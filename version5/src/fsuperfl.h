@@ -1,0 +1,295 @@
+//------------------------------------------------------------------------------
+// Desc:	This include file contains the class definitions for FLAIM's
+//			super file class.
+//
+// Tabs:	3
+//
+//		Copyright (c) 1998-2006 Novell, Inc. All Rights Reserved.
+//
+//		This program is free software; you can redistribute it and/or
+//		modify it under the terms of version 2 of the GNU General Public
+//		License as published by the Free Software Foundation.
+//
+//		This program is distributed in the hope that it will be useful,
+//		but WITHOUT ANY WARRANTY; without even the implied warranty of
+//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//		GNU General Public License for more details.
+//
+//		You should have received a copy of the GNU General Public License
+//		along with this program; if not, contact Novell, Inc.
+//
+//		To contact Novell about this file by physical or electronic mail,
+//		you may find current contact information at www.novell.com
+//
+// $Id: fsuperfl.h 3109 2006-01-19 13:07:07 -0700 (Thu, 19 Jan 2006) dsanders $
+//------------------------------------------------------------------------------
+
+#ifndef FSUPERFL_H
+#define FSUPERFL_H
+
+#include "fsrvlock.h"
+
+/*
+Constants
+*/
+
+#define MAX_CHECKED_OUT_FILE_HDLS	8
+
+/*
+Forward references
+*/
+
+class F_SuperFileHdl;
+typedef F_SuperFileHdl *	F_SuperFileHdl_p;
+
+class F_FileIdList;
+typedef F_FileIdList *	F_FileIdList_p;
+
+/*
+Typedefs
+*/
+
+typedef struct CheckedOutFileHdlTag
+{
+	IF_FileHdl *	pFileHdl;
+	FLMUINT			uiFileNumber;
+	FLMBOOL			bDirty;
+} CHECKED_OUT_FILE_HDL;
+
+// Misc. prototypes
+
+void bldSuperFileExtension(
+	FLMUINT		uiFileNum,
+	char *		pszFileExtension);
+
+/*===========================================================================
+Desc:		This class keeps a list of file IDs for file numbers in a database.
+			It does not know the use of the file IDs, and it is not limited in
+			the number of file IDs it can keep track of, but it will generally
+			be as follows:
+
+			FileNumber
+				0				This is the database file (xxx.db)
+				1-4095		These are the data files (xxx_data.nnn)
+				4096-8192	These are the rollback files (xxx_rb.nnn).  In this
+								case, the caller will map the file number in and
+								out of this range.
+===========================================================================*/
+class F_FileIdList : public XF_RefCount, public XF_Base
+{
+public:
+	F_FileIdList();
+
+	~F_FileIdList();
+
+	RCODE setup( void);
+
+	RCODE getFileId(
+		FLMUINT				uiFileNumber,
+		FLMUINT *			puiFileId);
+
+	FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	{
+		return( ftkAtomicIncrement( &m_ui32RefCnt));
+	}
+
+	FINLINE FLMUINT32 XFLMAPI Release( void)
+	{
+		FLMUINT32	ui32RefCnt = ftkAtomicDecrement( &m_ui32RefCnt);
+
+		if( !ui32RefCnt)
+		{
+			delete this;
+		}
+		return( ui32RefCnt);
+	}
+
+private:
+
+	F_MUTEX				m_hMutex;
+	FLMUINT				m_uiFileIdTblSize;
+	FLMUINT *			m_puiFileIdTbl;
+};
+
+/*===========================================================================
+Desc:		The F_SuperFileHdl object manages the control and block files
+			associated with a FLAIM Super File.  This class also provides
+			backward compatibility with prior file formats.
+Note:
+===========================================================================*/
+class F_SuperFileHdl : public XF_RefCount, public XF_Base
+{
+public:
+	F_SuperFileHdl();							// F_SuperFileHdl Constructor
+
+	~F_SuperFileHdl();						// F_SuperFileHdl Destructor
+
+	RCODE Setup(								// Configures the object.  Should
+													// be called exactly once.
+		F_FileIdList *		pFileIdList,
+		const char *		pszDbFileName,
+		const char *		pszDataDir);
+
+	RCODE CreateFile(							// Create a block file (>= 3.0 only)
+		FLMUINT			uiFileNumber);		// File number to create
+
+	RCODE ReadBlock(							// Reads a block from a block file or
+													// the log
+		FLMUINT			uiBlkAddress,		// Block address
+		FLMUINT			uiBytesToRead,		// Number of bytes to read from block
+		void *			pvBuffer,			// Buffer to place read bytes into
+		FLMUINT *		puiBytesRead);		// [out] number of bytes read
+
+	RCODE WriteBlock(							// Writes a block to a block file or
+													// the log
+		FLMUINT			uiBlkAddress,		// Block address
+		FLMUINT			uiBytesToWrite,	// Number of bytes to write
+		const void *	pvBuffer,			// Buffer to write bytes from
+		FLMUINT			uiBufferSize,		// Actual size of buffer
+		F_IOBuffer *	pIOBuffer,			// If non-NULL, contains info for
+													// doing an async write.
+		FLMUINT *		puiBytesWritten);	// [out] number of bytes written
+
+	RCODE ReadHeader(							// Reads data from the DB header
+		FLMUINT			uiOffset,
+		FLMUINT			uiBytesToRead,
+		void *			pvBuffer,
+		FLMUINT *		puiBytesRead);
+
+	RCODE WriteHeader(						// Writes data to the DB header
+		FLMUINT			uiOffset,
+		FLMUINT			uiBytesToWrite,
+		const void *	pvBuffer,
+		FLMUINT *		puiBytesWritten);
+
+	RCODE GetFilePath(						// Generates a block file's path
+		FLMUINT			uiFileNumber,		// File number
+		char *			pszPath);			// Returned path
+
+	RCODE	GetFileHdl(							// Returns a file's handle given
+													// the file's number
+		FLMUINT			uiFileNumber,
+		FLMBOOL			bGetForUpdate,
+		IF_FileHdl **	ppFileHdlRV);
+
+	RCODE GetFileSize(						// Returns the physical size of
+													// a file
+		FLMUINT			uiFileNumber,		// File number
+		FLMUINT64 *		pui64FileSize);	// File size return value
+
+	RCODE ReleaseFile(						// Release a single file
+		FLMUINT	uiFileNum,
+		FLMBOOL	bCloseFile);
+
+	RCODE ReleaseFiles(						// Releases all file handles and
+													// returns them to the file handle
+													// manager.  This is called at
+													// the end of a transaction.
+		FLMBOOL		bCloseFiles);			// Should files be closed?
+
+	RCODE TruncateFile(						// Truncate the file(s) to given address.
+		FLMUINT	uiEOFBlkAddress);			// End of file block address.
+
+	void TruncateFiles(						// Truncate the files specified by the
+		FLMUINT		uiStartFileNum,		// start and end file numbers.
+		FLMUINT		uiEndFileNum);
+
+	RCODE ReleaseFile(						// Release a single file
+		CHECKED_OUT_FILE_HDL *	pChkFileHdl,
+		FLMBOOL						bCloseFile);
+
+	FINLINE void enableFlushMinimize( void)
+	{
+		m_bMinimizeFlushes = TRUE;
+	}
+
+	void disableFlushMinimize( void);
+
+	RCODE Flush( void);
+
+	FINLINE void SetBlockSize(
+		FLMUINT		uiBlockSize)
+	{
+		m_uiBlockSize = uiBlockSize;
+	}
+
+	FINLINE void setExtendSize(
+		FLMUINT		uiExtendSize)
+	{
+		m_uiExtendSize = uiExtendSize;
+	}
+
+	FINLINE void setMaxAutoExtendSize(
+		FLMUINT		uiMaxAutoExtendSize)
+	{
+		m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
+	}
+
+	FINLINE FLMBOOL CanDoAsync( void)
+	{
+		if (m_pCheckedOutFileHdls[ 0].pFileHdl)
+		{
+			return( m_pCheckedOutFileHdls[ 0].pFileHdl->CanDoAsync());
+		}
+		else
+		{
+			IF_FileHdl *		pFileHdl;
+
+			if( RC_OK( GetFileHdl( 0, FALSE, &pFileHdl)))
+			{
+				return( pFileHdl->CanDoAsync());
+			}
+		}
+
+		return( FALSE);
+	}
+
+private:
+
+	FINLINE CHECKED_OUT_FILE_HDL * getCkoFileHdlPtr(
+		FLMUINT		uiFileNum,
+		FLMUINT *	puiSlot)
+	{
+		*puiSlot = (uiFileNum
+			? (uiFileNum % (m_uiCkoArraySize - 1)) + 1
+			: 0);
+
+		return( &m_pCheckedOutFileHdls[ *puiSlot]);
+	}
+
+	FINLINE void clearCkoFileHdl(
+		CHECKED_OUT_FILE_HDL *		pCkoFileHdl)
+	{
+		pCkoFileHdl->pFileHdl = NULL;
+		pCkoFileHdl->uiFileNumber = 0;
+		pCkoFileHdl->bDirty = FALSE;
+	}
+
+	void copyCkoFileHdls(
+		CHECKED_OUT_FILE_HDL *	pSrcCkoArray,
+		FLMUINT						uiSrcHighestUsedSlot);
+
+	RCODE reallocCkoArray(
+		FLMUINT	uiFileNum);
+
+	char *						m_pszDbFileName;
+	char *						m_pszDataFileNameBase;
+	FLMUINT						m_uiExtOffset;
+	FLMUINT						m_uiDataExtOffset;
+	F_FileIdList *				m_pFileIdList;
+	CHECKED_OUT_FILE_HDL		m_CheckedOutFileHdls[
+										MAX_CHECKED_OUT_FILE_HDLS + 1];
+	CHECKED_OUT_FILE_HDL *	m_pCheckedOutFileHdls;
+	FLMUINT						m_uiCkoArraySize;
+	FLMUINT						m_uiBlockSize;
+	FLMUINT						m_uiExtendSize;
+	FLMUINT						m_uiMaxAutoExtendSize;
+	FLMUINT						m_uiLowestDirtySlot;
+	FLMUINT						m_uiHighestDirtySlot;
+	FLMUINT						m_uiHighestUsedSlot;
+	FLMUINT						m_uiHighestFileNumber;
+	FLMBOOL						m_bMinimizeFlushes;
+	FLMBOOL						m_bSetupCalled;
+};
+
+#endif	// FSUPERFL_H
