@@ -1,0 +1,219 @@
+//-------------------------------------------------------------------------
+// Desc:	Miscellaneous functions.
+// Tabs:	3
+//
+//		Copyright (c) 1995-2001,2003-2006 Novell, Inc. All Rights Reserved.
+//
+//		This program is free software; you can redistribute it and/or
+//		modify it under the terms of version 2 of the GNU General Public
+//		License as published by the Free Software Foundation.
+//
+//		This program is distributed in the hope that it will be useful,
+//		but WITHOUT ANY WARRANTY; without even the implied warranty of
+//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//		GNU General Public License for more details.
+//
+//		You should have received a copy of the GNU General Public License
+//		along with this program; if not, contact Novell, Inc.
+//
+//		To contact Novell about this file by physical or electronic mail,
+//		you may find current contact information at www.novell.com
+//
+// $Id: fmisc.cpp 12266 2006-01-19 14:45:33 -0700 (Thu, 19 Jan 2006) dsanders $
+//-------------------------------------------------------------------------
+
+#include "flaimsys.h"
+
+/*API~***********************************************************************
+Name : FlmErrorIsFileCorrupt
+Area : INFORMATION
+Desc : Returns TRUE if the passed in RCODE indicates that a corruption
+		 has occured in a FLAIM database file.
+*END************************************************************************/
+FLMBOOL  FlmErrorIsFileCorrupt(
+	RCODE			rc)
+		// [IN] Return code to be checked.
+{
+	FLMBOOL		b = FALSE;
+
+	switch( rc)
+	{
+		/* This is the list of errors within FLAIM that indicate a corruption
+			has been found within FLAIM database file. */
+	case FERR_BTREE_ERROR :
+	case FERR_DATA_ERROR :
+	case FERR_DD_ERROR :
+	case FERR_NOT_FLAIM :
+	case FERR_PCODE_ERROR :
+	case FERR_BLOCK_CHECKSUM :
+	case FERR_INCOMPLETE_LOG :
+	case FERR_KEY_NOT_FOUND :
+	case FERR_NO_REC_FOR_KEY:
+		b = TRUE;
+		break;
+	default :
+		break;
+	}
+
+	return( b);
+}
+
+
+/*API~***********************************************************************
+Name : FlmGetDiagInfo
+Area : INFORMATION
+Desc : Returns specific information about the most recent error that
+		 occured within FLAIM.
+Notes: FLAIM maintains information about the operation which generated
+		 the error.  This information can include a field number
+		 or other information specific to the operation and can
+		 be useful in identifying the cause of the error.
+*END************************************************************************/
+RCODE FlmGetDiagInfo(
+	HFDB				hDb,
+	eDiagInfoType	eDiagCode,
+	void *			pvDiagInfo
+	)
+{
+	RCODE	rc = FERR_OK;
+	FDB *	pDb;
+
+	if ((pDb = (FDB *)hDb) == NULL)
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+	fdbUseCheck( pDb);
+
+	/* Now, copy over the data into the users variable */
+	switch( eDiagCode)
+	{
+		case FLM_GET_DIAG_INDEX_NUM :
+			if (!(pDb->Diag.uiInfoFlags & FLM_DIAG_INDEX_NUM))
+			{
+				rc = RC_SET( FERR_NOT_FOUND);
+				goto Exit;
+			}
+			else
+			{
+				*((FLMUINT *)pvDiagInfo) = pDb->Diag.uiIndexNum;
+			}
+			break;
+
+		case FLM_GET_DIAG_DRN :
+			if (!(pDb->Diag.uiInfoFlags & FLM_DIAG_DRN))
+			{
+				rc = RC_SET( FERR_NOT_FOUND);
+				goto Exit;
+			}
+			else
+			{
+				*((FLMUINT *)pvDiagInfo) = pDb->Diag.uiDrn;
+			}
+			break;
+
+		case FLM_GET_DIAG_FIELD_NUM :
+			if (!(pDb->Diag.uiInfoFlags & FLM_DIAG_FIELD_NUM))
+			{
+				rc = RC_SET( FERR_NOT_FOUND);
+				goto Exit;
+			}
+			else
+			{
+				*((FLMUINT *)pvDiagInfo) = pDb->Diag.uiFieldNum;
+			}
+			break;
+
+		case FLM_GET_DIAG_FIELD_TYPE :
+			if (!(pDb->Diag.uiInfoFlags & FLM_DIAG_FIELD_TYPE))
+			{
+				rc = RC_SET( FERR_NOT_FOUND);
+				goto Exit;
+			}
+			else
+			{
+				*((FLMUINT *)pvDiagInfo) = pDb->Diag.uiFieldType;
+			}
+			break;
+
+		case FLM_GET_DIAG_ENC_ID :
+			if (!(pDb->Diag.uiInfoFlags & FLM_DIAG_ENC_ID))
+			{
+				rc = RC_SET( FERR_NOT_FOUND);
+				goto Exit;
+			}
+			else
+			{
+				*((FLMUINT *)pvDiagInfo) = pDb->Diag.uiEncId;
+			}
+			break;
+		default:
+			flmAssert( 0);
+			rc = RC_SET( FERR_NOT_FOUND);
+			goto Exit;
+
+	}
+
+Exit:
+	if( pDb)
+	{
+		fdbUnuse( pDb);
+	}
+	return( rc);
+}
+
+
+/****************************************************************************
+Desc:	Get the total bytes represented by a particular block address.
+****************************************************************************/
+FLMUINT64 FSGetSizeInBytes(
+	FLMUINT	uiMaxFileSize,
+	FLMUINT	uiBlkAddress)
+{
+	FLMUINT	uiFileNum;
+	FLMUINT	uiFileOffset;
+	FLMUINT64	ui64Size;
+
+	uiFileNum = FSGetFileNumber( uiBlkAddress);
+	uiFileOffset = FSGetFileOffset( uiBlkAddress);
+	if( uiFileNum > 1)
+	{
+		ui64Size = (FLMUINT64)(((FLMUINT64)uiFileNum - (FLMUINT64)1) *
+											(FLMUINT64)uiMaxFileSize +
+											(FLMUINT64)uiFileOffset);
+	}
+	else
+	{
+		ui64Size = (FLMUINT64)uiFileOffset;
+	}
+	return( ui64Size);
+}
+
+/****************************************************************************
+Desc:	Converts a UNICODE string consisting of 7-bit ASCII characters to
+		a 7-bit ASCII string.  The conversion is done in place, so that
+		only one buffer is needed
+*****************************************************************************/
+RCODE flmUnicodeToAscii(
+	FLMUNICODE *	puzString) // Unicode in, Ascii out
+{
+	FLMBYTE *	pucDest;
+
+	pucDest = (FLMBYTE *)puzString;
+	while( *puzString)
+	{
+		if( *puzString > 0x007F)
+		{
+			*pucDest = 0xFF;
+		}
+		else
+		{
+			*pucDest = (FLMBYTE)*puzString;
+		}
+		pucDest++;
+		puzString++;
+	}
+	*pucDest = '\0';
+
+	return( FERR_OK);
+}

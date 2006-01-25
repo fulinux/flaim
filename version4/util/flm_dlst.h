@@ -1,0 +1,175 @@
+//-------------------------------------------------------------------------
+// Desc:	Dynamic, interactive list manager - definitions.
+// Tabs:	3
+//
+//		Copyright (c) 2000,2003,2005-2006 Novell, Inc. All Rights Reserved.
+//
+//		This program is free software; you can redistribute it and/or
+//		modify it under the terms of version 2 of the GNU General Public
+//		License as published by the Free Software Foundation.
+//
+//		This program is distributed in the hope that it will be useful,
+//		but WITHOUT ANY WARRANTY; without even the implied warranty of
+//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//		GNU General Public License for more details.
+//
+//		You should have received a copy of the GNU General Public License
+//		along with this program; if not, contact Novell, Inc.
+//
+//		To contact Novell about this file by physical or electronic mail,
+//		you may find current contact information at www.novell.com
+//
+// $Id: flm_dlst.h 12334 2006-01-23 12:45:35 -0700 (Mon, 23 Jan 2006) dsanders $
+//-------------------------------------------------------------------------
+
+#ifndef FLM_DLST_HPP
+#define FLM_DLST_HPP
+
+#include "ftx.h"
+
+#ifdef __cplusplus
+	class F_DynaList;
+	class F_DynamicList;
+	typedef F_DynaList *		F_DynaList_p;
+#else
+	typedef void *				F_DynaList_p;
+#endif
+
+#ifdef FLM_NLM
+	#define DLIST_DUMPFILE_PATH "sys:/system/dlstdump.txt"
+#else
+	#define DLIST_DUMPFILE_PATH "dlstdump.txt"
+#endif
+
+
+typedef RCODE (* F_DLIST_DISP_HOOK)(
+	FTX_WINDOW_p		pWin,
+	FLMBOOL				bSelected,
+	FLMUINT				uiRow,
+	FLMUINT				uiKey,
+	void *				pvData,
+	FLMUINT				uiDataLen,
+	F_DynamicList*		pDynamicList);
+
+RCODE  dlistDefaultDisplayHook(
+	FTX_WINDOW_p		pWin,
+	FLMBOOL				bSelected,
+	FLMUINT				uiRow,
+	FLMUINT				uiKey,
+	void *				pvData,
+	FLMUINT				uiDataLen,
+	F_DynamicList*		pDynamicList);
+
+/*
+Types, enums, etc.
+*/
+
+typedef struct dlist_node
+{
+	FLMUINT					uiKey;
+	dlist_node *			pPrev;
+	dlist_node *			pNext;
+	void *					pvData;
+	FLMUINT					uiDataLen;
+	F_DLIST_DISP_HOOK		pDispHook;
+} DLIST_NODE;
+
+/*
+Class definitions
+*/
+
+#ifdef __cplusplus
+
+class	F_DynamicList : public F_Base
+{
+private:
+
+	/*
+	  Data
+	*/
+
+	DLIST_NODE *		m_pFirst;
+	DLIST_NODE *		m_pLast;
+	DLIST_NODE *		m_pCur;
+	FTX_WINDOW *		m_pListWin;
+	FLMUINT				m_uiListRows;
+	FLMUINT				m_uiListCols;
+	FLMUINT				m_uiRow;
+	FLMBOOL				m_bChanged;
+	FLMBOOL				m_bShowHorizontalSelector;
+
+	/*
+	  Methods
+	*/
+
+	DLIST_NODE * getNode( FLMUINT uiKey);
+	void freeNode( DLIST_NODE * pNode);
+
+public:
+
+	/*
+	  Methods
+	*/
+
+	F_DynamicList( void);
+	~F_DynamicList( void);
+
+	RCODE setup( FTX_WINDOW_p	pInitializedWindow);
+
+	void refresh( void);
+
+	RCODE insert( 
+		FLMUINT					uiKey,
+		F_DLIST_DISP_HOOK 	pDisplayHook,
+		void *					pvData,
+		FLMUINT					uiDataLen);
+
+	RCODE update( 
+		FLMUINT					uiKey,
+		F_DLIST_DISP_HOOK 	pDisplayHook,
+		void *					pvData,
+		FLMUINT					uiDataLen);
+
+	RCODE remove(
+		FLMUINT	uiKey);
+
+	inline DLIST_NODE * getFirst( void)
+	{ 
+		return( m_pFirst);
+	}
+
+	inline DLIST_NODE * getCurrent( void)
+	{ 
+		return( m_pCur);
+	}
+
+	inline FTX_WINDOW_p getListWin( void)
+	{ 
+		return( m_pListWin);
+	}
+
+	void defaultKeyAction( FLMUINT uiKey);
+
+	void setShowHorizontalSelector( FLMBOOL bShow)
+	{
+		m_bShowHorizontalSelector = bShow;
+		m_bChanged = TRUE;
+	}
+	FLMBOOL getShowHorizontalSelector() { return m_bShowHorizontalSelector;}
+
+	RCODE dumpToFile();
+
+	/*
+	  Navigational Methods
+	*/
+
+	void cursorUp( void);
+	void cursorDown( void);
+	void pageUp( void);
+	void pageDown( void);
+	void home( void);
+	void end( void);
+};
+
+#endif	// __cplusplus
+#endif	// FLM_EDIT_HPP
