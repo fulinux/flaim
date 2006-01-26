@@ -7155,9 +7155,9 @@ Desc: Makes sure the utility is still allowed to run
 RCODE domEditVerifyRun( void)
 {
 	F_TMSTAMP	curDate;
-	FLMUINT		uiExpireYear;
-	FLMUINT		uiExpireMonth;
-	FLMUINT		uiExpireDay;
+	FLMUINT		uiExpireYear = 0;
+	FLMUINT		uiExpireMonth = 0;
+	FLMUINT		uiExpireDay = 0;
 	RCODE			rc = NE_XFLM_OK;
 	char *		pszDate = __DATE__;
 
