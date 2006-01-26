@@ -69,6 +69,10 @@ class IF_CCS
 {
 public:
 
+	virtual ~IF_CCS()
+	{
+	}
+
 	virtual RCODE generateEncryptionKey(
 		FLMUINT				uiEncKeySize) = 0;
 

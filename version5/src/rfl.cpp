@@ -6841,7 +6841,7 @@ RCODE F_Rfl::recovAttrSetValue(
 	FLMUINT				uiAttrNameId;
 	FLMUINT				uiEncDefId;
 	FLMUINT				uiPayloadLen;
-	FLMUINT				uiDecryptedDataLen;
+	FLMUINT				uiDecryptedDataLen = 0;
 	FLMUINT				uiIVLen = 0;
 	FLMUINT				uiHaveDataPackets;
 	FLMUINT				uiTmp;

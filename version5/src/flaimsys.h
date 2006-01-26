@@ -169,6 +169,8 @@ class F_IniFile;
 class F_QueryResultSet;
 class F_BTreeInfo;
 class F_AttrItem;
+class F_NodeVerifier;
+class F_RebuildNodeIStream;
 
 // Internal includes
 

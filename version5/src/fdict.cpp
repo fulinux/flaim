@@ -5446,7 +5446,7 @@ RCODE F_Db::getIndexComponentDef(
 	FLMUINT			uiKeyComponent;
 	FLMUINT			uiDataComponent;
 	FLMUINT			uiNameDictNumber = 0;
-	FLMUINT			uiDataType;
+	FLMUINT			uiDataType= 0;
 	FLMBYTE *		pszTmp;
 	FLMBYTE *		pszOption;
 	FLMBOOL			bLimitSet = FALSE;

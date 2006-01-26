@@ -291,6 +291,10 @@
 	
 	xflminterface XFLMIUnknown
 	{
+		virtual ~XFLMIUnknown()
+		{
+		}
+		
 		virtual RCODE XFLMAPI QueryInterface( 
 			RXFLMIID					riid,
 			void **					ppv) = 0;

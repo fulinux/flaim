@@ -296,7 +296,7 @@ RCODE KYEachWordParse(
 	FLMUINT			uiWordLen = 0;
 	FLMUINT			uiWordBufSize = *puiWordLen;
 	FLMUNICODE		uChar;
-	FLMUINT			uiType;
+	FLMUINT			uiType = 0;
 	FLMUINT			uiSize;
 	
 	if (!uiLimit)

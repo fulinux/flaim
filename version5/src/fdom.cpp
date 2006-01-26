@@ -6428,7 +6428,7 @@ RCODE F_DOMNode::setAttributeValueNumber(
 	F_Rfl *				pRfl = pDb->m_pDatabase->m_pRfl;
 	FLMUINT				uiRflToken = 0;
 	FLMBOOL				bNeg = FALSE;
-	FLMBOOL				bIsInIndexDef;
+	FLMBOOL				bIsInIndexDef = FALSE;
 	FLMBOOL				bStartedTrans = FALSE;
 	FLMBOOL				bMustAbortOnError = FALSE;
 
@@ -6623,7 +6623,7 @@ RCODE XFLMAPI F_DOMNode::setAttributeValueBinary(
 	F_Db *				pDb = (F_Db *)ifpDb;
 	F_Rfl *				pRfl = pDb->m_pDatabase->m_pRfl;
 	FLMUINT				uiRflToken = 0;
-	FLMBOOL				bIsInIndexDef;
+	FLMBOOL				bIsInIndexDef = FALSE;
 	FLMBOOL				bStartedTrans = FALSE;
 	FLMBOOL				bMustAbortOnError = FALSE;
 
@@ -6741,7 +6741,7 @@ RCODE XFLMAPI F_DOMNode::setAttributeValueUTF8(
 	F_Rfl *				pRfl = pDb->m_pDatabase->m_pRfl;
 	FLMUINT				uiNumCharsInBuffer;
 	FLMUINT				uiRflToken = 0;
-	FLMBOOL				bIsInIndexDef;
+	FLMBOOL				bIsInIndexDef = FALSE;
 	FLMBOOL				bStartedTrans = FALSE;
 	FLMBOOL				bMustAbortOnError = FALSE;
 

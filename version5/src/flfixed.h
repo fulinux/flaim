@@ -203,6 +203,11 @@ Desc:	Class with two virtual functions - canRelocate and relocate.
 class IF_Relocator
 {
 public:
+
+	virtual ~IF_Relocator()
+	{
+	}
+
 	virtual void relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc) = 0;
