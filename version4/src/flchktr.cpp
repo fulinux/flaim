@@ -807,7 +807,7 @@ FSTATIC RCODE chkVerifySubTree(
 	eCorruptionType  	eBlkCorruptionCode = FLM_NO_CORRUPTION;
 	eCorruptionType	eLastCorruptCode = FLM_NO_CORRUPTION;
 	FLMUINT				uiNumErrors = 0;
-	FLMUINT				uiErrElmRecOffset;
+	FLMUINT				uiErrElmRecOffset = 0;
 	FLMUINT64		  	ui64SaveKeyCount = 0;
 	FLMUINT64			ui64SaveKeyRefs = 0;
 	BLOCK_INFO			SaveBlkInfo;

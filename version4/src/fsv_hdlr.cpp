@@ -1151,9 +1151,9 @@ RCODE fsvOpClassDatabase(
 	FSV_SESN *			pSession;
 	HFDB					hDb = HFDB_NULL;
 	CREATE_OPTS			CreateOptsRV;
-	FLMUINT				uiBlockCountRV;
-	FLMUINT				uiBlocksExaminedRV;
-	FLMUINT				uiBlockAddrRV;
+	FLMUINT				uiBlockCountRV = 0;
+	FLMUINT				uiBlocksExaminedRV = 0;
+	FLMUINT				uiBlockAddrRV = 0;
 	FLMUINT				uiTransIdRV;
 	FLMUINT64			ui64NumValue1RV = 0;
 	FLMUINT64			ui64NumValue2RV = 0;
@@ -1166,8 +1166,8 @@ RCODE fsvOpClassDatabase(
 	F_NameTable 		nameTable;
 	FLMBOOL				bHaveCreateOptsVal = FALSE;
 	FLMBOOL				bHavePathValue = FALSE;
-	FLMBYTE *			pBinary;
-	FLMUINT				uiBinSize;
+	FLMBYTE *			pBinary = NULL;
+	FLMUINT				uiBinSize = 0;
 #ifdef FSV_LOGGING
 	char					szLogBuf[ FSV_LOG_BUFFER_SIZE];
 #endif

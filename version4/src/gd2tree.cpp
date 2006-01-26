@@ -84,7 +84,7 @@ RCODE GedToTree(
 	FLMUINT			levelBase = 0;
 	FLMUINT			levelPrior = 0;
 	FLMBYTE			nextChar;
-	NODE *			nd;
+	NODE *			nd = NULL;
 	NODE *			ndPrior = NULL;
 	FLMUINT			startPos;
 

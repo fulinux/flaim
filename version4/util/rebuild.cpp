@@ -175,18 +175,15 @@ Desc: ?
 #if defined( FLM_UNIX)
 int main(
 	int			iArgC,
-	char **		ppszArgV
-	)
+	char **		ppszArgV)
 #elif defined( FLM_NLM)
 int nlm_main(
 	int			iArgC,
-	char **		ppszArgV
-	)
+	char **		ppszArgV)
 #else
 int __cdecl main(
 	int			iArgC,
-	char **		ppszArgV
-	)
+	char **		ppszArgV)
 #endif   
 {
 	int		iRetCode = 0;
@@ -788,10 +785,8 @@ Show_Help:
 	{
 		goto Show_Help;
 	}
-	else
-	{
-		return( TRUE);
-	}
+	
+	return( TRUE);
 }
 
 /********************************************************************

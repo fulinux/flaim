@@ -1558,7 +1558,7 @@ eCorruptionType flmVerifyElement(
 	FLMBYTE *		pElmKey;
 	FLMUINT			uiElmKeyLen;
 	FLMUINT			uiElmPKCLen;
-	FLMINT			iCmpStatus;
+	FLMINT			iCmpStatus = 0;
 	FLMBYTE *		pCurKey = pStateInfo->pCurKey;
 	FLMUINT			uiCurKeyLen = pStateInfo->uiCurKeyLen;
 	FLMBOOL			bLfIsContainer = FALSE;

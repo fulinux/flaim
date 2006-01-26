@@ -217,7 +217,7 @@ FSTATIC RCODE flmProcessBeforeImage(
 	FLMUINT		uiBlkAddress;
 	FLMUINT		uiBlkLength;
 	FLMUINT		uiBytesWritten;
-	FLMBOOL		bIsBeforeImageBlk;
+	FLMBOOL		bIsBeforeImageBlk = FALSE;
 	F_TMSTAMP	StartTime;
 	DB_STATS *	pDbStats = pDb->pDbStats;
 

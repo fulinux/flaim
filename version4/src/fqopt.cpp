@@ -2343,13 +2343,13 @@ RCODE flmCurOptimize(
 	SUBQUERY_p		pContainerScanSubQuery = NULL;
 	FLMBOOL			bChoosingIndex;
 	DB_STATS *		pDbStats;
-	QPREDICATE_p	pPredicateList;
-	FLMUINT			uiTotalPredicates;
+	QPREDICATE_p	pPredicateList = NULL;
+	FLMUINT			uiTotalPredicates = 0;
 	POOL *			pTempPool;
 	void *			pvMark;
 	qOptTypes		eOptType;
 	FLMBOOL			bFromSubQuerySubsumed = FALSE;
-	FLMBOOL			bHaveUserPredicates;
+	FLMBOOL			bHaveUserPredicates = FALSE;
 
 	// Set up the operation control structure.
 

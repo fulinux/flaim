@@ -84,7 +84,7 @@ RCODE FSRefUpdate(
 	BTSK_p			pStack = stackBuf;			// Points to proper stack frame
 	FLMUINT			uiDinDomain = DIN_DOMAIN( pKrefEntry->uiDrn) + 1; // Lower bounds
 	FLMBYTE			byFlags = (FLMBYTE)pKrefEntry->uiFlags;
-	FLMBOOL			bSingleRef;
+	FLMBOOL			bSingleRef = FALSE;
 	FLMBOOL			bAddReference = (byFlags & KREF_DELETE_FLAG) ? FALSE : TRUE;
 	FLMBYTE			pKeyBuf[ MAX_KEY_SIZ ];		// Key buffer pointed to by stack
 

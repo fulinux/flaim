@@ -2496,7 +2496,7 @@ RCODE flmMaintFreeBlockChain(
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiStartAddr;
-	FLMUINT			uiEndAddr;
+	FLMUINT			uiEndAddr = 0;
 	void *			pvBlkChain;
 	FlmRecord *		pTrackerRec = NULL;
 	FlmRecord *		pTmpRec;

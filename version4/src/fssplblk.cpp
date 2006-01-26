@@ -51,36 +51,33 @@ Notes:	goto's are added to insure proper cleanup and to help maintain flow.
 RCODE FSBlkSplit(
 	FDB *			pDb,
 	LFILE *		pLFile,
-	BTSK_p *		ppStack,				/* Stack could change so returns current*/
-	FLMBYTE *	pElement,				/* Element still to be inserted */
-	FLMUINT		elmLen)					/* FULL length of element to be inserted*/
+	BTSK_p *		ppStack,
+	FLMBYTE *	pElement,
+	FLMUINT		elmLen)
 {
-	RCODE			rc;					 		/* Return code */
+	RCODE			rc = FERR_OK;
 	FLMUINT		uiBlockSize = pDb->pFile->FileHdr.uiBlockSize;
-	BTSK_p		pStack = *ppStack;			/* Points to current bt stack frame */
-	FLMUINT    	oldCurElm = pStack->uiCurElm;/* Original current element value*/
-	FLMUINT		uiElmOvhd = pStack->uiElmOvhd;/* element overhead used for speed*/
-	FLMUINT    	tempWord;			 		/* Tempory variable */
-	FLMUINT    	elmKeyLen;			 		/* General variable for element key len */
-	FLMUINT    	prevKeyCnt;			 		/* General variable for elements key cnt*/
-	FLMUINT    	curElm;				 		/* Current element value */
-	FLMBYTE *  	curElmPtr;			 		/* Points to current element */
-
-	FLMBYTE *  	pBlk;				 		/* Points to block */
-	FLMUINT   	blkNum = pStack->uiBlkAddr; /* block address */
-	FLMUINT    	uiBlkEnd;				 		/* Block end */
-
-	BTSK      	newBlkStk;					/* New and next stacks for moveElms */
+	BTSK_p		pStack = *ppStack;
+	FLMUINT    	oldCurElm = pStack->uiCurElm;
+	FLMUINT		uiElmOvhd = pStack->uiElmOvhd;
+	FLMUINT    	tempWord;
+	FLMUINT    	elmKeyLen;
+	FLMUINT    	prevKeyCnt;
+	FLMUINT    	curElm;
+	FLMBYTE *  	curElmPtr;
+	FLMBYTE *  	pBlk;
+	FLMUINT   	blkNum = pStack->uiBlkAddr;
+	FLMUINT    	uiBlkEnd;
+	BTSK      	newBlkStk;
 	BTSK			nextBlkStk;
-	FLMBYTE *  	newBlkPtr;					/* Points to new block and next block */
+	FLMBYTE *  	newBlkPtr;
 	FLMBYTE *	nextBlkPtr;
-	FLMUINT   	newBlkNum;					/* New and next block number */
+	FLMUINT   	newBlkNum;
 	FLMUINT		nextBlkNum;
-
-	FLMUINT   	blkNumRestore;		 		/* Used to position to inserted element */
-	FLMUINT    	curElmRestore;		 		/* Used to position to inserted element */
-	FLMBOOL    	bNewRootFlag;		 		/* Set if created a new root block */
-	FLMBOOL		bDoubleSplit;		 		/* Set if a double split is needed */
+	FLMUINT   	blkNumRestore = 0;
+	FLMUINT    	curElmRestore = 0;
+	FLMBOOL    	bNewRootFlag;
+	FLMBOOL		bDoubleSplit;
 	DB_STATS *	pDbStats;
 
 	f_yieldCPU();

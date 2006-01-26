@@ -91,6 +91,14 @@ class IF_CCS
 {
 public:
 
+	IF_CCS()
+	{
+	}
+	
+	virtual ~IF_CCS()
+	{
+	}
+
 	virtual RCODE generateEncryptionKey( void) = 0;
 
 	virtual RCODE generateWrappingKey( void) = 0;
@@ -107,10 +115,11 @@ public:
 		FLMBYTE *				pucOut,
 		FLMUINT *				puiOutLen) = 0;
 
-};  // IF_CCS
+};
 
-
-
+/****************************************************************************
+Desc:
+****************************************************************************/
 class F_CCS : public IF_CCS, public F_Base
 {
 public:
@@ -257,97 +266,96 @@ private:
 	F_MUTEX					m_hMutex;
 	FLMBYTE 					m_pucIV[ IV_SZ];	// Used when the algorithm type is DES, 3DES or AES
 
-}; // F_CCS
+};
 
+/****************************************************************************
+Desc:	Decodes an ASCII base64 stream to binary
+****************************************************************************/
+class F_Base64Decoder : public F_Base
+{
+public:
 
-	/****************************************************************************
-	Desc:	Decodes an ASCII base64 stream to binary
-	****************************************************************************/
-	class F_Base64Decoder : public F_Base
+	F_Base64Decoder( void )
 	{
-	public:
+		m_uiBufOffset = 0;
+		m_uiAvailBytes = 0;
+	}
 
-		F_Base64Decoder( void )
-		{
-			m_uiBufOffset = 0;
-			m_uiAvailBytes = 0;
-		}
-
-		~F_Base64Decoder()
-		{
-		}
-
-		RCODE read(
-			FLMBYTE *				psSource,
-			FLMUINT					uiSourceLen,
-			void *					pvBuffer,
-			FLMUINT32				ui32BytesToRead,
-			FLMUINT32 *				pui32BytesRead);
-
-		FINLINE void close( void)
-		{
-			m_uiAvailBytes = 0;
-			m_uiBufOffset = 0;
-		}
-
-	private:
-
-		FLMUINT				m_uiBufOffset;
-		FLMUINT				m_uiAvailBytes;
-		FLMBYTE				m_ucBuffer[ 8];
-		static FLMBYTE		m_ucDecodeTable[ 256];
-	};
-
-	/****************************************************************************
-	Desc:	Encodes a binary input stream into ASCII base64.
-	****************************************************************************/
-	class F_Base64Encoder : public F_Base
+	~F_Base64Decoder()
 	{
-	public:
+	}
 
-		F_Base64Encoder(
-			FLMBOOL				bLineBreaks = FALSE)
-		{
-			m_uiBase64Count = 0;
-			m_uiBufOffset = 0;
-			m_uiAvailBytes = 0;
-			m_bLineBreaks = bLineBreaks;
-			m_bInputExhausted = FALSE;
-			m_bPriorLineEnd = FALSE;
-		}
+	RCODE read(
+		FLMBYTE *				psSource,
+		FLMUINT					uiSourceLen,
+		void *					pvBuffer,
+		FLMUINT32				ui32BytesToRead,
+		FLMUINT32 *				pui32BytesRead);
 
-		~F_Base64Encoder()
-		{
-		}
+	FINLINE void close( void)
+	{
+		m_uiAvailBytes = 0;
+		m_uiBufOffset = 0;
+	}
 
-		RCODE read(
-			FLMBYTE *				psSource,
-			FLMUINT					uiSourceLen,
-			void *					pvBuffer,
-			FLMUINT32				ui32BytesToRead,
-			FLMUINT32 *				pui32BytesRead);
+private:
 
-		FINLINE void close( void)
-		{
+	FLMUINT				m_uiBufOffset;
+	FLMUINT				m_uiAvailBytes;
+	FLMBYTE				m_ucBuffer[ 8];
+	static FLMBYTE		m_ucDecodeTable[ 256];
+};
 
-			m_uiBufOffset = 0;
-			m_uiAvailBytes = 0;
-			m_uiBase64Count = 0;
-			m_bPriorLineEnd = FALSE;
-			m_bInputExhausted = TRUE;
-		}
+/****************************************************************************
+Desc:	Encodes a binary input stream into ASCII base64.
+****************************************************************************/
+class F_Base64Encoder : public F_Base
+{
+public:
 
-	private:
+	F_Base64Encoder(
+		FLMBOOL				bLineBreaks = FALSE)
+	{
+		m_uiBase64Count = 0;
+		m_uiBufOffset = 0;
+		m_uiAvailBytes = 0;
+		m_bLineBreaks = bLineBreaks;
+		m_bInputExhausted = FALSE;
+		m_bPriorLineEnd = FALSE;
+	}
 
-		FLMBOOL			m_bLineBreaks;
-		FLMBOOL			m_bPriorLineEnd;
-		FLMBOOL			m_bInputExhausted;
-		FLMUINT			m_uiBase64Count;
-		FLMUINT			m_uiBufOffset;
-		FLMUINT			m_uiAvailBytes;
-		FLMBYTE			m_ucBuffer[ 8];
-		static char 	m_ucEncodeTable[ 64];
-	};
+	~F_Base64Encoder()
+	{
+	}
+
+	RCODE read(
+		FLMBYTE *				psSource,
+		FLMUINT					uiSourceLen,
+		void *					pvBuffer,
+		FLMUINT32				ui32BytesToRead,
+		FLMUINT32 *				pui32BytesRead);
+
+	FINLINE void close( void)
+	{
+
+		m_uiBufOffset = 0;
+		m_uiAvailBytes = 0;
+		m_uiBase64Count = 0;
+		m_bPriorLineEnd = FALSE;
+		m_bInputExhausted = TRUE;
+	}
+
+private:
+
+	FLMBOOL			m_bLineBreaks;
+	FLMBOOL			m_bPriorLineEnd;
+	FLMBOOL			m_bInputExhausted;
+	FLMUINT			m_uiBase64Count;
+	FLMUINT			m_uiBufOffset;
+	FLMUINT			m_uiAvailBytes;
+	FLMBYTE			m_ucBuffer[ 8];
+	static char 	m_ucEncodeTable[ 64];
+};
 	
 RCODE flmDecryptBuffer(
 	FLMBYTE *				pucBuffer,
@@ -359,4 +367,4 @@ RCODE flmEncryptBuffer(
 
 #include "fpackoff.h"
 
-#endif	/* F_NICI_H */
+#endif
