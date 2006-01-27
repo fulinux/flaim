@@ -31,6 +31,30 @@
 #
 #############################################################################
 
+# -- Project --
+
+project_name = flaim
+
+# -- Version --
+
+major_version = 4
+minor_version = 8
+revision = 0
+version = $(major_version).$(minor_version).$(revision)
+
+rpm_release_num = 1
+
+# -- Paths --
+
+install_prefix = /usr/local
+lib_install_dir = $(install_prefix)/lib
+include_install_dir = $(install_prefix)/include
+
+build_output_dir = ./build
+archive_dir = $(build_output_dir)/archive
+
+spec_file = $(build_output_dir)/$(project_name)-$(version).spec
+
 # -- Target variables --
 
 target_build_type =
@@ -41,7 +65,6 @@ target_word_size =
 requested_target_word_size =
 win_target =
 unix_target =
-build_output_dir = ./build
 
 # -- Enable command echoing
 
@@ -62,6 +85,12 @@ endif
 ifndef host_os_family
 	ifneq (,$(findstring Win,$(OS)))
 		host_os_family = win
+	endif
+endif
+
+ifeq (,$(OSTYPE))
+	ifneq (,$(RPM_OS))
+		HOSTTYPE = $(RPM_OS)
 	endif
 endif
 	
@@ -133,6 +162,13 @@ ifndef target_os_family
 	ifeq ($(host_os_family),linux)
 		unix_target = yes
 		target_os_family = linux
+		
+		ifeq (,$(HOSTTYPE))
+			ifneq (,$(RPM_ARCH))
+				HOSTTYPE = $(RPM_ARCH)
+			endif
+         $(error HOSTTYPE environment variable has not been set)
+		endif
 		
 		ifeq (,$(HOSTTYPE))
          $(error HOSTTYPE environment variable has not been set)
@@ -264,11 +300,15 @@ comma := ,
 ifeq ($(host_os_family),win)
 	allprereqs  = $(subst /,\,$+)
 	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2)) >NUL
+	rmcmd = del /Q $(subst /,\,$(1))
+	rmdircmd = rd /q /s $(subst /,\,$(1))
 	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1)) >NUL
 	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
 else
 	allprereqs = $+
 	copycmd = cp -f $(1) $(2)
+	rmcmd = rm -f $(1)
+	rmdircmd = rm -rf $(1)
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
 endif
@@ -565,8 +605,8 @@ ut_basictest_src = \
 # -- FLAIM library --
 
 flaim_obj = $(patsubst src/%.cpp,$(obj_dir)/%$(obj_suffix),$(flaim_src))
-static_flaim_lib = $(static_lib_dir)/$(lib_prefix)flaim$(lib_suffix)
-shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)flaim$(shared_lib_suffix)
+static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
 
 # -- Unit tests  --
 
@@ -587,7 +627,7 @@ vpath %.cpp src util sample
 # -- Default target --
 
 .PHONY : all
-all: status dircheck $(static_flaim_lib) $(shared_flaim_lib) allutils
+all: status dircheck $(static_flaim_lib) $(shared_flaim_lib) allutils docs
 
 # -- *.cpp -> *$(obj_suffix) --
 
@@ -676,8 +716,114 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
+# -- dist --
+
+.PHONY : dist
+dist: status dircheck spec
+ifndef win_target
+	$(ec)$(gprintf) "Creating archive ...\n"
+	-$(ec)$(call rmdircmd,$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(call mkdircmd,$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(gprintf) "$(version)" > $(archive_dir)/$(project_name)-$(version)/VERSION
+	$(ec)$(call copycmd,Makefile,$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(call copycmd,COPYING,$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(call copycmd,Doxyfile,$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(call copycmd,$(spec_file),$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(call mkdircmd,$(archive_dir)/$(project_name)-$(version)/src)
+	$(ec)$(call copycmd,src/*.cpp,$(archive_dir)/$(project_name)-$(version)/src)
+	$(ec)$(call copycmd,src/*.h,$(archive_dir)/$(project_name)-$(version)/src)
+	$(ec)$(call mkdircmd,$(archive_dir)/$(project_name)-$(version)/util)
+	$(ec)$(call copycmd,util/*.cpp,$(archive_dir)/$(project_name)-$(version)/util)
+	$(ec)$(call copycmd,util/*.h,$(archive_dir)/$(project_name)-$(version)/util)
+	$(ec)tar zcf $(archive_dir)/$(project_name)-$(version).tar.gz -C $(archive_dir) $(project_name)-$(version)
+	-$(ec)$(call rmdircmd,$(archive_dir)/$(project_name)-$(version))
+	$(ec)$(gprintf) "Archive created.\n"
+endif
+	
+# -- install --
+
+.PHONY : install
+install: all
+ifndef win_target
+	$(ec)$(gprintf) "Installing ...\n"
+	$(ec)install --mode=666 $(shared_flaim_lib) $(lib_install_dir)
+	$(ec)ln -fs $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	$(ec)ln -fs $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	$(ec)install --mode=666 $(static_flaim_lib) $(lib_install_dir)
+	$(ec)install --mode=666 src/flaim.h $(include_install_dir)
+	$(ec)$(gprintf) "Installation complete.\n"
+endif
+
+# -- uninstall --
+
+.PHONY : uninstall
+uninstall: 
+ifndef win_target
+	$(ec)$(gprintf) "Uninstalling ...\n"
+	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
+	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+	-$(ec)rm -rf $(include_install_dir)/flaim.h
+	$(ec)$(gprintf) "Uninstalled.\n"
+endif
+
+# -- spec file --
+
+.PHONY : spec
+spec:
+	$(ec)$(gprintf) "Summary: An extensible, flexible, adaptable, embeddable database engine\n" > $(spec_file)
+	$(ec)$(gprintf) "Name: $(project_name)\n" >> $(spec_file)
+	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
+	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
+	$(ec)$(gprintf) "Copyright: GPL\n" >> $(spec_file)
+	$(ec)$(gprintf) "Vendor: Novell, Inc.\n" >> $(spec_file)
+	$(ec)$(gprintf) "Group: Development/Libraries\n" >> $(spec_file)
+	$(ec)$(gprintf) "Source: $(project_name)-$(version).tar.gz\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRoot: /var/tmp/$(project_name)-$(version)-buildroot\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%description\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%prep\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%setup -q\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%build\n" >> $(spec_file)
+	$(ec)$(gprintf) "make all\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
+	$(ec)$(gprintf) "make install\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
+	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%files\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%defattr(-,root,root)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%doc COPYING VERSION\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(include_install_dir)/flaim.h\n" >> $(spec_file)
+
+# -- SRCRPM --
+
+.PHONY : srcrpm
+srcrpm: dist
+	$(ec)$(gprintf) "Creating source RPM ...\n"
+	$(ec)rpmbuild -ts --quiet $(archive_dir)/$(project_name)-$(version).tar.gz
+	$(ec)$(call copycmd,$(shell rpm --eval %{_srcrpmdir})/$(project_name)-$(version)*.src.rpm $(archive_dir))
+	$(ec)$(gprintf) "Source RPM created.\n"
+	
+# -- Documentation --
+
+.PHONY : docs
+docs: status dircheck
+	$(ec)$(gprintf) "Creating documentation ...\n"
+	$(ec)doxygen Doxyfile
+	$(ec)$(gprintf) "Documentation created.\n"
+	
 # -- misc. targets --
 
+.PHONY : status
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
 	$(ec)$(gprintf) "Host Operating System Family = $(host_os_family)\n"
@@ -698,6 +844,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(sample_dir))
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
+	$(ec)$(call mkdircmd,$(archive_dir))
 
 # -- phony targets --
 
@@ -752,12 +899,35 @@ osx:
 verbose:
 	$(ec)$(gprintf) ""
 
+.PHONY : check
+check:
+	$(ec)$(gprintf) ""
+	
+.PHONY : TAGS
+TAGS:
+	$(ec)$(gprintf) ""
+	
+.PHONY : info
+info:
+	$(ec)$(gprintf) ""
+	
+.PHONY : installcheck
+installcheck:
+	$(ec)$(gprintf) ""
+	
 .PHONY : clean
 clean:
-	$(ec)$(gprintf) "Cleaning $(target_path) ...\n"
-ifdef win_target
-	-$(ec)if exist $(subst /,\,$(target_path)) rd /s /q $(subst /,\,$(target_path)) >NUL
-	-$(ec)if exist *.pch del /Q *.pch >NUL
-else
-	-$(ec)rm -rf $(target_path) 2>/dev/null
-endif
+	-$(ec)$(call rmdircmd,$(target_path))
+	-$(ec)$(call rmcmd *.pch)
+	
+.PHONY : distclean
+	-$(ec)$(call rmcmd *.pch)
+	
+.PHONY : mostlyclean
+mostlyclean : clean
+	$(ec)$(gprintf) ""
+
+.PHONY : maintainer-clean
+maintainer-clean:
+	-$(ec)$(call rmdircmd,$(build_output_dir))
+	-$(ec)$(call rmcmd *.pch)
