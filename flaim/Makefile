@@ -627,7 +627,7 @@ vpath %.cpp src util sample
 # -- Default target --
 
 .PHONY : all
-all: status dircheck $(static_flaim_lib) $(shared_flaim_lib) allutils docs
+all: status dircheck $(static_flaim_lib) $(shared_flaim_lib) allutils
 
 # -- *.cpp -> *$(obj_suffix) --
 
