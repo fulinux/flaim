@@ -46,14 +46,20 @@ rpm_release_num = 1
 
 # -- Paths --
 
-install_prefix = /usr/local
+install_prefix = /usr
 lib_install_dir = $(install_prefix)/lib
 include_install_dir = $(install_prefix)/include
 
 build_output_dir = ./build
 archive_dir = $(build_output_dir)/archive
 
-spec_file = $(build_output_dir)/$(project_name)-$(version).spec
+# -- RPM, SPEC file names
+
+rpm_proj_name = lib$(project_name)
+proj_desc = An extensible, flexible, adaptable, embeddable database engine
+rpm_proj_name_and_ver = $(rpm_proj_name)-$(version)
+spec_file = $(build_output_dir)/$(rpm_proj_name).spec
+pkgconfig_file = $(build_output_dir)/$(rpm_proj_name).pc
 
 # -- Target variables --
 
@@ -722,21 +728,21 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_
 dist: status dircheck spec
 ifndef win_target
 	$(ec)$(gprintf) "Creating archive ...\n"
-	-$(ec)$(call rmdircmd,$(archive_dir)/$(project_name)-$(version))
-	$(ec)$(call mkdircmd,$(archive_dir)/$(project_name)-$(version))
-	$(ec)$(gprintf) "$(version)" > $(archive_dir)/$(project_name)-$(version)/VERSION
-	$(ec)$(call copycmd,Makefile,$(archive_dir)/$(project_name)-$(version))
-	$(ec)$(call copycmd,COPYING,$(archive_dir)/$(project_name)-$(version))
-	$(ec)$(call copycmd,Doxyfile,$(archive_dir)/$(project_name)-$(version))
-	$(ec)$(call copycmd,$(spec_file),$(archive_dir)/$(project_name)-$(version))
-	$(ec)$(call mkdircmd,$(archive_dir)/$(project_name)-$(version)/src)
-	$(ec)$(call copycmd,src/*.cpp,$(archive_dir)/$(project_name)-$(version)/src)
-	$(ec)$(call copycmd,src/*.h,$(archive_dir)/$(project_name)-$(version)/src)
-	$(ec)$(call mkdircmd,$(archive_dir)/$(project_name)-$(version)/util)
-	$(ec)$(call copycmd,util/*.cpp,$(archive_dir)/$(project_name)-$(version)/util)
-	$(ec)$(call copycmd,util/*.h,$(archive_dir)/$(project_name)-$(version)/util)
-	$(ec)tar zcf $(archive_dir)/$(project_name)-$(version).tar.gz -C $(archive_dir) $(project_name)-$(version)
-	-$(ec)$(call rmdircmd,$(archive_dir)/$(project_name)-$(version))
+	-$(ec)$(call rmdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "$(version)" > $(archive_dir)/$(rpm_proj_name_and_ver)/VERSION
+	$(ec)$(call copycmd,Makefile,$(archive_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,COPYING,$(archive_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,Doxyfile,$(archive_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,$(spec_file),$(archive_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.cpp,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.h,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.cpp,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.h,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)tar zcf $(archive_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(archive_dir) $(rpm_proj_name_and_ver)
+	-$(ec)$(call rmdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "Archive created.\n"
 endif
 	
@@ -746,12 +752,24 @@ endif
 install: all
 ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
+	$(ec)mkdir -p $(lib_install_dir)
 	$(ec)install --mode=666 $(shared_flaim_lib) $(lib_install_dir)
-	$(ec)ln -fs $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	$(ec)ln -fs $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	$(ec)$(gprintf) "Installation complete.\n"
+endif
+
+.PHONY : install-devel
+install-devel: all pkgconfig
+ifndef win_target
+	$(ec)$(gprintf) "Installing (devel) ...\n"
+	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
+	$(ec)mkdir -p $(include_install_dir)
 	$(ec)install --mode=666 $(static_flaim_lib) $(lib_install_dir)
 	$(ec)install --mode=666 src/flaim.h $(include_install_dir)
-	$(ec)$(gprintf) "Installation complete.\n"
+	$(ec)install --mode=666 $(pkgconfig_file) $(lib_install_dir)/pkgconfig
+	$(ec)$(gprintf) "Installation (devel) complete.\n"
 endif
 
 # -- uninstall --
@@ -771,16 +789,19 @@ endif
 # -- spec file --
 
 .PHONY : spec
-spec:
-	$(ec)$(gprintf) "Summary: An extensible, flexible, adaptable, embeddable database engine\n" > $(spec_file)
-	$(ec)$(gprintf) "Name: $(project_name)\n" >> $(spec_file)
+spec: dircheck
+	$(ec)$(gprintf) "# neededforbuild  libstdc++-devel libstdc++ gcc-c++\n\n" > $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: libstdc++-devel libstdc++ gcc-c++\n\n" >> $(spec_file)
+	$(ec)$(gprintf) "Summary: $(proj_desc)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%define prefix /usr\n" >> $(spec_file)
+	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Copyright: GPL\n" >> $(spec_file)
 	$(ec)$(gprintf) "Vendor: Novell, Inc.\n" >> $(spec_file)
-	$(ec)$(gprintf) "Group: Development/Libraries\n" >> $(spec_file)
-	$(ec)$(gprintf) "Source: $(project_name)-$(version).tar.gz\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRoot: /var/tmp/$(project_name)-$(version)-buildroot\n" >> $(spec_file)
+	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
+	$(ec)$(gprintf) "Source: $(rpm_proj_name_and_ver).tar.gz\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRoot: /var/tmp/$(rpm_proj_name_and_ver)-buildroot\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%description\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%prep\n" >> $(spec_file)
@@ -790,7 +811,7 @@ spec:
 	$(ec)$(gprintf) "make all\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make install\n" >> $(spec_file)
+	$(ec)$(gprintf) "make install_prefix=$$""RPM_BUILD_ROOT%%{prefix} install\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT\n" >> $(spec_file)
@@ -798,11 +819,24 @@ spec:
 	$(ec)$(gprintf) "%%files\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(include_install_dir)/flaim.h\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/include/flaim.h\n" >> $(spec_file)
+
+
+# -- PKG-CONFIG	
+.PHONY : pkgconfig
+pkgconfig: dircheck
+	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
+	$(ec)$(gprintf) "exec_prefix=$$""{prefix}\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "libdir=$$""{exec_prefix}/lib\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "name: $(rpm_proj_name)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Description: $(proj_desc)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Libs: $(link_libs) -lflaim -L$$""{libdir}\n" >> $(pkgconfig_file)
 
 # -- SRCRPM --
 
