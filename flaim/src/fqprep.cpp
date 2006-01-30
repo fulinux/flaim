@@ -854,25 +854,23 @@ FSTATIC RCODE flmCurCopyQTree(
 		{
 
 			// Traverse back up the tree until we find a node that
-			// has a sibling.
+			// has a sibling.  Don't go further up than the node
+			// we started on.
 
-			while (!pQNode->pNextSib)
+			for (;;)
 			{
-				if ((pQNode = pQNode->pParent) == NULL)
+				if (pQNode == pSrcTree)
 				{
-
-					// We are done when we arrive back at the root of
-					// the tree.
-
 					goto Exit;
 				}
+				if (pQNode->pNextSib)
+				{
+					pQNode = pQNode->pNextSib;
+					break;
+				}
+				pQNode = pQNode->pParent;
 				pParentNode = pParentNode->pParent;
 			}
-
-			// If we get to this point, pNextSib is guaranteed to
-			// NOT be NULL.
-
-			pQNode = pQNode->pNextSib;
 		}
 	}
 
