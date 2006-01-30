@@ -19,7 +19,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: fqprep.cpp 12334 2006-01-23 12:45:35 -0700 (Mon, 23 Jan 2006) dsanders $
+// $Id: fqprep.cpp 12334 2006-01-23 19:45:35Z dsanders $
 //-------------------------------------------------------------------------
 
 #include "flaimsys.h"
@@ -52,12 +52,6 @@ FSTATIC RCODE flmCurDoDeMorgan(
 FSTATIC RCODE flmCurCopyQTree(
 	FQNODE_p		pSrcTree,
 	FQNODE_p  * ppDestTree,
-	POOL *		pPool);
-
-FSTATIC RCODE flmApplyAssociativity(
-	FQNODE_p *	ppTree,
-	FQNODE_p		pAndNode,
-	FQNODE_p		pOrNode,
 	POOL *		pPool);
 
 FSTATIC RCODE flmCurStratify(
@@ -854,281 +848,29 @@ FSTATIC RCODE flmCurCopyQTree(
 		{
 
 			// Traverse back up the tree until we find a node that
-			// has a sibling.  Don't go further up than the node
-			// we started on.
+			// has a sibling.
 
-			for (;;)
+			while (!pQNode->pNextSib)
 			{
-				if (pQNode == pSrcTree)
+				if ((pQNode = pQNode->pParent) == NULL)
 				{
+
+					// We are done when we arrive back at the root of
+					// the tree.
+
 					goto Exit;
 				}
-				if (pQNode->pNextSib)
-				{
-					pQNode = pQNode->pNextSib;
-					break;
-				}
-				pQNode = pQNode->pParent;
 				pParentNode = pParentNode->pParent;
 			}
+
+			// If we get to this point, pNextSib is guaranteed to
+			// NOT be NULL.
+
+			pQNode = pQNode->pNextSib;
 		}
 	}
 
 Exit:
-	return( rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class F_NodeList
-{
-public:
-	F_NodeList()
-	{
-		m_pNodeList = &m_nodeList [0];
-		m_uiListSize = sizeof( m_nodeList) / sizeof( FQNODE_p);
-		m_uiNumNodes = 0;
-	}
-
-	~F_NodeList()
-	{
-		if (m_pNodeList != &m_nodeList [0])
-		{
-			f_free( &m_pNodeList);
-		}
-	}
-
-	RCODE gatherNodeList(
-		FQNODE_p	pStartNode,
-		QTYPES	eOp,
-		FQNODE_p	pExcludeNode);
-
-	FINLINE FLMUINT getNumNodes( void)
-	{
-		return( m_uiNumNodes);
-	}
-
-	FINLINE FQNODE_p getNode(
-		FLMUINT	uiNodeIndex)
-	{
-		return( m_pNodeList [uiNodeIndex]);
-	}
-
-private:
-	FQNODE_p		m_nodeList [50];
-	FQNODE_p *	m_pNodeList;
-	FLMUINT		m_uiListSize;
-	FLMUINT		m_uiNumNodes;
-};
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE F_NodeList::gatherNodeList(
-	FQNODE_p	pStartNode,
-	QTYPES	eOp,
-	FQNODE_p	pExcludeNode)
-{
-	RCODE		rc = FERR_OK;
-	FQNODE_p	pTmpNode;
-	QTYPES	eTmpOp;
-
-	pTmpNode = pStartNode->pChild;
-	for (;;)
-	{
-		eTmpOp = GET_QNODE_TYPE( pTmpNode);
-		if (eTmpOp == eOp)
-		{
-			pTmpNode = pTmpNode->pChild;
-		}
-		else
-		{
-			// Put the node into a list - only if it is not the exclude node that
-			// was passed into the function.
-
-			if (pTmpNode != pExcludeNode)
-			{
-
-				// See if we need to resize the list.  Increase list size by 200
-
-				if (m_uiNumNodes == m_uiListSize)
-				{
-					FLMUINT	uiNewListSize = m_uiListSize + 200;
-
-					if (m_pNodeList == &m_nodeList [0])
-					{
-						if (RC_BAD( rc = f_alloc( uiNewListSize * sizeof( FQNODE_p), &m_pNodeList)))
-						{
-							goto Exit;
-						}
-						f_memcpy( m_pNodeList, &m_nodeList [0], sizeof( FQNODE_p) * m_uiNumNodes);
-					}
-					else
-					{
-						if (RC_BAD( rc = f_realloc( uiNewListSize * sizeof( FQNODE_p), &m_pNodeList)))
-						{
-							goto Exit;
-						}
-					}
-					m_uiListSize = uiNewListSize;
-				}
-				m_pNodeList [m_uiNumNodes] = pTmpNode;
-				m_uiNumNodes++;
-			}
-
-			// Go to the node's sibling.  If already at a sibling node, travel back up
-			// the tree until we hit the node we started from.
-
-			for (;;)
-			{
-				if (pTmpNode->pNextSib)
-				{
-					pTmpNode = pTmpNode->pNextSib;
-					break;
-				}
-				if ((pTmpNode = pTmpNode->pParent) == pStartNode)
-				{
-					goto Exit;
-				}
-			}
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE flmApplyAssociativity(
-	FQNODE_p *	ppTree,
-	FQNODE_p		pAndNode,
-	FQNODE_p		pOrNode,
-	POOL *		pPool
-	)
-{
-	RCODE			rc = FERR_OK;
-	QTYPES		eOp;
-	FQNODE_p		pAndParent;
-	FQNODE_p		pTmpNode;
-	FQNODE_p		pCopyNode;
-	FQNODE_p		pNewAndNode;
-	FQNODE_p		pNewOrNode;
-	F_NodeList	andNodeList;
-	F_NodeList	orNodeList;
-	FLMUINT		uiNumAndNodes;
-	FLMUINT		uiNumOrNodes;
-	FLMUINT		uiOrLoop;
-	FLMUINT		uiAndLoop;
-
-	// Find highest AND node above the passed in AND node.  That will be the node we are going to
-	// replace in the tree.
-
-	while (pAndNode->pParent)
-	{
-		eOp = GET_QNODE_TYPE( pAndNode->pParent);
-		if (eOp == FLM_AND_OP)
-		{
-			pAndNode = pAndNode->pParent;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	// Make a list of all of the nodes below the highest AND node that are not AND nodes.
-	// Exclude the OR node that was passed into this function.
-
-	if (RC_BAD( rc = andNodeList.gatherNodeList( pAndNode, FLM_AND_OP, pOrNode)))
-	{
-		goto Exit;
-	}
-
-	// Make a list of all of the nodes below the OR node that are not OR nodes.
-
-	if (RC_BAD( rc = orNodeList.gatherNodeList( pOrNode, FLM_OR_OP, pOrNode)))
-	{
-		goto Exit;
-	}
-
-	uiNumAndNodes = andNodeList.getNumNodes();
-	uiNumOrNodes = orNodeList.getNumNodes();
-
-	// Has to be at least two OR nodes and one AND node.
-
-	flmAssert( uiNumOrNodes >= 2 && uiNumAndNodes >= 1);
-
-	// AND all of the nodes in the OR list with each of the nodes in the AND list.
-	// Each group of ANDed nodes is then ORed together.
-
-	pNewOrNode = NULL;
-	for (uiOrLoop = 0; uiOrLoop < uiNumOrNodes; uiOrLoop++)
-	{
-		pTmpNode = orNodeList.getNode( uiOrLoop);
-		if (RC_BAD( rc = flmCurCopyQTree( pTmpNode, &pNewAndNode, pPool)))
-		{
-			goto Exit;
-		}
-		for (uiAndLoop = 0; uiAndLoop < uiNumAndNodes; uiAndLoop++)
-		{
-			pTmpNode = andNodeList.getNode( uiAndLoop);
-			if (RC_BAD( rc = flmCurCopyQTree( pTmpNode, &pCopyNode, pPool)))
-			{
-				goto Exit;
-			}
-
-			// AND copied node with last AND node.  Last AND node becomes the newly
-			// created AND operator.
-
-			if (RC_BAD( rc = flmCurGraftNode( pPool, pCopyNode, FLM_AND_OP, &pNewAndNode)))
-			{
-				goto Exit;
-			}
-		}
-
-		// OR the AND list with the last OR node, if any.  Last OR node becomes the newly
-		// created OR operator.
-
-		if (pNewOrNode)
-		{
-			if (RC_BAD( rc = flmCurGraftNode( pPool, pNewAndNode, FLM_OR_OP, &pNewOrNode)))
-			{
-				goto Exit;
-			}
-		}
-		else
-		{
-			pNewOrNode = pNewAndNode;
-		}
-	}
-
-	// Prune the AND operator from the tree and replace it with the newly created
-	// OR operator.
-
-	if ((pAndParent = pAndNode->pParent) == NULL)
-	{
-		*ppTree = pNewOrNode;
-	}
-	else
-	{
-
-		// Prune AND operator
-
-		flmCurPruneNode( pAndNode);
-
-		// Graft the OR operator in as child to pAndParent.
-
-		pAndParent->pChild->pNextSib = pNewOrNode;
-		pNewOrNode->pPrevSib = pAndParent->pChild;
-		pNewOrNode->pParent = pAndParent;
-	}
-
-Exit:
-
 	return( rc);
 }
 
@@ -1149,6 +891,15 @@ FSTATIC RCODE flmCurStratify(
 	QTYPES		eLeftOp;
 	QTYPES		eRightOp;
 	FQNODE_p		pTree = *ppTree;
+	FQNODE_p		pOrOp;
+	FQNODE_p		pOtherAndOp;
+	FQNODE_p		pOtherAndOpCopy;
+	FQNODE_p		pOrLeftOp;
+	FQNODE_p		pOrRightOp;
+	FQNODE_p		pNewAndOp1;
+	FQNODE_p		pNewAndOp2;
+	FQNODE_p		pNewOrOp;
+	FQNODE_p		pAndParent;
 	FQNODE_p		pCurrNode;
 	FLMBOOL		bStratified = TRUE;
 	void *		pvMark = GedPoolMark( pPool);
@@ -1202,19 +953,81 @@ FSTATIC RCODE flmCurStratify(
 					}
 					uiCount = 0;
 				}
+		
+				pAndParent = pCurrNode->pParent;
 				if (eLeftOp == FLM_OR_OP)
 				{
-					if (RC_BAD( rc = flmApplyAssociativity( &pTree, pCurrNode, pCurrNode->pChild, pPool)))
-					{
-						goto Exit;
-					}
+					pOrOp = pCurrNode->pChild;
+					pOtherAndOp = pCurrNode->pChild->pNextSib;
 				}
 				else
 				{
-					if (RC_BAD( rc = flmApplyAssociativity( &pTree, pCurrNode, pCurrNode->pChild->pNextSib, pPool)))
+					pOrOp = pCurrNode->pChild->pNextSib;
+					pOtherAndOp = pCurrNode->pChild;
+				}
+				pOrLeftOp = pOrOp->pChild;
+				pOrRightOp = pOrOp->pChild->pNextSib;
+
+				// Prune AND operator
+
+				flmCurPruneNode( pCurrNode);
+
+				// Prune AND's other operand => pOtherAndOp
+
+				flmCurPruneNode( pOtherAndOp);
+
+				// Prune children of OR operator => pOrLeftOp, pOrRightOp
+
+				flmCurPruneNode( pOrLeftOp);
+				flmCurPruneNode( pOrRightOp);
+
+				// Clone right operand - entire sub-tree => pOtherAndOpCopy
+
+				if (RC_BAD( rc = flmCurCopyQTree( pOtherAndOp,
+														&pOtherAndOpCopy, pPool)))
 					{
 						goto Exit;
 					}
+
+				// Graft pOtherAndOp AND pOrLeftOp => pNewAndOp1
+
+				pNewAndOp1 = pOrLeftOp;
+				if (RC_BAD( rc = flmCurGraftNode( pPool, pOtherAndOp,
+										FLM_AND_OP, &pNewAndOp1)))
+				{
+					goto Exit;
+				}
+
+				// Graft pOtherAndOpCopy AND pOrRightOp => pNewAndOp2
+
+				pNewAndOp2 = pOrRightOp;
+				if (RC_BAD( rc = flmCurGraftNode( pPool, pOtherAndOpCopy,
+										FLM_AND_OP, &pNewAndOp2)))
+				{
+					goto Exit;
+				}
+
+				// Graft pNewAndOp1 OR pNewAndOp2 => pNewOrOp
+
+				pNewOrOp = pNewAndOp2;
+				if (RC_BAD( rc = flmCurGraftNode( pPool, pNewAndOp1,
+										FLM_OR_OP, &pNewOrOp)))
+					{
+						goto Exit;
+					}
+
+				// Graft pNewOrOp back into the tree as the child of
+				// the original AND operator
+
+				if (!pAndParent)
+				{
+					pTree = pNewOrOp;
+				}
+				else
+				{
+					pAndParent->pChild->pNextSib = pNewOrOp;
+					pNewOrOp->pPrevSib = pAndParent->pChild;
+					pNewOrOp->pParent = pAndParent;
 				}
 
 				// After doing associativity, need to start over at the top
