@@ -749,27 +749,19 @@ endif
 # -- install --
 
 .PHONY : install
-install: all
+install: all pkgconfig
 ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
-	$(ec)mkdir -p $(lib_install_dir)
+	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
+	$(ec)mkdir -p $(include_install_dir)
 	$(ec)install --mode=666 $(shared_flaim_lib) $(lib_install_dir)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
-	$(ec)$(gprintf) "Installation complete.\n"
-endif
-
-.PHONY : install-devel
-install-devel: all pkgconfig
-ifndef win_target
-	$(ec)$(gprintf) "Installing (devel) ...\n"
-	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
-	$(ec)mkdir -p $(include_install_dir)
 	$(ec)install --mode=666 $(static_flaim_lib) $(lib_install_dir)
-	$(ec)install --mode=666 src/flaim.h $(include_install_dir)
 	$(ec)install --mode=666 $(pkgconfig_file) $(lib_install_dir)/pkgconfig
-	$(ec)$(gprintf) "Installation (devel) complete.\n"
+	$(ec)install --mode=666 src/flaim.h $(include_install_dir)
+	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
 # -- uninstall --
@@ -782,6 +774,7 @@ ifndef win_target
 	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
 	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
 	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+	-$(ec)rm -rf $(lib_install_dir)/pkgconfig/$(rpm_proj_name).pc
 	-$(ec)rm -rf $(include_install_dir)/flaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
@@ -799,13 +792,13 @@ spec: dircheck
 	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Copyright: GPL\n" >> $(spec_file)
 	$(ec)$(gprintf) "Vendor: Novell, Inc.\n" >> $(spec_file)
-	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
+	$(ec)$(gprintf) "Group: Development/Databases\n" >> $(spec_file)
 	$(ec)$(gprintf) "Source: $(rpm_proj_name_and_ver).tar.gz\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRoot: /var/tmp/$(rpm_proj_name_and_ver)-buildroot\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%package devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "Summary: FLAIM development files\n" >> $(spec_file)
-	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
+	$(ec)$(gprintf) "Summary: FLAIM static library and header file\n" >> $(spec_file)
+	$(ec)$(gprintf) "Group: Development/Databases\n" >> $(spec_file)
 	$(ec)$(gprintf) "Provides: $(rpm_proj_name)-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%prep\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%setup -q\n" >> $(spec_file)
@@ -815,9 +808,6 @@ spec: dircheck
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
 	$(ec)$(gprintf) "make install_prefix=$$""RPM_BUILD_ROOT%%{prefix} install\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%install devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "make install_prefix=$$""RPM_BUILD_ROOT%%{prefix} install-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT\n" >> $(spec_file)
@@ -829,12 +819,10 @@ spec: dircheck
 	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%files devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%defattr(-,root,root)\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%doc COPYING VERSION\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/include/flaim.h\n" >> $(spec_file)
-
 
 # -- PKG-CONFIG	
 .PHONY : pkgconfig
