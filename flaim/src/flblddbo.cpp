@@ -331,7 +331,7 @@ RCODE  FlmDbRebuild(
 				(!VALID_BLOCK_SIZE( pHdrInfo->FileHdr.uiBlockSize)))
 	{
 		FLMUINT	uiSaveBlockSize;
-		FLMUINT	uiCalcBlockSize;
+		FLMUINT	uiCalcBlockSize = 0;
 		FLMBYTE	ucFileHdrBuf[ FLM_FILE_HEADER_SIZE];
 
 		uiDbVersion = (FLMUINT)((rc != FERR_NOT_FLAIM)
