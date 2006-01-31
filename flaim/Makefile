@@ -47,15 +47,15 @@ rpm_release_num = 1
 
 # -- Paths --
 
+rpm_build_root =
 install_prefix = /usr
+
 lib_dir_name = lib
-lib_install_dir = $(install_prefix)/$(lib_dir_name)
-include_install_dir = $(install_prefix)/include
+lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
+include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 
-build_root = .
-build_output_dir_name = build
-build_output_dir = $(build_root)/$(build_output_dir_name)
+build_output_dir = build
 archive_dir = $(build_output_dir)/archive
 
 # -- RPM, SPEC file names
@@ -476,7 +476,6 @@ ifdef unix_target
 		ifeq ($(target_build_type),release)
 			ccflags += \
 				-O \
-				-fforce-mem \
 				-foptimize-sibling-calls \
 				-fstrength-reduce -fcse-follow-jumps \
 				-fcse-skip-blocks \
@@ -765,13 +764,13 @@ ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
 	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
 	$(ec)mkdir -p $(include_install_dir)
-	$(ec)install --mode=666 $(shared_flaim_lib) $(lib_install_dir)
+	$(ec)install --mode=664 $(shared_flaim_lib) $(lib_install_dir)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
-	$(ec)install --mode=666 $(static_flaim_lib) $(lib_install_dir)
-	$(ec)install --mode=666 $(pkgconfig_file) $(pkgconfig_install_dir)
-	$(ec)install --mode=666 src/flaim.h $(include_install_dir)
+	$(ec)install --mode=664 $(static_flaim_lib) $(lib_install_dir)
+	$(ec)install --mode=664 $(pkgconfig_file) $(pkgconfig_install_dir)
+	$(ec)install --mode=664 src/flaim.h $(include_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
@@ -796,7 +795,7 @@ endif
 spec: dircheck
 	$(ec)$(gprintf) "# neededforbuild  libstdc++-devel libstdc++ gcc-c++\n" > $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%define prefix /usr\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%define prefix $(install_prefix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRequires: libstdc++-devel libstdc++ gcc-c++\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
@@ -826,8 +825,8 @@ spec: dircheck
 	$(ec)$(gprintf) "make build_root=$$""RPM_BUILD_ROOT libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make build_root=$$""RPM_BUILD_ROOT install_prefix=$$""RPM_BUILD_ROOT%%{prefix} install\n" >> $(spec_file)
-	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT/$(build_output_dir_name)\n" >> $(spec_file)
+	$(ec)$(gprintf) "make rpm_build_root=$$""RPM_BUILD_ROOT install_prefix=%%{prefix} install\n" >> $(spec_file)
+	$(ec)$(gprintf) "rm -rf $(build_output_dir)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT\n" >> $(spec_file)
