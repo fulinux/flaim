@@ -34,6 +34,7 @@
 # -- Project --
 
 project_name = flaim
+project_desc = An extensible, flexible, adaptable, embeddable database engine
 
 # -- Version --
 
@@ -47,19 +48,25 @@ rpm_release_num = 1
 # -- Paths --
 
 install_prefix = /usr
-lib_install_dir = $(install_prefix)/lib
+lib_dir_name = lib
+lib_install_dir = $(install_prefix)/$(lib_dir_name)
 include_install_dir = $(install_prefix)/include
+pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 
-build_output_dir = ./build
+build_root = .
+build_output_dir_name = build
+build_output_dir = $(build_root)/$(build_output_dir_name)
 archive_dir = $(build_output_dir)/archive
 
 # -- RPM, SPEC file names
 
 rpm_proj_name = lib$(project_name)
-proj_desc = An extensible, flexible, adaptable, embeddable database engine
 rpm_proj_name_and_ver = $(rpm_proj_name)-$(version)
+
 spec_file = $(build_output_dir)/$(rpm_proj_name).spec
-pkgconfig_file = $(build_output_dir)/$(rpm_proj_name).pc
+
+pkgconfig_file_name = $(rpm_proj_name).pc
+pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
 
 # -- Target variables --
 
@@ -346,6 +353,10 @@ endif
 
 ifeq ($(target_word_size),64)
 	ccdefs += FLM_64BIT
+	ifeq ($(target_os_family),linux)
+		lib_dir_name = lib64
+		lib_install_dir = $(install_prefix)/$(lib_dir_name)
+	endif
 endif
 
 # Directories
@@ -632,8 +643,8 @@ vpath %.cpp src util sample
 
 # -- Default target --
 
-.PHONY : all
-all: status dircheck $(static_flaim_lib) $(shared_flaim_lib) allutils
+.PHONY : libs
+libs: status dircheck $(static_flaim_lib) $(shared_flaim_lib)
 
 # -- *.cpp -> *$(obj_suffix) --
 
@@ -749,7 +760,7 @@ endif
 # -- install --
 
 .PHONY : install
-install: all pkgconfig
+install: libs pkgconfig
 ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
 	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
@@ -759,7 +770,7 @@ ifndef win_target
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
 	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
 	$(ec)install --mode=666 $(static_flaim_lib) $(lib_install_dir)
-	$(ec)install --mode=666 $(pkgconfig_file) $(lib_install_dir)/pkgconfig
+	$(ec)install --mode=666 $(pkgconfig_file) $(pkgconfig_install_dir)
 	$(ec)install --mode=666 src/flaim.h $(include_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
@@ -774,7 +785,7 @@ ifndef win_target
 	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
 	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
 	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/pkgconfig/$(rpm_proj_name).pc
+	-$(ec)rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-$(ec)rm -rf $(include_install_dir)/flaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
@@ -783,10 +794,12 @@ endif
 
 .PHONY : spec
 spec: dircheck
-	$(ec)$(gprintf) "# neededforbuild  libstdc++-devel libstdc++ gcc-c++\n\n" > $(spec_file)
-	$(ec)$(gprintf) "BuildRequires: libstdc++-devel libstdc++ gcc-c++\n\n" >> $(spec_file)
-	$(ec)$(gprintf) "Summary: $(proj_desc)\n" >> $(spec_file)
+	$(ec)$(gprintf) "# neededforbuild  libstdc++-devel libstdc++ gcc-c++\n" > $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%define prefix /usr\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: libstdc++-devel libstdc++ gcc-c++\n" >> $(spec_file)
+	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
@@ -796,18 +809,25 @@ spec: dircheck
 	$(ec)$(gprintf) "Source: $(rpm_proj_name_and_ver).tar.gz\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRoot: /var/tmp/$(rpm_proj_name_and_ver)-buildroot\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%description\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: FLAIM static library and header file\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Databases\n" >> $(spec_file)
 	$(ec)$(gprintf) "Provides: $(rpm_proj_name)-devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%description devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%prep\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%build\n" >> $(spec_file)
-	$(ec)$(gprintf) "make all\n" >> $(spec_file)
+	$(ec)$(gprintf) "make build_root=$$""RPM_BUILD_ROOT libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make install_prefix=$$""RPM_BUILD_ROOT%%{prefix} install\n" >> $(spec_file)
+	$(ec)$(gprintf) "make build_root=$$""RPM_BUILD_ROOT install_prefix=$$""RPM_BUILD_ROOT%%{prefix} install\n" >> $(spec_file)
+	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT/$(build_output_dir_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $$""RPM_BUILD_ROOT\n" >> $(spec_file)
@@ -815,13 +835,14 @@ spec: dircheck
 	$(ec)$(gprintf) "%%files\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%files devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "%%{prefix}/lib/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(pkgconfig_install_dir)/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/include/flaim.h\n" >> $(spec_file)
 
 # -- PKG-CONFIG	
@@ -829,9 +850,9 @@ spec: dircheck
 pkgconfig: dircheck
 	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
 	$(ec)$(gprintf) "exec_prefix=$$""{prefix}\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "libdir=$$""{exec_prefix}/lib\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "libdir=$$""{exec_prefix}/$(lib_dir_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "name: $(rpm_proj_name)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Description: $(proj_desc)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(link_libs) -lflaim -L$$""{libdir}\n" >> $(pkgconfig_file)
 
@@ -879,8 +900,13 @@ dircheck:
 
 # -- phony targets --
 
+.PHONY : all
+all: libs allutils
+	$(ec)$(gprintf) ""
+
 .PHONY : allutils
 allutils: status dircheck checkdb rebuild view sample
+	$(ec)$(gprintf) ""
 
 .PHONY : test
 test:	status dircheck $(static_flaim_lib) basictest
