@@ -627,7 +627,7 @@ private:
 	FIELD * nextSiblingField(
 		FIELD *		pField);
 
-	FINLINE FIELD * F_Record::firstChildField(
+	FINLINE FIELD * firstChildField(
 		FIELD *		pField)
 	{
 		FLMUINT8 ui8Level = pField->ui8Level;
