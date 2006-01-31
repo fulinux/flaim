@@ -36,7 +36,7 @@
 project_name = flaim
 project_desc = An extensible, flexible, adaptable, embeddable database engine
 
-# -- Version --
+# -- Versions --
 
 major_version = 4
 minor_version = 8
@@ -45,28 +45,15 @@ version = $(major_version).$(minor_version).$(revision)
 
 rpm_release_num = 1
 
-# -- Paths --
+# -- Paths initializations --
 
 rpm_build_root =
 install_prefix = /usr
-
-lib_dir_name = lib
-lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
-include_install_dir = $(rpm_build_root)$(install_prefix)/include
-pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
-
-build_output_dir = build
-archive_dir = $(build_output_dir)/archive
 
 # -- RPM, SPEC file names
 
 rpm_proj_name = lib$(project_name)
 rpm_proj_name_and_ver = $(rpm_proj_name)-$(version)
-
-spec_file = $(build_output_dir)/$(rpm_proj_name).spec
-
-pkgconfig_file_name = $(rpm_proj_name).pc
-pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
 
 # -- Target variables --
 
@@ -355,11 +342,24 @@ ifeq ($(target_word_size),64)
 	ccdefs += FLM_64BIT
 	ifeq ($(target_os_family),linux)
 		lib_dir_name = lib64
-		lib_install_dir = $(install_prefix)/$(lib_dir_name)
+		lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
 	endif
 endif
 
-# Directories
+# Files and Directories
+
+ifndef lib_dir_name
+	lib_dir_name = lib
+endif
+
+lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
+include_install_dir = $(rpm_build_root)$(install_prefix)/include
+pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
+build_output_dir = build
+package_dir = $(build_output_dir)/package
+spec_file = $(package_dir)/$(rpm_proj_name).spec
+pkgconfig_file_name = $(rpm_proj_name).pc
+pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
 
 inc_dirs = src util smi
 obj_dir = $(target_path)/obj
@@ -737,23 +737,23 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_
 .PHONY : dist
 dist: status dircheck spec
 ifndef win_target
-	$(ec)$(gprintf) "Creating archive ...\n"
-	-$(ec)$(call rmdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(gprintf) "$(version)" > $(archive_dir)/$(rpm_proj_name_and_ver)/VERSION
-	$(ec)$(call copycmd,Makefile,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,COPYING,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,Doxyfile,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,$(spec_file),$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.cpp,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.h,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.cpp,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.h,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)tar zcf $(archive_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(archive_dir) $(rpm_proj_name_and_ver)
-	-$(ec)$(call rmdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(gprintf) "Archive created.\n"
+	$(ec)$(gprintf) "Creating package ...\n"
+	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
+	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,$(spec_file),$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)tar zcf $(package_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(package_dir) $(rpm_proj_name_and_ver)
+	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "Package created.\n"
 endif
 	
 # -- install --
@@ -762,15 +762,15 @@ endif
 install: libs pkgconfig
 ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
-	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
-	$(ec)mkdir -p $(include_install_dir)
-	$(ec)install --mode=664 $(shared_flaim_lib) $(lib_install_dir)
-	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
-	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
-	$(ec)install --mode=664 $(static_flaim_lib) $(lib_install_dir)
-	$(ec)install --mode=664 $(pkgconfig_file) $(pkgconfig_install_dir)
-	$(ec)install --mode=664 src/flaim.h $(include_install_dir)
+	mkdir -p $(lib_install_dir)/pkgconfig
+	mkdir -p $(include_install_dir)
+	install --mode=644 $(shared_flaim_lib) $(lib_install_dir)
+	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	install --mode=644 $(static_flaim_lib) $(lib_install_dir)
+	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
+	install --mode=644 src/flaim.h $(include_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
@@ -780,12 +780,12 @@ endif
 uninstall: 
 ifndef win_target
 	$(ec)$(gprintf) "Uninstalling ...\n"
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
-	-$(ec)rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
-	-$(ec)rm -rf $(include_install_dir)/flaim.h
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
+	-rm -rf $(include_install_dir)/flaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
 
@@ -860,8 +860,8 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: dist
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild -ts --quiet $(archive_dir)/$(project_name)-$(version).tar.gz
-	$(ec)$(call copycmd,$(shell rpm --eval %{_srcrpmdir})/$(project_name)-$(version)*.src.rpm $(archive_dir))
+	$(ec)rpmbuild -ts --quiet $(package_dir)/$(project_name)-$(version).tar.gz
+	$(ec)$(call copycmd,$(shell rpm --eval %{_srcrpmdir})/$(project_name)-$(version)*.src.rpm $(package_dir))
 	$(ec)$(gprintf) "Source RPM created.\n"
 	
 # -- Documentation --
@@ -895,7 +895,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(sample_dir))
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
-	$(ec)$(call mkdircmd,$(archive_dir))
+	$(ec)$(call mkdircmd,$(package_dir))
 
 # -- phony targets --
 
