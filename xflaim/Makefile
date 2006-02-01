@@ -35,7 +35,7 @@
 project_name = xflaim
 project_desc = An extensible, flexible, adaptable, embeddable database engine
 
-# -- Version --
+# -- Versions --
 
 major_version = 5
 minor_version = 0
@@ -44,28 +44,15 @@ version = $(major_version).$(minor_version).$(revision)
 
 rpm_release_num = 1
 
-# -- Paths --
+# -- Paths initializations --
 
 rpm_build_root =
 install_prefix = /usr
-
-lib_dir_name = lib
-lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
-include_install_dir = $(rpm_build_root)$(install_prefix)/include
-pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
-
-build_output_dir = build
-archive_dir = $(build_output_dir)/archive
 
 # -- RPM, SPEC file names
 
 rpm_proj_name = lib$(project_name)
 rpm_proj_name_and_ver = $(rpm_proj_name)-$(version)
-
-spec_file = $(build_output_dir)/$(rpm_proj_name).spec
-
-pkgconfig_file_name = $(rpm_proj_name).pc
-pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
 
 # -- Target variables --
 
@@ -196,7 +183,7 @@ ifndef target_os_family
 					target_word_size = 32
 				endif
 			else
-				$(error Platform not supported)
+            $(error Platform not supported)
 			endif
 		else
 			ifneq (,$(findstring x86,$(HOSTTYPE)))
@@ -212,7 +199,22 @@ ifndef target_os_family
 					target_processor = x86
 					target_word_size = 32
 				else
-					$(error Platform not supported)
+					ifneq (,$(findstring s390,$(HOSTTYPE)))
+						ifneq (,$(findstring s390x,$(HOSTTYPE)))
+							target_processor = s390x
+							target_word_size = 64
+						else
+							target_processor = s390
+							target_word_size = 31
+						endif
+					else
+						ifneq (,$(findstring ia64,$(HOSTTYPE)))
+							target_processor = ia64
+							target_word_size = 64
+						else
+		               $(error Platform not supported)
+						endif
+					endif
 				endif
 			endif
 		endif
@@ -303,6 +305,37 @@ ifndef target_os_family
    $(error Target operating system could not be determined)
 endif
 
+# Files and Directories
+
+ifeq ($(target_word_size),64)
+	ifeq ($(target_os_family),linux)
+		lib_dir_name = lib64
+	endif
+endif
+
+ifndef lib_dir_name
+	lib_dir_name = lib
+endif
+
+lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
+include_install_dir = $(rpm_build_root)$(install_prefix)/include
+pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
+build_output_dir = build
+package_dir = $(build_output_dir)/package
+spec_file = $(package_dir)/$(rpm_proj_name).spec
+pkgconfig_file_name = $(rpm_proj_name).pc
+pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
+
+target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+
+inc_dirs = src util
+obj_dir = $(target_path)/obj
+util_dir = $(target_path)/util
+test_dir = $(target_path)/test
+sample_dir = $(target_path)/sample
+shared_lib_dir = $(target_path)/lib/shared
+static_lib_dir = $(target_path)/lib/static
+
 # -- Utility variables --
 
 em :=
@@ -324,10 +357,6 @@ else
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
 endif
-
-# -- Target path --
-
-target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
 
 # -- Tools --
 
@@ -357,16 +386,6 @@ ifeq ($(target_word_size),64)
 		lib_install_dir = $(install_prefix)/$(lib_dir_name)
 	endif
 endif
-
-# Directories
-
-inc_dirs = src util
-obj_dir = $(target_path)/obj
-util_dir = $(target_path)/util
-test_dir = $(target_path)/test
-sample_dir = $(target_path)/sample
-shared_lib_dir = $(target_path)/lib/shared
-static_lib_dir = $(target_path)/lib/static
 
 ##############################################################################
 #   Win settings
@@ -458,11 +477,8 @@ ifdef unix_target
 
 	ifeq ($(compiler),g++)
 		ccflags += -Wall -Werror -fPIC
-
-		ifeq ($(target_word_size),64)
-			ccflags += -m64
-		else
-			ccflags += -m32
+		ifneq ($(target_processor),ia64)		
+			ccflags += -m$(target_word_size)
 		endif
 	endif
 	
@@ -546,10 +562,8 @@ ifdef unix_target
 	link_flags = -o $@
 	
 	ifeq ($(compiler),g++)
-		ifeq ($(target_word_size),64)
-			link_flags += -m64
-		else
-			link_flags += -m32
+		ifneq ($(target_processor),ia64)		
+			link_flags += -m$(target_word_size)
 		endif
 	endif
 	
@@ -1021,23 +1035,23 @@ $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(static_xflaim_lib)
 .PHONY : dist
 dist: status dircheck spec
 ifndef win_target
-	$(ec)$(gprintf) "Creating archive ...\n"
-	-$(ec)$(call rmdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(gprintf) "$(version)" > $(archive_dir)/$(rpm_proj_name_and_ver)/VERSION
-	$(ec)$(call copycmd,Makefile,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,COPYING,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,Doxyfile,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,$(spec_file),$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.cpp,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.h,$(archive_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call mkdircmd,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.cpp,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.h,$(archive_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)tar zcf $(archive_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(archive_dir) $(rpm_proj_name_and_ver)
-	-$(ec)$(call rmdircmd,$(archive_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(gprintf) "Archive created.\n"
+	$(ec)$(gprintf) "Creating package ...\n"
+	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
+	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/src)
+	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/util)
+	$(ec)tar zcf $(package_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(package_dir) $(rpm_proj_name_and_ver)
+	$(ec)$(call copycmd,$(rpm_proj_name).changes,$(package_dir))
+	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "Package created.\n"
 endif
 	
 # -- install --
@@ -1046,15 +1060,15 @@ endif
 install: libs pkgconfig
 ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
-	$(ec)mkdir -p $(lib_install_dir)/pkgconfig
-	$(ec)mkdir -p $(include_install_dir)
-	$(ec)install --mode=664 $(shared_xflaim_lib) $(lib_install_dir)
-	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
-	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	$(ec)ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
-	$(ec)install --mode=664 $(static_xflaim_lib) $(lib_install_dir)
-	$(ec)install --mode=664 $(pkgconfig_file) $(pkgconfig_install_dir)
-	$(ec)install --mode=664 src/xflaim.h $(include_install_dir)
+	mkdir -p $(lib_install_dir)/pkgconfig
+	mkdir -p $(include_install_dir)
+	install --mode=644 $(shared_xflaim_lib) $(lib_install_dir)
+	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	install --mode=644 $(static_xflaim_lib) $(lib_install_dir)
+	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
+	install --mode=644 src/xflaim.h $(include_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
@@ -1064,12 +1078,12 @@ endif
 uninstall: 
 ifndef win_target
 	$(ec)$(gprintf) "Uninstalling ...\n"
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
-	-$(ec)rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
-	-$(ec)rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
-	-$(ec)rm -rf $(include_install_dir)/xflaim.h
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
+	-rm -rf $(include_install_dir)/xflaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
 
@@ -1106,10 +1120,10 @@ spec: dircheck
 	$(ec)$(gprintf) "%%setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%build\n" >> $(spec_file)
-	$(ec)$(gprintf) "make build_root=$$""RPM_BUILD_ROOT libs\n" >> $(spec_file)
+	$(ec)$(gprintf) "make lib_dir_name=%%{_lib} libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make rpm_build_root=$$""RPM_BUILD_ROOT install_prefix=%%{prefix} install\n" >> $(spec_file)
+	$(ec)$(gprintf) "make rpm_build_root=$$""RPM_BUILD_ROOT install_prefix=%%{prefix} lib_dir_name=%%{_lib} install\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $(build_output_dir)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
@@ -1118,17 +1132,17 @@ spec: dircheck
 	$(ec)$(gprintf) "%%files\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%files devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(pkgconfig_install_dir)/$(pkgconfig_file_name)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/include/xflaim.h\n" >> $(spec_file)
 
-# -- PKG-CONFIG
+# -- PKG-CONFIG --
 
 .PHONY : pkgconfig
 pkgconfig: dircheck
@@ -1145,8 +1159,8 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: dist
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild -ts --quiet $(archive_dir)/$(project_name)-$(version).tar.gz
-	$(ec)$(call copycmd,$(shell rpm --eval %{_srcrpmdir})/$(project_name)-$(version)*.src.rpm $(archive_dir))
+	$(ec)rpmbuild -ts --quiet $(package_dir)/$(project_name)-$(version).tar.gz
+	$(ec)$(call copycmd,$(shell rpm --eval %{_srcrpmdir})/$(project_name)-$(version)*.src.rpm $(package_dir))
 	$(ec)$(gprintf) "Source RPM created.\n"
 	
 # -- Documentation --
@@ -1180,7 +1194,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(sample_dir))
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
-	$(ec)$(call mkdircmd,$(archive_dir))
+	$(ec)$(call mkdircmd,$(package_dir))
 
 # -- phony targets --
 
