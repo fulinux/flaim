@@ -45,6 +45,8 @@
 		#undef FLM_BIG_ENDIAN
 		#undef FLM_POWER_PC
 		#undef FLM_STRICT_ALIGNMENT
+		#undef FLM_S390
+		#undef FLM_IA64
 	
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
@@ -55,7 +57,9 @@
 			#endif
 		#elif defined( _WIN64)
 			#define FLM_WIN
-			#define FLM_64BIT
+			#ifndef FLM_64BIT
+				#define FLM_64BIT
+			#endif
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( _WIN32)
 			#define FLM_WIN
@@ -70,6 +74,23 @@
 			#if defined( __PPC__)
 				#define FLM_POWER_PC
 				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
+			#elif defined( __s390__)
+				#define FLM_S390
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
+			#elif defined( __s390x__)
+				#define FLM_S390
+				#ifndef FLM_64BIT
+					#define FLM_64BIT
+				#endif
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
+			#elif defined( __ia64__)
+				#define FLM_IA64
+				#ifndef FLM_64BIT
+					#define FLM_64BIT
+				#endif
 				#define FLM_STRICT_ALIGNMENT
 			#endif
 		#elif defined( sun)
@@ -145,7 +166,7 @@
 			typedef short							FLMINT16;
 			typedef signed char					FLMINT8;
 
-			#if defined( FLM_64BIT) || defined( FLM_OSX) 
+			#if defined( FLM_64BIT) || defined( FLM_OSX) || defined( FLM_S390) 
 				typedef unsigned long			FLMSIZET;
 			#else
 				typedef unsigned 					FLMSIZET;
