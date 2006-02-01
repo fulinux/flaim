@@ -754,7 +754,6 @@ ifndef win_target
 	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,$(spec_file),$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/src)
 	$(ec)$(call copycmd,src/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/src)
 	$(ec)$(call copycmd,src/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/src)
