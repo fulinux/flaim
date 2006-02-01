@@ -184,7 +184,7 @@ ifndef target_os_family
 					target_word_size = 32
 				endif
 			else
-				$(error Platform not supported)
+            $(error Platform not supported)
 			endif
 		else
 			ifneq (,$(findstring x86,$(HOSTTYPE)))
@@ -200,7 +200,7 @@ ifndef target_os_family
 					target_processor = x86
 					target_word_size = 32
 				else
-					$(error Platform not supported)
+               $(error Platform not supported)
 				endif
 			endif
 		endif
@@ -265,14 +265,14 @@ ifndef target_os_family
 					target_word_size = 32
 				endif
 			else
-				$(error Platform not supported)
+            $(error Platform not supported)
 			endif
 		else
 			ifneq (,$(findstring powerpc,$(HOSTTYPE)))
 				target_processor = powerpc
 				target_word_size = 32
 			else
-				$(error Platform not supported)
+            $(error Platform not supported)
 			endif
 		endif
 	endif
@@ -310,7 +310,7 @@ build_output_dir = build
 package_dir = $(build_output_dir)/package
 spec_file = $(package_dir)/$(rpm_proj_name).spec
 pkgconfig_file_name = $(rpm_proj_name).pc
-pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
+pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
 
@@ -822,10 +822,10 @@ spec: dircheck
 	$(ec)$(gprintf) "%%setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%build\n" >> $(spec_file)
-	$(ec)$(gprintf) "make libs\n" >> $(spec_file)
+	$(ec)$(gprintf) "make lib_dir_name=%%{_lib} libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make rpm_build_root=$$""RPM_BUILD_ROOT install_prefix=%%{prefix} install\n" >> $(spec_file)
+	$(ec)$(gprintf) "make rpm_build_root=$$""RPM_BUILD_ROOT install_prefix=%%{prefix} lib_dir_name=%%{_lib} install\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $(build_output_dir)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%clean\n" >> $(spec_file)
