@@ -379,14 +379,6 @@ ifneq (,$(findstring flm_dbg_log,$(MAKECMDGOALS)))
 	ccdefs += FLM_DBG_LOG
 endif
 
-ifeq ($(target_word_size),64)
-	ccdefs += FLM_64BIT
-	ifeq ($(target_os_family),linux)
-		lib_dir_name = lib64
-		lib_install_dir = $(install_prefix)/$(lib_dir_name)
-	endif
-endif
-
 ##############################################################################
 #   Win settings
 ##############################################################################
