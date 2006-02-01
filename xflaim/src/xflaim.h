@@ -43,6 +43,8 @@
 		#undef FLM_BIG_ENDIAN
 		#undef FLM_POWER_PC
 		#undef FLM_STRICT_ALIGNMENT
+		#undef FLM_S390
+		#undef FLM_IA64
 	
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
@@ -53,7 +55,9 @@
 			#endif
 		#elif defined( _WIN64)
 			#define FLM_WIN
-			#define FLM_64BIT
+			#ifndef FLM_64BIT
+				#define FLM_64BIT
+			#endif
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( _WIN32)
 			#define FLM_WIN
@@ -68,6 +72,23 @@
 			#if defined( __PPC__)
 				#define FLM_POWER_PC
 				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
+			#elif defined( __s390__)
+				#define FLM_S390
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
+			#elif defined( __s390x__)
+				#define FLM_S390
+				#ifndef FLM_64BIT
+					#define FLM_64BIT
+				#endif
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
+			#elif defined( __ia64__)
+				#define FLM_IA64
+				#ifndef FLM_64BIT
+					#define FLM_64BIT
+				#endif
 				#define FLM_STRICT_ALIGNMENT
 			#endif
 		#elif defined( sun)
@@ -89,7 +110,7 @@
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT			
 		#else
-			#error Platform architecture is undefined.
+				#error Platform architecture is undefined.
 		#endif
 	
 		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
@@ -135,15 +156,15 @@
 			typedef unsigned short				FLMUNICODE;
 
 			typedef unsigned long long			FLMUINT64;
-			typedef unsigned int   				FLMUINT32;
+			typedef unsigned int					FLMUINT32;
 			typedef unsigned short				FLMUINT16;
-			typedef unsigned char  				FLMUINT8;
-			typedef			  long long			FLMINT64;
-			typedef			  int	  				FLMINT32;
-			typedef          short				FLMINT16;
-			typedef signed   char				FLMINT8;
+			typedef unsigned char				FLMUINT8;
+			typedef long long						FLMINT64;
+			typedef int								FLMINT32;
+			typedef short							FLMINT16;
+			typedef signed char					FLMINT8;
 
-			#if defined( FLM_64BIT) || defined( FLM_OSX) 
+			#if defined( FLM_64BIT) || defined( FLM_OSX) || defined( FLM_S390) 
 				typedef unsigned long			FLMSIZET;
 			#else
 				typedef unsigned 					FLMSIZET;
@@ -154,28 +175,28 @@
 					typedef unsigned __int64		FLMUINT;
 					typedef __int64					FLMINT;
 					typedef unsigned long			FLMSIZET;
-					typedef unsigned int   			FLMUINT32;
+					typedef unsigned int				FLMUINT32;
 				#elif _MSC_VER >= 1300
 					typedef unsigned long __w64	FLMUINT;
 					typedef long __w64				FLMINT;
-					typedef unsigned int   			FLMUINT32;
+					typedef unsigned int				FLMUINT32;
 				#else
 					typedef unsigned long			FLMUINT;
 					typedef long						FLMINT;
-					typedef unsigned int   			FLMUINT32;
+					typedef unsigned int				FLMUINT32;
 				#endif
 			#elif defined( FLM_NLM)
 				typedef unsigned long int		FLMUINT;
 				typedef long int					FLMINT;
-				typedef unsigned long int   	FLMUINT32;
+				typedef unsigned long int		FLMUINT32;
 			#endif
 
 			typedef unsigned char				FLMBYTE;
 			typedef unsigned short int			FLMUNICODE;
 
 			typedef unsigned short int			FLMUINT16;
-			typedef unsigned char  				FLMUINT8;
-			typedef signed int   				FLMINT32;
+			typedef unsigned char				FLMUINT8;
+			typedef signed int					FLMINT32;
 			typedef signed short int			FLMINT16;
 			typedef signed char					FLMINT8;
 			typedef unsigned						FLMSIZET;
