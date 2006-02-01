@@ -329,7 +329,7 @@ pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
 
-inc_dirs = src util smi
+inc_dirs = src util
 obj_dir = $(target_path)/obj
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
@@ -854,7 +854,8 @@ spec: dircheck
 	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/include/flaim.h\n" >> $(spec_file)
 
-# -- PKG-CONFIG	
+# -- PKG-CONFIG --
+
 .PHONY : pkgconfig
 pkgconfig: dircheck
 	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
