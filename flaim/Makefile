@@ -762,6 +762,7 @@ ifndef win_target
 	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/util)
 	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/util)
 	$(ec)tar zcf $(package_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(package_dir) $(rpm_proj_name_and_ver)
+	$(ec)$(call copycmd,$(rpm_proj_name).changes,$(package_dir))
 	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "Package created.\n"
 endif
