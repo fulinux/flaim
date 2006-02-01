@@ -200,7 +200,22 @@ ifndef target_os_family
 					target_processor = x86
 					target_word_size = 32
 				else
-               $(error Platform not supported)
+					ifneq (,$(findstring s390,$(HOSTTYPE)))
+						ifneq (,$(findstring s390x,$(HOSTTYPE)))
+							target_processor = s390x
+							target_word_size = 64
+						else
+							target_processor = s390
+							target_word_size = 31
+						endif
+					else
+						ifneq (,$(findstring ia64,$(HOSTTYPE)))
+							target_processor = ia64
+							target_word_size = 64
+						else
+		               $(error Platform not supported)
+						endif
+					endif
 				endif
 			endif
 		endif
@@ -459,11 +474,8 @@ ifdef unix_target
 
 	ifeq ($(compiler),g++)
 		ccflags += -Wall -Werror -fPIC
-
-		ifeq ($(target_word_size),64)
-			ccflags += -m64
-		else
-			ccflags += -m32
+		ifneq ($(target_processor),ia64)		
+			ccflags += -m$(target_word_size)
 		endif
 	endif
 	
@@ -547,10 +559,8 @@ ifdef unix_target
 	link_flags = -o $@
 	
 	ifeq ($(compiler),g++)
-		ifeq ($(target_word_size),64)
-			link_flags += -m64
-		else
-			link_flags += -m32
+		ifneq ($(target_processor),ia64)		
+			link_flags += -m$(target_word_size)
 		endif
 	endif
 	
@@ -834,14 +844,14 @@ spec: dircheck
 	$(ec)$(gprintf) "%%files\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%files devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(pkgconfig_install_dir)/$(pkgconfig_file_name)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "%%{prefix}/%%{_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%{prefix}/include/flaim.h\n" >> $(spec_file)
 
 # -- PKG-CONFIG	
