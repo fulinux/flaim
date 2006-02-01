@@ -291,6 +291,37 @@ ifndef target_os_family
    $(error Target operating system could not be determined)
 endif
 
+# Files and Directories
+
+ifeq ($(target_word_size),64)
+	ifeq ($(target_os_family),linux)
+		lib_dir_name = lib64
+	endif
+endif
+
+ifndef lib_dir_name
+	lib_dir_name = lib
+endif
+
+lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
+include_install_dir = $(rpm_build_root)$(install_prefix)/include
+pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
+build_output_dir = build
+package_dir = $(build_output_dir)/package
+spec_file = $(package_dir)/$(rpm_proj_name).spec
+pkgconfig_file_name = $(rpm_proj_name).pc
+pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
+
+target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+
+inc_dirs = src util smi
+obj_dir = $(target_path)/obj
+util_dir = $(target_path)/util
+test_dir = $(target_path)/test
+sample_dir = $(target_path)/sample
+shared_lib_dir = $(target_path)/lib/shared
+static_lib_dir = $(target_path)/lib/static
+
 # -- Utility variables --
 
 em :=
@@ -312,10 +343,6 @@ else
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
 endif
-
-# -- Target path --
-
-target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
 
 # -- Tools --
 
@@ -340,34 +367,7 @@ endif
 
 ifeq ($(target_word_size),64)
 	ccdefs += FLM_64BIT
-	ifeq ($(target_os_family),linux)
-		lib_dir_name = lib64
-		lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
-	endif
 endif
-
-# Files and Directories
-
-ifndef lib_dir_name
-	lib_dir_name = lib
-endif
-
-lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
-include_install_dir = $(rpm_build_root)$(install_prefix)/include
-pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
-build_output_dir = build
-package_dir = $(build_output_dir)/package
-spec_file = $(package_dir)/$(rpm_proj_name).spec
-pkgconfig_file_name = $(rpm_proj_name).pc
-pkgconfig_file = $(build_output_dir)/$(pkgconfig_file_name)
-
-inc_dirs = src util smi
-obj_dir = $(target_path)/obj
-util_dir = $(target_path)/util
-test_dir = $(target_path)/test
-sample_dir = $(target_path)/sample
-shared_lib_dir = $(target_path)/lib/shared
-static_lib_dir = $(target_path)/lib/static
 
 ##############################################################################
 #   Win settings
@@ -822,7 +822,7 @@ spec: dircheck
 	$(ec)$(gprintf) "%%setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%build\n" >> $(spec_file)
-	$(ec)$(gprintf) "make build_root=$$""RPM_BUILD_ROOT libs\n" >> $(spec_file)
+	$(ec)$(gprintf) "make libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "%%install\n" >> $(spec_file)
 	$(ec)$(gprintf) "make rpm_build_root=$$""RPM_BUILD_ROOT install_prefix=%%{prefix} install\n" >> $(spec_file)
