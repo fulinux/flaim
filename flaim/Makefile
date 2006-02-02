@@ -521,8 +521,7 @@ ifdef unix_target
 				-falign-jumps \
 				-falign-loops \
 				-falign-labels \
-				-fcrossjumping \
-				-mminimal-toc
+				-fcrossjumping
 		endif
 	endif
 
@@ -566,8 +565,8 @@ ifdef unix_target
 
 	# Linker switches
 	
-	shared_link_flags = -mminimal-toc
-	link_flags = -mminimal-toc -o $@
+	shared_link_flags =
+	link_flags = -o $@
 	
 	ifeq ($(compiler),g++)
 		ifneq ($(target_processor),ia64)		
