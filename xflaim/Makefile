@@ -1193,6 +1193,7 @@ status:
 	$(ec)$(gprintf) "Defines = $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
 
+.PHONY : dircheck
 dircheck:
 	$(ec)$(call mkdircmd,$(obj_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
