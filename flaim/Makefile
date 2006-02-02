@@ -213,7 +213,17 @@ ifndef target_os_family
 							target_processor = ia64
 							target_word_size = 64
 						else
-		               $(error Platform not supported)
+							ifneq (,$(findstring ppc64,$(HOSTTYPE)))
+								target_processor = powerpc
+								target_word_size = 64
+							else
+								ifneq (,$(findstring ppc,$(HOSTTYPE)))
+									target_processor = powerpc
+									target_word_size = 32
+								else
+                           $(error Platform not supported)
+								endif
+							endif
 						endif
 					endif
 				endif
@@ -428,7 +438,8 @@ ifdef win_target
 
 	# Libraries that our various components need to link against
 	
-	link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
+	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
+	exe_link_libs =
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -510,7 +521,8 @@ ifdef unix_target
 				-falign-jumps \
 				-falign-loops \
 				-falign-labels \
-				-fcrossjumping
+				-fcrossjumping \
+				-mminimal-toc
 		endif
 	endif
 
@@ -554,24 +566,26 @@ ifdef unix_target
 
 	# Linker switches
 	
-	shared_link_flags =
-
-	link_flags = -o $@
+	shared_link_flags = -mminimal-toc
+	link_flags = -mminimal-toc -o $@
 	
 	ifeq ($(compiler),g++)
 		ifneq ($(target_processor),ia64)		
+			shared_link_flags += -m$(target_word_size)
 			link_flags += -m$(target_word_size)
 		endif
 	endif
 	
-	link_libs = -lpthread
+	lib_link_libs = -lpthread
+	exe_link_libs =
 
 	ifeq ($(target_os_family),linux)
-		link_libs += -lncurses -lrt -lstdc++ -ldl
+		lib_link_libs += -lrt -lstdc++ -ldl
+		exe_link_libs += -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
 	else
-		link_libs += -lcurses
+		exe_link_libs += -lcurses
 	endif
 
 	ifeq ($(target_os_family),solaris)
@@ -581,11 +595,12 @@ ifdef unix_target
 				link_flags += -xarch=generic64
 			endif
 		endif
-		link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
+
+		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
 	endif
 
 	ifeq ($(target_os_family),osx)
-		link_libs += -lstdc++ -ldl
+		lib_link_libs += -lstdc++ -ldl
 	endif
 	
 	util_link_flags = $(link_flags)
@@ -686,11 +701,11 @@ endif
 $(shared_flaim_lib) : $(flaim_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(link_libs)
+	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(lib_link_libs)
 else
 	$(ec)rm -f $@
 ifeq ($(target_os_family),linux)
-	$(ec)$(linker) $+ $(shared_link_flags) $(link_libs)
+	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
 endif
 
@@ -698,7 +713,7 @@ endif
 
 ifndef flm_util_link_cmd
    define flm_util_link_cmd
-		$(ec)$(linker) $(util_link_flags) $(allprereqs) $(link_libs)
+		$(ec)$(linker) $(util_link_flags) $(allprereqs) $(lib_link_libs) $(exe_link_libs)
    endef
 endif
 
@@ -864,7 +879,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "name: $(rpm_proj_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Libs: $(link_libs) -lflaim -L$$""{libdir}\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lflaim -L$$""{libdir}\n" >> $(pkgconfig_file)
 
 # -- SRCRPM --
 
