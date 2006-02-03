@@ -44,10 +44,13 @@ ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 
 	# Get the info for all files.
 	
-	revision = $(shell svnversion . -n)
+	revision = $(shell svnversion .. -n)
 	
 	ifneq (,$(findstring M,$(revision)))
       $(error Local modifications found - please check in before making distro)
+	endif
+	ifneq (,$(findstring :,$(revision)))
+      $(error Mixed revisions in repository - please update before making distro)
 	endif
 else
 	ifeq "$(wildcard SVNRevision.*)" ""
