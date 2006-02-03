@@ -40,7 +40,22 @@ project_desc = An extensible, flexible, adaptable, embeddable database engine
 
 major_version = 4
 minor_version = 8
-revision = 0
+ifneq (,$(findstring dist,$(MAKECMDGOALS)))
+
+	# Get the info for all files.
+	
+	revision = $(shell svnversion . -n)
+	
+	ifneq (,$(findstring M,$(revision)))
+      $(error Local modifications found - please check in before making distro)
+	endif
+else
+	ifeq "$(wildcard SVNRevision.*)" ""
+		revision = 0
+	else
+		revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
+	endif
+endif
 version = $(major_version).$(minor_version).$(revision)
 
 rpm_release_num = 1
@@ -761,10 +776,11 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_
 .PHONY : dist
 dist: status dircheck spec
 ifndef win_target
-	$(ec)$(gprintf) "Creating package ...\n"
-	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "Creating package (SVN Revision $(revision)) ...\n"
+	-$(ec)$(call rmdircmd,$(package_dir))/*.gz
 	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
+	$(ec)$(gprintf) " " > $(package_dir)/$(rpm_proj_name_and_ver)/SVNRevision.$(revision)
 	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
@@ -902,6 +918,7 @@ docs: status dircheck
 .PHONY : status
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
+	$(ec)$(gprintf) "SVN Revision = $(revision)\n"
 	$(ec)$(gprintf) "Host Operating System Family = $(host_os_family)\n"
 	$(ec)$(gprintf) "Target Operating System Family = $(target_os_family)\n"
 	$(ec)$(gprintf) "Target Processor = $(target_processor)\n"
@@ -913,6 +930,7 @@ status:
 	$(ec)$(gprintf) "Defines = $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
 
+.PHONY : dircheck
 dircheck:
 	$(ec)$(call mkdircmd,$(obj_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
