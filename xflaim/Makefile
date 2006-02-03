@@ -33,13 +33,31 @@
 # -- Project --
 
 project_name = xflaim
-project_desc = An extensible, flexible, adaptable, embeddable database engine
+project_desc = An extensible, flexible, adaptable, embeddable XML database engine
 
 # -- Versions --
 
 major_version = 5
 minor_version = 0
-revision = 0
+ifneq (,$(findstring dist,$(MAKECMDGOALS)))
+
+	# Get the info for all files.
+	
+	revision = $(shell svnversion . -n)
+	
+	ifneq (,$(findstring M,$(revision)))
+      $(error Local modifications found - please check in before making distro)
+	endif
+	ifneq (,$(findstring :,$(revision)))
+      $(error Mixed revisions in repository - please update before making distro)
+	endif
+else
+	ifeq "$(wildcard SVNRevision.*)" ""
+		revision = 0
+	else
+		revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
+	endif
+endif
 version = $(major_version).$(minor_version).$(revision)
 
 rpm_release_num = 1
@@ -356,7 +374,7 @@ ifeq ($(host_os_family),win)
 	allprereqs  = $(subst /,\,$+)
 	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2)) >NUL
 	rmcmd = del /Q $(subst /,\,$(1))
-	rmdircmd = -if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1))
+	rmdircmd = cmd /C "rmdir /q /s $(subst /,\,$(1))"
 	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1)) >NUL
 	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
 else
@@ -387,6 +405,10 @@ ccdefs =
 
 ifneq (,$(findstring flm_dbg_log,$(MAKECMDGOALS)))
 	ccdefs += FLM_DBG_LOG
+endif
+
+ifeq ($(target_word_size),64)
+	ccdefs += FLM_64BIT
 endif
 
 ##############################################################################
@@ -561,7 +583,6 @@ ifdef unix_target
 	# Linker switches
 	
 	shared_link_flags =
-
 	link_flags = -o $@
 	
 	ifeq ($(compiler),g++)
@@ -577,7 +598,8 @@ ifdef unix_target
 	ifeq ($(target_os_family),linux)
 		lib_link_libs += -lrt -lstdc++ -ldl
 		exe_link_libs += -lncurses
-		shared_link_flags += -shared -Wl,-Bsymbolic -fpic -Wl,-soname,$(@F).1 -o $@
+		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
+			-Wl,-soname,$(@F).1 -o $@
 	else
 		exe_link_libs += -lcurses
 	endif
@@ -1041,10 +1063,11 @@ $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(static_xflaim_lib)
 .PHONY : dist
 dist: status dircheck spec
 ifndef win_target
-	$(ec)$(gprintf) "Creating package ...\n"
-	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(gprintf) "Creating package (SVN Revision $(revision)) ...\n"
+	-$(ec)$(call rmdircmd,$(package_dir))/*.gz
 	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
+	$(ec)$(gprintf) " " > $(package_dir)/$(rpm_proj_name_and_ver)/SVNRevision.$(revision)
 	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
@@ -1182,6 +1205,7 @@ docs: status dircheck
 .PHONY : status
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
+	$(ec)$(gprintf) "SVN Revision = $(revision)\n"
 	$(ec)$(gprintf) "Host Operating System Family = $(host_os_family)\n"
 	$(ec)$(gprintf) "Target Operating System Family = $(target_os_family)\n"
 	$(ec)$(gprintf) "Target Processor = $(target_processor)\n"
