@@ -348,8 +348,6 @@
 		/// \defgroup memoryalloc Memory Functions
 		/// \ingroup misc
 
-
-
 	#ifndef NULL
 		#define NULL	0
 	#endif
