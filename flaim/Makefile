@@ -44,7 +44,7 @@ ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 
 	# Get the info for all files.
 	
-	revision = $(shell svnversion .. -n)
+	revision = $(shell svnversion . -n)
 	
 	ifneq (,$(findstring M,$(revision)))
       $(error Local modifications found - please check in before making distro)
