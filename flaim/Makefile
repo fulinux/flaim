@@ -831,6 +831,7 @@ endif
 
 # -- spec file --
 
+
 .PHONY : spec
 spec: dircheck
 	$(ec)$(gprintf) "# neededforbuild  libstdc++-devel libstdc++ gcc-c++\n" > $(spec_file)
