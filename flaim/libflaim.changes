@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Feb  3 09:13:02 MST 2006 - dsanders@novell.com
+
+- Added support for PowerPC architectures
+- Changed so that revision number for RPMs will match version number
+- in SVN repository.
+
+-------------------------------------------------------------------
 Wed Feb  1 11:54:08 MST 2006 - dsanders@novell.com
 
 - Initial submission
