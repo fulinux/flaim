@@ -395,11 +395,7 @@ libr =
 linker =
 compiler =
 
-ifdef unix_target
-	gprintf = printf
-else
-	gprintf = gprintf
-endif
+gprintf = printf
 
 # Compiler definitions and flags
 
@@ -786,6 +782,8 @@ ifndef win_target
 	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
 	$(ec)$(gprintf) " " > $(package_dir)/$(rpm_proj_name_and_ver)/SVNRevision.$(revision)
+	$(ec)$(call copycmd,make.exe,$(package_dir)/$(rpm_proj_name_and_ver))
+	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
@@ -897,10 +895,12 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
 	$(ec)$(gprintf) "exec_prefix=$(dollar){prefix}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "libdir=$(dollar){exec_prefix}/$(lib_dir_name)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "name: $(rpm_proj_name)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "includedir=$$""{prefix}/include\n\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Cflags: -I$$""{includedir}\n" >> $(pkgconfig_file)
 
 # -- SRCRPM --
 
