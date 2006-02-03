@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------
 // Desc:	Structures, classes, prototypes, and defines needed by an application
-//			to use FLAIM functionality.
+//			to use FLAIM functionality
 // Tabs:	3
 //
 //		Copyright (c) 1991-2006 Novell, Inc. All Rights Reserved.
