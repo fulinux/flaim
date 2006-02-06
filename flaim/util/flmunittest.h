@@ -33,9 +33,6 @@
 
 // Status codes passed to recordUnitTestResults
 
-#define PASS								"PASS"
-#define FAIL								"FAIL"
-
 #define MAX_SMALL_BUFFER_SIZE			255
 #define MAX_BUFFER_SIZE					2500
 
@@ -47,34 +44,9 @@
 		sizeof(a) / sizeof(a[0])
 #endif
 
-#define MAKE_ERR_STRING( str, buf) \
-	f_sprintf( buf, str" file: %s. line: %u.", __FILE__, __LINE__); \
-	flmAssert( 0)
-
-#define MAKE_ERROR_STRING( str, buf, rcode) \
-	f_sprintf( buf, str" "#rcode" == %X. file: %s. line: %u.", \
-		(unsigned)rcode, __FILE__, __LINE__); \
-	flmAssert( 0)
-
-#define MAKE_FLM_ERROR_STRING( str, buf, rcode) \
-	f_sprintf( buf, str" "#rcode" == %X : %s. file: %s. line: %u.", \
-		(unsigned)rcode, FlmErrorString( rcode), __FILE__, __LINE__); \
-	flmAssert( 0);
-	
-#define MAKE_GENERIC_ERROR_STRING( str, buf, num) \
-	f_sprintf( buf, str": %lX  file: %s. line: %u.", \
-		(unsigned long)num, __FILE__, __LINE__); \
-	flmAssert( 0);
-	
-#define MAKE_GENERIC_ERROR_STRING64( str, buf, num) \
-	f_sprintf( buf, str": %llX  file: %s. line: %u.", \
-		(unsigned long long)num, __FILE__, __LINE__); \
-	flmAssert( 0);
-
-#define MAKE_SMI_ERR_STRING( str, buf, err) \
-	f_sprintf( buf, "%s. ERROR: %d (%x). File: %s, Line %u.", \
-		str, err, err, __FILE__, __LINE__); \
-	flmAssert( 0);
+#define MAKE_ERROR_STRING( pszWhat, rc, pszFailInfo) \
+	f_sprintf( pszFailInfo, "Error %s: %X, file: %s, line: %u.", \
+		pszWhat, (unsigned)rc, __FILE__, (unsigned)__LINE__);
 
 // Error Codes
 
@@ -121,11 +93,9 @@ RCODE createUnitTest(
 
 RCODE recordUnitTestResults(
 	unitTestData *		uTD,
-	const char *		testName,
-	const char *		testDescr, 
-	const char *		steps, 
-	const char *		status, 
-	const char *		resultDetails);
+	const char *		pszTestName,
+	FLMBOOL				bPassed, 
+	const char *		pszFailInfo);
 
 /****************************************************************************
 Desc:
@@ -138,7 +108,6 @@ public:
 		FLMBOOL			bLog,
 		const char *	pszLogfile,
 		FLMBOOL			bDisplay,
-		FLMBOOL			bVerboseDisplay,
 		const char *	pszConfigFile,
 		const char *	pszEnvironment,
 		const char *	pszBuild,
@@ -189,11 +158,9 @@ public:
 		const char * 		userName);
 
 	RCODE recordUnitTestResults(
-		const char *		testName,
-		const char *		testDescr,
-		const char *		steps,
-		const char *		status,
-		const char *		resultDetails);
+		const char *	pszTestName,
+		FLMBOOL			bPassed,
+		const char *	pszFailInfo);
 };
 
 /****************************************************************************
@@ -390,14 +357,12 @@ public:
 	{
 		m_bLog = FALSE;
 		m_bDisplay = FALSE;
-		m_bDisplayVerbose = FALSE;
 		m_pLogger = NULL;
 		m_pDisplayer = NULL;
 		m_pReporter = NULL;
 		m_hDb = HFDB_NULL;
 		m_pszTestName = NULL;
-		m_pszTestDesc = NULL;
-		m_pszSteps = NULL;
+		m_szFailInfo [0] = 0;
 	}
 
 	virtual ~TestBase();
@@ -406,7 +371,6 @@ public:
 		FLMBOOL			bLog,
 		const char *	pszLogfile,
 		FLMBOOL			bDisplay,
-		FLMBOOL			bVerboseDisplay,
 		const char *	pszConfigFile,
 		const char *	pszEnvironment,
 		const char *	pszBuild,
@@ -416,25 +380,18 @@ protected:
 
 	FLMBOOL						m_bLog;
 	FLMBOOL						m_bDisplay;
-	FLMBOOL						m_bDisplayVerbose;
 	IFlmTestLogger *			m_pLogger;
 	IFlmTestDisplayer *		m_pDisplayer;
 	ITestReporter *			m_pReporter;
 	HFDB 							m_hDb;
-#define DETAILS_BUF_SIZ	1024
-	char							m_szDetails[ DETAILS_BUF_SIZ];
+	char							m_szFailInfo [100];
 	const char *				m_pszTestName;
-	const char *				m_pszTestDesc;
-	const char *				m_pszSteps;
 
 	void beginTest( 
-		const char *			pszTestName, 
-		const char *			pszTestDesc,
-		const char *			pszTestSteps,
-		const char *			pszDetails);
+		const char *			pszTestName); 
 
-	void endTest( 
-		const char *			pszTestResult);
+	void endTest(
+		FLMBOOL	bPassed);
 
 	void log( 
 		const char *			pszString);
@@ -445,14 +402,11 @@ protected:
 	void displayLine(
 		const char *			pszString);
 		
-	RCODE logTestResults(
-		const char * 			pszTestResult);
+	void logTestResults(
+		FLMBOOL	bPassed);
 
-	RCODE displayTestResults(
-		const char * 			pszTestResult);
-
-	RCODE outputAll( 
-		const char * 			pszTestResult);
+	void displayTestResults(
+		FLMBOOL	bPassed);
 
 	RCODE initCleanTestState( 
 		const char  *			pszDibName);

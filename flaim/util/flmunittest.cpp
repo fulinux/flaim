@@ -65,7 +65,6 @@ struct TEST_INFO
 	bool 				bLog;
 	char 				pszLogfile[ 256];
 	bool 				bDisplay;
-	bool 				bVerboseDisplay;
 	char 				pszEnvironment[ 32];
 	char 				pszBuild[ 32];
 	char 				pszUser[ 32];
@@ -76,7 +75,6 @@ struct TEST_INFO
 	{
 		bLog = FALSE;
 		bDisplay = FALSE;
-		bVerboseDisplay = FALSE;
 		pNext = NULL;
 		pszLogfile[ 0] = 0;
 		pszConfig[ 0] = 0;
@@ -122,14 +120,12 @@ ITestReporter::~ITestReporter()
 Desc:
 ****************************************************************************/
 RCODE ITestReporter::recordUnitTestResults(
-	const char *		testName,
-	const char *		testDescr,
-	const char *		steps,
-	const char *		status,
-	const char *		resultDetails)
+	const char *	pszTestName,
+	FLMBOOL			bPassed,
+	const char *	pszFailInfo)
 {
-	return ::recordUnitTestResults( &(this->m_uTD), testName, testDescr,
-		steps, status, resultDetails);
+	return ::recordUnitTestResults( &(this->m_uTD), pszTestName, bPassed,
+						pszFailInfo);
 }
 
 /****************************************************************************
@@ -286,10 +282,6 @@ int main(
 		{
 			f_strcpy( testInfo.pszUser, &args[i][2]);
 		}
-		else if( (args[i][1] == 'v') || (args[i][1] == 'V'))
-		{
-			testInfo.bVerboseDisplay = TRUE;
-		}
 		else if( (args[i][1] == 'i') || (args[i][1] == 'I'))
 		{
 			bPauseBeforeExit = TRUE;
@@ -319,7 +311,7 @@ int main(
 	}
 
 	if( pTest->init( testInfo.bLog, testInfo.pszLogfile, testInfo.bDisplay,
-		testInfo.bVerboseDisplay, testInfo.pszConfig, testInfo.pszEnvironment,
+		testInfo.pszConfig, testInfo.pszEnvironment,
 		testInfo.pszBuild, testInfo.pszUser) != 0)
 	{
 #ifndef FLM_NLM
@@ -822,33 +814,27 @@ Exit:
 Desc:	After each unit test call this to record the unit test status
 		to a CSV file.
 			uTD - contains the configuration information
-			testName - a Unique for this module unite test name.
-			testDescr - A description of the unit test.
-			steps - The steps the unit test performs.
-			status - Maybe be PASS or FAIL
-			resultDetails - details that explain the result status.
+			pszTestName - a unique name for this unit test.
+			bPassed - Did unit test pass?
+			pszFailInfo - If unit test failed, reason is here
 ****************************************************************************/
 RCODE recordUnitTestResults(
 	unitTestData *		uTD, 
-	const char *		testName, 
-	const char *		testDescr, 
-	const char *		steps, 
-	const char *		status, 
-	const char *		resultDetails) 
+	const char *		pszTestName, 
+	FLMBOOL				bPassed,
+	const char *		pszFailInfo) 
 {
 	RCODE		rc = FERR_OK;
 	char		buffer[ MAX_BUFFER_SIZE];
 	
-	if( !testName || !testDescr || !steps || !status || !resultDetails || !uTD )
-	{
-		flmAssert(0);
-	}
+	flmAssert( pszTestName && uTD);
 
 	if( uTD->csvFilename[ 0])
 	{
 		f_sprintf( buffer, "%s,%s,%s,%s,%s,%s,%s,%s,"/*%s,*/"%s,%s\n", 
-			testName, uTD->userName, testDescr, steps, uTD->buildNumber, status, 
-			uTD->environment, resultDetails, uTD->attrs, uTD->folder);
+			pszTestName, uTD->userName, pszTestName, pszTestName, uTD->buildNumber,
+			(const char *)(bPassed ? "PASS" : "FAIL"), 
+			uTD->environment, pszFailInfo, uTD->attrs, uTD->folder);
 
 		if( RC_BAD( rc = f_filecat( uTD->csvFilename, buffer)))
 		{
@@ -868,7 +854,6 @@ RCODE TestBase::init(
 	FLMBOOL			bLog,
 	const char *	pszLogfile,
 	FLMBOOL			bDisplay,
-	FLMBOOL			bVerboseDisplay,
 	const char *	pszConfigFile,
 	const char *	pszEnvironment,
 	const char *	pszBuild,
@@ -927,7 +912,6 @@ RCODE TestBase::init(
 	{
 		goto Exit;
 	}
-	m_bDisplayVerbose = bVerboseDisplay;
 
 Exit:
 
@@ -938,48 +922,11 @@ Exit:
 Desc:
 ****************************************************************************/
 void TestBase::beginTest( 
-	const char * 	pszTestName, 
-	const char * 	pszTestDesc,
-	const char * 	pszTestSteps,
-	const char * 	pszDetails)
+	const char * 	pszTestName) 
 {
-	char		szTemp[ 256];
-
 	m_pszTestName = pszTestName;
-	m_pszTestDesc = pszTestDesc;
-	m_pszSteps = pszTestSteps;
-
-	if( m_bDisplayVerbose)
-	{
-		displayLine(
-			"========================================"
-			"=======================================");
-			
-		f_sprintf( szTemp, "Test Name: %s", m_pszTestName);
-		displayLine( szTemp);
-		
-		f_sprintf( szTemp, "Test Description: %s", m_pszTestDesc);
-		displayLine( szTemp);
-		
-		f_sprintf( szTemp, "Steps: %s", m_pszSteps);
-		displayLine( szTemp);
-	}
-	else
-	{
-		f_sprintf( szTemp, "Test Name: %s ... ", m_pszTestName);
-		display( szTemp);
-	}
-
-	f_strcpy( m_szDetails, pszDetails);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-void TestBase::endTest( 
-	const char * 	pszTestResult)
-{
-	outputAll( pszTestResult);
+	display( m_pszTestName);
+	display( " ... ");
 }
 
 /****************************************************************************
@@ -1123,119 +1070,61 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE TestBase::logTestResults(
-	const char * 	pszTestResult)
+void TestBase::logTestResults(
+	FLMBOOL	bPassed)
 {
-	RCODE			rc = FERR_OK;
-	char *		pszTemp = NULL;
+	char	szMsg [300];
 
-	if( RC_BAD( rc = f_alloc( DETAILS_BUF_SIZ + 64, &pszTemp)))
+	if (m_bLog)
 	{
-		goto Exit;
+		log( "===============================================================================");
+				
+		f_sprintf( szMsg, "Test Name: %s", m_pszTestName);
+		log( szMsg);
+		
+		f_sprintf( szMsg, "Test Result: %s", (char *)(bPassed ? "PASS" : "FAIL"));
+		log( szMsg);
+	
+		if (!bPassed)
+		{
+			log( m_szFailInfo);
+		}
+		
+		log( "===============================================================================");
 	}
-
-	log(
-			"========================================"
-			"=======================================");
-			
-	f_sprintf( pszTemp, "Test Name: %s", m_pszTestName);
-	log( pszTemp);
-	
-	f_sprintf( pszTemp, "Test Description: %s", m_pszTestDesc);
-	log( pszTemp);
-	
-	f_sprintf( pszTemp, "Steps: %s", m_pszSteps);
-	log( pszTemp);
-	
-	f_sprintf( pszTemp, "Test Result: %s", pszTestResult);
-	log( pszTemp);
-	
-	f_sprintf( pszTemp, "Details: %s", m_szDetails);
-	log( pszTemp);
-	
-	log(
-			"========================================"
-			"=======================================");
-
-Exit:
-
-	if( pszTemp)
-	{
-		f_free( &pszTemp);
-	}
-	
-	return( rc);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE TestBase::displayTestResults(
-	const char *	pszTestResult)
+void TestBase::displayTestResults(
+	FLMBOOL	bPassed)
 {
-	RCODE			rc = FERR_OK;
-	char *		pszTemp = NULL;
-
-	if( RC_BAD( rc = f_alloc( DETAILS_BUF_SIZ + 64, &pszTemp)))
+	if (bPassed)
 	{
-		goto Exit;
-	}
-
-	if( m_bDisplayVerbose)
-	{
-		f_sprintf( pszTemp, "Test Result: %s", pszTestResult);
-		displayLine( pszTemp);
-		
-		f_sprintf( pszTemp, "Details: %s", m_szDetails);
-		displayLine( pszTemp);
-		
-		displayLine(
-			"========================================"
-			"=======================================");
+		displayLine( "PASS");
 	}
 	else
 	{
-		f_sprintf( pszTemp, "Result: %s", pszTestResult);
-		displayLine( pszTestResult);
+		displayLine( "FAIL");
+		displayLine( m_szFailInfo);
 	}
-
-Exit:
-
-	if( pszTemp)
-	{
-		f_free( &pszTemp);
-	}
-
-	return( rc);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE TestBase::outputAll( 
-	const char * 	pszTestResult)
+void TestBase::endTest(
+	FLMBOOL	bPassed)
 {
-	RCODE			rc = FERR_OK;
-
-	if( RC_BAD( rc = displayTestResults( pszTestResult)))
+	displayTestResults( bPassed);
+	if (m_bLog)
 	{
-		goto Exit;
+		logTestResults( bPassed);
 	}
 
-	if( RC_BAD( rc = logTestResults( pszTestResult)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = m_pReporter->recordUnitTestResults(
-		m_pszTestName, m_pszTestDesc, m_pszSteps, pszTestResult, m_szDetails)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
+	(void)m_pReporter->recordUnitTestResults(
+		m_pszTestName, bPassed, m_szFailInfo);
 }
 
 /****************************************************************************

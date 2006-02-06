@@ -59,12 +59,44 @@ class IFlmTestImpl : public TestBase
 {
 public:
 
+	IFlmTestImpl()
+	{
+		m_hDb = HFDB_NULL;
+	}
+	
+	virtual ~IFlmTestImpl()
+	{
+		if (m_hDb != HFDB_NULL)
+		{
+			(void)FlmDbClose( &m_hDb);
+		}
+	}
+
 	inline const char * getName( void)
 	{
 		return( "Basic Test");
 	}
 	
+	RCODE createDbTest( void);
+	
+	RCODE addRecordTest(
+		FLMUINT *	puiDrn);
+	
+	RCODE modifyRecordTest(
+		FLMUINT	uiDrn);
+	
+	RCODE deleteRecordTest(
+		FLMUINT	uiDrn);
+		
+	RCODE queryRecordTest( void);
+		
+	RCODE removeDbTest( void);
+		
 	RCODE execute( void);
+	
+private:
+
+	HFDB	m_hDb;
 };
 
 /****************************************************************************
@@ -89,17 +121,427 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::createDbTest( void)
+{
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bPassed = FALSE;
+
+	beginTest( "Create Database Test");
+
+	for (;;)
+	{
+		if( RC_BAD( rc = FlmDbCreate( DB_NAME_STR, NULL, 
+			NULL, NULL, gv_pszSampleDictionary, NULL, &m_hDb)))
+		{
+			if( rc == FERR_FILE_EXISTS)
+			{
+				// Since the database already exists, we'll make a call
+				// to FlmDbOpen to get a handle to it.
+	
+				if( RC_BAD( rc = FlmDbRemove( DB_NAME_STR, 
+					NULL, NULL, TRUE)))
+				{
+					MAKE_ERROR_STRING( "calling FlmDbRemove", rc, m_szFailInfo);
+					goto Exit;
+				}
+			}
+			else
+			{
+				MAKE_ERROR_STRING( "calling FlmDbCreate", rc, m_szFailInfo);
+				goto Exit;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	bPassed = TRUE;
+	
+Exit:
+
+	endTest( bPassed);
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::addRecordTest(
+	FLMUINT *	puiDrn
+	)
+{
+	RCODE				rc = FERR_OK;
+	FlmRecord *		pRec = NULL;
+	void *			pvField;
+	FLMBOOL			bTransActive = FALSE;
+	FLMBOOL			bPassed = FALSE;
+
+	beginTest( "FlmRecordAdd Test");
+
+	// Create a record object
+
+	if( (pRec = new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Populate the record object with fields and values
+	// The first field of a record will be inserted at
+	// level zero (the first parameter of insertLast()
+	// specifies the level number).  Subsequent fields
+	// will be inserted at a non-zero level.
+
+	if( RC_BAD( rc = pRec->insertLast( 0, PERSON_TAG,
+		FLM_TEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->insertLast( 1, FIRST_NAME_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->setNative( pvField, "Foo")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->insertLast( 1, LAST_NAME_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->setNative( pvField, "Bar")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->insertLast( 1, AGE_TAG,
+		FLM_NUMBER_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->setUINT( pvField, 32)))
+	{
+		MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	// Add the record to the database.
+
+	*puiDrn = 0;
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		puiDrn, pRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Commit the transaction
+	// If FlmDbTransCommit returns without an error, the changes made
+	// above will be durable even if the system crashes.
+
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+
+	bPassed = TRUE;
+	
+Exit:
+
+	if( bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	if( pRec)
+	{
+		pRec->Release();
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::modifyRecordTest(
+	FLMUINT	uiDrn
+	)
+{
+	RCODE				rc = FERR_OK;
+	FlmRecord *		pRec = NULL;
+	FlmRecord *		pModRec = NULL;
+	void *			pvField;
+	FLMBOOL			bTransActive = FALSE;
+	FLMBOOL			bPassed = FALSE;
+
+	// Retrieve the record from the database by ID
+
+	beginTest( "FlmRecordRetrieve Test");
+	if( RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DATA_CONTAINER, 
+		uiDrn, FO_EXACT, &pRec, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+		goto Exit;
+	}
+	endTest( TRUE);
+
+	
+	beginTest( "FlmRecordModify Test");
+
+	// Copy the record so we can modify it
+
+	if( (pModRec = pRec->copy()) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "calling FlmRecord->copy()", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Find the first name field and change it.
+
+	pvField = pModRec->find( pModRec->root(), FIRST_NAME_TAG);
+	if( RC_BAD( rc = pModRec->setNative( pvField, "FooFoo")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	// Add the record to the database.
+
+	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DATA_CONTAINER, 
+		uiDrn, pModRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Commit the transaction
+	// If FlmDbTransCommit returns without an error, the changes made
+	// above will be durable even if the system crashes.
+
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+
+	bPassed = TRUE;
+	
+Exit:
+
+	if( bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	if( pRec)
+	{
+		pRec->Release();
+	}
+
+	if( pModRec)
+	{
+		pModRec->Release();
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::deleteRecordTest(
+	FLMUINT	uiDrn
+	)
+{
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bPassed = FALSE;
+
+	// Delete a record from the database
+
+	beginTest( "FlmRecordDelete Test");
+	if( RC_BAD( rc = FlmRecordDelete( m_hDb, FLM_DATA_CONTAINER, 
+		uiDrn, FLM_AUTO_TRANS | 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordDelete", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bPassed = TRUE;
+
+Exit:
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::queryRecordTest( void)
+{
+	RCODE			rc = FERR_OK;
+	FlmRecord *	pRec = NULL;
+	HFCURSOR		hCursor = HFCURSOR_NULL;
+	FLMBYTE		ucTmpBuf[ 64];
+	FLMBOOL		bPassed = FALSE;
+	
+	// Now, build a query that retrieves the sample record.
+	// First we need to initialize a cursor handle.
+
+	beginTest( "Retrieve Record by query Test");
+
+	if( RC_BAD( rc = FlmCursorInit( m_hDb, FLM_DATA_CONTAINER, &hCursor)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorInit", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// We will search by first name and last name.  This will use the
+	// LastFirst_IX defined in the sample dictionary for optimization.
+
+	if( RC_BAD( rc = FlmCursorAddField( hCursor, LAST_NAME_TAG, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddField", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_EQ_OP)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	f_sprintf( (char *)ucTmpBuf, "Bar");
+	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_STRING_VAL, 
+		ucTmpBuf, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_AND_OP)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp failed", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddField( hCursor, FIRST_NAME_TAG, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddField", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_EQ_OP)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	f_sprintf( (char *)ucTmpBuf, "FooFoo");
+	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_STRING_VAL, 
+		ucTmpBuf, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorFirst( hCursor, &pRec)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorFirst", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bPassed = TRUE;
+	
+Exit:
+
+	if (hCursor != HFCURSOR_NULL)
+	{
+		FlmCursorFree( &hCursor);
+	}
+
+	if( pRec)
+	{
+		pRec->Release();
+	}
+
+	endTest( bPassed);
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::removeDbTest( void)
+{
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bPassed = FALSE;
+
+	// FlmDbRemove will delete the database and all of its files
+
+	beginTest( "Remove Database Test");
+
+	if( RC_BAD( rc = FlmDbRemove( DB_NAME_STR, NULL, NULL, TRUE)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbRemove", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bPassed = TRUE;
+	
+Exit:
+
+	endTest( bPassed);
+	return( rc);
+}
+	
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::execute( void)
 {
-	RCODE					rc = FERR_OK;
-	HFDB					hDb = HFDB_NULL;
-	HFCURSOR				hCursor = HFCURSOR_NULL;
-	FLMBOOL				bTransActive = FALSE;
-	FLMUINT				uiDrn;
-	FlmRecord *			pDefRec = NULL;
-	FlmRecord *			pRec = NULL;
-	void *				pvField;
-	FLMBYTE				ucTmpBuf[ 64];
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiDrn;
 
 	// Initialize the FLAIM database engine.  This call
 	// must be made once by the application prior to making any
@@ -110,296 +552,54 @@ RCODE IFlmTestImpl::execute( void)
 		goto Exit;
 	}
 
-	// Create or open a database.
-
-	beginTest( 
-		"Create Database Test",
-		"Create a new database",
-		"Self-explanatory",
-		"");
-
-Retry_Create:
-
-	if( RC_BAD( rc = FlmDbCreate( DB_NAME_STR, NULL, 
-		NULL, NULL, gv_pszSampleDictionary, NULL, &hDb)))
+	// Create database test
+	
+	if (RC_BAD( rc = createDbTest()))
 	{
-		if( rc == FERR_FILE_EXISTS)
-		{
-			// Since the database already exists, we'll make a call
-			// to FlmDbOpen to get a handle to it.
-
-			if( RC_BAD( rc = FlmDbRemove( DB_NAME_STR, 
-				NULL, NULL, TRUE)))
-			{
-				MAKE_ERROR_STRING( "FlmDbRemove failed", m_szDetails, rc);
-				goto Exit;
-			}
-			
-			goto Retry_Create;
-		}
-		else
-		{
-			MAKE_ERROR_STRING( "FlmDbCreate failed", m_szDetails, rc);
-			goto Exit;
-		}
+		goto Exit;
 	}
-
-	endTest( "PASS");
-
-	beginTest( 
-		"Create/Populate Record Test",
-		"Create a new record and populate it with data",
-		"Self-explanatory",
-		"");
-
-	// Create a record object
-
-	if( (pDefRec = new FlmRecord) == NULL)
+	
+	// FlmRecordAdd test
+	
+	if (RC_BAD( rc = addRecordTest( &uiDrn)))
 	{
-		rc = RC_SET( FERR_MEM);
-		MAKE_ERROR_STRING( "Could not allocate FlmRecord", m_szDetails, rc);
+		goto Exit;
+	}
+	
+	// FlmRecordModify test
+	
+	if (RC_BAD( rc = modifyRecordTest( uiDrn)))
+	{
+		goto Exit;
+	}
+	
+	// Retrieve record and query tests
+	
+	if (RC_BAD( rc = queryRecordTest()))
+	{
 		goto Exit;
 	}
 
-	// Populate the record object with fields and values
-	// The first field of a record will be inserted at
-	// level zero (the first parameter of insertLast()
-	// specifies the level number).  Subsequent fields
-	// will be inserted at a non-zero level.
-
-	if( RC_BAD( rc = pDefRec->insertLast( 0, PERSON_TAG,
-		FLM_TEXT_TYPE, NULL)))
+	// FlmRecordDelete test
+	
+	if (RC_BAD( rc = deleteRecordTest( uiDrn)))
 	{
-		MAKE_ERROR_STRING( "insertLast failed", m_szDetails, rc);
 		goto Exit;
 	}
-
-	if( RC_BAD( rc = pDefRec->insertLast( 1, FIRST_NAME_TAG,
-		FLM_TEXT_TYPE, &pvField)))
-	{
-		MAKE_ERROR_STRING( "insertLast failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pDefRec->setNative( pvField, "Foo")))
-	{
-		MAKE_ERROR_STRING( "setNative failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pDefRec->insertLast( 1, LAST_NAME_TAG,
-		FLM_TEXT_TYPE, &pvField)))
-	{
-		MAKE_ERROR_STRING( "insertLast failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pDefRec->setNative( pvField, "Bar")))
-	{
-		MAKE_ERROR_STRING( "setNative failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pDefRec->insertLast( 1, AGE_TAG,
-		FLM_NUMBER_TYPE, &pvField)))
-	{
-		MAKE_ERROR_STRING( "insertLast failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pDefRec->setUINT( pvField, 32)))
-	{
-		MAKE_ERROR_STRING( "setUINT failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	// Start an update transaction
-
-	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, 15)))
-	{
-		MAKE_ERROR_STRING( "FlmDbTransBegin failed", m_szDetails, rc);
-		goto Exit;
-	}
-	bTransActive = TRUE;
-
-	// Add the record to the database.  Initialize uiDrn to 0 so that FLAIM
-	// will automatically assign a unique ID to the new record.  We could
-	// also have specified a specific 32-bit ID to use for the record by
-	// setting uiDrn to the desired ID value.
-
-	uiDrn = 0;
-	if( RC_BAD( rc = FlmRecordAdd( hDb, FLM_DATA_CONTAINER, 
-		&uiDrn, pDefRec, 0)))
-	{
-		MAKE_ERROR_STRING( "FlmRecordAdd failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	// Commit the transaction
-	// If FlmDbTransCommit returns without an error, the changes made
-	// above will be durable even if the system crashes.
-
-	if( RC_BAD( rc = FlmDbTransCommit( hDb)))
-	{
-		MAKE_ERROR_STRING( "FlmDbTransCommit failed", m_szDetails, rc);
-		goto Exit;
-	}
-	bTransActive = FALSE;
-
-	endTest("PASS");
-
-	// Retrieve the record from the database by ID
-
-	beginTest( 
-		"Retrieve Record by ID Test",
-		"Retrieve the record we just created by its ID",
-		"Self-explanatory",
-		"");
-
-	if( RC_BAD( rc = FlmRecordRetrieve( hDb, FLM_DATA_CONTAINER, 
-		uiDrn, FO_EXACT, &pRec, NULL)))
-	{
-		MAKE_ERROR_STRING( "FlmRecordRetrieve failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	endTest("PASS");
-
-	// Now, build a query that retrieves the sample record.
-	// First we need to initialize a cursor handle.
-
-	beginTest( 
-		"Retrieve Record by query Test",
-		"Retrieve the record we just created using a query",
-		"Self-explanatory",
-		"");
-
-	if( RC_BAD( rc = FlmCursorInit( hDb, FLM_DATA_CONTAINER, &hCursor)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorInit failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	// We will search by first name and last name.  This will use the
-	// LastFirst_IX defined in the sample dictionary for optimization.
-
-	if( RC_BAD( rc = FlmCursorAddField( hCursor, LAST_NAME_TAG, 0)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddField failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_EQ_OP)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddOp failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	f_sprintf( (char *)ucTmpBuf, "Bar");
-	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_STRING_VAL, 
-		ucTmpBuf, 0)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddValue failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_AND_OP)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddOp failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = FlmCursorAddField( hCursor, FIRST_NAME_TAG, 0)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddField failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_EQ_OP)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddOp failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	f_sprintf( (char *)ucTmpBuf, "Foo");
-	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_STRING_VAL, 
-		ucTmpBuf, 0)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorAddValue failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = FlmCursorFirst( hCursor, &pRec)))
-	{
-		MAKE_ERROR_STRING( "FlmCursorFirst failed", m_szDetails, rc);
-		goto Exit;
-	}
-
-	// Free the cursor handle
-
-	FlmCursorFree( &hCursor);
-	endTest("PASS");
-
+	
 	// Close the database
 
-	FlmDbClose( &hDb);
-
-	// FlmDbRemove will delete the database and all of its files
-
-	beginTest( 
-		"Remove Database Test",
-		"Remove the database",
-		"Self-explanatory",
-		"");
-
-	if( RC_BAD( FlmDbRemove( DB_NAME_STR, NULL, NULL, TRUE)))
+	FlmDbClose( &m_hDb);
+	
+	if (RC_BAD( rc = removeDbTest()))
 	{
-		MAKE_ERROR_STRING( "FlmDbRemove failed", m_szDetails, rc);
 		goto Exit;
 	}
 
-	endTest("PASS");
-	
 Exit:
-
-	if( RC_BAD( rc))
-	{
-		endTest("FAIL");
-	}
-
-	if( pDefRec)
-	{
-		pDefRec->Release();
-	}
-
-	if( pRec)
-	{
-		pRec->Release();
-	}
-
-	if( hCursor != HFCURSOR_NULL)
-	{
-		FlmCursorFree( &hCursor);
-	}
-
-	if( bTransActive)
-	{
-		(void)FlmDbTransAbort( hDb);
-	}
-
-	if( hDb != HFDB_NULL)
-	{
-		FlmDbClose( &hDb);
-	}
 
 	FlmShutdown();
 
-	if( RC_BAD( rc))
-	{
-		f_sprintf( (char *)ucTmpBuf, "Error %04X -- %s", (unsigned)rc, 
-			(char *)FlmErrorString( rc));
-		displayLine( (char *)ucTmpBuf);
-	}
-	
 	return( rc);
 }
+
