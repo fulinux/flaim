@@ -533,7 +533,6 @@ ifdef unix_target
 				-fsched-spec \
 				-fcaller-saves \
 				-fpeephole2 \
-				-funit-at-a-time \
 				-freorder-blocks \
 				-freorder-functions \
 				-falign-functions \
