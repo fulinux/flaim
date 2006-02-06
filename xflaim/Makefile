@@ -30,6 +30,10 @@
 #
 #############################################################################
 
+# -- Include --
+
+-include config.in
+
 # -- Project --
 
 project_name = xflaim
@@ -136,7 +140,7 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
-   $(error Host operating system could not be determined)
+   $(error Host operating system could not be determined.  You may need to export HOSTTYPE from the environment.)
 endif
 
 # -- Target build type --
@@ -213,7 +217,7 @@ ifndef target_os_family
 					target_word_size = 32
 				endif
 			else
-				ifneq (,$(findstring i386,$(HOSTTYPE)))
+				ifneq (,$(findstring 86,$(HOSTTYPE)))
 					target_processor = x86
 					target_word_size = 32
 				else
@@ -528,7 +532,6 @@ ifdef unix_target
 				-fsched-spec \
 				-fcaller-saves \
 				-fpeephole2 \
-				-funit-at-a-time \
 				-freorder-blocks \
 				-freorder-functions \
 				-falign-functions \
