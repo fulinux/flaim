@@ -1,1 +1,4 @@
 #!/bin/bash
+
+echo OSTYPE = $OSTYPE > config.in
+echo HOSTTYPE = $HOSTTYPE >> config.in
