@@ -22,7 +22,6 @@
 # $Id: Makefile 3105 2006-01-11 11:14:10 -0700 (Wed, 11 Jan 2006) ahodgkinson $
 #-------------------------------------------------------------------------
 
-
 #############################################################################
 #
 # Sample Usage:
@@ -377,7 +376,7 @@ ifeq ($(host_os_family),win)
 	allprereqs  = $(subst /,\,$+)
 	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2)) >NUL
 	rmcmd = del /Q $(subst /,\,$(1))
-	rmdircmd = cmd /C "rmdir /q /s $(subst /,\,$(1))"
+	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1))
 	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1)) >NUL
 	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
 else
