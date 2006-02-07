@@ -69,7 +69,14 @@ rpm_release_num = 1
 
 # -- Paths initializations --
 
-rpm_build_root =
+ifndef rpm_build_root
+	ifneq (,$(DESTDIR))
+		rpm_build_root = $(DESTDIR)/
+	else
+		rpm_build_root =
+	endif
+endif
+
 install_prefix = /usr
 
 # -- RPM, SPEC file names
