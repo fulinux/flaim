@@ -192,7 +192,7 @@ Notes:	According to the Gregorian calendar (which we currently use), the
 			year is a leap year if it is divisible by 4, unless it is a century
 			year, then it must be divisible by 400.
 ****************************************************************************/
-static FLMUINT  f_timeLeapYearsSince1970(
+static FLMUINT f_timeLeapYearsSince1970(
 	FLMUINT16	ui16Year)
 {
 	FLMUINT		uiTemp;
