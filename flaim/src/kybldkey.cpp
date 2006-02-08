@@ -1059,7 +1059,7 @@ FSTATIC FLMBOOL flmSelectBestSubstr(	// Returns TRUE if NOT using first of key
 	FLMUINT			uiCurLen;
 	FLMUINT			uiBestNumChars;
 	FLMUINT			uiBestValueLen;
-	FLMUINT			uiWildcardPos;
+	FLMUINT			uiWildcardPos = 0;
 	FLMUINT			uiTargetNumChars;
 	FLMUINT			uiNumChars;
 	FLMBOOL			bNotUsingFirstOfString = FALSE;
