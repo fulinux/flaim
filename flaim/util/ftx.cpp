@@ -3189,9 +3189,8 @@ FTXRCODE
 	FLMBOOL			bInsert;
 	FLMBOOL			bRefresh;
 	FLMBOOL			bGotChar = FALSE;
-	FLMBOOL			bSaveScroll;
+	FLMBOOL			bSaveScroll = FALSE;
 	FTXRCODE			rc = FTXRC_SUCCESS;
-
 
 	if( puiCharCount)
 	{
