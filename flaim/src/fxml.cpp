@@ -5648,7 +5648,7 @@ RCODE F_XMLImport::processReference(
 
 		if( puChar)
 		{
-			FLMUINT		uiVal;
+			FLMUINT		uiVal = 0;
 
 			unicodeToNumber( m_uChars, &uiVal, NULL);
 			*puChar = (FLMUNICODE)uiVal;
