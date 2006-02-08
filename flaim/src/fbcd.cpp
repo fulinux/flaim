@@ -163,8 +163,8 @@ RCODE FlmStorage2INT(
 	const FLMBYTE *	pucValue,		// Internal Storage Format
 	FLMINT *				piNum)			// [OUT] return value.
 {
-	BCD_TYPE	bcd;
-	RCODE		rc;
+	RCODE			rc = FERR_OK;
+	BCD_TYPE		bcd = {0};
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
@@ -204,8 +204,8 @@ RCODE FlmStorage2UINT(
 	const FLMBYTE *	pucValue,				// Internal Storage Format
 	FLMUINT *			puiNum)			// [OUT] return value.
 {
-	BCD_TYPE		bcd;
-	RCODE			rc;
+	RCODE			rc = FERR_OK;
+	BCD_TYPE		bcd = {0};
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
@@ -244,8 +244,8 @@ RCODE FlmStorage2UINT32(
 	const FLMBYTE *	pucValue,		// Internal Storage Format
 	FLMUINT32 *			pui32Num)		// [OUT] return value.
 {
-	BCD_TYPE		bcd;
-	RCODE			rc;
+	RCODE			rc = FERR_OK;
+	BCD_TYPE		bcd = {0};
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
