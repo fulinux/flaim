@@ -1915,7 +1915,7 @@ RCODE flmGenerateHexPacket(
 	FLMBYTE *				pucUsedMap = NULL;
 	FLMUINT32				ui32Tmp;
 	FLMUINT					uiLoop;
-	FLMUINT					uiSlot;
+	FLMUINT					uiSlot = 0;
 	FLMBYTE					ucTmp[ 32];
 	FLMUINT					uiBinPacketSize;
 	FLMBOOL					bTmp;
