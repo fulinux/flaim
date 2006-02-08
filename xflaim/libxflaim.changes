@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Feb  8 09:53:07 MST 2006 - dsanders@novell.com
+
+- Removed make.exe and printf.exe from package.
+- Added support for Ubuntu and Debian
+- Simplified how unit tests are created.
+- Added some new unit tests
+
+-------------------------------------------------------------------
 Fri Feb  3 13:17:00 MST 2006 - dsanders@novell.com
 
 - Fixed libflaim.pc to specify includedir and Cflags:
