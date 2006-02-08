@@ -893,7 +893,7 @@ FSTATIC RCODE flmCurStratify(
 	FQNODE_p		pTree = *ppTree;
 	FQNODE_p		pOrOp;
 	FQNODE_p		pOtherAndOp;
-	FQNODE_p		pOtherAndOpCopy;
+	FQNODE_p		pOtherAndOpCopy = NULL;
 	FQNODE_p		pOrLeftOp;
 	FQNODE_p		pOrRightOp;
 	FQNODE_p		pNewAndOp1;
