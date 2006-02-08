@@ -291,7 +291,7 @@ RCODE FSDataCursor::unionRange(
 	while( pSrcSet || pInputSet)
 	{
 		FLMBOOL		bFromKeyLessThan;
-		FLMBOOL		bUntilKeyGreaterThan;
+		FLMBOOL		bUntilKeyGreaterThan = FALSE;
 
 		pPrevDestSet = pCurDestSet;
 		if( RC_BAD( rc = f_calloc( sizeof( RECSET), &pCurDestSet)))
