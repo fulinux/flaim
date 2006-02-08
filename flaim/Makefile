@@ -791,8 +791,6 @@ ifndef win_target
 	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
 	$(ec)$(gprintf) " " > $(package_dir)/$(rpm_proj_name_and_ver)/SVNRevision.$(revision)
-	$(ec)$(call copycmd,make.exe,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
