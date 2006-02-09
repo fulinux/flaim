@@ -1186,7 +1186,7 @@ RCODE IFlmTestImpl::deleteFieldTest(
 	FLMUINT		uiDrn;
 	FLMBOOL		bPassed = FALSE;
 
-	beginTest( "Delete Field Test");
+	beginTest( "Delete Field Definition Test");
 
 	// Delete the record from the dictionary.  This attempt should fail
 	// because it is not properly marked.
