@@ -303,18 +303,21 @@ RCODE flmDbRebuildFile(
 
 	// Signal the we are finished the rebuild
 
-	pRebuildState->CallbackData.iDoingFlag = REBUILD_FINISHED;
-
-	pRebuildState->CallbackData.bStartFlag = TRUE;
-
-	if (RC_BAD( rc = (*pRebuildState->fnStatusFunc)( FLM_REBUILD_STATUS,
-											(void *)&pRebuildState->CallbackData,
-											(void *)0,
-											pRebuildState->AppArg)))
+	if (pRebuildState->fnStatusFunc)
 	{
-		goto Exit;
+		pRebuildState->CallbackData.iDoingFlag = REBUILD_FINISHED;
+	
+		pRebuildState->CallbackData.bStartFlag = TRUE;
+	
+		if (RC_BAD( rc = (*pRebuildState->fnStatusFunc)( FLM_REBUILD_STATUS,
+												(void *)&pRebuildState->CallbackData,
+												(void *)0,
+												pRebuildState->AppArg)))
+		{
+			goto Exit;
+		}
+		pRebuildState->CallbackData.bStartFlag = FALSE;
 	}
-	pRebuildState->CallbackData.bStartFlag = FALSE;
 
 Exit:
 
