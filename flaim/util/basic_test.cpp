@@ -162,6 +162,9 @@ public:
 		const char *	pszDestDbName,
 		const char *	pszSrcDbName);
 		
+	RCODE reduceSizeTest(
+		const char *	pszDbName);
+		
 	RCODE removeDbTest(
 		const char *	pszDbName);
 		
@@ -413,9 +416,6 @@ RCODE IFlmTestImpl::createDbTest( void)
 		{
 			if( rc == FERR_FILE_EXISTS)
 			{
-				// Since the database already exists, we'll make a call
-				// to FlmDbOpen to get a handle to it.
-	
 				if( RC_BAD( rc = FlmDbRemove( DB_NAME_STR, 
 					NULL, NULL, TRUE)))
 				{
@@ -2244,6 +2244,147 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::reduceSizeTest(
+	const char *	pszDbName)
+{
+	RCODE			rc = FERR_OK;
+	HFDB			hDb = HFDB_NULL;
+	FLMBOOL		bPassed = FALSE;
+	FLMBOOL		bTransActive = FALSE;
+	char			szTest [200];
+	FlmRecord *	pRecord = NULL;
+	FLMUINT		uiDrn;
+	FLMUINT		uiCount;
+	
+	f_sprintf( szTest, "Reduce Size Test (%s)", pszDbName);
+	beginTest( szTest);
+	
+	if( RC_BAD( rc = FlmDbOpen( pszDbName, NULL, NULL, 0, NULL, &hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbOpen", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Start a transaction and attempt to do the remove - should fail.
+
+	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+	
+	// Delete all of the records in the default data container.
+	
+	uiDrn = 1;
+	for (;;)
+	{
+		if (RC_BAD( rc = FlmRecordRetrieve( hDb, FLM_DATA_CONTAINER, uiDrn,
+						FO_INCL, &pRecord, &uiDrn)))
+		{
+			if (rc == FERR_EOF_HIT)
+			{
+				rc = FERR_OK;
+				break;
+			}
+			else
+			{
+				MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+				goto Exit;
+			}
+		}
+		
+		// Delete the record.
+		
+		if (RC_BAD( rc = FlmRecordDelete( hDb, FLM_DATA_CONTAINER, uiDrn, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecordDelete", rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		// Go to the next record
+		
+		uiDrn++;
+	}
+	
+	// Commit the transaction.
+
+	bTransActive = FALSE;	
+	if (RC_BAD( rc = FlmDbTransCommit( hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+	
+	// Attempt to call reduce inside the transaction - should fail.
+	
+	if (RC_BAD( rc = FlmDbReduceSize( hDb, 0, &uiCount)))
+	{
+		if (rc == FERR_TRANS_ACTIVE)
+		{
+			rc = FERR_OK;
+		}
+		else
+		{
+			MAKE_ERROR_STRING( "calling FlmDbReduceSize", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	else
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_strcpy( m_szFailInfo,
+			"Should not be able to call FlmDbReduceSize inside of a transaction!");
+		goto Exit;
+	}
+	
+	bTransActive = FALSE;	
+	if (RC_BAD( rc = FlmDbTransAbort( hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransAbort", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Attempt the reduce again - should succeed this time.
+	
+	if (RC_BAD( rc = FlmDbReduceSize( hDb, 0, &uiCount)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbReduceSize", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bPassed = TRUE;
+	
+Exit:
+
+	if (pRecord)
+	{
+		pRecord->Release();
+	}
+
+	if (bTransActive)
+	{
+		(void)FlmDbTransAbort( hDb);
+	}
+
+	if (hDb != HFDB_NULL)
+	{
+		(void)FlmDbClose( &hDb);
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+	
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::removeDbTest(
 	const char *	pszDbName)
 {
@@ -2424,6 +2565,13 @@ RCODE IFlmTestImpl::execute( void)
 		goto Exit;
 	}
 	
+	// Reduce size test
+	
+	if (RC_BAD( rc = reduceSizeTest( DB_RENAME_NAME_STR)))
+	{
+		goto Exit;
+	}
+
 	// Remove database test
 	
 	if (RC_BAD( rc = removeDbTest( DB_RENAME_NAME_STR)))
