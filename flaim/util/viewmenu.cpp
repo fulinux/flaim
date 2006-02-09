@@ -259,7 +259,7 @@ FSTATIC void ViewDispMenuItem(
 		if (ViewMenuPtr->ItemNum == gv_uiViewMenuCurrItemNum)
 			WpsStrOutXY( " >", (Col - 2), Row);
 		else
-			WpsStrOutXY( "	 ", (Col - 2), Row);
+			WpsStrOutXY( "  ", (Col - 2), Row);
 	}
 	if (TempBuf[ 0])
 		WpsStrOutXY( TempBuf, Col, Row);
@@ -796,24 +796,24 @@ FSTATIC void ViewHelpScreen(
 	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
 	WpsScrClr( 0, 1);
 	WpsScrPos( 0, 3);
-	WpsStrOut( "	  RECOGNIZED KEYBOARD CHARACTERS\n");
+	WpsStrOut( "     RECOGNIZED KEYBOARD CHARACTERS\n");
 	WpsStrOut( "\n");
-	WpsStrOut( "	  ESCAPE					 - Exit Screen\n");
-	WpsStrOut( "	  U,u,8					 - Up Arrow\n");
-	WpsStrOut( "	  D,d,2					 - Down Arrow\n");
-	WpsStrOut( "	  +,3						 - Page Down\n");
-	WpsStrOut( "	  R,r,6					 - Right Arrow\n");
-	WpsStrOut( "	  L,l,5					 - Left Arrow\n");
-	WpsStrOut( "	  -,9						 - Page Up\n");
-	WpsStrOut( "	  H,h,7					 - Home\n");
-	WpsStrOut( "	  Z,z,1					 - End\n");
-	WpsStrOut( "	  E,e						 - Edit Data\n");
-	WpsStrOut( "	  A,a						 - Edit Data in RAW Mode (no checksum)\n");
-	WpsStrOut( "	  G,g						 - Goto Block\n");
-	WpsStrOut( "	  X,x						 - Display Hex\n");
-	WpsStrOut( "	  Y,y						 - Display Decrypted\n");
-	WpsStrOut( "	  S,s						 - Search\n");
-	WpsStrOut( "	  ?						 - Show this help screen\n");
+	WpsStrOut( "     ESCAPE               - Exit Screen\n");
+	WpsStrOut( "     U,u,8                - Up Arrow\n");
+	WpsStrOut( "     D,d,2                - Down Arrow\n");
+	WpsStrOut( "     +,3                  - Page Down\n");
+	WpsStrOut( "     R,r,6                - Right Arrow\n");
+	WpsStrOut( "     L,l,5                - Left Arrow\n");
+	WpsStrOut( "     -,9                  - Page Up\n");
+	WpsStrOut( "     H,h,7                - Home\n");
+	WpsStrOut( "     Z,z,1                - End\n");
+	WpsStrOut( "     E,e                  - Edit Data\n");
+	WpsStrOut( "     A,a                  - Edit Data in RAW Mode (no checksum)\n");
+	WpsStrOut( "     G,g                  - Goto Block\n");
+	WpsStrOut( "     X,x                  - Display Hex\n");
+	WpsStrOut( "     Y,y                  - Display Decrypted\n");
+	WpsStrOut( "     S,s                  - Search\n");
+	WpsStrOut( "     ?                    - Show this help screen\n");
 	WpsStrOut( "\n");
 	WpsStrOut( "	  PRESS ANY CHARACTER TO EXIT HELP SCREEN\n");
 
@@ -984,7 +984,7 @@ void ViewUpdateDate(
 	)
 {
 	F_TMSTAMP	CurrTime;
-	char			TempBuf[ 30];
+	char			TempBuf[ 40];
 	FLMUINT		Hour;
 	FLMBYTE		AmPm[ 4];
 	FLMUINT		uiNumCols;
@@ -1054,7 +1054,7 @@ void ViewUpdateDate(
 		}
 
 		if (gv_uiViewLastFileOffset == VIEW_INVALID_FILE_OFFSET)
-			f_strcpy( TempBuf, "File: N/A	  File Pos: N/A		 ");
+			f_strcpy( TempBuf, "File: N/A  File Pos: N/A       ");
 		else
 			f_sprintf( (char *)TempBuf, "File: %03u  File Pos: 0x%08X", 
 								(unsigned)gv_uiViewLastFileNumber, (unsigned)gv_uiViewLastFileOffset);
