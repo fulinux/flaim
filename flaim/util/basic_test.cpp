@@ -109,6 +109,9 @@ public:
 	RCODE deleteIndexTest(
 		FLMUINT	uiIndex);
 		
+	RCODE deleteFieldTest(
+		FLMUINT	uiFieldNum);
+		
 	RCODE suspendIndexTest(
 		FLMUINT	uiIndex);
 		
@@ -1172,6 +1175,272 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::deleteFieldTest(
+	FLMUINT	uiFieldNum
+	)
+{
+	RCODE			rc = FERR_OK;
+	FlmRecord *	pDictRec = NULL;
+	FlmRecord *	pNewRec = NULL;
+	void *		pvField;
+	FLMUINT		uiDrn;
+	FLMBOOL		bPassed = FALSE;
+
+	beginTest( "Delete Field Test");
+
+	// Delete the record from the dictionary.  This attempt should fail
+	// because it is not properly marked.
+
+	if( RC_BAD( rc = FlmRecordDelete( m_hDb, FLM_DICT_CONTAINER, uiFieldNum,
+								 FLM_AUTO_TRANS | 15))) 
+	{
+		if (rc != FERR_CANNOT_DEL_ITEM)
+		{
+			MAKE_ERROR_STRING( "calling FlmRecordDelete", rc, m_szFailInfo);
+			goto Exit;
+		}
+		else
+		{
+			rc = FERR_OK;
+		}
+	}
+	else
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, "Should not be able to delete field %u!",
+				(unsigned)uiFieldNum);
+		goto Exit;
+	}
+	
+	// Retrieve the field definition record.
+	
+	if (RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DICT_CONTAINER,
+								uiFieldNum, FO_EXACT, &pDictRec, &uiDrn)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// If it is not a field definition, we have the wrong definition record.
+	
+	if (pDictRec->getFieldID( pDictRec->root()) != FLM_FIELD_TAG)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, "Dictionary record %u, is not a field definition!",
+				(unsigned)uiFieldNum);
+		goto Exit;
+	}
+	
+	// Make a copy of the dictionary record
+	
+	if ((pNewRec = pDictRec->copy()) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "calling FlmRecord->copy()", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// See if there is a state field.  If not add it.
+	
+	if ((pvField = pNewRec->find( pNewRec->root(), FLM_STATE_TAG)) == NULL)
+	{
+		if (RC_BAD( rc = pNewRec->insert( pNewRec->root(), INSERT_LAST_CHILD,
+									FLM_STATE_TAG, FLM_TEXT_TYPE, &pvField)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->insert()", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Attempt to set the state field on the record to "unused", this should
+	// fail.
+	
+	if (RC_BAD( rc = pNewRec->setNative( pvField, "unused")))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecord->setNative()", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DICT_CONTAINER, 
+		uiFieldNum, pNewRec, FLM_AUTO_TRANS | 15)))
+	{
+		if (rc != FERR_CANNOT_MOD_FIELD_STATE)
+		{
+			MAKE_ERROR_STRING( "calling FlmRecordModify", rc, m_szFailInfo);
+			goto Exit;
+		}
+		else
+		{
+			rc = FERR_OK;
+		}
+	}
+	else
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, "Should not be able to set field %'s state to unused!",
+				(unsigned)uiFieldNum);
+		goto Exit;
+	}
+	
+	// Set the state field on the record to "check", then run
+	// FlmDbSweep.  The sweep should not set the field state
+	// to unused.
+	
+	if (RC_BAD( rc = pNewRec->setNative( pvField, "check")))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecord->setNative()", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DICT_CONTAINER, 
+		uiFieldNum, pNewRec, FLM_AUTO_TRANS | 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordModify", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_CHECKING_FLDS, EACH_CHANGE, NULL, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (pNewRec)
+	{
+		pNewRec->Release();
+		pNewRec = NULL;
+	}
+	if (pDictRec)
+	{
+		pDictRec->Release();
+		pDictRec = NULL;
+	}
+	
+	// Retrieve the record again and make sure the state flag is not set
+	// to unused.
+
+	if (RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DICT_CONTAINER,
+								uiFieldNum, FO_EXACT, &pDictRec, &uiDrn)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// If it is not a field definition, we have the wrong definition record.
+	
+	if (pDictRec->getFieldID( pDictRec->root()) != FLM_FIELD_TAG)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, "Dictionary record %u, is not a field definition!",
+				(unsigned)uiFieldNum);
+		goto Exit;
+	}
+	
+	// Make a copy of the dictionary record
+	
+	if ((pNewRec = pDictRec->copy()) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "calling FlmRecord->copy()", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// See if there is a state field.  If not add it.
+	
+	if ((pvField = pNewRec->find( pNewRec->root(), FLM_STATE_TAG)) == NULL)
+	{
+		if (RC_BAD( rc = pNewRec->insert( pNewRec->root(), INSERT_LAST_CHILD,
+									FLM_STATE_TAG, FLM_TEXT_TYPE, &pvField)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->insert()", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	else
+	{
+		char		szState [20];
+		FLMUINT	uiLen = sizeof( szState);
+		
+		// State should be active if it is present.
+		
+		if (RC_BAD( rc = pNewRec->getNative( pvField, szState, &uiLen)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->getNative()", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (f_strnicmp( szState, "acti", 4) != 0)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Dictionary record %u's state should be active!",
+					(unsigned)uiFieldNum);
+			goto Exit;
+		}
+	}
+	
+	// Attempt to set the state field on the record to "purge", this should
+	// succeed, and FlmDbSweep should get rid of the definition.
+	
+	if (RC_BAD( rc = pNewRec->setNative( pvField, "purge")))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecord->setNative()", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DICT_CONTAINER, 
+		uiFieldNum, pNewRec, FLM_AUTO_TRANS | 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordModify", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_PURGED_FLDS, EACH_CHANGE, NULL, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Make sure the dictionary definition is gone now.
+
+	if (pDictRec)
+	{
+		pDictRec->Release();
+		pDictRec = NULL;
+	}
+	if (RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DICT_CONTAINER,
+								uiFieldNum, FO_EXACT, &pDictRec, &uiDrn)))
+	{
+		if (rc != FERR_NOT_FOUND)
+		{
+			MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+			goto Exit;
+		}
+		else
+		{
+			rc = FERR_OK;
+		}
+	}
+	else
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, "Dictionary record %u should have been purged by FlmDbSweep!",
+				(unsigned)uiFieldNum);
+		goto Exit;
+	}
+	
+	bPassed = TRUE;
+	
+Exit:
+
+	if (pDictRec)
+	{
+		pDictRec->Release();
+	}
+	if (pNewRec)
+	{
+		pNewRec->Release();
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::suspendIndexTest(
 	FLMUINT	uiIndex
 	)
@@ -2017,6 +2286,13 @@ RCODE IFlmTestImpl::execute( void)
 	// Delete index test
 	
 	if (RC_BAD( rc = deleteIndexTest( uiIndex)))
+	{
+		goto Exit;
+	}
+	
+	// Delete field test
+	
+	if (RC_BAD( rc = deleteFieldTest( AGE_TAG)))
 	{
 		goto Exit;
 	}
