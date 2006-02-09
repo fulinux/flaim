@@ -52,12 +52,14 @@ FSTATIC const char * gv_pszSampleDictionary =
 	#define DB_COPY_NAME_STR			"SYS:\\SAMPLECOPY.DB"
 	#define DB_RENAME_NAME_STR			"SYS:\\SAMPLERENAME.DB"
 	#define DB_RESTORE_NAME_STR		"SYS:\\SAMPLERESTORE.DB"
+	#define DB_REBUILD_NAME_STR		"SYS:\\SAMPLEREBUILD.DB"
 	#define BACKUP_PATH					"SYS:\\SAMPLEBACKUP"
 #else
 	#define DB_NAME_STR					"sample.db"
 	#define DB_COPY_NAME_STR			"samplecopy.db"
 	#define DB_RENAME_NAME_STR			"samplerename.db"
 	#define DB_RESTORE_NAME_STR		"samplerestore.db"
+	#define DB_REBUILD_NAME_STR		"samplerebuild.db"
 	#define BACKUP_PATH					"samplebackup"
 #endif
 
@@ -144,6 +146,13 @@ public:
 	RCODE compareDbTest(
 		const char *	pszDb1,
 		const char *	pszDb2);
+		
+	RCODE checkDbTest(
+		const char *	pszDbName);
+		
+	RCODE rebuildDbTest(
+		const char *	pszDestDbName,
+		const char *	pszSrcDbName);
 		
 	RCODE copyDbTest(
 		const char *	pszDestDbName,
@@ -2108,6 +2117,71 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::checkDbTest(
+	const char *	pszDbName)
+{
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bPassed = FALSE;
+	char		szTest [200];
+	POOL		pool;
+	
+	GedPoolInit( &pool, 512);
+	
+	f_sprintf( szTest, "Check Database Test (%s)", pszDbName);
+	beginTest( szTest);
+
+	if( RC_BAD( rc = FlmDbCheck( HFDB_NULL, pszDbName, NULL, NULL,
+							FLM_CHK_INDEX_REFERENCING | FLM_CHK_FIELDS, &pool, NULL,
+							NULL, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbCheck", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bPassed = TRUE;
+	
+Exit:
+
+	GedPoolFree( &pool);
+
+	endTest( bPassed);
+	return( rc);
+}
+	
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::rebuildDbTest(
+	const char *	pszDestDbName,
+	const char *	pszSrcDbName)
+{
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bPassed = FALSE;
+	char		szTest [200];
+	FLMUINT	uiTotalRecords;
+	FLMUINT	uiRecsRecovered;
+	
+	f_sprintf( szTest, "Rebuild Database Test (%s --> %s)", pszSrcDbName,
+			pszDestDbName);
+	beginTest( szTest);
+
+	if( RC_BAD( rc = FlmDbRebuild( pszSrcDbName, NULL, pszDestDbName, NULL, NULL,
+							NULL, NULL, &uiTotalRecords, &uiRecsRecovered,
+							NULL, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbRebuild", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bPassed = TRUE;
+	
+Exit:
+
+	endTest( bPassed);
+	return( rc);
+}
+	
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::copyDbTest(
 	const char *	pszDestDbName,
 	const char *	pszSrcDbName)
@@ -2315,6 +2389,20 @@ RCODE IFlmTestImpl::execute( void)
 
 	FlmDbClose( &m_hDb);
 	
+	// Check database test
+	
+	if (RC_BAD( rc = checkDbTest( DB_NAME_STR)))
+	{
+		goto Exit;
+	}
+	
+	// Rebuild database test
+	
+	if (RC_BAD( rc = rebuildDbTest( DB_REBUILD_NAME_STR, DB_NAME_STR)))
+	{
+		goto Exit;
+	}
+	
 	// Copy database test
 	
 	if (RC_BAD( rc = copyDbTest( DB_COPY_NAME_STR, DB_NAME_STR)))
@@ -2350,7 +2438,10 @@ RCODE IFlmTestImpl::execute( void)
 	{
 		goto Exit;
 	}
-
+	if (RC_BAD( rc = removeDbTest( DB_REBUILD_NAME_STR)))
+	{
+		goto Exit;
+	}
 
 Exit:
 
