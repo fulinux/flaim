@@ -108,6 +108,12 @@ public:
 	RCODE addIndexTest(
 		FLMUINT *	puiIndex);
 		
+	RCODE addSubstringIndexTest(
+		FLMUINT *	puiIndex);
+		
+	RCODE addPresenceIndexTest(
+		FLMUINT *	puiIndex);
+		
 	RCODE deleteIndexTest(
 		FLMUINT	uiIndex);
 		
@@ -460,8 +466,10 @@ RCODE IFlmTestImpl::addRecordTest(
 	FLMUINT			uiLoop;
 	FLMUINT			uiLoop2;
 	FLMUINT			uiDrn2;
+	FLMUINT			uiLastDrn;
+	FLMUINT			uiReserveDrn;
 
-	beginTest( "FlmRecordAdd Test");
+	beginTest( "Construct Record Test");
 
 	// Create a record object
 
@@ -523,7 +531,10 @@ RCODE IFlmTestImpl::addRecordTest(
 		MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
 		goto Exit;
 	}
+	endTest( TRUE);
 
+	beginTest( "FlmReserveNextDrn Test");
+	
 	// Start an update transaction
 
 	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
@@ -533,6 +544,33 @@ RCODE IFlmTestImpl::addRecordTest(
 	}
 	bTransActive = TRUE;
 
+	// Reserve the next DRN - so it should not be used.
+
+	if (RC_BAD( rc = FlmReserveNextDrn( m_hDb, FLM_DATA_CONTAINER, &uiReserveDrn)))
+	{
+		MAKE_ERROR_STRING( "calling FlmReserveNextDrn", rc, m_szFailInfo);
+		goto Exit;
+		
+	}
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+	endTest( TRUE);
+	
+	beginTest( "FlmRecordAdd Test");
+	
+	// Start another update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+	
 	// Add the record to the database.
 
 	*puiDrn = 0;
@@ -542,6 +580,15 @@ RCODE IFlmTestImpl::addRecordTest(
 		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
 		goto Exit;
 	}
+	if (*puiDrn <= uiReserveDrn)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo,
+			"DRN %u returned from FlmRecordAdd must be > reserved DRN (%u)",
+			(unsigned)(*puiDrn), (unsigned)uiReserveDrn);
+		goto Exit;
+	}
+	uiLastDrn = *puiDrn;
 	
 	for (uiLoop = 0; gv_pszFamilyNames [uiLoop]; uiLoop++)
 	{
@@ -582,6 +629,15 @@ RCODE IFlmTestImpl::addRecordTest(
 				MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
 				goto Exit;
 			}
+			if (uiDrn2 <= uiLastDrn)
+			{
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo,
+					"DRN %u returned from FlmRecordAdd must be > last added DRN (%u)",
+					(unsigned)uiDrn2, (unsigned)uiLastDrn);
+				goto Exit;
+			}
+			uiLastDrn = uiDrn2;
 			pCopyRec->Release();
 			pCopyRec = NULL;
 		}
@@ -756,6 +812,8 @@ RCODE IFlmTestImpl::queryRecordTest( void)
 	HFCURSOR		hCursor = HFCURSOR_NULL;
 	FLMBYTE		ucTmpBuf[ 64];
 	FLMBOOL		bPassed = FALSE;
+	FLMUINT		uiIndex;
+	FLMUINT		uiIndexInfo;
 	
 	// Now, build a query that retrieves the sample record.
 	// First we need to initialize a cursor handle.
@@ -820,6 +878,45 @@ RCODE IFlmTestImpl::queryRecordTest( void)
 	if( RC_BAD( rc = FlmCursorFirst( hCursor, &pRec)))
 	{
 		MAKE_ERROR_STRING( "calling FlmCursorFirst", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Query should have optimized to use the LastName+FirstName index
+
+	if (RC_BAD( rc = FlmCursorGetConfig( hCursor, FCURSOR_GET_FLM_IX,
+								&uiIndex, &uiIndexInfo)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorGetConfig", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (uiIndex != LAST_NAME_FIRST_NAME_IX || uiIndexInfo != HAVE_ONE_INDEX)
+	{
+		const char *	pszHave;
+		
+		switch (uiIndexInfo)
+		{
+			case HAVE_NO_INDEX:
+				pszHave = "HAVE_NO_INDEX";
+				break;
+			case HAVE_ONE_INDEX:
+				pszHave = "HAVE_ONE_INDEX";
+				break;
+			case HAVE_ONE_INDEX_MULT_PARTS:
+				pszHave = "HAVE_ONE_INDEX_MULT_PARTS";
+				break;
+			case HAVE_MULTIPLE_INDEXES:
+				pszHave = "HAVE_MULTIPLE_INDEXES";
+				break;
+			default:
+				pszHave = "HAVE_UNKNOWN";
+				break;
+		}
+		
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo,
+			"Query should have used LastName+FirstName index (%u), used %u/%s instead",
+			(unsigned)LAST_NAME_FIRST_NAME_IX,
+			(unsigned)uiIndex, pszHave);
 		goto Exit;
 	}
 	bPassed = TRUE;
@@ -1104,6 +1201,378 @@ RCODE IFlmTestImpl::addIndexTest(
 		goto Exit;
 	}
 	
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	// Add the record to the database.
+
+	*puiIndex = 0;
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DICT_CONTAINER, 
+		puiIndex, pRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Commit the transaction
+	// If FlmDbTransCommit returns without an error, the changes made
+	// above will be durable even if the system crashes.
+
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+
+	bPassed = TRUE;
+	
+Exit:
+
+	if( bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	if( pRec)
+	{
+		pRec->Release();
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::addSubstringIndexTest(
+	FLMUINT *	puiIndex
+	)
+{
+	RCODE				rc = FERR_OK;
+	FlmRecord *		pRec = NULL;
+	void *			pvField;
+	FLMBOOL			bTransActive = FALSE;
+	FLMBOOL			bPassed = FALSE;
+	char				szFieldNum [20];
+
+	beginTest( "Add Substring (LastName+FirstName) Index Test");
+
+	// Create a record object
+
+	if( (pRec = new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 0 index FirstLast-SubString_IX
+	
+	if( RC_BAD( rc = pRec->insertLast( 0, FLM_INDEX_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "FirstLast-Substring_IX")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 1 language US
+
+	if( RC_BAD( rc = pRec->insertLast( 1, FLM_LANGUAGE_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "US")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 1 key
+
+	if( RC_BAD( rc = pRec->insertLast( 1, FLM_KEY_TAG,
+		FLM_CONTEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 2 field <FIRST_NAME_TAG>
+
+	if( RC_BAD( rc = pRec->insertLast( 2, FLM_FIELD_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	f_sprintf( szFieldNum, "%u", FIRST_NAME_TAG);
+	if( RC_BAD( rc = pRec->setNative( pvField, szFieldNum)))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// 3 required
+
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_REQUIRED_TAG,
+		FLM_TEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 3 use substring
+
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_USE_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "substring")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 2 field <LAST_NAME_TAG>
+
+	if( RC_BAD( rc = pRec->insertLast( 2, FLM_FIELD_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	f_sprintf( szFieldNum, "%u", LAST_NAME_TAG);
+	if( RC_BAD( rc = pRec->setNative( pvField, szFieldNum)))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// 3 required
+	
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_REQUIRED_TAG,
+		FLM_TEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// 3 use substring
+
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_USE_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "substring")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	// Add the record to the database.
+
+	*puiIndex = 0;
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DICT_CONTAINER, 
+		puiIndex, pRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Commit the transaction
+	// If FlmDbTransCommit returns without an error, the changes made
+	// above will be durable even if the system crashes.
+
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+
+	bPassed = TRUE;
+	
+Exit:
+
+	if( bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	if( pRec)
+	{
+		pRec->Release();
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::addPresenceIndexTest(
+	FLMUINT *	puiIndex
+	)
+{
+	RCODE				rc = FERR_OK;
+	FlmRecord *		pRec = NULL;
+	void *			pvField;
+	FLMBOOL			bTransActive = FALSE;
+	FLMBOOL			bPassed = FALSE;
+	char				szFieldNum [20];
+
+	beginTest( "Add Presence (LastName+FirstName) Index Test");
+
+	// Create a record object
+
+	if( (pRec = new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 0 index FirstLast-Presence_IX
+	
+	if( RC_BAD( rc = pRec->insertLast( 0, FLM_INDEX_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "FirstLast-Presence_IX")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 1 language US
+
+	if( RC_BAD( rc = pRec->insertLast( 1, FLM_LANGUAGE_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "US")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 1 key
+
+	if( RC_BAD( rc = pRec->insertLast( 1, FLM_KEY_TAG,
+		FLM_CONTEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 2 field <FIRST_NAME_TAG>
+
+	if( RC_BAD( rc = pRec->insertLast( 2, FLM_FIELD_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	f_sprintf( szFieldNum, "%u", FIRST_NAME_TAG);
+	if( RC_BAD( rc = pRec->setNative( pvField, szFieldNum)))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// 3 required
+
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_REQUIRED_TAG,
+		FLM_TEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 3 use field
+
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_USE_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "field")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// 2 field <LAST_NAME_TAG>
+
+	if( RC_BAD( rc = pRec->insertLast( 2, FLM_FIELD_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	f_sprintf( szFieldNum, "%u", LAST_NAME_TAG);
+	if( RC_BAD( rc = pRec->setNative( pvField, szFieldNum)))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// 3 required
+	
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_REQUIRED_TAG,
+		FLM_TEXT_TYPE, NULL)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// 3 use field
+
+	if( RC_BAD( rc = pRec->insertLast( 3, FLM_USE_TAG,
+		FLM_TEXT_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pRec->setNative( pvField, "field")))
+	{
+		MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+		goto Exit;
+	}
+
 	// Start an update transaction
 
 	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
@@ -2501,6 +2970,20 @@ RCODE IFlmTestImpl::execute( void)
 	// Delete index test
 	
 	if (RC_BAD( rc = deleteIndexTest( uiIndex)))
+	{
+		goto Exit;
+	}
+	
+	// Add sub-string index test
+	
+	if (RC_BAD( rc = addSubstringIndexTest( &uiIndex)))
+	{
+		goto Exit;
+	}
+	
+	// Add presence index test
+	
+	if (RC_BAD( rc = addPresenceIndexTest( &uiIndex)))
 	{
 		goto Exit;
 	}
