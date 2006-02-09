@@ -2155,15 +2155,6 @@ RCODE IFlmTestImpl::compareRecords(
 				pszDb2, (unsigned)uiLevel2);
 			goto Exit;
 		}
-		if (uiDataType1 != uiDataType2)
-		{
-			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Field Type mismatch in %s, Fld: %u, %s: %u, %s: %u",
-				pszWhat, (unsigned)uiFieldNum1,
-				pszDb1, (unsigned)uiDataType1,
-				pszDb2, (unsigned)uiDataType2);
-			goto Exit;
-		}
 		if (uiDataLength1 != uiDataLength2)
 		{
 			rc = RC_SET( FERR_FAILURE);
@@ -2172,6 +2163,21 @@ RCODE IFlmTestImpl::compareRecords(
 				pszDb1, (unsigned)uiDataLength1,
 				pszDb2, (unsigned)uiDataLength2);
 			goto Exit;
+		}
+
+		// Data type is not guaranteed to be preserved if there is no data.
+
+		if (uiDataLength1)
+		{
+			if (uiDataType1 != uiDataType2)
+			{
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo, "Field Type mismatch in %s, Fld: %u, %s: %u, %s: %u",
+					pszWhat, (unsigned)uiFieldNum1,
+					pszDb1, (unsigned)uiDataType1,
+					pszDb2, (unsigned)uiDataType2);
+				goto Exit;
+			}
 		}
 		if (uiEncLength1 != uiEncLength2)
 		{
