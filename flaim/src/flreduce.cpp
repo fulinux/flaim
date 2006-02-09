@@ -33,7 +33,8 @@ FSTATIC RCODE FLRReadBlkHdr(
 FSTATIC RCODE FLRMoveBtreeBlk(
 	FDB_p			pDb,
 	FLMUINT		uiBlkAddr,
-	FLMUINT		uiLfNumber);
+	FLMUINT		uiLfNumber,
+	FLMBOOL *	pbDone);
 
 FSTATIC RCODE FLRMovePcodeLFHBlk(
 	FDB_p			pDb,
@@ -77,6 +78,7 @@ RCODE FlmDbReduceSize(
 	FLMBOOL		bLoggingWasOff = FALSE;
 	FLMBOOL		bRestoreLoggingOffFlag = FALSE;
 	FLMBOOL		bLockedDatabase = FALSE;
+	FLMBOOL		bDone = FALSE;
 
 	// Lock the database if not already locked.
 	// Cannot lose exclusive access between the checkpoint and
@@ -245,7 +247,7 @@ Transmission_Error:
 			case	BHT_NON_LEAF:
 			case	BHT_NON_LEAF_DATA:
 				rc = FLRMoveBtreeBlk( pDb, uiBlkAddr,
-							 FB2UW( &BlkHeader [BH_LOG_FILE_NUM ]));
+							 FB2UW( &BlkHeader [BH_LOG_FILE_NUM ]), &bDone);
 				break;
 
 			case	BHT_LFH_BLK:
@@ -254,9 +256,14 @@ Transmission_Error:
 				break;
 			default:
 				rc = RC_SET( FERR_BTREE_ERROR);
+				break;
 		}
 		if (RC_BAD(rc))
 			goto Reduce_Size_Error;
+		if (bDone)
+		{
+			break;
+		}
 
 		uiNumBlksMoved++;
 
@@ -362,7 +369,7 @@ Exit:
 
 Reduce_Size_Error:
 
-	(void)flmAbortDbTrans( pDb);
+	(void)flmAbortDbTrans( pDb, FALSE);
 	uiNumBlksMoved = 0;
 	goto Exit;
 }
@@ -519,7 +526,8 @@ Notes:	Some of this code could be called in movePcodeLFHBlk but we have
 FSTATIC RCODE FLRMoveBtreeBlk(
 	FDB_p			pDb,
 	FLMUINT		uiBlkAddr,		// Block Address
-	FLMUINT		uiLfNumber)
+	FLMUINT		uiLfNumber,
+	FLMBOOL *	pbDone)
 {
 	RCODE			rc;
 	FFILE_p		pFile = pDb->pFile;
@@ -554,6 +562,15 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		 (RC_BAD( rc = fdictGetIndex( pDb->pDict, pDb->pFile->bInLimitedMode,
 		 		uiLfNumber, &pLFile, NULL, TRUE))))
 	{
+		// It may be that the index or container is being deleted by a background
+		// thread.  In that case, we need to bail out, as there is nothing
+		// more we can do until the background thread finishes its delete.
+
+		if (rc == FERR_BAD_IX)
+		{
+			*pbDone = TRUE;
+			rc = FERR_OK;
+		}
 		goto Exit;
 	}
 
