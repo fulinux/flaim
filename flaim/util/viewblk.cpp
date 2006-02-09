@@ -1418,6 +1418,7 @@ FSTATIC FLMINT OutputLeafElements(
 	FLMBYTE				KeyBuffer [MAX_KEY_SIZ];
 	LFILE *				pLFile = NULL;
 	LF_HDR				LogicalFile;
+	LF_STATS				LfStats;
 	LF_HDR *				pLogicalFile = NULL;
 
 	if (BlkExp->LfNum == 0)
@@ -1437,7 +1438,9 @@ FSTATIC FLMINT OutputLeafElements(
 				BlkExp->LfNum, &pLFile))))
 		{
 			f_memset( &LogicalFile, 0, sizeof( LF_HDR));
+			f_memset( &LfStats, 0, sizeof( LF_STATS));
 			pLogicalFile = &LogicalFile;
+			pLogicalFile->pLfStats = &LfStats;
 			LogicalFile.pLFile = pLFile;
 			if (pLFile->uiLfType == LF_INDEX)
 			{
