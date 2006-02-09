@@ -2775,7 +2775,7 @@ FTXRCODE FTXLineEdit(
 	FLMBOOL			bInsert;
 	FLMBOOL			bRefresh;
 	FLMBOOL			bGotChar = FALSE;
-	FLMBOOL			bSaveScroll;
+	FLMBOOL			bSaveScroll = FALSE;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -6411,7 +6411,7 @@ void WpsThrdInitUsingScreen(
 	char *			pszScreenTitle
 	)
 {
-	FLMUINT			uiRows;
+	FLMUINT			uiRows = 0;
 	FLMUINT			uiThrdId;
 	WPSSCREEN *		pCurScreen = NULL;
 

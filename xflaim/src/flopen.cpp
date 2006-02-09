@@ -360,7 +360,7 @@ RCODE F_DbSystem::openDatabase(
 	}
 	else
 	{
-		FLMBOOL	bWaited;
+		FLMBOOL	bWaited = FALSE;
 		flmAssert( !pLockFileHdl);
 
 		if (RC_BAD( rc = pDatabase->verifyOkToUse( &bWaited)))

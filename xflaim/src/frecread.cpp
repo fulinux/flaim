@@ -3033,7 +3033,7 @@ RCODE F_Record::storage2INT(
 	FLMINT *		piNum)
 {
 	RCODE			rc = NE_XFLM_OK;
-	BCD_TYPE		bcd;
+	BCD_TYPE		bcd = {0};
 
 	if( RC_BAD( rc = bcd2Num( uiType, uiBufLength, pBuf, &bcd)))
 	{
@@ -3081,7 +3081,7 @@ RCODE F_Record::storage2UINT(
 	FLMUINT *	puiNum)
 {
 	RCODE			rc = NE_XFLM_OK;
-	BCD_TYPE		bcd;
+	BCD_TYPE		bcd = {0};
 
 	if( RC_BAD( rc = bcd2Num( uiType, uiBufLength, pBuf, &bcd)))
 	{
@@ -3125,7 +3125,7 @@ RCODE F_Record::storage2UINT32(
 	FLMUINT32 *	pui32Num)
 {
 	RCODE			rc = NE_XFLM_OK;
-	BCD_TYPE		bcd;
+	BCD_TYPE		bcd = {0};
 
 	if( RC_BAD( rc = bcd2Num( uiType, uiBufLength, pBuf, &bcd)))
 	{

@@ -1209,7 +1209,7 @@ RCODE F_DomEditor::interactiveEdit(
 	FLMUINT				uiStartCol = 0;
 	eDbTransType			eTransType = XFLM_NO_TRANS;
 	FLMUINT				uiLoop;
-	FLMUINT				uiCurFlags;
+	FLMUINT				uiCurFlags = 0;
 	char					szAction[ 2];
 	FLMUINT				uiTermChar;
 	FLMUINT				uiHelpKey = uiStartChar;
@@ -4720,7 +4720,7 @@ FLMBOOL F_DomEditor::canDeleteRow(
 	DME_ROW_INFO *		pCurRow
 	)
 {
-	FLMUINT	uiFlags;
+	FLMUINT	uiFlags = 0;
 	FLMBOOL	bCanDelete = TRUE;
 
 	flmAssert( m_bSetupCalled == TRUE);

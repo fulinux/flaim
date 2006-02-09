@@ -64,6 +64,10 @@
 
 #include "xflaim.h"
 
+#ifdef HAVE_CONFIG_H
+# include "../config.h"
+#endif
+
 #ifdef FLM_NLM
 	#if defined( FLM_WATCOM_NLM)
 

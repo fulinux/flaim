@@ -2714,7 +2714,7 @@ RCODE F_RegExp::addLiteralExpr(
 	)
 {
 	RCODE			rc = NE_XFLM_OK;
-	REG_EXP *	pTmpExpr;
+	REG_EXP *	pTmpExpr = 0;
 	
 	if (RC_BAD( rc = createRegExp( EXP_LITERAL, &pTmpExpr)))
 	{
@@ -3867,7 +3867,7 @@ Desc:	Start an alternative - Called when we hit a left paren.
 RCODE F_RegExp::startAlternative( void)
 {
 	RCODE			rc = NE_XFLM_OK;
-	REG_EXP *	pTmpExpr;
+	REG_EXP *	pTmpExpr = 0;
 
 	// If we were gathering up a literal, save it out.
 
@@ -4037,7 +4037,7 @@ RCODE F_RegExp::setExpression(
 	)
 {
 	RCODE			rc = NE_XFLM_OK;
-	REG_EXP *	pTmpExpr;
+	REG_EXP *	pTmpExpr = 0;
 	FLMUNICODE	uzChar;
 
 	while (*puzRegExp)
