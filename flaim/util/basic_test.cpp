@@ -2165,19 +2165,22 @@ RCODE IFlmTestImpl::compareRecords(
 			goto Exit;
 		}
 
-		// Data type is not guaranteed to be preserved if there is no data.
+		// Data type may not match for FLAIM's reserved field numbers.  This is because
+		// FLAIM does not store the field type for these fields - it just assumes that
+		// they are FLM_TEXT_TYPE.  However, we also have some code where FLAIM puts
+		// a FLM_CONTEXT_TYPE into the field when it is created inside a FlmRecord
+		// object.  If that object remains cached, but the one we are comparing it to
+		// is not cached, we would have a mismatch.  Hence, we simply ignore field
+		// type for these fields.
 
-		if (uiDataLength1)
+		if (uiDataType1 != uiDataType2 && uiFieldNum1 < FLM_DICT_FIELD_NUMS)
 		{
-			if (uiDataType1 != uiDataType2)
-			{
-				rc = RC_SET( FERR_FAILURE);
-				f_sprintf( m_szFailInfo, "Field Type mismatch in %s, Fld: %u, %s: %u, %s: %u",
-					pszWhat, (unsigned)uiFieldNum1,
-					pszDb1, (unsigned)uiDataType1,
-					pszDb2, (unsigned)uiDataType2);
-				goto Exit;
-			}
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Field Type mismatch in %s, Fld: %u, %s: %u, %s: %u",
+				pszWhat, (unsigned)uiFieldNum1,
+				pszDb1, (unsigned)uiDataType1,
+				pszDb2, (unsigned)uiDataType2);
+			goto Exit;
 		}
 		if (uiEncLength1 != uiEncLength2)
 		{
