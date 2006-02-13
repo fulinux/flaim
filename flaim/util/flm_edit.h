@@ -27,12 +27,7 @@
 
 #include "flaim.h"
 
-#ifdef __cplusplus
-	class F_RecEditor;
-	typedef F_RecEditor *	F_RecEditor_p;
-#else
-	typedef void *				F_RecEditor_p;
-#endif
+class F_RecEditor;
 
 #define F_RECEDIT_BUF_SIZE				0x0000FFFF
 #define F_RECEDIT_MAX_TITLE_SIZE		64
