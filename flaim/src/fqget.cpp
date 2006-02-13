@@ -306,7 +306,7 @@ Exit:
 /*API~***********************************************************************
 Desc:	Given a cursor and two DRNs, this API does the following:
 *END************************************************************************/
-RCODE FlmCursorCompareDRNs(
+FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
 	HFCURSOR		hCursor,
 	FLMUINT		uiDRN1,
 	FLMUINT		uiDRN2,
@@ -769,22 +769,16 @@ Transmission_Error:
 
 
 /*API~***********************************************************************
-Name : FlmCursorTestRec
-Area : CURSOR
 Desc : Checks a record that has been retrieved from the database to see if
 		 satisfies the cursor selection criteria.
 		 IMPORTANT NOTE: pRec's containerID better be set to the container it
 		 came from, because flmCurEvalCriteria verifies that the record's
 		 container number matches the cursor's container number.
 *END************************************************************************/
-RCODE FlmCursorTestRec(
+FLMEXP RCODE FLMAPI FlmCursorTestRec(
 	HFCURSOR			hCursor,
-		// [IN] Handle to a cursor.
 	FlmRecord * 	pRec,
-		// [IN] Pointer to the record to be checked.
 	FLMBOOL * 		pbIsMatch
-		// [OUT] If *pbIsMatch == TRUE, then the record is a match.
-		// Otherwise, the record did not meet the criteria and is not a match.
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -869,24 +863,15 @@ Exit2:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorTestDRN
-Area : CURSOR
 Desc : Retrieves the record identified by the passed-in DRN and checks it to
 		 see if it satisfies the cursor selection criteria.
 Notes: This function is designed for use with cursors having only one
 		 associated source.  Multiple sources are not supported.
 *END************************************************************************/
-RCODE 
-		// FERR_NOT_IMPLEMENTED - The source list associated with the cursor
-		// is either empty or contains more than one source.
-	FlmCursorTestDRN(
-		HFCURSOR			hCursor,
-			// [IN] Handle to a cursor.
-		FLMUINT 			uiDrn,
-			// [IN] DRN of the record to be checked.
-		FLMBOOL * 		pbIsMatch
-			// [OUT] If *pbIsMatch == TRUE, then the record is a match.
-			// Otherwise, the record did not meet the criteria and is not a match.
+FLMEXP RCODE FLMAPI FlmCursorTestDRN(
+	HFCURSOR			hCursor,
+	FLMUINT 			uiDrn,
+	FLMBOOL * 		pbIsMatch
 	)
 {
 	RCODE			rc = FERR_OK;

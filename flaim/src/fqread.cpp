@@ -189,7 +189,7 @@ Transmission_Error:
 /****************************************************************************
 Desc:	Gets the requested record.
 ****************************************************************************/
-RCODE flmCurPerformRead(
+FLMEXP RCODE FLMAPI flmCurPerformRead(
 	eFlmFuncs		eFlmFuncId,
 	HFCURSOR			hCursor,
 	FLMBOOL			bReadForward,
@@ -392,16 +392,11 @@ Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorCurrent
-Area : CURSOR
 Desc : Retrieves the record currently pointed to by a cursor.
 *END************************************************************************/
-RCODE FlmCursorCurrent(
+FLMEXP RCODE FLMAPI FlmCursorCurrent(
 	HFCURSOR 		hCursor,
-		// [IN] Handle to a cursor.
 	FlmRecord **	ppRecord
-		// [OUT] Pointer to a FlmRecord.  *ppRecord will be non-NULL if the
-		// call is successful. Otherwise, *ppRecord will be NULL.
 	)
 {
 	RCODE		rc = FERR_OK;
@@ -440,16 +435,11 @@ Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorCurrentDRN
-Area : CURSOR
 Desc : Retrieves the DRN of the current record in a set defined by a cursor.
 *END************************************************************************/
-RCODE FlmCursorCurrentDRN(
+FLMEXP RCODE FLMAPI FlmCursorCurrentDRN(
 	HFCURSOR 	hCursor,
-		// [IN] Handle to a cursor.
 	FLMUINT * 	puiDrn
-		// [OUT] Pointer to a DRN.  If the call is successful, the value
-		// of *puiDrn will be the DRN of the current record.
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -494,7 +484,7 @@ Notes: Requests that position beyond the end of the result set will
 		 BOF_HIT error to be returned.  Passing a relative position of 0 is
 		 invalid and will cause ILLEGAL_OP to be returned.
 *END************************************************************************/
-RCODE FlmCursorMoveRelative(
+FLMEXP RCODE FLMAPI FlmCursorMoveRelative(
 	HFCURSOR				hCursor,
 	FLMINT *				piPosition,
 	FlmRecord **		ppRecord
@@ -527,17 +517,11 @@ Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorRecCount
-Area : CURSOR
 Desc : Returns the number of records in a set defined by a cursor.
 *END************************************************************************/
-RCODE FlmCursorRecCount(
+FLMEXP RCODE FLMAPI FlmCursorRecCount(
 	HFCURSOR		hCursor,
-		// [IN] Handle to a cursor.
 	FLMUINT *	puiCount
-		// [OUT] Pointer to a FLMUINT.  If the call is successful, the value
-		// of *puiCount will be number of records in the set defined by the
-		// cursor.
 	)
 {
 	RCODE			rc = FERR_OK;

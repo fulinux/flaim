@@ -146,7 +146,7 @@ Example:
 			pDirPath  = "\system"
 			pFileName "autoexec.ncf"
 ****************************************************************************/
-void f_pathParse(
+FLMEXP void FLMAPI f_pathParse(
 	const char *	pszInputPath,
 	char *			pszServer,
 	char *			pszVolume,
@@ -369,7 +369,7 @@ Desc:		This function will strip off the filename or trailing
 Notes:	This function handles drive based, UNC, Netware, and UNIX type
 			paths.
 ****************************************************************************/
-RCODE f_pathReduce(
+FLMEXP RCODE FLMAPI f_pathReduce(
 	const char *	pszPath,
 	char *			pszDir,
 	char * 			pszPathComponent)
@@ -472,7 +472,7 @@ Exit:
 /****************************************************************************
 Desc:	Append a component to a path name.
 ****************************************************************************/
-RCODE f_pathAppend(
+FLMEXP RCODE FLMAPI f_pathAppend(
 	char *				pszPath,
 	const char *		pszPathComponent)
 {
@@ -526,7 +526,7 @@ RCODE f_pathAppend(
 Desc:	Convert an PATH into a fully qualified, storable C string
 		reference to a file or directory.
 ****************************************************************************/
-RCODE f_pathToStorageString(
+FLMEXP RCODE FLMAPI f_pathToStorageString(
 	const char *	pszPath,
 	char *			pszStorageString)
 {
@@ -654,7 +654,7 @@ Desc:		Generates a file name given a seed and some modifiers, it is built
 			to be called in a loop until the file can be sucessfully written or
 			created with the increment being changed every time.
 ****************************************************************************/
-void f_pathCreateUniqueName(
+FLMEXP void FLMAPI f_pathCreateUniqueName(
 	FLMUINT *			puiTime,
 	char *				pFileName,
 	const char *		pFileExt,
@@ -713,7 +713,7 @@ void f_pathCreateUniqueName(
 /****************************************************************************
 Desc:		Compares the current file against a pattern template
 ****************************************************************************/
-FLMBOOL f_doesFileMatch(
+FLMEXP FLMBOOL FLMAPI f_doesFileMatch(
 	const char *	pszFileName,
 	const char *	pszTemplate)
 {

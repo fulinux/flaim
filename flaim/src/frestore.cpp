@@ -181,7 +181,7 @@ Exit:
 Desc:	Returns an unknown stream object - suitable for writing unknown
 		streams into the roll-forward log.
 *END************************************************************************/
-RCODE FlmDbGetUnknownStreamObj(
+FLMEXP RCODE FLMAPI FlmDbGetUnknownStreamObj(
 	HFDB						hDb,
 	F_UnknownStream **	ppUnknownStream)
 {

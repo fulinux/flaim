@@ -43,7 +43,7 @@ FSTATIC RCODE flmInitFileHdrs(
 /*API~***********************************************************************
 Desc : Creates a new FLAIM database.
 *END************************************************************************/
-RCODE FlmDbCreate(
+FLMEXP RCODE FLMAPI FlmDbCreate(
 	const char *		pszDbFileName,
 	const char *		pszDataDir,
 	const char *		pszRflDir,

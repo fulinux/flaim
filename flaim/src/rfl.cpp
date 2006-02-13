@@ -7564,7 +7564,7 @@ Exit:
 /*API~***********************************************************************
 Desc:	Returns the name of an RFL file given its number
 *END************************************************************************/
-RCODE FlmDbGetRflFileName(
+FLMEXP RCODE FLMAPI FlmDbGetRflFileName(
 	HFDB 			hDb,
 	FLMUINT		uiFileNum,
 	char *		pszFileName)

@@ -39,9 +39,9 @@ FSTATIC RCODE GedPoolFreeToMark(
 /****************************************************************************
 Desc: Initializes a memory pool
 ****************************************************************************/
-void GedPoolInit(
-		POOL *		pPool,
-		FLMUINT 		uiBlkSize)
+FLMEXP void FLMAPI GedPoolInit(
+	POOL *		pPool,
+	FLMUINT 		uiBlkSize)
 {
 	pPool->uiBytesAllocated = 0;
 	pPool->lblk = NULL;
@@ -52,7 +52,7 @@ void GedPoolInit(
 /****************************************************************************
 Desc: Returns a "marker" to the current offset in the memory pool
 ****************************************************************************/
-void * GedPoolMark(
+FLMEXP void * FLMAPI GedPoolMark(
 	POOL *		pPool)
 {
 	return (void *)((pPool->lblk)
@@ -135,7 +135,7 @@ Note:	If the number of bytes is more than the what is left in the
 		current block then a new block will be allocated and the lbkl element
 		of the PMS will be updated.
 *END************************************************************************/
-void * GedPoolAlloc(
+FLMEXP void * FLMAPI GedPoolAlloc(
 	POOL * 		pPool,
 	FLMUINT		uiSize)
 {
@@ -206,7 +206,7 @@ Exit:
 /*API~********************************************************************
 Desc:	Allocates memory from a pool and initializes all bytes to zero.
 *END*********************************************************************/
-void * GedPoolCalloc(
+FLMEXP void * FLMAPI GedPoolCalloc(
 	POOL * 		pPool,
   	FLMUINT		uiSize)
 {
@@ -223,7 +223,7 @@ void * GedPoolCalloc(
 Desc:	Releases all memory allocated to a pool.
 Note:	All memory allocated to the pool is returned to the operating system.
 *END************************************************************************/
-RCODE GedPoolFree(
+FLMEXP RCODE FLMAPI GedPoolFree(
 	POOL *		pPool)
 {
 	MBLK *		blk = pPool->lblk;
@@ -253,7 +253,7 @@ Desc:	Resets memory blocks allocated to a pool.
 Note:	Will reset the free space in the first memory block, and if
 		any extra blocks exist they will be freed (destroyed).
 *END************************************************************************/
-RCODE GedPoolReset(
+FLMEXP RCODE FLMAPI GedPoolReset(
 	POOL *		pPool,
 	void *		markPtr)
 {
@@ -379,5 +379,3 @@ FSTATIC RCODE GedPoolFreeToMark(
 
 	return( FERR_OK);
 }
-
-

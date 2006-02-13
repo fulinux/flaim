@@ -27,7 +27,7 @@
 /*******************************************************************************
 Desc:	Removes a database, including roll-forward log files, if requested.
 *******************************************************************************/
-RCODE FlmDbRemove(
+FLMEXP RCODE FLMAPI FlmDbRemove(
 	const char *		pszDbName,
 	const char *		pszDataDir,
 	const char *		pszRflDir,

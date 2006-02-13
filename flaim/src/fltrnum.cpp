@@ -30,7 +30,7 @@ Notes: This routine should only be called only from within an update
 		 transaction since read transactions are not assigned a transaction
 		 number.
 *END************************************************************************/
-RCODE FlmDbGetTransId(
+FLMEXP RCODE FLMAPI FlmDbGetTransId(
 	HFDB				hDb,
 	FLMUINT *		puiTrNumRV
 	)
@@ -97,7 +97,7 @@ Notes: Whenever a transaction is committed, FLAIM increments the commit
 		 An application may use this routine to determine if the database
 		 has been modified.
 *END************************************************************************/
-RCODE FlmDbGetCommitCnt(
+FLMEXP RCODE FLMAPI FlmDbGetCommitCnt(
 	HFDB				hDb,
 	FLMUINT *		puiCommitCount
 	)

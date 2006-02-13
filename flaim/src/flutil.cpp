@@ -56,7 +56,7 @@
 /****************************************************************************
 Desc:  	Unsigned word to NATIVE value - null terminate the native string
 ****************************************************************************/
-char * f_uwtoa(
+FLMEXP char * FLMAPI f_uwtoa(
 	FLMUINT16	value,
 	char *		ptr)
 {
@@ -73,7 +73,7 @@ char * f_uwtoa(
 Desc:  	Native to UDWORD value.  Supports 0x<HEX> codes. Non digits NOT ALLOWED
 			NO LEADING SPACES ALLOWED ! ! !  No checks for overflow over 4 bytes!
 ****************************************************************************/
-FLMUINT f_atoud(
+FLMEXP FLMUINT FLMAPI f_atoud(
 	const char *  	pszBuf)
 {
 	FLMUINT			uiValue;
@@ -132,7 +132,7 @@ FLMUINT f_atoud(
 /****************************************************************************
 Desc:  	Unsigned double (4 byte) number to native value & null terminate
 ****************************************************************************/
-char * f_udtoa(
+FLMEXP char * FLMAPI f_udtoa(
 	FLMUINT		value,
 	char *		ptr)
 {
@@ -148,7 +148,7 @@ char * f_udtoa(
 /****************************************************************************
 Desc:  	Word to native value - null terminate the native string
 ****************************************************************************/
-char * f_wtoa(
+FLMEXP char * FLMAPI f_wtoa(
 	FLMINT16		value,
 	char *		ptr)
 {
@@ -166,7 +166,7 @@ char * f_wtoa(
 /****************************************************************************
 Desc:  	Double (4 byte) number to native value - null terminate the string
 ****************************************************************************/
-char * f_dtoa(
+FLMEXP char * FLMAPI f_dtoa(
 	FLMINT		value,
 	char *		ptr)
 {
@@ -184,7 +184,7 @@ char * f_dtoa(
 /****************************************************************************
 Desc:  	Ascii to integer
 ****************************************************************************/
-FLMINT f_atoi(
+FLMEXP FLMINT FLMAPI f_atoi(
 	const char *	ptr)
 {
 	return( f_atod( ptr));
@@ -193,7 +193,7 @@ FLMINT f_atoi(
 /****************************************************************************
 Desc:  	native to long
 ****************************************************************************/
-FLMINT f_atol(
+FLMEXP FLMINT FLMAPI f_atol(
 	const char *	ptr)
 {
 	return( f_atod( ptr));
@@ -203,7 +203,7 @@ FLMINT f_atol(
 Desc:		Native to DWORD value.  Supports 0x<HEX> codes. Non digits NOT ALLOWED
 			NO LEADING SPACES ALLOWED ! ! !  No checks for overflow over 4 bytes!
 ****************************************************************************/
-FLMINT f_atod(
+FLMEXP FLMINT FLMAPI f_atod(
 	const char *		pszBuf)
 {
 	FLMINT				iValue;
@@ -255,7 +255,7 @@ FINLINE FLMUINT maxDecimalSize(
 /****************************************************************************
 Desc: Compares two Unicode strings
 ****************************************************************************/
-FLMINT f_unicmp(
+FLMEXP FLMINT FLMAPI f_unicmp(
 	const FLMUNICODE *	puzStr1,
 	const FLMUNICODE *	puzStr2)
 {
@@ -271,7 +271,7 @@ FLMINT f_unicmp(
 /****************************************************************************
 Desc: Returns the length of a unicode string
 ****************************************************************************/
-FLMUINT f_unilen(
+FLMEXP FLMUINT FLMAPI f_unilen(
 	const FLMUNICODE *	puzStr)
 {
 	FLMUINT		uiLen = 0;
@@ -295,7 +295,7 @@ Exit:
 /****************************************************************************
 Desc: Finds a substring
 ****************************************************************************/
-FLMUNICODE * f_uniindex(
+FLMEXP FLMUNICODE * FLMAPI f_uniindex(
 	const FLMUNICODE *	puzStr,
 	const FLMUNICODE *	puzSearch)
 {
@@ -347,7 +347,7 @@ FLMUNICODE * f_uniindex(
 /****************************************************************************
 Desc: The equivalent of strncmp for unicode strings.
 ****************************************************************************/
-FLMINT f_unincmp(
+FLMEXP FLMINT FLMAPI f_unincmp(
 	const FLMUNICODE *	puzStr1,
 	const FLMUNICODE *	puzStr2,
 	FLMUINT					uiLen)
@@ -369,7 +369,7 @@ FLMINT f_unincmp(
 /****************************************************************************
 Desc: Compares two strings, one Unicode and one native
 ****************************************************************************/
-FLMINT f_uninativecmp(
+FLMEXP FLMINT FLMAPI f_uninativecmp(
 	const FLMUNICODE *	puzStr1,
 	const char *			pszStr2)
 {
@@ -385,7 +385,7 @@ FLMINT f_uninativecmp(
 /****************************************************************************
 Desc: Compares two strings, one Unicode and one native
 ****************************************************************************/
-FLMINT f_uninativencmp(
+FLMEXP FLMINT FLMAPI f_uninativencmp(
 	const FLMUNICODE *	puzStr1,
 	const char *			pszStr2,
 	FLMUINT					uiCount)
@@ -409,7 +409,7 @@ FLMINT f_uninativencmp(
 /****************************************************************************
 Desc: Copies a unicode string
 ****************************************************************************/
-FLMUNICODE * f_unicpy(
+FLMEXP FLMUNICODE * FLMAPI f_unicpy(
 	FLMUNICODE *			puzDestStr,
 	const FLMUNICODE *	puzSrcStr)
 {
@@ -428,7 +428,7 @@ FLMUNICODE * f_unicpy(
 /****************************************************************************
 Desc: Copies a native string into a Unicode buffer
 ****************************************************************************/
-void f_nativetounistrcpy(
+FLMEXP void FLMAPI f_nativetounistrcpy(
 	FLMUNICODE *		puzDest,
 	const char *		pszSrc)
 {
@@ -609,7 +609,7 @@ void flmQSortUINTSwap(
 /****************************************************************************
 Desc:	Determine if a token is a number.
 ****************************************************************************/
-FLMBOOL tokenIsNum(
+FLMEXP FLMBOOL FLMAPI tokenIsNum(
 	const char *	pszToken,
 	FLMUINT *		puiNum)
 {

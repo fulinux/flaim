@@ -147,9 +147,8 @@ Exit:
 /****************************************************************************
 Desc:	Closes a FLAIM database.
 ****************************************************************************/
-RCODE FlmDbClose(
+FLMEXP RCODE FLMAPI FlmDbClose(
 	HFDB *	phDbRV)
 {
 	return( flmDbClose( phDbRV, FALSE));
 }
-

@@ -438,28 +438,13 @@ Exit:
 }
 
 /*API~***********************************************************************
-Area : TRANSACTION
 Desc : Starts a transaction.
 *END************************************************************************/
-RCODE 
-	FlmDbTransBegin(
-		HFDB				hDb,
-			// [IN] Database handle.
-		FLMUINT			uiTransType,
-			// [IN] Specifies the type of transaction to begin.
-			// Possible values are:
-			//
-			// FLM_READ_TRANS:  Begins a read transaction.
-			// FLM_UPDATE_TRANS:  Begins an update transaction.
-		FLMUINT			uiMaxLockWait,
-			// [IN] Maximum lock wait time.  Specifies the amount of time
-			// to wait for lock requests occuring during the transaction
-			// to be granted.  Valid values are 0 through 255 seconds.  Zero
-			// is used to specify no-wait locks.
-		FLMBYTE *		pszHeader
-			// [IN] 2K buffer
-			// [OUT] Returns the first 2K of the file, including the current
-			// version of the log header (from memory)
+FLMEXP RCODE FLMAPI FlmDbTransBegin(
+	HFDB			hDb,
+	FLMUINT		uiTransType,
+	FLMUINT		uiMaxLockWait,
+	FLMBYTE *	pucHeader
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -482,7 +467,7 @@ RCODE
 		{
 			if( RC_BAD( rc = Wire.doTransOp(
 				FCS_OP_TRANSACTION_BEGIN, uiTransType, uiFlags,
-				uiMaxLockWait, pszHeader)))
+				uiMaxLockWait, pucHeader)))
 			{
 				goto Exit;
 			}
@@ -546,10 +531,10 @@ RCODE
 	{
 		FLMUINT		uiBytesRead;
 
-		if( pszHeader)
+		if( pucHeader)
 		{
 			if( RC_BAD( rc = pDb->pSFileHdl->ReadHeader( 
-				0, 2048, pszHeader, &uiBytesRead)))
+				0, 2048, pucHeader, &uiBytesRead)))
 			{
 				goto Exit;
 			}
@@ -557,7 +542,7 @@ RCODE
 
 		if (RC_BAD( rc = flmBeginDbTrans( pDb, uiTransType, 
 			uiMaxLockWait, uiFlags,
-			pszHeader ? &pszHeader [16] : NULL)))
+			pucHeader ? &pucHeader [16] : NULL)))
 		{
 			goto Exit;
 		}
@@ -580,7 +565,7 @@ Exit:
 /*API~***********************************************************************
 Desc : Returns the type of the current database transaction.
 *END************************************************************************/
-RCODE FlmDbGetTransType(
+FLMEXP RCODE FLMAPI FlmDbGetTransType(
 	HFDB			hDb,
 	FLMUINT *	puiTransTypeRV
 	)
@@ -656,21 +641,13 @@ Exit:
 }
 
 /*API~***********************************************************************
-Area : TRANSACTION
 Desc : Obtains a a lock on the database.
 *END************************************************************************/
-RCODE 
-	FlmDbLock(
-		HFDB				hDb,
-			// [IN] Handle of database to be locked.
-		FLOCK_TYPE		eLockType,
-			// [IN] Type of lock request - must be FLM_LOCK_EXCLUSIVE or
-			// FLM_LOCK_SHARED
-		FLMINT			iPriority,
-			// [IN] Priority to be assigned to lock.
-		FLMUINT			uiTimeout
-			// [IN] Seconds to wait for lock to be granted.  FLM_NO_TIMEOUT
-			// means that it will wait forever for the lock to be granted.
+FLMEXP RCODE FLMAPI FlmDbLock(
+	HFDB				hDb,
+	FLOCK_TYPE		eLockType,
+	FLMINT			iPriority,
+	FLMUINT			uiTimeout
 	)
 {
 	RCODE		rc = FERR_OK;
@@ -786,13 +763,10 @@ Exit:
 }
 
 /*API~***********************************************************************
-Area : TRANSACTION
 Desc : Releases a lock on the database
 *END************************************************************************/
-RCODE 
-	FlmDbUnlock(
-		HFDB				hDb
-			// [IN] Handle of database to be unlocked.
+FLMEXP RCODE FLMAPI FlmDbUnlock(
+	HFDB	hDb
 	)
 {
 	RCODE		rc = FERR_OK;
@@ -885,7 +859,7 @@ Exit:
 Desc : Returns information about current and pending locks on the
 		 database.
 *END************************************************************************/
-RCODE FlmDbGetLockInfo(
+FLMEXP RCODE FLMAPI FlmDbGetLockInfo(
 	HFDB				hDb,
 	FLMINT			iPriority,
 	FLOCK_INFO *	pLockInfo
@@ -920,7 +894,7 @@ Exit:
 Desc : Returns information about the lock held by the specified database
 		 handle.
 *END************************************************************************/
-RCODE FlmDbGetLockType(
+FLMEXP RCODE FLMAPI FlmDbGetLockType(
 	HFDB				hDb,
 	FLOCK_TYPE *	peLockType,
 	FLMBOOL *		pbImplicit)
@@ -981,17 +955,11 @@ Exit:
 }
 
 /*API~***********************************************************************
-Area : TRANSACTION
 Desc : Forces a checkpoint on the database.
 *END************************************************************************/
-RCODE 
-	FlmDbCheckpoint(
-		HFDB		hDb,
-			// [IN] Handle of database to perform the checkpoint on.
-		FLMUINT	uiTimeout
-			// [IN] Seconds to wait to obtain lock on the database.
-			// FLM_NO_TIMEOUT means that it will wait forever for
-			// the lock to be granted.
+FLMEXP RCODE FLMAPI FlmDbCheckpoint(
+	HFDB		hDb,
+	FLMUINT	uiTimeout
 	)
 {
 	RCODE		rc = FERR_OK;

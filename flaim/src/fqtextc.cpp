@@ -91,7 +91,6 @@ FINLINE FLMUINT flmCharTypeAnsi7(
 
 
 /*API~***********************************************************************
-Name :	FlmStrCmp
 Desc :	Compare two unicode strings. This comparison uses the collation
 			rules that are defined for the specified language.
 Return:	Signed value of compare.  
@@ -99,7 +98,7 @@ Return:	Signed value of compare.
 			The case of returning 1 may be in using wild cards which
 			only need to return a does not match value.
 *END************************************************************************/
-FLMINT  FlmStrCmp(
+FLMEXP FLMINT FLMAPI FlmStrCmp(
 	FLMUINT					uiCompFlags,		
 	FLMUINT					byLang,
 	const FLMUNICODE *	uzStr1,

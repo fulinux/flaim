@@ -158,7 +158,7 @@ Notes:	During a database sweep, the user may perform one or all of the
 			 all items within the database and gather statistics about the
 			 database and it's contents.
 ****************************************************************************/
-RCODE FlmDbSweep(
+FLMEXP RCODE FLMAPI FlmDbSweep(
 	HFDB				hDb,
 	FLMUINT			uiSweepMode,
 	FLMUINT			uiCallbackFreq,

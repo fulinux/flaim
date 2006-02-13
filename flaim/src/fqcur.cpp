@@ -132,22 +132,14 @@ RCODE flmCurDbInit(
 }
 
 /*API~***********************************************************************
-Name : FlmCursorInit
-Area : CURSOR
 Desc : Initializes a cursor for subsequent definition and navigation of
 		 a record set.  A cursor must be initialized before it can
 		 be used.
 *END************************************************************************/
-RCODE FlmCursorInit(
-	HFDB				hDb,
-		// [IN] Initial source database.
-	FLMUINT			uiContainer,
-		// [IN] Initial source container.
-	HFCURSOR  *		phCursor
-		// [OUT] Cursor handle to be initialized.  If initialization fails,
-		// the returned cursor handle will have a value of HFCURSOR_NULL.
-		// Otherwise, the cursor handle will be ready for use in subsequent
-		// calls to cursor routines.
+FLMEXP RCODE FLMAPI FlmCursorInit(
+	HFDB			hDb,
+	FLMUINT		uiContainer,
+	HFCURSOR *	phCursor
 	)
 {
 	RCODE       rc = FERR_OK;
@@ -367,18 +359,12 @@ Exit:
 }
 
 /*API~***********************************************************************
-Area : CURSOR
 Desc : Initializes a new cursor and sets its selection criteria and record
 		 sources to be the same as those of the passed-in cursor.
 *END************************************************************************/
-RCODE FlmCursorClone(
+FLMEXP RCODE FLMAPI FlmCursorClone(
 	HFCURSOR      hSource,
-		// [IN] Source cursor.
 	HFCURSOR  *   phCursor
-		// [OUT] Cursor handle to be initialized.  If initialization fails,
-		// the returned cursor handle will have a value of HFCURSOR_NULL.
-		// Otherwise, the cursor handle will be ready for use in subsequent
-		// calls to cursor routines.
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -631,14 +617,12 @@ CS_Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorReleaseResources
-Area : CURSOR
 Desc:	Frees resources of the cursor without actually freeing the cursor.
 		Keeps around the stuff that is needed to display the cursor
 		information for debugging purposes after the fact.  At this point
 		the cursor is no longer usable.
 *END************************************************************************/
-void FlmCursorReleaseResources(
+FLMEXP void FLMAPI FlmCursorReleaseResources(
 	HFCURSOR	hCursor
 	)
 {
@@ -654,18 +638,12 @@ void FlmCursorReleaseResources(
 }
 
 /*API~***********************************************************************
-Name : FlmCursorFree
-Area : CURSOR
 Desc : Frees memory allocated to an initialized cursor.  The cursor handle
 		 cannot be used for additional cursor operations unless it is
 		 re-initialized.
 *END************************************************************************/
-RCODE FlmCursorFree(
+FLMEXP RCODE FLMAPI FlmCursorFree(
 	HFCURSOR  *   phCursor
-		// [IN/OUT] Cursor handle to be de-allocated.
-		// The cursor handle must have been previously initialized.
-		// The value of the handle is guaranteed to be HFCURSOR_NULL
-		// if the operation is successful.
 	)
 {
 	CURSOR_p			pCursor = (CURSOR *)*phCursor;
@@ -698,24 +676,12 @@ RCODE FlmCursorFree(
 }
 
 /*API~***********************************************************************
-Name : FlmCursorSetMode
-Area : CURSOR
 Desc : Sets flags in the query that determine text comparision modes and the
 		 granularity for QuickFinder indexes.
 *END************************************************************************/
-RCODE FlmCursorSetMode(
+FLMEXP RCODE FLMAPI FlmCursorSetMode(
 	HFCURSOR    hCursor,
-			// [IN] Handle to a cursor.
 	FLMUINT		uiFlags)
-			// [IN] Possible values of uiFlags:
-			//
-			// FLM_NOCASE:  Indicates that case-insensitive comparisions should be
-			// made when comparing field content to a string value. (Text
-			// comparison mode)
-			//
-			// FLM_WILD:  Indicates that '*' and '?' characters will be treated
-			// as wild cards in a string value when comparing to field content.
-			// (Text comparison mode)
 {
 	CURSOR_p    pCursor = (CURSOR *)hCursor;
 
@@ -1583,108 +1549,11 @@ Exit:
 Desc : Allows configuration of cursor attributes, including assignment of
 		 QuickFinder strings, indexes and search records.
 *END************************************************************************/
-RCODE FlmCursorConfig(
+FLMEXP RCODE FLMAPI FlmCursorConfig(
 	HFCURSOR				hCursor,
-		// [IN] Handle to a cursor.
 	eCursorConfigType	eConfigType,
-		// [IN] Cursor element to configure.  Possible values of uiType:
-		//
-		//      PARAM     TYPE       MEANING / USE
-		//
-		// FCURSOR_ALLOW_DUPS:  Allow duplicate keys to be returned.
-		//      Value1    N/A        N/A
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_ELIMINATE_DUPS:  Eliminate duplicate keys.
-		//      Value1    N/A        N/A
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_CLEAR_QUERY:  Clears the query criteria.
-		//      Value1    N/A        N/A
-		//      Value2    N/A        N/A
-		//
-		//	FCURSOR_DISCONNECT:  Calls into QuickFinder to free memory
-		// associated with files used by QF.
-		//      Value1    N/A        N/A
-		//      Value2    N/A        N/A
-		//
-		//	FCURSOR_GEN_POS_KEYS:  Generates an array of positioning keys for
-		// a cursor.
-		//      Value1    N/A        N/A
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_SET_HDB:  Resets the database handle associated with this
-		// cursor.
-		//      Value1    HFDB     Database handle to be used for cursor.
-		//      Value2    N/A      N/A
-		//
-		// FCURSOR_SET_FLM_IX:  Sets the index to be used by the cursor.
-		//      Value1    FLMUINT     Index number.
-		//      Value2    N/A         N/A
-		//
-		// FCURSOR_SET_OP_TIME_LIMIT:	Sets a time limit for the next read
-		// operation.
-		//      Value1    FLMUINT    Time limit in seconds.
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_SET_PERCENT_POS:  Sets the percentage position in the
-		// cursor's result set.
-		//      Value1    FLMUINT     Percentage value (1 - 100) to which the
-		//                           cursor position is to be set.
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_SET_ABS_POS:  Sets the absolute position in the
-		// cursor's result set.
-		//      Value1    FLMUINT *	Absolute position to which the cursor
-		//										is to be set.  Also returns the
-		//										position actually set to (if we fall
-		//										forward or backward).
-		//      Value2    FLMBOOL		If the position specified doesn't
-		//										pass the criteria, this flag specifies
-		//										whether to fall forward or backward.
-		//										TRUE=fall forward, FALSE=fall backward.
-		//
-		// FCURSOR_SET_POS:  Sets the cursor position from that of another
-		// cursor.
-		//      Value1    HFCURSOR   Handle to cursor from which position is
-		//                           to be set.
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_SET_POS_FROM_DRN:  Sets the cursor position from a DRN.
-		//      Value1    FLMUINT    DRN from which position is to be set.
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_SET_REC_TYPE:  Sets the record type associated with a
-		// cursor.  Only records of the specified type will be returned by
-		// by the cursor.
-		//      Value1    FLMUINT     Record type ID.
-		//      Value2    N/A         N/A
-		//
-		// FCURSOR_RETURN_KEYS_OK:  Sets the cursor to return keys, if possible.
-		//      Value1    FLMBOOL    TRUE = return keys, FALSE = return records
-		//      Value2    N/A        N/A
-		//
-		// FCURSOR_SET_REC_VALIDATOR: Set record validator for cursor.
-		//      Value1    REC_VALIDATOR_HOOK		  N/A
-		//      Value2    Data to be passed to callback.
-		//
-		// FCURSOR_SET_STATUS_HOOK: Set status callback for cursor.
-		//      Value1    STATUS_HOOK		  N/A
-		//      Value2    Data to be passed to callback.
-		//
-		// FCURSOR_SAVE_POSITION: Save current position of cursor.
-		//      Value1    N/A		  N/A
-		//      Value2    N/A		  N/A
-		//
-		// FCURSOR_RESTORE_POSITION: Restore cursor to last saved
-		// position.
-		//      Value1    N/A		  N/A
-		//      Value2    N/A		  N/A
-		//
-	void *      Value1,
-		// [IN] The type and domain of Value1 are determined by eConfigType.
-	void *      Value2
-		// [IN] The type and domain of Value2 are determined by eConfigType.
+	void *				Value1,
+	void *				Value2
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -1904,7 +1773,6 @@ Exit:
 }
 
 /************************************************************************
-Name : flmCurPositionable
 Desc : Returns whether or not a query is positionable.
 *************************************************************************/
 FSTATIC RCODE flmCurPositionable(
@@ -1948,7 +1816,6 @@ Exit:
 }
 
 /************************************************************************
-Name : flmCurAbsPositionable
 Desc : Returns whether or not a query is absolute positionable.
 *************************************************************************/
 FSTATIC RCODE flmCurAbsPositionable(
@@ -2000,7 +1867,6 @@ Exit:
 }
 
 /************************************************************************
-Name : flmCurGetAbsolutePos
 Desc : Returns absolute position of cursor.
 *************************************************************************/
 FSTATIC RCODE flmCurGetAbsolutePos(
@@ -2080,7 +1946,6 @@ Exit:
 }
 
 /************************************************************************
-Name : flmCurGetAbsoluteCount
 Desc : Returns absolute count for the cursor's index.  NOTE: This is
 		 not necessarily the same thing as the number of records that
 		 will pass the filter criteria.
@@ -2146,102 +2011,13 @@ Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorGetConfig
-Area : CURSOR
 Desc : Returns FLAIM cursor configuration values.
 *END************************************************************************/
-RCODE FlmCursorGetConfig(
+FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 	HFCURSOR						hCursor,
-		// [IN] Handle to a cursor.
 	eCursorGetConfigType		eGetConfigType,
-		// [IN] Cursor element to retrieve.  Possible values of uiType:
-		//
-		//      PARAM     TYPE             MEANING / USE
-		//
-		// FCURSOR_GET_PERCENT_POS:  Returns the percentage position of the
-		// cursor's current position.
-		//      Value1    FLMUINT *      Pointer to where percentage
-		//                               position is to be returned.
-		//
-		// FCURSOR_GET_ABS_POS:  Finds the absolute position of the
-		// cursor's current position.
-		//      Value1    FLMUINT *      Pointer to where absolute
-		//                               position is to be returned.
-		//
-		// FCURSOR_GET_ABS_COUNT:  Returns the absolute count of the
-		// cursor's index range.  NOTE: This is not necessarily the count of
-		// records that will pass the query criteria.
-		//      Value1    FLMUINT *      Pointer to where count
-		//                               is to be returned.
-		//
-		// FCURSOR_GET_OPT_INFO_LIST:  Populates a preallocated array of
-		// OPT_INFO structures with information from the subqueries in
-		// the current cursor.  NOTE:  the size of the array should be
-		// determined by calling this API with a NULL OPT_INFO *.
-		//      Value1    OPT_INFO *		Preallocated array of OPT_INFO
-		//                               structures to be populated.
-		//      Value2    FLMUINT *      Size of the array. A null Value1 will
-		//                               return the total number of sub queries.
-		//
-		// FCURSOR_GET_OPT_INFO:  Retrieves information about how a particular
-		// subquery is being optimized.
-		//      Value1    N/A            N/A
-		//		  Value2		OPT_INFO *		Preallocated OPT_INFO structure.
-		//
-		// FCURSOR_GET_FLM_IX:  Retrieves the number of the index being used
-		// to optimize query.  0 is returned if there is no index associated
-		// with the current cursor or if multiple indexes are being used.  In
-		// the case of multiple indexes, Value2 can be used to differentiate
-		// the use of multiple indexes from the no index case.
-		//      Value1    FLMUINT *		Storage location for returning the
-		//                               index number.
-		//      Value2    FLMUINT *		Index information
-		//												HAVE_NO_INDEX
-		//												HAVE_ONE_INDEX
-		//												HAVE_ONE_INDEX_MULT_PARTS
-		//												HAVE_MULTIPLE_INDEXES
-		//
-		// FCURSOR_GET_REC_TYPE:  Retrieves the record type associated with
-		// a cursor.
-		//      Value1    FLMUINT *      Storage location for returning the
-		//											record type.
-		//      Value2    N/A            N/A
-		//
-		// FCURSOR_GET_FLAGS:  Retrieves flags set by FlmCursorSetMode.
-		//      Value1    FLMUINT *      Storage location for returning the
-		//                               cursor flags.
-		//      Value2    N/A            N/A
-		//
-		// FCURSOR_GET_STATE:  Retrieves flags describing the state of the query.
-		//      Value1    FLMUINT *      Storage location for returning the
-		//                               state flags.
-		//      Value2    N/A            N/A
-		//
-		// FCURSOR_GET_POSITIONABLE:  Determines if a cursor is positionable.
-		//      Value1    FLMBOOL *      Storage location for returning whether
-		//                               or not the cursor is positionable.
-		//      Value2    N/A            N/A
-		//
-		// FCURSOR_GET_ABS_POSITIONABLE:  Determines if a cursor is
-		//	absolute positionable.
-		//      Value1    FLMBOOL *      Storage location for returning whether
-		//                               or not the cursor is absolute positionable.
-		//      Value2    N/A            N/A
-		//
-		// FCURSOR_AT_BOF:  Determines if a cursor is at BOF.
-		//      Value1    FLMBOOL *      Storage location for returning whether
-		//                               or not the cursor is at BOF.
-		//      Value2    N/A            N/A
-		//
-		// FCURSOR_AT_EOF:  Determines if a cursor is at EOF.
-		//      Value1    FLMBOOL *      Storage location for returning whether
-		//                               or not the cursor is at EOF.
-		//      Value2    N/A            N/A
-		//
-	void *					Value1,
-		// [IN/OUT] The type and domain of Value1 is determined by uiType.
-	void *					Value2
-		// [OUT] The type and domain of Value2 is determined by uiType.
+	void *						Value1,
+	void *						Value2
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -2603,7 +2379,7 @@ Warning:	The index selected from this call will be used for query optimization
 			in addition to ordering the results. This could result in slower
 			query performance.
 *END************************************************************************/
-RCODE FlmCursorSetOrderIndex(
+FLMEXP RCODE FLMAPI FlmCursorSetOrderIndex(
 	HFCURSOR		hCursor,
 	FLMUINT *	puiFieldPaths,		/* List of field paths to match on. Each path
 												is terminated with a single 0, and the 

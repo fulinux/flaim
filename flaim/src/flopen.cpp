@@ -53,7 +53,7 @@ FSTATIC RCODE flmDoRecover(
 /*API~***********************************************************************
 Desc : Opens an existing FLAIM database.
 *END************************************************************************/
-RCODE FlmDbOpen(
+FLMEXP RCODE FLMAPI FlmDbOpen(
 	const char *		pszDbFileName,
 	const char *		pszDataDir,
 	const char *		pszRflDir,

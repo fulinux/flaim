@@ -611,7 +611,7 @@ Notes: This routine may be called multiple times.  However, if that is done
 		 successfully.  This routine does not handle race conditions on
 		 platforms that do not support atomic increment.
 *END************************************************************************/
-RCODE FlmStartup( void)
+FLMEXP RCODE FLMAPI FlmStartup( void)
 {
 	RCODE				rc = FERR_OK;
 	FLMINT			iEventCategory;
@@ -1073,15 +1073,11 @@ Exit:
 /*API~***********************************************************************
 Desc : Configures how memory will be dynamically regulated.
 *END************************************************************************/
-RCODE  FlmSetDynamicMemoryLimit(
+FLMEXP RCODE FLMAPI FlmSetDynamicMemoryLimit(
 	FLMUINT			uiCacheAdjustPercent,
-			// [IN] Percentage of available physical memory to set or adjust to.
 	FLMUINT			uiCacheAdjustMin,
-			// [IN] Minimum bytes to adjust down to.
 	FLMUINT			uiCacheAdjustMax,
-			// [IN] Maximum bytes to adjust up to.
 	FLMUINT			uiCacheAdjustMinToLeave
-			// [IN] Minimum bytes to leave available after making adjustment.
 	)
 {
 #ifndef FLM_CAN_GET_PHYS_MEM
@@ -1119,21 +1115,13 @@ RCODE  FlmSetDynamicMemoryLimit(
 /*API~***********************************************************************
 Desc : Sets a hard memory limit for cache.
 *END************************************************************************/
-RCODE  FlmSetHardMemoryLimit(
-	FLMUINT			uiPercent,
-			// [IN] Percentage of available physical memory or total physical
-			// memory to set limit to.  If zero, uiMax is used as a byte
-			// limit.
-	FLMBOOL			bPercentOfAvail,
-			// [IN] Percentage is to be interpreted as a percentage of available
-			// memory as opposed to a percentage of all of physical memory.
-	FLMUINT			uiMin,
-			// [IN] Minimum bytes to adjust down to.
-	FLMUINT			uiMax,
-			// [IN] Maximum bytes to adjust up to.
-	FLMUINT			uiMinToLeave,
-			// [IN] Minimum bytes to leave available after making adjustment.
-	FLMBOOL			bPreallocate
+FLMEXP RCODE FLMAPI FlmSetHardMemoryLimit(
+	FLMUINT	uiPercent,
+	FLMBOOL	bPercentOfAvail,
+	FLMUINT	uiMin,
+	FLMUINT	uiMax,
+	FLMUINT	uiMinToLeave,
+	FLMBOOL	bPreallocate
 	)
 {
 	RCODE		rc = FERR_OK;
@@ -1170,7 +1158,7 @@ RCODE  FlmSetHardMemoryLimit(
 /*API~***********************************************************************
 Desc : Returns information about memory usage.
 *END************************************************************************/
-void  FlmGetMemoryInfo(
+FLMEXP void FLMAPI FlmGetMemoryInfo(
 	FLM_MEM_INFO *	pMemInfo)
 {
 	f_memset( pMemInfo, 0, sizeof( FLM_MEM_INFO));
@@ -1503,7 +1491,7 @@ Exit:
 /*API~***********************************************************************
 Desc: Configures share attributes.
 *END************************************************************************/
-RCODE FlmConfig(
+FLMEXP RCODE FLMAPI FlmConfig(
   	eFlmConfigTypes 	eConfigType,
 	void *				Value1,
 	void *		   	Value2)
@@ -1987,15 +1975,9 @@ Exit:
 /*API~***********************************************************************
 Desc : Gets configured shared attributes.
 *END************************************************************************/
-RCODE FlmGetConfig(
- 	eFlmConfigTypes eConfigType,
-		// [IN] Element to configure.  Possible values of eConfigType:
-		//
-		//      PARAM     TYPE       MEANING / USE
-		//
-	void *	    Value1
-		// [OUT] Pointer to return value.  The type and domain of the
-		// value returned are determined by eConfigType.
+FLMEXP RCODE FLMAPI FlmGetConfig(
+	eFlmConfigTypes	eConfigType,
+	void *				Value1
 	)
 {
 	RCODE		rc = FERR_OK;
@@ -2155,7 +2137,7 @@ RCODE FlmGetConfig(
 /*API~***********************************************************************
 Desc:
 *END************************************************************************/
-RCODE FlmGetThreadInfo(
+FLMEXP RCODE FLMAPI FlmGetThreadInfo(
 	POOL *				pPool,
 	F_THREAD_INFO **	ppThreadInfo,
 	FLMUINT *			puiNumThreads,
@@ -2965,7 +2947,7 @@ Notes: Allows itself to be called multiple times and even before FlmStartup
 		 race conditions very well on platforms that do not support atomic
 		 exchange.
 *END************************************************************************/
-void FlmShutdown( void)
+FLMEXP void FLMAPI FlmShutdown( void)
 {
 	flmLockSysData();
 	flmCleanup();
@@ -3603,7 +3585,7 @@ RCODE flmMonitor(
 /*API~***********************************************************************
 Desc : Registers a callback function to receive events.
 *END************************************************************************/
-RCODE FlmRegisterForEvent(
+FLMEXP RCODE FLMAPI FlmRegisterForEvent(
 	FEventCategory	eCategory,
 	FEVENT_CB		fnEventCB,
 	void *			pvAppData,
@@ -3656,7 +3638,7 @@ Exit:
 /*API~***********************************************************************
 Desc : Deregisters a callback function that was registered to receive events.
 *END************************************************************************/
-void  FlmDeregisterForEvent(
+FLMEXP void FLMAPI FlmDeregisterForEvent(
 	HFEVENT *	phEventRV)
 {
 	if (phEventRV && *phEventRV != HFEVENT_NULL)
@@ -5173,7 +5155,7 @@ void * F_SessionDb::getKey(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FlmAllocFileSystem(
+FLMEXP RCODE FLMAPI FlmAllocFileSystem(
 	F_FileSystem **		ppFileSystem)
 {
 	RCODE		rc = FERR_OK;
@@ -5194,7 +5176,7 @@ Exit:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FlmAllocDirHdl(
+FLMEXP RCODE FLMAPI FlmAllocDirHdl(
 	F_DirHdl **	ppDirHdl)
 {
 	RCODE		rc = FERR_OK;
@@ -5215,7 +5197,7 @@ Exit:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FlmAllocFileHandle(
+FLMEXP RCODE FLMAPI FlmAllocFileHandle(
 	F_FileHdl **		ppFileHandle)
 {
 	RCODE		rc = FERR_OK;

@@ -87,7 +87,7 @@ Notes:	This routine performs the following actions:  1) A temporary database
 			complete, the temporary database file is copied over the source
 			database file.
 *END************************************************************************/
-RCODE  FlmDbRebuild(
+FLMEXP RCODE FLMAPI FlmDbRebuild(
 	const char *			pszSourceDbPath,
 	const char *			pszSourceDataDir,
 	const char *			pszDestDbPath,

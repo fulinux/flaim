@@ -557,8 +557,6 @@ Transmission_Error:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorValidate
-Area : CURSOR
 Desc : Validates the selection criteria of a cursor.
 Notes: It is not necessary to explicitly validate the selection criteria
 		 through a call to this routine.  FLAIM will automatically attempt
@@ -568,7 +566,7 @@ Notes: It is not necessary to explicitly validate the selection criteria
 		 before calling cursor routines which will make use of it.
 Ret:	 FERR_CURSOR_SYNTAX - The selection criteria contains a syntax error
 *END************************************************************************/
-RCODE FlmCursorValidate(
+FLMEXP RCODE FLMAPI FlmCursorValidate(
 	HFCURSOR		hCursor
 		// [IN] Handle to a cursor.
 	)

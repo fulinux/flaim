@@ -169,7 +169,7 @@ private:
 Desc:		Prepares FLAIM to backup a database.
 Notes:	Only one backup of a particular database can be active at any time
 *******************************************************************************/
-RCODE FlmDbBackupBegin(
+FLMEXP RCODE FLMAPI FlmDbBackupBegin(
 	HFDB			hDb,
 	FBackupType	eBackupType,
 	FLMBOOL		bHotBackup,
@@ -413,7 +413,7 @@ Exit:
 /*API~***********************************************************************
 Desc : Returns information about a backup
 *END************************************************************************/
-RCODE FlmBackupGetConfig(
+FLMEXP RCODE FLMAPI FlmBackupGetConfig(
 	HFBACKUP					hBackup,
 	eBackupGetConfigType	eConfigType,
 	void *					pvValue1,
@@ -457,7 +457,7 @@ Notes: This routine attempts to create a backup of a database without
 		 too long in an environment where extensive updates are happening,
 		 an old view error could be returned.
 *END************************************************************************/
-RCODE FlmDbBackup(
+FLMEXP RCODE FLMAPI FlmDbBackup(
 	HFBACKUP					hBackup,
 	const char *			pszBackupPath,
 	const char *			pszPassword,
@@ -975,7 +975,7 @@ Exit:
 /*API~***********************************************************************
 Desc : Ends the backup, updating the log header if needed.
 *END************************************************************************/
-RCODE FlmDbBackupEnd(
+FLMEXP RCODE FLMAPI FlmDbBackupEnd(
 	HFBACKUP *		phBackup)
 {
 	RCODE				rc = FERR_OK;
@@ -1159,7 +1159,7 @@ Exit:
 /*API~***********************************************************************
 Desc:	Restores a database and supporting files.
 *END************************************************************************/
-RCODE	FlmDbRestore(
+FLMEXP RCODE FLMAPI FlmDbRestore(
 	const char *			pszDbPath,
 	const char *			pszDataDir,
 	const char *			pszBackupPath,

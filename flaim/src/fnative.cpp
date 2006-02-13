@@ -30,7 +30,7 @@
 Desc: 	Returns the size of buffer needed to hold the native string in 
 			FLAIM's storage format.
 ****************************************************************************/
-FLMUINT FlmGetNativeStorageLength(
+FLMEXP FLMUINT FLMAPI FlmGetNativeStorageLength(
 	const char *	pszStr)
 {
 	RCODE				rc;
@@ -47,7 +47,7 @@ Desc:		Copies and formats a native 8-bit null terminated string into a
 			caller supplied buffer, It converts the string into an internal FLAIM 
 			TEXT string.
 ****************************************************************************/
-RCODE FlmNative2Storage(
+FLMEXP RCODE FLMAPI FlmNative2Storage(
 	const char *		pszNativeString, 
 	FLMUINT *			puiStorageLen,
 	FLMBYTE *			pStorageBuffer)
@@ -156,7 +156,7 @@ RCODE FlmNative2Storage(
 /****************************************************************************
 Desc: 	Convert a storage text string into a native string
 ****************************************************************************/
-RCODE FlmStorage2Native(
+FLMEXP RCODE FLMAPI FlmStorage2Native(
 	FLMUINT				uiValueType,
 	FLMUINT				uiValueLength,
 	const FLMBYTE *	pucValue, 

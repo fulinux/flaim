@@ -1269,7 +1269,7 @@ Exit:
 /*API~***********************************************************************
 Desc:	Parse a query criteria string and populate an HFCURSOR from it.
 *END************************************************************************/
-RCODE FlmParseQuery(
+FLMEXP RCODE FLMAPI FlmParseQuery(
 	HFCURSOR				hCursor,
 	F_NameTable *		pNameTable,
 	const char *		pszQueryCriteria)

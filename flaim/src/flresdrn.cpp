@@ -25,33 +25,14 @@
 #include "flaimsys.h"
 
 /*API~***********************************************************************
-Area : UPDATE
 Desc : Returns the next DRN that record ADD would return.  The database/store
 		 must be in an existing update transaction.
 Notes: 
 *END************************************************************************/
-RCODE	
-	// FERR_ILLEGAL_TRANS	- a READ transaction is going - cannot promote to
-	//							     an update transaction
-	// FERR_ABORT_TRANS		- Previous operation failed forcing the caller
-	//								  to abort this transaction
-	// FERR_NO_TRANS_ACTIVE - an update transaction must be active.
-	// IO_FILE_LOCK_ERR 		- Could not get the lock on the database or store.
-	FlmReserveNextDrn(
-		HFDB			hDb,
-			// [IN] Database handle.
-		FLMUINT		uiContainer,
-			// [IN] Container number.
-		FLMUINT *	puiDrnRV
-			// [OUT] Pointer to a FLMUINT variable which will return the next DRN 
-			// value for the container as if FlmRecordAdd is called with *drnRV
-			// equal to zero.
-			//
-			// NOTE:  When FLAIM is allowed to assign the DRN, it always selects
-			// the highest available DRN.  If, for example, a user successfully
-			// adds a record with DRN 5000 to a previously empty container and
-			// then adds a second record (allowing FLAIM to automatically assign
-			// the DRN) the second record will be assigned DRN 5001.
+FLMEXP RCODE FLMAPI FlmReserveNextDrn(
+	HFDB			hDb,
+	FLMUINT		uiContainer,
+	FLMUINT *	puiDrnRV
 	)
 {
 	RCODE			rc;
@@ -172,13 +153,12 @@ ExitCS:
 
 
 /*API~***********************************************************************
-Area : UPDATE
 Desc : Searches for an available DRN in the dictionary container.  Differs
 		 from FlmReserveNextDrn in that it will attempt to reuse dictionary
 		 DRNS.  The database/store must be in an existing update transaction.
 Notes: 
 *END************************************************************************/
-RCODE FlmFindUnusedDictDrn(
+FLMEXP RCODE FLMAPI FlmFindUnusedDictDrn(
 	HFDB					hDb,
 	FLMUINT				uiStartDrn,
 	FLMUINT				uiEndDrn,

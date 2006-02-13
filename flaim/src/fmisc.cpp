@@ -25,14 +25,11 @@
 #include "flaimsys.h"
 
 /*API~***********************************************************************
-Name : FlmErrorIsFileCorrupt
-Area : INFORMATION
 Desc : Returns TRUE if the passed in RCODE indicates that a corruption
 		 has occured in a FLAIM database file.
 *END************************************************************************/
-FLMBOOL  FlmErrorIsFileCorrupt(
+FLMEXP FLMBOOL FLMAPI FlmErrorIsFileCorrupt(
 	RCODE			rc)
-		// [IN] Return code to be checked.
 {
 	FLMBOOL		b = FALSE;
 
@@ -60,8 +57,6 @@ FLMBOOL  FlmErrorIsFileCorrupt(
 
 
 /*API~***********************************************************************
-Name : FlmGetDiagInfo
-Area : INFORMATION
 Desc : Returns specific information about the most recent error that
 		 occured within FLAIM.
 Notes: FLAIM maintains information about the operation which generated
@@ -69,7 +64,7 @@ Notes: FLAIM maintains information about the operation which generated
 		 or other information specific to the operation and can
 		 be useful in identifying the cause of the error.
 *END************************************************************************/
-RCODE FlmGetDiagInfo(
+FLMEXP RCODE FLMAPI FlmGetDiagInfo(
 	HFDB				hDb,
 	eDiagInfoType	eDiagCode,
 	void *			pvDiagInfo

@@ -810,7 +810,7 @@ FLMINT f_vsprintf(
 /****************************************************************************
 Desc:		FLAIM's sprintf
 ****************************************************************************/
-FLMINT f_sprintf(
+FLMEXP FLMINT FLMCDECL f_sprintf(
 	char *			pszDestStr,
 	const char *	pszFormat,
 	...)

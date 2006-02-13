@@ -61,7 +61,7 @@ static FLMUINT PrecedenceTable [FLM_USER_PREDICATE - FLM_AND_OP + 1] =
 /*API~***********************************************************************
 Desc : Adds an operator to the selection criteria of a given cursor.
 *END************************************************************************/
-RCODE FlmCursorAddOp(
+FLMEXP RCODE FLMAPI FlmCursorAddOp(
 	HFCURSOR		hCursor,
 	QTYPES		eOperator,
 	FLMBOOL		bResolveUnknown
@@ -307,7 +307,7 @@ Exit:
 /*API~***********************************************************************
 Desc: Adds an embedded user predicate.
 *END************************************************************************/
-RCODE  FlmCursorAddUserPredicate(
+FLMEXP RCODE FLMAPI FlmCursorAddUserPredicate(
 	HFCURSOR					hCursor,
 	FlmUserPredicate *	pPredicate
 	)
@@ -695,7 +695,7 @@ Exit:
 /*API~***********************************************************************
 Desc : Adds a value to the selection criteria of a given cursor.
 *END************************************************************************/
-RCODE FlmCursorAddValue(
+FLMEXP RCODE FLMAPI FlmCursorAddValue(
 	HFCURSOR		hCursor,
 	QTYPES		eValType,
 	void *		pVal,
@@ -852,21 +852,12 @@ Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorAddField
-Area : CURSOR
 Desc : Adds a field ID to the selection criteria of a given cursor.
 *END************************************************************************/
-RCODE FlmCursorAddField(
+FLMEXP RCODE FLMAPI FlmCursorAddField(
 	HFCURSOR		hCursor,
-		// [IN] Handle to a cursor.
 	FLMUINT		uiFldId,
-		// [IN] Field number.
 	FLMUINT		uiFlags
-		// [IN] Flags. Valid values for uiFlags are as follows:
-		//      FLM_USE_DEFAULT_VALUE -- If a field is missing from a record,
-		//		  use a default value.
-		//		  FLM_SINGLE_VALUED -- Field will only have a single occurrance
-		//		  in any record it appears in.
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -934,46 +925,13 @@ Exit:
 
 
 /*API~***********************************************************************
-Name : FlmCursorAddFieldPath
-Area : CURSOR
 Desc : Adds a field path to the selection criteria of a given cursor.  A
 		 field path is the fully qualified context of a field within a record.
 *END************************************************************************/
-RCODE FlmCursorAddFieldPath(
+FLMEXP RCODE FLMAPI FlmCursorAddFieldPath(
 	HFCURSOR		hCursor,
-		// [IN] Handle to a cursor.
 	FLMUINT *	puiFldPath,
-		// [IN] Null-terminated array of field numbers.  The first member
-		// is the root field and the last member is the leaf field.
-		//
-		// Example:
-		//
-		// Assume that a sample database has a data dictionary with the fields
-		// PERSON (context field, id 567), BUILDING (context field, id 568),
-		// and NAME (string, id 569) defined.  Also, the following records
-		// have been added to the default data container:
-		//
-		// 0 PERSON                                0 BUILDING
-		//   1 NAME "john doe"                       1 NAME "empire state"
-		//
-		// If it is desired to select all records from the database
-		// in which the NAME field is found within the context of the PERSON
-		// field (occurences of NAME field which are directly subordinate
-		// to the PERSON field), a field path can be used:
-		//
-		//           FLMUINT     puiFldPath[] = { 567, 569, 0};
-		//
-		// The field path can be view simply as a "qualified" field,
-		// and as such, adding a field path to the selection criteria is no
-		// different syntactically than adding a field to the criteria.
-		// All operations, operators, and constructs which are valid when
-		// applied to a field are also valid when applied to a field path.
 	FLMUINT		uiFlags
-		// [IN] Flags. Valid values for uiFlags are as follows:
-		//      FLM_USE_DEFAULT_VALUE -- If a field is missing from a record,
-		//		  use a default value.
-		//		  FLM_SINGLE_VALUED -- Field will only have a single occurrance
-		//		  in any record it appears in.
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -1030,54 +988,17 @@ Exit:
 }
 
 /*API~***********************************************************************
-Name : FlmCursorAddFieldCB
-Area : CURSOR
 Desc : Adds a field path to the selection criteria of a given cursor - with
 		 a callback to retrieve the field.
 *END************************************************************************/
-RCODE FlmCursorAddFieldCB(
-	HFCURSOR		hCursor,
-		// [IN] Handle to a cursor.
-	FLMUINT *	puiFldPath,
-		// [IN] Null-terminated array of field numbers.  The first member
-		// is the root field and the last member is the leaf field.
-		//
-		// Example:
-		//
-		// Assume that a sample database has a data dictionary with the fields
-		// PERSON (context field, id 567), BUILDING (context field, id 568),
-		// and NAME (string, id 569) defined.  Also, the following records
-		// have been added to the default data container:
-		//
-		// 0 PERSON                                0 BUILDING
-		//   1 NAME "john doe"                       1 NAME "empire state"
-		//
-		// If it is desired to select all records from the database
-		// in which the NAME field is found within the context of the PERSON
-		// field (occurences of NAME field which are directly subordinate
-		// to the PERSON field), a field path can be used:
-		//
-		//           FLMUINT     puiFldPath[] = { 567, 569, 0 };
-		//
-		// The field path can be view simply as a "qualified" field,
-		// and as such, adding a field path to the selection criteria is no
-		// different syntactically than adding a field to the criteria.
-		// All operations, operators, and constructs which are valid when
-		// applied to a field are also valid when applied to a field path.
-	FLMUINT		uiFlags,
-		// [IN] Flags. Valid values for uiFlags are as follows:
-		//      FLM_USE_DEFAULT_VALUE -- If a field is missing from a record,
-		//		  use a default value.
-		//		  FLM_SINGLE_VALUED -- Field will only have a single occurrance
-		//		  in any record it appears in.
-	FLMBOOL		bValidateOnly,
-		// [IN] Validate fields only.  If TRUE, this indicates that fields are
-		// to be validated via the callback, not fetched.
+FLMEXP RCODE FLMAPI FlmCursorAddFieldCB(
+	HFCURSOR					hCursor,
+	FLMUINT *				puiFldPath,
+	FLMUINT					uiFlags,
+	FLMBOOL					bValidateOnly,
 	CURSOR_GET_FIELD_CB	fnGetField,
-		// [IN] Callback function to retrieve the field.
 	void *					pvUserData,
-		// [IN] User data for callback function
-	FLMUINT		uiUserDataLen
+	FLMUINT					uiUserDataLen
 	)
 {
 	RCODE			rc = FERR_OK;

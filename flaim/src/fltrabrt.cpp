@@ -329,16 +329,10 @@ Exit:
 }
 
 /*API~***********************************************************************
-Area : TRANSACTION
 Desc : Aborts an active transaction.
 *END************************************************************************/
-RCODE 
-		// FERR_ILLEGAL_TRANS_OP - Active child transactions must be committed
-		// or aborted before the parent transaction can be aborted.
-		//
-		// FERR_NO_TRANS_ACTIVE - No transaction is active
-	FlmDbTransAbort(
-		HFDB			hDb
+FLMEXP RCODE FLMAPI FlmDbTransAbort(
+	HFDB	hDb
 	)
 {
 	RCODE			rc;

@@ -28,7 +28,7 @@
 Desc:	Given an input key tree a FLAIM collated key will be built and returned
 		to the user.
 ****************************************************************************/
-RCODE FlmKeyBuild(
+FLMEXP RCODE FLMAPI FlmKeyBuild(
 	HFDB			hDb,
 	FLMUINT		uiIxNum,
 	FLMUINT		uiContainer,

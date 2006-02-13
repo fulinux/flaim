@@ -37,7 +37,7 @@ void flmGetCPInfo(
 /*******************************************************************************
 Desc:	 Sets indexing callback function
 *******************************************************************************/
-void FlmSetIndexingCallback(
+FLMEXP void FLMAPI FlmSetIndexingCallback(
 	HFDB						hDb,
 	IX_CALLBACK				fnIxCallback,
 	void *					pvAppData)
@@ -49,7 +49,7 @@ void FlmSetIndexingCallback(
 /*******************************************************************************
 Desc:	 Returns indexing callback function
 *******************************************************************************/
-void FlmGetIndexingCallback(
+FLMEXP void FLMAPI FlmGetIndexingCallback(
 	HFDB				hDb,
 	IX_CALLBACK *	pfnIxCallback,
 	void **			ppvAppData)
@@ -76,7 +76,7 @@ Notes: This function stores a pointer to a callback function which is
 		 or before records are returned to the application (read operations).
 		 By default, no record validation is performed by FLAIM.
 *******************************************************************************/
-void FlmSetRecValidatorHook(
+FLMEXP void FLMAPI FlmSetRecValidatorHook(
 	HFDB						hDb,
 	REC_VALIDATOR_HOOK   fnRecValidatorHook,
 	void *					pvAppData)
@@ -88,7 +88,7 @@ void FlmSetRecValidatorHook(
 /*******************************************************************************
 Desc : Returns to the user the sessions current Rec Validator Hook values.
 *******************************************************************************/
-void FlmGetRecValidatorHook(
+FLMEXP void FLMAPI FlmGetRecValidatorHook(
 	HFDB						hDb,
 	REC_VALIDATOR_HOOK * pfnRecValidatorHook, // [out] RecValidator func pointer
 	void **					ppvAppData)				// [out] application data
@@ -108,7 +108,7 @@ void FlmGetRecValidatorHook(
 Desc : Configures a callback function which is called to return general
 		 purpose information.
 *******************************************************************************/
-void FlmSetStatusHook(
+FLMEXP void FLMAPI FlmSetStatusHook(
 	HFDB				hDb,
 	STATUS_HOOK    fnStatusHook,
 	void *			pvAppData)
@@ -120,7 +120,7 @@ void FlmSetStatusHook(
 /*******************************************************************************
 Desc : Returns to the user the session's current status hook values.
 *******************************************************************************/
-void FlmGetStatusHook(
+FLMEXP void FLMAPI FlmGetStatusHook(
 	HFDB				hDb,
 	STATUS_HOOK *	pfnStatusHook,
 	void **			ppvAppData)
@@ -139,17 +139,11 @@ void FlmGetStatusHook(
 /*******************************************************************************
 Desc:	Allows an application to configure various options for a database.
 *******************************************************************************/
-RCODE 
-		// FERR_NOT_IMPLEMENTED - Invalid eConfigType value
-	FlmDbConfig(
-		HFDB				hDb,
-			// [IN] Handle to a database.
-		eDbConfigType	eConfigType,
-			// [IN] Database option to configure.
-		void *			Value1,
-			// [IN] The type and domain of Value1 are determined by eConfigType.
-		void *		   Value2
-			// [IN] The type and domain of Value2 are determined by eConfigType.
+FLMEXP RCODE FLMAPI FlmDbConfig(
+	HFDB				hDb,
+	eDbConfigType	eConfigType,
+	void *			Value1,
+	void *		   Value2
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -1001,183 +995,12 @@ Exit:
 /*******************************************************************************
 Desc:	Returns information about a particular database.
 *******************************************************************************/
-RCODE 
-		// FERR_NOT_IMPLEMENTED - Invalid eGetConfigType value
-		// FRC_NOT_FOUND - Requested information is not available
-	FlmDbGetConfig(
-		HFDB					hDb,
-			// [IN] Handle to a database.
-		eDbGetConfigType	eGetConfigType,
-			// [IN] Information to retrieve.  Possible values of eGetConfigType:
-			//
-			//		PARAM		TYPE					MEANING / USE
-			//
-			//	FDB_GET_VERSION:  Retrieves the database's version number.
-			//
-			//		Value1	FLMUINT *			Returns version number.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//
-			//	FDB_GET_BLKSIZ:  Retrieves the database's block size.
-			//
-			//		Value1	FLMUINT *			Returns block size.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//
-			//	FDB_GET_DEFAULT_LANG:  Retrieves the database's default language.
-			//
-			//		Value1	FLMUINT *			Returns default language.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//
-			//	FDB_GET_PATH:  Retrieves the store's file path.  If the
-			// path is not available, FRC_NOT_FOUND will be returned.
-			//
-			//		Value1	FLMBYTE *			Returns database file name.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//
-			//	FDB_GET_TRANS_ID:  Returns the stores' current transaction ID,
-			// if any.  A value of zero is returned if there is no current
-			// transaction.
-			//
-			//		Value1	FLMUINT *			Returns transaction ID.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//
-			//	FDB_GET_CHECKPOINT_INFO:  Returns checkpoint information for the
-			// store.
-			//
-			//		Value1	CHECKPOINT_INFO *	Returns checkpoint info.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//
-			//	FDB_GET_LOCK_HOLDER:  Returns holder of lock.
-			//
-			//		Value1	LOCK_USER *			Returns current lock holder.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//											
-			//	FDB_GET_LOCK_WAITERS:  Returns waiters for the lock.
-			//
-			//		Value1	LOCK_USER **		Returns array of LOCK_USER
-			//											structures.  Will return NULL if
-			//											there are no waiters.  NOTE: Caller
-			//											must delete[] the array!
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//											
-			//	FDB_GET_LOCK_WAITERS_EX:  Calls methods of a user-supplied
-			// object to return information about entries in the lock table
-			//
-			//		Value1	FlmLockInfo *		Returns lock information object.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_RFL_DIR:  Current RFL directory
-			//
-			//		Value1	FLMBYTE *			Returns RFL directory.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_RFL_FILE_NUM:  Current RFL file number
-			//
-			//		Value1	FLMUINT *			Returns current RFL file number.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_RFL_HIGHEST_NU:  Highest RFL file number that is
-			// no longer needed for recovery after a server crash
-			//
-			//		Value1	FLMUINT *			Returns highest RFL file number.
-			//						
-			//	FDB_GET_RFL_FILE_SIZE_LIMITS:  Gets the minimum and
-			// maximum RFL file sizes.
-			//
-			//		Value1	FLMUINT *			Returns minimum RFL file size.
-			//		Value2	FLMUINT *			Returns maximum RFL file size.
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_RFL_KEEP_FLAG:  Returns a boolean to indicate whether
-			// or not RFL files are being preserved
-			//
-			//		Value1	FLMBOOL *			Returns keep flag.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_LAST_BACKUP_TRANS_ID:  Transaction ID of the last backup.
-			// The backup may have been a full backup or an incremental backup.
-			//
-			//		Value1	FLMUINT *			Returns transaction ID.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_BLOCKS_CHANGED_SINCE_BACKUP:  Gets the approx. number of
-			// blocks that have changed since the last full or incremental backup.
-			//
-			//		Value1	FLMUINT *			Returns blocks changed.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_SERIAL_NUMBER:  Gets the database's serial number
-			//
-			//		Value1	FLMBYTE *			Returns serial number.  Buffer size
-			//											should be at least F_SERIAL_NUM_SIZE.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_AUTO_TURN_OFF_KEEP_RFL_FLAG:  Returns a boolean to
-			// indicate whether or not keeping of roll-forward log files
-			// will be automatically turned off when we run out of disk space.
-			//
-			//		Value1	FLMBOOL *			Returns flag.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_KEEP_ABORTED_TRANS_IN_RFL_FLAG:  Returns a boolean to
-			// to indicate whether or not we are keeping aborted transactions
-			// in the roll-forward log.
-			//
-			//		Value1	FLMBOOL *			Returns flag.
-			//		Value2	Not Used
-			//		Value3	Not Used
-			//						
-			//	FDB_GET_SIZES: Returns database size, rollback size,
-			// and RFL file size.  NULL pointers may be passed if one
-			// or more of the sizes is not requested.
-			//
-			//		Value1	FLMUINT64 *			Returns database size.
-			//		Value2	FLMUINT64 *			Returns rollback size.
-			//		Value3	FLMUINT64 *			Returns RFL size.
-			//
-			// FDB_GET_FILE_EXTEND_SIZE: Returns the amount by which the database
-			// is extending files whenever it has to extend them.
-			//		Value1	FLMUINT *			Returns extend size.
-			//
-			// FDB_GET_APP_DATA: Returns the application object for the DB.
-			//		Value1	void **				Returns application object.
-			//
-			// FDB_GET_NEXT_INC_BACKUP_SEQ_NUM: Returns the sequence number
-			// of the next incremental backup.
-			//		Value1	FLMUINT *			Returns the sequence number
-			//
-			// FDB_GET_DICT_SEQ_NUM: Returns the sequence number of 
-			// the dictionary
-			//		Value1	FLMUINT *			Returns the sequence number	
-			//
-			// FDB_GET_FFILE_ID: Returns the ID of the FDB's FFILE
-			//		Value1	FLMUINT *			Returns the ID
-			//
-			// FDB_GET_MUST_CLOSE_RC: Returns the error that caused the
-			// "must close" flag to be set
-			//		Value1	RCODE *				RCODE of "must close" error
-			//
-		void *				Value1,
-			// [OUT] The type and domain of Value1 is determined by eGetConfigType.
-		void *				Value2,
-			// [OUT] The type and domain of Value2 is determined by eGetConfigType.
-		void *				Value3
-			// [OUT] The type and domain of Value3 is determined by eGetConfigType.
+FLMEXP RCODE FLMAPI FlmDbGetConfig(
+	HFDB					hDb,
+	eDbGetConfigType	eGetConfigType,
+	void *				Value1,
+	void *				Value2,
+	void *				Value3
 	)
 {
 	RCODE					rc = FERR_OK;

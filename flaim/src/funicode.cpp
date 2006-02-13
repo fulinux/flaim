@@ -32,7 +32,7 @@ FSTATIC FLMUINT flmUnicodeToWP(
 Desc: 	Returns the size of buffer needed to hold the unicode string in 
 			FLAIM's storage format.
 ****************************************************************************/
-FLMUINT FlmGetUnicodeStorageLength(
+FLMEXP FLMUINT FLMAPI FlmGetUnicodeStorageLength(
 	const FLMUNICODE *	puzStr)
 {
 	FLMBYTE		chrSet;
@@ -108,7 +108,7 @@ Desc: 	Copies and formats a Unicode string into FLAIM's storage format.
 			Unicode values that are not represented as WordPerfect 6.x characters
 			are preserved as non-WP characters.
 ****************************************************************************/
-RCODE FlmUnicode2Storage(
+FLMEXP RCODE FLMAPI FlmUnicode2Storage(
 	const FLMUNICODE *	puzStr,
 	FLMUINT *				puiBufLength,
 	FLMBYTE *				pBuf)
@@ -264,7 +264,7 @@ Exit:
 /****************************************************************************
 Desc: 	Converts storage formats to UNICODE.
 ****************************************************************************/
-RCODE FlmStorage2Unicode(
+FLMEXP RCODE FLMAPI FlmStorage2Unicode(
 	FLMUINT				uiValueType,
 	FLMUINT				uiValueLength,
 	const FLMBYTE *	pucValue,

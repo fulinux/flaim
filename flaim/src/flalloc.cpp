@@ -1441,7 +1441,7 @@ FLMUINT F_Base::Release( void)
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void FlmFreeMem(
+FLMEXP void FLMAPI FlmFreeMem(
 	void *		pMem)
 {
 	f_free( &pMem);

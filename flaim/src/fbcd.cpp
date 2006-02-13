@@ -44,7 +44,7 @@ Note:		If terminating byte is half-full, low-nibble value is
 Method:	Using a MOD algorithm, stack BCD values -- popping to
 			destination reverses the order for correct final sequence
 ****************************************************************************/
-RCODE FlmUINT2Storage(
+FLMEXP RCODE FLMAPI FlmUINT2Storage(
 	FLMUINT		uiNum,
 	FLMUINT *	puiBufLength,	// [IN] size of pBuf, must be atleast F_MAX_NUM_BUF
 										// [OUT] actual amount of pBuf used.
@@ -97,7 +97,7 @@ Method:	Using a MOD algorithm, stack BCD values -- popping to
 			destination reverses the order for correct final sequence
 WARNING:	-2,147,483,648 may yield different results on different platforms
 ****************************************************************************/
-RCODE FlmINT2Storage(
+FLMEXP RCODE FLMAPI FlmINT2Storage(
 	FLMINT		iNum,
 	FLMUINT *	puiBufLength,	// [IN] size of pBuf, must be atleast F_MAX_NUM_BUF
 										// [OUT] actual amount of pBuf used.
@@ -157,7 +157,7 @@ RCODE FlmINT2Storage(
 Desc: 	Returns a signed value from a BCD value.
 			The data may be a number type, or context type. 
 ****************************************************************************/
-RCODE FlmStorage2INT(
+FLMEXP RCODE FLMAPI FlmStorage2INT(
 	FLMUINT				uiValueType,
 	FLMUINT				uiValueLength,
 	const FLMBYTE *	pucValue,		// Internal Storage Format
@@ -198,7 +198,7 @@ RCODE FlmStorage2INT(
 Desc: 	Returns a unsigned value from a BCD value.
 			The data may be a number type, or context type. 
 ****************************************************************************/
-RCODE FlmStorage2UINT(
+FLMEXP RCODE FLMAPI FlmStorage2UINT(
 	FLMUINT				uiValueType,
 	FLMUINT				uiValueLength,
 	const FLMBYTE *	pucValue,				// Internal Storage Format
@@ -238,7 +238,7 @@ RCODE FlmStorage2UINT(
 Desc: 	Returns a unsigned value from a BCD value.
 			The data may be a number type, or context type. 
 ****************************************************************************/
-RCODE FlmStorage2UINT32(
+FLMEXP RCODE FLMAPI FlmStorage2UINT32(
 	FLMUINT				uiValueType,
 	FLMUINT				uiValueLength,
 	const FLMBYTE *	pucValue,		// Internal Storage Format
@@ -370,5 +370,3 @@ RCODE flmBcd2Num(
 
 	return( FERR_OK);
 }
-
-

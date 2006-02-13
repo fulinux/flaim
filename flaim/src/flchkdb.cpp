@@ -53,7 +53,7 @@ Note:		The routine verifies the database by first reading through
 			verify the linked lists, we can keep ourselves from getting into
 			an infinite loop if there is a loop in the lists.
 *END************************************************************************/
-RCODE FlmDbCheck(
+FLMEXP RCODE FLMAPI FlmDbCheck(
 	HFDB						hDb,
 	const char *			pDbFileName,
 	const char *			pszDataDir,

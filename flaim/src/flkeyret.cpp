@@ -44,7 +44,7 @@ FSTATIC RCODE flmNextKey(
 /*API~***********************************************************************
 Desc:		Retrieves a key from an index based on a passed-in GEDCOM tree and DRN.
 *END************************************************************************/
-RCODE FlmKeyRetrieve(
+FLMEXP RCODE FLMAPI FlmKeyRetrieve(
 	HFDB				hDb,
 	FLMUINT			uiIndex,
 	FLMUINT			uiContainer,
@@ -636,4 +636,3 @@ FSTATIC RCODE flmNextKey(
 Exit:
 	return( rc);
 }
-

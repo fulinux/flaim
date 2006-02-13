@@ -25,10 +25,10 @@
 #include "flaimsys.h"
 
 /*API~***********************************************************************
-Desc:		Returns a pointer to the ASCII string representation of a FLAIM
-			return code.
+Desc:	Returns a pointer to the ASCII string representation of a FLAIM
+		return code.
 *END************************************************************************/
-const char * FlmErrorString(
+FLMEXP const char * FLMAPI FlmErrorString(
 	RCODE			rc)
 {
 	const char *	pszStr;
@@ -290,7 +290,3 @@ const char * flmErrorString(
 			return( NULL);
 	}
 }
-
-
-
-

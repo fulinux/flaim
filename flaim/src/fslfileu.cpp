@@ -3105,7 +3105,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FlmMaintenanceStatus(
+FLMEXP RCODE FLMAPI FlmMaintenanceStatus(
 	HFDB					hDb,
 	FMAINT_STATUS *	pMaintStatus)
 {

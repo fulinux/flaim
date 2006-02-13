@@ -155,7 +155,7 @@ Notes: If an index definition record is added to the dictionary container,
 		 keys in an index are not unique, the transaction commit will fail and
 		 return an error.
 *END************************************************************************/
-RCODE FlmRecordAdd(
+FLMEXP RCODE FLMAPI FlmRecordAdd(
 	HFDB			hDb,
 	FLMUINT		uiContainer,
 	FLMUINT *	puiDrn,
@@ -458,7 +458,7 @@ Notes: If an index definition record is modified in the dictionary container,
 		 index definition record is not allowed.  For information on changing
 		 the state of a field, see the Dictionary Syntax document.
 *END************************************************************************/
-RCODE FlmRecordModify(
+FLMEXP RCODE FLMAPI FlmRecordModify(
 	HFDB		   hDb,
 	FLMUINT		uiContainer,
 	FLMUINT		uiDrn,
@@ -752,7 +752,7 @@ Notes: If an index definition record or a container definition record is
 		 information on deletion of field definitions, see the Dictionary Syntax
 		 document.
 *END************************************************************************/
-RCODE	FlmRecordDelete(
+FLMEXP RCODE FLMAPI FlmRecordDelete(
 	HFDB	 		hDb,
 	FLMUINT		uiContainer,
 	FLMUINT		uiDrn,

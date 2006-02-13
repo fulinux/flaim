@@ -648,7 +648,7 @@ void FBListAfterAbort(
 /****************************************************************************
 Desc:    Allocate a new blob object
 ****************************************************************************/
-RCODE FlmAllocBlob(
+FLMEXP RCODE FLMAPI FlmAllocBlob(
 	FlmBlob **		ppBlob)
 {
 	RCODE			rc = FERR_OK;

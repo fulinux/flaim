@@ -34,11 +34,9 @@ FSTATIC RCODE	flmRecordRetrieveCS(
 
 
 /*API~***********************************************************************
-Name : FlmRecordRetrieve
-Area : RETRIEVAL
 Desc : Retrieves a single record from a container.
 *END************************************************************************/
-RCODE FlmRecordRetrieve(
+FLMEXP RCODE FLMAPI FlmRecordRetrieve(
 	HFDB				hDb,
 	FLMUINT 			uiContainer,
 	FLMUINT			uiDrn,

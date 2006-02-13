@@ -165,7 +165,7 @@ Exit:
 /*******************************************************************************
 Desc:	Renames a database
 *******************************************************************************/
-RCODE FlmDbRename(
+FLMEXP RCODE FLMAPI FlmDbRename(
 	const char *		pszDbName,
 	const char *		pszDataDir,
 	const char *		pszRflDir,

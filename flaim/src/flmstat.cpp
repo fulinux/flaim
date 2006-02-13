@@ -696,7 +696,7 @@ Exit:
 /****************************************************************************
 Desc:	This routine frees the memory associated with a FLM_STAT structure.
 ****************************************************************************/
-void FlmFreeStats(
+FLMEXP void FLMAPI FlmFreeStats(
 	FLM_STATS *	pStats
 	)
 {
@@ -1254,7 +1254,7 @@ Desc : Returns statistics that have been collected for a share.
 Notes: The statistics returned will be the statistics for ALL
 		 databases associated with the share structure.
 *END************************************************************************/
-RCODE FlmGetStats(
+FLMEXP RCODE FLMAPI FlmGetStats(
 	FLM_STATS *	pFlmStats)
 {
 	RCODE			rc = FERR_OK;

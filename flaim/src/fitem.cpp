@@ -31,7 +31,7 @@ Notes:	Given an item ID, this routine will search a specified shared or
 			of the item will be returned.  This routine supports version 2.0 and
 			higher databases only.
 *******************************************************************************/
-RCODE FlmGetItemName(
+FLMEXP RCODE FLMAPI FlmGetItemName(
 	HFDB			hDb,
 	FLMUINT		uiItemId,
 	FLMUINT		uiNameBufSize,

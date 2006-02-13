@@ -27,7 +27,7 @@
 /*API~***********************************************************************
 Desc:	Upgrades a database to the latest FLAIM version.
 *END************************************************************************/
-RCODE FlmDbUpgrade(
+FLMEXP RCODE FLMAPI FlmDbUpgrade(
 	HFDB				hDb,		
 	FLMUINT			uiNewVersion,
 	STATUS_HOOK		fnStatusCallback,
@@ -550,7 +550,7 @@ Exit:
 /*API~***********************************************************************
 Desc : Adds an encryption key to the database.
 *END************************************************************************/
-RCODE FlmEnableEncryption(
+FLMEXP RCODE FLMAPI FlmEnableEncryption(
 	HFDB				hDb,
 	FLMBYTE **		ppucWrappingKeyRV,
 	FLMUINT32 *		pui32KeyLen)
@@ -679,7 +679,7 @@ Exit:
 Desc:	Changes the way the database key is stored in the database.  Either
 		it is encrypted using a password or it is wrapped in the server key.
 *END************************************************************************/
-RCODE FlmDbWrapKey(
+FLMEXP RCODE FLMAPI FlmDbWrapKey(
 	HFDB					hDb,
 	const char *		pszPassword)
 {

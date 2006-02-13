@@ -55,7 +55,7 @@ FSTATIC RCODE flmCopyFile(
 /*******************************************************************************
 Desc:	Copies a database, including roll-forward log files.
 *******************************************************************************/
-RCODE FlmDbCopy(
+FLMEXP RCODE FLMAPI FlmDbCopy(
 	const char *		pszSrcDbName,
 	const char *		pszSrcDataDir,
 	const char *		pszSrcRflDir,

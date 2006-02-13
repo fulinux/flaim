@@ -124,7 +124,7 @@ FINLINE FLMUINT16 getNextCharState(
 /****************************************************************************
 Desc:	Determine the language number from the 2 byte language code
 ****************************************************************************/
-FLMUINT FlmLanguage(
+FLMEXP FLMUINT FLMAPI FlmLanguage(
 	char  *	pszLanguageCode)
 {
 	char		cFirstChar  = *pszLanguageCode;
@@ -151,7 +151,7 @@ FLMUINT FlmLanguage(
 /****************************************************************************
 Desc:	Determine the language code from the language number
 ****************************************************************************/
-void FlmGetLanguage(
+FLMEXP void FLMAPI FlmGetLanguage(
 	FLMUINT	uiLangNum,
 	char  *	pszLanguageCode)
 {

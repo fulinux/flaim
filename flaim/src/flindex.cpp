@@ -41,7 +41,7 @@ FSTATIC RCODE flmIndexStatusCS(
 /*API~***********************************************************************
 Desc : Return the status of the index.
 *END************************************************************************/
-RCODE FlmIndexStatus(
+FLMEXP RCODE FLMAPI FlmIndexStatus(
 	HFDB					hDb,
 	FLMUINT				uiIndexNum,
 	FINDEX_STATUS *	pIndexStatus)
@@ -149,7 +149,7 @@ Exit:
 Desc : Return the number of the next index.  Pass in zero to get the
 		 first index.
 *END************************************************************************/
-RCODE FlmIndexGetNext(
+FLMEXP RCODE FLMAPI FlmIndexGetNext(
 	HFDB			hDb,
 	FLMUINT *	puiIndexNum)
 {
@@ -245,14 +245,9 @@ Desc : Suspend the selected index from doing any key updates on records
 		 persistant if the database goes down.  
 Notes: An update transaction will be started if necessary.
 *END************************************************************************/
-RCODE 
-	// FERR_BAD_IX - There is not an index with the input index number.
-	// FERR_IO_FILE_LOCK_ERR
-	FlmIndexSuspend(
-		HFDB			hDb,
-			// [IN] Database handle.
-		FLMUINT		uiIndexNum)
-			// [IN] The number of the index to suspend.
+FLMEXP RCODE FLMAPI FlmIndexSuspend(
+	HFDB			hDb,
+	FLMUINT		uiIndexNum)
 {
 	RCODE			rc = FERR_OK;
 	FDB *			pDb = (FDB *)hDb;
@@ -459,14 +454,9 @@ Desc : If the index was suspended, restart the background process that
 		 Returns FERR_OK with no change if the index is already online.
 Notes: An update transaction will be started if necessary.
 *END************************************************************************/
-RCODE 
-	// FERR_BAD_IX - There is not an index with the input index number.
-	// FERR_IO_FILE_LOCK_ERR
-	FlmIndexResume(
-		HFDB			hDb,
-			// [IN] Database handle.
-		FLMUINT		uiIndexNum)
-			// [IN] Index to resume
+FLMEXP RCODE FLMAPI FlmIndexResume(
+	HFDB			hDb,
+	FLMUINT		uiIndexNum)
 {
 	RCODE				rc = FERR_OK;
 	FDB *				pDb = (FDB *)hDb;
