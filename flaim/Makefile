@@ -48,9 +48,10 @@ ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 	# Get the info for all files.
 	
 	revision = $(shell svnversion . -n)
+#	revision = $(subst M,,$(shell svnversion . -n))
 	
 	ifneq (,$(findstring M,$(revision)))
-      $(error Local modifications found - please check in before making distro)
+     $(error Local modifications found - please check in before making distro)
 	endif
 
 	ifneq (,$(findstring :,$(revision)))
@@ -64,6 +65,11 @@ else
 	endif
 endif
 version = $(major_version).$(minor_version).$(revision)
+
+so_current = 1
+so_revision = 0
+so_age = 0
+suffix_version =
 
 rpm_release_num = 1
 
@@ -382,6 +388,9 @@ em :=
 sp := $(em) $(em)
 percent := \045
 dollar := \044
+question := \077
+asterisk := \052
+dash := \055
 
 ifeq ($(host_os_family),win)
 	allprereqs  = $(subst /,\,$+)
@@ -491,6 +500,15 @@ ifdef unix_target
 	lib_prefix = lib
 	lib_suffix = .a
 	shared_lib_suffix = .so
+	ifneq ($(so_age),0)
+		suffix_version = .$(so_current).$(so_revision).$(so_age)
+	else
+		ifneq ($(so_revision),0)
+			suffix_version = .$(so_current).$(so_revision)
+		else
+			suffix_version = .$(so_current)
+		endif
+	endif
 	compiler = g++
 	linker = g++
 	
@@ -663,6 +681,10 @@ view_src = \
 sample_src = \
 	sample.cpp
 
+dbshell_src = \
+	dbshell.cpp \
+	flm_edit.cpp
+	
 ut_basictest_src = \
 	flmunittest.cpp \
 	basic_test.cpp
@@ -671,7 +693,7 @@ ut_basictest_src = \
 
 flaim_obj = $(patsubst src/%.cpp,$(obj_dir)/%$(obj_suffix),$(flaim_src))
 static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
-shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
+shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 
 # -- Unit tests  --
 
@@ -683,6 +705,7 @@ checkdb_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(checkdb_src))
 rebuild_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(rebuild_src))
 view_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(view_src))
 sample_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(sample_src))
+dbshell_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(dbshell_src))
 utilsup_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(utilsup_src))
 
 # -- Make system pattern search paths -- 
@@ -744,7 +767,7 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status dircheck $(util_dir)/checkdb$(exe_suffix)
+checkdb: status dircheck libs $(util_dir)/checkdb$(exe_suffix)
 $(util_dir)/checkdb$(exe_suffix): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
@@ -752,7 +775,7 @@ $(util_dir)/checkdb$(exe_suffix): $(checkdb_obj) $(utilsup_obj) $(static_flaim_l
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status dircheck $(util_dir)/rebuild$(exe_suffix)
+rebuild: status dircheck libs $(util_dir)/rebuild$(exe_suffix)
 $(util_dir)/rebuild$(exe_suffix): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
@@ -760,7 +783,7 @@ $(util_dir)/rebuild$(exe_suffix): $(rebuild_obj) $(utilsup_obj) $(static_flaim_l
 # -- view --
 
 .PHONY : view
-view: status dircheck $(util_dir)/view$(exe_suffix)
+view: status dircheck libs $(util_dir)/view$(exe_suffix)
 $(util_dir)/view$(exe_suffix): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
@@ -768,15 +791,23 @@ $(util_dir)/view$(exe_suffix): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 # -- sample --
 
 .PHONY : sample
-sample: status dircheck $(sample_dir)/sample$(exe_suffix)
+sample: status dircheck libs $(sample_dir)/sample$(exe_suffix)
 $(sample_dir)/sample$(exe_suffix): $(sample_obj) $(static_flaim_lib)
+	$(ec)$(gprintf) "Linking $@ ...\n"
+	$(flm_util_link_cmd)
+
+# -- dbshell --
+
+.PHONY : dbshell
+dbshell: status dircheck libs $(util_dir)/dbshell$(exe_suffix)
+$(util_dir)/dbshell$(exe_suffix): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
 # -- basictest --
 
 .PHONY : basictest
-basictest: status dircheck $(test_dir)/basictest$(exe_suffix)
+basictest: status dircheck libs $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
@@ -815,9 +846,7 @@ ifndef win_target
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
 	install --mode=644 $(shared_flaim_lib) $(lib_install_dir)
-	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
-	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	ln -fs $(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix) $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	ldconfig -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 	install --mode=644 $(static_flaim_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
@@ -830,9 +859,7 @@ endif
 uninstall: 
 ifndef win_target
 	$(ec)$(gprintf) "Uninstalling ...\n"
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)*
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
 	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-rm -rf $(include_install_dir)/flaim.h
@@ -851,15 +878,26 @@ spec: dircheck
 	$(ec)$(gprintf) "BuildRequires: libstdc++-devel libstdc++ gcc-c++\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" >> $(spec_file)
+	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
-	$(ec)$(gprintf) "Copyright: GPL\n" >> $(spec_file)
+	$(ec)$(gprintf) "License: GPL\n" >> $(spec_file)
 	$(ec)$(gprintf) "Vendor: Novell, Inc.\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
 	$(ec)$(gprintf) "Source: $(rpm_proj_name_and_ver).tar.gz\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRoot: /var/tmp/$(rpm_proj_name_and_ver)-buildroot\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRoot: $(percent){_tmppath}/$(percent){name}-$(percent){version}-build\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description\n" >> $(spec_file)
+	$(ec)$(gprintf) "FLAIM is an embeddable cross-platform database engine that provides a\n" >> $(spec_file)
+	$(ec)$(gprintf) "rich, powerful, easy-to-use feature set. It is the database engine used\n" >> $(spec_file)
+	$(ec)$(gprintf) "by Novell eDirectory. It has proven to be highly scalable, reliable,\n" >> $(spec_file)
+	$(ec)$(gprintf) "and robust. It is available on a wide variety of 32 bit and 64 bit\n" >> $(spec_file)
+	$(ec)$(gprintf) "platforms.\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "Authors:\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)\n" >> $(spec_file)
+	$(ec)$(gprintf) "    Daniel Sanders\n" >> $(spec_file)
+	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: FLAIM static library and header file\n" >> $(spec_file)
@@ -867,6 +905,16 @@ spec: dircheck
 	$(ec)$(gprintf) "Provides: $(rpm_proj_name)-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "FLAIM is an embeddable cross-platform database engine that provides a\n" >> $(spec_file)
+	$(ec)$(gprintf) "rich, powerful, easy-to-use feature set. It is the database engine used\n" >> $(spec_file)
+	$(ec)$(gprintf) "by Novell eDirectory. It has proven to be highly scalable, reliable,\n" >> $(spec_file)
+	$(ec)$(gprintf) "and robust. It is available on a wide variety of 32 bit and 64 bit\n" >> $(spec_file)
+	$(ec)$(gprintf) "platforms.\n" >> $(spec_file)
+	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "Authors:\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)\n" >> $(spec_file)
+	$(ec)$(gprintf) "    Daniel Sanders\n" >> $(spec_file)
+	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)prep\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
@@ -885,10 +933,7 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)files\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)-$(version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)-$(major_version).$(minor_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)-$(major_version)$(shared_lib_suffix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
@@ -960,7 +1005,7 @@ all: libs allutils
 	$(ec)$(gprintf) ""
 
 .PHONY : allutils
-allutils: status dircheck checkdb rebuild view sample
+allutils: status dircheck libs checkdb rebuild view sample dbshell
 	$(ec)$(gprintf) ""
 
 .PHONY : test
