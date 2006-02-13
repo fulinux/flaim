@@ -1831,7 +1831,7 @@ public:
 		return( F_FSRestore::openIncFile( uiFileNum));
 	}
 
-	FINLINE RCODE XFLMAPI openRflFile(
+	FINLINE RCODE openRflFile(
 		FLMUINT	uiFileNum)
 	{
 		RCODE	rc;
@@ -3291,7 +3291,7 @@ FLMINT FlmSysInfoCommand::execute(
 			FLMUINT				uiNumThreads;
 			FLMUINT				uiCurrentTime;
 			FLMUINT				uiRow;
-			F_THREAD_INFO *	pThreadInfo;
+			F_THREAD_INFO *	pThreadInfo = NULL;
 			F_THREAD_INFO *	pThrd;
 
 			for( ;;)
@@ -3437,7 +3437,7 @@ FSTATIC void fshellFileSystemTest(
 		}
 
 #ifdef FLM_WIN
-		pFileHdl->SetBlockSize( uiBlockSize);
+		((F_FileHdlImp *)pFileHdl)->SetBlockSize( uiBlockSize);
 #endif
 
 		// VISIT: get file size -- make sure it is a multiple of uiBlockSize
@@ -3455,7 +3455,7 @@ FSTATIC void fshellFileSystemTest(
 		}
 		
 #ifdef FLM_WIN
-		pFileHdl->SetBlockSize( uiBlockSize);
+		((F_FileHdlImp *)pFileHdl)->SetBlockSize( uiBlockSize);
 #endif
 
 		uiOffset = 0;
