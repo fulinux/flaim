@@ -1118,14 +1118,12 @@ RCODE F_FileSystemImp::SetReadOnly(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-#elif defined( FLM_NLM)
-
-	if ( RC_BAD( rc = flmNetWareSetReadOnly( pszFileName, bReadOnly)))
-	{
-		goto Exit;
-	}
 #else
-	rc = RC_SET_AND_ASSERT( FERR_NOT_IMPLEMENTED);
+	F_UNREFERENCED_PARM( pszFileName);
+	F_UNREFERENCED_PARM( bReadOnly);
+	flmAssert( 0);
+	rc = RC_SET( FERR_NOT_IMPLEMENTED);
+	goto Exit;
 #endif
 
 Exit:
