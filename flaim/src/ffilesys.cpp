@@ -1105,16 +1105,17 @@ RCODE F_FileSystemImp::SetReadOnly(
 	
 	if ( bReadOnly)
 	{
-		dwAttr |= XF_IO_FA_RDONLY;
+		dwAttr |= F_IO_FA_RDONLY;
 	}
 	else
 	{
-		dwAttr &= ~XF_IO_FA_RDONLY;
+		dwAttr &= ~F_IO_FA_RDONLY;
 	}
 	
 	if( !SetFileAttributes( (LPTSTR)pszFileName, dwAttr))
 	{
-		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
+		flmAssert( 0);
+		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
 #elif defined( FLM_NLM)
