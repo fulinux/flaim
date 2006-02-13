@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Feb 13 16:21:11 CET 2006 - ro@suse.de
+
+- install the SONAME at least as symlink (should be the real file) 
+
+-------------------------------------------------------------------
 Wed Feb  8 09:49:29 MST 2006 - dsanders@novell.com
 
 - Removed make.exe and printf.exe from package.
