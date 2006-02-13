@@ -375,6 +375,7 @@ pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
 
 inc_dirs = src util
+static_obj_dir = $(target_path)/static_obj
 obj_dir = $(target_path)/obj
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
@@ -692,6 +693,11 @@ ut_basictest_src = \
 # -- FLAIM library --
 
 flaim_obj = $(patsubst src/%.cpp,$(obj_dir)/%$(obj_suffix),$(flaim_src))
+ifdef win_target
+	flaim_static_obj = $(patsubst src/%.cpp,$(static_obj_dir)/%$(obj_suffix),$(flaim_src))
+else
+	flaim_static_obj = $(flaim_obj)
+endif
 static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
 shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 
@@ -721,25 +727,31 @@ libs: status dircheck $(static_flaim_lib) $(shared_flaim_lib)
 
 $(obj_dir)/%$(obj_suffix) : %.cpp
 ifdef win_target
-	$(ec)$(compiler) $(ccflags) /Fd$(subst /,\,$(obj_dir))\tmp.pdb \
+	$(ec)$(compiler) $(ccflags) /DFLM_SRC /DFLM_DLL /Fd$(subst /,\,$(obj_dir))\tmp.pdb \
 		/Fo$(subst /,\,$@) $(subst /,\,$<)
 else
 	$(ec)$(gprintf) "$<\n"
 	$(ec)$(compiler) $(ccflags) -c $< -o $@
 endif
 
+ifdef win_target
+$(static_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fd$(subst /,\,$(obj_dir))\tmp.pdb \
+		/Fo$(subst /,\,$@) $(subst /,\,$<)
+endif
+
 # -- flaim.lib and libflaim.a --
 
-$(static_flaim_lib) : $(flaim_obj)
+$(static_flaim_lib) : $(flaim_static_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(libr) /NOLOGO $(subst /,\,$+) /OUT:$(subst /,\,$@)	
 else
 	$(ec)rm -f $@
 ifeq ($(target_os_family),osx)
-		$(ec)$(libr) -static -o $@ $+
+	$(ec)$(libr) -static -o $@ $+
 else
-		$(ec)$(libr) -rcs $@ $+
+	$(ec)$(libr) -rcs $@ $+
 endif
 endif
 
@@ -991,6 +1003,7 @@ status:
 .PHONY : dircheck
 dircheck:
 	$(ec)$(call mkdircmd,$(obj_dir))
+	$(ec)$(call mkdircmd,$(static_obj_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
