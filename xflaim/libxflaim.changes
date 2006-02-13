@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Feb 13 11:28:25 MST 2006 - dsanders@novell.com
+
+- Started adding support for using autotools
+- Changed naming convention for shared library to conform to standard.
+
+-------------------------------------------------------------------
 Wed Feb  8 09:53:07 MST 2006 - dsanders@novell.com
 
 - Removed make.exe and printf.exe from package.

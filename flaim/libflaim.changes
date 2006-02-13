@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Mon Feb 13 11:14:33 MST 2006 - dsanders@novell.com
+
+- Changed naming convention for shared library to conform to standard - should be no need for SONAME fix now.
+- Added dbshell utility.
+- Started adding support for using autotools.
+- Fixed bug on FlmDbReduceSize - needed to quit when encountering a block in a not-yet-deleted b-tree
+- Added various new unit tests.
+- Fixed various compiler warnings.
+
+-------------------------------------------------------------------
 Mon Feb 13 16:21:11 CET 2006 - ro@suse.de
 
 - install the SONAME at least as symlink (should be the real file) 
