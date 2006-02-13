@@ -115,6 +115,10 @@ public:
 
 	// Miscellaneous methos
 
+	RCODE SetReadOnly(
+		const char *	pszFileName,
+		FLMBOOL			bReadOnly);
+		
 	RCODE GetSectorSize(							// Get the sector size of the volume for
 		const char *		pFileName,			// this file.
 		FLMUINT *			puiSectorSize);

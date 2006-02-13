@@ -1059,6 +1059,80 @@ Exit:
 }
 
 /****************************************************************************
+Desc: Set the Read-Only Attribute (not supported on all platforms).
+****************************************************************************/
+RCODE F_FileSystemImp::SetReadOnly(
+	const char *	pszFileName,
+	FLMBOOL			bReadOnly)
+{
+	RCODE				rc = FERR_OK;
+
+#if defined( FLM_UNIX)
+	struct stat		filestatus;
+
+	if( stat( (char *)pszFileName, &filestatus))
+	{
+		flmAssert( 0);
+		rc = RC_SET( FERR_FAILURE);
+		goto Exit;
+	}
+	
+	if ( bReadOnly)
+	{
+		filestatus.st_mode &= ~S_IWUSR;
+	}
+	else
+	{
+		filestatus.st_mode |= S_IWUSR;
+	}
+	
+	if ( chmod( (char *)pszFileName, filestatus.st_mode))
+	{
+		rc = RC_SET( FERR_FAILURE);
+		goto Exit;
+	}
+	
+#elif defined( FLM_WIN)
+
+	DWORD				dwAttr;
+
+	dwAttr = GetFileAttributes( (LPTSTR)pszFileName);
+	if( dwAttr == (DWORD)-1)
+	{
+		rc = RC_SET( FERR_IO_PATH_NOT_FOUND);
+		goto Exit;
+	}
+	
+	if ( bReadOnly)
+	{
+		dwAttr |= XF_IO_FA_RDONLY;
+	}
+	else
+	{
+		dwAttr &= ~XF_IO_FA_RDONLY;
+	}
+	
+	if( !SetFileAttributes( (LPTSTR)pszFileName, dwAttr))
+	{
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
+		goto Exit;
+	}
+#elif defined( FLM_NLM)
+
+	if ( RC_BAD( rc = flmNetWareSetReadOnly( pszFileName, bReadOnly)))
+	{
+		goto Exit;
+	}
+#else
+	rc = RC_SET_AND_ASSERT( FERR_NOT_IMPLEMENTED);
+#endif
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
 Desc:	stat tpath to see if it is a directory
 ****************************************************************************/
 #if defined( FLM_UNIX)

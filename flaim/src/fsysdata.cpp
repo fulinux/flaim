@@ -5194,6 +5194,27 @@ Exit:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
+RCODE FlmAllocDirHdl(
+	F_DirHdl **	ppDirHdl)
+{
+	RCODE		rc = FERR_OK;
+
+	flmAssert( ppDirHdl && *ppDirHdl == NULL);
+
+	if( (*ppDirHdl = f_new F_DirHdlImp) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:	
+****************************************************************************/
 RCODE FlmAllocFileHandle(
 	F_FileHdl **		ppFileHandle)
 {

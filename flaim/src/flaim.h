@@ -2814,6 +2814,8 @@
 														///< function whenever it is called.
 	} eDbConfigType;
 
+#define F_SERIAL_NUM_SIZE				16
+
 	/// Options for FlmDbGetConfig().
 	typedef enum
 	{
@@ -6478,6 +6480,15 @@
 			const char *		pszDestFilePath,		// Name of destination file.
 			FLMBOOL				bOverwrite,				// Overwrite destination file?
 			FLMUINT *			puiBytesCopied) = 0;	// Number of bytes copied.
+			
+		virtual RCODE SetReadOnly(
+			const char *	pszFileName,
+			FLMBOOL			bReadOnly) = 0;
+			
+		virtual RCODE GetSectorSize(				// Get the sector size of the volume for
+			const char *		pFileName,			// this file.
+			FLMUINT *			puiSectorSize) = 0;
+
 	};
 
 	RCODE FlmAllocFileSystem(

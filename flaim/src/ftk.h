@@ -1607,15 +1607,43 @@ void intToByte(
 								File Path Functions & Macros
 ****************************************************************************/
 
-// This defines the maximum file size we can support for ANY
-// platform, ANY file type.  It is not 4Gb because of a bug in direct IO
-// on Netware.  The limitation is that in direct IO mode (on the legacy file
-// system) we are not allowed room for the last block.  If the block
-// size were 64K for example, direct IO only lets us expand to a size of
-// 0xFFFF0000.  Since we can't anticipate what the block size will be,
-// we have to set a maximum that accounts for the maximum block size we
-// may ever see.  At this point, we are assuming it won't ever be more
-// than 256K on legacy file systems.  Thus, our limit of 0xFFFC0000.
+#if defined( FLM_WIN) || defined( FLM_NLM)
+	#define FWSLASH     '/'
+	#define SLASH       '\\'
+	#define SSLASH      "\\"
+	#define COLON       ':'
+	#define PERIOD      '.'
+	#define PARENT_DIR  ".."
+	#define CURRENT_DIR "."
+#else
+	#ifndef FWSLASH
+		#define FWSLASH '/'
+	#endif
+
+	#ifndef SLASH
+		#define SLASH  '/'
+	#endif
+
+	#ifndef SSLASH
+		#define SSLASH      "/"
+	#endif
+
+	#ifndef COLON
+		#define COLON  ':'
+	#endif
+
+	#ifndef PERIOD
+		#define PERIOD '.'
+	#endif
+
+	#ifndef PARENT_DIR
+		#define PARENT_DIR ".."
+	#endif
+
+	#ifndef CURRENT_DIR
+		#define CURRENT_DIR "."
+	#endif
+#endif
 
 /****************************************************************************
 								CPU Release Functions										
@@ -1802,8 +1830,6 @@ FLMUINT32 ftkAtomicExchange(
 /****************************************************************************
 									Pseudo Serial Numbers
 ****************************************************************************/
-
-#define F_SERIAL_NUM_SIZE				16
 
 RCODE f_initSerialNumberGenerator( void);
 
