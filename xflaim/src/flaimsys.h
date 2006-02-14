@@ -129,12 +129,12 @@ public:
 #if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
 	void operator delete(
 		void *			ptr,
-		char *			file,
+		const char *	file,
 		int				line);
 
 	void operator delete[](
 		void *			ptr,
-		char *			file,
+		const char *	file,
 		int				line);
 #endif
 

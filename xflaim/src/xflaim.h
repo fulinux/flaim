@@ -278,7 +278,21 @@
 	// Make sure we define XFLMAPI based on the way 
 	// it is defined in PSA (see psaapi.h)
 	
+	#define XFLMEXTC				extern "C"
+
 	#if defined( FLM_WIN)
+		#if defined( FLM_DLL)
+			#if defined( FLM_SRC)
+				#define XFLM_XI	dllexport
+			#else
+				#define XFLM_XI	dllimport
+			#endif
+			#define XFLMEXP		XFLMEXTC __declspec(XFLM_XI)
+		#else
+			#define XFLMEXP		XFLMEXTC
+		#endif
+		#define XFLMCDECL			__cdecl
+		#define XFLMCAPI			__cdecl
 		#define XFLMAPI     		__stdcall
 		#ifdef FLM_DEBUG
 			#define FINLINE		inline
@@ -286,16 +300,18 @@
 			#define FINLINE		__forceinline
 		#endif
 	#elif defined( FLM_NLM)
-		#define XFLMAPI     		__stdcall
+		#define XFLMAPI			__stdcall
+		#define XFLMCAPI			__cdecl
+		#define XFLMEXP			XFLMEXTC
 		#define FINLINE			inline
 	#elif defined( FLM_UNIX)
 		#define XFLMAPI
+		#define XFLMCAPI
+		#define XFLMEXP			XFLMEXTC
 		#define FINLINE			inline
 	#else
 		#error Platform not supported
 	#endif
-	
-	#define XFLMEXTC				extern "C"
 
 	// xflmnovtbl keeps MS compilers from generating vtables for interfaces
 	
@@ -3028,7 +3044,7 @@
 	 * using COM.
 	 * -------------------------------------------------------------------- */
 
-	XFLMEXTC RCODE FlmAllocDbSystem(
+	XFLMEXP RCODE XFLMCAPI FlmAllocDbSystem(
 		IF_DbSystem **				ppDbSystem);
 
 	/****************************************************************************

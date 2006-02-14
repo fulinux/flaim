@@ -34,19 +34,20 @@
 #define FLM_XML_EXTENDER			0x10
 #define FLM_XML_WHITESPACE			0x20
 
-#ifdef FLM_WIN
+#if defined( FLM_WIN)
 
 	// VISIT: When doing a release build, we use the /O2 compiler switch,
 	// which turns on various optimizations.  However, for some strange
-	// reason, the compiler (version msvc7) hangs when compiling this file
-	// with the /O2 switch.  This pragma below essentially disables the /O2
-	// switch for this file. -- This file compiled just fine under msvc6
+	// reason, the compiler (versions vc7 and vc8) hangs when compiling this
+	// file with the /O2 switch.  This pragma below essentially disables the
+	// /O2 switch for this file. -- This file compiled just fine under vc6
 	// without having to disable optimizations.  Therefore, when the next
 	// version of the Microsoft compiler comes out, it would be worth
 	// trying it again without this pragma to see if the compiler still
 	// hangs.
 
 	#pragma optimize("", off)
+	#pragma warning (disable: 4748)	// /GS security check option disabled
 #endif
 
 // Local typedefs

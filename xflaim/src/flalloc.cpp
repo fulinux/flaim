@@ -1701,7 +1701,7 @@ Desc:
 #if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
 void XF_Base::operator delete(
 	void *			ptr,
-	char *,		// file
+	const char *,	// file
 	int)			// line
 {
 	if( !ptr)
@@ -1719,7 +1719,7 @@ Desc:
 #if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
 void XF_Base::operator delete[](
 	void *			ptr,
-	char *,		// file
+	const char *,	// file
 	int)			// line
 {
 	if( !ptr)
