@@ -97,7 +97,7 @@
 			#define FLM_UNIX
 			#define FLM_SOLARIS
 			#define FLM_STRICT_ALIGNMENT
-			#if defined( sparc) || defined( __sparc)
+			#if defined( sparc) || defined( __sparc) || defined( __sparcv9)
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 			#endif
@@ -117,7 +117,7 @@
 	
 		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
 			#if defined( FLM_UNIX)
-				#if defined( __x86_64__) || defined( _LP64) || defined( __LP64__)
+				#if defined( __x86_64__) || defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
 					#define FLM_64BIT
 				#endif
 			#endif
