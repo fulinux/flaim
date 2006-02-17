@@ -74,10 +74,10 @@ RCODE // SUCCESS - No problems in processing
 			goto Exit;
 		}
 	}
-	/* If the node is not a BINARY or a TEXT node, return an error. */
+	/* If the node is not a BINARY node, return an error. */
 
 	nodeType = GedValType( node);
-	if( (nodeType != FLM_TEXT_TYPE) && (nodeType != FLM_BINARY_TYPE))
+	if( nodeType != FLM_BINARY_TYPE)
 	{
 		rc = RC_SET( FERR_CONV_ILLEGAL);
 		goto Exit;
@@ -85,11 +85,6 @@ RCODE // SUCCESS - No problems in processing
 
 	ptr = (FLMBYTE *)GedValPtr( node);
 	valLength = GedValLen( node);
-	if( nodeType == FLM_TEXT_TYPE)
-	{
-		rc = GedTextToBin( ptr, valLength, (FLMBYTE *)buffer, bufLenRV);
-		goto Exit;
-	}
 
 	/* At this point we know the node is a BINARY node */
 

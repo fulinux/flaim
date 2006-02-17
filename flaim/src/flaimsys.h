@@ -295,12 +295,6 @@ RCODE GedNumToText(
 	FLMBYTE *			txt,
 	FLMUINT 	*			txtLenRV);
 
-RCODE GedTextToBin(
-	const FLMBYTE *	txt,
-	FLMUINT				len,
-	FLMBYTE *			bin,
-	FLMUINT  *			lenRV);
-
 RCODE GedTextToNum(
 	const FLMBYTE *	txt,
 	FLMUINT				len,

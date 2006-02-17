@@ -199,7 +199,6 @@ libflaim_la_SOURCES = \
   gnative.cpp \
   gnbcd.cpp \
   gnum2txt.cpp \
-  gtxt2bin.cpp \
   gtxt2num.cpp \
   gunicode.cpp \
   imonbase.cpp \
