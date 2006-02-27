@@ -1369,8 +1369,8 @@ Delete_Exit:
 					FLMUINT		uiContainer;
 					char			pucResponse[ 16];
 					FLMUINT		uiDrn;
-					FLMBOOL		bAddInBackground;
-					FLMBOOL		bCreateSuspended;
+					FLMBOOL		bAddInBackground = FALSE;
+					FLMBOOL		bCreateSuspended = FALSE;
 					
 					*pucResponse = '\0';
 					requestInput(
@@ -1636,7 +1636,7 @@ Delete_Exit:
 				{
 					FLMBOOL		bFoundMatch = FALSE;
 					FLMBOOL		bTagSearch = FALSE;
-					FLMUINT		uiTagNum;
+					FLMUINT		uiTagNum = 0;
 					FLMUINT		uiTmp;
 
 					if( m_pEditStatusWin)
@@ -1705,7 +1705,7 @@ Delete_Exit:
 				{
 					FLMBOOL		bFoundMatch = FALSE;
 					FLMBOOL		bTagSearch = FALSE;
-					FLMUINT		uiTagNum;
+					FLMUINT		uiTagNum = 0;
 					FLMUINT		uiTmp;
 
 					if( m_pEditStatusWin)
@@ -6908,7 +6908,7 @@ RCODE F_RecEditor::refreshNameTable( void)
 {
 	NODE *					pRootNd = NULL;
 	NODE *					pTmpNd = NULL;
-	NODE *					pPriorNd;
+	NODE *					pPriorNd = NULL;
 	FLMUINT					uiFlags;
 	POOL *					pScratchPool = &m_scratchPool;
 	void *					pPoolMark = GedPoolMark( &m_scratchPool);
