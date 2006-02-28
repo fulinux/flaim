@@ -67,7 +67,7 @@ endif
 version = $(major_version).$(minor_version).$(revision)
 
 so_current = 1
-so_revision = 0
+so_revision = 2
 so_age = 0
 suffix_version =
 
