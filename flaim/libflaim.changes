@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Feb 28 13:41:42 MST 2006 - dsanders@novell.com
+
+- Added support for Intel MAC and __sparc49 (64 bit) platforms
+- Initialized variables to quiet compiler warnings
+- Got rid of unneeded internal functions
+- Various fixes for Windows - support for vc8 compiler, workaround to compiler issues with inline methods
+- Fixedup copyright notice in one source file
+
+-------------------------------------------------------------------
 Mon Feb 13 11:14:33 MST 2006 - dsanders@novell.com
 
 - Changed naming convention for shared library to conform to standard - should be no need for SONAME fix now.

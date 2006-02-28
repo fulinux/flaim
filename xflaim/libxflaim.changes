@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Feb 28 13:48:00 MST 2006 - dsanders@novell.com
+
+- Added support for Intel MAC platform and __sparc49 (64 bit solaris).
+
+-------------------------------------------------------------------
 Mon Feb 13 11:28:25 MST 2006 - dsanders@novell.com
 
 - Started adding support for using autotools
