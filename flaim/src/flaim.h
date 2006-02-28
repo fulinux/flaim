@@ -106,11 +106,13 @@
 			#define FLM_HPUX
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT
-		#elif (defined( __ppc__) || defined( __ppc64__)) && defined( __APPLE__)
+		#elif defined( __APPLE__)
 			#define FLM_UNIX
 			#define FLM_OSX
-			#define FLM_BIG_ENDIAN
-			#define FLM_STRICT_ALIGNMENT			
+			#if (defined( __ppc__) || defined( __ppc64__))
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT			
+			#endif
 		#else
 				#error Platform architecture is undefined.
 		#endif
