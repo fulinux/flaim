@@ -1134,13 +1134,10 @@ endif
 
 .PHONY : spec
 spec: dircheck
-	$(ec)$(gprintf) "# neededforbuild  libstdc++-devel libstdc++ gcc-c++\n" > $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
+	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRequires: libstdc++-devel libstdc++ gcc-c++\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
-	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
