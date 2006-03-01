@@ -68,7 +68,7 @@ F_DynamicList::~F_DynamicList( void)
 Name:	setup
 Desc:	Allocates the list window and prepares the object for use
 *****************************************************************************/
-RCODE F_DynamicList::setup( FTX_WINDOW_p pInitializedWindow)
+RCODE F_DynamicList::setup( FTX_WINDOW * pInitializedWindow)
 {
 	RCODE				rc = FERR_OK;
 
@@ -318,7 +318,7 @@ void F_DynamicList::refresh( void)
 {
 	DLIST_NODE *	pTmp;
 	FLMUINT			uiLoop;
-	FTX_SCREEN_p	pScreen = NULL;
+	FTX_SCREEN *	pScreen = NULL;
 
 	if( !m_bChanged)
 	{
@@ -586,7 +586,7 @@ Name:	dlistDefaultDisplayHook
 Desc:	
 *****************************************************************************/
 RCODE dlistDefaultDisplayHook(
-	FTX_WINDOW_p		pWin,
+	FTX_WINDOW *		pWin,
 	FLMBOOL				bSelected,
 	FLMUINT				uiRow,
 	FLMUINT				uiKey,
@@ -624,7 +624,7 @@ RCODE F_DynamicList::dumpToFile()
 #define DLST_RESP_SIZE 256
 	char				pszResponse[ DLST_RESP_SIZE];
 	FLMUINT			uiTermChar;
-	FTX_SCREEN_p pScreen;
+	FTX_SCREEN * pScreen;
 
 	f_strcpy( pszResponse, DLIST_DUMPFILE_PATH);
 	
@@ -698,7 +698,7 @@ RCODE F_DynamicList::dumpToFile()
 Exit_local:
 	{//give success/fail message
 			
-		FTX_SCREEN_p 	pTmpScreen;
+		FTX_SCREEN * 	pTmpScreen;
 		char 				pszMessage[ 256];
 		FLMUINT 			uiChar;
 			

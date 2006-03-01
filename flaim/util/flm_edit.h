@@ -206,9 +206,9 @@ class F_RecEditor : public F_Base
 		FLMBOOL *					m_pbShutdown;
 		FLMBOOL						m_bOwnNameTable;
 		FLMBOOL						m_bMonochrome;
-		FTX_SCREEN_p				m_pScreen;
-		FTX_WINDOW_p				m_pEditWindow;
-		FTX_WINDOW_p				m_pEditStatusWin;
+		FTX_SCREEN *				m_pScreen;
+		FTX_WINDOW *				m_pEditWindow;
+		FTX_WINDOW *				m_pEditStatusWin;
 		F_RecEditor *				m_pParent;
 		F_RecEditor *				m_pNameList;
 		F_RECEDIT_DISP_HOOK		m_pDisplayHook;
@@ -258,7 +258,7 @@ class F_RecEditor : public F_Base
 			FLMBOOL *		pbModified);
 
 		RCODE editBinaryNode(
-			FTX_WINDOW_p		pWindow,
+			FTX_WINDOW *		pWindow,
 			NODE *				pNd,
 			FLMBOOL *			pbModified);
 
@@ -350,7 +350,7 @@ class F_RecEditor : public F_Base
 		void reset( void);
 
 		RCODE Setup(
-			FTX_SCREEN_p	pScreen);
+			FTX_SCREEN *	pScreen);
 
 		void setParent(
 			F_RecEditor *	pParent);
@@ -420,7 +420,7 @@ class F_RecEditor : public F_Base
 			FLMBOOL		bBorder = TRUE,
 			FLMBOOL		bStatus = TRUE);
 
-		FTX_SCREEN_p getScreen( void);
+		FTX_SCREEN * getScreen( void);
 
 		FLMBOOL isMonochrome( void);
 
@@ -623,7 +623,7 @@ class F_RecEditor : public F_Base
 			FLMUINT			uiFore,
 			FLMUINT *		puiCols,
 			FLMUINT *		puiRows,
-			FTX_WINDOW_pp	ppWindow);
+			FTX_WINDOW **	ppWindow);
 
 		RCODE asciiUCMixToUC(
 			char *			pucAscii,
@@ -758,7 +758,7 @@ inline FLMUINT F_RecEditor::getContainer( void)
 	return( m_uiDefaultCont);
 }
 
-inline FTX_SCREEN_p F_RecEditor::getScreen( void)
+inline FTX_SCREEN * F_RecEditor::getScreen( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pScreen);

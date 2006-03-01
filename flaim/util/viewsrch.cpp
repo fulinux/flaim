@@ -47,8 +47,8 @@ FLMINT ViewGetKey( void)
 	FLMBYTE			LFH[ LFH_SIZE];
 	FLMUINT			FileOffset;
 	LFILE *			pLFile = NULL;
-	IXD_p				pIxd;
-	IFD_p				pIfd;
+	IXD *				pIxd;
+	IFD *				pIfd;
 	FLMUINT			uiRootBlkAddress;
 	FLMBOOL			bTruncated;
 

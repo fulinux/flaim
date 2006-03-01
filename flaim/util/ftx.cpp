@@ -240,13 +240,13 @@
 static FLMBOOL			gv_bInitialized = FALSE;
 static FLMBOOL			gv_bDisplayInitialized = FALSE;
 static FLMUINT			gv_uiInitCount = 0;
-static FTX_INFO_p		gv_pFtxInfo = NULL;
+static FTX_INFO *		gv_pFtxInfo = NULL;
 
 #if defined( FLM_WIN)
 
 FSTATIC FTXRCODE
 	ftxWinRefresh(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 
 #elif defined( FLM_NLM)
 
@@ -324,26 +324,26 @@ void SetCursorStyle(
 
 FSTATIC FTXRCODE
 	ftxNLMRefresh(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 
 #else
 
 FSTATIC FTXRCODE ftxRefresh(
-	FTX_INFO_p		pFtxInfo);
+	FTX_INFO *		pFtxInfo);
 
 #endif
 
 FSTATIC FTXRCODE ftxSyncImage(
-	FTX_INFO_p		pFtxInfo);
+	FTX_INFO *		pFtxInfo);
 
 FSTATIC FTXRCODE ftxWinReset(
-	FTX_WINDOW_p	pWindow);
+	FTX_WINDOW *	pWindow);
 
 FSTATIC FTXRCODE ftxCursorUpdate(
-	FTX_INFO_p		pFtxInfo);
+	FTX_INFO *		pFtxInfo);
 
 FSTATIC FTXRCODE ftxWinPrintChar(
-	FTX_WINDOW_p	pWindow,
+	FTX_WINDOW *	pWindow,
 	FLMUINT			uiChar);
 
 FSTATIC void ftxLock(
@@ -353,51 +353,51 @@ FSTATIC void ftxUnlock(
 	F_MUTEX *		phMutex);
 
 FSTATIC FTXRCODE ftxKeyboardFlush(
-	FTX_INFO_p		pFtxInfo);
+	FTX_INFO *		pFtxInfo);
 
 FSTATIC FTXRCODE ftxWinClearLine(
-	FTX_WINDOW_p	pWindow,
+	FTX_WINDOW *	pWindow,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow);
 
 FSTATIC FTXRCODE ftxWinClose(
-	FTX_WINDOW_p	pWindow);
+	FTX_WINDOW *	pWindow);
 
 FSTATIC FTXRCODE ftxWinFree(
-	FTX_WINDOW_p	pWindow);
+	FTX_WINDOW *	pWindow);
 
 FSTATIC FTXRCODE ftxWinOpen(
-	FTX_WINDOW_p	pWindow);
+	FTX_WINDOW *	pWindow);
 
 FSTATIC FTXRCODE ftxScreenFree(
-	FTX_SCREEN_p	pScreen);
+	FTX_SCREEN *	pScreen);
 
 FSTATIC FTXRCODE ftxWinSetCursorPos(
-	FTX_WINDOW_p	pWindow,
+	FTX_WINDOW *	pWindow,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow);
 
 FSTATIC FTXRCODE ftxDisplayInit(
-	FTX_INFO_p		pFtxInfo,
+	FTX_INFO *		pFtxInfo,
 	FLMUINT			uiRows,
 	FLMUINT			uiCols,
 	const char *	pucTitle);
 
 FSTATIC void ftxDisplayReset(
-	FTX_INFO_p		pFtxInfo);
+	FTX_INFO *		pFtxInfo);
 
 FSTATIC void ftxDisplayGetSize(
 	FLMUINT *		puiNumColsRV,
 	FLMUINT *		puiNumRowsRV);
 
 FSTATIC FLMBOOL ftxDisplaySetCursorType(
-	FTX_INFO_p		pFtxInfo,
+	FTX_INFO *		pFtxInfo,
 	FLMUINT			uiType);
 
 FSTATIC void ftxDisplayExit( void);
 
 FSTATIC void ftxDisplaySetCursorPos(
-	FTX_INFO_p		pFtxInfo,
+	FTX_INFO *		pFtxInfo,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow);
 	
@@ -626,10 +626,10 @@ FTXRCODE
 		FLMUINT			uiForeground,
 		KEY_HANDLER_p	pKeyHandler,
 		void *			pvKeyHandlerData,
-		FTX_INFO_pp		ppFtxInfo
+		FTX_INFO **		ppFtxInfo
 	)
 {
-	FTX_INFO_p		pFtxInfo;
+	FTX_INFO *		pFtxInfo;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -752,11 +752,11 @@ Notes:	All screens and windows are freed automatically
 ****************************************************************************/
 FTXRCODE
 	FTXFree(
-		FTX_INFO_pp			ppFtxInfo
+		FTX_INFO **			ppFtxInfo
 	)
 {
-	FTX_INFO_p			pFtxInfo;
-	FTX_SCREEN_p		pScreen;
+	FTX_INFO *			pFtxInfo;
+	FTX_SCREEN *		pScreen;
 	FTXRCODE				rc = FTXRC_SUCCESS;
 	
 	if( !gv_bInitialized)
@@ -825,10 +825,10 @@ Desc:		Refreshes the current screen
 ****************************************************************************/
 FTXRCODE
 	FTXRefresh(
-		FTX_INFO_p		pFtxInfo
+		FTX_INFO *		pFtxInfo
 	)
 {
-	FTX_WINDOW_p	pWinScreen;
+	FTX_WINDOW *	pWinScreen;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	ftxLock( &(pFtxInfo->hFtxMutex));
@@ -883,7 +883,7 @@ Desc:		Enables or disables refresh
 ****************************************************************************/
 FTXRCODE
 	FTXSetRefreshState(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMBOOL			bDisable
 	)
 {
@@ -902,7 +902,7 @@ Desc:		Allows a keyboard handler to add a key to the FTX key buffer
 ****************************************************************************/
 FTXRCODE
 	FTXAddKey(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMUINT			uiKey
 	)
 {
@@ -967,11 +967,11 @@ Desc:		Cycles to the next screen in the FTX environment
 ****************************************************************************/
 FTXRCODE
 	FTXCycleScreensNext(
-		FTX_INFO_p		pFtxInfo	
+		FTX_INFO *		pFtxInfo	
 	)
 {
-	FTX_SCREEN_p		pScreenTmp;
-	FTX_SCREEN_p		pScreenLast;
+	FTX_SCREEN *		pScreenTmp;
+	FTX_SCREEN *		pScreenLast;
 	FTXRCODE				rc = FTXRC_SUCCESS;
 	
 
@@ -1006,11 +1006,11 @@ Desc:		Cycles to the previous screen in the FTX environment
 ****************************************************************************/
 FTXRCODE
 	FTXCycleScreensPrev(
-		FTX_INFO_p		pFtxInfo	
+		FTX_INFO *		pFtxInfo	
 	)
 {
-	FTX_SCREEN_p		pScreenPreviousFront;
-	FTX_SCREEN_p		pScreenLast;
+	FTX_SCREEN *		pScreenPreviousFront;
+	FTX_SCREEN *		pScreenLast;
 	FTXRCODE				rc = FTXRC_SUCCESS;
 	
 
@@ -1057,7 +1057,7 @@ Desc:		Force cursor refresh
 ****************************************************************************/
 FTXRCODE
 	FTXRefreshCursor(
-		FTX_INFO_p		pFtxInfo	
+		FTX_INFO *		pFtxInfo	
 	)
 {
 	FTXRCODE				rc = FTXRC_SUCCESS;
@@ -1079,10 +1079,10 @@ Desc:		Invalidates the current screen so that it will be completly redrawn
 ****************************************************************************/
 FTXRCODE
 	FTXInvalidate(
-		FTX_INFO_p		pFtxInfo	
+		FTX_INFO *		pFtxInfo	
 	)
 {
-	FTX_WINDOW_p	pWinScreen;
+	FTX_WINDOW *	pWinScreen;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -1111,13 +1111,13 @@ Desc:		Allocates and initializes a new screen object
 ****************************************************************************/
 FTXRCODE
 	FTXScreenInit(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		const char *	pucName,
-		FTX_SCREEN_pp	ppScreen
+		FTX_SCREEN **	ppScreen
 	)
 {
-	FTX_SCREEN_p	pScreen;
-	FTX_SCREEN_p	pScreenTmp;
+	FTX_SCREEN *	pScreen;
+	FTX_SCREEN *	pScreenTmp;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -1220,12 +1220,12 @@ Desc:		Frees all resources allocated to a screen, including all window
 ****************************************************************************/
 FTXRCODE
 	FTXScreenFree(
-		FTX_SCREEN_pp	ppScreen
+		FTX_SCREEN **	ppScreen
 	)
 {
 
-	FTX_SCREEN_p	pScreen;
-	FTX_INFO_p		pFtxInfo;
+	FTX_SCREEN *	pScreen;
+	FTX_INFO *		pFtxInfo;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -1270,11 +1270,11 @@ Desc:		Makes the passed-in screen the visible screen
 ****************************************************************************/
 FTXRCODE
 	FTXScreenDisplay(
-		FTX_SCREEN_p	pScreen
+		FTX_SCREEN *	pScreen
 	)
 {
 	FLMBOOL				bScreenValid = FALSE;
-	FTX_SCREEN_p		pTmpScreen;
+	FTX_SCREEN *		pTmpScreen;
 	FTXRCODE				rc = FTXRC_SUCCESS;
 
 	ftxLock( &(gv_pFtxInfo->hFtxMutex));
@@ -1344,7 +1344,7 @@ Desc:		Retrieves the size of the passed-in screen
 ****************************************************************************/
 FTXRCODE
 	FTXScreenGetSize(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows
 	)
@@ -1381,7 +1381,7 @@ Desc:		Sets the screen's shutdown flag
 ****************************************************************************/
 FTXRCODE
 	FTXScreenSetShutdownFlag(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMBOOL *		pbShutdownFlag
 	)
 {
@@ -1409,7 +1409,7 @@ Desc:		Creates a title window and main window (with border)
 ****************************************************************************/
 FTXRCODE
 	FTXScreenInitStandardWindows(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMUINT			uiTitleBackColor,
 		FLMUINT			uiTitleForeColor,
 		FLMUINT			uiMainBackColor,
@@ -1417,14 +1417,14 @@ FTXRCODE
 		FLMBOOL			bBorder,
 		FLMBOOL			bBackFill,
 		const char *	pucTitle,
-		FTX_WINDOW_pp	ppTitleWin,
-		FTX_WINDOW_pp	ppMainWin
+		FTX_WINDOW **	ppTitleWin,
+		FTX_WINDOW **	ppMainWin
 	)
 {
 	FLMUINT			uiScreenCols;
 	FLMUINT			uiScreenRows;
-	FTX_WINDOW_p	pTitleWin;
-	FTX_WINDOW_p	pMainWin;
+	FTX_WINDOW *	pTitleWin;
+	FTX_WINDOW *	pMainWin;
 	FTXRCODE			rc;
 
 	if( (rc = FTXScreenGetSize( pScreen,
@@ -1530,16 +1530,16 @@ Desc:		Allocates and initializes a window object
 ****************************************************************************/
 FTXRCODE
 	FTXWinInit(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMUINT			uiCols,
 		FLMUINT			uiRows,
-		FTX_WINDOW_pp	ppWindow
+		FTX_WINDOW **	ppWindow
 	)
 {
 
 	FLMUINT			uiSize;
-	FTX_WINDOW_p	pWindow;
-	FTX_WINDOW_p	pWinTmp;
+	FTX_WINDOW *	pWindow;
+	FTX_WINDOW *	pWinTmp;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	*ppWindow = NULL;
@@ -1648,12 +1648,12 @@ Desc:		Frees all resources associated with the passed-in window object
 ****************************************************************************/
 FTXRCODE
 	FTXWinFree(
-		FTX_WINDOW_pp	ppWindow
+		FTX_WINDOW **	ppWindow
 	)
 {
 
-	FTX_WINDOW_p	pWindow;
-	FTX_SCREEN_p	pScreen;
+	FTX_WINDOW *	pWindow;
+	FTX_SCREEN *	pScreen;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	
@@ -1693,7 +1693,7 @@ Desc:		Opens the specified window and makes it visible
 ****************************************************************************/
 FTXRCODE
 	FTXWinOpen(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -1722,7 +1722,7 @@ Desc:		Closes (or hides) the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinClose(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -1756,7 +1756,7 @@ Desc:		Sets the specified window's name
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetName(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucName
 	)
 {
@@ -1785,7 +1785,7 @@ Desc:		Moves the specified window to a new location on the screen
 ****************************************************************************/
 FTXRCODE
 	FTXWinMove(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
 	)
@@ -1831,7 +1831,7 @@ Desc:		Sets the input focus to the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetFocus(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -1856,7 +1856,7 @@ Desc:		Sets the background color of all characters in the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinPaintBackground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground
 	)
 {
@@ -1889,7 +1889,7 @@ Desc:		Sets the background and/or foreground color of a row in the
 ****************************************************************************/
 FTXRCODE
 	FTXWinPaintRow(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiBackground,
 		FLMUINT *		puiForeground,
 		FLMUINT			uiRow
@@ -1937,7 +1937,7 @@ Desc:		Sets all of the characters in the window to the specified character
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar
 	)
 {
@@ -1968,7 +1968,7 @@ Desc:		Sets the background color of a row in the specified window.
 ****************************************************************************/
 FTXRCODE
 	FTXWinPaintRowBackground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground,
 		FLMUINT			uiRow
 	)
@@ -1984,7 +1984,7 @@ Desc:		Sets the foreground color of all characters in the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinPaintForeground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiForeground
 	)
 {
@@ -2015,7 +2015,7 @@ Desc:		Sets the foreground color of a row in the specified window.
 ****************************************************************************/
 FTXRCODE
 	FTXWinPaintRowForeground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiForeground,
 		FLMUINT			uiRow
 	)
@@ -2030,7 +2030,7 @@ Desc:		Sets the background and foreground color of the pen associated
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetBackFore(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground
 	)
@@ -2056,7 +2056,7 @@ Desc:		Retrieves the current background and/or foreground color of
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetBackFore(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiBackground,
 		FLMUINT *		puiForeground
 	)
@@ -2087,7 +2087,7 @@ Desc:		Prints a character at the current cursor location in the
 ****************************************************************************/
 FTXRCODE
 	FTXWinPrintChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar
 	)
 {
@@ -2109,7 +2109,7 @@ Desc:		Prints a string starting at the current cursor location in the
 ****************************************************************************/
 FTXRCODE
 	FTXWinPrintStr(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString
 	)
 {
@@ -2150,7 +2150,7 @@ Desc:    Output a formatted string at present cursor location.
 ****************************************************************************/
 FTXRCODE
 	FTXWinPrintf(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucFormat, ...)
 {
 	char				pucBuffer[ 512];
@@ -2167,7 +2167,7 @@ Desc:    Output a formatted string (with color) at present cursor location.
 ****************************************************************************/
 FTXRCODE
 	FTXWinCPrintf(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground,
 		const char *	pucFormat, ...)
@@ -2202,7 +2202,7 @@ Desc:		Prints a string starting at the current cursor location in the
 ****************************************************************************/
 FTXRCODE
 	FTXWinPrintStrR(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString
 	)
 {
@@ -2226,7 +2226,7 @@ Desc:		Prints a string at a specific offset in the specified window.
 ****************************************************************************/
 FTXRCODE
 	FTXWinPrintStrXY(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
@@ -2260,7 +2260,7 @@ Desc:		Prints a string at a specific offset in the specified window.
 ****************************************************************************/
 FTXRCODE
 	FTXWinPrintStrXYR(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
@@ -2288,7 +2288,7 @@ Desc:		Retrieves the size of the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetSize(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows
 	)
@@ -2315,7 +2315,7 @@ Desc:		Retrieves the printable region (canvas) size of the specified
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetCanvasSize(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows
 	)
@@ -2352,7 +2352,7 @@ Desc:		Retrieves the current cursor row in the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetCurrRow(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiRow
 	)
 {
@@ -2368,7 +2368,7 @@ Desc:		Retrieves the current cursor column in the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetCurrCol(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol
 	)
 {
@@ -2384,7 +2384,7 @@ Desc:		Sets the cursor position in the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetCursorPos(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
 	)
@@ -2407,7 +2407,7 @@ Desc:		Retrieves the row and/or column position of the cursor
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetCursorPos(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol,
 		FLMUINT *		puiRow
 	)
@@ -2445,7 +2445,7 @@ Desc:		Sets or changes the appearance of the cursor in the specified
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetCursorType(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiType
 	)
 {
@@ -2468,7 +2468,7 @@ Desc:		Retrieves the cursor type of the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetCursorType(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiType
 	)
 {
@@ -2484,7 +2484,7 @@ Desc:		Enables or disables scrolling in the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetScroll(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMBOOL			bScroll
 	)
 {
@@ -2518,7 +2518,7 @@ Desc:		Enables or disables line wrap
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetLineWrap(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMBOOL			bLineWrap
 	)
 {
@@ -2551,7 +2551,7 @@ Desc:		Retrieves the scroll flag for the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetScroll(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMBOOL *		pbScroll
 	)
 {
@@ -2585,8 +2585,8 @@ Desc:		Retrieves the screen of the current window
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetScreen(
-		FTX_WINDOW_p	pWindow,
-		FTX_SCREEN_p *	ppScreen
+		FTX_WINDOW *	pWindow,
+		FTX_SCREEN **	ppScreen
 	)
 {
 
@@ -2621,7 +2621,7 @@ Desc:		Retrieves the windows position on the screen
 ****************************************************************************/
 FTXRCODE
 	FTXWinGetPosition(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol,
 		FLMUINT *		puiRow)
 {
@@ -2662,7 +2662,7 @@ Desc:		Clears from the specified column and row to the end of the row in
 ****************************************************************************/
 FTXRCODE
 	FTXWinClearLine(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
 	)
@@ -2686,7 +2686,7 @@ Desc:		Clears from the current cursor position to the end of the current
 ****************************************************************************/
 FTXRCODE
 	FTXWinClearToEOL(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -2710,7 +2710,7 @@ Desc:		Clears the canvas of the specified window starting at the requested
 ****************************************************************************/
 FTXRCODE
 	FTXWinClearXY(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
 	)
@@ -2758,7 +2758,7 @@ Desc:		Clears the canvas area of the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinClear(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -2787,7 +2787,7 @@ Desc:		Draws a border around the canvas area of the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinDrawBorder(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -2895,7 +2895,7 @@ Desc:		Draws a border around the canvas area of the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetTitle(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucTitle,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground
@@ -2967,7 +2967,7 @@ Desc:		Draws a border around the canvas area of the specified window
 ****************************************************************************/
 FTXRCODE
 	FTXWinSetHelp(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pszHelp,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground
@@ -3039,11 +3039,11 @@ Desc:		Tests the key buffer for an available key
 ****************************************************************************/
 FTXRCODE
 	FTXWinTestKB(
-		FTX_WINDOW_p		pWindow
+		FTX_WINDOW *		pWindow
 	)
 {
 
-	FTX_INFO_p		pFtxInfo;
+	FTX_INFO *		pFtxInfo;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	pFtxInfo = pWindow->pScreen->pFtxInfo;
@@ -3074,11 +3074,11 @@ Desc:		Gets a character from the keyboard
 ****************************************************************************/
 FTXRCODE
 	FTXWinInputChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiChar
 	)
 {
-	FTX_INFO_p		pFtxInfo;
+	FTX_INFO *		pFtxInfo;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 	FLMBOOL			bLocked = FALSE;
 
@@ -3161,7 +3161,7 @@ Desc:		Line editor routine
 ****************************************************************************/
 FTXRCODE
 	FTXLineEdit(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		char *			pucBuffer,
 		FLMUINT			uiBufSize,
 		FLMUINT			uiMaxWidth,
@@ -3581,7 +3581,7 @@ Desc:		Line editor routine which assumes some defaults
 ****************************************************************************/
 FLMUINT
 	FTXLineEd(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		char *			pucBuffer,
 		FLMUINT			uiBufSize)
 {
@@ -3654,7 +3654,7 @@ FTXRCODE FTXMessageWindow(
 	FLMUINT				uiFore,
 	const char *		pucMessage1,
 	const char *		pucMessage2,
-	FTX_WINDOW_p *		ppWindow)
+	FTX_WINDOW **		ppWindow)
 {
 	FLMUINT			uiNumCols;
 	FLMUINT			uiNumRows;
@@ -3663,7 +3663,7 @@ FTXRCODE FTXMessageWindow(
 	FLMUINT			uiNumCanvCols;
 	FLMBYTE			pucTmpBuf[ 128];
 	FLMUINT			uiMessageLen;
-	FTX_WINDOW_p	pWindow = NULL;
+	FTX_WINDOW *	pWindow = NULL;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	if( (rc = FTXScreenGetSize( pScreen,
@@ -3774,7 +3774,7 @@ FTXRCODE FTXDisplayMessage(
 	const char *		pucMessage2,
 	FLMUINT *			puiTermChar)
 {
-	FTX_WINDOW_p	pWindow = NULL;
+	FTX_WINDOW *	pWindow = NULL;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	if( puiTermChar)
@@ -3845,7 +3845,7 @@ FTXRCODE FTXGetInput(
 	FLMUINT			uiNumRows;
 	FLMUINT			uiNumWinRows = 3;
 	FLMUINT			uiNumWinCols;
-	FTX_WINDOW_p	pWindow = NULL;
+	FTX_WINDOW *	pWindow = NULL;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	if ( (rc =
@@ -3928,7 +3928,7 @@ Desc:		Allows the keyboard handler to recieve ping characters
 ****************************************************************************/
 FTXRCODE
 	FTXEnablePingChar( 
-		FTX_INFO_p		pFtxInfo)
+		FTX_INFO *		pFtxInfo)
 {
 	ftxLock( &(pFtxInfo->hFtxMutex));
 	pFtxInfo->bEnablePingChar = TRUE;
@@ -3943,7 +3943,7 @@ Desc:		Sets the shutdown flag pointer
 ****************************************************************************/
 FTXRCODE
 	FTXSetShutdownFlag(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMBOOL *		pbShutdownFlag
 	)
 {
@@ -3986,12 +3986,12 @@ Desc:		Synchronizes the "camera-ready" display image with the "in-memory"
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxSyncImage(
-		FTX_INFO_p		pFtxInfo
+		FTX_INFO *		pFtxInfo
 	)
 {
 
-	FTX_WINDOW_p	pWin;
-	FTX_SCREEN_p	pScreenCur;
+	FTX_WINDOW *	pWin;
+	FTX_SCREEN *	pScreenCur;
 	FLMBYTE *		pucWTBuf;
 	FLMBYTE *		pucSBuf;
 	FLMBYTE *		pucWTBackAttrib;
@@ -4060,7 +4060,7 @@ Desc:		Win display update
 #if defined( FLM_WIN)
 FSTATIC FTXRCODE
 	ftxWinRefresh(
-		FTX_INFO_p			pFtxInfo
+		FTX_INFO *			pFtxInfo
 	)
 {
 	PCHAR_INFO			paCell;
@@ -4078,8 +4078,8 @@ FSTATIC FTXRCODE
 	FLMBOOL				bTopSet = FALSE;
 	FLMBOOL				bLeftSet = FALSE;
 	FLMBOOL				bChanged = FALSE;
-	FTX_WINDOW_p		pWinImage;
-	FTX_WINDOW_p		pWinScreen;
+	FTX_WINDOW *		pWinImage;
+	FTX_WINDOW *		pWinScreen;
 
 
 	ftxSyncImage( pFtxInfo);
@@ -4170,13 +4170,13 @@ Desc:		NLM display update
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxNLMRefresh(
-		FTX_INFO_p			pFtxInfo)
+		FTX_INFO *			pFtxInfo)
 {
 	FLMUINT				uiLoop;
 	FLMUINT				uiSubLoop;
 	FLMUINT				uiOffset;
-	FTX_WINDOW_p		pWinImage;
-	FTX_WINDOW_p		pWinScreen;
+	FTX_WINDOW *		pWinImage;
+	FTX_WINDOW *		pWinScreen;
 	FLMBOOL				bModified;
 	LONG					udCnt;
 	LONG					udStartColumn;
@@ -4251,7 +4251,7 @@ Desc:		Win16/Other display update
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxRefresh(
-		FTX_INFO_p			pFtxInfo)
+		FTX_INFO *			pFtxInfo)
 {
 
 	FLMBYTE *		pucWTBuf;
@@ -4267,8 +4267,8 @@ FSTATIC FTXRCODE
 	FLMUINT			uiLoop;
 	FLMUINT			uiSubloop;
 	FLMUINT			uiTempAttrib;
-	FTX_WINDOW_p	pWinImage;
-	FTX_WINDOW_p	pWinScreen;
+	FTX_WINDOW *	pWinImage;
+	FTX_WINDOW *	pWinScreen;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -4357,7 +4357,7 @@ Desc:		Initializes / resets a window object
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinReset(
-		FTX_WINDOW_p		pWindow
+		FTX_WINDOW *		pWindow
 	)
 {
 
@@ -4387,10 +4387,10 @@ Desc:		Low-level routine for freeing a screen object
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxScreenFree(
-		FTX_SCREEN_p	pScreen
+		FTX_SCREEN *	pScreen
 	)
 {
-	FTX_WINDOW_p	pWin;
+	FTX_WINDOW *	pWin;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -4434,10 +4434,10 @@ Desc:		Low-level routine for freeing a window object
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinFree(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
-	FTX_WINDOW_p	pWin;
+	FTX_WINDOW *	pWin;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 	if( pWindow->bOpen)
@@ -4494,7 +4494,7 @@ Desc:		Low-level routine for opening a window
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinOpen(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
@@ -4541,11 +4541,11 @@ Desc:		Low-level routine for closing a window
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinClose(
-		FTX_WINDOW_p	pWindow
+		FTX_WINDOW *	pWindow
 	)
 {
 
-	FTX_WINDOW_p			pWinTmp;
+	FTX_WINDOW *			pWinTmp;
 	FTXRCODE					rc = FTXRC_SUCCESS;
 
 	
@@ -4587,7 +4587,7 @@ Desc:		Low-level routine for printing a character
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinPrintChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar
 	)
 {
@@ -4733,13 +4733,13 @@ Desc:		Low-level routine for updating the cursor
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxCursorUpdate(
-		FTX_INFO_p		pFtxInfo
+		FTX_INFO *		pFtxInfo
 	)
 {
 
 	FLMUINT			uiCurX;
 	FLMUINT			uiCurY;
-	FTX_WINDOW_p	pWinCur;
+	FTX_WINDOW *	pWinCur;
 	FTXRCODE			rc = FTXRC_SUCCESS;
 
 
@@ -4773,7 +4773,7 @@ Desc:		Low-level routine for flushing the keyboard buffer
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxKeyboardFlush(
-		FTX_INFO_p		pFtxInfo
+		FTX_INFO *		pFtxInfo
 	)
 {
 
@@ -4791,7 +4791,7 @@ Desc:		Low-level routine for clearing a line
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinClearLine(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
 	)
@@ -4835,7 +4835,7 @@ Desc:		Low-level routine for setting the cursor's position
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxWinSetCursorPos(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow
 	)
@@ -4862,7 +4862,7 @@ Desc:		Initializes the "physical" screen
 ****************************************************************************/
 FSTATIC FTXRCODE
 	ftxDisplayInit(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMUINT			uiRows,		// 0xFF means use current screen height.
 		FLMUINT			uiCols,		// 0xFF means use current screen width.
 		const char *	pucTitle
@@ -5012,7 +5012,7 @@ Desc:    Resets (clears) the "physical" screen and positions the cursor
 ****************************************************************************/
 FSTATIC void
 	ftxDisplayReset(
-		FTX_INFO_p		pFtxInfo
+		FTX_INFO *		pFtxInfo
 		)
 {
 #if defined( FLM_WIN)
@@ -5097,7 +5097,7 @@ Desc : Sets the "physical" cursor attributes
 ****************************************************************************/
 FSTATIC FLMBOOL
 	ftxDisplaySetCursorType(
-		FTX_INFO_p	pFtxInfo,
+		FTX_INFO *	pFtxInfo,
 		FLMUINT		uiType
 	)
 {
@@ -5164,7 +5164,7 @@ Desc:    Sets the "physical" cursor to the column and row specified
 ****************************************************************************/
 FSTATIC void
 	ftxDisplaySetCursorPos(
-		FTX_INFO_p	pFtxInfo,
+		FTX_INFO *	pFtxInfo,
 		FLMUINT		uiCol,
 		FLMUINT		uiRow
 	)
@@ -6353,7 +6353,7 @@ FSTATIC unsigned FTXPrintNumber( FLMUINT number, unsigned base, char *buffer)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FTX_INFO_p _getGlobalFtxInfo( void)
+FTX_INFO * _getGlobalFtxInfo( void)
 {
 	return( gv_pFtxInfo);
 }

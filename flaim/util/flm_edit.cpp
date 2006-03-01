@@ -109,7 +109,7 @@ F_RecEditor::~F_RecEditor( void)
 Desc:
 *****************************************************************************/
 RCODE F_RecEditor::Setup(
-	FTX_SCREEN_p		pScreen)
+	FTX_SCREEN *		pScreen)
 {
 	RCODE		rc = FERR_OK;
 
@@ -2899,7 +2899,7 @@ RCODE F_RecEditor::editNode(
 	FLMUINT			uiNumWinCols;
 	FLMUINT			uiValType = GedValType( pNd);
 	FLMBOOL			bModified = FALSE;
-	FTX_WINDOW_p	pWindow = NULL;
+	FTX_WINDOW *	pWindow = NULL;
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBack;
 	FLMUINT			uiFore;
@@ -3070,7 +3070,7 @@ Exit:
 Desc: Edit text node as text
 *****************************************************************************/
 RCODE F_RecEditor::editTextNode(
-	FTX_WINDOW_p		pWindow,
+	FTX_WINDOW *		pWindow,
 	NODE *				pNd,
 	FLMBOOL *			pbModified)
 {
@@ -3176,7 +3176,7 @@ Exit:
 Desc: Edits a numeric node as using the text editor
 *****************************************************************************/
 RCODE F_RecEditor::editNumberNode(
-	FTX_WINDOW_p		pWindow,
+	FTX_WINDOW *		pWindow,
 	NODE *				pNd,
 	FLMBOOL *			pbModified)
 {
@@ -3264,7 +3264,7 @@ Exit:
 Desc: Edits a context node as using the text editor
 *****************************************************************************/
 RCODE F_RecEditor::editContextNode(
-	FTX_WINDOW_p		pWindow,
+	FTX_WINDOW *		pWindow,
 	NODE *				pNd,
 	FLMBOOL *			pbModified)
 {
@@ -3353,7 +3353,7 @@ Exit:
 Desc: Edits a binary node
 *****************************************************************************/
 RCODE F_RecEditor::editBinaryNode(
-	FTX_WINDOW_p		pWindow,
+	FTX_WINDOW *		pWindow,
 	NODE *				pNd,
 	FLMBOOL *			pbModified)
 {
@@ -3826,7 +3826,7 @@ RCODE F_RecEditor::requestInput(
 	FLMUINT			uiNumRows;
 	FLMUINT			uiNumWinRows = 3;
 	FLMUINT			uiNumWinCols;
-	FTX_WINDOW_p	pWindow = NULL;
+	FTX_WINDOW *	pWindow = NULL;
 	F_FileHdl *		pFileHdl = NULL;
 	RCODE				rc = FERR_OK;
 
@@ -5825,7 +5825,7 @@ RCODE F_RecEditor::retrieveRecordsFromDb(
 	NODE *				pSearchStart = NULL;
 	FlmRecord *			pTmpRec = NULL;
 	void *				pvMark = GedPoolMark( &m_scratchPool);
-	FTX_WINDOW_p		pWindow = NULL;
+	FTX_WINDOW *		pWindow = NULL;
 	FLMBOOL				bDone = FALSE;
 	FLMUINT				uiRecCount = 0;
 	FLMUINT				uiRecId = 0;
@@ -6049,7 +6049,7 @@ RCODE F_RecEditor::adHocQuery(
 	FLMUINT				uiNumDeleted = 0;
 	FLMUINT				uiDispOffset;
 	FLMUINT				uiErrCount = 0;
-	FTX_WINDOW_p		pWindow = NULL;
+	FTX_WINDOW *		pWindow = NULL;
 	FLMBOOL				bReopenEditor = FALSE;
 	RCODE					lastError = FERR_OK;
 	RCODE					rc = FERR_OK;
@@ -9165,13 +9165,13 @@ RCODE F_RecEditor::createStatusWindow(
 	FLMUINT				uiFore,
 	FLMUINT *			puiCols,
 	FLMUINT *			puiRows,
-	FTX_WINDOW_pp		ppWindow)
+	FTX_WINDOW **		ppWindow)
 {
 	FLMUINT			uiNumRows;
 	FLMUINT			uiNumCols;
 	FLMUINT			uiNumWinRows = 0;
 	FLMUINT			uiNumWinCols = 0;
-	FTX_WINDOW_p	pWindow = NULL;
+	FTX_WINDOW *	pWindow = NULL;
 	RCODE				rc = FERR_OK;
 
 	*ppWindow = NULL;
@@ -9728,7 +9728,7 @@ Desc:
 RCODE F_RecEditor::globalConfig(
 	FLMUINT		uiOption)
 {
-	CS_CONTEXT_p		pCSContext = NULL;
+	CS_CONTEXT *		pCSContext = NULL;
 	FLMUINT				uiCSOp;
 	eFlmConfigTypes	eConfigOp;
 	RCODE					rc = FERR_OK;
@@ -9741,7 +9741,7 @@ RCODE F_RecEditor::globalConfig(
 
 	if( m_hDefaultDb != HFDB_NULL)
 	{
-		pCSContext = ((FDB_p)m_hDefaultDb)->pCSContext;
+		pCSContext = ((FDB *)m_hDefaultDb)->pCSContext;
 	}
 
 	switch( uiOption)
@@ -9783,7 +9783,7 @@ RCODE F_RecEditor::globalConfig(
 	}
 	else
 	{
-		FCL_WIRE		Wire( pCSContext, (FDB_p)m_hDefaultDb);
+		FCL_WIRE		Wire( pCSContext, (FDB *)m_hDefaultDb);
 
 		/*
 		Send a C/S request
@@ -9829,7 +9829,7 @@ class LocalLockInfo : public FlmLockInfo
 {
 public:
 
-	LocalLockInfo( FTX_WINDOW_p pWindow)
+	LocalLockInfo( FTX_WINDOW * pWindow)
 	{
 		m_pWindow = pWindow;
 	}
@@ -9884,7 +9884,7 @@ public:
 
 private:
 
-	FTX_WINDOW_p		m_pWindow;
+	FTX_WINDOW *		m_pWindow;
 };
 
 /*============================================================================

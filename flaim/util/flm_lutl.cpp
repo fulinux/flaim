@@ -27,7 +27,7 @@
 extern FLMBOOL		gv_bShutdown;
 
 FSTATIC RCODE ixDisplayHook(
-	FTX_WINDOW_p		pWin,
+	FTX_WINDOW *		pWin,
 	FLMBOOL				bSelected,
 	FLMUINT				uiRow,
 	FLMUINT				uiKey,
@@ -59,7 +59,7 @@ typedef struct IxDisplayInfo
 } IX_DISPLAY_INFO;
 
 FSTATIC RCODE ixDisplayHook(
-	FTX_WINDOW_p		pWin,
+	FTX_WINDOW *		pWin,
 	FLMBOOL				bSelected,
 	FLMUINT				uiRow,
 	FLMUINT				uiKey,
@@ -189,10 +189,10 @@ RCODE flstIndexManagerThread(
 	F_Thread *		pThread)
 {
 	F_DynamicList *		pList = new F_DynamicList;
-	FTX_WINDOW_p			pTitleWin;
-	FTX_WINDOW_p			pListWin;
-	FTX_WINDOW_p			pHeaderWin;
-	FTX_WINDOW_p			pMsgWin;
+	FTX_WINDOW *			pTitleWin;
+	FTX_WINDOW *			pListWin;
+	FTX_WINDOW *			pHeaderWin;
+	FTX_WINDOW *			pMsgWin;
 	char						szName[ 100];
 	FLMUINT					uiIterations = 0;
 	FLMUINT					uiScreenCols;
@@ -585,8 +585,8 @@ Update_Screen:
 
 				case '?':
 				{
-					FTX_WINDOW_p		pHelpWin = NULL;
-					FTX_WINDOW_p		pHelpTitle = NULL;
+					FTX_WINDOW *		pHelpWin = NULL;
+					FTX_WINDOW *		pHelpTitle = NULL;
 					F_DynamicList *	pHelpList = NULL;
 					FLMUINT				uiItem = 0;
 					char					szTmpBuf [100];
@@ -757,17 +757,17 @@ RCODE flstMemoryManagerThread(
 	F_Thread *		pThread)
 {
 	F_DynamicList *	pList = new F_DynamicList;
-	FTX_SCREEN_p		pScreen;
-	FTX_WINDOW_p		pTitleWin;
-	FTX_WINDOW_p		pListWin;
-	FTX_WINDOW_p		pHeaderWin;
+	FTX_SCREEN *		pScreen;
+	FTX_WINDOW *		pTitleWin;
+	FTX_WINDOW *		pListWin;
+	FTX_WINDOW *		pHeaderWin;
 	char					szTmpBuf[ 80];
 	FLMUINT				uiLoop;
 	FLMUINT				uiIteration = 0;
 	FLMUINT				uiScreenCols;
 	FLMUINT				uiScreenRows;
 	FLM_MEM_INFO		CacheInfo;
-	CS_CONTEXT_p		pCSContext = NULL;
+	CS_CONTEXT *		pCSContext = NULL;
 	FCL_WIRE				Wire;
 	NODE *				pTree;
 	POOL					pool;
@@ -1078,10 +1078,10 @@ RCODE flstTrackerMonitorThread(
 	F_Thread *		pThread)
 {
 	F_DynamicList *	pList = new F_DynamicList;
-	FTX_SCREEN_p		pScreen;
-	FTX_WINDOW_p		pTitleWin;
-	FTX_WINDOW_p		pListWin;
-	FTX_WINDOW_p		pHeaderWin;
+	FTX_SCREEN *		pScreen;
+	FTX_WINDOW *		pTitleWin;
+	FTX_WINDOW *		pListWin;
+	FTX_WINDOW *		pHeaderWin;
 	char					szTmpBuf[ 80];
 	FLMUINT				uiScreenCols;
 	FLMUINT				uiScreenRows;

@@ -265,16 +265,13 @@ enum WPS_COLORS {
 #define WPK_CTRL_F9     0xE040            /* F9 */
 #define WPK_CTRL_F10    0xE041            /* F10 */
 
+// Forward declarations
+
+struct FTX_INFO;
+struct FTX_WINDOW;
+struct FTX_SCREEN;
 
 /* Type Definitions */
-
-typedef struct ftx_window *		FTX_WINDOW_p;
-typedef struct ftx_window **		FTX_WINDOW_pp;
-typedef struct ftx_screen *		FTX_SCREEN_p;
-typedef struct ftx_screen **		FTX_SCREEN_pp;
-typedef struct ftx_info *			FTX_INFO_p;
-typedef struct ftx_info **			FTX_INFO_pp;
-typedef struct nlm_char_info *	NLM_CHAR_INFO_p;
 
 typedef struct nlm_char_info
 {
@@ -286,12 +283,12 @@ typedef struct nlm_char_info
 
 
 typedef FLMBOOL (* KEY_HANDLER_p)(
-				FTX_INFO_p					pFtxInfo,
+				FTX_INFO *					pFtxInfo,
 				FLMUINT						uiKeyIn,
 				FLMUINT *					puiKeyOut,
 				void *						pvAppData);
 
-typedef struct ftx_window
+typedef struct FTX_WINDOW
 {
 	FLMBYTE *		pucBuffer;
 	FLMBYTE *		pucForeAttrib;
@@ -313,13 +310,13 @@ typedef struct ftx_window
 	FLMBOOL			bForceOutput;
 	FLMBOOL			bNoLineWrap;
 	FLMUINT			uiId;
-	FTX_WINDOW_p	pWinPrev;
-	FTX_WINDOW_p	pWinNext;
-	FTX_SCREEN_p	pScreen;
+	FTX_WINDOW *	pWinPrev;
+	FTX_WINDOW *	pWinNext;
+	FTX_SCREEN *	pScreen;
 } FTX_WINDOW;
 
 
-typedef struct ftx_screen
+typedef struct FTX_SCREEN
 {
 	F_MUTEX				hScreenMutex;
 	F_SEM					hKeySem; /* Semaphore that will be signaled when
@@ -337,16 +334,16 @@ typedef struct ftx_screen
 	FLMUINT				uiSequence;
 	FLMUINT				uiId;
 	FLMBOOL *			pbShutdown;
-	FTX_WINDOW_p		pWinImage;
-	FTX_WINDOW_p		pWinScreen;
-	FTX_WINDOW_p		pWinCur;
-	FTX_SCREEN_p		pScreenPrev;
-	FTX_SCREEN_p		pScreenNext;
-	FTX_INFO_p			pFtxInfo;
+	FTX_WINDOW *		pWinImage;
+	FTX_WINDOW *		pWinScreen;
+	FTX_WINDOW *		pWinCur;
+	FTX_SCREEN *		pScreenPrev;
+	FTX_SCREEN *		pScreenNext;
+	FTX_INFO *			pFtxInfo;
 
 } FTX_SCREEN;
 
-typedef struct ftx_info
+typedef struct FTX_INFO
 {
 	F_MUTEX				hFtxMutex;
 	F_Thread *			pBackgroundThrd;
@@ -367,24 +364,24 @@ typedef struct ftx_info
 	FLMBOOL				bRefreshDisabled;
 	FLMBOOL				bEnablePingChar;
 	FLMBOOL *			pbShutdown;
-	FTX_SCREEN_p		pScreenCur;
+	FTX_SCREEN *		pScreenCur;
 #if defined( FLM_WIN) || defined( VC32) || defined( VC4)
 	PCHAR_INFO   		pCells;
 #elif defined( FLM_NLM)
 	void *				pvScreenHandle;
-	NLM_CHAR_INFO_p	pCells;
+	NLM_CHAR_INFO *	pCells;
 #endif
 
 } FTX_INFO;
 
 FTXRCODE
 	FTXWinPrintChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar);
 
 FTXRCODE
 	FTXWinPrintStr(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString);
 
 int FTXVSprintf(
@@ -395,38 +392,38 @@ int FTXVSprintf(
 
 FTXRCODE
 	FTXWinPrintf(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucFormat, ...);
 
 FTXRCODE
 	FTXWinCPrintf(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground,
 		const char *	pucFormat, ...);
 
 FTXRCODE
 	FTXWinPrintStrR(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString);
 
 FTXRCODE
 	FTXWinPrintStrXY(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinPrintStrXYR(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucString,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinMove(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 
@@ -439,41 +436,41 @@ FTXRCODE
 		FLMUINT			uiForeground,
 		KEY_HANDLER_p	pKeyHandler,
 		void *			pvKeyHandlerData,
-		FTX_INFO_pp		ppFtxInfo);
+		FTX_INFO **		ppFtxInfo);
 
 FTXRCODE
 	FTXFree(
-		FTX_INFO_pp		ppFtxInfo);
+		FTX_INFO **		ppFtxInfo);
 
 FTXRCODE
 	FTXCycleScreensNext(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 
 FTXRCODE
 	FTXCycleScreensPrev(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 	
 FTXRCODE
 	FTXRefreshCursor(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 
 FTXRCODE
 	FTXInvalidate(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 
 FTXRCODE
 	FTXScreenInit(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		const char *	pucName,
-		FTX_SCREEN_pp	ppScreen);
+		FTX_SCREEN **	ppScreen);
 
 FTXRCODE
 	FTXScreenFree(
-		FTX_SCREEN_pp	ppScreen);
+		FTX_SCREEN **	ppScreen);
 
 FTXRCODE
 	FTXScreenInitStandardWindows(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMUINT			uiTitleBackColor,
 		FLMUINT			uiTitleForeColor,
 		FLMUINT			uiMainBackColor,
@@ -481,156 +478,156 @@ FTXRCODE
 		FLMBOOL			bBorder,
 		FLMBOOL			bBackFill,
 		const char *	pucTitle,
-		FTX_WINDOW_pp	ppTitleWin,
-		FTX_WINDOW_pp	ppMainWin);
+		FTX_WINDOW **	ppTitleWin,
+		FTX_WINDOW **	ppMainWin);
 
 FTXRCODE
 	FTXScreenSetShutdownFlag(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMBOOL *		pbShutdownFlag);
 
 FTXRCODE
 	FTXCaptureScreen(
-		FTX_INFO_p			pFtxInfo,
+		FTX_INFO *			pFtxInfo,
 		FLMBYTE *			pText,
 		FLMBYTE *			pForeAttrib,
 		FLMBYTE *			pBackAttrib);
 
 FTXRCODE
 	FTXRefresh(
-		FTX_INFO_p		pFtxInfo);
+		FTX_INFO *		pFtxInfo);
 
 FTXRCODE
 	FTXSetRefreshState(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMBOOL			bDisable);
 
 FTXRCODE
 	FTXAddKey(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMUINT			uiKey);
 
 FTXRCODE
 	FTXWinInit(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMUINT 			uiCols,
 		FLMUINT			uiRows,
-		FTX_WINDOW_pp	ppWindow);
+		FTX_WINDOW **	ppWindow);
 
 FTXRCODE
 	FTXWinFree(
-		FTX_WINDOW_pp	ppWindow);
+		FTX_WINDOW **	ppWindow);
 
 FTXRCODE
 	FTXWinOpen(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXWinSetName(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucName);
 
 FTXRCODE
 	FTXWinClose(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXWinSetFocus(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXScreenDisplay(
-		FTX_SCREEN_p	pScreen);
+		FTX_SCREEN *	pScreen);
 
 FTXRCODE
 	FTXWinPaintBackground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground);
 
 FTXRCODE
 	FTXWinPaintForeground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiForeground);
 
 FTXRCODE
 	FTXWinPaintRow(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiBackground,
 		FLMUINT *		puiForeground,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinSetChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar);
 
 FTXRCODE
 	FTXWinPaintRowForeground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiForeground,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinPaintRowBackground(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinSetBackFore(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground);
 
 FTXRCODE
 	FTXWinGetCanvasSize(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows);
 
 FTXRCODE
 	FTXWinGetSize(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows);
 
 FTXRCODE
 	FTXWinGetCurrRow(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiRow);
 
 FTXRCODE
 	FTXWinGetCurrCol(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol);
 
 FTXRCODE
 	FTXWinGetBackFore(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiBackground,
 		FLMUINT *		puiForeground);
 
 FTXRCODE
 	FTXWinDrawBorder(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXWinSetTitle(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pucTitle,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground);
 
 FTXRCODE
 	FTXWinSetHelp(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		const char *	pszHelp,
 		FLMUINT			uiBackground,
 		FLMUINT			uiForeground);
 
 FTXRCODE
 	FTXLineEdit(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		char *   		pucBuffer,
 		FLMUINT      	uiBufSize,
 		FLMUINT      	uiMaxWidth,
@@ -639,96 +636,96 @@ FTXRCODE
 
 FLMUINT
 	FTXLineEd(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		char *			pucBuffer,
 		FLMUINT			uiBufSize);
 
 FTXRCODE
 	FTXWinSetCursorPos(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinGetCursorPos(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol,
 		FLMUINT *		puiRow);
 
 FTXRCODE
 	FTXWinClear(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXWinClearXY(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT 			uiCol,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinClearLine(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 
 FTXRCODE
 	FTXWinClearToEOL(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXWinSetCursorType(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT			uiType);
 
 FTXRCODE
 	FTXWinGetCursorType(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiType);
 
 FTXRCODE
 	FTXScreenGetSize(
-		FTX_SCREEN_p	pScreen,
+		FTX_SCREEN *	pScreen,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows);
 
 FTXRCODE
 	FTXWinInputChar(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiChar);
 
 FTXRCODE
 	FTXWinTestKB(
-		FTX_WINDOW_p	pWindow);
+		FTX_WINDOW *	pWindow);
 
 FTXRCODE
 	FTXWinSetScroll(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMBOOL			bScroll);
 
 FTXRCODE
 	FTXWinSetLineWrap(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMBOOL			bLineWrap);
 
 FTXRCODE
 	FTXWinGetScroll(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMBOOL *		pbScroll);
 
 FTXRCODE
 	FTXWinGetScreen(
-		FTX_WINDOW_p	pWindow,
-		FTX_SCREEN_p *	ppScreen);
+		FTX_WINDOW *	pWindow,
+		FTX_SCREEN **	ppScreen);
 
 FTXRCODE
 	FTXWinGetPosition(
-		FTX_WINDOW_p	pWindow,
+		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol,
 		FLMUINT *		puiRow);
 
 FTXRCODE
 	FTXSetShutdownFlag(
-		FTX_INFO_p		pFtxInfo,
+		FTX_INFO *		pFtxInfo,
 		FLMBOOL *		pbShutdownFlag);
 
 FTXRCODE
@@ -738,7 +735,7 @@ FTXRCODE
 		FLMUINT				uiFore,
 		const char *		pucMessage1,
 		const char *		pucMessage2,
-		FTX_WINDOW_p *		ppWindow);
+		FTX_WINDOW **		ppWindow);
 
 FTXRCODE
 	FTXDisplayMessage(
@@ -759,7 +756,7 @@ FTXRCODE
 
 FTXRCODE
 	FTXEnablePingChar(
-		FTX_INFO_p			pFtxInfo);
+		FTX_INFO *			pFtxInfo);
 
 /* Routines Necessary to Support Keyboard Manager Thread */
 
@@ -795,7 +792,7 @@ RCODE _ftxDefaultKeyboardHandler(
 Misc.
 */
 
-FTX_INFO_p _getGlobalFtxInfo( void);
+FTX_INFO * _getGlobalFtxInfo( void);
 
 void debugFTXCycleScreens( void);
 

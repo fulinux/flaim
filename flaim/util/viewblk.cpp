@@ -1302,8 +1302,8 @@ FLMINT ViewAvailBlk(
 	flmInitReadState( &StateInfo, &bStateInitialized,
 							gv_ViewHdrInfo.FileHdr.uiVersionNum,
 							(gv_bViewDbInitialized)
-							? (FDB_p)gv_hViewDb
-							: (FDB_p)NULL, NULL, 0, BHT_FREE, NULL);
+							? (FDB *)gv_hViewDb
+							: (FDB *)NULL, NULL, 0, BHT_FREE, NULL);
 	StateInfo.uiBlkAddress = BlkAddress;
 	StateInfo.pBlk = BlkPtr;
 

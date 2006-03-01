@@ -751,7 +751,7 @@ Other_Error:
 	else
 	{
 		gv_bViewDbInitialized = TRUE;
-		if (RC_BAD( rc = fdbInit( (FDb *)gv_hViewDb, FLM_NO_TRANS, TRUE, 0,
+		if (RC_BAD( rc = fdbInit( (FDB *)gv_hViewDb, FLM_NO_TRANS, TRUE, 0,
 										&bIgnore)))
 		{
 			ViewShowRCError( "calling fdbInit", rc);

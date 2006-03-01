@@ -43,7 +43,7 @@
 
 
 typedef RCODE (* F_DLIST_DISP_HOOK)(
-	FTX_WINDOW_p		pWin,
+	FTX_WINDOW *		pWin,
 	FLMBOOL				bSelected,
 	FLMUINT				uiRow,
 	FLMUINT				uiKey,
@@ -52,7 +52,7 @@ typedef RCODE (* F_DLIST_DISP_HOOK)(
 	F_DynamicList*		pDynamicList);
 
 RCODE  dlistDefaultDisplayHook(
-	FTX_WINDOW_p		pWin,
+	FTX_WINDOW *		pWin,
 	FLMBOOL				bSelected,
 	FLMUINT				uiRow,
 	FLMUINT				uiKey,
@@ -114,7 +114,7 @@ public:
 	F_DynamicList( void);
 	~F_DynamicList( void);
 
-	RCODE setup( FTX_WINDOW_p	pInitializedWindow);
+	RCODE setup( FTX_WINDOW *	pInitializedWindow);
 
 	void refresh( void);
 
@@ -143,7 +143,7 @@ public:
 		return( m_pCur);
 	}
 
-	inline FTX_WINDOW_p getListWin( void)
+	inline FTX_WINDOW * getListWin( void)
 	{ 
 		return( m_pListWin);
 	}

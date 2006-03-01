@@ -31,9 +31,9 @@ typedef struct wps_screen
 {
 	FLMBOOL					bPrivate;
 	FLMUINT					uiScreenId;
-	FTX_SCREEN_p			pScreen;
-	FTX_WINDOW_p			pTitleWin;
-	FTX_WINDOW_p			pWin;
+	FTX_SCREEN *			pScreen;
+	FTX_WINDOW *			pTitleWin;
+	FTX_WINDOW *			pWin;
 	struct wps_screen *	pNext;
 	void *					hThis;
 } WPSSCREEN, * WPSSCREEN_p;
@@ -48,12 +48,12 @@ void WpsInit(
 	const char *	title);
 
 void WpsInitFTX(
-	FTX_INFO_p		pFtxInfo);
+	FTX_INFO *		pFtxInfo);
 
 void WpsExit( void);
 
 void WpsThrdInitUsingScreen(
-	FTX_SCREEN_p	pScreen,
+	FTX_SCREEN *	pScreen,
 	const char *	screenTitle);
 
 #define WpsThrdInit(a) \
@@ -141,7 +141,7 @@ FLMUINT WpkGetChar(
 
 FLMUINT WpkTestKB( void);
 
-FTX_SCREEN_p WpsGetThrdScreen( void);
+FTX_SCREEN * WpsGetThrdScreen( void);
 
 void WpsSetShutdown(
 	FLMBOOL *    	pbShutdown);

@@ -26,7 +26,7 @@
 #include "wpscreen.h"
 #include "sharutil.h"
 
-FSTATIC FTX_WINDOW_p
+FSTATIC FTX_WINDOW *
 	wpsGetThrdWin( void);
 	
 FSTATIC void
@@ -39,7 +39,7 @@ FSTATIC void
 		F_MUTEX	*	phMutex
 	);
 
-static FTX_INFO_p					gv_pFtxInfo = NULL;
+static FTX_INFO *					gv_pFtxInfo = NULL;
 static FLMBOOL						gv_bPrivateFTX = TRUE;
 static FLMBOOL						gv_bShutdown = FALSE;
 static FLMBOOL						gv_bInitialized = FALSE;
@@ -95,7 +95,7 @@ Ret:
 ****************************************************************************/
 void 
 	WpsInitFTX(
-		FTX_INFO_p	pFtxInfo
+		FTX_INFO *	pFtxInfo
 	)
 {
 	if( gv_bInitialized)
@@ -144,7 +144,7 @@ Ret:
 ****************************************************************************/
 void 
 	WpsThrdInitUsingScreen(
-		FTX_SCREEN_p	pFtxScreen,
+		FTX_SCREEN *	pFtxScreen,
 		const char *	screenTitle)
 {
 	FLMUINT			uiRows;
@@ -433,7 +433,7 @@ void
 		FLMUINT		row
 	)
 {
-	FTX_WINDOW_p	pThrdWin;
+	FTX_WINDOW *	pThrdWin;
 	FLMUINT			uiCurrCol;
 	FLMUINT			uiCurrRow;
 
@@ -472,7 +472,7 @@ void
 		FLMUINT		row
 	)
 {
-	FTX_WINDOW_p	pThrdWin;
+	FTX_WINDOW *	pThrdWin;
 	FLMUINT			uiCurrCol;
 	FLMUINT			uiCurrRow;
 	
@@ -505,7 +505,7 @@ void
 		FLMUINT		row
 	)
 {
-	FTX_WINDOW_p	pThrdWin;
+	FTX_WINDOW *	pThrdWin;
 	FLMUINT			uiCurrCol;
 	FLMUINT			uiCurrRow;
 
@@ -744,7 +744,7 @@ FLMUINT
 /****************************************************************************
 Desc:		Returns a pointer to a thread's screen
 ****************************************************************************/
-FTX_SCREEN_p
+FTX_SCREEN *
 	WpsGetThrdScreen( void)
 {
 	FLMUINT			uiThrdId;
@@ -800,7 +800,7 @@ FSTATIC void
 /****************************************************************************
 Desc:		Returns a pointer to a thread's screen
 ****************************************************************************/
-FSTATIC FTX_WINDOW_p
+FSTATIC FTX_WINDOW *
 	wpsGetThrdWin( void)
 {
 	FLMUINT			uiThrdId;
