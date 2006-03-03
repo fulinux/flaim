@@ -39,11 +39,11 @@
 #include <stdio.h>
 #include <string.h>
 
-FLMBOOL	gv_bShutdown = FALSE;
-
 #define DB_NAME_STR					"tst.db"
 #define BACKUP_NAME_STR				"tst.bak"
 #define NEW_NAME_STR					"new.db"
+
+FLMBOOL	gv_bShutdown = FALSE;
 
 void printMessage(
 	const char *		pszMessage,
