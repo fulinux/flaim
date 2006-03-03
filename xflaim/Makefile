@@ -47,15 +47,29 @@ ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 
 	# Get the info for all files.
 	
-	revision = $(shell svnversion . -n)
-#	revision = $(subst M,,$(shell svnversion . -n))
+	srevision = $(shell svnversion . -n)
+#	srevision = $(subst M,,$(shell svnversion . -n))
 	
-	ifneq (,$(findstring M,$(revision)))
+	ifneq (,$(findstring M,$(srevision)))
       $(error Local modifications found - please check in before making distro)
 	endif
-	ifneq (,$(findstring :,$(revision)))
+	ifneq (,$(findstring :,$(srevision)))
       $(error Mixed revisions in repository - please update before making distro)
 	endif
+	
+	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
+						$(subst 6,6 ,$(subst 5,5 ,$(subst 4,4 ,$(subst 3,3 ,\
+						$(subst 2,2 ,$(subst 1,1 ,$(subst 0,0 ,$(1))))))))))))
+	revision0 = $(shell svn info -R)
+	revision1 = $(subst Last Changed Rev: ,LastChangedRev:,$(revision0))
+	revision2 = $(filter LastChangedRev:%,$(revision1))
+	revision3 = $(subst LastChangedRev:,,$(revision2))
+	revision4 = $(sort $(revision3))
+	revision5 = $(foreach num,$(revision4),$(call numdigits,$(num)):$(num))
+	revision6 = $(sort $(revision5))
+	revision7 = $(word $(words $(revision6)),$(revision6))
+	revision = $(word 2,$(subst :, ,$(revision7)))
+	
 else
 	ifeq "$(wildcard SVNRevision.*)" ""
 		revision = 0
