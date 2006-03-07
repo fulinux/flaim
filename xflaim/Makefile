@@ -60,9 +60,9 @@ ifdef calc_svn_revision
 	
 	srevision = $(shell svnversion . -n)
 	
-#	ifneq (,$(findstring M,$(srevision)))
-#      $(error Local modifications found - please check in before making distro)
-#	endif
+	ifneq (,$(findstring M,$(srevision)))
+      $(error Local modifications found - please check in before making distro)
+	endif
 
 	ifneq (,$(findstring :,$(srevision)))
       $(error Mixed revisions in repository - please update before making distro)
