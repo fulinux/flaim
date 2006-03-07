@@ -996,7 +996,7 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: dist
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -bs $(spec_dir)/libflaim.spec
+	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
 	
 # -- RPMS --
@@ -1004,7 +1004,7 @@ srcrpm: dist
 .PHONY : rpms
 rpms: dist
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
-	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -ba $(spec_dir)/libflaim.spec
+	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -ba $(spec_file)
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 	
 # -- Documentation --
