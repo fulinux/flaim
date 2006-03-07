@@ -43,15 +43,25 @@ project_desc = An extensible, flexible, adaptable, embeddable database engine
 
 major_version = 4
 minor_version = 8
+
+calc_svn_revision =
+
 ifneq (,$(findstring dist,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+endif
+
+ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+endif
+
+ifdef calc_svn_revision
 
 	# Get the info for all files.
 	
 	srevision = $(shell svnversion . -n)
-#	srevision = $(subst M,,$(shell svnversion . -n))
 	
 	ifneq (,$(findstring M,$(srevision)))
-     $(error Local modifications found - please check in before making distro)
+      $(error Local modifications found - please check in before making distro)
 	endif
 
 	ifneq (,$(findstring :,$(srevision)))
@@ -382,7 +392,9 @@ include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = build
 package_dir = $(build_output_dir)/package
-spec_file = $(package_dir)/$(rpm_proj_name).spec
+spec_dir = $(package_dir)/SPECS
+spec_file = $(spec_dir)/$(rpm_proj_name).spec
+package_sources_dir = $(package_dir)/SOURCES
 pkgconfig_file_name = $(rpm_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
@@ -421,6 +433,7 @@ else
 	rmdircmd = rm -rf $(1)
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
+	cwd := $(shell pwd)
 endif
 
 # -- Tools --
@@ -515,6 +528,7 @@ ifdef unix_target
 	lib_prefix = lib
 	lib_suffix = .a
 	shared_lib_suffix = .so
+
 	ifneq ($(so_age),0)
 		suffix_version = .$(so_current).$(so_revision).$(so_age)
 	else
@@ -857,7 +871,7 @@ ifndef win_target
 	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/util)
 	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/util)
 	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)tar zcf $(package_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(package_dir) $(rpm_proj_name_and_ver)
+	$(ec)tar zcf $(package_sources_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(package_dir) $(rpm_proj_name_and_ver)
 	$(ec)$(call copycmd,$(rpm_proj_name).changes,$(package_dir))
 	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "Package created.\n"
@@ -872,10 +886,10 @@ ifndef win_target
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
 	install --mode=644 $(shared_flaim_lib) $(lib_install_dir)
-	ldconfig -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 	install --mode=644 $(static_flaim_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
+	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
@@ -982,9 +996,16 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: dist
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild -ts --quiet $(package_dir)/$(project_name)-$(version).tar.gz
-	$(ec)$(call copycmd,$(shell rpm --eval %{_srcrpmdir})/$(project_name)-$(version)*.src.rpm $(package_dir))
+	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -bs $(spec_dir)/libflaim.spec
 	$(ec)$(gprintf) "Source RPM created.\n"
+	
+# -- RPMS --
+
+.PHONY : rpms
+rpms: dist
+	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
+	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -ba $(spec_dir)/libflaim.spec
+	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 	
 # -- Documentation --
 
@@ -1021,6 +1042,11 @@ dircheck:
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
 	$(ec)$(call mkdircmd,$(package_dir))
+	$(ec)$(call mkdircmd,$(spec_dir))
+	$(ec)$(call mkdircmd,$(package_sources_dir))
+	$(ec)$(call mkdircmd,$(package_dir)/BUILD)
+	$(ec)$(call mkdircmd,$(package_dir)/RPMS)
+	$(ec)$(call mkdircmd,$(package_dir)/SRPMS)
 
 # -- phony targets --
 
@@ -1098,7 +1124,7 @@ installcheck:
 	
 .PHONY : clean
 clean:
-	-$(ec)$(call rmdircmd,$(target_path))
+	-$(ec)$(call rmdircmd,$(build_output_dir))
 	-$(ec)$(call rmcmd *.pch)
 	
 .PHONY : distclean
