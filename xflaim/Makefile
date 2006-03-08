@@ -45,27 +45,57 @@ major_version = 5
 minor_version = 0
 
 calc_svn_revision =
+must_have_one_rev =
 
 ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
+	must_have_one_rev = 1
 endif
 
 ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
+	must_have_one_rev = 1
 endif
 
+ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
+
+	calc_svn_revision = 1
+
+	# Get the info for this directory
+	
+	ifndef svn_user
+      $(error Must define svn_user=<user> in environment or as a parameter)
+	endif
+	
+	ifndef svn_rev
+      $(error Must define svn_rev=<low[:high]> in environment or as a parameter)
+	endif
+	
+	svnrevs = $(subst :, ,$(svn_rev))
+	svn_low_rev = $(word 1,$(svnrevs))
+	svn_high_rev = $(word 2,$(svnrevs))
+	
+	svnurl0 = $(shell svn info)
+	svnurl1 = $(subst URL: ,URL:,$(svnurl0))
+	svnurl2 = $(filter URL:%,$(svnurl1))
+	svnurl3 = $(subst URL:,,$(svnurl2))
+	svnurl = $(subst ://,://$(svn_user)@,$(svnurl3))
+endif
+	
 ifdef calc_svn_revision
 
 	# Get the info for all files.
 	
-	srevision = $(shell svnversion . -n)
+	ifdef must_have_one_rev	
+		srevision = $(shell svnversion . -n)
+		
+		ifneq (,$(findstring M,$(srevision)))
+         $(error Local modifications found - please check in before making distro)
+		endif
 	
-	ifneq (,$(findstring M,$(srevision)))
-      $(error Local modifications found - please check in before making distro)
-	endif
-
-	ifneq (,$(findstring :,$(srevision)))
-      $(error Mixed revisions in repository - please update before making distro)
+		ifneq (,$(findstring :,$(srevision)))
+         $(error Mixed revisions in repository - please update before making distro)
+		endif
 	endif
 	
 	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
@@ -88,6 +118,11 @@ else
 		revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
 	endif
 endif
+
+ifeq "$(svn_high_rev)" ""
+	svn_high_rev = $(revision)
+endif
+
 version = $(major_version).$(minor_version).$(revision)
 
 so_current = 1
@@ -1136,6 +1171,16 @@ ifndef win_target
 	$(ec)$(call copycmd,$(rpm_proj_name).changes,$(package_dir))
 	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
 	$(ec)$(gprintf) "Package created.\n"
+endif
+	
+.PHONY : changelog
+changelog:
+ifndef win_target
+	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
+	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
+	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
+	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(rpm_proj_name_and_ver).tar.log
+	$(ec)$(gprintf) "Change log created.\n"
 endif
 	
 # -- install --
