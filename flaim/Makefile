@@ -45,16 +45,40 @@ major_version = 4
 minor_version = 8
 
 calc_svn_revision =
-must_have_one_rev =
+
+ifneq (,$(findstring ignore-local-mods,$(MAKECMDGOALS)))
+	ignore_local_mods = 1
+endif
+
+ifneq (,$(findstring ilm,$(MAKECMDGOALS)))
+	ignore_local_mods = 1
+endif
+
+ifdef ignore_local_mods
+	local_mods_ok = 1
+else
+	local_mods_ok =
+endif
 
 ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
-	must_have_one_rev = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
 endif
 
 ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
-	must_have_one_rev = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
+ifneq (,$(findstring zips,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
 endif
 
 ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
@@ -86,7 +110,7 @@ ifdef calc_svn_revision
 
 	# Get the info for all files.
 	
-	ifdef must_have_one_rev	
+	ifndef local_mods_ok	
 		srevision = $(shell svnversion . -n)
 
 		ifneq (,$(findstring M,$(srevision)))
@@ -130,7 +154,7 @@ so_revision = 2
 so_age = 0
 suffix_version =
 
-rpm_release_num = 1
+package_release_num = 1
 
 # -- Paths initializations --
 
@@ -146,8 +170,8 @@ install_prefix = /usr
 
 # -- RPM, SPEC file names
 
-rpm_proj_name = lib$(project_name)
-rpm_proj_name_and_ver = $(rpm_proj_name)-$(version)
+package_proj_name = lib$(project_name)
+package_proj_name_and_ver = $(package_proj_name)-$(version)
 
 # -- Target variables --
 
@@ -426,14 +450,31 @@ lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
 include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = build
+docs_output_dir = $(build_output_dir)/docs
 package_dir = $(build_output_dir)/package
 spec_dir = $(package_dir)/SPECS
-spec_file = $(spec_dir)/$(rpm_proj_name).spec
+spec_file = $(spec_dir)/$(package_proj_name).spec
 package_sources_dir = $(package_dir)/SOURCES
-pkgconfig_file_name = $(rpm_proj_name).pc
+package_build_dir = $(package_dir)/BUILD
+package_rpms_dir = $(package_dir)/RPMS
+package_srpms_dir = $(package_dir)/SRPMS
+package_zips_dir = $(package_dir)/ZIPS
+pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+
+zip_stage_parent_dir = $(package_build_dir)/$(package_proj_name_and_ver)/stage
+zip_bin_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+zip_lib_stage_dir = $(zip_bin_stage_dir)/lib
+zip_shared_lib_stage_dir = $(zip_lib_stage_dir)/shared
+zip_static_lib_stage_dir = $(zip_lib_stage_dir)/static
+zip_util_stage_dir = $(zip_bin_stage_dir)/util
+zip_inc_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)/include
+zip_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)
+
+src_zip_name=$(package_proj_name_and_ver)-src.zip
+bin_zip_name=$(package_proj_name_and_ver)-bin.zip
 
 inc_dirs = src util
 static_obj_dir = $(target_path)/static_obj
@@ -456,19 +497,22 @@ dash := \055
 
 ifeq ($(host_os_family),win)
 	allprereqs  = $(subst /,\,$+)
-	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2)) >NUL
+	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2))
+	dircopycmd = xcopy /Y /E /V /I $(subst /,\,$(1)) $(subst /,\,$(2))
 	rmcmd = del /Q $(subst /,\,$(1))
 	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1))
-	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1)) >NUL
+	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
 	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
+	homedir := $(subst \,/,$(shell chdir))
 else
 	allprereqs = $+
 	copycmd = cp -f $(1) $(2)
+	dircopycmd = cp -rf $(subst /,\,$(1)) $(subst /,\,$(2))
 	rmcmd = rm -f $(1)
 	rmdircmd = rm -rf $(1)
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
-	cwd := $(shell pwd)
+	homedir := $(shell pwd)
 endif
 
 # -- Tools --
@@ -499,7 +543,7 @@ ifdef win_target
 	exe_suffix = .exe
 	obj_suffix = .obj
 	lib_prefix =
-	lib_suffix = .lib
+	static_lib_suffix = .lib
 	shared_lib_suffix = .dll
 	libr = lib.exe
 	linker = link.exe
@@ -561,7 +605,7 @@ ifdef unix_target
 	exe_suffix =
 	obj_suffix = .o
 	lib_prefix = lib
-	lib_suffix = .a
+	static_lib_suffix = .a
 	shared_lib_suffix = .so
 
 	ifneq ($(so_age),0)
@@ -761,8 +805,9 @@ ifdef win_target
 else
 	flaim_static_obj = $(flaim_obj)
 endif
-static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+shared_flaim_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)$(suffix_version)
 
 # -- Unit tests  --
 
@@ -771,10 +816,20 @@ ut_basictest_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(ut_basictest_src
 # -- Utilities  --
 
 checkdb_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(checkdb_src))
+checkdb_exe = $(util_dir)/checkdb$(exe_suffix)
+
 rebuild_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(rebuild_src))
+rebuild_exe = $(util_dir)/rebuild$(exe_suffix)
+
 view_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(view_src))
-sample_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(sample_src))
+view_exe = $(util_dir)/view$(exe_suffix)
+
 dbshell_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(dbshell_src))
+dbshell_exe = $(util_dir)/dbshell$(exe_suffix)
+
+sample_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(sample_src))
+sample_exe = $(sample_dir)/sample$(exe_suffix)
+
 utilsup_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(utilsup_src))
 
 # -- Make system pattern search paths -- 
@@ -842,40 +897,40 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status dircheck libs $(util_dir)/checkdb$(exe_suffix)
-$(util_dir)/checkdb$(exe_suffix): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
+checkdb: status dircheck libs $(checkdb_exe)
+$(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status dircheck libs $(util_dir)/rebuild$(exe_suffix)
-$(util_dir)/rebuild$(exe_suffix): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
+rebuild: status dircheck libs $(rebuild_exe)
+$(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
 # -- view --
 
 .PHONY : view
-view: status dircheck libs $(util_dir)/view$(exe_suffix)
-$(util_dir)/view$(exe_suffix): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
+view: status dircheck libs $(view_exe)
+$(view_exe): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
 # -- sample --
 
 .PHONY : sample
-sample: status dircheck libs $(sample_dir)/sample$(exe_suffix)
-$(sample_dir)/sample$(exe_suffix): $(sample_obj) $(static_flaim_lib)
+sample: status dircheck libs $(sample_exe)
+$(sample_exe): $(sample_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
 # -- dbshell --
 
 .PHONY : dbshell
-dbshell: status dircheck libs $(util_dir)/dbshell$(exe_suffix)
-$(util_dir)/dbshell$(exe_suffix): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
+dbshell: status dircheck libs $(dbshell_exe)
+$(dbshell_exe): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
@@ -890,39 +945,46 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_
 # -- dist --
 
 .PHONY : dist
-dist: status dircheck spec
-ifndef win_target
+dist: status dircheck docs
 	$(ec)$(gprintf) "Creating package (SVN Revision $(revision)) ...\n"
-	-$(ec)$(call rmdircmd,$(package_dir))/*.gz
-	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(rpm_proj_name_and_ver)/VERSION
-	$(ec)$(gprintf) " " > $(package_dir)/$(rpm_proj_name_and_ver)/SVNRevision.$(revision)
-	$(ec)$(call copycmd,Makefile,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,COPYING,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/src)
-	$(ec)$(call mkdircmd,$(package_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(rpm_proj_name_and_ver)/util)
-	$(ec)tar zcf $(package_sources_dir)/$(rpm_proj_name_and_ver).tar.gz -C $(package_dir) $(rpm_proj_name_and_ver)
-	$(ec)$(call copycmd,$(rpm_proj_name).changes,$(package_dir))
-	-$(ec)$(call rmdircmd,$(package_dir)/$(rpm_proj_name_and_ver))
-	$(ec)$(gprintf) "Package created.\n"
+	-$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(package_proj_name_and_ver)/VERSION
+	$(ec)$(gprintf) " " > $(package_dir)/$(package_proj_name_and_ver)/SVNRevision.$(revision)
+	$(ec)$(call copycmd,Makefile,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call copycmd,COPYING,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.cpp,$(package_dir)/$(package_proj_name_and_ver)/src)
+	$(ec)$(call copycmd,src/*.h,$(package_dir)/$(package_proj_name_and_ver)/src)
+	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(package_proj_name_and_ver)/util)
+	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(package_proj_name_and_ver)/util)
+	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_dir)/$(package_proj_name_and_ver)/docs)
+ifdef win_target
+	$(ec)$(call copycmd,make.exe,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call dircopycmd,external/w32,$(package_dir)/$(package_proj_name_and_ver)/external/w32)
+	$(ec)cmd /C "cd $(subst /,\,$(homedir)/$(package_dir)) && \
+			$(subst /,\,$(homedir)/7za a -tzip -r ZIPS/$(src_zip_name)) \
+			$(package_proj_name_and_ver)"
+else
+	$(ec)tar zcf $(package_sources_dir)/$(package_proj_name_and_ver).tar.gz \
+			-C $(package_dir) $(package_proj_name_and_ver)
 endif
+	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_dir))
+	-$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(gprintf) "Package created.\n"
 	
 # -- changelog --
 
 .PHONY : changelog
 changelog:
-ifndef win_target
 	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
 	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
 	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
-	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(rpm_proj_name_and_ver).tar.log
+	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(package_proj_name_and_ver).tar.log
 	$(ec)$(gprintf) "Change log created.\n"
-endif
 	
 # -- install --
 
@@ -947,7 +1009,7 @@ uninstall:
 ifndef win_target
 	$(ec)$(gprintf) "Uninstalling ...\n"
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)*
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(lib_suffix)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-rm -rf $(include_install_dir)/flaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
@@ -955,20 +1017,20 @@ endif
 
 # -- spec file --
 
-
 .PHONY : spec
 spec: dircheck
-	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" > $(spec_file)
+	$(ec)$(gprintf) "Creating spec file ...\n"
+	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
-	$(ec)$(gprintf) "Release: $(rpm_release_num)\n" >> $(spec_file)
+	$(ec)$(gprintf) "Release: $(package_release_num)\n" >> $(spec_file)
 	$(ec)$(gprintf) "License: GPL\n" >> $(spec_file)
 	$(ec)$(gprintf) "Vendor: Novell, Inc.\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
-	$(ec)$(gprintf) "Source: $(rpm_proj_name_and_ver).tar.gz\n" >> $(spec_file)
+	$(ec)$(gprintf) "Source: $(package_proj_name_and_ver).tar.gz\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRoot: $(percent){_tmppath}/$(percent){name}-$(percent){version}-build\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description\n" >> $(spec_file)
@@ -986,7 +1048,7 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: FLAIM static library and header file\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
-	$(ec)$(gprintf) "Provides: $(rpm_proj_name)-devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "Provides: $(package_proj_name)-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "FLAIM is an embeddable cross-platform database engine that provides a\n" >> $(spec_file)
@@ -1020,9 +1082,10 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(lib_suffix)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(static_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/include/flaim.h\n" >> $(spec_file)
+	$(ec)$(gprintf) "Created spec file.\n"
 
 # -- PKG-CONFIG --
 
@@ -1032,7 +1095,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "exec_prefix=$(dollar){prefix}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "libdir=$(dollar){exec_prefix}/$(lib_dir_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "includedir=$(dollar){prefix}/include\n\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Name: $(rpm_proj_name)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Name: $(package_proj_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
@@ -1041,18 +1104,64 @@ pkgconfig: dircheck
 # -- SRCRPM --
 
 .PHONY : srcrpm
-srcrpm: dist
+srcrpm: dist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -bs $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
 	
 # -- RPMS --
 
 .PHONY : rpms
-rpms: dist
+rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
-	$(ec)rpmbuild --define="_topdir $(cwd)/$(package_dir)" --quiet -ba $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -ba $(spec_file)
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
+	
+# -- ZIPS --
+
+.PHONY : zips
+zips: dist
+ifdef win_target
+	$(ec)$(gprintf) "Creating source and binary ZIPs ...\n"
+	$(ec)$(call copycmd,$(package_zips_dir)/$(src_zip_name),$(package_build_dir))
+	$(ec)7za x -o$(package_build_dir) $(package_build_dir)/$(src_zip_name)
+	$(ec)$(call rmcmd,$(package_build_dir)/$(src_zip_name))
+	$(ec)make -C $(package_build_dir)/$(package_proj_name_and_ver) all
+	$(ec)$(call mkdircmd,$(zip_stage_dir))
+	$(ec)$(call mkdircmd,$(zip_inc_stage_dir))
+	$(ec)$(call mkdircmd,$(zip_shared_lib_stage_dir))
+	$(ec)$(call mkdircmd,$(zip_static_lib_stage_dir))
+	$(ec)$(call mkdircmd,$(zip_util_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/VERSION,\
+		$(zip_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/COPYING,\
+		$(zip_stage_dir))
+	$(ec)$(call dircopycmd,$(package_build_dir)/$(package_proj_name_and_ver)/docs,\
+		$(zip_stage_dir)/docs)
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/src/flaim.h,\
+		$(zip_inc_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(static_flaim_lib), \
+		$(zip_static_lib_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(shared_flaim_lib), \
+		$(zip_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(shared_flaim_imp_lib), \
+		$(zip_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(checkdb_exe),\
+		$(zip_util_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(rebuild_exe),\
+		$(zip_util_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(view_exe),\
+		$(zip_util_stage_dir))
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(dbshell_exe),\
+		$(zip_util_stage_dir))
+	$(ec)cmd /C "cd $(subst /,\,$(zip_stage_parent_dir)) && \
+			$(subst /,\,$(homedir)/7za a -tzip -r $(homedir)/$(package_build_dir)/$(bin_zip_name)) \
+			$(package_proj_name_and_ver)"
+	$(ec)$(call copycmd,$(package_build_dir)/$(bin_zip_name),$(package_zips_dir))
+	$(ec)$(call rmcmd,$(package_build_dir)/$(bin_zip_name))
+	-$(ec)$(call rmdircmd,$(package_build_dir)/$(package_proj_name_and_ver))
+	$(ec)$(gprintf) "Source and binary ZIPs created.\n"
+endif
 	
 # -- Documentation --
 
@@ -1069,6 +1178,7 @@ status:
 	$(ec)$(gprintf) "===============================================================================\n"
 	$(ec)$(gprintf) "SVN Revision = $(revision)\n"
 	$(ec)$(gprintf) "Host Operating System Family = $(host_os_family)\n"
+	$(ec)$(gprintf) "Directory = $(homedir)\n"
 	$(ec)$(gprintf) "Target Operating System Family = $(target_os_family)\n"
 	$(ec)$(gprintf) "Target Processor = $(target_processor)\n"
 	$(ec)$(gprintf) "Target Word Size = $(target_word_size)\n"
@@ -1091,9 +1201,10 @@ dircheck:
 	$(ec)$(call mkdircmd,$(package_dir))
 	$(ec)$(call mkdircmd,$(spec_dir))
 	$(ec)$(call mkdircmd,$(package_sources_dir))
-	$(ec)$(call mkdircmd,$(package_dir)/BUILD)
-	$(ec)$(call mkdircmd,$(package_dir)/RPMS)
-	$(ec)$(call mkdircmd,$(package_dir)/SRPMS)
+	$(ec)$(call mkdircmd,$(package_build_dir))
+	$(ec)$(call mkdircmd,$(package_rpms_dir))
+	$(ec)$(call mkdircmd,$(package_srpms_dir))
+	$(ec)$(call mkdircmd,$(package_zips_dir))
 
 # -- phony targets --
 
@@ -1165,6 +1276,14 @@ TAGS:
 info:
 	$(ec)$(gprintf) ""
 	
+.PHONY : ignore-local-mods
+ignore-local-mods:
+	$(ec)$(gprintf) ""
+	
+.PHONY : ilm
+ilm:
+	$(ec)$(gprintf) ""
+	
 .PHONY : installcheck
 installcheck:
 	$(ec)$(gprintf) ""
@@ -1172,10 +1291,10 @@ installcheck:
 .PHONY : clean
 clean:
 	-$(ec)$(call rmdircmd,$(build_output_dir))
-	-$(ec)$(call rmcmd *.pch)
+	-$(ec)$(call rmcmd,*.pch)
 	
 .PHONY : distclean
-	-$(ec)$(call rmcmd *.pch)
+	-$(ec)$(call rmcmd,*.pch)
 	
 .PHONY : mostlyclean
 mostlyclean : clean
@@ -1184,4 +1303,4 @@ mostlyclean : clean
 .PHONY : maintainer-clean
 maintainer-clean:
 	-$(ec)$(call rmdircmd,$(build_output_dir))
-	-$(ec)$(call rmcmd *.pch)
+	-$(ec)$(call rmcmd,*.pch)
