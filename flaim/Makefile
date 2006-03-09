@@ -507,7 +507,7 @@ ifeq ($(host_os_family),win)
 else
 	allprereqs = $+
 	copycmd = cp -f $(1) $(2)
-	dircopycmd = cp -rf $(subst /,\,$(1)) $(subst /,\,$(2))
+	dircopycmd = cp -rf $(1) $(2)
 	rmcmd = rm -f $(1)
 	rmdircmd = rm -rf $(1)
 	mkdircmd = mkdir -p $(1)
@@ -971,6 +971,7 @@ ifdef win_target
 else
 	$(ec)tar zcf $(package_sources_dir)/$(package_proj_name_and_ver).tar.gz \
 			-C $(package_dir) $(package_proj_name_and_ver)
+	$(ec)chmod 775 $(package_sources_dir)/$(package_proj_name_and_ver).tar.gz
 endif
 	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_dir))
 	-$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
@@ -1115,6 +1116,7 @@ srcrpm: dist spec
 rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
 	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -ba $(spec_file)
+	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 	
 # -- ZIPS --
