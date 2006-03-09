@@ -499,8 +499,8 @@ ifeq ($(host_os_family),win)
 	allprereqs  = $(subst /,\,$+)
 	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2))
 	dircopycmd = xcopy /Y /E /V /I $(subst /,\,$(1)) $(subst /,\,$(2))
-	rmcmd = del /Q $(subst /,\,$(1))
-	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1))
+	rmcmd = del /Q $(subst /,\,$(1)) 2>NUL
+	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1)) 2>NUL
 	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
 	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
 	homedir := $(subst \,/,$(shell chdir))
