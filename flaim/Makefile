@@ -1136,8 +1136,6 @@ ifdef win_target
 		$(zip_stage_dir))
 	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/COPYING,\
 		$(zip_stage_dir))
-	$(ec)$(call dircopycmd,$(package_build_dir)/$(package_proj_name_and_ver)/docs,\
-		$(zip_stage_dir)/docs)
 	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/src/flaim.h,\
 		$(zip_inc_stage_dir))
 	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(static_flaim_lib), \
