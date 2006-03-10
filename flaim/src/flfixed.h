@@ -94,9 +94,6 @@ private:
 	FLMUINT					m_uiInUseSlabs;
 	void *					m_pLowPrealloc;
 	void *					m_pHighPrealloc;
-#ifdef FLM_SOLARIS
-	int						m_DevZero;
-#endif
 };
 
 // Cell sizes for buffer allocator

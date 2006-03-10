@@ -24,9 +24,6 @@
 //-------------------------------------------------------------------------
 
 #include "flaimsys.h"
-#ifdef FLM_SOLARIS
-	#include <fcntl.h>
-#endif
 
 #ifdef FLM_NLM
 	extern "C"
@@ -48,9 +45,6 @@ F_SlabManager::F_SlabManager()
 	m_uiInUseSlabs = 0;
 	m_pLowPrealloc = NULL;
 	m_pHighPrealloc = NULL;
-#ifdef FLM_SOLARIS
-	m_DevZero = -1;
-#endif
 }
 
 /****************************************************************************
@@ -68,13 +62,6 @@ F_SlabManager::~F_SlabManager()
 	{
 		f_mutexDestroy( &m_hMutex);
 	}
-	
-#ifdef FLM_SOLARIS
-	if( m_DevZero > 0)
-	{
-		close( m_DevZero);
-	}
-#endif
 }
 
 /****************************************************************************
@@ -101,14 +88,6 @@ RCODE F_SlabManager::setup(
 
 		GetSystemInfo( &sysInfo);
 		uiSysSlabSize = sysInfo.dwAllocationGranularity;
-	}
-#endif
-
-#ifdef FLM_SOLARIS
-	if( (m_DevZero = open( "/dev/zero", O_RDWR)) == -1)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
 	}
 #endif
 
@@ -432,18 +411,58 @@ void * F_SlabManager::allocSlabFromSystem( void)
 #ifdef FLM_WIN
 	pSlab = VirtualAlloc( NULL,
 		(DWORD)m_uiSlabSize, MEM_COMMIT, PAGE_READWRITE);
-#elif defined( FLM_SOLARIS)
-	if( (pSlab = mmap( 0, m_uiSlabSize, 
-		PROT_READ | PROT_WRITE, MAP_PRIVATE, m_DevZero, 0)) == MAP_FAILED)
-	{
-		return( NULL);
-	}
-#elif defined( FLM_UNIX)
+#elif defined( FLM_UNIX) && !defined( FLM_SOLARIS)
 	if( (pSlab = mmap( 0, m_uiSlabSize, 
 		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) == MAP_FAILED)
 	{
 		return( NULL);
 	}
+	
+	// We don't use mmap on Solaris because of the amount of address
+	// space it consumes for red-zones and rounding.  The following is from
+	// the Solaris mmap man page:
+	//	
+	// The mmap() function aligns based on the length of  the  map-
+	// ping.  When  determining  the  amount of space to add to the
+	// address space, mmap() includes two  8-Kbyte  pages,  one  at
+	// each  end  of the mapping that are not mapped and are there-
+	// fore used as "red-zone" pages.  Attempts to reference  these
+	// pages result in access violations.
+	//	
+	// The size requested is incremented by the 16 Kbytes for these
+	// pages  and is then subject to rounding constraints. The con-
+	// straints are:
+	//
+	// o	For 32-bit processes:
+	//
+	//     If length > 4 Mbytes
+	//             round to 4-Mbyte multiple
+	//     elseif length > 512 Kbytes
+	//             round to 512-Kbyte multiple
+	//     else
+	//             round to 64-Kbyte multiple
+	//
+	// o	For 64-bit processes:
+	//
+	//     If length > 4 Mbytes
+	//             round to 4-Mbyte multiple
+	//     else
+	//             round to 1-Mbyte multiple
+	//
+	// The net result is that for a 32-bit process:
+	//
+	// o	If an mmap() request is made for 4 Mbytes,  it  results
+	//		in 4 Mbytes + 16 Kbytes and is rounded up to 8 Mbytes.
+	//
+	// o	If an mmap() request is made for 512 Kbytes, it results
+	//		in 512 Kbytes + 16 Kbytes and is rounded up to 1 Mbyte.
+	//
+	// o	If an mmap() request is made for 1 Mbyte, it results in
+	//		1 Mbyte + 16 Kbytes and is rounded up to 1.5 Mbytes.
+	//
+	// o	Each 8-Kbyte mmap request "consumes" 64 Kbytes of  vir-
+	//		tual address space.
+	
 #else
 	if( RC_BAD( f_alloc( m_uiSlabSize, &pSlab)))
 	{
@@ -464,9 +483,7 @@ void F_SlabManager::releaseSlabToSystem(
 	
 #ifdef FLM_WIN
 	VirtualFree( pSlab, 0, MEM_RELEASE);
-#elif defined( FLM_SOLARIS)
-	munmap( (char *)pSlab, m_uiSlabSize);
-#elif defined( FLM_UNIX)
+#elif defined( FLM_UNIX) && !defined( FLM_SOLARIS)
 	munmap( pSlab, m_uiSlabSize);
 #else
 	f_free( &pSlab);
