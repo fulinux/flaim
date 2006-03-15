@@ -166,7 +166,7 @@
 			typedef short							FLMINT16;
 			typedef signed char					FLMINT8;
 
-			#if defined( FLM_64BIT) || defined( FLM_OSX) || defined( FLM_S390) 
+			#if defined( FLM_64BIT) || defined( FLM_OSX) || defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
 				typedef unsigned long			FLMSIZET;
 			#else
 				typedef unsigned 					FLMSIZET;
