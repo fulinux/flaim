@@ -332,10 +332,10 @@ public:
 		FLMBOOL					bRelease = FALSE,
 		DB_STATS *				pDbStats = NULL);
 		
-	FLMUINT Release(
+	FLMINT Release(
 		F_MutexRef *			pMutexRef);
 
-	FINLINE FLMUINT Release( void)
+	FINLINE FLMINT Release( void)
 	{
 		return( Release( NULL));
 	}

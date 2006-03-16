@@ -201,18 +201,18 @@ public:
 		cleanupThread();
 	}
 
-	FLMUINT AddRef( 
+	FLMINT AddRef( 
 		FLMBOOL bMutexLocked);
 
-	FINLINE FLMUINT AddRef( void)
+	FINLINE FLMINT AddRef( void)
 	{
 		return( AddRef( FALSE));
 	}
 
-	FLMUINT Release( 
+	FLMINT Release( 
 		FLMBOOL bMutexLocked);
 
-	FINLINE FLMUINT Release( void)
+	FINLINE FLMINT Release( void)
 	{
 		return( Release( FALSE));
 	}

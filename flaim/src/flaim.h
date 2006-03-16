@@ -97,7 +97,7 @@
 			#define FLM_UNIX
 			#define FLM_SOLARIS
 			#define FLM_STRICT_ALIGNMENT
-			#if defined( sparc) || defined( __sparc) || defined( __sparcv9)
+			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 			#endif
@@ -273,7 +273,11 @@
       #define FLMCDECL
       #define FLMAPI
       #define FLMCOM
-		#define FINLINE			inline
+		#if defined( __GNUC__)
+			#define FINLINE		__attribute__((always_inline)) inline
+		#else
+			#define FINLINE		inline
+		#endif
 	#else
 		#error Platform not supported
 	#endif
@@ -814,7 +818,7 @@
 
 		F_Base()
 		{ 
-			m_ui32RefCnt = 1;	
+			m_i32RefCnt = 1;	
 		}
 
 		virtual ~F_Base()
@@ -824,22 +828,21 @@
 		/// Increment the reference count for this object.
 		/// The reference count is the number of pointers that are referencing this object.
 		/// Return value is the incremented reference count.
-		FINLINE FLMUINT AddRef( void)
+		FINLINE FLMINT AddRef( void)
 		{
-			m_ui32RefCnt++;
-			return m_ui32RefCnt;
+			return( ++m_i32RefCnt);
 		}
 
 		/// Decrement the reference count for this object.
 		/// The reference count is the number of pointers that are referencing this object.
 		/// Return value is the decremented reference count.  If the reference count goes to
 		/// zero, the object will be deleted.
-		FLMUINT Release( void);
+		FLMINT Release( void);
 
 		/// Return the current reference count on the object.
-		FINLINE FLMUINT getRefCount( void)
+		FINLINE FLMINT getRefCount( void)
 		{
-			return( m_ui32RefCnt);
+			return( m_i32RefCnt);
 		}
 
 		/// Overloaded new operator for objects of this class.
@@ -916,7 +919,7 @@
 
 	protected:
 
-		FLMUINT32		m_ui32RefCnt;
+		FLMINT32			m_i32RefCnt;
 
 	friend class F_FileHdlPage;
 	friend class F_FileHdlMgrPage;
@@ -4603,16 +4606,13 @@
 		/// Increment the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.
 		/// Return value is the incremented reference count.
-		FINLINE FLMUINT AddRef( void)
-		{
-			return( AddRef( FALSE));
-		}
+		FLMINT AddRef( void);
 
 		/// Decrement the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.
 		/// Return value is the decremented reference count.  If the reference count goes to
 		/// zero, the ::FlmRecord object will be deleted.
-		FINLINE FLMUINT Release( void)
+		FINLINE FLMINT Release( void)
 		{
 			return( Release( FALSE));
 		}
@@ -5332,10 +5332,7 @@
 
 	private:
 
-		FLMUINT AddRef( 
-			FLMBOOL			bMutexLocked);
-
-		FLMUINT Release( 
+		FLMINT Release( 
 			FLMBOOL			bMutexLocked);
 
 		void * parent( 

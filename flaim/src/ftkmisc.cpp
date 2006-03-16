@@ -389,7 +389,7 @@ RCODE f_netwareStartup( void)
 {
 	RCODE		rc = FERR_OK;
 
-	if( ftkAtomicIncrement( &gv_ui32NetWareStartupCount) != 1)
+	if( ftkAtomicIncrement( &gv_i32NetWareStartupCount) != 1)
 	{
 		goto Exit;
 	}

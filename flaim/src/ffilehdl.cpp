@@ -299,7 +299,7 @@ RCODE F_FileHdlMgr::MakeAvailAndRelease(
 	F_FileHdlImp *		pFileHdl)
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiRefCnt;
+	FLMINT			iRefCnt;
 	
 	pFileHdl->SetAvailTime();
 	pMutexRef->Lock();
@@ -318,8 +318,8 @@ RCODE F_FileHdlMgr::MakeAvailAndRelease(
 
 	// Release the caller's reference to the file handle
 	
-	uiRefCnt = pFileHdl->Release();
-	flmAssert( uiRefCnt == 1);
+	iRefCnt = pFileHdl->Release();
+	flmAssert( iRefCnt == 1);
 
 	pMutexRef->Unlock();
 	return( rc);

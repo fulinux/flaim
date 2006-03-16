@@ -31,6 +31,7 @@
 		#define _LARGE_FILES
 	#endif
 	#include <stdio.h>
+	#include <sys/atomic_op.h>
 #endif
 
 #include <sys/types.h>
@@ -40,11 +41,9 @@
 	#define O_SYNC 	0				
 #endif
 
-#if !defined( O_DSYNC)		// some systems don't have this
-	#define O_DSYNC O_SYNC
+#if !defined( O_DSYNC)
+	#define O_DSYNC 	O_SYNC
 #endif
-
-extern RCODE gv_CriticalFSError;
 
 #define MAX_CREATION_TRIES		10
 
@@ -52,6 +51,20 @@ extern RCODE gv_CriticalFSError;
 	#include <sys/statvfs.h>
 #elif defined( FLM_LINUX)
 	#include <sys/vfs.h>
+#endif
+
+extern RCODE gv_CriticalFSError;
+
+#if FLM_USE_SPIN_LOCK_ATOMICS
+
+	#if defined( FLM_SPARC)
+		volatile unsigned char gv_flmAtomicLock;
+	#endif
+	
+#elif FLM_USE_MUTEX_ATOMICS
+
+	FSTATIC pthread_mutex_t 	gv_flmAtomicLock = PTHREAD_MUTEX_INITIALIZER;
+
 #endif
 
 /****************************************************************************
@@ -1523,110 +1536,14 @@ FLMUINT flmGetFSBlockSize(
 	return( uiFSBlkSize);
 }
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined(__GNUC__) && defined(__i386__)
-__attribute__((always_inline)) 
-static FINLINE unsigned int atomic_inc(
-	volatile unsigned int * p)
-{
-	unsigned int rv;
-	
-	__asm__ __volatile__(
-		"movl $1, %%eax\n\t"
-		"lock\n\t"
-		"xaddl %%eax, (%%ecx)\n\t"
-		"incl %%eax"
-		: "=a" (rv) 
-		: "c" (p)
-	);
-	
-	return rv;
-}
-#endif
+#endif // FLM_UNIX
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined(__GNUC__) && defined(__i386__)
-FLMUINT32 ftkAtomicIncrement( 
-	FLMUINT32 *		pui32Target)
+#if defined( FLM_WATCOM_NLM)
+int fposixDummy(void)
 {
-	return( atomic_inc( pui32Target));
+	return( 0);
 }
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined(__GNUC__) && defined(__i386__)
-__attribute__((always_inline)) 
-static FINLINE unsigned int atomic_dec(
-	volatile unsigned int * p) 
-{
-	unsigned int rv;
-	
-	__asm__ __volatile__(
-		"movl $-1, %%eax\n\t"
-		"lock\n\t"
-		"xaddl %%eax, (%%ecx)\n\t"
-		"decl %%eax"
-		: "=a" (rv)
-		: "c" (p)
-	);	// result left in eax
-	
-	return rv;
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined(__GNUC__) && defined(__i386__)
-FLMUINT32 ftkAtomicDecrement( 
-	FLMUINT32 *		pui32Target)
-{
-	return( atomic_dec( pui32Target));
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined(__GNUC__) && defined(__i386__)
-__attribute__((always_inline))
-static FINLINE unsigned int atomic_xchg(
-	volatile unsigned int * p, 
-	unsigned int 				i) 
-{
-	unsigned int rv;
-	
-	__asm__ __volatile__(
-		"xchgl %%eax, (%%ecx)"
-		: "=a" (rv)
-		: "c" (p), "a" (i)
-	);	// result left in eax, no buslock required for xchgl
-	
-	return rv;
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined(__GNUC__) && defined(__i386__)
-FLMUINT32 ftkAtomicExchange( 
-	FLMUINT32 *		puiTarget, 
-	FLMUINT32		ui32Value)
-{
-	return( atomic_xchg( puiTarget, ui32Value));
-}
-#endif
-
-#elif defined( FLM_WATCOM_NLM)
-	int fposixDummy(void)
-	{
-		return( 0);
-	}
 #endif

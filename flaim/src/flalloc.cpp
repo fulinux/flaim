@@ -1426,16 +1426,16 @@ void F_Base::operator delete[](
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-FLMUINT F_Base::Release( void)
+FLMINT F_Base::Release( void)
 {
-	FLMUINT		uiRefCnt = --m_ui32RefCnt;
+	FLMINT		iRefCnt = --m_i32RefCnt;
 
-	if( ! uiRefCnt)
+	if( !iRefCnt)
 	{
 		delete this;
 	}
 
-	return uiRefCnt;
+	return( iRefCnt);
 }
 
 /****************************************************************************

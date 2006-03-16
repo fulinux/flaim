@@ -220,10 +220,10 @@ RCODE F_SuperFileHdl::Setup(
 
 		if( RC_BAD( rc = m_pFileIdList->setup()))
 		{
-			FLMUINT		uiRefCnt;
+			FLMINT		iRefCnt;
 
-			uiRefCnt = m_pFileIdList->Release();
-			flmAssert( !uiRefCnt);
+			iRefCnt = m_pFileIdList->Release();
+			flmAssert( !iRefCnt);
 			m_pFileIdList = NULL;
 			goto Exit;
 		}
@@ -653,7 +653,7 @@ RCODE F_SuperFileHdl::ReleaseFile(
 
 		if( bCloseFile)
 		{
-			FLMUINT		uiRefCnt;
+			FLMINT		iRefCnt;
 
 			/* 
 			We must remove this handle from all lists and release 
@@ -661,8 +661,8 @@ RCODE F_SuperFileHdl::ReleaseFile(
 			*/
 			
 			rc = gv_FlmSysData.pFileHdlMgr->Remove( pFileHdl);
-			uiRefCnt = pFileHdl->Release();
-			flmAssert( uiRefCnt == 0);			// pFileHdl should have been freed.
+			iRefCnt = pFileHdl->Release();
+			flmAssert( iRefCnt == 0);			// pFileHdl should have been freed.
 		}
 		else
 		{

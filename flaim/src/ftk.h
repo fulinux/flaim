@@ -1055,15 +1055,20 @@
 	#include <utime.h>
 	#include <arpa/inet.h>
 	#include <netinet/tcp.h>
-	#ifndef FLM_OSX
-		#include <malloc.h>
-	#endif
 	#include <sys/mman.h>
 	#include <sys/resource.h>
 	#include <sys/socket.h>
 	#include <sys/stat.h>
 	#include <sys/time.h>
-
+	
+	#ifndef FLM_OSX
+		#include <malloc.h>
+	#endif
+	
+	#ifdef FLM_AIX
+		#include <sys/atomic_op.h>
+	#endif
+	
 	#define FSTATIC		static
 
 	#define f_stricmp(str1,str2) \
@@ -1777,53 +1782,534 @@ FLMINT f_timeCompareTimeStamps(
 #endif
 
 /****************************************************************************
-					Atomic Increment, Decrement, Exchange Functions
+Desc: Atomic Increment, Decrement, Exchange Functions
+Note:	Some of this code is derived from the Ximian source code contained
+		in that Mono project's atomic.h file. 
 ****************************************************************************/
-#ifdef ATOMIC_INCDEC_SUPPORT
-	#undef ATOMIC_INCDEC_SUPPORT
+#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+	#undef FLM_USE_SPIN_LOCK_ATOMICS
 #endif
 
-FLMUINT32 ftkAtomicIncrement( 
-	FLMUINT32 *		puiTarget);
+#ifdef FLM_USE_MUTEX_ATOMICS
+	#undef FLM_USE_MUTEX_ATOMICS
+#endif
 
-FLMUINT32 ftkAtomicDecrement( 
-	FLMUINT32 *		puiTarget);
+#if defined( FLM_NLM)
 
-FLMUINT32 ftkAtomicExchange( 
-	FLMUINT32 *		puiTarget, 
-	FLMUINT32		uiValue);
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 ftkAtomicIncrement(
+		volatile FLMINT32 *		pi32Target)
+	{
+		return( nlm_atomic_inc( pi32Target));
+	}
+		
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 ftkAtomicDecrement(
+		volatile FLMINT32 *		pi32Target)
+	{
+		return( nlm_atomic_dec( pi32Target));
+	}
+		
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 ftkAtomicExchange(
+		volatile FLMINT32 *		pi32Target,
+		FLMINT32						i32NewVal)
+	{
+		return( atomic_xchg( pi32Target, i32NewVal));
+	}
 
-#if defined( FLM_WIN)
+#elif defined( FLM_WIN)
 
-	#define ftkAtomicIncrement( puiTarget) \
-		((FLMUINT32)InterlockedIncrement( (LPLONG)(puiTarget)))
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 ftkAtomicIncrement(
+		volatile FLMINT32 *		pi32Target)
+	{
+		return( InterlockedIncrement( (volatile LONG *)pi32Target));
+	}
 
-	#define ftkAtomicDecrement( puiTarget) \
-		((FLMUINT32)InterlockedDecrement( (LPLONG)(puiTarget)))
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 ftkAtomicDecrement(
+		volatile FLMINT32 *		pi32Target)
+	{
+		return( InterlockedDecrement( (volatile LONG *)pi32Target));
+	}
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 ftkAtomicExchange(
+		volatile FLMINT32 *		pi32Target,
+		FLMINT32						i32NewVal)
+	{
+		return( InterlockedExchange( (volatile LONG *)pi32Target, i32NewVal));
+	}
+		
+#elif defined( FLM_AIX)
 
-	#define ftkAtomicExchange( puiTarget, uiValue) \
-		((FLMUINT32)InterlockedExchange( (LPLONG)(puiTarget), (LONG)(uiValue)))
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicIncrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			return( fetch_and_add( pi32Target, 1));
+		}
+	
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicDecrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			return( fetch_and_add( pi32Target, -1));
+		}
+		
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicExchange(
+			volatile FLMINT32 *		pi32Target,
+			FLMINT32						i32NewVal)
+		{
+			FLMINT32		i32OldVal;
+			
+			for( ;;)
+			{ 
+				i32OldVal = *pi32Target;
+				
+				if( compare_and_swap( pi32Target, &i32OldVal, i32NewVal))
+				{
+					break;
+				}
+			}
+			
+			return( i32OldVal);
+		}
+		
+#elif defined( FLM_HPUX)
 
-	#define ATOMIC_INCDEC_SUPPORT		1
+	#define FLM_USE_MUTEX_ATOMICS
+	
+#elif defined( __GNUC__)
 
-#elif defined( FLM_NLM)
+	#if defined( __i386__) || defined( __x86_64__)
 
-	#define ftkAtomicExchange( puiTarget, uiValue) \
-		((FLMUINT32)atomic_xchg( (LONG *)(puiTarget), (LONG)(uiValue)))
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicIncrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32 	i32Tmp;
+			
+			__asm__ __volatile__ ("lock; xaddl %0, %1"
+							: "=r" (i32Tmp), "=m" (*pi32Target)
+							: "0" (1), "m" (*pi32Target));
+		
+			return( i32Tmp + 1);
+		}
+		
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicDecrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32		i32Tmp;
+			
+			__asm__ __volatile__ ("lock; xaddl %0, %1"
+							: "=r" (i32Tmp), "=m" (*pi32Target)
+							: "0" (-1), "m" (*pi32Target));
+		
+			return( i32Tmp - 1);
+		}
+	
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicExchange(
+			volatile FLMINT32 *		pi32Target,
+			FLMINT32						i32NewVal)
+		{
+			FLMINT32 	i32Ret;
+			
+			__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
+							: "=m" (*pi32Target), "=a" (i32Ret)
+							: "r" (i32NewVal), "m" (*pi32Target), "a" (*pi32Target));
+		
+			return( i32Ret);
+		}
+		
+	#elif defined( sparc) || defined ( __sparc__)
 
-	#define ftkAtomicIncrement( puiTarget) \
-		((FLMUINT32)nlm_AtomicIncrement( puiTarget))
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		#define BEGIN_SPIN(tmp,lock) \
+			__asm__ __volatile__("1:        ldstub [%1],%0\n\t"  \
+												  "          cmp %0, 0\n\t" \
+												  "          bne 1b\n\t" \
+												  "          nop" \
+												  : "=&r" (tmp) \
+												  : "r" (&lock) \
+												  : "memory"); 
+		
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		#define END_SPIN(lock) \
+			__asm__ __volatile__("stb	%%g0, [%0]"  \
+										 : /* no outputs */ \
+										 : "r" (&lock)\
+										 : "memory");
+										 
+		#define FLM_USE_SPIN_LOCK_ATOMICS
+		
+	#elif defined( __ppc__) || defined ( __powerpc__)
+	
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicIncrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32		i32Result = 0;
+			FLMINT32		i32Tmp;
+		
+			__asm__ __volatile__ ("\n1:\n\t"
+							"lwarx  %0, 0, %2\n\t"
+							"addi   %1, %0, 1\n\t"
+							"stwcx. %1, 0, %2\n\t"
+							"bne-   1b"
+							: "=&b" (i32Result), "=&b" (i32Tmp) 
+							: "r" (i32Target) : "cc", "memory");
+	
+			return( i32Result + 1);
+		}
+	
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicDecrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32		i32Result = 0;
+			FLMINT32		i32Tmp;
+		
+			__asm__ __volatile__ ("\n1:\n\t"
+							"lwarx  %0, 0, %2\n\t"
+							"addi   %1, %0, -1\n\t"
+							"stwcx. %1, 0, %2\n\t"
+							"bne-   1b"
+							: "=&b" (i32Result), "=&b" (i32Tmp) 
+							: "r" (pi32Target) : "cc", "memory");
+							
+			return( i32Result - 1);
+		}
+	
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicExchange(
+			volatile FLMINT32 *		pi32Target,
+			FLMINT32						i32NewVal)
+		{
+			FLMINT32		i32Tmp = 0;
+		
+			__asm__ __volatile__ ("\n1:\n\t"
+							"lwarx  %0, 0, %2\n\t"
+							"stwcx. %3, 0, %2\n\t"
+							"bne    1b"
+							: "=r" (i32Tmp) : "0" (i32Tmp), "b" (pi32Target),
+							  "r" (i32NewVal) : "cc", "memory");
+							
+			return( i32Tmp);
+		}
+		
+	#elif defined( __ia64__)
+	
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ia64_compare_and_swap(
+			volatile FLMINT32 *		pi32Target,
+			FLMINT32						i32NewVal,
+			FLMINT32						i32CompVal)
+		{
+			FLMINT32 		i32Old;
+		
+			asm volatile ("mov ar.ccv = %2 ;;\n\t"
+						  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
+						  : "=r" (i32Old) : "r" (pi32Target), "r" (i32CompVal),
+						    "r" (i32NewVal));
+		
+			return( i32Old);
+		}
 
-	#define ftkAtomicDecrement( puiTarget) \
-		((FLMUINT32)nlm_AtomicDecrement( puiTarget))
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicIncrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32			i32Old;
 
-	#define ATOMIC_INCDEC_SUPPORT		1
+			for( ;;)
+			{
+				i32Old = *pi32Target;
+				
+				if( ia64_compare_and_swap( pi32Target, 
+						i32Old + 1, i32Old) == i32Old)
+				{
+					break;
+				}
+			}
+		
+			return( i32Old + 1);
+		}
 
-#elif defined( FLM_UNIX)
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicDecrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32			i32Old;
 
-	#if defined(__GNUC__) && defined(__i386__)
-		#define ATOMIC_INCDEC_SUPPORT		1
+			for( ;;)
+			{
+				i32Old = *pi32Target;
+				
+				if( ia64_compare_and_swap( pi32Target, 
+						i32Old - 1, i32Old) == i32Old)
+				{
+					break;
+				}
+			}
+		
+			return( i32Old - 1);
+		}
+
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicExchange(
+			volatile FLMINT32 *		pi32Target,
+			FLMINT32						i32NewVal)
+		{
+			FLMINT32			i32Result;
+
+			for( ;;)
+			{
+				i32Result = *pi32Target;
+				
+				if( ia64_compare_and_swap( pi32Target, 
+						i32NewVal, i32Result) == i32Result)
+				{
+					break;
+				}
+			}
+		
+			return( iResult);
+		}
+	
+	#elif defined( __s390__)
+		
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicIncrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32		i32Tmp;
+			
+			__asm__ __volatile__ ("\tLA\t2,%1\n"
+							"0:\tL\t%0,%1\n"
+							"\tLR\t1,%0\n"
+							"\tAHI\t1,1\n"
+							"\tCS\t%0,1,0(2)\n"
+							"\tJNZ\t0b\n"
+							"\tLR\t%0,1"
+							: "=r" (i32Tmp), "+m" (*pi32Target)
+							: : "1", "2", "cc");
+		
+			return( i32Tmp);
+		}
+
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicDecrement(
+			volatile FLMINT32 *		pi32Target)
+		{
+			FLMINT32		i32Tmp;
+	
+			__asm__ __volatile__ ("\tLA\t2,%1\n"
+							"0:\tL\t%0,%1\n"
+							"\tLR\t1,%0\n"
+							"\tAHI\t1,-1\n"
+							"\tCS\t%0,1,0(2)\n"
+							"\tJNZ\t0b\n"
+							"\tLR\t%0,1"
+							: "=r" (i32Tmp), "+m" (*pi32Target)
+							: : "1", "2", "cc");
+		
+			return( i32Tmp);
+		}
+
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
+		FINLINE FLMINT32 ftkAtomicExchange(
+			volatile FLMINT32 *		pi32Target,
+			FLMINT32						i32NewVal)
+		{
+			FLMINT32		i32Ret;
+			
+			__asm__ __volatile__ ("\tLA\t1,%0\n"
+							"0:\tL\t%1,%0\n"
+							"\tCS\t%1,%2,0(1)\n"
+							"\tJNZ\t0b"
+							: "+m" (*pi32Target), "=r" (i32Ret)
+							: "r" (i32NewVal)
+							: "1", "cc");
+		
+			return( i32Ret);
+		}
+		
+	#else
+	
+		#error Atomic operations aren't supported on this platform
+		
 	#endif
+									 
+#elif defined( FLM_SPARC)
+
+	/*************************************************************************
+	Desc:
+	*************************************************************************/
+	FINLINE void begin_spin(
+		volatile unsigned char *		lock)
+	{
+		asm( "1: ldstub [%i0], %l0");
+		asm( "cmp %l0,0");
+		asm( "bne 1b");
+		asm( "nop");
+	}
+	
+	#define BEGIN_SPIN(tmp,lock) \
+		begin_spin( &lock);
+		
+	#define END_SPIN(lock) \
+		((lock) = 0);
+		
+	#define FLM_USE_SPIN_LOCK_ATOMICS
+
+#else	
+
+	#error Atomic operations aren't supported on this platform
+
+#endif
+
+#if defined( FLM_USE_SPIN_LOCK_ATOMICS) || defined( FLM_USE_MUTEX_ATOMICS)
+
+	#if FLM_USE_SPIN_LOCK_ATOMICS
+		#if defined( FLM_SPARC)
+			extern volatile unsigned char gv_flmAtomicLock;
+		#endif
+	#endif
+	
+	/*************************************************************************
+	Desc:
+	*************************************************************************/
+	FINLINE FLMINT32 ftkAtomicIncrement(
+		volatile FLMINT32 *		pi32Target)
+	{
+		int 			iTmp;
+		FLMINT32 	i32RetVal;
+		
+	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+		BEGIN_SPIN( iTmp, gv_flmAtomicLock)
+	#else
+		pthread_mutex_lock( &gv_flmAtomicLock);
+	#endif
+		
+		(*pi32Target)++;
+		i32RetVal = *pi32Target;
+		
+	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+		END_SPIN( gv_flmAtomicLock)
+	#else
+		pthread_mutex_unlock( &gv_flmAtomicLock);
+	#endif
+		
+		return( i32RetVal);
+	}
+	
+	/*************************************************************************
+	Desc:
+	*************************************************************************/
+	FINLINE FLMINT32 ftkAtomicDecrement(
+		volatile FLMINT32 *		pi32Target)
+	{
+		int 			iTmp;
+		FLMINT32 	i32RetVal;
+		
+	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+		BEGIN_SPIN( iTmp, gv_flmAtomicLock)
+	#else
+		pthread_mutex_lock( &gv_flmAtomicLock);
+	#endif
+		
+		(*pi32Target)--;
+		i32RetVal = *pi32Target;
+		
+	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+		END_SPIN( gv_flmAtomicLock)
+	#else
+		pthread_mutex_unlock( &gv_flmAtomicLock);
+	#endif
+		
+		return( i32RetVal);
+	}
+	
+	/*************************************************************************
+	Desc:
+	*************************************************************************/
+	FINLINE FLMINT32 ftkAtomicExchange(
+		volatile FLMINT32 *		pi32Target,
+		FLMINT32						i32NewVal)
+	{
+		int 			iTmp;
+		FLMINT32 	i32RetVal;
+		
+	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+		BEGIN_SPIN( iTmp, gv_flmAtomicLock)
+	#else
+		pthread_mutex_lock( &gv_flmAtomicLock);
+	#endif
+	
+		i32RetVal = *pi32Target;
+		*pi32Target = i32NewVal;
+
+	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
+		END_SPIN( gv_flmAtomicLock)
+	#else
+		pthread_mutex_unlock( &gv_flmAtomicLock);
+	#endif
+		
+		return( i32RetVal);
+	}
 
 #endif
 
@@ -1893,10 +2379,8 @@ FINLINE FLMBYTE f_getHexVal(
 }
 
 /****************************************************************************
-
 									Process ID Functions
-	
-****************************************************************************/
+	****************************************************************************/
 
 #if defined( FLM_WIN)
 
@@ -1971,10 +2455,8 @@ void flmQSortUINTSwap(
 	FLMUINT		uiPos2);
 	
 /****************************************************************************
-
 									Module Load/Unload Functions
-	
-****************************************************************************/
+	****************************************************************************/
 
 typedef	void * FlmModHandle;
 

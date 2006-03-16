@@ -1692,12 +1692,12 @@ RCODE FlmRecord::compactMemory( void)
 	FLMBOOL		bHeapAlloc = FALSE;
 
 	flmAssert( isCached());
-	flmAssert( m_ui32RefCnt == 1);
+	flmAssert( m_i32RefCnt == 1);
 
 	// Temporarily increment the reference count so that we don't hit
 	// debug asserts while processing
 
-	m_ui32RefCnt++;
+	m_i32RefCnt++;
 
 	if( !m_uiBufferSize ||
 		(!m_bHolesInData && m_uiDataBufOffset == getDataBufSize()))
@@ -1952,7 +1952,7 @@ Exit:
 
 	// Remove the reference count added above
 
-	m_ui32RefCnt--;
+	m_i32RefCnt--;
 	return( rc);
 }
 
@@ -2710,46 +2710,26 @@ Exit:
 /*****************************************************************************
 Desc:		Add a globally shared reference to this object.
 *****************************************************************************/
-FLMUINT FlmRecord::AddRef(
-	FLMBOOL			bMutexLocked)
+FLMINT FlmRecord::AddRef( void)
 {
-	FLMUINT		uiRefCnt = 0;
-	FLMBOOL		bLockedMutex = FALSE;
+	FLMINT		iRefCnt = 0;
 
-#ifdef ATOMIC_INCDEC_SUPPORT
-	(void)bMutexLocked;
-	uiRefCnt = (FLMUINT)ftkAtomicIncrement( &m_ui32RefCnt);
-#else
+	iRefCnt = ftkAtomicIncrement( &m_i32RefCnt);
 
-	if( !bMutexLocked)
-	{
-		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-		bLockedMutex = TRUE;
-		bMutexLocked = TRUE;
-	}
-
-	uiRefCnt = ++m_ui32RefCnt;
-#endif
-
-	if( bLockedMutex)
-	{
-		f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-	}
-	flmAssert( uiRefCnt > 1);
-	return( uiRefCnt);
+	flmAssert( iRefCnt > 1);
+	return( iRefCnt);
 }
 
 /*****************************************************************************
 Desc:		Removes a globally shared reference to this object.
 *****************************************************************************/
-FLMUINT FlmRecord::Release(
+FLMINT FlmRecord::Release(
 	FLMBOOL			bMutexLocked)
 {
-	FLMUINT		uiRefCnt = 0;
+	FLMINT		iRefCnt = 0;
 	FLMBOOL		bUnlockMutex = FALSE;
 
-#ifdef ATOMIC_INCDEC_SUPPORT
-	if( isCached() && m_ui32RefCnt == 2)
+	if( isCached() && m_i32RefCnt == 2)
 	{
 		if( !bMutexLocked)
 		{
@@ -2759,26 +2739,16 @@ FLMUINT FlmRecord::Release(
 		}
 	}
 	
-	uiRefCnt = (FLMUINT)ftkAtomicDecrement( &m_ui32RefCnt);
-#else
-	if( !bMutexLocked)
-	{
-		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-		bMutexLocked = TRUE;
-		bUnlockMutex = TRUE;
-	}
+	iRefCnt = ftkAtomicDecrement( &m_i32RefCnt);
 
-	uiRefCnt = --m_ui32RefCnt;
-#endif
-
-	if( !uiRefCnt)
+	if( !iRefCnt)
 	{
 		flmAssert( !isCached());
 
 		m_uiFlags |= RCA_OK_TO_DELETE;
 		delete this;
 	}
-	else if( bMutexLocked && uiRefCnt == 1 && isCached())
+	else if( bMutexLocked && iRefCnt == 1 && isCached())
 	{
 		// If the record is still cached, and the reference count
 		// is 1, it is safe to compact the record's buffer
@@ -2809,7 +2779,7 @@ FLMUINT FlmRecord::Release(
 		f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 	}
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
 /*****************************************************************************
@@ -4585,7 +4555,7 @@ void FlmRecord::operator delete(
 		return;
 	}
 	
-	flmAssert( ((FlmRecord *)ptr)->m_ui32RefCnt == 0);
+	flmAssert( ((FlmRecord *)ptr)->m_i32RefCnt == 0);
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
 
@@ -4614,7 +4584,7 @@ void FlmRecord::operator delete(
 		return;
 	}
 
-	flmAssert( ((FlmRecord *)ptr)->m_ui32RefCnt == 0);
+	flmAssert( ((FlmRecord *)ptr)->m_i32RefCnt == 0);
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
 #endif

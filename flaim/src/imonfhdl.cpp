@@ -567,13 +567,13 @@ void F_FileHdlPage::write_data(
 	// Now for the final base class - F_Base
 	pBase = (F_Base *)pListItem;
 
-	// m_ui32RefCnt
-	printHTMLUint(
-		"F_Base.m_ui32RefCnt",
-		"FLMUINT",
+	// m_i32RefCnt
+	printHTMLInt(
+		"F_Base.m_i32RefCnt",
+		"FLMINT32",
 		(void *)pBase,
-		(void *)&pBase->m_ui32RefCnt,
-		pBase->m_ui32RefCnt,
+		(void *)&pBase->m_i32RefCnt,
+		pBase->m_i32RefCnt,
 		(bHighlight = ~bHighlight));
 
 

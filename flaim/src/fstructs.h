@@ -2308,9 +2308,9 @@ public:
 	void * getKey(
 		FLMUINT *	puiKeyLen = NULL);
 
-	FLMUINT AddRef();
+	FLMINT AddRef();
 
-	FLMUINT Release();
+	FLMINT Release();
 
 	FINLINE eHashObjType objectType( void)
 	{

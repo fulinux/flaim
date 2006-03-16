@@ -46,53 +46,53 @@
 /****************************************************************************
 Desc:		Add a Reference to this object.
 ****************************************************************************/
-FLMUINT F_Thread::AddRef(
+FLMINT F_Thread::AddRef(
 	FLMBOOL		bMutexLocked)
 {
-	FLMUINT		uiRefCnt;
+	FLMINT		iRefCnt;
 
 	if( !bMutexLocked)
 	{
 		f_mutexLock( m_hMutex);
 	}
 
-	uiRefCnt = ++m_ui32RefCnt;
+	iRefCnt = ++m_i32RefCnt;
 
 	if( !bMutexLocked)
 	{
 		f_mutexUnlock( m_hMutex);
 	}
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************
 Desc:		Removes a reference to this object.
 ****************************************************************************/
-FLMUINT F_Thread::Release( 
+FLMINT F_Thread::Release( 
 	FLMBOOL		bMutexLocked)
 {
-	FLMUINT		uiRefCnt;
+	FLMINT		iRefCnt;
 
 	if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
 	{
 		f_mutexLock( m_hMutex);
 	}
 
-	flmAssert( m_ui32RefCnt > 0);
-	uiRefCnt = --m_ui32RefCnt;
+	flmAssert( m_i32RefCnt > 0);
+	iRefCnt = --m_i32RefCnt;
 
 	if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
 	{
 		f_mutexUnlock( m_hMutex);
 	}
 
-	if( !uiRefCnt)
+	if( !iRefCnt)
 	{
 		delete this;
 	}
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************

@@ -63,34 +63,34 @@ FlmTrace::~FlmTrace()
 Public:	addRef
 Desc:		Add a reference to this object.
 ****************************************************************************/
-FLMUINT FlmTrace::AddRef( void)
+FLMINT FlmTrace::AddRef( void)
 {
-	FLMUINT	uiReturnCnt;
+	FLMINT	iRefCnt;
 
 	lock();
-	uiReturnCnt = ++m_ui32RefCnt;
+	iRefCnt = ++m_i32RefCnt;
 	unlock();
-	return uiReturnCnt;
+	return( iRefCnt);
 }
 
 /****************************************************************************
 Public:	release
 Desc:		Removes a reference to this object.
 ****************************************************************************/
-FLMUINT FlmTrace::Release( void)
+FLMINT FlmTrace::Release( void)
 {
-	FLMUINT	uiReturnCnt;
+	FLMINT	iRefCnt;
 
 	lock();
-	uiReturnCnt = --m_ui32RefCnt;
+	iRefCnt = --m_i32RefCnt;
 	unlock();
 
-	if( !uiReturnCnt)
+	if( !iRefCnt)
 	{
 		delete this;
 	}
 
-	return uiReturnCnt;
+	return( iRefCnt);
 }
 
 /****************************************************************************

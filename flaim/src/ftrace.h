@@ -107,8 +107,9 @@ public:
 	
 	virtual ~FlmTrace();
 
-	FLMUINT AddRef( void);
-	FLMUINT Release( void);
+	FLMINT AddRef( void);
+	
+	FLMINT Release( void);
 
 	FINLINE void enableCategory(
 		FLMUINT	uiCategory)

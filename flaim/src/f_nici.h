@@ -187,9 +187,9 @@ public:
 		return m_uiAlgType;
 	}
 
-	FLMUINT AddRef( void);
+	FLMINT AddRef( void);
 
-	FLMUINT Release( void);
+	FLMINT Release( void);
 
 private:
 

@@ -62,7 +62,7 @@
 #endif
 
 
-FLMUINT32	gv_ui32FlmSysSpinLock = 0;
+FLMINT32	gv_i32FlmSysSpinLock = 0;
 FLMUINT		gv_uiFlmSysStartupCount = 0;
 FLMBOOL		gv_bNetWareStartupCalled = FALSE;
 
@@ -574,21 +574,12 @@ Desc:	Lock the system data structure for access - called only by startup
 ***************************************************************************/
 FSTATIC void flmLockSysData( void)
 {
-#ifdef ATOMIC_INCDEC_SUPPORT
-
 	// Obtain the spin lock
 
-	while (ftkAtomicExchange( &gv_ui32FlmSysSpinLock, 1) == 1)
+	while (ftkAtomicExchange( &gv_i32FlmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
-#else
-	while (gv_ui32FlmSysSpinLock)
-	{
-		f_sleep( 10);
-	}
-	gv_ui32FlmSysSpinLock = 1;
-#endif
 }
 
 /***************************************************************************
@@ -597,11 +588,7 @@ Desc:	Unlock the system data structure for access - called only by startup
 ***************************************************************************/
 FSTATIC void flmUnlockSysData( void)
 {
-#ifdef ATOMIC_INCDEC_SUPPORT
-	(void)ftkAtomicExchange( &gv_ui32FlmSysSpinLock, 0);
-#else
-	gv_ui32FlmSysSpinLock = 0;
-#endif
+	(void)ftkAtomicExchange( &gv_i32FlmSysSpinLock, 0);
 }
 
 /*API~***********************************************************************
@@ -618,6 +605,24 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	FLMUINT			uiCacheBytes;
 #ifdef FLM_USE_NICI
 	int				iHandle;
+#endif
+
+	// Before starting anything, make sure the atomic primitives return the
+	// correct values on this platform
+
+#ifdef FLM_DEBUG
+	{	
+		FLMINT32		i32Val = 10772;
+		FLMINT32		i32Tmp;
+		
+		flmAssert( ftkAtomicIncrement( &i32Val) == 10773);
+		flmAssert( ftkAtomicDecrement( &i32Val) == 10772);
+		
+		i32Tmp = ftkAtomicExchange( &i32Val, 10777);
+		
+		flmAssert( i32Tmp == 10772);
+		flmAssert( i32Val == 10777);
+	}
 #endif
 
 	flmLockSysData();
@@ -2505,10 +2510,10 @@ void flmFreeFile(
 
 	if( pFile->pFileIdList)
 	{
-		FLMUINT		uiRefCnt;
+		FLMINT		iRefCnt;
 
-		uiRefCnt = pFile->pFileIdList->Release();
-		flmAssert( !uiRefCnt);
+		iRefCnt = pFile->pFileIdList->Release();
+		flmAssert( !iRefCnt);
 		pFile->pFileIdList = NULL;
 	}
 
@@ -2589,7 +2594,7 @@ void flmFreeFile(
 	
 	// Free the password
 	
-	if ( pFile->pszDbPassword)
+	if( pFile->pszDbPassword)
 	{
 		f_free( &pFile->pszDbPassword);
 	}
@@ -2768,16 +2773,16 @@ FSTATIC void flmCleanup( void)
 
 	if (gv_FlmSysData.pFileHdlMgr)
 	{
-		FLMUINT	uiRefCnt = gv_FlmSysData.pFileHdlMgr->Release();
+		FLMINT	iRefCnt = gv_FlmSysData.pFileHdlMgr->Release();
 
 		// No one else should have a reference to the file handle manager
 		// after this point.
 
 #ifdef FLM_DEBUG
-		flmAssert( 0 == uiRefCnt);
+		flmAssert( !iRefCnt);
 #else
 		// Quiet the compiler about the unused variable 
-		(void)uiRefCnt;
+		(void)iRefCnt;
 #endif
 		gv_FlmSysData.pFileHdlMgr = NULL;
 	}
@@ -2786,7 +2791,7 @@ FSTATIC void flmCleanup( void)
 
 	if (gv_FlmSysData.pServerLockMgr)
 	{
-		FLMUINT	uiRefCnt;
+		FLMINT	iRefCnt;
 
 		// Release all locks.
 
@@ -2794,17 +2799,17 @@ FSTATIC void flmCleanup( void)
 
 		// Release the lock manager.
 
-		uiRefCnt = gv_FlmSysData.pServerLockMgr->Release();
+		iRefCnt = gv_FlmSysData.pServerLockMgr->Release();
 
 		// No one else should have a reference to the server lock manager
 		// at this point, so lets trip a flmAssert if the object was really
 		// not deleted.
 
 #ifdef FLM_DEBUG
-		flmAssert( 0 == uiRefCnt);
+		flmAssert( !iRefCnt);
 #else
 		// Quiet the compiler about the unused variable 
-		(void)uiRefCnt;
+		(void)iRefCnt;
 #endif
 		gv_FlmSysData.pServerLockMgr = NULL;
 	}
@@ -2868,16 +2873,16 @@ FSTATIC void flmCleanup( void)
 
 	if (gv_FlmSysData.pFileSystem)
 	{
-		FLMUINT	uiRefCnt = gv_FlmSysData.pFileSystem->Release();
+		FLMINT	iRefCnt = gv_FlmSysData.pFileSystem->Release();
 
 		// No one else should have a reference to the file system
 		// after this point.
 
 #ifdef FLM_DEBUG
-		flmAssert( 0 == uiRefCnt);
+		flmAssert( !iRefCnt);
 #else
 		// Quiet the compiler about the unused variable 
-		(void)uiRefCnt;
+		(void)iRefCnt;
 #endif
 		gv_FlmSysData.pFileSystem = NULL;
 	}
@@ -3748,7 +3753,7 @@ F_Session::~F_Session()
 {
 	flmAssert( !m_pPrev);
 	flmAssert( !m_pNext);
-	flmAssert( !m_ui32RefCnt);
+	flmAssert( !m_i32RefCnt);
 	flmAssert( !m_uiThreadLockCount);
 
 	// Wake up any waiters
@@ -4161,7 +4166,7 @@ RCODE F_Session::lockSession(
 {
 	RCODE		rc = FERR_OK;
 
-	flmAssert( m_ui32RefCnt);
+	flmAssert( m_i32RefCnt);
 	f_mutexLock( m_hMutex);
 
 	if( m_uiThreadId && m_uiThreadId != f_threadId())
@@ -4194,7 +4199,7 @@ void F_Session::unlockSession()
 {
 	F_SEM				hSem;
 
-	flmAssert( m_ui32RefCnt);
+	flmAssert( m_i32RefCnt);
 
 	f_mutexLock( m_hMutex);
 	if( m_uiThreadId != f_threadId())
@@ -4240,37 +4245,37 @@ Desc:	Adds a reference to the session object.  The mutex is locked prior
 		acquire a pointer to the object.  However, they shouldn't use the
 		object w/o first locking it via a call to lockSession.
 ****************************************************************************/
-FLMUINT F_Session::AddRef( void)
+FLMINT F_Session::AddRef( void)
 {
-	FLMUINT		uiRefCnt;
+	FLMINT		iRefCnt;
 
 	f_mutexLock( m_hMutex);
-	flmAssert( m_ui32RefCnt);
-	uiRefCnt = F_Base::AddRef();
+	flmAssert( m_i32RefCnt);
+	iRefCnt = F_Base::AddRef();
 	f_mutexUnlock( m_hMutex);
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************
 Desc:	Decrements the objects use count
 ****************************************************************************/
-FLMUINT F_Session::Release( void)
+FLMINT F_Session::Release( void)
 {
-	FLMUINT		uiRefCnt;
+	FLMINT		iRefCnt;
 
-	flmAssert( m_ui32RefCnt);
+	flmAssert( m_i32RefCnt);
 
 	f_mutexLock( m_hMutex);
-	if( (uiRefCnt = --m_ui32RefCnt) == 0)
+	if( (iRefCnt = --m_i32RefCnt) == 0)
 	{
 		f_mutexUnlock( m_hMutex);
 		delete this;
-		return( uiRefCnt);
+		return( iRefCnt);
 	}
 	f_mutexUnlock( m_hMutex);
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************

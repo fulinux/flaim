@@ -248,13 +248,13 @@ RCODE F_FileHdlMgrPage::display(
 
 		pBase = (F_Base *)pFileHdlMgr;
 
-		// m_ui32RefCnt
-		printHTMLUint(
-			"F_Base.m_ui32RefCnt",
-			"FLMUINT",
+		// m_i32RefCnt
+		printHTMLInt(
+			"F_Base.m_i32RefCnt",
+			"FLMINT32",
 			(void *)pBase,
-			(void *)&pBase->m_ui32RefCnt,
-			pBase->m_ui32RefCnt,
+			(void *)&pBase->m_i32RefCnt,
+			pBase->m_i32RefCnt,
 			(bHighlight = ~bHighlight));
 
 

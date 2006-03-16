@@ -79,10 +79,6 @@ public:
 		}
 	};
 
-	// AddRef/Release provided by F_Base
-	//FLMUINT AddRef();					// Increment ref count for this object	
-	//FLMUINT Release();					// Decrement ref count, if 0 then delete.
-
 private:
 
 	FLMUINT				m_uiLockCount;	// Number of times the semaphore has

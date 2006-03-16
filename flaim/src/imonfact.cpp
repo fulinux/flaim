@@ -147,9 +147,6 @@ Exit:
 /****************************************************************************
  Desc:	Tells the factory that the WebPage object is no longer needed
 ****************************************************************************/
-// For now, we're going to keep Release() pretty simple.  In the near
-// future, we may want to implement some sort of caching scheme for
-// the WebPage objects...
 void F_WebPageFactory::Release(
 	F_WebPage **			ppPage)
 {

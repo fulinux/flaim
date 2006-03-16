@@ -731,7 +731,7 @@ public:
 	void Release( 
 		F_WebPage **		ppPage);
 
-	FINLINE FLMUINT Release( void)
+	FINLINE FLMINT Release( void)
 	{
 		flmAssert( 0);
 		return( 0);

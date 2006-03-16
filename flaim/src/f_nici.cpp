@@ -2721,52 +2721,31 @@ FSTATIC void GetIV(
 /*****************************************************************************
 Desc:		Add a globally shared reference to this object.
 *****************************************************************************/
-FLMUINT F_CCS::AddRef()
+FLMINT F_CCS::AddRef()
 {
-	FLMUINT		uiRefCnt = 0;
-
-#ifdef ATOMIC_INCDEC_SUPPORT
-	uiRefCnt = (FLMUINT)ftkAtomicIncrement( &m_ui32RefCnt);
-#else
-
-	f_mutexLock( m_hMutex);
-	uiRefCnt = ++m_ui32RefCnt;
-	f_mutexUnlock( m_hMutex);
-
-#endif
-
-
-	return( uiRefCnt);
+	return( ftkAtomicIncrement( &m_i32RefCnt));
 }
 
 /*****************************************************************************
 Desc:		Removes a globally shared reference to this object.
 *****************************************************************************/
-FLMUINT F_CCS::Release()
+FLMINT F_CCS::Release()
 {
-	FLMUINT		uiRefCnt = 0;
+	FLMINT		iRefCnt = 0;
 
-#ifdef ATOMIC_INCDEC_SUPPORT
-	uiRefCnt = (FLMUINT)ftkAtomicDecrement( &m_ui32RefCnt);
-#else
+	iRefCnt = ftkAtomicDecrement( &m_i32RefCnt);
 
-	f_mutexLock( m_hMutex);
-	uiRefCnt = --m_ui32RefCnt;
-	f_mutexUnlock( m_hMutex);
-
-#endif
-
-
-	if( !uiRefCnt)
+	if( !iRefCnt)
 	{
 		delete this;
 	}
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
-
-
+/*****************************************************************************
+Desc:
+*****************************************************************************/
 #ifdef FLM_USE_NICI
 #ifndef FLM_UNIX
 int	CCSX_SetNewIV(
