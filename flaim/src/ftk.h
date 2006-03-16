@@ -1955,8 +1955,8 @@ Note:	Some of this code is derived from the Ximian source code contained
 		/**********************************************************************
 		Desc:
 		**********************************************************************/
-		FINLINE void BEGIN_SPIN(
-			volatile unsigned char *	lock)
+		FINLINE void begin_spin(
+			volatile unsigned char *	pucLock)
 		{
 			int		iTmp;
 			
@@ -1965,19 +1965,19 @@ Note:	Some of this code is derived from the Ximian source code contained
 												  "          bne 1b\n\t" \
 												  "          nop" \
 												  : "=&r" (iTmp) \
-												  : "r" (lock) \
+												  : "r" (pucLock) \
 												  : "memory");
 		}
 		
 		/**********************************************************************
 		Desc:
 		**********************************************************************/
-		FINLINE void END_SPIN(
-			volatile unsigned char *	lock)
+		FINLINE void end_spin(
+			volatile unsigned char *	pucLock)
 		{
 			__asm__ __volatile__("stb	%%g0, [%0]"  \
 										 : /* no outputs */ \
-										 : "r" (lock)\
+										 : "r" (pucLock)\
 										 : "memory");
 		}
 										 
@@ -2207,20 +2207,24 @@ Note:	Some of this code is derived from the Ximian source code contained
 	Desc:
 	*************************************************************************/
 	FINLINE void begin_spin(
-		volatile unsigned char *		lock)
+		volatile unsigned char *		pucLock)
 	{
-		(void)lock;
+		(void)pucLock;
+
 		asm( "1: ldstub [%i0], %l0");
 		asm( "cmp %l0,0");
 		asm( "bne 1b");
 		asm( "nop");
 	}
 	
-	#define BEGIN_SPIN(lock) \
-		begin_spin( &lock);
-		
-	#define END_SPIN(lock) \
-		((lock) = 0);
+	/*************************************************************************
+	Desc:
+	*************************************************************************/
+	FINLINE void end_spin(
+		volatile unsigned char *		pucLock)
+	{
+		*pucLock = 0;
+	}
 		
 	#define FLM_USE_SPIN_LOCK_ATOMICS
 
@@ -2247,7 +2251,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FLMINT32 	i32RetVal;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		BEGIN_SPIN( gv_flmAtomicLock)
+		begin_spin( &gv_flmAtomicLock)
 	#else
 		pthread_mutex_lock( &gv_flmAtomicLock);
 	#endif
@@ -2256,7 +2260,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		i32RetVal = *pi32Target;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		END_SPIN( gv_flmAtomicLock)
+		end_spin( &gv_flmAtomicLock)
 	#else
 		pthread_mutex_unlock( &gv_flmAtomicLock);
 	#endif
@@ -2273,7 +2277,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FLMINT32 	i32RetVal;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		BEGIN_SPIN( gv_flmAtomicLock)
+		begin_spin( &gv_flmAtomicLock)
 	#else
 		pthread_mutex_lock( &gv_flmAtomicLock);
 	#endif
@@ -2282,7 +2286,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		i32RetVal = *pi32Target;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		END_SPIN( gv_flmAtomicLock)
+		end_spin( &gv_flmAtomicLock)
 	#else
 		pthread_mutex_unlock( &gv_flmAtomicLock);
 	#endif
@@ -2300,7 +2304,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FLMINT32 	i32RetVal;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		BEGIN_SPIN( gv_flmAtomicLock)
+		begin_spin( &gv_flmAtomicLock)
 	#else
 		pthread_mutex_lock( &gv_flmAtomicLock);
 	#endif
@@ -2309,7 +2313,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		*pi32Target = i32NewVal;
 
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		END_SPIN( gv_flmAtomicLock)
+		end_spin( &gv_flmAtomicLock)
 	#else
 		pthread_mutex_unlock( &gv_flmAtomicLock);
 	#endif
