@@ -538,12 +538,12 @@ endif
 ifdef unix_target
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
-		$(ec)tar zcf $(3) -C $(1) $(2)
-		$(ec)chmod 775 $(3)
+		$(ec)tar zcf $(2) -C $(1) $(3)
+		$(ec)chmod 775 $(2)
    endef
 
    define extract_archive
-		$(ec)tar zxvf -C $(1) $(2)
+		$(ec)tar zxvf $(strip $(1))/$(2) -C $(1)
    endef
 endif
 			
@@ -986,24 +986,27 @@ srcdist: status dircheck docs
    else
 		$(ec)$(gprintf) "Creating source package (SVN revision $(svn_revision)) ...\n"
    endif
-	-$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call make_version_files,$(package_dir)/$(package_proj_name_and_ver)) 
-	$(ec)$(call copycmd,Makefile,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call copycmd,COPYING,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call dircopycmd,src,$(package_dir)/$(package_proj_name_and_ver)/src)
-	$(ec)$(call dircopycmd,util,$(package_dir)/$(package_proj_name_and_ver)/util)
-	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_dir)/$(package_proj_name_and_ver)/docs)
+	-$(ec)$(call rmdircmd,$(package_stage_dir))
+	$(ec)$(call mkdircmd,$(package_stage_dir))
+	$(ec)$(call make_version_files,$(package_stage_dir)) 
+	$(ec)$(call copycmd,Makefile,$(package_stage_dir))
+	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
+	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
+	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
+	-$(ec)$(call rmdircmd,$(package_stage_dir)/src/.svn)
+	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
+	-$(ec)$(call rmdircmd,$(package_stage_dir)/util/.svn)
+	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 ifdef win_target
-	$(ec)$(call copycmd,make.exe,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call dircopycmd,external/w32,$(package_dir)/$(package_proj_name_and_ver)/external/w32)
+	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
+	$(ec)$(call copycmd,printf.exe,$(package_stage_dir))
+	$(ec)$(call dircopycmd,external/w32,$(package_stage_dir)/external/w32)
 endif
-	$(ec)$(call create_archive,$(package_dir), \
-		$(src_package_name), $(package_proj_name_and_ver))
-	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_dir))
-	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call create_archive,$(package_stage_parent_dir), \
+		$(package_dir)/$(src_package_name), \
+		$(package_proj_name_and_ver))
+	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_stage_dir))
+	$(ec)$(call rmdircmd,$(package_stage_dir))
 	$(ec)$(gprintf) "Source package created.\n"
 	
 # -- bindist --
@@ -1030,7 +1033,9 @@ binpackage: status
 	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
 	$(ec)$(call copycmd,$(static_flaim_lib),$(package_static_lib_stage_dir))
 	$(ec)$(call copycmd,$(shared_flaim_lib),$(package_shared_lib_stage_dir))
+ifdef win_target
 	$(ec)$(call copycmd,$(shared_flaim_imp_lib),$(package_shared_lib_stage_dir))
+endif
 	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
