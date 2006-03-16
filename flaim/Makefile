@@ -236,6 +236,12 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
+	ifneq (,$(findstring hpux,$(OSTYPE)))
+		host_os_family = hpux
+	endif
+endif
+
+ifndef host_os_family
    $(error Host operating system could not be determined.  You may need to export HOSTTYPE from the environment.)
 endif
 
@@ -444,6 +450,38 @@ ifndef target_os_family
 		else
 			ifneq (,$(findstring rs6000,$(HOSTTYPE)))
 				target_processor = powerpc
+				target_word_size = 32
+			else
+            $(error Platform not supported)
+			endif
+		endif
+	endif
+endif
+
+ifndef target_os_family
+	ifeq ($(host_os_family),hpux)
+		unix_target = yes
+		target_os_family = hpux
+
+		ifeq (,$(HOSTTYPE))
+         $(error HOSTTYPE environment variable has not been set)
+		endif
+		
+		ifdef requested_target_word_size
+			ifneq (,$(findstring hppa,$(HOSTTYPE)))
+				ifeq ($(requested_target_word_size),64)
+					target_processor = hppa
+					target_word_size = 64
+				else
+					target_processor = hppa
+					target_word_size = 32
+				endif
+			else
+            $(error Platform not supported)
+			endif
+		else
+			ifneq (,$(findstring hppa,$(HOSTTYPE)))
+				target_processor = hppa
 				target_word_size = 32
 			else
             $(error Platform not supported)
@@ -702,6 +740,13 @@ ifdef unix_target
 		endif
 	endif
 	
+	ifeq ($(usenativecc),yes)
+		ifeq ($(target_os_family),hpux)
+			compiler = aCC
+			linker = aCC
+		endif
+	endif
+	
 	# Compiler defines and flags
 
 	ifeq ($(compiler),g++)
@@ -773,6 +818,14 @@ ifdef unix_target
 		endif
 	endif
 
+	ifeq ($(target_os_family),hpux)
+		ifeq ($(usenativecc),yes)
+			# Must support 64 bit file sizes - even for 32 bit builds.
+				
+			ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+		endif
+	endif
+
 	ifeq ($(target_os_family),osx)
 		ccdefs += OSX
 	endif
@@ -837,6 +890,10 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),aix)
 		lib_link_libs += -lm -lc
+	endif
+	
+	ifeq ($(target_os_family),hpux)
+		lib_link_libs += -lm -lc -lrt
 	endif
 	
 	ifeq ($(target_os_family),osx)
