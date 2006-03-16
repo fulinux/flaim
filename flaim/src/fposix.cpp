@@ -63,7 +63,7 @@ extern RCODE gv_CriticalFSError;
 	
 #elif defined( FLM_USE_MUTEX_ATOMICS)
 
-	FSTATIC pthread_mutex_t 	gv_flmAtomicLock = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t 	gv_flmAtomicLock = PTHREAD_MUTEX_INITIALIZER;
 
 #endif
 
