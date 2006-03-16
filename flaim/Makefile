@@ -230,6 +230,12 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
+	ifneq (,$(findstring aix,$(OSTYPE)))
+		host_os_family = aix
+	endif
+endif
+
+ifndef host_os_family
    $(error Host operating system could not be determined.  You may need to export HOSTTYPE from the environment.)
 endif
 
@@ -405,6 +411,38 @@ ifndef target_os_family
 			endif
 		else
 			ifneq (,$(findstring powerpc,$(HOSTTYPE)))
+				target_processor = powerpc
+				target_word_size = 32
+			else
+            $(error Platform not supported)
+			endif
+		endif
+	endif
+endif
+
+ifndef target_os_family
+	ifeq ($(host_os_family),aix)
+		unix_target = yes
+		target_os_family = aix
+
+		ifeq (,$(HOSTTYPE))
+         $(error HOSTTYPE environment variable has not been set)
+		endif
+		
+		ifdef requested_target_word_size
+			ifneq (,$(findstring rs6000,$(HOSTTYPE)))
+				ifeq ($(requested_target_word_size),64)
+					target_processor = powerpc
+					target_word_size = 64
+				else
+					target_processor = powerpc
+					target_word_size = 32
+				endif
+			else
+            $(error Platform not supported)
+			endif
+		else
+			ifneq (,$(findstring rs6000,$(HOSTTYPE)))
 				target_processor = powerpc
 				target_word_size = 32
 			else
@@ -657,6 +695,13 @@ ifdef unix_target
 		endif
 	endif
 	
+	ifeq ($(usenativecc),yes)
+		ifeq ($(target_os_family),aix)
+			compiler = xlC_r
+			linker = xlC_r
+		endif
+	endif
+	
 	# Compiler defines and flags
 
 	ifeq ($(compiler),g++)
@@ -709,6 +754,20 @@ ifdef unix_target
 				# Must support 64 bit file sizes - even for 32 bit builds.
 				
 				ccflags += -xarch=generic 
+				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+			endif
+		endif
+	endif
+
+	ifeq ($(target_os_family),aix)
+		ifeq ($(usenativecc),yes)
+			ccflags += -qthreaded
+			ifeq ($(target_word_size),64)
+				ccflags += -q64
+			else
+				# Must support 64 bit file sizes - even for 32 bit builds.
+				
+				ccflags += -q32 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 			endif
 		endif
@@ -776,6 +835,10 @@ ifdef unix_target
 		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
 	endif
 
+	ifeq ($(target_os_family),aix)
+		lib_link_libs += -lm -lc
+	endif
+	
 	ifeq ($(target_os_family),osx)
 		lib_link_libs += -lstdc++ -ldl
 	endif
