@@ -1859,10 +1859,20 @@ Note:	Some of this code is derived from the Ximian source code contained
 		/**********************************************************************
 		Desc:
 		**********************************************************************/
+		FINLINE int aix_atomic_add(
+			volatile int *			piTarget,
+			int 						iDelta)
+		{
+			return( fetch_and_add( piTarget, iDelta) + iDelta);
+		}
+		
+		/**********************************************************************
+		Desc:
+		**********************************************************************/
 		FINLINE FLMINT32 ftkAtomicIncrement(
 			volatile FLMINT32 *		pi32Target)
 		{
-			return( fetch_and_add( pi32Target, 1));
+			return( aix_atomic_add( (int *)pi32Target, 1));
 		}
 	
 		/**********************************************************************
@@ -1871,7 +1881,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FINLINE FLMINT32 ftkAtomicDecrement(
 			volatile FLMINT32 *		pi32Target)
 		{
-			return( fetch_and_add( pi32Target, -1));
+			return( aix_atomic_add( (int *)pi32Target, -1));
 		}
 		
 		/**********************************************************************
@@ -1881,19 +1891,19 @@ Note:	Some of this code is derived from the Ximian source code contained
 			volatile FLMINT32 *		pi32Target,
 			FLMINT32						i32NewVal)
 		{
-			FLMINT32		i32OldVal;
+			int		iOldVal;
 			
 			for( ;;)
 			{ 
-				i32OldVal = *pi32Target;
+				iOldVal = *pi32Target;
 				
-				if( compare_and_swap( pi32Target, &i32OldVal, i32NewVal))
+				if( compare_and_swap( (int *)pi32Target, &iOldVal, (int)i32NewVal))
 				{
 					break;
 				}
 			}
 			
-			return( i32OldVal);
+			return( iOldVal);
 		}
 		
 #elif defined( FLM_HPUX)
