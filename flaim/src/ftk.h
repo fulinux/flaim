@@ -1068,6 +1068,10 @@
 	#ifdef FLM_AIX
 		#include <sys/atomic_op.h>
 	#endif
+
+	#ifdef FLM_HPUX
+		#include <pthread.h>
+	#endif	
 	
 	#define FSTATIC		static
 
@@ -2250,6 +2254,8 @@ Note:	Some of this code is derived from the Ximian source code contained
 		#if defined( FLM_SPARC)
 			extern volatile unsigned char gv_flmAtomicLock;
 		#endif
+	#elif defined( FLM_USE_MUTEX_ATOMICS)	
+		extern pthread_mutex_t gv_flmAtomicLock;
 	#endif
 	
 	/*************************************************************************
