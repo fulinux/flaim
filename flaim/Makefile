@@ -594,7 +594,7 @@ ifdef win_target
 		/NOLOGO \
 		/OUT:$(subst /,\,$@)
 	
-	util_link_flags = \
+	exe_link_flags = \
 		/DEBUG /PDB:$(subst /,\,$(@:.exe=.pdb)) \
 		/map:$(subst /,\,$(@:.exe=.map)) \
 		/INCREMENTAL:NO \
@@ -708,7 +708,7 @@ ifdef unix_target
 			else
 				# Must support 64 bit file sizes - even for 32 bit builds.
 				
-				ccdefs += -xarch=v8plus
+				ccflags += -xarch=generic 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 			endif
 		endif
@@ -769,7 +769,7 @@ ifdef unix_target
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
 			else
-				link_flags += -xarch=v8plus
+				link_flags += -xarch=generic
 			endif
 		endif
 
@@ -780,7 +780,7 @@ ifdef unix_target
 		lib_link_libs += -lstdc++ -ldl
 	endif
 	
-	util_link_flags = $(link_flags)
+	exe_link_flags = $(link_flags)
 endif
 
 # -- File lists --
@@ -915,9 +915,9 @@ endif
 
 # -- Utility link command --
 
-ifndef flm_util_link_cmd
-   define flm_util_link_cmd
-		$(ec)$(linker) $(util_link_flags) $(allprereqs) $(lib_link_libs) $(exe_link_libs)
+ifndef flm_exe_link_cmd
+   define flm_exe_link_cmd
+		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(lib_link_libs) $(exe_link_libs)
    endef
 endif
 
@@ -927,7 +927,7 @@ endif
 checkdb: status dircheck libs $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_util_link_cmd)
+	$(flm_exe_link_cmd)
 
 # -- rebuild --
 
@@ -935,7 +935,7 @@ $(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
 rebuild: status dircheck libs $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_util_link_cmd)
+	$(flm_exe_link_cmd)
 
 # -- view --
 
@@ -943,7 +943,7 @@ $(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
 view: status dircheck libs $(view_exe)
 $(view_exe): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_util_link_cmd)
+	$(flm_exe_link_cmd)
 
 # -- sample --
 
@@ -951,7 +951,7 @@ $(view_exe): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 sample: status dircheck libs $(sample_exe)
 $(sample_exe): $(sample_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_util_link_cmd)
+	$(flm_exe_link_cmd)
 
 # -- dbshell --
 
@@ -959,7 +959,7 @@ $(sample_exe): $(sample_obj) $(static_flaim_lib)
 dbshell: status dircheck libs $(dbshell_exe)
 $(dbshell_exe): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_util_link_cmd)
+	$(flm_exe_link_cmd)
 
 # -- basictest --
 
@@ -967,7 +967,7 @@ $(dbshell_exe): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
 basictest: status dircheck libs $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_util_link_cmd)
+	$(flm_exe_link_cmd)
 
 # -- version --
 
