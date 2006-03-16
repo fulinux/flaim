@@ -2251,7 +2251,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FLMINT32 	i32RetVal;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		begin_spin( &gv_flmAtomicLock)
+		begin_spin( &gv_flmAtomicLock);
 	#else
 		pthread_mutex_lock( &gv_flmAtomicLock);
 	#endif
@@ -2260,7 +2260,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		i32RetVal = *pi32Target;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		end_spin( &gv_flmAtomicLock)
+		end_spin( &gv_flmAtomicLock);
 	#else
 		pthread_mutex_unlock( &gv_flmAtomicLock);
 	#endif
@@ -2277,7 +2277,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FLMINT32 	i32RetVal;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		begin_spin( &gv_flmAtomicLock)
+		begin_spin( &gv_flmAtomicLock);
 	#else
 		pthread_mutex_lock( &gv_flmAtomicLock);
 	#endif
@@ -2286,7 +2286,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		i32RetVal = *pi32Target;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		end_spin( &gv_flmAtomicLock)
+		end_spin( &gv_flmAtomicLock);
 	#else
 		pthread_mutex_unlock( &gv_flmAtomicLock);
 	#endif
@@ -2304,7 +2304,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		FLMINT32 	i32RetVal;
 		
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		begin_spin( &gv_flmAtomicLock)
+		begin_spin( &gv_flmAtomicLock);
 	#else
 		pthread_mutex_lock( &gv_flmAtomicLock);
 	#endif
@@ -2313,7 +2313,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		*pi32Target = i32NewVal;
 
 	#ifdef FLM_USE_SPIN_LOCK_ATOMICS
-		end_spin( &gv_flmAtomicLock)
+		end_spin( &gv_flmAtomicLock);
 	#else
 		pthread_mutex_unlock( &gv_flmAtomicLock);
 	#endif
@@ -2475,8 +2475,8 @@ RCODE FlmModLoad(
 	FlmModHandle *		phMod);
 
 #ifndef FLM_NLM
-RCODE FlmModUnload( 
-	FlmModHandle * 	phMod);
+	RCODE FlmModUnload( 
+		FlmModHandle * 	phMod);
 #else
 	RCODE FlmModUnload( 
 		const char *	pszModPath);
