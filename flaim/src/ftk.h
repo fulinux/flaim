@@ -2189,7 +2189,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 		
 	#else
 	
-		#error Atomic operations aren't supported on this platform
+		#error Atomic operations are unsupported on this platform
 		
 	#endif
 									 
@@ -2217,7 +2217,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 
 #else	
 
-	#error Atomic operations aren't supported on this platform
+	#error Atomic operations are unsupported on this platform
 
 #endif
 
