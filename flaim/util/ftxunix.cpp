@@ -28,7 +28,9 @@
 #ifdef FLM_UNIX
 
 #if defined( FLM_HPUX) || defined( FLM_OSF)
-	#define _XOPEN_CURSES
+	#ifndef _XOPEN_CURSES
+		#define _XOPEN_CURSES
+	#endif
 	#define _XOPEN_SOURCE_EXTENDED 1
 #endif
 

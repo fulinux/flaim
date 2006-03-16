@@ -292,6 +292,19 @@ Exit:
 }
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdlMgr::InsertNew(
+	F_MutexRef *		pMutexRef,
+	F_FileHdlImp *		pFileHdl)
+{
+	pMutexRef->Lock();
+	m_ListMgr.InsertAtEnd( FHM_USED_LIST, (F_ListItem *)pFileHdl);
+	pMutexRef->Unlock();
+	return( FERR_OK);
+}
+
+/****************************************************************************
 Desc:		Make the specified F_FileHdlImp available for someone else to use.
 ****************************************************************************/
 RCODE F_FileHdlMgr::MakeAvailAndRelease(

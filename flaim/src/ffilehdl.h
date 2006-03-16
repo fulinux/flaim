@@ -217,15 +217,9 @@ private:
 		FLMBOOL				bReadOnlyFlag,	// TRUE if looking for read only file
 		F_FileHdlImp **	ppFileHdl);		// [out] returned F_FileHdlImp object.
 
-	FINLINE RCODE InsertNew(
+	RCODE InsertNew(
 		F_MutexRef *		pMutexRef,
-		F_FileHdlImp *		pFileHdl)		// FileHdl to add to this manager.
-	{
-		pMutexRef->Lock();							// ENTER CRITICAL SECTION
-		m_ListMgr.InsertAtEnd( FHM_USED_LIST, (F_ListItem *)pFileHdl);
-		pMutexRef->Unlock();							// EXIT CRITICAL SECTION
-		return( FERR_OK);
-	}
+		F_FileHdlImp *		pFileHdl);		// FileHdl to add to this manager.
 
 	RCODE MakeAvailAndRelease(			// Make the specified F_FileHdlImp available for
 												// someone else to use.

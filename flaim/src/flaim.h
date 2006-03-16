@@ -5997,7 +5997,7 @@
 	} REBUILD_INFO;
 
 	/// Return an error string for a corruption code.
-	FLMEXP char * FLMAPI FlmVerifyErrToStr(
+	FLMEXP const char * FLMAPI FlmVerifyErrToStr(
 		eCorruptionType	eCorruption		///< Corruption code.
 		);
 

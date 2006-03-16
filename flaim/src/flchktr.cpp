@@ -1641,7 +1641,7 @@ FSTATIC RCODE chkSetupLfTable(
 					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
-				pLogicalFile->pIfd = (IFD_p)(&pLogicalFile->pIxd [1]);
+				pLogicalFile->pIfd = (IFD_p)(void *)(&pLogicalFile->pIxd [1]);
 				f_memcpy( pLogicalFile->pIxd, pTmpIxd, sizeof( IXD));
 				f_memcpy( pLogicalFile->pIfd, pTmpIfd,
 								sizeof( IFD) * pTmpIxd->uiNumFlds);

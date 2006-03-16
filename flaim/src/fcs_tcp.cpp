@@ -694,7 +694,7 @@ RCODE FCS_TCP_CLIENT::openConnection(
 	for( iTries = 0; iTries < iMaxTries; iTries++ )
 	{			
 		iSockErr = 0;
-		if( connect( m_iSocket, (struct sockaddr *)&address,
+		if( connect( m_iSocket, (struct sockaddr *)(void *)&address,
 			(unsigned)sizeof(struct sockaddr)) >= 0)
 		{
 			/* SUCCESS! */
@@ -858,7 +858,7 @@ RCODE	FCS_TCP_SERVER::bind(
 
 	// Bind to the address+port
 
-	if( ::bind( m_iSocket, (struct sockaddr *)&address, 
+	if( ::bind( m_iSocket, (struct sockaddr *)(void *)&address, 
 		(unsigned)sizeof( address)) != 0)
 	{
 		rc = RC_SET( FERR_SVR_BIND_FAIL);
@@ -942,7 +942,7 @@ RCODE FCS_TCP_SERVER::connectClient(
 
 	iAddrLen = (int)sizeof( struct sockaddr);
 	if( (iSocket = accept( m_iSocket, 
-		(struct sockaddr *)&address, &iAddrLen)) == INVALID_SOCKET)
+		(struct sockaddr *)(void *)&address, &iAddrLen)) == INVALID_SOCKET)
 	{
 		rc = RC_SET( FERR_SVR_ACCEPT_FAIL);
 		goto Exit;

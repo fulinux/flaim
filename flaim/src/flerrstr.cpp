@@ -29,7 +29,7 @@
 **					REFLECTED IN THE CHECK CODE DEFINES FOUND IN flaim.h
 */
 
-char *	FlmCorruptStrings[ FLM_LAST_CORRUPT_ERROR]
+const char * FlmCorruptStrings[ FLM_LAST_CORRUPT_ERROR]
 =	{
 	"OK",										// 0
 	"BAD_CHAR",								// 1
@@ -122,7 +122,7 @@ char *	FlmCorruptStrings[ FLM_LAST_CORRUPT_ERROR]
 Desc : Returns a pointer to the string representation of a corruption
 		 error code.
 *END************************************************************************/
-char * FlmVerifyErrToStr(
+const char * FlmVerifyErrToStr(
 	eCorruptionType	eCorruption
 	)
 {
