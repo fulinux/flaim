@@ -1863,7 +1863,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 			volatile int *			piTarget,
 			int 						iDelta)
 		{
-			return( fetch_and_add( piTarget, iDelta) + iDelta);
+			return( fetch_and_add( (int *)piTarget, iDelta) + iDelta);
 		}
 		
 		/**********************************************************************
