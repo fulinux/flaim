@@ -74,13 +74,6 @@ ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
 	endif
 endif
 
-ifneq (,$(findstring zips,$(MAKECMDGOALS)))
-	calc_svn_revision = 1
-	ifndef ignore_local_mods
-		local_mods_ok =
-	endif
-endif
-
 ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
 
 	calc_svn_revision = 1
@@ -99,7 +92,7 @@ ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
 	svn_low_rev = $(word 1,$(svnrevs))
 	svn_high_rev = $(word 2,$(svnrevs))
 	
-	svnurl0 = $(shell svn info)
+	svnurl0 := $(shell svn info)
 	svnurl1 = $(subst URL: ,URL:,$(svnurl0))
 	svnurl2 = $(filter URL:%,$(svnurl1))
 	svnurl3 = $(subst URL:,,$(svnurl2))
@@ -111,7 +104,7 @@ ifdef calc_svn_revision
 	# Get the info for all files.
 	
 	ifndef local_mods_ok	
-		srevision = $(shell svnversion . -n)
+		srevision := $(shell svnversion . -n)
 
 		ifneq (,$(findstring M,$(srevision)))
          $(error Local modifications found - please check in before making distro)
@@ -125,7 +118,7 @@ ifdef calc_svn_revision
 	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
 						$(subst 6,6 ,$(subst 5,5 ,$(subst 4,4 ,$(subst 3,3 ,\
 						$(subst 2,2 ,$(subst 1,1 ,$(subst 0,0 ,$(1))))))))))))
-	revision0 = $(shell svn info -R)
+	revision0 := $(shell svn info -R)
 	revision1 = $(subst Last Changed Rev: ,LastChangedRev:,$(revision0))
 	revision2 = $(filter LastChangedRev:%,$(revision1))
 	revision3 = $(subst LastChangedRev:,,$(revision2))
@@ -133,21 +126,21 @@ ifdef calc_svn_revision
 	revision5 = $(foreach num,$(revision4),$(call numdigits,$(num)):$(num))
 	revision6 = $(sort $(revision5))
 	revision7 = $(word $(words $(revision6)),$(revision6))
-	revision = $(word 2,$(subst :, ,$(revision7)))
+	svn_revision = $(word 2,$(subst :, ,$(revision7)))
 	
 else
 	ifeq "$(wildcard SVNRevision.*)" ""
-		revision = 0
+		svn_revision = 0
 	else
-		revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
+		svn_revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
 	endif
 endif
 
 ifeq "$(svn_high_rev)" ""
-	svn_high_rev = $(revision)
+	svn_high_rev = $(svn_revision)
 endif
 
-version = $(major_version).$(minor_version).$(revision)
+version = $(major_version).$(minor_version).$(svn_revision)
 
 so_current = 1
 so_revision = 2
@@ -434,6 +427,28 @@ ifndef target_os_family
    $(error Target operating system could not be determined)
 endif
 
+# Platform-specific commands, directories, etc.
+
+ifeq ($(host_os_family),win)
+	allprereqs  = $(subst /,\,$+)
+	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2)) 1>NUL
+	dircopycmd = xcopy /Y /E /V /I $(subst /,\,$(1)) $(subst /,\,$(2))
+	rmcmd = if exist $(subst /,\,$(1)) del /Q $(subst /,\,$(1)) 1>NUL
+	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1)) 1>NUL
+	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
+	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
+	topdir := $(subst \,/,$(shell chdir))
+else
+	allprereqs = $+
+	copycmd = cp -f $(1) $(2)
+	dircopycmd = cp -rf $(1) $(2)
+	rmcmd = rm -f $(1)
+	rmdircmd = rm -rf $(1)
+	mkdircmd = mkdir -p $(1)
+	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
+	topdir := $(shell pwd)
+endif
+
 # Files and Directories
 
 ifeq ($(target_word_size),64)
@@ -449,7 +464,7 @@ endif
 lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
 include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
-build_output_dir = build
+build_output_dir = $(topdir)/build
 docs_output_dir = $(build_output_dir)/docs
 package_dir = $(build_output_dir)/package
 spec_dir = $(package_dir)/SPECS
@@ -458,23 +473,27 @@ package_sources_dir = $(package_dir)/SOURCES
 package_build_dir = $(package_dir)/BUILD
 package_rpms_dir = $(package_dir)/RPMS
 package_srpms_dir = $(package_dir)/SRPMS
-package_zips_dir = $(package_dir)/ZIPS
 pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
 
-zip_stage_parent_dir = $(package_build_dir)/$(package_proj_name_and_ver)/stage
-zip_bin_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
-zip_lib_stage_dir = $(zip_bin_stage_dir)/lib
-zip_shared_lib_stage_dir = $(zip_lib_stage_dir)/shared
-zip_static_lib_stage_dir = $(zip_lib_stage_dir)/static
-zip_util_stage_dir = $(zip_bin_stage_dir)/util
-zip_inc_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)/include
-zip_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)
+package_stage_parent_dir = $(package_dir)/stage
+package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
+package_bin_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+package_lib_stage_dir = $(package_bin_stage_dir)/lib
+package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
+package_static_lib_stage_dir = $(package_lib_stage_dir)/static
+package_util_stage_dir = $(package_bin_stage_dir)/util
+package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
 
-src_zip_name=$(package_proj_name_and_ver)-src.zip
-bin_zip_name=$(package_proj_name_and_ver)-bin.zip
+ifdef win_target
+	src_package_name=$(package_proj_name_and_ver)-src.zip
+	bin_package_name=$(package_proj_name_and_ver)-bin.zip
+else
+	src_package_name=$(package_proj_name_and_ver)-src.tar.gz
+	bin_package_name=$(package_proj_name_and_ver)-bin.tar.gz
+endif
 
 inc_dirs = src util
 static_obj_dir = $(target_path)/static_obj
@@ -495,26 +514,6 @@ question := \077
 asterisk := \052
 dash := \055
 
-ifeq ($(host_os_family),win)
-	allprereqs  = $(subst /,\,$+)
-	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2))
-	dircopycmd = xcopy /Y /E /V /I $(subst /,\,$(1)) $(subst /,\,$(2))
-	rmcmd = del /Q $(subst /,\,$(1)) 2>NUL
-	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1)) 2>NUL
-	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
-	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
-	homedir := $(subst \,/,$(shell chdir))
-else
-	allprereqs = $+
-	copycmd = cp -f $(1) $(2)
-	dircopycmd = cp -rf $(1) $(2)
-	rmcmd = rm -f $(1)
-	rmdircmd = rm -rf $(1)
-	mkdircmd = mkdir -p $(1)
-	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
-	homedir := $(shell pwd)
-endif
-
 # -- Tools --
 
 libr =
@@ -523,6 +522,31 @@ compiler =
 
 gprintf = printf
 
+# -- Helper functions --
+
+ifdef win_target
+   define create_archive
+		-$(ec)$(call rmcmd,$(2))
+		$(ec)cmd /C "cd $(subst /,\,$(1)) && $(subst /,\,$(topdir)/7za) a -tzip -r $(subst /,\,$(2)) $(subst /,\,$(3))"
+   endef
+	
+   define extract_archive
+		$(ec)cmd /C "cd $(subst /,\,$(1)) && $(subst /,\,$(topdir)/7za x $(2))
+   endef
+endif
+
+ifdef unix_target
+   define create_archive
+		-$(ec)$(call rmcmd,$(2))
+		$(ec)tar zcf $(3) -C $(1) $(2)
+		$(ec)chmod 775 $(3)
+   endef
+
+   define extract_archive
+		$(ec)tar zxvf -C $(1) $(2)
+   endef
+endif
+			
 # Compiler definitions and flags
 
 ccflags =
@@ -684,6 +708,7 @@ ifdef unix_target
 			else
 				# Must support 64 bit file sizes - even for 32 bit builds.
 				
+				ccdefs += -xarch=v8plus
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 			endif
 		endif
@@ -743,6 +768,8 @@ ifdef unix_target
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
+			else
+				link_flags += -xarch=v8plus
 			endif
 		endif
 
@@ -942,42 +969,97 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
-# -- dist --
+# -- version --
 
-.PHONY : dist
-dist: status dircheck docs
-	$(ec)$(gprintf) "Creating package (SVN Revision $(revision)) ...\n"
+define make_version_files
+	$(ec)$(gprintf) "$(version)" > $(1)/VERSION
+	$(ec)$(gprintf) " " > $(1)/SVNRevision.$(svn_revision)
+	$(ec)$(gprintf) "Version files created.\n"
+endef
+	
+# -- srcdist --
+
+.PHONY : srcdist
+srcdist: status dircheck docs
+   ifeq "$(svn_revision)" "0"
+		$(error SVN revision cannot be $(svn_revision))
+   else
+		$(ec)$(gprintf) "Creating source package (SVN revision $(svn_revision)) ...\n"
+   endif
 	-$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(gprintf) "$(version)" > $(package_dir)/$(package_proj_name_and_ver)/VERSION
-	$(ec)$(gprintf) " " > $(package_dir)/$(package_proj_name_and_ver)/SVNRevision.$(revision)
+	$(ec)$(call make_version_files,$(package_dir)/$(package_proj_name_and_ver)) 
 	$(ec)$(call copycmd,Makefile,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,COPYING,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,Doxyfile,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.cpp,$(package_dir)/$(package_proj_name_and_ver)/src)
-	$(ec)$(call copycmd,src/*.h,$(package_dir)/$(package_proj_name_and_ver)/src)
-	$(ec)$(call mkdircmd,$(package_dir)/$(package_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.cpp,$(package_dir)/$(package_proj_name_and_ver)/util)
-	$(ec)$(call copycmd,util/*.h,$(package_dir)/$(package_proj_name_and_ver)/util)
+	$(ec)$(call dircopycmd,src,$(package_dir)/$(package_proj_name_and_ver)/src)
+	$(ec)$(call dircopycmd,util,$(package_dir)/$(package_proj_name_and_ver)/util)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_dir)/$(package_proj_name_and_ver)/docs)
 ifdef win_target
 	$(ec)$(call copycmd,make.exe,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call dircopycmd,external/w32,$(package_dir)/$(package_proj_name_and_ver)/external/w32)
-	$(ec)cmd /C "cd $(subst /,\,$(homedir)/$(package_dir)) && \
-			$(subst /,\,$(homedir)/7za a -tzip -r ZIPS/$(src_zip_name)) \
-			$(package_proj_name_and_ver)"
-else
-	$(ec)tar zcf $(package_sources_dir)/$(package_proj_name_and_ver).tar.gz \
-			-C $(package_dir) $(package_proj_name_and_ver)
-	$(ec)chmod 775 $(package_sources_dir)/$(package_proj_name_and_ver).tar.gz
 endif
+	$(ec)$(call create_archive,$(package_dir), \
+		$(src_package_name), $(package_proj_name_and_ver))
 	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_dir))
-	-$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
-	$(ec)$(gprintf) "Package created.\n"
+	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(gprintf) "Source package created.\n"
 	
-# -- changelog --
+# -- bindist --
+
+.PHONY : bindist
+bindist: status dircheck all binpackage
+	$(ec)$(gprintf) ""
+
+.PHONY : binpackage
+binpackage: status
+   ifeq "$(svn_revision)" "0"
+		$(error SVN revision cannot be $(svn_revision))
+   else
+		$(ec)$(gprintf) "Creating binary package (SVN revision $(svn_revision)) ...\n"
+   endif
+	-$(ec)$(call rmdircmd,$(package_stage_dir))
+	$(ec)$(call mkdircmd,$(package_stage_dir))
+	$(ec)$(call mkdircmd,$(package_inc_stage_dir))
+	$(ec)$(call mkdircmd,$(package_shared_lib_stage_dir))
+	$(ec)$(call mkdircmd,$(package_static_lib_stage_dir))
+	$(ec)$(call mkdircmd,$(package_util_stage_dir))
+	$(ec)$(call make_version_files,$(package_stage_dir)) 
+	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
+	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
+	$(ec)$(call copycmd,$(static_flaim_lib),$(package_static_lib_stage_dir))
+	$(ec)$(call copycmd,$(shared_flaim_lib),$(package_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(shared_flaim_imp_lib),$(package_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
+	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
+	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
+	$(ec)$(call copycmd,$(dbshell_exe),$(package_util_stage_dir))
+	$(ec)$(call create_archive,$(package_stage_parent_dir), \
+		$(package_dir)/$(bin_package_name), \
+		$(package_proj_name_and_ver))
+	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
+	$(ec)$(gprintf) "Binary package created.\n"
+
+# -- dist --
+
+.PHONY : dist
+dist: status dircheck srcdist
+   ifeq "$(svn_revision)" "0"
+		$(error SVN revision cannot be $(svn_revision))
+   else
+		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
+   endif
+	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
+ifdef win_target
+	$(ec)$(call copycmd,7za.exe,$(package_dir)/$(package_proj_name_and_ver))
+endif
+	$(ec)make -C $(package_dir)/$(package_proj_name_and_ver) all
+	$(ec)make -C $(package_dir)/$(package_proj_name_and_ver) binpackage package_dir="$(package_dir)"
+	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(gprintf) "Distribution created.\n"
+
+# -- Change log --
 
 .PHONY : changelog
 changelog:
@@ -1107,7 +1189,7 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: dist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -bs $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
 	
 # -- RPMS --
@@ -1115,53 +1197,9 @@ srcrpm: dist spec
 .PHONY : rpms
 rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
-	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -ba $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
-	
-# -- ZIPS --
-
-.PHONY : zips
-zips: dist
-ifdef win_target
-	$(ec)$(gprintf) "Creating source and binary ZIPs ...\n"
-	$(ec)$(call copycmd,$(package_zips_dir)/$(src_zip_name),$(package_build_dir))
-	$(ec)7za x -o$(package_build_dir) $(package_build_dir)/$(src_zip_name)
-	$(ec)$(call rmcmd,$(package_build_dir)/$(src_zip_name))
-	$(ec)make -C $(package_build_dir)/$(package_proj_name_and_ver) all
-	$(ec)$(call mkdircmd,$(zip_stage_dir))
-	$(ec)$(call mkdircmd,$(zip_inc_stage_dir))
-	$(ec)$(call mkdircmd,$(zip_shared_lib_stage_dir))
-	$(ec)$(call mkdircmd,$(zip_static_lib_stage_dir))
-	$(ec)$(call mkdircmd,$(zip_util_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/VERSION,\
-		$(zip_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/COPYING,\
-		$(zip_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/src/flaim.h,\
-		$(zip_inc_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(static_flaim_lib), \
-		$(zip_static_lib_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(shared_flaim_lib), \
-		$(zip_shared_lib_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(shared_flaim_imp_lib), \
-		$(zip_shared_lib_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(checkdb_exe),\
-		$(zip_util_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(rebuild_exe),\
-		$(zip_util_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(view_exe),\
-		$(zip_util_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(dbshell_exe),\
-		$(zip_util_stage_dir))
-	$(ec)cmd /C "cd $(subst /,\,$(zip_stage_parent_dir)) && \
-			$(subst /,\,$(homedir)/7za a -tzip -r $(homedir)/$(package_build_dir)/$(bin_zip_name)) \
-			$(package_proj_name_and_ver)"
-	$(ec)$(call copycmd,$(package_build_dir)/$(bin_zip_name),$(package_zips_dir))
-	$(ec)$(call rmcmd,$(package_build_dir)/$(bin_zip_name))
-	-$(ec)$(call rmdircmd,$(package_build_dir)/$(package_proj_name_and_ver))
-	$(ec)$(gprintf) "Source and binary ZIPs created.\n"
-endif
 	
 # -- Documentation --
 
@@ -1176,9 +1214,9 @@ docs: status dircheck
 .PHONY : status
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
-	$(ec)$(gprintf) "SVN Revision = $(revision)\n"
+	$(ec)$(gprintf) "SVN Revision = $(svn_revision)\n"
 	$(ec)$(gprintf) "Host Operating System Family = $(host_os_family)\n"
-	$(ec)$(gprintf) "Directory = $(homedir)\n"
+	$(ec)$(gprintf) "Top Directory = $(topdir)\n"
 	$(ec)$(gprintf) "Target Operating System Family = $(target_os_family)\n"
 	$(ec)$(gprintf) "Target Processor = $(target_processor)\n"
 	$(ec)$(gprintf) "Target Word Size = $(target_word_size)\n"
@@ -1199,12 +1237,13 @@ dircheck:
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
 	$(ec)$(call mkdircmd,$(package_dir))
+ifndef win_target
 	$(ec)$(call mkdircmd,$(spec_dir))
 	$(ec)$(call mkdircmd,$(package_sources_dir))
 	$(ec)$(call mkdircmd,$(package_build_dir))
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
-	$(ec)$(call mkdircmd,$(package_zips_dir))
+endif
 
 # -- phony targets --
 
