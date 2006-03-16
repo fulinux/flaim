@@ -55,13 +55,13 @@
 
 extern RCODE gv_CriticalFSError;
 
-#if FLM_USE_SPIN_LOCK_ATOMICS
+#if defined( FLM_USE_SPIN_LOCK_ATOMICS)
 
 	#if defined( FLM_SPARC)
 		volatile unsigned char gv_flmAtomicLock;
 	#endif
 	
-#elif FLM_USE_MUTEX_ATOMICS
+#elif defined( FLM_USE_MUTEX_ATOMICS)
 
 	FSTATIC pthread_mutex_t 	gv_flmAtomicLock = PTHREAD_MUTEX_INITIALIZER;
 
