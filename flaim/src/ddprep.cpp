@@ -103,7 +103,7 @@ FSTATIC RCODE DDGetEncKey(
 // important because these values DO NOT match up exactly with the values in
 // the SMEncryptionScheme enum that's used at the SMI level.
 
-char * DDEncOpts[ MAX_ENC_TYPES] =
+const char * DDEncOpts[ MAX_ENC_TYPES] =
 {
 	"aes",
 	"des3",
