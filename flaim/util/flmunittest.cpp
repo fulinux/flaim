@@ -25,22 +25,6 @@
 
 #include "flmunittest.h"
 
-#if defined( FLM_WIN)
-	#if defined( FLM_64BIT)
-		#define PLATPROC_STR		"w64ia64"
-	#else
-		#define PLATPROC_STR		"w32x86"
-	#endif
-#elif defined( FLM_NLM)
-	#define PLATPROC_STR			"nwx86"
-#elif defined( FLM_LINUX)
-	#define PLATPROC_STR			"lxx86"
-#elif defined( FLM_OSX)
-	#define PLATPROC_STR			"osx"
-#elif defined( FLM_SOLARIS)
-	#define PLATPROC_STR			"solaris"
-#endif
-
 extern RCODE getTest( 
 	IFlmTest **		ppTest);
 
@@ -79,7 +63,7 @@ struct TEST_INFO
 		pszLogfile[ 0] = 0;
 		pszConfig[ 0] = 0;
 		
-		f_strcpy( pszEnvironment, PLATPROC_STR);
+		f_strcpy( pszEnvironment, FLM_OSTYPE_STR);
 		f_strcpy( pszBuild, __DATE__);
 		f_strcpy( pszUser, "defaultUser");
 	}

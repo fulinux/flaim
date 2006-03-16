@@ -50,6 +50,7 @@
 	
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
+			#define FLM_OSTYPE_STR "NetWare"
 			#if defined( __WATCOMC__)
 				#define FLM_WATCOM_NLM
 			#elif defined( __MWERKS__)
@@ -57,20 +58,24 @@
 			#endif
 		#elif defined( _WIN64)
 			#define FLM_WIN
+			#define FLM_OSTYPE_STR "Windows"
 			#ifndef FLM_64BIT
 				#define FLM_64BIT
 			#endif
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( _WIN32)
 			#define FLM_WIN
+			#define FLM_OSTYPE_STR "Windows"
 		#elif defined( _AIX)
-			#define FLM_UNIX
 			#define FLM_AIX
+			#define FLM_OSTYPE_STR "AIX"
+			#define FLM_UNIX
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( linux)
-			#define FLM_UNIX
 			#define FLM_LINUX
+			#define FLM_OSTYPE_STR "Linux"
+			#define FLM_UNIX
 			#if defined( __PPC__)
 				#define FLM_POWER_PC
 				#define FLM_BIG_ENDIAN
@@ -94,21 +99,24 @@
 				#define FLM_STRICT_ALIGNMENT
 			#endif
 		#elif defined( sun)
-			#define FLM_UNIX
 			#define FLM_SOLARIS
+			#define FLM_OSTYPE_STR "Solaris"
+			#define FLM_UNIX
 			#define FLM_STRICT_ALIGNMENT
 			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 			#endif
 		#elif defined( __hpux) || defined( hpux)
-			#define FLM_UNIX
 			#define FLM_HPUX
+			#define FLM_OSTYPE_STR "HPUX"
+			#define FLM_UNIX
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( __APPLE__)
-			#define FLM_UNIX
 			#define FLM_OSX
+			#define FLM_OSTYPE_STR "OSX"
+			#define FLM_UNIX
 			#if (defined( __ppc__) || defined( __ppc64__))
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT			
@@ -119,7 +127,8 @@
 	
 		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
 			#if defined( FLM_UNIX)
-				#if defined( __x86_64__) || defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
+				#if defined( __x86_64__) || defined( _LP64) || \
+					 defined( __LP64__) || defined( __sparcv9)
 					#define FLM_64BIT
 				#endif
 			#endif
