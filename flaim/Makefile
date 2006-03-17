@@ -1047,7 +1047,7 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status dircheck libs $(checkdb_exe)
+checkdb: status dircheck $(static_flaim_lib) $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_exe_link_cmd)
@@ -1055,7 +1055,7 @@ $(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status dircheck libs $(rebuild_exe)
+rebuild: status dircheck $(static_flaim_lib) $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_exe_link_cmd)
@@ -1063,7 +1063,7 @@ $(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
 # -- view --
 
 .PHONY : view
-view: status dircheck libs $(view_exe)
+view: status dircheck $(static_flaim_lib) $(view_exe)
 $(view_exe): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_exe_link_cmd)
@@ -1071,7 +1071,7 @@ $(view_exe): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
 # -- sample --
 
 .PHONY : sample
-sample: status dircheck libs $(sample_exe)
+sample: status dircheck $(static_flaim_lib) $(sample_exe)
 $(sample_exe): $(sample_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_exe_link_cmd)
@@ -1079,7 +1079,7 @@ $(sample_exe): $(sample_obj) $(static_flaim_lib)
 # -- dbshell --
 
 .PHONY : dbshell
-dbshell: status dircheck libs $(dbshell_exe)
+dbshell: status dircheck $(static_flaim_lib) $(dbshell_exe)
 $(dbshell_exe): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_exe_link_cmd)
@@ -1087,7 +1087,7 @@ $(dbshell_exe): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
 # -- basictest --
 
 .PHONY : basictest
-basictest: status dircheck libs $(test_dir)/basictest$(exe_suffix)
+basictest: status dircheck $(static_flaim_lib) $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_exe_link_cmd)
@@ -1380,7 +1380,7 @@ all: libs allutils
 	$(ec)$(gprintf) ""
 
 .PHONY : allutils
-allutils: status dircheck libs checkdb rebuild view sample dbshell
+allutils: status dircheck checkdb rebuild view sample dbshell
 	$(ec)$(gprintf) ""
 
 .PHONY : test
