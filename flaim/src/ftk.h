@@ -2327,7 +2327,7 @@ FINLINE FLMINT32 _flmAtomicExchange(
 		{ 
 			iOldVal = (int)*piTarget;
 			
-			if( compare_and_swap( piTarget, &iOldVal, i32NewVal))
+			if( compare_and_swap( (int *)piTarget, &iOldVal, i32NewVal))
 			{
 				break;
 			}
