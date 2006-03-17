@@ -1738,6 +1738,7 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		MAKE_ERROR_STRING( "calling FlmRecord->setNative()", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DICT_CONTAINER, 
 		uiFieldNum, pNewRec, FLM_AUTO_TRANS | 15)))
 	{
@@ -1768,22 +1769,26 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		MAKE_ERROR_STRING( "calling FlmRecord->setNative()", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DICT_CONTAINER, 
 		uiFieldNum, pNewRec, FLM_AUTO_TRANS | 15)))
 	{
 		MAKE_ERROR_STRING( "calling FlmRecordModify", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_CHECKING_FLDS, EACH_CHANGE, NULL, NULL)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (pNewRec)
 	{
 		pNewRec->Release();
 		pNewRec = NULL;
 	}
+	
 	if (pDictRec)
 	{
 		pDictRec->Release();
@@ -1842,6 +1847,7 @@ RCODE IFlmTestImpl::deleteFieldTest(
 			MAKE_ERROR_STRING( "calling FlmRecord->getNative()", rc, m_szFailInfo);
 			goto Exit;
 		}
+		
 		if (f_strnicmp( szState, "acti", 4) != 0)
 		{
 			rc = RC_SET( FERR_FAILURE);
@@ -1859,12 +1865,14 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		MAKE_ERROR_STRING( "calling FlmRecord->setNative()", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = FlmRecordModify( m_hDb, FLM_DICT_CONTAINER, 
 		uiFieldNum, pNewRec, FLM_AUTO_TRANS | 15)))
 	{
 		MAKE_ERROR_STRING( "calling FlmRecordModify", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_PURGED_FLDS, EACH_CHANGE, NULL, NULL)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
@@ -1878,6 +1886,7 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		pDictRec->Release();
 		pDictRec = NULL;
 	}
+	
 	if (RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DICT_CONTAINER,
 								uiFieldNum, FO_EXACT, &pDictRec, &uiDrn)))
 	{
@@ -1907,6 +1916,7 @@ Exit:
 	{
 		pDictRec->Release();
 	}
+	
 	if (pNewRec)
 	{
 		pNewRec->Release();
