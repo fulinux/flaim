@@ -179,6 +179,7 @@ void IFlmTestDisplayer::appendString(
 	F_UNREFERENCED_PARM( pszString);
 #else
 	printf( pszString);
+	fflush( stdout);
 #endif
 }
 
