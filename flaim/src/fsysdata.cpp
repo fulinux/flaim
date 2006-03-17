@@ -623,22 +623,22 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 
 #if defined( FLM_DEBUG) 
 
-	#if defined( FLM_HAVE_ATOMICS)
+	#if !defined( FLM_HAVE_ATOMICS) && (defined( FLM_WIN) || defined( FLM_NLM))
+		#error Something is wrong with the build environment!
+	#endif
+	
 	{
 		FLMATOMIC			atomicVal = 10772;
 		FLMINT32				i32Tmp;
 		
-		flmAssert( flmAtomicInc( &atomicVal) == 10773);
-		flmAssert( flmAtomicDec( &atomicVal) == 10772);
+		flmAssert( flmAtomicInc( &atomicVal, (F_MUTEX)1, TRUE) == 10773);
+		flmAssert( flmAtomicDec( &atomicVal, (F_MUTEX)1, TRUE) == 10772);
 		
-		i32Tmp = flmAtomicExchange( &atomicVal, 10777);
+		i32Tmp = flmAtomicExchange( &atomicVal, 10777, (F_MUTEX)1, TRUE);
 		
 		flmAssert( i32Tmp == 10772);
 		flmAssert( atomicVal == 10777);
 	}
-	#elif defined( FLM_WIN) || defined( FLM_NLM)
-		#error Something is wrong with the build environment!
-	#endif
 	
 #endif
 
