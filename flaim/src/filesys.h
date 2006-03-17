@@ -567,7 +567,7 @@
 		
 		if( uiDbVersion >= FLM_VER_4_3)
 		{
-			uiMaxSize = (FB2UW( &(pucLogHdr[ LOG_MAX_FILE_SIZE]))) << 16;
+			uiMaxSize = ((FLMUINT)FB2UW( &pucLogHdr[ LOG_MAX_FILE_SIZE])) << 16;
 			if( !uiMaxSize)
 			{
 				uiMaxSize = MAX_FILE_SIZE_VER40;
