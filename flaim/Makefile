@@ -652,6 +652,9 @@ ifdef win_target
 	# Compiler defines and flags
 	
 	ccflags += /nologo /c /GF /GR /J /MD /W4 /WX /Zi /Zp1
+	ccdefs += _CRT_SECURE_NO_DEPRECATE
+	ccdefs += WIN32_LEAN_AND_MEAN
+	ccdefs += WIN32_EXTRA_LEAN
 	
 	ifeq ($(target_build_type),debug)
 		ccflags += /Ob1 /Od /RTC1 /Wp64
