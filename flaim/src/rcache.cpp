@@ -1689,7 +1689,7 @@ FSTATIC void flmRcaSetRecord(
 	pRCache->pRecord = pNewRecord;
 	flmAssert( !pNewRecord->isCached());
 	FlmRecordExt::setCached( pNewRecord);
-	pNewRecord->AddRef();
+	pNewRecord->AddRef( TRUE);
 	FlmRecordExt::setReadOnly( pNewRecord);
 	
 	if( FlmRecordExt::getFlags( pNewRecord) & RCA_HEAP_BUFFER)
@@ -2213,7 +2213,7 @@ Found_Record:
 			}
 
 			pRecord = *ppRecord = pRCache->pRecord;
-			pRecord->AddRef();
+			pRecord->AddRef( bRCacheMutexLocked);
 		}
 	}
 
