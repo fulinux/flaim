@@ -1543,25 +1543,25 @@ void intToByte(
 	#define LO(wrd) 	(*(FLMUINT8  *)&wrd)
 	#define HI(wrd) 	(*((FLMUINT8 *)&wrd + 1))
 
-	#if( defined( FLM_UNIX) && !defined( __i386__)) || defined( FLM_64BIT)
+	#if( defined( FLM_UNIX) && defined( FLM_STRICT_ALIGNMENT))
 
 		/****************************************************************************
 										LITTLE ENDIAN BYTE ORDER
 										NOT SINGLE-BYTE ALIGNED
 		****************************************************************************/
 
-		#define	FB2UW( bp )			( (FLMUINT16)((((FLMUINT16)(((FLMUINT8 *)(bp))[1]))<<8) | \
-						 					(((FLMUINT16)(((FLMUINT8 *)(bp))[0]))   ) ))
+		#define FB2UW( bp)			((FLMUINT16)((((FLMUINT16)(((FLMUINT8 *)(bp))[1]))<<8) | \
+						 					(((FLMUINT16)(((FLMUINT8 *)(bp))[0])))))
 
-		#define	FB2UD( bp )			( (FLMUINT32)(	(((FLMUINT32)(((FLMUINT8 *)(bp))[3]))<<24) | \
+		#define FB2UD( bp)			((FLMUINT32)(	(((FLMUINT32)(((FLMUINT8 *)(bp))[3]))<<24) | \
 											(((FLMUINT32)(((FLMUINT8 *)(bp))[2]))<<16) | \
 											(((FLMUINT32)(((FLMUINT8 *)(bp))[1]))<< 8) | \
-											(((FLMUINT32)(((FLMUINT8 *)(bp))[0]))    ) ))
+											(((FLMUINT32)(((FLMUINT8 *)(bp))[0])))))
 
-		#define	UW2FBA( uw, bp )	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
+		#define UW2FBA( uw, bp)		(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
 											 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00)>>8))))
 
-		#define	UD2FBA( udw, bp )	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
+		#define UD2FBA( udw, bp)	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
 											 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00)>>8)), \
 											 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000)>>16)), \
 											 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000)>>24)))
@@ -1569,14 +1569,14 @@ void intToByte(
 	#else
 
 		/****************************************************************************
-										LITTLE ENDIAN BYTE ORDER (Intel x86 machines)
+										LITTLE ENDIAN BYTE ORDER
 										SINGLE-BYTE ALIGNED
 		****************************************************************************/
 
-		#define	FB2UW( fbp )				(*((FLMUINT16 *)(fbp)))
-		#define	FB2UD( fbp )				(*((FLMUINT32 *)(fbp)))
-		#define	UW2FBA( uw, fbp )			(*((FLMUINT16 *)(fbp)) = ((FLMUINT16) (uw)))
-		#define	UD2FBA( uw, fbp )			(*((FLMUINT32 *)(fbp)) = ((FLMUINT32) (uw)))
+		#define FB2UW( fbp)					(*((FLMUINT16 *)(fbp)))
+		#define FB2UD( fbp)					(*((FLMUINT32 *)(fbp)))
+		#define UW2FBA( uw, fbp)			(*((FLMUINT16 *)(fbp)) = ((FLMUINT16) (uw)))
+		#define UD2FBA( uw, fbp)			(*((FLMUINT32 *)(fbp)) = ((FLMUINT32) (uw)))
 
 	#endif
    
