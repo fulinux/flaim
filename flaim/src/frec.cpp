@@ -59,7 +59,7 @@ FLMBYTE arr[ 16] =
 #define f_isalpha(c) \
 	((c) < 128 && (c) > 58 ? (( ((FLMBYTE)(arr[(c) >> 3])) << \
 		((c) & 0x07)) & 0x80) : 0)
-
+	
 /*****************************************************************************
 Desc:
 *****************************************************************************/
@@ -1692,13 +1692,13 @@ RCODE FlmRecord::compactMemory( void)
 	FLMBOOL		bHeapAlloc = FALSE;
 
 	flmAssert( isCached());
-	flmAssert( m_i32RefCnt == 1);
+	flmAssert( getRefCount() == 1);
 
 	// Temporarily increment the reference count so that we don't hit
 	// debug asserts while processing
-
-	m_i32RefCnt++;
-
+	
+	flmAtomicInc( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, TRUE); 
+	
 	if( !m_uiBufferSize ||
 		(!m_bHolesInData && m_uiDataBufOffset == getDataBufSize()))
 	{
@@ -1949,10 +1949,8 @@ Exit:
 		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
 			uiNewSize, &pucNewBuf);
 	}
-
-	// Remove the reference count added above
-
-	m_i32RefCnt--;
+	
+	flmAtomicDec( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, TRUE); 
 	return( rc);
 }
 
@@ -2710,13 +2708,14 @@ Exit:
 /*****************************************************************************
 Desc:		Add a globally shared reference to this object.
 *****************************************************************************/
-FLMINT FlmRecord::AddRef( void)
+FLMINT FlmRecord::AddRef(
+	FLMBOOL			bMutexLocked)
 {
 	FLMINT		iRefCnt = 0;
-
-	iRefCnt = ftkAtomicIncrement( &m_i32RefCnt);
-
+	
+	iRefCnt = flmAtomicInc( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, bMutexLocked);
 	flmAssert( iRefCnt > 1);
+	
 	return( iRefCnt);
 }
 
@@ -2728,8 +2727,8 @@ FLMINT FlmRecord::Release(
 {
 	FLMINT		iRefCnt = 0;
 	FLMBOOL		bUnlockMutex = FALSE;
-
-	if( isCached() && m_i32RefCnt == 2)
+	
+	if( isCached() && getRefCount() == 2)
 	{
 		if( !bMutexLocked)
 		{
@@ -2739,7 +2738,7 @@ FLMINT FlmRecord::Release(
 		}
 	}
 	
-	iRefCnt = ftkAtomicDecrement( &m_i32RefCnt);
+	iRefCnt = flmAtomicDec( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, bMutexLocked);
 
 	if( !iRefCnt)
 	{
@@ -4555,7 +4554,7 @@ void FlmRecord::operator delete(
 		return;
 	}
 	
-	flmAssert( ((FlmRecord *)ptr)->m_i32RefCnt == 0);
+	flmAssert( ((FlmRecord *)ptr)->getRefCount() == 0);
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
 
@@ -4584,7 +4583,7 @@ void FlmRecord::operator delete(
 		return;
 	}
 
-	flmAssert( ((FlmRecord *)ptr)->m_i32RefCnt == 0);
+	flmAssert( ((FlmRecord *)ptr)->getRefCount() == 0);
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
 #endif

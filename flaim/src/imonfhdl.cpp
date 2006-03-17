@@ -303,7 +303,6 @@ Desc:	Function to display the private data on a WIN32 platform
 void F_FileHdlPage::write_data(
 	F_FileHdlImp *			pFileHdl)
 {
-	F_Base *					pBase;
 	F_ListItem *			pListItem;
 	F_FileHdlImpBase *	pFileHdlBase;
 	char						szAddress[20];
@@ -563,19 +562,6 @@ void F_FileHdlPage::write_data(
 		(void *)&pListItem->m_bInList,
 		(char *)(pListItem->m_bInList ? "Yes" : "No"),
 		(bHighlight = ~bHighlight));
-
-	// Now for the final base class - F_Base
-	pBase = (F_Base *)pListItem;
-
-	// m_i32RefCnt
-	printHTMLInt(
-		"F_Base.m_i32RefCnt",
-		"FLMINT32",
-		(void *)pBase,
-		(void *)&pBase->m_i32RefCnt,
-		pBase->m_i32RefCnt,
-		(bHighlight = ~bHighlight));
-
 
 	printTableEnd();
 

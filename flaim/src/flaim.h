@@ -177,13 +177,16 @@
 			typedef short							FLMINT16;
 			typedef signed char					FLMINT8;
 
-			#if defined( FLM_64BIT) || defined( FLM_OSX) || defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
+			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
+				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
 				typedef unsigned long			FLMSIZET;
 			#else
 				typedef unsigned 					FLMSIZET;
 			#endif
 		#else
+		
 			#if defined( FLM_WIN)
+			
 				#if defined( FLM_64BIT)
 					typedef unsigned __int64		FLMUINT;
 					typedef __int64					FLMINT;
@@ -198,10 +201,13 @@
 					typedef long						FLMINT;
 					typedef unsigned int				FLMUINT32;
 				#endif
+				
 			#elif defined( FLM_NLM)
+			
 				typedef unsigned long int		FLMUINT;
 				typedef long int					FLMINT;
 				typedef unsigned long int		FLMUINT32;
+				
 			#endif
 
 			typedef unsigned char				FLMBYTE;
@@ -224,8 +230,14 @@
 
 		#endif
 
+		#if defined( FLM_WIN) || defined( FLM_NLM)
+			#define FLMATOMIC		volatile long
+		#else
+			#define FLMATOMIC		volatile int
+		#endif
+	
 		typedef FLMINT								FLMBOOL;
-
+		
 		#define F_FILENAME_SIZE					256
 		#define F_PATH_MAX_SIZE					256
 
@@ -827,7 +839,7 @@
 
 		F_Base()
 		{ 
-			m_i32RefCnt = 1;	
+			m_refCnt = 1;	
 		}
 
 		virtual ~F_Base()
@@ -839,7 +851,7 @@
 		/// Return value is the incremented reference count.
 		FINLINE FLMINT AddRef( void)
 		{
-			return( ++m_i32RefCnt);
+			return( (FLMINT)(++m_refCnt));
 		}
 
 		/// Decrement the reference count for this object.
@@ -851,7 +863,7 @@
 		/// Return the current reference count on the object.
 		FINLINE FLMINT getRefCount( void)
 		{
-			return( m_i32RefCnt);
+			return( (FLMINT)(m_refCnt));
 		}
 
 		/// Overloaded new operator for objects of this class.
@@ -928,7 +940,7 @@
 
 	protected:
 
-		FLMINT32			m_i32RefCnt;
+		FLMATOMIC			m_refCnt;
 
 	friend class F_FileHdlPage;
 	friend class F_FileHdlMgrPage;
@@ -4615,7 +4627,10 @@
 		/// Increment the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.
 		/// Return value is the incremented reference count.
-		FLMINT AddRef( void);
+		FINLINE FLMINT AddRef( void)
+		{
+			return( AddRef( FALSE));
+		}
 
 		/// Decrement the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.
@@ -5340,6 +5355,9 @@
 #define FLD_ENC_FENCE					"ENCD"
 
 	private:
+
+		FLMINT AddRef( 
+			FLMBOOL			bMutexLocked);
 
 		FLMINT Release( 
 			FLMBOOL			bMutexLocked);

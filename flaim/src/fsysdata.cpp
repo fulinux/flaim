@@ -62,9 +62,9 @@
 #endif
 
 
-FLMINT32	gv_i32FlmSysSpinLock = 0;
-FLMUINT		gv_uiFlmSysStartupCount = 0;
-FLMBOOL		gv_bNetWareStartupCalled = FALSE;
+FLMATOMIC			gv_flmSysSpinLock = 0;
+FLMUINT				gv_uiFlmSysStartupCount = 0;
+FLMBOOL				gv_bNetWareStartupCalled = FALSE;
 
 #ifdef FLM_NLM
 	extern "C"
@@ -574,12 +574,19 @@ Desc:	Lock the system data structure for access - called only by startup
 ***************************************************************************/
 FSTATIC void flmLockSysData( void)
 {
-	// Obtain the spin lock
-
-	while (ftkAtomicExchange( &gv_i32FlmSysSpinLock, 1) == 1)
+#ifdef FLM_HAVE_ATOMICS
+	while( _flmAtomicExchange( &gv_flmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
+#else
+	while (gv_flmSysSpinLock)
+	{
+		f_sleep( 10);
+	}
+	
+	gv_flmSysSpinLock = 1;
+#endif
 }
 
 /***************************************************************************
@@ -588,7 +595,11 @@ Desc:	Unlock the system data structure for access - called only by startup
 ***************************************************************************/
 FSTATIC void flmUnlockSysData( void)
 {
-	(void)ftkAtomicExchange( &gv_i32FlmSysSpinLock, 0);
+#ifdef FLM_HAVE_ATOMICS
+	_flmAtomicExchange( &gv_flmSysSpinLock, 0);
+#else
+	gv_flmSysSpinLock = 0;
+#endif
 }
 
 /*API~***********************************************************************
@@ -610,19 +621,25 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	// Before starting anything, make sure the atomic primitives return the
 	// correct values on this platform
 
-#ifdef FLM_DEBUG
-	{	
-		FLMINT32		i32Val = 10772;
-		FLMINT32		i32Tmp;
+#if defined( FLM_DEBUG) 
+
+	#if defined( FLM_HAVE_ATOMICS)
+	{
+		FLMATOMIC			atomicVal = 10772;
+		FLMINT32				i32Tmp;
 		
-		flmAssert( ftkAtomicIncrement( &i32Val) == 10773);
-		flmAssert( ftkAtomicDecrement( &i32Val) == 10772);
+		flmAssert( flmAtomicInc( &atomicVal) == 10773);
+		flmAssert( flmAtomicDec( &atomicVal) == 10772);
 		
-		i32Tmp = ftkAtomicExchange( &i32Val, 10777);
+		i32Tmp = flmAtomicExchange( &atomicVal, 10777);
 		
 		flmAssert( i32Tmp == 10772);
-		flmAssert( i32Val == 10777);
+		flmAssert( atomicVal == 10777);
 	}
+	#elif defined( FLM_WIN) || defined( FLM_NLM)
+		#error Something is wrong with the build environment!
+	#endif
+	
 #endif
 
 	flmLockSysData();
@@ -706,7 +723,6 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	f_memoryInit();
 
 #if defined( FLM_NLM) || (defined( FLM_WIN) && !defined( FLM_64BIT))
-	/* Initialize the checksum code variable. */
 	InitFastBlockCheckSum();
 #endif
 
@@ -720,8 +736,6 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 #ifdef FLM_DBG_LOG
 	flmDbgLogInit();
 #endif
-
-	/* Initialize all of the fields. */
 
 	FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_UNUSED_TIME,
 		gv_FlmSysData.uiMaxUnusedTime);
@@ -819,7 +833,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 		goto Exit;
 	}
 
-	/* Create the mutex for controlling access to the structure. */
+	// Create the mutex for controlling access to the structure
 
 	if (RC_BAD( rc = f_mutexCreate( &gv_FlmSysData.hShareMutex)))
 	{
@@ -851,7 +865,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 		goto Exit;
 	}
 
-	/* Initialize a statistics structure. */
+	// Initialize a statistics structure
 
 	if (RC_BAD( rc = flmStatInit( &gv_FlmSysData.Stats, TRUE)))
 	{
@@ -859,7 +873,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	}
 	gv_FlmSysData.bStatsInitialized = TRUE;
 
-	/* Allocate memory for the file name hash table. */
+	// Allocate memory for the file name hash table
 
 	if (RC_BAD(rc = flmAllocHashTbl( FILE_HASH_ENTRIES,
 								&gv_FlmSysData.pFileHashTbl)))
@@ -869,7 +883,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 
 	gv_FlmSysData.uiNextFFileId = 1;
 
-	/* Allocate and Initialize FLAIM Shared File Handle Manager */
+	// Allocate and Initialize FLAIM Shared File Handle Manager
 
 	if ((gv_FlmSysData.pFileHdlMgr =
 				new F_FileHdlMgr( &gv_FlmSysData.hFileHdlMutex)) == NULL)
@@ -884,7 +898,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 		goto Exit;
 	}
 
-	/* Allocate and Initialize FLAIM Shared File System object */
+	// Allocate and Initialize FLAIM Shared File System object
 
 	if ((gv_FlmSysData.pFileSystem = f_new F_FileSystemImp) == NULL)
 	{
@@ -913,7 +927,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	gv_FlmSysData.bOkToDoAsyncWrites = TRUE;
 #endif
 
-	/* Allocate and Initialize FLAIM Server Lock Manager. */
+	// Allocate and Initialize FLAIM Server Lock Manager
 
 	if ((gv_FlmSysData.pServerLockMgr =
 				new ServerLockManager( &gv_FlmSysData.hServerLockMgrMutex)) == NULL)
@@ -968,9 +982,9 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	iHandle  = f_getpid();
 
 	// Initialize NICI
+	
 	if (CCS_Init(&iHandle))
 	{
-		// Failure.
 		rc = RC_SET( FERR_NICI_INIT_FAILED);
 		goto Exit;
 	}
@@ -3753,7 +3767,7 @@ F_Session::~F_Session()
 {
 	flmAssert( !m_pPrev);
 	flmAssert( !m_pNext);
-	flmAssert( !m_i32RefCnt);
+	flmAssert( !getRefCount());
 	flmAssert( !m_uiThreadLockCount);
 
 	// Wake up any waiters
@@ -4166,7 +4180,7 @@ RCODE F_Session::lockSession(
 {
 	RCODE		rc = FERR_OK;
 
-	flmAssert( m_i32RefCnt);
+	flmAssert( getRefCount());
 	f_mutexLock( m_hMutex);
 
 	if( m_uiThreadId && m_uiThreadId != f_threadId())
@@ -4199,7 +4213,7 @@ void F_Session::unlockSession()
 {
 	F_SEM				hSem;
 
-	flmAssert( m_i32RefCnt);
+	flmAssert( getRefCount());
 
 	f_mutexLock( m_hMutex);
 	if( m_uiThreadId != f_threadId())
@@ -4250,8 +4264,8 @@ FLMINT F_Session::AddRef( void)
 	FLMINT		iRefCnt;
 
 	f_mutexLock( m_hMutex);
-	flmAssert( m_i32RefCnt);
-	iRefCnt = F_Base::AddRef();
+	flmAssert( getRefCount());
+	iRefCnt = flmAtomicInc( &m_refCnt, m_hMutex, TRUE);
 	f_mutexUnlock( m_hMutex);
 
 	return( iRefCnt);
@@ -4262,12 +4276,12 @@ Desc:	Decrements the objects use count
 ****************************************************************************/
 FLMINT F_Session::Release( void)
 {
-	FLMINT		iRefCnt;
+	FLMINT				iRefCnt;
 
-	flmAssert( m_i32RefCnt);
+	flmAssert( getRefCount());
 
 	f_mutexLock( m_hMutex);
-	if( (iRefCnt = --m_i32RefCnt) == 0)
+	if( (iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, TRUE)) == 0)
 	{
 		f_mutexUnlock( m_hMutex);
 		delete this;

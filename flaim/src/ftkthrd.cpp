@@ -56,7 +56,7 @@ FLMINT F_Thread::AddRef(
 		f_mutexLock( m_hMutex);
 	}
 
-	iRefCnt = ++m_i32RefCnt;
+	iRefCnt = F_Base::AddRef();
 
 	if( !bMutexLocked)
 	{
@@ -73,16 +73,19 @@ FLMINT F_Thread::Release(
 	FLMBOOL		bMutexLocked)
 {
 	FLMINT		iRefCnt;
+	FLMBOOL		bUnlockMutex = FALSE;
 
 	if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
 	{
 		f_mutexLock( m_hMutex);
+		bUnlockMutex = TRUE;
+		bMutexLocked = TRUE;
 	}
 
-	flmAssert( m_i32RefCnt > 0);
-	iRefCnt = --m_i32RefCnt;
+	flmAssert( getRefCount() > 0);
+	iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, bMutexLocked);
 
-	if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
+	if( bUnlockMutex)
 	{
 		f_mutexUnlock( m_hMutex);
 	}

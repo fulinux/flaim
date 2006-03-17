@@ -68,8 +68,9 @@ FLMINT FlmTrace::AddRef( void)
 	FLMINT	iRefCnt;
 
 	lock();
-	iRefCnt = ++m_i32RefCnt;
+	iRefCnt = flmAtomicInc( &m_refCnt, m_hMutex, TRUE);
 	unlock();
+	
 	return( iRefCnt);
 }
 
@@ -82,7 +83,7 @@ FLMINT FlmTrace::Release( void)
 	FLMINT	iRefCnt;
 
 	lock();
-	iRefCnt = --m_i32RefCnt;
+	iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, TRUE);
 	unlock();
 
 	if( !iRefCnt)

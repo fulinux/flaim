@@ -187,10 +187,23 @@ public:
 		return m_uiAlgType;
 	}
 
-	FLMINT AddRef( void);
+	FINLINE FLMINT AddRef( void)
+	{
+		return( flmAtomicInc( &m_refCnt, m_hMutex, FALSE));
+	}
 
-	FLMINT Release( void);
-
+	FINLINE FLMINT Release( void)
+	{
+		FLMINT		iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, FALSE);
+	
+		if( !iRefCnt)
+		{
+			delete this;
+		}
+	
+		return( iRefCnt);
+	}
+	
 private:
 
 	RCODE getWrappingKey(
@@ -265,7 +278,6 @@ private:
 	NICI_OBJECT_HANDLE	m_keyHandle;		// Handle to the clear key - we don't ever get the actual key.
 	F_MUTEX					m_hMutex;
 	FLMBYTE 					m_pucIV[ IV_SZ];	// Used when the algorithm type is DES, 3DES or AES
-
 };
 
 /****************************************************************************

@@ -568,11 +568,10 @@ Desc:
 FLMINT ServerLockObject::Release(
 	F_MutexRef *	pMutexRef)
 {
-	FLMINT	iRefCnt = --m_i32RefCnt;
+	FLMINT	iRefCnt = F_Base::Release();
 
 	if( !iRefCnt)
 	{
-		delete this;
 		goto Exit;
 	}
 
@@ -1049,9 +1048,8 @@ RCODE ServerLockObject::Unlock(
 		// the lock manager's reference, and a reference from at least one
 		// waiter (that may have been granted above).
 		
-		flmAssert( m_i32RefCnt >= 3);
-		
-		m_i32RefCnt--;
+		flmAssert( getRefCount() >= 3);
+		F_Base::Release();
 	}
 
 	MutexRef.Unlock();

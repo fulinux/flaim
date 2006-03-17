@@ -40,7 +40,6 @@ RCODE F_FileHdlMgrPage::display(
 	char					szTemp[20];
 	FLMUINT				uiLoop;
 	FLMBOOL				bRefresh = FALSE;
-	F_Base *				pBase;
 	char					szAddress[20];
 	FLMBOOL				bHighlight = FALSE;
 	FLMBYTE *			pszTemp = NULL;
@@ -243,20 +242,6 @@ RCODE F_FileHdlMgrPage::display(
 			(void *)&pFileHdlMgr->m_uiFileIdCounter,
 			pFileHdlMgr->m_uiFileIdCounter,
 			(bHighlight = ~bHighlight));
-
-		// Now show the private member(s) of the F_Base class
-
-		pBase = (F_Base *)pFileHdlMgr;
-
-		// m_i32RefCnt
-		printHTMLInt(
-			"F_Base.m_i32RefCnt",
-			"FLMINT32",
-			(void *)pBase,
-			(void *)&pBase->m_i32RefCnt,
-			pBase->m_i32RefCnt,
-			(bHighlight = ~bHighlight));
-
 
 		printTableEnd();
 

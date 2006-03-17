@@ -2719,31 +2719,6 @@ FSTATIC void GetIV(
 #endif
 
 /*****************************************************************************
-Desc:		Add a globally shared reference to this object.
-*****************************************************************************/
-FLMINT F_CCS::AddRef()
-{
-	return( ftkAtomicIncrement( &m_i32RefCnt));
-}
-
-/*****************************************************************************
-Desc:		Removes a globally shared reference to this object.
-*****************************************************************************/
-FLMINT F_CCS::Release()
-{
-	FLMINT		iRefCnt = 0;
-
-	iRefCnt = ftkAtomicDecrement( &m_i32RefCnt);
-
-	if( !iRefCnt)
-	{
-		delete this;
-	}
-
-	return( iRefCnt);
-}
-
-/*****************************************************************************
 Desc:
 *****************************************************************************/
 #ifdef FLM_USE_NICI

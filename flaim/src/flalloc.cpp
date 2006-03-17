@@ -1428,7 +1428,7 @@ Desc:
 ****************************************************************************/
 FLMINT F_Base::Release( void)
 {
-	FLMINT		iRefCnt = --m_i32RefCnt;
+	FLMINT	iRefCnt = --m_refCnt;
 
 	if( !iRefCnt)
 	{
