@@ -1858,7 +1858,7 @@ FINLINE FLMINT32 _flmAtomicInc(
 			
 			__asm__ __volatile__ ("lock; xaddl %0, %1"
 							: "=r" (i32Tmp), "=m" (*piTarget)
-							: "0" (1), "m" (*piTarget);
+							: "0" (1), "m" (*piTarget));
 		
 			return( i32Tmp + 1);
 		}
@@ -1949,7 +1949,7 @@ FINLINE FLMINT32 _flmAtomicDec(
 			
 			__asm__ __volatile__ ("lock; xaddl %0, %1"
 							: "=r" (i32Tmp), "=m" (*piTarget)
-							: "0" (-1), "m" (*piTarget);
+							: "0" (-1), "m" (*piTarget));
 		
 			return( i32Tmp - 1);
 		}
@@ -2053,9 +2053,9 @@ FINLINE FLMINT32 _flmAtomicExchange(
 			FLMINT32 			i32Ret;
 			
 			__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
-							: "=m" (piTarget->iCounter), "=a" (i32Ret)
+							: "=m" (*piTarget), "=a" (i32Ret)
 							: "r" (i32NewVal), "m" (*piTarget),
-							  "a" (*piTarget);
+							  "a" (*piTarget));
 		
 			return( i32Ret);
 		}
