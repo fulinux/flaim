@@ -2183,12 +2183,22 @@ FINLINE FLMINT32 _flmAtomicInc(
 			#ifdef FLM_HAVE_ATOMICS
 				#undef FLM_HAVE_ATOMICS
 			#endif
+
+			F_UNREFERENCED_PARM( piTarget);	
+
+			flmAssert( 0);
+			return( 0);
 		#endif
 	}
 	#else
 		#ifdef FLM_HAVE_ATOMICS
 			#undef FLM_HAVE_ATOMICS
 		#endif
+
+		F_UNREFERENCED_PARM( piTarget);	
+
+		flmAssert( 0);
+		return( 0);
 	#endif
 }
 
@@ -2274,12 +2284,22 @@ FINLINE FLMINT32 _flmAtomicDec(
 			#ifdef FLM_HAVE_ATOMICS
 				#undef FLM_HAVE_ATOMICS
 			#endif
+
+			F_UNREFERENCED_PARM( piTarget);
+			
+			flmAssert( 0);
+			return( 0);
 		#endif
 	}
 	#else
 		#ifdef FLM_HAVE_ATOMICS
 			#undef FLM_HAVE_ATOMICS
 		#endif
+
+		F_UNREFERENCED_PARM( piTarget);
+			
+		flmAssert( 0);
+		return( 0);
 	#endif
 }
 
@@ -2377,12 +2397,24 @@ FINLINE FLMINT32 _flmAtomicExchange(
 			#ifdef FLM_HAVE_ATOMICS
 				#undef FLM_HAVE_ATOMICS
 			#endif
+
+			F_UNREFERENCED_PARM( piTarget);
+			F_UNREFERENCED_PARM( i32NewVal);
+			
+			flmAssert( 0);
+			return( 0);
 		#endif
 	}
 	#else
 		#ifdef FLM_HAVE_ATOMICS
 			#undef FLM_HAVE_ATOMICS
 		#endif
+
+		F_UNREFERENCED_PARM( piTarget);
+		F_UNREFERENCED_PARM( i32NewVal);
+
+		flmAssert( 0);
+		return( 0);
 	#endif
 }
 
