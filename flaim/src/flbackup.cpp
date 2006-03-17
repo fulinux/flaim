@@ -1696,6 +1696,7 @@ FSTATIC RCODE flmRestoreFile(
 	uiBlockSize = (FLMUINT)FB2UW( &pucBlkBuf[ FLM_BACKER_DB_BLOCK_SIZE_OFFSET]);
 	if( uiBlockSize > FLM_BACKER_MAX_DB_BLOCK_SIZE)
 	{
+		flmAssert( 0);
 		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
@@ -1708,6 +1709,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	if( FB2UD( &pucBlkBuf[ FLM_BACKER_MTU_OFFSET]) != FLM_BACKER_MTU_SIZE)
 	{
+		flmAssert( 0);
 		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
@@ -1768,6 +1770,7 @@ FSTATIC RCODE flmRestoreFile(
 	if( uiBlockSize != 
 		FB2UD( &pucBlkBuf[ FLAIM_HEADER_START + DB_BLOCK_SIZE]))
 	{
+		flmAssert( 0);
 		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
@@ -1786,6 +1789,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	if( (FLMUINT)FB2UW( &pLogHdr[ LOG_FLAIM_VERSION]) != uiDbVersion)
 	{
+		flmAssert( 0);
 		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
@@ -1808,6 +1812,7 @@ FSTATIC RCODE flmRestoreFile(
 	
 	if( uiBackupMaxFileSize != uiMaxFileSize)
 	{
+		flmAssert( 0);
 		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
@@ -2035,6 +2040,7 @@ FSTATIC RCODE flmRestoreFile(
 			!FSAddrIsBelow( uiBlkAddr, uiLogicalEOF) ||
 			(uiPriorBlkAddr && !FSAddrIsBelow( uiPriorBlkAddr, uiBlkAddr)))
 		{
+			flmAssert( 0);
 			rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 			goto Exit;
 		}
@@ -2043,6 +2049,7 @@ FSTATIC RCODE flmRestoreFile(
 
 		if( uiActualBlkSize > uiBlockSize || uiActualBlkSize < BH_OVHD)
 		{
+			flmAssert( 0);
 			rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 			goto Exit;
 		}
@@ -2054,6 +2061,7 @@ FSTATIC RCODE flmRestoreFile(
 
 		if( (GET_BH_ADDR( pucBlkBuf) & 0xFFFFFF00) != (uiBlkAddr & 0xFFFFFF00))
 		{
+			flmAssert( 0);
 			rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 			goto Exit;
 		}
@@ -2073,6 +2081,7 @@ FSTATIC RCODE flmRestoreFile(
 		{
 			if( rc == FERR_BLOCK_CHECKSUM)
 			{
+				flmAssert( 0);
 				rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 			}
 			
@@ -2109,6 +2118,7 @@ FSTATIC RCODE flmRestoreFile(
 
 				if( FSGetFileNumber( uiBlkAddr) != (uiPriorBlkFile + 1))
 				{
+					flmAssert( 0);
 					rc = RC_SET( FERR_INCONSISTENT_BACKUP);
 					goto Exit;
 				}
