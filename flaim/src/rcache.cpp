@@ -59,6 +59,13 @@ struct FlmRecordExt
 		pRec->setReadOnly();
 	}
 
+	static FINLINE FLMINT AddRef(
+		FlmRecord *			pRec,
+		FLMBOOL				bMutexLocked)
+	{
+		return( pRec->AddRef( bMutexLocked));
+	}
+	
 	static FINLINE FLMINT Release(
 		FlmRecord *			pRec,
 		FLMBOOL				bMutexLocked)
@@ -1689,7 +1696,7 @@ FSTATIC void flmRcaSetRecord(
 	pRCache->pRecord = pNewRecord;
 	flmAssert( !pNewRecord->isCached());
 	FlmRecordExt::setCached( pNewRecord);
-	pNewRecord->AddRef( TRUE);
+	FlmRecordExt::AddRef( pNewRecord, TRUE);
 	FlmRecordExt::setReadOnly( pNewRecord);
 	
 	if( FlmRecordExt::getFlags( pNewRecord) & RCA_HEAP_BUFFER)
@@ -2213,7 +2220,7 @@ Found_Record:
 			}
 
 			pRecord = *ppRecord = pRCache->pRecord;
-			pRecord->AddRef( bRCacheMutexLocked);
+			FlmRecordExt::AddRef( pRecord, bRCacheMutexLocked);
 		}
 	}
 
