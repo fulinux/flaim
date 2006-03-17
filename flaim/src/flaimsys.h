@@ -109,7 +109,6 @@ FLMUINT flmStrHashBucket(
 #include "ftk.h"
 #include "ftkmem.h"
 #include "ftknsem.h"
-#include "ftksem.h"
 #include "ftkwptxt.h"
 #include "ftkthrd.h"
 #include "fstructs.h"
