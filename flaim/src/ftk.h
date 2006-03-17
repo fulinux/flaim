@@ -945,9 +945,6 @@
 
 	#define FSTATIC		static
 	
-	#define WIN32_LEAN_AND_MEAN
-	#define WIN32_EXTRA_LEAN
-
 	// This pragma is needed because FLAIM may be built with a
 	// packing other than 8-bytes on Win (such as 1-byte packing).
 	// Code in FLAIM that uses windows structures and system calls
