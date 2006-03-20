@@ -47,6 +47,11 @@
 		#undef FLM_STRICT_ALIGNMENT
 		#undef FLM_S390
 		#undef FLM_IA64
+		#undef FLM_GNUC
+		
+		#if defined( __GNUC__)
+			#define FLM_GNUC
+		#endif		
 	
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
@@ -294,7 +299,7 @@
       #define FLMCDECL
       #define FLMAPI
       #define FLMCOM
-		#if defined( __GNUC__)
+		#if defined( FLM_GNUC)
 			#define FINLINE		__attribute__((always_inline)) inline
 		#else
 			#define FINLINE		inline
