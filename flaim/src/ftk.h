@@ -2071,7 +2071,7 @@ Note:	Some of this code is derived from the Ximian source code contained
 /*******************************************************************
 Desc:
 *******************************************************************/
-#if defined( __GNUC__) && defined( __ia64__)
+#if defined( FLM_GNUC) && defined( __ia64__)
 FINLINE FLMINT32 ia64_compare_and_swap(
 	volatile int *		piTarget,
 	FLMINT32				i32NewVal,
@@ -2087,6 +2087,24 @@ FINLINE FLMINT32 ia64_compare_and_swap(
 
 	return( i32Old);
 }
+#endif
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+#if defined( FLM_SPARC) && defined( FLM_SOLARIS) && !defined( FLM_GNUC)
+extern "C" FLMINT32 sparc_atomic_add_32(
+	volatile FLMINT32 *		piTarget,
+	FLMINT32						iDelta);
+#endif
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+#if defined( FLM_SPARC) && defined( FLM_SOLARIS) && !defined( FLM_GNUC)
+extern "C" FLMINT32 sparc_atomic_xchg_32(
+	volatile FLMINT32 *		piTarget,
+	FLMINT32						iNewValue);
 #endif
 
 /**********************************************************************
@@ -2119,7 +2137,7 @@ FINLINE FLMINT32 _flmAtomicInc(
 	{
 		return( (FLMINT32)aix_atomic_add( piTarget, 1));
 	}
-	#elif defined( __GNUC__)
+	#elif defined( FLM_GNUC)
 	{
 		#if defined( __i386__) || defined( __x86_64__)
 		{
@@ -2190,6 +2208,8 @@ FINLINE FLMINT32 _flmAtomicInc(
 			return( 0);
 		#endif
 	}
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC)
+		return( sparc_atomic_add_32( piTarget, 1));
 	#else
 		#ifdef FLM_HAVE_ATOMICS
 			#undef FLM_HAVE_ATOMICS
@@ -2220,7 +2240,7 @@ FINLINE FLMINT32 _flmAtomicDec(
 	{
 		return( (FLMINT32)aix_atomic_add( piTarget, -1));
 	}
-	#elif defined( __GNUC__)
+	#elif defined( FLM_GNUC)
 	{
 		#if defined( __i386__) || defined( __x86_64__)
 		{
@@ -2291,6 +2311,8 @@ FINLINE FLMINT32 _flmAtomicDec(
 			return( 0);
 		#endif
 	}
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC)
+		return( sparc_atomic_add_32( piTarget, -1));
 	#else
 		#ifdef FLM_HAVE_ATOMICS
 			#undef FLM_HAVE_ATOMICS
@@ -2335,7 +2357,7 @@ FINLINE FLMINT32 _flmAtomicExchange(
 		
 		return( (FLMINT32)iOldVal);
 	}
-	#elif defined( __GNUC__)
+	#elif defined( FLM_GNUC)
 	{
 		#if defined( __i386__) || defined( __x86_64__)
 		{
@@ -2405,6 +2427,8 @@ FINLINE FLMINT32 _flmAtomicExchange(
 			return( 0);
 		#endif
 	}
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC)
+		return( sparc_atomic_xchg_32( piTarget, i32NewVal));
 	#else
 		#ifdef FLM_HAVE_ATOMICS
 			#undef FLM_HAVE_ATOMICS
