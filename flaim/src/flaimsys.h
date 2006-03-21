@@ -28,24 +28,6 @@
 
 #include "flaim.h"
 
-#if defined( FLM_DEBUG) && !defined( FLM_HPUX)
-	#define f_new			new( __FILE__, __LINE__)
-#else
-	#define f_new			new
-#endif
-
-#ifdef FLM_DEBUG
-	#define RC_SET( rc) \
-		flmMakeErr(rc, __FILE__, __LINE__)
-
-	RCODE	flmMakeErr(
-		RCODE				rc,
-		const char *	pszFile,
-		int				iLine);
-#else
-	#define RC_SET(rc)		(rc)
-#endif
-
 class FResultSet;
 class F_Thread;
 class HRequest;

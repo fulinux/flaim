@@ -40,7 +40,7 @@ F_MUTEX					gv_hSerialMutex = F_MUTEX_NULL;
 		static f_randomGenerator					gv_flmRandGenerator;
 		static SEMAPHORE								gv_lFlmRandSemaphore = F_SEM_NULL;
 		static LONG										gv_lFlmStartTicks = 0;
-		static FLMUINT32								gv_ui32NetWareStartupCount = 0;
+		static FLMATOMIC								gv_NetWareStartupCount = 0;
 	}
 
 	#pragma pack(pop)
@@ -389,7 +389,7 @@ RCODE f_netwareStartup( void)
 {
 	RCODE		rc = FERR_OK;
 
-	if( ftkAtomicIncrement( &gv_i32NetWareStartupCount) != 1)
+	if( flmAtomicInc( &gv_NetWareStartupCount) != 1)
 	{
 		goto Exit;
 	}
@@ -446,7 +446,7 @@ void f_netwareShutdown( void)
 {
 	// Call exit function.
 
-	if( ftkAtomicDecrement( &gv_ui32NetWareStartupCount) != 0)
+	if( flmAtomicDec( &gv_NetWareStartupCount) != 0)
 	{
 		goto Exit;
 	}

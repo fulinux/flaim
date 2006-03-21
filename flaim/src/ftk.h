@@ -25,6 +25,24 @@
 #ifndef FTK_H
 #define FTK_H
 
+#if defined( FLM_DEBUG) && !defined( FLM_HPUX)
+	#define f_new			new( __FILE__, __LINE__)
+#else
+	#define f_new			new
+#endif
+
+#ifdef FLM_DEBUG
+	#define RC_SET( rc) \
+		flmMakeErr(rc, __FILE__, __LINE__)
+
+	RCODE	flmMakeErr(
+		RCODE				rc,
+		const char *	pszFile,
+		int				iLine);
+#else
+	#define RC_SET(rc)		(rc)
+#endif
+
 #ifdef FLM_NLM
 	
 	#ifndef LONG
@@ -2127,7 +2145,7 @@ FINLINE FLMINT32 _flmAtomicInc(
 {
 	#if defined( FLM_NLM)
 	{
-		return( (FLMINT32)nlm_atomic_inc( piTarget);
+		return( (FLMINT32)nlm_AtomicIncrement( (volatile LONG *)piTarget));
 	}
 	#elif defined( FLM_WIN)
 	{
@@ -2230,7 +2248,7 @@ FINLINE FLMINT32 _flmAtomicDec(
 {
 	#if defined( FLM_NLM)
 	{
-		return( (FLMINT32)nlm_atomic_dec( piTarget));
+		return( (FLMINT32)nlm_AtomicDecrement( (volatile LONG *)piTarget));
 	}
 	#elif defined( FLM_WIN)
 	{
@@ -2334,7 +2352,8 @@ FINLINE FLMINT32 _flmAtomicExchange(
 {
 	#if defined( FLM_NLM)
 	{
-		return( (FLMINT32)atomic_xchg( piTarget, i32NewVal));
+		return( (FLMINT32)nlm_AtomicExchange( 
+			(volatile LONG *)piTarget, i32NewVal));
 	}
 	#elif defined( FLM_WIN)
 	{
