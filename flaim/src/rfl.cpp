@@ -5067,7 +5067,8 @@ RCODE F_Rfl::getRecord(
 	{
 
 		// If we don't currently have a packet, get one
-		// Packet type had better be RFL_DATA_RECORD_PACKET.
+		// Packet type had better be RFL_DATA_RECORD_PACKET or
+		// RFL_ENC_DATA_RECORD_PACKET.
 
 		if (!uiPacketBodyLen)
 		{
@@ -5209,14 +5210,15 @@ RCODE F_Rfl::getRecord(
 					uiPacketBodyLen = 0;
 
 					// Get the next packet.  Packet type had better
-					// be RFL_DATA_RECORD_PACKET.
+					// be RFL_DATA_RECORD_PACKET or RFL_ENC_DATA_RECORD_PACKET
 
 					if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
 														&uiPacketBodyLen, NULL)))
 					{
 						goto Exit;
 					}
-					if (uiPacketType != RFL_DATA_RECORD_PACKET)
+					if (uiPacketType != RFL_DATA_RECORD_PACKET &&
+						 uiPacketType != RFL_ENC_DATA_RECORD_PACKET)
 					{
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
