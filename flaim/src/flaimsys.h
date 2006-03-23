@@ -1105,7 +1105,7 @@ void flmRcaReduceCache(
 
 RCODE flmRcaInsertRec(
 	FDB *					pDb,
-	FLMUINT				uiContainer,
+	LFILE *				pLFile,
 	FLMUINT				uiDrn,
 	FlmRecord *			pRecord);
 

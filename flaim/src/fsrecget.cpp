@@ -251,6 +251,10 @@ RCODE FSReadElement(
 
 				pRecord->setContainerID( pLFile->uiLfNum);
 				pRecord->setID( uiDrn);
+				if (pLFile->bMakeFieldIdTable)
+				{
+					pRecord->enableFieldIdTable();
+				}
 			}
 
 			// Check if out of fields in the tempoary field group.
@@ -618,6 +622,8 @@ RCODE FSReadElement(
 		flmAssert( 0);
 		(*ppRecord)->Release();
 	}
+	
+	pRecord->sortFieldIdTable();
 
 	*ppRecord = pRecord;
 	pRecord = NULL;

@@ -126,6 +126,8 @@ public:
 	RCODE resumeIndexTest(
 		FLMUINT	uiIndex);
 		
+	RCODE sortedFieldsTest( void);
+		
 	RCODE backupRestoreDbTest( void);
 	
 	RCODE compareRecords(
@@ -2029,6 +2031,254 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::sortedFieldsTest( void)
+{
+	RCODE				rc = FERR_OK;
+	FLMBOOL			bPassed = FALSE;
+	FlmRecord *		pRec = NULL;
+	FlmRecord *		pDataRec = NULL;
+	FlmRecord *		pCopyRec = NULL;
+	void *			pvField;
+	void *			pvDataField;
+	FLMBOOL			bTransActive = FALSE;
+	char				szFieldName [100];
+	FLMUINT			uiFieldId;
+	FLMUINT			uiTmp;
+	FLMUINT			uiDrn;
+
+	beginTest( "Sorted Fields Test");
+
+	// Modify to keep field id table for level one fields.
+
+	if (RC_BAD( rc = FlmDbConfig( m_hDb, FDB_ENABLE_FIELD_ID_TABLE,
+							(void *)FLM_DATA_CONTAINER, (void *)TRUE)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbConfig", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Create a dictionary record object
+
+	if( (pDataRec = new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pDataRec->insertLast( 0, FLM_FIELD_TAG,
+		FLM_TEXT_TYPE, &pvDataField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	// Create 300 IDs in the dictionary, 1001 to 1601, every other one
+	
+	for (uiFieldId = 1001; uiFieldId <= 1601; uiFieldId += 2)
+	{
+		if (pRec)
+		{
+			pRec->Release();
+			pRec = NULL;
+		}
+
+		// Create a dictionary record object
+	
+		if( (pRec = new FlmRecord) == NULL)
+		{
+			rc = RC_SET( FERR_MEM);
+			MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+			goto Exit;
+		}
+	
+		// Populate the record object with fields and values
+		// The first field of a record will be inserted at
+		// level zero (the first parameter of insertLast()
+		// specifies the level number).  Subsequent fields
+		// will be inserted at a non-zero level.
+	
+		if( RC_BAD( rc = pRec->insertLast( 0, FLM_FIELD_TAG,
+			FLM_TEXT_TYPE, &pvField)))
+		{
+			MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+			goto Exit;
+		}
+		f_sprintf( szFieldName, "Field_%u", (unsigned)uiFieldId);
+		if( RC_BAD( rc = pRec->setNative( pvField, szFieldName)))
+		{
+			MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+			goto Exit;
+		}
+	
+		if( RC_BAD( rc = pRec->insertLast( 1, FLM_TYPE_TAG,
+			FLM_TEXT_TYPE, &pvField)))
+		{
+			MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if( RC_BAD( rc = pRec->setNative( pvField, "number")))
+		{
+			MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DICT_CONTAINER, 
+			&uiFieldId, pRec, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Add the fields to the record in reverse order.
+
+	for (uiFieldId = 1601; uiFieldId >= 1001; uiFieldId -= 2)
+	{
+		if( RC_BAD( rc = pDataRec->insertLast( 1, uiFieldId,
+			FLM_NUMBER_TYPE, &pvDataField)))
+		{
+			MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (RC_BAD( rc = pDataRec->setUINT( pvDataField, uiFieldId)))
+		{
+			MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Add the data record to the data container.
+
+	uiDrn = 0;	
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		&uiDrn, pDataRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+	
+	// For each of the 300 field ids, get the field from the record, inclusive
+	
+	for (uiFieldId = 1000; uiFieldId <= 1600; uiFieldId += 2)
+	{
+		pvDataField = pDataRec->findLevelOneField( uiFieldId, TRUE);
+		if (!pvDataField)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Could not find level one field #%u (incl)", (unsigned)uiFieldId);
+			goto Exit;
+		}
+		if (RC_BAD( rc = pDataRec->getUINT( pvDataField, &uiTmp)))
+		{
+			MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (uiTmp != uiFieldId + 1)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from level one field #%u (incl)",
+				(unsigned)uiTmp, (unsigned)uiFieldId);
+			goto Exit;
+		}
+	}
+	
+	// For each of the 300 field ids, get the field from the record.
+	// Also, delete each one as we go, and make sure they are deleted.
+	// We need to copy the record so that this can be done.
+	
+	if ((pCopyRec = pDataRec->copy()) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "calling copy", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	for (uiFieldId = 1001; uiFieldId <= 1601; uiFieldId += 2)
+	{
+		pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
+		if (!pvDataField)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Could not find level one field #%u", (unsigned)uiFieldId);
+			goto Exit;
+		}
+		if (RC_BAD( rc = pCopyRec->getUINT( pvDataField, &uiTmp)))
+		{
+			MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (uiTmp != uiFieldId)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from level one field #%u",
+				(unsigned)uiTmp, (unsigned)uiFieldId);
+			goto Exit;
+		}
+		
+		// Remove the field and make sure that the find fails.
+		
+		if (RC_BAD( rc = pCopyRec->remove( pvDataField)))
+		{
+			MAKE_ERROR_STRING( "calling remove", rc, m_szFailInfo);
+			goto Exit;
+		}
+		pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
+		if (pvDataField)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Should NOT have found level one field #%u",
+				(unsigned)uiFieldId);
+			goto Exit;
+		}
+	}
+	
+	bPassed = TRUE;
+	
+Exit:
+
+	if (pRec)
+	{
+		pRec->Release();
+	}
+	
+	if (pDataRec)
+	{
+		pDataRec->Release();
+	}
+	
+	if (pCopyRec)
+	{
+		pCopyRec->Release();
+	}
+	
+	if (bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::backupRestoreDbTest( void)
 {
 	RCODE		rc = FERR_OK;
@@ -3013,7 +3263,14 @@ RCODE IFlmTestImpl::execute( void)
 	{
 		goto Exit;
 	}
+	
+	// Sorted field test
 
+	if (RC_BAD( rc = sortedFieldsTest()))
+	{
+		goto Exit;
+	}
+	
 	// Hot Backup/Restore test
 	
 	if (RC_BAD( rc = backupRestoreDbTest()))

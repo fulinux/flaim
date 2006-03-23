@@ -453,8 +453,7 @@ FSTATIC RCODE FSOutputIxCounts(
 
 		// Put the record into record cache.
 
-		if( RC_BAD( rc = flmRcaInsertRec( pDb, FLM_TRACKER_CONTAINER,
-										pIxStats->uiIndexNum,
+		if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile, pIxStats->uiIndexNum,
 										pTmpRec)))
 		{
 
@@ -478,7 +477,7 @@ FSTATIC RCODE FSOutputIxCounts(
 
 		// Put the modified record into record cache.
 
-		if (RC_BAD( rc = flmRcaInsertRec( pDb, FLM_TRACKER_CONTAINER,
+		if (RC_BAD( rc = flmRcaInsertRec( pDb, pLFile,
 									pIxStats->uiIndexNum, pTmpRec)))
 		{
 

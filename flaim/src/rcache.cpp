@@ -2260,12 +2260,13 @@ Desc:	This routine inserts a record into the record cache.  This is ONLY
 ****************************************************************************/
 RCODE flmRcaInsertRec(
 	FDB *			pDb,
-	FLMUINT		uiContainer,				// Container record is in.
+	LFILE *		pLFile,						// Container record is in.
 	FLMUINT		uiDrn,						// DRN of record
 	FlmRecord *	pRecord)						// Record to be inserted.
 {
 	RCODE					rc = FERR_OK;
 	FFILE_p				pFile = pDb->pFile;
+	FLMUINT				uiContainer = pLFile->uiLfNum;
 	FLMBOOL				bMutexLocked = FALSE;
 	RCACHE *				pRCache;
 	RCACHE *				pNewerRCache;
@@ -2274,6 +2275,28 @@ RCODE flmRcaInsertRec(
 														? TRUE
 														: FALSE;
 
+	if (pLFile->bMakeFieldIdTable && !pRecord->fieldIdTableEnabled())
+	{
+		
+		// NOTE: createFieldIdTable will call sortFieldIdTable().
+		
+		if (RC_BAD( rc = pRecord->createFieldIdTable( TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		pRecord->sortFieldIdTable();
+		if (getFieldIdTableItemCount( pRecord->getFieldIdTbl()) !=
+			 getFieldIdTableArraySize( pRecord->getFieldIdTbl()))
+		{
+			if (RC_BAD( rc = pRecord->truncateFieldIdTable()))
+			{
+				goto Exit;
+			}
+		}
+	}
 	flmAssert( uiDrn != 0);
 	
 	// Lock the mutex
@@ -2825,6 +2848,11 @@ void FlmRecordExt::relocateRec(
 		flmAssert( *((FlmRecord **)pOldRec->m_pucBuffer) == pOldRec);
 		*((FlmRecord **)pNewRec->m_pucBuffer) = pNewRec;
 	}
+	if( pNewRec->m_pucFieldIdTable)
+	{
+		flmAssert( *((FlmRecord **)pOldRec->m_pucFieldIdTable) == pOldRec);
+		*((FlmRecord **)pNewRec->m_pucFieldIdTable) = pNewRec;
+	}
 
 	// Find the record
 
@@ -2864,7 +2892,7 @@ FLMBOOL FlmRecordExt::canRelocateRecBuffer(
 {
 	FlmRecord *		pRec = *((FlmRecord **)pvAlloc);
 
-	flmAssert( pRec->m_pucBuffer == pvAlloc);
+	flmAssert( pRec->m_pucBuffer == pvAlloc || pRec->m_pucFieldIdTable == pvAlloc);
 
 	if( pRec->getRefCount() == 1 && pRec->isCached())
 	{
@@ -2885,12 +2913,22 @@ void FlmRecordExt::relocateRecBuffer(
 
 	flmAssert( pRec->getRefCount() == 1);
 	flmAssert( pRec->isCached());
-	flmAssert( pRec->m_pucBuffer == pvOldAlloc);
 	flmAssert( pvNewAlloc < pvOldAlloc);
 
 	// Update the buffer pointer in the record
 
-	pRec->m_pucBuffer = (FLMBYTE *)pvNewAlloc;
+	if (pRec->m_pucBuffer == pvOldAlloc)
+	{
+		pRec->m_pucBuffer = (FLMBYTE *)pvNewAlloc;
+	}
+	else if (pRec->m_pucFieldIdTable == pvOldAlloc)
+	{
+		pRec->m_pucFieldIdTable = (FLMBYTE *)pvNewAlloc;
+	}
+	else
+	{
+		flmAssert( 0);
+	}
 }
 
 /****************************************************************************

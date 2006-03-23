@@ -69,6 +69,7 @@ FlmRecord::FlmRecord()
 	m_uiBufferSize = 0;
 	m_uiFldTblSize = 0;
 	m_uiFlags = 0;
+	m_pucFieldIdTable = NULL;
 	clear();
 }
 
@@ -84,6 +85,12 @@ FlmRecord::~FlmRecord()
 		flmAssert( *((FlmRecord **)m_pucBuffer) == this);
 		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
 			m_uiBufferSize, &m_pucBuffer);
+	}
+	if( m_pucFieldIdTable)
+	{
+		flmAssert( *((FlmRecord **)m_pucFieldIdTable) == this);
+		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
+			fieldIdTableByteSize(), &m_pucFieldIdTable);
 	}
 }
 
@@ -126,6 +133,36 @@ FlmRecord * FlmRecord::copy( void)
 		{
 			pNewRec->m_uiFlags |= RCA_HEAP_BUFFER;
 		}
+	}
+
+	if( m_pucFieldIdTable)
+	{
+		FLMUINT	uiTableByteSize = fieldIdTableByteSize();
+		
+		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
+			uiTableByteSize,
+			&pNewRec, sizeof( FlmRecord *), &pNewRec->m_pucFieldIdTable,
+			&bHeapAlloc)))
+		{
+			goto Exit;
+		}
+	
+		f_memcpy( pNewRec->m_pucFieldIdTable + FLM_ALIGN_SIZE,
+			m_pucFieldIdTable + FLM_ALIGN_SIZE, 
+			uiTableByteSize - FLM_ALIGN_SIZE);
+			
+		if( bHeapAlloc)
+		{
+			pNewRec->m_uiFlags |= RCA_ID_TABLE_HEAP_BUFFER;
+		}
+		if (m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE)
+		{
+			pNewRec->m_uiFlags |= RCA_NEED_TO_SORT_FIELD_ID_TABLE;
+		}
+	}
+	if (m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED)
+	{
+		pNewRec->m_uiFlags |= RCA_FIELD_ID_TABLE_ENABLED;
 	}
 
 	pNewRec->m_uiBufferSize = m_uiBufferSize;
@@ -192,6 +229,11 @@ RCODE FlmRecord::clear(
 		m_uiFldTblSize = 0;
 	}
 
+	if (m_pucFieldIdTable)
+	{
+		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf(
+			fieldIdTableByteSize(), &m_pucFieldIdTable);
+	}
 	m_uiFlags = 0;
 	m_uiContainerID = 0;
 	m_uiRecordID = 0;
@@ -1019,6 +1061,13 @@ Exit:
 	{
 		pNewField->ui16FieldID = (FLMUINT16)uiFieldID;
 		setFieldDataType( pNewField, uiDataType);
+		
+		if (getFieldLevel( pNewField) == 1 &&
+			 (m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED))
+		{
+			rc = addToFieldIdTable( (FLMUINT16)uiFieldID,
+						(FIELDLINK)((FLMUINT)(pNewField - getFieldTable()) + 1));
+		}
 	}
 
 	if( ppvField)
@@ -1102,6 +1151,14 @@ RCODE FlmRecord::insertLast(
 		goto Exit;
 	}
 
+	if (uiLevel == 1 && (m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED))
+	{
+		if (RC_BAD( rc = addToFieldIdTable( (FLMUINT16)uiFieldID,
+					(FIELDLINK)((FLMUINT)(pField - getFieldTable()) + 1))))
+		{
+			goto Exit;
+		}
+	}
 	if( ppvField)
 	{
 		*ppvField = getFieldVoid( pField);
@@ -1668,6 +1725,30 @@ Exit:
 	return( rc);
 }
 
+/******************************************************************************
+Desc:	Routine for comparing two FIELD_ID structures.
+******************************************************************************/
+FINLINE FLMINT fieldIdCompare(
+	FIELD_ID *	pFieldIdA,
+	FIELD_ID *	pFieldIdB)
+{
+	if (pFieldIdA->ui16FieldId < pFieldIdB->ui16FieldId)
+	{
+		return( -1);
+	}
+	else if (pFieldIdA->ui16FieldId > pFieldIdB->ui16FieldId)
+	{
+		return( 1);
+	}
+	else if (pFieldIdA->ui32FieldOffset < pFieldIdB->ui32FieldOffset)
+	{
+		return( -1);
+	}
+	return( (pFieldIdA->ui32FieldOffset > pFieldIdB->ui32FieldOffset)
+			  ? 1
+			  : 0);
+}
+	
 /*****************************************************************************
 Desc:		Return most all unused memory back to the system.  This should
 			be called by the Release method of the record object.
@@ -1690,6 +1771,12 @@ RCODE FlmRecord::compactMemory( void)
 	FLMUINT		uiPicketFenceSize = 0;
 	FlmRecord *	pThis = this;
 	FLMBOOL		bHeapAlloc = FALSE;
+	FLMBYTE *	pucNewFieldIdTable = NULL;
+	FLMBOOL		bFieldIdHeapAlloc = FALSE;
+	FLMUINT		uiFieldIdTableItemCount = 0;
+	FIELD_ID *	pNewFieldIdTable = NULL;
+	FLMUINT		uiLevelOneFldCount;
+	FLMBOOL		bNeedToSortFieldIdTable;
 
 	flmAssert( isCached());
 	flmAssert( getRefCount() == 1);
@@ -1794,17 +1881,54 @@ RCODE FlmRecord::compactMemory( void)
 		goto Exit;
 	}
 
+	if (m_pucFieldIdTable)
+	{
+		uiFieldIdTableItemCount = getFieldIdTableItemCount( m_pucFieldIdTable);
+		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
+			calcFieldIdTableByteSize( uiFieldIdTableItemCount),
+			&pThis, sizeof( FlmRecord *), &pucNewFieldIdTable,
+			&bFieldIdHeapAlloc)))
+		{
+			goto Exit;
+		}
+		
+		// Set the item count and table size in this new item table to be
+		// the same.
+
+		setFieldIdTableItemCount( pucNewFieldIdTable, uiFieldIdTableItemCount);		
+		setFieldIdTableArraySize( pucNewFieldIdTable, uiFieldIdTableItemCount);		
+		pNewFieldIdTable = getFieldIdTable( pucNewFieldIdTable);
+	}
+	
 	pNewFldTbl = (FlmField *)(pucNewBuf + FLM_ALIGN_SIZE);
 	uiSlot = 0;
 	uiNewDataOffset = 0;
 	pucNewData = pucNewBuf + FLM_ALIGN_SIZE + (uiFields * sizeof( FlmField));
 
+	uiLevelOneFldCount = 0;
+	bNeedToSortFieldIdTable = FALSE;
 	pFld = getFieldPointer( root());
 	while( pFld)
 	{
 		uiLength = getFieldDataLength( pFld);
 		pNewFld = &pNewFldTbl[ uiSlot];
 		f_memcpy( pNewFld, pFld, sizeof( FlmField));
+		
+		if (pNewFieldIdTable && getFieldLevel( pFld) == 1)
+		{
+			FIELD_ID *	pFieldId = pNewFieldIdTable + uiLevelOneFldCount;
+			
+			flmAssert( uiLevelOneFldCount < uiFieldIdTableItemCount); 
+			pFieldId->ui16FieldId = pFld->ui16FieldID;
+			pFieldId->ui32FieldOffset = uiSlot + 1;
+			uiLevelOneFldCount++;
+
+			if (uiLevelOneFldCount > 1  && !bNeedToSortFieldIdTable &&			
+				 fieldIdCompare( pFieldId - 1, pFieldId) > 0)
+			{
+				bNeedToSortFieldIdTable = TRUE;
+			}
+		}
 
 		if (!isEncryptedField(pFld))
 		{
@@ -1926,8 +2050,30 @@ RCODE FlmRecord::compactMemory( void)
 	{
 		m_uiFlags &= ~RCA_HEAP_BUFFER;
 	}
-	
 	m_uiBufferSize = uiNewSize;
+	
+	if (m_pucFieldIdTable)
+	{
+		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
+			fieldIdTableByteSize(), &m_pucFieldIdTable);
+		m_pucFieldIdTable = pucNewFieldIdTable;
+		pucNewFieldIdTable = NULL;
+		if( bFieldIdHeapAlloc)
+		{
+			m_uiFlags |= RCA_ID_TABLE_HEAP_BUFFER;
+		}
+		else
+		{
+			m_uiFlags &= ~RCA_ID_TABLE_HEAP_BUFFER;
+		}
+		if (bNeedToSortFieldIdTable)
+		{
+			// Need to set the flag, otherwise sortFieldIdTable() won't
+			// sort the table.
+			m_uiFlags |= RCA_NEED_TO_SORT_FIELD_ID_TABLE;
+			sortFieldIdTable();
+		}
+	}
 	m_uiFldTblOffset = uiFields;
 	m_uiFldTblSize = uiFields;
 	m_uiDataBufOffset = uiNewDataSize;
@@ -1948,6 +2094,12 @@ Exit:
 	{
 		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
 			uiNewSize, &pucNewBuf);
+	}
+	if( pucNewFieldIdTable)
+	{
+		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
+			calcFieldIdTableByteSize( uiFieldIdTableItemCount),
+			&pucNewFieldIdTable);
 	}
 	
 	flmAtomicDec( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, TRUE); 
@@ -2063,6 +2215,7 @@ RCODE FlmRecord::removeFields(
 	RCODE				rc = FERR_OK;
 	FlmField *		pCurField;
 	FLMUINT			uiFieldsRemoved = 0;
+	FlmField * 		pFieldTable = getFieldTable();
 
 	flmAssert( !isReadOnly());
 	flmAssert( !isCached());
@@ -2095,6 +2248,13 @@ RCODE FlmRecord::removeFields(
 	pCurField = pFirstField;
 	while( pCurField)
 	{
+		if (getFieldLevel( pCurField) == 1 &&
+			 (m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED))
+		{
+			rc = removeFromFieldIdTable( (FLMUINT16)pCurField->ui16FieldID,
+						(FIELDLINK)((FLMUINT)(pCurField - pFieldTable) + 1));
+		}
+		
 		pCurField->uiPrev = 0;
 		pCurField->ui32DataOffset = 0;
 		pCurField->ui16FieldID = 0;
@@ -4008,8 +4168,16 @@ Desc:
 *****************************************************************************/
 FLMUINT FlmRecord::getTotalMemory( void)
 {
-	return( gv_FlmSysData.RCacheMgr.pRecBufAlloc->getTrueSize(
-		m_uiBufferSize, m_pucBuffer) + sizeof( FlmRecord));
+	FLMUINT	uiSize = sizeof( FlmRecord) +
+							gv_FlmSysData.RCacheMgr.pRecBufAlloc->getTrueSize(
+										m_uiBufferSize, m_pucBuffer);
+	
+	if (m_pucFieldIdTable)
+	{
+		uiSize += gv_FlmSysData.RCacheMgr.pRecBufAlloc->getTrueSize(
+						fieldIdTableByteSize(), m_pucFieldIdTable);
+	}
+	return( uiSize);
 }
 
 /*****************************************************************************
@@ -4802,3 +4970,505 @@ Exit:
 
 	return( rc);
 }
+
+/******************************************************************************
+Desc:	Swap FIELD_ID structures in the array.
+******************************************************************************/
+FINLINE void fieldIdSwap(
+	FIELD_ID *	pFieldIdArray,
+	FLMUINT		uiLeft,
+	FLMUINT		uiRight)
+{
+	FIELD_ID	tempId;
+	
+	tempId.ui16FieldId = pFieldIdArray [uiLeft].ui16FieldId;
+	tempId.ui32FieldOffset = pFieldIdArray [uiLeft].ui32FieldOffset;
+	pFieldIdArray [uiLeft].ui16FieldId = pFieldIdArray [uiRight].ui16FieldId;
+	pFieldIdArray [uiLeft].ui32FieldOffset = pFieldIdArray [uiRight].ui32FieldOffset;
+	pFieldIdArray [uiRight].ui16FieldId = tempId.ui16FieldId;
+	pFieldIdArray [uiRight].ui32FieldOffset = tempId.ui32FieldOffset;
+}
+	
+/******************************************************************************
+Desc:	Quick-sort a field ID table.
+******************************************************************************/
+FSTATIC void sortFieldIdArray(
+	FIELD_ID *	pFieldIdArray,
+	FLMUINT		uiLowerBounds,
+	FLMUINT		uiUpperBounds)
+{
+	FLMUINT			uiLBPos;
+	FLMUINT			uiUBPos;
+	FLMUINT			uiMIDPos;
+	FLMUINT			uiLeftItems;
+	FLMUINT			uiRightItems;
+	FIELD_ID *		pCurEntry;
+	FLMINT			iCompare;
+
+Iterate_Larger_Half:
+
+	uiUBPos = uiUpperBounds;
+	uiLBPos = uiLowerBounds;
+	uiMIDPos = (uiUpperBounds + uiLowerBounds + 1) / 2;
+	pCurEntry = &pFieldIdArray[ uiMIDPos ];
+	for( ;;)
+	{
+		while( (uiLBPos == uiMIDPos)				// Don't compare with target
+			||  ((iCompare = 
+						fieldIdCompare( &pFieldIdArray[ uiLBPos], pCurEntry)) < 0))
+		{
+			if( uiLBPos >= uiUpperBounds) break;
+			uiLBPos++;
+		}
+
+		while( (uiUBPos == uiMIDPos)				// Don't compare with target
+			||  (((iCompare = 
+						fieldIdCompare( pCurEntry, &pFieldIdArray[ uiUBPos])) < 0)))
+		{
+			if( !uiUBPos)	break;
+			uiUBPos--;
+		}
+		
+		if( uiLBPos < uiUBPos )			// Interchange and continue loop.
+		{
+			
+			// Interchange [uiLBPos] with [uiUBPos].
+
+			fieldIdSwap( pFieldIdArray, uiLBPos, uiUBPos );
+			uiLBPos++;						// Scan from left to right.
+			uiUBPos--;						// Scan from right to left.
+		}
+		else									// Past each other - done
+		{
+			break;
+		}
+	}
+	// Check for swap( LB, MID ) - cases 3 and 4
+
+	if( uiLBPos < uiMIDPos )
+	{
+		// Interchange [uiLBPos] with [uiMIDPos]
+
+		fieldIdSwap( pFieldIdArray, uiMIDPos, uiLBPos );
+		uiMIDPos = uiLBPos;
+	}
+	else if( uiMIDPos < uiUBPos )
+	{
+		// Interchange [uUBPos] with [uiMIDPos]
+
+		fieldIdSwap( pFieldIdArray, uiMIDPos, uiUBPos );
+		uiMIDPos = uiUBPos;
+	}
+
+	// Check the left piece.
+
+	uiLeftItems = (uiLowerBounds + 1 < uiMIDPos )
+							? uiMIDPos - uiLowerBounds		// 2 or more
+							: 0;
+	uiRightItems = (uiMIDPos + 1 < uiUpperBounds )
+							? uiUpperBounds - uiMIDPos 		// 2 or more
+							: 0;
+
+	if (uiLeftItems < uiRightItems)
+	{
+		
+		// Recurse on the LEFT side and goto the top on the RIGHT side.
+
+		if( uiLeftItems )
+		{
+			sortFieldIdArray( pFieldIdArray, uiLowerBounds, uiMIDPos - 1 );
+		}
+		uiLowerBounds = uiMIDPos + 1;
+		goto Iterate_Larger_Half;
+	}
+	else if (uiLeftItems)	// Compute a truth table to figure out this check.
+	{
+		
+		// Recurse on the RIGHT side and goto the top for the LEFT side.
+
+		if (uiRightItems)
+		{
+			sortFieldIdArray( pFieldIdArray, uiMIDPos + 1, uiUpperBounds);
+		}
+		uiUpperBounds = uiMIDPos - 1;
+		goto Iterate_Larger_Half;
+	}
+}
+
+/******************************************************************************
+Desc:	Sort the field ID table.
+******************************************************************************/
+void FlmRecord::sortFieldIdTable( void)
+{
+	if (m_pucFieldIdTable)
+	{
+		if (getFieldIdTableItemCount( m_pucFieldIdTable) > 1)
+		{
+			sortFieldIdArray( getFieldIdTable( m_pucFieldIdTable), 0,
+					getFieldIdTableItemCount( m_pucFieldIdTable) - 1);
+		}
+	}
+	m_uiFlags &= (~(RCA_NEED_TO_SORT_FIELD_ID_TABLE));
+}
+
+/******************************************************************************
+Desc:	Find a field ID to the field ID table.
+******************************************************************************/
+FIELD_ID * FlmRecord::findFieldId(
+	FLMUINT16	ui16FieldId,
+	FIELDLINK	ui32FieldOffset,
+	FLMUINT *	puiInsertPos)
+{
+	FIELD_ID *		pFieldId = NULL;
+	FIELD_ID *		pFieldIdTable = getFieldIdTable( m_pucFieldIdTable);
+	FLMUINT			uiTblSize;
+	FLMUINT			uiLow;
+	FLMUINT			uiMid;
+	FLMUINT			uiHigh;
+	FLMINT			iCmp;
+
+	if (m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE)
+	{
+		sortFieldIdTable();
+	}
+	
+	// Do binary search in the table
+
+	if ((uiTblSize = getFieldIdTableItemCount( m_pucFieldIdTable)) == 0)
+	{
+		if (puiInsertPos)
+		{
+			*puiInsertPos = 0;
+		}
+		goto Exit;
+	}
+	uiHigh = --uiTblSize;
+	uiLow = 0;
+	for (;;)
+	{
+		uiMid = (uiLow + uiHigh) / 2;
+		if (ui16FieldId < pFieldIdTable [uiMid].ui16FieldId)
+		{
+			iCmp = -1;
+		}
+		else if (ui16FieldId > pFieldIdTable [uiMid].ui16FieldId)
+		{
+			iCmp = 1;
+		}
+		else if (!ui32FieldOffset)
+		{
+			iCmp = 0;
+		}
+		else if (ui32FieldOffset < pFieldIdTable [uiMid].ui32FieldOffset)
+		{
+			iCmp = -1;
+		}
+		else if (ui32FieldOffset > pFieldIdTable [uiMid].ui32FieldOffset)
+		{
+			iCmp = 1;
+		}
+		else
+		{
+			iCmp = 0;
+		}
+		if (iCmp == 0)
+		{
+
+			// Found Match
+			
+			pFieldId = &pFieldIdTable [uiMid];
+			if (puiInsertPos)
+			{
+				*puiInsertPos = uiMid;
+			}
+			goto Exit;
+		}
+
+		// Check if we are done
+
+		if (uiLow >= uiHigh)
+		{
+
+			// Done, item not found
+
+			if (puiInsertPos)
+			{
+				*puiInsertPos = (iCmp < 0)
+									 ? uiMid
+									 : uiMid + 1;
+			}
+			goto Exit;
+		}
+
+		if (iCmp < 0)
+		{
+			if (uiMid == 0)
+			{
+				if (puiInsertPos)
+				{
+					*puiInsertPos = 0;
+				}
+				goto Exit;
+			}
+			uiHigh = uiMid - 1;
+		}
+		else
+		{
+			if (uiMid == uiTblSize)
+			{
+				if (puiInsertPos)
+				{
+					*puiInsertPos = uiMid + 1;
+				}
+				goto Exit;
+			}
+			uiLow = uiMid + 1;
+		}
+	}
+
+Exit:
+
+	return( pFieldId);
+}
+
+/******************************************************************************
+Desc:	Add a field ID to the field ID table.
+******************************************************************************/
+RCODE FlmRecord::addToFieldIdTable(
+	FLMUINT16	ui16FieldId,
+	FIELDLINK	ui32FieldOffset)
+{
+	RCODE			rc = FERR_OK;
+	FIELD_ID *	pFieldId;
+	FLMUINT		uiItemCount = getFieldIdTableItemCount( m_pucFieldIdTable);
+	FLMUINT		uiTableSize = getFieldIdTableArraySize( m_pucFieldIdTable);
+	FLMBOOL		bHeapAlloc;
+	FlmRecord *	pThis = this;
+	
+	if (uiItemCount == uiTableSize)
+	{
+		FLMUINT	uiNewByteSize;
+		
+		uiTableSize += 32;
+		
+		uiNewByteSize = calcFieldIdTableByteSize( uiTableSize);
+									
+		// Reallocate the table.
+
+		if (!uiItemCount)
+		{
+			if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
+				uiNewByteSize, &pThis, sizeof( FlmRecord *), &m_pucFieldIdTable,
+				&bHeapAlloc)))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
+				fieldIdTableByteSize(),
+				uiNewByteSize, &pThis, sizeof( FlmRecord *),
+				&m_pucFieldIdTable, &bHeapAlloc)))
+			{
+				goto Exit;
+			}
+		}
+		if( bHeapAlloc)
+		{
+			m_uiFlags |= RCA_ID_TABLE_HEAP_BUFFER;
+		}
+		else
+		{
+			m_uiFlags &= ~RCA_ID_TABLE_HEAP_BUFFER;
+		}
+		setFieldIdTableArraySize( m_pucFieldIdTable, uiTableSize);
+	}
+	pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiItemCount;
+	pFieldId->ui32FieldOffset = ui32FieldOffset;
+	pFieldId->ui16FieldId = ui16FieldId;
+	uiItemCount++;
+	setFieldIdTableItemCount( m_pucFieldIdTable, uiItemCount);
+	
+	// Table may no longer be sorted, in which case we need to set a flag
+	// indicating that it needs to be sorted.
+	
+	if (uiItemCount > 1 && !(m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE) &&
+		 fieldIdCompare( pFieldId - 1, pFieldId) > 0)
+	{
+		m_uiFlags |= RCA_NEED_TO_SORT_FIELD_ID_TABLE;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/******************************************************************************
+Desc:	Remove a field ID from the field ID table.
+******************************************************************************/
+RCODE FlmRecord::removeFromFieldIdTable(
+	FLMUINT16	ui16FieldId,
+	FIELDLINK	ui32FieldOffset)
+{
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiInsertPos;
+	FIELD_ID *	pFieldId;
+	
+	if ((pFieldId = findFieldId( ui16FieldId, ui32FieldOffset, &uiInsertPos)) != NULL)
+	{
+		FLMUINT		uiItemCount = getFieldIdTableItemCount( m_pucFieldIdTable); 
+		FLMUINT		uiTableSize = getFieldIdTableArraySize( m_pucFieldIdTable); 
+		FIELD_ID *	pFieldIdTable = getFieldIdTable( m_pucFieldIdTable);
+		
+		if (uiInsertPos < uiItemCount - 1)
+		{
+			f_memmove( pFieldId, &pFieldIdTable [uiInsertPos + 1],
+				sizeof( FIELD_ID) * (uiItemCount - uiInsertPos - 1));
+		}
+		uiItemCount--;
+		if (!uiItemCount)
+		{
+			gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
+				fieldIdTableByteSize(), &m_pucFieldIdTable);
+		}
+		else
+		{
+			FLMBOOL		bHeapAlloc;
+			FlmRecord *	pThis = this;
+										
+			setFieldIdTableItemCount( m_pucFieldIdTable, uiItemCount);
+			if (uiTableSize > uiItemCount + 32)
+			{
+				if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
+					fieldIdTableByteSize(), calcFieldIdTableByteSize( uiItemCount),
+					&pThis, sizeof( FlmRecord *),
+					&m_pucFieldIdTable, &bHeapAlloc)))
+				{
+					goto Exit;
+				}
+				setFieldIdTableArraySize( m_pucFieldIdTable, uiItemCount);											
+				if( bHeapAlloc)
+				{
+					m_uiFlags |= RCA_ID_TABLE_HEAP_BUFFER;
+				}
+				else
+				{
+					m_uiFlags &= ~RCA_ID_TABLE_HEAP_BUFFER;
+				}
+			}
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/******************************************************************************
+Desc:	Find a level one field in the record.
+******************************************************************************/
+void * FlmRecord::findLevelOneField(
+	FLMUINT	uiFieldId,
+	FLMBOOL	bFindInclusive)
+{
+	FLMUINT		uiInsertPos;
+	FIELD_ID *	pFieldId;
+	void *		pvField = NULL;
+	
+	if (m_pucFieldIdTable)
+	{
+		if ((pFieldId = findFieldId( (FLMUINT16)uiFieldId, 0, &uiInsertPos)) != NULL)
+		{
+			pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+		}
+		else if (bFindInclusive &&
+					uiInsertPos < getFieldIdTableItemCount( m_pucFieldIdTable))
+		{
+			pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiInsertPos;
+			pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+		}
+	}
+	else
+	{
+		flmAssert( m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED);
+	}
+	return( pvField);
+}
+
+/******************************************************************************
+Desc:	Create the field ID table, if not already created.
+******************************************************************************/
+RCODE FlmRecord::createFieldIdTable(
+	FLMBOOL	bTruncateTable)
+{
+	RCODE		rc = FERR_OK;
+	void *	pvField;
+	
+	if (!(m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED))
+	{
+		m_uiFlags |= RCA_FIELD_ID_TABLE_ENABLED;
+		pvField = firstChild( root());
+		while (pvField)
+		{
+			if (RC_BAD( rc = addToFieldIdTable( (FLMUINT16)getFieldID( pvField),
+										(FIELDLINK)((FLMUINT)pvField))))
+			{
+				goto Exit;
+			}
+			pvField = nextSibling( pvField);
+		}
+	}
+	if (m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE)
+	{
+		sortFieldIdTable();
+	}
+	if (bTruncateTable)
+	{
+		if (RC_BAD( rc = truncateFieldIdTable()))
+		{
+			goto Exit;
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/******************************************************************************
+Desc:	Truncate the field ID table, if not already truncated.
+******************************************************************************/
+RCODE FlmRecord::truncateFieldIdTable( void)
+{
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiItemCount = getFieldIdTableItemCount( m_pucFieldIdTable);
+	
+	if (uiItemCount != getFieldIdTableArraySize( m_pucFieldIdTable))
+	{
+		FLMBOOL		bHeapAlloc;
+		FlmRecord *	pThis = this;
+
+		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
+			fieldIdTableByteSize(), calcFieldIdTableByteSize( uiItemCount),
+			&pThis, sizeof( FlmRecord *),
+			&m_pucFieldIdTable, &bHeapAlloc)))
+		{
+			goto Exit;
+		}
+		setFieldIdTableArraySize( m_pucFieldIdTable, uiItemCount);											
+		if( bHeapAlloc)
+		{
+			m_uiFlags |= RCA_ID_TABLE_HEAP_BUFFER;
+		}
+		else
+		{
+			m_uiFlags &= ~RCA_ID_TABLE_HEAP_BUFFER;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+

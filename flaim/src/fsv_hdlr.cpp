@@ -1589,6 +1589,7 @@ RCODE fsvOpClassDatabase(
 					break;
 				case FDB_RFL_FILE_LIMITS:
 				case FDB_FILE_EXTEND_SIZE:
+				case FDB_ENABLE_FIELD_ID_TABLE:
 					if( RC_BAD( opRc = FlmDbConfig( hDb, (eDbConfigType)pWire->getType(),
 						(void *)((FLMUINT)pWire->getNumber1()),
 						(void *)((FLMUINT)pWire->getNumber2()))))

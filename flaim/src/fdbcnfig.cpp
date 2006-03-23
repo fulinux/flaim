@@ -149,6 +149,7 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 	RCODE			rc = FERR_OK;
 	FDB *			pDb = (FDB_p)hDb;
 	FFILE *		pFile = pDb->pFile;
+	LFILE *		pLFile;
 	FLMBOOL		bDbInitialized = FALSE;
 	FLMBOOL		bStartedTrans = FALSE;
 	FLMBOOL		bDbLocked = FALSE;
@@ -215,6 +216,7 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 			}
 
 			case FDB_RFL_FILE_LIMITS:
+			case FDB_ENABLE_FIELD_ID_TABLE:
 				if( RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER1,
 					(FLMUINT)Value1)))
 				{
@@ -637,6 +639,27 @@ Transmission_Error:
 		case FDB_SET_COMMIT_CALLBACK:
 			pDb->fnCommit = (COMMIT_FUNC)((FLMUINT)Value1);
 			pDb->pvCommitData = Value2;
+			break;
+			
+		case FDB_ENABLE_FIELD_ID_TABLE:
+			if (pDb->pDict)
+			{
+				if (RC_BAD( rc = fdictGetContainer( pDb->pDict, (FLMUINT)Value1,
+										&pLFile)))
+				{
+					goto Exit;
+				}
+				pLFile->bMakeFieldIdTable = (FLMBOOL)Value2;
+			}
+			else if (pDb->pFile->pDictList)
+			{
+				if (RC_BAD( rc = fdictGetContainer( pDb->pFile->pDictList,
+										(FLMUINT)Value1, &pLFile)))
+				{
+					goto Exit;
+				}
+				pLFile->bMakeFieldIdTable = (FLMBOOL)Value2;
+			}
 			break;
 
 		default:

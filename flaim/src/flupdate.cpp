@@ -401,8 +401,7 @@ RCODE	flmAddRecord(
 	pRecord->setContainerID( pLFile->uiLfNum);
 	if (bKeepInCache)
 	{
-		if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile->uiLfNum, uiDrn,
-										pRecord)))
+		if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile, uiDrn, pRecord)))
 		{
 			// Remove the record that was added because of the error.
 
@@ -578,7 +577,7 @@ FLMEXP RCODE FLMAPI FlmRecordModify(
 
 		pRecord->setID( uiDrn);
 		pRecord->setContainerID( uiContainer);
-		if( RC_BAD( rc = flmRcaInsertRec( pDb, uiContainer, uiDrn, pRecord)))
+		if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile, uiDrn, pRecord)))
 		{
 			goto Exit;
 		}
@@ -661,8 +660,7 @@ FLMEXP RCODE FLMAPI FlmRecordModify(
 	pRecord->setID( uiDrn);
 	pRecord->setContainerID( uiContainer);
 	
-	if( RC_BAD( rc = flmRcaInsertRec( pDb, uiContainer, uiDrn, 
-								pRecord)))
+	if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile, uiDrn, pRecord)))
 	{
 		if ( rc != FERR_MEM)
 		{

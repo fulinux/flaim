@@ -2857,10 +2857,13 @@
 		FDB_SET_APP_DATA,							///< Allows an application to have the database object remember some data.\  pvValue1 contains a
 														///< pointer to the data to be remembered.\  An application may retrieve this pointer at any time
 														///< by calling FlmDbGetConfig() with the eDbGetConfigType::FDB_GET_APP_DATA option.
-		FDB_SET_COMMIT_CALLBACK					///< Set a callback function that is to be called whenever this database handle commits an
+		FDB_SET_COMMIT_CALLBACK,				///< Set a callback function that is to be called whenever this database handle commits an
 														///< update transaction.\  pvValue1 is a pointer to the callback
 														///< function - a ::COMMIT_FUNC.\   pvValue2 is a pointer to application data that will be passed into the
 														///< function whenever it is called.
+		FDB_ENABLE_FIELD_ID_TABLE				///< Enable the creating of a field ID table for level-one fields in cached records for a specific
+														///< container.\  pvValue1 is a FLMUINT that holds the container number.\  pvValue2 is a FLMBOOL indicating
+														///< whether the field id table is to be enabled or disabled.
 	} eDbConfigType;
 
 #define F_SERIAL_NUM_SIZE				16
@@ -4539,6 +4542,69 @@
 	} FlmField;
 	
 	/****************************************************************************
+	Struct: 	FIELD_ID
+	****************************************************************************/
+	typedef struct FIELD_ID
+	{
+		FIELDLINK	ui32FieldOffset;
+		FLMUINT16	ui16FieldId;
+	} FIELD_ID;
+	
+	FINLINE FLMUINT calcFieldIdTableByteSize(
+		FLMUINT	uiTableItems)
+	{
+		return( FLM_ALIGN_SIZE + FLM_ALIGN_SIZE + FLM_ALIGN_SIZE +
+					sizeof( FIELD_ID) * uiTableItems);
+	}
+	
+	FINLINE void setFieldIdTableItemCount(
+		FLMBYTE *	pucFieldIdTable,
+		FLMUINT		uiItemCount)
+	{
+		*((FLMUINT *)(pucFieldIdTable + FLM_ALIGN_SIZE)) = uiItemCount;
+	}
+
+	FINLINE void setFieldIdTableArraySize(
+		FLMBYTE *	pucFieldIdTable,
+		FLMUINT		uiTableArraySize)
+	{
+		*((FLMUINT *)(pucFieldIdTable + FLM_ALIGN_SIZE + FLM_ALIGN_SIZE)) = uiTableArraySize;
+	}
+
+	FINLINE FLMUINT getFieldIdTableItemCount(
+		FLMBYTE *	pucFieldIdTable)
+	{
+		if (!pucFieldIdTable)
+		{
+			return( 0);
+		}
+		else
+		{
+			return( *((FLMUINT *)(pucFieldIdTable + FLM_ALIGN_SIZE)));
+		}
+	}
+
+	FINLINE FLMUINT getFieldIdTableArraySize(
+		FLMBYTE *	pucFieldIdTable)
+	{
+		if (!pucFieldIdTable)
+		{
+			return( 0);
+		}
+		else
+		{
+			return( *((FLMUINT *)(pucFieldIdTable + FLM_ALIGN_SIZE + FLM_ALIGN_SIZE)));
+		}
+	}
+
+	FINLINE FIELD_ID * getFieldIdTable(
+		FLMBYTE *	pucFieldIdTable)
+	{
+		return( (FIELD_ID *)(pucFieldIdTable +
+					FLM_ALIGN_SIZE + FLM_ALIGN_SIZE + FLM_ALIGN_SIZE));
+	}
+		
+	/****************************************************************************
 	Desc: 	Class which provides the record interface that FLAIM uses to
 				access and manipulate all records.
 	****************************************************************************/
@@ -4547,11 +4613,14 @@
 	{
 	public:
 
-		#define RCA_READ_ONLY_FLAG				0x00000001
-		#define RCA_CACHED						0x00000002
-		#define RCA_OK_TO_DELETE				0x00000004
-		#define RCA_OLD_VERSION					0x00000008
-		#define RCA_HEAP_BUFFER					0x00000010
+		#define RCA_READ_ONLY_FLAG						0x00000001
+		#define RCA_CACHED								0x00000002
+		#define RCA_OK_TO_DELETE						0x00000004
+		#define RCA_OLD_VERSION							0x00000008
+		#define RCA_HEAP_BUFFER							0x00000010
+		#define RCA_ID_TABLE_HEAP_BUFFER				0x00000020
+		#define RCA_FIELD_ID_TABLE_ENABLED				0x00000040
+		#define RCA_NEED_TO_SORT_FIELD_ID_TABLE	0x00000080
 
 		FlmRecord();
 
@@ -5343,6 +5412,41 @@
 			setEncFlags( getFieldPointer( pvField), uiFlags);
 		}
 
+		/// Determine if a record has a level one field ID table.
+		FINLINE FLMBOOL fieldIdTableEnabled( void)
+		{
+			return( (m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED)
+					  ? TRUE
+					  : FALSE);
+		}
+		
+		/// Set a flag in the record that will cause it to generate a level
+		/// one field ID table.
+		FINLINE void enableFieldIdTable( void)
+		{
+			m_uiFlags |= RCA_FIELD_ID_TABLE_ENABLED;
+		}
+		
+		/// Create a level one field ID table in a record.
+		RCODE createFieldIdTable(
+			FLMBOOL	bTruncateTable		///< Truncate the field id table after sorting?
+			);
+			
+		FINLINE FLMBYTE * getFieldIdTbl( void)
+		{
+			return m_pucFieldIdTable;
+		}
+		
+		RCODE truncateFieldIdTable( void);
+		
+		void sortFieldIdTable( void);
+		
+		/// Find a level one field ID in a record.
+		void * findLevelOneField(
+			FLMUINT	uiFieldID,			///< Field number of field to be found.
+			FLMBOOL	bFindInclusive		///< OK to find next field after uiFieldID?
+			);
+
 		void * locateFieldByPosition(
 			FLMUINT			uiPosition);
 
@@ -5558,6 +5662,25 @@
 		RCODE remove(
 			FlmField *		pField);
 
+		RCODE addToFieldIdTable(
+			FLMUINT16		ui16FieldId,
+			FIELDLINK		ui32FieldOffset);
+
+		RCODE removeFromFieldIdTable(
+			FLMUINT16		ui16FieldId,
+			FIELDLINK		ui32FieldOffset);
+			
+		FIELD_ID * findFieldId(
+			FLMUINT16	ui16FieldId,
+			FIELDLINK	ui32FieldOffset,
+			FLMUINT *	puiInsertPos);
+			
+		FINLINE FLMUINT fieldIdTableByteSize( void)
+		{
+			FLMUINT	uiTableArraySize = getFieldIdTableArraySize( m_pucFieldIdTable);
+			return calcFieldIdTableByteSize( uiTableArraySize);
+		}
+			
 		FLMUINT		m_uiContainerID;
 		FLMUINT		m_uiRecordID;
 		FLMUINT		m_uiFlags;
@@ -5569,6 +5692,7 @@
 		FLMBOOL		m_bHolesInData;
 		FLMUINT		m_uiAvailFields;
 		FIELDLINK	m_uiFirstAvail;
+		FLMBYTE *	m_pucFieldIdTable;
 
 		friend struct FlmRecordExt;
 		friend class F_Rfl;

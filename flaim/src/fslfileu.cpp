@@ -1483,8 +1483,7 @@ RCODE flmSetIxTrackerInfo(
 	pRecord->setID( uiIndexNum);
 	pRecord->setContainerID( FLM_TRACKER_CONTAINER);
 
-	if( RC_BAD( rc = flmRcaInsertRec( pDb, FLM_TRACKER_CONTAINER, 
-		uiIndexNum, pRecord)))
+	if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile, uiIndexNum, pRecord)))
 	{
 		goto Exit;
 	}
@@ -2367,8 +2366,7 @@ FSTATIC RCODE flmFreeIndexBlocks(
 				goto Exit;
 			}
 
-			if( RC_BAD( rc = flmRcaInsertRec( pDb, FLM_TRACKER_CONTAINER,
-				uiDrn, pRec)))
+			if( RC_BAD( rc = flmRcaInsertRec( pDb, pTrackerLFile, uiDrn, pRec)))
 			{
 				goto Exit;
 			}
@@ -2856,8 +2854,7 @@ FSTATIC RCODE flmModifyTrackerRec(
 	pRecord->setID( uiDrn);
 	pRecord->setContainerID( FLM_TRACKER_CONTAINER);
 
-	if( RC_BAD( rc = flmRcaInsertRec( pDb, FLM_TRACKER_CONTAINER, 
-		uiDrn, pRecord)))
+	if( RC_BAD( rc = flmRcaInsertRec( pDb, pLFile, uiDrn, pRecord)))
 	{
 		goto Exit;
 	}

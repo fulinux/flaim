@@ -1917,6 +1917,10 @@ typedef struct LFILE
 	FLMUINT		uiOffsetInBlk;			// Offset within block of entry.
 	FLMUINT		uiLfNum;					// Index number or container number.
 	FLMUINT		uiLfType; 				// Type of logical file. */
+	FLMBOOL		bMakeFieldIdTable;	// Boolean that indicates whether or not
+												// for this container when we create
+												// records in cache we should create a
+												// field id table for the level-1 fields.
 	IXD *			pIxd;						// If an index, points to the IXD.
 
 } LFILE;
