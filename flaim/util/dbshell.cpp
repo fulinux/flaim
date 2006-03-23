@@ -3859,10 +3859,7 @@ FLMINT FlmFileSysCommand::execute(
 				pShell->con_printf( "Error changing directory\n");
 			}
 #elif defined( FLM_NLM)
-			if (chdir( (char *)ppszArgV [1]) != 0)
-			{
-				pShell->con_printf( "Error changing directory\n");
-			}
+			pShell->con_printf( "Unable to change directory\n");
 #else
 		#error "This platform is not supported"
 
@@ -5072,10 +5069,15 @@ FSTATIC void extractBaseDirAndWildcard(
 /***************************************************************************
 Desc:	Program entry point (main)
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
-extern "C" int main(
+#if defined( FLM_UNIX)
+int main(
 	int,		// iArgC,
 	char **	// ppszArgV
+	)
+#elif defined( FLM_NLM)
+extern "C" int nlm_main(
+	int,		// iArgC,
+	char **	// ppucArgV
 	)
 #else
 int __cdecl main(
@@ -5090,11 +5092,6 @@ int __cdecl main(
 #ifdef FLM_NLM
 
 	gv_bRunning = TRUE;
-
-	// Setup the routines to be called when the NLM exits
-
-	atexit( xshellCleanup);
-//	SynchronizeStart();
 
 #endif
 
@@ -5141,4 +5138,3 @@ Exit:
 	gv_bRunning = FALSE;
 	return( 0);
 }
-

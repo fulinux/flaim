@@ -1410,49 +1410,9 @@ private:
 	FLMBOOL			m_bOpen;
 };
 
-#if defined( FLM_NLM)
-	#pragma pack(push,1) 
-
-	#ifndef _WCHAR_T
-		#define _WCHAR_T
-		typedef unsigned short   wchar_t;
-	#endif
-
-	extern "C"
-	{
-		#include "ws2nlm.h"
-	}
-
-	// Need to undefine things defined in ws2nlm.h that will create conflicts
-	// when compiling SMI
-
-	#undef HANDLE
-	#undef unicode
-
-	#pragma pack(pop)
-
-#elif defined( FLM_UNIX)
-	#ifndef INVALID_SOCKET
-		#define INVALID_SOCKET 		(-1)
-	#endif
-
-	#ifndef INADDR_NONE
-		#define INADDR_NONE		(-1)
-	#endif
-
-	#ifndef SOCKET
-		#define SOCKET			int
-	#endif
-#elif !defined( FLM_WIN)
-	#error Platform not supported
-#endif
-
 #include "fpackon.h"
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
-
-
-//	Forward declarations
 
 class FCS_TCP_SERVER;
 class FCS_TCP_CLIENT;

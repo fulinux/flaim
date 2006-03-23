@@ -22,8 +22,8 @@
 // $Id: sample.cpp 12329 2006-01-20 17:49:30 -0700 (Fri, 20 Jan 2006) ahodgkinson $
 //-------------------------------------------------------------------------
 
-#include <stdio.h>
 #include "flaim.h"
+#include <stdio.h>
 
 const char * gv_pszSampleDictionary =	
 	"0 @1@ field Person\n"

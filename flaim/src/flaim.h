@@ -270,19 +270,16 @@
 	#endif
 
 	#if defined( FLM_WIN)
-      #if defined( FLM_DLL)   // user must define for DLL linkage on Windows
+      #if defined( FLM_DLL)
          #if defined( FLM_SRC)
-            #define FLM_IX dllexport
+            #define FLMEXP 		__declspec(dllexport)
          #else
-            #define FLM_IX dllimport
+            #define FLMEXP 		__declspec(dllimport)
          #endif
-         #define FLMEXP __declspec(FLM_IX)
       #else
          #define FLMEXP
       #endif
-      #define FLMCDECL        __cdecl
       #define FLMAPI          __cdecl
-      #define FLMCOM          __stdcall
 		#ifdef FLM_DEBUG
 			#define FINLINE		inline
 		#else
@@ -290,15 +287,11 @@
 		#endif
 	#elif defined( FLM_NLM)
       #define FLMEXP
-      #define FLMCDECL        __cdecl
       #define FLMAPI          __cdecl
-      #define FLMCOM          __stdcall
 		#define FINLINE			inline
 	#elif defined( FLM_UNIX)
       #define FLMEXP
-      #define FLMCDECL
       #define FLMAPI
-      #define FLMCOM
 		#if defined( FLM_GNUC)
 			#define FINLINE		__attribute__((always_inline)) inline
 		#else
@@ -6667,7 +6660,7 @@
 	FLMEXP RCODE FLMAPI FlmAllocFileSystem(
 		F_FileSystem **		ppFileSystem);
 
-	FLMEXP FLMINT FLMCDECL f_sprintf(
+	FLMEXP FLMINT FLMAPI f_sprintf(
 		char *			pszDestStr,
 		const char *	pszFormat,
 		...);

@@ -109,7 +109,7 @@ RCODE FCS_TCP::_GetLocalInfo( void)
 	if( m_pszIp[ 0] == '\0' &&
 		(pHostEnt = gethostbyname( m_pszName)) != NULL)
 	{
-		ui32IPAddr = (FLMUINT32)(*((u_long*)pHostEnt->h_addr));
+		ui32IPAddr = (FLMUINT32)(*((unsigned long *)pHostEnt->h_addr));
 		if( ui32IPAddr != (FLMUINT32)-1)
 		{
 			struct in_addr			InAddr;
@@ -161,7 +161,7 @@ RCODE FCS_TCP::_GetRemoteInfo( void)
 	*/
 
 	HostsName = gethostbyaddr( (char *)&SockAddrIn.sin_addr.s_addr,
-		(unsigned)sizeof( u_long), AF_INET );
+		(unsigned)sizeof( unsigned long), AF_INET );
 
 	if( HostsName != NULL)
 	{
@@ -618,7 +618,7 @@ RCODE FCS_TCP_CLIENT::openConnection(
 	FLMINT					iMaxTries = 5;
 	struct sockaddr_in	address;
 	struct hostent *		pHostEntry;
-	u_long					ulIPAddr;
+	unsigned long			ulIPAddr;
 	RCODE						rc = FERR_OK;
 
 	flmAssert( !m_bConnected);
@@ -627,7 +627,7 @@ RCODE FCS_TCP_CLIENT::openConnection(
 	if( pucHostName && pucHostName[ 0] != '\0')
 	{
 		ulIPAddr = inet_addr( (char *)pucHostName);
-		if( ulIPAddr == (u_long)INADDR_NONE)
+		if( ulIPAddr == (unsigned long)INADDR_NONE)
 		{
 			pHostEntry = gethostbyname( (char *)pucHostName);
 
@@ -638,7 +638,7 @@ RCODE FCS_TCP_CLIENT::openConnection(
 			}
 			else
 			{
-				ulIPAddr = *((u_long*)pHostEntry->h_addr);
+				ulIPAddr = *((unsigned long *)pHostEntry->h_addr);
 			}
 
 		}
@@ -655,7 +655,7 @@ RCODE FCS_TCP_CLIENT::openConnection(
 	f_memset( (char*)&address, 0, sizeof( struct sockaddr_in));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = (unsigned)ulIPAddr;
-	address.sin_port = htons( (u_short)uiPort);
+	address.sin_port = htons( (unsigned short)uiPort);
 	
 	/*
 	Allocate a socket, then attempt to connect to it!
@@ -854,7 +854,7 @@ RCODE	FCS_TCP_SERVER::bind(
 	{
 		address.sin_addr.s_addr = inet_addr( (char *)pucBindAddr);
 	}
-	address.sin_port = htons( (u_short)uiBindPort);
+	address.sin_port = htons( (unsigned short)uiBindPort);
 
 	// Bind to the address+port
 

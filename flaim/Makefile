@@ -47,10 +47,12 @@ minor_version = 8
 calc_svn_revision =
 
 ifneq (,$(findstring ignore-local-mods,$(MAKECMDGOALS)))
+	submake_targets += ignore-local-mods
 	ignore_local_mods = 1
 endif
 
 ifneq (,$(findstring ilm,$(MAKECMDGOALS)))
+	submake_targets += ilm
 	ignore_local_mods = 1
 endif
 
@@ -171,15 +173,19 @@ package_proj_name_and_ver = $(package_proj_name)-$(version)
 target_build_type =
 usenativecc = yes
 target_os_family =
-target_processor =
+target_processor_family =
 target_word_size =
-requested_target_word_size =
+requested_word_size =
 win_target =
 unix_target =
+netware_target =
+submake_targets =
+package_archive_format = tar
 
 # -- Enable command echoing --
 
 ifneq (,$(findstring verbose,$(MAKECMDGOALS)))
+	submake_targets += verbose
 	ec =
 else
 	ec = @
@@ -249,12 +255,14 @@ endif
 
 ifndef target_build_type
 	ifneq (,$(findstring debug,$(MAKECMDGOALS)))
+		submake_targets += debug
 		target_build_type = debug
 	endif
 endif
 
 ifndef target_build_type
 	ifneq (,$(findstring release,$(MAKECMDGOALS)))
+		submake_targets += release
 		target_build_type = release
 	endif
 endif
@@ -266,92 +274,28 @@ endif
 # -- Use non-native (i.e., gcc) compiler on Solaris, etc.
 
 ifneq (,$(findstring usegcc,$(MAKECMDGOALS)))
+	submake_targets += usegcc
 	usenativecc = no
 endif
 
 # -- Override platform default word size? --
 
 ifneq (,$(findstring 64bit,$(MAKECMDGOALS)))
-	requested_target_word_size = 64
+	submake_targets += 64bit
+	requested_word_size = 64
 endif
 
 ifneq (,$(findstring 32bit,$(MAKECMDGOALS)))
-	requested_target_word_size = 32
+	submake_targets += 32bit
+	requested_word_size = 32
 endif
 
-# -- Target operating system and processor architecture --
+# -- Target operating system --
 
 ifndef target_os_family
 	ifeq ($(host_os_family),linux)
 		unix_target = yes
 		target_os_family = linux
-		
-		ifeq (,$(HOSTTYPE))
-			ifneq (,$(RPM_ARCH))
-				HOSTTYPE = $(RPM_ARCH)
-			endif
-         $(error HOSTTYPE environment variable has not been set)
-		endif
-		
-		ifeq (,$(HOSTTYPE))
-         $(error HOSTTYPE environment variable has not been set)
-		endif
-		
-		ifdef requested_target_word_size
-			ifneq (,$(findstring x86,$(HOSTTYPE)))
-				ifeq ($(requested_target_word_size),64)
-					target_processor = x86
-					target_word_size = 64
-				else
-					target_processor = x86
-					target_word_size = 32
-				endif
-			else
-            $(error Platform not supported)
-			endif
-		else
-			ifneq (,$(findstring x86,$(HOSTTYPE)))
-				ifneq (,$(findstring x86_64,$(HOSTTYPE)))
-					target_processor = x86
-					target_word_size = 64
-				else
-					target_processor = x86
-					target_word_size = 32
-				endif
-			else
-				ifneq (,$(findstring 86,$(HOSTTYPE)))
-					target_processor = x86
-					target_word_size = 32
-				else
-					ifneq (,$(findstring s390,$(HOSTTYPE)))
-						ifneq (,$(findstring s390x,$(HOSTTYPE)))
-							target_processor = s390x
-							target_word_size = 64
-						else
-							target_processor = s390
-							target_word_size = 31
-						endif
-					else
-						ifneq (,$(findstring ia64,$(HOSTTYPE)))
-							target_processor = ia64
-							target_word_size = 64
-						else
-							ifneq (,$(findstring ppc64,$(HOSTTYPE)))
-								target_processor = powerpc
-								target_word_size = 64
-							else
-								ifneq (,$(findstring ppc,$(HOSTTYPE)))
-									target_processor = powerpc
-									target_word_size = 32
-								else
-                           $(error Platform not supported)
-								endif
-							endif
-						endif
-					endif
-				endif
-			endif
-		endif
 	endif
 endif
 
@@ -359,38 +303,6 @@ ifndef target_os_family
 	ifeq ($(host_os_family),solaris)
 		unix_target = yes
 		target_os_family = solaris
-		
-		ifeq (,$(HOSTTYPE))
-         $(error HOSTTYPE environment variable has not been set)
-		endif
-		
-		ifdef requested_target_word_size
-			ifneq (,$(findstring sparc,$(HOSTTYPE)))
-				ifeq ($(requested_target_word_size),64)
-					target_processor = sparc
-					target_word_size = 64
-				else
-					target_processor = sparc
-					target_word_size = 32
-				endif
-			else
-				ifeq ($(requested_target_word_size),64)
-					target_processor = x86
-					target_word_size = 64
-				else
-					target_processor = x86
-					target_word_size = 32
-				endif
-			endif
-		else
-			ifneq (,$(findstring sparc,$(HOSTTYPE)))
-				target_processor = sparc
-				target_word_size = 32
-			else
-				target_processor = x86
-				target_word_size = 32
-			endif
-		endif
 	endif
 endif
 
@@ -398,31 +310,6 @@ ifndef target_os_family
 	ifeq ($(host_os_family),osx)
 		unix_target = yes
 		target_os_family = osx
-
-		ifeq (,$(HOSTTYPE))
-         $(error HOSTTYPE environment variable has not been set)
-		endif
-		
-		ifdef requested_target_word_size
-			ifneq (,$(findstring powerpc,$(HOSTTYPE)))
-				ifeq ($(requested_target_word_size),64)
-					target_processor = powerpc
-					target_word_size = 64
-				else
-					target_processor = powerpc
-					target_word_size = 32
-				endif
-			else
-            $(error Platform not supported)
-			endif
-		else
-			ifneq (,$(findstring powerpc,$(HOSTTYPE)))
-				target_processor = powerpc
-				target_word_size = 32
-			else
-            $(error Platform not supported)
-			endif
-		endif
 	endif
 endif
 
@@ -430,31 +317,6 @@ ifndef target_os_family
 	ifeq ($(host_os_family),aix)
 		unix_target = yes
 		target_os_family = aix
-
-		ifeq (,$(HOSTTYPE))
-         $(error HOSTTYPE environment variable has not been set)
-		endif
-		
-		ifdef requested_target_word_size
-			ifneq (,$(findstring rs6000,$(HOSTTYPE)))
-				ifeq ($(requested_target_word_size),64)
-					target_processor = powerpc
-					target_word_size = 64
-				else
-					target_processor = powerpc
-					target_word_size = 32
-				endif
-			else
-            $(error Platform not supported)
-			endif
-		else
-			ifneq (,$(findstring rs6000,$(HOSTTYPE)))
-				target_processor = powerpc
-				target_word_size = 32
-			else
-            $(error Platform not supported)
-			endif
-		endif
 	endif
 endif
 
@@ -462,40 +324,21 @@ ifndef target_os_family
 	ifeq ($(host_os_family),hpux)
 		unix_target = yes
 		target_os_family = hpux
-
-		ifeq (,$(HOSTTYPE))
-         $(error HOSTTYPE environment variable has not been set)
-		endif
-		
-		ifdef requested_target_word_size
-			ifneq (,$(findstring hppa,$(HOSTTYPE)))
-				ifeq ($(requested_target_word_size),64)
-					target_processor = hppa
-					target_word_size = 64
-				else
-					target_processor = hppa
-					target_word_size = 32
-				endif
-			else
-            $(error Platform not supported)
-			endif
-		else
-			ifneq (,$(findstring hppa,$(HOSTTYPE)))
-				target_processor = hppa
-				target_word_size = 32
-			else
-            $(error Platform not supported)
-			endif
-		endif
 	endif
+endif
+
+ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
+	submake_targets += nlm
+	netware_target = yes
+	target_os_family = netware
+	package_archive_format = zip
 endif
 
 ifndef target_os_family
 	ifeq ($(host_os_family),win)
 		win_target = yes
 		target_os_family = win
-		target_processor = x86
-		target_word_size = 32
+		package_archive_format = zip
 	endif
 endif
 	
@@ -503,17 +346,205 @@ ifndef target_os_family
    $(error Target operating system could not be determined)
 endif
 
+# -- Host word size and processor --
+
+host_native_word_size =
+host_processor_family =
+host_supported_word_sizes =
+
+ifneq (,$(PROCESSOR_ARCHITECTURE))
+	HOSTTYPE = $(PROCESSOR_ARCHITECTURE)
+endif
+
+ifeq (,$(HOSTTYPE))
+	ifneq (,$(RPM_ARCH))
+		HOSTTYPE = $(RPM_ARCH)
+	endif
+	$(error HOSTTYPE environment variable has not been set)
+endif
+	
+ifeq (,$(HOSTTYPE))
+	$(error HOSTTYPE environment variable has not been set)
+endif
+
+ifndef host_native_word_size		
+	ifneq (,$(findstring x86_64,$(HOSTTYPE)))
+		host_processor_family = x86
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size		
+	ifneq (,$(findstring x86,$(HOSTTYPE)))
+		host_processor_family = x86
+		host_native_word_size = 32
+		host_supported_word_sizes = 32
+	endif
+endif
+
+ifndef host_native_word_size		
+	ifneq (,$(findstring 86,$(HOSTTYPE)))
+		host_processor_family = x86
+		host_native_word_size = 32
+		host_supported_word_sizes = 32
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring ia64,$(HOSTTYPE)))
+		host_processor_family = ia64
+		host_native_word_size = 64
+		host_supported_word_sizes = 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring s390x,$(HOSTTYPE)))
+		host_processor_family = s390
+		host_native_word_size = 64
+		host_supported_word_sizes = 31 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring s390,$(HOSTTYPE)))
+		host_processor_family = s390
+		host_native_word_size = 31
+		host_supported_word_sizes = 31
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring ppc64,$(HOSTTYPE)))
+		host_processor_family = powerpc
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring ppc,$(HOSTTYPE)))
+		host_processor_family = powerpc
+		host_native_word_size = 32
+		host_supported_word_sizes = 32
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring sparc,$(HOSTTYPE)))
+		host_processor_family = sparc
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring powerpc,$(HOSTTYPE)))
+		host_processor_family = powerpc
+		host_native_word_size = 32
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring rs6000,$(HOSTTYPE)))
+		host_processor_family = powerpc
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring hppa,$(HOSTTYPE)))
+		host_processor_family = hppa
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+		
+ifndef host_native_word_size
+	$(error Unable to determine host word size)
+endif
+
+# -- Target word size and processor --
+
+ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
+	target_processor_family = x86
+	target_word_size = 32
+	target_supported_word_sizes = 32
+else
+	target_processor_family = $(host_processor_family)
+	target_word_size = $(host_native_word_size)
+	target_supported_word_sizes = $(host_supported_word_sizes)
+endif
+
+ifdef requested_word_size
+	ifneq (,$(findstring $(requested_word_size),$(target_supported_word_sizes)))
+		target_word_size = $(requested_word_size)
+	else
+      $(error Unsupported target word size)
+	endif
+endif
+
+# -- Helper functions --
+
+define normpath
+$(strip $(subst \,/,$(1)))
+endef
+
+ifeq (win,$(host_os_family))
+define hostpath
+$(strip $(subst /,\,$(1)))
+endef
+else
+define hostpath
+$(strip $(1))
+endef
+endif
+
+ifeq (win,$(host_os_family))
+define ppath
+$(strip $(subst \,\\,$(subst /,\,$(1))))
+endef
+else
+define ppath
+$(strip $(1))
+endef
+endif
+
+ifeq ($(package_archive_format),tar)
+   define create_archive
+		-$(ec)$(call rmcmd,$(2))
+		$(ec)tar zcf $(2) -C $(1) $(3)
+		$(ec)chmod 775 $(2)
+   endef
+
+   define extract_archive
+		$(ec)tar zxvf $(strip $(1))/$(2) -C $(1)
+   endef
+else
+   define create_archive
+		-$(ec)$(call rmcmd,$(2))
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7za) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
+   endef
+	
+   define extract_archive
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7za) x $(call hostpath,$(2))
+   endef
+endif
+
 # Platform-specific commands, directories, etc.
 
 ifeq ($(host_os_family),win)
-	allprereqs  = $(subst /,\,$+)
-	copycmd = copy /Y $(subst /,\,$(1)) $(subst /,\,$(2)) 1>NUL
-	dircopycmd = xcopy /Y /E /V /I $(subst /,\,$(1)) $(subst /,\,$(2))
-	rmcmd = if exist $(subst /,\,$(1)) del /Q $(subst /,\,$(1)) 1>NUL
-	rmdircmd = if exist $(subst /,\,$(1)) rmdir /q /s $(subst /,\,$(1)) 1>NUL
-	mkdircmd = -if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
-	runtest = cmd /C "cd $(subst /,\,$(test_dir)) && $(1) -d"
-	topdir := $(subst \,/,$(shell chdir))
+	allprereqs  = $(call hostpath,$+)
+	copycmd = copy /Y $(call hostpath,$(1)) $(call hostpath,$(2)) 1>NUL
+	dircopycmd = xcopy /Y /E /V /I $(call hostpath,$(1)) $(call hostpath,$(2))
+	rmcmd = if exist $(call hostpath,$(1)) del /Q $(call hostpath,$(1)) 1>NUL
+	rmdircmd = if exist $(call hostpath,$(1)) rmdir /q /s $(call hostpath,$(1)) 1>NUL
+	mkdircmd = -if not exist $(call hostpath,$(1)) mkdir $(call hostpath,$(1))
+	runtest = cmd /C "cd $(call hostpath,$(test_dir)) && $(1) -d"
+	topdir := $(call normpath,$(shell chdir))
 else
 	allprereqs = $+
 	copycmd = cp -f $(1) $(2)
@@ -552,33 +583,45 @@ package_srpms_dir = $(package_dir)/SRPMS
 pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
-target_path = $(build_output_dir)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
-package_bin_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor)-$(target_word_size)/$(target_build_type)
+package_bin_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 package_lib_stage_dir = $(package_bin_stage_dir)/lib
 package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
 package_static_lib_stage_dir = $(package_lib_stage_dir)/static
 package_util_stage_dir = $(package_bin_stage_dir)/util
 package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
+src_package_prefix = $(package_proj_name_and_ver)-src
+bin_package_prefix = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
 
-ifdef win_target
-	src_package_name=$(package_proj_name_and_ver)-src.zip
-	bin_package_name=$(package_proj_name_and_ver)-bin.zip
+ifeq ($(package_archive_format),tar)
+	src_package_name=$(src_package_prefix).tar.gz
+	bin_package_name=$(bin_package_prefix).tar.gz
 else
-	src_package_name=$(package_proj_name_and_ver)-src.tar.gz
-	bin_package_name=$(package_proj_name_and_ver)-bin.tar.gz
+	src_package_name=$(src_package_prefix).zip
+	bin_package_name=$(bin_package_prefix).zip
 endif
 
 inc_dirs = src util
-static_obj_dir = $(target_path)/static_obj
-obj_dir = $(target_path)/obj
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
 sample_dir = $(target_path)/sample
-shared_lib_dir = $(target_path)/lib/shared
-static_lib_dir = $(target_path)/lib/static
+lib_dir = $(target_path)/$(lib_dir_name)
+shared_lib_dir = $(lib_dir)/shared
+static_lib_dir = $(lib_dir)/static
+
+util_obj_dir = $(util_dir)/obj
+test_obj_dir = $(test_dir)/obj
+sample_obj_dir = $(sample_dir)/obj
+
+lib_obj_dir = $(static_lib_dir)/obj
+ifdef win_target
+	lib_sobj_dir = $(shared_lib_dir)/obj
+else
+	lib_sobj_dir = $(lib_obj_dir)
+endif
 
 # -- Utility variables --
 
@@ -598,39 +641,10 @@ compiler =
 
 gprintf = printf
 
-# -- Helper functions --
-
-ifdef win_target
-   define create_archive
-		-$(ec)$(call rmcmd,$(2))
-		$(ec)cmd /C "cd $(subst /,\,$(1)) && $(subst /,\,$(topdir)/7za) a -tzip -r $(subst /,\,$(2)) $(subst /,\,$(3))"
-   endef
-	
-   define extract_archive
-		$(ec)cmd /C "cd $(subst /,\,$(1)) && $(subst /,\,$(topdir)/7za x $(2))
-   endef
-endif
-
-ifdef unix_target
-   define create_archive
-		-$(ec)$(call rmcmd,$(2))
-		$(ec)tar zcf $(2) -C $(1) $(3)
-		$(ec)chmod 775 $(2)
-   endef
-
-   define extract_archive
-		$(ec)tar zxvf $(strip $(1))/$(2) -C $(1)
-   endef
-endif
-			
 # Compiler definitions and flags
 
 ccflags =
 ccdefs =
-
-ifneq (,$(findstring flm_dbg_log,$(MAKECMDGOALS)))
-	ccdefs += FLM_DBG_LOG
-endif
 
 ifeq ($(target_word_size),64)
 	ccdefs += FLM_64BIT
@@ -667,19 +681,19 @@ ifdef win_target
 
 	shared_link_flags = \
 		/DLL \
-		/DEBUG /PDB:$(subst /,\,$(@:.dll=.pdb)) \
-		/map:$(subst /,\,$(@:.dll=.map)) \
+		/DEBUG /PDB:$(call hostpath,$(@:.dll=.pdb)) \
+		/map:$(call hostpath,$(@:.dll=.map)) \
 		/INCREMENTAL:NO \
 		/NOLOGO \
-		/OUT:$(subst /,\,$@)
+		/OUT:$(call hostpath,$@)
 	
 	exe_link_flags = \
-		/DEBUG /PDB:$(subst /,\,$(@:.exe=.pdb)) \
-		/map:$(subst /,\,$(@:.exe=.map)) \
+		/DEBUG /PDB:$(call hostpath,$(@:.exe=.pdb)) \
+		/map:$(call hostpath,$(@:.exe=.map)) \
 		/INCREMENTAL:NO \
 		/FIXED:NO \
 		/NOLOGO \
-		/OUT:$(subst /,\,$@)
+		/OUT:$(call hostpath,$@)
 
 	# Libraries that our various components need to link against
 	
@@ -694,7 +708,7 @@ ifdef win_target
 
 	# Same thing for the include dirs
 
-	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),/I$(subst /,\,$(inc_dir)))
+	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),/I$(call hostpath,$(inc_dir)))
 
 	# Concatenate everything into the ccflags variable
 
@@ -754,7 +768,7 @@ ifdef unix_target
 
 	ifeq ($(compiler),g++)
 		ccflags += -Wall -Werror -fPIC
-		ifneq ($(target_processor),ia64)		
+		ifneq ($(target_processor_family),ia64)		
 			ccflags += -m$(target_word_size)
 		endif
 	endif
@@ -860,7 +874,7 @@ ifdef unix_target
 	link_flags = -o $@
 	
 	ifeq ($(compiler),g++)
-		ifneq ($(target_processor),ia64)		
+		ifneq ($(target_processor_family),ia64)		
 			shared_link_flags += -m$(target_word_size)
 			link_flags += -m$(target_word_size)
 		endif
@@ -906,6 +920,247 @@ ifdef unix_target
 	exe_link_flags = $(link_flags)
 endif
 
+##############################################################################
+#   NetWare settings
+##############################################################################
+ifdef netware_target
+	exe_suffix = .nlm
+	obj_suffix = .obj
+	lib_prefix =
+	static_lib_suffix = .lib
+	shared_lib_suffix = .nlm
+
+	ifdef WATCOM
+		wc_dir = $(WATCOM)
+	endif
+
+	ifdef watcom
+		wc_dir = $(watcom)
+	endif
+
+	ifndef wc_dir
+		wc_dir = $(WC_DIR)
+	endif
+
+	ifndef wc_dir
+      $(error Target operating system could not be determined)
+	endif
+	
+	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
+	linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
+	shared_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
+	compiler = "$(call normpath,$(wc_dir))/binnt/wpp386.exe"
+	
+	ifneq ($(build),release)
+		ccdefs += FLM_DEBUG
+	endif
+
+	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
+
+	ifeq ($(build),release)
+		ccflags += /oair
+	else
+		ccflags += /hc
+	endif
+
+	libflags += /b /q /p=256
+	link_flags = /m /l /v /s
+
+	export include = $(foreach inc_dir,$(strip $(inc_dirs)),$(call hostpath,$(inc_dir));)
+	export INCLUDE = $(include)
+	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
+	export wcc386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
+	
+   define make_lis_file_cmd
+		$(ec)$(gprintf) "option verbose\n" > $(4)
+		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
+		$(ec)$(gprintf) "option synchronize\n" >> $(4)
+		$(ec)$(gprintf) "option nod\n" >> $(4)
+		$(ec)$(gprintf) "option map\n" >> $(4)
+		$(ec)$(gprintf) "option start=FlmLoad, exit=FlmUnload, caseexact\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
+		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
+		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
+
+		$(ec)$(gprintf) "import __WSAFDIsSet\n" >> $(4)
+		$(ec)$(gprintf) "import ActivateScreen\n" >> $(4)
+		$(ec)$(gprintf) "import Alloc\n" >> $(4)
+		$(ec)$(gprintf) "import AllocateResourceTag\n" >> $(4)
+		$(ec)$(gprintf) "import atomic_dec\n" >> $(4)
+		$(ec)$(gprintf) "import atomic_inc\n" >> $(4)
+		$(ec)$(gprintf) "import atomic_xchg\n" >> $(4)
+		$(ec)$(gprintf) "import BitTest\n" >> $(4)
+		$(ec)$(gprintf) "import CEvaluateExpression\n" >> $(4)
+		$(ec)$(gprintf) "import CFindLoadModuleHandle\n" >> $(4)
+		$(ec)$(gprintf) "import CheckKeyStatus\n" >> $(4)
+		$(ec)$(gprintf) "import ClearScreen\n" >> $(4)
+		$(ec)$(gprintf) "import CloseFile\n" >> $(4)
+		$(ec)$(gprintf) "import CloseScreen\n" >> $(4)
+		$(ec)$(gprintf) "import CMovB\n" >> $(4)
+		$(ec)$(gprintf) "import CMoveFast\n" >> $(4)
+		$(ec)$(gprintf) "import ConvertPathString\n" >> $(4)
+		$(ec)$(gprintf) "import ConvertSecondsToTicks\n" >> $(4)
+		$(ec)$(gprintf) "import ConvertTicksToSeconds\n" >> $(4)
+		$(ec)$(gprintf) "import CpuCurrentProcessor\n" >> $(4)
+		$(ec)$(gprintf) "import CreateDirectory\n" >> $(4)
+		$(ec)$(gprintf) "import CreateFile\n" >> $(4)
+		$(ec)$(gprintf) "import CSetD\n" >> $(4)
+		$(ec)$(gprintf) "import DebuggerSymbolList\n" >> $(4)
+		$(ec)$(gprintf) "import DeleteDirectory\n" >> $(4)
+		$(ec)$(gprintf) "import DirectorySearch\n" >> $(4)
+		$(ec)$(gprintf) "import DirectReadFile\n" >> $(4)
+		$(ec)$(gprintf) "import DirectReadFile\n" >> $(4)
+		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(4)
+		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(4)
+		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(4)
+		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(4)
+		$(ec)$(gprintf) "import DisableInputCursor\n" >> $(4)
+		$(ec)$(gprintf) "import DisplayScreenTextWithAttribute\n" >> $(4)
+		$(ec)$(gprintf) "import DOSFirstByteBitMap\n" >> $(4)
+		$(ec)$(gprintf) "import EnableInputCursor\n" >> $(4)
+		$(ec)$(gprintf) "import EnterDebugger\n" >> $(4)
+		$(ec)$(gprintf) "import EraseFile\n" >> $(4)
+		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(4)
+		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(4)
+		$(ec)$(gprintf) "import ExportPublicSymbol\n" >> $(4)
+		$(ec)$(gprintf) "import FindAndLoadNLM\n" >> $(4)
+		$(ec)$(gprintf) "import Free\n" >> $(4)
+		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(4)
+		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(4)
+		$(ec)$(gprintf) "import GetCacheBufferSize\n" >> $(4)
+		$(ec)$(gprintf) "import GetClosestSymbol\n" >> $(4)
+		$(ec)$(gprintf) "import GetCurrentClock\n" >> $(4)
+		$(ec)$(gprintf) "import GetCurrentNumberOfCacheBuffers\n" >> $(4)
+		$(ec)$(gprintf) "import GetCurrentTime\n" >> $(4)
+		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(4)
+		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(4)
+		$(ec)$(gprintf) "import GetFileSize\n" >> $(4)
+		$(ec)$(gprintf) "import GetKey\n" >> $(4)
+		$(ec)$(gprintf) "import GetNLMAllocMemoryCounts\n" >> $(4)
+		$(ec)$(gprintf) "import GetOriginalNumberOfCacheBuffers\n" >> $(4)
+		$(ec)$(gprintf) "import GetProductMajorVersionNumber\n" >> $(4)
+		$(ec)$(gprintf) "import GetRunningProcess\n" >> $(4)
+		$(ec)$(gprintf) "import GetScreenSize\n" >> $(4)
+		$(ec)$(gprintf) "import GetSyncClockFields\n" >> $(4)
+		$(ec)$(gprintf) "import GetSystemConsoleScreen\n" >> $(4)
+		$(ec)$(gprintf) "import ImportPublicSymbol\n" >> $(4)
+		$(ec)$(gprintf) "import kCreateThread\n" >> $(4)
+		$(ec)$(gprintf) "import kCurrentThread\n" >> $(4)
+		$(ec)$(gprintf) "import kDelayThread\n" >> $(4)
+		$(ec)$(gprintf) "import kDestroyThread\n" >> $(4)
+		$(ec)$(gprintf) "import kExitThread\n" >> $(4)
+		$(ec)$(gprintf) "import kGetThreadName\n" >> $(4)
+		$(ec)$(gprintf) "import kGetThreadName\n" >> $(4)
+		$(ec)$(gprintf) "import KillMe\n" >> $(4)
+		$(ec)$(gprintf) "import kMutexAlloc\n" >> $(4)
+		$(ec)$(gprintf) "import kMutexFree\n" >> $(4)
+		$(ec)$(gprintf) "import kMutexLock\n" >> $(4)
+		$(ec)$(gprintf) "import kMutexUnlock\n" >> $(4)
+		$(ec)$(gprintf) "import kQueCount\n" >> $(4)
+		$(ec)$(gprintf) "import kReturnCurrentProcessorID\n" >> $(4)
+		$(ec)$(gprintf) "import kScheduleThread\n" >> $(4)
+		$(ec)$(gprintf) "import kSemaphoreAlloc\n" >> $(4)
+		$(ec)$(gprintf) "import kSemaphoreExamineCount\n" >> $(4)
+		$(ec)$(gprintf) "import kSemaphoreFree\n" >> $(4)
+		$(ec)$(gprintf) "import kSemaphoreSignal\n" >> $(4)
+		$(ec)$(gprintf) "import kSemaphoreTimedWait\n" >> $(4)
+		$(ec)$(gprintf) "import kSemaphoreWait\n" >> $(4)
+		$(ec)$(gprintf) "import kSetThreadLoadHandle\n" >> $(4)
+		$(ec)$(gprintf) "import kSetThreadName\n" >> $(4)
+		$(ec)$(gprintf) "import kYieldIfTimeSliceUp\n" >> $(4)
+		$(ec)$(gprintf) "import kYieldThread\n" >> $(4)
+		$(ec)$(gprintf) "import LoadModule\n" >> $(4)
+		$(ec)$(gprintf) "import LoadRules\n" >> $(4)
+		$(ec)$(gprintf) "import MapFileHandleToFCB\n" >> $(4)
+		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(4)
+		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(4)
+		$(ec)$(gprintf) "import MapVolumeNameToNumber\n" >> $(4)
+		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(4)
+		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(4)
+		$(ec)$(gprintf) "import MountVolume\n" >> $(4)
+		$(ec)$(gprintf) "import NDSCreateStreamFile\n" >> $(4)
+		$(ec)$(gprintf) "import NDSDeleteStreamFile\n" >> $(4)
+		$(ec)$(gprintf) "import NDSOpenStreamFile\n" >> $(4)
+		$(ec)$(gprintf) "import NWLocalToUnicode\n" >> $(4)
+		$(ec)$(gprintf) "import NWUnicodeToLocal\n" >> $(4)
+		$(ec)$(gprintf) "import OpenFile\n" >> $(4)
+		$(ec)$(gprintf) "import OpenScreen\n" >> $(4)
+		$(ec)$(gprintf) "import OutputToScreen\n" >> $(4)
+		$(ec)$(gprintf) "import PositionInputCursor\n" >> $(4)
+		$(ec)$(gprintf) "import PositionOutputCursor\n" >> $(4)
+		$(ec)$(gprintf) "import ReadFile\n" >> $(4)
+		$(ec)$(gprintf) "import RenameEntry\n" >> $(4)
+		$(ec)$(gprintf) "import RestartServer\n" >> $(4)
+		$(ec)$(gprintf) "import ReturnResourceTag\n" >> $(4)
+		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(4)
+		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(4)
+		$(ec)$(gprintf) "import RevokeFileHandleRights\n" >> $(4)
+		$(ec)$(gprintf) "import SetCursorStyle\n" >> $(4)
+		$(ec)$(gprintf) "import SetFileSize\n" >> $(4)
+		$(ec)$(gprintf) "import SetFileSize\n" >> $(4)
+		$(ec)$(gprintf) "import SGUIDCreate\n" >> $(4)
+		$(ec)$(gprintf) "import SizeOfAllocBlock\n" >> $(4)
+		$(ec)$(gprintf) "import StopBell\n" >> $(4)
+		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(4)
+		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(4)
+		$(ec)$(gprintf) "import UngetKey\n" >> $(4)
+		$(ec)$(gprintf) "import UnImportPublicSymbol\n" >> $(4)
+		$(ec)$(gprintf) "import UnloadRules\n" >> $(4)
+		$(ec)$(gprintf) "import VMGetDirectoryEntry\n" >> $(4)
+		$(ec)$(gprintf) "import WorkToDoListHead\n" >> $(4)
+		$(ec)$(gprintf) "import WriteFile\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_bind\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_closesocket\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_gethostbyaddr\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_gethostbyname\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_gethostname\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_htonl\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_htons\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_inet_addr\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_inet_ntoa\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_listen\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_recv\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_select\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_send\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_setsockopt\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_shutdown\n" >> $(4)
+		$(ec)$(gprintf) "import WS2_32_socket\n" >> $(4)
+		$(ec)$(gprintf) "import WSAAccept\n" >> $(4)
+		$(ec)$(gprintf) "import WSACleanup\n" >> $(4)
+		$(ec)$(gprintf) "import WSAConnect\n" >> $(4)
+		$(ec)$(gprintf) "import WSAGetLastError\n" >> $(4)
+		$(ec)$(gprintf) "import WSAStartup\n" >> $(4)
+		
+		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(ctorarst))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(dtorarst))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(undefed))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(undefmbd))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(pure_err))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stablcl))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabact))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabactv))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabmod))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(prwdata))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(moddtorr))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabadt))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8d))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8m))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8s))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(static_flaim_lib))\n" >> $(4)
+   endef
+	
+   define flm_exe_link_cmd
+		$(call make_lis_file_cmd,$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
+		$(ec)$(call hostpath,$(linker)) @$(call hostpath,$(1)/$(2).lis)
+		$(ec)$(call rmcmd,$(target_path)/$(1).lis)
+   endef
+	
+endif
+
 # -- File lists --
 
 flaim_src = \
@@ -920,10 +1175,12 @@ utilsup_src = \
 	wpscrnkb.cpp
 
 checkdb_src = \
-	checkdb.cpp
+	checkdb.cpp \
+	$(utilsup_src)
 
 rebuild_src = \
-	rebuild.cpp
+	rebuild.cpp \
+	$(utilsup_src)
 
 view_src = \
 	view.cpp \
@@ -934,53 +1191,52 @@ view_src = \
 	viewlhdr.cpp \
 	viewlfil.cpp \
 	viewmenu.cpp \
-	viewsrch.cpp
+	viewsrch.cpp \
+	$(utilsup_src)
 	
 sample_src = \
 	sample.cpp
 
 dbshell_src = \
 	dbshell.cpp \
-	flm_edit.cpp
+	flm_edit.cpp \
+	$(utilsup_src)
 	
 ut_basictest_src = \
 	flmunittest.cpp \
-	basic_test.cpp
+	basic_test.cpp \
+	$(utilsup_src)
 	
 # -- FLAIM library --
 
-flaim_obj = $(patsubst src/%.cpp,$(obj_dir)/%$(obj_suffix),$(flaim_src))
-ifdef win_target
-	flaim_static_obj = $(patsubst src/%.cpp,$(static_obj_dir)/%$(obj_suffix),$(flaim_src))
-else
-	flaim_static_obj = $(flaim_obj)
-endif
+flaim_static_obj = $(patsubst src/%.cpp,$(lib_obj_dir)/%$(obj_suffix),$(flaim_src))
+flaim_shared_obj = $(patsubst src/%.cpp,$(lib_sobj_dir)/%$(obj_suffix),$(flaim_src))
 static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
-shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
-shared_flaim_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)$(suffix_version)
+ifndef netware_target
+	shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+	shared_flaim_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)$(suffix_version)
+endif
 
 # -- Unit tests  --
 
-ut_basictest_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(ut_basictest_src))
+ut_basictest_obj = $(patsubst %.cpp,$(test_obj_dir)/%$(obj_suffix),$(ut_basictest_src))
 
 # -- Utilities  --
 
-checkdb_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(checkdb_src))
+checkdb_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(checkdb_src))
 checkdb_exe = $(util_dir)/checkdb$(exe_suffix)
 
-rebuild_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(rebuild_src))
+rebuild_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(rebuild_src))
 rebuild_exe = $(util_dir)/rebuild$(exe_suffix)
 
-view_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(view_src))
+view_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(view_src))
 view_exe = $(util_dir)/view$(exe_suffix)
 
-dbshell_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(dbshell_src))
+dbshell_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(dbshell_src))
 dbshell_exe = $(util_dir)/dbshell$(exe_suffix)
 
-sample_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(sample_src))
+sample_obj = $(patsubst %.cpp,$(sample_obj_dir)/%$(obj_suffix),$(sample_src))
 sample_exe = $(sample_dir)/sample$(exe_suffix)
-
-utilsup_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(utilsup_src))
 
 # -- Make system pattern search paths -- 
 
@@ -993,19 +1249,36 @@ libs: status dircheck $(static_flaim_lib) $(shared_flaim_lib)
 
 # -- *.cpp -> *$(obj_suffix) --
 
-$(obj_dir)/%$(obj_suffix) : %.cpp
 ifdef win_target
-	$(ec)$(compiler) $(ccflags) /DFLM_SRC /DFLM_DLL /Fd$(subst /,\,$(obj_dir))\tmp.pdb \
-		/Fo$(subst /,\,$@) $(subst /,\,$<)
-else
-	$(ec)$(gprintf) "$<\n"
-	$(ec)$(compiler) $(ccflags) -c $< -o $@
+define cpp_to_obj_template
+$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
+	$$(ec)$$(compiler) $$(ccflags) /Fo$$(call hostpath,$$@) $$(call hostpath,$$<)
+endef
 endif
 
+ifdef unix_target
+define cpp_to_obj_template
+$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
+	$$(ec)$$(gprintf) "$$<\n"
+	$$(ec)$$(compiler) $$(ccflags) -c $$< -o $$@
+endef
+endif
+
+ifdef netware_target
+define cpp_to_obj_template
+$$($(1)_obj_dir)/%$(obj_suffix) : %.cpp
+	$$(ec)$$(gprintf) "$$(notdir $$(strip $$@))\n"
+	$$(ec)$$(call hostpath,$$(compiler)) $$(call hostpath,$$<) /fo=$$(call hostpath,$$@)
+endef
+endif
+
+$(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
+
 ifdef win_target
-$(static_obj_dir)/%$(obj_suffix) : %.cpp
-	$(ec)$(compiler) $(ccflags) /Fd$(subst /,\,$(obj_dir))\tmp.pdb \
-		/Fo$(subst /,\,$@) $(subst /,\,$<)
+$(lib_sobj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /DFLM_SRC /DFLM_DLL \
+		/Fd$(call hostpath,$(lib_sobj_dir)/tmp.pdb) \
+		/Fo$(call hostpath,$@) $(call hostpath,$<)
 endif
 
 # -- flaim.lib and libflaim.a --
@@ -1013,8 +1286,9 @@ endif
 $(static_flaim_lib) : $(flaim_static_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(libr) /NOLOGO $(subst /,\,$+) /OUT:$(subst /,\,$@)	
-else
+	$(ec)$(libr) /NOLOGO $(call hostpath,$+) /OUT:$(call hostpath,$@)	
+endif
+ifdef unix_target
 	$(ec)rm -f $@
 ifeq ($(target_os_family),osx)
 	$(ec)$(libr) -static -o $@ $+
@@ -1022,14 +1296,19 @@ else
 	$(ec)$(libr) -rcs $@ $+
 endif
 endif
+ifdef netware_target
+	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/flmlib.lis)
+	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(static_flaim_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
+endif
 
 # -- flaim.dll and libflaim.so --
 
-$(shared_flaim_lib) : $(flaim_obj)
+$(shared_flaim_lib) : $(flaim_shared_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(lib_link_libs)
-else
+	$(ec)$(linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+endif
+ifdef unix_target
 	$(ec)rm -f $@
 ifeq ($(target_os_family),linux)
 	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
@@ -1048,49 +1327,51 @@ endif
 
 .PHONY : checkdb
 checkdb: status dircheck $(static_flaim_lib) $(checkdb_exe)
-$(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_flaim_lib)
+$(checkdb_exe): $(checkdb_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_exe_link_cmd)
+	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
 
 # -- rebuild --
 
 .PHONY : rebuild
 rebuild: status dircheck $(static_flaim_lib) $(rebuild_exe)
-$(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_flaim_lib)
+$(rebuild_exe): $(rebuild_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_exe_link_cmd)
+	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
 
 # -- view --
 
 .PHONY : view
 view: status dircheck $(static_flaim_lib) $(view_exe)
-$(view_exe): $(view_obj) $(utilsup_obj) $(static_flaim_lib)
+$(view_exe): $(view_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_exe_link_cmd)
-
-# -- sample --
-
-.PHONY : sample
-sample: status dircheck $(static_flaim_lib) $(sample_exe)
-$(sample_exe): $(sample_obj) $(static_flaim_lib)
-	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_exe_link_cmd)
+	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
 
 # -- dbshell --
 
 .PHONY : dbshell
 dbshell: status dircheck $(static_flaim_lib) $(dbshell_exe)
-$(dbshell_exe): $(dbshell_obj) $(utilsup_obj) $(static_flaim_lib)
+$(dbshell_exe): $(dbshell_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_exe_link_cmd)
+	$(call flm_exe_link_cmd,$(util_dir),dbshell,$(dbshell_obj))
+
+# -- sample --
+
+.PHONY : sample
+ifndef netware_target
+sample: status dircheck $(static_flaim_lib) $(sample_exe)
+$(sample_exe): $(sample_obj) $(static_flaim_lib)
+	$(ec)$(gprintf) "Linking $@ ...\n"
+	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
+endif
 
 # -- basictest --
 
 .PHONY : basictest
 basictest: status dircheck $(static_flaim_lib) $(test_dir)/basictest$(exe_suffix)
-$(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(utilsup_obj) $(static_flaim_lib)
+$(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(static_flaim_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(flm_exe_link_cmd)
+	$(call flm_exe_link_cmd,$(test_dir)basictest,$(ut_basictest_obj))
 
 # -- version --
 
@@ -1120,7 +1401,7 @@ srcdist: status dircheck docs
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	-$(ec)$(call rmdircmd,$(package_stage_dir)/util/.svn)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
-ifdef win_target
+ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
 	$(ec)$(call copycmd,printf.exe,$(package_stage_dir))
 	$(ec)$(call dircopycmd,external/w32,$(package_stage_dir)/external/w32)
@@ -1155,7 +1436,9 @@ binpackage: status
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
 	$(ec)$(call copycmd,$(static_flaim_lib),$(package_static_lib_stage_dir))
+ifdef shared_flaim_lib
 	$(ec)$(call copycmd,$(shared_flaim_lib),$(package_shared_lib_stage_dir))
+endif
 ifdef win_target
 	$(ec)$(call copycmd,$(shared_flaim_imp_lib),$(package_shared_lib_stage_dir))
 endif
@@ -1179,11 +1462,11 @@ dist: status dircheck srcdist
 		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
    endif
 	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
-ifdef win_target
+ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,7za.exe,$(package_dir)/$(package_proj_name_and_ver))
 endif
-	$(ec)make -C $(package_dir)/$(package_proj_name_and_ver) all
-	$(ec)make -C $(package_dir)/$(package_proj_name_and_ver) binpackage package_dir="$(package_dir)"
+	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
+	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(gprintf) "Distribution created.\n"
 
@@ -1201,7 +1484,7 @@ changelog:
 
 .PHONY : install
 install: libs pkgconfig
-ifndef win_target
+ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
@@ -1217,7 +1500,7 @@ endif
 
 .PHONY : uninstall
 uninstall: 
-ifndef win_target
+ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)*
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
@@ -1278,10 +1561,10 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)build\n" >> $(spec_file)
-	$(ec)$(gprintf) "make lib_dir_name=$(percent){_lib} libs\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(MAKE) lib_dir_name=$(percent){_lib} $(submake_targets) libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make rpm_build_root=$(dollar)RPM_BUILD_ROOT install_prefix=$(percent){prefix} lib_dir_name=$(percent){_lib} install\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(MAKE) rpm_build_root=$(dollar)RPM_BUILD_ROOT install_prefix=$(percent){prefix} lib_dir_name=$(percent){_lib} $(submake_targets) install\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $(build_output_dir)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)clean\n" >> $(spec_file)
@@ -1344,28 +1627,33 @@ status:
 	$(ec)$(gprintf) "===============================================================================\n"
 	$(ec)$(gprintf) "SVN Revision = $(svn_revision)\n"
 	$(ec)$(gprintf) "Host Operating System Family = $(host_os_family)\n"
-	$(ec)$(gprintf) "Top Directory = $(topdir)\n"
+	$(ec)$(gprintf) "Top Directory = $(call ppath,$(topdir))\n"
 	$(ec)$(gprintf) "Target Operating System Family = $(target_os_family)\n"
-	$(ec)$(gprintf) "Target Processor = $(target_processor)\n"
+	$(ec)$(gprintf) "Target Processor Family = $(target_processor_family)\n"
 	$(ec)$(gprintf) "Target Word Size = $(target_word_size)\n"
 	$(ec)$(gprintf) "Target Build Type = $(target_build_type)\n"
-	$(ec)$(gprintf) "Target Path = $(target_path)\n"
-	$(ec)$(gprintf) "Compiler = $(compiler)\n"
-	$(ec)$(gprintf) "Librarian = $(libr)\n"
+	$(ec)$(gprintf) "Target Path = $(call ppath,$(target_path))\n"
+	$(ec)$(gprintf) "Compiler = $(call ppath,$(compiler))\n"
+	$(ec)$(gprintf) "Librarian = $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Defines = $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
 
 .PHONY : dircheck
 dircheck:
-	$(ec)$(call mkdircmd,$(obj_dir))
-	$(ec)$(call mkdircmd,$(static_obj_dir))
+	$(ec)$(call mkdircmd,$(util_obj_dir))
+	$(ec)$(call mkdircmd,$(test_obj_dir))
+	$(ec)$(call mkdircmd,$(sample_obj_dir))
+	$(ec)$(call mkdircmd,$(lib_obj_dir))
+ifneq ($(lib_sobj_dir),$(lib_obj_dir))
+	$(ec)$(call mkdircmd,$(lib_sobj_dir))
+endif
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
 	$(ec)$(call mkdircmd,$(package_dir))
-ifndef win_target
+ifneq ($(host_os_family),win)
 	$(ec)$(call mkdircmd,$(spec_dir))
 	$(ec)$(call mkdircmd,$(package_sources_dir))
 	$(ec)$(call mkdircmd,$(package_build_dir))
@@ -1425,6 +1713,10 @@ solaris:
 
 .PHONY : osx
 osx:
+	$(ec)$(gprintf) ""
+	
+.PHONY : nlm
+nlm:
 	$(ec)$(gprintf) ""
 
 .PHONY : verbose
