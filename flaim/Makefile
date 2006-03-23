@@ -360,7 +360,7 @@ ifeq (,$(HOSTTYPE))
 	ifneq (,$(RPM_ARCH))
 		HOSTTYPE = $(RPM_ARCH)
 	endif
-	$(error HOSTTYPE environment variable has not been set)
+   $(error HOSTTYPE environment variable has not been set)
 endif
 	
 ifeq (,$(HOSTTYPE))
