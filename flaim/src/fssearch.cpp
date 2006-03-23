@@ -159,7 +159,7 @@ RCODE FSBtSearchEnd(
 		goto Exit;
 	}
 
-	flmUINT32ToBigEndian( uiDrn, key);
+	flmUINT32ToBigEndian( (FLMUINT32)uiDrn, key);
 	for(;;)
 	{
 		pStack->uiFlags = FULL_STACK;
@@ -582,7 +582,7 @@ RCODE FSBtScanNonLeafData(
 
 	// Set curElm and the key buffer.
 	pStack->uiCurElm = BH_OVHD + (uiMid << 3);
-	flmUINT32ToBigEndian( uiCurDrn, pStack->pKeyBuf);
+	flmUINT32ToBigEndian( (FLMUINT32)uiCurDrn, pStack->pKeyBuf);
 
 //Exit:
 	return( rc);

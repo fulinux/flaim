@@ -714,7 +714,7 @@ RCODE FSDataCursor::setRecPosition(
 	pOutRecPos->pStack = pOutRecPos->Stack;
 	pOutRecPos->Stack[0].pKeyBuf = pOutRecPos->pKey;
 	uiRecordId = pInRecPos->uiRecordId;
-	flmUINT32ToBigEndian( uiRecordId, buf);
+	flmUINT32ToBigEndian( (FLMUINT32)uiRecordId, buf);
 
 	// All of the variables should be setup for the search.
 	if( RC_BAD( rc = FSBtSearch( pDb, m_pLFile, &pOutRecPos->pStack,

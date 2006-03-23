@@ -329,11 +329,11 @@ RCODE FCS_DOS::writeHTD(
 
 		if( pCurNode)
 		{
-			flmUINT16ToBigEndian( GedTagNum( pCurNode), pucTmpBuf);
+			flmUINT16ToBigEndian( (FLMUINT16)GedTagNum( pCurNode), pucTmpBuf);
 		}
 		else if( pCurField)
 		{
-			flmUINT16ToBigEndian( pRecord->getFieldID( pCurField), pucTmpBuf);
+			flmUINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pCurField), pucTmpBuf);
 		}
 
 		if( RC_BAD( rc = write( pucTmpBuf, 2)))

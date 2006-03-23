@@ -334,7 +334,7 @@ FSTATIC void FSBuildNonLeafDataElement(
 		// Check for last element marker.
 		if( pOldElm[ BBE_PKC ] == 0 && pOldElm[ BBE_KL] == 0)
 		{
-			flmUINT32ToBigEndian( DRN_LAST_MARKER, pElement);
+			flmUINT32ToBigEndian( (FLMUINT32)DRN_LAST_MARKER, pElement);
 		}
 		else
 		{

@@ -1920,7 +1920,7 @@ RCODE FlmRecord::compactMemory( void)
 			
 			flmAssert( uiLevelOneFldCount < uiFieldIdTableItemCount); 
 			pFieldId->ui16FieldId = pFld->ui16FieldID;
-			pFieldId->ui32FieldOffset = uiSlot + 1;
+			pFieldId->ui32FieldOffset = (FLMUINT32)(uiSlot + 1);
 			uiLevelOneFldCount++;
 
 			if (uiLevelOneFldCount > 1  && !bNeedToSortFieldIdTable &&			

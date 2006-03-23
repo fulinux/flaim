@@ -96,7 +96,7 @@ RCODE FSReadRecord(						// Was FSRecordGet
 	pStack->pKeyBuf = pKeyBuf;
 
 	// Search the B-TREE for the record
-	flmUINT32ToBigEndian( uiDrn, pDrnBuf);
+	flmUINT32ToBigEndian( (FLMUINT32)uiDrn, pDrnBuf);
 	if( RC_OK( rc = FSBtSearch( pDb, pLFile, &pStack, pDrnBuf, 4, 0)))
 	{
 		rc = RC_SET( FERR_NOT_FOUND);

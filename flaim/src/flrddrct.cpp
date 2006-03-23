@@ -171,7 +171,7 @@ Search_Record:
 		{
 			goto Exit;
 		}
-		flmUINT32ToBigEndian( uiDrn, pSearchBuf);
+		flmUINT32ToBigEndian( (FLMUINT32)uiDrn, pSearchBuf);
 		FSInitStackCache( &stack [0], BH_MAX_LEVELS);
 		pStack = &stack[0];
 		bStackInitialized = TRUE;

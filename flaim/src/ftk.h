@@ -779,7 +779,7 @@
 					(((FLMUINT32)(((FLMUINT8 *)(bp))[1])) << 8) | \
 					(((FLMUINT32)(((FLMUINT8 *)(bp))[0]))    ) ))
 	
-		#define UW2FBA( uw, bp)	
+		#define UW2FBA( uw, bp)	\
 			(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
 					((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00)>>8))))
 	

@@ -890,7 +890,7 @@ RCODE flmIndexSetOfRecords(
 
 		uiLastDrn = 0;
 		pStack->pKeyBuf = ucKeyBuf;
-		flmUINT32ToBigEndian( uiStartDrn, ucSearchKey);
+		flmUINT32ToBigEndian( (FLMUINT32)uiStartDrn, ucSearchKey);
 
 		if (RC_BAD( rc = FSBtSearch( pDb, pDataLFile, &pStack,
 									ucSearchKey, 4, 0)))
@@ -1044,7 +1044,7 @@ RCODE flmIndexSetOfRecords(
 					FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 					pStack = stackBuf;
 					pStack->pKeyBuf = ucKeyBuf;
-					flmUINT32ToBigEndian( uiDrn, ucSearchKey);
+					flmUINT32ToBigEndian( (FLMUINT32)uiDrn, ucSearchKey);
 					if (RC_BAD( rc = FSBtSearch( pDb, pDataLFile, &pStack,
 												ucSearchKey, 4, 0)))
 					{
@@ -2719,7 +2719,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 	}
 
 	pStack->pKeyBuf = ucKeyBuf;
-	flmUINT32ToBigEndian( uiDrn, ucSearchKey);
+	flmUINT32ToBigEndian( (FLMUINT32)uiDrn, ucSearchKey);
 
 	if( RC_BAD( rc = FSBtSearch( 
 		pDb, pTrackerLFile, &pStack, ucSearchKey, 4, 0)))
