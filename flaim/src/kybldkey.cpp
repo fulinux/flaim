@@ -702,13 +702,13 @@ FSTATIC RCODE flmAddKeyPiece(
 	if( pIfd->uiFlags & IFD_CONTEXT)
 	{
 		pFromKey [uiFromKeyPos] = KY_CONTEXT_PREFIX;
-		intToByte( (FLMUINT16) pIfd->uiFldNum, &pFromKey [uiFromKeyPos + 1]);
+		flmUINT16ToBigEndian( (FLMUINT16) pIfd->uiFldNum, &pFromKey [uiFromKeyPos + 1]);
 		uiFromKeyPos += KY_CONTEXT_LEN;
 
 		if( uiUntilKeyPos + KY_CONTEXT_LEN < uiMaxKeySize)
 		{
 			pUntilKey [uiUntilKeyPos] = KY_CONTEXT_PREFIX;
-			intToByte( (FLMUINT16) pIfd->uiFldNum, &pUntilKey [uiUntilKeyPos + 1]);
+			flmUINT16ToBigEndian( (FLMUINT16) pIfd->uiFldNum, &pUntilKey [uiUntilKeyPos + 1]);
 			uiUntilKeyPos += KY_CONTEXT_LEN;
 		}
 		goto Exit;

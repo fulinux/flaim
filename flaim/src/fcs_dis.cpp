@@ -79,7 +79,7 @@ RCODE FCS_DIS::readShort(
 
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 2, NULL)))
 	{
-		ui16Value = byteToInt( (FLMBYTE *)pValue);
+		ui16Value = flmBigEndianToUINT16( (FLMBYTE *)pValue);
 		*pValue = *((FLMINT16 *)&ui16Value);
 	}
 
@@ -98,7 +98,7 @@ RCODE FCS_DIS::readUShort(
 
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 2, NULL)))
 	{
-		*pValue = byteToInt( (FLMBYTE *)pValue);
+		*pValue = flmBigEndianToUINT16( (FLMBYTE *)pValue);
 	}
 
 	return( rc);
@@ -117,7 +117,7 @@ RCODE FCS_DIS::readInt(
 
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 4, NULL)))
 	{
-		ui32Value = byteToLong( (FLMBYTE *)pValue);
+		ui32Value = flmBigEndianToUINT32( (FLMBYTE *)pValue);
 		*pValue = *((FLMINT32 *)&ui32Value);
 	}
 	
@@ -136,7 +136,7 @@ RCODE FCS_DIS::readUInt(
 
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 4, NULL)))
 	{
-		*pValue = byteToLong( (FLMBYTE *)pValue);
+		*pValue = flmBigEndianToUINT32( (FLMBYTE *)pValue);
 	}
 
 	return( rc);
@@ -155,7 +155,7 @@ RCODE FCS_DIS::readInt64(
 
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 8, NULL)))
 	{
-		ui64Value = byteToLong64( (FLMBYTE *)pValue);
+		ui64Value = flmBigEndianToUINT64( (FLMBYTE *)pValue);
 		*pValue = *((FLMINT64 *)&ui64Value);
 	}
 	
@@ -174,7 +174,7 @@ RCODE FCS_DIS::readUInt64(
 
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 8, NULL)))
 	{
-		*pValue = byteToLong64( (FLMBYTE *)pValue);
+		*pValue = flmBigEndianToUINT64( (FLMBYTE *)pValue);
 	}
 
 	return( rc);

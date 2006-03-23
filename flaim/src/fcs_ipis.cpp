@@ -210,7 +210,7 @@ RCODE FCS_IPIS::getNextPacket( void)
 			goto Exit;
 		}
 		
-		uiDescriptor = byteToInt( pucDescriptor);
+		uiDescriptor = flmBigEndianToUINT16( pucDescriptor);
 		m_uiPacketSize = uiDescriptor & 0x7FFF;
 
 		if( uiDescriptor & 0x8000)

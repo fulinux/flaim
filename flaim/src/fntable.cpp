@@ -1051,7 +1051,7 @@ ExitCS:
 
 		// Position to the first record in the B-Tree.
 
-		longToByte( (FLMUINT)0, ucDrnBuf);
+		flmUINT32ToBigEndian( 0, ucDrnBuf);
 		if (RC_BAD( rc = FSBtSearch( pDb, pLFile, &pStack,
 								ucDrnBuf, 4, ZERO_DOMAIN)))
 		{
@@ -1062,7 +1062,7 @@ ExitCS:
 
 		while (pStack->uiCmpStatus != BT_END_OF_DATA)
 		{
-			if ((uiDrn = byteToLong( ucKeyBuf)) == DRN_LAST_MARKER)
+			if ((uiDrn = flmBigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
 			{
 				break;
 			}

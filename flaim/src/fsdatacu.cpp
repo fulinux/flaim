@@ -680,7 +680,7 @@ FINLINE void setItemsFromBlock(
 	RECPOS *	pRecPos
 	)
 {
-	pRecPos->uiRecordId = byteToLong( pRecPos->pKey);
+	pRecPos->uiRecordId = flmBigEndianToUINT32( pRecPos->pKey);
 	pRecPos->uiBlockAddr = pRecPos->pStack->uiBlkAddr;
 	pRecPos->uiBlockTransId = (pRecPos->uiBlockAddr != BT_END) 
 									  ? FB2UD( &pRecPos->pStack->pBlk[ BH_TRANS_ID])
@@ -714,7 +714,7 @@ RCODE FSDataCursor::setRecPosition(
 	pOutRecPos->pStack = pOutRecPos->Stack;
 	pOutRecPos->Stack[0].pKeyBuf = pOutRecPos->pKey;
 	uiRecordId = pInRecPos->uiRecordId;
-	longToByte( uiRecordId, buf);
+	flmUINT32ToBigEndian( uiRecordId, buf);
 
 	// All of the variables should be setup for the search.
 	if( RC_BAD( rc = FSBtSearch( pDb, m_pLFile, &pOutRecPos->pStack,
@@ -731,8 +731,8 @@ RCODE FSDataCursor::setRecPosition(
 	}
 	if( bGoingForward)
 	{
-		if( pOutRecPos->pStack->uiCmpStatus == BT_END_OF_DATA
-		 || byteToLong( pOutRecPos->pKey) == DRN_LAST_MARKER)
+		if( pOutRecPos->pStack->uiCmpStatus == BT_END_OF_DATA ||
+			flmBigEndianToUINT32( pOutRecPos->pKey) == DRN_LAST_MARKER)
 		{
 			rc = RC_SET( FERR_EOF_HIT);
 			goto Exit;
@@ -740,8 +740,8 @@ RCODE FSDataCursor::setRecPosition(
 	}
 	else
 	{
-		if( (pOutRecPos->pStack->uiCmpStatus == BT_END_OF_DATA)
-		 || (byteToLong( pOutRecPos->pKey) > uiRecordId))
+		if( (pOutRecPos->pStack->uiCmpStatus == BT_END_OF_DATA) ||
+			 (flmBigEndianToUINT32( pOutRecPos->pKey) > uiRecordId))
 		{
 			// Went a little too far - go back to the previous record.
 			// Need to position back one element.
@@ -988,7 +988,7 @@ RCODE FSDataCursor::nextRec(			// FERR_OK, FERR_EOF_HIT or error
 					goto Exit;
 				}
 				bRecordGone = TRUE;
-				if( byteToLong( m_curRecPos.pKey) <=
+				if( flmBigEndianToUINT32( m_curRecPos.pKey) <=
 						m_pCurSet->untilKey.uiRecordId)
 				{
 					setItemsFromBlock( &m_curRecPos);
@@ -1135,7 +1135,8 @@ RCODE FSDataCursor::prevRec(			// FERR_OK, FERR_EOF_HIT or error
 					pCurElm = CURRENT_ELM( pStack);
 				}
 				bRecordGone = TRUE;
-				if( byteToLong( m_curRecPos.pKey) >= m_pCurSet->fromKey.uiRecordId)
+				if( flmBigEndianToUINT32( m_curRecPos.pKey) >= 
+						m_pCurSet->fromKey.uiRecordId)
 				{
 					setItemsFromBlock( &m_curRecPos);
 					break;

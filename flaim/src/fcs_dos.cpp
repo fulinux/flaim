@@ -329,11 +329,11 @@ RCODE FCS_DOS::writeHTD(
 
 		if( pCurNode)
 		{
-			intToByte( (FLMUINT16)GedTagNum( pCurNode), pucTmpBuf);
+			flmUINT16ToBigEndian( GedTagNum( pCurNode), pucTmpBuf);
 		}
 		else if( pCurField)
 		{
-			intToByte( (FLMUINT16)pRecord->getFieldID( pCurField), pucTmpBuf);
+			flmUINT16ToBigEndian( pRecord->getFieldID( pCurField), pucTmpBuf);
 		}
 
 		if( RC_BAD( rc = write( pucTmpBuf, 2)))
@@ -512,7 +512,7 @@ RCODE FCS_DOS::writeHTD(
 				*/
 				flmAssert( uiCurDataLen <= 0x0000FFFF);
 
-				intToByte( (FLMUINT16)uiCurDataLen, pucTmpBuf);
+				flmUINT16ToBigEndian( (FLMUINT16)uiCurDataLen, pucTmpBuf);
 				if( RC_BAD( rc = write( pucTmpBuf, 2)))
 				{
 					goto Exit;

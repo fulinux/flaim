@@ -34,7 +34,6 @@ FSTATIC RCODE FSConvertNonLeafTree(
 	void *	 	UserData,
 	DB_UPGRADE_INFO * pDbConvertInfo);
 
-
 FSTATIC void FSBuildNonLeafDataElement(
 	BTSK_p		pStack,
 	FLMBYTE *	pElement,
@@ -45,7 +44,6 @@ FSTATIC void FSBuildNonLeafDataElement(
 /***************************************************************************
 Desc:		File system conversions from one version to another.
 *****************************************************************************/
-
 RCODE FSVersionConversion40(
 	FDB_p			pDb,
 	FLMUINT		uiNewVersion,
@@ -92,7 +90,7 @@ RCODE FSVersionConversion40(
 			FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 			pStack = stackBuf;
 			pStack->pKeyBuf = pKeyBuf;
-			longToByte( 0, pDrnKey);
+			flmUINT32ToBigEndian( 0, pDrnKey);
 			if( RC_BAD(rc = FSBtSearch( pDb, pLFile, &pStack,
 												 pDrnKey, DIN_KEY_SIZ,0)))
 				goto Exit;
@@ -146,7 +144,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 	FLMUINT		uiBlkAddr;
 	
 	FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
-	longToByte( 0, pDrnKey);
+	flmUINT32ToBigEndian( 0, pDrnKey);
 
 	/*
 	Free the b-tree blocks that are above this lowest non-leaf level.
@@ -288,7 +286,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 			// Do callback to report progress.
 			if (fnStatusCallback)
 			{
-				pDbConvertInfo->uiDrn = byteToLong( pOldStack->pKeyBuf);
+				pDbConvertInfo->uiDrn = flmBigEndianToUINT32( pOldStack->pKeyBuf);
 				if (RC_BAD( rc = (*fnStatusCallback)( FLM_DB_UPGRADE_STATUS,
 											(void *) pDbConvertInfo,
 											(void *)0, UserData)))
@@ -336,20 +334,11 @@ FSTATIC void FSBuildNonLeafDataElement(
 		// Check for last element marker.
 		if( pOldElm[ BBE_PKC ] == 0 && pOldElm[ BBE_KL] == 0)
 		{
-			// We need to do the UNIX code in fear of misaligned memory access.
-#ifdef FLM_UNIX
-			longToByte( DRN_LAST_MARKER, pElement);
-#else
-			*(FLMUINT32 *)pElement = DRN_LAST_MARKER;
-#endif
+			flmUINT32ToBigEndian( DRN_LAST_MARKER, pElement);
 		}
 		else
 		{
-#ifdef FLM_UNIX
 			f_memcpy( pElement, pStack->pKeyBuf, DIN_KEY_SIZ);
-#else
-			*(FLMUINT32 *)pElement = *(FLMUINT32 *) pStack->pKeyBuf;
-#endif
 		}
 	}
 	else	// Old variable length 3.x format.
@@ -365,11 +354,7 @@ FSTATIC void FSBuildNonLeafDataElement(
 			pElement [ BBE_PKC ] = 0;		// Set PKC, DOMAIN to zero 
 			pElement [ BBE_KL ] = DIN_KEY_SIZ; // sizeof( FLMUINT32) or 4
 			uiElmLen = BNE_KEY_START + DIN_KEY_SIZ;
-#ifdef FLM_UNIX
 			f_memcpy( pElement + BNE_KEY_START, pStack->pKeyBuf, DIN_KEY_SIZ);
-#else
-			*(FLMUINT32 *)(pElement + BNE_KEY_START) = *(FLMUINT32 *) pStack->pKeyBuf;
-#endif
 		}
 		*ppKey = pElement + BNE_KEY_START;
 	}
@@ -378,4 +363,3 @@ FSTATIC void FSBuildNonLeafDataElement(
 	*puiElmLen = uiElmLen;
 	return;
 }
-

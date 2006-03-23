@@ -52,7 +52,7 @@ RCODE FSRecUpdate(
 
 	FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 	pStack->pKeyBuf = pKeyBuf;
-	longToByte( uiDrn, updCur.pKeyBuf);
+	flmUINT32ToBigEndian( uiDrn, updCur.pKeyBuf);
 
 	// Position to the element in the b-tree.
 
@@ -119,7 +119,7 @@ RCODE FSRecUpdate(
 		pElmBuf = updCur.pElmBuf;
 		pElmBuf[ BBE_PKC] = BBE_FIRST_FLAG;
 		pElmBuf[ BBE_KL] = DIN_KEY_SIZ;
-		longToByte( uiDrn, &pElmBuf[ BBE_KEY]);
+		flmUINT32ToBigEndian( uiDrn, &pElmBuf[ BBE_KEY]);
 
 		// BBE_RL is set in the flush routine 
 

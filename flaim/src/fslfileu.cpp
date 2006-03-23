@@ -890,7 +890,7 @@ RCODE flmIndexSetOfRecords(
 
 		uiLastDrn = 0;
 		pStack->pKeyBuf = ucKeyBuf;
-		longToByte( uiStartDrn, ucSearchKey);
+		flmUINT32ToBigEndian( uiStartDrn, ucSearchKey);
 
 		if (RC_BAD( rc = FSBtSearch( pDb, pDataLFile, &pStack,
 									ucSearchKey, 4, 0)))
@@ -909,7 +909,7 @@ RCODE flmIndexSetOfRecords(
 
 		for (;;)
 		{
-			if ((uiDrn = byteToLong( ucKeyBuf)) == DRN_LAST_MARKER)
+			if ((uiDrn = flmBigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
 			{
 				bHitEnd = TRUE;
 				break;
@@ -1044,7 +1044,7 @@ RCODE flmIndexSetOfRecords(
 					FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 					pStack = stackBuf;
 					pStack->pKeyBuf = ucKeyBuf;
-					longToByte( uiDrn, ucSearchKey);
+					flmUINT32ToBigEndian( uiDrn, ucSearchKey);
 					if (RC_BAD( rc = FSBtSearch( pDb, pDataLFile, &pStack,
 												ucSearchKey, 4, 0)))
 					{
@@ -2719,7 +2719,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 	}
 
 	pStack->pKeyBuf = ucKeyBuf;
-	longToByte( uiDrn, ucSearchKey);
+	flmUINT32ToBigEndian( uiDrn, ucSearchKey);
 
 	if( RC_BAD( rc = FSBtSearch( 
 		pDb, pTrackerLFile, &pStack, ucSearchKey, 4, 0)))
@@ -2737,7 +2737,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 
 	// Stack points to leaf element
 
-	if( (uiFoundDrn = byteToLong( ucKeyBuf)) == DRN_LAST_MARKER)
+	if( (uiFoundDrn = flmBigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
 	{
 		rc = RC_SET( FERR_EOF_HIT);
 		goto Exit;

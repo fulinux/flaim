@@ -1178,10 +1178,10 @@ RCODE FCS_WIRE::sendRecord(
 				4-byte container ID, 4-byte DRN
 			*/
 
-			longToByte( pRecord->getContainerID(), pucBufPos);
+			flmUINT32ToBigEndian( pRecord->getContainerID(), pucBufPos);
 			pucBufPos += 4;
 
-			longToByte( pRecord->getID(), pucBufPos);
+			flmUINT32ToBigEndian( pRecord->getID(), pucBufPos);
 			pucBufPos += 4;
 
 			/*

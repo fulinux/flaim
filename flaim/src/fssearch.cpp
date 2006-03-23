@@ -101,7 +101,8 @@ RCODE FSBtSearch(
 		else
 		{
 			rc = FSBtScanNonLeafData( pStack, keyLen == 1 
-			? (FLMUINT) *key : (FLMUINT) byteToLong( key));
+						? *key 
+						: flmBigEndianToUINT32( key));
 		}
 		if( RC_BAD( rc))
 		{
@@ -158,7 +159,7 @@ RCODE FSBtSearchEnd(
 		goto Exit;
 	}
 
-	longToByte( uiDrn, key);
+	flmUINT32ToBigEndian( uiDrn, key);
 	for(;;)
 	{
 		pStack->uiFlags = FULL_STACK;
@@ -525,7 +526,7 @@ RCODE FSBtScanNonLeafData(
 	{
 		uiMid = (uiLow + uiHigh) >> 1;		// (uiLow + uiHigh) / 2
 		
-		uiCurDrn = byteToLong( &pBlk[ BH_OVHD + (uiMid << 3)]);
+		uiCurDrn = flmBigEndianToUINT32( &pBlk[ BH_OVHD + (uiMid << 3)]);
 		if( uiCurDrn == 0)
 		{
 			// Special case - at the end of a rightmost block.
@@ -537,9 +538,14 @@ RCODE FSBtScanNonLeafData(
 			// Remember a data record can span multiple blocks (same DRN).
 			while( uiMid)
 			{
-				uiCurDrn = byteToLong( &pBlk[ BH_OVHD + ((uiMid - 1) << 3)]);
+				uiCurDrn = flmBigEndianToUINT32( 
+					&pBlk[ BH_OVHD + ((uiMid - 1) << 3)]);
+					
 				if( uiDrn != uiCurDrn)
+				{
 					break;
+				}
+				
 				uiMid--;
 			}
 			pStack->uiCmpStatus = BT_EQ_KEY;
@@ -576,7 +582,7 @@ RCODE FSBtScanNonLeafData(
 
 	// Set curElm and the key buffer.
 	pStack->uiCurElm = BH_OVHD + (uiMid << 3);
-	longToByte( uiCurDrn, pStack->pKeyBuf);
+	flmUINT32ToBigEndian( uiCurDrn, pStack->pKeyBuf);
 
 //Exit:
 	return( rc);

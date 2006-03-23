@@ -189,7 +189,7 @@ RCODE flmIxKeyOutput(
 			if( pIfd->uiFlags & IFD_CONTEXT)
 			{
 				if( RC_BAD( rc = flmBuildKeyPaths( pIfd,
-											(FLMUINT)byteToInt( &pucFromKey [1]),
+											flmBigEndianToUINT16( &pucFromKey [1]),
 											uiDataType, bFullFldPaths, pKey, &pvField)))
 				{
 					goto Exit;
@@ -366,7 +366,7 @@ RCODE flmIxKeyOutput(
 					default:
 						uiFromKeyLen = 5;
 
-						uiLongValue = (FLMUINT)byteToLong( pucFromKey + 1);
+						uiLongValue = flmBigEndianToUINT32( pucFromKey + 1);
 						UD2FBA( (FLMUINT32)uiLongValue, pucToKey);
 						uiToKeyLen = 4;
 						break;

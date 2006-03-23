@@ -643,7 +643,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 2];
 
-		intToByte( *((FLMUINT16 *)&i16Value), tmpBuf);
+		flmINT16ToBigEndian( i16Value, tmpBuf);
 		return( write( tmpBuf, 2));
 	}
 
@@ -652,7 +652,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 2];
 
-		intToByte( ui16Value, tmpBuf);
+		flmUINT16ToBigEndian( ui16Value, tmpBuf);
 		return( write( tmpBuf, 2));
 	}
 
@@ -661,7 +661,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 4];
 
-		longToByte( *((FLMUINT32 *)&i32Value), tmpBuf);
+		flmINT32ToBigEndian( i32Value, tmpBuf);
 		return( write( tmpBuf, 4));
 	}
 	
@@ -670,7 +670,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 4];
 
-		longToByte( ui32Value, tmpBuf);
+		flmUINT32ToBigEndian( ui32Value, tmpBuf);
 		return( write( tmpBuf, 4));
 	}
 
@@ -679,7 +679,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 8];
 
-		long64ToByte( *((FLMUINT64 *)&i64Value), tmpBuf);
+		flmINT64ToBigEndian( i64Value, tmpBuf);
 		return( write( tmpBuf, 8));
 	}
 
@@ -688,7 +688,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 8];
 
-		long64ToByte( ui64Value, tmpBuf);
+		flmUINT64ToBigEndian( ui64Value, tmpBuf);
 		return( write( tmpBuf, 8));
 	}
 	

@@ -429,7 +429,7 @@ FSTATIC RCODE flmProcessIndexedFld(
 				/* Context key (tag number). */
 
 			KeyBuf [0] = KY_CONTEXT_PREFIX;
-			intToByte( (FLMUINT16)pRecord->getFieldID( pvField ), &KeyBuf [1]);
+			flmUINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pvField ), &KeyBuf [1]);
 
 			if (RC_BAD( rc = KYAddToKrefTbl( pDb, pIxd, uiContainerNum,
 									pIfd, uiAction, uiDrn,

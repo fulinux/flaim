@@ -1139,7 +1139,7 @@ eCorruptionType flmVerifyKey(
 
 			if (pIfd->uiFlags & IFD_COMPOUND)
 			{
-				if (byteToInt( &pKey [uiJ + 1]) != pIfd->uiFldNum)
+				if (flmBigEndianToUINT16( &pKey [uiJ + 1]) != pIfd->uiFldNum)
 					return( FLM_BAD_CONTEXT_KEY);
 			}
 			else
@@ -1157,7 +1157,7 @@ eCorruptionType flmVerifyKey(
 						 uiH < uiTrueNumIxFields;
 						 uiH++, pTmpIfd++)
 				{
-					if (byteToInt( &pKey[ uiJ + 1]) == pTmpIfd->uiFldNum)
+					if (flmBigEndianToUINT16( &pKey[ uiJ + 1]) == pTmpIfd->uiFldNum)
 					{
 						break;
 					}
@@ -1650,12 +1650,8 @@ eCorruptionType flmVerifyElement(
 		{
 			f_memcpy( &ucRecBuff [uiElmPKCLen], pElmKey, uiElmKeyLen);
 		}
-		//else if (uiBlkType == BHT_NON_LEAF_DATA)
-		//{
-		//	*(FLMUINT32 *) ucRecBuff = *(FLMUINT32 *)pElmKey;
-		//}
 
-		pStateInfo->uiElmDrn = (FLMUINT)byteToLong( ucRecBuff);
+		pStateInfo->uiElmDrn = flmBigEndianToUINT32( ucRecBuff);
 		if (pStateInfo->uiElmDrn == DRN_LAST_MARKER && uiBlkType == BHT_LEAF)
 		{
 			FLMUINT	uiTempDrn;

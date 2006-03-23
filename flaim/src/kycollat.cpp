@@ -138,7 +138,7 @@ FIND_NXT:
         		/* Output the tag number. */
 
 				*pToKey = KY_CONTEXT_PREFIX;
-				intToByte( (FLMUINT16) pRecord->getFieldID( pvMatchField), &pToKey [1]);
+				flmUINT16ToBigEndian( (FLMUINT16) pRecord->getFieldID( pvMatchField), &pToKey [1]);
 				uiToKeyLen = KY_CONTEXT_LEN;
 			}
 			else
@@ -504,7 +504,7 @@ NumDone:
 			else
 			{
 				*pDest = 0x1F;
-				longToByte( FB2UD( pSrc), pDest + 1);
+				flmUINT32ToBigEndian( FB2UD( pSrc), pDest + 1);
 				uiDestLen = 5;
 				rc = FERR_OK;
 			}

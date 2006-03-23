@@ -425,7 +425,7 @@ FSTATIC RCODE bldAdjustNextDrn(
 
 		// Find the element whose DRN is DRN_LAST_MARKER
 
-		longToByte( DRN_LAST_MARKER, DrnMarker);
+		flmUINT32ToBigEndian( DRN_LAST_MARKER, DrnMarker);
 		if( RC_BAD( rc = FSBtSearch( pDb, pLFile, &pStack, DrnMarker,
 											 DIN_KEY_SIZ, 0)))
 		{

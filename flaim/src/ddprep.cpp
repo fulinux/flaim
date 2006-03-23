@@ -146,7 +146,7 @@ RCODE fdictProcessAllDictRecs(
 	// Position to the first of the data dictionary data records & read.
 	FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 	stack->pKeyBuf = btKeyBuf;
-	longToByte( 0, key);
+	flmUINT32ToBigEndian( 0, key);
 	if( RC_BAD(rc = FSBtSearch( pDb, pLFile, &stack, key, DRN_KEY_SIZ, 0 )))
 		goto Exit;
 
@@ -157,8 +157,7 @@ RCODE fdictProcessAllDictRecs(
 
 	do
 	{
-		uiDrn = (FLMUINT) byteToLong( btKeyBuf);
-		if( uiDrn == DRN_LAST_MARKER)
+		if( (uiDrn = flmBigEndianToUINT32( btKeyBuf)) == DRN_LAST_MARKER)
 		{
 			break;
 		}

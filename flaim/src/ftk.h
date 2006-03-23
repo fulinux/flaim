@@ -602,11 +602,11 @@
 	Desc: Byte order macros
 	****************************************************************************/
 	
-	FINLINE FLMUINT32 byteToLong( 
+	FINLINE FLMUINT32 flmBigEndianToUINT32( 
 		FLMBYTE *		pucBuf)
 	{
 		FLMUINT32		ui32Val = 0;
-		
+
 		ui32Val |= ((FLMUINT32)pucBuf[ 0]) << 24;
 		ui32Val |= ((FLMUINT32)pucBuf[ 1]) << 16;
 		ui32Val |= ((FLMUINT32)pucBuf[ 2]) << 8;
@@ -615,7 +615,7 @@
 		return( ui32Val);
 	}
 	
-	FINLINE FLMUINT64 byteToLong64( 
+	FINLINE FLMUINT64 flmBigEndianToUINT64( 
 		FLMBYTE *		pucBuf)
 	{
 		FLMUINT64		ui64Val = 0;
@@ -632,7 +632,7 @@
 		return( ui64Val);
 	}
 	
-	FINLINE FLMUINT16 byteToInt(
+	FINLINE FLMUINT16 flmBigEndianToUINT16(
 		FLMBYTE *		pucBuf)
 	{
 		FLMUINT16		ui16Val = 0;
@@ -643,45 +643,68 @@
 		return( ui16Val);
 	}
 	
-	FINLINE void longToByte( 
+	FINLINE void flmUINT32ToBigEndian( 
+		FLMUINT32		ui32Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui32Num >> 24);
+		pucBuf[ 1] = (FLMBYTE) (ui32Num >> 16);
+		pucBuf[ 2] = (FLMBYTE) (ui32Num >>  8);
+		pucBuf[ 3] = (FLMBYTE) (ui32Num);
+	}
+	
+	FINLINE void flmINT32ToBigEndian( 
 		FLMINT32			i32Num,
 		FLMBYTE *		pucBuf)
 	{
-		FLMUINT32		ui32Temp = (FLMUINT32)(i32Num);
-		FLMBYTE *		pucTemp = pucBuf;
-
-		pucTemp[ 0] = (FLMBYTE) (ui32Temp >> 24);
-		pucTemp[ 1] = (FLMBYTE) (ui32Temp >> 16);
-		pucTemp[ 2] = (FLMBYTE) (ui32Temp >>  8);
-		pucTemp[ 3] = (FLMBYTE) (ui32Temp);
+		pucBuf[ 0] = (FLMBYTE) (i32Num >> 24);
+		pucBuf[ 1] = (FLMBYTE) (i32Num >> 16);
+		pucBuf[ 2] = (FLMBYTE) (i32Num >>  8);
+		pucBuf[ 3] = (FLMBYTE) (i32Num);
 	}
 	
-	FINLINE void long64ToByte( 
+	FINLINE void flmINT64ToBigEndian( 
 		FLMINT64			i64Num,
 		FLMBYTE *		pucBuf)
 	{
-		FLMUINT64		ui64Temp = (FLMUINT64)i64Num;
-		FLMBYTE * 		pucTemp = pucBuf;
-		
-		pucTemp[ 0] = (FLMBYTE) (ui64Temp >> 56);
-		pucTemp[ 1] = (FLMBYTE) (ui64Temp >> 48);
-		pucTemp[ 2] = (FLMBYTE) (ui64Temp >> 40);
-		pucTemp[ 3] = (FLMBYTE) (ui64Temp >> 32);
-		pucTemp[ 4] = (FLMBYTE) (ui64Temp >> 24);
-		pucTemp[ 5] = (FLMBYTE) (ui64Temp >> 16);
-		pucTemp[ 6] = (FLMBYTE) (ui64Temp >>  8);
-		pucTemp[ 7] = (FLMBYTE) (ui64Temp);
+		pucBuf[ 0] = (FLMBYTE) (i64Num >> 56);
+		pucBuf[ 1] = (FLMBYTE) (i64Num >> 48);
+		pucBuf[ 2] = (FLMBYTE) (i64Num >> 40);
+		pucBuf[ 3] = (FLMBYTE) (i64Num >> 32);
+		pucBuf[ 4] = (FLMBYTE) (i64Num >> 24);
+		pucBuf[ 5] = (FLMBYTE) (i64Num >> 16);
+		pucBuf[ 6] = (FLMBYTE) (i64Num >>  8);
+		pucBuf[ 7] = (FLMBYTE) (i64Num);
 	}
 	
-	FINLINE void intToByte( 
+	FINLINE void flmUINT64ToBigEndian( 
+		FLMUINT64		ui64Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui64Num >> 56);
+		pucBuf[ 1] = (FLMBYTE) (ui64Num >> 48);
+		pucBuf[ 2] = (FLMBYTE) (ui64Num >> 40);
+		pucBuf[ 3] = (FLMBYTE) (ui64Num >> 32);
+		pucBuf[ 4] = (FLMBYTE) (ui64Num >> 24);
+		pucBuf[ 5] = (FLMBYTE) (ui64Num >> 16);
+		pucBuf[ 6] = (FLMBYTE) (ui64Num >>  8);
+		pucBuf[ 7] = (FLMBYTE) (ui64Num);
+	}
+	
+	FINLINE void flmINT16ToBigEndian( 
 		FLMINT16			i16Num,
 		FLMBYTE *		pucBuf)
 	{
-		FLMUINT16 	ui16Temp = (FLMUINT16)i16Num;
-		FLMBYTE * 	pucTemp = pucBuf;
-		
-		pucTemp[ 0] = (FLMBYTE) (ui16Temp >> 8);
-		pucTemp[ 1] = (FLMBYTE) (ui16Temp);
+		pucBuf[ 0] = (FLMBYTE) (i16Num >> 8);
+		pucBuf[ 1] = (FLMBYTE) (i16Num);
+	}
+	
+	FINLINE void flmUINT16ToBigEndian( 
+		FLMUINT16		ui16Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui16Num >> 8);
+		pucBuf[ 1] = (FLMBYTE) (ui16Num);
 	}
 	
 	#ifndef FLM_BIG_ENDIAN
@@ -691,7 +714,7 @@
 		#endif
 	
 		#define LO(wrd) \
-			(*(FLMUINT8  *)&wrd)
+			(*(FLMUINT8 *)&wrd)
 			
 		#define HI(wrd) \
 			(*((FLMUINT8 *)&wrd + 1))
@@ -756,7 +779,7 @@
 					(((FLMUINT32)(((FLMUINT8 *)(bp))[1])) << 8) | \
 					(((FLMUINT32)(((FLMUINT8 *)(bp))[0]))    ) ))
 	
-		#define UW2FBA( uw, bp)	\
+		#define UW2FBA( uw, bp)	
 			(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
 					((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00)>>8))))
 	

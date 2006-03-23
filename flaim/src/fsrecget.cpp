@@ -96,7 +96,7 @@ RCODE FSReadRecord(						// Was FSRecordGet
 	pStack->pKeyBuf = pKeyBuf;
 
 	// Search the B-TREE for the record
-	longToByte( uiDrn, pDrnBuf);
+	flmUINT32ToBigEndian( uiDrn, pDrnBuf);
 	if( RC_OK( rc = FSBtSearch( pDb, pLFile, &pStack, pDrnBuf, 4, 0)))
 	{
 		rc = RC_SET( FERR_NOT_FOUND);
@@ -154,7 +154,7 @@ RCODE FSReadElement(
 
 #ifdef FLM_DBG_LOG
 	flmAssert( pStack->uiKeyLen == DIN_KEY_SIZ && 
-		(FLMUINT)byteToLong( pStack->pKeyBuf) == uiDrn);
+		flmBigEndianToUINT32( pStack->pKeyBuf) == uiDrn);
 #endif
 
 	// Initialize variables

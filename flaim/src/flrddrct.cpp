@@ -171,7 +171,7 @@ Search_Record:
 		{
 			goto Exit;
 		}
-		longToByte( uiDrn, pSearchBuf);
+		flmUINT32ToBigEndian( uiDrn, pSearchBuf);
 		FSInitStackCache( &stack [0], BH_MAX_LEVELS);
 		pStack = &stack[0];
 		bStackInitialized = TRUE;
@@ -208,7 +208,7 @@ Search_Record:
 				}
 
 				if (uiKeyRelPos == BT_END_OF_DATA ||
-					 byteToLong( pKeyBuf) > uiDrn)
+					 flmBigEndianToUINT32( pKeyBuf) > uiDrn)
 				{
 
 					// Position to the last element in the block.
@@ -243,7 +243,9 @@ Search_Record:
 				goto Exit;
 			}
 		}
-		uiFoundDrn = byteToLong( pKeyBuf );
+		
+		uiFoundDrn = flmBigEndianToUINT32( pKeyBuf);
+		
 		if( uiFoundDrn == DRN_LAST_MARKER)
 		{
 			if( uiFlag & FO_EXACT)

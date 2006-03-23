@@ -784,7 +784,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		}
 		else
 		{
-			rc = FSBtScanNonLeafData( pStack, byteToLong( ucSearchKey));
+			rc = FSBtScanNonLeafData( pStack, flmBigEndianToUINT32( ucSearchKey));
 		}
 		if( RC_BAD( rc))
 		{

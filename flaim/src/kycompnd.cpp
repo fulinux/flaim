@@ -485,7 +485,7 @@ Cleanup1:
 				if( pIfd->uiFlags & IFD_CONTEXT)
 				{
 					pKeyBuf [uiKeyLen] = KY_CONTEXT_PREFIX;
-					intToByte( (FLMUINT16)pRecord->getFieldID( pvField), &pKeyBuf [uiKeyLen + 1]);
+					flmUINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pvField), &pKeyBuf [uiKeyLen + 1]);
 		   		uiKeyLen += KY_CONTEXT_LEN;
 				}
 				else if( pRecord->getDataLength( pvField))

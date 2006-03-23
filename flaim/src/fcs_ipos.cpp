@@ -134,7 +134,7 @@ RCODE	FCS_IPOS::_flush(
 
 		if( uiDescriptor)
 		{
-			intToByte( (FLMUINT16)uiDescriptor, m_pucBuffer);
+			flmUINT16ToBigEndian( (FLMUINT16)uiDescriptor, m_pucBuffer);
 
 			if( RC_BAD( rc = m_pTcpObj->write( m_pucBuffer,
 				uiLength, &uiActualCnt)))
