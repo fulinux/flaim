@@ -118,7 +118,7 @@ FLMINT ViewGetKey( void)
 										 0xFFFFFFFF, &ValEntered)) ||
 				(!ValEntered))
 			return( FALSE);
-		longToByte( Num, gv_ucViewSearchKey);
+		flmUINT32ToBigEndian( Num, gv_ucViewSearchKey);
 		gv_uiViewSearchKeyLen = 4;
 		return( TRUE);
 	}
@@ -163,7 +163,7 @@ FLMINT ViewGetKey( void)
 			}
 		}
 		gv_ucViewSearchKey [0] = KY_CONTEXT_PREFIX;
-		intToByte( (FLMUINT16)wTagType, &gv_ucViewSearchKey [1]);
+		flmUINT16ToBigEndian( (FLMUINT16)wTagType, &gv_ucViewSearchKey [1]);
 		gv_uiViewSearchKeyLen += KY_CONTEXT_LEN;
 		gv_ucViewSearchKey [gv_uiViewSearchKeyLen++] = COMPOUND_MARKER;
 

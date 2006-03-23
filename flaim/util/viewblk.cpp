@@ -2067,7 +2067,7 @@ FSTATIC FLMINT OutputNonLeafElements(
 
 			if (uiBlkType == BHT_NON_LEAF_DATA)
 			{
-				uiFixedDrn = byteToLong( StateInfo.pElm);
+				uiFixedDrn = flmBigEndianToUINT32( StateInfo.pElm);
 				TempAddrPtr = &StateInfo.pElm [BNE_DATA_CHILD_BLOCK];
 			}
 			else
