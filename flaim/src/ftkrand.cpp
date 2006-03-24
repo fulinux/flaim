@@ -59,7 +59,7 @@ implementation is correct.
 /*************************************************************************
 Desc:	Set the seed from the date and time
 *************************************************************************/
-void	f_randomize(
+FLMEXP void FLMAPI f_randomize(
 	f_randomGenerator *	pRand)
 {
 	FLMUINT	uiTime;
@@ -73,7 +73,7 @@ void	f_randomize(
 /*************************************************************************
 Desc:	initialize the seed to a known value
 *************************************************************************/
-void	f_randomSetSeed(
+FLMEXP void FLMAPI f_randomSetSeed(
 	f_randomGenerator *	pRand,
 	FLMINT32					ui32Seed)
 {
@@ -153,7 +153,7 @@ Note:
 	generator since it would continue to generate nothing but zero from
 	that point on (it IS a multiplicative generator, after all).
 *************************************************************************/
-FLMINT32		f_randomLong(
+FLMEXP FLMINT32 FLMAPI f_randomLong(
 	f_randomGenerator *	generator)
 {
 #define M		2147483647
@@ -214,7 +214,7 @@ Note:	The distance (range) between lo and hi must be no greater than
 		Therefore, f_randomChoice uses a better but slower algorithm if the
 		range is >= 1 Meg (2**20).
 *************************************************************************/
-FLMINT32		f_randomChoice(
+FLMEXP FLMINT32 FLMAPI f_randomChoice(
 	f_randomGenerator *	r,
 	FLMINT32				lo,		/* lowest allowed return value */
 	FLMINT32				hi			/* highest allowed return value */
@@ -258,7 +258,7 @@ Example:
 					life_force[ i] = 0;
 
 *************************************************************************/
-FLMINT		f_randomTruth(
+FLMEXP FLMINT FLMAPI f_randomTruth(
 	f_randomGenerator  *	pRand,
 	FLMINT					iPercentageTrue		/* 1 <= int <= 100 */
 	)

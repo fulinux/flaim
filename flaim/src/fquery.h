@@ -145,6 +145,7 @@ Structures used for the query tree and other stuff
 typedef struct FlmQueryField
 {
 	FLMUINT *				puiFldPath;		// In child-to-parent order.
+	FLMUINT *				puiPToCPath;	// In parent-to-child order.
 	CURSOR_GET_FIELD_CB	fnGetField;
 	FLMBOOL					bValidateOnly;
 	void *					pvUserData;
@@ -413,16 +414,6 @@ RCODE flmCurGetAtomVal(
 	POOL *			pPool,
 	QTYPES			eFldType,
 	FQATOM_p			pResult);
-
-RCODE flmCurGetAtomFromRec(
-	FDB *				pDb,
-	POOL *			pPool,
-	FQATOM_p			pTreeAtom,
-	FlmRecord *		pRecord,
-	QTYPES			eFldType,
-	FLMBOOL			bGetAtomVals,
-	FQATOM_p			pResult,
-	FLMBOOL			bHaveKey);
 
 RCODE flmCurEvalCriteria(
 	CURSOR_p			pCursor,

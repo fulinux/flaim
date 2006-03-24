@@ -386,6 +386,7 @@ protected:
 	HFDB 							m_hDb;
 	char							m_szFailInfo [100];
 	const char *				m_pszTestName;
+	FLMUINT						m_uiStartTime;
 
 	void beginTest( 
 		const char *			pszTestName); 
@@ -406,7 +407,8 @@ protected:
 		FLMBOOL	bPassed);
 
 	void displayTestResults(
-		FLMBOOL	bPassed);
+		FLMBOOL	bPassed,
+		FLMUINT	uiElapsedMilli);
 
 	RCODE initCleanTestState( 
 		const char  *			pszDibName);

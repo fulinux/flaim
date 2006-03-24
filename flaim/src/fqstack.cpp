@@ -495,7 +495,9 @@ void flmCurLinkLastChild(
 }
 
 /****************************************************************************
-Desc:	Put a value in an FQATOM node - so we can call it from SMI.
+Desc:	Put a value in an FQATOM node - so we can call it from SMI.  Can
+		only be used for values, not field paths.  Cannot be used for
+		unknown values.
 ****************************************************************************/
 RCODE flmPutValInAtom(
 	void *	pAtom,
@@ -527,9 +529,6 @@ RCODE flmPutValInAtom(
 			pQAtom->val.pucBuf = (FLMBYTE *)pvVal;
 			pQAtom->uiBufLen = uiValLen;
 			break;
-		case FLM_FLD_PATH:
-			pQAtom->val.QueryFld.puiFldPath = (FLMUINT *)pvVal;
-			break;
 		case FLM_UNKNOWN:
 			break;
 		default:
@@ -553,6 +552,7 @@ RCODE flmCurMakeQNode(
 	FQNODE_p *	ppQNode)
 {
 	FLMUINT *	puiTmpPath;
+	FLMUINT *	puiPToCPath;
 	FLMUINT *	puiFldPath;
 	FLMUINT		uiTmpLen = uiValLen;
 	FLMBYTE *	pTmpBuf;
@@ -622,19 +622,22 @@ RCODE flmCurMakeQNode(
 			}
 
 			if ((puiTmpPath = (FLMUINT *)GedPoolCalloc( pPool,
-				(FLMUINT)((FLMUINT)(uiPathCnt + 1) * 
+				(FLMUINT)((FLMUINT)(uiPathCnt + 1) * 2 * 
 					(FLMUINT)sizeof( FLMUINT)))) == NULL)
 			{
 				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			puiPToCPath = &puiTmpPath [uiPathCnt + 1];
 
 			puiFldPath = (FLMUINT *)pVal;
 			for (uiCnt = 0; uiCnt < uiPathCnt; uiCnt++)
 			{
 				puiTmpPath[ uiPathCnt - uiCnt - 1] = puiFldPath[ uiCnt];
+				puiPToCPath [uiCnt] = puiFldPath [uiCnt];
 			}
 			pQAtom->val.QueryFld.puiFldPath = puiTmpPath;
+			pQAtom->val.QueryFld.puiPToCPath = puiPToCPath;
 			break;
 		case FLM_BINARY_VAL:
 			if ((pTmpBuf = (FLMBYTE *)GedPoolCalloc( pPool, uiTmpLen)) == NULL)

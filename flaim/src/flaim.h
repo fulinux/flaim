@@ -2084,6 +2084,7 @@
 
 	#define FLM_USE_DEFAULT_VALUE	0x20
 	#define FLM_SINGLE_VALUED		0x40
+	#define FLM_ROOTED_PATH			0x80
 		
 	// Predefined values for special fields
 
@@ -5440,6 +5441,11 @@
 			FLMBOOL	bFindInclusive		///< OK to find next field after uiFieldID?
 			);
 
+		/// Find a level one field ID in a record.
+		void * nextLevelOneField(
+			void *	pvLastLevelOneField		///< Last level one field that was found.
+			);
+
 		void * locateFieldByPosition(
 			FLMUINT			uiPosition);
 
@@ -6753,5 +6759,146 @@
 			*pucCur = pucTmp + uiSize;
 		}
 	}
+
+	/****************************************************************************
+									Random Generation Functions
+	****************************************************************************/
+
+	#define MAX_RANDOM		2147483646L
+
+	typedef struct
+	{
+		FLMINT32 i32Seed;
+	} f_randomGenerator;
+
+	/*
+		Call f_randomSetSeed to initialize your random-number generator.  Then
+	call f_randomLong, f_randomChoice, or f_randomTruth to access the series of
+	random values.
+	  
+		Initialize your generator with f_randomSetSeed( &r, SOME_CONSTANT) to get a
+	reproducible sequence of pseudo-random numbers.  Using different constant
+	seeds will give you independent sequences.  The constant can be any number
+	between 1 and MAX_RANDOM, inclusive. 
+	  
+		Call f_randomLong to get a number randomly distributed between 1 and 
+	MAX_RANDOM.  This is the basic call, but is usually not as convenient as 
+	the subsequent functions, all of which call f_randomLong and process the 
+	result into a more useable form.
+
+				1 <= f_randomLong(&r) <= MAX_RANDOM
+	  
+		Call f_randomChoice to get a number uniformly distributed across a
+	specified range of integer values.
+	            
+				lo <= f_randomChoice(&r, lo, hi) <= hi
+	        
+		Call f_randomTruth(&r, n) to get a boolean value which is true n percent
+	of the time (0 <= n <= 100).
+	            	
+				0 <= f_randomTrue(&r, n) <= 1
+	*/
+
+	FLMEXP void FLMAPI f_randomize(
+		f_randomGenerator  *	pRand);
+
+	FLMEXP void FLMAPI f_randomSetSeed(
+		f_randomGenerator  *	pRand,
+		FLMINT32					i32seed);
+
+	FLMEXP FLMINT32 FLMAPI f_randomLong(
+		f_randomGenerator  *	pRand);
+
+	FLMEXP FLMINT32 FLMAPI f_randomChoice(
+		f_randomGenerator  *	pRand,
+		FLMINT32 				lo,
+		FLMINT32 				hi);
+
+	FLMEXP FLMINT FLMAPI f_randomTruth(
+		f_randomGenerator  *	pRand,
+		FLMINT					iPercentageTrue);
+
+	/****************************************************************************
+									Time, date, timestamp functions
+	****************************************************************************/
+	typedef struct
+	{
+		FLMUINT16   year;
+		FLMBYTE		month;
+		FLMBYTE		day;
+	} F_DATE, * F_DATE_p;
+
+	typedef struct
+	{
+		FLMBYTE		hour;
+		FLMBYTE		minute;
+		FLMBYTE		second;
+		FLMBYTE		hundredth;
+	} F_TIME, * F_TIME_p;
+
+	typedef struct
+	{
+		FLMUINT16	year;
+		FLMBYTE		month;
+		FLMBYTE		day;
+		FLMBYTE		hour;
+		FLMBYTE		minute;
+		FLMBYTE		second;
+		FLMBYTE		hundredth;
+	} F_TMSTAMP, * F_TMSTAMP_p;
+
+	FLMEXP void FLMAPI f_timeGetSeconds(
+		FLMUINT	*		puiSeconds);
+
+	FLMEXP void FLMAPI f_timeGetTimeStamp(
+		F_TMSTAMP *		pTimeStamp);
+
+	FLMEXP FLMINT FLMAPI f_timeGetLocalOffset( void);
+
+	FLMEXP void FLMAPI f_timeSecondsToDate(
+		FLMUINT			uiSeconds,
+		F_TMSTAMP *		pTimeStamp);
+
+	FLMEXP void FLMAPI f_timeDateToSeconds(
+		F_TMSTAMP *		pTimeStamp,
+		FLMUINT *		puiSeconds);
+
+	FLMEXP FLMINT FLMAPI f_timeCompareTimeStamps(
+		F_TMSTAMP *		pTimeStamp1,
+		F_TMSTAMP *		pTimeStamp2,
+		FLMUINT			uiCompareFlag);
+
+	#define COMPARE_DATE_AND_TIME	0
+	#define COMPARE_DATE_ONLY		1
+	#define COMPARE_TIME_ONLY		2
+
+	#if defined( FLM_UNIX)
+		FLMEXP FLMUINT FLMAPI f_timeGetMilliTime();
+	#endif
+
+	// Get the current time as platform-dependent timer units.
+	FLMEXP FLMUINT FLMAPI f_getCurrTimeAsTimerUnits( void);
+
+	// Convert seconds to platform-dependent timer units.
+	FLMEXP FLMUINT FLMAPI f_secondsToTimerUnits(
+		FLMUINT		uiSeconds);
+
+	// Convert platform-dependent timer units to seconds.
+	FLMEXP FLMUINT FLMAPI f_timerUnitsToSeconds(
+		FLMUINT		uiTimerUnits);
+
+	// Convert milliseconds to platform-dependent timer units.
+	FLMEXP FLMUINT FLMAPI f_milliSecondsToTimerUnits(
+		FLMUINT		uiMilliSeconds);
+
+	// Convert platform-dependent timer units to milli-seconds.
+	FLMEXP FLMUINT FLMAPI f_timerUnitsToMilliSeconds(
+		FLMUINT		uiTimerUnits);
+
+	// Return elapsed time (as platform-dependent timer units).  Input
+	// parameters must be passed in as platform-dependent timer units.
+	FLMEXP FLMUINT FLMAPI f_elapsedTimeTimerUnits(
+		FLMUINT	uiEarlierTimeTimerUnits,
+		FLMUINT	uiLaterTimeTimerUnits);
 
 #endif

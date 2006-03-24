@@ -912,6 +912,7 @@ void TestBase::beginTest(
 	m_pszTestName = pszTestName;
 	display( m_pszTestName);
 	display( " ... ");
+	m_uiStartTime = f_getCurrTimeAsTimerUnits();
 }
 
 /****************************************************************************
@@ -1083,15 +1084,18 @@ void TestBase::logTestResults(
 Desc:
 ****************************************************************************/
 void TestBase::displayTestResults(
-	FLMBOOL	bPassed)
+	FLMBOOL	bPassed,
+	FLMUINT	uiElapsedMilli)
 {
-	if (bPassed)
+	char		szResult [60];
+
+	f_sprintf( szResult, "%s (%u.%03u secs)",
+		(char *)(bPassed ? (char *)"PASS" : (char *)"FAIL"),
+		(unsigned)(uiElapsedMilli / 1000), (unsigned)(uiElapsedMilli % 1000));
+	
+	displayLine( szResult);
+	if (!bPassed)
 	{
-		displayLine( "PASS");
-	}
-	else
-	{
-		displayLine( "FAIL");
 		displayLine( m_szFailInfo);
 	}
 }
@@ -1102,7 +1106,11 @@ Desc:
 void TestBase::endTest(
 	FLMBOOL	bPassed)
 {
-	displayTestResults( bPassed);
+	FLMUINT	uiEndTime = f_getCurrTimeAsTimerUnits();
+	FLMUINT	uiElapsedMilli = f_timerUnitsToMilliSeconds(
+										f_elapsedTimeTimerUnits( m_uiStartTime, uiEndTime));
+
+	displayTestResults( bPassed, uiElapsedMilli);
 	if (m_bLog)
 	{
 		logTestResults( bPassed);

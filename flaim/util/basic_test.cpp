@@ -126,7 +126,12 @@ public:
 	RCODE resumeIndexTest(
 		FLMUINT	uiIndex);
 		
-	RCODE sortedFieldsTest( void);
+	RCODE sortedFieldsTest(
+		FLMUINT *	puiDrn);
+		
+	RCODE sortedFieldsQueryTest(
+		FLMUINT		uiDrn,
+		FLMBOOL		bDoRootedFieldPaths);
 		
 	RCODE backupRestoreDbTest( void);
 	
@@ -2031,7 +2036,8 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE IFlmTestImpl::sortedFieldsTest( void)
+RCODE IFlmTestImpl::sortedFieldsTest(
+	FLMUINT *	puiDrn)
 {
 	RCODE				rc = FERR_OK;
 	FLMBOOL			bPassed = FALSE;
@@ -2044,7 +2050,9 @@ RCODE IFlmTestImpl::sortedFieldsTest( void)
 	char				szFieldName [100];
 	FLMUINT			uiFieldId;
 	FLMUINT			uiTmp;
-	FLMUINT			uiDrn;
+	FLMUINT			uiCount;
+	FLMUINT			uiLoop1;
+	FLMUINT			uiLoop2;
 
 	beginTest( "Sorted Fields Test");
 
@@ -2065,7 +2073,7 @@ RCODE IFlmTestImpl::sortedFieldsTest( void)
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
 		goto Exit;
 	}
-	if( RC_BAD( rc = pDataRec->insertLast( 0, FLM_FIELD_TAG,
+	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
 		FLM_TEXT_TYPE, &pvDataField)))
 	{
 		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
@@ -2143,24 +2151,60 @@ RCODE IFlmTestImpl::sortedFieldsTest( void)
 
 	for (uiFieldId = 1601; uiFieldId >= 1001; uiFieldId -= 2)
 	{
-		if( RC_BAD( rc = pDataRec->insertLast( 1, uiFieldId,
-			FLM_NUMBER_TYPE, &pvDataField)))
+		// Add three instances of each field.
+		
+		for (uiCount = 1; uiCount <= 3; uiCount++)
 		{
-			MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
-			goto Exit;
-		}
-		if (RC_BAD( rc = pDataRec->setUINT( pvDataField, uiFieldId)))
-		{
-			MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
-			goto Exit;
+			if( RC_BAD( rc = pDataRec->insertLast( 1, uiFieldId,
+				FLM_NUMBER_TYPE, &pvDataField)))
+			{
+				MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+				goto Exit;
+			}
+			if (RC_BAD( rc = pDataRec->setUINT( pvDataField, uiFieldId)))
+			{
+				MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
+				goto Exit;
+			}
+			
+			// Under each field add 25 sub-fields, and under those add 5 sub-fields
+			
+			for (uiLoop1 = 0; uiLoop1 < 25; uiLoop1++)
+			{
+				if( RC_BAD( rc = pDataRec->insertLast( 2, uiFieldId,
+					FLM_NUMBER_TYPE, &pvDataField)))
+				{
+					MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+					goto Exit;
+				}
+				if (RC_BAD( rc = pDataRec->setUINT( pvDataField, uiFieldId)))
+				{
+					MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
+					goto Exit;
+				}
+				for (uiLoop2 = 0; uiLoop2 < 5; uiLoop2++)
+				{
+					if( RC_BAD( rc = pDataRec->insertLast( 3, uiFieldId,
+						FLM_NUMBER_TYPE, &pvDataField)))
+					{
+						MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+						goto Exit;
+					}
+					if (RC_BAD( rc = pDataRec->setUINT( pvDataField, uiFieldId)))
+					{
+						MAKE_ERROR_STRING( "calling setUINT", rc, m_szFailInfo);
+						goto Exit;
+					}
+				}
+			}
 		}
 	}
 	
 	// Add the data record to the data container.
 
-	uiDrn = 0;	
+	*puiDrn = 0;	
 	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
-		&uiDrn, pDataRec, 0)))
+		puiDrn, pDataRec, 0)))
 	{
 		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
 		goto Exit;
@@ -2181,9 +2225,24 @@ RCODE IFlmTestImpl::sortedFieldsTest( void)
 		if (!pvDataField)
 		{
 			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Could not find level one field #%u (incl)", (unsigned)uiFieldId);
+			f_sprintf( m_szFailInfo, "Could not find next level one after field #%u",
+				(unsigned)uiFieldId);
 			goto Exit;
 		}
+		
+		// Verify that we got the expected field ID.
+		
+		uiTmp = pDataRec->getFieldID( pvDataField);
+		if (uiTmp != uiFieldId + 1)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Incorrect field ID (%u) returned from level one field #%u (incl)",
+				(unsigned)uiTmp, (unsigned)(uiFieldId + 1));
+			goto Exit;
+		}
+		
+		// Verify that we got the expected field value.
+		
 		if (RC_BAD( rc = pDataRec->getUINT( pvDataField, &uiTmp)))
 		{
 			MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
@@ -2193,8 +2252,65 @@ RCODE IFlmTestImpl::sortedFieldsTest( void)
 		{
 			rc = RC_SET( FERR_FAILURE);
 			f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from level one field #%u (incl)",
-				(unsigned)uiTmp, (unsigned)uiFieldId);
+				(unsigned)uiTmp, (unsigned)(uiFieldId + 1));
 			goto Exit;
+		}
+		
+		// Get the next level one fields with the same ID.  Should be two more.
+		// Set uiCount to one because we have already retrieved one of them.
+
+		uiCount = 1;		
+		for (;;)
+		{
+			pvDataField = pDataRec->nextLevelOneField( pvDataField);
+			if (!pvDataField)
+			{
+				if (uiCount != 3)
+				{
+					rc = RC_SET( FERR_FAILURE);
+					f_sprintf( m_szFailInfo, "Could not get next level one field with same ID as #%u",
+										(unsigned)(uiFieldId + 1));
+					goto Exit;
+				}
+				break;
+			}
+			else
+			{
+				uiCount++;
+				if (uiCount > 3)
+				{
+					rc = RC_SET( FERR_FAILURE);
+					f_sprintf( m_szFailInfo, "Too many instances of level one fields with ID #%u",
+										(unsigned)(uiFieldId + 1));
+					goto Exit;
+				}
+				
+				// Verify that we got the expected field ID.
+				
+				uiTmp = pDataRec->getFieldID( pvDataField);
+				if (uiTmp != uiFieldId + 1)
+				{
+					rc = RC_SET( FERR_FAILURE);
+					f_sprintf( m_szFailInfo, "Incorrect field ID (%u) returned from instance #%u of level one field #%u",
+						(unsigned)uiTmp, (unsigned)uiCount, (unsigned)(uiFieldId + 1));
+					goto Exit;
+				}
+				
+				// Verify that we got the expected field value.
+				
+				if (RC_BAD( rc = pDataRec->getUINT( pvDataField, &uiTmp)))
+				{
+					MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
+					goto Exit;
+				}
+				if (uiTmp != uiFieldId + 1)
+				{
+					rc = RC_SET( FERR_FAILURE);
+					f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from instance #%u of level one field #%u",
+						(unsigned)uiTmp, (unsigned)uiCount, (unsigned)(uiFieldId + 1));
+					goto Exit;
+				}
+			}
 		}
 	}
 	
@@ -2211,33 +2327,57 @@ RCODE IFlmTestImpl::sortedFieldsTest( void)
 	
 	for (uiFieldId = 1001; uiFieldId <= 1601; uiFieldId += 2)
 	{
-		pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
-		if (!pvDataField)
+		
+		// Should be three instances to delete.
+		
+		for (uiCount = 1; uiCount <= 3; uiCount++)
 		{
-			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Could not find level one field #%u", (unsigned)uiFieldId);
-			goto Exit;
-		}
-		if (RC_BAD( rc = pCopyRec->getUINT( pvDataField, &uiTmp)))
-		{
-			MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
-			goto Exit;
-		}
-		if (uiTmp != uiFieldId)
-		{
-			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from level one field #%u",
-				(unsigned)uiTmp, (unsigned)uiFieldId);
-			goto Exit;
+			pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
+			if (!pvDataField)
+			{
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo, "Could not find instance #%u of level one field #%u",
+					(unsigned)uiCount, (unsigned)uiFieldId);
+				goto Exit;
+			}
+			
+			// Verify that we got the expected field ID.
+			
+			uiTmp = pCopyRec->getFieldID( pvDataField);
+			if (uiTmp != uiFieldId)
+			{
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo, "Incorrect field ID (%u) returned from instance #%u of level one field #%u",
+					(unsigned)uiTmp, (unsigned)uiCount, (unsigned)uiFieldId);
+				goto Exit;
+			}
+			
+			// Verify that we got the expected field value.
+			
+			if (RC_BAD( rc = pCopyRec->getUINT( pvDataField, &uiTmp)))
+			{
+				MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
+				goto Exit;
+			}
+			if (uiTmp != uiFieldId)
+			{
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from instance #%u of level one field #%u",
+					(unsigned)uiTmp, (unsigned)uiCount, (unsigned)uiFieldId);
+				goto Exit;
+			}
+			
+			// Remove the field and make sure that the find fails.
+			
+			if (RC_BAD( rc = pCopyRec->remove( pvDataField)))
+			{
+				MAKE_ERROR_STRING( "calling remove", rc, m_szFailInfo);
+				goto Exit;
+			}
 		}
 		
-		// Remove the field and make sure that the find fails.
+		// All instances should be gone now.
 		
-		if (RC_BAD( rc = pCopyRec->remove( pvDataField)))
-		{
-			MAKE_ERROR_STRING( "calling remove", rc, m_szFailInfo);
-			goto Exit;
-		}
 		pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
 		if (pvDataField)
 		{
@@ -2276,6 +2416,115 @@ Exit:
 	return( rc);
 }
 
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::sortedFieldsQueryTest(
+	FLMUINT		uiDrn,
+	FLMBOOL		bDoRootedFieldPaths)
+{
+	RCODE				rc = FERR_OK;
+	FLMBOOL			bPassed = FALSE;
+	HFCURSOR			hCursor = HFCURSOR_NULL;
+	FLMUINT			uiFieldPath [10];
+	FLMUINT			uiFlags;
+	FLMUINT32		ui32Value;
+	FLMUINT			uiLoop;
+	FlmRecord *		pRec = NULL;
+	FLMBOOL			bTransActive = FALSE;
+	char				szTest [100];
+
+	f_sprintf( szTest, "Sorted Fields Query Test, %s",
+		(char *)(bDoRootedFieldPaths ? (char *)"Rooted" : (char *)"Non-Rooted"));
+	beginTest( szTest);
+	
+	// Initialize a cursor
+	
+	if (RC_BAD( rc = FlmCursorInit( m_hDb, FLM_DATA_CONTAINER, &hCursor)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorInit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add a field path - use a field number right in the middle.
+	
+	uiFieldPath [0] = PERSON_TAG;
+	uiFieldPath [1] = 1301;
+	uiFieldPath [2] = 1301;
+	uiFieldPath [3] = 1301;
+	uiFieldPath [4] = 0;
+	uiFlags = (bDoRootedFieldPaths) ? FLM_ROOTED_PATH : 0; 
+	if (RC_BAD( rc = FlmCursorAddFieldPath( hCursor, uiFieldPath, uiFlags)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddFieldPath", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add the equals operator.
+	
+	if (RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_EQ_OP, FALSE)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add the value we are comparing to.
+	
+	ui32Value = 1301;
+	if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Value, 4)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Start a read transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_READ_TRANS, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	// Do the query 250 times.  Get a timing to print out.
+
+	for (uiLoop = 0; uiLoop < 250; uiLoop++)
+	{
+		if (RC_BAD( rc = FlmCursorFirst( hCursor, &pRec)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorFirst", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (pRec->getID() != uiDrn)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Got incorrect record back from query");
+			goto Exit;
+		}
+	}
+	bPassed = TRUE;
+	
+Exit:
+
+	if (hCursor != HFCURSOR_NULL)
+	{
+		FlmCursorFree( &hCursor);
+	}
+
+	if (pRec)
+	{
+		pRec->Release();
+	}
+	
+	if (bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+		
 /***************************************************************************
 Desc:
 ****************************************************************************/
@@ -3266,7 +3515,19 @@ RCODE IFlmTestImpl::execute( void)
 	
 	// Sorted field test
 
-	if (RC_BAD( rc = sortedFieldsTest()))
+	if (RC_BAD( rc = sortedFieldsTest( &uiDrn)))
+	{
+		goto Exit;
+	}
+	
+	// Sorted field query test - first time using rooted field path.
+	// Second time not using rooted field path.
+	
+	if (RC_BAD( rc = sortedFieldsQueryTest( uiDrn, TRUE)))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = sortedFieldsQueryTest( uiDrn, FALSE)))
 	{
 		goto Exit;
 	}

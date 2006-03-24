@@ -29,6 +29,16 @@ extern FQ_OPERATION * FQ_DoOperation[];
 FSTATIC FLMUINT flmCurEvalTrueFalse(
 	FQATOM_p			pElm);
 
+FSTATIC RCODE flmCurGetAtomFromRec(
+	FDB *				pDb,
+	POOL *			pPool,
+	FQATOM_p			pTreeAtom,
+	FlmRecord *		pRecord,
+	QTYPES			eFldType,
+	FLMBOOL			bGetAtomVals,
+	FQATOM_p			pResult,
+	FLMBOOL			bHaveKey);
+
 FSTATIC RCODE flmFieldIterate(
 	FDB *				pDb,
 	POOL *			pPool,
@@ -391,7 +401,7 @@ Desc:	Given a list of FQATOMs containing alternate field paths, finds those
 		contents of those paths.
 Ret:
 ****************************************************************************/
-RCODE flmCurGetAtomFromRec(
+FSTATIC RCODE flmCurGetAtomFromRec(
 	FDB *				pDb,
 	POOL *			pPool,
 	FQATOM_p			pTreeAtom,
@@ -403,17 +413,22 @@ RCODE flmCurGetAtomFromRec(
 {
 	RCODE			rc = FERR_OK;
 	FQATOM_p		pTmpResult = NULL;
-	FQATOM_p		pTmpQAtom;
-	void *		pField;
+	void *		pvField;
+	void *		pvLastLevelOneField;
 	FLMUINT *	puiFldPath;
 	FLMUINT		uiCurrFieldPath[ GED_MAXLVLNUM + 1];
-	FLMUINT		uiSlot;
+	FLMUINT		uiFieldLevel;
 	FLMUINT		uiTmp;
-	FLMUINT		uiFldNum;
+	FLMUINT		uiLeafFldNum;
 	FLMUINT		uiRecFldNum;
 	FLMBOOL		bFound;
 	FLMBOOL		bSavedInvisTrans;
 	FLMUINT		uiResult;
+	FLMBOOL		bPathFromRoot;
+	FLMBOOL		bUseFieldIdLookupTable;
+	FLMUINT *	puiPToCPath;
+	FLMUINT		uiHighestLevel;
+	FLMUINT		uiLevelOneFieldId;
 
 	pResult->eType = NO_TYPE;
 	if (pTreeAtom->val.QueryFld.puiFldPath [0] == FLM_MISSING_FIELD_TAG)
@@ -425,162 +440,240 @@ RCODE flmCurGetAtomFromRec(
 		goto Exit;
 	}
 
-	for (pTmpQAtom = pTreeAtom; pTmpQAtom; pTmpQAtom = pTmpQAtom->pNext)
+	flmAssert( !pTreeAtom->pNext);
+	puiFldPath = pTreeAtom->val.QueryFld.puiFldPath;
+	puiPToCPath = pTreeAtom->val.QueryFld.puiPToCPath;
+	uiLevelOneFieldId = puiPToCPath [1];
+	
+	// We are only going to do the path to root optimation if
+	// the field path is specified as having to be from the root (FLM_ROOTED_PATH)
+	// and it goes down to at least level 1 in the tree, and our record
+	// has a field id table in it.
+	
+	bPathFromRoot = (!bHaveKey &&
+						  (pTreeAtom->uiFlags & FLM_ROOTED_PATH))
+						 ? TRUE
+						 : FALSE;
+	bUseFieldIdLookupTable = (bPathFromRoot &&
+									  pRecord->fieldIdTableEnabled() &&
+									  uiLevelOneFieldId)
+									 ? TRUE
+									 : FALSE;
+	if (*puiFldPath == FLM_RECID_FIELD)
 	{
-		puiFldPath = pTmpQAtom->val.QueryFld.puiFldPath;
-		if (*puiFldPath == FLM_RECID_FIELD)
+		pResult->eType = FLM_UINT32_VAL;
+		pResult->val.uiVal = pRecord->getID();
+		goto Exit;
+	}
+	pvField = pRecord->root();
+	uiFieldLevel = 0;
+	if (bPathFromRoot)
+	{
+		// Determine the highest level we need to go down to in the record.
+		
+		uiHighestLevel = 1;
+		while (puiPToCPath [uiHighestLevel + 1])
 		{
-			pResult->eType = FLM_UINT32_VAL;
-			pResult->val.uiVal = pRecord->getID();
+			uiHighestLevel++;
+		}
+		if (puiPToCPath [0] != pRecord->getFieldID( pvField))
+		{
 			goto Exit;
 		}
-		pField = pRecord->root();
+		if (bUseFieldIdLookupTable)
+		{
+			if ((pvLastLevelOneField =
+					pRecord->findLevelOneField( uiLevelOneFieldId, FALSE)) == NULL)
+			{
+				goto Exit;
+			}
+			uiCurrFieldPath [0] = puiPToCPath [0];
+			pvField = pvLastLevelOneField;
+			uiFieldLevel = 1;
+		}
+	}
+	uiLeafFldNum = puiFldPath[ 0];
+	for (;;)
+	{
+		uiRecFldNum = pRecord->getFieldID( pvField);
+		uiCurrFieldPath[ uiFieldLevel] = uiRecFldNum;
+		
+		// When we are doing path from root, we only need to traverse
+		// back up when we are on a field that is exactly at the highest level
+		// we can go down to in the tree - no need to check any others.
+		// If we are not doing bPathFromRoot, we check all node paths.
+
+		if (uiRecFldNum == uiLeafFldNum &&
+			 (!bPathFromRoot || uiFieldLevel == uiHighestLevel))
+		{
+			bFound = TRUE;
+			
+			// We already know that puiFldPath[0] matches - it is the same
+			// as uiLeafFldNum.  Traverse back up the tree and see if
+			// the rest of the path matches.
+			
+			for (uiTmp = 1; puiFldPath[ uiTmp]; uiTmp++)
+			{
+				if (!uiFieldLevel)
+				{
+					bFound = FALSE;
+					break;
+				}
+				uiFieldLevel--;
+				if (puiFldPath[ uiTmp] != uiCurrFieldPath[ uiFieldLevel])
+				{
+					bFound = FALSE;
+					break;
+				}
+			}
+
+			// Found field in proper path.  Get the value if requested,
+			// otherwise set the result to FLM_TRUE and exit.  If a
+			// callback is set, do that first to see if it is REALLY
+			// found.
+
+			if (bFound && pTreeAtom->val.QueryFld.fnGetField)
+			{
+				CB_ENTER( pDb, &bSavedInvisTrans);
+				rc = pTreeAtom->val.QueryFld.fnGetField(
+							pTreeAtom->val.QueryFld.pvUserData, pRecord,
+							(HFDB)pDb, pTreeAtom->val.QueryFld.puiFldPath,
+							FLM_FLD_VALIDATE, NULL, &pvField, &uiResult);
+				CB_EXIT( pDb, bSavedInvisTrans);
+				if (RC_BAD( rc))
+				{
+					goto Exit;
+				}
+				if (uiResult == FLM_FALSE)
+				{
+					bFound = FALSE;
+				}
+				else if (uiResult == FLM_UNK)
+				{
+					if (bHaveKey)
+					{
+
+						// bHaveKey means we are evaluating a key.  There
+						// should only be one occurrence of the field in the
+						// key in this case.  If the callback does not know
+						// if the field really exists, we must defer judgement
+						// on this one until we can fetch the record.  Hence,
+						// we force the result to be UNKNOWN.  Note that it
+						// must be set to UNKNOWN, even if this is a field exists
+						// predicate (!bGetAtomVals).  If we set it to NO_TYPE
+						// and fall through to exist, it would get converted to
+						// a FLM_BOOL_VAL of FALSE, which is NOT what we
+						// want.
+
+						pResult->eType = FLM_UNKNOWN;
+						pResult->uiFlags = pTreeAtom->uiFlags &
+													~(FLM_IS_RIGHT_TRUNCATED_DATA |
+													  FLM_IS_LEFT_TRUNCATED_DATA);
+						if (pvField)
+						{
+							if (pRecord->isRightTruncated( pvField))
+							{
+								pResult->uiFlags |= FLM_IS_RIGHT_TRUNCATED_DATA;
+							}
+							if (pRecord->isLeftTruncated( pvField))
+							{
+								pResult->uiFlags |= FLM_IS_LEFT_TRUNCATED_DATA;
+							}
+						}
+
+						// Better not be multiple results in this case because
+						// we are evaluating a key.
+
+						flmAssert( pResult->pNext == NULL);
+						pResult->pNext = NULL;
+						goto Exit;
+					}
+					else
+					{
+						bFound = FALSE;
+					}
+				}
+			}
+
+			if (bFound)
+			{
+				if (!bGetAtomVals)
+				{
+					pResult->eType = FLM_BOOL_VAL;
+					pResult->val.uiBool = FLM_TRUE;
+					goto Exit;
+				}
+				if (!pTmpResult)
+				{
+					pTmpResult = pResult;
+				}
+				else if (pTmpResult->eType)
+				{
+					if ((pTmpResult->pNext =
+						(FQATOM_p)GedPoolCalloc( pPool, sizeof( FQATOM))) == NULL)
+					{
+						rc = RC_SET( FERR_MEM);
+						goto Exit;
+					}
+					pTmpResult = pTmpResult->pNext;
+				}
+				pTmpResult->uiFlags = pTreeAtom->uiFlags;
+				if ((rc = flmCurGetAtomVal( pRecord, pvField, pPool, eFldType,
+									pTmpResult)) == FERR_CURSOR_SYNTAX)
+				{
+					goto Exit;
+				}
+			}
+		}
+		
+		// Get the next field to process.  If bPathFromRoot is set, we will skip
+		// any fields that are at too high of levels in the record.
+		// If bUseFieldIdLookupTable is set, it means
+		// that when we get back up to level one fields, we should call the
+		// API to get the next level one field.
+		
 		for (;;)
 		{
-			uiRecFldNum = pRecord->getFieldID( pField);
-			uiSlot = pRecord->getLevel( pField);
-			uiCurrFieldPath[ uiSlot] = uiRecFldNum;
-			uiFldNum = puiFldPath[ 0];
-			if (uiRecFldNum == uiFldNum)
+			if ((pvField = pRecord->next( pvField)) == NULL)
 			{
-				bFound = TRUE;
-				for (uiTmp = 0; puiFldPath[ uiTmp]; uiSlot--, uiTmp++)
-				{
-					if (!uiSlot)
-					{
-						if ((puiFldPath[ uiTmp + 1]) ||
-							 (puiFldPath[ uiTmp] != uiCurrFieldPath[ uiSlot]))
-						{
-							bFound = FALSE;
-						}
-						break;
-					}
-					if (puiFldPath[ uiTmp] != uiCurrFieldPath[ uiSlot])
-					{
-						bFound = FALSE;
-						break;
-					}
-				}
-
-				// Found field in proper path.  Get the value if requested,
-				// otherwise set the result to FLM_TRUE and exit.  If a
-				// callback is set, do that first to see if it is REALLY
-				// found.
-
-				if (bFound && pTreeAtom->val.QueryFld.fnGetField)
-				{
-					CB_ENTER( pDb, &bSavedInvisTrans);
-					rc = pTreeAtom->val.QueryFld.fnGetField(
-								pTreeAtom->val.QueryFld.pvUserData, pRecord,
-								(HFDB)pDb, pTreeAtom->val.QueryFld.puiFldPath,
-								FLM_FLD_VALIDATE, NULL, &pField, &uiResult);
-					CB_EXIT( pDb, bSavedInvisTrans);
-					if (RC_BAD( rc))
-					{
-						goto Exit;
-					}
-					if (uiResult == FLM_FALSE)
-					{
-						bFound = FALSE;
-					}
-					else if (uiResult == FLM_UNK)
-					{
-						if (bHaveKey)
-						{
-
-							// bHaveKey means we are evaluating a key.  There
-							// should only be one occurrence of the field in the
-							// key in this case.  If the callback does not know
-							// if the field really exists, we must defer judgement
-							// on this one until we can fetch the record.  Hence,
-							// we force the result to be UNKNOWN.  Note that it
-							// must be set to UNKNOWN, even if this is a field exists
-							// predicate (!bGetAtomVals).  If we set it to NO_TYPE
-							// and fall through to exist, it would get converted to
-							// a FLM_BOOL_VAL of FALSE, which is NOT what we
-							// want.
-
-							pResult->eType = FLM_UNKNOWN;
-							pResult->uiFlags = pTreeAtom->uiFlags &
-														~(FLM_IS_RIGHT_TRUNCATED_DATA |
-														  FLM_IS_LEFT_TRUNCATED_DATA);
-							if (pField)
-							{
-								if (pRecord->isRightTruncated( pField))
-								{
-									pResult->uiFlags |= FLM_IS_RIGHT_TRUNCATED_DATA;
-								}
-								if (pRecord->isLeftTruncated( pField))
-								{
-									pResult->uiFlags |= FLM_IS_LEFT_TRUNCATED_DATA;
-								}
-							}
-
-							// Better not be multiple results in this case because
-							// we are evaluating a key.
-
-							flmAssert( pResult->pNext == NULL);
-							pResult->pNext = NULL;
-							goto Exit;
-						}
-						else
-						{
-							bFound = FALSE;
-						}
-					}
-				}
-
-				if (bFound)
-				{
-					if (!bGetAtomVals)
-					{
-						pResult->eType = FLM_BOOL_VAL;
-						pResult->val.uiBool = FLM_TRUE;
-						goto Exit;
-					}
-					if (!pTmpResult)
-					{
-						pTmpResult = pResult;
-					}
-					else if (pTmpResult->eType)
-					{
-						if ((pTmpResult->pNext =
-							(FQATOM_p)GedPoolCalloc( pPool, sizeof( FQATOM))) == NULL)
-						{
-							rc = RC_SET( FERR_MEM);
-							goto Exit;
-						}
-						pTmpResult = pTmpResult->pNext;
-					}
-					pTmpResult->uiFlags = pTreeAtom->uiFlags;
-					if ((rc = flmCurGetAtomVal( pRecord, pField, pPool, eFldType,
-										pTmpResult)) == FERR_CURSOR_SYNTAX)
-					{
-						goto Exit;
-					}
-				}
-			}
-			
-			// If the end of the record has been reached, and the last field
-			// value searched for was not found, unlink it from the result list.
-			
-			if ((pField = pRecord->next( pField)) == NULL)
-			{
-				if (pTmpResult && pTmpResult != pResult &&
-					 pTmpResult->eType == NO_TYPE)
-				{
-					FQATOM_p		pTmp;
-
-					for (pTmp = pResult;
-						  pTmp && pTmp->pNext != pTmpResult;
-						  pTmp = pTmp->pNext)
-					{
-						;
-					}
-					pTmp->pNext = NULL;
-				}
 				break;
 			}
+			uiFieldLevel = pRecord->getLevel( pvField);
+			if (!bPathFromRoot)
+			{
+				break;
+			}
+			if (uiFieldLevel > uiHighestLevel)
+			{
+				continue;
+			}
+			if (bUseFieldIdLookupTable && uiFieldLevel == 1)
+			{
+				pvLastLevelOneField = pvField = pRecord->nextLevelOneField(
+															pvLastLevelOneField);
+			}
+			break;
+		}
+		
+		// If the end of the record has been reached, and the last field
+		// value searched for was not found, unlink it from the result list.
+
+		if (!pvField)
+		{
+			if (pTmpResult && pTmpResult != pResult &&
+				 pTmpResult->eType == NO_TYPE)
+			{
+				FQATOM_p		pTmp;
+
+				for (pTmp = pResult;
+					  pTmp && pTmp->pNext != pTmpResult;
+					  pTmp = pTmp->pNext)
+				{
+					;
+				}
+				pTmp->pNext = NULL;
+			}
+			break;
 		}
 	}
 	
@@ -1298,7 +1391,7 @@ Get_Operand:
 		{
 			if (RC_BAD( rc = flmCurGetAtomFromRec( pDb, pTmpPool,
 									pTmpQNode->pQAtom, pRecord, eFldType,
-									TRUE, pTmpQAtom, bHaveKey)))
+ 									TRUE, pTmpQAtom, bHaveKey)))
 			{
 				goto Exit;
 			}

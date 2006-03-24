@@ -73,7 +73,7 @@ static FLMUINT f_timeLeapYearsSince1970(
 /****************************************************************************
 Desc:		Gets the number of seconds since 1980 or 1970.
 ****************************************************************************/
-void f_timeGetSeconds(
+FLMEXP void FLMAPI f_timeGetSeconds(
 	FLMUINT	*		puiSeconds)
 {
 #if defined( FLM_WIN)
@@ -93,7 +93,7 @@ void f_timeGetSeconds(
 /****************************************************************************
 Desc:		Gets the time stamp from the system clock.
 ****************************************************************************/
-void	f_timeGetTimeStamp(
+FLMEXP void FLMAPI f_timeGetTimeStamp(
 	F_TMSTAMP *		pTimeStamp)
 {
 #if defined( FLM_WIN)
@@ -136,7 +136,7 @@ void	f_timeGetTimeStamp(
 /****************************************************************************
 Desc:		Returns the local time bias in seconds
 ****************************************************************************/
-FLMINT f_timeGetLocalOffset( void)
+FLMEXP FLMINT FLMAPI f_timeGetLocalOffset( void)
 {
 	FLMINT		iOffset = 0;
 
@@ -217,7 +217,7 @@ static FLMUINT f_timeLeapYearsSince1970(
 /****************************************************************************
 Desc:		Convert from seconds to the F_TMSTAMP structure.
 ****************************************************************************/
-void	f_timeSecondsToDate(
+FLMEXP void FLMAPI f_timeSecondsToDate(
 	FLMUINT 			uiSeconds,
 	F_TMSTAMP *		date)
 {
@@ -273,7 +273,7 @@ void	f_timeSecondsToDate(
 /****************************************************************************
 Desc:		Convert a time stamp to the number of seconds.
 ****************************************************************************/
-void	f_timeDateToSeconds(
+FLMEXP void FLMAPI f_timeDateToSeconds(
 	F_TMSTAMP *		pTimeStamp,			// [in] - time stamp of date
 	FLMUINT *		puiSeconds)			// [out] - seconds of time stamp
 {
@@ -281,7 +281,7 @@ void	f_timeDateToSeconds(
 	FLMUINT			uiDays = 0;
 
 	// is date past max?
-	if( f_timeCompareTimeStamps( pTimeStamp, &maxdate, 0) > 0)
+	if( f_timeCompareTimeStamps( pTimeStamp, &maxdate, COMPARE_DATE_AND_TIME) > 0)
 	{
 			*pTimeStamp = maxdate;
 	}
@@ -309,12 +309,12 @@ void	f_timeDateToSeconds(
 /****************************************************************************
 Desc:	Compare two time stamps
 ****************************************************************************/
-FLMINT f_timeCompareTimeStamps(
+FLMEXP FLMINT FLMAPI f_timeCompareTimeStamps(
 	F_TMSTAMP *		pTimeStamp1,
 	F_TMSTAMP *		pTimeStamp2,
-	FLMUINT			flag)
+	FLMUINT			uiCompareFlag)
 {
-	if( flag != 2)				/* not comparing times only	*/
+	if( uiCompareFlag != COMPARE_TIME_ONLY)				/* not comparing times only	*/
 	{
 		if( pTimeStamp1->year != pTimeStamp2->year) 
 		{
@@ -329,7 +329,7 @@ FLMINT f_timeCompareTimeStamps(
 			return((pTimeStamp1->day < pTimeStamp2->day) ? -1 : 1);
 		}
 	}
-	if( flag != 1)
+	if( uiCompareFlag != COMPARE_DATE_ONLY)
 	{
 		if( pTimeStamp1->hour != pTimeStamp2->hour) 	
 		{
@@ -351,7 +351,7 @@ FLMINT f_timeCompareTimeStamps(
 Desc:		Get the current time in milliseconds.
 ****************************************************************************/
 #if defined( FLM_UNIX)
-unsigned f_timeGetMilliTime()
+FLMEXP FLMUINT FLMAPI f_timeGetMilliTime()
 {
 #ifdef FLM_SOLARIS
 	static hrtime_t epoch = 0;
@@ -360,7 +360,7 @@ unsigned f_timeGetMilliTime()
 	if (!epoch)
 		epoch = now;
 
-	return( (unsigned)((now - epoch) / (1000 * 1000)));
+	return( (FLMUINT)((now - epoch) / (1000 * 1000)));
 #else
 	static int epoch = 0;
 	struct timeval tv;
@@ -369,7 +369,74 @@ unsigned f_timeGetMilliTime()
 	if (!epoch)
 		epoch = tv.tv_sec;
 	
-	return (tv.tv_sec - epoch) * 1000 + tv.tv_usec / 1000;
+	return( (FLMUINT)((tv.tv_sec - epoch) * 1000 + tv.tv_usec / 1000));
 #endif
 }
 #endif
+
+/****************************************************************************
+Desc:	Get the current time as platform-dependent timer units.
+****************************************************************************/
+FLMEXP FLMUINT FLMAPI f_getCurrTimeAsTimerUnits( void)
+{
+	return( FLM_GET_TIMER());
+}
+
+/****************************************************************************
+Desc:	Convert seconds to platform-dependent timer units.
+****************************************************************************/
+FLMEXP FLMUINT FLMAPI f_secondsToTimerUnits(
+	FLMUINT		uiSeconds)
+{
+	FLMUINT	uiTimerUnits;
+
+	FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTimerUnits);
+	return( uiTimerUnits);
+}
+
+/****************************************************************************
+Desc:	Convert platform-dependent timer units to seconds.
+****************************************************************************/
+FLMEXP FLMUINT FLMAPI f_timerUnitsToSeconds(
+	FLMUINT		uiTimerUnits)
+{
+	FLMUINT	uiSeconds;
+
+	FLM_TIMER_UNITS_TO_SECS( uiTimerUnits, uiSeconds);
+	return( uiSeconds);
+}
+
+/****************************************************************************
+Desc:	Convert milliseconds to platform-dependent timer units.
+****************************************************************************/
+FLMEXP FLMUINT FLMAPI f_milliSecondsToTimerUnits(
+	FLMUINT		uiMilliSeconds)
+{
+	FLMUINT	uiTimerUnits;
+
+	FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTimerUnits);
+	return( uiTimerUnits);
+}
+
+/****************************************************************************
+Desc:	Convert platform-dependent timer units to milli-seconds.
+****************************************************************************/
+FLMEXP FLMUINT FLMAPI f_timerUnitsToMilliSeconds(
+	FLMUINT		uiTimerUnits)
+{
+	FLMUINT	uiMilliSeconds;
+
+	FLM_TIMER_UNITS_TO_MILLI( uiTimerUnits, uiMilliSeconds);
+	return( uiMilliSeconds);
+}
+
+/****************************************************************************
+Desc:	Return elapsed time (as platform-dependent timer units).  Input
+		parameters must be passed in as platform-dependent timer units.
+****************************************************************************/
+FLMEXP FLMUINT FLMAPI f_elapsedTimeTimerUnits(
+	FLMUINT	uiEarlierTimeTimerUnits,
+	FLMUINT	uiLaterTimeTimerUnits)
+{
+	return( FLM_ELAPSED_TIME( uiLaterTimeTimerUnits, uiEarlierTimeTimerUnits));
+}

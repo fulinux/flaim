@@ -5176,6 +5176,18 @@ FIELD_ID * FlmRecord::findFieldId(
 
 			// Found Match
 			
+			// If ui32FieldOffset was not set, we need to
+			// backtrack to find the lowest one that matches
+			
+			if (!ui32FieldOffset)
+			{
+				while (uiMid && pFieldIdTable [uiMid-1].ui16FieldId == ui16FieldId)
+				{
+					uiMid--;
+				}
+			}
+				
+			
 			pFieldId = &pFieldIdTable [uiMid];
 			if (puiInsertPos)
 			{
@@ -5387,6 +5399,47 @@ void * FlmRecord::findLevelOneField(
 		{
 			pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiInsertPos;
 			pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+		}
+	}
+	else
+	{
+		flmAssert( m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED);
+	}
+	return( pvField);
+}
+
+/******************************************************************************
+Desc:	Find a level one field in the record.
+******************************************************************************/
+void * FlmRecord::nextLevelOneField(
+	void *	pvLastLevelOneField)
+{
+	FLMUINT16	ui16FieldId = (FLMUINT16)getFieldID( pvLastLevelOneField);
+	FIELDLINK	ui32FieldOffset = (FIELDLINK)((FLMUINT)pvLastLevelOneField);
+	FLMUINT		uiInsertPos;
+	FIELD_ID *	pFieldId;
+	void *		pvField = NULL;
+	
+	if (m_pucFieldIdTable)
+	{
+		if ((pFieldId = findFieldId( ui16FieldId, ui32FieldOffset,
+											&uiInsertPos)) != NULL)
+		{
+			
+			// See if there is a next field in the array.
+			
+			if (uiInsertPos + 1 < getFieldIdTableItemCount( m_pucFieldIdTable))
+			{
+				
+				// See if the next field in the array has the same field ID as
+				// the one we're looking for.
+				
+				pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiInsertPos + 1;
+				if (pFieldId->ui16FieldId == ui16FieldId)
+				{
+					pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+				}
+			}
 		}
 	}
 	else
