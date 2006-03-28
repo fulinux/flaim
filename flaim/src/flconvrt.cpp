@@ -24,9 +24,9 @@
 
 #include "flaimsys.h"
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Upgrades a database to the latest FLAIM version.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbUpgrade(
 	HFDB				hDb,		
 	FLMUINT			uiNewVersion,
@@ -90,13 +90,14 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 
 	switch (uiOldVersion)
 	{
-		case FLM_VER_3_0:
-		case FLM_VER_3_02:
-		case FLM_VER_4_0:
-		case FLM_VER_4_3:
-		case FLM_VER_4_31:
-		case FLM_VER_4_50:
-		case FLM_VER_4_51:
+		case FLM_FILE_FORMAT_VER_3_0:
+		case FLM_FILE_FORMAT_VER_3_02:
+		case FLM_FILE_FORMAT_VER_4_0:
+		case FLM_FILE_FORMAT_VER_4_3:
+		case FLM_FILE_FORMAT_VER_4_31:
+		case FLM_FILE_FORMAT_VER_4_50:
+		case FLM_FILE_FORMAT_VER_4_51:
+		case FLM_FILE_FORMAT_VER_4_60:
 
 			// Upgrades from these versions are supported.
 
@@ -108,12 +109,13 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 
 	switch (uiNewVersion)
 	{
-		case FLM_VER_4_3:
-		case FLM_VER_4_31:
-		case FLM_VER_4_50:
-		case FLM_VER_4_51:
-		case FLM_CURRENT_VERSION_NUM:
-
+		case FLM_FILE_FORMAT_VER_4_3:
+		case FLM_FILE_FORMAT_VER_4_31:
+		case FLM_FILE_FORMAT_VER_4_50:
+		case FLM_FILE_FORMAT_VER_4_51:
+		case FLM_FILE_FORMAT_VER_4_60:
+		case FLM_CUR_FILE_FORMAT_VER_NUM:
+		{
 			// Verify that we can do the upgrade
 
 			if (uiNewVersion < uiOldVersion)
@@ -123,15 +125,19 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 			}
 			else if (uiNewVersion == uiOldVersion)
 			{
-
 				// No need to do upgrade - already there.
 
 				goto Exit;
 			}
+			
 			break;
+		}
+		
 		default:
+		{
 			rc = RC_SET( FERR_UNALLOWED_UPGRADE);
 			goto Exit;
+		}
 	}
 
 	// Save the state of RFL logging flag.
@@ -209,13 +215,14 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 	// If version is prior to 4.0, upgrade the non-leaf blocks in
 	// container B-Trees.
 
-	if (uiOldVersion < FLM_VER_4_0 && uiNewVersion >= FLM_VER_4_0)
+	if (uiOldVersion < FLM_FILE_FORMAT_VER_4_0 && 
+		 uiNewVersion >= FLM_FILE_FORMAT_VER_4_0)
 	{
 
 		// Upgrade non-leaf blocks in container B-Trees.
 
-		if (RC_BAD( rc = FSVersionConversion40( pDb, FLM_CURRENT_VERSION_NUM,
-				fnStatusCallback, UserData)))
+		if (RC_BAD( rc = FSVersionConversion40( pDb, 
+				FLM_CUR_FILE_FORMAT_VER_NUM, fnStatusCallback, UserData)))
 		{
 			goto Exit;
 		}
@@ -223,7 +230,8 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 
 	// If versions is pre-4.3, upgrade log header and RFL stuff.
 
-	if (uiOldVersion < FLM_VER_4_3 && uiNewVersion >= FLM_VER_4_3)
+	if (uiOldVersion < FLM_FILE_FORMAT_VER_4_3 && 
+		 uiNewVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// Initialize backup options
@@ -332,7 +340,8 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 		bExpandingFileCount = TRUE;
 	}
 
-	if (uiOldVersion < FLM_VER_4_31 && uiNewVersion >= FLM_VER_4_31)
+	if (uiOldVersion < FLM_FILE_FORMAT_VER_4_31 && 
+		 uiNewVersion >= FLM_FILE_FORMAT_VER_4_31)
 	{
 
 		// NOTE: We could really set the LOG_LAST_RFL_COMMIT_ID to anything,
@@ -346,7 +355,8 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 
 #ifdef FLM_USE_NICI
 
-	if (uiOldVersion < FLM_VER_4_60 && uiNewVersion >= FLM_VER_4_60)
+	if (uiOldVersion < FLM_FILE_FORMAT_VER_4_60 && 
+		 uiNewVersion >= FLM_FILE_FORMAT_VER_4_60)
 	{
 
 		if( RC_BAD( rc = flmCommitDbTrans( pDb, 0, TRUE)))
@@ -415,7 +425,8 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 	// Makes no sense before that because prior to 4.30 there was no
 	// possibility of keeping RFL files and doing a restore from them.
 
-	if (!(pDb->uiFlags & FDB_REPLAYING_RFL) && uiOldVersion >= FLM_VER_4_3)
+	if (!(pDb->uiFlags & FDB_REPLAYING_RFL) && 
+		 uiOldVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		// We would have turned logging OFF above, so we need to
 		// turn it back on here.
@@ -469,7 +480,8 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 	// Set up to use a new RFL directory.  Must do this only after
 	// setting FileHdr.uiVersionNum above.
 
-	if (uiOldVersion < FLM_VER_4_3 && uiNewVersion >= FLM_VER_4_3)
+	if (uiOldVersion < FLM_FILE_FORMAT_VER_4_3 &&
+		 uiNewVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		char	szTmpName [F_PATH_MAX_SIZE];
 
@@ -547,9 +559,9 @@ Exit:
 	return( rc );
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Adds an encryption key to the database.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmEnableEncryption(
 	HFDB				hDb,
 	FLMBYTE **		ppucWrappingKeyRV,
@@ -565,7 +577,7 @@ FLMEXP RCODE FLMAPI FlmEnableEncryption(
 	FLMUINT		uiFlags = FLM_GET_TRANS_FLAGS( FLM_UPDATE_TRANS);
 	FLMBOOL		bTransBegun = FALSE;
 
-	// We must will start our own transaction.  Then we will force a checkpoint
+	// We must start our own transaction.  Then we will force a checkpoint
 	// when we commit the transaction
 
 	if ( pDb->uiTransType != FLM_NO_TRANS)
@@ -675,10 +687,10 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Changes the way the database key is stored in the database.  Either
 		it is encrypted using a password or it is wrapped in the server key.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbWrapKey(
 	HFDB					hDb,
 	const char *		pszPassword)

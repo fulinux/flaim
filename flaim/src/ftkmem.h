@@ -76,7 +76,7 @@
 
 	FLMUINT * memWalkStack( void);
 
-	typedef struct F_MemHdrTag
+	typedef struct F_MEM_HDR
 	{
 		FLMUINT			uiDataSize;
 	#ifdef FLM_DEBUG

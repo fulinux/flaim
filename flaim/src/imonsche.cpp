@@ -47,7 +47,7 @@ RCODE F_SCacheBlockPage::display(
 	FLMUINT			uiBlkAddress = 0;
 	FLMUINT			uiLowTransID = 0;
 	FLMUINT			uiHighTransID = 0;
-	FFILE_p			pFile;
+	FFILE *			pFile;
 	FLMBOOL			bHighlight = FALSE;
 	char *			pszTemp = NULL;
 	char *			pszTemp1 = NULL;
@@ -326,7 +326,7 @@ RCODE F_SCacheBlockPage::display(
 
 	printTableRowStart( bHighlight = ~bHighlight);
 	fnPrintf( m_pHRequest, TD_s "<td><A href=%s>pFile</A></td>\n"
-				"<td>FFILE_p</td>\n<td><A HREF=%s>%s</a></td>\n",
+				"<td>FFILE *</td>\n<td><A HREF=%s>%s</a></td>\n",
 				szOffsetTable[1], pszFFileRequest, pszFFileRequest, szAddressTable[1]);
 	printTableRowEnd();
 
@@ -355,7 +355,7 @@ RCODE F_SCacheBlockPage::display(
 	{
 		fnPrintf( m_pHRequest,
 			TD_s
-			" <td> <A HREF=\"javascript:openPopup('%s')\"> pNotifyList </A> </td>	<td>FNOTIFY_p</td> "
+			" <td> <A HREF=\"javascript:openPopup('%s')\"> pNotifyList </A> </td>	<td>FNOTIFY *</td> "
 			"<td> <A HREF=\"javascript:openPopup('%s')\"> %s </A> </td>",
 			szOffsetTable[3], pszSCacheNotifyListRequest,
 			pszSCacheNotifyListRequest, szAddressTable[2]);
@@ -363,7 +363,7 @@ RCODE F_SCacheBlockPage::display(
 	else
 	{
 		fnPrintf( m_pHRequest,
-			TD_s " <td> pNotifyList </td>	<td>FNOTIFY_p</td> "
+			TD_s " <td> pNotifyList </td>	<td>FNOTIFY *</td> "
 			"<td> 0x0 </td>", szOffsetTable[3]);
 	}
 	printTableRowEnd();
@@ -545,7 +545,7 @@ RCODE F_SCacheDataPage::display(
 	FLMUINT		uiBlkAddress = 0;
 	FLMUINT		uiLowTransID = 0;
 	FLMUINT		uiHighTransID = 0;
-	FFILE_p		pFile = NULL;
+	FFILE *		pFile = NULL;
 	FLMBOOL		bFlaimLocked = FALSE;
 	SCACHE		LocalSCacheBlock;
 	char *		pucData = NULL;
@@ -1174,7 +1174,7 @@ RCODE F_SCacheBase::locateSCacheBlock(
 	FLMUINT *		puiBlkAddress,
 	FLMUINT *		puiLowTransID,
 	FLMUINT *		puiHighTransID,
-	FFILE_p *		ppFile)
+	FFILE * *		ppFile)
 {
 	RCODE				rc = FERR_OK;
 
@@ -1220,7 +1220,7 @@ RCODE F_SCacheBase::locateSCacheBlock(
 	{ 
 		goto Exit;
 	}
-	*ppFile = (FFILE_p)f_atoud( szFile);
+	*ppFile = (FFILE *)f_atoud( szFile);
 
 	flmAssert( *ppFile);
 	uiSigBitsInBlkSize = (*ppFile)->FileHdr.uiSigBitsInBlkSize;

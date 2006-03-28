@@ -123,7 +123,7 @@ private:
 
 #define NUM_BUF_ALLOCATORS	22
 
-typedef struct
+typedef struct FLM_ALLOC_USAGE
 {
 	FLMUINT64			ui64Slabs;
 	FLMUINT64			ui64SlabBytes;
@@ -232,20 +232,20 @@ public:
 		return( m_phMutex);
 	}
 
-	typedef struct Block
+	typedef struct BLOCK
 	{
 		void *		pvAllocator;
-		Block *		pNext;
-		Block *		pPrev;
-		Block *		pNextBlockWithAvailCells;
-		Block *		pPrevBlockWithAvailCells;
+		BLOCK *		pNext;
+		BLOCK *		pPrev;
+		BLOCK *		pNextBlockWithAvailCells;
+		BLOCK *		pPrevBlockWithAvailCells;
 		FLMBYTE *	pLocalAvailCellListHead;
 		FLMUINT32	ui32NextNeverUsedCell;
 		FLMUINT32	ui32AvailCellCount;
 		FLMUINT32	ui32AllocatedCells;
 	} BLOCK;
 
-	typedef struct CellHeader
+	typedef struct CELLHEADER
 	{
 		BLOCK *		pContainingBlock;
 #ifdef FLM_DEBUG
@@ -253,7 +253,7 @@ public:
 #endif
 	} CELLHEADER;
 
-	typedef struct CellAvailNext
+	typedef struct CELLAVAILNEXT
 	{
 		FLMBYTE *	pNextInList;
 #ifdef FLM_DEBUG

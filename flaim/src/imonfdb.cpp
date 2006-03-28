@@ -43,8 +43,8 @@ RCODE F_FDBPage::display(
 	char			szBucket[20];
 	FLMINT		uiBucket;
 	FDB			LocalFDB;
-	FDB_p			pDb=NULL;
-	FFILE_p		pFile = NULL;
+	FDB *			pDb=NULL;
+	FFILE *		pFile = NULL;
 	char			szTemp[GENERIC_SIZE_A];
 	FLMBOOL		bpFileInc = FALSE;
 	char			szAddress[20];
@@ -111,7 +111,7 @@ RCODE F_FDBPage::display(
 	// Now we will search for the FFile first, then look for the FDB.		
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 
-	pFile = (FFILE_p)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
+	pFile = (FFILE *)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
 			
 	while ((pFile != NULL) && ((void *)pFile != pvFFileAddress))
 	{
@@ -286,7 +286,7 @@ Exit:
 			the contents of the FDB structure
  ****************************************************************************/
 void F_FDBPage::write_data(
-	FDB_p				pDb,
+	FDB *				pDb,
 	const char *	pszFDBAddress,
 	FLMUINT			uiBucket)
 {
@@ -315,7 +315,7 @@ void F_FDBPage::write_data(
 
 		}
 
-		printHTMLLink( "pFile", "FFILE_p", (void *)pDb, (void *)&pDb->pFile,
+		printHTMLLink( "pFile", "FFILE *", (void *)pDb, (void *)&pDb->pFile,
 			(void *)pDb->pFile, szTemp, (bHighlight = ~bHighlight));
 
 		
@@ -331,7 +331,7 @@ void F_FDBPage::write_data(
 			
 			printHTMLLink(
 				"pDict",
-				"FDICT_p",
+				"FDICT *",
 				(void *)pDb,
 				(void *)&pDb->pDict,
 				(void *)pDb->pDict,
@@ -343,7 +343,7 @@ void F_FDBPage::write_data(
 			printAddress( pDb->pDict, szAddress);
 			printHTMLString(
 				"pDict",
-				"FDICT_p",
+				"FDICT *",
 				(void *)pDb,
 				(void *)&pDb->pDict,
 				szAddress,
@@ -366,7 +366,7 @@ void F_FDBPage::write_data(
 		
 			printHTMLLink(
 				"pNextForFile",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pNextForFile,
 				(void *)pDb->pNextForFile,
@@ -378,7 +378,7 @@ void F_FDBPage::write_data(
 			printAddress( pDb->pNextForFile, szAddress);
 			printHTMLString(
 				"pNextForFile",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pNextForFile,
 				szAddress,
@@ -403,7 +403,7 @@ void F_FDBPage::write_data(
 		
 			printHTMLLink(
 				"pPrevForFile",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pPrevForFile,
 				(void *)pDb->pPrevForFile,
@@ -415,7 +415,7 @@ void F_FDBPage::write_data(
 			printAddress( pDb->pPrevForFile, szAddress);
 			printHTMLString(
 				"pPrevForFile",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pPrevForFile,
 				szAddress,
@@ -485,7 +485,7 @@ void F_FDBPage::write_data(
 		
 			printHTMLLink(
 				"pSFileHdl",
-				"F_SuperFileHdl_p",
+				"F_SuperFileHdl *",
 				(void *)pDb,
 				(void *)&pDb->pSFileHdl,
 				(void *)pDb->pSFileHdl,
@@ -497,7 +497,7 @@ void F_FDBPage::write_data(
 			printAddress( pDb->pSFileHdl, szAddress);
 			printHTMLString(
 				"pSFileHdl",
-				"F_SuperFileHdl_p",
+				"F_SuperFileHdl *",
 				(void *)pDb,
 				(void *)&pDb->pSFileHdl,
 				szAddress,
@@ -897,7 +897,7 @@ void F_FDBPage::write_data(
 
 			printHTMLLink(
 				"pNextReadTrans",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pNextReadTrans,
 				(void *)pDb->pNextReadTrans,
@@ -909,7 +909,7 @@ void F_FDBPage::write_data(
 			printAddress( pDb->pNextReadTrans, szAddress);
 			printHTMLString(
 				"pNextReadTrans",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pNextReadTrans,
 				szAddress,
@@ -937,7 +937,7 @@ void F_FDBPage::write_data(
 		
 			printHTMLLink(
 				"pPrevReadTrans",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pPrevReadTrans,
 				(void *)pDb->pPrevReadTrans,
@@ -949,7 +949,7 @@ void F_FDBPage::write_data(
 			printAddress( pDb->pPrevReadTrans, szAddress);
 			printHTMLString(
 				"pPrevReadTrans",
-				"FDB_p",
+				"FDB *",
 				(void *)pDb,
 				(void *)&pDb->pPrevReadTrans,
 				szAddress,

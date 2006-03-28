@@ -680,20 +680,20 @@ public:
 	virtual ~F_NameTableMgr();
 
 	F_NameTable * getNameTable(
-		FFILE_p		pFile);
+		FFILE *		pFile);
 
 	RCODE releaseNameTable(
-		FFILE_p		pFile);
+		FFILE *		pFile);
 
 private:
 
 	FLMUINT initNameTable(
-		FFILE_p		pFile);
+		FFILE *		pFile);
 
 	struct
 	{ 
 		F_MUTEX			hMutex;
-		FFILE_p			pFile;
+		FFILE *			pFile;
 		FLMUINT			uiDictSeq;
 		F_NameTable *	pNameTable;
 	} m_tablearray[ TABLE_ARRAY_SIZE];
@@ -790,7 +790,7 @@ public:
 private:
 
 	void write_data(
-		FDB_p				pDb,
+		FDB *				pDb,
 		const char *	pszFDBAddress,
 		FLMUINT			uiBucket);
 };
@@ -828,7 +828,7 @@ public:
 private:
 
 	void write_data(
-		FFILE_p				pFile,
+		FFILE *				pFile,
 		void *				pvFFileAddress,
 		DATASTRUCT *		pDataStruct);
 };
@@ -962,23 +962,6 @@ public:
 		FLMUINT			uiNumParams,
 		const char **	ppszParams);
 
-};
-
-/****************************************************************************
-Desc: The class that displays the event headers in gv_FlmSysData
-*****************************************************************************/
-class F_EventHdrPage : public F_WebPage
-{
-public:
-
-	RCODE display(
-		FLMUINT			uiNumParams,
-		const char **	ppszParams);
-
-private:
-	
-	RCODE displayEvent(
-		FEVENT_p		pCurrentEvent);
 };
 
 /*********************************************************
@@ -1226,7 +1209,7 @@ protected:
 		FLMUINT *		puiBlkAddress,
 		FLMUINT *		puiLowTransID,
 		FLMUINT *		puiHighTransID,
-		FFILE_p *		ppFile);
+		FFILE * *		ppFile);
 
 	void notFoundErr();
 	
@@ -1644,11 +1627,11 @@ private:
 
 	void gatherLockStats(
 		STAT_GATHER *			pStatGather,
-		FFILE_p					pFile);
+		FFILE *					pFile);
 
 	void gatherCPStats(
 		STAT_GATHER *			pStatGather,
-		FFILE_p					pFile);
+		FFILE *					pFile);
 
 	void freeCPInfoHeaders(
 		STAT_GATHER *		pStatGather);

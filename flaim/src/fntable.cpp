@@ -913,7 +913,7 @@ RCODE F_NameTable::setupFromDb(
 	FLMUINT			uiLoop;
 	BTSK				StackBuf [BH_MAX_LEVELS];
 	FLMBOOL			bStackInitialized = FALSE;
-	BTSK_p			pStack;
+	BTSK *			pStack;
 	FLMBYTE			ucKeyBuf [8];
 	FLMBYTE			ucDrnBuf [8];
 	void *			pvField;

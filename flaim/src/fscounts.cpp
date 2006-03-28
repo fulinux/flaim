@@ -26,15 +26,14 @@
 
 extern FLMBYTE	SENLenArray[];
 
-
 /***************************************************************************
 Desc:		Compute the number of blocks between two stack positions.  
 			These values may be estimated or actual.
 *****************************************************************************/
 RCODE FSComputeRecordBlocks(			// Returns WERR_OK or FERR_BTREE_ERROR
-	BTSK_p			pFromStack,			// [in] - be carefull not to change
+	BTSK *			pFromStack,			// [in] - be carefull not to change
 												// anything in this structure.
-	BTSK_p			pUntilStack,		// [in]
+	BTSK *			pUntilStack,		// [in]
 	FLMUINT *		puiLeafBlocksBetween, // [out] blocks between the stacks
 	FLMUINT *		puiTotalRecords,	// [out]	
 	FLMBOOL *		pbTotalsEstimated)// [out] Set to TRUE when estimating.
@@ -80,6 +79,7 @@ RCODE FSComputeRecordBlocks(			// Returns WERR_OK or FERR_BTREE_ERROR
 	}
 
 	// Get (or estimate) the number of elements in the parent block.
+	
 	*pbTotalsEstimated = TRUE;
 	if( RC_BAD( rc = FSBlockCounts( pFromStack, BH_OVHD, 
 			pFromStack->uiBlkEnd, &uiEstRecordCount, NULL, NULL)))
@@ -179,27 +179,28 @@ Notes:	There are two versions for this routine in the way of estimating
 			the LFILE.
 *****************************************************************************/
 RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
-	BTSK_p			pFromStack,			// [in] - be carefull not to change
-												// anything in this structure.
-	BTSK_p			pUntilStack,		// [in]
-	FLMUINT *		puiLeafBlocksBetween, // [out] blocks between the stacks
-	FLMUINT *		puiTotalKeys,		// [out] total number of keys inclusive
-	FLMUINT *		puiTotalRefs,		// [out] total references inclusive
-	FLMBOOL *		pbTotalsEstimated)// [out] Set to TRUE when estimating.
+	BTSK *			pFromStack,					// [in] - be carefull not to change
+														// anything in this structure.
+	BTSK *			pUntilStack,				// [in]
+	FLMUINT *		puiLeafBlocksBetween, 	// [out] blocks between the stacks
+	FLMUINT *		puiTotalKeys,				// [out] total number of keys inclusive
+	FLMUINT *		puiTotalRefs,				// [out] total references inclusive
+	FLMBOOL *		pbTotalsEstimated)		// [out] Set to TRUE when estimating.
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiTotalKeys,
-						uiTempKeyCount,
-						uiEstKeyCount;
-	FLMUINT			uiTotalRefs,
-						uiTempRefCount, 
-						uiEstRefCount;
-	FLMUINT			uiTotalBlocksBetween,
-						uiEstBlocksBetween;
+	FLMUINT			uiTotalKeys;
+	FLMUINT			uiTempKeyCount;
+	FLMUINT			uiEstKeyCount;
+	FLMUINT			uiTotalRefs;
+	FLMUINT			uiTempRefCount; 
+	FLMUINT			uiEstRefCount;
+	FLMUINT			uiTotalBlocksBetween;
+	FLMUINT			uiEstBlocksBetween;
 	FLMBYTE *		pBlk;
 	
 	uiTotalBlocksBetween = uiTotalKeys = uiTotalRefs = 0;
 	*pbTotalsEstimated = FALSE;
+	
 	// Are the from and until positions in the same block? 
 
 	if( pFromStack->uiBlkAddr == pUntilStack->uiBlkAddr)
@@ -231,13 +232,12 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 		goto Exit;
 	}
 
-	/*
-	Estimate number of keys/refs in the leaf block.
-	Estimate using just the left block.  The right block may be a right-most
-	block so will scew the results.
-	*/
-		
+	// Estimate number of keys/refs in the leaf block.
+	// Estimate using just the left block.  The right block may be a right-most
+	// block so will skew the results.
+	//
 	// Code for non-leaf child counts is easy - no need to estimate.
+	
 	if( (pFromStack-1)->uiBlkType != BHT_NON_LEAF_COUNTS)
 	{
 		*pbTotalsEstimated = TRUE;
@@ -251,24 +251,29 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 
 	for(;;)
 	{
-		FLMUINT		uiElementCount,	// These are non-leaf elements.
-						uiTempElementCount,
-						uiEstElementCount,
-						uiRefCount;
+		FLMUINT		uiElementCount;
+		FLMUINT		uiTempElementCount;
+		FLMUINT		uiEstElementCount;
+		FLMUINT		uiRefCount;
 		FLMBYTE *	pCounts;
 
 		// Go up a b-tree level and check out how far apart the elements are.
+		
 		pFromStack--;
 		pUntilStack--;
 
 		// Share the same block?
+		
 		if( pFromStack->uiBlkAddr == pUntilStack->uiBlkAddr)
 		{
 			if( RC_BAD( rc = FSBlockCounts( pFromStack, pFromStack->uiCurElm,
 					pUntilStack->uiCurElm, NULL, &uiElementCount, &uiRefCount)))
+			{
 				goto Exit;
+			}
 
 			// Don't count the current element nor the ref counts.
+			
 			uiElementCount--;
 			if( pFromStack->uiBlkType == BHT_NON_LEAF_COUNTS)
 			{
@@ -290,7 +295,7 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 				uiTotalKeys += uiEstKeyCount * uiElementCount;
 				uiTotalRefs += uiEstRefCount * uiElementCount;
 			}
-			// DONE !
+			
 			goto Exit;
 		}
 
@@ -298,8 +303,12 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 
 		if( RC_BAD( rc = FSBlockCounts( pFromStack, pFromStack->uiCurElm,
 				pFromStack->uiBlkEnd, NULL, &uiElementCount, &uiRefCount)))
+		{
 			goto Exit;
+		}
+		
 		// Don't count the first element.
+		
 		uiElementCount--;
 
 		if( pFromStack->uiBlkType == BHT_NON_LEAF_COUNTS)
@@ -311,12 +320,14 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 
 		if( RC_BAD( rc = FSBlockCounts( pUntilStack, BH_OVHD,
 				pUntilStack->uiCurElm, NULL, &uiTempElementCount, &uiRefCount)))
+		{
 			goto Exit;
+		}
 
 		uiElementCount += uiTempElementCount;
-
 		uiTotalBlocksBetween += uiEstBlocksBetween * uiElementCount;
 		uiTotalKeys += uiEstKeyCount * uiElementCount;
+		
 		if( pUntilStack->uiBlkType == BHT_NON_LEAF_COUNTS)
 		{
 			uiTotalRefs += uiRefCount;
@@ -343,7 +354,9 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 
 		if( RC_BAD( rc = FSBlockCounts( pFromStack, BH_OVHD, 
 				pFromStack->uiBlkEnd, NULL, &uiEstElementCount, NULL)))
+		{
 			goto Exit;
+		}
 
 		// Adjust the estimated key/ref count to be the counts from a complete
 		// (not partial) block starting at this level going to the leaf.
@@ -354,18 +367,22 @@ RCODE FSComputeIndexCounts(					// Returns WERR_OK or FERR_BTREE_ERROR
 	}
 
 Exit:
+
 	if( puiLeafBlocksBetween)
 	{
 		*puiLeafBlocksBetween = uiTotalBlocksBetween;
 	}
+	
 	if( puiTotalKeys)
 	{
 		*puiTotalKeys = uiTotalKeys;
 	}
+	
 	if( puiTotalRefs)
 	{
 		*puiTotalRefs = uiTotalRefs;
 	}
+	
 	return( rc);
 }
 
@@ -374,7 +391,7 @@ Desc:		Returns the number of first keys (elements with the first flag),
 			elements and references (for leaf blocks).  
 *****************************************************************************/
 RCODE FSBlockCounts(						// Returns WERR_OK currently.
-	BTSK_p			pStack,				// [in] - be careful not to change
+	BTSK *			pStack,				// [in] - be careful not to change
 												// anything in this structure.
 	FLMUINT			uiFirstElement,	// [in] start at this element
 	FLMUINT			uiLastElement,		// [in] Do not include reference counts
@@ -392,7 +409,6 @@ RCODE FSBlockCounts(						// Returns WERR_OK currently.
 	FLMBOOL			bHaveNonleafElementCounts;
 	BTSK				tempStack;
 
-	// Debug checks.
 	flmAssert( uiFirstElement <= uiLastElement);
 	flmAssert( uiLastElement <= pStack->uiBlkEnd);
 
@@ -409,18 +425,8 @@ RCODE FSBlockCounts(						// Returns WERR_OK currently.
 			(tempStack.uiBlkType == BHT_NON_LEAF_COUNTS) ? TRUE : FALSE;
 
 	// Position to uiFirstElement (it could be bogus).
-	// The while() code is safer but lots slower.
-#if 0
-	while( tempStack.uiCurElm < uiFirstElement)
-	{
-		if( FSBlkNextElm( &tempStack) == FERR_BT_END_OF_DATA)
-		{
-			break;
-		}
-	}
-#else
+	
 	tempStack.uiCurElm = uiFirstElement;
-#endif
 
 	// Loop gathering the statistics.
 	
@@ -435,6 +441,7 @@ RCODE FSBlockCounts(						// Returns WERR_OK currently.
 				uiFirstKeyCount++;
 			}
 		}
+		
 		if( puiRefCount)
 		{
 			if( !bHaveNonleafElementCounts)
@@ -449,21 +456,28 @@ RCODE FSBlockCounts(						// Returns WERR_OK currently.
 		}
 
 		// Next element.
+		
 		if( FSBlkNextElm( &tempStack) == FERR_BT_END_OF_DATA)
+		{
 			break;
+		}
 	}
+	
 	if( puiFirstKeyCount)
 	{
 		*puiFirstKeyCount = uiFirstKeyCount;
 	}
+	
 	if( puiElementCount)
 	{
 		*puiElementCount = uiElementCount;
 	}
+	
 	if( puiRefCount)
 	{
 		*puiRefCount = uiRefCount;
 	}
+	
 	return( rc);
 }
 
@@ -471,8 +485,8 @@ RCODE FSBlockCounts(						// Returns WERR_OK currently.
 Desc:		Returns the number of references at the current b-tree element.
 			Leaf level blocks must be passed in and the block must be usable.
 *****************************************************************************/
-FLMUINT FSElementRefCount(				// Returns the number of references
-	BTSK_p			pStack)				// [in]
+FLMUINT FSElementRefCount(					// Returns the number of references
+	BTSK *			pStack)					// [in]
 {
 	FLMUINT			uiRefCount;
 	FLMBYTE *		pCurRef;					// Points to current reference
@@ -480,14 +494,18 @@ FLMUINT FSElementRefCount(				// Returns the number of references
 	FLMUINT			uiRefSize;				// Size of the reference set
 	DIN_STATE		tempState;
 
-	// Check block type.
+	// Check block type
+	
 	if( pStack->uiBlkType != BHT_LEAF)
 	{
 		uiRefCount = 0;
 		goto Exit;
 	}
+	
 	uiRefCount = 1;
+	
 	// Point to the start of the current reference skipping over domain info.
+	
 	pCurRef = pCurElm = CURRENT_ELM( pStack );
 	(void) FSGetDomain( &pCurRef, pStack->uiElmOvhd );
 	uiRefSize = (FLMUINT)(BBE_GET_RL(pCurElm) -
@@ -496,13 +514,14 @@ FLMUINT FSElementRefCount(				// Returns the number of references
 	RESET_DINSTATE( tempState );
 
 	// Read the first reference - there must be at least one reference.
+	
 	(void) DINNextVal( pCurRef, &tempState );	
 
 	while( tempState.uiOffset < uiRefSize )
 	{
 		FLMUINT			uiNextLength;
 	
-		/* Get the current byte to see what kind of item it is */
+		// Get the current byte to see what kind of item it is
 		
 		if( (uiNextLength = SENValLen( pCurRef + tempState.uiOffset)) == 0)
 		{
@@ -514,10 +533,11 @@ FLMUINT FSElementRefCount(				// Returns the number of references
 			uiRefCount++;
 		}
 	}
+	
 Exit:
-	return uiRefCount;
-}
 
+	return (uiRefCount);
+}
 
 /***************************************************************************
 Desc:		Read in the child block and set the counts in the input element.
@@ -540,23 +560,30 @@ RCODE FSUpdateAdjacentBlkCounts(
 	{
 		goto Exit;
 	}
+	
 	pStack = pBaseStack;
 	pStack--;
+	
 	if( RC_BAD( rc = FSBtNextElm( pDb, pLFile, pStack)))
 	{
 		if( rc == FERR_BT_END_OF_DATA)
 		{
 			rc = RC_SET( FERR_BTREE_ERROR);
 		}
+		
 		goto Exit;
 	}
+	
 	pStack = pBaseStack;
+	
 	if( RC_BAD( rc = FSUpdateBlkCounts( pDb, pStack, uiNextBlkCount)))
 	{
 		goto Exit;
 	}
+	
 	pStack = pBaseStack;
 	pStack--;
+	
 	if( RC_BAD( rc = FSBtPrevElm( pDb, pLFile, pStack)))
 	{
 		if( rc == FERR_BT_END_OF_DATA)
@@ -567,6 +594,7 @@ RCODE FSUpdateAdjacentBlkCounts(
 	}
 
 Exit:
+
 	return( rc);
 }
 
@@ -602,16 +630,20 @@ RCODE FSUpdateBlkCounts(
 			bFirstTime = FALSE;
 
 			// If the delta is zero there is nothing to do.
+			
 			if( !iDelta)
 			{
 				break;
 			}
 		}
+		
 		// Log the block.
+		
 		if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
 		{
 			goto Exit;
 		}
+		
 		// The block should be able to be used.
 
 		uiCount = uiCount - iDelta;
@@ -619,6 +651,7 @@ RCODE FSUpdateBlkCounts(
 	}
 
 Exit:
+
 	return( rc);
 }
 
@@ -630,8 +663,8 @@ Desc:		For a positioning index update the count in all the parent elements.
 *****************************************************************************/
 RCODE FSChangeCount(
 	FDB *				pDb,
-	BTSK_p 			pStack,
-	FLMBOOL			bAddReference)			// If FALSE decrement the referernce
+	BTSK * 			pStack,
+	FLMBOOL			bAddReference)			// If FALSE, decrement the reference
 {
 	RCODE				rc = FERR_OK;
 	FLMBYTE *		pCurElm;
@@ -640,17 +673,21 @@ RCODE FSChangeCount(
 	while( !BH_IS_ROOT_BLK( pStack->pBlk))
 	{
 		// Go to the parent and increment/decrement the counts.
+		
 		pStack--;
 
 		// Log the block.
+		
 		if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
 		{
 			goto Exit;
 		}
+		
 		// The block should be able to be used.
 
 		pCurElm = pStack->pBlk + pStack->uiCurElm; 
 		uiCount = FB2UD( &pCurElm[ BNE_CHILD_COUNT]);
+		
 		if( bAddReference)
 		{
 			uiCount++;
@@ -658,14 +695,18 @@ RCODE FSChangeCount(
 		else
 		{
 			// Don't allow value to be less than zero.
+			
 			if( uiCount)
 			{
 				uiCount--;
 			}
 		}
+		
 		UD2FBA( uiCount, &pCurElm[ BNE_CHILD_COUNT]);
 	}
+	
 Exit:
+
 	return( rc);
 }
 
@@ -686,6 +727,7 @@ RCODE FSChangeBlkCounts(
 	while( !BH_IS_ROOT_BLK( pStack->pBlk))
 	{
 		// Go to the parent and increment/decrement the counts.
+		
 		pStack--;
 
 		pCurElm = pStack->pBlk + pStack->uiCurElm; 
@@ -695,16 +737,19 @@ RCODE FSChangeBlkCounts(
 					? 0 : (FLMUINT) (uiCount + iDelta);
 
 		// Log the block.
+		
 		if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
 		{
 			goto Exit;
 		}
+		
 		// The block should be able to be used.
 
 		UD2FBA( uiCount, &pCurElm[ BNE_CHILD_COUNT]);
 	}
 
 Exit:
+
 	return( rc);
 }
 
@@ -724,7 +769,9 @@ RCODE FSGetBtreeRefPosition(
 	FLMUINT			uiRefCount;
 
 	F_UNREFERENCED_PARM( pDb);
+	
 	// Compute the reference counts before all the current elements up the tree.
+	
 	if( RC_BAD( rc = FSBlockCounts( pStack, BH_OVHD, pStack->uiCurElm,
 			NULL, NULL, &uiTotalCount)))
 	{
@@ -732,6 +779,7 @@ RCODE FSGetBtreeRefPosition(
 	}
 
 	// This must be a one-based number (first reference is 1).
+	
 	if( !pDinState->uiOffset)
 	{
 		uiTotalCount++;
@@ -753,6 +801,7 @@ RCODE FSGetBtreeRefPosition(
 									(pCurRef - BBE_REC_PTR(pCurElm)));
 
 		// Read the first reference - there must be at least one reference.
+		
 		(void) DINNextVal( pCurRef, &tempState );	
 
 		while( tempState.uiOffset < pDinState->uiOffset
@@ -760,7 +809,7 @@ RCODE FSGetBtreeRefPosition(
 		{
 			FLMUINT			uiNextLength;
 	
-			/* Get the current byte to see what kind of item it is */
+			// Get the current byte to see what kind of item it is
 		
 			if( (uiNextLength = SENValLen( pCurRef + tempState.uiOffset)) == 0)
 			{
@@ -772,17 +821,21 @@ RCODE FSGetBtreeRefPosition(
 				uiRefCount++;
 			}
 		}
+		
 		if( tempState.uiOffset == pDinState->uiOffset && pDinState->uiOnes)
 		{
 			uiRefCount += pDinState->uiOnes;
 		}
+		
 		uiTotalCount += uiRefCount;
 	}
 
 	// Go up the stack and keep the count up.
+	
 	while( !BH_IS_ROOT_BLK( pStack->pBlk))
 	{
 		// Go to the parent and increment/decrement the counts.
+		
 		pStack--;
 
 		if( RC_BAD( rc = FSBlockCounts( pStack, BH_OVHD, pStack->uiCurElm,
@@ -790,10 +843,12 @@ RCODE FSGetBtreeRefPosition(
 		{
 			goto Exit;
 		}
+		
 		uiTotalCount += uiRefCount;
 	}
 
 Exit:
+
 	*puiRefPosition = uiTotalCount;
 	return( rc);
 }
@@ -813,8 +868,8 @@ RCODE FSPositionSearch(
 	DIN_STATE *		pDinState)
 {
 	RCODE			rc;
-	BTSK_p		pStack = *ppStack;
-	FLMBYTE *	pKeyBuf = pStack->pKeyBuf;// Used to set key buf on each btsk.
+	BTSK *		pStack = *ppStack;
+	FLMBYTE *	pKeyBuf = pStack->pKeyBuf;
 	FLMUINT		uiBlkAddr;
 	LFILE			TmpLFile;
 
@@ -841,22 +896,28 @@ RCODE FSPositionSearch(
 		{
 			goto Exit;
 		}
+		
 		if( !pStack->uiLevel)
+		{
 			break;
+		}
 
 		uiBlkAddr = FSChildBlkAddr( pStack );
 		pStack++;
 		pStack->pKeyBuf = pKeyBuf;
 
 		if( RC_BAD(rc = FSGetBlock( pDb, pLFile, uiBlkAddr, pStack )))
+		{
 			goto Exit;
+		}
 	}
-	*ppStack = pStack;									// Set the stack return value.
+	
+	*ppStack = pStack;
 
 Exit:
+
 	return( rc);
 }
-
 
 /***************************************************************************
 Desc:		Position to the element given a position value relative to the block.
@@ -920,6 +981,7 @@ RCODE FSPositionScan(
 		else
 		{
 			// Copy the key into the key buffer.
+			
 			if( uiPrevKeyCnt > uiPrevPrevKeyCnt)
 			{
 				uiBytesToMove = uiPrevKeyCnt - uiPrevPrevKeyCnt;
@@ -928,6 +990,7 @@ RCODE FSPositionScan(
 			pPrevKey = pCurElm + uiElmOvhd;
 			uiTotalElmLen += BBE_GET_RL( pCurElm);
 		}
+		
 		if( uiRefCount >= uiRelativePosition)
 		{
 			pStack->uiKeyLen = uiElmKeyLen + uiPrevKeyCnt;
@@ -937,23 +1000,28 @@ RCODE FSPositionScan(
 			if( uiBlkType == BHT_LEAF)
 			{
 				// Copy the remaining bytes of the key.  pPrevKey is current key.
+				
 				if( uiElmKeyLen)
 				{
 					f_memcpy( &pKeyBuf[ uiPrevKeyCnt], pPrevKey, uiElmKeyLen);
 				}
+				
 				if( RC_BAD( rc = FSPositionToRef( pStack, uiRelativePosition,
 					puiRecordId, puiDomain, pDinState)))
 				{
 					goto Exit;
 				}
+				
 				uiRelativePosition = 0;
 			}
+			
 			break;
 		}
 
 		uiPrevPrevKeyCnt = uiPrevKeyCnt;
 		uiRelativePosition -= uiRefCount;
 		pStack->uiCurElm += uiTotalElmLen;
+		
 		if( pStack->uiCurElm >= pStack->uiBlkEnd)
 		{
 			uiRelativePosition = 0;
@@ -963,7 +1031,9 @@ RCODE FSPositionScan(
 	}
 
 	*puiRelativePosInElement = uiRelativePosition;
+	
 Exit:
+
 	return( rc);
 }
 
@@ -988,7 +1058,7 @@ RCODE FSPositionToRef(
 	{
 		uiRecordId = FSRefFirst( pStack, pDinState, puiDomain);
 	}
-	else // if( uiRefCount > uiRelativePosition)
+	else
 	{
 		// Find the position within the element.
 
@@ -998,6 +1068,7 @@ RCODE FSPositionToRef(
 		DIN_STATE		tempState;
 
 		// Point to the start of the current reference skipping over domain info.
+		
 		pCurRef = pCurElm = CURRENT_ELM( pStack );
 		*puiDomain = FSGetDomain( &pCurRef, pStack->uiElmOvhd) + 1;
 		uiRefSize = (FLMUINT)(BBE_GET_RL(pCurElm) -
@@ -1011,16 +1082,16 @@ RCODE FSPositionToRef(
 			uiRecordId -= DINNextVal( pCurRef, pDinState);
 			uiRelativePosition--;
 		}
+		
 		flmAssert( pDinState->uiOffset < uiRefSize);
 
 		// Get the last value without moving pDinState.
+		
 		tempState.uiOffset = pDinState->uiOffset;
-		tempState.uiOnes   = pDinState->uiOnes;
+		tempState.uiOnes = pDinState->uiOnes;
 		uiRecordId -= DINNextVal( pCurRef, &tempState );
 	}
+	
 	*puiRecordId = uiRecordId;
-
-//Exit:
 	return( rc);
 }
-

@@ -24,15 +24,13 @@
 
 #include "flaimsys.h"
 
-#define MAX_DIRTY_PERCENT	70
-
 FSTATIC RCODE flmPhysFileOpen(
-	FDB_p					pDb,
-	const char *		pszFilePath,
-	const char *		pszRflDir,
-	FLMUINT				uiOpenFlags,
-	FLMBOOL				bNewFile,
-	F_Restore *			pRestoreObj);
+	FDB *				pDb,
+	const char *	pszFilePath,
+	const char *	pszRflDir,
+	FLMUINT			uiOpenFlags,
+	FLMBOOL			bNewFile,
+	F_Restore *		pRestoreObj);
 
 FSTATIC RCODE flmReadFileHdr(
 	FDB *				pDb,
@@ -50,9 +48,12 @@ FSTATIC RCODE flmDoRecover(
 	FDB *				pDb,
 	F_Restore *		pRestoreObj);
 
-/*API~***********************************************************************
+FSTATIC RCODE flmDbMonitor(
+	F_Thread *		pThread);
+	
+/****************************************************************************
 Desc : Opens an existing FLAIM database.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbOpen(
 	const char *		pszDbFileName,
 	const char *		pszDataDir,
@@ -84,19 +85,19 @@ FLMEXP RCODE FLMAPI FlmDbOpen(
 										pszDbFileName, pszDataDir, pszRflDir,
 										uiOpenFlags, NULL,
 										NULL, NULL, TRUE,
-										pCSContext, (FDB_p *)phDbRV)))
+										pCSContext, (FDB * *)phDbRV)))
 		{
 			(void)flmCloseCSConnection( &pCSContext);
 		}
 		goto Exit;
 	}
 
-	/* Open the file. */
+	// Open the file
 
 	if (RC_BAD( rc = flmOpenFile( NULL,
 		pszDbFileName, pszDataDir, pszRflDir,
 		uiOpenFlags, FALSE,
-		NULL, NULL, pszPassword, (FDB_p *)phDbRV)))
+		NULL, NULL, pszPassword, (FDB * *)phDbRV)))
 	{
 		goto Exit;
 	}
@@ -120,7 +121,7 @@ RCODE flmOpenOrCreateDbClientServer(
 	CREATE_OPTS *		pCreateOpts,
 	FLMBOOL				bOpening,
 	CS_CONTEXT *		pCSContext,
-	FDB_p *				ppDb)
+	FDB * *				ppDb)
 {
 	RCODE				rc = FERR_OK;
 	FLMBOOL			bAllocatedFdb = FALSE;
@@ -130,11 +131,11 @@ RCODE flmOpenOrCreateDbClientServer(
 	FLMUNICODE *	puzTmp;
 	POOL				pool;
 	FCL_WIRE			Wire( pCSContext);
-	FDB_p				pDb;
+	FDB *				pDb;
 
 	GedPoolInit( &pool, 128);
 
-	/* Allocate and initialize an FDB structure. */
+	// Allocate and initialize an FDB structure
 
 	if (RC_BAD( rc = flmAllocFdb( ppDb)))
 	{
@@ -144,7 +145,7 @@ RCODE flmOpenOrCreateDbClientServer(
 
 	bAllocatedFdb = TRUE;
 
-	/* Convert the paths to UNICODE. */
+	// Convert the paths to Unicode
 
 	if( RC_BAD( rc = fcsConvertNativeToUnicode( 
 		&pool, pszDbPath, &puzDbPath)))
@@ -170,7 +171,7 @@ RCODE flmOpenOrCreateDbClientServer(
 		}
 	}
 
-	/* Send a request to open or create the database. */
+	// Send a request to open or create the database
 
 	if( RC_BAD( rc = Wire.sendOp( FCS_OPCLASS_DATABASE,
 					(FLMUINT)((bOpening)
@@ -214,10 +215,11 @@ RCODE flmOpenOrCreateDbClientServer(
 		if (pszDictFileName)
 		{
 
-			/* Convert the path to UNICODE. */
+			// Convert the path to Unicode
 
 			GedPoolReset( &pool, NULL);
-			if (RC_BAD( rc = fcsConvertNativeToUnicode( &pool, pszDictFileName, &puzTmp)))
+			if (RC_BAD( rc = fcsConvertNativeToUnicode( &pool, pszDictFileName,
+				&puzTmp)))
 			{
 				goto Exit;
 			}
@@ -230,10 +232,11 @@ RCODE flmOpenOrCreateDbClientServer(
 
 		if (pszDictBuf)
 		{
-			/* Convert the path to UNICODE. */
+			// Convert the path to Unicode
 
 			GedPoolReset( &pool, NULL);
-			if (RC_BAD( rc = fcsConvertNativeToUnicode( &pool, pszDictBuf, &puzTmp)))
+			if (RC_BAD( rc = fcsConvertNativeToUnicode( &pool, pszDictBuf, 
+				&puzTmp)))
 			{
 				goto Exit;
 			}
@@ -246,7 +249,8 @@ RCODE flmOpenOrCreateDbClientServer(
 
 		if (pCreateOpts)
 		{
-			if (RC_BAD( rc = Wire.sendCreateOpts( WIRE_VALUE_CREATE_OPTS, pCreateOpts)))
+			if (RC_BAD( rc = Wire.sendCreateOpts( WIRE_VALUE_CREATE_OPTS, 
+				pCreateOpts)))
 			{
 				goto Transmission_Error;
 			}
@@ -258,7 +262,7 @@ RCODE flmOpenOrCreateDbClientServer(
 		goto Transmission_Error;
 	}
 
-	/* Read the response. */
+	// Read the response
 	
 	if (RC_BAD( rc = Wire.read()))
 	{
@@ -299,7 +303,7 @@ Desc:    Allocates and initializes an FDB structure for a database which
 			is to be opened or created.
 ****************************************************************************/
 RCODE flmAllocFdb(
-	FDB_p *		ppDb)
+	FDB * *		ppDb)
 {
 	RCODE			rc = FERR_OK;
 	FDB *			pDb = NULL;
@@ -320,7 +324,8 @@ RCODE flmAllocFdb(
 	GedPoolInit( &pDb->TempPool, (MAX_KEY_SIZ * 4));
 
 #if defined( FLM_DEBUG) && (defined( FLM_WIN) || defined( FLM_NLM))
-	/* Create the semaphore for controlling access to the structure. */
+
+	// Create a mutex for controlling access to the structure
 
 	pDb->hMutex = F_MUTEX_NULL;
 	if (RC_BAD( rc = f_mutexCreate( &pDb->hMutex)))
@@ -352,7 +357,7 @@ Desc: This routine performs all of the necessary steps to complete
 		waiting for the open or create to complete.
 ****************************************************************************/
 RCODE flmCompleteOpenOrCreate(
-	FDB_p *	ppDb,
+	FDB * *	ppDb,
 	RCODE		rc,
 	FLMBOOL	bNewFile,
 	FLMBOOL	bAllocatedFdb)
@@ -362,11 +367,9 @@ RCODE flmCompleteOpenOrCreate(
 	if (RC_OK( rc))
 	{
 
-		/*
-		If this is a newly created FFILE, we need to notify any
-		threads waiting for the file to be created or opened that
-		the create or open is now complete.
-		*/
+		// If this is a newly created FFILE, we need to notify any
+		// threads waiting for the file to be created or opened that
+		// the create or open is now complete.
 
 		if (bNewFile)
 		{
@@ -379,12 +382,10 @@ RCODE flmCompleteOpenOrCreate(
 	{
 		FFILE *	pFile = pDb->pFile;
 
-		/*
-		Temporarily increment the use count on the FFILE structure
-		so that it will NOT be put into the UNUSED list by the call
-		to flmDbClose below.  If it is put into the UNUSED list,
-		it can be freed by another thread.
-		*/
+		// Temporarily increment the use count on the FFILE structure
+		// so that it will NOT be put into the UNUSED list by the call
+		// to flmDbClose below.  If it is put into the UNUSED list,
+		// it can be freed by another thread.
 
 		if (bNewFile)
 		{
@@ -433,22 +434,24 @@ RCODE flmOpenFile(
 	F_Restore *			pRestoreObj,
 	F_FileHdlImp *		pLockFileHdl,
 	const char *		pszPassword,
-	FDB_p *				ppDb)
+	FDB * *				ppDb)
 {
 	RCODE				rc;
 	FLMBOOL			bNewFile = FALSE;
 	FLMBOOL			bMutexLocked = FALSE;
 	FLMBOOL			bAllocatedFdb = FALSE;
-	FDB_p				pDb;
+	FDB *				pDb;
 	FLMBOOL			bNeedToOpen = FALSE;
 
-	/* Allocate and initialize an FDB structure. */
+	// Allocate and initialize an FDB structure
 
 	if (RC_BAD( rc = flmAllocFdb( ppDb)))
 	{
 		goto Exit;
 	}
+	
 	pDb = *ppDb;
+	
 	if (bInternalOpen)
 	{
 		pDb->uiFlags |= FDB_INTERNAL_OPEN;
@@ -458,23 +461,20 @@ RCODE flmOpenFile(
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	bMutexLocked = TRUE;
 
-	/*
-	Free any unused structures that have been unused for the maximum
-	amount of time.  May unlock and re-lock the global mutex.
-	*/
+	// Free any unused structures that have been unused for the maximum
+	// amount of time.  May unlock and re-lock the global mutex.
 
 	flmCheckNUStructs( 0);
 
-	/*
-	Look up the file using flmFindFile to see if we already
-	have the file open.
-	*/
+	// Look up the file using flmFindFile to see if we already
+	// have the file open.
 
 	if (!pFile)
 	{
 		bNeedToOpen = TRUE;
 
 		// May unlock and re-lock the global mutex.
+		
 		if (RC_BAD( rc = flmFindFile( pszDbPath, pszDataDir, &pFile)))
 		{
 			goto Exit;
@@ -488,7 +488,8 @@ RCODE flmOpenFile(
 
 	if (!pFile)
 	{
-		if (RC_BAD( rc = flmAllocFile( pszDbPath, pszDataDir, pszPassword, &pFile)))
+		if (RC_BAD( rc = flmAllocFile( pszDbPath, pszDataDir, 
+			pszPassword, &pFile)))
 		{
 			goto Exit;
 		}
@@ -502,24 +503,18 @@ RCODE flmOpenFile(
 		flmAssert( pFile->uiFlags & DBF_BEING_OPENED);
 		flmAssert( !(pFile->uiFlags & DBF_IN_NU_LIST));
 
-		/*
-		Put the FFILE back in the NU list.  FlmDbRestore removed the FFILE from
-		the NU list after allocating it so that it would not disappear during
-		the restore.  When the FFILE is linked to the FDB (below), the FFILE
-		will be removed from the NU list.
-		*/
+		// Put the FFILE back in the NU list.  FlmDbRestore removed the FFILE from
+		// the NU list after allocating it so that it would not disappear during
+		// the restore.  When the FFILE is linked to the FDB (below), the FFILE
+		// will be removed from the NU list.
 
 		flmLinkFileToNUList( pFile);
 
-		/*
-		Assign the lock file handle
-		*/
+		// Assign the lock file handle
 
 		pFile->pLockFileHdl = pLockFileHdl;
 
-		/*
-		Set to NULL to prevent lock file from being released below
-		*/
+		// Set to NULL to prevent lock file from being released below
 
 		pLockFileHdl = NULL;
 
@@ -537,13 +532,13 @@ RCODE flmOpenFile(
 
 	// If there is a password, verify that it matches the current password.
 
-	if ( pszPassword && pszPassword[0])
+	if( pszPassword && pszPassword[0])
 	{
-		if ( pFile->pszDbPassword)
+		if( pFile->pszDbPassword)
 		{
-			if ( f_strcmp( pszPassword, pFile->pszDbPassword) != 0)
+			if( f_strcmp( pszPassword, pFile->pszDbPassword) != 0)
 			{
-				if (uiOpenFlags & FO_ALLOW_LIMITED)
+				if( uiOpenFlags & FO_ALLOW_LIMITED)
 				{
 					pFile->bInLimitedMode = TRUE;
 					pFile->rcLimitedCode = RC_SET( FERR_PASSWD_INVALID);
@@ -555,7 +550,7 @@ RCODE flmOpenFile(
 				}
 			}
 		}
-		else if (uiOpenFlags & FO_ALLOW_LIMITED)
+		else if( uiOpenFlags & FO_ALLOW_LIMITED)
 		{
 			pFile->bInLimitedMode = TRUE;
 			pFile->rcLimitedCode = RC_SET( FERR_PASSWD_INVALID);
@@ -566,10 +561,7 @@ RCODE flmOpenFile(
 			goto Exit;
 		}
 	}
-
-	// If there was no password passed in, but there should have been, then oops.
-
-	else if (pFile->pszDbPassword && pFile->pszDbPassword[0])
+	else if (pFile->pszDbPassword && pFile->pszDbPassword[ 0])
 	{
 		if (uiOpenFlags & FO_ALLOW_LIMITED)
 		{
@@ -586,8 +578,10 @@ RCODE flmOpenFile(
 	// Link the FDB to the file.
 
 	rc = flmLinkFdbToFile( pDb, pFile);
+	
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	bMutexLocked = FALSE;
+	
 	if (RC_BAD(rc))
 	{
 		goto Exit;
@@ -606,16 +600,26 @@ RCODE flmOpenFile(
 		}
 	}
 
-	// Start a checkpoint thread
-
 	if (bNewFile && !(uiOpenFlags & FO_DONT_REDO_LOG))
 	{
+		// Start the checkpoint thread
+
 		flmAssert( pFile->pCPThrd == NULL);
+
 		if (RC_BAD( rc = flmStartCPThread( pFile)))
 		{
 			goto Exit;
 		}
 
+		// Start the database monitor thread
+
+		flmAssert( pFile->pMonitorThrd == NULL);
+
+		if (RC_BAD( rc = flmStartDbMonitorThread( pFile)))
+		{
+			goto Exit;
+		}
+		
 		if( !(uiOpenFlags & FO_DONT_RESUME_BACKGROUND_THREADS))
 		{
 			if (RC_BAD( rc = flmStartBackgrndIxThrds( pDb)))
@@ -649,7 +653,7 @@ Exit:
 /****************************************************************************
 Desc: This routine checks to see if it is OK for another FDB to use a file.
 		If so, it increments the file's use counter.  NOTE: This routine
-		assumes that the calling routine has locked the semaphore.
+		assumes that the calling routine has locked the global mutex.
 ****************************************************************************/
 RCODE flmVerifyFileUse(
 	F_MUTEX		hMutex,
@@ -744,22 +748,18 @@ RCODE flmCreateLckFile(
 	F_FileHdlImp *		pLockFileHdl = NULL;
 	FLMUINT				uiBaseLen;
 
-	/*
-	Extract the base name and put a .lck extension on it to create
-	the full path for the .lck file.
-	*/
+	// Extract the base name and put a .lck extension on it to create
+	// the full path for the .lck file.
 
 	flmGetDbBasePath( szLockPath, pszFilePath, &uiBaseLen);
 	f_strcpy( &szLockPath[ uiBaseLen], ".lck");
 
-	/*
-	Attempt to create the lock file.  If that succeeds, we are
-	OK to use the database.  If it fails, the lock file may have
-	been left because of a crash if FLAIM was not shut down properly.
-	Hence, we first try to delete the file.  If that succeeds, we
-	then attempt to create the file again.  If it, or the 2nd create
-	fail, we simply return an access denied error.
-	*/
+	// Attempt to create the lock file.  If that succeeds, we are
+	// OK to use the database.  If it fails, the lock file may have
+	// been left because of a crash if FLAIM was not shut down properly.
+	// Hence, we first try to delete the file.  If that succeeds, we
+	// then attempt to create the file again.  If it, or the 2nd create
+	// fail, we simply return an access denied error.
 
 #ifndef FLM_UNIX
 	if( RC_BAD( gv_FlmSysData.pFileSystem->Create( szLockPath,
@@ -829,19 +829,17 @@ RCODE flmGetExclAccess(
 	FLMBOOL				bNotifyWaiters = FALSE;
 	FLMBOOL				bMutexLocked = FALSE;
 
-	/*
-	If pFile->pLockFileHdl is non-NULL, it means that we currently
-	have the file locked with a lock file.  There is no need to make
-	this test inside a mutex lock, because the lock file handle can only
-	be set to NULL when the use count goes to zero, meaning that the thread
-	that sets it to NULL will be the only thread accessing it.
-	
-	However, it is possible that two or more threads will simultaneously
-	test pLockFileHdl and discover that it is NULL.  In that case,
-	we allow one thread to proceed and attempt to get a lock on the file
-	while the other threads wait to be notified of the results of the
-	attempt to lock the file.
-	*/
+	// If pFile->pLockFileHdl is non-NULL, it means that we currently
+	// have the file locked with a lock file.  There is no need to make
+	// this test inside a mutex lock, because the lock file handle can only
+	// be set to NULL when the use count goes to zero, meaning that the thread
+	// that sets it to NULL will be the only thread accessing it.
+	//
+	// However, it is possible that two or more threads will simultaneously
+	// test pLockFileHdl and discover that it is NULL.  In that case,
+	// we allow one thread to proceed and attempt to get a lock on the file
+	// while the other threads wait to be notified of the results of the
+	// attempt to lock the file.
 
 	if (pFile->pLockFileHdl)
 	{
@@ -854,11 +852,9 @@ RCODE flmGetExclAccess(
 	if (pFile->bBeingLocked)
 	{
 
-		/*
-		If the file is in the process of being locked by another
-		thread, wait for the lock to complete.  NOTE: flmWaitNotifyReq will
-		re-lock the mutex before returning.
-		*/
+		// If the file is in the process of being locked by another
+		// thread, wait for the lock to complete.  NOTE: flmWaitNotifyReq will
+		// re-lock the mutex before returning.
 
 		rc = flmWaitNotifyReq( gv_FlmSysData.hShareMutex, &pFile->pLockNotifies,
 												(void *)0);
@@ -867,12 +863,10 @@ RCODE flmGetExclAccess(
 	else
 	{
 
-		/*
-		No other thread was attempting to lock the file, so
-		set this thread up to make the attempt.  Other threads
-		coming in at this point will be required to wait and
-		be notified of the results.
-		*/
+		// No other thread was attempting to lock the file, so
+		// set this thread up to make the attempt.  Other threads
+		// coming in at this point will be required to wait and
+		// be notified of the results.
 
 		pFile->bBeingLocked = TRUE;
 		bNotifyWaiters = TRUE;
@@ -892,7 +886,7 @@ Exit:
 		FNOTIFY *		pNotify;
 		F_SEM				hSem;
 
-		/* Notify any thread waiting on the lock what its status is. */
+		// Notify any thread waiting on the lock what its status is
 
 		if( !bMutexLocked)
 		{
@@ -929,7 +923,7 @@ Desc: This routine checks to see if it is OK for another FDB to use a file.
 		assumes that the global mutex is NOT locked.
 ****************************************************************************/
 FSTATIC RCODE flmPhysFileOpen(
-	FDB_p					pDb,
+	FDB *					pDb,
 	const char *		pszFilePath,	// File name
 	const char *		pszRflDir,		// RFL directory
 	FLMUINT				uiOpenFlags,	// Flags for doing physical open
@@ -952,6 +946,7 @@ FSTATIC RCODE flmPhysFileOpen(
 		{
 			bAllowLimitedMode = TRUE;
 		}
+		
 		if( RC_BAD( rc = flmReadFileHdr( pDb, pFile->pucLogHdrWriteBuf, &LogHdr,
 													bAllowLimitedMode)))
 		{
@@ -1017,10 +1012,8 @@ FSTATIC RCODE flmPhysFileOpen(
 		}
 	}
 
-	/*
-	We must have exclusive access.  Create a lock file for that
-	purpose, if there is not already a lock file.
-	*/
+	// We must have exclusive access.  Create a lock file for that
+	// purpose, if there is not already a lock file.
 
 	if (!pFile->pLockFileHdl)
 	{
@@ -1041,7 +1034,7 @@ FSTATIC RCODE flmPhysFileOpen(
 			goto Exit;
 		}
 	}
-
+	
 Exit:
 
 	if (RC_BAD( rc))
@@ -1058,17 +1051,18 @@ Desc: This routine finishes up after creating a new FFILE structure.  It
 		of the status of the operation.
 ****************************************************************************/
 RCODE flmNewFileFinish(
-	FFILE *		pFile,	/* Pointer to FFILE structure. */
-	RCODE			OpenRc)  /* Return code to send to other threads that are
-									waiting for the open to complete. */
+	FFILE *		pFile,
+	RCODE			OpenRc)
 {
 	FNOTIFY *	pNotify;
 	F_SEM			hSem;
 
 	if (!pFile)
+	{
 		goto Exit;
+	}
 
-	/* Notify anyone waiting on the operation what its status is. */
+	// Notify anyone waiting on the operation what its status is
 
 	pNotify = pFile->pOpenNotifies;
 	while (pNotify)
@@ -1081,7 +1075,9 @@ RCODE flmNewFileFinish(
 	
 	pFile->pOpenNotifies = NULL;
 	pFile->uiFlags &= (~(DBF_BEING_OPENED));
+	
 Exit:
+
 	return OpenRc;
 }
 
@@ -1230,7 +1226,7 @@ RCODE flmAllocFile(
 	const char *		pszDbPath,
 	const char *		pszDataDir,
 	const char *		pszDbPassword,
-	FFILE_p *			ppFile)
+	FFILE * *			ppFile)
 {
 	RCODE					rc = FERR_OK;
 	FLMUINT				uiAllocLen;
@@ -1398,6 +1394,7 @@ Exit:
 	{
 		pFileItemId2->Release();
 	}
+
 	if( RC_BAD( rc))
 	{
 		if( pFile)
@@ -1448,16 +1445,16 @@ FSTATIC RCODE flmReadFileHdr(
 	// Create the database wrapping key from the data in Log Header
 
 #ifdef FLM_USE_NICI
-	if( pFile->FileHdr.uiVersionNum >= FLM_VER_4_60)
+	if( pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 	{
 		FLMUINT32	ui32KeyLen;
 	
 		ui32KeyLen = FB2UW( &pFile->ucLastCommittedLogHdr[ LOG_DATABASE_KEY_LEN]);
 
-		// VISIT:  Looks like the database was created by a version of flaim that did not have
-		// encryption.  Now we are opening it with a version that does.  Do we want to upgrade
-		// automatically?  Perhaps we need a different version, one that says we have encryption or don't???
-		// This code will force limited mode and not upgrade.
+		// Looks like the database was created by a version of FLAIM that did not
+		// have encryption.  Now we are opening it with a version that does.
+		// Allow the database to be opened in limited mode (i.e., no support
+		// for encryption).
 
 		if (ui32KeyLen == 0)
 		{
@@ -1483,8 +1480,10 @@ FSTATIC RCODE flmReadFileHdr(
 				goto Exit;
 			}
 	
-			// If the key was encrypted in a password, then the pszDbPassword parameter better be the key used to encrypt it.
-			// If the key was not encrypted in a password, the pszDbPassword parameter should be NULL.
+			// If the key was encrypted in a password, then the pszDbPassword 
+			// parameter better be the key used to encrypt it.
+			// If the key was not encrypted in a password, the pszDbPassword 
+			// parameter should be NULL.
 	
 			if( RC_BAD( rc = pFile->pDbWrappingKey->setKeyFromStore(
 									&pFile->ucLastCommittedLogHdr[LOG_DATABASE_KEY],
@@ -1644,6 +1643,28 @@ Exit:
 	return( rc);
 }
 
+/***************************************************************************
+Desc:
+*****************************************************************************/
+RCODE flmStartDbMonitorThread(
+	FFILE *		pFile)
+{
+	RCODE		rc = FERR_OK;
+	
+	flmAssert( pFile->pMonitorThrd == NULL);
+	
+	if (RC_BAD( rc = f_threadCreate( &pFile->pMonitorThrd,
+		flmDbMonitor, "FLAIM Database Monitor", 
+		FLM_DB_MONITOR_THREAD_GROUP, 0, pFile, NULL, 32000)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
 /****************************************************************************
 Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
@@ -1734,7 +1755,8 @@ FSTATIC RCODE flmCPThread(
 
 		if (bForceCheckpoint ||
 			 (gv_FlmSysData.SCacheMgr.uiMaxDirtyCache &&
-			  (pFile->uiDirtyCacheCount + pFile->uiLogCacheCount) * pFile->FileHdr.uiBlockSize >
+			  (pFile->uiDirtyCacheCount + pFile->uiLogCacheCount) *
+			  		pFile->FileHdr.uiBlockSize >
 				gv_FlmSysData.SCacheMgr.uiMaxDirtyCache))
 		{
 			if (RC_BAD( dbWriteLock( pFile, pDbStats)))
@@ -1886,13 +1908,13 @@ Desc: See if a given database URL name is a client/server connection.
 **************************************************************************/
 RCODE flmGetCSConnection(
 	const char *		pszUrlName,
-	CS_CONTEXT_p *		ppCSContextRV)
+	CS_CONTEXT * *		ppCSContextRV)
 {
 	RCODE					rc = FERR_OK;
 	FCL_WIRE				Wire;
 	const char *		pszHostName = NULL;
 	FLMINT				iSubProtocol;
-	CS_CONTEXT_p		pCSContext = NULL;
+	CS_CONTEXT *		pCSContext = NULL;
 	FUrl_p				pUrl = NULL;
 	FCS_IPIS *			pIpIStream = NULL;
 	FCS_IPOS	*			pIpOStream = NULL;
@@ -1907,9 +1929,7 @@ RCODE flmGetCSConnection(
 
 	*ppCSContextRV = NULL;
 
-	/*
-	Allocate a C/S context
-	*/
+	// Allocate a C/S context
 
 	if (RC_BAD( rc = f_calloc( sizeof( CS_CONTEXT),	&pCSContext)))
 	{
@@ -1917,7 +1937,7 @@ RCODE flmGetCSConnection(
 	}
 	GedPoolInit( &pCSContext->pool, 8192);
 
-	/* Create a URL out of the URL name. */
+	// Create a URL out of the URL name
 
 	if ((pUrl = f_new FUrl) == NULL)
 	{
@@ -1932,20 +1952,18 @@ RCODE flmGetCSConnection(
 
 	if( pUrl->IsLocal())
 	{
-		goto Exit;		// Returns SUCCESS in rc and NULL in ppCSContextRV
+		goto Exit;
 	}
 
-	/* Determine the sub-protocol to use. */
+	// Determine the sub-protocol to use
 
 	iSubProtocol = pUrl->GetSubProtocol();
 	if( iSubProtocol == NO_SUB_PROTOCOL)
 	{
-		goto Exit; // Returns SUCCESS in rc and NULL in ppCSContext
+		goto Exit;
 	}
 
-	/*
-	Get the address type.
-	*/
+	// Get the address type
 
 	uiAddrType = pUrl->GetAddrType();
 
@@ -1988,7 +2006,7 @@ RCODE flmGetCSConnection(
 		goto Exit;
 	}
 
-	/* Configure the I/O streams. */
+	// Configure the I/O streams
 
 	if( iSubProtocol == TCP_SUB_PROTOCOL)
 	{
@@ -2089,9 +2107,9 @@ RCODE flmGetCSConnection(
 	pCSContext->uiSessionId = FCS_INVALID_ID;
 	f_memcpy( pCSContext->pucAddr, pUrl->GetAddress(), FLM_CS_MAX_ADDR_LEN);
 	f_strncpy( pCSContext->pucUrl, pszUrlName, FLM_CS_MAX_ADDR_LEN - 1);
-	pCSContext->pucUrl[ FLM_CS_MAX_ADDR_LEN - 1] = '\0'; // Truncate the string (if necessary)
+	pCSContext->pucUrl[ FLM_CS_MAX_ADDR_LEN - 1] = '\0';
 
-	/* Configure the wire object */
+	// Configure the wire object
 
 	Wire.setContext( pCSContext);
 
@@ -2099,7 +2117,7 @@ RCODE flmGetCSConnection(
 
 Retry_Connect:
 
-	/* Send a request to open a session. */
+	// Send a request to open a session
 
 	if (RC_BAD( rc = Wire.sendOpcode( FCS_OPCLASS_SESSION, FCS_OP_SESSION_OPEN)))
 	{
@@ -2123,7 +2141,7 @@ Retry_Connect:
 		goto Exit;
 	}
 
-	/* Read the response. */
+	// Read the response
 	
 	if (RC_BAD( rc = Wire.read()))
 	{
@@ -2138,11 +2156,17 @@ Retry_Connect:
 		switch (uiClientVersion)
 		{
 			case FCS_VERSION_1_1_0:
+			{
 				break;
+			}
+			
 			case FCS_VERSION_1_1_1:
+			{
 				uiClientVersion = FCS_VERSION_1_1_0;
 				goto Retry_Connect;
+			}
 		}
+		
 		goto Exit;
 	}
 
@@ -2150,12 +2174,10 @@ Retry_Connect:
 	pCSContext->uiSessionId = Wire.getSessionId();
 	pCSContext->uiSessionCookie = Wire.getSessionCookie();
 	pCSContext->uiServerFlaimVer = Wire.getFlaimVersion();
-	if( pCSContext->uiServerFlaimVer < FLM_VER_4_3)
+	if( pCSContext->uiServerFlaimVer < FLM_FILE_FORMAT_VER_4_3)
 	{
-		/*
-		Versions of FLAIM prior to 4.3 did not send the server's code
-		version.  However, they all supported GEDCOM as a wire format.
-		*/
+		// Versions of FLAIM prior to 4.3 did not send the server's code
+		// version.  However, they all supported GEDCOM as a wire format.
 
 		pCSContext->bGedcomSupport = TRUE;
 	}
@@ -2165,18 +2187,22 @@ Retry_Connect:
 													? TRUE 
 													: FALSE;
 	}
+	
 	*ppCSContextRV = pCSContext;
 	pCSContext = NULL;
 
 Exit:
+
 	if (RC_BAD( rc) || pCSContext)
 	{
 		flmCloseCSConnection( &pCSContext);
 	}
+	
 	if (pUrl)
 	{
 		pUrl->Release();
 	}
+	
 	return( rc);
 }
 
@@ -2184,14 +2210,14 @@ Exit:
 Desc: Close a client/server connection.
 **************************************************************************/
 void flmCloseCSConnection(
-	CS_CONTEXT_p *		ppCSContext)
+	CS_CONTEXT * *		ppCSContext)
 {
 	if( !(*ppCSContext))
 	{
 		return;
 	}
 
-	CS_CONTEXT_p	pCSContext = *ppCSContext;
+	CS_CONTEXT *	pCSContext = *ppCSContext;
 	FCL_WIRE			Wire( pCSContext);
 
 	// Send a message to the FLAIM server indicating we are closing
@@ -2223,17 +2249,16 @@ void flmCloseCSConnection(
 			goto Clear_Session_ID;
 		}
 
-		/*
-		Read the response.  Ignore the return code.
-		*/
+		// Read the response.  Ignore the return code.
 
 		(void)Wire.read();
 
 Clear_Session_ID:
+
 		pCSContext->uiSessionId = FCS_INVALID_ID;
 	}
 
-	/* Free all of the input and output streams and the URL. */
+	// Free all of the input and output streams and the URL
 
 	if( pCSContext->pODataStream)
 	{
@@ -2267,4 +2292,136 @@ Clear_Session_ID:
 
 	GedPoolFree( &pCSContext->pool);
 	f_free( ppCSContext);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE flmDbMonitor(
+	F_Thread *		pThread)
+{
+	RCODE			rc = FERR_OK;
+	FFILE *		pFile = (FFILE *)pThread->getParm1();
+	FLMUINT		uiLastRflEventTime = 0;
+	FLMUINT64	ui64LastRflEventSize = 0;
+	
+	for (;;)
+	{
+		if( pThread->getShutdownFlag())
+		{
+			break;
+		}
+		
+		if (pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_61)
+		{
+			FLMUINT64			ui64RflDiskUsage;
+			FLMUINT64			ui64RflDiskThreshold;
+			FLMUINT				uiRflDiskLimitSpaceFreq;
+			FLMUINT				uiRflDiskLimitTimeFreq;
+			
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			
+			ui64RflDiskThreshold = ((FLMUINT64) 
+				FB2UD( &pFile->ucLastCommittedLogHdr[ 
+					LOG_RFL_DISK_SPACE_THRESHOLD])) << 10;
+				
+			uiRflDiskLimitSpaceFreq = 
+				FB2UD( &pFile->ucLastCommittedLogHdr[ LOG_RFL_LIMIT_SPACE_FREQ]);
+				
+			uiRflDiskLimitTimeFreq =
+				FB2UD( &pFile->ucLastCommittedLogHdr[ LOG_RFL_LIMIT_TIME_FREQ]);
+				
+			ui64RflDiskUsage = pFile->ui64RflDiskUsage;
+
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			
+			if( ui64RflDiskThreshold && ui64RflDiskUsage > ui64RflDiskThreshold)
+			{
+				FLMUINT				uiCurrentTime;
+				char					szRflDir[ F_PATH_MAX_SIZE];
+				char					szRflPrefix[ F_FILENAME_SIZE];
+				
+				f_mutexLock( gv_FlmSysData.hShareMutex);
+				
+				f_strcpy( szRflDir, pFile->pRfl->getRflDirPtr());
+				f_strcpy( szRflPrefix, pFile->pRfl->getDbPrefixPtr());
+				
+				f_mutexUnlock( gv_FlmSysData.hShareMutex);
+
+				f_timeGetSeconds( &uiCurrentTime);
+
+				if( !uiRflDiskLimitSpaceFreq && !uiRflDiskLimitTimeFreq)
+				{
+					uiRflDiskLimitTimeFreq = 30;
+				}
+				
+				if( uiLastRflEventTime || ui64LastRflEventSize)
+				{
+					if( !uiRflDiskLimitSpaceFreq || 
+						(ui64LastRflEventSize && ui64RflDiskUsage < 
+							ui64LastRflEventSize + uiRflDiskLimitSpaceFreq))				
+					{
+						if( !uiRflDiskLimitTimeFreq ||
+							(uiLastRflEventTime && uiCurrentTime <
+								uiLastRflEventTime + uiRflDiskLimitTimeFreq))
+						{
+							goto DoneWithRflSizeEvent;
+						}
+					}
+				}
+				
+				// Calculate the actual disk usage to make sure we are still
+				// over the limit
+				
+				if( RC_BAD( rc = flmRflCalcDiskUsage( szRflDir, szRflPrefix, 
+					pFile->FileHdr.uiVersionNum, &ui64RflDiskUsage)))
+				{
+					goto Exit;
+				}
+				
+				if( ui64RflDiskUsage > ui64RflDiskThreshold)
+				{
+					// Log a message
+					
+					flmLogMessage( FLM_WARN_MESSAGE, FLM_YELLOW, FLM_BLACK,
+						"WARNING: The RFL has exceeded the specified size limit of %i64u", 
+						ui64RflDiskThreshold);
+					
+					if( gv_FlmSysData.SizeEvents.pEventCBList)
+					{
+						FLM_RFL_SIZE_EVENT		rflSizeEvent;
+
+						rflSizeEvent.pszRflDir = szRflDir;						
+						rflSizeEvent.ui64RflDiskUsage = ui64RflDiskUsage;
+						
+						flmDoEventCallback( F_EVENT_SIZE, F_EVENT_RFL_SIZE, 
+							&rflSizeEvent, NULL);
+					}
+					
+					uiLastRflEventTime = uiCurrentTime;
+					ui64LastRflEventSize = ui64RflDiskUsage;
+				}
+				else
+				{
+					// Reset the disk usage.  There may have been changes since
+					// calling flmRflCalcDiskUsage, but this is only an estimate
+					// anyway.
+					
+					f_mutexLock( gv_FlmSysData.hShareMutex);
+					pFile->ui64RflDiskUsage = ui64RflDiskUsage;
+					f_mutexUnlock( gv_FlmSysData.hShareMutex);
+					
+					uiLastRflEventTime = 0;
+					ui64LastRflEventSize = 0;
+				}
+			}
+DoneWithRflSizeEvent:;
+		}
+		
+Exit:
+			
+		f_sleep( 1000);
+	}
+
+	return( FERR_OK);
 }

@@ -25,7 +25,7 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE flmCurCSTestRec(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMUINT			uiDrn,
 	FlmRecord *		pTestRec,
 	FLMBOOL *		pbIsMatchRV);
@@ -35,7 +35,7 @@ Desc: Makes a SET_DEL from a record.
 ****************************************************************************/
 RCODE flmCurMakeKeyFromRec(
 	FDB *				pDb,
-	IXD_p				pIxd,
+	IXD *				pIxd,
 	POOL *			pPool,
 	FlmRecord *		pRec,
 	FLMBYTE **		ppucKeyBuffer,
@@ -111,17 +111,17 @@ Exit:
 Desc:	Sets a query's position from a passed-in DRN.
 ****************************************************************************/
 RCODE flmCurSetPosFromDRN(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMUINT			uiDRN
 	)
 {
 	RCODE				rc = FERR_OK;
 	FlmRecord *		pRec = NULL;
 	POOL *			pTempPool;
-	FDB_p				pDb = NULL;
-	IXD_p				pIxd;
+	FDB *				pDb = NULL;
+	IXD *				pIxd;
 	LFILE *			pLFile;
-	SUBQUERY_p		pSubQuery;
+	SUBQUERY *		pSubQuery;
 	FLMBOOL			bPositioned;
 	FLMBYTE *		pucKeyBuffer = NULL;
 	FLMUINT			uiKeyLen;
@@ -303,9 +303,9 @@ Exit:
 	return( pCursor->rc = rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Given a cursor and two DRNs, this API does the following:
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
 	HFCURSOR		hCursor,
 	FLMUINT		uiDRN1,
@@ -316,8 +316,8 @@ FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
 	FLMUINT *	puiCount)
 {
 	RCODE					rc = FERR_OK;
-	CURSOR_p				pCursor = (CURSOR *)hCursor;
-	FDB_p					pDb = NULL;
+	CURSOR *				pCursor = (CURSOR *)hCursor;
+	FDB *					pDb = NULL;
 	POOL *				pTempPool;
 	FLMBYTE *			pucKey1;
 	FLMUINT				uiKey1Len;
@@ -325,7 +325,7 @@ FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
 	FLMUINT				uiKey2Len;
 	FlmRecord *			pRec1 = NULL;
 	FlmRecord *			pRec2 = NULL;
-	IXD_p					pIxd;
+	IXD *					pIxd;
 	FSIndexCursor *	pTmpFSIndexCursor = NULL;
 	FSIndexCursor *	pSaveFSIndexCursor = NULL;
 	FLMUINT				uiSaveTimeLimit = 0;
@@ -693,14 +693,14 @@ Desc:	Does FlmCursorTestRec and FlmCursorTestDRN over the client/server
 		line.
 ****************************************************************************/
 FSTATIC RCODE flmCurCSTestRec(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT		uiDrn,
 	FlmRecord *	pTestRec,
 	FLMBOOL *	pbIsMatchRV
 	)
 {
 	RCODE				rc = FERR_OK;
-	CS_CONTEXT_p	pCSContext = pCursor->pCSContext;
+	CS_CONTEXT *	pCSContext = pCursor->pCSContext;
 	FCL_WIRE			Wire( pCSContext);
 
 	// If there is no VALID id for the cursor, get one.
@@ -768,23 +768,22 @@ Transmission_Error:
 }
 
 
-/*API~***********************************************************************
-Desc : Checks a record that has been retrieved from the database to see if
-		 satisfies the cursor selection criteria.
-		 IMPORTANT NOTE: pRec's containerID better be set to the container it
-		 came from, because flmCurEvalCriteria verifies that the record's
-		 container number matches the cursor's container number.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Checks a record that has been retrieved from the database to see if
+		satisfies the cursor selection criteria.
+		IMPORTANT NOTE: pRec's containerID better be set to the container it
+		came from, because flmCurEvalCriteria verifies that the record's
+		container number matches the cursor's container number.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorTestRec(
 	HFCURSOR			hCursor,
 	FlmRecord * 	pRec,
-	FLMBOOL * 		pbIsMatch
-	)
+	FLMBOOL * 		pbIsMatch)
 {
-	RCODE			rc = FERR_OK;
-	FDB_p			pDb = NULL;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
-	SUBQUERY_p	pSubQuery;
+	RCODE				rc = FERR_OK;
+	FDB *				pDb = NULL;
+	CURSOR *			pCursor = (CURSOR *)hCursor;
+	SUBQUERY *		pSubQuery;
 
 	flmAssert( pCursor != NULL);
 	*pbIsMatch = FALSE;
@@ -862,23 +861,22 @@ Exit2:
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Retrieves the record identified by the passed-in DRN and checks it to
-		 see if it satisfies the cursor selection criteria.
-Notes: This function is designed for use with cursors having only one
-		 associated source.  Multiple sources are not supported.
-*END************************************************************************/
+/****************************************************************************
+Desc:		Retrieves the record identified by the passed-in DRN and checks it
+			to see if it satisfies the cursor selection criteria.
+Notes: 	This function is designed for use with cursors having only one
+		 	associated source.  Multiple sources are not supported.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorTestDRN(
 	HFCURSOR			hCursor,
 	FLMUINT 			uiDrn,
-	FLMBOOL * 		pbIsMatch
-	)
+	FLMBOOL * 		pbIsMatch)
 {
-	RCODE			rc = FERR_OK;
-	FDB_p			pDb = NULL;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
-	SUBQUERY_p	pSubQuery;
-	FlmRecord *	pRec = NULL;
+	RCODE				rc = FERR_OK;
+	FDB *				pDb = NULL;
+	CURSOR *			pCursor = (CURSOR *)hCursor;
+	SUBQUERY *		pSubQuery;
+	FlmRecord *		pRec = NULL;
 
 	flmAssert( pCursor != NULL);
 	*pbIsMatch = FALSE;

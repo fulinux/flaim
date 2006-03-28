@@ -61,7 +61,7 @@ typedef int (* FDYNSET_COMPARE_FUNC_p)(
 	const void *	vpData2,
 	size_t			UserValue);
 
-typedef struct 
+typedef struct FixedBlkHdr 
 {
 	FLMUINT		uiBlkAddr;
 	FLMUINT		uiPrevBlkAddr;
@@ -468,7 +468,10 @@ public:
 		FBtreeRoot *	pNewRoot);
 };
 
-typedef struct
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct FBTREE_CACHE
 {
 	FLMUINT			uiBlkAddr;
 	FLMUINT			uiLRUValue; 

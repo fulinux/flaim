@@ -25,22 +25,28 @@
 #ifndef FTK_H
 #define FTK_H
 
-	#if defined( FLM_DEBUG) && !defined( FLM_HPUX)
-		#define f_new			new( __FILE__, __LINE__)
-	#else
-		#define f_new			new
-	#endif
-	
+	/****************************************************************************
+	Desc:		Internal return code macros
+	****************************************************************************/
 	#ifdef FLM_DEBUG
-		#define RC_SET( rc) \
-			flmMakeErr(rc, __FILE__, __LINE__)
-	
 		RCODE	flmMakeErr(
 			RCODE				rc,
 			const char *	pszFile,
-			int				iLine);
+			int				iLine,
+			FLMBOOL			bAssert);
+			
+		#define RC_SET( rc) \
+			flmMakeErr( rc, __FILE__, __LINE__, FALSE)
+			
+		#define RC_SET_AND_ASSERT( rc) \
+			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
+			
+		#define RC_UNEXPECTED_ASSERT( rc) \
+			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
 	#else
-		#define RC_SET(rc)		(rc)
+		#define RC_SET( rc)							(rc)
+		#define RC_SET_AND_ASSERT( rc)			(rc)
+		#define RC_UNEXPECTED_ASSERT( rc)
 	#endif
 	
 	#define F_SEM_WAITFOREVER			0xFFFFFFFF
@@ -145,9 +151,9 @@
 		#define f_va_start		va_start
 		#define f_va_arg			va_arg
 		#define f_va_end			va_end
-		
-	#elif defined( FLM_UNIX)
 	
+	#elif defined( FLM_UNIX)
+
 		#include <errno.h>
 		#include <glob.h>
 		#include <limits.h>
@@ -184,6 +190,10 @@
 		
 		#ifdef FLM_AIX
 			#include <sys/atomic_op.h>
+		#endif
+		
+		#if defined( FLM_SOLARIS) || defined( FLM_LINUX)
+			#include <aio.h>
 		#endif
 	
 		#define FSTATIC		static
@@ -255,9 +265,9 @@
 		#ifndef SOCKET
 			#define SOCKET					int
 		#endif
-		
+
 	#endif
-	
+
 	/****************************************************************************
 										CROSS PLATFORM DEFINITIONS
 	****************************************************************************/
@@ -345,7 +355,6 @@
 	
 	
 	#include "fpackon.h"
-	
 	// IMPORTANT NOTE: No other include files should follow this one except
 	// for fpackoff.h
 	
@@ -356,97 +365,97 @@
 	Desc: ASCII Constants
 	****************************************************************************/
 	
-	#define ASCII_TAB						0x09
-	#define ASCII_NEWLINE				0x0A
-	#define ASCII_CR                 0x0D
-	#define ASCII_CTRLZ              0x1A
-	#define ASCII_SPACE              0x20
-	#define ASCII_DQUOTE					0x22
-	#define ASCII_POUND              0x23
-	#define ASCII_DOLLAR             0x24
-	#define ASCII_SQUOTE             0x27
-	#define ASCII_WILDCARD           0x2A
-	#define ASCII_PLUS               0x2B
-	#define ASCII_COMMA              0x2C
-	#define ASCII_DASH               0x2D
-	#define ASCII_MINUS              0x2D
-	#define ASCII_DOT                0x2E
-	#define ASCII_SLASH              0x2F
-	#define ASCII_COLON              0x3A
-	#define ASCII_SEMICOLON				0x3B
-	#define ASCII_EQUAL              0x3D
-	#define ASCII_QUESTIONMARK			0x3F
-	#define ASCII_AT                 0x40
-	#define ASCII_BACKSLASH				0x5C
-	#define ASCII_CARAT					0x5E
-	#define ASCII_UNDERSCORE			0x5F
-	#define ASCII_TILDE					0x7E
-	#define ASCII_AMP						0x26
+		#define ASCII_TAB						0x09
+		#define ASCII_NEWLINE				0x0A
+		#define ASCII_CR                 0x0D
+		#define ASCII_CTRLZ              0x1A
+		#define ASCII_SPACE              0x20
+		#define ASCII_DQUOTE					0x22
+		#define ASCII_POUND              0x23
+		#define ASCII_DOLLAR             0x24
+		#define ASCII_SQUOTE             0x27
+		#define ASCII_WILDCARD           0x2A
+		#define ASCII_PLUS               0x2B
+		#define ASCII_COMMA              0x2C
+		#define ASCII_DASH               0x2D
+		#define ASCII_MINUS              0x2D
+		#define ASCII_DOT                0x2E
+		#define ASCII_SLASH              0x2F
+		#define ASCII_COLON              0x3A
+		#define ASCII_SEMICOLON				0x3B
+		#define ASCII_EQUAL              0x3D
+		#define ASCII_QUESTIONMARK			0x3F
+		#define ASCII_AT                 0x40
+		#define ASCII_BACKSLASH				0x5C
+		#define ASCII_CARAT					0x5E
+		#define ASCII_UNDERSCORE			0x5F
+		#define ASCII_TILDE					0x7E
+		#define ASCII_AMP						0x26
 
-	#define ASCII_UPPER_A				0x41
-	#define ASCII_UPPER_B				0x42
-	#define ASCII_UPPER_C				0x43
-	#define ASCII_UPPER_D				0x44
-	#define ASCII_UPPER_E				0x45
-	#define ASCII_UPPER_F				0x46
-	#define ASCII_UPPER_G				0x47
-	#define ASCII_UPPER_H				0x48
-	#define ASCII_UPPER_I				0x49
-	#define ASCII_UPPER_J				0x4A
-	#define ASCII_UPPER_K				0x4B
-	#define ASCII_UPPER_L				0x4C
-	#define ASCII_UPPER_M				0x4D
-	#define ASCII_UPPER_N				0x4E
-	#define ASCII_UPPER_O				0x4F
-	#define ASCII_UPPER_P				0x50
-	#define ASCII_UPPER_Q				0x51
-	#define ASCII_UPPER_R				0x52
-	#define ASCII_UPPER_S				0x53
-	#define ASCII_UPPER_T				0x54
-	#define ASCII_UPPER_U				0x55
-	#define ASCII_UPPER_V				0x56
-	#define ASCII_UPPER_W				0x57
-	#define ASCII_UPPER_X				0x58
-	#define ASCII_UPPER_Y				0x59
-	#define ASCII_UPPER_Z				0x5A
+		#define ASCII_UPPER_A				0x41
+		#define ASCII_UPPER_B				0x42
+		#define ASCII_UPPER_C				0x43
+		#define ASCII_UPPER_D				0x44
+		#define ASCII_UPPER_E				0x45
+		#define ASCII_UPPER_F				0x46
+		#define ASCII_UPPER_G				0x47
+		#define ASCII_UPPER_H				0x48
+		#define ASCII_UPPER_I				0x49
+		#define ASCII_UPPER_J				0x4A
+		#define ASCII_UPPER_K				0x4B
+		#define ASCII_UPPER_L				0x4C
+		#define ASCII_UPPER_M				0x4D
+		#define ASCII_UPPER_N				0x4E
+		#define ASCII_UPPER_O				0x4F
+		#define ASCII_UPPER_P				0x50
+		#define ASCII_UPPER_Q				0x51
+		#define ASCII_UPPER_R				0x52
+		#define ASCII_UPPER_S				0x53
+		#define ASCII_UPPER_T				0x54
+		#define ASCII_UPPER_U				0x55
+		#define ASCII_UPPER_V				0x56
+		#define ASCII_UPPER_W				0x57
+		#define ASCII_UPPER_X				0x58
+		#define ASCII_UPPER_Y				0x59
+		#define ASCII_UPPER_Z				0x5A
 
-	#define ASCII_LOWER_A				0x61
-	#define ASCII_LOWER_B				0x62
-	#define ASCII_LOWER_C				0x63
-	#define ASCII_LOWER_D				0x64
-	#define ASCII_LOWER_E				0x65
-	#define ASCII_LOWER_F				0x66
-	#define ASCII_LOWER_G				0x67
-	#define ASCII_LOWER_H				0x68
-	#define ASCII_LOWER_I				0x69
-	#define ASCII_LOWER_J				0x6A
-	#define ASCII_LOWER_K				0x6B
-	#define ASCII_LOWER_L				0x6C
-	#define ASCII_LOWER_M				0x6D
-	#define ASCII_LOWER_N				0x6E
-	#define ASCII_LOWER_O				0x6F
-	#define ASCII_LOWER_P				0x70
-	#define ASCII_LOWER_Q				0x71
-	#define ASCII_LOWER_R				0x72
-	#define ASCII_LOWER_S				0x73
-	#define ASCII_LOWER_T				0x74
-	#define ASCII_LOWER_U				0x75
-	#define ASCII_LOWER_V				0x76
-	#define ASCII_LOWER_W				0x77
-	#define ASCII_LOWER_X				0x78
-	#define ASCII_LOWER_Y				0x79
-	#define ASCII_LOWER_Z				0x7A
+		#define ASCII_LOWER_A				0x61
+		#define ASCII_LOWER_B				0x62
+		#define ASCII_LOWER_C				0x63
+		#define ASCII_LOWER_D				0x64
+		#define ASCII_LOWER_E				0x65
+		#define ASCII_LOWER_F				0x66
+		#define ASCII_LOWER_G				0x67
+		#define ASCII_LOWER_H				0x68
+		#define ASCII_LOWER_I				0x69
+		#define ASCII_LOWER_J				0x6A
+		#define ASCII_LOWER_K				0x6B
+		#define ASCII_LOWER_L				0x6C
+		#define ASCII_LOWER_M				0x6D
+		#define ASCII_LOWER_N				0x6E
+		#define ASCII_LOWER_O				0x6F
+		#define ASCII_LOWER_P				0x70
+		#define ASCII_LOWER_Q				0x71
+		#define ASCII_LOWER_R				0x72
+		#define ASCII_LOWER_S				0x73
+		#define ASCII_LOWER_T				0x74
+		#define ASCII_LOWER_U				0x75
+		#define ASCII_LOWER_V				0x76
+		#define ASCII_LOWER_W				0x77
+		#define ASCII_LOWER_X				0x78
+		#define ASCII_LOWER_Y				0x79
+		#define ASCII_LOWER_Z				0x7A
 
-	#define ASCII_ZERO					0x30
-	#define ASCII_ONE						0x31
-	#define ASCII_TWO						0x32
-	#define ASCII_THREE					0x33
-	#define ASCII_FOUR					0x34
-	#define ASCII_FIVE					0x35
-	#define ASCII_SIX						0x36
-	#define ASCII_SEVEN					0x37
-	#define ASCII_EIGHT					0x38
-	#define ASCII_NINE					0x39
+		#define ASCII_ZERO					0x30
+		#define ASCII_ONE						0x31
+		#define ASCII_TWO						0x32
+		#define ASCII_THREE					0x33
+		#define ASCII_FOUR					0x34
+		#define ASCII_FIVE					0x35
+		#define ASCII_SIX						0x36
+		#define ASCII_SEVEN					0x37
+		#define ASCII_EIGHT					0x38
+		#define ASCII_NINE					0x39
 	
 	/****************************************************************************
 	Desc: Native constants
@@ -602,6 +611,17 @@
 	Desc: Byte order macros
 	****************************************************************************/
 	
+	FINLINE FLMUINT16 flmBigEndianToUINT16(
+		FLMBYTE *		pucBuf)
+	{
+		FLMUINT16		ui16Val = 0;
+		
+		ui16Val |= ((FLMUINT16)pucBuf[ 0]) << 8;
+		ui16Val |= ((FLMUINT16)pucBuf[ 1]);
+		
+		return( ui16Val);
+	}
+	
 	FINLINE FLMUINT32 flmBigEndianToUINT32( 
 		FLMBYTE *		pucBuf)
 	{
@@ -632,15 +652,45 @@
 		return( ui64Val);
 	}
 	
-	FINLINE FLMUINT16 flmBigEndianToUINT16(
+	FINLINE FLMINT16 flmBigEndianToINT16(
 		FLMBYTE *		pucBuf)
 	{
-		FLMUINT16		ui16Val = 0;
+		FLMINT16		i16Val = 0;
 		
-		ui16Val |= ((FLMUINT16)pucBuf[ 0]) << 8;
-		ui16Val |= ((FLMUINT16)pucBuf[ 1]);
+		i16Val |= ((FLMINT16)pucBuf[ 0]) << 8;
+		i16Val |= ((FLMINT16)pucBuf[ 1]);
 		
-		return( ui16Val);
+		return( i16Val);
+	}
+	
+	FINLINE FLMINT32 flmBigEndianToINT32( 
+		FLMBYTE *		pucBuf)
+	{
+		FLMINT32			i32Val = 0;
+
+		i32Val |= ((FLMINT32)pucBuf[ 0]) << 24;
+		i32Val |= ((FLMINT32)pucBuf[ 1]) << 16;
+		i32Val |= ((FLMINT32)pucBuf[ 2]) << 8;
+		i32Val |= ((FLMINT32)pucBuf[ 3]);
+		
+		return( i32Val);
+	}
+	
+	FINLINE FLMINT64 flmBigEndianToINT64( 
+		FLMBYTE *		pucBuf)
+	{
+		FLMINT64			i64Val = 0;
+	
+		i64Val |= ((FLMINT64)pucBuf[ 0]) << 56;
+		i64Val |= ((FLMINT64)pucBuf[ 1]) << 48;
+		i64Val |= ((FLMINT64)pucBuf[ 2]) << 40;
+		i64Val |= ((FLMINT64)pucBuf[ 3]) << 32;
+		i64Val |= ((FLMINT64)pucBuf[ 4]) << 24;
+		i64Val |= ((FLMINT64)pucBuf[ 5]) << 16;
+		i64Val |= ((FLMINT64)pucBuf[ 6]) << 8;
+		i64Val |= ((FLMINT64)pucBuf[ 7]);
+	
+		return( i64Val);
 	}
 	
 	FINLINE void flmUINT32ToBigEndian( 
@@ -1562,6 +1612,25 @@
 		}
 	
 		return( 0);
+	}
+	
+	/***************************************************************************
+	Desc:
+	****************************************************************************/
+	FINLINE FLMUINT64 flmRoundUp(
+		FLMUINT64		ui64ValueToRound,
+		FLMUINT64		ui64Boundary)
+	{
+		FLMUINT64	ui64RetVal;
+		
+		ui64RetVal = ((ui64ValueToRound / ui64Boundary) * ui64Boundary);	
+		
+		if( ui64RetVal < ui64ValueToRound)
+		{
+			ui64RetVal += ui64Boundary;
+		}
+		
+		return( ui64RetVal);
 	}
 	
 	/****************************************************************************

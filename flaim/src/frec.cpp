@@ -727,7 +727,7 @@ RCODE FlmRecord::setNative(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = FlmNative2Storage( pszString, &uiBufLen, pucData)))
+		if( RC_BAD( rc = FlmNative2Storage( pszString, 0, &uiBufLen, pucData)))
 		{
 			goto Exit;
 		}
@@ -1528,7 +1528,7 @@ RCODE FlmRecord::compressMemory( void)
 				// Add 1 to the length to allow for the flags byte which is only
 				// present on long fields and encrypted fields.
 
-				uiTmp = uiNewDataSize + sizeof( FLMUINT16) + 1;
+				uiTmp = uiNewDataSize + sizeof( FLMUINT32) + 1;
 
 				if( getFieldDataType( pFld) == FLM_BINARY_TYPE)
 				{
@@ -1608,7 +1608,7 @@ RCODE FlmRecord::compressMemory( void)
 			}
 			else if( uiLength >= 0xFF)
 			{
-				uiTmp = uiNewDataOffset + sizeof( FLMUINT16) + 1;
+				uiTmp = uiNewDataOffset + sizeof( FLMUINT32) + 1;
 
 				if( getFieldDataType( pFld) == FLM_BINARY_TYPE)
 				{
@@ -1619,8 +1619,8 @@ RCODE FlmRecord::compressMemory( void)
 				}
 
 				flmAssert( uiTmp + uiLength <= uiNewDataSize);
-				pucNewData[ uiNewDataOffset] = 0;  // Set the flags byte.
-				UW2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCID]);
+				pucNewData[ uiNewDataOffset + FLD_ENC_FLAGS] = 0;  // Set the flags byte.
+				UD2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCID]);
 				f_memcpy( &pucNewData[ uiTmp], getDataPtr( pFld), uiLength);
 				pFld->ui32DataOffset = (FLMUINT32)uiNewDataOffset;
 				uiNewDataOffset = uiTmp + uiLength;
@@ -1656,8 +1656,8 @@ RCODE FlmRecord::compressMemory( void)
 			flmAssert( uiEncTmp + uiEncLength + (uiPicketFenceSize / 2) <= uiNewDataSize);
 			pucNewData[ uiNewDataOffset + FLD_ENC_FLAGS] = ( FLMBYTE)uiFlags;
 			UW2FBA( (FLMUINT32)uiEncId, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCID]);
-			UW2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_DATA_LEN]);
-			UW2FBA( (FLMUINT32)uiEncLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCRYPTED_DATA_LEN]);
+			UD2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_DATA_LEN]);
+			UD2FBA( (FLMUINT32)uiEncLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCRYPTED_DATA_LEN]);
 #ifdef FLM_PICKET_FENCE
 			// Set the picket fence
 			f_sprintf( (char *)&pucNewData[ uiTmp], FLD_RAW_FENCE);
@@ -1829,7 +1829,7 @@ RCODE FlmRecord::compactMemory( void)
 			{
 				// Add one extra byte for the flags byte.
 
-				uiTmp = uiNewDataSize + sizeof( FLMUINT16) + 1;
+				uiTmp = uiNewDataSize + sizeof( FLMUINT32) + 1;
 
 				if( getFieldDataType( pFld) == FLM_BINARY_TYPE)
 				{
@@ -1951,7 +1951,7 @@ RCODE FlmRecord::compactMemory( void)
 			}
 			else if( uiLength >= 0xFF)
 			{
-				uiTmp = uiNewDataOffset + sizeof( FLMUINT16) + 1;
+				uiTmp = uiNewDataOffset + sizeof( FLMUINT32) + 1;
 
 				if( getFieldDataType( pFld) == FLM_BINARY_TYPE)
 				{
@@ -1962,8 +1962,8 @@ RCODE FlmRecord::compactMemory( void)
 				}
 
 				flmAssert( uiTmp + uiLength <= uiNewDataSize);
-				pucNewData[ uiNewDataOffset] = 0;	// Flags
-				UW2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCID]);
+				pucNewData[ uiNewDataOffset + FLD_ENC_FLAGS] = 0;	// Flags
+				UD2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCID]);
 				f_memcpy( &pucNewData[ uiTmp], getDataPtr( pFld), uiLength);
 				pNewFld->ui32DataOffset = (FLMUINT32)uiNewDataOffset;
 				uiNewDataOffset = uiTmp + uiLength;
@@ -1997,10 +1997,10 @@ RCODE FlmRecord::compactMemory( void)
 			uiEncTmp = uiTmp + uiLength + (uiPicketFenceSize / 2);
 
 			flmAssert( uiEncTmp + uiEncLength + (uiPicketFenceSize / 2) <= uiNewDataSize);
-			pucNewData[ uiNewDataOffset + FLD_ENC_FLAGS] = ( FLMBYTE)uiFlags;
+			pucNewData[ uiNewDataOffset + FLD_ENC_FLAGS] = (FLMBYTE)uiFlags;
 			UW2FBA( (FLMUINT16)uiEncId, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCID]);
-			UW2FBA( (FLMUINT16)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_DATA_LEN]);
-			UW2FBA( (FLMUINT16)uiEncLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCRYPTED_DATA_LEN]);
+			UD2FBA( (FLMUINT32)uiLength, &pucNewData[ uiNewDataOffset + FLD_ENC_DATA_LEN]);
+			UD2FBA( (FLMUINT32)uiEncLength, &pucNewData[ uiNewDataOffset + FLD_ENC_ENCRYPTED_DATA_LEN]);
 
 #ifdef FLM_PICKET_FENCE
 			f_sprintf( (char *)&pucNewData[ uiTmp], FLD_RAW_FENCE);
@@ -2322,25 +2322,14 @@ RCODE	FlmRecord::getNewDataPtr(
 		goto Exit;
 	}
 
-	// Make sure the requested size doesn't exceed the maximum
-	// field value size
-
-	if( uiNewLength > FLM_MAX_FIELD_VAL_SIZE ||
-		 uiEncNewLength > FLM_MAX_FIELD_VAL_SIZE)
-	{
-		rc = RC_SET( FERR_VALUE_TOO_LARGE);
-		goto Exit;
-	}
-	
 	bOldEncrypted = isEncryptedField( pField);
 
 	// If the new field is encrypted, we need to prefix the value
-	// with the encryption overhead.
-	// Otherwise, if the new length is >= 0xFF, we need to prefix the value
-	// with a 2-byte length
+	// with the encryption overhead.  Otherwise, if the new length
+	// is >= 0xFF, we need to prefix the value with a 4-byte length
 
 	uiHeader = (bNewEncrypted ? FLM_ENC_FLD_OVERHEAD
-									  : (uiNewLength >= 0xFF ? sizeof( FLMUINT16) + 1
+									  : (uiNewLength >= 0xFF ? sizeof( FLMUINT32) + 1
 									  								 : 0));
 	// Determine the true original data length
 
@@ -2352,7 +2341,8 @@ RCODE	FlmRecord::getNewDataPtr(
 		flmAssert( pField->ui8DataLen == 0xFF);
 
 		// Account for the header
-		uiOldHeader = (bOldEncrypted ? FLM_ENC_FLD_OVERHEAD : sizeof( FLMUINT16) + 1);
+		
+		uiOldHeader = (bOldEncrypted ? FLM_ENC_FLD_OVERHEAD : sizeof( FLMUINT32) + 1);
 		uiOldLength += uiOldHeader;
 
 		// Special work if this is a binary field
@@ -2527,7 +2517,7 @@ RCODE	FlmRecord::getNewDataPtr(
 					pucTmp = getDataBufPtr() + uiAllocStart;
 					*pucTmp = 0;	// Flags
 					pucTmp++;
-					UW2FBA( (FLMUINT16)uiNewLength, pucTmp);
+					UD2FBA( (FLMUINT32)uiNewLength, pucTmp);
 					pField->ui8DataLen = 0xFF;
 					pField->ui32DataOffset = (FLMUINT32)uiAllocStart;
 				}
@@ -2581,7 +2571,7 @@ RCODE	FlmRecord::getNewDataPtr(
 						pucTmp = getDataBufPtr() + pField->ui32DataOffset;
 						*pucTmp = 0;	// Flags
 						pucTmp++;
-						UW2FBA( (FLMUINT16)uiNewLength, pucTmp);
+						UD2FBA( (FLMUINT32)uiNewLength, pucTmp);
 						pField->ui8DataLen = 0xFF;
 					}
 					else
@@ -2679,7 +2669,7 @@ RCODE	FlmRecord::getNewDataPtr(
 						pucTmp = getDataBufPtr() + uiAllocStart;
 						*pucTmp = 0;	// Flags
 						pucTmp++;
-						UW2FBA( (FLMUINT16)uiNewLength, pucTmp);
+						UD2FBA( (FLMUINT32)uiNewLength, pucTmp);
 						pField->ui8DataLen = 0xFF;
 						pField->ui32DataOffset = (FLMUINT32)uiAllocStart;
 					}
@@ -4019,7 +4009,7 @@ FLMBYTE * FlmRecord::getDataPtr(
 		}
 		else
 		{
-			FLMUINT	uiOffset = pField->ui32DataOffset + sizeof( FLMUINT16) + 1;
+			FLMUINT	uiOffset = pField->ui32DataOffset + sizeof( FLMUINT32) + 1;
 
 			if( getFieldDataType( pField) == FLM_BINARY_TYPE)
 			{
@@ -4226,11 +4216,11 @@ FLMUINT FlmRecord::getFieldDataLength(
 		pucLength += 2;
 	}
 
-	uiDataLen = FB2UW( pucLength);
+	uiDataLen = FB2UD( pucLength);
 
 Exit:
 
-	return uiDataLen;
+	return( uiDataLen);
 }
 
 /*****************************************************************************
@@ -4289,8 +4279,7 @@ Exit:
 Desc:	Function to get the length of the encrypted data.
 *****************************************************************************/
 FLMUINT FlmRecord::getEncryptedDataLength(
-	FlmField *			pField
-	)
+	FlmField *			pField)
 {
 	FLMBYTE *		pucBuffer = NULL;
 	FLMUINT			uiEncDataLength = 0;
@@ -4303,7 +4292,7 @@ FLMUINT FlmRecord::getEncryptedDataLength(
 	}
 
 	pucBuffer = getDataBufPtr() + pField->ui32DataOffset;
-	uiEncDataLength = FB2UW( &pucBuffer[ FLD_ENC_ENCRYPTED_DATA_LEN]);
+	uiEncDataLength = FB2UD( &pucBuffer[ FLD_ENC_ENCRYPTED_DATA_LEN]);
 
 Exit:
 
@@ -4343,8 +4332,7 @@ Exit:
 Desc:
 *****************************************************************************/
 FLMUINT FlmRecord::getEncFlags(
-	FlmField *			pField
-	)
+	FlmField *			pField)
 {
 	FLMBYTE *	pucBuffer;
 
@@ -4357,7 +4345,6 @@ FLMUINT FlmRecord::getEncFlags(
 	pucBuffer = getDataBufPtr() + pField->ui32DataOffset;
 
 	return( (FLMUINT)pucBuffer[ FLD_ENC_FLAGS]);
-
 }
 
 /*****************************************************************************
@@ -4365,8 +4352,7 @@ Desc:
 *****************************************************************************/
 void FlmRecord::setEncFlags(
 	FlmField *		pField,
-	FLMUINT			uiFlags
-	)
+	FLMUINT			uiFlags)
 {
 	FLMBYTE *	pucBuffer;
 
@@ -4806,8 +4792,8 @@ RCODE FlmRecord::checkField(
 {
 	RCODE				rc = FERR_OK;
 	FLMBYTE *		pucFldBuffer;
-	FLMUINT16		ui16DataLen;
-	FLMUINT16		ui16EncDataLen;
+	FLMUINT32		ui32DataLen;
+	FLMUINT32		ui32EncDataLen;
 	FLMUINT			uiAlignment = 0;
 	FLMBYTE *		pucDataFence = NULL;
 	FLMBYTE *		pucEncFence = NULL;
@@ -4859,16 +4845,16 @@ RCODE FlmRecord::checkField(
 		goto Exit;
 	}
 
-	ui16DataLen = FB2UW( &pucFldBuffer[ FLD_ENC_DATA_LEN]);
-	if (!ui16DataLen)
+	ui32DataLen = FB2UD( &pucFldBuffer[ FLD_ENC_DATA_LEN]);
+	if (!ui32DataLen)
 	{
 		flmAssert( 0);
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
 
-	ui16EncDataLen = FB2UW( &pucFldBuffer[ FLD_ENC_ENCRYPTED_DATA_LEN]);
-	if (!ui16EncDataLen)
+	ui32EncDataLen = FB2UD( &pucFldBuffer[ FLD_ENC_ENCRYPTED_DATA_LEN]);
+	if (!ui32EncDataLen)
 	{
 		flmAssert( 0);
 		rc = RC_SET( FERR_FAILURE);
@@ -4893,7 +4879,7 @@ RCODE FlmRecord::checkField(
 	// Verify the picket fences.
 
 	pucDataFence = pucFldBuffer + FLM_ENC_FLD_OVERHEAD + uiAlignment;
-	pucEncFence = pucDataFence + ui16DataLen + 4;
+	pucEncFence = pucDataFence + ui32DataLen + 4;
 
 	if ( f_memcmp( pucDataFence, FLD_RAW_FENCE, FLD_PICKET_FENCE_SIZE / 2))
 	{
@@ -4920,7 +4906,7 @@ RCODE FlmRecord::checkField(
 		// Let's try to get this as unicode.
 		// Allocate a temporary buffer.
 
-		uiBufLen = (ui16DataLen * 2) + 2;
+		uiBufLen = (ui32DataLen * 2) + 2;
 		if (RC_BAD( rc = f_alloc( uiBufLen, &pUnicode)))
 		{
 			goto Exit;
@@ -5522,6 +5508,699 @@ RCODE FlmRecord::truncateFieldIdTable( void)
 
 Exit:
 
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class RecCursor : public F_Base
+{
+public:
+
+	RecCursor(
+		FlmRecord *					pRecord,
+		GRD_CallBackFunction 	pCallBackFunction,
+		void *						pvCallBackData)
+	{
+		m_pRecord = pRecord;
+		m_pvField = pRecord ? pRecord->root() : NULL;
+		m_uiRootLevel = pRecord ? pRecord->getLevel( m_pvField) : 0;
+		m_uiAbsoluteCursorPosition = 1;
+		m_pCallBack = pCallBackFunction;
+		m_pvCallBackData = pvCallBackData;
+		m_bStillAtTheRoot = TRUE;
+	}
+
+	RecCursor(
+		RecCursor * 				pCursor)
+	{
+		m_pRecord = pCursor->m_pRecord;
+		m_pvField = pCursor->m_pvField;
+		m_uiRootLevel = pCursor->m_uiRootLevel;
+		m_uiAbsoluteCursorPosition = pCursor->m_uiAbsoluteCursorPosition;
+		m_pCallBack = pCursor->m_pCallBack;
+		m_pvCallBackData = pCursor->m_pvCallBackData;
+		m_bStillAtTheRoot = pCursor->m_bStillAtTheRoot;
+	}
+
+	virtual ~RecCursor( void)
+	{
+		if (m_pRecord)
+		{
+			m_pRecord = NULL;
+		}
+	}
+
+	FINLINE FLMBOOL EndOfRecord( void)
+	{
+		return( m_pvField == NULL 
+						? TRUE 
+						: (m_pRecord->getLevel( m_pvField) <= m_uiRootLevel && 
+									!m_bStillAtTheRoot)
+								? TRUE 
+								: FALSE);
+	}
+
+	FINLINE void Advance( void)
+	{
+		m_bStillAtTheRoot = FALSE;
+		if (m_pvField)
+		{
+			m_pvField = m_pRecord->next( m_pvField);
+			m_uiAbsoluteCursorPosition++;
+		}
+	}
+
+	FLMBOOL	FieldValueIsEqualTo(
+		RecCursor *					pSomeField);
+
+	FINLINE FLMBOOL FieldIdIsEqualTo(
+		RecCursor *					pSomeField)
+	{
+		return( Level() == pSomeField->Level() &&
+					m_pRecord->getFieldID( m_pvField) == 
+						pSomeField->m_pRecord->getFieldID( pSomeField->m_pvField) &&
+					m_pRecord->getDataType( m_pvField) == 
+						pSomeField->m_pRecord->getDataType( pSomeField->m_pvField) 
+								? TRUE 
+								: FALSE);
+	}
+
+	enum RecFieldMatchTypes
+	{
+		GRD_NoMatch,
+		GRD_ExactMatch,
+		GRD_IDMatch
+	};
+
+	void * Scan(
+		RecCursor *					pTargetCursor, 
+		RecFieldMatchTypes *		peMatchType);
+
+	FINLINE FLMUINT AbsolutePosition( void)
+	{
+		return (m_uiAbsoluteCursorPosition);
+	}
+
+	FINLINE void * Field( void)
+	{
+		return ( m_pvField);
+	}
+
+	FINLINE FlmRecord * Record( void)
+	{
+		return (m_pRecord);
+	}
+
+	FINLINE FLMUINT Level( void)
+	{
+		return (m_pvField ? Normalize( m_pRecord->getLevel( m_pvField)) : 0);
+	}
+
+	FINLINE FLMUINT RawLevel( void)
+	{
+		return( m_pvField ? m_pRecord->getLevel( m_pvField) : 0);
+	}
+
+	FINLINE void CallBack(
+			GRD_DifferenceData &	difference)
+	{
+		(*m_pCallBack) (difference, m_pvCallBackData);
+	}
+
+	static void MarkBranchDeleted(
+		RecCursor *					pBeforeCursor,
+		RecCursor *					pAfterCursor);
+
+	static void MarkModified(
+		RecCursor *					pBeforeCursor, 
+		RecCursor *					pAfterCursor);
+
+	static void MarkInserted(
+		RecCursor * 				pCursor);
+
+	static void MarkRangeInserted(
+		RecCursor *					pAfterCursor, 
+		void *						pEndOfRange);
+		
+private:
+
+	FLMUINT							m_uiAbsoluteCursorPosition;
+	FlmRecord *						m_pRecord;
+	void *							m_pvField;
+	FLMUINT							m_uiRootLevel;
+	GRD_CallBackFunction 		m_pCallBack;
+	void *							m_pvCallBackData;
+	FLMBOOL							m_bStillAtTheRoot;
+	
+	RecCursor( void)
+	{
+	}
+
+	FINLINE FLMUINT Normalize(
+		FLMUINT						uiLevel)
+	{
+		return( uiLevel - m_uiRootLevel);
+	}
+
+	FINLINE FLMBOOL isLeafField(void)
+	{
+		void *		pvNext = m_pRecord->next( m_pvField);
+
+		// It is valid to compare raw node levels of nodes within the same
+		// record
+
+		return( (pvNext && 
+					m_pRecord->getLevel( pvNext) > m_pRecord->getLevel( m_pvField)) 
+							? FALSE
+							: TRUE);
+	}
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL RecCursor::FieldValueIsEqualTo(
+	RecCursor*	pSomeField)
+{
+	FLMBOOL				bEqual = FALSE;
+	FLMUINT				uiFieldLen = m_pRecord->getDataLength( m_pvField);
+	FLMUINT				uiSomeLen = pSomeField->m_pRecord->getDataLength( pSomeField->m_pvField);
+	FLMUINT				uiEncFieldLen = 0;
+	FLMUINT				uiEncSomeLen = 0;
+	const FLMBYTE*		pValue1;
+	const FLMBYTE*		pValue2;
+
+	// If the data lengths are not equal, we can exit.
+
+	if (uiFieldLen != uiSomeLen)
+	{
+		goto Exit;
+	}
+
+	// If one field is encrypted and the other is not, then we can exit.
+
+	if ((m_pRecord->isEncryptedField( m_pvField) &&
+		 	!pSomeField->m_pRecord->isEncryptedField( pSomeField->m_pvField)) ||
+		 (!m_pRecord->isEncryptedField( m_pvField) && 
+		 pSomeField->m_pRecord->isEncryptedField( pSomeField->m_pvField)))
+	{
+		goto Exit;
+	}
+
+	// If the fields are encrypted, are they using the same encryption
+	// scheme?
+
+	if (m_pRecord->isEncryptedField( m_pvField))
+	{
+		if (m_pRecord->getEncryptionID( m_pvField) != 
+				pSomeField->m_pRecord->getEncryptionID( pSomeField->m_pvField))
+		{
+			goto Exit;
+		}
+	}
+
+	// If the field is not encrypted, and we have a value length
+
+	if (uiFieldLen && !m_pRecord->isEncryptedField( m_pvField))
+	{
+		pValue1 = m_pRecord->getDataPtr( m_pvField);
+		pValue2 = pSomeField->m_pRecord->getDataPtr( pSomeField->m_pvField);
+
+		// If the values are not equal, we can exit.
+
+		if (f_memcmp( pValue1, pValue2, uiFieldLen) != 0)
+		{
+			goto Exit;
+		}
+	}
+
+	// Otherwise, if the field is encrypted, we need to check the
+	// encrypted value.
+
+	else if (m_pRecord->isEncryptedField( m_pvField))
+	{
+		uiEncFieldLen = m_pRecord->getEncryptedDataLength( m_pvField);
+		uiEncSomeLen = pSomeField->m_pRecord->getEncryptedDataLength( pSomeField->m_pvField);
+
+		// If the encrypted lengths are not equal, we can exit.
+
+		if (uiEncFieldLen != uiEncSomeLen)
+		{
+			goto Exit;
+		}
+
+		if (uiEncFieldLen)
+		{
+			pValue1 = m_pRecord->getEncryptionDataPtr( m_pvField);
+			pValue2 = pSomeField->m_pRecord->getEncryptionDataPtr( pSomeField->m_pvField);
+
+			// If the encrypted values are not equal, we can exit.
+
+			if (f_memcmp( pValue1, pValue2, uiFieldLen) != 0)
+			{
+				goto Exit;
+			}
+		}
+	}
+
+	// If we get this far, the fields are identical.
+
+	bEqual = TRUE;
+
+Exit:
+
+	return (bEqual);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * RecCursor::Scan(
+	RecCursor *				pTargetCursor,
+	RecFieldMatchTypes *	peMatchType)
+{
+	void *		pvIDMatch = NULL;
+	FLMUINT		uiTargetLevel = pTargetCursor->Level();
+	FLMBOOL		bAdvanced = FALSE;
+
+	*peMatchType = GRD_NoMatch;
+
+	for (RecCursor candidate = this;
+		  candidate.Level() >= uiTargetLevel && !candidate.EndOfRecord();
+		  candidate.Advance(), bAdvanced = TRUE)
+	{
+		if (pTargetCursor->FieldIdIsEqualTo( &candidate))
+		{
+			if (pTargetCursor->FieldValueIsEqualTo( &candidate))
+			{
+				*peMatchType = GRD_ExactMatch;
+				return (candidate.Field());
+			}
+			else if (*peMatchType == GRD_NoMatch)
+			{
+				if (!bAdvanced && isLeafField())
+				{
+					// Only allow ID matches on leaf fields, when cursor hasn't
+					// advanced
+
+					*peMatchType = GRD_IDMatch;
+					pvIDMatch = candidate.Field();
+				}
+			}
+		}
+	}
+
+	return (pvIDMatch);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void RecCursor::MarkBranchDeleted(
+	RecCursor *				pBeforeCursor,
+	RecCursor *				pAfterCursor)
+{
+	GRD_DifferenceData	difference;
+	FLMUINT					uiStartLevel = pBeforeCursor->RawLevel();
+
+	difference.type = GRD_DeletedSubtree;
+	difference.uiAbsolutePosition = pAfterCursor->AbsolutePosition();
+	difference.pBeforeRecord = pBeforeCursor->Record();
+	difference.pvBeforeField = pBeforeCursor->Field();
+	difference.pAfterRecord = NULL;
+	difference.pvAfterField = NULL;
+
+	pBeforeCursor->CallBack( difference);
+	difference.type = GRD_Deleted;
+	do
+	{
+		pBeforeCursor->CallBack( difference);
+		pBeforeCursor->Advance();
+	} while( !pBeforeCursor->EndOfRecord() && 
+				pBeforeCursor->RawLevel() > uiStartLevel);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void RecCursor::MarkModified(
+	RecCursor *		pBeforeCursor,
+	RecCursor *		pAfterCursor)
+{
+	GRD_DifferenceData	difference;
+
+	difference.type = GRD_Modified;
+	difference.uiAbsolutePosition = pAfterCursor->AbsolutePosition();
+	difference.pBeforeRecord = pBeforeCursor->Record();
+	difference.pvBeforeField = pBeforeCursor->Field();
+	difference.pAfterRecord = pAfterCursor->Record();
+	difference.pvAfterField = pAfterCursor->Field();
+
+	pBeforeCursor->CallBack( difference);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void RecCursor::MarkInserted(
+	RecCursor *				pAfterCursor)
+{
+	GRD_DifferenceData	difference;
+
+	difference.type = GRD_Inserted;
+	difference.uiAbsolutePosition = pAfterCursor->AbsolutePosition();
+	difference.pBeforeRecord = NULL;
+	difference.pvBeforeField = NULL;
+	difference.pAfterRecord = pAfterCursor->Record();
+	difference.pvAfterField = pAfterCursor->Field();
+
+	pAfterCursor->CallBack( difference);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void RecCursor::MarkRangeInserted(
+	RecCursor *		pAfterCursor,
+	void *			pEndOfRange)
+{
+	void *			pvField;
+
+	for (pvField = pAfterCursor->Field();
+		  pvField != pEndOfRange;
+		  pvField = pAfterCursor->Field())
+	{
+
+		// Note that MarkInserted will advance the field pointer
+
+		RecCursor::MarkInserted( pAfterCursor);
+		pAfterCursor->Advance();
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void flmRecordDifference(
+	FlmRecord *				pBefore,
+	FlmRecord *				pAfter,
+	GRD_CallBackFunction pCallBackFunction,
+	void *					pvCallBackData)
+{
+	RecCursor	beforeCursor( pBefore, pCallBackFunction, pvCallBackData);
+	RecCursor	afterCursor( pAfter, pCallBackFunction, pvCallBackData);
+
+	// Iterate through all of the fields in the 'before record'
+
+	while (!beforeCursor.EndOfRecord())
+	{
+		void *									pvFound;
+		RecCursor::RecFieldMatchTypes 	eMatchType;
+
+		if (afterCursor.EndOfRecord())
+		{
+			RecCursor::MarkBranchDeleted( &beforeCursor, &afterCursor);
+			continue;
+		}
+
+		pvFound = afterCursor.Scan( &beforeCursor, &eMatchType);
+		if (pvFound)
+		{
+			// 'before field' found in 'after record' Mark all intervening
+			// 'after fields' as inserted
+
+			RecCursor::MarkRangeInserted( &afterCursor, pvFound);
+			
+			if (eMatchType == RecCursor::GRD_IDMatch)
+			{
+				// 'before field' was modified in 'after record'
+
+				RecCursor::MarkModified( &beforeCursor, &afterCursor);
+			}
+
+			afterCursor.Advance();
+			beforeCursor.Advance();
+		}
+		else
+		{
+			// 'before field' has been deleted from 'after record'
+
+			RecCursor::MarkBranchDeleted( &beforeCursor, &afterCursor);
+		}
+	}
+
+	// The end of the 'before record' has been reached, all remaining
+	// 'after fields' must have been inserted
+
+	RecCursor::MarkRangeInserted( &afterCursor, NULL);
+}
+
+/****************************************************************************
+Desc: 	This routine adds a field to a record.
+****************************************************************************/
+RCODE flmAddField(
+	FlmRecord *		pRecord,
+	FLMUINT			uiTagNum,
+	const void *	pvData,
+	FLMUINT			uiDataLen,
+	FLMUINT			uiDataType)
+{
+	RCODE				rc = FERR_OK;
+	void *			pvField;
+
+	// Insert new field. 
+	
+	if( RC_BAD( rc = pRecord->insertLast( 1, uiTagNum, uiDataType, &pvField)))
+	{
+		goto Exit;
+	}
+
+	switch( uiDataType)
+	{
+		case FLM_TEXT_TYPE:
+		{
+			rc = pRecord->setNative( pvField, (const char *)pvData);
+
+			break;
+		}
+
+		case FLM_NUMBER_TYPE:
+		{
+			FLMUINT	uiNum;
+
+			switch (uiDataLen)
+			{
+				case 0:
+					uiNum = (FLMUINT)(*((FLMUINT *)(pvData)));
+					break;
+				case 1:
+					uiNum = (FLMUINT)(*((FLMBYTE *)(pvData)));
+					break;
+				case 2:
+					uiNum = (FLMUINT)(*((FLMUINT16 *)(pvData)));
+					break;
+				case 4:
+					uiNum = (FLMUINT)(*((FLMUINT32 *)(pvData)));
+					break;
+				default:
+					flmAssert( 0);
+					rc = RC_SET( FERR_INVALID_PARM);
+					goto Exit;
+			}
+			rc = pRecord->setUINT( pvField, uiNum);
+			break;
+		}
+		case FLM_BINARY_TYPE:
+		{
+			rc = pRecord->setBinary( pvField, pvData, uiDataLen);
+			break;
+		}
+		default :
+		{
+			flmAssert( 0);
+			break;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc: 	This routine modifies the first matching field in a record.
+			If the field is not found, a new field will be created.
+****************************************************************************/
+RCODE flmModField(
+	FlmRecord *		pRecord,
+	FLMUINT			uiTagNum,
+	const void *	pvData,
+	FLMUINT			uiDataLen,
+	FLMUINT			uiDataType)
+{
+	RCODE				rc = FERR_OK;
+	void *			pvField;
+
+	if( (pvField = pRecord->find( pRecord->root(), uiTagNum)) == NULL)
+	{
+		// Create the field.
+		
+		if( RC_BAD( rc = pRecord->insertLast( 1, uiTagNum, uiDataType, &pvField)))
+		{
+			goto Exit;
+		}
+	}
+	
+	switch( uiDataType)
+	{
+		case FLM_TEXT_TYPE:
+		{
+			rc = pRecord->setNative( pvField, (const char *)pvData);
+			break;
+		}
+		
+		case FLM_NUMBER_TYPE:
+		{
+			FLMUINT	uiNum;
+			switch (uiDataLen)
+			{
+				case 0:
+					uiNum = (FLMUINT)(*((FLMUINT *)(pvData)));
+				case 1:
+					uiNum = (FLMUINT)(*((FLMBYTE *)(pvData)));
+					break;
+				case 2:
+					uiNum = (FLMUINT)(*((FLMUINT16 *)(pvData)));
+					break;
+				case 4:
+					uiNum = (FLMUINT)(*((FLMUINT32 *)(pvData)));
+					break;
+				default:
+					flmAssert( 0);
+					rc = RC_SET( FERR_INVALID_PARM);
+					goto Exit;
+			}
+			
+			rc = pRecord->setUINT( pvField, uiNum);
+			break;
+		}
+		
+		case FLM_BINARY_TYPE:
+		{
+			rc = pRecord->setBinary( pvField, pvData, uiDataLen);
+			break;
+		}
+		
+		default :
+		{
+			flmAssert( 0);
+			break;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc: 	This routine searches for a specific numeric field and deletes
+			that field from the record.
+****************************************************************************/
+RCODE flmDelField(
+	FlmRecord *	pRecord,
+	FLMUINT		uiTagNum,
+	FLMUINT		uiValue)
+{
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiNum;
+	void *		pvField;
+
+	if( (pvField = pRecord->find( pRecord->root(), uiTagNum, 1)) != NULL)
+	{
+		for(;;)
+		{
+			if( pRecord->getFieldID( pvField) == uiTagNum)
+			{
+				if( RC_BAD( rc = pRecord->getUINT( pvField, &uiNum)))
+				{
+					goto Exit;
+				}
+
+				if( uiNum == uiValue)
+				{
+					pRecord->remove( pvField);
+					break;
+				}
+			}
+			
+			pvField = pRecord->nextSibling( pvField);
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc: 	This routine finds a field in a record and increments its value.
+			The value of 1 will be assigned if the field is not present.
+****************************************************************************/
+RCODE flmIncrField(
+	FlmRecord *		pRecord,		
+	FLMUINT			uiTagNum)
+{
+	RCODE				rc = FERR_OK;
+	void *			pvField;
+
+	if( (pvField = pRecord->find( pRecord->root(), uiTagNum, 1)) != NULL)
+	{
+		FLMUINT		uiNum;
+
+		if( RC_OK( rc = pRecord->getUINT( pvField, &uiNum)))
+		{
+			uiNum++;
+			rc = pRecord->setUINT( pvField, uiNum);
+		}
+	}
+	else
+	{
+		// Create the field and set the value to one.
+		
+		if( RC_OK( rc = pRecord->insertLast( 1, uiTagNum, 
+			FLM_NUMBER_TYPE, &pvField)))
+		{
+			rc = pRecord->setUINT( pvField, 1);
+		}
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc: 	This routine finds a field in a record and decrements its value.
+****************************************************************************/
+RCODE flmDecrField(
+	FlmRecord *		pRecord,
+	FLMUINT			uiTagNum)
+{
+	RCODE				rc = FERR_OK;
+	void *			pvField;
+
+	if( (pvField = pRecord->find( pRecord->root(), uiTagNum, 1)) != NULL)
+	{
+		FLMUINT		uiNum;
+
+		if( RC_OK( rc = pRecord->getUINT( pvField, &uiNum)))
+		{
+			uiNum--;
+			rc = pRecord->setUINT( pvField, uiNum);
+		}
+	}
+	
 	return( rc);
 }
 

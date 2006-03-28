@@ -96,8 +96,8 @@ FINLINE FLMBOOL DoValAndDictTypesMatch(
 Desc: Clips a SUBQUERY from a list, and frees memory associated with it.
 */
 FINLINE void flmClipSubQuery(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery
 	)
 {
 	if( pSubQuery == pCursor->pSubQueryList)
@@ -122,15 +122,15 @@ FSTATIC RCODE flmAllocIndexInfo(
 	IXD *				pIxd);
 
 FSTATIC RCODE flmSQGetDrnRanges(
-	SUBQUERY_p		pSubQuery,
+	SUBQUERY *		pSubQuery,
 	QTYPES			eOperator,
 	FLMUINT			uiVal);
 
 FSTATIC RCODE flmSQGenPredicateList(
 	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
+	SUBQUERY *		pSubQuery,
 	POOL *			pPool,
-	QPREDICATE_p *	ppPredicateList,
+	QPREDICATE * *	ppPredicateList,
 	FLMUINT *		puiTotalPredicates,
 	FLMBOOL *		pbHaveUserPredicates);
 
@@ -151,14 +151,14 @@ FSTATIC FLMBOOL flmIxFldPathSuitable(
 FSTATIC RCODE flmSQGetSuitableIndexes(
 	FDB *					pDb,
 	FLMUINT				uiForceIndex,
-	CURSOR_p				pCursor,
-	SUBQUERY_p			pSubQuery,
+	CURSOR *				pCursor,
+	SUBQUERY *			pSubQuery,
 	FLMUINT				uiContainer,
 	POOL *				pPool,
 	QPREDICATE *		pPredicateList,
 	FLMUINT				uiTotalPredicates,
 	FLMBOOL				bHaveUserPredicates,
-	QINDEX_p *			ppIndexList,
+	QINDEX * *			ppIndexList,
 	FLMUINT *			puiMaxIfds);
 
 FSTATIC RCODE flmSQEvaluateCurrIndexKey(
@@ -171,27 +171,27 @@ FSTATIC RCODE flmSQEvaluateCurrIndexKey(
 
 FSTATIC RCODE flmCheckUserPredicateCosts(
 	FDB *			pDb,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMBOOL		bOkToOptimizeWithPredicate);
 
 FSTATIC RCODE flmMergeSubQueries(
-	CURSOR_p			pCursor,
-	SUBQUERY_p *	ppFromSubQuery,
-	SUBQUERY_p		pIntoSubQuery,
+	CURSOR *			pCursor,
+	SUBQUERY * *	ppFromSubQuery,
+	SUBQUERY *		pIntoSubQuery,
 	FLMBOOL			bFromSubQuerySubsumed);
 
 FSTATIC RCODE flmSQSetupFullContainerScan(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery);
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery);
 
 FSTATIC RCODE flmSQChooseBestIndex(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FDB *				pDb,
 	FLMUINT			uiForceIndex,
 	FLMUINT			bForceFirstToLastKey,
-	SUBQUERY_p		pSubQuery,
+	SUBQUERY *		pSubQuery,
 	POOL *			pTempPool,
-	QPREDICATE_p	pPredicateList,
+	QPREDICATE *	pPredicateList,
 	FLMUINT			uiTotalPredicates,
 	FLMBOOL			bHaveUserPredicates);
 
@@ -199,7 +199,7 @@ FSTATIC RCODE flmSQChooseBestIndex(
 Desc:	Keep track of DRN ranges for a subquery.
 ****************************************************************************/
 FSTATIC RCODE flmSQGetDrnRanges(
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	QTYPES		eOperator,
 	FLMUINT		uiVal
 	)
@@ -316,9 +316,9 @@ Desc:	Generate the predicate list for a sub-query.
 ****************************************************************************/
 FSTATIC RCODE flmSQGenPredicateList(
 	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
+	SUBQUERY *		pSubQuery,
 	POOL *			pPool,
-	QPREDICATE_p *	ppPredicateList,
+	QPREDICATE * *	ppPredicateList,
 	FLMUINT *		puiTotalPredicates,
 	FLMBOOL *		pbHaveUserPredicates)
 {
@@ -358,7 +358,7 @@ FSTATIC RCODE flmSQGenPredicateList(
 			// Better be a parent node that is the operator for
 			// this field.
 
-			if ((pPredicate = (QPREDICATE_p)GedPoolCalloc( pPool,
+			if ((pPredicate = (QPREDICATE *)GedPoolCalloc( pPool,
 										sizeof( QPREDICATE))) == NULL)
 			{
 				rc = RC_SET( FERR_MEM);
@@ -829,14 +829,14 @@ Desc:	Generate the list of suitable indexes for a sub-query.  Rank each
 FSTATIC RCODE flmSQGetSuitableIndexes(
 	FDB *					pDb,
 	FLMUINT				uiForceIndex,
-	CURSOR_p				pCursor,
+	CURSOR *				pCursor,
 	SUBQUERY *			pSubQuery,
 	FLMUINT				uiContainer,
 	POOL *				pPool,
 	QPREDICATE *		pPredicateList,
 	FLMUINT				uiTotalPredicates,
 	FLMBOOL				bHaveUserPredicates,
-	QINDEX_p *			ppIndexList,
+	QINDEX * *			ppIndexList,
 	FLMUINT *			puiMaxIfds)
 {
 	RCODE						rc = FERR_OK;
@@ -1523,8 +1523,8 @@ Exit:
 Desc:	Set up a sub-query to do a full container scan.
 ****************************************************************************/
 FSTATIC RCODE flmSQSetupFullContainerScan(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery
 	)
 {
 	RCODE		rc = FERR_OK;
@@ -1587,19 +1587,19 @@ Exit:
 Desc:	Chooses a best index to use for a sub-query.
 ****************************************************************************/
 FSTATIC RCODE flmSQChooseBestIndex(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FDB *				pDb,
 	FLMUINT			uiForceIndex,
 	FLMUINT			bForceFirstToLastKey,
-	SUBQUERY_p		pSubQuery,
+	SUBQUERY *		pSubQuery,
 	POOL *			pTempPool,
-	QPREDICATE_p	pPredicateList,
+	QPREDICATE *	pPredicateList,
 	FLMUINT			uiTotalPredicates,
 	FLMBOOL			bHaveUserPredicates)
 {
 	RCODE						rc = FERR_OK;
-	QINDEX_p					pIndexList;
-	QINDEX_p					pIndex;
+	QINDEX *					pIndexList;
+	QINDEX *					pIndex;
 	FLMUINT					uiCurrIfd;
 	FLMUINT					uiMaxIfds;
 	QFIELD_PREDICATE **	ppFieldCurrPredicate = NULL;
@@ -1923,12 +1923,12 @@ Desc:	Gets scores for any embedded user predicate.
 ****************************************************************************/
 FSTATIC RCODE flmCheckUserPredicateCosts(
 	FDB *			pDb,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMBOOL		bOkToOptimizeWithPredicate
 	)
 {
 	RCODE						rc = FERR_OK;
-	FQNODE_p					pQNode = pSubQuery->pTree;
+	FQNODE *					pQNode = pSubQuery->pTree;
 	FLMUINT					uiCost;
 	FLMUINT					uiDrnCost;
 	FlmUserPredicate *	pPredicate;
@@ -2099,9 +2099,9 @@ Exit:
 Desc: Merges two SUBQUERY structures.
 ****************************************************************************/
 FSTATIC RCODE flmMergeSubQueries(
-	CURSOR_p			pCursor,
-	SUBQUERY_p *	ppFromSubQuery,
-	SUBQUERY_p		pIntoSubQuery,
+	CURSOR *			pCursor,
+	SUBQUERY * *	ppFromSubQuery,
+	SUBQUERY *		pIntoSubQuery,
 	FLMBOOL			bFromSubQuerySubsumed
 	)
 {
@@ -2333,17 +2333,17 @@ Exit:
 Desc: Optimizes the passed-in query.
 ****************************************************************************/
 RCODE flmCurOptimize(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMBOOL			bStratified)
 {
 	RCODE				rc = FERR_OK;
-	FDB_p				pDb = NULL;
-	SUBQUERY_p		pSubQuery;
-	SUBQUERY_p		pTmpSubQuery;
-	SUBQUERY_p		pContainerScanSubQuery = NULL;
+	FDB *				pDb = NULL;
+	SUBQUERY *		pSubQuery;
+	SUBQUERY *		pTmpSubQuery;
+	SUBQUERY *		pContainerScanSubQuery = NULL;
 	FLMBOOL			bChoosingIndex;
 	DB_STATS *		pDbStats;
-	QPREDICATE_p	pPredicateList = NULL;
+	QPREDICATE *	pPredicateList = NULL;
 	FLMUINT			uiTotalPredicates = 0;
 	POOL *			pTempPool;
 	void *			pvMark;

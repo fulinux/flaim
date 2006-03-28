@@ -94,7 +94,7 @@ RCODE F_LogHeaderPage::display(
 		bFlmLocked = TRUE;
 
 		// Get the pFile.
-		pFile = ((FDB_p)hDb)->pFile;
+		pFile = ((FDB *)hDb)->pFile;
 	}
 	else
 	{
@@ -120,7 +120,7 @@ RCODE F_LogHeaderPage::display(
 		f_mutexLock( gv_FlmSysData.hShareMutex);
 		bFlmLocked = TRUE;
 
-		pFile = (FFILE_p)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
+		pFile = (FFILE *)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
 		while (pFile && (void *)pFile != pvAddress)
 		{
 			pFile = pFile->pNext;

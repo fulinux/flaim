@@ -40,25 +40,25 @@ void flmSetFilePrefix(
 		
 	UD2FBA( (FLMUINT32)16, &pPrefix [4]);
 
-	// Fill these out with the old NDS values so FUSION code will work.
-
-	pPrefix [8] = 0xF3;		// old wp product type
-	pPrefix [9] = 0x01;		// old wp file type
+	pPrefix [8] = 0xF3;		// old product type
+	pPrefix [9] = 0x01;		// old file type
 	pPrefix [10] = (FLMBYTE)uiMajorVer;
 	pPrefix [11] = (FLMBYTE)uiMinorVer;
 
-	// Bytes 12 and 13 are the encryption key
+	// Bytes 12 and 13 are the encryption key (not used)
 
-	pPrefix [12] = pPrefix [13] = 0;
+	pPrefix [12] = 0; 
+	pPrefix [13] = 0;
 
 	// Bytes 14 and 15 point are the offset to file specific packets
 
-	pPrefix [14] = pPrefix [15] = 0;
+	pPrefix [14] = 0; 
+	pPrefix [15] = 0;
 }
 
 /********************************************************************
-Desc:	This routine adjusts the block size that is passe in (wBlkSize)
-		to the nearest valid block size.
+Desc:	This routine adjusts the block size to the nearest valid
+		block size.
 *********************************************************************/
 FLMUINT flmAdjustBlkSize(
 	FLMUINT	uiBlkSize)
@@ -79,24 +79,22 @@ Desc:	This routine extracts and verifies the information within
 		the file header.
 *****************************************************************************/
 RCODE flmGetFileHdrInfo(
-	FLMBYTE *		pPrefixBuf,			/* Buffer containing file prefix
-													information. */
-	FLMBYTE *		pFileHdrBuf,		/* Buffer containing file header
-													information. */
-	FILE_HDR_p		pFileHdrRV)			/* Returns file header information. */
+	FLMBYTE *		pPrefixBuf,
+	FLMBYTE *		pFileHdrBuf,
+	FILE_HDR *		pFileHdrRV)
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiVersionNum;
 	FLMUINT			uiTmpBlkSize;
 
-	/* Get the create options. */
+	// Get the create options
 
 	pFileHdrRV->uiBlockSize = (FLMUINT)FB2UW( &pFileHdrBuf [DB_BLOCK_SIZE]);
 	pFileHdrRV->uiAppMajorVer = pPrefixBuf [10];
 	pFileHdrRV->uiAppMinorVer = pPrefixBuf [11];
 	pFileHdrRV->uiDefaultLanguage = pFileHdrBuf [DB_DEFAULT_LANGUAGE];
 	pFileHdrRV->uiVersionNum = uiVersionNum =
-								((FLMUINT16)(pFileHdrBuf [FLM_VER_POS] - ASCII_ZERO) * 100 +
+								((FLMUINT16)(pFileHdrBuf [FLM_FILE_FORMAT_VER_POS] - ASCII_ZERO) * 100 +
 							 	 (FLMUINT16)(pFileHdrBuf [FLM_MINOR_VER_POS] - ASCII_ZERO) * 10 +
 							 	 (FLMUINT16)(pFileHdrBuf [FLM_SMINOR_VER_POS] - ASCII_ZERO));
 
@@ -111,8 +109,7 @@ RCODE flmGetFileHdrInfo(
 	pFileHdrRV->uiFirstLFHBlkAddr =
 		(FLMUINT)FB2UD( &pFileHdrBuf [DB_1ST_LFH_ADDR]);
 
-	// See if it is: 1) a WordPerfect file, 2) a FLAIM file,
-	// and 3) if the block size is valid.
+	// See if this looks like a valid database
 
 	if( (pPrefixBuf [1] != f_toascii('W')) ||
 		 (pPrefixBuf [2] != f_toascii('P')) ||
@@ -156,9 +153,8 @@ Desc: This routine initializes a FILE_HDR structure from the
 *********************************************************************/
 void flmInitFileHdrInfo(
 	CREATE_OPTS *	pCreateOpts,
-	FILE_HDR_p		pFileHdr,
-	FLMBYTE *		pFileHdrBuf
-	)
+	FILE_HDR *		pFileHdr,
+	FLMBYTE *		pFileHdrBuf)
 {
 	f_memset( pFileHdrBuf, 0, FLM_FILE_HEADER_SIZE);
 
@@ -184,9 +180,10 @@ void flmInitFileHdrInfo(
 
 	// Only allow database to be created with current version number
 
-	pFileHdr->uiVersionNum = FLM_CURRENT_VERSION_NUM;
-	f_memcpy( &pFileHdrBuf [FLM_VER_POS], (FLMBYTE *)FLM_CURRENT_VER_STR,
-					FLM_VER_LEN);
+	pFileHdr->uiVersionNum = FLM_CUR_FILE_FORMAT_VER_NUM;
+	f_memcpy( &pFileHdrBuf [FLM_FILE_FORMAT_VER_POS], 
+					(FLMBYTE *)FLM_CUR_FILE_FORMAT_VER_STR,
+					FLM_FILE_FORMAT_VER_LEN);
 
 	// Round block size up to nearest legal block size.
 
@@ -204,7 +201,7 @@ void flmInitFileHdrInfo(
 	pFileHdr->uiFirstLFHBlkAddr = FSBlkAddress(1, 0);
 	UD2FBA( pFileHdr->uiFirstLFHBlkAddr, &pFileHdrBuf [DB_1ST_LFH_ADDR]);
 
-	if (pFileHdr->uiVersionNum < FLM_VER_4_3)
+	if (pFileHdr->uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// Things to maintain for backward compatibility - pre 4.3.
@@ -229,8 +226,8 @@ RCODE flmReadAndVerifyHdrInfo(
 	DB_STATS *		pDbStats,
 	F_FileHdl *		pFileHdl,
 	FLMBYTE *		pReadBuf,
-	FILE_HDR_p		pFileHdrRV,
-	LOG_HDR_p		pLogHdrRV,
+	FILE_HDR *		pFileHdrRV,
+	LOG_HDR *		pLogHdrRV,
 	FLMBYTE *		pLogHdr)
 {
 	RCODE				rc = FERR_OK;
@@ -270,7 +267,10 @@ RCODE flmReadAndVerifyHdrInfo(
 		f_memcpy( pLogHdr, pucLogHdr, LOG_HEADER_SIZE);
 	}
 	
-	flmGetLogHdrInfo( pucLogHdr, pLogHdrRV);
+	if( pLogHdrRV)
+	{
+		flmGetLogHdrInfo( pucLogHdr, pLogHdrRV);
+	}
 
 	// Take the version from the log header if non-zero.
 	// Storing the version in the log header is new to 40 code base.
@@ -330,7 +330,7 @@ Exit:
 Desc:	Write the version number to disk and flush the write to disk.
 *****************************************************************************/
 RCODE flmWriteVersionNum(
-	F_SuperFileHdl_p		pSFileHdl,
+	F_SuperFileHdl *		pSFileHdl,
 	FLMUINT					uiVersionNum)
 {
 	RCODE		rc = FERR_OK;
@@ -350,7 +350,8 @@ RCODE flmWriteVersionNum(
 	szVersionStr[ 4] = 0;
 
 	if (RC_OK( rc = pSFileHdl->WriteHeader(
-					FLAIM_HEADER_START + FLM_VER_POS, FLM_VER_LEN,
+					FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS, 
+					FLM_FILE_FORMAT_VER_LEN,
 					szVersionStr, &uiWriteBytes)))
 	{
 		if (RC_BAD( rc = pSFileHdl->Flush()))
@@ -360,6 +361,45 @@ RCODE flmWriteVersionNum(
 	}
 
 Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:	This routine reads the header information in a FLAIM database,
+		verifies the password, and returns the file header and log
+		header information.
+*****************************************************************************/
+RCODE flmGetHdrInfo(
+	F_SuperFileHdl *	pSFileHdl,		/* Pointer to file handle. */
+	FILE_HDR *			pFileHdrRV,		/* Returns file header information. */
+	LOG_HDR *			pLogHdrRV,		/* Returns log header information. */
+	FLMBYTE *			pLogHdr
+	)
+{
+	RCODE				rc = FERR_OK;
+	FLMBYTE *		pBuf = NULL;
+	F_FileHdlImp *	pCFileHdl;
+
+	if (RC_BAD( rc = f_alloc( 2048, &pBuf)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	{
+		goto Exit;
+	}
+
+	rc = flmReadAndVerifyHdrInfo( NULL, pCFileHdl,
+											pBuf, pFileHdrRV, pLogHdrRV, pLogHdr);
+
+Exit:
+
+	if( pBuf)
+	{
+		f_free( &pBuf);
+	}
 
 	return( rc);
 }

@@ -25,14 +25,14 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE flmCurCSPerformRead(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	eFlmFuncs		eFlmFuncId,
 	FlmRecord **	ppRecordRV,
 	FLMUINT *		puiDrnRV,
 	FLMUINT *		puiCountRV);
 
 FSTATIC RCODE flmCurGetDRNRec(
-	CURSOR_p 		pCursor,
+	CURSOR * 		pCursor,
 	FLMUINT			uiDRN,
 	FlmRecord **	ppRecord);
 
@@ -40,13 +40,13 @@ FSTATIC RCODE flmCurGetDRNRec(
 Desc:	Gets the requested record, DRN, or count over the CS line.
 ****************************************************************************/
 FSTATIC RCODE flmCurCSPerformRead(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	eFlmFuncs		eFlmFuncId,
 	FlmRecord **	ppRecordRV,
 	FLMUINT *		puiDrnRV,
 	FLMUINT *		puiCountRV)
 {
-	CS_CONTEXT_p	pCSContext = pCursor->pCSContext;
+	CS_CONTEXT *	pCSContext = pCursor->pCSContext;
 	FCL_WIRE			Wire( pCSContext);
 	void *			pvMark = GedPoolMark( &pCSContext->pool);
 	RCODE				rc = FERR_OK;
@@ -329,12 +329,12 @@ Exit:
 Desc:	Gets the requested record given a DRN.
 ****************************************************************************/
 FSTATIC RCODE flmCurGetDRNRec(
-	CURSOR_p 		pCursor,
+	CURSOR * 		pCursor,
 	FLMUINT			uiDRN,
 	FlmRecord **	ppRecord)
 {
 	RCODE		rc = FERR_OK;
-	FDB_p		pDb = NULL;
+	FDB *		pDb = NULL;
 	LFILE *	pLFile;
 			
 	if (pCursor->pCSContext)
@@ -391,16 +391,15 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Retrieves the record currently pointed to by a cursor.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Retrieves the record currently pointed to by a cursor.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorCurrent(
 	HFCURSOR 		hCursor,
-	FlmRecord **	ppRecord
-	)
+	FlmRecord **	ppRecord)
 {
-	RCODE		rc = FERR_OK;
-	CURSOR_p	pCursor = (CURSOR *)hCursor;
+	RCODE				rc = FERR_OK;
+	CURSOR *			pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{
@@ -408,6 +407,7 @@ FLMEXP RCODE FLMAPI FlmCursorCurrent(
 		rc = RC_SET( FERR_INVALID_PARM);
 		goto Exit;
 	}
+	
 	*ppRecord = NULL;
 
 	if (pCursor->uiLastRecID == 0)
@@ -431,19 +431,19 @@ FLMEXP RCODE FLMAPI FlmCursorCurrent(
 	}
 
 Exit:
+
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Retrieves the DRN of the current record in a set defined by a cursor.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Retrieves the DRN of the current record in a set defined by a cursor.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorCurrentDRN(
 	HFCURSOR 	hCursor,
-	FLMUINT * 	puiDrn
-	)
+	FLMUINT * 	puiDrn)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{
@@ -472,27 +472,27 @@ FLMEXP RCODE FLMAPI FlmCursorCurrentDRN(
 	}
 
 Exit:
+
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Positions the cursor to a next or previous item at an offset relative
-		 to the current item and retrieves that item from the database.
-Notes: Requests that position beyond the end of the result set will
-		 cause an EOF_HIT error to be returned.  Likewise, requests that
-		 position before the beginning of the result set will cause a
-		 BOF_HIT error to be returned.  Passing a relative position of 0 is
-		 invalid and will cause ILLEGAL_OP to be returned.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Positions the cursor to a next or previous item at an offset relative
+		to the current item and retrieves that item from the database.
+Note:	Requests that position beyond the end of the result set will
+		cause an EOF_HIT error to be returned.  Likewise, requests that
+		position before the beginning of the result set will cause a
+		BOF_HIT error to be returned.  Passing a relative position of 0 is
+		invalid and will cause ILLEGAL_OP to be returned.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorMoveRelative(
 	HFCURSOR				hCursor,
 	FLMINT *				piPosition,
-	FlmRecord **		ppRecord
-	)
+	FlmRecord **		ppRecord)
 {
-	RCODE		rc = FERR_OK;
-	FLMINT	iPosition;
-	FLMUINT	uiTmpPos;
+	RCODE			rc = FERR_OK;
+	FLMINT		iPosition;
+	FLMUINT		uiTmpPos;
 
 	if ((iPosition = *piPosition) == 0)
 	{
@@ -516,19 +516,18 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Returns the number of records in a set defined by a cursor.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Returns the number of records in a set defined by a cursor.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorRecCount(
-	HFCURSOR		hCursor,
-	FLMUINT *	puiCount
-	)
+	HFCURSOR			hCursor,
+	FLMUINT *		puiCount)
 {
-	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
-	RCODE			TmpRc;
-	FDB *			pDb = NULL;
-	FLMBOOL		bSavedPosition = FALSE;
+	RCODE				rc = FERR_OK;
+	CURSOR *			pCursor = (CURSOR *)hCursor;
+	RCODE				TmpRc;
+	FDB *				pDb = NULL;
+	FLMBOOL			bSavedPosition = FALSE;
 
 	if (!pCursor)
 	{

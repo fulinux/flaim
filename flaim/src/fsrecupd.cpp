@@ -43,7 +43,7 @@ RCODE FSRecUpdate(
 {
 	RCODE			rc;
 	BTSK			stackBuf[ BH_MAX_LEVELS ];	// Stack to hold b-tree variables
-	BTSK_p		pStack = stackBuf;			// Points to a stack element
+	BTSK *		pStack = stackBuf;			// Points to a stack element
 	FLMBYTE		pKeyBuf[ DIN_KEY_SIZ + 4 ];// Key buffer pointed to by stack
 	UCUR			updCur;							// Update cursor
 	FLMBYTE *	pElmBuf;							// Points to updCur.buffer
@@ -98,7 +98,9 @@ RCODE FSRecUpdate(
 		}
 	}
 
-	updCur.uiFlags = (pStack->uiCmpStatus != BT_EQ_KEY) ? UCUR_INSERT : UCUR_REPLACE;
+	updCur.uiFlags = (pStack->uiCmpStatus != BT_EQ_KEY) 
+										? UCUR_INSERT 
+										: UCUR_REPLACE;
 	updCur.uiDrn = uiDrn;
 
 	// Update or Insert the record.
@@ -170,198 +172,33 @@ Exit:
 	return( rc);
 }
 
-/****************************************************************************
-Desc:		Sets or verifies the next DRN for the domain supplied. 
-			If the domain has no data blocks then LFH area will be updated.
-			Must have the stack positioned to the right most tree.
-Notes:	All checks are very explicit to make clear for maintenance.
-****************************************************************************/
-RCODE FSSetNextDrn(
-	FDB *			pDb,					// Pointer to operation context struct.
-	BTSK_p		pStack,				// Points to a stack element
-	FLMUINT		uiDrn,				// (IN) Value to update next counter
-	FLMBOOL		bManditoryChange)	// (IN) If true then must be set.
-{
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiNextDrn;
-	FLMBYTE *	ptr;
-	FLMBYTE *	pBlk = GET_CABLKPTR( pStack );
-
-	// Next DRN marker element in b-tree.  By this time, the root
-	// block will have been initialized. The '11' below is the size
-	// of the next DRN marker element.
-	
-	if( FB2UD( &pBlk[ BH_NEXT_BLK ]) == BT_END && 
-		pStack->uiCurElm + 11 + BBE_LEM_LEN >= pStack->uiBlkEnd)
-	{
-		ptr = CURRENT_ELM( pStack);
-		ptr += BBE_GETR_KL( ptr) + BBE_KEY;
-		uiNextDrn = FB2UD( ptr);
-	
-		// Check if the DRN is 0 or more than the NEXT DRN marker
-
-		if( uiDrn >= uiNextDrn)
-		{
-			uiNextDrn = uiDrn + 1;
-
-			if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
-			{
-				goto Exit;
-			}
-
-			ptr = CURRENT_ELM( pStack);
-			ptr += BBE_GETR_KL( ptr) + BBE_KEY;
-
-			// Update with the next DRN value and dirty the block
-
-			UD2FBA( uiNextDrn, ptr);
-			goto Exit;
-		}
-	}
-
-	if( bManditoryChange)
-	{
-		rc = RC_SET( FERR_BTREE_ERROR);
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:		Sets or verifies the next DRN for the domain supplied. 
-			If the domain is non-default domain then LFH area will be updated
-			for FLM_1_1 databases ONLY.  FLM_1_2 stores next DRN in last block.
-****************************************************************************/
-RCODE FSGetNextDrn(
-	FDB *			pDb,					// Pointer to operation context struct.
-	LFILE *		pLFile,				// Domain Logical File Definition
-	FLMBOOL		bUpdateNextDrn,	// (IN) TRUE then update next drn value 
-	FLMUINT *	puiDrnRV)			// (IN) 0 or value to check if higher
-											// (OUT) Returns input value or next value
-{
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiNextDrn = *puiDrnRV;
-	BTSK			stackBuf[ BH_MAX_LEVELS];
-	FLMBOOL		bUsedStack = FALSE;
-
-	if( uiNextDrn == DRN_LAST_MARKER)
-	{
-		rc = RC_SET( FERR_BAD_DRN);
-		goto Exit;
-	}
-
-	// All containers have next DRN marker
-
-	if( !uiNextDrn)
-	{
-		BTSK_p		pStack = stackBuf;				
-		FLMBYTE		pKeyBuf[ DIN_KEY_SIZ + 4];
-		FLMBYTE *	ptr;
-
-		// Set up the stack
-
-		bUsedStack = TRUE;
-		FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
-		pStack->pKeyBuf = pKeyBuf;
-
-		// Make sure pLFile is up to date
-
-		if( RC_BAD( rc = FSBtSearchEnd( pDb, pLFile, &pStack, DRN_LAST_MARKER)))
-		{
-			goto Exit;
-		}
-
-		if( pLFile->uiRootBlk == BT_END)
-		{
-			*puiDrnRV = pLFile->uiNextDrn;
-			if( bUpdateNextDrn)
-			{
-				pLFile->uiNextDrn++;
-				if( RC_BAD( rc = flmLFileWrite( pDb, pLFile)))
-				{
-					pLFile->uiNextDrn--;
-					goto Exit;
-				}
-			}
-		}
-		else
-		{
-			if( pStack->uiCmpStatus != BT_EQ_KEY || 
-				pLFile->uiLfNum != FB2UW( &pStack->pBlk[ BH_LOG_FILE_NUM]))
-			{
-				rc = RC_SET( FERR_BTREE_ERROR);
-				goto Exit;
-			}
-
-			ptr = CURRENT_ELM( pStack);
-			ptr += BBE_GETR_KL( ptr) + BBE_KEY;
-			*puiDrnRV = FB2UD( ptr);
-
-			if( bUpdateNextDrn)
-			{
-				FLMUINT32	ui32NextDrn = (FLMUINT32)(*puiDrnRV + 1);
-
-				if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
-				{
-					goto Exit;
-				}
-
-				ptr = CURRENT_ELM( pStack);
-				ptr += BBE_GETR_KL( ptr) + BBE_KEY;
-
-				// Update with the next DRN value and dirty the block 
-
-				UD2FBA( ui32NextDrn, ptr);
-			}
-		}
-	}
-
-	if( *puiDrnRV == DRN_LAST_MARKER)
-	{
-		rc = RC_SET( FERR_NO_MORE_DRNS);
-		goto Exit;
-	}
-
-Exit:
-
-	if( bUsedStack)
-	{
-		FSReleaseStackCache( stackBuf, BH_MAX_LEVELS, FALSE);
-	}
-
-	return( rc );
-}
-
 /***************************************************************************
 Desc:		Saves a record to the file. The record may overflow & span elements.
 *****************************************************************************/
 FSTATIC RCODE FSBldRecElement(
-	FDB *					pDb,
-	LFILE *				pLFile,
-	FlmRecord *			pRecord,
-	UCUR * 				updCur)
+	FDB *			pDb,
+	LFILE *		pLFile,
+	FlmRecord *	pRecord,
+	UCUR * 		updCur)
 {
 	RCODE					rc = FERR_OK;
-	FLMBYTE *			pBuf = updCur->pElmBuf;
-	FLMBYTE *			pField;
-	FLMBYTE *			pBufEnd;
-	const FLMBYTE *	pValue = NULL;
-	FLMBYTE *			pOvhd;
 	void *				pvField;
-	FLMUINT				uiBufLen = updCur->uiBufLen;
-	FLMUINT				uiValuePos;
-	FLMUINT				uiBytesLeft;
-	FLMUINT				uiValueLen;
+	FLMBYTE *			pBuf = updCur->pElmBuf;				// Make pointer for performance
+	FLMBYTE *			pField;									// Points to the output field
+	FLMBYTE *			pBufEnd;									// Points to the end of the buffer
+	const FLMBYTE *	pValue = NULL;							// Points to the value on the line
+	FLMBYTE *			pOvhd;
+	FLMUINT				uiBufLen = updCur->uiBufLen;		// Used to optimize
+	FLMUINT				uiValuePos;								// Position in the value buffer
+	FLMUINT				uiBytesLeft;							// Number of bytes left in element
+	FLMUINT				uiValueLen;								// Length of the value
 	FLMUINT				uiUsedLen = updCur->uiUsedLen;
 	FLMUINT				uiTagNum;
 	FLMUINT				uiLevel;
 	FLMUINT				uiFldType;
 	FLMINT				iLevelCntx;
-	FLMINT				iLastNdLevel = -1;
-	FLMBYTE				byValue;
+	FLMINT				iLastNdLevel = -1;					// Last node's level number
+	FLMBYTE				ucBaseFlags;
 	FLMUINT				uiEncValueLen;
 	FLMUINT				uiEncTagNum;
 
@@ -374,13 +211,16 @@ FSTATIC RCODE FSBldRecElement(
 		FLMUINT		uiEncId = 0;
 
 		// Check for encryption.
+
 		bFldEncrypted = pRecord->isEncryptedField( pvField);
-		if (bFldEncrypted)
+		if( bFldEncrypted)
 		{
 			// May still proceed if the field is already encrypted.
+
 			uiEncFlags = pRecord->getEncFlags( pvField);
 
 			// Cannot add encrypted field while in limited mode.
+
 			if (pDb->pFile->bInLimitedMode &&
 				 (!(uiEncFlags & FLD_HAVE_ENCRYPTED_DATA)))
 			{
@@ -389,16 +229,13 @@ FSTATIC RCODE FSBldRecElement(
 			}
 
 			// Only encrypt the field if it isn't already encrypted.
-			if (!(uiEncFlags & FLD_HAVE_ENCRYPTED_DATA))
-			{
 
+			if( !(uiEncFlags & FLD_HAVE_ENCRYPTED_DATA))
+			{
 				uiEncId = pRecord->getEncryptionID( pvField);
 
-				if (RC_BAD( rc = flmEncryptField( pDb->pDict,
-															 pRecord,
-															 pvField,
-															 uiEncId,
-															 &pDb->TempPool)))
+				if (RC_BAD( rc = flmEncryptField( 
+					pDb->pDict, pRecord, pvField, uiEncId, &pDb->TempPool)))
 				{
 					goto Exit;
 				}
@@ -406,6 +243,7 @@ FSTATIC RCODE FSBldRecElement(
 		}
 
 		// First determine if there is enough room for just the tag overhead
+
 		uiBytesLeft = (FLMUINT) (uiBufLen - uiUsedLen);
 
 		// Check for overflow - want all tagged fields with field overhead
@@ -427,19 +265,9 @@ FSTATIC RCODE FSBldRecElement(
 
 		if( bFldEncrypted)
 		{
-			if (pDb->pFile->bInLimitedMode)
-			{
-				rc = RC_SET( FERR_ENCRYPTION_UNAVAILABLE);
-				goto Exit;
-			}
-
-			if (RC_BAD( rc = pRecord->getFieldInfo( pvField,
-																 &uiTagNum,
-																 &uiLevel,
-																 &uiFldType,
-																 &uiValueLen,
-																 &uiEncValueLen,
-																 &uiEncTagNum)))
+			if( RC_BAD( rc = pRecord->getFieldInfo( pvField,
+				&uiTagNum, &uiLevel, &uiFldType, &uiValueLen,
+				&uiEncValueLen, &uiEncTagNum)))
 			{
 				goto Exit;
 			}
@@ -448,6 +276,7 @@ FSTATIC RCODE FSBldRecElement(
 		{
 			uiEncValueLen = 0;
 			uiEncTagNum = 0;
+
 			if( RC_BAD( rc = pRecord->getFieldInfo( pvField, &uiTagNum, &uiLevel,
 						&uiFldType, &uiValueLen, NULL, NULL)))
 			{
@@ -457,13 +286,23 @@ FSTATIC RCODE FSBldRecElement(
 
 		// Do data sanity checks
 
-		if( uiValueLen > 0x0000FFFF || uiEncValueLen > FLM_MAX_FIELD_VAL_SIZE)
+		if( pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
 		{
-			rc = RC_SET( FERR_VALUE_TOO_LARGE);
+			if( uiValueLen > 0x0000FFFF)
+			{
+				rc = RC_SET( FERR_VALUE_TOO_LARGE);
+				goto Exit;
+			}
+		}
+
+		if( !uiTagNum)
+		{
+			flmAssert( 0);
+			rc = RC_SET( FERR_BAD_FIELD_NUM);
 			goto Exit;
 		}
 
-		if( !bFldEncrypted)
+		if (!bFldEncrypted)
 		{
 			if( uiFldType == FLM_NUMBER_TYPE)
 			{
@@ -505,207 +344,198 @@ FSTATIC RCODE FSBldRecElement(
 		
 		flmAssert( uiTagNum != 0);
 
-		if (bFldEncrypted)
+		if( bFldEncrypted)
 		{
 			flmAssert( uiEncTagNum != 0);
 		}
 
-		if( (iLevelCntx = iLastNdLevel) == -1)	// Special case to start out//
+		if( (iLevelCntx = iLastNdLevel) == -1)
 		{
 			iLevelCntx = uiLevel;
 		}
 
-		if( (iLevelCntx -= uiLevel) > 0)			// If -1 then child, 0 = sibling //
+		if( (iLevelCntx -= uiLevel) > 0)
 		{
 			do
 			{
-				*pField++ = (FLMBYTE)(FOP_SET_LEVEL + 	// Don't forget extra parens below!
-							 ((iLevelCntx >= FOP_LEVEL_MAX)
-							 ? (FLMBYTE)FOP_LEVEL_MAX
-							 : (FLMBYTE)iLevelCntx));
+				*pField++ = (FLMBYTE)(FOP_SET_LEVEL +
+									((iLevelCntx >= FOP_LEVEL_MAX)
+										? (FLMBYTE)FOP_LEVEL_MAX
+										: (FLMBYTE)iLevelCntx));
 				iLevelCntx -= FOP_LEVEL_MAX;
 			} while( iLevelCntx > 0 );
-			iLevelCntx = 0;							// Storage next as sibling
+			iLevelCntx = 0;
 		}
 		iLastNdLevel = (FLMINT) uiLevel;
 
-		/**
-		***		DATA CONVERSION SECTION
-		***
-		***	No longer performed but could be done in kybuild.c
-		**/
-		/**
-		***		STORAGE SECTION
-		***
-		***	Tests to see if the field is defined in the dictionary.
-		***	If not, then field type will be stored with the value & tag
-		***	as a fully TAGGED field.  All flaim tags and unregistered
-		***	tags are, by definition, NOT defined in the dictionary.
-		***	Code tries to check most common cases first.
-		***
-		***	NOTE: The record has been verified while indexing so there is
-		***	no reason to read the dna table again an verify the field type.
-		**/
+		// Get a pointer to the data (if any)
 
 		if( uiValueLen)
 		{
 			pValue = pRecord->getDataPtr( pvField);
 		}
 
-		if (uiEncValueLen)
+		if( uiEncValueLen)
 		{
 			flmAssert( bFldEncrypted);
 			pValue = pRecord->getEncryptionDataPtr( pvField);
 			flmAssert( pValue);
 		}
 
-		// Normal field (not dictionary and not unregistered)
-		if( uiTagNum < FLM_DICT_FIELD_NUMS)
+		// Determine the FOP used for storing the field
+
+		if( uiValueLen > 0xFFFF)
 		{
-			if (!bFldEncrypted)
+			goto StoreLargeField;
+		}
+		else if( uiTagNum < FLM_DICT_FIELD_NUMS)
+		{
+			// Normal field (not dictionary and not unregistered)
+
+			if( !bFldEncrypted)
 			{
-				goto STORE_DEFINED_FIELD;
+				goto StoreDefinedField;
 			}
 			else
 			{
-				goto STORE_ENCRYPTED_FIELD;
+				goto StoreEncryptedField;
 			}
 		}
-
-		// If an unregistered field, store as tagged field
 		else if( uiTagNum >= FLM_UNREGISTERED_TAGS)
 		{
-			if (!bFldEncrypted)
+			if( !bFldEncrypted)
 			{
-				goto STORE_TAGGED_FIELD;
+				goto StoreTaggedField;
 			}
 			else
 			{
-				goto STORE_ENCRYPTED_FIELD;
+				goto StoreEncryptedField;
 			}
 		}
-
-		// dictionary fields
 		else
 		{
-			if( (uiFldType == FLM_TEXT_TYPE)
-			 || (uiFldType == FLM_CONTEXT_TYPE)) // Slight adjustment of semantics
+			// Dictionary fields 
+
+			if( !bFldEncrypted)
 			{
-				if (!bFldEncrypted)
+				if( uiFldType == FLM_TEXT_TYPE || uiFldType == FLM_CONTEXT_TYPE)
 				{
-					goto STORE_DEFINED_FIELD;		// Most dictionary fields are text
+					goto StoreDefinedField;
 				}
 				else
 				{
-					goto STORE_ENCRYPTED_FIELD;	// Special handling for encrypted fields.
+					goto StoreTaggedField;
 				}
-			}
-
-			if (!bFldEncrypted)
-			{
-				goto STORE_TAGGED_FIELD;			// Non text fields in dictionary
 			}
 			else
 			{
-				goto STORE_ENCRYPTED_FIELD;
+				goto StoreEncryptedField;
 			}
-		}		  										// type in field - we just have to parse it!
+		}
 
-STORE_DEFINED_FIELD:
+		// Store the field
 
-		if( (uiTagNum <= FSTA_MAX_FLD_NUM )			// If uiTagNum is 8 bits
-		 && (uiValueLen <= FSTA_MAX_FLD_LEN ))	// If field length fits
+StoreDefinedField:
+
+		flmAssert( uiValueLen <= 0xFFFF);
+
+		if( uiTagNum <= FSTA_MAX_FLD_NUM && uiValueLen <= FSTA_MAX_FLD_LEN)
 		{
-			/**
-			***		FOP_STANDARD
-			***		Most optimal format
-			**/
+			// FOP_STANDARD
+
 			*pField++ = (FLMBYTE)((iLevelCntx ? 0x40 : 0) + uiValueLen);
 			*pField++ = (FLMBYTE)uiTagNum;
 		}
 		else
 		{
 			pOvhd = pField++;
+
 			if( uiValueLen)
 			{
-				/**
-				***		FOP_OPEN
-				**/
-				byValue = iLevelCntx ? (FOP_OPEN + 0x08) : FOP_OPEN;
-/* THIS LABEL IS NOT CURRENTLY USED
-DO_FOP_OPEN:
-*/
-				*pField++ = (FLMBYTE) uiTagNum;
+				// FOP_OPEN
+
+				ucBaseFlags = iLevelCntx ? (FOP_OPEN + 0x08) : FOP_OPEN;
+				*pField++ = (FLMBYTE)uiTagNum;
+
 				if( uiTagNum > 0xFF)
 				{
-					byValue |= 0x02;
-					*pField++ = (FLMBYTE) (uiTagNum >> 8);
+					ucBaseFlags |= 0x02;
+					*pField++ = (FLMBYTE)(uiTagNum >> 8);
 				}
+
 				*pField++ = (FLMBYTE) uiValueLen;
-				if( uiValueLen > 0xFF)
+				if( uiValueLen > 0x000000FF)
 				{
-					byValue |= 0x01;
-					*pField++ = (FLMBYTE) (uiValueLen >> 8);
+					ucBaseFlags |= 0x01;
+					*pField++ = (FLMBYTE)(uiValueLen >> 8);
 				}
 			}
 			else
 			{
-				/**
-				***		FOP_NO_VALUE
-				**/
-				byValue = iLevelCntx ? (FOP_NO_VALUE + 0x04) : FOP_NO_VALUE;
+				// FOP_NO_VALUE
+
+				ucBaseFlags = iLevelCntx ? (FOP_NO_VALUE + 0x04) : FOP_NO_VALUE;
 				*pField++ = (FLMBYTE) uiTagNum;
+
 				if( uiTagNum > 0xFF)
 				{
-					byValue |= 0x02;
+					ucBaseFlags |= 0x02;
 					*pField++ = (FLMBYTE) (uiTagNum >> 8);
 				}
 			}
-			*pOvhd = byValue;
+
+			*pOvhd = ucBaseFlags;
 		}
-		goto WRITE_VALUE_PORTION;
+		goto WriteValuePortion;
+	
+StoreTaggedField:
 
-STORE_TAGGED_FIELD:
-		/**
-		***	FOP_TAGGED
-		***	Used for data dictionary records, unregistered & local fields.
-		***	Format similar to FOP_OPEN except the field
-		***	type is stored with the data.
-		***	When storing the unregistered fields (WPHOST) we cleared
-		***	the high bit to save on storage for VER11.  The problem is
-		***	that if a tag that is not in the unregistered range
-		***	(FLAIM TAGS) cannot be represented.  SO, we will XOR the
-		**		high bit so 0x0111 is stored as 0x8111 and 0x8222 is stored
-		***	as 0x0222.
-		**/
+		// FOP_TAGGED
+		//
+		// Used for data dictionary records, unregistered, and local fields.
+		// Format similar to FOP_OPEN except the field type is stored with
+		// the data.
+		//
+		// When storing the unregistered fields we cleared 
+		// the high bit to save on storage for VER11.  The problem is 
+		// that if a tag that is not in the unregistered range 
+		// (FLAIM TAGS) cannot be represented.  SO, we will XOR the 
+		// high bit so 0x0111 is stored as 0x8111 and 0x8222 is stored 
+		// as 0x0222.
+
 		pOvhd = pField++;
-		byValue = iLevelCntx ? (FOP_TAGGED + 0x08) : FOP_TAGGED;
 
-		uiTagNum ^= 0x8000;			/* Clear high bit if SET (VER11) or set
-												if it is in the FLM_TAGs range */
+		ucBaseFlags = iLevelCntx 
+							? (FOP_TAGGED + 0x08) 
+							: FOP_TAGGED;
+
+		uiTagNum ^= 0x8000;	// Clear high bit if SET (VER11) or set
+									// if it is in the FLM_TAGs range
+
 		*pField++ = (FLMBYTE) uiFldType;
 		*pField++ = (FLMBYTE) uiTagNum;
+
 		if( uiTagNum > 0xFF)
 		{
-			byValue |= 0x02;
+			ucBaseFlags |= 0x02;
 			*pField++ = (FLMBYTE) (uiTagNum >> 8);
 		}
+
 		*pField++ = (FLMBYTE) uiValueLen;
 		if( uiValueLen > 0xFF)
 		{
-			byValue |= 0x01;
-			*pField++ = (FLMBYTE) (uiValueLen >> 8);
+			ucBaseFlags |= 0x01;
+			*pField++ = (FLMBYTE)(uiValueLen >> 8);
 		}
-		*pOvhd = byValue;
 
-		goto WRITE_VALUE_PORTION;
+		*pOvhd = ucBaseFlags;
+		goto WriteValuePortion;
+		
+StoreEncryptedField:
 
-STORE_ENCRYPTED_FIELD:
-		/**
-		***	FOP_ENCRYPTED
-		**/
+		// FOP_ENCRYPTED
+
 		*pField++ = iLevelCntx ? (FOP_ENCRYPTED + 0x01) : FOP_ENCRYPTED;
-
 		*pField = (FLMBYTE)0;
 		*pField = (FLMBYTE)(uiFldType << 4);
 
@@ -758,23 +588,73 @@ STORE_ENCRYPTED_FIELD:
 		// Copy the encrypted value length (uiEncValueLen) into the value length
 		// (uiValueLength).  This will be use in the next section so that we can
 		// copy the right amount of data.
+
 		uiValueLen = uiEncValueLen;
+		goto WriteValuePortion;
+		
+StoreLargeField:
 
-		goto WRITE_VALUE_PORTION;
-
-WRITE_VALUE_PORTION:
-
-		/**
-		***		Write out the data a chunk at a time
-		**/
-
-		uiBytesLeft = (FLMUINT) (pBufEnd - pField);
-		if( uiValueLen <= uiBytesLeft )
+		// FOP_LARGE
+	
+		// 1101 xxec
+		// fieldType (1 byte, 0000 ffff)
+		// tagNum (2 bytes)
+		// dataLen (4 bytes)
+		//
+		// If encrypted, the following are also present:
+		//
+		// encryptionId (2 bytes)
+		// encryptionLength (4 bytes)
+	
+		*pField = FOP_LARGE;
+	
+		if( iLevelCntx)
 		{
-			// YES - enough room to copy the node and go on
+			*pField |= 0x01;
+		}
+	
+		if( bFldEncrypted)
+		{
+			*pField |= 0x02;
+		}
+		pField++;
+	
+		*pField = (FLMBYTE)(uiFldType & 0x0F);
+		pField++;
+	
+		UW2FBA( (FLMUINT16)uiTagNum, pField);
+		pField += 2;
+	
+		UD2FBA( (FLMUINT32)uiValueLen, pField);
+		pField += 4;
+	
+		if( bFldEncrypted)
+		{
+			UW2FBA( (FLMUINT16)uiEncTagNum, pField);
+			pField += 2;
+	
+			UD2FBA( (FLMUINT32)uiEncValueLen, pField);
+			pField += 4;
+	
+			// Copy the encrypted value length (uiEncValueLen) into the value length
+			// (uiValueLength).  This will be use in the next section so that we can
+			// copy the right amount of data.
+	
+			uiValueLen = uiEncValueLen;
+		}
+
+WriteValuePortion:
+
+		// Write out the data a chunk at a time
+	
+		uiBytesLeft = (FLMUINT)(pBufEnd - pField);
+		if( uiValueLen <= uiBytesLeft)
+		{
+			// YES - enough room to copy the node and go on 
+	
 			if( uiValueLen)
 			{
-				f_memcpy( pField, pValue, uiValueLen );
+				f_memcpy( pField, pValue, uiValueLen);
 				pField += uiValueLen;
 			}
 		}
@@ -787,9 +667,12 @@ WRITE_VALUE_PORTION:
 			for( ;;)
 			{
 				FLMUINT		uiTemp;
-				f_memcpy( pField, &pValue[ uiValuePos ], uiBytesLeft );
+	
+				f_memcpy( pField, &pValue[ uiValuePos], uiBytesLeft);
+				
 				pField  += uiBytesLeft;
 				uiValuePos += uiBytesLeft;
+	
 				if( uiValuePos >= uiValueLen)
 				{
 					break;
@@ -798,7 +681,7 @@ WRITE_VALUE_PORTION:
 	
 				updCur->uiUsedLen = uiUsedLen = uiBufLen;
 	
-				if( RC_BAD(rc = FSFlushElement( pDb, pLFile, updCur )))
+				if( RC_BAD( rc = FSFlushElement( pDb, pLFile, updCur )))
 				{
 					goto Exit;
 				}
@@ -817,9 +700,9 @@ WRITE_VALUE_PORTION:
 			}
 		}
 	
-		// Set the used length and get the next node
-
-		updCur->uiUsedLen = uiUsedLen = (FLMUINT) (pField - pBuf);
+		// Set the used length and get the next node 
+	
+		updCur->uiUsedLen = uiUsedLen = (FLMUINT)(pField - pBuf);
 	}
 
 Exit:
@@ -836,7 +719,7 @@ RCODE FSFlushElement(
 	UCUR *		updCur)
 {
 	RCODE			rc = FERR_OK;
-	BTSK_p		pStack = updCur->pStack;
+	BTSK *		pStack = updCur->pStack;
 	FLMBYTE *	pElmBuf = updCur->pElmBuf;
 	FLMUINT		uiFlags = updCur->uiFlags;
 	FLMBOOL		bIsLast = FALSE;
@@ -966,6 +849,171 @@ RCODE FSFlushElement(
 	updCur->pStack = pStack;
 
 Exit:
+
+	return( rc );
+}
+
+/****************************************************************************
+Desc:		Sets or verifies the next DRN for the domain supplied. 
+			If the domain has no data blocks then LFH area will be updated.
+			Must have the stack positioned to the right most tree.
+Notes:	All checks are very explicit to make clear for maintenance.
+****************************************************************************/
+RCODE FSSetNextDrn(
+	FDB *			pDb,					// Pointer to operation context struct.
+	BTSK *		pStack,				// Points to a stack element
+	FLMUINT		uiDrn,				// (IN) Value to update next counter
+	FLMBOOL		bManditoryChange)	// (IN) If true then must be set.
+{
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiNextDrn;
+	FLMBYTE *	ptr;
+	FLMBYTE *	pBlk = GET_CABLKPTR( pStack );
+
+	// Next DRN marker element in b-tree.  By this time, the root
+	// block will have been initialized. The '11' below is the size
+	// of the next DRN marker element.
+	
+	if( FB2UD( &pBlk[ BH_NEXT_BLK ]) == BT_END && 
+		pStack->uiCurElm + 11 + BBE_LEM_LEN >= pStack->uiBlkEnd)
+	{
+		ptr = CURRENT_ELM( pStack);
+		ptr += BBE_GETR_KL( ptr) + BBE_KEY;
+		uiNextDrn = FB2UD( ptr);
+	
+		// Check if the DRN is 0 or more than the NEXT DRN marker
+
+		if( uiDrn >= uiNextDrn)
+		{
+			uiNextDrn = uiDrn + 1;
+
+			if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
+			{
+				goto Exit;
+			}
+
+			ptr = CURRENT_ELM( pStack);
+			ptr += BBE_GETR_KL( ptr) + BBE_KEY;
+
+			// Update with the next DRN value and dirty the block
+
+			UD2FBA( uiNextDrn, ptr);
+			goto Exit;
+		}
+	}
+
+	if( bManditoryChange)
+	{
+		rc = RC_SET( FERR_BTREE_ERROR);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Sets or verifies the next DRN for the domain supplied. 
+			If the domain is non-default domain then LFH area will be updated
+			for FLM_1_1 databases ONLY.  FLM_1_2 stores next DRN in last block.
+****************************************************************************/
+RCODE FSGetNextDrn(
+	FDB *			pDb,					// Pointer to operation context struct.
+	LFILE *		pLFile,				// Domain Logical File Definition
+	FLMBOOL		bUpdateNextDrn,	// (IN) TRUE then update next drn value 
+	FLMUINT *	puiDrnRV)			// (IN) 0 or value to check if higher
+											// (OUT) Returns input value or next value
+{
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiNextDrn = *puiDrnRV;
+	BTSK			stackBuf[ BH_MAX_LEVELS];
+	FLMBOOL		bUsedStack = FALSE;
+
+	if( uiNextDrn == DRN_LAST_MARKER)
+	{
+		rc = RC_SET( FERR_BAD_DRN);
+		goto Exit;
+	}
+
+	// All containers have next DRN marker
+
+	if( !uiNextDrn)
+	{
+		BTSK *		pStack = stackBuf;				
+		FLMBYTE		pKeyBuf[ DIN_KEY_SIZ + 4];
+		FLMBYTE *	ptr;
+
+		// Set up the stack
+
+		bUsedStack = TRUE;
+		FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
+		pStack->pKeyBuf = pKeyBuf;
+
+		// Make sure pLFile is up to date
+
+		if( RC_BAD( rc = FSBtSearchEnd( pDb, pLFile, &pStack, DRN_LAST_MARKER)))
+		{
+			goto Exit;
+		}
+
+		if( pLFile->uiRootBlk == BT_END)
+		{
+			*puiDrnRV = pLFile->uiNextDrn;
+			if( bUpdateNextDrn)
+			{
+				pLFile->uiNextDrn++;
+				if( RC_BAD( rc = flmLFileWrite( pDb, pLFile)))
+				{
+					pLFile->uiNextDrn--;
+					goto Exit;
+				}
+			}
+		}
+		else
+		{
+			if( pStack->uiCmpStatus != BT_EQ_KEY || 
+				pLFile->uiLfNum != FB2UW( &pStack->pBlk[ BH_LOG_FILE_NUM]))
+			{
+				rc = RC_SET( FERR_BTREE_ERROR);
+				goto Exit;
+			}
+
+			ptr = CURRENT_ELM( pStack);
+			ptr += BBE_GETR_KL( ptr) + BBE_KEY;
+			*puiDrnRV = FB2UD( ptr);
+
+			if( bUpdateNextDrn)
+			{
+				FLMUINT32	ui32NextDrn = (FLMUINT32)(*puiDrnRV + 1);
+
+				if( RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
+				{
+					goto Exit;
+				}
+
+				ptr = CURRENT_ELM( pStack);
+				ptr += BBE_GETR_KL( ptr) + BBE_KEY;
+
+				// Update with the next DRN value and dirty the block 
+
+				UD2FBA( ui32NextDrn, ptr);
+			}
+		}
+	}
+
+	if( *puiDrnRV == DRN_LAST_MARKER)
+	{
+		rc = RC_SET( FERR_NO_MORE_DRNS);
+		goto Exit;
+	}
+
+Exit:
+
+	if( bUsedStack)
+	{
+		FSReleaseStackCache( stackBuf, BH_MAX_LEVELS, FALSE);
+	}
 
 	return( rc );
 }

@@ -34,43 +34,43 @@ POOL_STATS	g_QueryPoolStats = {0,0};
 // Local Function Prototypes
 
 FSTATIC RCODE flmCurCopyQTInfo(
-	QTINFO_p		pSrc,
-	QTINFO_p		pDest,
+	QTINFO *		pSrc,
+	QTINFO *		pDest,
 	POOL *		pPool);
 
 FSTATIC void flmCurClearSelect(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 FSTATIC RCODE flmCurPosToEOF(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 FSTATIC RCODE flmCurPosToBOF(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 FSTATIC RCODE flmCurSetPos(
-	CURSOR_p		pDestCursor,
-	CURSOR_p		pSrcCursor	);
+	CURSOR *		pDestCursor,
+	CURSOR *		pSrcCursor	);
 
 FSTATIC RCODE flmCurSetAbsolutePos(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT		uiPosition,
 	FLMBOOL		bFallForward,
 	FLMUINT *	puiPosition);
 
 FSTATIC RCODE flmCurPositionable(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL *	pbPositionable);
 
 FSTATIC RCODE flmCurAbsPositionable(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL *	pbAbsPositionable);
 
 FSTATIC RCODE flmCurGetAbsolutePos(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT *	puiPosition);
 
 FSTATIC RCODE flmCurGetAbsoluteCount(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT *	puiCount);
 
 FSTATIC FLMBOOL flmCurMatchIndexPath( 
@@ -82,7 +82,7 @@ FSTATIC FLMBOOL flmCurMatchIndexPath(
 Desc: Finishes a source's invisible transaction, if any.
 ****************************************************************************/
 void flmCurFinishTrans(
-	CURSOR_p		pCursor)
+	CURSOR *		pCursor)
 {
 	FLMBOOL		bIgnore;
 
@@ -112,7 +112,7 @@ void flmCurFinishTrans(
 Desc: Initializes an FDB for a source.
 ****************************************************************************/
 RCODE flmCurDbInit(
-	CURSOR_p		pCursor)
+	CURSOR *		pCursor)
 {
 	RCODE			rc;
 	FLMBOOL		bStartedTrans;
@@ -131,19 +131,18 @@ RCODE flmCurDbInit(
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Initializes a cursor for subsequent definition and navigation of
-		 a record set.  A cursor must be initialized before it can
-		 be used.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Initializes a cursor for subsequent definition and navigation of
+		a record set.  A cursor must be initialized before it can
+		be used.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorInit(
 	HFDB			hDb,
 	FLMUINT		uiContainer,
-	HFCURSOR *	phCursor
-	)
+	HFCURSOR *	phCursor)
 {
 	RCODE       rc = FERR_OK;
-	CURSOR_p    pCursor = NULL;
+	CURSOR *    pCursor = NULL;
 	FDB *			pDb = (FDB *)hDb;
 
 	flmAssert( hDb != HFDB_NULL);
@@ -200,14 +199,14 @@ Desc:	Copies a passed-in query tree into a new tree, using the passed-in
 		memory pool.
 ****************************************************************************/
 FSTATIC RCODE flmCurCopyQTInfo(
-	QTINFO_p		pSrc,
-	QTINFO_p		pDest,
+	QTINFO *		pSrc,
+	QTINFO *		pDest,
 	POOL *		pPool)
 {
 	RCODE			rc = FERR_OK;
-	FQNODE_p		pDestParentNode;
-	FQNODE_p		pSrcCurrNode;
-	FQNODE_p		pDestCurrNode;
+	FQNODE *		pDestParentNode;
+	FQNODE *		pSrcCurrNode;
+	FQNODE *		pDestCurrNode;
 	FLMBOOL		bGoingUp = FALSE;
 	FLMBOOL		bTreeComplete;
 
@@ -358,20 +357,19 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Initializes a new cursor and sets its selection criteria and record
-		 sources to be the same as those of the passed-in cursor.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Initializes a new cursor and sets its selection criteria and record
+		sources to be the same as those of the passed-in cursor.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorClone(
 	HFCURSOR      hSource,
-	HFCURSOR  *   phCursor
-	)
+	HFCURSOR  *   phCursor)
 {
-	RCODE			rc = FERR_OK;
-	CURSOR_p    pSrcCursor;
-	CURSOR_p    pDestCursor = NULL;
+	RCODE				rc = FERR_OK;
+	CURSOR *    	pSrcCursor;
+	CURSOR *    	pDestCursor = NULL;
 
-	if ((pSrcCursor = (CURSOR_p)hSource) == NULL)
+	if ((pSrcCursor = (CURSOR *)hSource) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -445,7 +443,7 @@ Exit:
 Desc: Frees up memory associated with a subquery structure.
 ****************************************************************************/
 void flmSQFree(
-	SUBQUERY_p     pSubQuery,
+	SUBQUERY *     pSubQuery,
 	FLMBOOL			bFreeEverything)
 {
 	if (!bFreeEverything)
@@ -461,7 +459,7 @@ void flmSQFree(
 	}
 	else
 	{
-		FQNODE_p	pCurrNode = pSubQuery->pTree;
+		FQNODE *	pCurrNode = pSubQuery->pTree;
 		QTYPES	eType;
 
 		// Free the memory associated with callbacks in the query tree.
@@ -528,11 +526,11 @@ void flmSQFree(
 Desc: Frees up memory associated with a cursor.
 ****************************************************************************/
 void flmCurFree(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFinishTrans)
 {
 	FLMUINT			uiCnt;
-	CS_CONTEXT_p	pCSContext;
+	CS_CONTEXT *	pCSContext;
 
 	if (bFinishTrans)
 	{
@@ -616,37 +614,36 @@ CS_Exit:
 	return;
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Frees resources of the cursor without actually freeing the cursor.
 		Keeps around the stuff that is needed to display the cursor
 		information for debugging purposes after the fact.  At this point
 		the cursor is no longer usable.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP void FLMAPI FlmCursorReleaseResources(
-	HFCURSOR	hCursor
-	)
+	HFCURSOR			hCursor)
 {
-	FLMUINT	uiCnt;
-	CURSOR_p	pCursor = (CURSOR_p)hCursor;
+	FLMUINT			uiCnt;
+	CURSOR *			pCursor = (CURSOR *)hCursor;
 
 	flmCurFinishTransactions( pCursor, TRUE);
 	flmCurFreeSQList( pCursor, FALSE);
+	
 	for (uiCnt = 0; uiCnt < pCursor->QTInfo.uiNumPredicates; uiCnt++)
 	{
 		pCursor->QTInfo.ppPredicates [uiCnt]->releaseResources();
 	}
 }
 
-/*API~***********************************************************************
-Desc : Frees memory allocated to an initialized cursor.  The cursor handle
-		 cannot be used for additional cursor operations unless it is
-		 re-initialized.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Frees memory allocated to an initialized cursor.  The cursor handle
+		cannot be used for additional cursor operations unless it is
+		re-initialized.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorFree(
-	HFCURSOR  *   phCursor
-	)
+	HFCURSOR  *   	phCursor)
 {
-	CURSOR_p			pCursor = (CURSOR *)*phCursor;
+	CURSOR *			pCursor = (CURSOR *)*phCursor;
 	F_LogMessage *	pLogMsg = NULL;
 
 	flmAssert( pCursor != NULL);
@@ -675,15 +672,15 @@ FLMEXP RCODE FLMAPI FlmCursorFree(
 	return FERR_OK;
 }
 
-/*API~***********************************************************************
-Desc : Sets flags in the query that determine text comparision modes and the
-		 granularity for QuickFinder indexes.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Sets flags in the query that determine text comparision modes
+		and the granularity for QuickFinder indexes.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorSetMode(
 	HFCURSOR    hCursor,
 	FLMUINT		uiFlags)
 {
-	CURSOR_p    pCursor = (CURSOR *)hCursor;
+	CURSOR *    pCursor = (CURSOR *)hCursor;
 
 	flmAssert( pCursor != NULL);
 
@@ -700,7 +697,7 @@ FLMEXP RCODE FLMAPI FlmCursorSetMode(
 Desc: Clears the selection criteria in a query.
 ****************************************************************************/
 FSTATIC void flmCurClearSelect(
-	CURSOR_p     pCursor)
+	CURSOR *     pCursor)
 {
 	flmCurFreeSQList( pCursor, TRUE);
 	pCursor->pTree = NULL;
@@ -727,8 +724,7 @@ FSTATIC void flmCurClearSelect(
 Desc: Positions a cursor to EOF.
 ****************************************************************************/
 FSTATIC RCODE flmCurPosToEOF(
-	CURSOR_p	pCursor
-	)
+	CURSOR *		pCursor)
 {
 	RCODE			rc = FERR_OK;
 	FlmRecord *	pRecord = NULL;
@@ -766,7 +762,7 @@ FSTATIC RCODE flmCurPosToEOF(
 Desc: Positions a cursor to BOF.
 ****************************************************************************/
 FSTATIC RCODE flmCurPosToBOF(
-	CURSOR_p	pCursor
+	CURSOR *	pCursor
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -806,16 +802,16 @@ Desc: Sets the positioning information in a query to be the same as that of
 		another query.
 ****************************************************************************/
 FSTATIC RCODE flmCurSetPos(
-	CURSOR_p		pDestCursor,
-	CURSOR_p		pSrcCursor)
+	CURSOR *		pDestCursor,
+	CURSOR *		pSrcCursor)
 {
 	RCODE			rc = FERR_OK;
-	FDB_p			pDb = NULL;
+	FDB *			pDb = NULL;
 	FlmRecord *	pRecord = NULL;
 	FLMUINT		uiRecordDrn;
 	FLMUINT		uiContainerNum;
-	SUBQUERY_p	pSrcSubQuery;
-	SUBQUERY_p	pDestSubQuery;
+	SUBQUERY *	pSrcSubQuery;
+	SUBQUERY *	pDestSubQuery;
 	FLMUINT		uiRecMatch;
 	FLMBYTE *	pucKeyBuffer = NULL;
 	FLMUINT		uiKeyLen;
@@ -1111,11 +1107,11 @@ Exit:
 Desc:	Saves the current cursor position.
 ****************************************************************************/
 RCODE flmCurSavePosition(
-	CURSOR_p	pCursor
+	CURSOR *	pCursor
 	)
 {
 	RCODE			rc = FERR_OK;
-	SUBQUERY_p	pSaveSubQuery;
+	SUBQUERY *	pSaveSubQuery;
 
 	pCursor->pSaveSubQuery = pSaveSubQuery = pCursor->pCurrSubQuery;
 	if (pSaveSubQuery)
@@ -1156,11 +1152,11 @@ Exit:
 Desc:	Restores the last cursor position that was saved.
 ****************************************************************************/
 RCODE flmCurRestorePosition(
-	CURSOR_p	pCursor
+	CURSOR *	pCursor
 	)
 {
 	RCODE			rc = FERR_OK;
-	SUBQUERY_p	pSaveSubQuery = pCursor->pSaveSubQuery;
+	SUBQUERY *	pSaveSubQuery = pCursor->pSaveSubQuery;
 
 	if ((pCursor->pCurrSubQuery =
 			pSaveSubQuery =
@@ -1204,7 +1200,7 @@ Exit:
 Desc:	Sets a cursor to an absolute position.
 ****************************************************************************/
 FSTATIC RCODE flmCurSetAbsolutePos(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT		uiPosition,
 	FLMBOOL		bFallForward,
 	FLMUINT *	puiPosition
@@ -1545,10 +1541,10 @@ Exit:
 	return( pCursor->rc = rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Allows configuration of cursor attributes, including assignment of
 		 QuickFinder strings, indexes and search records.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorConfig(
 	HFCURSOR				hCursor,
 	eCursorConfigType	eConfigType,
@@ -1557,7 +1553,7 @@ FLMEXP RCODE FLMAPI FlmCursorConfig(
 	)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{
@@ -1701,9 +1697,9 @@ FLMEXP RCODE FLMAPI FlmCursorConfig(
 
 		case FCURSOR_SET_POS:
 		{
-			CURSOR_p      pPosCursor;
+			CURSOR *      pPosCursor;
 
-			if ((pPosCursor = (CURSOR_p)Value1) == NULL)
+			if ((pPosCursor = (CURSOR *)Value1) == NULL)
 			{
 				flmAssert( 0);
 				rc = RC_SET( FERR_INVALID_PARM);
@@ -1776,11 +1772,11 @@ Exit:
 Desc : Returns whether or not a query is positionable.
 *************************************************************************/
 FSTATIC RCODE flmCurPositionable(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL *	pbPositionable)
 {
 	RCODE			rc = FERR_OK;
-	SUBQUERY_p	pSubQuery;
+	SUBQUERY *	pSubQuery;
 
 	*pbPositionable = FALSE;
 
@@ -1819,11 +1815,11 @@ Exit:
 Desc : Returns whether or not a query is absolute positionable.
 *************************************************************************/
 FSTATIC RCODE flmCurAbsPositionable(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL *	pbAbsPositionable)
 {
 	RCODE			rc = FERR_OK;
-	SUBQUERY_p	pSubQuery;
+	SUBQUERY *	pSubQuery;
 	FLMBOOL		bSavedInvisTrans;
 
 	*pbAbsPositionable = FALSE;
@@ -1870,7 +1866,7 @@ Exit:
 Desc : Returns absolute position of cursor.
 *************************************************************************/
 FSTATIC RCODE flmCurGetAbsolutePos(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT *	puiPosition
 	)
 {
@@ -1951,7 +1947,7 @@ Desc : Returns absolute count for the cursor's index.  NOTE: This is
 		 will pass the filter criteria.
 *************************************************************************/
 FSTATIC RCODE flmCurGetAbsoluteCount(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMUINT *	puiCount
 	)
 {
@@ -2010,18 +2006,17 @@ Exit:
 	return( pCursor->rc = rc);
 }
 
-/*API~***********************************************************************
-Desc : Returns FLAIM cursor configuration values.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Returns FLAIM cursor configuration values.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 	HFCURSOR						hCursor,
 	eCursorGetConfigType		eGetConfigType,
 	void *						Value1,
-	void *						Value2
-	)
+	void *						Value2)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{
@@ -2038,6 +2033,7 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 	switch( eGetConfigType)
 	{
 		case FCURSOR_GET_PERCENT_POS:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2046,8 +2042,12 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 			{
 				rc = flmCurGetPercentPos( pCursor, (FLMUINT *)Value1);
 			}
+			
 			break;
+		}
+			
 		case FCURSOR_GET_ABS_POS:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2056,8 +2056,12 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 			{
 				rc = flmCurGetAbsolutePos( pCursor, (FLMUINT *)Value1);
 			}
+			
 			break;
+		}
+			
 		case FCURSOR_GET_ABS_COUNT:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2066,8 +2070,12 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 			{
 				rc = flmCurGetAbsoluteCount( pCursor, (FLMUINT *)Value1);
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_GET_OPT_INFO_LIST:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2086,6 +2094,7 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 						goto Exit;
 					}
 				}
+				
 				for (pSubQuery = pCursor->pSubQueryList;
 					  pSubQuery;
 					  pSubQuery = pSubQuery->pNext)
@@ -2095,12 +2104,18 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 						f_memcpy( &pOptInfoArray[ uiSubQueryCnt],
 										&pSubQuery->OptInfo, sizeof( OPT_INFO));   
 					}
+					
 					uiSubQueryCnt++;
 				}
+				
 				*puiSubQueryCnt = uiSubQueryCnt;
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_GET_OPT_INFO:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2114,14 +2129,19 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 						goto Exit;
 					}
 				}
+				
 				if (pCursor->pSubQueryList)
 				{
 					f_memcpy( (OPT_INFO *)Value2,
 						&pCursor->pSubQueryList->OptInfo, sizeof( OPT_INFO));
 				}
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_GET_FLM_IX:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2142,7 +2162,7 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 
 				if( pCursor->pSubQueryList)
 				{
-					SUBQUERY_p		pTmpSubQuery = pCursor->pSubQueryList;
+					SUBQUERY *		pTmpSubQuery = pCursor->pSubQueryList;
 					FLMUINT			uiSQIndex = 0;
 
 					while( pTmpSubQuery)
@@ -2158,7 +2178,9 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 						{
 							FLMUINT	uiTmpIndexInfo;
 
-							uiSQIndex = pTmpSubQuery->pPredicate->getIndex( &uiTmpIndexInfo);
+							uiSQIndex = pTmpSubQuery->pPredicate->getIndex( 
+												&uiTmpIndexInfo);
+												
 							if (uiTmpIndexInfo == HAVE_MULTIPLE_INDEXES)
 							{
 								if (!uiIxNum)
@@ -2231,14 +2253,24 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 					*((FLMUINT *)Value2) = uiIndexInfo;
 				}
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_GET_REC_TYPE:
+		{
 			*((FLMUINT *)Value1) = pCursor->uiRecType;
 			break;
+		}
+		
 		case FCURSOR_GET_FLAGS:
+		{
 			*((FLMUINT *)Value1) = pCursor->QTInfo.uiFlags;
 			break;
+		}
+		
 		case FCURSOR_GET_STATE:
+		{
 			*((FLMUINT *)Value1) = 0;
 
 			if (pCursor->QTInfo.pTopNode ||
@@ -2247,23 +2279,30 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 			{
 				*((FLMUINT *)Value1) |= FCURSOR_HAVE_CRITERIA;
 			}
+			
 			if (pCursor->QTInfo.uiExpecting & FLM_Q_OPERATOR)
 			{
 				*((FLMUINT *)Value1) |= FCURSOR_EXPECTING_OPERATOR;
 			}
+			
 			if ((pCursor->QTInfo.uiNestLvl == 0) ||
 				 ((pCursor->QTInfo.uiExpecting & FLM_Q_OPERATOR) &&
 					pCursor->QTInfo.pTopNode))
 			{
 				*((FLMUINT *)Value1) |= FCURSOR_QUERY_COMPLETE;
 			}
+			
 			if (pCursor->bOptimized)
 			{
 				*((FLMUINT *)Value1) |=
 					(FCURSOR_QUERY_OPTIMIZED | FCURSOR_READ_PERFORMED);
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_GET_POSITIONABLE:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2272,8 +2311,12 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 			{
 				rc = flmCurPositionable( pCursor, (FLMBOOL *)Value1);
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_GET_ABS_POSITIONABLE:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2282,8 +2325,12 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 			{
 				rc = flmCurAbsPositionable( pCursor, (FLMBOOL *)Value1);
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_AT_BOF:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2297,13 +2344,18 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 						goto Exit;
 					}
 				}
+				
 				*((FLMBOOL *)Value1) = (FLMBOOL)((!pCursor->uiLastRecID &&
 															 pCursor->ReadRc == FERR_BOF_HIT)
 															? (FLMBOOL)TRUE
 															: (FLMBOOL)FALSE);
 			}
+			
 			break;
+		}
+		
 		case FCURSOR_AT_EOF:
+		{
 			if (pCursor->pCSContext)
 			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -2317,24 +2369,31 @@ FLMEXP RCODE FLMAPI FlmCursorGetConfig(
 						goto Exit;
 					}
 				}
+				
 				*((FLMBOOL *)Value1) = (FLMBOOL)((!pCursor->uiLastRecID &&
 															 pCursor->ReadRc == FERR_EOF_HIT)
 															? (FLMBOOL)TRUE
 															: (FLMBOOL)FALSE);
 			}
+			
 			break;
+		}
+		
 		default:
+		{
 			rc = RC_SET( FERR_NOT_IMPLEMENTED);
 			break;
+		}
 	}
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Desc: 	Given a IFD this function will verify that the input path matches and
-			that it is in the same position (for compound keys)
+Desc: Given a IFD this function will verify that the input path matches and
+		that it is in the same position (for compound keys)
 ****************************************************************************/
 FSTATIC FLMBOOL flmCurMatchIndexPath( 
 	IFD *			pIfd, 
@@ -2370,7 +2429,7 @@ Exit:
 	return( bIsMatch);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:		Uses the specified field path[s] to find a matching ordering index.
 Note:		FlmCursorConfig( type == FCURSOR_SET_FLM_IX) and FlmCursorSetOrderIndex
 			cannot both be called for the same cursor (they will override each 
@@ -2378,7 +2437,7 @@ Note:		FlmCursorConfig( type == FCURSOR_SET_FLM_IX) and FlmCursorSetOrderIndex
 Warning:	The index selected from this call will be used for query optimization
 			in addition to ordering the results. This could result in slower
 			query performance.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorSetOrderIndex(
 	HFCURSOR		hCursor,
 	FLMUINT *	puiFieldPaths,		/* List of field paths to match on. Each path
@@ -2389,11 +2448,11 @@ FLMEXP RCODE FLMAPI FlmCursorSetOrderIndex(
 												was found. */
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p    pCursor = (CURSOR *)hCursor;
-	FDB_p			pDb = NULL;
-	IFD_p			pIfd;
-	IFD_p			pIfd2;
-	IXD_p			pIxd;
+	CURSOR *    pCursor = (CURSOR *)hCursor;
+	FDB *			pDb = NULL;
+	IFD *			pIfd;
+	IFD *			pIfd2;
+	IXD *			pIxd;
 	FLMUINT *	puiField = puiFieldPaths;
 	FLMUINT		uiPos;
 	FLMUINT		uiScore;
@@ -2557,10 +2616,10 @@ Exit:
 Desc:
 ****************************************************************************/
 void flmCurFreeSQList(
-	CURSOR_p	pCursor,
+	CURSOR *	pCursor,
 	FLMBOOL	bFreeEverything)
 {
-	SUBQUERY_p	pSubQuery;
+	SUBQUERY *	pSubQuery;
 
 	for( pSubQuery = pCursor->pSubQueryList;
 		  pSubQuery;

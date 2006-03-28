@@ -25,8 +25,9 @@
 #include "flaimsys.h"
 
 #if defined( FLM_NLM) && !defined( __MWERKS__)
-// Disable "Warning! W549: col(XX) 'sizeof' operand contains
-// compiler generated information"
+	// Disable "Warning! W549: col(XX) 'sizeof' operand contains
+	// compiler generated information"
+	
 	#pragma warning 549 9
 #endif
 
@@ -37,8 +38,9 @@ FSTATIC void rcaRelocate(
 	void *		pvOldAlloc,
 	void *		pvNewAlloc);
 	
-// Extended record object for accessing private members of FlmRecord
-
+/****************************************************************************
+Desc:	Extended record object for accessing private members of FlmRecord
+****************************************************************************/
 struct FlmRecordExt
 {
 	static FINLINE void clearCached(
@@ -109,8 +111,11 @@ struct FlmRecordExt
 // Functions for calculating minimum and maximum record counts for a
 // given hash table size.
 
-#define FLM_RCA_MIN_REC_CNT(uiHashTblSz)	((uiHashTblSz) / 4)
-#define FLM_RCA_MAX_REC_CNT(uiHashTblSz)	((uiHashTblSz) * 4)
+#define FLM_RCA_MIN_REC_CNT(uiHashTblSz) \
+	((uiHashTblSz) / 4)
+	
+#define FLM_RCA_MAX_REC_CNT(uiHashTblSz) \
+	((uiHashTblSz) * 4)
 
 // Hash function for hashing to records in record cache.
 
@@ -118,7 +123,7 @@ struct FlmRecordExt
 	(RCACHE **)(&(gv_FlmSysData.RCacheMgr.ppHashBuckets[(uiDrn) & \
 						(gv_FlmSysData.RCacheMgr.uiHashMask)]))
 
-/* LOCAL STATIC FUNCTION PROTOTYPES */
+// Local functions
 
 FSTATIC void flmRcaFreePurged(
 	RCACHE *			pRCache);
@@ -136,12 +141,12 @@ FSTATIC RCODE flmRcaSetMemLimit(
 	FLMUINT			uiMaxCacheBytes);
 
 FSTATIC RCODE flmRcaWaitNotify(
-	FNOTIFY **			ppNotifyListRV);
+	FNOTIFY **		ppNotifyListRV);
 
 FSTATIC void flmRcaNotify(
-	FNOTIFY *			pNotify,
-	RCACHE *				pUseRCache,
-	RCODE					NotifyRc);
+	FNOTIFY *		pNotify,
+	RCACHE *			pUseRCache,
+	RCODE				NotifyRc);
 
 FSTATIC RCODE flmRcaAllocCacheStruct(
 	RCACHE **		ppRCache);
@@ -161,16 +166,16 @@ FSTATIC void flmRcaLinkIntoRCache(
 
 FSTATIC void flmRcaLinkToFFILE(
 	RCACHE *			pRCache,
-	FFILE_p			pFile,
-	FDB_p				pDb,
+	FFILE *			pFile,
+	FDB *				pDb,
 	FLMUINT			uiLowTransId,
 	FLMBOOL			bMostCurrent);
 
 #ifdef FLM_DEBUG
 FSTATIC RCODE flmRcaCheck(
-	FDB_p			pDb,
-	FLMUINT		uiContainer,
-	FLMUINT		uiDrn);
+	FDB *				pDb,
+	FLMUINT			uiContainer,
+	FLMUINT			uiDrn);
 #endif
 
 /****************************************************************************
@@ -395,7 +400,7 @@ Desc:	This routine links a record to an FFILE list at the head of the list.
 ****************************************************************************/
 FINLINE void flmRcaLinkToFileAtHead(
 	RCACHE *		pRCache,
-	FFILE_p		pFile)
+	FFILE *		pFile)
 {
 	pRCache->pPrevInFile = NULL;
 	if ((pRCache->pNextInFile = pFile->pFirstRecord) != NULL)
@@ -419,7 +424,7 @@ Desc:	This routine links a record to an FFILE list at the end of the list.
 ****************************************************************************/
 FINLINE void flmRcaLinkToFileAtEnd(
 	RCACHE *		pRCache,
-	FFILE_p		pFile)
+	FFILE *		pFile)
 {
 	pRCache->pNextInFile = NULL;
 	if( (pRCache->pPrevInFile = pFile->pLastRecord) != NULL)
@@ -452,6 +457,7 @@ FINLINE void flmRcaUnlinkFromFile(
 		{
 			pRCache->pFile->pLastRecord = pRCache->pPrevInFile;
 		}
+		
 		if( pRCache->pPrevInFile)
 		{
 			pRCache->pPrevInFile->pNextInFile = pRCache->pNextInFile;
@@ -460,6 +466,7 @@ FINLINE void flmRcaUnlinkFromFile(
 		{
 			pRCache->pFile->pFirstRecord = pRCache->pNextInFile;
 		}
+		
 		pRCache->pPrevInFile = pRCache->pNextInFile = NULL;
 		RCA_UNSET_LINKED_TO_FILE( pRCache->uiFlags);
 	}
@@ -496,6 +503,7 @@ FINLINE void flmRcaUnlinkFromHashBucket(
 	{
 		pRCache->pNextInBucket->pPrevInBucket = pRCache->pPrevInBucket;
 	}
+	
 	if (pRCache->pPrevInBucket)
 	{
 		pRCache->pPrevInBucket->pNextInBucket = pRCache->pNextInBucket;
@@ -521,6 +529,7 @@ FINLINE void flmRcaLinkToVerList(
 	{
 		pNewerVer->pOlderVersion = pRCache;
 	}
+	
 	if ((pRCache->pOlderVersion = pOlderVer) != NULL)
 	{
 		pOlderVer->pNewerVersion = pRCache;
@@ -538,6 +547,7 @@ FINLINE void flmRcaUnlinkFromVerList(
 	{
 		pRCache->pNewerVersion->pOlderVersion = pRCache->pOlderVersion;
 	}
+	
 	if (pRCache->pOlderVersion)
 	{
 		pRCache->pOlderVersion->pNewerVersion = pRCache->pNewerVersion;
@@ -877,9 +887,10 @@ FSTATIC FLMUINT flmRcaGetBestHashTblSize(
 		// we are either below the lowest minimum, or higher than the
 		// highest maximum.
 
-		uiHashTblSize = (FLMUINT)((uiCurrRecCount < FLM_RCA_MIN_REC_CNT( MIN_RCACHE_BUCKETS))
-										  ? (FLMUINT)MIN_RCACHE_BUCKETS
-										  : (FLMUINT)MAX_RCACHE_BUCKETS);
+		uiHashTblSize = 
+			(FLMUINT)((uiCurrRecCount < FLM_RCA_MIN_REC_CNT( MIN_RCACHE_BUCKETS))
+									  ? (FLMUINT)MIN_RCACHE_BUCKETS
+									  : (FLMUINT)MAX_RCACHE_BUCKETS);
 
 	}
 	else
@@ -1496,7 +1507,7 @@ Desc:	This routine finds a record in the record cache.  If it cannot
 void flmRcaFindRec(
 	FLMUINT			uiContainer,
 	FLMUINT			uiDrn,
-	FFILE_p			pFile,
+	FFILE *			pFile,
 	FLMUINT			uiVersionNeeded,
 	FLMBOOL			bDontPoisonCache,
 	FLMUINT *		puiNumLooks,
@@ -1761,8 +1772,8 @@ Desc:	This routine links a new record to its FFILE according to whether
 ****************************************************************************/
 FSTATIC void flmRcaLinkToFFILE(
 	RCACHE *			pRCache,
-	FFILE_p			pFile,
-	FDB_p				pDb,
+	FFILE *			pFile,
+	FDB *				pDb,
 	FLMUINT			uiLowTransId,
 	FLMBOOL			bMostCurrent)
 {
@@ -1959,7 +1970,7 @@ RCODE flmRcaRetrieveRec(
 {
 	RCODE					rc = FERR_OK;
 	FLMBOOL				bRCacheMutexLocked = FALSE;
-	FFILE_p				pFile = pDb->pFile;
+	FFILE *				pFile = pDb->pFile;
 	RCACHE *				pRCache;
 	RCACHE *				pNewerRCache;
 	RCACHE *				pOlderRCache;
@@ -1970,7 +1981,7 @@ RCODE flmRcaRetrieveRec(
 	FLMUINT				uiLowTransId;
 	FLMBOOL				bMostCurrent;
 	FLMUINT				uiCurrTransId;
-	FNOTIFY_p			pNotify;
+	FNOTIFY *			pNotify;
 	FLMUINT				uiNumLooks;
 	FLMBOOL				bInitializedFdb = FALSE;
 	FLMBOOL				bDontPoisonCache = pDb->uiFlags & FDB_DONT_POISON_CACHE
@@ -2096,6 +2107,7 @@ Start_Find:
 	// because they won't match a NULL FFILE.  The result of not setting
 	// the FFILE is that multiple copies of the same version of a particular
 	// record could end up in cache.
+	
 	pRCache->pFile = pFile;
 
 	flmRcaLinkIntoRCache( pNewerRCache, pOlderRCache, 
@@ -2265,7 +2277,7 @@ RCODE flmRcaInsertRec(
 	FlmRecord *	pRecord)						// Record to be inserted.
 {
 	RCODE					rc = FERR_OK;
-	FFILE_p				pFile = pDb->pFile;
+	FFILE *				pFile = pDb->pFile;
 	FLMUINT				uiContainer = pLFile->uiLfNum;
 	FLMBOOL				bMutexLocked = FALSE;
 	RCACHE *				pRCache;
@@ -2483,7 +2495,7 @@ RCODE flmRcaRemoveRec(
 	RCACHE *				pRCache;
 	RCACHE *				pNewerRCache;
 	RCACHE *				pOlderRCache;
-	FFILE_p				pFile = pDb->pFile;
+	FFILE *				pFile = pDb->pFile;
 
 	flmAssert( uiDrn != 0);
 
@@ -2564,7 +2576,7 @@ Desc:	This routine is called when an FFILE structure is going to be removed
 		of all records that have been cached for that FFILE.
 ****************************************************************************/
 void flmRcaFreeFileRecs(
-	FFILE_p			pFile)
+	FFILE *			pFile)
 {
 	FLMUINT	uiNumFreed = 0;
 
@@ -2599,10 +2611,9 @@ Desc:	This routine is called when an update transaction aborts.  At that
 		the record cache.
 ****************************************************************************/
 void flmRcaAbortTrans(
-	FDB *		pDb
-	)
+	FDB *		pDb)
 {
-	FFILE_p			pFile = pDb->pFile;
+	FFILE *			pFile = pDb->pFile;
 	RCACHE *			pRCache;
 	RCACHE *			pOlderVersion;
 	FLMUINT			uiOlderTransId =
@@ -2784,7 +2795,7 @@ Desc:
 ****************************************************************************/
 #ifdef FLM_DEBUG
 FSTATIC RCODE flmRcaCheck(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiContainer,
 	FLMUINT		uiDrn)
 {

@@ -32,12 +32,12 @@
 #define MAX_CHECKED_OUT_FILE_HDLS	8
 
 class F_SuperFileHdl;
-typedef F_SuperFileHdl *	F_SuperFileHdl_p;
-
 class F_FileIdList;
-typedef F_FileIdList *	F_FileIdList_p;
 
-typedef struct CheckedOutFileHdlTag
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct CHECKED_OUT_FILE_HDL
 {
 	F_FileHdlImp *	pFileHdl;
 	FLMUINT			uiFileNumber;

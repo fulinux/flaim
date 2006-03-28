@@ -42,8 +42,8 @@ FLMEXP void FLMAPI FlmSetIndexingCallback(
 	IX_CALLBACK				fnIxCallback,
 	void *					pvAppData)
 {
-	((FDB_p)hDb)->fnIxCallback = fnIxCallback;
-	((FDB_p)hDb)->IxCallbackData = pvAppData;
+	((FDB *)hDb)->fnIxCallback = fnIxCallback;
+	((FDB *)hDb)->IxCallbackData = pvAppData;
 }
 
 /*******************************************************************************
@@ -56,12 +56,12 @@ FLMEXP void FLMAPI FlmGetIndexingCallback(
 {
 	if (pfnIxCallback)
 	{
-		*pfnIxCallback = ((FDB_p)hDb)->fnIxCallback;
+		*pfnIxCallback = ((FDB *)hDb)->fnIxCallback;
 	}
 
 	if (ppvAppData)
 	{
-		*ppvAppData = ((FDB_p)hDb)->IxCallbackData;
+		*ppvAppData = ((FDB *)hDb)->IxCallbackData;
 	}
 }
 
@@ -81,8 +81,8 @@ FLMEXP void FLMAPI FlmSetRecValidatorHook(
 	REC_VALIDATOR_HOOK   fnRecValidatorHook,
 	void *					pvAppData)
 {
-	((FDB_p)hDb)->fnRecValidator = fnRecValidatorHook;
-	((FDB_p)hDb)->RecValData = pvAppData;
+	((FDB *)hDb)->fnRecValidator = fnRecValidatorHook;
+	((FDB *)hDb)->RecValData = pvAppData;
 }
 
 /*******************************************************************************
@@ -95,12 +95,12 @@ FLMEXP void FLMAPI FlmGetRecValidatorHook(
 {
 	if (pfnRecValidatorHook)
 	{
-		*pfnRecValidatorHook = ((FDB_p)hDb)->fnRecValidator;
+		*pfnRecValidatorHook = ((FDB *)hDb)->fnRecValidator;
 	}
 
 	if (ppvAppData)
 	{
-		*ppvAppData = ((FDB_p)hDb)->RecValData;
+		*ppvAppData = ((FDB *)hDb)->RecValData;
 	}
 }
 
@@ -113,8 +113,8 @@ FLMEXP void FLMAPI FlmSetStatusHook(
 	STATUS_HOOK    fnStatusHook,
 	void *			pvAppData)
 {
-	((FDB_p)hDb)->fnStatus = fnStatusHook;
-	((FDB_p)hDb)->StatusData = pvAppData;
+	((FDB *)hDb)->fnStatus = fnStatusHook;
+	((FDB *)hDb)->StatusData = pvAppData;
 }
 
 /*******************************************************************************
@@ -127,12 +127,12 @@ FLMEXP void FLMAPI FlmGetStatusHook(
 {
 	if (pfnStatusHook)
 	{
-		*pfnStatusHook = ((FDB_p)hDb)->fnStatus;
+		*pfnStatusHook = ((FDB *)hDb)->fnStatus;
 	}
 
 	if (ppvAppData)
 	{
-		*ppvAppData = ((FDB_p)hDb)->StatusData;
+		*ppvAppData = ((FDB *)hDb)->StatusData;
 	}
 }
 
@@ -142,28 +142,25 @@ Desc:	Allows an application to configure various options for a database.
 FLMEXP RCODE FLMAPI FlmDbConfig(
 	HFDB				hDb,
 	eDbConfigType	eConfigType,
-	void *			Value1,
-	void *		   Value2
-	)
+	void *			pvValue1,
+	void *		   pvValue2)
 {
 	RCODE			rc = FERR_OK;
-	FDB *			pDb = (FDB_p)hDb;
+	FDB *			pDb = (FDB *)hDb;
 	FFILE *		pFile = pDb->pFile;
 	LFILE *		pLFile;
 	FLMBOOL		bDbInitialized = FALSE;
 	FLMBOOL		bStartedTrans = FALSE;
 	FLMBOOL		bDbLocked = FALSE;
-
-	/*
-	Handle client/server requests
-	*/
+	
+	// Process the client/server request
 
 	if( IsInCSMode( hDb))
 	{
 		fdbInitCS( pDb);
 		bDbInitialized = TRUE;
 
-		CS_CONTEXT_p		pCSContext = pDb->pCSContext;
+		CS_CONTEXT *		pCSContext = pDb->pCSContext;
 		FCL_WIRE				Wire( pCSContext, pDb);
 
 		if( !pCSContext->bConnectionGood)
@@ -190,19 +187,21 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 			case FDB_KEEP_ABORTED_TRANS_IN_RFL:
 			case FDB_AUTO_TURN_OFF_KEEP_RFL:
 			case FDB_SET_APP_DATA:
+			{
 				if( RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER2,
-					(FLMUINT)Value1)))
+					(FLMUINT)pvValue1)))
 				{
 					goto Transmission_Error;
 				}
 				break;
+			}
 
 			case FDB_RFL_DIR:
 			{
 				FLMUNICODE *	puzRflDir;
 
 				if( RC_BAD( rc = fcsConvertNativeToUnicode( 
-					Wire.getPool(), (const char *)Value1, &puzRflDir)))
+					Wire.getPool(), (const char *)pvValue1, &puzRflDir)))
 				{
 					goto Transmission_Error;
 				}
@@ -216,34 +215,41 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 			}
 
 			case FDB_RFL_FILE_LIMITS:
-			case FDB_ENABLE_FIELD_ID_TABLE:
+			{
 				if( RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER1,
-					(FLMUINT)Value1)))
+					(FLMUINT)pvValue1)))
 				{
 					goto Transmission_Error;
 				}
 
 				if( RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER2,
-					(FLMUINT)Value2)))
+					(FLMUINT)pvValue2)))
 				{
 					goto Transmission_Error;
 				}
 				break;
+			}
 
 			case FDB_FILE_EXTEND_SIZE:
+			{
 				if( RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER1,
-					(FLMUINT)Value1)))
+					(FLMUINT)pvValue1)))
 				{
 					goto Transmission_Error;
 				}
 				break;
+			}
 
 			case FDB_RFL_ROLL_TO_NEXT_FILE:
+			{
 				break;
+			}
 
 			default:
+			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
 				goto Exit;
+			}
 		}
 
 		if( RC_BAD( rc = Wire.sendTerminate()))
@@ -251,7 +257,7 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 			goto Transmission_Error;
 		}
 
-		/* Read the response. */
+		// Read the response
 	
 		if (RC_BAD( rc = Wire.read()))
 		{
@@ -266,6 +272,7 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 		goto Exit;
 
 Transmission_Error:
+
 		pCSContext->bConnectionGood = FALSE;
 		goto Exit;
 	}
@@ -277,19 +284,17 @@ Transmission_Error:
 		goto Exit;
 	}
 
-	/*
-	Process the local (non-C/S) request
-	*/
+	// Process the local (non-C/S) request
 
 	switch( eConfigType)
 	{
 		case FDB_RFL_KEEP_FILES:
 		{
-			FLMBOOL	bKeepFiles = (FLMBOOL)(Value1 ? TRUE : FALSE);
+			FLMBOOL	bKeepFiles = (FLMBOOL)(pvValue1 ? TRUE : FALSE);
 
 			// This operation is not legal for pre 4.3 databases.
 
-			if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+			if (pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 			{
 				rc = RC_SET( FERR_ILLEGAL_OP);
 				goto Exit;
@@ -306,7 +311,7 @@ Transmission_Error:
 			// Make sure there is no active backup running
 
 			f_mutexLock( gv_FlmSysData.hShareMutex);
-			if( pDb->pFile->bBackupActive)
+			if( pFile->bBackupActive)
 			{
 				f_mutexUnlock( gv_FlmSysData.hShareMutex);
 				rc = RC_SET( FERR_BACKUP_ACTIVE);
@@ -323,6 +328,7 @@ Transmission_Error:
 				{
 					goto Exit;
 				}
+				
 				bDbLocked = TRUE;
 			}
 
@@ -330,9 +336,9 @@ Transmission_Error:
 			// anything.
 
 			if ((bKeepFiles &&
-				  pDb->pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]) ||
+				  pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]) ||
 				 (!bKeepFiles &&
-				  !pDb->pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]))
+				  !pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]))
 			{
 				goto Exit;	// Will return FERR_OK;
 			}
@@ -347,29 +353,48 @@ Transmission_Error:
 				goto Exit;
 			}
 
-			f_memcpy( pDb->pFile->ucUncommittedLogHdr,
-						 pDb->pFile->ucLastCommittedLogHdr,
+			f_memcpy( pFile->ucUncommittedLogHdr,
+						 pFile->ucLastCommittedLogHdr,
 						 LOG_HEADER_SIZE);
-			pDb->pFile->ucUncommittedLogHdr [LOG_KEEP_RFL_FILES] =
+			pFile->ucUncommittedLogHdr [LOG_KEEP_RFL_FILES] =
 				(FLMBYTE)((bKeepFiles) ? (FLMBYTE)1 : (FLMBYTE)0);
 
 			// Force a new RFL file - this will also write out the entire
 			// log header - including the changes we made above.
 
-			if (RC_BAD( rc = pDb->pFile->pRfl->finishCurrFile( pDb, TRUE)))
+			if (RC_BAD( rc = pFile->pRfl->finishCurrFile( pDb, TRUE)))
 			{
 				goto Exit;
 			}
+			
+			// Update the RFL size
+		
+			if( bKeepFiles)
+			{
+				FLMUINT64		ui64RflDiskUsage;
+				
+				if( RC_BAD( rc = flmRflCalcDiskUsage( 
+					pFile->pRfl->getRflDirPtr(), pFile->pRfl->getDbPrefixPtr(),
+					pFile->FileHdr.uiVersionNum, &ui64RflDiskUsage)))
+				{
+					goto Exit;
+				}
+				
+				f_mutexLock( gv_FlmSysData.hShareMutex);
+				pFile->ui64RflDiskUsage = ui64RflDiskUsage;
+				f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			}
+			
 			break;
 		}
 
 		case FDB_RFL_DIR:
 		{
-			const char *	pszNewRflDir = (const char *)Value1;
+			const char *	pszNewRflDir = (const char *)pvValue1;
 
 			// This operation is not legal for pre 4.3 databases.
 
-			if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+			if (pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 			{
 				rc = RC_SET( FERR_ILLEGAL_OP);
 				goto Exit;
@@ -386,7 +411,7 @@ Transmission_Error:
 			// Make sure there is no active backup running
 
 			f_mutexLock( gv_FlmSysData.hShareMutex);
-			if( pDb->pFile->bBackupActive)
+			if( pFile->bBackupActive)
 			{
 				f_mutexUnlock( gv_FlmSysData.hShareMutex);
 				rc = RC_SET( FERR_BACKUP_ACTIVE);
@@ -439,7 +464,7 @@ Transmission_Error:
 
 			// Force a new RFL file.
 
-			if (RC_BAD( rc = pDb->pFile->pRfl->finishCurrFile( pDb, FALSE)))
+			if (RC_BAD( rc = pFile->pRfl->finishCurrFile( pDb, FALSE)))
 			{
 				goto Exit;
 			}
@@ -455,12 +480,12 @@ Transmission_Error:
 
 		case FDB_RFL_FILE_LIMITS:
 		{
-			FLMUINT	uiMinRflSize = (FLMUINT)Value1;
-			FLMUINT	uiMaxRflSize = (FLMUINT)Value2;
+			FLMUINT	uiMinRflSize = (FLMUINT)pvValue1;
+			FLMUINT	uiMaxRflSize = (FLMUINT)pvValue2;
 
 			// Make sure the limits are valid.
 
-			if (pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+			if (pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 			{
 
 				// Maximum must be enough to hold at least one packet plus
@@ -497,11 +522,11 @@ Transmission_Error:
 			// Commit the transaction.
 
 			UD2FBA( (FLMUINT32)uiMinRflSize,
-				&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
-			if (pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+				&pFile->ucUncommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
+			if (pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 			{
 				UD2FBA( (FLMUINT32)uiMaxRflSize,
-					&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MAX_FILE_SIZE]);
+					&pFile->ucUncommittedLogHdr [LOG_RFL_MAX_FILE_SIZE]);
 			}
 			if (RC_BAD( rc = flmCommitDbTrans( pDb, 0, FALSE)))
 			{
@@ -512,34 +537,31 @@ Transmission_Error:
 		}
 
 		case FDB_RFL_ROLL_TO_NEXT_FILE:
-
+		{
 			// This operation is not legal for pre 4.3 databases.
 
-			if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+			if (pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 			{
 				rc = RC_SET( FERR_ILLEGAL_OP);
 				goto Exit;
 			}
 
-			/*
-			NOTE: finishCurrFile will not roll to the next file if the current
-			file has not been created.
-			*/
+			// NOTE: finishCurrFile will not roll to the next file if the current
+			// file has not been created.
 
-			if (RC_BAD( rc = pDb->pFile->pRfl->finishCurrFile( pDb, FALSE)))
+			if (RC_BAD( rc = pFile->pRfl->finishCurrFile( pDb, FALSE)))
 			{
 				goto Exit;
 			}
 			break;
+		}
 
 		case FDB_SET_APP_VERSION:
 		{
 			FLMUINT		uiOldMajorVer;
 			FLMUINT		uiOldMinorVer;
 
-			/*
-			Start an update transaction.
-			*/
+			// Start an update transaction.
 
 			bDbInitialized = TRUE;
 			if (RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS,
@@ -548,32 +570,26 @@ Transmission_Error:
 				goto Exit;
 			}
 
-			/*
-			Set the version.
-			*/
+			// Set the version.
 
 			f_mutexLock( gv_FlmSysData.hShareMutex);
-			uiOldMajorVer = pDb->pFile->FileHdr.uiAppMajorVer;
-			pDb->pFile->FileHdr.uiAppMajorVer = (FLMUINT)Value1;
-			uiOldMinorVer = pDb->pFile->FileHdr.uiAppMinorVer;
-			pDb->pFile->FileHdr.uiAppMinorVer = (FLMUINT)Value2;
+			uiOldMajorVer = pFile->FileHdr.uiAppMajorVer;
+			pFile->FileHdr.uiAppMajorVer = (FLMUINT)pvValue1;
+			uiOldMinorVer = pFile->FileHdr.uiAppMinorVer;
+			pFile->FileHdr.uiAppMinorVer = (FLMUINT)pvValue2;
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 
-			/*
-			Commit the transaction.  NOTE: This will always cause
-			us to write out the application version numbers, because
-			we always write out the prefix - first 512 bytes.
-			*/
+			// Commit the transaction.  NOTE: This will always cause
+			// us to write out the application version numbers, because
+			// we always write out the prefix - first 512 bytes.
 
 			if (RC_BAD( rc = flmCommitDbTrans( pDb, 0, FALSE)))
 			{
-				/*
-				Undo the changes made above
-				*/
+				// Undo the changes made above
 
 				f_mutexLock( gv_FlmSysData.hShareMutex);
-				pDb->pFile->FileHdr.uiAppMajorVer = uiOldMajorVer;
-				pDb->pFile->FileHdr.uiAppMinorVer = uiOldMinorVer;
+				pFile->FileHdr.uiAppMajorVer = uiOldMajorVer;
+				pFile->FileHdr.uiAppMinorVer = uiOldMinorVer;
 				f_mutexUnlock( gv_FlmSysData.hShareMutex);
 				goto Exit;
 			}
@@ -583,10 +599,11 @@ Transmission_Error:
 
 		case FDB_KEEP_ABORTED_TRANS_IN_RFL:
 		case FDB_AUTO_TURN_OFF_KEEP_RFL:
+		{
 
 			// These operations are not legal for pre 4.3 databases.
 
-			if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+			if (pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 			{
 				rc = RC_SET( FERR_ILLEGAL_OP);
 				goto Exit;
@@ -606,15 +623,15 @@ Transmission_Error:
 
 			if (eConfigType == FDB_KEEP_ABORTED_TRANS_IN_RFL)
 			{
-				pDb->pFile->ucUncommittedLogHdr [LOG_KEEP_ABORTED_TRANS_IN_RFL] =
-									(FLMBYTE)(Value1
+				pFile->ucUncommittedLogHdr [LOG_KEEP_ABORTED_TRANS_IN_RFL] =
+									(FLMBYTE)(pvValue1
 												 ? (FLMBYTE)1
 												 : (FLMBYTE)0);
 			}
 			else
 			{
-				pDb->pFile->ucUncommittedLogHdr [LOG_AUTO_TURN_OFF_KEEP_RFL] =
-									(FLMBYTE)(Value1
+				pFile->ucUncommittedLogHdr [LOG_AUTO_TURN_OFF_KEEP_RFL] =
+									(FLMBYTE)(pvValue1
 												 ? (FLMBYTE)1
 												 : (FLMBYTE)0);
 			}
@@ -627,44 +644,80 @@ Transmission_Error:
 			}
 			bStartedTrans = FALSE;
 			break;
+		}
 
 		case FDB_FILE_EXTEND_SIZE:
-			pDb->pFile->uiFileExtendSize = (FLMUINT)Value1;
+		{
+			pFile->uiFileExtendSize = (FLMUINT)pvValue1;
 			break;
+		}
 
 		case FDB_SET_APP_DATA:
-			pDb->pvAppData = Value1;
+		{
+			pDb->pvAppData = pvValue1;
 			break;
+		}
 
 		case FDB_SET_COMMIT_CALLBACK:
-			pDb->fnCommit = (COMMIT_FUNC)((FLMUINT)Value1);
-			pDb->pvCommitData = Value2;
+		{
+			pDb->fnCommit = (COMMIT_FUNC)((FLMUINT)pvValue1);
+			pDb->pvCommitData = pvValue2;
 			break;
+		}
+		
+		case FDB_SET_RFL_SIZE_THRESHOLD:
+		{
+			if( RC_BAD( rc = flmSetRflSizeThreshold( hDb, (FLMUINT)pvValue1, 
+				FLM_MAX_UINT, FLM_MAX_UINT)))
+			{
+				goto Exit;
+			}
 			
+			break;
+		}
+
+		case FDB_SET_RFL_SIZE_EVENT_INTERVALS:
+		{
+			FLMUINT			uiTimeInterval = (FLMUINT)pvValue1;
+			FLMUINT			uiSizeInterval = (FLMUINT)pvValue2;
+			
+			if( RC_BAD( rc = flmSetRflSizeThreshold( hDb, FLM_MAX_UINT, 
+				uiTimeInterval, uiSizeInterval)))
+			{
+				goto Exit;
+			}
+			
+			break;
+		}
+		
 		case FDB_ENABLE_FIELD_ID_TABLE:
+		{
 			if (pDb->pDict)
 			{
-				if (RC_BAD( rc = fdictGetContainer( pDb->pDict, (FLMUINT)Value1,
+				if (RC_BAD( rc = fdictGetContainer( pDb->pDict, (FLMUINT)pvValue1,
 										&pLFile)))
 				{
 					goto Exit;
 				}
-				pLFile->bMakeFieldIdTable = (FLMBOOL)Value2;
+				pLFile->bMakeFieldIdTable = (FLMBOOL)pvValue2;
 			}
 			else if (pDb->pFile->pDictList)
 			{
 				if (RC_BAD( rc = fdictGetContainer( pDb->pFile->pDictList,
-										(FLMUINT)Value1, &pLFile)))
+										(FLMUINT)pvValue1, &pLFile)))
 				{
 					goto Exit;
 				}
-				pLFile->bMakeFieldIdTable = (FLMBOOL)Value2;
+				pLFile->bMakeFieldIdTable = (FLMBOOL)pvValue2;
 			}
 			break;
+		}
 
 		default:
+		{
 			rc = RC_SET( FERR_NOT_IMPLEMENTED);
 			goto Exit;
+		}
 	}
 
 Exit:
@@ -695,8 +748,7 @@ FSTATIC RCODE flmDbGetSizes(
 	FDB *			pDb,
 	FLMUINT64 *	pui64DbFileSize,
 	FLMUINT64 *	pui64RollbackFileSize,
-	FLMUINT64 *	pui64RflFileSize
-	)
+	FLMUINT64 *	pui64RflFileSize)
 {
 	RCODE				rc = FERR_OK;
 	FFILE *			pFile = pDb->pFile;
@@ -867,7 +919,7 @@ FSTATIC RCODE flmDbGetSizes(
 		char *	pszDbFileName = pFile->pszDbPath;
 
 		*pui64RflFileSize = 0;
-		if (uiDbVersion < FLM_VER_4_3)
+		if (uiDbVersion < FLM_FILE_FORMAT_VER_4_3)
 		{
 
 			// For pre-4.3 versions, only need to get the size for one
@@ -1021,10 +1073,9 @@ Desc:	Returns information about a particular database.
 FLMEXP RCODE FLMAPI FlmDbGetConfig(
 	HFDB					hDb,
 	eDbGetConfigType	eGetConfigType,
-	void *				Value1,
-	void *				Value2,
-	void *				Value3
-	)
+	void *				pvValue1,
+	void *				pvValue2,
+	void *				pvValue3)
 {
 	RCODE					rc = FERR_OK;
 	FDB *					pDb = (FDB *)hDb;
@@ -1039,7 +1090,7 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 		fdbInitCS( pDb);
 		bDbInitialized = TRUE;
 
-		CS_CONTEXT_p		pCSContext = pDb->pCSContext;
+		CS_CONTEXT *		pCSContext = pDb->pCSContext;
 		FCL_WIRE				Wire( pCSContext, pDb);
 		CREATE_OPTS			createOpts;
 
@@ -1065,7 +1116,7 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			goto Transmission_Error;
 		}
 
-		/* Read the response. */
+		// Read the response
 	
 		if (RC_BAD( rc = Wire.read()))
 		{
@@ -1080,17 +1131,26 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 		switch( eGetConfigType)
 		{
 			case FDB_GET_VERSION:
+			{
 				Wire.copyCreateOpts( &createOpts);
-				*((FLMUINT *)Value1) = createOpts.uiVersionNum;
+				*((FLMUINT *)pvValue1) = createOpts.uiVersionNum;
 				break;
+			}
+			
 			case FDB_GET_BLKSIZ:
+			{
 				Wire.copyCreateOpts( &createOpts);
-				*((FLMUINT *)Value1) = createOpts.uiBlockSize;
+				*((FLMUINT *)pvValue1) = createOpts.uiBlockSize;
 				break;
+			}
+			
 			case FDB_GET_DEFAULT_LANG:
+			{
 				Wire.copyCreateOpts( &createOpts);
-				*((FLMUINT *)Value1) = createOpts.uiDefaultLanguage;
+				*((FLMUINT *)pvValue1) = createOpts.uiDefaultLanguage;
 				break;
+			}
+			
 			case FDB_GET_PATH:
 			case FDB_GET_RFL_DIR:
 			{
@@ -1103,10 +1163,11 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 				{
 					goto Exit;
 				}
-				f_strcpy( (char *)Value1, pszPath);
+				f_strcpy( (char *)pvValue1, pszPath);
 				GedPoolReset( pPool, pvMark);
 				break;
 			}
+			
 			case FDB_GET_TRANS_ID:
 			case FDB_GET_RFL_FILE_NUM:
 			case FDB_GET_RFL_HIGHEST_NU:
@@ -1118,61 +1179,90 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			case FDB_GET_DICT_SEQ_NUM:
 			case FDB_GET_FFILE_ID:
 			case FDB_GET_MUST_CLOSE_RC:
-				*((FLMUINT *)Value1) = (FLMUINT)Wire.getNumber1();
+			{
+				*((FLMUINT *)pvValue1) = (FLMUINT)Wire.getNumber1();
 				break;
+			}
+			
 			case FDB_GET_RFL_FILE_SIZE_LIMITS:
-				if (Value1)
+			{
+				if (pvValue1)
 				{
-					*((FLMUINT *)Value1) = (FLMUINT)Wire.getNumber1();
+					*((FLMUINT *)pvValue1) = (FLMUINT)Wire.getNumber1();
 				}
-				if (Value2)
+				
+				if (pvValue2)
 				{
-					*((FLMUINT *)Value2) = (FLMUINT)Wire.getNumber2();
+					*((FLMUINT *)pvValue2) = (FLMUINT)Wire.getNumber2();
 				}
+				
 				break;
+			}
+			
 			case FDB_GET_RFL_KEEP_FLAG:
 			case FDB_GET_AUTO_TURN_OFF_KEEP_RFL_FLAG:
 			case FDB_GET_KEEP_ABORTED_TRANS_IN_RFL_FLAG:
-				*((FLMBOOL *)Value1) = Wire.getBoolean();
+			{
+				*((FLMBOOL *)pvValue1) = Wire.getBoolean();
 				break;
+			}
+			
 			case FDB_GET_CHECKPOINT_INFO:
-				rc = fcsExtractCheckpointInfo( Wire.getHTD(), (CHECKPOINT_INFO *)Value1);
+			{
+				rc = fcsExtractCheckpointInfo( Wire.getHTD(), (CHECKPOINT_INFO *)pvValue1);
 				break;
+			}
+			
 			case FDB_GET_LOCK_HOLDER:
-				rc = fcsExtractLockUser( Wire.getHTD(), FALSE, ((LOCK_USER *)Value1));
+			{
+				rc = fcsExtractLockUser( Wire.getHTD(), FALSE, ((LOCK_USER *)pvValue1));
 				break;
+			}
+			
 			case FDB_GET_LOCK_WAITERS:
-				rc = fcsExtractLockUser( Wire.getHTD(), TRUE, ((void *)Value1));
+			{
+				rc = fcsExtractLockUser( Wire.getHTD(), TRUE, ((void *)pvValue1));
 				break;
+			}
+			
 			case FDB_GET_SERIAL_NUMBER:
 			{
-				f_memcpy( (FLMBYTE *)Value1, 
+				f_memcpy( (FLMBYTE *)pvValue1, 
 					Wire.getSerialNum(), F_SERIAL_NUM_SIZE);
 				break;
 			}
+			
 			case FDB_GET_SIZES:
-				if (Value1)
+			{
+				if (pvValue1)
 				{
-					*((FLMUINT64 *)Value1) = (FLMUINT64)Wire.getNumber1();
+					*((FLMUINT64 *)pvValue1) = (FLMUINT64)Wire.getNumber1();
 				}
-				if (Value2)
+				
+				if (pvValue2)
 				{
-					*((FLMUINT64 *)Value2) = (FLMUINT64)Wire.getNumber2();
+					*((FLMUINT64 *)pvValue2) = (FLMUINT64)Wire.getNumber2();
 				}
-				if (Value3)
+				
+				if (pvValue3)
 				{
-					*((FLMUINT64 *)Value3) = (FLMUINT64)Wire.getNumber3();
+					*((FLMUINT64 *)pvValue3) = (FLMUINT64)Wire.getNumber3();
 				}
+				
 				break;
+			}
 
 			default:
+			{
 				rc = RC_SET( FERR_NOT_IMPLEMENTED);
 				break;
+			}
 		}
 
 		goto Exit;
 
 Transmission_Error:
+
 		pCSContext->bConnectionGood = FALSE;
 		goto Exit;
 	}
@@ -1201,269 +1291,325 @@ Transmission_Error:
 
 	switch( eGetConfigType)
 	{
-	case FDB_GET_VERSION:
-		*((FLMUINT *)Value1) = pFile->FileHdr.uiVersionNum;
-		break;
-	case FDB_GET_BLKSIZ:
-		*((FLMUINT *)Value1) = pFile->FileHdr.uiBlockSize;
-		break;
-	case FDB_GET_DEFAULT_LANG:
-		*((FLMUINT *)Value1) = pFile->FileHdr.uiDefaultLanguage;
-		break;
-	case FDB_GET_PATH:
-		if( RC_BAD( rc = flmGetFilePath( pFile, ((char *)Value1))))
+		case FDB_GET_VERSION:
 		{
-			goto Exit;
+			*((FLMUINT *)pvValue1) = pFile->FileHdr.uiVersionNum;
+			break;
 		}
-		break;
-	case FDB_GET_TRANS_ID:
-		if (pDb->uiTransType != FLM_NO_TRANS)
+		
+		case FDB_GET_BLKSIZ:
 		{
-			*((FLMUINT *)Value1) = pDb->LogHdr.uiCurrTransID;
+			*((FLMUINT *)pvValue1) = pFile->FileHdr.uiBlockSize;
+			break;
 		}
-		else if (pDb->uiFlags & FDB_HAS_FILE_LOCK)
+		
+		case FDB_GET_DEFAULT_LANG:
 		{
-
-			// Get last committed value.
-
-			*((FLMUINT *)Value1) = FB2UD( &pFile->ucLastCommittedLogHdr [LOG_CURR_TRANS_ID]);
+			*((FLMUINT *)pvValue1) = pFile->FileHdr.uiDefaultLanguage;
+			break;
 		}
-		else
+		
+		case FDB_GET_PATH:
 		{
-			*((FLMUINT *)Value1) = 0;
-		}
-		break;
-	case FDB_GET_CHECKPOINT_INFO:
-		pCheckpointInfo = (CHECKPOINT_INFO *)Value1;
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		flmGetCPInfo( pFile, pCheckpointInfo);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-	case FDB_GET_LOCK_HOLDER:
-		if (pFile->pFileLockObj)
-		{
-			rc = pFile->pFileLockObj->GetLockInfo( FALSE, (void *)Value1);
-		}
-		else
-		{
-			((LOCK_USER *)Value1)->uiThreadId = 0;
-			((LOCK_USER *)Value1)->uiTime = 0;
-		}
-		break;
-	case FDB_GET_LOCK_WAITERS:
-		if (pFile->pFileLockObj)
-		{
-			rc = pFile->pFileLockObj->GetLockInfo( TRUE, (void *)Value1);
-		}
-		else
-		{
-			*((LOCK_USER **)Value1) = NULL;
-		}
-		break;
-
-	case FDB_GET_LOCK_WAITERS_EX:
-	{
-		FlmLockInfo * pLockInfo = (FlmLockInfo *)Value1;
-
-		if (pFile->pFileLockObj)
-		{
-			rc = pFile->pFileLockObj->GetLockInfo( pLockInfo);
-		}
-		else
-		{
-			pLockInfo->setLockCount( 0);
-		}
-		break;
-	}
-
-	case FDB_GET_RFL_DIR:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
-		{
-			rc = RC_SET( FERR_NOT_IMPLEMENTED);
-			goto Exit;
-		}
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		f_strcpy( (char *)Value1, pDb->pFile->pRfl->getRflDirPtr());
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FDB_GET_RFL_FILE_NUM:
-	{
-		FLMUINT		uiLastCPFile;
-		FLMUINT		uiLastTransFile;
-
-		/*
-		Get the CP and last trans RFL file numbers.  Need to
-		return the higher of the two.  No need to lock the
-		mutex because we are in an update transaction.
-		*/
-
-		uiLastCPFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
-			LOG_RFL_LAST_CP_FILE_NUM]);
-
-		uiLastTransFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
-			LOG_RFL_FILE_NUM]);
-
-		*((FLMUINT *)Value1) = uiLastCPFile > uiLastTransFile
-									 ? uiLastCPFile
-									 : uiLastTransFile;
-		break;
-	}
-
-	case FDB_GET_RFL_HIGHEST_NU:
-	{
-		FLMUINT		uiLastCPFile;
-		FLMUINT		uiLastTransFile;
-
-		/*
-		Get the CP and last trans RFL file numbers.  Need to
-		return the lower of the two minus 1.
-		*/
-
-		uiLastCPFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
-			LOG_RFL_LAST_CP_FILE_NUM]);
-
-		uiLastTransFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
-			LOG_RFL_FILE_NUM]);
-
-		*((FLMUINT *)Value1) =
-			(FLMUINT)((uiLastCPFile < uiLastTransFile
-						? uiLastCPFile
-						: uiLastTransFile) - 1);
-		break;
-	}
-
-	case FDB_GET_RFL_FILE_SIZE_LIMITS:
-		if (Value1)
-		{
-			*((FLMUINT *)Value1) = (FLMUINT)FB2UD(
-					&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
-		}
-		if (Value2)
-		{
-			if (pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+			if( RC_BAD( rc = flmGetFilePath( pFile, ((char *)pvValue1))))
 			{
-				*((FLMUINT *)Value2) = (FLMUINT)FB2UD(
-					&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MAX_FILE_SIZE]);
+				goto Exit;
+			}
+			break;
+		}
+		
+		case FDB_GET_TRANS_ID:
+		{
+			if (pDb->uiTransType != FLM_NO_TRANS)
+			{
+				*((FLMUINT *)pvValue1) = pDb->LogHdr.uiCurrTransID;
+			}
+			else if (pDb->uiFlags & FDB_HAS_FILE_LOCK)
+			{
+	
+				// Get last committed value.
+	
+				*((FLMUINT *)pvValue1) = 
+						FB2UD( &pFile->ucLastCommittedLogHdr [LOG_CURR_TRANS_ID]);
 			}
 			else
 			{
-				*((FLMUINT *)Value2) = (FLMUINT)FB2UD(
-					&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
+				*((FLMUINT *)pvValue1) = 0;
 			}
+			break;
 		}
-		break;
-
-	case FDB_GET_RFL_KEEP_FLAG:
-		*((FLMBOOL *)Value1) =
-				pDb->pFile->ucUncommittedLogHdr [LOG_KEEP_RFL_FILES]
-				? TRUE
-				: FALSE;
-		break;
-
-	case FDB_GET_LAST_BACKUP_TRANS_ID:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+		
+		case FDB_GET_CHECKPOINT_INFO:
+		{
+			pCheckpointInfo = (CHECKPOINT_INFO *)pvValue1;
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			flmGetCPInfo( pFile, pCheckpointInfo);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+		}
+		
+		case FDB_GET_LOCK_HOLDER:
+		{
+			if (pFile->pFileLockObj)
+			{
+				rc = pFile->pFileLockObj->GetLockInfo( FALSE, (void *)pvValue1);
+			}
+			else
+			{
+				((LOCK_USER *)pvValue1)->uiThreadId = 0;
+				((LOCK_USER *)pvValue1)->uiTime = 0;
+			}
+			break;
+		}
+		
+		case FDB_GET_LOCK_WAITERS:
+		{
+			if (pFile->pFileLockObj)
+			{
+				rc = pFile->pFileLockObj->GetLockInfo( TRUE, (void *)pvValue1);
+			}
+			else
+			{
+				*((LOCK_USER **)pvValue1) = NULL;
+			}
+			break;
+		}
+	
+		case FDB_GET_LOCK_WAITERS_EX:
+		{
+			FlmLockInfo * pLockInfo = (FlmLockInfo *)pvValue1;
+	
+			if (pFile->pFileLockObj)
+			{
+				rc = pFile->pFileLockObj->GetLockInfo( pLockInfo);
+			}
+			else
+			{
+				pLockInfo->setLockCount( 0);
+			}
+			break;
+		}
+	
+		case FDB_GET_RFL_DIR:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				rc = RC_SET( FERR_NOT_IMPLEMENTED);
+				goto Exit;
+			}
+			
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			f_strcpy( (char *)pvValue1, pDb->pFile->pRfl->getRflDirPtr());
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+		}
+	
+		case FDB_GET_RFL_FILE_NUM:
+		{
+			FLMUINT		uiLastCPFile;
+			FLMUINT		uiLastTransFile;
+	
+			// Get the CP and last trans RFL file numbers.  Need to
+			// return the higher of the two.  No need to lock the
+			// mutex because we are in an update transaction.
+	
+			uiLastCPFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
+				LOG_RFL_LAST_CP_FILE_NUM]);
+	
+			uiLastTransFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
+				LOG_RFL_FILE_NUM]);
+	
+			*((FLMUINT *)pvValue1) = uiLastCPFile > uiLastTransFile
+										 ? uiLastCPFile
+										 : uiLastTransFile;
+			break;
+		}
+	
+		case FDB_GET_RFL_HIGHEST_NU:
+		{
+			FLMUINT		uiLastCPFile;
+			FLMUINT		uiLastTransFile;
+	
+			// Get the CP and last trans RFL file numbers.  Need to
+			// return the lower of the two minus 1.
+	
+			uiLastCPFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
+				LOG_RFL_LAST_CP_FILE_NUM]);
+	
+			uiLastTransFile = FB2UD( &pDb->pFile->ucUncommittedLogHdr[
+				LOG_RFL_FILE_NUM]);
+	
+			*((FLMUINT *)pvValue1) =
+				(FLMUINT)((uiLastCPFile < uiLastTransFile
+							? uiLastCPFile
+							: uiLastTransFile) - 1);
+			break;
+		}
+	
+		case FDB_GET_RFL_FILE_SIZE_LIMITS:
+		{
+			if (pvValue1)
+			{
+				*((FLMUINT *)pvValue1) = (FLMUINT)FB2UD(
+						&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
+			}
+			if (pvValue2)
+			{
+				if (pDb->pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
+				{
+					*((FLMUINT *)pvValue2) = (FLMUINT)FB2UD(
+						&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MAX_FILE_SIZE]);
+				}
+				else
+				{
+					*((FLMUINT *)pvValue2) = (FLMUINT)FB2UD(
+						&pDb->pFile->ucUncommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
+				}
+			}
+			break;
+		}
+	
+		case FDB_GET_RFL_KEEP_FLAG:
+		{
+			*((FLMBOOL *)pvValue1) =
+					pDb->pFile->ucUncommittedLogHdr [LOG_KEEP_RFL_FILES]
+					? TRUE
+					: FALSE;
+			break;
+		}
+	
+		case FDB_GET_LAST_BACKUP_TRANS_ID:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				rc = RC_SET( FERR_NOT_IMPLEMENTED);
+				goto Exit;
+			}
+			*((FLMUINT *)pvValue1) = (FLMUINT)FB2UD(
+					&pDb->pFile->ucUncommittedLogHdr [LOG_LAST_BACKUP_TRANS_ID]);
+			break;
+		}
+	
+		case FDB_GET_BLOCKS_CHANGED_SINCE_BACKUP:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				rc = RC_SET( FERR_NOT_IMPLEMENTED);
+				goto Exit;
+			}
+			*((FLMUINT *)pvValue1) = (FLMUINT)FB2UD(
+					&pDb->pFile->ucUncommittedLogHdr[ LOG_BLK_CHG_SINCE_BACKUP]);
+			break;
+		}
+	
+		case FDB_GET_SERIAL_NUMBER:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				rc = RC_SET( FERR_NOT_IMPLEMENTED);
+				goto Exit;
+			}
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			f_memcpy( (FLMBYTE *)pvValue1, 
+				&pDb->pFile->ucLastCommittedLogHdr [LOG_DB_SERIAL_NUM],
+				F_SERIAL_NUM_SIZE);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+		}
+	
+		case FDB_GET_AUTO_TURN_OFF_KEEP_RFL_FLAG:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				*((FLMBOOL *)pvValue1) = FALSE;
+			}
+			else
+			{
+				*((FLMBOOL *)pvValue1) =
+					pDb->pFile->ucUncommittedLogHdr [LOG_AUTO_TURN_OFF_KEEP_RFL]
+					? TRUE
+					: FALSE;
+			}
+			break;
+		}
+	
+		case FDB_GET_KEEP_ABORTED_TRANS_IN_RFL_FLAG:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				*((FLMBOOL *)pvValue1) = FALSE;
+			}
+			else
+			{
+				*((FLMBOOL *)pvValue1) =
+					pDb->pFile->ucUncommittedLogHdr [LOG_KEEP_ABORTED_TRANS_IN_RFL]
+					? TRUE
+					: FALSE;
+			}
+			break;
+		}
+	
+		case FDB_GET_SIZES:
+		{
+			rc = flmDbGetSizes( pDb, (FLMUINT64 *)pvValue1, (FLMUINT64 *)pvValue2,
+											 (FLMUINT64 *)pvValue3);
+			break;
+		}
+	
+		case FDB_GET_FILE_EXTEND_SIZE:
+		{
+			*((FLMUINT *)pvValue1) = pDb->pFile->uiFileExtendSize;
+			break;
+		}
+	
+		case FDB_GET_APP_DATA:
+		{
+			*((void **)pvValue1) = pDb->pvAppData;
+			break;
+		}
+	
+		case FDB_GET_NEXT_INC_BACKUP_SEQ_NUM:
+		{
+			if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+			{
+				rc = RC_SET( FERR_NOT_IMPLEMENTED);
+				goto Exit;
+			}
+			*((FLMUINT *)pvValue1) = (FLMUINT)FB2UD(
+					&pDb->pFile->ucUncommittedLogHdr[ LOG_INC_BACKUP_SEQ_NUM]);
+			break;
+		}
+	
+		case FDB_GET_DICT_SEQ_NUM:
+		{
+			if( pDb->pDict)
+			{
+				*((FLMUINT *)pvValue1) = pDb->pDict->uiDictSeq;
+			}
+			else
+			{
+				*((FLMUINT *)pvValue1) = pDb->pFile->pDictList->uiDictSeq;
+			}
+			break;
+		}
+		
+		case FDB_GET_FFILE_ID:
+		{
+			*((FLMUINT *)pvValue1) = pDb->pFile->uiFFileId;
+			break;
+		}
+		
+		case FDB_GET_MUST_CLOSE_RC:
+		{
+			*((RCODE *)pvValue1) = pDb->pFile->rcMustClose;
+			break;
+		}
+		
+		default:
 		{
 			rc = RC_SET( FERR_NOT_IMPLEMENTED);
-			goto Exit;
+			break;
 		}
-		*((FLMUINT *)Value1) = (FLMUINT)FB2UD(
-				&pDb->pFile->ucUncommittedLogHdr [LOG_LAST_BACKUP_TRANS_ID]);
-		break;
-
-	case FDB_GET_BLOCKS_CHANGED_SINCE_BACKUP:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
-		{
-			rc = RC_SET( FERR_NOT_IMPLEMENTED);
-			goto Exit;
-		}
-		*((FLMUINT *)Value1) = (FLMUINT)FB2UD(
-				&pDb->pFile->ucUncommittedLogHdr[ LOG_BLK_CHG_SINCE_BACKUP]);
-		break;
-
-	case FDB_GET_SERIAL_NUMBER:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
-		{
-			rc = RC_SET( FERR_NOT_IMPLEMENTED);
-			goto Exit;
-		}
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		f_memcpy( (FLMBYTE *)Value1, 
-			&pDb->pFile->ucLastCommittedLogHdr [LOG_DB_SERIAL_NUM],
-			F_SERIAL_NUM_SIZE);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FDB_GET_AUTO_TURN_OFF_KEEP_RFL_FLAG:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
-		{
-			*((FLMBOOL *)Value1) = FALSE;
-		}
-		else
-		{
-			*((FLMBOOL *)Value1) =
-				pDb->pFile->ucUncommittedLogHdr [LOG_AUTO_TURN_OFF_KEEP_RFL]
-				? TRUE
-				: FALSE;
-		}
-		break;
-
-	case FDB_GET_KEEP_ABORTED_TRANS_IN_RFL_FLAG:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
-		{
-			*((FLMBOOL *)Value1) = FALSE;
-		}
-		else
-		{
-			*((FLMBOOL *)Value1) =
-				pDb->pFile->ucUncommittedLogHdr [LOG_KEEP_ABORTED_TRANS_IN_RFL]
-				? TRUE
-				: FALSE;
-		}
-		break;
-
-	case FDB_GET_SIZES:
-		rc = flmDbGetSizes( pDb, (FLMUINT64 *)Value1, (FLMUINT64 *)Value2,
-										 (FLMUINT64 *)Value3);
-		break;
-
-	case FDB_GET_FILE_EXTEND_SIZE:
-		*((FLMUINT *)Value1) = pDb->pFile->uiFileExtendSize;
-		break;
-
-	case FDB_GET_APP_DATA:
-		*((void **)Value1) = pDb->pvAppData;
-		break;
-
-	case FDB_GET_NEXT_INC_BACKUP_SEQ_NUM:
-		if (pDb->pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
-		{
-			rc = RC_SET( FERR_NOT_IMPLEMENTED);
-			goto Exit;
-		}
-		*((FLMUINT *)Value1) = (FLMUINT)FB2UD(
-				&pDb->pFile->ucUncommittedLogHdr[ LOG_INC_BACKUP_SEQ_NUM]);
-		break;
-
-	case FDB_GET_DICT_SEQ_NUM:
-		if( pDb->pDict)
-		{
-			*((FLMUINT *)Value1) = pDb->pDict->uiDictSeq;
-		}
-		else
-		{
-			*((FLMUINT *)Value1) = pDb->pFile->pDictList->uiDictSeq;
-		}
-		break;
-	case FDB_GET_FFILE_ID:
-		*((FLMUINT *)Value1) = pDb->pFile->uiFFileId;
-		break;
-	case FDB_GET_MUST_CLOSE_RC:
-		*((RCODE *)Value1) = pDb->pFile->rcMustClose;
-		break;
-	default:
-		rc = RC_SET( FERR_NOT_IMPLEMENTED);
-		break;
 	}
 
 Exit:
@@ -1487,8 +1633,7 @@ Desc: Retrieves the Checkpoint info for the pFile passed in.  This assumes the
 *****************************************************************************/
 void flmGetCPInfo(
 	void *					pFilePtr,
-	CHECKPOINT_INFO *		pCheckpointInfo
-	)
+	CHECKPOINT_INFO *		pCheckpointInfo)
 {
 	FFILE *	pFile;
 	FLMUINT	uiElapTime;
@@ -1531,6 +1676,7 @@ void flmGetCPInfo(
 			{
 				pCheckpointInfo->uiForceCheckpointRunningTime = 0;
 			}
+			
 			pCheckpointInfo->iForceCheckpointReason =
 				pFile->pCPInfo->iForceCheckpointReason;
 			pCheckpointInfo->bWritingDataBlocks =
@@ -1540,10 +1686,12 @@ void flmGetCPInfo(
 			pCheckpointInfo->uiDataBlocksWritten =
 				pFile->pCPInfo->uiDataBlocksWritten;
 		}
+		
 		pCheckpointInfo->uiBlockSize =
 			(FLMUINT)pFile->FileHdr.uiBlockSize;
 		pCheckpointInfo->uiDirtyCacheBytes = 
 			pFile->uiDirtyCacheCount * pFile->FileHdr.uiBlockSize;
+			
 		if (pFile->pCPInfo->uiStartWaitTruncateTime)
 		{
 			uiCurrTime = FLM_GET_TIMER();
@@ -1558,4 +1706,102 @@ void flmGetCPInfo(
 			pCheckpointInfo->uiWaitTruncateTime = 0;
 		}
 	}
+}
+
+/****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE flmSetRflSizeThreshold(
+	HFDB			hDb,
+	FLMUINT		uiSizeThreshold,
+	FLMUINT		uiTimeInterval,
+	FLMUINT		uiSizeInterval)
+{
+	RCODE			rc = FERR_OK;
+	FDB *			pDb = (FDB *)hDb;
+	FFILE *		pFile = pDb->pFile;
+	FLMBOOL		bDbInitialized = FALSE;
+	FLMBOOL		bStartedTrans = FALSE;
+			
+	// Start an update transaction.  Must not already be one going.
+
+	bDbInitialized = TRUE;
+	if (RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS,
+		0, FLM_NO_TIMEOUT | FLM_AUTO_TRANS, &bStartedTrans)))
+	{
+		goto Exit;
+	}
+			
+	if (pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+	{
+		rc = RC_SET( FERR_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	// Set the size threshold and event intervals
+
+	if( uiSizeThreshold == FLM_MAX_UINT)
+	{
+		uiSizeThreshold = FB2UD( 
+			&pFile->ucUncommittedLogHdr [LOG_RFL_DISK_SPACE_THRESHOLD]);
+	}
+	else
+	{
+		UD2FBA( (FLMUINT32)uiSizeThreshold,
+			&pFile->ucUncommittedLogHdr [LOG_RFL_DISK_SPACE_THRESHOLD]);
+	}
+	
+	if( uiTimeInterval == FLM_MAX_UINT)
+	{
+		uiTimeInterval = FB2UD( 
+			&pFile->ucUncommittedLogHdr [LOG_RFL_LIMIT_TIME_FREQ]);
+	}
+	else
+	{
+		UD2FBA( (FLMUINT32)uiTimeInterval,
+			&pFile->ucUncommittedLogHdr [LOG_RFL_LIMIT_TIME_FREQ]);
+	}
+	
+	if( uiSizeInterval == FLM_MAX_UINT)
+	{
+		uiSizeInterval = FB2UD( 
+			&pFile->ucUncommittedLogHdr [LOG_RFL_LIMIT_SPACE_FREQ]);
+	}
+	else
+	{
+		UD2FBA( (FLMUINT32)uiSizeInterval,
+			&pFile->ucUncommittedLogHdr [LOG_RFL_LIMIT_SPACE_FREQ]);
+	}
+		
+	// Log the change to the RFL
+
+	if( RC_BAD( rc = pFile->pRfl->logSizeEventConfig( 
+		pDb->LogHdr.uiCurrTransID, uiSizeThreshold, uiTimeInterval,
+		uiSizeInterval)))
+	{
+		goto Exit;
+	}
+
+	// Commit the transaction.
+
+	if (RC_BAD( rc = flmCommitDbTrans( pDb, 0, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	bStartedTrans = FALSE;
+	
+Exit:
+
+	if( bStartedTrans)
+	{
+		flmAbortDbTrans( pDb);
+	}
+
+	if( bDbInitialized)
+	{
+		fdbExit( pDb);
+	}
+	
+	return( rc);
 }

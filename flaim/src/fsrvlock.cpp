@@ -192,7 +192,7 @@ void ServerLockManager::CheckLockTimeouts(
 	FLMBOOL			bTimeoutAll)
 {
 	FLMUINT			uiCurrTime;
-	LOCK_WAITER_p	pLockWaiter;
+	LOCK_WAITER *	pLockWaiter;
 	
 	pMutexRef->Lock();
 	uiCurrTime = (FLMUINT)FLM_GET_TIMER();
@@ -232,8 +232,8 @@ void ServerLockManager::SignalLockWaiter(
 	FLMUINT					uiThreadId)
 {
 	FLMUINT			uiCurrTime;
-	LOCK_WAITER_p	pLockWaiter;
-	LOCK_WAITER_p	pNextWaiter;
+	LOCK_WAITER *	pLockWaiter;
+	LOCK_WAITER *	pNextWaiter;
 	F_MutexRef		MutexRef( m_phMutex);
 	
 
@@ -272,9 +272,9 @@ Desc:		Inserts a waiter into the global list of waiters, sorted by
 			is already locked.
 ****************************************************************************/
 void ServerLockManager::InsertWaiter(
-	LOCK_WAITER_p	pLockWaiter)
+	LOCK_WAITER *	pLockWaiter)
 {
-	LOCK_WAITER_p	pPrevLockWaiter;
+	LOCK_WAITER *	pPrevLockWaiter;
 
 	// Determine where in the list this lock waiter should go.
 
@@ -644,7 +644,7 @@ Desc:		Removes a waiter from the list of waiters on this object.
 			is already locked.
 ****************************************************************************/
 void ServerLockObject::RemoveWaiter(
-	LOCK_WAITER_p	pLockWaiter)
+	LOCK_WAITER *	pLockWaiter)
 {
 	if (pLockWaiter->pNext)
 		pLockWaiter->pNext->pPrev = pLockWaiter->pPrev;
@@ -753,7 +753,7 @@ RCODE ServerLockObject::Lock(
 		// Do the event callback, if any registered.
 
 		if (bLogEvent &&
-			 gv_FlmSysData.EventHdrs [F_EVENT_LOCKS].pEventCBList)
+			 gv_FlmSysData.LockEvents.pEventCBList)
 		{
 			flmDoEventCallback( F_EVENT_LOCKS,
 						(FEventType)((bSendSuspendEvent)
@@ -793,7 +793,7 @@ RCODE ServerLockObject::Lock(
 		// Do the event callback, if any registered.
 
 		if (bLogEvent &&
-			 gv_FlmSysData.EventHdrs [F_EVENT_LOCKS].pEventCBList)
+			 gv_FlmSysData.LockEvents.pEventCBList)
 		{
 			if (RC_BAD( rc))
 			{
@@ -864,7 +864,7 @@ RCODE ServerLockObject::Lock(
 
 		if (bLogEvent &&
 			 !bSendSuspendEvent &&
-			 gv_FlmSysData.EventHdrs [F_EVENT_LOCKS].pEventCBList)
+			 gv_FlmSysData.LockEvents.pEventCBList)
 		{
 			MutexRef.Unlock();
 			bSemLocked = FALSE;
@@ -892,14 +892,14 @@ Desc:		Unlock this object.  If there is a pending lock request, give
 ****************************************************************************/
 RCODE ServerLockObject::Unlock(
 	FLMBOOL		bLogEvent,
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMBOOL		bRelease,
 	DB_STATS *	pDbStats
 	)
 {
 	RCODE				rc = FERR_OK;
 	F_SEM				hESem;
-	LOCK_WAITER_p	pLockWaiter;
+	LOCK_WAITER *	pLockWaiter;
 	F_MutexRef		MutexRef( m_pServerLockMgr->GetSemPtr());
 
 	MutexRef.Lock();
@@ -932,7 +932,7 @@ RCODE ServerLockObject::Unlock(
 	// us to end up in here again!
 
 	if (bLogEvent &&
-		 gv_FlmSysData.EventHdrs [F_EVENT_LOCKS].pEventCBList)
+		 gv_FlmSysData.LockEvents.pEventCBList)
 	{
 		flmDoEventCallback( F_EVENT_LOCKS,
 					F_EVENT_LOCK_RELEASED,
@@ -1064,7 +1064,7 @@ void ServerLockObject::GetLockInfo(
 	FLOCK_INFO *	pLockInfo
 	)
 {
-	LOCK_WAITER_p	pLockWaiter;
+	LOCK_WAITER *	pLockWaiter;
 	F_MutexRef		MutexRef( m_pServerLockMgr->GetSemPtr());
 
 	f_memset( pLockInfo, 0, sizeof( FLOCK_INFO));
@@ -1258,7 +1258,7 @@ Desc:		Returns TRUE if there are lock waiters with a priority > iPriority
 FLMBOOL ServerLockObject::haveHigherPriorityWaiter(
 	FLMINT			iPriority)
 {
-	LOCK_WAITER_p	pLockWaiter;
+	LOCK_WAITER *	pLockWaiter;
 	F_MutexRef		MutexRef( m_pServerLockMgr->GetSemPtr());
 	FLMBOOL			bWaiters = FALSE;
 

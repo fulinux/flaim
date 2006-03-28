@@ -25,6 +25,15 @@
 #ifndef FSTRUCTS_H
 #define FSTRUCTS_H
 
+struct FFILE;
+struct FNOTIFY;
+struct FBUCKET;
+struct QUERY_HDR;
+struct CDL;
+struct FDICT;
+struct CP_INFO;
+struct IFD;
+
 /**************************************************************************
 	Typedefs for structure pointers.
 **************************************************************************/
@@ -317,7 +326,7 @@ typedef int (* RECV_BUFFER_FN)(
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
 
-#define 				LOG_HEADER_SIZE 			400
+#define 				LOG_HEADER_SIZE 			512
 #define				LOG_HEADER_SIZE_VER40	88
 
 // C/S Address types
@@ -327,7 +336,9 @@ typedef int (* RECV_BUFFER_FN)(
 #define FLM_CS_STREAM_ADDR				0x02
 
 // Define the overhead space required to manage encrypted fields.
-#define FLM_ENC_FLD_OVERHEAD			7 // Rosalind overhead
+
+#define FLM_ENC_FLD_OVERHEAD			7
+
 #define FLD_ENC_FLAGS					0
 #define FLD_ENC_ENCID					1
 #define FLD_ENC_DATA_LEN				3
@@ -352,25 +363,21 @@ typedef FLMUINT (* UNPROTECT_PAGE_FUNC)(
 typedef FLMUINT (* SET_DBG_PAGE_WRITER_FUNC)(
 	FLMUINT	uiThreadId);
 
-#ifdef FLM_DEBUG
-typedef struct SCache_Use  * 	SCACHE_USE_p;
 /****************************************************************************
-Struct:	SCACHE_USE	(Cache Block Use)
 Desc:	 	This is a debug only structure that is used to keep track of the
 			threads that are currently using a block.
 ****************************************************************************/
-typedef struct SCache_Use
+#ifdef FLM_DEBUG
+typedef struct SCACHE_USE
 {
-	SCACHE_USE_p	pNext;			// Pointer to next SCACHE_USE structure in
+	SCACHE_USE *	pNext;			// Pointer to next SCACHE_USE structure in
 											// the list.
 	FLMUINT			uiThreadId;		// Thread ID of thread using the block.
 	FLMUINT			uiUseCount;		// Use count for this particular thread.
 } SCACHE_USE;
 #endif
 
-
 /****************************************************************************
-Struct:	SCACHE	(Cache Block)
 Desc:	 	This is the header structure for a cached data block.
 ****************************************************************************/
 typedef struct SCACHE
@@ -387,7 +394,7 @@ typedef struct SCACHE
 											// the structure.  We keep a pointer to it
 											// so we are not always having to calculate
 											// its address.
-	FFILE_p		pFile;				// Pointer to the file this data block
+	FFILE *		pFile;				// Pointer to the file this data block
 											// belongs to.
 	FLMUINT		uiBlkAddress;		// Block address.
 	SCACHE *		pPrevInGlobalList;
@@ -428,7 +435,7 @@ typedef struct SCACHE
 											// just different versions of the same
 											// block.  The next block is an older
 											// version of the block.
-	FNOTIFY_p	pNotifyList;		// This is a pointer to a list of threads
+	FNOTIFY *	pNotifyList;		// This is a pointer to a list of threads
 											// that want to be notified when a pending
 											// I/O is complete.  This pointer is only
 											// non-null if the block is currently being
@@ -519,17 +526,16 @@ typedef struct SCACHE
 
 #ifdef FLM_DEBUG
 	FLMUINT			uiChecksum;		// Checksum for the block and header.
-	SCACHE_USE_p	pUseList;		// This is a pointer to a list of threads
+	SCACHE_USE *	pUseList;		// This is a pointer to a list of threads
 											// that are currently using the block.
 #endif
 } SCACHE;
 
 /****************************************************************************
-Struct:	SCACHE_MGR	(Cache Manager)
 Desc:	 	This is the structure that will be embedded in the FLMSYSDATA 
 			structure to manage cache.
 ****************************************************************************/
-typedef struct SCache_Mgr
+typedef struct SCACHE_MGR
 {
 	SCACHE *				pMRUCache;	// This is a pointer to the
 											// most-recently used cache block.  It
@@ -614,14 +620,13 @@ typedef struct SCache_Mgr
 } SCACHE_MGR;
 
 /****************************************************************************
-Struct:	RCACHE
 Desc:	 	This structure is used to manage a particular record in the
 			FLAIM record cache.
 ****************************************************************************/
 typedef struct RCACHE
 {
 	FlmRecord *			pRecord;				// Pointer to record object in cache.
-	FFILE_p				pFile;				// Pointer to the file this record
+	FFILE *				pFile;				// Pointer to the file this record
 													// belongs to.
 	FLMUINT				uiContainer;		// Container the record comes from
 	FLMUINT				uiDrn;				// Data record number.
@@ -647,7 +652,7 @@ typedef struct RCACHE
 													// memory was allocated on the heap
 	RCACHE *				pNextInHeapList;	// Next in the list of records whose
 													// memory was allocated on the heap
-	FNOTIFY_p			pNotifyList;		// This is a pointer to a list of
+	FNOTIFY *			pNotifyList;		// This is a pointer to a list of
 													// threads that want to be notified
 													// when a pending I/O is complete.
 													// This pointer is only non-null if the
@@ -733,12 +738,11 @@ typedef struct RCACHE
 } RCACHE;
 
 /****************************************************************************
-Struct:	RCACHE_MGR (FLAIM Record Cache Manager)
 Desc:	 	This structure defines the header information that is used to
 			control the FLAIM record cache.  This structure will be embedded
 			in the FLMSYSDATA structure.
 ****************************************************************************/
-typedef struct
+typedef struct RCACHE_MGR
 {
 	RCACHE *				pPurgeList;					// List of RCACHE structures that
 															// need to be purged when use
@@ -777,55 +781,50 @@ typedef struct
 #define	FTHREAD_ACTION_INDEX_OFFLINE		1
 
 /***************************************************************************
-Struct:	F_BKGND_IX (FLAIM Background Indexing Context)
 Desc:		Contains elements for passing parms into the background thread.
 ***************************************************************************/
-typedef struct F_BkgndIx
+typedef struct F_BKGND_IX
 {
-	FFILE_p				pFile;
+	FFILE *				pFile;
 	FLMUINT				uiIndexingAction;
 	FINDEX_STATUS		indexStatus;
-	F_BKGND_IX_p		pPrev;
-	F_BKGND_IX_p		pNext;
+	F_BKGND_IX *		pPrev;
+	F_BKGND_IX *		pNext;
 } F_BKGND_IX;
 
 /***************************************************************************
-Struct:	FEVENT		(FLAIM Event Structure)
 Desc:		This is the FLAIM Event Structure.  It keeps track of a registered
 			event callback function that has been registered for a particular
 			event category.
 ***************************************************************************/
-typedef struct F_Event
+typedef struct FEVENT
 {
 	FEventCategory	eCategory;
 	FEVENT_CB		fnEventCB;
 	void *			pvAppData;
-	FEVENT_p			pNext;
-	FEVENT_p			pPrev;
+	FEVENT *			pNext;
+	FEVENT *			pPrev;
 } FEVENT;
 
 /***************************************************************************
-Struct:	FEVENT_HDR		(FLAIM Event Header Structure)
 Desc:		This is the FLAIM Event Header Structure.  It is the header for
 			the list of events that have been registered for a particular
 			event category.
 ***************************************************************************/
-typedef struct F_Event_Hdr
+typedef struct FEVENT_HDR
 {
-	FEVENT_p			pEventCBList;		// List of registered event callbacks.
+	FEVENT *			pEventCBList;		// List of registered event callbacks.
 	F_MUTEX			hMutex;				// Mutex to control access to the
 												// the event list.
 } FEVENT_HDR;
 
-
 /***************************************************************************
-Struct:	HTTPCONFIGPARAMS (HTTP configuration parameters)
 Desc:	Contains various parameters needed for displaying debugging data
 		via http.  (The reason for all of the function pointers is so that
 		we can compile and link without an http stack if one isn't available
 		and we can dynamicly load one in after we've started.)
 ***************************************************************************/
-typedef struct
+typedef struct HTTPCONFIGPARAMS
 {
 	F_MUTEX					hMutex;		
 	FLMUINT					uiUseCount;	// Webpage display functions increment this while
@@ -863,17 +862,16 @@ typedef struct
 } HTTPCONFIGPARAMS;
 
 /***************************************************************************
-Struct:	FLMSYSDATA		(FLAIM System Data Structure)
 Desc:		This is the FLAIM Shared System Data Structure.  It is the anchor
 			for all of the other shared structures.
 ***************************************************************************/
-typedef struct FlmSystemData
+typedef struct FLMSYSDATA
 {
-	FFILE_p				pMrnuFile;		// Pointer to the most recently non-used
+	FFILE *				pMrnuFile;		// Pointer to the most recently non-used
 												// FFILE structure.
-	FFILE_p				pLrnuFile;		// Pointer to the least recently non-used
+	FFILE *				pLrnuFile;		// Pointer to the least recently non-used
 												// FFILE structure.
-	FBUCKET_p			pFileHashTbl;	// File name hash table (array of FBUCKET).
+	FBUCKET *			pFileHashTbl;	// File name hash table (array of FBUCKET).
 #define						FILE_HASH_ENTRIES		256
 
 	FLMUINT				uiNextFFileId;	// ID that will be assigned to the next
@@ -941,8 +939,8 @@ typedef struct FlmSystemData
 	FLM_STATS			Stats;			// Statistics structure
 
 	F_MUTEX				hQueryMutex;	// Mutex for managing query list
-	QUERY_HDR_p			pNewestQuery;	// Head of query list (newest)
-	QUERY_HDR_p			pOldestQuery;	// Tail of query list (oldest)
+	QUERY_HDR *			pNewestQuery;	// Head of query list (newest)
+	QUERY_HDR *			pOldestQuery;	// Tail of query list (oldest)
 	FLMUINT				uiQueryCnt;		// Number of queries in the list
 	FLMUINT				uiMaxQueries;	// Maximum number of queries to keep around
 	FLMBOOL				bNeedToUnsetMaxQueries;
@@ -953,7 +951,7 @@ typedef struct FlmSystemData
 												// Has statistics structure been
 												// initialized?
 
-	char					szTempDir[F_PATH_MAX_SIZE];
+	char					szTempDir[ F_PATH_MAX_SIZE];
 												// Temporary working directory for
 												// ResultSets, RecordCache
 												// and other sub-systems that need 
@@ -965,7 +963,9 @@ typedef struct FlmSystemData
 												// unused structures in memory before
 												// freeing them.
 	FLMBYTE				ucBlobExt [64];// Blob Override extension
-	FEVENT_HDR			EventHdrs [F_MAX_EVENT_CATEGORIES];
+	FEVENT_HDR			LockEvents;		// Lock events
+	FEVENT_HDR			UpdateEvents;	// Update events
+	FEVENT_HDR			SizeEvents;		// Size threshold events
 	POOL					KRefPool;		// Memory Pool that is only used by 
 												// record updaters for key building
 
@@ -1029,7 +1029,7 @@ typedef struct FlmSystemData
 Desc:		This is the hash bucket header structure.  Each bucket header
 			points to a list of items that belong to the bucket.
 ***************************************************************************/
-typedef struct FBucket
+typedef struct FBUCKET
 {
 	void *		pFirstInBucket;	// Pointer to first item in the bucket.
 											// The type of structure being pointed to
@@ -1037,12 +1037,11 @@ typedef struct FBucket
 	FLMUINT		uiHashValue;		// Hash value for this bucket.
 } FBUCKET;
 
-
 /****************************************************************************
 Desc:		This structure is used to sort keys before the keys are actually
 			added to an index.
 ****************************************************************************/
-typedef struct Kref_Entry
+typedef struct KREF_ENTRY
 {
 	FLMUINT		uiFlags;					// Flags for this KREF entry.
 		#define KREF_UNIQUE_KEY		0x01
@@ -1066,11 +1065,11 @@ typedef struct Kref_Entry
 /****************************************************************************
 Desc:		This structure is used in the key building process
 ****************************************************************************/
-typedef struct Kref_Cntrl
+typedef struct KREF_CNTRL
 {
-	KREF_ENTRY_p *	pKrefTbl;			// Pointer to KREF Table which is an array of
-												// KREF_ENTRY_p pointers.
-	CDL_p		 *		ppCdlTbl;			// Pointer to table of CDL pointers.
+	KREF_ENTRY **	pKrefTbl;			// Pointer to KREF Table which is an array of
+												// KREF_ENTRY * pointers.
+	CDL **			ppCdlTbl;			// Pointer to table of CDL pointers.
 												// There is one CDL pointer per IFD.
 	FLMBYTE *		pIxHasCmpKeys;		// Pointer to table of FLMBYTEs.  There
 												// is one FLMBYTE for each index. The
@@ -1096,14 +1095,12 @@ typedef struct Kref_Cntrl
 	void *			pReset;				// Used to reset pool for failed records.
 } KREF_CNTRL;
 
-
 /****************************************************************************
-Struct:	FDIAG		(Diagnostic Information)
 Desc:	 	This structure keeps track of diagnostic information (if any)
 			associated with the last FLAIM operation.  It is reset at the
 			beginning of every operation.
 ****************************************************************************/
-typedef struct FDiag
+typedef struct FDIAG
 {
 	FLMUINT		uiInfoFlags;			// Bit flags indicating what diagnostic
 												// information, if any, was recorded by
@@ -1119,14 +1116,13 @@ typedef struct FDiag
 	FLMUINT		uiFieldType;			// contains data for FLM_DIAG_FIELD_TYPE
 	FLMUINT		uiEncId;					// contains data for FLM_DIAG_ENC_ID
 
-} FDIAG,  * FDIAG_p;
+} FDIAG;
 
 /****************************************************************************
-Struct:	CS_CONTEXT		(Client/Server Context)
 Desc:	 	This structure keeps track of a connection that is in progress with
 			a server.
 ****************************************************************************/
-typedef struct CS_Context
+typedef struct CS_CONTEXT
 {
 	void *			pTcpClient;
 	void *			pDDSLocalRequestFunc;
@@ -1164,7 +1160,6 @@ typedef struct CS_Context
 } CS_CONTEXT;
 
 /**************************************************************************
-Struct:	LOG_HDR		(Log Header Information)
 Desc:		Information from the log header.  The fields in this structure
 			are used temporarily during both read and update transactions.
 			They are set at the beginning of the transaction when the
@@ -1172,7 +1167,7 @@ Desc:		Information from the log header.  The fields in this structure
 			and will be written back into the log header when the update
 			transaction completes.
 **************************************************************************/
-typedef struct Log_Hdr
+typedef struct LOG_HDR
 {
 	FLMUINT  	uiCurrTransID;			// Current transaction ID.
 #define	TRANS_ID_HIGH_VALUE		0xFFFFFFFF
@@ -1183,38 +1178,39 @@ typedef struct Log_Hdr
 												// blocks are allocated at this address.
 } LOG_HDR;
 
-typedef struct IxStatsTag *	IX_STATS_p;
-
-typedef struct IxStatsTag
+/**************************************************************************
+Desc:
+**************************************************************************/
+typedef struct IX_STATS
 {
 	FLMUINT		uiIndexNum;
 	FLMINT		iDeltaRefs;
 	FLMINT		iDeltaKeys;
-	IX_STATS_p	pNext;
+	IX_STATS *	pNext;
 } IX_STATS;
 
-typedef struct IxdFixupTag *	IXD_FIXUP_p;
-
-typedef struct IxdFixupTag
+/**************************************************************************
+Desc:
+**************************************************************************/
+typedef struct IXD_FIXUP
 {
 	FLMUINT		uiIndexNum;
 	FLMUINT		uiLastContainerIndexed;
 	FLMUINT		uiLastDrnIndexed;
-	IXD_FIXUP_p	pNext;
+	IXD_FIXUP *	pNext;
 } IXD_FIXUP;
 
 /**************************************************************************
-Struct:	FDB		(Database Context Structure)
 Desc: 	This structure is the current database context.  The database
 			context structure points to a particular FLAIM file and contains
 			the application context for accessing that file.
 **************************************************************************/
-typedef struct FDb
+typedef struct FDB
 {
-	FFILE_p					pFile;				// Pointer to FFILE structure.
-	FDICT_p					pDict;				// Pointer to local dictionary
-	FDB_p						pNextForFile;		// Next FDB associated with FFILE
-	FDB_p						pPrevForFile;		// Prev FDB associated with FFILE
+	FFILE *					pFile;				// Pointer to FFILE structure.
+	FDICT *					pDict;				// Pointer to local dictionary
+	FDB *						pNextForFile;		// Next FDB associated with FFILE
+	FDB *						pPrevForFile;		// Prev FDB associated with FFILE
 	void *					pvAppData;			// Application data that is used
 														// to associate this FDB with
 														// an object in the application
@@ -1355,18 +1351,18 @@ typedef struct FDb
 														// been created or deleted during the
 														// transaction - not used for read
 														// transactions.
-	IXD_FIXUP_p				pIxdFixups;			// List of indexes whose IXD needs
+	IXD_FIXUP *				pIxdFixups;			// List of indexes whose IXD needs
 														// to be restored to its prior
 														// state if the transaction aborts
 
 	// READ TRANSACTION STUFF
 
-	FDB_p						pNextReadTrans;	// Next active read transaction for
+	FDB *						pNextReadTrans;	// Next active read transaction for
 														// this file.
 														// NOTE: If uiKilledTime (see below)
 														// is non-zero, then transaction is
 														// in killed list.
-	FDB_p						pPrevReadTrans;	// Previous active read transaction
+	FDB *						pPrevReadTrans;	// Previous active read transaction
 														// for this file.
 														// NOTE: If uiKilledTime (see below)
 														// is non-zero, then transaction is
@@ -1427,7 +1423,7 @@ typedef struct FDb
 														// of transaction.
 	FLMBOOL					bStatsInitialized;// Has statistics structure been
 														// initialized?
-	CS_CONTEXT_p			pCSContext;			// Pointer to client/server
+	CS_CONTEXT *			pCSContext;			// Pointer to client/server
 														// connection this FDB is associated
 														// with, NULL if none.
 	F_BKGND_IX *			pIxStartList;		// Indexing threads to start at 
@@ -1455,10 +1451,10 @@ typedef struct FDb
 
 // FLAIM Version Number Defines
 
-#define FLM_VER_POS							(FLAIM_NAME_LEN)
-#define FLM_VER_LEN							4
-#define FLM_MINOR_VER_POS 					(FLM_VER_POS + 2)
-#define FLM_SMINOR_VER_POS   				(FLM_VER_POS + 3)
+#define FLM_FILE_FORMAT_VER_POS			(FLAIM_NAME_LEN)
+#define FLM_FILE_FORMAT_VER_LEN			4
+#define FLM_MINOR_VER_POS 					(FLM_FILE_FORMAT_VER_POS + 2)
+#define FLM_SMINOR_VER_POS   				(FLM_FILE_FORMAT_VER_POS + 3)
 
 // Defines to access elements within the database version number
 
@@ -1491,7 +1487,7 @@ typedef struct FDb
 Desc: 	This structure contains the file header information for a file as
 			well as its create options.
 **************************************************************************/
-typedef struct File_Hdr
+typedef struct FILE_HDR
 {
 	FLMUINT		uiFirstLFHBlkAddr;	// Address of first LFH block.
 	FLMUINT		uiVersionNum;			// Database version		
@@ -1505,16 +1501,15 @@ typedef struct File_Hdr
 } FILE_HDR;
 
 /**************************************************************************
-Struct:	FFILE			(FLAIM File Structure)
 Desc: 	This structure is the main shared structure for a FLAIM file.  It
 			contains static information about the file.
 **************************************************************************/
-typedef struct FFile
+typedef struct FFILE
 {
-	FFILE_p					pNext;					// Next FFILE structure in in name hash
+	FFILE *					pNext;					// Next FFILE structure in in name hash
 															// bucket, dependent store hash
 															// bucket, or avail list.
-	FFILE_p					pPrev;					// Previous FFILE structure in name hash
+	FFILE *					pPrev;					// Previous FFILE structure in name hash
 															// bucket or dependent store hash
 															// bucket.
 	FLMUINT					uiFFileId;				// Unique FFILE identifier
@@ -1522,16 +1517,16 @@ typedef struct FFile
 	FLMUINT					uiUseCount;				// Number of FDBs currently using this	file.
 	FLMUINT					uiInternalUseCount;	// Number of the uses that are internal
 															// background threads.
-	FDB_p						pFirstDb;				// List of ALL FDB's associated with
+	FDB *						pFirstDb;				// List of ALL FDB's associated with
 															// this FFILE.
 	char *					pszDbPath;				// Database file name.
 	char *					pszDataDir;				// Path for data files.
-	FFILE_p					pNextNUFile;			// Next FFILE structure in list of
+	FFILE *					pNextNUFile;			// Next FFILE structure in list of
 															// unused files.  When use count goes
 															// to zero, the structure is linked
 															// into a list of unused files off of
 															// the FSYSDATA structure.
-	FFILE_p					pPrevNUFile;			// Previous FFILE structure in list of
+	FFILE *					pPrevNUFile;			// Previous FFILE structure in list of
 															// unused files.
 	SCACHE *					pSCacheList;			// This is a pointer to a linked list
 															// of all shared cache blocks
@@ -1564,15 +1559,15 @@ typedef struct FFile
 															// belonging to this file that need
 															// to be logged to the rollback log
 															// for the current transaction.
-	FNOTIFY_p				pOpenNotifies;			// Pointer to a list of notifies to
+	FNOTIFY *				pOpenNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// opened (points to a linked list of
 															// FNOTIFY structures).
-	FNOTIFY_p				pCloseNotifies;		// Pointer to a list of notifies to
+	FNOTIFY *				pCloseNotifies;		// Pointer to a list of notifies to
 															// perform when this file is finally
 															// closed (points to a linked list of
 															// FNOTIFY structures).
-	FDICT_p					pDictList;				// Pointer to linked list of 
+	FDICT *					pDictList;				// Pointer to linked list of 
 															// dictionaries currently being used
 															// for this file.  The linked list
 															// is a list of versions of the 
@@ -1597,12 +1592,12 @@ typedef struct FFile
 															// sets this value to its
 															// checkpoint.
 	F_Rfl *					pRfl;						// Pointer RFL object.
-	FLMBYTE					ucLastCommittedLogHdr [LOG_HEADER_SIZE];
+	FLMBYTE					ucLastCommittedLogHdr[ LOG_HEADER_SIZE];
 															// This is the last committed log header.
-	FLMBYTE					ucCheckpointLogHdr [LOG_HEADER_SIZE];
+	FLMBYTE					ucCheckpointLogHdr[ LOG_HEADER_SIZE];
 															// This is the log header as of the start
 															// of the last checkpoint.
-	FLMBYTE					ucUncommittedLogHdr [LOG_HEADER_SIZE];
+	FLMBYTE					ucUncommittedLogHdr[ LOG_HEADER_SIZE];
 															// This is the uncommitted log header.
 															// It is used by the current update
 															// transaction.
@@ -1641,8 +1636,13 @@ typedef struct FFile
 #define LOG_NU_152_153						152	// Two bytes are unused
 #define LOG_MAX_FILE_SIZE					154	// Multiply by 64K to get actual maximum
 #define LOG_DATABASE_KEY_LEN				156 	// Current Length of the database key
-#define LOG_DATABASE_KEY					158 	// Wrapped or shrouded copy of the database
-															 // key (Up to 204 bytes long)
+#define LOG_DATABASE_KEY					158 	// Wrapped or shrouded copy of the database key (max 256 bytes)
+#define LOG_RFL_DISK_SPACE_THRESHOLD	414	// RFL disk space threshold in K bytes (0 = unlimited)
+#define LOG_RFL_LIMIT_TIME_FREQ			418	// How often (in seconds) to throw an over-the-limit event (0 = ignore)
+#define LOG_RFL_LIMIT_SPACE_FREQ			422	// How often (based on the size increase in megabytes since the last event) 
+															// to throw an over-the-limit-event (0 = ignore)
+
+#define FLM_MAX_DB_ENC_KEY_LEN			256
 
 	F_FileIdList *			pFileIdList;			// List of unique IDs that have been
 															// assigned to the physical files that
@@ -1652,6 +1652,7 @@ typedef struct FFile
 #define MAX_WRITE_BUFFER_BYTES			(4 * 1024 * 1024)
 #define MAX_PENDING_WRITES					(MAX_WRITE_BUFFER_BYTES / 4096)
 #define MAX_LOG_BUFFER_SIZE				(256 * 1024)
+
 	F_IOBuffer *			pCurrLogBuffer;
 	FLMUINT					uiCurrLogWriteOffset;// Offset in current write buffer
 	FLMUINT					uiCurrLogBlkAddr;		// Address of first block in the current
@@ -1661,18 +1662,18 @@ typedef struct FFile
 	ServerLockObject *	pFileLockObj;			// Object for locking the file.
 	ServerLockObject *	pWriteLockObj;			// Object for locking to do writing.
 	F_FileHdlImp *			pLockFileHdl;			// Lock file handle for 3.x databases.
-	FNOTIFY_p				pLockNotifies;			// Pointer to a list of notifies to
+	FNOTIFY *				pLockNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// locked (points to a linked list of
 															// FNOTIFY structures).
 	FLMBOOL					bBeingLocked;			// Flag indicating whether or not this
 															// file is in the process of being
 															// locked for exclusive access.
-	FDB_p						pFirstReadTrans;		// Pointer to first read transaction for
+	FDB *						pFirstReadTrans;		// Pointer to first read transaction for
 															// this file.
-	FDB_p						pLastReadTrans;		// Pointer to last read transaction for
+	FDB *						pLastReadTrans;		// Pointer to last read transaction for
 															// this file.
-	FDB_p						pFirstKilledTrans;	// List of read transactions that have
+	FDB *						pFirstKilledTrans;	// List of read transactions that have
 															// been killed.
 	FLMUINT					uiFirstLogBlkAddress;// Address of first block logged for the
 															// current update transaction.
@@ -1683,8 +1684,9 @@ typedef struct FFile
 	FLMUINT					uiLastCheckpointTime;
 															// Last time we successfully completed a
 															// checkpoint.
+	F_Thread *				pMonitorThrd;			// Database monitor thread
 	F_Thread *				pCPThrd;					// Checkpoint thread.
-	CP_INFO_p				pCPInfo;					// Pointer to checkpoint thread's
+	CP_INFO *				pCPInfo;					// Pointer to checkpoint thread's
 															// information buffer - used for
 															// communicating information to the
 															// checkpoint thread.
@@ -1716,21 +1718,18 @@ typedef struct FFile
 															// that there may be some work to do
 	FMAINT_STATUS			maintStatus;
 	char *					pszDbPassword;			// A password that was used to open the database (may be NULL).
-
-#define FFILE_MIN_FILL		35
-#define FFILE_MAX_FILL		91
+	FLMUINT64				ui64RflDiskUsage;		// Current RFL disk space usage estimate (used only if keeping RFL files)
 } FFILE;
 
 /***************************************************************************
-Struct:	FNOTIFY		(Notify Structure)
 Desc:		This is the notify request structure.  Notify requests are linked
 			off of open requests for files or read requests for files so that
 			when an operation is complete	that multiple threads are waiting
 			on, all of them will be notified.
 ***************************************************************************/
-typedef struct FNotify
+typedef struct FNOTIFY
 {
-	FNOTIFY_p		pNext;		// Pointer to next FNOTIFY structure in list.
+	FNOTIFY *		pNext;		// Pointer to next FNOTIFY structure in list.
 	FLMUINT			uiThreadId;	// ID of thread requesting the notify
 	RCODE  *			pRc;			// Pointer to a return code variable that is to
 										// be filled in when the operation is completed.
@@ -1742,251 +1741,11 @@ typedef struct FNotify
 										// operation is complete.
 } FNOTIFY;
 
-
 /****************************************************************************
-Struct:	ITT		(Item Type Table entry)
-Desc:		A Item Type consists of a byte that describes the type of item
-			like a field, index or container.
-			For fields a ITT will also indicate the fields delete status.
-****************************************************************************/
-
-typedef struct Itt
-{
-	FLMUINT		uiType;
-	void *		pvItem;		// Points to LFILE if index or container
-									// If field, is NULL or points to first IFD.
-} ITT;
-
-// Bit values for uiType.  The 4 low bits contain the field type.
-// See FLM_XXXX_TYPE in FLAIM.H for lower four bits.
-
-#define ITT_FLD_GET_TYPE( pItt)		(((pItt)->uiType) & 0x0F)
-#define ITT_FLD_IS_INDEXED( pItt)	(((pItt)->pvItem) ? TRUE : FALSE)
-#define ITT_FLD_GET_STATE( pItt)		(((pItt)->uiType) & 0x30)
-
-#define ITT_FLD_STATE_MASK			0x30
-#define ITT_FLD_STATE_ACTIVE		0x00 	// Normal active field
-#define ITT_FLD_STATE_CHECKING	0x10	// Field has been marked to be checked
-#define ITT_FLD_STATE_UNUSED		0x30	// Field is not used.
-#define ITT_FLD_STATE_PURGE		0x20	// Purge this field from the database.
-											// And delete the dictionary definition
-
-#define ITT_ENC_STATE_MASK			0x30
-#define ITT_ENC_STATE_ACTIVE		0x00 	// Normal active field
-#define ITT_ENC_STATE_CHECKING	0x10	// EncDef has been marked to be checked
-#define ITT_ENC_STATE_UNUSED		0x30	// EncDef is not used.
-#define ITT_ENC_STATE_PURGE		0x20	// EncDef record is being deleted.  Decrypt the
-													// encrypted field as it can no longer be
-													// encrypted.
-
-#define ITT_ENCDEF_TYPE			0xAF	// Encrypted Definition Record
-#define ITT_INDEX_TYPE			0xBF
-#define ITT_CONTAINER_TYPE		0xCF
-#define ITT_EMPTY_SLOT 			0xEF
-#define ITT_INFO_MASK			0x0F
-
-#define ITT_IS_FIELD(pItt)	(((pItt)->uiType & ITT_INFO_MASK) != ITT_INFO_MASK)
-#define ITT_IS_CONTAINER(pItt)	((pItt)->uiType == ITT_CONTAINER_TYPE)
-#define ITT_IS_INDEX(pItt)			((pItt)->uiType == ITT_INDEX_TYPE)
-#define ITT_IS_ENCDEF(pItt)		((pItt)->uiType == ITT_ENCDEF_TYPE)
-
-/****************************************************************************
-Struct:	IXD		(Index Definition)
-Desc:		This structure holds the information for an index definition.
-			There may be multiple IXDs for the same index number.
-****************************************************************************/
-typedef struct Ixd
-{
-	FLMUINT		uiIndexNum;				// Index number.
-	FLMUINT		uiContainerNum;		// Container number being indexed.
-	IFD_p			pFirstIfd;				// Points to first IFD
-	FLMUINT		uiNumFlds;		  		// Number of index fields in the IFD.
-	FLMUINT		uiFlags;
-		#define IXD_UNIQUE				0x00001	// Unique index
-		#define IXD_COUNT					0x00002	// Count keys and references
-		#define IXD_EACHWORD				0x00100	// FUTURE: FLAIMs fulltext indexing.
-		#define IXD_HAS_POST				0x01000	// Has post keys parts.
-		#define IXD_HAS_SUBSTRING		0x02000
-		#define IXD_POSITIONING			0x04000	// The index has positioning counts.
-		#define IXD_OFFLINE				0x08000
-		#define IXD_SUSPENDED			0x10000
-
-	FLMUINT		uiLanguage;				// WP.LRS language number (not code!)
-		#define US_LANG			0
-		#define DEFAULT_LANG		US_LANG
-
-#define	TRANS_ID_OFFLINE			TRANS_ID_HIGH_VALUE
-#define	TRANS_ID_ALWAYS_ONLINE	TRANS_ID_LOW_VALUE
-
-	FLMUINT		uiLastContainerIndexed;	// Last container indexed if index
-													// covers multiple containers.
-	FLMUINT		uiLastDrnIndexed;		// If value is not DRN_LAST_MARKER then 
-												// update index with keys from a record 
-												// update if drn of record is <= of 
-												// this value.
-	FLMUINT		uiEncId;					// The ID / Drn of the Encryption record (if used)
-} IXD;
-
-/****************************************************************************
-Struct:	IFD		(Index Field Definition)
-Desc:		This structure contains an index field definition.
-****************************************************************************/
-typedef struct Ifd
-{
-	FLMUINT		uiFldNum;				// Field being indexed.
-	FLMUINT		uiIndexNum;				// Index number.
-	IXD_p			pIxd;						// IXD corresponding to wIndexNum
-	FLMUINT		uiFlags;					// The first 4 bits contain field type
-												// Use FLM_XXXXX_TYPE definitions.
-
-	IFD_p			pNextInChain;			// Next IFD in the chain that has this
-												// field number and is used in another index.
-	FLMUINT *	pFieldPathCToP;		// Child to parent field path (zero term)
-	FLMUINT *	pFieldPathPToC;		// Parent to child field path (zero term)
-
-	FLMUINT		uiLimit;					// Zero or # of characters/bytes to limit.
-#define IFD_DEFAULT_LIMIT					256
-#define IFD_DEFAULT_SUBSTRING_LIMIT		48
-
-	FLMUINT		uiCompoundPos;			// Position of this field is in
-												// the compound key.  Zero based number.
-} IFD;
-
-#define IFD_GET_FIELD_TYPE(pIfd)	((pIfd)->uiFlags & 0x0F)
-#define IFD_SET_FIELD_TYPE(pIfd,type)	((pIfd)->uiFlags = ((pIfd)->uiFlags & 0xFFFFFFF0) | (type))
-#define IFD_FIELD	 			0x00000010	// There must always be some value
-#define IFD_VALUE				0x00000010	// Value agrees with parsing syntax
-
-#define IFD_EACHWORD			0x00000020	// Index each and every word in the field
-#define IFD_CONTEXT			0x00000040	// Index the tag and NOT the value
-#define IFD_COMPOUND			0x00000080	// Index multiple fields
-
-#define IFD_POST				0x00000100	// Place case info at end of compound key
-#define IFD_UPPER	 			0x00000200	// Uppercase keys only
-#define IFD_OPTIONAL			0x00000400	// This field is optional (compound)
-													// Phasing this value out.
-
-// Note: the unique flag is for future compatiblity.
-
-#define IFD_UNIQUE_PIECE	0x00000800	// Better name
-
-#define IFD_REQUIRED_PIECE	0x00001000	// Required piece (not optional)
-#define IFD_REQUIRED_IN_SET 0x0002000	// Required within a set of fields.
-
-#define IFD_LAST				0x00008000	// Last IFD for this index definition
-
-#define IFD_SUBSTRING		0x00040000	// Index all substrings pieces
-#define IFD_DRN				0x00080000	// index DRN value
-#define IFD_FIELDID_PAIR	0x00200000	// Data | fieldID pair.
-#define IFD_MIN_SPACES		0x00400000	// Removed leading/trailing spaces.
-													// Combine multiple spaces into 1 space.
-													// Minimize spaces
-#define IFD_NO_SPACE			0x00800000	// Remove all spaces
-#define IFD_NO_DASH			0x01000000	// Remove all dashes
-#define IFD_NO_UNDERSCORE	0x02000000	// Change underscores to spaces,
-													// Must be applied before nospace/minspace
-#define IFD_ESC_CHAR			0x04000000	// Placehold so that a query can parse the input
-													// string and find a literal '*' or '\\'.
-
-/*
-	Future Options to support (This is here so we don't forget about them.)
-		ALL_COMBOS - Currently we normalize all field combinations
-			This option would drop the normalization on context.
-		NO_COLLATION - drop all of the text collation and just store the
-			text without the key conversion.
-		FULLTEXT indexing - 
-		ALLOW_NULL_KEY - allow a null key
-		ALTERNATE_KEYS - Each compound field piece can have data from multiple fields.
-*/
-
-#define IFD_IS_POST_TEXT(pIfd)		(((pIfd)->uiFlags & IFD_POST) && \
-												(IFD_GET_FIELD_TYPE(pIfd) == FLM_TEXT_TYPE))
-#define IFD_DEFAULT_LIMIT					256
-#define IFD_DEFAULT_SUBSTRING_LIMIT		48
-
-/****************************************************************************
-Struct:	LFILE		(Logical File)
-Desc:		This keeps track of the logical file information for an index or
-			a container.
-****************************************************************************/
-typedef struct LFILE
-{
-	FLMUINT	   uiRootBlk;				// Address of root block.
-	FLMUINT		uiNextDrn;				// Next DRN - only use when root is null
-	FLMUINT		uiBlkAddress;			// Block address of LFile entry.
-	FLMUINT		uiOffsetInBlk;			// Offset within block of entry.
-	FLMUINT		uiLfNum;					// Index number or container number.
-	FLMUINT		uiLfType; 				// Type of logical file. */
-	FLMBOOL		bMakeFieldIdTable;	// Boolean that indicates whether or not
-												// for this container when we create
-												// records in cache we should create a
-												// field id table for the level-1 fields.
-	IXD *			pIxd;						// If an index, points to the IXD.
-
-} LFILE;
-
-/**************************************************************************
-Struct:	FDICT		(Dictionary Header Structure)
-Desc: 	This structure is a header for a FLAIM dictionary.  All of
-			the information in this structure is static.
-**************************************************************************/
-typedef struct FDict
-{
-	FDICT_p		pNext;			// Pointer to next FDICT structure in the list,
-										// if any.  All versions of a dictionary that
-										// are currently in use are linked together.
-										// Usually, there will be only one local
-										// dictionary in the list.
-	FDICT_p		pPrev;			// Previous FDICT structure in the list.
-	FFILE *		pFile;			// File this dictionary is associated with.
-										// A null value means it is not yet linked
-										// to a file.
-	FLMUINT		uiDictSeq;		// This is the sequence number of the dictionary
-
-	// Local Dictionary Tables.
-
-	LFILE *		pLFileTbl;		// Logical file (index or container)
-	FLMUINT		uiLFileCnt;
-#define LFILE_DATA_CONTAINER_OFFSET			0
-#define LFILE_DICT_CONTAINER_OFFSET			1
-#define LFILE_DICT_INDEX_OFFSET				2
-#define LFILE_TRACKER_CONTAINER_OFFSET		3
-
-	ITT *			pIttTbl;
-	FLMUINT		uiIttCnt;
-
-	IXD *			pIxdTbl;
-	FLMUINT		uiIxdCnt;
-
-	IFD *			pIfdTbl;
-	FLMUINT		uiIfdCnt;
-
-	FLMUINT *	pFldPathsTbl;
-	FLMUINT		uiFldPathsCnt;
-
-	FLMUINT		uiUseCount;		// Number of FDB structures currently
-										// pointing to this dictionary.
-} FDICT;
-
-/****************************************************************************
-Struct:	CDL			(Compound Data List)
-Desc:		This is a temporary structure that is used when building compound
-			keys.
-****************************************************************************/
-typedef struct Cdl
-{
-	void *		pField;			// Field to be included in a compound key
-	void *		pRootContext;	// Points to root context of field path
-	CDL_p			pNext;			// Pointer to the next CDL entry.
-} CDL;
-
-
-/****************************************************************************
-Struct:	CP_INFO		(Checkpoint Information(
 Desc:	 	Structure used to pass information to the checkpoint thread for 3.x
 			databases.
 ****************************************************************************/
-typedef struct CP_Info
+typedef struct CP_INFO
 {
 	FFILE *				pFile;
 	F_SuperFileHdl *	pSFileHdl;
@@ -2005,10 +1764,9 @@ typedef struct CP_Info
 } CP_INFO;
 
 /****************************************************************************
-Struct:	DIN_STATE
 Desc:	 	State information for parsing forward/back in reference set lists.
 ****************************************************************************/
-typedef struct Din_State
+typedef struct DIN_STATE
 {
 	FLMUINT		uiOffset;
 	FLMUINT		uiOnes;
@@ -2027,10 +1785,9 @@ typedef struct Din_State
 #define MAX_KEY_SIZ						640
 
 /****************************************************************************
-Struct:	BTSK		(B-Tree State Information)
 Desc:	 	State information for parsing forward/back in reference set lists.
 ****************************************************************************/
-typedef struct Btsk
+typedef struct BTSK
 {
 	FLMBYTE *	pBlk;						// Points to the cache block buffer
 	FLMBYTE *	pKeyBuf; 				// Points to a key buffer - near ptr
@@ -2052,7 +1809,6 @@ typedef struct Btsk
 } BTSK;
 
 /****************************************************************************
-Struct:	FBAK		(Backup Handle)
 Desc:	 	State information for performing a backup
 ****************************************************************************/
 typedef struct FBak
@@ -2077,7 +1833,10 @@ typedef struct FBak
 	FLMBYTE			ucDbHeader[ F_TRANS_HEADER_SIZE];
 } FBak;
 
-typedef struct
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct BCD_TYPE
 {
 	const FLMBYTE *	pucPtr;
 	FLMUINT				uiNibCnt;
@@ -2086,6 +1845,9 @@ typedef struct
 	FLMBYTE				ucNumBuf[ F_MAX_NUM_BUF];
 } BCD_TYPE;
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 typedef struct GED_STREAM
 {
 	F_FileHdl *		pFileHdl;
@@ -2096,18 +1858,24 @@ typedef struct GED_STREAM
 	char *			pLast;
 	FLMINT			errorIO;
 	FLMINT			thisC;
-} GED_STREAM, * GED_STREAM_p;
+} GED_STREAM;
 
 #define	MAX_COMPOUND_PIECES		32
 
-typedef struct FLD_PATH_CONTEXT
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct FLD_CONTEXT
 {
 	void *		pParentAnchor;
 	void *		rootContexts[ MAX_COMPOUND_PIECES];
 	void *		leafFlds[ MAX_COMPOUND_PIECES];
 } FLD_CONTEXT;
 
-typedef struct Exp_Imp_Info
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct EXP_IMP_INFO
 {
 	F_FileHdl *	pFileHdl;
 	FLMBYTE *	pBuf;
@@ -2117,24 +1885,32 @@ typedef struct Exp_Imp_Info
 	FLMUINT		uiFilePos;
 	FLMBOOL		bDictRecords;
 	FLMBOOL		bBufDirty;
-} EXP_IMP_INFO, * EXP_IMP_INFO_p;
+} EXP_IMP_INFO;
 
-// The ND2BF structure is used to convert a NODE into a
-// buffer and is used within GedNodeToBuf.
+/****************************************************************************
+Desc:	The ND2BF structure is used to convert a NODE into a
+		buffer and is used within GedNodeToBuf.
+****************************************************************************/
 typedef struct ND2BF
 {
 	FLMBYTE * 			buffer;
 	FLMINT				iLimit;
 	F_NameTable *		pNameTable;
-} ND2BF, * ND2BF_p;
+} ND2BF;
 
-typedef struct QueryHdrTag
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct QUERY_HDR
 {
 	HFCURSOR		hCursor;
-	QUERY_HDR_p	pNext;
-	QUERY_HDR_p	pPrev;
+	QUERY_HDR *	pNext;
+	QUERY_HDR *	pPrev;
 } QUERY_HDR;
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 typedef enum
 {
 	HASH_SESSION_OBJ = 0,
@@ -2339,7 +2115,7 @@ private:
 	FLMUINT				m_uiThreadId;
 	FLMUINT				m_uiThreadLockCount;
 	F_MUTEX				m_hMutex;
-	FNOTIFY_p			m_pNotifyList;
+	FNOTIFY *			m_pNotifyList;
 	F_NameTable *		m_pNameTable;
 	FLMUINT				m_uiDictSeqNum;
 	F_XMLImport *		m_pXmlImport;

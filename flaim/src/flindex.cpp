@@ -38,9 +38,9 @@ FSTATIC RCODE flmIndexStatusCS(
 	FLMUINT				uiIndexNum,
 	FINDEX_STATUS *	pIndexStatus);
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Return the status of the index.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmIndexStatus(
 	HFDB					hDb,
 	FLMUINT				uiIndexNum,
@@ -115,7 +115,7 @@ FLMEXP RCODE FLMAPI FlmIndexStatus(
 		// Sanity check
 
 #ifdef FLM_DEBUG
-		if( pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_51 &&
+		if( pDb->pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_51 &&
 			bSuspended != bTrackerIxSuspended)
 		{
 			flmAssert( 0);
@@ -145,10 +145,10 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Return the number of the next index.  Pass in zero to get the
 		 first index.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmIndexGetNext(
 	HFDB			hDb,
 	FLMUINT *	puiIndexNum)
@@ -164,7 +164,7 @@ FLMEXP RCODE FLMAPI FlmIndexGetNext(
 	{
 		fdbInitCS( pDb);
 
-		CS_CONTEXT_p		pCSContext = pDb->pCSContext;
+		CS_CONTEXT *		pCSContext = pDb->pCSContext;
 		FCL_WIRE				Wire( pCSContext, pDb);
 
 		if( !pCSContext->bConnectionGood)
@@ -235,7 +235,7 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Suspend the selected index from doing any key updates on records
 		 that are equal or higher than the next record ID value
 		 in the container that the index references.  If the index is offline
@@ -244,7 +244,7 @@ Desc : Suspend the selected index from doing any key updates on records
 		 suspended FERR_OK will be returned.  A suspended index is not
 		 persistant if the database goes down.  
 Notes: An update transaction will be started if necessary.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmIndexSuspend(
 	HFDB			hDb,
 	FLMUINT		uiIndexNum)
@@ -262,7 +262,7 @@ FLMEXP RCODE FLMAPI FlmIndexSuspend(
 	{
 		fdbInitCS( pDb);
 
-		CS_CONTEXT_p		pCSContext = pDb->pCSContext;
+		CS_CONTEXT *		pCSContext = pDb->pCSContext;
 		FCL_WIRE				Wire( pCSContext, pDb);
 
 		if( !pCSContext->bConnectionGood)
@@ -448,12 +448,12 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : If the index was suspended, restart the background process that
 		 will get the index up to date so that it will eventually be online.
 		 Returns FERR_OK with no change if the index is already online.
 Notes: An update transaction will be started if necessary.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmIndexResume(
 	HFDB			hDb,
 	FLMUINT		uiIndexNum)
@@ -470,7 +470,7 @@ FLMEXP RCODE FLMAPI FlmIndexResume(
 	{
 		fdbInitCS( pDb);
 
-		CS_CONTEXT_p		pCSContext = pDb->pCSContext;
+		CS_CONTEXT *		pCSContext = pDb->pCSContext;
 		FCL_WIRE				Wire( pCSContext, pDb);
 
 		if( !pCSContext->bConnectionGood)
@@ -1395,7 +1395,7 @@ Loop_Again:
 		{
 			// flmIndexSetOfRecords brought the index on-line
 
-			if( gv_FlmSysData.EventHdrs[ F_EVENT_UPDATES].pEventCBList)
+			if( gv_FlmSysData.UpdateEvents.pEventCBList)
 			{
 				flmDoEventCallback( F_EVENT_UPDATES, 
 						F_EVENT_INDEXING_COMPLETE, (void *)uiIndexNum, 
@@ -1570,7 +1570,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 
 /****************************************************************************
 Desc : Return the status of the index (via C/S protocol)
-*END************************************************************************/
+****************************************************************************/
 FSTATIC RCODE flmIndexStatusCS(
 	FDB *					pDb,
 	FLMUINT				uiIndexNum,

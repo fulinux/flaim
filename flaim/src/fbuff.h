@@ -220,6 +220,13 @@ public:
 	}
 #endif
 
+#ifdef FLM_LINUX
+	FINLINE struct aiocb * getAIOStruct( void)
+	{
+		return( &m_aio);
+	}
+#endif
+
 #ifdef FLM_NLM
 	void signalComplete(
 		RCODE		rc);
@@ -252,6 +259,9 @@ private:
 #ifdef FLM_WIN
 	HANDLE					m_FileHandle;
 	OVERLAPPED				m_Overlapped;
+#endif
+#ifdef FLM_LINUX
+	struct aiocb			m_aio;
 #endif
 #ifdef FLM_NLM
 	F_SEM						m_hSem;

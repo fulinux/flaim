@@ -389,7 +389,7 @@ FSTATIC RCODE flmCopyDb(
 
 	// Get the sizes of the roll-forward log files
 
-	if( uiDbVersion < FLM_VER_4_3)
+	if( uiDbVersion < FLM_FILE_FORMAT_VER_4_3)
 	{
 		// For pre-4.3 versions, only need to copy one RFL file.
 
@@ -553,7 +553,7 @@ FSTATIC RCODE flmCopyDb(
 
 	// Copy the RFL files
 
-	if( uiDbVersion < FLM_VER_4_3)
+	if( uiDbVersion < FLM_FILE_FORMAT_VER_4_3)
 	{
 		// Get the source file path and the destination file path.
 

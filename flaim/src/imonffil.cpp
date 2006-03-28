@@ -39,7 +39,7 @@ RCODE F_FFilePage::display(
 	char				szBucket[ 4];
 	FLMUINT			uiBucket;
 	FFILE				localFFile;
-	FFILE_p			pFile;
+	FFILE *			pFile;
 	FLMBOOL			bRefresh;
 	void *			pvAddress;
 	char				szAddress[GENERIC_SIZE_B];
@@ -96,7 +96,7 @@ RCODE F_FFilePage::display(
 		}
 
 		uiBucket = f_atoud( szBucket);
-		pFile = (FFILE_p)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
+		pFile = (FFILE *)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
 	}
 	else if ( (f_stricmp( szFrom, "SCacheBlock") == 0) || 
 				 (f_stricmp( szFrom, "RCache") == 0) ||
@@ -124,7 +124,7 @@ RCODE F_FFilePage::display(
 		
 		pvAddress = (void *)f_atoud( szAddress);
 
-		pFile = (FFILE_p)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
+		pFile = (FFILE *)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
 
 		while (pFile && (void *)pFile != pvAddress)
 		{
@@ -216,7 +216,7 @@ RCODE F_FFilePage::display(
 
 		if (gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket)
 		{
-			pFile = (FFILE_p)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
+			pFile = (FFILE *)gv_FlmSysData.pFileHashTbl[uiBucket].pFirstInBucket;
 		}
 
 		// Now let's make sure we are looking at the right FFile...
@@ -413,7 +413,7 @@ Exit:
 			the contents of the FFile structure
  ****************************************************************************/
 void F_FFilePage::write_data(
-	FFILE_p			pFile,
+	FFILE *			pFile,
 	void *			pvFFileAddress,
 	DATASTRUCT *	pDataStruct)
 {
@@ -447,7 +447,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pNext", 
-				"FFILE_p",
+				"FFILE *",
 				(void *)pFile,
 				(void *)&pFile->pNext,
 				(void *)pFile->pNext,
@@ -468,7 +468,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pPrev", 
-				"FFILE_p",
+				"FFILE *",
 				(void *)pFile,
 				(void *)&pFile->pPrev,
 				(void *)pFile->pPrev,
@@ -528,7 +528,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pFirstDb", 
-				"FDB_p",
+				"FDB *",
 				(void *)pFile,
 				(void *)&pFile->pFirstDb,
 				(void *)pFile->pFirstDb,
@@ -572,7 +572,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pNextNUFile", 
-				"FFILE_p",
+				"FFILE *",
 				(void *)pFile,
 				(void *)&pFile->pNextNUFile,
 				(void *)pFile->pNextNUFile,
@@ -593,7 +593,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pPrevNUFile", 
-				"FFILE_p",
+				"FFILE *",
 				(void *)pFile,
 				(void *)&pFile->pPrevNUFile,
 				(void *)pFile->pPrevNUFile,
@@ -816,7 +816,7 @@ void F_FFilePage::write_data(
 		
 		printHTMLLink(
 				"pOpenNotifies", 
-				"FNOTIFY_p",
+				"FNOTIFY *",
 				(void *)pFile,
 				(void *)&pFile->pOpenNotifies,
 				(void *)pFile->pOpenNotifies,
@@ -835,7 +835,7 @@ void F_FFilePage::write_data(
 		
 		printHTMLLink(
 				"pCloseNotifies", 
-				"FNOTIFY_p",
+				"FNOTIFY *",
 				(void *)pFile,
 				(void *)&pFile->pCloseNotifies,
 				(void *)pFile->pCloseNotifies,
@@ -854,7 +854,7 @@ void F_FFilePage::write_data(
 		
 		printHTMLLink(
 				"pDictList", 
-				"FDICT_p",
+				"FDICT *",
 				(void *)pFile,
 				(void *)&pFile->pDictList,
 				(void *)pFile->pDictList,
@@ -1170,7 +1170,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pLockNotifies", 
-				"FNOTIFY_p",
+				"FNOTIFY *",
 				(void *)pFile,
 				(void *)&pFile->pLockNotifies,
 				(void *)pFile->pLockNotifies,
@@ -1207,7 +1207,7 @@ void F_FFilePage::write_data(
 		
 		printHTMLLink(
 				"pFirstReadTrans", 
-				"FDB_p",
+				"FDB *",
 				(void *)pFile,
 				(void *)&pFile->pFirstReadTrans,
 				(void *)pFile->pFirstReadTrans,
@@ -1233,7 +1233,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pLastReadTrans", 
-				"FDB_p",
+				"FDB *",
 				(void *)pFile,
 				(void *)&pFile->pLastReadTrans,
 				(void *)pFile->pLastReadTrans,
@@ -1259,7 +1259,7 @@ void F_FFilePage::write_data(
 
 		printHTMLLink(
 				"pFirstKilledTrans", 
-				"FDB_p",
+				"FDB *",
 				(void *)pFile,
 				(void *)&pFile->pFirstKilledTrans,
 				(void *)pFile->pFirstKilledTrans,

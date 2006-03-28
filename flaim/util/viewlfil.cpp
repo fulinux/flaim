@@ -23,7 +23,6 @@
 //-------------------------------------------------------------------------
 
 #include "view.h"
-#include "fddpcode.h"
 
 FSTATIC FLMINT ViewOutputLFH2_0(
 	FLMUINT		Col,

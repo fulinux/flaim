@@ -135,7 +135,7 @@ RCODE F_ServerLockMgrPage::display(
 	printAddress( pServerLockMgr->m_pHashTbl, szAddress);
 	printHTMLString(
 		"m_pHashTbl",
-		"FBUCKET_p",
+		"FBUCKET *",
 		(void *)pServerLockMgr,
 		(void *)&pServerLockMgr->m_pHashTbl,
 		szAddress,

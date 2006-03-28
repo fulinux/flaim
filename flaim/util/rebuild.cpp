@@ -563,7 +563,7 @@ FSTATIC FLMBOOL bldGetParams(
 	gv_DefaultCreateOpts.bKeepRflFiles = DEFAULT_KEEP_RFL_FILES_FLAG;
 	gv_DefaultCreateOpts.bLogAbortedTransToRfl = DEFAULT_LOG_ABORTED_TRANS_FLAG;
 	gv_DefaultCreateOpts.uiDefaultLanguage = DEFAULT_LANG;
-	gv_DefaultCreateOpts.uiVersionNum = FLM_CURRENT_VERSION_NUM;
+	gv_DefaultCreateOpts.uiVersionNum = FLM_CUR_FILE_FORMAT_VER_NUM;
 	gv_DefaultCreateOpts.uiAppMajorVer = 
 	gv_DefaultCreateOpts.uiAppMinorVer = 0;
 	gv_uiCacheSize = 30000;

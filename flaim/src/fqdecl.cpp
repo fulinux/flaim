@@ -26,18 +26,18 @@
 
 FSTATIC RCODE flmSendCursorFrom(
 	FCL_WIRE *		pWire,
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 FSTATIC RCODE flmSendCursorWhere(
 	FCL_WIRE *		pWire,
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 /****************************************************************************
 Desc:	Send the FROM information for the cursor to the client.
 ****************************************************************************/
 FSTATIC RCODE flmSendCursorFrom(
 	FCL_WIRE *		pWire,
-	CURSOR_p			pCursor)
+	CURSOR *			pCursor)
 {
 	RCODE				rc = FERR_OK;
 	NODE *			pRootNode;
@@ -46,7 +46,7 @@ FSTATIC RCODE flmSendCursorFrom(
 	POOL *			pPool = pWire->getPool();
 	void *			pvMark = GedPoolMark( pPool);
 	FLMUINT			uiTmp;
-	CS_CONTEXT_p	pCSContext = pWire->getContext();
+	CS_CONTEXT *	pCSContext = pWire->getContext();
 
 	if ((pRootNode = GedNodeMake( pPool, FCS_ITERATOR_FROM, &rc)) == NULL)
 	{
@@ -102,7 +102,7 @@ FSTATIC RCODE flmSendCursorFrom(
 
 	// Add bOkToReturnKeys flag
 
-	if( pCSContext->uiServerFlaimVer >= FLM_VER_4_3)
+	if( pCSContext->uiServerFlaimVer >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		uiTmp = (FLMUINT)(pCursor->bOkToReturnKeys ? 1 : 0);
 		if (RC_BAD( rc = gedAddField( pPool, pChildNode,
@@ -152,19 +152,19 @@ Desc:	Send selection criteria for the cursor to the server.
 ****************************************************************************/
 FSTATIC RCODE flmSendCursorWhere(
 	FCL_WIRE *		pWire,
-	CURSOR_p			pCursor
+	CURSOR *			pCursor
 	)
 {
 	RCODE				rc = FERR_OK;
 	NODE *			pRootNode;
 	NODE *			pFldNode;
-	FQNODE_p			pQNode;
+	FQNODE *			pQNode;
 	FLMUINT			uiOperator;
 	FLMUINT			uiLastFlags = 0;
 	QTYPES			eOp;
 	POOL *			pPool = pWire->getPool();
 	void *			pvMark = GedPoolMark( pPool);
-	CS_CONTEXT_p	pCSContext = pWire->getContext();
+	CS_CONTEXT *	pCSContext = pWire->getContext();
 
 	if ((pRootNode = GedNodeMake( pPool, FCS_ITERATOR_WHERE, &rc)) == NULL)
 	{
@@ -499,11 +499,11 @@ Exit:
 Desc:	Initialize a query over the client/server line.
 ****************************************************************************/
 RCODE flmInitCurCS(
-	CURSOR_p	pCursor
+	CURSOR *	pCursor
 	)
 {
 	RCODE				rc = FERR_OK;
-	CS_CONTEXT_p	pCSContext = pCursor->pCSContext;
+	CS_CONTEXT *	pCSContext = pCursor->pCSContext;
 	FCL_WIRE			Wire( pCSContext);
 
 	if (pCursor->uiCursorId != FCS_INVALID_ID)
@@ -556,23 +556,21 @@ Transmission_Error:
 	goto Exit;
 }
 
-/*API~***********************************************************************
-Desc : Validates the selection criteria of a cursor.
-Notes: It is not necessary to explicitly validate the selection criteria
-		 through a call to this routine.  FLAIM will automatically attempt
-		 validation on the first call to any of the cursor routines which
-		 make use of the criteria.  Although explicit validation is unnecessary,
-		 it can be convenient to identify an error in the selection criteria
-		 before calling cursor routines which will make use of it.
-Ret:	 FERR_CURSOR_SYNTAX - The selection criteria contains a syntax error
-*END************************************************************************/
+/****************************************************************************
+Desc:		Validates the selection criteria of a cursor.
+Notes:	It is not necessary to explicitly validate the selection criteria
+			through a call to this routine.  FLAIM will automatically attempt
+			validation on the first call to any of the cursor routines which
+			make use of the criteria.  Although explicit validation is 
+			unnecessary, it can be convenient to identify an error in the
+			selection criteria before calling cursor routines which will make
+			use of it.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorValidate(
-	HFCURSOR		hCursor
-		// [IN] Handle to a cursor.
-	)
+	HFCURSOR		hCursor)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{

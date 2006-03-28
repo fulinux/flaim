@@ -40,9 +40,9 @@ FSTATIC RCODE flmInitFileHdrs(
 	FLMBYTE *			pInitBuf,
 	FLMUINT				uiBufSize);
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Creates a new FLAIM database.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbCreate(
 	const char *		pszDbFileName,
 	const char *		pszDataDir,
@@ -55,7 +55,10 @@ FLMEXP RCODE FLMAPI FlmDbCreate(
 	RCODE					rc = FERR_OK;
 	CS_CONTEXT *		pCSContext;
 
-	*phDbRV = HFDB_NULL;
+	if( phDbRV)
+	{
+		*phDbRV = HFDB_NULL;
+	}
 
 	if( !pszDbFileName || !pszDbFileName[ 0])
 	{
@@ -74,7 +77,7 @@ FLMEXP RCODE FLMAPI FlmDbCreate(
 
 		if( RC_BAD( rc = flmOpenOrCreateDbClientServer( pszDbFileName,
 			pszDataDir, pszRflDir, 0, pszDictFileName,
-			pszDictBuf, pCreateOpts, FALSE, pCSContext, (FDB_p *)phDbRV)))
+			pszDictBuf, pCreateOpts, FALSE, pCSContext, (FDB * *)phDbRV)))
 		{
 			(void)flmCloseCSConnection( &pCSContext);
 		}
@@ -83,7 +86,7 @@ FLMEXP RCODE FLMAPI FlmDbCreate(
 
 	if( RC_BAD( rc = flmCreateNewFile( pszDbFileName, pszDataDir, pszRflDir,
 		pszDictFileName, pszDictBuf, pCreateOpts,
-		0, (FDB_p *)phDbRV)))
+		0, (FDB * *)phDbRV)))
 	{
 		goto Exit;
 	}
@@ -104,18 +107,20 @@ RCODE flmCreateNewFile(
 	const char *		pszDictBuf,
 	CREATE_OPTS *		pCreateOpts,
 	FLMUINT				uiTransID,
-	FDB_p *				ppDb,
+	FDB * *				ppDb,
 	REBUILD_STATE *	pRebuildState)
 {
 	RCODE				rc = FERR_OK;
-	FDB *				pDb;
+	FDB *				pDb = NULL;
 	FFILE *			pFile;
 	FLMBOOL			bFileCreated = FALSE;
 	FLMBOOL			bNewFile = FALSE;
-	FLMBOOL			bAllocatedFdb = FALSE;
 	FLMBOOL			bMutexLocked = FALSE;
 
-	*ppDb = NULL;
+	if( ppDb)
+	{
+		*ppDb = NULL;
+	}
 
 #ifndef FLM_USE_NICI
 	F_UNREFERENCED_PARM( pRebuildState);
@@ -123,12 +128,10 @@ RCODE flmCreateNewFile(
 
 	// Allocate and initialize an FDB structure.
 
-	if (RC_BAD( rc = flmAllocFdb( ppDb)))
+	if (RC_BAD( rc = flmAllocFdb( &pDb)))
 	{
 		goto Exit;
 	}
-	pDb = *ppDb;
-	bAllocatedFdb = TRUE;
 
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	bMutexLocked = TRUE;
@@ -203,7 +206,7 @@ RCODE flmCreateNewFile(
 	else
 	{
 		pDb->pSFileHdl->SetBlockSize( DEFAULT_BLKSIZ);
-		pDb->pSFileHdl->SetDbVersion( FLM_CURRENT_VERSION_NUM);
+		pDb->pSFileHdl->SetDbVersion( FLM_CUR_FILE_FORMAT_VER_NUM);
 	}
 
 #ifdef FLM_USE_NICI
@@ -211,7 +214,7 @@ RCODE flmCreateNewFile(
 	// Create a new F_CCS object for the database wrapping key if the new
 	// database version is at least ver 4.60
 	
-	if (!pCreateOpts || pCreateOpts->uiVersionNum >= FLM_VER_4_60)
+	if (!pCreateOpts || pCreateOpts->uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 	{
 		if ((pFile->pDbWrappingKey = f_new F_CCS) == NULL)
 		{
@@ -228,8 +231,8 @@ RCODE flmCreateNewFile(
 		// Only generate a key when this is not part of a rebuild operation or
 		// the original database version was less than 4.60
 		
-		if (!pRebuildState ||
-			 pRebuildState->pHdrInfo->FileHdr.uiVersionNum < FLM_VER_4_60)
+		if (!pRebuildState || pRebuildState->pHdrInfo->FileHdr.uiVersionNum <
+										FLM_FILE_FORMAT_VER_4_60)
 		{
 			if (RC_BAD( rc = pFile->pDbWrappingKey->generateWrappingKey()))
 			{
@@ -239,8 +242,8 @@ RCODE flmCreateNewFile(
 		else
 		{
 			if( RC_BAD( rc = pFile->pDbWrappingKey->setKeyFromStore(
-				&pRebuildState->pLogHdr[LOG_DATABASE_KEY],
-				FB2UW(&pRebuildState->pLogHdr[LOG_DATABASE_KEY_LEN]),
+				&pRebuildState->pLogHdr[ LOG_DATABASE_KEY],
+				FB2UW(&pRebuildState->pLogHdr[ LOG_DATABASE_KEY_LEN]),
 				NULL, NULL, FALSE)))
 			{
 				goto Exit;
@@ -293,6 +296,13 @@ RCODE flmCreateNewFile(
 		goto Exit;
 	}
 
+	// Start the database monitor thread
+	
+	if( RC_BAD( rc = flmStartDbMonitorThread( pFile)))
+	{
+		goto Exit;
+	}
+
 Exit:
 
 	if( bMutexLocked)
@@ -300,7 +310,7 @@ Exit:
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	}
 
-	rc = flmCompleteOpenOrCreate( ppDb, rc, bNewFile, bAllocatedFdb);
+	rc = flmCompleteOpenOrCreate( &pDb, rc, bNewFile, pDb ? TRUE : FALSE);
 
 	if( RC_BAD( rc))
 	{
@@ -308,8 +318,10 @@ Exit:
 		{
 			(void)gv_FlmSysData.pFileSystem->Delete( pszFilePath);
 		}
-
-		*ppDb = NULL;
+	}
+	else if( ppDb)
+	{
+		*ppDb = pDb;
 	}
 
 	return( rc);
@@ -467,7 +479,7 @@ FSTATIC RCODE flmInitFileHdrs(
 	FLMUINT			uiBufSize)
 {
 	RCODE				rc = FERR_OK;
-	FFILE_p			pFile = pDb->pFile;
+	FFILE *			pFile = pDb->pFile;
 	FLMBYTE *		pucLastCommittedLogHdr;
 	FLMUINT			uiLogicalEOF;
 	FLMUINT			uiWriteBytes;
@@ -501,7 +513,7 @@ FSTATIC RCODE flmInitFileHdrs(
 	// Reserve only room for LFH in 4.3 and above.
 
 	uiLogicalEOF = (FLMUINT)((pFile->FileHdr.uiVersionNum >=
-									  FLM_VER_4_3)
+									  FLM_FILE_FORMAT_VER_4_3)
 									 ? (FLMUINT)pFile->FileHdr.uiFirstLFHBlkAddr +
 												uiBlkSize
 									 : (FLMUINT)pFile->FileHdr.uiFirstLFHBlkAddr +
@@ -546,7 +558,7 @@ FSTATIC RCODE flmInitFileHdrs(
 										  ? pCreateOpts->uiMinRflFileSize
 										  : (FLMUINT)DEFAULT_MIN_RFL_FILE_SIZE);
 
-	if( pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+	if( pDb->pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		FLMUINT16	ui16Tmp;
 
@@ -653,14 +665,19 @@ FSTATIC RCODE flmInitFileHdrs(
 		{
 			goto Exit;
 		}
-		// IMPORTANT NOTE: pucBuf must be freed before going to Exit!!!
+		
+		// Verify that the field in the log header is long enough to
+		// hold the key.
+		
+		if( ui32KeyLen > FLM_MAX_DB_ENC_KEY_LEN)
+		{
+			f_free( &pucBuf);
+			rc = RC_SET_AND_ASSERT( FERR_BAD_ENC_KEY);
+			goto Exit;
+		}
 
-		// Assert that the field in the log header is long enough to
-		// hold the key.  Note: This test is only valid if the key
-		// field is the last one in the log header!!
-		flmAssert( ui32KeyLen <= (LOG_HEADER_SIZE - LOG_DATABASE_KEY));
-
-		UW2FBA(ui32KeyLen, &pucLastCommittedLogHdr[LOG_DATABASE_KEY_LEN]);
+		UW2FBA(ui32KeyLen, &pucLastCommittedLogHdr[ LOG_DATABASE_KEY_LEN]);
+		
 		f_memcpy( &pucLastCommittedLogHdr[LOG_DATABASE_KEY], pucBuf,
 					 ui32KeyLen);
 		f_free( &pucBuf);
@@ -705,7 +722,7 @@ FSTATIC RCODE flmInitFileHdrs(
 
 	// Initialize and output the first pcode block.
 
-	if (pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		FLMUINT	uiPcodeAddr;
 

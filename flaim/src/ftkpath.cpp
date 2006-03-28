@@ -381,7 +381,7 @@ FLMEXP RCODE FLMAPI f_pathReduce(
 
 	// Check for valid path pointers
 
-	if( !pszPath || !pszDir)
+	if( !pszPath)
 	{
 		rc = RC_SET( FERR_INVALID_PARM);
 		goto Exit;
@@ -427,29 +427,32 @@ FLMEXP RCODE FLMAPI f_pathReduce(
 
 		// Copy the reduced source path to the dir path
 
-		if (pszFileNameStart > pszPath)
+		if( pszDir)
 		{
-			uiLen = (FLMUINT)(pszFileNameStart - pszPath);
-			f_memcpy( pszDir, pszPath, uiLen);
-
-			if (uiLen >= 2 && f_isSlashSeparator( pszDir [uiLen - 1])
-#ifndef FLM_UNIX
-				 && pszDir [uiLen - 2] != ':'
-#endif
-				 )
+			if (pszFileNameStart > pszPath)
 			{
-				// Trim off the trailing path separator
+				uiLen = (FLMUINT)(pszFileNameStart - pszPath);
+				f_memcpy( pszDir, pszPath, uiLen);
 
-				pszDir [uiLen - 1] = 0;
+				if (uiLen >= 2 && f_isSlashSeparator( pszDir [uiLen - 1])
+#ifndef FLM_UNIX
+					&& pszDir [uiLen - 2] != ':'
+#endif
+					)
+				{
+					// Trim off the trailing path separator
+
+					pszDir [uiLen - 1] = 0;
+				}
+				else
+				{
+					pszDir [uiLen] = 0;
+				}
 			}
 			else
 			{
-				pszDir [uiLen] = 0;
+				*pszDir = 0;
 			}
-		}
-		else
-		{
-			*pszDir = 0;
 		}
 	}
 	else
@@ -460,8 +463,11 @@ FLMEXP RCODE FLMAPI f_pathReduce(
 		{
 			f_strcpy( pszPathComponent, pszPath);
 		}
-		
-		*pszDir = 0;
+
+		if( pszDir)
+		{
+			*pszDir = 0;
+		}
 	}
 
 Exit:

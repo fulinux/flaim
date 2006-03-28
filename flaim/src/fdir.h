@@ -34,7 +34,7 @@ typedef F_DirHdl *			F_DirHdl_p;
 
 #if defined( FLM_WIN)
 
-	typedef struct
+	typedef struct F_IO_FIND_DATA
 	{
 		 HANDLE					findHandle;
 		 WIN32_FIND_DATA		findBuffer;
@@ -52,7 +52,7 @@ typedef F_DirHdl *			F_DirHdl_p;
 
 #elif defined( FLM_UNIX)
 
-	typedef struct _DirInfo
+	typedef struct F_IO_FIND_DATA
 	{
 		mode_t		mode_flag;
 		struct stat	FileStat;

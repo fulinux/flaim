@@ -41,7 +41,7 @@ FSTATIC FLMINT FSCompareKeys(
 			(pKeyPos2)->pKey, (pKeyPos2)->uiKeyLen, (pKeyPos2)->bExclusiveKey)
 
 /****************************************************************************
-Public: Constructor
+Desc:
 ****************************************************************************/
 FSIndexCursor::FSIndexCursor() 
 {
@@ -52,7 +52,7 @@ FSIndexCursor::FSIndexCursor()
 }
 
 /****************************************************************************
-Public: Destructor
+Desc:
 ****************************************************************************/
 FSIndexCursor::~FSIndexCursor() 
 {
@@ -61,8 +61,7 @@ FSIndexCursor::~FSIndexCursor()
 }
 
 /****************************************************************************
-Public: 	reset
-Desc: 	Resets any allocations, keys, state, etc.
+Desc:	Resets any allocations, keys, state, etc.
 ****************************************************************************/
 void FSIndexCursor::reset( void)
 {
@@ -83,10 +82,9 @@ void FSIndexCursor::reset( void)
 
 
 /****************************************************************************
-Public: 	resetTransaction
-Desc: 	Resets to a new transaction that may change the read consistency of
-			the query.  This is usually an old view error internal or external of
-			this class.
+Desc:	Resets to a new transaction that may change the read consistency of
+		the query.  This is usually an old view error internal or external of
+		this class.
 ****************************************************************************/
 RCODE FSIndexCursor::resetTransaction( 
 	FDB *			pDb)
@@ -100,13 +98,12 @@ RCODE FSIndexCursor::resetTransaction(
 	{	
 		goto Exit;
 	}
+	
 	m_uiCurrTransId = pDb->LogHdr.uiCurrTransID;
 	m_uiBlkChangeCnt = pDb->uiBlkChangeCnt;
 	m_bIsUpdateTrans = (pDb->uiTransType == FLM_UPDATE_TRANS) ? TRUE : FALSE;
 
-	/*
-	Need to release all stacks that are currently in use.
-	*/
+	// Need to release all stacks that are currently in use.
 
 	for( pTmpSet = m_pFirstSet; pTmpSet; pTmpSet = pTmpSet->pNext)
 	{
@@ -125,11 +122,12 @@ RCODE FSIndexCursor::resetTransaction(
 	releaseKeyBlocks( &m_curKeyPos);
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Desc: 	Free all of the allocated sets.
+Desc:	Free all of the allocated sets.
 ****************************************************************************/
 void FSIndexCursor::freeSets( void)
 {
@@ -139,11 +137,13 @@ void FSIndexCursor::freeSets( void)
 	for( pCurSet = m_pFirstSet; pCurSet; pCurSet = pNextSet)
 	{
 		pNextSet = pCurSet->pNext;
+		
 		if( pCurSet != &m_DefaultSet)
 		{
 			f_free( &pCurSet);
 		}
 	}
+	
 	m_pFirstSet = m_pCurSet = NULL;
 
 	if( m_pSavedPos)
@@ -152,15 +152,11 @@ void FSIndexCursor::freeSets( void)
 		f_free( &m_pSavedPos);
 		m_pSavedPos = NULL;
 	}
-	return;
 }
 
-
 /****************************************************************************
-Public: 	releaseBlocks
-Desc: 	Releases the cache blocks back to cache.
+Desc:	Releases the cache blocks back to cache.
 ****************************************************************************/
-
 void FSIndexCursor::releaseBlocks( void)
 {
 	KEYSET *		pCurSet;
@@ -172,20 +168,18 @@ void FSIndexCursor::releaseBlocks( void)
 		releaseKeyBlocks( &pCurSet->fromKey);
 		releaseKeyBlocks( &pCurSet->untilKey);
 	}
+	
 	releaseKeyBlocks( &m_curKeyPos);
-
-	return;
 }
 
 /****************************************************************************
-Public: 	setupKeys
-Desc: 	Setup the from and until keys in the cursor.  Return counts
-			after positioning to the from and until key in the index.
-			This code does not work with multiple key sets of FROM/UNTIL keys.
+Desc: Setup the from and until keys in the cursor.  Return counts
+		after positioning to the from and until key in the index.
+		This code does not work with multiple key sets of FROM/UNTIL keys.
 ****************************************************************************/
 RCODE FSIndexCursor::setupKeys(
 	FDB *				pDb,
-	IXD_p				pIxd,
+	IXD *				pIxd,
 	QPREDICATE **	ppQPredicateList,
 	FLMBOOL *		pbDoRecMatch,			// [out] Leave alone or set to TRUE.
 	FLMBOOL *		pbDoKeyMatch,			// [out] Set to TRUE or FALSE
@@ -193,7 +187,6 @@ RCODE FSIndexCursor::setupKeys(
 	FLMUINT *		puiTotalKeys,			// [out] total number of keys
 	FLMUINT *		puiTotalRefs,			// [out] total references
 	FLMBOOL *		pbTotalsEstimated)	// [out] set to TRUE when estimating.
-
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiUntilKeyLen;
@@ -202,10 +195,12 @@ RCODE FSIndexCursor::setupKeys(
 
 	RESET_DINSTATE( dinState);
 	m_uiIndexNum = pIxd->uiIndexNum;
+	
 	if( RC_BAD( rc = checkTransaction( pDb)))
 	{
 		goto Exit;
 	}
+	
 	m_DefaultSet.fromKey.uiRefPosition = 0;
 	m_DefaultSet.untilKey.uiRefPosition = 0;
 	m_DefaultSet.fromKey.bExclusiveKey = FALSE;
@@ -218,13 +213,12 @@ RCODE FSIndexCursor::setupKeys(
 	{
 		goto Exit;
 	}
-	/*
-	Here is a rundown of how the data is setup after this call.
-	Default.FROM key - block address and current element offset and 
-							 generated FROM key.
-	Default.UNTIL key - full stack setup and the generated UNTIL key
-	curKeyPos - pKey is the first key positioned the full stack is setup.
-	*/
+	
+	// Here is a rundown of how the data is setup after this call.
+	// Default.FROM key - block address and current element offset and 
+	//							 generated FROM key.
+	// Default.UNTIL key - full stack setup and the generated UNTIL key
+	// curKeyPos - pKey is the first key positioned the full stack is setup.
 
 	f_memcpy( m_curKeyPos.pKey, m_DefaultSet.fromKey.pKey, 
 		m_curKeyPos.uiKeyLen = m_DefaultSet.fromKey.uiKeyLen);
@@ -238,26 +232,30 @@ RCODE FSIndexCursor::setupKeys(
 	m_DefaultSet.untilKey.uiDomain = ZERO_DOMAIN;
 
 	// Want any of the counts back?
+	
 	if( puiLeafBlocksBetween || puiTotalKeys || puiTotalRefs)
 	{
 		if( RC_OK( rc = setKeyPosition( pDb, TRUE, 
 					&m_DefaultSet.fromKey, &m_curKeyPos)))
 		{
 			// Copy the b-tree information to the from key.
+			
 			m_DefaultSet.fromKey.uiBlockAddr = m_curKeyPos.uiBlockAddr;
 			m_DefaultSet.fromKey.uiDomain = m_curKeyPos.uiDomain;
 			m_DefaultSet.fromKey.uiBlockTransId = m_curKeyPos.uiBlockTransId;
 			m_DefaultSet.fromKey.uiCurElm = m_curKeyPos.uiCurElm;
 	
 			// All keys bewteen FROM and UNTIL may be gone.
+			
 			if( FS_COMPARE_KEYS( FALSE, &m_curKeyPos, 
 										TRUE, &m_DefaultSet.untilKey) <= 0)
 			{
-				rc = setKeyPosition( pDb, TRUE /* Going Forward so position is exclusive */, 
-					&m_DefaultSet.untilKey, &m_DefaultSet.untilKey);
+				rc = setKeyPosition( pDb, TRUE, 
+						&m_DefaultSet.untilKey, &m_DefaultSet.untilKey);
 				rc = (rc == FERR_EOF_HIT) ? FERR_OK: rc;
 
 				// Restore the original UNTIL key - throws away what the last key is.
+				
 				f_memcpy( m_DefaultSet.untilKey.pKey, pUntilKey,
 					m_DefaultSet.untilKey.uiKeyLen = uiUntilKeyLen);
 			}
@@ -278,6 +276,7 @@ RCODE FSIndexCursor::setupKeys(
 		if( RC_BAD( rc))
 		{
 			// Empty tree or empty set case.
+			
 			if( rc == FERR_EOF_HIT || rc == FERR_BOF_HIT)
 			{
 				if( puiLeafBlocksBetween)
@@ -332,7 +331,7 @@ Desc: 	Setup a cursor with just a single FROM/UNTIL key.
 
 RCODE	FSIndexCursor::setupKeys(
 	FDB *			pDb,
-	IXD_p       pIxd,
+	IXD *       pIxd,
 	FLMBYTE *	pFromKey,
 	FLMUINT		uiFromKeyLen,
 	FLMUINT		uiFromRecordId,
@@ -351,6 +350,7 @@ RCODE	FSIndexCursor::setupKeys(
 	m_DefaultSet.pNext = m_DefaultSet.pPrev = NULL;
 
 	// FROM key
+	
 	m_DefaultSet.fromKey.uiRecordId = uiFromRecordId;
 	m_DefaultSet.fromKey.uiDomain = 
 		uiFromRecordId ? DRN_DOMAIN( uiFromRecordId) + 1: MAX_DOMAIN;
@@ -360,6 +360,7 @@ RCODE	FSIndexCursor::setupKeys(
 	m_DefaultSet.fromKey.bExclusiveKey = FALSE;
 
 	// UNTIL key
+	
 	m_DefaultSet.untilKey.uiRecordId = uiUntilRecordId;
 	m_DefaultSet.untilKey.uiDomain = 
 		uiUntilRecordId ? DRN_DOMAIN( uiUntilRecordId) + 1: ZERO_DOMAIN;
@@ -374,6 +375,7 @@ RCODE	FSIndexCursor::setupKeys(
 
 	// If this is a positioning index we need to setup the FROM/UNTIL
 	// btrees to get the FROM/UNTIL reference positions.
+	
 	if( pIxd->uiFlags & IXD_POSITIONING)
 	{
 		if( RC_BAD( rc = setupForPositioning( pDb)))
@@ -418,7 +420,9 @@ RCODE	FSIndexCursor::setupForPositioning(
 		{
 			goto Exit;
 		}
+		
 		// Copy the key back.
+		
 		f_memcpy( pSrcSet->untilKey.pKey, pTempKey, 
 			pSrcSet->untilKey.uiKeyLen = uiTempKeyLen);
 
@@ -440,11 +444,14 @@ RCODE	FSIndexCursor::setupForPositioning(
 				goto Exit;
 			}
 			m_pCurSet = m_pFirstSet;
+			
 			// Copy the b-tree information to the from key.
+			
 			m_pCurSet->fromKey.uiBlockAddr = m_curKeyPos.uiBlockAddr;
 			m_pCurSet->fromKey.uiDomain = m_curKeyPos.uiDomain;
 			m_pCurSet->fromKey.uiBlockTransId = m_curKeyPos.uiBlockTransId;
 			m_pCurSet->fromKey.uiCurElm = m_curKeyPos.uiCurElm;
+			
 			if( m_pIxd->uiFlags & IXD_POSITIONING)
 			{
 				if( RC_BAD( rc = FSGetBtreeRefPosition( pDb, 
@@ -465,9 +472,12 @@ RCODE	FSIndexCursor::setupForPositioning(
 			{
 				goto Exit;
 			}
+			
 			// Copy the key back.
+			
 			f_memcpy( pSrcSet->fromKey.pKey, pTempKey, 
 				pSrcSet->fromKey.uiKeyLen = uiTempKeyLen);
+				
 			if( m_pIxd->uiFlags & IXD_POSITIONING)
 			{
 				if( RC_BAD( rc = FSGetBtreeRefPosition( pDb, 
@@ -479,13 +489,14 @@ RCODE	FSIndexCursor::setupForPositioning(
 			}
 		}
 	}
+	
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	unionKeys
-Desc: 	Merge the input cursors fromUntil sets as a result of a UNION.
+Desc:	Merge the input cursors fromUntil sets as a result of a UNION.
 ****************************************************************************/
 RCODE FSIndexCursor::unionKeys( 
 	FSIndexCursor * pFSCursor)
@@ -498,6 +509,7 @@ RCODE FSIndexCursor::unionKeys(
 	KEYSET *		pPrevDestSet;
 
 	// We need to release all of the blocks.  Too complex
+	
 	pFSCursor->releaseBlocks();
 	releaseBlocks();
 	pInputSet = pFSCursor->getFromUntilSets();
@@ -512,7 +524,8 @@ RCODE FSIndexCursor::unionKeys(
 		if( RC_BAD( rc = f_calloc( sizeof( KEYSET), &pCurDestSet)))
 		{
 			goto Exit;
-		}	
+		}
+		
 		if( !pSrcSet)
 		{
 			f_memcpy( pCurDestSet, pInputSet, sizeof( KEYSET));
@@ -551,8 +564,8 @@ RCODE FSIndexCursor::unionKeys(
 
 				if( bUntilKeyGreaterThan)
 				{
-					if( ((pSrcSet = pSrcSet->pNext) == NULL)
-					 || !FSCompareKeyPos( pInputSet, pSrcSet, 
+					if( ((pSrcSet = pSrcSet->pNext) == NULL) || 
+						!FSCompareKeyPos( pInputSet, pSrcSet, 
 								&bFromKeyLessThan, &bUntilKeyGreaterThan))
 					{
 						f_memcpy( &pCurDestSet->untilKey, &pInputSet->untilKey, 
@@ -563,8 +576,8 @@ RCODE FSIndexCursor::unionKeys(
 				}
 				else
 				{
-					if( ((pInputSet = pInputSet->pNext) == NULL)
-					||  !FSCompareKeyPos( pInputSet, pSrcSet, 
+					if( ((pInputSet = pInputSet->pNext) == NULL) ||  
+						!FSCompareKeyPos( pInputSet, pSrcSet, 
 								&bFromKeyLessThan, &bUntilKeyGreaterThan))
 					{
 						f_memcpy( &pCurDestSet->untilKey, 
@@ -577,6 +590,7 @@ RCODE FSIndexCursor::unionKeys(
 		}
 
 		// Link in.
+		
 		pCurDestSet->pNext = NULL;
 		if( !pDestSet)
 		{
@@ -589,6 +603,7 @@ RCODE FSIndexCursor::unionKeys(
 			pCurDestSet->pPrev = pPrevDestSet;
 		}
 	}
+	
 	// We went to the trouble of having a default set allocated with this class.
 	// Undo the last allocation.  if( pDestSet) then pCurDestSet can be used.
 
@@ -607,16 +622,17 @@ RCODE FSIndexCursor::unionKeys(
 		}
 		f_free( &pCurDestSet);
 	}
+	
 	m_bAtBOF = TRUE;
 	m_pCurSet = NULL;
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	intersectKeys
-Desc: 	Intersect the from/until key sets of pFSCursor into 'this'.
+Desc:	Intersect the from/until key sets of pFSCursor into 'this'.
 ****************************************************************************/
 RCODE FSIndexCursor::intersectKeys( 
 	FDB *			pDb,
@@ -645,6 +661,7 @@ RCODE FSIndexCursor::intersectKeys(
 					&bFromKeyLessThan, &bUntilKeyGreaterThan))
 		{
 			// Keys do NOT overlap - go to the next set section.
+			
 			if( bFromKeyLessThan)
 			{
 				pInputSet = pInputSet->pNext;
@@ -662,8 +679,10 @@ RCODE FSIndexCursor::intersectKeys(
 			if( RC_BAD( rc = f_calloc( sizeof( KEYSET), &pCurDestSet)))
 			{
 				goto Exit;
-			}	
+			}
+			
 			pCurDestSet->pNext = NULL;
+			
 			if( !pDestSet)
 			{
 				pDestSet = pCurDestSet;
@@ -676,11 +695,13 @@ RCODE FSIndexCursor::intersectKeys(
 			}
 
 			// Take the highest FROM key.
+			
 			f_memcpy( &pCurDestSet->fromKey, 
 				bFromKeyLessThan ? &pSrcSet->fromKey : &pInputSet->fromKey, 
 				sizeof( KEYPOS));
 
 			// Take the lowest until key and position to the next set.
+			
 			if( bUntilKeyGreaterThan)
 			{
 				f_memcpy( &pCurDestSet->untilKey, &pSrcSet->untilKey, sizeof( KEYPOS));
@@ -696,7 +717,9 @@ RCODE FSIndexCursor::intersectKeys(
 
 	// We went to the trouble of having a default set allocated with this class.
 	// Undo the last allocation.  if( pDestSet) then pCurDestSet can be used.
+	
 	freeSets();
+	
 	if( pDestSet)
 	{
 		f_memcpy( &m_DefaultSet, pCurDestSet, sizeof( KEYSET));
@@ -709,13 +732,16 @@ RCODE FSIndexCursor::intersectKeys(
 		{
 			m_pFirstSet = &m_DefaultSet;
 		}
+		
 		f_free( &pCurDestSet);
 	}
+	
 	m_bAtBOF = TRUE;
 	m_pCurSet = NULL;
 
 	// If this is a positioning index we need to setup the FROM/UNTIL
 	// btrees to get the FROM/UNTIL reference positions.
+	
 	if( m_pIxd->uiFlags & IXD_POSITIONING)
 	{
 		if( RC_BAD( rc = setupForPositioning( pDb)))
@@ -725,14 +751,13 @@ RCODE FSIndexCursor::intersectKeys(
 	}
 
 Exit:
+
 	return( rc);
 }
 
-
 /****************************************************************************
-Public: 	compareKeyRange
-Desc: 	Specific compare for a key range against the 
-			key ranges in this cursor.
+Desc:	Specific compare for a key range against the key ranges in this
+		cursor.
 ****************************************************************************/
 
 FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
@@ -746,7 +771,7 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 	FLMBOOL *	pbUntilGreaterThan)		//              F   T	F
 {
 	FLMBOOL		bKeysOverlap = FALSE;
-	KEYSET *		pSrcSet;			// Current source set
+	KEYSET *		pSrcSet;						// Current source set
 	FLMINT		iFromCmp;
 	FLMINT		iUntilCmp;
 	FLMINT		iFromUntilCmp;
@@ -764,6 +789,7 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 		if( iFromCmp < 0)
 		{
 			// Move from left-most to right-most to see where the overlap is.
+			
 			iUntilFromCmp = FSCompareKeys( TRUE,
 													pUntilKey, uiUntilKeyLen,
 													bExclusiveUntil,
@@ -771,12 +797,14 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 													pSrcSet->fromKey.pKey,
 													pSrcSet->fromKey.uiKeyLen,
 													pSrcSet->fromKey.bExclusiveKey);
+													
 			if( iUntilFromCmp < 0)
 			{
 				*pbUntilKeyInSet = FALSE;
 				*pbUntilGreaterThan = FALSE;
 				goto Exit;
 			}
+			
 			if( iUntilFromCmp == 0)
 			{
 				bKeysOverlap = TRUE;
@@ -784,12 +812,15 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 				*pbUntilGreaterThan = FALSE;
 				goto Exit;
 			}
+			
 			// UNTIL > pSrcSet->fromKey
+			
 			iUntilCmp = FSCompareKeys( TRUE, pUntilKey, uiUntilKeyLen,
 												bExclusiveUntil, TRUE,
 												pSrcSet->untilKey.pKey,
 												pSrcSet->untilKey.uiKeyLen,
 												pSrcSet->untilKey.bExclusiveKey);
+												
 			if( iUntilCmp <= 0)
 			{
 				bKeysOverlap = TRUE;
@@ -797,12 +828,15 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 				*pbUntilGreaterThan = FALSE;
 				goto Exit;
 			}
+			
 			bKeysOverlap = TRUE;
+			
 			// Try the next source set to see if the UNTIL key is in a set.
 		}
 		else
 		{
 			// Move from left-most to right-most to see where the overlap is.
+			
 			if( iFromCmp == 0)
 			{
 				bKeysOverlap = TRUE;
@@ -814,6 +848,7 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 														 TRUE, pSrcSet->untilKey.pKey,
 														 pSrcSet->untilKey.uiKeyLen,
 														 pSrcSet->untilKey.bExclusiveKey);
+														 
 				if( iFromUntilCmp <= 0)
 				{
 					bKeysOverlap = TRUE;
@@ -823,11 +858,13 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 					continue;
 				}
 			}
+			
 			iUntilCmp = FSCompareKeys( TRUE, pUntilKey, uiUntilKeyLen,
 												bExclusiveFrom,
 												TRUE, pSrcSet->untilKey.pKey,
 												pSrcSet->untilKey.uiKeyLen,
 												pSrcSet->untilKey.bExclusiveKey);
+												
 			if( iUntilCmp <= 0)
 			{
 				bKeysOverlap = TRUE;
@@ -837,20 +874,23 @@ FLMBOOL FSIndexCursor::compareKeyRange(	// Returns TRUE if keys overlap.
 			}
 		}
 	}
+	
 	*pbUntilKeyInSet = FALSE;
 	*pbUntilGreaterThan = TRUE;
+	
 Exit:
+
 	return bKeysOverlap;
 }	
 
 /****************************************************************************
-Desc: 	Compare two From/Until key positions.
+Desc:	Compare two From/Until key positions.
 ****************************************************************************/
 FLMBOOL FSIndexCursor::FSCompareKeyPos(		// TRUE if keys overlap
 	KEYSET *			pSet1,
 	KEYSET *			pSet2,
-	FLMBOOL *		pbFromKeyLessThan,		// pSet1->from < pSet2->from
-	FLMBOOL *		pbUntilKeyGreaterThan)	// pSet1->until > pSet2->until
+	FLMBOOL *		pbFromKeyLessThan,			// pSet1->from < pSet2->from
+	FLMBOOL *		pbUntilKeyGreaterThan)		// pSet1->until > pSet2->until
 {
 
 	if( FS_COMPARE_KEYS( TRUE, &pSet1->untilKey, FALSE, &pSet2->fromKey) < 0)
@@ -859,6 +899,7 @@ FLMBOOL FSIndexCursor::FSCompareKeyPos(		// TRUE if keys overlap
 		pbUntilKeyGreaterThan = FALSE;
 		return FALSE;
 	}
+	
 	if( FS_COMPARE_KEYS( FALSE, &pSet1->fromKey, TRUE, &pSet2->untilKey) > 0)
 	{
 		*pbFromKeyLessThan = FALSE;
@@ -874,15 +915,14 @@ FLMBOOL FSIndexCursor::FSCompareKeyPos(		// TRUE if keys overlap
 	*pbUntilKeyGreaterThan = (FLMBOOL) ((FS_COMPARE_KEYS( TRUE, &pSet1->untilKey, 
 				TRUE, &pSet2->untilKey) > 0) ? TRUE : FALSE);
 
-	return TRUE;
+	return (TRUE);
 }
 
 /****************************************************************************
 Desc:	Set information from the block into the KEYPOS structure.
 ****************************************************************************/
 FINLINE void setKeyItemsFromBlock(
-	KEYPOS *	pKeyPos
-	)
+	KEYPOS *			pKeyPos)
 {
 	pKeyPos->uiBlockAddr = pKeyPos->pStack->uiBlkAddr;
 	pKeyPos->uiCurElm = pKeyPos->pStack->uiCurElm;
@@ -893,9 +933,8 @@ FINLINE void setKeyItemsFromBlock(
 }
 
 /****************************************************************************
-Protected:	setKeyPosition
-Desc: 		Set the key position given some KEYPOS structure.
-				Please note that the blocks in the stack may or may not be used.
+Desc:	Set the key position given some KEYPOS structure.
+		Please note that the blocks in the stack may or may not be used.
 ****************************************************************************/
 RCODE FSIndexCursor::setKeyPosition(
 	FDB *				pDb,
@@ -910,6 +949,7 @@ RCODE FSIndexCursor::setKeyPosition(
 	FLMUINT			uiTargetRecordId = pInKeyPos->uiRecordId;
 
 	// May have to unuse the b-tree blocks.  Then setup the stack.
+	
 	if( !pOutKeyPos->bStackInUse)
 	{
 		FSInitStackCache( pOutKeyPos->Stack, BH_MAX_LEVELS);
@@ -925,11 +965,14 @@ RCODE FSIndexCursor::setKeyPosition(
 	{
 		pSearchKey = pInKeyPos->pKey;
 	}
+	
 	// Setup the stack.
+	
 	pOutKeyPos->pStack = pOutKeyPos->Stack;
 	pOutKeyPos->Stack[0].pKeyBuf = pOutKeyPos->pKey;
 
 	// All of the variables should be setup for the search.
+	
 	if( RC_BAD( rc = FSBtSearch( pDb, m_pLFile, &pOutKeyPos->pStack,
 				pSearchKey, pInKeyPos->uiKeyLen, 
 				uiTargetRecordId
@@ -938,6 +981,7 @@ RCODE FSIndexCursor::setKeyPosition(
 	{
 		goto Exit;
 	}
+	
 	pOutKeyPos->uiBlockAddr = pOutKeyPos->pStack->uiBlkAddr;
 	pOutKeyPos->uiCurElm = pOutKeyPos->pStack->uiCurElm;
 
@@ -947,6 +991,7 @@ RCODE FSIndexCursor::setKeyPosition(
 		rc = RC_SET( FERR_EOF_HIT);
 		goto Exit;
 	}
+	
 	pOutKeyPos->uiKeyLen = pOutKeyPos->pStack->uiKeyLen;
 
 	if( bGoingForward)
@@ -962,8 +1007,9 @@ RCODE FSIndexCursor::setKeyPosition(
 		BTSK *			pStack;
 
 		// Going backwards or to the last.  May have positioned too far.
-		if( pOutKeyPos->pStack->uiCmpStatus == BT_END_OF_DATA
-		 || FS_COMPARE_KEYS( TRUE, pOutKeyPos, TRUE, pInKeyPos) > 0)
+		
+		if( pOutKeyPos->pStack->uiCmpStatus == BT_END_OF_DATA || 
+			 FS_COMPARE_KEYS( TRUE, pOutKeyPos, TRUE, pInKeyPos) > 0)
 		{
 			uiTargetRecordId = 0;
 			pStack = pOutKeyPos->pStack;
@@ -980,33 +1026,41 @@ RCODE FSIndexCursor::setKeyPosition(
 						{
 							rc = RC_SET( FERR_BTREE_ERROR);
 						}
+						
 						goto Exit;
 					}
 				}
 			}
+			
 			// Position to the last continuation element of the previous element.
+			
 			if( RC_BAD( rc = FSBtPrevElm( pDb, m_pLFile, pStack)))
 			{
 				if( rc == FERR_BT_END_OF_DATA)
 				{
 					rc = RC_SET( FERR_BOF_HIT);
 				}
+				
 				goto Exit;
 			}
 		}
 	}
+	
 	// When using the positioning index, we must always have a complete stack.
+	
 	if( !(m_pIxd->uiFlags & IXD_POSITIONING))
 	{
 		pOutKeyPos->pStack->uiFlags = NO_STACK;
 	}
 
 	// Get the record ID at the leaf level of the b-tree.
+	
 	if( uiTargetRecordId)
 	{
 		pOutKeyPos->uiRecordId = pInKeyPos->uiRecordId;
 		rc = FSRefSearch( pOutKeyPos->pStack,
 						&pOutKeyPos->DinState, &pOutKeyPos->uiRecordId);
+						
 		if( rc == FERR_FAILURE)
 		{
 			rc = FERR_OK;
@@ -1030,6 +1084,7 @@ RCODE FSIndexCursor::setKeyPosition(
 Exit:
 
 	// Save state only on a good return value.
+	
 	if( RC_OK( rc) || 
 		((rc == FERR_EOF_HIT || rc == FERR_BOF_HIT) && pOutKeyPos->bStackInUse))
 	{
@@ -1039,17 +1094,15 @@ Exit:
 	{
 		releaseKeyBlocks( pOutKeyPos);
 	}
+	
 	return( rc);
 }
 
-
 /****************************************************************************
-Public: 	currentKey
 Desc: 	Return the current record and record id.
 VISIT:	We may want to return BOF/EOF when positioned on an endpoint.
 ****************************************************************************/
-
-RCODE FSIndexCursor::currentKey(			// FERR_OK, FERR_NOT_FOUND, BOF/EOF_HIT, error
+RCODE FSIndexCursor::currentKey(
 	FDB *				pDb,
 	FlmRecord **	ppRecordKey,		// Will replace what is there
 	FLMUINT *		puiRecordId)		// Set the record ID
@@ -1062,11 +1115,13 @@ RCODE FSIndexCursor::currentKey(			// FERR_OK, FERR_NOT_FOUND, BOF/EOF_HIT, erro
 	{
 		goto Exit;
 	}
+	
 	if( m_bAtBOF)
 	{
 		rc = RC_SET( FERR_BOF_HIT);
 		goto Exit;
 	}
+	
 	if( m_bAtEOF)
 	{
 		rc = RC_SET( FERR_EOF_HIT);
@@ -1084,6 +1139,7 @@ RCODE FSIndexCursor::currentKey(			// FERR_OK, FERR_NOT_FOUND, BOF/EOF_HIT, erro
 	}
 
 	// If this assert happens we have to code for it.
+	
 	flmAssert( m_curKeyPos.uiRecordId != 0);
 
 	if( ppRecordKey)
@@ -1093,17 +1149,19 @@ RCODE FSIndexCursor::currentKey(			// FERR_OK, FERR_NOT_FOUND, BOF/EOF_HIT, erro
 		{
 			goto Exit;
 		}
+		
 		(*ppRecordKey)->setID( m_curKeyPos.uiRecordId);
 	}
+	
 	if( puiRecordId)
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
 
 Exit:
+
 	return( rc);
 }
-
 
 /****************************************************************************
 Desc: 	Return the current record and record id.
@@ -1112,7 +1170,7 @@ VISIT:	We may want to return BOF/EOF when positioned on an endpoint.
 RCODE FSIndexCursor::currentKeyBuf(
 	FDB *				pDb,
 	POOL *			pPool,
-	FLMBYTE * *		ppKeyBuf,
+	FLMBYTE **		ppKeyBuf,
 	FLMUINT *		puiKeyLen,
 	FLMUINT *		puiRecordId,
 	FLMUINT *		puiContainerId)
@@ -1125,11 +1183,13 @@ RCODE FSIndexCursor::currentKeyBuf(
 	{
 		goto Exit;
 	}
+	
 	if( m_bAtBOF)
 	{
 		rc = RC_SET( FERR_BOF_HIT);
 		goto Exit;
 	}
+	
 	if( m_bAtEOF)
 	{
 		rc = RC_SET( FERR_EOF_HIT);
@@ -1147,6 +1207,7 @@ RCODE FSIndexCursor::currentKeyBuf(
 	}
 
 	// If this assert happens we have to code for it.
+	
 	flmAssert( m_curKeyPos.uiRecordId != 0);
 
 	if( ppKeyBuf)
@@ -1164,6 +1225,7 @@ RCODE FSIndexCursor::currentKeyBuf(
 				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
 			f_memcpy( *ppKeyBuf, m_curKeyPos.pKey, m_curKeyPos.uiKeyLen);
 		}
 		else
@@ -1171,10 +1233,12 @@ RCODE FSIndexCursor::currentKeyBuf(
 			*ppKeyBuf = NULL;
 		}
 	}
+	
 	if( puiRecordId)
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
+	
 	if (puiContainerId)
 	{
 		if ((*puiContainerId = m_pIxd->uiContainerNum) == 0)
@@ -1186,17 +1250,16 @@ RCODE FSIndexCursor::currentKeyBuf(
 	}
 
 Exit:
+
 	return( rc);
 }
 
-
 /****************************************************************************
-Public: 	firstKey
 Desc: 	Position to and return the first record.
 			This is hard because positioning using the first key may actually
 			position past or into another FROM/UNTIL set in the list.
 ****************************************************************************/
-RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
+RCODE FSIndexCursor::firstKey(
 	FDB *				pDb,
 	FlmRecord **	ppRecordKey,		// Will replace what is there
 	FLMUINT *		puiRecordId)		// Set the record ID
@@ -1207,6 +1270,7 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 	{
 		goto Exit;
 	}
+	
 	if( !m_pFirstSet)
 	{
 		m_bAtBOF = FALSE;
@@ -1215,9 +1279,9 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 		goto Exit;
 	}
 
-	// Complex Optimization: 
 	// If at BOF and stack is in use, the key is the first key!
 	// This should only happen when firstKey is called the first time.
+	
 	if( m_bAtBOF && m_curKeyPos.bStackInUse && m_pCurSet)
 	{
 		m_bAtBOF = FALSE;
@@ -1226,6 +1290,7 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 	{
 		m_pCurSet = m_pFirstSet;
 		m_bAtBOF = m_bAtEOF = FALSE;
+		
 		if( RC_BAD( rc = setKeyPosition( pDb, TRUE, &m_pCurSet->fromKey, 
 				&m_curKeyPos)))
 		{
@@ -1233,26 +1298,32 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 			{
 				m_bAtEOF = TRUE;
 			}
+			
 			goto Exit;
 		}
 	}
 
 	// Check to see if the key is within one of the FROM/UNTIL sets.
+	
 	for(;;)
 	{
 		// Check to see if the current key <= UNTIL key.
 
-		if( FS_COMPARE_KEYS( FALSE, &m_curKeyPos, TRUE, &m_pCurSet->untilKey) <= 0)
+		if( FS_COMPARE_KEYS( FALSE, &m_curKeyPos, TRUE, 
+			&m_pCurSet->untilKey) <= 0)
 		{
 			break;
 		}
-		// Nope - UntilKey < current key. 
+		
+		// Nope - UntilKey < current key.
+		
 		if( !m_pCurSet->pNext)
 		{
 			rc = RC_SET( FERR_EOF_HIT);
 			m_bAtEOF = TRUE;
 			goto Exit;
 		}
+		
 		m_pCurSet = m_pCurSet->pNext;
 
 		// If (current key < FROM key of the next set) we need to reposition.
@@ -1266,6 +1337,7 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 				{
 					m_bAtEOF = TRUE;
 				}
+				
 				goto Exit;
 			}
 		}
@@ -1275,6 +1347,7 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
+	
 	if( ppRecordKey)
 	{
 		if( RC_BAD( rc = flmIxKeyOutput( m_pIxd, m_curKeyPos.pKey, 
@@ -1282,23 +1355,26 @@ RCODE FSIndexCursor::firstKey(		// FERR_OK, FERR_BOF_HIT or error
 		{
 			goto Exit;
 		}
+		
 		(*ppRecordKey)->setID( m_curKeyPos.uiRecordId);
 	}
 
 Exit:
+
 	if( m_bAtEOF)
 	{
 		// The saved state is not pointing anywhere specific in the B-tree.
+		
 		releaseKeyBlocks( &m_curKeyPos);
 	}
+	
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	nextKey
 Desc: 	Position to the next key and the first reference of that key.
 ****************************************************************************/
-RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
+RCODE FSIndexCursor::nextKey(
 	FDB *				pDb,
 	FlmRecord **	ppRecordKey,
 	FLMUINT *		puiRecordId)
@@ -1312,11 +1388,13 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 	{
 		goto Exit;
 	}
+	
 	if( m_bAtEOF)
 	{
 		rc = RC_SET( FERR_EOF_HIT);
 		goto Exit;
 	}
+	
 	if( m_bAtBOF)
 	{
 		rc = firstKey( pDb, ppRecordKey, puiRecordId);
@@ -1336,7 +1414,9 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 			{
 				m_bAtEOF = TRUE;
 			}
+			
 			// May return FERR_EOF_HIT if all remaining keys are deleted.
+			
 			goto Exit;
 		}
 	}
@@ -1354,16 +1434,20 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 			{
 				if( RC_BAD( rc = FSBtNextElm( pDb, m_pLFile, pStack)))
 				{
-					// b-tree corrupt if FERR_BT_END_OF_DATA .
+					// b-tree corrupt if FERR_BT_END_OF_DATA
+					
 					if( rc == FERR_BT_END_OF_DATA)		
 					{
 						rc = RC_SET( FERR_BTREE_ERROR);
 					}
+					
 					goto Exit;
 				}
 				pCurElm = CURRENT_ELM( pStack);
 			}
+			
 			// Now go to the next element.
+			
 			if( RC_BAD( rc = FSBtNextElm( pDb, m_pLFile, pStack)))
 			{
 				if( rc == FERR_BT_END_OF_DATA)		
@@ -1371,14 +1455,17 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 					m_bAtEOF = TRUE;
 					rc = RC_SET( FERR_EOF_HIT);
 				}
+				
 				goto Exit;
 			}
+			
 			bKeyGone = TRUE;
 			m_curKeyPos.uiKeyLen = m_curKeyPos.pStack->uiKeyLen;
 		}
 
 		// Could have positioned after the current sets until key before
 		// the FROM key of the next set.
+		
 		iCmp = FS_COMPARE_KEYS( FALSE, &m_curKeyPos, TRUE, &m_pCurSet->untilKey);
 		if( iCmp <= 0)
 		{
@@ -1387,20 +1474,26 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 				FSRefFirst( pStack, &m_curKeyPos.DinState, &m_curKeyPos.uiDomain);
 			break;
 		}
+		
 		// Go to the next set if there is one.
+		
 		if( !m_pCurSet->pNext)
 		{
 			m_bAtEOF = TRUE;
 			rc = RC_SET( FERR_EOF_HIT);
 			goto Exit;
 		}
+		
 		m_pCurSet = m_pCurSet->pNext;
+		
 		// The key may fit in the next set.
+		
 		iCmp = FS_COMPARE_KEYS( FALSE, &m_curKeyPos, FALSE, &m_pCurSet->fromKey);
 		if( iCmp < 0)
 		{
 			// Reposition using the from key.
-			if( RC_BAD( rc = setKeyPosition( pDb, TRUE, &m_pCurSet->fromKey, &m_curKeyPos)))
+			if( RC_BAD( rc = setKeyPosition( pDb, TRUE, 
+				&m_pCurSet->fromKey, &m_curKeyPos)))
 			{
 				if( rc == FERR_EOF_HIT)
 				{
@@ -1415,6 +1508,7 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
+	
 	if( ppRecordKey)
 	{
 		if( RC_BAD( rc = flmIxKeyOutput( m_pIxd, m_curKeyPos.pKey, 
@@ -1422,20 +1516,23 @@ RCODE FSIndexCursor::nextKey(			// FERR_OK, FERR_EOF_HIT or error
 		{
 			goto Exit;
 		}
+		
 		(*ppRecordKey)->setID( m_curKeyPos.uiRecordId);
 	}
 
 Exit:
+
 	if( m_bAtEOF)
 	{
 		// The saved state is not pointing anywhere specific in the B-tree.
+		
 		releaseKeyBlocks( &m_curKeyPos);
 	}
+	
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	nextRef
 Desc: 	Position to the next referece of the current key.
 ****************************************************************************/
 RCODE FSIndexCursor::nextRef(			// FERR_OK, FERR_EOF_HIT or error
@@ -1450,12 +1547,14 @@ RCODE FSIndexCursor::nextRef(			// FERR_OK, FERR_EOF_HIT or error
 	{
 		goto Exit;
 	}
+	
 	flmAssert( m_pCurSet != NULL);
 	bKeyGone = bRefGone = FALSE;
 
 	if( !m_curKeyPos.bStackInUse)
 	{
 		// Take care of any re-read of a block if we changed transactions.
+		
 		if( RC_BAD( rc = reposition( pDb, FALSE, FALSE, &bKeyGone, 
 											  TRUE, FALSE, &bRefGone)))
 		{
@@ -1475,6 +1574,7 @@ RCODE FSIndexCursor::nextRef(			// FERR_OK, FERR_EOF_HIT or error
 			{
 				rc = RC_SET( FERR_EOF_HIT);
 			}
+			
 			goto Exit;
 		}
 		else
@@ -1482,22 +1582,23 @@ RCODE FSIndexCursor::nextRef(			// FERR_OK, FERR_EOF_HIT or error
 			setKeyItemsFromBlock( &m_curKeyPos);
 		}
 	}
+	
 	if( puiRecordId)
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	lastKey
-Desc: 	Position to and return the last record.
-			This is hard because positioning using the first key may actually
-			position past or into another FROM/UNTIL set in the list.
+Desc:	Position to and return the last record.
+		This is hard because positioning using the first key may actually
+		position past or into another FROM/UNTIL set in the list.
 ****************************************************************************/
-RCODE FSIndexCursor::lastKey(				// FERR_OK, FERR_EOF_HIT or error
+RCODE FSIndexCursor::lastKey(
 	FDB *				pDb,
 	FlmRecord **	ppRecordKey,		// Will replace what is there
 	FLMUINT *		puiRecordId)		// Set the record ID
@@ -1508,6 +1609,7 @@ RCODE FSIndexCursor::lastKey(				// FERR_OK, FERR_EOF_HIT or error
 	{
 		goto Exit;
 	}
+	
 	m_pCurSet = m_pFirstSet;
 	if( !m_pCurSet)
 	{
@@ -1518,10 +1620,12 @@ RCODE FSIndexCursor::lastKey(				// FERR_OK, FERR_EOF_HIT or error
 	}
 
 	// Position to the last set.
+	
 	while( m_pCurSet->pNext)
 	{
 		m_pCurSet = m_pCurSet->pNext;
 	}
+	
 	m_bAtBOF = m_bAtEOF = FALSE;
 
 	for(;;)
@@ -1530,39 +1634,49 @@ RCODE FSIndexCursor::lastKey(				// FERR_OK, FERR_EOF_HIT or error
 				&m_curKeyPos)))
 		{
 			// Returns an error or FERR_EOF_HIT.
+			
 			if( rc != FERR_EOF_HIT)
+			{
 				goto Exit;
+			}
 				
 			// Position to the previous key if possible.
+			
 			if( m_curKeyPos.pStack->uiBlkAddr == BT_END)
 			{
 				m_bAtBOF = TRUE;
 				rc = RC_SET( FERR_BOF_HIT);
 				goto Exit;
 			}
+			
 			// Went past the until key.  Go back one.
+			
 			if( RC_BAD( rc = FSBtPrevElm( pDb, m_pLFile, m_curKeyPos.pStack)))
 			{
 				if( rc == FERR_BT_END_OF_DATA)
 				{
 					rc = RC_SET( FERR_BOF_HIT);
 				}
+				
 				goto Exit;
 			}
 		}
 
 		// We may have positioned before the FROM key of this set.
 
-		if( FS_COMPARE_KEYS( FALSE, &m_pCurSet->fromKey, FALSE, &m_curKeyPos) <= 0)
+		if( FS_COMPARE_KEYS( FALSE, &m_pCurSet->fromKey, 
+			FALSE, &m_curKeyPos) <= 0)
 		{
 			break;
 		}
+		
 		if( !m_pCurSet->pPrev)
 		{
 			rc = RC_SET( FERR_BOF_HIT);
 			m_bAtBOF = TRUE;
 			goto Exit;
 		}
+		
 		m_pCurSet = m_pCurSet->pPrev;
 	}
 
@@ -1576,6 +1690,7 @@ RCODE FSIndexCursor::lastKey(				// FERR_OK, FERR_EOF_HIT or error
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
+	
 	if( ppRecordKey)
 	{
 		if( RC_BAD( rc = flmIxKeyOutput( m_pIxd, m_curKeyPos.pKey, 
@@ -1583,24 +1698,25 @@ RCODE FSIndexCursor::lastKey(				// FERR_OK, FERR_EOF_HIT or error
 		{
 			goto Exit;
 		}
+		
 		(*ppRecordKey)->setID( m_curKeyPos.uiRecordId);
 	}
 
 Exit:
+
 	if( rc == FERR_BOF_HIT)
 	{
 		// The saved state is not pointing anywhere specific in the B-tree.
 		releaseKeyBlocks( &m_curKeyPos);
 	}
+	
 	return( rc);
 }
 
-
 /****************************************************************************
-Public: 	prevKey
-Desc: 	Position to the PREVIOUS key and the LAST reference of that key.
+Desc: Position to the PREVIOUS key and the LAST reference of that key.
 ****************************************************************************/
-RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
+RCODE FSIndexCursor::prevKey(
 	FDB *				pDb,
 	FlmRecord **	ppRecordKey,
 	FLMUINT *		puiRecordId)
@@ -1614,11 +1730,13 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 	{
 		goto Exit;
 	}
+	
 	if( m_bAtBOF)
 	{
 		rc = RC_SET( FERR_BOF_HIT);
 		goto Exit;
 	}
+	
 	if( !m_pCurSet || m_bAtEOF)
 	{
 		rc = lastKey( pDb, ppRecordKey, puiRecordId);
@@ -1635,14 +1753,17 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 											  FALSE, FALSE, &bRefGone)))
 		{
 			// May return FERR_EOF_HIT if all remaining keys are deleted.
+			
 			if( rc != FERR_BOF_HIT && rc != FERR_EOF_HIT)
 			{
 				goto Exit;
 			}
+			
 			m_bAtBOF = TRUE;
 			rc = RC_SET( FERR_BOF_HIT);
 		}
 	}
+	
 	for(;;)
 	{
 		if( !bKeyGone)
@@ -1654,13 +1775,16 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 			{
 				if( RC_BAD( rc = FSBtPrevElm( pDb, m_pLFile, pStack)))
 				{
-					// b-tree corrupt if FERR_BT_END_OF_DATA .
+					// b-tree corrupt if FERR_BT_END_OF_DATA
+					
 					if( rc == FERR_BT_END_OF_DATA)		
 					{
 						rc = RC_SET( FERR_BTREE_ERROR);
 					}
+					
 					goto Exit;
 				}
+				
 				pCurElm = CURRENT_ELM( pStack);
 			}
 
@@ -1668,19 +1792,24 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 
 			if( RC_BAD(rc = FSBtPrevElm( pDb, m_pLFile, pStack)))
 			{
-				// b-tree corrupt if FERR_BT_END_OF_DATA .
+				// b-tree corrupt if FERR_BT_END_OF_DATA
+				
 				if( rc == FERR_BT_END_OF_DATA)		
 				{
 					m_bAtBOF = TRUE;
 					rc = RC_SET( FERR_BOF_HIT);
 				}
+				
 				goto Exit;
 			}
+			
 			bKeyGone = TRUE;
 			m_curKeyPos.uiKeyLen = m_curKeyPos.pStack->uiKeyLen;
 		}
+		
 		// Could have positioned after the current sets until key before
 		// the FROM key of the next set.
+		
 		if( FS_COMPARE_KEYS( FALSE, &m_curKeyPos, TRUE, &m_pCurSet->fromKey) >= 0)
 		{
 			setKeyItemsFromBlock( &m_curKeyPos);
@@ -1688,19 +1817,24 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 				FSRefLast( pStack, &m_curKeyPos.DinState, &m_curKeyPos.uiDomain);
 			break;
 		}
+		
 		// Go to the previous set if there is one.
+		
 		if( !m_pCurSet->pPrev)
 		{
 			m_bAtBOF = TRUE;
 			rc = RC_SET( FERR_BOF_HIT);
 			goto Exit;
 		}
+		
 		m_pCurSet = m_pCurSet->pPrev;
 
 		// The key may fit in the previous set.
+		
 		if( FS_COMPARE_KEYS( FALSE, &m_curKeyPos, FALSE, &m_pCurSet->fromKey) > 0)
 		{
 			// Reposition using the from key.
+			
 			if( RC_BAD( rc = setKeyPosition( pDb, FALSE, 
 						&m_pCurSet->untilKey, &m_curKeyPos)))
 			{
@@ -1709,6 +1843,7 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 					m_bAtBOF = TRUE;
 					rc = RC_SET( FERR_BOF_HIT);
 				}
+				
 				goto Exit;
 			}
 		}
@@ -1718,6 +1853,7 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
+	
 	if( ppRecordKey)
 	{
 		if( RC_BAD( rc = flmIxKeyOutput( m_pIxd, m_curKeyPos.pKey, 
@@ -1725,23 +1861,25 @@ RCODE FSIndexCursor::prevKey(			// FERR_OK, FERR_BOF_HIT or error
 		{
 			goto Exit;
 		}
+		
 		(*ppRecordKey)->setID( m_curKeyPos.uiRecordId);
 	}
 
 Exit:
+
 	if( rc == FERR_BOF_HIT)
 	{
 		// The saved state is not pointing anywhere specific in the B-tree.
 		releaseKeyBlocks( &m_curKeyPos);
 	}
+	
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	prevRef
-Desc: 	Position to the previous referece of the current key.
+Desc:	Position to the previous referece of the current key.
 ****************************************************************************/
-RCODE FSIndexCursor::prevRef(			// FERR_OK, FERR_BOF_HIT or error
+RCODE FSIndexCursor::prevRef(
 	FDB *				pDb,
 	FLMUINT *		puiRecordId)		// Set the record ID
 {
@@ -1759,19 +1897,23 @@ RCODE FSIndexCursor::prevRef(			// FERR_OK, FERR_BOF_HIT or error
 	if( !m_curKeyPos.bStackInUse)
 	{
 		// Take care of any re-read of a block if we changed transactions.
+		
 		if( RC_BAD( rc = reposition( pDb, FALSE, FALSE, &bKeyGone, 
 											  FALSE, TRUE, &bRefGone)))
 		{
 			// May return FERR_EOF_HIT if all preceeding references are deleted.
+			
 			if( rc == FERR_EOF_HIT)
 			{
 				rc = RC_SET( FERR_BOF_HIT);
 			}
+			
 			goto Exit;
 		}
 
 		flmAssert( !bKeyGone);
 	}
+	
 	if( !bRefGone)
 	{
 		if( RC_BAD( rc = FSRefPrev( pDb, m_pLFile, m_curKeyPos.pStack,
@@ -1781,6 +1923,7 @@ RCODE FSIndexCursor::prevRef(			// FERR_OK, FERR_BOF_HIT or error
 			{
 				rc = RC_SET( FERR_BOF_HIT);
 			}
+			
 			goto Exit;
 		}
 		else
@@ -1788,22 +1931,22 @@ RCODE FSIndexCursor::prevRef(			// FERR_OK, FERR_BOF_HIT or error
 			setKeyItemsFromBlock( &m_curKeyPos);
 		}
 	}
+	
 	if( puiRecordId)
 	{
 		*puiRecordId = m_curKeyPos.uiRecordId;
 	}
 
 Exit:
+
 	return( rc);
 }
 
-
 /****************************************************************************
-Public: 	reposition
-Desc: 	Reposition to the current key + recordId.  If the current key
-			is gone we may reposition past the UNTIL key and should check.
+Desc:	Reposition to the current key + recordId.  If the current key
+		is gone we may reposition past the UNTIL key and should check.
 ****************************************************************************/
-RCODE FSIndexCursor::reposition(		// FERR_OK, FERR_EOF/BOF_HIT, FERR_NOT_FOUND
+RCODE FSIndexCursor::reposition(
 	FDB *				pDb,
 	FLMBOOL			bCanPosToNextKey,	// May be TRUE if bPosToPrevKey is FALSE
 	FLMBOOL			bCanPosToPrevKey,	// May be TRUE if bPosToNextKey is FALSE
@@ -1818,12 +1961,14 @@ RCODE FSIndexCursor::reposition(		// FERR_OK, FERR_EOF/BOF_HIT, FERR_NOT_FOUND
 	FLMUINT			uiTargetRecordId;
 
 	uiTargetRecordId = m_curKeyPos.uiRecordId;
+	
 	// May have to unuse the b-tree blocks.  Then setup the stack again.
 
 	flmAssert( !m_curKeyPos.bStackInUse);
 	*pbKeyGone = *pbRefGone = FALSE;
 
 	// Re-read the block and see if it is the same block.
+	
 	if( m_curKeyPos.uiBlockAddr == BT_END)
 	{
 		bReread = TRUE;
@@ -1837,6 +1982,7 @@ RCODE FSIndexCursor::reposition(		// FERR_OK, FERR_EOF/BOF_HIT, FERR_NOT_FOUND
 			{
 				goto Exit;
 			}
+			
 			rc = FERR_OK;
 			bReread = TRUE;
 		}
@@ -1936,6 +2082,7 @@ RCODE FSIndexCursor::reposition(		// FERR_OK, FERR_EOF/BOF_HIT, FERR_NOT_FOUND
 		else if( !bCanPosToNextRef)
 		{
 			// We have an error positioning.  Return NOT_FOUND
+			
 			rc = RC_SET( FERR_NOT_FOUND);
 		}
 	}		
@@ -1946,7 +2093,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc: 	Save the current key position.
+Desc:	Save the current key position.
 ****************************************************************************/
 void FSIndexCursor::saveCurrKeyPos(
 	KEYPOS *		pSaveKeyPos)
@@ -1958,7 +2105,7 @@ void FSIndexCursor::saveCurrKeyPos(
 }
 
 /****************************************************************************
-Desc: 	Restore the current key position.
+Desc:	Restore the current key position.
 ****************************************************************************/
 void FSIndexCursor::restoreCurrKeyPos(
 	KEYPOS *		pSaveKeyPos)
@@ -1977,8 +2124,8 @@ RCODE FSIndexCursor::getKeySet(
 	FLMUINT		uiKeyLen,
 	KEYSET **	ppKeySet)
 {
-	RCODE		rc = FERR_OK;
-	KEYSET *	pKeySet;
+	RCODE			rc = FERR_OK;
+	KEYSET *		pKeySet;
 
 	pKeySet = m_pFirstSet;
 	while (pKeySet)
@@ -2010,23 +2157,25 @@ RCODE FSIndexCursor::getKeySet(
 
 		pKeySet = pKeySet->pNext;
 	}
+	
 	if( !pKeySet)
 	{
 		rc = RC_SET( FERR_NOT_FOUND);
 		goto Exit;
 	}
+	
 Exit:
+
 	*ppKeySet = pKeySet;
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	positionTo
-Desc: 	Position to the input key + recordId.
+Desc:	Position to the input key + recordId.
 ****************************************************************************/
 RCODE FSIndexCursor::positionTo(
 	FDB *				pDb,
-	FLMBYTE *		pKey,				// Returns FERR_OK, FERR_EOF_HIT
+	FLMBYTE *		pKey,
 	FLMUINT			uiKeyLen,
 	FLMUINT			uiRecordId)
 {
@@ -2040,7 +2189,9 @@ RCODE FSIndexCursor::positionTo(
 	{
 		goto Exit;
 	}
+	
 	// A key with a non-zero key length must be passed in.
+	
 	flmAssert( uiKeyLen != 0);
 
 	// Make sure we fall inside one of the key ranges and
@@ -2057,8 +2208,8 @@ RCODE FSIndexCursor::positionTo(
 	{
 		goto Exit;
 	}
+	
 	saveCurrKeyPos( pSaveKeyPos);
-
 	releaseKeyBlocks( &m_curKeyPos);
 	m_curKeyPos.uiKeyLen = uiKeyLen;
 	f_memcpy( m_curKeyPos.pKey, pKey, uiKeyLen);
@@ -2072,24 +2223,27 @@ RCODE FSIndexCursor::positionTo(
 		restoreCurrKeyPos( pSaveKeyPos);
 		goto Exit;
 	}
+	
 	m_bAtEOF = FALSE;
 	m_bAtBOF = FALSE;
 	m_pCurSet = pKeySet;
+	
 Exit:
+
 	if (pSaveKeyPos)
 	{
 		f_free( &pSaveKeyPos);
 	}
+	
 	return( rc);
-};
+}
 
 /****************************************************************************
-Public: 	positionToDomain
-Desc: 	Position to the input key + domain
+Desc:	Position to the input key + domain
 ****************************************************************************/
 RCODE FSIndexCursor::positionToDomain(
 	FDB *				pDb,
-	FLMBYTE *		pKey,				// Returns FERR_OK, FERR_EOF_HIT
+	FLMBYTE *		pKey,
 	FLMUINT			uiKeyLen,
 	FLMUINT			uiDomain)
 {
@@ -2112,8 +2266,7 @@ RCODE FSIndexCursor::positionToDomain(
 	// save the current key position so we can restore it
 	// if the reposition call fails.
 
-	if( RC_BAD( rc = f_alloc( sizeof( KEYPOS),
-								&pSaveKeyPos)))
+	if( RC_BAD( rc = f_alloc( sizeof( KEYPOS), &pSaveKeyPos)))
 	{
 		goto Exit;
 	}
@@ -2122,8 +2275,8 @@ RCODE FSIndexCursor::positionToDomain(
 	{
 		goto Exit;
 	}
+	
 	saveCurrKeyPos( pSaveKeyPos);
-
 	releaseKeyBlocks( &m_curKeyPos);
 	m_curKeyPos.uiKeyLen = uiKeyLen;
 	f_memcpy( m_curKeyPos.pKey, pKey, uiKeyLen);
@@ -2137,20 +2290,23 @@ RCODE FSIndexCursor::positionToDomain(
 		restoreCurrKeyPos( pSaveKeyPos);
 		goto Exit;
 	}
+	
 	m_bAtEOF = FALSE;
 	m_bAtBOF = FALSE;
 	m_pCurSet = pKeySet;
+	
 Exit:
+
 	if (pSaveKeyPos)
 	{
 		f_free( &pSaveKeyPos);
 	}
+	
 	return( rc);
-};
+}
 
 /****************************************************************************
-Public: 	savePosition
-Desc: 	Save the current position.
+Desc:	Save the current position.
 ****************************************************************************/
 RCODE FSIndexCursor::savePosition( void)
 {
@@ -2163,16 +2319,17 @@ RCODE FSIndexCursor::savePosition( void)
 			goto Exit;
 		}	
 	}
+	
 	f_memcpy( m_pSavedPos, &m_curKeyPos, sizeof( KEYPOS));
 	m_curKeyPos.bStackInUse = FALSE;
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Public: 	restorePosition
-Desc: 	Save the current position.
+Desc:
 ****************************************************************************/
 RCODE FSIndexCursor::restorePosition( void)
 {
@@ -2180,14 +2337,13 @@ RCODE FSIndexCursor::restorePosition( void)
 	{
 		releaseKeyBlocks( &m_curKeyPos);
 		f_memcpy( &m_curKeyPos, m_pSavedPos, sizeof(KEYPOS));
-		// The key blocks may still be in use.
 	}
 
-	return FERR_OK;
+	return (FERR_OK);
 }
 
 /****************************************************************************
-Desc: 	Compare two key positions as they would be ordered in the index.
+Desc:	Compare two key positions as they would be ordered in the index.
 ****************************************************************************/
 FSTATIC FLMINT FSCompareKeys(			// negative is '<', 0 is '=', position='>'
 	FLMBOOL			bKey1IsUntilKey,	// TRUE (until key) or FALSE (from key)
@@ -2203,7 +2359,7 @@ FSTATIC FLMINT FSCompareKeys(			// negative is '<', 0 is '=', position='>'
 
 	// Handle the first key and last key issues.
 
-	if( !uiKeyLen1)				// FROM or UNTIL key at end point?
+	if( !uiKeyLen1)						// FROM or UNTIL key at end point?
 	{
 		if( !bKey1IsUntilKey)			// FROM key
 		{
@@ -2226,9 +2382,10 @@ FSTATIC FLMINT FSCompareKeys(			// negative is '<', 0 is '=', position='>'
 		}
 		
 	}
-	// Compare the key buffers.  No FIRST or LAST key now.
 	else if( uiKeyLen1 > uiKeyLen2)
 	{
+		// Compare the key buffers.  No FIRST or LAST key now.
+		
 		if( (iCmp = f_memcmp( pKey1, pKey2, uiKeyLen2)) == 0)
 		{
 			iCmp = 1;
@@ -2241,7 +2398,7 @@ FSTATIC FLMINT FSCompareKeys(			// negative is '<', 0 is '=', position='>'
 			iCmp = -1;
 		}
 	}
-	else	// Key lengths are equal
+	else
 	{
 		if( (iCmp = f_memcmp( pKey1, pKey2, uiKeyLen1)) == 0)
 		{
@@ -2271,38 +2428,14 @@ FSTATIC FLMINT FSCompareKeys(			// negative is '<', 0 is '=', position='>'
 					iCmp = bExclusiveKey1 ? -1 : 1;
 				}
 			}
-#if 0
-			if( iCmp == 0)
-			{
-				// Compare the record Id.  Value of 0 means ALL record Ids.
-				// Remember that RecordIds for the same key are DESCENDING.
-
-				if( uiRecordId1 != uiRecordId2)
-				{
-					if( uiRecordId1 == 0)
-					{
-						iCmp = bKey1IsUntilKey ? 1 : -1;
-					}
-					else if( uiRecordId2 == 0)
-					{
-						iCmp = bKey2IsUntilKey ? -1 : 1;
-					}
-					else
-					{
-						// Don't trust (ui - ui) to return a signed value.
-						iCmp = (uiRecordId1 > uiRecordId2) ? -1 : 1;
-					}
-				}
-			}
-#endif
 		}
 	}
-	return iCmp;
+	
+	return (iCmp);
 }
 
-
 /****************************************************************************
-Desc: 	Allocate and return the first and last keys in an index.
+Desc:	Allocate and return the first and last keys in an index.
 ****************************************************************************/
 RCODE	FSIndexCursor::getFirstLastKeys(	
 	FLMBYTE **		ppFirstKey,
@@ -2321,11 +2454,13 @@ RCODE	FSIndexCursor::getFirstLastKeys(
 		*pbLastKeyExclusive = TRUE;
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = f_alloc( pCurSet->fromKey.uiKeyLen, 
 		ppFirstKey)))
 	{
 		goto Exit;
 	}
+	
 	*puiFirstKeyLen = pCurSet->fromKey.uiKeyLen;
 	f_memcpy( *ppFirstKey, pCurSet->fromKey.pKey, *puiFirstKeyLen);
 
@@ -2341,21 +2476,24 @@ RCODE	FSIndexCursor::getFirstLastKeys(
 		{
 			f_free( ppFirstKey);
 		}
+		
 		goto Exit;
 	}
+	
 	*puiLastKeyLen = pCurSet->untilKey.uiKeyLen;
 	f_memcpy( *ppLastKey, pCurSet->untilKey.pKey, *puiLastKeyLen);
 	*pbLastKeyExclusive = pCurSet->untilKey.bExclusiveKey;
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Desc: 	Set the absolute position in a positioning index relative to the
-			FROM/UNTIL keys in all of the key sets. Supports multiple key sets.
+Desc:	Set the absolute position in a positioning index relative to the
+		FROM/UNTIL keys in all of the key sets. Supports multiple key sets.
 ****************************************************************************/
-RCODE FSIndexCursor::setAbsolutePosition(	// FERR_FAILURE - index not positionable
+RCODE FSIndexCursor::setAbsolutePosition(
 	FDB *				pDb,
 	FLMUINT			uiRefPosition)		// 0 -> BOF, -1 -> EOF points, one based
 {
@@ -2369,35 +2507,44 @@ RCODE FSIndexCursor::setAbsolutePosition(	// FERR_FAILURE - index not positionab
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = checkTransaction( pDb)))
 	{
 		goto Exit;
 	}
 
 	// Zero value position to BOF
+	
 	if( uiRefPosition == 0 || uiRefPosition == 1)
 	{
 		// Go to the first reference.
+		
 		if( RC_OK( rc = firstKey( pDb, NULL, NULL)))
 		{
 			if( uiRefPosition == 0)
 			{
 				// Should return FERR_BOF_HIT
+				
 				rc = prevKey( pDb, NULL, NULL);
 			}
 		}
+		
 		goto Exit;
 	}
 
 	// High-values value position to EOF
+	
 	if( uiRefPosition == (FLMUINT) -1)
 	{
 		// Position to EOF
+		
 		if( RC_OK( rc = lastKey( pDb, NULL, NULL)))
 		{
 			// Should return FERR_EOF_HIT
+			
 			rc = nextKey( pDb, NULL, NULL);
 		}
+		
 		goto Exit;
 	}
 
@@ -2422,14 +2569,18 @@ RCODE FSIndexCursor::setAbsolutePosition(	// FERR_FAILURE - index not positionab
 			break;
 		}
 	}
+	
 	if( !uiBtreeRefPosition)
 	{
 		// Position to EOF
+		
 		if( RC_OK( rc = lastKey( pDb, NULL, NULL)))
 		{
 			// Should return FERR_EOF_HIT
+			
 			rc = nextKey( pDb, NULL, NULL);
 		}
+		
 		goto Exit;
 	}
 
@@ -2443,17 +2594,19 @@ RCODE FSIndexCursor::setAbsolutePosition(	// FERR_FAILURE - index not positionab
 	{
 		goto Exit;
 	}
+	
 	m_curKeyPos.bStackInUse = TRUE;
 	setKeyItemsFromBlock( &m_curKeyPos);
 	m_bAtBOF = m_bAtEOF = FALSE;
 
 Exit:
+
 	return( rc);
 }
 
 /****************************************************************************
-Desc: 	Get the absolute position in a positioning index.
-			Supports multiple sets.
+Desc:	Get the absolute position in a positioning index.
+		Supports multiple sets.
 ****************************************************************************/
 RCODE FSIndexCursor::getAbsolutePosition(
 	FDB *				pDb,
@@ -2470,15 +2623,18 @@ RCODE FSIndexCursor::getAbsolutePosition(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = checkTransaction( pDb)))
 	{
 		goto Exit;
 	}
+	
 	if( m_bAtBOF)
 	{
 		*puiRefPosition = 0;
 		goto Exit;
 	}
+	
 	if( m_bAtEOF)
 	{
 		*puiRefPosition = (FLMUINT) -1;
@@ -2489,6 +2645,7 @@ RCODE FSIndexCursor::getAbsolutePosition(
 	{
 		FLMBOOL		bKeyGone;
 		FLMBOOL		bRefGone;
+		
 		if( RC_BAD( rc = reposition( pDb, FALSE, FALSE, &bKeyGone, 
 													 FALSE, FALSE, &bRefGone)))
 		{
@@ -2505,6 +2662,7 @@ RCODE FSIndexCursor::getAbsolutePosition(
 	{
 		goto Exit;
 	}
+	
 	uiRefPosition = (uiBtreeRefPosition - m_pCurSet->fromKey.uiRefPosition) + 1;
 
 	for( pTempSet = m_pCurSet->pPrev; pTempSet; pTempSet = pTempSet->pPrev)
@@ -2516,16 +2674,17 @@ RCODE FSIndexCursor::getAbsolutePosition(
 	}
 
 Exit:
+
 	if( RC_OK( rc))
 	{
 		*puiRefPosition = uiRefPosition;
 	}
+	
 	return( rc);
 }
 
-
 /****************************************************************************
-Desc: 	Get the total number of reference for all of the sets.
+Desc:	Get the total number of reference for all of the sets.
 ****************************************************************************/
 RCODE FSIndexCursor::getTotalReferences(
 	FDB *				pDb,
@@ -2543,6 +2702,7 @@ RCODE FSIndexCursor::getTotalReferences(
 	{
 		goto Exit;
 	}
+	
 	*pbTotalsEstimated = FALSE;
 
 	// We have to be careful not to change the current position in any way.
@@ -2564,6 +2724,7 @@ RCODE FSIndexCursor::getTotalReferences(
 				goto Exit;
 			}	
 		}
+		
 		// Compute the counts the old fashion way.
 
 		f_memcpy( pTempSet, pKeySet, sizeof( KEYSET));
@@ -2574,14 +2735,17 @@ RCODE FSIndexCursor::getTotalReferences(
 			pTempSet->untilKey.Stack[uiStackPos].pSCache = NULL;
 			pTempSet->untilKey.Stack[uiStackPos].pBlk = NULL;
 		}
+		
 		pTempSet->fromKey.bStackInUse = FALSE;
 		pTempSet->untilKey.bStackInUse = FALSE;
 
 		// Search down the tree and get the counts.
+		
 		if( RC_OK( rc = setKeyPosition( pDb, TRUE, 
 					&pTempSet->fromKey, &pTempSet->fromKey)))
 		{
 			// All keys bewteen low and high may be gone.
+			
 			if( FS_COMPARE_KEYS( FALSE, &pTempSet->fromKey,
 										TRUE, &pKeySet->untilKey) > 0)
 			{
@@ -2593,9 +2757,11 @@ RCODE FSIndexCursor::getTotalReferences(
 					&pTempSet->untilKey, &pTempSet->untilKey);
 			}
 		}
+		
 		if( RC_BAD( rc))
 		{
 			// Empty tree case.
+			
 			if( rc == FERR_EOF_HIT || rc == FERR_BOF_HIT)
 			{
 				rc = FERR_OK;
@@ -2613,23 +2779,27 @@ RCODE FSIndexCursor::getTotalReferences(
 			{
 				goto Exit;
 			}
+			
 			uiTotalRefs += uiRefCount;
 		}
+		
 		releaseKeyBlocks( &pTempSet->fromKey);
 		releaseKeyBlocks( &pTempSet->untilKey);
 	}
 
 Exit:
+
 	if( pTempSet)
 	{
 		releaseKeyBlocks( &pTempSet->fromKey);
 		releaseKeyBlocks( &pTempSet->untilKey);
 		f_free( &pTempSet);
 	}
+	
 	if( RC_OK(rc))
 	{
 		*puiTotalRefs = uiTotalRefs;
 	}
+	
 	return( rc);
 }
-

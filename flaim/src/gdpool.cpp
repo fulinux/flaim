@@ -102,7 +102,7 @@ FINLINE void UpdateSmartPoolStats(
 	}
 }
 
-/*API~*******************************************************************
+/*************************************************************************
 Desc:	Initialize a smart pool memory structure. A smart pool is one that
 		will adjust it's block allocation size based on statistics it 
 		gathers within the POOL_STATS structure. For each pool that user 
@@ -129,12 +129,12 @@ void GedSmartPoolInit(
 	}
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Allocates a block of memory from a memory pool.
 Note:	If the number of bytes is more than the what is left in the
 		current block then a new block will be allocated and the lbkl element
 		of the PMS will be updated.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP void * FLMAPI GedPoolAlloc(
 	POOL * 		pPool,
 	FLMUINT		uiSize)
@@ -203,7 +203,7 @@ Exit:
 	return( (void *) freePtr);
 }
 
-/*API~********************************************************************
+/************************************************************************
 Desc:	Allocates memory from a pool and initializes all bytes to zero.
 *END*********************************************************************/
 FLMEXP void * FLMAPI GedPoolCalloc(
@@ -219,10 +219,10 @@ FLMEXP void * FLMAPI GedPoolCalloc(
 	return ptr;
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Releases all memory allocated to a pool.
 Note:	All memory allocated to the pool is returned to the operating system.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI GedPoolFree(
 	POOL *		pPool)
 {
@@ -248,11 +248,11 @@ FLMEXP RCODE FLMAPI GedPoolFree(
 	return( FERR_OK);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Resets memory blocks allocated to a pool.
 Note:	Will reset the free space in the first memory block, and if
 		any extra blocks exist they will be freed (destroyed).
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI GedPoolReset(
 	POOL *		pPool,
 	void *		markPtr)

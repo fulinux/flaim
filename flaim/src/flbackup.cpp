@@ -212,7 +212,7 @@ FLMEXP RCODE FLMAPI FlmDbBackupBegin(
 		goto Exit;
 	}
 
-	if( uiDbVersion < FLM_VER_4_3 &&
+	if( uiDbVersion < FLM_FILE_FORMAT_VER_4_3 &&
 		eBackupType != FLM_FULL_BACKUP)
 	{
 		rc = RC_SET( FERR_NOT_IMPLEMENTED);
@@ -292,7 +292,7 @@ FLMEXP RCODE FLMAPI FlmDbBackupBegin(
 	// set of incremental backup files from being applied
 	// to a database.
 
-	if( uiDbVersion >= FLM_VER_4_3)
+	if( uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		if( !pFBak->bCSMode)
 		{
@@ -322,7 +322,7 @@ FLMEXP RCODE FLMAPI FlmDbBackupBegin(
 
 	// Get version 4.3+ values from the header
 
-	if( uiDbVersion >= FLM_VER_4_3)
+	if( uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		// Determine the transaction ID of the last backup
 
@@ -410,9 +410,9 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Returns information about a backup
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmBackupGetConfig(
 	HFBACKUP					hBackup,
 	eBackupGetConfigType	eConfigType,
@@ -449,14 +449,14 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Streams the contents of a database to the write hook supplied by
 		 the application.
 Notes: This routine attempts to create a backup of a database without
 		 excluding any readers or updaters.  However, if the backup runs
 		 too long in an environment where extensive updates are happening,
 		 an old view error could be returned.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbBackup(
 	HFBACKUP					hBackup,
 	const char *			pszBackupPath,
@@ -464,8 +464,7 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 	BACKER_WRITE_HOOK		fnWrite,
 	STATUS_HOOK				fnStatus,
 	void *					pvAppData,
-	FLMUINT *				puiIncSeqNum
-	)
+	FLMUINT *				puiIncSeqNum)
 {
 	FDB *						pDb = NULL;
 	FLMBOOL					bDbInitialized = FALSE;
@@ -647,7 +646,7 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 
 	// Fix up the log header
 
-	if( !pLogHdr[ LOG_KEEP_RFL_FILES] || pFBak->uiDbVersion < FLM_VER_4_3)
+	if( !pLogHdr[ LOG_KEEP_RFL_FILES] || pFBak->uiDbVersion < FLM_FILE_FORMAT_VER_4_3)
 	{
 		pLogHdr[ LOG_KEEP_RFL_FILES] = 0;
 
@@ -662,7 +661,7 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 		// Create new serial numbers for the RFL.  We don't want anyone
 		// to be able to branch into a "no-keep" RFL sequence.
 
-		if( pFBak->uiDbVersion >= FLM_VER_4_3)
+		if( pFBak->uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 		{
 			if (RC_BAD( rc = f_createSerialNumber(
 								&pLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM])))
@@ -689,7 +688,7 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 	// Shroud the database key (stored in the log header) in the password
 	// so we can restore this backup to a different server
 
-	if ( pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_60 &&
+	if ( pDb->pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60 &&
 		  pszPassword && *pszPassword &&
 		  FB2UW( &pLogHdr[ LOG_DATABASE_KEY_LEN]) > 0)
 	{
@@ -704,14 +703,25 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 			goto Exit;
 		}
 
-		// IMPORTANT NOTE: pucTmpBuf must be freed before going to Exit!!!
+		// Verify that the field in the log header is long enough to
+		// hold the key.
+		
+		if( ui32KeyLen > FLM_MAX_DB_ENC_KEY_LEN)
+		{
+			rc = RC_SET_AND_ASSERT( FERR_BAD_ENC_KEY);
+			goto Exit;
+		}
 
-		// Assert that the field in the log header is long enough to
-		// hold the key.  Note: This test is only valid if the key
-		// field is the last one in the log header!!
-
-		flmAssert( ui32KeyLen <= (LOG_HEADER_SIZE - LOG_DATABASE_KEY));
-
+		// Verify that the field in the log header is long enough to
+		// hold the key.
+		
+		if( ui32KeyLen > FLM_MAX_DB_ENC_KEY_LEN)
+		{
+			f_free( &pucTmpBuf);
+			rc = RC_SET_AND_ASSERT( FERR_BAD_ENC_KEY);
+			goto Exit;
+		}
+		
 		UW2FBA( ui32KeyLen, &pLogHdr[ LOG_DATABASE_KEY_LEN]);
 		f_memcpy( &pLogHdr[ LOG_DATABASE_KEY], pucTmpBuf, ui32KeyLen);
 		f_free( &pucTmpBuf);
@@ -972,9 +982,9 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Ends the backup, updating the log header if needed.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbBackupEnd(
 	HFBACKUP *		phBackup)
 {
@@ -998,7 +1008,7 @@ FLMEXP RCODE FLMAPI FlmDbBackupEnd(
 	// Update log header fields
 
 	if( pFBak->bCompletedBackup && 
-		pFBak->uiDbVersion >= FLM_VER_4_3)
+		pFBak->uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		// Start an update transaction.
 
@@ -1156,9 +1166,9 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc:	Restores a database and supporting files.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbRestore(
 	const char *			pszDbPath,
 	const char *			pszDataDir,
@@ -1342,7 +1352,7 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 	// Apply any available incremental backups.  uiNextIncNum will be 0 if
 	// the database version does not support incremental backups.
 
-	if( uiNextIncNum && uiDbVersion >= FLM_VER_4_3)
+	if( uiNextIncNum && uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		FLMUINT		uiCurrentIncNum;
 
@@ -1461,7 +1471,7 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 	rc = flmOpenFile( pFile,
 		pszDbPath, pszDataDir,
 		pszRflDir, FO_DONT_RESUME_BACKGROUND_THREADS,
-		TRUE, pRestoreObj, pLockFileHdl, NULL, (FDB_p *)&hDb);
+		TRUE, pRestoreObj, pLockFileHdl, NULL, (FDB **)&hDb);
 	pLockFileHdl = NULL;
 	pFile = NULL;
 
@@ -1553,7 +1563,7 @@ Exit:
 
 /***************************************************************************
 Desc : Restores a full or incremental backup
-*END************************************************************************/
+****************************************************************************/
 FSTATIC RCODE flmRestoreFile(
 	F_Restore *				pRestoreObj,
 	const char *			pszPassword,
@@ -1682,22 +1692,21 @@ FSTATIC RCODE flmRestoreFile(
 
 	if( FB2UD( &pucBlkBuf[ FLM_BACKER_VERSION_OFFSET]) !=	FLM_BACKER_VERSION)
 	{
-		rc = RC_SET( FERR_UNSUPPORTED_VERSION);
+		rc = RC_SET_AND_ASSERT( FERR_UNSUPPORTED_VERSION);
 		goto Exit;
 	}
 
 	if( f_strncmp( (const char *)&pucBlkBuf[ FLM_BACKER_SIGNATURE_OFFSET],
 		FLM_BACKER_SIGNATURE, FLM_BACKER_SIGNATURE_SIZE) != 0)
 	{
-		rc = RC_SET( FERR_UNSUPPORTED_VERSION);
+		rc = RC_SET_AND_ASSERT( FERR_UNSUPPORTED_VERSION);
 		goto Exit;
 	}
 	
 	uiBlockSize = (FLMUINT)FB2UW( &pucBlkBuf[ FLM_BACKER_DB_BLOCK_SIZE_OFFSET]);
 	if( uiBlockSize > FLM_BACKER_MAX_DB_BLOCK_SIZE)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+		rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
 
@@ -1709,8 +1718,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	if( FB2UD( &pucBlkBuf[ FLM_BACKER_MTU_OFFSET]) != FLM_BACKER_MTU_SIZE)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+		rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
 
@@ -1770,8 +1778,7 @@ FSTATIC RCODE flmRestoreFile(
 	if( uiBlockSize != 
 		FB2UD( &pucBlkBuf[ FLAIM_HEADER_START + DB_BLOCK_SIZE]))
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+		rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
 
@@ -1789,8 +1796,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	if( (FLMUINT)FB2UW( &pLogHdr[ LOG_FLAIM_VERSION]) != uiDbVersion)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+		rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
 	uiMaxFileSize = flmGetMaxFileSize( uiDbVersion, pLogHdr);
@@ -1812,8 +1818,7 @@ FSTATIC RCODE flmRestoreFile(
 	
 	if( uiBackupMaxFileSize != uiMaxFileSize)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+		rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
 
@@ -1823,7 +1828,7 @@ FSTATIC RCODE flmRestoreFile(
 	// create the F_CCS object when it initializes the FFILE.)
 
 	if( pszPassword && *pszPassword &&
-		  FB2UD( &pLogHdr[ LOG_FLAIM_VERSION]) >= FLM_VER_4_60 &&
+		  FB2UD( &pLogHdr[ LOG_FLAIM_VERSION]) >= FLM_FILE_FORMAT_VER_4_60 &&
 		  FB2UW( &pLogHdr[ LOG_DATABASE_KEY_LEN]) > 0 )
 	{
 		FLMBYTE *	pucTmpBuf = NULL;
@@ -1855,13 +1860,15 @@ FSTATIC RCODE flmRestoreFile(
 			goto Exit;
 		}
 
-		// IMPORTANT NOTE: pucTmpBuf must be freed before going to Exit!!!
-
-		// Assert that the field in the log header is long enough to
-		// hold the key.  Note: This test is only valid if the key
-		// field is the last one in the log header!!
-
-		flmAssert( ui32KeyLen <= (LOG_HEADER_SIZE - LOG_DATABASE_KEY));
+		// Verify that the field in the log header is long enough to
+		// hold the key.
+		
+		if( ui32KeyLen > FLM_MAX_DB_ENC_KEY_LEN)
+		{
+			f_free( &pucTmpBuf);
+			rc = RC_SET_AND_ASSERT( FERR_BAD_ENC_KEY);
+			goto Exit;
+		}
 
 		UW2FBA( ui32KeyLen, &pLogHdr[ LOG_DATABASE_KEY_LEN]);
 		f_memcpy( &pLogHdr[LOG_DATABASE_KEY], pucTmpBuf, ui32KeyLen);
@@ -1883,14 +1890,14 @@ FSTATIC RCODE flmRestoreFile(
 				goto Exit;
 			}
 
-			f_memcpy( *ppucKeyToSave, &pLogHdr[LOG_DATABASE_KEY], ui32KeyLen);
+			f_memcpy( *ppucKeyToSave, &pLogHdr[ LOG_DATABASE_KEY], ui32KeyLen);
 			*puiKeyLen = ui32KeyLen;
 		}
 	}
 	else if( pucKeyToUse)
 	{
-		UW2FBA( *puiKeyLen, &pLogHdr[LOG_DATABASE_KEY_LEN]);
-		f_memcpy( &pLogHdr[LOG_DATABASE_KEY], pucKeyToUse, *puiKeyLen);
+		UW2FBA( *puiKeyLen, &pLogHdr[ LOG_DATABASE_KEY_LEN]);
+		f_memcpy( &pLogHdr[ LOG_DATABASE_KEY], pucKeyToUse, *puiKeyLen);
 	}
 
 	// Get the logical EOF from the log header
@@ -1979,7 +1986,7 @@ FSTATIC RCODE flmRestoreFile(
 	// so, the log header will contain the correct serial number for a
 	// subsequent incremental backup that may have been made.
 
-	if( uiDbVersion >= FLM_VER_4_3)
+	if( uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		f_memcpy( &pLogHdr[ LOG_INC_BACKUP_SERIAL_NUM],
 			ucNextIncSerialNum, F_SERIAL_NUM_SIZE);
@@ -2040,8 +2047,7 @@ FSTATIC RCODE flmRestoreFile(
 			!FSAddrIsBelow( uiBlkAddr, uiLogicalEOF) ||
 			(uiPriorBlkAddr && !FSAddrIsBelow( uiPriorBlkAddr, uiBlkAddr)))
 		{
-			flmAssert( 0);
-			rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+			rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 			goto Exit;
 		}
 
@@ -2049,8 +2055,7 @@ FSTATIC RCODE flmRestoreFile(
 
 		if( uiActualBlkSize > uiBlockSize || uiActualBlkSize < BH_OVHD)
 		{
-			flmAssert( 0);
-			rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+			rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 			goto Exit;
 		}
 
@@ -2061,8 +2066,7 @@ FSTATIC RCODE flmRestoreFile(
 
 		if( (GET_BH_ADDR( pucBlkBuf) & 0xFFFFFF00) != (uiBlkAddr & 0xFFFFFF00))
 		{
-			flmAssert( 0);
-			rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+			rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 			goto Exit;
 		}
 		
@@ -2081,8 +2085,7 @@ FSTATIC RCODE flmRestoreFile(
 		{
 			if( rc == FERR_BLOCK_CHECKSUM)
 			{
-				flmAssert( 0);
-				rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+				rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 			}
 			
 			goto Exit;
@@ -2118,8 +2121,7 @@ FSTATIC RCODE flmRestoreFile(
 
 				if( FSGetFileNumber( uiBlkAddr) != (uiPriorBlkFile + 1))
 				{
-					flmAssert( 0);
-					rc = RC_SET( FERR_INCONSISTENT_BACKUP);
+					rc = RC_SET_AND_ASSERT( FERR_INCONSISTENT_BACKUP);
 					goto Exit;
 				}
 
@@ -2898,4 +2900,295 @@ Exit:
 	pBackerStream->m_uiPendingIO = 0;
 	f_semSignal( pBackerStream->m_hIdleSem);
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_FSRestore::F_FSRestore() 
+{
+	m_pFileHdl = NULL;
+	m_pFileHdl64 = NULL;
+	m_ui64Offset = 0;
+	m_bSetupCalled = FALSE;
+	m_szDbPath[ 0] = 0;
+	m_uiDbVersion = 0;
+	m_szBackupSetPath[ 0] = 0;
+	m_szRflDir[ 0] = 0;
+	m_bOpen = FALSE;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_FSRestore::~F_FSRestore() 
+{
+	if( m_bOpen)
+	{
+		(void)close();
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FSRestore::setup(
+	const char *		pucDbPath,
+	const char *		pucBackupSetPath,
+	const char *		pucRflDir)
+{
+	flmAssert( !m_bSetupCalled);
+	flmAssert( pucDbPath);
+	flmAssert( pucBackupSetPath);
+
+	f_strcpy( m_szDbPath, pucDbPath);
+	f_strcpy( m_szBackupSetPath, pucBackupSetPath);
+
+	if( pucRflDir)
+	{
+		f_strcpy( m_szRflDir, pucRflDir);
+	}
+	
+
+	m_bSetupCalled = TRUE;
+	return( FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FSRestore::openBackupSet( void)
+{
+	RCODE			rc = FERR_OK;
+
+	flmAssert( m_bSetupCalled);
+	flmAssert( !m_pFileHdl64);
+
+	if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = m_pFileHdl64->Open( m_szBackupSetPath)))
+	{
+		m_pFileHdl64->Release();
+		m_pFileHdl64 = NULL;
+		goto Exit;
+	}
+
+	m_ui64Offset = 0;
+	m_bOpen = TRUE;
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FSRestore::openRflFile(
+	FLMUINT			uiFileNum)
+{
+	RCODE				rc = FERR_OK;
+	char				szRflPath[ F_PATH_MAX_SIZE];
+	char				szDbPrefix[ F_FILENAME_SIZE];
+	char				szBaseName[ F_FILENAME_SIZE];
+	FLMBYTE *		pBuf = NULL;
+	FILE_HDR			fileHdr;
+	LOG_HDR			logHdr;
+	F_FileHdl *		pFileHdl = NULL;
+
+	flmAssert( m_bSetupCalled);
+	flmAssert( uiFileNum);
+	flmAssert( !m_pFileHdl);
+
+	// Read the database header to determine the version number
+	
+	if( !m_uiDbVersion)
+	{
+		if (RC_BAD( rc = f_alloc( 2048, &pBuf)))
+		{
+			goto Exit;
+		}
+
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( 
+			m_szDbPath, F_IO_RDWR | F_IO_SH_DENYNONE, &pFileHdl)))
+		{
+			goto Exit;
+		}
+
+		if( RC_BAD( rc = flmReadAndVerifyHdrInfo( NULL, pFileHdl,
+			pBuf, &fileHdr, &logHdr, NULL)))
+		{
+			goto Exit;
+		}
+
+		pFileHdl->Close();
+		pFileHdl->Release();
+		pFileHdl = NULL;
+
+		m_uiDbVersion = fileHdr.uiVersionNum;
+	}
+
+	/*
+	Generate the log file name.
+	*/
+
+	if( RC_BAD( rc = rflGetDirAndPrefix( 
+		m_uiDbVersion, m_szDbPath, m_szRflDir, szRflPath, szDbPrefix)))
+	{
+		goto Exit;
+	}
+
+	rflGetBaseFileName( m_uiDbVersion, szDbPrefix, uiFileNum, szBaseName);
+	f_pathAppend( szRflPath, szBaseName);
+
+	/* 
+	Open the file.
+	*/
+
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenBlockFile( 
+		szRflPath, F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT,
+		512, &m_pFileHdl)))
+	{
+		goto Exit;
+	}
+
+	m_bOpen = TRUE;
+	m_ui64Offset = 0;
+
+Exit:
+
+	if( pBuf)
+	{
+		f_free( &pBuf);
+	}
+
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FSRestore::openIncFile(
+	FLMUINT			uiFileNum)
+{
+	RCODE			rc = FERR_OK;
+	char			szIncPath[ F_PATH_MAX_SIZE];
+	char			szIncFile[ F_FILENAME_SIZE];
+
+	flmAssert( m_bSetupCalled);
+	flmAssert( !m_pFileHdl64);
+
+	/*
+	Since this is a non-interactive restore, we will "guess"
+	that incremental backups are located in the same parent
+	directory as the main backup set.  We will further assume
+	that the incremental backup sets have been named XXXXXXXX.INC,
+	where X is a hex digit.
+	*/
+
+	if( RC_BAD( rc = f_pathReduce( m_szBackupSetPath, 
+		szIncPath, NULL)))
+	{
+		goto Exit;
+	}
+
+	f_sprintf( szIncFile, "%08X.INC", (unsigned)uiFileNum);
+	f_pathAppend( szIncPath, szIncFile);
+
+	if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = m_pFileHdl64->Open( szIncPath)))
+	{
+		m_pFileHdl64->Release();
+		m_pFileHdl64 = NULL;
+		goto Exit;
+	}
+
+	m_ui64Offset = 0;
+	m_bOpen = TRUE;
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FSRestore::read(
+	FLMUINT			uiLength,
+	void *			pvBuffer,
+	FLMUINT *		puiBytesRead)
+{
+	FLMUINT		uiBytesRead = 0;
+	RCODE			rc = FERR_OK;
+
+	flmAssert( m_bSetupCalled);
+	flmAssert( m_pFileHdl || m_pFileHdl64);
+
+	if( m_pFileHdl64)
+	{
+		if( RC_BAD( rc = m_pFileHdl64->Read( m_ui64Offset, 
+			uiLength, pvBuffer, &uiBytesRead)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		if( RC_BAD( rc = m_pFileHdl->Read( (FLMUINT)m_ui64Offset,
+			uiLength, pvBuffer, &uiBytesRead)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	m_ui64Offset += uiBytesRead;
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = uiBytesRead;
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FSRestore::close( void)
+{
+	flmAssert( m_bSetupCalled);
+
+	if( m_pFileHdl64)
+	{
+		m_pFileHdl64->Release();
+		m_pFileHdl64 = NULL;
+	}
+
+	if( m_pFileHdl)
+	{
+		m_pFileHdl->Release();
+		m_pFileHdl = NULL;
+	}
+
+	m_bOpen = FALSE;
+	m_ui64Offset = 0;
+
+	return( FERR_OK);
 }

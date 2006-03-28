@@ -33,7 +33,9 @@ FSTATIC const char * gv_pszSampleDictionary =
 	" 1 type text\n"
 	"0 @4@ field Age\n"
 	" 1 type number\n"
-	"0 @5@ index LastFirst_IX\n"
+	"0 @5@ field Misc\n"
+	" 1 type binary\n"
+	"0 @100@ index LastFirst_IX\n"
 	" 1 language US\n"
 	" 1 key\n"
 	"  2 field 2\n"
@@ -45,7 +47,8 @@ FSTATIC const char * gv_pszSampleDictionary =
 #define LAST_NAME_TAG				2
 #define FIRST_NAME_TAG				3
 #define AGE_TAG						4
-#define LAST_NAME_FIRST_NAME_IX	5
+#define MISC_TAG						5
+#define LAST_NAME_FIRST_NAME_IX	100
 
 #ifdef FLM_NLM
 	#define DB_NAME_STR					"SYS:\\SAMPLE.DB"
@@ -92,6 +95,8 @@ public:
 	
 	RCODE addRecordTest(
 		FLMUINT *	puiDrn);
+	
+	RCODE largeFieldTest( void);
 	
 	RCODE modifyRecordTest(
 		FLMUINT	uiDrn);
@@ -687,9 +692,150 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::largeFieldTest( void)
+{
+	RCODE					rc = FERR_OK;
+	FLMBYTE *			pucValue = NULL;
+	FlmRecord *			pRec = NULL;
+	void *				pvField;
+	FLMUINT				uiDrn;
+	FLMUINT				uiValueSize;
+	FLMUINT				uiLoop;
+	f_randomGenerator	randGen;
+	FLM_MEM_INFO		memInfo;
+	FLMBOOL				bTransActive = FALSE;
+	FLMBOOL				bPassed = FALSE;
+
+	beginTest( "Large Field Test");
+	
+	// Generate a large binary value
+	
+	uiValueSize = 1024 * 1024;
+	if( RC_BAD( rc = f_alloc( uiValueSize, &pucValue)))
+	{
+		goto Exit;
+	}
+	
+	f_randomize( &randGen);
+	
+	for( uiLoop = 0; uiLoop < uiValueSize; uiLoop++)
+	{
+		pucValue[ uiLoop] = (FLMBYTE)f_randomLong( &randGen);
+	}
+
+	// Create a record object
+
+	if( (pRec = new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Populate the record object with fields and values
+
+	if( RC_BAD( rc = pRec->insertLast( 0, MISC_TAG,
+		FLM_BINARY_TYPE, &pvField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pRec->setBinary( pvField, pucValue, uiValueSize)))
+	{
+		MAKE_ERROR_STRING( "calling setBinary", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+	
+	// Add the record to the database.
+
+	uiDrn = 0;
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		&uiDrn, pRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Commit the transaction
+
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Clear cache
+	
+	FlmGetMemoryInfo( &memInfo);
+	FlmConfig( FLM_CACHE_LIMIT, 0, 0);
+	FlmConfig( FLM_CACHE_LIMIT, 
+		(void *)(memInfo.RecordCache.uiMaxBytes + memInfo.BlockCache.uiMaxBytes), 0);
+
+	// Make sure the record was removed from cache
+		
+	if( pRec->isCached())
+	{
+		rc = RC_SET( FERR_FAILURE);
+		MAKE_ERROR_STRING( "Record is still cached", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	pRec->Release();
+	pRec = NULL;
+	
+	if (RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DATA_CONTAINER, uiDrn,
+					FO_EXACT, &pRec, &uiDrn)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( f_memcmp( pucValue, pRec->getDataPtr( pRec->root()), uiValueSize) != 0)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		MAKE_ERROR_STRING( "Data value did not match.", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	bTransActive = FALSE;
+	bPassed = TRUE;
+	
+Exit:
+
+	if( bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	if( pRec)
+	{
+		pRec->Release();
+	}
+	
+	if( pucValue)
+	{
+		f_free( &pucValue);
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::modifyRecordTest(
-	FLMUINT	uiDrn
-	)
+	FLMUINT	uiDrn)
 {
 	RCODE				rc = FERR_OK;
 	FlmRecord *		pRec = NULL;
@@ -3432,6 +3578,13 @@ RCODE IFlmTestImpl::execute( void)
 	// FlmRecordModify test
 	
 	if (RC_BAD( rc = modifyRecordTest( uiDrn)))
+	{
+		goto Exit;
+	}
+	
+	// Large field test
+	
+	if (RC_BAD( rc = largeFieldTest()))
 	{
 		goto Exit;
 	}

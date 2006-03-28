@@ -33,7 +33,7 @@ RCODE F_FileHdlMgrPage::display(
 	const char ** 	ppszParams)
 {
 	RCODE					rc = FERR_OK;
-	F_FileHdlMgr_p		pFileHdlMgr;
+	F_FileHdlMgr *		pFileHdlMgr;
 	F_ListMgr *			pListMgr;
 	FLMUINT				uiNumAvailItems;
 	FLMUINT				uiNumUsedItems;

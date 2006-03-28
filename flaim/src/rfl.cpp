@@ -24,10 +24,14 @@
 
 #include "flaimsys.h"
 
-#define MOD_512( uiNum)							(FLMUINT)((uiNum) & 511)
-#define ON_512_BYTE_BOUNDARY( uiNum)		(!MOD_512(uiNum))
-#define ROUND_DOWN_TO_NEAREST_512( uiNum)	\
-	(FLMUINT)((uiNum) & (~((FLMUINT)511)))
+#define MOD_512(uiNum) \
+	(FLMUINT) ((uiNum) & 511)
+
+#define ON_512_BYTE_BOUNDARY(uiNum) \
+	(!MOD_512( uiNum))
+
+#define ROUND_DOWN_TO_NEAREST_512(uiNum) \
+	(FLMUINT) ((uiNum) & (~((FLMUINT) 511)))
 
 FSTATIC RCODE RflCheckMaxLogged(
 	FLMUINT *	puiMaxBytesNeededRV,
@@ -40,7 +44,7 @@ FSTATIC void RflChangeCallback(
 	void *					CallbackData);
 
 /********************************************************************
-Desc:		Constructor
+Desc:
 *********************************************************************/
 F_Rfl::F_Rfl()
 {
@@ -50,14 +54,14 @@ F_Rfl::F_Rfl()
 	m_pCurrentBuf = NULL;
 	m_uiRflWriteBufs = DEFAULT_RFL_WRITE_BUFFERS;
 	m_uiBufferSize = DEFAULT_RFL_BUFFER_SIZE;
-	f_memset( &m_Buf1, 0, sizeof( m_Buf1));
-	f_memset( &m_Buf2, 0, sizeof( m_Buf2));
+	f_memset( &m_Buf1, 0, sizeof(m_Buf1));
+	f_memset( &m_Buf2, 0, sizeof(m_Buf2));
 	m_bKeepRflFiles = FALSE;
 	m_uiRflMinFileSize = DEFAULT_MIN_RFL_FILE_SIZE;
 	m_uiRflMaxFileSize = DEFAULT_MAX_RFL_FILE_SIZE;
 	m_pFileHdl = NULL;
 	m_uiLastRecoverFileNum = 0;
-	f_memset( m_ucCurrSerialNum, 0, sizeof( m_ucCurrSerialNum));
+	f_memset( m_ucCurrSerialNum, 0, sizeof(m_ucCurrSerialNum));
 	m_bLoggingOff = FALSE;
 	m_bLoggingUnknown = FALSE;
 	m_uiUnknownPacketLen = 0;
@@ -75,22 +79,23 @@ F_Rfl::F_Rfl()
 	m_uiRflReadOffset = 0;
 	m_uiFileEOF = 0;
 	m_pRestore = NULL;
-	f_memset( m_szDbPrefix, 0, sizeof( m_szDbPrefix));
-	f_memset( m_szRflDir, 0, sizeof( m_szRflDir));
+	f_memset( m_szDbPrefix, 0, sizeof(m_szDbPrefix));
+	f_memset( m_szRflDir, 0, sizeof(m_szRflDir));
 	m_bRflDirSameAsDb = FALSE;
 	m_bCreateRflDir = FALSE;
-	f_memset( m_ucNextSerialNum, 0, sizeof( m_ucNextSerialNum));
+	f_memset( m_ucNextSerialNum, 0, sizeof(m_ucNextSerialNum));
 	m_bRflVolumeOk = TRUE;
 	m_bRflVolumeFull = FALSE;
 }
 
 /********************************************************************
-Desc:		Destructor
+Desc:
 *********************************************************************/
 F_Rfl::~F_Rfl()
 {
-	// Better not be in the middle of logging unknown packets for
-	// the application.
+
+	// Better not be in the middle of logging unknown packets for the
+	// application.
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -99,24 +104,27 @@ F_Rfl::~F_Rfl()
 		m_Buf1.pIOBuffer->Release();
 		m_Buf1.pIOBuffer = NULL;
 	}
+
 	if (m_Buf2.pIOBuffer)
 	{
 		m_Buf2.pIOBuffer->Release();
 		m_Buf2.pIOBuffer = NULL;
 	}
 
-	if( m_Buf1.pBufferMgr)
+	if (m_Buf1.pBufferMgr)
 	{
-		flmAssert( !m_Buf1.pBufferMgr->havePendingIO() &&
+		flmAssert( !m_Buf1.pBufferMgr->havePendingIO() && 
 					  !m_Buf1.pBufferMgr->haveUsed());
+
 		m_Buf1.pBufferMgr->Release();
 		m_Buf1.pBufferMgr = NULL;
 	}
 
-	if( m_Buf2.pBufferMgr)
+	if (m_Buf2.pBufferMgr)
 	{
-		flmAssert( !m_Buf2.pBufferMgr->havePendingIO() &&
+		flmAssert( !m_Buf2.pBufferMgr->havePendingIO() && 
 					  !m_Buf2.pBufferMgr->haveUsed());
+
 		m_Buf2.pBufferMgr->Release();
 		m_Buf2.pBufferMgr = NULL;
 	}
@@ -140,16 +148,15 @@ Desc:		Returns a boolean indicating whether or not we are at
 			the end of the RFL log - will only be TRUE when we are
 			doing recovery.
 *********************************************************************/
-FLMBOOL F_Rfl::atEndOfLog( void)
+FLMBOOL F_Rfl::atEndOfLog(void)
 {
-	return( (!m_pRestore &&
-				m_uiFileEOF &&
+	return( (!m_pRestore && m_uiFileEOF &&
 				m_pCurrentBuf->uiRflFileOffset +
 				m_pCurrentBuf->uiRflBufBytes >= m_uiFileEOF &&
 				m_uiRflReadOffset == m_pCurrentBuf->uiRflBufBytes &&
-				m_pCurrentBuf->uiCurrFileNum == m_uiLastRecoverFileNum)
-			  ? TRUE
-			  : FALSE);
+				m_pCurrentBuf->uiCurrFileNum == m_uiLastRecoverFileNum) 
+					? TRUE 
+					: FALSE);
 }
 
 /********************************************************************
@@ -159,16 +166,16 @@ Desc:	Gets the base RFL file name - does not have directory part.
 		object.
 *********************************************************************/
 void rflGetBaseFileName(
-	FLMUINT				uiDbVersion,
-	const char *		pszDbPrefix,
-	FLMUINT				uiFileNum,
-	char *				pszBaseNameOut)
+	FLMUINT			uiDbVersion,
+	const char *	pszDbPrefix,
+	FLMUINT			uiFileNum,
+	char *			pszBaseNameOut)
 {
 	FLMINT		iCnt = 0;
 	FLMUINT		uiDigit;
 	char *		pszTmp = pszBaseNameOut;
 
-	if (uiDbVersion < FLM_VER_4_3)
+	if (uiDbVersion < FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// Output the database name prefix (up to three characters).
@@ -184,7 +191,7 @@ void rflGetBaseFileName(
 		pszTmp += 4;
 		while (iCnt < 5)
 		{
-			uiDigit = (FLMUINT)(uiFileNum % 36);
+			uiDigit = (FLMUINT) (uiFileNum % 36);
 			uiFileNum /= 36;
 			if (uiDigit <= 9)
 			{
@@ -194,8 +201,8 @@ void rflGetBaseFileName(
 			{
 				uiDigit += (NATIVE_LOWER_A - 10);
 			}
-			
-			*pszTmp = (FLMBYTE)uiDigit;
+
+			*pszTmp = (FLMBYTE) uiDigit;
 			pszTmp--;
 			iCnt++;
 		}
@@ -213,7 +220,7 @@ void rflGetBaseFileName(
 		pszTmp += 7;
 		while (iCnt < 8)
 		{
-			uiDigit = (FLMUINT)(uiFileNum & 0xF);
+			uiDigit = (FLMUINT) (uiFileNum & 0xF);
 			uiFileNum >>= 4;
 			if (uiDigit <= 9)
 			{
@@ -223,7 +230,8 @@ void rflGetBaseFileName(
 			{
 				uiDigit += (NATIVE_LOWER_A - 10);
 			}
-			*pszTmp = (FLMBYTE)uiDigit;
+
+			*pszTmp = (FLMBYTE) uiDigit;
 			pszTmp--;
 			iCnt++;
 		}
@@ -239,26 +247,25 @@ void rflGetBaseFileName(
 Desc:		Gets the base RFL file name - does not have directory part.
 *********************************************************************/
 void F_Rfl::getBaseRflFileName(
-	FLMUINT		uiFileNum,
-	char *		pszBaseName)
+	FLMUINT	uiFileNum,
+	char *	pszBaseName)
 {
-	rflGetBaseFileName( m_pFile->FileHdr.uiVersionNum,
-								m_szDbPrefix,
-								uiFileNum, pszBaseName);
+	rflGetBaseFileName( m_pFile->FileHdr.uiVersionNum, 
+		m_szDbPrefix, uiFileNum, pszBaseName);
 }
 
 /********************************************************************
-Desc:		Generates the full roll forward log file name.
-			Name is based on the sequence number and the first three
-			characters of the database if the DB is less than version 4.3.
-			Otherwise, it is a hex number.
+Desc:	Generates the full roll forward log file name. Name is based
+		on the sequence number and the first three characters of the
+		database if the DB is less than version 4.3. 
+		Otherwise, it is a hex number.
 *********************************************************************/
 RCODE F_Rfl::getFullRflFileName(
-	FLMUINT		uiFileNum,
-	char *		pszRflFileName)
+	FLMUINT	uiFileNum,
+	char *	pszRflFileName)
 {
-	RCODE			rc = FERR_OK;
-	char			szBaseName [F_FILENAME_SIZE];
+	RCODE 	rc = FERR_OK;
+	char		szBaseName[F_FILENAME_SIZE];
 
 	// Get the directory name.
 
@@ -276,40 +283,39 @@ RCODE F_Rfl::getFullRflFileName(
 	}
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Positions to the offset specified in the RFL file.
 *********************************************************************/
 RCODE F_Rfl::positionTo(
-	FLMUINT		uiFileOffset
-	)
+	FLMUINT	uiFileOffset)
 {
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiBytesToRead;
-	FLMUINT		uiBytesRead;
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiBytesToRead;
+	FLMUINT	uiBytesRead;
 
-	// Should never be attempting to position to something less
-	// than 512 - the header is stored in the first 512 bytes.
+	// Should never be attempting to position to something less than 512 -
+	// the header is stored in the first 512 bytes.
 
 	flmAssert( uiFileOffset >= 512);
 
-	// If the position is within our current buffer, see if we
-	// can adjust things without having to go back and re-read
-	// the buffer from disk.
+	// If the position is within our current buffer, see if we can adjust
+	// things without having to go back and re-read the buffer from disk.
 
 	if (m_pCurrentBuf->uiRflBufBytes &&
 		 uiFileOffset >= m_pCurrentBuf->uiRflFileOffset &&
 		 uiFileOffset <= m_pCurrentBuf->uiRflFileOffset +
-							  m_pCurrentBuf->uiRflBufBytes)
+		 m_pCurrentBuf->uiRflBufBytes)
 	{
 
-		// Whatever is in the buffer beyond uiFileOffset is irrelevant
-		// and can be discarded.
+		// Whatever is in the buffer beyond uiFileOffset is irrelevant and
+		// can be discarded.
 
-		m_pCurrentBuf->uiRflBufBytes = uiFileOffset -
-													m_pCurrentBuf->uiRflFileOffset;
+		m_pCurrentBuf->uiRflBufBytes = uiFileOffset - 
+												 m_pCurrentBuf->uiRflFileOffset;
 	}
 	else
 	{
@@ -322,10 +328,10 @@ RCODE F_Rfl::positionTo(
 		m_pCurrentBuf->uiRflBufBytes = MOD_512( uiFileOffset);
 		if (m_pCurrentBuf->uiRflBufBytes)
 		{
-			if (RC_BAD( rc = m_pFileHdl->SectorRead( m_pCurrentBuf->uiRflFileOffset,
-								m_pCurrentBuf->uiRflBufBytes,
-								m_pCurrentBuf->pIOBuffer->m_pucBuffer,
-								&uiBytesRead)))
+			if (RC_BAD( rc = m_pFileHdl->SectorRead(
+							  m_pCurrentBuf->uiRflFileOffset,
+						  m_pCurrentBuf->uiRflBufBytes,
+						  m_pCurrentBuf->pIOBuffer->m_pucBuffer, &uiBytesRead)))
 			{
 				if (rc == FERR_IO_END_OF_FILE)
 				{
@@ -335,6 +341,7 @@ RCODE F_Rfl::positionTo(
 				{
 					m_bRflVolumeOk = FALSE;
 				}
+
 				goto Exit;
 			}
 			else if (uiBytesRead < m_pCurrentBuf->uiRflBufBytes)
@@ -347,7 +354,7 @@ RCODE F_Rfl::positionTo(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -363,14 +370,13 @@ RCODE rflGetDirAndPrefix(
 	char *			pszRflDirOut,
 	char *			pszDbPrefixOut)
 {
-	RCODE				rc = FERR_OK;
-	char				szDbPath [F_PATH_MAX_SIZE];
-	char				szBaseName [F_FILENAME_SIZE];
+	RCODE 		rc = FERR_OK;
+	char			szDbPath[F_PATH_MAX_SIZE];
+	char			szBaseName[F_FILENAME_SIZE];
 
 	// Parse the database name into directory and base name
 
-	if (RC_BAD( rc = f_pathReduce( pszDbFileName,
-							szDbPath, szBaseName)))
+	if (RC_BAD( rc = f_pathReduce( pszDbFileName, szDbPath, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -379,12 +385,11 @@ RCODE rflGetDirAndPrefix(
 
 	flmGetDbBasePath( pszDbPrefixOut, szBaseName, NULL);
 
-	if (uiDbVersionNum >= FLM_VER_4_3)
+	if (uiDbVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
 
-		// Determine the RFL directory.  If one was
-		// specified, it is whatever was specified.
-		// Otherwise, it is relative to the database
+		// Determine the RFL directory. If one was specified, it is
+		// whatever was specified. Otherwise, it is relative to the database
 		// directory.
 
 		if (pszRflDirIn && *pszRflDirIn)
@@ -396,9 +401,8 @@ RCODE rflGetDirAndPrefix(
 			f_strcpy( pszRflDirOut, szDbPath);
 		}
 
-		// For 4.3 and above, the RFL files go in
-		// a subdirectory underneath the directory where
-		// the database is located or the specified
+		// For 4.3 and above, the RFL files go in a subdirectory underneath
+		// the directory where the database is located or the specified
 		// directory.
 
 		f_strcpy( szBaseName, pszDbPrefixOut);
@@ -412,7 +416,7 @@ RCODE rflGetDirAndPrefix(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -423,28 +427,27 @@ Desc:		Set the RFL directory.  If pszRflDir is NULL or empty string,
 RCODE F_Rfl::setRflDir(
 	const char *	pszRflDir)
 {
+
 	// Better have set up the FFILE pointer.
 
 	flmAssert( m_pFile != NULL);
 
-	m_bRflDirSameAsDb = (!pszRflDir || !(*pszRflDir))
-							  ? TRUE
-							  : FALSE;
+	m_bRflDirSameAsDb = (!pszRflDir || !(*pszRflDir)) ? TRUE : FALSE;
 
 	flmAssert( m_pFile->FileHdr.uiVersionNum);
 
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 
-		// Don't allow RFL directory to be specified for versions
-		// less than 4.3
+		// Don't allow RFL directory to be specified for versions less than
+		// 4.3
 
 		pszRflDir = NULL;
 		m_bRflDirSameAsDb = TRUE;
 	}
 
 	m_bCreateRflDir =
-		(m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+		(m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 		? TRUE
 		: FALSE;
 	return( rflGetDirAndPrefix(
@@ -468,18 +471,21 @@ RCODE rflGetFileName(
 
 	// Get the full RFL file name.
 
-	if (RC_BAD( rc = rflGetDirAndPrefix( uiDbVersion, pszDbName,
-									pszRflDir, pszRflFileName, szDbPrefix)))
+	if (RC_BAD( rc = rflGetDirAndPrefix( uiDbVersion, pszDbName, pszRflDir,
+				  pszRflFileName, szDbPrefix)))
 	{
 		goto Exit;
 	}
+
 	rflGetBaseFileName( uiDbVersion, szDbPrefix, uiFileNum, szBaseName);
 	if (RC_BAD( rc = f_pathAppend( pszRflFileName, szBaseName)))
 	{
 		goto Exit;
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -497,21 +503,20 @@ FLMBOOL rflGetFileNum(
 	char *			pszTmp;
 	FLMUINT			uiCharCnt;
 
-	if( RC_BAD( f_pathReduce( pszRflFileName, szDir, szBaseName)))
+	if (RC_BAD( f_pathReduce( pszRflFileName, szDir, szBaseName)))
 	{
 		goto Exit;
 	}
 
 	// See if it has a .log extension.
 
-	pszTmp = &szBaseName [0];
+	pszTmp = &szBaseName[0];
 	while (*pszTmp && *pszTmp != '.')
 	{
 		pszTmp++;
 	}
 
-	// If we do not have a .log extension, it is not a legitimate
-	// RFL file.
+	// If we do not have a .log extension, it is not a legitimate RFL file.
 
 	if (f_stricmp( pszTmp, ".log") != 0)
 	{
@@ -520,11 +525,11 @@ FLMBOOL rflGetFileNum(
 
 	// Parse out the name according to the rules for this DB version.
 
-	*pszTmp = 0;	// Set period to zero
-	pszTmp = &szBaseName [0];
+	*pszTmp = 0;			// Set period to zero
+	pszTmp = &szBaseName[0];
 	*puiFileNum = 0;
 	uiCharCnt = 0;
-	if (uiDbVersion >= FLM_VER_4_3)
+	if (uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// Name up to the period should be a hex number
@@ -534,38 +539,36 @@ FLMBOOL rflGetFileNum(
 			(*puiFileNum) <<= 4;
 			if (*pszTmp >= NATIVE_ZERO && *pszTmp <= NATIVE_NINE)
 			{
-				*puiFileNum += (FLMUINT)(*pszTmp - NATIVE_ZERO);
+				*puiFileNum += (FLMUINT) (*pszTmp - NATIVE_ZERO);
 			}
 			else if (*pszTmp >= NATIVE_LOWER_A && *pszTmp <= NATIVE_LOWER_F)
 			{
-				*puiFileNum += ((FLMUINT)(*pszTmp - NATIVE_LOWER_A) + 10);
+				*puiFileNum += ((FLMUINT) (*pszTmp - NATIVE_LOWER_A) + 10);
 			}
 			else if (*pszTmp >= NATIVE_UPPER_A && *pszTmp <= NATIVE_UPPER_F)
 			{
-				*puiFileNum += ((FLMUINT)(*pszTmp - NATIVE_UPPER_A) + 10);
+				*puiFileNum += ((FLMUINT) (*pszTmp - NATIVE_UPPER_A) + 10);
 			}
 			else
 			{
 				goto Exit;	// Not a hex number
 			}
+
 			uiCharCnt++;
 			pszTmp++;
 		}
 
 		// Better have been exactly 8 hex digits.
 
-		bGotNum = (FLMBOOL)((uiCharCnt == 8)
-									? TRUE
-									: FALSE);
+		bGotNum = (FLMBOOL) ((uiCharCnt == 8) ? TRUE : FALSE);
 	}
 	else
 	{
 		FLMUINT	uiLen = f_strlen( pszTmp);
 		FLMUINT	uiPrefixLen = f_strlen( pszDbPrefix);
 
-		// Length of base name without the .log extension better
-		// be exactly 5 more characters than the length of
-		// the prefix.
+		// Length of base name without the .log extension better be exactly
+		// 5 more characters than the length of the prefix.
 
 		if (uiLen != uiPrefixLen + 5)
 		{
@@ -581,6 +584,7 @@ FLMBOOL rflGetFileNum(
 			{
 				goto Exit;
 			}
+
 			uiPrefixLen--;
 			pszTmp++;
 			pszDbPrefix++;
@@ -593,26 +597,30 @@ FLMBOOL rflGetFileNum(
 			(*puiFileNum) *= 36;
 			if (*pszTmp >= NATIVE_ZERO && *pszTmp <= NATIVE_NINE)
 			{
-				*puiFileNum += (FLMUINT)(*pszTmp - NATIVE_ZERO);
+				*puiFileNum += (FLMUINT) (*pszTmp - NATIVE_ZERO);
 			}
 			else if (*pszTmp >= NATIVE_LOWER_A && *pszTmp <= NATIVE_LOWER_Z)
 			{
-				*puiFileNum += ((FLMUINT)(*pszTmp - NATIVE_LOWER_A) + 10);
+				*puiFileNum += ((FLMUINT) (*pszTmp - NATIVE_LOWER_A) + 10);
 			}
 			else if (*pszTmp >= NATIVE_UPPER_A && *pszTmp <= NATIVE_UPPER_Z)
 			{
-				*puiFileNum += ((FLMUINT)(*pszTmp - NATIVE_UPPER_A) + 10);
+				*puiFileNum += ((FLMUINT) (*pszTmp - NATIVE_UPPER_A) + 10);
 			}
 			else
 			{
 				goto Exit;	// Not a base 36 number
 			}
+
 			pszTmp++;
 		}
+
 		bGotNum = TRUE;
 	}
+
 Exit:
-	return( bGotNum);
+
+	return (bGotNum);
 }
 
 /********************************************************************
@@ -631,13 +639,10 @@ RCODE F_Rfl::setup(
 
 	// Allocate memory for the RFL buffers
 
-#ifndef FLM_UNIX
 	if (!gv_FlmSysData.bOkToDoAsyncWrites)
-#endif
 	{
 		m_uiRflWriteBufs = 1;
-		m_uiBufferSize = 
-			DEFAULT_RFL_WRITE_BUFFERS * DEFAULT_RFL_BUFFER_SIZE;
+		m_uiBufferSize = DEFAULT_RFL_WRITE_BUFFERS * DEFAULT_RFL_BUFFER_SIZE;
 	}
 
 	if (RC_BAD( rc = f_mutexCreate( &m_hBufMutex)))
@@ -645,22 +650,24 @@ RCODE F_Rfl::setup(
 		goto Exit;
 	}
 
-	if( (m_Buf1.pBufferMgr = f_new F_IOBufferMgr) == NULL)
+	if ((m_Buf1.pBufferMgr = f_new F_IOBufferMgr) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-	if( (m_Buf2.pBufferMgr = f_new F_IOBufferMgr) == NULL)
+
+	if ((m_Buf2.pBufferMgr = f_new F_IOBufferMgr) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+
 	m_Buf1.pBufferMgr->enableKeepBuffer();
 	m_Buf1.pBufferMgr->setMaxBuffers( m_uiRflWriteBufs);
 	m_Buf1.pBufferMgr->setMaxBytes( m_uiRflWriteBufs * m_uiBufferSize);
 
-	if( RC_BAD( rc = m_Buf1.pBufferMgr->getBuffer( &m_Buf1.pIOBuffer,
-								m_uiBufferSize, m_uiBufferSize)))
+	if (RC_BAD( rc = m_Buf1.pBufferMgr->getBuffer( &m_Buf1.pIOBuffer,
+				  m_uiBufferSize, m_uiBufferSize)))
 	{
 		goto Exit;
 	}
@@ -669,8 +676,8 @@ RCODE F_Rfl::setup(
 	m_Buf2.pBufferMgr->setMaxBuffers( m_uiRflWriteBufs);
 	m_Buf2.pBufferMgr->setMaxBytes( m_uiRflWriteBufs * m_uiBufferSize);
 
-	if( RC_BAD( rc = m_Buf2.pBufferMgr->getBuffer( &m_Buf2.pIOBuffer,
-								m_uiBufferSize, m_uiBufferSize)))
+	if (RC_BAD( rc = m_Buf2.pBufferMgr->getBuffer( &m_Buf2.pIOBuffer,
+				  m_uiBufferSize, m_uiBufferSize)))
 	{
 		goto Exit;
 	}
@@ -688,7 +695,7 @@ RCODE F_Rfl::setup(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -698,8 +705,7 @@ Desc:	Wait for the writes of a buffer to finish.  This routine assumes
 *********************************************************************/
 RCODE F_Rfl::waitForWrites(
 	RFL_BUFFER *	pBuffer,
-	FLMBOOL			bIsWriter
-	)
+	FLMBOOL			bIsWriter)
 {
 	RCODE			rc = FERR_OK;
 	RCODE			TempRc;
@@ -716,8 +722,8 @@ RCODE F_Rfl::waitForWrites(
 		goto Exit;
 	}
 
-	// Note: rc better be changed to success or write error
-	// by the process that signals us.
+	// Note: rc better be changed to success or write error by the process
+	// that signals us.
 
 	rc = RC_SET( FERR_FAILURE);
 	Waiter.pRc = &rc;
@@ -730,6 +736,7 @@ RCODE F_Rfl::waitForWrites(
 	{
 		pBuffer->pFirstWaiter = &Waiter;
 	}
+
 	pBuffer->pLastWaiter = &Waiter;
 	f_mutexUnlock( m_hBufMutex);
 	bMutexLocked = FALSE;
@@ -748,8 +755,8 @@ RCODE F_Rfl::waitForWrites(
 	else
 	{
 
-		// Process that signaled us better set the rc to something
-		// besides FERR_FAILURE.
+		// Process that signaled us better set the rc to something besides
+		// FERR_FAILURE.
 
 		if (rc == FERR_FAILURE)
 		{
@@ -763,7 +770,7 @@ RCODE F_Rfl::waitForWrites(
 
 Exit:
 
-	if( Waiter.hESem != F_SEM_NULL)
+	if (Waiter.hESem != F_SEM_NULL)
 	{
 		f_semDestroy( &Waiter.hESem);
 	}
@@ -772,29 +779,29 @@ Exit:
 	{
 		f_mutexUnlock( m_hBufMutex);
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:	If a commit is in progress, wait for it to finish.
 *********************************************************************/
-RCODE F_Rfl::waitForCommit( void)
+RCODE F_Rfl::waitForCommit(void)
 {
-	RCODE			rc = FERR_OK;
-	FLMBOOL		bMutexLocked = FALSE;
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bMutexLocked = FALSE;
 
 	// NOTE: If m_pCommitBuf is NULL it cannot be set to something
 	// non-NULL except by this thread when this thread ends the
-	// transaction.  So, there is no need to lock the mutex and
-	// re-check if it is NULL.
+	// transaction. So, there is no need to lock the mutex and re-check if
+	// it is NULL.
 
 	if (m_pCommitBuf)
 	{
 		f_mutexLock( m_hBufMutex);
 		bMutexLocked = TRUE;
 
-		// Check m_pCommitBuf again after locking mutex - may have
-		// finished.
+		// Check m_pCommitBuf again after locking mutex - may have finished.
 
 		if (m_pCommitBuf)
 		{
@@ -810,7 +817,8 @@ RCODE F_Rfl::waitForCommit( void)
 	{
 		f_mutexUnlock( m_hBufMutex);
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -830,33 +838,30 @@ RCODE F_Rfl::writeHeader(
 	flmAssert( m_pFile);
 	flmAssert( m_pFileHdl);
 
-	f_memset( ucBuf, 0, sizeof( ucBuf));
-	f_memcpy( &ucBuf [RFL_NAME_POS], RFL_NAME, RFL_NAME_LEN);
-	f_memcpy( &ucBuf [RFL_VERSION_POS], RFL_VERSION, RFL_VERSION_LEN);
-	UD2FBA( (FLMUINT32)uiFileNum, &ucBuf [RFL_FILE_NUMBER_POS]);
-	UD2FBA( (FLMUINT32)uiEof, &ucBuf [RFL_EOF_POS]);
+	f_memset( ucBuf, 0, sizeof(ucBuf));
+	f_memcpy( &ucBuf[RFL_NAME_POS], RFL_NAME, RFL_NAME_LEN);
+	f_memcpy( &ucBuf[RFL_VERSION_POS], RFL_VERSION, RFL_VERSION_LEN);
+	UD2FBA( (FLMUINT32) uiFileNum, &ucBuf[RFL_FILE_NUMBER_POS]);
+	UD2FBA( (FLMUINT32) uiEof, &ucBuf[RFL_EOF_POS]);
 
-	if (m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+	if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
-		f_memcpy( &ucBuf [RFL_DB_SERIAL_NUM_POS],
-			&m_pFile->ucLastCommittedLogHdr [LOG_DB_SERIAL_NUM],
-			F_SERIAL_NUM_SIZE);
-		f_memcpy( &ucBuf [RFL_SERIAL_NUM_POS], pucSerialNum,
-			F_SERIAL_NUM_SIZE);
-		f_memcpy( &ucBuf [RFL_NEXT_FILE_SERIAL_NUM_POS], pucNextSerialNum,
-			F_SERIAL_NUM_SIZE);
-		f_strcpy( (char *)&ucBuf [RFL_KEEP_SIGNATURE_POS],
-			((bKeepSignature)
-							? RFL_KEEP_SIGNATURE
-							: RFL_NOKEEP_SIGNATURE));
+		f_memcpy( &ucBuf[RFL_DB_SERIAL_NUM_POS],
+					&m_pFile->ucLastCommittedLogHdr[LOG_DB_SERIAL_NUM],
+					F_SERIAL_NUM_SIZE);
+		f_memcpy( &ucBuf[RFL_SERIAL_NUM_POS], pucSerialNum, F_SERIAL_NUM_SIZE);
+		f_memcpy( &ucBuf[RFL_NEXT_FILE_SERIAL_NUM_POS], pucNextSerialNum,
+					F_SERIAL_NUM_SIZE);
+		f_strcpy( (char *) &ucBuf[RFL_KEEP_SIGNATURE_POS],
+					((bKeepSignature) ? RFL_KEEP_SIGNATURE : RFL_NOKEEP_SIGNATURE));
 	}
 
 	// Write out the header
 
-	if (RC_BAD( rc = m_pFileHdl->SectorWrite( 0L, 512,
-										ucBuf, sizeof( ucBuf),
-										NULL, &uiBytesWritten)))
+	if (RC_BAD( rc = m_pFileHdl->SectorWrite( 0L, 512, ucBuf, sizeof(ucBuf),
+				  NULL, &uiBytesWritten)))
 	{
+
 		// Remap disk full error
 
 		if (rc == FERR_IO_DISK_FULL)
@@ -864,6 +869,7 @@ RCODE F_Rfl::writeHeader(
 			rc = RC_SET( FERR_RFL_DEVICE_FULL);
 			m_bRflVolumeFull = TRUE;
 		}
+
 		m_bRflVolumeOk = FALSE;
 		goto Exit;
 	}
@@ -880,12 +886,14 @@ RCODE F_Rfl::writeHeader(
 			rc = RC_SET( FERR_RFL_DEVICE_FULL);
 			m_bRflVolumeFull = TRUE;
 		}
+
 		m_bRflVolumeOk = FALSE;
 		goto Exit;
 	}
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -894,50 +902,48 @@ Desc:		Verifies the header of an RFL file.
 RCODE F_Rfl::verifyHeader(
 	FLMBYTE *	pucHeader,
 	FLMUINT		uiFileNum,
-	FLMBYTE *	pucSerialNum
-	)
+	FLMBYTE *	pucSerialNum)
 {
-	RCODE	rc = FERR_OK;
+	RCODE rc = FERR_OK;
 
 	flmAssert( m_pFile);
 
-
 	// Check the RFL name and version number
 
-	if (f_memcmp( &pucHeader [RFL_NAME_POS], RFL_NAME,
-						RFL_NAME_LEN) != 0)
+	if (f_memcmp( &pucHeader[RFL_NAME_POS], RFL_NAME, RFL_NAME_LEN) != 0)
 	{
 		rc = RC_SET( FERR_NOT_RFL);
 		goto Exit;
 	}
-	if (f_memcmp( &pucHeader [RFL_VERSION_POS], RFL_VERSION,
-					RFL_VERSION_LEN) != 0)
+
+	if (f_memcmp( &pucHeader[RFL_VERSION_POS], 
+					  RFL_VERSION, RFL_VERSION_LEN) != 0)
 	{
 		rc = RC_SET( FERR_NOT_RFL);
 		goto Exit;
 	}
-	if (m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+
+	if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// Verify the database serial number
 
-		if (f_memcmp( &pucHeader [RFL_DB_SERIAL_NUM_POS],
-							&m_pFile->ucLastCommittedLogHdr [LOG_DB_SERIAL_NUM],
-							F_SERIAL_NUM_SIZE) != 0)
+		if (f_memcmp( &pucHeader[RFL_DB_SERIAL_NUM_POS],
+						 &m_pFile->ucLastCommittedLogHdr[LOG_DB_SERIAL_NUM],
+						 F_SERIAL_NUM_SIZE) != 0)
 		{
 			rc = RC_SET( FERR_BAD_RFL_DB_SERIAL_NUM);
 			goto Exit;
 		}
 
-		// Verify the serial number that is expected to be on the
-		// RFL file.  If pucSerialNum is NULL, we will not verify
-		// it.  This is generally only done during recovery or restore
-		// when we are reading through multiple RFL files and we need
-		// to verify their serial numbers.
+		// Verify the serial number that is expected to be on the RFL file.
+		// If pucSerialNum is NULL, we will not verify it. This is generally
+		// only done during recovery or restore when we are reading through
+		// multiple RFL files and we need to verify their serial numbers.
 
 		if (pucSerialNum &&
-			 f_memcmp( &pucHeader [RFL_SERIAL_NUM_POS],
-							pucSerialNum, F_SERIAL_NUM_SIZE) != 0)
+			 f_memcmp( &pucHeader[RFL_SERIAL_NUM_POS], pucSerialNum,
+						 F_SERIAL_NUM_SIZE) != 0)
 		{
 			rc = RC_SET( FERR_BAD_RFL_SERIAL_NUM);
 			goto Exit;
@@ -945,7 +951,7 @@ RCODE F_Rfl::verifyHeader(
 
 		// Verify the file number.
 
-		if (uiFileNum != (FLMUINT)FB2UD( &pucHeader [RFL_FILE_NUMBER_POS]))
+		if (uiFileNum != (FLMUINT) FB2UD( &pucHeader[RFL_FILE_NUMBER_POS]))
 		{
 			rc = RC_SET( FERR_BAD_RFL_FILE_NUMBER);
 			goto Exit;
@@ -953,18 +959,19 @@ RCODE F_Rfl::verifyHeader(
 
 		// Save serial numbers from the header.
 
-		f_memcpy( m_ucCurrSerialNum, &pucHeader [RFL_SERIAL_NUM_POS],
-						F_SERIAL_NUM_SIZE);
-		f_memcpy( m_ucNextSerialNum, &pucHeader [RFL_NEXT_FILE_SERIAL_NUM_POS],
-						F_SERIAL_NUM_SIZE);
+		f_memcpy( m_ucCurrSerialNum, &pucHeader[RFL_SERIAL_NUM_POS],
+					F_SERIAL_NUM_SIZE);
+		f_memcpy( m_ucNextSerialNum, &pucHeader[RFL_NEXT_FILE_SERIAL_NUM_POS],
+					F_SERIAL_NUM_SIZE);
 	}
 
 	// Save some things from the header.
 
-	m_uiFileEOF = (FLMUINT)FB2UD( &pucHeader [RFL_EOF_POS]);
+	m_uiFileEOF = (FLMUINT) FB2UD( &pucHeader[RFL_EOF_POS]);
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -972,8 +979,7 @@ Desc:		Opens an RFL file.  Verifies the serial number for 4.3 dbs.
 *********************************************************************/
 RCODE F_Rfl::openFile(
 	FLMUINT		uiFileNum,
-	FLMBYTE *	pucSerialNum
-	)
+	FLMBYTE *	pucSerialNum)
 {
 	RCODE				rc = FERR_OK;
 	char				szRflFileName [F_PATH_MAX_SIZE];
@@ -982,8 +988,8 @@ RCODE F_Rfl::openFile(
 
 	flmAssert( m_pFile);
 
-	// If we have a file open and it is not the file number
-	// passed in, close it.
+	// If we have a file open and it is not the file number passed in,
+	// close it.
 
 	if (m_pFileHdl)
 	{
@@ -993,6 +999,7 @@ RCODE F_Rfl::openFile(
 			{
 				goto Exit;
 			}
+
 			closeFile();
 		}
 		else
@@ -1003,8 +1010,8 @@ RCODE F_Rfl::openFile(
 	else
 	{
 
-		// Should not be able to be in the middle of a commit
-		// if we don't have a file open!
+		// Should not be able to be in the middle of a commit if we don't
+		// have a file open!
 
 		flmAssert( !m_pCommitBuf);
 	}
@@ -1019,16 +1026,17 @@ RCODE F_Rfl::openFile(
 	// Open the file.
 
 	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenBlockFile( szRflFileName,
-			  			   F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT,
-							512, &m_pFileHdl)))
+				  F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT, 512, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
 
+	m_pFileHdl->setMaxAutoExtendSize( m_uiRflMaxFileSize);
+	m_pFileHdl->setExtendSize( m_pFile->uiFileExtendSize);
+	
 	// Read the header.
 
-	if (RC_BAD( rc = m_pFileHdl->SectorRead( 0, 512, ucBuf,
-								&uiBytesRead)))
+	if (RC_BAD( rc = m_pFileHdl->SectorRead( 0, 512, ucBuf, &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
 		{
@@ -1038,11 +1046,11 @@ RCODE F_Rfl::openFile(
 		{
 			m_bRflVolumeOk = FALSE;
 		}
+
 		goto Exit;
 	}
 
-	// If there is not enough data in the buffer, it is not an
-	// RFL file.
+	// If there is not enough data in the buffer, it is not an RFL file.
 
 	if (uiBytesRead < 512)
 	{
@@ -1060,13 +1068,16 @@ RCODE F_Rfl::openFile(
 	m_pCurrentBuf->uiRflBufBytes = 0;
 	m_pCurrentBuf->uiRflFileOffset = 0;
 	m_pCurrentBuf->uiCurrFileNum = uiFileNum;
+	
 Exit:
+
 	if (RC_BAD( rc))
 	{
 		waitForCommit();
 		closeFile();
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -1093,7 +1104,7 @@ RCODE F_Rfl::createFile(
 	{
 		goto Exit;
 	}
-	
+
 	closeFile();
 
 	// Generate the log file name.
@@ -1103,18 +1114,17 @@ RCODE F_Rfl::createFile(
 		goto Exit;
 	}
 
-	// Delete the file if it already exists - don't care
-	// about return code here
+	// Delete the file if it already exists - don't care about return code
+	// here
 
-	(void)gv_FlmSysData.pFileSystem->Delete( szRflFileName);
+	(void) gv_FlmSysData.pFileSystem->Delete( szRflFileName);
 
-	// If DB is 4.3 or greater and we are in the same directory as
-	// our database files, see if we need to create the
-	// subdirectory.  Otherwise, the RFL directory should already
-	// have been created.  If the directory already exists, it is
-	// OK - we only try this the first time after setRflDir is
-	// called - to either verify that the directory exists, or if
-	// it doesn't, to create it.
+	// If DB is 4.3 or greater and we are in the same directory as our
+	// database files, see if we need to create the subdirectory.
+	// Otherwise, the RFL directory should already have been created. If
+	// the directory already exists, it is OK - we only try this the first
+	// time after setRflDir is called - to either verify that the directory
+	// exists, or if it doesn't, to create it.
 
 	if (m_bCreateRflDir)
 	{
@@ -1129,29 +1139,32 @@ RCODE F_Rfl::createFile(
 			}
 			else
 			{
-				if (RC_BAD( rc =
-						gv_FlmSysData.pFileSystem->CreateDir( m_szRflDir)))
+				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->CreateDir( m_szRflDir)))
 				{
 					goto Exit;
 				}
 			}
 		}
+
 		m_bCreateRflDir = FALSE;
 	}
 
 	// Create the file
 
 	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->CreateBlockFile( szRflFileName,
-			 F_IO_RDWR | F_IO_EXCL | F_IO_SH_DENYNONE | F_IO_DIRECT,
-			512, &m_pFileHdl)))
+				  F_IO_RDWR | F_IO_EXCL | F_IO_SH_DENYNONE | F_IO_DIRECT, 512,
+				  &m_pFileHdl)))
 	{
 		goto Exit;
 	}
 
+	m_pFileHdl->setMaxAutoExtendSize( m_uiRflMaxFileSize);
+	m_pFileHdl->setExtendSize( m_pFile->uiFileExtendSize);
+
 	// Initialize the header.
 
-	if (RC_BAD( rc = writeHeader( uiFileNum, 0,
-								pucSerialNum, pucNextSerialNum, bKeepSignature)))
+	if (RC_BAD( rc = writeHeader( uiFileNum, 0, pucSerialNum, pucNextSerialNum,
+				  bKeepSignature)))
 	{
 		goto Exit;
 	}
@@ -1159,6 +1172,25 @@ RCODE F_Rfl::createFile(
 	m_pCurrentBuf->uiRflBufBytes = 0;
 	m_pCurrentBuf->uiRflFileOffset = 512;
 	m_pCurrentBuf->uiCurrFileNum = uiFileNum;
+	
+	// Update the size of the RFL
+
+	if( m_bKeepRflFiles)
+	{
+		FLMUINT64		ui64RflDiskUsage;
+		
+		if( RC_BAD( rc = flmRflCalcDiskUsage( m_szRflDir, m_szDbPrefix,
+			m_pFile->FileHdr.uiVersionNum, &ui64RflDiskUsage)))
+		{
+			goto Exit;
+		}
+		
+		f_mutexLock( gv_FlmSysData.hShareMutex);
+		m_pFile->ui64RflDiskUsage = ui64RflDiskUsage;
+		f_mutexUnlock( gv_FlmSysData.hShareMutex);
+	}
+
+	
 Exit:
 
 	// Close the RFL log file AND delete it if we were not successful.
@@ -1166,9 +1198,10 @@ Exit:
 	if (RC_BAD( rc))
 	{
 		closeFile();
-		(void)gv_FlmSysData.pFileSystem->Delete( szRflFileName);
+		(void) gv_FlmSysData.pFileSystem->Delete( szRflFileName);
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -1210,24 +1243,23 @@ void F_Rfl::copyLastSector(
 	else if (pBuffer->uiRflBufBytes >= 512)
 	{
 
-		// See if the number of bytes in the buffer is an exact
-		// multiple of 512.
+		// See if the number of bytes in the buffer is an exact multiple of
+		// 512.
 
 		if (pBuffer->uiRflBufBytes & 511)	// Not exact multiple
 		{
 
 			// Round m_uiRflBufBytes down to next 512 byte boundary
 
-			FLMUINT		ui512Offset = ROUND_DOWN_TO_NEAREST_512(
-										pBuffer->uiRflBufBytes);
+			FLMUINT	ui512Offset = ROUND_DOWN_TO_NEAREST_512( 
+												pBuffer->uiRflBufBytes);
 
-			// Move all bytes above the nearest 512 byte boundary
-			// down to the beginning of the buffer and adjust
-			// pBuffer->uiRflBufBytes and
-			// pBuffer->uiRflFileOffset accordingly.
+			// Move all bytes above the nearest 512 byte boundary down to
+			// the beginning of the buffer and adjust pBuffer->uiRflBufBytes
+			// and pBuffer->uiRflFileOffset accordingly.
 
 			f_memcpy( pucNewBuffer, &pucOldBuffer[ui512Offset],
-						 pBuffer->uiRflBufBytes - ui512Offset);
+						pBuffer->uiRflBufBytes - ui512Offset);
 			pBuffer->uiRflBufBytes -= ui512Offset;
 			pBuffer->uiRflFileOffset += ui512Offset;
 		}
@@ -1241,12 +1273,12 @@ void F_Rfl::copyLastSector(
 	{
 		f_memcpy( pucNewBuffer, pucOldBuffer, pBuffer->uiRflBufBytes);
 	}
+
 	if (uiCurrPacketLen)
 	{
 		flmAssert( uiOldBufBytes + uiCurrPacketLen <= m_uiBufferSize);
-		f_memmove( &pucNewBuffer [pBuffer->uiRflBufBytes],
-						&pucOldBuffer [uiOldBufBytes],
-						uiCurrPacketLen);
+		f_memmove( &pucNewBuffer[pBuffer->uiRflBufBytes],
+					 &pucOldBuffer[uiOldBufBytes], uiCurrPacketLen);
 	}
 }
 
@@ -1257,8 +1289,7 @@ RCODE F_Rfl::flush(
 	RFL_BUFFER *	pBuffer,
 	FLMBOOL			bFinalWrite,
 	FLMUINT			uiCurrPacketLen,
-	FLMBOOL			bStartingNewFile
-	)
+	FLMBOOL			bStartingNewFile)
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesWritten;
@@ -1271,8 +1302,8 @@ RCODE F_Rfl::flush(
 	if (m_pFileHdl && pBuffer->uiRflBufBytes)
 	{
 
-		// Must wait for stuff in committing buffer, if any, before
-		// going ahead here.
+		// Must wait for stuff in committing buffer, if any, before going
+		// ahead here.
 
 		if (pBuffer != m_pCommitBuf)
 		{
@@ -1287,8 +1318,7 @@ RCODE F_Rfl::flush(
 			pAsyncBuf = pBuffer->pIOBuffer;
 		}
 
-		if ((FLMUINT)(-1) - pBuffer->uiRflFileOffset <=
-								pBuffer->uiRflBufBytes)
+		if ((FLMUINT) (-1) - pBuffer->uiRflFileOffset <= pBuffer->uiRflBufBytes)
 		{
 			rc = RC_SET( FERR_DB_FULL);
 			goto Exit;
@@ -1299,17 +1329,15 @@ RCODE F_Rfl::flush(
 		uiBufBytes = pBuffer->uiRflBufBytes;
 		if (m_uiRflWriteBufs > 1)
 		{
-			if( RC_BAD( rc = pBuffer->pBufferMgr->getBuffer(
-										&pNewBuffer,
-										m_uiBufferSize, m_uiBufferSize)))
+			if (RC_BAD( rc = pBuffer->pBufferMgr->getBuffer( &pNewBuffer,
+						  m_uiBufferSize, m_uiBufferSize)))
 			{
 				goto Exit;
 			}
 
-			// No need to copy data if it is the final write,
-			// because it won't be reused anyway - the data for
-			// the next transaction has already been copied to
-			// another buffer.
+			// No need to copy data if it is the final write, because it
+			// won't be reused anyway - the data for the next transaction has
+			// already been copied to another buffer.
 
 			if (!bFinalWrite)
 			{
@@ -1318,16 +1346,42 @@ RCODE F_Rfl::flush(
 			}
 		}
 
-		rc = m_pFileHdl->SectorWrite( uiFileOffset, uiBufBytes,
-						pucOldBuffer, 
-						m_uiBufferSize, pAsyncBuf,
-						&uiBytesWritten, FALSE);
-		if( m_uiRflWriteBufs == 1)
+		if( RC_OK( rc = m_pFileHdl->SectorWrite( uiFileOffset, uiBufBytes, 
+											  pucOldBuffer,
+											  m_uiBufferSize, pAsyncBuf, &uiBytesWritten,
+											  FALSE)))
+		{
+			if( m_bKeepRflFiles)
+			{
+				f_mutexLock( gv_FlmSysData.hShareMutex);
+
+				if( m_pFile->uiFileExtendSize)
+				{
+					FLMUINT		uiTmpSize;
+
+					uiTmpSize = (uiFileOffset % m_pFile->uiFileExtendSize) + 
+										(FLMUINT)flmRoundUp( uiBufBytes, 
+												m_pFileHdl->GetSectorSize());
+
+					if( uiTmpSize > m_pFile->uiFileExtendSize)
+					{
+						m_pFile->ui64RflDiskUsage += m_pFile->uiFileExtendSize;
+					}
+				}
+				else
+				{
+					m_pFile->ui64RflDiskUsage += uiBytesWritten;
+				}
+
+				f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			}
+		}
+		
+		if (m_uiRflWriteBufs == 1)
 		{
 
-			// We are counting on the fact that the write completed.
-			// When we only have one buffer, we cannot do async
-			// writes.
+			// We are counting on the fact that the write completed. When we
+			// only have one buffer, we cannot do async writes.
 
 			flmAssert( !pAsyncBuf);
 			if (RC_OK( rc) && !bFinalWrite)
@@ -1337,28 +1391,29 @@ RCODE F_Rfl::flush(
 			}
 
 			// DO NOT call notifyComplete - that would put
-			// pBuffer->pIOBuffer into the avail list, and we
-			// don't want that.  We simply want to keep
-			// reusing it.
+			// pBuffer->pIOBuffer into the avail list, and we don't want
+			// that. We simply want to keep reusing it.
 
 		}
 		else
 		{
 
-			// No need to call copyLastSector, because it was called
-			// above before calling SectorWrite.  The part of the
-			// old buffer that needs to be transferred to the new
-			// buffer has already been transferred.
+			// No need to call copyLastSector, because it was called above
+			// before calling SectorWrite. The part of the old buffer that
+			// needs to be transferred to the new buffer has already been
+			// transferred.
 
 			if (!pAsyncBuf)
 			{
 				pBuffer->pIOBuffer->notifyComplete( rc);
 			}
+
 			pBuffer->pIOBuffer = pNewBuffer;
 		}
 
 		if (RC_BAD( rc))
 		{
+
 			// Remap disk full error
 
 			if (rc == FERR_IO_DISK_FULL)
@@ -1366,6 +1421,7 @@ RCODE F_Rfl::flush(
 				rc = RC_SET( FERR_RFL_DEVICE_FULL);
 				m_bRflVolumeFull = TRUE;
 			}
+
 			m_bRflVolumeOk = FALSE;
 			goto Exit;
 		}
@@ -1373,13 +1429,13 @@ RCODE F_Rfl::flush(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
 Desc:	Switch buffers.  This routine assumes the m_hBufMutex is locked.
 *********************************************************************/
-void F_Rfl::switchBuffers( void)
+void F_Rfl::switchBuffers(void)
 {
 	RFL_BUFFER *	pOldBuffer = m_pCurrentBuf;
 
@@ -1391,6 +1447,7 @@ void F_Rfl::switchBuffers( void)
 	{
 		m_pCurrentBuf = &m_Buf1;
 	}
+
 	m_pCurrentBuf->bTransInProgress = pOldBuffer->bTransInProgress;
 	m_pCurrentBuf->uiCurrFileNum = pOldBuffer->uiCurrFileNum;
 	m_pCurrentBuf->uiRflBufBytes = pOldBuffer->uiRflBufBytes;
@@ -1398,7 +1455,7 @@ void F_Rfl::switchBuffers( void)
 	if (pOldBuffer->uiRflBufBytes)
 	{
 		copyLastSector( m_pCurrentBuf, pOldBuffer->pIOBuffer->m_pucBuffer,
-							 m_pCurrentBuf->pIOBuffer->m_pucBuffer, 0, FALSE);
+							m_pCurrentBuf->pIOBuffer->m_pucBuffer, 0, FALSE);
 	}
 }
 
@@ -1408,8 +1465,7 @@ Desc: Wait for all RFL transaction writes to be finished.  The caller
 		writes to the RFL.
 *********************************************************************/
 FLMBOOL F_Rfl::seeIfRflWritesDone(
-	FLMBOOL	bForceWait
-	)
+	FLMBOOL	bForceWait)
 {
 	FLMBOOL	bWritesDone;
 
@@ -1417,43 +1473,42 @@ FLMBOOL F_Rfl::seeIfRflWritesDone(
 
 	if (!bForceWait)
 	{
-		bWritesDone = (FLMBOOL)((m_pCurrentBuf->pFirstWaiter || m_pCommitBuf)
-										? FALSE
-										: TRUE);
+		bWritesDone = (FLMBOOL) ((m_pCurrentBuf->pFirstWaiter || m_pCommitBuf) 
+													? FALSE 
+													: TRUE);
 		f_mutexUnlock( m_hBufMutex);
 	}
 	else
 	{
 
-		// If the current buffer has a waiter, add self to that list
-		// to wait, because it will be notified after the commit buffer
-		// has been notified.  Otherwise, if there is a commit in
-		// progress, add self to that list to wait.
+		// If the current buffer has a waiter, add self to that list to
+		// wait, because it will be notified after the commit buffer has
+		// been notified. Otherwise, if there is a commit in progress, add
+		// self to that list to wait.
 
 		if (m_pCurrentBuf->pFirstWaiter)
 		{
 
-			// If bTransInProgress is TRUE and m_pCommitBuf is NULL
-			// then this thread is the current transaction, and
-			// nobody is going to wake up the first waiter until we
-			// are done!  Hence, we must wake him up.
+			// If bTransInProgress is TRUE and m_pCommitBuf is NULL then
+			// this thread is the current transaction, and nobody is going to
+			// wake up the first waiter until we are done! Hence, we must
+			// wake him up.
 
 			if (!m_pCommitBuf)
 			{
 
 				// If m_pCommitBuf is NULL, this could only be possible if
-				// there is a transaction in progress.  Otherwise, there
-				// would not have been a pFirstWaiter, because when
-				// the commit buffer finishes writing, if there is a
-				// waiter, it will set commitbuf=currentbuf if there
-				// is no transaction active.
+				// there is a transaction in progress. Otherwise, there would
+				// not have been a pFirstWaiter, because when the commit
+				// buffer finishes writing, if there is a waiter, it will set
+				// commitbuf=currentbuf if there is no transaction active.
 
 				flmAssert( m_pCurrentBuf->bTransInProgress);
 
 				m_pCommitBuf = m_pCurrentBuf;
 				switchBuffers();
 				wakeUpWaiter( FERR_OK, TRUE);
-				(void)waitForWrites( m_pCommitBuf, FALSE);
+				(void) waitForWrites( m_pCommitBuf, FALSE);
 			}
 			else
 			{
@@ -1461,18 +1516,18 @@ FLMBOOL F_Rfl::seeIfRflWritesDone(
 
 				// Must set bTransInProgress to FALSE so that when the writer
 				// of m_pCommitBuf finishes, it will signal the first waiter
-				// on m_pCurrentBuf.  If we don't do this, m_pCommitBuf will
-				// simply be set to NULL, and the first waiter will never
-				// be woke up.
+				// on m_pCurrentBuf. If we don't do this, m_pCommitBuf will
+				// simply be set to NULL, and the first waiter will never be
+				// woke up.
 
 				m_pCurrentBuf->bTransInProgress = FALSE;
-				(void)waitForWrites( m_pCurrentBuf, FALSE);
+				(void) waitForWrites( m_pCurrentBuf, FALSE);
 
 				// It is OK to restore the trans in progress flag to what it
 				// was before, because whoever called this routine has a lock
-				// on the database, and it is his trans-in-progress state
-				// that should be preserved.  No other thread will have been
-				// able to change that state because the database is locked.
+				// on the database, and it is his trans-in-progress state that
+				// should be preserved. No other thread will have been able to
+				// change that state because the database is locked.
 
 				f_mutexLock( m_hBufMutex);
 				m_pCurrentBuf->bTransInProgress = bSaveTransInProgress;
@@ -1481,15 +1536,17 @@ FLMBOOL F_Rfl::seeIfRflWritesDone(
 		}
 		else if (m_pCommitBuf)
 		{
-			(void)waitForWrites( m_pCommitBuf, FALSE);
+			(void) waitForWrites( m_pCommitBuf, FALSE);
 		}
 		else
 		{
 			f_mutexUnlock( m_hBufMutex);
 		}
+
 		bWritesDone = TRUE;
 	}
-	return( bWritesDone);
+
+	return (bWritesDone);
 }
 
 /********************************************************************
@@ -1517,11 +1574,11 @@ void F_Rfl::wakeUpWaiter(
 
 	*(m_pCommitBuf->pFirstWaiter->pRc) = rc;
 	hESem = m_pCommitBuf->pFirstWaiter->hESem;
-	if ((m_pCommitBuf->pFirstWaiter =
-			m_pCommitBuf->pFirstWaiter->pNext) == NULL)
+	if ((m_pCommitBuf->pFirstWaiter = m_pCommitBuf->pFirstWaiter->pNext) == NULL)
 	{
 		m_pCommitBuf->pLastWaiter = NULL;
 	}
+
 	f_semSignal( hESem);
 }
 
@@ -1548,46 +1605,45 @@ RCODE F_Rfl::completeTransWrites(
 
 	flmAssert( pDb->uiFlags & FDB_HAS_WRITE_LOCK);
 
-	// If we are not logging, we are probably recovering or restoring
-	// the database.  All we need to do in this case is write out the
-	// log header.
+	// If we are not logging, we are probably recovering or restoring the
+	// database. All we need to do in this case is write out the log
+	// header.
 
 	if (pDb->uiFlags & FDB_REPLAYING_RFL)
 	{
-		if (pDb->bHadUpdOper &&  m_pCurrentBuf->bOkToWriteHdrs)
+		if (pDb->bHadUpdOper && m_pCurrentBuf->bOkToWriteHdrs)
 		{
 			f_mutexUnlock( m_hBufMutex);
 			bMutexLocked = FALSE;
-			if (RC_BAD( rc = flmWriteLogHdr( pDb->pDbStats,
-												pDb->pSFileHdl, pDb->pFile,
-												m_pCurrentBuf->ucLogHdr,
-												m_pCurrentBuf->ucCPHdr, FALSE)))
+			if (RC_BAD( rc = flmWriteLogHdr( pDb->pDbStats, pDb->pSFileHdl,
+						  pDb->pFile, m_pCurrentBuf->ucLogHdr, m_pCurrentBuf->ucCPHdr,
+						  FALSE)))
 			{
 				flmSetMustCloseFlags( pDb->pFile, rc, FALSE);
 			}
 		}
+
 		goto Exit;
 	}
 
-	// Handle empty transactions differently.
-	// These transactions should not do any writing and do not need to
-	// wait for all writes to complete, unless the bOkToUnlock flag
-	// is set to FALSE.  In that case they must wait for all writes
-	// to complete before unlocking.
+	// Handle empty transactions differently. These transactions should
+	// not do any writing and do not need to wait for all writes to
+	// complete, unless the bOkToUnlock flag is set to FALSE. In that case
+	// they must wait for all writes to complete before unlocking.
 
 	if (!pDb->bHadUpdOper)
 	{
 
-		// If the current buffer has a waiter, add self to that list
-		// to wait, because it will be notified after the commit buffer
-		// has been notified.  Otherwise, if there is a commit in
-		// progress, add self to that list to wait.
+		// If the current buffer has a waiter, add self to that list to
+		// wait, because it will be notified after the commit buffer has
+		// been notified. Otherwise, if there is a commit in progress, add
+		// self to that list to wait.
 
 		if (m_pCurrentBuf->pFirstWaiter)
 		{
 
-			// If m_pCommitBuf is NULL then nobody is going to wake up
-			// the first waiter - we must do it.
+			// If m_pCommitBuf is NULL then nobody is going to wake up the
+			// first waiter - we must do it.
 
 			if (!m_pCommitBuf)
 			{
@@ -1596,6 +1652,7 @@ RCODE F_Rfl::completeTransWrites(
 					flmUnlinkDbFromTrans( pDb, bCommitting);
 					bDbUnlocked = TRUE;
 				}
+
 				m_pCommitBuf = m_pCurrentBuf;
 				switchBuffers();
 				wakeUpWaiter( FERR_OK, TRUE);
@@ -1603,13 +1660,13 @@ RCODE F_Rfl::completeTransWrites(
 				if (!bOkToUnlock)
 				{
 					bMutexLocked = FALSE;
-					(void)waitForWrites( m_pCommitBuf, FALSE);
+					(void) waitForWrites( m_pCommitBuf, FALSE);
 				}
 			}
 			else if (!bOkToUnlock)
 			{
 				bMutexLocked = FALSE;
-				(void)waitForWrites( m_pCurrentBuf, FALSE);
+				(void) waitForWrites( m_pCurrentBuf, FALSE);
 			}
 		}
 		else if (m_pCommitBuf)
@@ -1620,26 +1677,25 @@ RCODE F_Rfl::completeTransWrites(
 				rc = waitForWrites( m_pCommitBuf, FALSE);
 			}
 		}
+
 		goto Exit;
 	}
 
-	// If there is a transaction committing, put self into
-	// the wait list on the current buffer.  When the committer
-	// finishes, he will wake up the first thread in the list
-	// and that thread will commit the buffer.
+	// If there is a transaction committing, put self into the wait list
+	// on the current buffer. When the committer finishes, he will wake up
+	// the first thread in the list and that thread will commit the buffer.
 
 	if (m_pCommitBuf)
 	{
 		FLMBOOL	bIsWriter;
 
-		// Another thread has to be doing the writes to m_pCommitBuf,
-		// which means that m_pCurrentBuf better not be equal to
-		// m_pCommitBuf.
+		// Another thread has to be doing the writes to m_pCommitBuf, which
+		// means that m_pCurrentBuf better not be equal to m_pCommitBuf.
 
 		flmAssert( m_pCommitBuf != m_pCurrentBuf);
 
-		// If there are no waiters, we are the first one, so when
-		// we get signaled, we should proceed and do the write.
+		// If there are no waiters, we are the first one, so when we get
+		// signaled, we should proceed and do the write.
 
 		bIsWriter = m_pCurrentBuf->pFirstWaiter ? FALSE : TRUE;
 		if (bOkToUnlock)
@@ -1647,29 +1703,27 @@ RCODE F_Rfl::completeTransWrites(
 			flmUnlinkDbFromTrans( pDb, bCommitting);
 			bDbUnlocked = TRUE;
 		}
+
 		bMutexLocked = FALSE;
 		rc = waitForWrites( m_pCurrentBuf, bIsWriter);
 
-		// If we were the first one in the queue, we must now
-		// do the write.
+		// If we were the first one in the queue, we must now do the write.
 
 		if (!bIsWriter)
 		{
 			goto Exit;
 		}
 
-		// First one in the queue, fall through to do the write.
-
-		// The thread that woke me up better have set m_pCommitBuf
-		// See below.
+		// First one in the queue, fall through to do the write. The thread
+		// that woke me up better have set m_pCommitBuf See below.
 
 		flmAssert( m_pCommitBuf);
 	}
 	else if (m_pCurrentBuf->pFirstWaiter)
 	{
 
-		// Another thread is ready to commit the next set of
-		// buffers, but just needs to be woke up.
+		// Another thread is ready to commit the next set of buffers, but
+		// just needs to be woke up.
 
 		if (bOkToUnlock)
 		{
@@ -1677,8 +1731,7 @@ RCODE F_Rfl::completeTransWrites(
 			bDbUnlocked = TRUE;
 		}
 
-		// Need to set things up for that first waiter and get him
-		// going.
+		// Need to set things up for that first waiter and get him going.
 
 		m_pCommitBuf = m_pCurrentBuf;
 		switchBuffers();
@@ -1699,20 +1752,18 @@ RCODE F_Rfl::completeTransWrites(
 			flmUnlinkDbFromTrans( pDb, bCommitting);
 			bDbUnlocked = TRUE;
 		}
+
 		f_mutexUnlock( m_hBufMutex);
 		bMutexLocked = FALSE;
 	}
 
-	// NOTE: From this point on we use tmpRc because we don't want to
-	// lose the rc that may have been set above in the call to
-	// waitForWrites
-
+	// NOTE: From this point on we use tmpRc because we don't want to lose
+	// the rc that may have been set above in the call to waitForWrites;
 	// At this point the mutex better not be locked.
-	
 	flmAssert( !bMutexLocked);
 	bNotifyWaiters = TRUE;
 
-	if( (pDbStats = pDb->pDbStats) != NULL)
+	if ((pDbStats = pDb->pDbStats) != NULL)
 	{
 		f_timeGetTimeStamp( &StartTime);
 	}
@@ -1726,6 +1777,7 @@ RCODE F_Rfl::completeTransWrites(
 		{
 			rc = tmpRc;
 		}
+
 		goto Exit;
 	}
 
@@ -1737,15 +1789,15 @@ RCODE F_Rfl::completeTransWrites(
 		{
 			rc = tmpRc;
 		}
+
 		goto Exit;
 	}
 
-	// Force the RFL writes to disk if necessary.
-	// NOTE: It is possible for m_pFileHdl to be NULL at this point if
-	// there were no operations actually logged.  This happens in
-	// FlmDbUpgrade (see flconvrt.cpp).  Even though nothing was logged
-	// the transaction is not an empty transaction, because it still needs
-	// to write out the log header.
+	// Force the RFL writes to disk if necessary. NOTE: It is possible for
+	// m_pFileHdl to be NULL at this point if there were no operations
+	// actually logged. This happens in FlmDbUpgrade (see flconvrt.cpp).
+	// Even though nothing was logged the transaction is not an empty
+	// transaction, because it still needs to write out the log header.
 
 	if (m_pFileHdl)
 	{
@@ -1763,6 +1815,7 @@ RCODE F_Rfl::completeTransWrites(
 			{
 				rc = tmpRc;
 			}
+
 			m_bRflVolumeOk = FALSE;
 			goto Exit;
 		}
@@ -1772,15 +1825,15 @@ RCODE F_Rfl::completeTransWrites(
 
 	if (m_pCommitBuf->bOkToWriteHdrs)
 	{
-		if (RC_BAD( tmpRc = flmWriteLogHdr( pDb->pDbStats,
-											pDb->pSFileHdl, pDb->pFile,
-											m_pCommitBuf->ucLogHdr,
-											m_pCommitBuf->ucCPHdr, FALSE)))
+		if (RC_BAD( tmpRc = flmWriteLogHdr( pDb->pDbStats, pDb->pSFileHdl,
+					  pDb->pFile, m_pCommitBuf->ucLogHdr, m_pCommitBuf->ucCPHdr,
+					  FALSE)))
 		{
 			if (RC_OK( rc))
 			{
 				rc = tmpRc;
 			}
+
 			flmSetMustCloseFlags( pDb->pFile, tmpRc, FALSE);
 			goto Exit;
 		}
@@ -1809,8 +1862,8 @@ Exit:
 			wakeUpWaiter( rc, FALSE);
 		}
 
-		// If there are waiters on the current buffer, the first one
-		// should be woke up so it can start the next set of writes.
+		// If there are waiters on the current buffer, the first one should
+		// be woke up so it can start the next set of writes.
 
 		if (m_pCurrentBuf->pFirstWaiter && !m_pCurrentBuf->bTransInProgress)
 		{
@@ -1823,10 +1876,11 @@ Exit:
 		{
 			m_pCommitBuf = NULL;
 		}
+
 		if (pDbStats)
 		{
 			flmAddElapTime( &StartTime,
-				&pDbStats->UpdateTransStats.GroupCompletes.ui64ElapMilli);
+								&pDbStats->UpdateTransStats.GroupCompletes.ui64ElapMilli);
 			pDbStats->UpdateTransStats.GroupCompletes.ui64Count++;
 			pDbStats->bHaveStats = TRUE;
 			pDbStats->UpdateTransStats.ui64GroupFinished += uiNumFinished;
@@ -1837,7 +1891,8 @@ Exit:
 	{
 		f_mutexUnlock( m_hBufMutex);
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -1854,11 +1909,11 @@ FLMBYTE RflCalcChecksum(
 	const FLMBYTE *	pucEnd;
 	const FLMBYTE *	pucSectionEnd;
 	const FLMBYTE *	pucCur;
-	
-	// Checksum is calculated for every byte in the packet that
-	// comes after the checksum byte.
 
-	pucStart = &pucPacket[ RFL_PACKET_CHECKSUM_OFFSET + 1];
+	// Checksum is calculated for every byte in the packet that comes
+	// after the checksum byte.
+
+	pucStart = &pucPacket[RFL_PACKET_CHECKSUM_OFFSET + 1];
 	uiBytesToChecksum = (FLMUINT)(uiPacketBodyLen +
 												RFL_PACKET_OVERHEAD -
 												(RFL_PACKET_CHECKSUM_OFFSET + 1));
@@ -1872,14 +1927,14 @@ FLMBYTE RflCalcChecksum(
 	pucSectionEnd = pucStart + (sizeof( FLMUINT) - ((FLMUINT)pucStart & 0x3));
 #endif
 
-	if( pucSectionEnd > pucEnd)
+	if (pucSectionEnd > pucEnd)
 	{
 		pucSectionEnd = pucEnd;
 	}
 
-	while( pucCur < pucSectionEnd)
+	while (pucCur < pucSectionEnd)
 	{
-		uiChecksum = (uiChecksum << 8) + *pucCur++;
+		uiChecksum = (uiChecksum << 8) +*pucCur++;
 	}
 
 #ifdef FLM_64BIT
@@ -1888,24 +1943,24 @@ FLMBYTE RflCalcChecksum(
 	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
 #endif
 
-	while( pucCur < pucSectionEnd)
+	while (pucCur < pucSectionEnd)
 	{
-		uiChecksum ^= *((FLMUINT *)pucCur);
-		pucCur += sizeof( FLMUINT);
+		uiChecksum ^= *((FLMUINT *) pucCur);
+		pucCur += sizeof(FLMUINT);
 	}
 
-	while( pucCur < pucEnd)
+	while (pucCur < pucEnd)
 	{
 		uiChecksum ^= *pucCur++;
 	}
 
-	ucTmp = (FLMBYTE)uiChecksum;
+	ucTmp = (FLMBYTE) uiChecksum;
 
 	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
+	ucTmp ^= (FLMBYTE) uiChecksum;
 
 	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
+	ucTmp ^= (FLMBYTE) uiChecksum;
 
 #ifdef FLM_64BIT
 	uiChecksum >>= 8;
@@ -1920,16 +1975,15 @@ FLMBYTE RflCalcChecksum(
 	uiChecksum >>= 8;
 	ucTmp ^= (FLMBYTE)uiChecksum;
 #endif
-
-	ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
+	ucTmp ^= (FLMBYTE) (uiChecksum >> 8);
 	uiChecksum = ucTmp;
 
-	if( (uiChecksum = ucTmp) == 0)
+	if ((uiChecksum = ucTmp) == 0)
 	{
 		uiChecksum = 1;
 	}
 
-	return( (FLMBYTE)uiChecksum);
+	return ((FLMBYTE) uiChecksum);
 }
 
 /********************************************************************
@@ -1938,30 +1992,29 @@ Desc:	Flush all completed packets out of the RFL buffer, and shift
 		now room in the buffer for the maximum packet size.
 *********************************************************************/
 RCODE F_Rfl::shiftPacketsDown(
-	FLMUINT		uiCurrPacketLen,
-	FLMBOOL		bStartingNewFile
-	)
+	FLMUINT	uiCurrPacketLen,
+	FLMBOOL	bStartingNewFile)
 {
-	RCODE	rc = FERR_OK;
+	RCODE rc = FERR_OK;
 
-	// The call to flush will move whatever needs to be moved from
-	// the current buffer into a new buffer if multiple buffers are
-	// being used.  If only one buffer is being used, it will move
-	// the part of the packet that needs to be moved down to the
-	// beginning of the buffer - AFTER writing out the buffer.
+	// The call to flush will move whatever needs to be moved from the
+	// current buffer into a new buffer if multiple buffers are being used.
+	// If only one buffer is being used, it will move the part of the
+	// packet that needs to be moved down to the beginning of the buffer -
+	// AFTER writing out the buffer.
 
-	if (RC_BAD( rc = flush( m_pCurrentBuf, FALSE,
-									uiCurrPacketLen, bStartingNewFile)))
+	if (RC_BAD( rc = flush( m_pCurrentBuf, FALSE, uiCurrPacketLen,
+				  bStartingNewFile)))
 	{
 		goto Exit;
 	}
 
-	// NOTE: If multiple buffers are being used, whatever was moved
-	// to the new buffer has not yet been written out
+	// NOTE: If multiple buffers are being used, whatever was moved to the
+	// new buffer has not yet been written out
 
 	if (bStartingNewFile)
 	{
-		if( RC_BAD( rc = waitPendingWrites()))
+		if (RC_BAD( rc = waitPendingWrites()))
 		{
 			goto Exit;
 		}
@@ -1969,7 +2022,7 @@ RCODE F_Rfl::shiftPacketsDown(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -1980,17 +2033,15 @@ Desc:		Determine if we should start a new file.  If we are over the
 *********************************************************************/
 RCODE F_Rfl::seeIfNeedNewFile(
 	FLMUINT	uiPacketLen,
-	FLMBOOL	bDoNewIfOverLowLimit
-	)
+	FLMBOOL	bDoNewIfOverLowLimit)
 {
 	RCODE		rc = FERR_OK;
-	FLMBYTE	ucNextSerialNum [F_SERIAL_NUM_SIZE];
+	FLMBYTE	ucNextSerialNum[F_SERIAL_NUM_SIZE];
 
 	flmAssert( m_pFile);
 
-	// If the keep files flag is FALSE, we won't start
-	// a new file.  NOTE: This should ALWAYS be false
-	// for pre 4.3 databases.
+	// If the keep files flag is FALSE, we won't start a new file. NOTE:
+	// This should ALWAYS be false for pre 4.3 databases.
 
 	if (!m_bKeepRflFiles)
 	{
@@ -1998,25 +2049,24 @@ RCODE F_Rfl::seeIfNeedNewFile(
 	}
 
 	// VERY IMPORTANT NOTE: It is preferrable that we keep transactions
-	// entirely contained in the same RFL file if at all possible.  Note
-	// that it is NOT a hard and fast requirement.  The system will work
-	// just fine if we don't.  However, it would be nice if RFL files
-	// always ended with a commit or abort packet.  This preferences is
-	// due to what happens after a restore operation.  After a restore
-	// operation, we always need to start a new RFL file, but if possible,
-	// we would like that new RFL file to be the next one in the sequence
-	// after the last RFL file that was restored.  We can only do this if
-	// we were able to restore EVERY transaction that was in the last
-	// restored RFL file - which we can only do if the last restored RFL
-	// file ended with a commit or abort packet.
-	// To accomplish this end, we try to roll to new files on the first
-	// transaction begin packet that occurs after we have exceeded our
-	// low threshold - which is why bDoNewIfOverLowLimit is only set to
-	// TRUE on transaction begin packets.  It is set to FALSE on other
-	// packets so that we will continue logging the transaction in the
-	// same file that we started the transaction in - if possible.  The
-	// only thing that will cause a non-transaction-begin packet to roll
-	// to a new file is if we would exceed the high limit.
+	// entirely contained in the same RFL file if at all possible. Note
+	// that it is NOT a hard and fast requirement. The system will work
+	// just fine if we don't. However, it would be nice if RFL files always
+	// ended with a commit or abort packet. This preferences is due to what
+	// happens after a restore operation. After a restore operation, we
+	// always need to start a new RFL file, but if possible, we would like
+	// that new RFL file to be the next one in the sequence after the last
+	// RFL file that was restored. We can only do this if we were able to
+	// restore EVERY transaction that was in the last restored RFL file -
+	// which we can only do if the last restored RFL file ended with a
+	// commit or abort packet. To accomplish this end, we try to roll to
+	// new files on the first transaction begin packet that occurs after we
+	// have exceeded our low threshold - which is why bDoNewIfOverLowLimit
+	// is only set to TRUE on transaction begin packets. It is set to FALSE
+	// on other packets so that we will continue logging the transaction in
+	// the same file that we started the transaction in - if possible. The
+	// only thing that will cause a non-transaction-begin packet to roll to
+	// a new file is if we would exceed the high limit.
 
 	if ((bDoNewIfOverLowLimit &&
 		  m_pCurrentBuf->uiRflFileOffset + m_pCurrentBuf->uiRflBufBytes >=
@@ -2027,9 +2077,9 @@ RCODE F_Rfl::seeIfNeedNewFile(
 		FLMUINT	uiCurrFileEOF = m_pCurrentBuf->uiRflFileOffset +
 										 m_pCurrentBuf->uiRflBufBytes;
 
-		// Shift the current packet to the beginning of the buffer.
-		// Any packets in the buffer before that one will be written
-		// out to the current file.
+		// Shift the current packet to the beginning of the buffer. Any
+		// packets in the buffer before that one will be written out to the
+		// current file.
 
 		if (RC_BAD( rc = shiftPacketsDown( uiPacketLen, TRUE)))
 		{
@@ -2038,9 +2088,8 @@ RCODE F_Rfl::seeIfNeedNewFile(
 
 		// Update the header of the current file and close it.
 
-		if (RC_BAD( rc = writeHeader( m_pCurrentBuf->uiCurrFileNum,
-									uiCurrFileEOF,
-									m_ucCurrSerialNum, m_ucNextSerialNum, TRUE)))
+		if (RC_BAD( rc = writeHeader( m_pCurrentBuf->uiCurrFileNum, uiCurrFileEOF,
+					  m_ucCurrSerialNum, m_ucNextSerialNum, TRUE)))
 		{
 			goto Exit;
 		}
@@ -2051,6 +2100,7 @@ RCODE F_Rfl::seeIfNeedNewFile(
 		{
 			uiCurrFileEOF = ROUND_DOWN_TO_NEAREST_512( uiCurrFileEOF) + 512;
 		}
+
 		if (RC_BAD( rc = m_pFileHdl->Truncate( uiCurrFileEOF)))
 		{
 			goto Exit;
@@ -2062,47 +2112,44 @@ RCODE F_Rfl::seeIfNeedNewFile(
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
-		// Get the next serial number that will be used for the RFL
-		// file after this one.
+		// Get the next serial number that will be used for the RFL file
+		// after this one.
 
 		if (RC_BAD( rc = f_createSerialNumber( ucNextSerialNum)))
 		{
 			goto Exit;
 		}
 
-		// Create next file in the sequence.
-
-		// Use the next serial number stored in the FDB's log header
-		// for the serial number on this RFL file.  Use the serial
-		// number we just generated as the next RFL serial number.
+		// Create next file in the sequence. Use the next serial number
+		// stored in the FDB's log header for the serial number on this RFL
+		// file. Use the serial number we just generated as the next RFL
+		// serial number.
 
 		if (RC_BAD( rc = createFile( m_pCurrentBuf->uiCurrFileNum + 1,
-									m_ucNextSerialNum, ucNextSerialNum,
-									TRUE)))
+					  m_ucNextSerialNum, ucNextSerialNum, TRUE)))
 		{
 			goto Exit;
 		}
 
-		// Move the next serial number to the current serial number
-		// and the serial number we generated above into the next
-		// serial number.
+		// Move the next serial number to the current serial number and the
+		// serial number we generated above into the next serial number.
 
 		f_memcpy( m_ucCurrSerialNum, m_ucNextSerialNum, F_SERIAL_NUM_SIZE);
 		f_memcpy( m_ucNextSerialNum, ucNextSerialNum, F_SERIAL_NUM_SIZE);
 	}
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
-Desc:		Finish the current RFL file - set up so that next
-			transaction will begin a new RFL file.
-*********************************************************************/
+Desc: Finish the current RFL file - set up so that next transaction
+		will begin a new RFL file.
+********************************************************************/
 RCODE F_Rfl::finishCurrFile(
 	FDB *		pDb,
-	FLMBOOL	bNewKeepState
-	)
+	FLMBOOL	bNewKeepState)
 {
 	RCODE			rc = FERR_OK;
 	FLMBOOL		bDbLocked = FALSE;
@@ -2129,23 +2176,25 @@ RCODE F_Rfl::finishCurrFile(
 		rc = RC_SET( FERR_BACKUP_ACTIVE);
 		goto Exit;
 	}
+
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 
-	// Lock the database - need to prevent update
-	// transactions and checkpoint thread from running.
+	// Lock the database - need to prevent update transactions and
+	// checkpoint thread from running.
 
 	if (RC_BAD( rc = dbLock( pDb, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
+
 	bDbLocked = TRUE;
 
 	// Must wait for all RFL writes before switching files.
 
-	(void)seeIfRflWritesDone( TRUE);
+	(void) seeIfRflWritesDone( TRUE);
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -2155,31 +2204,30 @@ RCODE F_Rfl::finishCurrFile(
 
 	// If DB version is less than 4.3 we cannot do this.
 
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
-		goto Exit;	// Will return FERR_OK
+		goto Exit;		// Will return FERR_OK
 	}
 
-	pucUncommittedLogHdr = &m_pFile->ucUncommittedLogHdr [0];
+	pucUncommittedLogHdr = &m_pFile->ucUncommittedLogHdr[0];
 
-	// Don't want to copy last committed log header into
-	// uncommitted log header if bNewKeepState is TRUE because
-	// the caller has already done it, and has made modifications
-	// to the uncommitted log header that we don't want to lose.
+	// Don't want to copy last committed log header into uncommitted log
+	// header if bNewKeepState is TRUE because the caller has already done
+	// it, and has made modifications to the uncommitted log header that we
+	// don't want to lose.
 
 	if (!bNewKeepState)
 	{
 		f_memcpy( pucUncommittedLogHdr, m_pFile->ucLastCommittedLogHdr,
-						LOG_HEADER_SIZE);
+					LOG_HEADER_SIZE);
 
-		// If we are in a no-keep state, but we were not told that
-		// we have a new keep state, we cannot roll to the next
-		// RFL file, because a checkpoint has not been done.  This is
-		// not an error - it is just the case where FlmDbConfig was
-		// asked to roll to the next RFL file when the keep flag was
-		// still FALSE.
+		// If we are in a no-keep state, but we were not told that we have
+		// a new keep state, we cannot roll to the next RFL file, because a
+		// checkpoint has not been done. This is not an error - it is just
+		// the case where FlmDbConfig was asked to roll to the next RFL file
+		// when the keep flag was still FALSE.
 
-		if (!pucUncommittedLogHdr [LOG_KEEP_RFL_FILES])
+		if (!pucUncommittedLogHdr[LOG_KEEP_RFL_FILES])
 		{
 			goto Exit;	// Will return FERR_OK
 		}
@@ -2189,26 +2237,25 @@ RCODE F_Rfl::finishCurrFile(
 	// buffer.
 
 	f_memcpy( m_ucCurrSerialNum,
-					&pucUncommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM],
-					F_SERIAL_NUM_SIZE);
-	f_memcpy( m_ucNextSerialNum,
-					&pucUncommittedLogHdr [LOG_RFL_NEXT_SERIAL_NUM],
-					F_SERIAL_NUM_SIZE);
-	uiTransFileNum =
-		(FLMUINT)FB2UD( &pucUncommittedLogHdr [LOG_RFL_FILE_NUM]);
-	uiTransOffset =
-		(FLMUINT)FB2UD( &pucUncommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+				&pucUncommittedLogHdr[LOG_LAST_TRANS_RFL_SERIAL_NUM],
+				F_SERIAL_NUM_SIZE);
+				
+	f_memcpy( m_ucNextSerialNum, &pucUncommittedLogHdr[LOG_RFL_NEXT_SERIAL_NUM],
+				F_SERIAL_NUM_SIZE);
+				
+	uiTransFileNum = (FLMUINT) FB2UD( &pucUncommittedLogHdr[LOG_RFL_FILE_NUM]);
+	uiTransOffset = (FLMUINT) FB2UD( &pucUncommittedLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
 
-	// If the LOG_RFL_LAST_TRANS_OFFSET is zero, there is no need to go set
-	// up to go to the next file, because we are already poised to do so at
-	// the beginning of the next transaction.  Just return if this is the
-	// case.  Same for if the file does not exist.
+	// If the LOG_RFL_LAST_TRANS_OFFSET is zero, there is no need to go
+	// set up to go to the next file, because we are already poised to do
+	// so at the beginning of the next transaction. Just return if this is
+	// the case. Same for if the file does not exist.
 
 	if (!uiTransOffset)
 	{
 		if (!bNewKeepState)
 		{
-			goto Exit;		// Will return FERR_OK
+			goto Exit;	// Will return FERR_OK
 		}
 	}
 	else if (RC_BAD( rc = openFile( uiTransFileNum, m_ucCurrSerialNum)))
@@ -2229,28 +2276,30 @@ RCODE F_Rfl::finishCurrFile(
 	else
 	{
 
-		// At this point, we know the file exists, so we will update
-		// its header and then update the log header.  Note that we
-		// use the keep RFL state from the last committed log header,
-		// not the uncommitted log header - because it will contain
-		// the correct keep-state for the current RFL file.
+		// At this point, we know the file exists, so we will update its
+		// header and then update the log header. Note that we use the keep
+		// RFL state from the last committed log header, not the uncommitted
+		// log header - because it will contain the correct keep-state for
+		// the current RFL file.
 
 		if (RC_BAD( rc = writeHeader( m_pCurrentBuf->uiCurrFileNum, uiTransOffset,
 										m_ucCurrSerialNum, m_ucNextSerialNum,
 										m_pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]
-										? TRUE
-										: FALSE)))
+											? TRUE
+											: FALSE)))
 		{
 			goto Exit;
 		}
 
-		// Truncate the file down to its EOF size - the nearest 512 byte boundary.
+		// Truncate the file down to its EOF size - the nearest 512 byte
+		// boundary.
 
 		uiTruncateSize = uiTransOffset;
 		if (!ON_512_BYTE_BOUNDARY( uiTruncateSize))
 		{
 			uiTruncateSize = ROUND_DOWN_TO_NEAREST_512( uiTruncateSize) + 512;
 		}
+
 		if (RC_BAD( rc = m_pFileHdl->Truncate( uiTruncateSize)))
 		{
 			goto Exit;
@@ -2262,19 +2311,19 @@ RCODE F_Rfl::finishCurrFile(
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
-		// Set things up in the log header to go to the next file when
-		// we begin the next transaction.  NOTE: NO need to lock the
-		// mutex, because nobody but an update transaction looks at
-		// the uncommitted log header.
+		// Set things up in the log header to go to the next file when we
+		// begin the next transaction. NOTE: NO need to lock the mutex,
+		// because nobody but an update transaction looks at the uncommitted
+		// log header.
 
 		uiTransFileNum++;
-		UD2FBA( (FLMUINT32)uiTransFileNum,
-					&pucUncommittedLogHdr [LOG_RFL_FILE_NUM]);
+		UD2FBA( (FLMUINT32) uiTransFileNum,
+				 &pucUncommittedLogHdr[LOG_RFL_FILE_NUM]);
 	}
 
-	// Generate a new current serial number if bNewKeepState is
-	// TRUE.  Otherwise, move the next serial number into the current
-	// serial number.
+	// Generate a new current serial number if bNewKeepState is TRUE.
+	// Otherwise, move the next serial number into the current serial
+	// number.
 
 	if (bNewKeepState)
 	{
@@ -2295,26 +2344,27 @@ RCODE F_Rfl::finishCurrFile(
 		goto Exit;
 	}
 
-	// Set transaction offset to zero.  This will force the
-	// next RFL file to be created on the next transaction
-	// begin.  It will be created even if it is already
-	// there.
+	// Set transaction offset to zero. This will force the next RFL file
+	// to be created on the next transaction begin. It will be created even
+	// if it is already there.
 
-	UD2FBA( (FLMUINT32)0, &pucUncommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
-	f_memcpy( &pucUncommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM],
-				 m_ucCurrSerialNum, F_SERIAL_NUM_SIZE);
-	f_memcpy( &pucUncommittedLogHdr [LOG_RFL_NEXT_SERIAL_NUM],
-				 m_ucNextSerialNum, F_SERIAL_NUM_SIZE);
+	UD2FBA( (FLMUINT32) 0, &pucUncommittedLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
+	
+	f_memcpy( &pucUncommittedLogHdr[LOG_LAST_TRANS_RFL_SERIAL_NUM],
+				m_ucCurrSerialNum, F_SERIAL_NUM_SIZE);
+				
+	f_memcpy( &pucUncommittedLogHdr[LOG_RFL_NEXT_SERIAL_NUM], m_ucNextSerialNum,
+				F_SERIAL_NUM_SIZE);
 
 	// Set the CP file number and CP offset to point into the new file.
 	// The outer code (FlmDbConfig) has done a checkpoint and the database
-	// is still locked.  We need to set these values here, otherwise
-	// if we crash before the next checkpoint, recovery will start in the
-	// old RFL file, causing an FERR_BAD_RFL_SERIAL_NUM to be returned when
-	// traversing from the old RFL file to the new RFL file.
-	// NOTE:  These changes must be made to the uncommitted log header AND 
-	// the CP log header (so that they will be written out even
-	// though we are not forcing a checkpoint).
+	// is still locked. We need to set these values here, otherwise if we
+	// crash before the next checkpoint, recovery will start in the old RFL
+	// file, causing an FERR_BAD_RFL_SERIAL_NUM to be returned when
+	// traversing from the old RFL file to the new RFL file. NOTE: These
+	// changes must be made to the uncommitted log header AND the CP log
+	// header (so that they will be written out even though we are not
+	// forcing a checkpoint).
 
 	if (bNewKeepState)
 	{
@@ -2322,24 +2372,26 @@ RCODE F_Rfl::finishCurrFile(
 		// Do a quick check to see if it looks like we are in a
 		// checkpointed state
 
-		if( !m_pFile->ucLastCommittedLogHdr[ LOG_KEEP_RFL_FILES] && 
-			(FLMUINT)FB2UD( &m_pFile->ucLastCommittedLogHdr[ 
-				LOG_RFL_LAST_TRANS_OFFSET]) > 512)
+		if (!m_pFile->ucLastCommittedLogHdr[LOG_KEEP_RFL_FILES] &&
+			 (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[
+										LOG_RFL_LAST_TRANS_OFFSET]) > 512)
 		{
 			flmAssert( 0);
 		}
 #endif
 
-		f_memcpy( ucCheckpointLogHdr, 
-			m_pFile->ucCheckpointLogHdr, LOG_HEADER_SIZE);
-		UD2FBA( (FLMUINT32)uiTransFileNum,
-					&ucCheckpointLogHdr [LOG_RFL_LAST_CP_FILE_NUM]);
-		UD2FBA( (FLMUINT32)uiTransFileNum,
-					&pucUncommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM]);
-		UD2FBA( (FLMUINT32)512,
-					&ucCheckpointLogHdr [LOG_RFL_LAST_CP_OFFSET]);
-		UD2FBA( (FLMUINT32)512,
-					&pucUncommittedLogHdr [LOG_RFL_LAST_CP_OFFSET]);
+		f_memcpy( ucCheckpointLogHdr, m_pFile->ucCheckpointLogHdr,
+					LOG_HEADER_SIZE);
+		
+		UD2FBA( (FLMUINT32) uiTransFileNum,
+				 &ucCheckpointLogHdr[LOG_RFL_LAST_CP_FILE_NUM]);
+				 
+		UD2FBA( (FLMUINT32) uiTransFileNum,
+				 &pucUncommittedLogHdr[LOG_RFL_LAST_CP_FILE_NUM]);
+				 
+		UD2FBA( (FLMUINT32) 512, &ucCheckpointLogHdr[LOG_RFL_LAST_CP_OFFSET]);
+		
+		UD2FBA( (FLMUINT32) 512, &pucUncommittedLogHdr[LOG_RFL_LAST_CP_OFFSET]);
 	}
 
 	// Write out the log header to disk.
@@ -2353,37 +2405,38 @@ RCODE F_Rfl::finishCurrFile(
 		goto Exit;
 	}
 
-	// Copy the uncommitted log header back to the committed log header and
-	// copy the CP log header (if changed above).
+	// Copy the uncommitted log header back to the committed log header
+	// and copy the CP log header (if changed above).
 
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	f_memcpy( m_pFile->ucLastCommittedLogHdr, pucUncommittedLogHdr,
 				LOG_HEADER_SIZE);
 
-	if( bNewKeepState)
+	if (bNewKeepState)
 	{
-		f_memcpy( m_pFile->ucCheckpointLogHdr, 
-			ucCheckpointLogHdr, LOG_HEADER_SIZE);
+		f_memcpy( m_pFile->ucCheckpointLogHdr, ucCheckpointLogHdr,
+					LOG_HEADER_SIZE);
 	}
+
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 
 Exit:
 
 	if (bDbLocked)
 	{
-		(void)dbUnlock( pDb);
+		(void) dbUnlock( pDb);
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Finish packet by outputting header information for it.
 *********************************************************************/
 RCODE F_Rfl::finishPacket(
-	FLMUINT		uiPacketType,
-	FLMUINT		uiPacketBodyLen,
-	FLMBOOL		bDoNewIfOverLowLimit
-	)
+	FLMUINT	uiPacketType,
+	FLMUINT	uiPacketBodyLen,
+	FLMBOOL	bDoNewIfOverLowLimit)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiEncryptPacketBodyLen;
@@ -2393,11 +2446,11 @@ RCODE F_Rfl::finishPacket(
 	// Encrypt the packet body, if requested.
 
 	uiEncryptPacketBodyLen = getEncryptPacketBodyLen( uiPacketType,
-												uiPacketBodyLen);
+																	 uiPacketBodyLen);
 	uiPacketLen = uiEncryptPacketBodyLen + RFL_PACKET_OVERHEAD;
 
-	// See if this packet will cause us to overflow the limits on
-	// the current file.  If so, create a new file.
+	// See if this packet will cause us to overflow the limits on the
+	// current file. If so, create a new file.
 
 	if (RC_BAD( rc = seeIfNeedNewFile( uiPacketLen, bDoNewIfOverLowLimit)))
 	{
@@ -2411,48 +2464,52 @@ RCODE F_Rfl::finishPacket(
 
 	// Set the packet address in the packet header.
 
-	m_uiPacketAddress = m_pCurrentBuf->uiRflFileOffset +
-							  m_pCurrentBuf->uiRflBufBytes;
-	UD2FBA( (FLMUINT32)m_uiPacketAddress, &pucPacket [RFL_PACKET_ADDRESS_OFFSET]);
+	m_uiPacketAddress = m_pCurrentBuf->uiRflFileOffset + 
+									m_pCurrentBuf->uiRflBufBytes;
+									
+	UD2FBA( (FLMUINT32) m_uiPacketAddress, &pucPacket[
+															RFL_PACKET_ADDRESS_OFFSET]);
 
 	// Set the packet type and packet body length.
 
-	pucPacket [RFL_PACKET_TYPE_OFFSET] = (FLMBYTE)uiPacketType;
-	UW2FBA( (FLMUINT16)uiPacketBodyLen,
-		&pucPacket [RFL_PACKET_BODY_LENGTH_OFFSET]);
+	pucPacket[RFL_PACKET_TYPE_OFFSET] = (FLMBYTE) uiPacketType;
+	
+	UW2FBA( (FLMUINT16) uiPacketBodyLen,
+			 &pucPacket[RFL_PACKET_BODY_LENGTH_OFFSET]);
 
 	// Set the checksum for the packet.
 
-	pucPacket [RFL_PACKET_CHECKSUM_OFFSET] = RflCalcChecksum( pucPacket,
-																uiEncryptPacketBodyLen);
+	pucPacket[RFL_PACKET_CHECKSUM_OFFSET] = 
+						RflCalcChecksum( pucPacket, uiEncryptPacketBodyLen);
 
 	// Increment bytes in the buffer to reflect the fact that this packet
 	// is now complete.
 
 	m_pCurrentBuf->uiRflBufBytes += uiPacketLen;
+	
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
-Desc:		Truncate roll-forward log file to a certain size - only
-			do if not keeping RFL files.
+Desc:	Truncate roll-forward log file to a certain size - only do if 
+		not keeping RFL files.
 *********************************************************************/
 RCODE F_Rfl::truncate(
-	FLMUINT	uiTruncateSize
-	)
+	FLMUINT		uiTruncateSize)
 {
-	RCODE		rc = FERR_OK;
-	FLMUINT	uiFileNum;
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiFileNum;
 
 	flmAssert( uiTruncateSize >= 512);
 
 	// Keeping of log files better not be enabled.
 
-	flmAssert( !m_pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]);
+	flmAssert( !m_pFile->ucLastCommittedLogHdr[LOG_KEEP_RFL_FILES]);
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -2460,33 +2517,38 @@ RCODE F_Rfl::truncate(
 
 	flmAssert( !m_uiCurrTransID);
 
-	// Open the current RFL file.  If it does not exist, it is OK - there
+	// Open the current RFL file. If it does not exist, it is OK - there
 	// is nothing to truncate.
 
-	uiFileNum = (FLMUINT)FB2UD(
-						&m_pFile->ucLastCommittedLogHdr [LOG_RFL_FILE_NUM]);
-	if (RC_BAD( rc = openFile( uiFileNum,
-				&m_pFile->ucLastCommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM])))
+	uiFileNum = (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[
+																		LOG_RFL_FILE_NUM]);
+	
+	if (RC_BAD( rc = openFile( uiFileNum, &m_pFile->ucLastCommittedLogHdr[
+					  LOG_LAST_TRANS_RFL_SERIAL_NUM])))
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 		{
 			rc = FERR_OK;
 		}
+
 		goto Exit;
 	}
+
 	if (RC_BAD( rc = m_pFileHdl->Truncate( uiTruncateSize)))
 	{
 		m_bRflVolumeOk = FALSE;
 		goto Exit;
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Setup to begin a transaction
 *********************************************************************/
-RCODE F_Rfl::setupTransaction( void)
+RCODE F_Rfl::setupTransaction(void)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiFileNum;
@@ -2501,33 +2563,37 @@ RCODE F_Rfl::setupTransaction( void)
 	// buffer.
 
 	f_memcpy( m_ucCurrSerialNum,
-				&m_pFile->ucLastCommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM],
+				&m_pFile->ucLastCommittedLogHdr[LOG_LAST_TRANS_RFL_SERIAL_NUM],
 				F_SERIAL_NUM_SIZE);
+				
 	f_memcpy( m_ucNextSerialNum,
-				&m_pFile->ucLastCommittedLogHdr [LOG_RFL_NEXT_SERIAL_NUM],
+				&m_pFile->ucLastCommittedLogHdr[LOG_RFL_NEXT_SERIAL_NUM],
 				F_SERIAL_NUM_SIZE);
-	uiFileNum = (FLMUINT)FB2UD(
-				&m_pFile->ucLastCommittedLogHdr [LOG_RFL_FILE_NUM]);
-	uiLastTransOffset = (FLMUINT)FB2UD(
-				&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+				
+	uiFileNum = (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[
+															LOG_RFL_FILE_NUM]);
+	
+	uiLastTransOffset = (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[ 
+															LOG_RFL_LAST_TRANS_OFFSET]);
 
 	// If the LOG_RFL_LAST_TRANS_OFFSET is zero, we need to create the
-	// next RFL file number no matter what.  There are two cases where
-	// this happens: 1) when the database is first created, and 2) after
-	// a restore operation.
+	// next RFL file number no matter what. There are two cases where this
+	// happens: 1) when the database is first created, and 2) after a
+	// restore operation.
 
 	if (!uiLastTransOffset)
 	{
 		bCreateFile = TRUE;
 
-		// Close the current file, just in case we had opened it before.
-		// At this point, it doesn't matter because we are going to
-		// overwrite it.
+		// Close the current file, just in case we had opened it before. At
+		// this point, it doesn't matter because we are going to overwrite
+		// it.
 
 		if (RC_BAD( rc = waitForCommit()))
 		{
 			goto Exit;
 		}
+
 		closeFile();
 	}
 	else if (RC_BAD( rc = openFile( uiFileNum, m_ucCurrSerialNum)))
@@ -2536,6 +2602,7 @@ RCODE F_Rfl::setupTransaction( void)
 		{
 			goto Exit;
 		}
+
 		bCreateFile = TRUE;
 	}
 	else
@@ -2546,10 +2613,10 @@ RCODE F_Rfl::setupTransaction( void)
 	if (bCreateFile)
 	{
 
-		// If the log header indicates that data has already been logged
-		// to the file, we need to return the I/O error rather than just
-		// re-creating the file.  This may mean that someone changed the
-		// RFL directory without moving the RFL files properly.
+		// If the log header indicates that data has already been logged to
+		// the file, we need to return the I/O error rather than just
+		// re-creating the file. This may mean that someone changed the RFL
+		// directory without moving the RFL files properly.
 
 		if (uiLastTransOffset > 512)
 		{
@@ -2557,11 +2624,10 @@ RCODE F_Rfl::setupTransaction( void)
 			goto Exit;
 		}
 
-		// Create the RFL file if not found.
-
-		// Use the next serial number stored in the FDB's log header
-		// for the serial number on this RFL file.  Use the serial
-		// number we just generated as the next RFL serial number.
+		// Create the RFL file if not found. Use the next serial number
+		// stored in the FDB's log header for the serial number on this RFL
+		// file. Use the serial number we just generated as the next RFL
+		// serial number.
 
 		if (RC_BAD( rc = createFile( uiFileNum,
 									m_ucCurrSerialNum, m_ucNextSerialNum,
@@ -2575,8 +2641,8 @@ RCODE F_Rfl::setupTransaction( void)
 	else
 	{
 
-		// Read in enough of the buffer from the RFL file so that
-		// we are positioned on a 512 byte boundary.
+		// Read in enough of the buffer from the RFL file so that we are
+		// positioned on a 512 byte boundary.
 
 		if (RC_BAD( positionTo( uiLastTransOffset)))
 		{
@@ -2586,29 +2652,31 @@ RCODE F_Rfl::setupTransaction( void)
 
 	// These can only be changed when starting a transaction.
 
-	if (m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+	if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
-		m_bKeepRflFiles = m_pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]
-								? TRUE
-								: FALSE;
-		m_uiRflMaxFileSize = (FLMUINT)FB2UD(
-						&m_pFile->ucLastCommittedLogHdr [LOG_RFL_MAX_FILE_SIZE]);
+		m_bKeepRflFiles = m_pFile->ucLastCommittedLogHdr[LOG_KEEP_RFL_FILES] 
+									? TRUE 
+									: FALSE;
+		
+		m_uiRflMaxFileSize = (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[
+													LOG_RFL_MAX_FILE_SIZE]);
 
-		// Round maximum down to nearest 512 boundary.  This is necessary
+		// Round maximum down to nearest 512 boundary. This is necessary
 		// because we always write a minimum of 512 byte units in direct IO
-		// mode.  If we did not round the maximum down, our last packet could
+		// mode. If we did not round the maximum down, our last packet could
 		// end at an offset that is less than the maximum, but greater than
-		// the nearest 512 byte boundary - technically within the user-specified
-		// size limit.  However, because we always write a full 512 bytes of data
-		// to fill out the last sector when we are in direct IO mode, we would
-		// end up with a file that was slightly larger than the user-specified
-		// limit.  The EOF in the header of the file would be below the limit,
-		// but the actual file size would not be.  Thus, the need to round down.
+		// the nearest 512 byte boundary - technically within the
+		// user-specified size limit. However, because we always write a
+		// full 512 bytes of data to fill out the last sector when we are in
+		// direct IO mode, we would end up with a file that was slightly
+		// larger than the user-specified limit. The EOF in the header of
+		// the file would be below the limit, but the actual file size would
+		// not be. Thus, the need to round down.
 
 		m_uiRflMaxFileSize = ROUND_DOWN_TO_NEAREST_512( m_uiRflMaxFileSize);
 
-		// The maximum cannot go below a certain threshold - must have room for
-		// least one packet plus the header.
+		// The maximum cannot go below a certain threshold - must have room
+		// for least one packet plus the header.
 
 		if (m_uiRflMaxFileSize < RFL_MAX_PACKET_SIZE + 512)
 		{
@@ -2624,9 +2692,9 @@ RCODE F_Rfl::setupTransaction( void)
 		m_bKeepRflFiles = FALSE;
 		m_uiRflMaxFileSize = gv_FlmSysData.uiMaxFileSize;
 	}
-
-	m_uiRflMinFileSize = (FLMUINT)FB2UD(
-				&m_pFile->ucLastCommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
+	
+	m_uiRflMinFileSize = (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[
+												LOG_RFL_MIN_FILE_SIZE]);
 
 	// Minimum RFL file size should not be allowed to be larger than
 	// maximum!
@@ -2640,11 +2708,14 @@ RCODE F_Rfl::setupTransaction( void)
 
 	m_uiOperCount = 0;
 
+	// Set file extend sizes
+
 	m_pFileHdl->setMaxAutoExtendSize( m_uiRflMaxFileSize);
 	m_pFileHdl->setExtendSize( m_pFile->uiFileExtendSize);
+
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -2656,8 +2727,7 @@ Desc:		Log transaction begin.  This routine will also make sure
 			compatible because it reads the flag.
 *********************************************************************/
 RCODE F_Rfl::logBeginTransaction(
-	FDB *			pDb
-	)
+	FDB *			pDb)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiDbVersion = pDb->pFile->FileHdr.uiVersionNum;
@@ -2672,8 +2742,8 @@ RCODE F_Rfl::logBeginTransaction(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -2681,12 +2751,12 @@ RCODE F_Rfl::logBeginTransaction(
 
 	flmAssert( !m_uiCurrTransID);
 
-	if( RC_BAD( rc = setupTransaction()))
+	if (RC_BAD( rc = setupTransaction()))
 	{
 		goto Exit;
 	}
 
-	uiPacketBodyLen = uiDbVersion >= FLM_VER_4_31 ? 12 : 8;
+	uiPacketBodyLen = uiDbVersion >= FLM_FILE_FORMAT_VER_4_31 ? 12 : 8;
 
 	// Make sure we have space in the RFL buffer for a complete packet.
 
@@ -2704,41 +2774,41 @@ RCODE F_Rfl::logBeginTransaction(
 
 	// Output the transaction ID.
 
-	UD2FBA( (FLMUINT32)pDb->LogHdr.uiCurrTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) pDb->LogHdr.uiCurrTransID, pucPacketBody);
 	pucPacketBody += 4;
 
-	// This used to be a FLM_GET_TIMER() value in pre-4.3 code, but
-	// it was never really used.  Set it to GMT time now.
+	// This used to be a FLM_GET_TIMER() value in pre-4.3 code, but it was
+	// never really used. Set it to GMT time now.
 
 	f_timeGetSeconds( &uiGMTTime);
-	UD2FBA( (FLMUINT32)uiGMTTime, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiGMTTime, pucPacketBody);
 	pucPacketBody += 4;
 
-	// NOTE: In the pre-4.3 code the next four bytes would be
-	// zero, but that is really unnecessary.  We will simply
-	// no longer set the RFL_TIME_LOGGED_FLAG bit in the
-	// packet type.  Pre-4.3 code should be compatible.
+	// NOTE: In the pre-4.3 code the next four bytes would be zero, but
+	// that is really unnecessary. We will simply no longer set the
+	// RFL_TIME_LOGGED_FLAG bit in the packet type. Pre-4.3 code should be
+	// compatible.
 
-	if( uiDbVersion >= FLM_VER_4_31)
+	if (uiDbVersion >= FLM_FILE_FORMAT_VER_4_31)
 	{
-		FLMUINT		uiLastLoggedCommitID;
+		FLMUINT	uiLastLoggedCommitID;
 
 		uiLastLoggedCommitID = FB2UD( 
-			&m_pFile->ucLastCommittedLogHdr [LOG_LAST_RFL_COMMIT_ID]);
+					&m_pFile->ucLastCommittedLogHdr[LOG_LAST_RFL_COMMIT_ID]);
 
-		UD2FBA( (FLMUINT32)uiLastLoggedCommitID, pucPacketBody);
+		UD2FBA( (FLMUINT32) uiLastLoggedCommitID, pucPacketBody);
 		pucPacketBody += 4;
 
-		if (RC_BAD( rc = finishPacket( 
-			RFL_TRNS_BEGIN_EX_PACKET, uiPacketBodyLen, TRUE)))
+		if (RC_BAD( rc = finishPacket( RFL_TRNS_BEGIN_EX_PACKET, uiPacketBodyLen,
+					  TRUE)))
 		{
 			goto Exit;
 		}
 	}
 	else
 	{
-		if (RC_BAD( rc = finishPacket( 
-				RFL_TRNS_BEGIN_PACKET, uiPacketBodyLen, TRUE)))
+		if (RC_BAD( rc = finishPacket( RFL_TRNS_BEGIN_PACKET, uiPacketBodyLen,
+					  TRUE)))
 		{
 			goto Exit;
 		}
@@ -2748,37 +2818,39 @@ RCODE F_Rfl::logBeginTransaction(
 
 	m_uiTransStartFile = m_pCurrentBuf->uiCurrFileNum;
 	m_uiTransStartAddr = m_pCurrentBuf->uiRflFileOffset +
-								m_pCurrentBuf->uiRflBufBytes -
-									uiPacketBodyLen - RFL_PACKET_OVERHEAD;
+		m_pCurrentBuf->uiRflBufBytes -
+		uiPacketBodyLen -
+		RFL_PACKET_OVERHEAD;
 	m_uiCurrTransID = pDb->LogHdr.uiCurrTransID;
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Flushes the RFL and sets some things in the log header.
 *********************************************************************/
-void F_Rfl::finalizeTransaction( void)
+void F_Rfl::finalizeTransaction(void)
 {
 	FLMUINT		uiRflTransEndOffset;
-	FLMBYTE *	pucLogHdr = &m_pFile->ucUncommittedLogHdr [0];
+	FLMBYTE *	pucLogHdr = &m_pFile->ucUncommittedLogHdr[0];
 
 	// Save the serial numbers and file numbers into the file's
 	// uncommitted log header.
 
-	UD2FBA( (FLMUINT32)m_pCurrentBuf->uiCurrFileNum,
-		&pucLogHdr [LOG_RFL_FILE_NUM]);
+	UD2FBA( (FLMUINT32) m_pCurrentBuf->uiCurrFileNum,
+			 &pucLogHdr[LOG_RFL_FILE_NUM]);
 
 	uiRflTransEndOffset = getCurrWriteOffset();
-	UD2FBA( (FLMUINT32)uiRflTransEndOffset,
-		&pucLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
+	UD2FBA( (FLMUINT32) uiRflTransEndOffset,
+			 &pucLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
 
-	f_memcpy( &pucLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM],
-		m_ucCurrSerialNum, F_SERIAL_NUM_SIZE);
+	f_memcpy( &pucLogHdr[LOG_LAST_TRANS_RFL_SERIAL_NUM], m_ucCurrSerialNum,
+				F_SERIAL_NUM_SIZE);
 
-	f_memcpy( &pucLogHdr [LOG_RFL_NEXT_SERIAL_NUM],
-		m_ucNextSerialNum, F_SERIAL_NUM_SIZE);
+	f_memcpy( &pucLogHdr[LOG_RFL_NEXT_SERIAL_NUM], m_ucNextSerialNum,
+				F_SERIAL_NUM_SIZE);
 }
 
 /********************************************************************
@@ -2792,7 +2864,7 @@ Desc:		Handles the commit and abort log operations. If aborting
 			the RFL files be deleted.  If they are not successfully
 			deleted, they will be overwritten if need be when creating
 			new ones.
-			NOTE: The prior version of FLAIM (before 4.3) would log
+Note:		The prior version of FLAIM (before 4.3) would log
 			a time and set the RFL_TIME_LOGGED_FLAG bit in the packet
 			type.  This is no longer done.  Old code should be
 			compatible because it reads the flag.
@@ -2806,18 +2878,18 @@ RCODE F_Rfl::logEndTransaction(
 	RCODE			rc2 = FERR_OK;
 	FLMUINT		uiLowFileNum;
 	FLMUINT		uiHighFileNum;
-	char			szRflFileName [F_PATH_MAX_SIZE];
+	char			szRflFileName[F_PATH_MAX_SIZE];
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
 	// Initialize the "logged trans end" flag
 
-	if( pbLoggedTransEnd)
+	if (pbLoggedTransEnd)
 	{
 		*pbLoggedTransEnd = FALSE;
 	}
@@ -2832,32 +2904,31 @@ RCODE F_Rfl::logEndTransaction(
 	flmAssert( m_pFileHdl);
 	flmAssert( m_pFile);
 
-	// If the transaction had no operations, throw it away - don't
-	// even log the packet.  An abort operation may also
-	// elect to throw the log away even if there were
-	// operations.  That is determined by the bThrowLogAway flag.
-	// The bThrowLogAway flag may be TRUE when doing a commit if
-	// the caller knows that nothing happened during the transction.
+	// If the transaction had no operations, throw it away - don't even
+	// log the packet. An abort operation may also elect to throw the log
+	// away even if there were operations. That is determined by the
+	// bThrowLogAway flag. The bThrowLogAway flag may be TRUE when doing a
+	// commit if the caller knows that nothing happened during the
+	// transction.
 
 	if (bThrowLogAway || !m_uiOperCount)
 	{
 Throw_Away_Transaction:
 
-		// If we have switched files, delete all but the file we
-		// started in.
+		// If we have switched files, delete all but the file we started in.
 
 		if (m_pCurrentBuf->uiCurrFileNum != m_uiTransStartFile)
 		{
 			flmAssert( m_pCurrentBuf->uiCurrFileNum > m_uiTransStartFile);
 
-			// File number in uncommitted log header better not
-			// have been changed yet.  It is only supposed to
-			// be changed when the transaction finishes - i.e., in
-			// this routine.  Up until this point, it should only
-			// be changed in m_pCurrentBuf->uiCurrFileNum.
+			// File number in uncommitted log header better not have been
+			// changed yet. It is only supposed to be changed when the
+			// transaction finishes - i.e., in this routine. Up until this
+			// point, it should only be changed in
+			// m_pCurrentBuf->uiCurrFileNum.
 
-			flmAssert( m_uiTransStartFile ==
-				(FLMUINT)FB2UD( &m_pFile->ucUncommittedLogHdr [LOG_RFL_FILE_NUM]));
+			flmAssert( m_uiTransStartFile == (FLMUINT) FB2UD(
+							 &m_pFile->ucUncommittedLogHdr[LOG_RFL_FILE_NUM]));
 
 			uiLowFileNum = m_uiTransStartFile + 1;
 			uiHighFileNum = m_pCurrentBuf->uiCurrFileNum;
@@ -2868,17 +2939,19 @@ Throw_Away_Transaction:
 			{
 				goto Exit;
 			}
+
 			closeFile();
 
-			// Delete as many of the files as possible.  Don't worry
-			// about errors here.
+			// Delete as many of the files as possible. Don't worry about
+			// errors here.
 
 			while (uiLowFileNum <= uiHighFileNum)
 			{
 				if (RC_OK( getFullRflFileName( uiLowFileNum, szRflFileName)))
 				{
-					(void)gv_FlmSysData.pFileSystem->Delete( szRflFileName);
+					(void) gv_FlmSysData.pFileSystem->Delete( szRflFileName);
 				}
+
 				uiLowFileNum++;
 			}
 		}
@@ -2890,16 +2963,17 @@ Throw_Away_Transaction:
 
 			if (RC_BAD( rc2 = positionTo( m_uiTransStartAddr)))
 			{
-				// If we got to this point because of a 
-				// "goto Throw_Away_Transaction", we don't want to 
-				// clobber the original error code.  So, we use rc2
-				// temporarily and then determine if its value should 
-				// be set into rc.
 
-				if( RC_OK( rc))
+				// If we got to this point because of a "goto
+				// Throw_Away_Transaction", we don't want to clobber the
+				// original error code. So, we use rc2 temporarily and then
+				// determine if its value should be set into rc.
+
+				if (RC_OK( rc))
 				{
 					rc = rc2;
 				}
+
 				rc2 = FERR_OK;
 				goto Exit;
 			}
@@ -2928,19 +3002,18 @@ Throw_Away_Transaction:
 
 		// Output the transaction ID.
 
-		UD2FBA( (FLMUINT32)m_uiCurrTransID, pucPacketBody);
+		UD2FBA( (FLMUINT32) m_uiCurrTransID, pucPacketBody);
 		pucPacketBody += 4;
-		UD2FBA( (FLMUINT32)m_uiTransStartAddr, pucPacketBody);
+		UD2FBA( (FLMUINT32) m_uiTransStartAddr, pucPacketBody);
 		pucPacketBody += 4;
-		if (RC_BAD( rc = finishPacket( uiPacketType, uiPacketBodyLen,
-								FALSE)))
+		if (RC_BAD( rc = finishPacket( uiPacketType, uiPacketBodyLen, FALSE)))
 		{
 			goto Throw_Away_Transaction;
 		}
 
 		finalizeTransaction();
 
-		if( pbLoggedTransEnd)
+		if (pbLoggedTransEnd)
 		{
 			*pbLoggedTransEnd = TRUE;
 		}
@@ -2953,17 +3026,17 @@ Exit:
 		m_uiCurrTransID = 0;
 	}
 
-	return( RC_BAD( rc) ? rc : rc2);
+	return (RC_BAD( rc) ? rc : rc2);
 }
 
 /********************************************************************
 Desc:		Log add, modify, delete, and reserve DRN packets
 *********************************************************************/
 RCODE F_Rfl::logUpdatePacket(
-	FLMUINT		uiPacketType,
-	FLMUINT		uiContainer,
-	FLMUINT		uiDrn,
-	FLMUINT		uiAutoTrans)
+	FLMUINT	uiPacketType,
+	FLMUINT	uiContainer,
+	FLMUINT	uiDrn,
+	FLMUINT	uiAutoTrans)
 {
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
@@ -2976,8 +3049,8 @@ RCODE F_Rfl::logUpdatePacket(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -2987,9 +3060,9 @@ RCODE F_Rfl::logUpdatePacket(
 
 	m_uiOperCount++;
 
-	if( uiPacketType == RFL_ADD_RECORD_PACKET_VER_2 ||
-		uiPacketType == RFL_MODIFY_RECORD_PACKET_VER_2 ||
-		uiPacketType == RFL_DELETE_RECORD_PACKET_VER_2)
+	if (uiPacketType == RFL_ADD_RECORD_PACKET_VER_2 ||
+		 uiPacketType == RFL_MODIFY_RECORD_PACKET_VER_2 ||
+		 uiPacketType == RFL_DELETE_RECORD_PACKET_VER_2)
 	{
 		uiPacketBodyLen = 11;
 	}
@@ -3014,61 +3087,60 @@ RCODE F_Rfl::logUpdatePacket(
 
 	// Output the transaction ID.
 
-	UD2FBA( (FLMUINT32)m_uiCurrTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) m_uiCurrTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the container number.
 
-	UW2FBA( (FLMUINT16)uiContainer, pucPacketBody);
+	UW2FBA( (FLMUINT16) uiContainer, pucPacketBody);
 	pucPacketBody += 2;
 
 	// Output the DRN.
 
-	UD2FBA( (FLMUINT32)uiDrn, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiDrn, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the flags
 
-	if( uiPacketType == RFL_ADD_RECORD_PACKET_VER_2 ||
-		uiPacketType == RFL_MODIFY_RECORD_PACKET_VER_2 ||
-		uiPacketType == RFL_DELETE_RECORD_PACKET_VER_2)
+	if (uiPacketType == RFL_ADD_RECORD_PACKET_VER_2 ||
+		 uiPacketType == RFL_MODIFY_RECORD_PACKET_VER_2 ||
+		 uiPacketType == RFL_DELETE_RECORD_PACKET_VER_2)
 	{
-		FLMUINT		uiFlags = 0;
+		FLMUINT	uiFlags = 0;
 
 		// For now, these are the only flags we log
 
-		if( uiAutoTrans & FLM_DO_IN_BACKGROUND)
+		if (uiAutoTrans & FLM_DO_IN_BACKGROUND)
 		{
 			uiFlags |= RFL_UPDATE_BACKGROUND;
 		}
 
-		if( uiAutoTrans & FLM_SUSPENDED)
+		if (uiAutoTrans & FLM_SUSPENDED)
 		{
 			uiFlags |= RFL_UPDATE_SUSPENDED;
 		}
 
-		*pucPacketBody++ = (FLMBYTE)uiFlags;
+		*pucPacketBody++ = (FLMBYTE) uiFlags;
 	}
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket( uiPacketType, uiPacketBodyLen,
-								FALSE)))
+	if (RC_BAD( rc = finishPacket( uiPacketType, uiPacketBodyLen, FALSE)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Log index suspend and resume packets
 *********************************************************************/
 RCODE F_Rfl::logIndexSuspendOrResume(
-	FLMUINT		uiIndexNum,
-	FLMUINT		uiPacketType)
+	FLMUINT	uiIndexNum,
+	FLMUINT	uiPacketType)
 {
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
@@ -3077,7 +3149,7 @@ RCODE F_Rfl::logIndexSuspendOrResume(
 	// This call is new with 4.51 databases - not supported in older
 	// versions, so don't log it.
 
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_51)
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_51)
 	{
 		goto Exit;
 	}
@@ -3089,8 +3161,8 @@ RCODE F_Rfl::logIndexSuspendOrResume(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -3117,25 +3189,115 @@ RCODE F_Rfl::logIndexSuspendOrResume(
 
 	// Output the transaction ID.
 
-	UD2FBA( (FLMUINT32)m_uiCurrTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) m_uiCurrTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the index number.
 
-	UW2FBA( (FLMUINT16)uiIndexNum, pucPacketBody);
+	UW2FBA( (FLMUINT16) uiIndexNum, pucPacketBody);
 	pucPacketBody += 2;
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket( uiPacketType, uiPacketBodyLen,
-								FALSE)))
+	if (RC_BAD( rc = finishPacket( uiPacketType, uiPacketBodyLen, FALSE)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
-	return( rc);
+	return (rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logSizeEventConfig(
+	FLMUINT		uiTransID,
+	FLMUINT		uiSizeThreshold,
+	FLMUINT		uiSecondsBetweenEvents,
+	FLMUINT		uiBytesBetweenEvents)
+{
+	RCODE			rc = FERR_OK;
+	FLMBYTE *	pucPacketBody;
+	FLMUINT		uiPacketBodyLen;
+
+	// Don't log the operation if it isn't supported by the current database
+	// version
+
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+	{
+		goto Exit;
+	}
+
+	// Do nothing if logging is disabled.
+
+	if (m_bLoggingOff)
+	{
+		goto Exit;
+	}
+
+	// Better not be in the middle of logging unknown stuff for the
+	// application
+
+	flmAssert( !m_bLoggingUnknown);
+
+	// We need to set up to log this packet as if we were logging a
+	// transaction. The only difference is that we don't log the begin
+	// transaction packet.
+
+	if (RC_BAD( rc = setupTransaction()))
+	{
+		goto Exit;
+	}
+
+	uiPacketBodyLen = 16;
+
+	// Make sure we have space in the RFL buffer for a complete packet.
+
+	if( !haveBuffSpace( uiPacketBodyLen + RFL_PACKET_OVERHEAD))
+	{
+		if (RC_BAD( rc = flush( m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = getPacketBodyPtr();
+
+	// Output the transaction ID.
+
+	UD2FBA( (FLMUINT32) uiTransID, pucPacketBody);
+	pucPacketBody += 4;
+
+	// Output the size threshold
+
+	UD2FBA( (FLMUINT32) uiSizeThreshold, pucPacketBody);
+	pucPacketBody += 4;
+
+	// Output the time frequency
+
+	UD2FBA( (FLMUINT32) uiSecondsBetweenEvents, pucPacketBody);
+	pucPacketBody += 4;
+	
+	// Output the size frequency
+
+	UD2FBA( (FLMUINT32) uiBytesBetweenEvents, pucPacketBody);
+	pucPacketBody += 4;
+	
+	// Finish the packet
+
+	if (RC_BAD( rc = finishPacket( RFL_CONFIG_SIZE_EVENT_PACKET, 
+		uiPacketBodyLen, TRUE)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return (rc);
 }
 
 /********************************************************************
@@ -3150,14 +3312,13 @@ RCODE F_Rfl::makeRoom(
 	FLMUINT *	puiCurrPacketLenRV,
 	FLMUINT		uiPacketType,
 	FLMUINT *	puiBytesAvailableRV,
-	FLMUINT *	puiPacketCountRV
-	)
+	FLMUINT *	puiPacketCountRV)
 {
 	RCODE		rc = FERR_OK;
 	FLMUINT	uiBytesNeeded;
 
-	// Must account for encryption, so round bytes needed to nearest
-	// four byte boundary.
+	// Must account for encryption, so round bytes needed to nearest four
+	// byte boundary.
 
 	uiBytesNeeded = *puiCurrPacketLenRV + uiAdditionalBytesNeeded;
 	if (uiBytesNeeded & 0x3)
@@ -3165,7 +3326,7 @@ RCODE F_Rfl::makeRoom(
 		uiBytesNeeded += (4 - (uiBytesNeeded & 0x3));
 	}
 
-	if (uiBytesNeeded <= (FLMUINT)RFL_MAX_PACKET_SIZE)
+	if (uiBytesNeeded <= (FLMUINT) RFL_MAX_PACKET_SIZE)
 	{
 		FLMUINT	uiTmp = uiBytesNeeded;
 
@@ -3179,20 +3340,20 @@ RCODE F_Rfl::makeRoom(
 		else
 		{
 
-			// Bytes requested will fit into a packet, but not the
-			// buffer, so we need to shift the packets in the buffer
-			// down.  The shiftPacketsDown guarantees that there
-			// is room in the buffer for a full size packet.
+			// Bytes requested will fit into a packet, but not the buffer,
+			// so we need to shift the packets in the buffer down. The
+			// shiftPacketsDown guarantees that there is room in the buffer
+			// for a full size packet.
 
 			if (RC_BAD( rc = shiftPacketsDown( *puiCurrPacketLenRV, FALSE)))
 			{
 				goto Exit;
 			}
 
-			// If a non-NULL puwBytesAvailableRV is passed in it means that we
-			// are to return the number of bytes that we can actually output.
-			// Since we know there is enough for the bytes needed, we simply return
-			// the number of bytes that were requested.
+			// If a non-NULL puwBytesAvailableRV is passed in it means that
+			// we are to return the number of bytes that we can actually
+			// output. Since we know there is enough for the bytes needed, we
+			// simply return the number of bytes that were requested.
 
 			if (puiBytesAvailableRV)
 			{
@@ -3200,17 +3361,15 @@ RCODE F_Rfl::makeRoom(
 			}
 		}
 	}
-	else // (uiBytesNeeded > RFL_MAX_PACKET_SIZE)
+	else	// (uiBytesNeeded > RFL_MAX_PACKET_SIZE)
 	{
 
 		// This is the case where the bytes needed would overflow the
-		// maximum packet size.
-		// If puwBytesAvailableRV is NULL, it means that all of the 
-		// requested additional bytes must fit into the packet.  In that
-		// case, since the requested bytes would put us over the packet
-		// size limit, we must finish the current packet and then
-		// flush the packets out of the buffer so we can start a
-		// new packet.
+		// maximum packet size. If puwBytesAvailableRV is NULL, it means
+		// that all of the requested additional bytes must fit into the
+		// packet. In that case, since the requested bytes would put us over
+		// the packet size limit, we must finish the current packet and then
+		// flush the packets out of the buffer so we can start a new packet.
 
 		if (!puiBytesAvailableRV)
 		{
@@ -3221,36 +3380,40 @@ RCODE F_Rfl::makeRoom(
 			{
 				(*puiPacketCountRV)++;
 			}
+
 			if (RC_BAD( rc = finishPacket( uiPacketType,
-						*puiCurrPacketLenRV - RFL_PACKET_OVERHEAD,
-						FALSE)))
+						  *puiCurrPacketLenRV - RFL_PACKET_OVERHEAD, FALSE)))
 			{
 				goto Exit;
 			}
+
 			if (RC_BAD( rc = flush( m_pCurrentBuf)))
 			{
 				goto Exit;
 			}
+
 			*puiCurrPacketLenRV = RFL_PACKET_OVERHEAD;
 		}
 		else
 		{
 
 			// When puiBytesAvailableRV is non-NULL, it means we can fill up
-			// the rest of the packet with part of the bytes.  In this case
-			// we return the number of bytes available and then shift the
-			// packets down in the buffer to make sure there is room for
-			// a full-size packet.
+			// the rest of the packet with part of the bytes. In this case we
+			// return the number of bytes available and then shift the
+			// packets down in the buffer to make sure there is room for a
+			// full-size packet.
 
-			*puiBytesAvailableRV = RFL_MAX_PACKET_SIZE - *puiCurrPacketLenRV;
+			*puiBytesAvailableRV = RFL_MAX_PACKET_SIZE -*puiCurrPacketLenRV;
 			if (RC_BAD( rc = shiftPacketsDown( *puiCurrPacketLenRV, FALSE)))
 			{
 				goto Exit;
 			}
 		}
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -3267,31 +3430,29 @@ RCODE F_Rfl::logData(
 	FLMUINT *			puiMaxLogBytesNeededRV,
 	FLMUINT *			puiTotalBytesLoggedRV)
 {
-	RCODE					rc = FERR_OK;
-	FLMUINT				uiBytesAvail;
-	FLMBYTE *			pucDest;
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiBytesAvail;
+	FLMBYTE *	pucDest;
 
 	while (uiDataLen)
 	{
-		if (RC_BAD( rc = makeRoom( uiDataLen,
-								puiPacketLenRV, uiPacketType, &uiBytesAvail,
-								puiPacketCountRV)))
+		if (RC_BAD( rc = makeRoom( uiDataLen, puiPacketLenRV, uiPacketType,
+					  &uiBytesAvail, puiPacketCountRV)))
 		{
 			goto Exit;
 		}
+
 		if (uiBytesAvail)
 		{
 			if (puiMaxLogBytesNeededRV)
 			{
-				if (RC_BAD( rc = RflCheckMaxLogged(
-													puiMaxLogBytesNeededRV,
-													*puiPacketCountRV,
-													puiTotalBytesLoggedRV,
-													uiBytesAvail)))
+				if (RC_BAD( rc = RflCheckMaxLogged( puiMaxLogBytesNeededRV,
+							  *puiPacketCountRV, puiTotalBytesLoggedRV, uiBytesAvail)))
 				{
 					goto Exit;
 				}
 			}
+
 			pucDest = getPacketPtr() + (*puiPacketLenRV);
 			f_memcpy( pucDest, pucData, uiBytesAvail);
 			uiDataLen -= uiBytesAvail;
@@ -3299,8 +3460,8 @@ RCODE F_Rfl::logData(
 			(*puiPacketLenRV) += uiBytesAvail;
 		}
 
-		// If we didn't get all of the data into the RFL buffer,
-		// finish and flush the current packet.
+		// If we didn't get all of the data into the RFL buffer, finish and
+		// flush the current packet.
 
 		if (uiDataLen)
 		{
@@ -3308,32 +3469,34 @@ RCODE F_Rfl::logData(
 			{
 				(*puiPacketCountRV)++;
 			}
+
 			if (RC_BAD( rc = finishPacket( uiPacketType,
-									*puiPacketLenRV - RFL_PACKET_OVERHEAD,
-									FALSE)))
+						  *puiPacketLenRV - RFL_PACKET_OVERHEAD, FALSE)))
 			{
 				goto Exit;
 			}
+
 			if (RC_BAD( rc = flush( m_pCurrentBuf)))
 			{
 				goto Exit;
 			}
+
 			*puiPacketLenRV = RFL_PACKET_OVERHEAD;
 			if (puiMaxLogBytesNeededRV)
 			{
-				if (RC_BAD( rc = RflCheckMaxLogged(
-													puiMaxLogBytesNeededRV,
-													*puiPacketCountRV,
-													puiTotalBytesLoggedRV,
-													RFL_PACKET_OVERHEAD)))
+				if (RC_BAD( rc = RflCheckMaxLogged( puiMaxLogBytesNeededRV,
+							  *puiPacketCountRV, puiTotalBytesLoggedRV,
+							  RFL_PACKET_OVERHEAD)))
 				{
 					goto Exit;
 				}
 			}
 		}
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -3350,18 +3513,19 @@ FSTATIC RCODE RflCheckMaxLogged(
 	FLMUINT *	puiCurrTotalLoggedRV,
 	FLMUINT		uiBytesToLog)
 {
-	RCODE	rc = FERR_OK;
+	RCODE rc = FERR_OK;
 
 	*puiCurrTotalLoggedRV += uiBytesToLog;
 
-	if ((!uiPacketsLogged) &&
-		 (*puiCurrTotalLoggedRV > *puiMaxBytesNeededRV))
+	if ((!uiPacketsLogged) && (*puiCurrTotalLoggedRV > *puiMaxBytesNeededRV))
 	{
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -3369,11 +3533,10 @@ Desc: Callback function that captures the changes being logged by
 		the call to flmRecordDifference.
 *********************************************************************/
 FSTATIC void RflChangeCallback(
-	GRD_DifferenceData &	DiffData,
-	void *					CallbackData
-	)
+	GRD_DifferenceData&	DiffData,
+	void *					CallbackData)
 {
-	RFL_CHANGE_DATA *	pRflChangeData = (RFL_CHANGE_DATA *)CallbackData;
+	RFL_CHANGE_DATA *	pRflChangeData = (RFL_CHANGE_DATA*) CallbackData;
 	F_Rfl *				pRfl = pRflChangeData->pRfl;
 	void *				pvField;
 	const FLMBYTE *	pucExportPtr;
@@ -3393,46 +3556,63 @@ FSTATIC void RflChangeCallback(
 		goto Exit;
 	}
 
-	if ( DiffData.pvAfterField)
+	if (DiffData.pvAfterField)
 	{
 		flmAssert( DiffData.pAfterRecord);
-		bEncrypted = DiffData.pAfterRecord->isEncryptedField(
-														DiffData.pvAfterField);
+		bEncrypted = DiffData.pAfterRecord->isEncryptedField( DiffData.pvAfterField);
 	}
 
 	switch (DiffData.type)
 	{
 		case GRD_Inserted:
+		{
 			uiOverhead = (bEncrypted ? 13 : 9);
 			break;
+		}
+			
 		case GRD_Deleted:
+		{
 			// Ignore these for versions of the database >= 4.60
-			if (pRflChangeData->uiVersionNum >= FLM_VER_4_60)
+
+			if (pRflChangeData->uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 			{
 				goto Exit;
 			}
+
 			uiOverhead = 3;
 			break;
+		}
+		
 		case GRD_DeletedSubtree:
+		{
 			// Ignore these for versions of the database < 4.60
-			if (pRflChangeData->uiVersionNum < FLM_VER_4_60)
+
+			if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_60)
 			{
 				goto Exit;
 			}
+
 			uiOverhead = 3;
 			break;
+		}
+		
 		case GRD_Modified:
+		{
 			uiOverhead = (bEncrypted ? 10 : 6);
 			break;
+		}
+		
 		default:
+		{
 			flmAssert( 0);
 			break;
+		}
 	}
 
-	// Determine the number of bytes that will actually be logged with this
-	// overhead.  If it won't fit in the current packet, we will have to
-	// create a new packet - hence, we add RFL_PACKET_OVERHEAD to the amount
-	// that will be logged.
+	// Determine the number of bytes that will actually be logged with
+	// this overhead. If it won't fit in the current packet, we will have
+	// to create a new packet - hence, we add RFL_PACKET_OVERHEAD to the
+	// amount that will be logged.
 
 	uiBytesToLog = uiOverhead;
 	if (RFL_MAX_PACKET_SIZE - uiOverhead < pRflChangeData->uiCurrPacketLen)
@@ -3440,13 +3620,13 @@ FSTATIC void RflChangeCallback(
 		uiBytesToLog += RFL_PACKET_OVERHEAD;
 	}
 
-	// See if the bytes we are going log will exceed the maximum bytes needed.
+	// See if the bytes we are going log will exceed the maximum bytes
+	// needed.
 
 	if (RC_BAD( pRflChangeData->rc = RflCheckMaxLogged(
-														&pRflChangeData->uiMaxLogBytesNeeded,
-														pRflChangeData->uiPacketCount,
-														&pRflChangeData->uiTotalBytesLogged,
-														uiBytesToLog)))
+					  &pRflChangeData->uiMaxLogBytesNeeded,
+				  pRflChangeData->uiPacketCount,
+				  &pRflChangeData->uiTotalBytesLogged, uiBytesToLog)))
 	{
 		goto Exit;
 	}
@@ -3454,97 +3634,40 @@ FSTATIC void RflChangeCallback(
 	// Make room to log the overhead
 
 	if (RC_BAD( pRflChangeData->rc = pRfl->makeRoom( uiOverhead,
-													&pRflChangeData->uiCurrPacketLen,
-													RFL_CHANGE_FIELDS_PACKET, NULL,
-													&pRflChangeData->uiPacketCount)))
+				  &pRflChangeData->uiCurrPacketLen, RFL_CHANGE_FIELDS_PACKET, NULL,
+				  &pRflChangeData->uiPacketCount)))
 	{
 		goto Exit;
 	}
+
 	pucTmp = pRfl->getPacketPtr() + pRflChangeData->uiCurrPacketLen;
 	uiPos = DiffData.uiAbsolutePosition;
-	UW2FBA( (FLMUINT16)uiPos, &pucTmp [1]);
+	UW2FBA( (FLMUINT16) uiPos, &pucTmp[1]);
 	pRflChangeData->uiCurrPacketLen += uiOverhead;
 	pvField = DiffData.pvAfterField;
 
 	switch (DiffData.type)
 	{
 		case GRD_Inserted:
+		{
 			*pucTmp = (bEncrypted ? RFL_INSERT_ENC_FIELD : RFL_INSERT_FIELD);
 			pucTmp += 3;
 			uiTagNum = DiffData.pAfterRecord->getFieldID( pvField);
-			UW2FBA( (FLMUINT16)uiTagNum, pucTmp);
+			UW2FBA( (FLMUINT16) uiTagNum, pucTmp);
 			pucTmp += 2;
-			*pucTmp++ = (FLMBYTE)DiffData.pAfterRecord->getDataType( pvField);
-			*pucTmp++ = (FLMBYTE)DiffData.pAfterRecord->getLevel( pvField);
+			*pucTmp++ = (FLMBYTE) DiffData.pAfterRecord->getDataType( pvField);
+			*pucTmp++ = (FLMBYTE) DiffData.pAfterRecord->getLevel( pvField);
 			uiDataLen = DiffData.pAfterRecord->getDataLength( pvField);
-			UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+			UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
 			pucTmp += 2;
 
 			if (bEncrypted)
 			{
 				uiEncId = DiffData.pAfterRecord->getEncryptionID( pvField);
 				flmAssert( uiEncId);
-				UW2FBA( (FLMUINT16)uiEncId, pucTmp);
+				UW2FBA( (FLMUINT16) uiEncId, pucTmp);
 				pucTmp += 2;
 
-				uiDataLen = DiffData.pAfterRecord->getEncryptedDataLength(pvField);
-				UW2FBA( uiDataLen, pucTmp);
-				pucTmp += 2;
-			}
-
-			// Log the data, if any.
-
-			if (uiDataLen)
-			{
-				if (bEncrypted)
-				{
-					pucExportPtr =
-							DiffData.pAfterRecord->getEncryptionDataPtr(pvField);
-				}
-				else
-				{
-					pucExportPtr = DiffData.pAfterRecord->getDataPtr( pvField);
-				}
-				if( !pucExportPtr)
-				{
-					pRflChangeData->rc = RC_SET( FERR_MEM);
-					goto Exit;
-				}
-
-				if( RC_BAD( pRflChangeData->rc = pRfl->logData(
-									uiDataLen,
-									pucExportPtr,
-									RFL_CHANGE_FIELDS_PACKET,
-									&pRflChangeData->uiCurrPacketLen,
-									&pRflChangeData->uiPacketCount,
-									&pRflChangeData->uiMaxLogBytesNeeded,
-									&pRflChangeData->uiTotalBytesLogged)))
-				{
-					goto Exit;
-				}
-			}
-			break;
-		case GRD_Deleted:
-		case GRD_DeletedSubtree:
-			*pucTmp = RFL_DELETE_FIELD;
-			break;
-		case GRD_Modified:
-			*pucTmp = (bEncrypted ? RFL_MODIFY_ENC_FIELD : RFL_MODIFY_FIELD);
-			pucTmp += 3;
-
-			// For now, just log the new bytes using RFL_REPLACE_BYTES option
-			*pucTmp++ = RFL_REPLACE_BYTES;
-			uiDataLen = DiffData.pAfterRecord->getDataLength( pvField);
-			UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
-			pucTmp += 2;
-			
-			if (bEncrypted)
-			{
-				uiEncId = DiffData.pAfterRecord->getEncryptionID( pvField);
-				flmAssert( uiEncId);
-				UW2FBA( (FLMUINT16)uiEncId, pucTmp);
-				pucTmp += 2;
-				
 				uiDataLen = DiffData.pAfterRecord->getEncryptedDataLength( pvField);
 				UW2FBA( uiDataLen, pucTmp);
 				pucTmp += 2;
@@ -3556,38 +3679,106 @@ FSTATIC void RflChangeCallback(
 			{
 				if (bEncrypted)
 				{
-					pucExportPtr =
-							DiffData.pAfterRecord->getEncryptionDataPtr(pvField);
+					pucExportPtr = DiffData.pAfterRecord->getEncryptionDataPtr( pvField);
 				}
 				else
 				{
 					pucExportPtr = DiffData.pAfterRecord->getDataPtr( pvField);
 				}
+
+				if (!pucExportPtr)
+				{
+					pRflChangeData->rc = RC_SET( FERR_MEM);
+					goto Exit;
+				}
+
+				if (RC_BAD( pRflChangeData->rc = pRfl->logData( uiDataLen,
+							  pucExportPtr, RFL_CHANGE_FIELDS_PACKET,
+							  &pRflChangeData->uiCurrPacketLen,
+							  &pRflChangeData->uiPacketCount,
+							  &pRflChangeData->uiMaxLogBytesNeeded,
+							  &pRflChangeData->uiTotalBytesLogged)))
+				{
+					goto Exit;
+				}
+			}
+			
+			break;
+		}
+		
+		case GRD_Deleted:
+		case GRD_DeletedSubtree:
+		{
+			*pucTmp = RFL_DELETE_FIELD;
+			break;
+		}
+		
+		case GRD_Modified:
+		{
+			*pucTmp = (bEncrypted ? RFL_MODIFY_ENC_FIELD : RFL_MODIFY_FIELD);
+			pucTmp += 3;
+
+			// For now, just log the new bytes using RFL_REPLACE_BYTES option
+
+			*pucTmp++ = RFL_REPLACE_BYTES;
+			uiDataLen = DiffData.pAfterRecord->getDataLength( pvField);
+			UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
+			pucTmp += 2;
+
+			if (bEncrypted)
+			{
+				uiEncId = DiffData.pAfterRecord->getEncryptionID( pvField);
+				flmAssert( uiEncId);
+				UW2FBA( (FLMUINT16) uiEncId, pucTmp);
+				pucTmp += 2;
+
+				uiDataLen = DiffData.pAfterRecord->getEncryptedDataLength( pvField);
+				UW2FBA( uiDataLen, pucTmp);
+				pucTmp += 2;
+			}
+
+			// Log the data, if any.
+
+			if (uiDataLen)
+			{
+				if (bEncrypted)
+				{
+					pucExportPtr = DiffData.pAfterRecord->getEncryptionDataPtr( pvField);
+				}
+				else
+				{
+					pucExportPtr = DiffData.pAfterRecord->getDataPtr( pvField);
+				}
+
 				if (pucExportPtr == NULL)
 				{
 					pRflChangeData->rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 
-				if( RC_BAD( pRflChangeData->rc = pRfl->logData(
-												uiDataLen,
-												pucExportPtr,
-												RFL_CHANGE_FIELDS_PACKET,
-												&pRflChangeData->uiCurrPacketLen,
-												&pRflChangeData->uiPacketCount,
-												&pRflChangeData->uiMaxLogBytesNeeded,
-												&pRflChangeData->uiTotalBytesLogged)))
+				if (RC_BAD( pRflChangeData->rc = pRfl->logData( uiDataLen,
+							  pucExportPtr, RFL_CHANGE_FIELDS_PACKET,
+							  &pRflChangeData->uiCurrPacketLen,
+							  &pRflChangeData->uiPacketCount,
+							  &pRflChangeData->uiMaxLogBytesNeeded,
+							  &pRflChangeData->uiTotalBytesLogged)))
 				{
 					goto Exit;
 				}
 			}
-
+			
 			break;
+		}
+		
 		default:
+		{
 			flmAssert( 0);
 			break;
+		}
 	}
+
 Exit:
+
 	return;
 }
 
@@ -3596,8 +3787,7 @@ Desc:		Log change fields for a record modify operation.
 *********************************************************************/
 RCODE F_Rfl::logChangeFields(
 	FlmRecord *	pOldRecord,
-	FlmRecord *	pNewRecord
-	)
+	FlmRecord *	pNewRecord)
 {
 	RFL_CHANGE_DATA	RflChangeData;
 	FLMUINT				uiTmpBodyLen;
@@ -3610,13 +3800,13 @@ RCODE F_Rfl::logChangeFields(
 	RflChangeData.pRfl = this;
 	RflChangeData.uiVersionNum = m_pFile->FileHdr.uiVersionNum;
 
-	// Determine the total amount that would have to be logged if
-	// we just logged the new record.
+	// Determine the total amount that would have to be logged if we just
+	// logged the new record.
 
 	RflChangeData.uiMaxLogBytesNeeded = RFL_PACKET_OVERHEAD;
 	uiTmpBodyLen = 0;
 	pvNewField = pNewRecord->root();
-	for (; pvNewField; pvNewField = pNewRecord->next( pvNewField) )
+	for (; pvNewField; pvNewField = pNewRecord->next( pvNewField))
 	{
 		bEncrypted = pNewRecord->isEncryptedField( pvNewField);
 		uiOverhead = (bEncrypted ? 10 : 6);
@@ -3629,6 +3819,7 @@ RCODE F_Rfl::logChangeFields(
 			uiTmpBodyLen = uiOverhead;
 			RflChangeData.uiMaxLogBytesNeeded += RFL_PACKET_OVERHEAD;
 		}
+
 		RflChangeData.uiMaxLogBytesNeeded += uiOverhead;
 		if (bEncrypted)
 		{
@@ -3638,6 +3829,7 @@ RCODE F_Rfl::logChangeFields(
 		{
 			uiDataLen = pNewRecord->getDataLength( pvNewField);
 		}
+
 		while (uiDataLen)
 		{
 			FLMUINT	uiTmp;
@@ -3653,6 +3845,7 @@ RCODE F_Rfl::logChangeFields(
 				uiTmpBodyLen = 0;
 				RflChangeData.uiMaxLogBytesNeeded += RFL_PACKET_OVERHEAD;
 			}
+
 			RflChangeData.uiMaxLogBytesNeeded += uiTmp;
 			uiDataLen -= uiTmp;
 		}
@@ -3664,6 +3857,7 @@ RCODE F_Rfl::logChangeFields(
 	{
 		RflChangeData.uiMaxLogBytesNeeded += RFL_PACKET_OVERHEAD;
 	}
+
 	RflChangeData.uiMaxLogBytesNeeded += 2;
 
 	RflChangeData.uiPacketCount = 0;
@@ -3679,10 +3873,10 @@ RCODE F_Rfl::logChangeFields(
 	}
 
 	flmRecordDifference( pOldRecord, pNewRecord, RflChangeCallback,
-								(void *)&RflChangeData);
+							  (void *) &RflChangeData);
 
-	// See if we exceeded the maximum log bytes.  If so, just log
-	// the changed record in its entirety.
+	// See if we exceeded the maximum log bytes. If so, just log the
+	// changed record in its entirety.
 
 	if (RC_BAD( RflChangeData.rc))
 	{
@@ -3690,47 +3884,49 @@ RCODE F_Rfl::logChangeFields(
 		{
 			RflChangeData.rc = logRecord( pNewRecord);
 		}
+
 		goto Exit;
 	}
 	else
 	{
-		FLMBYTE *	pucTmp;
+		FLMBYTE *		pucTmp;
 
 		// Make room to log the 3 bytes of terminator
 
 		if (RC_BAD( RflChangeData.rc = makeRoom( 3,
-														&RflChangeData.uiCurrPacketLen,
-														RFL_CHANGE_FIELDS_PACKET, NULL,
-														&RflChangeData.uiPacketCount)))
+					  &RflChangeData.uiCurrPacketLen, RFL_CHANGE_FIELDS_PACKET, NULL,
+					  &RflChangeData.uiPacketCount)))
 		{
 			if (RflChangeData.rc == FERR_FAILURE)
 			{
 				RflChangeData.rc = logRecord( pNewRecord);
 			}
+
 			goto Exit;
 		}
+
 		pucTmp = getPacketPtr() + RflChangeData.uiCurrPacketLen;
 		*pucTmp++ = RFL_END_FIELD_CHANGES;
-		UW2FBA( (FLMUINT16)0, pucTmp);
+		UW2FBA( (FLMUINT16) 0, pucTmp);
 		RflChangeData.uiCurrPacketLen += 3;
 
 		if (RC_BAD( RflChangeData.rc = finishPacket( RFL_CHANGE_FIELDS_PACKET,
-						  RflChangeData.uiCurrPacketLen - RFL_PACKET_OVERHEAD,
-						  FALSE)))
+					  RflChangeData.uiCurrPacketLen - RFL_PACKET_OVERHEAD, FALSE)))
 		{
 			goto Exit;
 		}
 	}
 
 Exit:
-	return( RflChangeData.rc);
+
+	return (RflChangeData.rc);
 }
 
 /********************************************************************
 Desc:		Log a record for the record add or modify operations.
 *********************************************************************/
 RCODE F_Rfl::logRecord(
-	FlmRecord *		pRecord)
+	FlmRecord *	pRecord)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiPacketLen = RFL_PACKET_OVERHEAD;
@@ -3743,15 +3939,15 @@ RCODE F_Rfl::logRecord(
 	FLMUINT		uiPacketType;
 	FLMUINT		uiOverhead;
 
-	if( !haveBuffSpace( RFL_PACKET_OVERHEAD))
+	if (!haveBuffSpace( RFL_PACKET_OVERHEAD))
 	{
 		if (RC_BAD( rc = flush( m_pCurrentBuf)))
 		{
 			goto Exit;
 		}
 	}
-	
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_60)
+
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_60)
 	{
 		uiPacketType = RFL_DATA_RECORD_PACKET;
 	}
@@ -3761,7 +3957,7 @@ RCODE F_Rfl::logRecord(
 	}
 
 	pvField = pRecord->root();
-	for (; pvField; pvField = pRecord->next( pvField) )
+	for (; pvField; pvField = pRecord->next( pvField))
 	{
 		if (uiPacketType == RFL_DATA_RECORD_PACKET)
 		{
@@ -3773,9 +3969,9 @@ RCODE F_Rfl::logRecord(
 			bEncrypted = pRecord->isEncryptedField( pvField);
 			uiOverhead = (bEncrypted ? 11 : 7);
 		}
-		
-		if (RC_BAD( rc = makeRoom( uiOverhead, &uiPacketLen,
-									uiPacketType, NULL, NULL)))
+
+		if (RC_BAD( rc = makeRoom( uiOverhead, &uiPacketLen, uiPacketType, NULL,
+					  NULL)))
 		{
 			goto Exit;
 		}
@@ -3784,40 +3980,42 @@ RCODE F_Rfl::logRecord(
 		uiPacketLen += uiOverhead;
 
 		uiTagNum = pRecord->getFieldID( pvField);
-		UW2FBA( (FLMUINT16)uiTagNum, pucTmp);
+		UW2FBA( (FLMUINT16) uiTagNum, pucTmp);
 		pucTmp += 2;
-		*pucTmp++ = (FLMBYTE)pRecord->getDataType( pvField);
-		*pucTmp++ = (FLMBYTE)pRecord->getLevel( pvField);
+		*pucTmp++ = (FLMBYTE) pRecord->getDataType( pvField);
+		*pucTmp++ = (FLMBYTE) pRecord->getLevel( pvField);
 		uiDataLen = pRecord->getDataLength( pvField);
-		UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+		UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
 		pucTmp += 2;
-		// Record if this field is encrypted.  If it is, then there will
-		// be more data to follow.
+
+		// Record if this field is encrypted. If it is, then there will be
+		// more data to follow.
+
 		if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
 		{
-			*pucTmp = (bEncrypted ? (FLMBYTE)1 : (FLMBYTE)0);
+			*pucTmp = (bEncrypted ? (FLMBYTE) 1 : (FLMBYTE) 0);
 			pucTmp++;
 
 			// Check for encrypted field and add the results.
+
 			if (bEncrypted)
 			{
 				uiEncId = pRecord->getEncryptionID( pvField);
 				flmAssert( uiEncId);
-				UW2FBA( (FLMUINT16)uiEncId, pucTmp);
+				UW2FBA( (FLMUINT16) uiEncId, pucTmp);
 				pucTmp += 2;
-				
-				uiDataLen = pRecord->getEncryptedDataLength(pvField);
+
+				uiDataLen = pRecord->getEncryptedDataLength( pvField);
 				UW2FBA( uiDataLen, pucTmp);
 				pucTmp += 2;
 			}
 		}
 
-
 		// Log the data, if any.
 
 		if (uiDataLen)
 		{
-			const FLMBYTE *	pucExportPtr;
+			const FLMBYTE *		pucExportPtr;
 
 			if (bEncrypted)
 			{
@@ -3827,14 +4025,15 @@ RCODE F_Rfl::logRecord(
 			{
 				pucExportPtr = pRecord->getDataPtr( pvField);
 			}
+
 			if (pucExportPtr == NULL)
 			{
 				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
 
-			if( RC_BAD( rc = logData( uiDataLen, pucExportPtr,
-							uiPacketType, &uiPacketLen, NULL, NULL, NULL)))
+			if (RC_BAD( rc = logData( uiDataLen, pucExportPtr, uiPacketType,
+						  &uiPacketLen, NULL, NULL, NULL)))
 			{
 				goto Exit;
 			}
@@ -3843,8 +4042,7 @@ RCODE F_Rfl::logRecord(
 
 	// Add null to terminate the record.
 
-	if (RC_BAD( rc = makeRoom( 2, &uiPacketLen, uiPacketType,
-								NULL, NULL)))
+	if (RC_BAD( rc = makeRoom( 2, &uiPacketLen, uiPacketType, NULL, NULL)))
 	{
 		goto Exit;
 	}
@@ -3856,26 +4054,26 @@ RCODE F_Rfl::logRecord(
 
 	// Finish the packet.
 
-	if (RC_BAD( rc = finishPacket( uiPacketType,
-			uiPacketLen - RFL_PACKET_OVERHEAD, FALSE)))
+	if (RC_BAD( rc = finishPacket( uiPacketType, 
+		uiPacketLen - RFL_PACKET_OVERHEAD, FALSE)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Log record add, modify, or delete operation
 *********************************************************************/
 RCODE F_Rfl::logUpdate(
-	FLMUINT			uiContainer,
-	FLMUINT			uiDrn,
-	FLMUINT			uiAutoTrans,
-	FlmRecord *		pOldRecord,
-	FlmRecord *		pNewRecord)
+	FLMUINT		uiContainer,
+	FLMUINT		uiDrn,
+	FLMUINT		uiAutoTrans,
+	FlmRecord *	pOldRecord,
+	FlmRecord *	pNewRecord)
 {
 	RCODE		rc = FERR_OK;
 	FLMUINT	uiPacketType;
@@ -3887,8 +4085,8 @@ RCODE F_Rfl::logUpdate(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -3898,7 +4096,7 @@ RCODE F_Rfl::logUpdate(
 
 	if (pOldRecord && pNewRecord)
 	{
-		if( m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_60)
+		if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 		{
 			uiPacketType = RFL_MODIFY_RECORD_PACKET_VER_2;
 		}
@@ -3909,7 +4107,7 @@ RCODE F_Rfl::logUpdate(
 	}
 	else if (pNewRecord)
 	{
-		if( m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_60)
+		if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 		{
 			uiPacketType = RFL_ADD_RECORD_PACKET_VER_2;
 		}
@@ -3920,7 +4118,7 @@ RCODE F_Rfl::logUpdate(
 	}
 	else
 	{
-		if( m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_60)
+		if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 		{
 			uiPacketType = RFL_DELETE_RECORD_PACKET_VER_2;
 		}
@@ -3930,14 +4128,14 @@ RCODE F_Rfl::logUpdate(
 		}
 	}
 
-	if (RC_BAD( rc = logUpdatePacket( uiPacketType,
-		uiContainer, uiDrn, uiAutoTrans)))
+	if (RC_BAD( rc = logUpdatePacket( uiPacketType, uiContainer, uiDrn,
+				  uiAutoTrans)))
 	{
 		goto Exit;
 	}
 
-	// If it is a record modify, log the change fields.
-	// If it is a record add, log the new record.
+	// If it is a record modify, log the change fields. If it is a record
+	// add, log the new record.
 
 	if (pOldRecord && pNewRecord)
 	{
@@ -3953,27 +4151,29 @@ RCODE F_Rfl::logUpdate(
 			goto Exit;
 		}
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Log a set of records that is indexed for a specific index.
 *********************************************************************/
 RCODE F_Rfl::logIndexSet(
-	FLMUINT		uiIndex,
-	FLMUINT		uiContainerNum,
-	FLMUINT		uiStartDrn,
-	FLMUINT		uiEndDrn)
-{	
+	FLMUINT	uiIndex,
+	FLMUINT	uiContainerNum,
+	FLMUINT	uiStartDrn,
+	FLMUINT	uiEndDrn)
+{
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
 
-	// This call is a new database version.  Database better have
-	// been upgraded.
+	// This call is a new database version. Database better have been
+	// upgraded.
 
-	flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_VER_3_02);
+	flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_3_02);
 
 	// Do nothing if logging is disabled.
 
@@ -3982,8 +4182,8 @@ RCODE F_Rfl::logIndexSet(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -3992,9 +4192,10 @@ RCODE F_Rfl::logIndexSet(
 	flmAssert( m_uiCurrTransID);
 
 	m_uiOperCount++;
-	uiPacketBodyLen = (FLMUINT)((m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_50)
-										 ? (FLMUINT)16
-										 : (FLMUINT)14);
+	uiPacketBodyLen = 
+		(FLMUINT)((m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_50) 
+											? (FLMUINT) 16 
+											: (FLMUINT) 14);
 
 	// Make sure we have space in the RFL buffer for a complete packet.
 
@@ -4012,51 +4213,52 @@ RCODE F_Rfl::logIndexSet(
 
 	// Output the transaction ID.
 
-	UD2FBA( (FLMUINT32)m_uiCurrTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) m_uiCurrTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the container number, if db version is >= 4.50
 
-	if (m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_50)
+	if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_50)
 	{
-		UW2FBA( (FLMUINT16)uiContainerNum, pucPacketBody);
+		UW2FBA( (FLMUINT16) uiContainerNum, pucPacketBody);
 		pucPacketBody += 2;
 	}
 
 	// Output the index number.
 
-	UW2FBA( (FLMUINT16)uiIndex, pucPacketBody);
+	UW2FBA( (FLMUINT16) uiIndex, pucPacketBody);
 	pucPacketBody += 2;
 
 	// Output the starting DRN.
 
-	UD2FBA( (FLMUINT32)(uiStartDrn), pucPacketBody);
+	UD2FBA( (FLMUINT32) (uiStartDrn), pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the ending DRN.
 
-	UD2FBA( (FLMUINT32)(uiEndDrn), pucPacketBody);
+	UD2FBA( (FLMUINT32) (uiEndDrn), pucPacketBody);
 	pucPacketBody += 4;
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket(
-			(FLMUINT)((m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_50)
-						 ? (FLMUINT)RFL_INDEX_SET_PACKET_VER_2
-						 : (FLMUINT)RFL_INDEX_SET_PACKET), uiPacketBodyLen,
-							FALSE)))
+	if (RC_BAD( rc = finishPacket( (FLMUINT) (
+					  (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_50) 
+								? (FLMUINT) RFL_INDEX_SET_PACKET_VER_2
+								: (FLMUINT) RFL_INDEX_SET_PACKET), 
+					  uiPacketBodyLen, FALSE)))
 	{
 		goto Exit;
 	}
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Start logging unknown packets.
 *********************************************************************/
-RCODE F_Rfl::startLoggingUnknown( void)
+RCODE F_Rfl::startLoggingUnknown(void)
 {
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
@@ -4064,18 +4266,16 @@ RCODE F_Rfl::startLoggingUnknown( void)
 
 	flmAssert( m_pFile);
 
-	// Do nothing if logging is disabled.  Also, ignore
-	// these packets if we are operating on a pre-4.3
-	// database.
+	// Do nothing if logging is disabled. Also, ignore these packets if we
+	// are operating on a pre-4.3 database.
 
-	if (m_bLoggingOff ||
-		 m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_bLoggingOff || m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		goto Exit;
 	}
 
-	// Better not already be in the middle of logging unknown stuff
-	// for the application
+	// Better not already be in the middle of logging unknown stuff for
+	// the application
 
 	flmAssert( !m_bLoggingUnknown);
 
@@ -4102,21 +4302,23 @@ RCODE F_Rfl::startLoggingUnknown( void)
 
 	// Output the transaction ID.
 
-	UD2FBA( (FLMUINT32)m_uiCurrTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) m_uiCurrTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Finish the packet
 
 	if (RC_BAD( rc = finishPacket( RFL_START_UNKNOWN_PACKET, uiPacketBodyLen,
-							FALSE)))
+				  FALSE)))
 	{
 		goto Exit;
 	}
 
 	m_bLoggingUnknown = TRUE;
 	m_uiUnknownPacketLen = RFL_PACKET_OVERHEAD;
+	
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -4126,78 +4328,71 @@ RCODE F_Rfl::logUnknown(
 	FLMBYTE *	pucUnknown,
 	FLMUINT		uiLen)
 {
-	RCODE	rc = FERR_OK;
+	RCODE rc = FERR_OK;
 
-	// Do nothing if logging is disabled.  Also, ignore
-	// these packets if we are operating on a pre-4.3
-	// database.
+	// Do nothing if logging is disabled. Also, ignore these packets if we
+	// are operating on a pre-4.3 database.
 
-	if (m_bLoggingOff ||
-		 m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_bLoggingOff || m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		goto Exit;
 	}
 
 	flmAssert( m_bLoggingUnknown);
-	if (RC_BAD( rc = logData( uiLen, pucUnknown,
-								RFL_UNKNOWN_PACKET,
-								&m_uiUnknownPacketLen,
-								NULL, NULL, NULL)))
+	if (RC_BAD( rc = logData( uiLen, pucUnknown, RFL_UNKNOWN_PACKET,
+				  &m_uiUnknownPacketLen, NULL, NULL, NULL)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
 Desc:		End logging unknown packets.
 *********************************************************************/
-RCODE F_Rfl::endLoggingUnknown( void)
+RCODE F_Rfl::endLoggingUnknown(void)
 {
-	RCODE			rc = FERR_OK;
+	RCODE rc = FERR_OK;
 
 	flmAssert( m_pFile);
 
-	// Do nothing if logging is disabled.  Also, ignore
-	// these packets if we are operating on a pre-4.3
-	// database.
+	// Do nothing if logging is disabled. Also, ignore these packets if we
+	// are operating on a pre-4.3 database.
 
-	if (m_bLoggingOff ||
-		 m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_bLoggingOff || m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		goto Exit;
 	}
 
-	// Better be in the middle of logging unknown stuff
-	// for the application
+	// Better be in the middle of logging unknown stuff for the application
 
 	flmAssert( m_bLoggingUnknown);
 	if (m_uiUnknownPacketLen > RFL_PACKET_OVERHEAD)
 	{
 		if (RC_BAD( rc = finishPacket( RFL_UNKNOWN_PACKET,
-								m_uiUnknownPacketLen - RFL_PACKET_OVERHEAD,
-								FALSE)))
+					  m_uiUnknownPacketLen - RFL_PACKET_OVERHEAD, FALSE)))
 		{
 			goto Exit;
 		}
 	}
 
 Exit:
+
 	m_bLoggingUnknown = FALSE;
 	m_uiUnknownPacketLen = RFL_PACKET_OVERHEAD;
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
 Desc:		Log a reduce packet
 *********************************************************************/
 RCODE F_Rfl::logReduce(
-	FLMUINT		uiTransID,
-	FLMUINT		uiCount)
-{	
+	FLMUINT	uiTransID,
+	FLMUINT	uiCount)
+{
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
@@ -4205,7 +4400,7 @@ RCODE F_Rfl::logReduce(
 	// This call is new with 4.3 databases - not supported in older
 	// versions, so don't log it.
 
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		goto Exit;
 	}
@@ -4217,16 +4412,16 @@ RCODE F_Rfl::logReduce(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
-	// We need to set up to log this packet as if we
-	// were logging a transaction.  The only difference
-	// is that we don't log the begin transaction packet.
+	// We need to set up to log this packet as if we were logging a
+	// transaction. The only difference is that we don't log the begin
+	// transaction packet.
 
-	if( RC_BAD( rc = setupTransaction()))
+	if (RC_BAD( rc = setupTransaction()))
 	{
 		goto Exit;
 	}
@@ -4249,18 +4444,17 @@ RCODE F_Rfl::logReduce(
 
 	// Output the transaction ID.
 
-	UD2FBA( (FLMUINT32)uiTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the count
 
-	UD2FBA( (FLMUINT32)uiCount, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiCount, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket( RFL_REDUCE_PACKET, uiPacketBodyLen,
-							TRUE)))
+	if (RC_BAD( rc = finishPacket( RFL_REDUCE_PACKET, uiPacketBodyLen, TRUE)))
 	{
 		goto Exit;
 	}
@@ -4271,7 +4465,7 @@ RCODE F_Rfl::logReduce(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -4285,7 +4479,7 @@ RCODE F_Rfl::logUpgrade(
 	FLMUINT		uiOldVersion,
 	FLMBYTE *	pucDBKey,
 	FLMUINT32	ui32DBKeyLen)
-{	
+{
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
@@ -4297,16 +4491,16 @@ RCODE F_Rfl::logUpgrade(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
-	// We need to set up to log this packet as if we
-	// were logging a transaction.  The only difference
-	// is that we don't log the begin transaction packet.
+	// We need to set up to log this packet as if we were logging a
+	// transaction. The only difference is that we don't log the begin
+	// transaction packet.
 
-	if( RC_BAD( rc = setupTransaction()))
+	if (RC_BAD( rc = setupTransaction()))
 	{
 		goto Exit;
 	}
@@ -4329,27 +4523,28 @@ RCODE F_Rfl::logUpgrade(
 
 	// Output the transaction ID
 
-	UD2FBA( (FLMUINT32)uiTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the old database version
 
-	UD2FBA( (FLMUINT32)uiOldVersion, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiOldVersion, pucPacketBody);
 	pucPacketBody += 4;
 
 	// Output the new database version
 
-	UD2FBA( (FLMUINT32)FLM_CURRENT_VERSION_NUM, pucPacketBody);
+	UD2FBA( (FLMUINT32) FLM_CUR_FILE_FORMAT_VER_NUM, pucPacketBody);
 	pucPacketBody += 4;
 
-	// For versions >= 4.60, the next two bytes will give the length of the DB Key.
-	
+	// For versions >= 4.60, the next two bytes will give the length of
+	// the DB Key.
+
 	flmAssert( ui32DBKeyLen <= 0xFFFF);
-	UW2FBA( (FLMUINT16)ui32DBKeyLen, pucPacketBody);
+	UW2FBA( (FLMUINT16) ui32DBKeyLen, pucPacketBody);
 	pucPacketBody += 2;
-	
-	// If we were built without encryption, the key length will be zero, so no need to
-	// store the key.
+
+	// If we were built without encryption, the key length will be zero,
+	// so no need to store the key.
 
 	if (ui32DBKeyLen)
 	{
@@ -4359,8 +4554,7 @@ RCODE F_Rfl::logUpgrade(
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket( RFL_UPGRADE_PACKET, uiPacketBodyLen,
-							TRUE)))
+	if (RC_BAD( rc = finishPacket( RFL_UPGRADE_PACKET, uiPacketBodyLen, TRUE)))
 	{
 		goto Exit;
 	}
@@ -4371,24 +4565,22 @@ RCODE F_Rfl::logUpgrade(
 
 Exit:
 
-	if( !m_bLoggingOff)
+	if (!m_bLoggingOff)
 	{
 		m_uiCurrTransID = 0;
 	}
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
-Public:	logWrappedKey
 Desc:		Log the wrapped database key
 *********************************************************************/
 RCODE F_Rfl::logWrappedKey(
 	FLMUINT		uiTransID,
 	FLMBYTE *	pucDBKey,
-	FLMUINT32	ui32DBKeyLen
-	)
-{	
+	FLMUINT32	ui32DBKeyLen)
+{
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
@@ -4400,12 +4592,12 @@ RCODE F_Rfl::logWrappedKey(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
-	if ( RC_BAD( rc = setupTransaction()))
+	if (RC_BAD( rc = setupTransaction()))
 	{
 		goto Exit;
 	}
@@ -4428,17 +4620,17 @@ RCODE F_Rfl::logWrappedKey(
 
 	// Output the transaction ID
 
-	UD2FBA( (FLMUINT32)uiTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// The next two bytes will give the length of the DB Key.
-	
+
 	flmAssert( ui32DBKeyLen <= 0xFFFF);
-	UW2FBA( (FLMUINT16)ui32DBKeyLen, pucPacketBody);
+	UW2FBA( (FLMUINT16) ui32DBKeyLen, pucPacketBody);
 	pucPacketBody += 2;
-	
-	// If we were built without encryption, the key length will be zero, so no need to
-	// store the key.
+
+	// If we were built without encryption, the key length will be zero,
+	// so no need to store the key.
 
 	if (ui32DBKeyLen)
 	{
@@ -4448,9 +4640,7 @@ RCODE F_Rfl::logWrappedKey(
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket( RFL_WRAP_KEY_PACKET,
-											 uiPacketBodyLen,
-											 TRUE)))
+	if (RC_BAD( rc = finishPacket( RFL_WRAP_KEY_PACKET, uiPacketBodyLen, TRUE)))
 	{
 		goto Exit;
 	}
@@ -4459,19 +4649,17 @@ RCODE F_Rfl::logWrappedKey(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
-Public:	logEnableEncryption
 Desc:		Log that we have enabled encryption
 *********************************************************************/
 RCODE F_Rfl::logEnableEncryption(
 	FLMUINT		uiTransID,
 	FLMBYTE *	pucDBKey,
-	FLMUINT32	ui32DBKeyLen
-	)
-{	
+	FLMUINT32	ui32DBKeyLen)
+{
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
@@ -4483,12 +4671,12 @@ RCODE F_Rfl::logEnableEncryption(
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+	// Better not be in the middle of logging unknown stuff for the
+	// application
 
 	flmAssert( !m_bLoggingUnknown);
 
-	if ( RC_BAD( rc = setupTransaction()))
+	if (RC_BAD( rc = setupTransaction()))
 	{
 		goto Exit;
 	}
@@ -4511,17 +4699,17 @@ RCODE F_Rfl::logEnableEncryption(
 
 	// Output the transaction ID
 
-	UD2FBA( (FLMUINT32)uiTransID, pucPacketBody);
+	UD2FBA( (FLMUINT32) uiTransID, pucPacketBody);
 	pucPacketBody += 4;
 
 	// The next two bytes will give the length of the DB Key.
-	
+
 	flmAssert( ui32DBKeyLen <= 0xFFFF);
-	UW2FBA( (FLMUINT16)ui32DBKeyLen, pucPacketBody);
+	UW2FBA( (FLMUINT16) ui32DBKeyLen, pucPacketBody);
 	pucPacketBody += 2;
-	
-	// If we were built without encryption, the key length will be zero, so no need to
-	// store the key.
+
+	// If we were built without encryption, the key length will be zero,
+	// so no need to store the key.
 
 	if (ui32DBKeyLen)
 	{
@@ -4531,9 +4719,8 @@ RCODE F_Rfl::logEnableEncryption(
 
 	// Finish the packet
 
-	if (RC_BAD( rc = finishPacket( RFL_ENABLE_ENCRYPTION_PACKET,
-											 uiPacketBodyLen,
-											 TRUE)))
+	if (RC_BAD( rc = finishPacket( RFL_ENABLE_ENCRYPTION_PACKET, uiPacketBodyLen,
+				  TRUE)))
 	{
 		goto Exit;
 	}
@@ -4542,7 +4729,94 @@ RCODE F_Rfl::logEnableEncryption(
 
 Exit:
 
-	return( rc);
+	return (rc);
+}
+
+/********************************************************************
+Desc:		Log a block chain free operation
+*********************************************************************/
+RCODE F_Rfl::logBlockChainFree(
+	FLMUINT	uiTrackerDrn,
+	FLMUINT	uiCount,
+	FLMUINT	uiEndAddr)
+{
+	RCODE			rc = FERR_OK;
+	FLMBYTE *	pucPacketBody;
+	FLMUINT		uiPacketBodyLen;
+
+	// This call is new with 4.52 databases - not supported in older
+	// versions, so don't log it.
+
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_60)
+	{
+		flmAssert( 0);
+		goto Exit;
+	}
+
+	// Do nothing if logging is disabled.
+
+	if (m_bLoggingOff)
+	{
+		goto Exit;
+	}
+
+	// Better not be in the middle of logging unknown stuff for the
+	// application
+
+	flmAssert( !m_bLoggingUnknown);
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_uiCurrTransID);
+	m_uiOperCount++;
+
+	uiPacketBodyLen = 16;
+
+	// Make sure we have space in the RFL buffer for a complete packet.
+
+	if (!haveBuffSpace( uiPacketBodyLen + RFL_PACKET_OVERHEAD))
+	{
+		if (RC_BAD( rc = flush( m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = getPacketBodyPtr();
+
+	// Output the transaction ID.
+
+	UD2FBA( (FLMUINT32) m_uiCurrTransID, pucPacketBody);
+	pucPacketBody += 4;
+
+	// Output the tracker record number
+
+	UD2FBA( (FLMUINT32) uiTrackerDrn, pucPacketBody);
+	pucPacketBody += 4;
+
+	// Output the count
+
+	UD2FBA( (FLMUINT32) uiCount, pucPacketBody);
+	pucPacketBody += 4;
+
+	// Output the ending block address
+
+	UD2FBA( (FLMUINT32) uiEndAddr, pucPacketBody);
+	pucPacketBody += 4;
+
+	// Finish the packet
+
+	if (RC_BAD( rc = finishPacket( RFL_BLK_CHAIN_FREE_PACKET, uiPacketBodyLen,
+				  TRUE)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return (rc);
 }
 
 /********************************************************************
@@ -4550,54 +4824,54 @@ Desc:		Reads a full packet, based on what file offset and read
 			offset are currently set to.
 *********************************************************************/
 RCODE F_Rfl::readPacket(
-	FLMUINT	uiMinBytesNeeded
-	)
+	FLMUINT	uiMinBytesNeeded)
 {
 	RCODE		rc = FERR_OK;
 	FLMUINT	uiTmpOffset;
 	FLMUINT	uiReadLen;
 	FLMUINT	uiBytesRead;
 
-	// If we have enough bytes in the buffer for the minimum bytes
-	// needed, we don't need to retrieve any more bytes.
+	// If we have enough bytes in the buffer for the minimum bytes needed,
+	// we don't need to retrieve any more bytes.
 
 	if (m_pCurrentBuf->uiRflBufBytes - m_uiRflReadOffset >= uiMinBytesNeeded)
 	{
 		goto Exit;
 	}
 
-	// If we are doing restore, we have to do only sequential
-	// reads - cannot depend on doing reads on 512 byte boundaries.
-	// Otherwise, we read directly from disk on 512 byte boundaries.
+	// If we are doing restore, we have to do only sequential reads -
+	// cannot depend on doing reads on 512 byte boundaries. Otherwise, we
+	// read directly from disk on 512 byte boundaries.
 
 	if (m_pRestore)
 	{
 		FLMUINT	uiCurrFilePos = m_pCurrentBuf->uiRflFileOffset +
-										 m_pCurrentBuf->uiRflBufBytes;
-		
+			m_pCurrentBuf->uiRflBufBytes;
+
 		if (m_uiRflReadOffset > 0)
 		{
 
-			// Move the bytes left in the buffer down to the beginning
-			// of the buffer.
+			// Move the bytes left in the buffer down to the beginning of
+			// the buffer.
 
-			f_memmove( m_pCurrentBuf->pIOBuffer->m_pucBuffer, 
-				&(m_pCurrentBuf->pIOBuffer->m_pucBuffer[ m_uiRflReadOffset]),
-						m_pCurrentBuf->uiRflBufBytes - m_uiRflReadOffset);
+			f_memmove( m_pCurrentBuf->pIOBuffer->m_pucBuffer,
+						 &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[m_uiRflReadOffset]),
+							 m_pCurrentBuf->uiRflBufBytes - m_uiRflReadOffset);
 			m_pCurrentBuf->uiRflBufBytes -= m_uiRflReadOffset;
 			m_pCurrentBuf->uiRflFileOffset += m_uiRflReadOffset;
 			m_uiRflReadOffset = 0;
 		}
+
 		uiReadLen = m_uiBufferSize - m_pCurrentBuf->uiRflBufBytes;
 
-		// Read enough to fill the rest of the buffer, which is
-		// guaranteed to hold at least one full packet.
+		// Read enough to fill the rest of the buffer, which is guaranteed
+		// to hold at least one full packet.
 
 		if (!m_uiFileEOF)
 		{
-			if (uiCurrFilePos > (FLMUINT)(-1) - uiReadLen)
+			if (uiCurrFilePos > (FLMUINT) (-1) - uiReadLen)
 			{
-				uiReadLen = (FLMUINT)(-1) - uiCurrFilePos;
+				uiReadLen = (FLMUINT) (-1) - uiCurrFilePos;
 			}
 		}
 		else
@@ -4608,8 +4882,8 @@ RCODE F_Rfl::readPacket(
 			}
 		}
 
-		// If reading will not give us the minimum bytes needed,
-		// we cannot satisfy this request from the current file.
+		// If reading will not give us the minimum bytes needed, we cannot
+		// satisfy this request from the current file.
 
 		if (uiReadLen + m_pCurrentBuf->uiRflBufBytes < uiMinBytesNeeded)
 		{
@@ -4619,9 +4893,9 @@ RCODE F_Rfl::readPacket(
 
 		// Read enough to get the entire packet.
 
-		if (RC_BAD( rc = m_pRestore->read( uiReadLen,
-			&(m_pCurrentBuf->pIOBuffer->m_pucBuffer[ m_pCurrentBuf->uiRflBufBytes]),
-			&uiBytesRead)))
+		if (RC_BAD( rc = m_pRestore->read( uiReadLen, &(
+						  m_pCurrentBuf->pIOBuffer->m_pucBuffer[
+						  m_pCurrentBuf->uiRflBufBytes]), &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
 			{
@@ -4633,22 +4907,22 @@ RCODE F_Rfl::readPacket(
 			}
 		}
 
-		// If we didn't read enough to satisfy the minimum bytes needed,
-		// we cannot satisfy this request from the current file.
+		// If we didn't read enough to satisfy the minimum bytes needed, we
+		// cannot satisfy this request from the current file.
 
 		if (uiBytesRead + m_pCurrentBuf->uiRflBufBytes < uiMinBytesNeeded)
 		{
 			rc = RC_SET( FERR_BAD_RFL_PACKET);
 			goto Exit;
 		}
+
 		m_pCurrentBuf->uiRflBufBytes += uiBytesRead;
 	}
 	else
 	{
-		
-		// Set offsets so we are on a 512 byte boundary for our
-		// next read.  No need to move data, since we will be
-		// re-reading it anyway.
+
+		// Set offsets so we are on a 512 byte boundary for our next read.
+		// No need to move data, since we will be re-reading it anyway.
 
 		if (m_uiRflReadOffset > 0)
 		{
@@ -4661,16 +4935,17 @@ RCODE F_Rfl::readPacket(
 			m_uiRflReadOffset = m_pCurrentBuf->uiRflFileOffset & 511;
 			m_pCurrentBuf->uiRflFileOffset -= m_uiRflReadOffset;
 		}
+
 		m_pCurrentBuf->uiRflBufBytes = 0;
 
-		// Read enough to fill the rest of the buffer, which is
-		// guaranteed to hold at least one full packet.
+		// Read enough to fill the rest of the buffer, which is guaranteed
+		// to hold at least one full packet.
 
 		uiReadLen = m_uiBufferSize;
 
-		// m_uiFileEOF better not be zero at this point - we should
-		// always know precisely where the RFL file ends when we
-		// are doing recovery as opposed to doing a restore.
+		// m_uiFileEOF better not be zero at this point - we should always
+		// know precisely where the RFL file ends when we are doing recovery
+		// as opposed to doing a restore.
 
 		flmAssert( m_uiFileEOF >= 512);
 		if (m_pCurrentBuf->uiRflFileOffset + uiReadLen > m_uiFileEOF)
@@ -4678,8 +4953,8 @@ RCODE F_Rfl::readPacket(
 			uiReadLen = m_uiFileEOF - m_pCurrentBuf->uiRflFileOffset;
 		}
 
-		// If reading will not give us the minimum number of bytes
-		// needed, we have a bad packet.
+		// If reading will not give us the minimum number of bytes needed,
+		// we have a bad packet.
 
 		if (uiReadLen < m_uiRflReadOffset ||
 			 uiReadLen - m_uiRflReadOffset < uiMinBytesNeeded)
@@ -4691,8 +4966,8 @@ RCODE F_Rfl::readPacket(
 		// Read to get the entire packet.
 
 		if (RC_BAD( rc = m_pFileHdl->SectorRead( m_pCurrentBuf->uiRflFileOffset,
-									uiReadLen, m_pCurrentBuf->pIOBuffer->m_pucBuffer,
-									&uiBytesRead)))
+					  uiReadLen, m_pCurrentBuf->pIOBuffer->m_pucBuffer, 
+					  &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
 			{
@@ -4704,15 +4979,19 @@ RCODE F_Rfl::readPacket(
 				goto Exit;
 			}
 		}
+
 		if (uiBytesRead < uiReadLen)
 		{
 			rc = RC_SET( FERR_BAD_RFL_PACKET);
 			goto Exit;
 		}
+
 		m_pCurrentBuf->uiRflBufBytes = uiReadLen;
 	}
+
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -4724,36 +5003,36 @@ RCODE F_Rfl::getPacket(
 	FLMUINT *	puiPacketTypeRV,
 	FLMBYTE **	ppucPacketBodyRV,
 	FLMUINT *	puiPacketBodyLenRV,
-	FLMBOOL *	pbLoggedTimes
-	)
+	FLMBOOL *	pbLoggedTimes)
 {
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPacket;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketType;
 	FLMUINT		uiEncryptPacketBodyLen;
-	FLMBYTE		ucHdr [512];
+	FLMBYTE		ucHdr[512];
 	FLMUINT		uiBytesRead;
 
-	// See if we need to go to the next file.  Note that we only
-	// check for this exactly on packet boundaries.  We do not expect
-	// packets to be split across files.  If we are not at the end
-	// of processing what is in the buffer, we should be able to
-	// read the rest of the packet from the current file.
+	// See if we need to go to the next file. Note that we only check for
+	// this exactly on packet boundaries. We do not expect packets to be
+	// split across files. If we are not at the end of processing what is
+	// in the buffer, we should be able to read the rest of the packet from
+	// the current file.
 
 Get_Next_File:
+
 	if (bForceNextFile || 
 		 (m_uiFileEOF && m_uiRflReadOffset == m_pCurrentBuf->uiRflBufBytes &&
 		  m_pCurrentBuf->uiRflFileOffset + m_pCurrentBuf->uiRflBufBytes ==
 						m_uiFileEOF))
 	{
-		if( m_bKeepRflFiles)
+		if (m_bKeepRflFiles)
 		{
 			if (!m_pRestore)
 			{
 
-				// Only doing recovery after a failure, see if we are at
-				// the last file already.
+				// Only doing recovery after a failure, see if we are at the
+				// last file already.
 
 				if (m_pCurrentBuf->uiCurrFileNum == m_uiLastRecoverFileNum)
 				{
@@ -4765,11 +5044,12 @@ Get_Next_File:
 					!(FLMUINT)FB2UD( &m_pFile->ucLastCommittedLogHdr[ 
 						LOG_RFL_LAST_TRANS_OFFSET]))
 				{
-					// We are going to try to open the last file.  Since the log header
-					// shows a current offset of 0, the file may have been created but
-					// nothing was logged to it.  We don't want to try to open
-					// it here because it may not have been initialized fully
-					// at the time of the server crash.
+
+					// We are going to try to open the last file. Since the
+					// log header shows a current offset of 0, the file may
+					// have been created but nothing was logged to it. We don't
+					// want to try to open it here because it may not have been
+					// initialized fully at the time of the server crash.
 
 					m_pCurrentBuf->uiCurrFileNum = m_uiLastRecoverFileNum;
 					rc = RC_SET( FERR_END);
@@ -4779,23 +5059,24 @@ Get_Next_File:
 				// Open the next file in the sequence.
 
 				if (RC_BAD( rc = openFile( m_pCurrentBuf->uiCurrFileNum + 1,
-												m_ucNextSerialNum)))
+							  m_ucNextSerialNum)))
 				{
 					if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 					{
 						rc = RC_SET( FERR_END);
 					}
+
 					goto Exit;
 				}
 
-				// If this is the last RFL file, the EOF is contained
-				// in the log header.  Otherwise, it will be in the RFL
-				// file's header, and openFile will already have retrieved it.
+				// If this is the last RFL file, the EOF is contained in the
+				// log header. Otherwise, it will be in the RFL file's header,
+				// and openFile will already have retrieved it.
 
 				if (m_pCurrentBuf->uiCurrFileNum == m_uiLastRecoverFileNum)
 				{
-					m_uiFileEOF = (FLMUINT)FB2UD(
-								&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+					m_uiFileEOF = (FLMUINT) FB2UD( &m_pFile->ucLastCommittedLogHdr[
+														LOG_RFL_LAST_TRANS_OFFSET]);
 
 					// Could be zero if RFL file wasn't created yet.
 
@@ -4805,13 +5086,14 @@ Get_Next_File:
 					}
 				}
 
-				// By this point, the EOF better be greater than or equal to 512.
+				// By this point, the EOF better be greater than or equal to
+				// 512.
 
 				flmAssert( m_uiFileEOF >= 512);
 			}
 			else
 			{
-				if( RC_BAD( rc = m_pRestore->close()))
+				if (RC_BAD( rc = m_pRestore->close()))
 				{
 					goto Exit;
 				}
@@ -4819,37 +5101,40 @@ Get_Next_File:
 				// Ask the recovery object to open the file.
 
 				if (RC_BAD( rc = m_pRestore->openRflFile(
-												m_pCurrentBuf->uiCurrFileNum + 1)))
+								  m_pCurrentBuf->uiCurrFileNum + 1)))
 				{
 					if (rc == FERR_IO_PATH_NOT_FOUND)
 					{
 						rc = RC_SET( FERR_END);
 					}
+
 					goto Exit;
 				}
 
-				// Get the first 512 bytes from the file and verify the header.
+				// Get the first 512 bytes from the file and verify the
+				// header.
 
 				if (RC_BAD( rc = m_pRestore->read( 512, ucHdr, &uiBytesRead)))
 				{
 					goto Exit;
 				}
+
 				if (uiBytesRead < 512)
 				{
 					rc = RC_SET( FERR_NOT_RFL);
 					goto Exit;
 				}
+
 				if (RC_BAD( rc = verifyHeader( ucHdr,
-										m_pCurrentBuf->uiCurrFileNum + 1,
-										m_ucNextSerialNum)))
+							  m_pCurrentBuf->uiCurrFileNum + 1, m_ucNextSerialNum)))
 				{
 					goto Exit;
 				}
 
-				// We may not know the actual EOF of files during restore operations.
-				// m_uiFileEOF could be zero here.
+				// We may not know the actual EOF of files during restore
+				// operations. m_uiFileEOF could be zero here.
 
-				m_uiFileEOF = (FLMUINT)FB2UD( &ucHdr [RFL_EOF_POS]);
+				m_uiFileEOF = (FLMUINT) FB2UD( &ucHdr[RFL_EOF_POS]);
 
 				// File EOF may be zero or >= 512 at this point.
 
@@ -4859,6 +5144,7 @@ Get_Next_File:
 
 				m_pCurrentBuf->uiCurrFileNum++;
 			}
+
 			m_pCurrentBuf->uiRflFileOffset = 512;
 			m_uiRflReadOffset = 0;
 			m_pCurrentBuf->uiRflBufBytes = 0;
@@ -4875,14 +5161,16 @@ Get_Next_File:
 					bForceNextFile = TRUE;
 					goto Get_Next_File;
 				}
+
 				goto Exit;
 			}
 		}
 		else
 		{
-			// This is the case where we are not keeping the RFL files.
-			// So, there is no next file to go to.  If we get to this
-			// point, we had better not be doing a restore.
+
+			// This is the case where we are not keeping the RFL files. So,
+			// there is no next file to go to. If we get to this point, we
+			// had better not be doing a restore.
 
 			flmAssert( m_pRestore == NULL && !bForceNextFile);
 			rc = RC_SET( FERR_END);
@@ -4901,8 +5189,7 @@ Get_Next_File:
 
 	m_uiPacketAddress = m_pCurrentBuf->uiRflFileOffset + m_uiRflReadOffset;
 	pucPacket = &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[m_uiRflReadOffset]);
-	if ((FLMUINT)FB2UD( &pucPacket [RFL_PACKET_ADDRESS_OFFSET]) !=
-				m_uiPacketAddress)
+	if ((FLMUINT) FB2UD( &pucPacket[RFL_PACKET_ADDRESS_OFFSET]) != m_uiPacketAddress)
 	{
 		rc = RC_SET( FERR_BAD_RFL_PACKET);
 		goto Exit;
@@ -4910,26 +5197,25 @@ Get_Next_File:
 
 	// Get packet type, time flag, and packet body length
 
-	*puiPacketTypeRV =
-	uiPacketType = RFL_GET_PACKET_TYPE( pucPacket [RFL_PACKET_TYPE_OFFSET]);
+	*puiPacketTypeRV = uiPacketType = RFL_GET_PACKET_TYPE( 
+														pucPacket[RFL_PACKET_TYPE_OFFSET]);
 
-	if( pbLoggedTimes)
+	if (pbLoggedTimes)
 	{
-		*pbLoggedTimes = 
-			(pucPacket [RFL_PACKET_TYPE_OFFSET] & RFL_TIME_LOGGED_FLAG)
-			? TRUE 
-			: FALSE;
+		*pbLoggedTimes = (pucPacket[RFL_PACKET_TYPE_OFFSET] & RFL_TIME_LOGGED_FLAG) 
+											? TRUE 
+											: FALSE;
 	}
 
-	*puiPacketBodyLenRV =
-		(FLMUINT)FB2UW( &pucPacket [RFL_PACKET_BODY_LENGTH_OFFSET]);
+	*puiPacketBodyLenRV = (FLMUINT) FB2UW( 
+									&pucPacket[RFL_PACKET_BODY_LENGTH_OFFSET]);
 
-	// Adjust the packet body length for encryption if necessary.
-	// NOTE: This adjusted length is NOT returned to the caller.
-	// The actual body length is what will be returned.
+	// Adjust the packet body length for encryption if necessary. NOTE:
+	// This adjusted length is NOT returned to the caller. The actual body
+	// length is what will be returned.
 
 	uiEncryptPacketBodyLen = getEncryptPacketBodyLen( uiPacketType,
-										*puiPacketBodyLenRV);
+																	 *puiPacketBodyLenRV);
 
 	// Make sure we have the entire packet in the buffer.
 
@@ -4937,39 +5223,41 @@ Get_Next_File:
 	{
 		goto Exit;
 	}
+
 	pucPacket = &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[m_uiRflReadOffset]);
 
-	// At this point, we are guaranteed to have the entire packet
-	// in the buffer.
+	// At this point, we are guaranteed to have the entire packet in the
+	// buffer.
 
-	*ppucPacketBodyRV = 
-	pucPacketBody = &pucPacket [RFL_PACKET_OVERHEAD];
+	*ppucPacketBodyRV = pucPacketBody = &pucPacket[RFL_PACKET_OVERHEAD];
 
 	// Validate the packet checksum
 
-	if (RflCalcChecksum( pucPacket, uiEncryptPacketBodyLen) !=
-			pucPacket [RFL_PACKET_CHECKSUM_OFFSET])
+	if (RflCalcChecksum( pucPacket, uiEncryptPacketBodyLen) != 
+								pucPacket[RFL_PACKET_CHECKSUM_OFFSET])
 	{
 		rc = RC_SET( FERR_BAD_RFL_PACKET);
 		goto Exit;
 	}
 
 	if (uiPacketType == RFL_TRNS_BEGIN_PACKET ||
-		uiPacketType == RFL_TRNS_BEGIN_EX_PACKET ||
-		uiPacketType == RFL_UPGRADE_PACKET ||
-		uiPacketType == RFL_REDUCE_PACKET ||
-		uiPacketType == RFL_WRAP_KEY_PACKET ||
-		uiPacketType == RFL_ENABLE_ENCRYPTION_PACKET)
+		 uiPacketType == RFL_TRNS_BEGIN_EX_PACKET ||
+		 uiPacketType == RFL_UPGRADE_PACKET ||
+		 uiPacketType == RFL_REDUCE_PACKET ||
+		 uiPacketType == RFL_WRAP_KEY_PACKET ||
+		 uiPacketType == RFL_ENABLE_ENCRYPTION_PACKET)
 	{
-		// Current transaction ID better be zero, otherwise, we
-		// have two or more begin packets in a row.
+
+		// Current transaction ID better be zero, otherwise, we have two or
+		// more begin packets in a row.
 
 		if (m_uiCurrTransID)
 		{
 			rc = RC_SET( FERR_BAD_RFL_PACKET);
 			goto Exit;
 		}
-		m_uiCurrTransID = (FLMUINT)FB2UD( pucPacketBody);
+
+		m_uiCurrTransID = (FLMUINT) FB2UD( pucPacketBody);
 		pucPacketBody += 4;
 
 		// Make sure the transaction numbers are ascending
@@ -4980,19 +5268,19 @@ Get_Next_File:
 			goto Exit;
 		}
 
-		if( uiPacketType == RFL_TRNS_BEGIN_EX_PACKET)
+		if (uiPacketType == RFL_TRNS_BEGIN_EX_PACKET)
 		{
-			FLMUINT		uiLastLoggedCommitTransID;
-				
+			FLMUINT	uiLastLoggedCommitTransID;
+
 			// Skip past seconds
 
 			pucPacketBody += 4;
 
-			uiLastLoggedCommitTransID = (FLMUINT)FB2UD( pucPacketBody);
+			uiLastLoggedCommitTransID = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 
-			if( m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_31 && 
-				m_uiLastLoggedCommitTransID != uiLastLoggedCommitTransID)
+			if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_31 &&
+				 m_uiLastLoggedCommitTransID != uiLastLoggedCommitTransID)
 			{
 				rc = RC_SET( FERR_RFL_TRANS_GAP);
 				goto Exit;
@@ -5002,9 +5290,8 @@ Get_Next_File:
 	else
 	{
 
-		// If transaction ID is not zero, we are not inside a
-		// transaction, and it is likely that we have a corrupt
-		// packet.
+		// If transaction ID is not zero, we are not inside a transaction,
+		// and it is likely that we have a corrupt packet.
 
 		if (!m_uiCurrTransID)
 		{
@@ -5012,13 +5299,12 @@ Get_Next_File:
 			goto Exit;
 		}
 
-		// Decrypt the packet if it is a packet type that was
-		// encrypted.
+		// Decrypt the packet if it is a packet type that was encrypted.
 
 		if (uiPacketType == RFL_TRNS_COMMIT_PACKET ||
 			 uiPacketType == RFL_TRNS_ABORT_PACKET)
 		{
-			if( (FLMUINT)FB2UD( pucPacketBody) != m_uiCurrTransID)
+			if ((FLMUINT) FB2UD( pucPacketBody) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
@@ -5029,8 +5315,10 @@ Get_Next_File:
 	// Set read offset to beginning of next packet.
 
 	m_uiRflReadOffset += (RFL_PACKET_OVERHEAD + uiEncryptPacketBodyLen);
+	
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /********************************************************************
@@ -5056,27 +5344,26 @@ RCODE F_Rfl::getRecord(
 	FLMUINT		uiEncDataLen = 0;
 	POOL			pool;
 
-
 	GedPoolInit( &pool, 512);
 
-	// Go into a loop processing packets until we have retrieved
-	// all of the fields of the record.  At that point, we
-	// had better be at the end of the record.
+	// Go into a loop processing packets until we have retrieved all of
+	// the fields of the record. At that point, we had better be at the end
+	// of the record.
 
 	for (;;)
 	{
 
-		// If we don't currently have a packet, get one
-		// Packet type had better be RFL_DATA_RECORD_PACKET or
-		// RFL_ENC_DATA_RECORD_PACKET.
+		// If we don't currently have a packet, get one Packet type had
+		// better be RFL_DATA_RECORD_PACKET.
 
 		if (!uiPacketBodyLen)
 		{
 			if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-												&uiPacketBodyLen, NULL)))
+						  &uiPacketBodyLen, NULL)))
 			{
 				goto Exit;
 			}
+
 			if (uiPacketType != RFL_DATA_RECORD_PACKET &&
 				 uiPacketType != RFL_ENC_DATA_RECORD_PACKET)
 			{
@@ -5085,9 +5372,9 @@ RCODE F_Rfl::getRecord(
 			}
 		}
 
-		// Packet body length better be at least two or we
-		// have an incomplete packet - we need to at least
-		// be able to get the tag number at this point.
+		// Packet body length better be at least two or we have an
+		// incomplete packet - we need to at least be able to get the tag
+		// number at this point.
 
 		if (uiPacketBodyLen < 2)
 		{
@@ -5097,12 +5384,11 @@ RCODE F_Rfl::getRecord(
 		else if (uiPacketBodyLen == 2)
 		{
 
-			// If the packet body length is only two, we
-			// had better be at the end of the record with
-			// a tag number of zero.  Otherwise, we have
-			// an incomplete packet.
+			// If the packet body length is only two, we had better be at
+			// the end of the record with a tag number of zero. Otherwise, we
+			// have an incomplete packet.
 
-			if ((uiTagNum = (FLMUINT)FB2UW( pucPacketBody))!= 0)
+			if ((uiTagNum = (FLMUINT) FB2UW( pucPacketBody)) != 0)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
@@ -5113,49 +5399,58 @@ RCODE F_Rfl::getRecord(
 		{
 			if (uiPacketBodyLen < 6)
 			{
-				// If we have a packet body length less than
-				// six (for RFL_DATA_RECORD_PACKETs),
-				// we have an incomplete field header.
+
+				// If we have a packet body length less than six (for
+				// RFL_DATA_RECORD_PACKETs), we have an incomplete field
+				// header.
+
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
 		}
 		else if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
 		{
-			// This type of packet is only valid with versions of flaim >= 4.60
-			flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_60);
+
+			// This type of packet is only valid with versions of flaim >=
+			// 4.60
+
+			flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60);
 
 			if (uiPacketBodyLen < 7)
 			{
-				// If we have a packet body length less than
-				// seven we have an incomplete field header.
+
+				// If we have a packet body length less than seven we have an
+				// incomplete field header.
+
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
 		}
 
-		// At this point, we have a packet body length that
-		// is greater than or equal to seven (or six), meaning we could
-		// not possibly be on the last field of the record.
-		// Hence, a zero tag number is invalid here.
+		// At this point, we have a packet body length that is greater than
+		// or equal to seven (or six), meaning we could not possibly be on
+		// the last field of the record. Hence, a zero tag number is invalid
+		// here.
 
-		if ((uiTagNum = (FLMUINT)FB2UW( pucPacketBody)) == 0)
+		if ((uiTagNum = (FLMUINT) FB2UW( pucPacketBody)) == 0)
 		{
 			rc = RC_SET( FERR_BAD_RFL_PACKET);
 			goto Exit;
 		}
+
 		pucPacketBody += 2;
 		uiDataType = *pucPacketBody++;
 		uiLevel = *pucPacketBody++;
-		uiDataLen = (FLMUINT)FB2UW( pucPacketBody);
+		uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
 		pucPacketBody += 2;
 		uiPacketBodyLen -= 6;
 
-		// If the database version supports encryption,
-		// we need to check for it.
+		// If the database version supports encryption, we need to check
+		// for it.
+
 		if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
 		{
-			bEncrypted = (FLMBOOL)*pucPacketBody++;
+			bEncrypted = (FLMBOOL) * pucPacketBody++;
 			--uiPacketBodyLen;
 
 			if (bEncrypted)
@@ -5168,6 +5463,7 @@ RCODE F_Rfl::getRecord(
 				}
 
 				// Extract the encryption ID and the encrypted length.
+
 				uiEncId = FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 
@@ -5180,20 +5476,16 @@ RCODE F_Rfl::getRecord(
 
 		// Create a new field.
 
-		if (RC_BAD( rc = pRecord->insertLast( uiLevel, uiTagNum,
-												uiDataType, &pvField)))
+		if (RC_BAD( rc = pRecord->insertLast( uiLevel, uiTagNum, uiDataType,
+					  &pvField)))
 		{
 			goto Exit;
 		}
 
 		if (!bEncrypted && uiDataLen)
 		{
-			if (RC_BAD( rc = pRecord->allocStorageSpace( pvField,
-																	  uiDataType,
-																	  uiDataLen,
-																	  0, 0, 0,
-																	  &pucFieldData,
-																	  NULL)))
+			if (RC_BAD( rc = pRecord->allocStorageSpace( pvField, uiDataType,
+						  uiDataLen, 0, 0, 0, &pucFieldData, NULL)))
 			{
 				goto Exit;
 			}
@@ -5209,16 +5501,16 @@ RCODE F_Rfl::getRecord(
 
 					uiPacketBodyLen = 0;
 
-					// Get the next packet.  Packet type had better
-					// be RFL_DATA_RECORD_PACKET or RFL_ENC_DATA_RECORD_PACKET
+					// Get the next packet. Packet type had better be
+					// RFL_DATA_RECORD_PACKET.
 
 					if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-														&uiPacketBodyLen, NULL)))
+								  &uiPacketBodyLen, NULL)))
 					{
 						goto Exit;
 					}
-					if (uiPacketType != RFL_DATA_RECORD_PACKET &&
-						 uiPacketType != RFL_ENC_DATA_RECORD_PACKET)
+
+					if (uiPacketType != RFL_DATA_RECORD_PACKET)
 					{
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
@@ -5233,22 +5525,19 @@ RCODE F_Rfl::getRecord(
 					uiDataLen = 0;
 				}
 			}
+
 			pucFieldData = NULL;
 		}
 		else if (bEncrypted)
 		{
-			FLMBYTE *	pucEncFieldData;
+			FLMBYTE *		pucEncFieldData;
 
 			if (uiEncDataLen)
 			{
-				if (RC_BAD( rc = pRecord->allocStorageSpace( pvField,
-																		   uiDataType,
-																		   uiDataLen,
-																		   uiEncDataLen,
-																		   uiEncId,
-																		   FLD_HAVE_ENCRYPTED_DATA,
-																		   &pucFieldData,
-																		   &pucEncFieldData)))
+				if (RC_BAD( rc = pRecord->allocStorageSpace( pvField, uiDataType,
+							  uiDataLen, uiEncDataLen, uiEncId,
+							  FLD_HAVE_ENCRYPTED_DATA, &pucFieldData, &pucEncFieldData
+							  )))
 				{
 					goto Exit;
 				}
@@ -5265,14 +5554,15 @@ RCODE F_Rfl::getRecord(
 
 					uiPacketBodyLen = 0;
 
-					// Get the next packet.  Packet type had better
-					// be RFL_ENC_DATA_RECORD_PACKET.
+					// Get the next packet. Packet type had better be
+					// RFL_ENC_DATA_RECORD_PACKET.
 
 					if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-														&uiPacketBodyLen, NULL)))
+								  &uiPacketBodyLen, NULL)))
 					{
 						goto Exit;
 					}
+
 					if (uiPacketType != RFL_ENC_DATA_RECORD_PACKET)
 					{
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
@@ -5288,12 +5578,13 @@ RCODE F_Rfl::getRecord(
 					uiEncDataLen = 0;
 				}
 			}
+
 			pucEncFieldData = NULL;
 
 			if (!m_pFile->bInLimitedMode)
 			{
-				if (RC_BAD( rc = flmDecryptField( pDb->pDict, pRecord,
-					pvField, uiEncId, &pool)))
+				if (RC_BAD( rc = flmDecryptField( pDb->pDict, pRecord, pvField,
+							  uiEncId, &pool)))
 				{
 					goto Exit;
 				}
@@ -5305,7 +5596,7 @@ Exit:
 
 	GedPoolFree( &pool);
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -5313,8 +5604,8 @@ Desc:		Modify a record using RFL_DATA_RECORD_PACKETs or
 			RFL_CHANGE_FIELD_PACKETs.
 *********************************************************************/
 RCODE F_Rfl::modifyRecord(
-	HFDB				hDb,
-	FlmRecord *		pRecord)
+	HFDB			hDb,
+	FlmRecord *	pRecord)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiPacketType;
@@ -5329,7 +5620,7 @@ RCODE F_Rfl::modifyRecord(
 	FLMUINT		uiDataLen = 0;
 	FLMBYTE *	pucData;
 	FLMBYTE *	pucEncData;
-	FDB *			pDb = (FDB *)hDb;
+	FDB *			pDb = (FDB *) hDb;
 	FLMBOOL		bEncrypted = FALSE;
 	FLMUINT		uiEncDataLen;
 	FLMUINT		uiEncId;
@@ -5338,22 +5629,21 @@ RCODE F_Rfl::modifyRecord(
 	FLMUINT		uiCurPos = 1;
 	void *		pvField;
 
-	// Get the first packet and see what it is.
-	// If it is an RFL_DATA_RECORD_PACKET, just
-	// call Rfl3GetRecord to get the entire new
-	// record.
+	// Get the first packet and see what it is. If it is an
+	// RFL_DATA_RECORD_PACKET, just call Rfl3GetRecord to get the entire
+	// new record.
 
 	if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-										&uiPacketBodyLen, NULL)))
+				  &uiPacketBodyLen, NULL)))
 	{
 		goto Exit;
 	}
+
 	if (uiPacketType == RFL_DATA_RECORD_PACKET ||
 		 uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
 	{
 		pRecord->clear();
-		rc = getRecord( pDb, uiPacketType, pucPacketBody,
-									uiPacketBodyLen, pRecord);
+		rc = getRecord( pDb, uiPacketType, pucPacketBody, uiPacketBodyLen, pRecord);
 		goto Exit;
 	}
 	else if (uiPacketType != RFL_CHANGE_FIELDS_PACKET)
@@ -5362,29 +5652,29 @@ RCODE F_Rfl::modifyRecord(
 		goto Exit;
 	}
 
-	// Go into a loop processing packets until we have processed
-	// all of the changed fields for the record.
-	
+	// Go into a loop processing packets until we have processed all of
+	// the changed fields for the record.
+
 	pField = pRecord->getFieldPointer( pRecord->root());
 
 	flmAssert( pField);
 
 	for (;;)
 	{
-
 		uiEncDataLen = 0;
 		uiEncId = 0;
 
-		// If we don't currently have a packet, get one
-		// Packet type had better be RFL_CHANGE_FIELDS_PACKET.
+		// If we don't currently have a packet, get one Packet type had
+		// better be RFL_CHANGE_FIELDS_PACKET.
 
 		if (!uiPacketBodyLen)
 		{
 			if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-												&uiPacketBodyLen, NULL)))
+						  &uiPacketBodyLen, NULL)))
 			{
 				goto Exit;
 			}
+
 			if (uiPacketType != RFL_CHANGE_FIELDS_PACKET)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
@@ -5392,10 +5682,9 @@ RCODE F_Rfl::modifyRecord(
 			}
 		}
 
-		// Packet body length better be at least three or we
-		// have an incomplete packet - we need to at least
-		// be able to get the type of change and the absolute
-		// position of the change.
+		// Packet body length better be at least three or we have an
+		// incomplete packet - we need to at least be able to get the type
+		// of change and the absolute position of the change.
 
 		if (uiPacketBodyLen < 3)
 		{
@@ -5403,21 +5692,19 @@ RCODE F_Rfl::modifyRecord(
 			goto Exit;
 		}
 
-		// Get the change type and the absolute position where
-		// the change is to be put.  A position of zero is
-		// illegal.
+		// Get the change type and the absolute position where the change
+		// is to be put. A position of zero is illegal.
 
 		uiChangeType = *pucPacketBody++;
-		uiPosition = (FLMUINT)FB2UW( pucPacketBody);
+		uiPosition = (FLMUINT) FB2UW( pucPacketBody);
 		pucPacketBody += 2;
 		uiPacketBodyLen -= 3;
 
 		if (uiChangeType == RFL_END_FIELD_CHANGES)
 		{
 
-			// If we are not at the end of the packet, it must
-			// be a bad packet.  Also, uiPosition should be
-			// a zero for this packet.
+			// If we are not at the end of the packet, it must be a bad
+			// packet. Also, uiPosition should be a zero for this packet.
 
 			if (uiPacketBodyLen || uiPosition)
 			{
@@ -5427,8 +5714,7 @@ RCODE F_Rfl::modifyRecord(
 			break;
 		}
 
-		// If not RFL_END_FIELD_CHANGES, a position of
-		// zero is illegal.
+		// If not RFL_END_FIELD_CHANGES, a position of zero is illegal.
 
 		if (!uiPosition)
 		{
@@ -5444,19 +5730,18 @@ RCODE F_Rfl::modifyRecord(
 				if (uiPacketBodyLen < 6)
 				{
 
-					// If the change type is insert field and there are
-					// not at least six bytes in the packet, we have
-					// a problem.
+					// If the change type is insert field and there are not at
+					// least six bytes in the packet, we have a problem.
 
 					rc = RC_SET( FERR_BAD_RFL_PACKET);
 					goto Exit;
 				}
 
-				uiTagNum = (FLMUINT)FB2UW( pucPacketBody);
+				uiTagNum = (FLMUINT) FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 				uiDataType = *pucPacketBody++;
 				uiLevel = *pucPacketBody++;
-				uiDataLen = (FLMUINT)FB2UW( pucPacketBody);
+				uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 				uiPacketBodyLen -= 6;
 				bEncrypted = (uiChangeType == RFL_INSERT_FIELD ? FALSE : TRUE);
@@ -5467,7 +5752,8 @@ RCODE F_Rfl::modifyRecord(
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
 					}
-					uiEncId = FB2UW(pucPacketBody);
+
+					uiEncId = FB2UW( pucPacketBody);
 					pucPacketBody += 2;
 
 					uiEncDataLen = FB2UW( pucPacketBody);
@@ -5481,17 +5767,18 @@ RCODE F_Rfl::modifyRecord(
 			case RFL_MODIFY_FIELD:
 			case RFL_MODIFY_ENC_FIELD:
 			{
-				// Packet better have at least three bytes and the first
-				// byte had better be RFL_REPLACE_BYTES.
 
-				if (uiPacketBodyLen < 3 ||
-					*pucPacketBody != RFL_REPLACE_BYTES)
+				// Packet better have at least three bytes and the first byte
+				// had better be RFL_REPLACE_BYTES.
+
+				if (uiPacketBodyLen < 3 || *pucPacketBody != RFL_REPLACE_BYTES)
 				{
 					rc = RC_SET( FERR_BAD_RFL_PACKET);
 					goto Exit;
 				}
+
 				pucPacketBody++;
-				uiDataLen = (FLMUINT)FB2UW( pucPacketBody);
+				uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 
 				bEncrypted = (uiChangeType == RFL_MODIFY_FIELD ? FALSE : TRUE);
@@ -5504,7 +5791,8 @@ RCODE F_Rfl::modifyRecord(
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
 					}
-					uiEncId = FB2UW(pucPacketBody);
+
+					uiEncId = FB2UW( pucPacketBody);
 					pucPacketBody += 2;
 
 					uiEncDataLen = FB2UW( pucPacketBody);
@@ -5512,7 +5800,6 @@ RCODE F_Rfl::modifyRecord(
 
 					uiPacketBodyLen -= 4;
 				}
-
 				break;
 			}
 
@@ -5523,13 +5810,14 @@ RCODE F_Rfl::modifyRecord(
 
 			default:
 			{
+
 				// Bad change type in packet.
 
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-		} // Switch
-		
+		}
+
 		// Now position to the target field.
 
 		switch (uiChangeType)
@@ -5538,7 +5826,7 @@ RCODE F_Rfl::modifyRecord(
 			case RFL_MODIFY_FIELD:
 			case RFL_MODIFY_ENC_FIELD:
 			{
-				while ( uiCurPos != uiPosition)
+				while (uiCurPos != uiPosition)
 				{
 					if (uiPosition < uiCurPos)
 					{
@@ -5556,25 +5844,29 @@ RCODE F_Rfl::modifyRecord(
 
 				if (uiChangeType != RFL_DELETE_FIELD)
 				{
-					// Get the data type ... not supplied in the modify field packet.
+
+					// Get the data type ... not supplied in the modify field
+					// packet.
+
 					uiDataType = pRecord->getFieldDataType( pField);
 					uiTagNum = pField->ui16FieldID;
 				}
-
 				break;
 			}
-			
+
 			case RFL_INSERT_FIELD:
 			case RFL_INSERT_ENC_FIELD:
 			{
 				FlmField *	pNewField;
 
-				// On insert, we may be trying to position to a field that does not exist yet.
-				// Therefore we need to position to the field prior to the field position we want to insert.
-	
-				flmAssert( uiPosition > 1); // cannot insert at the root position.
-	
-				while ( uiCurPos != uiPosition - 1)
+				// On insert, we may be trying to position to a field that
+				// does not exist yet. Therefore we need to position to the
+				// field prior to the field position we want to insert.
+
+				flmAssert( uiPosition > 1);	// cannot insert at the root
+														///position.
+
+				while (uiCurPos != uiPosition - 1)
 				{
 					if (uiPosition - 1 < uiCurPos)
 					{
@@ -5590,23 +5882,25 @@ RCODE F_Rfl::modifyRecord(
 					}
 				}
 
-				// Insert the new field at the specified position and
-				// get back a new field to use later.
+				// Insert the new field at the specified position and get
+				// back a new field to use later.
 
-				if( RC_BAD( rc = pRecord->createField( pField, &pNewField)))
+				if (RC_BAD( rc = pRecord->createField( pField, &pNewField)))
 				{
 					goto Exit;
 				}
-	
-				if( RC_BAD( rc = pRecord->setFieldLevel( pNewField, uiLevel)))
+
+				if (RC_BAD( rc = pRecord->setFieldLevel( pNewField, uiLevel)))
 				{
 					goto Exit;
 				}
 
 				pField = pNewField;
-				pField->ui16FieldID = (FLMUINT16)uiTagNum;
-				uiCurPos++; // Bump the position as we have just added a new field and
-								// we are positioned on it.
+				pField->ui16FieldID = (FLMUINT16) uiTagNum;
+				uiCurPos++;							// Bump the position as we have
+														///just added a new field and
+
+				// we are positioned on it.
 
 				break;
 			}
@@ -5614,8 +5908,10 @@ RCODE F_Rfl::modifyRecord(
 
 		if (uiChangeType == RFL_DELETE_FIELD)
 		{
+
 			// Remove the specified field or subtree
-			pvField = (void *)((FLMUINT)(pField->uiPrev));
+
+			pvField = (void *) ((FLMUINT) (pField->uiPrev));
 			--uiCurPos;
 			if (!pvField)
 			{
@@ -5624,10 +5920,10 @@ RCODE F_Rfl::modifyRecord(
 			}
 
 			// For versions 4.60 and greater, the interpretation for
-			// RFL_DELETE_FIELD is to delete the entire sub-tree.
-			// Prior to that, it is to delete only a single field.
+			// RFL_DELETE_FIELD is to delete the entire sub-tree. Prior to
+			// that, it is to delete only a single field.
 
-			if (m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_60)
+			if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
 			{
 				if (RC_BAD( rc = pRecord->remove( pField)))
 				{
@@ -5637,19 +5933,20 @@ RCODE F_Rfl::modifyRecord(
 			else
 			{
 
-				// Passing in the same pointer to removeFields will effectively
-				// delete just pField.
+				// Passing in the same pointer to removeFields will
+				// effectively delete just pField.
 
 				if (RC_BAD( rc = pRecord->removeFields( pField, pField)))
 				{
 					goto Exit;
 				}
 			}
-			
+
 			// We need to reset our pField.
+
 			pField = pRecord->getFieldPointer( pvField);
 
-			continue; // Next field...
+			continue;	// Next field...
 		}
 
 		// Both insert & modify need to have space allocated.
@@ -5665,26 +5962,19 @@ RCODE F_Rfl::modifyRecord(
 
 		flmAssert( pField);
 
-		// Allocate space for the data.  We call this even if uiDataLen is
-		// zero so that the appropriate data type will be set in the node
-		// as well.
-
-		// Before we allocate storage space, save the field offset.  The
-		// field buffer may get reallocated, resulting in a nwe address
-		// for pField.
+		// Allocate space for the data. We call this even if uiDataLen is
+		// zero so that the appropriate data type will be set in the node as
+		// well. ;
+		// Before we allocate storage space, save the field offset. The
+		// field buffer may get reallocated, resulting in a nwe address for
+		// pField.
 		pvField = pRecord->getFieldVoid( pField);
-		if (RC_BAD( rc = pRecord->getNewDataPtr(
-								pField,
-								uiDataType,
-								uiDataLen,
-								uiEncDataLen,
-								uiEncId,
-								uiFlags,
-								&pucData,
-								&pucEncData)))
+		if (RC_BAD( rc = pRecord->getNewDataPtr( pField, uiDataType, uiDataLen,
+					  uiEncDataLen, uiEncId, uiFlags, &pucData, &pucEncData)))
 		{
 			goto Exit;
 		}
+
 		pField = pRecord->getFieldPointer( pvField);
 
 		// Get the data for insert or modify, if any
@@ -5700,11 +5990,11 @@ RCODE F_Rfl::modifyRecord(
 					uiEncDataLen -= uiPacketBodyLen;
 					uiPacketBodyLen = 0;
 
-					// Get the next packet.  Packet type had better
-					// be RFL_CHANGE_FIELDS_PACKET.
+					// Get the next packet. Packet type had better be
+					// RFL_CHANGE_FIELDS_PACKET.
 
 					if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-														&uiPacketBodyLen, NULL)))
+								  &uiPacketBodyLen, NULL)))
 					{
 						goto Exit;
 					}
@@ -5725,7 +6015,7 @@ RCODE F_Rfl::modifyRecord(
 				}
 			}
 		}
-		else // Not encrypted
+		else				// Not encrypted
 		{
 			while (uiDataLen)
 			{
@@ -5736,11 +6026,11 @@ RCODE F_Rfl::modifyRecord(
 					uiDataLen -= uiPacketBodyLen;
 					uiPacketBodyLen = 0;
 
-					// Get the next packet.  Packet type had better
-					// be RFL_CHANGE_FIELDS_PACKET.
+					// Get the next packet. Packet type had better be
+					// RFL_CHANGE_FIELDS_PACKET.
 
 					if (RC_BAD( rc = getPacket( FALSE, &uiPacketType, &pucPacketBody,
-														&uiPacketBodyLen, NULL)))
+								  &uiPacketBodyLen, NULL)))
 					{
 						goto Exit;
 					}
@@ -5762,25 +6052,24 @@ RCODE F_Rfl::modifyRecord(
 			}
 		}
 
+		// If this field is involved in an index, and it is encrypted, we
+		// need to make sure we decrypt it too. If it is not encrypted, we
+		// don't care if it involved in an index.
 
-		// If this field is involved in an index, and it is encrypted, we need to
-		// make sure we decrypt it too.
-		// If it is not encrypted, we don't care if it involved in an index.
-		
 		if (bEncrypted && !(pDb->pFile->bInLimitedMode))
 		{
-			IFD *		pIfd;
+			IFD *	pIfd;
 
-			if( RC_BAD( rc = fdictGetField( pDb->pDict, uiTagNum, NULL,
-				&pIfd, NULL)))
+			if (RC_BAD( rc = fdictGetField( pDb->pDict, uiTagNum, NULL, &pIfd, NULL
+						  )))
 			{
 				goto Exit;
 			}
 
-			if( pIfd)
+			if (pIfd)
 			{
-				if( RC_BAD( rc = flmDecryptField( pDb->pDict, pRecord,
-					pRecord->getFieldVoid(pField), uiEncId, &pDb->TempPool)))
+				if (RC_BAD( rc = flmDecryptField( pDb->pDict, pRecord,
+							  pRecord->getFieldVoid( pField), uiEncId, &pDb->TempPool)))
 				{
 					goto Exit;
 				}
@@ -5790,7 +6079,7 @@ RCODE F_Rfl::modifyRecord(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -5799,66 +6088,46 @@ Desc:		Read the next operation from the roll-forward log.
 RCODE F_Rfl::readOp(
 	FDB *				pDb,
 	FLMBOOL			bForceNextFile,
-	FLMUINT *		puiOpRV,
-	FLMUINT *		puiContainerRV,
-	FLMUINT *		puiDrnRV,
-	FLMUINT *		puiIndexRV,
-	FLMUINT *		puiEndDrnRV,
-	FlmRecord *		pRecord,
-	FLMUINT *		puiTransIDRV,
-	FLMUINT *		puiStartTimeRV,
-	FLMUINT *		puiLastLoggedCommitTransIDRV,
-	FLMUINT *		puiFlagsRV)
+	RFL_OP_INFO *	pOpInfo,
+	FlmRecord *		pRecord)
 {
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiPacketType;
-	FLMBYTE *	pucPacketBody;
-	FLMUINT		uiPacketBodyLen;
-	FLMUINT		uiExpectedBodyLen;
-	FLMUINT		uiLastLoggedCommitTransID = 0;
-	FLMUINT		uiTransId;
-	FLMUINT		uiStartTime;
-	FLMUINT		uiContainer;
-	FLMUINT		uiDrn;
-	FLMUINT		uiIndex;
-	FLMUINT		uiEndDrn;
-	FLMUINT		uiFlags = 0;
-	FLMBOOL		bLoggedTimes;
+	RCODE				rc = FERR_OK;
+	FLMBYTE *		pucPacketBody;
+	FLMUINT			uiPacketBodyLen;
+	FLMUINT			uiExpectedBodyLen;
+	FLMBOOL			bLoggedTimes;
+	
+	f_memset( pOpInfo, 0, sizeof( RFL_OP_INFO));
 
 	// Get the next packet.
 
-	if (RC_BAD( rc = getPacket( bForceNextFile, &uiPacketType, &pucPacketBody,
-								&uiPacketBodyLen, &bLoggedTimes)))
+	if (RC_BAD( rc = getPacket( bForceNextFile, &pOpInfo->uiPacketType,
+				  &pucPacketBody, &uiPacketBodyLen, &bLoggedTimes)))
 	{
 		goto Exit;
 	}
 
-	// Must be one of our packet types that represents
-	// an operation.
+	// Must be one of our packet types that represents an operation.
 
-	uiTransId = 0;
-	uiStartTime = 0;
-	uiContainer = 0;
-	uiDrn = 0;
-	uiIndex = 0;
-	uiEndDrn = 0;
-	switch (uiPacketType)
+	switch (pOpInfo->uiPacketType)
 	{
 		case RFL_TRNS_BEGIN_PACKET:
 		{
 			uiExpectedBodyLen = 8;
-			if( bLoggedTimes)
+			if (bLoggedTimes)
 			{
 				uiExpectedBodyLen += 4;
 			}
+
 			if (uiExpectedBodyLen != uiPacketBodyLen)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			uiTransId = (FLMUINT)FB2UD( pucPacketBody);
+
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
-			uiStartTime = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiStartTime = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 			break;
 		}
@@ -5871,11 +6140,12 @@ RCODE F_Rfl::readOp(
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			uiTransId = (FLMUINT)FB2UD( pucPacketBody);
+
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
-			uiStartTime = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiStartTime = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
-			uiLastLoggedCommitTransID = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiLastLoggedCommitTransId = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 			break;
 		}
@@ -5884,7 +6154,7 @@ RCODE F_Rfl::readOp(
 		case RFL_TRNS_ABORT_PACKET:
 		{
 			uiExpectedBodyLen = 8;
-			if( bLoggedTimes)
+			if (bLoggedTimes)
 			{
 				uiExpectedBodyLen += 8;
 			}
@@ -5894,7 +6164,8 @@ RCODE F_Rfl::readOp(
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			uiTransId = (FLMUINT)FB2UD( pucPacketBody);
+
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 8;
 			break;
 		}
@@ -5905,26 +6176,32 @@ RCODE F_Rfl::readOp(
 		case RFL_RESERVE_DRN_PACKET:
 		{
 			uiExpectedBodyLen = 10;
-			if( bLoggedTimes)
+			if (bLoggedTimes)
 			{
 				uiExpectedBodyLen += 16;
 			}
+
 			if (uiExpectedBodyLen != uiPacketBodyLen)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			if ((uiTransId = (FLMUINT)FB2UD( pucPacketBody)) != m_uiCurrTransID)
+
+			if ((pOpInfo->uiTransId = 
+				(FLMUINT) FB2UD( pucPacketBody)) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
 			pucPacketBody += 4;
-			uiContainer = (FLMUINT)FB2UW( pucPacketBody);
+			
+			pOpInfo->uiContainer = (FLMUINT) FB2UW( pucPacketBody);
 			pucPacketBody += 2;
-			uiDrn = (FLMUINT)FB2UD( pucPacketBody);
+			
+			pOpInfo->uiDrn = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
-			if( uiPacketType == RFL_ADD_RECORD_PACKET)
+			
+			if (pOpInfo->uiPacketType == RFL_ADD_RECORD_PACKET)
 			{
 				if (RC_BAD( rc = getRecord( pDb, 0, NULL, 0, pRecord)))
 				{
@@ -5939,7 +6216,7 @@ RCODE F_Rfl::readOp(
 		case RFL_DELETE_RECORD_PACKET_VER_2:
 		{
 			uiExpectedBodyLen = 11;
-			if( bLoggedTimes)
+			if (bLoggedTimes)
 			{
 				uiExpectedBodyLen += 16;
 			}
@@ -5950,42 +6227,43 @@ RCODE F_Rfl::readOp(
 				goto Exit;
 			}
 
-			if ((uiTransId = (FLMUINT)FB2UD( pucPacketBody)) != m_uiCurrTransID)
+			if ((pOpInfo->uiTransId = 
+				(FLMUINT) FB2UD( pucPacketBody)) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
 			pucPacketBody += 4;
 
-			uiContainer = (FLMUINT)FB2UW( pucPacketBody);
+			pOpInfo->uiContainer = (FLMUINT) FB2UW( pucPacketBody);
 			pucPacketBody += 2;
 
-			uiDrn = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiDrn = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 
-			uiFlags = *pucPacketBody;
+			pOpInfo->uiFlags = *pucPacketBody;
 			pucPacketBody++;
 
 			// Translate the flags
 
-			if( uiFlags)
+			if (pOpInfo->uiFlags)
 			{
-				FLMUINT		uiTmp = 0;
+				FLMUINT	uiTmp = 0;
 
-				if( uiFlags & RFL_UPDATE_BACKGROUND)
+				if (pOpInfo->uiFlags & RFL_UPDATE_BACKGROUND)
 				{
 					uiTmp |= FLM_DO_IN_BACKGROUND;
 				}
 
-				if( uiFlags & RFL_UPDATE_SUSPENDED)
+				if (pOpInfo->uiFlags & RFL_UPDATE_SUSPENDED)
 				{
 					uiTmp |= FLM_SUSPENDED;
 				}
 
-				uiFlags = uiTmp;
+				pOpInfo->uiFlags = uiTmp;
 			}
 
-			if( uiPacketType == RFL_ADD_RECORD_PACKET_VER_2)
+			if (pOpInfo->uiPacketType == RFL_ADD_RECORD_PACKET_VER_2)
 			{
 				if (RC_BAD( rc = getRecord( pDb, 0, NULL, 0, pRecord)))
 				{
@@ -5999,36 +6277,44 @@ RCODE F_Rfl::readOp(
 		case RFL_INDEX_SET_PACKET_VER_2:
 		{
 			uiExpectedBodyLen = 
-				(FLMUINT)((uiPacketType == RFL_INDEX_SET_PACKET_VER_2)
-													? (FLMUINT)16
-													: (FLMUINT)14);
+					(FLMUINT) ((pOpInfo->uiPacketType == RFL_INDEX_SET_PACKET_VER_2) 
+																? (FLMUINT) 16 
+																: (FLMUINT) 14);
 
-			if( bLoggedTimes)
+			if (bLoggedTimes)
 			{
 				uiExpectedBodyLen += 16;
 			}
+
 			if (uiExpectedBodyLen != uiPacketBodyLen)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			if ((uiTransId = (FLMUINT)FB2UD( pucPacketBody)) != m_uiCurrTransID)
+
+			if ((pOpInfo->uiTransId = 
+				(FLMUINT) FB2UD( pucPacketBody)) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
 			pucPacketBody += 4;
-			if (uiPacketType == RFL_INDEX_SET_PACKET_VER_2)
+			
+			if (pOpInfo->uiPacketType == RFL_INDEX_SET_PACKET_VER_2)
 			{
-				uiContainer = (FLMUINT)FB2UW( pucPacketBody);
+				pOpInfo->uiContainer = (FLMUINT) FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 			}
-			uiIndex = (FLMUINT)FB2UW( pucPacketBody);
+
+			pOpInfo->uiIndex = (FLMUINT) FB2UW( pucPacketBody);
 			pucPacketBody += 2;
-			uiDrn = (FLMUINT)FB2UD( pucPacketBody);
+			
+			pOpInfo->uiDrn = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
-			uiEndDrn = (FLMUINT)FB2UD( pucPacketBody);
+			
+			pOpInfo->uiEndDrn = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
+			
 			break;
 		}
 
@@ -6040,11 +6326,14 @@ RCODE F_Rfl::readOp(
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			if ((uiTransId = (FLMUINT)FB2UD( pucPacketBody)) != m_uiCurrTransID)
+
+			if ((pOpInfo->uiTransId = 
+				(FLMUINT) FB2UD( pucPacketBody)) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
+
 			pucPacketBody += 4;
 			break;
 		}
@@ -6057,14 +6346,14 @@ RCODE F_Rfl::readOp(
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
-			uiTransId = (FLMUINT)FB2UD( pucPacketBody);
-			uiLastLoggedCommitTransID = uiTransId;
+
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
+			pOpInfo->uiLastLoggedCommitTransId = pOpInfo->uiTransId;
 			pucPacketBody += 4;
 
-			// We will return the count in the uiDrn parameter
-
-			uiDrn = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiCount = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
+			
 			break;
 		}
 
@@ -6072,37 +6361,39 @@ RCODE F_Rfl::readOp(
 		{
 			uiExpectedBodyLen = 16;
 
-			if( bLoggedTimes)
+			if (bLoggedTimes)
 			{
 				uiExpectedBodyLen += 16;
 			}
 
-			if( uiExpectedBodyLen != uiPacketBodyLen)
+			if (uiExpectedBodyLen != uiPacketBodyLen)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
 
-			if( (uiTransId = (FLMUINT)FB2UD( pucPacketBody)) != m_uiCurrTransID)
+			if ((pOpInfo->uiTransId = 
+				(FLMUINT) FB2UD( pucPacketBody)) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
+
 			pucPacketBody += 4;
 
 			// Tracker record ID
 
-			uiDrn = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiDrn = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 
 			// Count
 
-			uiFlags = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiCount = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 
 			// Ending block address
 
-			uiEndDrn = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiEndBlock = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 
 			break;
@@ -6118,21 +6409,23 @@ RCODE F_Rfl::readOp(
 				goto Exit;
 			}
 
-			if ((uiTransId = (FLMUINT)FB2UD( pucPacketBody)) != m_uiCurrTransID)
+			if ((pOpInfo->uiTransId = 
+				(FLMUINT) FB2UD( pucPacketBody)) != m_uiCurrTransID)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
+
 			pucPacketBody += 4;
 
-			uiIndex = (FLMUINT)FB2UW( pucPacketBody);
+			pOpInfo->uiIndex = (FLMUINT) FB2UW( pucPacketBody);
 			pucPacketBody += 2;
 			break;
 		}
 
 		case RFL_UPGRADE_PACKET:
 		{
-			FLMUINT		uiDBKeyLen;
+			FLMUINT	uiDBKeyLen;
 
 			uiExpectedBodyLen = 12;
 			if (uiExpectedBodyLen > uiPacketBodyLen)
@@ -6141,34 +6434,37 @@ RCODE F_Rfl::readOp(
 				goto Exit;
 			}
 
-			// We will return the current DB version in the uiDrn parameter
-			// and the new DB version will be returned in the uiEndDrn parameter
-
-			uiTransId = (FLMUINT)FB2UD( pucPacketBody);
-			pucPacketBody += 4;
-			uiPacketBodyLen -= 4;
-			uiDrn = (FLMUINT)FB2UD( pucPacketBody);
-			pucPacketBody += 4;
-			uiPacketBodyLen -= 4;
-			uiEndDrn = (FLMUINT)FB2UD( pucPacketBody);
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
 			pucPacketBody += 4;
 			uiPacketBodyLen -= 4;
 			
-			// Only look for the wrapping key if the new database version
-			// is greater than 4.60 and there isn't already a key.
-			if (uiEndDrn >= FLM_VER_4_60 && !m_pFile->pDbWrappingKey)
+			pOpInfo->uiOldVersion = (FLMUINT) FB2UD( pucPacketBody);
+			pucPacketBody += 4;
+			uiPacketBodyLen -= 4;
+			
+			pOpInfo->uiNewVersion = (FLMUINT) FB2UD( pucPacketBody);
+			pucPacketBody += 4;
+			uiPacketBodyLen -= 4;
+
+			// Only look for the wrapping key if the new database version is
+			// greater than 4.60 and there isn't already a key.
+
+			if (pOpInfo->uiEndDrn >= FLM_FILE_FORMAT_VER_4_60 && 
+				 !m_pFile->pDbWrappingKey)
 			{
 				if (uiPacketBodyLen < 2)
 				{
 					rc = RC_SET( FERR_BAD_RFL_PACKET);
 					goto Exit;
 				}
+
 				uiDBKeyLen = FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 				uiPacketBodyLen -= 2;
-				if ( uiDBKeyLen)
+				
+				if (uiDBKeyLen)
 				{
-					if ( uiPacketBodyLen != uiDBKeyLen)
+					if (uiPacketBodyLen != uiDBKeyLen)
 					{
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
@@ -6179,18 +6475,20 @@ RCODE F_Rfl::readOp(
 						rc = RC_SET( FERR_MEM);
 						goto Exit;
 					}
-					
+
 					if (RC_BAD( rc = m_pFile->pDbWrappingKey->init( TRUE,
-																					FLM_NICI_AES)))
+								  FLM_NICI_AES)))
 					{
 						goto Exit;
 					}
-					
-					if( RC_BAD( rc = m_pFile->pDbWrappingKey->setKeyFromStore(
-						pucPacketBody, (FLMUINT32)uiDBKeyLen, NULL, NULL, FALSE)))
+
+					if (RC_BAD( rc = m_pFile->pDbWrappingKey->setKeyFromStore(
+								pucPacketBody, (FLMUINT32) uiDBKeyLen, NULL, NULL,
+								FALSE)))
 					{
 						goto Exit;
 					}
+
 					pucPacketBody += uiDBKeyLen;
 					uiPacketBodyLen -= uiDBKeyLen;
 					flmAssert( !uiPacketBodyLen);
@@ -6198,12 +6496,37 @@ RCODE F_Rfl::readOp(
 			}
 			break;
 		}
+
+		case RFL_CONFIG_SIZE_EVENT_PACKET:
+		{
+			uiExpectedBodyLen = 16;
+			if (uiExpectedBodyLen != uiPacketBodyLen)
+			{
+				rc = RC_SET( FERR_BAD_RFL_PACKET);
+				goto Exit;
+			}
+
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
+			pOpInfo->uiLastLoggedCommitTransId = pOpInfo->uiTransId;
+			pucPacketBody += 4;
+
+			pOpInfo->uiSizeThreshold = (FLMUINT) FB2UD( pucPacketBody);
+			pucPacketBody += 4;
+			
+			pOpInfo->uiTimeInterval = (FLMUINT) FB2UD( pucPacketBody);
+			pucPacketBody += 4;
+			
+			pOpInfo->uiSizeInterval = (FLMUINT) FB2UD( pucPacketBody);
+			pucPacketBody += 4;
+			
+			break;
+		}
 		
 		case RFL_WRAP_KEY_PACKET:
 		case RFL_ENABLE_ENCRYPTION_PACKET:
 		{
 			FLMUINT					uiDBKeyLen;
-			FLMBYTE *				pucUncommittedLogHdr = &m_pFile->ucUncommittedLogHdr [0];
+			FLMBYTE *				pucUncommittedLogHdr = &m_pFile->ucUncommittedLogHdr[0];
 			eRestoreActionType	eRestoreAction;
 
 			uiExpectedBodyLen = 6;
@@ -6213,8 +6536,8 @@ RCODE F_Rfl::readOp(
 				goto Exit;
 			}
 
-			uiTransId = (FLMUINT)FB2UD( pucPacketBody);
-			uiLastLoggedCommitTransID = uiTransId;
+			pOpInfo->uiTransId = (FLMUINT) FB2UD( pucPacketBody);
+			pOpInfo->uiLastLoggedCommitTransId = pOpInfo->uiTransId;
 			pucPacketBody += 4;
 			uiPacketBodyLen -= 4;
 
@@ -6223,21 +6546,19 @@ RCODE F_Rfl::readOp(
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
 			}
+
 			uiDBKeyLen = FB2UW( pucPacketBody);
 			pucPacketBody += 2;
 			uiPacketBodyLen -= 2;
 
 			if (m_pRestore)
 			{
-				if (RC_BAD( rc = m_pRestore->status(
-									uiPacketType == RFL_WRAP_KEY_PACKET
-										? RESTORE_WRAP_KEY
-										: RESTORE_ENABLE_ENCRYPTION,
-									uiTransId,
-									(void *)uiDBKeyLen,
-									(void *)0,
-									(void *)0,
-									&eRestoreAction)))
+				if (RC_BAD( rc = m_pRestore->status( 
+						  pOpInfo->uiPacketType == RFL_WRAP_KEY_PACKET 
+								? RESTORE_WRAP_KEY 
+								: RESTORE_ENABLE_ENCRYPTION,
+						  pOpInfo->uiTransId, (void *) uiDBKeyLen, (void *) 0, 
+						  (void *) 0, &eRestoreAction)))
 				{
 					goto Exit;
 				}
@@ -6249,40 +6570,41 @@ RCODE F_Rfl::readOp(
 				}
 			}
 
-			if ( uiDBKeyLen)
+			if (uiDBKeyLen)
 			{
-				if ( uiPacketBodyLen != uiDBKeyLen)
+				if (uiPacketBodyLen != uiDBKeyLen)
 				{
 					rc = RC_SET( FERR_BAD_RFL_PACKET);
 					goto Exit;
 				}
 
 				// We cannot directly set the key at this point as it may be
-				// encrypted using a password, which we do not have here.  We will
-				// write the key out to the log header and trust the user to know whether
-				// or not a password is needed to open the database.
+				// encrypted using a password, which we do not have here. We
+				// will write the key out to the log header and trust the user
+				// to know whether or not a password is needed to open the
+				// database.
 
-				if (RC_BAD(rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 
-					0, 0)))
+				if (RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 0, 0)))
 				{
 					goto Exit;
 				}
 
-				f_memcpy( &pucUncommittedLogHdr[ LOG_DATABASE_KEY], pucPacketBody, uiDBKeyLen);
+				f_memcpy( &pucUncommittedLogHdr[ LOG_DATABASE_KEY], pucPacketBody,
+							uiDBKeyLen);
+							
 				UW2FBA( uiDBKeyLen, &pucUncommittedLogHdr[ LOG_DATABASE_KEY_LEN]);
 
-				if ( RC_BAD( rc = flmCommitDbTrans( pDb, 0, TRUE)))
+				if (RC_BAD( rc = flmCommitDbTrans( pDb, 0, TRUE)))
 				{
 					goto Exit;
 				}
-
 
 				pucPacketBody += uiDBKeyLen;
 				uiPacketBodyLen -= uiDBKeyLen;
 				flmAssert( !uiPacketBodyLen);
 			}
-			m_uiCurrTransID = 0;
 
+			m_uiCurrTransID = 0;
 			break;
 		}
 
@@ -6294,19 +6616,9 @@ RCODE F_Rfl::readOp(
 		}
 	}
 
-	*puiOpRV = uiPacketType;
-	*puiContainerRV = uiContainer;
-	*puiDrnRV = uiDrn;
-	*puiIndexRV = uiIndex;
-	*puiEndDrnRV = uiEndDrn;
-	*puiTransIDRV = uiTransId;
-	*puiStartTimeRV = uiStartTime;
-	*puiLastLoggedCommitTransIDRV = uiLastLoggedCommitTransID;
-	*puiFlagsRV = uiFlags;
-
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -6322,8 +6634,8 @@ RCODE F_Rfl::readUnknown(
 	FLMUINT	uiBytesRead = 0;
 	FLMUINT	uiBytesToCopy;
 
-	// If we have read through all of the unknown packets,
-	// return FERR_EOF_HIT.
+	// If we have read through all of the unknown packets, return
+	// FERR_EOF_HIT.
 
 	if (!m_bReadingUnknown)
 	{
@@ -6331,8 +6643,8 @@ RCODE F_Rfl::readUnknown(
 		goto Exit;
 	}
 
-	// Process packets until we have satisfied the read request or
-	// until we run out of unknown packets.
+	// Process packets until we have satisfied the read request or until
+	// we run out of unknown packets.
 
 	while (uiLenToRead)
 	{
@@ -6342,50 +6654,51 @@ RCODE F_Rfl::readUnknown(
 		if (!m_uiUnknownPacketBodyLen)
 		{
 			if (RC_BAD( rc = getPacket( FALSE, &uiPacketType,
-										&m_pucUnknownPacketBody,
-										&m_uiUnknownPacketBodyLen, NULL)))
+						  &m_pucUnknownPacketBody, &m_uiUnknownPacketBodyLen, NULL)))
 			{
 				m_bReadingUnknown = FALSE;
 				m_uiUnknownPacketRc = rc;
 				goto Exit;
 			}
+
 			if (uiPacketType != RFL_UNKNOWN_PACKET)
 			{
 				if (!uiBytesRead)
 				{
 					rc = RC_SET( FERR_EOF_HIT);
 				}
+
 				m_bReadingUnknown = FALSE;
 
-				// At this point, we know that the entire packet is
-				// inside our memory buffer, so it is safe to reset
-				// m_uiRflReadOffset back to the beginning of the
-				// packet.  The call to readOp() will call
-				// getPacket again, which will get this exact same
+				// At this point, we know that the entire packet is inside
+				// our memory buffer, so it is safe to reset m_uiRflReadOffset
+				// back to the beginning of the packet. The call to readOp()
+				// will call getPacket again, which will get this exact same
 				// packet for processing.
 
-				m_uiRflReadOffset -= (RFL_PACKET_OVERHEAD +
-												m_uiUnknownPacketBodyLen);
+				m_uiRflReadOffset -= (RFL_PACKET_OVERHEAD + m_uiUnknownPacketBodyLen);
 				goto Exit;
 			}
+
 			m_uiUnknownBodyLenProcessed = 0;
 		}
 
 		uiBytesToCopy = uiLenToRead;
-		if (uiBytesToCopy > m_uiUnknownPacketBodyLen - m_uiUnknownBodyLenProcessed)
+		if (uiBytesToCopy > m_uiUnknownPacketBodyLen -
+			 m_uiUnknownBodyLenProcessed)
 		{
 			uiBytesToCopy = m_uiUnknownPacketBodyLen - m_uiUnknownBodyLenProcessed;
 		}
-		f_memcpy( pucBuffer,
-				m_pucUnknownPacketBody + m_uiUnknownBodyLenProcessed,
-				uiBytesToCopy);
+
+		f_memcpy( pucBuffer, m_pucUnknownPacketBody + m_uiUnknownBodyLenProcessed,
+					uiBytesToCopy);
 		pucBuffer += uiBytesToCopy;
 		uiLenToRead -= uiBytesToCopy;
 		uiBytesRead += uiBytesToCopy;
 		m_uiUnknownBodyLenProcessed += uiBytesToCopy;
 
-		// If we have exhausted the current packet, reset things so that
-		// we will get a new packet the next time around.
+		// If we have exhausted the current packet, reset things so that we
+		// will get a new packet the next time around.
 
 		if (m_uiUnknownBodyLenProcessed == m_uiUnknownPacketBodyLen)
 		{
@@ -6398,7 +6711,7 @@ RCODE F_Rfl::readUnknown(
 Exit:
 
 	*puiBytesRead = uiBytesRead;
-	return( rc);
+	return (rc);
 }
 
 /********************************************************************
@@ -6410,43 +6723,36 @@ RCODE F_Rfl::recover(
 	F_Restore *	pRestore)
 {
 	RCODE						rc = FERR_OK;
+	HFDB						hDb = (HFDB) pDb;
 	FLMUINT					uiStartFileNum;
 	FLMUINT					uiStartOffset;
 	FLMUINT					uiOffset;
 	FLMUINT					uiReadLen;
 	FLMUINT					uiBytesRead;
-	FLMBYTE					ucHdr [512];
-	FLMUINT					uiOp;
-	FLMUINT					uiContainer;
-	FLMUINT					uiDrn;
-	FLMUINT					uiIndex;
-	FLMUINT					uiEndDrn;
-	FLMUINT					uiStartTime;
+	FLMBYTE					ucHdr[ 512];
 	FLMUINT					uiCount;
+	RFL_OP_INFO				opInfo;
 	FlmRecord *				pRecord = NULL;
 	FlmRecord *				pTmpRecord = NULL;
-	HFDB						hDb = (HFDB)pDb;
-	FLMUINT					uiTransId;
 	eRestoreActionType	eRestoreAction;
-	FLMUINT					uiLastLoggedCommitTransID;
 	FLMBOOL					bTransActive = FALSE;
 	FLMBOOL					bHadOperations = FALSE;
 	FLMBOOL					bLastTransEndedAtFileEOF = FALSE;
 	FLMBOOL					bForceNextFile;
-	FLMUINT					uiOpFlags;
 
 	flmAssert( m_pFile);
 
 	m_pCurrentBuf = &m_Buf1;
 	m_uiLastLoggedCommitTransID = 0;
 
-	// We need to allow all updates logged in the RFL 
-	// (including dictionary updates).
+	// We need to allow all updates logged in the RFL (including
+	// dictionary updates).
+
 	pDb->bFldStateUpdOk = TRUE;
 
 	// If we are less than version 4.3, we cannot do restore.
 
-	if (pRestore && m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (pRestore && m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		goto Exit;
 	}
@@ -6461,35 +6767,54 @@ RCODE F_Rfl::recover(
 
 	// Set the flag as to whether or not we are using multiple RFL files.
 
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		m_bKeepRflFiles = FALSE;
 	}
 	else
 	{
-		m_bKeepRflFiles = m_pFile->ucLastCommittedLogHdr [LOG_KEEP_RFL_FILES]
-								? TRUE
-								: FALSE;
+		m_bKeepRflFiles = m_pFile->ucLastCommittedLogHdr[LOG_KEEP_RFL_FILES] 
+														? TRUE 
+														: FALSE;
+	}
+	
+	// Determine the current, on-disk size of the RFL
+
+	if( m_bKeepRflFiles)
+	{
+		FLMUINT64		ui64RflDiskUsage;
+		
+		if( RC_BAD( rc = flmRflCalcDiskUsage( m_szRflDir, m_szDbPrefix,
+			m_pFile->FileHdr.uiVersionNum, &ui64RflDiskUsage)))
+		{
+			goto Exit;
+		}
+		
+		f_mutexLock( gv_FlmSysData.hShareMutex);
+		m_pFile->ui64RflDiskUsage = ui64RflDiskUsage;
+		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	}
 
-	// If pRestore is NULL, we are doing a database recovery after
-	// open.  In that case, we start from the last checkpoint offset
-	// and only run until the last transaction offset.
-	// 
+	// If pRestore is NULL, we are doing a database recovery after open.
+	// In that case, we start from the last checkpoint offset and only run
+	// until the last transaction offset.
 
 	if ((m_pRestore = pRestore) == NULL)
 	{
 		FLMBYTE *	pucCheckSerialNum;
 		FLMUINT		uiEndOffset;
 
-		uiStartFileNum = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM]);
-		m_uiLastRecoverFileNum = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_RFL_FILE_NUM]);
-		uiStartOffset = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_CP_OFFSET]);
-		uiEndOffset = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+		uiStartFileNum = (FLMUINT) FB2UD( 
+				&m_pFile->ucLastCommittedLogHdr[ LOG_RFL_LAST_CP_FILE_NUM]);
+														
+		m_uiLastRecoverFileNum = (FLMUINT) FB2UD( 
+			&m_pFile->ucLastCommittedLogHdr[ LOG_RFL_FILE_NUM]);
+			
+		uiStartOffset = (FLMUINT) FB2UD( 
+			&m_pFile->ucLastCommittedLogHdr[ LOG_RFL_LAST_CP_OFFSET]);
+			
+		uiEndOffset = (FLMUINT) FB2UD( 
+			&m_pFile->ucLastCommittedLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
 
 		// Could be zero if the file was created, but no transactions were
 		// ever committed to it.
@@ -6504,8 +6829,8 @@ RCODE F_Rfl::recover(
 		flmAssert( uiStartOffset >= 512);
 		flmAssert( uiEndOffset >= 512);
 
-		// If start and end are at the same place, there is nothing
-		// to recover.
+		// If start and end are at the same place, there is nothing to
+		// recover.
 
 		if (uiStartFileNum == m_uiLastRecoverFileNum &&
 			 uiStartOffset == uiEndOffset)
@@ -6513,23 +6838,23 @@ RCODE F_Rfl::recover(
 			goto Finish_Recovery;
 		}
 
-		// We have not recorded the serial number of the last checkpoint file
-		// number, so we pass in NULL, unless it happens to be the same as the
-		// last transaction file number, in which case we can pass in the
-		// serial number we have stored in the log header.
+		// We have not recorded the serial number of the last checkpoint
+		// file number, so we pass in NULL, unless it happens to be the same
+		// as the last transaction file number, in which case we can pass in
+		// the serial number we have stored in the log header.
 
-		pucCheckSerialNum =
-			(uiStartFileNum == m_uiLastRecoverFileNum)
-			? &m_pFile->ucLastCommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM]
-			: NULL;
+		pucCheckSerialNum = (uiStartFileNum == m_uiLastRecoverFileNum)
+				? &m_pFile->ucLastCommittedLogHdr[LOG_LAST_TRANS_RFL_SERIAL_NUM] 
+				: NULL;
+					
 		if (RC_BAD( rc = openFile( uiStartFileNum, pucCheckSerialNum)))
 		{
 			goto Exit;
 		}
 
-		// If this is the last RFL file, the EOF is contained
-		// in the log header.  Otherwise, it will be in the RFL
-		// file's header, and openFile will already have retrieved it.
+		// If this is the last RFL file, the EOF is contained in the log
+		// header. Otherwise, it will be in the RFL file's header, and
+		// openFile will already have retrieved it.
 
 		if (uiStartFileNum == m_uiLastRecoverFileNum)
 		{
@@ -6542,6 +6867,7 @@ RCODE F_Rfl::recover(
 	}
 	else if (!m_bKeepRflFiles)
 	{
+
 		// FlmDbRestore should be checking the "keep" flag and not
 		// attempting to do a restore of the RFL.
 
@@ -6551,10 +6877,11 @@ RCODE F_Rfl::recover(
 	}
 	else
 	{
-		uiStartFileNum = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_RFL_FILE_NUM]);
-		uiStartOffset = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+		uiStartFileNum = (FLMUINT) FB2UD( 
+						&m_pFile->ucLastCommittedLogHdr[LOG_RFL_FILE_NUM]);
+									
+		uiStartOffset = (FLMUINT) FB2UD( 
+						&m_pFile->ucLastCommittedLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
 
 		// Could be zero if the RFL file had never been created.
 
@@ -6570,14 +6897,14 @@ Retry_Open:
 		flmAssert( uiStartFileNum);
 		if (RC_BAD( rc = m_pRestore->openRflFile( uiStartFileNum)))
 		{
-			if( rc == FERR_IO_PATH_NOT_FOUND)
+			if (rc == FERR_IO_PATH_NOT_FOUND)
 			{
-				// Need to set m_pCurrentBuf->uiCurrFileNum in case the first
-				// call to openRflFile fails.  This will cause the code at the
-				// Finish_Recovery label to correctly set up the log
-				// header.
 
-				if( !uiStartOffset)
+				// Need to set m_pCurrentBuf->uiCurrFileNum in case the first
+				// call to openRflFile fails. This will cause the code at the
+				// Finish_Recovery label to correctly set up the log header.
+
+				if (!uiStartOffset)
 				{
 					m_pCurrentBuf->uiCurrFileNum = uiStartFileNum - 1;
 				}
@@ -6609,16 +6936,13 @@ Retry_Open:
 		}
 
 		if (RC_BAD( rc = verifyHeader( ucHdr, uiStartFileNum,
-				&m_pFile->ucLastCommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM])))
+				&m_pFile->ucLastCommittedLogHdr[LOG_LAST_TRANS_RFL_SERIAL_NUM])))
 		{
-			RCODE		tmpRc;
+			RCODE tmpRc;
 
-			if (RC_BAD( tmpRc = m_pRestore->status( 
-								RESTORE_ERROR,
-								0,
-								(void *)((FLMUINT)rc),
-								(void *)0,
-								(void *)0, &eRestoreAction)))
+			if (RC_BAD( tmpRc = m_pRestore->status( RESTORE_ERROR, 0,
+						  (void *) ((FLMUINT) rc), (void *) 0, (void *) 0,
+						  &eRestoreAction)))
 			{
 				rc = tmpRc;
 				goto Exit;
@@ -6626,29 +6950,32 @@ Retry_Open:
 
 			if (eRestoreAction == RESTORE_ACTION_RETRY)
 			{
-				if( RC_BAD( rc = m_pRestore->close()))
+				if (RC_BAD( rc = m_pRestore->close()))
 				{
 					goto Exit;
 				}
+
 				goto Retry_Open;
 			}
+
 			goto Exit;
 		}
 
-		// We may not know the actual EOF of files during restore operations.
+		// We may not know the actual EOF of files during restore
+		// operations.
 
-		if ((m_uiFileEOF = (FLMUINT)FB2UD( &ucHdr [RFL_EOF_POS])) == 0)
+		if ((m_uiFileEOF = (FLMUINT) FB2UD( &ucHdr[RFL_EOF_POS])) == 0)
 		{
 			bLastTransEndedAtFileEOF = TRUE;
 		}
 		else
 		{
-			bLastTransEndedAtFileEOF = (m_uiFileEOF == uiStartOffset)
-												? TRUE
-												: FALSE;
+			bLastTransEndedAtFileEOF = (m_uiFileEOF == uiStartOffset) 
+														? TRUE 
+														: FALSE;
 		}
 
-		// Position to the start offset.  Unfortunately, this means reading
+		// Position to the start offset. Unfortunately, this means reading
 		// through the data and discarding it.
 
 		uiOffset = 512;
@@ -6659,8 +6986,9 @@ Retry_Open:
 			{
 				uiReadLen = m_uiBufferSize;
 			}
+
 			if (RC_BAD( rc = m_pRestore->read( uiReadLen,
-				m_pCurrentBuf->pIOBuffer->m_pucBuffer, &uiBytesRead)))
+						  m_pCurrentBuf->pIOBuffer->m_pucBuffer, &uiBytesRead)))
 			{
 				goto Exit;
 			}
@@ -6681,8 +7009,8 @@ Retry_Open:
 
 		m_pCurrentBuf->uiCurrFileNum = uiStartFileNum;
 
-		// Better not be any transactions to recover - last database
-		// state needs to be a completed checkpoint.
+		// Better not be any transactions to recover - last database state
+		// needs to be a completed checkpoint.
 
 		flmAssert(
 			FB2UD( &m_pFile->ucLastCommittedLogHdr [LOG_LAST_CP_TRANS_ID]) ==
@@ -6693,44 +7021,39 @@ Retry_Open:
 		// case we should be comparing to 512, and uiStartOffset will have
 		// been adjusted to 512 if that is the case.
 
-		flmAssert( 
-			FB2UD( &m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_CP_OFFSET]) ==
-			uiStartOffset);
+		flmAssert( FB2UD( &m_pFile->ucLastCommittedLogHdr [
+							LOG_RFL_LAST_CP_OFFSET]) == uiStartOffset);
 
-		flmAssert( 
-			FB2UD( &m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM]) ==
-			uiStartFileNum);
+		flmAssert( FB2UD( &m_pFile->ucLastCommittedLogHdr[
+							LOG_RFL_LAST_CP_FILE_NUM]) == uiStartFileNum);
 	}
 
-	// Set last transaction ID to the last transaction
-	// that was checkpointed - transaction numbers should ascend
-	// from here.
+	// Set last transaction ID to the last transaction that was
+	// checkpointed - transaction numbers should ascend from here.
 
-	m_uiLastTransID = (FLMUINT)FB2UD(
-					&m_pFile->ucLastCommittedLogHdr [LOG_LAST_CP_TRANS_ID]);
+	m_uiLastTransID = (FLMUINT) FB2UD( 
+							&m_pFile->ucLastCommittedLogHdr[LOG_LAST_CP_TRANS_ID]);
 
 	// Set the last committed trans ID if this is a 4.31+ database
 
-	if( m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_31)
+	if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_31)
 	{
-		m_uiLastLoggedCommitTransID = (FLMUINT)FB2UD(
-						&m_pFile->ucLastCommittedLogHdr [LOG_LAST_RFL_COMMIT_ID]);
+		m_uiLastLoggedCommitTransID = (FLMUINT) FB2UD( 
+							&m_pFile->ucLastCommittedLogHdr[LOG_LAST_RFL_COMMIT_ID]);
 	}
 
 	m_pCurrentBuf->uiRflFileOffset = uiStartOffset;
 	m_uiRflReadOffset = 0;
 	m_pCurrentBuf->uiRflBufBytes = 0;
 
-
 	// Now, read until we are done.
 
 	bForceNextFile = FALSE;
 	for (;;)
 	{
-
 		if (!pRecord)
 		{
-			if( (pRecord = f_new FlmRecord) == NULL)
+			if ((pRecord = f_new FlmRecord) == NULL)
 			{
 				rc = RC_SET( FERR_MEM);
 				goto Exit;
@@ -6739,23 +7062,20 @@ Retry_Open:
 
 		// Get the next operation from the file.
 
-		rc = readOp( pDb, bForceNextFile,
-								&uiOp, &uiContainer, &uiDrn, &uiIndex,
-								&uiEndDrn, pRecord, &uiTransId,
-								&uiStartTime, &uiLastLoggedCommitTransID, 
-								&uiOpFlags);
+		rc = readOp( pDb, bForceNextFile, &opInfo, pRecord); 
 		bForceNextFile = FALSE;
-		
+
 		if (RC_BAD( rc))
 		{
 Handle_Packet_Error:
+
 			if (rc == FERR_END)
 			{
 				if (!m_pRestore)
 				{
 
 					// If we didn't end exactly where we should have, we have
-					// an incomplete log.  The same is true if we are in the
+					// an incomplete log. The same is true if we are in the
 					// middle of a transaction.
 
 					if (m_pCurrentBuf->uiCurrFileNum != m_uiLastRecoverFileNum ||
@@ -6782,12 +7102,12 @@ Handle_Packet_Error:
 			}
 			else if (rc == FERR_BAD_RFL_PACKET)
 			{
-				// If we don't know the current file size, and we
-				// are doing a restore, it is OK to end on a bad
-				// packet - we will simply abort the current
-				// transaction, if any.  Then, try to go to the
-				// next file, because we really don't know where
-				// this file ends.
+
+				// If we don't know the current file size, and we are doing a
+				// restore, it is OK to end on a bad packet - we will simply
+				// abort the current transaction, if any. Then, try to go to
+				// the next file, because we really don't know where this file
+				// ends.
 
 				if (m_pRestore && !m_uiFileEOF)
 				{
@@ -6797,8 +7117,8 @@ Handle_Packet_Error:
 						bTransActive = FALSE;
 					}
 
-					// Set current transaction ID to zero - as if we had encountered
-					// an abort packet.
+					// Set current transaction ID to zero - as if we had
+					// encountered an abort packet.
 
 					m_uiCurrTransID = 0;
 					bLastTransEndedAtFileEOF = TRUE;
@@ -6810,37 +7130,34 @@ Handle_Packet_Error:
 					continue;
 				}
 			}
+
 			goto Exit;
 		}
 
-		// At this point, we know we have a good packet, see what it
-		// is and handle it.
+		// At this point, we know we have a good packet, see what it is and
+		// handle it.
 
 		bHadOperations = TRUE;
-		switch (uiOp)
+		switch (opInfo.uiPacketType)
 		{
 			case RFL_TRNS_BEGIN_EX_PACKET:
 			case RFL_TRNS_BEGIN_PACKET:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status( 
-										RESTORE_BEGIN_TRANS,
-										uiTransId,
-										(void *)uiStartTime,
-										(void *)0,
-										(void *)0,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_BEGIN_TRANS,
+								  opInfo.uiTransId, (void *) opInfo.uiStartTime, 
+								  (void *) 0, (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
 
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
-						// Need to set m_uiCurrTransID to 0 since it was
-						// set by getPacket().  We are not going to
-						// start a transaction because of the user's request
-						// to exit.
+
+						// Need to set m_uiCurrTransID to 0 since it was set by
+						// getPacket(). We are not going to start a transaction
+						// because of the user's request to exit.
 
 						m_uiCurrTransID = 0;
 						bLastTransEndedAtFileEOF = FALSE;
@@ -6848,13 +7165,11 @@ Handle_Packet_Error:
 					}
 				}
 
-				// If we already have a transaction active, we have
-				// a problem.
+				// If we already have a transaction active, we have a problem.
 
 				flmAssert( !bTransActive);
 
-				if( RC_BAD( rc = FlmDbTransBegin( hDb,
-											FLM_UPDATE_TRANS, 0)))
+				if (RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, 0)))
 				{
 					goto Exit;
 				}
@@ -6865,17 +7180,14 @@ Handle_Packet_Error:
 
 			case RFL_TRNS_COMMIT_PACKET:
 			{
+
 				// Commit the current transaction.
 
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status( 
-										RESTORE_COMMIT_TRANS,
-										uiTransId,
-										(void *)0,
-										(void *)0,
-										(void *)0,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_COMMIT_TRANS,
+								  opInfo.uiTransId, (void *) 0, (void *) 0, (void *) 0,
+								  &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -6886,7 +7198,7 @@ Handle_Packet_Error:
 						goto Finish_Recovery;
 					}
 				}
-				
+
 				flmAssert( bTransActive);
 				pDb->uiFlags |= FDB_REPLAYING_COMMIT;
 				rc = FlmDbTransCommit( hDb);
@@ -6898,42 +7210,43 @@ Handle_Packet_Error:
 					goto Exit;
 				}
 
-				m_uiLastLoggedCommitTransID = uiTransId;
+				m_uiLastLoggedCommitTransID = opInfo.uiTransId;
+				
 Finish_Transaction:
+
 				if (!m_uiFileEOF)
 				{
 					bLastTransEndedAtFileEOF = TRUE;
 				}
 				else
 				{
-					bLastTransEndedAtFileEOF =
+					bLastTransEndedAtFileEOF = 
 						(m_uiRflReadOffset == m_pCurrentBuf->uiRflBufBytes &&
 						 m_pCurrentBuf->uiRflFileOffset +
-						 m_pCurrentBuf->uiRflBufBytes == m_uiFileEOF)
-						? TRUE
-						: FALSE;
+						 m_pCurrentBuf->uiRflBufBytes == m_uiFileEOF) 
+									? TRUE 
+									: FALSE;
 				}
-				m_uiLastTransID = uiTransId;
+
+				m_uiLastTransID = opInfo.uiTransId;
 				m_uiCurrTransID = 0;
 				break;
 			}
 
 			case RFL_TRNS_ABORT_PACKET:
 			{
+
 				// Abort the current transaction.
 
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_ABORT_TRANS,
-										uiTransId,
-										(void *)0,
-										(void *)0,
-										(void *)0,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_ABORT_TRANS,
+								  opInfo.uiTransId, (void *) 0, (void *) 0, (void *) 0,
+								  &eRestoreAction)))
 					{
 						goto Exit;
 					}
+
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
 						bLastTransEndedAtFileEOF = FALSE;
@@ -6949,6 +7262,7 @@ Finish_Transaction:
 				{
 					goto Exit;
 				}
+
 				goto Finish_Transaction;
 			}
 
@@ -6957,16 +7271,14 @@ Finish_Transaction:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_ADD_REC,
-										uiTransId,
-										(void *)uiContainer,
-										(void *)uiDrn,
-										(void *)pRecord,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_ADD_REC, 
+								  opInfo.uiTransId, (void *) opInfo.uiContainer,
+								  (void *) opInfo.uiDrn, 
+								  (void *) pRecord, &eRestoreAction)))
 					{
 						goto Exit;
 					}
+
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
 						bLastTransEndedAtFileEOF = FALSE;
@@ -6974,8 +7286,8 @@ Finish_Transaction:
 					}
 				}
 
-				rc = FlmRecordAdd( hDb, uiContainer, &uiDrn,
-											pRecord, uiOpFlags);
+				rc = FlmRecordAdd( hDb, opInfo.uiContainer, &opInfo.uiDrn, 
+										 pRecord, opInfo.uiFlags);
 				pRecord->Release();
 				pRecord = NULL;
 				if (RC_BAD( rc))
@@ -6988,11 +7300,12 @@ Finish_Transaction:
 			case RFL_MODIFY_RECORD_PACKET:
 			case RFL_MODIFY_RECORD_PACKET_VER_2:
 			{
-				// Must retrieve the record and then get the
-				// modify packet(s) to alter it.
 
-				if (RC_BAD( rc = FlmRecordRetrieve( hDb, uiContainer,
-											uiDrn, FO_EXACT, &pRecord, NULL)))
+				// Must retrieve the record and then get the modify packet(s)
+				// to alter it.
+
+				if (RC_BAD( rc = FlmRecordRetrieve( hDb, opInfo.uiContainer, 
+							  opInfo.uiDrn, FO_EXACT, &pRecord, NULL)))
 				{
 					goto Exit;
 				}
@@ -7015,13 +7328,10 @@ Finish_Transaction:
 
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_MOD_REC,
-										uiTransId,
-										(void *)uiContainer,
-										(void *)uiDrn,
-										(void *)pTmpRecord,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_MOD_REC, 
+								  opInfo.uiTransId,
+								  (void *) opInfo.uiContainer, (void *) opInfo.uiDrn,
+								  (void *) pTmpRecord, &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -7033,8 +7343,8 @@ Finish_Transaction:
 					}
 				}
 
-				rc = FlmRecordModify( hDb, uiContainer, uiDrn,
-							pTmpRecord, uiOpFlags);
+				rc = FlmRecordModify( hDb, opInfo.uiContainer, opInfo.uiDrn, 
+											 pTmpRecord, opInfo.uiFlags);
 
 				pTmpRecord->Release();
 				pTmpRecord = NULL;
@@ -7043,6 +7353,7 @@ Finish_Transaction:
 				{
 					goto Exit;
 				}
+				
 				break;
 			}
 
@@ -7051,16 +7362,14 @@ Finish_Transaction:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_DEL_REC,
-										uiTransId,
-										(void *)uiContainer,
-										(void *)uiDrn,
-										(void *)0,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_DEL_REC, 
+								  opInfo.uiTransId,
+								  (void *) opInfo.uiContainer, (void *) opInfo.uiDrn, 
+								  (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
+
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
 						bLastTransEndedAtFileEOF = FALSE;
@@ -7068,8 +7377,8 @@ Finish_Transaction:
 					}
 				}
 
-				if( RC_BAD( rc = FlmRecordDelete( hDb, uiContainer, 
-					uiDrn, uiOpFlags)))
+				if (RC_BAD( rc = FlmRecordDelete( hDb, opInfo.uiContainer, 
+								opInfo.uiDrn, opInfo.uiFlags)))
 				{
 					goto Exit;
 				}
@@ -7080,16 +7389,13 @@ Finish_Transaction:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_RESERVE_DRN,
-										uiTransId,
-										(void *)uiContainer,
-										(void *)uiDrn,
-										(void *)0,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_RESERVE_DRN,
+								  opInfo.uiTransId, (void *) opInfo.uiContainer, 
+								  (void *) opInfo.uiDrn, (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
+
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
 						bLastTransEndedAtFileEOF = FALSE;
@@ -7097,26 +7403,23 @@ Finish_Transaction:
 					}
 				}
 
-				if( RC_BAD( rc = FlmReserveNextDrn( hDb, uiContainer, &uiDrn)))
+				if (RC_BAD( rc = FlmReserveNextDrn( hDb, opInfo.uiContainer, 
+					&opInfo.uiDrn)))
 				{
 					goto Exit;
 				}
+				
 				break;
 			}
 
 			case RFL_INDEX_SUSPEND_PACKET:
 			{
-				// NOTE: The index number is returned in the uiDrn parameter of
-				// the readOp function.
 
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_INDEX_SUSPEND,
-										uiTransId,
-										(void *)uiIndex,
-										(void *)0,
-										(void *)0, &eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_INDEX_SUSPEND,
+								  opInfo.uiTransId, (void *) opInfo.uiIndex, 
+								  (void *) 0, (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -7128,26 +7431,22 @@ Finish_Transaction:
 					}
 				}
 
-				if( RC_BAD( rc = FlmIndexSuspend( hDb, uiIndex)))
+				if (RC_BAD( rc = FlmIndexSuspend( hDb, opInfo.uiIndex)))
 				{
 					goto Exit;
 				}
+				
 				break;
 			}
 
 			case RFL_INDEX_RESUME_PACKET:
 			{
-				// NOTE: The index number is returned in the uiDrn parameter of
-				// the readOp function.
 
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_INDEX_RESUME,
-										uiTransId,
-										(void *)uiIndex,
-										(void *)0,
-										(void *)0, &eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_INDEX_RESUME,
+								  opInfo.uiTransId, (void *) opInfo.uiIndex, (void *) 0, 
+								  (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -7159,7 +7458,7 @@ Finish_Transaction:
 					}
 				}
 
-				if( RC_BAD( rc = FlmIndexResume( hDb, uiIndex)))
+				if (RC_BAD( rc = FlmIndexResume( hDb, opInfo.uiIndex)))
 				{
 					goto Exit;
 				}
@@ -7171,13 +7470,10 @@ Finish_Transaction:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_INDEX_SET,
-										uiTransId,
-										(void *)uiIndex,
-										(void *)uiDrn,
-										(void *)uiEndDrn,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_INDEX_SET,
+								  opInfo.uiTransId, (void *) opInfo.uiIndex, 
+								  (void *) opInfo.uiDrn, (void *) opInfo.uiEndDrn,
+								  &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -7188,18 +7484,20 @@ Finish_Transaction:
 						goto Finish_Recovery;
 					}
 				}
-#ifdef FLM_DEBUG
-				if( m_pFile->FileHdr.uiVersionNum < FLM_VER_4_50)
-				{
-					flmAssert( uiOp == RFL_INDEX_SET_PACKET);
-				}
-#endif
 
-				if( RC_BAD( rc = flmDbIndexSetOfRecords( hDb, uiIndex, 
-					uiContainer, uiDrn, uiEndDrn)))
+				if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_50 &&
+					 opInfo.uiPacketType != RFL_INDEX_SET_PACKET)
+				{
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
+				}
+				
+				if (RC_BAD( rc = flmDbIndexSetOfRecords( hDb, opInfo.uiIndex, 
+							  opInfo.uiContainer, opInfo.uiDrn, opInfo.uiEndDrn)))
 				{
 					goto Exit;
 				}
+				
 				break;
 			}
 
@@ -7207,13 +7505,10 @@ Finish_Transaction:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_BLK_CHAIN_DELETE,
-										uiTransId,
-										(void *)uiDrn,
-										(void *)uiOpFlags,
-										(void *)uiEndDrn,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_BLK_CHAIN_DELETE,
+								  opInfo.uiTransId, (void *) opInfo.uiDrn, 
+								  (void *) opInfo.uiCount,
+								  (void *) opInfo.uiEndBlock, &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -7225,12 +7520,11 @@ Finish_Transaction:
 					}
 				}
 
-				if( RC_BAD( rc = flmMaintFreeBlockChain(
-					pDb, uiDrn, uiOpFlags, uiEndDrn, NULL)))
+				if (RC_BAD( rc = flmMaintFreeBlockChain( pDb, opInfo.uiDrn, 
+							  opInfo.uiCount, opInfo.uiEndBlock, NULL)))
 				{
 					goto Exit;
 				}
-
 				break;
 			}
 
@@ -7248,18 +7542,19 @@ Finish_Transaction:
 					m_uiUnknownPacketRc = FERR_OK;
 
 					if (RC_BAD( rc = m_pRestore->processUnknown(
-													(F_UnknownStream *)&unkStrm)))
+									  (F_UnknownStream*) &unkStrm)))
 					{
 						if (m_uiUnknownPacketRc != FERR_OK)
 						{
 							rc = m_uiUnknownPacketRc;
 							goto Handle_Packet_Error;
 						}
+
 						goto Exit;
 					}
 
-					// If we did not read through all of the unknown
-					// packets, skip them at this time.
+					// If we did not read through all of the unknown packets,
+					// skip them at this time.
 
 					if (m_bReadingUnknown)
 					{
@@ -7279,7 +7574,7 @@ Skip_Unknown_Packets:
 						FLMUINT		uiPacketBodyLen;
 
 						if (RC_BAD( rc = getPacket( FALSE, &uiPacketType,
-													&pucPacketBody, &uiPacketBodyLen, NULL)))
+									  &pucPacketBody, &uiPacketBodyLen, NULL)))
 						{
 							goto Handle_Packet_Error;
 						}
@@ -7294,12 +7589,12 @@ Skip_Unknown_Packets:
 							// At this point, we know that the entire packet is
 							// inside our memory buffer, so it is safe to reset
 							// m_uiRflReadOffset back to the beginning of the
-							// packet.  The call to readOp() above will call
+							// packet. The call to readOp() above will call
 							// getPacket again, which will get this exact same
 							// packet for processing.
 
-							m_uiRflReadOffset -= (RFL_PACKET_OVERHEAD +
-															uiPacketBodyLen);
+							m_uiRflReadOffset -= 
+									(RFL_PACKET_OVERHEAD + uiPacketBodyLen);
 							break;
 						}
 					}
@@ -7309,17 +7604,12 @@ Skip_Unknown_Packets:
 
 			case RFL_REDUCE_PACKET:
 			{
-				// NOTE: The count is returned in the uiDrn parameter of
-				// the readOp function.
 
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_REDUCE,
-										uiTransId,
-										(void *)uiDrn,	// count
-										(void *)0,
-										(void *)0, &eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_REDUCE, 
+								  opInfo.uiTransId, (void *) opInfo.uiCount,
+								  (void *) 0, (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
@@ -7327,18 +7617,17 @@ Skip_Unknown_Packets:
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
 
-						// Need to set m_uiCurrTransID to 0 since it was
-						// set by getPacket().  We are not going to
-						// start a transaction because of the user's request
-						// to exit.
+						// Need to set m_uiCurrTransID to 0 since it was set by
+						// getPacket(). We are not going to start a transaction
+						// because of the user's request to exit.
 
 						m_uiCurrTransID = 0;
 						bLastTransEndedAtFileEOF = FALSE;
 						goto Finish_Recovery;
 					}
 				}
-				
-				if( RC_BAD( rc = FlmDbReduceSize( hDb, uiDrn, &uiCount)))
+
+				if (RC_BAD( rc = FlmDbReduceSize( hDb, opInfo.uiCount, &uiCount)))
 				{
 					goto Exit;
 				}
@@ -7350,23 +7639,21 @@ Skip_Unknown_Packets:
 			{
 				if (m_pRestore)
 				{
-					if (RC_BAD( rc = m_pRestore->status(
-										RESTORE_UPGRADE,
-										uiTransId,
-										(void *)uiDrn,		// Old DB Version
-										(void *)uiEndDrn, // New DB Version
-										(void *)0,
-										&eRestoreAction)))
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_UPGRADE, 
+								  opInfo.uiTransId,
+								  (void *) opInfo.uiOldVersion,
+								  (void *) opInfo.uiNewVersion,
+								  (void *) 0, &eRestoreAction)))
 					{
 						goto Exit;
 					}
 
 					if (eRestoreAction == RESTORE_ACTION_STOP)
 					{
-						// Need to set m_uiCurrTransID to 0 since it was
-						// set by getPacket().  We are not going to
-						// start a transaction because of the user's request
-						// to exit.
+
+						// Need to set m_uiCurrTransID to 0 since it was set by
+						// getPacket(). We are not going to start a transaction
+						// because of the user's request to exit.
 
 						m_uiCurrTransID = 0;
 						bLastTransEndedAtFileEOF = FALSE;
@@ -7374,52 +7661,87 @@ Skip_Unknown_Packets:
 					}
 				}
 
-				// Attempt the conversion if the current version is less
-				// than the target version and the target version is
-				// less than or equal to the highest version supported
-				// by this code.
+				// Attempt the conversion if the current version is less than
+				// the target version and the target version is less than or
+				// equal to the highest version supported by this code.
 
-				if( uiEndDrn > FLM_CURRENT_VERSION_NUM)
+				if (opInfo.uiNewVersion > FLM_CUR_FILE_FORMAT_VER_NUM)
 				{
 					rc = RC_SET( FERR_UNALLOWED_UPGRADE);
 					goto Exit;
 				}
 				else
 				{
-					flmAssert( m_pFile->FileHdr.uiVersionNum < uiEndDrn);
+					flmAssert( m_pFile->FileHdr.uiVersionNum < opInfo.uiNewVersion);
 
-					// The logged "new" version may be a lesser version
-					// than FLM_CURRENT_VERSION_NUM, which is what FlmDbUpgrade
-					// upgrades to.  This is O.K. because the current version
-					// should support all packets in the RFL for versions
-					// that are less than it.  Otherwise, the RFL chain
-					// would have been broken by the original upgrade and it
-					// would not have logged an upgrade packet.
+					// The logged "new" version may be a lesser version than
+					// FLM_CURRENT_FILE_FORMAT_VERSION, which is what FlmDbUpgrade
+					// upgrades to. This is OK because the current version
+					// should support all packets in the RFL for versions that
+					// are less than it. Otherwise, the RFL chain would have
+					// been broken by the original upgrade and it would not
+					// have logged an upgrade packet.
 
-					if( RC_BAD( rc = FlmDbUpgrade( hDb, uiEndDrn, NULL, NULL)))
+					if (RC_BAD( rc = FlmDbUpgrade( hDb, opInfo.uiNewVersion, 
+						NULL, NULL)))
 					{
 						goto Exit;
 					}
 				}
+
 				goto Finish_Transaction;
 			}
-			
+
 			case RFL_WRAP_KEY_PACKET:
 			case RFL_ENABLE_ENCRYPTION_PACKET:
 			{
 				goto Finish_Transaction;
 			}
 
+			case RFL_CONFIG_SIZE_EVENT_PACKET: // here
+			{
+				if (m_pRestore)
+				{
+					if (RC_BAD( rc = m_pRestore->status( RESTORE_CONFIG_SIZE_EVENT, 
+								  opInfo.uiTransId,
+								  (void *) opInfo.uiSizeThreshold,
+								  (void *) opInfo.uiTimeInterval, 
+								  (void *) opInfo.uiSizeInterval, &eRestoreAction)))
+					{
+						goto Exit;
+					}
+
+					if (eRestoreAction == RESTORE_ACTION_STOP)
+					{
+
+						// Need to set m_uiCurrTransID to 0 since it was set by
+						// getPacket(). We are not going to start a transaction
+						// because of the user's request to exit.
+
+						m_uiCurrTransID = 0;
+						bLastTransEndedAtFileEOF = FALSE;
+						goto Finish_Recovery;
+					}
+				}
+
+				if (RC_BAD( rc = flmSetRflSizeThreshold( 
+					hDb, opInfo.uiSizeThreshold, opInfo.uiTimeInterval, 
+					opInfo.uiSizeInterval)))
+				{
+					goto Exit;
+				}
+
+				goto Finish_Transaction;
+			}
+			
 			default:
 			{
-				// Should not be getting other packet types at this
-				// point.
 
-				// If we don't know the current file size, and we
-				// are doing a restore, it is OK to end on a bad
-				// packet - we will simply abort the current
-				// transaction, if any.
-
+				// Should not be getting other packet types at this point. ;
+				// If we don't know the current file size, and we are doing a
+				// restore, it is OK to end on a bad packet - we will simply
+				// abort the current transaction, if any.
+				
 				if (m_pRestore && !m_uiFileEOF)
 				{
 					rc = FERR_OK;
@@ -7447,44 +7769,42 @@ Finish_Recovery:
 	{
 		FLMUINT	uiNextRflFileNum = m_pCurrentBuf->uiCurrFileNum + 1;
 
-		// At the end of the restore operation, we need to set things
-		// up so that the next transaction will begin a new RFL file.
-		// If we ended the restore in the middle of an RFL file, we
-		// need to set it up so that the new RFL file will have a new
-		// serial number.  If we ended at the end of an RFL file, we
-		// can set it up so that the new RFL file will have the next
-		// serial number.
-
+		// At the end of the restore operation, we need to set things up so
+		// that the next transaction will begin a new RFL file. If we ended
+		// the restore in the middle of an RFL file, we need to set it up so
+		// that the new RFL file will have a new serial number. If we ended
+		// at the end of an RFL file, we can set it up so that the new RFL
+		// file will have the next serial number. ;
 		// Set up the next RFL file number and offset.
-
+		
 		UD2FBA( uiNextRflFileNum,
-			&m_pFile->ucLastCommittedLogHdr [LOG_RFL_FILE_NUM]);
+				 &m_pFile->ucLastCommittedLogHdr[LOG_RFL_FILE_NUM]);
 
 		// Set a zero into the offset, this is a special case which tells
-		// us that we should create the file no matter what - even if
-		// it already exists - it should be overwritten.
+		// us that we should create the file no matter what - even if it
+		// already exists - it should be overwritten.
 
-		UD2FBA( 0,
-			&m_pFile->ucLastCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+		UD2FBA( 0, &m_pFile->ucLastCommittedLogHdr[LOG_RFL_LAST_TRANS_OFFSET]);
 
 		if (bLastTransEndedAtFileEOF)
 		{
-			// Move the next serial number of the last RFL file processed into 
-			// into the current RFL serial number so that the log header
+
+			// Move the next serial number of the last RFL file processed
+			// into into the current RFL serial number so that the log header
 			// will be correct
 
-			f_memcpy(
-				&m_pFile->ucLastCommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM],
-				m_ucNextSerialNum, F_SERIAL_NUM_SIZE);
+			f_memcpy( &m_pFile->ucLastCommittedLogHdr[
+				LOG_LAST_TRANS_RFL_SERIAL_NUM], m_ucNextSerialNum, 
+				F_SERIAL_NUM_SIZE);
 		}
 		else
 		{
 
-			// Must create a new serial number so that when the new RFL
-			// file is created, it will have that next serial number.
+			// Must create a new serial number so that when the new RFL file
+			// is created, it will have that next serial number.
 
-			if (RC_BAD( rc = f_createSerialNumber(
-				&m_pFile->ucLastCommittedLogHdr [LOG_LAST_TRANS_RFL_SERIAL_NUM])))
+			if (RC_BAD( rc = f_createSerialNumber( &m_pFile->ucLastCommittedLogHdr[
+							  LOG_LAST_TRANS_RFL_SERIAL_NUM])))
 			{
 				goto Exit;
 			}
@@ -7492,19 +7812,19 @@ Finish_Recovery:
 
 		// Save the last logged commit transaction ID.
 
-		if (m_pFile->FileHdr.uiVersionNum >= FLM_VER_4_31 &&
+		if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_31 &&
 			 m_uiLastLoggedCommitTransID)
 		{
-			UD2FBA(m_uiLastLoggedCommitTransID,
-						&m_pFile->ucLastCommittedLogHdr [LOG_LAST_RFL_COMMIT_ID]);
+			UD2FBA( m_uiLastLoggedCommitTransID,
+					 &m_pFile->ucLastCommittedLogHdr[LOG_LAST_RFL_COMMIT_ID]);
 		}
 
-		// No matter what, we must generate a new next serial number.  This
+		// No matter what, we must generate a new next serial number. This
 		// is what will be written to the new RFL file's header when it is
 		// created.
 
 		if (RC_BAD( rc = f_createSerialNumber(
-						&m_pFile->ucLastCommittedLogHdr [LOG_RFL_NEXT_SERIAL_NUM])))
+						  &m_pFile->ucLastCommittedLogHdr[LOG_RFL_NEXT_SERIAL_NUM])))
 		{
 			goto Exit;
 		}
@@ -7513,28 +7833,29 @@ Finish_Recovery:
 	if (!bHadOperations)
 	{
 
-		// No transactions were recovered, but still need to
-		// setup a few things.
+		// No transactions were recovered, but still need to setup a few
+		// things.
 
 		m_pFile->uiFirstLogCPBlkAddress = 0;
-		m_pFile->uiLastCheckpointTime = (FLMUINT)FLM_GET_TIMER();
+		m_pFile->uiLastCheckpointTime = (FLMUINT) FLM_GET_TIMER();
 
-		// Save the state of the log header into the ucCheckpointLogHdr buffer.
+		// Save the state of the log header into the ucCheckpointLogHdr
+		// buffer.
 
-		f_memcpy( m_pFile->ucCheckpointLogHdr,
-				m_pFile->ucLastCommittedLogHdr,
-				LOG_HEADER_SIZE);
+		f_memcpy( m_pFile->ucCheckpointLogHdr, m_pFile->ucLastCommittedLogHdr,
+					LOG_HEADER_SIZE);
 	}
 
 	// Force a checkpoint to force the log files to be truncated and
-	// everything to be reset.  This is done because during recovery
-	// the checkpoints that are executed do NOT truncate the RFL file -
-	// because it is using the log file to recover!
+	// everything to be reset. This is done because during recovery the
+	// checkpoints that are executed do NOT truncate the RFL file - because
+	// it is using the log file to recover!
 
 	closeFile();
 	m_pRestore = NULL;
 	m_bLoggingOff = FALSE;
 	pDb->uiFlags &= ~FDB_REPLAYING_RFL;
+	
 	if (RC_BAD( rc = FlmDbCheckpoint( hDb, 0)))
 	{
 		goto Exit;
@@ -7560,106 +7881,299 @@ Exit:
 	pDb->bFldStateUpdOk = FALSE;
 	pDb->uiFlags &= ~FDB_REPLAYING_RFL;
 
-	return( rc);
-}
-
-/*API~***********************************************************************
-Desc:	Returns the name of an RFL file given its number
-*END************************************************************************/
-FLMEXP RCODE FLMAPI FlmDbGetRflFileName(
-	HFDB 			hDb,
-	FLMUINT		uiFileNum,
-	char *		pszFileName)
-{
-	((FDB *)hDb)->pFile->pRfl->getBaseRflFileName( 
-		uiFileNum, pszFileName);
-
-	return( FERR_OK);
+	return (rc);
 }
 
 /********************************************************************
-Desc:		Log a block chain free operation
-*********************************************************************/
-RCODE F_Rfl::logBlockChainFree(
-	FLMUINT		uiTrackerDrn,
-	FLMUINT		uiCount,
-	FLMUINT		uiEndAddr)
-{	
+Desc:
+********************************************************************/
+RCODE flmRflCalcDiskUsage(
+	const char *	pszRflDir,
+	const char *	pszRflPrefix,
+	FLMUINT			uiDbVersionNum,
+	FLMUINT64 *		pui64DiskUsage)
+{
+	RCODE				rc = FERR_OK;
+	F_DirHdl *		pDirHdl = NULL;
+	FLMUINT			uiFileNumber;
+	FLMUINT64		ui64DiskUsage;
+	
+	ui64DiskUsage = 0;
+	
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenDir( pszRflDir,
+		(char *) "*", &pDirHdl)))
+	{
+		if( rc == FERR_IO_PATH_NOT_FOUND)
+		{
+			rc = FERR_OK;
+		}
+
+		goto Exit;
+	}
+	
+	for( ;;)
+	{
+		if( RC_BAD( rc = pDirHdl->Next()))
+		{
+			if( rc != FERR_IO_NO_MORE_FILES && rc != FERR_IO_PATH_NOT_FOUND)
+			{
+				goto Exit;
+			}
+			
+			rc = FERR_OK;
+			break;
+		}
+	
+		// If the current file is an RFL file, increment the disk usage
+	
+		if( rflGetFileNum( uiDbVersionNum, pszRflPrefix, 
+			pDirHdl->CurrentItemName(), &uiFileNumber))
+		{
+			ui64DiskUsage += pDirHdl->CurrentItemSize();
+		}
+	}
+	
+Exit:
+
+	*pui64DiskUsage = ui64DiskUsage;
+
+	if( pDirHdl)
+	{
+		pDirHdl->Release();
+	}
+	
+	return( rc);
+}
+
+/********************************************************************
+Desc:	Returns the name of an RFL file given its number
+********************************************************************/
+FLMEXP RCODE FLMAPI FlmDbGetRflFileName(
+	HFDB			hDb,
+	FLMUINT		uiFileNum,
+	char *		pszFileName)
+{
+	((FDB *) hDb)->pFile->pRfl->getBaseRflFileName( uiFileNum, pszFileName);
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_RflUnknownStream::F_RflUnknownStream() 
+{
+	m_pRfl = NULL;
+	m_bStartedWriting = FALSE;
+	m_bInputStream = FALSE;
+	m_bSetupCalled = FALSE;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_RflUnknownStream::~F_RflUnknownStream() 
+{
+	if (m_bSetupCalled)
+	{
+		(void)close();
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_RflUnknownStream::setup(
+		F_Rfl *			pRfl,
+		FLMBOOL			bInputStream)
+{
 	RCODE			rc = FERR_OK;
-	FLMBYTE *	pucPacketBody;
-	FLMUINT		uiPacketBodyLen;
 
-	// This call is new with 4.52 databases - not supported in older
-	// versions, so don't log it.
+	flmAssert( !m_bSetupCalled);
 
-	if (m_pFile->FileHdr.uiVersionNum < FLM_VER_4_60)
+	if (!pRfl)
 	{
 		flmAssert( 0);
+		rc = RC_SET( FERR_INVALID_PARM);
+		goto Exit;
+	}
+	m_pRfl = pRfl;
+	m_bInputStream = bInputStream;
+	m_bSetupCalled = TRUE;
+	m_bStartedWriting = FALSE;
+
+Exit:
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_RflUnknownStream::close( void)
+{
+	RCODE			rc = FERR_OK;
+
+	flmAssert( m_bSetupCalled);
+
+	// There is nothing to do for input streams, because the RFL
+	// code handles skipping over any unknown data that may not have
+	// been read yet.
+	// For output streams, we need to call the endLoggingUnknown
+	// routine so that the last packet gets written out.
+
+	if (!m_bInputStream)
+	{
+		if (m_bStartedWriting)
+		{
+			m_bStartedWriting = FALSE;
+			if (RC_BAD( rc = m_pRfl->endLoggingUnknown()))
+			{
+				goto Exit;
+			}
+		}
+	}
+Exit:
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_RflUnknownStream::read(
+	FLMUINT			uiLength,
+	void *			pvBuffer,
+	FLMUINT *		puiBytesRead)
+{
+	RCODE			rc = FERR_OK;
+
+	flmAssert( m_bSetupCalled);
+
+	if (!m_bInputStream)
+	{
+
+		// Cannot read from an output stream.
+
+		flmAssert( 0);
+		rc = RC_SET( FERR_ILLEGAL_OP);
 		goto Exit;
 	}
 
-	// Do nothing if logging is disabled.
-
-	if (m_bLoggingOff)
+	if (RC_BAD( rc = m_pRfl->readUnknown( uiLength, (FLMBYTE *)pvBuffer,
+										puiBytesRead)))
 	{
 		goto Exit;
 	}
 
-	// Better not be in the middle of logging unknown stuff
-	// for the application
+Exit:
+	return( rc);
+}
 
-	flmAssert( !m_bLoggingUnknown);
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_RflUnknownStream::write(
+	FLMUINT			uiLength,
+	void *			pvBuffer)
+{
+	RCODE			rc = FERR_OK;
 
-	// Better be in the middle of a transaction.
+	flmAssert( m_bSetupCalled);
+	flmAssert( m_pRfl);
 
-	flmAssert( m_uiCurrTransID);
-	m_uiOperCount++;
-
-	uiPacketBodyLen = 16;
-
-	// Make sure we have space in the RFL buffer for a complete packet.
-
-	if (!haveBuffSpace( uiPacketBodyLen + RFL_PACKET_OVERHEAD))
+	if (m_bInputStream)
 	{
-		if (RC_BAD( rc = flush( m_pCurrentBuf)))
+
+		// Cannot write to an input stream.
+
+		flmAssert( 0);
+		rc = RC_SET( FERR_ILLEGAL_OP);
+		goto Exit;
+	}
+
+	// Need to start logging on the first write.
+
+	if (!m_bStartedWriting)
+	{
+		if (RC_BAD( rc = m_pRfl->startLoggingUnknown()))
 		{
 			goto Exit;
 		}
+		m_bStartedWriting = TRUE;
 	}
 
-	// Get a pointer to where we will be laying down the packet body.
+	// Log the data.
 
-	pucPacketBody = getPacketBodyPtr();
+	if (RC_BAD( rc = m_pRfl->logUnknown( (FLMBYTE *)pvBuffer, uiLength)))
+	{
+		goto Exit;
+	}
+Exit:
+	return( rc);
+}
 
-	// Output the transaction ID.
+/****************************************************************************
+Desc:	Returns an unknown stream object - suitable for writing unknown
+		streams into the roll-forward log.
+****************************************************************************/
+FLMEXP RCODE FLMAPI FlmDbGetUnknownStreamObj(
+	HFDB						hDb,
+	F_UnknownStream **	ppUnknownStream)
+{
+	RCODE						rc = FERR_OK;
+	FDB *						pDb = (FDB *)hDb;
+	F_RflUnknownStream *	pUnkStream = NULL;
 
-	UD2FBA( (FLMUINT32)m_uiCurrTransID, pucPacketBody);
-	pucPacketBody += 4;
+	flmAssert( pDb);
+	flmAssert( ppUnknownStream);
 
-	// Output the tracker record number
+	// See if the database is being forced to close
 
-	UD2FBA( (FLMUINT32)uiTrackerDrn, pucPacketBody);
-	pucPacketBody += 4;
+	if( RC_BAD( rc = flmCheckDatabaseState( pDb)))
+	{
+		goto Exit;
+	}
 
-	// Output the count
+	// This is only valid on 4.3 and greater.
 
-	UD2FBA( (FLMUINT32)uiCount, pucPacketBody);
-	pucPacketBody += 4;
+	if (pDb->pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
+	{
+		goto Exit;	// Will return FERR_OK and a NULL pointer.
+	}
 
-	// Output the ending block address
+	// Must be in an update transaction.
 
-	UD2FBA( (FLMUINT32)uiEndAddr, pucPacketBody);
-	pucPacketBody += 4;
+	if (pDb->uiTransType == FLM_NO_TRANS)
+	{
+		rc = RC_SET( FERR_NO_TRANS_ACTIVE);
+		goto Exit;
+	}
+	if (pDb->uiTransType != FLM_UPDATE_TRANS)
+	{
+		rc = RC_SET( FERR_ILLEGAL_TRANS_OP);
+		goto Exit;
+	}
 
-	// Finish the packet
+	// Allocate the stream object we want.
 
-	if (RC_BAD( rc = finishPacket( RFL_BLK_CHAIN_FREE_PACKET, 
-		uiPacketBodyLen, TRUE)))
+	if ((pUnkStream = f_new F_RflUnknownStream) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+
+	// Setup the unknown stream object.
+
+	if (RC_BAD( rc = pUnkStream->setup( pDb->pFile->pRfl, FALSE)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
+	if (RC_BAD( rc) && pUnkStream)
+	{
+		pUnkStream->Release();
+		pUnkStream = NULL;
+	}
+	*ppUnknownStream = (F_UnknownStream *)pUnkStream;
 	return( rc);
 }

@@ -47,22 +47,17 @@ Ret:	FERR_OK
 			Indicates that we would have read beyond the log end-of-file.
 		other
 			other FLAIM error codes
-SWPVISIT: Why is the block decrypted and then encrypted again?  The block
-			 does not change any - all we did was verify the checksum.
-			 Note - blkChecksum() removes the checksum so we will still have
-			 to call the checksum routine two times or have carnal knowledge
-			 and remember the checksum low byte.
 ****************************************************************************/
 FSTATIC RCODE flmReadLog(
 	FDB *					pDb,
-	FLMUINT				uiLogEOF,			/* Address of end of rollback log. */
-	FLMUINT *			puiCurrAddrRV,		/* This is the current address we are
-														readingin the log file.  It
-														will be updated after reading the
-														data. */
-	FLMBYTE *			pBlk,					/* This is the buffer that is to hold
-														the data that is read from the
-														log file. */
+	FLMUINT				uiLogEOF,				// Address of end of rollback log
+	FLMUINT *			puiCurrAddrRV,			// This is the current address we are
+														// reading in the log file.  It
+														// will be updated after reading the
+														// data
+	FLMBYTE *			pBlk,						// This is the buffer that is to hold
+														// the data that is read from the
+														// log file
 	FLMBOOL *			pbIsBeforeImageBlkRV	// Is block a before-image block?
 	)
 {
@@ -76,7 +71,7 @@ FSTATIC RCODE flmReadLog(
 
 	uiFilePos = *puiCurrAddrRV;
 
-	/* Verify that we are not going to read beyond the log EOF */
+	// Verify that we are not going to read beyond the log EOF
 
 	if (!FSAddrIsAtOrBelow( uiFilePos + uiBlkSize, uiLogEOF))
 	{
@@ -84,7 +79,7 @@ FSTATIC RCODE flmReadLog(
 		goto Exit;
 	}
 
-	/* Position to the appropriate place and read the data */
+	// Position to the appropriate place and read the data
 
 	if (pDbStats)
 	{
@@ -125,7 +120,7 @@ FSTATIC RCODE flmReadLog(
 		goto Exit;
 	}
 
-	/* Verify the checksum on the block BEFORE decrypting */
+	// Verify the checksum on the block
 
 	if( RC_BAD( rc = BlkCheckSum( pBlk, CHECKSUM_CHECK, BT_END, uiBlkSize)))
 	{
@@ -136,16 +131,12 @@ FSTATIC RCODE flmReadLog(
 		goto Exit;
 	}
 
-	// See if BI bits are set.  Unset them before
-	// decrypting or doing anything else with the
-	// the block so that the block type is accurate.
-
 	*pbIsBeforeImageBlkRV = (FLMBOOL)((BH_IS_BI( pBlk))
 											  ? (FLMBOOL)TRUE
 											  : (FLMBOOL)FALSE);
 	BH_UNSET_BI( pBlk);
 
-	/* Adjust the current address for the next read */
+	// Adjust the current address for the next read
 
 	uiFilePos += uiBlkSize;
 	if (FSGetFileOffset( uiFilePos) >= pFile->uiMaxFileSize)
@@ -163,9 +154,8 @@ FSTATIC RCODE flmReadLog(
 			uiFileNumber++;
 		}
 
-		if (uiFileNumber >
-				MAX_LOG_BLOCK_FILE_NUMBER(
-					pFile->FileHdr.uiVersionNum))
+		if (uiFileNumber > 
+			 MAX_LOG_BLOCK_FILE_NUMBER( pFile->FileHdr.uiVersionNum))
 		{
 			rc = RC_SET( FERR_DB_FULL);
 			goto Exit;
@@ -195,22 +185,20 @@ Ret:	FERR_OK
 ****************************************************************************/
 FSTATIC RCODE flmProcessBeforeImage(
 	FDB *					pDb,
-	FLMUINT				uiLogEOF,			/* Address of the end of the rollback
-														log. */
-	FLMUINT *			puiCurrAddrRV,		/* This is the current offset we are
-														reading in the log file.
-														It will be updated after reading the
-														data. */
-	FLMBYTE *			pBlk,					/* This is a pointer to a buffer that
-														will be used to hold the block that
-														is read. */
+	FLMUINT				uiLogEOF,			// Address of the end of the rollback
+													// log
+	FLMUINT *			puiCurrAddrRV,		// This is the current offset we are
+													// reading in the log file.
+													// It will be updated after reading the
+													// data
+	FLMBYTE *			pBlk,					// This is a pointer to a buffer that
+													// will be used to hold the block that
+													// is read
 	FLMBOOL				bDoingRecovery,	// Are we doing a recovery as opposed to
 													// rolling back a transaction?
-	FLMUINT				uiMaxTransID		// Maximum transaction ID to recover to when
+	FLMUINT				uiMaxTransID)		// Maximum transaction ID to recover to when
 													// bDoingRecovery is TRUE.  This parameter
 													// is ignored when bDoingRecover is FALSE.
-				
-	)
 {
 	RCODE			rc = FERR_OK;
 	FFILE *		pFile = pDb->pFile;
@@ -221,7 +209,7 @@ FSTATIC RCODE flmProcessBeforeImage(
 	F_TMSTAMP	StartTime;
 	DB_STATS *	pDbStats = pDb->pDbStats;
 
-	/* Read the block from the log */
+	// Read the block from the log
 
 	if (RC_BAD( rc = flmReadLog( pDb, uiLogEOF, puiCurrAddrRV, pBlk,
 										  &bIsBeforeImageBlk)))
@@ -263,15 +251,15 @@ FSTATIC RCODE flmProcessBeforeImage(
 		goto Exit;
 	}
 
-	/* Determine the block address before setting the checksum. */
+	// Determine the block address before setting the checksum
 
 	uiBlkAddress = (FLMUINT)GET_BH_ADDR( pBlk);
 	uiBlkLength = getEncryptSize( pBlk);
 
-	/* Set the block checksum AFTER encrypting */
+	// Set the block checksum AFTER encrypting
 
 	BlkCheckSum( pBlk, CHECKSUM_SET, 
-					 uiBlkAddress, pFile->FileHdr.uiBlockSize );
+					 uiBlkAddress, pFile->FileHdr.uiBlockSize);
 
 
 	if (pDbStats)
@@ -284,10 +272,9 @@ FSTATIC RCODE flmProcessBeforeImage(
 
 	pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-	rc = pDb->pSFileHdl->WriteBlock( uiBlkAddress,
-						 uiBlkLength, pBlk,
-						 pFile->FileHdr.uiBlockSize,
-						 NULL, &uiBytesWritten);
+	rc = pDb->pSFileHdl->WriteBlock( uiBlkAddress, uiBlkLength, pBlk,
+						 pFile->FileHdr.uiBlockSize, NULL, &uiBytesWritten);
+						 
 #ifdef FLM_DBG_LOG
 	flmDbgLogWrite( pFile->uiFFileId, uiBlkAddress, 0,
 							FB2UD( &pBlk [BH_TRANS_ID]),
@@ -319,14 +306,13 @@ RCODE flmWriteLogHdr(
 	FLMBYTE *			pucLogHdr,			// Log header buffer.
 	FLMBYTE *			pucCPLogHdr,		// Log header as it was at the time
 													// of the checkpoint.
-	FLMBOOL				bIsCheckpoint		// Are we writing a checkpoint?  If we
+	FLMBOOL				bIsCheckpoint)		// Are we writing a checkpoint?  If we
 													// we are, we may write the log header
 													// as is.  Otherwise, we need to make
 													// sure we don't write out certain
 													// parts of the log header - they must
 													// not be updated on disk until a
 													// checkpoint actually occurs.
-	)
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesWritten;
@@ -360,7 +346,7 @@ RCODE flmWriteLogHdr(
 	// Only copy the part of the header that is relevant for this
 	// database version.
 
-	if( pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if( pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		f_memcpy( pucTmpLogHdr, pucLogHdr, LOG_HEADER_SIZE_VER40);
 	}
@@ -396,13 +382,13 @@ RCODE flmWriteLogHdr(
 		f_memcpy( &pucTmpLogHdr [LOG_PF_NUM_AVAIL_BLKS],
 					 &pucCPLogHdr [LOG_PF_NUM_AVAIL_BLKS], 4);
 		
-		if( pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+		if( pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 		{
 			f_memcpy( &pucTmpLogHdr [LOG_BLK_CHG_SINCE_BACKUP],
 						 &pucCPLogHdr [LOG_BLK_CHG_SINCE_BACKUP], 4);
 		}
 		
-		if( pFile->FileHdr.uiVersionNum >= FLM_VER_4_31)
+		if( pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_31)
 		{
 			f_memcpy( &pucTmpLogHdr [LOG_LAST_RFL_COMMIT_ID],
 						 &pucCPLogHdr [LOG_LAST_RFL_COMMIT_ID], 4);
@@ -412,7 +398,7 @@ RCODE flmWriteLogHdr(
 	// If this is not a 4.3 database, make sure the old values
 	// in the log header slots are preserved.
 
-	if( pFile->FileHdr.uiVersionNum < FLM_VER_4_3)
+	if( pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		// Compatibility for parts that were unused.
 
@@ -430,7 +416,7 @@ RCODE flmWriteLogHdr(
 	uiNewCheckSum = lgHdrCheckSum( pucTmpLogHdr, FALSE);
 	UW2FBA( (FLMUINT16)uiNewCheckSum, &pucTmpLogHdr [LOG_HDR_CHECKSUM]);
 
-	/* Now update the log header record on disk. */
+	// Now update the log header record on disk
 
 	if (pDbStats)
 	{
@@ -578,6 +564,7 @@ RCODE flmPhysRollback(
 	}
 
 Exit:
+
 	pDb->pSFileHdl->disableFlushMinimize();
 
 	// Free the memory handle, if one was allocated.

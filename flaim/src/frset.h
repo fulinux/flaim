@@ -105,7 +105,7 @@ RCODE FRSDefaultCompare(
 ***** 
 *****************************************************************************/
 
-typedef struct
+typedef struct RSET_CB_INFO
 {
 	void *		UserValue;
 	FLMUINT64	ui64EstTotalUnits;	// Estimated total number of units to do.
@@ -114,7 +114,6 @@ typedef struct
 } RSET_CB_INFO;
 
 typedef FLMINT (* RSET_CB_FUNC_p)( RSET_CB_INFO *);
-
 
 /*****************************************************************************
 ***** 
@@ -185,7 +184,7 @@ class FResultSetBlk;
 			read the block header i.e. portability is not a problem.
 ****************************************************************************/
 
-typedef struct _FBlockHeader 
+typedef struct FBlockHeader 
 {
 	FLMUINT64	ui64FilePos;			// RSBLK_UNSET_FILE_POS or file position
 	FLMUINT		uiEntryCount,			// Number of entries in block

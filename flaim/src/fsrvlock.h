@@ -46,10 +46,9 @@ typedef RFileItemId *			RFileItemId_p;
 Desc: 	This structure is used to keep track of threads waiting for a
 			lock.
 **************************************************************************/
-typedef struct Lock_Waiter *	LOCK_WAITER_p;
-typedef struct Lock_Waiter
+typedef struct LOCK_WAITER
 {
-	ServerLockObject_p	pLockObject;	// Pointer to lock object.
+	ServerLockObject *	pLockObject;	// Pointer to lock object.
 	FLMUINT					uiThreadId;		// Thread of waiter
 	F_SEM						hESem;			// Semaphore to signal when lock is
 													// granted (or denied).
@@ -65,12 +64,12 @@ typedef struct Lock_Waiter
 	FLMINT					iPriority;		// Priority of waiter.
 	F_TMSTAMP				StartTime;		// Time we started waiting (for stats)
 	DB_STATS *				pDbStats;		// Statistics to update.
-	LOCK_WAITER_p			pNext;			// Next lock waiter in list.
-	LOCK_WAITER_p			pPrev;			// Previous lock waiter in list.
-	LOCK_WAITER_p			pNextGlobal;	// Next lock waiter in global list
+	LOCK_WAITER *			pNext;			// Next lock waiter in list.
+	LOCK_WAITER *			pPrev;			// Previous lock waiter in list.
+	LOCK_WAITER *			pNextGlobal;	// Next lock waiter in global list
 													// that is ordered according to
 													// udWaitEndTime.
-	LOCK_WAITER_p			pPrevGlobal;	// Previous lock waiter in global list
+	LOCK_WAITER *			pPrevGlobal;	// Previous lock waiter in global list
 } LOCK_WAITER;
 
 /****************************************************************************
@@ -112,7 +111,7 @@ public:
 		LOCK_WAITER *			pLockWaiter);
 
 	FINLINE void RemoveWaiter(
-		LOCK_WAITER_p			pLockWaiter)
+		LOCK_WAITER *			pLockWaiter)
 	{
 		if (pLockWaiter->pNextGlobal)
 		{
@@ -157,7 +156,7 @@ public:
 private:
 
 	F_MUTEX *					m_phMutex;
-	FBUCKET_p					m_pHashTbl;
+	FBUCKET *					m_pHashTbl;
 	LOCK_WAITER *				m_pFirstLockWaiter;
 	FLMUINT						m_uiNumAvail;
 	ServerLockObject *		m_pAvailLockList;
@@ -189,7 +188,7 @@ public:
 		F_ItemId *				pItemId) = 0;
 
 	virtual FLMUINT GetHashBucket(
-		FBUCKET_p				pHashTbl,
+		FBUCKET *				pHashTbl,
 		FLMUINT					uiHashTblSize) = 0;
 
 	FINLINE FLMUINT GetItemType( void)
@@ -215,7 +214,7 @@ class FFileItemId : public F_ItemId
 public:
 
 	FINLINE FFileItemId(
-		FFILE_p			pFile,
+		FFILE *			pFile,
 		FLMBOOL			bTrans)
 	{
 		m_pFile = pFile;
@@ -232,7 +231,7 @@ public:
 		F_ItemId *		pItemId);
 
 	FINLINE FLMUINT GetHashBucket(
-		FBUCKET_p		pHashTbl,
+		FBUCKET *		pHashTbl,
 		FLMUINT			uiHashTblSize)
 	{
 		char		szFileName[ F_PATH_MAX_SIZE];
@@ -256,7 +255,7 @@ public:
 
 private:
 
-	FFILE_p				m_pFile;	
+	FFILE *				m_pFile;	
 };
 
 /****************************************************************************
@@ -277,7 +276,7 @@ public:
 		F_ItemId *		pItemId);
 
 	FINLINE FLMUINT GetHashBucket(
-		FBUCKET_p		pHashTbl,
+		FBUCKET *		pHashTbl,
 		FLMUINT			uiHashTblSize)
 	{
 		return( flmStrHashBucket( m_szFileName, pHashTbl, uiHashTblSize));
@@ -319,7 +318,7 @@ public:
 
 	RCODE Lock(
 		FLMBOOL					bLogEvent,
-		FDB_p						pDb,
+		FDB *						pDb,
 		FLMBOOL					bSendSuspendEvent,
 		FLMBOOL					bExclLock,
 		FLMUINT					uiMaxWaitSecs,
@@ -328,7 +327,7 @@ public:
 
 	RCODE Unlock(
 		FLMBOOL					bLogEvent,
-		FDB_p						pDb,
+		FDB *						pDb,
 		FLMBOOL					bRelease = FALSE,
 		DB_STATS *				pDbStats = NULL);
 		

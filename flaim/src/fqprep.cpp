@@ -27,45 +27,45 @@
 POOL_STATS	g_SubQueryOptPoolStats = {0,0};
 
 FSTATIC void flmCurPruneNode(
-	FQNODE_p 	pQNode);
+	FQNODE * 	pQNode);
 
 FSTATIC RCODE flmCurAddSubQuery(
-	CURSOR_p		pCursor,
-	FQNODE_p		pQNode);
+	CURSOR *		pCursor,
+	FQNODE *		pQNode);
 
 FSTATIC RCODE flmCurDivideQTree(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 FSTATIC RCODE flmCurCreateSQList(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 FSTATIC void flmCurClipNode(
-	FQNODE_p 	pQNode);
+	FQNODE * 	pQNode);
 
 FSTATIC void flmCurReplaceNode(
-	FQNODE_p		pNodeToReplace,
-	FQNODE_p		pReplacementNode);
+	FQNODE *		pNodeToReplace,
+	FQNODE *		pReplacementNode);
 
 FSTATIC RCODE flmCurDoDeMorgan(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 FSTATIC RCODE flmCurCopyQTree(
-	FQNODE_p		pSrcTree,
-	FQNODE_p  * ppDestTree,
+	FQNODE *		pSrcTree,
+	FQNODE *  * ppDestTree,
 	POOL *		pPool);
 
 FSTATIC RCODE flmCurStratify(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	POOL *		pPool,
 	FLMBOOL *	pbStratified,
-	FQNODE_p *	ppTree);
+	FQNODE * *	ppTree);
 
 /****************************************************************************
 Desc:	Prunes an FQNODE, along with its children, from a query tree.
 Ret:
 ****************************************************************************/
 FSTATIC void flmCurPruneNode(
-	FQNODE_p	pQNode
+	FQNODE *	pQNode
 	)
 {
 	// If necessary, unlink the node from any parent or siblings
@@ -98,13 +98,13 @@ Desc:	Allocates space for a subquery, initializes certain members, and adds
 Ret:
 ****************************************************************************/
 FSTATIC RCODE flmCurAddSubQuery(
-	CURSOR_p	pCursor,
-	FQNODE_p	pQNode )
+	CURSOR *	pCursor,
+	FQNODE *	pQNode )
 {
 	RCODE			rc = FERR_OK;
-	SUBQUERY_p	pSubQuery;
+	SUBQUERY *	pSubQuery;
 
-	if ((pSubQuery = (SUBQUERY_p)GedPoolCalloc( &pCursor->SQPool,
+	if ((pSubQuery = (SUBQUERY *)GedPoolCalloc( &pCursor->SQPool,
 											sizeof( SUBQUERY))) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
@@ -121,7 +121,7 @@ FSTATIC RCODE flmCurAddSubQuery(
 	}
 	else
 	{
-		SUBQUERY_p		pTmpSubQuery;
+		SUBQUERY *		pTmpSubQuery;
 		
 		for( pTmpSubQuery = pCursor->pSubQueryList;
 				pTmpSubQuery->pNext;
@@ -140,12 +140,12 @@ Desc:	Scans a query tree and breaks it into a set of
 		conjunct subqueries.
 ****************************************************************************/
 FSTATIC RCODE flmCurDivideQTree(
-	CURSOR_p	pCursor
+	CURSOR *	pCursor
 	)
 {
 	RCODE		rc = FERR_OK;
-	FQNODE_p	pQNode;
-	FQNODE_p	pParent;
+	FQNODE *	pQNode;
+	FQNODE *	pParent;
 
 	// Caller has already verified that pCursor->pTree is non-NULL.
 
@@ -208,7 +208,7 @@ Desc:	Scans a query tree and breaks it into a set of
 Ret:
 ****************************************************************************/
 FSTATIC RCODE flmCurCreateSQList(
-	CURSOR_p	pCursor)
+	CURSOR *	pCursor)
 {
 	RCODE	rc = FERR_OK;
 
@@ -240,9 +240,9 @@ FSTATIC RCODE flmCurCreateSQList(
 Desc:	Clips an FQNODE from a query tree, grafting its children to its parent.
 ****************************************************************************/
 FSTATIC void flmCurClipNode(
-	FQNODE_p 	pQNode)
+	FQNODE * 	pQNode)
 {
-	FQNODE_p		pTmpQNode;
+	FQNODE *		pTmpQNode;
 
 	// If necessary, unlink pQNode from its parent, children and siblings
 
@@ -298,11 +298,11 @@ FSTATIC void flmCurClipNode(
 Desc:	Replace one node with another node in the tree.
 ****************************************************************************/
 FSTATIC void flmCurReplaceNode(
-	FQNODE_p		pNodeToReplace,
-	FQNODE_p		pReplacementNode
+	FQNODE *		pNodeToReplace,
+	FQNODE *		pReplacementNode
 	)
 {
-	FQNODE_p	pParentNode;
+	FQNODE *	pParentNode;
 	FLMBOOL	bLinkAsFirst = (pNodeToReplace->pNextSib) ? TRUE : FALSE;
 
 	pParentNode = pNodeToReplace->pParent;
@@ -326,11 +326,11 @@ Desc:	Applies DeMorgan's laws to get rid of NOT operators in a tree - this
 		is necessary to do before we optimize the query.
 ****************************************************************************/
 FSTATIC RCODE flmCurDoDeMorgan(
-	CURSOR_p		pCursor
+	CURSOR *		pCursor
 	)
 {
 	RCODE		rc = FERR_OK;
-	FQNODE_p	pQNode;
+	FQNODE *	pQNode;
 	FLMBOOL	bNotted;
 	QTYPES	eOp;
 
@@ -454,7 +454,7 @@ FSTATIC RCODE flmCurDoDeMorgan(
 
 				if (pQNode->eOpType == FLM_NOT_OP)
 				{
-					FQNODE_p	pKeepNode;
+					FQNODE *	pKeepNode;
 
 					bNotted = !bNotted;
 
@@ -480,9 +480,9 @@ FSTATIC RCODE flmCurDoDeMorgan(
 				{
 					FLMUINT	uiLeftBoolVal = 0;
 					FLMUINT	uiRightBoolVal = 0;
-					FQNODE_p	pLeftNode = pQNode->pChild;
-					FQNODE_p	pRightNode = pLeftNode->pNextSib;
-					FQNODE_p	pReplacementNode = NULL;
+					FQNODE *	pLeftNode = pQNode->pChild;
+					FQNODE *	pRightNode = pLeftNode->pNextSib;
+					FQNODE *	pReplacementNode = NULL;
 
 					if (pLeftNode->eOpType == FLM_BOOL_VAL)
 					{
@@ -598,9 +598,9 @@ Desc:	Copies a passed-in query node into a new node, using the passed-in
 		memory pool.
 ****************************************************************************/
 RCODE flmCurCopyQNode(
-	FQNODE_p			pSrcNode,
-	QTINFO_p			pDestQTInfo,
-	FQNODE_p * 		ppDestNode,
+	FQNODE *			pSrcNode,
+	QTINFO *			pDestQTInfo,
+	FQNODE * * 		ppDestNode,
 	POOL *			pPool)
 {
 	RCODE				rc = FERR_OK;
@@ -612,7 +612,7 @@ RCODE flmCurCopyQNode(
 	FLMUINT			uiLen;
 	FLMUINT			uiFlags;
 	FLMUINT			uiCnt;
-	FQNODE_p			pDestNd;
+	FQNODE *			pDestNd;
 
 	if( IS_OP( pSrcNode->eOpType))
 	{
@@ -800,14 +800,14 @@ Desc:	Copies a passed-in query tree into a new tree, using the passed-in
 		memory pool.
 ****************************************************************************/
 FSTATIC RCODE flmCurCopyQTree(
-	FQNODE_p			pSrcTree,
-	FQNODE_p  * 	ppDestTree,
+	FQNODE *			pSrcTree,
+	FQNODE *  * 	ppDestTree,
 	POOL *			pPool)
 {
 	RCODE				rc = FERR_OK;
-	FQNODE_p			pQNode;
-	FQNODE_p			pDestNode;
-	FQNODE_p			pParentNode;
+	FQNODE *			pQNode;
+	FQNODE *			pDestNode;
+	FQNODE *			pParentNode;
 
 	// Don't try to copy a NULL tree.
 	
@@ -881,26 +881,26 @@ Desc:	Applies associativity to logical operators in a query tree to render
 Ret:
 ****************************************************************************/
 FSTATIC RCODE flmCurStratify(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	POOL *		pPool,
 	FLMBOOL *	pbStratified,
-	FQNODE_p *	ppTree)
+	FQNODE * *	ppTree)
 {
 	RCODE			rc = FERR_OK;
 	QTYPES		eOp;
 	QTYPES		eLeftOp;
 	QTYPES		eRightOp;
-	FQNODE_p		pTree = *ppTree;
-	FQNODE_p		pOrOp;
-	FQNODE_p		pOtherAndOp;
-	FQNODE_p		pOtherAndOpCopy = NULL;
-	FQNODE_p		pOrLeftOp;
-	FQNODE_p		pOrRightOp;
-	FQNODE_p		pNewAndOp1;
-	FQNODE_p		pNewAndOp2;
-	FQNODE_p		pNewOrOp;
-	FQNODE_p		pAndParent;
-	FQNODE_p		pCurrNode;
+	FQNODE *		pTree = *ppTree;
+	FQNODE *		pOrOp;
+	FQNODE *		pOtherAndOp;
+	FQNODE *		pOtherAndOpCopy = NULL;
+	FQNODE *		pOrLeftOp;
+	FQNODE *		pOrRightOp;
+	FQNODE *		pNewAndOp1;
+	FQNODE *		pNewAndOp2;
+	FQNODE *		pNewOrOp;
+	FQNODE *		pAndParent;
+	FQNODE *		pCurrNode;
 	FLMBOOL		bStratified = TRUE;
 	void *		pvMark = GedPoolMark( pPool);
 	FLMUINT		uiCount = 0;
@@ -1081,7 +1081,7 @@ Desc: Prepares a query for subsequent use by partitioning it and optimizing
 		its subqueries.
 ****************************************************************************/
 RCODE flmCurPrep(
-	CURSOR_p	pCursor)
+	CURSOR *	pCursor)
 {
 	RCODE		rc = FERR_OK;
 	FLMBOOL	bStratified;

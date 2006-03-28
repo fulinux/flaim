@@ -33,7 +33,7 @@
 #define F_64BIT_FHDL_LIST_SIZE						8
 #define F_64BIT_FHDL_DEFAULT_MAX_FILE_SIZE		((FLMUINT)0xFFFFFFFF)
 
-typedef struct
+typedef struct FH_INFO
 {
 	F_FileHdl *		pFileHdl;
 	FLMUINT			uiFileNum;

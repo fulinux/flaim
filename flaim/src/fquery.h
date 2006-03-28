@@ -126,23 +126,10 @@ Desc:	 	Macros used for determining the nature and precedence of OP codes.
 			(((left) < (right)) ?  -1 : 1 ))
 
 
-typedef struct QueryAtom *				FQATOM_p;
-typedef struct QueryNode *				FQNODE_p;
-typedef struct QPredicateInfo *		QPREDICATE_p;
-typedef struct QFieldPredicateTag *	QFIELD_PREDICATE_p;
-typedef struct QIndexTag *				QINDEX_p;
-typedef struct QueryTreeInfo *		QTINFO_p;
-typedef struct Set_Delimeter *		SET_DEL_p;
-typedef struct FQKey *					FQKEY_p;
-typedef struct SubQuery *				SUBQUERY_p;
-typedef struct FQCursor *				CURSOR_p;
-typedef struct PositionKey *			POS_KEY_p;
-
 /****************************************************************************
-Structures used for the query tree and other stuff
+Desc:
 ****************************************************************************/
-
-typedef struct FlmQueryField
+typedef struct F_QUERY_FLD
 {
 	FLMUINT *				puiFldPath;		// In child-to-parent order.
 	FLMUINT *				puiPToCPath;	// In parent-to-child order.
@@ -150,17 +137,21 @@ typedef struct FlmQueryField
 	FLMBOOL					bValidateOnly;
 	void *					pvUserData;
 	FLMUINT					uiUserDataLen;
-} F_QUERY_FLD, * F_QUERY_FLD_p;
+} F_QUERY_FLD;
 
-typedef struct QueryAtom
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct FQATOM
 {
-	FQATOM_p		pNext;					// Atoms are chained in some areas.
+	FQATOM *		pNext;					// Atoms are chained in some areas.
 	FlmRecord *	pFieldRec;
 	QTYPES		eType;					// From enum qTypes in FLAIM.H.  
 												// Describes this atom.  Value from 0
 												// to FLM_Q_MAX_TYPES.
 	FLMUINT		uiFlags;
 	FLMUINT		uiBufLen;				// Length if the type is text or binary
+	
 	union
 	{
 		FLMUINT					uiBool;
@@ -175,20 +166,25 @@ typedef struct QueryAtom
 	} val;									// Holds or points to the atom value.
 } FQATOM;
 
-
-typedef struct QueryNode
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct FQNODE
 {
-	QTYPES      eOpType;					// Type of QueryNode - see enum qTypes
+	QTYPES		eOpType;					// Type of QueryNode - see enum qTypes
 	FLMUINT		uiNestLvl;				// Nesting level of query node.
-	FLMUINT     uiStatus;				// Status of node - defs in FLAIM.h
-	FQNODE_p    pParent;					// Parent of this query node
-	FQNODE_p    pPrevSib;				// Previous sibling of this query node
-	FQNODE_p    pNextSib;				// Next sibling of this query node
-	FQNODE_p    pChild;					// Child of this query node
-	FQATOM_p    pQAtom;					// Atomic value(s) of this query node
+	FLMUINT		uiStatus;				// Status of node - defs in FLAIM.h
+	FQNODE *		pParent;					// Parent of this query node
+	FQNODE *		pPrevSib;				// Previous sibling of this query node
+	FQNODE *		pNextSib;				// Next sibling of this query node
+	FQNODE *		pChild;					// Child of this query node
+	FQATOM *		pQAtom;					// Atomic value(s) of this query node
 } FQNODE;
 
-typedef struct QPredicateInfo
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct QPREDICATE
 {
 	FQNODE *			pPredNode;			// Root node of this predicate - unless
 												// it is an exists operator or not exists,
@@ -209,19 +205,25 @@ typedef struct QPredicateInfo
 	FLMBOOL			bReturnsTrueOnNullRec;
 												// Does this predicate return NULL when
 												// evaluated on an empty record?
-	QPREDICATE_p	pNext;				// Next predicate in the list.
+	QPREDICATE *	pNext;				// Next predicate in the list.
 } QPREDICATE;
 
-typedef struct QFieldPredicateTag
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct QFIELD_PREDICATE
 {
-	QPREDICATE_p			pPredicate;	// Pointer to predicate
-	IFD_p						pIfd;			// IFD for this predicate's field.
+	QPREDICATE *			pPredicate;	// Pointer to predicate
+	IFD *						pIfd;			// IFD for this predicate's field.
 	FLMUINT					uiRank;		// Ranking of this predicate with respect
 												// to this IFD.
-	QFIELD_PREDICATE_p	pNext;		// Next predicate involving same field
+	QFIELD_PREDICATE *	pNext;		// Next predicate involving same field
 } QFIELD_PREDICATE;
 
-typedef struct QIndexTag
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct QINDEX
 {
 	FLMUINT					uiIndexNum;
 	FLMUINT					uiNumFields;
@@ -231,20 +233,23 @@ typedef struct QIndexTag
 																	// It doesn't matter which.
 	FLMBOOL					bMultiplePredsOnIfd;			// Some IFD has multiple
 																	// predicates.
-	IXD_p						pIxd;
+	IXD *						pIxd;
 	QFIELD_PREDICATE **	ppFieldPredicateList;	// One for each IFD
 	FLMUINT					uiNumPredicatesCovered;
 	FLMUINT					uiRank;
-	QINDEX_p					pNext;
-	QINDEX_p					pPrev;
+	QINDEX *					pNext;
+	QINDEX *					pPrev;
 } QINDEX;
 
-typedef struct QueryTreeInfo
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct QTINFO
 {
-	FQNODE_p					pTopNode;
-	FQNODE_p					pCurOpNode;
-	FQNODE_p					pCurAtomNode;
-	FQNODE_p					pSaveQuery;
+	FQNODE *					pTopNode;
+	FQNODE *					pCurOpNode;
+	FQNODE *					pCurAtomNode;
+	FQNODE *					pSaveQuery;
 	FLMUINT					uiNestLvl;		// Number of unclosed left parens
 	FLMUINT					uiExpecting;	// Next thing that should be pushed
 		#define FLM_Q_PAREN       1
@@ -261,8 +266,10 @@ typedef struct QueryTreeInfo
 	FLMUINT					uiNumPredicates;
 } QTINFO;
 
-
-typedef struct Set_Delimeter
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct SET_DEL
 {
 	FLMBYTE *	pKeyBuf;
 	FLMUINT		uiKeyBufLen;
@@ -271,29 +278,35 @@ typedef struct Set_Delimeter
 	FLMUINT		uiAttr;
 } SET_DEL;
 
-typedef struct FQKey
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct FQKEY
 {
 	SET_DEL     FromKey;
 	SET_DEL     UntilKey;
-	FQKEY_p     pNext;
-	FQKEY_p     pPrev;
+	FQKEY *     pNext;
+	FQKEY *     pPrev;
 } FQKEY;
 
-typedef struct PositionKey
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct POS_KEY
 {
 	FLMBYTE *	pucKey;
 	FLMUINT		uiKeyLen;
 	FLMUINT		uiDrn;		// May be domain if not leaf level key.
 } POS_KEY;
 
-
-// Major structures:  CURSOR, SUBQUERY
-
-typedef struct SubQuery
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct SUBQUERY
 {
-	SUBQUERY_p				pNext;
-	SUBQUERY_p				pPrev;
-	FQNODE_p					pTree;
+	SUBQUERY *				pNext;
+	SUBQUERY *				pPrev;
+	FQNODE *					pTree;
 	OPT_INFO					OptInfo;
 	FSIndexCursor *		pFSIndexCursor;	// Used of OptInfo.eOptType is
 														// QOPT_USING_INDEX
@@ -321,25 +334,28 @@ typedef struct SubQuery
 	FLMUINT					uiCurrKeyMatch;
 } SUBQUERY;
 
-typedef struct FQCursor
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct CURSOR
 {
-	FDB_p						pDb;
+	FDB *						pDb;
 	FLMUINT					uiContainer;
 	FLMUINT					uiRecType;
 	FLMUINT					uiIndexNum;
 
 	// Query tree and subqueries.
 
-	FQNODE_p					pTree;
-	SUBQUERY_p				pSubQueryList;
-	SUBQUERY_p				pCurrSubQuery;
-	SUBQUERY_p				pSaveSubQuery;
+	FQNODE *					pTree;
+	SUBQUERY *				pSubQueryList;
+	SUBQUERY *				pCurrSubQuery;
+	SUBQUERY *				pSaveSubQuery;
 	FLMBOOL					bInvTrans;
 	FLMUINT					uiTransSeq;
 
 	// Positioning keys.
 
-	POS_KEY_p				pPosKeyArray;
+	POS_KEY *				pPosKeyArray;
 	FLMUINT					uiNumPosKeys;
 	FLMBOOL					bLeafLevel;
 	FLMUINT					uiLastPrcntPos;
@@ -366,38 +382,38 @@ typedef struct FQCursor
 	RCODE       			ReadRc;				// Will only be SUCCESS, FRC_EOF_HIT,
 														// or FRC_BOF_HIT
 	FLMUINT					uiTimeLimit;
-	CS_CONTEXT_p			pCSContext;
+	CS_CONTEXT *			pCSContext;
 	FLMUINT					uiCursorId;
 } CURSOR;
 
 typedef RCODE FQ_OPERATION(
-	FQATOM_p	lhs,							// Left hand side
-	FQATOM_p	rhs,							// Right hand side
-	FQATOM_p	pResult);					// Newly allocated result side
+	FQATOM *	lhs,							// Left hand side
+	FQATOM *	rhs,							// Right hand side
+	FQATOM *	pResult);					// Newly allocated result side
 
 RCODE flmCurDbInit(
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 
 void flmSQFree(
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMBOOL		bFreeEverything);
 
 void flmCurFinishTrans(			
-	CURSOR_p		pCursor);
+	CURSOR *		pCursor);
 	
 RCODE flmCurSavePosition(
-	CURSOR_p	pCursor);
+	CURSOR *	pCursor);
 
 RCODE flmCurRestorePosition(
-	CURSOR_p	pCursor);
+	CURSOR *	pCursor);
 
 void flmCurFree(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFinishTrans);
 
 RCODE flmCurSearch(
 	eFlmFuncs		eFlmFuncId,
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMBOOL			bFirstRead,
 	FLMBOOL			bReadForward,
 	FLMUINT *		puiCount,
@@ -406,26 +422,26 @@ RCODE flmCurSearch(
 	FLMUINT *		puiDrn);
 
 RCODE flmInitCurCS(
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 RCODE flmCurGetAtomVal(
 	FlmRecord *		pRecord,
 	void *			pField,
 	POOL *			pPool,
 	QTYPES			eFldType,
-	FQATOM_p			pResult);
+	FQATOM *			pResult);
 
 RCODE flmCurEvalCriteria(
-	CURSOR_p			pCursor,
-	SUBQUERY_p		pSubQuery,
+	CURSOR *			pCursor,
+	SUBQUERY *		pSubQuery,
 	FlmRecord *		pRecord,
 	FLMBOOL			bHaveKey,
 	FLMUINT *		puiResult);
 
 void flmCompareOperands(
 	FLMUINT			uiLang,
-	FQATOM_p			pLhs,
-	FQATOM_p			pRhs,
+	FQATOM *			pLhs,
+	FQATOM *			pRhs,
 	QTYPES			eOp,
 	FLMBOOL			bResolveUnknown,
 	FLMBOOL			bForEvery,
@@ -435,35 +451,35 @@ void flmCompareOperands(
 
 RCODE flmCurEvalCompareOp(
 	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
+	SUBQUERY *		pSubQuery,
 	FlmRecord *		pRecord,
-	FQNODE_p			pQNode,
+	FQNODE *			pQNode,
 	QTYPES			eOp,
 	FLMBOOL			bHaveKey,
-	FQATOM_p			pResult);
+	FQATOM *			pResult);
 
 RCODE flmCurDoNeg(
-	FQATOM_p			pResult);
+	FQATOM *			pResult);
 
 FLMUINT flmCurDoMatchOp(
-	FQATOM_p			lhs,
-	FQATOM_p			rhs,
+	FQATOM *			lhs,
+	FQATOM *			rhs,
 	FLMUINT			uiLang,
 	FLMBOOL			bLeadingWildCard,
 	FLMBOOL			bTrailingWildCard);
 
 FLMINT flmCurDoRelationalOp(
-	FQATOM_p			lhs,
-	FQATOM_p			rhs,
+	FQATOM *			lhs,
+	FQATOM *			rhs,
 	FLMUINT			uiLang);	
 
 FLMUINT flmCurDoContainsOp(
-	FQATOM_p			lhs,
-	FQATOM_p			rhs,
+	FQATOM *			lhs,
+	FQATOM *			rhs,
 	FLMUINT			uiLang);
 
 RCODE flmCurDoNeg(
-	FQATOM_p			pResult);
+	FQATOM *			pResult);
 
 FLMINT flmTextCompare(
 	FLMBYTE *		pLeftBuf,
@@ -485,60 +501,60 @@ FLMUINT flmTextMatch(
 
 RCODE flmCurMakeKeyFromRec(
 	FDB *				pDb,
-	IXD_p				pIxd,
+	IXD *				pIxd,
 	POOL *			pPool,
 	FlmRecord *		pRec,
 	FLMBYTE **		ppucKeyBuffer,
 	FLMUINT *		puiKeyLen);
 
 RCODE flmCurSetPosFromDRN(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMUINT			uiDRN);
 
 RCODE flmCurCopyQNode(
-	FQNODE_p			pSrcNode,
-	QTINFO_p			pDestQTInfo,
-	FQNODE_p  * 	ppDestNode,
+	FQNODE *			pSrcNode,
+	QTINFO *			pDestQTInfo,
+	FQNODE *  * 	ppDestNode,
 	POOL *			pPool);
 
 RCODE flmCurPrep(
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 void flmCurFreePosKeys(
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 RCODE flmCurSetupPosKeyArray(
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 RCODE flmCurGetPercentPos(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMUINT *		puiPrcntPos);
 	
 RCODE flmCurSetPercentPos(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMUINT			uiPrcntPos);
 	
 RCODE flmSQSetupFullContainerScan(
-	SUBQUERY_p	pSubQuery);
+	SUBQUERY *	pSubQuery);
 
 RCODE flmCurOptimize(
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMBOOL			bStratified);
 
 RCODE flmCurPartitionTree(
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 RCODE flmCurAddRefPredicate(
-	QTINFO_p					pQTInfo,
+	QTINFO *					pQTInfo,
 	FlmUserPredicate *	pPredicate);
 
 void flmCurLinkFirstChild(
-	FQNODE_p			pParent,
-	FQNODE_p			pChild);
+	FQNODE *			pParent,
+	FQNODE *			pChild);
 
 void flmCurLinkLastChild(
-	FQNODE_p			pParent,
-	FQNODE_p			pChild);
+	FQNODE *			pParent,
+	FQNODE *			pChild);
 
 RCODE flmPutValInAtom(
 	void *			pAtom,
@@ -553,21 +569,21 @@ RCODE flmCurMakeQNode(
 	void *			pVal,
 	FLMUINT			uiStrLen,
 	FLMUINT			uiFlags,
-	FQNODE_p  *		ppQNode);
+	FQNODE *  *		ppQNode);
 
 RCODE flmCurGraftNode(
 	POOL *			pPool,
-	FQNODE_p			pQNode,
+	FQNODE *			pQNode,
 	QTYPES			eGraftOp,
-	FQNODE_p  *		ppQTree);
+	FQNODE *  *		ppQTree);
 
 void flmLogQuery(
 	F_LogMessage *	pLogMsg,
 	FLMUINT			uiIndent,
-	CURSOR_p			pCursor);
+	CURSOR *			pCursor);
 
 FINLINE void flmCurFinishTransactions(
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bSetToNull)
 {
 	flmCurFinishTrans( pCursor);
@@ -578,7 +594,7 @@ FINLINE void flmCurFinishTransactions(
 }
 
 void flmCurFreeSQList(
-	CURSOR_p	pCursor,
+	CURSOR *	pCursor,
 	FLMBOOL	bFreeEverything);
 
 FLMUINT flmGetPathLen(

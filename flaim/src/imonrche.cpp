@@ -459,7 +459,7 @@ RCODE F_RCachePage::display(
 	RCACHE *				pOlderRCache;
 	RCACHE *				pNewerRCache;
 	char					szFile[GENERIC_SIZE];
-	FFILE_p				pFile;
+	FFILE *				pFile;
 	char					szFrom[GENERIC_SIZE];
 	char					szBucket[GENERIC_SIZE];
 	FLMUINT				uiBucket;
@@ -563,7 +563,7 @@ RCODE F_RCachePage::display(
 		{
 			goto Exit;
 		}
-		pFile = (FFILE_p)f_atoud( szFile);
+		pFile = (FFILE *)f_atoud( szFile);
 
 		// Version tag
 		if (RC_BAD(rc = ExtractParameter( uiNumParams, 
@@ -799,7 +799,7 @@ void F_RCachePage::write_data(
 		
 		printHTMLLink(
 			"pFile",
-			"FFILE_p",
+			"FFILE *",
 			(void *)pRCache,
 			(void *)&pRCache->pFile,
 			(void *)pRCache->pFile,
@@ -1064,7 +1064,7 @@ void F_RCachePage::write_data(
 		
 		printHTMLLink(
 			"pNotifyList",
-			"FNOTIFY_p",
+			"FNOTIFY *",
 			(void *)pRCache,
 			(void *)&pRCache->pNotifyList,
 			(void *)pRCache->pNotifyList,
@@ -1108,7 +1108,7 @@ RCODE F_RecordPage::display(
 	RCACHE *				pOlderRCache;
 	RCACHE *				pNewerRCache;
 	char					szFile[GENERIC_SIZE];
-	FFILE_p				pFile;
+	FFILE *				pFile;
 	FlmRecord *			pRecord = NULL;
 	FLMBOOL				bpFileInc = FALSE;
 	FLMBYTE *			pszTemp = NULL;
@@ -1150,7 +1150,7 @@ RCODE F_RecordPage::display(
 	{
 		goto Exit;
 	}
-	pFile = (FFILE_p)f_atoud( szFile);
+	pFile = (FFILE *)f_atoud( szFile);
 
 
 

@@ -39,8 +39,6 @@ class F_FileHdlPage;
 class F_ListMgr;
 class F_MutexRef;
 
-typedef F_FileHdlMgr *		F_FileHdlMgr_p;
-
 #define	FHM_AVAIL_LIST		0
 #define	FHM_USED_LIST		1
 #define	FHM_LNODE_COUNT	2
@@ -48,7 +46,7 @@ typedef F_FileHdlMgr *		F_FileHdlMgr_p;
 RCODE flmCloseAllFiles();
 
 RCODE DetermineLockMgr(
-	FFILE_p			pFile,
+	FFILE *			pFile,
 	F_FileHdlImp *	pFileHdl);
 
 RCODE flmCopyPartial(
@@ -217,9 +215,15 @@ private:
 		FLMBOOL				bReadOnlyFlag,	// TRUE if looking for read only file
 		F_FileHdlImp **	ppFileHdl);		// [out] returned F_FileHdlImp object.
 
-	RCODE InsertNew(
+	FINLINE RCODE InsertNew(
 		F_MutexRef *		pMutexRef,
-		F_FileHdlImp *		pFileHdl);		// FileHdl to add to this manager.
+		F_FileHdlImp *		pFileHdl)		// FileHdl to add to this manager.
+	{
+		pMutexRef->Lock();							// ENTER CRITICAL SECTION
+		m_ListMgr.InsertAtEnd( FHM_USED_LIST, (F_ListItem *)pFileHdl);
+		pMutexRef->Unlock();							// EXIT CRITICAL SECTION
+		return( FERR_OK);
+	}
 
 	RCODE MakeAvailAndRelease(			// Make the specified F_FileHdlImp available for
 												// someone else to use.

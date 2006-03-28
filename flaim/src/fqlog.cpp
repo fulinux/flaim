@@ -331,7 +331,7 @@ FSTATIC void flmLogText(
 		}
 
 		ucChar = *pucBuf;
-		uiObjType = GedTextObjType( ucChar);
+		uiObjType = flmTextObjType( ucChar);
 		switch (uiObjType)
 		{
 			case ASCII_CHAR_CODE:  			// 0nnnnnnn
@@ -546,7 +546,7 @@ FSTATIC void flmLogSubQuery(
 	SUBQUERY *		pSubQuery
 	)
 {
-	FQNODE_p		pQNode;
+	FQNODE *		pQNode;
 	QTYPES		eCurrentOp;
 	QTYPES		eTmpParentOp;
 	FLMBYTE *	pucFromKey;
@@ -623,7 +623,7 @@ FSTATIC void flmLogSubQuery(
 				bIndentOptInfo = FALSE;
 				pLogMsg->newline();
 				uiIndent += 2;
-				flmLogQuery( pLogMsg, uiIndent, (CURSOR_p)hCursor);
+				flmLogQuery( pLogMsg, uiIndent, (CURSOR *)hCursor);
 				uiIndent -= 2;
 				flmLogIndent( pLogMsg, uiIndent);
 				flmLogOperator( pLogMsg, FLM_RPAREN_OP, FALSE);
@@ -844,7 +844,7 @@ Desc:	This routine logs the query criteria for a cursor.
 void flmLogQuery(
 	F_LogMessage *	pLogMsg,
 	FLMUINT			uiIndent,
-	CURSOR_p			pCursor
+	CURSOR *			pCursor
 	)
 {
 	SUBQUERY *	pSubQuery;

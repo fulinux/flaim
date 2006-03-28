@@ -69,6 +69,7 @@ FSTATIC RCODE flmRenameFile(
 		{
 			*pbFileFound = TRUE;
 		}
+		
 		goto Exit;
 	}
 
@@ -154,11 +155,14 @@ FSTATIC RCODE flmRenameFile(
 
 		pRenameFile = NULL;
 	}
+	
 Exit:
+
 	if (pRenameFile)
 	{
 		f_free( &pRenameFile);
 	}
+	
 	return( rc);
 }
 
@@ -222,6 +226,7 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	{
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = f_pathReduce( pszNewDbName, pszNewName, szNewBase)))
 	{
 		goto Exit;
@@ -336,6 +341,7 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 
 	pszExtNew = pszNewName + f_strlen( pszNewName) - 1;
 	pszDataExtNew = pszNewDataName + f_strlen( pszNewDataName) - 1;
+	
 	while (pszExtNew != pszOldName && *pszExtNew != '.')
 	{
 		pszExtNew--;
@@ -346,6 +352,7 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 
 		pszDataExtNew--;
 	}
+	
 	if (*pszExtNew != '.')
 	{
 		pszExtNew = pszNewName + f_strlen( pszNewName);
@@ -411,21 +418,24 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 		{
 			goto Exit;
 		}
+		
 		if (!bFileFound)
 		{
 			break;
 		}
+		
 		if (uiFileNumber ==
 				MAX_LOG_BLOCK_FILE_NUMBER( FileHdr.uiVersionNum))
 		{
 			break;
 		}
+		
 		uiFileNumber++;
 	}
 
 	// Rename roll-forward log files.
 
-	if (FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// For pre-4.3 versions, only need to rename one RFL file.
@@ -476,10 +486,12 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	}
 
 Exit:
+
 	if (pFileHdl)
 	{
 		pFileHdl->Release();
 	}
+	
 	if (pucBuffer)
 	{
 		f_free( &pucBuffer);
@@ -502,7 +514,9 @@ Exit:
 			gv_FlmSysData.pFileSystem->Rename( pRenameFile->Info.szDstFileName,
 														  pRenameFile->Info.szSrcFileName);
 		}
+		
 		f_free( &pRenameFile);
 	}
+	
 	return( rc);
 }

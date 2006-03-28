@@ -37,7 +37,7 @@ typedef FLMUINT64					ESMADDR64;
 	#pragma pack(push, 1)
 #endif
 
-typedef struct
+typedef struct ESMQueryInfo
 {
 	FLMUINT64		ui64TotalExtendedMemory;
 	FLMUINT64		ui64RemainingExtendedMemory;
@@ -74,7 +74,7 @@ typedef FLMUINT (* ESM_MAP_MEM_FUNC)(
 	ESMADDR64			esmAddress,
 	FLMUINT32			ui32Size);
 
-typedef struct
+typedef struct ECACHE_HDR
 {
 	ESMADDR64		esmAddr;
 	FLMUINT			uiStartBlkAddr;

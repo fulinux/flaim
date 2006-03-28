@@ -203,7 +203,7 @@ FSTATIC FLMINT ViewSetupLogHeaderMenu(
 
 	/* Display the maximum roll-forward log file size. */
 
-	if( uiDbVersion >= FLM_VER_4_3)
+	if( uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		if (!ViewAddMenuItem( LBL_RFL_MAX_FILE_SIZE, LABEL_WIDTH,
 					VAL_IS_NUMBER | DISP_DECIMAL_HEX,
@@ -227,7 +227,7 @@ FSTATIC FLMINT ViewSetupLogHeaderMenu(
 			Col, Row++, 0, bc, fc, bc, fc))
 		return( 0);
 
-	if (uiDbVersion >= FLM_VER_4_3)
+	if (uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		/* Display the auto turn off aborted transactions flag. */
@@ -268,7 +268,7 @@ FSTATIC FLMINT ViewSetupLogHeaderMenu(
 
 	/* Display the last committed transaction ID */
 
-	if( uiDbVersion >= FLM_VER_4_31)
+	if( uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		if (!ViewAddMenuItem( LBL_LAST_RFL_COMMIT_ID, LABEL_WIDTH,
 					VAL_IS_NUMBER | DISP_DECIMAL,
@@ -389,7 +389,7 @@ FSTATIC FLMINT ViewSetupLogHeaderMenu(
 			Col, Row++, 0, bc, fc, bc, fc))
 		return( 0);
 
-	if (uiDbVersion >= FLM_VER_4_3)
+	if (uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		FLMBYTE		ucBuf[ 64];
 

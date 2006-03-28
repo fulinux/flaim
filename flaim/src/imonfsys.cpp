@@ -146,7 +146,7 @@ void F_FlmSysDataPage::write_data(
 	
 	printHTMLLink(
 		"pMrnuFile",
-		"FFILE_p",
+		"FFILE *",
 		(void *)&gv_FlmSysData,
 		(void *)&gv_FlmSysData.pMrnuFile,
 		(void *)gv_FlmSysData.pMrnuFile,
@@ -168,7 +168,7 @@ void F_FlmSysDataPage::write_data(
 	
 	printHTMLLink(
 		"pLrnuFile",
-		"FFILE_p",
+		"FFILE *",
 		(void *)&gv_FlmSysData,
 		(void *)&gv_FlmSysData.pLrnuFile,
 		(void *)gv_FlmSysData.pLrnuFile,
@@ -183,7 +183,7 @@ void F_FlmSysDataPage::write_data(
 
 	printHTMLLink(
 		"pFileHashTbl",
-		"FFILE_p",
+		"FFILE *",
 		(void *)&gv_FlmSysData,
 		(void *)&gv_FlmSysData.pFileHashTbl,
 		(void *)gv_FlmSysData.pFileHashTbl,
@@ -235,7 +235,7 @@ void F_FlmSysDataPage::write_data(
 
 	printHTMLLink(
 		"pFileHdlMgr",
-		"FFILE_p",
+		"FFILE *",
 		(void *)&gv_FlmSysData,
 		(void *)&gv_FlmSysData.pFileHdlMgr,
 		(void *)gv_FlmSysData.pFileHdlMgr,
@@ -617,24 +617,6 @@ void F_FlmSysDataPage::write_data(
 		(void *)&gv_FlmSysData,
 		(void *)&gv_FlmSysData.ucBlobExt[0],
 		(char *)gv_FlmSysData.ucBlobExt,
-		(bHighlight = !bHighlight));
-
-	
-	
-	
-	// EventHdrs - Event Headers
-	f_sprintf( (char *)pszTemp, "<A HREF=\"javascript:openPopup('%s/EventHdr')\">EventHdrs</A>",
-				m_pszURLString);
-	printAddress( (void *)&gv_FlmSysData.EventHdrs, szAddress);
-	f_sprintf( (char *)pszTemp2, "<A HREF=\"javascript:openPopup('%s/EventHdr')\">%s</A>",
-				m_pszURLString, szAddress);
-
-	printHTMLString(
-		(char *)pszTemp,
-		"FEVENT_HDR",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.EventHdrs[0],
-		(char *)szAddress,
 		(bHighlight = !bHighlight));
 
 	
@@ -1128,137 +1110,6 @@ RCODE F_HttpConfigParmsPage::display(
 	fnPrintf( m_pHRequest, " </BODY> </HTML>\n");
 	fnEmit();
 
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	This implements the display method of the F_FEventHdr class
-*****************************************************************************/
-RCODE F_EventHdrPage::display(
-	FLMUINT			uiNumParams,
-	const char ** 	ppszParams)
-{
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiLoop = 0;
-	FEVENT_p		pCurrentEvent = NULL;
-
-	char			szAddress[20];
-	char			szOffset[8];
-
-	F_UNREFERENCED_PARM( uiNumParams);
-	F_UNREFERENCED_PARM( ppszParams);
-
-
-	printDocStart(	"EventHdrs", FALSE);
-	
-	for (uiLoop = 0; uiLoop < F_MAX_EVENT_CATEGORIES; uiLoop++)
-	{
-				
-
-		f_sprintf( (char *)szAddress, "EventHdrs[%lu]\n", uiLoop);
-		printTableStart( (char *)szAddress, 4);
-
-		printColumnHeading( "Byte Offset (hex)");
-		printColumnHeading( "Field Name");
-		printColumnHeading( "Field Type");
-		printColumnHeading( "Value");
-
-		printAddress( (void *)gv_FlmSysData.EventHdrs[uiLoop].pEventCBList, szAddress);
-		printOffset( &gv_FlmSysData.EventHdrs[uiLoop],
-						 &gv_FlmSysData.EventHdrs[uiLoop].pEventCBList,
-						 szOffset);
-		printTableRowStart();
-		fnPrintf( m_pHRequest, TD_s "<TD>pEventCBList</TD> <TD>FEVENT_p</TD>" TD_s,
-					 szOffset, szAddress);
-		printTableRowEnd();
-
-		printAddress( (void *)gv_FlmSysData.EventHdrs[uiLoop].hMutex, szAddress);
-		printOffset( &gv_FlmSysData.EventHdrs[uiLoop],
-						 &gv_FlmSysData.EventHdrs[uiLoop].hMutex,
-						 szOffset);
-		printTableRowStart( TRUE);
-		fnPrintf( m_pHRequest, TD_s "<TD>hMutex</TD> <TD>F_MUTEX</TD>" TD_s,
-					 szOffset, szAddress);
-		printTableRowEnd();
-		
-		printTableEnd();
-
-		f_mutexLock( gv_FlmSysData.EventHdrs[uiLoop].hMutex);
-		pCurrentEvent = gv_FlmSysData.EventHdrs[uiLoop].pEventCBList;
-		while (pCurrentEvent)
-		{
-			displayEvent( pCurrentEvent);
-			pCurrentEvent = pCurrentEvent->pNext;
-		} // end of while loop
-		f_mutexUnlock( gv_FlmSysData.EventHdrs[uiLoop].hMutex);
-		fnPrintf( m_pHRequest, "<BR>\n");
-		
-	}  // end of for loop
-		
-		
-	fnPrintf( m_pHRequest, " </BODY> </HTML>\n");
-	fnEmit();
-	return( rc);
-}
-
-
-/****************************************************************************
-Desc:	Displays a single FEVENT struct.  Assumes that the event mutex has
-		already been locked!
-*****************************************************************************/
-RCODE F_EventHdrPage::displayEvent(
-	FEVENT_p			pCurrentEvent)
-{
-	RCODE			rc = FERR_OK;
-	char			szOffset[8];
-	char			szAddress[20];
-	char			szTitle[30];
-	
-	printAddress( (void *)pCurrentEvent, szAddress);
-	f_sprintf( (char *)szTitle, "FEVENT  %s", szAddress);
-	printTableStart( (char *)szTitle, 4);
-
-	printColumnHeading( "Byte Offset (hex)");
-	printColumnHeading( "Field Name");
-	printColumnHeading( "Field Type");
-	printColumnHeading( "Value");
-
-	printOffset( pCurrentEvent, &pCurrentEvent->eCategory, szOffset);
-	printTableRowStart();
-	fnPrintf( m_pHRequest, TD_s "<TD>eCategory</TD> <TD>FEventCategory</TD>" TD_lu,
-				 szOffset, pCurrentEvent->eCategory);
-	printTableRowEnd();
-
-	printAddress( *((void **)&pCurrentEvent->fnEventCB), szAddress);
-	printOffset( pCurrentEvent, &pCurrentEvent->fnEventCB, szOffset);
-	printTableRowStart( TRUE);
-	fnPrintf( m_pHRequest, TD_s "<TD>fnEventCB</TD> <TD>FEVENT_CB</TD>" TD_s,
-				 szOffset, szAddress);
-	printTableRowEnd();
-
-	printAddress( (void *)pCurrentEvent->pvAppData, szAddress);
-	printOffset( pCurrentEvent, &pCurrentEvent->pvAppData, szOffset);
-	printTableRowStart();
-	fnPrintf( m_pHRequest, TD_s "<TD>pvAppData</TD> <TD>void *</TD>" TD_s,
-				 szOffset, szAddress);
-	printTableRowEnd();
-
-	printAddress( (void *)pCurrentEvent->pNext, szAddress);
-	printOffset( pCurrentEvent, &pCurrentEvent->pNext, szOffset);
-	printTableRowStart( TRUE);
-	fnPrintf( m_pHRequest, TD_s "<TD>pNext</TD> <TD>FEVENT_p</TD>" TD_s,
-				 szOffset, szAddress);
-	printTableRowEnd();
-
-	printAddress( (void *)pCurrentEvent->pPrev, szAddress);
-	printOffset( pCurrentEvent, &pCurrentEvent->pPrev, szOffset);
-	printTableRowStart();
-	fnPrintf( m_pHRequest, TD_s "<TD>pPrev</TD> <TD>FEVENT_p</TD>" TD_s,
-				 szOffset, szAddress);
-	printTableRowEnd();
-
-	printTableEnd();
 
 	return( rc);
 }

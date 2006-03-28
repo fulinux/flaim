@@ -25,17 +25,17 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE FSConvertNonLeafTree(
-	FDB_p			pDb,
+	FDB *			pDb,
 	LFILE *		pLFile,
-	BTSK_p		pOldStack,	
-	BTSK_p		pOldStackBase,
+	BTSK *		pOldStack,	
+	BTSK *		pOldStackBase,
 	FLMUINT		uiNewVersion,
 	STATUS_HOOK	fnStatusCallback,
 	void *	 	UserData,
 	DB_UPGRADE_INFO * pDbConvertInfo);
 
 FSTATIC void FSBuildNonLeafDataElement(
-	BTSK_p		pStack,
+	BTSK *		pStack,
 	FLMBYTE *	pElement,
 	FLMUINT *	puiElmLen,
 	FLMUINT		uiNewElmOvhd,
@@ -45,7 +45,7 @@ FSTATIC void FSBuildNonLeafDataElement(
 Desc:		File system conversions from one version to another.
 *****************************************************************************/
 RCODE FSVersionConversion40(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiNewVersion,
 	STATUS_HOOK	fnStatusCallback,
 	void *	 	UserData)
@@ -55,7 +55,7 @@ RCODE FSVersionConversion40(
 	LFILE *		pLFileTbl;
 	FLMUINT		uiPos, uiTblSize;
 	FLMUINT		uiCurrentVersion;
-	BTSK_p		pStack;						
+	BTSK *		pStack;						
 	BTSK			stackBuf[ BH_MAX_LEVELS ];	
 	FLMBYTE		pKeyBuf[ DIN_KEY_SIZ + 4 ];
 	FLMBYTE		pDrnKey[ DIN_KEY_SIZ];
@@ -125,10 +125,10 @@ Desc:		Convert the non-leaf data blocks from one version to another version.
 			and make this the new tree while freeing up the old non-leaf blocks.
 *****************************************************************************/
 FSTATIC RCODE FSConvertNonLeafTree(
-	FDB_p			pDb,
+	FDB *			pDb,
 	LFILE *		pLFile,
-	BTSK_p		pOldStack,
-	BTSK_p		pOldStackBase,
+	BTSK *		pOldStack,
+	BTSK *		pOldStackBase,
 	FLMUINT		uiNewVersion,
 	STATUS_HOOK	fnStatusCallback,
 	void *	 	UserData,
@@ -136,7 +136,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 {
 	RCODE			rc = FERR_OK;
 	BTSK			stackBuf[ BH_MAX_LEVELS ];	
-	BTSK_p		pStack;
+	BTSK *		pStack;
 	FLMBYTE		pKeyBuf[ DIN_KEY_SIZ + 4 ];
 	FLMBYTE		pDrnKey[ DIN_KEY_SIZ];
 	FLMBYTE		pElement[ DIN_KEY_SIZ + 16];	// Enough bytes for either format
@@ -202,7 +202,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 
 	UW2FBA( BH_OVHD, &pStack->pBlk[ BH_BLK_END]);
 
-	if( uiNewVersion >= FLM_VER_4_0)
+	if( uiNewVersion >= FLM_FILE_FORMAT_VER_4_0)
 	{
 		pStack->pBlk[ BH_TYPE ] = BHT_NON_LEAF_DATA + BHT_ROOT_BLK;
 	}
@@ -233,7 +233,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 		FSBuildNonLeafDataElement( pOldStack, pElement, 
 			&uiElmLen, pStack->uiElmOvhd, &pKey);
 		
-		if( uiNewVersion <= FLM_VER_3_02)
+		if( uiNewVersion <= FLM_FILE_FORMAT_VER_3_02)
 		{
 			flmAssert( pStack->uiCurElm == pStack->uiBlkEnd);
 			if( pStack != stackBuf)
@@ -314,7 +314,7 @@ Exit:
 Desc:		Build a non-leaf data element from the current stack position.
 *****************************************************************************/
 FSTATIC void FSBuildNonLeafDataElement(
-	BTSK_p		pStack,
+	BTSK *		pStack,
 	FLMBYTE *	pElement,
 	FLMUINT *	puiElmLen,
 	FLMUINT		uiNewElmOvhd,

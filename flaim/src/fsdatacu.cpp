@@ -25,7 +25,7 @@
 #include "flaimsys.h"
 
 /****************************************************************************
-Public: Constructor
+Desc:
 ****************************************************************************/
 FSDataCursor::FSDataCursor() 
 {
@@ -37,7 +37,7 @@ FSDataCursor::FSDataCursor()
 }
 
 /****************************************************************************
-Public: Destructor
+Desc:
 ****************************************************************************/
 FSDataCursor::~FSDataCursor() 
 {
@@ -46,8 +46,7 @@ FSDataCursor::~FSDataCursor()
 }
 
 /****************************************************************************
-Public: 	reset
-Desc: 	Resets any allocations, keys, state, etc.
+Desc:	Resets any allocations, keys, state, etc.
 ****************************************************************************/
 void FSDataCursor::reset( void)
 {
@@ -69,10 +68,9 @@ void FSDataCursor::reset( void)
 
 
 /****************************************************************************
-Public: 	resetTransaction
-Desc: 	Resets to a new transaction that may change the read consistency of
-			the query.  This is usually an old view error internal or external of
-			this class.
+Desc: Resets to a new transaction that may change the read consistency of
+		the query.  This is usually an old view error internal or external of
+		this class.
 ****************************************************************************/
 RCODE FSDataCursor::resetTransaction( 
 	FDB *			pDb)
@@ -89,9 +87,7 @@ RCODE FSDataCursor::resetTransaction(
 	m_uiBlkChangeCnt = pDb->uiBlkChangeCnt;
 	m_bIsUpdateTrans = (pDb->uiTransType == FLM_UPDATE_TRANS) ? TRUE : FALSE;
 
-	/*
-	Need to release all stacks that are currently in use.
-	*/
+	// Need to release all stacks that are currently in use.
 
 	for( pTmpSet = m_pFirstSet; pTmpSet; pTmpSet = pTmpSet->pNext)
 	{
@@ -142,10 +138,8 @@ void FSDataCursor::freeSets( void)
 
 
 /****************************************************************************
-Public: 	releaseBlocks
-Desc: 	Releases the cache blocks back to cache.
+Desc:	Releases the cache blocks back to cache.
 ****************************************************************************/
-
 void FSDataCursor::releaseBlocks( void)
 {
 	RECSET *		pCurSet;
@@ -163,10 +157,9 @@ void FSDataCursor::releaseBlocks( void)
 }
 
 /****************************************************************************
-Public: 	setupRange
-Desc: 	Setup the from and until keys in the cursor.  Return counts
-			after positioning to the from and until key in the index.
-			This code does not work with multiple key sets of FROM/UNTIL keys.
+Desc:	Setup the from and until keys in the cursor.  Return counts
+		after positioning to the from and until key in the index.
+		This code does not work with multiple key sets of FROM/UNTIL keys.
 ****************************************************************************/
 RCODE FSDataCursor::setupRange(
 	FDB *			pDb,
@@ -272,8 +265,7 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	unionRange
-Desc: 	Merge the input cursors fromUntil sets as a result of a UNION.
+Desc:	Merge the input cursors fromUntil sets as a result of a UNION.
 ****************************************************************************/
 RCODE FSDataCursor::unionRange( 
 	FSDataCursor * pFSCursor)
@@ -420,8 +412,7 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	intersectRange
-Desc: 	Intersect the from/until key sets of pFSCursor into 'this'.
+Desc:	Intersect the from/until key sets of pFSCursor into 'this'.
 ****************************************************************************/
 RCODE FSDataCursor::intersectRange( 
 	FSDataCursor * pFSCursor)
@@ -548,11 +539,9 @@ FLMBOOL FSDataCursor::FSCompareRecPos(			// TRUE if keys overlap
 }
 
 /****************************************************************************
-Public: 	currentRec
 Desc: 	Return the current record and record id.
 VISIT:	We may want to return BOF/EOF when positioned on an endpoint.
 ****************************************************************************/
-
 RCODE FSDataCursor::currentRec(		// FERR_OK, FERR_EOF_HIT or error
 	FDB *				pDb,
 	FlmRecord **	ppRecord,			// Will replace what is there
@@ -595,15 +584,14 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	firstRec
-Desc: 	Position to and return the first record.
-			This is hard because positioning using the first key may actually
-			position past or into another FROM/UNTIL set in the list.
+Desc: Position to and return the first record.
+		This is hard because positioning using the first key may actually
+		position past or into another FROM/UNTIL set in the list.
 ****************************************************************************/
-RCODE FSDataCursor::firstRec(			// FERR_OK, FERR_EOF_HIT or error
+RCODE FSDataCursor::firstRec(
 	FDB *				pDb,
 	FlmRecord **	ppRecord,		// Will replace what is there
-	FLMUINT *		puiRecordId)		// Set the record ID
+	FLMUINT *		puiRecordId)	// Set the record ID
 {
 	RCODE				rc;
 
@@ -777,14 +765,13 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	lastRec
-Desc: 	Position to and return the last record.
-			This is hard because positioning using the first key may actually
-			position past or into another FROM/UNTIL set in the list.
+Desc: Position to and return the last record.
+		This is hard because positioning using the first key may actually
+		position past or into another FROM/UNTIL set in the list.
 ****************************************************************************/
-RCODE FSDataCursor::lastRec(				// FERR_OK, FERR_BOF_HIT or error
+RCODE FSDataCursor::lastRec(
 	FDB *				pDb,
-	FlmRecord **	ppRecord,		// Will replace what is there
+	FlmRecord **	ppRecord,			// Will replace what is there
 	FLMUINT *		puiRecordId)		// Set the record ID
 {
 	RCODE				rc;
@@ -912,10 +899,9 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	nextRec
-Desc: 	Position to the next key and the first reference of that key.
+Desc: Position to the next key and the first reference of that key.
 ****************************************************************************/
-RCODE FSDataCursor::nextRec(			// FERR_OK, FERR_EOF_HIT or error
+RCODE FSDataCursor::nextRec(
 	FDB *				pDb,
 	FlmRecord **	ppRecord,
 	FLMUINT *		puiRecordId)
@@ -1045,10 +1031,9 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	prevRec
-Desc: 	Position to the PREVIOUS record.
+Desc:	Position to the PREVIOUS record.
 ****************************************************************************/
-RCODE FSDataCursor::prevRec(			// FERR_OK, FERR_EOF_HIT or error
+RCODE FSDataCursor::prevRec(
 	FDB *				pDb,
 	FlmRecord **	ppRecord,
 	FLMUINT *		puiRecordId)
@@ -1295,10 +1280,9 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	positionTo
-Desc: 	Position to the input key + recordId.
+Desc:	Position to the input key + recordId.
 ****************************************************************************/
-RCODE FSDataCursor::positionTo(	// FERR_NOT_FOUND if outside set or not found
+RCODE FSDataCursor::positionTo(
 	FDB *				pDb,
 	FLMUINT			uiRecordId)
 {
@@ -1331,10 +1315,9 @@ Exit:
 };
 
 /****************************************************************************
-Public: 	positionToOrAfter
-Desc: 	Position to the input key + recordId.
+Desc:	Position to the input key + recordId.
 ****************************************************************************/
-RCODE FSDataCursor::positionToOrAfter(	// FERR_EOF_HIT or error.
+RCODE FSDataCursor::positionToOrAfter(
 	FDB *				pDb,
 	FLMUINT *		puiRecordId)
 {
@@ -1382,8 +1365,7 @@ Exit:
 };
 
 /****************************************************************************
-Public: 	savePosition
-Desc: 	Save the current position.
+Desc:	Save the current position.
 ****************************************************************************/
 RCODE FSDataCursor::savePosition( void)
 {
@@ -1404,8 +1386,7 @@ Exit:
 }
 
 /****************************************************************************
-Public: 	restorePosition
-Desc: 	Save the current position.
+Desc:	Save the current position.
 ****************************************************************************/
 RCODE FSDataCursor::restorePosition( void)
 {
@@ -1417,5 +1398,3 @@ RCODE FSDataCursor::restorePosition( void)
 
 	return FERR_OK;
 }
-
-

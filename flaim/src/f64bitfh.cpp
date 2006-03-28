@@ -69,9 +69,7 @@ void F_64BitFileHandle::ReleaseLockFile(
 	
 	if( m_pLockFileHdl)
 	{
-		/*
-		Release the lock file
-		*/
+		// Release the lock file
 
 		(void)m_pLockFileHdl->Close();
 		m_pLockFileHdl->Release();
@@ -82,9 +80,7 @@ void F_64BitFileHandle::ReleaseLockFile(
 		{
 			char		szTmpPath[ F_PATH_MAX_SIZE];
 
-			/*
-			Delete the lock file
-			*/
+			// Delete the lock file
 
 			f_strcpy( szTmpPath, pszBasePath);
 			f_pathAppend( szTmpPath, "64.LCK");
@@ -132,9 +128,7 @@ void F_64BitFileHandle::Close(
 		if( RC_OK( gv_FlmSysData.pFileSystem->OpenDir(
 			m_ucPath, "*.64", &pDir)))
 		{
-			/*
-			Remove all data files
-			*/
+			// Remove all data files
 
 			for( rc = pDir->Next(); !RC_BAD( rc) ; rc = pDir->Next() )
 			{
@@ -147,15 +141,11 @@ void F_64BitFileHandle::Close(
 			pDir = NULL;
 		}
 
-		/*
-		Release and delete the lock file
-		*/
+		// Release and delete the lock file
 
 		(void)ReleaseLockFile( m_ucPath, TRUE);
 
-		/*
-		Remove the directory
-		*/
+		// Remove the directory
 
 		(void)gv_FlmSysData.pFileSystem->RemoveDir( m_ucPath);
 	}
@@ -192,10 +182,8 @@ RCODE F_64BitFileHandle::Delete(
 
 	if( !gv_FlmSysData.pFileSystem->IsDir( pszPath))
 	{
-		/*
-		If the path specifies a single file rather than a 
-		64-bit directory, just go ahead and delete the file.
-		*/
+		// If the path specifies a single file rather than a 
+		// 64-bit directory, just go ahead and delete the file.
 	
 		rc = gv_FlmSysData.pFileSystem->Delete( pszPath);
 		goto Exit;
@@ -209,9 +197,7 @@ RCODE F_64BitFileHandle::Delete(
 	if( RC_OK( gv_FlmSysData.pFileSystem->OpenDir(
 		pszPath, "*.64", &pDir)))
 	{
-		/*
-		Remove all data files
-		*/
+		// Remove all data files
 
 		for( rc = pDir->Next(); !RC_BAD( rc) ; rc = pDir->Next())
 		{
@@ -225,22 +211,17 @@ RCODE F_64BitFileHandle::Delete(
 		rc = FERR_OK;
 	}
 
-	/*
-	Release and delete the lock file
-	*/
+	// Release and delete the lock file
 
 	(void)ReleaseLockFile( pszPath, TRUE);
 
-	/*
-	Remove the directory
-	*/
+	// Remove the directory
 
 	(void)gv_FlmSysData.pFileSystem->RemoveDir( pszPath);
 
 Exit:
 
 	(void)ReleaseLockFile( pszPath, FALSE);
-
 	return( rc);
 }
 
@@ -267,27 +248,21 @@ RCODE F_64BitFileHandle::Create(
 	f_strcpy( m_ucPath, pszPath);
 	bCreatedDir = TRUE;
 
-	/*
-	Create the lock file
-	*/
+	// Create the lock file
 
 	if( RC_BAD( rc = CreateLockFile( m_ucPath)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Initialize the EOF to 0 and set the state to open
-	*/
+	// Initialize the EOF to 0 and set the state to open
 	
 	m_ui64EOF = 0;
 	m_bOpen = TRUE;
 
 Exit:
 
-	/*
-	Release the lock file
-	*/
+	// Release the lock file
 
 	if( RC_BAD( rc))
 	{
@@ -364,27 +339,21 @@ RCODE F_64BitFileHandle::CreateUnique(
 	f_strcpy( m_ucPath, szTmpPath);
 	bCreatedDir = TRUE;
 
-	/*
-	Create the lock file
-	*/
+	// Create the lock file
 
 	if( RC_BAD( rc = CreateLockFile( m_ucPath)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Initialize the EOF to 0 and set the state to open
-	*/
+	// Initialize the EOF to 0 and set the state to open
 	
 	m_ui64EOF = 0;
 	m_bOpen = TRUE;
 
 Exit:
 
-	/*
-	Release the lock file
-	*/
+	// Release the lock file
 
 	if( RC_BAD( rc))
 	{
@@ -426,18 +395,14 @@ RCODE F_64BitFileHandle::Open(
 
 	f_strcpy( m_ucPath, pszPath);
 
-	/*
-	Create the lock file
-	*/
+	// Create the lock file
 
 	if( RC_BAD( rc = CreateLockFile( m_ucPath)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Need to determine the current EOF
-	*/
+	// Need to determine the current EOF
 
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenDir(
 		m_ucPath, "*.64", &pDir)))
@@ -445,9 +410,7 @@ RCODE F_64BitFileHandle::Open(
 		goto Exit;
 	}
 
-	/*
-	Find all data files to determine the EOF
-	*/
+	// Find all data files to determine the EOF
 
 	for( rc = pDir->Next(); !RC_BAD( rc) ; rc = pDir->Next() )
 	{
@@ -473,9 +436,7 @@ Exit:
 		pDir->Release();
 	}
 
-	/*
-	Release the lock file
-	*/
+	// Release the lock file
 
 	if( RC_BAD( rc))
 	{
@@ -534,9 +495,7 @@ RCODE F_64BitFileHandle::Read(
 	FLMUINT			uiMaxReadLen;
 	F_FileHdl *		pFileHdl;
 
-	/*
-	Handle the case of a 0-byte read
-	*/
+	// Handle the case of a 0-byte read
 
 	if( !uiLength)
 	{
@@ -547,9 +506,7 @@ RCODE F_64BitFileHandle::Read(
 		goto Exit;
 	}
 
-	/*
-	Read the data file(s), moving to new files as needed.
-	*/
+	// Read the data file(s), moving to new files as needed.
 
 	for( ;;)
 	{
@@ -570,10 +527,8 @@ RCODE F_64BitFileHandle::Read(
 		{
 			if( rc == FERR_IO_PATH_NOT_FOUND)
 			{
-				/*
-				Handle the case of a sparse file by filling the unread
-				portion of the buffer with zeros.
-				*/
+				// Handle the case of a sparse file by filling the unread
+				// portion of the buffer with zeros.
 
 				f_memset( pvBuffer, 0, uiBytesToRead);
 				uiTmp = uiBytesToRead;
@@ -591,10 +546,8 @@ RCODE F_64BitFileHandle::Read(
 			{
 				if( rc == FERR_IO_END_OF_FILE)
 				{
-					/*
-					Handle the case of a sparse file by filling the unread
-					portion of the buffer with zeros.
-					*/
+					// Handle the case of a sparse file by filling the unread
+					// portion of the buffer with zeros.
 
 					f_memset( &(((FLMBYTE *)(pvBuffer))[ uiTmp]), 
 						0, (FLMUINT)(uiBytesToRead - uiTmp));
@@ -615,9 +568,7 @@ RCODE F_64BitFileHandle::Read(
 			break;
 		}
 
-		/*
-		Set up for next read
-		*/
+		// Set up for next read
 
 		pvBuffer = ((FLMBYTE *)pvBuffer) + uiTmp;
 		ui64Offset += uiTmp;
@@ -649,15 +600,11 @@ RCODE F_64BitFileHandle::Write(
 	FLMUINT			uiMaxWriteLen;
 	F_FileHdl *		pFileHdl;
 
-	/*
-	Don't allow zero-length writes
-	*/
+	// Don't allow zero-length writes
 
 	flmAssert( uiLength);
 
-	/*
-	Write to the data file(s), moving to new files as needed.
-	*/
+	// Write to the data file(s), moving to new files as needed.
 
 	for( ;;)
 	{
@@ -687,9 +634,7 @@ RCODE F_64BitFileHandle::Write(
 			break;
 		}
 
-		/*
-		Set up for next write
-		*/
+		// Set up for next write
 
 		pvBuffer = ((FLMBYTE *)pvBuffer) + uiTmp;
 		uiFileNum = GetFileNum( ui64Offset);
@@ -818,9 +763,7 @@ RCODE F_64BitFileHandle::GetFileNum(
 		}
 		else
 		{
-			/*
-			Invalid character found in the file name
-			*/
+			// Invalid character found in the file name
 
 			rc = RC_SET( FERR_IO_INVALID_PATH);
 			goto Exit;
@@ -853,13 +796,11 @@ RCODE F_64BitFileHandle::CreateLockFile(
 	f_strcpy( szLockPath, pszBasePath);
 	f_pathAppend( szLockPath, "64.LCK");
 
-	/*
-	Attempt to create the lock file.  If it fails, the lock file
-	may have been left because of a crash.  Hence, we first try
-	to delete the file.  If that succeeds, we then attempt to
-	create the file again.  If it, or the 2nd create fail, we simply 
-	return an access denied error.
-	*/
+	// Attempt to create the lock file.  If it fails, the lock file
+	// may have been left because of a crash.  Hence, we first try
+	// to delete the file.  If that succeeds, we then attempt to
+	// create the file again.  If it, or the 2nd create fail, we simply 
+	// return an access denied error.
 
 #ifndef FLM_UNIX
 	if( RC_BAD( gv_FlmSysData.pFileSystem->Create( szLockPath,

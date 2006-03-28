@@ -144,7 +144,7 @@ void flmUpdEventCallback(
 	flmDoEventCallback( F_EVENT_UPDATES, eEventType, &UpdEvent, NULL);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Adds a record to a container.
 Notes: If an index definition record is added to the dictionary container,
 		 the index will be built automatically when the transaction commits.
@@ -154,22 +154,27 @@ Notes: If an index definition record is added to the dictionary container,
 		 commits and the index is actually built.  If FLAIM discovers that the
 		 keys in an index are not unique, the transaction commit will fail and
 		 return an error.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmRecordAdd(
 	HFDB			hDb,
 	FLMUINT		uiContainer,
 	FLMUINT *	puiDrn,
 	FlmRecord *	pRecord,
-	FLMUINT		uiAutoTrans
-	)
+	FLMUINT		uiAutoTrans)
 {
 	RCODE			rc = FERR_OK;
+	FLMUINT		uiDrn = 0;
 	FDB *			pDb = (FDB *)hDb;
 	LFILE *		pLFile;
 	FLMBOOL		bStartedAutoTrans = FALSE;
 	FLMBOOL		bLogCompleteIndexSet = FALSE;
 	DB_STATS *	pDbStats = NULL;
 	F_TMSTAMP	StartTime;
+
+	if( puiDrn)
+	{
+		uiDrn = *puiDrn;
+	}
 
 	if( uiContainer == FLM_TRACKER_CONTAINER)
 	{
@@ -181,7 +186,7 @@ FLMEXP RCODE FLMAPI FlmRecordAdd(
 	{
 		fdbInitCS( pDb);
 		rc = flmDoUpdateCS( pDb, FCS_OP_RECORD_ADD, uiContainer,
-									puiDrn, pRecord, uiAutoTrans);
+									&uiDrn, pRecord, uiAutoTrans);
 		goto ExitCS;
 	}
 
@@ -220,7 +225,7 @@ FLMEXP RCODE FLMAPI FlmRecordAdd(
 		goto Exit;
 	}
 
-	rc = flmAddRecord( pDb, pLFile, puiDrn, pRecord, FALSE,
+	rc = flmAddRecord( pDb, pLFile, &uiDrn, pRecord, FALSE,
 				(uiAutoTrans & FLM_DO_IN_BACKGROUND) ? TRUE : FALSE,
 				(uiAutoTrans & FLM_SUSPENDED) ? TRUE : FALSE,
 				(FLMBOOL)((uiAutoTrans & FLM_DONT_INSERT_IN_CACHE) ? FALSE : TRUE),
@@ -232,15 +237,15 @@ Exit:
 	if( RC_OK( rc))
 	{
 		if( RC_OK( rc = pDb->pFile->pRfl->logUpdate( 
-				uiContainer, *puiDrn, uiAutoTrans, NULL, pRecord)) && 
+				uiContainer, uiDrn, uiAutoTrans, NULL, pRecord)) && 
 			 bLogCompleteIndexSet &&
-			 pDb->pFile->FileHdr.uiVersionNum <= FLM_VER_4_51)
+			 pDb->pFile->FileHdr.uiVersionNum <= FLM_FILE_FORMAT_VER_4_51)
 		{
 
 			// Log the fact that we indexed everything so the redo will also
 			// index all data records in the container.
 
-			rc = pDb->pFile->pRfl->logIndexSet( *puiDrn, 0, 1, 0xFFFFFFFF);
+			rc = pDb->pFile->pRfl->logIndexSet( uiDrn, 0, 1, 0xFFFFFFFF);
 		}
 	}
 
@@ -251,9 +256,9 @@ Exit:
 		pDbStats->bHaveStats = TRUE;
 	}
 
-	if( gv_FlmSysData.EventHdrs[ F_EVENT_UPDATES].pEventCBList)
+	if( gv_FlmSysData.UpdateEvents.pEventCBList)
 	{
-		flmUpdEventCallback( pDb, F_EVENT_ADD_RECORD, hDb, rc, *puiDrn,
+		flmUpdEventCallback( pDb, F_EVENT_ADD_RECORD, hDb, rc, uiDrn,
 								uiContainer, pRecord, NULL);
 	}
 
@@ -265,6 +270,11 @@ Exit:
 	}
 
 ExitCS:
+
+	if( puiDrn)
+	{
+		*puiDrn = uiDrn;
+	}
 
 	flmExit( FLM_RECORD_ADD, pDb, rc);
 	return( rc);
@@ -287,11 +297,16 @@ RCODE	flmAddRecord(
 	FLMBOOL *	pbLogCompleteIndexSet)
 {
 	RCODE			rc = FERR_OK;
-	FLMUINT		uiDrn = *puiDrn;
+	FLMUINT		uiDrn = 0;
 	FLMBOOL		bProcessedKeys = FALSE;
 	FLMUINT		uiLfNum = pLFile->uiLfNum;
 	FLMUINT		uiAddAppendFlags = REC_UPD_ADD;
 	FLMBOOL		bHadUniqueKeys;
+
+	if( puiDrn)
+	{
+		uiDrn = *puiDrn;
+	}
 
 	if( pDb->uiFlags & FDB_COMMITTING_TRANS)
 	{
@@ -325,9 +340,13 @@ RCODE	flmAddRecord(
 					pRecord, NULL, bDoInBackground, bCreateSuspended,
 					pbLogCompleteIndexSet)))
 		{
-			*puiDrn = uiDrn;				// Set return value
+			if( puiDrn)
+			{
+				*puiDrn = uiDrn;
+			}
 		}
-		goto Exit;								// all done.
+
+		goto Exit;
 	}
 	else
 	{
@@ -379,7 +398,11 @@ RCODE	flmAddRecord(
 	{
 		goto Exit;
 	}
-	*puiDrn = uiDrn;					// Set return value.
+
+	if( puiDrn)
+	{
+		*puiDrn = uiDrn;
+	}
 
 	// Sort and check keys for uniqueness.
 	
@@ -430,7 +453,7 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Modifies a record within a container.
 Notes: If an index definition record is modified in the dictionary container,
 		 the index B-TREE will be deleted and rebuilt automatically when the
@@ -456,7 +479,7 @@ Notes: If an index definition record is modified in the dictionary container,
 		 Changing a field type or changing a field definition record into an
 		 index definition record is not allowed.  For information on changing
 		 the state of a field, see the Dictionary Syntax document.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmRecordModify(
 	HFDB		   hDb,
 	FLMUINT		uiContainer,
@@ -694,7 +717,7 @@ Exit:
 		if( RC_OK( rc = pDb->pFile->pRfl->logUpdate( 
 				uiContainer, uiDrn, uiAutoTrans, pOldRecord, pRecord)) && 
 			 bLogCompleteIndexSet &&
-			 pDb->pFile->FileHdr.uiVersionNum <= FLM_VER_4_51)
+			 pDb->pFile->FileHdr.uiVersionNum <= FLM_FILE_FORMAT_VER_4_51)
 		{
 			// Log the fact that we indexed everything so the redo will also
 			// index all data records in the container.
@@ -710,7 +733,7 @@ Exit:
 		pDbStats->bHaveStats = TRUE;
 	}
 
-	if( gv_FlmSysData.EventHdrs [F_EVENT_UPDATES].pEventCBList)
+	if( gv_FlmSysData.UpdateEvents.pEventCBList)
 	{
 		flmUpdEventCallback( pDb, F_EVENT_MODIFY_RECORD, hDb, rc, uiDrn,
 								uiContainer, pRecord, pOldRecord);
@@ -740,7 +763,7 @@ ExitCS:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Deletes a record from a container.
 Notes: If an index definition record or a container definition record is
 		 deleted from the dictionary container, the index B-TREE container or
@@ -749,7 +772,7 @@ Notes: If an index definition record or a container definition record is
 		 dictionary using this routine if the field is not in use.  For more
 		 information on deletion of field definitions, see the Dictionary Syntax
 		 document.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmRecordDelete(
 	HFDB	 		hDb,
 	FLMUINT		uiContainer,
@@ -806,10 +829,11 @@ FLMEXP RCODE FLMAPI FlmRecordDelete(
 		goto Exit;
 	}
 
-	if( gv_FlmSysData.EventHdrs [F_EVENT_UPDATES].pEventCBList)
+	if( gv_FlmSysData.UpdateEvents.pEventCBList)
 	{
 		// Do not have flmDeleteRecord fetch the old version of the record
 		// unless an event callback is registered.
+		
 		ppOldRecord = &pOldRecord;
 	}
 	
@@ -836,7 +860,7 @@ Exit:
 		pDbStats->bHaveStats = TRUE;
 	}
 
-	if( gv_FlmSysData.EventHdrs [F_EVENT_UPDATES].pEventCBList)
+	if( gv_FlmSysData.UpdateEvents.pEventCBList)
 	{
 		flmUpdEventCallback( pDb, F_EVENT_DELETE_RECORD, hDb, rc, uiDrn,
 								uiContainer, NULL, pOldRecord);
@@ -993,5 +1017,188 @@ Exit:
 	// Add the BLOB entries to the blob list.
 	
 	rc = FB_OperationEnd( pDb, rc);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Returns the next DRN that record ADD would return.  The database
+			must be in an existing update transaction.
+****************************************************************************/
+FLMEXP RCODE FLMAPI FlmReserveNextDrn(
+	HFDB			hDb,
+	FLMUINT		uiContainer,
+	FLMUINT *	puiDrnRV)
+{
+	RCODE			rc;
+	FDB *			pDb = (FDB *)hDb;
+	LFILE *		pLFile;
+	FLMBOOL		bIgnore;
+	FLMUINT		uiDrn = 0;
+
+	if (IsInCSMode( hDb))
+	{
+		fdbInitCS( pDb);
+
+		CS_CONTEXT *	pCSContext = pDb->pCSContext;
+		FCL_WIRE			Wire( pCSContext, pDb);
+
+		// Send the request
+
+		if( RC_BAD( rc = Wire.sendOp( 
+			FCS_OPCLASS_RECORD, FCS_OP_RESERVE_NEXT_DRN)))
+		{
+			goto ExitCS;
+		}
+
+		if( uiContainer)
+		{
+			if (RC_BAD( rc = Wire.sendNumber(
+				WIRE_VALUE_CONTAINER_ID, uiContainer)))
+			{
+				goto Transmission_Error;
+			}
+		}
+
+		if( RC_BAD( rc = Wire.sendTerminate()))
+		{
+			goto Transmission_Error;
+		}
+
+		// Read the response
+
+		if( RC_BAD( rc = Wire.read()))
+		{
+			goto Transmission_Error;
+		}
+
+		if( RC_BAD( rc = Wire.getRCode()))
+		{
+			goto ExitCS;
+		}
+
+		*puiDrnRV = Wire.getDrn();
+		goto ExitCS;
+
+Transmission_Error:
+		pCSContext->bConnectionGood = FALSE;
+		goto ExitCS;
+	}
+
+	bIgnore = FALSE;					// Set to shut up compiler.
+
+	if( RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS,
+										FDB_TRANS_GOING_OK,	// byFlags
+										0, 						// wAutoTrans
+										&bIgnore)))				// bStartedAutoTrans
+	{
+		goto Exit;
+	}
+
+	if( pDb->uiFlags & FDB_COMMITTING_TRANS)
+	{
+		flmAssert( 0);
+		rc = RC_SET( FERR_ILLEGAL_TRANS_OP);
+		goto Exit;
+	}
+
+	if( RC_BAD( fdictGetContainer( pDb->pDict, uiContainer, &pLFile)))
+	{
+#ifdef FLM_DBG_LOG
+		uiDrn = 0;
+#endif
+		goto Exit;
+	}
+	uiDrn = (FLMUINT) 0;					// Must initialize before call.
+	if( RC_BAD( rc = FSGetNextDrn( pDb, pLFile, TRUE, &uiDrn)))
+	{
+#ifdef FLM_DBG_LOG
+		uiDrn = 0;
+#endif
+		goto Exit;
+	}
+
+	*puiDrnRV = uiDrn;						// Set return value.
+
+Exit:
+
+	if (RC_OK( rc))
+	{
+		rc = pDb->pFile->pRfl->logUpdatePacket( 
+			RFL_RESERVE_DRN_PACKET, uiContainer, *puiDrnRV, 0);
+	}
+
+	if( gv_FlmSysData.UpdateEvents.pEventCBList)
+	{
+		flmUpdEventCallback( pDb, F_EVENT_RESERVE_DRN, hDb, rc, *puiDrnRV,
+								uiContainer, NULL, NULL);
+	}
+
+#ifdef FLM_DBG_LOG
+	flmDbgLogUpdate( pDb->pFile->uiFFileId, pDb->LogHdr.uiCurrTransID,
+			uiContainer, uiDrn, rc, "RDrn");
+#endif
+
+ExitCS:
+
+	flmExit( FLM_RESERVE_NEXT_DRN, pDb, rc);
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Searches for an available DRN in the dictionary container.
+			Differs from FlmReserveNextDrn in that it will attempt to reuse
+			dictionary DRNS.
+****************************************************************************/
+FLMEXP RCODE FLMAPI FlmFindUnusedDictDrn(
+	HFDB					hDb,
+	FLMUINT				uiStartDrn,
+	FLMUINT				uiEndDrn,
+	FLMUINT *			puiDrnRV)
+{
+	RCODE			rc;
+	FDB *			pDb = (FDB *)hDb;
+	FLMBOOL		bIgnore = FALSE;
+	FDICT *		pDict;
+	FLMUINT		uiCurrDrn;
+	FLMUINT		uiStopSearch;
+
+	if( RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS, FDB_TRANS_GOING_OK,
+		0, &bIgnore)))
+	{
+		*puiDrnRV = (FLMUINT)-1;
+		goto Exit;
+	}
+
+	// Search through the ITT table looking for the first occurance
+	// of ITT_EMPTY_SLOT
+	
+	pDict = pDb->pDict;
+	uiCurrDrn = f_max( uiStartDrn, 1);
+	uiStopSearch = f_min( uiEndDrn, pDict->uiIttCnt - 1);
+	
+	while (uiCurrDrn <= uiStopSearch)	
+	{
+		if (pDict->pIttTbl[ uiCurrDrn].uiType == ITT_EMPTY_SLOT)
+		{
+			break;
+		}
+		else
+		{
+			uiCurrDrn++;
+		}	
+	}
+
+	if (uiCurrDrn > uiEndDrn)
+	{
+		rc = RC_SET( FERR_NO_MORE_DRNS);
+		goto Exit;
+	}
+
+	*puiDrnRV = uiCurrDrn;
+
+Exit:
+
+	fdbExit( pDb);
 	return( rc);
 }

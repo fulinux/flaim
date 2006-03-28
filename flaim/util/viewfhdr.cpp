@@ -91,7 +91,8 @@ FSTATIC FLMINT ViewSetupFileHeaderMenu(
 	if (!ViewAddMenuItem( LBL_FLAIM_VERSION, LABEL_WIDTH,
 			VAL_IS_TEXT_PTR,
 			(FLMUINT)((FLMBYTE *)(&gv_szFlaimVersion[ 0])), 0,
-			0, FLAIM_HEADER_START + FLM_VER_POS, FLM_VER_LEN, MOD_TEXT,
+			0, FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS, 
+			FLM_FILE_FORMAT_VER_LEN, MOD_TEXT,
 			Col, Row++, 0, bc, fc, bc, fc))
 		goto Zero_Exit;
 
@@ -133,7 +134,7 @@ FSTATIC FLMINT ViewSetupFileHeaderMenu(
 
 	/* Display the first PCODE block address */
 
-	if (gv_ViewHdrInfo.FileHdr.uiVersionNum < FLM_VER_4_3)
+	if (gv_ViewHdrInfo.FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
 		if (!ViewAddMenuItem( LBL_FIRST_PCODE_BLOCK_ADDRESS, LABEL_WIDTH,
 				VAL_IS_NUMBER | DISP_HEX_DECIMAL,

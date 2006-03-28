@@ -976,7 +976,7 @@ Desc:	Gets the LOCK_USER information for the specified pFile.
 ****************************************************************************/
 void F_StatsPage::gatherLockStats(
 	STAT_GATHER *			pStatGather,
-	FFILE_p					pFile
+	FFILE *					pFile
 	)
 {
 	LOCK_USER_HEADER_p		pTmp;
@@ -1043,7 +1043,7 @@ Desc:	Gets the CHECKPOINT_INFO information for the specified pFile.
 ****************************************************************************/
 void F_StatsPage::gatherCPStats(
 	STAT_GATHER *			pStatGather,
-	FFILE_p					pFile
+	FFILE *					pFile
 	)
 {
 	CP_INFO_HEADER_p		pTmp;

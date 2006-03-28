@@ -508,13 +508,13 @@ FSTATIC RCODE ViewReadAndVerifyHdrInfo(
 						uiTmpLen);
 	gv_szFlaimName [uiTmpLen] = 0;
 
-	uiTmpLen = FLM_VER_LEN;
+	uiTmpLen = FLM_FILE_FORMAT_VER_LEN;
 	if (uiTmpLen > sizeof( gv_szFlaimVersion) - 1)
 	{
 		uiTmpLen = sizeof( gv_szFlaimVersion) - 1;
 	}
 	f_memcpy( gv_szFlaimVersion,
-		&pReadBuf [FLAIM_HEADER_START + FLM_VER_POS], uiTmpLen);
+		&pReadBuf [FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS], uiTmpLen);
 	gv_szFlaimVersion [uiTmpLen] = 0;
 
 	/*

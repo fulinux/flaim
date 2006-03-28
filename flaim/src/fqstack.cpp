@@ -58,9 +58,9 @@ static FLMUINT PrecedenceTable [FLM_USER_PREDICATE - FLM_AND_OP + 1] =
 								? PrecedenceTable [(e) - FLM_AND_OP] \
 								: (FLMUINT)0)
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Adds an operator to the selection criteria of a given cursor.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorAddOp(
 	HFCURSOR		hCursor,
 	QTYPES		eOperator,
@@ -68,10 +68,10 @@ FLMEXP RCODE FLMAPI FlmCursorAddOp(
 	)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
-	FQNODE_p		pTmpQNode;
-	FQNODE_p		pTmpGraftNode;
-	FQNODE_p		pTmpChildNode;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
+	FQNODE *		pTmpQNode;
+	FQNODE *		pTmpGraftNode;
+	FQNODE *		pTmpChildNode;
 	FLMBOOL		bDecrementNestLvl = FALSE;
 	FLMUINT		uiFlags = bResolveUnknown ? FLM_RESOLVE_UNK : 0;
 
@@ -253,7 +253,7 @@ Exit:
 Desc: Add a reference to an embedded user predicate.
 ****************************************************************************/
 RCODE flmCurAddRefPredicate(
-	QTINFO_p					pQTInfo,
+	QTINFO *					pQTInfo,
 	FlmUserPredicate *	pPredicate
 	)
 {
@@ -304,17 +304,17 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc: Adds an embedded user predicate.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorAddUserPredicate(
 	HFCURSOR					hCursor,
 	FlmUserPredicate *	pPredicate
 	)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR_p)hCursor;
-	FQNODE_p		pQNode;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
+	FQNODE *		pQNode;
 	QTYPES		eOperator;
 
 	if (!pCursor || !pPredicate)
@@ -394,11 +394,11 @@ Exit:
 Desc:	Links one FQNODE as the first child of another.
 ****************************************************************************/
 void flmCurLinkFirstChild(
-	FQNODE_p pParent,
-	FQNODE_p pChild
+	FQNODE * pParent,
+	FQNODE * pChild
 	)
 {
-	FQNODE_p	pTmpQNode;
+	FQNODE *	pTmpQNode;
 
 	// If necessary, unlink the child from a sibling list and link it back in
 	// as the first child.
@@ -443,11 +443,11 @@ void flmCurLinkFirstChild(
 Desc:	Links one FQNODE as the last child of another.
 ****************************************************************************/
 void flmCurLinkLastChild(
-	FQNODE_p	pParent,
-	FQNODE_p	pChild
+	FQNODE *	pParent,
+	FQNODE *	pChild
 	)
 {
-	FQNODE_p	pTmpQNode;
+	FQNODE *	pTmpQNode;
 
 	// If necessary, unlink the child from any parent or siblings
 
@@ -508,7 +508,7 @@ RCODE flmPutValInAtom(
 	)
 {
 	RCODE		rc = FERR_OK;
-	FQATOM_p	pQAtom = (FQATOM_p)pAtom;
+	FQATOM *	pQAtom = (FQATOM *)pAtom;
 
 	pQAtom->uiFlags = uiFlags;
 	pQAtom->eType = eValType;
@@ -549,7 +549,7 @@ RCODE flmCurMakeQNode(
 	void *		pVal,
 	FLMUINT		uiValLen,
 	FLMUINT		uiFlags,
-	FQNODE_p *	ppQNode)
+	FQNODE * *	ppQNode)
 {
 	FLMUINT *	puiTmpPath;
 	FLMUINT *	puiPToCPath;
@@ -562,7 +562,7 @@ RCODE flmCurMakeQNode(
 	FQNODE *		pQNode;
 	FQATOM *		pQAtom;
 
-	if ((*ppQNode = pQNode = (FQNODE_p)GedPoolCalloc( pPool,
+	if ((*ppQNode = pQNode = (FQNODE *)GedPoolCalloc( pPool,
 											sizeof( FQNODE))) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
@@ -577,7 +577,7 @@ RCODE flmCurMakeQNode(
 		pQNode->uiStatus = uiFlags;
 		goto Exit;
 	}
-	if ((pQNode->pQAtom = pQAtom = (FQATOM_p)GedPoolCalloc( pPool,
+	if ((pQNode->pQAtom = pQAtom = (FQATOM *)GedPoolCalloc( pPool,
 												sizeof( FQATOM))) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
@@ -668,11 +668,11 @@ Ret:
 ****************************************************************************/
 RCODE flmCurGraftNode(
 	POOL *		pPool,
-	FQNODE_p 	pQNode,
+	FQNODE * 	pQNode,
 	QTYPES		eGraftOp,
-	FQNODE_p  * ppQTree)
+	FQNODE *  * ppQTree)
 {
-	FQNODE_p		pTmpQNode;
+	FQNODE *		pTmpQNode;
 	RCODE			rc = FERR_OK;
 
 	if (*ppQTree == NULL)
@@ -695,9 +695,9 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Adds a value to the selection criteria of a given cursor.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorAddValue(
 	HFCURSOR		hCursor,
 	QTYPES		eValType,
@@ -709,7 +709,7 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 	FLMINT		iVal;
 	FLMUINT		uiVal;
 	void *		pTmpVal = pVal;
-	CURSOR_p		pCursor = (CURSOR *)hCursor;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 	FLMBOOL		bPoolInitialized = FALSE;
 	POOL			pool;
 
@@ -854,18 +854,17 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Adds a field ID to the selection criteria of a given cursor.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Adds a field ID to the selection criteria of a given cursor.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorAddField(
 	HFCURSOR		hCursor,
 	FLMUINT		uiFldId,
-	FLMUINT		uiFlags
-	)
+	FLMUINT		uiFlags)
 {
 	RCODE			rc = FERR_OK;
-	CURSOR_p		pCursor = (CURSOR_p)hCursor;
-	FQNODE_p		pTmpQNode;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
+	FQNODE *		pTmpQNode;
 	FLMUINT		uiPath [2];
 
 	if (!pCursor)
@@ -926,20 +925,18 @@ Exit:
 	return( rc);
 }
 
-
-/*API~***********************************************************************
-Desc : Adds a field path to the selection criteria of a given cursor.  A
-		 field path is the fully qualified context of a field within a record.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Adds a field path to the selection criteria of a given cursor.  A
+		field path is the fully qualified context of a field within a record.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorAddFieldPath(
 	HFCURSOR		hCursor,
 	FLMUINT *	puiFldPath,
-	FLMUINT		uiFlags
-	)
+	FLMUINT		uiFlags)
 {
 	RCODE			rc = FERR_OK;
-	FQNODE_p		pTmpQNode;
-	CURSOR_p		pCursor = (CURSOR_p)hCursor;
+	FQNODE *		pTmpQNode;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{
@@ -990,10 +987,10 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
-Desc : Adds a field path to the selection criteria of a given cursor - with
-		 a callback to retrieve the field.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Adds a field path to the selection criteria of a given cursor - with
+		a callback to retrieve the field.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmCursorAddFieldCB(
 	HFCURSOR					hCursor,
 	FLMUINT *				puiFldPath,
@@ -1001,12 +998,11 @@ FLMEXP RCODE FLMAPI FlmCursorAddFieldCB(
 	FLMBOOL					bValidateOnly,
 	CURSOR_GET_FIELD_CB	fnGetField,
 	void *					pvUserData,
-	FLMUINT					uiUserDataLen
-	)
+	FLMUINT					uiUserDataLen)
 {
 	RCODE			rc = FERR_OK;
-	FQNODE_p		pTmpQNode;
-	CURSOR_p		pCursor = (CURSOR_p)hCursor;
+	FQNODE *		pTmpQNode;
+	CURSOR *		pCursor = (CURSOR *)hCursor;
 
 	if (!pCursor)
 	{
@@ -1038,7 +1034,7 @@ FLMEXP RCODE FLMAPI FlmCursorAddFieldCB(
 									puiFldPath, 0, pCursor->QTInfo.uiFlags,
 									&pTmpQNode)))
 	{
-		FQATOM_p	pQAtom = pTmpQNode->pQAtom;
+		FQATOM *	pQAtom = pTmpQNode->pQAtom;
 
 		pQAtom->val.QueryFld.fnGetField = fnGetField;
 		pQAtom->val.QueryFld.bValidateOnly = bValidateOnly;

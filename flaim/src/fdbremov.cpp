@@ -38,12 +38,11 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	FLMBYTE *			pucBuffer = NULL;
 	FLMUINT				uiFileNumber;
 	FILE_HDR				FileHdr;
-	LOG_HDR				LogHdr;
+	FLMUINT				uiVersionNum;
 	char *				pszTmpName = NULL;
 	char *				pszRflDirName;
 	char *				pszDataName;
 	char *				pszBaseName;
-	FLMBYTE *			pucLogHdr;
 	char					szPrefix[ F_FILENAME_SIZE];
 	char *				pszExt;
 	char *				pszDataExt;
@@ -59,8 +58,8 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 	// Allocate memory, so as to not consume stack.
 
-	if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE * 3 + F_FILENAME_SIZE +
-							LOG_HEADER_SIZE, &pszTmpName)))
+	if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE * 3 + F_FILENAME_SIZE,
+									  &pszTmpName)))
 	{
 		goto Exit;
 	}
@@ -68,7 +67,6 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	pszRflDirName = pszTmpName + F_PATH_MAX_SIZE;
 	pszDataName = pszRflDirName + F_PATH_MAX_SIZE;
 	pszBaseName = pszDataName + F_PATH_MAX_SIZE;
-	pucLogHdr =(FLMBYTE *)(pszBaseName + F_FILENAME_SIZE);
 
 	// First make sure we have closed this database and gotten rid of
 	// it from our internal memory tables - in case it had been open.
@@ -99,9 +97,13 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	// file numbers.
 
 	if (RC_BAD( flmReadAndVerifyHdrInfo( NULL, pFileHdl,
-								pucBuffer, &FileHdr, &LogHdr, pucLogHdr)))
+								pucBuffer, &FileHdr, NULL, NULL)))
 	{
-		goto Exit;
+		uiVersionNum = FLM_CUR_FILE_FORMAT_VER_NUM;
+	}
+	else
+	{
+		uiVersionNum = FileHdr.uiVersionNum;
 	}
 
 	// Close the file.
@@ -181,8 +183,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	uiFileNumber = 1;
 	for (;;)
 	{
-		bldSuperFileExtension( FileHdr.uiVersionNum,
-			uiFileNumber, pszDataExt);
+		bldSuperFileExtension( uiVersionNum, uiFileNumber, pszDataExt);
 
 		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszDataName)))
 		{
@@ -196,8 +197,8 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 				goto Exit;
 			}
 		}
-		if (uiFileNumber ==
-				MAX_DATA_BLOCK_FILE_NUMBER( FileHdr.uiVersionNum))
+		
+		if (uiFileNumber == MAX_DATA_BLOCK_FILE_NUMBER( uiVersionNum))
 		{
 			break;
 		}
@@ -206,12 +207,10 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 	// Delete rollback log files.
 
-	uiFileNumber =
-		FIRST_LOG_BLOCK_FILE_NUMBER( FileHdr.uiVersionNum);
+	uiFileNumber = FIRST_LOG_BLOCK_FILE_NUMBER( uiVersionNum);
 	for (;;)
 	{
-		bldSuperFileExtension( FileHdr.uiVersionNum,
-			uiFileNumber, pszExt);
+		bldSuperFileExtension( uiVersionNum, uiFileNumber, pszExt);
 
 		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszTmpName)))
 		{
@@ -225,11 +224,12 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 				goto Exit;
 			}
 		}
-		if (uiFileNumber ==
-				MAX_LOG_BLOCK_FILE_NUMBER( FileHdr.uiVersionNum))
+		
+		if (uiFileNumber == MAX_LOG_BLOCK_FILE_NUMBER( uiVersionNum))
 		{
 			break;
 		}
+		
 		uiFileNumber++;
 	}
 
@@ -238,16 +238,17 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 		// Delete roll-forward log files.
 
-		if (FileHdr.uiVersionNum < FLM_VER_4_3)
+		if (uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 		{
 
 			// For pre-4.3 versions, only need to delete one RFL file.
 
-			if (RC_BAD( rc = rflGetFileName( FileHdr.uiVersionNum,
-										pszDbName, pszRflDir, 1, pszTmpName)))
+			if (RC_BAD( rc = rflGetFileName( uiVersionNum, pszDbName, 
+				pszRflDir, 1, pszTmpName)))
 			{
 				goto Exit;
 			}
+			
 			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszTmpName)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
@@ -267,7 +268,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 			// For 4.3 and greater, need to scan the RFL directory for
 			// RFL files.
 
-			if (RC_BAD( rc = rflGetDirAndPrefix( FileHdr.uiVersionNum,
+			if (RC_BAD( rc = rflGetDirAndPrefix( uiVersionNum,
 										pszDbName, pszRflDir, pszRflDirName, szPrefix)))
 			{
 				goto Exit;
@@ -316,7 +317,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 				{
 					bCanDeleteDir = FALSE;
 				}
-				else if (!rflGetFileNum( FileHdr.uiVersionNum,
+				else if (!rflGetFileNum( uiVersionNum,
 													szPrefix, pszTmpName, &uiFileNumber))
 				{
 					bCanDeleteDir = FALSE;
@@ -367,21 +368,26 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	}
 
 Exit:
+
 	if (pszTmpName)
 	{
 		f_free( &pszTmpName);
 	}
+	
 	if (pFileHdl)
 	{
 		pFileHdl->Release();
 	}
+	
 	if (pucBuffer)
 	{
 		f_free( &pucBuffer);
 	}
+	
 	if (pDirHdl)
 	{
 		pDirHdl->Release();
 	}
+	
 	return( rc);
 }

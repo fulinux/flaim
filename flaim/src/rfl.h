@@ -26,6 +26,7 @@
 #define RFL_H
 
 #include "fpackon.h"
+
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
 
@@ -57,6 +58,7 @@
 #define RFL_RESERVED_FOR_KEPLER_24			24
 #define RFL_WRAP_KEY_PACKET					25
 #define RFL_ENABLE_ENCRYPTION_PACKET		26
+#define RFL_CONFIG_SIZE_EVENT_PACKET		27
 #define RFL_TIME_LOGGED_FLAG					0x80
 #define RFL_PACKET_TYPE_MASK					0x7F
 
@@ -135,19 +137,45 @@
 #define	RFL_MAX_PACKET_BODY_SIZE			((RFL_MAX_PACKET_SIZE - \
 														  RFL_PACKET_OVERHEAD) & 0xFFFC)
 
-
-typedef struct RflWaiterTag *	RFL_WAITER_p;
-
-typedef struct RflWaiterTag
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct RFL_OP_INFO
+{
+	FLMUINT		uiPacketType;
+	FLMUINT		uiContainer;
+	FLMUINT		uiDrn;
+	FLMUINT		uiIndex;
+	FLMUINT		uiEndDrn;
+	FLMUINT		uiTransId;
+	FLMUINT		uiStartTime;
+	FLMUINT		uiLastLoggedCommitTransId;
+	FLMUINT		uiFlags;
+	FLMUINT		uiCount;
+	FLMUINT		uiEndBlock;
+	FLMUINT		uiOldVersion;
+	FLMUINT		uiNewVersion;
+	FLMUINT		uiSizeThreshold;
+	FLMUINT		uiSizeInterval;
+	FLMUINT		uiTimeInterval;
+} RFL_OP_INFO;
+														  
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct RFL_WAITER
 {
 	FLMUINT			uiThreadId;
 	FLMBOOL			bIsWriter;
 	F_SEM				hESem;
 	RCODE *			pRc;
-	RFL_WAITER_p	pNext;
+	RFL_WAITER *	pNext;
 } RFL_WAITER;
 
-typedef struct RflBufferTag
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct RFL_BUFFER
 {
 	F_IOBufferMgr *	pBufferMgr;				// Write buffer manager
 	F_IOBuffer *		pIOBuffer;
@@ -189,17 +217,17 @@ public:
 	// database is first opened or created.
 
 	RCODE setup(
-		FFILE_p				pFile,
+		FFILE *				pFile,
 		const char *		pszRflDir);
 
 	RCODE finishCurrFile(
-		FDB_p					pDb,
+		FDB *					pDb,
 		FLMBOOL				bNewKeepState);
 
 	// Log transaction begin
 
 	RCODE logBeginTransaction(
-		FDB_p					pDb);
+		FDB *					pDb);
 
 	// Log transaction commit or abort
 
@@ -269,6 +297,14 @@ public:
 		FLMUINT			uiOldVersion,
 		FLMBYTE *		pucDBKey,
 		FLMUINT32		ui32DBKeyLen);
+		
+	// Routine for logging size event configuration
+		
+	RCODE logSizeEventConfig(
+		FLMUINT		uiTransID,
+		FLMUINT		uiSizeThreshold,
+		FLMUINT		uiSecondsBetweenEvents,
+		FLMUINT		uiBytesBetweenEvents);
 
 	// Routines for restore operations.
 
@@ -278,7 +314,7 @@ public:
 		FLMUINT *		puiBytesRead);
 
 	RCODE recover(
-		FDB_p				pDb,
+		FDB *				pDb,
 		F_Restore *		pRestore);
 
 	FLMBOOL atEndOfLog( void);
@@ -305,7 +341,12 @@ public:
 
 	FINLINE const char * getRflDirPtr( void)
 	{
-		return &m_szRflDir [0];
+		return( m_szRflDir);
+	}
+	
+	FINLINE const char * getDbPrefixPtr( void)
+	{
+		return( m_szDbPrefix);
 	}
 
 	FINLINE FLMBOOL isRflDirSameAsDbDir( void)
@@ -409,6 +450,7 @@ public:
 		{
 			flmAssert( !m_pCurrentBuf->pBufferMgr->havePendingIO());
 		}
+		
 		if (m_pFileHdl)
 		{
 			m_pFileHdl->Close();
@@ -476,7 +518,7 @@ public:
 		FLMBOOL			bIsWriter);
 
 	RCODE completeTransWrites(
-		FDB_p				pDb,
+		FDB *				pDb,
 		FLMBOOL			bCommitting,
 		FLMBOOL			bOkToUnlock);
 
@@ -489,6 +531,11 @@ public:
 		FLMUINT		uiTransID,
 		FLMBYTE *	pucDBKey,
 		FLMUINT32	ui32DBKeyLen);
+		
+	FINLINE const char * getRflDir( void)
+	{
+		return( m_szRflDir);
+	}
 
 private:
 
@@ -631,16 +678,8 @@ private:
 	RCODE readOp(
 		FDB *				pDb,
 		FLMBOOL			bForceNextFile,
-		FLMUINT *		puiOpRV,
-		FLMUINT *		puiContainerRV,
-		FLMUINT *		puiDrnRV,
-		FLMUINT *		puiIndexRV,
-		FLMUINT *		puiEndDrnRV,
-		FlmRecord *		pRecord,
-		FLMUINT *		puiTransIDRV,
-		FLMUINT *		puiStartTimeRV,
-		FLMUINT *		puiLastCommittedTransId,
-		FLMUINT *		puiFlags);
+		RFL_OP_INFO *	pOpInfo,
+		FlmRecord *		pRecord);
 
 	RCODE setupTransaction( void);
 
@@ -648,7 +687,7 @@ private:
 
 	// Member variables
 
-	FFILE_p			m_pFile;					// Pointer to FFILE structure
+	FFILE *			m_pFile;					// Pointer to FFILE structure
 	RFL_BUFFER		m_Buf1;
 	RFL_BUFFER		m_Buf2;
 	F_MUTEX			m_hBufMutex;
@@ -719,13 +758,51 @@ private:
 													// RFL volume?
 };
 
+/****************************************************************************
+Desc:	This object is our implementation of the
+		F_UnknownStream object which is used to handle unknown
+		objects in the RFL.
+****************************************************************************/
+class F_RflUnknownStream : public F_UnknownStream
+{
+public:
+
+	F_RflUnknownStream();
+	virtual ~F_RflUnknownStream();
+
+	RCODE setup(
+		F_Rfl *			pRfl,
+		FLMBOOL			bInputStream);
+
+	RCODE reset( void);
+
+	RCODE read(
+		FLMUINT			uiLength,				// Number of bytes to read
+		void *			pvBuffer,				// Buffer to place read bytes into
+		FLMUINT *		puiBytesRead);			// [out] Number of bytes read
+
+	RCODE write(
+		FLMUINT			uiLength,				// Number of bytes to write
+		void *			pvBuffer);
+
+	RCODE close( void);							// Reads to the end of the
+														// stream and discards any
+														// remaining data (if input stream).
+
+private:
+
+	FLMBOOL		m_bSetupCalled;
+	F_Rfl *		m_pRfl;							// RFL object.
+	FLMBOOL		m_bInputStream;				// TRUE=input stream, FALSE=output stream
+	FLMBOOL		m_bStartedWriting;			// Only used for output streams
+};
+
 /**************************************************************************
-Struct:	RFL_CHANGE_DATA
 Desc: 	This structure is passed to the callback function that gets the
 			differences between an old and a new record when a record
 			modify operation is logged.
 **************************************************************************/
-typedef struct Rfl_Change_Data
+typedef struct RFL_CHANGE_DATA
 {
 	RCODE			rc;
 	FLMUINT		uiVersionNum;
@@ -734,7 +811,7 @@ typedef struct Rfl_Change_Data
 	FLMUINT		uiPacketCount;
 	FLMUINT		uiTotalBytesLogged;
 	FLMUINT		uiMaxLogBytesNeeded;
-} RFL_CHANGE_DATA, * RFL_CHANGE_DATA_p;
+} RFL_CHANGE_DATA;
 
 FLMBYTE RflCalcChecksum(
 	const FLMBYTE *	pucPacket,
@@ -766,6 +843,12 @@ FLMBOOL rflGetFileNum(
 	const char *		pszRflFileName,
 	FLMUINT *			puiFileNum);
 
+RCODE flmRflCalcDiskUsage(
+	const char *		pszRflDir,
+	const char *		pszRflPrefix,
+	FLMUINT				uiDbVersionNum,
+	FLMUINT64 *			pui64DiskUsage);
+	
 #include "fpackoff.h"
 
 #endif

@@ -43,7 +43,7 @@ char F_Base64Encoder::m_ucEncodeTable[ 64] =
 	ASCII_LOWER_W, ASCII_LOWER_X, ASCII_LOWER_Y, ASCII_LOWER_Z,
 	ASCII_ZERO,    ASCII_ONE,     ASCII_TWO,     ASCII_THREE,
 	ASCII_FOUR,    ASCII_FIVE,    ASCII_SIX,     ASCII_SEVEN,
-	ASCII_EIGHT,   ASCII_NINE,   ASCII_PLUS,     ASCII_SLASH
+	ASCII_EIGHT,   ASCII_NINE,    ASCII_PLUS,    ASCII_SLASH
 };
 
 FLMBYTE F_Base64Decoder::m_ucDecodeTable[ 256] =
@@ -169,10 +169,10 @@ RCODE F_CCS::wrapKey(
 		goto Exit;
 	}
 	
-	f_memset( &wKey, 0, sizeof(NICI_ATTRIBUTE));
+	f_memset( &wKey, 0, sizeof( NICI_ATTRIBUTE));
 
 	wKey.type = NICI_A_KEY_TYPE;
-	if( CCS_GetAttributeValue(context, wrappingKeyHandle, &wKey, 1) != 0)
+	if( CCS_GetAttributeValue( context, wrappingKeyHandle, &wKey, 1) != 0)
 	{
 		rc = RC_SET( FERR_NICI_ATTRIBUTE_VALUE);
 		goto Exit;
@@ -194,7 +194,7 @@ RCODE F_CCS::wrapKey(
 			algorithm.parameter = parm;
 			algorithm.parameter->count = 1;
 			algorithm.parameter->parms[0].parmType = NICI_P_IV;
-			algorithm.parameter->parms[0].u.b.len = IV_SZ; /* 16-byte IV */
+			algorithm.parameter->parms[0].u.b.len = IV_SZ;
 			algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 			break;
 		}
@@ -207,7 +207,7 @@ RCODE F_CCS::wrapKey(
 			algorithm.parameter = parm;
 			algorithm.parameter->count = 1;
 			algorithm.parameter->parms[0].parmType = NICI_P_IV;
-			algorithm.parameter->parms[0].u.b.len = IV_SZ8; /* 8-byte IV */
+			algorithm.parameter->parms[0].u.b.len = IV_SZ8;
 			algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 			break;
 		}
@@ -222,7 +222,7 @@ RCODE F_CCS::wrapKey(
 			algorithm.parameter = parm;
 			algorithm.parameter->count = 1;
 			algorithm.parameter->parms[0].parmType = NICI_P_IV;
-			algorithm.parameter->parms[0].u.b.len = IV_SZ8; /* 8-byte IV */
+			algorithm.parameter->parms[0].u.b.len = IV_SZ8;
 			algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 			break;
 		}
@@ -268,7 +268,6 @@ Exit:
 	return( rc);
 }
 
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -303,7 +302,7 @@ RCODE F_CCS::unwrapKey(
 
 	// Create NICI Context
 	
-	if( CCS_CreateContext(0, &context) != 0)
+	if( CCS_CreateContext( 0, &context) != 0)
 	{
 		rc = RC_SET( FERR_NICI_CONTEXT);
 		goto Exit;
@@ -841,7 +840,7 @@ RCODE F_CCS::encryptToStoreAES(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ; /* 16-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ;
 	algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 
 	if( CCS_DataEncryptInit(context, &algorithm, m_keyHandle) != 0)
@@ -904,7 +903,7 @@ RCODE F_CCS::decryptFromStoreAES(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ; /* 16-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ;
 	algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 
 	// Init encryption
@@ -969,7 +968,7 @@ RCODE F_CCS::encryptToStoreDES3(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ8; /* 8-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ8;
 	algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 
 	// Init encryption
@@ -1036,7 +1035,7 @@ RCODE F_CCS::decryptFromStoreDES3(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ8; /* 8-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ8;
 	algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 
 	// Init encryption
@@ -1101,7 +1100,7 @@ RCODE F_CCS::encryptToStoreDES(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ8; /* 8-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ8;
 	algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 
 	// Init encryption
@@ -1168,7 +1167,7 @@ RCODE F_CCS::decryptFromStoreDES(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ8; /* 8-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ8;
 	algorithm.parameter->parms[0].u.b.ptr = m_pucIV;
 
 	// Init encryption
@@ -1235,7 +1234,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	Pick a wrapping key that we can use to wrap &
+Desc:	Pick a wrapping key that we can use to wrap and
 		unwrap the encryption key with.
 ****************************************************************************/
 RCODE F_CCS::getWrappingKey(
@@ -1383,7 +1382,7 @@ RCODE F_CCS::getKeyToStore(
 
 	// The shrouded or wrapped key will be stored in m_pKey.
 	
-	ui32PaddedLength = (ui32WrappedKeyLen + sizeof( FLMBOOL) +
+	ui32PaddedLength = (ui32WrappedKeyLen + sizeof( FLMUINT32) +
 								sizeof( FLMUINT32) + IV_SZ );
 
 	// Make sure our buffer size is padded to a 16 byte boundary.
@@ -1411,15 +1410,13 @@ RCODE F_CCS::getKeyToStore(
 	// Save a flag indicating whether the key is wrapped or encoded in
 	// a password.
 	
-	UD2FBA( (pszEncKeyPasswd && pszEncKeyPasswd[0]) 
-						? (FLMUINT)TRUE 
-						: (FLMUINT)FALSE, pucPtr);
-	pucPtr += sizeof(FLMBOOL);
+	UD2FBA( (pszEncKeyPasswd && pszEncKeyPasswd[0]) ? 1 : 0, pucPtr); 
+	pucPtr += sizeof( FLMUINT32);
 
 	// Copy the key length.
 	
 	UD2FBA(ui32WrappedKeyLen, pucPtr);
-	pucPtr += sizeof(FLMUINT32);
+	pucPtr += sizeof( FLMUINT32);
 
 	// Copy the IV too.
 	
@@ -1568,8 +1565,7 @@ RCODE F_CCS::setKeyFromStore(
 
 		// Buffer is Base64 encoded.  We must first decode it.
 		
-		pB64Decoder = f_new F_Base64Decoder;
-		if (pB64Decoder == NULL)
+		if( (pB64Decoder = f_new F_Base64Decoder) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
@@ -1594,12 +1590,12 @@ RCODE F_CCS::setKeyFromStore(
 	// Extract the fields from the buffer
 	
 	bShrouded = FB2UD( pucTmp);
-	pucTmp += sizeof(FLMUINT);
+	pucTmp += sizeof( FLMUINT32);
 
 	// Actual length - note that the passed buffer is padded to 16 byte boundary.
 	
 	ui32Length = FB2UD( pucTmp);
-	pucTmp += sizeof(FLMUINT32);
+	pucTmp += sizeof( FLMUINT32);
 
 	// Get the IV
 	
@@ -1630,7 +1626,7 @@ RCODE F_CCS::setKeyFromStore(
 		// to machines with different byte ordering.
 		
 		if( RC_BAD( rc = f_calloc( f_strlen(pszEncKeyPasswd) +
-			(f_strlen(pszEncKeyPasswd) % 2) + 2, &pszFormattedEncKeyPasswd)))
+			(f_strlen( pszEncKeyPasswd) % 2) + 2, &pszFormattedEncKeyPasswd)))
 		{
 			goto Exit;
 		}
@@ -2110,7 +2106,6 @@ RCODE F_CCS::injectKey(
 	{
 		case NICI_K_AES:
 		{
-			/* Set key attributes */
 			uiIndx = 0;
 			keyAttr[uiIndx].type = NICI_A_KEY_TYPE;
 			keyAttr[uiIndx].u.f.hasValue = 1;
@@ -2156,7 +2151,6 @@ RCODE F_CCS::injectKey(
 		}
 		case NICI_K_DES3X:
 		{
-			/* Set key attributes */
 			uiIndx = 0;
 			keyAttr[uiIndx].type = NICI_A_KEY_TYPE;
 			keyAttr[uiIndx].u.f.hasValue = 1;
@@ -2559,7 +2553,7 @@ RCODE flmDecryptBuffer(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ; /* 16-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ;
 	algorithm.parameter->parms[0].u.b.ptr = pucIV;
 
 	// Init encryption
@@ -2594,8 +2588,7 @@ Desc:
 ****************************************************************************/
 RCODE flmEncryptBuffer(
 	FLMBYTE *				pucBuffer,
-	FLMUINT *				puiBufLen
-	)
+	FLMUINT *				puiBufLen)
 {
 	RCODE							rc = FERR_OK;
 
@@ -2614,7 +2607,8 @@ RCODE flmEncryptBuffer(
 	FLMBYTE						oid_aes[] = {IDV_AES128CBC};
 	FLMBYTE						pucIV[ IV_SZ];
 
-	/* Create NICI Context */
+	// Create NICI Context
+	
 	if (CCS_CreateContext(0, &context) != 0)
 	{
 		rc = RC_SET( FERR_NICI_CONTEXT);
@@ -2657,12 +2651,13 @@ RCODE flmEncryptBuffer(
 	algorithm.parameter = parm;
 	algorithm.parameter->count = 1;
 	algorithm.parameter->parms[0].parmType = NICI_P_IV;
-	algorithm.parameter->parms[0].u.b.len = IV_SZ; /* 16-byte IV */
+	algorithm.parameter->parms[0].u.b.len = IV_SZ;
 	algorithm.parameter->parms[0].u.b.ptr = pucIV;
 
 	GetIV(pucIV, IV_SZ);
 
-	/* init encryption */
+	// Init encryption
+	
 	if (CCS_DataEncryptInit(context, &algorithm, serverKeyHdl) != 0)
 	{
 		rc = RC_SET( FERR_NICI_ENC_INIT_FAILED);
@@ -2721,16 +2716,13 @@ FSTATIC void GetIV(
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-#ifdef FLM_USE_NICI
-#ifndef FLM_UNIX
-int	CCSX_SetNewIV(
-	int				,//MODULEID,
-	FLMUINT32		,//hContext,
-	pnuint8			,//IV,
-	nuint32			//IVLen
-	)
+#if defined( FLM_USE_NICI) && !defined( FLM_UNIX)
+int CCSX_SetNewIV(
+	int				,	// MODULEID,
+	FLMUINT32		,	// hContext,
+	pnuint8			,	// IV,
+	nuint32)				// IVLen
 {
-	return(NICI_E_FUNCTION_NOT_SUPPORTED);
+	return( NICI_E_FUNCTION_NOT_SUPPORTED);
 }
-#endif
 #endif

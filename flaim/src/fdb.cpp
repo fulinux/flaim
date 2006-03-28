@@ -422,7 +422,7 @@ Desc: This function checks to see if an update transaction should be forced
 ****************************************************************************/
 void flmExit(
 	eFlmFuncs	eFlmFuncId,
-	FDB_p			pDb,
+	FDB *			pDb,
 	RCODE			rc)
 {
 

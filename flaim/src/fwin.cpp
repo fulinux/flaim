@@ -25,22 +25,21 @@
 #include "flaimsys.h"
 
 #if defined( FLM_WIN)
-
-extern RCODE		gv_CriticalFSError;
-
-FSTATIC RCODE _DeleteFile(
-	const char *	path);
-
+	extern RCODE		gv_CriticalFSError;
+	
+	FSTATIC RCODE _DeleteFile(
+		const char *	path);
+#endif
 
 /***************************************************************************
 Desc:	Maps WIN errors to IO errors.
 ***************************************************************************/
+#if defined( FLM_WIN)
 RCODE MapWinErrorToFlaim(
 	DWORD		udErrCode,
 	RCODE		defaultRc)
 {
-
-	/* Switch on passed in error code value */
+	// Switch on passed in error code value
 
 	switch (udErrCode)
 	{
@@ -119,10 +118,12 @@ RCODE MapWinErrorToFlaim(
 
    }
 }
+#endif
 
 /****************************************************************************
 Desc:		Default Constructor for F_FileHdl class
 ****************************************************************************/
+#if defined( FLM_WIN)
 F_FileHdlImp::F_FileHdlImp()
 {
 	m_FileHandle = INVALID_HANDLE_VALUE;
@@ -139,10 +140,12 @@ F_FileHdlImp::F_FileHdlImp()
 	m_bCanDoAsync = FALSE;			// Change to TRUE when we want to do async writes.
 	m_Overlapped.hEvent = NULL;
 }
+#endif
 
 /****************************************************************************
 Desc:		Destructor for F_FileHdl class
 ****************************************************************************/
+#if defined( FLM_WIN)
 F_FileHdlImp::~F_FileHdlImp()
 {
 	// Close file if it was open.
@@ -151,6 +154,7 @@ F_FileHdlImp::~F_FileHdlImp()
 	{
 		(void)Close();
 	}
+	
 	if (m_pucAlignedBuff)
 	{
 		f_mutexLock( gv_FlmSysData.hShareMutex);
@@ -164,15 +168,18 @@ F_FileHdlImp::~F_FileHdlImp()
 		m_pucAlignedBuff = NULL;
 		m_uiAlignedBuffSize = 0;
 	}
+	
 	if (m_Overlapped.hEvent)
 	{
 		CloseHandle( m_Overlapped.hEvent);
 	}
 }
+#endif
 
 /***************************************************************************
 Desc:		Open or create a file.
 ***************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::OpenOrCreate(
 	const char *	pFileName,
    FLMUINT			uiAccess,
@@ -253,9 +260,7 @@ RCODE F_FileHdlImp::OpenOrCreate(
 		m_bCanDoAsync = gv_FlmSysData.bOkToDoAsyncWrites;
 	}
 
-	/*
-	Set up the file characteristics requested by caller.
-	*/
+	// Set up the file characteristics requested by caller.
 
    if (uiAccess & F_IO_SH_DENYRW)
    {
@@ -277,13 +282,14 @@ RCODE F_FileHdlImp::OpenOrCreate(
       udShareMode = (FILE_SHARE_READ | FILE_SHARE_WRITE);
 	}
 
-	/* Begin setting the CreateFile flags and fields */
+	// Begin setting the CreateFile flags and fields
 
    udAttrFlags = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS;
 	if (m_bDoDirectIO)
 	{
 		udAttrFlags |= FILE_FLAG_NO_BUFFERING;
 	}
+	
 	if (m_bCanDoAsync)
 	{
 		udAttrFlags |= FILE_FLAG_OVERLAPPED;
@@ -312,7 +318,7 @@ RCODE F_FileHdlImp::OpenOrCreate(
 
 Retry_Create:
 
-	/* Try to create or open the file */
+	// Try to create or open the file
 
 	if( (m_FileHandle = CreateFile( (LPCTSTR)pFileName, udAccessMode,
 					udShareMode, NULL, udCreateMode,
@@ -326,7 +332,7 @@ Retry_Create:
 
 			uiAccess &= ~F_IO_CREATE_DIR;
 
-			/* Remove the file name for which we are creating the directory. */
+			// Remove the file name for which we are creating the directory
 
 			if( RC_OK( f_pathReduce( szSaveFileName, ioDirPath, szTemp)))
 			{
@@ -340,6 +346,7 @@ Retry_Create:
 				}
 			}
 		}
+		
 		rc = MapWinErrorToFlaim( udErrCode,
 						(RCODE)(bCreateFlag
 								  ? (RCODE)(m_bDoDirectIO
@@ -350,20 +357,25 @@ Retry_Create:
 												: (RCODE)FERR_OPENING_FILE)));
 		goto Exit;
 	}
+	
 Exit:
+
 	if (RC_BAD( rc))
 	{
 		m_FileHandle = INVALID_HANDLE_VALUE;
 	}
+	
    return( rc );
 }
+#endif
 
 /****************************************************************************
 Desc:		Create a file 
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Create(
 	const char *	pszIoPath,
-	FLMUINT			uiIoFlags )
+	FLMUINT			uiIoFlags)
 {
 	RCODE				rc = FERR_OK;
 
@@ -387,10 +399,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::CreateUnique(
 	char *			pszIoPath,
 	const char *	pszFileExtension,
@@ -487,10 +501,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Open a file
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Open(
 	const char *	pszIoPath,
 	FLMUINT			uiIoFlags)
@@ -534,10 +550,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Close a file
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Close( void)
 {
 	FLMBOOL	bDeleteAllowed = TRUE;
@@ -583,11 +601,13 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
-Desc:		Does nothing.
+Desc:
 ****************************************************************************/
-RCODE F_FileHdlImp::Flush()
+#if defined( FLM_WIN)
+RCODE F_FileHdlImp::Flush( void)
 {
 	RCODE	rc = FERR_OK;
 
@@ -604,10 +624,12 @@ RCODE F_FileHdlImp::Flush()
 	}
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Allocate an aligned buffer.
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::AllocAlignBuffer( void)
 {
 	RCODE	rc = FERR_OK;
@@ -618,6 +640,7 @@ RCODE F_FileHdlImp::AllocAlignBuffer( void)
 	// boundary if it is not already on one.
 
 	m_uiAlignedBuffSize = RoundToNextSector( 64 * 1024);
+	
 	if ((m_pucAlignedBuff = (FLMBYTE *)VirtualAlloc( NULL,
 								(DWORD)m_uiAlignedBuffSize,
 								MEM_COMMIT, PAGE_READWRITE)) == NULL)
@@ -625,6 +648,7 @@ RCODE F_FileHdlImp::AllocAlignBuffer( void)
 		rc = MapWinErrorToFlaim( GetLastError(), FERR_MEM);
 		goto Exit;
 	}
+	
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +=
 		m_uiAlignedBuffSize;
@@ -633,16 +657,17 @@ RCODE F_FileHdlImp::AllocAlignBuffer( void)
 Exit:
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Position and do a single read operation.
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::DoOneRead(
 	DWORD			udReadOffset,
 	DWORD			udBytesToRead,
 	LPVOID		pvReadBuffer,
-	LPDWORD		pudBytesRead
-	)
+	LPDWORD		pudBytesRead)
 {
 	RCODE				rc = FERR_OK;
 	OVERLAPPED *	pOverlapped;
@@ -707,14 +732,18 @@ RCODE F_FileHdlImp::DoOneRead(
 			goto Exit;
 		}
 	}
+	
 Exit:
+
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Read from a file - reads using aligned buffers and offsets - only
 			sector boundaries
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::DirectRead(
 	FLMUINT		uiReadOffset,
 	FLMUINT		uiBytesToRead,	
@@ -826,11 +855,14 @@ RCODE F_FileHdlImp::DirectRead(
 		{
 			udBytesRead = (DWORD)uiBytesToRead;
 		}
+		
 		uiBytesToRead -= (FLMUINT)udBytesRead;
+		
 		if( puiBytesReadRV)
 		{
 			(*puiBytesReadRV) += (FLMUINT)udBytesRead;
 		}
+		
 		m_uiCurrentPos = uiReadOffset + (FLMUINT)udBytesRead;
 
 		// If using a different buffer for reading, copy the
@@ -840,8 +872,11 @@ RCODE F_FileHdlImp::DirectRead(
 		{
 			f_memcpy( pucDestBuffer, pucReadBuffer, udBytesRead);
 		}
+		
 		if (!uiBytesToRead)
+		{
 			break;
+		}
 
 		// Still more to read - did we hit EOF above?
 
@@ -850,17 +885,21 @@ RCODE F_FileHdlImp::DirectRead(
 			rc = RC_SET( FERR_IO_END_OF_FILE);
 			break;
 		}
+		
 		pucDestBuffer += udBytesRead;
 		uiReadOffset += (FLMUINT)udBytesRead;
 	}
 
 Exit:
-	return( rc );
+
+	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Read from a file
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Read(
 	FLMUINT		uiReadOffset,
 	FLMUINT		uiBytesToRead,	
@@ -917,12 +956,15 @@ RCODE F_FileHdlImp::Read(
 	}
 
 Exit:
-	return( rc );
+
+	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Sets current position of file.
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Seek(
 	FLMUINT		uiOffset,
 	FLMINT		iWhence,
@@ -954,14 +996,19 @@ RCODE F_FileHdlImp::Seek(
 			rc = RC_SET( FERR_NOT_IMPLEMENTED);
 			goto Exit;
 	}
+	
 	*puiNewOffset = m_uiCurrentPos;
+	
 Exit:
+
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Return the size of the file
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Size(
 	FLMUINT *	puiSize)
 {
@@ -978,13 +1025,17 @@ RCODE F_FileHdlImp::Size(
 		rc = MapWinErrorToFlaim( GetLastError(), FERR_GETTING_FILE_SIZE);
 		goto Exit;
 	}
+	
 Exit:
-	return( rc );
+
+	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Returns m_uiCurrentPos
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Tell(
 	FLMUINT *	puiOffset)
 {
@@ -1001,12 +1052,14 @@ Exit:
 	
 	return( rc );
 }
+#endif
 
 /****************************************************************************
 Desc:		Truncate the file to the indicated size
 WARNING: Direct IO methods are calling this method.  Make sure that all changes
 			to this method work in direct IO mode.
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Truncate(
 	FLMUINT	uiSize)
 {
@@ -1037,20 +1090,23 @@ RCODE F_FileHdlImp::Truncate(
 		rc = MapWinErrorToFlaim( GetLastError(), FERR_TRUNCATING_FILE);
 		goto Exit;
 	}
+	
 Exit:
+
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Handles when a file is extended in direct IO mode.  May extend the
 			file some more.  Will always call FlushFileBuffers to ensure that
 			the new file size gets written out.
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::extendFile(
-	FLMUINT	uiEndOfLastWrite,	// Must be on a sector boundary
-	FLMUINT	uiMaxBytesToExtend,
-	FLMBOOL	bFlush
-	)
+	FLMUINT			uiEndOfLastWrite,	// Must be on a sector boundary
+	FLMUINT			uiMaxBytesToExtend,
+	FLMBOOL			bFlush)
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiTotalBytesToExtend;
@@ -1201,12 +1257,15 @@ RCODE F_FileHdlImp::extendFile(
 	}
 
 Exit:
+
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Write to a file using direct IO
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::DirectWrite(
 	FLMUINT			uiWriteOffset,
 	FLMUINT			uiBytesToWrite,
@@ -1549,10 +1608,12 @@ Exit:
 
 	return( rc );
 }
+#endif
 
 /****************************************************************************
 Desc:		Write to a file
 ****************************************************************************/
+#if defined( FLM_WIN)
 RCODE F_FileHdlImp::Write(
 	FLMUINT			uiWriteOffset,
 	FLMUINT			uiBytesToWrite,
@@ -1663,32 +1724,34 @@ RCODE F_FileHdlImp::Write(
 	}
 
 Exit:
-	return( rc );
+
+	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:	Deletes a file.
 ****************************************************************************/
+#if defined( FLM_WIN)
 FSTATIC RCODE _DeleteFile(
 	const char *	path)
 {
 	RCODE			rc = FERR_OK;
 
-	/* Delete the file */
    if( DeleteFile( (LPTSTR)path) == FALSE)
 	{
 		rc = MapWinErrorToFlaim( GetLastError(), FERR_DELETING_FILE);
 	}
 
 	return( rc);
-} 
+}
+#endif
 
-#else
-	#if defined( FLM_NLM) && !defined( __MWERKS__)
-		int gv_iXxxxxDummy( void)
-		{
-			return( 0);
-		}
-	#endif
-#endif // #if defined( FLM_WIN)
+/****************************************************************************
+Desc:
+****************************************************************************/
+int fwinDummy( void)
+{
+	return( 0);
+}
 

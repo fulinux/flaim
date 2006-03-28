@@ -32,18 +32,16 @@ FSTATIC RCODE	flmRecordRetrieveCS(
 	FlmRecord **	ppRecord,
 	FLMUINT *		puiDrnRV);
 
-
-/*API~***********************************************************************
-Desc : Retrieves a single record from a container.
-*END************************************************************************/
+/****************************************************************************
+Desc:	Retrieves a single record from a container.
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmRecordRetrieve(
 	HFDB				hDb,
 	FLMUINT 			uiContainer,
 	FLMUINT			uiDrn,
 	FLMUINT			uiFlag,
 	FlmRecord **	ppRecord,
-	FLMUINT *		puiDrnRV
-	)
+	FLMUINT *		puiDrnRV)
 {
 	FLMUINT			uiKeyRelPos;
 	FLMBOOL			bTransStarted;
@@ -51,7 +49,7 @@ FLMEXP RCODE FLMAPI FlmRecordRetrieve(
 	LFILE *			pLFile;
 	BTSK				stack[ BH_MAX_LEVELS];
 	FLMBOOL			bStackInitialized = FALSE;
-	BTSK_p			pStack;
+	BTSK *			pStack;
 	FLMBYTE			pSearchBuf[ DRN_KEY_SIZ + 4];
 	FLMBYTE			pKeyBuf[ DRN_KEY_SIZ + 4];
 	FDB *				pDb = (FDB *)hDb;
@@ -89,9 +87,11 @@ FLMEXP RCODE FLMAPI FlmRecordRetrieve(
 	}
 
 	// Remove the exclusive case and turn it into an inclusive search.
+	
 	if( uiFlag & FO_EXCL)
 	{
 		// For records, exclusive is same as inclusive drn+1
+		
 		uiDrn++;
 		uiFlag &= ~FO_EXCL;
 		uiFlag = FO_INCL;
@@ -134,13 +134,11 @@ FLMEXP RCODE FLMAPI FlmRecordRetrieve(
 	else // only FO_INCL case can exist for the else case.
 	{
 
-		/*
-		Let's be optimistic and see if record is already in cache
-		before we search the b-tree.  Don't try to retrieve the record from
-		disk if it is not in cache ... the next record may not have a DRN
-		of uiDrn and we don't want to search the b-tree twice to fetch
-		the next record.
-		*/
+		// Let's be optimistic and see if record is already in cache
+		// before we search the b-tree.  Don't try to retrieve the record from
+		// disk if it is not in cache ... the next record may not have a DRN
+		// of uiDrn and we don't want to search the b-tree twice to fetch
+		// the next record.
 
 		if( RC_OK( rc = flmRcaRetrieveRec( pDb, &bTransStarted,
 			uiContainer, uiDrn, FALSE, NULL, NULL, ppRecord)))
@@ -171,13 +169,14 @@ Search_Record:
 		{
 			goto Exit;
 		}
+
 		flmUINT32ToBigEndian( (FLMUINT32)uiDrn, pSearchBuf);
 		FSInitStackCache( &stack [0], BH_MAX_LEVELS);
 		pStack = &stack[0];
 		bStackInitialized = TRUE;
 		pStack->pKeyBuf = pKeyBuf;
 			
-		/* Search the B-Tree for the key. */
+		// Search the B-Tree for the key.
 		
 		if (RC_BAD( rc = FSBtSearch( pDb, pLFile, &pStack, pSearchBuf, 4, 0)))
 		{
@@ -232,6 +231,7 @@ Search_Record:
 							{ 
 								rc = RC_SET( FERR_BTREE_ERROR);
 							}
+							
 							goto Exit;
 						}
 					}
@@ -256,10 +256,12 @@ Search_Record:
 			{
 				rc = RC_SET( FERR_EOF_HIT);
 			}
+			
 			goto Exit;
 		}
 
 		// Need to return the record?
+		
 		if( ppRecord)
 		{
 			if( RC_BAD( rc = flmRcaRetrieveRec( pDb, NULL,
@@ -283,7 +285,8 @@ Search_Record:
 
 ExitCS:
 
-	/* Call record validator callback */
+	// Call record validator callback
+	
 	if( pDb->fnRecValidator)
 	{
 		FLMBOOL	bSavedInvisTrans;
@@ -296,15 +299,16 @@ ExitCS:
 
 Exit:
 	
-	if( bStackInitialized)
+	if (bStackInitialized)
 	{
 		FSReleaseStackCache( stack, BH_MAX_LEVELS, FALSE);
 	}
 
-	if ( bTransStarted)
+	if (bTransStarted)
 	{
-		RCODE rc2 = flmAbortDbTrans( pDb);
-		if ( RC_OK( rc))
+		RCODE 	rc2 = flmAbortDbTrans( pDb);
+		
+		if (RC_OK( rc))
 		{
 			rc = rc2;
 		}
@@ -316,14 +320,14 @@ Exit:
 	{
 		pDb = NULL;
 	}
+	
 	flmExit( FLM_RECORD_RETRIEVE, pDb, rc);
-
 	return( rc);
 }
 
 /****************************************************************************
 Desc:		Retrieves a record based on uiDrn and uiFlag client-server.
-*END************************************************************************/
+****************************************************************************/
 FSTATIC RCODE flmRecordRetrieveCS(
 	FDB *				pDb,
 	FLMUINT 			uiContainer,
@@ -333,14 +337,12 @@ FSTATIC RCODE flmRecordRetrieveCS(
 	FLMUINT *		puiDrnRV)
 {
 	RCODE				rc;
-	CS_CONTEXT_p	pCSContext = pDb->pCSContext;
+	CS_CONTEXT *	pCSContext = pDb->pCSContext;
 	void *			pvMark = GedPoolMark( &pCSContext->pool);
 	FCL_WIRE			Wire( pCSContext, pDb);
 
-	/*
-	Set the record object so that it can be re-used,
-	if possible
-	*/
+	// Set the record object so that it can be re-used,
+	// if possible
 
 	if( ppRecord)
 	{
@@ -352,13 +354,11 @@ FSTATIC RCODE flmRecordRetrieveCS(
 		}
 	}
 
-	/*
-	Set the temporary pool
-	*/
+	// Set the temporary pool
 
 	Wire.setPool( &pCSContext->pool);
 
-	/* Send a request to retrieve the record. */
+	// Send a request to retrieve the record
 
 	if (RC_BAD( rc = Wire.sendOp( FCS_OPCLASS_RECORD,
 		FCS_OP_RECORD_RETRIEVE)))
@@ -404,7 +404,7 @@ FSTATIC RCODE flmRecordRetrieveCS(
 		goto Transmission_Error;
 	}
 
-	/* Read the response. */
+	// Read the response
 
 	if (RC_BAD( rc = Wire.read()))
 	{
@@ -435,6 +435,7 @@ Exit:
 	return( rc);
 
 Transmission_Error:
+
 	pCSContext->bConnectionGood = FALSE;
 	goto Exit;
 }

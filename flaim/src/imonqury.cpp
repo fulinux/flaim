@@ -34,8 +34,8 @@
 #define Q_DOT_COLOR			FLM_BLACK
 
 FSTATIC FLMBOOL findSubQuery(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery);
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery);
 
 /****************************************************************************
 Desc: Class for formatting a query into HTML
@@ -49,14 +49,14 @@ public:
 	void formatQuery(
 		HRequest *	pHRequest,
 		F_WebPage *	pWebPage,
-		CURSOR_p		pCursor,
+		CURSOR *		pCursor,
 		FLMBOOL		bSingleLineOnly,
 		FLMUINT		uiMaxChars);
 
 	void outputSubqueryStats(
 		HRequest *	pHRequest,
 		F_WebPage *	pWebPage,
-		SUBQUERY_p	pSubQuery);
+		SUBQUERY *	pSubQuery);
 
 private:
 
@@ -113,13 +113,13 @@ private:
 	void outputSubQuery(
 		FLMUINT			uiIndent,
 		QTYPES			eParentOp,
-		CURSOR_p			pReferenceCursor,
+		CURSOR *			pReferenceCursor,
 		SUBQUERY *		pSubQuery);
 
 	void outputQuery(
 		FLMUINT			uiIndent,
-		CURSOR_p			pReferenceCursor,
-		CURSOR_p			pCursor);
+		CURSOR *			pReferenceCursor,
+		CURSOR *			pCursor);
 
 	void outputLabel(
 		const char *	pszLabel,
@@ -209,12 +209,12 @@ RCODE F_QueriesPage::display(
 	while (pQueryHdr)
 	{
 		char			szAddress [20];
-		CURSOR_p		pCursor;
-		SUBQUERY_p	pSubQuery;
+		CURSOR *		pCursor;
+		SUBQUERY *	pSubQuery;
 		FLMUINT		uiRecCount;
 
 		hCursor = pQueryHdr->hCursor;
-		pCursor = (CURSOR_p)hCursor;
+		pCursor = (CURSOR *)hCursor;
 
 		// Setup a hyperlink for the query.
 
@@ -822,7 +822,7 @@ void F_QueryFormatter::outputText(
 		}
 
 		ucChar = *pucBuf;
-		uiObjType = GedTextObjType( ucChar);
+		uiObjType = flmTextObjType( ucChar);
 		switch (uiObjType)
 		{
 			case ASCII_CHAR_CODE:  			// 0nnnnnnn
@@ -1046,12 +1046,12 @@ Desc:	This routine outputs a subquery.
 void F_QueryFormatter::outputSubQuery(
 	FLMUINT			uiIndent,
 	QTYPES			eParentOp,
-	CURSOR_p			pReferenceCursor,
+	CURSOR *			pReferenceCursor,
 	SUBQUERY *		pSubQuery
 	)
 {
 	char *		pszURL = NULL;
-	FQNODE_p		pQNode;
+	FQNODE *		pQNode;
 	QTYPES		eCurrentOp;
 	QTYPES		eTmpParentOp;
 	FLMBOOL		bIndentOptInfo = TRUE;
@@ -1140,7 +1140,7 @@ void F_QueryFormatter::outputSubQuery(
 					newline();
 				}
 				uiIndent += 2;
-				outputQuery( uiIndent, pReferenceCursor, (CURSOR_p)hCursor);
+				outputQuery( uiIndent, pReferenceCursor, (CURSOR *)hCursor);
 				uiIndent -= 2;
 				if (!m_bSingleLineOnly)
 				{
@@ -1255,7 +1255,7 @@ Desc:	This routine formats the query criteria for a cursor and optionally
 void F_QueryFormatter::formatQuery(
 	HRequest *	pHRequest,
 	F_WebPage *	pWebPage,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bSingleLineOnly,
 	FLMUINT		uiMaxChars
 	)
@@ -1276,8 +1276,8 @@ Desc:	This routine formats the query criteria for a cursor and optionally
 ****************************************************************************/
 void F_QueryFormatter::outputQuery(
 	FLMUINT			uiIndent,
-	CURSOR_p			pReferenceCursor,
-	CURSOR_p			pCursor
+	CURSOR *			pReferenceCursor,
+	CURSOR *			pCursor
 	)
 {
 	SUBQUERY *		pSubQuery;
@@ -1387,7 +1387,7 @@ RCODE F_QueryPage::display(
 	{
 		// Output query
 
-		qf.formatQuery( m_pHRequest, this, (CURSOR_p)hCursor, FALSE, 0);
+		qf.formatQuery( m_pHRequest, this, (CURSOR *)hCursor, FALSE, 0);
 	}
 	else
 	{
@@ -1417,11 +1417,11 @@ Exit:
 Desc:	Find a sub-query within a cursor.
 ****************************************************************************/
 FSTATIC FLMBOOL findSubQuery(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery
 	)
 {
-	SUBQUERY_p	pTmpSubQuery;
+	SUBQUERY *	pTmpSubQuery;
 	FLMBOOL		bFound = FALSE;
 	HFCURSOR		hTmpCursor;
 	FLMUINT		uiLoop;
@@ -1446,7 +1446,7 @@ FSTATIC FLMBOOL findSubQuery(
 		if ((hTmpCursor = pCursor->QTInfo.ppPredicates [uiLoop]->getCursor()) !=
 						HFCURSOR_NULL)
 		{
-			if (findSubQuery( (CURSOR_p)hTmpCursor, pSubQuery))
+			if (findSubQuery( (CURSOR *)hTmpCursor, pSubQuery))
 			{
 				bFound = TRUE;
 				goto Exit;
@@ -1470,7 +1470,7 @@ RCODE F_QueryStatsPage::display(
 	RCODE					rc = FERR_OK;
 	QUERY_HDR *			pQueryHdr;
 	HFCURSOR				hCursor;
-	SUBQUERY_p			pSubQuery;
+	SUBQUERY *			pSubQuery;
 	char					szPtr [100];
 	F_QueryFormatter	qf;
 	FLMBOOL				bMutexLocked = FALSE;
@@ -1493,7 +1493,7 @@ RCODE F_QueryStatsPage::display(
 	{
 		goto Exit;
 	}
-	pSubQuery = (SUBQUERY_p)f_atoud( szPtr);
+	pSubQuery = (SUBQUERY *)f_atoud( szPtr);
 
 	// Lock the mutex on the queries
 
@@ -1513,7 +1513,7 @@ RCODE F_QueryStatsPage::display(
 
 		// Make sure we can find the sub-query.
 
-		if (!findSubQuery( (CURSOR_p)hCursor, pSubQuery))
+		if (!findSubQuery( (CURSOR *)hCursor, pSubQuery))
 		{
 			fnPrintf( m_pHRequest,
 				"<center>SubQuery is no longer in the query!</center>\n");
@@ -1723,7 +1723,7 @@ Desc:	This routine formats the sub-query statistics.
 void F_QueryFormatter::outputSubqueryStats(
 	HRequest *		pHRequest,
 	F_WebPage *		pWebPage,
-	SUBQUERY_p		pSubQuery
+	SUBQUERY *		pSubQuery
 	)
 {
 	FLMBYTE *	pucFromKey = NULL;

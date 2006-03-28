@@ -84,6 +84,7 @@ class F_ThreadMgr;
 #define FLM_CHECKPOINT_THREAD_GROUP					2
 #define FLM_BACKGROUND_INDEXING_THREAD_GROUP		3
 #define FLM_DB_THREAD_GROUP							4
+#define FLM_DB_MONITOR_THREAD_GROUP					5
 
 /****************************************************************************
 Desc: 	Class for managing a set of threads

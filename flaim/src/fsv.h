@@ -30,6 +30,7 @@
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
 
+#define FSV_MAX_TCP_HANDLERS					64
 #define FSV_LOG_BUFFER_SIZE					256
 
 // Server defaults
@@ -50,13 +51,12 @@
 #define FSV_OBJECT_ROPS							0x0007
 #define FSV_OBJECT_POOL							0x0008
 
-typedef struct
+typedef struct FSV_RECORD_ID
 {
 	FLMUINT		uiDatabaseId;
 	FLMUINT		uiStore;
 	FLMUINT		uiContainer;
 	FLMUINT		uiDrn;
-
 } FSV_RECORD_ID;
 
 #ifdef FLM_NLM
@@ -256,14 +256,7 @@ private:
 #define MAX_SESN_ITERATORS			10
 	HFCURSOR				m_IteratorList[ MAX_SESN_ITERATORS];
 	POOL					m_wireScratchPool;
-
-	/*
-	Metchods
-	*/
-
 };
-
-
 
 /****************************************************************************
 
@@ -550,7 +543,7 @@ RCODE	fsvGetStreamedResponse(
 	FLMBOOL *			pbLastPacket);
 
 RCODE fsvStreamLoopback(
-	FCS_BIOS_p			pStream,
+	FCS_BIOS *			pStream,
 	FLMUINT				uiEvent,
 	void *				UserData);
 

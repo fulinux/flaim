@@ -4393,7 +4393,7 @@ FLMINT FlmEditCommand::execute(
 
 	f_sprintf( szTitle,
 		"Database Edit for FLAIM [DB=%s/BUILD=%s]",
-		FLM_CURRENT_VER_STR, __DATE__);
+		FLM_CUR_FILE_FORMAT_VER_STR, __DATE__);
 
 	if( FTXScreenInit( gv_pFtxInfo, szTitle, &pScreen) != FTXRC_SUCCESS)
 	{

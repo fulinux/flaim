@@ -24,10 +24,6 @@
 
 #include "flaimsys.h"
 
-#if( defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
-
-static unsigned long gv_mmxCheckSumFlag = 1;
-
 #if defined( FLM_WATCOM_NLM)
 
 	extern void FastBlockCheckSumMMX(
@@ -44,7 +40,9 @@ static unsigned long gv_mmxCheckSumFlag = 1;
 	
 	extern unsigned long GetMMXSupported(void);
 	
-#else
+	static unsigned long gv_mmxCheckSumFlag = 1;
+
+#elif (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 
 	static void FastBlockCheckSumMMX(
 			void *			pBlk,
@@ -59,6 +57,8 @@ static unsigned long gv_mmxCheckSumFlag = 1;
 			unsigned long	uiNumberOfBytes);
 	
 	static unsigned long GetMMXSupported(void);
+	
+	static unsigned long gv_mmxCheckSumFlag = 1;
 	
 #endif
 
@@ -77,7 +77,7 @@ Ret:	0 or 1 if CPU supports MMX
 		0x0F 0x95 0xC0                      /* setnz	al  		*/\
 		modify exact [EAX EBX ECX EDX];
 
-#else
+#elif (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 
 	unsigned long GetMMXSupported( void)
 	{
@@ -208,7 +208,7 @@ Desc: Performs part of the FLAIM block checksum algorithm
 		parm [ESI] [eax] [ebx] [ecx]	\
 		modify exact [eax ebx ecx edx ESI EDI];
 
-#else
+#elif (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 
 	static void FastBlockCheckSumMMX(
 			void *			pBlk,
@@ -405,84 +405,85 @@ Desc: Performs part of the FLAIM block checksum algorithm
 	0x89 0x17                       /* mov		[edi], edx 						*/\
 	parm [ESI] [eax] [ebx] [ecx]	\
 	modify exact [eax ebx ecx edx ESI EDI];
-#else
+	
+#elif (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 
-static void FastBlockCheckSum386(
-		void *			pBlk,
-		unsigned long *puiChecksum,	
-		unsigned long *puiXORdata,
-		unsigned long	uiNumberOfBytes)
-{
-	__asm
+	static void FastBlockCheckSum386(
+			void *			pBlk,
+			unsigned long *puiChecksum,	
+			unsigned long *puiXORdata,
+			unsigned long	uiNumberOfBytes)
 	{
-			mov		esi, pBlk
-
-			// Load up the starting checksum values into edx (add) and ebx (XOR)
-
-			mov		eax, puiChecksum
-			mov		edx, [eax]				// Set local add
-			and		edx, 0ffh			;clear unneeded bits 
-			mov		eax, puiXORdata
-			mov		ebx, [eax]
-			and		ebx, 0ffh			;clear unneeded bits 
-			mov		ecx, uiNumberOfBytes
-
-                              ;dl contains the sum to this point 		
-                              ;ebx contains the xor to this point - 32 bits wide. 
-                              ;ecx contains the bytes still left to do 
-                              ;esi contains pointer to data to checksum 
-			cmp		ecx, 4 							
-			jb			SmallStuff 					
-			mov		edi, ecx 						
-			shr		ecx, 2 							
-			and		edi, 3 							
-DSSumLoop: 								
-			mov		eax, [esi] 						
-			add		esi, 4 							
-			xor		ebx, eax 						
-			add		dl, al 							
-			add		dh, ah 							
-			shr		eax, 16 						
-			add		dl, al 							
-			add		dh, ah 							
-			dec		ecx 							
-			jnz		DSSumLoop 						
-			mov		ecx, edi		;load up the rest of the length 
-                              ;dl contains half the sum to this point 	
-                              ;dh contains half the sum to this point 	
-                              ;ebx contains the xor to this point - 32 bits wide. 
-                              ;ecx contains the bytes still left to do 
-                              ;esi contains pointer to data to checksum 
-SmallStuff: 							
-			add		dl, dh		;get complete sum in dl 
-			mov		eax, ebx		;get complete xor in bl
-			shr		eax, 16 						
-			xor		bx, ax 							
-			xor		bl, bh 							
-			cmp		ecx, 0		;see if anything left to do - 3 or less bytes 
-			jz			Done 							
-
-SmallStuffLoop: 						
-			mov		al, [esi] 						
-			inc		esi								
-			add		dl, al 							
-			xor		bl, al 							
-			dec		ecx 							
-			jnz		SmallStuffLoop 				
-Done:
-			and		edx, 0ffh	;clear unneeded bits 
-			and		ebx, 0ffh	;clear unneeded bits 
-		
-			// Set the return values.
-
-			mov		eax, puiChecksum		// Address of add result/start
-			mov		[eax], edx
-
-			mov		eax, puiXORdata		// Address of xor result/start
-			mov		[eax], ebx
+		__asm
+		{
+				mov		esi, pBlk
+	
+				// Load up the starting checksum values into edx (add) and ebx (XOR)
+	
+				mov		eax, puiChecksum
+				mov		edx, [eax]				// Set local add
+				and		edx, 0ffh			;clear unneeded bits 
+				mov		eax, puiXORdata
+				mov		ebx, [eax]
+				and		ebx, 0ffh			;clear unneeded bits 
+				mov		ecx, uiNumberOfBytes
+	
+											;dl contains the sum to this point 		
+											;ebx contains the xor to this point - 32 bits wide. 
+											;ecx contains the bytes still left to do 
+											;esi contains pointer to data to checksum 
+				cmp		ecx, 4 							
+				jb			SmallStuff 					
+				mov		edi, ecx 						
+				shr		ecx, 2 							
+				and		edi, 3 							
+	DSSumLoop: 								
+				mov		eax, [esi] 						
+				add		esi, 4 							
+				xor		ebx, eax 						
+				add		dl, al 							
+				add		dh, ah 							
+				shr		eax, 16 						
+				add		dl, al 							
+				add		dh, ah 							
+				dec		ecx 							
+				jnz		DSSumLoop 						
+				mov		ecx, edi		;load up the rest of the length 
+											;dl contains half the sum to this point 	
+											;dh contains half the sum to this point 	
+											;ebx contains the xor to this point - 32 bits wide. 
+											;ecx contains the bytes still left to do 
+											;esi contains pointer to data to checksum 
+	SmallStuff: 							
+				add		dl, dh		;get complete sum in dl 
+				mov		eax, ebx		;get complete xor in bl
+				shr		eax, 16 						
+				xor		bx, ax 							
+				xor		bl, bh 							
+				cmp		ecx, 0		;see if anything left to do - 3 or less bytes 
+				jz			Done 							
+	
+	SmallStuffLoop: 						
+				mov		al, [esi] 						
+				inc		esi								
+				add		dl, al 							
+				xor		bl, al 							
+				dec		ecx 							
+				jnz		SmallStuffLoop 				
+	Done:
+				and		edx, 0ffh	;clear unneeded bits 
+				and		ebx, 0ffh	;clear unneeded bits 
+			
+				// Set the return values.
+	
+				mov		eax, puiChecksum		// Address of add result/start
+				mov		[eax], edx
+	
+				mov		eax, puiXORdata		// Address of xor result/start
+				mov		[eax], ebx
+		}
+		return;
 	}
-	return;
-}
 #endif
 
 /******************************************************************************
@@ -491,7 +492,7 @@ Desc: Performs part of the FLAIM block checksum algorithm
 Note:	FastBlockCheckSum will start with the checksum and xordata you
 		pass in.  It assumes that the data is already dword aligned.
 ******************************************************************************/
-
+#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 void FastBlockCheckSum(
 		void *			pBlk,
 		FLMUINT *		puiChecksum,	
@@ -509,111 +510,295 @@ void FastBlockCheckSum(
 					(unsigned long *) puiXORdata, (unsigned long) uiNumberOfBytes);
 	}
 }
+#endif
 
 /******************************************************************************
 Desc: Sets the global variable to check if MMX instructions are allowed.
 ******************************************************************************/
-void InitFastBlockCheckSum(void)
+#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
+void InitFastBlockCheckSum( void)
 {
-	/* NOTE that GetMMXSupported assumes that we are running on at least a
-	 * pentium.  The check to see if we are on a pentium requires that  we
-	 * modify the flags register, and we can't do that if we are running
-	 * in ring3.  Because NetWare 5 - according to our product marketing -
-	 * requires at least a P5 90Mhz, we will be safe.  When you port this
-	 * code to NT, you may need to come up with a safe way to see if we
-	 * can do MMX instructions - unless you can assume that even on NT you
-	 * will be on at least a P5.
-	 */
+	// NOTE that GetMMXSupported assumes that we are running on at least a
+	// pentium.  The check to see if we are on a pentium requires that  we
+	// modify the flags register, and we can't do that if we are running
+	// in ring3.  Because NetWare 5 - according to our product marketing -
+	// requires at least a P5 90Mhz, we will be safe.  When you port this
+	// code to NT, you may need to come up with a safe way to see if we
+	// can do MMX instructions - unless you can assume that even on NT you
+	// will be on at least a P5.
+	
 	gv_mmxCheckSumFlag = GetMMXSupported();
 }
+#endif
 
-/****************************************************************************/
-
-
-/*
-	Routine to memset the stack.  This is used to find code
-	that may access uninitialized values on the stack.
-
-	How to use this under Netware.
-
-	1. Compile what code as if you were running the profiler.
-	To do this type "m debug PROFILE NLM".  This adds a __PRO
-	and a __EPI call to every routine.
-
-   2. Make sure that this file is NOT compiled with the PROFILE
-	on the command line - or else we could recurse forever. 
-	Recompile this file just to make sure "m debug nlm" after
-	you remove the comments before "#define STACK_CLEAR below.
-
-   3. Run the nlm watching for any protection errors.  You may
-	want to change EAX in the memset to 0xFE so that some code
-	like 
-		if (pUninitialized) *pUninitialized = 0;
-	will cause a protection fault.
-*/
-
-//#define STACK_CLEAR
-
-#if defined( FLM_NLM) && defined( STACK_CLEAR)
-extern "C"
+/********************************************************************
+Desc: Compares or sets the checksum value in a block.  
+		Operates to compare the block checksum with the actual checksum.
+Ret:	if (Compare) returns FERR_BLOCK_CHECKSUM block checksum does
+		not agree with checksum header values.  
+*********************************************************************/
+RCODE BlkCheckSum(
+	FLMBYTE *	pucBlkPtr,		// Points to block
+	FLMINT		iCompare,		// TRUE compare checksums, FALSE set chksum
+										// Use CHECKSUM_CHECK or CHECKSUM_SET
+	FLMUINT		uiBlkAddress,	// Expected block address (3.x version)
+	FLMUINT		uiBlkSize)		// Used to verify that we don't read outside
+										// of an allocation.
 {
-	// This routines will have to be defined in the nlm.imp file.
+	RCODE				rc = FERR_OK;
+#if !((defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM))
+	FLMBYTE			ucTmp;
+	FLMBYTE *		pucCur;
+	FLMBYTE *		pucEnd;
+#endif
+	FLMUINT			uiAdds;
+	FLMUINT			uiXORs;
+	FLMUINT			uiCurrCheckSum = 0;
+	FLMUINT			uiNewCheckSum;
+	FLMUINT			uiEncryptSize;
+	FLMBYTE *		pucSaveBlkPtr = pucBlkPtr;
 
-	LONG GetRunningProcess(void);
-	void *GetPCBStackLimit( struct PCBStructure *pcb );
+	// Check the block length against the maximum block size
 
-	void __PRO()
+	uiEncryptSize = (FLMUINT)getEncryptSize( pucBlkPtr);
+	if( uiEncryptSize > uiBlkSize || uiEncryptSize < BH_OVHD)
 	{
-		;
+		rc = RC_SET( FERR_BLOCK_CHECKSUM);
+		goto Exit;
+	}	
+
+	// If we are comparing, but there is no current checksum just return.
+	// The next time the checksum is modified, the comparison will be performed. 
+	// Version 3.x will store the full block address or if
+	// a checksum is used, the lost low byte of block address is checksummed.
+
+	if( iCompare == CHECKSUM_CHECK)
+	{
+		uiCurrCheckSum = (FLMUINT)(((FLMUINT)pucBlkPtr[ BH_CHECKSUM_HIGH] << 8) + 
+											 (FLMUINT)pucBlkPtr[ BH_CHECKSUM_LOW]);
 	}
 
-	void __EPI()
+	// We need to checksum the data that is encrypted. 
+	// This is done by the getEncryptSize() call.
+
+	// Check all of block, except for embedded checksum bytes.
+	// For speed, the initial values of uiAdds and uiXORs effectively ignore/skip
+	// the checksum values already embedded in the source: (a - a) == 0 and 
+	// (a ^ a) == 0 so the initial values, net of the 2nd operations, equal zero
+	// too.  
+
+	uiAdds = 0 - (pucBlkPtr[ BH_CHECKSUM_LOW] + pucBlkPtr[ BH_CHECKSUM_HIGH]);
+	uiXORs = pucBlkPtr[ BH_CHECKSUM_LOW] ^ pucBlkPtr[ BH_CHECKSUM_HIGH];
+
+	// The 3.x version checksums the low byte of the address.
+
+	if( uiBlkAddress != BT_END)
 	{
-		char *pStackLimit;
+		uiAdds += (FLMBYTE)uiBlkAddress;
+		uiXORs ^= (FLMBYTE)uiBlkAddress;
+	}
+
+#if defined( FLM_NLM) || (defined( FLM_WIN) && !defined( FLM_64BIT))
+
+	FastBlockCheckSum( pucBlkPtr, &uiAdds, &uiXORs,
+		(unsigned long)uiEncryptSize);
+
+#else
+
+#ifdef FLM_64BIT
+	pucCur = pucBlkPtr;
+	pucEnd = pucBlkPtr + (uiEncryptSize & 0xFFFFFFFFFFFFFFF8);
+#else
+	pucCur = pucBlkPtr;
+	pucEnd = pucBlkPtr + (uiEncryptSize & 0xFFFFFFFC);
+#endif
+
+	while( pucCur < pucEnd)
+	{
+		FLMUINT	uiValue = *(FLMUINT *)pucCur;
+
+		uiXORs ^= uiValue;
+
+		uiAdds += (FLMBYTE)uiValue;
+
+		uiValue >>= 8;
+		uiAdds += (FLMBYTE)uiValue;
+
+		uiValue >>= 8;
+		uiAdds += (FLMBYTE)uiValue;
+
+#ifdef FLM_64BIT
+		uiValue >>= 8;
+		uiAdds += (FLMBYTE)uiValue;
+
+		uiValue >>= 8;
+		uiAdds += (FLMBYTE)uiValue;
+
+		uiValue >>= 8;
+		uiAdds += (FLMBYTE)uiValue;
+
+		uiValue >>= 8;
+		uiAdds += (FLMBYTE)uiValue;
+#endif
+
+		uiAdds += (FLMBYTE)(uiValue >> 8);
+		pucCur += sizeof( FLMUINT);
+	}
+
+	ucTmp = (FLMBYTE)uiXORs;
+	ucTmp ^= (FLMBYTE)(uiXORs >> 8);
+	ucTmp ^= (FLMBYTE)(uiXORs >> 16);
+	ucTmp ^= (FLMBYTE)(uiXORs >> 24);
+#ifdef FLM_64BIT
+	ucTmp ^= (FLMBYTE)(uiXORs >> 32);
+	ucTmp ^= (FLMBYTE)(uiXORs >> 40);
+	ucTmp ^= (FLMBYTE)(uiXORs >> 48);
+	ucTmp ^= (FLMBYTE)(uiXORs >> 56);
+#endif
+	uiXORs = ucTmp;
+
+	pucCur = pucEnd;
+	pucEnd = pucBlkPtr + uiEncryptSize;
+
+	while( pucCur < pucEnd)	
+	{
+		uiAdds += *pucCur;
+		uiXORs ^= *pucCur++;
+	}
+#endif
+
+	uiNewCheckSum = (((uiAdds << 8) + uiXORs) & 0xFFFF);
+	
+	// Set the checksum
+	
+	if (iCompare == CHECKSUM_SET)
+	{
+		pucSaveBlkPtr[ BH_CHECKSUM_HIGH] = (FLMBYTE)(uiNewCheckSum >> 8);
+		pucSaveBlkPtr[ BH_CHECKSUM_LOW] = (FLMBYTE)uiNewCheckSum;
+		goto Exit;
+	}
+
+	// The checksum is different from the stored checksum.
+	// For version 3.x database we don't store the low byte of the
+	// address.  Thus, it will have to be computed from the checksum.
+
+	if( uiBlkAddress == BT_END)
+	{
+		FLMBYTE		byXor;
+		FLMBYTE		byAdd;
+		FLMBYTE		byDelta;
 		
-		__asm
-		{
-			// Save these registers before making any call.
-			// The "C" call already saves EBX, EDI and ESI on the stack.
-			push eax
-			push ecx
-		}
-
-		pStackLimit = (char *)
-			GetPCBStackLimit((struct PCBStructure *)GetRunningProcess());
+		// If there is a one byte value that will satisfy both
+		// sides of the checksum, the checksum is OK and that value
+		// is the first byte value.
 		
-		__asm
+		byXor = (FLMBYTE) uiNewCheckSum;
+		byAdd = (FLMBYTE) (uiNewCheckSum >> 8);
+		byDelta = byXor ^ pucSaveBlkPtr [BH_CHECKSUM_LOW];
+		
+		// Here is the big check, if byDelta is also what is
+		// off with the add portion of the checksum, we have
+		// a good value.
+		
+		if( ((FLMBYTE) (byAdd + byDelta)) == pucSaveBlkPtr[ BH_CHECKSUM_HIGH] )
 		{
-			// put in ecx the number of bytes remaining on the stack.
-			mov  eax, pStackLimit
-			mov  ecx, esp
-			sub  ecx, eax
-
-			// only set the first 1096 bytes or less if less remains on the stack.
-			cmp  ecx, 1096
-			 jb  smallMove
-			mov  ecx, 1096
-
-smallMove:
-
-			// Move into edi the address to start the memset.
-			mov  eax, esp
-			sub  eax, 4				// Back off 4 bytes.
-			sub  eax, ecx
-			mov  edi, eax
-
-			// Set dwords at a time 
-			shr  ecx, 2
-			xor  eax, eax			// Could set eax to FE.
-			//cld		- Not necessary - better always be clear
-			rep  stosd
-
-			// Restore ecx and eax
-			pop  ecx
-			pop  eax
+			// Set the low checksum value with the computed value.
+			
+			pucSaveBlkPtr[ BH_CHECKSUM_LOW] = byDelta;
+			goto Exit;
 		}
 	}
+	else
+	{
+		// This has the side effect of setting the low block address byte
+		// in the block thus getting rid of the low checksum byte.
+
+		// NOTE: We are allowing the case where the calculated checksum is
+		// zero and the stored checksum is one because we used to change
+		// a calculated zero to a one in old databases and store the one.
+		// This is probably a somewhat rare case (1 out of 65536 checksums
+		// will be zero), so forgiving it will be OK most of the time.
+		// So that those don't cause us to report block checksum errors,
+		// we just allow it - checksumming isn't a perfect check anyway.
+		// VISIT: We do eventually want to get rid of this forgiving code.
+		
+		if (uiNewCheckSum == uiCurrCheckSum ||
+			 ((!uiNewCheckSum) && (uiCurrCheckSum == 1)))
+		{
+			pucSaveBlkPtr [BH_CHECKSUM_LOW] = (FLMBYTE) uiBlkAddress;
+			goto Exit;
+		}
+	}
+	
+	// Otherwise, we have a checksum error.
+	
+	rc = RC_SET( FERR_BLOCK_CHECKSUM);
+
+Exit:
+
+	return( rc);
 }
-#endif
 
-#endif
+/********************************************************************
+Desc:
+*********************************************************************/
+FLMUINT lgHdrCheckSum(
+	FLMBYTE *	pucLogHdr,
+	FLMBOOL		bCompare)
+{
+	FLMUINT	uiCnt;
+	FLMUINT	uiTempSum;
+	FLMUINT	uiCurrCheckSum;
+	FLMUINT	uiTempSum2;
+	FLMUINT	uiBytesToChecksum;
+
+	uiBytesToChecksum = (FB2UW( &pucLogHdr [LOG_FLAIM_VERSION]) < 
+									FLM_FILE_FORMAT_VER_4_3)
+										? LOG_HEADER_SIZE_VER40
+										: LOG_HEADER_SIZE;
+
+	// If we are comparing, but there is no current checksum, return
+	// zero to indicate success.  The next time the checksum is
+	// modified, the comparison will be performed.
+	//
+	// Unconverted databases may have a 0xFFFF or a zero in the checksum
+	// If 0xFFFF, change to a zero so we only have to deal with one value.
+
+	if( (uiCurrCheckSum = (FLMUINT)FB2UW( 
+				&pucLogHdr[ LOG_HDR_CHECKSUM])) == 0xFFFF)
+	{
+		uiCurrCheckSum = 0;
+	}
+
+	if( bCompare && !uiCurrCheckSum)
+	{
+		return( 0);
+	}
+
+	// Check all of log header except for the bytes which contain the
+	// checksum.
+	//
+	// For speed, uiTempSum is initialized to effectively ignore or skip
+	// the checksum embedded in the source:  (a - a) == 0 so we store a negative
+	// that the later addition clears out.  Also, the loop counter, i,
+	// is 1 larger than the number of FLMUINT16's so that we can
+	// pre-decrement by "for(;--i != 0;)" -- basically "loop-non-zero".
+	
+	for( uiTempSum = 0 - (FLMUINT)FB2UW( &pucLogHdr[ LOG_HDR_CHECKSUM]),
+		  uiCnt = 1 + uiBytesToChecksum / sizeof( FLMUINT16);	--uiCnt != 0; )
+	{
+		uiTempSum += (FLMUINT)FB2UW( pucLogHdr);
+		pucLogHdr += sizeof( FLMUINT16);
+	}
+
+	// Don't want a zero or 0xFFFF checksum - change to 1
+
+	if( (0 == (uiTempSum2 = (uiTempSum & 0xFFFF))) || (uiTempSum2 == 0xFFFF))
+	{
+		uiTempSum2 = 1;
+	}
+
+	return( (FLMUINT)(((bCompare) && (uiTempSum2 == uiCurrCheckSum))
+							? (FLMUINT)0
+							: uiTempSum2) );
+}

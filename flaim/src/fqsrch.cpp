@@ -29,56 +29,56 @@
 #define STATUS_CB_INTERVAL 1
 
 FSTATIC RCODE flmCurSetSubQuery(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery);
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery);
 
 FSTATIC RCODE flmCurRecValidate(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery,
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiSkipCount,
 	FLMUINT *	puiCount,
 	FLMBOOL *	pbReturnRecOK);
 
 FSTATIC RCODE flmCurRetrieveRec(
-	FDB_p			pDb,
-	SUBQUERY_p	pSubQuery,
+	FDB *			pDb,
+	SUBQUERY *	pSubQuery,
 	FLMUINT		uiContainer);
 
 FSTATIC RCODE flmCurSearchIndex(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount,
 	FLMBOOL		bGettingRecord);
 
 FSTATIC RCODE flmCurSearchPredicate(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount);
 
 FSTATIC RCODE flmCurSearchContainer(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount);
 
 FSTATIC RCODE flmCurEvalSingleRec(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount);
 
@@ -87,8 +87,8 @@ Desc: This routine will do all the setup needed to establish a sub-query as
 		the current subquery for the query.
 ****************************************************************************/
 FSTATIC RCODE flmCurSetSubQuery(
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery
 	)
 {
 	RCODE			rc = FERR_OK;
@@ -126,8 +126,8 @@ Desc: Validate a record that has passed the search criteria.  This routine
 ****************************************************************************/
 FSTATIC RCODE flmCurRecValidate(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
-	SUBQUERY_p	pSubQuery,
+	CURSOR *		pCursor,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiSkipCount,
 	FLMUINT *	puiCount,
 	FLMBOOL *	pbReturnRecOK
@@ -257,8 +257,8 @@ Exit:
 Desc: Does the actual reading of a record from cache or disk.
 ****************************************************************************/
 FSTATIC RCODE flmCurRetrieveRec(
-	FDB_p			pDb,
-	SUBQUERY_p	pSubQuery,
+	FDB *			pDb,
+	SUBQUERY *	pSubQuery,
 	FLMUINT		uiContainer
 	)
 {
@@ -289,17 +289,17 @@ Desc: Searches an index for matching record.
 ****************************************************************************/
 FSTATIC RCODE flmCurSearchIndex(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount,
 	FLMBOOL		bGettingRecord
 	)
 {
 	RCODE					rc = FERR_OK;
-	FDB_p					pDb = pCursor->pDb;
+	FDB *					pDb = pCursor->pDb;
 	FSIndexCursor *	pFSIndexCursor = pSubQuery->pFSIndexCursor;
 	FLMUINT				uiCBTimer = 0;
 	FLMUINT				uiCurrCBTime;
@@ -683,16 +683,16 @@ Desc: Searches a user predicate for matching record.
 ****************************************************************************/
 FSTATIC RCODE flmCurSearchPredicate(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount
 	)
 {
 	RCODE						rc = FERR_OK;
-	FDB_p						pDb = pCursor->pDb;
+	FDB *						pDb = pCursor->pDb;
 	FlmUserPredicate *	pPredicate = pSubQuery->pPredicate;
 	FLMBOOL					bSavedInvisTrans;
 	FLMUINT					uiCBTimer = 0;
@@ -848,16 +848,16 @@ Desc: Searches a container for matching record.
 ****************************************************************************/
 FSTATIC RCODE flmCurSearchContainer(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount
 	)
 {
 	RCODE					rc = FERR_OK;
-	FDB_p					pDb = pCursor->pDb;
+	FDB *					pDb = pCursor->pDb;
 	FSDataCursor *		pFSDataCursor = pSubQuery->pFSDataCursor;
 	FLMUINT				uiCBTimer = 0;
 	FLMUINT				uiCurrCBTime;
@@ -1001,16 +1001,16 @@ Desc: Retrieves a single record and evaluates it.
 ****************************************************************************/
 FSTATIC RCODE flmCurEvalSingleRec(
 	eFlmFuncs	eFlmFuncId,
-	CURSOR_p		pCursor,
+	CURSOR *		pCursor,
 	FLMBOOL		bFirstRead,
 	FLMBOOL		bReadForward,
-	SUBQUERY_p	pSubQuery,
+	SUBQUERY *	pSubQuery,
 	FLMUINT *	puiCount,
 	FLMUINT *	puiSkipCount
 	)
 {
 	RCODE			rc = FERR_OK;
-	FDB_p			pDb = pCursor->pDb;
+	FDB *			pDb = pCursor->pDb;
 	FLMBOOL		bReturnRecOK;
 	FLMUINT		uiRecMatch;
 
@@ -1080,7 +1080,7 @@ Desc: Performs the search operation.
 ****************************************************************************/
 RCODE flmCurSearch(
 	eFlmFuncs		eFlmFuncId,
-	CURSOR_p			pCursor,
+	CURSOR *			pCursor,
 	FLMBOOL			bFirstRead,
 	FLMBOOL			bReadForward,
 	FLMUINT *		puiCount,
@@ -1093,7 +1093,7 @@ RCODE flmCurSearch(
 	FDB *			pDb;
 	DB_STATS *	pDbStats;
 	RCODE			TmpRc;
-	SUBQUERY_p	pSubQuery = pCursor->pCurrSubQuery;
+	SUBQUERY *	pSubQuery = pCursor->pCurrSubQuery;
 	FLMBOOL		bSavedInvisTrans;
 
 	pDb = pCursor->pDb;
@@ -1236,7 +1236,7 @@ RCODE flmCurSearch(
 
 		// Reached BOF/EOF in the current subquery. Move on to the next one.
 
-		pSubQuery = (SUBQUERY_p)((bReadForward)
+		pSubQuery = (SUBQUERY *)((bReadForward)
 										 ? pSubQuery->pNext
 										 : pSubQuery->pPrev);
 		if (!pSubQuery)

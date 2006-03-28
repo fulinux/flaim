@@ -58,6 +58,7 @@ extern RCODE gv_CriticalFSError;
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_UNIX)
 F_FileHdlImp::F_FileHdlImp()
 {
 	m_fd = INVALID_HANDLE_VALUE;
@@ -73,10 +74,12 @@ F_FileHdlImp::F_FileHdlImp()
 	m_pucAlignedBuff = NULL;
 	m_uiAlignedBuffSize = 0;
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_UNIX)
 F_FileHdlImp::~F_FileHdlImp()
 {
 	if( m_bFileOpened)
@@ -89,10 +92,12 @@ F_FileHdlImp::~F_FileHdlImp()
 		free( m_pucAlignedBuff);
 	}
 }
+#endif
 
 /***************************************************************************
 Desc:		Open or create a file.
 ***************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::OpenOrCreate(
 	const char *		pFileName,
    FLMUINT				uiAccess,
@@ -108,13 +113,13 @@ RCODE F_FileHdlImp::OpenOrCreate(
 		goto Exit;
 	}
 
-#if !defined( FLM_UNIX)
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS)
 	bDoDirectIO = (uiAccess & F_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
-// HPUX needs this defined to access files larger than 2 GB.  The Linux
-// man pages *say* it's needed although as of Suse 9.1 it actually
-// isn't.  Including this flag on Linux anyway just it case...
+	// HPUX needs this defined to access files larger than 2 GB.  The Linux
+	// man pages *say* it's needed although as of Suse 9.1 it actually
+	// isn't.  Including this flag on Linux anyway just it case...
 
 #if defined( FLM_HPUX) || defined( FLM_LINUX)
 	openFlags |= O_LARGEFILE;
@@ -191,6 +196,34 @@ RCODE F_FileHdlImp::OpenOrCreate(
 			{
 				bDoDirectIO = FALSE;
 			}
+			else
+			{
+#if defined( FLM_LINUX)
+				FLMUINT		uiMajor = gv_FlmSysData.uiLinuxMajorVer;
+				FLMUINT		uiMinor = gv_FlmSysData.uiLinuxMinorVer;
+				FLMUINT		uiRevision = gv_FlmSysData.uiLinuxRevision;
+																																														
+				if( uiMajor > 2 || (uiMajor == 2 && uiMinor > 6) ||
+					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
+				{
+					openFlags |= O_DIRECT;
+					
+					if( gv_FlmSysData.bOkToDoAsyncWrites)
+					{
+						m_bCanDoAsync = TRUE;
+					}
+				}
+				else
+				{
+					bDoDirectIO = FALSE;
+				}
+#elif defined( FLM_SOLARIS)
+				if( gv_FlmSysData.bOkToDoAsyncWrites)
+				{
+					m_bCanDoAsync = TRUE;
+				}
+#endif
+			}
 		}
 	}
 	
@@ -221,6 +254,15 @@ Retry_Create:
 				goto Retry_Create;
 			}
 		}
+#ifdef FLM_LINUX
+		else if( errno == EINVAL && bDoDirectIO)
+		{
+			openFlags &= ~O_DIRECT;
+			bDoDirectIO = FALSE;
+			m_bCanDoAsync = FALSE;
+			goto Retry_Create;
+		}
+#endif
 		
 		rc = MapErrnoToFlaimErr( errno, FERR_OPENING_FILE);
 		goto Exit;
@@ -246,10 +288,12 @@ Exit:
 	
    return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Create a file 
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Create(
 	const char *	pIoPath,
 	FLMUINT			uiIoFlags)
@@ -276,10 +320,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::CreateUnique(
 	char *				pIoPath,
 	const char *		pszFileExtension,
@@ -389,10 +435,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Open a file
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Open(
 	const char *	pIoPath,
 	FLMUINT			uiIoFlags)
@@ -440,11 +488,12 @@ Exit:
 
 	return( rc);
 }
-
+#endif
 
 /****************************************************************************
 Desc:		Close a file
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Close( void)
 {
 	FLMBOOL	bDeleteAllowed = TRUE;
@@ -484,10 +533,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Make sure all file data is safely on disk
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Flush( void)
 {
 #ifdef FLM_SOLARIS
@@ -536,10 +587,12 @@ RCODE F_FileHdlImp::Flush( void)
 	
 	return( FERR_OK);
 }
+#endif
 
 /****************************************************************************
 Desc:		Read from a file
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::DirectRead(
 	FLMUINT			uiReadOffset,
 	FLMUINT			uiBytesToRead,	
@@ -623,26 +676,12 @@ RCODE F_FileHdlImp::DirectRead(
 
 		bHitEOF = FALSE;
 
-#ifdef HAVE_PREAD
 		if( (iTmp = pread( m_fd, pucReadBuffer,
 			uiMaxBytesToRead, GetSectorStartOffset( uiReadOffset))) == -1)
 		{
 			rc = MapErrnoToFlaimErr( errno, FERR_READING_FILE);
 			goto Exit;
 		}
-#else
-		if( lseek( m_fd, GetSectorStartOffset( uiReadOffset), SEEK_SET) == -1)
-		{
-			rc = MapErrnoToFlaimErr( errno, FERR_POSITIONING_IN_FILE);
-			goto Exit;
-		}
-	
-		if( (iTmp = read( m_fd, pucReadBuffer, uiMaxBytesToRead)) == -1)
-		{
-			rc = MapErrnoToFlaimErr(errno, FERR_READING_FILE);
-			goto Exit;
-		}
-#endif
 		uiBytesRead = (FLMUINT)iTmp;
 
 		if( uiBytesRead < uiMaxBytesToRead)
@@ -709,10 +748,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Read from a file
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Read(
 	FLMUINT			uiReadOffset,
 	FLMUINT			uiBytesToRead,	
@@ -741,28 +782,11 @@ RCODE F_FileHdlImp::Read(
 		uiReadOffset = m_uiCurrentPos;
 	}
 	
-#ifdef HAVE_PREAD
 	if( (iBytesRead = pread( m_fd, pvBuffer, uiBytesToRead, uiReadOffset)) == -1)
 	{
 		rc = MapErrnoToFlaimErr(errno, FERR_READING_FILE);
 		goto Exit;
 	}
-#else
-	if( m_uiCurrentPos != uiReadOffset)
-	{
-		if( lseek( m_fd, uiReadOffset, SEEK_SET) == -1)
-		{
-			rc = MapErrnoToFlaimErr( errno, FERR_POSITIONING_IN_FILE);
-			goto Exit;
-		}
-	}
-
-	if( (iBytesRead = read( m_fd, pvBuffer, uiBytesToRead)) == -1)
-	{
-		rc = MapErrnoToFlaimErr(errno, FERR_READING_FILE);
-		goto Exit;
-	}
-#endif
 
 	if( puiBytesRead)
 	{
@@ -781,12 +805,14 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 Note:	This function assumes that the pvBuffer that is passed in is
 		a multiple of a the sector size.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::SectorRead(
 	FLMUINT			uiReadOffset,
 	FLMUINT			uiBytesToRead,
@@ -803,11 +829,13 @@ RCODE F_FileHdlImp::SectorRead(
 		return( Read( uiReadOffset, uiBytesToRead, pvBuffer, puiBytesRead));
 	}
 }
+#endif
 
 /****************************************************************************
 Desc:		Sets current position of file.
 Note:		F_IO_SEEK_END is not supported.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Seek(
 	FLMUINT			uiOffset,
 	FLMINT			iWhence,
@@ -850,24 +878,18 @@ RCODE F_FileHdlImp::Seek(
 		}
 	}
 	
-#ifndef HAVE_PREAD
-	if( lseek( m_fd, m_uiCurrentPos, SEEK_SET) == -1)
-	{
-		rc = MapErrnoToFlaimErr( errno, FERR_POSITIONING_IN_FILE);
-		goto Exit;
-	}
-#endif
-
 	*puiNewOffset = m_uiCurrentPos;
 
 Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Return the size of the file
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Size(
 	FLMUINT *		puiSize)
 {
@@ -894,10 +916,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Returns m_uiCurrentPos
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Tell(
 	FLMUINT *	puiOffset)
 {
@@ -914,12 +938,14 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Truncate the file to the indicated size
 WARNING: Direct IO methods are calling this method.  Make sure that all
 			changes to this method work in direct IO mode.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Truncate(
 	FLMUINT		uiSize)
 {
@@ -942,10 +968,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Write to a file
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Write(
 	FLMUINT			uiWriteOffset,
 	FLMUINT			uiBytesToWrite,
@@ -975,29 +1003,12 @@ RCODE F_FileHdlImp::Write(
 		uiWriteOffset = m_uiCurrentPos;
 	}
 
-#ifdef HAVE_PREAD
 	if( (iBytesWritten = pwrite(m_fd, pvBuffer, uiBytesToWrite,
 											uiWriteOffset)) == -1)
 	{
 		rc = MapErrnoToFlaimErr( errno, FERR_WRITING_FILE);
 		goto Exit;
 	}
-#else
-	if( m_uiCurrentPos != uiWriteOffset)
-	{
-		if( lseek(m_fd, uiWriteOffset, SEEK_SET) == -1)
-		{
-			rc = MapErrnoToFlaimErr( errno, FERR_POSITIONING_IN_FILE);
-			goto Exit;
-		}
-	}
-	
-  	if( (iBytesWritten = write( m_fd, pvBuffer, uiBytesToWrite)) == -1)
-	{
-		rc = MapErrnoToFlaimErr(errno, FERR_WRITING_FILE);
-		goto Exit;
-	}
-#endif
 
 	if( puiBytesWrittenRV)
 	{
@@ -1016,10 +1027,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Allocate an aligned buffer.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::AllocAlignBuffer( void)
 {
 #if !defined( FLM_LINUX) && !defined( FLM_SOLARIS)
@@ -1052,6 +1065,7 @@ Exit:
 	return( rc);
 #endif
 }
+#endif
 
 /****************************************************************************
 Desc:
@@ -1061,11 +1075,12 @@ Note:	This routine assumes that the size of pvBuffer is a multiple of
 		buffer will still be written out - a partial sector on disk will
 		not be preserved.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::DirectWrite(
 	FLMUINT			uiWriteOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
-	FLMUINT,
+	FLMUINT			uiBufferSize,
 	F_IOBuffer *	pBufferObj,
 	FLMUINT *		puiBytesWrittenRV,
 	FLMBOOL			bBuffHasFullSectors,
@@ -1077,9 +1092,6 @@ RCODE F_FileHdlImp::DirectWrite(
 	FLMUINT			uiBytesBeingOutput;
 	FLMBYTE *		pucWriteBuffer;
 	FLMBYTE *		pucSrcBuffer;
-	FLMBOOL			bDoAsync = (pBufferObj != NULL) 
-										? TRUE 
-										: FALSE;
 	FLMBOOL			bDidAsync = FALSE;
 	FLMUINT			uiLastWriteOffset;
 	FLMUINT			uiLastWriteSize;
@@ -1087,12 +1099,10 @@ RCODE F_FileHdlImp::DirectWrite(
 	flmAssert( m_bFileOpened);
 
 #ifdef FLM_DEBUG
-	if( bDoAsync)
+	if( pBufferObj != NULL)
 	{
 		flmAssert( m_bCanDoAsync);
 	}
-#else
-	(void)bDoAsync;
 #endif
 
 	if( puiBytesWrittenRV)
@@ -1126,7 +1136,7 @@ RCODE F_FileHdlImp::DirectWrite(
 			// Cannot be using a temporary write buffer if we are doing
 			// asynchronous writes!
 
-			flmAssert( !bDoAsync || !m_bCanDoAsync);
+			flmAssert( !pBufferObj || !m_bCanDoAsync);
 			
 			if( !m_pucAlignedBuff)
 			{
@@ -1214,26 +1224,12 @@ RCODE F_FileHdlImp::DirectWrite(
 		{
 			FLMINT		iBytesWritten;
 			
-#ifdef HAVE_PREAD
 			if( (iBytesWritten = pwrite( m_fd, 
 				pucWriteBuffer, uiMaxBytesToWrite, uiLastWriteOffset)) == -1)
 			{
 				rc = MapErrnoToFlaimErr( errno, FERR_WRITING_FILE);
 				goto Exit;
 			}
-#else
-			if( lseek( m_fd, uiLastWriteOffset, SEEK_SET) == -1)
-			{
-				rc = MapErrnoToFlaimErr( errno, FERR_POSITIONING_IN_FILE);
-				goto Exit;
-			}
-
-			if( (iBytesWritten = write( m_fd, pucWriteBuffer, uiMaxBytesToWrite)) == -1)
-			{
-				rc = MapErrnoToFlaimErr( errno, FERR_WRITING_FILE);
-				goto Exit;
-			}
-#endif
 
 			if( (FLMUINT)iBytesWritten < uiMaxBytesToWrite)
 			{
@@ -1243,7 +1239,32 @@ RCODE F_FileHdlImp::DirectWrite(
 		}
 		else
 		{
-			flmAssert( 0);
+#ifdef FLM_OSX
+			// Mac OS doesn't have posix async io, so we don't ever
+			// want to enter this else clause
+
+			rc = RC_SET_AND_ASSERT( FERR_NOT_IMPLEMENTED);
+			goto Exit;
+#else
+			struct aiocb *		pAio = pBufferObj->getAIOStruct();
+			
+			f_memset( pAio, 0, sizeof( struct aiocb));
+			pAio->aio_lio_opcode = LIO_WRITE;
+			pAio->aio_sigevent.sigev_notify = SIGEV_NONE;
+			pAio->aio_fildes = m_fd;
+			pAio->aio_offset = uiLastWriteOffset;
+			pAio->aio_nbytes = uiMaxBytesToWrite;
+			pAio->aio_buf = pucWriteBuffer;
+			
+			if( aio_write( pAio) == -1)
+			{
+				rc = MapErrnoToFlaimErr( errno, FERR_WRITING_FILE);
+				goto Exit;
+			}
+			
+			pBufferObj->makePending();
+			bDidAsync = TRUE;
+#endif
 		}
 
 		uiBytesToWrite -= uiBytesBeingOutput;
@@ -1274,20 +1295,24 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Returns flag indicating whether or not we can do async writes.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 FLMBOOL F_FileHdlImp::CanDoAsync( void)
 {
 	return( m_bCanDoAsync);
 }
+#endif
 
 /****************************************************************************
 Desc:		Attempts to lock byte 0 of the file.  This method is used to
 			lock byte 0 of the .lck file to ensure that only one process
 			has access to a database.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Lock( void)
 {
 	RCODE				rc = FERR_OK;
@@ -1311,10 +1336,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Attempts to unlock byte 0 of the file.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 RCODE F_FileHdlImp::Unlock( void)
 {
 	struct flock   LockStruct;
@@ -1338,11 +1365,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /***************************************************************************
 Desc:		Determines the kernel version of a linux system
 ***************************************************************************/
-#ifdef FLM_LINUX
+#if defined( FLM_LINUX)
 void flmGetLinuxKernelVersion(
 	FLMUINT *		puiMajor,
 	FLMUINT *		puiMinor,
@@ -1427,7 +1455,7 @@ Exit:
 /***************************************************************************
 Desc:	Determines if the linux system we are running on is 2.4 or greater.
 ***************************************************************************/
-#ifdef FLM_LINUX
+#if defined( FLM_LINUX)
 FLMUINT flmGetLinuxMaxFileSize(
 	FLMUINT		uiSizeofFLMUINT)
 {
@@ -1469,6 +1497,7 @@ Exit:
 /****************************************************************************
 Desc: This routine gets the block size for the file system a file belongs to.
 ****************************************************************************/
+#if defined( FLM_UNIX)
 FLMUINT flmGetFSBlockSize(
 	const char *	pszFileName)
 {
@@ -1523,6 +1552,7 @@ FLMUINT flmGetFSBlockSize(
 
 	return( uiFSBlkSize);
 }
+#endif
 
 #if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
 /****************************************************************************

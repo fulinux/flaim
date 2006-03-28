@@ -27,6 +27,9 @@
 FSTATIC void lgWriteComplete(
 	F_IOBuffer *	pIOBuffer);
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 #ifdef FLM_DBG_LOG
 void scaLogWrite(
 	FLMUINT		uiFFileId,
@@ -34,8 +37,7 @@ void scaLogWrite(
 	FLMBYTE *	pucBlkBuf,
 	FLMUINT		uiBufferLen,
 	FLMUINT		uiBlockSize,
-	char *		pszEvent
-	)
+	char *		pszEvent)
 {
 	FLMUINT	uiOffset = 0;
 	FLMUINT	uiBlkAddress;
@@ -63,8 +65,7 @@ Desc:	This is the callback routine that is called when a disk write is
 		completed.
 ****************************************************************************/
 FSTATIC void lgWriteComplete(
-	F_IOBuffer *	pIOBuffer
-	)
+	F_IOBuffer *	pIOBuffer)
 {
 #ifdef FLM_DBG_LOG
 	FFILE *		pFile = (FFILE *)pIOBuffer->getCompletionCallbackData( 0);
@@ -107,7 +108,6 @@ RCODE lgFlushLogBuffer(
 	FLMUINT			uiBytesWritten;
 	F_IOBuffer *	pAsyncBuffer;
 
-#if defined( FLM_NLM) || defined( FLM_WIN)
 	if (!bDoAsync)
 	{
 		pAsyncBuffer = NULL;
@@ -116,10 +116,6 @@ RCODE lgFlushLogBuffer(
 	{
 		pAsyncBuffer = pFile->pCurrLogBuffer;
 	}
-#else
-	pAsyncBuffer = NULL;
-	F_UNREFERENCED_PARM( bDoAsync);
-#endif
 
 	if (pDbStats)
 	{
@@ -144,10 +140,12 @@ RCODE lgFlushLogBuffer(
 				pFile->pCurrLogBuffer->getBuffer(),
 				pFile->pCurrLogBuffer->getBufferSize(),
 				pAsyncBuffer, &uiBytesWritten);
+				
 	if (!pAsyncBuffer)
 	{
 		pFile->pCurrLogBuffer->notifyComplete( rc);
 	}
+	
 	pFile->pCurrLogBuffer = NULL;
 
 	if (RC_BAD( rc))
@@ -158,7 +156,9 @@ RCODE lgFlushLogBuffer(
 		}
 		goto Exit;
 	}
+	
 Exit:
+
 	pFile->uiCurrLogWriteOffset = 0;
 	pFile->pCurrLogBuffer = NULL;
 	return( rc);
@@ -171,14 +171,13 @@ RCODE lgOutputBlock(
 	DB_STATS	*			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	SCACHE *				pLogBlock,	// Cached log block.
-	FLMBYTE *			pucBlk,		// Pointer to the corresponding modified
-											// block in cache.  This block will be
-											// modified to the logged version of
-											// the block
-	FLMBOOL				bDoAsync,	// Do asynchronous writes?
-	FLMUINT *			puiLogEofRV	// Returns log EOF
-	)
+	SCACHE *				pLogBlock,		// Cached log block.
+	FLMBYTE *			pucBlk,			// Pointer to the corresponding modified
+												// block in cache.  This block will be
+												// modified to the logged version of
+												// the block
+	FLMBOOL				bDoAsync,		// Do asynchronous writes?
+	FLMUINT *			puiLogEofRV)	// Returns log EOF
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiFilePos = *puiLogEofRV;
@@ -237,8 +236,9 @@ RCODE lgOutputBlock(
 		pFile->uiCurrLogBlkAddr = uiFilePos;
 
 		// Get a buffer for logging.
+		//
 		// NOTE: Buffers are not kept by the FFILE's buffer manager,
-		// so once we are done with this buffer, it will be freed.
+		// so once we are done with this buffer, it will be freed
 
 		uiLogBufferSize = MAX_LOG_BUFFER_SIZE;
 
@@ -248,7 +248,7 @@ RCODE lgOutputBlock(
 				&pFile->pCurrLogBuffer, uiLogBufferSize, uiLogBufferSize)))
 			{
 				// If we failed to get a buffer of the requested size,
-				// reduce the buffer size by half and try again.
+				// reduce the buffer size by half and try again
 
 				if( rc == FERR_MEM)
 				{
@@ -276,7 +276,7 @@ RCODE lgOutputBlock(
 	// transaction, set the BEFORE IMAGE (BI) flag in the block header
 	// so we will know that this block is a before image block that
 	// needs to be restored when aborting the current update
-	// transaction.
+	// transaction
 
 	if (pLogBlock->ui16Flags & CA_WRITE_TO_LOG)
 	{
@@ -284,7 +284,8 @@ RCODE lgOutputBlock(
 	}
 
 	// If this is an index block, and it is encrypted, we need to encrypt
-	// it before we calculate the checksum.
+	// it before we calculate the checksum
+	
 	if (BH_GET_TYPE( pucLogBlk) != BHT_FREE && pucLogBlk[ BH_ENCRYPTED])
 	{
 		FLMUINT		uiBufLen = getEncryptSize( pucLogBlk);
@@ -299,7 +300,8 @@ RCODE lgOutputBlock(
 			goto Exit;
 		}
 	}
-	// Calculate the block checksum.
+	
+	// Calculate the block checksum
 
 	uiBlkAddress = GET_BH_ADDR( pucLogBlk);
 	BlkCheckSum( pucLogBlk, CHECKSUM_SET, uiBlkAddress, uiBlkSize);
@@ -308,7 +310,7 @@ RCODE lgOutputBlock(
 
 	pFile->uiCurrLogWriteOffset += uiBlkSize;
 
-	// If this log buffer is full, write it out.
+	// If this log buffer is full, write it out
 
 	if (pFile->uiCurrLogWriteOffset == 
 		pFile->pCurrLogBuffer->getBufferSize())
@@ -321,7 +323,7 @@ RCODE lgOutputBlock(
 	}
 
 	// Save the previous block address into the modified block's
-	// block header area.  Also save the transaction id.
+	// block header area.  Also save the transaction id
 
 	UD2FBA( (FLMUINT32)uiFilePos, &pucBlk [BH_PREV_BLK_ADDR]);
 	f_memcpy( &pucBlk [BH_PREV_TRANS_ID], &pLogBlock->pucBlk [BH_TRANS_ID], 4);

@@ -1249,11 +1249,11 @@ Exit:
 	return( rc);
 }
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Returns statistics that have been collected for a share.
 Notes: The statistics returned will be the statistics for ALL
 		 databases associated with the share structure.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmGetStats(
 	FLM_STATS *	pFlmStats)
 {

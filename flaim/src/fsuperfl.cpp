@@ -960,7 +960,7 @@ RCODE F_SuperFileHdl::GetFilePath(
 		goto Exit;
 	}
 
-	if ((m_uiDbVersion >= FLM_VER_4_3 &&
+	if ((m_uiDbVersion >= FLM_FILE_FORMAT_VER_4_3 &&
 		  uiFileNumber <= MAX_DATA_FILE_NUM_VER43) ||
 		 uiFileNumber <= MAX_DATA_FILE_NUM_VER40)
 	{
@@ -1209,7 +1209,7 @@ void bldSuperFileExtension(
 	
 	flmAssert( uiDbVersion); // Make sure the database version is valid
 
-	if (uiDbVersion >= FLM_VER_4_3)
+	if (uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		if (uiFileNum <= MAX_DATA_FILE_NUM_VER43 - 1536)
 		{

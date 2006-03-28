@@ -1267,15 +1267,12 @@ Desc:	Output the current thread status to the web page.
 void F_IndexListPage::getIndexListStatus(
 	FLMUINT				uiIndexListThreadId,
 	FLMBOOL				bStopIndexList,
-	IXLIST_STATUS *	pIndexListStatus
-	)
+	IXLIST_STATUS *	pIndexListStatus)
 {
 	FLMUINT				uiThreadId;
 	F_Thread *			pThread = NULL;
 	IXLIST_STATUS *	pThreadIndexListStatus;
 	FLMBOOL				bMutexLocked = FALSE;
-
-	// pIndexListStatus->bHaveIndexListStatus should be set to FALSE by the caller.
 
 	flmAssert( !pIndexListStatus->bHaveIndexListStatus);
 

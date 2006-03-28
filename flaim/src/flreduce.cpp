@@ -25,40 +25,40 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE FLRReadBlkHdr(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddress,
 	FLMBYTE *	pucBlockHeader,
 	FLMINT * 	iTypeRV);
 	
 FSTATIC RCODE FLRMoveBtreeBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddr,
 	FLMUINT		uiLfNumber,
 	FLMBOOL *	pbDone);
 
 FSTATIC RCODE FLRMovePcodeLFHBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddr,
 	FLMUINT		uiBlkType);
 
 FSTATIC RCODE FLRFreeAvailBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddr);
 
 FSTATIC RCODE FLRFindPrevAvailBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT *	puiBlkAddrRV,
 	FLMBOOL *	pbFirstChainFlagRV);
 
 
-/*API~***********************************************************************
+/****************************************************************************
 Desc : Reduces the size of a FLAIM database file.
 Notes: The size of the database file is reduced by freeing a specified
 		 number of blocks from the available (unused) block list.  The blocks
 		 are moved to the end of the file and the file is truncated.  If the
 		 available block list is empty, FLAIM will attemp to add blocks to
 		 the list by freeing log extent blocks.
-*END************************************************************************/
+****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbReduceSize(
 	HFDB				hDb,
 	FLMUINT			uiCount,
@@ -66,7 +66,7 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 	)
 {
 	RCODE			rc;
-	FDB_p			pDb = (FDB_p) hDb;
+	FDB *			pDb = (FDB *) hDb;
 	F_Rfl *		pRfl = NULL;
 	FLMUINT		uiLogicalEOF;	 			/* Local variable- change dbd->logEof last*/
 	FLMUINT		uiBlkAddr;
@@ -82,7 +82,7 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 
 	// Lock the database if not already locked.
 	// Cannot lose exclusive access between the checkpoint and
-	// the update transaction that does the conversion.
+	// the update transaction that does the truncation.
 
 	if( (pDb->uiFlags & FDB_HAS_FILE_LOCK) == 0)
 	{
@@ -97,10 +97,10 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 	{
 		fdbInitCS( pDb);
 
-		CS_CONTEXT_p	pCSSession = pDb->pCSContext;
+		CS_CONTEXT *	pCSSession = pDb->pCSContext;
 		FCL_WIRE			Wire( pCSSession, pDb);
 
-		/* Send a request to reduce the file. */
+		// Send a request to reduce the file
 
 		if (RC_BAD( rc = Wire.sendOp(
 			FCS_OPCLASS_DATABASE, FCS_OP_DB_REDUCE_SIZE)))
@@ -121,7 +121,7 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 			goto Transmission_Error;
 		}
 
-		/* Read the response. */
+		// Read the response
 	
 		if (RC_BAD( rc = Wire.read()))
 		{
@@ -133,6 +133,7 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 		goto Exit;
 
 Transmission_Error:
+
 		pCSSession->bConnectionGood = FALSE;
 		goto Exit;
 	}
@@ -143,7 +144,7 @@ Transmission_Error:
 		goto Exit;
 	}
 
-	/* Make sure we are NOT in a database transaction. */
+	// Make sure we are NOT in a database transaction
 
 	if (pDb->uiTransType != FLM_NO_TRANS)
 	{
@@ -162,17 +163,7 @@ Transmission_Error:
 	pRfl->setLoggingOffState( TRUE);
 	bRestoreLoggingOffFlag = TRUE;
 
-	/**-------------------------------------------------------------------
-	***  Keep looping to here until the count is satisfied or there
-	***  are not any more log extent blocks to turn into avail blks.
-	***  The loop does a begin transaction - move blocks - set logical
-	***  EOF and commits the transaction.  During the commit if there are
-	***  not any avail blocks left then a log extent (if any) will be turned
-	***  into more avail blocks and we can do this again with more avail
-	***  blocks.
-	***------------------------------------------------------------------*/
-
-	/* Start a database transaction */
+	// Start a database transaction
 
 	if (RC_BAD(rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 
 		15, FLM_DONT_POISON_CACHE)))
@@ -186,12 +177,9 @@ Transmission_Error:
 
 	uiBlkSize = pDb->pFile->FileHdr.uiBlockSize;
 
-	/**-----------------------------------------------------------------
-	***  Get the logical end of file and use internally.
-	***  Loop until there are not any more free blocks left or the
-	***  input count is matched.  Switch on each block type found
-	***  while backing up through the file.
-	***----------------------------------------------------------------*/
+	// Get the logical end of file and use internally.
+	// Loop until there are not any more free blocks left or the
+	// input count is matched.  Switch on each block type found
 
 	uiLogicalEOF = pDb->LogHdr.uiLogicalEOF;
 
@@ -199,9 +187,7 @@ Transmission_Error:
 		 && ((!uiCount) || (uiNumBlksMoved < uiCount)))
 	{
 
-		/* Read the last block and determine block type. */
-
-		/* Special case for 3x files.  */
+		// Read the last block and determine block type
 
 		if( FSGetFileOffset( uiLogicalEOF) == 0)
 		{
@@ -221,7 +207,8 @@ Transmission_Error:
 				goto Reduce_Size_Error;
 			}
 
-			// Adjust to a block bounds.
+			// Adjust to a block bounds
+			
 			uiTemp = (uiFileSize / uiBlkSize) * uiBlkSize;
 			if( uiTemp < uiFileSize)
 			{
@@ -240,26 +227,39 @@ Transmission_Error:
 		switch( iType )
 		{
 			case	BHT_FREE:
+			{
 				rc = FLRFreeAvailBlk( pDb, uiBlkAddr );
 				break;
+			}
 
 			case	BHT_LEAF:
 			case	BHT_NON_LEAF:
 			case	BHT_NON_LEAF_DATA:
+			{
 				rc = FLRMoveBtreeBlk( pDb, uiBlkAddr,
 							 FB2UW( &BlkHeader [BH_LOG_FILE_NUM ]), &bDone);
 				break;
+			}
 
 			case	BHT_LFH_BLK:
 			case	BHT_PCODE_BLK:
+			{
 				rc = FLRMovePcodeLFHBlk( pDb, uiBlkAddr, iType);
 				break;
+			}
+			
 			default:
+			{
 				rc = RC_SET( FERR_BTREE_ERROR);
 				break;
+			}
 		}
+		
 		if (RC_BAD(rc))
+		{
 			goto Reduce_Size_Error;
+		}
+		
 		if (bDone)
 		{
 			break;
@@ -277,13 +277,17 @@ Transmission_Error:
 			F_FileHdlImp *		pFileHdl;
 
 			if( uiFileNumber <= 1)
+			{
 				break;
+			}
 
 			// Leave the current file at zero bytes and move to the 
 			// previous store file.
+			
 			uiFileNumber--;
 			
 			// Compute the end of the previous block file.
+			
 			if( RC_BAD( rc = pDb->pSFileHdl->GetFileHdl( 
 				uiFileNumber, TRUE, &pFileHdl)))
 			{
@@ -297,6 +301,7 @@ Transmission_Error:
 			
 			uiLogicalEOF = FSBlkAddress( uiFileNumber, uiFileOffset);
 		}
+		
 		uiLogicalEOF -= uiBlkSize;
 	}
 
@@ -305,7 +310,7 @@ Transmission_Error:
 	// and then turn it back off after logging the packet.
 
 	if (!(pDb->uiFlags & FDB_REPLAYING_RFL) &&
-		  pDb->pFile->FileHdr.uiVersionNum >= FLM_VER_4_3)
+		  pDb->pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
 
 		// We would have turned logging OFF above, so we need to
@@ -326,13 +331,15 @@ Transmission_Error:
 		}
 	}
 
-	/* Commit the transaction. */
+	// Commit the transaction
 
 	{
 		FLMBOOL	bFlagSet;
 		
 		if (pDb->uiFlags & FDB_DO_TRUNCATE)
+		{
 			bFlagSet = TRUE;
+		}
 		else
 		{
 			bFlagSet = FALSE;
@@ -340,17 +347,23 @@ Transmission_Error:
 		}
 
 		rc = flmCommitDbTrans( pDb, uiLogicalEOF, TRUE);
+		
 		if (!bFlagSet)
+		{
 			pDb->uiFlags &= (~(FDB_DO_TRUNCATE));
+		}
+		
 		if (RC_BAD( rc))
+		{
 			goto Exit;
+		}
 	}
 
 Exit:
 
 	if( puiCountRV)
 	{
-		*puiCountRV = uiNumBlksMoved;	/* May be more than requested count */
+		*puiCountRV = uiNumBlksMoved;
 	}
 
 	if (bRestoreLoggingOffFlag)
@@ -364,7 +377,6 @@ Exit:
 	}
 
 	flmExit( FLM_DB_REDUCE_SIZE, pDb, rc);
-
 	return( rc);
 
 Reduce_Size_Error:
@@ -378,7 +390,7 @@ Reduce_Size_Error:
 Desc:	Read the block header and return the type of block it is
 ****************************************************************************/
 FSTATIC RCODE FLRReadBlkHdr(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddress,
 	FLMBYTE *	pucBlockHeader,
 	FLMINT *		piTypeRV	)
@@ -524,13 +536,13 @@ Notes:	Some of this code could be called in movePcodeLFHBlk but we have
 			to worry about if the block is a root or right most leaf block.
 ****************************************************************************/
 FSTATIC RCODE FLRMoveBtreeBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddr,		// Block Address
 	FLMUINT		uiLfNumber,
 	FLMBOOL *	pbDone)
 {
 	RCODE			rc;
-	FFILE_p		pFile = pDb->pFile;
+	FFILE *		pFile = pDb->pFile;
 	LFILE *		pLFile;
 	SCACHE *		pSCache;
 	FLMBOOL		bReleaseCache = FALSE;
@@ -542,7 +554,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 	SCACHE *		pFreeSCache;
 	FLMBOOL		bReleaseCache2 = FALSE;
 	BTSK			StackArea;			 		/* Single stack allocation */
-	BTSK_p		pStack = &StackArea;		/* Points to stack - easier to use */
+	BTSK *		pStack = &StackArea;		/* Points to stack - easier to use */
 	FLMUINT		uiElmOvhd;				 	/* Number of bytes in block overhead */
 	FLMUINT		uiSearchKeyLen;		 		/* Length of block's 1st key */
 	FLMBYTE		ucKeyBuf [MAX_KEY_SIZ];
@@ -856,7 +868,7 @@ Desc:	Find where a pcode list the input block is located.  Move to
 		a free block and change all pointers to the block.
 ****************************************************************************/
 FSTATIC RCODE FLRMovePcodeLFHBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddr,
 	FLMUINT		uiBlkType)
 {
@@ -870,7 +882,7 @@ FSTATIC RCODE FLRMovePcodeLFHBlk(
 	FLMUINT		uiLeftBlkAddr;
 	FLMUINT		uiRightBlkAddr;
 	FLMUINT		uiFreeBlkAddr;
-	FFILE_p		pFile = pDb->pFile;
+	FFILE *		pFile = pDb->pFile;
 	FLMUINT		uiSavePrevTransID;
 	FLMUINT		uiSavePrevBlkAddr;
 
@@ -1039,11 +1051,11 @@ Exit:
 Desc:	Free the input avail block.  Link the block out of the free list
 ****************************************************************************/
 FSTATIC RCODE FLRFreeAvailBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiBlkAddr)
 {
 	RCODE			rc = FERR_OK;
-	FFILE_p		pFile = pDb->pFile;
+	FFILE *		pFile = pDb->pFile;
 	FLMBYTE		ucBlkHeader [BH_OVHD];
 	FLMBYTE *	pucBlk;
 	FLMUINT		uiPrevBlkAddr;
@@ -1354,7 +1366,7 @@ Desc:	Move an avail block out of the avail block list.
 		Worry about version 1.11+ back chaining
 ****************************************************************************/
 FSTATIC RCODE  FLRFindPrevAvailBlk(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT *	puiBlkAddrRV,
 	FLMBOOL *	pbFirstChainFlagRV)
 {

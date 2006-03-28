@@ -30,13 +30,7 @@
 
 #define MAX_BLOCKS_TO_SORT			500
 
-FINLINE FLMUINT SCA_MEM_SIZE(
-	SCACHE *		pSCache)
-{
-	return( sizeof( SCACHE) + pSCache->ui16BlkSize);
-}
-
-typedef struct Tmp_Read_Stats
+typedef struct TMP_READ_STATS
 {
 	DISKIO_STAT		BlockReads;						// Statistics on block reads
 	DISKIO_STAT		OldViewBlockReads;			// Statistics on old view
@@ -47,13 +41,13 @@ typedef struct Tmp_Read_Stats
 	FLMUINT			uiOldViewBlockChkErrs;		// Number of times we had
 															// check errors reading an
 															// old view of a block
-} TMP_READ_STATS, * TMP_READ_STATS_p;
+} TMP_READ_STATS;
 
 FLMUINT ScaGetBlkSize(
 	SCACHE **		pSCache);
 
-#define ScaGetBlkSize( pSCache) (FLMUINT)((pSCache)->ui16BlkSize)
-
+#define ScaGetBlkSize( pSCache) \
+	(FLMUINT)((pSCache)->ui16BlkSize)
 
 FSTATIC void ScaUnlinkFromGlobalList(
 	SCACHE *			pSCache);
@@ -86,8 +80,7 @@ FSTATIC void ScaUnlinkFromFreeList(
 FSTATIC void ScaDebugMsg(
 	const char *	pszMsg,
 	SCACHE *			pSCache,
-	SCACHE_USE *	pUse
-	);
+	SCACHE_USE *	pUse);
 
 FSTATIC void _ScaDbgUseForThread(
 	SCACHE *			pSCache,
@@ -123,8 +116,7 @@ FSTATIC void ScaSavePrevBlkAddress(
 FSTATIC RCODE ScaAllocBlocksArray(
 	FFILE *			pFile,
 	FLMUINT			uiNewSize,
-	FLMBOOL			bOneArray
-	);
+	FLMBOOL			bOneArray);
 
 FSTATIC RCODE ScaFlushLogBlocks(
 	DB_STATS *			pDbStats,
@@ -188,6 +180,96 @@ FSTATIC RCODE scaFinishCheckpoint(
 	FLMUINT				uiCPStartTime,
 	FLMUINT				uiTotalToWrite);
 
+FSTATIC RCODE ScaReadIntoCache(
+	FDB *					pDb,
+	FLMUINT				uiBlkType,
+	LFILE *				pLFile,
+	FLMUINT				uiBlkAddress,
+	SCACHE *				pPrevInVerList,
+	SCACHE *				pNextInVerList,
+	SCACHE **			ppSCacheRV,
+	FLMBOOL *			pbGotFromDisk
+	);
+
+FSTATIC void scaSort(
+	SCACHE **		ppSCacheTbl,
+	FLMUINT			uiLowerBounds,
+	FLMUINT			uiUpperBounds);
+
+FSTATIC RCODE ScaWriteContiguousBlocks(
+	DB_STATS *			pDbStats,
+	F_SuperFileHdl *	pSFileHdl,
+	FFILE *				pFile,
+	F_IOBuffer *		pIOBuffer,
+	FLMUINT				uiBlkAddress,
+	FLMBOOL				bDoAsync);
+
+FSTATIC RCODE scaWriteSortedBlocks(
+	DB_STATS *			pDbStats,
+	F_SuperFileHdl *	pSFileHdl,
+	FFILE *				pFile,
+	FLMUINT				uiMaxDirtyCache,
+	FLMUINT *			puiDirtyCacheLeft,
+	FLMBOOL *			pbForceCheckpoint,
+	FLMBOOL				bIsCPThread,
+	FLMBOOL				bDoAsync,
+	FLMUINT				uiNumSortedBlocks,
+	FLMBOOL *			pbWroteAll);
+
+FSTATIC RCODE ScaFlushDirtyBlocks(
+	DB_STATS *			pDbStats,
+	F_SuperFileHdl *	pSFileHdl,
+	FFILE *				pFile,
+	FLMUINT				uiMaxDirtyCache,
+	FLMBOOL				bForceCheckpoint,
+	FLMBOOL				bIsCPThread,
+	FLMBOOL *			pbWroteAll);
+
+FSTATIC RCODE ScaReduceNewBlocks(
+	DB_STATS *			pDbStats,
+	F_SuperFileHdl *	pSFileHdl,
+	FFILE *				pFile,
+	FLMUINT *			puiBlocksFlushed);
+
+FSTATIC void scaSetBlkDirty(
+	FFILE *	pFile,
+	SCACHE *	pSCache);
+
+FSTATIC FLMUINT ScaNumHashBuckets(
+	FLMUINT	uiMaxSharedCache
+	);
+
+FSTATIC RCODE ScaInitHashTbl(
+	FLMUINT			uiNumBuckets
+	);
+
+#ifdef SCACHE_LINK_CHECKING
+	FSTATIC void scaVerifyCache(
+		SCACHE *			pSCache,
+		int				iPlace);
+
+	FSTATIC void scaVerify(
+		int				iPlace);
+#else
+
+	#define scaVerifyCache(pSCache,iPlace)
+	#define scaVerify(iPlace)
+
+#endif
+
+FSTATIC void scaReduceFreeCache(
+	FLMBOOL			bFreeAll);
+
+FSTATIC void scaReduceReuseList( void);
+
+#ifdef FLM_DEBUG
+FSTATIC FLMUINT ScaComputeChecksum(
+	SCACHE *			pSCache);
+
+FSTATIC void ScaVerifyChecksum(
+	SCACHE *			pSCache);
+#endif
+
 FLMBOOL ScaNeededByReadTrans(
 	FFILE *			pFile,
 	SCACHE *			pSCache);
@@ -217,6 +299,34 @@ FSTATIC FLMBOOL ScaCanRelocate(
 FSTATIC void ScaRelocate(
 	void *		pvOldAlloc,
 	void *		pvNewAlloc);
+
+#ifdef FLM_DEBUG
+
+	FSTATIC void ScaDbgUseForThread(
+		SCACHE *			pSCache,
+		FLMUINT *		puiThreadId);
+
+	FSTATIC void ScaDbgReleaseForThread(
+		SCACHE *			pSCache);
+
+	#define ScaUseForThread			ScaDbgUseForThread
+	#define ScaReleaseForThread	ScaDbgReleaseForThread
+
+#else
+
+	#define ScaUseForThread			ScaNonDbgUseForThread
+	#define ScaReleaseForThread	ScaNonDbgReleaseForThread
+
+#endif
+
+/***************************************************************************
+Desc:
+*****************************************************************************/
+FINLINE FLMUINT SCA_MEM_SIZE(
+	SCACHE *		pSCache)
+{
+	return( sizeof( SCACHE) + pSCache->ui16BlkSize);
+}
 
 /***************************************************************************
 Desc:	Compare two cache blocks to determine which one has lower address.
@@ -656,115 +766,6 @@ FINLINE FLMBOOL scaIsCacheOverLimit( void)
 
 	return( FALSE);
 }
-
-#ifdef FLM_DEBUG
-
-	FSTATIC void ScaDbgUseForThread(
-		SCACHE *			pSCache,
-		FLMUINT *		puiThreadId);
-
-	FSTATIC void ScaDbgReleaseForThread(
-		SCACHE *			pSCache);
-
-	#define ScaUseForThread			ScaDbgUseForThread
-	#define ScaReleaseForThread	ScaDbgReleaseForThread
-
-#else
-
-	#define ScaUseForThread			ScaNonDbgUseForThread
-	#define ScaReleaseForThread	ScaNonDbgReleaseForThread
-
-#endif
-
-FSTATIC RCODE ScaReadIntoCache(
-	FDB *					pDb,
-	FLMUINT				uiBlkType,
-	LFILE *				pLFile,
-	FLMUINT				uiBlkAddress,
-	SCACHE *				pPrevInVerList,
-	SCACHE *				pNextInVerList,
-	SCACHE **			ppSCacheRV,
-	FLMBOOL *			pbGotFromDisk
-	);
-
-FSTATIC void scaSort(
-	SCACHE **		ppSCacheTbl,
-	FLMUINT			uiLowerBounds,
-	FLMUINT			uiUpperBounds);
-
-FSTATIC RCODE ScaWriteContiguousBlocks(
-	DB_STATS *			pDbStats,
-	F_SuperFileHdl *	pSFileHdl,
-	FFILE *				pFile,
-	F_IOBuffer *		pIOBuffer,
-	FLMUINT				uiBlkAddress,
-	FLMBOOL				bDoAsync);
-
-FSTATIC RCODE scaWriteSortedBlocks(
-	DB_STATS *			pDbStats,
-	F_SuperFileHdl *	pSFileHdl,
-	FFILE *				pFile,
-	FLMUINT				uiMaxDirtyCache,
-	FLMUINT *			puiDirtyCacheLeft,
-	FLMBOOL *			pbForceCheckpoint,
-	FLMBOOL				bIsCPThread,
-	FLMBOOL				bDoAsync,
-	FLMUINT				uiNumSortedBlocks,
-	FLMBOOL *			pbWroteAll);
-
-FSTATIC RCODE ScaFlushDirtyBlocks(
-	DB_STATS *			pDbStats,
-	F_SuperFileHdl *	pSFileHdl,
-	FFILE *				pFile,
-	FLMUINT				uiMaxDirtyCache,
-	FLMBOOL				bForceCheckpoint,
-	FLMBOOL				bIsCPThread,
-	FLMBOOL *			pbWroteAll);
-
-FSTATIC RCODE ScaReduceNewBlocks(
-	DB_STATS *			pDbStats,
-	F_SuperFileHdl *	pSFileHdl,
-	FFILE *				pFile,
-	FLMUINT *			puiBlocksFlushed);
-
-FSTATIC void scaSetBlkDirty(
-	FFILE *	pFile,
-	SCACHE *	pSCache);
-
-FSTATIC FLMUINT ScaNumHashBuckets(
-	FLMUINT	uiMaxSharedCache
-	);
-
-FSTATIC RCODE ScaInitHashTbl(
-	FLMUINT			uiNumBuckets
-	);
-
-#ifdef SCACHE_LINK_CHECKING
-	FSTATIC void scaVerifyCache(
-		SCACHE *			pSCache,
-		int				iPlace);
-
-	FSTATIC void scaVerify(
-		int				iPlace);
-#else
-
-	#define scaVerifyCache(pSCache,iPlace)
-	#define scaVerify(iPlace)
-
-#endif
-
-FSTATIC void scaReduceFreeCache(
-	FLMBOOL			bFreeAll);
-
-FSTATIC void scaReduceReuseList( void);
-
-#ifdef FLM_DEBUG
-	FSTATIC FLMUINT ScaComputeChecksum(
-		SCACHE *			pSCache);
-
-	FSTATIC void ScaVerifyChecksum(
-		SCACHE *			pSCache);
-#endif
 
 /****************************************************************************
 Desc:	Unlinks a cache block from the replace list
@@ -1542,11 +1543,9 @@ FSTATIC void ScaUnlinkCache(
 							"UNLINK");
 #endif
 
-	/*
-	If cache block has no previous versions linked to it, it
-	is in the hash bucket and needs to be unlinked from it.
-	Otherwise, it only needs to be unlinked from the version list.
-	*/
+	// If cache block has no previous versions linked to it, it
+	// is in the hash bucket and needs to be unlinked from it.
+	// Otherwise, it only needs to be unlinked from the version list.
 
 	if (pSCache->pFile)
 	{
@@ -3505,6 +3504,7 @@ FSTATIC RCODE ScaReadTheBlock(
 	// need to decrypt it before we can use it.
 	// The function ScaDecryptBlock will check if the index
 	// is encrypted first.  If not, it will return.
+	
 	if (pLFile && pLFile->uiLfType == LF_INDEX)
 	{
 		if (RC_BAD( rc = ScaDecryptBlock( pDb->pFile, pucBlk)))
@@ -3921,9 +3921,8 @@ FSTATIC RCODE ScaReadBlock(
 		pTmpReadStats = NULL;
 	}
 
-	// Read in the block from the database
-
-	// Stay in a loop reading until we get an error or get the block
+	// Read in the block from the database.  Stay in a loop reading until 
+	// we get an error or get the block
 
 	for (;;)
 	{
@@ -3938,8 +3937,8 @@ FSTATIC RCODE ScaReadBlock(
 
 		// Read and verify the block.
 
-		if (RC_BAD( rc = ScaReadTheBlock( pDb, pLFile, pTmpReadStats, pucBlk, uiFilePos,
-							uiBlkAddress)))
+		if (RC_BAD( rc = ScaReadTheBlock( pDb, pLFile, pTmpReadStats, pucBlk, 
+				uiFilePos, uiBlkAddress)))
 		{
 			goto Exit;
 		}
@@ -5017,7 +5016,6 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 
 	pucWriteBuffer = pIOBuffer->getBuffer();
 
-#if defined( FLM_NLM) || defined( FLM_WIN)
 	if (!bDoAsync)
 	{
 		pAsyncBuffer = NULL;
@@ -5026,10 +5024,6 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 	{
 		pAsyncBuffer = pIOBuffer;
 	}
-#else
-	pAsyncBuffer = NULL;
-	F_UNREFERENCED_PARM( bDoAsync);
-#endif
 
 	// Determine how many bytes to write
 
@@ -5356,11 +5350,13 @@ Add_Contiguous_Block:
 			flmAssert( uiCopyLen >= BH_OVHD && uiCopyLen <= uiBlockSize);
 			f_memcpy( pucBuffer, pSCache->pucBlk, uiCopyLen);
 
-			// If this is an encrypted block, see that
-			// it gets encrypted.
-			if (BH_GET_TYPE( pSCache->pucBlk) != BHT_FREE && pSCache->pucBlk[ BH_ENCRYPTED])
+			// If this is an encrypted block, see that it gets encrypted.
+			
+			if (BH_GET_TYPE( pSCache->pucBlk) != BHT_FREE && 
+				pSCache->pucBlk[ BH_ENCRYPTED])
 			{
 				// Encrypt the block? Will check the IXD
+				
 				if (RC_BAD( rc = ScaEncryptBlock( pSCache->pFile,
 															 pucBuffer,
 															 uiCopyLen,
@@ -6779,7 +6775,7 @@ RCODE ScaLogPhysBlk(
 	}
 	pDb->bHadUpdOper = TRUE;
 
-	if( uiDbVersion >= FLM_VER_4_3)
+	if( uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
 	{
 		// See if the transaction ID is greater than the last backup
 		// transaction ID.  If so, we need to update our block change
@@ -7008,8 +7004,7 @@ Desc:	This routine calculates the number of hash buckets to use based on
 		the maximum amount of cache we want utilized.
 ****************************************************************************/
 FSTATIC FLMUINT ScaNumHashBuckets(
-	FLMUINT	uiMaxSharedCache
-	)
+	FLMUINT	uiMaxSharedCache)
 {
 	FLMUINT	uiNumBuckets;
 	FLMUINT	uiCeiling;
@@ -7061,8 +7056,7 @@ Exit:
 Desc:	This routine initializes the hash table for shared cache.
 ****************************************************************************/
 FSTATIC RCODE ScaInitHashTbl(
-	FLMUINT	uiNumBuckets
-	)
+	FLMUINT	uiNumBuckets)
 {
 	RCODE		rc = FERR_OK;
 	FLMUINT	uiAllocSize;
@@ -7597,8 +7591,7 @@ Desc:	This routine computes an in-memory checksum on a cache block.  This
 ****************************************************************************/
 #ifdef FLM_DEBUG
 FSTATIC FLMUINT ScaComputeChecksum(
-	SCACHE *			pSCache
-	)
+	SCACHE *			pSCache)
 {
 	FLMUINT	uiChecksum = 0;
 
@@ -8166,7 +8159,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 	if (bDoTruncate)
 	{
 		if (RC_BAD( rc = pSFileHdl->TruncateFile(
-									(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LOGICAL_EOF]))))
+							(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LOGICAL_EOF]))))
 		{
 			goto Exit;
 		}
@@ -8595,35 +8588,33 @@ RCODE ScaEncryptBlock(
 
 	if (uiEncLen == 0)
 	{
-		// return FERR_OK. Nothing to do since we don't encrypt the header.
 		goto Exit;
 	}
 
 	uiIxNum = FB2UW( &pucBuffer[ BH_LOG_FILE_NUM]);
 
-	// Get the index.
-	if (RC_BAD( rc = fdictGetIndex( pFile->pDictList,
-											  pFile->bInLimitedMode,
-											  uiIxNum,
-											  NULL,
-											  &pIxd,
-											  TRUE)))
+	// Get the index
+	
+	if (RC_BAD( rc = fdictGetIndex( pFile->pDictList, pFile->bInLimitedMode,
+			uiIxNum, NULL, &pIxd, TRUE)))
 	{
-		// Not an index.
+		// Not an index
+		
 		if (rc == FERR_BAD_IX)
 		{
 			rc = FERR_OK;
 		}
+		
 		goto Exit;
 	}
 
-	// The index may not be encrypted.
-	// We can just exit here.
+	// The index may not be encrypted.  We can just exit here.
+	
 	if (!pIxd || !pIxd->uiEncId)
 	{
 		flmAssert( pucBuffer[ BH_ENCRYPTED] == 0);
 		pucBuffer[ BH_ENCRYPTED] = 0;
-		goto Exit;  // FERR_OK;
+		goto Exit;
 	}
 
 	flmAssert(pucBuffer[ BH_ENCRYPTED]);
@@ -8641,18 +8632,17 @@ RCODE ScaEncryptBlock(
 		goto Exit;
 	}
 
-
-	// Need to get the encryption object.
+	// Need to get the encryption object
+	
 	pCcs = (F_CCS *)pFile->pDictList->pIttTbl[ pIxd->uiEncId].pvItem;
 
 	flmAssert( pCcs);
 	flmAssert( !(uiEncLen % 16));
 
-	// Encrypt the buffer in place.
+	// Encrypt the buffer in place
+	
 	if (RC_BAD( rc = pCcs->encryptToStore( &pucBuffer[ BH_OVHD],
-														uiEncLen,
-														&pucBuffer[ BH_OVHD],
-														&uiEncLen)))
+		uiEncLen, &pucBuffer[ BH_OVHD], &uiEncLen)))
 	{
 		goto Exit;
 	}
@@ -8660,6 +8650,7 @@ RCODE ScaEncryptBlock(
 	flmAssert( uiEncLen == uiBufLen - BH_OVHD);
 
 	// Fill the rest of the buffer with random data.
+	
 	if (uiBufLen < uiBlockSize)
 	{
 		FLMUINT		uiContext;
@@ -8670,9 +8661,8 @@ RCODE ScaEncryptBlock(
 			goto Exit;
 		}
 
-		if (CCS_GetRandom(uiContext,
-								 &pucBuffer[uiBufLen],
-								 uiBlockSize - uiBufLen) != 0)
+		if (CCS_GetRandom( uiContext, &pucBuffer[uiBufLen],
+			uiBlockSize - uiBufLen) != 0)
 		{
 			rc = RC_SET( FERR_NICI_BAD_RANDOM);
 			goto Exit;
@@ -8693,8 +8683,7 @@ Desc:	This function will decrypt the block of data passed in.
 ****************************************************************************/
 RCODE ScaDecryptBlock(
 	FFILE *		pFile,
-	FLMBYTE *	pucBuffer
-	)
+	FLMBYTE *	pucBuffer)
 {
 	RCODE				rc = FERR_OK;
 	IXD *				pIxd;
@@ -8710,38 +8699,37 @@ RCODE ScaDecryptBlock(
 
 	if (!uiEncLen)
 	{
-		// Nothing to decrypt
-		goto Exit;  // FERR_OK;
+		goto Exit;
 	}
 
 	uiIxNum = FB2UW( &pucBuffer[ BH_LOG_FILE_NUM]);
 
-	// Get the index.
-	if (RC_BAD( rc = fdictGetIndex( pFile->pDictList,
-											  pFile->bInLimitedMode,
-											  uiIxNum,
-											  NULL,
-											  &pIxd,
-											  TRUE)))
+	// Get the index
+	
+	if (RC_BAD( rc = fdictGetIndex( pFile->pDictList, pFile->bInLimitedMode,
+		uiIxNum, NULL, &pIxd, TRUE)))
 	{
 		// Not an index
+		
 		if (rc == FERR_BAD_IX)
 		{
 			rc = FERR_OK;
 		}
+		
 		goto Exit;
 	}
 
-	// The index may not be encrypted.
-	// We can just exit here.
+	// The index may not be encrypted.  We can just exit here.
+	
 	if (!pIxd || !pIxd->uiEncId)
 	{
 		if (pucBuffer[ BH_ENCRYPTED])
 		{
 			flmAssert(0);
 		}
+		
 		pucBuffer[ BH_ENCRYPTED] = 0;
-		goto Exit;  // FERR_OK;
+		goto Exit;
 	}
 
 	if (!pucBuffer[ BH_ENCRYPTED])
@@ -8749,6 +8737,7 @@ RCODE ScaDecryptBlock(
 		// Block was not encrypted on disk so don't decrypt it. Setting the 
 		// BH_ENCRYPTED bit here will ensure we encrypt it next time we write it
 		// out.
+		
 		flmAssert(0);
 		pucBuffer[ BH_ENCRYPTED] = 1;
 		goto Exit;
@@ -8767,14 +8756,13 @@ RCODE ScaDecryptBlock(
 	}
 
 	// Need to get the encryption object.
+	
 	pCcs = (F_CCS *)pFile->pDictList->pIttTbl[ pIxd->uiEncId].pvItem;
 
 	flmAssert( pCcs);
 
 	if (RC_BAD( rc = pCcs->decryptFromStore( &pucBuffer[ BH_OVHD],
-														  uiEncLen,
-														  &pucBuffer[ BH_OVHD],
-														  &uiEncLen)))
+		uiEncLen, &pucBuffer[ BH_OVHD], &uiEncLen)))
 	{
 		goto Exit;
 	}

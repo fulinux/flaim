@@ -3469,7 +3469,7 @@ RCODE F_DatabasePage::display(
 
 		f_memset( &createOpts, 0, sizeof( CREATE_OPTS));
 		createOpts.uiBlockSize = DEFAULT_BLKSIZ;
-		createOpts.uiVersionNum = FLM_CURRENT_VERSION_NUM;
+		createOpts.uiVersionNum = FLM_CUR_FILE_FORMAT_VER_NUM;
 		createOpts.uiDefaultLanguage = uiLanguage;
 
 		// Create the database

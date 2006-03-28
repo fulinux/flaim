@@ -768,8 +768,8 @@ protected:
 	FLMBOOL				m_bSendGedcom;
 	FCS_DIS *			m_pDIStream;
 	FCS_DOS *			m_pDOStream;
-	CS_CONTEXT_p		m_pCSContext;		// Used by FCL_WIRE
-	FDB_p					m_pDb;				// Used by FCL_WIRE
+	CS_CONTEXT *		m_pCSContext;		// Used by FCL_WIRE
+	FDB *					m_pDb;				// Used by FCL_WIRE
 
 	void resetCommon( void);
 
@@ -1130,12 +1130,12 @@ public:
 	}
 	
 	FINLINE void setFDB( 
-		FDB_p				pDb)
+		FDB *				pDb)
 	{ 
 		m_pDb = pDb;
 	}
 	
-	FINLINE FDB_p getFDB( void)
+	FINLINE FDB * getFDB( void)
 	{
 		return( m_pDb);
 	}
@@ -1164,7 +1164,9 @@ private:
 	
 public:
 
-	FCL_WIRE( CS_CONTEXT_p pCSContext = NULL, FDB_p pDb = NULL);
+	FCL_WIRE( 
+		CS_CONTEXT *		pCSContext = NULL,
+		FDB * 				pDb = NULL);
 
 	FINLINE virtual ~FCL_WIRE( void)
 	{
@@ -1200,9 +1202,9 @@ public:
 		return( m_pNameTable);
 	}
 
-	void setContext( CS_CONTEXT_p);
+	void setContext( CS_CONTEXT *);
 	
-	FINLINE CS_CONTEXT_p getContext( void)
+	FINLINE CS_CONTEXT * getContext( void)
 	{ 
 		return( m_pCSContext);
 	}
@@ -1212,19 +1214,17 @@ public:
 #define FCS_BIOS_EOM_EVENT				0x0001		// End-Of-Message event
 
 class FCS_BIOS;
-typedef FCS_BIOS *	FCS_BIOS_p;
 
-typedef struct FCSBIOSBlock * 	FCSBIOSBLOCK_p;
-typedef struct FCSBIOSBlock
+typedef struct FCSBIOSBLOCK
 {
-	FCSBIOSBLOCK_p		pNextBlock;
+	FCSBIOSBLOCK *		pNextBlock;
 	FLMUINT				uiCurrWriteOffset;
 	FLMUINT				uiCurrReadOffset;
 	FLMBYTE *			pucBlock;
 }	FCSBIOSBLOCK;
 
 typedef RCODE (* FCS_BIOS_EVENT_HOOK)(
-	FCS_BIOS_p	pStream,
+	FCS_BIOS *	pStream,
 	FLMUINT		uiEvent,
 	void *		pvUserData);
 
@@ -1791,7 +1791,7 @@ void fcsDecodeHttpString(
 	char *				pszSrc);
 
 RCODE flmStreamEventDispatcher(
-	FCS_BIOS_p			pStream,
+	FCS_BIOS *			pStream,
 	FLMUINT				uiEvent,
 	void *				pvUserData);
 

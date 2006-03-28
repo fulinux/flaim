@@ -24,68 +24,387 @@
 
 #include "flaimsys.h"
 
-extern FQ_OPERATION * FQ_DoOperation[];
-	
 FSTATIC FLMUINT flmCurEvalTrueFalse(
-	FQATOM_p			pElm);
+	FQATOM *				pElm);
 
 FSTATIC RCODE flmCurGetAtomFromRec(
-	FDB *				pDb,
-	POOL *			pPool,
-	FQATOM_p			pTreeAtom,
-	FlmRecord *		pRecord,
-	QTYPES			eFldType,
-	FLMBOOL			bGetAtomVals,
-	FQATOM_p			pResult,
-	FLMBOOL			bHaveKey);
-
+	FDB *					pDb,
+	POOL *				pPool,
+	FQATOM *				pTreeAtom,
+	FlmRecord *			pRecord,
+	QTYPES				eFldType,
+	FLMBOOL				bGetAtomVals,
+	FQATOM *				pResult,
+	FLMBOOL				bHaveKey);
+	
 FSTATIC RCODE flmFieldIterate(
-	FDB *				pDb,
-	POOL *			pPool,
-	QTYPES			eFldType,
-	FQNODE_p			pOpCB,
-	FlmRecord *		pRecord,
-	FLMBOOL			bHaveKey,
-	FLMBOOL			bGetAtomVals,
-	FLMUINT			uiAction,
-	FQATOM_p			pResult);
+	FDB *					pDb,
+	POOL *				pPool,
+	QTYPES				eFldType,
+	FQNODE *				pOpCB,
+	FlmRecord *			pRecord,
+	FLMBOOL				bHaveKey,
+	FLMBOOL				bGetAtomVals,
+	FLMUINT				uiAction,
+	FQATOM *				pResult);
 
 FSTATIC RCODE flmCurEvalArithOp(
-	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
-	FlmRecord *		pRecord,
-	FQNODE_p			pQNode,
-	QTYPES			eOp,
-	FLMBOOL			bGetNewField,
-	FLMBOOL			bHaveKey,
-	FQATOM_p			pResult);
+	FDB *					pDb,
+	SUBQUERY *			pSubQuery,
+	FlmRecord *			pRecord,
+	FQNODE *				pQNode,
+	QTYPES				eOp,
+	FLMBOOL				bGetNewField,
+	FLMBOOL				bHaveKey,
+	FQATOM *				pResult);
 
 FSTATIC RCODE flmCurEvalLogicalOp(
-	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
-	FlmRecord *		pRecord,
-	FQNODE_p			pQNode,
-	QTYPES			eOp,
-	FLMBOOL			bHaveKey,
-	FQATOM_p			pResult);
+	FDB *					pDb,
+	SUBQUERY *			pSubQuery,
+	FlmRecord *			pRecord,
+	FQNODE *				pQNode,
+	QTYPES				eOp,
+	FLMBOOL				bHaveKey,
+	FQATOM *				pResult);
 
-#define IS_EXPORT_PTR( e) \
+FSTATIC RCODE OpSyntaxError(
+	FQATOM *				pLhs,
+	FQATOM * 			pRhs,
+	FQATOM * 			pResult);
+
+FSTATIC RCODE OpUUBitAND(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUBitOR(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUBitXOR(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUMult(
+	FQATOM *				pLhs,
+	FQATOM * 			pRhs,
+	FQATOM * 			pResult);
+
+FSTATIC RCODE OpUSMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSSMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSUMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpURMult(
+	FQATOM * 			pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRUMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSRMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRSMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRRMult(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUSDiv(
+	FQATOM *				pLhs, 
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSSDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSUDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpURDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRUDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSRDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRSDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRRDiv(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUMod(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUSMod(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSSMod(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSUMod(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUSPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSSPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSUPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpURPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRUPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSRPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRSPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRRPlus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUUMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpUSMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSSMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSUMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpURMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRUMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpSRMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRSMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+FSTATIC RCODE OpRRMinus(
+	FQATOM *				pLhs,
+	FQATOM *				pRhs,
+	FQATOM *				pResult);
+
+#define IS_EXPORT_PTR(e) \
 	((e) == FLM_TEXT_VAL || (e) == FLM_BINARY_VAL)
 
 /****************************************************************************
-Desc:	Evaluates a list of QATOM elements, and returns a complex boolean
+Desc:
+****************************************************************************/
+FQ_OPERATION * FQ_DoOperation[((LAST_ARITH_OP - FIRST_ARITH_OP) + 1) * 9] =
+{
+	// BITAND
+	
+	OpUUBitAND,
+	OpUUBitAND,
+	OpSyntaxError,
+	OpUUBitAND,
+	OpUUBitAND,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+
+	// BITOR
+
+	OpUUBitOR,
+	OpUUBitOR,
+	OpSyntaxError,
+	OpUUBitOR,
+	OpUUBitOR,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+
+	// BITXOR
+
+	OpUUBitXOR,
+	OpUUBitXOR,
+	OpSyntaxError,
+	OpUUBitXOR,
+	OpUUBitXOR,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+
+	// MULT
+
+	OpUUMult,
+	OpUSMult,
+	OpURMult,
+	OpSUMult,
+	OpSSMult,
+	OpSRMult,
+	OpRUMult,
+	OpRSMult,
+	OpRRMult,
+
+	// DIV
+
+	OpUUDiv,
+	OpUSDiv,
+	OpURDiv,
+	OpSUDiv,
+	OpSSDiv,
+	OpSRDiv,
+	OpRUDiv,
+	OpRSDiv,
+	OpRRDiv,
+
+	// MOD
+
+	OpUUMod,
+	OpUSMod,
+	OpSyntaxError,
+	OpSUMod,
+	OpSSMod,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+	OpSyntaxError,
+
+	// PLUS
+
+	OpUUPlus,
+	OpUSPlus,
+	OpURPlus,
+	OpSUPlus,
+	OpSSPlus,
+	OpSRPlus,
+	OpRUPlus,
+	OpRSPlus,
+	OpRRPlus,
+
+	// MINUS
+
+	OpUUMinus,
+	OpUSMinus,
+	OpURMinus,
+	OpSUMinus,
+	OpSSMinus,
+	OpSRMinus,
+	OpRUMinus,
+	OpRSMinus,
+	OpRRMinus
+};
+
+/****************************************************************************
+Desc: Evaluates a list of QATOM elements, and returns a complex boolean
 		based on their contents.
 Ret:	FLM_TRUE if all elements have nonzero numerics or nonempty buffers.
-		FLM_FALSE if all contents are zero or empty.
+		FLM_FALSE if all contents are zero or empty. 
 		FLM_UNK if any QATOM is of type FLM_UNKNOWN.
-		Any combination of the preceeding values if their corresponding criteria
-		are met.
+		Any combination of the preceeding values if their corresponding 
+		criteria are met.
 ****************************************************************************/
 FSTATIC FLMUINT flmCurEvalTrueFalse(
-	FQATOM_p pQAtom
-	)
+	FQATOM *	pQAtom)
 {
-	FQATOM_p	pTmpQAtom;
+	FQATOM *	pTmpQAtom;
 	FLMUINT	uiTrueFalse = 0;
 
 	for (pTmpQAtom = pQAtom; pTmpQAtom; pTmpQAtom = pTmpQAtom->pNext)
@@ -135,6 +454,7 @@ FSTATIC FLMUINT flmCurEvalTrueFalse(
 					goto Exit;
 			}
 		}
+
 		if (uiTrueFalse == FLM_ALL_BOOL)
 		{
 			break;
@@ -142,7 +462,8 @@ FSTATIC FLMUINT flmCurEvalTrueFalse(
 	}
 
 Exit:
-	return( uiTrueFalse);
+
+	return (uiTrueFalse);
 }
 
 /****************************************************************************
@@ -150,14 +471,14 @@ Desc:	Gets a value from the passed-in record field and stuffs it into the
 		passed-in FQATOM.
 ****************************************************************************/
 RCODE flmCurGetAtomVal(
-	FlmRecord *	pRecord,
-	void *		pField,
-	POOL *		pPool,
-	QTYPES		eFldType,
-	FQATOM_p		pResult)
+	FlmRecord *		pRecord,
+	void *			pField,
+	POOL *			pPool,
+	QTYPES			eFldType,
+	FQATOM *			pResult)
 {
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiType = 0;
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiType = 0;
 
 	if (pField)
 	{
@@ -168,12 +489,15 @@ RCODE flmCurGetAtomVal(
 			goto Exit;
 		}
 	}
+
 	switch (eFldType)
 	{
 		case FLM_TEXT_VAL:
-
-			if (!pField)	// Use default value
+		{
+			if (!pField)
 			{
+				// Default value
+				
 				pResult->uiBufLen = 0;
 				pResult->val.pucBuf = NULL;
 			}
@@ -182,26 +506,32 @@ RCODE flmCurGetAtomVal(
 				pResult->uiBufLen = pRecord->getDataLength( pField);
 				if (pResult->uiBufLen)
 				{
-					pResult->val.pucBuf = (FLMBYTE *)pRecord->getDataPtr( pField);
+					pResult->val.pucBuf = (FLMBYTE *) pRecord->getDataPtr( pField);
 					pResult->pFieldRec = pRecord;
 				}
 				else
 				{
-					if ((pResult->val.pucBuf =
-							(FLMBYTE *)GedPoolAlloc( pPool, 1)) == NULL)
+					if ((pResult->val.pucBuf = (FLMBYTE *) GedPoolAlloc( 
+						pPool, 1)) == NULL)
 					{
 						rc = RC_SET( FERR_MEM);
 						break;
 					}
-					pResult->val.pucBuf [0] = 0;
+
+					pResult->val.pucBuf[0] = 0;
 				}
 			}
+
 			pResult->eType = FLM_TEXT_VAL;
 			break;
-	
+		}
+		
 		case FLM_INT32_VAL:
-			if (!pField || pRecord->getDataLength( pField) == 0)	// Use default value
+		{
+			if (!pField || pRecord->getDataLength( pField) == 0)
 			{
+				// Default value
+				
 				pResult->val.iVal = 0;
 			}
 			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
@@ -209,9 +539,9 @@ RCODE flmCurGetAtomVal(
 				if (RC_BAD( rc = pRecord->getINT( pField, &pResult->val.iVal)))
 				{
 
-					// Try to get the number as an unsigned value.  For purposes of
-					// evaluation, the 32-bit value will still be treated as
-					// signed.  In effect, the large positive value is wrapped and
+					// Try to get the number as an unsigned value. For purposes
+					// of evaluation, the 32-bit value will still be treated as
+					// signed. In effect, the large positive value is wrapped and
 					// becomes a negative value.
 
 					if (rc == FERR_CONV_NUM_OVERFLOW)
@@ -230,15 +560,21 @@ RCODE flmCurGetAtomVal(
 			{
 				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
 			}
+
 			if (RC_OK( rc))
 			{
 				pResult->eType = eFldType;
 			}
 			break;
+		}
+		
 		case FLM_UINT32_VAL:
 		case FLM_REC_PTR_VAL:
-			if (!pField || pRecord->getDataLength( pField) == 0)		// Use default value
+		{
+			if (!pField || pRecord->getDataLength( pField) == 0)
 			{
+				// Default value
+				
 				pResult->val.uiVal = 0;
 			}
 			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
@@ -246,9 +582,9 @@ RCODE flmCurGetAtomVal(
 				if (RC_BAD( rc = pRecord->getUINT( pField, &pResult->val.uiVal)))
 				{
 
-					// Try to get the number as a signed value.  For purposes of
+					// Try to get the number as a signed value. For purposes of
 					// evaluation, the 32-bit value will still be treated as
-					// unsigned.  In effect, the negative value is wrapped and
+					// unsigned. In effect, the negative value is wrapped and
 					// becomes a large positive value.
 
 					if (rc == FERR_CONV_NUM_UNDERFLOW)
@@ -266,12 +602,16 @@ RCODE flmCurGetAtomVal(
 			{
 				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
 			}
+
 			if (RC_OK( rc))
 			{
 				pResult->eType = eFldType;
 			}
 			break;
+		}
+		
 		case FLM_BINARY_VAL:
+		{
 			if (pField)
 			{
 				pResult->uiBufLen = pRecord->getDataLength( pField);
@@ -280,26 +620,29 @@ RCODE flmCurGetAtomVal(
 			{
 				pResult->uiBufLen = 0;
 			}
+
 			if (!pResult->uiBufLen)
 			{
 				pResult->val.pucBuf = NULL;
 			}
 			else
 			{
-				pResult->val.pucBuf = (FLMBYTE *)pRecord->getDataPtr( pField);
+				pResult->val.pucBuf = (FLMBYTE *) pRecord->getDataPtr( pField);
 				pResult->pFieldRec = pRecord;
 			}
+
 			pResult->eType = FLM_BINARY_VAL;
 			break;
+		}
 
 		// No type -- use the type in the passed-in node.
-		
-		case NO_TYPE:
 
-			// At this point, if we are attempting to get a default
-			// value, but don't know the type, it is because both
-			// sides of the operand are unknown, so we need to return
-			// no type.
+		case NO_TYPE:
+		{
+
+			// At this point, if we are attempting to get a default value, but
+			// don't know the type, it is because both sides of the operand are
+			// unknown, so we need to return no type.
 
 			if (!pField)
 			{
@@ -314,24 +657,27 @@ RCODE flmCurGetAtomVal(
 						pResult->uiBufLen = pRecord->getDataLength( pField);
 						if (pResult->uiBufLen)
 						{
-							pResult->val.pucBuf = (FLMBYTE *)pRecord->getDataPtr( pField);
+							pResult->val.pucBuf = (FLMBYTE *) pRecord->getDataPtr( pField);
 							pResult->pFieldRec = pRecord;
 						}
 						else
 						{
-							if ((pResult->val.pucBuf =
-									(FLMBYTE *)GedPoolAlloc( pPool, 1)) == NULL)
+							if ((pResult->val.pucBuf = (FLMBYTE *) GedPoolAlloc( 
+								pPool, 1)) == NULL)
 							{
 								rc = RC_SET( FERR_MEM);
 								break;
 							}
-							pResult->val.pucBuf[ 0] = 0;
+
+							pResult->val.pucBuf[0] = 0;
 						}
+
 						pResult->eType = FLM_TEXT_VAL;
 						break;
 					}
 
 					case FLM_BINARY_TYPE:
+					{
 						if (pField)
 						{
 							pResult->uiBufLen = pRecord->getDataLength( pField);
@@ -340,101 +686,119 @@ RCODE flmCurGetAtomVal(
 						{
 							pResult->uiBufLen = 0;
 						}
+	
 						if (!pResult->uiBufLen)
 						{
 							pResult->val.pucBuf = NULL;
 						}
 						else
 						{
-							pResult->val.pucBuf = (FLMBYTE *)pRecord->getDataPtr( pField);
+							pResult->val.pucBuf = 
+								(FLMBYTE *) pRecord->getDataPtr( pField);
 							pResult->pFieldRec = pRecord;
 						}
+	
 						pResult->eType = FLM_BINARY_VAL;
 						break;
-
+					}
+					
 					case FLM_NUMBER_TYPE:
-						if (RC_OK( rc = pRecord->getUINT( pField, &pResult->val.uiVal)))
+					{
+						if (RC_OK( rc = pRecord->getUINT( pField, 
+								&pResult->val.uiVal)))
 						{
 							pResult->eType = FLM_UINT32_VAL;
 						}
-						else if (RC_OK( rc = pRecord->getINT( pField, &pResult->val.iVal)))
+						else if (RC_OK( rc = pRecord->getINT( pField, 
+								&pResult->val.iVal)))
 						{
 							pResult->eType = FLM_INT32_VAL;
 						}
 						break;
-
+					}
+					
 					case FLM_CONTEXT_TYPE:
-						if (RC_OK( rc = pRecord->getUINT( pField, &(pResult->val.uiVal))))
+					{
+						if (RC_OK( rc = pRecord->getUINT( pField, 
+								&(pResult->val.uiVal))))
 						{
 							pResult->eType = FLM_UINT32_VAL;
 						}
 						break;
+					}
 				}
 			}
 			break;
+		}
+		
 		default:
+		{
 			rc = RC_SET( FERR_CURSOR_SYNTAX);
 			break;
+		}
 	}
 
 Exit:
-	pResult->uiFlags &= ~(FLM_IS_RIGHT_TRUNCATED_DATA |
-								 FLM_IS_LEFT_TRUNCATED_DATA);
+
+	pResult->uiFlags &= 
+		~(FLM_IS_RIGHT_TRUNCATED_DATA | FLM_IS_LEFT_TRUNCATED_DATA);
+		
 	if (RC_OK( rc) && pField)
 	{
 		if (pRecord->isRightTruncated( pField))
 		{
 			pResult->uiFlags |= FLM_IS_RIGHT_TRUNCATED_DATA;
 		}
+
 		if (pRecord->isLeftTruncated( pField))
 		{
 			pResult->uiFlags |= FLM_IS_LEFT_TRUNCATED_DATA;
 		}
 	}
 
-	return( rc);
+	return (rc);
 }
 
 /****************************************************************************
-Desc:	Given a list of FQATOMs containing alternate field paths, finds those
-		field paths in a compound record and creates a list of FQATOMs from the
-		contents of those paths.
-Ret:
+Desc: Given a list of FQATOMs containing alternate field paths, finds
+		those field paths in a compound record and creates a list of FQATOMs 
+		from the contents of those paths.
 ****************************************************************************/
 FSTATIC RCODE flmCurGetAtomFromRec(
 	FDB *				pDb,
 	POOL *			pPool,
-	FQATOM_p			pTreeAtom,
-	FlmRecord *		pRecord,			// may be NULL - for testing query on empty rec
+	FQATOM *			pTreeAtom,
+	FlmRecord *		pRecord,
 	QTYPES			eFldType,
 	FLMBOOL			bGetAtomVals,
-	FQATOM_p			pResult,
+	FQATOM *			pResult,
 	FLMBOOL			bHaveKey)
 {
-	RCODE			rc = FERR_OK;
-	FQATOM_p		pTmpResult = NULL;
-	void *		pvField;
-	void *		pvLastLevelOneField;
-	FLMUINT *	puiFldPath;
-	FLMUINT		uiCurrFieldPath[ GED_MAXLVLNUM + 1];
-	FLMUINT		uiFieldLevel;
-	FLMUINT		uiTmp;
-	FLMUINT		uiLeafFldNum;
-	FLMUINT		uiRecFldNum;
-	FLMBOOL		bFound;
-	FLMBOOL		bSavedInvisTrans;
-	FLMUINT		uiResult;
-	FLMBOOL		bPathFromRoot;
-	FLMBOOL		bUseFieldIdLookupTable;
-	FLMUINT *	puiPToCPath;
-	FLMUINT		uiHighestLevel;
-	FLMUINT		uiLevelOneFieldId;
+	RCODE				rc = FERR_OK;
+	FQATOM *			pTmpResult = NULL;
+	void *			pvField;
+	void *			pvLastLevelOneField;
+	FLMUINT *		puiFldPath;
+	FLMUINT			uiCurrFieldPath[ GED_MAXLVLNUM + 1];
+	FLMUINT			uiFieldLevel;
+	FLMUINT			uiTmp;
+	FLMUINT			uiLeafFldNum;
+	FLMUINT			uiRecFldNum;
+	FLMBOOL			bFound;
+	FLMBOOL			bSavedInvisTrans;
+	FLMUINT			uiResult;
+	FLMBOOL			bPathFromRoot;
+	FLMBOOL			bUseFieldIdLookupTable;
+	FLMUINT *		puiPToCPath;
+	FLMUINT			uiHighestLevel;
+	FLMUINT			uiLevelOneFieldId;
 
 	pResult->eType = NO_TYPE;
 	if (pTreeAtom->val.QueryFld.puiFldPath [0] == FLM_MISSING_FIELD_TAG)
 	{
 		goto Exit;
 	}
+	
 	if (!pRecord)
 	{
 		goto Exit;
@@ -454,19 +818,23 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 						  (pTreeAtom->uiFlags & FLM_ROOTED_PATH))
 						 ? TRUE
 						 : FALSE;
+						 
 	bUseFieldIdLookupTable = (bPathFromRoot &&
 									  pRecord->fieldIdTableEnabled() &&
 									  uiLevelOneFieldId)
 									 ? TRUE
 									 : FALSE;
+									 
 	if (*puiFldPath == FLM_RECID_FIELD)
 	{
 		pResult->eType = FLM_UINT32_VAL;
 		pResult->val.uiVal = pRecord->getID();
 		goto Exit;
 	}
+	
 	pvField = pRecord->root();
 	uiFieldLevel = 0;
+	
 	if (bPathFromRoot)
 	{
 		// Determine the highest level we need to go down to in the record.
@@ -476,10 +844,12 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 		{
 			uiHighestLevel++;
 		}
+		
 		if (puiPToCPath [0] != pRecord->getFieldID( pvField))
 		{
 			goto Exit;
 		}
+		
 		if (bUseFieldIdLookupTable)
 		{
 			if ((pvLastLevelOneField =
@@ -487,11 +857,13 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 			{
 				goto Exit;
 			}
+			
 			uiCurrFieldPath [0] = puiPToCPath [0];
 			pvField = pvLastLevelOneField;
 			uiFieldLevel = 1;
 		}
 	}
+	
 	uiLeafFldNum = puiFldPath[ 0];
 	for (;;)
 	{
@@ -519,7 +891,9 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 					bFound = FALSE;
 					break;
 				}
+				
 				uiFieldLevel--;
+				
 				if (puiFldPath[ uiTmp] != uiCurrFieldPath[ uiFieldLevel])
 				{
 					bFound = FALSE;
@@ -540,10 +914,12 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 							(HFDB)pDb, pTreeAtom->val.QueryFld.puiFldPath,
 							FLM_FLD_VALIDATE, NULL, &pvField, &uiResult);
 				CB_EXIT( pDb, bSavedInvisTrans);
+				
 				if (RC_BAD( rc))
 				{
 					goto Exit;
 				}
+				
 				if (uiResult == FLM_FALSE)
 				{
 					bFound = FALSE;
@@ -603,6 +979,7 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 					pResult->val.uiBool = FLM_TRUE;
 					goto Exit;
 				}
+				
 				if (!pTmpResult)
 				{
 					pTmpResult = pResult;
@@ -610,13 +987,14 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 				else if (pTmpResult->eType)
 				{
 					if ((pTmpResult->pNext =
-						(FQATOM_p)GedPoolCalloc( pPool, sizeof( FQATOM))) == NULL)
+						(FQATOM *)GedPoolCalloc( pPool, sizeof( FQATOM))) == NULL)
 					{
 						rc = RC_SET( FERR_MEM);
 						goto Exit;
 					}
 					pTmpResult = pTmpResult->pNext;
 				}
+				
 				pTmpResult->uiFlags = pTreeAtom->uiFlags;
 				if ((rc = flmCurGetAtomVal( pRecord, pvField, pPool, eFldType,
 									pTmpResult)) == FERR_CURSOR_SYNTAX)
@@ -638,20 +1016,25 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 			{
 				break;
 			}
+			
 			uiFieldLevel = pRecord->getLevel( pvField);
+			
 			if (!bPathFromRoot)
 			{
 				break;
 			}
+			
 			if (uiFieldLevel > uiHighestLevel)
 			{
 				continue;
 			}
+			
 			if (bUseFieldIdLookupTable && uiFieldLevel == 1)
 			{
 				pvLastLevelOneField = pvField = pRecord->nextLevelOneField(
 															pvLastLevelOneField);
 			}
+			
 			break;
 		}
 		
@@ -663,7 +1046,7 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 			if (pTmpResult && pTmpResult != pResult &&
 				 pTmpResult->eType == NO_TYPE)
 			{
-				FQATOM_p		pTmp;
+				FQATOM *		pTmp;
 
 				for (pTmp = pResult;
 					  pTmp && pTmp->pNext != pTmpResult;
@@ -704,22 +1087,23 @@ Exit:
 			pResult->uiFlags = pTreeAtom->uiFlags;
 		}
 	}
+	
 	return( rc);
 }
 
 /****************************************************************************
-Desc:	Iterate to the next occurrance of a field.
+Desc: Iterate to the next occurrance of a field.
 ****************************************************************************/
 FSTATIC RCODE flmFieldIterate(
 	FDB *				pDb,
 	POOL *			pPool,
 	QTYPES			eFldType,
-	FQNODE_p			pOpCB,
-	FlmRecord *		pRecord,			// may be NULL - for testing query on empty rec.
+	FQNODE *			pOpCB,
+	FlmRecord *		pRecord,
 	FLMBOOL			bHaveKey,
 	FLMBOOL			bGetAtomVals,
 	FLMUINT			uiAction,
-	FQATOM_p			pResult)
+	FQATOM *			pResult)
 {
 	RCODE				rc = FERR_OK;
 	FlmRecord *		pFieldRec = NULL;
@@ -728,29 +1112,31 @@ FSTATIC RCODE flmFieldIterate(
 
 	if (bHaveKey)
 	{
+
 		// bHaveKey is TRUE when we are evaluating a key instead of the
-		// full record.  In this case, it will not be possible for the
-		// callback function to get all of the values - so we simply
-		// return unknown, which will be handled by the outside.  If the
-		// entire query evaluates to unknown, FLAIM will fetch the
-		// record and evaluate the entire thing.  This is the safe
-		// route to take in this case.
+		// full record. In this case, it will not be possible for the
+		// callback function to get all of the values - so we simply return
+		// unknown, which will be handled by the outside. If the entire
+		// query evaluates to unknown, FLAIM will fetch the record and
+		// evaluate the entire thing. This is the safe route to take in this
+		// case.
 
 		pResult->eType = FLM_UNKNOWN;
 	}
 	else
 	{
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		rc = pOpCB->pQAtom->val.QueryFld.fnGetField(
-					pOpCB->pQAtom->val.QueryFld.pvUserData, pRecord, (HFDB)pDb,
-					pOpCB->pQAtom->val.QueryFld.puiFldPath, uiAction,
-					&pFieldRec, &pField, NULL);
+		rc = pOpCB->pQAtom->val.QueryFld.fnGetField( 
+			pOpCB->pQAtom->val.QueryFld.pvUserData, pRecord, (HFDB) pDb,
+			pOpCB->pQAtom->val.QueryFld.puiFldPath, uiAction, 
+			&pFieldRec, &pField, NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 
 		if (RC_BAD( rc))
 		{
 			goto Exit;
 		}
+
 		if (!pField)
 		{
 			if (!bGetAtomVals)
@@ -763,8 +1149,8 @@ FSTATIC RCODE flmFieldIterate(
 				if ((pOpCB->pQAtom->uiFlags & FLM_USE_DEFAULT_VALUE) &&
 					 (uiAction == FLM_FLD_FIRST))
 				{
-					if (RC_BAD( rc = flmCurGetAtomVal( pFieldRec, NULL, 
-						pPool, eFldType, pResult)))
+					if (RC_BAD( rc = flmCurGetAtomVal( pFieldRec, NULL, pPool,
+								  eFldType, pResult)))
 					{
 						goto Exit;
 					}
@@ -782,8 +1168,8 @@ FSTATIC RCODE flmFieldIterate(
 				pResult->eType = FLM_BOOL_VAL;
 				pResult->val.uiBool = FLM_TRUE;
 			}
-			else if (RC_BAD( rc = flmCurGetAtomVal( pFieldRec,
-						pField, pPool, eFldType, pResult)))
+			else if (RC_BAD( rc = flmCurGetAtomVal( pFieldRec, pField, pPool,
+								 eFldType, pResult)))
 			{
 				goto Exit;
 			}
@@ -792,46 +1178,44 @@ FSTATIC RCODE flmFieldIterate(
 
 Exit:
 
-	return( rc);
+	return (rc);
 }
 
 /****************************************************************************
-Desc:		Performs arithmetic operations on stack element lists.
-Notes:	This is a recursive routine.
+Desc:	Performs arithmetic operations on stack element lists.
 ****************************************************************************/
 FSTATIC RCODE flmCurEvalArithOp(
-	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
-	FlmRecord *		pRecord,
-	FQNODE_p			pQNode,
-	QTYPES			eOp,
-	FLMBOOL			bGetNewField,
-	FLMBOOL			bHaveKey,
-	FQATOM_p			pResult
-	)
+	FDB *			pDb,
+	SUBQUERY *	pSubQuery,
+	FlmRecord *	pRecord,
+	FQNODE *		pQNode,
+	QTYPES		eOp,
+	FLMBOOL		bGetNewField,
+	FLMBOOL		bHaveKey,
+	FQATOM *		pResult)
 {
-	RCODE				rc = FERR_OK;
-	FQNODE_p			pTmpQNode;
-	FQATOM			Lhs;
-	FQATOM			Rhs;
-	FQATOM_p			pTmpQAtom;
-	FQATOM_p			pRhs;
-	FQATOM_p			pLhs;
-	FQATOM_p			pFirstRhs;
-	QTYPES			eType;
-	QTYPES			eFldType = NO_TYPE;
-	FLMBOOL			bSecondOperand = FALSE;
-	FQNODE_p			pRightOpCB = NULL;
-	FQNODE_p			pLeftOpCB = NULL;
-	FQNODE_p			pOpCB = NULL;
-	POOL *			pTmpPool = &pDb->TempPool;
-	FLMBOOL			bSavedInvisTrans;
-	RCODE				TempRc;
+	RCODE			rc = FERR_OK;
+	FQNODE *		pTmpQNode;
+	FQATOM		Lhs;
+	FQATOM		Rhs;
+	FQATOM *		pTmpQAtom;
+	FQATOM *		pRhs;
+	FQATOM *		pLhs;
+	FQATOM *		pFirstRhs;
+	QTYPES		eType;
+	QTYPES		eFldType = NO_TYPE;
+	FLMBOOL		bSecondOperand = FALSE;
+	FQNODE *		pRightOpCB = NULL;
+	FQNODE *		pLeftOpCB = NULL;
+	FQNODE *		pOpCB = NULL;
+	POOL *		pTmpPool = &pDb->TempPool;
+	FLMBOOL		bSavedInvisTrans;
+	RCODE			TempRc;
 
 	if ((pTmpQNode = pQNode->pChild) == NULL)
 	{
 		rc = RC_SET( FERR_CURSOR_SYNTAX);
-		return( rc);
+		return (rc);
 	}
 
 	pLhs = &Lhs;
@@ -852,12 +1236,15 @@ FSTATIC RCODE flmCurEvalArithOp(
 	// Get the two operands (may be multiple values per operand)
 
 	pTmpQAtom = pLhs;
+	
 Get_Operand:
+
 	eType = GET_QNODE_TYPE( pTmpQNode);
 	if (IS_FLD_CB( eType, pTmpQNode))
 	{
 		eType = FLM_CB_FLD;
 	}
+
 	if (IS_VAL( eType))
 	{
 		if (bSecondOperand)
@@ -902,11 +1289,11 @@ Get_Operand:
 
 		if (eType == FLM_CB_FLD)
 		{
+
 			// Get the first occurrence of the field.
 
 			if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType, pOpCB,
-										pRecord, bHaveKey, TRUE,
-										FLM_FLD_FIRST, pTmpQAtom)))
+						  pRecord, bHaveKey, TRUE, FLM_FLD_FIRST, pTmpQAtom)))
 			{
 				goto Exit;
 			}
@@ -914,8 +1301,8 @@ Get_Operand:
 		else
 		{
 			if (RC_BAD( rc = flmCurGetAtomFromRec( pDb, pTmpPool,
-										pTmpQNode->pQAtom, pRecord,
-										eFldType, TRUE, pTmpQAtom, bHaveKey)))
+						  pTmpQNode->pQAtom, pRecord, eFldType, TRUE, pTmpQAtom,
+						  bHaveKey)))
 			{
 				goto Exit;
 			}
@@ -926,9 +1313,8 @@ Get_Operand:
 
 		// Recursive call
 
-		if (RC_BAD( rc = flmCurEvalArithOp( pDb, pSubQuery, pRecord,
-									pTmpQNode, eType, bGetNewField, bHaveKey,
-									pTmpQAtom)))
+		if (RC_BAD( rc = flmCurEvalArithOp( pDb, pSubQuery, pRecord, pTmpQNode,
+					  eType, bGetNewField, bHaveKey, pTmpQAtom)))
 		{
 			goto Exit;
 		}
@@ -954,6 +1340,7 @@ Get_Operand:
 				rc = RC_SET( FERR_CURSOR_SYNTAX);
 				goto Exit;
 			}
+
 			pTmpQNode = pTmpQNode->pNextSib;
 			pTmpQAtom = pRhs;
 			bSecondOperand = TRUE;
@@ -975,27 +1362,27 @@ Get_Operand:
 		else
 		{
 			int		opPos = (eOp - FIRST_ARITH_OP) * 9;
-
-			QTYPES	lhType = (QTYPES)(pLhs->eType - FLM_UINT32_VAL);
-			QTYPES	rhType = (QTYPES)(pRhs->eType - FLM_UINT32_VAL);
+			QTYPES	lhType = (QTYPES) (pLhs->eType - FLM_UINT32_VAL);
+			QTYPES	rhType = (QTYPES) (pRhs->eType - FLM_UINT32_VAL);
 
 			if (lhType > 2 || rhType > 2)
 			{
 				rc = RC_SET( FERR_CURSOR_SYNTAX);
 				goto Exit;
 			}
+
 			opPos += (lhType * 3) + rhType;
 
 			// Call through a table the operation handling routine.
-				
-			rc = (FQ_DoOperation[ opPos ]) ( pLhs, pRhs, pTmpQAtom );
+
+			rc = (FQ_DoOperation[opPos]) (pLhs, pRhs, pTmpQAtom);
 		}
 
 		// Doing contextless, do them all - loop through right hand
 		// operands, then left hand operands.
-
+		//
 		// Get the next right hand operand.
-
+		
 		if (!pRightOpCB)
 		{
 			pRhs = pRhs->pNext;
@@ -1006,20 +1393,20 @@ Get_Operand:
 		}
 		else
 		{
-			if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-										pRightOpCB, pRecord, bHaveKey,
-										TRUE, FLM_FLD_NEXT, pRhs)))
+			if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType, pRightOpCB,
+						  pRecord, bHaveKey, TRUE, FLM_FLD_NEXT, pRhs)))
 			{
 				goto Exit;
 			}
+
 			if (pRhs->eType == FLM_UNKNOWN)
 			{
 				pRhs = NULL;
 			}
 		}
 
-		// If no more right hand side, get the next left hand
-		// side, and reset the right hand side.
+		// If no more right hand side, get the next left hand side, and
+		// reset the right hand side.
 
 		if (!pRhs)
 		{
@@ -1034,16 +1421,17 @@ Get_Operand:
 			else
 			{
 				if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-											pLeftOpCB, pRecord, bHaveKey,
-											TRUE, FLM_FLD_NEXT, pLhs)))
+							  pLeftOpCB, pRecord, bHaveKey, TRUE, FLM_FLD_NEXT, pLhs)))
 				{
 					goto Exit;
 				}
+
 				if (pLhs->eType == FLM_UNKNOWN)
 				{
 					pLhs = NULL;
 				}
 			}
+
 			if (!pLhs)
 			{
 				break;
@@ -1054,8 +1442,8 @@ Get_Operand:
 			if (pRightOpCB)
 			{
 				if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-											pRightOpCB, pRecord, bHaveKey,
-											TRUE, FLM_FLD_FIRST, pRhs)))
+							  pRightOpCB, pRecord, bHaveKey, TRUE, FLM_FLD_FIRST, pRhs
+							  )))
 				{
 					goto Exit;
 				}
@@ -1068,13 +1456,13 @@ Get_Operand:
 
 		// Set up for next result
 
-		if ((pTmpQAtom->pNext =
-					(FQATOM_p)GedPoolCalloc( pTmpPool, sizeof( FQATOM)))
-									== NULL)
+		if ((pTmpQAtom->pNext = (FQATOM *) GedPoolCalloc( 
+				pTmpPool, sizeof( FQATOM))) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
+
 		pTmpQAtom = pTmpQAtom->pNext;
 	}
 
@@ -1085,11 +1473,10 @@ Exit:
 	if (pLeftOpCB)
 	{
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		TempRc = pLeftOpCB->pQAtom->val.QueryFld.fnGetField(
-							pLeftOpCB->pQAtom->val.QueryFld.pvUserData,
-							NULL, (HFDB)pDb,
-							pLeftOpCB->pQAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_RESET, NULL, NULL, NULL);
+		TempRc = pLeftOpCB->pQAtom->val.QueryFld.fnGetField( 
+			pLeftOpCB->pQAtom->val.QueryFld.pvUserData, NULL, (HFDB) pDb,
+			pLeftOpCB->pQAtom->val.QueryFld.puiFldPath, FLM_FLD_RESET, NULL,
+			NULL, NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 
 		if (RC_BAD( TempRc))
@@ -1100,14 +1487,14 @@ Exit:
 			}
 		}
 	}
+
 	if (pRightOpCB)
 	{
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		TempRc = pRightOpCB->pQAtom->val.QueryFld.fnGetField(
-							pRightOpCB->pQAtom->val.QueryFld.pvUserData, NULL,
-							(HFDB)pDb,
-							pRightOpCB->pQAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_RESET, NULL, NULL, NULL);
+		TempRc = pRightOpCB->pQAtom->val.QueryFld.fnGetField( 
+			pRightOpCB->pQAtom->val.QueryFld.pvUserData, NULL, (HFDB) pDb,
+			pRightOpCB->pQAtom->val.QueryFld.puiFldPath, FLM_FLD_RESET, NULL,
+			NULL, NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 
 		if (RC_BAD( TempRc))
@@ -1118,17 +1505,18 @@ Exit:
 			}
 		}
 	}
-	return( rc);
+
+	return (rc);
 }
 
 /****************************************************************************
-Desc:	Performs a comparison operation on two operands,
-		one or both of which can be FLM_UNKNOWN.
+Desc:	Performs a comparison operation on two operands, one or both of
+		which can be FLM_UNKNOWN.
 ****************************************************************************/
 void flmCompareOperands(
 	FLMUINT		uiLang,
-	FQATOM_p		pLhs,
-	FQATOM_p		pRhs,
+	FQATOM *		pLhs,
+	FQATOM *		pRhs,
 	QTYPES		eOp,
 	FLMBOOL		bResolveUnknown,
 	FLMBOOL		bForEvery,
@@ -1138,10 +1526,10 @@ void flmCompareOperands(
 {
 	if (pLhs->eType == FLM_UNKNOWN || pRhs->eType == FLM_UNKNOWN)
 	{
-	
-		// If we are not resolving predicates with unknown operands,
-		// return FLM_UNK.
-		
+
+		// If we are not resolving predicates with unknown operands, return
+		// FLM_UNK.
+
 		if (bHaveKey || !bResolveUnknown)
 		{
 			*puiTrueFalse = FLM_UNK;
@@ -1149,139 +1537,152 @@ void flmCompareOperands(
 		else if (bNotted)
 		{
 
-			// If bNotted is TRUE, the result will be inverted on the outside,
-			// so we need to set it to the opposite of what we want it to
-			// ultimately be.
+			// If bNotted is TRUE, the result will be inverted on the
+			// outside, so we need to set it to the opposite of what we want
+			// it to ultimately be.
 
-			*puiTrueFalse = (bForEvery
-									? FLM_FALSE		// will be changed to FLM_TRUE on outside
-									: FLM_TRUE);	// will be changed to FLM_FALSE on outside
-
-
+			*puiTrueFalse = (bForEvery ? FLM_FALSE : FLM_TRUE);
 		}
 		else
 		{
-			*puiTrueFalse = (bForEvery
-									? FLM_TRUE
-									: FLM_FALSE);
+			*puiTrueFalse = (bForEvery ? FLM_TRUE : FLM_FALSE);
 		}
 	}
 
-	// At this point, both operands are known to be present.  The comparison
-	// will therefore be performed according to the operator specified.
-	
+	// At this point, both operands are known to be present. The
+	// comparison will therefore be performed according to the operator
+	// specified.
+
 	else
 	{
-		switch( eOp)
+		switch (eOp)
 		{
 			case FLM_EQ_OP:
+			{
 
 				// OPTIMIZATION: for UINT32 compares avoid func call by doing
 				// compare here!
 
-				if (pLhs->eType == FLM_UINT32_VAL &&
-					 pRhs->eType == FLM_UINT32_VAL)
-				{	
-					*puiTrueFalse = (FQ_COMPARE( pLhs->val.uiVal,
-														  pRhs->val.uiVal) == 0)
-										 ? FLM_TRUE
-										 : FLM_FALSE;
+				if (pLhs->eType == FLM_UINT32_VAL && pRhs->eType == FLM_UINT32_VAL)
+				{
+					*puiTrueFalse =
+						(FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal) == 0)
+							? FLM_TRUE : FLM_FALSE;
 				}
 				else
 				{
-					*puiTrueFalse = (flmCurDoRelationalOp( pLhs,
-											pRhs, uiLang) == 0)
-										 ? FLM_TRUE
-										 : FLM_FALSE;
+					*puiTrueFalse =
+						(flmCurDoRelationalOp( pLhs, pRhs, uiLang) == 0)
+							? FLM_TRUE : FLM_FALSE;
 				}
+				
 				break;
-
+			}
+			
 			case FLM_MATCH_OP:
+			{
 				if ((pLhs->uiFlags & FLM_WILD) || (pRhs->uiFlags & FLM_WILD))
 				{
-					*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang,
-											FALSE, FALSE);
+					*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang, FALSE, FALSE);
 				}
 				else
 				{
-					*puiTrueFalse = (flmCurDoRelationalOp( pLhs,
-												pRhs, uiLang) == 0)
-										 ? FLM_TRUE
-										 : FLM_FALSE;
+					*puiTrueFalse =
+						(flmCurDoRelationalOp( pLhs, pRhs, uiLang) == 0)
+							? FLM_TRUE : FLM_FALSE;
 				}
+				
 				break;
-
+			}
+			
 			case FLM_MATCH_BEGIN_OP:
-				*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang,
-											FALSE, TRUE);
+			{
+				*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang, FALSE, TRUE);
 				break;
-
+			}
+			
 			case FLM_MATCH_END_OP:
-				*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang,
-											TRUE, FALSE);
+			{
+				*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang, TRUE, FALSE);
 				break;
-
+			}
+			
 			case FLM_NE_OP:
-				*puiTrueFalse = (flmCurDoRelationalOp( pLhs, pRhs, uiLang) != 0)
-									 ? FLM_TRUE
-									 : FLM_FALSE;
+			{
+				*puiTrueFalse =
+					(flmCurDoRelationalOp( pLhs, pRhs, uiLang) != 0)
+						? FLM_TRUE : FLM_FALSE;
 				break;
-
+			}
+			
 			case FLM_LT_OP:
-				*puiTrueFalse = (flmCurDoRelationalOp( pLhs, pRhs, uiLang) < 0)
-									 ? FLM_TRUE
-									 : FLM_FALSE;
+			{
+				*puiTrueFalse =
+					(flmCurDoRelationalOp( pLhs, pRhs, uiLang) < 0)
+						? FLM_TRUE : FLM_FALSE;
 				break;
-
+			}
+			
 			case FLM_LE_OP:
-				*puiTrueFalse = (flmCurDoRelationalOp( pLhs, pRhs, uiLang) <= 0)
-									 ? FLM_TRUE
-									 : FLM_FALSE;
+			{
+				*puiTrueFalse =
+					(flmCurDoRelationalOp( pLhs, pRhs, uiLang) <= 0)
+						? FLM_TRUE : FLM_FALSE;
 				break;
-
+			}
+			
 			case FLM_GT_OP:
-				*puiTrueFalse = (flmCurDoRelationalOp( pLhs, pRhs, uiLang) > 0)
-									 ? FLM_TRUE
-									 : FLM_FALSE;
+			{
+				*puiTrueFalse =
+					(flmCurDoRelationalOp( pLhs, pRhs, uiLang) > 0)
+						? FLM_TRUE : FLM_FALSE;
 				break;
-
+			}
+			
 			case FLM_GE_OP:
-				*puiTrueFalse = (flmCurDoRelationalOp( pLhs, pRhs, uiLang) >= 0)
-									 ? FLM_TRUE
-									 : FLM_FALSE;
+			{
+				*puiTrueFalse =
+					(flmCurDoRelationalOp( pLhs, pRhs, uiLang) >= 0)
+						? FLM_TRUE : FLM_FALSE;
 				break;
-
+			}
+			
 			case FLM_CONTAINS_OP:
+			{
 				*puiTrueFalse = flmCurDoContainsOp( pLhs, pRhs, uiLang);
 				break;
-
+			}
+			
 			default:
-				*puiTrueFalse = 0;					// Syntax error.
+			{
+				// Syntax error.
+				
+				*puiTrueFalse = 0;
 				flmAssert( 0);
 				break;
+			}
 		}
 	}
 }
 
 /****************************************************************************
-Desc:	Performs relational operations on stack elements.
+Desc: Performs relational operations on stack elements.
 ****************************************************************************/
 RCODE flmCurEvalCompareOp(
 	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
-	FlmRecord *		pRecord,			// maybe NULL - for testing query on empty rec.
-	FQNODE_p			pQNode,
+	SUBQUERY *		pSubQuery,
+	FlmRecord *		pRecord,
+	FQNODE *			pQNode,
 	QTYPES			eOp,
 	FLMBOOL			bHaveKey,
-	FQATOM_p			pResult
-	)
+	FQATOM *			pResult)
 {
 	RCODE				rc = FERR_OK;
-	FQNODE_p			pTmpQNode;
-	FQATOM_p			pTmpQAtom;
-	FQATOM_p			pLhs;
-	FQATOM_p			pRhs;
-	FQATOM_p			pFirstRhs;
+	FQNODE *			pTmpQNode;
+	FQATOM *			pTmpQAtom;
+	FQATOM *			pLhs;
+	FQATOM *			pRhs;
+	FQATOM *			pFirstRhs;
 	FQATOM			Lhs;
 	FQATOM			Rhs;
 	QTYPES			wTmpOp = eOp;
@@ -1293,13 +1694,11 @@ RCODE flmCurEvalCompareOp(
 	FLMBOOL			bGetNewField = FALSE;
 	FLMBOOL			bRightTruncated = FALSE;
 	FLMBOOL			bNotted = (pQNode->uiStatus & FLM_NOTTED) ? TRUE : FALSE;
-	FLMBOOL			bResolveUnknown = (pQNode->uiStatus & FLM_RESOLVE_UNK)
-												? TRUE : FALSE;
-	FLMBOOL			bForEvery =
-							(pQNode->uiStatus & FLM_FOR_EVERY) ? TRUE : FALSE;
-	FQNODE_p			pRightOpCB = NULL;
-	FQNODE_p			pLeftOpCB = NULL;
-	FQNODE_p			pOpCB = NULL;
+	FLMBOOL			bResolveUnknown = (pQNode->uiStatus & FLM_RESOLVE_UNK) ? TRUE : FALSE;
+	FLMBOOL			bForEvery = (pQNode->uiStatus & FLM_FOR_EVERY) ? TRUE : FALSE;
+	FQNODE *			pRightOpCB = NULL;
+	FQNODE *			pLeftOpCB = NULL;
+	FQNODE *			pOpCB = NULL;
 	RCODE				TempRc;
 	FLMBOOL			bSavedInvisTrans;
 	POOL *			pTmpPool = &pDb->TempPool;
@@ -1313,24 +1712,28 @@ RCODE flmCurEvalCompareOp(
 		rc = RC_SET( FERR_CURSOR_SYNTAX);
 		goto Exit;
 	}
+
 	pLhs = &Lhs;
 	pRhs = &Rhs;
 
 	pTmpQNode = pQNode->pChild;
 	bSecondOperand = FALSE;
-	f_memset( &Lhs, 0, sizeof( FQATOM ));
-	f_memset( &Rhs, 0, sizeof( FQATOM ));
+	f_memset( &Lhs, 0, sizeof(FQATOM));
+	f_memset( &Rhs, 0, sizeof(FQATOM));
 	pLhs->eType = pRhs->eType = NO_TYPE;
 
 	// Get the two operands from the stack or passed-in record node
 
 	pTmpQAtom = pLhs;
+	
 Get_Operand:
+
 	eType = GET_QNODE_TYPE( pTmpQNode);
 	if (IS_FLD_CB( eType, pTmpQNode))
 	{
 		eType = FLM_CB_FLD;
 	}
+
 	if (IS_VAL( eType))
 	{
 		if (bSecondOperand)
@@ -1360,12 +1763,14 @@ Get_Operand:
 				rc = RC_SET( FERR_CURSOR_SYNTAX);
 				goto Exit;
 			}
+
 			eFldType = GET_QNODE_TYPE( pTmpQNode->pNextSib);
 			if (eType == FLM_CB_FLD)
 			{
 				pOpCB = pLeftOpCB = pTmpQNode;
 			}
 		}
+
 		if (!IS_VAL( eFldType))
 		{
 			eFldType = NO_TYPE;
@@ -1377,11 +1782,11 @@ Get_Operand:
 			// Get the first occurrence of the field.
 
 			if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType, pOpCB,
-										pRecord, bHaveKey, TRUE,
-										FLM_FLD_FIRST, pTmpQAtom)))
+						  pRecord, bHaveKey, TRUE, FLM_FLD_FIRST, pTmpQAtom)))
 			{
 				goto Exit;
 			}
+
 			if (pTmpQAtom->uiFlags & FLM_IS_RIGHT_TRUNCATED_DATA)
 			{
 				bRightTruncated = TRUE;
@@ -1390,24 +1795,25 @@ Get_Operand:
 		else
 		{
 			if (RC_BAD( rc = flmCurGetAtomFromRec( pDb, pTmpPool,
-									pTmpQNode->pQAtom, pRecord, eFldType,
- 									TRUE, pTmpQAtom, bHaveKey)))
+						  pTmpQNode->pQAtom, pRecord, eFldType, TRUE, pTmpQAtom,
+						  bHaveKey)))
 			{
 				goto Exit;
 			}
+
 			if (pTmpQAtom->uiFlags & FLM_IS_RIGHT_TRUNCATED_DATA)
 			{
 				bRightTruncated = TRUE;
 			}
 		}
 
-		// Check to see if this field is a substring field in the index. If it
-		// is, and it is not the first substring value in the field, and we are
-		// doing a match begin or match operator, return FLM_FALSE - we cannot
-		// evaluate anything except first substrings in these two cases.
-		// NOTE: If we are evaluating a key and this is a callback field,
-		// we don't need to worry about this condition, because the CB field
-		// will have been set up to return unknown.
+		// Check to see if this field is a substring field in the index. If
+		// it is, and it is not the first substring value in the field, and
+		// we are doing a match begin or match operator, return FLM_FALSE -
+		// we cannot evaluate anything except first substrings in these two
+		// cases. NOTE: If we are evaluating a key and this is a callback
+		// field, we don't need to worry about this condition, because the
+		// CB field will have been set up to return unknown.
 
 		if (bHaveKey &&
 			 (pTmpQAtom->uiFlags & FLM_IS_LEFT_TRUNCATED_DATA) &&
@@ -1419,9 +1825,8 @@ Get_Operand:
 	}
 	else if (IS_ARITH_OP( eType))
 	{
-		if( RC_BAD( rc = flmCurEvalArithOp( pDb, pSubQuery, pRecord,
-									pTmpQNode, eType, bGetNewField,
-									bHaveKey, pTmpQAtom)))
+		if (RC_BAD( rc = flmCurEvalArithOp( pDb, pSubQuery, pRecord, pTmpQNode,
+					  eType, bGetNewField, bHaveKey, pTmpQAtom)))
 		{
 			goto Exit;
 		}
@@ -1439,14 +1844,15 @@ Get_Operand:
 			rc = RC_SET( FERR_CURSOR_SYNTAX);
 			goto Exit;
 		}
+
 		pTmpQNode = pTmpQNode->pNextSib;
 		pTmpQAtom = pRhs;
 		bSecondOperand = TRUE;
 		goto Get_Operand;
 	}
 
-	// If necessary, reverse the operator to render the expression in the form
-	// <field><op><value>.
+	// If necessary, reverse the operator to render the expression in the
+	// form <field><op><value>.
 
 	if (bSwitchOperands)
 	{
@@ -1468,46 +1874,48 @@ Get_Operand:
 	pFirstRhs = pRhs;
 	for (;;)
 	{
-		FLMBOOL		bDoComp = TRUE;
+		FLMBOOL	bDoComp = TRUE;
 
-		// If this key piece is truncated, and the selection criteria can't be
-		// evaluated as a result, read the record and start again.
-		// NOTE: this will only happen if the field type is text or binary.
+		// If this key piece is truncated, and the selection criteria can't
+		// be evaluated as a result, read the record and start again. NOTE:
+		// this will only happen if the field type is text or binary.
 
-		if (bHaveKey && 
+		if (bHaveKey &&
 			 bRightTruncated &&
 			 pRhs->eType != FLM_UNKNOWN &&
 			 pLhs->eType != FLM_UNKNOWN)
 		{
 
-			// VISIT:
-			// We should optimized to flunk or pass text compares.  The problems come
-			// with comparing only up to the first wildcard.
+			// VISIT: We should optimized to flunk or pass text compares.
+			// The problems come with comparing only up to the first
+			// wildcard.
 
-			if( pLhs->eType != FLM_BINARY_VAL)
+			if (pLhs->eType != FLM_BINARY_VAL)
 			{
 				uiTrueFalse = FLM_UNK;
 			}
 			else
 			{
-				FLMINT		iCompVal;
+				FLMINT	iCompVal;
 
 				// We better only compare binary types here.
 
 				flmAssert( pRhs->eType == FLM_BINARY_VAL);
 
 				iCompVal = f_memcmp( pLhs->val.pucBuf, pRhs->val.pucBuf,
-								f_min( pLhs->uiBufLen, pRhs->uiBufLen));
+										  f_min( pLhs->uiBufLen, pRhs->uiBufLen));
 
-				if( !iCompVal)
+				if (!iCompVal)
 				{
-					// Lhs is the truncated key.  If its length is <= to the length
-					// of the Rhs, comparison must continue by fetching the record.
-					// So, we set uiTrueFalse to FLM_UNK.  Otherwise, we know that
-					// the Lhs length is greater than the Rhs, so we are able to
-					// complete the comparison even though the key is truncated.
 
-					if( pLhs->uiBufLen <= pRhs->uiBufLen)
+					// Lhs is the truncated key. If its length is <= to the
+					// length of the Rhs, comparison must continue by fetching
+					// the record. So, we set uiTrueFalse to FLM_UNK.
+					// Otherwise, we know that the Lhs length is greater than
+					// the Rhs, so we are able to complete the comparison even
+					// though the key is truncated.
+
+					if (pLhs->uiBufLen <= pRhs->uiBufLen)
 					{
 						uiTrueFalse = FLM_UNK;
 					}
@@ -1517,70 +1925,83 @@ Get_Operand:
 					}
 				}
 
-				// iCompVal == 0 has been handled above.  This means that
+				// iCompVal == 0 has been handled above. This means that
 				// uiTrueFalse has been set to FLM_UNK.
-				
-				if( iCompVal)
+
+				if (iCompVal)
 				{
 					switch (eOp)
 					{
 						case FLM_NE_OP:
+						{
+
 							// We know that iCompVal != 0
+
 							uiTrueFalse = FLM_TRUE;
 							break;
+						}
+						
 						case FLM_GT_OP:
 						case FLM_GE_OP:
+						{
 							uiTrueFalse = (iCompVal > 0) ? FLM_TRUE : FLM_FALSE;
 							break;
+						}
+						
 						case FLM_LT_OP:
 						case FLM_LE_OP:
+						{
 							uiTrueFalse = (iCompVal < 0) ? FLM_TRUE : FLM_FALSE;
 							break;
+						}
+						
 						case FLM_EQ_OP:
 						default:
+						{
 							// We know that iCompVal != 0
+
 							uiTrueFalse = FLM_FALSE;
 							break;
+						}
 					}
 				}
+
 				bDoComp = FALSE;
 			}
 		}
 		else
 		{
 			flmCompareOperands( pSubQuery->uiLanguage, pLhs, pRhs, eOp,
-							bResolveUnknown, bForEvery, bNotted,
-							bHaveKey, &uiTrueFalse);
+									 bResolveUnknown, bForEvery, bNotted, bHaveKey,
+									 &uiTrueFalse);
 		}
 
 		if (bNotted)
 		{
-			uiTrueFalse = (uiTrueFalse == FLM_TRUE)
-							  ? FLM_FALSE
-							  : (uiTrueFalse == FLM_FALSE)
-								 ? FLM_TRUE
-								 : FLM_UNK;
+			uiTrueFalse = (uiTrueFalse == FLM_TRUE) 
+									? FLM_FALSE 
+									: (uiTrueFalse == FLM_FALSE) 
+											? FLM_TRUE 
+											: FLM_UNK;
 		}
 
 		// For index keys - validate that the field is correct if the
-		// compare returned true.  Otherwise, set the result to unknown.
-		// VISIT:  This will not work for index keys that have more than
-		// one field that needs to be validated.
+		// compare returned true. Otherwise, set the result to unknown.
+		// VISIT: This will not work for index keys that have more than one
+		// field that needs to be validated.
 
-		if (bDoComp &&
-			 eType == FLM_FLD_PATH &&
-			 uiTrueFalse == FLM_TRUE &&
-			 bHaveKey)
+		if (bDoComp && eType == FLM_FLD_PATH &&
+			 uiTrueFalse == FLM_TRUE && bHaveKey)
 		{
-			FQATOM_p		pTreeAtom = pTmpQNode->pQAtom;
+			FQATOM *		pTreeAtom = pTmpQNode->pQAtom;
 			FLMUINT		uiResult;
 			void *		pField = NULL;
 
 			CB_ENTER( pDb, &bSavedInvisTrans);
-			rc = pTreeAtom->val.QueryFld.fnGetField(
-							pTreeAtom->val.QueryFld.pvUserData, pRecord,
-							(HFDB)pDb, pTreeAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_VALIDATE, NULL, &pField, &uiResult);
+			rc = pTreeAtom->val.QueryFld.fnGetField( 
+				pTreeAtom->val.QueryFld.pvUserData, pRecord, (HFDB) pDb,
+				pTreeAtom->val.QueryFld.puiFldPath, FLM_FLD_VALIDATE, NULL,
+				&pField, &uiResult);
 			CB_EXIT( pDb, bSavedInvisTrans);
 
 			if (RC_BAD( rc))
@@ -1599,10 +2020,10 @@ Get_Operand:
 
 		pResult->val.uiBool = uiTrueFalse;
 
-		// Doing contextless, see if we need to process any more.
-		// If the FOR EVERY flag is TRUE (universal quantifier), we
-		// quit when we see a FALSE.  If the FOR EVERY flag is FALSE
-		// (existential quantifier), we quit when we see a TRUE.
+		// Doing contextless, see if we need to process any more. If the
+		// FOR EVERY flag is TRUE (universal quantifier), we quit when we
+		// see a FALSE. If the FOR EVERY flag is FALSE (existential
+		// quantifier), we quit when we see a TRUE.
 
 		if ((bForEvery && uiTrueFalse == FLM_FALSE) ||
 			 (!bForEvery && uiTrueFalse == FLM_TRUE))
@@ -1622,24 +2043,25 @@ Get_Operand:
 		}
 		else
 		{
-			if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-										pRightOpCB, pRecord, bHaveKey,
-										TRUE, FLM_FLD_NEXT, pRhs)))
+			if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType, pRightOpCB,
+						  pRecord, bHaveKey, TRUE, FLM_FLD_NEXT, pRhs)))
 			{
 				goto Exit;
 			}
+
 			if (pRhs->uiFlags & FLM_IS_RIGHT_TRUNCATED_DATA)
 			{
 				bRightTruncated = TRUE;
 			}
+
 			if (pRhs->eType == FLM_UNKNOWN)
 			{
 				pRhs = NULL;
 			}
 		}
 
-		// If no more right hand side, get the next left hand
-		// side, and reset the right hand side.
+		// If no more right hand side, get the next left hand side, and
+		// reset the right hand side.
 
 		if (!pRhs)
 		{
@@ -1654,20 +2076,22 @@ Get_Operand:
 			else
 			{
 				if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-										pLeftOpCB, pRecord, bHaveKey,
-										TRUE, FLM_FLD_NEXT, pLhs)))
+							  pLeftOpCB, pRecord, bHaveKey, TRUE, FLM_FLD_NEXT, pLhs)))
 				{
 					goto Exit;
 				}
+
 				if (pLhs->uiFlags & FLM_IS_RIGHT_TRUNCATED_DATA)
 				{
 					bRightTruncated = TRUE;
 				}
+
 				if (pLhs->eType == FLM_UNKNOWN)
 				{
 					pLhs = NULL;
 				}
 			}
+
 			if (!pLhs)
 			{
 				break;
@@ -1678,11 +2102,11 @@ Get_Operand:
 			if (pRightOpCB)
 			{
 				if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-										pRightOpCB, pRecord, bHaveKey,
-										TRUE, FLM_FLD_FIRST, pRhs)))
+					pRightOpCB, pRecord, bHaveKey, TRUE, FLM_FLD_FIRST, pRhs)))
 				{
 					goto Exit;
 				}
+
 				if (pRhs->uiFlags & FLM_IS_RIGHT_TRUNCATED_DATA)
 				{
 					bRightTruncated = TRUE;
@@ -1702,11 +2126,10 @@ Exit:
 	if (pLeftOpCB)
 	{
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		TempRc = pLeftOpCB->pQAtom->val.QueryFld.fnGetField(
-							pLeftOpCB->pQAtom->val.QueryFld.pvUserData,
-							NULL, (HFDB)pDb,
-							pLeftOpCB->pQAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_RESET, NULL, NULL, NULL);
+		TempRc = pLeftOpCB->pQAtom->val.QueryFld.fnGetField( 
+			pLeftOpCB->pQAtom->val.QueryFld.pvUserData, NULL, (HFDB) pDb,
+			pLeftOpCB->pQAtom->val.QueryFld.puiFldPath, FLM_FLD_RESET, NULL,
+			NULL, NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 
 		if (RC_BAD( TempRc))
@@ -1717,14 +2140,14 @@ Exit:
 			}
 		}
 	}
+
 	if (pRightOpCB)
 	{
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		TempRc = pRightOpCB->pQAtom->val.QueryFld.fnGetField(
-							pRightOpCB->pQAtom->val.QueryFld.pvUserData,
-							NULL, (HFDB)pDb,
-							pRightOpCB->pQAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_RESET, NULL, NULL, NULL);
+		TempRc = pRightOpCB->pQAtom->val.QueryFld.fnGetField( 
+			pRightOpCB->pQAtom->val.QueryFld.pvUserData, NULL, (HFDB) pDb,
+			pRightOpCB->pQAtom->val.QueryFld.puiFldPath, FLM_FLD_RESET, NULL,
+			NULL, NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 		if (RC_BAD( TempRc))
 		{
@@ -1734,31 +2157,31 @@ Exit:
 			}
 		}
 	}
+
 	GedPoolReset( pTmpPool, pvMark);
-	return( rc);
+	return (rc);
 }
 
 /****************************************************************************
-Desc:		Performs logical AND or OR operations
+Desc: Performs logical AND or OR operations
 ****************************************************************************/
-FSTATIC RCODE  flmCurEvalLogicalOp(
-	FDB *				pDb,
-	SUBQUERY_p		pSubQuery,
-	FlmRecord *		pRecord,
-	FQNODE_p			pQNode,
-	QTYPES			eOp,
-	FLMBOOL			bHaveKey,
-	FQATOM_p			pResult
-	)
+FSTATIC RCODE flmCurEvalLogicalOp(
+	FDB *			pDb,
+	SUBQUERY *	pSubQuery,
+	FlmRecord *	pRecord,
+	FQNODE *		pQNode,
+	QTYPES		eOp,
+	FLMBOOL		bHaveKey,
+	FQATOM *		pResult)
 {
-	RCODE				rc = FERR_OK;
-	FQATOM			TmpQAtom;
-	FQNODE_p			pTmpQNode;
-	FQATOM_p			pTmpQAtom;
-	QTYPES			eType;
-	FLMBOOL			bSavedInvisTrans;
-	FLMUINT			uiTrueFalse;
-	RCODE				TempRc;
+	RCODE			rc = FERR_OK;
+	FQATOM		TmpQAtom;
+	FQNODE *		pTmpQNode;
+	FQATOM *		pTmpQAtom;
+	QTYPES		eType;
+	FLMBOOL		bSavedInvisTrans;
+	FLMUINT		uiTrueFalse;
+	RCODE			TempRc;
 
 	pResult->eType = FLM_BOOL_VAL;
 	pResult->pNext = NULL;
@@ -1789,6 +2212,7 @@ Get_Operand:
 	{
 		eType = FLM_CB_FLD;
 	}
+
 	if (IS_VAL( eType))
 	{
 		pTmpQAtom = pTmpQNode->pQAtom;
@@ -1798,30 +2222,30 @@ Get_Operand:
 
 		// Get the first occurrence of the field.
 
-		if (RC_OK( rc = flmFieldIterate( pDb, &pDb->TempPool, NO_TYPE,
-									pTmpQNode, pRecord, bHaveKey, FALSE,
-									FLM_FLD_FIRST, pTmpQAtom)))
+		if (RC_OK( rc = flmFieldIterate( pDb, &pDb->TempPool, NO_TYPE, pTmpQNode,
+					 pRecord, bHaveKey, FALSE, FLM_FLD_FIRST, pTmpQAtom)))
 		{
 			if (pTmpQNode->uiStatus & FLM_NOTTED &&
 				 pTmpQAtom->eType == FLM_BOOL_VAL)
 			{
-				pTmpQAtom->val.uiBool = (pTmpQAtom->val.uiBool == FLM_TRUE)
-											 ? FLM_FALSE
-											 : FLM_TRUE;
+				pTmpQAtom->val.uiBool = (pTmpQAtom->val.uiBool == FLM_TRUE) 
+														? FLM_FALSE 
+														: FLM_TRUE;
 			}
 		}
+
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		TempRc = pTmpQNode->pQAtom->val.QueryFld.fnGetField(
-							pTmpQNode->pQAtom->val.QueryFld.pvUserData,
-							NULL, (HFDB)pDb,
-							pTmpQNode->pQAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_RESET, NULL, NULL, NULL);
+		TempRc = pTmpQNode->pQAtom->val.QueryFld.fnGetField( 
+			pTmpQNode->pQAtom->val.QueryFld.pvUserData, NULL, (HFDB) pDb,
+			pTmpQNode->pQAtom->val.QueryFld.puiFldPath, FLM_FLD_RESET, NULL,
+			NULL, NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 
 		if (RC_BAD( TempRc) && RC_OK( rc))
 		{
 			rc = TempRc;
 		}
+
 		if (RC_BAD( rc))
 		{
 			goto Exit;
@@ -1830,24 +2254,24 @@ Get_Operand:
 	else if (eType == FLM_FLD_PATH)
 	{
 		if (RC_BAD( rc = flmCurGetAtomFromRec( pDb, &pDb->TempPool,
-								pTmpQNode->pQAtom, pRecord, NO_TYPE, FALSE,
-								pTmpQAtom, bHaveKey)))
+					  pTmpQNode->pQAtom, pRecord, NO_TYPE, FALSE, pTmpQAtom, bHaveKey
+					  )))
 		{
 			goto Exit;
 		}
 
 		// NOTE: pTmpQAtom could come back from this as an UNKNOWN now,
-		// even though we are testing for field existence.  This could
-		// happen when we are testing a key and we have a callback, but
-		// the callback cannot tell if the field instance is actually
-		// present or not.
+		// even though we are testing for field existence. This could happen
+		// when we are testing a key and we have a callback, but the
+		// callback cannot tell if the field instance is actually present or
+		// not.
 
 		if ((pTmpQNode->uiStatus & FLM_NOTTED) &&
 			 (pTmpQAtom->eType == FLM_BOOL_VAL))
 		{
-			pTmpQAtom->val.uiBool = (pTmpQAtom->val.uiBool == FLM_TRUE)
-										 ? FLM_FALSE
-										 : FLM_TRUE;
+			pTmpQAtom->val.uiBool = (pTmpQAtom->val.uiBool == FLM_TRUE) 
+														? FLM_FALSE 
+														: FLM_TRUE;
 		}
 	}
 	else if (IS_LOG_OP( eType))
@@ -1863,8 +2287,8 @@ Get_Operand:
 	}
 	else if (IS_COMPARE_OP( eType))
 	{
-		if (RC_BAD( rc = flmCurEvalCompareOp( pDb, pSubQuery, pRecord,
-									pTmpQNode, eType, bHaveKey, pTmpQAtom)))
+		if (RC_BAD( rc = flmCurEvalCompareOp( pDb, pSubQuery, pRecord, pTmpQNode,
+					  eType, bHaveKey, pTmpQAtom)))
 		{
 			goto Exit;
 		}
@@ -1875,8 +2299,8 @@ Get_Operand:
 		{
 
 			// Don't want to do the callback if we only have a key - because
-			// the callback won't have access to all of the values from
-			// here.  The safe thing is to just return unknown.
+			// the callback won't have access to all of the values from here.
+			// The safe thing is to just return unknown.
 
 			pResult->eType = FLM_UNKNOWN;
 			goto Exit;
@@ -1884,14 +2308,14 @@ Get_Operand:
 		else
 		{
 			CB_ENTER( pDb, &bSavedInvisTrans);
-			rc = pTmpQNode->pQAtom->val.pPredicate->testRecord(
-									(HFDB)pDb, pRecord, pRecord->getID(),
-									&pTmpQAtom->val.uiBool);
+			rc = pTmpQNode->pQAtom->val.pPredicate->testRecord( 
+					(HFDB) pDb, pRecord, pRecord->getID(), &pTmpQAtom->val.uiBool);
 			CB_EXIT( pDb, bSavedInvisTrans);
 			if (RC_BAD( rc))
 			{
 				goto Exit;
 			}
+
 			pTmpQAtom->eType = FLM_BOOL_VAL;
 		}
 	}
@@ -1905,15 +2329,14 @@ Get_Operand:
 
 	uiTrueFalse = flmCurEvalTrueFalse( pTmpQAtom);
 
-	// Traverse back up the tree, ORing or ANDing or NOTing
-	// this result as necessary.
+	// Traverse back up the tree, ORing or ANDing or NOTing this result as
+	// necessary.
 
 	for (;;)
 	{
 
-		// If ANDing and we have a FALSE result or ORing and
-		// we have a TRUE result, the result can simply be
-		// propagated up the tree.
+		// If ANDing and we have a FALSE result or ORing and we have a TRUE
+		// result, the result can simply be propagated up the tree.
 
 		if ((eOp == FLM_AND_OP && uiTrueFalse == FLM_FALSE) ||
 			 (eOp == FLM_OR_OP && uiTrueFalse == FLM_TRUE))
@@ -1926,6 +2349,7 @@ Get_Operand:
 			{
 				break;
 			}
+
 			eOp = GET_QNODE_TYPE( pQNode);
 		}
 		else if (pTmpQNode->pNextSib)
@@ -1941,20 +2365,20 @@ Get_Operand:
 			pTmpQNode = pTmpQNode->pNextSib;
 			goto Get_Operand;
 		}
-		else	// Processing results of right hand operand
+		else		// Processing results of right hand operand
 		{
 			FLMUINT	uiRhs;
 
 			if (eOp == FLM_AND_OP)
 			{
 
-				// FALSE case for AND operator has already been
-				// handled up above.
+				// FALSE case for AND operator has already been handled up
+				// above.
 
 				flmAssert( uiTrueFalse != FLM_FALSE);
 
-				// AND the results from the left-hand side.
-				// Get left-hand side result from pQNode.
+				// AND the results from the left-hand side. Get left-hand
+				// side result from pQNode.
 
 				uiRhs = uiTrueFalse;
 				uiTrueFalse = FLM_GET_RESULT( pQNode->uiStatus);
@@ -1965,29 +2389,30 @@ Get_Operand:
 				{
 					uiTrueFalse |= FLM_FALSE;
 				}
+
 				if (uiRhs & FLM_UNK)
 				{
 					uiTrueFalse |= FLM_UNK;
 				}
 
-				// If both left hand side and right hand side do
-				// not have FLM_TRUE set, we must turn it off.
+				// If both left hand side and right hand side do not have
+				// FLM_TRUE set, we must turn it off.
 
-				if ((uiTrueFalse & FLM_TRUE) &&
-					 (!(uiRhs & FLM_TRUE)))
+				if ((uiTrueFalse & FLM_TRUE) && (!(uiRhs & FLM_TRUE)))
 				{
 					uiTrueFalse &= (~(FLM_TRUE));
 				}
 			}
 			else if (eOp == FLM_OR_OP)
 			{
-				// TRUE case for OR operator better have been
-				// handled up above.
+
+				// TRUE case for OR operator better have been handled up
+				// above.
 
 				flmAssert( uiTrueFalse != FLM_TRUE);
 
-				// OR the results from the left hand side.
-				// Get left-hand side result from pQNode.
+				// OR the results from the left hand side. Get left-hand side
+				// result from pQNode.
 
 				uiRhs = uiTrueFalse;
 				uiTrueFalse = FLM_GET_RESULT( pQNode->uiStatus);
@@ -1998,21 +2423,21 @@ Get_Operand:
 				{
 					uiTrueFalse |= FLM_TRUE;
 				}
+
 				if (uiRhs & FLM_UNK)
 				{
 					uiTrueFalse |= FLM_UNK;
 				}
 
-				// If both left hand side and right hand side do
-				// not have FLM_FALSE set, we must turn it off.
+				// If both left hand side and right hand side do not have
+				// FLM_FALSE set, we must turn it off.
 
-				if ((uiTrueFalse & FLM_FALSE) &&
-					 (!(uiRhs & FLM_FALSE)))
+				if ((uiTrueFalse & FLM_FALSE) && (!(uiRhs & FLM_FALSE)))
 				{
 					uiTrueFalse &= (~(FLM_FALSE));
 				}
 			}
-			else // (eOp == FLM_NOT_OP)
+			else	// (eOp == FLM_NOT_OP)
 			{
 				flmAssert( eOp == FLM_NOT_OP);
 
@@ -2034,15 +2459,9 @@ Get_Operand:
 				{
 					uiTrueFalse = FLM_TRUE | FLM_UNK;
 				}
-				// Other cases are:
-				// FLM_TRUE | FLM_FALSE - Unchanged
-				// FLM_UNK - Unchanged
-				// FLM_UNK | FLM_TRUE | FLM_FALSE - Unchanged
-				// 0 - should not be possible at this point.
 			}
 
-			// Traverse back up to the parent with this
-			// result.
+			// Traverse back up to the parent with this result.
 
 			pTmpQNode = pQNode;
 
@@ -2052,40 +2471,41 @@ Get_Operand:
 			{
 				break;
 			}
+
 			eOp = GET_QNODE_TYPE( pQNode);
 		}
 	}
 
-	// At this point, we are done, because there is no higher to
-	// traverse back up in the tree.
+	// At this point, we are done, because there is no higher to traverse
+	// back up in the tree.
 
 	pResult->val.uiBool = uiTrueFalse;
 
 Exit:
-	return( rc);
+
+	return (rc);
 }
 
 /****************************************************************************
-Desc:	Checks a record that has been retrieved from the database in GEDCOM tree
-		format to see if it matches the criteria specified in the query stack.
-Note:	Note the two early returns.
+Desc:	Checks a record that has been retrieved from the database
+		to see if it matches the criteria specified in the query
+		stack.
 ****************************************************************************/
 RCODE flmCurEvalCriteria(
-	CURSOR_p			pCursor,
-	SUBQUERY_p		pSubQuery,
-	FlmRecord *		pRecord,							// Points to the data record
-	FLMBOOL			bHaveKey,						// Evaluating key?
-	FLMUINT *		puiResult						// Returns FLM_TRUE if match.
-	)
+	CURSOR *			pCursor,
+	SUBQUERY *		pSubQuery,
+	FlmRecord *		pRecord,
+	FLMBOOL			bHaveKey,
+	FLMUINT *		puiResult)
 {
 	RCODE				rc = FERR_OK;
 	FQATOM			Result;
 	QTYPES			eType;
-	FDB_p				pDb = pCursor->pDb;
-	FQNODE_p			pQNode;
+	FDB *				pDb = pCursor->pDb;
+	FQNODE *			pQNode;
 	void *			pTmpMark = GedPoolMark( &pDb->TempPool);
 	FLMUINT			uiResult = 0;
-	FQNODE_p			pOpCB = NULL;
+	FQNODE *			pOpCB = NULL;
 	RCODE				TempRc;
 
 	// By definition, a NULL record doesn't match selection criteria.
@@ -2110,15 +2530,14 @@ RCODE flmCurEvalCriteria(
 		goto Exit;
 	}
 
-	// First check the record type if necessary, then verify that there are
-	// search criteria to match against.
+	// First check the record type if necessary, then verify that there
+	// are search criteria to match against.
 
 	if (pCursor->uiRecType)
 	{
 		void *	pField = pRecord->root();
 
-		if (!pField ||
-			 pCursor->uiRecType != pRecord->getFieldID( pField))
+		if (!pField || pCursor->uiRecType != pRecord->getFieldID( pField))
 		{
 			uiResult = FLM_FALSE;
 			goto Exit;
@@ -2127,7 +2546,7 @@ RCODE flmCurEvalCriteria(
 
 	pQNode = pSubQuery->pTree;
 
-	f_memset( &Result, 0, sizeof( FQATOM));
+	f_memset( &Result, 0, sizeof(FQATOM));
 
 	eType = GET_QNODE_TYPE( pQNode);
 	if (IS_FLD_CB( eType, pQNode))
@@ -2143,9 +2562,10 @@ RCODE flmCurEvalCriteria(
 	{
 		if (bHaveKey)
 		{
+
 			// Don't want to do the callback if we only have a key - because
-			// the callback won't have access to all of the values from
-			// here.  The safe thing is to just return unknown.
+			// the callback won't have access to all of the values from here.
+			// The safe thing is to just return unknown.
 
 			uiResult = FLM_UNK;
 			rc = FERR_OK;
@@ -2154,9 +2574,8 @@ RCODE flmCurEvalCriteria(
 		{
 			FLMBOOL	bSavedInvisTrans;
 			CB_ENTER( pDb, &bSavedInvisTrans);
-			rc = pQNode->pQAtom->val.pPredicate->testRecord(
-									(HFDB)pDb, pRecord,
-									pRecord->getID(), &uiResult);
+			rc = pQNode->pQAtom->val.pPredicate->testRecord( 
+				(HFDB) pDb, pRecord, pRecord->getID(), &uiResult);
 			CB_EXIT( pDb, bSavedInvisTrans);
 			if (RC_BAD( rc))
 			{
@@ -2172,54 +2591,53 @@ RCODE flmCurEvalCriteria(
 			// Get the first occurrence of the field.
 
 			pOpCB = pQNode;
-			if (RC_BAD( rc = flmFieldIterate( pDb, &pDb->TempPool,
-				NO_TYPE, pQNode, pRecord, bHaveKey, FALSE,
-				FLM_FLD_FIRST, &Result)))
+			if (RC_BAD( rc = flmFieldIterate( pDb, &pDb->TempPool, NO_TYPE, pQNode,
+						  pRecord, bHaveKey, FALSE, FLM_FLD_FIRST, &Result)))
 			{
 				goto Exit;
 			}
+
 			if (pQNode->uiStatus & FLM_NOTTED && Result.eType == FLM_BOOL_VAL)
 			{
-				Result.val.uiBool = (Result.val.uiBool == FLM_TRUE)
-											 ? FLM_FALSE
-											 : FLM_TRUE;
+				Result.val.uiBool = (Result.val.uiBool == FLM_TRUE) 
+													? FLM_FALSE 
+													: FLM_TRUE;
 			}
 		}
 		else if (eType == FLM_FLD_PATH)
 		{
-			if (RC_BAD( rc = flmCurGetAtomFromRec( pDb,
-				&pDb->TempPool, pQNode->pQAtom, pRecord,
-				NO_TYPE, FALSE, &Result, bHaveKey)))
+			if (RC_BAD( rc = flmCurGetAtomFromRec( pDb, &pDb->TempPool,
+						  	pQNode->pQAtom, pRecord, NO_TYPE, FALSE, &Result, 
+							bHaveKey)))
 			{
 				goto Exit;
 			}
 
 			// NOTE: Result could come back from this as an UNKNOWN now,
-			// even though we are testing for field existence.  This could
+			// even though we are testing for field existence. This could
 			// happen when we are testing a key and we have a callback, but
 			// the callback cannot tell if the field instance is actually
 			// present or not.
 
-			if ((pQNode->uiStatus & FLM_NOTTED) &&
-				 (Result.eType == FLM_BOOL_VAL))
+			if ((pQNode->uiStatus & FLM_NOTTED) && (Result.eType == FLM_BOOL_VAL))
 			{
-				Result.val.uiBool = (Result.val.uiBool == FLM_TRUE)
-											 ? FLM_FALSE
-											 : FLM_TRUE;
+				Result.val.uiBool = (Result.val.uiBool == FLM_TRUE) 
+													? FLM_FALSE 
+													: FLM_TRUE;
 			}
 		}
 		else if (IS_LOG_OP( eType))
 		{
-			if (RC_BAD( rc = flmCurEvalLogicalOp( pDb, pSubQuery, pRecord,
-									pQNode, eType, bHaveKey, &Result)))
+			if (RC_BAD( rc = flmCurEvalLogicalOp( pDb, pSubQuery, pRecord, pQNode,
+						  eType, bHaveKey, &Result)))
 			{
 				goto Exit;
 			}
 		}
 		else if (IS_COMPARE_OP( eType))
 		{
-			if( RC_BAD( rc = flmCurEvalCompareOp( pDb, pSubQuery, pRecord,
-									pQNode, eType, bHaveKey, &Result)))
+			if (RC_BAD( rc = flmCurEvalCompareOp( pDb, pSubQuery, pRecord, pQNode,
+						  eType, bHaveKey, &Result)))
 			{
 				goto Exit;
 			}
@@ -2240,6 +2658,7 @@ RCODE flmCurEvalCriteria(
 	}
 
 Exit:
+
 	if (rc == FERR_EOF_HIT)
 	{
 		rc = FERR_OK;
@@ -2251,11 +2670,10 @@ Exit:
 	{
 		FLMBOOL	bSavedInvisTrans;
 		CB_ENTER( pDb, &bSavedInvisTrans);
-		TempRc = pOpCB->pQAtom->val.QueryFld.fnGetField(
-							pOpCB->pQAtom->val.QueryFld.pvUserData,
-							NULL, (HFDB)pDb,
-							pOpCB->pQAtom->val.QueryFld.puiFldPath,
-							FLM_FLD_RESET, NULL, NULL, NULL);
+		TempRc = pOpCB->pQAtom->val.QueryFld.fnGetField( 
+			pOpCB->pQAtom->val.QueryFld.pvUserData, NULL, (HFDB) pDb,
+			pOpCB->pQAtom->val.QueryFld.puiFldPath, FLM_FLD_RESET, NULL, NULL,
+			NULL);
 		CB_EXIT( pDb, bSavedInvisTrans);
 		if (RC_BAD( TempRc))
 		{
@@ -2265,7 +2683,970 @@ Exit:
 			}
 		}
 	}
+
 	GedPoolReset( &pDb->TempPool, pTmpMark);
 	*puiResult = uiResult;
-	return( rc);
+	return (rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSyntaxError(
+	FQATOM *		pLhs,
+	FQATOM *		pRhs,
+	FQATOM *		pResult)
+{
+	F_UNREFERENCED_PARM( pLhs);
+	F_UNREFERENCED_PARM( pRhs);
+	F_UNREFERENCED_PARM( pResult);
+	
+	return (RC_SET( FERR_CURSOR_SYNTAX));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUBitAND(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.uiVal = pLhs->val.uiVal & pRhs->val.uiVal;
+	pResult->eType = FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUBitOR(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.uiVal = pLhs->val.uiVal | pRhs->val.uiVal;
+	pResult->eType = FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUBitXOR(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.uiVal = pLhs->val.uiVal ^ pRhs->val.uiVal;
+	pResult->eType = FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.uiVal = pLhs->val.uiVal * pRhs->val.uiVal;
+	pResult->eType = FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUSMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.iVal = (FLMINT) pLhs->val.uiVal * pRhs->val.iVal;
+	pResult->eType = FLM_INT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSSMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.iVal = pLhs->val.iVal * pRhs->val.iVal;
+	pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSUMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.iVal = pLhs->val.iVal * (FLMINT) pRhs->val.uiVal;
+	pResult->eType = FLM_INT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpURMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRUMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSRMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRSMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRRMult(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.uiVal)
+	{
+		pResult->val.uiVal = pLhs->val.uiVal / pRhs->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		// Divide by ZERO case.
+		
+		pResult->val.uiVal = 0;
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUSDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.iVal)
+	{
+		pResult->val.iVal = (FLMINT) pLhs->val.uiVal / pRhs->val.iVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		// Divide by ZERO case.
+
+		pResult->val.uiVal = 0;
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSSDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.iVal)
+	{
+		pResult->val.iVal = pLhs->val.iVal / pRhs->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.uiVal = 0; // divide by ZERO case
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSUDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.uiVal)
+	{
+		pResult->val.iVal = pLhs->val.iVal / (FLMINT) pRhs->val.uiVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else	// Divide by ZERO case - let's try not to crash.
+	{
+		pResult->val.uiVal = 0;
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpURDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRUDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSRDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRSDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRRDiv(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUMod(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.uiVal != 0)
+	{
+		pResult->val.uiVal = pLhs->val.uiVal % pRhs->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.uiVal = 0; // MOD by ZERO case.
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUSMod(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.iVal != 0)
+	{
+		pResult->val.iVal = (FLMINT) pLhs->val.uiVal / pRhs->val.iVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		pResult->val.uiVal = 0; // MOD by ZERO case
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSSMod(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.iVal != 0)
+	{
+		pResult->val.iVal = pLhs->val.iVal % pRhs->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+	else
+	{
+		// MOD by ZERO case
+		
+		pResult->val.uiVal = 0;
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSUMod(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.uiVal != 0)
+	{
+		pResult->val.iVal = pLhs->val.iVal % ((FLMINT) pRhs->val.uiVal);
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		// Divide by ZERO case.
+		
+		pResult->val.uiVal = 0;
+		pResult->eType = FLM_UNKNOWN;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.uiVal = pLhs->val.uiVal + pRhs->val.uiVal;
+	pResult->eType = FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUSPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if ((pRhs->val.iVal >= 0) || (pLhs->val.uiVal > MAX_SIGNED_VAL))
+	{
+		pResult->val.uiVal = pLhs->val.uiVal + (FLMUINT) pRhs->val.iVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.iVal = (FLMINT) pLhs->val.uiVal + pRhs->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSSPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	pResult->val.iVal = pLhs->val.iVal + pRhs->val.iVal;
+	pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSUPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if ((pLhs->val.iVal >= 0) || (pRhs->val.uiVal > MAX_SIGNED_VAL))
+	{
+		pResult->val.uiVal = (FLMUINT) pLhs->val.iVal + pRhs->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.iVal = pLhs->val.iVal + (FLMINT) pRhs->val.uiVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpURPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRUPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSRPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRSPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRRPlus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUUMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pLhs->val.uiVal >= pRhs->val.uiVal)
+	{
+		pResult->val.uiVal = pLhs->val.uiVal - pRhs->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.iVal = (FLMINT) (pLhs->val.uiVal - pRhs->val.uiVal);
+		pResult->eType = FLM_INT32_VAL;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpUSMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+
+	if (pRhs->val.iVal < 0)
+	{
+		pResult->val.uiVal = pLhs->val.uiVal - pRhs->val.iVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.iVal = (FLMINT) pLhs->val.uiVal - pRhs->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSSMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if ((pLhs->val.iVal > 0) && (pRhs->val.iVal < 0))
+	{
+		pResult->val.uiVal = (FLMUINT) (pLhs->val.iVal - pRhs->val.iVal);
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.iVal = pLhs->val.iVal - pRhs->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSUMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	if (pRhs->val.uiVal > MAX_SIGNED_VAL)
+	{
+		pResult->val.iVal = (pLhs->val.iVal - MAX_SIGNED_VAL) - 
+										(FLMINT) (pRhs->val.uiVal - MAX_SIGNED_VAL);
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		pResult->val.iVal = pLhs->val.iVal - (FLMINT) pRhs->val.uiVal;
+		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+
+	return (FERR_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpURMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRUMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpSRMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRSMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE OpRRMinus(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FQATOM *	pResult)
+{
+	return (OpSyntaxError( pLhs, pRhs, pResult));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE flmCurDoNeg(
+	FQATOM *	pResult)
+{
+	RCODE		rc = FERR_OK;
+	FQATOM *	pTmpQAtom;
+
+	// Perform operation on list according to operand types
+
+	for (pTmpQAtom = pResult; pTmpQAtom; pTmpQAtom = pTmpQAtom->pNext)
+	{
+		if (IS_UNSIGNED( pTmpQAtom->eType))
+		{
+			if (pTmpQAtom->val.uiVal >= MAX_SIGNED_VAL)
+			{
+				pTmpQAtom->eType = NO_TYPE;
+			}
+			else
+			{
+				pTmpQAtom->val.iVal = -((FLMINT) (pTmpQAtom->val.uiVal));
+				pTmpQAtom->eType = FLM_INT32_VAL;
+			}
+		}
+		else if (IS_SIGNED( pTmpQAtom->eType))
+		{
+			pTmpQAtom->val.iVal *= -1;
+		}
+		else if (pTmpQAtom->eType != FLM_UNKNOWN)
+		{
+			rc = RC_SET( FERR_CURSOR_SYNTAX);
+			break;
+		}
+	}
+
+	return (rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT flmCurDoMatchOp(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FLMUINT	uiLang,
+	FLMBOOL	bLeadingWildCard,
+	FLMBOOL	bTrailingWildCard)
+{
+	FLMUINT	uiFlags = pLhs->uiFlags | pRhs->uiFlags;
+	FLMUINT	uiTrueFalse = 0;
+
+	// Verify operand types - non-text and non-binary return false
+
+	if (!IS_BUF_TYPE( pLhs->eType) || !IS_BUF_TYPE( pRhs->eType))
+	{
+		goto Exit;
+	}
+
+	// If one of the operands is binary, simply do a byte comparison of the
+	// two values without regard to case or wildcards.
+
+	if ((pLhs->eType == FLM_BINARY_VAL) || (pRhs->eType == FLM_BINARY_VAL))
+	{
+		FLMUINT	uiLen1;
+		FLMUINT	uiLen2;
+
+		uiLen1 = pLhs->uiBufLen;
+		uiLen2 = pRhs->uiBufLen;
+		flmAssert( !bLeadingWildCard);
+		if ((bTrailingWildCard) && (uiLen2 > uiLen1))
+		{
+			uiLen2 = uiLen1;
+		}
+
+		uiTrueFalse = (FLMUINT)
+			(
+				(
+					(uiLen1 == uiLen2) &&
+					(f_memcmp( pLhs->val.pucBuf, pRhs->val.pucBuf, uiLen1) == 0)
+				) ? (FLMUINT) FLM_TRUE : (FLMUINT) FLM_FALSE
+			);
+		goto Exit;
+	}
+
+	// If wildcards are set, do a string search, first making necessary
+	// adjustments for case sensitivity. ;
+	//
+	// NOTE: THIS IS MATCH BEGIN CASE WITHOUT WILD CARD. The non-wild case
+	// for bMatchEntire (DO_MATCH) does NOT come through this section of
+	// code. Rather, flmCurDoEQ is called instead of this routine in that
+	// case.
+	
+	if (pLhs->eType == FLM_TEXT_VAL && pRhs->eType == FLM_TEXT_VAL)
+	{
+
+		// Always true if there is a wild card.
+
+		uiTrueFalse = flmTextMatch( pLhs->val.pucBuf, pLhs->uiBufLen,
+											pRhs->val.pucBuf, pRhs->uiBufLen, uiFlags,
+											bLeadingWildCard, bTrailingWildCard, uiLang);
+	}
+	else
+	{
+		uiTrueFalse = FLM_FALSE;
+	}
+
+Exit:
+
+	return (uiTrueFalse);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT flmCurDoContainsOp(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FLMUINT	uiLang)
+{
+	FLMBYTE *	pResult = NULL;
+	FLMUINT		uiFlags = pLhs->uiFlags | pRhs->uiFlags;
+	FLMUINT		uiTrueFalse = 0;
+
+	// Verify operands -- both should be buffered types
+
+	if (!IS_BUF_TYPE( pLhs->eType) || !IS_BUF_TYPE( pRhs->eType))
+	{
+		goto Exit;
+	}
+
+	// If one of the operands is binary, simply do a byte comparison of the
+	// two values without regard to case or wildcards.
+
+	if ((pLhs->eType == FLM_BINARY_VAL) || (pRhs->eType == FLM_BINARY_VAL))
+	{
+		uiTrueFalse = FLM_FALSE;
+		for (pResult = pLhs->val.pucBuf;
+			  (FLMUINT) (pResult - pLhs->val.pucBuf) < pLhs->uiBufLen;
+			  pResult++)
+		{
+			if ((*pResult == pRhs->val.pucBuf[0]) &&
+				 (f_memcmp( pLhs->val.pucBuf, pRhs->val.pucBuf, 
+						pRhs->uiBufLen) == 0))
+			{
+				uiTrueFalse = FLM_TRUE;
+				goto Exit;
+			}
+		}
+
+		goto Exit;
+	}
+
+	uiTrueFalse = flmTextMatch( pLhs->val.pucBuf, pLhs->uiBufLen,
+										pRhs->val.pucBuf, pRhs->uiBufLen, uiFlags,
+										TRUE, TRUE, uiLang);
+Exit:
+
+	return (uiTrueFalse);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT flmCurDoRelationalOp(
+	FQATOM *	pLhs,
+	FQATOM *	pRhs,
+	FLMUINT	uiLang)
+{
+	FLMUINT	uiFlags = pLhs->uiFlags | pRhs->uiFlags;
+	FLMINT	iCompVal = 0;
+
+	switch (pLhs->eType)
+	{
+		case FLM_TEXT_VAL:
+		{
+			flmAssert( pRhs->eType == FLM_TEXT_VAL);
+			iCompVal = flmTextCompare( pLhs->val.pucBuf, pLhs->uiBufLen,
+											  pRhs->val.pucBuf, pRhs->uiBufLen, uiFlags,
+											  uiLang);
+			break;
+		}
+		
+		case FLM_UINT32_VAL:
+		{
+			switch (pRhs->eType)
+			{
+				case FLM_UINT32_VAL:
+				{
+					iCompVal = FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal);
+					break;
+				}
+				
+				case FLM_INT32_VAL:
+				{
+					if (pRhs->val.iVal < 0)
+					{
+						iCompVal = 1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( pLhs->val.uiVal, 
+													  (FLMUINT) pRhs->val.iVal);
+					}
+					break;
+				}
+				
+				default:
+				{
+					flmAssert( 0);
+					break;
+				}
+
+			}
+			break;
+		}
+		
+		case FLM_INT32_VAL:
+		{
+			switch (pRhs->eType)
+			{
+				case FLM_INT32_VAL:
+				{
+					iCompVal = FQ_COMPARE( pLhs->val.iVal, pRhs->val.iVal);
+					break;
+				}
+				
+				case FLM_UINT32_VAL:
+				{
+					if (pLhs->val.iVal < 0)
+					{
+						iCompVal = -1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( (FLMUINT) pLhs->val.iVal, 
+													  pRhs->val.uiVal);
+					}
+					break;
+				}
+				
+				default:
+				{
+					flmAssert( 0);
+					break;
+				}
+			}
+			break;
+		}
+		
+		case FLM_REC_PTR_VAL:
+		{
+			flmAssert( pRhs->eType == FLM_REC_PTR_VAL || 
+						  pRhs->eType == FLM_UINT32_VAL);
+						  
+			iCompVal = FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal);
+			break;
+		}
+		
+		case FLM_BINARY_VAL:
+		{
+			flmAssert( (pRhs->eType == FLM_BINARY_VAL) || 
+						  (pRhs->eType == FLM_TEXT_VAL));
+						  
+			if ((iCompVal = f_memcmp( pLhs->val.pucBuf, pRhs->val.pucBuf, 
+						((pLhs->uiBufLen > pRhs->uiBufLen) 
+								? pRhs->uiBufLen 
+								: pLhs->uiBufLen))) == 0)
+			{
+				if (pLhs->uiBufLen < pRhs->uiBufLen)
+				{
+					iCompVal = -1;
+				}
+				else if (pLhs->uiBufLen > pRhs->uiBufLen)
+				{
+					iCompVal = 1;
+				}
+			}
+			
+			break;
+		}
+		
+		default:
+		{
+			flmAssert( 0);
+			break;
+		}
+	}
+
+	return (iCompVal);
 }

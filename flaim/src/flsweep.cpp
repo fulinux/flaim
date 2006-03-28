@@ -41,7 +41,7 @@ public:
 	~DbDict();
 
 	RCODE Init(
-		FDB_p			pDb,
+		FDB *			pDb,
 		FLMUINT		uiMode,
 		FLMBOOL *	pbFoundPurgeField);
 
@@ -66,7 +66,7 @@ public:
 
 private:
 
-	FDB_p			m_pDb;
+	FDB *			m_pDb;
 	FLMUINT *	m_puiStateTbl;
 	FLMUINT		m_uiTblSize;
 };
@@ -97,7 +97,7 @@ public:
 	}
 
 	FINLINE void Init(
-		FDB_p			pDb,
+		FDB *			pDb,
 		FLMUINT		uiCallbackFreq,
 		STATUS_HOOK fnStatusHook,
 		void *	  	UserData)
@@ -120,7 +120,7 @@ public:
 
 private:
 
-	FDB_p				m_pDb;
+	FDB *				m_pDb;
 	FLMUINT			m_uiCallbackFreq;
 	STATUS_HOOK		m_fnStatusHook;
 	void *			m_UserData;
@@ -173,7 +173,7 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 	FLMUINT			uiState;
 	SWEEP_INFO 		SwpInfo;
 	FLMBOOL			bStartedTrans = FALSE;
-	FDB_p				pDb = (FDB_p) hDb;
+	FDB *				pDb = (FDB *) hDb;
 	FLMUINT			uiEncState;
 
 	if( IsInCSMode( pDb))
@@ -752,12 +752,12 @@ Desc:		Read the dictionary and create a internal table that records
 			the state of field templates within the specified dictionary
 ****************************************************************************/
 RCODE DbDict::Init(
-	FDB_p			pDb,
+	FDB *			pDb,
 	FLMUINT		uiMode,				// are we looking for checking or purged or both
 	FLMBOOL *	pbFoundPurgeField)// [out] dictionary contained field that is marked purged.
 {
 	RCODE			rc = FERR_OK;
-	ITT_p			pItt = NULL;
+	ITT *			pItt = NULL;
 	FLMUINT		uiItem;
 	FLMUINT		uiCount;
 	FLMUINT		uiStateMask = 0;
@@ -948,7 +948,7 @@ Desc: Change a field/record's defined state. Currently the only supported
 Ret:
 ****************************************************************************/
 RCODE flmChangeItemState(
-	FDB_p				pDb,
+	FDB *				pDb,
 	FLMUINT			uiItemId,
 	FLMUINT			uiNewState)
 {
