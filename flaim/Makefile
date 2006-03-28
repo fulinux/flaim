@@ -144,9 +144,9 @@ endif
 
 version = $(major_version).$(minor_version).$(svn_revision)
 
-so_current = 1
-so_revision = 2
-so_age = 0
+so_current = 2
+so_revision = 0
+so_age = 1
 suffix_version =
 
 package_release_num = 1
