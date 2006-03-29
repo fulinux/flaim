@@ -3545,9 +3545,10 @@ FSTATIC void RflChangeCallback(
 	FLMUINT				uiBytesToLog;
 	FLMUINT				uiPos;
 	FLMUINT				uiTagNum;
-	FLMUINT				uiDataLen;
+	FLMUINT				uiDataLen = 0;
 	FLMBOOL				bEncrypted = FALSE;
 	FLMUINT				uiEncId;
+	FLMBYTE				ucChangeType = 0;
 
 	// If we had an error before this callback, do nothing.
 
@@ -3556,22 +3557,44 @@ FSTATIC void RflChangeCallback(
 		goto Exit;
 	}
 
-	if (DiffData.pvAfterField)
-	{
-		flmAssert( DiffData.pAfterRecord);
-		bEncrypted = DiffData.pAfterRecord->isEncryptedField( DiffData.pvAfterField);
-	}
-
 	switch (DiffData.type)
 	{
 		case GRD_Inserted:
 		{
-			uiOverhead = (bEncrypted ? 13 : 9);
+			bEncrypted = DiffData.pAfterRecord->isEncryptedField( DiffData.pvAfterField);
+			uiDataLen = DiffData.pAfterRecord->getDataLength( DiffData.pvAfterField);
+			if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+			{
+				if (bEncrypted)
+				{
+					uiOverhead = 13;
+					ucChangeType = RFL_INSERT_ENC_FIELD;
+				}
+				else
+				{
+					uiOverhead = 9;
+					ucChangeType = RFL_INSERT_FIELD;
+				}
+			}
+			else
+			{
+				if (bEncrypted)
+				{
+					uiOverhead = 17;
+					ucChangeType = RFL_INSERT_ENC_LARGE_FIELD;
+				}
+				else
+				{
+					uiOverhead = 11;
+					ucChangeType = RFL_INSERT_LARGE_FIELD;
+				}
+			}
 			break;
 		}
 			
 		case GRD_Deleted:
 		{
+
 			// Ignore these for versions of the database >= 4.60
 
 			if (pRflChangeData->uiVersionNum >= FLM_FILE_FORMAT_VER_4_60)
@@ -3585,6 +3608,7 @@ FSTATIC void RflChangeCallback(
 		
 		case GRD_DeletedSubtree:
 		{
+
 			// Ignore these for versions of the database < 4.60
 
 			if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_60)
@@ -3598,7 +3622,34 @@ FSTATIC void RflChangeCallback(
 		
 		case GRD_Modified:
 		{
-			uiOverhead = (bEncrypted ? 10 : 6);
+			bEncrypted = DiffData.pAfterRecord->isEncryptedField( DiffData.pvAfterField);
+			uiDataLen = DiffData.pAfterRecord->getDataLength( DiffData.pvAfterField);
+			if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+			{
+				if (bEncrypted)
+				{
+					uiOverhead = 10;
+					ucChangeType = RFL_MODIFY_ENC_FIELD;
+				}
+				else
+				{
+					uiOverhead = 6;
+					ucChangeType = RFL_MODIFY_FIELD;
+				}
+			}
+			else
+			{
+				if (bEncrypted)
+				{
+					uiOverhead = 14;
+					ucChangeType = RFL_MODIFY_ENC_LARGE_FIELD;
+				}
+				else
+				{
+					uiOverhead = 8;
+					ucChangeType = RFL_MODIFY_LARGE_FIELD;
+				}
+			}
 			break;
 		}
 		
@@ -3650,16 +3701,23 @@ FSTATIC void RflChangeCallback(
 	{
 		case GRD_Inserted:
 		{
-			*pucTmp = (bEncrypted ? RFL_INSERT_ENC_FIELD : RFL_INSERT_FIELD);
+			*pucTmp = ucChangeType;
 			pucTmp += 3;
 			uiTagNum = DiffData.pAfterRecord->getFieldID( pvField);
 			UW2FBA( (FLMUINT16) uiTagNum, pucTmp);
 			pucTmp += 2;
 			*pucTmp++ = (FLMBYTE) DiffData.pAfterRecord->getDataType( pvField);
 			*pucTmp++ = (FLMBYTE) DiffData.pAfterRecord->getLevel( pvField);
-			uiDataLen = DiffData.pAfterRecord->getDataLength( pvField);
-			UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
-			pucTmp += 2;
+			if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+			{
+				UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+				pucTmp += 2;
+			}
+			else
+			{
+				UD2FBA( (FLMUINT32)uiDataLen, pucTmp);
+				pucTmp += 4;
+			}
 
 			if (bEncrypted)
 			{
@@ -3669,8 +3727,16 @@ FSTATIC void RflChangeCallback(
 				pucTmp += 2;
 
 				uiDataLen = DiffData.pAfterRecord->getEncryptedDataLength( pvField);
-				UW2FBA( uiDataLen, pucTmp);
-				pucTmp += 2;
+				if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+				{
+					UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+					pucTmp += 2;
+				}
+				else
+				{
+					UD2FBA( (FLMUINT32)uiDataLen, pucTmp);
+					pucTmp += 4;
+				}
 			}
 
 			// Log the data, if any.
@@ -3715,15 +3781,23 @@ FSTATIC void RflChangeCallback(
 		
 		case GRD_Modified:
 		{
-			*pucTmp = (bEncrypted ? RFL_MODIFY_ENC_FIELD : RFL_MODIFY_FIELD);
+			*pucTmp = ucChangeType;
 			pucTmp += 3;
 
 			// For now, just log the new bytes using RFL_REPLACE_BYTES option
 
 			*pucTmp++ = RFL_REPLACE_BYTES;
 			uiDataLen = DiffData.pAfterRecord->getDataLength( pvField);
-			UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
-			pucTmp += 2;
+			if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+			{
+				UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+				pucTmp += 2;
+			}
+			else
+			{
+				UD2FBA( (FLMUINT32)uiDataLen, pucTmp);
+				pucTmp += 4;
+			}
 
 			if (bEncrypted)
 			{
@@ -3733,8 +3807,16 @@ FSTATIC void RflChangeCallback(
 				pucTmp += 2;
 
 				uiDataLen = DiffData.pAfterRecord->getEncryptedDataLength( pvField);
-				UW2FBA( uiDataLen, pucTmp);
-				pucTmp += 2;
+				if (pRflChangeData->uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
+				{
+					UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+					pucTmp += 2;
+				}
+				else
+				{
+					UD2FBA( (FLMUINT32)uiDataLen, pucTmp);
+					pucTmp += 4;
+				}
 			}
 
 			// Log the data, if any.
@@ -3951,9 +4033,13 @@ RCODE F_Rfl::logRecord(
 	{
 		uiPacketType = RFL_DATA_RECORD_PACKET;
 	}
-	else
+	else if (m_pFile->FileHdr.uiVersionNum < FLM_FILE_FORMAT_VER_4_61)
 	{
 		uiPacketType = RFL_ENC_DATA_RECORD_PACKET;
+	}
+	else
+	{
+		uiPacketType = RFL_DATA_RECORD_PACKET_VER_3;
 	}
 
 	pvField = pRecord->root();
@@ -3964,10 +4050,15 @@ RCODE F_Rfl::logRecord(
 			bEncrypted = FALSE;
 			uiOverhead = 6;
 		}
-		else
+		else if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
 		{
 			bEncrypted = pRecord->isEncryptedField( pvField);
 			uiOverhead = (bEncrypted ? 11 : 7);
+		}
+		else
+		{
+			bEncrypted = pRecord->isEncryptedField( pvField);
+			uiOverhead = (bEncrypted ? 15 : 9);
 		}
 
 		if (RC_BAD( rc = makeRoom( uiOverhead, &uiPacketLen, uiPacketType, NULL,
@@ -3985,13 +4076,21 @@ RCODE F_Rfl::logRecord(
 		*pucTmp++ = (FLMBYTE) pRecord->getDataType( pvField);
 		*pucTmp++ = (FLMBYTE) pRecord->getLevel( pvField);
 		uiDataLen = pRecord->getDataLength( pvField);
-		UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
-		pucTmp += 2;
+		if (uiPacketType != RFL_DATA_RECORD_PACKET_VER_3)
+		{
+			UW2FBA( (FLMUINT16) uiDataLen, pucTmp);
+			pucTmp += 2;
+		}
+		else
+		{
+			UD2FBA( (FLMUINT32) uiDataLen, pucTmp);
+			pucTmp += 4;
+		}
 
 		// Record if this field is encrypted. If it is, then there will be
 		// more data to follow.
 
-		if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
+		if (uiPacketType != RFL_DATA_RECORD_PACKET)
 		{
 			*pucTmp = (bEncrypted ? (FLMBYTE) 1 : (FLMBYTE) 0);
 			pucTmp++;
@@ -4006,8 +4105,16 @@ RCODE F_Rfl::logRecord(
 				pucTmp += 2;
 
 				uiDataLen = pRecord->getEncryptedDataLength( pvField);
-				UW2FBA( uiDataLen, pucTmp);
-				pucTmp += 2;
+				if (uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
+				{
+					UD2FBA( (FLMUINT32)uiDataLen, pucTmp);
+					pucTmp += 4;
+				}
+				else
+				{
+					UW2FBA( (FLMUINT16)uiDataLen, pucTmp);
+					pucTmp += 2;
+				}
 			}
 		}
 
@@ -5365,7 +5472,8 @@ RCODE F_Rfl::getRecord(
 			}
 
 			if (uiPacketType != RFL_DATA_RECORD_PACKET &&
-				 uiPacketType != RFL_ENC_DATA_RECORD_PACKET)
+				 uiPacketType != RFL_ENC_DATA_RECORD_PACKET &&
+				 uiPacketType != RFL_DATA_RECORD_PACKET_VER_3)
 			{
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
 				goto Exit;
@@ -5397,6 +5505,7 @@ RCODE F_Rfl::getRecord(
 		}
 		else if (uiPacketType == RFL_DATA_RECORD_PACKET)
 		{
+			flmAssert( m_pFile->FileHdr.uiVersionNum <= FLM_FILE_FORMAT_VER_4_60);
 			if (uiPacketBodyLen < 6)
 			{
 
@@ -5414,12 +5523,26 @@ RCODE F_Rfl::getRecord(
 			// This type of packet is only valid with versions of flaim >=
 			// 4.60
 
-			flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_60);
+			flmAssert( m_pFile->FileHdr.uiVersionNum == FLM_FILE_FORMAT_VER_4_60);
 
 			if (uiPacketBodyLen < 7)
 			{
 
 				// If we have a packet body length less than seven we have an
+				// incomplete field header.
+
+				rc = RC_SET( FERR_BAD_RFL_PACKET);
+				goto Exit;
+			}
+		}
+		else
+		{
+			flmAssert( uiPacketType == RFL_DATA_RECORD_PACKET_VER_3);
+			flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_61);
+			if (uiPacketBodyLen < 9)
+			{
+
+				// If we have a packet body length less than nine we have an
 				// incomplete field header.
 
 				rc = RC_SET( FERR_BAD_RFL_PACKET);
@@ -5441,9 +5564,18 @@ RCODE F_Rfl::getRecord(
 		pucPacketBody += 2;
 		uiDataType = *pucPacketBody++;
 		uiLevel = *pucPacketBody++;
-		uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
-		pucPacketBody += 2;
-		uiPacketBodyLen -= 6;
+		if (uiPacketType != RFL_DATA_RECORD_PACKET_VER_3)
+		{
+			uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
+			pucPacketBody += 2;
+			uiPacketBodyLen -= 6;
+		}
+		else
+		{
+			uiDataLen = (FLMUINT) FB2UD( pucPacketBody);
+			pucPacketBody += 4;
+			uiPacketBodyLen -= 8;
+		}
 
 		// If the database version supports encryption, we need to check
 		// for it.
@@ -5471,6 +5603,31 @@ RCODE F_Rfl::getRecord(
 				pucPacketBody += 2;
 
 				uiPacketBodyLen -= 4;
+			}
+		}
+		else if (uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
+		{
+			bEncrypted = (FLMBOOL) * pucPacketBody++;
+			--uiPacketBodyLen;
+
+			if (bEncrypted)
+			{
+				if (uiPacketBodyLen < 6)
+				{
+					flmAssert( 0);
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
+				}
+
+				// Extract the encryption ID and the encrypted length.
+
+				uiEncId = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncDataLen = FB2UD( pucPacketBody);
+				pucPacketBody += 4;
+
+				uiPacketBodyLen -= 6;
 			}
 		}
 
@@ -5510,7 +5667,9 @@ RCODE F_Rfl::getRecord(
 						goto Exit;
 					}
 
-					if (uiPacketType != RFL_DATA_RECORD_PACKET)
+					if (uiPacketType != RFL_DATA_RECORD_PACKET &&
+						 uiPacketType != RFL_ENC_DATA_RECORD_PACKET &&
+						 uiPacketType != RFL_DATA_RECORD_PACKET_VER_3)
 					{
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
@@ -5563,7 +5722,8 @@ RCODE F_Rfl::getRecord(
 						goto Exit;
 					}
 
-					if (uiPacketType != RFL_ENC_DATA_RECORD_PACKET)
+					if (uiPacketType != RFL_ENC_DATA_RECORD_PACKET &&
+						 uiPacketType != RFL_DATA_RECORD_PACKET_VER_3)
 					{
 						rc = RC_SET( FERR_BAD_RFL_PACKET);
 						goto Exit;
@@ -5640,7 +5800,8 @@ RCODE F_Rfl::modifyRecord(
 	}
 
 	if (uiPacketType == RFL_DATA_RECORD_PACKET ||
-		 uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
+		 uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+		 uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 	{
 		pRecord->clear();
 		rc = getRecord( pDb, uiPacketType, pucPacketBody, uiPacketBodyLen, pRecord);
@@ -5725,14 +5886,11 @@ RCODE F_Rfl::modifyRecord(
 		switch (uiChangeType)
 		{
 			case RFL_INSERT_FIELD:
-			case RFL_INSERT_ENC_FIELD:
 			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum <= FLM_FILE_FORMAT_VER_4_60);
+				bEncrypted = FALSE;
 				if (uiPacketBodyLen < 6)
 				{
-
-					// If the change type is insert field and there are not at
-					// least six bytes in the packet, we have a problem.
-
 					rc = RC_SET( FERR_BAD_RFL_PACKET);
 					goto Exit;
 				}
@@ -5741,36 +5899,85 @@ RCODE F_Rfl::modifyRecord(
 				pucPacketBody += 2;
 				uiDataType = *pucPacketBody++;
 				uiLevel = *pucPacketBody++;
-				uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
+				uiDataLen = (FLMUINT)FB2UW( pucPacketBody);
 				pucPacketBody += 2;
 				uiPacketBodyLen -= 6;
-				bEncrypted = (uiChangeType == RFL_INSERT_FIELD ? FALSE : TRUE);
-				if (bEncrypted)
+				break;
+			}
+			case RFL_INSERT_ENC_FIELD:
+			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum == FLM_FILE_FORMAT_VER_4_60);
+				bEncrypted = TRUE;
+				if (uiPacketBodyLen < 10)
 				{
-					if (uiPacketBodyLen < 4)
-					{
-						rc = RC_SET( FERR_BAD_RFL_PACKET);
-						goto Exit;
-					}
-
-					uiEncId = FB2UW( pucPacketBody);
-					pucPacketBody += 2;
-
-					uiEncDataLen = FB2UW( pucPacketBody);
-					pucPacketBody += 2;
-
-					uiPacketBodyLen -= 4;
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
 				}
+
+				uiTagNum = (FLMUINT) FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+				uiDataType = *pucPacketBody++;
+				uiLevel = *pucPacketBody++;
+				uiDataLen = (FLMUINT)FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncId = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncDataLen = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiPacketBodyLen -= 10;
+				break;
+			}
+			case RFL_INSERT_LARGE_FIELD:
+			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_61);
+				bEncrypted = FALSE;
+				if (uiPacketBodyLen < 8)
+				{
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
+				}
+				uiTagNum = (FLMUINT) FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+				uiDataType = *pucPacketBody++;
+				uiLevel = *pucPacketBody++;
+				uiDataLen = (FLMUINT)FB2UD( pucPacketBody);
+				pucPacketBody += 4;
+				uiPacketBodyLen -= 8;
+				break;
+			}
+			case RFL_INSERT_ENC_LARGE_FIELD:
+			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_61);
+				bEncrypted = TRUE;
+				if (uiPacketBodyLen < 14)
+				{
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
+				}
+				uiTagNum = (FLMUINT) FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+				uiDataType = *pucPacketBody++;
+				uiLevel = *pucPacketBody++;
+				uiDataLen = (FLMUINT)FB2UD( pucPacketBody);
+				pucPacketBody += 4;
+
+				uiEncId = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncDataLen = FB2UW( pucPacketBody);
+				pucPacketBody += 4;
+
+				uiPacketBodyLen -= 14;
 				break;
 			}
 
 			case RFL_MODIFY_FIELD:
-			case RFL_MODIFY_ENC_FIELD:
 			{
-
-				// Packet better have at least three bytes and the first byte
-				// had better be RFL_REPLACE_BYTES.
-
+				flmAssert( m_pFile->FileHdr.uiVersionNum <= FLM_FILE_FORMAT_VER_4_60);
+				bEncrypted = FALSE;
 				if (uiPacketBodyLen < 3 || *pucPacketBody != RFL_REPLACE_BYTES)
 				{
 					rc = RC_SET( FERR_BAD_RFL_PACKET);
@@ -5780,26 +5987,69 @@ RCODE F_Rfl::modifyRecord(
 				pucPacketBody++;
 				uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
 				pucPacketBody += 2;
-
-				bEncrypted = (uiChangeType == RFL_MODIFY_FIELD ? FALSE : TRUE);
 				uiPacketBodyLen -= 3;
+				break;
+			}
 
-				if (bEncrypted)
+			case RFL_MODIFY_ENC_FIELD:
+			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum == FLM_FILE_FORMAT_VER_4_60);
+				bEncrypted = TRUE;
+				if (uiPacketBodyLen < 7 || *pucPacketBody != RFL_REPLACE_BYTES)
 				{
-					if (uiPacketBodyLen < 4)
-					{
-						rc = RC_SET( FERR_BAD_RFL_PACKET);
-						goto Exit;
-					}
-
-					uiEncId = FB2UW( pucPacketBody);
-					pucPacketBody += 2;
-
-					uiEncDataLen = FB2UW( pucPacketBody);
-					pucPacketBody += 2;
-
-					uiPacketBodyLen -= 4;
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
 				}
+
+				pucPacketBody++;
+				uiDataLen = (FLMUINT) FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncId = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncDataLen = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiPacketBodyLen -= 7;
+				break;
+			}
+			case RFL_MODIFY_LARGE_FIELD:
+			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_61);
+				bEncrypted = FALSE;
+				if (uiPacketBodyLen < 5 || *pucPacketBody != RFL_REPLACE_BYTES)
+				{
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
+				}
+				pucPacketBody++;
+				uiDataLen = (FLMUINT)FB2UD( pucPacketBody);
+				pucPacketBody += 4;
+				uiPacketBodyLen -= 5;
+				break;
+			}
+			case RFL_MODIFY_ENC_LARGE_FIELD:
+			{
+				flmAssert( m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_61);
+				bEncrypted = TRUE;
+				if (uiPacketBodyLen < 11 || *pucPacketBody != RFL_REPLACE_BYTES)
+				{
+					rc = RC_SET( FERR_BAD_RFL_PACKET);
+					goto Exit;
+				}
+
+				pucPacketBody++;
+				uiDataLen = (FLMUINT)FB2UD( pucPacketBody);
+				pucPacketBody += 4;
+
+				uiEncId = FB2UW( pucPacketBody);
+				pucPacketBody += 2;
+
+				uiEncDataLen = FB2UD( pucPacketBody);
+				pucPacketBody += 4;
+
+				uiPacketBodyLen -= 11;
 				break;
 			}
 
@@ -5825,6 +6075,8 @@ RCODE F_Rfl::modifyRecord(
 			case RFL_DELETE_FIELD:
 			case RFL_MODIFY_FIELD:
 			case RFL_MODIFY_ENC_FIELD:
+			case RFL_MODIFY_LARGE_FIELD:
+			case RFL_MODIFY_ENC_LARGE_FIELD:
 			{
 				while (uiCurPos != uiPosition)
 				{
@@ -5856,6 +6108,8 @@ RCODE F_Rfl::modifyRecord(
 
 			case RFL_INSERT_FIELD:
 			case RFL_INSERT_ENC_FIELD:
+			case RFL_INSERT_LARGE_FIELD:
+			case RFL_INSERT_ENC_LARGE_FIELD:
 			{
 				FlmField *	pNewField;
 
@@ -6060,8 +6314,7 @@ RCODE F_Rfl::modifyRecord(
 		{
 			IFD *	pIfd;
 
-			if (RC_BAD( rc = fdictGetField( pDb->pDict, uiTagNum, NULL, &pIfd, NULL
-						  )))
+			if (RC_BAD( rc = fdictGetField( pDb->pDict, uiTagNum, NULL, &pIfd, NULL)))
 			{
 				goto Exit;
 			}

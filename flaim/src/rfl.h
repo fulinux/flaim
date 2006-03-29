@@ -55,7 +55,7 @@
 #define RFL_DELETE_RECORD_PACKET_VER_2		21
 #define RFL_BLK_CHAIN_FREE_PACKET			22
 #define RFL_ENC_DATA_RECORD_PACKET			23
-#define RFL_RESERVED_FOR_KEPLER_24			24
+#define RFL_DATA_RECORD_PACKET_VER_3		24
 #define RFL_WRAP_KEY_PACKET					25
 #define RFL_ENABLE_ENCRYPTION_PACKET		26
 #define RFL_CONFIG_SIZE_EVENT_PACKET		27
@@ -67,12 +67,16 @@
 
 // Change types for RFL_CHANGE_FIELDS_PACKET.
 
-#define RFL_INSERT_FIELD			1
-#define RFL_DELETE_FIELD			2
-#define RFL_MODIFY_FIELD			3
-#define RFL_END_FIELD_CHANGES		4
-#define RFL_INSERT_ENC_FIELD		5
-#define RFL_MODIFY_ENC_FIELD		6
+#define RFL_INSERT_FIELD				1
+#define RFL_DELETE_FIELD				2
+#define RFL_MODIFY_FIELD				3
+#define RFL_END_FIELD_CHANGES			4
+#define RFL_INSERT_ENC_FIELD			5
+#define RFL_MODIFY_ENC_FIELD			6
+#define RFL_INSERT_LARGE_FIELD		7
+#define RFL_INSERT_ENC_LARGE_FIELD	8
+#define RFL_MODIFY_LARGE_FIELD		9
+#define RFL_MODIFY_ENC_LARGE_FIELD	10
 
 // Flags for add, delete, and modify packets
 // The flags need to fit in a single byte
@@ -546,6 +550,7 @@ private:
 		if (uiPacketType == RFL_CHANGE_FIELDS_PACKET ||
 			 uiPacketType == RFL_DATA_RECORD_PACKET ||
 			 uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+			 uiPacketType == RFL_DATA_RECORD_PACKET_VER_3 ||
 			 uiPacketType == RFL_UNKNOWN_PACKET)
 		{
 			if (uiPacketBodyLen & 0x03)
