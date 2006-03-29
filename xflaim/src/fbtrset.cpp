@@ -210,7 +210,7 @@ RCODE F_BtResultSet::addEntry(
 		goto Exit;
 	}
 
-	flmAssert( uiKeyLength <= MAX_KEY_SIZ);
+	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btInsertEntry( pucKey, uiKeyLength,
 		uiKeyLength, pucEntry, uiEntryLength, TRUE, TRUE)))
@@ -254,7 +254,7 @@ RCODE F_BtResultSet::modifyEntry(
 		goto Exit;
 	}
 
-	flmAssert( uiKeyLength <= MAX_KEY_SIZ);
+	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btReplaceEntry( pucKey, uiKeyLength,
 		uiKeyLength, pucEntry, uiEntryLength, TRUE, TRUE)))
@@ -289,7 +289,7 @@ RCODE F_BtResultSet::deleteEntry(
 		goto Exit;
 	}
 
-	flmAssert( uiKeyLength <= MAX_KEY_SIZ);
+	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
 	if (RC_BAD( rc = pBTree->btRemoveEntry( pucKey,
 														 uiKeyLength,
@@ -329,7 +329,7 @@ RCODE F_BtResultSet::findEntry(
 		goto Exit;
 	}
 
-	flmAssert( uiKeyBufLen <= MAX_KEY_SIZ);
+	flmAssert( uiKeyBufLen <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btLocateEntry( pucKey, uiKeyBufLen, puiKeyLen,
 		XFLM_EXACT, NULL, &uiLengthRV)))
@@ -382,7 +382,7 @@ RCODE F_BtResultSet::getCurrent(
 		goto Exit;
 	}
 
-	flmAssert( uiKeyLength <= MAX_KEY_SIZ);
+	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btGetEntry( pucKey, uiKeyLength, uiKeyLength,
 		pucEntry, uiEntryLength, puiReturnLength)))
@@ -426,7 +426,7 @@ RCODE F_BtResultSet::getNext(
 		bFreeBTree = TRUE;
 	}
 
-	flmAssert( uiKeyBufLen <= MAX_KEY_SIZ);
+	flmAssert( uiKeyBufLen <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btNextEntry( pucKey, uiKeyBufLen, puiKeyLen,
 		puiReturnLength)))
@@ -479,7 +479,7 @@ RCODE F_BtResultSet::getPrev(
 		bFreeBTree = TRUE;
 	}
 
-	flmAssert( uiKeyBufLen <= MAX_KEY_SIZ);
+	flmAssert( uiKeyBufLen <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btPrevEntry( pucKey, uiKeyBufLen, puiKeyLen,
 		puiReturnLength)))
@@ -532,7 +532,7 @@ RCODE F_BtResultSet::getFirst(
 		bFreeBTree = TRUE;
 	}
 
-	flmAssert( uiKeyBufLen <= MAX_KEY_SIZ);
+	flmAssert( uiKeyBufLen <= XFLM_MAX_KEY_SIZE);
 
 	pBTree->btResetBtree();
 
@@ -587,7 +587,7 @@ RCODE F_BtResultSet::getLast(
 		bFreeBTree = TRUE;
 	}
 
-	flmAssert( uiKeyBufLen <= MAX_KEY_SIZ);
+	flmAssert( uiKeyBufLen <= XFLM_MAX_KEY_SIZE);
 
 	if( RC_BAD( rc = pBTree->btLastEntry( pucKey, uiKeyBufLen, puiKeyLen,
 		puiReturnLength)))

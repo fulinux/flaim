@@ -343,8 +343,8 @@ Exit:
 /****************************************************************************
 Desc:		Format text removing leading and trailing spaces.  Treat
 			underscores as spaces.  As options, remove all spaces and dashes.
-Ret:		NE_XFLM_OK always.  WIll truncate so text will fill MAX_KEY_SIZ.
-			Allocate 8 more than MAX_KEY_SIZ for psDestBuf.
+Ret:		NE_XFLM_OK always.  WIll truncate so text will fill XFLM_MAX_KEY_SIZE.
+			Allocate 8 more than XFLM_MAX_KEY_SIZE for psDestBuf.
 Visit:	Pass in uiLimit and pass back a truncated flag when the
 			string is truncated.  This was not done because we will have
 			to get the exact truncated count that is done in f_tocoll.cpp

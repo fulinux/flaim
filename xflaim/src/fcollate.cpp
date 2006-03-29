@@ -4319,13 +4319,13 @@ RCODE flmColText2StorageText(
 	{
 		// If it won't fit, allocate a new buffer
 
-		if( RC_BAD( rc = f_alloc( MAX_KEY_SIZ * 2, &pucWPPtr)))
+		if( RC_BAD( rc = f_alloc( XFLM_MAX_KEY_SIZE * 2, &pucWPPtr)))
 		{
 			goto Exit;
 		}
 
 		pucAllocatedWSPtr = pucWPPtr;
-		uiMaxWPBytes = uiWPStrLen = MAX_KEY_SIZ * 2;
+		uiMaxWPBytes = uiWPStrLen = XFLM_MAX_KEY_SIZE * 2;
 	}
 	else
 	{

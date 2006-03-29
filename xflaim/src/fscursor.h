@@ -30,7 +30,7 @@
 
 typedef struct KeyPosition
 {
-	FLMBYTE	ucKey [MAX_KEY_SIZ];
+	FLMBYTE	ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT	uiKeyLen;
 } KEYPOS;
 

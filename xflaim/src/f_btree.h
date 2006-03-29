@@ -253,8 +253,8 @@ typedef struct
 	FLMUINT		uiChildBlkAddr;
 	FLMUINT		uiCounts;
 	void *		pPrev;
-	FLMBYTE		pucParentKey[ MAX_KEY_SIZ];
-	FLMBYTE		pucNewKey[ MAX_KEY_SIZ];
+	FLMBYTE		pucParentKey[ XFLM_MAX_KEY_SIZE];
+	FLMBYTE		pucNewKey[ XFLM_MAX_KEY_SIZE];
 } BTREE_REPLACE_STRUCT;
 
 class F_BtPool;

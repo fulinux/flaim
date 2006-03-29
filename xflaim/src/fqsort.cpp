@@ -853,7 +853,7 @@ RCODE F_QueryResultSet::positionToEntry(
 	FLMBOOL			bLockMutex)
 {
 	RCODE		rc = NE_XFLM_OK;
-	FLMBYTE	ucSearchKey [MAX_KEY_SIZ];
+	FLMBYTE	ucSearchKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT	uiSearchKeyLen = 0;
 	FLMUINT	uiOriginalFlags;
 	FLMUINT	uiIdMatchFlags = uiFlags & (XFLM_MATCH_IDS | XFLM_MATCH_DOC_ID);
@@ -1672,7 +1672,7 @@ RCODE F_Query::getFirstFromResultSet(
 	FLMUINT			uiTimeLimit)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	FLMUINT		uiNumToWaitFor = 1;
@@ -1790,7 +1790,7 @@ RCODE F_Query::getLastFromResultSet(
 	FLMUINT			uiTimeLimit)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	FLMUINT		uiStartTimeTU = 0;
@@ -1890,7 +1890,7 @@ RCODE F_Query::getNextFromResultSet(
 	FLMUINT *		puiNumSkipped)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	FLMUINT		uiStartTimeTU = 0;
@@ -2031,7 +2031,7 @@ RCODE F_Query::getPrevFromResultSet(
 	FLMUINT *		puiNumSkipped)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	FLMUINT		uiStartTimeTU = 0;
@@ -2181,7 +2181,7 @@ RCODE F_Query::getCurrentFromResultSet(
 	IF_DOMNode **		ppNode)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	
@@ -2264,7 +2264,7 @@ RCODE XFLMAPI F_Query::positionTo(
 	)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	FLMUINT		uiStartTimeTU = 0;
@@ -2429,7 +2429,7 @@ RCODE XFLMAPI F_Query::positionTo(
 	)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucKey [MAX_KEY_SIZ];
+	FLMBYTE		ucKey [XFLM_MAX_KEY_SIZE];
 	FLMUINT		uiKeyLen;
 	FLMUINT64	ui64DocId;
 	FLMUINT		uiStartTimeTU = 0;

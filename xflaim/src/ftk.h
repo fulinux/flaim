@@ -27,13 +27,29 @@
 #ifndef FTK_H
 #define FTK_H
 
-	class F_DOMNode;
+	#ifndef FLM_PLATFORM_CONFIGURED
+		#error Platform not configured
+	#endif
 
 	/****************************************************************************
 	Desc:		NLM
 	****************************************************************************/
 	#if defined( FLM_NLM)
 	
+		#if defined( FLM_WATCOM_NLM)
+			#pragma warning 007 9
+	
+			// Disable "Warning! W549: col(XX) 'sizeof' operand contains
+			// compiler generated information"
+			
+			#pragma warning 549 9
+			
+			// Disable "Warning! W656: col(1) define this function inside its class
+			// definition (may improve code quality)"
+			
+			#pragma warning 656 9
+		#endif
+
 		#include <stdio.h>
 		#include <stdlib.h>
 		#include <string.h>
@@ -146,6 +162,36 @@
 	****************************************************************************/
 	#if defined( FLM_WIN)
 
+		#ifndef WIN32_LEAN_AND_MEAN
+			#define WIN32_LEAN_AND_MEAN
+		#endif
+	
+		#ifndef WIN32_EXTRA_LEAN
+			#define WIN32_EXTRA_LEAN
+		#endif
+	
+		// Enable critical section and spin count API to be visible in header
+		// file.
+	
+		#define _WIN32_WINNT	0x0403
+	
+		#pragma pack( push, enter_windows, 8)
+			#include <windows.h>
+			#include <time.h>
+			#include <stdlib.h>
+			#include <rpc.h>
+			#include <process.h>
+		#pragma pack( pop, enter_windows)
+		
+		// Conversion from XXX to YYY, possible loss of data
+		#pragma warning( disable : 4244) 
+	
+		// Local variable XXX may be used without having been initialized
+		#pragma warning( disable : 4701)
+	
+		// Function XXX not inlined
+		#pragma warning( disable : 4710) 
+		
 		#define FSTATIC			static
 
 		#define ENDLINE			ENDLINE_CRLF
@@ -405,6 +451,61 @@
 	protected:
 
 		FLMUINT32		m_ui32RefCnt;
+	};
+
+	/****************************************************************************
+	Desc:		Base class
+	****************************************************************************/
+	class XF_Base
+	{
+	public:
+	
+		XF_Base()
+		{
+		}
+	
+		virtual ~XF_Base()
+		{
+		}
+	
+		void * operator new(
+			FLMSIZET			uiSize);
+	
+		void * operator new[](
+			FLMSIZET			uiSize);
+	
+	#ifdef FLM_DEBUG
+		void * operator new(
+			FLMSIZET			uiSize,
+			const char *	pszFile,
+			int				iLine);
+	#endif
+	
+	#ifdef FLM_DEBUG
+		void * operator new[](
+			FLMSIZET			uiSize,
+			const char *	pszFile,
+			int				iLine);
+	#endif
+	
+		void operator delete(
+			void *			ptr);
+	
+		void operator delete[](
+			void *			ptr);
+	
+	#if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
+		void operator delete(
+			void *			ptr,
+			const char *	file,
+			int				line);
+	
+		void operator delete[](
+			void *			ptr,
+			const char *	file,
+			int				line);
+	#endif
+	
 	};
 
 	/****************************************************************************

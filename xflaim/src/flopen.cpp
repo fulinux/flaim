@@ -130,7 +130,7 @@ F_Db::F_Db(
 	m_pKrefReset = NULL;
 	
 	m_tmpKrefPool.poolInit( 8192);
-	m_TempPool.poolInit( MAX_KEY_SIZ * 4);
+	m_TempPool.poolInit( XFLM_MAX_KEY_SIZE * 4);
 }
 
 /***************************************************************************

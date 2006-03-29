@@ -288,7 +288,7 @@ RCODE KYEachWordParse(
 	IF_PosIStream *	pIStream,
 	FLMUINT *			puiCompareRules,
 	FLMUINT				uiLimit,				// [in] Max characters
-	FLMBYTE *			pucWordBuf,			// [out] Buffer of at least MAX_KEY_SIZ
+	FLMBYTE *			pucWordBuf,			// [out] Buffer of at least XFLM_MAX_KEY_SIZE
   	FLMUINT *			puiWordLen)
 {
 	RCODE				rc = NE_XFLM_OK;

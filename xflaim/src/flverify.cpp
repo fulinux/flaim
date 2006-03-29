@@ -375,7 +375,7 @@ RCODE flmVerifyElement(
 
 	// Verify the key length is not too big
 	
-	if( pStateInfo->uiElmKeyLen > MAX_KEY_SIZ)
+	if( pStateInfo->uiElmKeyLen > XFLM_MAX_KEY_SIZE)
 	{
 		*piErrCode = FLM_BAD_ELM_KEY_SIZE;
 		goto Exit;
@@ -1316,7 +1316,7 @@ RCODE F_DbCheck::verifyBTrees(
 
 		if (uiKeysAllocated < pLogicalFile->uiNumLevels)
 		{
-			if (RC_BAD( rc = f_realloc( pLogicalFile->uiNumLevels * MAX_KEY_SIZ,
+			if (RC_BAD( rc = f_realloc( pLogicalFile->uiNumLevels * XFLM_MAX_KEY_SIZE,
 										&pucKeyBuffer)))
 			{
 				goto Exit;
@@ -1407,7 +1407,7 @@ RCODE F_DbCheck::verifyBTrees(
 									pLogicalFile,
 									uiCurrLevel,
 									uiExpectedBlkType,
-									&pucKeyBuffer [uiCurrLevel * MAX_KEY_SIZ]);
+									&pucKeyBuffer [uiCurrLevel * XFLM_MAX_KEY_SIZE]);
 
 			State[ uiCurrLevel].pCollection = m_pCollection;
 			State[ uiCurrLevel].uiRootLevel = pLogicalFile->uiNumLevels - 1;
@@ -1650,7 +1650,7 @@ Reset:
 											pLogicalFile,
 											uiCurrLevel,
 											uiExpectedBlkType,
-											&pucKeyBuffer [uiCurrLevel * MAX_KEY_SIZ]);
+											&pucKeyBuffer [uiCurrLevel * XFLM_MAX_KEY_SIZE]);
 
 					State[ uiCurrLevel].pCollection = m_pCollection;
 					State[ uiCurrLevel].uiRootLevel = pLogicalFile->uiNumLevels - 1;
@@ -2263,8 +2263,8 @@ RCODE F_DbCheck::verifyNodePointers(
 	F_BtResultSet *				pResult = pStateInfo->pNodeRS;
 	FLMUINT							uiRSEntrySize = sizeof( NODE_RS_ENTRY);
 	FLMBOOL							bFirst = TRUE;
-	FLMBYTE							pucKey[ MAX_KEY_SIZ];
-	FLMUINT							uiKeyLength = MAX_KEY_SIZ;
+	FLMBYTE							pucKey[ XFLM_MAX_KEY_SIZE];
+	FLMUINT							uiKeyLength = XFLM_MAX_KEY_SIZE;
 	F_Btree *						pBTree = NULL;
 	FLMINT							iErrCode = 0;
 
@@ -2294,7 +2294,7 @@ RCODE F_DbCheck::verifyNodePointers(
 
 			if (RC_BAD( rc = pResult->getFirst( NULL, NULL, pBTree, 
 															pucKey,
-															MAX_KEY_SIZ,
+															XFLM_MAX_KEY_SIZE,
 															&uiKeyLength,
 															(FLMBYTE *)pRSEntry,
 															sizeof( NODE_RS_ENTRY),
@@ -2313,7 +2313,7 @@ RCODE F_DbCheck::verifyNodePointers(
 		{
 			if (RC_BAD( rc = pResult->getNext( NULL, NULL, pBTree, 
 														  pucKey,
-														  MAX_KEY_SIZ,
+														  XFLM_MAX_KEY_SIZE,
 														  &uiKeyLength,
 														  (FLMBYTE *)pRSEntry,
 														  sizeof( NODE_RS_ENTRY),
@@ -4875,7 +4875,7 @@ RCODE F_KeyCollector::addKey(
 	FLMBYTE *	pucData = pucKey + pKref->ui16KeyLen;
 	FLMUINT		uiDataLen;
 
-	flmAssert( pKref->ui16KeyLen <= MAX_KEY_SIZ);
+	flmAssert( pKref->ui16KeyLen <= XFLM_MAX_KEY_SIZE);
 	
 	// Can't store an entry with zero length data.
 	

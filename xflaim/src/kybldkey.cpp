@@ -265,7 +265,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			goto Exit;
 		}
 
-		uiFromKeyLen = MAX_KEY_SIZ - 2;
+		uiFromKeyLen = XFLM_MAX_KEY_SIZE - 2;
 		bDataTruncated = FALSE;
 		
 		// Pass 0 for compare rules because it is non-text
@@ -627,7 +627,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 
-			uiFromKeyLen = MAX_KEY_SIZ - 2;
+			uiFromKeyLen = XFLM_MAX_KEY_SIZE - 2;
 			bDataTruncated = FALSE;
 			
 			// Pass 0 for compare rules on non-text component.
@@ -709,7 +709,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			{
 				goto Exit;
 			}
-			uiUntilKeyLen = MAX_KEY_SIZ - 2;
+			uiUntilKeyLen = XFLM_MAX_KEY_SIZE - 2;
 			bDataTruncated = FALSE;
 			
 			// Pass 0 for compare rule because it is a non-text piece.
@@ -748,15 +748,15 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	UW2FBA( (FLMUINT16)(uiFromKeyLen | uiFromFlags), pucFromKeyLenPos);
 	UW2FBA( (FLMUINT16)(uiUntilKeyLen | uiUntilFlags), pucUntilKeyLenPos);
 	
-	if (!(uiFromFlags & EXCLUSIVE_GT_FLAG) && uiFromKeyLen < MAX_KEY_SIZ - 2)
+	if (!(uiFromFlags & EXCLUSIVE_GT_FLAG) && uiFromKeyLen < XFLM_MAX_KEY_SIZE - 2)
 	{
 		uiFromKeyLen += kyAddInclComponent( pIcd, &pucFromKey [uiFromKeyLen],
-										TRUE, MAX_KEY_SIZ - 2 - uiFromKeyLen);
+										TRUE, XFLM_MAX_KEY_SIZE - 2 - uiFromKeyLen);
 	}
-	if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG) && uiUntilKeyLen < MAX_KEY_SIZ - 2)
+	if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG) && uiUntilKeyLen < XFLM_MAX_KEY_SIZE - 2)
 	{
 		uiUntilKeyLen += kyAddInclComponent( pIcd, &pucUntilKey [uiUntilKeyLen],
-										FALSE, MAX_KEY_SIZ - 2 - uiUntilKeyLen);
+										FALSE, XFLM_MAX_KEY_SIZE - 2 - uiUntilKeyLen);
 	}
 		
 	// Set the FROM and UNTIL key length return values.
@@ -1583,7 +1583,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		// Add ICD_ESC_CHAR to the icd flags because
 		// the search string must have BACKSLASHES and '*' escaped.
 
-		uiFromKeyLen = MAX_KEY_SIZ - 2;
+		uiFromKeyLen = XFLM_MAX_KEY_SIZE - 2;
 		bDataTruncated = FALSE;
 		if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
 								&bufferIStream, XFLM_TEXT_TYPE,
@@ -1688,8 +1688,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 					// Fill the rest of the until key with high values.
 		
 					f_memset( &pucUntilKey[ uiCollationLen], 0xFF,
-									MAX_KEY_SIZ - uiCollationLen - 2);
-					uiUntilKeyLen = MAX_KEY_SIZ - 2;
+									XFLM_MAX_KEY_SIZE - uiCollationLen - 2);
+					uiUntilKeyLen = XFLM_MAX_KEY_SIZE - 2;
 				}
 				else
 				{
@@ -1716,8 +1716,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 					// Fill rest of from key with high values after collation values.
 					
 					f_memset( &pucFromKey[ uiCollationLen], 0xFF,
-								MAX_KEY_SIZ - uiCollationLen - 2);
-					uiFromKeyLen = MAX_KEY_SIZ - 2;
+								XFLM_MAX_KEY_SIZE - uiCollationLen - 2);
+					uiFromKeyLen = XFLM_MAX_KEY_SIZE - 2;
 				}
 			}
 			else
@@ -1814,7 +1814,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		// Add ICD_ESC_CHAR to the icd flags because
 		// the search string must have BACKSLASHES and '*' escaped.
 
-		uiUntilKeyLen = MAX_KEY_SIZ - 2;
+		uiUntilKeyLen = XFLM_MAX_KEY_SIZE - 2;
 		bDataTruncated = FALSE;
 		if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilKeyLen,
 								&bufferIStream, XFLM_TEXT_TYPE,
@@ -1864,15 +1864,15 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	UW2FBA( (FLMUINT16)(uiFromKeyLen | uiFromFlags), pucFromKeyLenPos);
 	UW2FBA( (FLMUINT16)(uiUntilKeyLen | uiUntilFlags), pucUntilKeyLenPos);
 	
-	if (!(uiFromFlags & EXCLUSIVE_GT_FLAG) && uiFromKeyLen < MAX_KEY_SIZ - 2)
+	if (!(uiFromFlags & EXCLUSIVE_GT_FLAG) && uiFromKeyLen < XFLM_MAX_KEY_SIZE - 2)
 	{
 		uiFromKeyLen += kyAddInclComponent( pIcd, &pucFromKey [uiFromKeyLen],
-										TRUE, MAX_KEY_SIZ - 2 - uiFromKeyLen);
+										TRUE, XFLM_MAX_KEY_SIZE - 2 - uiFromKeyLen);
 	}
-	if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG) && uiUntilKeyLen < MAX_KEY_SIZ - 2)
+	if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG) && uiUntilKeyLen < XFLM_MAX_KEY_SIZE - 2)
 	{
 		uiUntilKeyLen += kyAddInclComponent( pIcd, &pucUntilKey [uiUntilKeyLen],
-										FALSE, MAX_KEY_SIZ - 2 - uiUntilKeyLen);
+										FALSE, XFLM_MAX_KEY_SIZE - 2 - uiUntilKeyLen);
 	}
 		
 	// Set the FROM and UNTIL key lengths

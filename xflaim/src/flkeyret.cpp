@@ -91,14 +91,14 @@ RCODE	F_Db::keyRetrieve(
 
 	if (pSearchKey)
 	{
-		if (RC_BAD( rc = m_TempPool.poolAlloc( MAX_KEY_SIZ,
+		if (RC_BAD( rc = m_TempPool.poolAlloc( XFLM_MAX_KEY_SIZE,
 												(void **)&pucSearchKey)))
 		{
 			goto Exit;
 		}
 	}
 
-	if (RC_BAD( rc = m_TempPool.poolAlloc( MAX_KEY_SIZ, (void **)&pucFoundKey)))
+	if (RC_BAD( rc = m_TempPool.poolAlloc( XFLM_MAX_KEY_SIZE, (void **)&pucFoundKey)))
 	{
 		goto Exit;
 	}
@@ -162,7 +162,7 @@ RCODE	F_Db::keyRetrieve(
 		}
 
 		if (RC_BAD( rc = pSearchKey->outputKey( pIxd, uiIdMatchFlags,
-				pucSearchKey, MAX_KEY_SIZ, &uiSearchKeyLen, SEARCH_KEY_FLAG)))
+				pucSearchKey, XFLM_MAX_KEY_SIZE, &uiSearchKeyLen, SEARCH_KEY_FLAG)))
 		{
 			goto Exit;
 		}
@@ -225,7 +225,7 @@ RCODE	F_Db::keyRetrieve(
 	uiFoundKeyLen = uiSearchKeyLen;
 
 	if( RC_BAD( rc = pbtree->btLocateEntry(
-		pucFoundKey, MAX_KEY_SIZ, &uiFoundKeyLen, uiFlags, NULL,
+		pucFoundKey, XFLM_MAX_KEY_SIZE, &uiFoundKeyLen, uiFlags, NULL,
 		&uiDataLen)))
 	{
 		if (rc == NE_XFLM_EOF_HIT && uiOriginalFlags & XFLM_EXACT)
@@ -280,9 +280,9 @@ RCODE	F_Db::keyRetrieve(
 			// reuse it since we are not going to do anything with
 			// it after this.  Otherwise, allocate a new buffer.
 
-			if (uiDataLen <= MAX_KEY_SIZ && pucSearchKey)
+			if (uiDataLen <= XFLM_MAX_KEY_SIZE && pucSearchKey)
 			{
-				uiDataBufSize = MAX_KEY_SIZ;
+				uiDataBufSize = XFLM_MAX_KEY_SIZE;
 				pucData = pucSearchKey;
 			}
 			else
@@ -298,7 +298,7 @@ RCODE	F_Db::keyRetrieve(
 			// Retrieve the data
 
 			if (RC_BAD( rc = pbtree->btGetEntry(
-				pucFoundKey, MAX_KEY_SIZ, uiFoundKeyLen,
+				pucFoundKey, XFLM_MAX_KEY_SIZE, uiFoundKeyLen,
 				pucData, uiDataBufSize, &uiDataLen)))
 			{
 				goto Exit;

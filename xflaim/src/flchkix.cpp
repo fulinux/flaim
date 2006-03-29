@@ -80,10 +80,10 @@ RCODE F_DbCheck::chkGetNextRSKey( void)
 	
 	if (RC_BAD( rc = m_pIxRSet->getFirst( m_pDb, m_pIxd, NULL,
 										pCurrRSKey->pucRSKeyBuf,
-										MAX_KEY_SIZ,
+										XFLM_MAX_KEY_SIZE,
 										&pCurrRSKey->uiRSKeyLen,
 										pCurrRSKey->pucRSDataBuf,
-										MAX_KEY_SIZ,
+										XFLM_MAX_KEY_SIZE,
 										&pCurrRSKey->uiRSDataLen)))
 	{
 		goto Exit;
@@ -730,7 +730,7 @@ RCODE F_DbCheck::addDelKeyRef(
 	FLMBOOL			bDelete)
 {
 	RCODE				rc = NE_XFLM_OK;
-	FLMBYTE			ucKeyBuf[ sizeof( KREF_ENTRY) + MAX_KEY_SIZ];
+	FLMBYTE			ucKeyBuf[ sizeof( KREF_ENTRY) + XFLM_MAX_KEY_SIZE];
 	KREF_ENTRY *	pKrefEntry = (KREF_ENTRY *)(&ucKeyBuf[ 0]);
 	FLMBOOL			bStartedUpdate = FALSE;
 	FLMBOOL			bKeyInDoc;

@@ -661,7 +661,6 @@ typedef struct FNotify
 
 // Maximum length of a key.
 
-#define MAX_KEY_SIZ				1024
 #define MAX_ID_SIZE				256		// Cannot be more than 256 because
 													// we can only use one byte to
 													// represent the total ID size.

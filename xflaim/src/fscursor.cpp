@@ -516,7 +516,7 @@ RCODE FSIndexCursor::getKeyData(
 		// Retrieve the data
 
 		if (RC_BAD( rc = pBTree->btGetEntry(
-			m_curKey.ucKey, MAX_KEY_SIZ, m_curKey.uiKeyLen,
+			m_curKey.ucKey, XFLM_MAX_KEY_SIZE, m_curKey.uiKeyLen,
 			m_pucCurKeyDataBuf, m_uiCurKeyDataBufSize,
 			&m_uiCurKeyDataLen)))
 		{
@@ -573,7 +573,7 @@ RCODE FSIndexCursor::setKeyPosition(
 	m_ixCompare.setSearchKey( pExtSrchKey);
 	m_ixCompare.setCompareDocId( pExtSrchKey ? FALSE : TRUE);
 	m_ixCompare.setCompareNodeIds( pExtSrchKey ? FALSE : TRUE);
-	if (RC_BAD( rc = pBTree->btLocateEntry( pFoundKey->ucKey, MAX_KEY_SIZ,
+	if (RC_BAD( rc = pBTree->btLocateEntry( pFoundKey->ucKey, XFLM_MAX_KEY_SIZE,
 										&pFoundKey->uiKeyLen,
 										(bGoingForward && bExcludeKey)
 										? XFLM_EXCL
@@ -603,7 +603,7 @@ RCODE FSIndexCursor::setKeyPosition(
 
 			// Position to last key in tree.
 
-			if (RC_BAD( rc = pBTree->btLastEntry( pFoundKey->ucKey, MAX_KEY_SIZ,
+			if (RC_BAD( rc = pBTree->btLastEntry( pFoundKey->ucKey, XFLM_MAX_KEY_SIZE,
 														&pFoundKey->uiKeyLen,
 														&uiDataLen, NULL, NULL)))
 			{
@@ -636,7 +636,7 @@ RCODE FSIndexCursor::setKeyPosition(
 
 				// Position to the previous key.
 
-				if (RC_BAD( rc = pBTree->btPrevEntry( pFoundKey->ucKey, MAX_KEY_SIZ,
+				if (RC_BAD( rc = pBTree->btPrevEntry( pFoundKey->ucKey, XFLM_MAX_KEY_SIZE,
 																	&pFoundKey->uiKeyLen,
 																	&uiDataLen, NULL, NULL)))
 				{
@@ -981,7 +981,7 @@ RCODE FSIndexCursor::nextKey(
 			
 			// Get the next key, if any
 	
-			if (RC_BAD( rc = m_pbTree->btNextEntry( m_curKey.ucKey, MAX_KEY_SIZ,
+			if (RC_BAD( rc = m_pbTree->btNextEntry( m_curKey.ucKey, XFLM_MAX_KEY_SIZE,
 												&m_curKey.uiKeyLen, &uiDataLen, NULL, NULL)))
 			{
 				if (rc == NE_XFLM_EOF_HIT)
@@ -1219,7 +1219,7 @@ RCODE FSIndexCursor::prevKey(
 		
 			// Get the previous key, if any
 	
-			if (RC_BAD( rc = m_pbTree->btPrevEntry( m_curKey.ucKey, MAX_KEY_SIZ,
+			if (RC_BAD( rc = m_pbTree->btPrevEntry( m_curKey.ucKey, XFLM_MAX_KEY_SIZE,
 												&m_curKey.uiKeyLen, &uiDataLen, NULL, NULL)))
 			{
 				if (rc == NE_XFLM_BOF_HIT)

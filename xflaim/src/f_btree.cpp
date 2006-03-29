@@ -2626,8 +2626,8 @@ RCODE F_Btree::createNewLevel( void)
 	FLMUINT				uiCounts = 0;
 	FLMBYTE *			pucEntry;
 	FLMBYTE *			pucNull = NULL;
-	FLMBYTE				ucBuffer[ MAX_KEY_SIZ + BTE_NLC_KEY_START];
-	FLMUINT				uiMaxNLKey = MAX_KEY_SIZ + BTE_NLC_KEY_START;
+	FLMBYTE				ucBuffer[ XFLM_MAX_KEY_SIZE + BTE_NLC_KEY_START];
+	FLMUINT				uiMaxNLKey = XFLM_MAX_KEY_SIZE + BTE_NLC_KEY_START;
 	FLMUINT				uiEntrySize;
 	F_BTSK *				pRootStack;
 	FLMUINT				uiFlags;
@@ -4959,7 +4959,7 @@ RCODE F_Btree::findEntry(
 		uiKeyLen = 0;
 	}
 
-	if( uiKeyLen > MAX_KEY_SIZ)
+	if( uiKeyLen > XFLM_MAX_KEY_SIZE)
 	{
 		rc = RC_SET( NE_XFLM_BTREE_KEY_SIZE);
 		goto Exit;

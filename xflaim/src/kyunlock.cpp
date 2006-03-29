@@ -83,7 +83,7 @@ RCODE F_Db::krefCntrlCheck( void)
 		
 		if( !m_pucKrefKeyBuf)
 		{
-			if (RC_BAD( rc = f_alloc( MAX_KEY_SIZ, &m_pucKrefKeyBuf)))
+			if (RC_BAD( rc = f_alloc( XFLM_MAX_KEY_SIZE, &m_pucKrefKeyBuf)))
 			{
 				goto Exit;
 			}

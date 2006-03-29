@@ -1166,7 +1166,7 @@ RCODE F_DataVector::inputKey(
 {
 	RCODE					rc = NE_XFLM_OK;
 	const FLMBYTE *	pucKeyEnd = pucKey + uiKeyLen;
-	FLMBYTE				ucDataBuf [MAX_KEY_SIZ];
+	FLMBYTE				ucDataBuf [XFLM_MAX_KEY_SIZE];
 	FLMUINT				uiDataLen;
 	ICD *					pIcd;
 	FLMUINT				uiLanguage = pIxd->uiLanguage;

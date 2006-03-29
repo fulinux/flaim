@@ -154,8 +154,8 @@
 // enough for the sset and JP characters - computed wrong.
 // This crashed the process that was building a key of sset characaters.
 
-#define MAX_SUBCOL_BUF			(500)	// (((MAX_KEY_SIZ / 4) * 3 + fluff
-#define MAX_CASE_BYTES	  		(150) // ((MAX_KEY_SIZ -(MAX_KEY_SIZ / 8)) / 8) * 2
+#define MAX_SUBCOL_BUF			(500)	// (((XFLM_MAX_KEY_SIZE / 4) * 3 + fluff
+#define MAX_CASE_BYTES	  		(150) // ((XFLM_MAX_KEY_SIZE -(XFLM_MAX_KEY_SIZE / 8)) / 8) * 2
 
 // Flags
 

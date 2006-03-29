@@ -847,7 +847,7 @@ RCODE F_Db::buildData(
 											m_keyGenInfo.pIxd,
 											m_keyGenInfo.pCdlTbl,
 											&m_keyGenInfo.pucKeyBuf [uiKeyLen],
-											MAX_KEY_SIZ - uiKeyLen, &uiIDLen)))
+											XFLM_MAX_KEY_SIZE - uiKeyLen, &uiIDLen)))
 				{
 					goto Exit;
 				}
@@ -973,7 +973,7 @@ RCODE F_Db::buildContext(
 											m_keyGenInfo.pIxd,
 											m_keyGenInfo.pCdlTbl,
 											&m_keyGenInfo.pucKeyBuf [uiKeyLen],
-											MAX_KEY_SIZ - uiKeyLen, &uiIDLen)))
+											XFLM_MAX_KEY_SIZE - uiKeyLen, &uiIDLen)))
 				{
 					goto Exit;
 				}
@@ -1070,7 +1070,7 @@ RCODE F_Db::finishKeyComponent(
 											m_keyGenInfo.pIxd,
 											m_keyGenInfo.pCdlTbl,
 											&m_keyGenInfo.pucKeyBuf [uiKeyLen],
-											MAX_KEY_SIZ - uiKeyLen,
+											XFLM_MAX_KEY_SIZE - uiKeyLen,
 											&uiIDLen)))
 				{
 					goto Exit;
@@ -1181,7 +1181,7 @@ No_Strings:
 
 		if (bWholeString)
 		{
-			uiElmLen = MAX_KEY_SIZ - uiKeyLen;
+			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			if( RC_BAD( rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 							&uiElmLen,
 							pIStream, XFLM_TEXT_TYPE,
@@ -1199,7 +1199,7 @@ No_Strings:
 			if (*ppucTmpBuf == NULL)
 			{
 				*ppvMark = m_TempPool.poolMark();
-				*puiTmpBufSize = (FLMUINT)MAX_KEY_SIZ + 8;
+				*puiTmpBufSize = (FLMUINT)XFLM_MAX_KEY_SIZE + 8;
 				if (RC_BAD( rc = m_TempPool.poolAlloc( *puiTmpBufSize,
 												(void **)ppucTmpBuf)))
 				{
@@ -1231,7 +1231,7 @@ No_Strings:
 			// Pass 0 for compare rules because KYEachWordParse will already
 			// have taken care of them - except for XFLM_COMP_CASE_INSENSITIVE.
 
-			uiElmLen = MAX_KEY_SIZ - uiKeyLen;
+			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 										&uiElmLen,
 										&bufferStream, XFLM_TEXT_TYPE,
@@ -1283,7 +1283,7 @@ No_Strings:
 
 			// Pass 0 for compare rules - only applies to strings.
 			
-			uiElmLen = MAX_KEY_SIZ - uiKeyLen;
+			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 										&uiElmLen,
 										&bufferStream, XFLM_NUMBER_TYPE,
@@ -1307,7 +1307,7 @@ No_Strings:
 			if (*ppucTmpBuf == NULL)
 			{
 				*ppvMark = m_TempPool.poolMark();
-				*puiTmpBufSize = (FLMUINT)MAX_KEY_SIZ + 8;
+				*puiTmpBufSize = (FLMUINT)XFLM_MAX_KEY_SIZE + 8;
 				if (RC_BAD( rc = m_TempPool.poolAlloc( *puiTmpBufSize,
 												(void **)ppucTmpBuf)))
 				{
@@ -1344,7 +1344,7 @@ No_Strings:
 			// Pass 0 for compare rules, because KYSubstringParse has already
 			// taken care of them, except for XFLM_COMP_CASE_INSENSITIVE
 
-			uiElmLen = MAX_KEY_SIZ - uiKeyLen;
+			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 										&uiElmLen,
 										&bufferStream, XFLM_TEXT_TYPE,
@@ -1491,7 +1491,7 @@ No_Data:
 			
 		// Compute number of bytes left
 
-		uiElmLen = MAX_KEY_SIZ - uiKeyLen;
+		uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 		bDataTruncated = FALSE;
 		
 		// Pass zero for compare rules - these are not strings.

@@ -153,7 +153,7 @@ RCODE F_Db::dictReadDefs(
 	LFILE *			pLFile;
 	IXD *				pIxd;
 	F_Btree *		pbTree = NULL;
-	FLMBYTE			ucKeyBuf [MAX_KEY_SIZ];
+	FLMBYTE			ucKeyBuf [XFLM_MAX_KEY_SIZE];
 	FLMUINT			uiKeyLen;
 	FLMUINT			uiFoundDictType;
 	FLMUINT			uiLowest;
