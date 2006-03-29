@@ -195,16 +195,18 @@
 				#if defined( FLM_64BIT)
 					typedef unsigned __int64		FLMUINT;
 					typedef __int64					FLMINT;
-					typedef unsigned long			FLMSIZET;
+					typedef unsigned __int64		FLMSIZET;
 					typedef unsigned int				FLMUINT32;
 				#elif _MSC_VER >= 1300
 					typedef unsigned long __w64	FLMUINT;
 					typedef long __w64				FLMINT;
 					typedef unsigned int				FLMUINT32;
+					typedef __w64 unsigned int		FLMSIZET;
 				#else
 					typedef unsigned long			FLMUINT;
 					typedef long						FLMINT;
 					typedef unsigned int				FLMUINT32;
+					typedef __w64 unsigned int		FLMSIZET;
 				#endif
 				
 			#elif defined( FLM_NLM)
@@ -212,7 +214,9 @@
 				typedef unsigned long int		FLMUINT;
 				typedef long int					FLMINT;
 				typedef unsigned long int		FLMUINT32;
-				
+				typedef unsigned					FLMSIZET;
+			#else
+				#error Platform not supported
 			#endif
 
 			typedef unsigned char				FLMBYTE;
@@ -223,7 +227,6 @@
 			typedef signed int					FLMINT32;
 			typedef signed short int			FLMINT16;
 			typedef signed char					FLMINT8;
-			typedef unsigned						FLMSIZET;
 
 			#if defined( __MWERKS__)
 				typedef unsigned long long		FLMUINT64;
