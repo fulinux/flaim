@@ -337,12 +337,12 @@ typedef int (* RECV_BUFFER_FN)(
 
 // Define the overhead space required to manage encrypted fields.
 
-#define FLM_ENC_FLD_OVERHEAD			7
+#define FLM_ENC_FLD_OVERHEAD					11
 
-#define FLD_ENC_FLAGS					0
-#define FLD_ENC_ENCID					1
-#define FLD_ENC_DATA_LEN				3
-#define FLD_ENC_ENCRYPTED_DATA_LEN	5
+#define FLD_ENC_FLAGS_OFFSET					0
+#define FLD_ENC_ENCID_OFFSET					1
+#define FLD_ENC_DATA_LEN_OFFSET				3
+#define FLD_ENC_ENCRYPTED_DATA_LEN_OFFSET	7
 
 // C/S Address sizes
 
