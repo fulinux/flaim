@@ -834,7 +834,7 @@ FSTATIC FLMUINT rflFindPrevPacket(
 	)
 {
 	RCODE			rc;
-	FLMUINT		uiPrevAddr;
+	FLMUINT		uiPrevAddr = 0;
 	FLMUINT		uiReadOffset;
 	FLMBYTE *	pucPacketHdr = NULL;
 	FLMBYTE *	pucBuffer = NULL;
@@ -970,9 +970,9 @@ FSTATIC RCODE rflRetrievePacket(
 	FLMUINT		uiBytesToRead;
 	FLMUINT		uiBytesRead;
 	FLMUINT		uiBytes;
-	FLMUINT		uiExpectedBodyLen;
+	FLMUINT		uiExpectedBodyLen = 0;
 	FLMBYTE *	pucPacketHdr;
-	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketBody = NULL;
 
 	f_memset( pRflPacket, 0, sizeof( RFL_PACKET));
 	pRflPacket->uiFileOffset = uiFileOffset;
