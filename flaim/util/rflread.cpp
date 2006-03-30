@@ -510,7 +510,7 @@ FSTATIC void rflFormatDBKeyLen(
 {
 	char *	pszTmp = *ppszTmp;
 
-	if (pRflPacket->uiEndDrn < FLM_VER_4_60)
+	if (pRflPacket->uiEndDrn < FLM_FILE_FORMAT_VER_4_60)
 	{
 		return;
 	}
@@ -1584,7 +1584,7 @@ FSTATIC RCODE rflRetrievePacket(
 			rflGetNumValue( pucPacketBody, uiBytesRead, 8,
 					4, &pRflPacket->uiEndDrn,
 					&pRflPacket->uiEndDrnBytes);
-			if (pRflPacket->uiEndDrn >= FLM_VER_4_60)
+			if (pRflPacket->uiEndDrn >= FLM_FILE_FORMAT_VER_4_60)
 			{
 				// Get the size of the DB key.
 				rflGetNumValue( pucPacketBody, uiBytesRead, 12,

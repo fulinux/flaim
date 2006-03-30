@@ -1356,7 +1356,7 @@ FSTATIC RCODE rflOpenNewFile(
 	char			szPath [F_PATH_MAX_SIZE];
 	char			szBaseName [F_FILENAME_SIZE];
 	char			szPrefix [F_FILENAME_SIZE];
-	FLMUINT		uiDbVersion = FLM_VER_4_3;
+	FLMUINT		uiDbVersion = FLM_FILE_FORMAT_VER_4_3;
 	FLMUINT		uiFileNum;
 
 	// If no file name was specified, go to the next or previous file from
@@ -1371,11 +1371,11 @@ FSTATIC RCODE rflOpenNewFile(
 
 		// See if it is version 4.3 or greater first.
 
-		uiDbVersion = FLM_VER_4_3;
+		uiDbVersion = FLM_FILE_FORMAT_VER_4_3;
 		if (!rflGetFileNum( uiDbVersion, szPrefix, gv_szRflPath, &uiFileNum))
 		{
 			szPrefix [3] = 0;
-			uiDbVersion = FLM_VER_4_0;
+			uiDbVersion = FLM_FILE_FORMAT_VER_4_0;
 			if (!rflGetFileNum( uiDbVersion, szPrefix, gv_szRflPath, &uiFileNum))
 			{
 				rc = RC_SET( FERR_IO_PATH_NOT_FOUND);
