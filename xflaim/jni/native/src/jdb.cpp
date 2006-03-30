@@ -54,7 +54,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1transBegin(
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
-	
+
 	if (RC_BAD( rc = pDb->transBegin( (eDbTransType)iTransactionType,
 		(FLMUINT)iMaxLockWait, (FLMUINT)iFlags)))
 	{
@@ -72,11 +72,13 @@ Desc:
 ****************************************************************************/
 JNIEXPORT void JNICALL Java_xflaim_Db__1transCommit(
 	JNIEnv *			pEnv,
-	jobject,			// obj,
+	jobject			obj,
 	jlong				lThis)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
+
+	(void)obj;
 	
 	if (RC_BAD( rc = pDb->transCommit()))
 	{
@@ -135,9 +137,6 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1import(
 		goto Exit;
 	}
 
-	// VISIT:  We need to handle the rest of the parameters: F_DOMNode & 
-	// XFLM_IMPORT_STATS, but how???  We can return only one value from here.
-	
 	if (RC_BAD( rc = pDb->import( pIStream, (FLMUINT)iCollection)))
 	{
 		ThrowError( rc, pEnv);
@@ -286,20 +285,16 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1createElementDef(
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
 	FLMUINT			uiNameId = iRequestedNum;
-	FLMBOOL			bReleaseNamespace = FALSE;
 	jchar *			pszNamespaceURI = NULL;
 	jchar *			pszElementName;
 	
 	if (sNamespaceURI)
 	{
 		pszNamespaceURI = (jchar *)pEnv->GetStringCritical( sNamespaceURI, NULL);
-		bReleaseNamespace = TRUE;
 	}
 	
 	flmAssert( sElementName);
 	pszElementName = (jchar *)pEnv->GetStringCritical( sElementName, NULL);
-	
-	
 	
 	if (RC_BAD( rc = pDb->createElementDef( pszNamespaceURI, pszElementName,
 											(FLMUINT)iDataType, &uiNameId, NULL)))
@@ -310,7 +305,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1createElementDef(
 	
 Exit:
 	
-	if (bReleaseNamespace)
+	if (pszNamespaceURI)
 	{
 		pEnv->ReleaseStringCritical( sNamespaceURI, pszNamespaceURI);
 	}

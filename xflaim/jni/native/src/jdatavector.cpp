@@ -65,10 +65,9 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setID(
 {
 	RCODE				rc = NE_XFLM_OK;
 
-	if (RC_BAD( rc = THIS_VECTOR()->setID( 
-		(FLMUINT)iElementId, (FLMUINT64)lID)))
+	if (RC_BAD( rc = THIS_VECTOR()->setID( (FLMUINT)iElementId, (FLMUINT64)lID)))
 	{
-		ThrowError(rc, pEnv);
+		ThrowError( rc, pEnv);
 	}
 }
 
@@ -84,7 +83,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setNameId(
 	jboolean			bIsAttr,
 	jboolean			bIsData)
 {
-	RCODE					rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
 
 	if (RC_BAD( rc = THIS_VECTOR()->setNameId( (FLMUINT)iElementNumber,
 			(FLMUINT)iNameId, (FLMBOOL)(bIsAttr ? TRUE : FALSE),
@@ -104,7 +103,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setINT(
 	jint				iElementNumber,
 	jint				iNum)
 {
-	RCODE					rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
 
 	if (iNum  > 0x7FFFFFFF)
 	{
@@ -134,8 +133,8 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setUINT(
 	jint				iElementNumber,
 	jint				iUNum)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiNum = (FLMUINT)iUNum;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiNum = (FLMUINT)iUNum;
 	
 	if (uiNum  > 0xFFFFFFFF)
 	{
@@ -164,7 +163,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setLong(
 	jint				iElementNumber,
 	jlong				lNum)
 {
-	RCODE					rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
 	
 	if (RC_BAD( rc = THIS_VECTOR()->setINT64( 
 			(FLMUINT)iElementNumber, (FLMUINT64)lNum)))
@@ -183,9 +182,9 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setString(
 	jint				iElementNumber,
 	jstring			sValue)
 {
-	RCODE					rc = NE_XFLM_OK;
-	jchar *				puzValue = NULL;
-	FLMBOOL				bMustRelease = FALSE;
+	RCODE				rc = NE_XFLM_OK;
+	jchar *			puzValue = NULL;
+	FLMBOOL			bMustRelease = FALSE;
 	
 	if (sValue)
 	{
@@ -218,11 +217,11 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setBinary(
 	jint				iElementNumber,
 	jbyteArray		Value)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiLength = pEnv->GetArrayLength( Value);
-	void *				pvValue = NULL;
-	jboolean				bIsCopy = false;
-	FLMBOOL				bMustRelease = false;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiLength = pEnv->GetArrayLength( Value);
+	void *			pvValue = NULL;
+	jboolean			bIsCopy = false;
+	FLMBOOL			bMustRelease = false;
 	
 	if ( (pvValue = pEnv->GetPrimitiveArrayCritical( Value, &bIsCopy)) == NULL)
 	{
@@ -263,7 +262,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setRightTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_DataVector__1setLefttTruncated(
+JNIEXPORT void JNICALL Java_xflaim_DataVector__1setLeftTruncated(
 	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis,
@@ -287,7 +286,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1clearRightTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_DataVector__1clearLefttTruncated(
+JNIEXPORT void JNICALL Java_xflaim_DataVector__1clearLeftTruncated(
 	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis,
@@ -425,8 +424,8 @@ JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getUINT(
 	jlong				lThis,
 	jint				iElementNumber)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMINT				iINT;
+	RCODE				rc = NE_XFLM_OK;
+	FLMINT			iINT;
 	
 	if (RC_BAD( rc = THIS_VECTOR()->getUINT( (FLMUINT)iElementNumber, 
 		(FLMUINT *)&iINT)))
@@ -473,12 +472,12 @@ JNIEXPORT jstring JNICALL Java_xflaim_DataVector__1getString(
 	jlong				lThis,
 	jint				iElementNumber)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMUNICODE			uzBuffer[ 128];
-	FLMUNICODE *		puzBuf = uzBuffer;
-	FLMUINT				uiBufSize = sizeof( uzBuffer);
-	FLMUINT				uiNumChars;
-	jstring				sBuf = NULL;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUNICODE		uzBuffer[ 128];
+	FLMUNICODE *	puzBuf = uzBuffer;
+	FLMUINT			uiBufSize = sizeof( uzBuffer);
+	FLMUINT			uiNumChars;
+	jstring			sBuf = NULL;
 	
 	if (RC_BAD( rc = THIS_VECTOR()->getUnicode( (FLMUINT)iElementNumber,
 		NULL, &uiNumChars)))
@@ -590,7 +589,6 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputKey(
 	FLMBOOL			bMustRelease = false;
 	
 	uiLength = XFLM_MAX_KEY_SIZE;
-
 	Key = pEnv->NewByteArray( uiLength);
 	
 	if( (pvKey = pEnv->GetPrimitiveArrayCritical( Key, &bIsCopy)) == NULL)
@@ -648,7 +646,6 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputData(
 	FLMBOOL			bMustRelease = false;
 	
 	uiLength = XFLM_MAX_KEY_SIZE;
-
 	Data = pEnv->NewByteArray( uiLength);
 	
 	if ( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)

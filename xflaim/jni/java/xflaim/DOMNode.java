@@ -86,10 +86,26 @@ public class DOMNode
 	}
 	
 	/**
-	 *  Creates a new DOM node and inserts it into the database in the
-	 *  specified position relative to the current node.  An existing
-	 *  DOMNode object can optionally be passed in, and it will be reused
-	 *  instead of a new object being allocated.
+	 * Desc:
+	 */
+	public void release()
+	{
+		synchronized( m_jdb)
+		{
+			if (m_this != 0)
+			{
+				_release( m_this);
+			}
+		}
+		
+		m_jdb = null;
+	}
+	
+	/**
+	 * Creates a new DOM node and inserts it into the database in the
+	 * specified position relative to the current node.  An existing
+	 * DOMNode object can optionally be passed in, and it will be reused
+	 * instead of a new object being allocated.
 	 * @param iNodeType An integer representing the type of node to create.
 	 * (Use the constants in {@link xflaim.FlmDomNodeType FlmDomNodeType}.)
 	 * @param iNameId The dictionary tag number that represents the node name.
@@ -456,9 +472,9 @@ public class DOMNode
 	 * Retrieves the node ID for this node.
 	 * @return Returns the node ID.
 	 */
-	public long getId()
+	public long getNodeId()
 	{
-		return _getId( m_this);
+		return _getNodeId( m_this, m_jdb.m_this);
 	}
 	
 	/**
@@ -466,9 +482,9 @@ public class DOMNode
 	 * @return Returns the root node's node ID.
 	 * @throws XFlaimException
 	 */
-	public long getRootId() throws XFlaimException
+	public long getDocumentId() throws XFlaimException
 	{
-		return _getRootId(  m_this, m_jdb.m_this);
+		return _getDocumentId( m_this, m_jdb.m_this);
 	}
 	
 	/**
@@ -1157,7 +1173,7 @@ public class DOMNode
 	 */
 	public int getCollection() throws XFlaimException
 	{
-		return _getCollection( m_this);
+		return _getCollection( m_this, m_jdb.m_this);
 	}
 
 	/**
@@ -1517,13 +1533,14 @@ public class DOMNode
 	/**
 	 * Desc:
 	 */
-	private native long _getId(
-		long		lThis);
+	private native long _getNodeId(
+		long		lThis,
+		long		lpDbRef);
 		
 	/**
 	 * Desc:
 	 */
-	private native long _getRootId(
+	private native long _getDocumentId(
 		long		lThis,
 		long		lpDbRef) throws XFlaimException;
 
@@ -1601,7 +1618,8 @@ public class DOMNode
 	 * Desc:
 	 */
 	private native int _getCollection(
-		long		lThis) throws XFlaimException;
+		long		lThis,
+		long		lpDbRef) throws XFlaimException;
 		
 
 	/**

@@ -22,8 +22,8 @@
 //
 // $Id: DbSystem.java 3110 2006-01-19 13:09:08 -0700 (Thu, 19 Jan 2006) dsanders $
 //------------------------------------------------------------------------------
-package xflaim;
 
+package xflaim;
 
 /**
  * The DbSystem class provides a number of methods that allow java 
@@ -34,7 +34,7 @@ public class DbSystem
 {
 	static
 	{ 
-		System.loadLibrary( "xflaim");
+		System.loadLibrary( "xflaimjni");
 	}
 	  
 	/**
@@ -47,23 +47,19 @@ public class DbSystem
 			throws XFlaimException
 	{
 		super();
-
-		// Create an F_DbSystem on the native side...
-		m_this = _createDbSystem();  // Sets the value of m_this
-		
-		// Initialize the F_DbSystem
+		m_this = _createDbSystem();
 		_init(m_this);
 	}
 
 	public void finalize()
 	{
 		_exit( m_this);
-		m_this = 0;  // Not strictly necessary - but just to make things obvious...
+		m_this = 0;
 	}	
 
 	public void dbClose()
 	{
-		_exit(m_this);
+		_exit( m_this);
 		m_this = 0;		
 	}
 		
@@ -96,23 +92,19 @@ public class DbSystem
 		CREATEOPTS  			CreateOpts) throws XFlaimException
 	{
 	
-		Db jDb = null;
+		Db 		jDb = null;
+		long 		jDb_ref;
 		
-		long jDb_ref =  _dbCreate(
-						  m_this,
-						  sDbFileName,
-						  sDataDir,
-						  sRflDir,
-						  sDictFileName,
-						  sDictBuf,
-						  CreateOpts);
 		
-		if ( jDb_ref != 0)
+		jDb_ref = _dbCreate( m_this, sDbFileName, sDataDir, sRflDir,
+						sDictFileName, sDictBuf, CreateOpts);
+		
+		if( jDb_ref != 0)
 		{
 			jDb = new Db( jDb_ref, this);	
 		}
 		
-		return jDb;
+		return( jDb);
 	}
 	
 	/**
@@ -127,21 +119,24 @@ public class DbSystem
 	 * @return Returns an instance of Db.
 	 * @throws XFlaimException
 	 */
+	 
 	public Db dbOpen(
 		String				sDbFileName,
 		String				sDataDir,
-		String				sRflDir) throws XFlaimException
+		String				sRflDir,
+		String				sPassword,
+		boolean				bAllowLimited) throws XFlaimException
 	{
-		Db jDb = null;
-		
-		long jDb_ref = _dbOpen( m_this, sDbFileName, sDataDir, sRflDir);
+		Db 	jDb = null;
+		long 	jDb_ref;
 											
-		if (jDb_ref != 0)
+		if( (jDb_ref = _dbOpen( m_this, sDbFileName, sDataDir, 
+			sRflDir, sPassword, bAllowLimited)) != 0)
 		{
 			jDb = new Db( jDb_ref, this);
 		}
 		
-		return jDb;
+		return( jDb);
 	}
 	
 	/**
@@ -162,11 +157,7 @@ public class DbSystem
 		String				sRflDir,
 		boolean				bRemoveRflFiles)
 	{
-		_dbRemove( m_this,
-							sDbFileName,
-							sDataDir,
-							sRflDir,
-							bRemoveRflFiles);
+		_dbRemove( m_this, sDbFileName, sDataDir, sRflDir, bRemoveRflFiles);
 	}
 	
 	/**
@@ -196,6 +187,7 @@ public class DbSystem
 		String			sDataDir,
 		String			sRflDir,
 		String			sBackupPath,
+		String			sPassword,
 		RestoreClient	RestoreClient,
 		RestoreStatus	RestoreStatus) throws XFlaimException
 	{
@@ -210,8 +202,8 @@ public class DbSystem
 			Client = new DefaultRestoreClient( sBackupPath);
 		}
 		
-		_dbRestore( m_this, sDbPath, sDataDir, sRflDir, 
-					Client, RestoreStatus);
+		_dbRestore( m_this, sDbPath, sDataDir, sRflDir, sBackupPath,
+				sPassword, Client, RestoreStatus);
 	}
 
 
@@ -226,14 +218,14 @@ public class DbSystem
 		PosIStream	jPosIStream = null;
 		long					lRef = 0;
 
-		lRef = _openBufferIStream(
-							m_this,
-							sBuffer);
+		lRef = _openBufferIStream( m_this, sBuffer);
+		
 		if (lRef != 0)
 		{
 			jPosIStream = new PosIStream( lRef,  sBuffer, this);
-		}	
-		return jPosIStream;
+		}
+		
+		return( jPosIStream);
 	}
 
 	/**
@@ -256,8 +248,7 @@ public class DbSystem
 			jIStream = new PosIStream( lRef, this);		
 		}
 		
-		return jIStream;
-		
+		return( jIStream);
 	}
 
 	/**
@@ -279,29 +270,6 @@ public class DbSystem
 		
 		return jDataVector;
 	}
-
-/* ------------------------------------------------------------
-	virtual RCODE PCOMAPI dbRebuild(
-		char *					pszSourceDbPath,
-		char *					pszSourceDataDir,
-		char *					pszDestDbPath,
-		char *					pszDestDataDir,
-		char *					pszDestRflDir,
-		char *					pszDictPath,
-		CREATEOPTS *			pCreateOpts,
-		FLMUINT64 *				pui64TotNodes,
-		FLMUINT64 *				pui64NodesRecov,
-		FLMUINT64 *				pui64QuarantinedNodes,
-		IF_DbRebuildStatus *	ifpDbRebuild) = 0;
- 
-	virtual RCODE PCOMAPI dbCheck(
-		char *					pszDbFileName,
-		char *					pszDataDir,
-		char *					pszRflDir,
-		FLMUINT					uiFlags,
-		IF_DbInfo **			ppDbInfo,
-		IF_DbCheckStatus *	ifpDbCheckStatus) = 0;
- ------------------------------------------------------------ */
 
 	/**
 	 * Peforms an integrity check on the specified database.
@@ -327,11 +295,12 @@ public class DbSystem
 		String			sDbFileName,
 		String			sDataDir,
 		String			sRflDir,
+		String			sPassword,
 		int				iFlags,
 		DbCheckStatus	Status) throws XFlaimException
 	{
 		 long	lRef = _dbCheck( m_this, sDbFileName, sDataDir, sRflDir,
-		 						 iFlags, Status);
+		 						 sPassword, iFlags, Status);
 		 return new DbInfo( lRef);
 	}
 	
@@ -390,129 +359,126 @@ public class DbSystem
 		String				sRflDir,
 		String				sNewDbName,
 		boolean				bOverwriteDestOk,
-		DbRenameStatus	Status) throws XFlaimException
+		DbRenameStatus		Status) throws XFlaimException
 	{
 		_dbRename( m_this, sDbName, sDataDir, sRflDir, sNewDbName,
 				   bOverwriteDestOk, Status);
 	}
 
- 		
-/*=========================================================================
- * Desc:	Native interface for the createDbSystem method.  This is invoked
- * by the constructor.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native long _createDbSystem();
 	
-/*=========================================================================
- * Desc:	Native interface for the init method.  This is invoked by the
- * constructor.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native void _init( long lThis);
 	
-/*=========================================================================
- * Desc:	Native interface for the exit method.  This is invoked by the finalizer.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native void _exit( long lThis);
-	
 
-/*=========================================================================
- * Desc:	Native interface for the dbCreate method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native long _dbCreate(
-		long				lThis,
-		String 			DbFileName,
-		String 			DataDir,
-		String 			RflDir,
-		String 			DictFileName,
-		String 			DictBuf,
+		long					lThis,
+		String 				DbFileName,
+		String 				DataDir,
+		String 				RflDir,
+		String 				DictFileName,
+		String 				DictBuf,
 		CREATEOPTS  		CreateOpts);
 
-/*=========================================================================
- * Desc:	Native interface for the dbOpen method.
- *========================================================================*/
 	private native long _dbOpen(
-		long				lThis,
-		String			DbFileName,
-		String			DataDir,
-		String			RflDir);
+		long					lThis,
+		String				DbFileName,
+		String				DataDir,
+		String				RflDir,
+		String				Password,
+		boolean				bAllowLimited);
 
-/*=========================================================================
- * Desc:	Native interface for the dbRemove method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native void _dbRemove(
-		long				lThis,
-		String			DbFileName,
-		String			DataDir,
-		String			RflDir,
-		boolean			bRemoveRflFiles);
+		long					lThis,
+		String				DbFileName,
+		String				DataDir,
+		String				RflDir,
+		boolean				bRemoveRflFiles);
 
-/*=========================================================================
- * Desc:	Native interface for the dbCheck method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native long _dbCheck(
-		long			lThis,
-		String			sDbFileName,
-		String			sDataDir,
-		String			sRflDir,
-		int				iFlags,
-		DbCheckStatus	Status) throws XFlaimException;
+		long					lThis,
+		String				sDbFileName,
+		String				sDataDir,
+		String				sRflDir,
+		String				sPassword,
+		int					iFlags,
+		DbCheckStatus		Status) throws XFlaimException;
 
-
-/*=========================================================================
- * Desc:	Native interface for the dbCopy method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native void _dbCopy(
-		long			lThis,
-		String			sSrcDbName,
-		String			sSrcDataDir,
-		String			sSrcRflDir,
-		String			sDestDbName,
-		String			sDestDataDir,
-		String			sDestRflDir,
-		DbCopyStatus	Status) throws XFlaimException;
+		long					lThis,
+		String				sSrcDbName,
+		String				sSrcDataDir,
+		String				sSrcRflDir,
+		String				sDestDbName,
+		String				sDestDataDir,
+		String				sDestRflDir,
+		DbCopyStatus		Status) throws XFlaimException;
 
-/*=========================================================================
- * Desc:	Native interface for the dbRestore method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native void _dbRestore(
-		long			lThis,
-		String			sDbPath,
-		String			sDataDir,
-		String			sRflDir,
-		RestoreClient	RestoreClient,
-		RestoreStatus	RestoreStatus) throws XFlaimException;
+		long					lThis,
+		String				sDbPath,
+		String				sDataDir,
+		String				sRflDir,
+		String				sBackupPath,
+		String				sPassword,
+		RestoreClient		RestoreClient,
+		RestoreStatus		RestoreStatus) throws XFlaimException;
 		
-/*=========================================================================
- * Desc:	Native interface for the dbRename method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native void _dbRename(
-		long				lThis,
+		long					lThis,
 		String				sDbName,
 		String				sDataDir,
 		String				sRflDir,
 		String				sNewDbName,
 		boolean				bOverwriteDestOk,
-		DbRenameStatus	Status) throws XFlaimException;
+		DbRenameStatus		Status) throws XFlaimException;
 		
-/*=========================================================================
- * Desc:	Native interface for the openBufferIStream method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native long _openBufferIStream(
-		long				lThis,
+		long					lThis,
 		String				sBuffer) throws XFlaimException;
 
-/*=========================================================================
- * Desc:	Native interface for the openFileIStream method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native long _openFileIStream(
-		long			lThis,
-		String			sPath);
+		long					lThis,
+		String				sPath);
 
-/*=========================================================================
- * Desc:	Native interface for the createJDataVector method.
- *========================================================================*/
+	/**
+	 * Desc:
+	 */
 	private native long _createJDataVector(
-		long		lRef);
+		long					lRef);
 
-	private long m_this;
+	private long			m_this;
 }

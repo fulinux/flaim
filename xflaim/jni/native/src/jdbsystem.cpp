@@ -205,16 +205,19 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbOpen(
 	jlong				lThis,
 	jstring			sDbFileName,
 	jstring			sDataDir,
-	jstring			sRflDir)
+	jstring			sRflDir,
+	jstring			sPassword,
+	jboolean			bAllowLimited)
 {
 	RCODE 			rc = NE_XFLM_OK;
 	F_Db * 			pDb = NULL;
 	char * 			pszFilePath;
 	char *			pszDataDir = NULL;
 	char *			pszRflDir = NULL;
- 
+	char *			pszPassword = NULL;
  
  	flmAssert( sDbFileName);
+	
 	pszFilePath = (char *)pEnv->GetStringUTFChars( sDbFileName, NULL);
 	
 	if (sDataDir)
@@ -226,9 +229,15 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbOpen(
 	{
 		pszRflDir = (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
 	}
+	
+	if (sPassword)
+	{
+		pszPassword = (char *)pEnv->GetStringUTFChars( sPassword, NULL);
+	}
   
  	if (RC_BAD( rc = THIS_DBSYS()->dbOpen( pszFilePath, pszDataDir,
- 									 pszRflDir, NULL, TRUE, (IF_Db **)&pDb)))
+ 						pszRflDir, pszPassword, bAllowLimited ? TRUE : FALSE,
+						(IF_Db **)&pDb)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -246,6 +255,11 @@ Exit:
 	if (pszRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
+	}
+	
+	if( pszPassword)
+	{
+		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
 	}
 	
 	return( (jlong)(FLMUINT)pDb);
@@ -266,34 +280,31 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRemove(
 	char * 			pszName;
 	char *			pszDataDir = NULL;
 	char *			pszRflDir = NULL;
-	FLMBOOL			bReleaseDataDir = FALSE;
-	FLMBOOL			bReleaseRflDir = FALSE;
 
 	flmAssert( sDbName);
 	pszName = (char *)pEnv->GetStringUTFChars( sDbName, NULL);
 	
 	if (sDataDir)
 	{
-		pszDataDir =  (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
-		bReleaseDataDir = TRUE;
+		pszDataDir = (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
 	}
 	
 	if (sRflDir)
 	{
-		pszRflDir =  (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-		bReleaseRflDir = TRUE;
+		pszRflDir = (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
 	}
 
 	THIS_DBSYS()->dbRemove( pszName, pszDataDir, 
 		pszRflDir, bRemove ? TRUE : FALSE);
 
 	pEnv->ReleaseStringUTFChars( sDbName, pszName);
-	if (bReleaseDataDir)
+	
+	if (pszDataDir)
 	{
 		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
 	}
 	
-	if (bReleaseRflDir)
+	if (pszRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
 	}
@@ -309,6 +320,8 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 	jstring			sDbPath,
 	jstring			sDataDir,
 	jstring			sRflDir,
+	jstring			sBackupPath,
+	jstring			sPassword,
 	jobject			RestoreClient,
 	jobject			RestoreStatus)
 {
@@ -316,8 +329,8 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 	char * 					pszName;
 	char *					pszDataDir = NULL;
 	char *					pszRflDir = NULL;
-	FLMBOOL					bReleaseDataDir = FALSE;
-	FLMBOOL					bReleaseRflDir = FALSE;
+	char *					pszBackupPath = NULL;
+	char *					pszPassword = NULL;
 	JavaVM *					pJvm = NULL;
 	JNIRestoreClient *	pRestoreClient = NULL;
 	JNIRestoreStatus *	pRestoreStatus = NULL;
@@ -330,13 +343,21 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 	if (sDataDir)
 	{
 		pszDataDir =  (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
-		bReleaseDataDir = TRUE;
 	}
 	
 	if (sRflDir)
 	{
 		pszRflDir =  (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-		bReleaseRflDir = TRUE;
+	}
+	
+	if (sBackupPath)
+	{
+		pszBackupPath =  (char *)pEnv->GetStringUTFChars( sBackupPath, NULL);
+	}
+	
+	if (sPassword)
+	{
+		pszPassword =  (char *)pEnv->GetStringUTFChars( sPassword, NULL);
 	}
 	
 	flmAssert( RestoreClient);
@@ -355,8 +376,8 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 		}		
 	}
 	
-	if (RC_BAD( rc = THIS_DBSYS()->dbRestore( pszName, pszDataDir, NULL,
-		pszRflDir, NULL, pRestoreClient, pRestoreStatus)))
+	if (RC_BAD( rc = THIS_DBSYS()->dbRestore( pszName, pszDataDir, pszBackupPath,
+		pszRflDir, pszPassword, pRestoreClient, pRestoreStatus)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -376,13 +397,24 @@ Exit:
 	
 	pEnv->ReleaseStringUTFChars( sDbPath, pszName);
 	
-	if (bReleaseDataDir)
+	if (pszDataDir)
 	{
 		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
 	}
-	if (bReleaseRflDir)
+	
+	if (pszRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
+	}
+
+	if (pszBackupPath)
+	{
+		pEnv->ReleaseStringUTFChars( sBackupPath, pszBackupPath);
+	}
+	
+	if (pszPassword)
+	{
+		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
 	}	
 }
 
@@ -405,8 +437,6 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRename(
 	char *				pszDataDir = NULL;
 	char *				pszRflDir = NULL;
 	char *				pszNewDbName = NULL;
-	FLMBOOL				bReleaseDataDir = FALSE;
-	FLMBOOL				bReleaseRflDir = FALSE;
 	JavaVM *				pJvm;
 	JNIRenameStatus *	pStatus = NULL;
 
@@ -418,13 +448,11 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRename(
 	if (sDataDir)
 	{
 		pszDataDir =  (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
-		bReleaseDataDir = TRUE;
 	}
 	
 	if (sRflDir)
 	{
 		pszRflDir =  (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-		bReleaseRflDir = TRUE;
 	}
 	
 	if (Status != NULL)
@@ -454,12 +482,12 @@ Exit:
 	pEnv->ReleaseStringUTFChars( sDbName, pszDbName);
 	pEnv->ReleaseStringUTFChars( sNewDbName, pszNewDbName);
 	
-	if (bReleaseDataDir)
+	if (pszDataDir)
 	{
 		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
 	}
 	
-	if (bReleaseRflDir)
+	if (pszRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
 	}	
@@ -487,10 +515,6 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy(
 	char *				pszDestDbName = NULL;
 	char *				pszDestDataDir = NULL;
 	char *				pszDestRflDir = NULL;
-	FLMBOOL				bReleaseSrcDataDir = FALSE;
-	FLMBOOL				bReleaseSrcRflDir = FALSE;
-	FLMBOOL				bReleaseDestDataDir = FALSE;
-	FLMBOOL				bReleaseDestRflDir = FALSE;
 	JavaVM *				pJvm;
 	JNICopyStatus *	pStatus = NULL;
 
@@ -500,13 +524,11 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy(
 	if (sSrcDataDir)
 	{
 		pszSrcDataDir = (char *)pEnv->GetStringUTFChars( sSrcDataDir, NULL);
-		bReleaseSrcDataDir = TRUE;
 	}
 	
 	if (sSrcRflDir)
 	{
 		pszSrcRflDir = (char *)pEnv->GetStringUTFChars( sSrcRflDir, NULL);
-		bReleaseSrcRflDir = TRUE;
 	}
 
 	flmAssert( sSrcDbName);
@@ -515,13 +537,11 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy(
 	if (sDestDataDir)
 	{
 		pszDestDataDir = (char *)pEnv->GetStringUTFChars( sDestDataDir, NULL);
-		bReleaseDestDataDir = TRUE;
 	}
 
 	if (sDestRflDir)
 	{
 		pszDestRflDir = (char *)pEnv->GetStringUTFChars( sDestRflDir, NULL);
-		bReleaseDestRflDir = TRUE;
 	}
 
 	if (Status)
@@ -550,24 +570,24 @@ Exit:
 	
 	pEnv->ReleaseStringUTFChars( sSrcDbName, pszSrcDbName);
 	
-	if (bReleaseSrcDataDir)
+	if (pszSrcDataDir)
 	{
 		pEnv->ReleaseStringUTFChars( sSrcDataDir, pszSrcDataDir);
 	}
 	
-	if (bReleaseSrcRflDir)
+	if (pszSrcRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sSrcRflDir, pszSrcRflDir);
 	}
 	
 	pEnv->ReleaseStringUTFChars( sDestDbName, pszDestDbName);
 	
-	if (bReleaseDestDataDir)
+	if (pszDestDataDir)
 	{
 		pEnv->ReleaseStringUTFChars( sDestDataDir, pszDestDataDir);
 	}
 	
-	if (bReleaseDestRflDir)
+	if (pszDestRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sDestRflDir, pszDestRflDir);
 	}
@@ -583,18 +603,15 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCheck(
 	jstring			sDbName,
 	jstring			sDataDir,
 	jstring			sRflDir,
+	jstring			sPassword,
 	jint				iFlags,
-	jobject			Status,
-	jstring			sPassword)
+	jobject			Status)
 {
 	RCODE					rc = NE_XFLM_OK;
 	char *				pszDbName = NULL;
 	char * 				pszDataDir = NULL;
 	char *				pszRflDir = NULL;
 	char *				pszPassword = NULL;
-	FLMBOOL				bReleaseDataDir = FALSE;
-	FLMBOOL				bReleaseRflDir = FALSE;
-	FLMBOOL				bReleasePassword = FALSE;
 	JNICheckStatus *	pStatus = NULL;
 	F_DbInfo *			pDbInfo = NULL;
 	
@@ -604,19 +621,16 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCheck(
 	if (sDataDir)
 	{
 		pszDataDir = (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
-		bReleaseDataDir = TRUE;
 	}
 	
 	if (sRflDir)
 	{
 		pszDataDir = (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-		bReleaseDataDir = TRUE;
 	}
 
 	if (sPassword)
 	{
 		pszPassword = (char *)pEnv->GetStringUTFChars( sPassword, NULL);
-		bReleasePassword = TRUE;
 	}	
 	
 	if (Status != NULL)
@@ -648,17 +662,17 @@ Exit:
 	
 	pEnv->ReleaseStringUTFChars( sDbName, pszDbName);
 	
-	if (bReleaseDataDir)
+	if (pszDataDir)
 	{
 		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
 	}
 	
-	if (bReleaseRflDir)
+	if (pszRflDir)
 	{
 		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
 	}
 
-	if (bReleasePassword)
+	if (pszPassword)
 	{
 		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
 	}	

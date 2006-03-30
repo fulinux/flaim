@@ -35,7 +35,6 @@ public interface RestoreStatus
 {
 	/**
 	 * 
-	 * @param eAction
 	 * @param lBytesToDo
 	 * @param lBytesDone
 	 * @return Returns a status code.  The integer should one of the constants
@@ -44,13 +43,11 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportProgress(
-		int		eAction,
 		long		lBytesToDo,
 		long		lBytesDone);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param eErrCode
 	 * @return Returns a status code.  The integer should one of the constants
 	 * found in {@link xflaim.RCODE xflaim.RCODE}.
@@ -58,12 +55,10 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportError(
-		int		eAction,
 		int		eErrCode);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @param iStartTime
 	 * @return Returns a status code.  The integer should one of the constants
@@ -72,13 +67,10 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportBeginTrans(
-		int		eAction,
-		long		lTransId,
-		int		iStartTime);
+		long		lTransId);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @return Returns a status code.  The integer should one of the constants
 	 * found in {@link xflaim.RCODE xflaim.RCODE}.
@@ -86,12 +78,10 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportCommitTrans(
-		int		eAction,
 		long		lTransId);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @return Returns a status code.  The integer should one of the constants
 	 * found in {@link xflaim.RCODE xflaim.RCODE}.
@@ -99,120 +89,10 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportAbortTrans(
-		int		eAction,
 		long		lTransId);
-
-	/**
-	 * 
-	 * @param eAction
-	 * @param lTransId
-	 * @param iLfNum
-	 * @param Key
-	 * @return Returns a status code.  The integer should one of the constants
-	 * found in {@link xflaim.RCODE xflaim.RCODE}.
-	 * Note that returning anything other than NE_XFLM_OK will cause the
-	 * restore operation to abort and an XFLaimException to be thrown.
-	 */
-	int reportRemoveData(
-		int		eAction,
-		long		lTransId,
-		int		iLfNum,
-		byte[]	Key);
-
-	/**
-	 * 
-	 * @param eAction
-	 * @param lTransId
-	 * @param iLfNum
-	 * @param Key
-	 * @return Returns a status code.  The integer should one of the constants
-	 * found in {@link xflaim.RCODE xflaim.RCODE}.
-	 * Note that returning anything other than NE_XFLM_OK will cause the
-	 * restore operation to abort and an XFLaimException to be thrown.
-	 */
-	int reportInsertData(
-		int		eAction,
-		long		lTransId,
-		int		iLfNum,
-		byte[]	Key);
-
-	/**
-	 * 
-	 * @param eAction
-	 * @param lTransId
-	 * @param iLfNum
-	 * @param pucKey
-	 * @return Returns a status code.  The integer should one of the constants
-	 * found in {@link xflaim.RCODE xflaim.RCODE}.
-	 * Note that returning anything other than NE_XFLM_OK will cause the
-	 * restore operation to abort and an XFLaimException to be thrown.
-	 */
-	int reportReplaceData(
-		int		eAction,
-		long		lTransId,
-		int		iLfNum,
-		byte		pucKey);
-
-	/**
-	 * 
-	 * @param eAction
-	 * @param lTransId
-	 * @param iLfNum
-	 * @return Returns a status code.  The integer should one of the constants
-	 * found in {@link xflaim.RCODE xflaim.RCODE}.
-	 * Note that returning anything other than NE_XFLM_OK will cause the
-	 * restore operation to abort and an XFLaimException to be thrown.
-	 */
-	int reportLFileCreate(
-		int		eAction,
-		long		lTransId,
-		int		iLfNum);
-
-	/**
-	 * 
-	 * @param eAction
-	 * @param lTransId
-	 * @param iLfNum
-	 * @param iRootBlk
-	 * @param lNextNodeId
-	 * @param lFirstDocId
-	 * @param lLastDocId
-	 * @return Returns a status code.  The integer should one of the constants
-	 * found in {@link xflaim.RCODE xflaim.RCODE}.
-	 * Note that returning anything other than NE_XFLM_OK will cause the
-	 * restore operation to abort and an XFLaimException to be thrown.
-	 */
-	int reportLFileUpdate(
-		int		eAction,
-		long		lTransId,
-		int		iLfNum,
-		int		iRootBlk,
-		long		lNextNodeId,
-		long		lFirstDocId,
-		long		lLastDocId);
-
-	/**
-	 * 
-	 * @param eAction
-	 * @param lTransId
-	 * @param iDictType
-	 * @param iDictNum
-	 * @param bDeleting
-	 * @return Returns a status code.  The integer should one of the constants
-	 * found in {@link xflaim.RCODE xflaim.RCODE}.
-	 * Note that returning anything other than NE_XFLM_OK will cause the
-	 * restore operation to abort and an XFLaimException to be thrown.
-	 */
-	int reportUpdateDict(
-		int		eAction,
-		long		lTransId,
-		int		iDictType,
-		int		iDictNum,
-		boolean	bDeleting);
 	
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @param iMaintDocNum
 	 * @param iStartBlkAddr
@@ -224,7 +104,6 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportBlockChainFree(
-		int		eAction,
 		long		lTransId,
 		int		iMaintDocNum,
 		int		iStartBlkAddr,
@@ -233,7 +112,6 @@ public interface RestoreStatus
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @param iIndexNum
 	 * @return Returns a status code.  The integer should one of the constants
@@ -242,13 +120,11 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportIndexSuspend(
-		int		eAction,
 		long		lTransId,
 		int		iIndexNum);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @param iIndexNum
 	 * @return Returns a status code.  The integer should one of the constants
@@ -257,13 +133,11 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportIndexResume(
-		int		eAction,
 		long		lTransId,
 		int		iIndexNum);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @param iCount
 	 * @return Returns a status code.  The integer should one of the constants
@@ -272,13 +146,11 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportReduce(
-		int		eAction,
 		long		lTransId,
 		int		iCount);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param lTransId
 	 * @param iOldDbVersion
 	 * @param iNewDbVersion
@@ -288,14 +160,12 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportUpgrade(
-		int		eAction,
 		long		lTransId,
 		int		iOldDbVersion,
 		int		iNewDbVersion);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param iFileNum
 	 * @return Returns a status code.  The integer should one of the constants
 	 * found in {@link xflaim.RCODE xflaim.RCODE}.
@@ -303,12 +173,10 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportOpenRflFile(
-		int		eAction,
 		int		iFileNum);
 
 	/**
 	 * 
-	 * @param eAction
 	 * @param iFileNum
 	 * @param iBytesRead
 	 * @return Returns a status code.  The integer should one of the constants
@@ -317,7 +185,221 @@ public interface RestoreStatus
 	 * restore operation to abort and an XFLaimException to be thrown.
 	 */
 	int reportRflRead(
-		int		eAction,
 		int		iFileNum,
 		int		iBytesRead);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportEnableEncryption(
+		long		lTransId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportWrapKey(
+		long		lTransId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportSetNextNodeId(
+		long		lTransId,
+		int		iCollection,
+		long		lNextNodeId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeSetMetaValue(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId,
+		long		lMetaValue);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeSetPrefixId(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId,
+		int		iAttrNameId,
+		int		iPrefixId);
+
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeFlagsUpdate(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId,
+		int		iFlags,
+		boolean	bAdd);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportAttributeSetValue(
+		long		lTransId,
+		int		iCollection,
+		long		lElementNodeId,
+		int		iAttrNameId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeSetValue(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeUpdate(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId);
+
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportInsertBefore(
+		long		lTransId,
+		int		iCollection,
+		long		lParentId,
+		long		lNewChildId,
+		long		lRefChildId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeCreate(
+		long		lTransId,
+		int		iCollection,
+		long		lRefNodeId,
+		int		eNodeType,
+		int		iNameId,
+		int		eLocation);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeChildrenDelete(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId,
+		int		iNameId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportAttributeDelete(
+		long		lTransId,
+		int		iCollection,
+		long		lElementId,
+		int		iAttrNameId);
+
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportNodeDelete(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportDocumentDone(
+		long		lTransId,
+		int		iCollection,
+		long		lNodeId);
+		
+	/**
+	 * 
+	 * @param lTransId
+	 * @return Returns a status code.  The integer should one of the constants
+	 * found in {@link xflaim.RCODE xflaim.RCODE}.
+	 * Note that returning anything other than NE_XFLM_OK will cause the
+	 * restore operation to abort and an XFLaimException to be thrown.
+	 */
+	int reportRollOverDbKey(
+		long		lTransId);
 }

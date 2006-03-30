@@ -33,17 +33,20 @@ void ThrowError(
 	RCODE				rc,
 	JNIEnv *			pEnv)
 {
-  char 				szMsg[ 128];
-  
-  f_strcpy( szMsg, "Bad RCODE: ");
-  
-  jclass class_XFlaimException = pEnv->FindClass( "xflaim/XFlaimException");
-  jmethodID id_Constructor = pEnv->GetMethodID( class_XFlaimException,
-  												"<init>",
-  												"(ILjava/lang/String;)V");
-
-  jobject Exception = pEnv->NewObject( class_XFlaimException, id_Constructor,
-  									   (jint)rc, pEnv->NewStringUTF( szMsg));
-
-  pEnv->Throw( reinterpret_cast<jthrowable>(Exception));
+	char 				szMsg[ 128];
+	jclass 			class_XFlaimException;
+	jmethodID 		id_Constructor;
+	jobject 			Exception;
+	
+	f_sprintf( szMsg, "Error code from XFLAIM was %08X", (unsigned)rc);
+	
+	class_XFlaimException = pEnv->FindClass( "xflaim/XFlaimException");
+	
+	id_Constructor = pEnv->GetMethodID( class_XFlaimException,
+							"<init>", "(ILjava/lang/String;)V");
+	
+	Exception = pEnv->NewObject( class_XFlaimException, id_Constructor,
+										(jint)rc, pEnv->NewStringUTF( szMsg));
+	
+	pEnv->Throw( reinterpret_cast<jthrowable>(Exception));
 }

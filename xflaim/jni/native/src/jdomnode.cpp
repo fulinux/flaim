@@ -83,10 +83,10 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1deleteNode(
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
-	
+
 Exit:
 
-	return;	
+	return;
 }
 
 /****************************************************************************
@@ -298,14 +298,10 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAttribute(
 	{
 		bRv = true;
 	}
-	else
+	else if (rc != NE_XFLM_DOM_NODE_NOT_FOUND)
 	{
-		bRv = false;
-		if (rc != NE_XFLM_DOM_NODE_NOT_FOUND)
-		{
-			ThrowError( rc, pEnv);
-			goto Exit;
-		}
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
 	
 Exit:
@@ -1336,7 +1332,6 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary(
 	jbyteArray		Data = NULL;
 	void *			pvData = NULL;
 	jboolean			bIsCopy = false;
-	FLMBOOL			bMustRelease = false;
 	
 	if (RC_BAD(rc = pThisNode->getDataLength( ifpDb, &uiLength)))
 	{
@@ -1353,8 +1348,6 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary(
 		goto Exit;
 	}
 	
-	bMustRelease = true;
-	
 	if (RC_BAD( rc = pThisNode->getBinary(ifpDb, pvData, 0, uiLength, NULL)))
 	{
 		ThrowError( rc, pEnv);
@@ -1363,7 +1356,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary(
 	
 Exit:
 
-	if (bMustRelease)
+	if (pvData)
 	{
 		if (RC_BAD( rc))
 		{
@@ -1416,12 +1409,10 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setString(
 	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
 	jchar *			pszValue = NULL;
 	FLMUINT			uiLength = 0;
-	FLMBOOL			bMustRelease = FALSE;
 
 	if (sValue)
 	{
 		pszValue = (jchar *)pEnv->GetStringCritical( sValue, NULL);
-		bMustRelease = TRUE;
 		uiLength = (FLMUINT)pEnv->GetStringLength( sValue);
 	}
 	
@@ -1434,7 +1425,7 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setString(
 	
 Exit:
 
-	if (bMustRelease)
+	if (pszValue)
 	{
 		pEnv->ReleaseStringCritical( sValue, pszValue);
 	}
@@ -1456,7 +1447,6 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setBinary(
 	FLMUINT			uiLength = pEnv->GetArrayLength( Value);
 	void *			pvValue = NULL;
 	jboolean			bIsCopy = false;
-	FLMBOOL			bMustRelease = false;
 	
 	if( (pvValue = pEnv->GetPrimitiveArrayCritical( Value, &bIsCopy)) == NULL)
 	{
@@ -1464,8 +1454,6 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setBinary(
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
-	
-	bMustRelease = true;
 	
 	if( RC_BAD( rc = pThisNode->setBinary(ifpDb, pvValue, uiLength)))
 	{
@@ -1475,7 +1463,7 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setBinary(
 	
 Exit:
 
-	if (bMustRelease)
+	if (pvValue)
 	{
 		pEnv->ReleasePrimitiveArrayCritical( Value, pvValue, JNI_ABORT);
 	}

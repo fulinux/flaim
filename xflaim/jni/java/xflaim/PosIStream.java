@@ -94,7 +94,21 @@ public class PosIStream
 	}
 
 	/**
-	 * Desc:
+	 *
+	 */	
+	public void release()
+	{
+		if (m_this != 0)
+		{
+			_release( m_this);
+			m_this = 0;
+		}
+
+		m_dbSystem = null;
+	}
+	
+	/**
+	 *
 	 */
 	private native void _release( long iThis);
 

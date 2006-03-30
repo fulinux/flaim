@@ -220,6 +220,8 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
+	jstring			sBackupPath,
+	jstring			sPassword,
 	jobject			Client,
 	jobject			Status)
 {
@@ -227,8 +229,11 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 	IF_Backup *				pBackup = THIS_BACKUP();
 	FLMUINT					uiSeqNum = 0;
 	JavaVM *					pJvm;
+	char *					pszBackupPath = NULL;
+	char *					pszPassword = NULL;
 	JNIBackupClient *		pClient;
 	JNIBackupStatus *		pStatus = NULL;
+ 
 	
 	flmAssert( Client);
 	
@@ -238,6 +243,16 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 		rc = RC_SET( NE_XFLM_MEM);
 		ThrowError( rc, pEnv);
 		goto Exit;
+	}
+	
+	if (sBackupPath)
+	{
+		pszBackupPath = (char *)pEnv->GetStringUTFChars( sBackupPath, NULL);
+	}
+	
+	if (sPassword)
+	{
+		pszPassword = (char *)pEnv->GetStringUTFChars( sPassword, NULL);
 	}
 	
 	if (Status)
@@ -250,17 +265,24 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 		}
 	}
 	
-	// VISIT: Both the backup path and the password are NULL!  If anyone ever
-	// starts using these interfaces, we're going to have to come back here
-	// and fix this up.
-	
-	if (RC_BAD( rc = pBackup->backup( NULL, NULL, pClient, pStatus, &uiSeqNum)))
+	if (RC_BAD( rc = pBackup->backup( pszBackupPath, pszPassword, pClient,
+		pStatus, &uiSeqNum)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 	
 Exit:
+
+	if( pszBackupPath)
+	{
+		pEnv->ReleaseStringUTFChars( sBackupPath, pszBackupPath);
+	}
+	
+	if( pszPassword)
+	{
+		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
+	}
 
 	if (pClient)
 	{

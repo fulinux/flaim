@@ -35,16 +35,11 @@ public final class FlmDomNodeType
 	public final static int INVALID_NODE						=	0x00;
 	public final static int DOCUMENT_NODE						=	0x01;
 	public final static int ELEMENT_NODE						=	0x02;
-	public final static int ATTRIBUTE_NODE						=	0x03;
-	public final static int DATA_NODE							=	0x04;
-	public final static int COMMENT_NODE						=	0x05;
-	public final static int CDATA_SECTION_NODE				=	0x06;
-	public final static int ANNOTATION_NODE					=	0x07;
-	public final static int PROCESSING_INSTRUCTION_NODE	=	0x08;		// Future
-	public final static int NOTATION_NODE						=	0x09;		// Future
-	public final static int ENTITY_NODE							=	0x0A;		// Future
-	public final static int ENTITY_REFERENCE_NODE			=	0x0B;		// Future
-	public final static int DOCUMENT_FRAGMENT_NODE			=	0x0C;		// Future
-	public final static int DOCUMENT_TYPE_NODE				=	0x0D;		// Future
+	public final static int DATA_NODE							=	0x03;
+	public final static int COMMENT_NODE						=	0x04;
+	public final static int CDATA_SECTION_NODE				=	0x05;
+	public final static int ANNOTATION_NODE					=	0x06;
+	public final static int PROCESSING_INSTRUCTION_NODE	=	0x07;
+	public final static int ATTRIBUTE_NODE						=	0x08;
 	public final static int ANY_NODE_TYPE						=	0xFFFF;
 }

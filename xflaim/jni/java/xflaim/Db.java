@@ -32,7 +32,7 @@ public class Db
 {
 	static
 	{ 
-		System.loadLibrary( "xflaim");
+		System.loadLibrary( "xflaimjni");
 	}
 	
 	Db( 
