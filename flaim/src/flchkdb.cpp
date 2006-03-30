@@ -4072,6 +4072,9 @@ FSTATIC RCODE chkSetupLfTable(
 								&pDbInfo->pProgress->pLfStats[uiTmpIxOffset - 1],
 								sizeof(LF_STATS));
 								
+					pDbInfo->pLogicalFiles [uiTmpIxOffset].pLfStats =
+								&pDbInfo->pProgress->pLfStats [uiTmpIxOffset];
+
 					uiTmpIxOffset--;
 				}
 
