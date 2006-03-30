@@ -777,7 +777,7 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 	RCODE				rc = FERR_OK;
 	FQATOM *			pTmpResult = NULL;
 	void *			pvField;
-	void *			pvLastLevelOneField;
+	void *			pvLastLevelOneField = NULL;
 	FLMUINT *		puiFldPath;
 	FLMUINT			uiCurrFieldPath[ GED_MAXLVLNUM + 1];
 	FLMUINT			uiFieldLevel;
@@ -790,7 +790,7 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 	FLMBOOL			bPathFromRoot;
 	FLMBOOL			bUseFieldIdLookupTable;
 	FLMUINT *		puiPToCPath;
-	FLMUINT			uiHighestLevel;
+	FLMUINT			uiHighestLevel = 0;
 	FLMUINT			uiLevelOneFieldId;
 
 	pResult->eType = NO_TYPE;
