@@ -488,6 +488,7 @@ ifdef jhome
 	jni_inc_dir = $(target_path)/java/include
 	inc_dirs += $(subst $(sp),@,"$(jhome)/include")
 	inc_dirs += $(subst $(sp),@,"$(jhome)/include/win32")
+	inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
 	inc_dirs += $(jni_inc_dir)
 endif
 
@@ -528,6 +529,32 @@ else
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
 	homedir := $(shell pwd)
+endif
+
+# -- Helper functions --
+
+define normpath
+$(strip $(subst \,/,$(1)))
+endef
+
+ifeq (win,$(host_os_family))
+define hostpath
+$(strip $(subst /,\,$(1)))
+endef
+else
+define hostpath
+$(strip $(1))
+endef
+endif
+
+ifeq (win,$(host_os_family))
+define ppath
+$(strip $(subst \,\\,$(subst /,\,$(1))))
+endef
+else
+define ppath
+$(strip $(1))
+endef
 endif
 
 # -- Tools --
@@ -723,7 +750,7 @@ ifdef unix_target
 
 	# Same thing for the include dirs
 
-	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),-I$(subst @,$(sp),$(subst /,\,$(inc_dir))))
+	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),-I$(subst @,$(sp),$(call hostpath,$(inc_dir))))
 
 	# Concatenate everything into the ccflags variable
 
@@ -969,14 +996,14 @@ libs: status dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
 ifdef jhome
 $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(gprintf) "Compiling JNI java sources ...\n"
-	$(ec)$(jhome)/bin/javac -g -d $(java_class_output_dir) $(subst /,\,$(jni_java_src))
+	$(ec)$(jhome)/bin/javac -g -d $(java_class_output_dir) $(call hostpath,$(jni_java_src))
 	$(ec)$(gprintf) "Creating JNI jar file ...\n"
 	$(ec)$(call rmcmd,$(xflaim_jni_jar))
-	$(ec)$(jhome)/bin/jar cf $(subst /,\,$(xflaim_jni_jar)) \
-		-C $(subst /,\,$(java_class_output_dir)) .
+	$(ec)$(jhome)/bin/jar cf $(call hostpath,$(xflaim_jni_jar)) \
+		-C $(call hostpath,$(java_class_output_dir)) .
 	$(ec)$(gprintf) "Creating JNI header files ...\n"
 	$(ec)$(jhome)/bin/javah -d $(jni_inc_dir) \
-		-classpath $(subst /,\,$(xflaim_jni_jar)) \
+		-classpath $(call hostpath,$(xflaim_jni_jar)) \
 		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
 endif
 
