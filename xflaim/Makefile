@@ -475,8 +475,24 @@ zip_stage_dir = $(zip_stage_parent_dir)/$(package_proj_name_and_ver)
 src_zip_name=$(package_proj_name_and_ver)-src.zip
 bin_zip_name=$(package_proj_name_and_ver)-bin.zip
 
+java_output_dir = $(target_path)/java
+java_class_output_dir = $(target_path)/java/classes
+
+ifdef JAVA_HOME
+	jhome := $(subst \,/,$(JAVA_HOME))
+endif
+
 inc_dirs = src util
+
+ifdef jhome
+	jni_inc_dir = $(target_path)/java/include
+	inc_dirs += $(subst $(sp),@,"$(jhome)/include")
+	inc_dirs += $(subst $(sp),@,"$(jhome)/include/win32")
+	inc_dirs += $(jni_inc_dir)
+endif
+
 static_obj_dir = $(target_path)/static_obj
+xflaim_jni_jar = $(java_output_dir)/xflaimjni.jar
 obj_dir = $(target_path)/obj
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
@@ -590,7 +606,7 @@ ifdef win_target
 
 	# Same thing for the include dirs
 
-	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),/I$(subst /,\,$(inc_dir)))
+	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),/I$(subst @,$(sp),$(subst /,\,$(inc_dir))))
 
 	# Concatenate everything into the ccflags variable
 
@@ -707,7 +723,7 @@ ifdef unix_target
 
 	# Same thing for the include dirs
 
-	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),-I$(inc_dir))
+	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),-I$(subst @,$(sp),$(subst /,\,$(inc_dir))))
 
 	# Concatenate everything into the ccflags variable
 
@@ -760,6 +776,9 @@ endif
 xflaim_src = \
 	$(wildcard src/*.cpp)
 
+xflaim_jni_src = \
+	$(wildcard jni/native/src/*.cpp)
+	
 utilsup_src = \
 	flm_dlst.cpp \
 	flm_lutl.cpp \
@@ -881,9 +900,11 @@ ut_xpathtest2_src = \
 # -- XFLAIM library --
 
 xflaim_obj = $(patsubst src/%.cpp,$(obj_dir)/%$(obj_suffix),$(xflaim_src))
-static_xflaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
-shared_xflaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
-shared_xflaim_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
+xflaim_jni_obj = $(patsubst jni/native/src/%.cpp,$(obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
+xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
+xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+xflaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
+xflaim_jni_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)jni$(shared_lib_suffix)$(suffix_version)
 
 # -- Unit tests  --
 
@@ -910,6 +931,10 @@ ut_sortkeytest2_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(ut_sortkeytes
 ut_xpathtest1_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(ut_xpathtest1_src))
 ut_xpathtest2_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(ut_xpathtest2_src))
 
+# -- Java --
+
+jni_java_src = $(wildcard jni/java/xflaim/*.java)
+
 # -- Utilities  --
 
 checkdb_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(checkdb_src))
@@ -931,12 +956,29 @@ utilsup_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(utilsup_src))
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample
+vpath %.cpp src util sample jni/native/src 
+vpath %.java jni/java/xflaim
 
 # -- Default target --
 
 .PHONY : libs
-libs: status dircheck $(static_xflaim_lib) $(shared_xflaim_lib)
+libs: status dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
+
+# -- JNI (Java) --
+
+ifdef jhome
+$(xflaim_jni_jar) : $(jni_java_src)
+	$(ec)$(gprintf) "Compiling JNI java sources ...\n"
+	$(ec)$(jhome)/bin/javac -g -d $(java_class_output_dir) $(subst /,\,$(jni_java_src))
+	$(ec)$(gprintf) "Creating JNI jar file ...\n"
+	$(ec)$(call rmcmd,$(xflaim_jni_jar))
+	$(ec)$(jhome)/bin/jar cf $(subst /,\,$(xflaim_jni_jar)) \
+		-C $(subst /,\,$(java_class_output_dir)) .
+	$(ec)$(gprintf) "Creating JNI header files ...\n"
+	$(ec)$(jhome)/bin/javah -d $(jni_inc_dir) \
+		-classpath $(subst /,\,$(xflaim_jni_jar)) \
+		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
+endif
 
 # -- *.cpp -> *$(obj_suffix) --
 
@@ -951,7 +993,7 @@ endif
 
 # -- xflaim.lib and libxflaim.a --
 
-$(static_xflaim_lib) : $(xflaim_obj)
+$(xflaim_static_lib) : $(xflaim_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(libr) /NOLOGO $(subst /,\,$+) /OUT:$(subst /,\,$@)	
@@ -966,7 +1008,25 @@ endif
 
 # -- xflaim.dll and libxflaim.so --
 
-$(shared_xflaim_lib) : $(xflaim_obj)
+$(xflaim_shared_lib) : $(xflaim_obj)
+	$(ec)$(gprintf) "Building $@ ...\n"
+ifdef win_target
+	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(lib_link_libs)
+else
+	$(ec)rm -f $@
+ifeq ($(target_os_family),linux)
+	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
+endif
+endif
+
+# -- xflaim.lib import library --
+
+$(xflaim_shared_imp_lib) : $(xflaim_shared_lib)
+	$(ec)$(gprintf) "Building $@ ...\n"
+
+# -- xflaimjni.dll and libxflaimjni.so --
+
+$(xflaim_jni_shared_lib) : $(xflaim_obj) $(xflaim_jni_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(lib_link_libs)
@@ -989,7 +1049,7 @@ endif
 
 .PHONY : checkdb
 checkdb: status dircheck libs $(checkdb_exe)
-$(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_xflaim_lib)
+$(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
@@ -997,7 +1057,7 @@ $(checkdb_exe): $(checkdb_obj) $(utilsup_obj) $(static_xflaim_lib)
 
 .PHONY : rebuild
 rebuild: status dircheck libs $(rebuild_exe)
-$(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_xflaim_lib)
+$(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
@@ -1005,7 +1065,7 @@ $(rebuild_exe): $(rebuild_obj) $(utilsup_obj) $(static_xflaim_lib)
 
 .PHONY : view
 view: status dircheck libs $(view_exe)
-$(view_exe): $(view_obj) $(utilsup_obj) $(static_xflaim_lib)
+$(view_exe): $(view_obj) $(utilsup_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
@@ -1013,7 +1073,7 @@ $(view_exe): $(view_obj) $(utilsup_obj) $(static_xflaim_lib)
 
 .PHONY : sample
 sample: status dircheck libs $(sample_exe)
-$(sample_exe): $(sample_obj) $(static_xflaim_lib)
+$(sample_exe): $(sample_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	$(ec)$(call copycmd,sample/xmlfiles/*.xml,$(sample_dir))
@@ -1022,7 +1082,7 @@ $(sample_exe): $(sample_obj) $(static_xflaim_lib)
 
 .PHONY : xshell
 xshell: status dircheck libs $(xshell_exe)
-$(xshell_exe): $(xshell_obj) $(utilsup_obj) $(static_xflaim_lib)
+$(xshell_exe): $(xshell_obj) $(utilsup_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
@@ -1030,7 +1090,7 @@ $(xshell_exe): $(xshell_obj) $(utilsup_obj) $(static_xflaim_lib)
 
 .PHONY : basictest
 basictest: status dircheck $(test_dir)/basictest$(exe_suffix)
-$(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(static_xflaim_lib)
+$(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 
@@ -1038,7 +1098,7 @@ $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(static_xflaim_lib)
 
 .PHONY : binarytest
 binarytest: status dircheck $(test_dir)/binarytest$(exe_suffix)
-$(test_dir)/binarytest$(exe_suffix): $(ut_binarytest_obj) $(static_xflaim_lib)
+$(test_dir)/binarytest$(exe_suffix): $(ut_binarytest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1046,7 +1106,7 @@ $(test_dir)/binarytest$(exe_suffix): $(ut_binarytest_obj) $(static_xflaim_lib)
 
 .PHONY : colldeftest
 colldeftest: status dircheck $(test_dir)/colldeftest$(exe_suffix)
-$(test_dir)/colldeftest$(exe_suffix): $(ut_colldeftest_obj) $(static_xflaim_lib)
+$(test_dir)/colldeftest$(exe_suffix): $(ut_colldeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1054,7 +1114,7 @@ $(test_dir)/colldeftest$(exe_suffix): $(ut_colldeftest_obj) $(static_xflaim_lib)
 
 .PHONY : dictchangetest
 dictchangetest: status dircheck $(test_dir)/dictchangetest$(exe_suffix)
-$(test_dir)/dictchangetest$(exe_suffix): $(ut_dictchangetest_obj) $(static_xflaim_lib)
+$(test_dir)/dictchangetest$(exe_suffix): $(ut_dictchangetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1062,7 +1122,7 @@ $(test_dir)/dictchangetest$(exe_suffix): $(ut_dictchangetest_obj) $(static_xflai
 
 .PHONY : dictdeftest
 dictdeftest: status dircheck $(test_dir)/dictdeftest$(exe_suffix)
-$(test_dir)/dictdeftest$(exe_suffix): $(ut_dictdeftest_obj) $(static_xflaim_lib)
+$(test_dir)/dictdeftest$(exe_suffix): $(ut_dictdeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1070,7 +1130,7 @@ $(test_dir)/dictdeftest$(exe_suffix): $(ut_dictdeftest_obj) $(static_xflaim_lib)
 
 .PHONY : dirtyexittest1
 dirtyexittest1: status dircheck $(test_dir)/dirtyexittest1$(exe_suffix)
-$(test_dir)/dirtyexittest1$(exe_suffix): $(ut_dirtyexittest1_obj) $(static_xflaim_lib)
+$(test_dir)/dirtyexittest1$(exe_suffix): $(ut_dirtyexittest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1078,7 +1138,7 @@ $(test_dir)/dirtyexittest1$(exe_suffix): $(ut_dirtyexittest1_obj) $(static_xflai
 
 .PHONY : dirtyexittest2
 dirtyexittest2: status dircheck $(test_dir)/dirtyexittest2$(exe_suffix)
-$(test_dir)/dirtyexittest2$(exe_suffix): $(ut_dirtyexittest2_obj) $(static_xflaim_lib)
+$(test_dir)/dirtyexittest2$(exe_suffix): $(ut_dirtyexittest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1086,7 +1146,7 @@ $(test_dir)/dirtyexittest2$(exe_suffix): $(ut_dirtyexittest2_obj) $(static_xflai
 
 .PHONY : domnodetest
 domnodetest: status dircheck $(test_dir)/domnodetest$(exe_suffix)
-$(test_dir)/domnodetest$(exe_suffix): $(ut_domnodetest_obj) $(static_xflaim_lib)
+$(test_dir)/domnodetest$(exe_suffix): $(ut_domnodetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1094,7 +1154,7 @@ $(test_dir)/domnodetest$(exe_suffix): $(ut_domnodetest_obj) $(static_xflaim_lib)
 
 .PHONY : enctest
 enctest: status dircheck $(test_dir)/enctest$(exe_suffix)
-$(test_dir)/enctest$(exe_suffix): $(ut_enctest_obj) $(static_xflaim_lib)
+$(test_dir)/enctest$(exe_suffix): $(ut_enctest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1102,7 +1162,7 @@ $(test_dir)/enctest$(exe_suffix): $(ut_enctest_obj) $(static_xflaim_lib)
 
 .PHONY : importtest
 importtest: status dircheck $(test_dir)/importtest$(exe_suffix)
-$(test_dir)/importtest$(exe_suffix): $(ut_importtest_obj) $(static_xflaim_lib)
+$(test_dir)/importtest$(exe_suffix): $(ut_importtest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1110,7 +1170,7 @@ $(test_dir)/importtest$(exe_suffix): $(ut_importtest_obj) $(static_xflaim_lib)
 
 .PHONY : indexdeftest
 indexdeftest: status dircheck $(test_dir)/indexdeftest$(exe_suffix)
-$(test_dir)/indexdeftest$(exe_suffix): $(ut_indexdeftest_obj) $(static_xflaim_lib)
+$(test_dir)/indexdeftest$(exe_suffix): $(ut_indexdeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1118,7 +1178,7 @@ $(test_dir)/indexdeftest$(exe_suffix): $(ut_indexdeftest_obj) $(static_xflaim_li
 
 .PHONY : indextest1
 indextest1: status dircheck $(test_dir)/indextest1$(exe_suffix)
-$(test_dir)/indextest1$(exe_suffix): $(ut_indextest1_obj) $(static_xflaim_lib)
+$(test_dir)/indextest1$(exe_suffix): $(ut_indextest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1126,7 +1186,7 @@ $(test_dir)/indextest1$(exe_suffix): $(ut_indextest1_obj) $(static_xflaim_lib)
 
 .PHONY : indextest2
 indextest2: status dircheck $(test_dir)/indextest2$(exe_suffix)
-$(test_dir)/indextest2$(exe_suffix): $(ut_indextest2_obj) $(static_xflaim_lib)
+$(test_dir)/indextest2$(exe_suffix): $(ut_indextest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1134,7 +1194,7 @@ $(test_dir)/indextest2$(exe_suffix): $(ut_indextest2_obj) $(static_xflaim_lib)
 
 .PHONY : indextest3
 indextest3: status dircheck $(test_dir)/indextest3$(exe_suffix)
-$(test_dir)/indextest3$(exe_suffix): $(ut_indextest3_obj) $(static_xflaim_lib)
+$(test_dir)/indextest3$(exe_suffix): $(ut_indextest3_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1142,7 +1202,7 @@ $(test_dir)/indextest3$(exe_suffix): $(ut_indextest3_obj) $(static_xflaim_lib)
 
 .PHONY : metaphonetest
 metaphonetest: status dircheck $(test_dir)/metaphonetest$(exe_suffix)
-$(test_dir)/metaphonetest$(exe_suffix): $(ut_metaphonetest_obj) $(static_xflaim_lib)
+$(test_dir)/metaphonetest$(exe_suffix): $(ut_metaphonetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1150,7 +1210,7 @@ $(test_dir)/metaphonetest$(exe_suffix): $(ut_metaphonetest_obj) $(static_xflaim_
 
 .PHONY : namespacetest
 namespacetest: status dircheck $(test_dir)/namespacetest$(exe_suffix)
-$(test_dir)/namespacetest$(exe_suffix): $(ut_namespacetest_obj) $(static_xflaim_lib)
+$(test_dir)/namespacetest$(exe_suffix): $(ut_namespacetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1158,7 +1218,7 @@ $(test_dir)/namespacetest$(exe_suffix): $(ut_namespacetest_obj) $(static_xflaim_
 
 .PHONY : regressiontest
 regressiontest: status dircheck $(test_dir)/regressiontest$(exe_suffix)
-$(test_dir)/regressiontest$(exe_suffix): $(ut_regressiontest_obj) $(static_xflaim_lib)
+$(test_dir)/regressiontest$(exe_suffix): $(ut_regressiontest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1166,7 +1226,7 @@ $(test_dir)/regressiontest$(exe_suffix): $(ut_regressiontest_obj) $(static_xflai
 
 .PHONY : rfltest
 rfltest: status dircheck $(test_dir)/rfltest$(exe_suffix)
-$(test_dir)/rfltest$(exe_suffix): $(ut_rfltest_obj) $(static_xflaim_lib)
+$(test_dir)/rfltest$(exe_suffix): $(ut_rfltest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1174,7 +1234,7 @@ $(test_dir)/rfltest$(exe_suffix): $(ut_rfltest_obj) $(static_xflaim_lib)
 
 .PHONY : sortkeytest
 sortkeytest: status dircheck $(test_dir)/sortkeytest$(exe_suffix)
-$(test_dir)/sortkeytest$(exe_suffix): $(ut_sortkeytest_obj) $(static_xflaim_lib)
+$(test_dir)/sortkeytest$(exe_suffix): $(ut_sortkeytest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1182,7 +1242,7 @@ $(test_dir)/sortkeytest$(exe_suffix): $(ut_sortkeytest_obj) $(static_xflaim_lib)
 
 .PHONY : sortkeytest2
 sortkeytest2: status dircheck $(test_dir)/sortkeytest2$(exe_suffix)
-$(test_dir)/sortkeytest2$(exe_suffix): $(ut_sortkeytest2_obj) $(static_xflaim_lib)
+$(test_dir)/sortkeytest2$(exe_suffix): $(ut_sortkeytest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1190,7 +1250,7 @@ $(test_dir)/sortkeytest2$(exe_suffix): $(ut_sortkeytest2_obj) $(static_xflaim_li
 
 .PHONY : xpathtest1
 xpathtest1: status dircheck $(test_dir)/xpathtest1$(exe_suffix)
-$(test_dir)/xpathtest1$(exe_suffix): $(ut_xpathtest1_obj) $(static_xflaim_lib)
+$(test_dir)/xpathtest1$(exe_suffix): $(ut_xpathtest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
@@ -1198,9 +1258,14 @@ $(test_dir)/xpathtest1$(exe_suffix): $(ut_xpathtest1_obj) $(static_xflaim_lib)
 
 .PHONY : xpathtest2
 xpathtest2: status dircheck $(test_dir)/xpathtest2$(exe_suffix)
-$(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(static_xflaim_lib)
+$(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
+	
+# -- jni --
+
+.PHONY : jni
+jni: status dircheck $(xflaim_jni_jar) $(xflaim_jni_shared_lib)
 	
 # -- dist --
 
@@ -1250,8 +1315,8 @@ ifndef win_target
 	$(ec)$(gprintf) "Installing ...\n"
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
-	install --mode=644 $(shared_xflaim_lib) $(lib_install_dir)
-	install --mode=644 $(static_xflaim_lib) $(lib_install_dir)
+	install --mode=644 $(xflaim_shared_lib) $(lib_install_dir)
+	install --mode=644 $(xflaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
 	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
@@ -1393,11 +1458,11 @@ ifdef win_target
 		$(zip_stage_dir))
 	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/src/xflaim.h,\
 		$(zip_inc_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(static_xflaim_lib), \
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(xflaim_static_lib), \
 		$(zip_static_lib_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(shared_xflaim_lib), \
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(xflaim_shared_lib), \
 		$(zip_shared_lib_stage_dir))
-	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(shared_xflaim_imp_lib), \
+	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(xflaim_shared_imp_lib), \
 		$(zip_shared_lib_stage_dir))
 	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(checkdb_exe),\
 		$(zip_util_stage_dir))
@@ -1431,6 +1496,7 @@ status:
 	$(ec)$(gprintf) "Target Path = $(target_path)\n"
 	$(ec)$(gprintf) "Compiler = $(compiler)\n"
 	$(ec)$(gprintf) "Librarian = $(libr)\n"
+	$(ec)$(gprintf) "Java Home = $(jhome)\n"
 	$(ec)$(gprintf) "Defines = $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
 
@@ -1438,6 +1504,8 @@ status:
 dircheck:
 	$(ec)$(call mkdircmd,$(obj_dir))
 	$(ec)$(call mkdircmd,$(static_obj_dir))
+	$(ec)$(call mkdircmd,$(java_output_dir))
+	$(ec)$(call mkdircmd,$(java_class_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
@@ -1462,7 +1530,7 @@ allutils: status dircheck libs checkdb rebuild view sample xshell
 	$(ec)$(gprintf) ""
 
 .PHONY : test
-test:	status dircheck $(static_xflaim_lib) \
+test:	status dircheck $(xflaim_static_lib) \
 		basictest binarytest colldeftest dictchangetest dictdeftest \
 		dirtyexittest1 dirtyexittest2 domnodetest enctest importtest \
 		indexdeftest indextest1 indextest2 indextest3 \
