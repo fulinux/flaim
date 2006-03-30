@@ -97,6 +97,7 @@ public class Backup
 	 */
 	public long backup(
 		String				sBackupPath,
+		String				sPassword,
 		BackupClient		Client,
 		BackupStatus		Status) throws XFlaimException
 	{
@@ -120,7 +121,7 @@ public class Backup
 			BackupClient = Client;
 		}
 		
-		return _backup( m_this, BackupClient, Status);
+		return _backup( m_this, sBackupPath, sPassword, BackupClient, Status);
 	}
 
 	/**
@@ -160,6 +161,8 @@ public class Backup
 	 */
 	private native long _backup(
 		long				lThis,
+		String			sBackupPath,
+		String			sPassword,
 		BackupClient	Client,
 		BackupStatus	Status) throws XFlaimException;
 	
