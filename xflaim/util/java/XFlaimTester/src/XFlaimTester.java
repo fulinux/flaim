@@ -61,7 +61,7 @@ public class XFlaimTester
 		{	
 			try
 			{
-				jDb = dbSystem.dbOpen("tst.db", "", "");
+				jDb = dbSystem.dbOpen("tst.db", null, null, null, true);
 				bDone = true;
 				System.out.println("Database successfully opened!");
 			}
@@ -99,7 +99,7 @@ public class XFlaimTester
 		}
 		
 		jDb.close();
-		jDb = dbSystem.dbOpen("tst.db", "", "");
+		jDb = dbSystem.dbOpen("tst.db", null, null, null, true);
 			
 		System.out.println("Database successfully re-opened!");
 		
@@ -141,9 +141,9 @@ public class XFlaimTester
 										
 			System.out.println("Began an UPDATE transaction");
 
-//			jDb.Import(jIStream, 65535);
-//			
-//			System.out.println("Imported the document");
+			jDb.Import(jIStream, xflaim.Collections.DATA);
+			
+			System.out.println("Imported the document");
 			
 			jDb.transCommit();
 			
@@ -157,22 +157,24 @@ public class XFlaimTester
 		
 		// Get the first document.
 		
-//		try
-//		{
-//			jDb.transBegin( TransactionType.READ_TRANS, 0, 0);
-//			jDoc = jDb.getFirstDocument( Collections.DATA, null);
-//			jDb.transCommit();
+		try
+		{
+			jDb.transBegin( TransactionType.READ_TRANS, 0, 0);
+			jDoc = jDb.getFirstDocument( xflaim.Collections.DATA, null);
+			jDb.transCommit();
+			jDoc.release();
 			System.out.println("Got the first document.");
-//		}
-//		catch (XFlaimException e)
-//		{
-//			System.out.println("Caught getFirstDocument exception: " + e.getMessage());
-//			e.printStackTrace();
-//		}
+		}
+		catch (XFlaimException e)
+		{
+			System.out.println("Caught getFirstDocument exception: " + e.getMessage());
+			e.printStackTrace();
+		}
 		
 		// Now shut down.
 		
 		System.out.println("Shutting down");
+		jIStream.release();
 		jDb.close();
 		dbSystem.dbClose();
 	}
