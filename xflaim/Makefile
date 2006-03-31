@@ -1309,6 +1309,7 @@ dist: status dircheck
 	$(ec)$(call dircopycmd,src,$(package_dir)/$(package_proj_name_and_ver)/src)
 	$(ec)$(call dircopycmd,util,$(package_dir)/$(package_proj_name_and_ver)/util)
 	$(ec)$(call dircopycmd,sample,$(package_dir)/$(package_proj_name_and_ver)/sample)
+	$(ec)$(call dircopycmd,jni,$(package_dir)/$(package_proj_name_and_ver)/jni)
 ifdef win_target
 	$(ec)$(call copycmd,make.exe,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(package_proj_name_and_ver))
