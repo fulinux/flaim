@@ -152,6 +152,11 @@ FSTATIC FLMBOOL editSearchFormCB(
 	FLMUINT *			puiKeyOut,
 	void *				pvAppData);
 
+FSTATIC RCODE addPullDownPacketType(
+	FlmForm *		pForm,
+	FLMUINT			uiPacketType,
+	const char *	pszPacketTypeName);
+	
 FSTATIC RCODE getSearchCriteria(
 	F_RecEditor *	pRecEditor,
 	RFL_PACKET *	pSrchCriteria,
@@ -456,6 +461,22 @@ FSTATIC FLMBOOL editSearchFormCB(
 }
 
 /********************************************************************
+Desc: Add a packet type to a pulldown list
+*********************************************************************/
+FSTATIC RCODE addPullDownPacketType(
+	FlmForm *		pForm,
+	FLMUINT			uiPacketType,
+	const char *	pszPacketTypeName)
+{
+	char	szDisplayValue [100];
+	
+	f_sprintf( szDisplayValue, "%s (%u)", pszPacketTypeName,
+			(unsigned)uiPacketType);
+	return( pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG, uiPacketType,
+								szDisplayValue, 0));
+}
+
+/********************************************************************
 Desc: Add a label to a form.
 *********************************************************************/
 FSTATIC RCODE getSearchCriteria(
@@ -517,123 +538,143 @@ FSTATIC RCODE getSearchCriteria(
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_TRNS_BEGIN_PACKET,
-								"B=Transaction Begin", (FLMUINT)'B')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_TRNS_BEGIN_PACKET,
+								"Transaction Begin")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_TRNS_BEGIN_EX_PACKET,
-								"X=Transaction Begin (Extended)", (FLMUINT)'X')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_TRNS_BEGIN_EX_PACKET,
+								"Transaction Begin Ext")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_TRNS_COMMIT_PACKET,
-								"C=Transaction Commit", (FLMUINT)'C')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_TRNS_COMMIT_PACKET,
+								"Transaction Commit")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_TRNS_ABORT_PACKET,
-								"A=Transaction Abort", (FLMUINT)'A')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_TRNS_ABORT_PACKET,
+								"Transaction Abort")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_ADD_RECORD_PACKET,
-								"E=Add Record", (FLMUINT)'E')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_ADD_RECORD_PACKET,
+								"Add Record")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_MODIFY_RECORD_PACKET,
-								"M=Modify Record", (FLMUINT)'M')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_MODIFY_RECORD_PACKET,
+								"Modify Record")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_DELETE_RECORD_PACKET,
-								"D=Delete Record", (FLMUINT)'D')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_DELETE_RECORD_PACKET,
+								"Delete Record")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_RESERVE_DRN_PACKET,
-								"R=Reserve DRN", (FLMUINT)'R')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_RESERVE_DRN_PACKET,
+								"Reserve DRN")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_CHANGE_FIELDS_PACKET,
-								"F=Change Fields", (FLMUINT)'F')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_CHANGE_FIELDS_PACKET,
+								"Change Fields")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_DATA_RECORD_PACKET,
-								"T=Data Record", (FLMUINT)'T')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_DATA_RECORD_PACKET,
+								"Data Record")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_INDEX_SET_PACKET,
-								"I=Index Set", (FLMUINT)'I')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_INDEX_SET_PACKET,
+								"Index Set")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_INDEX_SET_PACKET_VER_2,
-								"2=Index Set2", (FLMUINT)'2')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_INDEX_SET_PACKET_VER_2,
+								"Index Set V2")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_BLK_CHAIN_FREE_PACKET,
-								"L=Block Chain Free", (FLMUINT)'L')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_BLK_CHAIN_FREE_PACKET,
+								"Block Chain Free")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_START_UNKNOWN_PACKET,
-								"S=Start Unknown", (FLMUINT)'S')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_START_UNKNOWN_PACKET,
+								"Start Unknown")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_UNKNOWN_PACKET,
-								"U=User Unknown", (FLMUINT)'U')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_UNKNOWN_PACKET,
+								"User Unknown")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_REDUCE_PACKET,
-								"K=Reduce", (FLMUINT)'K')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_REDUCE_PACKET,
+								"Reduce")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_UPGRADE_PACKET,
-								"G=Upgrade", (FLMUINT)'G')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_UPGRADE_PACKET,
+								"Upgrade")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_INDEX_SUSPEND_PACKET,
-								"P=Index Suspend", (FLMUINT)'P')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_INDEX_SUSPEND_PACKET,
+								"Index Suspend")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								RFL_INDEX_RESUME_PACKET,
-								"J=Index Resume", (FLMUINT)'J')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_INDEX_RESUME_PACKET,
+								"Index Resume")))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = pForm->addPulldownItem( SRCH_PACKET_TYPE_TAG,
-								0xFFFFFFFF,
-								"*=All packet types", (FLMUINT)'*')))
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_ADD_RECORD_PACKET_VER_2,
+								"Add Record V2")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_MODIFY_RECORD_PACKET_VER_2,
+								"Modify Record V2")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_DELETE_RECORD_PACKET_VER_2,
+								"Delete Record V2")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_ENC_DATA_RECORD_PACKET,
+								"Data Record Encrypted")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_DATA_RECORD_PACKET_VER_3,
+								"Data Record V3")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_WRAP_KEY_PACKET,
+								"Wrap Encryption Key")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_ENABLE_ENCRYPTION_PACKET,
+								"Enable Encryption")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, RFL_CONFIG_SIZE_EVENT_PACKET,
+								"Configure RFL Size")))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addPullDownPacketType( pForm, 0xFFFFFFFF,
+								"All packet types")))
 	{
 		goto Exit;
 	}
