@@ -86,95 +86,6 @@ FSTATIC RCODE rflOpenNewFile(
 NetWare hooks
 */
 
-// Data
-
-typedef struct RflTagName
-{
-	const char *	pszTagName;
-	FLMUINT			uiTagNum;
-} RFL_TAG_NAME;
-
-RFL_TAG_NAME RflDictTags[] =
-{
-	{ "TransBegin", RFL_TRNS_BEGIN_FIELD},
-	{ "TransCommit", RFL_TRNS_COMMIT_FIELD},
-	{ "TransAbort", RFL_TRNS_ABORT_FIELD},
-	{ "RecAdd", RFL_RECORD_ADD_FIELD},
-	{ "RecModify", RFL_RECORD_MODIFY_FIELD},
-	{ "RecDelete", RFL_RECORD_DELETE_FIELD},
-	{ "ReserveDRN", RFL_RESERVE_DRN_FIELD},
-	{ "ChangeFields", RFL_CHANGE_FIELDS_FIELD},
-	{ "DataRecord", RFL_DATA_RECORD_FIELD},
-	{ "IndexNum", RFL_INDEX_NUM_FIELD},
-	{ "StartDRN", RFL_START_DRN_FIELD},
-	{ "EndDRN", RFL_END_DRN_FIELD},
-	{ "UnknownPacket", RFL_UNKNOWN_PACKET_FIELD},
-	{ "NumBytesValid", RFL_NUM_BYTES_VALID_FIELD},
-	{ "PacketAddress", RFL_PACKET_ADDRESS_FIELD},
-	{ "PacketChecksum", RFL_PACKET_CHECKSUM_FIELD},
-	{ "PacketChecksumValid", RFL_PACKET_CHECKSUM_VALID_FIELD},
-	{ "PacketBodyLength", RFL_PACKET_BODY_LENGTH_FIELD},
-	{ "NextPacketAddress", RFL_NEXT_PACKET_ADDRESS_FIELD},
-	{ "PrevPacketAddress", RFL_PREV_PACKET_ADDRESS_FIELD},
-	{ "TransID", RFL_TRANS_ID_FIELD},
-	{ "StartSeconds", RFL_START_SECONDS_FIELD},
-	{ "StartMillisec", RFL_START_MSEC_FIELD},
-	{ "EndSeconds", RFL_END_SECONDS_FIELD},
-	{ "EndMillisec", RFL_END_MSEC_FIELD},
-	{ "StartTransAddr", RFL_START_TRNS_ADDR_FIELD},
-	{ "ContainerNum", RFL_CONTAINER_FIELD},
-	{ "RecordID", RFL_DRN_FIELD},
-	{ "TagNum", RFL_TAG_NUM_FIELD},
-	{ "FieldType", RFL_TYPE_FIELD},
-	{ "Level", RFL_LEVEL_FIELD},
-	{ "DataLen", RFL_DATA_LEN_FIELD},
-	{ "Data", RFL_DATA_FIELD},
-	{ "MoreData", RFL_MORE_DATA_FIELD},
-	{ "InsertFld", RFL_INSERT_FLD_FIELD},
-	{ "ModifyFld", RFL_MODIFY_FLD_FIELD},
-	{ "DeleteFld", RFL_DELETE_FLD_FIELD},
-	{ "EndChanges", RFL_END_CHANGES_FIELD},
-	{ "UnknownChangeType", RFL_UNKNOWN_CHANGE_TYPE_FIELD},
-	{ "Position", RFL_POSITION_FIELD},
-	{ "ReplaceBytes", RFL_REPLACE_BYTES_FIELD},
-	{ "UnknownChangeBytes", RFL_UNKNOWN_CHANGE_BYTES_FIELD},
-	{ "IndexSet", RFL_INDEX_SET_FIELD},
-	{ "IndexSet2", RFL_INDEX_SET2_FIELD},
-	{ "StartUnknown", RFL_START_UNKNOWN_FIELD},
-	{ "UserUnknown", RFL_UNKNOWN_USER_PACKET_FIELD},
-	{ "RFLName", RFL_HDR_NAME_FIELD},
-	{ "RFLVersion", RFL_HDR_VERSION_FIELD},
-	{ "FileNumber", RFL_HDR_FILE_NUMBER_FIELD},
-	{ "FileEOF", RFL_HDR_EOF_FIELD},
-	{ "DBSerialNum", RFL_HDR_DB_SERIAL_NUM_FIELD},
-	{ "FileSerialNum", RFL_HDR_FILE_SERIAL_NUM_FIELD},
-	{ "NextFileSerialNum", RFL_HDR_NEXT_FILE_SERIAL_NUM_FIELD},
-	{ "KeepSignature", RFL_HDR_KEEP_SIGNATURE_FIELD},
-	{ "TransBeginEx", RFL_TRNS_BEGIN_EX_FIELD},
-	{ "UpgradeDB", RFL_UPGRADE_PACKET_FIELD},
-	{ "OldDbVersion", RFL_OLD_DB_VERSION_FIELD},
-	{ "NewDbVersion", RFL_NEW_DB_VERSION_FIELD},
-	{ "ReduceDb", RFL_REDUCE_PACKET_FIELD},
-	{ "BlockCount", RFL_BLOCK_COUNT_FIELD},
-	{ "LastCommitTransID", RFL_LAST_COMMITTED_TRANS_ID_FIELD},
-	{ "IndexSuspend", RFL_INDEX_SUSPEND_FIELD},
-	{ "IndexResume", RFL_INDEX_RESUME_FIELD},
-	{ "BlockChainFree", RFL_BLK_CHAIN_FREE_FIELD},
-	{ "TrackerRecDRN", RFL_TRACKER_REC_FIELD},
-	{ "EndBlockAddr", RFL_END_BLK_ADDR_FIELD},
-	{ "Flags", RFL_FLAGS_FIELD},
-	{ "InsertEncrypted",  RFL_INSERT_ENC_FLD_FIELD},
-	{ "ModifyEncrypted",  RFL_MODIFY_ENC_FLD_FIELD},
-	{ "Encrypted", RFL_ENC_FIELD},
-	{ "EncryptedDefId", RFL_ENC_DEF_ID_FIELD},
-	{ "EncryptedDataLen", RFL_ENC_DATA_LEN_FIELD},
-	{ "DataBaseKeyLen", RFL_DB_KEY_LEN_FIELD},
-	{ "DataBaseKey", RFL_DB_KEY_FIELD},
-	{ "WrapKey", RFL_WRAP_KEY_FIELD},
-	{ "EnableEncryption", RFL_ENABLE_ENCRYPTION_FIELD},
-	{ NULL, 0}
-};
-
 // Local Prototypes
 
 void UIMain(
@@ -1159,7 +1070,8 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the name field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_NAME_FIELD, 0, &rc)) == NULL)
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_NAME_FIELD),
+							0, &rc)) == NULL)
 	{
 		goto Exit;
 	}
@@ -1173,7 +1085,8 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the version field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_VERSION_FIELD, 0, &rc)) == NULL)
+	if ((pNode = GedNodeCreate( &tmpPool,
+							makeTagNum( RFL_HDR_VERSION_FIELD), 0, &rc)) == NULL)
 	{
 		goto Exit;
 	}
@@ -1187,7 +1100,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the file number field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_FILE_NUMBER_FIELD,
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_FILE_NUMBER_FIELD),
 							0, &rc)) == NULL)
 	{
 		goto Exit;
@@ -1201,7 +1114,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the EOF field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_EOF_FIELD,
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_EOF_FIELD),
 							0, &rc)) == NULL)
 	{
 		goto Exit;
@@ -1215,7 +1128,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the database serial number field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_DB_SERIAL_NUM_FIELD,
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_DB_SERIAL_NUM_FIELD),
 								0, &rc)) == NULL)
 	{
 		goto Exit;
@@ -1229,7 +1142,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the file serial number field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_FILE_SERIAL_NUM_FIELD,
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_FILE_SERIAL_NUM_FIELD),
 								0, &rc)) == NULL)
 	{
 		goto Exit;
@@ -1243,7 +1156,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the next file serial number field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_NEXT_FILE_SERIAL_NUM_FIELD,
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_NEXT_FILE_SERIAL_NUM_FIELD),
 								0, &rc)) == NULL)
 	{
 		goto Exit;
@@ -1257,7 +1170,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Create the next file serial number field
 
-	if ((pNode = GedNodeCreate( &tmpPool, RFL_HDR_KEEP_SIGNATURE_FIELD,
+	if ((pNode = GedNodeCreate( &tmpPool, makeTagNum( RFL_HDR_KEEP_SIGNATURE_FIELD),
 								0, &rc)) == NULL)
 	{
 		goto Exit;
@@ -2571,12 +2484,10 @@ RCODE viewRflNameTableInit(
 	char					szFileName[ F_PATH_MAX_SIZE];
 	HFDB					hDb = HFDB_NULL;
 	F_NameTable *		pNameTable = NULL;
-	RFL_TAG_NAME *		pTag;
+	FLMUINT				uiTagNum;
 	RCODE					rc = FERR_OK;
 
-	/*
-	Try to open the database
-	*/
+	// Try to open the database
 
 	if( RC_BAD( f_pathReduce( gv_szRflPath, szIoDbPath, szFileName)))
 	{
@@ -2625,16 +2536,16 @@ RCODE viewRflNameTableInit(
 
 	// Build the name table
 
-	pTag = &RflDictTags[ 0];
-	while( pTag->pszTagName)
+	uiTagNum = 0;
+	while (gv_szTagNames [uiTagNum])
 	{
-		if( RC_BAD( rc = pNameTable->addTag( NULL, pTag->pszTagName,
-			pTag->uiTagNum, FLM_FIELD_TAG, 0)))
+		if( RC_BAD( rc = pNameTable->addTag( NULL, gv_szTagNames [uiTagNum],
+			uiTagNum + 32769, FLM_FIELD_TAG, 0)))
 		{
 			flmAssert( 0);
 			goto Exit;
 		}
-		pTag++;
+		uiTagNum++;
 	}
 
 	*ppNameTable = pNameTable;
@@ -2654,3 +2565,4 @@ Exit:
 
 	return( rc);
 }
+

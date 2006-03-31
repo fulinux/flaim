@@ -100,7 +100,7 @@ FSTATIC RCODE rflPutNum(
 	POOL *			pPool,
 	NODE *			pLinkToNode,
 	FLMBOOL			bPutAsSib,
-	FLMUINT			uiTagNum,
+	eDispTag			eDispTag,
 	FLMUINT			uiNum,
 	FLMUINT			uiOffset,
 	FLMUINT			uiNumExpectedBytes,
@@ -182,6 +182,11 @@ FSTATIC RCODE rflExpandUnkPacket(
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandEncryptionPacket(
+	RFL_PACKET *	pRflPacket,
+	POOL *			pPool,
+	NODE **			ppForest);
+
+FSTATIC RCODE rflExpandConfigSizePacket(
 	RFL_PACKET *	pRflPacket,
 	POOL *			pPool,
 	NODE **			ppForest);
@@ -667,7 +672,10 @@ void RflFormatPacket(
 				f_strcpy( pszTmp, "    DataRec   ");
 				break;
 			case RFL_ENC_DATA_RECORD_PACKET:
-				f_strcpy( pszTmp, "    EncDataRec   ");
+				f_strcpy( pszTmp, "    EDataRec  ");
+				break;
+			case RFL_DATA_RECORD_PACKET_VER_3:
+				f_strcpy( pszTmp, "    DataRec3  ");
 				break;
 			case RFL_INDEX_SET_PACKET:
 				f_strcpy( pszTmp, "  IndexSet    ");
@@ -683,7 +691,7 @@ void RflFormatPacket(
 				rflFormatDRNRange( pRflPacket, &pszTmp);
 				break;
 			case RFL_BLK_CHAIN_FREE_PACKET:
-				f_strcpy( pszTmp, "BlockChainFree");
+				f_strcpy( pszTmp, "BlkChainFree  ");
 				rflFormatTransID( pRflPacket, &pszTmp);
 				rflFormatDRN( pRflPacket, &pszTmp);
 				rflFormatCount( pRflPacket, &pszTmp);
@@ -718,14 +726,17 @@ void RflFormatPacket(
 				rflFormatIndex( pRflPacket, &pszTmp);
 				break;
 			case RFL_WRAP_KEY_PACKET:
-				f_strcpy( pszTmp, "Wrap Key     ");
+				f_strcpy( pszTmp, "Wrap Key      ");
 				rflFormatTransID( pRflPacket, &pszTmp);
 				rflFormatDBKeyLen( pRflPacket, &pszTmp);
 				break;
 			case RFL_ENABLE_ENCRYPTION_PACKET:
-				f_strcpy( pszTmp, "Enable Enc   ");
+				f_strcpy( pszTmp, "Enable Enc    ");
 				rflFormatTransID( pRflPacket, &pszTmp);
 				rflFormatDBKeyLen( pRflPacket, &pszTmp);
+				break;
+			case RFL_CONFIG_SIZE_EVENT_PACKET:
+				f_strcpy( pszTmp, "Config Size   ");
 				break;
 		}
 	}
@@ -1111,6 +1122,7 @@ FSTATIC RCODE rflRetrievePacket(
 			case RFL_CHANGE_FIELDS_PACKET:
 			case RFL_DATA_RECORD_PACKET:
 			case RFL_ENC_DATA_RECORD_PACKET:
+			case RFL_DATA_RECORD_PACKET_VER_3:
 			case RFL_UNKNOWN_PACKET:
 				uiExpectedBodyLen = pRflPacket->uiPacketBodyLength;
 				if (uiExpectedBodyLen & 0x03)
@@ -1188,6 +1200,12 @@ FSTATIC RCODE rflRetrievePacket(
 			case RFL_ENABLE_ENCRYPTION_PACKET:
 				uiExpectedBodyLen = pRflPacket->uiPacketBodyLength;
 				break;
+			case RFL_CONFIG_SIZE_EVENT_PACKET:
+				uiExpectedBodyLen = 16;
+				pRflPacket->uiNextPacketAddress =
+											uiFileOffset + RFL_PACKET_OVERHEAD +
+											uiExpectedBodyLen;
+				break;
 			default:
 				pRflPacket->bValidPacketType = FALSE;
 				pRflPacket->uiNextPacketAddress =
@@ -1224,9 +1242,10 @@ FSTATIC RCODE rflRetrievePacket(
 		// determine where the next packet starts, starting from
 		// the packet overhead.
 
-		if ((pRflPacket->uiPacketType == RFL_CHANGE_FIELDS_PACKET) ||
-			 (pRflPacket->uiPacketType == RFL_DATA_RECORD_PACKET) ||
-		 	 (pRflPacket->uiPacketType == RFL_ENC_DATA_RECORD_PACKET))
+		if (pRflPacket->uiPacketType == RFL_CHANGE_FIELDS_PACKET ||
+			 pRflPacket->uiPacketType == RFL_DATA_RECORD_PACKET ||
+		 	 pRflPacket->uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+			 pRflPacket->uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 		{
 			if ((uiBytesRead != uiExpectedBodyLen) ||
 				 (!pRflPacket->bHavePacketChecksum) ||
@@ -1619,6 +1638,26 @@ FSTATIC RCODE rflRetrievePacket(
 				uiFileOffset + RFL_PACKET_OVERHEAD +
 				6 + pRflPacket->uiCount;
 			break;
+			
+		case RFL_CONFIG_SIZE_EVENT_PACKET:
+
+			// Get transaction ID, size threshhold, time interval, and
+			// size interval
+
+			rflGetNumValue( pucPacketBody, uiBytesRead, 0,
+					4, &pRflPacket->uiTransID,
+					&pRflPacket->uiTransIDBytes);
+			rflGetNumValue( pucPacketBody, uiBytesRead, 4,
+					4, &pRflPacket->uiSizeThreshold,
+					&pRflPacket->uiSizeThresholdBytes);
+			rflGetNumValue( pucPacketBody, uiBytesRead, 8,
+					4, &pRflPacket->uiTimeInterval,
+					&pRflPacket->uiTimeIntervalBytes);
+			rflGetNumValue( pucPacketBody, uiBytesRead, 12,
+					4, &pRflPacket->uiSizeInterval,
+					&pRflPacket->uiSizeInterval);
+			break;
+
 		default:
 			break;
 	}
@@ -1644,9 +1683,11 @@ FSTATIC RCODE rflGetNextOpPacket(
 		// Stop when we either don't have a valid packet, or it is an
 		// operation packet.
 
-		if ((!pRflPacket->bValidPacketType) ||
-			 ((pRflPacket->uiPacketType != RFL_CHANGE_FIELDS_PACKET) &&
-			  (pRflPacket->uiPacketType != RFL_DATA_RECORD_PACKET)))
+		if (!pRflPacket->bValidPacketType ||
+			 (pRflPacket->uiPacketType != RFL_CHANGE_FIELDS_PACKET &&
+			  pRflPacket->uiPacketType != RFL_DATA_RECORD_PACKET &&
+			  pRflPacket->uiPacketType != RFL_ENC_DATA_RECORD_PACKET &&
+			  pRflPacket->uiPacketType != RFL_DATA_RECORD_PACKET_VER_3))
 		{
 			*pbFoundNext = TRUE;
 			break;
@@ -1718,7 +1759,8 @@ RCODE RflGetNextNode(
 
 	// Create the packet node.
 
-	if ((pPacketNode = GedNodeCreate( pPool, RFL_PACKET_FIELD, 0, &rc)) == NULL)
+	if ((pPacketNode = GedNodeCreate( pPool, RFL_PACKET_FIELD,
+										0, &rc)) == NULL)
 	{
 		goto Exit;
 	}
@@ -1791,9 +1833,11 @@ FSTATIC RCODE rflGetPrevOpPacket(
 		// Stop when we either don't have a valid packet, or it is an
 		// operation packet.
 
-		if ((!pRflPacket->bValidPacketType) ||
-			 ((pRflPacket->uiPacketType != RFL_CHANGE_FIELDS_PACKET) &&
-			  (pRflPacket->uiPacketType != RFL_DATA_RECORD_PACKET)))
+		if (!pRflPacket->bValidPacketType ||
+			 (pRflPacket->uiPacketType != RFL_CHANGE_FIELDS_PACKET &&
+			  pRflPacket->uiPacketType != RFL_DATA_RECORD_PACKET &&
+			  pRflPacket->uiPacketType != RFL_ENC_DATA_RECORD_PACKET &&
+			  pRflPacket->uiPacketType != RFL_DATA_RECORD_PACKET_VER_3))
 		{
 			*pbFoundPrev = TRUE;
 			break;
@@ -1883,7 +1927,8 @@ RCODE RflGetPrevNode(
 
 	// Create the packet node.
 
-	if ((pPacketNode = GedNodeCreate( pPool, RFL_PACKET_FIELD, 0, &rc)) == NULL)
+	if ((pPacketNode = GedNodeCreate( pPool, RFL_PACKET_FIELD,
+										0, &rc)) == NULL)
 	{
 		goto Exit;
 	}
@@ -1984,7 +2029,8 @@ RCODE RflPositionToNode(
 
 	// Create the packet node.
 
-	if ((pPacketNode = GedNodeCreate( pPool, RFL_PACKET_FIELD, 0, &rc)) == NULL)
+	if ((pPacketNode = GedNodeCreate( pPool, RFL_PACKET_FIELD,
+								0, &rc)) == NULL)
 	{
 		goto Exit;
 	}
@@ -2085,7 +2131,7 @@ FSTATIC RCODE rflPutNum(
 	POOL *		pPool,
 	NODE *		pLinkToNode,
 	FLMBOOL		bPutAsSib,
-	FLMUINT		uiTagNum,
+	eDispTag		eDispTag,
 	FLMUINT		uiNum,
 	FLMUINT		uiOffset,
 	FLMUINT		uiNumExpectedBytes,
@@ -2102,7 +2148,7 @@ FSTATIC RCODE rflPutNum(
 
 		// Create the number node.
 
-		if ((pNode = GedNodeCreate( pPool, uiTagNum, uiOffset, &rc)) == NULL)
+		if ((pNode = GedNodeCreate( pPool, makeTagNum( eDispTag), uiOffset, &rc)) == NULL)
 		{
 			goto Exit;
 		}
@@ -2133,7 +2179,8 @@ FSTATIC RCODE rflPutNum(
 
 			// Create the number of bytes valid node.
 
-			if ((pNode2 = GedNodeCreate( pPool, RFL_NUM_BYTES_VALID_FIELD,
+			if ((pNode2 = GedNodeCreate( pPool,
+											makeTagNum( RFL_NUM_BYTES_VALID_FIELD),
 											0, &rc)) == NULL)
 			{
 				goto Exit;
@@ -2171,97 +2218,103 @@ FSTATIC RCODE rflExpandPacketHdr(
 	)
 {
 	RCODE		rc = FERR_OK;
-	FLMUINT	uiTagNum;
+	eDispTag	eTagNum;
 	NODE *	pParent;
 	FLMUINT	uiOffset;
 	NODE *	pNode;
 
 	if (!pRflPacket->bValidPacketType)
 	{
-		uiTagNum = RFL_UNKNOWN_PACKET_FIELD;
+		eTagNum = RFL_UNKNOWN_PACKET_FIELD;
 	}
 	else
 	{
 		switch (pRflPacket->uiPacketType)
 		{
 			case RFL_TRNS_BEGIN_PACKET:
-				uiTagNum = RFL_TRNS_BEGIN_FIELD;
+				eTagNum = RFL_TRNS_BEGIN_FIELD;
 				break;
 			case RFL_TRNS_BEGIN_EX_PACKET:
-				uiTagNum = RFL_TRNS_BEGIN_EX_FIELD;
+				eTagNum = RFL_TRNS_BEGIN_EX_FIELD;
 				break;
 			case RFL_TRNS_COMMIT_PACKET:
-				uiTagNum = RFL_TRNS_COMMIT_FIELD;
+				eTagNum = RFL_TRNS_COMMIT_FIELD;
 				break;
 			case RFL_TRNS_ABORT_PACKET:
-				uiTagNum = RFL_TRNS_ABORT_FIELD;
+				eTagNum = RFL_TRNS_ABORT_FIELD;
 				break;
 			case RFL_ADD_RECORD_PACKET:
 			case RFL_ADD_RECORD_PACKET_VER_2:
-				uiTagNum = RFL_RECORD_ADD_FIELD;
+				eTagNum = RFL_RECORD_ADD_FIELD;
 				break;
 			case RFL_MODIFY_RECORD_PACKET:
 			case RFL_MODIFY_RECORD_PACKET_VER_2:
-				uiTagNum = RFL_RECORD_MODIFY_FIELD;
+				eTagNum = RFL_RECORD_MODIFY_FIELD;
 				break;
 			case RFL_DELETE_RECORD_PACKET:
 			case RFL_DELETE_RECORD_PACKET_VER_2:
-				uiTagNum = RFL_RECORD_DELETE_FIELD;
-				break;
-			case RFL_ENC_DATA_RECORD_PACKET:
-				uiTagNum = RFL_ENC_FIELD;
+				eTagNum = RFL_RECORD_DELETE_FIELD;
 				break;
 			case RFL_RESERVE_DRN_PACKET:
-				uiTagNum = RFL_RESERVE_DRN_FIELD;
+				eTagNum = RFL_RESERVE_DRN_FIELD;
 				break;
 			case RFL_CHANGE_FIELDS_PACKET:
-				uiTagNum = RFL_CHANGE_FIELDS_FIELD;
+				eTagNum = RFL_CHANGE_FIELDS_FIELD;
 				break;
 			case RFL_DATA_RECORD_PACKET:
-				uiTagNum = RFL_DATA_RECORD_FIELD;
+				eTagNum = RFL_DATA_RECORD_FIELD;
+				break;
+			case RFL_ENC_DATA_RECORD_PACKET:
+				eTagNum = RFL_ENC_DATA_RECORD_FIELD;
+				break;
+			case RFL_DATA_RECORD_PACKET_VER_3:
+				eTagNum = RFL_DATA_RECORD3_FIELD;
 				break;
 			case RFL_INDEX_SET_PACKET:
-				uiTagNum = RFL_INDEX_SET_FIELD;
+				eTagNum = RFL_INDEX_SET_FIELD;
 				break;
 			case RFL_INDEX_SET_PACKET_VER_2:
-				uiTagNum = RFL_INDEX_SET2_FIELD;
+				eTagNum = RFL_INDEX_SET2_FIELD;
 				break;
 			case RFL_BLK_CHAIN_FREE_PACKET:
-				uiTagNum = RFL_BLK_CHAIN_FREE_FIELD;
+				eTagNum = RFL_BLK_CHAIN_FREE_FIELD;
 				break;
 			case RFL_START_UNKNOWN_PACKET:
-				uiTagNum = RFL_START_UNKNOWN_FIELD;
+				eTagNum = RFL_START_UNKNOWN_FIELD;
 				break;
 			case RFL_UNKNOWN_PACKET:
-				uiTagNum = RFL_UNKNOWN_USER_PACKET_FIELD;
+				eTagNum = RFL_UNKNOWN_USER_PACKET_FIELD;
 				break;
 			case RFL_REDUCE_PACKET:
-				uiTagNum = RFL_REDUCE_PACKET_FIELD;
+				eTagNum = RFL_REDUCE_PACKET_FIELD;
 				break;
 			case RFL_UPGRADE_PACKET:
-				uiTagNum = RFL_UPGRADE_PACKET_FIELD;
+				eTagNum = RFL_UPGRADE_PACKET_FIELD;
 				break;
 			case RFL_INDEX_SUSPEND_PACKET:
-				uiTagNum = RFL_INDEX_SUSPEND_FIELD;
+				eTagNum = RFL_INDEX_SUSPEND_FIELD;
 				break;
 			case RFL_INDEX_RESUME_PACKET:
-				uiTagNum = RFL_INDEX_RESUME_FIELD;
+				eTagNum = RFL_INDEX_RESUME_FIELD;
 				break;
 			case RFL_WRAP_KEY_PACKET:
-				uiTagNum = RFL_WRAP_KEY_FIELD;
+				eTagNum = RFL_WRAP_KEY_FIELD;
 				break;
 			case RFL_ENABLE_ENCRYPTION_PACKET:
-				uiTagNum = RFL_ENABLE_ENCRYPTION_FIELD;
+				eTagNum = RFL_ENABLE_ENCRYPTION_FIELD;
+				break;
+			case RFL_CONFIG_SIZE_EVENT_PACKET:
+				eTagNum = RFL_CONFIG_SIZE_EVENT_FIELD;
 				break;
 			default:
-				uiTagNum = RFL_UNKNOWN_PACKET_FIELD;
+				eTagNum = RFL_UNKNOWN_PACKET_FIELD;
 				break;
 		}
 	}
 
 	// Create the packet node.
 
-	if ((pParent = GedNodeCreate( pPool, uiTagNum,
+	if ((pParent = GedNodeCreate( pPool, makeTagNum( eTagNum),
 									pRflPacket->uiFileOffset, &rc)) == NULL)
 	{
 		goto Exit;
@@ -2270,7 +2323,7 @@ FSTATIC RCODE rflExpandPacketHdr(
 	// If packet type is unknown, put it into the data portion of the
 	// field - if we have it.
 
-	if ((uiTagNum == RFL_UNKNOWN_PACKET_FIELD) &&
+	if ((eTagNum == RFL_UNKNOWN_PACKET_FIELD) &&
 		 (pRflPacket->bHavePacketType))
 	{
 		if (RC_BAD( rc = GedPutUINT( pPool, pParent,
@@ -3132,8 +3185,8 @@ FSTATIC RCODE rflExpandDataPacket(
 			{
 				for (;;)
 				{
-					if ((pTmpNode = GedNodeCreate( pPool, RFL_MORE_DATA_FIELD,
-												0, &rc)) == 0)
+					if ((pTmpNode = GedNodeCreate( pPool,
+									makeTagNum( RFL_MORE_DATA_FIELD), 0, &rc)) == 0)
 					{
 						goto Exit;
 					}
@@ -3155,7 +3208,7 @@ FSTATIC RCODE rflExpandDataPacket(
 
 			// Create a GEDCOM node.
 
-			if ((pTagNode = GedNodeCreate( pPool, RFL_MORE_DATA_FIELD,
+			if ((pTagNode = GedNodeCreate( pPool, makeTagNum( RFL_MORE_DATA_FIELD),
 										uiOffset, &rc)) == NULL)
 			{
 				goto Exit;
@@ -3227,14 +3280,25 @@ FSTATIC RCODE rflExpandDataPacket(
 			pucPacketBody += uiLevelLen;
 			uiBytesRead -= uiLevelLen;
 
-			rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiDataLen, &uiDataLenLen);
+			if (uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
+			{
+				rflGetNumValue( pucPacketBody, uiBytesRead, 0, 4, &uiDataLen, &uiDataLenLen);
+				if (uiDataLenLen < 4)
+				{
+					bIncompleteHdr = TRUE;
+				}
+			}
+			else
+			{
+				rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiDataLen, &uiDataLenLen);
+				if (uiDataLenLen < 2)
+				{
+					bIncompleteHdr = TRUE;
+				}
+			}
 			pucPacketBody += uiDataLenLen;
 			uiBytesRead -= uiDataLenLen;
 
-			if (uiDataLenLen < 2)
-			{
-				bIncompleteHdr = TRUE;
-			}
 
 			// If we have an encrypted packet, handle the remaining fields here
 
@@ -3244,7 +3308,8 @@ FSTATIC RCODE rflExpandDataPacket(
 			uiEncDefIDLen = 0;
 			uiEncLen = 0;
 			uiEncLenLen = 0;
-			if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
+			if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+				 uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 			{
 				rflGetNumValue( pucPacketBody, uiBytesRead, 0, 1, &uiEncrypted, &uiEncryptedLen);
 				pucPacketBody += uiEncryptedLen;
@@ -3260,14 +3325,24 @@ FSTATIC RCODE rflExpandDataPacket(
 					pucPacketBody += uiEncDefIDLen;
 					uiBytesRead -= uiEncDefIDLen;
 
-					rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiEncLen, &uiEncLenLen);
+					if (uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
+					{
+						rflGetNumValue( pucPacketBody, uiBytesRead, 0, 4, &uiEncLen, &uiEncLenLen);
+						if (uiEncLenLen < 4)
+						{
+							bIncompleteHdr = TRUE;
+						}
+					}
+					else
+					{
+						rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiEncLen, &uiEncLenLen);
+						if (uiEncLenLen < 2)
+						{
+							bIncompleteHdr = TRUE;
+						}
+					}
 					pucPacketBody += uiEncLenLen;
 					uiBytesRead -= uiEncLenLen;
-
-					if (uiEncLenLen < 2)
-					{
-						bIncompleteHdr = TRUE;
-					}
 				}
 			}
 
@@ -3307,14 +3382,26 @@ FSTATIC RCODE rflExpandDataPacket(
 				}
 				uiOffset += uiLevelLen;
 
-				if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_DATA_LEN_FIELD,
-					uiDataLen, uiOffset, 2, uiDataLenLen, &pTmpNode)))
+				if (uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 				{
-					goto Exit;
+					if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_DATA_LEN_FIELD,
+						uiDataLen, uiOffset, 4, uiDataLenLen, &pTmpNode)))
+					{
+						goto Exit;
+					}
+				}
+				else
+				{
+					if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_DATA_LEN_FIELD,
+						uiDataLen, uiOffset, 2, uiDataLenLen, &pTmpNode)))
+					{
+						goto Exit;
+					}
 				}
 				uiOffset += uiDataLenLen;
 
-				if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
+				if (uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+					 uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 				{
 					if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_ENC_FIELD,
 						uiEncrypted, uiOffset, 1, uiEncryptedLen, &pTmpNode)))
@@ -3332,10 +3419,21 @@ FSTATIC RCODE rflExpandDataPacket(
 						}
 						uiOffset += uiEncDefIDLen;
 
-						if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_ENC_DATA_LEN_FIELD,
-							uiEncLen, uiOffset, 2, uiEncLenLen, &pTmpNode)))
+						if (uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 						{
-							goto Exit;
+							if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_ENC_DATA_LEN_FIELD,
+								uiEncLen, uiOffset, 4, uiEncLenLen, &pTmpNode)))
+							{
+								goto Exit;
+							}
+						}
+						else
+						{
+							if ( RC_BAD( rc = rflPutNum( pPool, pTmpNode, TRUE, RFL_ENC_DATA_LEN_FIELD,
+								uiEncLen, uiOffset, 2, uiEncLenLen, &pTmpNode)))
+							{
+								goto Exit;
+							}
 						}
 						uiOffset += uiEncLenLen;
 
@@ -3351,7 +3449,7 @@ FSTATIC RCODE rflExpandDataPacket(
 
 					// Create a GEDCOM node for the data.
 
-					if ((pDataNode = GedNodeCreate( pPool, RFL_DATA_FIELD,
+					if ((pDataNode = GedNodeCreate( pPool, makeTagNum( RFL_DATA_FIELD),
 									uiOffset, &rc)) == NULL)
 					{
 						goto Exit;
@@ -3502,7 +3600,7 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiBytesRead;
 	FLMUINT		uiOffset;
-	FLMUINT		uiChangeTagNum;
+	eDispTag		eChangeTagNum;
 	FLMUINT		uiDataTagNum;
 	FLMUINT		uiDataLen;
 	FLMUINT		uiChangeType;
@@ -3511,6 +3609,7 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 	FLMUINT		uiNodeDataLen;
 	FLMUINT		uiTmp;
 	FLMUINT		uiLen;
+	FLMUINT		uiDataLenLen;
 
 	// Output the packet header.
 
@@ -3569,7 +3668,7 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 
 			// Create a dummy change node.
 
-			if ((pChangeNode = GedNodeCreate( pPool, RFL_MORE_DATA_FIELD,
+			if ((pChangeNode = GedNodeCreate( pPool, makeTagNum( RFL_MORE_DATA_FIELD),
 											0, &rc)) == 0)
 			{
 				goto Exit;
@@ -3582,30 +3681,42 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 			switch (uiChangeType)
 			{
 				case RFL_INSERT_FIELD:
-					uiChangeTagNum = RFL_INSERT_FLD_FIELD;
+					eChangeTagNum = RFL_INSERT_FLD_FIELD;
 					break;
 				case RFL_MODIFY_FIELD:
-					uiChangeTagNum = RFL_MODIFY_FLD_FIELD;
+					eChangeTagNum = RFL_MODIFY_FLD_FIELD;
 					break;
 				case RFL_DELETE_FIELD:
-					uiChangeTagNum = RFL_DELETE_FLD_FIELD;
+					eChangeTagNum = RFL_DELETE_FLD_FIELD;
 					break;
 				case RFL_END_FIELD_CHANGES:
-					uiChangeTagNum = RFL_END_CHANGES_FIELD;
+					eChangeTagNum = RFL_END_CHANGES_FIELD;
 					break;
 				// Added
 				case RFL_INSERT_ENC_FIELD:
-					uiChangeTagNum = RFL_INSERT_ENC_FLD_FIELD;
+					eChangeTagNum = RFL_INSERT_ENC_FLD_FIELD;
 					break;
 				case RFL_MODIFY_ENC_FIELD:
-					uiChangeTagNum = RFL_MODIFY_ENC_FLD_FIELD;
+					eChangeTagNum = RFL_MODIFY_ENC_FLD_FIELD;
+					break;
+				case RFL_INSERT_LARGE_FIELD:
+					eChangeTagNum = RFL_INSERT_LARGE_FLD_FIELD;
+					break;
+				case RFL_INSERT_ENC_LARGE_FIELD:
+					eChangeTagNum = RFL_INSERT_ENC_LARGE_FLD_FIELD;
+					break;
+				case RFL_MODIFY_LARGE_FIELD:
+					eChangeTagNum = RFL_MODIFY_LARGE_FLD_FIELD;
+					break;
+				case RFL_MODIFY_ENC_LARGE_FIELD:
+					eChangeTagNum = RFL_MODIFY_ENC_LARGE_FLD_FIELD;
 					break;
 				default:
-					uiChangeTagNum = RFL_UNKNOWN_CHANGE_TYPE_FIELD;
+					eChangeTagNum = RFL_UNKNOWN_CHANGE_TYPE_FIELD;
 					break;
 			}
 			if (RC_BAD( rc = rflPutNum( pPool, pLastNode, TRUE,
-									uiChangeTagNum,
+									eChangeTagNum,
 									uiChangeType, uiOffset,
 									1, 1, &pChangeNode)))
 			{
@@ -3632,7 +3743,9 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 
 			uiDataLen = 0;
 			if (uiChangeType == RFL_INSERT_FIELD ||
-			 	uiChangeType == RFL_INSERT_ENC_FIELD)
+			 	 uiChangeType == RFL_INSERT_ENC_FIELD ||
+				 uiChangeType == RFL_INSERT_LARGE_FIELD ||
+				 uiChangeType == RFL_INSERT_ENC_LARGE_FIELD)
 			{
 
 				// Output tag number.
@@ -3682,12 +3795,16 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 
 				// Output data length
 
+				uiDataLenLen = (uiChangeType == RFL_INSERT_LARGE_FIELD ||
+									 uiChangeType == RFL_INSERT_ENC_LARGE_FIELD)
+									? 4
+									: 2;
 				rflGetNumValue( pucPacketBody, uiBytesRead, 0,
-										2, &uiTmp, &uiLen);
+										uiDataLenLen, &uiTmp, &uiLen);
 				if (RC_BAD( rc = rflPutNum( pPool, pChangeNode, FALSE,
 										RFL_DATA_LEN_FIELD,
 										uiTmp, uiOffset,
-										2, uiLen, NULL)))
+										uiDataLenLen, uiLen, NULL)))
 				{
 					goto Exit;
 				}
@@ -3700,7 +3817,8 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 				}
 
 				uiDataTagNum = RFL_DATA_FIELD;
-				if ( uiChangeType == RFL_INSERT_ENC_FIELD)
+				if (uiChangeType == RFL_INSERT_ENC_FIELD ||
+					 uiChangeType == RFL_INSERT_ENC_LARGE_FIELD)
 				{
 					// Output the encryption definition id
 					rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiTmp, &uiLen);
@@ -3714,9 +3832,9 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 					uiBytesRead -= uiLen;
 
 					// Output the encrypted data length
-					rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiTmp, &uiLen);
+					rflGetNumValue( pucPacketBody, uiBytesRead, 0, uiDataLenLen, &uiTmp, &uiLen);
 					if ( RC_BAD( rc = rflPutNum( pPool, pChangeNode, FALSE, RFL_ENC_DATA_LEN_FIELD,
-						uiTmp, uiOffset, 2, uiLen, NULL)))
+						uiTmp, uiOffset, uiDataLenLen, uiLen, NULL)))
 					{
 						goto Exit;
 					}
@@ -3730,7 +3848,9 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 				}
 			}
 			else if (uiChangeType == RFL_MODIFY_FIELD ||
-				uiChangeType == RFL_MODIFY_ENC_FIELD)
+						uiChangeType == RFL_MODIFY_ENC_FIELD ||
+						uiChangeType == RFL_MODIFY_LARGE_FIELD ||
+						uiChangeType == RFL_MODIFY_ENC_LARGE_FIELD)
 			{
 
 				// Output change bytes type
@@ -3763,24 +3883,29 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 
 				// Output data length
 
+				uiDataLenLen = (uiChangeType == RFL_MODIFY_LARGE_FIELD ||
+									 uiChangeType == RFL_MODIFY_ENC_LARGE_FIELD)
+									? 4
+									: 2;
 				rflGetNumValue( pucPacketBody, uiBytesRead, 0,
-										2, &uiTmp, &uiLen);
+										uiDataLenLen, &uiTmp, &uiLen);
 				if (RC_BAD( rc = rflPutNum( pPool, pChangeNode, FALSE,
 										RFL_DATA_LEN_FIELD,
 										uiTmp, uiOffset,
-										2, uiLen, NULL)))
+										uiDataLenLen, uiLen, NULL)))
 				{
 					goto Exit;
 				}
 				uiOffset += uiLen;
 				pucPacketBody += uiLen;
 				uiBytesRead -= uiLen;
-				if (uiLen == 2)
+				if (uiLen == uiDataLenLen)
 				{
 					uiDataLen = uiTmp;
 				}
 				uiDataTagNum = RFL_DATA_FIELD;
-				if ( uiChangeType == RFL_MODIFY_ENC_FIELD)
+				if (uiChangeType == RFL_MODIFY_ENC_FIELD ||
+					 uiChangeType == RFL_MODIFY_ENC_LARGE_FIELD)
 				{
 					// Output the encryption definition id
 					rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiTmp, &uiLen);
@@ -3794,16 +3919,16 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 					uiBytesRead -= uiLen;
 
 					// Output the encrypted data length
-					rflGetNumValue( pucPacketBody, uiBytesRead, 0, 2, &uiTmp, &uiLen);
+					rflGetNumValue( pucPacketBody, uiBytesRead, 0, uiDataLenLen, &uiTmp, &uiLen);
 					if ( RC_BAD( rc = rflPutNum( pPool, pChangeNode, FALSE, RFL_ENC_DATA_LEN_FIELD,
-						uiTmp, uiOffset, 2, uiLen, NULL)))
+						uiTmp, uiOffset, uiDataLenLen, uiLen, NULL)))
 					{
 						goto Exit;
 					}
 					uiOffset += uiLen;
 					pucPacketBody += uiLen;
 					uiBytesRead -= uiLen;
-					if (uiLen == 2)
+					if (uiLen == uiDataLenLen)
 					{
 						uiDataLen = uiTmp;
 					}
@@ -3918,8 +4043,10 @@ FSTATIC RCODE rflExpandRecordPackets(
 
 		if (uiPacketType == 0xFF)
 		{
-			if ((RflPacket.uiPacketType == RFL_DATA_RECORD_PACKET) ||
-				 (RflPacket.uiPacketType == RFL_CHANGE_FIELDS_PACKET))
+			if (RflPacket.uiPacketType == RFL_DATA_RECORD_PACKET ||
+				 RflPacket.uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+				 RflPacket.uiPacketType == RFL_DATA_RECORD_PACKET_VER_3 ||
+				 RflPacket.uiPacketType == RFL_CHANGE_FIELDS_PACKET)
 			{
 				uiPacketType = RflPacket.uiPacketType;
 			}
@@ -3931,8 +4058,8 @@ FSTATIC RCODE rflExpandRecordPackets(
 
 		// Stop when we don't have a valid data packet.
 
-		if ((!RflPacket.bValidPacketType) ||
-			 (RflPacket.uiPacketType != uiPacketType))
+		if (!RflPacket.bValidPacketType ||
+			 RflPacket.uiPacketType != uiPacketType)
 		{
 			break;
 		}
@@ -3942,7 +4069,9 @@ FSTATIC RCODE rflExpandRecordPackets(
 										? (FLMBOOL)TRUE
 										: (FLMBOOL)FALSE);
 
-		if (uiPacketType == RFL_DATA_RECORD_PACKET || uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
+		if (uiPacketType == RFL_DATA_RECORD_PACKET ||
+			 uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+			 uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 		{
 			if (RC_BAD( rc = rflExpandDataPacket( &RflPacket, pPool,
 								bOutputPacket, uiPacketType,
@@ -4127,7 +4256,7 @@ FSTATIC RCODE rflExpandRecOpPacket(
 	{
 		if (RC_BAD( rc = rflExpandRecordPackets( pPool,
 										pRflPacket->uiNextPacketAddress,
-										RFL_DATA_RECORD_PACKET,
+										0xFF,
 										&pParent, uiPacketOffset)))
 		{
 			goto Exit;
@@ -4220,7 +4349,7 @@ FSTATIC RCODE rflExpandUnkPacket(
 
 	// Create a GEDCOM node for the data.
 
-	if ((pTmpNode2 = GedNodeCreate( pPool, RFL_DATA_FIELD,
+	if ((pTmpNode2 = GedNodeCreate( pPool, makeTagNum( RFL_DATA_FIELD),
 					uiOffset, &rc)) == NULL)
 	{
 		goto Exit;
@@ -4300,7 +4429,7 @@ FSTATIC RCODE rflExpandEncryptionPacket(
 
 	// Create a data node, if there is data to output.
 
-	if ((pDataNode = GedNodeCreate( pPool, RFL_DATA_FIELD,
+	if ((pDataNode = GedNodeCreate( pPool, makeTagNum( RFL_DATA_FIELD),
 								uiOffset, &rc)) == NULL)
 	{
 		goto Exit;
@@ -4325,6 +4454,91 @@ FSTATIC RCODE rflExpandEncryptionPacket(
 	{
 		f_memcpy( pucNodeData, pucPacketBody, pRflPacket->uiCount);
 	}
+
+Exit:
+
+	if (RC_BAD( rc) || !pParent)
+	{
+		if (rc == FERR_IO_END_OF_FILE)
+		{
+			rc = FERR_OK;
+		}
+		*ppForest = NULL;
+		GedPoolReset( pPool, pvMark);
+	}
+	else
+	{
+		*ppForest = pParent;
+	}
+	return( rc);
+}
+
+/********************************************************************
+Desc: Expands a config rfl size packet (RFL_CONFIG_SIZE_EVENT_PACKET)
+*********************************************************************/
+FSTATIC RCODE rflExpandConfigSizePacket(
+	RFL_PACKET *	pRflPacket,
+	POOL *			pPool,
+	NODE **			ppForest
+	)
+{
+	RCODE			rc = FERR_OK;
+	void *		pvMark = GedPoolMark( pPool);
+	NODE *		pParent = NULL;
+	NODE *		pLastNode;
+	FLMUINT		uiOffset;
+
+	// Output generic packet header information.
+
+	if (RC_BAD( rc = rflExpandPacketHdr( pRflPacket, pPool, &pParent)))
+	{
+		goto Exit;
+	}
+	
+	// Output transaction ID
+
+	uiOffset = pRflPacket->uiFileOffset + RFL_PACKET_OVERHEAD;
+	if (RC_BAD( rc = rflPutNum( pPool, pParent, FALSE,
+									RFL_TRANS_ID_FIELD,
+									pRflPacket->uiTransID, uiOffset,
+									4, pRflPacket->uiTransIDBytes, &pLastNode)))
+	{
+		goto Exit;
+	}
+	uiOffset += 4;
+
+	// Output size threshhold
+
+	if (RC_BAD( rc = rflPutNum( pPool, pParent, FALSE,
+									RFL_SIZE_THRESHOLD_FIELD,
+									pRflPacket->uiSizeThreshold, uiOffset,
+									4, pRflPacket->uiSizeThresholdBytes, &pLastNode)))
+	{
+		goto Exit;
+	}
+	uiOffset += 4;
+
+	// Output time interval
+
+	if (RC_BAD( rc = rflPutNum( pPool, pParent, FALSE,
+									RFL_TIME_INTERVAL_FIELD,
+									pRflPacket->uiTimeInterval, uiOffset,
+									4, pRflPacket->uiTimeInterval, &pLastNode)))
+	{
+		goto Exit;
+	}
+	uiOffset += 4;
+
+	// Output size interval
+
+	if (RC_BAD( rc = rflPutNum( pPool, pParent, FALSE,
+									RFL_SIZE_INTERVAL_FIELD,
+									pRflPacket->uiSizeInterval, uiOffset,
+									4, pRflPacket->uiSizeInterval, &pLastNode)))
+	{
+		goto Exit;
+	}
+	uiOffset += 4;
 
 Exit:
 
@@ -4401,6 +4615,7 @@ RCODE RflExpandPacket(
 			case RFL_CHANGE_FIELDS_PACKET:
 			case RFL_DATA_RECORD_PACKET:
 			case RFL_ENC_DATA_RECORD_PACKET:
+			case RFL_DATA_RECORD_PACKET_VER_3:
 				f_memcpy( &tmpPacket, pRflPacket, sizeof( RFL_PACKET));
 				bFoundPrev = FALSE;
 				if (RC_BAD( rc = rflGetPrevOpPacket( &tmpPacket, &bFoundPrev)))
@@ -4412,7 +4627,8 @@ RCODE RflExpandPacket(
 					uiDataLen = 0xFFFF;
 					uiLevel = 0;
 					if (pRflPacket->uiPacketType == RFL_DATA_RECORD_PACKET ||
-						pRflPacket->uiPacketType == RFL_ENC_DATA_RECORD_PACKET)
+						 pRflPacket->uiPacketType == RFL_ENC_DATA_RECORD_PACKET ||
+						 pRflPacket->uiPacketType == RFL_DATA_RECORD_PACKET_VER_3)
 					{
 						rc = rflExpandDataPacket( pRflPacket, pPool,
 							TRUE, pRflPacket->uiPacketType,
@@ -4456,6 +4672,9 @@ RCODE RflExpandPacket(
 			case RFL_WRAP_KEY_PACKET:
 			case RFL_ENABLE_ENCRYPTION_PACKET:
 				rc = rflExpandEncryptionPacket( pRflPacket, pPool, &pForest);
+				goto Exit;
+			case RFL_CONFIG_SIZE_EVENT_PACKET:
+				rc = rflExpandConfigSizePacket( pRflPacket, pPool, &pForest);
 				goto Exit;
 			default:
 				rc = rflExpandUnkPacket( pRflPacket, pPool, &pForest);
