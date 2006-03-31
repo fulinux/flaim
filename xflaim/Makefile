@@ -996,13 +996,13 @@ libs: status dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
 ifdef jhome
 $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(gprintf) "Compiling JNI java sources ...\n"
-	$(ec)$(jhome)/bin/javac -g -d $(java_class_output_dir) $(call hostpath,$(jni_java_src))
+	$(ec)$(call hostpath,$(jhome)/bin/javac) -g -d $(java_class_output_dir) $(call hostpath,$(jni_java_src))
 	$(ec)$(gprintf) "Creating JNI jar file ...\n"
 	$(ec)$(call rmcmd,$(xflaim_jni_jar))
-	$(ec)$(jhome)/bin/jar cf $(call hostpath,$(xflaim_jni_jar)) \
+	$(ec)$(call hostpath,$(jhome)/bin/jar) cf $(call hostpath,$(xflaim_jni_jar)) \
 		-C $(call hostpath,$(java_class_output_dir)) .
 	$(ec)$(gprintf) "Creating JNI header files ...\n"
-	$(ec)$(jhome)/bin/javah -d $(jni_inc_dir) \
+	$(ec)$(call hostpath,$(jhome)/bin/javah) -d $(jni_inc_dir) \
 		-classpath $(call hostpath,$(xflaim_jni_jar)) \
 		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
 endif
