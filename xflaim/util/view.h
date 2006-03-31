@@ -463,7 +463,7 @@ EXTERN FLMBOOL						gv_bViewExclusive;
 EXTERN VIEW_MENU_ITEM_p			gv_pViewSearchItem;
 EXTERN FLMUINT						gv_uiViewSearchLfNum;
 EXTERN FLMUINT						gv_uiViewSearchLfType;
-EXTERN FLMBYTE						gv_ucViewSearchKey[ MAX_KEY_SIZ];
+EXTERN FLMBYTE						gv_ucViewSearchKey[ XFLM_MAX_KEY_SIZE];
 EXTERN FLMUINT						gv_uiViewSearchKeyLen;
 EXTERN F_Pool						gv_ViewPool;
 EXTERN FLMUINT						gv_uiViewTopRow;

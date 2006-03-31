@@ -12541,16 +12541,16 @@ ix_list_retry:
 	// Allocate key buffers for the from & until key so we
 	// can do comparisons.
 
-	if (RC_BAD( rc = f_calloc( MAX_KEY_SIZ * 2, &pucUntilKeyBuf)))
+	if (RC_BAD( rc = f_calloc( XFLM_MAX_KEY_SIZE * 2, &pucUntilKeyBuf)))
 	{
 		goto Exit;
 	}
-	pucFoundKeyBuf = &pucUntilKeyBuf [MAX_KEY_SIZ];
+	pucFoundKeyBuf = &pucUntilKeyBuf [XFLM_MAX_KEY_SIZE];
 
 	// Get the collated until key.
 
 	if (RC_BAD( rc = pUntilKeyV->outputKey(
-		m_pDb, uiIndex, 0, pucUntilKeyBuf, MAX_KEY_SIZ, &uiUntilKeyLen)))
+		m_pDb, uiIndex, 0, pucUntilKeyBuf, XFLM_MAX_KEY_SIZE, &uiUntilKeyLen)))
 	{
 		goto Exit;
 	}
@@ -12607,7 +12607,7 @@ ix_list_retry:
 		// See if we have gone past the until key.
 
 		if (RC_BAD( rc = pFoundKeyV->outputKey(
-			m_pDb, uiIndex, 0, pucFoundKeyBuf, MAX_KEY_SIZ, &uiFoundKeyLen)))
+			m_pDb, uiIndex, 0, pucFoundKeyBuf, XFLM_MAX_KEY_SIZE, &uiFoundKeyLen)))
 		{
 			goto Exit;
 		}
@@ -13480,7 +13480,7 @@ RCODE F_DomEditor::viewOnlyDeleteIxKey( void	)
 	RCODE					rc = NE_XFLM_OK;
 	F_DataVector *		pVector = NULL;
 	DME_ROW_INFO *		pFirstDeleteRow = NULL;
-	FLMBYTE				pucKeyBuf[ MAX_KEY_SIZ];
+	FLMBYTE				pucKeyBuf[ XFLM_MAX_KEY_SIZE];
 	FLMUINT				uiKeyLen;
 	F_Btree *			pBtree = NULL;
 	IXD *					pIxd;
@@ -13547,7 +13547,7 @@ RCODE F_DomEditor::viewOnlyDeleteIxKey( void	)
 													 m_pCurRow->pNext->uiIndex,
 													 0,
 													 pucKeyBuf,
-													 MAX_KEY_SIZ,
+													 XFLM_MAX_KEY_SIZE,
 													 &uiKeyLen)))
 	{
 		goto Exit;
@@ -13586,7 +13586,7 @@ RCODE F_DomEditor::viewOnlyDeleteIxKey( void	)
 
 	// Delete the key.
 	if (RC_BAD( rc = pBtree->btRemoveEntry( pucKeyBuf,
-														 MAX_KEY_SIZ,
+														 XFLM_MAX_KEY_SIZE,
 														 uiKeyLen)))
 	{
 		goto Exit;
