@@ -129,7 +129,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1import(
 	
 	jclass class_JIStream = pEnv->FindClass( "xflaim/PosIStream");
 	jfieldID fid_this = pEnv->GetFieldID( class_JIStream, "m_this", "J");
-	pIStream = (IF_PosIStream *)pEnv->GetLongField( jIStream, fid_this);
+	pIStream = (IF_PosIStream *)((FLMUINT)pEnv->GetLongField( jIStream, fid_this));
 	
 	if (!pIStream)
 	{

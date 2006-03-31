@@ -193,7 +193,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 		pEnv->ReleaseStringUTFChars( sDictBuf, pszDictBuf);
 	}
 
-  	return( (jlong)pDb);
+  	return( (jlong)((FLMUINT)pDb));
 }
 
 /****************************************************************************
