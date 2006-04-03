@@ -1412,12 +1412,10 @@ srcdist: status dircheck docs
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
-	-$(ec)$(call rmdircmd,$(package_stage_dir)/src/.svn)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
-	-$(ec)$(call rmdircmd,$(package_stage_dir)/util/.svn)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 ifneq ($(host_os_family),win)
-	-$(ec)rm -rf `find $(package_stage_dir)/tools -name .svn`
+	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
 endif
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 ifeq ($(host_os_family),win)
