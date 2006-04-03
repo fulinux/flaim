@@ -604,7 +604,7 @@ package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
 package_static_lib_stage_dir = $(package_lib_stage_dir)/static
 package_util_stage_dir = $(package_bin_stage_dir)/util
 package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
-src_package_prefix = $(package_proj_name_and_ver)-src
+src_package_prefix = $(package_proj_name_and_ver)
 bin_package_prefix = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
 
 ifeq ($(package_archive_format),tar)
@@ -1399,7 +1399,7 @@ endef
 # -- srcdist --
 
 .PHONY : srcdist
-srcdist: status dircheck docs
+srcdist: status dircheck docs spec
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
    else
