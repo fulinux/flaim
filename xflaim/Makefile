@@ -485,14 +485,13 @@ endif
 inc_dirs = src util
 
 ifdef jhome
-	jni_inc_dir = $(target_path)/java/include
+	jni_src_dir = java/jni
 	inc_dirs += $(subst $(sp),@,"$(jhome)/include")
 	inc_dirs += $(subst $(sp),@,"$(jhome)/include/win32")
 	inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
-	inc_dirs += $(jni_inc_dir)
+	inc_dirs += $(jni_src_dir)
 endif
 
-static_obj_dir = $(target_path)/static_obj
 xflaim_jni_jar = $(java_output_dir)/xflaimjni.jar
 obj_dir = $(target_path)/obj
 util_dir = $(target_path)/util
@@ -804,7 +803,7 @@ xflaim_src = \
 	$(wildcard src/*.cpp)
 
 xflaim_jni_src = \
-	$(wildcard jni/native/src/*.cpp)
+	$(wildcard java/jni/*.cpp)
 	
 utilsup_src = \
 	flm_dlst.cpp \
@@ -927,11 +926,10 @@ ut_xpathtest2_src = \
 # -- XFLAIM library --
 
 xflaim_obj = $(patsubst src/%.cpp,$(obj_dir)/%$(obj_suffix),$(xflaim_src))
-xflaim_jni_obj = $(patsubst jni/native/src/%.cpp,$(obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
+xflaim_jni_obj = $(patsubst java/jni/%.cpp,$(obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
 xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 xflaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
-xflaim_jni_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)jni$(shared_lib_suffix)$(suffix_version)
 
 # -- Unit tests  --
 
@@ -960,7 +958,7 @@ ut_xpathtest2_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(ut_xpathtest2_s
 
 # -- Java --
 
-jni_java_src = $(wildcard jni/java/xflaim/*.java)
+jni_java_src = $(wildcard java/xflaim/*.java)
 
 # -- Utilities  --
 
@@ -983,7 +981,7 @@ utilsup_obj = $(patsubst %.cpp,$(obj_dir)/%$(obj_suffix),$(utilsup_src))
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample jni/native/src 
+vpath %.cpp src util sample java/jni 
 vpath %.java jni/java/xflaim
 
 # -- Default target --
@@ -1002,7 +1000,7 @@ $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(call hostpath,$(jhome)/bin/jar) cf $(call hostpath,$(xflaim_jni_jar)) \
 		-C $(call hostpath,$(java_class_output_dir)) .
 	$(ec)$(gprintf) "Creating JNI header files ...\n"
-	$(ec)$(call hostpath,$(jhome)/bin/javah) -d $(jni_inc_dir) \
+	$(ec)$(call hostpath,$(jhome)/bin/javah) -d $(jni_src_dir) \
 		-classpath $(call hostpath,$(xflaim_jni_jar)) \
 		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
 endif
@@ -1035,7 +1033,7 @@ endif
 
 # -- xflaim.dll and libxflaim.so --
 
-$(xflaim_shared_lib) : $(xflaim_obj)
+$(xflaim_shared_lib) : $(xflaim_obj) $(xflaim_jni_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(lib_link_libs)
@@ -1050,19 +1048,6 @@ endif
 
 $(xflaim_shared_imp_lib) : $(xflaim_shared_lib)
 	$(ec)$(gprintf) "Building $@ ...\n"
-
-# -- xflaimjni.dll and libxflaimjni.so --
-
-$(xflaim_jni_shared_lib) : $(xflaim_obj) $(xflaim_jni_obj)
-	$(ec)$(gprintf) "Building $@ ...\n"
-ifdef win_target
-	$(ec)$(linker) $(subst /,\,$+) $(shared_link_flags) $(lib_link_libs)
-else
-	$(ec)rm -f $@
-ifeq ($(target_os_family),linux)
-	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
-endif
-endif
 
 # -- Utility link command --
 
@@ -1289,10 +1274,10 @@ $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(flm_util_link_cmd)
 	
-# -- jni --
+# -- java (JNI jar file) --
 
-.PHONY : jni
-jni: status dircheck $(xflaim_jni_jar) $(xflaim_jni_shared_lib)
+.PHONY : java
+java: status dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
 	
 # -- dist --
 
@@ -1531,7 +1516,6 @@ status:
 .PHONY : dircheck
 dircheck:
 	$(ec)$(call mkdircmd,$(obj_dir))
-	$(ec)$(call mkdircmd,$(static_obj_dir))
 	$(ec)$(call mkdircmd,$(java_output_dir))
 	$(ec)$(call mkdircmd,$(java_class_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
