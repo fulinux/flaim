@@ -96,6 +96,7 @@ FSTATIC void flmUnlockSysData( void);
 
 FSTATIC RCODE flmSetCacheLimits(
 	FLMUINT		uiNewTotalCacheSize,
+	FLMBOOL		bForceLimit,
 	FLMBOOL		bPreallocateCache);
 
 FSTATIC void flmFreeEvent(
@@ -1012,13 +1013,14 @@ Desc: This routine sets the limits for record cache and block cache - dividing
 ****************************************************************************/
 FSTATIC RCODE flmSetCacheLimits(
 	FLMUINT		uiNewTotalCacheSize,
+	FLMBOOL		bForceLimit,
 	FLMBOOL		bPreallocateCache)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiNewBlockCacheSize;
 	FLMBOOL		bResizeAfterConfig = FALSE;
 	
-	if( uiNewTotalCacheSize > FLM_MAX_CACHE_SIZE)
+	if( !bForceLimit && uiNewTotalCacheSize > FLM_MAX_CACHE_SIZE)
 	{
 		uiNewTotalCacheSize = FLM_MAX_CACHE_SIZE;
 	}
@@ -1124,7 +1126,7 @@ FLMEXP RCODE FLMAPI FlmSetDynamicMemoryLimit(
 									gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE,
 									gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
 									gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated());
-	rc = flmSetCacheLimits( uiCacheBytes, FALSE);
+	rc = flmSetCacheLimits( uiCacheBytes, FALSE, FALSE);
 	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	return( rc);
@@ -1162,12 +1164,12 @@ FLMEXP RCODE FLMAPI FlmSetHardMemoryLimit(
 										bPercentOfAvail,
 										gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
 										gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated());
-		rc = flmSetCacheLimits( uiCacheBytes, bPreallocate);
+		rc = flmSetCacheLimits( uiCacheBytes, FALSE, bPreallocate);
 #endif
 	}
 	else
 	{
-		rc = flmSetCacheLimits( uiMax, bPreallocate);
+		rc = flmSetCacheLimits( uiMax, TRUE, bPreallocate);
 	}
 	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
@@ -1533,7 +1535,7 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
 			gv_FlmSysData.bDynamicCacheAdjust = FALSE;
-			rc = flmSetCacheLimits( (FLMUINT)Value1, (FLMBOOL)Value2);
+			rc = flmSetCacheLimits( (FLMUINT)Value1, TRUE, (FLMBOOL)Value2);
 			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			break;
@@ -1552,6 +1554,7 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			rc = flmSetCacheLimits( 
 				gv_FlmSysData.SCacheMgr.Usage.uiMaxBytes + 
 				gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes,
+				gv_FlmSysData.bDynamicCacheAdjust ? FALSE : TRUE,
 				gv_FlmSysData.bCachePreallocated);
 
 			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
@@ -3581,7 +3584,7 @@ RCODE flmSystemMonitor(
 										gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE,
 										gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
 										gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated());
-				(void)flmSetCacheLimits( uiCacheBytes, FALSE);
+				(void)flmSetCacheLimits( uiCacheBytes, FALSE, FALSE);
 			}
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
