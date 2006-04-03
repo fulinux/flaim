@@ -1016,7 +1016,7 @@ ifdef netware_target
 		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)\n" >> $(4)
-		$(ec)$(gprintf) "library $(call ppath,$(static_flaim_lib))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(xflaim_static_lib))\n" >> $(4)
    endef
 	
    define flm_exe_link_cmd
@@ -1030,10 +1030,10 @@ endif
 # -- File lists --
 
 xflaim_src = \
-	$(wildcard src/*.cpp)
+	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
 
 xflaim_jni_src = \
-	$(wildcard java/jni/*.cpp)
+	$(patsubst java/jni/%.cpp,%.cpp,$(wildcard java/jni/*.cpp))
 	
 util_common_src = \
 	flm_dlst.cpp \
@@ -1160,8 +1160,8 @@ ut_xpathtest2_src = \
 	
 # -- XFLAIM library --
 
-xflaim_obj = $(patsubst src/%.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_src))
-xflaim_jni_obj = $(patsubst java/jni/%.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
+xflaim_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_src))
+xflaim_jni_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
 xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
    xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
@@ -1211,7 +1211,7 @@ view_exe = $(util_dir)/view$(exe_suffix)
 xshell_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(xshell_src))
 xshell_exe = $(util_dir)/xshell$(exe_suffix)
 
-sample_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(sample_src))
+sample_obj = $(patsubst %.cpp,$(sample_obj_dir)/%$(obj_suffix),$(sample_src))
 sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths -- 
@@ -1284,7 +1284,7 @@ endif
 endif
 ifdef netware_target
 	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/flmlib.lis)
-	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(static_flaim_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
+	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(xflaim_static_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
 endif
 
 # -- xflaim.dll and libxflaim.so --
@@ -1536,6 +1536,14 @@ $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(xflaim_static_lib)
 .PHONY : java
 java: status dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
 	
+# -- version --
+
+define make_version_files
+	$(ec)$(gprintf) "$(version)" > $(1)/VERSION
+	$(ec)$(gprintf) " " > $(1)/SVNRevision.$(svn_revision)
+	$(ec)$(gprintf) "Version files created.\n"
+endef
+
 # -- srcdist --
 
 .PHONY : srcdist
@@ -1553,6 +1561,8 @@ srcdist: status dircheck docs spec
 	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
+	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
+	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 ifneq ($(host_os_family),win)
@@ -1589,13 +1599,13 @@ binpackage: status
 	$(ec)$(call mkdircmd,$(package_util_stage_dir))
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
-	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
-	$(ec)$(call copycmd,$(static_flaim_lib),$(package_static_lib_stage_dir))
-ifdef shared_flaim_lib
-	$(ec)$(call copycmd,$(shared_flaim_lib),$(package_shared_lib_stage_dir))
+	$(ec)$(call copycmd,src/xflaim.h,$(package_inc_stage_dir))
+	$(ec)$(call copycmd,$(xflaim_static_lib),$(package_static_lib_stage_dir))
+ifdef xflaim_shared_lib
+	$(ec)$(call copycmd,$(xflaim_shared_lib),$(package_shared_lib_stage_dir))
 endif
 ifdef win_target
-	$(ec)$(call copycmd,$(shared_flaim_imp_lib),$(package_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(xflaim_shared_imp_lib),$(package_shared_lib_stage_dir))
 endif
 	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
