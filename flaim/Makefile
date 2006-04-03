@@ -526,11 +526,11 @@ ifeq ($(package_archive_format),tar)
 else
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7z) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
    endef
 	
    define extract_archive
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7z) x $(call hostpath,$(2))
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2))
    endef
 endif
 
@@ -554,6 +554,17 @@ else
 	mkdircmd = mkdir -p $(1)
 	runtest = sh -c "cd $(test_dir); ./$(1) -d; exit"
 	topdir := $(shell pwd)
+endif
+
+# If this is an un-tar'd or un-zipped source package, the tools directory
+# will be subordinate to the top directory.  Otherwise, it will be
+# a sibling to the top directory - which is how it is set up in the
+# subversion repository.
+
+ifeq "$(wildcard $(topdir)/tools*)" ""
+	tooldir := $(dir $(topdir))tools/$(host_os_family)
+else
+	tooldir := $(topdir)/tools/$(host_os_family)
 endif
 
 # Files and Directories
@@ -639,7 +650,11 @@ libr =
 linker =
 compiler =
 
-gprintf = printf
+ifdef win_target
+	gprintf = $(call hostpath,$(tooldir)/printf.exe)
+else
+	gprintf = printf
+endif
 
 # Compiler definitions and flags
 
@@ -1400,11 +1415,13 @@ srcdist: status dircheck docs
 	-$(ec)$(call rmdircmd,$(package_stage_dir)/src/.svn)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	-$(ec)$(call rmdircmd,$(package_stage_dir)/util/.svn)
+	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
+ifneq ($(host_os_family),win)
+	-$(ec)rm -rf `find $(package_stage_dir)/tools -name .svn`
+endif
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
-	$(ec)$(call copycmd,printf.exe,$(package_stage_dir))
-	$(ec)$(call dircopycmd,external/w32,$(package_stage_dir)/external/w32)
 endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
 		$(package_dir)/$(src_package_name), \
@@ -1463,8 +1480,9 @@ dist: status dircheck srcdist
    endif
 	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
 ifeq ($(host_os_family),win)
-	$(ec)$(call copycmd,7z.exe,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call copycmd,$(call hostpath,$(tooldir)/7z.exe),$(package_dir)/$(package_proj_name_and_ver))
 endif
+	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
