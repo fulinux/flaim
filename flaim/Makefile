@@ -1477,9 +1477,6 @@ dist: status dircheck srcdist
 		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
    endif
 	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
-ifeq ($(host_os_family),win)
-	$(ec)$(call copycmd,$(call hostpath,$(tooldir)/7z.exe),$(package_dir)/$(package_proj_name_and_ver))
-endif
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
