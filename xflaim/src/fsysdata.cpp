@@ -4539,7 +4539,7 @@ Exit:
 /****************************************************************************
 Desc:	Allocates an F_DbSystem object for non-COM applications
 ****************************************************************************/
-RCODE FlmAllocDbSystem(
+XFLMEXP RCODE XFLMAPI FlmAllocDbSystem(
 	IF_DbSystem **			ppDbSystem)
 {
 	flmAssert( ppDbSystem && *ppDbSystem == NULL);
