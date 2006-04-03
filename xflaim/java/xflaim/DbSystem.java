@@ -34,7 +34,7 @@ public class DbSystem
 {
 	static
 	{ 
-		System.loadLibrary( "xflaimjni");
+		System.loadLibrary( "xflaim");
 	}
 	  
 	/**
