@@ -890,7 +890,7 @@ ifdef unix_target
 
 	# Same thing for the include dirs
 
-	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),-I$(subst @,$(sp),$(inc_dir))
+	ccinclude = $(foreach inc_dir,$(strip $(inc_dirs)),-I$(subst @,$(sp),$(inc_dir)))
 
 	# Concatenate everything into the ccflags variable
 

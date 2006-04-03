@@ -280,19 +280,19 @@
 	#define XFLMEXTC				extern "C"
 
 	#if defined( FLM_WIN)
-		#define XFLMEXP			__declspec(dllexport)
 		#define XFLMAPI     		__stdcall
+		#define XFLMEXP			__declspec(dllexport)
 		#ifdef FLM_DEBUG
 			#define FINLINE		inline
 		#else
 			#define FINLINE		__forceinline
 		#endif
 	#elif defined( FLM_NLM)
-		#define XFLMAPI			__stdcall
+		#define XFLMAPI     		__stdcall
 		#define XFLMEXP			XFLMEXTC
 		#define FINLINE			inline
 	#elif defined( FLM_UNIX)
-		#define XFLMAPI			__cdecl
+		#define XFLMAPI     		
 		#define XFLMEXP			XFLMEXTC
 		#define FINLINE			inline
 	#else
