@@ -526,11 +526,11 @@ ifeq ($(package_archive_format),tar)
 else
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7za) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7z) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
    endef
 	
    define extract_archive
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7za) x $(call hostpath,$(2))
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(topdir)/7z) x $(call hostpath,$(2))
    endef
 endif
 
@@ -1463,7 +1463,7 @@ dist: status dircheck srcdist
    endif
 	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
 ifeq ($(host_os_family),win)
-	$(ec)$(call copycmd,7za.exe,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call copycmd,7z.exe,$(package_dir)/$(package_proj_name_and_ver))
 endif
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"

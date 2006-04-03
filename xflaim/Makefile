@@ -1314,7 +1314,7 @@ ifdef win_target
 	$(ec)$(call copycmd,make.exe,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,printf.exe,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)cmd /C "cd $(subst /,\,$(homedir)/$(package_dir)) && \
-			$(subst /,\,$(homedir)/7za a -tzip -r ZIPS/$(src_zip_name)) \
+			$(subst /,\,$(homedir)/7z a -tzip -r ZIPS/$(src_zip_name)) \
 			$(package_proj_name_and_ver)"
 else
 	$(ec)tar zcf $(package_sources_dir)/$(package_proj_name_and_ver).tar.gz \
@@ -1472,7 +1472,7 @@ zips: dist
 ifdef win_target
 	$(ec)$(gprintf) "Creating source and binary ZIPs ...\n"
 	$(ec)$(call copycmd,$(package_zips_dir)/$(src_zip_name),$(package_build_dir))
-	$(ec)7za x -o$(package_build_dir) $(package_build_dir)/$(src_zip_name)
+	$(ec)7z x -o$(package_build_dir) $(package_build_dir)/$(src_zip_name)
 	$(ec)$(call rmcmd,$(package_build_dir)/$(src_zip_name))
 	$(ec)make -C $(package_build_dir)/$(package_proj_name_and_ver) all
 	$(ec)$(call mkdircmd,$(zip_stage_dir))
@@ -1501,7 +1501,7 @@ ifdef win_target
 	$(ec)$(call copycmd,$(package_build_dir)/$(package_proj_name_and_ver)/$(xshell_exe),\
 		$(zip_util_stage_dir))
 	$(ec)cmd /C "cd $(subst /,\,$(zip_stage_parent_dir)) && \
-			$(subst /,\,$(homedir)/7za a -tzip -r $(homedir)/$(package_build_dir)/$(bin_zip_name)) \
+			$(subst /,\,$(homedir)/7z a -tzip -r $(homedir)/$(package_build_dir)/$(bin_zip_name)) \
 			$(package_proj_name_and_ver)"
 	$(ec)$(call copycmd,$(package_build_dir)/$(bin_zip_name),$(package_zips_dir))
 	$(ec)$(call rmcmd,$(package_build_dir)/$(bin_zip_name))
