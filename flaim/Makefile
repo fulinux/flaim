@@ -1165,7 +1165,7 @@ ifdef netware_target
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8d))\n" >> $(4)
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8m))\n" >> $(4)
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8s))\n" >> $(4)
-		$(ec)$(gprintf) "library $(call ppath,$(static_flaim_lib))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(flaim_static_lib))\n" >> $(4)
    endef
 	
    define flm_exe_link_cmd
@@ -1179,7 +1179,7 @@ endif
 # -- File lists --
 
 flaim_src = \
-	$(wildcard src/*.cpp)
+	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
 
 utilsup_src = \
 	flm_dlst.cpp \
@@ -1224,12 +1224,12 @@ ut_basictest_src = \
 	
 # -- FLAIM library --
 
-flaim_static_obj = $(patsubst src/%.cpp,$(lib_obj_dir)/%$(obj_suffix),$(flaim_src))
-flaim_shared_obj = $(patsubst src/%.cpp,$(lib_sobj_dir)/%$(obj_suffix),$(flaim_src))
-static_flaim_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
+flaim_static_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(flaim_src))
+flaim_shared_obj = $(patsubst %.cpp,$(lib_sobj_dir)/%$(obj_suffix),$(flaim_src))
+flaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
-	shared_flaim_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
-	shared_flaim_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)$(suffix_version)
+	flaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+	flaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)$(suffix_version)
 endif
 
 # -- Unit tests  --
@@ -1260,7 +1260,7 @@ vpath %.cpp src util sample
 # -- Default target --
 
 .PHONY : libs
-libs: status dircheck $(static_flaim_lib) $(shared_flaim_lib)
+libs: status dircheck $(flaim_static_lib) $(flaim_shared_lib)
 
 # -- *.cpp -> *$(obj_suffix) --
 
@@ -1298,7 +1298,7 @@ endif
 
 # -- flaim.lib and libflaim.a --
 
-$(static_flaim_lib) : $(flaim_static_obj)
+$(flaim_static_lib) : $(flaim_static_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(libr) /NOLOGO $(call hostpath,$+) /OUT:$(call hostpath,$@)	
@@ -1313,12 +1313,12 @@ endif
 endif
 ifdef netware_target
 	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/flmlib.lis)
-	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(static_flaim_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
+	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(flaim_static_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
 endif
 
 # -- flaim.dll and libflaim.so --
 
-$(shared_flaim_lib) : $(flaim_shared_obj)
+$(flaim_shared_lib) : $(flaim_shared_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
@@ -1341,32 +1341,32 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status dircheck $(static_flaim_lib) $(checkdb_exe)
-$(checkdb_exe): $(checkdb_obj) $(static_flaim_lib)
+checkdb: status dircheck $(flaim_static_lib) $(checkdb_exe)
+$(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
 
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status dircheck $(static_flaim_lib) $(rebuild_exe)
-$(rebuild_exe): $(rebuild_obj) $(static_flaim_lib)
+rebuild: status dircheck $(flaim_static_lib) $(rebuild_exe)
+$(rebuild_exe): $(rebuild_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
 
 # -- view --
 
 .PHONY : view
-view: status dircheck $(static_flaim_lib) $(view_exe)
-$(view_exe): $(view_obj) $(static_flaim_lib)
+view: status dircheck $(flaim_static_lib) $(view_exe)
+$(view_exe): $(view_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
 
 # -- dbshell --
 
 .PHONY : dbshell
-dbshell: status dircheck $(static_flaim_lib) $(dbshell_exe)
-$(dbshell_exe): $(dbshell_obj) $(static_flaim_lib)
+dbshell: status dircheck $(flaim_static_lib) $(dbshell_exe)
+$(dbshell_exe): $(dbshell_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),dbshell,$(dbshell_obj))
 
@@ -1374,8 +1374,8 @@ $(dbshell_exe): $(dbshell_obj) $(static_flaim_lib)
 
 .PHONY : sample
 ifndef netware_target
-sample: status dircheck $(static_flaim_lib) $(sample_exe)
-$(sample_exe): $(sample_obj) $(static_flaim_lib)
+sample: status dircheck $(flaim_static_lib) $(sample_exe)
+$(sample_exe): $(sample_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
 endif
@@ -1383,8 +1383,8 @@ endif
 # -- basictest --
 
 .PHONY : basictest
-basictest: status dircheck $(static_flaim_lib) $(test_dir)/basictest$(exe_suffix)
-$(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(static_flaim_lib)
+basictest: status dircheck $(flaim_static_lib) $(test_dir)/basictest$(exe_suffix)
+$(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir)basictest,$(ut_basictest_obj))
 
@@ -1450,12 +1450,12 @@ binpackage: status
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
-	$(ec)$(call copycmd,$(static_flaim_lib),$(package_static_lib_stage_dir))
-ifdef shared_flaim_lib
-	$(ec)$(call copycmd,$(shared_flaim_lib),$(package_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(flaim_static_lib),$(package_static_lib_stage_dir))
+ifdef flaim_shared_lib
+	$(ec)$(call copycmd,$(flaim_shared_lib),$(package_shared_lib_stage_dir))
 endif
 ifdef win_target
-	$(ec)$(call copycmd,$(shared_flaim_imp_lib),$(package_shared_lib_stage_dir))
+	$(ec)$(call copycmd,$(flaim_shared_imp_lib),$(package_shared_lib_stage_dir))
 endif
 	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
@@ -1501,8 +1501,8 @@ ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
-	install --mode=644 $(shared_flaim_lib) $(lib_install_dir)
-	install --mode=644 $(static_flaim_lib) $(lib_install_dir)
+	install --mode=644 $(flaim_shared_lib) $(lib_install_dir)
+	install --mode=644 $(flaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
 	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
@@ -1683,7 +1683,7 @@ allutils: status dircheck checkdb rebuild view sample dbshell
 	$(ec)$(gprintf) ""
 
 .PHONY : test
-test:	status dircheck $(static_flaim_lib) basictest
+test:	status dircheck $(flaim_static_lib) basictest
 	$(ec)$(call runtest,basictest)
 
 .PHONY : debug
