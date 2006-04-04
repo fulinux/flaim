@@ -191,6 +191,28 @@ else
 	ec = @
 endif
 
+# -- Determine if we are only cleaning --
+
+util_targets = checkdb rebuild view sample xshell
+test_targets = basictest binarytest colldeftest dictchangetest dictdeftest \
+		dirtyexittest1 dirtyexittest2 domnodetest enctest importtest \
+		indexdeftest indextest1 indextest2 indextest3 \
+		namespacetest metaphonetest regressiontest rfltest sortkeytest \
+		sortkeytest2 xpathtest1 xpathtest2
+all_targets = java rpms install libs all allutils test $(util_targets) $(test_targets)
+found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
+
+ifneq (,$(findstring clean,$(MAKECMDGOALS)))
+	clean_only = $(if $(findstring 0,$(words $(found_targets))),1,0)
+	do_clean = 1
+	ifeq ($(clean_only),0)
+      $(error Cannot specify other targets with clean target)
+	endif
+else
+	clean_only = 0
+	do_clean = 0
+endif
+
 # -- Determine the host operating system --
 
 ifndef host_os_family
@@ -332,6 +354,7 @@ ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
 	netware_target = yes
 	target_os_family = netware
 	package_archive_format = zip
+	host_os_family = win
 endif
 
 ifndef target_os_family
@@ -663,10 +686,10 @@ libr =
 linker =
 compiler =
 
-ifdef win_target
-	gprintf = $(call hostpath,$(tooldir)/printf.exe)
-else
+ifdef unix_target
 	gprintf = printf
+else
+	gprintf = $(call hostpath,$(tooldir)/printf.exe)
 endif
 
 # Compiler definitions and flags
@@ -1222,10 +1245,13 @@ vpath %.java jni/java/xflaim
 # -- Default target --
 
 .PHONY : libs
-libs: status dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
+ifeq ($(clean_only),0)
+libs: status clean dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
+endif
 
 # -- JNI (Java) --
 
+ifeq ($(clean_only),0)
 ifdef jhome
 $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(gprintf) "Compiling JNI java sources ...\n"
@@ -1238,6 +1264,7 @@ $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(call hostpath,$(jhome)/bin/javah) -d $(jni_src_dir) \
 		-classpath $(call hostpath,$(xflaim_jni_jar)) \
 		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
+endif
 endif
 
 # -- *.cpp -> *$(obj_suffix) --
@@ -1269,6 +1296,7 @@ $(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
 
 # -- xflaim.lib and libxflaim.a --
 
+ifeq ($(clean_only),0)
 $(xflaim_static_lib) : $(xflaim_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
@@ -1286,9 +1314,11 @@ ifdef netware_target
 	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/flmlib.lis)
 	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(xflaim_static_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
 endif
+endif
 
 # -- xflaim.dll and libxflaim.so --
 
+ifeq ($(clean_only),0)
 $(xflaim_shared_lib) : $(xflaim_obj) $(xflaim_jni_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
@@ -1300,11 +1330,14 @@ ifeq ($(target_os_family),linux)
 	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
 endif
+endif
 
 # -- xflaim.lib import library --
 
+ifeq ($(clean_only),0)
 $(xflaim_shared_imp_lib) : $(xflaim_shared_lib)
 	$(ec)$(gprintf) "Building $@ ...\n"
+endif
 
 # -- Utility link command --
 
@@ -1317,225 +1350,281 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status dircheck libs $(checkdb_exe)
+ifeq ($(clean_only),0)
+checkdb: status clean dircheck libs $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
+endif
 
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status dircheck libs $(rebuild_exe)
+ifeq ($(clean_only),0)
+rebuild: status clean dircheck libs $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
+endif
 
 # -- view --
 
 .PHONY : view
-view: status dircheck libs $(view_exe)
+ifeq ($(clean_only),0)
+view: status clean dircheck libs $(view_exe)
 $(view_exe): $(view_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
+endif
 
 # -- sample --
 
 .PHONY : sample
-sample: status dircheck libs $(sample_exe)
+ifeq ($(clean_only),0)
+sample: status clean dircheck libs $(sample_exe)
 $(sample_exe): $(sample_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),dbshell,$(sample_obj))
 	$(ec)$(call copycmd,sample/xmlfiles/*.xml,$(sample_dir))
+endif
 
 # -- xshell --
 
 .PHONY : xshell
-xshell: status dircheck libs $(xshell_exe)
+ifeq ($(clean_only),0)
+xshell: status clean dircheck libs $(xshell_exe)
 $(xshell_exe): $(xshell_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
-	
+endif
+
 # -- basictest --
 
 .PHONY : basictest
-basictest: status dircheck $(test_dir)/basictest$(exe_suffix)
+ifeq ($(clean_only),0)
+basictest: status clean dircheck $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),basictest,$(ut_basictest_obj))
-	
+endif
+
 # -- binarytest --
 
 .PHONY : binarytest
-binarytest: status dircheck $(test_dir)/binarytest$(exe_suffix)
+ifeq ($(clean_only),0)
+binarytest: status clean dircheck $(test_dir)/binarytest$(exe_suffix)
 $(test_dir)/binarytest$(exe_suffix): $(ut_binarytest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),binarytest,$(ut_binarytest_obj))
-	
+endif
+
 # -- colldeftest --
 
 .PHONY : colldeftest
-colldeftest: status dircheck $(test_dir)/colldeftest$(exe_suffix)
+ifeq ($(clean_only),0)
+colldeftest: status clean dircheck $(test_dir)/colldeftest$(exe_suffix)
 $(test_dir)/colldeftest$(exe_suffix): $(ut_colldeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),colldeftest,$(ut_colldeftest_obj))
-	
+endif
+
 # -- dictchangetest --
 
 .PHONY : dictchangetest
-dictchangetest: status dircheck $(test_dir)/dictchangetest$(exe_suffix)
+ifeq ($(clean_only),0)
+dictchangetest: status clean dircheck $(test_dir)/dictchangetest$(exe_suffix)
 $(test_dir)/dictchangetest$(exe_suffix): $(ut_dictchangetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dictchangetest,$(ut_dictchangetest_obj))
-	
+endif
+
 # -- dictdeftest --
 
 .PHONY : dictdeftest
-dictdeftest: status dircheck $(test_dir)/dictdeftest$(exe_suffix)
+ifeq ($(clean_only),0)
+dictdeftest: status clean dircheck $(test_dir)/dictdeftest$(exe_suffix)
 $(test_dir)/dictdeftest$(exe_suffix): $(ut_dictdeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dictdeftest,$(ut_dictdeftest_obj))
-	
+endif
+
 # -- dirtyexittest1 --
 
 .PHONY : dirtyexittest1
-dirtyexittest1: status dircheck $(test_dir)/dirtyexittest1$(exe_suffix)
+ifeq ($(clean_only),0)
+dirtyexittest1: status clean dircheck $(test_dir)/dirtyexittest1$(exe_suffix)
 $(test_dir)/dirtyexittest1$(exe_suffix): $(ut_dirtyexittest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dirtyexittest1,$(ut_dirtyexittest1_obj))
-	
+endif
+
 # -- dirtyexittest2 --
 
 .PHONY : dirtyexittest2
-dirtyexittest2: status dircheck $(test_dir)/dirtyexittest2$(exe_suffix)
+ifeq ($(clean_only),0)
+dirtyexittest2: status clean dircheck $(test_dir)/dirtyexittest2$(exe_suffix)
 $(test_dir)/dirtyexittest2$(exe_suffix): $(ut_dirtyexittest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dirtyexittest2,$(ut_dirtyexittest2_obj))
-	
+endif
+
 # -- domnodetest --
 
 .PHONY : domnodetest
-domnodetest: status dircheck $(test_dir)/domnodetest$(exe_suffix)
+ifeq ($(clean_only),0)
+domnodetest: status clean dircheck $(test_dir)/domnodetest$(exe_suffix)
 $(test_dir)/domnodetest$(exe_suffix): $(ut_domnodetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),domnodetest,$(ut_domnodetest_obj))
-	
+endif
+
 # -- enctest --
 
 .PHONY : enctest
-enctest: status dircheck $(test_dir)/enctest$(exe_suffix)
+ifeq ($(clean_only),0)
+enctest: status clean dircheck $(test_dir)/enctest$(exe_suffix)
 $(test_dir)/enctest$(exe_suffix): $(ut_enctest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),enctest,$(ut_enctest_obj))
-	
+endif
+
 # -- importtest --
 
 .PHONY : importtest
-importtest: status dircheck $(test_dir)/importtest$(exe_suffix)
+ifeq ($(clean_only),0)
+importtest: status clean dircheck $(test_dir)/importtest$(exe_suffix)
 $(test_dir)/importtest$(exe_suffix): $(ut_importtest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),importtest,$(ut_importtest_obj))
-	
+endif
+
 # -- indexdeftest --
 
 .PHONY : indexdeftest
-indexdeftest: status dircheck $(test_dir)/indexdeftest$(exe_suffix)
+ifeq ($(clean_only),0)
+indexdeftest: status clean dircheck $(test_dir)/indexdeftest$(exe_suffix)
 $(test_dir)/indexdeftest$(exe_suffix): $(ut_indexdeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indexdeftest,$(ut_indexdeftest_obj))
-	
+endif
+
 # -- indextest1 --
 
 .PHONY : indextest1
-indextest1: status dircheck $(test_dir)/indextest1$(exe_suffix)
+ifeq ($(clean_only),0)
+indextest1: status clean dircheck $(test_dir)/indextest1$(exe_suffix)
 $(test_dir)/indextest1$(exe_suffix): $(ut_indextest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indextest1,$(ut_indextest1_obj))
-	
+endif
+
 # -- indextest2 --
 
 .PHONY : indextest2
-indextest2: status dircheck $(test_dir)/indextest2$(exe_suffix)
+ifeq ($(clean_only),0)
+indextest2: status clean dircheck $(test_dir)/indextest2$(exe_suffix)
 $(test_dir)/indextest2$(exe_suffix): $(ut_indextest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indextest2,$(ut_indextest2_obj))
-	
+endif
+
 # -- indextest3 --
 
 .PHONY : indextest3
-indextest3: status dircheck $(test_dir)/indextest3$(exe_suffix)
+ifeq ($(clean_only),0)
+indextest3: status clean dircheck $(test_dir)/indextest3$(exe_suffix)
 $(test_dir)/indextest3$(exe_suffix): $(ut_indextest3_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indextest3,$(ut_indextest3_obj))
-	
+endif
+
 # -- metaphonetest --
 
 .PHONY : metaphonetest
-metaphonetest: status dircheck $(test_dir)/metaphonetest$(exe_suffix)
+ifeq ($(clean_only),0)
+metaphonetest: status clean dircheck $(test_dir)/metaphonetest$(exe_suffix)
 $(test_dir)/metaphonetest$(exe_suffix): $(ut_metaphonetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),metaphonetest,$(ut_metaphonetest_obj))
-	
+endif
+
 # -- namespacetest --
 
 .PHONY : namespacetest
-namespacetest: status dircheck $(test_dir)/namespacetest$(exe_suffix)
+ifeq ($(clean_only),0)
+namespacetest: status clean dircheck $(test_dir)/namespacetest$(exe_suffix)
 $(test_dir)/namespacetest$(exe_suffix): $(ut_namespacetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),namespacetest,$(ut_namespacetest_obj))
-	
+endif
+
 # -- regressiontest --
 
 .PHONY : regressiontest
-regressiontest: status dircheck $(test_dir)/regressiontest$(exe_suffix)
+ifeq ($(clean_only),0)
+regressiontest: status clean dircheck $(test_dir)/regressiontest$(exe_suffix)
 $(test_dir)/regressiontest$(exe_suffix): $(ut_regressiontest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),regressiontest,$(ut_regressiontest_obj))
-	
+endif
+
 # -- rfltest --
 
 .PHONY : rfltest
-rfltest: status dircheck $(test_dir)/rfltest$(exe_suffix)
+ifeq ($(clean_only),0)
+rfltest: status clean dircheck $(test_dir)/rfltest$(exe_suffix)
 $(test_dir)/rfltest$(exe_suffix): $(ut_rfltest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),rfltest,$(ut_rfltest_obj))
-	
+endif
+
 # -- sortkeytest --
 
 .PHONY : sortkeytest
-sortkeytest: status dircheck $(test_dir)/sortkeytest$(exe_suffix)
+ifeq ($(clean_only),0)
+sortkeytest: status clean dircheck $(test_dir)/sortkeytest$(exe_suffix)
 $(test_dir)/sortkeytest$(exe_suffix): $(ut_sortkeytest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),sortkeytest,$(ut_sortkeytest_obj))
-	
+endif
+
 # -- sortkeytest2 --
 
 .PHONY : sortkeytest2
-sortkeytest2: status dircheck $(test_dir)/sortkeytest2$(exe_suffix)
+ifeq ($(clean_only),0)
+sortkeytest2: status clean dircheck $(test_dir)/sortkeytest2$(exe_suffix)
 $(test_dir)/sortkeytest2$(exe_suffix): $(ut_sortkeytest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),sortkeytest2,$(ut_sortkeytest2_obj))
-	
+endif
+
 # -- xpathtest1 --
 
 .PHONY : xpathtest1
-xpathtest1: status dircheck $(test_dir)/xpathtest1$(exe_suffix)
+ifeq ($(clean_only),0)
+xpathtest1: status clean dircheck $(test_dir)/xpathtest1$(exe_suffix)
 $(test_dir)/xpathtest1$(exe_suffix): $(ut_xpathtest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),xpathtest1,$(ut_xpathtest1_obj))
-	
+endif
+
 # -- xpathtest2 --
 
 .PHONY : xpathtest2
-xpathtest2: status dircheck $(test_dir)/xpathtest2$(exe_suffix)
+ifeq ($(clean_only),0)
+xpathtest2: status clean dircheck $(test_dir)/xpathtest2$(exe_suffix)
 $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),xpathtest2,$(ut_xpathtest2_obj))
-	
+endif
+
 # -- java (JNI jar file) --
 
 .PHONY : java
-java: status dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
-	
+ifeq ($(clean_only),0)
+java: status clean dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
+endif
+
 # -- version --
 
 define make_version_files
@@ -1547,6 +1636,7 @@ endef
 # -- srcdist --
 
 .PHONY : srcdist
+ifeq ($(clean_only),0)
 srcdist: status dircheck docs spec
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
@@ -1577,15 +1667,19 @@ endif
 	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_dir))
 	$(ec)$(call rmdircmd,$(package_stage_dir))
 	$(ec)$(gprintf) "Source package created.\n"
-	
+endif
+
 # -- bindist --
 
 .PHONY : bindist
+ifeq ($(clean_only),0)
 bindist: status dircheck all binpackage
 	$(ec)$(gprintf) ""
+endif
 
 .PHONY : binpackage
-binpackage: status
+ifeq ($(clean_only),0)
+binpackage: status clean
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
    else
@@ -1616,10 +1710,12 @@ endif
 		$(package_proj_name_and_ver))
 	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
 	$(ec)$(gprintf) "Binary package created.\n"
+endif
 
 # -- dist --
 
 .PHONY : dist
+ifeq ($(clean_only),0)
 dist: status dircheck srcdist
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
@@ -1632,20 +1728,24 @@ dist: status dircheck srcdist
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(gprintf) "Distribution created.\n"
-	
+endif
+
 # -- changelog --
 
 .PHONY : changelog
+ifeq ($(clean_only),0)
 changelog:
 	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
 	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
 	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
 	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(package_proj_name_and_ver).tar.log
 	$(ec)$(gprintf) "Change log created.\n"
-	
+endif
+
 # -- install --
 
 .PHONY : install
+ifeq ($(clean_only),0)
 install: libs pkgconfig
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
@@ -1658,10 +1758,12 @@ ifneq ($(host_os_family),win)
 	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
+endif
 
 # -- uninstall --
 
 .PHONY : uninstall
+ifeq ($(clean_only),0)
 uninstall: 
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
@@ -1671,10 +1773,12 @@ ifneq ($(host_os_family),win)
 	-rm -rf $(include_install_dir)/xflaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
+endif
 
 # -- spec file --
 
 .PHONY : spec
+ifeq ($(clean_only),0)
 spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
@@ -1741,10 +1845,12 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/include/xflaim.h\n" >> $(spec_file)
 	$(ec)$(gprintf) "Created spec file.\n"
+endif
 
 # -- PKG-CONFIG --
 
 .PHONY : pkgconfig
+ifeq ($(clean_only),0)
 pkgconfig: dircheck
 	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
 	$(ec)$(gprintf) "exec_prefix=$(dollar){prefix}\n" >> $(pkgconfig_file)
@@ -1755,35 +1861,43 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lxflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
+endif
 
 # -- SRCRPM --
 
 .PHONY : srcrpm
+ifeq ($(clean_only),0)
 srcrpm: dist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
 	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
-	
+endif
+
 # -- RPMS --
 
 .PHONY : rpms
+ifeq ($(clean_only),0)
 rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
 	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
-	
+endif
+
 # -- Documentation --
 
 .PHONY : docs
+ifeq ($(clean_only),0)
 docs: status dircheck
 	$(ec)$(gprintf) "Creating documentation ...\n"
 	$(ec)doxygen Doxyfile
 	$(ec)$(gprintf) "Documentation created.\n"
+endif
 
 # -- misc. targets --
 
 .PHONY : status
+ifeq ($(clean_only),0)
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
 	$(ec)$(gprintf) "SVN Revision ................... $(revision)\n"
@@ -1799,8 +1913,10 @@ status:
 	$(ec)$(gprintf) "Java Home ...................... $(call ppath,$(jhome))\n"
 	$(ec)$(gprintf) "Defines ........................ $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
+endif
 
 .PHONY : dircheck
+ifeq ($(clean_only),0)
 dircheck:
 	$(ec)$(call mkdircmd,$(util_obj_dir))
 	$(ec)$(call mkdircmd,$(test_obj_dir))
@@ -1819,24 +1935,25 @@ dircheck:
 	$(ec)$(call mkdircmd,$(package_build_dir))
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
+endif
 
 # -- phony targets --
 
 .PHONY : all
+ifeq ($(clean_only),0)
 all: libs allutils
 	$(ec)$(gprintf) ""
+endif
 
 .PHONY : allutils
-allutils: status dircheck libs checkdb rebuild view sample xshell
+ifeq ($(clean_only),0)
+allutils: status dircheck libs $(util_targets)
 	$(ec)$(gprintf) ""
+endif
 
 .PHONY : test
-test:	status dircheck $(xflaim_static_lib) \
-		basictest binarytest colldeftest dictchangetest dictdeftest \
-		dirtyexittest1 dirtyexittest2 domnodetest enctest importtest \
-		indexdeftest indextest1 indextest2 indextest3 \
-		namespacetest metaphonetest regressiontest rfltest sortkeytest \
-		sortkeytest2 xpathtest1 xpathtest2
+ifeq ($(clean_only),0)
+test:	status dircheck $(xflaim_static_lib) $(test_targets)
 	$(ec)$(call copycmd,util/xmlfiles/*.xml,$(test_dir))
 	$(ec)$(call runtest,basictest)
 	$(ec)$(call runtest,binarytest)
@@ -1860,6 +1977,7 @@ test:	status dircheck $(xflaim_static_lib) \
 	$(ec)$(call runtest,sortkeytest2)
 	$(ec)$(call runtest,xpathtest1)
 	$(ec)$(call runtest,xpathtest2)
+endif
 
 .PHONY : debug
 debug:
@@ -1938,9 +2056,14 @@ mostlyclean : clean
 	$(ec)$(gprintf) ""
 
 .PHONY : clean
-clean:
-	-$(ec)$(call rmdircmd,$(build_output_dir))
+clean: status
+ifeq ($(do_clean),1)
+	$(ec)$(gprintf) "\n"
+	$(ec)$(gprintf) "Cleaning $(target_path) ...\n"
+	-$(ec)$(call rmdircmd,$(target_path))
 	-$(ec)$(call rmcmd,*.pch)
+	$(ec)$(gprintf) "\n"
+endif
 	
 .PHONY : distclean
 	-$(ec)$(call rmcmd,*.pch)
