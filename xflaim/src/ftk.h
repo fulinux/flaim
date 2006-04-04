@@ -31,6 +31,25 @@
 		#error Platform not configured
 	#endif
 
+	/****************************************************************************
+	Desc:		Internal return code macros
+	****************************************************************************/
+	#ifdef FLM_DEBUG
+		RCODE	flmMakeErr(
+			RCODE				rc,
+			const char *	pszFile,
+			int				iLine,
+			FLMBOOL			bAssert);
+			
+		#define RC_SET( rc)							flmMakeErr( rc, __FILE__, __LINE__, FALSE)
+		#define RC_SET_AND_ASSERT( rc)			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
+		#define RC_UNEXPECTED_ASSERT( rc)		flmMakeErr( rc, __FILE__, __LINE__, TRUE)
+	#else
+		#define RC_SET( rc)							(rc)
+		#define RC_SET_AND_ASSERT( rc)			(rc)
+		#define RC_UNEXPECTED_ASSERT( rc)
+	#endif
+
 	#define F_SEM_WAITFOREVER			(0xFFFFFFFF)
 
 	/****************************************************************************
@@ -124,103 +143,6 @@
 		typedef MUTEX				F_MUTEX;
 		typedef MUTEX *			F_MUTEX_p;
 		#define F_MUTEX_NULL		0
-
-		FINLINE RCODE f_mutexCreate(
-			F_MUTEX *	phMutex)
-		{
-			if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
-			{
-				return RC_SET( NE_XFLM_MEM);
-			}
-	
-			return NE_XFLM_OK;
-		}
-	
-		FINLINE void f_mutexDestroy(
-			F_MUTEX *	phMutex)
-		{
-			if (*phMutex != F_MUTEX_NULL)
-			{
-				if( kMutexFree( (MUTEX)(*phMutex)))
-				{
-					flmAssert( 0);
-				}
-				
-				*phMutex = F_MUTEX_NULL;
-			}
-		}
-	
-		FINLINE void f_mutexLock(
-			F_MUTEX		hMutex)
-		{
-			(void)kMutexLock( (MUTEX)hMutex);
-		}
-	
-		FINLINE void f_mutexUnlock(
-			F_MUTEX		hMutex)
-		{
-			(void)kMutexUnlock( (MUTEX)hMutex);
-		}
-	
-		FINLINE void f_assertMutexLocked(
-			F_MUTEX)
-		{
-		}
-
-		typedef SEMAPHORE				F_SEM;
-		typedef SEMAPHORE *			F_SEM_p;
-		#define F_SEM_NULL			0
-
-		FINLINE RCODE f_semCreate(
-			F_SEM *		phSem)
-		{
-			if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"NOVDB", 0)) == F_SEM_NULL)
-			{
-				return RC_SET( NE_XFLM_MEM);
-			}
-	
-			return NE_XFLM_OK;
-		}
-	
-		FINLINE void f_semDestroy(
-			F_SEM *		phSem)
-		{
-			if (*phSem != F_SEM_NULL)
-			{
-				(void)kSemaphoreFree( (SEMAPHORE)(*phSem));
-				*phSem = F_SEM_NULL;
-			}
-		}
-	
-		FINLINE RCODE f_semWait(
-			F_SEM			hSem,
-			FLMUINT		uiTimeout)
-		{
-			RCODE			rc = NE_XFLM_OK;
-	
-			if( uiTimeout == F_SEM_WAITFOREVER)
-			{
-				if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
-				{
-					rc = RC_SET( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE);
-				}
-			}
-			else
-			{
-				if( kSemaphoreTimedWait( (SEMAPHORE)hSem, (UINT)uiTimeout) != 0)
-				{
-					rc = RC_SET( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE);
-				}
-			}
-	
-			return( rc);
-		}
-	
-		FINLINE void f_semSignal(
-			F_SEM			hSem)
-		{
-			(void)kSemaphoreSignal( (SEMAPHORE)hSem);
-		}
 
 		// External Netware Symbols
 		
@@ -336,104 +258,15 @@
 			FLMATOMIC						waitCount;
 	#endif
 		} F_INTERLOCK;
-	
+		
 		typedef F_INTERLOCK *			F_MUTEX;
 		typedef F_INTERLOCK	**			F_MUTEX_p;
 		#define F_MUTEX_NULL				NULL
-
-		RCODE f_mutexCreate(
-			F_MUTEX *	phMutex);
-	
-		void f_mutexDestroy(
-			F_MUTEX *	phMutex);
-			
-		FINLINE void f_mutexLock(
-			F_MUTEX		hMutex)
-		{
-			while( flmAtomicExchange( 
-				&(((F_INTERLOCK *)hMutex)->locked), 1) != 0)
-			{
-	#ifdef FLM_DEBUG
-				flmAtomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
-	#endif
-				Sleep( 0);
-			}
-	
-	#ifdef FLM_DEBUG
-			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
-			((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
-			flmAtomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
-	#endif
-		}
-		
-		FINLINE void f_mutexUnlock(
-			F_MUTEX		hMutex)
-		{
-			flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
-	#ifdef FLM_DEBUG
-			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
-			((F_INTERLOCK *)hMutex)->uiThreadId = 0;
-	#endif
-			flmAtomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
-		}
-	
-		FINLINE void f_assertMutexLocked(
-			F_MUTEX		hMutex)
-		{
-	#ifdef FLM_DEBUG
-			flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
-			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
-	#else
-			F_UNREFERENCED_PARM( hMutex);
-	#endif
-		}
 
 		typedef HANDLE					F_SEM;
 		typedef HANDLE *				F_SEM_p;
 		#define F_SEM_NULL			NULL
 
-		FINLINE RCODE f_semCreate(
-			F_SEM *		phSem)
-		{
-			if( (*phSem = CreateSemaphore( (LPSECURITY_ATTRIBUTES)NULL,
-				0, 10000, NULL )) == NULL)
-			{
-				return( RC_SET( NE_XFLM_COULD_NOT_CREATE_SEMAPHORE));
-			}
-	
-			return NE_XFLM_OK;
-		}
-	
-		FINLINE void f_semDestroy(
-			F_SEM *		phSem)
-		{
-			if (*phSem != F_SEM_NULL)
-			{
-				CloseHandle( *phSem);
-				*phSem = F_SEM_NULL;
-			}
-		}
-	
-		FINLINE RCODE f_semWait(
-			F_SEM			hSem,
-			FLMUINT		uiTimeout)
-		{
-			if( WaitForSingleObject( hSem, uiTimeout ) == WAIT_OBJECT_0)
-			{
-				return( NE_XFLM_OK);
-			}
-			else
-			{
-				return( RC_SET( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE));
-			}
-		}
-	
-		FINLINE void f_semSignal(
-			F_SEM			hSem)
-		{
-			(void)ReleaseSemaphore( hSem, 1, NULL);
-		}
-	
 		#define f_stricmp( str1, str2) \
 			_stricmp((char *)(str1), (char *)(str2))
 
@@ -504,6 +337,7 @@
 			#include <sys/vminfo.h>
 		#endif
 
+		#include <assert.h>
 		#include <pthread.h>
 		#include <errno.h>
 		#include <glob.h>
@@ -582,35 +416,10 @@
 		#define f_va_arg			va_arg
 		#define f_va_end			va_end
 
-		#include <pthread.h>
-	
 		typedef pthread_mutex_t *	F_MUTEX;
 		typedef F_MUTEX *				F_MUTEX_p;
 		#define F_MUTEX_NULL			NULL
 		
-		RCODE f_mutexCreate(
-			F_MUTEX *	phMutex);
-	
-		void f_mutexDestroy(
-			F_MUTEX *	phMutex);
-		
-		FINLINE void f_mutexLock(
-			F_MUTEX		hMutex)
-		{
-			(void)pthread_mutex_lock( hMutex);
-		}
-	
-		FINLINE void f_mutexUnlock(
-			F_MUTEX		hMutex)
-		{
-			(void)pthread_mutex_unlock( hMutex);
-		}
-	
-		FINLINE void f_assertMutexLocked(
-			F_MUTEX)
-		{
-		}
-
 		typedef struct
 		{
 			pthread_mutex_t lock;
@@ -622,25 +431,6 @@
 		typedef F_SEM *		F_SEM_p;
 		#define F_SEM_NULL	NULL
 	
-		int sema_signal(
-			sema_t *			sem);
-
-		void f_semDestroy(
-			F_SEM *	phSem);
-	
-		RCODE f_semCreate(
-			F_SEM *	phSem);
-	
-		RCODE f_semWait(
-			F_SEM		hSem,
-			FLMUINT	uiTimeout);
-	
-		FINLINE void f_semSignal(
-			F_SEM			hSem)
-		{
-			(void)sema_signal( hSem);
-		}
-
 	#endif
 
 	/****************************************************************************
@@ -917,25 +707,6 @@
 	};
 
 	/****************************************************************************
-	Desc:		Internal return code macros
-	****************************************************************************/
-	#ifdef FLM_DEBUG
-		RCODE	flmMakeErr(
-			RCODE				rc,
-			const char *	pszFile,
-			int				iLine,
-			FLMBOOL			bAssert);
-			
-		#define RC_SET( rc)							flmMakeErr( rc, __FILE__, __LINE__, FALSE)
-		#define RC_SET_AND_ASSERT( rc)			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
-		#define RC_UNEXPECTED_ASSERT( rc)		flmMakeErr( rc, __FILE__, __LINE__, TRUE)
-	#else
-		#define RC_SET( rc)							(rc)
-		#define RC_SET_AND_ASSERT( rc)			(rc)
-		#define RC_UNEXPECTED_ASSERT( rc)
-	#endif
-
-	/****************************************************************************
 										CROSS PLATFORM DEFINITIONS
 	****************************************************************************/
 	#define F_UNREFERENCED_PARM( parm )		(void)parm
@@ -1047,8 +818,6 @@
 			#endif
 
 		#elif defined( FLM_UNIX)
-			#include <assert.h>
-
 			#ifdef FLM_DBG_LOG
 				#define flmAssert( exp) \
 					(void)( (exp) || (flmDbgLogFlush(), assert(0), 0))
@@ -2158,6 +1927,242 @@
 		}
 		#endif
 	}
+
+	/****************************************************************************
+	Desc: Mutex and semaphore routines
+	****************************************************************************/
+	#ifdef FLM_NLM
+		FINLINE RCODE f_mutexCreate(
+			F_MUTEX *	phMutex)
+		{
+			if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
+			{
+				return RC_SET( NE_XFLM_MEM);
+			}
+	
+			return NE_XFLM_OK;
+		}
+	
+		FINLINE void f_mutexDestroy(
+			F_MUTEX *	phMutex)
+		{
+			if (*phMutex != F_MUTEX_NULL)
+			{
+				if( kMutexFree( (MUTEX)(*phMutex)))
+				{
+					flmAssert( 0);
+				}
+				
+				*phMutex = F_MUTEX_NULL;
+			}
+		}
+	
+		FINLINE void f_mutexLock(
+			F_MUTEX		hMutex)
+		{
+			(void)kMutexLock( (MUTEX)hMutex);
+		}
+	
+		FINLINE void f_mutexUnlock(
+			F_MUTEX		hMutex)
+		{
+			(void)kMutexUnlock( (MUTEX)hMutex);
+		}
+	
+		FINLINE void f_assertMutexLocked(
+			F_MUTEX)
+		{
+		}
+
+		typedef SEMAPHORE				F_SEM;
+		typedef SEMAPHORE *			F_SEM_p;
+		#define F_SEM_NULL			0
+
+		FINLINE RCODE f_semCreate(
+			F_SEM *		phSem)
+		{
+			if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"NOVDB", 0)) == F_SEM_NULL)
+			{
+				return RC_SET( NE_XFLM_MEM);
+			}
+	
+			return NE_XFLM_OK;
+		}
+	
+		FINLINE void f_semDestroy(
+			F_SEM *		phSem)
+		{
+			if (*phSem != F_SEM_NULL)
+			{
+				(void)kSemaphoreFree( (SEMAPHORE)(*phSem));
+				*phSem = F_SEM_NULL;
+			}
+		}
+	
+		FINLINE RCODE f_semWait(
+			F_SEM			hSem,
+			FLMUINT		uiTimeout)
+		{
+			RCODE			rc = NE_XFLM_OK;
+	
+			if( uiTimeout == F_SEM_WAITFOREVER)
+			{
+				if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
+				{
+					rc = RC_SET( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE);
+				}
+			}
+			else
+			{
+				if( kSemaphoreTimedWait( (SEMAPHORE)hSem, (UINT)uiTimeout) != 0)
+				{
+					rc = RC_SET( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE);
+				}
+			}
+	
+			return( rc);
+		}
+	
+		FINLINE void f_semSignal(
+			F_SEM			hSem)
+		{
+			(void)kSemaphoreSignal( (SEMAPHORE)hSem);
+		}
+	
+	#elif defined( FLM_WIN)
+	
+		RCODE f_mutexCreate(
+			F_MUTEX *	phMutex);
+	
+		void f_mutexDestroy(
+			F_MUTEX *	phMutex);
+			
+		FINLINE void f_mutexLock(
+			F_MUTEX		hMutex)
+		{
+			while( flmAtomicExchange( 
+				&(((F_INTERLOCK *)hMutex)->locked), 1) != 0)
+			{
+		#ifdef FLM_DEBUG
+				flmAtomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
+		#endif
+				Sleep( 0);
+			}
+	
+		#ifdef FLM_DEBUG
+			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
+			((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
+			flmAtomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
+		#endif
+		}
+		
+		FINLINE void f_mutexUnlock(
+			F_MUTEX		hMutex)
+		{
+			flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
+		#ifdef FLM_DEBUG
+			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+			((F_INTERLOCK *)hMutex)->uiThreadId = 0;
+		#endif
+			flmAtomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
+		}
+	
+		FINLINE void f_assertMutexLocked(
+			F_MUTEX		hMutex)
+		{
+		#ifdef FLM_DEBUG
+			flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
+			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+		#else
+			F_UNREFERENCED_PARM( hMutex);
+		#endif
+		}
+		
+		FINLINE RCODE f_semCreate(
+			F_SEM *		phSem)
+		{
+			if( (*phSem = CreateSemaphore( (LPSECURITY_ATTRIBUTES)NULL,
+				0, 10000, NULL )) == NULL)
+			{
+				return( RC_SET( NE_XFLM_COULD_NOT_CREATE_SEMAPHORE));
+			}
+	
+			return NE_XFLM_OK;
+		}
+	
+		FINLINE void f_semDestroy(
+			F_SEM *		phSem)
+		{
+			if (*phSem != F_SEM_NULL)
+			{
+				CloseHandle( *phSem);
+				*phSem = F_SEM_NULL;
+			}
+		}
+	
+		FINLINE RCODE f_semWait(
+			F_SEM			hSem,
+			FLMUINT		uiTimeout)
+		{
+			if( WaitForSingleObject( hSem, uiTimeout ) == WAIT_OBJECT_0)
+			{
+				return( NE_XFLM_OK);
+			}
+			else
+			{
+				return( RC_SET( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE));
+			}
+		}
+	
+		FINLINE void f_semSignal(
+			F_SEM			hSem)
+		{
+			(void)ReleaseSemaphore( hSem, 1, NULL);
+		}
+	#elif defined( FLM_UNIX)
+		RCODE f_mutexCreate(
+			F_MUTEX *	phMutex);
+	
+		void f_mutexDestroy(
+			F_MUTEX *	phMutex);
+		
+		FINLINE void f_mutexLock(
+			F_MUTEX		hMutex)
+		{
+			(void)pthread_mutex_lock( hMutex);
+		}
+	
+		FINLINE void f_mutexUnlock(
+			F_MUTEX		hMutex)
+		{
+			(void)pthread_mutex_unlock( hMutex);
+		}
+	
+		FINLINE void f_assertMutexLocked(
+			F_MUTEX)
+		{
+		}
+
+		int sema_signal(
+			sema_t *			sem);
+
+		void f_semDestroy(
+			F_SEM *	phSem);
+	
+		RCODE f_semCreate(
+			F_SEM *	phSem);
+	
+		RCODE f_semWait(
+			F_SEM		hSem,
+			FLMUINT	uiTimeout);
+	
+		FINLINE void f_semSignal(
+			F_SEM			hSem)
+		{
+			(void)sema_signal( hSem);
+		}
+
+	#endif
 
 	/****************************************************************************
 										Pseudo Serial Numbers
