@@ -3,12 +3,14 @@ libxflaim_la_SOURCES = \
   btreeinfo.cpp \
   checksum.cpp \
   ddcreate.cpp \
-  f64bitfh.cpp \
-  f64bitfh.h \
   f_btpool.cpp \
   f_btpool.h \
   f_btree.cpp \
   f_btree.h \
+  f_nici.cpp \
+  f_nici.h \
+  f64bitfh.cpp \
+  f64bitfh.h \
   fbtrset.cpp \
   fbtrset.h \
   fbuff.cpp \
@@ -71,8 +73,6 @@ libxflaim_la_SOURCES = \
   fltrcmit.cpp \
   flutil.cpp \
   flverify.cpp \
-  f_nici.cpp \
-  f_nici.h \
   fntable.cpp \
   fnumber.cpp \
   fposix.cpp \
@@ -84,9 +84,9 @@ libxflaim_la_SOURCES = \
   frecread.cpp \
   frecread.h \
   frestore.cpp \
-  frsetblk.cpp \
   frset.cpp \
   frset.h \
+  frsetblk.cpp \
   fsblk_u.cpp \
   fscursor.cpp \
   fscursor.h \
@@ -101,14 +101,13 @@ libxflaim_la_SOURCES = \
   fsuperfl.cpp \
   fsuperfl.h \
   fsysdata.cpp \
-  ftkdir.cpp \
   ftk.h \
+  ftkdir.cpp \
   ftkmem.h \
   ftkmisc.cpp \
   ftkpath.cpp \
   ftkrand.cpp \
   ftksem.cpp \
-  ftksem.h \
   ftkthrd.cpp \
   ftkthrd.h \
   ftktime.cpp \
@@ -128,8 +127,6 @@ libxflaim_la_SOURCES = \
   kyeword.cpp \
   kyqsort.cpp \
   kyunlock.cpp \
-  Makefile.am \
-  Makefile.in \
   ncache.cpp \
   nodeinfo.cpp \
   recover.cpp \
