@@ -45,9 +45,15 @@
 		#undef FLM_STRICT_ALIGNMENT
 		#undef FLM_S390
 		#undef FLM_IA64
+		#undef FLM_GNUC
+		
+		#if defined( __GNUC__)
+			#define FLM_GNUC
+		#endif		
 	
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
+			#define FLM_OSTYPE_STR "NetWare"
 			#if defined( __WATCOMC__)
 				#define FLM_WATCOM_NLM
 			#elif defined( __MWERKS__)
@@ -55,20 +61,24 @@
 			#endif
 		#elif defined( _WIN64)
 			#define FLM_WIN
+			#define FLM_OSTYPE_STR "Windows"
 			#ifndef FLM_64BIT
 				#define FLM_64BIT
 			#endif
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( _WIN32)
 			#define FLM_WIN
+			#define FLM_OSTYPE_STR "Windows"
 		#elif defined( _AIX)
-			#define FLM_UNIX
 			#define FLM_AIX
+			#define FLM_OSTYPE_STR "AIX"
+			#define FLM_UNIX
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( linux)
-			#define FLM_UNIX
 			#define FLM_LINUX
+			#define FLM_OSTYPE_STR "Linux"
+			#define FLM_UNIX
 			#if defined( __PPC__)
 				#define FLM_POWER_PC
 				#define FLM_BIG_ENDIAN
@@ -92,24 +102,27 @@
 				#define FLM_STRICT_ALIGNMENT
 			#endif
 		#elif defined( sun)
-			#define FLM_UNIX
 			#define FLM_SOLARIS
+			#define FLM_OSTYPE_STR "Solaris"
+			#define FLM_UNIX
 			#define FLM_STRICT_ALIGNMENT
-			#if defined( sparc) || defined( __sparc) || defined( __sparcv9)
+			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 			#endif
 		#elif defined( __hpux) || defined( hpux)
-			#define FLM_UNIX
 			#define FLM_HPUX
+			#define FLM_OSTYPE_STR "HPUX"
+			#define FLM_UNIX
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT
 		#elif defined( __APPLE__)
-			#define FLM_UNIX
 			#define FLM_OSX
+			#define FLM_OSTYPE_STR "OSX"
+			#define FLM_UNIX
 			#if (defined( __ppc__) || defined( __ppc64__))
 				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
+				#define FLM_STRICT_ALIGNMENT			
 			#endif
 		#else
 				#error Platform architecture is undefined.
@@ -117,7 +130,8 @@
 	
 		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
 			#if defined( FLM_UNIX)
-				#if defined( __x86_64__) || defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
+				#if defined( __x86_64__) || defined( _LP64) || \
+					 defined( __LP64__) || defined( __sparcv9)
 					#define FLM_64BIT
 				#endif
 			#endif
@@ -166,31 +180,41 @@
 			typedef short							FLMINT16;
 			typedef signed char					FLMINT8;
 
-			#if defined( FLM_64BIT) || defined( FLM_OSX) || defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
+			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
+				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
 				typedef unsigned long			FLMSIZET;
 			#else
 				typedef unsigned 					FLMSIZET;
 			#endif
 		#else
+		
 			#if defined( FLM_WIN)
+			
 				#if defined( FLM_64BIT)
 					typedef unsigned __int64		FLMUINT;
 					typedef __int64					FLMINT;
-					typedef unsigned long			FLMSIZET;
+					typedef unsigned __int64		FLMSIZET;
 					typedef unsigned int				FLMUINT32;
 				#elif _MSC_VER >= 1300
 					typedef unsigned long __w64	FLMUINT;
 					typedef long __w64				FLMINT;
 					typedef unsigned int				FLMUINT32;
+					typedef __w64 unsigned int		FLMSIZET;
 				#else
 					typedef unsigned long			FLMUINT;
 					typedef long						FLMINT;
 					typedef unsigned int				FLMUINT32;
+					typedef __w64 unsigned int		FLMSIZET;
 				#endif
+				
 			#elif defined( FLM_NLM)
+			
 				typedef unsigned long int		FLMUINT;
 				typedef long int					FLMINT;
 				typedef unsigned long int		FLMUINT32;
+				typedef unsigned					FLMSIZET;
+			#else
+				#error Platform not supported
 			#endif
 
 			typedef unsigned char				FLMBYTE;
@@ -201,7 +225,6 @@
 			typedef signed int					FLMINT32;
 			typedef signed short int			FLMINT16;
 			typedef signed char					FLMINT8;
-			typedef unsigned						FLMSIZET;
 
 			#if defined( __MWERKS__)
 				typedef unsigned long long		FLMUINT64;
@@ -213,13 +236,37 @@
 
 		#endif
 
+		#if defined( FLM_WIN) || defined( FLM_NLM)
+			#define FLMATOMIC		volatile long
+		#else
+			#define FLMATOMIC		volatile int
+		#endif
+	
 		typedef FLMINT								RCODE;
 		typedef FLMINT								FLMBOOL;
+		
+		#define F_FILENAME_SIZE					256
+		#define F_PATH_MAX_SIZE					256
 
-		#if defined( FLM_WIN) || defined( FLM_NLM)
-			typedef volatile long 				FLMATOMIC;
+		#define FLM_MAX_UINT						((FLMUINT)(-1L))
+		#define FLM_MAX_INT						((FLMINT)(((FLMUINT)(-1L)) >> 1))
+		#define FLM_MIN_INT						((FLMINT)((((FLMUINT)(-1L)) >> 1) + 1))
+		#define FLM_MAX_UINT32					((FLMUINT32)(0xFFFFFFFFL))
+		#define FLM_MAX_INT32					((FLMINT32)(0x7FFFFFFFL))
+		#define FLM_MIN_INT32					((FLMINT32)(0x80000000L))
+		#define FLM_MAX_UINT16					((FLMUINT16)(0xFFFF))
+		#define FLM_MAX_INT16					((FLMINT16)(0x7FFF))
+		#define FLM_MIN_INT16					((FLMINT16)(0x8000))
+		#define FLM_MAX_UINT8					((FLMUINT8)0xFF)
+	
+		#if( _MSC_VER >= 1200) && (_MSC_VER < 1300)
+			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFL))
+			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFL))
+			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000L))
 		#else
-			typedef volatile int					FLMATOMIC;
+			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFLL))
+			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFLL))
+			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000LL))
 		#endif
 		
 		#define F_FILENAME_SIZE					256
