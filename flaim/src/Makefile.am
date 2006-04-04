@@ -1,73 +1,51 @@
 lib_LTLIBRARIES = libflaim.la
 libflaim_la_SOURCES = \
   checksum.cpp \
-  ddcreate.cpp \
-  ddprep.cpp \
   ecache.cpp \
   ecache.h \
+  f_nici.cpp \
+  f_nici.h \
   f64bitfh.cpp \
   f64bitfh.h \
-  fbcd.cpp \
   fblob.cpp \
   fbuff.cpp \
   fbuff.h \
-  f_coltb1.cpp \
-  fcs_bios.cpp \
-  fcs_dis.cpp \
-  fcs_dos.cpp \
-  fcs_fis.cpp \
+  fcs.cpp \
   fcs.h \
-  fcs_ipis.cpp \
-  fcs_ipos.cpp \
-  fcs_tcp.cpp \
-  fcs_util.cpp \
-  fcs_wire.cpp \
+  fdb.cpp \
   fdbcnfig.cpp \
   fdbcopy.cpp \
-  fdb.cpp \
   fdbremov.cpp \
   fdbrenam.cpp \
-  fddpcode.h \
-  fdictbld.cpp \
   fdict.cpp \
+  fdict.h \
   fdir.h \
   fdynbtre.cpp \
   fdynsset.cpp \
   fdynsset.h \
-  fexpimp.cpp \
   ffilehdl.cpp \
   ffilehdl.h \
   ffilehdr.cpp \
   ffilesys.cpp \
   ffilesys.h \
+  fgedcom.cpp \
   filesys.h \
-  fitem.cpp \
   flaim.h \
   flaimsys.h \
   flalloc.cpp \
   flbackup.cpp \
-  flblddb.cpp \
-  flblddbo.cpp \
-  flblksum.cpp \
   flchkdb.cpp \
-  flchkix.cpp \
-  flchktr.cpp \
   flclose.cpp \
   flconvrt.cpp \
   flcreate.cpp \
   fldbglog.cpp \
   flerror.cpp \
-  flerrstr.cpp \
   flfixed.cpp \
   flfixed.h \
-  flgdrecs.cpp \
-  flgethdr.cpp \
   flindex.cpp \
   flist.cpp \
   flist.h \
-  flkeymak.cpp \
   flkeyret.cpp \
-  flkeys.cpp \
   flmimon.cpp \
   flmimon.h \
   flmstat.cpp \
@@ -76,24 +54,18 @@ libflaim_la_SOURCES = \
   flog.h \
   flopen.cpp \
   flprintf.cpp \
-  flrcodes.cpp \
   flrddrct.cpp \
   flreduce.cpp \
-  flresdrn.cpp \
   flsweep.cpp \
-  fltrabrt.cpp \
-  fltrbeg.cpp \
-  fltrcmit.cpp \
-  fltrnum.cpp \
   flupdate.cpp \
   flutil.cpp \
   flverify.cpp \
   fmisc.cpp \
   fmutxref.h \
-  fnative.cpp \
-  f_nici.cpp \
-  f_nici.h \
+  fnlm.cpp \
+  fnlm.h \
   fntable.cpp \
+  fnumber.cpp \
   fobjtrck.cpp \
   fobjtrck.h \
   fpackoff.h \
@@ -102,8 +74,6 @@ libflaim_la_SOURCES = \
   fposix.h \
   fqcur.cpp \
   fqdecl.cpp \
-  fqeval2.cpp \
-  fqeval3.cpp \
   fqeval.cpp \
   fqget.cpp \
   fqkeys.cpp \
@@ -114,15 +84,13 @@ libflaim_la_SOURCES = \
   fqread.cpp \
   fqsrch.cpp \
   fqstack.cpp \
-  fqtextc.cpp \
   fquery.h \
+  frebuild.cpp \
   frec.cpp \
   frecset.cpp \
-  frestore.cpp \
-  frestore.h \
-  frsetblk.cpp \
   frset.cpp \
   frset.h \
+  frsetblk.cpp \
   fsblk_u.cpp \
   fscomblk.cpp \
   fsconvrt.cpp \
@@ -147,20 +115,16 @@ libflaim_la_SOURCES = \
   fstructs.h \
   fsuperfl.cpp \
   fsuperfl.h \
-  fsv_glob.cpp \
+  fsv.cpp \
   fsv.h \
-  fsv_hdlr.cpp \
-  fsv_sctx.cpp \
-  fsv_sesn.cpp \
-  fsv_sev.cpp \
-  fsv_tcph.cpp \
-  fsv_wire.cpp \
   fsysdata.cpp \
-  ftkdir.cpp \
+  ftext.cpp \
   ftk.h \
+  ftkdir.cpp \
   ftkmem.h \
   ftkmisc.cpp \
   ftkmod.cpp \
+  ftknlm.h \
   ftknsem.cpp \
   ftknsem.h \
   ftkpath.cpp \
@@ -170,37 +134,16 @@ libflaim_la_SOURCES = \
   ftkthrd.cpp \
   ftkthrd.h \
   ftktime.cpp \
-  ftkwptxt.h \
-  f_tocoll.cpp \
   ftrace.cpp \
   ftrace.h \
-  f_uncoll.cpp \
-  funicode.cpp \
+  ftrans.cpp \
   furl.cpp \
   furl.h \
   fwin.cpp \
   fwin.h \
-  fwpasia.cpp \
-  fwpchar.cpp \
-  fwpchrs.cpp \
-  fwpcoll.cpp \
   fxml.cpp \
   fxml.h \
-  gbinary.cpp \
-  gd2tree.cpp \
-  gdcopy.cpp \
-  gddiff.cpp \
-  gddiff.h \
-  gdfind.cpp \
-  gdgraft.cpp \
-  gdmisc.cpp \
   gdpool.cpp \
-  gdtrvrs1.cpp \
-  gnative.cpp \
-  gnbcd.cpp \
-  gnum2txt.cpp \
-  gtxt2num.cpp \
-  gunicode.cpp \
   imonbase.cpp \
   imonchk.cpp \
   imonerr.cpp \
@@ -223,17 +166,12 @@ libflaim_la_SOURCES = \
   imonslmg.cpp \
   imonstat.cpp \
   imonutil.cpp \
-  kyasia1.cpp \
-  kyasia2.cpp \
-  kybldkey.cpp \
   kybuild.cpp \
   kycollat.cpp \
-  kycompnd.cpp \
-  kyeword.cpp \
   kyget.cpp \
-  kyqsort.cpp \
-  kyunlock.cpp \
   lock.cpp \
+  nlmload.cpp \
+  nwyield.cpp \
   rcache.cpp \
   recover.cpp \
   rfl.cpp \
