@@ -351,14 +351,14 @@ public:
 		FLMBOOL				bRelease = FALSE,		// Release object if no one is waiting
 		XFLM_DB_STATS *	pDbStats = NULL);		// Place to gather DB stats.
 
-	FLMUINT Release(
+	FLMINT Release(
 		FLMBOOL	bMutexAlreadyLocked);
 												// Decrement ref count, when it gets
 												// down to 1, put it in the avail list.
 
-	FLMUINT32 XFLMAPI Release( void)
+	FLMINT XFLMAPI Release( void)
 	{
-		return( (FLMUINT32)Release( FALSE));
+		return( Release( FALSE));
 	}
 
 	void RemoveWaiter(

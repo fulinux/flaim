@@ -62,12 +62,12 @@ public:
 		return( IF_RestoreClient::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_RestoreClient::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_RestoreClient::Release());
 	}
@@ -262,12 +262,12 @@ public:
 		return( IF_RestoreStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_RestoreStatus::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_RestoreStatus::Release());
 	}

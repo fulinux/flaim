@@ -265,12 +265,12 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare, public XF_Base
 		return( NE_XFLM_OK);
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}

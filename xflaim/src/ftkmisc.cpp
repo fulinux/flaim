@@ -32,10 +32,6 @@ F_MUTEX						gv_hSerialMutex = F_MUTEX_NULL;
 
 #ifdef FLM_UNIX
 	F_RandomGenerator		gv_SerialRandom;
-	
-	#if !(defined( __i386__) && defined( __GNUC__))
-		static pthread_mutex_t xflm_atomic_mutex = PTHREAD_MUTEX_INITIALIZER;
-	#endif
 #endif
 
 #ifdef FLM_NLM
@@ -402,54 +398,41 @@ Exit:
 }
 
 /****************************************************************************
-Desc: 	
+Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) && !(defined( __i386__) && defined( __GNUC__))
-FLMUINT32 ftkAtomicIncrement( 
-	FLMUINT32 *			puiTarget)
+#if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+static void sparc_asm_code( void)
 {
-	FLMUINT32		ui32Ret;
+	asm( ".align 8");
+	asm( ".global sparc_atomic_add_32");
+	asm( ".type sparc_atomic_add_32, #function");
+	asm( "sparc_atomic_add_32:");
+	asm( "    membar #LoadLoad | #LoadStore | #StoreStore | #StoreLoad");
+	asm( "    ld [%o0], %l0");
+	asm( "    add %l0, %o1, %l2");
+	asm( "    cas [%o0], %l0, %l2");
+	asm( "    cmp %l0, %l2");
+	asm( "    bne sparc_atomic_add_32");
+	asm( "    nop");
+	asm( "    add %l2, %o1, %o0");
+	asm( "    membar #LoadLoad | #LoadStore | #StoreStore | #StoreLoad");
+	asm( "retl");
+	asm( "nop");
 	
-	pthread_mutex_lock( &xflm_atomic_mutex);
-	ui32Ret = ++(*puiTarget);
-	pthread_mutex_unlock( &xflm_atomic_mutex);
-	
-	return( ui32Ret);
-}
-#endif
-
-/****************************************************************************
-Desc: 	
-****************************************************************************/
-#if defined( FLM_UNIX) && !(defined( __i386__) && defined( __GNUC__))
-FLMUINT32 ftkAtomicDecrement( 
-	FLMUINT32 *			puiTarget)
-{
-	FLMUINT32		ui32Ret;
-	
-	pthread_mutex_lock( &xflm_atomic_mutex);
-	ui32Ret = --(*puiTarget);
-	pthread_mutex_unlock( &xflm_atomic_mutex);
-	
-	return( ui32Ret);
-}
-#endif
-
-/****************************************************************************
-Desc: 	
-****************************************************************************/
-#if defined( FLM_UNIX) && !(defined( __i386__) && defined( __GNUC__))
-FLMUINT32 ftkAtomicExchange( 
-	FLMUINT32 *			puiTarget,
-	FLMUINT32			uiValue)
-{
-	FLMUINT32		ui32Ret;
-	
-	pthread_mutex_lock( &xflm_atomic_mutex);
-	ui32Ret = *puiTarget;
-	*puiTarget = uiValue;
-	pthread_mutex_unlock( &xflm_atomic_mutex);
-	
-	return( ui32Ret);
+	asm( ".align 8");
+	asm( ".global sparc_atomic_xchg_32");
+	asm( ".type sparc_atomic_xchg_32, #function");
+	asm( "sparc_atomic_xchg_32:");
+	asm( "    membar #LoadLoad | #LoadStore | #StoreStore | #StoreLoad");
+	asm( "    ld [%o0], %l0");
+	asm( "    mov %o1, %l1");
+	asm( "    cas [%o0], %l0, %l1");
+	asm( "    cmp %l0, %l1");
+	asm( "    bne sparc_atomic_xchg_32");
+	asm( "    nop");
+	asm( "    mov %l0, %o0");
+	asm( "    membar #LoadLoad | #LoadStore | #StoreStore | #StoreLoad");
+	asm( "retl");
+	asm( "nop");
 }
 #endif

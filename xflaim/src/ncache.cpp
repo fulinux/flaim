@@ -875,7 +875,7 @@ F_NodeCacheMgr::~F_NodeCacheMgr()
 	while( (pTmp = m_pFirstNode) != NULL)
 	{
 		m_pFirstNode = m_pFirstNode->m_pNextInPool;
-		pTmp->m_ui32RefCnt = 0;
+		pTmp->m_refCnt = 0;
 		pTmp->m_pNextInPool = NULL;
 		pTmp->m_pCachedNode = NULL;
 		delete pTmp;

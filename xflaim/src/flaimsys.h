@@ -419,33 +419,33 @@ public:
 	RCODE setupNameTable( void);
 
 	void clearTable(
-		FLMUINT	uiPoolBlkSize);
+		FLMUINT					uiPoolBlkSize);
 
 	RCODE addReservedDictTags( void);
 
 	RCODE getNextTagTypeAndNumOrder(
-		FLMUINT			uiType,
-		FLMUINT *		puiNextPos,
-		FLMUNICODE *	puzTagName = NULL,
-		char *			pszTagName = NULL,
-		FLMUINT			uiNameBufSize = 0,
-		FLMUINT *		puiTagNum = NULL,
-		FLMUINT *		puiDataType = NULL,
-		FLMUNICODE *	puzNamespace = NULL,
-		FLMUINT			uiNamespaceBufSize = 0,
-		FLMBOOL			bTruncatedNamesOk = TRUE);
+		FLMUINT					uiType,
+		FLMUINT *				puiNextPos,
+		FLMUNICODE *			puzTagName = NULL,
+		char *					pszTagName = NULL,
+		FLMUINT					uiNameBufSize = 0,
+		FLMUINT *				puiTagNum = NULL,
+		FLMUINT *				puiDataType = NULL,
+		FLMUNICODE *			puzNamespace = NULL,
+		FLMUINT					uiNamespaceBufSize = 0,
+		FLMBOOL					bTruncatedNamesOk = TRUE);
 
 	RCODE getNextTagTypeAndNameOrder(
-		FLMUINT			uiType,
-		FLMUINT *		puiNextPos,
-		FLMUNICODE *	puzTagName = NULL,
-		char *			pszTagName = NULL,
-		FLMUINT			uiNameBufSize = 0,
-		FLMUINT *		puiTagNum = NULL,
-		FLMUINT *		puiDataType = NULL,
-		FLMUNICODE *	puzNamespace = NULL,
-		FLMUINT			uiNamespaceBufSize = 0,
-		FLMBOOL			bTruncatedNamesOk = TRUE);
+		FLMUINT					uiType,
+		FLMUINT *				puiNextPos,
+		FLMUNICODE *			puzTagName = NULL,
+		char *					pszTagName = NULL,
+		FLMUINT					uiNameBufSize = 0,
+		FLMUINT *				puiTagNum = NULL,
+		FLMUINT *				puiDataType = NULL,
+		FLMUNICODE *			puzNamespace = NULL,
+		FLMUINT					uiNamespaceBufSize = 0,
+		FLMBOOL					bTruncatedNamesOk = TRUE);
 
 	RCODE getFromTagTypeAndName(
 		F_Db *					pDb,
@@ -458,27 +458,27 @@ public:
 		FLMUINT *				puiDataType = NULL);
 
 	RCODE getFromTagTypeAndNum(
-		F_Db *			pDb,
-		FLMUINT			uiType,
-		FLMUINT			uiTagNum,
-		FLMUNICODE *	puzTagName = NULL,
-		char *			pszTagName = NULL,
-		FLMUINT *		puiNameBufSize = NULL,
-		FLMUINT *		puiDataType = NULL,
-		FLMUNICODE *	puzNamespace = NULL,
-		char *			pszNamespace = NULL,
-		FLMUINT *		puiNamespaceBufSize = NULL,
-		FLMBOOL			bTruncatedNamesOk = TRUE);
+		F_Db *					pDb,
+		FLMUINT					uiType,
+		FLMUINT					uiTagNum,
+		FLMUNICODE *			puzTagName = NULL,
+		char *					pszTagName = NULL,
+		FLMUINT *				puiNameBufSize = NULL,
+		FLMUINT *				puiDataType = NULL,
+		FLMUNICODE *			puzNamespace = NULL,
+		char *					pszNamespace = NULL,
+		FLMUINT *				puiNamespaceBufSize = NULL,
+		FLMBOOL					bTruncatedNamesOk = TRUE);
 
 	RCODE addTag(
-		FLMUINT			uiType,
-		FLMUNICODE *	puzTagName,
-		const char *	pszTagName,
-		FLMUINT			uiTagNum,
-		FLMUINT			uiDataType = 0,
-		FLMUNICODE *	puzNamespace = NULL,
-		FLMBOOL			bCheckDuplicates = TRUE,
-		FLMBOOL			bLimitNumToLoad = TRUE);
+		FLMUINT					uiType,
+		FLMUNICODE *			puzTagName,
+		const char *			pszTagName,
+		FLMUINT					uiTagNum,
+		FLMUINT					uiDataType = 0,
+		FLMUNICODE *			puzNamespace = NULL,
+		FLMBOOL					bCheckDuplicates = TRUE,
+		FLMBOOL					bLimitNumToLoad = TRUE);
 
 	void sortTags( void);
 
@@ -487,10 +487,10 @@ public:
 		FLMUINT	uiTagNum);
 
 	RCODE cloneNameTable(
-		F_NameTable *	pSrcNameTable);
+		F_NameTable *			pSrcNameTable);
 
 	RCODE importFromNameTable(
-		F_NameTable *	pSrcNameTable);
+		F_NameTable *			pSrcNameTable);
 
 	FINLINE FLMBOOL haveAllElements( void)
 	{
@@ -502,38 +502,35 @@ public:
 		return m_bLoadedAllAttributes;
 	}
 
-	// Override the AddRef and Release provided in XF_RefCount.
-	// These need to be thread-safe.
+	FLMINT XFLMAPI AddRef( void);
 
-	FLMUINT32 XFLMAPI AddRef( void);
-
-	FLMUINT32 XFLMAPI Release( void);
-
+	FLMINT XFLMAPI Release( void);
+	
 private:
 
 	RCODE allocTag(
-		FLMUINT				uiType,
-		FLMUNICODE *		puzTagName,
-		const char *		pszTagName,
-		FLMUINT				uiTagNum,
-		FLMUINT				uiDataType,
-		FLMUNICODE *		puzNamespace,
-		FLM_TAG_INFO **	ppTagInfo);
+		FLMUINT					uiType,
+		FLMUNICODE *			puzTagName,
+		const char *			pszTagName,
+		FLMUINT					uiTagNum,
+		FLMUINT					uiDataType,
+		FLMUNICODE *			puzNamespace,
+		FLM_TAG_INFO **		ppTagInfo);
 
 	RCODE reallocSortTables(
-		FLMUINT	uiNewTblSize);
+		FLMUINT					uiNewTblSize);
 
 	RCODE copyTagName(
-		FLMUNICODE *	puzDestTagName,
-		char *			pszDestTagName,
-		FLMUINT *		puiDestBufSize,
-		FLMUNICODE *	puzSrcTagName,
-		FLMBOOL			bTruncatedNamesOk);
+		FLMUNICODE *			puzDestTagName,
+		char *					pszDestTagName,
+		FLMUINT *				puiDestBufSize,
+		FLMUNICODE *			puzSrcTagName,
+		FLMBOOL					bTruncatedNamesOk);
 
 	FLM_TAG_INFO * findTagByTypeAndNum(
-		FLMUINT			uiType,
-		FLMUINT			uiTagNum,
-		FLMUINT *		puiInsertPos = NULL);
+		FLMUINT					uiType,
+		FLMUINT					uiTagNum,
+		FLMUINT *				puiInsertPos = NULL);
 
 	FLM_TAG_INFO * findTagByTypeAndName(
 		FLMUINT					uiType,
@@ -545,33 +542,33 @@ private:
 		FLMUINT *				puiInsertPos = NULL);
 
 	RCODE insertTagInTables(
-		FLM_TAG_INFO *	pTagInfo,
-		FLMUINT			uiTagTypeAndNameTblInsertPos,
-		FLMUINT			uiTagTypeAndNumTblInsertPos);
+		FLM_TAG_INFO *			pTagInfo,
+		FLMUINT					uiTagTypeAndNameTblInsertPos,
+		FLMUINT					uiTagTypeAndNumTblInsertPos);
 
 	FLMUNICODE * findNamespace(
-		FLMUNICODE *	puzNamespace,
-		FLMUINT *		puiInsertPos);
+		FLMUNICODE *			puzNamespace,
+		FLMUINT *				puiInsertPos);
 
 	RCODE insertNamespace(
-		FLMUNICODE *	puzNamespace,
-		FLMUINT			uiInsertPos);
+		FLMUNICODE *			puzNamespace,
+		FLMUINT					uiInsertPos);
 
-	F_Pool					m_pool;
-	FLMUINT					m_uiMemoryAllocated;
-	FLM_TAG_INFO **		m_ppSortedByTagTypeAndName;
-	FLM_TAG_INFO **		m_ppSortedByTagTypeAndNum;
-	FLMUINT					m_uiTblSize;
-	FLMUINT					m_uiNumTags;
-	FLMBOOL					m_bTablesSorted;
-	FLMBOOL					m_bLoadedAllElements;
-	FLMBOOL					m_bLoadedAllAttributes;
-	FLMUINT					m_uiNumElementsLoaded;
-	FLMUINT					m_uiNumAttributesLoaded;
-	FLMUNICODE **			m_ppuzNamespaces;
-	FLMUINT					m_uiNamespaceTblSize;
-	FLMUINT					m_uiNumNamespaces;
-	F_MUTEX					m_hRefMutex;
+	F_Pool						m_pool;
+	FLMUINT						m_uiMemoryAllocated;
+	FLM_TAG_INFO **			m_ppSortedByTagTypeAndName;
+	FLM_TAG_INFO **			m_ppSortedByTagTypeAndNum;
+	FLMUINT						m_uiTblSize;
+	FLMUINT						m_uiNumTags;
+	FLMBOOL						m_bTablesSorted;
+	FLMBOOL						m_bLoadedAllElements;
+	FLMBOOL						m_bLoadedAllAttributes;
+	FLMUINT						m_uiNumElementsLoaded;
+	FLMUINT						m_uiNumAttributesLoaded;
+	FLMUNICODE **				m_ppuzNamespaces;
+	FLMUINT						m_uiNamespaceTblSize;
+	FLMUINT						m_uiNumNamespaces;
+	F_MUTEX						m_hRefMutex;
 	
 friend class F_Db;
 };
@@ -1531,12 +1528,12 @@ public:
 		return( IF_BackupClient::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_BackupClient::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_BackupClient::Release());
 	}
@@ -1587,12 +1584,12 @@ public:
 		return( IF_RestoreClient::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_RestoreClient::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_RestoreClient::Release());
 	}
@@ -1806,12 +1803,12 @@ public:
 		return( IF_RestoreStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_RestoreStatus::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_RestoreStatus::Release());
 	}
@@ -4047,12 +4044,12 @@ public:
 		return( IF_ResultSetCompare::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}
@@ -5000,7 +4997,7 @@ public:
 
 	F_DbSystem() 
 	{
-		m_ui32RefCnt = 1;
+		m_refCnt = 1;
 		LockModule();
 	}
 
@@ -5009,9 +5006,9 @@ public:
 		UnlockModule();
 	}
 
-	FLMUINT32 XFLMAPI AddRef( void);
+	FLMINT XFLMAPI AddRef( void);
 
-	FLMUINT32 XFLMAPI Release( void);
+	FLMINT XFLMAPI Release( void);
 
 	RCODE XFLMAPI QueryInterface(
 		RXFLMIID					riid,
@@ -5637,7 +5634,7 @@ private:
 
 	static void checkNotUsedObjects( void);
 
-	static FLMUINT32			m_ui32FlmSysSpinLock;
+	static FLMATOMIC			m_flmSysSpinLock;
 	static FLMUINT				m_uiFlmSysStartupCount;
 
 friend class F_Db;
@@ -5991,7 +5988,7 @@ public:
 		FLMUINT			uiBytesToRead,
 		FLMUINT *		puiBytesRead);
 
-	FLMUINT32 XFLMAPI Release( void);
+	FLMINT XFLMAPI Release( void);
 	
 	FINLINE FLMUINT32 getBlkAddr( void)
 	{
@@ -6106,7 +6103,7 @@ public:
 		}
 	}
 
-	FLMUINT32 XFLMAPI Release( void);
+	FLMINT XFLMAPI Release( void);
 
 	RCODE XFLMAPI createNode(
 		IF_Db *				pDb,

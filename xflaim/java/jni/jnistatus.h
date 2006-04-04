@@ -53,12 +53,12 @@ public:
 		return( IF_DbRenameStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_DbRenameStatus::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_DbRenameStatus::Release());
 	}
@@ -98,12 +98,12 @@ public:
 		return( IF_DbCopyStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_DbCopyStatus::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_DbCopyStatus::Release());
 	}
@@ -143,12 +143,12 @@ public:
 		return( IF_DbCheckStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_DbCheckStatus::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_DbCheckStatus::Release());
 	}

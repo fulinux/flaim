@@ -220,20 +220,20 @@ public:
 
 	// Reference counting methods.
 
-	FLMUINT32 AddRef(
+	FLMINT AddRef(
 		FLMBOOL bMutexLocked);
 
-	FLMUINT32 Release(
+	FLMINT Release(
 		FLMBOOL bMutexLocked);
 
 	// Override the AddRef and Release from XF_RefCount
 
-	FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( AddRef( FALSE));
 	}
 
-	FINLINE FLMUINT32 XFLMAPI Release( void)
+	FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( Release( FALSE));
 	}

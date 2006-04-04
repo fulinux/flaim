@@ -105,15 +105,16 @@ private:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-FLMUINT32 XFLMAPI F_BTreeIStream::Release( void)
+FLMINT XFLMAPI F_BTreeIStream::Release( void)
 {
-	FLMUINT32	ui32RefCnt = --m_ui32RefCnt;
-	if (m_ui32RefCnt == 0)
+	FLMATOMIC	refCnt = --m_refCnt;
+	
+	if (m_refCnt == 0)
 	{
 		close();
 		if( gv_XFlmSysData.pNodePool)
 		{
-			m_ui32RefCnt = 1;
+			m_refCnt = 1;
 			gv_XFlmSysData.pNodePool->insertBTreeIStream( this);
 			return( 0);
 		}
@@ -122,7 +123,8 @@ FLMUINT32 XFLMAPI F_BTreeIStream::Release( void)
 			delete this;
 		}
 	}
-	return ui32RefCnt;
+	
+	return( refCnt);
 }
 
 /*****************************************************************************
@@ -200,15 +202,15 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT32 XFLMAPI F_DOMNode::Release( void)
+FLMINT XFLMAPI F_DOMNode::Release( void)
 {
-	FLMUINT32	ui32RefCnt = --m_ui32RefCnt;
+	FLMINT	iRefCnt = --m_refCnt;
 	
-	if (m_ui32RefCnt == 0)
+	if (iRefCnt == 0)
 	{
 		if( gv_XFlmSysData.pNodeCacheMgr)
 		{
-			m_ui32RefCnt = 1;
+			m_refCnt = 1;
 			gv_XFlmSysData.pNodeCacheMgr->insertDOMNode( this);
 			return( 0);
 		}
@@ -218,7 +220,7 @@ FLMUINT32 XFLMAPI F_DOMNode::Release( void)
 		}
 	}
 
-	return ui32RefCnt;
+	return( iRefCnt);
 }
 
 /*****************************************************************************
@@ -12411,7 +12413,7 @@ F_NodePool::~F_NodePool()
 	while( (pTmpBTreeIStream = m_pFirstBTreeIStream) != NULL)
 	{
 		m_pFirstBTreeIStream = m_pFirstBTreeIStream->m_pNextInPool;
-		pTmpBTreeIStream->m_ui32RefCnt = 0;
+		pTmpBTreeIStream->m_refCnt = 0;
 		pTmpBTreeIStream->m_pNextInPool = NULL;
 		delete pTmpBTreeIStream;
 	}
@@ -12446,7 +12448,7 @@ void F_NodeCacheMgr::insertDOMNode(
 	F_DOMNode *			pNode)
 {
 	
-	flmAssert( pNode->m_ui32RefCnt == 1);
+	flmAssert( pNode->m_refCnt == 1);
 
 	f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 	pNode->resetDOMNode( TRUE);
@@ -12499,7 +12501,7 @@ Desc:
 void F_NodePool::insertBTreeIStream(
 	F_BTreeIStream *			pBTreeIStream)
 {
-	flmAssert( pBTreeIStream->m_ui32RefCnt == 1);
+	flmAssert( pBTreeIStream->m_refCnt == 1);
 
 	pBTreeIStream->reset();
 	f_mutexLock( m_hMutex);
@@ -16086,7 +16088,7 @@ Exit:
 
 	if( pAttr)
 	{
-		flmAssert( pAttr->m_ui32RefCnt <= 2);
+		flmAssert( pAttr->m_refCnt <= 2);
 		pAttr->Release();
 	}
 

@@ -27,73 +27,6 @@
 #ifndef FTKSEM_H
 #define FTKSEM_H
 
-/*****************************************************************************
-					 					Mutexes
-*****************************************************************************/
-
-#if defined( FLM_WIN)
-
-	typedef struct
-	{
-		FLMUINT32						ui32Locked;
-#ifdef FLM_DEBUG
-		FLMUINT							uiThreadId;
-		FLMUINT32						ui32LockedCount;
-		FLMUINT32						ui32WaitCount;
-#endif
-	} F_INTERLOCK;
-
-	typedef F_INTERLOCK *			F_MUTEX;
-	typedef F_INTERLOCK	**			F_MUTEX_p;
-	#define F_MUTEX_NULL				NULL
-
-#elif defined( FLM_NLM)
-
-	// WARNING! The following come from portable.h
-
-	#ifndef UINT
-	#define UINT	unsigned int
-	#endif
-
-	// WARNING! The following come from mpkapis.h
-
-	typedef void * MUTEX;
-	typedef void * SEMAPHORE;
-	typedef unsigned long ERROR;
-
-extern "C"
-{
-	SEMAPHORE	kSemaphoreAlloc(BYTE *pSemaName, UINT SemaCount);
-	ERROR			kSemaphoreFree(SEMAPHORE SemaHandle);
-	ERROR			kSemaphoreWait(SEMAPHORE SemaHandle);
-	ERROR			kSemaphoreTimedWait(SEMAPHORE SemaHandle, UINT MilliSecondTimeOut);
-	ERROR			kSemaphoreSignal(SEMAPHORE SemaHandle);
-	UINT			kSemaphoreExamineCount(SEMAPHORE SemaHandle);
-
-	MUTEX			kMutexAlloc(BYTE *MutexName);
-	ERROR			kMutexFree(MUTEX MutexHandle);
-	ERROR			kMutexLock(MUTEX MutexHandle);
-	ERROR			kMutexUnlock(MUTEX MutexHandle);
-}
-
-	typedef MUTEX				F_MUTEX;
-	typedef MUTEX *			F_MUTEX_p;
-	#define F_MUTEX_NULL		0
-
-#elif defined( FLM_UNIX)
-
-	#include <pthread.h>
-
-	typedef pthread_mutex_t *	F_MUTEX;
-	typedef F_MUTEX *				F_MUTEX_p;
-	#define F_MUTEX_NULL			NULL
-#else
-
-	#error Unsupported platform
-#endif
-
-/* prototypes for the mutex functions **********************************/
-
 #ifndef FLM_NLM
 	RCODE f_mutexCreate(
 		F_MUTEX *	phMutex);
@@ -155,11 +88,11 @@ extern "C"
 	FINLINE void f_mutexLock(
 		F_MUTEX		hMutex)
 	{
-		while( ftkAtomicExchange( 
-			&(((F_INTERLOCK *)hMutex)->ui32Locked), 1) != 0)
+		while( flmAtomicExchange( 
+			&(((F_INTERLOCK *)hMutex)->locked), 1) != 0)
 		{
 #ifdef FLM_DEBUG
-			ftkAtomicIncrement( &(((F_INTERLOCK *)hMutex)->ui32WaitCount));
+			flmAtomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
 #endif
 			Sleep( 0);
 		}
@@ -167,26 +100,26 @@ extern "C"
 #ifdef FLM_DEBUG
 		flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
 		((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
-		ftkAtomicIncrement( &(((F_INTERLOCK *)hMutex)->ui32LockedCount));
+		flmAtomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
 #endif
 	}
 	
 	FINLINE void f_mutexUnlock(
 		F_MUTEX		hMutex)
 	{
-		flmAssert( ((F_INTERLOCK *)hMutex)->ui32Locked == 1);
+		flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
 #ifdef FLM_DEBUG
 		flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
 		((F_INTERLOCK *)hMutex)->uiThreadId = 0;
 #endif
-		ftkAtomicExchange( &(((F_INTERLOCK *)hMutex)->ui32Locked), 0);
+		flmAtomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
 	}
 
 	FINLINE void f_assertMutexLocked(
 		F_MUTEX		hMutex)
 	{
 #ifdef FLM_DEBUG
-		flmAssert( ((F_INTERLOCK *)hMutex)->ui32Locked == 1);
+		flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
 		flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
 #else
 		F_UNREFERENCED_PARM( hMutex);

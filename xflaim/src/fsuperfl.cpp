@@ -172,7 +172,7 @@ F_SuperFileHdl::~F_SuperFileHdl()
 
 	if( m_pFileIdList)
 	{
-		m_pFileIdList->Release();
+		m_pFileIdList->Release( FALSE);
 	}
 
 	if (m_pszDbFileName)
@@ -215,7 +215,7 @@ RCODE F_SuperFileHdl::Setup(
 		{
 			FLMUINT		uiRefCnt;
 
-			uiRefCnt = m_pFileIdList->Release();
+			uiRefCnt = m_pFileIdList->Release( FALSE);
 			flmAssert( !uiRefCnt);
 			m_pFileIdList = NULL;
 			goto Exit;
@@ -223,7 +223,7 @@ RCODE F_SuperFileHdl::Setup(
 	}
 	else
 	{
-		pFileIdList->AddRef();
+		pFileIdList->AddRef( FALSE);
 		m_pFileIdList = pFileIdList;
 	}
 

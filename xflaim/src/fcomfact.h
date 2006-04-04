@@ -44,9 +44,9 @@
 		RCODE XFLMAPI LockServer(
 			bool					bLock);
 			
-		FLMUINT32 XFLMAPI AddRef( void);
+		FLMINT XFLMAPI AddRef( void);
 
-		FLMUINT32 XFLMAPI Release( void);
+		FLMINT XFLMAPI Release( void);
 	};
 
 #endif // FCOMFACT_H

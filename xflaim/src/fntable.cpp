@@ -168,6 +168,7 @@ F_NameTable::F_NameTable()
 	m_ppuzNamespaces = NULL;
 	m_uiNamespaceTblSize = 0;
 	m_uiNumNamespaces = 0;
+	m_hRefMutex = F_MUTEX_NULL;
 }
 
 /****************************************************************************
@@ -176,6 +177,11 @@ Desc:	Destructor
 F_NameTable::~F_NameTable()
 {
 	clearTable( 0);
+	
+	if( m_hRefMutex)
+	{
+		f_mutexDestroy( &m_hRefMutex);
+	}
 }
 
 /****************************************************************************
@@ -184,7 +190,20 @@ Desc:	Setup name table.  This routine should be called immediately after
 ****************************************************************************/
 RCODE F_NameTable::setupNameTable( void)
 {
+#ifndef FLM_HAVE_ATOMICS	
+	RCODE		rc = NE_XFLM_OK;
+
+	if( RC_BAD( rc = f_mutexCreate( &m_hRefMutex)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+	
+	return( rc);
+#else
 	return( NE_XFLM_OK);
+#endif
 }
 
 /****************************************************************************
@@ -2391,24 +2410,24 @@ Exit:
 /****************************************************************************
 Desc:	Increment use count on this object.
 ****************************************************************************/
-FLMUINT32 XFLMAPI F_NameTable::AddRef( void)
+FLMINT XFLMAPI F_NameTable::AddRef( void)
 {
-	return( (FLMUINT32)(ftkAtomicIncrement( &m_ui32RefCnt)));
+	return( flmAtomicInc( &m_refCnt, m_hRefMutex, FALSE));
 }
 
 /****************************************************************************
 Desc:	Decrement the use count and delete if use count goes to zero.
 ****************************************************************************/
-FLMUINT32 XFLMAPI F_NameTable::Release( void)
+FLMINT XFLMAPI F_NameTable::Release( void)
 {
-	FLMUINT32		ui32RefCnt;
+	FLMINT		iRefCnt;
 
-	if ((ui32RefCnt = (FLMUINT32)ftkAtomicDecrement( &m_ui32RefCnt)) == 0)
+	if ((iRefCnt = flmAtomicDec( &m_refCnt, m_hRefMutex, FALSE)) == 0)
 	{
 		delete this;
 	}
 
-	return( ui32RefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************
@@ -2419,8 +2438,7 @@ Desc:	Get the name table for an FDB, if any.  If it has no current
 		is done with it.
 ****************************************************************************/
 RCODE F_Db::getNameTable(
-	F_NameTable **	ppNameTable
-	)
+	F_NameTable **	ppNameTable)
 {
 	RCODE		rc = NE_XFLM_OK;
 	FLMBOOL	bMutexLocked = FALSE;
@@ -2433,6 +2451,7 @@ RCODE F_Db::getNameTable(
 			rc = RC_SET_AND_ASSERT( NE_XFLM_NO_NAME_TABLE);
 			goto Exit;
 		}
+		
 		(*ppNameTable)->AddRef();
 	}
 	else
@@ -2447,6 +2466,7 @@ RCODE F_Db::getNameTable(
 				rc = RC_SET_AND_ASSERT( NE_XFLM_NO_NAME_TABLE);
 				goto Exit;
 			}
+			
 			(*ppNameTable)->AddRef();
 		}
 		else

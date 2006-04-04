@@ -579,12 +579,12 @@ ServerLockObject::ServerLockObject()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT ServerLockObject::Release(
+FLMINT ServerLockObject::Release(
 	FLMBOOL	bMutexAlreadyLocked)
 {
-	FLMUINT	uiRefCnt = --m_ui32RefCnt;
+	FLMINT	iRefCnt = --m_refCnt;
 
-	if( !uiRefCnt)
+	if( !iRefCnt)
 	{
 		delete this;
 		goto Exit;
@@ -593,7 +593,7 @@ FLMUINT ServerLockObject::Release(
 	// When it is no longer pointed to from anything but the server lock
 	// manager, put it into the avail list.
 
-	if (uiRefCnt == 1)
+	if (iRefCnt == 1)
 	{
 		LOCK_WAITER *	pLockWaiter;
 
@@ -622,7 +622,7 @@ FLMUINT ServerLockObject::Release(
 
 Exit:
 
-	return( uiRefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************
@@ -1050,8 +1050,8 @@ RCODE ServerLockObject::Unlock(
 		// At this point we should still have our reference to the object,
 		// the lock manager's reference, and a reference from at least one
 		// waiter (that may have been granted above).
-		flmAssert( m_ui32RefCnt >= 3);
-		m_ui32RefCnt--;
+		flmAssert( m_refCnt >= 3);
+		m_refCnt--;
 	}
 
 	m_pServerLockMgr->unlockMutex( FALSE);

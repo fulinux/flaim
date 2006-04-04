@@ -216,6 +216,12 @@
 		typedef FLMINT								RCODE;
 		typedef FLMINT								FLMBOOL;
 
+		#if defined( FLM_WIN) || defined( FLM_NLM)
+			typedef volatile long 				FLMATOMIC;
+		#else
+			typedef volatile int					FLMATOMIC;
+		#endif
+		
 		#define F_FILENAME_SIZE					256
 		#define F_PATH_MAX_SIZE					256
 
@@ -322,9 +328,9 @@
 			RXFLMIID					riid,
 			void **					ppv) = 0;
 			
-		virtual FLMUINT32 XFLMAPI AddRef( void) = 0;
+		virtual FLMINT XFLMAPI AddRef( void) = 0;
 		
-		virtual FLMUINT32 XFLMAPI Release( void) = 0;
+		virtual FLMINT XFLMAPI Release( void) = 0;
 	};
 	
 	// XFLMIClassFactory
@@ -1684,7 +1690,7 @@
 
 		XF_RefCount()
 		{
-			m_ui32RefCnt = 1;
+			m_refCnt = 1;
 		}
 
 		virtual ~XF_RefCount()
@@ -1693,30 +1699,29 @@
 
 		virtual FINLINE FLMUINT getRefCount( void)
 		{
-			return( m_ui32RefCnt);
+			return( m_refCnt);
 		}
 
-		virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+		virtual FINLINE FLMINT XFLMAPI AddRef( void)
 		{
-			m_ui32RefCnt++;
-			return m_ui32RefCnt;
+			return( ++m_refCnt);
 		}
 
-		virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+		virtual FINLINE FLMINT XFLMAPI Release( void)
 		{
-			FLMUINT32		ui32RefCnt = --m_ui32RefCnt;
+			FLMINT		iRefCnt = --m_refCnt;
 
-			if( !ui32RefCnt)
+			if( !iRefCnt)
 			{
 				delete this;
 			}
 
-			return( ui32RefCnt);
+			return( iRefCnt);
 		}
 
 	protected:
 
-		FLMUINT32		m_ui32RefCnt;
+		FLMATOMIC		m_refCnt;
 	};
 
 	// Class ID for the F_DbSystemFactory class (which is defined in fcompub.h).

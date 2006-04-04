@@ -96,6 +96,33 @@
 			#define BYTE unsigned char
 		#endif
 
+		#ifndef UINT
+			#define UINT	unsigned int
+		#endif
+	
+		typedef void * MUTEX;
+		typedef void * SEMAPHORE;
+		typedef unsigned long ERROR;
+	
+		extern "C"
+		{
+			SEMAPHORE	kSemaphoreAlloc(BYTE *pSemaName, UINT SemaCount);
+			ERROR			kSemaphoreFree(SEMAPHORE SemaHandle);
+			ERROR			kSemaphoreWait(SEMAPHORE SemaHandle);
+			ERROR			kSemaphoreTimedWait(SEMAPHORE SemaHandle, UINT MilliSecondTimeOut);
+			ERROR			kSemaphoreSignal(SEMAPHORE SemaHandle);
+			UINT			kSemaphoreExamineCount(SEMAPHORE SemaHandle);
+		
+			MUTEX			kMutexAlloc(BYTE *MutexName);
+			ERROR			kMutexFree(MUTEX MutexHandle);
+			ERROR			kMutexLock(MUTEX MutexHandle);
+			ERROR			kMutexUnlock(MUTEX MutexHandle);
+		}
+	
+		typedef MUTEX				F_MUTEX;
+		typedef MUTEX *			F_MUTEX_p;
+		#define F_MUTEX_NULL		0
+
 		// External Netware Symbols
 		
 		extern "C"
@@ -199,6 +226,20 @@
 		#define f_va_start		va_start
 		#define f_va_arg			va_arg
 		#define f_va_end			va_end
+
+		typedef struct
+		{
+			FLMATOMIC						locked;
+	#ifdef FLM_DEBUG
+			FLMUINT							uiThreadId;
+			FLMATOMIC						lockedCount;
+			FLMATOMIC						waitCount;
+	#endif
+		} F_INTERLOCK;
+	
+		typedef F_INTERLOCK *			F_MUTEX;
+		typedef F_INTERLOCK	**			F_MUTEX_p;
+		#define F_MUTEX_NULL				NULL
 
 		#define f_stricmp( str1, str2) \
 			_stricmp((char *)(str1), (char *)(str2))
@@ -353,6 +394,12 @@
 		#define f_va_arg			va_arg
 		#define f_va_end			va_end
 
+		#include <pthread.h>
+	
+		typedef pthread_mutex_t *	F_MUTEX;
+		typedef F_MUTEX *				F_MUTEX_p;
+		#define F_MUTEX_NULL			NULL
+		
 	#endif
 
 	/****************************************************************************
@@ -388,7 +435,7 @@
 
 		F_OSBase()
 		{ 
-			m_ui32RefCnt = 1;	
+			m_refCnt = 1;	
 		}
 
 		virtual ~F_OSBase()
@@ -397,7 +444,7 @@
 
 		FINLINE FLMUINT getRefCount( void)
 		{
-			return( m_ui32RefCnt);
+			return( m_refCnt);
 		}
 
 		void * operator new(
@@ -430,27 +477,26 @@
 			int);				// line
 	#endif
 
-		virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+		virtual FINLINE FLMINT XFLMAPI AddRef( void)
 		{
-			m_ui32RefCnt++;
-			return m_ui32RefCnt;
+			return( ++m_refCnt);
 		}
 
-		virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+		virtual FINLINE FLMINT XFLMAPI Release( void)
 		{
-			FLMUINT32		ui32RefCnt = --m_ui32RefCnt;
+			FLMINT		iRefCnt = --m_refCnt;
 
-			if( !ui32RefCnt)
+			if( !iRefCnt)
 			{
 				delete this;
 			}
 
-			return( ui32RefCnt);
+			return( iRefCnt);
 		}
 
 	protected:
 
-		FLMUINT32		m_ui32RefCnt;
+		FLMATOMIC		m_refCnt;
 	};
 
 	/****************************************************************************
@@ -1378,97 +1424,499 @@
 		return( uiSeconds + f_timeGetLocalOffset());
 	}
 
-	/****************************************************************************
-						Atomic Increment, Decrement, Exchange Functions
-	****************************************************************************/
-
-	FLMUINT32 ftkAtomicIncrement( 
-		FLMUINT32 *			puiTarget);
-
-	FLMUINT32 ftkAtomicDecrement( 
-		FLMUINT32 *			puiTarget);
-
-	FLMUINT32 ftkAtomicExchange( 
-		FLMUINT32 *			puiTarget,
-		FLMUINT32			uiValue);
-
-	#if defined( FLM_WIN)
-
-		FINLINE FLMUINT32 ftkAtomicIncrement(
-			FLMUINT32 *			puiTarget)
-		{
-			__asm
-			{
-				mov	eax, 1
-				mov	ecx, puiTarget
-				lock xadd [ecx], eax
-				inc	eax
-			}
-		}
-		
-		FINLINE FLMUINT32 ftkAtomicDecrement(
-			FLMUINT32 *		puiTarget)
-		{
-			__asm
-			{
-				mov	eax, 0ffffffffh
-				mov	ecx, puiTarget
-				lock xadd [ecx], eax
-				dec	eax
-			}
-		}
-	
-		FINLINE FLMUINT32 ftkAtomicExchange(
-			FLMUINT32 *		puiTarget,
-			FLMUINT32		ui32Value)
-		{
-			__asm
-			{
-				mov	eax, ui32Value
-				mov	ecx, puiTarget
-				lock xchg eax, [ecx]
-			}
-		}
-		
-	#elif defined( FLM_NLM)
-
-		extern "C"
-		{
-			LONG atomic_xchg( LONG *address, LONG value);
-		}
-
-		#define ftkAtomicExchange( puiTarget, uiValue) \
-			((FLMUINT32)atomic_xchg( (LONG *)(puiTarget), (LONG)(uiValue)))
-
-		#if defined( FLM_WATCOM_NLM)
-
-			#pragma aux ftkAtomicIncrement parm [ecx];
-			#pragma aux ftkAtomicIncrement = \
-			0xB8 0x01 0x00 0x00 0x00   		/*  mov	eax, 1  	 			*/ \
-			0xF0 0x0F 0xC1 0x01					/*  lock xadd [ecx], eax 	*/ \
-			0x40										/*  inc	eax 					*/ \
-			parm [ecx]	\
-			modify exact [eax];
-
-			#pragma aux ftkAtomicDecrement parm [ecx];
-			#pragma aux ftkAtomicDecrement = \
-			0xB8 0xFF 0xFF 0xFF 0xFF   		/*  mov	eax, 0ffffffffh	*/ \
-			0xF0 0x0F 0xC1 0x01					/*  lock xadd [ecx], eax 	*/ \
-			0x48										/*  dec	eax 					*/ \
-			parm [ecx]	\
-			modify exact [eax];
-
-		#endif
-
-	#elif defined( FLM_UNIX)
-	
-		#if defined(__GNUC__) && defined(__i386__)
-			#define ATOMIC_INCDEC_SUPPORT		1
-		#endif
-	
-	#else
-		#error Atomic operations are not available on the target platform
+	/**********************************************************************
+	Desc: Atomic Increment, Decrement, Exchange
+	Note:	Some of this code is derived from the Ximian source code contained
+			in that Mono project's atomic.h file. 
+	**********************************************************************/
+	#ifndef FLM_HAVE_ATOMICS
+		#define FLM_HAVE_ATOMICS
 	#endif
+	
+	/*******************************************************************
+	Desc:
+	*******************************************************************/
+	#if defined( FLM_GNUC) && defined( __ia64__)
+	FINLINE FLMINT32 ia64_compare_and_swap(
+		volatile int *		piTarget,
+		FLMINT32				i32NewVal,
+		FLMINT32				i32CompVal)
+	{
+		FLMINT32 			i32Old;
+	
+		asm volatile ("mov ar.ccv = %2 ;;\n\t"
+					  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
+					  : "=r" (i32Old) : "r" (piTarget), 
+						 "r" (i32CompVal),
+						 "r" (i32NewVal));
+	
+		return( i32Old);
+	}
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	#if defined( FLM_SPARC) && defined( FLM_SOLARIS) && !defined( FLM_GNUC)
+	extern "C" FLMINT32 sparc_atomic_add_32(
+		volatile FLMINT32 *		piTarget,
+		FLMINT32						iDelta);
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	#if defined( FLM_SPARC) && defined( FLM_SOLARIS) && !defined( FLM_GNUC)
+	extern "C" FLMINT32 sparc_atomic_xchg_32(
+		volatile FLMINT32 *		piTarget,
+		FLMINT32						iNewValue);
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	#if defined( FLM_AIX)
+	FINLINE int aix_atomic_add(
+		volatile int *			piTarget,
+		int 						iDelta)
+	{
+		return( fetch_and_add( (int *)piTarget, iDelta) + iDelta);
+	}
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 _flmAtomicInc(
+		FLMATOMIC *			piTarget)
+	{
+		#if defined( FLM_NLM)
+		{
+			return( (FLMINT32)nlm_AtomicIncrement( (volatile LONG *)piTarget));
+		}
+		#elif defined( FLM_WIN)
+		{
+			return( (FLMINT32)InterlockedIncrement( (volatile LONG *)piTarget));
+		}
+		#elif defined( FLM_AIX)
+		{
+			return( (FLMINT32)aix_atomic_add( piTarget, 1));
+		}
+		#elif defined( FLM_GNUC)
+		{
+			#if defined( __i386__) || defined( __x86_64__)
+			{
+				FLMINT32 			i32Tmp;
+				
+				__asm__ __volatile__ ("lock; xaddl %0, %1"
+								: "=r" (i32Tmp), "=m" (*piTarget)
+								: "0" (1), "m" (*piTarget));
+			
+				return( i32Tmp + 1);
+			}
+			#elif defined( __ppc__) || defined ( __powerpc__)
+			{
+				FLMINT32				i32Result = 0;
+				FLMINT32				i32Tmp;
+			
+				__asm__ __volatile__ ("\n1:\n\t"
+								"lwarx  %0, 0, %2\n\t"
+								"addi   %1, %0, 1\n\t"
+								"stwcx. %1, 0, %2\n\t"
+								"bne-   1b"
+								: "=&b" (i32Result), "=&b" (i32Tmp) 
+								: "r" (piTarget) : "cc", "memory");
+		
+				return( i32Result + 1);
+			}
+			#elif defined( __ia64__)
+			{
+				FLMINT32				i32Old;
+	
+				for( ;;)
+				{
+					i32Old = (FLMINT32)*piTarget;
+					
+					if( ia64_compare_and_swap( piTarget, 
+							i32Old + 1, i32Old) == i32Old)
+					{
+						break;
+					}
+				}
+			
+				return( i32Old + 1);
+			}
+			#elif defined( __s390__)
+			{
+				FLMINT32				i32Tmp;
+				
+				__asm__ __volatile__ ("\tLA\t2,%1\n"
+								"0:\tL\t%0,%1\n"
+								"\tLR\t1,%0\n"
+								"\tAHI\t1,1\n"
+								"\tCS\t%0,1,0(2)\n"
+								"\tJNZ\t0b\n"
+								"\tLR\t%0,1"
+								: "=r" (i32Tmp), "+m" (*piTarget)
+								: : "1", "2", "cc");
+			
+				return( i32Tmp);
+			}
+			#else
+				#ifdef FLM_HAVE_ATOMICS
+					#undef FLM_HAVE_ATOMICS
+				#endif
+	
+				F_UNREFERENCED_PARM( piTarget);	
+	
+				flmAssert( 0);
+				return( 0);
+			#endif
+		}
+		#elif defined( FLM_SOLARIS) && defined( FLM_SPARC)
+			return( sparc_atomic_add_32( piTarget, 1));
+		#else
+			#ifdef FLM_HAVE_ATOMICS
+				#undef FLM_HAVE_ATOMICS
+			#endif
+	
+			F_UNREFERENCED_PARM( piTarget);	
+	
+			flmAssert( 0);
+			return( 0);
+		#endif
+	}
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 _flmAtomicDec(
+		FLMATOMIC *			piTarget)
+	{
+		#if defined( FLM_NLM)
+		{
+			return( (FLMINT32)nlm_AtomicDecrement( (volatile LONG *)piTarget));
+		}
+		#elif defined( FLM_WIN)
+		{
+			return( (FLMINT32)InterlockedDecrement( (volatile LONG *)piTarget));
+		}
+		#elif defined( FLM_AIX)
+		{
+			return( (FLMINT32)aix_atomic_add( piTarget, -1));
+		}
+		#elif defined( FLM_GNUC)
+		{
+			#if defined( __i386__) || defined( __x86_64__)
+			{
+				FLMINT32				i32Tmp;
+				
+				__asm__ __volatile__ ("lock; xaddl %0, %1"
+								: "=r" (i32Tmp), "=m" (*piTarget)
+								: "0" (-1), "m" (*piTarget));
+			
+				return( i32Tmp - 1);
+			}
+			#elif defined( __ppc__) || defined ( __powerpc__)
+			{
+				FLMINT32				i32Result = 0;
+				FLMINT32				i32Tmp;
+			
+				__asm__ __volatile__ ("\n1:\n\t"
+								"lwarx  %0, 0, %2\n\t"
+								"addi   %1, %0, -1\n\t"
+								"stwcx. %1, 0, %2\n\t"
+								"bne-   1b"
+								: "=&b" (i32Result), "=&b" (i32Tmp) 
+								: "r" (piTarget) : "cc", "memory");
+								
+				return( i32Result - 1);
+			}
+			#elif defined( __ia64__)
+			{
+				FLMINT32				i32Old;
+	
+				for( ;;)
+				{
+					i32Old = (FLMINT32)*piTarget;
+					
+					if( ia64_compare_and_swap( piTarget, i32Old - 1,
+						i32Old) == i32Old)
+					{
+						break;
+					}
+				}
+			
+				return( i32Old - 1);
+			}
+			#elif defined( __s390__)
+			{
+				FLMINT32				i32Tmp;
+		
+				__asm__ __volatile__ ("\tLA\t2,%1\n"
+								"0:\tL\t%0,%1\n"
+								"\tLR\t1,%0\n"
+								"\tAHI\t1,-1\n"
+								"\tCS\t%0,1,0(2)\n"
+								"\tJNZ\t0b\n"
+								"\tLR\t%0,1"
+								: "=r" (i32Tmp), "+m" (*piTarget)
+								: : "1", "2", "cc");
+			
+				return( i32Tmp);
+			}
+			#else
+				#ifdef FLM_HAVE_ATOMICS
+					#undef FLM_HAVE_ATOMICS
+				#endif
+	
+				F_UNREFERENCED_PARM( piTarget);
+				
+				flmAssert( 0);
+				return( 0);
+			#endif
+		}
+		#elif defined( FLM_SOLARIS) && defined( FLM_SPARC)
+			return( sparc_atomic_add_32( piTarget, -1));
+		#else
+			#ifdef FLM_HAVE_ATOMICS
+				#undef FLM_HAVE_ATOMICS
+			#endif
+	
+			F_UNREFERENCED_PARM( piTarget);
+				
+			flmAssert( 0);
+			return( 0);
+		#endif
+	}
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 _flmAtomicExchange(
+		FLMATOMIC *			piTarget,
+		FLMINT32				i32NewVal)
+	{
+		#if defined( FLM_NLM)
+		{
+			return( (FLMINT32)nlm_AtomicExchange( 
+				(volatile LONG *)piTarget, i32NewVal));
+		}
+		#elif defined( FLM_WIN)
+		{
+			return( (FLMINT32)InterlockedExchange( (volatile LONG *)piTarget,
+				i32NewVal));
+		}
+		#elif defined( FLM_AIX)
+		{
+			int		iOldVal;
+			
+			for( ;;)
+			{ 
+				iOldVal = (int)*piTarget;
+				
+				if( compare_and_swap( (int *)piTarget, &iOldVal, i32NewVal))
+				{
+					break;
+				}
+			}
+			
+			return( (FLMINT32)iOldVal);
+		}
+		#elif defined( FLM_GNUC)
+		{
+			#if defined( __i386__) || defined( __x86_64__)
+			{
+				FLMINT32 			i32Ret;
+				
+				__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
+								: "=m" (*piTarget), "=a" (i32Ret)
+								: "r" (i32NewVal), "m" (*piTarget),
+								  "a" (*piTarget));
+			
+				return( i32Ret);
+			}
+			#elif defined( __ppc__) || defined ( __powerpc__)
+			{
+				FLMINT32				i32Tmp = 0;
+			
+				__asm__ __volatile__ ("\n1:\n\t"
+								"lwarx  %0, 0, %2\n\t"
+								"stwcx. %3, 0, %2\n\t"
+								"bne    1b"
+								: "=r" (i32Tmp) : "0" (i32Tmp), 
+								  "b" (piTarget),
+								  "r" (i32NewVal) : "cc", "memory");
+								
+				return( i32Tmp);
+			}
+			#elif defined( __ia64__)
+			{
+				FLMINT32			i32Result;
+	
+				for( ;;)
+				{
+					i32Result = (FLMINT32)*piTarget;
+					
+					if( ia64_compare_and_swap( piTarget, 
+							i32NewVal, i32Result) == i32Result)
+					{
+						break;
+					}
+				}
+			
+				return( i32Result);
+			}
+			#elif defined( __s390__)
+			{
+				FLMINT32				i32Ret;
+				
+				__asm__ __volatile__ ("\tLA\t1,%0\n"
+								"0:\tL\t%1,%0\n"
+								"\tCS\t%1,%2,0(1)\n"
+								"\tJNZ\t0b"
+								: "+m" (*piTarget), "=r" (i32Ret)
+								: "r" (i32NewVal)
+								: "1", "cc");
+			
+				return( i32Ret);
+			}
+			#else
+				#ifdef FLM_HAVE_ATOMICS
+					#undef FLM_HAVE_ATOMICS
+				#endif
+	
+				F_UNREFERENCED_PARM( piTarget);
+				F_UNREFERENCED_PARM( i32NewVal);
+				
+				flmAssert( 0);
+				return( 0);
+			#endif
+		}
+		#elif defined( FLM_SOLARIS) && defined( FLM_SPARC)
+			return( sparc_atomic_xchg_32( piTarget, i32NewVal));
+		#else
+			#ifdef FLM_HAVE_ATOMICS
+				#undef FLM_HAVE_ATOMICS
+			#endif
+	
+			F_UNREFERENCED_PARM( piTarget);
+			F_UNREFERENCED_PARM( i32NewVal);
+	
+			flmAssert( 0);
+			return( 0);
+		#endif
+	}
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 flmAtomicInc(
+		FLMATOMIC *		piTarget,
+		F_MUTEX			hMutex = F_MUTEX_NULL,
+		FLMBOOL			bMutexAlreadyLocked = FALSE)
+	{
+		#ifdef FLM_HAVE_ATOMICS
+			F_UNREFERENCED_PARM( bMutexAlreadyLocked);
+			F_UNREFERENCED_PARM( hMutex);
+			
+			return( _flmAtomicInc( piTarget));
+		#else
+		{
+			FLMINT32		i32NewVal;
+			
+			flmAssert( hMutex != F_MUTEX_NULL);
+	
+			if( !bMutexAlreadyLocked)
+			{
+				f_mutexLock( hMutex);
+			}
+			
+			i32NewVal = (FLMINT32)(++(*piTarget));
+			
+			if( !bMutexAlreadyLocked)
+			{
+				f_mutexUnlock( hMutex);
+			}
+			
+			return( i32NewVal);
+		}
+		#endif
+	}
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 flmAtomicDec(
+		FLMATOMIC *		piTarget,
+		F_MUTEX			hMutex = F_MUTEX_NULL,
+		FLMBOOL			bMutexAlreadyLocked = FALSE)
+	{
+		#ifdef FLM_HAVE_ATOMICS
+			F_UNREFERENCED_PARM( bMutexAlreadyLocked);
+			F_UNREFERENCED_PARM( hMutex);
+			
+			return( _flmAtomicDec( piTarget));
+		#else
+		{
+			FLMINT32		i32NewVal;
+			
+			flmAssert( hMutex != F_MUTEX_NULL);
+			
+			if( !bMutexAlreadyLocked)
+			{
+				f_mutexLock( hMutex);
+			}
+			
+			i32NewVal = (FLMINT32)(--(*piTarget));
+			
+			if( !bMutexAlreadyLocked)
+			{
+				f_mutexUnlock( hMutex);
+			}
+			
+			return( i32NewVal);
+		}
+		#endif
+	}
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 flmAtomicExchange(
+		FLMATOMIC *		piTarget,
+		FLMINT32			i32NewVal,
+		F_MUTEX			hMutex = F_MUTEX_NULL,
+		FLMBOOL			bMutexAlreadyLocked = FALSE)
+	{
+		#ifdef FLM_HAVE_ATOMICS
+			F_UNREFERENCED_PARM( bMutexAlreadyLocked);
+			F_UNREFERENCED_PARM( hMutex);
+			
+			return( _flmAtomicExchange( piTarget, i32NewVal));
+		#else
+		{
+			FLMINT32		i32OldVal;
+			
+			flmAssert( hMutex != F_MUTEX_NULL);
+			
+			if( !bMutexAlreadyLocked)
+			{
+				f_mutexLock( hMutex);
+			}
+			
+			i32OldVal = (FLMINT32)*piTarget;
+			*piTarget = i32NewVal;
+			
+			if( !bMutexAlreadyLocked)
+			{
+				f_mutexUnlock( hMutex);
+			}
+			
+			return( i32OldVal);
+		}
+		#endif
+	}
 
 	/****************************************************************************
 										Pseudo Serial Numbers

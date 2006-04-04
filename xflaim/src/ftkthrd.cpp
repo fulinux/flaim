@@ -43,53 +43,26 @@
 /****************************************************************************
 Desc:	Add a Reference to this object.
 ****************************************************************************/
-FLMUINT32 F_Thread::AddRef(
+FLMINT F_Thread::AddRef(
 	FLMBOOL		bMutexLocked)
 {
-	FLMUINT32		ui32RefCnt;
-
-	if( !bMutexLocked)
-	{
-		f_mutexLock( m_hMutex);
-	}
-
-	ui32RefCnt = ++m_ui32RefCnt;
-
-	if( !bMutexLocked)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-
-	return( ui32RefCnt);
+	return( flmAtomicInc( &m_refCnt, m_hMutex, bMutexLocked));
 }
 
 /****************************************************************************
 Desc: Removes a reference to this object.
 ****************************************************************************/
-FLMUINT32 F_Thread::Release(
+FLMINT F_Thread::Release(
 	FLMBOOL		bMutexLocked)
 {
-	FLMUINT32		ui32RefCnt;
-
-	if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexLock( m_hMutex);
-	}
-
-	flmAssert( m_ui32RefCnt > 0);
-	ui32RefCnt = --m_ui32RefCnt;
-
-	if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-
-	if( !ui32RefCnt)
+	FLMINT		iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, bMutexLocked);
+	
+	if( !iRefCnt)
 	{
 		delete this;
 	}
 
-	return( ui32RefCnt);
+	return( iRefCnt);
 }
 
 /****************************************************************************
@@ -192,7 +165,7 @@ RCODE F_Thread::startThread(
 	// Increment the reference count of the thread object now
 	// that it is linked into the thread manager's list.
 
-	m_ui32RefCnt++;
+	m_refCnt++;
 
 	// Start the thread
 

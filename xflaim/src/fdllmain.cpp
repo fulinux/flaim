@@ -27,7 +27,7 @@
 #include "fcomfact.h"
 
 static F_DbSystem *			gv_pDbSystem = NULL;
-static FLMUINT32				gv_ui32LockCount = 0;
+static FLMATOMIC				gv_lockCount = 0;
 
 XFLMEXTC RCODE XFLMAPI DllCanUnloadNow( void);
 
@@ -73,8 +73,7 @@ Desc:
 ******************************************************************************/
 void LockModule(void)
 {
-	ftkAtomicIncrement( &gv_ui32LockCount);
-//	flmAssert( gv_ui32LockCount < 20);
+	flmAtomicInc( &gv_lockCount);
 }
 
 /******************************************************************************
@@ -82,7 +81,7 @@ Desc:
 ******************************************************************************/
 void UnlockModule(void)
 {
-	ftkAtomicDecrement( &gv_ui32LockCount);
+	flmAtomicDec( &gv_lockCount);
 }
 
 /******************************************************************************
@@ -95,15 +94,15 @@ XFLMEXTC RCODE XFLMAPI DllCanUnloadNow( void)
 
 	flmAssert( gv_pDbSystem);
 
-	if( gv_ui32LockCount > 1)
+	if( gv_lockCount > 1)
 	{
 		rc = RC_SET( NE_XFLM_FAILURE);
 	}
 	else
 	{
-		// gv_ui32LockCount should be 1 because gv_pDbSystem is non-null.
+		// gv_lockCount should be 1 because gv_pDbSystem is non-null.
 
-		flmAssert( gv_ui32LockCount == 1);
+		flmAssert( gv_lockCount == 1);
 
 		// Check for open databases
 
@@ -194,7 +193,7 @@ XFLMEXTC RCODE XFLMAPI DllStop( void)
 {
 	if( gv_pDbSystem)
 	{
-		flmAssert( gv_ui32LockCount == 1);
+		flmAssert( gv_lockCount == 1);
 
 		gv_pDbSystem->exit();
 		gv_pDbSystem->Release();

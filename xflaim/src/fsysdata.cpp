@@ -50,7 +50,7 @@
 	#define FLM_MAX_CACHE_SIZE			(~((FLMUINT)0))
 #endif
 
-FLMUINT32			F_DbSystem::m_ui32FlmSysSpinLock = 0;
+FLMATOMIC			F_DbSystem::m_flmSysSpinLock = 0;
 FLMUINT				F_DbSystem::m_uiFlmSysStartupCount = 0;
 
 static FLMBYTE		ucSENPrefixArray[] =
@@ -2194,7 +2194,7 @@ void F_DbSystem::lockSysData( void)
 {
 	// Obtain the spin lock
 
-	while( ftkAtomicExchange( &m_ui32FlmSysSpinLock, 1) == 1)
+	while( flmAtomicExchange( &m_flmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
@@ -2206,7 +2206,7 @@ Desc:	Unlock the system data structure for access - called only by startup
 ***************************************************************************/
 void F_DbSystem::unlockSysData( void)
 {
-	(void)ftkAtomicExchange( &m_ui32FlmSysSpinLock, 0);
+	(void)flmAtomicExchange( &m_flmSysSpinLock, 0);
 }
 
 /****************************************************************************
@@ -4342,9 +4342,9 @@ RCODE XFLMAPI F_DbSystem::QueryInterface(
 /****************************************************************************
 Desc:		Increment the database system use count
 ****************************************************************************/
-FLMUINT32 XFLMAPI F_DbSystem::AddRef(void)
+FLMINT XFLMAPI F_DbSystem::AddRef(void)
 {
-	FLMUINT32	ui32RefCnt = ftkAtomicIncrement( &m_ui32RefCnt);
+	FLMINT		iRefCnt = flmAtomicInc( &m_refCnt);
 
 	// Note: We don't bother with a call to LockModule() here because
 	// it's done in the constructor.  In fact, it's unlikely that
@@ -4352,22 +4352,22 @@ FLMUINT32 XFLMAPI F_DbSystem::AddRef(void)
 	// already sets the ref count to 1 and it's unlikely that there
 	// will be to references to the same DbSystem object...
 
-	return ui32RefCnt;
+	return( iRefCnt);
 }
 
 /****************************************************************************
 Desc:		Decrement the database system use count
 ****************************************************************************/
-FLMUINT32 XFLMAPI F_DbSystem::Release(void)
+FLMINT XFLMAPI F_DbSystem::Release(void)
 {
-	FLMUINT32	ui32RefCnt = ftkAtomicDecrement( &m_ui32RefCnt);
+	FLMINT	iRefCnt = flmAtomicDec( &m_refCnt);
 
-	if (ui32RefCnt == 0)
+	if (iRefCnt == 0)
 	{
 		delete this;	
 	}
 
-	return ui32RefCnt;
+	return( iRefCnt);
 }
 
 /****************************************************************************

@@ -40,11 +40,11 @@ RCODE f_mutexCreate(
 		return( RC_SET( NE_XFLM_MEM));
 	}
 
-	(*phMutex)->ui32Locked = 0;
+	(*phMutex)->locked = 0;
 #ifdef FLM_DEBUG
 	(*phMutex)->uiThreadId = 0;
-	(*phMutex)->ui32LockedCount = 0;
-	(*phMutex)->ui32WaitCount = 0;
+	(*phMutex)->lockedCount = 0;
+	(*phMutex)->waitCount = 0;
 #endif
 
 	return( NE_XFLM_OK);

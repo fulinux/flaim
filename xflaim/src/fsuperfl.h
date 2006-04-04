@@ -88,24 +88,37 @@ public:
 		FLMUINT				uiFileNumber,
 		FLMUINT *			puiFileId);
 
-	FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	FINLINE FLMINT XFLMAPI AddRef(
+		FLMBOOL			bMutexLocked)
 	{
-		return( ftkAtomicIncrement( &m_ui32RefCnt));
+		return( flmAtomicInc( &m_refCnt, m_hMutex, bMutexLocked));
 	}
 
-	FINLINE FLMUINT32 XFLMAPI Release( void)
+	FINLINE FLMINT XFLMAPI Release(
+		FLMBOOL			bMutexLocked)
 	{
-		FLMUINT32	ui32RefCnt = ftkAtomicDecrement( &m_ui32RefCnt);
+		FLMINT	iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, bMutexLocked);
 
-		if( !ui32RefCnt)
+		if( !iRefCnt)
 		{
 			delete this;
 		}
-		return( ui32RefCnt);
+		
+		return( iRefCnt);
 	}
 
 private:
 
+	FINLINE FLMINT XFLMAPI AddRef( void)
+	{
+		return( AddRef( FALSE));
+	}
+			
+	FINLINE FLMINT XFLMAPI Release( void)
+	{
+		return( Release( FALSE));
+	}
+	
 	F_MUTEX				m_hMutex;
 	FLMUINT				m_uiFileIdTblSize;
 	FLMUINT *			m_puiFileIdTbl;

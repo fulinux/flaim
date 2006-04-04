@@ -1255,7 +1255,7 @@ F_Database::~F_Database()
 	{
 		FLMUINT		uiRefCnt;
 
-		uiRefCnt = m_pFileIdList->Release();
+		uiRefCnt = m_pFileIdList->Release( FALSE);
 		flmAssert( !uiRefCnt);
 		m_pFileIdList = NULL;
 	}

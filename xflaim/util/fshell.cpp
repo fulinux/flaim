@@ -310,7 +310,9 @@ FSTATIC void domDisplayInfo(
 char * errorToString(
 	XMLParseError	errorType);
 
-// Local class definitions
+/****************************************************************************
+Desc:
+*****************************************************************************/
 class F_LocalRestore : public F_FSRestore
 {
 public:
@@ -347,6 +349,9 @@ private:
 
 };
 
+/****************************************************************************
+Desc:
+*****************************************************************************/
 class F_LocalRestoreStatus : public F_DefaultRestoreStatus
 {
 public:
@@ -617,6 +622,9 @@ private:
 	FLMUINT64			m_ui64RflBytesRead;
 };
 
+/****************************************************************************
+Desc:
+*****************************************************************************/
 class F_LocalBackupClient : public F_DefaultBackupClient
 {
 public:
@@ -632,6 +640,9 @@ private:
 	FlmShell *	m_pShell;
 };
 
+/****************************************************************************
+Desc:
+*****************************************************************************/
 class F_LocalBackupStatus : public IF_BackupStatus, public XF_Base
 {
 public:
@@ -651,12 +662,12 @@ public:
 		return( IF_BackupStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLMAPI AddRef( void)
 	{
 		return( IF_BackupStatus::AddRef());
 	}
 
-	virtual FINLINE FLMUINT32 XFLMAPI Release( void)
+	virtual FINLINE FLMINT XFLMAPI Release( void)
 	{
 		return( IF_BackupStatus::Release());
 	}
@@ -665,8 +676,6 @@ private:
 
 	FlmShell *	m_pShell;
 };
-
-// Methods
 
 /****************************************************************************
 Desc:

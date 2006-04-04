@@ -2591,39 +2591,6 @@ FLMINT f_uninativencmp(
 	return( uiCount ? ((FLMINT)*puzStr1 - (FLMINT)*pszStr2) : 0);
 }
 
-#if defined( FLM_MWERKS_NLM)
-
-/****************************************************************************
-Desc: Atomic increment... returns incremented value
-****************************************************************************/
-FLMUINT32 ftkAtomicIncrement(
-	FLMUINT32 *			puiTarget)
-{
-	__asm
-	{
-		mov	eax, 1
-		mov	ecx, puiTarget
-		lock xadd [ecx], eax
-		inc	eax
-	}
-}
-
-/****************************************************************************
-Desc: Atomic decrement... returns decremented value
-****************************************************************************/
-FLMUINT32 ftkAtomicDecrement(
-	FLMUINT32 *		puiTarget)
-{
-	__asm
-	{
-		mov	eax, 0ffffffffh
-		mov	ecx, puiTarget
-		lock xadd [ecx], eax
-		dec	eax
-	}
-}
-#endif
-
 /***************************************************************************
 Desc:		Sort an array of items
 ****************************************************************************/

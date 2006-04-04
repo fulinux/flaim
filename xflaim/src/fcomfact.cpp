@@ -56,19 +56,19 @@ RCODE F_DbSystemFactory::QueryInterface(
 /********************************************************************
 Desc: 
 *********************************************************************/
-FLMUINT32 F_DbSystemFactory::AddRef(void)
+FLMINT F_DbSystemFactory::AddRef(void)
 {
 	LockModule();
-	return 2;
+	return( 2);
 }
 
 /********************************************************************
 Desc: 
 *********************************************************************/
-FLMUINT32 F_DbSystemFactory::Release(void)
+FLMINT F_DbSystemFactory::Release(void)
 {
 	UnlockModule();
-	return 1;
+	return( 1);
 }
 
 /********************************************************************
