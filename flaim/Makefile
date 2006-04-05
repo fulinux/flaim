@@ -1473,6 +1473,14 @@ ifeq ($(clean_only),0)
 bindist: status clean dircheck all binpackage
 	$(ec)$(gprintf) ""
 
+# -- bindistpath --
+
+.PHONY : bindistpath
+bindistpath:
+	$(ec)$(gprintf) "$(package_dir)/$(bin_package_name)"
+
+# -- binpackage --
+
 .PHONY : binpackage
 binpackage: status
    ifeq "$(svn_revision)" "0"

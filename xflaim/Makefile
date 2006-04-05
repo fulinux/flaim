@@ -1677,6 +1677,15 @@ bindist: status dircheck all binpackage
 	$(ec)$(gprintf) ""
 endif
 
+# -- bindist --
+
+.PHONY : bindist
+ifeq ($(clean_only),0)
+bindist: status clean dircheck all binpackage
+	$(ec)$(gprintf) ""
+
+# -- bindistpath --
+
 .PHONY : binpackage
 ifeq ($(clean_only),0)
 binpackage: status clean
