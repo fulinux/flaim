@@ -1,4 +1,57 @@
 lib_LTLIBRARIES = libxflaim.la
+
+java_jni_dir = ../java/jni
+
+java_jni_srcs = \
+  $(java_jni_dir)/jbackup.cpp \ 
+  $(java_jni_dir)/jdatavector.cpp \
+  $(java_jni_dir)/jdb.cpp \
+  $(java_jni_dir)/jdbsystem.cpp \
+  $(java_jni_dir)/jdomnode.cpp \
+  $(java_jni_dir)/jniftk.cpp \
+  $(java_jni_dir)/jniftk.h \
+  $(java_jni_dir)/jnirestore.cpp \
+  $(java_jni_dir)/jnirestore.h \
+  $(java_jni_dir)/jnistatus.cpp \
+  $(java_jni_dir)/jnistatus.h \
+  $(java_jni_dir)/jposistream.cpp \
+  $(java_jni_dir)/xflaim_Backup.h \
+  $(java_jni_dir)/xflaim_BackupClient.h \
+  $(java_jni_dir)/xflaim_BackupStatus.h \
+  $(java_jni_dir)/xflaim_CHECKINFO.h \
+  $(java_jni_dir)/xflaim_CHECKINFO_CheckPhaseCodes.h \
+  $(java_jni_dir)/xflaim_Collections.h \
+  $(java_jni_dir)/xflaim_CORRUPTINFO.h \
+  $(java_jni_dir)/xflaim_CORRUPTINFO_LOCALE_CODES.h \
+  $(java_jni_dir)/xflaim_CREATEOPTS.h \
+  $(java_jni_dir)/xflaim_DataVector.h \
+  $(java_jni_dir)/xflaim_Db.h \
+  $(java_jni_dir)/xflaim_DbCheckFlags.h \
+  $(java_jni_dir)/xflaim_DbCheckStatus.h \
+  $(java_jni_dir)/xflaim_DbCopyStatus.h \
+  $(java_jni_dir)/xflaim_DbInfo.h \
+  $(java_jni_dir)/xflaim_DbRebuildStatus.h \
+  $(java_jni_dir)/xflaim_DbRenameStatus.h \
+  $(java_jni_dir)/xflaim_DbSystem.h \
+  $(java_jni_dir)/xflaim_DefaultBackupClient.h \
+  $(java_jni_dir)/xflaim_DefaultRestoreClient.h \
+  $(java_jni_dir)/xflaim_DOMNode.h \
+  $(java_jni_dir)/xflaim_FlmBackupType.h \
+  $(java_jni_dir)/xflaim_FlmDataType.h \
+  $(java_jni_dir)/xflaim_FlmDictIndex.h \
+  $(java_jni_dir)/xflaim_FlmDomNodeType.h \
+  $(java_jni_dir)/xflaim_FlmInsertLoc.h \
+  $(java_jni_dir)/xflaim_KeyRetrieveFlags.h \
+  $(java_jni_dir)/xflaim_PosIStream.h \
+  $(java_jni_dir)/xflaim_RCODE.h \
+  $(java_jni_dir)/xflaim_ReserveID.h \
+  $(java_jni_dir)/xflaim_RestoreAction.h \
+  $(java_jni_dir)/xflaim_RestoreClient.h \
+  $(java_jni_dir)/xflaim_RestoreStatus.h \
+  $(java_jni_dir)/xflaim_TransactionFlags.h \
+  $(java_jni_dir)/xflaim_TransactionType.h \
+  $(java_jni_dir)/xflaim_XFlaimException.h
+
 libxflaim_la_SOURCES = \
   btreeinfo.cpp \
   checksum.cpp \
@@ -136,7 +189,10 @@ libxflaim_la_SOURCES = \
   scache.cpp \
   translog.cpp \
   unitable.h \
-  xflaim.h
+  xflaim.h \
+  $(java_jni_srcs)
 
+libxflaim_la_CPPFLAGS = -I$(top_srcdir)/java/jni
 libxflaim_la_LDFLAGS = -version-info 0:0:0
+
 
