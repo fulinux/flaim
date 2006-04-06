@@ -147,7 +147,7 @@ version = $(major_version).$(minor_version).$(svn_revision)
 so_current = 2
 so_revision = 0
 so_age = 1
-suffix_version =
+shared_lib_version =
 
 package_release_num = 1
 
@@ -732,7 +732,7 @@ ifdef win_target
 	# Libraries that our various components need to link against
 
 	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
-	exe_link_libs =
+	exe_link_libs = $(lib_link_libs)
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -757,15 +757,15 @@ ifdef unix_target
 	obj_suffix = .o
 	lib_prefix = lib
 	static_lib_suffix = .a
-	shared_lib_suffix = .so
+	shared_lib_suffix = .so.$(shared_lib_version)
 
 	ifneq ($(so_age),0)
-		suffix_version = .$(so_current).$(so_revision).$(so_age)
+		shared_lib_version = .$(so_current).$(so_revision).$(so_age)
 	else
 		ifneq ($(so_revision),0)
-			suffix_version = .$(so_current).$(so_revision)
+			shared_lib_version = .$(so_current).$(so_revision)
 		else
-			suffix_version = .$(so_current)
+			shared_lib_version = .$(so_current)
 		endif
 	endif
 	compiler = g++
@@ -915,15 +915,13 @@ ifdef unix_target
 	endif
 
 	lib_link_libs = -lpthread
-	exe_link_libs =
+	exe_link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
 		lib_link_libs += -lrt -lstdc++ -ldl
-		exe_link_libs += -lncurses
+		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
-	else
-		exe_link_libs += -lcurses
 	endif
 
 	ifeq ($(target_os_family),solaris)
@@ -937,18 +935,30 @@ ifdef unix_target
 		endif
 
 		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
+		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
 		lib_link_libs += -lm -lc
+		exe_link_libs += -lm -lc -lcurses
 	endif
 
 	ifeq ($(target_os_family),hpux)
 		lib_link_libs += -lm -lc -lrt
+		exe_link_libs += -lm -lc -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),osx)
+so_current = 2
+so_revision = 0
+so_age = 1
+		shared_lib_suffix = -$(major_version).$(so_current).dylib
 		lib_link_libs += -lstdc++ -ldl
+		exe_link_libs += -lstdc++ -ldl -lncurses
+		shared_link_flags += -dynamiclib
+		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
+		shared_link_flags += -compatibility_version $(major_version).$(so_current).0
+		shared_link_flags += -o $@
 	endif
 
 	exe_link_flags = $(link_flags)
@@ -1246,8 +1256,8 @@ flaim_static_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(flaim_src))
 flaim_shared_obj = $(patsubst %.cpp,$(lib_sobj_dir)/%$(obj_suffix),$(flaim_src))
 flaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
-	flaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
-	flaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)$(suffix_version)
+	flaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	flaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 endif
 
 # -- Unit tests  --
@@ -1351,6 +1361,9 @@ ifdef unix_target
 ifeq ($(target_os_family),linux)
 	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
+ifeq ($(target_os_family),osx)
+	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
+endif
 endif
 endif
 
@@ -1358,7 +1371,7 @@ endif
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(lib_link_libs) $(exe_link_libs)
+		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
    endef
 endif
 
@@ -1472,16 +1485,20 @@ endif
 ifeq ($(clean_only),0)
 bindist: status clean dircheck all binpackage
 	$(ec)$(gprintf) ""
+endif
 
 # -- bindistpath --
 
 .PHONY : bindistpath
+ifeq ($(clean_only),0)
 bindistpath:
 	$(ec)$(gprintf) "$(package_dir)/$(bin_package_name)"
-
+endif
+	
 # -- binpackage --
 
 .PHONY : binpackage
+ifeq ($(clean_only),0)
 binpackage: status
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
@@ -1558,7 +1575,7 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(flaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
-	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 endif
@@ -1570,7 +1587,7 @@ ifeq ($(clean_only),0)
 uninstall:
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)*
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)*$(shared_lib_suffix)*
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-rm -rf $(include_install_dir)/flaim.h
@@ -1643,7 +1660,7 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)files\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(asterisk)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(static_lib_suffix)\n" >> $(spec_file)
