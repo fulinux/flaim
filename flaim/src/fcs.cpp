@@ -7384,10 +7384,10 @@ RCODE FCS_WIRE::sendRecord(
 			//
 			//		4-byte container ID, 4-byte DRN
 
-			flmUINT32ToBigEndian( pRecord->getContainerID(), pucBufPos);
+			flmUINT32ToBigEndian( (FLMUINT32)pRecord->getContainerID(), pucBufPos);
 			pucBufPos += 4;
 
-			flmUINT32ToBigEndian( pRecord->getID(), pucBufPos);
+			flmUINT32ToBigEndian( (FLMUINT32)pRecord->getID(), pucBufPos);
 			pucBufPos += 4;
 
 			// Send the descriptor and record source.
