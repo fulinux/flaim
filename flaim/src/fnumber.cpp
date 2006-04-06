@@ -19,7 +19,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id$
+// $Id: $
 //-------------------------------------------------------------------------
 
 #include "flaimsys.h"
@@ -173,7 +173,7 @@ FLMEXP RCODE FLMAPI FlmStorage2INT(
 	FLMINT *				piNum)
 {
 	RCODE			rc = FERR_OK;
-	BCD_TYPE		bcd = {0};
+	BCD_TYPE		bcd;
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
@@ -211,7 +211,7 @@ FLMEXP RCODE FLMAPI FlmStorage2UINT(
 	FLMUINT *			puiNum)
 {
 	RCODE			rc = FERR_OK;
-	BCD_TYPE		bcd = {0};
+	BCD_TYPE		bcd;
 
 	if( RC_OK( rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
@@ -251,7 +251,7 @@ FLMEXP RCODE FLMAPI FlmStorage2UINT32(
 	FLMUINT32 *			pui32Num)
 {
 	RCODE			rc = FERR_OK;
-	BCD_TYPE		bcd = {0};
+	BCD_TYPE		bcd;
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
