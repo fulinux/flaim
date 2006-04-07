@@ -542,12 +542,14 @@ endif
 ifeq ($(package_archive_format),tar)
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
-		$(ec)tar zcf $(2) -C $(1) $(3)
-		$(ec)chmod 775 $(2)
+		$(ec)tar cf $(2).tar -C $(1) $(3)
+		$(ec)gzip -f $(2).tar
+		$(ec)chmod 775 $(2).tar.gz
    endef
 
    define extract_archive
-		$(ec)tar zxvf $(strip $(1))/$(2) -C $(1)
+		$(ec)gunzip $(strip $(1))/$(2).tar.gz
+		$(ec)tar xvf $(strip $(1))/$(2).tar -C $(1)
    endef
 else
    define create_archive
@@ -630,15 +632,15 @@ package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
 package_static_lib_stage_dir = $(package_lib_stage_dir)/static
 package_util_stage_dir = $(package_bin_stage_dir)/util
 package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
-src_package_prefix = $(package_proj_name_and_ver)
-bin_package_prefix = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
+src_package_base_name = $(package_proj_name_and_ver)
+bin_package_base_name = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
 
 ifeq ($(package_archive_format),tar)
-	src_package_name=$(src_package_prefix).tar.gz
-	bin_package_name=$(bin_package_prefix).tar.gz
+	src_package_name=$(src_package_base_name).tar.gz
+	bin_package_name=$(bin_package_base_name).tar.gz
 else
-	src_package_name=$(src_package_prefix).zip
-	bin_package_name=$(bin_package_prefix).zip
+	src_package_name=$(src_package_base_name).zip
+	bin_package_name=$(bin_package_base_name).zip
 endif
 
 inc_dirs = src util
@@ -673,7 +675,8 @@ dash := \055
 # -- Tools --
 
 libr =
-linker =
+exe_linker =
+shared_linker =
 compiler =
 
 ifdef unix_target
@@ -701,7 +704,8 @@ ifdef win_target
 	static_lib_suffix = .lib
 	shared_lib_suffix = .dll
 	libr = lib.exe
-	linker = link.exe
+	exe_linker = link.exe
+	shared_linker = link.exe
 	compiler = cl.exe
 
 	# Compiler defines and flags
@@ -760,23 +764,26 @@ endif
 #   Linux/Unix settings
 ##############################################################################
 ifdef unix_target
+
+	ifneq ($(so_age),0)
+		shared_lib_version = $(so_current).$(so_revision).$(so_age)
+	else
+		ifneq ($(so_revision),0)
+			shared_lib_version = $(so_current).$(so_revision)
+		else
+			shared_lib_version = $(so_current)
+		endif
+	endif
+	
 	exe_suffix =
 	obj_suffix = .o
 	lib_prefix = lib
 	static_lib_suffix = .a
 	shared_lib_suffix = .so.$(shared_lib_version)
-
-	ifneq ($(so_age),0)
-		shared_lib_version = .$(so_current).$(so_revision).$(so_age)
-	else
-		ifneq ($(so_revision),0)
-			shared_lib_version = .$(so_current).$(so_revision)
-		else
-			shared_lib_version = .$(so_current)
-		endif
-	endif
+	
 	compiler = g++
-	linker = g++
+	exe_linker = g++
+	shared_linker = g++
 
 	ifeq ($(target_os_family),osx)
 		libr = libtool
@@ -787,21 +794,24 @@ ifdef unix_target
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
-			linker = CC
+			exe_linker = CC
+			shared_linker = ld
 		endif
 	endif
 
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),aix)
 			compiler = xlC_r
-			linker = xlC_r
+			exe_linker = xlC_r
+			shared_linker = xlC_r
 		endif
 	endif
 
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),hpux)
 			compiler = aCC
-			linker = aCC
+			exe_linker = aCC
+			shared_linker = aCC
 		endif
 	endif
 
@@ -856,8 +866,8 @@ ifdef unix_target
 			else
 				# Must support 64 bit file sizes - even for 32 bit builds.
 
-				ccflags += -xarch=generic
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+				ccflags += -xarch=generic
 			endif
 		endif
 	endif
@@ -933,6 +943,8 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),solaris)
 		link_flags += -R /usr/lib/lwp
+		shared_link_flags += -G -pic -o $@
+		
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
@@ -995,7 +1007,7 @@ ifdef netware_target
 	endif
 
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
-	linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
+	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	shared_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	compiler = "$(call normpath,$(wc_dir))/binnt/wpp386.exe"
 
@@ -1202,7 +1214,7 @@ ifdef netware_target
 
    define flm_exe_link_cmd
 		$(call make_lis_file_cmd,$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
-		$(ec)$(call hostpath,$(linker)) @$(call hostpath,$(1)/$(2).lis)
+		$(ec)$(call hostpath,$(exe_linker)) @$(call hostpath,$(1)/$(2).lis)
 		$(ec)$(call rmcmd,$(target_path)/$(1).lis)
    endef
 
@@ -1358,16 +1370,11 @@ ifeq ($(clean_only),0)
 $(flaim_shared_lib) : $(flaim_shared_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
-ifeq ($(target_os_family),linux)
-	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
-endif
-ifeq ($(target_os_family),osx)
-	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
-endif
+	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
 endif
 
@@ -1375,7 +1382,7 @@ endif
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
+		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
    endef
 endif
 
@@ -1476,7 +1483,7 @@ ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
 endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
-		$(package_dir)/$(src_package_name), \
+		$(package_dir)/$(src_package_base_name), \
 		$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_stage_dir))
 	$(ec)$(call rmdircmd,$(package_stage_dir))
@@ -1522,7 +1529,7 @@ endif
 	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(dbshell_exe),$(package_util_stage_dir))
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
-		$(package_dir)/$(bin_package_name), \
+		$(package_dir)/$(bin_package_base_name), \
 		$(package_proj_name_and_ver))
 	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
 	$(ec)$(gprintf) "Binary package created.\n"
@@ -1538,7 +1545,7 @@ dist: status clean dircheck srcdist
    else
 		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
    endif
-	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
+	$(ec)$(call extract_archive,$(package_dir),$(src_package_base_name))
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
