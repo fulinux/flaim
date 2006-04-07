@@ -749,7 +749,7 @@ ifdef win_target
 	# Libraries that our various components need to link against
 	
 	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
-	exe_link_libs =
+	exe_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -932,11 +932,11 @@ ifdef unix_target
 	endif
 	
 	lib_link_libs = -lpthread
-	exe_link_libs =
+	exe_link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
 		lib_link_libs += -lrt -lstdc++ -ldl
-		exe_link_libs += -lncurses
+		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
 	else
@@ -954,18 +954,27 @@ ifdef unix_target
 		endif
 
 		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
+		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
 	endif
 
 	ifeq ($(target_os_family),aix)
 		lib_link_libs += -lm -lc
+		exe_link_libs += -lm -lc
 	endif
 	
 	ifeq ($(target_os_family),hpux)
 		lib_link_libs += -lm -lc -lrt
+		exe_link_libs += -lm -lc -lrt
 	endif
 	
 	ifeq ($(target_os_family),osx)
+		shared_lib_suffix = -$(major_version).$(so_current).dylib
 		lib_link_libs += -lstdc++ -ldl
+		exe_link_libs += -lstdc++ -ldl -lncurses
+		shared_link_flags += -dynamiclib
+		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
+		shared_link_flags += -compatibility_version $(major_version).$(so_current).0
+		shared_link_flags += -o $@
 	endif
 	
 	exe_link_flags = $(link_flags)
@@ -1329,6 +1338,9 @@ ifdef unix_target
 ifeq ($(target_os_family),linux)
 	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
+ifeq ($(target_os_family),osx)
+	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
+endif
 endif
 endif
 
@@ -1343,7 +1355,7 @@ endif
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(lib_link_libs) $(exe_link_libs)
+		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
    endef
 endif
 
@@ -1676,13 +1688,6 @@ ifeq ($(clean_only),0)
 bindist: status dircheck all binpackage
 	$(ec)$(gprintf) ""
 endif
-
-# -- bindist --
-
-.PHONY : bindist
-ifeq ($(clean_only),0)
-bindist: status clean dircheck all binpackage
-	$(ec)$(gprintf) ""
 
 # -- bindistpath --
 
