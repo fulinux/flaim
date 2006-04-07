@@ -649,9 +649,6 @@ inc_dirs = src util
 
 ifdef jhome
 	jni_src_dir = java/jni
-	inc_dirs += $(subst $(sp),@,"$(jhome)/include")
-	inc_dirs += $(subst $(sp),@,"$(jhome)/include/win32")
-	inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
 	inc_dirs += $(jni_src_dir)
 endif
 
@@ -745,6 +742,14 @@ ifdef win_target
 		/FIXED:NO \
 		/NOLOGO \
 		/OUT:$(call hostpath,$@)
+		
+	# Java
+
+	ifdef jhome	
+		inc_dirs += $(subst $(sp),@,"$(jhome)/include")
+		inc_dirs += $(subst $(sp),@,"$(jhome)/include/win32")
+	endif
+
 
 	# Libraries that our various components need to link against
 	
@@ -774,7 +779,7 @@ ifdef unix_target
 	obj_suffix = .o
 	lib_prefix = lib
 	static_lib_suffix = .a
-	shared_lib_suffix = .so
+	shared_lib_suffix = .so.$(shared_lib_version)
 
 	ifneq ($(so_age),0)
 		suffix_version = .$(so_current).$(so_revision).$(so_age)
@@ -787,6 +792,10 @@ ifdef unix_target
 	endif
 	compiler = g++
 	linker = g++
+	
+	ifdef jhome	
+		inc_dirs += $(subst $(sp),@,"$(jhome)/include")
+	endif
 	
 	ifeq ($(target_os_family),osx)
 		libr = libtool
@@ -829,6 +838,10 @@ ifdef unix_target
 		# Must support 64 bit file sizes - even for 32 bit builds.
 	
 		ccdefs += N_PLAT_UNIX _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64
+		
+		ifdef jhome	
+			inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
+		endif
 		
 		ifeq ($(target_build_type),release)
 			ccflags += \
@@ -896,6 +909,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),osx)
 		ccdefs += OSX
+		inc_dirs += /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers
 	endif
 
 	ccdefs += _REENTRANT
@@ -1196,7 +1210,7 @@ xflaim_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_src))
 xflaim_jni_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
 xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
-   xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+   xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
    xflaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 endif
 
@@ -1396,7 +1410,7 @@ ifeq ($(clean_only),0)
 sample: status clean dircheck libs $(sample_exe)
 $(sample_exe): $(sample_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(call flm_exe_link_cmd,$(sample_dir),dbshell,$(sample_obj))
+	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
 	$(ec)$(call copycmd,sample/xmlfiles/*.xml,$(sample_dir))
 endif
 
@@ -1683,7 +1697,6 @@ endif
 
 # -- bindist --
 
-.PHONY : bindist
 ifeq ($(clean_only),0)
 bindist: status dircheck all binpackage
 	$(ec)$(gprintf) ""
@@ -1691,8 +1704,8 @@ endif
 
 # -- bindistpath --
 
-.PHONY : binpackage
 ifeq ($(clean_only),0)
+.PHONY : binpackage
 binpackage: status clean
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
@@ -1718,7 +1731,7 @@ endif
 	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
-	$(ec)$(call copycmd,$(dbshell_exe),$(package_util_stage_dir))
+	$(ec)$(call copycmd,$(xshell_exe),$(package_util_stage_dir))
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
 		$(package_dir)/$(bin_package_name), \
 		$(package_proj_name_and_ver))
@@ -1737,7 +1750,7 @@ dist: status dircheck srcdist
 		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
    endif
 	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
-	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
+		$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
@@ -1769,7 +1782,7 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(xflaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
-	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(suffix_version)
+	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 endif
@@ -1781,7 +1794,7 @@ ifeq ($(clean_only),0)
 uninstall: 
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)*
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)*$(shared_lib_suffix)*
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-rm -rf $(include_install_dir)/xflaim.h
@@ -1852,7 +1865,7 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)files\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)doc COPYING VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(asterisk)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(static_lib_suffix)\n" >> $(spec_file)
