@@ -4313,7 +4313,7 @@ RCODE F_RecEditor::addComment(
 	flmAssert( m_bSetupCalled == TRUE);
 
 	f_va_start( args, pucFormat);
-	FTXVSprintf( sizeof( pucBuffer), (char *)pucBuffer,
+	FTXVSprintf( (int)sizeof( pucBuffer), (char *)pucBuffer,
 		pucFormat, (f_va_list *)&args);
 	f_va_end( args);
 
@@ -4362,7 +4362,7 @@ RCODE F_RecEditor::addAnnotation(
 	flmAssert( m_bSetupCalled == TRUE);
 
 	f_va_start( args, pucFormat);
-	FTXVSprintf( sizeof( pucBuffer), (char *)pucBuffer, 
+	FTXVSprintf( (int)sizeof( pucBuffer), (char *)pucBuffer, 
 		pucFormat, (f_va_list *)&args);
 	f_va_end( args);
 

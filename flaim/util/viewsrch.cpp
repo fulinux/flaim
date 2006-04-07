@@ -117,7 +117,7 @@ FLMINT ViewGetKey( void)
 										 0xFFFFFFFF, &ValEntered)) ||
 				(!ValEntered))
 			return( FALSE);
-		flmUINT32ToBigEndian( Num, gv_ucViewSearchKey);
+		flmUINT32ToBigEndian( (FLMUINT32)Num, gv_ucViewSearchKey);
 		gv_uiViewSearchKeyLen = 4;
 		return( TRUE);
 	}

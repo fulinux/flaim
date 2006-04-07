@@ -203,9 +203,8 @@ public:
 		const char *	pszFormat, ...);
 
 	FINLINE void displayCommand(
-		char *	pszCommand,
-		char *	pszDescription
-		)
+		const char *	pszCommand,
+		const char *	pszDescription)
 	{
 		con_printf( "  %-20s  -- %s\n", pszCommand, pszDescription);
 	}

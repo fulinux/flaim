@@ -3871,8 +3871,6 @@ FLMINT FlmFileSysCommand::execute(
 			f_stricmp( "move", ppszArgV[0]) == 0 ||
 			f_stricmp( "mv", ppszArgV[0]) == 0 )
 	{
-		FLMUINT		uiLoop = 0;
-		FLMBOOL		bForce = FALSE;
 		FLMBOOL		bOverwrite = FALSE;
 
 		for( uiLoop = 1; uiLoop < (FLMUINT)iArgC; uiLoop++)
@@ -3984,8 +3982,6 @@ FLMINT FlmFileSysCommand::execute(
 	else if(f_stricmp( "copy", ppszArgV[0]) == 0 ||
 				f_stricmp( "cp", ppszArgV[0]) == 0)
 	{
-		FLMUINT			uiLoop;
-		FLMBOOL			bForce = FALSE;
 		FLMBOOL			bOverwrite = FALSE;
 		FLMUINT			uiBytesCopied = 0;
 

@@ -192,7 +192,7 @@
 			#include <sys/atomic_op.h>
 		#endif
 		
-		#if defined( FLM_SOLARIS) || defined( FLM_LINUX)
+		#ifndef FLM_OSX
 			#include <aio.h>
 		#endif
 	

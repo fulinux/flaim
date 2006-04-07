@@ -1080,7 +1080,7 @@ RCODE F_FileHdlImp::DirectWrite(
 	FLMUINT			uiWriteOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
-	FLMUINT			uiBufferSize,
+	FLMUINT,
 	F_IOBuffer *	pBufferObj,
 	FLMUINT *		puiBytesWrittenRV,
 	FLMBOOL			bBuffHasFullSectors,
@@ -1239,13 +1239,6 @@ RCODE F_FileHdlImp::DirectWrite(
 		}
 		else
 		{
-#ifdef FLM_OSX
-			// Mac OS doesn't have posix async io, so we don't ever
-			// want to enter this else clause
-
-			rc = RC_SET_AND_ASSERT( FERR_NOT_IMPLEMENTED);
-			goto Exit;
-#else
 			struct aiocb *		pAio = pBufferObj->getAIOStruct();
 			
 			f_memset( pAio, 0, sizeof( struct aiocb));
@@ -1264,7 +1257,6 @@ RCODE F_FileHdlImp::DirectWrite(
 			
 			pBufferObj->makePending();
 			bDidAsync = TRUE;
-#endif
 		}
 
 		uiBytesToWrite -= uiBytesBeingOutput;
