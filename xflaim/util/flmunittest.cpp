@@ -35,7 +35,7 @@
 	#define PLATPROC_STR			"nwx86"
 #elif defined( FLM_LINUX)
 	#define PLATPROC_STR			"lxx86"
-#elif defined( FLM_MACOSX)
+#elif defined( FLM_OSX)
 	#define PLATPROC_STR			"osx"
 #elif defined( FLM_SOLARIS)
 	#define PLATPROC_STR			"solaris"

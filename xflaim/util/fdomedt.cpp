@@ -5985,7 +5985,7 @@ RCODE F_DomEditor::getNumber(
 	{
 		if( pi64Value)
 		{
-#ifdef FLM_LINUX
+#if defined( FLM_GNUC)
 			if( ui64Value > 0x7FFFFFFFFFFFFFFFULL)
 #else
 			if( ui64Value > 0x7FFFFFFFFFFFFFFF)
