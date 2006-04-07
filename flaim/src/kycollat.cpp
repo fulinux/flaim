@@ -6925,7 +6925,7 @@ RCODE flmIxKeyOutput(
 	FLMUINT			uiFromKeyLen;
 	FLMUINT 			uiFromRemaining;
 	FLMUINT			uiPostLen;
-	FLMUINT			uiPostPos;
+	FLMUINT			uiPostPos = 0;
 	FLMUINT			uiTempFromKeyLen;
 	FLMUINT			uiFldType;
 	FLMUINT			uiDataType;
