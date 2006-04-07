@@ -177,6 +177,7 @@
 		#include <sys/socket.h>
 		#include <sys/stat.h>
 		#include <sys/time.h>
+		#include <aio.h>
 		
 		#ifndef  _POSIX_THREADS
 			#define  _POSIX_THREADS
@@ -192,10 +193,6 @@
 			#include <sys/atomic_op.h>
 		#endif
 		
-		#ifndef FLM_OSX
-			#include <aio.h>
-		#endif
-	
 		#define FSTATIC		static
 	
 		#define f_stricmp(str1,str2) \

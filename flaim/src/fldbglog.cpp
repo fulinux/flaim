@@ -342,15 +342,13 @@ void _flmDbgOutputMsg(
 	}
 }
 
-#else
+#endif	// #ifdef FLM_DBG_LOG
 
-// Must have something here for the Netware platform, or it won't build.
-
-#if defined( FLM_NLM) && !defined( __MWERKS__)
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if( (defined( FLM_NLM) && !defined( __MWERKS__)) || defined( FLM_OSX))
 void gv_fldbglog()
 {
 }
 #endif
-
-
-#endif	// #ifdef FLM_DBG_LOG

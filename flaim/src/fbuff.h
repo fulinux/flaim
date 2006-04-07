@@ -220,7 +220,7 @@ public:
 	}
 #endif
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( FLM_UNIX)
 	FINLINE struct aiocb * getAIOStruct( void)
 	{
 		return( &m_aio);
@@ -260,7 +260,7 @@ private:
 	HANDLE					m_FileHandle;
 	OVERLAPPED				m_Overlapped;
 #endif
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( FLM_UNIX)
 	struct aiocb			m_aio;
 #endif
 #ifdef FLM_NLM

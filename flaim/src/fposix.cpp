@@ -217,7 +217,7 @@ RCODE F_FileHdlImp::OpenOrCreate(
 				{
 					bDoDirectIO = FALSE;
 				}
-#elif defined( FLM_SOLARIS)
+#else
 				if( gv_FlmSysData.bOkToDoAsyncWrites)
 				{
 					m_bCanDoAsync = TRUE;
