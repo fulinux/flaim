@@ -949,9 +949,6 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),osx)
-so_current = 2
-so_revision = 0
-so_age = 1
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
 		lib_link_libs += -lstdc++ -ldl
 		exe_link_libs += -lstdc++ -ldl -lncurses
@@ -1487,14 +1484,6 @@ bindist: status clean dircheck all binpackage
 	$(ec)$(gprintf) ""
 endif
 
-# -- bindistpath --
-
-.PHONY : bindistpath
-ifeq ($(clean_only),0)
-bindistpath:
-	$(ec)$(gprintf) "$(package_dir)/$(bin_package_name)"
-endif
-	
 # -- binpackage --
 
 .PHONY : binpackage
@@ -1550,6 +1539,15 @@ dist: status clean dircheck srcdist
 	$(ec)$(gprintf) "Distribution created.\n"
 endif
 
+# -- pathinfo --
+
+.PHONY : pathinfo
+ifeq ($(clean_only),0)
+pathinfo:
+	$(ec)$(gprintf) "srcpackage = $(call ppath,$(package_dir)/$(src_package_name))\n"
+	$(ec)$(gprintf) "binpackage = $(call ppath,$(package_dir)/$(bin_package_name))\n"
+endif
+	
 # -- Change log --
 
 .PHONY : changelog

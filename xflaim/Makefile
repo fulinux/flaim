@@ -1702,7 +1702,7 @@ bindist: status dircheck all binpackage
 	$(ec)$(gprintf) ""
 endif
 
-# -- bindistpath --
+# -- binpackage --
 
 ifeq ($(clean_only),0)
 .PHONY : binpackage
@@ -1755,6 +1755,15 @@ dist: status dircheck srcdist
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
 	$(ec)$(gprintf) "Distribution created.\n"
+endif
+
+# -- pathinfo --
+
+.PHONY : pathinfo
+ifeq ($(clean_only),0)
+pathinfo:
+	$(ec)$(gprintf) "srcpackage = $(call ppath,$(package_dir)/$(src_package_name))\n"
+	$(ec)$(gprintf) "binpackage = $(call ppath,$(package_dir)/$(bin_package_name))\n"
 endif
 
 # -- changelog --
