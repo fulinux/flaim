@@ -378,7 +378,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #if defined( FLM_OSX)
-void gv_fnlm()
+void gv_ftkmod()
 {
 }
 #endif
