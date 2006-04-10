@@ -894,10 +894,6 @@ ifdef unix_target
 		endif
 	endif
 
-	ifeq ($(target_os_family),osx)
-		ccdefs += OSX
-	endif
-
 	ccdefs += _REENTRANT
 
 	ifeq ($(target_build_type),debug)

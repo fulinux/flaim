@@ -81,7 +81,7 @@
 			#define FLM_LINUX
 			#define FLM_OSTYPE_STR "Linux"
 			#define FLM_UNIX
-			#if defined( __PPC__)
+			#if defined( __PPC__) || defined( __ppc__)
 				#define FLM_POWER_PC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT
