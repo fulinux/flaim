@@ -192,6 +192,10 @@
 		#ifdef FLM_AIX
 			#include <sys/atomic_op.h>
 		#endif
+
+		#ifdef FLM_OSX
+			#include <libkern/OSAtomic.h>
+		#endif
 		
 		#define FSTATIC		static
 	
@@ -1130,6 +1134,10 @@
 		{
 			return( (FLMINT32)aix_atomic_add( piTarget, 1));
 		}
+		#elif defined( FLM_OSX)
+		{
+			return( (FLMINT32)OSAtomicIncrement32( (int32_t *)piTarget));
+		}
 		#elif defined( FLM_GNUC)
 		{
 			#if defined( __i386__) || defined( __x86_64__)
@@ -1238,6 +1246,10 @@
 		#elif defined( FLM_AIX)
 		{
 			return( (FLMINT32)aix_atomic_add( piTarget, -1));
+		}
+		#elif defined( FLM_OSX)
+		{
+			return( (FLMINT32)OSAtomicDecrement32( (int32_t *)piTarget));
 		}
 		#elif defined( FLM_GNUC)
 		{
@@ -1355,6 +1367,22 @@
 				iOldVal = (int)*piTarget;
 				
 				if( compare_and_swap( (int *)piTarget, &iOldVal, i32NewVal))
+				{
+					break;
+				}
+			}
+			
+			return( (FLMINT32)iOldVal);
+		}
+		#elif defined( FLM_OSX)
+		{
+			int32_t		iOldVal;
+
+			for( ;;)
+			{
+				iOldVal = (int32_t)*piTarget;
+
+				if( OSAtomicCompareAndSwap32( iOldVal, i32NewVal, (int32_t *)piTarget))
 				{
 					break;
 				}
