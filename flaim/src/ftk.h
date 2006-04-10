@@ -1136,7 +1136,8 @@
 			{
 				FLMINT32 			i32Tmp;
 				
-				__asm__ __volatile__ ("lock; xaddl %0, %1"
+				__asm__ __volatile__ (
+								"lock; xaddl %0, %1"
 								: "=r" (i32Tmp), "=m" (*piTarget)
 								: "0" (1), "m" (*piTarget));
 			
@@ -1147,13 +1148,16 @@
 				FLMINT32				i32Result = 0;
 				FLMINT32				i32Tmp;
 			
-				__asm__ __volatile__ ("\n1:\n\t"
-								"lwarx  %0, 0, %2\n\t"
-								"addi   %1, %0, 1\n\t"
-								"stwcx. %1, 0, %2\n\t"
-								"bne-   1b"
+				__asm__ __volatile__ (
+								"sync;"
+								"1:		lwarx  %0, 0, %2;"
+								"			addi %1, %0, 1;"
+								"			stwcx. %1, 0, %2;"
+								"			bne-   1b;"
+								"sync"
 								: "=&b" (i32Result), "=&b" (i32Tmp) 
-								: "r" (piTarget) : "cc", "memory");
+								: "r" (piTarget) 
+								: "cc", "memory");
 		
 				return( i32Result + 1);
 			}
@@ -1178,7 +1182,8 @@
 			{
 				FLMINT32				i32Tmp;
 				
-				__asm__ __volatile__ ("\tLA\t2,%1\n"
+				__asm__ __volatile__ (
+								"\tLA\t2,%1\n"
 								"0:\tL\t%0,%1\n"
 								"\tLR\t1,%0\n"
 								"\tAHI\t1,1\n"
@@ -1186,7 +1191,8 @@
 								"\tJNZ\t0b\n"
 								"\tLR\t%0,1"
 								: "=r" (i32Tmp), "+m" (*piTarget)
-								: : "1", "2", "cc");
+								: 
+								: "1", "2", "cc");
 			
 				return( i32Tmp);
 			}
@@ -1250,13 +1256,16 @@
 				FLMINT32				i32Result = 0;
 				FLMINT32				i32Tmp;
 			
-				__asm__ __volatile__ ("\n1:\n\t"
-								"lwarx  %0, 0, %2\n\t"
-								"addi   %1, %0, -1\n\t"
-								"stwcx. %1, 0, %2\n\t"
-								"bne-   1b"
+				__asm__ __volatile__ (
+								"sync;"
+								"1:		lwarx  %0, 0, %2;"
+								"			addi %1, %0, -1;"
+								"			stwcx. %1, 0, %2;"
+								"			bne-   1b;"
+								"sync"
 								: "=&b" (i32Result), "=&b" (i32Tmp) 
-								: "r" (piTarget) : "cc", "memory");
+								: "r" (piTarget) 
+								: "cc", "memory");
 								
 				return( i32Result - 1);
 			}
@@ -1281,7 +1290,8 @@
 			{
 				FLMINT32				i32Tmp;
 		
-				__asm__ __volatile__ ("\tLA\t2,%1\n"
+				__asm__ __volatile__ (
+								"\tLA\t2,%1\n"
 								"0:\tL\t%0,%1\n"
 								"\tLR\t1,%0\n"
 								"\tAHI\t1,-1\n"
@@ -1289,7 +1299,8 @@
 								"\tJNZ\t0b\n"
 								"\tLR\t%0,1"
 								: "=r" (i32Tmp), "+m" (*piTarget)
-								: : "1", "2", "cc");
+								: 
+								: "1", "2", "cc");
 			
 				return( i32Tmp);
 			}
@@ -1355,28 +1366,32 @@
 		{
 			#if defined( __i386__) || defined( __x86_64__)
 			{
-				FLMINT32 			i32Ret;
+				FLMINT32 			i32OldVal;
 				
 				__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
-								: "=m" (*piTarget), "=a" (i32Ret)
+								: "=m" (*piTarget), "=a" (i32OldVal)
 								: "r" (i32NewVal), "m" (*piTarget),
 								  "a" (*piTarget));
 			
-				return( i32Ret);
+				return( i32OldVal);
 			}
 			#elif defined( __ppc__) || defined ( __powerpc__)
 			{
-				FLMINT32				i32Tmp = 0;
+				FLMINT32				i32OldVal = 0;
 			
-				__asm__ __volatile__ ("\n1:\n\t"
-								"lwarx  %0, 0, %2\n\t"
-								"stwcx. %3, 0, %2\n\t"
-								"bne    1b"
-								: "=r" (i32Tmp) : "0" (i32Tmp), 
-								  "b" (piTarget),
-								  "r" (i32NewVal) : "cc", "memory");
+				__asm__ __volatile__ ( 
+								"sync;"
+								"0:		lwarx %0,0,%1;"
+								"			xor. %0,%3,%0;"
+								"			bne 1f;"
+								"			stwcx. %2,0,%1;"
+								"			bne- 0b;"
+								"1:		sync"
+								: "=&r" (i32OldVal) 
+								: "r" (piTarget), "r" (i32NewVal), "r" (*piTarget) 
+								: "cr0", "memory");
 								
-				return( i32Tmp);
+				return( i32OldVal);
 			}
 			#elif defined( __ia64__)
 			{
@@ -1399,7 +1414,8 @@
 			{
 				FLMINT32				i32Ret;
 				
-				__asm__ __volatile__ ("\tLA\t1,%0\n"
+				__asm__ __volatile__ (
+								"\tLA\t1,%0\n"
 								"0:\tL\t%1,%0\n"
 								"\tCS\t%1,%2,0(1)\n"
 								"\tJNZ\t0b"

@@ -31,7 +31,6 @@
 		#define _LARGE_FILES
 	#endif
 	#include <stdio.h>
-	#include <sys/atomic_op.h>
 #endif
 
 #include <sys/types.h>
