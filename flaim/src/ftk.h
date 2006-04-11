@@ -1065,27 +1065,6 @@
 		#define FLM_HAVE_ATOMICS
 	#endif
 	
-	/*******************************************************************
-	Desc:
-	*******************************************************************/
-	#if defined( FLM_GNUC) && defined( __ia64__)
-	FINLINE FLMINT32 ia64_compare_and_swap(
-		volatile int *		piTarget,
-		FLMINT32				i32NewVal,
-		FLMINT32				i32CompVal)
-	{
-		FLMINT32 			i32Old;
-	
-		asm volatile ("mov ar.ccv = %2 ;;\n\t"
-					  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
-					  : "=r" (i32Old) : "r" (piTarget), 
-						 "r" (i32CompVal),
-						 "r" (i32NewVal));
-	
-		return( i32Old);
-	}
-	#endif
-	
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
