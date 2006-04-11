@@ -1255,7 +1255,7 @@
 			
 			__asm__ __volatile__ (
 							"1:	lock;"
-							"		cmpxchgl %2, %0;
+							"		cmpxchgl %2, %0;"
 							"		jne 1b"
 								: "=m" (*piTarget), "=a" (i32OldVal)
 								: "r" (i32NewVal), "m" (*piTarget), "a" (*piTarget));
