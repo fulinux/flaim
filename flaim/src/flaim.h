@@ -43,7 +43,7 @@
 		#undef FLM_HPUX
 		#undef FLM_OSX
 		#undef FLM_BIG_ENDIAN
-		#undef FLM_POWER_PC
+		#undef FLM_PPC
 		#undef FLM_STRICT_ALIGNMENT
 		#undef FLM_S390
 		#undef FLM_IA64
@@ -82,7 +82,7 @@
 			#define FLM_OSTYPE_STR "Linux"
 			#define FLM_UNIX
 			#if defined( __PPC__) || defined( __ppc__)
-				#define FLM_POWER_PC
+				#define FLM_PPC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT
 			#elif defined( __s390__)
@@ -123,6 +123,7 @@
 			#define FLM_OSTYPE_STR "OSX"
 			#define FLM_UNIX
 			#if (defined( __ppc__) || defined( __ppc64__))
+				#define FLM_PPC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT			
 			#endif
@@ -799,7 +800,7 @@
 	typedef struct
 	{
 		FLMUINT		uiBlockSize;					///< Block size for the database.
-	#define DEFAULT_BLKSIZ					4096
+	#define DEFAULT_BLKSIZ								4096
 
 		FLMUINT		uiVersionNum;					///< Database version number.
 	#define FLM_FILE_FORMAT_VER_3_0					301
@@ -6775,33 +6776,31 @@
 		FLMINT32 i32Seed;
 	} f_randomGenerator;
 
-	/*
-		Call f_randomSetSeed to initialize your random-number generator.  Then
-	call f_randomLong, f_randomChoice, or f_randomTruth to access the series of
-	random values.
-	  
-		Initialize your generator with f_randomSetSeed( &r, SOME_CONSTANT) to get a
-	reproducible sequence of pseudo-random numbers.  Using different constant
-	seeds will give you independent sequences.  The constant can be any number
-	between 1 and MAX_RANDOM, inclusive. 
-	  
-		Call f_randomLong to get a number randomly distributed between 1 and 
-	MAX_RANDOM.  This is the basic call, but is usually not as convenient as 
-	the subsequent functions, all of which call f_randomLong and process the 
-	result into a more useable form.
-
-				1 <= f_randomLong(&r) <= MAX_RANDOM
-	  
-		Call f_randomChoice to get a number uniformly distributed across a
-	specified range of integer values.
-	            
-				lo <= f_randomChoice(&r, lo, hi) <= hi
-	        
-		Call f_randomTruth(&r, n) to get a boolean value which is true n percent
-	of the time (0 <= n <= 100).
-	            	
-				0 <= f_randomTrue(&r, n) <= 1
-	*/
+	// Call f_randomSetSeed to initialize your random-number generator.  Then
+	// call f_randomLong, f_randomChoice, or f_randomTruth to access the series
+	//	of random values.
+	//	  
+	// Initialize your generator with f_randomSetSeed( &r, SOME_CONSTANT) to
+	// get a reproducible sequence of pseudo-random numbers.  Using different
+	// constant seeds will give you independent sequences.  The constant can
+	// be any number between 1 and MAX_RANDOM, inclusive. 
+	//  
+	// Call f_randomLong to get a number randomly distributed between 1 and 
+	// MAX_RANDOM.  This is the basic call, but is usually not as convenient as 
+	// the subsequent functions, all of which call f_randomLong and process the 
+	// result into a more useable form.
+	//
+	//			1 <= f_randomLong(&r) <= MAX_RANDOM
+	//	  
+	// Call f_randomChoice to get a number uniformly distributed across a
+	// specified range of integer values.
+	//	            
+	//			lo <= f_randomChoice(&r, lo, hi) <= hi
+	//	        
+	// Call f_randomTruth(&r, n) to get a boolean value which is true n percent
+	// of the time (0 <= n <= 100).
+	//	            	
+	//			0 <= f_randomTrue(&r, n) <= 1
 
 	FLMEXP void FLMAPI f_randomize(
 		f_randomGenerator  *	pRand);

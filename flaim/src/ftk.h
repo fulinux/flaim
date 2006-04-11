@@ -760,7 +760,7 @@
 	
 	#ifndef FLM_BIG_ENDIAN
 	
-		#if defined( FLM_SPARC) || defined( FLM_POWER_PC)
+		#if defined( FLM_SPARC) || defined( FLM_PPC)
 			#error Wrong endian order selected
 		#endif
 	
@@ -1142,7 +1142,7 @@
 		{
 			return( sparc_atomic_add_32( piTarget, 1));
 		}
-		#elif defined( FLM_GNUC) && (defined( __i386__) || defined( __x86_64__))
+		#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
 		{
 			FLMINT32 			i32Tmp;
 			
@@ -1192,7 +1192,7 @@
 		{
 			return( sparc_atomic_add_32( piTarget, -1));
 		}
-		#elif defined( FLM_GNUC) && (defined( __i386__) || defined( __x86_64__))
+		#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
 		{
 			FLMINT32				i32Tmp;
 			
@@ -1270,7 +1270,7 @@
 		{
 			return( sparc_atomic_xchg_32( piTarget, i32NewVal));
 		}
-		#elif defined( FLM_GNUC) && (defined( __i386__) || defined( __x86_64__))
+		#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
 		{
 			FLMINT32 			i32OldVal;
 			

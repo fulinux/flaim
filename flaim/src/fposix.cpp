@@ -1545,10 +1545,10 @@ FLMUINT flmGetFSBlockSize(
 }
 #endif
 
-#if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
 static void sparc_asm_code( void)
 {
 	asm( ".align 8");
