@@ -187,7 +187,6 @@ win_target =
 unix_target =
 netware_target =
 submake_targets =
-package_archive_format = tar
 
 # -- Enable command echoing --
 
@@ -206,13 +205,11 @@ all_targets = java rpms install libs all allutils test $(util_targets) $(test_ta
 found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
 
 ifneq (,$(findstring clean,$(MAKECMDGOALS)))
-	clean_only = $(if $(findstring 0,$(words $(found_targets))),1,0)
 	do_clean = 1
-	ifeq ($(clean_only),0)
+	ifeq ($(if $(findstring 0,$(words $(found_targets))),1,0),0)
       $(error Cannot specify other targets with clean target)
 	endif
 else
-	clean_only = 0
 	do_clean = 0
 endif
 
@@ -356,7 +353,6 @@ ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
 	submake_targets += nlm
 	netware_target = yes
 	target_os_family = netware
-	package_archive_format = zip
 	host_os_family = win
 endif
 
@@ -364,7 +360,6 @@ ifndef target_os_family
 	ifeq ($(host_os_family),win)
 		win_target = yes
 		target_os_family = win
-		package_archive_format = zip
 	endif
 endif
 
@@ -539,7 +534,19 @@ $(strip $(1))
 endef
 endif
 
-ifeq ($(package_archive_format),tar)
+ifeq (win,$(host_os_family))
+   define create_archive
+		-$(ec)$(call rmcmd,$(2))
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -ttar -r $(call hostpath,$(2)).tar $(call hostpath,$(3))"
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -tgzip -r $(call hostpath,$(2)).tar.gz $(call hostpath,$(2)).tar"
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && del $(call hostpath,$(2)).tar"
+   endef
+
+   define extract_archive
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2)).tar.gz
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2)).tar
+   endef
+else
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
 		$(ec)tar cf $(2).tar -C $(1) $(3)
@@ -550,15 +557,6 @@ ifeq ($(package_archive_format),tar)
    define extract_archive
 		$(ec)gunzip $(strip $(1))/$(2).tar.gz
 		$(ec)tar xvf $(strip $(1))/$(2).tar -C $(1)
-   endef
-else
-   define create_archive
-		-$(ec)$(call rmcmd,$(2))
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
-   endef
-
-   define extract_archive
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2))
    endef
 endif
 
@@ -612,17 +610,19 @@ include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = $(topdir)/build
 docs_output_dir = $(build_output_dir)/docs
-package_dir = $(build_output_dir)/package
+
+target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
+
+package_dir = $(target_path)/package
 spec_dir = $(package_dir)/SPECS
 spec_file = $(spec_dir)/$(package_proj_name).spec
 package_sources_dir = $(package_dir)/SOURCES
+package_bin_dir = $(package_dir)/BIN
 package_build_dir = $(package_dir)/BUILD
 package_rpms_dir = $(package_dir)/RPMS
 package_srpms_dir = $(package_dir)/SRPMS
 pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
-
-target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
@@ -632,16 +632,19 @@ package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
 package_static_lib_stage_dir = $(package_lib_stage_dir)/static
 package_util_stage_dir = $(package_bin_stage_dir)/util
 package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
+
+src_package_dir = $(package_sources_dir)
+bin_package_dir = $(package_bin_dir)
+
 src_package_base_name = $(package_proj_name_and_ver)
 bin_package_base_name = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
 
-ifeq ($(package_archive_format),tar)
-	src_package_name=$(src_package_base_name).tar.gz
-	bin_package_name=$(bin_package_base_name).tar.gz
-else
-	src_package_name=$(src_package_base_name).zip
-	bin_package_name=$(bin_package_base_name).zip
-endif
+src_package_name=$(src_package_base_name).tar.gz
+bin_package_name=$(bin_package_base_name).tar.gz
+
+rpm_name = $(package_proj_name_and_ver)-$(package_release_num).rpm
+srpm_name = $(package_proj_name_and_ver)-$(package_release_num).src.rpm
+develrpm_name = $(package_proj_name_and_ver)-$(package_release_num).devel.rpm
 
 inc_dirs = src util
 util_dir = $(target_path)/util
@@ -1300,9 +1303,7 @@ vpath %.cpp src util sample
 # -- Default target --
 
 .PHONY : libs
-ifeq ($(clean_only),0)
 libs: status clean dircheck $(flaim_static_lib) $(flaim_shared_lib)
-endif
 
 # -- *.cpp -> *$(obj_suffix) --
 
@@ -1340,7 +1341,6 @@ endif
 
 # -- flaim.lib and libflaim.a --
 
-ifeq ($(clean_only),0)
 $(flaim_static_lib) : $(flaim_static_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
@@ -1358,11 +1358,9 @@ ifdef netware_target
 	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/flmlib.lis)
 	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(flaim_static_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
 endif
-endif
 
 # -- flaim.dll and libflaim.so --
 
-ifeq ($(clean_only),0)
 $(flaim_shared_lib) : $(flaim_shared_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
@@ -1371,7 +1369,6 @@ endif
 ifdef unix_target
 	$(ec)rm -f $@
 	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
-endif
 endif
 
 # -- Utility link command --
@@ -1385,64 +1382,52 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-ifeq ($(clean_only),0)
 checkdb: status clean dircheck $(flaim_static_lib) $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
-endif
 
 # -- rebuild --
 
 .PHONY : rebuild
-ifeq ($(clean_only),0)
 rebuild: status clean dircheck $(flaim_static_lib) $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
-endif
 
 # -- view --
 
 .PHONY : view
-ifeq ($(clean_only),0)
 view: status clean dircheck $(flaim_static_lib) $(view_exe)
 $(view_exe): $(view_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
-endif
 
 # -- dbshell --
 
 .PHONY : dbshell
-ifeq ($(clean_only),0)
 dbshell: status clean dircheck $(flaim_static_lib) $(dbshell_exe)
 $(dbshell_exe): $(dbshell_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),dbshell,$(dbshell_obj))
-endif
 
 # -- sample --
 
 .PHONY : sample
-ifeq ($(clean_only),0)
 ifndef netware_target
 sample: status clean dircheck $(flaim_static_lib) $(sample_exe)
 $(sample_exe): $(sample_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
 endif
-endif
 
 # -- basictest --
 
 .PHONY : basictest
-ifeq ($(clean_only),0)
 basictest: status clean dircheck $(flaim_static_lib) $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir)basictest,$(ut_basictest_obj))
-endif
 
 # -- version --
 
@@ -1455,7 +1440,6 @@ endef
 # -- srcdist --
 
 .PHONY : srcdist
-ifeq ($(clean_only),0)
 srcdist: status clean dircheck docs spec
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
@@ -1479,25 +1463,21 @@ ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
 endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
-		$(package_dir)/$(src_package_base_name), \
+		$(src_package_dir)/$(src_package_base_name), \
 		$(package_proj_name_and_ver))
 	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_stage_dir))
 	$(ec)$(call rmdircmd,$(package_stage_dir))
 	$(ec)$(gprintf) "Source package created.\n"
-endif
 
 # -- bindist --
 
 .PHONY : bindist
-ifeq ($(clean_only),0)
 bindist: status clean dircheck all binpackage
 	$(ec)$(gprintf) ""
-endif
 
 # -- binpackage --
 
 .PHONY : binpackage
-ifeq ($(clean_only),0)
 binpackage: status
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
@@ -1525,55 +1505,52 @@ endif
 	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(dbshell_exe),$(package_util_stage_dir))
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
-		$(package_dir)/$(bin_package_base_name), \
+		$(bin_package_dir)/$(bin_package_base_name), \
 		$(package_proj_name_and_ver))
 	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
 	$(ec)$(gprintf) "Binary package created.\n"
-endif
 
 # -- dist --
 
 .PHONY : dist
-ifeq ($(clean_only),0)
 dist: status clean dircheck srcdist
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
    else
 		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
    endif
+	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(package_dir))
 	$(ec)$(call extract_archive,$(package_dir),$(src_package_base_name))
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call rmcmd,$(package_dir)/$(src_package_name))
 	$(ec)$(gprintf) "Distribution created.\n"
-endif
 
 # -- pathinfo --
 
 .PHONY : pathinfo
-ifeq ($(clean_only),0)
 pathinfo:
-	$(ec)$(gprintf) "srcpackage = $(call ppath,$(package_dir)/$(src_package_name))\n"
-	$(ec)$(gprintf) "binpackage = $(call ppath,$(package_dir)/$(bin_package_name))\n"
-endif
+	$(ec)$(gprintf) "srcpackage = $(call ppath,$(src_package_dir)/$(src_package_name))\n"
+	$(ec)$(gprintf) "binpackage = $(call ppath,$(bin_package_dir)/$(bin_package_name))\n"
+	$(ec)$(gprintf) "rpm = $(call ppath,$(package_rpms_dir)/$(rpm_name))\n"
+	$(ec)$(gprintf) "srcrpm = $(call ppath,$(package_srpms_dir)/$(srpm_name))\n"
+	$(ec)$(gprintf) "develrpm = $(call ppath,$(package_rpms_dir)/$(develrpm_name))\n"
 	
 # -- Change log --
 
 .PHONY : changelog
-ifeq ($(clean_only),0)
 changelog:
 	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
 	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
 	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
 	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(package_proj_name_and_ver).tar.log
 	$(ec)$(gprintf) "Change log created.\n"
-endif
 
 # -- install --
 
 .PHONY : install
-ifeq ($(clean_only),0)
 install: libs pkgconfig
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
@@ -1586,12 +1563,10 @@ ifneq ($(host_os_family),win)
 	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
-endif
 
 # -- uninstall --
 
 .PHONY : uninstall
-ifeq ($(clean_only),0)
 uninstall:
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
@@ -1601,12 +1576,10 @@ ifneq ($(host_os_family),win)
 	-rm -rf $(include_install_dir)/flaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
-endif
 
 # -- spec file --
 
 .PHONY : spec
-ifeq ($(clean_only),0)
 spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
@@ -1675,12 +1648,10 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/include/flaim.h\n" >> $(spec_file)
 	$(ec)$(gprintf) "Created spec file.\n"
-endif
 
 # -- PKG-CONFIG --
 
 .PHONY : pkgconfig
-ifeq ($(clean_only),0)
 pkgconfig: dircheck
 	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
 	$(ec)$(gprintf) "exec_prefix=$(dollar){prefix}\n" >> $(pkgconfig_file)
@@ -1691,43 +1662,35 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
-endif
 
 # -- SRCRPM --
 
 .PHONY : srcrpm
-ifeq ($(clean_only),0)
 srcrpm: dist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
 	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
-endif
 
 # -- RPMS --
 
 .PHONY : rpms
-ifeq ($(clean_only),0)
 rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
 	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
-endif
 
 # -- Documentation --
 
 .PHONY : docs
-ifeq ($(clean_only),0)
 docs: status clean dircheck
 	$(ec)$(gprintf) "Creating documentation ...\n"
 	$(ec)doxygen Doxyfile
 	$(ec)$(gprintf) "Documentation created.\n"
-endif
 
 # -- misc. targets --
 
 .PHONY : status
-ifeq ($(clean_only),0)
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
 	$(ec)$(gprintf) "SVN Revision.................... $(svn_revision)\n"
@@ -1742,10 +1705,8 @@ status:
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
-endif
 
 .PHONY : dircheck
-ifeq ($(clean_only),0)
 dircheck:
 	$(ec)$(call mkdircmd,$(util_obj_dir))
 	$(ec)$(call mkdircmd,$(test_obj_dir))
@@ -1762,30 +1723,24 @@ endif
 	$(ec)$(call mkdircmd,$(package_dir))
 	$(ec)$(call mkdircmd,$(spec_dir))
 	$(ec)$(call mkdircmd,$(package_sources_dir))
+	$(ec)$(call mkdircmd,$(package_bin_dir))
 	$(ec)$(call mkdircmd,$(package_build_dir))
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
-endif
 
 # -- phony targets --
 
 .PHONY : all
-ifeq ($(clean_only),0)
 all: libs allutils
 	$(ec)$(gprintf) ""
-endif
 
 .PHONY : allutils
-ifeq ($(clean_only),0)
 allutils: status clean dircheck $(util_targets)
 	$(ec)$(gprintf) ""
-endif
 
 .PHONY : test
-ifeq ($(clean_only),0)
 test:	status clean dircheck $(flaim_static_lib) $(test_targets)
 	$(ec)$(call runtest,basictest)
-endif
 
 .PHONY : debug
 debug:
@@ -1860,7 +1815,7 @@ installcheck:
 	$(ec)$(gprintf) ""
 
 .PHONY : clean
-clean: status
+clean:
 ifeq ($(do_clean),1)
 	$(ec)$(gprintf) "\n"
 	$(ec)$(gprintf) "Cleaning $(target_path) ...\n"
