@@ -642,9 +642,9 @@ bin_package_base_name = $(package_proj_name_and_ver)-$(target_os_family)-$(targe
 src_package_name=$(src_package_base_name).tar.gz
 bin_package_name=$(bin_package_base_name).tar.gz
 
-rpm_name = $(package_proj_name_and_ver)-$(package_release_num).rpm
+rpm_name = $(package_proj_name_and_ver)-$(package_release_num).$(HOSTTYPE).rpm
 srpm_name = $(package_proj_name_and_ver)-$(package_release_num).src.rpm
-develrpm_name = $(package_proj_name_and_ver)-$(package_release_num).devel.rpm
+develrpm_name = $(package_proj_name)-devel-$(version)-$(package_release_num).$(HOSTTYPE).rpm
 
 inc_dirs = src util
 util_dir = $(target_path)/util
@@ -1534,9 +1534,9 @@ dist: status clean dircheck srcdist
 pathinfo:
 	$(ec)$(gprintf) "srcpackage = $(call ppath,$(src_package_dir)/$(src_package_name))\n"
 	$(ec)$(gprintf) "binpackage = $(call ppath,$(bin_package_dir)/$(bin_package_name))\n"
-	$(ec)$(gprintf) "rpm = $(call ppath,$(package_rpms_dir)/$(rpm_name))\n"
+	$(ec)$(gprintf) "rpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(rpm_name))\n"
 	$(ec)$(gprintf) "srcrpm = $(call ppath,$(package_srpms_dir)/$(srpm_name))\n"
-	$(ec)$(gprintf) "develrpm = $(call ppath,$(package_rpms_dir)/$(develrpm_name))\n"
+	$(ec)$(gprintf) "develrpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(develrpm_name))\n"
 	
 # -- Change log --
 
@@ -1633,7 +1633,6 @@ spec: dircheck
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)install\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(MAKE) rpm_build_root=$(dollar)RPM_BUILD_ROOT install_prefix=$(percent){prefix} lib_dir_name=$(percent){_lib} $(submake_targets) install\n" >> $(spec_file)
-	$(ec)$(gprintf) "rm -rf $(build_output_dir)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)clean\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $(dollar)RPM_BUILD_ROOT\n" >> $(spec_file)
@@ -1674,7 +1673,7 @@ srcrpm: dist spec
 # -- RPMS --
 
 .PHONY : rpms
-rpms: dist spec
+rpms: srcdist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
 	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
