@@ -88,31 +88,31 @@ ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 
 	# Get the info for this directory
-	
+
 	ifndef svn_user
       $(error Must define svn_user=<user> in environment or as a parameter)
 	endif
-	
+
 	ifndef svn_rev
       $(error Must define svn_rev=<low[:high]> in environment or as a parameter)
 	endif
-	
+
 	svnrevs = $(subst :, ,$(svn_rev))
 	svn_low_rev = $(word 1,$(svnrevs))
 	svn_high_rev = $(word 2,$(svnrevs))
-	
+
 	svnurl0 := $(shell svn info)
 	svnurl1 = $(subst URL: ,URL:,$(svnurl0))
 	svnurl2 = $(filter URL:%,$(svnurl1))
 	svnurl3 = $(subst URL:,,$(svnurl2))
 	svnurl = $(subst ://,://$(svn_user)@,$(svnurl3))
 endif
-	
+
 ifdef calc_svn_revision
 
 	# Get the info for all files.
-	
-	ifndef local_mods_ok	
+
+	ifndef local_mods_ok
 		srevision := $(shell svnversion . -n)
 
 		ifneq (,$(findstring M,$(srevision)))
@@ -123,7 +123,7 @@ ifdef calc_svn_revision
          $(error Mixed revisions in repository - please update before making distro)
 		endif
 	endif
-	
+
 	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
 						$(subst 6,6 ,$(subst 5,5 ,$(subst 4,4 ,$(subst 3,3 ,\
 						$(subst 2,2 ,$(subst 1,1 ,$(subst 0,0 ,$(1))))))))))))
@@ -136,7 +136,7 @@ ifdef calc_svn_revision
 	revision6 = $(sort $(revision5))
 	revision7 = $(word $(words $(revision6)),$(revision6))
 	svn_revision = $(word 2,$(subst :, ,$(revision7)))
-	
+
 else
 	ifeq "$(wildcard SVNRevision.*)" ""
 		svn_revision = 0
@@ -154,7 +154,7 @@ version = $(major_version).$(minor_version).$(svn_revision)
 so_current = 1
 so_revision = 0
 so_age = 0
-suffix_version =
+shared_lib_version =
 
 package_release_num = 1
 
@@ -187,7 +187,6 @@ win_target =
 unix_target =
 netware_target =
 submake_targets =
-package_archive_format = tar
 
 # -- Enable command echoing --
 
@@ -210,13 +209,11 @@ all_targets = java rpms install libs all allutils test $(util_targets) $(test_ta
 found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
 
 ifneq (,$(findstring clean,$(MAKECMDGOALS)))
-	clean_only = $(if $(findstring 0,$(words $(found_targets))),1,0)
 	do_clean = 1
-	ifeq ($(clean_only),0)
+	ifeq ($(if $(findstring 0,$(words $(found_targets))),1,0),0)
       $(error Cannot specify other targets with clean target)
 	endif
 else
-	clean_only = 0
 	do_clean = 0
 endif
 
@@ -257,7 +254,7 @@ ifndef host_os_family
 		host_os_family = solaris
 	endif
 endif
-	
+
 ifndef host_os_family
 	ifneq (,$(findstring darwin,$(OSTYPE)))
 		host_os_family = osx
@@ -360,7 +357,6 @@ ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
 	submake_targets += nlm
 	netware_target = yes
 	target_os_family = netware
-	package_archive_format = zip
 	host_os_family = win
 endif
 
@@ -368,10 +364,9 @@ ifndef target_os_family
 	ifeq ($(host_os_family),win)
 		win_target = yes
 		target_os_family = win
-		package_archive_format = zip
 	endif
 endif
-	
+
 ifndef target_os_family
    $(error Target operating system could not be determined)
 endif
@@ -392,12 +387,12 @@ ifeq (,$(HOSTTYPE))
 	endif
    $(error HOSTTYPE environment variable has not been set)
 endif
-	
+
 ifeq (,$(HOSTTYPE))
 	$(error HOSTTYPE environment variable has not been set)
 endif
 
-ifndef host_native_word_size		
+ifndef host_native_word_size
 	ifneq (,$(findstring x86_64,$(HOSTTYPE)))
 		host_processor_family = x86
 		host_native_word_size = 64
@@ -405,7 +400,7 @@ ifndef host_native_word_size
 	endif
 endif
 
-ifndef host_native_word_size		
+ifndef host_native_word_size
 	ifneq (,$(findstring x86,$(HOSTTYPE)))
 		host_processor_family = x86
 		host_native_word_size = 32
@@ -413,7 +408,7 @@ ifndef host_native_word_size
 	endif
 endif
 
-ifndef host_native_word_size		
+ifndef host_native_word_size
 	ifneq (,$(findstring 86,$(HOSTTYPE)))
 		host_processor_family = x86
 		host_native_word_size = 32
@@ -492,7 +487,7 @@ ifndef host_native_word_size
 		host_supported_word_sizes = 32 64
 	endif
 endif
-		
+
 ifndef host_native_word_size
 	$(error Unable to determine host word size)
 endif
@@ -543,24 +538,29 @@ $(strip $(1))
 endef
 endif
 
-ifeq ($(package_archive_format),tar)
+ifeq (win,$(host_os_family))
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
-		$(ec)tar zcf $(2) -C $(1) $(3)
-		$(ec)chmod 775 $(2)
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -ttar -r $(call hostpath,$(2)).tar $(call hostpath,$(3))"
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -tgzip -r $(call hostpath,$(2)).tar.gz $(call hostpath,$(2)).tar"
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && del $(call hostpath,$(2)).tar"
    endef
 
    define extract_archive
-		$(ec)tar zxvf $(strip $(1))/$(2) -C $(1)
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2)).tar.gz
+		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2)).tar
    endef
 else
    define create_archive
 		-$(ec)$(call rmcmd,$(2))
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) a -tzip -r $(call hostpath,$(2)) $(call hostpath,$(3))"
+		$(ec)tar cf $(2).tar -C $(1) $(3)
+		$(ec)gzip -f $(2).tar
+		$(ec)chmod 775 $(2).tar.gz
    endef
-	
+
    define extract_archive
-		$(ec)cmd /C "cd $(call hostpath,$(1)) && $(call hostpath,$(tooldir)/7z) x -y $(call hostpath,$(2))
+		$(ec)gunzip $(strip $(1))/$(2).tar.gz
+		$(ec)tar xvf $(strip $(1))/$(2).tar -C $(1)
    endef
 endif
 
@@ -614,17 +614,19 @@ include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = $(topdir)/build
 docs_output_dir = $(build_output_dir)/docs
-package_dir = $(build_output_dir)/package
+
+target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
+
+package_dir = $(target_path)/package
 spec_dir = $(package_dir)/SPECS
 spec_file = $(spec_dir)/$(package_proj_name).spec
 package_sources_dir = $(package_dir)/SOURCES
+package_bin_dir = $(package_dir)/BIN
 package_build_dir = $(package_dir)/BUILD
 package_rpms_dir = $(package_dir)/RPMS
 package_srpms_dir = $(package_dir)/SRPMS
 pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
-
-target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
@@ -634,16 +636,19 @@ package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
 package_static_lib_stage_dir = $(package_lib_stage_dir)/static
 package_util_stage_dir = $(package_bin_stage_dir)/util
 package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
-src_package_prefix = $(package_proj_name_and_ver)
-bin_package_prefix = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
 
-ifeq ($(package_archive_format),tar)
-	src_package_name=$(src_package_prefix).tar.gz
-	bin_package_name=$(bin_package_prefix).tar.gz
-else
-	src_package_name=$(src_package_prefix).zip
-	bin_package_name=$(bin_package_prefix).zip
-endif
+src_package_dir = $(package_sources_dir)
+bin_package_dir = $(package_bin_dir)
+
+src_package_base_name = $(package_proj_name_and_ver)
+bin_package_base_name = $(package_proj_name_and_ver)-$(target_os_family)-$(target_processor_family)-$(target_word_size)-bin
+
+src_package_name=$(src_package_base_name).tar.gz
+bin_package_name=$(bin_package_base_name).tar.gz
+
+rpm_name = $(package_proj_name_and_ver)-$(package_release_num).$(HOSTTYPE).rpm
+srpm_name = $(package_proj_name_and_ver)-$(package_release_num).src.rpm
+develrpm_name = $(package_proj_name)-devel-$(version)-$(package_release_num).$(HOSTTYPE).rpm
 
 java_output_dir = $(target_path)/java
 java_class_output_dir = $(target_path)/java/classes
@@ -687,7 +692,8 @@ dash := \055
 # -- Tools --
 
 libr =
-linker =
+exe_linker =
+shared_linker =
 compiler =
 
 ifdef unix_target
@@ -715,23 +721,24 @@ ifdef win_target
 	static_lib_suffix = .lib
 	shared_lib_suffix = .dll
 	libr = lib.exe
-	linker = link.exe
+	exe_linker = link.exe
+	shared_linker = link.exe
 	compiler = cl.exe
-	
+
 	# Compiler defines and flags
-	
+
 	ccflags += /nologo /c /GF /GR /J /MD /W4 /WX /Zi /Zp1
 	ccdefs += _CRT_SECURE_NO_DEPRECATE
 	ccdefs += WIN32_LEAN_AND_MEAN
 	ccdefs += WIN32_EXTRA_LEAN
-	
+
 	ifeq ($(target_build_type),debug)
 		ccflags += /Ob1 /Od /RTC1 /Wp64
 		ccdefs += FLM_DEBUG
 	else
 		ccflags += /O2
 	endif
-	
+
 	# Linker switches
 
 	shared_link_flags = \
@@ -741,7 +748,7 @@ ifdef win_target
 		/INCREMENTAL:NO \
 		/NOLOGO \
 		/OUT:$(call hostpath,$@)
-	
+
 	exe_link_flags = \
 		/DEBUG /PDB:$(call hostpath,$(@:.exe=.pdb)) \
 		/map:$(call hostpath,$(@:.exe=.map)) \
@@ -759,9 +766,9 @@ ifdef win_target
 
 
 	# Libraries that our various components need to link against
-	
+
 	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
-	exe_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
+	exe_link_libs = $(lib_link_libs)
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -782,70 +789,72 @@ endif
 #   Linux/Unix settings
 ##############################################################################
 ifdef unix_target
+
+	ifneq ($(so_age),0)
+		shared_lib_version = $(so_current).$(so_revision).$(so_age)
+	else
+		ifneq ($(so_revision),0)
+			shared_lib_version = $(so_current).$(so_revision)
+		else
+			shared_lib_version = $(so_current)
+		endif
+	endif
+	
 	exe_suffix =
 	obj_suffix = .o
 	lib_prefix = lib
 	static_lib_suffix = .a
 	shared_lib_suffix = .so.$(shared_lib_version)
-
-	ifneq ($(so_age),0)
-		suffix_version = .$(so_current).$(so_revision).$(so_age)
-	else
-		ifneq ($(so_revision),0)
-			suffix_version = .$(so_current).$(so_revision)
-		else
-			suffix_version = .$(so_current)
-		endif
-	endif
+	
 	compiler = g++
-	linker = g++
-	
-	ifdef jhome	
-		inc_dirs += $(subst $(sp),@,"$(jhome)/include")
-	endif
-	
+	exe_linker = g++
+	shared_linker = g++
+
 	ifeq ($(target_os_family),osx)
 		libr = libtool
 	else
 		libr = ar
 	endif
-	
+
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
-			linker = CC
+			exe_linker = CC
+			shared_linker = ld
 		endif
 	endif
-	
+
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),aix)
 			compiler = xlC_r
-			linker = xlC_r
+			exe_linker = xlC_r
+			shared_linker = xlC_r
 		endif
 	endif
-	
+
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),hpux)
 			compiler = aCC
-			linker = aCC
+			exe_linker = aCC
+			shared_linker = aCC
 		endif
 	endif
-	
+
 	# Compiler defines and flags
 
 	ifeq ($(compiler),g++)
 		ccflags += -Wall -Werror -fPIC
-		ifneq ($(target_processor_family),ia64)		
+		ifneq ($(target_processor_family),ia64)
 			ccflags += -m$(target_word_size)
 		endif
 	endif
-	
+
 	ifeq ($(target_os_family),linux)
-	
+
 		# Must support 64 bit file sizes - even for 32 bit builds.
-	
+
 		ccdefs += N_PLAT_UNIX _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64
-		
+
 		ifdef jhome	
 			inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
 		endif
@@ -885,9 +894,9 @@ ifdef unix_target
 				ccflags += -xarch=generic64
 			else
 				# Must support 64 bit file sizes - even for 32 bit builds.
-				
-				ccflags += -xarch=generic 
+
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+				ccflags += -xarch=generic
 			endif
 		endif
 	endif
@@ -899,8 +908,8 @@ ifdef unix_target
 				ccflags += -q64
 			else
 				# Must support 64 bit file sizes - even for 32 bit builds.
-				
-				ccflags += -q32 
+
+				ccflags += -q32
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 			endif
 		endif
@@ -909,7 +918,7 @@ ifdef unix_target
 	ifeq ($(target_os_family),hpux)
 		ifeq ($(usenativecc),yes)
 			# Must support 64 bit file sizes - even for 32 bit builds.
-				
+
 			ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 		endif
 	endif
@@ -925,7 +934,7 @@ ifdef unix_target
 		ccdefs += FLM_DEBUG
 		ccflags += -g
 	endif
-	
+
 	# Convert the list of defines into a proper set of command-line params
 
 	ifdef ccdefs
@@ -941,17 +950,17 @@ ifdef unix_target
 	ccflags += $(ccdefine) $(ccinclude)
 
 	# Linker switches
-	
+
 	shared_link_flags =
 	link_flags = -o $@
-	
+
 	ifeq ($(compiler),g++)
-		ifneq ($(target_processor_family),ia64)		
+		ifneq ($(target_processor_family),ia64)
 			shared_link_flags += -m$(target_word_size)
 			link_flags += -m$(target_word_size)
 		endif
 	endif
-	
+
 	lib_link_libs = -lpthread
 	exe_link_libs = -lpthread
 
@@ -960,12 +969,12 @@ ifdef unix_target
 		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
-	else
-		exe_link_libs += -lcurses
 	endif
 
 	ifeq ($(target_os_family),solaris)
 		link_flags += -R /usr/lib/lwp
+		shared_link_flags += -G -pic -o $@
+		
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
@@ -975,19 +984,19 @@ ifdef unix_target
 		endif
 
 		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
-		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
+		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
 		lib_link_libs += -lm -lc
-		exe_link_libs += -lm -lc
+		exe_link_libs += -lm -lc -lcurses
 	endif
-	
+
 	ifeq ($(target_os_family),hpux)
 		lib_link_libs += -lm -lc -lrt
-		exe_link_libs += -lm -lc -lrt
+		exe_link_libs += -lm -lc -lrt -lcurses
 	endif
-	
+
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
 		lib_link_libs += -lstdc++ -ldl
@@ -997,7 +1006,7 @@ ifdef unix_target
 		shared_link_flags += -compatibility_version $(major_version).$(so_current).0
 		shared_link_flags += -o $@
 	endif
-	
+
 	exe_link_flags = $(link_flags)
 endif
 
@@ -1026,12 +1035,12 @@ ifdef netware_target
 	ifndef wc_dir
       $(error Target operating system could not be determined)
 	endif
-	
+
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
-	linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
+	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	shared_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	compiler = "$(call normpath,$(wc_dir))/binnt/wpp386.exe"
-	
+
 	ifneq ($(build),release)
 		ccdefs += FLM_DEBUG
 	endif
@@ -1051,7 +1060,7 @@ ifdef netware_target
 	export INCLUDE = $(include)
 	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
 	export wcc386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
-	
+
    define make_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
@@ -1071,13 +1080,13 @@ ifdef netware_target
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(xflaim_static_lib))\n" >> $(4)
    endef
-	
+
    define flm_exe_link_cmd
 		$(call make_lis_file_cmd,$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
-		$(ec)$(call hostpath,$(linker)) @$(call hostpath,$(1)/$(2).lis)
+		$(ec)$(call hostpath,$(exe_linker)) @$(call hostpath,$(1)/$(2).lis)
 		$(ec)$(call rmcmd,$(target_path)/$(1).lis)
    endef
-	
+
 endif
 
 # -- File lists --
@@ -1275,13 +1284,10 @@ vpath %.java jni/java/xflaim
 # -- Default target --
 
 .PHONY : libs
-ifeq ($(clean_only),0)
 libs: status clean dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
-endif
 
 # -- JNI (Java) --
 
-ifeq ($(clean_only),0)
 ifdef jhome
 $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(gprintf) "Compiling JNI java sources ...\n"
@@ -1294,7 +1300,6 @@ $(xflaim_jni_jar) : $(jni_java_src)
 	$(ec)$(call hostpath,$(jhome)/bin/javah) -d $(jni_src_dir) \
 		-classpath $(call hostpath,$(xflaim_jni_jar)) \
 		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
-endif
 endif
 
 # -- *.cpp -> *$(obj_suffix) --
@@ -1326,11 +1331,10 @@ $(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
 
 # -- xflaim.lib and libxflaim.a --
 
-ifeq ($(clean_only),0)
 $(xflaim_static_lib) : $(xflaim_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(libr) /NOLOGO $(call hostpath,$+) /OUT:$(call hostpath,$@)	
+	$(ec)$(libr) /NOLOGO $(call hostpath,$+) /OUT:$(call hostpath,$@)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
@@ -1341,322 +1345,256 @@ else
 endif
 endif
 ifdef netware_target
-	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/flmlib.lis)
-	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(xflaim_static_lib)) @$(call hostpath,$(static_lib_dir)/flmlib.lis)
-endif
+	$(ec)dir /s/b  $(call hostpath,$(lib_obj_dir)/*$(obj_suffix)) > $(call hostpath,$(static_lib_dir)/xflmlib.lis)
+	$(ec)$(call hostpath,$(libr)) $(libflags) $(call hostpath,$(xflaim_static_lib)) @$(call hostpath,$(static_lib_dir)/xflmlib.lis)
 endif
 
 # -- xflaim.dll and libxflaim.so --
 
-ifeq ($(clean_only),0)
 $(xflaim_shared_lib) : $(xflaim_obj) $(xflaim_jni_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
-ifeq ($(target_os_family),linux)
-	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
-endif
-ifeq ($(target_os_family),osx)
-	$(ec)$(linker) $+ $(shared_link_flags) $(lib_link_libs)
-endif
-endif
+	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
 
 # -- xflaim.lib import library --
 
-ifeq ($(clean_only),0)
 $(xflaim_shared_imp_lib) : $(xflaim_shared_lib)
 	$(ec)$(gprintf) "Building $@ ...\n"
-endif
 
 # -- Utility link command --
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
+		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
    endef
 endif
 
 # -- checkdb --
 
 .PHONY : checkdb
-ifeq ($(clean_only),0)
 checkdb: status clean dircheck libs $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
-endif
 
 # -- rebuild --
 
 .PHONY : rebuild
-ifeq ($(clean_only),0)
 rebuild: status clean dircheck libs $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
-endif
 
 # -- view --
 
 .PHONY : view
-ifeq ($(clean_only),0)
 view: status clean dircheck libs $(view_exe)
 $(view_exe): $(view_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
-endif
 
 # -- sample --
 
 .PHONY : sample
-ifeq ($(clean_only),0)
 sample: status clean dircheck libs $(sample_exe)
 $(sample_exe): $(sample_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
 	$(ec)$(call copycmd,sample/xmlfiles/*.xml,$(sample_dir))
-endif
 
 # -- xshell --
 
 .PHONY : xshell
-ifeq ($(clean_only),0)
 xshell: status clean dircheck libs $(xshell_exe)
 $(xshell_exe): $(xshell_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
-endif
 
 # -- basictest --
 
 .PHONY : basictest
-ifeq ($(clean_only),0)
 basictest: status clean dircheck $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),basictest,$(ut_basictest_obj))
-endif
 
 # -- binarytest --
 
 .PHONY : binarytest
-ifeq ($(clean_only),0)
 binarytest: status clean dircheck $(test_dir)/binarytest$(exe_suffix)
 $(test_dir)/binarytest$(exe_suffix): $(ut_binarytest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),binarytest,$(ut_binarytest_obj))
-endif
 
 # -- colldeftest --
 
 .PHONY : colldeftest
-ifeq ($(clean_only),0)
 colldeftest: status clean dircheck $(test_dir)/colldeftest$(exe_suffix)
 $(test_dir)/colldeftest$(exe_suffix): $(ut_colldeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),colldeftest,$(ut_colldeftest_obj))
-endif
 
 # -- dictchangetest --
 
 .PHONY : dictchangetest
-ifeq ($(clean_only),0)
 dictchangetest: status clean dircheck $(test_dir)/dictchangetest$(exe_suffix)
 $(test_dir)/dictchangetest$(exe_suffix): $(ut_dictchangetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dictchangetest,$(ut_dictchangetest_obj))
-endif
 
 # -- dictdeftest --
 
 .PHONY : dictdeftest
-ifeq ($(clean_only),0)
 dictdeftest: status clean dircheck $(test_dir)/dictdeftest$(exe_suffix)
 $(test_dir)/dictdeftest$(exe_suffix): $(ut_dictdeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dictdeftest,$(ut_dictdeftest_obj))
-endif
 
 # -- dirtyexittest1 --
 
 .PHONY : dirtyexittest1
-ifeq ($(clean_only),0)
 dirtyexittest1: status clean dircheck $(test_dir)/dirtyexittest1$(exe_suffix)
 $(test_dir)/dirtyexittest1$(exe_suffix): $(ut_dirtyexittest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dirtyexittest1,$(ut_dirtyexittest1_obj))
-endif
 
 # -- dirtyexittest2 --
 
 .PHONY : dirtyexittest2
-ifeq ($(clean_only),0)
 dirtyexittest2: status clean dircheck $(test_dir)/dirtyexittest2$(exe_suffix)
 $(test_dir)/dirtyexittest2$(exe_suffix): $(ut_dirtyexittest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),dirtyexittest2,$(ut_dirtyexittest2_obj))
-endif
 
 # -- domnodetest --
 
 .PHONY : domnodetest
-ifeq ($(clean_only),0)
 domnodetest: status clean dircheck $(test_dir)/domnodetest$(exe_suffix)
 $(test_dir)/domnodetest$(exe_suffix): $(ut_domnodetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),domnodetest,$(ut_domnodetest_obj))
-endif
 
 # -- enctest --
 
 .PHONY : enctest
-ifeq ($(clean_only),0)
 enctest: status clean dircheck $(test_dir)/enctest$(exe_suffix)
 $(test_dir)/enctest$(exe_suffix): $(ut_enctest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),enctest,$(ut_enctest_obj))
-endif
 
 # -- importtest --
 
 .PHONY : importtest
-ifeq ($(clean_only),0)
 importtest: status clean dircheck $(test_dir)/importtest$(exe_suffix)
 $(test_dir)/importtest$(exe_suffix): $(ut_importtest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),importtest,$(ut_importtest_obj))
-endif
 
 # -- indexdeftest --
 
 .PHONY : indexdeftest
-ifeq ($(clean_only),0)
 indexdeftest: status clean dircheck $(test_dir)/indexdeftest$(exe_suffix)
 $(test_dir)/indexdeftest$(exe_suffix): $(ut_indexdeftest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indexdeftest,$(ut_indexdeftest_obj))
-endif
 
 # -- indextest1 --
 
 .PHONY : indextest1
-ifeq ($(clean_only),0)
 indextest1: status clean dircheck $(test_dir)/indextest1$(exe_suffix)
 $(test_dir)/indextest1$(exe_suffix): $(ut_indextest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indextest1,$(ut_indextest1_obj))
-endif
 
 # -- indextest2 --
 
 .PHONY : indextest2
-ifeq ($(clean_only),0)
 indextest2: status clean dircheck $(test_dir)/indextest2$(exe_suffix)
 $(test_dir)/indextest2$(exe_suffix): $(ut_indextest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indextest2,$(ut_indextest2_obj))
-endif
 
 # -- indextest3 --
 
 .PHONY : indextest3
-ifeq ($(clean_only),0)
 indextest3: status clean dircheck $(test_dir)/indextest3$(exe_suffix)
 $(test_dir)/indextest3$(exe_suffix): $(ut_indextest3_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),indextest3,$(ut_indextest3_obj))
-endif
 
 # -- metaphonetest --
 
 .PHONY : metaphonetest
-ifeq ($(clean_only),0)
 metaphonetest: status clean dircheck $(test_dir)/metaphonetest$(exe_suffix)
 $(test_dir)/metaphonetest$(exe_suffix): $(ut_metaphonetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),metaphonetest,$(ut_metaphonetest_obj))
-endif
 
 # -- namespacetest --
 
 .PHONY : namespacetest
-ifeq ($(clean_only),0)
 namespacetest: status clean dircheck $(test_dir)/namespacetest$(exe_suffix)
 $(test_dir)/namespacetest$(exe_suffix): $(ut_namespacetest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),namespacetest,$(ut_namespacetest_obj))
-endif
 
 # -- regressiontest --
 
 .PHONY : regressiontest
-ifeq ($(clean_only),0)
 regressiontest: status clean dircheck $(test_dir)/regressiontest$(exe_suffix)
 $(test_dir)/regressiontest$(exe_suffix): $(ut_regressiontest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),regressiontest,$(ut_regressiontest_obj))
-endif
 
 # -- rfltest --
 
 .PHONY : rfltest
-ifeq ($(clean_only),0)
 rfltest: status clean dircheck $(test_dir)/rfltest$(exe_suffix)
 $(test_dir)/rfltest$(exe_suffix): $(ut_rfltest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),rfltest,$(ut_rfltest_obj))
-endif
 
 # -- sortkeytest --
 
 .PHONY : sortkeytest
-ifeq ($(clean_only),0)
 sortkeytest: status clean dircheck $(test_dir)/sortkeytest$(exe_suffix)
 $(test_dir)/sortkeytest$(exe_suffix): $(ut_sortkeytest_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),sortkeytest,$(ut_sortkeytest_obj))
-endif
 
 # -- sortkeytest2 --
 
 .PHONY : sortkeytest2
-ifeq ($(clean_only),0)
 sortkeytest2: status clean dircheck $(test_dir)/sortkeytest2$(exe_suffix)
 $(test_dir)/sortkeytest2$(exe_suffix): $(ut_sortkeytest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),sortkeytest2,$(ut_sortkeytest2_obj))
-endif
 
 # -- xpathtest1 --
 
 .PHONY : xpathtest1
-ifeq ($(clean_only),0)
 xpathtest1: status clean dircheck $(test_dir)/xpathtest1$(exe_suffix)
 $(test_dir)/xpathtest1$(exe_suffix): $(ut_xpathtest1_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),xpathtest1,$(ut_xpathtest1_obj))
-endif
 
 # -- xpathtest2 --
 
 .PHONY : xpathtest2
-ifeq ($(clean_only),0)
 xpathtest2: status clean dircheck $(test_dir)/xpathtest2$(exe_suffix)
 $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(test_dir),xpathtest2,$(ut_xpathtest2_obj))
-endif
 
 # -- java (JNI jar file) --
 
 .PHONY : java
-ifeq ($(clean_only),0)
 java: status clean dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
-endif
 
 # -- version --
 
@@ -1669,8 +1607,7 @@ endef
 # -- srcdist --
 
 .PHONY : srcdist
-ifeq ($(clean_only),0)
-srcdist: status dircheck docs spec
+srcdist: status clean dircheck docs spec
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
    else
@@ -1695,25 +1632,22 @@ ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
 endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
-		$(package_dir)/$(src_package_name), \
+		$(src_package_dir)/$(src_package_base_name), \
 		$(package_proj_name_and_ver))
-	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_dir))
+	$(ec)$(call copycmd,$(package_proj_name).changes,$(package_stage_dir))
 	$(ec)$(call rmdircmd,$(package_stage_dir))
 	$(ec)$(gprintf) "Source package created.\n"
-endif
 
 # -- bindist --
 
-ifeq ($(clean_only),0)
-bindist: status dircheck all binpackage
+.PHONY : bindist
+bindist: status clean dircheck all binpackage
 	$(ec)$(gprintf) ""
-endif
 
 # -- binpackage --
 
-ifeq ($(clean_only),0)
 .PHONY : binpackage
-binpackage: status clean
+binpackage: status
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
    else
@@ -1740,55 +1674,52 @@ endif
 	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(xshell_exe),$(package_util_stage_dir))
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
-		$(package_dir)/$(bin_package_name), \
+		$(bin_package_dir)/$(bin_package_base_name), \
 		$(package_proj_name_and_ver))
 	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
 	$(ec)$(gprintf) "Binary package created.\n"
-endif
 
 # -- dist --
 
 .PHONY : dist
-ifeq ($(clean_only),0)
-dist: status dircheck srcdist
+dist: status clean dircheck srcdist
    ifeq "$(svn_revision)" "0"
 		$(error SVN revision cannot be $(svn_revision))
    else
 		$(ec)$(gprintf) "Creating distribution (SVN revision $(svn_revision)) ...\n"
    endif
-	$(ec)$(call extract_archive,$(package_dir),$(src_package_name))
-		$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
+	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(package_dir))
+	$(ec)$(call extract_archive,$(package_dir),$(src_package_base_name))
+	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) clean
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) all
 	$(ec)$(MAKE) -C $(package_dir)/$(package_proj_name_and_ver) $(submake_targets) binpackage package_dir="$(package_dir)"
 	$(ec)$(call rmdircmd,$(package_dir)/$(package_proj_name_and_ver))
+	$(ec)$(call rmcmd,$(package_dir)/$(src_package_name))
 	$(ec)$(gprintf) "Distribution created.\n"
-endif
 
 # -- pathinfo --
 
 .PHONY : pathinfo
-ifeq ($(clean_only),0)
 pathinfo:
-	$(ec)$(gprintf) "srcpackage = $(call ppath,$(package_dir)/$(src_package_name))\n"
-	$(ec)$(gprintf) "binpackage = $(call ppath,$(package_dir)/$(bin_package_name))\n"
-endif
-
-# -- changelog --
+	$(ec)$(gprintf) "srcpackage = $(call ppath,$(src_package_dir)/$(src_package_name))\n"
+	$(ec)$(gprintf) "binpackage = $(call ppath,$(bin_package_dir)/$(bin_package_name))\n"
+	$(ec)$(gprintf) "rpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(rpm_name))\n"
+	$(ec)$(gprintf) "srcrpm = $(call ppath,$(package_srpms_dir)/$(srpm_name))\n"
+	$(ec)$(gprintf) "develrpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(develrpm_name))\n"
+	
+# -- Change log --
 
 .PHONY : changelog
-ifeq ($(clean_only),0)
 changelog:
 	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
 	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
 	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
 	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(package_proj_name_and_ver).tar.log
 	$(ec)$(gprintf) "Change log created.\n"
-endif
 
 # -- install --
 
 .PHONY : install
-ifeq ($(clean_only),0)
 install: libs pkgconfig
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
@@ -1801,12 +1732,10 @@ ifneq ($(host_os_family),win)
 	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
-endif
 
 # -- uninstall --
 
 .PHONY : uninstall
-ifeq ($(clean_only),0)
 uninstall: 
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
@@ -1816,12 +1745,10 @@ ifneq ($(host_os_family),win)
 	-rm -rf $(include_install_dir)/xflaim.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
-endif
 
 # -- spec file --
 
 .PHONY : spec
-ifeq ($(clean_only),0)
 spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
@@ -1869,11 +1796,10 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)build\n" >> $(spec_file)
-	$(ec)$(gprintf) "make lib_dir_name=$(percent){_lib} libs\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(MAKE) lib_dir_name=$(percent){_lib} $(submake_targets) libs\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)install\n" >> $(spec_file)
-	$(ec)$(gprintf) "make rpm_build_root=$(dollar)RPM_BUILD_ROOT install_prefix=$(percent){prefix} lib_dir_name=$(percent){_lib} install\n" >> $(spec_file)
-	$(ec)$(gprintf) "rm -rf $(build_output_dir)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(MAKE) rpm_build_root=$(dollar)RPM_BUILD_ROOT install_prefix=$(percent){prefix} lib_dir_name=$(percent){_lib} $(submake_targets) install\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)clean\n" >> $(spec_file)
 	$(ec)$(gprintf) "rm -rf $(dollar)RPM_BUILD_ROOT\n" >> $(spec_file)
@@ -1888,12 +1814,10 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/include/xflaim.h\n" >> $(spec_file)
 	$(ec)$(gprintf) "Created spec file.\n"
-endif
 
 # -- PKG-CONFIG --
 
 .PHONY : pkgconfig
-ifeq ($(clean_only),0)
 pkgconfig: dircheck
 	$(ec)$(gprintf) "prefix=$(install_prefix)\n" > $(pkgconfig_file)
 	$(ec)$(gprintf) "exec_prefix=$(dollar){prefix}\n" >> $(pkgconfig_file)
@@ -1904,62 +1828,52 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lxflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
-endif
 
 # -- SRCRPM --
 
 .PHONY : srcrpm
-ifeq ($(clean_only),0)
-srcrpm: dist spec
+srcrpm: srcdist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -bs $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
-endif
 
 # -- RPMS --
 
 .PHONY : rpms
-ifeq ($(clean_only),0)
 rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
-	$(ec)rpmbuild --define="_topdir $(homedir)/$(package_dir)" --quiet -ba $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
-endif
 
 # -- Documentation --
 
 .PHONY : docs
-ifeq ($(clean_only),0)
-docs: status dircheck
+docs: status clean dircheck
 	$(ec)$(gprintf) "Creating documentation ...\n"
 	$(ec)doxygen Doxyfile
 	$(ec)$(gprintf) "Documentation created.\n"
-endif
 
 # -- misc. targets --
 
 .PHONY : status
-ifeq ($(clean_only),0)
 status:
 	$(ec)$(gprintf) "===============================================================================\n"
-	$(ec)$(gprintf) "SVN Revision ................... $(revision)\n"
-	$(ec)$(gprintf) "Host Operating System Family ... $(host_os_family)\n"
-	$(ec)$(gprintf) "Top Directory .................. $(call ppath,$(topdir))\n"
-	$(ec)$(gprintf) "Target Operating System Family . $(target_os_family)\n"
-	$(ec)$(gprintf) "Target Processor Family ........ $(target_processor_family)\n"
-	$(ec)$(gprintf) "Target Word Size ............... $(target_word_size)\n"
-	$(ec)$(gprintf) "Target Build Type .............. $(target_build_type)\n"
-	$(ec)$(gprintf) "Target Path .................... $(call ppath,$(target_path))\n"
-	$(ec)$(gprintf) "Compiler ....................... $(call ppath,$(compiler))\n"
-	$(ec)$(gprintf) "Librarian ...................... $(call ppath,$(libr))\n"
+	$(ec)$(gprintf) "SVN Revision.................... $(svn_revision)\n"
+	$(ec)$(gprintf) "Host Operating System Family.... $(host_os_family)\n"
+	$(ec)$(gprintf) "Top Directory................... $(call ppath,$(topdir))\n"
+	$(ec)$(gprintf) "Target Operating System Family.. $(target_os_family)\n"
+	$(ec)$(gprintf) "Target Processor Family......... $(target_processor_family)\n"
+	$(ec)$(gprintf) "Target Word Size................ $(target_word_size)\n"
+	$(ec)$(gprintf) "Target Build Type............... $(target_build_type)\n"
+	$(ec)$(gprintf) "Target Path..................... $(call ppath,$(target_path))\n"
+	$(ec)$(gprintf) "Compiler........................ $(call ppath,$(compiler))\n"
+	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Java Home ...................... $(call ppath,$(jhome))\n"
-	$(ec)$(gprintf) "Defines ........................ $(strip $(ccdefs))\n"
+	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
-endif
 
 .PHONY : dircheck
-ifeq ($(clean_only),0)
 dircheck:
 	$(ec)$(call mkdircmd,$(util_obj_dir))
 	$(ec)$(call mkdircmd,$(test_obj_dir))
@@ -1975,27 +1889,22 @@ dircheck:
 	$(ec)$(call mkdircmd,$(package_dir))
 	$(ec)$(call mkdircmd,$(spec_dir))
 	$(ec)$(call mkdircmd,$(package_sources_dir))
+	$(ec)$(call mkdircmd,$(package_bin_dir))
 	$(ec)$(call mkdircmd,$(package_build_dir))
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
-endif
 
 # -- phony targets --
 
 .PHONY : all
-ifeq ($(clean_only),0)
 all: libs allutils
 	$(ec)$(gprintf) ""
-endif
 
 .PHONY : allutils
-ifeq ($(clean_only),0)
 allutils: status dircheck libs $(util_targets)
 	$(ec)$(gprintf) ""
-endif
 
 .PHONY : test
-ifeq ($(clean_only),0)
 test:	status dircheck $(xflaim_static_lib) $(test_targets)
 	$(ec)$(call copycmd,util/xmlfiles/*.xml,$(test_dir))
 	$(ec)$(call runtest,basictest)
@@ -2020,7 +1929,6 @@ test:	status dircheck $(xflaim_static_lib) $(test_targets)
 	$(ec)$(call runtest,sortkeytest2)
 	$(ec)$(call runtest,xpathtest1)
 	$(ec)$(call runtest,xpathtest2)
-endif
 
 .PHONY : debug
 debug:
@@ -2030,10 +1938,6 @@ debug:
 release:
 	$(ec)$(gprintf) ""
 
-.PHONY : flm_dbg_log
-flm_dbg_log:
-	$(ec)$(gprintf) ""
-
 .PHONY : usegcc
 usegcc:
 	$(ec)$(gprintf) ""
@@ -2041,7 +1945,7 @@ usegcc:
 .PHONY : 32bit
 32bit:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : 64bit
 64bit:
 	$(ec)$(gprintf) ""
@@ -2065,7 +1969,7 @@ osx:
 .PHONY : nlm
 nlm:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : verbose
 verbose:
 	$(ec)$(gprintf) ""
@@ -2073,33 +1977,29 @@ verbose:
 .PHONY : check
 check:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : TAGS
 TAGS:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : info
 info:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : ignore-local-mods
 ignore-local-mods:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : ilm
 ilm:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : installcheck
 installcheck:
 	$(ec)$(gprintf) ""
-	
-.PHONY : mostlyclean
-mostlyclean : clean
-	$(ec)$(gprintf) ""
 
 .PHONY : clean
-clean: status
+clean:
 ifeq ($(do_clean),1)
 	$(ec)$(gprintf) "\n"
 	$(ec)$(gprintf) "Cleaning $(target_path) ...\n"
@@ -2107,10 +2007,14 @@ ifeq ($(do_clean),1)
 	-$(ec)$(call rmcmd,*.pch)
 	$(ec)$(gprintf) "\n"
 endif
-	
+
 .PHONY : distclean
 	-$(ec)$(call rmcmd,*.pch)
-	
+
+.PHONY : mostlyclean
+mostlyclean : clean
+	$(ec)$(gprintf) ""
+
 .PHONY : maintainer-clean
 maintainer-clean:
 	-$(ec)$(call rmdircmd,$(build_output_dir))
