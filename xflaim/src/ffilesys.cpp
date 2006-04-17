@@ -29,12 +29,12 @@
 Desc:    Create a file, return a file handle to created file.
 ****************************************************************************/
 RCODE XFLMAPI F_FileSystem::Create(
-	const char *	pszFileName,		// Name of file to be created
-	FLMUINT			uiIoFlags,			// Access amd Mode flags
-	IF_FileHdl **	ppFileHdl)			// Returns open file handle object.
+	const char *	pszFileName,
+	FLMUINT			uiIoFlags,
+	IF_FileHdl **	ppFileHdl)
 {
-	RCODE			rc = NE_XFLM_OK;
-	F_FileHdl *	pFileHdl = NULL;
+	RCODE				rc = NE_XFLM_OK;
+	F_FileHdl *		pFileHdl = NULL;
 
 	if ((pFileHdl = f_new F_FileHdl) == NULL)
 	{
@@ -886,22 +886,7 @@ Desc:	Rename an existing file (typically an "X" locked file to an
 		CREAT and EXCL options, (ensuring a unique file name)).  Then,
 		the source file will be renamed to new name.
 ****************************************************************************/
-
 #if defined( FLM_UNIX)
-
-/*************************************************************************
- * There appears to be a bug in newer versions of glibc (it was first
- * noticed in RedHat 8) where the behavior of the reaname() function has
- * changed.  According to the man page, rename should allow you to 
- * overwrite an existing directory (ie: rename( "OldDir", "NewDir") 
- * should succeed, even if NewDir already exists).  In order to 
- * avoid having #ifdefs for individual Linux distributions, we
- * decided not to rely on this behavior, and simply do the 
- * existence test ourselves.  Thus, the race condition that this 
- * function was supposed to avoid is theoretically possible, but as long
- * as this function only gets called while the database is closed, it won't
- * be a problem.              RGM 5 June 2003
- ***************************************************************************/
 RCODE F_FileSystem::unix_RenameSafe(
 	const char *	pszSrcFile,
 	const char *	pszDestFile)
