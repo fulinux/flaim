@@ -389,20 +389,20 @@ F_ERROR_CODE_MAP gv_FlmIoErrors[
 F_ERROR_CODE_MAP gv_FlmNetErrors[
 	NE_XFLM_LAST_NET_ERROR - NE_XFLM_FIRST_NET_ERROR - 1] =
 {
-	flmErrorCodeEntry( NE_XFLM_SVR_NOIP_ADDR),
-	flmErrorCodeEntry( NE_XFLM_SVR_SOCK_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_CONNECT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_BIND_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_LISTEN_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_ACCEPT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_SELECT_ERR),
-	flmErrorCodeEntry( NE_XFLM_SVR_SOCKOPT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_DISCONNECT),
-	flmErrorCodeEntry( NE_XFLM_SVR_READ_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_WRT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SVR_READ_TIMEOUT),
-	flmErrorCodeEntry( NE_XFLM_SVR_WRT_TIMEOUT),
-	flmErrorCodeEntry( NE_XFLM_SVR_ALREADY_CLOSED)
+	flmErrorCodeEntry( NE_XFLM_NOIP_ADDR),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_FAIL),
+	flmErrorCodeEntry( NE_XFLM_CONNECT_FAIL),
+	flmErrorCodeEntry( NE_XFLM_BIND_FAIL),
+	flmErrorCodeEntry( NE_XFLM_LISTEN_FAIL),
+	flmErrorCodeEntry( NE_XFLM_ACCEPT_FAIL),
+	flmErrorCodeEntry( NE_XFLM_SELECT_ERR),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_SET_OPT_FAIL),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_DISCONNECT),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_READ_FAIL),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_WRITE_FAIL),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_READ_TIMEOUT),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_WRITE_TIMEOUT),
+	flmErrorCodeEntry( NE_XFLM_SOCKET_ALREADY_CLOSED)
 };
 
 F_ERROR_CODE_MAP gv_FlmQueryErrors[
