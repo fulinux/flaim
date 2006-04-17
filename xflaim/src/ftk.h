@@ -257,6 +257,7 @@
 			#include <stddef.h>
 			#include <rpc.h>
 			#include <process.h>
+			#include <winsock.h>
 		#pragma pack( pop, enter_windows)
 		
 		// Conversion from XXX to YYY, possible loss of data
@@ -2768,6 +2769,109 @@
 		FLMBOOL				m_bEndOfStream;
 	};
 
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class	F_TCPStream : public F_IStream, public F_OStream
+	{
+	public:
+	
+			F_TCPStream( void);
+			
+			virtual ~F_TCPStream( void);
+	
+			RCODE openConnection(
+				const char *	pucHostAddress,
+				FLMUINT			uiPort,
+				FLMUINT			uiConnectTimeout	= 3,
+				FLMUINT			uiDataTimeout = 15);
+	
+			FINLINE RCODE socketPeekWrite(
+				FLMINT		iTimeOut)
+			{
+				return( socketPeek( iTimeOut, FALSE));
+			}
+	
+			FINLINE RCODE socketPeekRead( 
+				FLMINT		iTimeOut)
+			{
+				return( socketPeek( iTimeOut, TRUE));
+			};
+	
+			FINLINE const char * getName( void)
+			{
+				getLocalInfo();
+				return( (const char *)m_pszName);
+			};
+	
+			FINLINE const char * getAddr( void)
+			{
+				getLocalInfo();
+				return( (const char *)m_pszIp);
+			};
+	
+			FINLINE const char * getPeerName( void)
+			{
+				getRemoteInfo();
+				return( (const char *)m_pszPeerName);
+			};
+	
+			FINLINE const char * getPeerAddr( void)
+			{
+				getRemoteInfo();
+				return( (const char *)m_pszPeerIp);
+			};
+	
+			RCODE read(
+				FLMBYTE *		pucBuffer,
+				FLMUINT			uiCount,
+				FLMUINT *		puiBytesRead);
+	
+			RCODE readNoWait(
+				FLMBYTE *		pucBuffer,
+				FLMUINT			uiCount,
+				FLMUINT *		puiReadRead);
+	
+			RCODE readAll(
+				FLMBYTE *		pucBuffer,
+				FLMUINT			uiCount,
+				FLMUINT *		puiBytesRead);
+	
+			RCODE write(
+				FLMBYTE *		pucBuffer,
+				FLMUINT			uiCount,
+				FLMUINT *		puiBytesWritten);
+	
+			RCODE	setTcpDelay(
+				FLMBOOL			bOn);
+	
+			void close(
+				FLMBOOL			bForce = FALSE);
+	
+	private:
+	
+			RCODE getLocalInfo( void);
+			
+			RCODE getRemoteInfo( void);
+	
+			RCODE socketPeek(
+				FLMINT			iTimoutVal,
+				FLMBOOL			bPeekRead);
+	
+	#ifndef FLM_UNIX
+			WSADATA			m_wsaData;
+	#endif
+			FLMBOOL			m_bInitialized;
+			SOCKET			m_iSocket;
+			FLMUINT			m_uiIOTimeout;
+			FLMBOOL			m_bConnected;
+			char				m_pszIp[ 256];
+			char				m_pszName[ 256];
+			char				m_pszPeerIp[ 256];
+			char				m_pszPeerName[ 256];
+			unsigned long	m_ulRemoteAddr;
+	};
+	
 	/****************************************************************************
 												Misc.
 	****************************************************************************/

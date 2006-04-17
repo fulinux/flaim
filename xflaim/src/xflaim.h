@@ -5891,20 +5891,20 @@
 	****************************************************************************/
 
 	#define NE_XFLM_FIRST_NET_ERROR							XFLM_ERROR_BASE( 0x3100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_SVR_NOIP_ADDR								XFLM_ERROR_BASE( 0x3101)			// IP address not found
-	#define NE_XFLM_SVR_SOCK_FAIL								XFLM_ERROR_BASE( 0x3102)			// IP socket failure
-	#define NE_XFLM_SVR_CONNECT_FAIL							XFLM_ERROR_BASE( 0x3103)			// TCP/IP connection failure
-	#define NE_XFLM_SVR_BIND_FAIL								XFLM_ERROR_BASE( 0x3104)			// The TCP/IP services on your system may not be configured or installed.  If this POA is not to run Client/Server, use the /notcpip startup switch or disable TCP/IP through the NWADMIN snapin
-	#define NE_XFLM_SVR_LISTEN_FAIL							XFLM_ERROR_BASE( 0x3105)			// TCP/IP listen failed
-	#define NE_XFLM_SVR_ACCEPT_FAIL							XFLM_ERROR_BASE( 0x3106)			// TCP/IP accept failed
-	#define NE_XFLM_SVR_SELECT_ERR							XFLM_ERROR_BASE( 0x3107)			// TCP/IP select failed
-	#define NE_XFLM_SVR_SOCKOPT_FAIL							XFLM_ERROR_BASE( 0x3108)			// TCP/IP socket operation failed
-	#define NE_XFLM_SVR_DISCONNECT							XFLM_ERROR_BASE( 0x3109)			// TCP/IP disconnected
-	#define NE_XFLM_SVR_READ_FAIL								XFLM_ERROR_BASE( 0x310A)			// TCP/IP read failed
-	#define NE_XFLM_SVR_WRT_FAIL								XFLM_ERROR_BASE( 0x310B)			// TCP/IP write failed
-	#define NE_XFLM_SVR_READ_TIMEOUT							XFLM_ERROR_BASE( 0x310C)			// TCP/IP read timeout
-	#define NE_XFLM_SVR_WRT_TIMEOUT							XFLM_ERROR_BASE( 0x310D)			// TCP/IP write timeout
-	#define NE_XFLM_SVR_ALREADY_CLOSED						XFLM_ERROR_BASE( 0x310E)			// Connection already closed
+	#define NE_XFLM_NOIP_ADDR									XFLM_ERROR_BASE( 0x3101)			// IP address not found
+	#define NE_XFLM_SOCKET_FAIL								XFLM_ERROR_BASE( 0x3102)			// IP socket failure
+	#define NE_XFLM_CONNECT_FAIL								XFLM_ERROR_BASE( 0x3103)			// TCP/IP connection failure
+	#define NE_XFLM_BIND_FAIL									XFLM_ERROR_BASE( 0x3104)			// The TCP/IP services on your system may not be configured or installed.  If this POA is not to run Client/Server, use the /notcpip startup switch or disable TCP/IP through the NWADMIN snapin
+	#define NE_XFLM_LISTEN_FAIL								XFLM_ERROR_BASE( 0x3105)			// TCP/IP listen failed
+	#define NE_XFLM_ACCEPT_FAIL								XFLM_ERROR_BASE( 0x3106)			// TCP/IP accept failed
+	#define NE_XFLM_SELECT_ERR									XFLM_ERROR_BASE( 0x3107)			// TCP/IP select failed
+	#define NE_XFLM_SOCKET_SET_OPT_FAIL						XFLM_ERROR_BASE( 0x3108)			// TCP/IP socket operation failed
+	#define NE_XFLM_SOCKET_DISCONNECT						XFLM_ERROR_BASE( 0x3109)			// TCP/IP disconnected
+	#define NE_XFLM_SOCKET_READ_FAIL							XFLM_ERROR_BASE( 0x310A)			// TCP/IP read failed
+	#define NE_XFLM_SOCKET_WRITE_FAIL						XFLM_ERROR_BASE( 0x310B)			// TCP/IP write failed
+	#define NE_XFLM_SOCKET_READ_TIMEOUT						XFLM_ERROR_BASE( 0x310C)			// TCP/IP read timeout
+	#define NE_XFLM_SOCKET_WRITE_TIMEOUT					XFLM_ERROR_BASE( 0x310D)			// TCP/IP write timeout
+	#define NE_XFLM_SOCKET_ALREADY_CLOSED					XFLM_ERROR_BASE( 0x310E)			// Connection already closed
 	#define NE_XFLM_LAST_NET_ERROR							XFLM_ERROR_BASE( 0x310F)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************

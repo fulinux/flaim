@@ -2683,3 +2683,698 @@ Exit:
 
 	return( rc);
 }
+
+/********************************************************************
+Desc:
+*********************************************************************/
+F_TCPStream::F_TCPStream( void)
+{
+	m_pszIp[ 0] = 0;
+	m_pszName[ 0] = 0;
+	m_pszPeerIp[ 0] = 0;
+	m_pszPeerName[ 0] = 0;
+	m_uiIOTimeout = 10;
+	m_iSocket = INVALID_SOCKET;
+	m_ulRemoteAddr = 0;
+	m_bInitialized = FALSE;
+	m_bConnected = FALSE;
+
+#ifndef FLM_UNIX
+	if( !WSAStartup( MAKEWORD( 2, 0), &m_wsaData))
+	{
+		m_bInitialized = TRUE;
+	}
+#endif
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+F_TCPStream::~F_TCPStream( void)
+{
+	if( m_bConnected)
+	{
+		close();
+	}
+
+#ifndef FLM_UNIX
+	if( m_bInitialized)
+	{
+		WSACleanup();
+	}
+#endif
+}
+
+/********************************************************************
+Desc: Opens a new connection
+*********************************************************************/
+RCODE F_TCPStream::openConnection(
+	const char  *		pucHostName,
+	FLMUINT				uiPort,
+	FLMUINT				uiConnectTimeout,
+	FLMUINT				uiDataTimeout)
+{
+	RCODE						rc = NE_XFLM_OK;
+	FLMINT					iSockErr;
+	FLMINT    				iTries;
+	FLMINT					iMaxTries = 5;
+	struct sockaddr_in	address;
+	struct hostent *		pHostEntry;
+	unsigned long			ulIPAddr;
+	int						iTmp;
+
+	flmAssert( !m_bConnected);
+	m_iSocket = INVALID_SOCKET;
+
+	if( pucHostName && pucHostName[ 0] != '\0')
+	{
+		ulIPAddr = inet_addr( (char *)pucHostName);
+		if( ulIPAddr == (unsigned long)INADDR_NONE)
+		{
+			pHostEntry = gethostbyname( (char *)pucHostName);
+
+			if( !pHostEntry)
+			{
+				rc = RC_SET( NE_XFLM_NOIP_ADDR);
+				goto Exit;
+			}
+			else
+			{
+				ulIPAddr = *((unsigned long *)pHostEntry->h_addr);
+			}
+
+		}
+	}
+	else
+	{
+		ulIPAddr = inet_addr( (char *)"127.0.0.1");
+	}
+
+	// Fill in the Socket structure with family type
+
+	f_memset( (char *)&address, 0, sizeof( struct sockaddr_in));
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = (unsigned)ulIPAddr;
+	address.sin_port = htons( (unsigned short)uiPort);
+	
+	// Allocate a socket, then attempt to connect to it!
+
+	if( (m_iSocket = socket( AF_INET, 
+		SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
+	{
+		rc = RC_SET( NE_XFLM_SOCKET_FAIL);
+		goto Exit;
+	}
+
+	// Now attempt to connect with the specified partner host, 
+	// time-out if connection doesn't complete within alloted time
+	
+#ifdef FLM_WIN
+
+	if( uiConnectTimeout)
+	{
+		if ( uiConnectTimeout < 5 )
+		{
+			iMaxTries = (iMaxTries * uiConnectTimeout) / 5;
+			uiConnectTimeout = 5;
+		}
+	}
+	else
+	{
+		iMaxTries = 1;
+	}
+#endif	
+
+	for( iTries = 0; iTries < iMaxTries; iTries++ )
+	{			
+		iSockErr = 0;
+		if( connect( m_iSocket, (struct sockaddr *)&address,
+			(unsigned)sizeof(struct sockaddr)) >= 0)
+		{
+			break;
+		}
+
+		#ifndef FLM_UNIX
+			iSockErr = WSAGetLastError();
+		#else
+			iSockErr = errno;
+		#endif
+
+	#ifdef FLM_WIN
+
+		// In WIN, we sometimes get WSAEINVAL when, if we keep
+		// trying, we will eventually connect.  Therefore,
+		// here we'll treat WSAEINVAL as EINPROGRESS.
+
+		if( iSockErr == WSAEINVAL)
+		{
+		#ifndef FLM_UNIX
+			closesocket( m_iSocket);
+		#else
+			::close( m_iSocket);
+		#endif
+			if( (m_iSocket = socket( AF_INET, 
+				SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
+			{
+				rc = RC_SET( NE_XFLM_SOCKET_FAIL);
+				goto Exit;
+			}
+		#if defined( FLM_WIN) || defined( FLM_NLM)
+			iSockErr = WSAEINPROGRESS;
+		#else
+			iSockErr = EINPROGRESS;
+		#endif
+			continue;
+		}
+	#endif
+
+	#if defined( FLM_WIN) || defined( FLM_NLM)
+		if( iSockErr == WSAEISCONN )
+	#else
+		if( iSockErr == EISCONN )
+	#endif
+		{
+			break;
+		}
+	#if defined( FLM_WIN) || defined( FLM_NLM)
+		else if( iSockErr == WSAEWOULDBLOCK)
+	#else
+		else if( iSockErr == EWOULDBLOCK)
+	#endif
+		{
+			// Let's wait a split second to give the connection
+         // request a chance. 
+
+			f_sleep( 100 );
+			continue;
+		}
+	#if defined( FLM_WIN) || defined( FLM_NLM)
+		else if( iSockErr == WSAEINPROGRESS)
+	#else
+		else if( iSockErr == EINPROGRESS)
+	#endif
+		{
+			if( RC_OK( rc = socketPeek( uiConnectTimeout, FALSE)))
+			{
+				// Let's wait a split second to give the connection
+            // request a chance. 
+
+				f_sleep( 100 );
+				continue;
+			}
+		}
+		
+		rc = RC_SET( NE_XFLM_CONNECT_FAIL);
+		goto Exit;
+	}
+
+	// Disable Nagel's algorithm
+
+	iTmp = 1;
+	if( (setsockopt( m_iSocket, IPPROTO_TCP, TCP_NODELAY, (char *)&iTmp,
+		(unsigned)sizeof( iTmp) )) < 0)
+	{
+		rc = RC_SET( NE_XFLM_SOCKET_SET_OPT_FAIL);
+		goto Exit;
+	}
+	
+	m_uiIOTimeout = uiDataTimeout;
+	m_bConnected = TRUE;
+
+Exit:
+
+	if( RC_BAD( rc))
+	{
+		if( m_iSocket != INVALID_SOCKET)
+		{
+		#ifndef FLM_UNIX
+			closesocket( m_iSocket);
+		#else
+			::close( m_iSocket);
+		#endif
+			m_iSocket = INVALID_SOCKET;
+		}
+	}
+	
+	return( rc);
+}
+
+/********************************************************************
+Desc: Gets information about the local host machine.
+*********************************************************************/
+RCODE F_TCPStream::getLocalInfo( void)
+{
+	RCODE						rc = NE_XFLM_OK;
+	struct hostent *		pHostEnt;
+	FLMUINT32				ui32IPAddr;
+
+	m_pszIp[ 0] = 0;
+	m_pszName[ 0] = 0;
+
+	if( !m_pszName[ 0])
+	{
+		if( gethostname( m_pszName, (unsigned)sizeof( m_pszName)))
+		{
+			rc = RC_SET( NE_XFLM_SOCKET_FAIL);
+			goto Exit;
+		}
+	}
+
+	if( !m_pszIp[ 0] && (pHostEnt = gethostbyname( m_pszName)) != NULL)
+	{
+		ui32IPAddr = (FLMUINT32)(*((unsigned long *)pHostEnt->h_addr));
+		if( ui32IPAddr != (FLMUINT32)-1)
+		{
+			struct in_addr			InAddr;
+
+			InAddr.s_addr = ui32IPAddr;
+			f_strcpy( m_pszIp, inet_ntoa( InAddr));
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc: Gets information about the remote machine.
+*********************************************************************/
+RCODE F_TCPStream::getRemoteInfo( void)
+{
+	RCODE						rc = NE_XFLM_OK;
+	struct sockaddr_in 	SockAddrIn;
+	char *					InetAddr = NULL;
+	struct hostent	*		HostsName;
+
+	m_pszPeerIp[ 0] = 0;
+	m_pszPeerName[ 0] = 0;
+
+	SockAddrIn.sin_addr.s_addr = (unsigned)m_ulRemoteAddr;
+
+	InetAddr = inet_ntoa( SockAddrIn.sin_addr);
+	f_strcpy( m_pszPeerIp, InetAddr);
+	
+	// Try to get the peer's host name by looking up his IP
+	// address.
+
+	HostsName = gethostbyaddr( (char *)&SockAddrIn.sin_addr.s_addr,
+		(unsigned)sizeof( unsigned long), AF_INET );
+
+	if( HostsName != NULL)
+	{
+		f_strcpy( m_pszPeerName, (char*) HostsName->h_name );
+	}
+	else
+	{
+		if (!InetAddr)
+		{
+			InetAddr = inet_ntoa( SockAddrIn.sin_addr);
+		}
+		
+		f_strcpy( m_pszPeerName, InetAddr);
+	}
+	
+	return( rc);
+}
+
+/********************************************************************
+Desc: Tests for socket data readiness
+*********************************************************************/
+RCODE F_TCPStream::socketPeek(
+	FLMINT				iTimeoutVal,
+	FLMBOOL				bPeekRead)
+{
+	RCODE					rc = NE_XFLM_OK;
+	struct timeval		TimeOut;
+	int					iMaxDescs;
+	fd_set				GenDescriptors;
+	fd_set *				DescrRead;
+	fd_set *				DescrWrt;
+
+	if( m_iSocket != INVALID_SOCKET)
+	{
+		FD_ZERO( &GenDescriptors);
+#ifdef FLM_WIN
+		#pragma warning( push)
+		#pragma warning( disable : 4127)
+#endif
+		FD_SET( m_iSocket, &GenDescriptors);
+#ifdef FLM_WIN
+		#pragma warning( pop)
+#endif
+
+		iMaxDescs = (int)(m_iSocket + 1);
+		DescrRead = bPeekRead ? &GenDescriptors : NULL;
+		DescrWrt  = bPeekRead ? NULL : &GenDescriptors;
+
+		TimeOut.tv_sec = (long)iTimeoutVal;
+		TimeOut.tv_usec = (long)0;
+
+		if( select( iMaxDescs, DescrRead, DescrWrt, NULL, &TimeOut) < 0 )
+		{
+			rc = RC_SET( NE_XFLM_SELECT_ERR);
+			goto Exit;
+		}
+		else
+		{
+			if( !FD_ISSET( m_iSocket, &GenDescriptors))
+			{
+				rc = bPeekRead 
+					? RC_SET( NE_XFLM_SOCKET_READ_TIMEOUT)
+					: RC_SET( NE_XFLM_SOCKET_WRITE_TIMEOUT);
+			}
+		}
+	}
+	else
+	{
+		rc = RC_SET( NE_XFLM_CONNECT_FAIL);
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_TCPStream::write(
+	FLMBYTE *		pucBuffer,
+	FLMUINT			uiBytesToWrite,
+	FLMUINT *		puiBytesWritten)
+{
+	RCODE				rc = NE_XFLM_OK;
+	FLMINT			iRetryCount = 0;
+	FLMINT			iBytesWritten = 0;
+
+	if( m_iSocket == INVALID_SOCKET)
+	{
+		rc = RC_SET( NE_XFLM_CONNECT_FAIL);
+		goto Exit;
+	}
+
+	flmAssert( pucBuffer && uiBytesToWrite);
+
+Retry:
+
+	*puiBytesWritten = 0;
+	if( RC_OK( rc = socketPeek( m_uiIOTimeout, FALSE)))
+	{
+		iBytesWritten = send( m_iSocket, 
+					(char *)pucBuffer, (int)uiBytesToWrite, 0);
+		
+		switch ( iBytesWritten)
+		{
+			case -1:
+			{
+				*puiBytesWritten = 0;
+				rc = RC_SET( NE_XFLM_SOCKET_WRITE_FAIL);
+				break;
+			}
+
+			case 0:
+			{
+				rc = RC_SET( NE_XFLM_SOCKET_DISCONNECT);
+				break;
+			}
+
+			default:
+			{
+				*puiBytesWritten = (FLMUINT)iBytesWritten;
+				break;
+			}
+		}
+	}
+
+	if( RC_BAD( rc) && rc != NE_XFLM_SOCKET_WRITE_TIMEOUT)
+	{
+#ifndef FLM_UNIX
+		FLMINT iSockErr = WSAGetLastError();
+#else
+		FLMINT iSockErr = errno;
+#endif
+
+#if defined( FLM_WIN) || defined( FLM_NLM)
+		if( iSockErr == WSAECONNABORTED)
+#else
+		if( iSockErr == ECONNABORTED)
+#endif
+		{
+			rc = RC_SET( NE_XFLM_SOCKET_DISCONNECT);
+		}
+#if defined( FLM_WIN) || defined( FLM_NLM)
+		else if( iSockErr == WSAEWOULDBLOCK && iRetryCount < 5)
+#else
+		else if( iSockErr == EWOULDBLOCK && iRetryCount < 5)
+#endif
+		{
+			iRetryCount++;
+			f_sleep( (FLMUINT)(100 * iRetryCount));
+			goto Retry;
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc: Reads data from the connection
+*********************************************************************/
+RCODE F_TCPStream::read(
+	FLMBYTE *		pucBuffer,
+   FLMUINT			uiBytesToWrite,
+	FLMUINT *		puiBytesRead)
+{
+	RCODE			rc = NE_XFLM_OK;
+	FLMINT		iReadCnt = 0;
+
+	flmAssert( m_bConnected && pucBuffer && uiBytesToWrite);
+
+	if( RC_OK( rc = socketPeek( m_uiIOTimeout, TRUE)))
+	{
+		iReadCnt = (FLMINT)recv( m_iSocket, 
+			(char *)pucBuffer, (int)uiBytesToWrite, 0);
+			
+		switch ( iReadCnt)
+		{
+			case -1:
+			{
+				iReadCnt = 0;
+#if defined( FLM_WIN) || defined( FLM_NLM)
+				if ( WSAGetLastError() == WSAECONNRESET)
+#else
+				if( errno == ECONNRESET)
+#endif
+				{
+					rc = RC_SET( NE_XFLM_SOCKET_DISCONNECT);
+				}
+				else
+				{
+					rc = RC_SET( NE_XFLM_SOCKET_READ_FAIL);
+				}
+				break;
+			}
+
+			case 0:
+			{
+				rc = RC_SET( NE_XFLM_SOCKET_DISCONNECT);
+				break;
+			}
+
+			default:
+			{
+				break;
+			}
+		}
+	}
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = (FLMUINT)iReadCnt;
+	}
+
+	return( rc);
+}
+
+/********************************************************************
+Desc: Reads data from the connection - Timeout valkue is zero, no error
+      is generated if timeout occurs.
+*********************************************************************/
+RCODE F_TCPStream::readNoWait(
+	FLMBYTE *		pucBuffer,
+   FLMUINT			uiBytesToRead,
+	FLMUINT *		puiBytesRead)
+{
+	RCODE			rc = NE_XFLM_OK;
+	FLMINT		iReadCnt = 0;
+
+	flmAssert( m_bConnected && pucBuffer && uiBytesToRead);
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = 0;
+	}
+
+	if( RC_OK( rc = socketPeek( (FLMUINT)0, TRUE)))
+	{
+		iReadCnt = recv( m_iSocket, (char *)pucBuffer, (int)uiBytesToRead, 0);
+		switch ( iReadCnt)
+		{
+			case -1:
+			{
+				*puiBytesRead = 0;
+#if defined( FLM_WIN) || defined( FLM_NLM)
+				if ( WSAGetLastError() == WSAECONNRESET)
+#else
+				if( errno == ECONNRESET)
+#endif
+				{
+					rc = RC_SET( NE_XFLM_SOCKET_DISCONNECT);
+				}
+				else
+				{
+					rc = RC_SET( NE_XFLM_SOCKET_READ_FAIL);
+				}
+				goto Exit;
+			}
+
+			case 0:
+			{
+				rc = RC_SET( NE_XFLM_SOCKET_DISCONNECT);
+				goto Exit;
+			}
+
+			default:
+			{
+				break;
+			}
+		}
+	}
+	else if (rc == NE_XFLM_SOCKET_READ_TIMEOUT)
+	{
+		rc = NE_XFLM_OK;
+	}
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = (FLMUINT)iReadCnt;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc: Reads data and does not return until all requested data has
+		been read or a timeout error has been encountered.
+*********************************************************************/
+RCODE F_TCPStream::readAll(
+	FLMBYTE *		pucBuffer,
+	FLMUINT			uiBytesToRead,
+   FLMUINT *		puiBytesRead)
+{
+	RCODE			rc = NE_XFLM_OK;
+	FLMUINT		uiToRead = 0;
+	FLMUINT		uiHaveRead = 0;
+	FLMUINT		uiPartialCnt;
+
+	flmAssert( m_bConnected && pucBuffer && uiBytesToRead);
+
+	uiToRead = uiBytesToRead;
+	while( uiToRead)
+	{
+		if( RC_BAD( rc = read( pucBuffer, uiToRead, &uiPartialCnt)))
+		{
+			goto Exit;
+		}
+
+		pucBuffer += uiPartialCnt;
+		uiHaveRead += uiPartialCnt;
+		uiToRead = (FLMUINT)(uiBytesToRead - uiHaveRead);
+
+		if( puiBytesRead)
+		{
+			*puiBytesRead = uiHaveRead;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc: Closes any open connections
+*********************************************************************/
+void F_TCPStream::close(
+	FLMBOOL			bForce)
+{
+	if( m_iSocket == INVALID_SOCKET)
+	{
+		goto Exit;
+	}
+
+#ifdef FLM_NLM
+	F_UNREFERENCED_PARM( bForce);
+#else
+	if( !bForce)
+	{
+		char					ucTmpBuf[ 128];
+		struct timeval		tv;
+		fd_set				fds;
+		fd_set				fds_read;
+		fd_set				fds_err;
+
+		// Close our half of the connection
+
+		shutdown( m_iSocket, 1);
+
+		// Set up to wait for readable data on the socket
+
+		FD_ZERO( &fds);
+#ifdef FLM_WIN
+		#pragma warning( push)
+		#pragma warning( disable : 4127)
+#endif
+		FD_SET( m_iSocket, &fds);
+#ifdef FLM_WIN
+		#pragma warning( pop)
+#endif
+
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+
+		fds_read = fds;
+		fds_err = fds;
+
+		// Wait for data or an error
+
+		while( select( m_iSocket + 1, &fds_read, NULL, &fds_err, &tv) > 0)
+		{
+			if( recv( m_iSocket, ucTmpBuf, sizeof( ucTmpBuf), 0) <= 0)
+			{
+				break;
+			}
+			fds_read = fds;
+			fds_err = fds;
+		}
+
+		shutdown( m_iSocket, 2);
+	}
+#endif
+
+#ifndef FLM_UNIX
+	closesocket( m_iSocket);
+#else
+	::close( m_iSocket);
+#endif
+
+Exit:
+
+	m_iSocket = INVALID_SOCKET;
+	m_bConnected = FALSE;
+}
