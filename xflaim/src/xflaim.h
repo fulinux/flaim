@@ -41,7 +41,7 @@
 		#undef FLM_HPUX
 		#undef FLM_OSX
 		#undef FLM_BIG_ENDIAN
-		#undef FLM_POWER_PC
+		#undef FLM_PPC
 		#undef FLM_STRICT_ALIGNMENT
 		#undef FLM_S390
 		#undef FLM_IA64
@@ -79,8 +79,8 @@
 			#define FLM_LINUX
 			#define FLM_OSTYPE_STR "Linux"
 			#define FLM_UNIX
-			#if defined( __PPC__)
-				#define FLM_POWER_PC
+			#if defined( __PPC__) || defined( __ppc__)
+				#define FLM_PPC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT
 			#elif defined( __s390__)
@@ -121,6 +121,7 @@
 			#define FLM_OSTYPE_STR "OSX"
 			#define FLM_UNIX
 			#if (defined( __ppc__) || defined( __ppc64__))
+				#define FLM_PPC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT			
 			#endif
@@ -244,30 +245,6 @@
 	
 		typedef FLMINT								RCODE;
 		typedef FLMINT								FLMBOOL;
-		
-		#define F_FILENAME_SIZE					256
-		#define F_PATH_MAX_SIZE					256
-
-		#define FLM_MAX_UINT						((FLMUINT)(-1L))
-		#define FLM_MAX_INT						((FLMINT)(((FLMUINT)(-1L)) >> 1))
-		#define FLM_MIN_INT						((FLMINT)((((FLMUINT)(-1L)) >> 1) + 1))
-		#define FLM_MAX_UINT32					((FLMUINT32)(0xFFFFFFFFL))
-		#define FLM_MAX_INT32					((FLMINT32)(0x7FFFFFFFL))
-		#define FLM_MIN_INT32					((FLMINT32)(0x80000000L))
-		#define FLM_MAX_UINT16					((FLMUINT16)(0xFFFF))
-		#define FLM_MAX_INT16					((FLMINT16)(0x7FFF))
-		#define FLM_MIN_INT16					((FLMINT16)(0x8000))
-		#define FLM_MAX_UINT8					((FLMUINT8)0xFF)
-	
-		#if( _MSC_VER >= 1200) && (_MSC_VER < 1300)
-			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFL))
-			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFL))
-			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000L))
-		#else
-			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFLL))
-			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFLL))
-			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000LL))
-		#endif
 		
 		#define F_FILENAME_SIZE					256
 		#define F_PATH_MAX_SIZE					256
