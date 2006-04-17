@@ -41,9 +41,14 @@
 			int				iLine,
 			FLMBOOL			bAssert);
 			
-		#define RC_SET( rc)							flmMakeErr( rc, __FILE__, __LINE__, FALSE)
-		#define RC_SET_AND_ASSERT( rc)			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
-		#define RC_UNEXPECTED_ASSERT( rc)		flmMakeErr( rc, __FILE__, __LINE__, TRUE)
+		#define RC_SET( rc) \
+			flmMakeErr( rc, __FILE__, __LINE__, FALSE)
+			
+		#define RC_SET_AND_ASSERT( rc) \
+			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
+			
+		#define RC_UNEXPECTED_ASSERT( rc) \
+			flmMakeErr( rc, __FILE__, __LINE__, TRUE)
 	#else
 		#define RC_SET( rc)							(rc)
 		#define RC_SET_AND_ASSERT( rc)			(rc)
@@ -89,9 +94,16 @@
 		// "fixed" version of stdarg.h implemented by DS.
 
 		typedef unsigned long f_va_list;
-		#define f_argsize(x) ((sizeof(x)+sizeof(int)-1) & ~(sizeof(int)-1))
-		#define f_va_start(ap, parmN) ((void)((ap) = (unsigned long)&(parmN) + f_argsize(parmN)))
-		#define f_va_arg(ap, type) (*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
+		
+		#define f_argsize(x) \
+			((sizeof(x)+sizeof(int)-1) & ~(sizeof(int)-1))
+			
+		#define f_va_start(ap, parmN) \
+			((void)((ap) = (unsigned long)&(parmN) + f_argsize(parmN)))
+			
+		#define f_va_arg(ap, type) \
+			(*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
+			
 		#define f_va_end(ap) ((void)0)
 		#define FSTATIC
 
@@ -121,39 +133,54 @@
 			#define UINT	unsigned int
 		#endif
 	
-		typedef void * MUTEX;
-		typedef void * SEMAPHORE;
-		typedef unsigned long ERROR;
-	
-		extern "C"
-		{
-			SEMAPHORE	kSemaphoreAlloc(BYTE *pSemaName, UINT SemaCount);
-			ERROR			kSemaphoreFree(SEMAPHORE SemaHandle);
-			ERROR			kSemaphoreWait(SEMAPHORE SemaHandle);
-			ERROR			kSemaphoreTimedWait(SEMAPHORE SemaHandle, UINT MilliSecondTimeOut);
-			ERROR			kSemaphoreSignal(SEMAPHORE SemaHandle);
-			UINT			kSemaphoreExamineCount(SEMAPHORE SemaHandle);
-		
-			MUTEX			kMutexAlloc(BYTE *MutexName);
-			ERROR			kMutexFree(MUTEX MutexHandle);
-			ERROR			kMutexLock(MUTEX MutexHandle);
-			ERROR			kMutexUnlock(MUTEX MutexHandle);
-		}
-	
+		typedef void * 			MUTEX;
 		typedef MUTEX				F_MUTEX;
 		typedef MUTEX *			F_MUTEX_p;
-		#define F_MUTEX_NULL		0
 
+		#define F_MUTEX_NULL		0
+		
+		typedef void * 			SEMAPHORE;
+		typedef unsigned long 	ERROR;
+
+		extern "C" SEMAPHORE kSemaphoreAlloc(
+			BYTE *		pSemaName,
+			UINT			SemaCount);
+			
+		extern "C" ERROR kSemaphoreFree(
+			SEMAPHORE	SemaHandle);
+			
+		extern "C" ERROR kSemaphoreWait(
+			SEMAPHORE	SemaHandle);
+			
+		extern "C" ERROR kSemaphoreTimedWait(
+			SEMAPHORE	SemaHandle,
+			UINT			MilliSecondTimeOut);
+			
+		extern "C" ERROR kSemaphoreSignal(
+			SEMAPHORE	SemaHandle);
+			
+		extern "C" UINT kSemaphoreExamineCount(
+			SEMAPHORE	SemaHandle);
+	
+		extern "C" MUTEX kMutexAlloc(
+			BYTE *		MutexName);
+			
+		extern "C" ERROR kMutexFree(
+			MUTEX			MutexHandle);
+			
+		extern "C" ERROR kMutexLock(
+			MUTEX			MutexHandle);
+			
+		extern "C" ERROR kMutexUnlock(
+			MUTEX			MutexHandle);
+	
 		// External Netware Symbols
 		
-		extern "C"
-		{
-			FLMUINT f_getNLMHandle( void);
-			
-			RCODE f_netwareStartup( void);
+		extern "C" FLMUINT f_getNLMHandle( void);
+		
+		extern "C" RCODE f_netwareStartup( void);
 
-			void f_netwareShutdown( void);
-		}
+		extern "C" void f_netwareShutdown( void);
 			
 		#define f_stricmp(str1,str2) \
 			strcasecmp((char *)(str1),(char *)(str2))
@@ -263,9 +290,9 @@
 		typedef F_INTERLOCK	**			F_MUTEX_p;
 		#define F_MUTEX_NULL				NULL
 
-		typedef HANDLE					F_SEM;
-		typedef HANDLE *				F_SEM_p;
-		#define F_SEM_NULL			NULL
+		typedef HANDLE						F_SEM;
+		typedef HANDLE *					F_SEM_p;
+		#define F_SEM_NULL				NULL
 
 		#define f_stricmp( str1, str2) \
 			_stricmp((char *)(str1), (char *)(str2))
@@ -411,10 +438,10 @@
 		#define f_strupr( str) \
 			strupr( (char *)(str))
 
-		#define f_va_list			va_list
-		#define f_va_start		va_start
-		#define f_va_arg			va_arg
-		#define f_va_end			va_end
+		#define f_va_list				va_list
+		#define f_va_start			va_start
+		#define f_va_arg				va_arg
+		#define f_va_end				va_end
 
 		typedef pthread_mutex_t *	F_MUTEX;
 		typedef F_MUTEX *				F_MUTEX_p;
@@ -427,9 +454,9 @@
 			int             count;
 		} sema_t;
 	
-		typedef sema_t *		F_SEM;
-		typedef F_SEM *		F_SEM_p;
-		#define F_SEM_NULL	NULL
+		typedef sema_t *				F_SEM;
+		typedef F_SEM *				F_SEM_p;
+		#define F_SEM_NULL			NULL
 	
 	#endif
 
@@ -594,21 +621,17 @@
 
 		typedef struct PoolMemoryBlock
 		{
-			PoolMemoryBlock *		pPrevBlock;		// Points to the previous block
-			FLMUINT					uiBlockSize;	// This block's size
-			FLMUINT					uiFreeOffset;	// Free offset in the block
-			FLMUINT					uiFreeSize;		// Amount of free memory left in block
+			PoolMemoryBlock *		pPrevBlock;
+			FLMUINT					uiBlockSize;
+			FLMUINT					uiFreeOffset;
+			FLMUINT					uiFreeSize;
 		} MBLK;
 
 		typedef struct
 		{
-			FLMUINT	uiAllocBytes;					// Total number of bytes requested from
-															// poolAlloc and poolCalloc methods
-			FLMUINT	uiCount;							// Number of Free/Resets performed on 
-															// the pool
+			FLMUINT	uiAllocBytes;
+			FLMUINT	uiCount;
 		} POOL_STATS;
-
-		// Constructors and Destructors
 
 		F_Pool()
 		{
@@ -620,28 +643,28 @@
 
 		~F_Pool();
 
-		FINLINE void poolInit(				// flalloc.cpp
-			FLMUINT	uiBlockSize)
+		FINLINE void poolInit(
+			FLMUINT			uiBlockSize)
 		{
 			m_uiBlockSize = uiBlockSize;
 		}
 
-		void smartPoolInit(					// flalloc.cpp
+		void smartPoolInit(
 			POOL_STATS *	pPoolStats);
 
-		RCODE poolAlloc(						// flalloc.cpp
-			FLMUINT	uiSize,
-			void **	ppvPtr);
+		RCODE poolAlloc(
+			FLMUINT			uiSize,
+			void **			ppvPtr);
 
 		RCODE poolCalloc(
-  			FLMUINT		uiSize,
-			void **		ppvPtr);
+  			FLMUINT			uiSize,
+			void **			ppvPtr);
 
-		void poolFree( void);				// flalloc.cpp
+		void poolFree( void);
 
-		void poolReset(						// flalloc.cpp
-			void *	pvMark,
-			FLMBOOL	bReduceFirstBlock = FALSE);
+		void poolReset(
+			void *			pvMark,
+			FLMBOOL			bReduceFirstBlock = FALSE);
 
 		FINLINE void * poolMark( void)
 		{
@@ -699,28 +722,34 @@
 		void freeToMark(
 			void *		pvMark);
 
-		PoolMemoryBlock *		m_pLastBlock;			// Points to last allocated memory block
-		FLMUINT					m_uiBlockSize;			// Default size of each memory block
-		FLMUINT					m_uiBytesAllocated;	// Number of bytes allocated since pool 
-																// init and/or reset
-		POOL_STATS *			m_pPoolStats;			// [optional] only used by smart pools
+		PoolMemoryBlock *		m_pLastBlock;
+		FLMUINT					m_uiBlockSize;
+		FLMUINT					m_uiBytesAllocated;
+		POOL_STATS *			m_pPoolStats;
 	};
 
 	/****************************************************************************
 										CROSS PLATFORM DEFINITIONS
 	****************************************************************************/
-	#define F_UNREFERENCED_PARM( parm )		(void)parm
-	#define f_min(a, b)							((a) < (b) ? (a) : (b))
-	#define f_max(a, b)							((a) < (b) ? (b) : (a))
-	#define f_swap( a, b, tmp)					((tmp) = (a), (a) = (b), (b) = (tmp))
+	#define F_UNREFERENCED_PARM( parm) \
+		(void)parm
+		
+	#define f_min(a, b) \
+		((a) < (b) ? (a) : (b))
+		
+	#define f_max(a, b) \
+		((a) < (b) ? (b) : (a))
+		
+	#define f_swap( a, b, tmp) \
+		((tmp) = (a), (a) = (b), (b) = (tmp))
 	
 	char * f_uwtoa(
 		FLMUINT16	value,
 		char *		ptr);
 
 	char * f_udtoa(
-		FLMUINT	value,
-		char *	ptr);
+		FLMUINT		value,
+		char *		ptr);
 
 	char * f_wtoa(
 		FLMINT16		value,
@@ -759,18 +788,18 @@
 
 	FLMUNICODE * f_unicpy(
 		FLMUNICODE *			puzDestStr,
-		FLMUNICODE *			puzSrcStr);
+		const FLMUNICODE *	puzSrcStr);
 
 	FLMUNICODE f_unitolower(
 		FLMUNICODE				uChar);
 
 	FLMINT f_unicmp(
-		FLMUNICODE *			puzStr1,
-		FLMUNICODE *			puzStr2);
+		const FLMUNICODE *	puzStr1,
+		const FLMUNICODE *	puzStr2);
 
 	FLMINT f_uniicmp(
-		FLMUNICODE *			puzStr1,
-		FLMUNICODE *			puzStr2);
+		const FLMUNICODE *	puzStr1,
+		const FLMUNICODE *	puzStr2);
 
 	FLMINT f_uninativecmp(
 		const FLMUNICODE *	puzStr1,
@@ -804,10 +833,7 @@
 			#endif
 
 		#elif defined( FLM_NLM)
-			extern "C"
-			{
-				void EnterDebugger(void);
-			}
+			extern "C" void EnterDebugger(void);
 
 			#ifdef FLM_DBG_LOG
 				#define flmAssert( exp)	\
@@ -953,19 +979,24 @@
 
 	#define f_stringToAscii( str)
 
-	#define f_toascii( native)			(native)
+	#define f_toascii( native) \
+		(native)
 
-	#define f_tonative( ascii)			(ascii)
+	#define f_tonative( ascii) \
+		(ascii)
 
-	#define f_toupper( native)			(((native) >= 'a' && (native) <= 'z') \
-													? (native) - 'a' + 'A' \
-													: (native))
+	#define f_toupper( native) \
+		(((native) >= 'a' && (native) <= 'z') \
+				? (native) - 'a' + 'A' \
+				: (native))
 
-	#define f_tolower( native)			(((native) >= 'A' && (native) <= 'Z') \
-													? (native) - 'A' + 'a' \
-													: (native))
+	#define f_tolower( native) \
+		(((native) >= 'A' && (native) <= 'Z') \
+				? (native) - 'A' + 'a' \
+				: (native))
 
-	#define f_islower( native)			((native) >= 'a' && (native) <= 'z')
+	#define f_islower( native) \
+		((native) >= 'a' && (native) <= 'z')
 
 	#ifndef FLM_ASCII_PLATFORM
 		#define FLM_ASCII_PLATFORM
@@ -1100,13 +1131,21 @@
 									WORD/BYTE ORDERING MACROS
 	****************************************************************************/
 
-	FLMUINT32 byteToLong( FLMBYTE * ptr);
-	#define  byteToLong(p)  ( \
-		((FLMUINT32) ( ((((FLMBYTE *)(p))[ 0]) << 8) | (((FLMBYTE *)(p))[ 1]) ) << 16 ) | \
-		 (FLMUINT16) ( ((((FLMBYTE *)(p))[ 2]) << 8) | (((FLMBYTE *)(p))[ 3]) ) )
+	FINLINE FLMUINT32 byteToLong(
+		const FLMBYTE *		pucBuf)
+	{
+		FLMUINT32		ui32Val = 0;
 
+		ui32Val |= ((FLMUINT32)pucBuf[ 0]) << 24;
+		ui32Val |= ((FLMUINT32)pucBuf[ 1]) << 16;
+		ui32Val |= ((FLMUINT32)pucBuf[ 2]) << 8;
+		ui32Val |= ((FLMUINT32)pucBuf[ 3]);
+
+		return( ui32Val);
+	}
+	
 	FINLINE FLMUINT64 byteToLong64(
-		FLMBYTE *		pucBuf)
+		const FLMBYTE *		pucBuf)
 	{
 		FLMUINT64		ui64Val = 0;
 
@@ -1122,11 +1161,11 @@
 		return( ui64Val);
 	}
 
-	FLMUINT32 byteToInt( FLMBYTE * ptr);
+	FLMUINT32 byteToInt( const FLMBYTE * ptr);
 	#define  byteToInt(p)  ( \
  		 (FLMUINT16) ( ((((FLMBYTE *)(p))[ 0]) << 8) | (((FLMBYTE *)(p))[ 1]) ) )
 
-	void longToByte( FLMINT32 uiNum, FLMBYTE *ptr);
+	void longToByte( FLMINT32 uiNum, FLMBYTE * ptr);
 	#define longToByte( n, p) { \
 		FLMUINT32 ui32Temp = (FLMUINT32) (n); FLMBYTE * pTemp = (FLMBYTE *)(p); \
 				pTemp[0] = (FLMBYTE) (ui32Temp >> 24); \
@@ -1135,7 +1174,7 @@
 				pTemp[3] = (FLMBYTE) (ui32Temp      ); \
 		}
 
-	void long64ToByte( FLMINT64 uiNum, FLMBYTE *ptr);
+	void long64ToByte( FLMINT64 uiNum, FLMBYTE * ptr);
 	#define long64ToByte( n, p) { \
 		FLMUINT64 ui64Temp = (FLMUINT64) (n); FLMBYTE * pTemp = (FLMBYTE *)(p); \
 				pTemp[0] = (FLMBYTE) (ui64Temp >> 56); \
@@ -1148,7 +1187,7 @@
 				pTemp[7] = (FLMBYTE) (ui64Temp      ); \
 		}
 
-	void intToByte( FLMINT16 uiNum, FLMBYTE *ptr);
+	void intToByte( FLMINT16 uiNum, FLMBYTE * ptr);
 	#define intToByte( n, p) { \
 		FLMUINT16 ui16Temp = (FLMUINT16) (n); FLMBYTE * pTemp = (FLMBYTE *) (p); \
 				pTemp[0] = (FLMBYTE) (ui16Temp >>  8); \
@@ -1166,55 +1205,63 @@
 
 		#if defined( FLM_STRICT_ALIGNMENT)
 
-			#define	FB2UW( bp )			((FLMUINT16) \
-												( \
-												 (((FLMUINT16)(((FLMUINT8 *)(bp))[1]))<<8) | \
-												 (((FLMUINT16)(((FLMUINT8 *)(bp))[0]))   ) \
-												))
+			#define FB2UW( bp) \
+				((FLMUINT16)((((FLMUINT16)(((FLMUINT8 *)(bp))[1])) << 8) | \
+								 (((FLMUINT16)(((FLMUINT8 *)(bp))[0])))))
 	
-			#define	FB2UD( bp )			((FLMUINT32) \
-												( \
-												 (((FLMUINT32)(((FLMUINT8 *)(bp))[3]))<<24) | \
-												 (((FLMUINT32)(((FLMUINT8 *)(bp))[2]))<<16) | \
-												 (((FLMUINT32)(((FLMUINT8 *)(bp))[1]))<< 8) | \
-												 (((FLMUINT32)(((FLMUINT8 *)(bp))[0]))    ) \
-												))
+			#define FB2UD( bp) \
+				((FLMUINT32)((((FLMUINT32)(((FLMUINT8 *)(bp))[3]))<< 24) | \
+								 (((FLMUINT32)(((FLMUINT8 *)(bp))[2]))<< 16) | \
+								 (((FLMUINT32)(((FLMUINT8 *)(bp))[1]))<< 8)  | \
+								 (((FLMUINT32)(((FLMUINT8 *)(bp))[0])))))
 	
-			#define	FB2U64( bp )		((FLMUINT64) \
-												( \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[7]))<<56) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[6]))<<48) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[5]))<<40) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[4]))<<32) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[3]))<<24) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[2]))<<16) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[1]))<< 8) | \
-												 (((FLMUINT64)(((FLMUINT8 *)(bp))[0]))    ) \
-												))
+			#define FB2U64( bp)	\
+				((FLMUINT64)((((FLMUINT64)(((FLMUINT8 *)(bp))[7])) << 56) | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[6])) << 48) | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[5])) << 40) | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[4])) << 32) | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[3])) << 24) | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[2])) << 16) | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[1]))<< 8)   | \
+								 (((FLMUINT64)(((FLMUINT8 *)(bp))[0])))))
 	
-			#define	UW2FBA( uw, bp )	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
-												 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00)>>8))))
+			#define UW2FBA( uw, bp)	\
+				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
+				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00) >> 8))))
 	
-			#define	UD2FBA( udw, bp )	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
-												 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00)>>8)), \
-												 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000)>>16)), \
-												 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000)>>24)))
+			#define UD2FBA( udw, bp) \
+				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
+				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00) >> 8)), \
+				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000) >> 16)), \
+				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000) >> 24)))
 	
-			#define	U642FBA( u64, bp) (((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xff)), \
-												 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00)>>8)), \
-												 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000)>>16)), \
-												 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000)>>24)), \
-												 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000)>>32)), \
-												 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000)>>40)), \
-												 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000)>>48)), \
-												 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000)>>56)))
+			#define U642FBA( u64, bp) \
+				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xff)), \
+				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00) >> 8)), \
+				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000) >> 16)), \
+				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000) >> 24)), \
+				 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000) >> 32)), \
+				 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000) >> 40)), \
+				 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000) >> 48)), \
+				 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000) >> 56)))
 		#else
-			#define	FB2UW( fbp )				(*((FLMUINT16 *)(fbp)))
-			#define	FB2UD( fbp )				(*((FLMUINT32 *)(fbp)))
-			#define	FB2U64( fbp )				(*((FLMUINT64 *)(fbp)))
-			#define	UW2FBA( uw, fbp )			(*((FLMUINT16 *)(fbp)) = ((FLMUINT16) (uw)))
-			#define	UD2FBA( uw, fbp )			(*((FLMUINT32 *)(fbp)) = ((FLMUINT32) (uw)))
-			#define	U642FBA( uw, fbp )		(*((FLMUINT64 *)(fbp)) = ((FLMUINT64) (uw)))
+			#define FB2UW( fbp) \
+				(*((FLMUINT16 *)(fbp)))
+				
+			#define FB2UD( fbp) \
+				(*((FLMUINT32 *)(fbp)))
+				
+			#define FB2U64( fbp) \
+				(*((FLMUINT64 *)(fbp)))
+				
+			#define UW2FBA( uw, fbp) \
+				(*((FLMUINT16 *)(fbp)) = ((FLMUINT16) (uw)))
+				
+			#define UD2FBA( uw, fbp) \
+				(*((FLMUINT32 *)(fbp)) = ((FLMUINT32) (uw)))
+				
+			#define U642FBA( uw, fbp) \
+				(*((FLMUINT64 *)(fbp)) = ((FLMUINT64) (uw)))
 		#endif
 
 	#else
@@ -1223,61 +1270,62 @@
 			#error Wrong endian order selected
 		#endif
 
-		#define	LO(wrd) 				(*((FLMUINT8 *)&wrd + 1))
-		#define	HI(wrd) 				(*(FLMUINT8  *)&wrd)
+		#define LO( wrd) \
+			(*((FLMUINT8 *)&wrd + 1))
+			
+		#define HI( wrd) \
+			(*(FLMUINT8  *)&wrd)
 
-		#define	FB2UW( bp )			((FLMUINT16) \
-											( \
-											 (((FLMUINT16)(((FLMUINT8 *)(bp))[1]))<<8) | \
-											 (((FLMUINT16)(((FLMUINT8 *)(bp))[0]))   ) \
-											))
+		#define FB2UW( bp) \
+			((FLMUINT16)((((FLMUINT16)(((FLMUINT8 *)(bp))[1])) << 8) | \
+							 (((FLMUINT16)(((FLMUINT8 *)(bp))[0])))))
 
-		#define	FB2UD( bp )			((FLMUINT32) \
-											( \
-											 (((FLMUINT32)(((FLMUINT8 *)(bp))[3]))<<24) | \
-											 (((FLMUINT32)(((FLMUINT8 *)(bp))[2]))<<16) | \
-											 (((FLMUINT32)(((FLMUINT8 *)(bp))[1]))<< 8) | \
-											 (((FLMUINT32)(((FLMUINT8 *)(bp))[0]))    ) \
-											))
+		#define FB2UD( bp) \
+			((FLMUINT32)((((FLMUINT32)(((FLMUINT8 *)(bp))[3])) << 24) | \
+							 (((FLMUINT32)(((FLMUINT8 *)(bp))[2])) << 16) | \
+							 (((FLMUINT32)(((FLMUINT8 *)(bp))[1])) << 8)  | \
+							 (((FLMUINT32)(((FLMUINT8 *)(bp))[0])))))
 
-		#define	FB2U64( bp )		((FLMUINT64) \
-											( \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[7]))<<56) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[6]))<<48) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[5]))<<40) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[4]))<<32) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[3]))<<24) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[2]))<<16) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[1]))<< 8) | \
-											 (((FLMUINT64)(((FLMUINT8 *)(bp))[0]))    ) \
-											))
+		#define FB2U64( bp) \
+			((FLMUINT64)((((FLMUINT64)(((FLMUINT8 *)(bp))[7])) << 56) | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[6])) << 48) | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[5])) << 40) | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[4])) << 32) | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[3])) << 24) | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[2])) << 16) | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[1])) << 8)  | \
+							 (((FLMUINT64)(((FLMUINT8 *)(bp))[0])))))
 
-		#define	UW2FBA( uw, bp )	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
-											 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00)>>8))))
+		#define UW2FBA( uw, bp) \
+			(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
+			 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00) >> 8))))
 
-		#define	UD2FBA( udw, bp)	(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
-											 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00)>>8)), \
-											 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000)>>16)), \
-											 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000)>>24)))
+		#define UD2FBA( udw, bp) \
+			(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
+			 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00) >> 8)), \
+			 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000) >> 16)), \
+			 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000) >> 24)))
 
 		#ifdef FLM_UNIX
-			#define	U642FBA( u64, bp) (((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xffULL)), \
-												 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00ULL)>>8)), \
-												 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000ULL)>>16)), \
-												 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000ULL)>>24)), \
-												 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000ULL)>>32)), \
-												 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000ULL)>>40)), \
-												 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000ULL)>>48)), \
-												 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000ULL)>>56)))
+			#define U642FBA( u64, bp) \
+				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xffULL)), \
+				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00ULL) >> 8)), \
+				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000ULL) >> 16)), \
+				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000ULL) >> 24)), \
+				 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000ULL) >> 32)), \
+				 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000ULL) >> 40)), \
+				 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000ULL) >> 48)), \
+				 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000ULL) >> 56)))
 		#else
-			#define	U642FBA( u64, bp) (((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xff)), \
-												 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00)>>8)), \
-												 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000)>>16)), \
-												 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000)>>24)), \
-												 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000)>>32)), \
-												 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000)>>40)), \
-												 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000)>>48)), \
-												 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000)>>56)))
+			#define	U642FBA( u64, bp) \
+				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xff)), \
+				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00) >> 8)), \
+				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000) >> 16)), \
+				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000) >> 24)), \
+				 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000) >> 32)), \
+				 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000) >> 40)), \
+				 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000) >> 48)), \
+				 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000) >> 56)))
 		#endif
 	#endif
 
@@ -1297,40 +1345,40 @@
 	// (See define of F_MAXIMUM_FILE_SIZE in xflaim.h)
 
 	#if defined( FLM_WIN) || defined( FLM_NLM)
-		#define FWSLASH     '/'
-		#define SLASH       '\\'
-		#define SSLASH      "\\"
-		#define COLON       ':'
-		#define PERIOD      '.'
-		#define PARENT_DIR  ".."
-		#define CURRENT_DIR "."
+		#define FWSLASH     		'/'
+		#define SLASH       		'\\'
+		#define SSLASH      		"\\"
+		#define COLON       		':'
+		#define PERIOD      		'.'
+		#define PARENT_DIR  		".."
+		#define CURRENT_DIR 		"."
 	#else
 		#ifndef FWSLASH
-			#define FWSLASH '/'
+			#define FWSLASH 		'/'
 		#endif
 
 		#ifndef SLASH
-			#define SLASH  '/'
+			#define SLASH  		'/'
 		#endif
 
 		#ifndef SSLASH
-			#define SSLASH      "/"
+			#define SSLASH			"/"
 		#endif
 
 		#ifndef COLON
-			#define COLON  ':'
+			#define COLON  		':'
 		#endif
 
 		#ifndef PERIOD
-			#define PERIOD '.'
+			#define PERIOD 		'.'
 		#endif
 
 		#ifndef PARENT_DIR
-			#define PARENT_DIR ".."
+			#define PARENT_DIR 	".."
 		#endif
 
 		#ifndef CURRENT_DIR
-			#define CURRENT_DIR "."
+			#define CURRENT_DIR 	"."
 		#endif
 	#endif
 
@@ -1339,7 +1387,8 @@
 	****************************************************************************/
 
 	#ifdef FLM_NLM
-		#define f_yieldCPU()		pthread_yield()
+		#define f_yieldCPU() \
+			pthread_yield()
 	#else
 		#define f_yieldCPU()
 	#endif
@@ -1348,7 +1397,8 @@
 		FLMUINT	uiMilliseconds);
 
 	#ifdef FLM_WIN
-		#define f_sleep( uiMilliseconds)		Sleep( (DWORD)uiMilliseconds)
+		#define f_sleep( uiMilliseconds) \
+			Sleep( (DWORD)uiMilliseconds)
 	#endif
 
 	/****************************************************************************
@@ -1364,16 +1414,16 @@
 		void randomize( void);
 
 		void randomSetSeed(
-			FLMINT32					i32seed);
+			FLMINT32		i32seed);
 
 		FLMINT32	randomLong( void);
 
 		FLMINT32 randomChoice(
-			FLMINT32 				lo,
-			FLMINT32 				hi);
+			FLMINT32 	lo,
+			FLMINT32 	hi);
 
 		FLMINT randomTruth(
-			FLMINT					iPercentageTrue);
+			FLMINT		iPercentageTrue);
 
 		FLMINT getSeed( void)
 		{
@@ -1400,8 +1450,8 @@
 		FLMBYTE		hundredth;
 	} F_TMSTAMP;
 
-	#define f_timeIsLeapYear(year) ((((year) & 0x03) == 0) \
-										  && (((year) % 100) != 0) || (((year) % 400) == 0))
+	#define f_timeIsLeapYear(year) \
+		((((year) & 0x03) == 0) && (((year) % 100) != 0) || (((year) % 400) == 0))
 
 	void f_timeGetSeconds(
 		FLMUINT	*		puiSeconds);
@@ -2830,8 +2880,7 @@
 	typedef struct
 	{
 		FLMBYTE *	pszDestStr;
-	} 
-	F_SPRINTF_INFO;
+	} F_SPRINTF_INFO;
 
 	// Percent formating prefixes
 
