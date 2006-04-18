@@ -458,6 +458,9 @@
 		typedef sema_t *				F_SEM;
 		typedef F_SEM *				F_SEM_p;
 		#define F_SEM_NULL			NULL
+
+		typedef int						SOCKET;
+		#define INVALID_SOCKET		-1
 	
 	#endif
 
