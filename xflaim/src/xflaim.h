@@ -4265,7 +4265,7 @@
 		 * @brief Close the input stream.
 		 *
 		 */
-		virtual void XFLMAPI close( void) = 0;
+		virtual RCODE XFLMAPI close( void) = 0;
 	};
 
 	/****************************************************************************

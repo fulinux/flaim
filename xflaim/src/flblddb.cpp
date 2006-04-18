@@ -121,7 +121,7 @@ public:
 		F_DbRebuild *		pRebuild,
 		FLMBOOL				bRecovDictionary);
 
-	void XFLMAPI close( void);
+	RCODE XFLMAPI close( void);
 	
 	RCODE XFLMAPI read(
 		void *				pvBuffer,
@@ -1860,7 +1860,7 @@ Exit:
 /***************************************************************************
 Desc:
 *****************************************************************************/
-void F_RebuildNodeIStream::close( void)
+RCODE F_RebuildNodeIStream::close( void)
 {
 	if( m_pucFirstElmBlk)
 	{
@@ -1883,6 +1883,8 @@ void F_RebuildNodeIStream::close( void)
 	
 	f_memset( &m_firstElmState, 0, sizeof( F_SCAN_STATE));
 	f_memset( &m_tmpState, 0, sizeof( F_SCAN_STATE));
+	
+	return( NE_XFLM_OK);
 }
 
 /***************************************************************************

@@ -208,16 +208,19 @@ Exit:
 /****************************************************************************
 Desc:	Closes the input stream and frees any resources
 *****************************************************************************/
-void F_FileIStream::close( void)
+RCODE F_FileIStream::close( void)
 {
+	RCODE		rc = NE_XFLM_OK;
+	
 	if( m_pFileHdl)
 	{
-		m_pFileHdl->Close();
+		rc = m_pFileHdl->Close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}
 
 	m_ui64FileOffset = 0;
+	return( rc);
 }
 
 /****************************************************************************
@@ -409,13 +412,15 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-void XFLMAPI F_BufferedIStream::close( void)
+RCODE XFLMAPI F_BufferedIStream::close( void)
 {
+	RCODE		rc = NE_XFLM_OK;
+	
 	if( m_pIStream)
 	{
 		if( m_pIStream->getRefCount() == 1)
 		{
-			m_pIStream->close();
+			rc = m_pIStream->close();
 		}
 
 		m_pIStream->Release();
@@ -430,6 +435,8 @@ void XFLMAPI F_BufferedIStream::close( void)
 	m_uiBufferSize = 0;
 	m_uiBufferOffset = 0;
 	m_uiBytesAvail = 0;
+	
+	return( rc);
 }
 
 /****************************************************************************
@@ -740,7 +747,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-void XFLMAPI F_MultiFileIStream::close( void)
+RCODE XFLMAPI F_MultiFileIStream::close( void)
 {
 	if( m_pIStream)
 	{
@@ -754,6 +761,8 @@ void XFLMAPI F_MultiFileIStream::close( void)
 	m_szBaseName[ 0] = 0;
 	m_bEndOfStream = FALSE;
 	m_bOpen = FALSE;
+	
+	return( NE_XFLM_OK);
 }
 
 /****************************************************************************
@@ -1289,7 +1298,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-void XFLMAPI F_BufferIStream::close( void)
+RCODE XFLMAPI F_BufferIStream::close( void)
 {
 	if( m_bIsOpen)
 	{
@@ -1309,6 +1318,8 @@ void XFLMAPI F_BufferIStream::close( void)
 		
 		m_bIsOpen = FALSE;
 	}
+	
+	return( NE_XFLM_OK);
 }
 
 /*****************************************************************************
@@ -2207,7 +2218,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-void XFLMAPI F_UncompressingIStream::close( void)
+RCODE XFLMAPI F_UncompressingIStream::close( void)
 {
 	if( m_pIStream)
 	{
@@ -2224,6 +2235,8 @@ void XFLMAPI F_UncompressingIStream::close( void)
 	{
 		f_free( &m_pucDecodeBuffer);
 	}
+	
+	return( NE_XFLM_OK);
 }
 
 /****************************************************************************
@@ -3059,8 +3072,8 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE F_TCPStream::write(
-	FLMBYTE *		pucBuffer,
+RCODE XFLMAPI F_TCPStream::write(
+	const void *	pucBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
 {
@@ -3141,12 +3154,12 @@ Exit:
 }
 
 /********************************************************************
-Desc: Reads data from the connection
+Desc:
 *********************************************************************/
-RCODE F_TCPStream::read(
-	FLMBYTE *		pucBuffer,
-   FLMUINT			uiBytesToWrite,
-	FLMUINT *		puiBytesRead)
+RCODE XFLMAPI F_TCPStream::read(
+	void *		pucBuffer,
+   FLMUINT		uiBytesToWrite,
+	FLMUINT *	puiBytesRead)
 {
 	RCODE			rc = NE_XFLM_OK;
 	FLMINT		iReadCnt = 0;
@@ -3310,62 +3323,12 @@ Exit:
 /********************************************************************
 Desc: Closes any open connections
 *********************************************************************/
-void F_TCPStream::close(
-	FLMBOOL			bForce)
+RCODE XFLMAPI F_TCPStream::close( void)
 {
 	if( m_iSocket == INVALID_SOCKET)
 	{
 		goto Exit;
 	}
-
-#ifdef FLM_NLM
-	F_UNREFERENCED_PARM( bForce);
-#else
-	if( !bForce)
-	{
-		char					ucTmpBuf[ 128];
-		struct timeval		tv;
-		fd_set				fds;
-		fd_set				fds_read;
-		fd_set				fds_err;
-
-		// Close our half of the connection
-
-		shutdown( m_iSocket, 1);
-
-		// Set up to wait for readable data on the socket
-
-		FD_ZERO( &fds);
-#ifdef FLM_WIN
-		#pragma warning( push)
-		#pragma warning( disable : 4127)
-#endif
-		FD_SET( m_iSocket, &fds);
-#ifdef FLM_WIN
-		#pragma warning( pop)
-#endif
-
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-
-		fds_read = fds;
-		fds_err = fds;
-
-		// Wait for data or an error
-
-		while( select( m_iSocket + 1, &fds_read, NULL, &fds_err, &tv) > 0)
-		{
-			if( recv( m_iSocket, ucTmpBuf, sizeof( ucTmpBuf), 0) <= 0)
-			{
-				break;
-			}
-			fds_read = fds;
-			fds_err = fds;
-		}
-
-		shutdown( m_iSocket, 2);
-	}
-#endif
 
 #ifndef FLM_UNIX
 	closesocket( m_iSocket);
@@ -3377,4 +3340,6 @@ Exit:
 
 	m_iSocket = INVALID_SOCKET;
 	m_bConnected = FALSE;
+	
+	return( NE_XFLM_OK);
 }

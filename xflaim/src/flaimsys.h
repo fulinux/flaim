@@ -5763,13 +5763,15 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	void XFLMAPI close( void)
+	RCODE XFLMAPI close( void)
 	{
 		if( m_pIStream)
 		{
 			m_pIStream->Release();
 			m_pIStream = NULL;
 		}
+		
+		return( NE_XFLM_OK);
 	}
 
 	RCODE XFLMAPI read(
@@ -5970,9 +5972,10 @@ public:
 		return( m_uiStreamSize - (m_uiBufferStartOffset + m_uiBufferOffset));
 	}
 
-	FINLINE void XFLMAPI close( void)
+	FINLINE RCODE XFLMAPI close( void)
 	{
 		reset();
+		return( NE_XFLM_OK);
 	}
 
 	RCODE XFLMAPI positionTo(

@@ -2189,7 +2189,7 @@
 			return( m_uiBufferLen - m_uiOffset);
 		}
 
-		void XFLMAPI close( void);
+		RCODE XFLMAPI close( void);
 
 		FINLINE RCODE XFLMAPI positionTo(
 			FLMUINT64		ui64Position)
@@ -2279,7 +2279,7 @@
 		RCODE XFLMAPI open(
 			const char *	pszPath);
 
-		void XFLMAPI close( void);
+		RCODE XFLMAPI close( void);
 
 		RCODE XFLMAPI positionTo(
 			FLMUINT64		ui64Position);
@@ -2328,7 +2328,7 @@
 			FLMUINT				uiBytesToRead,
 			FLMUINT *			puiBytesRead);
 
-		void XFLMAPI close( void);
+		RCODE XFLMAPI close( void);
 
 		FINLINE FLMUINT64 XFLMAPI totalSize( void)
 		{
@@ -2493,7 +2493,7 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 
-		void XFLMAPI close( void);
+		RCODE XFLMAPI close( void);
 
 	private:
 
@@ -2586,13 +2586,15 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 			
-		FINLINE void XFLMAPI close( void)
+		FINLINE RCODE XFLMAPI close( void)
 		{
+			RCODE		rc = NE_XFLM_OK;
+			
 			if( m_pIStream)
 			{
 				if( m_pIStream->getRefCount() == 1)
 				{
-					m_pIStream->close();
+					rc = m_pIStream->close();
 				}
 
 				m_pIStream->Release();
@@ -2601,6 +2603,8 @@
 			
 			m_uiAvailBytes = 0;
 			m_uiBufOffset = 0;
+			
+			return( rc);
 		}
 		
 	private:
@@ -2638,18 +2642,22 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 
-		FINLINE void XFLMAPI close( void)
+		FINLINE RCODE XFLMAPI close( void)
 		{
+			RCODE		rc = NE_XFLM_OK;
+			
 			if( m_pIStream)
 			{
 				if( m_pIStream->getRefCount() == 1)
 				{
-					m_pIStream->close();
+					rc = m_pIStream->close();
 				}
 
 				m_pIStream->Release();
 				m_pIStream = NULL;
 			}
+			
+			return( rc);
 		}
 		
 	private:
@@ -2765,7 +2773,7 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 
-		void XFLMAPI close( void);
+		RCODE XFLMAPI close( void);
 		
 	private:
 
@@ -2803,6 +2811,16 @@
 				FLMUINT			uiConnectTimeout	= 3,
 				FLMUINT			uiDataTimeout = 15);
 	
+			RCODE XFLMAPI read(
+				void *			pvBuffer,
+				FLMUINT			uiBytesToRead,
+				FLMUINT *		puiBytesRead);
+				
+			RCODE XFLMAPI write(
+				const void *	pvBuffer,
+				FLMUINT			uiBytesToWrite,
+				FLMUINT *		puiBytesWritten);
+			
 			FINLINE RCODE socketPeekWrite(
 				FLMINT		iTimeOut)
 			{
@@ -2839,11 +2857,6 @@
 				return( (const char *)m_pszPeerIp);
 			};
 	
-			RCODE read(
-				FLMBYTE *		pucBuffer,
-				FLMUINT			uiCount,
-				FLMUINT *		puiBytesRead);
-	
 			RCODE readNoWait(
 				FLMBYTE *		pucBuffer,
 				FLMUINT			uiCount,
@@ -2854,16 +2867,10 @@
 				FLMUINT			uiCount,
 				FLMUINT *		puiBytesRead);
 	
-			RCODE write(
-				FLMBYTE *		pucBuffer,
-				FLMUINT			uiCount,
-				FLMUINT *		puiBytesWritten);
-	
 			RCODE	setTcpDelay(
 				FLMBOOL			bOn);
-	
-			void close(
-				FLMBOOL			bForce = FALSE);
+				
+			RCODE XFLMAPI close( void);
 	
 	private:
 	

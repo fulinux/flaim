@@ -89,8 +89,9 @@ public:
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE void XFLMAPI close( void)
+	FINLINE RCODE XFLMAPI close( void)
 	{
+		return( NE_XFLM_OK);
 	}
 	
 private:
@@ -2836,13 +2837,15 @@ public:
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE void XFLMAPI close( void)
+	FINLINE RCODE XFLMAPI close( void)
 	{
 		if( m_pIStream)
 		{
 			m_pIStream->Release();
 			m_pIStream = NULL;
 		}
+		
+		return( NE_XFLM_OK);
 	}
 	
 	RCODE open(
@@ -2987,13 +2990,15 @@ public:
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE void XFLMAPI close( void)
+	FINLINE RCODE XFLMAPI close( void)
 	{
 		if( m_pEncoderStream)
 		{
 			m_pEncoderStream->Release();
 			m_pEncoderStream = NULL;
 		}
+		
+		return( NE_XFLM_OK);
 	}
 	
 	RCODE open(
