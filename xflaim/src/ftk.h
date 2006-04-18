@@ -456,6 +456,12 @@
 		typedef F_MUTEX *				F_MUTEX_p;
 		#define F_MUTEX_NULL			NULL
 		
+		void f_mutexLock(
+			F_MUTEX		hMutex);
+	
+		void f_mutexUnlock(
+			F_MUTEX		hMutex);
+		
 		typedef struct
 		{
 			pthread_mutex_t lock;
