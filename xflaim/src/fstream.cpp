@@ -2762,7 +2762,7 @@ RCODE F_TCPStream::openConnection(
 	if( pucHostName && pucHostName[ 0] != '\0')
 	{
 		ulIPAddr = inet_addr( (char *)pucHostName);
-		if( ulIPAddr == (unsigned long)INADDR_NONE)
+		if( ulIPAddr == (unsigned long)(-1))
 		{
 			pHostEntry = gethostbyname( (char *)pucHostName);
 
