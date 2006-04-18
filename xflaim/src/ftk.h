@@ -391,6 +391,14 @@
 		#include <sys/stat.h>
 		#include <sys/time.h>
 
+		#ifdef FLM_AIX
+			#include <sys/atomic_op.h>
+		#endif
+
+		#ifdef FLM_OSX
+			#include <libkern/OSAtomic.h>
+		#endif
+
 		#define f_stricmp(str1,str2) \
 			strcasecmp((char *)(str1),(char *)(str2))
 
