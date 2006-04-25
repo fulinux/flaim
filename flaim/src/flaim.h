@@ -5481,6 +5481,9 @@
 		FLMINT Release( 
 			FLMBOOL			bMutexLocked);
 
+		static void objectAllocInit(
+			void *			pvAlloc);
+			
 		void * parent( 
 			FlmField *		pField);
 

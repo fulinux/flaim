@@ -138,6 +138,9 @@ typedef void (* FLM_RELOC_FUNC)(
 typedef FLMBOOL (* FLM_CAN_RELOC_FUNC)(
 	void *				pvOldAlloc);
 
+typedef void (* FLM_ALLOC_INIT_FUNC)(
+	void *				pvAlloc);
+	
 /****************************************************************************
 Desc:	Class to provide an efficient means of providing many allocations
 		of a fixed size.
@@ -199,6 +202,31 @@ public:
 		return( pvCell);
 	}
 
+	FINLINE void * allocCell(
+		FLM_ALLOC_INIT_FUNC	fnAllocInit)
+	{
+		void *	pvCell;
+
+		if( m_phMutex)
+		{
+			f_mutexLock( *m_phMutex);
+		}
+
+		pvCell = getCell();
+		
+		if( pvCell && fnAllocInit)
+		{
+			fnAllocInit( pvCell);
+		}
+	
+		if( m_phMutex)
+		{
+			f_mutexUnlock( *m_phMutex);
+		}
+	
+		return( pvCell);
+	}
+	
 	FINLINE void freeCell( 
 		void *		ptr)
 	{

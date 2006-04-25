@@ -86,6 +86,7 @@ FlmRecord::~FlmRecord()
 		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf( 
 			m_uiBufferSize, &m_pucBuffer);
 	}
+	
 	if( m_pucFieldIdTable)
 	{
 		flmAssert( *((FlmRecord **)m_pucFieldIdTable) == this);
@@ -4631,6 +4632,21 @@ void * FlmRecord::locateFieldByPosition(
 	return (getFieldVoid( pField));
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FlmRecord::objectAllocInit(
+	void *		pvAlloc)
+{
+	// Need to make sure that m_refCnt and m_uiFlags are initialized to zero
+	// prior to unlocking the mutex.  This is so the FLAIM allocator 
+	// doesn't see garbage values that may cause it to relocate the object 
+	// before the constructor has been called.
+	
+	((FlmRecord *)pvAlloc)->m_uiFlags = 0;
+	((FlmRecord *)pvAlloc)->m_refCnt = 0;
+}
+
 #undef new
 #undef delete
 
@@ -4645,7 +4661,7 @@ void * FlmRecord::operator new(
 {
 	F_UNREFERENCED_PARM( uiSize);
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
-	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell());
+	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( objectAllocInit));
 }
 
 /****************************************************************************
@@ -4673,7 +4689,7 @@ void * FlmRecord::operator new(
 #endif
 {
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
-	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell());
+	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( objectAllocInit));
 }
 #endif
 
