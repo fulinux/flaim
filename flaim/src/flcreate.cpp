@@ -425,7 +425,7 @@ FSTATIC RCODE flmInitNewFile(
 	// The following code starts an update transaction on the new DB so
 	// we can get it built.
 
-	if (RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 0)))
+	if (RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}

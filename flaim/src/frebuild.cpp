@@ -1927,7 +1927,7 @@ Do_Dict_Recs:
 			{
 				// Start an update transaction
 
-				if( RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 5)))
+				if( RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 				{
 					goto Exit;
 				}
@@ -2061,7 +2061,7 @@ Exit:
 	bldFreeRecovDictInfo( pDictToDo);
 	if ((RC_OK( rc)) && (!(*pbStartedTransRV)))
 	{
-		if (RC_OK( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 5)))
+		if (RC_OK( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			*pbStartedTransRV = TRUE;
 		}

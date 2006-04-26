@@ -501,7 +501,6 @@ Begin_Check:
 	pDbInfo->pLogicalFiles = NULL;
 	pDbInfo->pProgress->pLfStats = NULL;
 	pDbInfo->uiFlags = uiCheckFlags;
-	pDbInfo->uiMaxLockWait = 15;
 	pDbInfo->bStartedUpdateTrans = FALSE;
 	f_memset( &pDbInfo->pProgress->AvailBlocks, 0, sizeof(BLOCK_INFO));
 	f_memset( &pDbInfo->pProgress->LFHBlocks, 0, sizeof(BLOCK_INFO));
@@ -2520,7 +2519,7 @@ FSTATIC RCODE chkStartUpdate(
 		// Try to start an update transaction
 
 		if (RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS,
-					  pIxChkInfo->pDbInfo->uiMaxLockWait, FLM_DONT_POISON_CACHE)))
+					  FLM_NO_TIMEOUT, FLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
 		}

@@ -2200,7 +2200,6 @@ typedef struct DB_INFO
 	FLMBOOL						bDbInitialized;
 	F_SuperFileHdl *			pSFileHdl;
 	FLMUINT						uiFlags;
-	FLMUINT						uiMaxLockWait;
 	FLMBOOL						bStartedUpdateTrans;
 } DB_INFO;
 

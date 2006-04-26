@@ -6837,7 +6837,7 @@ RCODE F_Rfl::readOp(
 				// to know whether or not a password is needed to open the
 				// database.
 
-				if (RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 0, 0)))
+				if (RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT, 0)))
 				{
 					goto Exit;
 				}

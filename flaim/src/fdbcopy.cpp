@@ -273,7 +273,7 @@ FSTATIC RCODE flmCopyDb(
 		{
 			pFileLockObj = pFile->pFileLockObj;
 			pFileLockObj->AddRef();
-			if (RC_BAD( rc = pFileLockObj->Lock( TRUE, NULL, FALSE, TRUE, 15, 0)))
+			if (RC_BAD( rc = pFileLockObj->Lock( TRUE, NULL, FALSE, TRUE, FLM_NO_TIMEOUT, 0)))
 			{
 				goto Exit;
 			}

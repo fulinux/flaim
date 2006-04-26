@@ -24,8 +24,6 @@
 
 #include "flaimsys.h"
 
-#define SWEEPER_LOCK_WAIT			60
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -923,7 +921,7 @@ RCODE DbDict::Finish()				// Finish will make any final changes to the
 			/* Delete the 'purged' item */
 
 			if( RC_BAD( rc = FlmRecordDelete( (HFDB)m_pDb, FLM_DICT_CONTAINER, 
-				uiItem, SWEEPER_LOCK_WAIT | FLM_AUTO_TRANS)))
+				uiItem, FLM_NO_TIMEOUT | FLM_AUTO_TRANS)))
 			{
 				goto Exit;
 			}
@@ -963,7 +961,7 @@ RCODE flmChangeItemState(
 	if( pDb->uiTransType == FLM_NO_TRANS)
 	{
 		if( RC_BAD( rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 
-			SWEEPER_LOCK_WAIT, FLM_DONT_POISON_CACHE)))
+			FLM_NO_TIMEOUT, FLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
 		}

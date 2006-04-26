@@ -86,7 +86,7 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 
 	if( (pDb->uiFlags & FDB_HAS_FILE_LOCK) == 0)
 	{
-		if( RC_BAD( rc = FlmDbLock( hDb, FLM_LOCK_EXCLUSIVE, 0, 15)))
+		if( RC_BAD( rc = FlmDbLock( hDb, FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
@@ -166,7 +166,7 @@ Transmission_Error:
 	// Start a database transaction
 
 	if (RC_BAD(rc = flmBeginDbTrans( pDb, FLM_UPDATE_TRANS, 
-		15, FLM_DONT_POISON_CACHE)))
+		FLM_NO_TIMEOUT, FLM_DONT_POISON_CACHE)))
 	{
 		goto Exit;
 	}

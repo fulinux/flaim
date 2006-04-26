@@ -67,7 +67,7 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 
 	if( (pDb->uiFlags & FDB_HAS_FILE_LOCK) == 0)
 	{
-		if( RC_BAD( rc = FlmDbLock( hDb, FLM_LOCK_EXCLUSIVE, 0, 15)))
+		if( RC_BAD( rc = FlmDbLock( hDb, FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
@@ -713,7 +713,7 @@ FLMEXP RCODE FLMAPI FlmDbWrapKey(
 
 	if( (pDb->uiFlags & FDB_HAS_FILE_LOCK) == 0)
 	{
-		if( RC_BAD( rc = FlmDbLock( hDb, FLM_LOCK_EXCLUSIVE, 0, 15)))
+		if( RC_BAD( rc = FlmDbLock( hDb, FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
