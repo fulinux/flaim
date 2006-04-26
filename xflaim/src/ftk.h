@@ -1503,15 +1503,6 @@
 	}
 
 	/**********************************************************************
-	Desc: Atomic Increment, Decrement, Exchange
-	Note:	Some of this code is derived from the Ximian source code contained
-			in that Mono project's atomic.h file. 
-	**********************************************************************/
-	#ifndef FLM_HAVE_ATOMICS
-		#define FLM_HAVE_ATOMICS
-	#endif
-	
-	/**********************************************************************
 	Desc:
 	**********************************************************************/
 	#if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
@@ -1544,7 +1535,25 @@
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
-	FINLINE FLMINT32 _flmAtomicInc(
+	#if defined( FLM_UNIX)
+	extern "C" FLMINT32 posix_atomic_add_32(
+		volatile FLMINT32 *		piTarget,
+		FLMINT32						iDelta);
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	#if defined( FLM_UNIX)
+	extern "C" FLMINT32 posix_atomic_xchg_32(
+		volatile FLMINT32 *		piTarget,
+		FLMINT32						iNewValue);
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	FINLINE FLMINT32 flmAtomicInc(
 		FLMATOMIC *			piTarget)
 	{
 		#if defined( FLM_NLM)
@@ -1579,22 +1588,17 @@
 		
 			return( i32Tmp + 1);
 		}
+		#elif defined( FLM_UNIX)
+			return( posix_atomic_add_32( piTarget, 1));
 		#else
-			#ifdef FLM_HAVE_ATOMICS
-				#undef FLM_HAVE_ATOMICS
-			#endif
-	
-			F_UNREFERENCED_PARM( piTarget);	
-	
-			flmAssert( 0);
-			return( 0);
+			#error Atomic operations aren't supported
 		#endif
 	}
 	
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
-	FINLINE FLMINT32 _flmAtomicDec(
+	FINLINE FLMINT32 flmAtomicDec(
 		FLMATOMIC *			piTarget)
 	{
 		#if defined( FLM_NLM)
@@ -1629,22 +1633,17 @@
 		
 			return( i32Tmp - 1);
 		}
+		#elif defined( FLM_UNIX)
+			return( posix_atomic_add_32( piTarget, -1));
 		#else
-			#ifdef FLM_HAVE_ATOMICS
-				#undef FLM_HAVE_ATOMICS
-			#endif
-	
-			F_UNREFERENCED_PARM( piTarget);
-				
-			flmAssert( 0);
-			return( 0);
+			#error Atomic operations aren't supported
 		#endif
 	}
 	
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
-	FINLINE FLMINT32 _flmAtomicExchange(
+	FINLINE FLMINT32 flmAtomicExchange(
 		FLMATOMIC *			piTarget,
 		FLMINT32				i32NewVal)
 	{
@@ -1708,135 +1707,13 @@
 		
 			return( i32OldVal);
 		}
+		#elif defined( FLM_UNIX)
+			return( posix_atomic_xchg_32( piTarget, i32NewVal));
 		#else
-			#ifdef FLM_HAVE_ATOMICS
-				#undef FLM_HAVE_ATOMICS
-			#endif
-	
-			F_UNREFERENCED_PARM( piTarget);
-			F_UNREFERENCED_PARM( i32NewVal);
-	
-			flmAssert( 0);
-			return( 0);
+			#error Atomic operations aren't supported
 		#endif
 	}
 	
-	/**********************************************************************
-	Desc:
-	**********************************************************************/
-	FINLINE FLMINT32 flmAtomicInc(
-		FLMATOMIC *		piTarget,
-		F_MUTEX			hMutex = F_MUTEX_NULL,
-		FLMBOOL			bMutexAlreadyLocked = FALSE)
-	{
-		#ifdef FLM_HAVE_ATOMICS
-		{
-			F_UNREFERENCED_PARM( bMutexAlreadyLocked);
-			F_UNREFERENCED_PARM( hMutex);
-			
-			return( _flmAtomicInc( piTarget));
-		}
-		#else
-		{
-			FLMINT32		i32NewVal;
-			
-			flmAssert( hMutex != F_MUTEX_NULL);
-	
-			if( !bMutexAlreadyLocked)
-			{
-				f_mutexLock( hMutex);
-			}
-			
-			i32NewVal = (FLMINT32)(++(*piTarget));
-			
-			if( !bMutexAlreadyLocked)
-			{
-				f_mutexUnlock( hMutex);
-			}
-			
-			return( i32NewVal);
-		}
-		#endif
-	}
-	
-	/**********************************************************************
-	Desc:
-	**********************************************************************/
-	FINLINE FLMINT32 flmAtomicDec(
-		FLMATOMIC *		piTarget,
-		F_MUTEX			hMutex = F_MUTEX_NULL,
-		FLMBOOL			bMutexAlreadyLocked = FALSE)
-	{
-		#ifdef FLM_HAVE_ATOMICS
-		{
-			F_UNREFERENCED_PARM( bMutexAlreadyLocked);
-			F_UNREFERENCED_PARM( hMutex);
-			
-			return( _flmAtomicDec( piTarget));
-		}
-		#else
-		{
-			FLMINT32		i32NewVal;
-			
-			flmAssert( hMutex != F_MUTEX_NULL);
-			
-			if( !bMutexAlreadyLocked)
-			{
-				f_mutexLock( hMutex);
-			}
-			
-			i32NewVal = (FLMINT32)(--(*piTarget));
-			
-			if( !bMutexAlreadyLocked)
-			{
-				f_mutexUnlock( hMutex);
-			}
-			
-			return( i32NewVal);
-		}
-		#endif
-	}
-	
-	/**********************************************************************
-	Desc:
-	**********************************************************************/
-	FINLINE FLMINT32 flmAtomicExchange(
-		FLMATOMIC *		piTarget,
-		FLMINT32			i32NewVal,
-		F_MUTEX			hMutex = F_MUTEX_NULL,
-		FLMBOOL			bMutexAlreadyLocked = FALSE)
-	{
-		#ifdef FLM_HAVE_ATOMICS
-		{
-			F_UNREFERENCED_PARM( bMutexAlreadyLocked);
-			F_UNREFERENCED_PARM( hMutex);
-			
-			return( _flmAtomicExchange( piTarget, i32NewVal));
-		}
-		#else
-		{
-			FLMINT32		i32OldVal;
-			
-			flmAssert( hMutex != F_MUTEX_NULL);
-			
-			if( !bMutexAlreadyLocked)
-			{
-				f_mutexLock( hMutex);
-			}
-			
-			i32OldVal = (FLMINT32)*piTarget;
-			*piTarget = i32NewVal;
-			
-			if( !bMutexAlreadyLocked)
-			{
-				f_mutexUnlock( hMutex);
-			}
-			
-			return( i32OldVal);
-		}
-		#endif
-	}
-
 	/****************************************************************************
 	Desc: Mutex and semaphore routines
 	****************************************************************************/

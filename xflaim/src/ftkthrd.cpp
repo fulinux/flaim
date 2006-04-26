@@ -43,19 +43,17 @@
 /****************************************************************************
 Desc:	Add a Reference to this object.
 ****************************************************************************/
-FLMINT F_Thread::AddRef(
-	FLMBOOL		bMutexLocked)
+FLMINT F_Thread::AddRef( void)
 {
-	return( flmAtomicInc( &m_refCnt, m_hMutex, bMutexLocked));
+	return( flmAtomicInc( &m_refCnt));
 }
 
 /****************************************************************************
 Desc: Removes a reference to this object.
 ****************************************************************************/
-FLMINT F_Thread::Release(
-	FLMBOOL		bMutexLocked)
+FLMINT F_Thread::Release( void)
 {
-	FLMINT		iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, bMutexLocked);
+	FLMINT		iRefCnt = flmAtomicDec( &m_refCnt);
 	
 	if( !iRefCnt)
 	{
@@ -786,7 +784,7 @@ RCODE F_ThreadMgr::findThread(
 			{
 				// Found a match.
 
-				pCurThread->AddRef( TRUE);
+				pCurThread->AddRef();
 				*ppThread = pCurThread;
 				f_mutexUnlock( pCurThread->m_hMutex);
 				goto Exit;

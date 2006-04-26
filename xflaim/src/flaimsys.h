@@ -568,7 +568,6 @@ private:
 	FLMUNICODE **				m_ppuzNamespaces;
 	FLMUINT						m_uiNamespaceTblSize;
 	FLMUINT						m_uiNumNamespaces;
-	F_MUTEX						m_hRefMutex;
 	
 friend class F_Db;
 };

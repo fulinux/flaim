@@ -59,6 +59,8 @@
 	#include <sys/mount.h>
 #endif
 
+pthread_mutex_t gv_atomicMutex = PTHREAD_MUTEX_INITIALIZER;
+
 /******************************************************************************
 Desc:
 *******************************************************************************/
@@ -1607,6 +1609,40 @@ static void sparc_asm_code( void)
 	asm( "nop");
 }
 #endif
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+extern "C" FLMINT32 posix_atomic_add_32(
+	volatile FLMINT32 *		piTarget,
+	FLMINT32						iDelta)
+{
+	FLMINT32		iNewVal;
+	
+	pthread_mutex_lock( &gv_atomicMutex);
+	(*piTarget) += iDelta;
+	iNewVal = *piTarget;
+	pthread_mutex_unlock( &gv_atomicMutex);
+	
+	return( iNewVal);
+}
+	
+/**********************************************************************
+Desc:
+**********************************************************************/
+extern "C" FLMINT32 posix_atomic_xchg_32(
+	volatile FLMINT32 *		piTarget,
+	FLMINT32						iNewValue)
+{
+	FLMINT32		iOldVal;
+	
+	pthread_mutex_lock( &gv_atomicMutex);
+	iOldVal = *piTarget;
+	*piTarget = iNewValue;
+	pthread_mutex_unlock( &gv_atomicMutex);
+	
+	return( iOldVal);
+}
 
 #endif // FLM_UNIX
 

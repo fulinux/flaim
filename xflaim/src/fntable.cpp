@@ -168,7 +168,6 @@ F_NameTable::F_NameTable()
 	m_ppuzNamespaces = NULL;
 	m_uiNamespaceTblSize = 0;
 	m_uiNumNamespaces = 0;
-	m_hRefMutex = F_MUTEX_NULL;
 }
 
 /****************************************************************************
@@ -177,11 +176,6 @@ Desc:	Destructor
 F_NameTable::~F_NameTable()
 {
 	clearTable( 0);
-	
-	if( m_hRefMutex)
-	{
-		f_mutexDestroy( &m_hRefMutex);
-	}
 }
 
 /****************************************************************************
@@ -190,20 +184,7 @@ Desc:	Setup name table.  This routine should be called immediately after
 ****************************************************************************/
 RCODE F_NameTable::setupNameTable( void)
 {
-#ifndef FLM_HAVE_ATOMICS	
-	RCODE		rc = NE_XFLM_OK;
-
-	if( RC_BAD( rc = f_mutexCreate( &m_hRefMutex)))
-	{
-		goto Exit;
-	}
-	
-Exit:
-	
-	return( rc);
-#else
 	return( NE_XFLM_OK);
-#endif
 }
 
 /****************************************************************************
@@ -2412,7 +2393,7 @@ Desc:	Increment use count on this object.
 ****************************************************************************/
 FLMINT XFLMAPI F_NameTable::AddRef( void)
 {
-	return( flmAtomicInc( &m_refCnt, m_hRefMutex, FALSE));
+	return( flmAtomicInc( &m_refCnt));
 }
 
 /****************************************************************************
@@ -2422,7 +2403,7 @@ FLMINT XFLMAPI F_NameTable::Release( void)
 {
 	FLMINT		iRefCnt;
 
-	if ((iRefCnt = flmAtomicDec( &m_refCnt, m_hRefMutex, FALSE)) == 0)
+	if ((iRefCnt = flmAtomicDec( &m_refCnt)) == 0)
 	{
 		delete this;
 	}

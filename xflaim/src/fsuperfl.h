@@ -88,16 +88,14 @@ public:
 		FLMUINT				uiFileNumber,
 		FLMUINT *			puiFileId);
 
-	FINLINE FLMINT XFLMAPI AddRef(
-		FLMBOOL			bMutexLocked)
+	FINLINE FLMINT XFLMAPI AddRef( void)
 	{
-		return( flmAtomicInc( &m_refCnt, m_hMutex, bMutexLocked));
+		return( flmAtomicInc( &m_refCnt));
 	}
 
-	FINLINE FLMINT XFLMAPI Release(
-		FLMBOOL			bMutexLocked)
+	FINLINE FLMINT XFLMAPI Release( void)
 	{
-		FLMINT	iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, bMutexLocked);
+		FLMINT	iRefCnt = flmAtomicDec( &m_refCnt);
 
 		if( !iRefCnt)
 		{
@@ -109,16 +107,6 @@ public:
 
 private:
 
-	FINLINE FLMINT XFLMAPI AddRef( void)
-	{
-		return( AddRef( FALSE));
-	}
-			
-	FINLINE FLMINT XFLMAPI Release( void)
-	{
-		return( Release( FALSE));
-	}
-	
 	F_MUTEX				m_hMutex;
 	FLMUINT				m_uiFileIdTblSize;
 	FLMUINT *			m_puiFileIdTbl;

@@ -218,25 +218,9 @@ public:
 		cleanupThread();
 	}
 
-	// Reference counting methods.
+	FLMINT XFLMAPI AddRef( void);
 
-	FLMINT AddRef(
-		FLMBOOL bMutexLocked);
-
-	FLMINT Release(
-		FLMBOOL bMutexLocked);
-
-	// Override the AddRef and Release from XF_RefCount
-
-	FINLINE FLMINT XFLMAPI AddRef( void)
-	{
-		return( AddRef( FALSE));
-	}
-
-	FINLINE FLMINT XFLMAPI Release( void)
-	{
-		return( Release( FALSE));
-	}
+	FLMINT XFLMAPI Release( void);
 
 	// Other methods
 

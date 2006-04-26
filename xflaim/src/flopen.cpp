@@ -1255,7 +1255,7 @@ F_Database::~F_Database()
 	{
 		FLMUINT		uiRefCnt;
 
-		uiRefCnt = m_pFileIdList->Release( FALSE);
+		uiRefCnt = m_pFileIdList->Release();
 		flmAssert( !uiRefCnt);
 		m_pFileIdList = NULL;
 	}
@@ -1270,7 +1270,7 @@ F_Database::~F_Database()
 
 	if (m_pDatabaseLockObj)
 	{
-		m_pDatabaseLockObj->Release( FALSE);
+		m_pDatabaseLockObj->Release();
 		m_pDatabaseLockObj = NULL;
 	}
 
