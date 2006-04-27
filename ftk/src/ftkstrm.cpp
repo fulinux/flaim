@@ -616,7 +616,7 @@ RCODE FLMAPI F_BufferedIStream::read(
 				}
 			}
 
-			flmAssert( m_uiBytesAvail <= m_uiBufferSize);
+			f_assert( m_uiBytesAvail <= m_uiBufferSize);
 			m_uiBufferOffset = 0;
 		}
 		else if( uiBytesToRead < uiMaxSize)
@@ -1485,7 +1485,7 @@ RCODE FLMAPI F_BufferIStream::open(
 {
 	RCODE			rc = NE_FLM_OK;
 	
-	flmAssert( !m_pucBuffer);
+	f_assert( !m_pucBuffer);
 	
 	if( !pucBuffer && uiLength)
 	{
@@ -1554,7 +1554,7 @@ RCODE FLMAPI F_BufferIStream::read(
 	FLMBYTE *	pucBuffer = (FLMBYTE *)pvBuffer;
 	FLMUINT		uiBytesRead;
 	
-	flmAssert( m_bIsOpen);
+	f_assert( m_bIsOpen);
 
 	uiBytesRead = uiBytesToRead < m_uiBufferLen - m_uiOffset
 					  ? uiBytesToRead
@@ -2318,8 +2318,8 @@ RCODE F_UncompressingIStream::decodeToBuffer(
 
 	while( ui16Code > 0x00FF)
 	{
-		flmAssert( m_uiDecodeBufferOffset < m_uiDecodeBufferSize);
-		flmAssert( ui16Code < m_ui16FreeCode);
+		f_assert( m_uiDecodeBufferOffset < m_uiDecodeBufferSize);
+		f_assert( ui16Code < m_ui16FreeCode);
 
 		m_pucDecodeBuffer[ m_uiDecodeBufferOffset++] = m_pDict[ ui16Code].ucChar;
 		ui16Code = m_pDict[ ui16Code].ui16ParentCode;
@@ -2385,7 +2385,7 @@ RCODE FLMAPI F_UncompressingIStream::read(
 		}
 		else if( ui16Code == LZW_STOP_COMPRESSION)
 		{
-			flmAssert( !m_bStopCompression);
+			f_assert( !m_bStopCompression);
 			m_bStopCompression = TRUE;
 			continue;
 		}
@@ -2398,7 +2398,7 @@ RCODE FLMAPI F_UncompressingIStream::read(
 				// condition.  The code below builds the correct
 				// sequence of bytes.
 
-				flmAssert( m_ui16LastCode != LZW_END_OF_DATA);
+				f_assert( m_ui16LastCode != LZW_END_OF_DATA);
 
 				uiSavePos = m_uiDecodeBufferOffset++;
 				if( RC_BAD( rc = decodeToBuffer( m_ui16LastCode)))
@@ -2411,7 +2411,7 @@ RCODE FLMAPI F_UncompressingIStream::read(
 			}
 			else if( m_ui16LastCode == LZW_END_OF_DATA)
 			{
-				flmAssert( ui16Code <= 0x00FF);
+				f_assert( ui16Code <= 0x00FF);
 				*pucBuffer++ = (FLMBYTE)ui16Code;
 				uiBytesToRead--;
 				m_ui16LastCode = ui16Code;
@@ -2427,7 +2427,7 @@ RCODE FLMAPI F_UncompressingIStream::read(
 
 			if( m_ui16FreeCode < LZW_MAX_CODE)
 			{
-				flmAssert( m_uiDecodeBufferOffset);
+				f_assert( m_uiDecodeBufferOffset);
 
 				m_pDict[ m_ui16FreeCode].ui16ParentCode = m_ui16LastCode;
 				m_pDict[ m_ui16FreeCode].ucChar = 
@@ -2532,7 +2532,7 @@ RCODE F_TCPStream::openConnection(
 	unsigned long			ulIPAddr;
 	int						iTmp;
 
-	flmAssert( !m_bConnected);
+	f_assert( !m_bConnected);
 	m_iSocket = INVALID_SOCKET;
 
 	if( pucHostName && pucHostName[ 0] != '\0')
@@ -2863,7 +2863,7 @@ RCODE FLMAPI F_TCPStream::write(
 		goto Exit;
 	}
 
-	flmAssert( pucBuffer && uiBytesToWrite);
+	f_assert( pucBuffer && uiBytesToWrite);
 
 Retry:
 
@@ -2940,7 +2940,7 @@ RCODE FLMAPI F_TCPStream::read(
 	RCODE			rc = NE_FLM_OK;
 	FLMINT		iReadCnt = 0;
 
-	flmAssert( m_bConnected && pucBuffer && uiBytesToWrite);
+	f_assert( m_bConnected && pucBuffer && uiBytesToWrite);
 
 	if( RC_OK( rc = socketPeek( m_uiIOTimeout, TRUE)))
 	{
@@ -3000,7 +3000,7 @@ RCODE F_TCPStream::readNoWait(
 	RCODE			rc = NE_FLM_OK;
 	FLMINT		iReadCnt = 0;
 
-	flmAssert( m_bConnected && pvBuffer && uiBytesToRead);
+	f_assert( m_bConnected && pvBuffer && uiBytesToRead);
 
 	if( puiBytesRead)
 	{
@@ -3072,7 +3072,7 @@ RCODE F_TCPStream::readAll(
 	FLMUINT		uiPartialCnt;
 	FLMBYTE *	pucBuffer = (FLMBYTE *)pvBuffer;
 
-	flmAssert( m_bConnected && pvBuffer && uiBytesToRead);
+	f_assert( m_bConnected && pvBuffer && uiBytesToRead);
 
 	uiToRead = uiBytesToRead;
 	while( uiToRead)

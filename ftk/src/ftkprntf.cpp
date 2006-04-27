@@ -142,7 +142,7 @@ NoMoreFlags:
 			}
 			else
 			{
-				flmAssert( 0);
+				f_assert( 0);
 			}
 			break;
 
@@ -619,7 +619,7 @@ void f_sprintfNumberFormatter(
 		}
 
 		default:
-			flmAssert( 0);
+			f_assert( 0);
 			break;
 	}
 
@@ -728,7 +728,7 @@ void f_sprintfNotHandledFormatter(
 	F_SPRINTF_INFO *	pInfo,
 	f_va_list *			) // args)
 {
-	flmAssert( 0);
+	f_assert( 0);
 	*pInfo->pszDestStr++ = '?';
 	*pInfo->pszDestStr = 0;
 }

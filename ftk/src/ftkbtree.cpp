@@ -381,7 +381,7 @@ public:
 	FINLINE void btSetSearchLevel(
 		FLMUINT						uiSearchLevel)
 	{
-		flmAssert( uiSearchLevel <= BH_MAX_LEVELS);
+		f_assert( uiSearchLevel <= BH_MAX_LEVELS);
 
 		btResetBtree();
 
@@ -618,7 +618,7 @@ private:
 		FLMUINT					uiTargetKeyLen,
 		FLMINT *					piCompare)
 	{
-		flmAssert( uiBlockKeyLen);
+		f_assert( uiBlockKeyLen);
 
 		if( !m_pCompare && uiBlockKeyLen == uiTargetKeyLen)
 		{
@@ -1425,7 +1425,7 @@ RCODE F_Btree::btOpen(
 		goto Exit;
 	}
 
-	flmAssert( !m_pCompare);
+	f_assert( !m_pCompare);
 	if ((m_pCompare = pCompare) != NULL)
 	{
 		m_pCompare->AddRef();
@@ -1460,7 +1460,7 @@ void F_Btree::btClose()
 
 	if( m_pBlock)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 		m_pBlock->Release();
 		m_pBlock = NULL;
 	}
@@ -1498,7 +1498,7 @@ RCODE F_Btree::btDeleteTree(
 	FLMUINT		puiBlkAddrs[ BH_MAX_LEVELS];
 	FLMUINT		uiLoop;
 
-	flmAssert( m_bOpened);
+	f_assert( m_bOpened);
 
 	// Fill up uiBlkAddrs and calculate the number of levels.
 
@@ -1673,7 +1673,7 @@ RCODE F_Btree::btGetBlockChains(
 	FLMBYTE *			pucBlk;
 	FLMBYTE *			pucEntry;
 
-	flmAssert( m_bOpened);
+	f_assert( m_bOpened);
 
 	// Fill puiBlockAddrs and calculate the number of levels.
 	// NOTE: Normally, level 0 is the leaf level.  In this function,
@@ -1748,7 +1748,7 @@ RCODE F_Btree::btInsertEntry(
 		goto Exit;
 	}
 
-	flmAssert( m_uiSearchLevel >= BH_MAX_LEVELS);
+	f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
 
 	if( !uiKeyLen)
 	{
@@ -1795,7 +1795,7 @@ RCODE F_Btree::btInsertEntry(
 
 		// Get one empty block to begin with.
 
-		flmAssert( m_pBlock == NULL);
+		f_assert( m_pBlock == NULL);
 		if( RC_BAD( rc = m_pBlockMgr->createBlock( &m_pBlock)))
 		{
 			goto Exit;
@@ -1962,7 +1962,7 @@ RCODE F_Btree::btReplaceEntry(
 		goto Exit;
 	}
 
-	flmAssert( m_uiSearchLevel >= BH_MAX_LEVELS);
+	f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
 
 	if (!uiKeyLen)
 	{
@@ -2008,7 +2008,7 @@ RCODE F_Btree::btReplaceEntry(
 		// data only blocks.
 		
 		m_bDataOnlyBlock = TRUE;
-		flmAssert( m_pBlock == NULL);
+		f_assert( m_pBlock == NULL);
 		
 		if( m_bOrigInDOBlocks)
 		{
@@ -2183,7 +2183,7 @@ RCODE F_Btree::btLocateEntry(
 	FLMBYTE *		pucEntry = NULL;
 	F_BLK_HDR *		pBlkHdr = NULL;
 
-	flmAssert( pucKey && uiKeyBufSize && puiKeyLen);
+	f_assert( pucKey && uiKeyBufSize && puiKeyLen);
 
 	if (!m_bOpened || m_bSetupForWrite || m_bSetupForReplace)
 	{
@@ -2325,7 +2325,7 @@ RCODE F_Btree::btGetEntry(
 
 			// Key lengths should be the same
 			
-			flmAssert( uiKeyLen == (FLMUINT)ui16KeyLen);
+			f_assert( uiKeyLen == (FLMUINT)ui16KeyLen);
 
 			m_pucDataPtr += (ui16KeyLen + 2);
 		}
@@ -2677,7 +2677,7 @@ RCODE F_Btree::btPositionTo(
 	RCODE				rc = NE_FLM_OK;
 	FLMBYTE *		pucEntry = NULL;
 
-	flmAssert( pucKey && uiKeyBufSize && puiKeyLen);
+	f_assert( pucKey && uiKeyBufSize && puiKeyLen);
 
 	m_bSetupForRead = FALSE;
 
@@ -2763,8 +2763,8 @@ RCODE F_Btree::btGetPosition(
 	{
 		// Get the block at this level.
 		
-		flmAssert( m_pStack->ui32BlkAddr);
-		flmAssert( m_pStack->pBlock == NULL);
+		f_assert( m_pStack->ui32BlkAddr);
+		f_assert( m_pStack->pBlock == NULL);
 
 		if( RC_BAD( rc = m_pBlockMgr->getBlock( m_pStack->ui32BlkAddr, 
 			&m_pStack->pBlock)))
@@ -3234,7 +3234,7 @@ RCODE F_Btree::splitBlock(
 			goto Exit;
 		}
 
-		flmAssert( bLastEntry);
+		f_assert( bLastEntry);
 
 		if( m_pStack->uiLevel == 0)
 		{
@@ -3336,7 +3336,7 @@ MoveToPrev:
 				}
 			}
 
-			flmAssert( pNewBlock);
+			f_assert( pNewBlock);
 
 			m_pStack->pBlock->Release();
 			m_pStack->pBlock = pNewBlock;
@@ -3393,7 +3393,7 @@ RCODE F_Btree::createNewLevel( void)
 
 	// Assert that we are looking at the root block!
 	
-	flmAssert( isRootBlk( m_pStack->pBlkHdr));
+	f_assert( isRootBlk( m_pStack->pBlkHdr));
 
 	// Check the root level
 	
@@ -3641,7 +3641,7 @@ RCODE F_Btree::updateParentCounts(
 	IF_Block *			pParentBlock;
 	FLMBYTE *			pBlk = pChildBlock->getBlockPtr(); 
 
-	flmAssert( getBlkType( pBlk) == BT_NON_LEAF_COUNTS);
+	f_assert( getBlkType( pBlk) == BT_NON_LEAF_COUNTS);
 	uiCounts = countKeys( pBlk);
 
 	if( RC_BAD( rc = m_pBlockMgr->prepareForUpdate( ppParentBlock)))
@@ -3730,9 +3730,9 @@ RCODE F_Btree::storeDataOnlyBlocks(
 		
 		// Assert that the current block is empty and has no previous link.
 		
-		flmAssert( pBlkHdr->ui16BlkBytesAvail ==
+		f_assert( pBlkHdr->ui16BlkBytesAvail ==
 					  m_uiBlockSize - sizeofDOBlkHdr( pBlkHdr));
-		flmAssert( pBlkHdr->ui32PrevBlkInChain == 0);
+		f_assert( pBlkHdr->ui32PrevBlkInChain == 0);
 
 		pDestPtr = (FLMBYTE *)pBlkHdr + 
 							sizeofDOBlkHdr( (F_BLK_HDR *)m_pBlock->getBlockPtr());
@@ -3892,9 +3892,9 @@ RCODE F_Btree::replaceDataOnlyBlocks(
 		
 		// Assert that the current block is empty and has no previous link.
 		
-		flmAssert( pBlkHdr->ui16BlkBytesAvail ==
+		f_assert( pBlkHdr->ui16BlkBytesAvail ==
 			m_uiBlockSize - sizeofDOBlkHdr( pBlkHdr));
-		flmAssert( pBlkHdr->ui32PrevBlkInChain == 0);
+		f_assert( pBlkHdr->ui32PrevBlkInChain == 0);
 
 		pDestPtr = (FLMBYTE *)pBlkHdr + 
 							sizeofDOBlkHdr( (F_BLK_HDR *)m_pBlock->getBlockPtr());
@@ -4020,7 +4020,7 @@ RCODE F_Btree::replaceDataOnlyBlocks(
 	
 	if( bLast && bTruncate)
 	{
-		flmAssert( m_pBlock);
+		f_assert( m_pBlock);
 		pBlkHdr = ((F_BLK_HDR *)m_pBlock->getBlockPtr());
 
 		ui32NextBlkAddr = pBlkHdr->ui32NextBlkInChain;
@@ -4198,7 +4198,7 @@ RCODE F_Btree::buildAndStoreEntry(
 
 			pucTemp = pucBuffer;
 
-			flmAssert( uiChildBlkAddr);
+			f_assert( uiChildBlkAddr);
 			UD2FBA( uiChildBlkAddr, pucTemp);
 			pucTemp += 4;
 
@@ -4415,7 +4415,7 @@ RCODE F_Btree::removeRange(
 		goto Exit;
 	}
 
-	flmAssert( uiEndElm < uiNumKeys);
+	f_assert( uiEndElm < uiNumKeys);
 
 	// Point to the entry ...
 	
@@ -4645,7 +4645,7 @@ RCODE F_Btree::moveEntriesToPrevBlk(
 	
 	if( uiHeapSize < uiOAEntrySize)
 	{
-		flmAssert( uiHeapSize != uiAvailSpace);
+		f_assert( uiHeapSize != uiAvailSpace);
 		if( RC_BAD( rc = defragmentBlock( &pPrevBlock)))
 		{
 			goto Exit;
@@ -4935,13 +4935,13 @@ RCODE F_Btree::moveEntriesToNextBlk(
 		goto Exit;
 	}
 
-	flmAssert( uiStart > uiFinish);
+	f_assert( uiStart > uiFinish);
 
 	// Do we need to defragment the block first before we do the move?
 	
 	if( uiHeapSize < uiOAEntrySize)
 	{
-		flmAssert( uiHeapSize != uiAvailSpace);
+		f_assert( uiHeapSize != uiAvailSpace);
 		if( RC_BAD( rc = defragmentBlock( &pNextBlock)))
 		{
 			goto Exit;
@@ -5020,7 +5020,7 @@ RCODE F_Btree::moveEntriesToNextBlk(
 				
 				uiNextBlkAddr = pParentStack->pBlkHdr->stdBlkHdr.ui32NextBlkInChain;
 
-				flmAssert( uiNextBlkAddr);
+				f_assert( uiNextBlkAddr);
 
 				if( RC_BAD( rc = m_pBlockMgr->getBlock( 
 					uiNextBlkAddr, &pParentBlock)))
@@ -5266,7 +5266,7 @@ RCODE F_Btree::advanceToNextElement(
 	RCODE							rc = NE_FLM_OK;
 	F_BTREE_BLK_HDR *			pBlkHdr;
 
-	flmAssert( m_pBlock);
+	f_assert( m_pBlock);
 
 	pBlkHdr = (F_BTREE_BLK_HDR *)m_pBlock->getBlockPtr();
 
@@ -5319,7 +5319,7 @@ RCODE F_Btree::backupToPrevElement(
 	RCODE					rc = NE_FLM_OK;
 	FLMBYTE *			pucBlk;
 
-	flmAssert( m_pBlock);
+	f_assert( m_pBlock);
 
 	pucBlk = m_pBlock->getBlockPtr();
 
@@ -5451,7 +5451,7 @@ FLMUINT F_Btree::getEntryKeyLength(
 		
 		default:
 		{
-			flmAssert( 0);
+			f_assert( 0);
 			uiKeyLength = 0;
 			pucTmp = NULL;
 			break;
@@ -5675,7 +5675,7 @@ FLMUINT F_Btree::getEntrySize(
 		
 		default:
 		{
-			flmAssert( 0);
+			f_assert( 0);
 			uiEntrySize = 0;
 			break;
 		}
@@ -5796,7 +5796,7 @@ RCODE F_Btree::findEntry(
 		{
 			if( m_bCounts && puiPosition)
 			{
-				flmAssert( m_uiSearchLevel >= BH_MAX_LEVELS);
+				f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
 				*puiPosition = uiPrevCounts + pStack->uiCurOffset;
 			}
 
@@ -5985,7 +5985,7 @@ GotEntry:
 
 	if( m_bCounts && puiPosition)
 	{
-		flmAssert( m_uiSearchLevel >= BH_MAX_LEVELS);
+		f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
 		*puiPosition = pStack->uiCurOffset;
 	}
 
@@ -6088,7 +6088,7 @@ RCODE F_Btree::scanBlock(
 		goto Exit;
 	}
 
-	flmAssert( uiMatch == FLM_INCL || uiMatch == FLM_EXCL || 
+	f_assert( uiMatch == FLM_INCL || uiMatch == FLM_EXCL || 
 				  uiMatch == FLM_EXACT);
 
 	// Test the first entry
@@ -6243,7 +6243,7 @@ ResultGreater:
 			// our target key, we can skip it and advance to the key that is one
 			// beyond it.
 			
-			flmAssert( uiMid < uiBottom);
+			f_assert( uiMid < uiBottom);
 			uiTop = uiMid + 1;
 			continue;
 		}
@@ -6533,7 +6533,7 @@ RCODE F_Btree::searchBlock(
 
 	if( getBlkType( (FLMBYTE *)pBlkHdr) != BT_NON_LEAF_COUNTS)
 	{
-		flmAssert( uiPosition >= *puiPrevCounts);
+		f_assert( uiPosition >= *puiPrevCounts);
 		
 		uiOffset = uiPosition - *puiPrevCounts;
 		*puiPrevCounts = uiPosition;
@@ -6593,7 +6593,7 @@ RCODE F_Btree::defragmentBlock(
 	IF_Block *					pOldBlock = NULL;
 	void *						pvPoolMark = m_pPool->poolMark();
 
-	flmAssert( pBlk->stdBlkHdr.ui16BlkBytesAvail != pBlk->ui16HeapSize);
+	f_assert( pBlk->stdBlkHdr.ui16BlkBytesAvail != pBlk->ui16HeapSize);
 
 	pOldBlock = pBlock;
 	pOldBlock->AddRef();
@@ -6777,7 +6777,7 @@ RCODE F_Btree::defragmentBlock(
 		pBlk->stdBlkHdr.ui16BlkBytesAvail = ui16BlkBytesAvail;
 	}
 
-	flmAssert( pBlk->stdBlkHdr.ui16BlkBytesAvail == ui16BlkBytesAvail);
+	f_assert( pBlk->stdBlkHdr.ui16BlkBytesAvail == ui16BlkBytesAvail);
 	pBlk->ui16HeapSize = ui16BlkBytesAvail;
 
 	// Clean up the heap space.
@@ -6824,7 +6824,7 @@ RCODE F_Btree::updateEntry(
 	FLMUINT					uiOrigDataLen = uiLen;
 	FLMBOOL					bOrigTruncate = bTruncate;
 
-	flmAssert( m_pReplaceInfo == NULL);
+	f_assert( m_pReplaceInfo == NULL);
 
 	// For each level that needs modifying...
 	
@@ -6891,7 +6891,7 @@ RCODE F_Btree::updateEntry(
 
 				// Should only get here if we are able to truncate the data.
 				
-				flmAssert( bTruncate);
+				f_assert( bTruncate);
 
 				if( RC_BAD( rc = replaceEntry( &pucKey, &uiKeyLen, pucValue,
 					uiLen, uiFlags, &uiChildBlkAddr, &uiCounts,
@@ -7238,7 +7238,7 @@ StartOver:
 			*puiCounts = countKeys( (FLMBYTE *)m_pStack->pBlkHdr);
 		}
 
-		flmAssert( !isRootBlk( m_pStack->pBlkHdr));
+		f_assert( !isRootBlk( m_pStack->pBlkHdr));
 
 		// Return the key to the last entry in the prevous block.
 		// Recall that we have changed that stack now so that it
@@ -7306,7 +7306,7 @@ StartOver:
 
 		}
 
-		flmAssert( !isRootBlk( m_pStack->pBlkHdr));
+		f_assert( !isRootBlk( m_pStack->pBlkHdr));
 
 		// if we are maintaining counts, then lets return a count of the
 		// current number of keys referenced below this point.
@@ -7610,7 +7610,7 @@ RCODE F_Btree::removeEntry(
 			// Backup to the new "last" entry (remove() does not adjust the offset
 			// in the stack).
 
-			flmAssert( m_pStack->uiCurOffset > 0);
+			f_assert( m_pStack->uiCurOffset > 0);
 
 			m_pStack->uiCurOffset--;
 			pucEntry = BtEntry( (FLMBYTE *)m_pStack->pBlkHdr,
@@ -7690,7 +7690,7 @@ RCODE F_Btree::replaceEntry(
 	{
 		if( m_bOrigInDOBlocks)
 		{
-			flmAssert( bTruncate);
+			f_assert( bTruncate);
 
 			pucEntry = BtEntry( (FLMBYTE *)m_pStack->pBlkHdr,
 									  m_pStack->uiCurOffset);
@@ -7837,7 +7837,7 @@ RCODE F_Btree::replaceOldEntry(
 	{
 		if( !bTruncate)
 		{
-			flmAssert( uiLen <= uiDataLen);
+			f_assert( uiLen <= uiDataLen);
 			f_memcpy( pucData, pucValue, uiLen);
 
 			if( m_pStack->uiCurOffset == 
@@ -8165,7 +8165,7 @@ RCODE F_Btree::replace(
 	uiOldEntrySize = actualEntrySize( getEntrySize( 
 														pBlk, m_pStack->uiCurOffset));
 
-	flmAssert( uiOldEntrySize >= uiEntrySize);
+	f_assert( uiOldEntrySize >= uiEntrySize);
 
 	pucReplaceAt = BtEntry( pBlk, m_pStack->uiCurOffset);
 
@@ -8305,7 +8305,7 @@ RCODE F_Btree::moveStackToPrev(
 				// block in the chain.
 
 				uiBlkAddr = pStack->pBlkHdr->stdBlkHdr.ui32PrevBlkInChain;
-				flmAssert( uiBlkAddr);
+				f_assert( uiBlkAddr);
 
 				// Fetch the new block
 
@@ -8443,7 +8443,7 @@ RCODE F_Btree::moveStackToNext(
 				// the chain.
 
 				uiBlkAddr = pStack->pBlkHdr->stdBlkHdr.ui32NextBlkInChain;
-				flmAssert( uiBlkAddr);
+				f_assert( uiBlkAddr);
 
 				// Get the next block
 
@@ -8606,7 +8606,7 @@ RCODE F_Btree::saveReplaceInfo(
 
 	// We should not be at the root level already!
 
-	flmAssert( pStack->uiLevel != m_uiStackLevels - 1);
+	f_assert( pStack->uiLevel != m_uiStackLevels - 1);
 
 	m_pReplaceInfo->uiParentLevel = pStack->uiLevel+1;
 	m_pReplaceInfo->uiNewKeyLen = uiNewKeyLen;
@@ -8808,7 +8808,7 @@ RCODE F_Btree::extractEntryData(
 	FLMUINT			uiDataLen = 0;
 	FLMBYTE *		pucBlk = NULL;
 
-	flmAssert( m_pBlock);
+	f_assert( m_pBlock);
 
 	if( puiDataLen)
 	{
@@ -8907,7 +8907,7 @@ RCODE F_Btree::extractEntryData(
 			{
 				pucBlk = m_pBlock->getBlockPtr();
 
-				flmAssert( ((F_BLK_HDR *)pucBlk)->ui8BlkType == BT_DATA_ONLY);
+				f_assert( ((F_BLK_HDR *)pucBlk)->ui8BlkType == BT_DATA_ONLY);
 				
 				m_pucDataPtr = pucBlk +	sizeofDOBlkHdr( (F_BLK_HDR *)pucBlk);
 										  
@@ -9091,7 +9091,7 @@ RCODE F_Btree::removeRemainingEntries(
 
 	// We should never get to this function when in the upper levels.
 
-	flmAssert( m_pStack->uiLevel == 0);
+	f_assert( m_pStack->uiLevel == 0);
 
 	// If we do not have a stack setup yet (which can happen if the replace
 	// is trying to shortcut to the previously known block address and offset),
@@ -9149,7 +9149,7 @@ RCODE F_Btree::removeRemainingEntries(
 		{
 			for (;;)
 			{
-				flmAssert( !isRootBlk( m_pStack->pBlkHdr));
+				f_assert( !isRootBlk( m_pStack->pBlkHdr));
 
 				// Remove this block, then update the parent.
 				
@@ -9307,7 +9307,7 @@ RCODE F_Btree::removeDOBlocks(
 			goto Exit;
 		}
 		
-		flmAssert( getBlkType( pBlock->getBlockPtr()) == BT_DATA_ONLY);
+		f_assert( getBlkType( pBlock->getBlockPtr()) == BT_DATA_ONLY);
 		ui32NextBlkAddr = ((F_BLK_HDR *)pBlock->getBlockPtr())->ui32NextBlkInChain;
 
 		if( RC_BAD( rc = m_pBlockMgr->freeBlock( &pBlock)))
@@ -9356,7 +9356,7 @@ RCODE F_Btree::replaceMultiples(
 
 	// Must be at the leaf level!
 
-	flmAssert( m_pStack->uiLevel == 0);
+	f_assert( m_pStack->uiLevel == 0);
 
 	while( uiRemainingData)
 	{
@@ -9447,7 +9447,7 @@ RCODE F_Btree::replaceMultiples(
 		{
 			FLMBYTE *		pucTmp = pucEntry;
 
-			flmAssert( bteOADataLenFlag( pucEntry));
+			f_assert( bteOADataLenFlag( pucEntry));
 
 			pucTmp++;
 			
@@ -9570,7 +9570,7 @@ RCODE F_Btree::replaceMultiNoTruncate(
 
 	// Must be at the leaf level
 	
-	flmAssert( m_pStack->uiLevel == 0);
+	f_assert( m_pStack->uiLevel == 0);
 
 	while( uiRemainingData)
 	{
@@ -9974,7 +9974,7 @@ RCODE F_Btree::verifyChildLinks(
 		// Non-leaf nodes have children.
 		
 		ui32BlkAddr = bteGetBlkAddr( pucEntry);
-		flmAssert( ui32BlkAddr);
+		f_assert( ui32BlkAddr);
 
 		if( RC_BAD( rc = m_pBlockMgr->getBlock( ui32BlkAddr, &pChildBlock)))
 		{
@@ -10229,8 +10229,8 @@ RCODE F_Btree::blockCounts(
 
 	// Debug checks.
 
-	flmAssert( uiFirstOffset <= uiLastOffset);
-	flmAssert( uiLastOffset <= (FLMUINT)(pStack->pBlkHdr->ui16NumKeys - 1));
+	f_assert( uiFirstOffset <= uiLastOffset);
+	f_assert( uiLastOffset <= (FLMUINT)(pStack->pBlkHdr->ui16NumKeys - 1));
 
 	uiKeyCount = uiElementCount = 0;
 	pucBlk = (FLMBYTE *)pStack->pBlkHdr;
@@ -10632,7 +10632,7 @@ RCODE F_Btree::mergeBlocks(
 			}
 			pPrevBlock = NULL;
 
-			flmAssert( m_pStack->pBlkHdr->ui16NumKeys == 0);
+			f_assert( m_pStack->pBlkHdr->ui16NumKeys == 0);
 
 			// Free the empty block.
 
@@ -10721,7 +10721,7 @@ RCODE F_Btree::mergeBlocks(
 				pPrevBlock = NULL;
 			}
 
-			flmAssert( m_pStack->pBlkHdr->ui16NumKeys == 0);
+			f_assert( m_pStack->pBlkHdr->ui16NumKeys == 0);
 
 			// Free the empty block.
 
@@ -11006,7 +11006,7 @@ RCODE F_Btree::btMoveBlock(
 		goto Exit;
 	}
 
-	flmAssert( m_uiSearchLevel >= BH_MAX_LEVELS);
+	f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
 
 	// Get the From block and retrieve the last key in the block.  Make note
 	// of the level of the block.  We will need this to make sure we get the
@@ -11074,7 +11074,7 @@ RCODE F_Btree::moveBtreeBlock(
 
 	// m_pBlock has already been retrieved.
 
-	flmAssert( m_pBlock);
+	f_assert( m_pBlock);
 
 	pBlkHdr = (F_BTREE_BLK_HDR *)m_pBlock->getBlockPtr();
 	uiBlkLevel = pBlkHdr->ui8BlkLevel;
@@ -11180,7 +11180,7 @@ RCODE F_Btree::moveBtreeBlock(
 		
 		pTmpHdr = (F_BLK_HDR *)pBlock->getBlockPtr();
 		
-		flmAssert( pTmpHdr->ui32NextBlkInChain == ui32FromBlkAddr);
+		f_assert( pTmpHdr->ui32NextBlkInChain == ui32FromBlkAddr);
 		pTmpHdr->ui32NextBlkInChain = ui32ToBlkAddr;
 
 		pBlock->Release();
@@ -11204,7 +11204,7 @@ RCODE F_Btree::moveBtreeBlock(
 		
 		pTmpHdr = (F_BLK_HDR *)pBlock->getBlockPtr();
 		
-		flmAssert( pTmpHdr->ui32PrevBlkInChain == ui32FromBlkAddr);
+		f_assert( pTmpHdr->ui32PrevBlkInChain == ui32FromBlkAddr);
 		pTmpHdr->ui32PrevBlkInChain = ui32ToBlkAddr;
 
 		pBlock->Release();
@@ -11227,7 +11227,7 @@ RCODE F_Btree::moveBtreeBlock(
 	// Move up one level to the parent entry.
 	
 	m_pStack++;
-	flmAssert( m_pStack->pBlock);
+	f_assert( m_pStack->pBlock);
 
 	// Log that we are making a change to the block.
 	
@@ -11289,7 +11289,7 @@ RCODE F_Btree::moveDOBlock(
 
 	// m_pBlock has already been retrieved.
 
-	flmAssert( m_pBlock);
+	f_assert( m_pBlock);
 
 	// Log that we are changing this block.
 
@@ -11347,7 +11347,7 @@ RCODE F_Btree::moveDOBlock(
 		
 		pTmpHdr = (F_BLK_HDR *)pPrevBlock->getBlockPtr();
 		
-		flmAssert( pTmpHdr->ui32NextBlkInChain == ui32FromBlkAddr);
+		f_assert( pTmpHdr->ui32NextBlkInChain == ui32FromBlkAddr);
 		pTmpHdr->ui32NextBlkInChain = ui32ToBlkAddr;
 		pPrevBlock->Release();
 		pPrevBlock = NULL;
@@ -11370,7 +11370,7 @@ RCODE F_Btree::moveDOBlock(
 		
 		pTmpHdr = (F_BLK_HDR *)pNextBlock->getBlockPtr();
 		
-		flmAssert( pTmpHdr->ui32PrevBlkInChain == ui32FromBlkAddr);
+		f_assert( pTmpHdr->ui32PrevBlkInChain == ui32FromBlkAddr);
 		pTmpHdr->ui32PrevBlkInChain = ui32ToBlkAddr;
 		pNextBlock->Release();
 		pNextBlock = NULL;
@@ -11532,7 +11532,7 @@ RCODE F_Btree::btSetReadPosition(
 		if( m_bDataOnlyBlock)
 		{
 			ui32BlkAddr = pBlkHdr->ui32PrevBlkInChain;
-			flmAssert( ui32BlkAddr);
+			f_assert( ui32BlkAddr);
 
 			m_pBlock->Release();
 			m_pBlock = NULL;
@@ -11605,7 +11605,7 @@ RCODE F_Btree::btSetReadPosition(
 	
 	while( uiPosition >= (m_uiOffsetAtStart + m_uiDataLength))
 	{
-		flmAssert( m_uiDataLength + m_uiOffsetAtStart <= m_uiOADataLength);
+		f_assert( m_uiDataLength + m_uiOffsetAtStart <= m_uiOADataLength);
 
 		// Get the next entry.
 		
@@ -11616,7 +11616,7 @@ RCODE F_Btree::btSetReadPosition(
 		if( m_bDataOnlyBlock)
 		{
 			ui32BlkAddr = pBlkHdr->ui32NextBlkInChain;
-			flmAssert( ui32BlkAddr);
+			f_assert( ui32BlkAddr);
 
 			m_pBlock->Release();
 			m_pBlock = NULL;
@@ -11707,7 +11707,7 @@ RCODE F_Btree::btGetReadPosition(
 		goto Exit;
 	}
 
-	flmAssert( puiPosition);
+	f_assert( puiPosition);
 	*puiPosition = m_uiOffsetAtStart + (m_uiDataLength - m_uiDataRemaining);
 
 Exit:
@@ -11913,12 +11913,12 @@ RCODE F_Btree::btCheck(
 					{
 						if( iCmpResult < 0)
 						{
-							flmAssert( *pucEntry & BTE_FLAG_FIRST_ELEMENT);
+							f_assert( *pucEntry & BTE_FLAG_FIRST_ELEMENT);
 						}
 						else if( iCmpResult == 0)
 						{
-							flmAssert( (*pucEntry & BTE_FLAG_FIRST_ELEMENT) == 0);
-							flmAssert( (*pucPrevEntry & BTE_FLAG_LAST_ELEMENT) == 0);
+							f_assert( (*pucEntry & BTE_FLAG_FIRST_ELEMENT) == 0);
+							f_assert( (*pucPrevEntry & BTE_FLAG_LAST_ELEMENT) == 0);
 						}
 					}
 				}
@@ -12185,7 +12185,7 @@ RCODE F_Btree::verifyCounts(
 	FLMBYTE *			pBlk;
 	FLMBOOL				bDone = FALSE;
 
-	flmAssert( m_bCounts);
+	f_assert( m_bCounts);
 
 	// Repeat at each level, starting at the root.
 	

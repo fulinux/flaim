@@ -738,7 +738,9 @@
 			int				iLine,
 			FLMBOOL			bAssert);
 			
-		void FLMAPI f_enterDebugger( void);
+		void FLMAPI f_enterDebugger(
+			const char *	pszFile,
+			int				iLine);
 			
 		#define RC_SET( rc) \
 			f_makeErr( rc, __FILE__, __LINE__, FALSE)
@@ -750,7 +752,7 @@
 			f_makeErr( rc, __FILE__, __LINE__, TRUE)
 			
 		#define f_assert( c) \
-			(void)((c) ? f_enterDebugger() : 0)
+			(void)((c) ? 0 : f_enterDebugger( __FILE__, __LINE__))
 	#else
 		#define RC_SET( rc)							(rc)
 		#define RC_SET_AND_ASSERT( rc)			(rc)
@@ -2848,6 +2850,486 @@
 	
 	const char * FLMAPI f_errorString(
 		RCODE							rc);
+
+	/****************************************************************************
+	Desc:		Key definitions
+	****************************************************************************/
+	
+	#define FKB_ESCAPE      0xE01B            /* Escape (ESC) */
+	#define FKB_ESC         FKB_ESCAPE
+	#define FKB_SPACE       0x20
+	
+	#define FKB_HOME        0xE008            /* HOME key */
+	#define FKB_UP          0xE017            /* Up arrow */
+	#define FKB_PGUP        0xE059            /* Page Up */
+	#define FKB_LEFT        0xE019            /* Left arrow */
+	#define FKB_RIGHT       0xE018            /* Right arrow */
+	#define FKB_END         0xE055            /* END key */
+	#define FKB_DOWN        0xE01A            /* Down arrow */
+	#define FKB_PGDN        0xE05A            /* Page Down */
+	#define FKB_PLUS			0x002B				/* Plus (+) */
+	#define FKB_MINUS			0x002D				/* Minus (-) */
+	
+	#define FKB_INSERT      0xE05D            /* Insert key */
+	#define FKB_DELETE      0xE051            /* Delete key */
+	#define FKB_BACKSPACE   0xE050            /* Backspace */
+	#define FKB_TAB         0xE009            /* TAB */
+	
+	#define FKB_ENTER       0xE00a            /* Enter */
+	#define FKB_F1          0xE020            /* F1 */
+	#define FKB_F2          0xE021            /* F2 */
+	#define FKB_F3          0xE022            /* F3 */
+	#define FKB_F4          0xE023            /* F4 */
+	#define FKB_F5          0xE024            /* F5 */
+	#define FKB_F6          0xE025            /* F6 */
+	#define FKB_F7          0xE026            /* F7 */
+	#define FKB_F8          0xE027            /* F8 */
+	#define FKB_F9          0xE028            /* F9 */
+	#define FKB_F10         0xE029            /* F10 */
+	#define FKB_F11         0xE03A            /* F10 */
+	#define FKB_F12         0xE03B            /* F10 */
+	
+	#define FKB_STAB        0xE05E            /* Shift TAB */
+	
+	#define FKB_SF1         0xE02C            /* F1 */
+	#define FKB_SF2         0xE02D            /* F2 */
+	#define FKB_SF3         0xE02E            /* F3 */
+	#define FKB_SF4         0xE02F            /* F4 */
+	#define FKB_SF5         0xE030            /* F5 */
+	#define FKB_SF6         0xE031            /* F6 */
+	#define FKB_SF7         0xE032            /* F7 */
+	#define FKB_SF8         0xE033            /* F8 */
+	#define FKB_SF9         0xE034            /* F9 */
+	#define FKB_SF10        0xE035            /* F10 */
+	#define FKB_SF11        0xE036            /* F10 */
+	#define FKB_SF12        0xE037            /* F10 */
+	
+	#define FKB_ALT_A       0xFDDC
+	#define FKB_ALT_B       0xFDDD
+	#define FKB_ALT_C       0xFDDE
+	#define FKB_ALT_D       0xFDDF
+	#define FKB_ALT_E       0xFDE0
+	#define FKB_ALT_F       0xFDE1
+	#define FKB_ALT_G       0xFDE2
+	#define FKB_ALT_H       0xFDE3
+	#define FKB_ALT_I       0xFDE4
+	#define FKB_ALT_J       0xFDE5
+	#define FKB_ALT_K       0xFDE6
+	#define FKB_ALT_L       0xFDE7
+	#define FKB_ALT_M       0xFDE8
+	#define FKB_ALT_N       0xFDE9
+	#define FKB_ALT_O       0xFDEA
+	#define FKB_ALT_P       0xFDEB
+	#define FKB_ALT_Q       0xFDEC
+	#define FKB_ALT_R       0xFDED
+	#define FKB_ALT_S       0xFDEE
+	#define FKB_ALT_T       0xFDEF
+	#define FKB_ALT_U       0xFDF0
+	#define FKB_ALT_V       0xFDF1
+	#define FKB_ALT_W       0xFDF2
+	#define FKB_ALT_X       0xFDF3
+	#define FKB_ALT_Y       0xFDF4
+	#define FKB_ALT_Z       0xFDF5
+	
+	#define FKB_ALT_1       0xFDF7            /* ALT 1 */
+	#define FKB_ALT_2       0xFDF8            /* ALT 2 */
+	#define FKB_ALT_3       0xFDF9            /* ALT 3 */
+	#define FKB_ALT_4       0xFDFA            /* ALT 4 */
+	#define FKB_ALT_5       0xFDFB            /* ALT 5 */
+	#define FKB_ALT_6       0xFDFC            /* ALT 6 */
+	#define FKB_ALT_7       0xFDFD            /* ALT 7 */
+	#define FKB_ALT_8       0xFDFE            /* ALT 8 */
+	#define FKB_ALT_9       0xFDFF            /* ALT 9 */
+	#define FKB_ALT_0       0xFDF6            /* ALT 0 */
+	
+	#define FKB_ALT_MINUS   0xE061            /* ALT MINUS */
+	#define FKB_ALT_EQUAL   0xE06B            /* ALT EQUAL */
+	
+	#define FKB_ALT_F1      0xE038            /* ALT F1 */
+	#define FKB_ALT_F2      0xE039            /* ALT F2 */
+	#define FKB_ALT_F3      0xE03A            /* ALT F3 */
+	#define FKB_ALT_F4      0xE03B            /* ALT F4 */
+	#define FKB_ALT_F5      0xE03C            /* ALT F5 */
+	#define FKB_ALT_F6      0xE03D            /* ALT F6 */
+	#define FKB_ALT_F7      0xE03E            /* ALT F7 */
+	#define FKB_ALT_F8      0xE03F            /* ALT F8 */
+	#define FKB_ALT_F9      0xE040            /* ALT F9 */
+	#define FKB_ALT_F10     0xE041            /* ALT F10 -F11,F12 NOT SUPPORTED*/
+	
+	#define FKB_GOTO        0xE058            /* GOTO cntl-home */
+	#define FKB_CTRL_HOME   0xE058            /* CTRL Home */
+	#define FKB_CTRL_UP     0xE063            /* CTRL Up arrow */
+	#define FKB_CTRL_PGUP   0xE057            /* CTRL Page Up */
+	
+	#define FKB_CTRL_LEFT   0xE054            /* CTRL Left arrow */
+	#define FKB_CTRL_RIGHT  0xE053            /* CTRL Right arrow */
+	
+	#define FKB_CTRL_END    0xE00B            /* CTRL END */
+	#define FKB_CTRL_DOWN   0xE064            /* CTRL Down arrow */
+	#define FKB_CTRL_PGDN   0xE00C            /* CTRL Page Down */
+	#define FKB_CTRL_INSERT 0xE06E            /* CTRL Insert */
+	#define FKB_CTRL_DELETE 0xE06D            /* CTRL Delete */
+	
+	#define FKB_CTRL_ENTER  0xE05F            /* CTRL Enter */
+	
+	#define FKB_CTRL_A      0xE07C
+	#define FKB_CTRL_B      0xE07D
+	#define FKB_CTRL_C      0xE07E
+	#define FKB_CTRL_D      0xE07F
+	#define FKB_CTRL_E      0xE080
+	#define FKB_CTRL_F      0xE081
+	#define FKB_CTRL_G      0xE082
+	#define FKB_CTRL_H      0xE083
+	#define FKB_CTRL_I      0xE084
+	#define FKB_CTRL_J      0xE085
+	#define FKB_CTRL_K      0xE086
+	#define FKB_CTRL_L      0xE087
+	#define FKB_CTRL_M      0xE088
+	#define FKB_CTRL_N      0xE089
+	#define FKB_CTRL_O      0xE08A
+	#define FKB_CTRL_P      0xE08B
+	#define FKB_CTRL_Q      0xE08C
+	#define FKB_CTRL_R      0xE08D
+	#define FKB_CTRL_S      0xE08E
+	#define FKB_CTRL_T      0xE08F
+	#define FKB_CTRL_U      0xE090
+	#define FKB_CTRL_V      0xE091
+	#define FKB_CTRL_W      0xE092
+	#define FKB_CTRL_X      0xE093
+	#define FKB_CTRL_Y      0xE094
+	#define FKB_CTRL_Z      0xE095
+	
+	#define FKB_CTRL_1      0xE06B            /* F1 - NOT SUPPORTED IN WP TO F10*/
+	#define FKB_CTRL_2      0xE06C            /* F2 */
+	#define FKB_CTRL_3      0xE06D            /* F3 */
+	#define FKB_CTRL_4      0xE06E            /* F4 */
+	#define FKB_CTRL_5      0xE06F            /* F5 */
+	#define FKB_CTRL_6      0xE070            /* F6 */
+	#define FKB_CTRL_7      0xE071            /* F7 */
+	#define FKB_CTRL_8      0xE072            /* F8 */
+	#define FKB_CTRL_9      0xE073            /* F9 */
+	#define FKB_CTRL_0      0xE074            /* F10 */
+	
+	#define FKB_CTRL_MINUS  0xE060            /* MINUS */
+	#define FKB_CTRL_EQUAL  0xE061            /* EQUAL - NOT SUPPORTED IN WP */
+	
+	#define FKB_CTRL_F1     0xE038            /* F1 */
+	#define FKB_CTRL_F2     0xE039            /* F2 */
+	#define FKB_CTRL_F3     0xE03A            /* F3 */
+	#define FKB_CTRL_F4     0xE03B            /* F4 */
+	#define FKB_CTRL_F5     0xE03C            /* F5 */
+	#define FKB_CTRL_F6     0xE03D            /* F6 */
+	#define FKB_CTRL_F7     0xE03E            /* F7 */
+	#define FKB_CTRL_F8     0xE03F            /* F8 */
+	#define FKB_CTRL_F9     0xE040            /* F9 */
+	#define FKB_CTRL_F10    0xE041            /* F10 */
+
+	/****************************************************************************
+	Desc:	FTX
+	****************************************************************************/
+	
+	#define	FLM_CURSOR_BLOCK			0x01
+	#define	FLM_CURSOR_UNDERLINE		0x02
+	#define	FLM_CURSOR_INVISIBLE		0x04
+	#define	FLM_CURSOR_VISIBLE		0x08
+	
+	typedef struct FTX_SCREEN	FTX_SCREEN;
+	typedef struct FTX_WINDOW	FTX_WINDOW;
+	
+	typedef FLMBOOL (FLMAPI * KEY_HANDLER)(
+		FLMUINT			uiKeyIn,
+		FLMUINT *		puiKeyOut,
+		void *			pvAppData);
+	
+	RCODE FLMAPI FTXInit(
+		const char *	pszAppName = NULL,
+		FLMUINT			uiCols = 0,
+		FLMUINT			uiRows = 0,
+		eColorType		backgroundColor = FLM_BLUE,
+		eColorType		foregroundColor = FLM_WHITE,
+		KEY_HANDLER 	pKeyHandler = NULL,
+		void *			pvKeyHandlerData = NULL);
+	
+	void FLMAPI FTXExit( void);
+	
+	void FLMAPI FTXCycleScreensNext( void);
+	
+	void FLMAPI FTXCycleScreensPrev( void);
+	
+	void FLMAPI FTXRefreshCursor( void);
+	
+	void FLMAPI FTXInvalidate( void);
+	
+	void FLMAPI FTXSetShutdownFlag(
+		FLMBOOL *		pbShutdownFlag);
+	
+	RCODE FLMAPI FTXScreenInit(
+		const char *	pszName,
+		FTX_SCREEN **	ppScreen);
+	
+	RCODE FLMAPI FTXCaptureScreen(
+		FLMBYTE *		pText,
+		FLMBYTE *		pForeAttrib,
+		FLMBYTE *		pBackAttrib);
+	
+	void FLMAPI FTXRefresh( void);
+	
+	void FLMAPI FTXSetRefreshState(
+		FLMBOOL			bDisable);
+	
+	RCODE FLMAPI FTXAddKey(
+		FLMUINT			uiKey);
+	
+	RCODE FLMAPI FTXWinInit(
+		FTX_SCREEN *	pScreen,
+		FLMUINT 			uiCols,
+		FLMUINT			uiRows,
+		FTX_WINDOW **	ppWindow);
+	
+	void FLMAPI FTXWinFree(
+		FTX_WINDOW **	ppWindow);
+	
+	RCODE FLMAPI FTXWinOpen(
+		FTX_WINDOW *	pWindow);
+	
+	RCODE FLMAPI FTXWinSetName(
+		FTX_WINDOW *	pWindow,
+		char *			pszName);
+	
+	void FLMAPI FTXWinClose(
+		FTX_WINDOW *	pWindow);
+	
+	void FLMAPI FTXWinSetFocus(
+		FTX_WINDOW *	pWindow);
+	
+	void FLMAPI FTXWinPrintChar(
+		FTX_WINDOW *	pWindow,
+		FLMUINT			uiChar);
+	
+	void FLMAPI FTXWinPrintStr(
+		FTX_WINDOW *	pWindow,
+		const char *	pszString);
+	
+	void FLMAPI FTXWinPrintf(
+		FTX_WINDOW *	pWindow,
+		const char *	pszFormat, ...);
+	
+	void FLMAPI FTXWinCPrintf(
+		FTX_WINDOW *	pWindow,
+		eColorType		backgroundColor,
+		eColorType		foregroundColor,
+		const char *	pszFormat, ...);
+	
+	void FLMAPI FTXWinPrintStrXY(
+		FTX_WINDOW *	pWindow,
+		const char *	pszString,
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinMove(
+		FTX_WINDOW *	pWindow,
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinPaintBackground(
+		FTX_WINDOW *	pWindow,
+		eColorType		backgroundColor);
+	
+	void FLMAPI FTXWinPaintForeground(
+		FTX_WINDOW *	pWindow,
+		eColorType		foregroundColor);
+	
+	void FLMAPI FTXWinPaintRow(
+		FTX_WINDOW *	pWindow,
+		eColorType *	pBackgroundColor,
+		eColorType *	pForegroundColor,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinSetChar(
+		FTX_WINDOW *	pWindow,
+		FLMUINT			uiChar);
+	
+	void FLMAPI FTXWinPaintRowForeground(
+		FTX_WINDOW *	pWindow,
+		eColorType		foregroundColor,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinPaintRowBackground(
+		FTX_WINDOW *	pWindow,
+		eColorType		backgroundColor,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinSetBackFore(
+		FTX_WINDOW *	pWindow,
+		eColorType		backgroundColor,
+		eColorType		foregroundColor);
+	
+	void FLMAPI FTXWinGetCanvasSize(
+		FTX_WINDOW *	pWindow,
+		FLMUINT *		puiNumCols,
+		FLMUINT *		puiNumRows);
+	
+	void FLMAPI FTXWinGetSize(
+		FTX_WINDOW *	pWindow,
+		FLMUINT *		puiNumCols,
+		FLMUINT *		puiNumRows);
+	
+	FLMUINT FLMAPI FTXWinGetCurrRow(
+		FTX_WINDOW *	pWindow);
+	
+	FLMUINT FLMAPI FTXWinGetCurrCol(
+		FTX_WINDOW *	pWindow);
+	
+	void FLMAPI FTXWinGetBackFore(
+		FTX_WINDOW *	pWindow,
+		eColorType *	pBackgroundColor,
+		eColorType *	pForegroundColor);
+	
+	void FLMAPI FTXWinDrawBorder(
+		FTX_WINDOW *	pWindow);
+	
+	void FLMAPI FTXWinSetTitle(
+		FTX_WINDOW *	pWindow,
+		const char *	pszTitle,
+		eColorType		backgroundColor,
+		eColorType		foregroundColor);
+	
+	void FLMAPI FTXWinSetHelp(
+		FTX_WINDOW *	pWindow,
+		char *			pszHelp,
+		eColorType		backgroundColor,
+		eColorType		foregroundColor);
+	
+	RCODE FLMAPI FTXLineEdit(
+		FTX_WINDOW *	pWindow,
+		char *   		pszBuffer,
+		FLMUINT      	uiBufSize,
+		FLMUINT      	uiMaxWidth,
+		FLMUINT *		puiCharCount,
+		FLMUINT *   	puiTermChar);
+	
+	FLMUINT FLMAPI FTXLineEd(
+		FTX_WINDOW *	pWindow,
+		char *			pszBuffer,
+		FLMUINT			uiBufSize);
+	
+	void FLMAPI FTXWinSetCursorPos(
+		FTX_WINDOW *	pWindow,
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinGetCursorPos(
+		FTX_WINDOW *	pWindow,
+		FLMUINT *		puiCol,
+		FLMUINT *		puiRow);
+	
+	void FLMAPI FTXWinClear(
+		FTX_WINDOW *	pWindow);
+	
+	void FLMAPI FTXWinClearXY(
+		FTX_WINDOW *	pWindow,
+		FLMUINT 			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinClearLine(
+		FTX_WINDOW *	pWindow,
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI FTXWinClearToEOL(
+		FTX_WINDOW *	pWindow);
+		
+	void FLMAPI FTXWinSetCursorType(
+		FTX_WINDOW *	pWindow,
+		FLMUINT			uiType);
+	
+	FLMUINT FLMAPI FTXWinGetCursorType(
+		FTX_WINDOW *	pWindow);
+	
+	RCODE FLMAPI FTXWinInputChar(
+		FTX_WINDOW *	pWindow,
+		FLMUINT *		puiChar);
+	
+	RCODE FLMAPI FTXWinTestKB(
+		FTX_WINDOW *	pWindow);
+	
+	void FLMAPI FTXWinSetScroll(
+		FTX_WINDOW *	pWindow,
+		FLMBOOL			bScroll);
+	
+	void FLMAPI FTXWinSetLineWrap(
+		FTX_WINDOW *	pWindow,
+		FLMBOOL			bLineWrap);
+	
+	void FLMAPI FTXWinGetScroll(
+		FTX_WINDOW *	pWindow,
+		FLMBOOL *		pbScroll);
+	
+	RCODE FLMAPI FTXWinGetScreen(
+		FTX_WINDOW *	pWindow,
+		FTX_SCREEN **	ppScreen);
+	
+	RCODE FLMAPI FTXWinGetPosition(
+		FTX_WINDOW *	pWindow,
+		FLMUINT *		puiCol,
+		FLMUINT *		puiRow);
+	
+	void FLMAPI FTXScreenFree(
+		FTX_SCREEN **	ppScreen);
+	
+	RCODE FLMAPI FTXScreenInitStandardWindows(
+		FTX_SCREEN *	pScreen,
+		eColorType		titleBackColor,
+		eColorType		titleForeColor,
+		eColorType		mainBackColor,
+		eColorType		mainForeColor,
+		FLMBOOL			bBorder,
+		FLMBOOL			bBackFill,
+		const char *	pszTitle,
+		FTX_WINDOW **	ppTitleWin,
+		FTX_WINDOW **	ppMainWin);
+	
+	void FLMAPI FTXScreenSetShutdownFlag(
+		FTX_SCREEN *	pScreen,
+		FLMBOOL *		pbShutdownFlag);
+	
+	RCODE FLMAPI FTXScreenDisplay(
+		FTX_SCREEN *	pScreen);
+	
+	RCODE FLMAPI FTXScreenGetSize(
+		FTX_SCREEN *	pScreen,
+		FLMUINT *		puiNumCols,
+		FLMUINT *		puiNumRows);
+	
+	RCODE FLMAPI FTXMessageWindow(
+		FTX_SCREEN *	pScreen,
+		eColorType		backgroundColor,
+		eColorType		foregroundColor,
+		const char *	pszMessage1,
+		const char *	pszMessage2,
+		FTX_WINDOW **	ppWindow);
+	
+	RCODE FLMAPI FTXDisplayMessage(
+		FTX_SCREEN *	pScreen,
+		eColorType		backgroundColor,
+		eColorType		foregroundColor,
+		const char *	pszMessage1,
+		const char *	pszMessage2,
+		FLMUINT *		puiTermChar);
+	
+	RCODE FLMAPI FTXDisplayScrollWindow(
+		FTX_SCREEN *	pScreen,
+		const char *	pszTitle,
+		const char *	pszMessage,
+		FLMUINT			uiCols,
+		FLMUINT			uiRows);
+	
+	RCODE FLMAPI FTXGetInput(
+		FTX_SCREEN *	pScreen,
+		const char *	pszMessage,
+		char *			pszResponse,
+		FLMUINT			uiMaxRespLen,
+		FLMUINT *		puiTermChar);
 
 	/****************************************************************************
 	Desc: General errors

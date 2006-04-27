@@ -202,7 +202,7 @@ public:
 			lockMutex();
 		}
 		
-		flmAssert( m_uiTotalBytesAllocated >= uiCount);
+		f_assert( m_uiTotalBytesAllocated >= uiCount);
 		m_uiTotalBytesAllocated -= uiCount;	
 		
 		if( !bMutexLocked)
@@ -310,7 +310,7 @@ public:
 	{
 		void *	pvCell;
 		
-		flmAssert( pRelocator);
+		f_assert( pRelocator);
 
 		if( !bMutexLocked)
 		{
@@ -428,7 +428,7 @@ private:
 		SLAB *		pSlab1 = (((SLAB **)pvBuffer)[ uiPos1]);
 		SLAB *		pSlab2 = (((SLAB **)pvBuffer)[ uiPos2]);
 
-		flmAssert( pSlab1 != pSlab2);
+		f_assert( pSlab1 != pSlab2);
 
 		if( pSlab1 < pSlab2)
 		{
@@ -1125,7 +1125,7 @@ FSTATIC void freeMemTrackingInfo(
 		// does not have a slot for tracking it in the array.
 
 		gv_ppvMemTrackingPtrs [uiId - 1] = NULL;
-		flmAssert( gv_uiNumMemPtrs);
+		f_assert( gv_uiNumMemPtrs);
 		gv_uiNumMemPtrs--;
 
 		if ( !bMutexAlreadyLocked)
@@ -1329,7 +1329,7 @@ void logMemLeak(
 	}
 	else if (iRet == IDABORT)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 	}
 #else
 	gv_bLogLeaks = TRUE;
@@ -2071,7 +2071,7 @@ void F_Pool::freeToMark(
 
 			if (m_pPoolStats)
 			{
-				flmAssert( uiOldFreeOffset >= pBlock->uiFreeOffset);
+				f_assert( uiOldFreeOffset >= pBlock->uiFreeOffset);
 				m_uiBytesAllocated -= (uiOldFreeOffset - pBlock->uiFreeOffset);
 			}
 
@@ -2117,12 +2117,12 @@ Desc:
 F_SlabManager::~F_SlabManager()
 {
 	
-	flmAssert( !m_uiInUseSlabs);
-	flmAssert( m_uiAvailSlabs == m_uiTotalSlabs);
+	f_assert( !m_uiInUseSlabs);
+	f_assert( m_uiAvailSlabs == m_uiTotalSlabs);
 
 	freeAllSlabs();
 	
-	flmAssert( !m_uiTotalBytesAllocated);
+	f_assert( !m_uiTotalBytesAllocated);
 	
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -2262,8 +2262,8 @@ RCODE FLMAPI F_SlabManager::resize(
 			
 			releaseSlabToSystem( pSlab);
 			
-			flmAssert( m_uiTotalSlabs);
-			flmAssert( m_uiInUseSlabs);
+			f_assert( m_uiTotalSlabs);
+			f_assert( m_uiInUseSlabs);
 			
 			m_uiAvailSlabs--;
 			m_uiTotalSlabs--;
@@ -2359,13 +2359,13 @@ RCODE FLMAPI F_SlabManager::allocSlab(
 		
 		((SLABHEADER *)*ppSlab)->pNext = NULL;
 		
-		flmAssert( m_uiAvailSlabs);
+		f_assert( m_uiAvailSlabs);
 		m_uiAvailSlabs--;
 		m_uiInUseSlabs++;
 	}
 	else
 	{
-		flmAssert( !m_uiAvailSlabs);
+		f_assert( !m_uiAvailSlabs);
 
 		if( (*ppSlab = allocSlabFromSystem()) == NULL)
 		{
@@ -2396,7 +2396,7 @@ void FLMAPI F_SlabManager::freeSlab(
 {
 	FLMBOOL				bUnlockMutex = FALSE;
 	
-	flmAssert( ppSlab && *ppSlab);
+	f_assert( ppSlab && *ppSlab);
 	
 	if( !bMutexLocked)
 	{
@@ -2419,7 +2419,7 @@ void FLMAPI F_SlabManager::freeSlab(
 		m_pFirstInSlabList = *ppSlab;
 		*ppSlab = NULL;
 
-		flmAssert( m_uiInUseSlabs);		
+		f_assert( m_uiInUseSlabs);		
 		m_uiInUseSlabs--;
 		m_uiAvailSlabs++;
 	}
@@ -2428,8 +2428,8 @@ void FLMAPI F_SlabManager::freeSlab(
 		releaseSlabToSystem( *ppSlab);
 		*ppSlab = NULL;
 		
-		flmAssert( m_uiTotalSlabs);
-		flmAssert( m_uiInUseSlabs);
+		f_assert( m_uiTotalSlabs);
+		f_assert( m_uiInUseSlabs);
 		
 		m_uiTotalSlabs--;
 		m_uiInUseSlabs--;
@@ -2459,7 +2459,7 @@ void F_SlabManager::freeAllSlabs( void)
 		m_uiAvailSlabs--;
 	}
 	
-	flmAssert( !m_uiAvailSlabs);
+	f_assert( !m_uiAvailSlabs);
 	m_pLastInSlabList = NULL;
 }
 	
@@ -2508,7 +2508,7 @@ Desc:	Assumes that the mutex is locked
 void F_SlabManager::releaseSlabToSystem(
 	void *		pSlab)
 {
-	flmAssert( pSlab);
+	f_assert( pSlab);
 	
 #ifdef FLM_WIN
 	VirtualFree( pSlab, 0, MEM_RELEASE);
@@ -2534,7 +2534,7 @@ FLMINT FLMAPI F_SlabManager::slabAddrCompareFunc(
 	void *		pSlab1 = (((void **)pvBuffer)[ uiPos1]);
 	void *		pSlab2 = (((void **)pvBuffer)[ uiPos2]);
 
-	flmAssert( pSlab1 != pSlab2);
+	f_assert( pSlab1 != pSlab2);
 
 	if( pSlab1 < pSlab2)
 	{
@@ -2602,16 +2602,16 @@ RCODE F_SlabManager::sortSlabList( void)
 
 	while( pCurSlab)
 	{
-		flmAssert( uiSortEntries != uiMaxSortEntries);
+		f_assert( uiSortEntries != uiMaxSortEntries);
 		pSortBuf[ uiSortEntries++] = pCurSlab;
 		pCurSlab = ((SLABHEADER *)pCurSlab)->pNext;
 	}
 	
-	flmAssert( uiSortEntries == uiMaxSortEntries);
+	f_assert( uiSortEntries == uiMaxSortEntries);
 
 	// Quick sort
 
-	flmAssert( uiSortEntries);
+	f_assert( uiSortEntries);
 
 	f_qsort( (FLMBYTE *)pSortBuf, 0, uiSortEntries - 1, 
 		F_SlabManager::slabAddrCompareFunc,
@@ -2704,9 +2704,9 @@ RCODE F_FixedAlloc::setup(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	flmAssert( pSlabManager);
-	flmAssert( uiCellSize);
-	flmAssert( pUsageStats != NULL);
+	f_assert( pSlabManager);
+	f_assert( uiCellSize);
+	f_assert( pUsageStats != NULL);
 	
 	m_pUsageStats = pUsageStats;
 	m_pSlabManager = pSlabManager;
@@ -2730,7 +2730,7 @@ RCODE F_FixedAlloc::setup(
 
 	// Ensure that there's enough space for our overhead
 
-	flmAssert( m_uiCellSize >= sizeof( CELLAVAILNEXT));
+	f_assert( m_uiCellSize >= sizeof( CELLAVAILNEXT));
 
 	m_uiSizeOfCellAndHeader = m_uiCellHeaderSize + m_uiCellSize;
 
@@ -2738,9 +2738,9 @@ RCODE F_FixedAlloc::setup(
 		(m_uiSlabSize - m_uiSlabHeaderSize) /
 		m_uiSizeOfCellAndHeader;
 
-	flmAssert( m_uiCellsPerSlab);
-	flmAssert( m_uiCellsPerSlab <= FLM_MAX_UINT16);
-	flmAssert( (m_uiCellsPerSlab * m_uiCellSize) < m_uiSlabSize);
+	f_assert( m_uiCellsPerSlab);
+	f_assert( m_uiCellsPerSlab <= FLM_MAX_UINT16);
+	f_assert( (m_uiCellsPerSlab * m_uiCellSize) < m_uiSlabSize);
 	
 	return( rc);
 }
@@ -2759,12 +2759,12 @@ void * F_FixedAlloc::getCell(
 
 	if( (pSlab = m_pFirstSlabWithAvailCells) != NULL)
 	{
-		flmAssert( pSlab->ui16AvailCellCount <= m_uiTotalFreeCells);
-		flmAssert( m_uiTotalFreeCells);
-		flmAssert( pSlab->ui16AllocatedCells < m_uiCellsPerSlab);
+		f_assert( pSlab->ui16AvailCellCount <= m_uiTotalFreeCells);
+		f_assert( m_uiTotalFreeCells);
+		f_assert( pSlab->ui16AllocatedCells < m_uiCellsPerSlab);
 
 		pCell = m_pFirstSlabWithAvailCells->pLocalAvailCellListHead;
-		flmAssert( pCell);
+		f_assert( pCell);
 
 		pHeader = (CELLHEADER *)((FLMBYTE *)pCell - m_uiCellHeaderSize);
 		pSlab->ui16AllocatedCells++;
@@ -2789,19 +2789,19 @@ void * F_FixedAlloc::getCell(
 			// Need to keep the NULLNESS of the content of the cell consistent
 			// with the slab's ui16AvailCellCount being equal to 0
 
-			flmAssert( !pSlabToUnlink->ui16AvailCellCount);
+			f_assert( !pSlabToUnlink->ui16AvailCellCount);
 
 			// There can't be a pPrevSlabWithAvailCells since
 			// we're positioned to the first one
 
-			flmAssert( !pSlabToUnlink->pPrevSlabWithAvailCells);				
+			f_assert( !pSlabToUnlink->pPrevSlabWithAvailCells);				
 
 			// Update m_pFirstSlabWithAvailCells to point to the next one
 
 			if( (m_pFirstSlabWithAvailCells =
 				pSlabToUnlink->pNextSlabWithAvailCells) == NULL)
 			{
-				flmAssert( m_pLastSlabWithAvailCells == pSlabToUnlink);
+				f_assert( m_pLastSlabWithAvailCells == pSlabToUnlink);
 				m_pLastSlabWithAvailCells = NULL;
 			}
 
@@ -2816,7 +2816,7 @@ void * F_FixedAlloc::getCell(
 
 			// Decrement the slab count
 
-			flmAssert( m_uiSlabsWithAvailCells);
+			f_assert( m_uiSlabsWithAvailCells);
 			m_uiSlabsWithAvailCells--;
 		}
 	}
@@ -2921,7 +2921,7 @@ void F_FixedAlloc::freeCell(
 
 	if( !pSlab || pSlab->pvAllocator != (void *)this)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 		goto Exit;
 	}
 
@@ -2937,7 +2937,7 @@ void F_FixedAlloc::freeCell(
 
 	// Should always be set on a free
 	
-	flmAssert( m_pFirstSlab);
+	f_assert( m_pFirstSlab);
 	
 	// Add the cell to the pSlab's free list
 
@@ -2949,11 +2949,11 @@ void F_FixedAlloc::freeCell(
 	f_strcpy( (char *)pCellContents->szDebugPattern, "FREECELL");
 #endif
 
-	flmAssert( pCell);
+	f_assert( pCell);
 	pSlab->pLocalAvailCellListHead = (FLMBYTE *)pCell;
 	pSlab->ui16AvailCellCount++;
 
-	flmAssert( pSlab->ui16AllocatedCells);
+	f_assert( pSlab->ui16AllocatedCells);
 	pSlab->ui16AllocatedCells--;
 
 	// If there's no chain, make this one the first
@@ -2962,8 +2962,8 @@ void F_FixedAlloc::freeCell(
 	{
 		m_pFirstSlabWithAvailCells = pSlab;
 		m_pLastSlabWithAvailCells = pSlab;
-		flmAssert( !pSlab->pNextSlabWithAvailCells);
-		flmAssert( !pSlab->pPrevSlabWithAvailCells);
+		f_assert( !pSlab->pNextSlabWithAvailCells);
+		f_assert( !pSlab->pPrevSlabWithAvailCells);
 		m_uiSlabsWithAvailCells++;
 		m_bAvailListSorted = TRUE;
 	}
@@ -2991,7 +2991,7 @@ void F_FixedAlloc::freeCell(
 
 	if( pSlab->ui16AvailCellCount == m_uiCellsPerSlab)
 	{
-		flmAssert( !pSlab->ui16AllocatedCells);
+		f_assert( !pSlab->ui16AllocatedCells);
 
 		// If we have met our threshold for being able to free a slab
 
@@ -3022,7 +3022,7 @@ void F_FixedAlloc::freeCell(
 			}
 			else
 			{
-				flmAssert( m_pLastSlabWithAvailCells == pSlab);
+				f_assert( m_pLastSlabWithAvailCells == pSlab);
 				m_pLastSlabWithAvailCells = pSlab->pPrevSlabWithAvailCells;
 			}
 
@@ -3083,13 +3083,13 @@ void F_FixedAlloc::freeSlab(
 	FLMUINT32				ui32AvailCount = 0;
 #endif
 
-	flmAssert( pSlab);
+	f_assert( pSlab);
 
 	// Memory corruption detected!
 
 	if( pSlab->ui16AllocatedCells || pSlab->pvAllocator != this)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 		return;
 	}
 
@@ -3103,8 +3103,8 @@ void F_FixedAlloc::freeSlab(
 		pAvailNext = (CELLAVAILNEXT *)pAvailNext->pNextInList;
 	}
 
-	flmAssert( pSlab->ui16AvailCellCount == ui32AvailCount);
-	flmAssert( pSlab->ui16NextNeverUsedCell >= ui32AvailCount);
+	f_assert( pSlab->ui16AvailCellCount == ui32AvailCount);
+	f_assert( pSlab->ui16NextNeverUsedCell >= ui32AvailCount);
 #endif
 	
 	// Unlink from all-slabs-list
@@ -3149,9 +3149,9 @@ void F_FixedAlloc::freeSlab(
 		m_pFirstSlabWithAvailCells = pSlab->pNextSlabWithAvailCells;
 	}
 
-	flmAssert( m_uiSlabsWithAvailCells);
+	f_assert( m_uiSlabsWithAvailCells);
 	m_uiSlabsWithAvailCells--;
-	flmAssert( m_uiTotalFreeCells >= pSlab->ui16AvailCellCount);
+	f_assert( m_uiTotalFreeCells >= pSlab->ui16AvailCellCount);
 	m_uiTotalFreeCells -= pSlab->ui16AvailCellCount;
 	m_pUsageStats->ui64Slabs--;
 	m_pSlabManager->freeSlab( (void **)&pSlab, TRUE);
@@ -3173,7 +3173,7 @@ void F_FixedAlloc::freeAll( void)
 		freeSlab( pFreeMe);
 	}
 
-	flmAssert( !m_uiTotalFreeCells);
+	f_assert( !m_uiTotalFreeCells);
 
 	m_pFirstSlab = NULL;
 	m_pLastSlab = NULL;
@@ -3236,14 +3236,14 @@ void F_FixedAlloc::defragmentMemory( void)
 
 		while( pCurSlab)
 		{
-			flmAssert( uiSortEntries != uiMaxSortEntries);
+			f_assert( uiSortEntries != uiMaxSortEntries);
 			pSortBuf[ uiSortEntries++] = pCurSlab;
 			pCurSlab = pCurSlab->pNextSlabWithAvailCells;
 		}
 
 		// Quick sort
 
-		flmAssert( uiSortEntries);
+		f_assert( uiSortEntries);
 
 		f_qsort( (FLMBYTE *)pSortBuf, 0, uiSortEntries - 1, 
 			F_FixedAlloc::slabAddrCompareFunc,
@@ -3336,7 +3336,7 @@ void F_FixedAlloc::defragmentMemory( void)
 
 				// If pContainingSlab is non-NULL, the cell is currently allocated
 
-				flmAssert( pCellHeader->pContainingSlab == pCurSlab);
+				f_assert( pCellHeader->pContainingSlab == pCurSlab);
 
 				pucOriginal = ((FLMBYTE *)pCellHeader + m_uiCellHeaderSize);
 
@@ -3471,7 +3471,7 @@ RCODE F_BufferAlloc::setup(
 	FLMUINT		uiLoop;
 	FLMUINT		uiSize;
 	
-	flmAssert( pSlabManager);
+	f_assert( pSlabManager);
 	m_pSlabManager = pSlabManager;
 	m_pSlabManager->AddRef();
 	
@@ -3590,7 +3590,7 @@ RCODE F_BufferAlloc::allocBuf(
 	
 	if( pAllocator)
 	{
-		flmAssert( pAllocator->getCellSize() >= uiSize);
+		f_assert( pAllocator->getCellSize() >= uiSize);
 
 		if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( pRelocator, 
 			pvInitialData, uiDataSize)) == NULL)
@@ -3643,7 +3643,7 @@ RCODE F_BufferAlloc::reallocBuf(
 	IF_FixedAlloc *	pNewAllocator;
 	FLMBOOL				bLockedMutex = FALSE;
 
-	flmAssert( uiNewSize);
+	f_assert( uiNewSize);
 
 	if( !uiOldSize)
 	{
@@ -3674,7 +3674,7 @@ RCODE F_BufferAlloc::reallocBuf(
 	{
 		if( pNewAllocator)
 		{
-			flmAssert( pOldAllocator != pNewAllocator);
+			f_assert( pOldAllocator != pNewAllocator);
 
 			if( (pucTmp = (FLMBYTE *)pNewAllocator->allocCell( pRelocator,
 										NULL, 0, TRUE)) == NULL)
@@ -3723,8 +3723,8 @@ RCODE F_BufferAlloc::reallocBuf(
 		{
 			FLMUINT		uiOldAllocSize = f_msize( *ppucBuffer);
 	
-			flmAssert( uiOldSize > m_ppAllocators[ NUM_BUF_ALLOCATORS - 1]->getCellSize());
-			flmAssert( uiNewSize > m_ppAllocators[ NUM_BUF_ALLOCATORS - 1]->getCellSize());
+			f_assert( uiOldSize > m_ppAllocators[ NUM_BUF_ALLOCATORS - 1]->getCellSize());
+			f_assert( uiNewSize > m_ppAllocators[ NUM_BUF_ALLOCATORS - 1]->getCellSize());
 			
 			if( RC_BAD( rc = f_realloc( uiNewSize, ppucBuffer)))
 			{
@@ -3828,7 +3828,7 @@ IF_FixedAlloc * F_BufferAlloc::getAllocator(
 {
 	IF_FixedAlloc *		pAllocator;
 
-	flmAssert( uiSize);
+	f_assert( uiSize);
 	
 	if( uiSize <= CELL_SIZE_10)
 	{
@@ -4075,8 +4075,8 @@ RCODE F_MultiAlloc::allocBuf(
 	RCODE					rc = NE_FLM_OK;
 	IF_FixedAlloc *	pAllocator = getAllocator( uiSize);
 
-	flmAssert( pAllocator);
-	flmAssert( pAllocator->getCellSize() >= uiSize);
+	f_assert( pAllocator);
+	f_assert( pAllocator->getCellSize() >= uiSize);
 
 	if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( pRelocator, 
 		NULL, 0, bMutexLocked)) == NULL)
@@ -4105,7 +4105,7 @@ RCODE F_MultiAlloc::reallocBuf(
 	IF_FixedAlloc *	pNewAllocator;
 	FLMBOOL				bLockedMutex = FALSE;
 
-	flmAssert( uiNewSize);
+	f_assert( uiNewSize);
 
 	if( !(*ppucBuffer))
 	{
@@ -4177,7 +4177,7 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 	IF_FixedAlloc *	pAllocator = NULL;
 	FLMUINT				uiLoop;
 
-	flmAssert( uiSize);
+	f_assert( uiSize);
 
 	for( uiLoop = 0; m_puiCellSizes[ uiLoop]; uiLoop++)
 	{

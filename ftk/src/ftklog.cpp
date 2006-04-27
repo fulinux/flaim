@@ -495,7 +495,7 @@ void FLMAPI f_endLogMessage(
 	if( *ppLogMessage)
 	{
 		f_mutexLock( gv_hLoggerMutex);
-		flmAssert( gv_uiPendingLogMessages);
+		f_assert( gv_uiPendingLogMessages);
 		
 		(*ppLogMessage)->endMessage();
 		(*ppLogMessage)->Release();

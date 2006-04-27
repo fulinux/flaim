@@ -2565,7 +2565,7 @@ FINLINE FLMUINT maxDecimalSize(
 		case 8:
 			return 20;
 		default:
-			flmAssert( 0);
+			f_assert( 0);
 			return 0;
 	}
 }
@@ -5366,7 +5366,7 @@ RCODE FLMAPI f_formatUTF8Text(
 		}
 		else
 		{
-			flmAssert( uiCompareRules & FLM_COMP_COMPRESS_WHITESPACE);
+			f_assert( uiCompareRules & FLM_COMP_COMPRESS_WHITESPACE);
 			
 			// A space will already have been encoded into the string.
 			// Since we know a space takes exactly one byte in the UTF8
@@ -5507,7 +5507,7 @@ FSTATIC void f_metaStrToNum(
 					uiMeta += 13;
 					break;
 				default:
-					flmAssert( 0);
+					f_assert( 0);
 			}
 
 			pszMeta++;
@@ -5515,7 +5515,7 @@ FSTATIC void f_metaStrToNum(
 
 		if( ++uiOffset == 4)
 		{
-			flmAssert( *pszMeta == 0);
+			f_assert( *pszMeta == 0);
 			break;
 		}
 		uiMeta <<= 4;
@@ -7292,7 +7292,7 @@ Exit:
 		pBufferStream->Release();
 	}
 
-	flmAssert( RC_OK( rc));
+	f_assert( RC_OK( rc));
 	return( rc);
 }
 #endif

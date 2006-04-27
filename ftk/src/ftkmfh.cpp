@@ -221,7 +221,7 @@ F_MultiFileHdl::~F_MultiFileHdl()
 		close();
 	}
 
-	flmAssert( !m_pLockFileHdl);
+	f_assert( !m_pLockFileHdl);
 }
 
 /****************************************************************************
@@ -269,7 +269,7 @@ void F_MultiFileHdl::close(
 			for( rc = pDir->next(); !RC_BAD( rc) ; rc = pDir->next())
 			{
 				pDir->currentItemPath( szTmpPath);
-				flmAssert( f_strstr( szTmpPath, ".64") != 0);
+				f_assert( f_strstr( szTmpPath, ".64") != 0);
 				(void)gv_pFileSystem->deleteFile( szTmpPath);
 			}
 
@@ -346,7 +346,7 @@ RCODE F_MultiFileHdl::deleteMultiFile(
 		for( rc = pDir->next(); !RC_BAD( rc) ; rc = pDir->next())
 		{
 			pDir->currentItemPath( szTmpPath);
-			flmAssert( f_strstr( szTmpPath, ".64") != 0);
+			f_assert( f_strstr( szTmpPath, ".64") != 0);
 			(void)gv_pFileSystem->deleteFile( szTmpPath);
 		}
 
@@ -685,7 +685,7 @@ RCODE F_MultiFileHdl::read(
 		}
 
 		uiMaxReadLen = m_uiMaxFileSize - uiFileOffset;
-		flmAssert( uiMaxReadLen != 0);
+		f_assert( uiMaxReadLen != 0);
 		uiTmp = (uiLength >= uiMaxReadLen ? uiMaxReadLen : uiLength);
 		uiBytesToRead = (((FLMUINT64)uiTmp > (FLMUINT64)(m_ui64EOF - ui64Offset))
 								? (FLMUINT)(m_ui64EOF - ui64Offset)
@@ -770,7 +770,7 @@ RCODE F_MultiFileHdl::write(
 
 	// Don't allow zero-length writes
 
-	flmAssert( uiLength);
+	f_assert( uiLength);
 
 	// Write to the data file(s), moving to new files as needed.
 
@@ -782,7 +782,7 @@ RCODE F_MultiFileHdl::write(
 		}
 
 		uiMaxWriteLen = m_uiMaxFileSize - uiFileOffset;
-		flmAssert( uiMaxWriteLen != 0);
+		f_assert( uiMaxWriteLen != 0);
 		uiBytesToWrite = uiLength >= uiMaxWriteLen ? uiMaxWriteLen : uiLength;
 
 		uiTmp = 0;
@@ -833,7 +833,7 @@ RCODE F_MultiFileHdl::getFileHdl(
 	char				szPath[ F_PATH_MAX_SIZE];
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bOpen);
+	f_assert( m_bOpen);
 
 	*ppFileHdl = NULL;
 
@@ -876,7 +876,7 @@ RCODE F_MultiFileHdl::getFileHdl(
 
 		m_pFileHdlList[ uiSlot].pFileHdl = pTmpHdl;
 		m_pFileHdlList[ uiSlot].uiFileNum = uiFileNum;
-		flmAssert( !m_pFileHdlList[ uiSlot].bDirty);
+		f_assert( !m_pFileHdlList[ uiSlot].bDirty);
 	}
 
 	*ppFileHdl = m_pFileHdlList[ uiSlot].pFileHdl;

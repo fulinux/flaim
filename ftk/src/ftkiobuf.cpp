@@ -116,7 +116,7 @@ Desc:
 ****************************************************************************/
 F_IOBufferMgr::~F_IOBufferMgr()
 {
-	flmAssert( !m_pFirstPending && !m_pFirstUsed);
+	f_assert( !m_pFirstPending && !m_pFirstUsed);
 	while (m_pFirstPending)
 	{
 		m_pFirstPending->Release();
@@ -159,7 +159,7 @@ void F_IOBufferMgr::linkToList(
 	F_IOBuffer **	ppListHead,
 	F_IOBuffer *	pIOBuffer)
 {
-	flmAssert( pIOBuffer->m_eList == F_IOBuffer::MGR_LIST_NONE);
+	f_assert( pIOBuffer->m_eList == F_IOBuffer::MGR_LIST_NONE);
 	pIOBuffer->m_pPrev = NULL;
 	if ((pIOBuffer->m_pNext = *ppListHead) != NULL)
 	{
@@ -212,13 +212,13 @@ void F_IOBufferMgr::unlinkFromList(
 	}
 	else
 	{
-		flmAssert( 0);
+		f_assert( 0);
 	}
 	if (pIOBuffer->m_eList == F_IOBuffer::MGR_LIST_PENDING ||
 		 pIOBuffer->m_eList == F_IOBuffer::MGR_LIST_USED)
 	{
 		m_uiBuffersInUse--;
-		flmAssert( m_uiBufferBytesInUse >= pIOBuffer->m_uiBufferSize);
+		f_assert( m_uiBufferBytesInUse >= pIOBuffer->m_uiBufferSize);
 		m_uiBufferBytesInUse -= pIOBuffer->m_uiBufferSize;
 	}
 	pIOBuffer->m_eList = F_IOBuffer::MGR_LIST_NONE;
@@ -263,7 +263,7 @@ RCODE FLMAPI F_IOBufferMgr::getBuffer(
 				}
 				else
 				{
-					flmAssert( m_uiBuffersInUse < m_uiMaxBuffers);
+					f_assert( m_uiBuffersInUse < m_uiMaxBuffers);
 					break;
 				}
 			}
@@ -283,7 +283,7 @@ RCODE FLMAPI F_IOBufferMgr::getBuffer(
 	{
 		pIOBuffer = m_pFirstAvail;
 		unlinkFromList( pIOBuffer);
-		flmAssert( pIOBuffer->getBufferSize() == uiBufferSize);
+		f_assert( pIOBuffer->getBufferSize() == uiBufferSize);
 	}
 	else
 	{
@@ -305,7 +305,7 @@ RCODE FLMAPI F_IOBufferMgr::getBuffer(
 
 	linkToList( &m_pFirstUsed, pIOBuffer);
 #ifdef FLM_NLM
-	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)(pIOBuffer->m_hSem)) == 0);
+	f_assert( kSemaphoreExamineCount( (SEMAPHORE)(pIOBuffer->m_hSem)) == 0);
 #endif
 
 Exit:
@@ -356,7 +356,7 @@ F_IOBuffer::~F_IOBuffer()
 
 	if (m_eList != MGR_LIST_NONE)
 	{
-		flmAssert( m_pIOBufferMgr);
+		f_assert( m_pIOBufferMgr);
 		m_pIOBufferMgr->unlinkFromList( this);
 	}
 
@@ -393,7 +393,7 @@ Desc:
 ****************************************************************************/
 void FLMAPI F_IOBuffer::makePending( void)
 {
-	flmAssert( m_eList == MGR_LIST_USED);
+	f_assert( m_eList == MGR_LIST_USED);
 
 	// Unlink from used list
 
@@ -473,7 +473,7 @@ Desc:
 void FLMAPI F_IOBuffer::notifyComplete(
 	RCODE			rc)
 {
-	flmAssert( m_eList == MGR_LIST_PENDING ||
+	f_assert( m_eList == MGR_LIST_PENDING ||
 				  m_eList == MGR_LIST_USED);
 
 	m_completionRc = rc;
@@ -536,7 +536,7 @@ FLMBOOL F_IOBuffer::isIOComplete( void)
 #ifdef FLM_NLM
 	if( (uiSemCount = (FLMUINT)kSemaphoreExamineCount( (SEMAPHORE)m_hSem)) != 0)
 	{
-		flmAssert( uiSemCount == 1);
+		f_assert( uiSemCount == 1);
 		bComplete = TRUE;
 	}
 #endif
@@ -588,9 +588,9 @@ RCODE F_IOBuffer::waitToComplete( void)
 #ifdef FLM_NLM
 	if( kSemaphoreWait( (SEMAPHORE)m_hSem) != 0)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 	}
-	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
+	f_assert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
 	rc = m_completionRc;
 	notifyComplete( m_completionRc);
 #endif
@@ -606,7 +606,7 @@ void FLMAPI F_IOBuffer::signalComplete(
 	RCODE	rc)
 {
 	m_completionRc = rc;
-	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
+	f_assert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
 	kSemaphoreSignal( (SEMAPHORE)m_hSem);
 }
 #endif

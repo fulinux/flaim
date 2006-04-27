@@ -486,7 +486,7 @@ void F_XML::setCharFlag(
 {
 	FLMUINT		uiLoop;
 
-	flmAssert( uLowChar <= uHighChar);
+	f_assert( uLowChar <= uHighChar);
 
 	for( uiLoop = (FLMUINT)uLowChar; uiLoop <= (FLMUINT)uHighChar; uiLoop++)
 	{

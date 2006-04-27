@@ -614,7 +614,7 @@ F_ResultSet::~F_ResultSet()
 
 		pNextRSBlk = pCurRSBlk->m_pNext;
 		uiCount = pCurRSBlk->Release();
-		flmAssert( !uiCount);
+		f_assert( !uiCount);
 	}
 
 	// Set list to NULL for debugging in memory.
@@ -665,7 +665,7 @@ RCODE FLMAPI F_ResultSet::resetResultSet(
 		if( pCurRSBlk != m_pFirstRSBlk)
 		{
 			uiCount = pCurRSBlk->Release();
-			flmAssert( !uiCount);
+			f_assert( !uiCount);
 		}
 	}
 
@@ -755,8 +755,8 @@ RCODE FLMAPI F_ResultSet::setupResultSet(
 	FLMBOOL		bNewBlock = FALSE;
 	FLMBOOL		bNewBuffer = FALSE;
 
-	flmAssert( !m_bSetupCalled );
-	flmAssert( uiEntrySize <= RS_MAX_FIXED_ENTRY_SIZE);
+	f_assert( !m_bSetupCalled );
+	f_assert( uiEntrySize <= RS_MAX_FIXED_ENTRY_SIZE);
 
 	// Perform all of the allocations first.
 
@@ -868,7 +868,7 @@ RCODE F_ResultSet::setupFromFile( void)
 	FLMUINT					uiBytesRead;
 	F_BLOCK_HEADER			BlkHdr;
 
-	flmAssert( !m_bSetupCalled);
+	f_assert( !m_bSetupCalled);
 	
 	if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl1)))
 	{
@@ -1046,7 +1046,7 @@ RCODE FLMAPI F_ResultSet::flushToFile()
 {
 	RCODE		rc = NE_FLM_OK;
 
-	flmAssert( m_bFile1Opened);
+	f_assert( m_bFile1Opened);
 
 	// Flush to disk what ever we have.
 
@@ -1077,8 +1077,8 @@ RCODE FLMAPI F_ResultSet::addEntry(
 {
 	RCODE		rc = NE_FLM_OK;
 
-	flmAssert( m_bSetupCalled);
-	flmAssert( !m_bFinalizeCalled);
+	f_assert( m_bSetupCalled);
+	f_assert( !m_bFinalizeCalled);
 
 	rc = m_pCurRSBlk->addEntry( (FLMBYTE *)pvEntry, uiEntryLength);
 
@@ -1184,8 +1184,8 @@ RCODE FLMAPI F_ResultSet::finalizeResultSet(
 
 	// Avoid being called more than once.
 
-	flmAssert( !m_bFinalizeCalled);
-	flmAssert( m_bSetupCalled );
+	f_assert( !m_bFinalizeCalled);
+	f_assert( m_bSetupCalled );
 
 	// Not a bug - but for future possibilities just check
 	// if there is more than one block and if so then
@@ -1534,7 +1534,7 @@ Exit:
 
 		pRightBlk = pTempBlk->m_pNext;
 		uiTemp = pTempBlk->Release();
-		flmAssert( uiTemp == 0);
+		f_assert( uiTemp == 0);
 		pTempBlk = pRightBlk;
 	}
 
@@ -1551,7 +1551,7 @@ RCODE FLMAPI F_ResultSet::getCurrent(
 {
 	RCODE		rc = NE_FLM_OK;
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	if( !m_pCurRSBlk)
 	{
@@ -1577,7 +1577,7 @@ RCODE FLMAPI F_ResultSet::getNext(
 {
 	RCODE		rc = NE_FLM_OK;
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	// Make sure we are positioned to a block.
 
@@ -1637,7 +1637,7 @@ RCODE FLMAPI F_ResultSet::getPrev(
 {
 	RCODE				rc;
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	// Make sure we are positioned to a block.
 
@@ -1695,7 +1695,7 @@ RCODE FLMAPI F_ResultSet::getFirst(
 {
 	RCODE				rc;
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	if( m_pCurRSBlk != m_pFirstRSBlk)
 	{
@@ -1738,7 +1738,7 @@ RCODE FLMAPI F_ResultSet::getLast(
 {
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	if( m_pCurRSBlk != m_pLastRSBlk)
 	{
@@ -1786,7 +1786,7 @@ RCODE FLMAPI F_ResultSet::findMatch(
 	F_ResultSetBlk *	pLowBlk;				// Used for locating block.
 	F_ResultSetBlk *	pHighBlk;			// Low and High are exclusive.
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	// If not positioned anywhere, position to the midpoint.
 	// Otherwise, start on the current block we are on.
@@ -1935,7 +1935,7 @@ F_ResultSetBlk * F_ResultSet::selectMidpoint(
 
 	if( !pTempBlk)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 		pTempBlk = pLowBlk;
 		goto Exit;
 	}
@@ -1963,7 +1963,7 @@ RCODE FLMAPI F_ResultSet::setPosition(
 	RCODE					rc = NE_FLM_OK;
 	F_ResultSetBlk *	pInitialBlk = m_pCurRSBlk;
 
-	flmAssert( m_bFinalizeCalled);
+	f_assert( m_bFinalizeCalled);
 
 	if( ui64Position == RS_POSITION_NOT_SET)
 	{
@@ -2001,7 +2001,7 @@ RCODE FLMAPI F_ResultSet::setPosition(
 		do
 		{
 			m_pCurRSBlk = m_pCurRSBlk->m_pPrev;
-			flmAssert( m_pCurRSBlk);
+			f_assert( m_pCurRSBlk);
 		}
 		while( ui64Position < m_pCurRSBlk->m_ui64BlkEntryPosition);
 	}
@@ -2070,7 +2070,7 @@ RCODE F_ResultSet::getNextPtr(
 	F_ResultSetBlk *	pNextBlk;
 	FLMBYTE *			pucBuffer;
 
-	flmAssert( pCurBlk);
+	f_assert( pCurBlk);
 
 	while( RC_BAD( rc = pCurBlk->getNextPtr( ppucBuffer, puiReturnLength)))
 	{
@@ -2403,7 +2403,7 @@ Desc:	Reset a block so it can be reused.
 ******************************************************************************/
 void F_ResultSetBlk::reset( void)
 {
-	flmAssert( !m_pNext && !m_pPrev);
+	f_assert( !m_pNext && !m_pPrev);
 
 	// Initialize all of the member variables
 	// between this constructor, SetBuffer() and Setup().
@@ -2430,7 +2430,7 @@ void F_ResultSetBlk::setup(
 	FLMBOOL						bDropDuplicates,
 	FLMBOOL						bEntriesInOrder)
 {
-	flmAssert( ppMultiFileHdl);
+	f_assert( ppMultiFileHdl);
 	m_ppMultiFileHdl = ppMultiFileHdl;
 
 	if( m_pCompare)
@@ -2548,7 +2548,7 @@ RCODE F_ResultSetBlk::addEntry(
 	FLMUINT			uiAlignLength;
 	F_VAR_HEADER *	pEntry;
 
-	flmAssert( m_pucBlockBuf);
+	f_assert( m_pucBlockBuf);
 
 	// Was setup called for fixed length entries?
 
@@ -2597,7 +2597,7 @@ RCODE F_ResultSetBlk::addEntry(
 
 	// Check that setup was called for fixed length entries.
 
-	flmAssert( m_bFixedEntrySize);
+	f_assert( m_bFixedEntrySize);
 
 	// Check to see if the current buffer is full.
 
@@ -2633,7 +2633,7 @@ RCODE F_ResultSetBlk::modifyEntry(
 
 	F_UNREFERENCED_PARM( uiEntryLength);
 
-	flmAssert( m_pucBlockBuf);
+	f_assert( m_pucBlockBuf);
 
 	// The incoming entry MUST be the same size.
 
@@ -2642,7 +2642,7 @@ RCODE F_ResultSetBlk::modifyEntry(
 		// Assert that the entry length must be zero.
 		// If not - still use m_uiEntrySize;
 
-		flmAssert( !uiEntryLength);
+		f_assert( !uiEntryLength);
 
 		// Copy over the current item.
 
@@ -2659,7 +2659,7 @@ RCODE F_ResultSetBlk::modifyEntry(
 
 		// We cannot support changing the entry size at this time.
 
-		flmAssert( uiEntryLength == (FLMUINT)pCurEntry->ui32Length);
+		f_assert( uiEntryLength == (FLMUINT)pCurEntry->ui32Length);
 
 		f_memcpy( m_pucBlockBuf + pCurEntry->ui32Offset,
 				pucEntry, uiEntryLength);
@@ -2681,7 +2681,7 @@ RCODE F_ResultSetBlk::flush(
 
 	// Make sure SetBuffer was called
 
-	flmAssert( m_pucBlockBuf);
+	f_assert( m_pucBlockBuf);
 	squeezeSpace();
 
 	if( !m_bEntriesInOrder)
@@ -2739,8 +2739,8 @@ void F_ResultSetBlk::squeezeSpace( void)
 
 		// Overlapping memory move call.
 
-		flmAssert( (m_pucBlockBuf + m_BlockHeader.uiBlockSize) > m_pucEndPoint );
-		flmAssert( uiBytesToMoveUp < m_BlockHeader.uiBlockSize );
+		f_assert( (m_pucBlockBuf + m_BlockHeader.uiBlockSize) > m_pucEndPoint );
+		f_assert( uiBytesToMoveUp < m_BlockHeader.uiBlockSize );
 
 		f_memmove( m_pucEndPoint - uiBytesToMoveUp, m_pucEndPoint,
 			(FLMUINT) ((m_pucBlockBuf + m_BlockHeader.uiBlockSize ) - m_pucEndPoint ));
@@ -2910,7 +2910,7 @@ void F_ResultSetBlk::removeEntry(
 		FLMUINT			uiPos;
 		FLMUINT			uiMoveBytes;
 
-		flmAssert( m_BlockHeader.uiBlockSize >=
+		f_assert( m_BlockHeader.uiBlockSize >=
 						(uiDeletedOffset + uiDeletedLength ));
 
 		uiMoveBytes = (FLMUINT)
@@ -2926,7 +2926,7 @@ void F_ResultSetBlk::removeEntry(
 						  uiMoveBytes );
 		}
 
-		flmAssert( m_BlockHeader.uiBlockSize >=
+		f_assert( m_BlockHeader.uiBlockSize >=
 							(FLMUINT)((FLMBYTE *)(&pEntry[1]) - m_pucBlockBuf) );
 
 		uiMoveBytes = m_BlockHeader.uiBlockSize -
@@ -3267,7 +3267,7 @@ RCODE F_ResultSetBlk::copyCurrentEntry(
 	F_VAR_HEADER *	pEntry;
 	FLMBYTE *		pucEntry;
 
-	flmAssert( pucBuffer);
+	f_assert( pucBuffer);
 
 	// Copy the current entry.  This is a shared routine
 	// because the code to copy an entry is a little complicated.
@@ -3311,7 +3311,7 @@ RCODE F_ResultSetBlk::getCurrent(
 {
 	RCODE			rc;
 
-	flmAssert( m_pucBlockBuf);
+	f_assert( m_pucBlockBuf);
 	if( !m_bPositioned )
 	{
 		rc = RC_SET( NE_FLM_NOT_FOUND);
@@ -3350,9 +3350,9 @@ RCODE F_ResultSetBlk::getNextPtr(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	flmAssert( ppucBuffer);
-	flmAssert( puiReturnLength);
-	flmAssert( m_bPositioned);
+	f_assert( ppucBuffer);
+	f_assert( puiReturnLength);
+	f_assert( m_bPositioned);
 
 	// Are we on the last entry or past the last entry?
 
@@ -3397,7 +3397,7 @@ RCODE F_ResultSetBlk::getPrev(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	flmAssert( m_bPositioned);
+	f_assert( m_bPositioned);
 
 	// If not positioned then position past last entry.
 
@@ -3438,7 +3438,7 @@ RCODE F_ResultSetBlk::setPosition(
 
 	// Buffer must be set or SetBuffer() will set iEntryPos back to -1.
 
-	flmAssert( m_bPositioned);
+	f_assert( m_bPositioned);
 
 	if( ui64Position == RS_POSITION_NOT_SET)
 	{
@@ -3446,7 +3446,7 @@ RCODE F_ResultSetBlk::setPosition(
 		goto Exit;
 	}
 	
-	flmAssert( ui64Position >= m_ui64BlkEntryPosition);
+	f_assert( ui64Position >= m_ui64BlkEntryPosition);
 
 	// Convert to a zero based number relative to this block.
 

@@ -609,7 +609,7 @@ FLM_TAG_INFO * F_NameTable::findTagByTypeAndName(
 
 				// Better not be trying to insert a new one in this case!
 
-				flmAssert( puiInsertPos == NULL);
+				f_assert( puiInsertPos == NULL);
 
 				if ((uiMid &&
 						tagNameCompare( puzTagName, pszTagName,
@@ -711,7 +711,7 @@ RCODE F_NameTable::copyTagName(
 		// terminating NULL character. uiDestChars better be at least big
 		// enough for a null terminating character.
 
-		flmAssert( uiDestCharCnt >= sizeof( FLMUNICODE));
+		f_assert( uiDestCharCnt >= sizeof( FLMUNICODE));
 		uiDestCharCnt /= sizeof( FLMUNICODE);
 		uiDestCharCnt--;
 
@@ -748,7 +748,7 @@ RCODE F_NameTable::copyTagName(
 		// 0 character. uiDestCharCnt better be at list big
 		// enough for a 0 terminating character.
 
-		flmAssert( uiDestCharCnt);
+		f_assert( uiDestCharCnt);
 		uiDestCharCnt--;
 
 		if (puzSrcTagName)
@@ -1798,7 +1798,7 @@ void FLMAPI F_NameTable::removeTag(
 
 			// It should have been in the name table too!
 
-			flmAssert( 0);
+			f_assert( 0);
 		}
 
 		// Shift everything in the sorted number table that is above

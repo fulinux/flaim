@@ -232,7 +232,7 @@ Exit:
 #if defined( FLM_DEBUG)
 	if( bAssert)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 	}
 #else
 	F_UNREFERENCED_PARM( bAssert);
@@ -507,9 +507,13 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_enterDebugger( void)
+void FLMAPI f_enterDebugger(
+	const char *	pszFile,
+	int				iLine)
 {
 #ifdef FLM_WIN
+	fprintf( stderr, "Assertion failed in %s on line %d\n", pszFile, iLine);
+	fflush( stderr);
 	DebugBreak();
 #else
 	assert( 0);

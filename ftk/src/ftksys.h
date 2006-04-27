@@ -200,6 +200,7 @@
 			#include <winsock.h>
 			#include <imagehlp.h>
 			#include <malloc.h>
+			#include <stdio.h>
 		#pragma pack( pop, enter_windows)
 		
 		// Conversion from XXX to YYY, possible loss of data
@@ -552,37 +553,6 @@
 		FLMATOMIC		m_refCnt;
 	};
 
-	/****************************************************************************
-	Desc: Asserts
-	****************************************************************************/
-
-	#ifdef FLM_DEBUG
-
-		#if defined( FLM_WIN)
-		
-			#define flmAssert( exp) \
-				(void)( (exp) || (DebugBreak(), 0))
-
-		#elif defined( FLM_NLM)
-		
-			extern "C" void EnterDebugger(void);
-
-			#define flmAssert( exp) \
-				(void)( (exp) || ( EnterDebugger(), 0))
-
-		#elif defined( FLM_UNIX)
-		
-			#define flmAssert( exp)	\
-				(void)( (exp) || (assert(0), 0))
-
-		#else
-			#define flmAssert( exp)
-		#endif
-
-	#else
-		#define flmAssert( exp)
-	#endif
-
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
@@ -817,7 +787,7 @@
 			{
 				if( kMutexFree( (MUTEX)(*phMutex)))
 				{
-					flmAssert( 0);
+					f_assert( 0);
 				}
 				
 				*phMutex = F_MUTEX_NULL;
@@ -917,8 +887,9 @@
 		FINLINE void FLMAPI f_mutexLock(
 			F_MUTEX		hMutex)
 		{
-			while( f_atomicExchange( 
-				&(((F_INTERLOCK *)hMutex)->locked), 1) != 0)
+			F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
+
+			while( f_atomicExchange( &pInterlock->locked, 1) != 0)
 			{
 		#ifdef FLM_DEBUG
 				f_atomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
@@ -927,7 +898,7 @@
 			}
 	
 		#ifdef FLM_DEBUG
-			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
+			f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
 			((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
 			f_atomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
 		#endif
@@ -936,9 +907,9 @@
 		FINLINE void FLMAPI f_mutexUnlock(
 			F_MUTEX		hMutex)
 		{
-			flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
+			f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
 		#ifdef FLM_DEBUG
-			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+			f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
 			((F_INTERLOCK *)hMutex)->uiThreadId = 0;
 		#endif
 			f_atomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
@@ -948,8 +919,8 @@
 			F_MUTEX		hMutex)
 		{
 		#ifdef FLM_DEBUG
-			flmAssert( ((F_INTERLOCK *)hMutex)->locked == 1);
-			flmAssert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+			f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
+			f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
 		#else
 			F_UNREFERENCED_PARM( hMutex);
 		#endif
@@ -1257,14 +1228,14 @@
 			FLMUINT	uiBlockNumber,
 			void *	pvData)
 		{
-			flmAssert( uiBlockNumber < MAX_BUFFER_BLOCKS);
+			f_assert( uiBlockNumber < MAX_BUFFER_BLOCKS);
 			m_UserData [uiBlockNumber] = pvData;
 		}
 	
 		FINLINE void * FLMAPI getCompletionCallbackData(
 			FLMUINT	uiBlockNumber)
 		{
-			flmAssert( uiBlockNumber < MAX_BUFFER_BLOCKS);
+			f_assert( uiBlockNumber < MAX_BUFFER_BLOCKS);
 			return( m_UserData [uiBlockNumber]);
 		}
 	
@@ -1647,7 +1618,7 @@
 			}
 			else
 			{
-				flmAssert( pvBufferObj == NULL);
+				f_assert( pvBufferObj == NULL);
 				return( write( ui64WriteOffset, uiBytesToWrite, pvBuffer,
 									puiBytesWrittenRV));
 			}
@@ -2105,13 +2076,13 @@
 	
 		FINLINE FLMUINT64 FLMAPI totalSize( void)
 		{
-			flmAssert( m_bIsOpen);
+			f_assert( m_bIsOpen);
 			return( m_uiBufferLen);
 		}
 	
 		FINLINE FLMUINT64 FLMAPI remainingSize( void)
 		{
-			flmAssert( m_bIsOpen);
+			f_assert( m_bIsOpen);
 			return( m_uiBufferLen - m_uiOffset);
 		}
 	
@@ -2120,7 +2091,7 @@
 		FINLINE RCODE FLMAPI positionTo(
 			FLMUINT64		ui64Position)
 		{
-			flmAssert( m_bIsOpen);
+			f_assert( m_bIsOpen);
 	
 			if( ui64Position < m_uiBufferLen)
 			{
@@ -2136,7 +2107,7 @@
 	
 		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
 		{
-			flmAssert( m_bIsOpen);
+			f_assert( m_bIsOpen);
 			return( m_uiOffset);
 		}
 	
@@ -2147,22 +2118,22 @@
 			
 		FINLINE const FLMBYTE * getBuffer( void)
 		{
-			flmAssert( m_bIsOpen);
+			f_assert( m_bIsOpen);
 			return( m_pucBuffer);
 		}
 		
 		FINLINE const FLMBYTE * getBufferAtCurrentOffset( void)
 		{
-			flmAssert( m_bIsOpen);
+			f_assert( m_bIsOpen);
 			return( m_pucBuffer ? &m_pucBuffer[ m_uiOffset] : NULL);
 		}
 		
 		FINLINE void truncate(
 			FLMUINT		uiOffset)
 		{
-			flmAssert( m_bIsOpen);
-			flmAssert( uiOffset >= m_uiOffset);
-			flmAssert( uiOffset <= m_uiBufferLen);
+			f_assert( m_bIsOpen);
+			f_assert( uiOffset >= m_uiOffset);
+			f_assert( uiOffset <= m_uiBufferLen);
 			
 			m_uiBufferLen = uiOffset;
 		}
@@ -2260,7 +2231,7 @@
 		{
 			if (!m_pIStream)
 			{
-				flmAssert( 0);
+				f_assert( 0);
 				return( 0);
 			}
 	
@@ -2271,7 +2242,7 @@
 		{
 			if( !m_pIStream)
 			{
-				flmAssert( 0);
+				f_assert( 0);
 				return( 0);
 			}
 	
@@ -2283,7 +2254,7 @@
 		{
 			if( !m_pIStream)
 			{
-				flmAssert( 0);
+				f_assert( 0);
 				return( RC_SET( NE_FLM_ILLEGAL_OP));
 			}
 	
@@ -2303,7 +2274,7 @@
 		{
 			if( !m_pIStream)
 			{
-				flmAssert( 0);
+				f_assert( 0);
 				return( 0);
 			}
 	

@@ -44,7 +44,7 @@ Desc:
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *	phMutex)
 {
-	flmAssert( phMutex != NULL);
+	f_assert( phMutex != NULL);
 
 	if( (*phMutex = (F_MUTEX)malloc( sizeof( F_INTERLOCK))) == F_MUTEX_NULL)
 	{
@@ -69,7 +69,7 @@ Desc:
 void FLMAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
-	flmAssert( phMutex != NULL);
+	f_assert( phMutex != NULL);
 
 	if (*phMutex != F_MUTEX_NULL)
 	{
@@ -89,7 +89,7 @@ RCODE FLMAPI f_mutexCreate(
 	RCODE								rc = NE_FLM_OK;
 	pthread_mutexattr_t *		pMutexAttr = NULL;
 
-	flmAssert( phMutex != NULL);
+	f_assert( phMutex != NULL);
 
 	// NOTE: Cannot call f_alloc because the memory initialization needs
 	// to be able to set up mutexes.
@@ -143,7 +143,7 @@ Desc:
 void FLMAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
-	flmAssert( phMutex != NULL);
+	f_assert( phMutex != NULL);
 
 	if (*phMutex != F_MUTEX_NULL)
 	{
@@ -225,7 +225,7 @@ FINLINE int sema_wait(
 	}
 
 	pSem->count--;
-	flmAssert( pSem->count >= 0);
+	f_assert( pSem->count >= 0);
 
 Exit:
 
@@ -278,7 +278,7 @@ Restart:
 	}
 
 	pSem->count--;
-	flmAssert( pSem->count >= 0);
+	f_assert( pSem->count >= 0);
 
 Exit:
 
@@ -296,7 +296,7 @@ int sema_signal(
 {
 	pthread_mutex_lock( &pSem->lock);
 	pSem->count++;
-	flmAssert( pSem->count > 0);
+	f_assert( pSem->count > 0);
 	pthread_cond_signal( &pSem->cond);
 	pthread_mutex_unlock( &pSem->lock);
 
@@ -313,7 +313,7 @@ RCODE f_semCreate(
 {
 	RCODE	rc = NE_FLM_OK;
 
-	flmAssert( phSem != NULL);
+	f_assert( phSem != NULL);
 
 	if( RC_BAD( rc = f_alloc( sizeof( sema_t), phSem)))
 	{
@@ -341,7 +341,7 @@ Desc:
 void f_semDestroy(
 	F_SEM  *		phSem)
 {
-	flmAssert( phSem != NULL);
+	f_assert( phSem != NULL);
 
 	if (*phSem != F_SEM_NULL)
 	{
@@ -362,7 +362,7 @@ RCODE f_semWait(
 {
 	RCODE			rc	= NE_FLM_OK;
 
-	flmAssert( hSem != F_SEM_NULL);
+	f_assert( hSem != F_SEM_NULL);
 
 	//catch the F_SEM_WAITFOREVER flag so we can directly call sema_wait
 	//instead of passing F_SEM_WAITFOREVER through to sema_timedwait.

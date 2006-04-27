@@ -256,8 +256,8 @@ RCODE FLMAPI F_IniFile::read(
 	char *			pszReadBuf = NULL;
 	FLMUINT			uiLineNum = 0;
 	
-	flmAssert( m_bReady);
-	flmAssert( !m_pFileHdl);
+	f_assert( m_bReady);
+	f_assert( !m_pFileHdl);
 
 	// Open the file
 
@@ -388,7 +388,7 @@ RCODE FLMAPI F_IniFile::write( void)
 	INI_LINE *	pCurLine = NULL;
 	FLMBOOL		uiFileOffset = 0;		
 
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 	
 	if (!m_bModified)
 	{
@@ -399,7 +399,7 @@ RCODE FLMAPI F_IniFile::write( void)
 
 	// Open the file
 	
-	flmAssert( !m_pFileHdl);
+	f_assert( !m_pFileHdl);
 	
 	if (RC_BAD( rc = gv_pFileSystem->createFile( m_pszFileName,
 								FLM_IO_RDWR, &m_pFileHdl)))
@@ -516,7 +516,7 @@ FLMBOOL FLMAPI F_IniFile::getParam(
 	FLMBOOL		bFound = FALSE;
 	INI_LINE *	pLine = NULL;
 
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 	
 	pLine = findParam( pszParamName);
 	if( !pLine)
@@ -548,7 +548,7 @@ RCODE FLMAPI F_IniFile::setParam(
 	RCODE			rc = NE_FLM_OK;
 	INI_LINE *	pLine;
 
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 
 	// If the parameter exists in the list, just store the new value.
 	// Othewise, create a new INI_LINE and add it to the list
@@ -583,7 +583,7 @@ FLMBOOL FLMAPI F_IniFile::getParam(
 	FLMBOOL			bFound = FALSE;
 	INI_LINE *		pLine = NULL;
 	
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 
 	pLine = findParam( pszParamName);
 
@@ -616,7 +616,7 @@ RCODE FLMAPI F_IniFile::setParam(
 	RCODE			rc = NE_FLM_OK;
 	INI_LINE *	pLine;
 
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 
 	// If the parameter exists in the list, just store the new value.
 	// Othewise, create a new INI_LINE and add it to the list
@@ -651,7 +651,7 @@ FLMBOOL FLMAPI F_IniFile::getParam(
 	FLMBOOL		bFound = FALSE;
 	INI_LINE *	pLine = NULL;
 
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 	*ppszParamVal = NULL;
 
 	pLine = findParam( pszParamName);
@@ -685,7 +685,7 @@ RCODE FLMAPI F_IniFile::setParam(
 	RCODE				rc = NE_FLM_OK;
 	INI_LINE *		pLine;
 
-	flmAssert( m_bReady);
+	f_assert( m_bReady);
 
 	// If the parameter exists in the list, just store the new value.
 	// Othewise, create a new INI_LINE and add it to the list
@@ -723,7 +723,7 @@ RCODE F_IniFile::readLine(
 	FLMUINT		uiEOLBytes = 0;
 	FLMBOOL		bEOL = FALSE;
 		
-	flmAssert( m_pFileHdl);
+	f_assert( m_pFileHdl);
 	
 	rc = m_pFileHdl->read( m_uiFileOffset, *puiBytes,
 		(FLMBYTE *)pszBuf, &uiBytesRead);
@@ -803,8 +803,8 @@ RCODE F_IniFile::parseBuffer(
 	INI_LINE *	pLine = NULL;
 	FLMUINT		uiStrLen = 0;
 
-	flmAssert( pszBuf);
-	flmAssert( uiNumBytes);
+	f_assert( pszBuf);
+	f_assert( uiNumBytes);
 
 	// Start looking for the parameter name...
 	

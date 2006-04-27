@@ -262,11 +262,11 @@ RCODE F_FileHdl::create(
 {
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bFileOpened == FALSE);
+	f_assert( m_bFileOpened == FALSE);
 
 	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-		flmAssert( m_pszFileName == NULL);
+		f_assert( m_pszFileName == NULL);
 
 		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
 		{
@@ -320,11 +320,11 @@ RCODE F_FileHdl::createUnique(
 
 	szFileName[0] = '\0';
 	szTmpPath[0] = '\0';
-	flmAssert( m_bFileOpened == FALSE);
+	f_assert( m_bFileOpened == FALSE);
 
 	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-		flmAssert( m_pszFileName == NULL);
+		f_assert( m_pszFileName == NULL);
 		m_bDeleteOnRelease = TRUE;
 	}
 	else
@@ -420,11 +420,11 @@ RCODE F_FileHdl::open(
 {
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bFileOpened == FALSE);
+	f_assert( m_bFileOpened == FALSE);
 
 	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-		flmAssert( m_pszFileName == NULL);
+		f_assert( m_pszFileName == NULL);
 
 		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
 		{
@@ -493,7 +493,7 @@ RCODE FLMAPI F_FileHdl::close( void)
 
 	if( m_bDeleteOnRelease)
 	{
-		flmAssert( NULL != m_pszFileName );
+		f_assert( NULL != m_pszFileName );
 
 		if( bDeleteAllowed)
 		{
@@ -648,7 +648,7 @@ RCODE F_FileHdl::directRead(
 	FLMUINT			uiMaxBytesToRead;
 	FLMBOOL			bHitEOF;
 
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 	if( puiBytesReadRV)
 	{
@@ -704,7 +704,7 @@ RCODE F_FileHdl::directRead(
 		else
 		{
 			uiMaxBytesToRead = roundToNextSector( uiBytesToRead);
-			flmAssert( uiMaxBytesToRead >= uiBytesToRead);
+			f_assert( uiMaxBytesToRead >= uiBytesToRead);
 			pucReadBuffer = pucDestBuffer;
 		}
 
@@ -729,7 +729,7 @@ RCODE F_FileHdl::directRead(
 		if (ui64ReadOffset & m_ui64NotOnSectorBoundMask)
 		{
 			pucReadBuffer += (ui64ReadOffset & m_ui64NotOnSectorBoundMask);
-			flmAssert( uiBytesRead >= m_uiBytesPerSector);
+			f_assert( uiBytesRead >= m_uiBytesPerSector);
 			uiBytesRead -= (ui64ReadOffset & m_ui64NotOnSectorBoundMask);
 		}
 
@@ -802,7 +802,7 @@ RCODE FLMAPI F_FileHdl::read(
 
 	// If not doing direct IO, a single read call will do.
 
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 	if( puiBytesReadRV)
 	{
 		*puiBytesReadRV = 0;
@@ -929,7 +929,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 	RCODE					rc = NE_FLM_OK;
 	LARGE_INTEGER		liTmp;
 
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 	// Position the file to the nearest sector below the read offset.
 	
@@ -1132,12 +1132,12 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT			uiLastWriteSize;
 	LARGE_INTEGER	liTmp;
 
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 #ifdef FLM_DEBUG
 	if (bDoAsync)
 	{
-		flmAssert( m_bCanDoAsync);
+		f_assert( m_bCanDoAsync);
 	}
 #endif
 
@@ -1203,7 +1203,7 @@ RCODE F_FileHdl::directWrite(
 			// Cannot be using a temporary write buffer if we are doing
 			// asynchronous writes!
 
-			flmAssert( !bDoAsync || !m_bCanDoAsync);
+			f_assert( !bDoAsync || !m_bCanDoAsync);
 			if (!m_pucAlignedBuff)
 			{
 				if (RC_BAD( rc = allocAlignBuffer()))
@@ -1468,7 +1468,7 @@ RCODE FLMAPI F_FileHdl::write(
 
 	// If not doing direct IO, a single write call will do.
 
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 	if( puiBytesWrittenRV)
 	{

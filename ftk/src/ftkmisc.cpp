@@ -305,7 +305,7 @@ RCODE FLMAPI f_createSerialNumber(
 
 	// Generate a pseudo GUID value
 
-	flmAssert( gv_hSerialMutex != F_MUTEX_NULL);
+	f_assert( gv_hSerialMutex != F_MUTEX_NULL);
 
 	f_mutexLock( gv_hSerialMutex);
 
@@ -409,24 +409,6 @@ void f_updateCRC(
 	}
 
 	*pui32CRC = ui32CRC;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FLMUINT f_breakpoint(
-	FLMUINT		uiBreakFlag)
-{
-	if( uiBreakFlag)
-	{
-#ifdef FLM_NLM
-		EnterDebugger();
-#else
-		flmAssert( 0);
-#endif
-	}
-
-	return( 0);
 }
 
 /****************************************************************************
