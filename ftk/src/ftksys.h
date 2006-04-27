@@ -1870,6 +1870,11 @@
 	
 		RCODE FLMAPI unlock( void);
 	
+		FINLINE FLMBOOL FLMAPI isReadOnly( void)
+		{
+			return( m_bOpenedReadOnly);
+		}
+		
 		FINLINE void FLMAPI setBlockSize(
 			FLMUINT				uiBlockSize)
 		{

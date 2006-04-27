@@ -1384,7 +1384,7 @@
 
 		virtual FLMINT32 FLMAPI getInt32(
 			FLMINT32 				i32Low = FLM_MIN_INT32,
-			FLMINT32 				i32High = FLM_MAX_INT32);
+			FLMINT32 				i32High = FLM_MAX_INT32) = 0;
 
 		virtual FLMBOOL FLMAPI getBoolean( void) = 0;
 	};

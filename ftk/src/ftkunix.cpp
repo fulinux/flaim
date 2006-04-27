@@ -41,6 +41,7 @@
 
 #include <fcntl.h>
 
+extern FLMUINT		gv_uiMaxFileSize;
 extern FLMBOOL		gv_bOkToDoAsyncWrites;
 
 #if defined( FLM_SOLARIS)
@@ -1606,6 +1607,13 @@ static void sparc_asm_code( void)
 	asm( "nop");
 }
 #endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_yieldCPU( void)
+{
+}
 
 #endif // FLM_UNIX
 

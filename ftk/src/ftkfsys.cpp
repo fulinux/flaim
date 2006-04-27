@@ -394,6 +394,20 @@ RCODE FLMAPI FlmGetFileSystem(
 }
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+RCODE f_allocFileHdl(
+	F_FileHdl **		ppFileHdl)
+{
+	if( (*ppFileHdl = f_new F_FileHdl) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+	
+/****************************************************************************
 Desc:    Create a file, return a file handle to created file.
 ****************************************************************************/
 RCODE FLMAPI F_FileSystem::createFile(
