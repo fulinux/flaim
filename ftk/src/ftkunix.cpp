@@ -296,14 +296,14 @@ RCODE FLMAPI F_FileHdl::create(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	flmAssert( m_bFileOpened == FALSE);
+	f_assert( m_bFileOpened == FALSE);
 
 	if( m_bDeleteOnRelease)
 	{
 		// This file handle had better not been used for another file
 		// before.  Otherwise, we will get a memory leak.
 
-		flmAssert( m_pszFileName == NULL);
+		f_assert( m_pszFileName == NULL);
 
 		// Note: 'OpenOrCreate' will set m_pszFileName
 		
@@ -353,7 +353,7 @@ RCODE FLMAPI F_FileHdl::createUnique(
 	char				szTmpPath[ F_PATH_MAX_SIZE];
 	FLMUINT			uiCount;
 
-	flmAssert( !m_bFileOpened);
+	f_assert( !m_bFileOpened);
 	f_memset( szFileName, 0, sizeof( szFileName));
 
 	if( m_bDeleteOnRelease)
@@ -361,7 +361,7 @@ RCODE FLMAPI F_FileHdl::createUnique(
 		// This file handle had better not been used for another file
 		// before.  Otherwise, we will get a memory leak.
 
-		flmAssert( !m_pszFileName);
+		f_assert( !m_pszFileName);
 	}
 
 	if( !pszDirName || pszDirName[ 0] == '\0')
@@ -465,14 +465,14 @@ RCODE FLMAPI F_FileHdl::open(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	flmAssert( !m_bFileOpened);
+	f_assert( !m_bFileOpened);
 
 	if( m_bDeleteOnRelease)
 	{
 		// This file handle had better not been used for another file
 		// before.  Otherwise, we will get a memory leak.
 
-		flmAssert( !m_pszFileName);
+		f_assert( !m_pszFileName);
 
 		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
 		{
@@ -538,7 +538,7 @@ RCODE FLMAPI F_FileHdl::close( void)
 
 	if( m_bDeleteOnRelease)
 	{
-		flmAssert( m_pszFileName);
+		f_assert( m_pszFileName);
 
 		if( bDeleteAllowed)
 		{
@@ -621,8 +621,8 @@ RCODE F_FileHdl::directRead(
 	FLMINT			iTmp;
 	FLMBOOL			bHitEOF;
 	
-	flmAssert( m_bFileOpened);
-	flmAssert( m_bDoDirectIO);
+	f_assert( m_bFileOpened);
+	f_assert( m_bDoDirectIO);
 	
 	if( puiBytesRead)
 	{
@@ -677,7 +677,7 @@ RCODE F_FileHdl::directRead(
 		else
 		{
 			uiMaxBytesToRead = (FLMUINT)roundUpToSectorMultiple( uiBytesToRead);
-			flmAssert( uiMaxBytesToRead >= uiBytesToRead);
+			f_assert( uiMaxBytesToRead >= uiBytesToRead);
 			pucReadBuffer = pucDestBuffer;
 		}
 
@@ -705,7 +705,7 @@ RCODE F_FileHdl::directRead(
 		if( ui64ReadOffset & m_ui64NotOnSectorBoundMask)
 		{
 			pucReadBuffer += (ui64ReadOffset & m_ui64NotOnSectorBoundMask);
-			flmAssert( uiBytesRead >= m_uiBytesPerSector);
+			f_assert( uiBytesRead >= m_uiBytesPerSector);
 			uiBytesRead -= (FLMUINT)(ui64ReadOffset & m_ui64NotOnSectorBoundMask);
 		}
 
@@ -768,7 +768,7 @@ RCODE FLMAPI F_FileHdl::read(
 	RCODE				rc = NE_FLM_OK;
 	FLMINT      	iBytesRead;
 	
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 	if( m_bDoDirectIO)
 	{
@@ -919,7 +919,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 {
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 	if( ftruncate( m_fd, ui64Size) == -1)
 	{
@@ -944,7 +944,7 @@ RCODE FLMAPI F_FileHdl::write(
 	RCODE			rc = NE_FLM_OK;
 	FLMINT      iBytesWritten = 0;
 	
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 	if( m_bDoDirectIO)
 	{
@@ -1054,12 +1054,12 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT			uiLastWriteOffset;
 	FLMUINT			uiLastWriteSize;
 	
-	flmAssert( m_bFileOpened);
+	f_assert( m_bFileOpened);
 
 #ifdef FLM_DEBUG
 	if( bDoAsync)
 	{
-		flmAssert( m_bCanDoAsync);
+		f_assert( m_bCanDoAsync);
 	}
 #endif
 
@@ -1089,7 +1089,7 @@ RCODE F_FileHdl::directWrite(
 			// Cannot be using a temporary write buffer if we are doing
 			// asynchronous writes!
 
-			flmAssert( !bDoAsync || !m_bCanDoAsync);
+			f_assert( !bDoAsync || !m_bCanDoAsync);
 			
 			if( !m_pucAlignedBuff)
 			{
@@ -1225,7 +1225,7 @@ RCODE F_FileHdl::directWrite(
 			break;
 		}
 
-		flmAssert( !pBufferObj);
+		f_assert( !pBufferObj);
 
 		pucSrcBuffer += uiBytesBeingOutput;
 		ui64WriteOffset += uiBytesBeingOutput;
@@ -1401,7 +1401,7 @@ FLMUINT f_getLinuxMaxFileSize( void)
 #else
 	FLMUINT	uiMaxFileSize = 0x7FF00000;
 	
-	flmAssert( gv_uiLinuxMajorVer);
+	f_assert( gv_uiLinuxMajorVer);
 	
 	// Is version 2.4 or greater?
 

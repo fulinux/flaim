@@ -393,7 +393,7 @@ RCODE f_semWait(
 Desc:   Get the lock on a semaphore - p operation
 ****************************************************************************/
 #if defined( FLM_UNIX)
-FINLINE void FLMAPI f_semSignal(
+void FLMAPI f_semSignal(
 	F_SEM			hSem)
 {
 	(void)sema_signal( (sema_t *)hSem);

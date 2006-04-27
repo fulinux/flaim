@@ -358,10 +358,6 @@ static FLMBOOL			gv_bInitialized = FALSE;
 static FLMBOOL			gv_bDisplayInitialized = FALSE;
 static FLMUINT			gv_uiInitCount = 0;
 static FTX_INFO *		gv_pFtxInfo = NULL;
-static FLMBOOL			gv_bPrivateFTX = TRUE;
-static FLMBOOL			gv_bShutdown = FALSE;
-static FLMBOOL			gv_bOptimize = FALSE;
-static F_MUTEX			gv_hDispMutex = F_MUTEX_NULL;
 
 #if defined( FLM_WIN)
 
@@ -3581,8 +3577,8 @@ FSTATIC void ftxRefresh( void)
 				pszSBuf[ uiChangeEnd + 1] = '\0';
 				uiTempAttrib = (pucSBackAttrib [uiChangeStart] << 4) +
 						pucSForeAttrib [uiChangeStart];
-				ftxDisplaySetBackFore( pucSBackAttrib[ uiChangeStart],
-					pucSForeAttrib[ uiChangeStart]);
+				ftxDisplaySetBackFore( (eColorType)pucSBackAttrib[ uiChangeStart],
+					(eColorType)pucSForeAttrib[ uiChangeStart]);
 				ftxDisplayStrOut( &(pszSBuf[ uiChangeStart]), uiTempAttrib);
 				pszSBuf[ uiChangeEnd + 1] = uiSaveChar;
 			}
@@ -5299,7 +5295,7 @@ FSTATIC void ftxUnixDisplayInit( void)
 		flm2curses[ FLM_GREEN] = COLOR_GREEN;
 		flm2curses[ FLM_CYAN] = COLOR_CYAN;
 		flm2curses[ FLM_RED] = COLOR_RED;
-		flm2curses[ FLM_MAGENTA] = COLOR_MAGENTA;
+		flm2curses[ FLM_PURPLE] = COLOR_MAGENTA;
 		flm2curses[ FLM_BROWN] = COLOR_YELLOW;
 		flm2curses[ FLM_LIGHTGRAY] = COLOR_WHITE;
 

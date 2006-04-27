@@ -738,7 +738,7 @@
 			int				iLine,
 			FLMBOOL			bAssert);
 			
-		void FLMAPI f_enterDebugger(
+		FLMINT FLMAPI f_enterDebugger(
 			const char *	pszFile,
 			int				iLine);
 			

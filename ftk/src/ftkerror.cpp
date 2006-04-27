@@ -507,7 +507,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_enterDebugger(
+FLMINT FLMAPI f_enterDebugger(
 	const char *	pszFile,
 	int				iLine)
 {
@@ -518,6 +518,8 @@ void FLMAPI f_enterDebugger(
 #else
 	assert( 0);
 #endif
+
+	return( 0);
 }
 
 /****************************************************************************
