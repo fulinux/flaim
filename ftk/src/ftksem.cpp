@@ -28,6 +28,18 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_UNIX)
+typedef struct
+{
+	pthread_mutex_t		lock;
+	pthread_cond_t			cond;
+	int						count;
+} sema_t;
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 #if defined( FLM_WIN)
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *	phMutex)
@@ -101,7 +113,7 @@ RCODE FLMAPI f_mutexCreate(
 	}
 #endif
 
-	if( pthread_mutex_init( *phMutex, pMutexAttr) != 0)
+	if( pthread_mutex_init( (pthread_mutex_t *)*phMutex, pMutexAttr) != 0)
 	{
 		// NOTE: Cannot call f_free because we had to use malloc up above due
 		// to the fact that the memory subsystem uses a mutex before itis
@@ -135,7 +147,7 @@ void FLMAPI f_mutexDestroy(
 
 	if (*phMutex != F_MUTEX_NULL)
 	{
-		pthread_mutex_destroy( *phMutex);
+		pthread_mutex_destroy( (pthread_mutex_t *)*phMutex);
 
 		// NOTE: Cannot call f_free because we had to use malloc up above due
 		// to the fact that the memory subsystem uses a mutex before it is
@@ -308,7 +320,7 @@ RCODE f_semCreate(
 		goto Exit;
 	}
 
-	if( sema_init( *phSem) < 0)
+	if( sema_init( (sema_t *)*phSem) < 0)
 	{
 		f_free( phSem);
 		*phSem = F_SEM_NULL;
@@ -333,7 +345,7 @@ void f_semDestroy(
 
 	if (*phSem != F_SEM_NULL)
 	{
-		sema_destroy( *phSem);
+		sema_destroy( (sema_t *)*phSem);
 		f_free( phSem);
 		*phSem = F_SEM_NULL;
 	}
@@ -360,20 +372,31 @@ RCODE f_semWait(
 
 	if( uiTimeout == F_SEM_WAITFOREVER)
 	{
-		if( sema_wait( hSem))
+		if( sema_wait( (sema_t *)hSem))
 		{
 			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
 		}
 	}
 	else
 	{
-		if( sema_timedwait( hSem, (unsigned int)uiTimeout))
+		if( sema_timedwait( (sema_t *)hSem, (unsigned int)uiTimeout))
 		{
 			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
 		}
 	}
 
 	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:   Get the lock on a semaphore - p operation
+****************************************************************************/
+#if defined( FLM_UNIX)
+FINLINE void FLMAPI f_semSignal(
+	F_SEM			hSem)
+{
+	(void)sema_signal( (sema_t *)hSem);
 }
 #endif
 

@@ -131,7 +131,7 @@ private:
 
 				f_strcpy( szTmpPath, pszBasePath);
 				gv_pFileSystem->pathAppend( szTmpPath, "64.LCK");
-				gv_pFileSystem->Delete( szTmpPath);
+				gv_pFileSystem->deleteFile( szTmpPath);
 			}
 #endif
 		}

@@ -59,192 +59,11 @@
 	#include <sys/mount.h>
 #endif
 
-/***************************************************************************
-Desc:
-***************************************************************************/
-class F_FileHdl : public IF_FileHdl, public F_Base
-{
-public:
-
-	F_FileHdl();
-
-	~F_FileHdl();
-
-	RCODE FLMAPI setup(							
-		FLMUINT				uiFileId);
-
-	RCODE FLMAPI close( void);
-												
-	RCODE FLMAPI create(
-		const char *		pszFileName,
-		FLMUINT				uiIoFlags);
-
-	RCODE FLMAPI createUnique(
-		const char *		pszDirName,
-		const char *		pszFileExtension,
-		FLMUINT				uiIoFlags);
-
-	RCODE FLMAPI open(
-		const char *		pszFileName,
-		FLMUINT				uiIoFlags);
-
-	RCODE FLMAPI flush( void);
-
-	RCODE FLMAPI read(
-		FLMUINT64			ui64Offset,
-		FLMUINT				uiLength,
-		void *				pvBuffer,
-		FLMUINT *			puiBytesRead);
-
-	RCODE FLMAPI seek(
-		FLMUINT64			ui64Offset,
-		FLMINT				iWhence,
-		FLMUINT64 *			pui64NewOffset);
-
-	RCODE FLMAPI size(
-		FLMUINT64 *			pui64Size);
-
-	RCODE FLMAPI tell(
-		FLMUINT64 *			pui64Offset);
-
-	RCODE FLMAPI truncate(
-		FLMUINT64			ui64Size);
-
-	RCODE FLMAPI write(
-		FLMUINT64			ui64Offset,
-		FLMUINT				uiLength,
-		const void *		pvBuffer,
-		FLMUINT *			puiBytesWritten);
-
-	RCODE FLMAPI sectorRead(
-		FLMUINT64			ui64ReadOffset,
-		FLMUINT				uiBytesToRead,
-		void *				pvBuffer,
-		FLMUINT *			puiBytesReadRV);
-
-	RCODE FLMAPI sectorWrite(
-		FLMUINT64			ui64WriteOffset,
-		FLMUINT				uiBytesToWrite,
-		const void *		pvBuffer,
-		FLMUINT				uiBufferSize,
-		void *				pvBufferObj,
-		FLMUINT *			puiBytesWrittenRV,
-		FLMBOOL				bZeroFill = TRUE)
-	{
-		if( m_bDoDirectIO)
-		{
-			return( DirectWrite( ui64WriteOffset, uiBytesToWrite, 
-				pvBuffer, uiBufferSize, (F_IOBuffer *)pvBufferObj, 
-				puiBytesWrittenRV, TRUE, bZeroFill));
-		}
-		else
-		{
-			return( Write( ui64WriteOffset, uiBytesToWrite, 
-				pvBuffer, puiBytesWrittenRV));
-		}
-	}
-
-	FLMBOOL FLMAPI canDoAsync( void);
-
-	FINLINE FLMBOOL FLMAPI usingDirectIo( void)
-	{
-		return( m_bDoDirectIO);
-	}
-
-	FINLINE void FLMAPI setExtendSize(
-		FLMUINT				uiExtendSize)
-	{
-		m_uiExtendSize = uiExtendSize;
-	}
-
-	FINLINE void FLMAPI setMaxAutoExtendSize(
-		FLMUINT				uiMaxAutoExtendSize)
-	{
-		m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
-	}
-
-	RCODE FLMAPI lock( void);
-
-	RCODE FLMAPI unlock( void);
-
-	FINLINE void FLMAPI setBlockSize(
-		FLMUINT				uiBlockSize)
-	{
-		m_uiBlockSize = uiBlockSize;
-	}
-	
-	FINLINE FLMUINT FLMAPI getSectorSize( void)
-	{
-		return( m_uiBytesPerSector);
-	}
-
-private:
-
-	RCODE openOrCreate(
-		const char *		pszFileName,
-		FLMUINT				uiAccess,
-		FLMBOOL				bCreateFlag);
-
-	FINLINE FLMUINT64 roundUpToSectorMultiple(
-		FLMUINT64			ui64Bytes)
-	{
-		return( (ui64Bytes + m_ui64NotOnSectorBoundMask) &
-					m_ui64GetSectorBoundMask);
-	}
-
-	FINLINE FLMUINT64 getSectorStartOffset(
-		FLMUINT64			ui64Offset)
-	{
-		return( ui64Offset & m_ui64GetSectorBoundMask);
-	}
-
-	RCODE directRead(
-		FLMUINT64			ui64ReadOffset,
-		FLMUINT				uiBytesToRead,	
-		void *				pvBuffer,
-		FLMBOOL				bBuffHasFullSectors,
-		FLMUINT *			puiBytesRead);
-
-	RCODE directWrite(
-		FLMUINT64			ui64WriteOffset,
-		FLMUINT				uiBytesToWrite,
-		const void *		pvBuffer,
-		FLMUINT				uiBufferSize,
-		F_IOBuffer *		pBufferObj,
-		FLMUINT *			puiBytesWrittenRV,
-		FLMBOOL				bBuffHasFullSectors,
-		FLMBOOL				bZeroFill);
-	
-	RCODE allocAlignBuffer( void);
-	
-	FLMBOOL					m_bFileOpened;
-	FLMBOOL					m_bDeleteOnRelease;
-	FLMBOOL					m_bOpenedReadOnly;
-	FLMBOOL					m_bOpenedExclusive;
-	char *					m_pszFileName;
-	int				   	m_fd;
-	FLMUINT					m_uiBlockSize;
-	FLMUINT					m_uiBytesPerSector;
-	FLMUINT64				m_ui64NotOnSectorBoundMask;
-	FLMUINT64				m_ui64GetSectorBoundMask;
-	FLMUINT64				m_ui64CurrentPos;
-	FLMUINT					m_uiExtendSize;
-	FLMUINT					m_uiMaxAutoExtendSize;
-	FLMBOOL					m_bCanDoAsync;
-	FLMBOOL					m_bDoDirectIO;
-	FLMBYTE *				m_pucAlignedBuff;
-	FLMUINT					m_uiAlignedBuffSize;
-};
-	
 /******************************************************************************
 Desc:
 *******************************************************************************/
 F_FileHdl::F_FileHdl()
 {
-	m_pNext = NULL;
-	m_pPrev = NULL;
-	m_bInList = FALSE;
-	m_uiAvailTime = 0;
 	m_bFileOpened = FALSE;
 	m_bDeleteOnRelease = FALSE;
 	m_bOpenedReadOnly = FALSE;
@@ -253,7 +72,7 @@ F_FileHdl::F_FileHdl()
 	m_fd = -1;
 	m_bDoDirectIO = FALSE;
 	m_uiExtendSize = 0;
-	m_uiMaxAutoExtendSize = gv_XFlmSysData.uiMaxFileSize;
+//	m_uiMaxAutoExtendSize = gv_XFlmSysData.uiMaxFileSize;
 	m_uiBytesPerSector = 0;
 	m_ui64NotOnSectorBoundMask = 0;
 	m_ui64GetSectorBoundMask = 0;
@@ -272,7 +91,7 @@ F_FileHdl::~F_FileHdl()
 {
 	if( m_bFileOpened)
 	{
-		(void)Close();
+		(void)close();
 	}
 	
 	if( m_pucAlignedBuff)
@@ -289,18 +108,18 @@ F_FileHdl::~F_FileHdl()
 /***************************************************************************
 Desc:	Open or create a file.
 ***************************************************************************/
-RCODE F_FileHdl::OpenOrCreate(
+RCODE F_FileHdl::openOrCreate(
 	const char *	pszFileName,
    FLMUINT			uiAccess,
 	FLMBOOL			bCreateFlag)
 {
-	RCODE			rc = NE_XFLM_OK;
+	RCODE			rc = NE_FLM_OK;
 	FLMBOOL		bDoDirectIO = FALSE;
 	char			szSaveFileName[ F_PATH_MAX_SIZE];
 	int         openFlags = O_RDONLY;
 
 #if !defined( FLM_UNIX) || defined( FLM_LINUX) || defined( FLM_SOLARIS)
-	bDoDirectIO = (uiAccess & XFLM_IO_DIRECT) ? TRUE : FALSE;
+	bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
 // HPUX needs this defined to access files larger than 2 GB.  The Linux
@@ -312,15 +131,15 @@ RCODE F_FileHdl::OpenOrCreate(
 
 	// Save the file name in case we have to create the directory
 
-	if( bCreateFlag && (uiAccess & XFLM_IO_CREATE_DIR))
+	if( bCreateFlag && (uiAccess & FLM_IO_CREATE_DIR))
 	{
-		f_strcpy( &szSaveFileName, pszFileName);
+		f_strcpy( szSaveFileName, pszFileName);
 	}
 
    if( bCreateFlag)
    {
 		openFlags |= O_CREAT;
-		if( uiAccess & XFLM_IO_EXCL)
+		if( uiAccess & FLM_IO_EXCL)
 		{
 	  		openFlags |= O_EXCL;
 		}
@@ -330,12 +149,12 @@ RCODE F_FileHdl::OpenOrCreate(
 		}
 	}
 
-   if( !(uiAccess & XFLM_IO_RDONLY))
+   if( !(uiAccess & FLM_IO_RDONLY))
 	{
 		openFlags |= O_RDWR;
 	}
 	
-   if( !(uiAccess & XFLM_IO_RDONLY))
+   if( !(uiAccess & FLM_IO_RDONLY))
 	{
       openFlags |= O_RDWR;
 	}
@@ -350,7 +169,7 @@ RCODE F_FileHdl::OpenOrCreate(
 		}
 		else
 		{
-			if( RC_BAD( rc = gv_pFileSystem->GetSectorSize( 
+			if( RC_BAD( rc = gv_pFileSystem->getSectorSize( 
 				pszFileName, &m_uiBytesPerSector)))
 			{
 				goto Exit;
@@ -370,29 +189,29 @@ RCODE F_FileHdl::OpenOrCreate(
 			else
 			{
 #if defined( FLM_LINUX)
-				FLMUINT		uiMajor = gv_XFlmSysData.uiLinuxMajorVer;
-				FLMUINT		uiMinor = gv_XFlmSysData.uiLinuxMinorVer;
-				FLMUINT		uiRevision = gv_XFlmSysData.uiLinuxRevision;
+//				FLMUINT		uiMajor = gv_XFlmSysData.uiLinuxMajorVer;
+//				FLMUINT		uiMinor = gv_XFlmSysData.uiLinuxMinorVer;
+//				FLMUINT		uiRevision = gv_XFlmSysData.uiLinuxRevision;
 																																														
 				if( uiMajor > 2 || (uiMajor == 2 && uiMinor > 6) ||
 					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
 				{
 					openFlags |= O_DIRECT;
 					
-					if( gv_XFlmSysData.bOkToDoAsyncWrites)
-					{
-						m_bCanDoAsync = TRUE;
-					}
+//					if( gv_XFlmSysData.bOkToDoAsyncWrites)
+//					{
+//						m_bCanDoAsync = TRUE;
+//					}
 				}
 				else
 				{
 					bDoDirectIO = FALSE;
 				}
 #elif defined( FLM_SOLARIS)
-				if( gv_XFlmSysData.bOkToDoAsyncWrites)
-				{
-					m_bCanDoAsync = TRUE;
-				}
+//				if( gv_XFlmSysData.bOkToDoAsyncWrites)
+//				{
+//					m_bCanDoAsync = TRUE;
+//				}
 #endif
 			}
 		}
@@ -402,21 +221,21 @@ Retry_Create:
 
 	// Try to create or open the file
 
-	if ((m_fd = open( pszFileName, openFlags, 0600)) == -1)
+	if ((m_fd = ::open( pszFileName, openFlags, 0600)) == -1)
 	{
-		if ((errno == ENOENT) && (uiAccess & XFLM_IO_CREATE_DIR))
+		if ((errno == ENOENT) && (uiAccess & FLM_IO_CREATE_DIR))
 		{
 			char	szTemp[ F_PATH_MAX_SIZE];
 			char	szIoDirPath[ F_PATH_MAX_SIZE];
 
-			uiAccess &= ~XFLM_IO_CREATE_DIR;
+			uiAccess &= ~FLM_IO_CREATE_DIR;
 
 			// Remove the file name for which we are creating the directory
 
 			if( RC_OK( gv_pFileSystem->pathReduce( szSaveFileName,
 													szIoDirPath, szTemp)))
 			{
-				if( RC_OK( rc = gv_pFileSystem->CreateDir( szIoDirPath)))
+				if( RC_OK( rc = gv_pFileSystem->createDir( szIoDirPath)))
 				{
 					goto Retry_Create;
 				}
@@ -436,7 +255,7 @@ Retry_Create:
 		}
 #endif
 		
-		rc = MapErrnoToFlaimErr( errno, NE_XFLM_OPENING_FILE);
+		rc = MapPlatformError( errno, NE_FLM_OPENING_FILE);
 		goto Exit;
 	}
 
@@ -464,11 +283,11 @@ Exit:
 /******************************************************************************
 Desc:	Create a file 
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Create(
+RCODE FLMAPI F_FileHdl::create(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
-	RCODE			rc = NE_XFLM_OK;
+	RCODE			rc = NE_FLM_OK;
 
 	flmAssert( m_bFileOpened == FALSE);
 
@@ -489,14 +308,14 @@ RCODE XFLMAPI F_FileHdl::Create(
 		f_strcpy( m_pszFileName, pszFileName);
 	}
 
-	if( RC_BAD( rc = OpenOrCreate( pszFileName, uiIoFlags, TRUE)))
+	if( RC_BAD( rc = openOrCreate( pszFileName, uiIoFlags, TRUE)))
 	{
 		goto Exit;
 	}
 	
 	m_bFileOpened = TRUE;
 	m_ui64CurrentPos = 0;
-	m_bOpenedExclusive = (uiIoFlags & XFLM_IO_SH_DENYRW) ? TRUE : FALSE;
+	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
 
 Exit:
 
@@ -511,12 +330,12 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::CreateUnique(
-	const char *	pszDirName,
+RCODE FLMAPI F_FileHdl::createUnique(
+	char *			pszDirName,
 	const char *	pszFileExtension,
 	FLMUINT			uiIoFlags)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	char *			pszTmp;
 	FLMBOOL			bModext = TRUE;
 	FLMUINT			uiBaseTime = 0;
@@ -590,30 +409,30 @@ RCODE XFLMAPI F_FileHdl::CreateUnique(
 			f_free( &m_pszFileName);
 		}
 		
-		rc = Create( szTmpPath, uiIoFlags | XFLM_IO_EXCL);
+		rc = create( szTmpPath, uiIoFlags | FLM_IO_EXCL);
 		
-		if (rc == NE_XFLM_IO_DISK_FULL)
+		if (rc == NE_FLM_IO_DISK_FULL)
 		{
-			gv_pFileSystem->Delete( pszDirPath);
+			gv_pFileSystem->deleteFile( pszDirPath);
 			goto Exit;
 		}
 		
-		if( rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_PASSWORD)
+		if( rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_PASSWORD)
 		{
 			goto Exit;
 		}
-	} while ((rc != NE_XFLM_OK) && (uiCount++ < 10));
+	} while ((rc != NE_FLM_OK) && (uiCount++ < 10));
 
    // Check if the path was created
 
-   if( uiCount >= 10 && rc != NE_XFLM_OK)
+   if( uiCount >= 10 && rc != NE_FLM_OK)
    {
-		rc = RC_SET( NE_XFLM_IO_PATH_CREATE_FAILURE);
+		rc = RC_SET( NE_FLM_IO_PATH_CREATE_FAILURE);
 		goto Exit;
    }
 
 	m_bFileOpened = TRUE;
-	m_bOpenedExclusive = (uiIoFlags & XFLM_IO_SH_DENYRW) ? TRUE : FALSE;
+	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
 
 	// Created file name needs to be returned.
 
@@ -633,11 +452,11 @@ Exit:
 /******************************************************************************
 Desc:	Open a file
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Open(
+RCODE FLMAPI F_FileHdl::open(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
-	RCODE			rc = NE_XFLM_OK;
+	RCODE			rc = NE_FLM_OK;
 
 	flmAssert( !m_bFileOpened);
 
@@ -658,12 +477,12 @@ RCODE XFLMAPI F_FileHdl::Open(
 
 	for( ;;)
 	{
-		if( RC_OK( rc = OpenOrCreate( pszFileName, uiIoFlags, FALSE)))
+		if( RC_OK( rc = openOrCreate( pszFileName, uiIoFlags, FALSE)))
 		{
 			break;
 		}
 
-		if( rc != NE_XFLM_IO_TOO_MANY_OPEN_FILES)
+		if( rc != NE_FLM_IO_TOO_MANY_OPEN_FILES)
 		{
 			goto Exit;
 		}
@@ -671,13 +490,13 @@ RCODE XFLMAPI F_FileHdl::Open(
 		// If for some reason we cannot open the file, then
 		// try to close some other file handle in the list.
 
-		gv_XFlmSysData.pFileHdlMgr->releaseOneAvail( FALSE);
+//		gv_XFlmSysData.pFileHdlMgr->releaseOneAvail( FALSE);
 	}
 
 	m_bFileOpened = TRUE;
 	m_ui64CurrentPos = 0;
-	m_bOpenedReadOnly = (uiIoFlags & XFLM_IO_RDONLY) ? TRUE : FALSE;
-	m_bOpenedExclusive = (uiIoFlags & XFLM_IO_SH_DENYRW) ? TRUE : FALSE;
+	m_bOpenedReadOnly = (uiIoFlags & FLM_IO_RDONLY) ? TRUE : FALSE;
+	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
 
 Exit:
 
@@ -693,17 +512,17 @@ Exit:
 /******************************************************************************
 Desc:	Close a file
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Close( void)
+RCODE FLMAPI F_FileHdl::close( void)
 {
 	FLMBOOL	bDeleteAllowed = TRUE;
-	RCODE		rc = NE_XFLM_OK;
+	RCODE		rc = NE_FLM_OK;
 
 	if( !m_bFileOpened)
 	{
 		goto Exit;
 	}
 
-	close( m_fd);
+	::close( m_fd);
 	
 	m_fd = -1;
 	m_bFileOpened = FALSE;
@@ -716,7 +535,7 @@ RCODE XFLMAPI F_FileHdl::Close( void)
 
 		if( bDeleteAllowed)
 		{
-			gv_pFileSystem->Delete( m_pszFileName);
+			gv_pFileSystem->deleteFile( m_pszFileName);
 		}
 		m_bDeleteOnRelease = FALSE;
 
@@ -732,7 +551,7 @@ Exit:
 /******************************************************************************
 Desc:	Make sure all file data is safely on disk
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Flush()
+RCODE FLMAPI F_FileHdl::flush( void)
 {
 #ifdef FLM_SOLARIS
 	// Direct I/O on Solaris is ADVISORY, meaning that the
@@ -758,7 +577,7 @@ RCODE XFLMAPI F_FileHdl::Flush()
 
 	if( fdatasync( m_fd) != 0)
 	{
-		 return( MapErrnoToFlaimErr( errno, NE_XFLM_FLUSHING_FILE));
+		 return( MapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 	}
 #else
 	if( !m_bDoDirectIO)
@@ -769,25 +588,25 @@ RCODE XFLMAPI F_FileHdl::Flush()
 		if( fdatasync( m_fd) != 0)
 	#endif
 		{
-			 return( MapErrnoToFlaimErr( errno, NE_XFLM_FLUSHING_FILE));
+			 return( MapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 		}
 	}
 #endif
 	
-	return( NE_XFLM_OK);
+	return( NE_FLM_OK);
 }
 
 /******************************************************************************
 Desc:	Read from a file
 ******************************************************************************/
-RCODE F_FileHdl::DirectRead(
+RCODE F_FileHdl::directRead(
 	FLMUINT64		ui64ReadOffset,
 	FLMUINT			uiBytesToRead,	
    void *			pvBuffer,
 	FLMBOOL			bBuffHasFullSectors,
 	FLMUINT *		puiBytesRead)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiBytesRead;
 	FLMBYTE *		pucReadBuffer;
 	FLMBYTE *		pucDestBuffer;
@@ -803,7 +622,7 @@ RCODE F_FileHdl::DirectRead(
 		*puiBytesRead = 0;
 	}
 
-	if( ui64ReadOffset == XFLM_IO_CURRENT_POS)
+	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64ReadOffset = m_ui64CurrentPos;
 	}
@@ -824,7 +643,7 @@ RCODE F_FileHdl::DirectRead(
 		{
 			if( !m_pucAlignedBuff)
 			{
-				if( RC_BAD( rc = AllocAlignBuffer()))
+				if( RC_BAD( rc = allocAlignBuffer()))
 				{
 					goto Exit;
 				}
@@ -838,7 +657,7 @@ RCODE F_FileHdl::DirectRead(
 			// the read offset.  We then round that up to the next sector
 			// to get the total number of bytes we are going to read.
 
-			uiMaxBytesToRead = (FLMUINT)RoundUpToSectorMultiple( 
+			uiMaxBytesToRead = (FLMUINT)roundUpToSectorMultiple( 
 					uiBytesToRead + (ui64ReadOffset & m_ui64NotOnSectorBoundMask));
 
 			// Can't read more than the aligned buffer will hold.
@@ -850,7 +669,7 @@ RCODE F_FileHdl::DirectRead(
 		}
 		else
 		{
-			uiMaxBytesToRead = (FLMUINT)RoundUpToSectorMultiple( uiBytesToRead);
+			uiMaxBytesToRead = (FLMUINT)roundUpToSectorMultiple( uiBytesToRead);
 			flmAssert( uiMaxBytesToRead >= uiBytesToRead);
 			pucReadBuffer = pucDestBuffer;
 		}
@@ -858,9 +677,9 @@ RCODE F_FileHdl::DirectRead(
 		bHitEOF = FALSE;
 
 		if( (iTmp = pread( m_fd, pucReadBuffer,
-			uiMaxBytesToRead, GetSectorStartOffset( ui64ReadOffset))) == -1)
+			uiMaxBytesToRead, getSectorStartOffset( ui64ReadOffset))) == -1)
 		{
-			rc = MapErrnoToFlaimErr( errno, NE_XFLM_READING_FILE);
+			rc = MapPlatformError( errno, NE_FLM_READING_FILE);
 			goto Exit;
 		}
 		uiBytesRead = (FLMUINT)iTmp;
@@ -917,7 +736,7 @@ RCODE F_FileHdl::DirectRead(
 
 		if( bHitEOF)
 		{
-			rc = RC_SET( NE_XFLM_IO_END_OF_FILE);
+			rc = RC_SET( NE_FLM_IO_END_OF_FILE);
 			break;
 		}
 
@@ -933,25 +752,25 @@ Exit:
 /******************************************************************************
 Desc:	Read from a file
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Read(
+RCODE FLMAPI F_FileHdl::read(
 	FLMUINT64		ui64ReadOffset,
 	FLMUINT			uiBytesToRead,	
    void *			pvBuffer,
    FLMUINT *		puiBytesRead)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	FLMINT      	iBytesRead;
 	
 	flmAssert( m_bFileOpened);
 
 	if( m_bDoDirectIO)
 	{
-		rc = DirectRead( ui64ReadOffset, uiBytesToRead, 
+		rc = directRead( ui64ReadOffset, uiBytesToRead, 
 			pvBuffer, FALSE, puiBytesRead);
 		goto Exit;
 	}
 
-	if( ui64ReadOffset == XFLM_IO_CURRENT_POS)
+	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64ReadOffset = m_ui64CurrentPos;
 	}
@@ -959,7 +778,7 @@ RCODE XFLMAPI F_FileHdl::Read(
 	if( (iBytesRead = pread( m_fd, pvBuffer, 
 		uiBytesToRead, ui64ReadOffset)) == -1)
 	{
-		rc = MapErrnoToFlaimErr(errno, NE_XFLM_READING_FILE);
+		rc = MapPlatformError(errno, NE_FLM_READING_FILE);
 		goto Exit;
 	}
 
@@ -972,7 +791,7 @@ RCODE XFLMAPI F_FileHdl::Read(
 	
 	if( (FLMUINT)iBytesRead < uiBytesToRead)
 	{
-		rc = RC_SET( NE_XFLM_IO_END_OF_FILE);
+		rc = RC_SET( NE_FLM_IO_END_OF_FILE);
 		goto Exit;
 	}
 
@@ -985,7 +804,7 @@ Exit:
 Note:	This function assumes that the pvBuffer that is passed in is
 		a multiple of a the sector size.
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::SectorRead(
+RCODE FLMAPI F_FileHdl::sectorRead(
 	FLMUINT64		ui64ReadOffset,
 	FLMUINT			uiBytesToRead,
    void *			pvBuffer,
@@ -993,42 +812,42 @@ RCODE XFLMAPI F_FileHdl::SectorRead(
 {
 	if( m_bDoDirectIO)
 	{
-		return( DirectRead( ui64ReadOffset, uiBytesToRead, 
+		return( directRead( ui64ReadOffset, uiBytesToRead, 
 			pvBuffer, TRUE, puiBytesRead));
 	}
 	else
 	{
-		return( Read( ui64ReadOffset, uiBytesToRead, pvBuffer, puiBytesRead));
+		return( read( ui64ReadOffset, uiBytesToRead, pvBuffer, puiBytesRead));
 	}
 }
 
 /******************************************************************************
 Desc:	Sets current position of file.
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Seek(
+RCODE FLMAPI F_FileHdl::seek(
 	FLMUINT64		ui64Offset,
 	FLMINT			iWhence,
 	FLMUINT64 *		pui64NewOffset)
 {
-	RCODE			rc = NE_XFLM_OK;
+	RCODE			rc = NE_FLM_OK;
 
 	switch( iWhence)
 	{
-		case XFLM_IO_SEEK_CUR:
+		case FLM_IO_SEEK_CUR:
 		{
 			m_ui64CurrentPos += ui64Offset;
 			break;
 		}
 		
-		case XFLM_IO_SEEK_SET:
+		case FLM_IO_SEEK_SET:
 		{
 			m_ui64CurrentPos = ui64Offset;
 			break;
 		}
 		
-		case XFLM_IO_SEEK_END:
+		case FLM_IO_SEEK_END:
 		{
-			if( RC_BAD( rc = Size( &m_ui64CurrentPos)))
+			if( RC_BAD( rc = size( &m_ui64CurrentPos)))
 			{
 				goto Exit;
 			}
@@ -1038,7 +857,7 @@ RCODE XFLMAPI F_FileHdl::Seek(
 		
 		default:
 		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_NOT_IMPLEMENTED);
+			rc = RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED);
 			goto Exit;
 		}
 	}
@@ -1056,15 +875,15 @@ Exit:
 /******************************************************************************
 Desc:	Return the size of the file
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Size(
+RCODE FLMAPI F_FileHdl::size(
 	FLMUINT64 *		pui64Size)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
    struct stat 	statBuf;
 
    if( fstat( m_fd, &statBuf) == -1)
    {
-      rc = MapErrnoToFlaimErr( errno, NE_XFLM_GETTING_FILE_SIZE);
+      rc = MapPlatformError( errno, NE_FLM_GETTING_FILE_SIZE);
 		goto Exit;
    }
 	
@@ -1078,26 +897,26 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Tell(
+RCODE FLMAPI F_FileHdl::tell(
 	FLMUINT64 *		pui64Offset)
 {
 	*pui64Offset = m_ui64CurrentPos;
-	return( NE_XFLM_OK);
+	return( NE_FLM_OK);
 }
 
 /******************************************************************************
 Desc:	Truncate the file to the indicated size
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Truncate(
+RCODE FLMAPI F_FileHdl::truncate(
 	FLMUINT64		ui64Size)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 
 	flmAssert( m_bFileOpened);
 
 	if( ftruncate( m_fd, ui64Size) == -1)
 	{
-		rc = MapErrnoToFlaimErr( errno, NE_XFLM_TRUNCATING_FILE);
+		rc = MapPlatformError( errno, NE_FLM_TRUNCATING_FILE);
 		goto Exit;
 	}
 
@@ -1109,25 +928,25 @@ Exit:
 /******************************************************************************
 Desc:	Write to a file
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Write(
+RCODE FLMAPI F_FileHdl::write(
 	FLMUINT64		ui64WriteOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
 	FLMUINT *		puiBytesWrittenRV)
 {
-	RCODE			rc = NE_XFLM_OK;
+	RCODE			rc = NE_FLM_OK;
 	FLMINT      iBytesWritten = 0;
 	
 	flmAssert( m_bFileOpened);
 
 	if( m_bDoDirectIO)
 	{
-		rc = DirectWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer, 
+		rc = directWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer, 
 			uiBytesToWrite, NULL, puiBytesWrittenRV, FALSE, TRUE);
 		goto Exit;
 	}
 	
-	if( ui64WriteOffset == XFLM_IO_CURRENT_POS)
+	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64WriteOffset = m_ui64CurrentPos;
 	}
@@ -1135,7 +954,7 @@ RCODE XFLMAPI F_FileHdl::Write(
   	if( (iBytesWritten = pwrite( m_fd, pvBuffer,
 		uiBytesToWrite, ui64WriteOffset)) == -1)
 	{
-		rc = MapErrnoToFlaimErr(errno, NE_XFLM_WRITING_FILE);
+		rc = MapPlatformError(errno, NE_FLM_WRITING_FILE);
 		goto Exit;
 	}
 
@@ -1148,7 +967,7 @@ RCODE XFLMAPI F_FileHdl::Write(
 	
 	if( (FLMUINT)iBytesWritten < uiBytesToWrite)
 	{
-		rc = RC_SET( NE_XFLM_IO_DISK_FULL);
+		rc = RC_SET( NE_FLM_IO_DISK_FULL);
 		goto Exit;
 	}
 
@@ -1160,9 +979,9 @@ Exit:
 /******************************************************************************
 Desc:	Allocate an aligned buffer.
 ******************************************************************************/
-RCODE F_FileHdl::AllocAlignBuffer( void)
+RCODE F_FileHdl::allocAlignBuffer( void)
 {
-	RCODE		rc = NE_XFLM_OK;
+	RCODE		rc = NE_FLM_OK;
 	
 	if( m_pucAlignedBuff)
 	{
@@ -1174,7 +993,7 @@ RCODE F_FileHdl::AllocAlignBuffer( void)
 	// the time.  The calculation below rounds it up to the next sector
 	// boundary if it is not already on one.
 
-	m_uiAlignedBuffSize = (FLMUINT)RoundUpToSectorMultiple( 64 * 1024);
+	m_uiAlignedBuffSize = (FLMUINT)roundUpToSectorMultiple( 64 * 1024);
 	
 #if defined( FLM_SOLARIS)
 	if( (m_pucAlignedBuff = (FLMBYTE *)memalign( 
@@ -1187,7 +1006,7 @@ RCODE F_FileHdl::AllocAlignBuffer( void)
 #endif
 	{
 		m_uiAlignedBuffSize = 0;
-		rc = MapErrnoToFlaimErr( errno, NE_XFLM_MEM);
+		rc = MapPlatformError( errno, NE_FLM_MEM);
 		goto Exit;
 	}
 	
@@ -1203,7 +1022,7 @@ Note:	This routine assumes that the size of pvBuffer is a multiple of
 		buffer will still be written out - a partial sector on disk will
 		not be preserved.
 ******************************************************************************/
-RCODE F_FileHdl::DirectWrite(
+RCODE F_FileHdl::directWrite(
 	FLMUINT64		ui64WriteOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
@@ -1213,7 +1032,7 @@ RCODE F_FileHdl::DirectWrite(
 	FLMBOOL			bBuffHasFullSectors,
 	FLMBOOL			bZeroFill)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiBytesRead;
 	FLMUINT			uiMaxBytesToWrite;
 	FLMUINT			uiBytesBeingOutput;
@@ -1242,7 +1061,7 @@ RCODE F_FileHdl::DirectWrite(
 		*puiBytesWrittenRV = 0;
 	}
 
-	if( ui64WriteOffset == XFLM_IO_CURRENT_POS)
+	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64WriteOffset = m_ui64CurrentPos;
 	}
@@ -1267,7 +1086,7 @@ RCODE F_FileHdl::DirectWrite(
 			
 			if( !m_pucAlignedBuff)
 			{
-				if( RC_BAD( rc = AllocAlignBuffer()))
+				if( RC_BAD( rc = allocAlignBuffer()))
 				{
 					goto Exit;
 				}
@@ -1281,7 +1100,7 @@ RCODE F_FileHdl::DirectWrite(
 			// the read offset.  We then round to the next sector to get the
 			// total number of bytes we are going to write.
 
-			uiMaxBytesToWrite = (FLMUINT)RoundUpToSectorMultiple( 
+			uiMaxBytesToWrite = (FLMUINT)roundUpToSectorMultiple( 
 				uiBytesToWrite + (ui64WriteOffset & m_ui64NotOnSectorBoundMask));
 
 			// Can't write more than the aligned buffer will hold.
@@ -1309,15 +1128,15 @@ RCODE F_FileHdl::DirectWrite(
 				// preserve what is already in the sector before
 				// writing it back out again.
 
-				if( RC_BAD( rc = Read( GetSectorStartOffset( ui64WriteOffset),
+				if( RC_BAD( rc = read( getSectorStartOffset( ui64WriteOffset),
 					m_uiBytesPerSector, pucWriteBuffer, &uiBytesRead)))
 				{
-					if( rc != NE_XFLM_IO_END_OF_FILE)
+					if( rc != NE_FLM_IO_END_OF_FILE)
 					{
 						goto Exit;
 					}
 
-					rc = NE_XFLM_OK;
+					rc = NE_FLM_OK;
 					f_memset( &pucWriteBuffer[ uiBytesRead], 0, 
 						m_uiBytesPerSector - uiBytesRead);
 				}
@@ -1331,7 +1150,7 @@ RCODE F_FileHdl::DirectWrite(
 		}
 		else
 		{
-			uiMaxBytesToWrite = (FLMUINT)RoundUpToSectorMultiple( uiBytesToWrite);
+			uiMaxBytesToWrite = (FLMUINT)roundUpToSectorMultiple( uiBytesToWrite);
 			uiBytesBeingOutput = uiBytesToWrite;
 			pucWriteBuffer = pucSrcBuffer;
 			
@@ -1344,7 +1163,7 @@ RCODE F_FileHdl::DirectWrite(
 
 		// Position the file to the nearest sector below the write offset.
 
-		uiLastWriteOffset = (FLMUINT)GetSectorStartOffset( ui64WriteOffset);
+		uiLastWriteOffset = (FLMUINT)getSectorStartOffset( ui64WriteOffset);
 		uiLastWriteSize = uiMaxBytesToWrite;
 		
 		if( !m_bCanDoAsync || !pBufferObj)
@@ -1354,13 +1173,13 @@ RCODE F_FileHdl::DirectWrite(
 			if( (iBytesWritten = pwrite( m_fd, 
 				pucWriteBuffer, uiMaxBytesToWrite, uiLastWriteOffset)) == -1)
 			{
-				rc = MapErrnoToFlaimErr( errno, NE_XFLM_WRITING_FILE);
+				rc = MapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 
 			if( (FLMUINT)iBytesWritten < uiMaxBytesToWrite)
 			{
-				rc = RC_SET( NE_XFLM_IO_DISK_FULL);
+				rc = RC_SET( NE_FLM_IO_DISK_FULL);
 				goto Exit;
 			}
 		}
@@ -1378,7 +1197,7 @@ RCODE F_FileHdl::DirectWrite(
 			
 			if( aio_write( pAio) == -1)
 			{
-				rc = MapErrnoToFlaimErr( errno, NE_XFLM_WRITING_FILE);
+				rc = MapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 			
@@ -1418,7 +1237,7 @@ Exit:
 /******************************************************************************
 Desc:	Returns flag indicating whether or not we can do async writes.
 ******************************************************************************/
-FLMBOOL XFLMAPI F_FileHdl::CanDoAsync()
+FLMBOOL FLMAPI F_FileHdl::canDoAsync()
 {
 	return( m_bCanDoAsync);
 }
@@ -1428,9 +1247,9 @@ Desc:	Attempts to lock byte 0 of the file.  This method is used to
 		lock byte 0 of the .lck file to ensure that only one process
 		has access to a database.
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Lock( void)
+RCODE FLMAPI F_FileHdl::lock( void)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
 
 	// Lock first byte in file
@@ -1443,7 +1262,7 @@ RCODE XFLMAPI F_FileHdl::Lock( void)
 
 	if( fcntl( m_fd, F_SETLK, &LockStruct) == -1)
 	{
-		rc = RC_SET( NE_XFLM_IO_FILE_LOCK_ERR);
+		rc = RC_SET( NE_FLM_IO_FILE_LOCK_ERR);
 		goto Exit;
 	} 
 
@@ -1455,9 +1274,9 @@ Exit:
 /******************************************************************************
 Desc:	Attempts to unlock byte 0 of the file.
 ******************************************************************************/
-RCODE XFLMAPI F_FileHdl::Unlock( void)
+RCODE FLMAPI F_FileHdl::unlock( void)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
 
 	// Lock first byte in file
@@ -1470,7 +1289,7 @@ RCODE XFLMAPI F_FileHdl::Unlock( void)
 
 	if( fcntl( m_fd, F_SETLK, &LockStruct) == -1)
 	{
-		rc = RC_SET( NE_XFLM_IO_FILE_UNLOCK_ERR);
+		rc = RC_SET( NE_FLM_IO_FILE_UNLOCK_ERR);
 		goto Exit;
 	} 
 
@@ -1572,20 +1391,20 @@ Desc:	Determines if the linux system we are running on is 2.4 or greater.
 FLMUINT flmGetLinuxMaxFileSize( void)
 {
 #ifdef FLM_32BIT
-	return( XFLM_MAXIMUM_FILE_SIZE);
+	return( FLM_MAXIMUM_FILE_SIZE);
 #else
 	FLMUINT	uiMaxFileSize = 0x7FF00000;
 	
-	flmAssert( gv_XFlmSysData.uiLinuxMajorVer);
+//	flmAssert( gv_XFlmSysData.uiLinuxMajorVer);
 	
 	// Is version 2.4 or greater?
 
-	if( gv_XFlmSysData.uiLinuxMajorVer > 2 || 
-		 (gv_XFlmSysData.uiLinuxMajorVer == 2 && 
-		  gv_XFlmSysData.uiLinuxMinorVer >= 4))
-	{
-		uiMaxFileSize = XFLM_MAXIMUM_FILE_SIZE;
-	}
+//	if( gv_XFlmSysData.uiLinuxMajorVer > 2 || 
+//		 (gv_XFlmSysData.uiLinuxMajorVer == 2 && 
+//		  gv_XFlmSysData.uiLinuxMinorVer >= 4))
+//	{
+//		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
+//	}
 	
 	return( uiMaxFileSize);
 #endif
@@ -1699,7 +1518,7 @@ FLMUINT flmGetFSBlockSize(
 	FLMBYTE *	pszFileName)
 {
 	FLMUINT		uiFSBlkSize = 4096;
-	FLMBYTE *	pszTmp = pszFileName + f_strlen( pszFileName) - 1;
+	FLMBYTE *	pszTmp = pszFileName + f_strlen( (const char *)pszFileName) - 1;
 	FLMBYTE *	pszDir;
 	FLMBYTE		ucRestoreByte = 0;
 

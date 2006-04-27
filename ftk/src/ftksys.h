@@ -302,21 +302,6 @@
 		#define f_va_arg				va_arg
 		#define f_va_end				va_end
 
-		typedef pthread_mutex_t *	F_MUTEX;
-		typedef F_MUTEX *				F_MUTEX_p;
-		#define F_MUTEX_NULL			NULL
-		
-		typedef struct
-		{
-			pthread_mutex_t lock;
-			pthread_cond_t  cond;
-			int             count;
-		} sema_t;
-	
-		typedef sema_t *				F_SEM;
-		typedef F_SEM *				F_SEM_p;
-		#define F_SEM_NULL			NULL
-
 		typedef int						SOCKET;
 		#define INVALID_SOCKET		-1
 	
@@ -406,12 +391,14 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	#ifdef FLM_WIN
 	FINLINE FLMINT FLMAPI f_stricmp(
 		const char *		pvStr1,
 		const char *		pvStr2)
 	{
 		return( _stricmp( pvStr1, pvStr2));
 	}
+	#endif
 	
 	/****************************************************************************
 	Desc:
@@ -427,34 +414,38 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	#ifdef FLM_WIN
 	FINLINE FLMINT FLMAPI f_strnicmp(
 		const char *		pvStr1,
 		const char *		pvStr2,
 		FLMSIZET				uiLength)
 	{
-		return( _strnicmp( pvStr1, pvStr2, uiLength));
+		return( _strnicmp( pvStr1, pvStr2, uiLength));#else
 	}
-	
-//		#define f_strcat( dest, src) \
-//			strcat( (char*)(dest), (char*)(src))
-//
-//		#define f_strchr( str, value) \
-//			strchr( (char*)str, (int)value)
-//
-//		#define f_strncpy( dest, src, length) \
-//			strncpy( (char*)(dest), (char*)(src), (size_t)(length))
-//
-//		#define f_strrchr( str, value ) \
-//			strrchr( (char*)(str), (int)value)
-//
-//		#define f_strstr( str1, str2) \
-//			(char *)strstr( (char*)(str1), (char*)(str2))
-//
-//		#define f_strncat( str1, str2, n) \
-//			strncat( (char *)(str1), (char *)(str2), n)
-//
-//		#define f_strupr( str) \
-//			_strupr( (char *)(str))
+	#endif
+
+#if 0	
+		#define f_strcat( dest, src) \
+			strcat( (char*)(dest), (char*)(src))
+
+		#define f_strchr( str, value) \
+			strchr( (char*)str, (int)value)
+
+		#define f_strncpy( dest, src, length) \
+			strncpy( (char*)(dest), (char*)(src), (size_t)(length))
+
+		#define f_strrchr( str, value ) \
+			strrchr( (char*)(str), (int)value)
+
+		#define f_strstr( str1, str2) \
+			(char *)strstr( (char*)(str1), (char*)(str2))
+
+		#define f_strncat( str1, str2, n) \
+			strncat( (char *)(str1), (char *)(str2), n)
+
+		#define f_strupr( str) \
+			_strupr( (char *)(str))
+#endif
 
 	#if defined( __va_copy)
 		#define  f_va_copy(to, from) __va_copy(to, from)
@@ -559,6 +550,9 @@
 			FLMSIZET			uiSize,
 			const char *	pszFile,
 			int				iLine);
+		
+		void operator delete(
+			void *			ptr);
 	
 		void operator delete(
 			void *			ptr,
@@ -1025,22 +1019,19 @@
 		FINLINE void FLMAPI f_mutexLock(
 			F_MUTEX		hMutex)
 		{
-			(void)pthread_mutex_lock( hMutex);
+			(void)pthread_mutex_lock( (pthread_mutex_t *)hMutex);
 		}
 	
 		FINLINE void FLMAPI f_mutexUnlock(
 			F_MUTEX		hMutex)
 		{
-			(void)pthread_mutex_unlock( hMutex);
+			(void)pthread_mutex_unlock( (pthread_mutex_t *)hMutex);
 		}
 	
 		FINLINE void FLMAPI f_assertMutexLocked(
 			F_MUTEX)
 		{
 		}
-
-		int sema_signal(
-			sema_t *			sem);
 
 		void FLMAPI f_semDestroy(
 			F_SEM *	phSem);
@@ -1052,12 +1043,6 @@
 			F_SEM		hSem,
 			FLMUINT	uiTimeout);
 	
-		FINLINE void FLMAPI f_semSignal(
-			F_SEM			hSem)
-		{
-			(void)sema_signal( hSem);
-		}
-
 	#endif
 
 	/****************************************************************************
@@ -1716,7 +1701,7 @@
 			FLMUINT			uiIoFlags);
 	
 		RCODE createUnique(
-			const char *	pszDirName,
+			char *			pszDirName,
 			const char *	pszFileExtension,
 			FLMUINT			uiIoFlags);
 	
@@ -1799,6 +1784,185 @@
 		FLMUINT64			m_ui64CurrentPos;
 		FLMBOOL				m_bCanDoAsync;
 		OVERLAPPED			m_Overlapped;
+		
+		friend class F_FileSystem;
+		friend class F_MultiFileHdl;
+	};
+	#endif
+
+	/***************************************************************************
+	Desc:
+	***************************************************************************/
+	#ifdef FLM_UNIX
+	class F_FileHdl : public IF_FileHdl, public F_Base
+	{
+	public:
+	
+		F_FileHdl();
+	
+		~F_FileHdl();
+	
+		RCODE FLMAPI flush( void);
+	
+		RCODE FLMAPI read(
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE FLMAPI seek(
+			FLMUINT64			ui64Offset,
+			FLMINT				iWhence,
+			FLMUINT64 *			pui64NewOffset);
+	
+		RCODE FLMAPI size(
+			FLMUINT64 *			pui64Size);
+	
+		RCODE FLMAPI tell(
+			FLMUINT64 *			pui64Offset);
+	
+		RCODE FLMAPI truncate(
+			FLMUINT64			ui64Size);
+	
+		RCODE FLMAPI write(
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			const void *		pvBuffer,
+			FLMUINT *			puiBytesWritten);
+	
+		RCODE FLMAPI sectorRead(
+			FLMUINT64			ui64ReadOffset,
+			FLMUINT				uiBytesToRead,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesReadRV);
+	
+		RCODE FLMAPI sectorWrite(
+			FLMUINT64			ui64WriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			FLMUINT				uiBufferSize,
+			void *				pvBufferObj,
+			FLMUINT *			puiBytesWrittenRV,
+			FLMBOOL				bZeroFill = TRUE)
+		{
+			if( m_bDoDirectIO)
+			{
+				return( directWrite( ui64WriteOffset, uiBytesToWrite, 
+					pvBuffer, uiBufferSize, (F_IOBuffer *)pvBufferObj, 
+					puiBytesWrittenRV, TRUE, bZeroFill));
+			}
+			else
+			{
+				return( write( ui64WriteOffset, uiBytesToWrite, 
+					pvBuffer, puiBytesWrittenRV));
+			}
+		}
+	
+		RCODE FLMAPI close( void);
+													
+		FLMBOOL FLMAPI canDoAsync( void);
+	
+		FINLINE FLMBOOL FLMAPI usingDirectIo( void)
+		{
+			return( m_bDoDirectIO);
+		}
+	
+		FINLINE void FLMAPI setExtendSize(
+			FLMUINT				uiExtendSize)
+		{
+			m_uiExtendSize = uiExtendSize;
+		}
+	
+		FINLINE void FLMAPI setMaxAutoExtendSize(
+			FLMUINT				uiMaxAutoExtendSize)
+		{
+			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
+		}
+	
+		RCODE FLMAPI lock( void);
+	
+		RCODE FLMAPI unlock( void);
+	
+		FINLINE void FLMAPI setBlockSize(
+			FLMUINT				uiBlockSize)
+		{
+			m_uiBlockSize = uiBlockSize;
+		}
+		
+		FINLINE FLMUINT FLMAPI getSectorSize( void)
+		{
+			return( m_uiBytesPerSector);
+		}
+	
+	private:
+	
+		RCODE create(
+			const char *		pszFileName,
+			FLMUINT				uiIoFlags);
+	
+		RCODE createUnique(
+			char *				pszDirName,
+			const char *		pszFileExtension,
+			FLMUINT				uiIoFlags);
+	
+		RCODE open(
+			const char *		pszFileName,
+			FLMUINT				uiIoFlags);
+	
+		RCODE openOrCreate(
+			const char *		pszFileName,
+			FLMUINT				uiAccess,
+			FLMBOOL				bCreateFlag);
+	
+		FINLINE FLMUINT64 roundUpToSectorMultiple(
+			FLMUINT64			ui64Bytes)
+		{
+			return( (ui64Bytes + m_ui64NotOnSectorBoundMask) &
+						m_ui64GetSectorBoundMask);
+		}
+	
+		FINLINE FLMUINT64 getSectorStartOffset(
+			FLMUINT64			ui64Offset)
+		{
+			return( ui64Offset & m_ui64GetSectorBoundMask);
+		}
+	
+		RCODE directRead(
+			FLMUINT64			ui64ReadOffset,
+			FLMUINT				uiBytesToRead,	
+			void *				pvBuffer,
+			FLMBOOL				bBuffHasFullSectors,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE directWrite(
+			FLMUINT64			ui64WriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			FLMUINT				uiBufferSize,
+			F_IOBuffer *		pBufferObj,
+			FLMUINT *			puiBytesWrittenRV,
+			FLMBOOL				bBuffHasFullSectors,
+			FLMBOOL				bZeroFill);
+		
+		RCODE allocAlignBuffer( void);
+		
+		FLMBOOL					m_bFileOpened;
+		FLMBOOL					m_bDeleteOnRelease;
+		FLMBOOL					m_bOpenedReadOnly;
+		FLMBOOL					m_bOpenedExclusive;
+		char *					m_pszFileName;
+		int				   	m_fd;
+		FLMUINT					m_uiBlockSize;
+		FLMUINT					m_uiBytesPerSector;
+		FLMUINT64				m_ui64NotOnSectorBoundMask;
+		FLMUINT64				m_ui64GetSectorBoundMask;
+		FLMUINT64				m_ui64CurrentPos;
+		FLMUINT					m_uiExtendSize;
+		FLMUINT					m_uiMaxAutoExtendSize;
+		FLMBOOL					m_bCanDoAsync;
+		FLMBOOL					m_bDoDirectIO;
+		FLMBYTE *				m_pucAlignedBuff;
+		FLMUINT					m_uiAlignedBuffSize;
 		
 		friend class F_FileSystem;
 		friend class F_MultiFileHdl;

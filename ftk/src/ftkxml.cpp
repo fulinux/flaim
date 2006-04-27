@@ -43,16 +43,6 @@ typedef struct
 	FLMUINT			uiValue;
 } CharEntity;
 
-static FLMUNICODE gv_puzNamespaceDeclPrefix[] =
-{
-	FLM_UNICODE_x,
-	FLM_UNICODE_m,
-	FLM_UNICODE_l,
-	FLM_UNICODE_n,
-	FLM_UNICODE_s,
-	0
-};
-
 static FLMUNICODE gv_puzXMLPrefix[] =
 {
 	FLM_UNICODE_x,
@@ -462,12 +452,12 @@ static CHAR_TBL charTbl[] =
    { 0, 0, 0}
 };
 
-FSTATIC RCODE exportUniValue(
-	IF_OStream *	pOStream,
-	FLMUNICODE *	puzStr,
-	FLMUINT			uiStrChars,
-	FLMBOOL			bEncodeSpecialChars,
-	FLMUINT			uiIndentCount);
+//FSTATIC RCODE exportUniValue(
+//	IF_OStream *	pOStream,
+//	FLMUNICODE *	puzStr,
+//	FLMUINT			uiStrChars,
+//	FLMBOOL			bEncodeSpecialChars,
+//	FLMUINT			uiIndentCount);
 	
 /****************************************************************************
 Desc: XML

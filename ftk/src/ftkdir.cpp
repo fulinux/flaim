@@ -260,7 +260,7 @@ RCODE FLMAPI F_DirHdl::openDir(
 
 	if( pszPattern)
 	{
-		if( f_strlen( pszPattern) >= sizeof( m_szPattern))
+		if( f_strlen( pszPattern) >= (FLMINT)sizeof( m_szPattern))
 		{
 			rc = RC_SET( NE_FLM_MEM);
 			goto Exit;
@@ -522,8 +522,8 @@ Exit:
 	
 	if( uiSearchAttrib & F_IO_FA_DIRECTORY )
 	{
-		while( (f_strcmp( (FLMBYTE *)pFindData->name, (FLMBYTE *)"..") == 0) ||
-			   (f_strcmp( (FLMBYTE *)pFindData->name, (FLMBYTE *)".") == 0))
+		while( (f_strcmp( pFindData->name, "..") == 0) ||
+			   (f_strcmp( pFindData->name, ".") == 0))
 		{
 			if( (iRetVal = Find2( pFindData)) != 0)
 			{

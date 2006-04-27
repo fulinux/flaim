@@ -294,7 +294,7 @@ RCODE MapPlatformError(
 	FLMINT	iError,
 	RCODE		defaultRc)
 {
-	switch (err)
+	switch (iError)
 	{
 		case 0:
 		{

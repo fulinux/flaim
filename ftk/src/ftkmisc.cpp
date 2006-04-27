@@ -201,7 +201,7 @@ FSTATIC RCODE f_initSerialNumberGenerator( void)
 		goto Exit;
 	}
 
-	gv_pSerialRandom->randomSetSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
+	gv_pSerialRandom->setSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
 #endif
 
 Exit:
@@ -282,10 +282,10 @@ RCODE FLMAPI f_createSerialNumber(
 
 	f_mutexLock( gv_hSerialMutex);
 
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 0]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 4]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 8]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 12]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 0]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 4]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 8]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 12]);
 
 	f_mutexUnlock( gv_hSerialMutex);
 

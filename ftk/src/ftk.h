@@ -921,7 +921,7 @@
 			IF_FileHdl **			ppFile) = 0;
 
 		virtual RCODE FLMAPI createUniqueFile(
-			const char *			pszDirName,
+			char *					pszPath,
 			const char *			pszFileExtension,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
@@ -1390,8 +1390,6 @@
 			FLMINT32					i32seed) = 0;
 			
 		virtual FLMINT32 FLMAPI getSeed( void) = 0;
-
-		virtual FLMINT32 FLMAPI getInt32( void) = 0;
 
 		virtual FLMINT32 FLMAPI getInt32(
 			FLMINT32 				i32Low = FLM_MIN_INT32,
@@ -3376,8 +3374,9 @@
 	#define NE_FLM_BTREE_ERROR									FTK_ERROR_BASE( 0x125)			// Generic b-tree error
 	#define NE_FLM_BTREE_KEY_SIZE								FTK_ERROR_BASE( 0x126)			// Invalid b-tree key size
 	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x127)			// B-tree cannot grow beyond current size
-	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x128)			// B-tree operation cannot be completed 
-	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x129)			// NOTE: This is not an error code - do not document
+	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x128)			// B-tree operation cannot be completed
+	#define NE_FLM_COULD_NOT_CREATE_MUTEX					FTK_ERROR_BASE( 0x129)			// Mutex alloc / init failed
+	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x130)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc: I/O Errors

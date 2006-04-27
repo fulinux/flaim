@@ -79,7 +79,7 @@ public:
 		IF_FileHdl **	ppFile);
 
 	RCODE FLMAPI createUniqueFile(
-		const char *	pszDirName,
+		char *			pszPath,
 		const char *	pszFileExtension,
 		FLMUINT			uiIoFlags,
 		IF_FileHdl **	ppFile);
@@ -460,7 +460,7 @@ Exit:
 Desc:	Create a unique file, return a file handle to created file.
 ****************************************************************************/
 RCODE FLMAPI F_FileSystem::createUniqueFile(
-	const char *	pszDirName,
+	char *			pszPath,
 	const char *	pszFileExtension,
 	FLMUINT			uiIoFlags,
 	IF_FileHdl **	ppFileHdl)
@@ -473,7 +473,7 @@ RCODE FLMAPI F_FileSystem::createUniqueFile(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pFileHdl->createUnique( pszDirName, 
+	if( RC_BAD( rc = pFileHdl->createUnique( pszPath, 
 			pszFileExtension,	uiIoFlags)))
 	{
 		goto Exit;
@@ -724,7 +724,7 @@ RCODE FLMAPI F_FileSystem::doesFileExist(
 
    if( access( pszPath, F_OK) == -1)
 	{
-		return( MapErrnoToFlaimErr( errno, NE_FLM_CHECKING_FILE_EXISTENCE));
+		return( MapPlatformError( errno, NE_FLM_CHECKING_FILE_EXISTENCE));
 	}
 
 	return( NE_FLM_OK);
@@ -832,7 +832,7 @@ Exit:
 
 	if( stat( pszPath, &filestatus) == -1)
 	{
-       return( MapErrnoToFlaimErr( errno, NE_FLM_GETTING_FILE_INFO));
+       return( MapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
 	}
 
 	*puiTimeStamp = (FLMUINT)filestatus.st_mtime; // st_mtime is UTC
@@ -896,7 +896,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 
 	if( stat( (char *)pszFileName, &FileStat) == -1)
 	{
-		return( MapErrnoToFlaimErr( errno, NE_FLM_GETTING_FILE_INFO));
+		return( MapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
 	}
 
 	// Ensure that the path does NOT designate a directory for deletion
@@ -910,7 +910,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 	
 	if( unlink( (char *)pszFileName) == -1)
 	{
-       return( MapErrnoToFlaimErr( errno, NE_FLM_IO_DELETING_FILE));
+       return( MapPlatformError( errno, NE_FLM_IO_DELETING_FILE));
 	}
 
 	return( NE_FLM_OK);
@@ -1093,7 +1093,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 				}
 				else
 				{
-					return( MapErrnoToFlaimErr( errno, NE_FLM_RENAMING_FILE));
+					return( MapPlatformError( errno, NE_FLM_RENAMING_FILE));
 				}
 			}
 		}
@@ -1258,7 +1258,7 @@ RCODE F_FileSystem::unix_TargetIsDir(
 	*isdir = 0;
 	if( stat(tpath, &sbuf) < 0)
 	{
-		rc = MapErrnoToFlaimErr( errno, NE_FLM_IO_ACCESS_DENIED);
+		rc = MapPlatformError( errno, NE_FLM_IO_ACCESS_DENIED);
 	}
 	else if( (sbuf.st_mode & S_IFMT) == S_IFDIR)
 	{
@@ -1300,7 +1300,7 @@ RCODE F_FileSystem::unix_RenameSafe(
 			// ENOENT means the file didn't exist, which is what we were
 			// hoping for.
 			
-			rc = MapErrnoToFlaimErr( errno, NE_FLM_IO_RENAME_FAILURE);
+			rc = MapPlatformError( errno, NE_FLM_IO_RENAME_FAILURE);
 			goto Exit;
 		}
 	}
@@ -1308,7 +1308,7 @@ RCODE F_FileSystem::unix_RenameSafe(
 	errno = 0;
 	if( rename( pszSrcFile, pszDestFile) != 0)
 	{
-		rc = MapErrnoToFlaimErr( errno, NE_FLM_IO_RENAME_FAILURE);
+		rc = MapPlatformError( errno, NE_FLM_IO_RENAME_FAILURE);
 	}
 
 Exit:
@@ -1912,7 +1912,7 @@ RCODE FLMAPI F_FileSystem::pathToStorageString(
 
 	if (!realpath( (char *)szDir, (char *)pszRealPath))
 	{
-		rc = MapErrnoToFlaimErr( errno, NE_FLM_PARSING_FILE_NAME);
+		rc = MapPlatformError( errno, NE_FLM_PARSING_FILE_NAME);
 		goto Exit;
 	}
 

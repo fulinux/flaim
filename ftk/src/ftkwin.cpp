@@ -321,7 +321,7 @@ Exit:
 Desc:	Create a unique file name in the specified directory
 ****************************************************************************/
 RCODE F_FileHdl::createUnique(
-	const char *	pszDirName,
+	char *			pszDirName,
 	const char *	pszFileExtension,
 	FLMUINT			uiIoFlags)
 {
@@ -416,7 +416,7 @@ RCODE F_FileHdl::createUnique(
 
 	// Created file name needs to be returned
 	
-	f_strcpy( (char *)pszDirName, szTmpPath);
+	f_strcpy( pszDirName, szTmpPath);
 
 Exit:
 
