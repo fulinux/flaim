@@ -28,6 +28,76 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
+class F_IOBufferMgr : public IF_IOBufferMgr, public F_Base
+{
+public:
+
+	F_IOBufferMgr();
+
+	virtual ~F_IOBufferMgr();
+
+	RCODE FLMAPI waitForAllPendingIO( void);
+
+	FINLINE void FLMAPI setMaxBuffers(
+		FLMUINT			uiMaxBuffers)
+	{
+		m_uiMaxBuffers = uiMaxBuffers;
+	}
+
+	FINLINE void FLMAPI setMaxBytes(
+		FLMUINT			uiMaxBytes)
+	{
+		m_uiMaxBufferBytesToUse = uiMaxBytes;
+	}
+
+	FINLINE void FLMAPI enableKeepBuffer( void)
+	{
+		m_bKeepBuffers = TRUE;
+	}
+
+	RCODE FLMAPI getBuffer(
+		IF_IOBuffer **		ppIOBuffer,
+		FLMUINT				uiBufferSize,
+		FLMUINT				uiBlockSize);
+
+	FINLINE FLMBOOL FLMAPI havePendingIO( void)
+	{
+		return( m_pFirstPending ? TRUE : FALSE);
+	}
+
+	FINLINE FLMBOOL FLMAPI haveUsed( void)
+	{
+		return( m_pFirstUsed ? TRUE : FALSE);
+	}
+
+private:
+
+	// Private methods and variables
+
+	F_IOBuffer *		m_pFirstPending;
+	F_IOBuffer *		m_pFirstAvail;
+	F_IOBuffer *		m_pFirstUsed;
+	FLMUINT				m_uiMaxBuffers;
+	FLMUINT				m_uiMaxBufferBytesToUse;
+	FLMUINT				m_uiBufferBytesInUse;
+	FLMUINT				m_uiBuffersInUse;
+	RCODE					m_completionRc;
+	FLMBOOL				m_bKeepBuffers;
+
+	void linkToList(
+		F_IOBuffer **	ppListHead,
+		F_IOBuffer *	pIOBuffer);
+
+	void unlinkFromList(
+		F_IOBuffer *	pIOBuffer);
+
+friend class F_IOBuffer;
+
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 F_IOBufferMgr::F_IOBufferMgr()
 {
 	m_pFirstPending = NULL;

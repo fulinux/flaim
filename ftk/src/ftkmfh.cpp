@@ -25,6 +25,174 @@
 
 #include "ftksys.h"
 
+#define F_MULTI_FHDL_LIST_SIZE								8
+#define F_MULTI_FHDL_DEFAULT_MAX_FILE_SIZE				((FLMUINT)0xFFFFFFFF)
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+typedef struct
+{
+	IF_FileHdl *	pFileHdl;
+	FLMUINT			uiFileNum;
+	FLMBOOL			bDirty;
+} FH_INFO;
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_MultiFileHdl : public IF_MultiFileHdl, public F_Base
+{
+public:
+
+	F_MultiFileHdl(
+		FLMUINT			uiMaxFileSize = F_MULTI_FHDL_DEFAULT_MAX_FILE_SIZE);
+
+	virtual ~F_MultiFileHdl();
+
+	void FLMAPI close(
+		FLMBOOL			bDelete = FALSE);
+
+
+	RCODE FLMAPI create(
+		const char *	pszPath);
+
+	RCODE FLMAPI createUnique(
+		const char *	pszPath,
+		const char *	pszFileExtension);
+
+	RCODE FLMAPI deleteMultiFile(
+		const char *	pszPath);
+
+	RCODE FLMAPI open(
+		const char *	pszPath);
+
+	RCODE FLMAPI flush( void);
+
+	RCODE FLMAPI read(
+		FLMUINT64	ui64Offset,
+		FLMUINT		uiLength,
+		void *		pvBuffer,
+		FLMUINT *	puiBytesRead);
+
+	RCODE FLMAPI write(
+		FLMUINT64	ui64Offset,
+		FLMUINT		uiLength,
+		void *		pvBuffer,
+		FLMUINT *	puiBytesWritten);
+
+	RCODE FLMAPI getPath(
+		char *	pszFilePath);
+
+	FINLINE RCODE FLMAPI size(
+		FLMUINT64 *	pui64FileSize)
+	{
+		*pui64FileSize = m_ui64EOF;
+		return( NE_FLM_OK);
+	}
+
+	RCODE FLMAPI truncate(
+		FLMUINT64	ui64NewSize);
+
+private:
+
+	RCODE getFileHdl(
+		FLMUINT				uiFileNum,
+		FLMBOOL				bGetForWrite,
+		IF_FileHdl **		ppFileHdl);
+
+	RCODE createLockFile(
+		const char *		pszBasePath);
+
+	FINLINE void releaseLockFile(
+		const char *		pszBasePath,
+		FLMBOOL				bDelete)
+	{
+#ifndef FLM_UNIX
+		F_UNREFERENCED_PARM( bDelete);
+		F_UNREFERENCED_PARM( pszBasePath);
+#endif
+
+		if( m_pLockFileHdl)
+		{
+
+			// Release the lock file
+
+			(void)m_pLockFileHdl->close();
+			m_pLockFileHdl->Release();
+			m_pLockFileHdl = NULL;
+
+#ifdef FLM_UNIX
+			if( bDelete)
+			{
+				char		szTmpPath[ F_PATH_MAX_SIZE];
+
+				// Delete the lock file
+
+				f_strcpy( szTmpPath, pszBasePath);
+				gv_pFileSystem->pathAppend( szTmpPath, "64.LCK");
+				gv_pFileSystem->Delete( szTmpPath);
+			}
+#endif
+		}
+	}
+
+	FINLINE void formatFileNum(
+		FLMUINT	uiFileNum,
+		char *	pszStr)
+	{
+		f_sprintf( pszStr, "%08X.64", (unsigned)uiFileNum);
+	}
+
+	RCODE getFileNum(
+		const char *	pszFileName,
+		FLMUINT *		puiFileNum);
+
+	FINLINE void dataFilePath(
+		FLMUINT		uiFileNum,
+		char *		pszPath)
+	{
+		char	szFileName[ 13];
+
+		f_strcpy( pszPath, m_szPath);
+		formatFileNum( uiFileNum, szFileName);
+		gv_pFileSystem->pathAppend( pszPath, szFileName);
+	}
+
+	FINLINE FLMUINT getFileNum(
+		FLMUINT64		ui64Offset)
+	{
+		return( (FLMUINT)(ui64Offset / m_uiMaxFileSize));
+	}
+
+	FINLINE FLMUINT getFileOffset(
+		FLMUINT64		ui64Offset)
+	{
+		return( (FLMUINT)(ui64Offset % m_uiMaxFileSize));
+	}
+
+	FH_INFO				m_pFileHdlList[ F_MULTI_FHDL_LIST_SIZE];
+	char					m_szPath[ F_PATH_MAX_SIZE];
+	FLMBOOL				m_bOpen;
+	FLMUINT64			m_ui64EOF;
+	FLMUINT				m_uiMaxFileSize;
+	IF_FileHdl *		m_pLockFileHdl;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmAllocMultiFileHdl(
+	IF_MultiFileHdl **		ppFileHdl)
+{
+	if( (*ppFileHdl = f_new F_MultiFileHdl) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+		
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -495,9 +663,7 @@ RCODE F_MultiFileHdl::read(
 	IF_FileHdl *	pFileHdl;
 	RCODE				rc = NE_FLM_OK;
 
-	/*
-	Handle the case of a 0-byte read
-	*/
+	// Handle the case of a 0-byte read
 
 	if( !uiLength)
 	{
@@ -508,9 +674,7 @@ RCODE F_MultiFileHdl::read(
 		goto Exit;
 	}
 
-	/*
-	Read the data file(s), moving to new files as needed.
-	*/
+	// Read the data file(s), moving to new files as needed.
 
 	for( ;;)
 	{
@@ -531,10 +695,8 @@ RCODE F_MultiFileHdl::read(
 		{
 			if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
-				/*
-				Handle the case of a sparse file by filling the unread
-				portion of the buffer with zeros.
-				*/
+				// Handle the case of a sparse file by filling the unread
+				// portion of the buffer with zeros.
 
 				f_memset( pvBuffer, 0, uiBytesToRead);
 				uiTmp = uiBytesToRead;
@@ -552,10 +714,8 @@ RCODE F_MultiFileHdl::read(
 			{
 				if( rc == NE_FLM_IO_END_OF_FILE)
 				{
-					/*
-					Handle the case of a sparse file by filling the unread
-					portion of the buffer with zeros.
-					*/
+					// Handle the case of a sparse file by filling the unread
+					// portion of the buffer with zeros.
 
 					f_memset( &(((FLMBYTE *)(pvBuffer))[ uiTmp]),
 						0, (FLMUINT)(uiBytesToRead - uiTmp));
@@ -576,9 +736,7 @@ RCODE F_MultiFileHdl::read(
 			break;
 		}
 
-		/*
-		Set up for next read
-		*/
+		// Set up for next read
 
 		pvBuffer = ((FLMBYTE *)pvBuffer) + uiTmp;
 		ui64Offset += uiTmp;
@@ -601,6 +759,7 @@ RCODE F_MultiFileHdl::write(
 	void *		pvBuffer,				// Buffer that contains bytes to be written
 	FLMUINT *	puiBytesWritten)		// Number of bytes written.
 {
+	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiFileNum = getFileNum( ui64Offset);
 	FLMUINT			uiFileOffset = getFileOffset( ui64Offset);
 	FLMUINT			uiTmp;
@@ -608,17 +767,12 @@ RCODE F_MultiFileHdl::write(
 	FLMUINT			uiBytesToWrite;
 	FLMUINT			uiMaxWriteLen;
 	IF_FileHdl *	pFileHdl;
-	RCODE				rc = NE_FLM_OK;
 
-	/*
-	Don't allow zero-length writes
-	*/
+	// Don't allow zero-length writes
 
 	flmAssert( uiLength);
 
-	/*
-	Write to the data file(s), moving to new files as needed.
-	*/
+	// Write to the data file(s), moving to new files as needed.
 
 	for( ;;)
 	{
@@ -648,9 +802,7 @@ RCODE F_MultiFileHdl::write(
 			break;
 		}
 
-		/*
-		Set up for next write
-		*/
+		// Set up for next write
 
 		pvBuffer = ((FLMBYTE *)pvBuffer) + uiTmp;
 		uiFileNum = getFileNum( ui64Offset);
@@ -779,10 +931,6 @@ RCODE F_MultiFileHdl::getFileNum(
 		}
 		else
 		{
-			/*
-			Invalid character found in the file name
-			*/
-
 			rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
 			goto Exit;
 		}
@@ -810,36 +958,30 @@ RCODE F_MultiFileHdl::createLockFile(
 	RCODE				rc = NE_FLM_OK;
 	char				szLockPath [F_PATH_MAX_SIZE];
 	F_FileHdl *		pLockFileHdl = NULL;
+	FLMUINT			uiIoFlags = FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW;
 
 	f_strcpy( szLockPath, pszBasePath);
 	gv_pFileSystem->pathAppend( szLockPath, "64.LCK");
 
-	/*
-	Attempt to create the lock file.  If it fails, the lock file
-	may have been left because of a crash.  Hence, we first try
-	to delete the file.  If that succeeds, we then attempt to
-	create the file again.  If it, or the 2nd create fail, we simply
-	return an access denied error.
-	*/
-
-	if ((pLockFileHdl = f_new F_FileHdl) == NULL)
+	// Attempt to create the lock file.  If it fails, the lock file
+	// may have been left because of a crash.  Hence, we first try
+	// to delete the file.  If that succeeds, we then attempt to
+	// create the file again.  If it, or the 2nd create fail, we simply
+	// return an access denied error.
+	
+	if( RC_BAD( rc = f_allocFileHdl( &pLockFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 
 #ifndef FLM_UNIX
-	pLockFileHdl->setupFileHdl( 0, TRUE);
-#else
-
 	// On Unix, we do not want to delete the file because it
 	// will succeed even if someone else has the file open.
-
-	pLockFileHdl->setupFileHdl( 0, FALSE);
+	
+	uiIoFlags |= FLM_IO_DELETE_ON_RELEASE;
 #endif
 
-	if( RC_BAD( pLockFileHdl->create( szLockPath,
-									FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW)))
+	if( RC_BAD( pLockFileHdl->create( szLockPath, uiIoFlags)))
 	{
 #ifndef FLM_UNIX
 		if (RC_BAD( gv_pFileSystem->deleteFile( szLockPath)))
@@ -847,17 +989,14 @@ RCODE F_MultiFileHdl::createLockFile(
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
-		else if (RC_BAD( pLockFileHdl->create( szLockPath,
-									FLM_IO_RDWR | FLM_IO_EXCL |
-									FLM_IO_SH_DENYRW)))
+		else if (RC_BAD( pLockFileHdl->create( szLockPath, uiIoFlags)))
 		{
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
 #else
 
-		if( RC_BAD( pLockFileHdl->open( szLockPath,
-										FLM_IO_RDWR | FLM_IO_SH_DENYRW)))
+		if( RC_BAD( pLockFileHdl->open( szLockPath, uiIoFlags)))
 		{
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
@@ -910,6 +1049,5 @@ RCODE F_MultiFileHdl::truncate(
 
 Exit:
 
-	return rc;
-
+	return( rc);
 }

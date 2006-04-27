@@ -196,7 +196,7 @@ endif
 # -- Determine if we are only cleaning --
 
 util_targets = 
-test_targets = basictest
+test_targets = ftktest
 all_targets = rpms install libs all allutils test $(util_targets) $(test_targets)
 found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
 
@@ -1178,13 +1178,13 @@ $(sample_exe): $(sample_obj) $(ftk_static_lib)
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
 	$(ec)$(call copycmd,sample/xmlfiles/*.xml,$(sample_dir))
 
-# -- basictest --
+# -- ftktest  --
 
-.PHONY : basictest
-basictest: status clean dircheck $(test_dir)/basictest$(exe_suffix)
+.PHONY : ftktest
+ftktest: status clean dircheck $(test_dir)/ftktest$(exe_suffix)
 $(test_dir)/ftktest$(exe_suffix): $(ftk_test_obj) $(ftk_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(call flm_exe_link_cmd,$(test_dir),basictest,$(ftk_test_obj))
+	$(call flm_exe_link_cmd,$(test_dir),ftktest,$(ftk_test_obj))
 
 # -- version --
 
@@ -1486,7 +1486,7 @@ allutils: status dircheck libs $(util_targets)
 
 .PHONY : test
 test:	status dircheck $(ftk_static_lib) $(test_targets)
-	$(ec)$(call runtest,basictest)
+	$(ec)$(call runtest,ftktest)
 
 .PHONY : debug
 debug:

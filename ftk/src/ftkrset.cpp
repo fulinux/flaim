@@ -25,10 +25,6 @@
 
 #include "ftksys.h"
 
-// Make sure that the extension is in lower case characters.
-
-#define FRSET_FILENAME_EXTENSION		"frs"
-
 /*
 ** Sorting Result Sets:
 **
@@ -104,6 +100,437 @@
 	9				9
 */
 
+#define FRSET_FILENAME_EXTENSION		"frs"
+#define RSBLK_UNSET_FILE_POS			(~((FLMUINT64)0))
+#define RS_BLOCK_SIZE					(1024 * 512)
+#define RS_POSITION_NOT_SET			FLM_MAX_UINT64
+#define RS_MAX_FIXED_ENTRY_SIZE		64
+	
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+typedef struct
+{
+	FLMUINT32	ui32Offset;
+	FLMUINT32	ui32Length;
+} F_VAR_HEADER;
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+typedef struct
+{
+	FLMUINT64	ui64FilePos;
+	FLMUINT		uiEntryCount;
+	FLMUINT		uiBlockSize;
+	FLMBOOL		bFirstBlock;
+	FLMBOOL		bLastBlock;
+} F_BLOCK_HEADER;
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class	F_ResultSetBlk : public F_RefCount, public F_Base
+{
+public:
+
+	F_ResultSetBlk();
+
+	FINLINE ~F_ResultSetBlk()
+	{
+		if (m_pNext)
+		{
+			m_pNext->m_pPrev = m_pPrev;
+		}
+		
+		if( m_pPrev)
+		{
+			m_pPrev->m_pNext = m_pNext;
+		}
+		
+		if (m_pCompare)
+		{
+			m_pCompare->Release();
+		}
+	}
+
+	void reset( void);
+
+	void setup(
+		IF_MultiFileHdl **		ppMultiFileHdl,
+		IF_ResultSetCompare *	pCompare,
+		FLMUINT						uiEntrySize,
+		FLMBOOL						bFirstInList,
+		FLMBOOL						bDropDuplicates,
+		FLMBOOL						bEntriesInOrder);
+
+	RCODE setBuffer(
+		FLMBYTE *					pBuffer,
+		FLMUINT						uiBufferSize = RS_BLOCK_SIZE);
+
+	FINLINE FLMUINT bytesUsedInBuffer( void)
+	{
+		if (m_bEntriesInOrder)
+		{
+			return( m_BlockHeader.uiBlockSize);
+		}
+		else
+		{
+			return( m_BlockHeader.uiBlockSize - m_uiLengthRemaining);
+		}
+	}
+
+	RCODE addEntry(
+		FLMBYTE *	pEntry,
+		FLMUINT		uiEntryLength );
+
+	RCODE modifyEntry(
+		FLMBYTE *	pEntry,
+		FLMUINT		uiEntryLength = 0);
+
+	FINLINE RCODE finalize(
+		FLMBOOL		bForceWrite)
+	{
+		return( flush( TRUE, bForceWrite));
+	}
+
+	RCODE flush(
+		FLMBOOL		bLastBlockInList,
+		FLMBOOL		bForceWrite);
+
+	RCODE getCurrent(
+		FLMBYTE *	pBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	FINLINE RCODE getNext(
+		FLMBYTE *	pucBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength)
+	{
+		// Are we on the last entry or past the last entry?
+
+		if (m_iEntryPos + 1 >= (FLMINT)m_BlockHeader.uiEntryCount)
+		{
+			m_iEntryPos = (FLMINT) m_BlockHeader.uiEntryCount;
+			return RC_SET( NE_FLM_EOF_HIT);
+		}
+
+		m_iEntryPos++;
+		return( copyCurrentEntry( pucBuffer, uiBufferLength, puiReturnLength));
+	}
+
+	RCODE getNextPtr(
+		FLMBYTE **	ppBuffer,
+		FLMUINT *	puiReturnLength);
+
+	RCODE getPrev(
+		FLMBYTE *	pBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	FINLINE FLMUINT64 getPosition( void)
+	{
+		return( (!m_bPositioned ||
+								m_iEntryPos == -1 ||
+								m_iEntryPos == (FLMINT)m_BlockHeader.uiEntryCount
+								? RS_POSITION_NOT_SET
+								: m_ui64BlkEntryPosition + (FLMUINT64)m_iEntryPos));
+	}
+
+	RCODE setPosition(
+		FLMUINT64	ui64Position );
+
+	RCODE	findMatch(
+		FLMBYTE *	pMatchEntry,
+		FLMUINT		uiMatchEntryLength,
+		FLMBYTE *	pFoundEntry,
+		FLMUINT *	puiFoundEntryLength,
+		FLMINT *		piCompare);
+
+	void adjustState(
+		FLMUINT		uiBlkBufferSize);
+
+	RCODE truncate(
+		FLMBYTE *	pszPath);
+
+private:
+
+	RCODE addEntry(
+		FLMBYTE *	pucEntry);
+
+	void squeezeSpace( void);
+
+	RCODE sortAndRemoveDups( void);
+
+	void removeEntry(
+		FLMBYTE *	pucEntry);
+
+	RCODE quickSort(
+		FLMUINT		uiLowerBounds,
+		FLMUINT		uiUpperBounds);
+
+	FINLINE RCODE entryCompare(
+		FLMBYTE *	pucLeftEntry,
+		FLMBYTE *	pucRightEntry,
+		FLMINT *		piCompare)
+	{
+		RCODE			rc;
+
+		if( m_bFixedEntrySize)
+		{
+			rc = m_pCompare->compare( pucLeftEntry,  m_uiEntrySize,
+						pucRightEntry, m_uiEntrySize, piCompare);
+		}
+		else
+		{
+			rc = m_pCompare->compare(
+						m_pucBlockBuf + ((F_VAR_HEADER *)pucLeftEntry)->ui32Offset,
+						((F_VAR_HEADER *)pucLeftEntry)->ui32Length,
+						m_pucBlockBuf + ((F_VAR_HEADER *)pucRightEntry)->ui32Offset,
+						((F_VAR_HEADER *)pucRightEntry)->ui32Length,
+						piCompare);
+		}
+		if (*piCompare == 0)
+		{
+			m_bDuplicateFound = TRUE;
+		}
+		
+		return( rc);
+	}
+
+	RCODE copyCurrentEntry(
+		FLMBYTE *	pBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE compareEntry(
+		FLMBYTE *	pMatchEntry,
+		FLMUINT		uiMatchEntryLength,
+		FLMUINT		uiEntryPos,
+		FLMINT *		piCompare);
+
+	RCODE write();
+	
+	RCODE read();
+
+	F_BLOCK_HEADER					m_BlockHeader;
+	IF_ResultSetCompare *		m_pCompare;
+	FLMBYTE *						m_pucBlockBuf;
+	FLMBYTE *						m_pucEndPoint;
+	F_ResultSetBlk *				m_pNext;
+	F_ResultSetBlk *				m_pPrev;
+	IF_MultiFileHdl **			m_ppMultiFileHdl;
+	FLMUINT64						m_ui64BlkEntryPosition;
+	FLMUINT							m_uiLengthRemaining;
+	FLMINT							m_iEntryPos;
+	FLMUINT							m_uiEntrySize;
+	FLMBOOL							m_bEntriesInOrder;
+	FLMBOOL							m_bFixedEntrySize;
+	FLMBOOL							m_bPositioned;
+	FLMBOOL							m_bModifiedEntry;
+	FLMBOOL							m_bDuplicateFound;
+	FLMBOOL							m_bDropDuplicates;
+	
+	friend class F_ResultSet;
+};
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+class F_ResultSet : public IF_ResultSet, public F_Base
+{
+public:
+
+	F_ResultSet();
+	
+	F_ResultSet(
+		FLMUINT		uiBlkSize);
+
+	virtual ~F_ResultSet();
+
+	RCODE FLMAPI setupResultSet(
+		const char *				pszPath,
+		IF_ResultSetCompare *	pCompare,
+		FLMUINT						uiEntrySize,
+		FLMBOOL						bDropDuplicates = TRUE,
+		FLMBOOL						bEntriesInOrder = FALSE,
+		const char *				pszInputFileName = NULL);	
+
+	FINLINE void FLMAPI setSortStatus(
+		IF_ResultSetSortStatus *	pSortStatus)
+	{
+		if (m_pSortStatus)
+		{
+			m_pSortStatus->Release();
+			m_pSortStatus = NULL;
+		}
+		
+		if ((m_pSortStatus = pSortStatus) != NULL)
+		{
+			m_pSortStatus->AddRef();
+		}
+	}
+
+	FINLINE FLMUINT64 FLMAPI getTotalEntries( void)
+	{
+		F_ResultSetBlk	*	pBlk = m_pFirstRSBlk;
+		FLMUINT64			ui64TotalEntries = 0;
+
+		for( pBlk = m_pFirstRSBlk; pBlk; pBlk = pBlk->m_pNext)
+		{
+			ui64TotalEntries += pBlk->m_BlockHeader.uiEntryCount;
+		}
+		
+		return( ui64TotalEntries);
+	}
+
+	RCODE FLMAPI addEntry(
+		const void *	pvEntry,
+		FLMUINT			uiEntryLength = 0);
+
+	RCODE FLMAPI finalizeResultSet(
+		FLMUINT64 *		pui64TotalEntries = NULL);
+
+	RCODE FLMAPI getFirst(
+		void *			pvEntryBuffer,
+		FLMUINT			uiBufferLength = 0,
+		FLMUINT *		puiEntryLength = NULL);
+
+	RCODE FLMAPI getNext(
+		void *			pvEntryBuffer,
+		FLMUINT			uiBufferLength = 0,
+		FLMUINT *		puiEntryLength = NULL);
+
+	RCODE FLMAPI getLast(
+		void *			pvEntryBuffer,
+		FLMUINT			uiBufferLength = 0,
+		FLMUINT *		puiEntryLength = NULL);
+
+	RCODE FLMAPI getPrev(
+		void *			pvEntryBuffer,
+		FLMUINT			uiBufferLength = 0,
+		FLMUINT *		puiEntryLength = NULL);
+
+	RCODE FLMAPI getCurrent(
+		void *			pvEntryBuffer,
+		FLMUINT			uiBufferLength = 0,
+		FLMUINT *		puiEntryLength = NULL);
+
+	FINLINE RCODE FLMAPI modifyCurrent(
+		const void *	pvEntry,
+		FLMUINT			uiEntryLength = 0)
+	{
+		return( m_pCurRSBlk->modifyEntry( (FLMBYTE *)pvEntry, uiEntryLength));
+	}
+
+	FINLINE RCODE FLMAPI findMatch(
+		const void *	pvMatchEntry,
+		void *			pvFoundEntry)
+	{
+		return( findMatch( pvMatchEntry, m_uiEntrySize,
+								pvFoundEntry, NULL));
+	}
+
+	RCODE FLMAPI findMatch(
+		const void *	pvMatchEntry,
+		FLMUINT			uiMatchEntryLength,
+		void *			pvFoundEntry,
+		FLMUINT *		puiFoundEntryLength);
+		
+	FINLINE FLMUINT64 FLMAPI getPosition( void)
+	{
+		return( (!m_pCurRSBlk
+								? RS_POSITION_NOT_SET
+								: m_pCurRSBlk->getPosition()));
+	}
+
+	RCODE FLMAPI setPosition(
+		FLMUINT64		ui64Position);
+
+	RCODE FLMAPI resetResultSet(
+		FLMBOOL			bDelete = TRUE);
+
+	RCODE FLMAPI flushToFile( void);
+
+private:
+
+	FINLINE FLMUINT64 numberOfBlockChains( void)
+	{
+		FLMUINT64			ui64Count = 0;
+		F_ResultSetBlk *	pBlk = m_pFirstRSBlk;
+
+		for (; pBlk ; pBlk = pBlk->m_pNext)
+		{
+			if (pBlk->m_BlockHeader.bFirstBlock)
+			{
+				ui64Count++;
+			}
+		}
+		
+		return( ui64Count);
+	}
+
+	RCODE mergeSort();
+
+	RCODE getNextPtr(
+		F_ResultSetBlk **			ppCurBlk,
+		FLMBYTE *	*				ppBuffer,
+		FLMUINT *					puiReturnLength);
+
+	RCODE unionBlkLists(
+		F_ResultSetBlk *			pLeftBlk,
+		F_ResultSetBlk *			pRightBlk = NULL);
+
+	RCODE copyRemainingItems(
+		F_ResultSetBlk *			pCurBlk);
+
+	void closeFile(
+		IF_MultiFileHdl **		ppMultiFileHdl,
+		FLMBOOL						bDelete = TRUE);
+
+	RCODE openFile(
+		IF_MultiFileHdl **		ppMultiFileHdl);
+
+	F_ResultSetBlk * selectMidpoint(
+		F_ResultSetBlk *			pLowBlk,
+		F_ResultSetBlk *			pHighBlk,
+		FLMBOOL						bPickHighIfNeighbors);
+
+	RCODE setupFromFile( void);
+
+	IF_ResultSetCompare *		m_pCompare;
+	IF_ResultSetSortStatus *	m_pSortStatus;
+	FLMUINT64						m_ui64EstTotalUnits;
+	FLMUINT64						m_ui64UnitsDone;
+	FLMUINT							m_uiEntrySize;
+	FLMUINT64						m_ui64TotalEntries;
+	F_ResultSetBlk *				m_pCurRSBlk;
+	F_ResultSetBlk *				m_pFirstRSBlk;
+	F_ResultSetBlk *				m_pLastRSBlk;
+	char								m_szIoDefaultPath[ F_PATH_MAX_SIZE];
+	char								m_szIoFilePath1[ F_PATH_MAX_SIZE];
+	char								m_szIoFilePath2[ F_PATH_MAX_SIZE];
+	IF_MultiFileHdl *				m_pMultiFileHdl1;
+	IF_MultiFileHdl *				m_pMultiFileHdl2;
+	FLMBYTE *						m_pucBlockBuf1;
+	FLMBYTE *						m_pucBlockBuf2;
+	FLMBYTE *						m_pucBlockBuf3;
+	FLMUINT							m_uiBlockBuf1Len;
+	FLMBOOL							m_bFile1Opened;
+	FLMBOOL							m_bFile2Opened;
+	FLMBOOL							m_bOutput2ndFile;
+	FLMBOOL							m_bInitialAdding;
+	FLMBOOL							m_bFinalizeCalled;
+	FLMBOOL							m_bSetupCalled;
+	FLMBOOL							m_bDropDuplicates;
+	FLMBOOL							m_bAppAddsInOrder;
+	FLMBOOL							m_bEntriesInOrder;
+	FLMUINT							m_uiBlkSize;
+
+	friend class F_ResultSetBlk;
+};
+	
 /*****************************************************************************
 Desc:
 *****************************************************************************/
@@ -442,10 +869,9 @@ RCODE F_ResultSet::setupFromFile( void)
 	F_BLOCK_HEADER			BlkHdr;
 
 	flmAssert( !m_bSetupCalled);
-
-	if( (m_pMultiFileHdl1 = f_new F_MultiFileHdl) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl1)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 
@@ -1923,9 +2349,8 @@ RCODE F_ResultSet::openFile(
 
 	f_strcpy( pszDirPath, m_szIoDefaultPath);
 
-	if( (*ppMultiFileHdl = f_new F_MultiFileHdl) == NULL)
+	if( RC_BAD( rc = FlmAllocMultiFileHdl( ppMultiFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 

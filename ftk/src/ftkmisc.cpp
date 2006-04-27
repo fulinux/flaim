@@ -25,49 +25,103 @@
 
 #include "ftksys.h"
 
-// Global data
-
+FLMUINT						gv_uiStartupCount = 0;
 FLMUINT						gv_uiSerialInitCount = 0;
 F_MUTEX						gv_hSerialMutex = F_MUTEX_NULL;
+IF_FileSystem *			gv_pFileSystem = NULL;
+IF_RandomGenerator *		gv_pSerialRandom = NULL;
+IF_ThreadMgr *				gv_pThreadMgr = NULL;
 
-#ifdef FLM_UNIX
-	F_RandomGenerator		gv_SerialRandom;
+FSTATIC RCODE f_initSerialNumberGenerator( void);
+
+FSTATIC void f_freeSerialNumberGenerator( void);
+
+#ifdef FLM_AIX
+	#ifndef nsleep
+		extern "C"
+		{
+			extern int nsleep( struct timestruc_t *, struct timestruc_t *);
+		}
+	#endif
 #endif
 
-#ifdef FLM_NLM
-	void f_sleep( 
-		FLMUINT	uiMilliseconds)
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI ftkStartup( void)
+{
+	RCODE		rc = NE_FLM_OK;
+	
+	if( ++gv_uiStartupCount > 1)
 	{
-		if( ! uiMilliseconds )
-		{
-			kYieldThread();
-		}
-		else
-		{
-			kDelayThread( uiMilliseconds);
-		}
+		goto Exit;
 	}
 	
-#endif
+	f_memoryInit();
+	
+	if( RC_BAD( rc = f_allocFileSystem( &gv_pFileSystem)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = f_allocThreadMgr( &gv_pThreadMgr)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = f_initSerialNumberGenerator()))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = f_checkErrorCodeTables()))
+	{
+		goto Exit;
+	}
 
-#if defined( FLM_UNIX)
+Exit:
 
-	#ifdef FLM_AIX
-		#ifndef nsleep
-			extern "C"
-			{
-				extern int nsleep( struct timestruc_t *, struct timestruc_t *);
-			}
-		#endif
-	#endif
+	if( RC_BAD( rc))
+	{
+		ftkShutdown();
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI ftkShutdown( void)
+{
+	if( !gv_uiStartupCount || --gv_uiStartupCount > 0)
+	{
+		return;
+	}
+	
+	if( gv_pThreadMgr)
+	{
+		gv_pThreadMgr->Release();
+		gv_pThreadMgr = NULL;
+	}
+	
+	if( gv_pFileSystem)
+	{
+		gv_pFileSystem->Release();
+		gv_pFileSystem = NULL;
+	}
+	
+	f_freeSerialNumberGenerator();
+	f_memoryCleanup();
+}
 
 /****************************************************************************
 Desc: This routine causes the calling process to delay the given number
 		of milliseconds.  Due to the nature of the call, the actual sleep
 		time is almost guaranteed to be different from requested sleep time.
-In:   milliseconds - the number of milliseconds to delay
 ****************************************************************************/
-void f_sleep(
+#ifdef FLM_UNIX
+void FLMAPI f_sleep(
 	FLMUINT		uiMilliseconds)
 {
 #ifdef FLM_AIX
@@ -88,70 +142,31 @@ void f_sleep(
 }
 #endif
 
-/***************************************************************************
-Desc:   Map POSIX errno to Flaim IO errors.
-***************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
-RCODE MapPlatformError(
-	FLMINT	iError,
-	RCODE		defaultRc)
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_sleep(
+	FLMUINT		uiMilliseconds)
 {
-	switch (err)
+	Sleep( (DWORD)uiMilliseconds);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_sleep( 
+	FLMUINT		uiMilliseconds)
+{
+	if( !uiMilliseconds )
 	{
-		case 0:
-		{
-			return( NE_FLM_OK);
-		}
-
-		case ENOENT:
-		{
-			return( RC_SET( NE_FLM_IO_PATH_NOT_FOUND));
-		}
-
-		case EACCES:
-		case EEXIST:
-		{
-			return( RC_SET( NE_FLM_IO_ACCESS_DENIED));
-		}
-
-		case EINVAL:
-		{
-			return( RC_SET( NE_FLM_IO_PATH_TOO_LONG));
-		}
-
-		case EIO:
-		{
-			return( RC_SET( NE_FLM_IO_DISK_FULL));
-		}
-
-		case ENOTDIR:
-		{
-			return( RC_SET( NE_FLM_IO_DIRECTORY_ERR));
-		}
-
-#ifdef EBADFD
-		case EBADFD:
-		{
-			return( RC_SET( NE_FLM_IO_BAD_FILE_HANDLE));
-		}
-#endif
-
-#ifdef EOF
-		case EOF:
-		{
-			return( RC_SET( NE_FLM_IO_END_OF_FILE));
-		}
-#endif
-			
-		case EMFILE:
-		{
-			return( RC_SET( NE_FLM_IO_NO_MORE_FILES));
-		}
-
-		default:
-		{
-			return( RC_SET( defaultRc));
-		}
+		kYieldThread();
+	}
+	else
+	{
+		kDelayThread( uiMilliseconds);
 	}
 }
 #endif
@@ -162,7 +177,7 @@ Desc:		This routine initializes the serial number generator.  If the O/S
 			routines fail for some reason, a pseudo-GUID will be generated.
 Notes:	This routine should only be called once by the process.
 ****************************************************************************/
-RCODE f_initSerialNumberGenerator( void)
+FSTATIC RCODE f_initSerialNumberGenerator( void)
 {
 	FLMUINT					uiTime;
 	RCODE						rc = NE_FLM_OK;
@@ -180,12 +195,40 @@ RCODE f_initSerialNumberGenerator( void)
 	f_timeGetSeconds( &uiTime );
 
 #if defined( FLM_UNIX)
-	gv_SerialRandom.randomSetSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
+	
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &gv_pSerialRandom)))
+	{
+		goto Exit;
+	}
+
+	gv_pSerialRandom->randomSetSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
 #endif
 
 Exit:
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC void f_freeSerialNumberGenerator( void)
+{
+	if( (--gv_uiSerialInitCount) > 0)
+	{
+		return;
+	}
+	
+	if( gv_pSerialRandom)
+	{
+		gv_pSerialRandom->Release();
+		gv_pSerialRandom = NULL;
+	}
+
+	if( gv_hSerialMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &gv_hSerialMutex);
+	}
 }
 
 /****************************************************************************
@@ -239,10 +282,10 @@ RCODE FLMAPI f_createSerialNumber(
 
 	f_mutexLock( gv_hSerialMutex);
 
-	UD2FBA( (FLMUINT32)gv_SerialRandom.randomLong(), &pszSerialNum[ 0]);
-	UD2FBA( (FLMUINT32)gv_SerialRandom.randomLong(), &pszSerialNum[ 4]);
-	UD2FBA( (FLMUINT32)gv_SerialRandom.randomLong(), &pszSerialNum[ 8]);
-	UD2FBA( (FLMUINT32)gv_SerialRandom.randomLong(), &pszSerialNum[ 12]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 0]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 4]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 8]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->randomLong(), &pszSerialNum[ 12]);
 
 	f_mutexUnlock( gv_hSerialMutex);
 
@@ -253,22 +296,6 @@ Exit:
 #endif
 
 	return( rc);
-}
-
-/****************************************************************************
-Notes:	This routine should only be called once by the process.
-****************************************************************************/
-void f_freeSerialNumberGenerator( void)
-{
-	if( (--gv_uiSerialInitCount) > 0)
-	{
-		return;
-	}
-
-	if( gv_hSerialMutex != F_MUTEX_NULL)
-	{
-		f_mutexDestroy( &gv_hSerialMutex);
-	}
 }
 
 /****************************************************************************
@@ -535,7 +562,7 @@ Iterate_Larger_Half:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT flmQSortUINTCompare(
+FLMINT FLMAPI f_qsortUINTCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -558,7 +585,7 @@ FLMINT flmQSortUINTCompare(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-void flmQSortUINTSwap(
+void FLMAPI f_qsortUINTSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)

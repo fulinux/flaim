@@ -28,6 +28,125 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
+typedef struct INI_LINE
+{
+	char *				pszParamName;
+	char *				pszParamValue;	
+	char *				pszComment;
+	struct INI_LINE *	pPrev;
+	struct INI_LINE *	pNext;
+} INI_LINE;
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_IniFile : public IF_IniFile, public F_Base
+{
+public:
+
+	F_IniFile();
+	
+	virtual ~F_IniFile();
+	
+	RCODE init( void);
+	
+	RCODE FLMAPI read(
+		const char *		pszFileName);
+		
+	RCODE FLMAPI write( void);
+
+	FLMBOOL FLMAPI getParam(
+		const char *	pszParamName,
+		FLMUINT *		puiParamVal);
+	
+	FLMBOOL FLMAPI getParam(
+		const char *	pszParamName,
+		FLMBOOL *		pbParamVal);
+	
+	FLMBOOL FLMAPI getParam(
+		const char *	pszParamName,
+		char **			ppszParamVal);
+	
+	RCODE FLMAPI setParam(
+		const char *	pszParamName,
+		FLMUINT 			uiParamVal);
+
+	RCODE FLMAPI setParam(
+		const char *	pszParamName,
+		FLMBOOL			bParamVal);
+
+	RCODE FLMAPI setParam(
+		const char *	pszParamName,
+		const char *	pszParamVal);
+
+	FINLINE FLMBOOL FLMAPI testParam(
+		const char *	pszParamName)
+	{
+		if( findParam( pszParamName))
+		{
+			return( TRUE);
+		}
+		
+		return( FALSE);
+	}
+
+private:
+
+	RCODE readLine(
+		char *			pucBuf,
+		FLMUINT *		puiBytes,
+		FLMBOOL *		pbMore);
+
+	RCODE parseBuffer(
+		char *			pucBuf,
+		FLMUINT			uiNumButes);
+
+	INI_LINE * findParam(
+		const char *	pszParamName);
+
+	RCODE setParamCommon( 
+		INI_LINE **		ppLine,
+		const char *	pszParamName);
+
+	void fromAscii( 
+		FLMUINT * 		puiVal,
+		const char *	pszParamValue);
+		
+	void fromAscii(
+		FLMBOOL *		pbVal,
+		const char *	pszParamValue);
+
+	RCODE toAscii( 
+		char **			ppszParamValue,
+		FLMUINT			puiVal);
+		
+	RCODE toAscii( 
+		char **			ppszParamValue,
+		FLMBOOL 			pbVal);
+		
+	RCODE toAscii(
+		char **			ppszParamValue,
+		const char * 	pszVal);
+
+	FINLINE FLMBOOL isWhiteSpace(
+		FLMBYTE			ucChar)
+	{
+		return( ucChar == 32 || ucChar == 9 ? TRUE : FALSE);
+	}
+	
+	IF_Pool *			m_pPool;
+	IF_FileHdl * 		m_pFileHdl;
+	char *				m_pszFileName;
+	INI_LINE *			m_pFirstLine;	
+	INI_LINE *			m_pLastLine;
+	FLMBOOL				m_bReady;
+	FLMBOOL				m_bModified;
+	FLMUINT				m_uiFileOffset;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 F_IniFile::F_IniFile()
 {
 	m_pFirstLine = NULL;
@@ -63,18 +182,51 @@ F_IniFile::~F_IniFile()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_IniFile::init()
+RCODE FLMAPI FlmAllocIniFile(
+	IF_IniFile **				ppIniFile)
+{
+	RCODE				rc = NE_FLM_OK;
+	F_IniFile *		pIniFile = NULL;
+	
+	if( (pIniFile = f_new F_IniFile) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIniFile->init()))
+	{
+		goto Exit;
+	}
+	
+	*ppIniFile = pIniFile;
+	pIniFile = NULL;
+	
+Exit:
+
+	if( pIniFile)
+	{
+		pIniFile->Release();
+	}
+
+	return( rc);
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_IniFile::init()
 {
 	RCODE		rc = NE_FLM_OK;
 	
 	if( m_pPool)
 	{
 		m_pPool->Release();
+		m_pPool = NULL;
 	}
 	
-	if (( m_pPool = f_new F_Pool) == NULL)
+	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 	
@@ -185,6 +337,7 @@ RCODE FLMAPI F_IniFile::read(
 		{
 			// NumBytes will be 0 if the line was blank.  No need
 			// to call parseBuffer in this case
+			
 			if (RC_BAD( rc = parseBuffer( pszReadBuf, uiBytesInLine)))
 			{
 				if (rc == NE_FLM_SYNTAX)
@@ -197,7 +350,7 @@ RCODE FLMAPI F_IniFile::read(
 				}
 			}
 		}
-	}  // end of while (!bEOF)
+	}
 
 Exit:
 
@@ -240,6 +393,7 @@ RCODE FLMAPI F_IniFile::write( void)
 	if (!m_bModified)
 	{
 		// Nothing needs to be written
+		
 		goto Exit;
 	}
 
@@ -271,6 +425,7 @@ RCODE FLMAPI F_IniFile::write( void)
 			if (pCurLine->pszParamValue)
 			{
 				// Output the "=" and the value
+				
 				if (RC_BAD (rc = m_pFileHdl->write( uiFileOffset, 1,
 					(void *)"=", &uiBytesWritten)))
 				{
@@ -293,6 +448,7 @@ RCODE FLMAPI F_IniFile::write( void)
 		if (pCurLine->pszComment)
 		{
 			// Output the comment
+			
 			if (pCurLine->pszParamName)
 			{
 				if (RC_BAD (rc = m_pFileHdl->write( uiFileOffset, 2,

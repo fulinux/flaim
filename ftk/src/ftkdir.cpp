@@ -30,15 +30,30 @@
 
 #if defined( FLM_WIN)
 
+	#define F_IO_FA_NORMAL			FILE_ATTRIBUTE_NORMAL		// Normal file
+	#define F_IO_FA_RDONLY			FILE_ATTRIBUTE_READONLY		// Read only attribute
+	#define F_IO_FA_HIDDEN			FILE_ATTRIBUTE_HIDDEN		// Hidden file
+	#define F_IO_FA_SYSTEM			FILE_ATTRIBUTE_SYSTEM		// System file
+	#define F_IO_FA_VOLUME			FILE_ATTRIBUTE_VOLUME		// Volume label
+	#define F_IO_FA_DIRECTORY		FILE_ATTRIBUTE_DIRECTORY	// Directory
+	#define F_IO_FA_ARCHIVE			FILE_ATTRIBUTE_ARCHIVE		// Archive
+	
 	FSTATIC FLMBOOL f_fileMeetsFindCriteria(
 		F_IO_FIND_DATA *		pFindData);
 
 #elif defined( FLM_UNIX) || defined( FLM_NLM)
 
+	#define F_IO_FA_NORMAL			0x01	// Normal file, no attributes
+	#define F_IO_FA_RDONLY			0x02	// Read only attribute
+	#define F_IO_FA_HIDDEN			0x04	// Hidden file
+	#define F_IO_FA_SYSTEM			0x08	// System file
+	#define F_IO_FA_VOLUME			0x10	// Volume label
+	#define F_IO_FA_DIRECTORY		0x20	// Directory
+	#define F_IO_FA_ARCHIVE			0x40	// Archive
+	
 	FSTATIC int Find1(
 		char *				FindTemplate,
 		F_IO_FIND_DATA *	DirInfo);
-
 
 	FSTATIC int Find2(
 		F_IO_FIND_DATA *	DirStuff);
@@ -57,8 +72,37 @@
 
 #endif
 
+RCODE f_fileFindFirst(
+	char *				pszSearchPath,
+	FLMUINT				uiSearchAttrib,
+	F_IO_FIND_DATA	*	find_data,
+	char *				pszFoundPath,
+	FLMUINT *			puiFoundAttrib);
+
+RCODE f_fileFindNext(
+	F_IO_FIND_DATA *	pFindData,
+	char *				pszFoundPath,
+	FLMUINT *			puiFoundAttrib);
+
+void f_fileFindClose(
+	F_IO_FIND_DATA *		pFindData);
+
 /****************************************************************************
-Desc:	Constructor
+Desc:
+****************************************************************************/
+RCODE f_allocDirHdl(
+	F_DirHdl **				ppDirHdl)
+{
+	if( (*ppDirHdl = f_new F_DirHdl) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+		
+/****************************************************************************
+Desc:
 ****************************************************************************/
 F_DirHdl::F_DirHdl()
 {
@@ -67,6 +111,17 @@ F_DirHdl::F_DirHdl()
 	m_bFindOpen = FALSE;
 	m_uiAttrib = 0;
 	m_szPattern[ 0] = '\0';
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_DirHdl::~F_DirHdl()
+{
+	if( m_bFindOpen)
+	{
+		f_fileFindClose( &m_FindData);
+	}
 }
 
 /****************************************************************************
@@ -190,7 +245,7 @@ Exit:
 /****************************************************************************
 Desc:	Open a directory
 ****************************************************************************/
-RCODE F_DirHdl::openDir(
+RCODE FLMAPI F_DirHdl::openDir(
 	const char *	pszDirName,
 	const char *	pszPattern)
 {
@@ -223,7 +278,7 @@ Exit:
 /****************************************************************************
 Desc:	Create a directory (and parent directories if necessary).
 ****************************************************************************/
-RCODE F_DirHdl::createDir(
+RCODE FLMAPI F_DirHdl::createDir(
 	const char *	pszDirPath)
 {
 	char *			pszParentDir = NULL;
@@ -301,7 +356,7 @@ Exit:
 Desc:		Remove a directory
 Notes:	The directory must be empty.
 ****************************************************************************/
-RCODE F_DirHdl::removeDir(
+RCODE FLMAPI F_DirHdl::removeDir(
 	const char *	pszDirName)
 {
 #if defined( FLM_WIN)

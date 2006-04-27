@@ -26,12 +26,43 @@
 
 #include "ftksys.h"
 
+// Cell sizes for buffer allocator
+
+#define CELL_SIZE_0			16
+#define CELL_SIZE_1			32
+#define CELL_SIZE_2			64
+#define CELL_SIZE_3			128
+#define CELL_SIZE_4			192
+#define CELL_SIZE_5			320
+#define CELL_SIZE_6			512
+#define CELL_SIZE_7			672
+#define CELL_SIZE_8			832
+#define CELL_SIZE_9			1088
+#define CELL_SIZE_10			1344
+#define CELL_SIZE_11			1760
+#define CELL_SIZE_12			2176
+#define CELL_SIZE_13			2848
+#define CELL_SIZE_14			3520
+#define CELL_SIZE_15			4608
+#define CELL_SIZE_16			5152
+#define CELL_SIZE_17			5696
+#define CELL_SIZE_18 		8164
+#define CELL_SIZE_19 		13068
+#define CELL_SIZE_20 		16340
+#define CELL_SIZE_21 		21796
+#define MAX_CELL_SIZE		CELL_SIZE_21
+
+#define NUM_BUF_ALLOCATORS	22
+
+/************************************************************************
+Desc:
+*************************************************************************/
 typedef struct F_MemHdrTag
 {
 	FLMUINT			uiDataSize;
 #ifdef FLM_DEBUG
 	const char *	pszFileName;
-	FLMINT			iLineNumber;
+	int				iLineNumber;
 	FLMBOOL			bAllocFromNewOp;
 	FLMUINT			uiAllocationId;
 	FLMUINT			uiAllocCnt;
@@ -42,21 +73,48 @@ typedef struct F_MemHdrTag
 #endif
 } F_MEM_HDR;
 
+/************************************************************************
+Desc:
+*************************************************************************/
 #define F_GET_ALLOC_PTR( pDataPtr) \
 	(FLMBYTE *)((FLMBYTE *)(pDataPtr) - sizeof( F_MEM_HDR))
 
+/************************************************************************
+Desc:
+*************************************************************************/
 #define F_GET_DATA_PTR( pAllocPtr) \
 	(FLMBYTE *)((FLMBYTE *)(pAllocPtr) + sizeof( F_MEM_HDR))
 
+/************************************************************************
+Desc:
+*************************************************************************/
 #define F_GET_MEM_DATA_SIZE( pDataPtr) \
 	(((F_MEM_HDR *)(F_GET_ALLOC_PTR( pDataPtr)))->uiDataSize)
 
+/************************************************************************
+Desc:
+*************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_NLM) || defined( FLM_WIN)
 	#define PTR_IN_MBLK(p,bp,offs) \
 		(((FLMBYTE *)(p) > (FLMBYTE *)(bp)) && \
 				((FLMBYTE *)(p) <= (FLMBYTE *)(bp) + (offs)))
 #else
 	#error Platform not supported
+#endif
+
+static FLMBOOL		gv_bMemTrackingInitialized = FALSE;
+static FLMUINT		gv_uiInitThreadId = 0;
+static F_MUTEX		gv_hMemTrackingMutex = F_MUTEX_NULL;
+static FLMUINT		gv_uiMemTrackingPtrArraySize = 0;
+static FLMBOOL		gv_bTrackLeaks = FALSE;
+static FLMUINT		gv_uiNumMemPtrs = 0;
+static void **		gv_ppvMemTrackingPtrs = NULL;
+static FLMUINT		gv_uiNextMemPtrSlotToUse = 0;
+static FLMUINT		gv_uiAllocCnt = 0;
+static FLMBOOL		gv_bStackWalk = FALSE;
+static FLMBOOL		gv_bLogLeaks = FALSE;
+#ifdef FLM_WIN
+	static HANDLE	gv_hMemProcess;
 #endif
 
 #define MEM_PTR_INIT_ARRAY_SIZE		512
@@ -78,22 +136,6 @@ typedef struct F_MemHdrTag
 	}
 #endif
 
-static FLMBOOL		gv_bMemTrackingInitialized = FALSE;
-static FLMUINT		gv_uiInitThreadId = 0;
-static F_MUTEX		gv_hMemTrackingMutex = F_MUTEX_NULL;
-static FLMUINT		gv_uiMemTrackingPtrArraySize = 0;
-static FLMBOOL		gv_bTrackLeaks = FALSE;
-static FLMUINT		gv_uiNumMemPtrs = 0;
-static void **		gv_ppvMemTrackingPtrs = NULL;
-static FLMUINT		gv_uiNextMemPtrSlotToUse = 0;
-static FLMUINT		gv_uiAllocCnt = 0;
-static FLMBOOL		gv_bStackWalk = FALSE;
-static FLMBOOL		gv_bLogLeaks = FALSE;
-
-#ifdef FLM_WIN
-	static HANDLE	gv_hMemProcess;
-#endif
-
 FSTATIC FLMBOOL initMemTracking( void);
 
 FSTATIC void saveMemTrackingInfo(
@@ -106,6 +148,580 @@ FSTATIC void freeMemTrackingInfo(
 	FLMBOOL			bMutexAlreadyLocked,
 	FLMUINT			uiId,
 	FLMUINT *		puiStack);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_SlabManager : public IF_SlabManager, public F_Base
+{
+public:
+
+	F_SlabManager();
+
+	virtual ~F_SlabManager();
+
+	RCODE FLMAPI setup(
+		FLMUINT 				uiPreallocSize);
+		
+	RCODE FLMAPI allocSlab(
+		void **				ppSlab,
+		FLMBOOL				bMutexLocked);
+		
+	void FLMAPI freeSlab(
+		void **				ppSlab,
+		FLMBOOL				bMutexLocked);
+		
+	RCODE FLMAPI resize(
+		FLMUINT 				uiNumBytes,
+		FLMUINT *			puiActualSize = NULL,
+		FLMBOOL				bMutexLocked = FALSE);
+
+	FINLINE void FLMAPI incrementTotalBytesAllocated(
+		FLMUINT					uiCount,
+		FLMBOOL					bMutexLocked)
+	{
+		if( !bMutexLocked)
+		{
+			lockMutex();
+		}
+		
+		m_uiTotalBytesAllocated += uiCount;	
+		
+		if( !bMutexLocked)
+		{
+			unlockMutex();
+		}
+	}
+
+	FINLINE void FLMAPI decrementTotalBytesAllocated(
+		FLMUINT					uiCount,
+		FLMBOOL					bMutexLocked)
+	{
+		if( !bMutexLocked)
+		{
+			lockMutex();
+		}
+		
+		flmAssert( m_uiTotalBytesAllocated >= uiCount);
+		m_uiTotalBytesAllocated -= uiCount;	
+		
+		if( !bMutexLocked)
+		{
+			unlockMutex();
+		}
+	}
+
+	FINLINE FLMUINT FLMAPI getSlabSize( void)
+	{
+		return( m_uiSlabSize);
+	}
+
+	FINLINE FLMUINT FLMAPI getTotalSlabs( void)
+	{
+		return( m_uiTotalSlabs);
+	}
+	
+	FINLINE void FLMAPI lockMutex( void)
+	{
+		f_mutexLock( m_hMutex);
+	}
+	
+	FINLINE void FLMAPI unlockMutex( void)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	FINLINE FLMUINT FLMAPI totalBytesAllocated( void)
+	{
+		return( m_uiTotalBytesAllocated);
+	}
+
+	FINLINE FLMUINT FLMAPI availSlabs( void)
+	{
+		return( m_uiAvailSlabs);
+	}
+	
+private:
+
+	void freeAllSlabs( void);
+	
+	void * allocSlabFromSystem( void);
+	
+	void releaseSlabToSystem(
+		void *				pSlab);
+
+	RCODE sortSlabList( void);
+
+	typedef struct
+	{
+		void *				pPrev;
+		void *				pNext;
+	} SLABHEADER;
+
+	static FLMINT FLMAPI slabAddrCompareFunc(
+		void *		pvBuffer,
+		FLMUINT		uiPos1,
+		FLMUINT		uiPos2);
+
+	static void FLMAPI slabAddrSwapFunc(
+		void *		pvBuffer,
+		FLMUINT		uiPos1,
+		FLMUINT		uiPos2);
+	
+	F_MUTEX					m_hMutex;
+	FLMUINT					m_uiTotalBytesAllocated;
+	void *					m_pFirstInSlabList;
+	void *					m_pLastInSlabList;
+	FLMUINT					m_uiSlabSize;
+	FLMUINT					m_uiTotalSlabs;
+	FLMUINT					m_uiAvailSlabs;
+	FLMUINT					m_uiInUseSlabs;
+	FLMUINT					m_uiPreallocSlabs;
+#ifdef FLM_SOLARIS
+	int						m_DevZero;
+#endif
+
+friend class F_FixedAlloc;
+};
+
+/****************************************************************************
+Desc:	Class to provide an efficient means of providing many allocations
+		of a fixed size.
+****************************************************************************/
+class F_FixedAlloc : public IF_FixedAlloc, public F_Base
+{
+public:
+
+	F_FixedAlloc();
+
+	virtual ~F_FixedAlloc();
+
+	RCODE FLMAPI setup(
+		IF_Relocator *			pRelocator,
+		IF_SlabManager *		pSlabManager,
+		FLMUINT					uiCellSize,
+		FLM_SLAB_USAGE *		pUsageStats);
+
+	FINLINE void * FLMAPI allocCell(
+		IF_Relocator *		pRelocator,
+		void *				pvInitialData = NULL,
+		FLMUINT				uiDataSize = 0,
+		FLMBOOL				bMutexLocked = FALSE)
+	{
+		void *	pvCell;
+		
+		flmAssert( pRelocator);
+
+		if( !bMutexLocked)
+		{
+			m_pSlabManager->lockMutex();
+		}
+		
+		if( (pvCell = getCell( pRelocator)) == NULL)
+		{
+			goto Exit;
+		}
+		
+		if( uiDataSize == sizeof( FLMUINT *))
+		{
+			*((FLMUINT *)pvCell) = *((FLMUINT *)pvInitialData); 
+		}
+		else if( uiDataSize)
+		{
+			f_memcpy( pvCell, pvInitialData, uiDataSize);
+		}
+		
+	Exit:
+		
+		if( !bMutexLocked)
+		{
+			m_pSlabManager->unlockMutex();
+		}
+		
+		return( pvCell);
+	}
+
+	FINLINE void FLMAPI freeCell( 
+		void *		ptr,
+		FLMBOOL		bMutexLocked)
+	{
+		freeCell( ptr, bMutexLocked, FALSE, NULL);
+	}
+
+	void FLMAPI freeUnused( void);
+
+	void FLMAPI freeAll( void);
+
+	FINLINE FLMUINT FLMAPI getCellSize( void)
+	{
+		return( m_uiCellSize);
+	}
+	
+	void FLMAPI defragmentMemory( void);
+	
+private:
+
+	typedef struct Slab
+	{
+		void *		pvAllocator;
+		Slab *		pNext;
+		Slab *		pPrev;
+		Slab *		pNextSlabWithAvailCells;
+		Slab *		pPrevSlabWithAvailCells;
+		FLMBYTE *	pLocalAvailCellListHead;
+		FLMUINT16	ui16NextNeverUsedCell;
+		FLMUINT16	ui16AvailCellCount;
+		FLMUINT16	ui16AllocatedCells;
+	} SLAB;
+
+	typedef struct CELLHEADER
+	{
+		SLAB *			pContainingSlab;
+#ifdef FLM_DEBUG
+		FLMUINT *		puiStack;
+#endif
+	} CELLHEADER;
+
+	typedef struct CELLHEADER2
+	{
+		CELLHEADER		cellHeader;
+		IF_Relocator *	pRelocator;
+	} CELLHEADER2;
+
+	typedef struct CellAvailNext
+	{
+		FLMBYTE *	pNextInList;
+#ifdef FLM_DEBUG
+		FLMBYTE		szDebugPattern[ 8];
+#endif
+	} CELLAVAILNEXT;
+
+	void * getCell(
+		IF_Relocator *		pRelocator);
+
+	SLAB * getAnotherSlab( void);
+
+	static FINLINE FLMUINT getAllocAlignedSize(
+		FLMUINT		uiAskedForSize)
+	{
+		return( (uiAskedForSize + FLM_ALLOC_ALIGN) & (~FLM_ALLOC_ALIGN));
+	}
+
+	void freeSlab( 
+		SLAB *			pSlab);
+
+	void freeCell(
+		void *		pCell,
+		FLMBOOL		bMutexLocked,
+		FLMBOOL		bFreeIfEmpty,
+		FLMBOOL *	pbFreedSlab);
+
+#ifdef FLM_DEBUG
+	void testForLeaks( void);
+#endif
+
+	FINLINE static FLMINT FLMAPI slabAddrCompareFunc(
+		void *		pvBuffer,
+		FLMUINT		uiPos1,
+		FLMUINT		uiPos2)
+	{
+		SLAB *		pSlab1 = (((SLAB **)pvBuffer)[ uiPos1]);
+		SLAB *		pSlab2 = (((SLAB **)pvBuffer)[ uiPos2]);
+
+		flmAssert( pSlab1 != pSlab2);
+
+		if( pSlab1 < pSlab2)
+		{
+			return( -1);
+		}
+
+		return( 1);
+	}
+
+	FINLINE static void FLMAPI slabAddrSwapFunc(
+		void *		pvBuffer,
+		FLMUINT		uiPos1,
+		FLMUINT		uiPos2)
+	{
+		SLAB **		ppSlab1 = &(((SLAB **)pvBuffer)[ uiPos1]);
+		SLAB **		ppSlab2 = &(((SLAB **)pvBuffer)[ uiPos2]);
+		SLAB *		pTmp;
+
+		pTmp = *ppSlab1;
+		*ppSlab1 = *ppSlab2;
+		*ppSlab2 = pTmp;
+	}
+
+	IF_SlabManager *		m_pSlabManager;
+	SLAB *					m_pFirstSlab;
+	SLAB *					m_pLastSlab;
+	SLAB *					m_pFirstSlabWithAvailCells;
+	SLAB *					m_pLastSlabWithAvailCells;
+	IF_Relocator *			m_pRelocator;
+	FLMBOOL					m_bAvailListSorted;
+	FLMUINT					m_uiSlabsWithAvailCells;
+	FLMUINT					m_uiSlabHeaderSize;
+	FLMUINT					m_uiCellHeaderSize;
+	FLMUINT					m_uiCellSize;
+	FLMUINT					m_uiSizeOfCellAndHeader; 
+	FLMUINT					m_uiTotalFreeCells;
+	FLMUINT					m_uiCellsPerSlab;
+	FLMUINT					m_uiSlabSize;
+	FLM_SLAB_USAGE *		m_pUsageStats;
+	
+friend class F_BufferAlloc;
+friend class F_MultiAlloc;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_BufferAlloc : public IF_BufferAlloc, public F_Base
+{
+public:
+
+	F_BufferAlloc()
+	{
+		f_memset( m_ppAllocators, 0, sizeof( m_ppAllocators));
+		m_pSlabManager = NULL;
+	}
+
+	virtual ~F_BufferAlloc();
+
+	RCODE FLMAPI setup(
+		IF_SlabManager *		pSlabManager,
+		FLM_SLAB_USAGE *		pUsageStats);
+
+	RCODE FLMAPI allocBuf(
+		IF_Relocator *		pRelocator,
+		FLMUINT				uiSize,
+		void *				pvInitialData,
+		FLMUINT				uiDataSize,
+		FLMBYTE **			ppucBuffer,
+		FLMBOOL *			pbAllocatedOnHeap = NULL);
+
+	RCODE FLMAPI reallocBuf(
+		IF_Relocator *		pRelocator,
+		FLMUINT				uiOldSize,
+		FLMUINT				uiNewSize,
+		void *				pvInitialData,
+		FLMUINT				uiDataSize,
+		FLMBYTE **			ppucBuffer,
+		FLMBOOL *			pbAllocatedOnHeap = NULL);
+
+	void FLMAPI freeBuf(
+		FLMUINT				uiSize,
+		FLMBYTE **			ppucBuffer);
+
+	FLMUINT FLMAPI getTrueSize(
+		FLMUINT				uiSize,
+		FLMBYTE *			pucBuffer);
+
+	void FLMAPI defragmentMemory( void);
+	
+private:
+
+	IF_FixedAlloc * getAllocator(
+		FLMUINT				uiSize);
+
+	IF_SlabManager *		m_pSlabManager;
+	IF_FixedAlloc *		m_ppAllocators[ NUM_BUF_ALLOCATORS];
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_MultiAlloc : public IF_MultiAlloc, public F_Base
+{
+public:
+
+	F_MultiAlloc()
+	{
+		m_pSlabManager = NULL;
+		m_puiCellSizes = NULL;
+		m_ppAllocators = NULL;
+	}
+
+	~F_MultiAlloc()
+	{
+		cleanup();
+	}
+
+	RCODE FLMAPI setup(
+		F_SlabManager *		pSlabManager,
+		FLMUINT *				puiCellSizes,
+		FLM_SLAB_USAGE *		pUsageStats);
+
+	RCODE FLMAPI allocBuf(
+		IF_Relocator *			pRelocator,
+		FLMUINT					uiSize,
+		FLMBYTE **				ppucBuffer,
+		FLMBOOL					bMutexLocked = FALSE);
+
+	RCODE FLMAPI reallocBuf(
+		IF_Relocator *			pRelocator,
+		FLMUINT					uiNewSize,
+		FLMBYTE **				ppucBuffer,
+		FLMBOOL					bMutexLocked = FALSE);
+
+	FINLINE void FLMAPI freeBuf(
+		FLMBYTE **				ppucBuffer)
+	{
+		if( ppucBuffer && *ppucBuffer)
+		{
+			getAllocator( *ppucBuffer)->freeCell( *ppucBuffer, FALSE);
+			*ppucBuffer = NULL;
+		}
+	}
+
+	void FLMAPI defragmentMemory( void);
+
+	FINLINE FLMUINT FLMAPI getTrueSize(
+		FLMBYTE *				pucBuffer)
+	{
+		return( getAllocator( pucBuffer)->getCellSize());
+	}
+
+	FINLINE void FLMAPI lockMutex( void)
+	{
+		m_pSlabManager->lockMutex();
+	}
+
+	FINLINE void FLMAPI unlockMutex( void)
+	{
+		m_pSlabManager->unlockMutex();
+	}
+		
+private:
+
+	IF_FixedAlloc * getAllocator(
+		FLMUINT					uiSize);
+
+	IF_FixedAlloc * getAllocator(
+		FLMBYTE *				pucBuffer);
+
+	void cleanup( void);
+
+	IF_SlabManager *			m_pSlabManager;
+	FLMUINT *					m_puiCellSizes;
+	IF_FixedAlloc **			m_ppAllocators;
+};
+
+/****************************************************************************
+Desc:	This class is used to do pool memory allocations.
+****************************************************************************/
+class F_Pool : public IF_Pool, public F_Base
+{
+public:
+
+	typedef struct PoolMemoryBlock
+	{
+		PoolMemoryBlock *		pPrevBlock;
+		FLMUINT					uiBlockSize;
+		FLMUINT					uiFreeOffset;
+		FLMUINT					uiFreeSize;
+	} MBLK;
+
+	typedef struct
+	{
+		FLMUINT	uiAllocBytes;
+		FLMUINT	uiCount;
+	} POOL_STATS;
+
+	F_Pool()
+	{
+		m_uiBytesAllocated = 0;
+		m_pLastBlock = NULL;
+		m_pPoolStats = NULL;
+		m_uiBlockSize = 0;
+	}
+
+	virtual ~F_Pool();
+
+	FINLINE void FLMAPI poolInit(
+		FLMUINT			uiBlockSize)
+	{
+		m_uiBlockSize = uiBlockSize;
+	}
+
+	void smartPoolInit(
+		POOL_STATS *	pPoolStats);
+
+	RCODE FLMAPI poolAlloc(
+		FLMUINT			uiSize,
+		void **			ppvPtr);
+
+	RCODE FLMAPI poolCalloc(
+		FLMUINT			uiSize,
+		void **			ppvPtr);
+
+	void FLMAPI poolFree( void);
+
+	void FLMAPI poolReset(
+		void *			pvMark,
+		FLMBOOL			bReduceFirstBlock = FALSE);
+
+	FINLINE void * FLMAPI poolMark( void)
+	{
+		return (void *)(m_pLastBlock
+							 ? (FLMBYTE *)m_pLastBlock + m_pLastBlock->uiFreeOffset
+							 : NULL);
+	}
+
+	FINLINE FLMUINT FLMAPI getBlockSize( void)
+	{
+		return( m_uiBlockSize);
+	}
+
+	FINLINE FLMUINT FLMAPI getBytesAllocated( void)
+	{
+		return( m_uiBytesAllocated);
+	}
+
+private:
+
+	FINLINE void updateSmartPoolStats( void)
+	{
+		if (m_uiBytesAllocated)
+		{
+			if( (m_pPoolStats->uiAllocBytes + m_uiBytesAllocated) >= 0xFFFF0000)
+			{
+				m_pPoolStats->uiAllocBytes =
+					(m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount) * 100;
+				m_pPoolStats->uiCount = 100;
+			}
+			else
+			{
+				m_pPoolStats->uiAllocBytes += m_uiBytesAllocated;
+				m_pPoolStats->uiCount++;
+			}
+			m_uiBytesAllocated = 0;
+		}
+	}
+
+	FINLINE void setInitialSmartPoolBlkSize( void)
+	{
+		// Determine starting block size:
+		// 1) average of bytes allocated / # of frees/resets (average size needed)
+		// 2) add 10% - to minimize extra allocs 
+
+		m_uiBlockSize = (m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount);
+		m_uiBlockSize += (m_uiBlockSize / 10);
+
+		if (m_uiBlockSize < 512)
+		{
+			m_uiBlockSize = 512;
+		}
+	}
+
+	void freeToMark(
+		void *		pvMark);
+
+	PoolMemoryBlock *		m_pLastBlock;
+	FLMUINT					m_uiBlockSize;
+	FLMUINT					m_uiBytesAllocated;
+	POOL_STATS *			m_pPoolStats;
+};
 
 /************************************************************************
 Desc:
@@ -529,8 +1145,6 @@ void logMemLeak(
 	char *			pszMessageBuffer;
 	char *			pszTmp;
 	IF_FileHdl *	pFileHdl = NULL;
-	F_FileSystem	fileSys;
-	FLMBOOL			bClearFileSys = FALSE;
 	FLMBOOL			bSaveTrackLeaks = gv_bTrackLeaks;
 
 	gv_bTrackLeaks = FALSE;
@@ -544,12 +1158,6 @@ void logMemLeak(
 		uiMsgBufSize = sizeof( szTmpBuffer);
 	}
 	pszTmp = pszMessageBuffer;
-
-	if( !gv_pFileSystem)
-	{
-		gv_pFileSystem = &fileSys;
-		bClearFileSys = TRUE;
-	}
 
 	// Format message to be logged.
 
@@ -717,9 +1325,8 @@ void logMemLeak(
 	gv_bLogLeaks = TRUE;
 #endif
 
-	if (gv_bLogLeaks)
+	if (gv_bLogLeaks && gv_pFileSystem)
 	{
-		F_FileSystem	FileSystem;
 		RCODE				rc;
 		FLMUINT			uiDummy;
 #ifdef FLM_NLM
@@ -728,12 +1335,12 @@ void logMemLeak(
 		const char *	pszErrPath = "memtest.ert";
 #endif
 
-	if (RC_BAD( rc = FileSystem.openFile( pszErrPath, 
+	if (RC_BAD( rc = gv_pFileSystem->openFile( pszErrPath, 
 		FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pFileHdl)))
 		{
 			if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
-				rc = FileSystem.createFile( pszErrPath, 
+				rc = gv_pFileSystem->createFile( pszErrPath, 
 					FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pFileHdl);
 			}
 		}
@@ -763,11 +1370,6 @@ void logMemLeak(
 		pFileHdl->Release();
 	}
 
-	if( bClearFileSys)
-	{
-		gv_pFileSystem = NULL;
-	}
-	
 	if (pszMessageBuffer != &szTmpBuffer [0])
 	{
 		free( pszMessageBuffer);
@@ -836,18 +1438,12 @@ void f_memoryCleanup( void)
 /********************************************************************
 Desc: Allocate Memory.
 *********************************************************************/
-#ifdef FLM_DEBUG
-RCODE f_allocImp(
+RCODE FLMAPI f_allocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	FLMBOOL			bAllocFromNewOp,
 	const char *	pszFileName,
-	FLMINT			iLineNumber)
-#else
-RCODE f_allocImp(
-	FLMUINT				uiSize,
-	void **				ppvPtr)
-#endif
+	int				iLineNumber)
 {
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pHdr;
@@ -883,19 +1479,11 @@ Exit:
 /********************************************************************
 Desc: Allocate and initialize memory.
 *********************************************************************/
-#ifdef FLM_DEBUG
-RCODE f_callocImp(
+RCODE FLMAPI f_callocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	const char *	pszFileName,
-	FLMINT			iLineNumber
-	)
-#else
-RCODE f_callocImp(
-	FLMUINT			uiSize,
-	void **			ppvPtr
-	)
-#endif
+	int				iLineNumber)
 {
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pHdr;
@@ -930,19 +1518,11 @@ Exit:
 /********************************************************************
 Desc: Reallocate memory.
 *********************************************************************/
-#ifdef FLM_DEBUG
-RCODE f_reallocImp(
+RCODE FLMAPI f_reallocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	const char *	pszFileName,
-	FLMINT			iLineNumber
-	)
-#else
-RCODE f_reallocImp(
-	FLMUINT			uiSize,
-	void **			ppvPtr
-	)
-#endif
+	int				iLineNumber)
 {
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pNewHdr;
@@ -1029,19 +1609,11 @@ Exit:
 /********************************************************************
 Desc: Reallocate memory, and initialize the new part.
 *********************************************************************/
-#ifdef FLM_DEBUG
-RCODE f_recallocImp(
+RCODE FLMAPI f_recallocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	const char *	pszFileName,
-	FLMINT			iLineNumber
-	)
-#else
-RCODE f_recallocImp(
-	FLMUINT			uiSize,
-	void **			ppvPtr
-	)
-#endif
+	int				iLineNumber)
 {
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pNewHdr;
@@ -1135,7 +1707,7 @@ Exit:
 /********************************************************************
 Desc: Free previously allocated memory.
 *********************************************************************/
-void f_freeImp(
+void FLMAPI f_freeImp(
 	void **	ppvPtr,
 	FLMBOOL	bFreeFromDeleteOp)
 {
@@ -1189,7 +1761,7 @@ Desc: Reset the stack information for an allocation.
 void f_resetStackInfoImp(
 	void *			pvPtr,
 	const char *	pszFileName,
-	FLMINT			iLineNumber)
+	int				iLineNumber)
 {
 	if (pvPtr)
 	{
@@ -1206,6 +1778,20 @@ void f_resetStackInfoImp(
 }
 #endif
 
+/************************************************************************
+Desc:
+*************************************************************************/
+RCODE FLMAPI FlmAllocPool(
+	IF_Pool **		ppPool)
+{
+	if( (*ppPool = f_new F_Pool) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+	
 /************************************************************************
 Desc:	Destructor
 *************************************************************************/
@@ -1930,42 +2516,6 @@ void F_SlabManager::releaseSlabToSystem(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_MEM_PROTECT	
-void F_SlabManager::protectSlab(
-	void *		pSlab)
-{
-#ifdef FLM_WIN
-	(void)pSlab;
-	DWORD		dOldProtect;
-	VirtualProtect( pSlab, m_uiSlabSize, PAGE_READONLY, &dOldProtect);
-	flmAssert( dOldProtect == PAGE_READWRITE);
-#elif defined( FLM_UNIX)
-	mprotect( pSlab, m_uiSlabSize, PROT_READ);
-#endif
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_MEM_PROTECT	
-void F_SlabManager::unprotectSlab(
-	void *		pSlab)
-{
-#ifdef FLM_WIN
-	(void)pSlab;
-	DWORD		dOldProtect;
-	VirtualProtect( pSlab, m_uiSlabSize, PAGE_READWRITE, &dOldProtect);
-	flmAssert( dOldProtect == PAGE_READONLY);
-#elif defined( FLM_UNIX)
-	mprotect( pSlab, m_uiSlabSize, PROT_READ | PROT_WRITE);
-#endif
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 FLMINT FLMAPI F_SlabManager::slabAddrCompareFunc(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
@@ -2113,10 +2663,6 @@ F_FixedAlloc::F_FixedAlloc()
 	m_uiTotalFreeCells = 0;
 	m_uiSlabSize = 0;
 	m_pUsageStats = NULL;
-	
-#ifdef FLM_MEM_PROTECT	
-	m_bMemProtectionEnabled = FALSE;
-#endif
 }
 
 /****************************************************************************
@@ -2143,7 +2689,6 @@ Desc:	Setup method for any setup that can fail
 RCODE F_FixedAlloc::setup(
 	IF_Relocator *			pRelocator,
 	IF_SlabManager *		pSlabManager,
-	FLMBOOL					bMemProtect,
 	FLMUINT					uiCellSize,
 	FLM_SLAB_USAGE *		pUsageStats)
 {
@@ -2187,12 +2732,6 @@ RCODE F_FixedAlloc::setup(
 	flmAssert( m_uiCellsPerSlab <= FLM_MAX_UINT16);
 	flmAssert( (m_uiCellsPerSlab * m_uiCellSize) < m_uiSlabSize);
 	
-#ifdef FLM_MEM_PROTECT	
-	m_bMemProtectionEnabled = bMemProtect;
-#else
-	F_UNREFERENCED_PARM( bMemProtect);
-#endif
-	
 	return( rc);
 }
 
@@ -2210,10 +2749,6 @@ void * F_FixedAlloc::getCell(
 
 	if( (pSlab = m_pFirstSlabWithAvailCells) != NULL)
 	{
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( pSlab, TRUE);
-#endif
-		
 		flmAssert( pSlab->ui16AvailCellCount <= m_uiTotalFreeCells);
 		flmAssert( m_uiTotalFreeCells);
 		flmAssert( pSlab->ui16AllocatedCells < m_uiCellsPerSlab);
@@ -2264,17 +2799,8 @@ void * F_FixedAlloc::getCell(
 
 			if( pSlabToUnlink->pNextSlabWithAvailCells)
 			{
-#ifdef FLM_MEM_PROTECT	
-				unprotectSlab( pSlabToUnlink->pNextSlabWithAvailCells, TRUE);
-#endif
-				
-				pSlabToUnlink->
-					pNextSlabWithAvailCells->pPrevSlabWithAvailCells =
+				pSlabToUnlink->pNextSlabWithAvailCells->pPrevSlabWithAvailCells =
 					pSlabToUnlink->pPrevSlabWithAvailCells;
-
-#ifdef FLM_MEM_PROTECT	
-				protectSlab( pSlabToUnlink->pNextSlabWithAvailCells, TRUE);
-#endif
 				pSlabToUnlink->pNextSlabWithAvailCells = NULL;
 			}
 
@@ -2301,21 +2827,8 @@ void * F_FixedAlloc::getCell(
 
 			if( m_pFirstSlab)
 			{
-#ifdef FLM_MEM_PROTECT	
-				unprotectSlab( pNewSlab, TRUE);
-#endif
 				pNewSlab->pNext = m_pFirstSlab;
-#ifdef FLM_MEM_PROTECT	
-				protectSlab( pNewSlab, TRUE);
-#endif
-
-#ifdef FLM_MEM_PROTECT	
-				unprotectSlab( m_pFirstSlab, TRUE);
-#endif
 				m_pFirstSlab->pPrev = pNewSlab;
-#ifdef FLM_MEM_PROTECT	
-				protectSlab( m_pFirstSlab, TRUE);
-#endif
 			}
 			else
 			{
@@ -2326,15 +2839,7 @@ void * F_FixedAlloc::getCell(
 		}
 
 		pSlab = m_pFirstSlab;
-
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( pSlab, TRUE);
-#endif
 		pSlab->ui16AllocatedCells++;
-		
-#ifdef FLM_MEM_PROTECT	
-		flmAssert( pSlab->ui16AllocatedCells <= m_uiCellsPerSlab);
-#endif
 		
 		pHeader = (CELLHEADER *)
 				((FLMBYTE *)pSlab + m_uiSlabHeaderSize +
@@ -2361,10 +2866,6 @@ void * F_FixedAlloc::getCell(
 		((CELLHEADER2 *)pHeader)->pRelocator = pRelocator;
 	}
 
-#ifdef FLM_MEM_PROTECT	
-	protectSlab( pSlab, TRUE);
-#endif
-	
 	m_pUsageStats->ui64AllocatedCells++;
 
 Exit:
@@ -2385,9 +2886,6 @@ void F_FixedAlloc::freeCell(
 	CELLHEADER *		pHeader;
 	SLAB *				pSlab;
 	FLMBOOL				bUnlockMutex = FALSE;
-#ifdef FLM_MEM_PROTECT	
-	FLMBOOL				bProtectSlab = FALSE;
-#endif
 
 	if( pbFreedSlab)
 	{
@@ -2417,12 +2915,8 @@ void F_FixedAlloc::freeCell(
 		goto Exit;
 	}
 
-#ifdef FLM_MEM_PROTECT	
-	unprotectSlab( pSlab, TRUE);
-	bProtectSlab = TRUE;
-#endif
-	
 	pHeader->pContainingSlab = NULL;
+	
 #ifdef FLM_DEBUG
 	if( pHeader->puiStack)
 	{
@@ -2474,14 +2968,7 @@ void F_FixedAlloc::freeCell(
 
 		pSlab->pNextSlabWithAvailCells = m_pFirstSlabWithAvailCells;
 		pSlab->pPrevSlabWithAvailCells = NULL;
-
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( m_pFirstSlabWithAvailCells, TRUE);
-#endif
 		m_pFirstSlabWithAvailCells->pPrevSlabWithAvailCells = pSlab;
-#ifdef FLM_MEM_PROTECT	
-		protectSlab( m_pFirstSlabWithAvailCells, TRUE);
-#endif
 		m_pFirstSlabWithAvailCells = pSlab;
 		m_uiSlabsWithAvailCells++;
 	}
@@ -2500,11 +2987,6 @@ void F_FixedAlloc::freeCell(
 
 		if( m_uiTotalFreeCells >= m_uiCellsPerSlab || bFreeIfEmpty)
 		{
-#ifdef FLM_MEM_PROTECT	
-			protectSlab( pSlab, TRUE);
-			bProtectSlab = FALSE;
-#endif
-
 			freeSlab( pSlab);
 
 			if( pbFreedSlab)
@@ -2549,13 +3031,6 @@ void F_FixedAlloc::freeCell(
 
 Exit:
 
-#ifdef FLM_MEM_PROTECT	
-	if( bProtectSlab)
-	{
-		protectSlab( pSlab, TRUE);
-	}
-#endif
-	
 	if( bUnlockMutex)
 	{
 		m_pSlabManager->unlockMutex();
@@ -2582,124 +3057,10 @@ F_FixedAlloc::SLAB * F_FixedAlloc::getAnotherSlab( void)
 	pSlab->pvAllocator = (void *)this;
 	m_pUsageStats->ui64Slabs++;
 
-#ifdef FLM_MEM_PROTECT	
-	if( m_bMemProtectionEnabled)
-	{
-		m_pSlabManager->protectSlab( pSlab);
-	}
-#endif
-	
 Exit:
 	
 	return( pSlab);
 }
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_MEM_PROTECT	
-void F_FixedAlloc::protectSlab(
-	SLAB *			pSlab,
-	FLMBOOL			bMutexLocked)
-{
-	FLMBOOL			bUnlockMutex = FALSE;
-
-	if( !m_bMemProtectionEnabled)
-	{
-		return;
-	}
-	
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->lockMutex();
-		bUnlockMutex = TRUE;
-	}
-	
-	flmAssert( pSlab->pvAllocator == this);
-	flmAssert( pSlab->ui16UnprotectCount);
-
-	pSlab->ui16UnprotectCount--;
-	
-	if( !pSlab->ui16UnprotectCount)
-	{
-		m_pSlabManager->protectSlab( pSlab);
-	}
-	
-	if( bUnlockMutex)
-	{
-		m_pSlabManager->unlockMutex();
-	}
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_MEM_PROTECT	
-void F_FixedAlloc::unprotectSlab(
-	SLAB *			pSlab,
-	FLMBOOL			bMutexLocked)
-{
-	FLMBOOL			bUnlockMutex = FALSE;
-	
-	if( !m_bMemProtectionEnabled)
-	{
-		return;
-	}
-
-	flmAssert( pSlab->pvAllocator == this);
-	
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->lockMutex();
-		bUnlockMutex = TRUE;
-	}
-	
-	if( !pSlab->ui16UnprotectCount)
-	{
-		m_pSlabManager->unprotectSlab( pSlab);
-	}
-	
-	pSlab->ui16UnprotectCount++;
-	
-	if( bUnlockMutex)
-	{
-		m_pSlabManager->unlockMutex();
-	}
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_MEM_PROTECT	
-void F_FixedAlloc::protectCell(
-	void *			pvCell)
-{
-	CELLHEADER *	pCellHeader;
-
-	m_pSlabManager->lockMutex();
-	pCellHeader = (CELLHEADER *)((FLMBYTE *)pvCell - m_uiCellHeaderSize);
-	protectSlab( pCellHeader->pContainingSlab, TRUE);
-	m_pSlabManager->unlockMutex();
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_MEM_PROTECT	
-void F_FixedAlloc::unprotectCell(
-	void *			pvCell)
-{
-	CELLHEADER *	pCellHeader;
-
-	m_pSlabManager->lockMutex();
-	pCellHeader = (CELLHEADER *)((FLMBYTE *)pvCell - m_uiCellHeaderSize);
-	unprotectSlab( pCellHeader->pContainingSlab, TRUE);
-	m_pSlabManager->unlockMutex();
-}
-#endif
 
 /****************************************************************************
 Desc:	Private internal method to free an unused empty slab back to the OS.
@@ -2713,9 +3074,6 @@ void F_FixedAlloc::freeSlab(
 #endif
 
 	flmAssert( pSlab);
-#ifdef FLM_MEM_PROTECT	
-	flmAssert( !pSlab->ui16UnprotectCount);
-#endif
 
 	// Memory corruption detected!
 
@@ -2743,13 +3101,7 @@ void F_FixedAlloc::freeSlab(
 
 	if( pSlab->pNext)
 	{
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( pSlab->pNext, TRUE);
-#endif
 		pSlab->pNext->pPrev = pSlab->pPrev;
-#ifdef FLM_MEM_PROTECT	
-		protectSlab( pSlab->pNext, TRUE);
-#endif
 	}
 	else
 	{
@@ -2758,13 +3110,7 @@ void F_FixedAlloc::freeSlab(
 
 	if( pSlab->pPrev)
 	{
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( pSlab->pPrev, TRUE);
-#endif
 		pSlab->pPrev->pNext = pSlab->pNext;
-#ifdef FLM_MEM_PROTECT	
-		protectSlab( pSlab->pPrev, TRUE);
-#endif
 	}
 	else
 	{
@@ -2775,14 +3121,8 @@ void F_FixedAlloc::freeSlab(
 
 	if( pSlab->pNextSlabWithAvailCells)
 	{
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( pSlab->pNextSlabWithAvailCells, TRUE);
-#endif
 		pSlab->pNextSlabWithAvailCells->pPrevSlabWithAvailCells =
 			pSlab->pPrevSlabWithAvailCells;
-#ifdef FLM_MEM_PROTECT	
-		protectSlab( pSlab->pNextSlabWithAvailCells, TRUE);
-#endif
 	}
 	else
 	{
@@ -2791,14 +3131,8 @@ void F_FixedAlloc::freeSlab(
 
 	if( pSlab->pPrevSlabWithAvailCells)
 	{
-#ifdef FLM_MEM_PROTECT	
-		unprotectSlab( pSlab->pPrevSlabWithAvailCells, TRUE);
-#endif
 		pSlab->pPrevSlabWithAvailCells->pNextSlabWithAvailCells =
 			pSlab->pNextSlabWithAvailCells;
-#ifdef FLM_MEM_PROTECT	
-		protectSlab( pSlab->pPrevSlabWithAvailCells, TRUE);
-#endif
 	}
 	else
 	{
@@ -2810,10 +3144,6 @@ void F_FixedAlloc::freeSlab(
 	flmAssert( m_uiTotalFreeCells >= pSlab->ui16AvailCellCount);
 	m_uiTotalFreeCells -= pSlab->ui16AvailCellCount;
 	m_pUsageStats->ui64Slabs--;
-	
-#ifdef FLM_MEM_PROTECT	
-	unprotectSlab( pSlab, TRUE);
-#endif
 	m_pSlabManager->freeSlab( (void **)&pSlab, TRUE);
 }
 
@@ -2921,32 +3251,19 @@ void F_FixedAlloc::defragmentMemory( void)
 		for( uiLoop = 0; uiLoop < uiSortEntries; uiLoop++)
 		{
 			pCurSlab = pSortBuf[ uiLoop];
-#ifdef FLM_MEM_PROTECT	
-			unprotectSlab( pCurSlab, TRUE);
-#endif
-			
 			pCurSlab->pNextSlabWithAvailCells = NULL;
 			pCurSlab->pPrevSlabWithAvailCells = NULL;
 
 			if( pPrevSib)
 			{
 				pCurSlab->pPrevSlabWithAvailCells = pPrevSib;
-#ifdef FLM_MEM_PROTECT	
-				unprotectSlab( pPrevSib, TRUE);
-#endif
 				pPrevSib->pNextSlabWithAvailCells = pCurSlab;
-#ifdef FLM_MEM_PROTECT	
-				protectSlab( pPrevSib, TRUE);
-#endif
 			}
 			else
 			{
 				m_pFirstSlabWithAvailCells = pCurSlab;
 			}
 
-#ifdef FLM_MEM_PROTECT	
-			protectSlab( pCurSlab, TRUE);
-#endif
 			pPrevSib = pCurSlab;
 		}
 
@@ -3020,19 +3337,9 @@ void F_FixedAlloc::defragmentMemory( void)
 						goto Exit;
 					}
 
-#ifdef FLM_MEM_PROTECT	
-					unprotectSlab( ((CELLHEADER *)(pucReloc - 
-								m_uiCellHeaderSize))->pContainingSlab, TRUE);
-#endif
-							
 					f_memcpy( pucReloc, pucOriginal, m_uiCellSize);
 					pRelocator->relocate( pucOriginal, pucReloc);
 
-#ifdef FLM_MEM_PROTECT	
-					protectSlab( ((CELLHEADER *)(pucReloc - 
-								m_uiCellHeaderSize))->pContainingSlab, TRUE);
-#endif
-							
 					freeCell( pucOriginal, TRUE, TRUE, &bSlabFreed);
 					
 					if( bSlabFreed)
@@ -3148,7 +3455,6 @@ Desc:
 ****************************************************************************/ 
 RCODE F_BufferAlloc::setup(
 	IF_SlabManager *		pSlabManager,
-	FLMBOOL					bMemProtect,
 	FLM_SLAB_USAGE *		pUsageStats)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -3242,7 +3548,7 @@ RCODE F_BufferAlloc::setup(
 		}
 
 		if (RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( NULL,
-			pSlabManager, bMemProtect, uiSize, pUsageStats)))
+			pSlabManager, uiSize, pUsageStats)))
 		{
 			goto Exit;
 		}
@@ -3625,7 +3931,6 @@ Desc:
 ****************************************************************************/ 
 RCODE F_MultiAlloc::setup(
 	F_SlabManager *		pSlabManager,
-	FLMBOOL					bMemProtect,
 	FLMUINT *				puiCellSizes,
 	FLM_SLAB_USAGE *		pUsageStats)
 {
@@ -3684,7 +3989,7 @@ RCODE F_MultiAlloc::setup(
 		}
 
 		if( RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( NULL,
-			pSlabManager, bMemProtect, m_puiCellSizes[ uiLoop], pUsageStats)))
+			pSlabManager, m_puiCellSizes[ uiLoop], pUsageStats)))
 		{
 			goto Exit;
 		}
@@ -3897,70 +4202,6 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 	m_pSlabManager->unlockMutex();
 	return( pAllocator);
 }
-
-/****************************************************************************
-Desc:
-****************************************************************************/ 
-#ifdef FLM_MEM_PROTECT	
-void F_MultiAlloc::protectBuffer(
-	void *			pvBuffer,
-	FLMBOOL			bMutexLocked)
-{
-	F_FixedAlloc::CELLHEADER *	pHeader;
-	F_FixedAlloc::SLAB *			pSlab;
-	IF_FixedAlloc *				pAllocator = NULL;
-	FLMBYTE *						pucBuffer = (FLMBYTE *)pvBuffer;
-
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->lockMutex();
-	}
-	
-	pHeader = (F_FixedAlloc::CELLHEADER *)(pucBuffer - 
-			F_FixedAlloc::getAllocAlignedSize( 
-			sizeof( F_FixedAlloc::CELLHEADER2)));
-	pSlab = pHeader->pContainingSlab;
-	pAllocator = (IF_FixedAlloc *)pSlab->pvAllocator;
-	pAllocator->protectSlab( pSlab, TRUE);
-
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->unlockMutex();
-	}
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/ 
-#ifdef FLM_MEM_PROTECT	
-void F_MultiAlloc::unprotectBuffer(
-	void *			pvBuffer,
-	FLMBOOL			bMutexLocked)
-{
-	F_FixedAlloc::CELLHEADER *	pHeader;
-	F_FixedAlloc::SLAB *			pSlab;
-	IF_FixedAlloc *				pAllocator = NULL;
-	FLMBYTE *						pucBuffer = (FLMBYTE *)pvBuffer;
-
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->lockMutex();
-	}
-	
-	pHeader = (F_FixedAlloc::CELLHEADER *)(pucBuffer - 
-		F_FixedAlloc::getAllocAlignedSize( 
-		sizeof( F_FixedAlloc::CELLHEADER2)));
-	pSlab = pHeader->pContainingSlab;
-	pAllocator = (IF_FixedAlloc *)pSlab->pvAllocator;
-	pAllocator->unprotectSlab( pSlab, TRUE);
-
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->unlockMutex();
-	}
-}
-#endif
 
 #undef	new
 #undef	delete

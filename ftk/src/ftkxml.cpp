@@ -25,8 +25,6 @@
 
 #include "ftksys.h"
 
-// Constants
-
 #define FLM_XML_BASE_CHAR			0x01
 #define FLM_XML_IDEOGRAPHIC		0x02
 #define FLM_XML_COMBINING_CHAR	0x04
@@ -34,15 +32,16 @@
 #define FLM_XML_EXTENDER			0x10
 #define FLM_XML_WHITESPACE			0x20
 
-// Local typedefs
-
+typedef struct xmlChar
+{
+	FLMBYTE		ucFlags;
+} XMLCHAR;
+	
 typedef struct
 {
 	char *			pszEntity;
 	FLMUINT			uiValue;
 } CharEntity;
-
-// Global data
 
 static FLMUNICODE gv_puzNamespaceDeclPrefix[] =
 {
@@ -471,6 +470,589 @@ FSTATIC RCODE exportUniValue(
 	FLMUINT			uiIndentCount);
 	
 /****************************************************************************
+Desc: XML
+****************************************************************************/
+class F_XML : public IF_XML, public virtual F_Base
+{
+public:
+
+	F_XML();
+
+	virtual ~F_XML();
+	
+	RCODE FLMAPI setup( void);
+
+	FLMBOOL FLMAPI isPubidChar(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isQuoteChar(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isWhitespace(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isExtender(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isCombiningChar(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isNameChar(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isNCNameChar(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isIdeographic(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isBaseChar(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isDigit(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isLetter(
+		FLMUNICODE		uChar);
+
+	FLMBOOL FLMAPI isNameValid(
+		FLMUNICODE *	puzName,
+		FLMBYTE *		pszName);
+
+private:
+
+	void setCharFlag(
+		FLMUNICODE		uLowChar,
+		FLMUNICODE		uHighChar,
+		FLMUINT16		ui16Flag);
+
+	XMLCHAR *			m_pCharTable;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_XMLNamespace : public F_RefCount, public F_Base
+{
+public:
+
+	FINLINE F_XMLNamespace()
+	{
+		m_puzPrefix = NULL;
+		m_puzURI = NULL;
+		m_pNext = NULL;
+	}
+
+	virtual FINLINE ~F_XMLNamespace()
+	{
+		flmAssert( !m_pNext);
+
+		if( m_puzPrefix)
+		{
+			f_free( &m_puzPrefix);
+		}
+
+		if( m_puzURI)
+		{
+			f_free( &m_puzURI);
+		}
+	}
+
+	RCODE setPrefix(
+		FLMUNICODE *		puzPrefix);
+
+	RCODE setURI(
+		FLMUNICODE *		puzURI);
+
+	RCODE setup(
+		FLMUNICODE *		puzPrefix,
+		FLMUNICODE *		puzURI,
+		F_XMLNamespace *	pNext);
+
+	FINLINE FLMUNICODE * getPrefixPtr( void)
+	{
+		return( m_puzPrefix);
+	}
+
+	FINLINE FLMUNICODE * getURIPtr( void)
+	{
+		return( m_puzURI);
+	}
+
+private:
+
+	FLMUNICODE *		m_puzPrefix;
+	FLMUNICODE *		m_puzURI;
+	F_XMLNamespace *	m_pNext;
+
+friend class F_XMLNamespaceMgr;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_XMLNamespaceMgr : public F_RefCount, public virtual F_Base
+{
+public:
+
+	F_XMLNamespaceMgr();
+
+	virtual ~F_XMLNamespaceMgr();
+
+	RCODE findNamespace(
+		FLMUNICODE *		puzPrefix,
+		F_XMLNamespace **	ppNamespace,
+		FLMUINT				uiMaxSearchSize = ~((FLMUINT)0));
+
+	RCODE pushNamespace(
+		FLMUNICODE *		puzPrefix,
+		FLMUNICODE *		puzNamespaceURI);
+
+	RCODE pushNamespace(
+		F_XMLNamespace *	pNamespace);
+
+	void popNamespaces(
+		FLMUINT				uiCount);
+
+	FLMUINT getNamespaceCount( void)
+	{
+		return( m_uiNamespaceCount);
+	}
+
+private:
+
+	F_XMLNamespace *			m_pFirstNamespace;
+	FLMUINT						m_uiNamespaceCount;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_XMLParser : public F_XML, public F_XMLNamespaceMgr
+{
+public:
+
+	F_XMLParser();
+
+	~F_XMLParser();
+
+	RCODE FLMAPI setup( void);
+
+	void FLMAPI reset( void);
+
+	RCODE FLMAPI import(
+		IF_IStream *				pStream,
+		FLMUINT						uiFlags,
+		IF_DOMNode *				pNodeToLinkTo,
+		eNodeInsertLoc				eInsertLoc,
+		IF_DOMNode **				ppNewNode,
+		FLM_IMPORT_STATS *		pImportStats);
+
+	FINLINE void FLMAPI setStatusCallback(
+		XML_STATUS_HOOK			fnStatus,
+		void *						pvUserData)
+	{
+		m_fnStatus = fnStatus;
+		m_pvCallbackData = pvUserData;
+	}
+
+private:
+
+	#define F_DEFAULT_NS_DECL		0x01
+	#define F_PREFIXED_NS_DECL		0x02
+
+	typedef struct xmlattr
+	{
+		FLMUINT				uiLineNum;
+		FLMUINT				uiLineOffset;
+		FLMUINT				uiLineFilePos;	
+		FLMUINT				uiLineBytes;
+		FLMUINT				uiValueLineNum;
+		FLMUINT				uiValueLineOffset;
+		FLMUNICODE *		puzPrefix;
+		FLMUNICODE *		puzLocalName;
+		FLMUNICODE *		puzVal;
+		FLMUINT				uiFlags;
+		xmlattr *			pPrev;
+		xmlattr *			pNext;
+	} XML_ATTR;
+
+	// Methods
+
+	RCODE getFieldTagAndType(
+		FLMUNICODE *	puzName,
+		FLMBOOL			bOkToAdd,
+		FLMUINT *		puiTagNum,
+		FLMUINT *		puiDataType);
+
+	RCODE getByte(
+		FLMBYTE *	pucByte);
+		
+	FINLINE void ungetByte(
+		FLMBYTE	ucByte)
+	{
+		// Can only unget a single byte.
+		
+		flmAssert( !m_ucUngetByte);
+		m_ucUngetByte = ucByte;
+		m_importStats.uiChars--;
+	}
+		
+	RCODE getLine( void);
+	
+	FINLINE FLMUNICODE getChar( void)
+	{
+		if (m_uiCurrLineOffset == m_uiCurrLineNumChars)
+		{
+			return( (FLMUNICODE)0);
+		}
+		else
+		{
+			return( m_puzCurrLineBuf [m_uiCurrLineOffset++]);
+		}
+	}
+	
+	FINLINE FLMUNICODE peekChar( void)
+	{
+		if (m_uiCurrLineOffset == m_uiCurrLineNumChars)
+		{
+			return( (FLMUNICODE)0);
+		}
+		else
+		{
+			return( m_puzCurrLineBuf [m_uiCurrLineOffset]);
+		}
+	}
+	
+	FINLINE void ungetChar( void)
+	{
+		flmAssert( m_uiCurrLineOffset);
+		m_uiCurrLineOffset--;
+	}
+	
+	RCODE getName(
+		FLMUINT *		puiChars);
+
+	RCODE getQualifiedName(
+		FLMUINT *		puiChars,
+		FLMUNICODE **	ppuzPrefix,
+		FLMUNICODE **	ppuzLocal,
+		FLMBOOL *		pbNamespaceDecl,
+		FLMBOOL *		pbDefaultNamespaceDecl);
+
+	void getNmtoken(
+		FLMUINT *		puiChars);
+
+	RCODE getPubidLiteral( void);
+
+	RCODE getSystemLiteral( void);
+
+	RCODE getElementValue(
+		FLMUNICODE *	puBuf,
+		FLMUINT *		puiMaxChars,
+		FLMBOOL *		pbEntity);
+
+	RCODE processEntityValue( void);
+
+	RCODE getEntity(
+		FLMUNICODE *	puBuf,
+		FLMUINT *		puiChars,
+		FLMBOOL *		pbTranslated,
+		FLMUNICODE *	puTransChar);
+
+	RCODE processReference(
+		FLMUNICODE *	puChar = NULL);
+
+	RCODE processCDATA(
+		IF_DOMNode *	pParent,
+		FLMUINT			uiSavedLineNum,
+		FLMUINT     	uiSavedOffset,
+		FLMUINT			uiSavedFilePos,
+		FLMUINT			uiSavedLineBytes);
+
+	RCODE processAttributeList( void);
+
+	RCODE processComment(
+		IF_DOMNode *	pParent,
+		FLMUINT			uiSavedLineNum,
+		FLMUINT     	uiSavedOffset,
+		FLMUINT			uiSavedFilePos,
+		FLMUINT			uiSavedLineBytes);
+
+	RCODE processProlog( void);
+
+	RCODE processXMLDecl( void);
+
+	RCODE processVersion( void);
+
+	RCODE processEncodingDecl( void);
+
+	RCODE processSDDecl( void);
+
+	RCODE processMisc( void);
+
+	RCODE processDocTypeDecl( void);
+
+	RCODE processPI(
+		IF_DOMNode *	pParent,
+		FLMUINT			uiSavedLineNum,
+		FLMUINT     	uiSavedOffset,
+		FLMUINT			uiSavedFilePos,
+		FLMUINT			uiSavedLineBytes);
+
+	RCODE processElement(
+		IF_DOMNode *		pNodeToLinkTo,
+		eNodeInsertLoc		eInsertLoc,
+		IF_DOMNode **		ppNewNode);
+
+	RCODE unicodeToNumber64(
+		FLMUNICODE *		puzVal,
+		FLMUINT64 *			pui64Val,
+		FLMBOOL *			pbNeg);
+
+	RCODE flushElementValue(
+		IF_DOMNode *		pParent,
+		FLMBYTE *			pucValue,
+		FLMUINT				uiValueLen);
+
+	RCODE getBinaryVal(
+		FLMUINT *			puiLength);
+
+	RCODE fixNamingTag(
+		IF_DOMNode *		pNode);
+
+	FLMBOOL lineHasToken(
+		const char *	pszToken);
+		
+	RCODE processMarkupDecl( void);
+
+	RCODE processPERef( void);
+
+	RCODE processElementDecl( void);
+
+	RCODE processEntityDecl( void);
+
+	RCODE processNotationDecl( void);
+
+	RCODE processAttListDecl( void);
+
+	RCODE processContentSpec( void);
+
+	RCODE processMixedContent( void);
+
+	RCODE processChildContent( void);
+
+	RCODE processAttDef( void);
+
+	RCODE processAttType( void);
+
+	RCODE processAttValue(
+		XML_ATTR *	pAttr);
+
+	RCODE processDefaultDecl( void);
+
+	RCODE processID(
+		FLMBOOL	bPublicId);
+
+	RCODE processSTag(
+		IF_DOMNode *		pNodeToLinkTo,	
+		eNodeInsertLoc		eInsertLoc,
+		FLMBOOL *			pbHasContent,
+		IF_DOMNode **		ppElement);
+
+	RCODE skipWhitespace(
+		FLMBOOL	bRequired);
+
+	RCODE resizeValBuffer(
+		FLMUINT			uiSize);
+
+	// Attribute management
+
+	void resetAttrList( void)
+	{
+		m_pFirstAttr = NULL;
+		m_pLastAttr = NULL;
+		m_pAttrPool->poolReset( NULL);
+	}
+
+	RCODE allocAttribute(
+		XML_ATTR **		ppAttr)
+	{
+		XML_ATTR *	pAttr = NULL;
+		RCODE			rc = NE_FLM_OK;
+
+		if( RC_BAD( rc = m_pAttrPool->poolCalloc( 
+			sizeof( XML_ATTR), (void **)&pAttr)))
+		{
+			goto Exit;
+		}
+
+		if( (pAttr->pPrev = m_pLastAttr) == NULL)
+		{
+			m_pFirstAttr = pAttr;
+		}
+		else
+		{
+			m_pLastAttr->pNext = pAttr;
+		}
+
+		m_pLastAttr = pAttr;
+
+	Exit:
+
+		*ppAttr = pAttr;
+		return( rc);
+	}
+
+	RCODE setPrefix(
+		XML_ATTR *		pAttr,
+		FLMUNICODE *	puzPrefix)
+	{
+		RCODE		rc = NE_FLM_OK;
+		FLMUINT	uiStrLen;
+
+		if( !puzPrefix)
+		{
+			pAttr->puzPrefix = NULL;
+			goto Exit;
+		}
+
+		uiStrLen = f_unilen( puzPrefix);
+
+		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
+			sizeof( FLMUNICODE) * (uiStrLen + 1), (void **)&pAttr->puzPrefix)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( pAttr->puzPrefix, puzPrefix, 
+			sizeof( FLMUNICODE) * (uiStrLen + 1));
+
+	Exit:
+
+		return( rc);
+	}
+
+	RCODE setLocalName(
+		XML_ATTR *		pAttr,
+		FLMUNICODE *	puzLocalName)
+	{
+		RCODE		rc = NE_FLM_OK;
+		FLMUINT	uiStrLen;
+
+		if( !puzLocalName)
+		{
+			pAttr->puzLocalName = NULL;
+			goto Exit;
+		}
+
+		uiStrLen = f_unilen( puzLocalName);
+
+		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
+			sizeof( FLMUNICODE) * (uiStrLen + 1), 
+			(void **)&pAttr->puzLocalName)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( pAttr->puzLocalName, puzLocalName,
+			sizeof( FLMUNICODE) * (uiStrLen + 1));
+
+	Exit:
+
+		return( rc);
+	}
+
+	RCODE setUnicode(
+		XML_ATTR	*		pAttr,
+		FLMUNICODE *	puzUnicode)
+	{
+		RCODE		rc = NE_FLM_OK;
+		FLMUINT	uiStrLen;
+
+		if( !puzUnicode)
+		{
+			pAttr->puzVal = NULL;
+			goto Exit;
+		}
+
+		uiStrLen = f_unilen( puzUnicode);
+
+		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
+			sizeof( FLMUNICODE) * (uiStrLen + 1), 
+			(void **)&pAttr->puzVal)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( pAttr->puzVal, puzUnicode, 
+			sizeof( FLMUNICODE) * (uiStrLen + 1));
+
+	Exit:
+
+		return( rc);
+	}
+
+	RCODE addAttributesToElement(
+		IF_DOMNode *		pElement);
+		
+	FINLINE void setErrInfo(
+		FLMUINT			uiErrLineNum,
+		FLMUINT			uiErrLineOffset,
+		XMLParseError	eErrorType,
+		FLMUINT			uiErrLineFilePos,
+		FLMUINT			uiErrLineBytes)
+	{
+		m_importStats.uiErrLineNum = uiErrLineNum;
+		m_importStats.uiErrLineOffset = uiErrLineOffset;
+		m_importStats.eErrorType = eErrorType;
+		m_importStats.uiErrLineFilePos = uiErrLineFilePos;
+		m_importStats.uiErrLineBytes = uiErrLineBytes;
+	}
+
+	FLMBYTE						m_ucUngetByte;
+	FLMUNICODE *				m_puzCurrLineBuf;
+	FLMUINT						m_uiCurrLineBufMaxChars;
+	FLMUINT						m_uiCurrLineNumChars;
+	FLMUINT						m_uiCurrLineOffset;
+	FLMUINT						m_uiCurrLineNum;
+	FLMUINT						m_uiCurrLineFilePos;
+	FLMUINT						m_uiCurrLineBytes;
+#define FLM_XML_MAX_CHARS		128
+	FLMUNICODE					m_uChars[ FLM_XML_MAX_CHARS];
+	FLMBOOL						m_bSetup;
+	IF_IStream *				m_pStream;
+	FLMBYTE *					m_pucValBuf;
+	FLMUINT						m_uiValBufSize; // Number of Unicode characters
+	FLMUINT						m_uiFlags;
+	FLMBOOL						m_bExtendDictionary;
+	XMLEncoding					m_eXMLEncoding;
+	XML_STATUS_HOOK			m_fnStatus;
+	void *						m_pvCallbackData;
+	FLM_IMPORT_STATS			m_importStats;
+	XML_ATTR *					m_pFirstAttr;
+	XML_ATTR *					m_pLastAttr;
+	IF_Pool *					m_pTmpPool;
+	IF_Pool * 					m_pAttrPool;
+};
+
+#define FLM_XML_EXTEND_DICT_FLAG				0x00000001
+#define FLM_XML_COMPRESS_WHITESPACE_FLAG	0x00000002
+#define FLM_XML_TRANSLATE_ESC_FLAG			0x00000004
+
+FINLINE FLMBOOL isXMLNS(
+	FLMUNICODE *	puzName)
+{
+	return( (puzName [0] == FLM_UNICODE_x || puzName [0] == FLM_UNICODE_X) &&
+			  (puzName [1] == FLM_UNICODE_m || puzName [1] == FLM_UNICODE_M) &&
+			  (puzName [2] == FLM_UNICODE_l || puzName [2] == FLM_UNICODE_L) &&
+			  (puzName [3] == FLM_UNICODE_n || puzName [3] == FLM_UNICODE_N) &&
+			  (puzName [4] == FLM_UNICODE_s || puzName [4] == FLM_UNICODE_S)
+			  ? TRUE
+			  : FALSE);
+}
+		
+/****************************************************************************
 Desc:
 ****************************************************************************/
 F_XML::F_XML()
@@ -787,10 +1369,11 @@ F_XMLParser::F_XMLParser()
 	m_bSetup = FALSE;
 	m_fnStatus = NULL;
 	m_pvCallbackData = NULL;
-	m_tmpPool.poolInit( 4096);
-	m_attrPool.poolInit( 4096);
 	m_puzCurrLineBuf = NULL;
 	m_uiCurrLineBufMaxChars = 0;
+	m_pTmpPool = NULL;
+	m_pAttrPool = NULL;
+	
 	reset();
 }
 
@@ -805,9 +1388,20 @@ F_XMLParser::~F_XMLParser()
 	{
 		f_free( &m_pucValBuf);
 	}
+	
 	if (m_puzCurrLineBuf)
 	{
 		f_free( &m_puzCurrLineBuf);
+	}
+	
+	if( m_pTmpPool)
+	{
+		m_pTmpPool->Release();
+	}
+	
+	if( m_pAttrPool)
+	{
+		m_pAttrPool->Release();
 	}
 }
 
@@ -828,7 +1422,7 @@ void FLMAPI F_XMLParser::reset( void)
 	f_memset( &m_importStats, 0, sizeof( FLM_IMPORT_STATS));
 
 	popNamespaces( getNamespaceCount());
-	m_tmpPool.poolReset( NULL);
+	m_pTmpPool->poolReset( NULL);
 	resetAttrList();
 }
 
@@ -850,7 +1444,20 @@ RCODE FLMAPI F_XMLParser::setup( void)
 	{
 		goto Exit;
 	}
-
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pTmpPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pTmpPool->poolInit( 4096);
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pAttrPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pAttrPool->poolInit( 4096);
 	m_bSetup = TRUE;
 
 Exit:
@@ -1592,7 +2199,7 @@ RCODE F_XMLParser::processSTag(
 	FLMUNICODE *		puzLocal = NULL;
 	FLMUINT				uiNameId = 0;
 	FLMUINT				uiAllocSize;
-	void *				pvMark = m_tmpPool.poolMark();
+	void *				pvMark = m_pTmpPool->poolMark();
 	FLMBOOL				bNamespaceDecl;
 	FLMUINT				uiSavedLineNum;
 	FLMUINT           uiSavedOffset;
@@ -1636,7 +2243,7 @@ RCODE F_XMLParser::processSTag(
 	}
 
 	uiAllocSize = (f_unilen( puzTmpLocal) + 1) * sizeof( FLMUNICODE);
-	if( RC_BAD( rc = m_tmpPool.poolAlloc( uiAllocSize, (void **)&puzLocal)))
+	if( RC_BAD( rc = m_pTmpPool->poolAlloc( uiAllocSize, (void **)&puzLocal)))
 	{
 		goto Exit;
 	}
@@ -1649,7 +2256,7 @@ RCODE F_XMLParser::processSTag(
 		// continues, the scratch buffer will be overwritten
 
 		uiAllocSize = (f_unilen( puzTmpPrefix) + 1) * sizeof( FLMUNICODE);
-		if( RC_BAD( rc = m_tmpPool.poolAlloc( uiAllocSize, (void **)&puzPrefix)))
+		if( RC_BAD( rc = m_pTmpPool->poolAlloc( uiAllocSize, (void **)&puzPrefix)))
 		{
 			goto Exit;
 		}
@@ -1821,7 +2428,7 @@ Exit:
 		pNamespace->Release();
 	}
 
-	m_tmpPool.poolReset( pvMark);
+	m_pTmpPool->poolReset( pvMark);
 	return( rc);
 }
 

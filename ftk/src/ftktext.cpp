@@ -7246,9 +7246,14 @@ RCODE f_verifyMetaphoneRoutines( void)
 {
 	RCODE						rc = NE_FLM_OK;
 	METAPHONE_MAPPING *	pMetaMap = gv_MetaTestTable;
-	F_BufferIStream		bufferStream;
+	IF_BufferIStream *	pBufferStream = NULL;
 	FLMUINT					uiMeta;
 	FLMUINT					uiAltMeta;
+	
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferStream)))
+	{
+		goto Exit;
+	}
 
 	for( ;;)
 	{
@@ -7257,13 +7262,13 @@ RCODE f_verifyMetaphoneRoutines( void)
 			break;
 		}
 
-		if( RC_BAD( rc = bufferStream.open( 
+		if( RC_BAD( rc = pBufferStream->open( 
 			(FLMBYTE *)pMetaMap->pszWord, f_strlen( pMetaMap->pszWord))))
 		{
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = f_getNextMetaphone( &bufferStream, 
+		if( RC_BAD( rc = f_getNextMetaphone( pBufferStream, 
 			&uiMeta, &uiAltMeta)))
 		{
 			goto Exit;
@@ -7276,11 +7281,16 @@ RCODE f_verifyMetaphoneRoutines( void)
 			goto Exit;
 		}
 
-		bufferStream.close();
+		pBufferStream->close();
 		pMetaMap++;
 	}
 
 Exit:
+
+	if( pBufferStream)
+	{
+		pBufferStream->Release();
+	}
 
 	flmAssert( RC_OK( rc));
 	return( rc);

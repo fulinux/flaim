@@ -36,6 +36,245 @@
 		void *	pvThread);
 #endif
 
+static F_ThreadMgr *		gv_pThreadMgrImp = (F_ThreadMgr *)gv_pThreadMgr;
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_ThreadMgr : public IF_ThreadMgr, public F_Base
+{
+public:
+
+	F_ThreadMgr()
+	{
+		m_hMutex = F_MUTEX_NULL;
+		m_pThreadList = NULL;
+		m_uiNumThreads = 0;
+	}
+
+	virtual ~F_ThreadMgr();
+
+	RCODE FLMAPI setupThreadMgr( void);
+
+	RCODE FLMAPI createThread(
+		IF_Thread **		ppThread,
+		F_THREAD_FUNC		fnThread,
+		const char *		pszThreadName,
+		FLMUINT				uiThreadGroup,
+		FLMUINT				uiAppId,
+		void *				pvParm1,
+		void *				pvParm2,
+		FLMUINT				uiStackSize);
+		
+	void FLMAPI shutdownThreadGroup(
+		FLMUINT				uiThreadGroup);
+
+	void FLMAPI setThreadShutdownFlag(
+		FLMUINT				uiThreadId);
+
+	RCODE FLMAPI findThread(
+		IF_Thread **		ppThread,
+		FLMUINT				uiThreadGroup,
+		FLMUINT				uiAppId = 0,
+		FLMBOOL				bOkToFindMe = TRUE);
+
+	RCODE FLMAPI getNextGroupThread(
+		IF_Thread **		ppThread,
+		FLMUINT				uiThreadGroup,
+		FLMUINT *			puiThreadId);
+
+	RCODE FLMAPI getThreadInfo(
+		IF_Pool *			pPool,
+		F_THREAD_INFO **	ppThreadInfo,
+		FLMUINT *			puiNumThreads);
+
+	FLMUINT FLMAPI getThreadGroupCount(
+		FLMUINT				uiThreadGroup);
+		
+	inline void lockMutex( void)
+	{
+		f_mutexLock( m_hMutex);
+	}
+	
+	inline void unlockMutex( void)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
+	void unlinkThread(
+		IF_Thread *		pThread,
+		FLMBOOL			bMutexLocked);
+
+private:
+
+	F_MUTEX			m_hMutex;
+	F_Thread *		m_pThreadList;
+	FLMUINT			m_uiNumThreads;
+
+friend class F_Thread;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_Thread : public IF_Thread, public F_Base
+{
+public:
+
+	F_Thread()
+	{
+		m_hMutex = F_MUTEX_NULL;
+		m_pszThreadName = NULL;
+		m_pszThreadStatus = NULL;
+		m_uiStatusBufLen = 0;
+		m_pPrev = NULL;
+		m_pNext = NULL;
+		cleanupThread();
+	}
+
+	virtual ~F_Thread()
+	{
+		stopThread();
+		cleanupThread();
+	}
+
+	FLMINT FLMAPI AddRef( void);
+
+	FLMINT FLMAPI Release( void);
+
+	RCODE FLMAPI startThread(
+		F_THREAD_FUNC	fnThread,
+		const char *	pszThreadName = NULL,
+		FLMUINT			uiThreadGroup = 0,
+		FLMUINT			uiAppId = 0,
+		void *			pvParm1 = NULL,
+		void *			pvParm2 = NULL,
+		FLMUINT        uiStackSize = F_THREAD_DEFAULT_STACK_SIZE);
+
+	void FLMAPI stopThread( void);
+
+	FINLINE FLMUINT FLMAPI getThreadId( void)
+	{
+		return( m_uiThreadId);
+	}
+
+	FINLINE FLMBOOL FLMAPI getShutdownFlag( void)
+	{
+		return( m_bShutdown);
+	}
+
+	FINLINE RCODE FLMAPI getExitCode( void)
+	{
+		return( m_exitRc);
+	}
+
+	FINLINE void * FLMAPI getParm1( void)
+	{
+		return( m_pvParm1);
+	}
+
+	FINLINE void FLMAPI setParm1(
+		void *		pvParm)
+	{
+		m_pvParm1 = pvParm;
+	}
+
+	FINLINE void * FLMAPI getParm2( void)
+	{
+		return( m_pvParm2);
+	}
+
+	FINLINE void FLMAPI setParm2(
+		void *		pvParm)
+	{
+		m_pvParm2 = pvParm;
+	}
+
+	FINLINE void FLMAPI setShutdownFlag( void)
+	{
+		m_bShutdown = TRUE;
+	}
+
+	FINLINE FLMBOOL FLMAPI isThreadRunning( void)
+	{
+		return( m_bRunning);
+	}
+
+	void FLMAPI setThreadStatusStr(
+		const char *	pszStatus);
+
+	void FLMAPI setThreadStatus(
+		const char *	pszBuffer, ...);
+
+	void FLMAPI setThreadStatus(
+		eThreadStatus	genericStatus);
+
+	FINLINE void FLMAPI setThreadAppId(
+		FLMUINT		uiAppId)
+	{
+		f_mutexLock( m_hMutex);
+		m_uiAppId = uiAppId;
+		f_mutexUnlock( m_hMutex);
+	}
+
+	FINLINE FLMUINT FLMAPI getThreadAppId( void)
+	{
+		return( m_uiAppId);
+	}
+
+	FINLINE FLMUINT FLMAPI getThreadGroup( void)
+	{
+		return( m_uiThreadGroup);
+	}
+
+	void FLMAPI cleanupThread( void);
+
+	F_MUTEX				m_hMutex;
+	F_Thread *			m_pPrev;
+	F_Thread *			m_pNext;
+	char *				m_pszThreadName;
+	char *				m_pszThreadStatus;
+	FLMUINT				m_uiStatusBufLen;
+	FLMBOOL				m_bShutdown;
+	F_THREAD_FUNC		m_fnThread;
+	FLMBOOL				m_bRunning;
+	FLMUINT				m_uiStackSize;
+	void *				m_pvParm1;
+	void *				m_pvParm2;
+	FLMUINT				m_uiThreadId;
+	FLMUINT				m_uiThreadGroup;
+	FLMUINT				m_uiAppId;
+	FLMUINT				m_uiStartTime;
+	RCODE					m_exitRc;
+
+friend class F_ThreadMgr;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE f_allocThreadMgr(
+	IF_ThreadMgr **		ppThreadMgr)
+{
+	if( (*ppThreadMgr = f_new F_ThreadMgr) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmGetThreadMgr(
+	IF_ThreadMgr **		ppThreadMgr)
+{
+	*ppThreadMgr = gv_pThreadMgr;
+	(*ppThreadMgr)->AddRef();
+	return( NE_FLM_OK);
+}
+		
 /****************************************************************************
 Desc:	Add a Reference to this object.
 ****************************************************************************/
@@ -137,24 +376,24 @@ RCODE FLMAPI F_Thread::startThread(
 
 	// Lock the thread manager's mutex.
 
-	f_mutexLock( gv_pThreadMgr->m_hMutex);
+	f_mutexLock( gv_pThreadMgrImp->m_hMutex);
 	bManagerMutexLocked = TRUE;
 
 	// Increment the active thread count
 
-	gv_pThreadMgr->m_uiNumThreads++;
+	gv_pThreadMgrImp->m_uiNumThreads++;
 
 	// Link the thread into the manager's list.  We can't link threads in order
 	// by thread ID at this point, because we don't know what the new thread's
 	// ID will be.
 
-	if( gv_pThreadMgr->m_pThreadList)
+	if( gv_pThreadMgrImp->m_pThreadList)
 	{
-		gv_pThreadMgr->m_pThreadList->m_pPrev = this;
+		gv_pThreadMgrImp->m_pThreadList->m_pPrev = this;
 	}
 
-	m_pNext = gv_pThreadMgr->m_pThreadList;
-	gv_pThreadMgr->m_pThreadList = this;
+	m_pNext = gv_pThreadMgrImp->m_pThreadList;
+	gv_pThreadMgrImp->m_pThreadList = this;
 
 	// Increment the reference count of the thread object now
 	// that it is linked into the thread manager's list.
@@ -221,7 +460,7 @@ RCODE FLMAPI F_Thread::startThread(
 
 	// Unlock the thread manager's mutex.
 
-	f_mutexUnlock( gv_pThreadMgr->m_hMutex);
+	f_mutexUnlock( gv_pThreadMgrImp->m_hMutex);
 	bManagerMutexLocked = FALSE;
 
 Exit:
@@ -231,7 +470,7 @@ Exit:
 		// Unlink the thread from the manager's list.  This call
 		// won't do anything if the thread was not linked above.
 
-		gv_pThreadMgr->unlinkThread( this, bManagerMutexLocked);
+		gv_pThreadMgrImp->unlinkThread( this, bManagerMutexLocked);
 
 		// Reset the thread object back to its initial state
 
@@ -240,7 +479,7 @@ Exit:
 
 	if( bManagerMutexLocked)
 	{
-		f_mutexUnlock( gv_pThreadMgr->m_hMutex);
+		f_mutexUnlock( gv_pThreadMgrImp->m_hMutex);
 	}
 
 	return( rc);
@@ -292,7 +531,7 @@ void * threadStub(
 
 	// Lock the manager's mutex
 
-	gv_pThreadMgr->lockMutex();
+	gv_pThreadMgrImp->lockMutex();
 
 	// At this point, the thread ID must match.
 
@@ -304,7 +543,7 @@ void * threadStub(
 
 	// Unlock the manager's mutex
 
-	gv_pThreadMgr->unlockMutex();
+	gv_pThreadMgrImp->unlockMutex();
 
 	// Call the thread's function
 
@@ -318,7 +557,7 @@ void * threadStub(
 
 	// Unlink the thread from the thread manager.
 
-	gv_pThreadMgr->unlinkThread( pThread, FALSE);
+	gv_pThreadMgrImp->unlinkThread( pThread, FALSE);
 
 	// Set the running flag to FALSE
 
@@ -932,7 +1171,7 @@ FLMUINT FLMAPI F_ThreadMgr::getThreadGroupCount(
 /****************************************************************************
 Desc:    Allocate a thread object and start the thread
 ****************************************************************************/
-RCODE FLMAPI f_threadCreate(
+RCODE FLMAPI F_ThreadMgr::createThread(
 	IF_Thread **		ppThread,
 	F_THREAD_FUNC		fnThread,
 	const char *		pszThreadName,
@@ -942,8 +1181,8 @@ RCODE FLMAPI f_threadCreate(
 	void *				pvParm2,
 	FLMUINT				uiStackSize)
 {
-	RCODE				rc = NE_FLM_OK;
-	F_Thread *		pThread = NULL;
+	RCODE					rc = NE_FLM_OK;
+	F_Thread *			pThread = NULL;
 
 	if( ppThread)
 	{
@@ -983,22 +1222,6 @@ Exit:
 	}
 
 	return( rc);
-}
-
-/****************************************************************************
-Desc:		Deletes a thread object and sets the passed-in pointer to NULL
-Notes:	Should not be used on threads that were started with the
-			auto-destroy flag set to TRUE
-****************************************************************************/
-void FLMAPI f_threadDestroy(
-	IF_Thread **		ppThread)
-{
-	if( *ppThread != NULL)
-	{
-		(*ppThread)->stopThread();
-		(*ppThread)->Release();
-		*ppThread = NULL;
-	}
 }
 
 /****************************************************************************

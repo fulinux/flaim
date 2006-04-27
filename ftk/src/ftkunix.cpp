@@ -59,6 +59,183 @@
 	#include <sys/mount.h>
 #endif
 
+/***************************************************************************
+Desc:
+***************************************************************************/
+class F_FileHdl : public IF_FileHdl, public F_Base
+{
+public:
+
+	F_FileHdl();
+
+	~F_FileHdl();
+
+	RCODE FLMAPI setup(							
+		FLMUINT				uiFileId);
+
+	RCODE FLMAPI close( void);
+												
+	RCODE FLMAPI create(
+		const char *		pszFileName,
+		FLMUINT				uiIoFlags);
+
+	RCODE FLMAPI createUnique(
+		const char *		pszDirName,
+		const char *		pszFileExtension,
+		FLMUINT				uiIoFlags);
+
+	RCODE FLMAPI open(
+		const char *		pszFileName,
+		FLMUINT				uiIoFlags);
+
+	RCODE FLMAPI flush( void);
+
+	RCODE FLMAPI read(
+		FLMUINT64			ui64Offset,
+		FLMUINT				uiLength,
+		void *				pvBuffer,
+		FLMUINT *			puiBytesRead);
+
+	RCODE FLMAPI seek(
+		FLMUINT64			ui64Offset,
+		FLMINT				iWhence,
+		FLMUINT64 *			pui64NewOffset);
+
+	RCODE FLMAPI size(
+		FLMUINT64 *			pui64Size);
+
+	RCODE FLMAPI tell(
+		FLMUINT64 *			pui64Offset);
+
+	RCODE FLMAPI truncate(
+		FLMUINT64			ui64Size);
+
+	RCODE FLMAPI write(
+		FLMUINT64			ui64Offset,
+		FLMUINT				uiLength,
+		const void *		pvBuffer,
+		FLMUINT *			puiBytesWritten);
+
+	RCODE FLMAPI sectorRead(
+		FLMUINT64			ui64ReadOffset,
+		FLMUINT				uiBytesToRead,
+		void *				pvBuffer,
+		FLMUINT *			puiBytesReadRV);
+
+	RCODE FLMAPI sectorWrite(
+		FLMUINT64			ui64WriteOffset,
+		FLMUINT				uiBytesToWrite,
+		const void *		pvBuffer,
+		FLMUINT				uiBufferSize,
+		void *				pvBufferObj,
+		FLMUINT *			puiBytesWrittenRV,
+		FLMBOOL				bZeroFill = TRUE)
+	{
+		if( m_bDoDirectIO)
+		{
+			return( DirectWrite( ui64WriteOffset, uiBytesToWrite, 
+				pvBuffer, uiBufferSize, (F_IOBuffer *)pvBufferObj, 
+				puiBytesWrittenRV, TRUE, bZeroFill));
+		}
+		else
+		{
+			return( Write( ui64WriteOffset, uiBytesToWrite, 
+				pvBuffer, puiBytesWrittenRV));
+		}
+	}
+
+	FLMBOOL FLMAPI canDoAsync( void);
+
+	FINLINE FLMBOOL FLMAPI usingDirectIo( void)
+	{
+		return( m_bDoDirectIO);
+	}
+
+	FINLINE void FLMAPI setExtendSize(
+		FLMUINT				uiExtendSize)
+	{
+		m_uiExtendSize = uiExtendSize;
+	}
+
+	FINLINE void FLMAPI setMaxAutoExtendSize(
+		FLMUINT				uiMaxAutoExtendSize)
+	{
+		m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
+	}
+
+	RCODE FLMAPI lock( void);
+
+	RCODE FLMAPI unlock( void);
+
+	FINLINE void FLMAPI setBlockSize(
+		FLMUINT				uiBlockSize)
+	{
+		m_uiBlockSize = uiBlockSize;
+	}
+	
+	FINLINE FLMUINT FLMAPI getSectorSize( void)
+	{
+		return( m_uiBytesPerSector);
+	}
+
+private:
+
+	RCODE openOrCreate(
+		const char *		pszFileName,
+		FLMUINT				uiAccess,
+		FLMBOOL				bCreateFlag);
+
+	FINLINE FLMUINT64 roundUpToSectorMultiple(
+		FLMUINT64			ui64Bytes)
+	{
+		return( (ui64Bytes + m_ui64NotOnSectorBoundMask) &
+					m_ui64GetSectorBoundMask);
+	}
+
+	FINLINE FLMUINT64 getSectorStartOffset(
+		FLMUINT64			ui64Offset)
+	{
+		return( ui64Offset & m_ui64GetSectorBoundMask);
+	}
+
+	RCODE directRead(
+		FLMUINT64			ui64ReadOffset,
+		FLMUINT				uiBytesToRead,	
+		void *				pvBuffer,
+		FLMBOOL				bBuffHasFullSectors,
+		FLMUINT *			puiBytesRead);
+
+	RCODE directWrite(
+		FLMUINT64			ui64WriteOffset,
+		FLMUINT				uiBytesToWrite,
+		const void *		pvBuffer,
+		FLMUINT				uiBufferSize,
+		F_IOBuffer *		pBufferObj,
+		FLMUINT *			puiBytesWrittenRV,
+		FLMBOOL				bBuffHasFullSectors,
+		FLMBOOL				bZeroFill);
+	
+	RCODE allocAlignBuffer( void);
+	
+	FLMBOOL					m_bFileOpened;
+	FLMBOOL					m_bDeleteOnRelease;
+	FLMBOOL					m_bOpenedReadOnly;
+	FLMBOOL					m_bOpenedExclusive;
+	char *					m_pszFileName;
+	int				   	m_fd;
+	FLMUINT					m_uiBlockSize;
+	FLMUINT					m_uiBytesPerSector;
+	FLMUINT64				m_ui64NotOnSectorBoundMask;
+	FLMUINT64				m_ui64GetSectorBoundMask;
+	FLMUINT64				m_ui64CurrentPos;
+	FLMUINT					m_uiExtendSize;
+	FLMUINT					m_uiMaxAutoExtendSize;
+	FLMBOOL					m_bCanDoAsync;
+	FLMBOOL					m_bDoDirectIO;
+	FLMBYTE *				m_pucAlignedBuff;
+	FLMUINT					m_uiAlignedBuffSize;
+};
+	
 /******************************************************************************
 Desc:
 *******************************************************************************/

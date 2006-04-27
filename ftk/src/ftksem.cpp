@@ -25,20 +25,6 @@
 
 #include "ftksys.h"
 
-#ifdef FLM_WIN
-
-	typedef struct
-	{
-		FLMATOMIC						locked;
-#ifdef FLM_DEBUG
-		FLMUINT							uiThreadId;
-		FLMATOMIC						lockedCount;
-		FLMATOMIC						waitCount;
-#endif
-	} F_INTERLOCK;
-	
-#endif
-
 /****************************************************************************
 Desc:
 ****************************************************************************/

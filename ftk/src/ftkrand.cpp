@@ -61,6 +61,52 @@ implement SWB, nor does he give any simple test to determine whether an SWB
 implementation is correct.
 ****************************************************************************/
 
+#define MAX_RANDOM  2147483646L
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_RandomGenerator : public IF_RandomGenerator, public F_Base
+{
+public:
+
+	void FLMAPI randomize( void);
+
+	void FLMAPI setSeed(
+		FLMINT32		i32seed);
+
+	FLMINT32 FLMAPI getInt32( void);
+		
+	FLMINT32 FLMAPI getInt32(
+		FLMINT32 	i32Low,
+		FLMINT32 	i32High);
+
+	FLMBOOL FLMAPI getBoolean( void);
+
+	FLMINT32 FLMAPI getSeed( void)
+	{
+		return( m_i32Seed);
+	}
+
+private:
+
+	FLMINT32			m_i32Seed;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmAllocRandomGenerator(
+	IF_RandomGenerator **	ppRandomGenerator)
+{
+	if( (*ppRandomGenerator = f_new F_RandomGenerator) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+
 /*************************************************************************
 Desc:	Set the seed from the date and time
 *************************************************************************/
@@ -69,7 +115,7 @@ void	F_RandomGenerator::randomize( void)
 	FLMUINT	uiTime;
 
 	f_timeGetSeconds( &uiTime );
-	randomSetSeed( (FLMUINT32)(((FLMUINT32)uiTime % MAX_RANDOM) + 1));
+	setSeed( (FLMUINT32)(((FLMUINT32)uiTime % MAX_RANDOM) + 1));
 }
 
 /*************************************************************************
@@ -84,7 +130,7 @@ void F_RandomGenerator::setSeed(
 	}
 	else
 	{
-		randomSetSeed( (FLMUINT32) 
+		setSeed( (FLMUINT32) 
 			(i32Seed < 1
 				? i32Seed + MAX_RANDOM
 				: i32Seed - MAX_RANDOM));

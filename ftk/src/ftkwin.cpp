@@ -27,111 +27,28 @@
 
 #if defined( FLM_WIN)
 
-RCODE MapWinErrorToFlaim(
-	DWORD		udErrCode,
-	RCODE		defaultRc);
-
 FSTATIC RCODE _DeleteFile(
 	char *	path);
 
-/***************************************************************************
-Desc:	Maps WIN errors to IO errors.
-***************************************************************************/
-RCODE MapWinErrorToFlaim(
-	DWORD		udErrCode,
-	RCODE		defaultRc)
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE f_allocFileHdl(
+	F_FileHdl **		ppFileHdl)
 {
-
-	// Switch on passed in error code value
-
-	switch( udErrCode)
+	if( (*ppFileHdl = f_new F_FileHdl) == NULL)
 	{
-		case ERROR_NOT_ENOUGH_MEMORY:
-		case ERROR_OUTOFMEMORY:
-			return( RC_SET( NE_FLM_MEM));
-			
-		case ERROR_BAD_NETPATH:
-		case ERROR_BAD_PATHNAME:
-		case ERROR_DIRECTORY:
-		case ERROR_FILE_NOT_FOUND:
-		case ERROR_INVALID_DRIVE:
-		case ERROR_INVALID_NAME:
-		case ERROR_NO_NET_OR_BAD_PATH:
-		case ERROR_PATH_NOT_FOUND:
-			return( RC_SET( NE_FLM_IO_PATH_NOT_FOUND));
-
-		case ERROR_ACCESS_DENIED:
-		case ERROR_SHARING_VIOLATION:
-		case ERROR_FILE_EXISTS:
-		case ERROR_ALREADY_EXISTS:
-			return( RC_SET( NE_FLM_IO_ACCESS_DENIED));
-
-		case ERROR_BUFFER_OVERFLOW:
-		case ERROR_FILENAME_EXCED_RANGE:
-			return( RC_SET( NE_FLM_IO_PATH_TOO_LONG));
-
-		case ERROR_DISK_FULL:
-		case ERROR_HANDLE_DISK_FULL:
-			return( RC_SET( NE_FLM_IO_DISK_FULL));
-
-		case ERROR_CURRENT_DIRECTORY:
-		case ERROR_DIR_NOT_EMPTY:
-			return( RC_SET( NE_FLM_IO_DIRECTORY_ERR));
-
-		case ERROR_DIRECT_ACCESS_HANDLE:
-		case ERROR_INVALID_HANDLE:
-		case ERROR_INVALID_TARGET_HANDLE:
-			return( RC_SET( NE_FLM_IO_BAD_FILE_HANDLE));
-
-		case ERROR_HANDLE_EOF:
-			return( RC_SET( NE_FLM_IO_END_OF_FILE));
-
-		case ERROR_OPEN_FAILED:
-			return( RC_SET( NE_FLM_IO_OPEN_ERR));
-
-		case ERROR_CANNOT_MAKE:
-			return( RC_SET( NE_FLM_IO_PATH_CREATE_FAILURE));
-
-		case ERROR_LOCK_FAILED:
-		case ERROR_LOCK_VIOLATION:
-			return( RC_SET( NE_FLM_IO_FILE_LOCK_ERR));
-
-		case ERROR_NEGATIVE_SEEK:
-		case ERROR_SEEK:
-		case ERROR_SEEK_ON_DEVICE:
-			return( RC_SET( NE_FLM_IO_SEEK_ERR));
-
-		case ERROR_NO_MORE_FILES:
-		case ERROR_NO_MORE_SEARCH_HANDLES:
-			return( RC_SET( NE_FLM_IO_NO_MORE_FILES));
-
-		case ERROR_TOO_MANY_OPEN_FILES:
-			return( RC_SET( NE_FLM_IO_TOO_MANY_OPEN_FILES));
-
-		case NO_ERROR:
-			return( NE_FLM_OK);
-
-		case ERROR_DISK_CORRUPT:
-		case ERROR_DISK_OPERATION_FAILED:
-		case ERROR_FILE_CORRUPT:
-		case ERROR_FILE_INVALID:
-		case ERROR_NOT_SAME_DEVICE:
-		case ERROR_IO_DEVICE:
-		default:
-			return( RC_SET( defaultRc));
-
-   }
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
 }
-
+	
 /****************************************************************************
 Desc:
 ****************************************************************************/
 F_FileHdl::F_FileHdl()
 {
-	m_pNext = NULL;
-	m_pPrev = NULL;
-	m_bInList = FALSE;
-	m_uiAvailTime = 0;
 	m_bFileOpened = FALSE;
 	m_bDeleteOnRelease = FALSE;
 	m_bOpenedReadOnly = FALSE;
@@ -144,7 +61,7 @@ F_FileHdl::F_FileHdl()
 	m_ui64GetSectorBoundMask = 0;
 	m_bDoDirectIO = FALSE;
 	m_uiExtendSize = 0;
-//	m_uiMaxAutoExtendSize = gv_XFlmSysData.uiMaxFileSize;
+	m_uiMaxAutoExtendSize = FLM_MAXIMUM_FILE_SIZE;
 	m_pucAlignedBuff = NULL;
 	m_uiAlignedBuffSize = 0;
 	m_ui64CurrentPos = 0;
@@ -198,7 +115,7 @@ RCODE F_FileHdl::openOrCreate(
 
 	m_bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
 
-	/* Save the file name in case we have to create the directory. */
+	// Save the file name in case we have to create the directory
 
 	if ((bCreateFlag) && (uiAccess & FLM_IO_CREATE_DIR))
 	{
@@ -318,7 +235,8 @@ Retry_Create:
 
 			// Remove the file name for which we are creating the directory.
 
-			if( RC_OK( gv_pFileSystem->pathReduce( szSaveFileName, szDirPath, szTemp)))
+			if( RC_OK( gv_pFileSystem->pathReduce( szSaveFileName, 
+				szDirPath, szTemp)))
 			{
 				if( RC_OK( rc = gv_pFileSystem->createDir( szDirPath)))
 				{
@@ -331,7 +249,7 @@ Retry_Create:
 			}
 		}
 		
-		rc = MapWinErrorToFlaim( udErrCode,
+		rc = MapPlatformError( udErrCode,
 						(RCODE)(bCreateFlag
 								  ? (RCODE)(m_bDoDirectIO
 												? (RCODE)NE_FLM_DIRECT_CREATING_FILE
@@ -355,19 +273,16 @@ Exit:
 /****************************************************************************
 Desc:	Create a file
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::create(
+RCODE F_FileHdl::create(
 	const char *	pszFileName,
-	FLMUINT			uiIoFlags )
+	FLMUINT			uiIoFlags)
 {
 	RCODE				rc = NE_FLM_OK;
 
 	flmAssert( m_bFileOpened == FALSE);
 
-	if( m_bDeleteOnRelease)
+	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-		// This file handle had better not been used for another file
-		// before.  Otherwise, we will get a memory leak.
-
 		flmAssert( m_pszFileName == NULL);
 
 		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
@@ -376,6 +291,11 @@ RCODE FLMAPI F_FileHdl::create(
 		}
 
 		f_strcpy( m_pszFileName, pszFileName);
+		m_bDeleteOnRelease = TRUE;
+	}
+	else
+	{
+		m_bDeleteOnRelease = FALSE;
 	}
 
 	if( RC_BAD( rc = openOrCreate( pszFileName, uiIoFlags, TRUE)))
@@ -400,7 +320,7 @@ Exit:
 /****************************************************************************
 Desc:	Create a unique file name in the specified directory
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::createUnique(
+RCODE F_FileHdl::createUnique(
 	const char *	pszDirName,
 	const char *	pszFileExtension,
 	FLMUINT			uiIoFlags)
@@ -419,20 +339,19 @@ RCODE FLMAPI F_FileHdl::createUnique(
 	szTmpPath[0] = '\0';
 	flmAssert( m_bFileOpened == FALSE);
 
-	if( m_bDeleteOnRelease)
+	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-
-		// This file handle had better not been used for another file
-		// before.  Otherwise, we will get a memory leak.
-
 		flmAssert( m_pszFileName == NULL);
-
+		m_bDeleteOnRelease = TRUE;
 	}
+	else
+	{
+		m_bDeleteOnRelease = FALSE;
+	}
+	
 	f_strcpy( szDirPath, pszDirName);
 
-	/*
-   Search backwards replacing trailing spaces with NULLs.
-	*/
+   // Search backwards replacing trailing spaces with NULLs.
 
 	pszTmp = (char *) szDirPath;
 	pszTmp += (f_strlen( pszTmp) - 1);
@@ -442,7 +361,7 @@ RCODE FLMAPI F_FileHdl::createUnique(
 		pszTmp--;
 	}
 
-	/* Append a backslash if one isn't already there. */
+	// Append a backslash if one isn't already there
 
 	if (pszTmp >= (char *) szDirPath && *pszTmp != '\\')
 	{
@@ -463,10 +382,9 @@ RCODE FLMAPI F_FileHdl::createUnique(
 	uiCount = 0;
 	do
 	{
-		gv_pFileSystem->pathCreateUniqueName( &uiBaseTime,  szFileName, pszFileExtension,
-										&ucHighByte, bModext);
+		gv_pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName, 
+			pszFileExtension, &ucHighByte, bModext);
 
-		//need to strcpy to the buffer b/c it is uninitialized
 		f_strcpy( szTmpPath, szDirPath);
 		gv_pFileSystem->pathAppend( szTmpPath, szFileName);
 		if( m_pszFileName)
@@ -486,7 +404,7 @@ RCODE FLMAPI F_FileHdl::createUnique(
 		}
 	} while ((rc != NE_FLM_OK) && (uiCount++ < 10));
 
-   /* Check if the path was created. */
+   // Check if the path was created
 
    if ((uiCount >= 10) && (rc != NE_FLM_OK))
    {
@@ -496,7 +414,8 @@ RCODE FLMAPI F_FileHdl::createUnique(
 	m_bFileOpened = TRUE;
 	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
 
-	// Created file name needs to be returned.
+	// Created file name needs to be returned
+	
 	f_strcpy( (char *)pszDirName, szTmpPath);
 
 Exit:
@@ -512,7 +431,7 @@ Exit:
 /****************************************************************************
 Desc:	Open a file
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::open(
+RCODE F_FileHdl::open(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
@@ -520,12 +439,8 @@ RCODE FLMAPI F_FileHdl::open(
 
 	flmAssert( m_bFileOpened == FALSE);
 
-	if( m_bDeleteOnRelease)
+	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-
-		// This file handle had better not been used for another file
-		// before.  Otherwise, we will get a memory leak.
-
 		flmAssert( m_pszFileName == NULL);
 
 		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
@@ -534,6 +449,11 @@ RCODE FLMAPI F_FileHdl::open(
 		}
 
 		f_strcpy( m_pszFileName, pszFileName);
+		m_bDeleteOnRelease = TRUE;
+	}
+	else
+	{
+		m_bDeleteOnRelease = FALSE;
 	}
 
 	// Loop on error open conditions.
@@ -581,14 +501,14 @@ RCODE FLMAPI F_FileHdl::close( void)
 
 	if (!CloseHandle( m_FileHandle))
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_CLOSING_FILE);
+		rc = MapPlatformError( GetLastError(), NE_FLM_CLOSING_FILE);
 		goto Exit;
 	}
 
 	m_FileHandle = INVALID_HANDLE_VALUE;
 	m_bFileOpened = m_bOpenedReadOnly = m_bOpenedExclusive = FALSE;
 
-	if (m_bDeleteOnRelease )
+	if (m_bDeleteOnRelease)
 	{
 		flmAssert( NULL != m_pszFileName );
 
@@ -596,6 +516,7 @@ RCODE FLMAPI F_FileHdl::close( void)
 		{
 			(void)_DeleteFile( m_pszFileName);
 		}
+		
 		m_bDeleteOnRelease = FALSE;
 		f_free( &m_pszFileName);
 	}
@@ -616,7 +537,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	{
 		if( !FlushFileBuffers( m_FileHandle))
   		{
-			rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_FLUSHING_FILE);
+			rc = MapPlatformError( GetLastError(), NE_FLM_FLUSHING_FILE);
 		}
 	}
 	return( rc);
@@ -639,7 +560,7 @@ RCODE F_FileHdl::allocAlignBuffer( void)
 								(DWORD)m_uiAlignedBuffSize,
 								MEM_COMMIT, PAGE_READWRITE)) == NULL)
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_MEM);
+		rc = MapPlatformError( GetLastError(), NE_FLM_MEM);
 		goto Exit;
 	}
 	
@@ -668,7 +589,7 @@ RCODE F_FileHdl::doOneRead(
 		liTmp.QuadPart = ui64ReadOffset;
 		if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 		{
-			rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
+			rc = MapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
 			goto Exit;
 		}
 
@@ -681,7 +602,7 @@ RCODE F_FileHdl::doOneRead(
 			if ((m_Overlapped.hEvent = CreateEvent( NULL, TRUE,
 													FALSE, NULL)) == NULL)
 			{
-				rc = MapWinErrorToFlaim( GetLastError(),
+				rc = MapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_READ);
 				goto Exit;
 			}
@@ -693,7 +614,7 @@ RCODE F_FileHdl::doOneRead(
 		
 		if( !ResetEvent( pOverlapped->hEvent))
 		{
-			rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_SETTING_UP_FOR_READ);
+			rc = MapPlatformError( GetLastError(), NE_FLM_SETTING_UP_FOR_READ);
 			goto Exit;
 		}
 	}
@@ -710,13 +631,13 @@ RCODE F_FileHdl::doOneRead(
 			if( !GetOverlappedResult( m_FileHandle, 
 				pOverlapped, puiBytesRead, TRUE))
 			{
-				rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_READING_FILE);
+				rc = MapPlatformError( GetLastError(), NE_FLM_READING_FILE);
 				goto Exit;
 			}
 		}
 		else
 		{
-			rc = MapWinErrorToFlaim( udErr, NE_FLM_READING_FILE);
+			rc = MapPlatformError( udErr, NE_FLM_READING_FILE);
 			goto Exit;
 		}
 	}
@@ -993,7 +914,7 @@ RCODE FLMAPI F_FileHdl::size(
 	
 	if( !GetFileSizeEx( m_FileHandle, &liTmp))
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
+		rc = MapPlatformError( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
 		goto Exit;
 	}
 	
@@ -1032,7 +953,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 	liTmp.QuadPart = ui64Size;
 	if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
+		rc = MapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
 		goto Exit;
 	}
 		
@@ -1040,7 +961,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 
 	if( !SetEndOfFile( m_FileHandle))
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_TRUNCATING_FILE);
+		rc = MapPlatformError( GetLastError(), NE_FLM_TRUNCATING_FILE);
 		goto Exit;
 	}
 	
@@ -1116,7 +1037,7 @@ RCODE F_FileHdl::extendFile(
 			liTmp.QuadPart = ui64EndOfLastWrite;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 			{
-				rc = MapWinErrorToFlaim( GetLastError(), 
+				rc = MapPlatformError( GetLastError(), 
 							NE_FLM_POSITIONING_IN_FILE);
 				goto Exit;
 			}
@@ -1131,7 +1052,7 @@ RCODE F_FileHdl::extendFile(
 				if ((pOverlapped->hEvent = CreateEvent( NULL, TRUE,
 														FALSE, NULL)) == NULL)
 				{
-					rc = MapWinErrorToFlaim( GetLastError(),
+					rc = MapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_WRITE);
 					goto Exit;
 				}
@@ -1142,7 +1063,7 @@ RCODE F_FileHdl::extendFile(
 			
 			if (!ResetEvent( pOverlapped->hEvent))
 			{
-				rc = MapWinErrorToFlaim( GetLastError(),
+				rc = MapPlatformError( GetLastError(),
 							NE_FLM_SETTING_UP_FOR_WRITE);
 				goto Exit;
 			}
@@ -1153,7 +1074,7 @@ RCODE F_FileHdl::extendFile(
 		if( !WriteFile( m_FileHandle, m_pucAlignedBuff,
 			uiBytesToWrite, &uiBytesWritten, pOverlapped))
 		{
-			rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_WRITING_FILE);
+			rc = MapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 			
 			// Don't care if it is a disk full error, because
 			// extending the file is optional work.
@@ -1187,7 +1108,7 @@ RCODE F_FileHdl::extendFile(
 	{
 		if( !FlushFileBuffers( m_FileHandle))
   		{
-			rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_FLUSHING_FILE);
+			rc = MapPlatformError( GetLastError(), NE_FLM_FLUSHING_FILE);
 			goto Exit;
 		}
 	}
@@ -1252,7 +1173,7 @@ RCODE F_FileHdl::directWrite(
 
 	if( !GetFileSizeEx( m_FileHandle, &liTmp))
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
+		rc = MapPlatformError( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
 		goto Exit;
 	}
 	
@@ -1410,7 +1331,7 @@ RCODE F_FileHdl::directWrite(
 			liTmp.QuadPart = ui64LastWriteOffset;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 			{
-				rc = MapWinErrorToFlaim( GetLastError(),
+				rc = MapPlatformError( GetLastError(),
 							NE_FLM_POSITIONING_IN_FILE);
 				goto Exit;
 			}
@@ -1434,7 +1355,7 @@ RCODE F_FileHdl::directWrite(
 				if ((pOverlapped->hEvent = CreateEvent( NULL, TRUE,
 														FALSE, NULL)) == NULL)
 				{
-					rc = MapWinErrorToFlaim( GetLastError(),
+					rc = MapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_WRITE);
 					goto Exit;
 				}
@@ -1445,7 +1366,7 @@ RCODE F_FileHdl::directWrite(
 			
 			if (!ResetEvent( pOverlapped->hEvent))
 			{
-				rc = MapWinErrorToFlaim( GetLastError(),
+				rc = MapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_WRITE);
 				goto Exit;
 			}
@@ -1478,14 +1399,14 @@ RCODE F_FileHdl::directWrite(
 				if (!GetOverlappedResult( m_FileHandle, pOverlapped,
 							&uiBytesWritten, TRUE))
 				{
-					rc = MapWinErrorToFlaim( GetLastError(),
+					rc = MapPlatformError( GetLastError(),
 								NE_FLM_WRITING_FILE);
 					goto Exit;
 				}
 			}
 			else
 			{
-				rc = MapWinErrorToFlaim( udErr, NE_FLM_WRITING_FILE);
+				rc = MapPlatformError( udErr, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 		}
@@ -1583,7 +1504,7 @@ RCODE FLMAPI F_FileHdl::write(
 		liTmp.QuadPart = ui64WriteOffset;
 		if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 		{
-			rc = MapWinErrorToFlaim( GetLastError(),
+			rc = MapPlatformError( GetLastError(),
 						NE_FLM_POSITIONING_IN_FILE);
 			goto Exit;
 		}
@@ -1597,7 +1518,7 @@ RCODE FLMAPI F_FileHdl::write(
 			if ((m_Overlapped.hEvent = CreateEvent( NULL, TRUE,
 													FALSE, NULL)) == NULL)
 			{
-				rc = MapWinErrorToFlaim( GetLastError(),
+				rc = MapPlatformError( GetLastError(),
 							NE_FLM_SETTING_UP_FOR_WRITE);
 				goto Exit;
 			}
@@ -1609,7 +1530,7 @@ RCODE FLMAPI F_FileHdl::write(
 		
 		if( !ResetEvent( pOverlapped->hEvent))
 		{
-			rc = MapWinErrorToFlaim( GetLastError(),
+			rc = MapPlatformError( GetLastError(),
 						NE_FLM_SETTING_UP_FOR_WRITE);
 			goto Exit;
 		}
@@ -1625,13 +1546,13 @@ RCODE FLMAPI F_FileHdl::write(
 			if (!GetOverlappedResult( m_FileHandle, pOverlapped,
 						&uiBytesWritten, TRUE))
 			{
-				rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_WRITING_FILE);
+				rc = MapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 		}
 		else
 		{
-			rc = MapWinErrorToFlaim( udErr, NE_FLM_WRITING_FILE);
+			rc = MapPlatformError( udErr, NE_FLM_WRITING_FILE);
 			goto Exit;
 		}
 	}
@@ -1663,7 +1584,7 @@ FSTATIC RCODE _DeleteFile(
 
    if( DeleteFile( (LPTSTR)pszPath) == FALSE)
 	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_FLM_IO_DELETING_FILE);
+		rc = MapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE);
 	}
 
 	return rc;

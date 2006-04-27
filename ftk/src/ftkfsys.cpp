@@ -26,6 +26,366 @@
 #include "ftksys.h"
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+FINLINE void HexToNative(
+	FLMBYTE		ucHexVal,
+	char *		pszNativeChar)
+{
+	*pszNativeChar = (char)(ucHexVal < 10
+										? ucHexVal + NATIVE_ZERO
+										: (ucHexVal - 10) + NATIVE_LOWER_A);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FINLINE void SetUpTime(
+	FLMUINT *	puiBaseTime,
+	FLMBYTE *	pbyHighByte)
+{
+	FLMUINT		uiSdTime = 0;
+	f_timeGetSeconds( &uiSdTime);
+	*pbyHighByte = (FLMBYTE)(uiSdTime >> 24);
+	uiSdTime = uiSdTime << 5;
+	if( *puiBaseTime < uiSdTime)
+		*puiBaseTime = uiSdTime;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_FileSystem : public IF_FileSystem, public F_Base
+{
+public:
+
+	F_FileSystem()
+	{
+	}
+
+	virtual ~F_FileSystem()
+	{
+	}
+
+	RCODE FLMAPI createFile(
+		const char *	pszFileName,
+		FLMUINT			uiIoFlags,
+		IF_FileHdl **	ppFile);
+
+	RCODE FLMAPI createBlockFile(
+		const char *	pszFileName,
+		FLMUINT			uiIoFlags,
+		FLMUINT			uiBlockSize,
+		IF_FileHdl **	ppFile);
+
+	RCODE FLMAPI createUniqueFile(
+		const char *	pszDirName,
+		const char *	pszFileExtension,
+		FLMUINT			uiIoFlags,
+		IF_FileHdl **	ppFile);
+
+	RCODE FLMAPI openFile(
+		const char *	pszFileName,
+		FLMUINT			uiIoFlags,
+		IF_FileHdl **	ppFile);
+
+	RCODE FLMAPI openBlockFile(
+		const char *	pszFileName,
+		FLMUINT			uiIoFlags,
+		FLMUINT			uiBlockSize,
+		IF_FileHdl **	ppFile);
+
+	RCODE FLMAPI openDir(
+		const char *	pszDirName,
+		const char *	pszPattern,
+		IF_DirHdl **	ppDir);
+
+	RCODE FLMAPI createDir(
+		const char *	pszDirName);
+
+	RCODE FLMAPI removeDir(
+		const char *	pszDirName,
+		FLMBOOL			bClear = FALSE);
+
+	RCODE FLMAPI doesFileExist(
+		const char *	pszFileName);
+
+	FLMBOOL FLMAPI isDir(
+		const char *	pszFileName);
+
+	RCODE FLMAPI getFileTimeStamp(
+		const char *	pszFileName,
+		FLMUINT *		puiTimeStamp);
+
+	RCODE FLMAPI deleteFile(
+		const char *	pszFileName);
+
+	RCODE FLMAPI copyFile(
+		const char *	pszSrcFileName,
+		const char *	pszDestFileName,
+		FLMBOOL			bOverwrite,
+		FLMUINT64 *		pui64BytesCopied);
+
+	RCODE FLMAPI renameFile(
+		const char *	pszFileName,
+		const char *	pszNewFileName);
+
+	void FLMAPI pathParse(
+		const char *	pszPath,
+		char *			pszServer,
+		char *			pszVolume,
+		char *			pszDirPath,
+		char *			pszFileName);
+
+	RCODE FLMAPI pathReduce(
+		const char *	pszSourcePath,
+		char *			pszDestPath,
+		char *			pszString);
+
+	RCODE FLMAPI pathAppend(
+		char *			pszPath,
+		const char *	pszPathComponent);
+
+	RCODE FLMAPI pathToStorageString(
+		const char *	pszPath,
+		char *			pszString);
+
+	void FLMAPI pathCreateUniqueName(
+		FLMUINT *		puiTime,
+		char *			pszFileName,
+		const char *	pszFileExt,
+		FLMBYTE *		pHighChars,
+		FLMBOOL			bModext);
+
+	FLMBOOL FLMAPI doesFileMatch(
+		const char *	pszFileName,
+		const char *	pszTemplate);
+
+	RCODE FLMAPI getSectorSize(
+		const char *	pszFileName,
+		FLMUINT *		puiSectorSize);
+
+	RCODE setReadOnly(
+		const char *	pszFileName,
+		FLMBOOL			bReadOnly);
+
+private:
+
+#if defined( FLM_UNIX)
+	RCODE unix_RenameSafe(
+		const char *	pszSrcFile,
+		const char *	pszDestFile);
+
+	RCODE unix_TargetIsDir(
+		const char	*	tpath,
+		FLMBOOL *		isdir);
+#endif
+};
+	
+FSTATIC FLMBOOL f_canReducePath(
+	const char *	pszSource);
+
+FSTATIC const char * f_findFileNameStart(
+	const char * 	pszPath);
+
+FSTATIC char * f_getPathComponent(
+	char **			ppszPath,
+	FLMUINT *		puiEndChar);
+
+/****************************************************************************
+Desc:	Returns TRUE if character is a "slash" separator
+****************************************************************************/
+FINLINE FLMBOOL f_isSlashSeparator(
+	char	cChar)
+{
+#ifdef FLM_UNIX
+	return( cChar == '/' ? TRUE : FALSE);
+#else
+	return( cChar == '/' || cChar == '\\' ? TRUE : FALSE);
+#endif
+}
+
+/****************************************************************************
+Desc:	Return a pointer to the next path component in ppszPath.
+****************************************************************************/
+FSTATIC char * f_getPathComponent(
+	char **			ppszPath,
+	FLMUINT *		puiEndChar)
+{
+	char *	pszComponent;
+	char *	pszEnd;
+	
+	pszComponent = pszEnd = *ppszPath;
+	if (f_isSlashSeparator( *pszEnd))
+	{
+		// handle the condition of sys:\system   the colon would have terminated
+		// the previous token, to pComponent would now be pointing at the '\'.
+		// We need to move past the '\' to find the next token.
+
+		pszEnd++;
+	}
+
+	// Find the end of the path component
+
+	while (*pszEnd)
+	{
+		if (f_isSlashSeparator( *pszEnd)
+#ifndef FLM_UNIX
+			|| *pszEnd == ':'
+#endif
+			)
+		{
+			break;
+		}
+		pszEnd++;
+	}
+
+	if (*pszEnd)
+	{
+
+		// A delimiter was found, assume that there is another path component
+		// after this one.
+		// Return a pointer to the beginning of the next path component
+
+		*ppszPath = pszEnd + 1;
+
+		*puiEndChar = *pszEnd;
+
+		// NULL terminate the path component
+
+		*pszEnd = 0;
+	}
+	else
+	{
+
+		// There is no "next path component" so return a pointer to the 
+		// NULL-terminator
+
+		*ppszPath = pszEnd;
+		*puiEndChar = 0;
+	}	
+	
+	// Return the path component
+
+	return( pszComponent);
+}
+
+/****************************************************************************
+Desc:	Will determine whether any format of (UNC, drive based, NetWare
+		UNC) path can be reduced any further.
+****************************************************************************/
+FSTATIC FLMBOOL f_canReducePath(
+	const char *	pszSource)
+{
+#if defined FLM_UNIX
+	F_UNREFERENCED_PARM( pszSource);
+	return( TRUE);
+#else
+	FLMBOOL			bCanReduce;
+	const char *	pszTemp = pszSource;
+
+	// Determine whether the passed path is UNC or not
+	// (UNC format is: \\FileServer\Volume\Path).
+
+	if (f_strncmp( "\\\\", pszSource, 2 ) == 0)
+	{
+		FLMUINT	uiSlashCount = 0;
+
+		pszTemp += 2;
+
+		// Search forward for at least two slash separators
+		// If we find at least two, the path can be reduced.
+
+		bCanReduce = FALSE;
+		while (*pszTemp)
+		{
+			pszTemp++;
+			if (f_isSlashSeparator( *pszTemp))
+			{
+				++uiSlashCount;
+				if (uiSlashCount == 2)
+				{
+					bCanReduce = TRUE;
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		bCanReduce = TRUE;
+
+		// Search forward for the colon.
+
+		while (*pszTemp)
+		{
+			if (*pszTemp == ':')
+			{
+
+				// If nothing comes after the colon,
+				// we can't reduce any more.
+
+				if (*(pszTemp + 1) == 0)
+				{
+					bCanReduce = FALSE;
+				}
+				break;
+			}
+			pszTemp++;
+		}
+	}
+
+	return( bCanReduce);
+#endif
+}
+
+/****************************************************************************
+Desc:	Return pointer to start of filename part of path.
+		Search for the last slash separator.
+****************************************************************************/
+FSTATIC const char * f_findFileNameStart(
+	const char * 	pszPath)
+{
+	const char *	pszFileNameStart;
+
+	pszFileNameStart = pszPath;
+	while (*pszPath)
+	{
+		if (f_isSlashSeparator( *pszPath))
+		{
+			pszFileNameStart = pszPath + 1;
+		}
+		pszPath++;
+	}
+	return( pszFileNameStart);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE f_allocFileSystem(
+	IF_FileSystem **		ppFileSystem)
+{
+	if( (*ppFileSystem = f_new F_FileSystem) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmGetFileSystem(
+	IF_FileSystem **		ppFileSystem)
+{
+	*ppFileSystem = gv_pFileSystem;
+	(*ppFileSystem)->AddRef();
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
 Desc:    Create a file, return a file handle to created file.
 ****************************************************************************/
 RCODE FLMAPI F_FileSystem::createFile(
@@ -35,23 +395,27 @@ RCODE FLMAPI F_FileSystem::createFile(
 {
 	RCODE				rc = NE_FLM_OK;
 	F_FileHdl *		pFileHdl = NULL;
-
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
+	
+	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 
 	if (RC_BAD( rc = pFileHdl->create( pszFileName, uiIoFlags)))
 	{
-		pFileHdl->Release();
-		pFileHdl = NULL;
 		goto Exit;
 	}
+	
+	*ppFileHdl = pFileHdl;
+	pFileHdl = NULL;
 
 Exit:
 
-	*ppFileHdl = (IF_FileHdl *)pFileHdl;
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
 	return( rc);
 }
 
@@ -64,12 +428,11 @@ RCODE FLMAPI F_FileSystem::createBlockFile(
 	FLMUINT			uiBlockSize,
 	IF_FileHdl **	ppFileHdl)
 {
-	RCODE			rc = NE_FLM_OK;
-	F_FileHdl *	pFileHdl = NULL;
+	RCODE				rc = NE_FLM_OK;
+	F_FileHdl *		pFileHdl = NULL;
 
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
+	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 
@@ -77,14 +440,19 @@ RCODE FLMAPI F_FileSystem::createBlockFile(
 	
 	if (RC_BAD( rc = pFileHdl->create( pszFileName, uiIoFlags)))
 	{
-		pFileHdl->Release();
-		pFileHdl = NULL;
 		goto Exit;
 	}
+	
+	*ppFileHdl = pFileHdl;
+	pFileHdl = NULL;
 
 Exit:
 
-	*ppFileHdl = (IF_FileHdl *)pFileHdl;
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
 	return( rc);
 }
 
@@ -97,25 +465,30 @@ RCODE FLMAPI F_FileSystem::createUniqueFile(
 	FLMUINT			uiIoFlags,
 	IF_FileHdl **	ppFileHdl)
 {
-	RCODE				rc;
+	RCODE				rc = NE_FLM_OK;
 	F_FileHdl *		pFileHdl = NULL;
 
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
+	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = pFileHdl->createUnique( pszDirName, 
 			pszFileExtension,	uiIoFlags)))
 	{
-		pFileHdl->Release();
-		pFileHdl = NULL;
 		goto Exit;
 	}
+	
+	*ppFileHdl = pFileHdl;
+	pFileHdl = NULL;
 
 Exit:
 
-	*ppFileHdl = (IF_FileHdl *)pFileHdl;
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
 	return( rc);
 }
 
@@ -127,24 +500,29 @@ RCODE FLMAPI F_FileSystem::openFile(
 	FLMUINT			uiIoFlags,
 	IF_FileHdl **	ppFileHdl)
 {
-	RCODE			rc = NE_FLM_OK;
-	F_FileHdl *	pFileHdl = NULL;
+	RCODE				rc = NE_FLM_OK;
+	F_FileHdl *		pFileHdl = NULL;
 
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
+	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = pFileHdl->open( pszFileName, uiIoFlags)))
 	{
-		pFileHdl->Release();
-		pFileHdl = NULL;
 		goto Exit;
 	}
+	
+	*ppFileHdl = pFileHdl;
+	pFileHdl = NULL;
 
 Exit:
 
-	*ppFileHdl = (IF_FileHdl *)pFileHdl;
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
 	return( rc);
 }
 
@@ -157,12 +535,11 @@ RCODE FLMAPI F_FileSystem::openBlockFile(
 	FLMUINT			uiBlockSize,
 	IF_FileHdl **	ppFileHdl)
 {
-	RCODE			rc = NE_FLM_OK;
-	F_FileHdl *	pFileHdl = NULL;
+	RCODE				rc = NE_FLM_OK;
+	F_FileHdl *		pFileHdl = NULL;
 
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
+	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 	
@@ -170,14 +547,19 @@ RCODE FLMAPI F_FileSystem::openBlockFile(
 	
 	if (RC_BAD( rc = pFileHdl->open( pszFileName, uiIoFlags)))
 	{
-		pFileHdl->Release();
-		pFileHdl = NULL;
 		goto Exit;
 	}
+	
+	*ppFileHdl = pFileHdl;
+	pFileHdl = NULL;
 
 Exit:
 
-	*ppFileHdl = (IF_FileHdl *)pFileHdl;
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
 	return( rc);
 }
 
@@ -189,23 +571,29 @@ RCODE FLMAPI F_FileSystem::openDir(
 	const char *	pszPattern,
 	IF_DirHdl **	ppDirHdl)
 {
-	RCODE			rc = NE_FLM_OK;
-	F_DirHdl *	pDirHdl = NULL;
-
-	if ((pDirHdl = f_new F_DirHdl) == NULL)
+	RCODE				rc = NE_FLM_OK;
+	F_DirHdl *		pDirHdl = NULL;
+	
+	if( RC_BAD( rc = f_allocDirHdl( &pDirHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
-	if (RC_BAD( rc = pDirHdl->openDir( pszDirName, pszPattern)))
+	
+	if( RC_BAD( rc = pDirHdl->openDir( pszDirName, pszPattern)))
 	{
-		pDirHdl->Release();
-		pDirHdl = NULL;
+		goto Exit;
 	}
 
+	*ppDirHdl = (IF_DirHdl *)pDirHdl;
+	pDirHdl = NULL;
+	
 Exit:
 
-	*ppDirHdl = (IF_DirHdl *)pDirHdl;
+	if( pDirHdl)
+	{
+		pDirHdl->Release();
+	}
+
 	return( rc);
 }
 
@@ -215,16 +603,18 @@ Desc:    Create a directory.
 RCODE FLMAPI F_FileSystem::createDir(
 	const char *	pszDirName)
 {
-	RCODE			rc = NE_FLM_OK;
-	F_DirHdl *	pDirHdl = NULL;
-
-	if ((pDirHdl = f_new F_DirHdl) == NULL)
+	RCODE				rc = NE_FLM_OK;
+	F_DirHdl *		pDirHdl = NULL;
+	
+	if( RC_BAD( rc = f_allocDirHdl( &pDirHdl)))
 	{
-		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 
-	rc = pDirHdl->createDir( pszDirName);
+	if( RC_BAD( rc = pDirHdl->createDir( pszDirName)))
+	{
+		goto Exit;
+	}
 
 Exit:
 
@@ -253,7 +643,7 @@ RCODE FLMAPI F_FileSystem::removeDir(
 			goto Exit;
 		}
 
-		for ( rc = pDirHdl->next(); RC_OK( rc) ; rc = pDirHdl->next())
+		for( rc = pDirHdl->next(); RC_OK( rc) ; rc = pDirHdl->next())
 		{
 			pDirHdl->currentItemPath( szFilePath);
 			if( !pDirHdl->currentItemIsDir())
@@ -406,17 +796,20 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 		goto Exit;
 	}
 
-   /* Fill the Time Stamp structure */
+   // Fill the time stamp structure
+	
    f_memset( &tmstamp, 0, sizeof( F_TMSTAMP));
-   tmstamp.hour		= (FLMBYTE)stLastFileWriteTime.wHour;
-   tmstamp.minute		= (FLMBYTE)stLastFileWriteTime.wMinute;
-   tmstamp.second		= (FLMBYTE)stLastFileWriteTime.wSecond;
+	
+   tmstamp.hour = (FLMBYTE)stLastFileWriteTime.wHour;
+   tmstamp.minute = (FLMBYTE)stLastFileWriteTime.wMinute;
+   tmstamp.second = (FLMBYTE)stLastFileWriteTime.wSecond;
 	tmstamp.hundredth = (FLMBYTE)stLastFileWriteTime.wMilliseconds;
-   tmstamp.year		= (FLMUINT16)stLastFileWriteTime.wYear;
-	tmstamp.month		= (FLMBYTE)(stLastFileWriteTime.wMonth - 1);
-   tmstamp.day			= (FLMBYTE)stLastFileWriteTime.wDay;
+   tmstamp.year = (FLMUINT16)stLastFileWriteTime.wYear;
+	tmstamp.month = (FLMBYTE)(stLastFileWriteTime.wMonth - 1);
+   tmstamp.day = (FLMBYTE)stLastFileWriteTime.wDay;
 
-   /* Convert and return the file time stamp as seconds since January 1, 1970 */
+   // Convert and return the file time stamp as seconds since January 1, 1970
+	
    f_timeDateToSeconds( &tmstamp, puiTimeStamp);
 
 Exit:
@@ -822,13 +1215,13 @@ RCODE F_FileSystem::setReadOnly(
 		goto Exit;
 	}
 	
-	if ( bReadOnly)
+	if( bReadOnly)
 	{
-		dwAttr |= F_IO_FA_RDONLY;
+		dwAttr |= FILE_ATTRIBUTE_READONLY;
 	}
 	else
 	{
-		dwAttr &= ~F_IO_FA_RDONLY;
+		dwAttr &= ~FILE_ATTRIBUTE_READONLY;
 	}
 	
 	if( !SetFileAttributes( (LPTSTR)pszFileName, dwAttr))
@@ -923,359 +1316,6 @@ Exit:
 	return( rc);
 }
 #endif
-
-/****************************************************************************
-Desc:		Initializes variables
-****************************************************************************/
-F_FileHdlMgr::F_FileHdlMgr()
-{
-	m_hMutex = F_MUTEX_NULL;
-
-	m_uiOpenThreshold = 0xFFFF;
-	FLM_SECS_TO_TIMER_UNITS( 30 * 60, m_uiMaxAvailTime);
-	m_bIsSetup = FALSE;
-
-	m_uiFileIdCounter = 0;
-
-	m_pFirstAvail = NULL;
-	m_pLastAvail = NULL;
-	m_uiNumAvail = 0;
-
-	m_pFirstUsed = NULL;
-	m_pLastUsed = NULL;
-	m_uiNumUsed = 0;
-
-}
-
-/****************************************************************************
-Desc:	Setup the File handle manager.
-****************************************************************************/
-RCODE F_FileHdlMgr::setupFileHdlMgr(
-	FLMUINT		uiOpenThreshold,
-	FLMUINT		uiMaxAvailTime)
-{
-	RCODE			rc = NE_FLM_OK;
-
-	if (RC_BAD( rc = f_mutexCreate( &m_hMutex)))
-	{
-		goto Exit;
-	}
-	
-	m_uiOpenThreshold = uiOpenThreshold;
-	m_uiMaxAvailTime = uiMaxAvailTime;
-	m_bIsSetup = TRUE;
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Return the next available file handle that matches the uiFileId.
-****************************************************************************/
-void F_FileHdlMgr::findAvail(
-	FLMUINT			uiFileId,
-	FLMBOOL			bReadOnlyFlag,
-	F_FileHdl **	ppFileHdl)
-{
-	F_FileHdl *	pFileHdl;
-
-	lockMutex( FALSE);
-	pFileHdl = m_pFirstAvail;
-	while (pFileHdl)
-	{
-		if (pFileHdl->m_uiFileId == uiFileId &&
-			 pFileHdl->m_bOpenedReadOnly == bReadOnlyFlag)
-		{
-
-			// Move this file handle out of the available list into
-			// the used list.
-
-			// NOTE: To prevent this file handle from being freed this code
-			// performs an AddRef while its being relinked.  This reference
-			// will be kept for the caller.
-
-			pFileHdl->AddRef();
-
-			removeFromList( TRUE,
-				pFileHdl, &m_pFirstAvail, &m_pLastAvail, &m_uiNumAvail);
-				
-			insertInList( TRUE, pFileHdl, FALSE,
-				&m_pFirstUsed, &m_pLastUsed, &m_uiNumUsed);
-
-			break;
-		}
-		
-		pFileHdl = pFileHdl->m_pNext;
-	}
-	
-	unlockMutex( FALSE);
-	*ppFileHdl = pFileHdl;
-}
-
-/****************************************************************************
-Desc: Make the specified F_FileHdl available for someone else to use.
-****************************************************************************/
-void F_FileHdlMgr::makeAvailAndRelease(
-	FLMBOOL			bMutexAlreadyLocked,
-	F_FileHdl *		pFileHdl)
-{
-	pFileHdl->m_uiAvailTime = (FLMUINT)FLM_GET_TIMER();
-
-	lockMutex( bMutexAlreadyLocked);
-
-	pFileHdl->AddRef();
-
-	removeFromList( TRUE,
-			pFileHdl, &m_pFirstUsed, &m_pLastUsed, &m_uiNumUsed);
-			
-	insertInList( TRUE, pFileHdl, TRUE,
-			&m_pFirstAvail, &m_pLastAvail, &m_uiNumAvail);
-
-	pFileHdl->Release();
-	pFileHdl->Release();
-
-	unlockMutex( bMutexAlreadyLocked);
-}
-
-/****************************************************************************
-Desc:	Remove (close&free) all FileHdl's that have the specified FileId.
-		Remove from the avail and used lists.
-****************************************************************************/
-void F_FileHdlMgr::removeFileHdls(
- 	FLMUINT			uiFileId)
-{
-	F_FileHdl *	pFileHdl;
-	F_FileHdl *	pNextFileHdl;
-
-	lockMutex( FALSE);
-
-	// Free all matching file handles in the available list.
-
-	pFileHdl = m_pFirstAvail;
-	while (pFileHdl)
-	{
-		pNextFileHdl = pFileHdl->m_pNext;
-		if (pFileHdl->m_uiFileId == uiFileId)
-		{
-			removeFromList( TRUE,
-				pFileHdl, &m_pFirstAvail, &m_pLastAvail, &m_uiNumAvail);
-		}
-		
-		pFileHdl = pNextFileHdl;
-	}
-
-	// Free all matching file handles in the used list.
-
-	pFileHdl = m_pFirstUsed;
-	while (pFileHdl)
-	{
-		pNextFileHdl = pFileHdl->m_pNext;
-		if (pFileHdl->m_uiFileId == uiFileId)
-		{
-			removeFromList( TRUE,
-				pFileHdl, &m_pFirstUsed, &m_pLastUsed, &m_uiNumUsed);
-		}
-		
-		pFileHdl = pNextFileHdl;
-	}
-
-	unlockMutex( FALSE);
-}
-
-/****************************************************************************
-Desc:	Remove all handles from the avail list.
-****************************************************************************/
-void F_FileHdlMgr::freeAvailList(
-	FLMBOOL			bMutexAlreadyLocked)
-{
-	F_FileHdl *		pFileHdl;
-	F_FileHdl *		pNextFileHdl;
-
-	lockMutex( bMutexAlreadyLocked);
-	pFileHdl = m_pFirstAvail;
-	while (pFileHdl)
-	{
-		pFileHdl->m_bInList = FALSE;
-		pNextFileHdl = pFileHdl->m_pNext;
-		pFileHdl->Release();
-		pFileHdl = pNextFileHdl;
-	}
-	
-	m_pFirstAvail = NULL;
-	m_pLastAvail = NULL;
-	m_uiNumAvail = 0;
-	
-	unlockMutex( bMutexAlreadyLocked);
-}
-
-/****************************************************************************
-Desc:	Remove all handles from the used list.
-****************************************************************************/
-void F_FileHdlMgr::freeUsedList(
-	FLMBOOL			bMutexAlreadyLocked)
-{
-	F_FileHdl *		pFileHdl;
-	F_FileHdl *		pNextFileHdl;
-
-	lockMutex( bMutexAlreadyLocked);
-	
-	pFileHdl = m_pFirstUsed;
-	while (pFileHdl)
-	{
-		pFileHdl->m_bInList = FALSE;
-		pNextFileHdl = pFileHdl->m_pNext;
-		pFileHdl->Release();
-		pFileHdl = pNextFileHdl;
-	}
-	
-	m_pFirstUsed = NULL;
-	m_pLastUsed = NULL;
-	m_uiNumUsed = 0;
-	
-	unlockMutex( bMutexAlreadyLocked);
-}
-
-/****************************************************************************
-Desc:	Insert a handle into either the avail or used list.
-****************************************************************************/
-void F_FileHdlMgr::insertInList(
-	FLMBOOL			bMutexAlreadyLocked,
-	F_FileHdl *		pFileHdl,
-	FLMBOOL			bInsertAtEnd,
-	F_FileHdl **	ppFirst,
-	F_FileHdl **	ppLast,
-	FLMUINT *		puiCount)
-{
-	lockMutex( bMutexAlreadyLocked);
-
-	flmAssert( !pFileHdl->m_bInList);
-
-	if (bInsertAtEnd)
-	{
-		pFileHdl->m_pNext = NULL;
-		if ((pFileHdl->m_pPrev = *ppLast) != NULL)
-		{
-			pFileHdl->m_pPrev->m_pNext = pFileHdl;
-		}
-		else
-		{
-			*ppFirst = pFileHdl;
-		}
-		
-		*ppLast = pFileHdl;
-	}
-	else
-	{
-		pFileHdl->m_pPrev = NULL;
-		if ((pFileHdl->m_pNext = *ppFirst) != NULL)
-		{
-			pFileHdl->m_pNext->m_pPrev = pFileHdl;
-		}
-		else
-		{
-			*ppLast = pFileHdl;
-		}
-		
-		*ppFirst = pFileHdl;
-	}
-	
-	(*puiCount)++;
-	pFileHdl->m_bInList = TRUE;
-	pFileHdl->AddRef();
-	
-	unlockMutex( bMutexAlreadyLocked);
-}
-
-/****************************************************************************
-Desc:	Remove a handle into either the avail or used list.
-****************************************************************************/
-void F_FileHdlMgr::removeFromList(
-	FLMBOOL			bMutexAlreadyLocked,
-	F_FileHdl *		pFileHdl,
-	F_FileHdl **	ppFirst,
-	F_FileHdl **	ppLast,
-	FLMUINT *		puiCount)
-{
-	lockMutex( bMutexAlreadyLocked);
-
-	flmAssert( pFileHdl->m_bInList);
-	if (pFileHdl->m_pNext)
-	{
-		pFileHdl->m_pNext->m_pPrev = pFileHdl->m_pPrev;
-	}
-	else
-	{
-		*ppLast = pFileHdl->m_pPrev;
-	}
-	
-	if (pFileHdl->m_pPrev)
-	{
-		pFileHdl->m_pPrev->m_pNext = pFileHdl->m_pNext;
-	}
-	else
-	{
-		*ppFirst = pFileHdl->m_pNext;
-	}
-	
-	flmAssert( *puiCount);
-	
-	(*puiCount)--;
-	pFileHdl->m_bInList = FALSE;
-	pFileHdl->Release();
-	
-	unlockMutex( bMutexAlreadyLocked);
-}
-
-/****************************************************************************
-Desc:	Check items in the avail list and if over a certain age then
-		remove them from the avail list.  This will cause file handles
-		that have been opened for a long time to be closed.  Also added
-		code to reduce the total number of file handles if it is more
-		than the open threshold.
-****************************************************************************/
-void F_FileHdlMgr::checkAgedFileHdls(
-	FLMUINT	uiMinTimeOpened)
-{
-	FLMUINT	uiTime;
-	FLMUINT	uiMaxAvailTicks;
-
-	uiTime = (FLMUINT)FLM_GET_TIMER();
-
-	FLM_SECS_TO_TIMER_UNITS( uiMinTimeOpened, uiMaxAvailTicks);
-
-	lockMutex( FALSE);
-
-	// Loop while the open count is greater than the open threshold.
-
-	while (m_uiNumAvail && (m_uiNumAvail + m_uiNumUsed > m_uiOpenThreshold))
-	{
-		// Release until the threshold is down.
-
-		releaseOneAvail( TRUE);
-	}
-
-	// Reduce all items older than the specified time.
-
-	while (m_pFirstAvail)
-	{
-		// All file handles are in order of oldest first.
-		// m_uiMaxAvailTime may be a zero value.
-
-		if( FLM_ELAPSED_TIME( uiTime, 
-				m_pFirstAvail->m_uiAvailTime) < uiMaxAvailTicks)
-		{
-			// All files are newer so we are done.
-			
-			break;
-		}
-		
-		removeFromList( TRUE,
-			m_pFirstAvail, &m_pFirstAvail, &m_pLastAvail, &m_uiNumAvail);
-	}
-
-	unlockMutex( FALSE);
-}
 
 /****************************************************************************
 Desc:	Do a partial copy from one file into another file.
@@ -1445,16 +1485,15 @@ RCODE FLMAPI f_filecat(
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_FileHdl *		pFileHdl = NULL;
-	F_FileSystem		fileSystem;
 	FLMUINT64 			ui64FileSize = 0;
 	FLMUINT 				uiBytesWritten = 0;
 
-	if (RC_BAD( rc = fileSystem.doesFileExist( pszSourceFile)))
+	if (RC_BAD( rc = gv_pFileSystem->doesFileExist( pszSourceFile)))
 	{
 		if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
-			if( RC_BAD( rc = fileSystem.createFile( pszSourceFile, FLM_IO_RDWR,
-				&pFileHdl)))
+			if( RC_BAD( rc = gv_pFileSystem->createFile( 
+				pszSourceFile, FLM_IO_RDWR, &pFileHdl)))
 			{
 				goto Exit;
 			}
@@ -1466,7 +1505,7 @@ RCODE FLMAPI f_filecat(
 	}
 	else
 	{
-		if( RC_BAD( rc = fileSystem.openFile( pszSourceFile,
+		if( RC_BAD( rc = gv_pFileSystem->openFile( pszSourceFile,
 			FLM_IO_RDWR, &pFileHdl)))
 		{
 			goto Exit;
@@ -1488,10 +1527,553 @@ Exit:
 
 	if( pFileHdl)
 	{
-		pFileHdl->close();
 		pFileHdl->Release();
-		pFileHdl = NULL;
 	}
 	
 	return( rc);
+}
+
+/****************************************************************************
+Desc:	Split the path into its components
+Output:
+		pServer - pointer to a buffer to hold the server name
+		pVolume - pointer to a buffer to hold the volume name
+		pDirPath  - pointer to a buffer to hold the path
+		pFileName pointer to a buffer to hold the filename
+
+		All of the output parameters are optional.  If you do not want one
+		of the components, simply give a NULL pointer.
+
+Note: if the input path has no file name, d:\dir_1 for example, then
+		pass a NULL pointer for pFileName.  Otherwise dir_1 will be returned
+		as pFileName.
+
+		The server name may be ommitted in the input path:
+			sys:\system\autoexec.ncf
+
+		UNC paths of the form:
+			\\server-name\volume-name\dir_1\dir_2\file.ext
+		are supported.
+
+		DOS paths of the form:
+			d:\dir_1\dir_2\file.ext
+		are also supported.
+
+Example:
+		Given this input:  orm-prod48/sys:\system\autoexec.ncf
+		The output would be:
+			pServer = "orm-prod48"
+			pVolume = "sys:"
+			pDirPath  = "\system"
+			pFileName "autoexec.ncf"
+****************************************************************************/
+void FLMAPI F_FileSystem::pathParse(
+	const char *	pszInputPath,
+	char *			pszServer,
+	char *			pszVolume,
+	char *			pszDirPath,
+	char *			pszFileName)
+{
+	char			szInput[ F_PATH_MAX_SIZE];
+	char *		pszNext;
+	char *		pszColon;
+	char *		pszComponent;
+	FLMUINT		uiEndChar;
+	FLMBOOL		bUNC = FALSE;
+	
+	// Initialize return buffers
+
+	if (pszServer)
+	{
+		*pszServer = 0;
+	}
+	if (pszVolume)
+	{
+		*pszVolume = 0;
+	}
+	if (pszDirPath)
+	{
+		*pszDirPath = 0;
+	}
+	if (pszFileName)
+	{
+
+		// Get the file name
+
+		*pszFileName = 0;
+		gv_pFileSystem->pathReduce( pszInputPath, szInput, pszFileName);
+	}
+	else
+	{
+		f_strcpy( szInput, pszInputPath);
+	}
+	
+	// Split out the rest of the components
+
+	pszComponent = &szInput [0];
+
+	// Is this a UNC path?
+
+	if (szInput[0] == '\\' && szInput[1] == '\\')
+	{
+
+		// Yes, assume a UNC path
+
+		pszComponent += 2;
+		bUNC = TRUE;
+	}
+
+	pszNext = pszColon = pszComponent;
+
+	// Is there a ':' in the szInput path?
+
+	while (*pszColon && *pszColon != ':')
+	{
+		pszColon++;
+	}
+	if (*pszColon || bUNC)
+	{
+		
+		// Yes, assume there is a volume in the path
+		
+		pszComponent = f_getPathComponent( &pszNext, &uiEndChar);
+		if (uiEndChar != ':')
+		{
+			// Assume that this component is the server
+
+			if (pszServer)
+			{
+				f_strcpy( pszServer, pszComponent);
+			}
+
+			// Get the next component
+
+			pszComponent = f_getPathComponent( &pszNext, &uiEndChar);
+		}
+
+		// Assume that this component is the volume
+
+		if (pszVolume)
+		{
+			char *	pszSrc = pszComponent;
+			char *	pszDst = pszVolume;
+
+			while (*pszSrc)
+			{
+				*pszDst++ = *pszSrc++;
+			}
+			*pszDst++ = ':';
+			*pszDst = 0;
+		}
+
+		// For UNC paths, the leading '\' of the path is set to 0 by
+		// f_getPathComponent.  This code restores the leading '\'.
+
+		if (f_isSlashSeparator( (char)uiEndChar))
+		{
+			*(--pszNext) = (char)uiEndChar;
+		}
+	}
+
+	// Assume that all that is left of the input is the path
+
+	if (pszDirPath)
+	{
+		f_strcpy( pszDirPath, pszNext);
+	}
+}	
+
+/****************************************************************************
+Desc:		This function will strip off the filename or trailing
+			directory of a path.  The stripped component of the path will
+			be placed into the area pointed at by string.  The source
+			path will not be modified.  The dest path will contain the
+			remainder of the stripped path.  A stripped path can be processed
+			repeatedly by this function until there is no more path to reduce.
+			If the string is set to NULL, the copying of the stripped portion of
+			the path will be bypassed by the function.
+
+Notes:	This function handles drive based, UNC, Netware, and UNIX type
+			paths.
+****************************************************************************/
+RCODE FLMAPI F_FileSystem::pathReduce(
+	const char *	pszPath,
+	char *			pszDir,
+	char * 			pszPathComponent)
+{
+	RCODE				rc = NE_FLM_OK;
+	const char *	pszFileNameStart;
+	char				szLocalPath[ F_PATH_MAX_SIZE];
+	FLMUINT			uiLen;
+
+	// Check for valid path pointers
+
+	if( !pszPath || !pszDir)
+	{
+		rc = RC_SET( NE_FLM_INVALID_PARM);
+		goto Exit;
+	}
+
+	if ((uiLen = f_strlen( pszPath)) == 0)
+	{
+		rc = RC_SET( NE_FLM_IO_CANNOT_REDUCE_PATH);
+		goto Exit;
+	}
+
+	// Trim out any trailing slash separators
+	
+	if( f_isSlashSeparator( pszPath [uiLen - 1]))
+	{
+		f_strcpy( szLocalPath, pszPath);
+		
+		while( f_isSlashSeparator( szLocalPath[ uiLen - 1]))
+		{
+			szLocalPath[ --uiLen] = 0;
+			if( !uiLen)
+			{
+				rc = RC_SET( NE_FLM_IO_CANNOT_REDUCE_PATH);
+				goto Exit;
+			}
+		}
+		
+		pszPath = szLocalPath;
+	}
+
+	if( f_canReducePath( pszPath))
+	{
+		// Search for a slash or beginning of path
+
+		pszFileNameStart = f_findFileNameStart( pszPath);
+
+		// Copy the sliced portion of the path if requested by caller
+
+		if( pszPathComponent)
+		{
+			f_strcpy( pszPathComponent, pszFileNameStart);
+		}
+
+		// Copy the reduced source path to the dir path
+
+		if (pszFileNameStart > pszPath)
+		{
+			uiLen = (FLMUINT)(pszFileNameStart - pszPath);
+			f_memcpy( pszDir, pszPath, uiLen);
+
+			if (uiLen >= 2 && f_isSlashSeparator( pszDir [uiLen - 1])
+#ifndef FLM_UNIX
+				 && pszDir [uiLen - 2] != ':'
+#endif
+				 )
+			{
+				// Trim off the trailing path separator
+
+				pszDir [uiLen - 1] = 0;
+			}
+			else
+			{
+				pszDir [uiLen] = 0;
+			}
+		}
+		else
+		{
+			*pszDir = 0;
+		}
+	}
+	else
+	{
+		// We've found the drive id or server\volume specifier.
+
+		if (pszPathComponent)
+		{
+			f_strcpy( pszPathComponent, pszPath);
+		}
+		
+		*pszDir = 0;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:   Internal function for WpioPathBuild() and WpioPathModify().
+	     Appends string the path & adds a path delimiter if necessary.
+In:     *path     = pointer to an IO_PATH
+	     *string   = pointer to a NULL terminated string
+	     *end_ptr  = pointer to the end of the IO_PATH which is being built.
+****************************************************************************/
+RCODE FLMAPI F_FileSystem::pathAppend(
+	char *			pszPath,
+	const char *	pszPathComponent)
+{
+
+	// Don't put a slash separator if pszPath is empty
+
+	if (*pszPath)
+	{
+		FLMUINT		uiStrLen = f_strlen( pszPath);
+		char *		pszEnd = pszPath + uiStrLen - 1;
+
+		if (!f_isSlashSeparator( *pszEnd))
+		{
+
+		   // Check for maximum path size - 2 is for slash separator
+			// and null byte.
+
+			if (uiStrLen + 2 + f_strlen( pszPathComponent) > F_PATH_MAX_SIZE)
+			{
+				return RC_SET( NE_FLM_IO_PATH_TOO_LONG);
+			}
+
+			pszEnd++;
+#if defined( FLM_UNIX)
+			*pszEnd = '/';
+#else
+			*pszEnd = '\\';
+#endif
+		}
+		else
+		{
+
+		   // Check for maximum path size +1 is for null byte.
+
+			if (uiStrLen + 1 + f_strlen( pszPathComponent) > F_PATH_MAX_SIZE)
+			{
+				return RC_SET( NE_FLM_IO_PATH_TOO_LONG);
+			}
+		}
+
+		f_strcpy( pszEnd + 1, pszPathComponent);
+	}
+	else
+	{
+		f_strcpy( pszPath, pszPathComponent);
+	}
+
+   return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:	Convert an PATH into a fully qualified, storable C string
+		reference to a file or directory.
+In:	pszPath - the path to convert.
+		pszStorageString - a pointer to a string that is atleast 
+		F_PATH_MAX_SIZE in size
+****************************************************************************/
+RCODE FLMAPI F_FileSystem::pathToStorageString(
+	const char *	pszPath,
+	char *			pszStorageString)
+{
+#ifdef FLM_WIN
+	char *	pszNamePart;
+
+	if (GetFullPathName( (LPCSTR)pszPath,
+							(DWORD)F_PATH_MAX_SIZE - 1,
+							(LPSTR)pszStorageString,
+							(LPSTR *)&pszNamePart) != 0)
+	{
+
+	}
+	else
+	{
+		// Convert to upper case.
+
+		while (*pszPath)
+		{
+			*pszStorageString++ = *pszPath;
+			pszPath++;
+		}
+		*pszStorageString = 0;
+	}
+	return NE_FLM_OK;
+#else
+
+	char			szFile[ F_PATH_MAX_SIZE];
+	char			szDir[ F_PATH_MAX_SIZE];
+	char *		pszRealPath = NULL;
+	RCODE			rc = NE_FLM_OK;
+
+	if (RC_BAD( rc = pathReduce( pszPath, szDir, szFile)))
+	{
+		goto Exit;
+	}
+
+	if (!szDir [0])
+	{
+		szDir [0] = '.';
+		szDir [1] = '\0';
+	}
+
+	if (RC_BAD( rc = f_alloc( (FLMUINT)PATH_MAX, &pszRealPath)))
+	{
+		goto Exit;
+	}
+
+	if (!realpath( (char *)szDir, (char *)pszRealPath))
+	{
+		rc = MapErrnoToFlaimErr( errno, NE_FLM_PARSING_FILE_NAME);
+		goto Exit;
+	}
+
+	if (f_strlen( pszRealPath) >= F_PATH_MAX_SIZE)
+	{
+		rc = RC_SET( NE_FLM_IO_PATH_TOO_LONG);
+		goto Exit;
+	}
+
+	f_strcpy( pszStorageString, pszRealPath);
+
+	if (RC_BAD( rc = pathAppend( pszStorageString, szFile)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if (pszRealPath)
+	{
+		f_free( &pszRealPath);
+	}
+
+	return( rc);
+#endif
+}
+
+/****************************************************************************
+Desc:		Generates a file name given a seed and some modifiers, it is built
+			to be called in a loop until the file can be sucessfully written or
+			created with the increment being changed every time.
+In:		bModext		-> if TRUE then we will use the extension for collisions.
+In\Out:	puiTime		-> a modified time stamp which is used as the base
+								filename.  To properly set up this value, make sure
+								the puiTime points to a 0 the first time this routine
+								is called and it will be set up for you.  Thereafter,
+                        do not change it between calls.
+			pHighChars->	these are the 8 bits that were shifted off the top of
+								the time struct.  It will be set up for you the first
+								time you call this routine if puiTime points to a 0
+								the first time this routine is called.  Do not change
+								this value between calls.
+			pszFileName -> should be pointing to a null string on the way in.
+								going out it will be the complete filename.
+			pszFileExt	-> the last char of the ext will be used for collisions,
+								depending on the bModext flag.  If null then
+								the extension will be .00x where x is the collision
+								counter.
+Notes:	The counter on the collision is 0-9, a-z.
+****************************************************************************/
+void FLMAPI F_FileSystem::pathCreateUniqueName(
+	FLMUINT *		puiTime,
+	char *			pszFileName,
+	const char *	pszFileExt,
+	FLMBYTE *		pHighChars,
+	FLMBOOL			bModext)
+{
+	FLMINT		iCount, iLength;
+	FLMUINT		uiSdTmp = 0;
+	FLMUINT		uiIncVal = 1;
+
+	SetUpTime( puiTime, pHighChars);
+	uiSdTmp = *puiTime;
+
+	*(pszFileName + 8) = NATIVE_DOT;
+	f_memset( (pszFileName + 9), NATIVE_ZERO, 3 );
+	
+	if ( ( pszFileExt != NULL ))
+	{
+		if ((iLength = f_strlen(pszFileExt)) > 3)
+		{
+			iLength = 3;
+		}
+      f_memmove( (pszFileName + 9), pszFileExt, iLength);
+   }
+
+	if( bModext == TRUE)
+	{
+		HexToNative((FLMBYTE)(uiSdTmp & 0x0000001F), pszFileName+(11));
+   }
+	else
+	{
+	 	uiIncVal = 32;
+	}
+	
+	uiSdTmp = uiSdTmp >> 5;
+	for( iCount = 0; iCount < 6; iCount++)
+	{
+		HexToNative((FLMBYTE)(uiSdTmp & 0x0000000F), pszFileName+(7-iCount));
+		uiSdTmp = uiSdTmp >> 4;
+	}
+
+	for( iCount = 0; iCount < 2; iCount++)
+	{
+		HexToNative((FLMBYTE)(*pHighChars & 0x0000000F), pszFileName+(1-iCount));
+		*pHighChars = *pHighChars >> 4;
+	}
+
+   *(pszFileName + 12) = '\0';
+	*puiTime += uiIncVal;
+}
+
+/****************************************************************************
+Desc:		Compares the current file against a pattern template
+****************************************************************************/
+FLMBOOL FLMAPI F_FileSystem::doesFileMatch(
+	const char *	pszFileName,
+	const char *	pszTemplate)
+{
+	FLMUINT		uiPattern;
+	FLMUINT		uiChar;
+
+	if( !*pszTemplate)
+	{
+		return( TRUE);
+	}
+
+	while( *pszTemplate)
+	{
+		uiPattern = *pszTemplate++;
+		switch( uiPattern)
+		{
+			case NATIVE_WILDCARD:
+			{
+				if( *pszTemplate == 0)
+				{
+					return( TRUE);
+				}
+
+				while( *pszFileName)
+				{
+					if( doesFileMatch( pszFileName, pszTemplate))
+					{
+						return( TRUE);
+					}
+					pszFileName++;
+				}
+				
+				return( FALSE);
+			}
+			
+			case NATIVE_QUESTIONMARK:
+			{
+				if( *pszFileName++ == 0)
+				{
+					return( FALSE);
+				}
+				break;
+			}
+			
+			default:
+			{
+				uiChar = *pszFileName++;
+				if( f_toupper( uiPattern) != f_toupper( uiChar))
+				{
+					return( FALSE);
+				}
+				break;
+			}
+		}
+	}
+
+	return( (*pszFileName != 0) ? FALSE : TRUE);
 }

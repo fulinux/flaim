@@ -155,11 +155,11 @@
 		// Alignment
 	
 		#if defined( FLM_UNIX) || defined( FLM_64BIT)
-			#define FLM_ALLOC_ALIGN				0x0007
-			#define FLM_ALIGN_SIZE				8
+			#define FLM_ALLOC_ALIGN					0x0007
+			#define FLM_ALIGN_SIZE					8
 		#elif defined( FLM_WIN) || defined( FLM_NLM)
-			#define FLM_ALLOC_ALIGN				0x0003
-			#define FLM_ALIGN_SIZE				4
+			#define FLM_ALLOC_ALIGN					0x0003
+			#define FLM_ALIGN_SIZE					4
 		#else
 			#error Platform not supported
 		#endif
@@ -167,26 +167,26 @@
 		// Basic type definitions
 
 		#if defined( FLM_UNIX)
-			typedef unsigned long				FLMUINT;
-			typedef long							FLMINT;
-			typedef unsigned char				FLMBYTE;
-			typedef unsigned short				FLMUNICODE;
+			typedef unsigned long					FLMUINT;
+			typedef long								FLMINT;
+			typedef unsigned char					FLMBYTE;
+			typedef unsigned short					FLMUNICODE;
 
-			typedef unsigned long long			FLMUINT64;
-			typedef unsigned int					FLMUINT32;
-			typedef unsigned short				FLMUINT16;
-			typedef unsigned char				FLMUINT8;
-			typedef long long						FLMINT64;
-			typedef int								FLMINT32;
-			typedef short							FLMINT16;
-			typedef signed char					FLMINT8;
-			typedef char *							f_va_list;
+			typedef unsigned long long				FLMUINT64;
+			typedef unsigned int						FLMUINT32;
+			typedef unsigned short					FLMUINT16;
+			typedef unsigned char					FLMUINT8;
+			typedef long long							FLMINT64;
+			typedef int									FLMINT32;
+			typedef short								FLMINT16;
+			typedef signed char						FLMINT8;
+			typedef char *								f_va_list;
 
 			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
 				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
-				typedef unsigned long			FLMSIZET;
+				typedef unsigned long				FLMSIZET;
 			#else
-				typedef unsigned 					FLMSIZET;
+				typedef unsigned 						FLMSIZET;
 			#endif
 		#else
 		
@@ -471,6 +471,7 @@
 	#define FLM_IO_SH_DENYWR						0x0020
 	#define FLM_IO_SH_DENYNONE						0x0040
 	#define FLM_IO_DIRECT							0x0080
+	#define FLM_IO_DELETE_ON_RELEASE				0x0100
 
 	// File Positioning Definitions
 
@@ -697,18 +698,18 @@
 	
 	typedef struct
 	{
-		FLMUINT			uiLines;
-		FLMUINT			uiChars;
-		FLMUINT			uiAttributes;
-		FLMUINT			uiElements;
-		FLMUINT			uiText;
-		FLMUINT			uiDocuments;
-		FLMUINT			uiErrLineNum;
-		FLMUINT			uiErrLineOffset;	// NOTE: This is a zero-based offset
-		XMLParseError	eErrorType;
-		FLMUINT			uiErrLineFilePos;
-		FLMUINT			uiErrLineBytes;
-		XMLEncoding		eXMLEncoding;
+		FLMUINT						uiLines;
+		FLMUINT						uiChars;
+		FLMUINT						uiAttributes;
+		FLMUINT						uiElements;
+		FLMUINT						uiText;
+		FLMUINT						uiDocuments;
+		FLMUINT						uiErrLineNum;
+		FLMUINT						uiErrLineOffset;	// NOTE: This is a zero-based offset
+		XMLParseError				eErrorType;
+		FLMUINT						uiErrLineFilePos;
+		FLMUINT						uiErrLineBytes;
+		XMLEncoding					eXMLEncoding;
 	} FLM_IMPORT_STATS;
 
 	typedef enum
@@ -717,11 +718,19 @@
 	} eXMLStatus;
 	
 	typedef RCODE (* XML_STATUS_HOOK)(
-		eXMLStatus		eStatusType,
-		void *			pvArg1,
-		void *			pvArg2,
-		void *			pvArg3,
-		void *			pvUserData);
+		eXMLStatus					eStatusType,
+		void *						pvArg1,
+		void *						pvArg2,
+		void *						pvArg3,
+		void *						pvUserData);
+
+	/****************************************************************************
+	Desc:	Startup and shutdown
+	****************************************************************************/
+	
+	RCODE FLMAPI ftkStartup( void);
+
+	void FLMAPI ftkShutdown( void);
 
 	/****************************************************************************
 	Desc:	Reference Counting class
@@ -795,7 +804,7 @@
 
 		virtual RCODE FLMAPI close( void) = 0;
 	};
-
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -814,12 +823,42 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	flminterface IF_BufferIStream : public IF_PosIStream
+	{
+		virtual RCODE FLMAPI open(
+			const FLMBYTE *	pucBuffer,
+			FLMUINT				uiLength,
+			FLMBYTE **			ppucAllocatedBuffer = NULL) = 0;
+	
+		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
+	
+		virtual FLMUINT64 FLMAPI remainingSize( void) = 0;
+	
+		virtual RCODE FLMAPI close( void) = 0;
+	
+		virtual RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position) = 0;
+	
+		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
+	
+		virtual RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead) = 0;
+	};
+
+	RCODE FLMAPI FlmAllocBufferIStream( 
+		IF_BufferIStream **		ppIStream);
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	flminterface IF_OStream : public F_RefCount
 	{
 		virtual RCODE FLMAPI write(
-			const void *	pvBuffer,
-			FLMUINT			uiBytesToWrite,
-			FLMUINT *		puiBytesWritten = NULL) = 0;
+			const void *			pvBuffer,
+			FLMUINT					uiBytesToWrite,
+			FLMUINT *				puiBytesWritten = NULL) = 0;
 
 		virtual RCODE FLMAPI close( void) = 0;
 	};
@@ -837,7 +876,7 @@
 	flminterface IF_LoggerClient : public F_RefCount
 	{
 		virtual IF_LogMessageClient * FLMAPI beginMessage(
-			FLMUINT		uiMsgType) = 0;
+			FLMUINT					uiMsgType) = 0;
 	};
 	
 	/****************************************************************************
@@ -968,27 +1007,15 @@
 			const char *			pszFileName,
 			const char *			pszTemplate) = 0;
 	};
+	
+	RCODE FLMAPI FlmGetFileSystem(
+		IF_FileSystem **		ppFileSystem);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface IF_FileHdl : public F_RefCount
 	{
-		virtual RCODE FLMAPI close( void) = 0;
-
-		virtual RCODE FLMAPI create(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags) = 0;
-
-		virtual RCODE FLMAPI createUnique(
-			const char *			pszDirName,
-			const char *			pszFileExtension,
-			FLMUINT					uiIoFlags) = 0;
-
-		virtual RCODE FLMAPI open(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags) = 0;
-
 		virtual RCODE FLMAPI flush( void) = 0;
 
 		virtual RCODE FLMAPI read(
@@ -1032,6 +1059,8 @@
 			FLMUINT *				puiBytesWrittenRV,
 			FLMBOOL					bZeroFill = TRUE) = 0;
 
+		virtual RCODE FLMAPI close( void) = 0;
+
 		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
 
 		virtual void FLMAPI setExtendSize(
@@ -1039,56 +1068,61 @@
 
 		virtual void FLMAPI setMaxAutoExtendSize(
 			FLMUINT					uiMaxAutoExtendSize) = 0;
+			
+		virtual void FLMAPI setBlockSize(
+			FLMUINT					uiBlockSize) = 0;
+			
+		virtual FLMBOOL FLMAPI isReadOnly( void) = 0;
 	};
-
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface IF_MultiFileHdl : public F_RefCount
 	{
-		virtual void FLMAPI close(
-			FLMBOOL			bDelete = FALSE) = 0;
-	
 		virtual RCODE FLMAPI create(
-			const char *	pszPath) = 0;
+			const char *			pszPath) = 0;
 	
 		virtual RCODE FLMAPI createUnique(
-			const char *	pszPath,
-			const char *	pszFileExtension) = 0;
-	
-		virtual RCODE FLMAPI deleteMultiFile(
-			const char *	pszPath) = 0;
+			const char *			pszPath,
+			const char *			pszFileExtension) = 0;
 	
 		virtual RCODE FLMAPI open(
-			const char *	pszPath) = 0;
+			const char *			pszPath) = 0;
+	
+		virtual RCODE FLMAPI deleteMultiFile(
+			const char *			pszPath) = 0;
 	
 		virtual RCODE FLMAPI flush( void) = 0;
 	
 		virtual RCODE FLMAPI read(
-			FLMUINT64	ui64Offset,
-			FLMUINT		uiLength,
-			void *		pvBuffer,
-			FLMUINT *	puiBytesRead) = 0;
+			FLMUINT64				ui64Offset,
+			FLMUINT					uiLength,
+			void *					pvBuffer,
+			FLMUINT *				puiBytesRead) = 0;
 	
 		virtual RCODE FLMAPI write(
-			FLMUINT64	ui64Offset,
-			FLMUINT		uiLength,
-			void *		pvBuffer,
-			FLMUINT *	puiBytesWritten) = 0;
+			FLMUINT64				ui64Offset,
+			FLMUINT					uiLength,
+			void *					pvBuffer,
+			FLMUINT *				puiBytesWritten) = 0;
 	
 		virtual RCODE FLMAPI getPath(
-			char *	pszFilePath) = 0;
+			char *					pszFilePath) = 0;
 	
 		virtual RCODE FLMAPI size(
-			FLMUINT64 *	pui64FileSize) = 0;
+			FLMUINT64 *				pui64FileSize) = 0;
 	
 		virtual RCODE FLMAPI truncate(
-			FLMUINT64	ui64NewSize) = 0;
+			FLMUINT64				ui64NewSize) = 0;
+			
+		virtual void FLMAPI close(
+			FLMBOOL					bDelete = FALSE) = 0;
 	};
 	
-	typedef void (* WRITE_COMPLETION_CB)(
-		IF_IOBuffer *		pWriteBuffer);
-
+	RCODE FLMAPI FlmAllocMultiFileHdl(
+		IF_MultiFileHdl **		ppFileHdl);
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1097,23 +1131,29 @@
 		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;
 	
 		virtual void FLMAPI setMaxBuffers(
-			FLMUINT			uiMaxBuffers) = 0;
+			FLMUINT					uiMaxBuffers) = 0;
 	
 		virtual void FLMAPI setMaxBytes(
-			FLMUINT			uiMaxBytes) = 0;
+			FLMUINT					uiMaxBytes) = 0;
 	
 		virtual void FLMAPI enableKeepBuffer( void) = 0;
 	
 		virtual RCODE FLMAPI getBuffer(
-			IF_IOBuffer **		ppIOBuffer,
-			FLMUINT				uiBufferSize,
-			FLMUINT				uiBlockSize) = 0;
+			IF_IOBuffer **			ppIOBuffer,
+			FLMUINT					uiBufferSize,
+			FLMUINT					uiBlockSize) = 0;
 	
 		virtual FLMBOOL FLMAPI havePendingIO( void) = 0;
 	
 		virtual FLMBOOL FLMAPI haveUsed( void) = 0;
 	};
 
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	typedef void (* WRITE_COMPLETION_CB)(
+		IF_IOBuffer *				pWriteBuffer);
+		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1128,8 +1168,8 @@
 		} eBufferMgrList;
 	
 		virtual RCODE FLMAPI setupBuffer(
-			FLMUINT	uiBufferSize,
-			FLMUINT	uiBlockSize) = 0;
+			FLMUINT					uiBufferSize,
+			FLMUINT					uiBlockSize) = 0;
 	
 		virtual FLMBYTE * FLMAPI getBuffer( void) = 0;
 	
@@ -1138,17 +1178,17 @@
 		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
 	
 		virtual void FLMAPI notifyComplete(
-			RCODE			rc) = 0;
+			RCODE						rc) = 0;
 	
 		virtual void FLMAPI setCompletionCallback(
 			WRITE_COMPLETION_CB 	fnCompletion) = 0;
 	
 		virtual void FLMAPI setCompletionCallbackData(
-			FLMUINT	uiBlockNumber,
-			void *	pvData);
+			FLMUINT					uiBlockNumber,
+			void *					pvData);
 	
 		virtual void * FLMAPI getCompletionCallbackData(
-			FLMUINT	uiBlockNumber);
+			FLMUINT					uiBlockNumber);
 	
 		virtual RCODE FLMAPI getCompletionCode( void) = 0;
 	
@@ -1173,7 +1213,7 @@
 
 		virtual FLMBOOL FLMAPI currentItemIsDir( void) = 0;
 	};
-
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1302,27 +1342,30 @@
 		virtual FLMUINT FLMAPI getBytesAllocated( void) = 0;
 	};
 	
+	RCODE FLMAPI FlmAllocPool(
+		IF_Pool **		ppPool);
+	
 	/****************************************************************************
 	Desc: Dynamic buffer
 	****************************************************************************/
 	flminterface IF_DynaBuf : public F_RefCount
 	{
 		virtual void FLMAPI truncateData(
-			FLMUINT			uiSize) = 0;
+			FLMUINT					uiSize) = 0;
 		
 		virtual RCODE FLMAPI allocSpace(
-			FLMUINT			uiSize,
-			void **			ppvPtr) = 0;
+			FLMUINT					uiSize,
+			void **					ppvPtr) = 0;
 		
 		virtual RCODE FLMAPI appendData(
-			const void *	pvData,
-			FLMUINT			uiSize) = 0;
+			const void *			pvData,
+			FLMUINT					uiSize) = 0;
 			
 		virtual RCODE FLMAPI appendByte(
-			FLMBYTE			ucChar) = 0;
+			FLMBYTE					ucChar) = 0;
 		
 		virtual RCODE FLMAPI appendUniChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 		
 		virtual FLMBYTE * FLMAPI getBufferPtr( void) = 0;
 		
@@ -1333,7 +1376,7 @@
 		virtual FLMUINT FLMAPI getDataLength( void) = 0;
 		
 		virtual RCODE FLMAPI copyFromBuffer(
-			IF_DynaBuf *		pSource) = 0;
+			IF_DynaBuf *			pSource) = 0;
 	};
 	
 	/****************************************************************************
@@ -1343,7 +1386,7 @@
 	{
 		virtual void FLMAPI randomize( void) = 0;
 
-		virtual void FLMAPI randomSetSeed(
+		virtual void FLMAPI setSeed(
 			FLMINT32					i32seed) = 0;
 			
 		virtual FLMINT32 FLMAPI getSeed( void) = 0;
@@ -1357,58 +1400,62 @@
 		virtual FLMBOOL FLMAPI getBoolean( void) = 0;
 	};
 	
+	RCODE FLMAPI FlmAllocRandomGenerator(
+		IF_RandomGenerator **	ppRandomGenerator);
+	
 	/**********************************************************************
 	Desc:	Atomic operations
 	**********************************************************************/
 	FLMINT32 FLMAPI f_atomicInc(
-		FLMATOMIC *		piTarget);
+		FLMATOMIC *					piTarget);
 	
 	FLMINT32 FLMAPI f_atomicDec(
-		FLMATOMIC *		piTarget);
+		FLMATOMIC *					piTarget);
 	
 	FLMINT32 FLMAPI f_atomicExchange(
-		FLMATOMIC *		piTarget,
-		FLMINT32			i32NewVal);
+		FLMATOMIC *					piTarget,
+		FLMINT32						i32NewVal);
 		
 	/****************************************************************************
 	Desc: Mutexes
 	****************************************************************************/
-	typedef void *				F_MUTEX;
-	#define F_MUTEX_NULL		NULL
+	typedef void *					F_MUTEX;
+	#define F_MUTEX_NULL			NULL
 	
 	RCODE FLMAPI f_mutexCreate(
-		F_MUTEX *	phMutex);
+		F_MUTEX *					phMutex);
 	
 	void FLMAPI f_mutexDestroy(
-		F_MUTEX *	phMutex);
+		F_MUTEX *					phMutex);
 			
 	void FLMAPI f_mutexLock(
-		F_MUTEX		hMutex);
+		F_MUTEX						hMutex);
 		
 	void FLMAPI f_mutexUnlock(
-		F_MUTEX		hMutex);
+		F_MUTEX						hMutex);
 	
 	void FLMAPI f_assertMutexLocked(
-		F_MUTEX		hMutex);
+		F_MUTEX						hMutex);
 
 	/****************************************************************************
 	Desc: Semaphores
 	****************************************************************************/
-	typedef void *				F_SEM;
-	#define F_SEM_NULL		NULL
+	typedef void *					F_SEM;
+	#define F_SEM_NULL			NULL
+	#define F_SEM_WAITFOREVER	(0xFFFFFFFF)
 	
 	RCODE FLMAPI f_semCreate(
-		F_SEM *		phSem);
+		F_SEM *						phSem);
 	
 	void FLMAPI f_semDestroy(
-		F_SEM *		phSem);
+		F_SEM *						phSem);
 	
 	RCODE FLMAPI f_semWait(
-		F_SEM			hSem,
-		FLMUINT		uiTimeout);
+		F_SEM							hSem,
+		FLMUINT						uiTimeout);
 	
 	void FLMAPI f_semSignal(
-		F_SEM			hSem);
+		F_SEM							hSem);
 
 	/****************************************************************************
 	Desc: Thread manager
@@ -1416,32 +1463,45 @@
 	flminterface IF_ThreadMgr : public F_RefCount
 	{
 		virtual RCODE FLMAPI setupThreadMgr( void) = 0;
+		
+		virtual RCODE FLMAPI createThread(
+			IF_Thread **			ppThread,
+			F_THREAD_FUNC			fnThread,
+			const char *			pszThreadName = NULL,
+			FLMUINT					uiThreadGroup = 0,
+			FLMUINT					uiAppId = 0,
+			void *					pvParm1 = NULL,
+			void *					pvParm2 = NULL,
+			FLMUINT					uiStackSize = F_THREAD_DEFAULT_STACK_SIZE) = 0;
 	
 		virtual void FLMAPI shutdownThreadGroup(
-			FLMUINT			uiThreadGroup) = 0;
+			FLMUINT					uiThreadGroup) = 0;
 	
 		virtual void FLMAPI setThreadShutdownFlag(
-			FLMUINT			uiThreadId) = 0;
+			FLMUINT					uiThreadId) = 0;
 	
 		virtual RCODE FLMAPI findThread(
-			IF_Thread **	ppThread,
-			FLMUINT			uiThreadGroup,
-			FLMUINT			uiAppId = 0,
-			FLMBOOL			bOkToFindMe = TRUE) = 0;
+			IF_Thread **			ppThread,
+			FLMUINT					uiThreadGroup,
+			FLMUINT					uiAppId = 0,
+			FLMBOOL					bOkToFindMe = TRUE) = 0;
 	
 		virtual RCODE FLMAPI getNextGroupThread(
-			IF_Thread **	ppThread,
-			FLMUINT			uiThreadGroup,
-			FLMUINT *		puiThreadId) = 0;
+			IF_Thread **			ppThread,
+			FLMUINT					uiThreadGroup,
+			FLMUINT *				puiThreadId) = 0;
 	
 		virtual RCODE FLMAPI getThreadInfo(
-			IF_Pool *			pPool,
-			F_THREAD_INFO **	ppThreadInfo,
-			FLMUINT *			puiNumThreads) = 0;
+			IF_Pool *				pPool,
+			F_THREAD_INFO **		ppThreadInfo,
+			FLMUINT *				puiNumThreads) = 0;
 	
 		virtual FLMUINT FLMAPI getThreadGroupCount(
-			FLMUINT			uiThreadGroup) = 0;
+			FLMUINT					uiThreadGroup) = 0;
 	};
+	
+	RCODE FLMAPI FlmGetThreadMgr(
+		IF_ThreadMgr **		ppThreadMgr);
 
 	/****************************************************************************
 	Desc: Thread
@@ -1449,13 +1509,13 @@
 	flminterface IF_Thread : public F_RefCount
 	{
 		virtual RCODE FLMAPI startThread(
-			F_THREAD_FUNC		fnThread,
-			const char *		pszThreadName = NULL,
-			FLMUINT				uiThreadGroup = 0,
-			FLMUINT				uiAppId = 0,
-			void *				pvParm1 = NULL,
-			void *				pvParm2 = NULL,
-			FLMUINT        	uiStackSize = F_THREAD_DEFAULT_STACK_SIZE) = 0;
+			F_THREAD_FUNC			fnThread,
+			const char *			pszThreadName = NULL,
+			FLMUINT					uiThreadGroup = 0,
+			FLMUINT					uiAppId = 0,
+			void *					pvParm1 = NULL,
+			void *					pvParm2 = NULL,
+			FLMUINT        		uiStackSize = F_THREAD_DEFAULT_STACK_SIZE) = 0;
 	
 		virtual void FLMAPI stopThread( void) = 0;
 	
@@ -1468,28 +1528,28 @@
 		virtual void * FLMAPI getParm1( void) = 0;
 	
 		virtual void FLMAPI setParm1(
-			void *				pvParm) = 0;
+			void *					pvParm) = 0;
 	
 		virtual void * FLMAPI getParm2( void) = 0;
 	
 		virtual void FLMAPI setParm2(
-			void *				pvParm) = 0;
+			void *					pvParm) = 0;
 	
 		virtual void FLMAPI setShutdownFlag( void) = 0;
 	
 		virtual FLMBOOL FLMAPI isThreadRunning( void) = 0;
 	
 		virtual void FLMAPI setThreadStatusStr(
-			const char *		pszStatus) = 0;
+			const char *			pszStatus) = 0;
 	
 		virtual void FLMAPI setThreadStatus(
-			const char *		pszBuffer, ...) = 0;
+			const char *			pszBuffer, ...) = 0;
 	
 		virtual void FLMAPI setThreadStatus(
-			eThreadStatus		genericStatus) = 0;
+			eThreadStatus			genericStatus) = 0;
 	
 		virtual void FLMAPI setThreadAppId(
-			FLMUINT				uiAppId) = 0;
+			FLMUINT					uiAppId) = 0;
 	
 		virtual FLMUINT FLMAPI getThreadAppId( void) = 0;
 	
@@ -1498,19 +1558,6 @@
 		virtual void FLMAPI cleanupThread( void) = 0;
 	};
 	
-	RCODE FLMAPI f_threadCreate(
-		IF_Thread **		ppThread,
-		F_THREAD_FUNC		fnThread,
-		const char *		pszThreadName = NULL,
-		FLMUINT				uiThreadGroup = 0,
-		FLMUINT				uiAppId = 0,
-		void *				pvParm1 = NULL,
-		void *				pvParm2 = NULL,
-		FLMUINT				uiStackSize = F_THREAD_DEFAULT_STACK_SIZE);
-	
-	void FLMAPI f_threadDestroy(
-		IF_Thread **		ppThread);
-	
 	FLMUINT FLMAPI f_threadId( void);
 
 	/****************************************************************************
@@ -1518,152 +1565,153 @@
 	****************************************************************************/
 	flminterface IF_IniFile : public F_RefCount
 	{
-		virtual RCODE FLMAPI init( void) = 0;
-		
 		virtual RCODE FLMAPI read(
-			const char *	pszFileName) = 0;
+			const char *			pszFileName) = 0;
 			
 		virtual RCODE FLMAPI write( void) = 0;
 	
 		virtual FLMBOOL FLMAPI getParam(
-			const char *	pszParamName,
-			FLMUINT *		puiParamVal) = 0;
+			const char *			pszParamName,
+			FLMUINT *				puiParamVal) = 0;
 		
 		virtual FLMBOOL FLMAPI getParam(
-			const char *	pszParamName,
-			FLMBOOL *		pbParamVal) = 0;
+			const char *			pszParamName,
+			FLMBOOL *				pbParamVal) = 0;
 		
 		virtual FLMBOOL FLMAPI getParam(
-			const char *	pszParamName,
-			char **			ppszParamVal) = 0;
+			const char *			pszParamName,
+			char **					ppszParamVal) = 0;
 		
 		virtual RCODE FLMAPI setParam(
-			const char *	pszParamName,
-			FLMUINT 			uiParamVal) = 0;
+			const char *			pszParamName,
+			FLMUINT 					uiParamVal) = 0;
 	
 		virtual RCODE FLMAPI setParam(
-			const char *	pszParamName,
-			FLMBOOL			bParamVal) = 0;
+			const char *			pszParamName,
+			FLMBOOL					bParamVal) = 0;
 	
 		virtual RCODE FLMAPI setParam(
-			const char *	pszParamName,
-			const char *	pszParamVal) = 0;
+			const char *			pszParamName,
+			const char *			pszParamVal) = 0;
 	
 		virtual FLMBOOL FLMAPI testParam(
-			const char *	pszParamName) = 0;
+			const char *			pszParamName) = 0;
 	};
+	
+	RCODE FLMAPI FlmAllocIniFile(
+		IF_IniFile **				ppIniFile);
 	
 	/****************************************************************************
 	Desc: Serial numbers
 	****************************************************************************/
 	RCODE FLMAPI f_createSerialNumber(
-		FLMBYTE *			pszSerialNumber);
+		FLMBYTE *					pszSerialNumber);
 
 	/****************************************************************************
 	Desc: CRC
 	****************************************************************************/
 	void FLMAPI f_updateCRC(
-		const void *		pvBuffer,
-		FLMUINT				uiCount,
-		FLMUINT32 *			pui32CRC);
+		const void *				pvBuffer,
+		FLMUINT						uiCount,
+		FLMUINT32 *					pui32CRC);
 		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	char * FLMAPI f_uwtoa(
-		FLMUINT16				value,
-		char *					ptr);
+		FLMUINT16					value,
+		char *						ptr);
 
 	char * FLMAPI f_udtoa(
-		FLMUINT					value,
-		char *					ptr);
+		FLMUINT						value,
+		char *						ptr);
 
 	char * FLMAPI f_wtoa(
-		FLMINT16					value,
-		char *					ptr);
+		FLMINT16						value,
+		char *						ptr);
 
 	char * FLMAPI f_dtoa(
-		FLMINT					value,
-		char *					ptr);
+		FLMINT						value,
+		char *						ptr);
 
 	char * FLMAPI f_ui64toa(
-		FLMUINT64				value,
-		char *					ptr);
+		FLMUINT64					value,
+		char *						ptr);
 
 	char * FLMAPI f_i64toa(
-		FLMINT64					value,
-		char *					ptr);
+		FLMINT64						value,
+		char *						ptr);
 
 	FLMINT FLMAPI f_atoi(
-		const char *			ptr);
+		const char *				ptr);
 
 	FLMINT FLMAPI f_atol(
-		const char *			ptr);
+		const char *				ptr);
 
 	FLMINT FLMAPI f_atod(
-		const char *			ptr);
+		const char *				ptr);
 
 	FLMUINT FLMAPI f_atoud(
-		const char *			ptr,
-		FLMBOOL					bAllowUnprefixedHex = FALSE);
+		const char *				ptr,
+		FLMBOOL						bAllowUnprefixedHex = FALSE);
 
 	FLMUINT64 FLMAPI f_atou64(
-		const char *  			pszBuf);
+		const char *  				pszBuf);
 
 	FLMUINT FLMAPI f_unilen(
-		const FLMUNICODE *	puzStr);
+		const FLMUNICODE *		puzStr);
 
 	FLMUNICODE * FLMAPI f_unicpy(
-		FLMUNICODE *			puzDestStr,
-		const FLMUNICODE *	puzSrcStr);
+		FLMUNICODE *				puzDestStr,
+		const FLMUNICODE *		puzSrcStr);
 
 	FLMBOOL FLMAPI f_uniIsLower(
-		FLMUNICODE				uzChar);
+		FLMUNICODE					uzChar);
 	
 	FLMBOOL FLMAPI f_uniIsAlpha(
-		FLMUNICODE				uzChar);
+		FLMUNICODE					uzChar);
 	
 	FLMBOOL FLMAPI f_uniIsDecimalDigit(
-		FLMUNICODE				uzChar);
+		FLMUNICODE					uzChar);
 	
 	FLMUNICODE FLMAPI f_unitolower(
-		FLMUNICODE				uChar);
+		FLMUNICODE					uChar);
 
 	FLMINT FLMAPI f_unicmp(
-		const FLMUNICODE *	puzStr1,
-		const FLMUNICODE *	puzStr2);
+		const FLMUNICODE *		puzStr1,
+		const FLMUNICODE *		puzStr2);
 
 	FLMINT FLMAPI f_uniicmp(
-		const FLMUNICODE *	puzStr1,
-		const FLMUNICODE *	puzStr2);
+		const FLMUNICODE *		puzStr1,
+		const FLMUNICODE *		puzStr2);
 
 	FLMINT FLMAPI f_uninativecmp(
-		const FLMUNICODE *	puzStr1,
-		const char *			pszStr2);
+		const FLMUNICODE *		puzStr1,
+		const char *				pszStr2);
 
 	FLMINT FLMAPI f_uninativencmp(
-		const FLMUNICODE *	puzStr1,
-		const char  *			pszStr2,
-		FLMUINT					uiCount);
+		const FLMUNICODE *		puzStr1,
+		const char  *				pszStr2,
+		FLMUINT						uiCount);
 
 	RCODE	FLMAPI f_nextUCS2Char(
-		const FLMBYTE **		ppszUTF8,
-		const FLMBYTE *		pszEndOfUTF8String,
-		FLMUNICODE *			puzChar);
+		const FLMBYTE **			ppszUTF8,
+		const FLMBYTE *			pszEndOfUTF8String,
+		FLMUNICODE *				puzChar);
 	
 	RCODE FLMAPI f_numUCS2Chars(
-		const FLMBYTE *		pszUTF8,
-		FLMUINT *				puiNumChars);
+		const FLMBYTE *			pszUTF8,
+		FLMUINT *					puiNumChars);
 	
 	RCODE FLMAPI f_readUTF8CharAsUnicode(
-		IF_IStream *			pStream,
-		FLMUNICODE *			puChar);
+		IF_IStream *				pStream,
+		FLMUNICODE *				puChar);
 	
 	RCODE FLMAPI f_formatUTF8Text(
-		IF_PosIStream *		pIStream,
-		FLMBOOL					bAllowEscapes,
-		FLMUINT					uiCompareRules,
-		IF_DynaBuf *			pDynaBuf);
+		IF_PosIStream *			pIStream,
+		FLMBOOL						bAllowEscapes,
+		FLMUINT						uiCompareRules,
+		IF_DynaBuf *				pDynaBuf);
 		
 	/****************************************************************************
 	Desc: ASCII character constants and macros
@@ -1939,7 +1987,18 @@
 	Desc: Endian macros
 	****************************************************************************/
 
-	FINLINE FLMUINT32 f_byteToLong(
+	FINLINE FLMUINT16 f_byteToUINT16( 
+		const FLMBYTE *		pucBuf)
+	{
+		FLMUINT16		ui16Val = 0;
+		
+		ui16Val |= ((FLMUINT16)pucBuf[ 0]) << 8;
+		ui16Val |= ((FLMUINT16)pucBuf[ 1]);
+		
+		return( ui16Val);
+	}
+	
+	FINLINE FLMUINT32 f_byteToUINT32(
 		const FLMBYTE *		pucBuf)
 	{
 		FLMUINT32		ui32Val = 0;
@@ -1952,7 +2011,7 @@
 		return( ui32Val);
 	}
 	
-	FINLINE FLMUINT64 f_byteToLong64(
+	FINLINE FLMUINT64 f_byteToUINT64(
 		const FLMBYTE *		pucBuf)
 	{
 		FLMUINT64		ui64Val = 0;
@@ -1969,172 +2028,133 @@
 		return( ui64Val);
 	}
 
-	FLMUINT32 f_byteToInt( const FLMBYTE * ptr);
-	#define f_byteToInt(p)  ( \
- 		 (FLMUINT16) ( ((((FLMBYTE *)(p))[ 0]) << 8) | (((FLMBYTE *)(p))[ 1]) ) )
-
-	void f_longToByte( FLMINT32 uiNum, FLMBYTE * ptr);
-	#define f_longToByte( n, p) { \
-		FLMUINT32 ui32Temp = (FLMUINT32) (n); FLMBYTE * pTemp = (FLMBYTE *)(p); \
-				pTemp[0] = (FLMBYTE) (ui32Temp >> 24); \
-				pTemp[1] = (FLMBYTE) (ui32Temp >> 16); \
-				pTemp[2] = (FLMBYTE) (ui32Temp >>  8); \
-				pTemp[3] = (FLMBYTE) (ui32Temp      ); \
-		}
-
-	void f_long64ToByte( FLMINT64 uiNum, FLMBYTE * ptr);
-	#define f_long64ToByte( n, p) { \
-		FLMUINT64 ui64Temp = (FLMUINT64) (n); FLMBYTE * pTemp = (FLMBYTE *)(p); \
-				pTemp[0] = (FLMBYTE) (ui64Temp >> 56); \
-				pTemp[1] = (FLMBYTE) (ui64Temp >> 48); \
-				pTemp[2] = (FLMBYTE) (ui64Temp >> 40); \
-				pTemp[3] = (FLMBYTE) (ui64Temp >> 32); \
-				pTemp[4] = (FLMBYTE) (ui64Temp >> 24); \
-				pTemp[5] = (FLMBYTE) (ui64Temp >> 16); \
-				pTemp[6] = (FLMBYTE) (ui64Temp >>  8); \
-				pTemp[7] = (FLMBYTE) (ui64Temp      ); \
-		}
-
-	void f_intToByte( FLMINT16 uiNum, FLMBYTE * ptr);
-	#define f_intToByte( n, p) { \
-		FLMUINT16 ui16Temp = (FLMUINT16) (n); FLMBYTE * pTemp = (FLMBYTE *) (p); \
-				pTemp[0] = (FLMBYTE) (ui16Temp >>  8); \
-				pTemp[1] = (FLMBYTE) (ui16Temp      ); \
-		}
-
-	#ifndef FLM_BIG_ENDIAN
-
-		#if defined( FLM_SPARC)
-			#error Wrong endian order selected
-		#endif
+	FINLINE void f_UIN16ToByte(
+		FLMUINT16		ui16Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui16Num >>  8);
+		pucBuf[ 1] = (FLMBYTE) (ui16Num);
+	}
 	
-		#define LO(wrd) 	(*(FLMUINT8  *)&wrd)
-		#define HI(wrd) 	(*((FLMUINT8 *)&wrd + 1))
-
-		#if defined( FLM_STRICT_ALIGNMENT)
-
-			#define FB2UW( bp) \
-				((FLMUINT16)((((FLMUINT16)(((FLMUINT8 *)(bp))[1])) << 8) | \
-								 (((FLMUINT16)(((FLMUINT8 *)(bp))[0])))))
+	FINLINE void f_UIN32ToByte(
+		FLMUINT32		ui32Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui32Num >> 24);
+		pucBuf[ 1] = (FLMBYTE) (ui32Num >> 16);
+		pucBuf[ 2] = (FLMBYTE) (ui32Num >>  8);
+		pucBuf[ 3] = (FLMBYTE) (ui32Num);
+	}
 	
-			#define FB2UD( bp) \
-				((FLMUINT32)((((FLMUINT32)(((FLMUINT8 *)(bp))[3]))<< 24) | \
-								 (((FLMUINT32)(((FLMUINT8 *)(bp))[2]))<< 16) | \
-								 (((FLMUINT32)(((FLMUINT8 *)(bp))[1]))<< 8)  | \
-								 (((FLMUINT32)(((FLMUINT8 *)(bp))[0])))))
-	
-			#define FB2U64( bp)	\
-				((FLMUINT64)((((FLMUINT64)(((FLMUINT8 *)(bp))[7])) << 56) | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[6])) << 48) | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[5])) << 40) | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[4])) << 32) | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[3])) << 24) | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[2])) << 16) | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[1]))<< 8)   | \
-								 (((FLMUINT64)(((FLMUINT8 *)(bp))[0])))))
-	
-			#define UW2FBA( uw, bp)	\
-				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
-				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00) >> 8))))
-	
-			#define UD2FBA( udw, bp) \
-				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
-				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00) >> 8)), \
-				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000) >> 16)), \
-				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000) >> 24)))
-	
-			#define U642FBA( u64, bp) \
-				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xff)), \
-				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00) >> 8)), \
-				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000) >> 16)), \
-				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000) >> 24)), \
-				 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000) >> 32)), \
-				 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000) >> 40)), \
-				 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000) >> 48)), \
-				 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000) >> 56)))
-		#else
-			#define FB2UW( fbp) \
-				(*((FLMUINT16 *)(fbp)))
-				
-			#define FB2UD( fbp) \
-				(*((FLMUINT32 *)(fbp)))
-				
-			#define FB2U64( fbp) \
-				(*((FLMUINT64 *)(fbp)))
-				
-			#define UW2FBA( uw, fbp) \
-				(*((FLMUINT16 *)(fbp)) = ((FLMUINT16) (uw)))
-				
-			#define UD2FBA( uw, fbp) \
-				(*((FLMUINT32 *)(fbp)) = ((FLMUINT32) (uw)))
-				
-			#define U642FBA( uw, fbp) \
-				(*((FLMUINT64 *)(fbp)) = ((FLMUINT64) (uw)))
-		#endif
+	FINLINE void f_UIN64ToByte(
+		FLMUINT64		ui64Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui64Num >> 56);
+		pucBuf[ 1] = (FLMBYTE) (ui64Num >> 48);
+		pucBuf[ 2] = (FLMBYTE) (ui64Num >> 40);
+		pucBuf[ 3] = (FLMBYTE) (ui64Num >> 32);
+		pucBuf[ 4] = (FLMBYTE) (ui64Num >> 24);
+		pucBuf[ 5] = (FLMBYTE) (ui64Num >> 16);
+		pucBuf[ 6] = (FLMBYTE) (ui64Num >>  8);
+		pucBuf[ 7] = (FLMBYTE) (ui64Num);
+	}
 
-	#else
-
-		#if defined( __i386__)
-			#error Wrong endian order selected
-		#endif
-
-		#define LO( wrd) \
-			(*((FLMUINT8 *)&wrd + 1))
+	#if defined( FLM_STRICT_ALIGNMENT) || defined( FLM_BIG_ENDIAN)
+	
+		FINLINE FLMUINT16 FB2UW(	
+			const FLMBYTE *	pucBuf)
+		{
+			FLMUINT16		ui16Val = 0;
 			
-		#define HI( wrd) \
-			(*(FLMUINT8  *)&wrd)
+			ui16Val |= ((FLMUINT16)pucBuf[ 1]) << 8;
+			ui16Val |= ((FLMUINT16)pucBuf[ 0]);
+			
+			return( ui16Val);
+		}
 
-		#define FB2UW( bp) \
-			((FLMUINT16)((((FLMUINT16)(((FLMUINT8 *)(bp))[1])) << 8) | \
-							 (((FLMUINT16)(((FLMUINT8 *)(bp))[0])))))
+		FINLINE FLMUINT32 FB2UD(	
+			const FLMBYTE *	pucBuf)
+		{
+			FLMUINT32		ui32Val = 0;
+			
+			ui32Val |= ((FLMUINT32)pucBuf[ 3]) << 24;
+			ui32Val |= ((FLMUINT32)pucBuf[ 2]) << 16;
+			ui32Val |= ((FLMUINT32)pucBuf[ 1]) << 8;
+			ui32Val |= ((FLMUINT32)pucBuf[ 0]);
+			
+			return( ui32Val);
+		}
+		
+		FINLINE FLMUINT64 FB2U64(	
+			const FLMBYTE *	pucBuf)
+		{
+			FLMUINT64		ui64Val = 0;
+			
+			ui64Val |= ((FLMUINT64)pucBuf[ 7]) << 56;
+			ui64Val |= ((FLMUINT64)pucBuf[ 6]) << 48;
+			ui64Val |= ((FLMUINT64)pucBuf[ 5]) << 40;
+			ui64Val |= ((FLMUINT64)pucBuf[ 4]) << 32;
+			ui64Val |= ((FLMUINT64)pucBuf[ 3]) << 24;
+			ui64Val |= ((FLMUINT64)pucBuf[ 2]) << 16;
+			ui64Val |= ((FLMUINT64)pucBuf[ 1]) << 8;
+			ui64Val |= ((FLMUINT64)pucBuf[ 0]);
+			
+			return( ui64Val);
+		}
+		
+		FINLINE void UW2FBA(
+			FLMUINT16		ui16Num,
+			FLMBYTE *		pucBuf)
+		{
+			pucBuf[ 1] = (FLMBYTE) (ui16Num >>  8);
+			pucBuf[ 0] = (FLMBYTE) (ui16Num);
+		}
+		
+		FINLINE void UD2FBA(
+			FLMUINT32		ui32Num,
+			FLMBYTE *		pucBuf)
+		{
+			pucBuf[ 3] = (FLMBYTE) (ui32Num >> 24);
+			pucBuf[ 2] = (FLMBYTE) (ui32Num >> 16);
+			pucBuf[ 1] = (FLMBYTE) (ui32Num >>  8);
+			pucBuf[ 0] = (FLMBYTE) (ui32Num);
+		}
+		
+		FINLINE void U642FBA(
+			FLMUINT64		ui64Num,
+			FLMBYTE *		pucBuf)
+		{
+			pucBuf[ 7] = (FLMBYTE) (ui64Num >> 56);
+			pucBuf[ 6] = (FLMBYTE) (ui64Num >> 48);
+			pucBuf[ 5] = (FLMBYTE) (ui64Num >> 40);
+			pucBuf[ 4] = (FLMBYTE) (ui64Num >> 32);
+			pucBuf[ 3] = (FLMBYTE) (ui64Num >> 24);
+			pucBuf[ 2] = (FLMBYTE) (ui64Num >> 16);
+			pucBuf[ 1] = (FLMBYTE) (ui64Num >>  8);
+			pucBuf[ 0] = (FLMBYTE) (ui64Num);
+		}
+			 
+	#else
+	
+		#define FB2UW( fbp) \
+			(*((FLMUINT16 *)(fbp)))
+			
+		#define FB2UD( fbp) \
+			(*((FLMUINT32 *)(fbp)))
+			
+		#define FB2U64( fbp) \
+			(*((FLMUINT64 *)(fbp)))
+			
+		#define UW2FBA( uw, fbp) \
+			(*((FLMUINT16 *)(fbp)) = ((FLMUINT16) (uw)))
+			
+		#define UD2FBA( uw, fbp) \
+			(*((FLMUINT32 *)(fbp)) = ((FLMUINT32) (uw)))
+			
+		#define U642FBA( uw, fbp) \
+			(*((FLMUINT64 *)(fbp)) = ((FLMUINT64) (uw)))
 
-		#define FB2UD( bp) \
-			((FLMUINT32)((((FLMUINT32)(((FLMUINT8 *)(bp))[3])) << 24) | \
-							 (((FLMUINT32)(((FLMUINT8 *)(bp))[2])) << 16) | \
-							 (((FLMUINT32)(((FLMUINT8 *)(bp))[1])) << 8)  | \
-							 (((FLMUINT32)(((FLMUINT8 *)(bp))[0])))))
-
-		#define FB2U64( bp) \
-			((FLMUINT64)((((FLMUINT64)(((FLMUINT8 *)(bp))[7])) << 56) | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[6])) << 48) | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[5])) << 40) | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[4])) << 32) | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[3])) << 24) | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[2])) << 16) | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[1])) << 8)  | \
-							 (((FLMUINT64)(((FLMUINT8 *)(bp))[0])))))
-
-		#define UW2FBA( uw, bp) \
-			(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)(uw)), \
-			 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)((((uw) & 0xff00) >> 8))))
-
-		#define UD2FBA( udw, bp) \
-			(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((udw) & 0xff)), \
-			 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((udw) & 0xff00) >> 8)), \
-			 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((udw) & 0xff0000) >> 16)), \
-			 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((udw) & 0xff000000) >> 24)))
-
-		#ifdef FLM_UNIX
-			#define U642FBA( u64, bp) \
-				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xffULL)), \
-				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00ULL) >> 8)), \
-				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000ULL) >> 16)), \
-				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000ULL) >> 24)), \
-				 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000ULL) >> 32)), \
-				 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000ULL) >> 40)), \
-				 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000ULL) >> 48)), \
-				 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000ULL) >> 56)))
-		#else
-			#define	U642FBA( u64, bp) \
-				(((FLMUINT8 *)(bp))[0] = ((FLMUINT8)((u64) & 0xff)), \
-				 ((FLMUINT8 *)(bp))[1] = ((FLMUINT8)(((u64) & 0xff00) >> 8)), \
-				 ((FLMUINT8 *)(bp))[2] = ((FLMUINT8)(((u64) & 0xff0000) >> 16)), \
-				 ((FLMUINT8 *)(bp))[3] = ((FLMUINT8)(((u64) & 0xff000000) >> 24)), \
-				 ((FLMUINT8 *)(bp))[4] = ((FLMUINT8)(((u64) & 0xff00000000) >> 32)), \
-				 ((FLMUINT8 *)(bp))[5] = ((FLMUINT8)(((u64) & 0xff0000000000) >> 40)), \
-				 ((FLMUINT8 *)(bp))[6] = ((FLMUINT8)(((u64) & 0xff000000000000) >> 48)), \
-				 ((FLMUINT8 *)(bp))[7] = ((FLMUINT8)(((u64) & 0xff00000000000000) >> 56)))
-		#endif
 	#endif
 
 	/****************************************************************************
@@ -2194,22 +2214,10 @@
 	Desc: CPU release and sleep functions
 	****************************************************************************/
 
-//	#ifdef FLM_NLM
-//		#define f_yieldCPU() \
-//			pthread_yield()
-//	#else
-//		#define f_yieldCPU()
-//	#endif
-
 	void FLMAPI f_yieldCPU( void);
 
 	void FLMAPI f_sleep(
 		FLMUINT	uiMilliseconds);
-
-//	#ifdef FLM_WIN
-//		#define f_sleep( uiMilliseconds) \
-//			Sleep( (DWORD)uiMilliseconds)
-//	#endif
 
 	/****************************************************************************
 	Desc: Time, date, timestamp functions
@@ -2302,38 +2310,38 @@
 	****************************************************************************/
 	
 	FLMINT FLMAPI f_vsprintf(
-		char *			pszDestStr,
-		const char *	pszFormat,
-		f_va_list *		args);
+		char *					pszDestStr,
+		const char *			pszFormat,
+		f_va_list *				args);
 
 	FLMINT FLMAPI f_sprintf(
-		char *			pszDestStr,
-		const char *	pszFormat,
+		char *					pszDestStr,
+		const char *			pszFormat,
 		...);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	
-	void FLMAPI f_memcpy(
+	void * FLMAPI f_memcpy(
 		void *				pvDest,
 		const void *		pvSrc,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
-	void FLMAPI f_memmove(
+	void * FLMAPI f_memmove(
 		void *				pvDest,
 		const void *		pvSrc,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
-	void FLMAPI f_memset(
+	void * FLMAPI f_memset(
 		void *				pvDest,
 		unsigned char		ucByte,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
 	FLMINT FLMAPI f_memcmp(
 		const void *		pvStr1,
 		const void *		pvStr2,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
 	FLMINT FLMAPI f_strcat(
 		char *				pszDest,
@@ -2342,7 +2350,7 @@
 	FLMINT FLMAPI f_strncat(
 		char *				pszDest,
 		const char *		pszSrc,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
 	const char * FLMAPI f_strchr(
 		const char *		pszStr,
@@ -2366,7 +2374,7 @@
 	FLMINT FLMAPI f_strncmp(
 		const char *		pszStr1,
 		const char *		pszStr2,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
 	FLMINT FLMAPI f_stricmp(
 		const char *		pszStr1,
@@ -2375,16 +2383,16 @@
 	FLMINT FLMAPI f_strnicmp(
 		const char *		pszStr1,
 		const char *		pszStr2,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
-	FLMINT FLMAPI f_strcpy(
+	char * FLMAPI f_strcpy(
 		char *				pszDest,
 		const char *		pszSrc);
 
-	FLMINT FLMAPI f_strncpy(
+	char * FLMAPI f_strncpy(
 		char *				pszDest,
 		const char *		pszSrc,
-		FLMUINT				uiLength);
+		FLMSIZET				uiLength);
 		
 	FLMINT FLMAPI f_strlen(
 		const char *		pszStr);
@@ -2421,50 +2429,52 @@
 	Desc: Memory
 	****************************************************************************/
 	
-	RCODE FLMAPI f_alloc(
+	RCODE FLMAPI f_allocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
-		const char *	pszFile = __FILE__,
-		int				iLine = __LINE__);
+		FLMBOOL			bFromNewOp,
+		const char *	pszFile,
+		int				iLine);
 		
 	#define f_alloc(s,p) \
-		f_alloc((s),(void **)p)
+		f_allocImp( (s), (void **)p, FALSE, __FILE__, __LINE__)
 		
-	RCODE FLMAPI f_calloc(
+	RCODE FLMAPI f_callocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
-		const char *	pszFile = __FILE__,
-		int				iLine = __LINE__);
+		const char *	pszFile,
+		int				iLine);
 	
 	#define f_calloc(s,p) \
-		f_calloc((s),(void **)p)
+		f_callocImp( (s), (void **)p, __FILE__, __LINE__)
 		
-	RCODE FLMAPI f_realloc(
+	RCODE FLMAPI f_reallocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
-		const char *	pszFile = __FILE__,
-		int				iLine = __LINE__);
+		const char *	pszFile,
+		int				iLine);
 		
 	#define f_realloc(s,p) \
-		f_realloc((s),(void **)p)
+		f_reallocImp( (s), (void **)p, __FILE__, __LINE__)
 		
-	RCODE FLMAPI f_recalloc(
+	RCODE FLMAPI f_recallocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
-		const char *	pszFile = __FILE__,
-		int				iLine = __LINE__);
+		const char *	pszFile,
+		int				iLine);
 		
 	#define f_recalloc(s,p) \
-		f_recalloc((s),(void **)p)
+		f_recallocImp( (s), (void **)p, __FILE__, __LINE__)
 		
 	#define f_new \
 		new( __FILE__, __LINE__)
 	
-	RCODE FLMAPI f_free(
-		void **			ppvPtr);
+	void FLMAPI f_freeImp(
+		void **			ppvPtr,
+		FLMBOOL			bFromDelOp);
 		
 	#define f_free(p) \
-		f_free( (void **)p)
+		f_freeImp( (void **)p, FALSE)
 		
 	/****************************************************************************
 	Desc: Logging
@@ -2495,41 +2505,41 @@
 		virtual RCODE FLMAPI setup( void) = 0;
 	
 		virtual FLMBOOL FLMAPI isPubidChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isQuoteChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isWhitespace(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isExtender(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isCombiningChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isNameChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isNCNameChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isIdeographic(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isBaseChar(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isDigit(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isLetter(
-			FLMUNICODE		uChar) = 0;
+			FLMUNICODE				uChar) = 0;
 	
 		virtual FLMBOOL FLMAPI isNameValid(
-			FLMUNICODE *	puzName,
-			FLMBYTE *		pszName) = 0;
+			FLMUNICODE *			puzName,
+			FLMBYTE *				pszName) = 0;
 	};
 
 	/****************************************************************************
@@ -2987,16 +2997,16 @@
 		virtual void FLMAPI reset( void) = 0;
 	
 		virtual RCODE FLMAPI import(
-			IF_IStream *				pStream,
-			FLMUINT						uiFlags,
-			IF_DOMNode *				pNodeToLinkTo,
-			eNodeInsertLoc				eInsertLoc,
-			IF_DOMNode **				ppNewNode,
-			FLM_IMPORT_STATS *		pImportStats) = 0;
+			IF_IStream *			pStream,
+			FLMUINT					uiFlags,
+			IF_DOMNode *			pNodeToLinkTo,
+			eNodeInsertLoc			eInsertLoc,
+			IF_DOMNode **			ppNewNode,
+			FLM_IMPORT_STATS *	pImportStats) = 0;
 	
 		virtual void FLMAPI setStatusCallback(
-			XML_STATUS_HOOK			fnStatus,
-			void *						pvUserData) = 0;
+			XML_STATUS_HOOK		fnStatus,
+			void *					pvUserData) = 0;
 	};
 	
 	/****************************************************************************
@@ -3102,17 +3112,17 @@
 		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
 		
 		virtual RCODE FLMAPI getBlock(
-			FLMUINT32		ui32BlockId,
-			IF_Block **		ppBlock) = 0;
+			FLMUINT32				ui32BlockId,
+			IF_Block **				ppBlock) = 0;
 			
 		virtual RCODE FLMAPI createBlock(
-			IF_Block **		ppBlock) = 0;
+			IF_Block **				ppBlock) = 0;
 		
 		virtual RCODE FLMAPI freeBlock(
-			IF_Block **		ppBlock) = 0;
+			IF_Block **				ppBlock) = 0;
 		
 		virtual RCODE FLMAPI prepareForUpdate(
-			IF_Block **		ppBlock) = 0;
+			IF_Block **				ppBlock) = 0;
 	};
 	
 	/****************************************************************************
@@ -3121,11 +3131,11 @@
 	flminterface IF_Relocator : public F_RefCount
 	{
 		virtual void FLMAPI relocate(
-			void *	pvOldAlloc,
-			void *	pvNewAlloc) = 0;
+			void *					pvOldAlloc,
+			void *					pvNewAlloc) = 0;
 	
 		virtual FLMBOOL FLMAPI canRelocate(
-			void *	pvOldAlloc) = 0;
+			void *					pvOldAlloc) = 0;
 	};
 
 	/****************************************************************************
@@ -3134,20 +3144,20 @@
 	flminterface IF_SlabManager : public F_RefCount
 	{
 		virtual RCODE FLMAPI setup(
-			FLMUINT 				uiPreallocSize) = 0;
+			FLMUINT 					uiPreallocSize) = 0;
 			
 		virtual RCODE FLMAPI allocSlab(
-			void **				ppSlab,
-			FLMBOOL				bMutexLocked) = 0;
+			void **					ppSlab,
+			FLMBOOL					bMutexLocked) = 0;
 			
 		virtual void FLMAPI freeSlab(
-			void **				ppSlab,
-			FLMBOOL				bMutexLocked) = 0;
+			void **					ppSlab,
+			FLMBOOL					bMutexLocked) = 0;
 			
 		virtual RCODE FLMAPI resize(
-			FLMUINT 				uiNumBytes,
-			FLMUINT *			puiActualSize = NULL,
-			FLMBOOL				bMutexLocked = FALSE) = 0;
+			FLMUINT 					uiNumBytes,
+			FLMUINT *				puiActualSize = NULL,
+			FLMBOOL					bMutexLocked = FALSE) = 0;
 	
 		virtual void FLMAPI incrementTotalBytesAllocated(
 			FLMUINT					uiCount,
@@ -3168,12 +3178,6 @@
 		virtual FLMUINT FLMAPI totalBytesAllocated( void) = 0;
 	
 		virtual FLMUINT FLMAPI availSlabs( void) = 0;
-		
-		virtual void FLMAPI protectSlab(
-			void *			pSlab) = 0;
-	
-		virtual void FLMAPI unprotectSlab(
-			void *			pSlab) = 0;
 	};
 
 	/****************************************************************************
@@ -3185,19 +3189,18 @@
 		virtual RCODE FLMAPI setup(
 			IF_Relocator *			pRelocator,
 			IF_SlabManager *		pSlabManager,
-			FLMBOOL					bMemProtect,
 			FLMUINT					uiCellSize,
 			FLM_SLAB_USAGE *		pUsageStats) = 0;
 	
 		virtual void * FLMAPI allocCell(
-			IF_Relocator *		pRelocator,
-			void *				pvInitialData = NULL,
-			FLMUINT				uiDataSize = 0,
-			FLMBOOL				bMutexLocked = FALSE) = 0;
+			IF_Relocator *			pRelocator,
+			void *					pvInitialData = NULL,
+			FLMUINT					uiDataSize = 0,
+			FLMBOOL					bMutexLocked = FALSE) = 0;
 	
 		virtual void FLMAPI freeCell( 
-			void *		ptr,
-			FLMBOOL		bMutexLocked) = 0;
+			void *					ptr,
+			FLMBOOL					bMutexLocked) = 0;
 	
 		virtual void FLMAPI freeUnused( void) = 0;
 	
@@ -3206,12 +3209,6 @@
 		virtual FLMUINT FLMAPI getCellSize( void) = 0;
 		
 		virtual void FLMAPI defragmentMemory( void) = 0;
-		
-		virtual void FLMAPI protectCell(
-			void *					pvCell) = 0;
-		
-		virtual void FLMAPI unprotectCell(
-			void *					pvCell) = 0;
 	};
 
 	/****************************************************************************
@@ -3221,33 +3218,32 @@
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
-			FLMBOOL					bMemProtect,
 			FLM_SLAB_USAGE *		pUsageStats) = 0;
 	
 		virtual RCODE FLMAPI allocBuf(
-			IF_Relocator *		pRelocator,
-			FLMUINT				uiSize,
-			void *				pvInitialData,
-			FLMUINT				uiDataSize,
-			FLMBYTE **			ppucBuffer,
-			FLMBOOL *			pbAllocatedOnHeap = NULL) = 0;
+			IF_Relocator *			pRelocator,
+			FLMUINT					uiSize,
+			void *					pvInitialData,
+			FLMUINT					uiDataSize,
+			FLMBYTE **				ppucBuffer,
+			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
 	
 		virtual RCODE FLMAPI reallocBuf(
-			IF_Relocator *		pRelocator,
-			FLMUINT				uiOldSize,
-			FLMUINT				uiNewSize,
-			void *				pvInitialData,
-			FLMUINT				uiDataSize,
-			FLMBYTE **			ppucBuffer,
-			FLMBOOL *			pbAllocatedOnHeap = NULL) = 0;
+			IF_Relocator *			pRelocator,
+			FLMUINT					uiOldSize,
+			FLMUINT					uiNewSize,
+			void *					pvInitialData,
+			FLMUINT					uiDataSize,
+			FLMBYTE **				ppucBuffer,
+			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
 	
 		virtual void FLMAPI freeBuf(
-			FLMUINT				uiSize,
-			FLMBYTE **			ppucBuffer) = 0;
+			FLMUINT					uiSize,
+			FLMBYTE **				ppucBuffer) = 0;
 	
 		virtual FLMUINT FLMAPI getTrueSize(
-			FLMUINT				uiSize,
-			FLMBYTE *			pucBuffer) = 0;
+			FLMUINT					uiSize,
+			FLMBYTE *				pucBuffer) = 0;
 	
 		virtual void FLMAPI defragmentMemory( void) = 0;
 	};
@@ -3259,7 +3255,6 @@
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
-			FLMBOOL					bMemProtect,
 			FLMUINT *				puiCellSizes,
 			FLM_SLAB_USAGE *		pUsageStats) = 0;
 	
@@ -3283,14 +3278,6 @@
 		virtual FLMUINT FLMAPI getTrueSize(
 			FLMBYTE *				pucBuffer) = 0;
 	
-		virtual void FLMAPI protectBuffer(
-			void *					pvBuffer,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
-	
-		virtual void FLMAPI unprotectBuffer(
-			void *					pvBuffer,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
-	
 		virtual void FLMAPI lockMutex( void) = 0;
 	
 		virtual void FLMAPI unlockMutex( void) = 0;
@@ -3312,20 +3299,20 @@
 		((tmp) = (a), (a) = (b), (b) = (tmp))
 		
 	RCODE FLMAPI f_filecpy(
-		const char *	pszSourceFile,
-		const char *	pszData);
+		const char *				pszSourceFile,
+		const char *				pszData);
 		
 	RCODE FLMAPI f_filecat(
-		const char *	pszSourceFile,
-		const char *	pszData);
+		const char *				pszSourceFile,
+		const char *				pszData);
 
 	RCODE FLMAPI f_copyPartial(
-		IF_FileHdl *	pSrcFileHdl,
-		FLMUINT64		ui64SrcOffset,
-		FLMUINT64		ui64SrcSize,
-		IF_FileHdl *	pDestFileHdl,
-		FLMUINT64		ui64DestOffset,
-		FLMUINT64 *		pui64BytesCopiedRV);
+		IF_FileHdl *				pSrcFileHdl,
+		FLMUINT64					ui64SrcOffset,
+		FLMUINT64					ui64SrcSize,
+		IF_FileHdl *				pDestFileHdl,
+		FLMUINT64					ui64DestOffset,
+		FLMUINT64 *					pui64BytesCopiedRV);
 	
 	/****************************************************************************
 	Desc: Status and return codes
@@ -3342,7 +3329,7 @@
 	#define FTK_ERROR_BASE(e)		((RCODE)((int)(0x81055000+(e))))
 	
 	const char * FLMAPI f_errorString(
-		RCODE			rc);
+		RCODE							rc);
 
 	/****************************************************************************
 	Desc: General errors
@@ -3388,8 +3375,9 @@
 	#define NE_FLM_NOT_UNIQUE									FTK_ERROR_BASE( 0x124)			// Non-unique key
 	#define NE_FLM_BTREE_ERROR									FTK_ERROR_BASE( 0x125)			// Generic b-tree error
 	#define NE_FLM_BTREE_KEY_SIZE								FTK_ERROR_BASE( 0x126)			// Invalid b-tree key size
-	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x127)			// B-tree cannot grow beyond current size				
-	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x128)			// NOTE: This is not an error code - do not document
+	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x127)			// B-tree cannot grow beyond current size
+	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x128)			// B-tree operation cannot be completed 
+	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x129)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc: I/O Errors
@@ -3439,8 +3427,7 @@
 	#define NE_FLM_CHECKING_FILE_EXISTENCE					FTK_ERROR_BASE( 0x229)			// Unexpected error occurred while checking to see if a file exists.
 	#define NE_FLM_RENAMING_FILE								FTK_ERROR_BASE( 0x22A)			// Unexpected error occurred while renaming a file.
 	#define NE_FLM_SETTING_FILE_INFO							FTK_ERROR_BASE( 0x22B)			// Unexpected error occurred while setting a file's information.
-	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x22C)
-	#define NE_FLM_LAST_IO_ERROR								FTK_ERROR_BASE( 0x22D)			// NOTE: This is not an error code - do not document
+	#define NE_FLM_LAST_IO_ERROR								FTK_ERROR_BASE( 0x22C)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc: Network Errors

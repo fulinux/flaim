@@ -28,6 +28,15 @@
 #define MAX_ELEMENTS_TO_LOAD			0xFFFF
 #define MAX_ATTRIBUTES_TO_LOAD		0xFFFF
 
+typedef struct
+{
+	FLMUINT				uiType;
+	FLMUNICODE *		puzTagName;
+	FLMUINT				uiTagNum;
+	FLMUINT				uiDataType;
+	FLMUNICODE *		puzNamespace;
+} FLM_TAG_INFO;
+
 typedef FLMINT (*	TAG_COMPARE_FUNC)(
 	FLM_TAG_INFO *			pTagInfo1,
 	FLM_TAG_INFO *			pTagInfo2);
@@ -52,11 +61,158 @@ FSTATIC void sortTagTbl(
 	TAG_COMPARE_FUNC		fnTagCompare);
 
 /****************************************************************************
+Desc:	Class for name/number lookup.
+****************************************************************************/
+class F_NameTable : public IF_NameTable, public F_Base
+{
+public:
+
+	F_NameTable();
+
+	virtual ~F_NameTable();
+
+	RCODE FLMAPI setupNameTable( void);
+
+	void FLMAPI clearTable(
+		FLMUINT					uiPoolBlkSize);
+
+	RCODE FLMAPI getNextTagTypeAndNumOrder(
+		FLMUINT					uiType,
+		FLMUINT *				puiNextPos,
+		FLMUNICODE *			puzTagName = NULL,
+		char *					pszTagName = NULL,
+		FLMUINT					uiNameBufSize = 0,
+		FLMUINT *				puiTagNum = NULL,
+		FLMUINT *				puiDataType = NULL,
+		FLMUNICODE *			puzNamespace = NULL,
+		FLMUINT					uiNamespaceBufSize = 0,
+		FLMBOOL					bTruncatedNamesOk = TRUE);
+
+	RCODE FLMAPI getNextTagTypeAndNameOrder(
+		FLMUINT					uiType,
+		FLMUINT *				puiNextPos,
+		FLMUNICODE *			puzTagName = NULL,
+		char *					pszTagName = NULL,
+		FLMUINT					uiNameBufSize = 0,
+		FLMUINT *				puiTagNum = NULL,
+		FLMUINT *				puiDataType = NULL,
+		FLMUNICODE *			puzNamespace = NULL,
+		FLMUINT					uiNamespaceBufSize = 0,
+		FLMBOOL					bTruncatedNamesOk = TRUE);
+
+	RCODE FLMAPI getFromTagTypeAndName(
+		FLMUINT					uiType,
+		const FLMUNICODE *	puzTagName,
+		const char *			pszTagName,
+		FLMBOOL					bMatchNamespace,
+		const FLMUNICODE *	puzNamespace = NULL,
+		FLMUINT *				puiTagNum = NULL,
+		FLMUINT *				puiDataType = NULL);
+
+	RCODE FLMAPI getFromTagTypeAndNum(
+		FLMUINT					uiType,
+		FLMUINT					uiTagNum,
+		FLMUNICODE *			puzTagName = NULL,
+		char *					pszTagName = NULL,
+		FLMUINT *				puiNameBufSize = NULL,
+		FLMUINT *				puiDataType = NULL,
+		FLMUNICODE *			puzNamespace = NULL,
+		char *					pszNamespace = NULL,
+		FLMUINT *				puiNamespaceBufSize = NULL,
+		FLMBOOL					bTruncatedNamesOk = TRUE);
+
+	RCODE FLMAPI addTag(
+		FLMUINT					uiType,
+		FLMUNICODE *			puzTagName,
+		const char *			pszTagName,
+		FLMUINT					uiTagNum,
+		FLMUINT					uiDataType = 0,
+		FLMUNICODE *			puzNamespace = NULL,
+		FLMBOOL					bCheckDuplicates = TRUE);
+
+	void FLMAPI removeTag(
+		FLMUINT	uiType,
+		FLMUINT	uiTagNum);
+
+	RCODE FLMAPI cloneNameTable(
+		IF_NameTable *			pSrcNameTable);
+
+	RCODE FLMAPI importFromNameTable(
+		IF_NameTable *			pSrcNameTable);
+
+	FLMINT FLMAPI AddRef( void);
+
+	FLMINT FLMAPI Release( void);
+	
+private:
+
+	void sortTags( void);
+
+	RCODE allocTag(
+		FLMUINT					uiType,
+		FLMUNICODE *			puzTagName,
+		const char *			pszTagName,
+		FLMUINT					uiTagNum,
+		FLMUINT					uiDataType,
+		FLMUNICODE *			puzNamespace,
+		FLM_TAG_INFO **		ppTagInfo);
+
+	RCODE reallocSortTables(
+		FLMUINT					uiNewTblSize);
+
+	RCODE copyTagName(
+		FLMUNICODE *			puzDestTagName,
+		char *					pszDestTagName,
+		FLMUINT *				puiDestBufSize,
+		FLMUNICODE *			puzSrcTagName,
+		FLMBOOL					bTruncatedNamesOk);
+
+	FLM_TAG_INFO * findTagByTypeAndNum(
+		FLMUINT					uiType,
+		FLMUINT					uiTagNum,
+		FLMUINT *				puiInsertPos = NULL);
+
+	FLM_TAG_INFO * findTagByTypeAndName(
+		FLMUINT					uiType,
+		const FLMUNICODE *	puzTagName,
+		const char *			pszTagName,
+		FLMBOOL					bMatchNamespace,
+		const FLMUNICODE *	puzNamespace,
+		FLMBOOL *				pbAmbiguous,
+		FLMUINT *				puiInsertPos = NULL);
+
+	RCODE insertTagInTables(
+		FLM_TAG_INFO *			pTagInfo,
+		FLMUINT					uiTagTypeAndNameTblInsertPos,
+		FLMUINT					uiTagTypeAndNumTblInsertPos);
+
+	FLMUNICODE * findNamespace(
+		FLMUNICODE *			puzNamespace,
+		FLMUINT *				puiInsertPos);
+
+	RCODE insertNamespace(
+		FLMUNICODE *			puzNamespace,
+		FLMUINT					uiInsertPos);
+
+	IF_Pool *					m_pPool;
+	FLMUINT						m_uiMemoryAllocated;
+	FLM_TAG_INFO **			m_ppSortedByTagTypeAndName;
+	FLM_TAG_INFO **			m_ppSortedByTagTypeAndNum;
+	FLMUINT						m_uiTblSize;
+	FLMUINT						m_uiNumTags;
+	FLMBOOL						m_bTablesSorted;
+	FLMUNICODE **				m_ppuzNamespaces;
+	FLMUINT						m_uiNamespaceTblSize;
+	FLMUINT						m_uiNumNamespaces;
+	F_MUTEX						m_hRefMutex;
+};
+
+/****************************************************************************
 Desc:
 ****************************************************************************/
 F_NameTable::F_NameTable()
 {
-	m_pool.poolInit( 1024);
+	m_pPool = NULL;
 	m_uiMemoryAllocated = 0;
 	m_ppSortedByTagTypeAndName = NULL;
 	m_ppSortedByTagTypeAndNum = NULL;
@@ -76,6 +232,11 @@ F_NameTable::~F_NameTable()
 {
 	clearTable( 0);
 	
+	if( m_pPool)
+	{
+		m_pPool->Release();
+	}
+	
 	if( m_hRefMutex)
 	{
 		f_mutexDestroy( &m_hRefMutex);
@@ -88,20 +249,18 @@ Desc:	Setup name table.  This routine should be called immediately after
 ****************************************************************************/
 RCODE FLMAPI F_NameTable::setupNameTable( void)
 {
-#ifndef FLM_HAVE_ATOMICS	
 	RCODE		rc = NE_FLM_OK;
-
-	if( RC_BAD( rc = f_mutexCreate( &m_hRefMutex)))
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
 	{
 		goto Exit;
 	}
 	
+	m_pPool->poolInit( 1024);
+
 Exit:
-	
+
 	return( rc);
-#else
-	return( NE_FLM_OK);
-#endif
 }
 
 /****************************************************************************
@@ -110,11 +269,11 @@ Desc:	Free everything in the table
 void FLMAPI F_NameTable::clearTable(
 	FLMUINT	uiPoolBlkSize)
 {
-	m_pool.poolFree();
+	m_pPool->poolFree();
 	
 	if (uiPoolBlkSize)
 	{
-		m_pool.poolInit( uiPoolBlkSize);
+		m_pPool->poolInit( uiPoolBlkSize);
 	}
 	
 	m_uiMemoryAllocated = 0;
@@ -996,9 +1155,9 @@ RCODE F_NameTable::allocTag(
 
 	// Create a new tag info structure.
 
-	pvMark = m_pool.poolMark();
+	pvMark = m_pPool->poolMark();
 	uiSaveMemoryAllocated = m_uiMemoryAllocated;
-	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FLM_TAG_INFO),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FLM_TAG_INFO),
 										(void **)&pTagInfo)))
 	{
 		goto Exit;
@@ -1010,7 +1169,7 @@ RCODE F_NameTable::allocTag(
 	if (puzTagName)
 	{
 		uiNameSize = (f_unilen( puzTagName) + 1) * sizeof( FLMUNICODE);
-		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
 											(void **)&pTagInfo->puzTagName)))
 		{
 			goto Exit;
@@ -1021,7 +1180,7 @@ RCODE F_NameTable::allocTag(
 	else
 	{
 		uiNameSize = (f_strlen( pszTagName) + 1) * sizeof( FLMUNICODE);
-		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
 										(void **)&pTagInfo->puzTagName)))
 		{
 			goto Exit;
@@ -1050,7 +1209,7 @@ RCODE F_NameTable::allocTag(
 										&uiNamespaceInsertPos)) == NULL)
 		{
 			uiNameSize = (f_unilen( puzNamespace) + 1) * sizeof( FLMUNICODE);
-			if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+			if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
 										(void **)&puzTblNamespace)))
 			{
 				goto Exit;
@@ -1068,7 +1227,7 @@ RCODE F_NameTable::allocTag(
 			// allocated if the pool is reset at Exit due to a later
 			// error.
 
-			pvMark = m_pool.poolMark();
+			pvMark = m_pPool->poolMark();
 			uiSaveMemoryAllocated = m_uiMemoryAllocated;
 		}
 		
@@ -1079,7 +1238,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		m_pool.poolReset( pvMark);
+		m_pPool->poolReset( pvMark);
 		m_uiMemoryAllocated = uiSaveMemoryAllocated;
 		pTagInfo = NULL;
 	}
