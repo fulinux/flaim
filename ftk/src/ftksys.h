@@ -49,30 +49,6 @@
 		IF_ThreadMgr *					gv_pThreadMgr;
 	#endif
 	
-	/****************************************************************************
-	Desc:	Errors
-	****************************************************************************/
-	#ifdef FLM_DEBUG
-		RCODE	f_makeErr(
-			RCODE				rc,
-			const char *	pszFile,
-			int				iLine,
-			FLMBOOL			bAssert);
-			
-		#define RC_SET( rc) \
-			f_makeErr( rc, __FILE__, __LINE__, FALSE)
-			
-		#define RC_SET_AND_ASSERT( rc) \
-			f_makeErr( rc, __FILE__, __LINE__, TRUE)
-			
-		#define RC_UNEXPECTED_ASSERT( rc) \
-			f_makeErr( rc, __FILE__, __LINE__, TRUE)
-	#else
-		#define RC_SET( rc)							(rc)
-		#define RC_SET_AND_ASSERT( rc)			(rc)
-		#define RC_UNEXPECTED_ASSERT( rc)
-	#endif
-
 	RCODE MapPlatformError(
 		FLMINT		iError,
 		RCODE			defaultRc);
@@ -574,45 +550,6 @@
 	protected:
 
 		FLMATOMIC		m_refCnt;
-	};
-
-	/****************************************************************************
-	Desc:		Base class
-	****************************************************************************/
-	class F_Base
-	{
-	public:
-	
-		F_Base()
-		{
-		}
-	
-		virtual ~F_Base()
-		{
-		}
-	
-		void * operator new(
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
-	
-		void * operator new[](
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
-		
-		void operator delete(
-			void *			ptr);
-	
-		void operator delete(
-			void *			ptr,
-			const char *	file,
-			int				line);
-	
-		void operator delete[](
-			void *			ptr,
-			const char *	file,
-			int				line);
 	};
 
 	/****************************************************************************

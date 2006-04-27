@@ -172,7 +172,7 @@ Desc:	The primary purpose of this function is to provide a way to easily
 		to catch them.
 ****************************************************************************/
 #ifdef FLM_DEBUG
-RCODE f_makeErr(
+RCODE FLMAPI f_makeErr(
 	RCODE				rc,
 	const char *,	// pszFile,
 	int,				// iLine,
@@ -502,6 +502,18 @@ RCODE f_checkErrorCodeTables( void)
 Exit:
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_enterDebugger( void)
+{
+#ifdef FLM_WIN
+	DebugBreak();
+#else
+	assert( 0);
+#endif
 }
 
 /****************************************************************************

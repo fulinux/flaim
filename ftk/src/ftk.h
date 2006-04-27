@@ -400,7 +400,6 @@
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
 	flminterface IF_IOBuffer;
-	flminterface IF_DOMNode;
 
 	/****************************************************************************
 										CROSS PLATFORM DEFINITIONS
@@ -640,95 +639,6 @@
 	} eNodeInsertLoc;
 	
 	/****************************************************************************
-	Desc:	XML
-	****************************************************************************/
-	typedef enum
-	{
-		FLM_XML_UTF8_ENCODING,
-		FLM_XML_USASCII_ENCODING
-	} XMLEncoding;
-
-	typedef enum
-	{
-		XML_NO_ERROR = 0,
-		XML_ERR_BAD_ELEMENT_NAME,				// 1	Invalid element name - does not start with a valid character for element names
-		XML_ERR_XMLNS_IN_ELEMENT_NAME,		// 2	Element names cannot be "xmlns" or have "xmlns:" as a prefix
-		XML_ERR_ELEMENT_NAME_MISMATCH,		//	3	The element name inside the "</" does not match the element name in the opening "<"
-		XML_ERR_PREFIX_NOT_DEFINED,			// 4	The prefix for the element or attribute has not been defined with an "xmlns:prefix=" attribute somewhere
-		XML_ERR_EXPECTING_GT,					// 5	Expecting a '>'
-		XML_ERR_EXPECTING_ELEMENT_LT,			// 6	Expecting a '<' to begin an element name
-		XML_ERR_EXPECTING_EQ,					// 7	Expecting a '=' after the attribute name
-		XML_ERR_MULTIPLE_XMLNS_DECLS,			// 8	Multiple "xmlns" default namespace declarations in an element
-		XML_ERR_MULTIPLE_PREFIX_DECLS,		// 9	Multiple definitions for the same prefix ("xmlns:prefix=...") in an element
-		XML_ERR_EXPECTING_QUEST_GT,			// 10	Expecting "?>" to terminate "<?xml" declaration
-		XML_ERR_INVALID_XML_MARKUP,			// 11	Invalid XML markup, expecting "<?", "<!--", "<!ENTITY", "<!ELEMENT", "<!ATTLIST", or "<!NOTATION"
-		XML_ERR_MUST_HAVE_ONE_ATT_DEF,		// 12	Must have at least one attr def in an <!ATTLIST markup
-		XML_ERR_EXPECTING_NDATA,				// 13	Expecting "NDATA" keyword
-		XML_ERR_EXPECTING_SYSTEM_OR_PUBLIC,	// 14	Expecting "SYSTEM" or "PUBLIC" keyword in <!NOTATION declaration
-		XML_ERR_EXPECTING_LPAREN,				// 15	Expecting "("
-		XML_ERR_EXPECTING_RPAREN_OR_PIPE,	// 16	Expecing ")" or "|"
-		XML_ERR_EXPECTING_NAME,					// 17	Expecting a name
-		XML_ERR_INVALID_ATT_TYPE,				// 18	Invalid Attr type in <!ATTLIST markup, expecting CDATA, ID, IDREF, IDREFS, ENTITY, ENTITIES, NMTOKEN, NMTOKENS, NOTATION, or (
-		XML_ERR_INVALID_DEFAULT_DECL,			// 19 Invalid default decl, expecting #FIXED, #REQUIRED, #IMPLIED, or quoted attr value
-		XML_ERR_EXPECTING_PCDATA,				// 20	Expecting PCDATA - only PCDATA allowed after #
-		XML_ERR_EXPECTING_ASTERISK,			// 21	Expecting "*"
-		XML_ERR_EMPTY_CONTENT_INVALID,		// 22	Empty content is invalid - must be parameters between parens
-		XML_ERR_CANNOT_MIX_CHOICE_AND_SEQ,	// 23	Cannot mix choice items with sequenced items.
-		XML_ERR_XML_ILLEGAL_PI_NAME,			// 24	"XML" is not a legal name for a processing instruction
-		XML_ERR_ILLEGAL_FIRST_NAME_CHAR,		// 25	Illegal first character in name - must be an alphabetic letter or underscore
-		XML_ERR_ILLEGAL_COLON_IN_NAME,		// 26	Illegal second ":" found in name.  Name already has a colon.
-		XML_ERR_EXPECTING_VERSION,				// 27	Expecting "version"
-		XML_ERR_INVALID_VERSION_NUM,			// 28	Invalid version number - only 1.0 is supported.
-		XML_ERR_UNSUPPORTED_ENCODING,			// 29	Unsupported encoding - must be "UTF-8" or "us-ascii"
-		XML_ERR_EXPECTING_YES_OR_NO,			// 30	Expecting "yes" or "no"
-		XML_ERR_EXPECTING_QUOTE_BEFORE_EOL,	// 31	Expecting quote character - unexpected end of line
-		XML_ERR_EXPECTING_SEMI,					// 32	Expecting ";"
-		XML_ERR_UNEXPECTED_EOL_IN_ENTITY,	// 33 Unexpected end of line in entity reference, need proper terminating character - ";"
-		XML_ERR_INVALID_CHARACTER_NUMBER,	// 34	Invalid numeric character entity.  Number is either too large, or zero, or illegal characters were used in the number.
-		XML_ERR_UNSUPPORTED_ENTITY,			// 35	Unsupported predefined entity reference.
-		XML_ERR_EXPECTING_QUOTE,				// 36	Expecting single or double quote character.
-		XML_ERR_INVALID_PUBLIC_ID_CHAR,		// 37	Invalid character in public id.
-		XML_ERR_EXPECTING_WHITESPACE,			// 38	Whitespace required
-		XML_ERR_EXPECTING_HEX_DIGIT,			// 39	Expecting HEX digit for binary value
-		XML_ERR_INVALID_BINARY_ATTR_VALUE,	// 40	Invalid binary value for attribute
-		XML_ERR_CREATING_CDATA_NODE,			// 41 Error returned from createNode in processCDATA
-		XML_ERR_CREATING_COMMENT_NODE,		// 42 Error returned from createNode in processComment
-		XML_ERR_CREATING_PI_NODE,				// 43 Error returned from createNode in processPI
-		XML_ERR_CREATING_DATA_NODE,			// 44 Error returned from createNode in processPI
-		XML_ERR_CREATING_ROOT_ELEMENT,		// 45 Error returned from createRootElement in processSTag
-		XML_ERR_CREATING_ELEMENT_NODE,		// 46 Error returned from createNode in processSTag
-		XML_NUM_ERRORS
-	} XMLParseError;
-	
-	typedef struct
-	{
-		FLMUINT						uiLines;
-		FLMUINT						uiChars;
-		FLMUINT						uiAttributes;
-		FLMUINT						uiElements;
-		FLMUINT						uiText;
-		FLMUINT						uiDocuments;
-		FLMUINT						uiErrLineNum;
-		FLMUINT						uiErrLineOffset;	// NOTE: This is a zero-based offset
-		XMLParseError				eErrorType;
-		FLMUINT						uiErrLineFilePos;
-		FLMUINT						uiErrLineBytes;
-		XMLEncoding					eXMLEncoding;
-	} FLM_IMPORT_STATS;
-
-	typedef enum
-	{
-		XML_STATS
-	} eXMLStatus;
-	
-	typedef RCODE (* XML_STATUS_HOOK)(
-		eXMLStatus					eStatusType,
-		void *						pvArg1,
-		void *						pvArg2,
-		void *						pvArg3,
-		void *						pvUserData);
-
-	/****************************************************************************
 	Desc:	Startup and shutdown
 	****************************************************************************/
 	
@@ -778,6 +688,75 @@
 
 		FLMATOMIC		m_refCnt;
 	};
+
+	/****************************************************************************
+	Desc:		Base class
+	****************************************************************************/
+	class F_Base
+	{
+	public:
+	
+		F_Base()
+		{
+		}
+	
+		virtual ~F_Base()
+		{
+		}
+	
+		void * operator new(
+			FLMSIZET			uiSize,
+			const char *	pszFile,
+			int				iLine);
+	
+		void * operator new[](
+			FLMSIZET			uiSize,
+			const char *	pszFile,
+			int				iLine);
+		
+		void operator delete(
+			void *			ptr);
+	
+		void operator delete(
+			void *			ptr,
+			const char *	file,
+			int				line);
+	
+		void operator delete[](
+			void *			ptr,
+			const char *	file,
+			int				line);
+	};
+
+	/****************************************************************************
+	Desc:	Errors
+	****************************************************************************/
+	#ifdef FLM_DEBUG
+		RCODE	FLMAPI f_makeErr(
+			RCODE				rc,
+			const char *	pszFile,
+			int				iLine,
+			FLMBOOL			bAssert);
+			
+		void FLMAPI f_enterDebugger( void);
+			
+		#define RC_SET( rc) \
+			f_makeErr( rc, __FILE__, __LINE__, FALSE)
+			
+		#define RC_SET_AND_ASSERT( rc) \
+			f_makeErr( rc, __FILE__, __LINE__, TRUE)
+			
+		#define RC_UNEXPECTED_ASSERT( rc) \
+			f_makeErr( rc, __FILE__, __LINE__, TRUE)
+			
+		#define f_assert( c) \
+			(void)((c) ? f_enterDebugger() : 0)
+	#else
+		#define RC_SET( rc)							(rc)
+		#define RC_SET_AND_ASSERT( rc)			(rc)
+		#define RC_UNEXPECTED_ASSERT( rc)
+		#define f_assert(c)
+	#endif
 
 	/****************************************************************************
 	Desc:
@@ -2552,473 +2531,6 @@
 			FLMBYTE *				pszName) = 0;
 	};
 
-	/****************************************************************************
-	Desc: DOM
-	****************************************************************************/
-	flminterface IF_DOMNode : public F_RefCount
-	{
-		virtual RCODE FLMAPI createNode(
-			eDomNodeType			eNodeType,
-			FLMUINT					uiNameId,
-			eNodeInsertLoc			eLocation,
-			IF_DOMNode **			ppNewNode) = 0;
-
-		virtual RCODE FLMAPI createChildElement(
-			FLMUINT					uiChildElementNameId,
-			eNodeInsertLoc			eLocation,
-			IF_DOMNode **			ppNewChildElementNode) = 0;
-			
-		virtual RCODE FLMAPI deleteNode( void);
-
-		virtual RCODE FLMAPI deleteChildren(
-			FLMUINT					uiNameId = 0) = 0;
-			
-		virtual RCODE FLMAPI createAttribute(
-			FLMUINT					uiAttrNameId,
-			IF_DOMNode **			ppAttrNode) = 0;
-
-		virtual RCODE FLMAPI getFirstAttribute(
-			IF_DOMNode **			ppAttrNode) = 0;
-
-		virtual RCODE FLMAPI getLastAttribute(
-			IF_DOMNode **			ppAttrNode) = 0;
-
-		virtual RCODE FLMAPI getAttribute(
-			FLMUINT					uiAttrNameId,
-			IF_DOMNode **			ppAttrNode) = 0;
-
-		virtual RCODE FLMAPI deleteAttribute(
-			FLMUINT					uiAttrNameId) = 0;
-
-		virtual RCODE FLMAPI hasAttribute(
-			FLMUINT					uiAttrNameId,
-			IF_DOMNode **			ppAttrNode = NULL) = 0;
-
-		virtual RCODE FLMAPI hasAttributes(
-			FLMBOOL *				pbHasAttrs) = 0;
-
-		virtual RCODE FLMAPI hasNextSibling(
-			FLMBOOL *				pbHasNextSibling) = 0;
-
-		virtual RCODE FLMAPI hasPreviousSibling(
-			FLMBOOL *				pbHasPreviousSibling) = 0;
-
-		virtual RCODE FLMAPI hasChildren(
-			FLMBOOL *				pbHasChildren) = 0;
-
-		virtual RCODE FLMAPI isNamespaceDecl(
-			FLMBOOL *				pbIsNamespaceDecl) = 0;
-
-		virtual eDomNodeType FLMAPI getNodeType( void) = 0;
-			
-		virtual RCODE FLMAPI getNodeId(
-			FLMUINT64 *				pui64NodeId) = 0;
-
-		virtual RCODE FLMAPI getParentId(
-			FLMUINT64 *				pui64ParentId) = 0;
-			
-		virtual RCODE FLMAPI getDocumentId(
-			FLMUINT64 *				pui64DocumentId) = 0;
-
-		virtual RCODE FLMAPI getPrevSibId(
-			FLMUINT64 *				pui64PrevSibId) = 0;
-
-		virtual RCODE FLMAPI getNextSibId(
-			FLMUINT64 *				pui64NextSibId) = 0;
-
-		virtual RCODE FLMAPI getFirstChildId(
-			FLMUINT64 *				pui64FirstChildId) = 0;
-
-		virtual RCODE FLMAPI getLastChildId(
-			FLMUINT64 *				pui64LastChildId) = 0;
-
-		virtual RCODE FLMAPI getNameId(
-			FLMUINT *				puiNameId) = 0;
-
-		virtual RCODE FLMAPI getEncDefId(
-			FLMUINT *				puiEncDefId) = 0;
-
-		virtual RCODE FLMAPI getDataType(
-			eFlmDataType *			puiDataType) = 0;
-
-		virtual RCODE FLMAPI getDataLength(
-			FLMUINT *				puiLength) = 0;
-
-		virtual RCODE FLMAPI getUINT32(
-			FLMUINT32 *				pui32Value) = 0;
-			
-		virtual RCODE FLMAPI getUINT(
-			FLMUINT *				puiValue) = 0;
-
-		virtual RCODE FLMAPI getUINT64(
-			FLMUINT64 *				pui64Value) = 0;
-
-		virtual RCODE FLMAPI getINT32(
-			FLMINT32 *				pi32Value) = 0;
-			
-		virtual RCODE FLMAPI getINT(
-			FLMINT *					piValue) = 0;
-
-		virtual RCODE FLMAPI getINT64(
-			FLMINT64 *				pi64Value) = 0;
-
-		virtual RCODE FLMAPI getMetaValue(
-			FLMUINT64 *				pui64Value) = 0;
-			
-		virtual RCODE FLMAPI getUnicodeChars(
-			FLMUINT *				puiNumChars) = 0;
-
-		virtual RCODE FLMAPI getUnicode(
-			FLMUNICODE *			puzValueBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT					uiCharOffset,
-			FLMUINT					uiMaxCharsRequested,
-			FLMUINT *				puiCharsReturned = NULL,
-			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
-
-		virtual RCODE FLMAPI getUnicode(
-			FLMUNICODE **			ppuzUnicodeValue) = 0;
-
-		virtual RCODE FLMAPI getUnicode(
-			IF_DynaBuf *			pDynaBuf) = 0;
-			
-		virtual RCODE FLMAPI getUTF8(
-			FLMBYTE *				pucValueBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT					uiCharOffset,
-			FLMUINT					uiMaxCharsRequested,
-			FLMUINT *				puiCharsReturned = NULL,
-			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
-
-		virtual RCODE FLMAPI getUTF8(
-			FLMBYTE **				ppszUTF8Value) = 0;
-			
-		virtual RCODE FLMAPI getUTF8(
-			IF_DynaBuf *			pDynaBuf) = 0;
-
-		virtual RCODE FLMAPI getBinary(
-			void *					pvValue,
-			FLMUINT					uiByteOffset,
-			FLMUINT					uiBytesRequested,
-			FLMUINT *				puiBytesReturned) = 0;
-
-		virtual RCODE FLMAPI getBinary(
-			IF_DynaBuf *			pBuffer) = 0;
-			
-		virtual RCODE FLMAPI getAttributeValueUINT32(
-			FLMUINT					uiAttrNameId,
-			FLMUINT32 *				pui32Num) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUINT32(
-			FLMUINT					uiAttrNameId,
-			FLMUINT32 *				pui32Num,
-			FLMUINT32				ui32NotFoundDefault) = 0;
-			
-		virtual RCODE FLMAPI getAttributeValueUINT(
-			FLMUINT					uiAttrNameId,
-			FLMUINT *				puiNum) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUINT(
-			FLMUINT					uiAttrNameId,
-			FLMUINT *				puiNum,
-			FLMUINT					uiNotFoundDefault) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUINT64(
-			FLMUINT					uiAttrNameId,
-			FLMUINT64 *				pui64Num) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUINT64(
-			FLMUINT					uiAttrNameId,
-			FLMUINT64 *				pui64Num,
-			FLMUINT64				ui64NotFoundDefault) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueINT(
-			FLMUINT					uiAttrNameId,
-			FLMINT *					piNum) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueINT(
-			FLMUINT					uiAttrNameId,
-			FLMINT *					piNum,
-			FLMINT					iNotFoundDefault) = 0;
-			
-		virtual RCODE FLMAPI getAttributeValueINT64(
-			FLMUINT					uiAttrNameId,
-			FLMINT64 *				pi64Num) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueINT64(
-			FLMUINT					uiAttrNameId,
-			FLMINT64 *				pi64Num,
-			FLMINT64					i64NotFoundDefault) = 0;
-			
-		virtual RCODE FLMAPI getAttributeValueUnicode(
-			FLMUINT					uiAttrNameId,
-			FLMUNICODE *			puzValueBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL,
-			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUnicode(
-			FLMUINT					uiAttrNameId,
-			FLMUNICODE **			ppuzValueBuffer) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUnicode(
-			FLMUINT					uiAttrNameId,
-			IF_DynaBuf *			pDynaBuf) = 0;
-			
-		virtual RCODE FLMAPI getAttributeValueUTF8(
-			FLMUINT					uiAttrNameId,
-			FLMBYTE *				pucValueBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL,
-			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueUTF8(
-			FLMUINT					uiAttrNameId,
-			FLMBYTE **				ppszValueBuffer) = 0;
-			
-		virtual RCODE FLMAPI getAttributeValueUTF8(
-			FLMUINT					uiAttrNameId,
-			IF_DynaBuf *			pDynaBuf) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueBinary(
-			FLMUINT					uiAttrNameId,
-			void *					pvValueBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiValueLength) = 0;
-
-		virtual RCODE FLMAPI getAttributeValueBinary(
-			FLMUINT					uiAttrNameId,
-			IF_DynaBuf *			pDynaBuf) = 0;
-			
-		virtual RCODE FLMAPI setUINT(
-			FLMUINT					uiValue,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setUINT64(
-			FLMUINT64				ui64Value,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setINT(
-			FLMINT					iValue,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setINT64(
-			FLMINT64					i64Value,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setMetaValue(
-			FLMUINT64				ui64Value) = 0;
-
-		virtual RCODE FLMAPI setUnicode(
-			const FLMUNICODE *	puzValue,
-			FLMUINT					uiValueLength = 0,
-			FLMBOOL					bLast = TRUE,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setUTF8(
-			const FLMBYTE *		pszValue,
-			FLMUINT					uiValueLength = 0,
-			FLMBOOL					bLast = TRUE,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setBinary(
-			const void *			pvValue,
-			FLMUINT					uiValueLength,
-			FLMBOOL					bLast = TRUE,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueUINT(
-			FLMUINT					uiAttrNameId,
-			FLMUINT					uiValue,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueUINT64(
-			FLMUINT					uiAttrNameId,
-			FLMUINT64				ui64Value,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueINT(
-			FLMUINT					uiAttrNameId,
-			FLMINT					iValue,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueINT64(
-			FLMUINT					uiAttrNameId,
-			FLMINT64					i64Value,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueUnicode(
-			FLMUINT					uiAttrNameId,
-			const FLMUNICODE *	puzValue,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueUTF8(
-			FLMUINT					uiAttrNameId,
-			const FLMBYTE *		pucValue,
-			FLMUINT					uiLength = 0,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI setAttributeValueBinary(
-			FLMUINT					uiAttrNameId,
-			const void *			pvValue,
-			FLMUINT					uiLength,
-			FLMUINT					uiEncDefId = 0) = 0;
-
-		virtual RCODE FLMAPI getDocumentNode(
-			IF_DOMNode **			ppDocument) = 0;
-
-		virtual RCODE FLMAPI getNextDocument(
-			IF_DOMNode **			ppNextDocument) = 0;
-
-		virtual RCODE FLMAPI getPreviousDocument(
-			IF_DOMNode **			ppPrevDocument) = 0;
-
-		virtual RCODE FLMAPI getParentNode(
-			IF_DOMNode **			ppParent) = 0;
-
-		virtual RCODE FLMAPI getFirstChild(
-			IF_DOMNode **			ppFirstChild) = 0;
-
-		virtual RCODE FLMAPI getLastChild(
-			IF_DOMNode **			ppLastChild) = 0;
-
-		virtual RCODE FLMAPI getNextSibling(
-			IF_DOMNode **			ppNextSibling) = 0;
-
-		virtual RCODE FLMAPI getPreviousSibling(
-			IF_DOMNode **			ppPrevSibling) = 0;
-
-		virtual RCODE FLMAPI getChild(
-			eDomNodeType			eNodeType,
-			IF_DOMNode **			ppChild) = 0;
-
-		virtual RCODE FLMAPI getChildElement(
-			FLMUINT					uiElementNameId,
-			IF_DOMNode **			ppChild,
-			FLMUINT					uiFlags = 0) = 0;
-
-		virtual RCODE FLMAPI getSiblingElement(
-			FLMUINT					uiElementNameId,
-			FLMBOOL					bNext,
-			IF_DOMNode **			ppSibling) = 0;
-
-		virtual RCODE FLMAPI getAncestorElement(
-			FLMUINT					uiElementNameId,
-			IF_DOMNode **			ppAncestor) = 0;
-			
-		virtual RCODE FLMAPI getDescendantElement(
-			FLMUINT					uiElementNameId,
-			IF_DOMNode **			ppDescendant) = 0;
-			
-		virtual RCODE FLMAPI insertBefore(
-			IF_DOMNode *			pNewChild,
-			IF_DOMNode *			pRefChild) = 0;
-
-		virtual RCODE FLMAPI getPrefix(
-			FLMUNICODE *			puzPrefixBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getPrefix(
-			char *					pszPrefixBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getPrefixId(
-			FLMUINT *				puiPrefixId) = 0;
-
-		virtual RCODE FLMAPI setPrefix(
-			const FLMUNICODE *	puzPrefix) = 0;
-
-		virtual RCODE FLMAPI setPrefix(
-			const char *			pszPrefix) = 0;
-
-		virtual RCODE FLMAPI setPrefixId(
-			FLMUINT					uiPrefixId) = 0;
-
-		virtual RCODE FLMAPI getNamespaceURI(
-			FLMUNICODE *			puzNamespaceURIBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getNamespaceURI(
-			char *					pszNamespaceURIBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getLocalName(
-			FLMUNICODE *			puzLocalNameBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getLocalName(
-			char *					pszLocalNameBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getQualifiedName(
-			FLMUNICODE *			puzQualifiedNameBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getQualifiedName(
-			char *					pszQualifiedNameBuffer,
-			FLMUINT					uiBufferSize,
-			FLMUINT *				puiCharsReturned = NULL) = 0;
-
-		virtual RCODE FLMAPI getCollection(
-			FLMUINT *				puiCollection) = 0;
-
-		virtual RCODE FLMAPI createAnnotation(
-			IF_DOMNode **			ppAnnotation,
-			FLMUINT64 *				pui64NodeId = NULL) = 0;
-
-		virtual RCODE FLMAPI getAnnotation(
-			IF_DOMNode **			ppAnnotation) = 0;
-
-		virtual RCODE FLMAPI getAnnotationId(
-			FLMUINT64 *				pui64AnnotationId) = 0;
-			
-		virtual RCODE FLMAPI hasAnnotation(
-			FLMBOOL *				pbHasAnnotation) = 0;
-
-		virtual RCODE FLMAPI getIStream(
-			IF_PosIStream **		ppIStream,
-			FLMUINT *				puiDataType = NULL,
-			FLMUINT *				puiDataLength = NULL) = 0;
-
-		virtual RCODE FLMAPI getTextIStream(
-			IF_PosIStream **		ppIStream,
-			FLMUINT *				puiNumChars = NULL) = 0;
-
-		virtual FLMUINT FLMAPI compareNode(
-			IF_DOMNode *			pNode,
-			char *					pszErrBuff,
-			FLMUINT					uiErrBuffLen) = 0;
-	};
-	
-	/****************************************************************************
-	Desc: XML parser
-	****************************************************************************/
-	flminterface IF_XMLParser : public F_RefCount
-	{
-		virtual RCODE FLMAPI setup( void) = 0;
-	
-		virtual void FLMAPI reset( void) = 0;
-	
-		virtual RCODE FLMAPI import(
-			IF_IStream *			pStream,
-			FLMUINT					uiFlags,
-			IF_DOMNode *			pNodeToLinkTo,
-			eNodeInsertLoc			eInsertLoc,
-			IF_DOMNode **			ppNewNode,
-			FLM_IMPORT_STATS *	pImportStats) = 0;
-	
-		virtual void FLMAPI setStatusCallback(
-			XML_STATUS_HOOK		fnStatus,
-			void *					pvUserData) = 0;
-	};
-	
 	/****************************************************************************
 	Desc: Name table
 	****************************************************************************/
