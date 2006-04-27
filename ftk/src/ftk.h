@@ -180,7 +180,11 @@
 			typedef int									FLMINT32;
 			typedef short								FLMINT16;
 			typedef signed char						FLMINT8;
-			typedef char *								f_va_list;
+			#if defined( FLM_GNUC)
+				typedef __builtin_va_list			f_va_list;
+			#else
+				typedef char *							f_va_list;
+			#endif
 
 			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
 				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
@@ -2350,15 +2354,15 @@
 		const char *		pszSrc,
 		FLMSIZET				uiLength);
 		
-	const char * FLMAPI f_strchr(
+	char * FLMAPI f_strchr(
 		const char *		pszStr,
 		unsigned char		ucByte);
 
-	const char * FLMAPI f_strrchr(
+	char * FLMAPI f_strrchr(
 		const char *		pszStr,
 		unsigned char		ucByte);
 		
-	const char * FLMAPI f_strstr(
+	char * FLMAPI f_strstr(
 		const char *		pszStr,
 		const char *		pszSearch);
 		

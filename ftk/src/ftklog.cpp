@@ -100,7 +100,7 @@ FSTATIC void f_logProcessFormatString(
 	{
 		f_logStringFormatter( 0, uiLen, uiLen, 0, pLogMessage, &args);
 	}
-	f_va_end(args);
+	f_va_end( args);
 }
 
 /****************************************************************************

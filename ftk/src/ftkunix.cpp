@@ -41,10 +41,16 @@
 
 #include <fcntl.h>
 
+extern FLMBOOL		gv_bOkToDoAsyncWrites;
+
 #if defined( FLM_SOLARIS)
 	#include <sys/statvfs.h>
 #elif defined( FLM_LINUX)
 	#include <sys/vfs.h>
+
+	extern FLMUINT		gv_uiLinuxMajorVer;
+	extern FLMUINT		gv_uiLinuxMinorVer;
+	extern FLMUINT		gv_uiLinuxRevision;
 #elif defined( FLM_OSF)
 
 	// Tru64 4.0 does not have this declaration. Tru64 5.0 renames statfs
@@ -189,29 +195,29 @@ RCODE F_FileHdl::openOrCreate(
 			else
 			{
 #if defined( FLM_LINUX)
-//				FLMUINT		uiMajor = gv_XFlmSysData.uiLinuxMajorVer;
-//				FLMUINT		uiMinor = gv_XFlmSysData.uiLinuxMinorVer;
-//				FLMUINT		uiRevision = gv_XFlmSysData.uiLinuxRevision;
+				FLMUINT		uiMajor = gv_uiLinuxMajorVer;
+				FLMUINT		uiMinor = gv_uiLinuxMinorVer;
+				FLMUINT		uiRevision = gv_uiLinuxRevision;
 																																														
 				if( uiMajor > 2 || (uiMajor == 2 && uiMinor > 6) ||
 					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
 				{
 					openFlags |= O_DIRECT;
 					
-//					if( gv_XFlmSysData.bOkToDoAsyncWrites)
-//					{
-//						m_bCanDoAsync = TRUE;
-//					}
+					if( gv_bOkToDoAsyncWrites)
+					{
+						m_bCanDoAsync = TRUE;
+					}
 				}
 				else
 				{
 					bDoDirectIO = FALSE;
 				}
 #elif defined( FLM_SOLARIS)
-//				if( gv_XFlmSysData.bOkToDoAsyncWrites)
-//				{
-//					m_bCanDoAsync = TRUE;
-//				}
+				if( gv_bOkToDoAsyncWrites)
+				{
+					m_bCanDoAsync = TRUE;
+				}
 #endif
 			}
 		}
@@ -1324,8 +1330,7 @@ void flmGetLinuxKernelVersion(
 	{
 		goto Exit;
 	}
-	if( (pszVer = (char *)f_strstr( 
-		(FLMBYTE *)szBuffer, (FLMBYTE *)"version ")) == NULL)
+	if( (pszVer = f_strstr( szBuffer, "version ")) == NULL)
 	{
 		goto Exit;
 	}
@@ -1422,8 +1427,7 @@ FINLINE FLMUINT64 flmGetLinuxMemInfoValue(
 	char *			pszTmp;
 	FLMUINT64		ui64Bytes = 0;
 
-	if( (pszTmp = (char *)f_strstr( 
-		(FLMBYTE *)pszMemInfoBuffer, (FLMBYTE *)pszTag)) == NULL)
+	if( (pszTmp = f_strstr( pszMemInfoBuffer, pszTag)) == NULL)
 	{
 		return( 0);
 	}

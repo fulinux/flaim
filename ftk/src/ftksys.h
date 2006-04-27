@@ -685,7 +685,7 @@
 		#elif defined( FLM_UNIX)
 			return( posix_atomic_add_32( piTarget, 1));
 		#else
-			#error Atomic operations aren't supported
+			#error Atomic operations are not supported
 		#endif
 	}
 	
@@ -730,7 +730,7 @@
 		#elif defined( FLM_UNIX)
 			return( posix_atomic_add_32( piTarget, -1));
 		#else
-			#error Atomic operations aren't supported
+			#error Atomic operations are not supported
 		#endif
 	}
 	
@@ -804,7 +804,7 @@
 		#elif defined( FLM_UNIX)
 			return( posix_atomic_xchg_32( piTarget, i32NewVal));
 		#else
-			#error Atomic operations aren't supported
+			#error Atomic operations are not supported
 		#endif
 	}
 
