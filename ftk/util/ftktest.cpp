@@ -36,6 +36,10 @@ int main( void)
 		goto Exit;
 	}
 	
+	FTXInit();
+	f_sleep( 1000);
+	FTXExit();
+	
 Exit:
 
 	ftkShutdown();
