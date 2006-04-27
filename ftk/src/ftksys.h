@@ -372,6 +372,17 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	FINLINE char * FLMAPI f_strncpy(
+		char *			pszDest,
+		const char *	pszSrc,
+		FLMSIZET			uiLength)
+	{
+		return( strncpy( pszDest, pszSrc, uiLength));
+	}
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	FINLINE FLMINT FLMAPI f_strlen(
 		const char *	pszStr)
 	{
@@ -382,10 +393,10 @@
 	Desc:
 	****************************************************************************/
 	FINLINE FLMINT FLMAPI f_strcmp(
-		const char *		pvStr1,
-		const char *		pvStr2)
+		const char *		pszStr1,
+		const char *		pszStr2)
 	{
-		return( strcmp( pvStr1, pvStr2));
+		return( strcmp( pszStr1, pszStr2));
 	}
 		
 	/****************************************************************************
@@ -393,10 +404,10 @@
 	****************************************************************************/
 	#ifdef FLM_WIN
 	FINLINE FLMINT FLMAPI f_stricmp(
-		const char *		pvStr1,
-		const char *		pvStr2)
+		const char *		pszStr1,
+		const char *		pszStr2)
 	{
-		return( _stricmp( pvStr1, pvStr2));
+		return( _stricmp( pszStr1, pszStr2));
 	}
 	#endif
 	
@@ -404,11 +415,11 @@
 	Desc:
 	****************************************************************************/
 	FINLINE FLMINT FLMAPI f_strncmp(
-		const char *		pvStr1,
-		const char *		pvStr2,
+		const char *		pszStr1,
+		const char *		pszStr2,
 		FLMSIZET				uiLength)
 	{
-		return( strncmp( pvStr1, pvStr2, uiLength));
+		return( strncmp( pszStr1, pszStr2, uiLength));
 	}
 		
 	/****************************************************************************
@@ -416,36 +427,75 @@
 	****************************************************************************/
 	#ifdef FLM_WIN
 	FINLINE FLMINT FLMAPI f_strnicmp(
-		const char *		pvStr1,
-		const char *		pvStr2,
+		const char *		pszStr1,
+		const char *		pszStr2,
 		FLMSIZET				uiLength)
 	{
-		return( _strnicmp( pvStr1, pvStr2, uiLength));#else
+		return( _strnicmp( pszStr1, pszStr2, uiLength));
 	}
 	#endif
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	FINLINE char * FLMAPI f_strcat(
+		char *				pszDest,
+		const char *		pszSrc)
+	{
+		return( strcat( pszDest, pszSrc));
+	}
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	FINLINE char * FLMAPI f_strncat(
+		char *				pszDest,
+		const char *		pszSrc,
+		FLMSIZET				uiLength)
+	{
+		return( strncat( pszDest, pszSrc, uiLength));
+	}
 
-#if 0	
-		#define f_strcat( dest, src) \
-			strcat( (char*)(dest), (char*)(src))
-
-		#define f_strchr( str, value) \
-			strchr( (char*)str, (int)value)
-
-		#define f_strncpy( dest, src, length) \
-			strncpy( (char*)(dest), (char*)(src), (size_t)(length))
-
-		#define f_strrchr( str, value ) \
-			strrchr( (char*)(str), (int)value)
-
-		#define f_strstr( str1, str2) \
-			(char *)strstr( (char*)(str1), (char*)(str2))
-
-		#define f_strncat( str1, str2, n) \
-			strncat( (char *)(str1), (char *)(str2), n)
-
-		#define f_strupr( str) \
-			_strupr( (char *)(str))
-#endif
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	FINLINE char * FLMAPI f_strchr(
+		char *				pszStr,
+		unsigned char		ucByte)
+	{
+		return( strchr( pszStr, ucByte));
+	}
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	FINLINE char * FLMAPI f_strrchr(
+		char *				pszStr,
+		unsigned char		ucByte)
+	{
+		return( strrchr( pszStr, ucByte));
+	}
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	FINLINE char * FLMAPI f_strstr(
+		const char *		pszStr1,
+		const char *		pszStr2)
+	{
+		return( strstr( pszStr1, pszStr2));
+	}
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	#ifdef FLM_WIN
+	FINLINE char * FLMAPI f_strupr(
+		char *				pszStr)
+	{
+		return( _strupr( pszStr));
+	}
+	#endif
 
 	#if defined( __va_copy)
 		#define  f_va_copy(to, from) __va_copy(to, from)
@@ -2051,6 +2101,506 @@
 	};
 
 	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_IStream : public IF_IStream, public F_Base
+	{
+	public:
+	
+		F_IStream();
+	
+		virtual ~F_IStream();
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_OStream : public IF_OStream, public F_Base
+	{
+	public:
+	
+		F_OStream();
+	
+		virtual ~F_OStream();
+	
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_PosIStream : public IF_PosIStream, public F_Base
+	{
+	public:
+	
+		F_PosIStream();
+	
+		virtual ~F_PosIStream();
+	
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_BufferIStream : public IF_BufferIStream, public F_Base
+	{
+	public:
+	
+		F_BufferIStream()
+		{
+			m_pucBuffer = NULL;
+			m_uiBufferLen = 0;
+			m_uiOffset = 0;
+			m_bAllocatedBuffer = FALSE;
+			m_bIsOpen = FALSE;
+		}
+	
+		virtual ~F_BufferIStream();
+	
+		RCODE FLMAPI open(
+			const FLMBYTE *	pucBuffer,
+			FLMUINT				uiLength,
+			FLMBYTE **			ppucAllocatedBuffer = NULL);
+	
+		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		{
+			flmAssert( m_bIsOpen);
+			return( m_uiBufferLen);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		{
+			flmAssert( m_bIsOpen);
+			return( m_uiBufferLen - m_uiOffset);
+		}
+	
+		RCODE FLMAPI close( void);
+	
+		FINLINE RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position)
+		{
+			flmAssert( m_bIsOpen);
+	
+			if( ui64Position < m_uiBufferLen)
+			{
+				m_uiOffset = (FLMUINT)ui64Position;
+			}
+			else
+			{
+				m_uiOffset = m_uiBufferLen;
+			}
+	
+			return( NE_FLM_OK);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		{
+			flmAssert( m_bIsOpen);
+			return( m_uiOffset);
+		}
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+			
+		FINLINE const FLMBYTE * getBuffer( void)
+		{
+			flmAssert( m_bIsOpen);
+			return( m_pucBuffer);
+		}
+		
+		FINLINE const FLMBYTE * getBufferAtCurrentOffset( void)
+		{
+			flmAssert( m_bIsOpen);
+			return( m_pucBuffer ? &m_pucBuffer[ m_uiOffset] : NULL);
+		}
+		
+		FINLINE void truncate(
+			FLMUINT		uiOffset)
+		{
+			flmAssert( m_bIsOpen);
+			flmAssert( uiOffset >= m_uiOffset);
+			flmAssert( uiOffset <= m_uiBufferLen);
+			
+			m_uiBufferLen = uiOffset;
+		}
+	
+		FINLINE FLMBOOL isOpen( void)
+		{
+			return( m_bIsOpen);
+		}
+	
+	private:
+	
+		const FLMBYTE *	m_pucBuffer;
+		FLMUINT				m_uiBufferLen;
+		FLMUINT				m_uiOffset;
+		FLMBOOL				m_bAllocatedBuffer;
+		FLMBOOL				m_bIsOpen;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_FileIStream : public F_PosIStream
+	{
+	public:
+	
+		F_FileIStream()
+		{
+			m_pFileHdl = NULL;
+			m_ui64FileOffset = 0;
+		}
+	
+		virtual ~F_FileIStream()
+		{
+			if( m_pFileHdl)
+			{
+				m_pFileHdl->Release();
+			}
+		}
+	
+		RCODE FLMAPI open(
+			const char *	pszPath);
+	
+		RCODE FLMAPI close( void);
+	
+		RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position);
+	
+		FLMUINT64 FLMAPI totalSize( void);
+	
+		FLMUINT64 FLMAPI remainingSize( void);
+	
+		FLMUINT64 FLMAPI getCurrPosition( void);
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+	
+	private:
+	
+		IF_FileHdl *		m_pFileHdl;
+		FLMUINT64			m_ui64FileOffset;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_BufferedIStream : public F_PosIStream
+	{
+	public:
+	
+		F_BufferedIStream()
+		{
+			m_pIStream = NULL;
+			m_pucBuffer = NULL;
+		}
+	
+		virtual ~F_BufferedIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_IStream *		pIStream,
+			FLMUINT				uiBufferSize);
+	
+		RCODE FLMAPI read(
+			void *				pvBuffer,
+			FLMUINT				uiBytesToRead,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE FLMAPI close( void);
+	
+		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		{
+			if (!m_pIStream)
+			{
+				flmAssert( 0);
+				return( 0);
+			}
+	
+			return( m_uiBytesAvail);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		{
+			if( !m_pIStream)
+			{
+				flmAssert( 0);
+				return( 0);
+			}
+	
+			return( m_uiBytesAvail - m_uiBufferOffset);
+		}
+	
+		FINLINE RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position)
+		{
+			if( !m_pIStream)
+			{
+				flmAssert( 0);
+				return( RC_SET( NE_FLM_ILLEGAL_OP));
+			}
+	
+			if( ui64Position < m_uiBytesAvail)
+			{
+				m_uiBufferOffset = (FLMUINT)ui64Position;
+			}
+			else
+			{
+				m_uiBufferOffset = m_uiBytesAvail;
+			}
+	
+			return( NE_FLM_OK);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		{
+			if( !m_pIStream)
+			{
+				flmAssert( 0);
+				return( 0);
+			}
+	
+			return( m_uiBufferOffset);
+		}
+	
+	private:
+	
+		IF_IStream *			m_pIStream;
+		FLMBYTE *				m_pucBuffer;
+		FLMUINT					m_uiBufferSize;
+		FLMUINT					m_uiBufferOffset;
+		FLMUINT					m_uiBytesAvail;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_BufferedOStream : public F_OStream
+	{
+	public:
+	
+		F_BufferedOStream()
+		{
+			m_pOStream = NULL;
+			m_pucBuffer = NULL;
+		}
+	
+		virtual ~F_BufferedOStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_OStream *	pOStream,
+			FLMUINT			uiBufferSize);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+		RCODE FLMAPI flush( void);
+	
+	private:
+	
+		IF_OStream *		m_pOStream;
+		FLMBYTE *			m_pucBuffer;
+		FLMUINT				m_uiBufferSize;
+		FLMUINT				m_uiBufferOffset;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_FileOStream : public F_OStream
+	{
+	public:
+	
+		F_FileOStream()
+		{
+			m_pFileHdl = NULL;
+		}
+	
+		virtual ~F_FileOStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			const char *	pszFilePath,
+			FLMBOOL			bTruncateIfExists);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+	private:
+	
+		IF_FileHdl *		m_pFileHdl;
+		FLMUINT64			m_ui64FileOffset;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_MultiFileIStream : public F_IStream
+	{
+	public:
+	
+		F_MultiFileIStream()
+		{
+			m_pIStream = NULL;
+			m_bOpen = FALSE;
+		}
+	
+		virtual ~F_MultiFileIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			const char *	pszDirectory,
+			const char *	pszBaseName);
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+	
+		RCODE FLMAPI close( void);
+	
+	private:
+	
+		RCODE rollToNextFile( void);
+	
+		IF_IStream *		m_pIStream;
+		FLMBOOL				m_bOpen;
+		FLMBOOL				m_bEndOfStream;
+		FLMUINT				m_uiFileNum;
+		FLMUINT64			m_ui64FileOffset;
+		char 					m_szDirectory[ F_PATH_MAX_SIZE + 1];
+		char	 				m_szBaseName[ F_PATH_MAX_SIZE + 1];
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_MultiFileOStream : public F_OStream
+	{
+	public:
+	
+		F_MultiFileOStream()
+		{
+			m_pOStream = NULL;
+			m_bOpen = FALSE;
+		}
+	
+		virtual ~F_MultiFileOStream()
+		{
+			close();
+		}
+	
+		RCODE create(
+			const char *	pszDirectory,
+			const char *	pszBaseName,
+			FLMUINT			uiMaxFileSize,
+			FLMBOOL			bOkToOverwrite);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+	private:
+	
+		RCODE rollToNextFile( void);
+	
+		RCODE processDirectory(
+			const char *	pszDirectory,
+			const char *	pszBaseName,
+			FLMBOOL			bOkToDelete);
+	
+		F_OStream *		m_pOStream;
+		FLMBOOL			m_bOpen;
+		FLMUINT			m_uiFileNum;
+		FLMUINT64		m_ui64MaxFileSize;
+		FLMUINT64		m_ui64FileOffset;
+		char 				m_szDirectory[ F_PATH_MAX_SIZE + 1];
+		char 				m_szBaseName[ F_PATH_MAX_SIZE + 1];
+		
+		friend class F_FileSystem;
+	};
+	
+	/****************************************************************************
+	Desc:	Decodes an ASCII base64 stream to binary
+	****************************************************************************/
+	class F_Base64DecoderIStream : public F_IStream
+	{
+	public:
+	
+		F_Base64DecoderIStream()
+		{
+			m_pIStream = NULL;
+			m_uiBufOffset = 0;
+			m_uiAvailBytes = 0;
+		}
+	
+		virtual ~F_Base64DecoderIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_IStream *	pIStream);
+		
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+			
+		FINLINE RCODE FLMAPI close( void)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_pIStream)
+			{
+				if( m_pIStream->getRefCount() == 1)
+				{
+					rc = m_pIStream->close();
+				}
+	
+				m_pIStream->Release();
+				m_pIStream = NULL;
+			}
+			
+			m_uiAvailBytes = 0;
+			m_uiBufOffset = 0;
+			
+			return( rc);
+		}
+		
+	private:
+	
+		IF_IStream *		m_pIStream;
+		FLMUINT				m_uiBufOffset;
+		FLMUINT				m_uiAvailBytes;
+		FLMBYTE				m_ucBuffer[ 8];
+		static FLMBYTE		m_ucDecodeTable[ 256];
+	};
+
+	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
 
@@ -2155,18 +2705,18 @@
 	/****************************************************************************
 	Desc:	Misc.
 	****************************************************************************/
-	FLMUINT flmGetFSBlockSize(
+	FLMUINT f_getFSBlockSize(
 		FLMBYTE *			pszFileName);
 		
 	#if defined( FLM_LINUX)
-		void flmGetLinuxKernelVersion(
+		void f_getLinuxKernelVersion(
 			FLMUINT *		puiMajor,
 			FLMUINT *		puiMinor,
 			FLMUINT *		puiRevision);
 			
-		FLMUINT flmGetLinuxMaxFileSize( void);
+		FLMUINT f_getLinuxMaxFileSize( void);
 		
-		void flmGetLinuxMemInfo(
+		void f_getLinuxMemInfo(
 			FLMUINT64 *		pui64TotalMem,
 			FLMUINT64 *		pui64AvailMem);
 	#endif

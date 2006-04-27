@@ -78,7 +78,7 @@ F_FileHdl::F_FileHdl()
 	m_fd = -1;
 	m_bDoDirectIO = FALSE;
 	m_uiExtendSize = 0;
-//	m_uiMaxAutoExtendSize = gv_XFlmSysData.uiMaxFileSize;
+	m_uiMaxAutoExtendSize = gv_uiMaxFileSize;
 	m_uiBytesPerSector = 0;
 	m_ui64NotOnSectorBoundMask = 0;
 	m_ui64GetSectorBoundMask = 0;
@@ -1308,7 +1308,7 @@ Exit:
 Desc:	Determines the kernel version of the linux system we are running on
 ***************************************************************************/
 #ifdef FLM_LINUX
-void flmGetLinuxKernelVersion(
+void f_getLinuxKernelVersion(
 	FLMUINT *		puiMajor,
 	FLMUINT *		puiMinor,
 	FLMUINT *		puiRevision)
@@ -1393,23 +1393,22 @@ Exit:
 Desc:	Determines if the linux system we are running on is 2.4 or greater.
 ***************************************************************************/
 #ifdef FLM_LINUX
-FLMUINT flmGetLinuxMaxFileSize( void)
+FLMUINT f_getLinuxMaxFileSize( void)
 {
 #ifdef FLM_32BIT
 	return( FLM_MAXIMUM_FILE_SIZE);
 #else
 	FLMUINT	uiMaxFileSize = 0x7FF00000;
 	
-//	flmAssert( gv_XFlmSysData.uiLinuxMajorVer);
+	flmAssert( gv_uiLinuxMajorVer);
 	
 	// Is version 2.4 or greater?
 
-//	if( gv_XFlmSysData.uiLinuxMajorVer > 2 || 
-//		 (gv_XFlmSysData.uiLinuxMajorVer == 2 && 
-//		  gv_XFlmSysData.uiLinuxMinorVer >= 4))
-//	{
-//		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
-//	}
+	if( gv_uiLinuxMajorVer > 2 || 
+		(gv_uiLinuxMajorVer == 2 && gv_uiLinuxMinorVer >= 4))
+	{
+		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
+	}
 	
 	return( uiMaxFileSize);
 #endif
@@ -1420,7 +1419,7 @@ FLMUINT flmGetLinuxMaxFileSize( void)
 Desc:
 ***************************************************************************/
 #ifdef FLM_LINUX
-FINLINE FLMUINT64 flmGetLinuxMemInfoValue(
+FINLINE FLMUINT64 f_getLinuxMemInfoValue(
 	char *			pszMemInfoBuffer,
 	char *			pszTag)
 {
@@ -1454,7 +1453,7 @@ FINLINE FLMUINT64 flmGetLinuxMemInfoValue(
 Desc:
 ***************************************************************************/
 #ifdef FLM_LINUX
-void flmGetLinuxMemInfo(
+void f_getLinuxMemInfo(
 	FLMUINT64 *		pui64TotalMem,
 	FLMUINT64 *		pui64AvailMem)
 {
@@ -1483,12 +1482,12 @@ void flmGetLinuxMemInfo(
 	pszMemInfoBuf[ iBytesRead] = 0;
 	
 	if( (ui64TotalMem = 
-		flmGetLinuxMemInfoValue( pszMemInfoBuf, "MemTotal:")) != 0)
+		f_getLinuxMemInfoValue( pszMemInfoBuf, "MemTotal:")) != 0)
 	{
 		ui64AvailMem = 
-				flmGetLinuxMemInfoValue( pszMemInfoBuf, "MemFree:") +
-				flmGetLinuxMemInfoValue( pszMemInfoBuf, "Buffers:") +
-				flmGetLinuxMemInfoValue( pszMemInfoBuf, "Cached:");
+				f_getLinuxMemInfoValue( pszMemInfoBuf, "MemFree:") +
+				f_getLinuxMemInfoValue( pszMemInfoBuf, "Buffers:") +
+				f_getLinuxMemInfoValue( pszMemInfoBuf, "Cached:");
 	}
 	
 Exit:
@@ -1518,7 +1517,7 @@ Exit:
 /****************************************************************************
 Desc: This routine gets the block size for the file system a file belongs to.
 ****************************************************************************/
-FLMUINT flmGetFSBlockSize(
+FLMUINT f_getFSBlockSize(
 	FLMBYTE *	pszFileName)
 {
 	FLMUINT		uiFSBlkSize = 4096;

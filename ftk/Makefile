@@ -1090,7 +1090,7 @@ sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample 
+vpath %.cpp src util 
 
 # -- Default target --
 
@@ -1486,7 +1486,9 @@ allutils: status dircheck libs $(util_targets)
 
 .PHONY : test
 test:	status dircheck $(ftk_static_lib) $(test_targets)
+	$(ec)$(gprintf) "Running unit tests ... \n"
 	$(ec)$(call runtest,ftktest)
+	$(ec)$(gprintf) "Done.\n"
 
 .PHONY : debug
 debug:

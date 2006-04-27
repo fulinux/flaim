@@ -78,7 +78,8 @@ F_ERROR_CODE_MAP gv_FlmGeneralErrors[
 	flmErrorCodeEntry( NE_FLM_BTREE_ERROR),
 	flmErrorCodeEntry( NE_FLM_BTREE_KEY_SIZE),
 	flmErrorCodeEntry( NE_FLM_BTREE_FULL),
-	flmErrorCodeEntry( NE_FLM_BTREE_BAD_STATE)
+	flmErrorCodeEntry( NE_FLM_BTREE_BAD_STATE),
+	flmErrorCodeEntry( NE_FLM_COULD_NOT_CREATE_MUTEX)
 };
 
 /****************************************************************************

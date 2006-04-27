@@ -966,6 +966,10 @@
 		virtual RCODE FLMAPI deleteFile(
 			const char *			pszFileName) = 0;
 
+		virtual RCODE FLMAPI deleteMultiFileStream(
+			const char *			pszDirectory,
+			const char *			pszBaseName) = 0;
+	
 		virtual RCODE FLMAPI copyFile(
 			const char *			pszSrcFileName,
 			const char *			pszDestFileName,
@@ -1010,6 +1014,10 @@
 		virtual FLMBOOL FLMAPI doesFileMatch(
 			const char *			pszFileName,
 			const char *			pszTemplate) = 0;
+			
+		virtual RCODE FLMAPI writeToOStream(
+			IF_IStream *			pIStream,
+			IF_OStream *			pOStream) = 0;
 	};
 	
 	RCODE FLMAPI FlmGetFileSystem(
@@ -2345,11 +2353,11 @@
 		const void *		pvStr2,
 		FLMSIZET				uiLength);
 		
-	FLMINT FLMAPI f_strcat(
+	char * FLMAPI f_strcat(
 		char *				pszDest,
 		const char *		pszSrc);
 		
-	FLMINT FLMAPI f_strncat(
+	char * FLMAPI f_strncat(
 		char *				pszDest,
 		const char *		pszSrc,
 		FLMSIZET				uiLength);
@@ -3080,10 +3088,7 @@
 			FLMUINT					uiTagNum) = 0;
 	
 		virtual RCODE FLMAPI cloneNameTable(
-			IF_NameTable *			pSrcNameTable) = 0;
-	
-		virtual RCODE FLMAPI importFromNameTable(
-			IF_NameTable *			pSrcNameTable) = 0;
+			IF_NameTable **		ppNewNameTable) = 0;
 	};
 
 	/****************************************************************************
@@ -3327,7 +3332,6 @@
 		#define RC_BAD( rc)        ((rc) != 0)
 	#endif
 
-	#define FLM_ERROR_BASE(e)		((RCODE)((int)(0x81050000+(e))))
 	#define FTK_ERROR_BASE(e)		((RCODE)((int)(0x81055000+(e))))
 	
 	const char * FLMAPI f_errorString(
@@ -3380,7 +3384,7 @@
 	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x127)			// B-tree cannot grow beyond current size
 	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x128)			// B-tree operation cannot be completed
 	#define NE_FLM_COULD_NOT_CREATE_MUTEX					FTK_ERROR_BASE( 0x129)			// Mutex alloc / init failed
-	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x130)			// NOTE: This is not an error code - do not document
+	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x12A)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc: I/O Errors

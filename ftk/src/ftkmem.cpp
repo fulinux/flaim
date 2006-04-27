@@ -4263,6 +4263,20 @@ void * F_Base::operator new[](
 Desc:	
 ****************************************************************************/
 void F_Base::operator delete(
+	void *			ptr)
+{
+	if( !ptr)
+	{
+		return;
+	}
+
+	f_freeImp( &ptr, TRUE);
+}
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
+void F_Base::operator delete(
 	void *			ptr,
 	const char *,	// file
 	int)				// line

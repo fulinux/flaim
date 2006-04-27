@@ -28,9 +28,17 @@
 FLMUINT						gv_uiStartupCount = 0;
 FLMUINT						gv_uiSerialInitCount = 0;
 F_MUTEX						gv_hSerialMutex = F_MUTEX_NULL;
+FLMBOOL						gv_bOkToDoAsyncWrites = TRUE;
+FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
 IF_FileSystem *			gv_pFileSystem = NULL;
 IF_RandomGenerator *		gv_pSerialRandom = NULL;
 IF_ThreadMgr *				gv_pThreadMgr = NULL;
+
+#ifdef FLM_LINUX
+FLMUINT						gv_uiLinuxMajorVer = 0;
+FLMUINT						gv_uiLinuxMinorVer = 0;
+FLMUINT						gv_uiLinuxRevision = 0;
+#endif
 
 FSTATIC RCODE f_initSerialNumberGenerator( void);
 
@@ -78,6 +86,25 @@ RCODE FLMAPI ftkStartup( void)
 	{
 		goto Exit;
 	}
+	
+#if defined( FLM_LINUX)
+	flmGetLinuxKernelVersion( &gv_uiLinuxMajorVer, &gv_uiLinuxMinorVer, 
+		&gv_uiLinuxRevision);
+	gv_uiMaxFileSize = flmGetLinuxMaxFileSize();
+#elif defined( FLM_AIX)
+
+	// Call set setrlimit to increase the max allowed file size.
+	// We don't have a good way to deal with any errors returned by
+	// setrlimit(), so we just hope that there aren't any...
+	
+	struct rlimit rlim;
+	
+	rlim.rlim_cur = RLIM_INFINITY;
+	rlim.rlim_max = RLIM_INFINITY;
+	
+	setrlimit( RLIMIT_FSIZE, &rlim);
+#endif
+	
 
 Exit:
 

@@ -120,6 +120,10 @@ public:
 	RCODE FLMAPI deleteFile(
 		const char *	pszFileName);
 
+	RCODE FLMAPI deleteMultiFileStream(
+		const char *	pszDirectory,
+		const char *	pszBaseName);
+		
 	RCODE FLMAPI copyFile(
 		const char *	pszSrcFileName,
 		const char *	pszDestFileName,
@@ -169,6 +173,10 @@ public:
 		const char *	pszFileName,
 		FLMBOOL			bReadOnly);
 
+	RCODE FLMAPI writeToOStream(
+		IF_IStream *	pIStream,
+		IF_OStream *	pOStream);
+		
 private:
 
 #if defined( FLM_UNIX)
@@ -2076,4 +2084,79 @@ FLMBOOL FLMAPI F_FileSystem::doesFileMatch(
 	}
 
 	return( (*pszFileName != 0) ? FALSE : TRUE);
+}
+
+/****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE FLMAPI F_FileSystem::deleteMultiFileStream(
+	const char *			pszDirectory,
+	const char *			pszBaseName)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_MultiFileOStream *	pMultiStream = NULL;
+	
+	if( (pMultiStream = f_new F_MultiFileOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pMultiStream->processDirectory( 
+		pszDirectory, pszBaseName, TRUE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	if( pMultiStream)
+	{
+		pMultiStream->Release();
+	}
+
+	return( rc);
+}
+
+/******************************************************************************
+Desc: Read all data from input stream and write to the output stream.
+******************************************************************************/
+RCODE FLMAPI F_FileSystem::writeToOStream(
+	IF_IStream *	pIStream,
+	IF_OStream *	pOStream)
+{
+	RCODE			rc = NE_FLM_OK;
+	FLMBYTE		ucBuffer[ 512];
+	FLMUINT		uiBufferSize = sizeof( ucBuffer);
+	FLMUINT		uiBytesToWrite;
+	FLMUINT		uiBytesRead;
+
+	for (;;)
+	{
+		if( RC_BAD( rc = pIStream->read( 
+			ucBuffer, uiBufferSize, &uiBytesRead)))
+		{
+			if( rc != NE_FLM_EOF_HIT)
+			{
+				goto Exit;
+			}
+
+			rc = NE_FLM_OK;
+
+			if (!uiBytesRead)
+			{
+				goto Exit;
+			}
+		}
+
+		uiBytesToWrite = uiBytesRead;
+		if( RC_BAD( rc = pOStream->write( ucBuffer, uiBytesToWrite)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
 }

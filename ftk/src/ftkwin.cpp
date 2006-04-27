@@ -27,9 +27,6 @@
 
 #if defined( FLM_WIN)
 
-FSTATIC RCODE _DeleteFile(
-	char *	path);
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -395,7 +392,7 @@ RCODE F_FileHdl::createUnique(
 		rc = create( szTmpPath, uiIoFlags | FLM_IO_EXCL);
 		if (rc == NE_FLM_IO_DISK_FULL)
 		{
-			(void)_DeleteFile( szTmpPath);
+			DeleteFile( (LPTSTR)szTmpPath);
 			goto Exit;
 		}
 		if ((rc == NE_FLM_IO_PATH_NOT_FOUND) || (rc == NE_FLM_IO_INVALID_PASSWORD))
@@ -499,7 +496,7 @@ RCODE FLMAPI F_FileHdl::close( void)
 		goto Exit;
 	}
 
-	if (!CloseHandle( m_FileHandle))
+	if( !CloseHandle( m_FileHandle))
 	{
 		rc = MapPlatformError( GetLastError(), NE_FLM_CLOSING_FILE);
 		goto Exit;
@@ -508,13 +505,13 @@ RCODE FLMAPI F_FileHdl::close( void)
 	m_FileHandle = INVALID_HANDLE_VALUE;
 	m_bFileOpened = m_bOpenedReadOnly = m_bOpenedExclusive = FALSE;
 
-	if (m_bDeleteOnRelease)
+	if( m_bDeleteOnRelease)
 	{
 		flmAssert( NULL != m_pszFileName );
 
 		if( bDeleteAllowed)
 		{
-			(void)_DeleteFile( m_pszFileName);
+			DeleteFile( (LPTSTR)m_pszFileName);
 		}
 		
 		m_bDeleteOnRelease = FALSE;
@@ -1575,19 +1572,11 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	Deletes a file
+Desc:
 ****************************************************************************/
-FSTATIC RCODE _DeleteFile(
-	char *	pszPath)
+void FLMAPI f_yieldCPU( void)
 {
-	RCODE			rc = NE_FLM_OK;
-
-   if( DeleteFile( (LPTSTR)pszPath) == FALSE)
-	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE);
-	}
-
-	return rc;
+	Sleep( 0);
 }
 
 #endif // FLM_WIN

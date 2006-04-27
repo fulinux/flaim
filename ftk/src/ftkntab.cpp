@@ -135,10 +135,7 @@ public:
 		FLMUINT	uiTagNum);
 
 	RCODE FLMAPI cloneNameTable(
-		IF_NameTable *			pSrcNameTable);
-
-	RCODE FLMAPI importFromNameTable(
-		IF_NameTable *			pSrcNameTable);
+		IF_NameTable **		ppNewNameTable);
 
 	FLMINT FLMAPI AddRef( void);
 
@@ -1830,20 +1827,28 @@ void FLMAPI F_NameTable::removeTag(
 }
 
 /****************************************************************************
-Desc:	Clone a name table from another one
+Desc:	Create a clone of this name table
 ****************************************************************************/
-#if 0
 RCODE FLMAPI F_NameTable::cloneNameTable(
-	IF_NameTable *		pSrcNameTable)
+	IF_NameTable **		ppNewNameTable)
 {
 	RCODE					rc = NE_FLM_OK;
 	FLMUINT				uiLoop;
 	FLM_TAG_INFO *		pTagInfo;
 	FLMUINT				uiPoolBlkSize;
+	F_NameTable *		pNewNameTable = NULL;
+	
+	// Allocate a new name table 
+	
+	if( (pNewNameTable = f_new F_NameTable) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
 
 	// Set the pool size to be as optimal as possible.
 
-	uiPoolBlkSize = pSrcNameTable->m_uiMemoryAllocated / 8;
+	uiPoolBlkSize = m_uiMemoryAllocated / 8;
 	if (uiPoolBlkSize < 1024)
 	{
 		uiPoolBlkSize = 1024;
@@ -1852,87 +1857,42 @@ RCODE FLMAPI F_NameTable::cloneNameTable(
 	{
 		uiPoolBlkSize = 65536;
 	}
-	clearTable( uiPoolBlkSize);
+	
+	pNewNameTable->clearTable( uiPoolBlkSize);
 
 	// Pre-allocate exactly enough table space
 
-	if (RC_BAD( rc = reallocSortTables( pSrcNameTable->m_uiNumTags)))
+	if (RC_BAD( rc = pNewNameTable->reallocSortTables( m_uiNumTags)))
 	{
 		goto Exit;
 	}
 
 	// Add all of the tags
 
-	for (uiLoop = 0; uiLoop < pSrcNameTable->m_uiNumTags; uiLoop++)
+	for (uiLoop = 0; uiLoop < m_uiNumTags; uiLoop++)
 	{
-		pTagInfo = pSrcNameTable->m_ppSortedByTagTypeAndNum [uiLoop];
-		if (RC_BAD( rc = addTag( pTagInfo->uiType, pTagInfo->puzTagName, NULL,
-									pTagInfo->uiTagNum,
-									pTagInfo->uiDataType,
-									pTagInfo->puzNamespace, FALSE)))
+		pTagInfo = m_ppSortedByTagTypeAndNum [uiLoop];
+		if (RC_BAD( rc = pNewNameTable->addTag( 
+			pTagInfo->uiType, pTagInfo->puzTagName, NULL, pTagInfo->uiTagNum,
+			pTagInfo->uiDataType, pTagInfo->puzNamespace, FALSE)))
 		{
 			goto Exit;
 		}
 	}
 
-	sortTags();
+	pNewNameTable->sortTags();
+	*ppNewNameTable = pNewNameTable;
+	pNewNameTable = NULL;
 
 Exit:
 
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:	Copy a name table from another one.  This differs from cloneNameTable
-		in that it doesn't clear the name table, it just copies the names.
-		Thus, the destination name table may already have names in it, and the
-		names from the source table will just be added.
-****************************************************************************/
-#if 0
-RCODE FLMAPI F_NameTable::importFromNameTable(
-	IF_NameTable *		pSrcNameTable)
-{
-	RCODE					rc = NE_FLM_OK;
-	FLMUINT				uiLoop;
-	FLM_TAG_INFO *		pTagInfo;
-
-	// Pre-allocate exactly enough table space
-
-	if (RC_BAD( rc = reallocSortTables( m_uiNumTags +
-								pSrcNameTable->m_uiNumTags)))
+	if( pNewNameTable)
 	{
-		goto Exit;
+		pNewNameTable->Release();
 	}
-
-	// Add all of the tags from the source table
-
-	for (uiLoop = 0; uiLoop < pSrcNameTable->m_uiNumTags; uiLoop++)
-	{
-		pTagInfo = pSrcNameTable->m_ppSortedByTagTypeAndNum [uiLoop];
-		if (RC_BAD( rc = addTag( pTagInfo->uiType, pTagInfo->puzTagName, NULL,
-									pTagInfo->uiTagNum,
-									pTagInfo->uiDataType,
-									pTagInfo->puzNamespace, FALSE)))
-		{
-			if (rc != NE_FLM_EXISTS)
-			{
-				goto Exit;
-			}
-			else
-			{
-				rc = NE_FLM_OK;
-			}
-		}
-	}
-
-	sortTags();
-
-Exit:
 
 	return( rc);
 }
-#endif
 
 /****************************************************************************
 Desc:	Increment use count on this object.
