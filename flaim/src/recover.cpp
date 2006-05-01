@@ -254,7 +254,7 @@ FSTATIC RCODE flmProcessBeforeImage(
 	// Determine the block address before setting the checksum
 
 	uiBlkAddress = (FLMUINT)GET_BH_ADDR( pBlk);
-	uiBlkLength = getEncryptSize( pBlk);
+	uiBlkLength = pFile->FileHdr.uiBlockSize;
 
 	// Set the block checksum AFTER encrypting
 
