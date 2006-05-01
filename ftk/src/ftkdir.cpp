@@ -330,14 +330,14 @@ RCODE FLMAPI F_DirHdl::createDir(
 
 	if( !CreateDirectory((LPTSTR)pszDirPath, NULL))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_CREATING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_CREATING_FILE);
 	}
 
 #elif defined( FLM_UNIX) || defined( FLM_NLM)
 
 	if( mkdir( (char *)pszDirPath, 0777) == -1)
 	{
-		rc = MapPlatformError( errno, NE_FLM_CREATING_FILE);
+		rc = f_mapPlatformError( errno, NE_FLM_CREATING_FILE);
 	}
 
 #endif
@@ -363,7 +363,7 @@ RCODE FLMAPI F_DirHdl::removeDir(
 
 	if( !RemoveDirectory((LPTSTR)pszDirName))
 	{
-		return( MapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE));
+		return( f_mapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE));
 	}
 
 	return( NE_FLM_OK);
@@ -372,7 +372,7 @@ RCODE FLMAPI F_DirHdl::removeDir(
 
 	 if( rmdir( (char *)pszDirName) == -1)
 	 {
-		 return( MapPlatformError( errno, NE_FLM_IO_DELETING_FILE));
+		 return( f_mapPlatformError( errno, NE_FLM_IO_DELETING_FILE));
 	 }
 
     return( NE_FLM_OK);
@@ -422,7 +422,7 @@ RCODE f_fileFindFirst(
    if( (pFindData->findHandle = FindFirstFile( (LPTSTR)szTmpPath,
 	      &(pFindData->findBuffer))) == INVALID_HANDLE_VALUE)
    {
-		rc = MapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
 		goto Exit;
 	}
 
@@ -438,7 +438,7 @@ RCODE f_fileFindFirst(
 		if( FindNextFile( pFindData->findHandle,
 			&(pFindData->findBuffer)) == FALSE)
 		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_READING_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_READING_FILE);
 			goto Exit;
 		}
 	}
@@ -512,7 +512,7 @@ Exit:
 		}
 		else
 		{
-			rc = MapPlatformError( errno, NE_FLM_READING_FILE);
+			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
 		}
 		
 		goto Exit;
@@ -538,7 +538,7 @@ Exit:
 				}
 				else
 				{
-					rc = MapPlatformError( errno, NE_FLM_READING_FILE);
+					rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
 				}
 				
 				goto Exit;
@@ -585,7 +585,7 @@ RCODE f_fileFindNext(
    if( FindNextFile( pFindData->findHandle,
 		&(pFindData->findBuffer)) == FALSE)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_READING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_READING_FILE);
 		goto Exit;
 	}
 
@@ -601,7 +601,7 @@ RCODE f_fileFindNext(
 		if( FindNextFile( pFindData->findHandle,
 			&(pFindData->findBuffer)) == FALSE)
 		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_READING_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_READING_FILE);
 			goto Exit;
 		}
 	}
@@ -635,7 +635,7 @@ RCODE f_fileFindNext(
 			return( RC_SET( NE_FLM_IO_NO_MORE_FILES));
 		}
 		
-		return( MapPlatformError( errno, NE_FLM_READING_FILE));
+		return( f_mapPlatformError( errno, NE_FLM_READING_FILE));
 	}
 
 	// Append the file name to the path name

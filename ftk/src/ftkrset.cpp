@@ -534,6 +534,105 @@ private:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
+class F_BtResultSet : public IF_BtResultSet, public F_Base
+{
+public:
+
+	F_BtResultSet( void)
+	{
+		m_pBtree = NULL;
+		m_pCompare = NULL;
+	}
+
+	virtual ~F_BtResultSet()
+	{
+		if( m_pBtree)
+		{
+			m_pBtree->Release();
+		}
+		
+		if( m_pCompare)
+		{
+			m_pCompare->Release();
+		}
+	}
+	
+	RCODE FLMAPI setupResultSet(
+		const char *				pszPath,
+		IF_ResultSetCompare *	pCompare);
+
+	RCODE FLMAPI addEntry(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyLength,
+		FLMBYTE *	pucEntry,
+		FLMUINT		uiEntryLength);
+
+	RCODE FLMAPI modifyEntry(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyLength,
+		FLMBYTE *	pucEntry,
+		FLMUINT		uiEntryLength);
+
+	RCODE FLMAPI getCurrent(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyLength,
+		FLMBYTE *	pucEntry,
+		FLMUINT		uiEntryLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE FLMAPI getNext(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyBufLen,
+		FLMUINT *	puiKeylen,
+		FLMBYTE *	pucBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE FLMAPI getPrev(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyBufLen,
+		FLMUINT *	puiKeylen,
+		FLMBYTE *	pucBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE FLMAPI getFirst(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyBufLen,
+		FLMUINT *	puiKeylen,
+		FLMBYTE *	pucBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE FLMAPI getLast(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyBufLen,
+		FLMUINT *	puiKeylen,
+		FLMBYTE *	pucBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE FLMAPI findEntry(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyBufLen,
+		FLMUINT *	puiKeylen,
+		FLMBYTE *	pucBuffer,
+		FLMUINT		uiBufferLength,
+		FLMUINT *	puiReturnLength);
+
+	RCODE FLMAPI deleteEntry(
+		FLMBYTE *	pucKey,
+		FLMUINT		uiKeyLength);
+
+private:
+
+	IF_Btree *						m_pBtree;
+	IF_ResultSetCompare *		m_pCompare;
+};
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
 F_ResultSet::F_ResultSet()
 {
 	m_pCompare = NULL;
@@ -3758,6 +3857,289 @@ RCODE F_ResultSetBlk::truncate(
 	}
 
 	m_BlockHeader.ui64FilePos = RSBLK_UNSET_FILE_POS;
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::addEntry(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyLength,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyLength <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btInsertEntry( pucKey, uiKeyLength,
+		uiKeyLength, pucEntry, uiEntryLength, TRUE, TRUE)))
+	{
+		if (rc == NE_FLM_NOT_UNIQUE)
+		{
+			rc = NE_FLM_OK;
+		}
+		else
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::modifyEntry(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyLength,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyLength <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btReplaceEntry( pucKey, uiKeyLength,
+		uiKeyLength, pucEntry, uiEntryLength, TRUE, TRUE)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::deleteEntry(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyLength <= FLM_MAX_KEY_SIZE);
+
+	if (RC_BAD( rc = m_pBtree->btRemoveEntry( 
+		pucKey, uiKeyLength, uiKeyLength)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::findEntry(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyBufLen,
+	FLMUINT *	puiKeyLen,
+	FLMBYTE *	pucBuffer,
+	FLMUINT		uiBufferLength,
+	FLMUINT *	puiReturnLength)
+{
+	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiLengthRV;
+
+	f_assert( uiKeyBufLen <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btLocateEntry( pucKey, uiKeyBufLen, puiKeyLen,
+		FLM_EXACT, NULL, &uiLengthRV)))
+	{
+		goto Exit;
+	}
+
+	if( pucBuffer)
+	{
+		if( RC_BAD( rc = m_pBtree->btGetEntry( pucKey, *puiKeyLen,
+			pucBuffer, uiBufferLength, puiReturnLength)))
+		{
+			goto Exit;
+		}
+	}
+	else if( puiReturnLength)
+	{
+		*puiReturnLength = uiLengthRV;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::getCurrent(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyLength,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength,
+	FLMUINT *	puiReturnLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyLength <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btGetEntry( pucKey, uiKeyLength,
+		pucEntry, uiEntryLength, puiReturnLength)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::getNext(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyBufLen,
+	FLMUINT *	puiKeyLen,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength,
+	FLMUINT *	puiReturnLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyBufLen <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btNextEntry( pucKey, uiKeyBufLen, puiKeyLen,
+		puiReturnLength)))
+	{
+		goto Exit;
+	}
+
+	if( pucEntry)
+	{
+		if( RC_BAD( rc = m_pBtree->btGetEntry( pucKey, *puiKeyLen,
+			pucEntry, uiEntryLength, puiReturnLength)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::getPrev(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyBufLen,
+	FLMUINT *	puiKeyLen,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength,
+	FLMUINT *	puiReturnLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyBufLen <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btPrevEntry( pucKey, uiKeyBufLen, puiKeyLen,
+		puiReturnLength)))
+	{
+		goto Exit;
+	}
+
+	if( pucEntry)
+	{
+		if( RC_BAD( rc = m_pBtree->btGetEntry( pucKey, *puiKeyLen,
+			pucEntry, uiEntryLength, puiReturnLength)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::getFirst(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyBufLen,
+	FLMUINT *	puiKeyLen,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength,
+	FLMUINT *	puiReturnLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyBufLen <= FLM_MAX_KEY_SIZE);
+
+	m_pBtree->btResetBtree();
+	if( RC_BAD( rc = m_pBtree->btFirstEntry( pucKey, uiKeyBufLen, puiKeyLen,
+		puiReturnLength)))
+	{
+		goto Exit;
+	}
+
+	if( pucEntry)
+	{
+		if( RC_BAD( rc = m_pBtree->btGetEntry( pucKey, *puiKeyLen,
+			pucEntry, uiEntryLength, puiReturnLength)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_BtResultSet::getLast(
+	FLMBYTE *	pucKey,
+	FLMUINT		uiKeyBufLen,
+	FLMUINT *	puiKeyLen,
+	FLMBYTE *	pucEntry,
+	FLMUINT		uiEntryLength,
+	FLMUINT *	puiReturnLength)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	f_assert( uiKeyBufLen <= FLM_MAX_KEY_SIZE);
+
+	if( RC_BAD( rc = m_pBtree->btLastEntry( pucKey, uiKeyBufLen, puiKeyLen,
+		puiReturnLength)))
+	{
+		goto Exit;
+	}
+
+	if( pucEntry)
+	{
+		if( RC_BAD( rc = m_pBtree->btGetEntry( pucKey, *puiKeyLen,
+			pucEntry, uiEntryLength, puiReturnLength)))
+		{
+			goto Exit;
+		}
+	}
 
 Exit:
 

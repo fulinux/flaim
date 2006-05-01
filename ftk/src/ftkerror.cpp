@@ -291,7 +291,7 @@ const char * FLMAPI f_errorString(
 Desc:   Map POSIX errno to Flaim IO errors.
 ***************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_NLM)
-RCODE MapPlatformError(
+RCODE f_mapPlatformError(
 	FLMINT	iError,
 	RCODE		defaultRc)
 {
@@ -359,7 +359,7 @@ RCODE MapPlatformError(
 Desc:
 ***************************************************************************/
 #ifdef FLM_WIN
-RCODE MapPlatformError(
+RCODE f_mapPlatformError(
 	FLMINT	iErrCode,
 	RCODE		defaultRc)
 {

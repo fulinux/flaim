@@ -417,7 +417,7 @@ RCODE FLMAPI F_IOBuffer::setupBuffer(
 	if( (m_Overlapped.hEvent = CreateEvent( NULL, TRUE,
 											FALSE, NULL)) == NULL)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_SETTING_UP_FOR_WRITE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_SETTING_UP_FOR_WRITE);
 		goto Exit;
 	}
 #endif
@@ -436,21 +436,21 @@ RCODE FLMAPI F_IOBuffer::setupBuffer(
 								(DWORD)uiBufferSize,
 								MEM_COMMIT, PAGE_READWRITE)) == NULL)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_MEM);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
 		goto Exit;
 	}
 #elif defined( FLM_LINUX)
 	if( posix_memalign( (void **)&m_pucBuffer, 
 		sysconf( _SC_PAGESIZE), uiBufferSize) != 0)
 	{
-		rc = MapPlatformError( errno, NE_FLM_MEM);
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
 		goto Exit;
 	}
 #elif defined( FLM_SOLARIS)
 	if( (m_pucBuffer = (FLMBYTE *)memalign( sysconf( _SC_PAGESIZE),
 		uiBufferSize)) == NULL)
 	{
-		rc = MapPlatformError( errno, NE_FLM_MEM);
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
 		goto Exit;
 	}
 #else
@@ -564,7 +564,7 @@ RCODE F_IOBuffer::waitToComplete( void)
 		if (!GetOverlappedResult( m_FileHandle, &m_Overlapped,
 											&udBytesWritten, TRUE))
 		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 		}
 
 		notifyComplete( rc);
@@ -578,7 +578,7 @@ RCODE F_IOBuffer::waitToComplete( void)
 		
 		if( aio_suspend( &pAio, 1, NULL) == -1)
 		{
-			rc = MapPlatformError( errno, NE_FLM_MEM);
+			rc = f_mapPlatformError( errno, NE_FLM_MEM);
 		}
 
 		notifyComplete( rc);

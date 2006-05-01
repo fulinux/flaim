@@ -32,11 +32,11 @@ Desc:
 ****************************************************************************/
 F_FileHdl::F_FileHdl()
 {
+	m_uiFileId = 0;
 	m_bFileOpened = FALSE;
 	m_bDeleteOnRelease = FALSE;
 	m_bOpenedReadOnly = FALSE;
 	m_pszFileName = NULL;
-	
 	m_FileHandle = INVALID_HANDLE_VALUE;
 	m_uiBlockSize = 0;
 	m_uiBytesPerSector = 0;
@@ -232,7 +232,7 @@ Retry_Create:
 			}
 		}
 		
-		rc = MapPlatformError( udErrCode,
+		rc = f_mapPlatformError( udErrCode,
 						(RCODE)(bCreateFlag
 								  ? (RCODE)(m_bDoDirectIO
 												? (RCODE)NE_FLM_DIRECT_CREATING_FILE
@@ -484,7 +484,7 @@ RCODE FLMAPI F_FileHdl::close( void)
 
 	if( !CloseHandle( m_FileHandle))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_CLOSING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_CLOSING_FILE);
 		goto Exit;
 	}
 
@@ -520,7 +520,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	{
 		if( !FlushFileBuffers( m_FileHandle))
   		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_FLUSHING_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_FLUSHING_FILE);
 		}
 	}
 	return( rc);
@@ -529,7 +529,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 /****************************************************************************
 Desc:	Allocate an aligned buffer.
 ****************************************************************************/
-RCODE F_FileHdl::allocAlignBuffer( void)
+RCODE F_FileHdl::allocAlignedBuffer( void)
 {
 	RCODE	rc = NE_FLM_OK;
 
@@ -543,7 +543,7 @@ RCODE F_FileHdl::allocAlignBuffer( void)
 								(DWORD)m_uiAlignedBuffSize,
 								MEM_COMMIT, PAGE_READWRITE)) == NULL)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_MEM);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
 		goto Exit;
 	}
 	
@@ -572,7 +572,7 @@ RCODE F_FileHdl::doOneRead(
 		liTmp.QuadPart = ui64ReadOffset;
 		if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
 			goto Exit;
 		}
 
@@ -585,7 +585,7 @@ RCODE F_FileHdl::doOneRead(
 			if ((m_Overlapped.hEvent = CreateEvent( NULL, TRUE,
 													FALSE, NULL)) == NULL)
 			{
-				rc = MapPlatformError( GetLastError(),
+				rc = f_mapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_READ);
 				goto Exit;
 			}
@@ -597,7 +597,7 @@ RCODE F_FileHdl::doOneRead(
 		
 		if( !ResetEvent( pOverlapped->hEvent))
 		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_SETTING_UP_FOR_READ);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_SETTING_UP_FOR_READ);
 			goto Exit;
 		}
 	}
@@ -614,13 +614,13 @@ RCODE F_FileHdl::doOneRead(
 			if( !GetOverlappedResult( m_FileHandle, 
 				pOverlapped, puiBytesRead, TRUE))
 			{
-				rc = MapPlatformError( GetLastError(), NE_FLM_READING_FILE);
+				rc = f_mapPlatformError( GetLastError(), NE_FLM_READING_FILE);
 				goto Exit;
 			}
 		}
 		else
 		{
-			rc = MapPlatformError( udErr, NE_FLM_READING_FILE);
+			rc = f_mapPlatformError( udErr, NE_FLM_READING_FILE);
 			goto Exit;
 		}
 	}
@@ -677,7 +677,7 @@ RCODE F_FileHdl::directRead(
 		{
 			if (!m_pucAlignedBuff)
 			{
-				if (RC_BAD( rc = allocAlignBuffer()))
+				if (RC_BAD( rc = allocAlignedBuffer()))
 				{
 					goto Exit;
 				}
@@ -897,7 +897,7 @@ RCODE FLMAPI F_FileHdl::size(
 	
 	if( !GetFileSizeEx( m_FileHandle, &liTmp))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
 		goto Exit;
 	}
 	
@@ -936,7 +936,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 	liTmp.QuadPart = ui64Size;
 	if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
 		goto Exit;
 	}
 		
@@ -944,7 +944,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 
 	if( !SetEndOfFile( m_FileHandle))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_TRUNCATING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_TRUNCATING_FILE);
 		goto Exit;
 	}
 	
@@ -997,7 +997,7 @@ RCODE F_FileHdl::extendFile(
 
 		if (!m_pucAlignedBuff)
 		{
-			if (RC_BAD( rc = allocAlignBuffer()))
+			if (RC_BAD( rc = allocAlignedBuffer()))
 			{
 				goto Exit;
 			}
@@ -1020,7 +1020,7 @@ RCODE F_FileHdl::extendFile(
 			liTmp.QuadPart = ui64EndOfLastWrite;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 			{
-				rc = MapPlatformError( GetLastError(), 
+				rc = f_mapPlatformError( GetLastError(), 
 							NE_FLM_POSITIONING_IN_FILE);
 				goto Exit;
 			}
@@ -1035,7 +1035,7 @@ RCODE F_FileHdl::extendFile(
 				if ((pOverlapped->hEvent = CreateEvent( NULL, TRUE,
 														FALSE, NULL)) == NULL)
 				{
-					rc = MapPlatformError( GetLastError(),
+					rc = f_mapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_WRITE);
 					goto Exit;
 				}
@@ -1046,7 +1046,7 @@ RCODE F_FileHdl::extendFile(
 			
 			if (!ResetEvent( pOverlapped->hEvent))
 			{
-				rc = MapPlatformError( GetLastError(),
+				rc = f_mapPlatformError( GetLastError(),
 							NE_FLM_SETTING_UP_FOR_WRITE);
 				goto Exit;
 			}
@@ -1057,7 +1057,7 @@ RCODE F_FileHdl::extendFile(
 		if( !WriteFile( m_FileHandle, m_pucAlignedBuff,
 			uiBytesToWrite, &uiBytesWritten, pOverlapped))
 		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 			
 			// Don't care if it is a disk full error, because
 			// extending the file is optional work.
@@ -1091,7 +1091,7 @@ RCODE F_FileHdl::extendFile(
 	{
 		if( !FlushFileBuffers( m_FileHandle))
   		{
-			rc = MapPlatformError( GetLastError(), NE_FLM_FLUSHING_FILE);
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_FLUSHING_FILE);
 			goto Exit;
 		}
 	}
@@ -1156,7 +1156,7 @@ RCODE F_FileHdl::directWrite(
 
 	if( !GetFileSizeEx( m_FileHandle, &liTmp))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_GETTING_FILE_SIZE);
 		goto Exit;
 	}
 	
@@ -1206,7 +1206,7 @@ RCODE F_FileHdl::directWrite(
 			f_assert( !bDoAsync || !m_bCanDoAsync);
 			if (!m_pucAlignedBuff)
 			{
-				if (RC_BAD( rc = allocAlignBuffer()))
+				if (RC_BAD( rc = allocAlignedBuffer()))
 				{
 					goto Exit;
 				}
@@ -1314,7 +1314,7 @@ RCODE F_FileHdl::directWrite(
 			liTmp.QuadPart = ui64LastWriteOffset;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 			{
-				rc = MapPlatformError( GetLastError(),
+				rc = f_mapPlatformError( GetLastError(),
 							NE_FLM_POSITIONING_IN_FILE);
 				goto Exit;
 			}
@@ -1338,7 +1338,7 @@ RCODE F_FileHdl::directWrite(
 				if ((pOverlapped->hEvent = CreateEvent( NULL, TRUE,
 														FALSE, NULL)) == NULL)
 				{
-					rc = MapPlatformError( GetLastError(),
+					rc = f_mapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_WRITE);
 					goto Exit;
 				}
@@ -1349,7 +1349,7 @@ RCODE F_FileHdl::directWrite(
 			
 			if (!ResetEvent( pOverlapped->hEvent))
 			{
-				rc = MapPlatformError( GetLastError(),
+				rc = f_mapPlatformError( GetLastError(),
 								NE_FLM_SETTING_UP_FOR_WRITE);
 				goto Exit;
 			}
@@ -1382,14 +1382,14 @@ RCODE F_FileHdl::directWrite(
 				if (!GetOverlappedResult( m_FileHandle, pOverlapped,
 							&uiBytesWritten, TRUE))
 				{
-					rc = MapPlatformError( GetLastError(),
+					rc = f_mapPlatformError( GetLastError(),
 								NE_FLM_WRITING_FILE);
 					goto Exit;
 				}
 			}
 			else
 			{
-				rc = MapPlatformError( udErr, NE_FLM_WRITING_FILE);
+				rc = f_mapPlatformError( udErr, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 		}
@@ -1487,7 +1487,7 @@ RCODE FLMAPI F_FileHdl::write(
 		liTmp.QuadPart = ui64WriteOffset;
 		if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
 		{
-			rc = MapPlatformError( GetLastError(),
+			rc = f_mapPlatformError( GetLastError(),
 						NE_FLM_POSITIONING_IN_FILE);
 			goto Exit;
 		}
@@ -1501,7 +1501,7 @@ RCODE FLMAPI F_FileHdl::write(
 			if ((m_Overlapped.hEvent = CreateEvent( NULL, TRUE,
 													FALSE, NULL)) == NULL)
 			{
-				rc = MapPlatformError( GetLastError(),
+				rc = f_mapPlatformError( GetLastError(),
 							NE_FLM_SETTING_UP_FOR_WRITE);
 				goto Exit;
 			}
@@ -1513,7 +1513,7 @@ RCODE FLMAPI F_FileHdl::write(
 		
 		if( !ResetEvent( pOverlapped->hEvent))
 		{
-			rc = MapPlatformError( GetLastError(),
+			rc = f_mapPlatformError( GetLastError(),
 						NE_FLM_SETTING_UP_FOR_WRITE);
 			goto Exit;
 		}
@@ -1529,13 +1529,13 @@ RCODE FLMAPI F_FileHdl::write(
 			if (!GetOverlappedResult( m_FileHandle, pOverlapped,
 						&uiBytesWritten, TRUE))
 			{
-				rc = MapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
+				rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 		}
 		else
 		{
-			rc = MapPlatformError( udErr, NE_FLM_WRITING_FILE);
+			rc = f_mapPlatformError( udErr, NE_FLM_WRITING_FILE);
 			goto Exit;
 		}
 	}

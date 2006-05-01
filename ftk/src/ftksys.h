@@ -49,9 +49,10 @@
 		IF_ThreadMgr *					gv_pThreadMgr;
 	#endif
 	
-	RCODE MapPlatformError(
-		FLMINT		iError,
-		RCODE			defaultRc);
+	#define FLM_DEFAULT_OPEN_THRESHOLD						100
+	#define FLM_DEFAULT_MAX_AVAIL_TIME						900
+	
+	#define FLM_MAX_KEY_SIZE									1024
 
 	/****************************************************************************
 	Desc:		NLM
@@ -101,7 +102,6 @@
 			(*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
 			
 		#define f_va_end(ap) ((void)0)
-		#define FSTATIC
 
 		#ifndef _SIZE_T
 			#define _SIZE_T
@@ -212,8 +212,6 @@
 		// Function XXX not inlined
 		#pragma warning( disable : 4710) 
 		
-		#define FSTATIC			static
-
 		#define ENDLINE			ENDLINE_CRLF
 		#define f_va_start		va_start
 		#define f_va_arg			va_arg
@@ -225,8 +223,6 @@
 	Desc:		UNIX
 	****************************************************************************/
 	#if defined( FLM_UNIX)
-
-		#define FSTATIC		static
 
 		#ifdef HAVE_CONFIG_H
 			#include "config.h"
@@ -479,79 +475,6 @@
 	#else
 		#define f_va_copy(to, from)  ((to) = (from))
 	#endif
-
-	/****************************************************************************
-	Desc:		Internal base class
-	****************************************************************************/
-	class F_OSBase
-	{
-	public:
-
-		F_OSBase()
-		{ 
-			m_refCnt = 1;	
-		}
-
-		virtual ~F_OSBase()
-		{
-		}
-
-		FINLINE FLMUINT getRefCount( void)
-		{
-			return( m_refCnt);
-		}
-
-		void * operator new(
-			FLMSIZET			uiSize);
-
-	#ifdef FLM_DEBUG
-		void * operator new(
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
-	#endif
-
-		void operator delete(
-			void *			ptr);
-
-		void operator delete[](
-			void *			ptr);
-
-	#if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
-		void operator delete(
-			void *			ptr,
-			const char *,	// file
-			int);				// line
-	#endif
-
-	#if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
-		void operator delete[](
-			void *			ptr,
-			const char *,	// file
-			int);				// line
-	#endif
-
-		virtual FINLINE FLMINT FLMAPI AddRef( void)
-		{
-			return( ++m_refCnt);
-		}
-
-		virtual FINLINE FLMINT FLMAPI Release( void)
-		{
-			FLMINT		iRefCnt = --m_refCnt;
-
-			if( !iRefCnt)
-			{
-				delete this;
-			}
-
-			return( iRefCnt);
-		}
-
-	protected:
-
-		FLMATOMIC		m_refCnt;
-	};
 
 	/**********************************************************************
 	Desc:
@@ -1651,6 +1574,27 @@
 		{
 			m_uiBlockSize = uiBlockSize;
 		}
+		
+		FINLINE FLMUINT FLMAPI getBlockSize( void)
+		{
+			return( m_uiBlockSize);
+		}
+		
+		FINLINE FLMUINT FLMAPI getSectorSize( void)
+		{
+			return( m_uiBytesPerSector);
+		}
+		
+		FINLINE void FLMAPI setFileId(
+			FLMUINT			uiFileId)
+		{
+			m_uiFileId = uiFileId;
+		}
+		
+		FINLINE FLMUINT FLMAPI getFileId( void)
+		{
+			return( m_uiFileId);
+		}
 	
 	private:
 	
@@ -1667,11 +1611,6 @@
 			const char *	pszFileName,
 			FLMUINT			uiIoFlags);
 	
-		FINLINE FLMUINT getSectorSize( void)
-		{
-			return( m_uiBytesPerSector);
-		}
-	
 		FINLINE HANDLE getFileHandle( void)
 		{
 			return m_FileHandle;
@@ -1681,8 +1620,6 @@
 			const char *	pszFileName,
 			FLMUINT			uiAccess,
 			FLMBOOL			bCreateFlag);
-	
-		RCODE allocAlignBuffer( void);
 	
 		RCODE doOneRead(
 			FLMUINT64		ui64Offset,
@@ -1723,7 +1660,10 @@
 			FLMUINT64		ui64EndOfLastWrite,
 			FLMUINT			uiMaxBytesToExtend,
 			FLMBOOL			bFlush);
+			
+		RCODE allocAlignedBuffer( void);
 	
+		FLMUINT				m_uiFileId;
 		FLMBOOL				m_bFileOpened;
 		FLMBOOL				m_bDeleteOnRelease;
 		FLMBOOL				m_bOpenedReadOnly;
@@ -1907,7 +1847,7 @@
 			FLMBOOL				bBuffHasFullSectors,
 			FLMBOOL				bZeroFill);
 		
-		RCODE allocAlignBuffer( void);
+		RCODE allocAlignedBuffer( void);
 		
 		FLMBOOL					m_bFileOpened;
 		FLMBOOL					m_bDeleteOnRelease;
@@ -1931,6 +1871,181 @@
 		friend class F_MultiFileHdl;
 	};
 	#endif
+
+	/***************************************************************************
+	Desc:
+	***************************************************************************/
+	class F_FileHdlMgr : public IF_FileHdlMgr, public F_Base
+	{
+	public:
+	
+		F_FileHdlMgr();
+	
+		virtual FINLINE ~F_FileHdlMgr()
+		{
+			if (m_hMutex != F_MUTEX_NULL)
+			{
+				lockMutex( FALSE);
+				freeUsedList( TRUE);
+				freeAvailList( TRUE);
+				unlockMutex( FALSE);
+				f_mutexDestroy( &m_hMutex);
+			}
+		}
+	
+		FINLINE void FLMAPI setOpenThreshold(
+			FLMUINT		uiOpenThreshold)
+		{
+			if (m_bIsSetup)
+			{
+				lockMutex( FALSE);
+				m_uiOpenThreshold = uiOpenThreshold;
+				unlockMutex( FALSE);
+			}
+		}
+	
+		FINLINE void FLMAPI setMaxAvailTime(
+			FLMUINT		uiMaxAvailTime)
+		{
+			if (m_bIsSetup)
+			{
+				lockMutex( FALSE);
+				m_uiMaxAvailTime = uiMaxAvailTime;
+				unlockMutex( FALSE);
+			}
+		}
+	
+		FINLINE FLMUINT FLMAPI getUniqueId( void)
+		{
+			FLMUINT	uiTemp;
+	
+			lockMutex( FALSE);
+			uiTemp = ++m_uiFileIdCounter;
+			unlockMutex( FALSE);
+			return( uiTemp);
+		}
+	
+		void FLMAPI findAvail(
+			FLMUINT			uiFileId,
+			FLMBOOL			bReadOnlyFlag,
+			IF_FileHdl **	ppFileHdl);
+	
+		void FLMAPI removeFileHdls(
+			FLMUINT			uiFileId);
+	
+		void FLMAPI checkAgedFileHdls(
+			FLMUINT			uiMinSecondsOpened);
+	
+		FINLINE FLMUINT FLMAPI getOpenThreshold( void)
+		{
+			return( m_uiOpenThreshold);
+		}
+	
+		FINLINE FLMUINT FLMAPI getOpenedFiles( void)
+		{
+			FLMUINT		uiTemp;
+	
+			lockMutex( FALSE);
+			uiTemp = m_uiNumUsed + m_uiNumAvail;
+			unlockMutex( FALSE);
+			return( uiTemp);
+		}
+	
+		FINLINE FLMUINT FLMAPI getMaxAvailTime( void)
+		{
+			return( m_uiMaxAvailTime);
+		}
+	
+	private:
+	
+		RCODE setupFileHdlMgr(
+			FLMUINT		uiOpenThreshold = FLM_DEFAULT_OPEN_THRESHOLD,
+			FLMUINT		uiMaxAvailTime = FLM_DEFAULT_MAX_AVAIL_TIME);
+	
+		void freeAvailList(
+			FLMBOOL			bMutexAlreadyLocked);
+	
+		void freeUsedList(
+			FLMBOOL			bMutexAlreadyLocked);
+	
+		FINLINE void insertInUsedList(
+			FLMBOOL			bMutexAlreadyLocked,
+			IF_FileHdl *	pFileHdl,
+			FLMBOOL			bInsertAtEnd)
+		{
+			insertInList( bMutexAlreadyLocked,
+				pFileHdl, bInsertAtEnd,
+				&m_pFirstUsed, &m_pLastUsed, &m_uiNumUsed);
+		}
+	
+		void makeAvailAndRelease(
+			FLMBOOL			bMutexAlreadyLocked,
+			IF_FileHdl *	pFileHdl);
+	
+		void FINLINE releaseOneAvail(
+			FLMBOOL			bMutexAlreadyLocked)
+		{
+			lockMutex( bMutexAlreadyLocked);
+			if (m_pFirstAvail)
+			{
+				removeFromList( TRUE,
+					m_pFirstAvail, &m_pFirstAvail, &m_pLastAvail, &m_uiNumAvail);
+			}
+			unlockMutex( bMutexAlreadyLocked);
+		}
+	
+		void insertInList(
+			FLMBOOL			bMutexAlreadyLocked,
+			IF_FileHdl *	pFileHdl,
+			FLMBOOL			bInsertAtEnd,
+			IF_FileHdl **	ppFirst,
+			IF_FileHdl **	ppLast,
+			FLMUINT *		puiCount);
+	
+		void removeFromList(
+			FLMBOOL			bMutexAlreadyLocked,
+			IF_FileHdl *	pFileHdl,
+			IF_FileHdl **	ppFirst,
+			IF_FileHdl **	ppLast,
+			FLMUINT *		puiCount);
+	
+		FINLINE void lockMutex(
+			FLMBOOL			bMutexAlreadyLocked)
+		{
+			if (m_hMutex != F_MUTEX_NULL && !bMutexAlreadyLocked)
+			{
+				f_mutexLock( m_hMutex);
+			}
+		}
+	
+		FINLINE void unlockMutex(
+			FLMBOOL			bMutexAlreadyLocked)
+		{
+			if (m_hMutex != F_MUTEX_NULL && !bMutexAlreadyLocked)
+			{
+				f_mutexUnlock( m_hMutex);
+			}
+		}
+	
+		F_MUTEX				m_hMutex;
+		FLMUINT				m_uiOpenThreshold;	// FileHdl open threshold.
+		FLMUINT				m_uiMaxAvailTime;		// Time to close any available files.
+	
+		// Used list
+	
+		IF_FileHdl *		m_pFirstUsed;
+		IF_FileHdl *		m_pLastUsed;
+		FLMUINT				m_uiNumUsed;
+	
+		// Avail list
+	
+		IF_FileHdl *		m_pFirstAvail;
+		IF_FileHdl *		m_pLastAvail;
+		FLMUINT				m_uiNumAvail;
+	
+		FLMBOOL				m_bIsSetup;
+		FLMUINT				m_uiFileIdCounter;
+	};
 
 	/****************************************************************************
 	Desc:
@@ -2457,63 +2572,6 @@
 	};
 	
 	/****************************************************************************
-	Desc:	Decodes an ASCII base64 stream to binary
-	****************************************************************************/
-	class F_Base64DecoderIStream : public F_IStream
-	{
-	public:
-	
-		F_Base64DecoderIStream()
-		{
-			m_pIStream = NULL;
-			m_uiBufOffset = 0;
-			m_uiAvailBytes = 0;
-		}
-	
-		virtual ~F_Base64DecoderIStream()
-		{
-			close();
-		}
-	
-		RCODE FLMAPI open(
-			IF_IStream *	pIStream);
-		
-		RCODE FLMAPI read(
-			void *			pvBuffer,
-			FLMUINT			uiBytesToRead,
-			FLMUINT *		puiBytesRead);
-			
-		FINLINE RCODE FLMAPI close( void)
-		{
-			RCODE		rc = NE_FLM_OK;
-			
-			if( m_pIStream)
-			{
-				if( m_pIStream->getRefCount() == 1)
-				{
-					rc = m_pIStream->close();
-				}
-	
-				m_pIStream->Release();
-				m_pIStream = NULL;
-			}
-			
-			m_uiAvailBytes = 0;
-			m_uiBufOffset = 0;
-			
-			return( rc);
-		}
-		
-	private:
-	
-		IF_IStream *		m_pIStream;
-		FLMUINT				m_uiBufOffset;
-		FLMUINT				m_uiAvailBytes;
-		FLMBYTE				m_ucBuffer[ 8];
-		static FLMBYTE		m_ucDecodeTable[ 256];
-	};
-
-	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
 
@@ -2651,5 +2709,93 @@
 	
 	RCODE f_allocDirHdl(
 		F_DirHdl **			ppDirHdl);
+		
+#if defined( FLM_NLM)
+
+	extern "C"
+	{
+		void ConvertTicksToSeconds(
+			LONG		ticks,
+			LONG *	seconds,
+			LONG *	tenthsOfSeconds);
+	
+		void ConvertSecondsToTicks(
+			LONG		seconds,
+			LONG		tenthsOfSeconds,
+			LONG *	ticks);
+	}
+
+	#define FLM_GET_TIMER()	(FLMUINT)GetCurrentTime()
+
+	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)	\
+		ConvertSecondsToTicks( (LONG)(uiSeconds), 0, (LONG *)(&(uiTU)))
+
+	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)	\
+	{ \
+		LONG	udDummy; \
+		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(uiSeconds)), &udDummy); \
+	}
+
+	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)	\
+	{ \
+		LONG	udTenths; \
+		LONG	udSeconds; \
+		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(udSeconds)), &udTenths); \
+		uiMilli = (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100; \
+	}
+	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU)	\
+	{ \
+		LONG udTenths, udSeconds; \
+		udSeconds = ((LONG) uiMilliSeconds) / 1000; \
+		udTenths = (((LONG) uiMilliSeconds) % 1000) / 100; \
+		ConvertSecondsToTicks( udSeconds, udTenths, (LONG *)(&(uiTU))); \
+	}
+
+#elif defined( FLM_UNIX)
+
+	// gettimeofday() is actually 4 times faster than time() on
+	// Solaris. gethrtime() is even faster. On Linux time() is the
+	// fastest; gettimeofday() is 50% slower. clock() is the
+	// slowest on both Solaris and Linux. We use a new function for
+	// millisec resolution. The implementation is OS dependent.
+
+	#define FLM_GET_TIMER() (FLMUINT) f_timeGetMilliTime()
+	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)  \
+       ((uiTU) = ((uiSeconds) * 1000))
+	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)  \
+       ((uiSeconds) = ((uiTU) / 1000))
+	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)   \
+		 ((uiMilli) = (uiTU))
+	#define FLM_MILLI_TO_TIMER_UNITS( uiMilli, uiTU)	\
+		 ((uiTU) = (uiMilli))
+#else /* FLM_WIN */
+
+	#define FLM_GET_TIMER() \
+		(FLMUINT)GetTickCount()
+
+	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
+		((uiTU) = (uiSeconds) * 1000)
+
+	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
+		((uiSeconds) = (uiTU) / 1000)
+
+	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
+		(uiMilli = (uiTU))
+
+	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU) \
+		(uiTU = (uiMilliSeconds))
+
+#endif
+
+// This macro for calculating elapsed time accounts for the
+// possibility of the time wrapping - which it will for some
+// of our counters (FLM_WIN is milliseconds and wraps in 49.7 days).
+
+#define FLM_ELAPSED_TIME(uiLaterTime,uiEarlierTime) \
+	(FLMUINT)(((uiLaterTime) >= (uiEarlierTime)) \
+				 ? (FLMUINT)((uiLaterTime) - (uiEarlierTime)) \
+				 : (FLMUINT)((0xFFFFFFFF - (uiEarlierTime)) + (uiLaterTime)))
+
+
 		
 #endif	// FTKSYS_H

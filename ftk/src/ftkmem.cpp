@@ -726,7 +726,7 @@ private:
 /************************************************************************
 Desc:
 *************************************************************************/
-FINLINE FLMUINT f_msize(
+FLMUINT f_msize(
 	void *			pvPtr)
 {
 #if defined( FLM_UNIX)
@@ -1767,12 +1767,12 @@ void FLMAPI f_freeImp(
 /********************************************************************
 Desc: Reset the stack information for an allocation.
 *********************************************************************/
-#ifdef FLM_DEBUG
 void f_resetStackInfoImp(
 	void *			pvPtr,
 	const char *	pszFileName,
 	int				iLineNumber)
 {
+#ifdef FLM_DEBUG
 	if (pvPtr)
 	{
 
@@ -1785,8 +1785,12 @@ void f_resetStackInfoImp(
 		f_mutexUnlock( gv_hMemTrackingMutex);
 		updateMemTrackingInfo( pHdr);
 	}
-}
+#else
+	F_UNREFERENCED_PARM( pvPtr);
+	F_UNREFERENCED_PARM( pszFileName);
+	F_UNREFERENCED_PARM( iLineNumber);
 #endif
+}
 
 /************************************************************************
 Desc:
@@ -4213,6 +4217,49 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 	return( pAllocator);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_allocAlignedBuffer(
+	FLMUINT			uiMinSize,
+	void **			ppvAlloc)
+{
+	RCODE		rc = NE_FLM_OK;
+	
+#ifdef FLM_WIN
+	if ((*ppvAlloc = (void *)VirtualAlloc( NULL,
+		uiMinSize, MEM_COMMIT, PAGE_READWRITE)) == NULL)
+	{
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
+		goto Exit;
+	}
+	f_memset( *ppvAlloc, 0, uiMinSize);
+#elif defined( FLM_LINUX)
+	if( posix_memalign( ppvAlloc, sysconf( _SC_PAGESIZE), uiMinSize) != 0)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		goto Exit;
+	}
+	f_memset( *ppvAlloc, 0, uiMinSize);
+#elif defined( FLM_SOLARIS)
+	if( (*ppvAlloc = memalign( sysconf( _SC_PAGESIZE), uiMinSize)) == NULL)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		goto Exit;
+	}
+	f_memset( *ppvAlloc, 0, uiMinSize);
+#else
+	if( RC_BAD( rc = f_calloc( uiMinSize, ppvAlloc)))
+	{
+		goto Exit;
+	}
+#endif
+
+Exit:
+
+	return( rc);
+}
+
 #undef	new
 #undef	delete
 /****************************************************************************
@@ -4305,19 +4352,9 @@ void F_Base::operator delete[](
 	f_freeImp( &ptr, TRUE);
 }
 
-/************************************************************************
-Desc:	
-*************************************************************************/
-void * F_OSBase::operator new(
-	FLMSIZET			uiSize)
-{
-	return( malloc( uiSize));
-}
-
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-#ifdef FLM_DEBUG
 void * F_OSBase::operator new(
 	FLMSIZET			uiSize,
 	const char *,	// pszFile,
@@ -4325,7 +4362,6 @@ void * F_OSBase::operator new(
 {
 	return( malloc( uiSize));
 }
-#endif
 
 /************************************************************************
 Desc:	
@@ -4339,16 +4375,6 @@ void F_OSBase::operator delete(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void F_OSBase::operator delete[](
-	void *			ptr)
-{
-	free( &ptr);
-}
-
-/****************************************************************************
-Desc:	
-****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
 void F_OSBase::operator delete(
 	void *			ptr,
 	const char *,	// file
@@ -4356,12 +4382,10 @@ void F_OSBase::operator delete(
 {
 	free( &ptr);
 }
-#endif
 
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( FLM_WATCOM_NLM) && !defined( FLM_SOLARIS)
 void F_OSBase::operator delete[](
 	void *			ptr,
 	const char *,	// file
@@ -4369,4 +4393,3 @@ void F_OSBase::operator delete[](
 {
 	free( &ptr);
 }
-#endif

@@ -75,9 +75,9 @@ public:
 	void FLMAPI setSeed(
 		FLMINT32		i32seed);
 
-	FLMINT32 FLMAPI getInt32( void);
+	FLMINT32 FLMAPI getINT32( void);
 		
-	FLMINT32 FLMAPI getInt32(
+	FLMINT32 FLMAPI getINT32(
 		FLMINT32 	i32Low,
 		FLMINT32 	i32High);
 
@@ -143,7 +143,7 @@ Desc:	Generate the next number in the pseudo-random sequence
 		time,	on average.  Likewise, "f_randomLong( &r) & 0x1" has a 50-50
 		chance of being true.
 *************************************************************************/
-FLMINT32 F_RandomGenerator::getInt32( void)
+FLMINT32 F_RandomGenerator::getINT32( void)
 {
 #define M		2147483647
 #define A		48271
@@ -177,7 +177,7 @@ FLMINT32 F_RandomGenerator::getInt32( void)
 /*************************************************************************
 Desc:	Returns a random integer between i32Low and i32High, inclusive.
 *************************************************************************/
-FLMINT32 F_RandomGenerator::getInt32(
+FLMINT32 F_RandomGenerator::getINT32(
 	FLMINT32				i32Low,
 	FLMINT32				i32High)
 {
@@ -185,7 +185,7 @@ FLMINT32 F_RandomGenerator::getInt32(
 
 	if( i32Range < (1L << 20))
 	{
-		return( i32Low + getInt32() % i32Range);
+		return( i32Low + getINT32() % i32Range);
 	}
 	else
 	{
@@ -200,7 +200,7 @@ FLMINT32 F_RandomGenerator::getInt32(
 
 		do
 		{
-			i32Val = getInt32() & i32Mask;
+			i32Val = getINT32() & i32Mask;
 		}	while( i32Val > i32Range);
 
 		return( i32Low + i32Val);
@@ -212,5 +212,5 @@ Desc:
 *************************************************************************/
 FLMBOOL F_RandomGenerator::getBoolean( void)
 {
-	return( (getInt32( 1, 100) <= 50 ? TRUE : FALSE));
+	return( (getINT32( 1, 100) <= 50 ? TRUE : FALSE));
 }

@@ -25,10 +25,14 @@
 
 #include "ftksys.h"
 
+#define	FHM_AVAIL_LIST		0
+#define	FHM_USED_LIST		1
+#define	FHM_LNODE_COUNT	2
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FINLINE void HexToNative(
+FINLINE void f_hexToNative(
 	FLMBYTE		ucHexVal,
 	char *		pszNativeChar)
 {
@@ -40,7 +44,7 @@ FINLINE void HexToNative(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FINLINE void SetUpTime(
+FINLINE void f_setupTime(
 	FLMUINT *	puiBaseTime,
 	FLMBYTE *	pbyHighByte)
 {
@@ -746,7 +750,7 @@ RCODE FLMAPI F_FileSystem::doesFileExist(
 
    if( access( pszPath, F_OK) == -1)
 	{
-		return( MapPlatformError( errno, NE_FLM_CHECKING_FILE_EXISTENCE));
+		return( f_mapPlatformError( errno, NE_FLM_CHECKING_FILE_EXISTENCE));
 	}
 
 	return( NE_FLM_OK);
@@ -787,7 +791,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 	hSearch = FindFirstFile( (LPTSTR)pszPath, &find_data);
 	if( hSearch == INVALID_HANDLE_VALUE)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
 		switch( rc)
 		{
 	   	case NE_FLM_IO_NO_MORE_FILES:
@@ -795,7 +799,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 				goto Exit;
 			default:
 				goto Exit;
-		}	/* End switch. */
+		}
 	}
 
 	// Convert it to a local time, so we can adjust based on our own
@@ -804,7 +808,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 	if( FileTimeToLocalFileTime( &(find_data.ftLastWriteTime),
 											&ftLocalFileTime) == FALSE)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
 		goto Exit;
 	}
 
@@ -814,7 +818,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 	if( FileTimeToSystemTime( &ftLocalFileTime,
 									   &stLastFileWriteTime) == FALSE)
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_OPENING_FILE);
 		goto Exit;
 	}
 
@@ -854,7 +858,7 @@ Exit:
 
 	if( stat( pszPath, &filestatus) == -1)
 	{
-       return( MapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
+       return( f_mapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
 	}
 
 	*puiTimeStamp = (FLMUINT)filestatus.st_mtime; // st_mtime is UTC
@@ -907,7 +911,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 
 	if( DeleteFile( (LPTSTR)pszFileName) == FALSE)
 	{
-		return( MapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE));
+		return( f_mapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE));
 	}
 	
 	return( NE_FLM_OK);
@@ -918,7 +922,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 
 	if( stat( (char *)pszFileName, &FileStat) == -1)
 	{
-		return( MapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
+		return( f_mapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
 	}
 
 	// Ensure that the path does NOT designate a directory for deletion
@@ -932,7 +936,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 	
 	if( unlink( (char *)pszFileName) == -1)
 	{
-       return( MapPlatformError( errno, NE_FLM_IO_DELETING_FILE));
+       return( f_mapPlatformError( errno, NE_FLM_IO_DELETING_FILE));
 	}
 
 	return( NE_FLM_OK);
@@ -1065,7 +1069,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 				}
 				break;
 			default:
-				rc = MapPlatformError( error, NE_FLM_RENAMING_FILE);
+				rc = f_mapPlatformError( error, NE_FLM_RENAMING_FILE);
 				break;
 		}
 	}
@@ -1115,7 +1119,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 				}
 				else
 				{
-					return( MapPlatformError( errno, NE_FLM_RENAMING_FILE));
+					return( f_mapPlatformError( errno, NE_FLM_RENAMING_FILE));
 				}
 			}
 		}
@@ -1176,7 +1180,7 @@ RCODE FLMAPI F_FileSystem::getSectorSize(
 			&udBytesPerSector, &udNumberOfFreeClusters,
 			&udTotalNumberOfClusters))
 	{
-		rc = MapPlatformError( GetLastError(), NE_FLM_INITIALIZING_IO_SYSTEM);
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_INITIALIZING_IO_SYSTEM);
 		*puiSectorSize = 0;
 		goto Exit;
 	}
@@ -1280,7 +1284,7 @@ RCODE F_FileSystem::unix_TargetIsDir(
 	*isdir = 0;
 	if( stat(tpath, &sbuf) < 0)
 	{
-		rc = MapPlatformError( errno, NE_FLM_IO_ACCESS_DENIED);
+		rc = f_mapPlatformError( errno, NE_FLM_IO_ACCESS_DENIED);
 	}
 	else if( (sbuf.st_mode & S_IFMT) == S_IFDIR)
 	{
@@ -1322,7 +1326,7 @@ RCODE F_FileSystem::unix_RenameSafe(
 			// ENOENT means the file didn't exist, which is what we were
 			// hoping for.
 			
-			rc = MapPlatformError( errno, NE_FLM_IO_RENAME_FAILURE);
+			rc = f_mapPlatformError( errno, NE_FLM_IO_RENAME_FAILURE);
 			goto Exit;
 		}
 	}
@@ -1330,7 +1334,7 @@ RCODE F_FileSystem::unix_RenameSafe(
 	errno = 0;
 	if( rename( pszSrcFile, pszDestFile) != 0)
 	{
-		rc = MapPlatformError( errno, NE_FLM_IO_RENAME_FAILURE);
+		rc = f_mapPlatformError( errno, NE_FLM_IO_RENAME_FAILURE);
 	}
 
 Exit:
@@ -1934,7 +1938,7 @@ RCODE FLMAPI F_FileSystem::pathToStorageString(
 
 	if (!realpath( (char *)szDir, (char *)pszRealPath))
 	{
-		rc = MapPlatformError( errno, NE_FLM_PARSING_FILE_NAME);
+		rc = f_mapPlatformError( errno, NE_FLM_PARSING_FILE_NAME);
 		goto Exit;
 	}
 
@@ -1996,7 +2000,7 @@ void FLMAPI F_FileSystem::pathCreateUniqueName(
 	FLMUINT		uiSdTmp = 0;
 	FLMUINT		uiIncVal = 1;
 
-	SetUpTime( puiTime, pHighChars);
+	f_setupTime( puiTime, pHighChars);
 	uiSdTmp = *puiTime;
 
 	*(pszFileName + 8) = NATIVE_DOT;
@@ -2013,7 +2017,7 @@ void FLMAPI F_FileSystem::pathCreateUniqueName(
 
 	if( bModext == TRUE)
 	{
-		HexToNative((FLMBYTE)(uiSdTmp & 0x0000001F), pszFileName+(11));
+		f_hexToNative((FLMBYTE)(uiSdTmp & 0x0000001F), pszFileName+(11));
    }
 	else
 	{
@@ -2023,13 +2027,13 @@ void FLMAPI F_FileSystem::pathCreateUniqueName(
 	uiSdTmp = uiSdTmp >> 5;
 	for( iCount = 0; iCount < 6; iCount++)
 	{
-		HexToNative((FLMBYTE)(uiSdTmp & 0x0000000F), pszFileName+(7-iCount));
+		f_hexToNative((FLMBYTE)(uiSdTmp & 0x0000000F), pszFileName+(7-iCount));
 		uiSdTmp = uiSdTmp >> 4;
 	}
 
 	for( iCount = 0; iCount < 2; iCount++)
 	{
-		HexToNative((FLMBYTE)(*pHighChars & 0x0000000F), pszFileName+(1-iCount));
+		f_hexToNative((FLMBYTE)(*pHighChars & 0x0000000F), pszFileName+(1-iCount));
 		*pHighChars = *pHighChars >> 4;
 	}
 

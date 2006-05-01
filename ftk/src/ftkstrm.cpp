@@ -36,6 +36,63 @@
 #define MULTI_FILE_OUT_STREAM_MAX_FILE_SIZE	2147483647
 
 /****************************************************************************
+Desc:	Decodes an ASCII base64 stream to binary
+****************************************************************************/
+class F_Base64DecoderIStream : public F_IStream
+{
+public:
+
+	F_Base64DecoderIStream()
+	{
+		m_pIStream = NULL;
+		m_uiBufOffset = 0;
+		m_uiAvailBytes = 0;
+	}
+
+	virtual ~F_Base64DecoderIStream()
+	{
+		close();
+	}
+
+	RCODE FLMAPI open(
+		IF_IStream *	pIStream);
+	
+	RCODE FLMAPI read(
+		void *			pvBuffer,
+		FLMUINT			uiBytesToRead,
+		FLMUINT *		puiBytesRead);
+		
+	FINLINE RCODE FLMAPI close( void)
+	{
+		RCODE		rc = NE_FLM_OK;
+		
+		if( m_pIStream)
+		{
+			if( m_pIStream->getRefCount() == 1)
+			{
+				rc = m_pIStream->close();
+			}
+
+			m_pIStream->Release();
+			m_pIStream = NULL;
+		}
+		
+		m_uiAvailBytes = 0;
+		m_uiBufOffset = 0;
+		
+		return( rc);
+	}
+	
+private:
+
+	IF_IStream *		m_pIStream;
+	FLMUINT				m_uiBufOffset;
+	FLMUINT				m_uiAvailBytes;
+	FLMBYTE				m_ucBuffer[ 8];
+	static FLMBYTE		m_ucDecodeTable[ 256];
+};
+
+/****************************************************************************
 Desc:
 ****************************************************************************/
 FLMBYTE F_Base64DecoderIStream::m_ucDecodeTable[ 256] = 
@@ -77,7 +134,7 @@ FLMBYTE F_Base64DecoderIStream::m_ucDecodeTable[ 256] =
 /****************************************************************************
 Desc:	Encodes a binary input stream into ASCII base64.
 ****************************************************************************/
-class F_Base64EncoderIStream : public F_IStream
+class F_Base64EncoderIStream : public IF_IStream
 {
 public:
 

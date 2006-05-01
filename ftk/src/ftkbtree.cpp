@@ -37,8 +37,6 @@ FSTATIC RCODE btGetEntryData(
 	FLMUINT				uiBufferSize,
 	FLMUINT *			puiLenDataRV);
 
-#define FLM_MAX_KEY_SIZE										1024
-
 typedef struct FlmBlockHdrTag
 {
 	FLMUINT32	ui32BlkAddr;
@@ -78,8 +76,6 @@ typedef struct FlmBTreeBlkHdr
 	FLMUINT16	ui16BtreeId;
 	FLMUINT16	ui16NumKeys;
 	FLMUINT8		ui8BlkLevel;
-		#define BH_MAX_LEVELS									8
-		#define MAX_LEVELS										BH_MAX_LEVELS
 	FLMUINT8		ui8BTreeFlags;
 		#define BLK_IS_ROOT										0x01
 		#define BLK_IS_INDEX										0x02
@@ -92,46 +88,6 @@ typedef struct FlmBTreeBlkHdr
 #define F_BTREE_BLK_HDR_ui8BlkLevel_OFFSET				36
 #define F_BTREE_BLK_HDR_ui8BTreeFlags_OFFSET				37
 #define F_BTREE_BLK_HDR_ui16HeapSize_OFFSET				38
-
-enum BTREE_ERR_TYPE
-{
-	NO_ERR = 0,  // FYI: Visual Studio already defines NOERROR
-	BT_HEADER,
-	KEY_ORDER,
-	DUPLICATE_KEYS,
-	INFINITY_MARKER,
-	CHILD_BLOCK_ADDRESS,
-	SCA_GET_BLOCK_FAILED,
-	MISSING_OVERALL_DATA_LENGTH,
-	NOT_DATA_ONLY_BLOCK,
-	BAD_DO_BLOCK_LENGTHS,
-	BAD_COUNTS,
-	CATASTROPHIC_FAILURE = 999
-};
-
-typedef struct
-{
-	FLMUINT				uiKeyCnt;
-	FLMUINT				uiFirstKeyCnt;
-	FLMUINT				uiBlkCnt;
-	FLMUINT				uiBytesUsed;
-	FLMUINT				uiDOBlkCnt;
-	FLMUINT				uiDOBytesUsed;
-} BTREE_LEVEL_STATS;
-
-typedef struct
-{
-	FLMUINT				uiBlkAddr;
-	FLMUINT				uiBlockSize;
-	FLMUINT				uiBlocksChecked;
-	FLMUINT				uiAvgFreeSpace;
-	FLMUINT				uiLevels;
-	FLMUINT				uiNumKeys;
-	FLMUINT64			ui64FreeSpace;
-	BTREE_LEVEL_STATS	LevelStats[ BH_MAX_LEVELS];
-	char					szMsg[ 64];
-	BTREE_ERR_TYPE		type;
-}  BTREE_ERR_STRUCT;
 
 typedef struct
 {
@@ -169,6 +125,47 @@ typedef enum
 	ELM_BLK_MERGE,
 	ELM_DONE
 } F_ELM_UPD_ACTION;
+
+enum BTREE_ERR_TYPE
+{
+	NO_ERR = 0,
+	BT_HEADER,
+	KEY_ORDER,
+	DUPLICATE_KEYS,
+	INFINITY_MARKER,
+	CHILD_BLOCK_ADDRESS,
+	SCA_GET_BLOCK_FAILED,
+	MISSING_OVERALL_DATA_LENGTH,
+	NOT_DATA_ONLY_BLOCK,
+	BAD_DO_BLOCK_LENGTHS,
+	BAD_COUNTS,
+	CATASTROPHIC_FAILURE = 999
+};
+
+typedef struct
+{
+	FLMUINT				uiKeyCnt;
+	FLMUINT				uiFirstKeyCnt;
+	FLMUINT				uiBlkCnt;
+	FLMUINT				uiBytesUsed;
+	FLMUINT				uiDOBlkCnt;
+	FLMUINT				uiDOBytesUsed;
+} BTREE_LEVEL_STATS;
+
+typedef struct
+{
+	FLMUINT				uiBlkAddr;
+	FLMUINT				uiBlockSize;
+	FLMUINT				uiBlocksChecked;
+	FLMUINT				uiAvgFreeSpace;
+	FLMUINT				uiLevels;
+	FLMUINT				uiNumKeys;
+	FLMUINT64			ui64FreeSpace;
+#define FLM_MAX_BTREE_LEVELS		8
+	BTREE_LEVEL_STATS	LevelStats[ FLM_MAX_BTREE_LEVELS];
+	char					szMsg[ 64];
+	BTREE_ERR_TYPE		type;
+}  BTREE_ERR_STRUCT;
 
 // Represent the maximum size for data & key before needing two bytes to
 // store the length.
@@ -214,7 +211,7 @@ typedef enum
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_Btree : public F_RefCount, public F_Base
+class F_Btree : public IF_Btree, public F_Base
 {
 public:
 
@@ -222,36 +219,35 @@ public:
 	
 	virtual ~F_Btree( void);
 
-	RCODE btCreate(
+	RCODE FLMAPI btCreate(
 		IF_BlockMgr *				pBlockMgr,
 		FLMUINT16					ui16BtreeId,
 		FLMBOOL						bCounts,
 		FLMBOOL						bData,
 		FLMUINT *					puiRootBlkAddr);
 
-
-	RCODE btOpen(
+	RCODE FLMAPI btOpen(
 		IF_BlockMgr *				pBlockMgr,
 		FLMUINT						uiRootBlkAddr,
 		FLMBOOL						bCounts,
 		FLMBOOL						bData,
 		IF_ResultSetCompare *	pCompare = NULL);
 
-	void btClose( void);
+	void FLMAPI btClose( void);
 
-	RCODE btDeleteTree(
+	RCODE FLMAPI btDeleteTree(
 		IF_DeleteStatus *			ifpDeleteStatus);
 
-	RCODE btGetBlockChains(
+	RCODE FLMAPI btGetBlockChains(
 		FLMUINT *					puiBlockChains,
 		FLMUINT *					puiNumLevels);
 
-	RCODE btRemoveEntry(
+	RCODE FLMAPI btRemoveEntry(
 		const FLMBYTE *			pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT						uiKeyLen);
 
-	RCODE btInsertEntry(
+	RCODE FLMAPI btInsertEntry(
 		const FLMBYTE *			pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT						uiKeyLen,
@@ -262,7 +258,7 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btReplaceEntry(
+	RCODE FLMAPI btReplaceEntry(
 		const FLMBYTE *			pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT						uiKeyLen,
@@ -274,7 +270,7 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btLocateEntry(
+	RCODE FLMAPI btLocateEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -284,14 +280,14 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btGetEntry(
+	RCODE FLMAPI btGetEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyLen,
 		FLMBYTE *					pucData,
 		FLMUINT						uiDataBufSize,
 		FLMUINT *					puiDataLen);
 
-	RCODE btNextEntry(
+	RCODE FLMAPI btNextEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -299,7 +295,7 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btPrevEntry(
+	RCODE FLMAPI btPrevEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -307,7 +303,7 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btFirstEntry(
+	RCODE FLMAPI btFirstEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -315,7 +311,7 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btLastEntry(
+	RCODE FLMAPI btLastEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -323,34 +319,43 @@ public:
 		FLMUINT32 *					pui32BlkAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE btSetReadPosition(
+	RCODE FLMAPI btSetReadPosition(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyLen,
 		FLMUINT						uiPosition);
 
-	RCODE btGetReadPosition(
+	RCODE FLMAPI btGetReadPosition(
 		FLMUINT *					puiPosition);
 
-	RCODE btPositionTo(
+	RCODE FLMAPI btPositionTo(
 		FLMUINT						uiPosition,
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen);
 
-	RCODE btGetPosition(
+	RCODE FLMAPI btGetPosition(
 		FLMUINT *					puiPosition);
 
-	RCODE btCheck(
-		BTREE_ERR_STRUCT *		pErrStruct);
+	RCODE FLMAPI btComputeCounts(
+		F_Btree *					pUntilBtree,
+		FLMUINT *					puiBlkCount,
+		FLMUINT *					puiKeyCount,
+		FLMBOOL *					pbTotalsEstimated,
+		FLMUINT						uiAvgBlkFullness);
 
-	RCODE btRewind( void);
+	RCODE FLMAPI btRewind( void);
 
-	FINLINE void btRelease( void)
+	FINLINE FLMBOOL FLMAPI btHasCounts( void)
 	{
-		releaseBlocks( TRUE);
+		return( m_bCounts);
 	}
 
-	FINLINE void btResetBtree( void)
+	FINLINE FLMBOOL FLMAPI btHasData( void)
+	{
+		return( m_bData);
+	}
+
+	FINLINE void FLMAPI btResetBtree( void)
 	{
 		releaseBlocks( TRUE);
 		m_bSetupForRead = FALSE;
@@ -368,20 +373,23 @@ public:
 		m_uiDataRemaining = 0;
 		m_uiOADataRemaining = 0;
 		m_uiOffsetAtStart = 0;
-		m_uiSearchLevel = BH_MAX_LEVELS;
+		m_uiSearchLevel = FLM_MAX_BTREE_LEVELS;
 	}
 
-	RCODE btComputeCounts(
-		F_Btree *					pUntilBtree,
-		FLMUINT *					puiBlkCount,
-		FLMUINT *					puiKeyCount,
-		FLMBOOL *					pbTotalsEstimated,
-		FLMUINT						uiAvgBlkFullness);
+private:
+
+	RCODE btCheck(
+		BTREE_ERR_STRUCT *		pErrStruct);
+
+	FINLINE void btRelease( void)
+	{
+		releaseBlocks( TRUE);
+	}
 
 	FINLINE void btSetSearchLevel(
 		FLMUINT						uiSearchLevel)
 	{
-		f_assert( uiSearchLevel <= BH_MAX_LEVELS);
+		f_assert( uiSearchLevel <= FLM_MAX_BTREE_LEVELS);
 
 		btResetBtree();
 
@@ -391,16 +399,6 @@ public:
 	RCODE btMoveBlock(
 		FLMUINT32					ui32FromBlkAddr,
 		FLMUINT32					ui32ToBlkAddr);
-
-	FINLINE FLMBOOL btHasCounts( void)
-	{
-		return( m_bCounts);
-	}
-
-	FINLINE FLMBOOL btHasData( void)
-	{
-		return( m_bData);
-	}
 
 	FINLINE FLMBOOL btDbIsOpen( void)
 	{
@@ -422,8 +420,6 @@ public:
 		return( m_bSetupForReplace);
 	}
 	
-private:
-
 	RCODE btFreeBlockChain(
 		FLMUINT					uiStartAddr,
 		FLMUINT					uiBlocksToFree,
@@ -947,7 +943,7 @@ private:
 	FLMUINT32					m_ui32PrimaryBlkAddr;
 	FLMUINT32					m_ui32DOBlkAddr;
 	FLMUINT32					m_ui32CurBlkAddr;
-	F_BTSK						m_Stack[ BH_MAX_LEVELS];
+	F_BTSK						m_Stack[ FLM_MAX_BTREE_LEVELS];
 	IF_ResultSetCompare *	m_pCompare;
 };
 
@@ -1256,7 +1252,7 @@ F_Btree::F_Btree( void)
 	m_bFirstRead = FALSE;
 	m_pBlock = NULL;
 	m_pBlkHdr = NULL;
-	m_uiSearchLevel = BH_MAX_LEVELS;
+	m_uiSearchLevel = FLM_MAX_BTREE_LEVELS;
 	m_pCompare = NULL;
 }
 
@@ -1405,7 +1401,7 @@ RCODE F_Btree::btOpen(
 	m_bData = bData;
 	m_pReplaceInfo = NULL;
 	m_uiReplaceLevels = 0;
-	m_uiSearchLevel = BH_MAX_LEVELS;
+	m_uiSearchLevel = FLM_MAX_BTREE_LEVELS;
 
 	m_bSetupForRead = FALSE;
 	m_bSetupForWrite = FALSE;
@@ -1419,7 +1415,7 @@ RCODE F_Btree::btOpen(
 	m_pPool->poolInit( m_uiBlockSize);
 	
 	if( RC_BAD( rc = m_pPool->poolAlloc( 
-		sizeof( BTREE_REPLACE_STRUCT) * BH_MAX_LEVELS, 
+		sizeof( BTREE_REPLACE_STRUCT) * FLM_MAX_BTREE_LEVELS, 
 		(void **)&m_pReplaceStruct)))
 	{
 		goto Exit;
@@ -1450,7 +1446,7 @@ void F_Btree::btClose()
 		return;
 	}
 
-	for (uiLoop = 0; uiLoop < BH_MAX_LEVELS; uiLoop++)
+	for (uiLoop = 0; uiLoop < FLM_MAX_BTREE_LEVELS; uiLoop++)
 	{
 		m_Stack[ uiLoop].pucKeyBuf = NULL;
 		m_Stack[ uiLoop].uiKeyBufSize = 0;
@@ -1495,7 +1491,7 @@ RCODE F_Btree::btDeleteTree(
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiNumLevels;
-	FLMUINT		puiBlkAddrs[ BH_MAX_LEVELS];
+	FLMUINT		puiBlkAddrs[ FLM_MAX_BTREE_LEVELS];
 	FLMUINT		uiLoop;
 
 	f_assert( m_bOpened);
@@ -1660,7 +1656,7 @@ Exit:
 /***************************************************************************
 Desc:	Returns the address of the first block at each level of the tree
 Note:	puiBlockAddrs is assumed to point to a buffer that can store
-		BH_MAX_LEVELS FLMUINT values
+		FLM_MAX_BTREE_LEVELS FLMUINT values
 ****************************************************************************/
 RCODE F_Btree::btGetBlockChains(
 	FLMUINT *	puiBlockAddrs,
@@ -1748,7 +1744,7 @@ RCODE F_Btree::btInsertEntry(
 		goto Exit;
 	}
 
-	f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
+	f_assert( m_uiSearchLevel >= FLM_MAX_BTREE_LEVELS);
 
 	if( !uiKeyLen)
 	{
@@ -1962,7 +1958,7 @@ RCODE F_Btree::btReplaceEntry(
 		goto Exit;
 	}
 
-	f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
+	f_assert( m_uiSearchLevel >= FLM_MAX_BTREE_LEVELS);
 
 	if (!uiKeyLen)
 	{
@@ -2260,7 +2256,7 @@ Desc: Method to get the data after a call to btLocateEntry, btNextEntry,
 ****************************************************************************/
 RCODE F_Btree::btGetEntry(
 	FLMBYTE *				pucKey,
-	FLMUINT					uiKeyLen,
+	FLMUINT 					uiKeyLen,
 	FLMBYTE *				pucData,
 	FLMUINT					uiDataBufSize,
 	FLMUINT *				puiDataLen)
@@ -2306,7 +2302,6 @@ RCODE F_Btree::btGetEntry(
 	if( !m_bDataOnlyBlock)
 	{
 		pucEntry = BtEntry( (FLMBYTE *)pBlkHdr, m_uiCurOffset);
-
 		btGetEntryDataLength( pucEntry, &m_pucDataPtr, NULL, NULL);
 	}
 	else
@@ -2338,7 +2333,7 @@ RCODE F_Btree::btGetEntry(
 	{
 		goto Exit;
 	}
-
+	
 	// Mark that we have completed our first read operation.
 	// No more read synchronization allowed.
 	
@@ -3372,7 +3367,7 @@ Desc: Function to create a new level in the Btree.
 		of the root block into it.  It will then insert a single entry into
 		the root block to point to the new child.
 
-		Note that there is a maximum of BH_MAX_LEVELS levels to the Btree.
+		Note that there is a maximum of FLM_MAX_BTREE_LEVELS levels to the Btree.
 		Any effort to exceed that level will result in an error.
 ****************************************************************************/
 RCODE F_Btree::createNewLevel( void)
@@ -3397,7 +3392,7 @@ RCODE F_Btree::createNewLevel( void)
 
 	// Check the root level
 	
-	if( m_pStack->uiLevel >= BH_MAX_LEVELS - 1)
+	if( m_pStack->uiLevel >= FLM_MAX_BTREE_LEVELS - 1)
 	{
 		rc = RC_SET_AND_ASSERT( NE_FLM_BTREE_FULL);
 		goto Exit;
@@ -5796,7 +5791,7 @@ RCODE F_Btree::findEntry(
 		{
 			if( m_bCounts && puiPosition)
 			{
-				f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
+				f_assert( m_uiSearchLevel >= FLM_MAX_BTREE_LEVELS);
 				*puiPosition = uiPrevCounts + pStack->uiCurOffset;
 			}
 
@@ -5985,7 +5980,7 @@ GotEntry:
 
 	if( m_bCounts && puiPosition)
 	{
-		f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
+		f_assert( m_uiSearchLevel >= FLM_MAX_BTREE_LEVELS);
 		*puiPosition = pStack->uiCurOffset;
 	}
 
@@ -8594,7 +8589,7 @@ RCODE F_Btree::saveReplaceInfo(
 	const FLMBYTE *				pucParentKey;
 	FLMBYTE *						pucEntry;
 
-	if( m_uiReplaceLevels + 1 >= BH_MAX_LEVELS)
+	if( m_uiReplaceLevels + 1 >= FLM_MAX_BTREE_LEVELS)
 	{
 		rc = RC_SET_AND_ASSERT( NE_FLM_BTREE_ERROR);
 		goto Exit;
@@ -8762,7 +8757,7 @@ FINLINE RCODE F_Btree::setReturnKey(
 	FLMUINT				uiKeyLen;
 	const FLMBYTE *	pucKeyRV;
 
-	uiKeyLen =  getEntryKeyLength( pucEntry, uiBlockType, &pucKeyRV);
+	uiKeyLen = getEntryKeyLength( pucEntry, uiBlockType, &pucKeyRV);
 	
 	if( uiKeyLen == 0)
 	{
@@ -11006,7 +11001,7 @@ RCODE F_Btree::btMoveBlock(
 		goto Exit;
 	}
 
-	f_assert( m_uiSearchLevel >= BH_MAX_LEVELS);
+	f_assert( m_uiSearchLevel >= FLM_MAX_BTREE_LEVELS);
 
 	// Get the From block and retrieve the last key in the block.  Make note
 	// of the level of the block.  We will need this to make sure we get the

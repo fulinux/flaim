@@ -650,7 +650,7 @@ RCODE F_FileHdl::directRead(
 		{
 			if( !m_pucAlignedBuff)
 			{
-				if( RC_BAD( rc = allocAlignBuffer()))
+				if( RC_BAD( rc = allocAlignedBuffer()))
 				{
 					goto Exit;
 				}
@@ -986,7 +986,7 @@ Exit:
 /******************************************************************************
 Desc:	Allocate an aligned buffer.
 ******************************************************************************/
-RCODE F_FileHdl::allocAlignBuffer( void)
+RCODE F_FileHdl::allocAlignedBuffer( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
@@ -1093,7 +1093,7 @@ RCODE F_FileHdl::directWrite(
 			
 			if( !m_pucAlignedBuff)
 			{
-				if( RC_BAD( rc = allocAlignBuffer()))
+				if( RC_BAD( rc = allocAlignedBuffer()))
 				{
 					goto Exit;
 				}
