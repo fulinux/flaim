@@ -148,7 +148,7 @@ FINLINE void FLMAPI F_DirHdl::currentItemPath(
 	if( RC_OK( m_rc))
 	{
 		f_strcpy( pszPath, m_szDirectoryPath);
-		gv_pFileSystem->pathAppend( pszPath, m_szFileName);
+		f_getFileSysPtr()->pathAppend( pszPath, m_szFileName);
 	}
 }
 
@@ -186,10 +186,11 @@ Desc:	Get the next item in a directory
 ****************************************************************************/
 RCODE FLMAPI F_DirHdl::next( void)
 {
-	char				szFoundPath[ F_PATH_MAX_SIZE];
-	char				szDummyPath[ F_PATH_MAX_SIZE];
-	FLMUINT			uiSearchAttributes;
-	FLMUINT			uiFoundAttrib;
+	char					szFoundPath[ F_PATH_MAX_SIZE];
+	char					szDummyPath[ F_PATH_MAX_SIZE];
+	FLMUINT				uiSearchAttributes;
+	FLMUINT				uiFoundAttrib;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( RC_BAD( m_rc))
 	{
@@ -225,13 +226,13 @@ RCODE FLMAPI F_DirHdl::next( void)
 			m_uiAttrib = uiFoundAttrib;
 		}
 
-		if( RC_BAD( m_rc = gv_pFileSystem->pathReduce( szFoundPath, 
+		if( RC_BAD( m_rc = pFileSystem->pathReduce( szFoundPath, 
 			szDummyPath, m_szFileName)))
 		{
 			goto Exit;
 		}
 
-		if( gv_pFileSystem->doesFileMatch( m_szFileName, m_szPattern))
+		if( pFileSystem->doesFileMatch( m_szFileName, m_szPattern))
 		{
 			break;
 		}
@@ -281,8 +282,9 @@ Desc:	Create a directory (and parent directories if necessary).
 RCODE FLMAPI F_DirHdl::createDir(
 	const char *	pszDirPath)
 {
-	char *			pszParentDir = NULL;
-	RCODE				rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	char *				pszParentDir = NULL;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &pszParentDir)))
 	{
@@ -291,7 +293,7 @@ RCODE FLMAPI F_DirHdl::createDir(
 
 	// Discover the parent directory of the given one
 
-	if( RC_BAD( rc = gv_pFileSystem->pathReduce( pszDirPath, 
+	if( RC_BAD( rc = pFileSystem->pathReduce( pszDirPath, 
 		pszParentDir, NULL)))
 	{
 		goto Exit;
@@ -312,9 +314,9 @@ RCODE FLMAPI F_DirHdl::createDir(
 	{
 		// If the "parent" is actually a regular file we need to return an error
 
-		if( RC_OK( gv_pFileSystem->doesFileExist( pszParentDir)))
+		if( RC_OK( pFileSystem->doesFileExist( pszParentDir)))
 		{
-			if( !gv_pFileSystem->isDir( pszParentDir))
+			if( !pFileSystem->isDir( pszParentDir))
 			{
 				rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 				goto Exit;
@@ -391,9 +393,10 @@ RCODE f_fileFindFirst(
 	FLMUINT *			puiFoundAttrib)
 {
 #ifdef FLM_WIN
-	char 			szTmpPath[ F_PATH_MAX_SIZE];
-   char *		pszWildCard = "*.*";
-	RCODE			rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	char 					szTmpPath[ F_PATH_MAX_SIZE];
+   char *				pszWildCard = "*.*";
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	f_memset( pFindData, 0, sizeof( F_IO_FIND_DATA));
 	pFindData->findHandle = INVALID_HANDLE_VALUE;
@@ -414,7 +417,7 @@ RCODE f_fileFindFirst(
 
 	f_strcpy( szTmpPath, pszSearchPath);
 	
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( szTmpPath, pszWildCard)))
+	if( RC_BAD( rc = pFileSystem->pathAppend( szTmpPath, pszWildCard)))
 	{
 		goto Exit;
 	}
@@ -447,7 +450,7 @@ RCODE f_fileFindFirst(
 
 	f_strcpy( pszFoundPath, pFindData->szSearchPath);
 	
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( pszFoundPath, 
+	if( RC_BAD( rc = pFileSystem->pathAppend( pszFoundPath, 
 		(char *)pFindData->findBuffer.cFileName)))
 	{
 		goto Exit;
@@ -468,11 +471,12 @@ Exit:
 	return( rc);
 
 #else
-
+	
+	RCODE					rc = NE_FLM_OK;
 	char 					szTmpPath[ F_PATH_MAX_SIZE];
 	FSTATIC char		pszWildCard[] = {'*',0};
 	int					iRetVal;
-	RCODE					rc = NE_FLM_OK;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( !pszSearchPath)
 	{
@@ -481,7 +485,7 @@ Exit:
 	}
 
 	f_strcpy( szTmpPath, pszSearchPath);
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( szTmpPath, pszWildCard)))
+	if( RC_BAD( rc = pFileSystem->pathAppend( szTmpPath, pszWildCard)))
 	{
 		goto Exit;
 	}
@@ -550,7 +554,7 @@ Exit:
 	
 	f_strcpy( pszFoundPath, pszSearchPath);
 	
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( pszFoundPath, 
+	if( RC_BAD( rc = pFileSystem->pathAppend( pszFoundPath, 
 		(char *)pFindData->name)))
 	{
 		goto Exit;
@@ -578,7 +582,8 @@ RCODE f_fileFindNext(
 	char *				pszFoundPath,
 	FLMUINT *			puiFoundAttrib)
 {
-	RCODE			rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 #ifdef FLM_WIN
 
@@ -610,7 +615,7 @@ RCODE f_fileFindNext(
 
 	f_strcpy( pszFoundPath, pFindData->szSearchPath);
 	
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( pszFoundPath, 
+	if( RC_BAD( rc = pFileSystem->pathAppend( pszFoundPath, 
 		(char *)pFindData->findBuffer.cFileName)))
 	{
 		goto Exit;
@@ -642,7 +647,7 @@ RCODE f_fileFindNext(
 	
 	f_strcpy( pszFoundPath, pFindData->search_path);
 	
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( pszFoundPath, 
+	if( RC_BAD( rc = pFileSystem->pathAppend( pszFoundPath, 
 		(char *)pFindData->name)))
 	{
 		goto Exit;

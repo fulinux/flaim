@@ -41,7 +41,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_MultiFileHdl : public IF_MultiFileHdl, public F_Base
+class F_MultiFileHdl : public IF_MultiFileHdl
 {
 public:
 
@@ -130,8 +130,8 @@ private:
 				// Delete the lock file
 
 				f_strcpy( szTmpPath, pszBasePath);
-				gv_pFileSystem->pathAppend( szTmpPath, "64.LCK");
-				gv_pFileSystem->deleteFile( szTmpPath);
+				pFileSystem->pathAppend( szTmpPath, "64.LCK");
+				pFileSystem->deleteFile( szTmpPath);
 			}
 #endif
 		}
@@ -152,11 +152,12 @@ private:
 		FLMUINT		uiFileNum,
 		char *		pszPath)
 	{
-		char	szFileName[ 13];
+		char					szFileName[ 13];
+		IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 		f_strcpy( pszPath, m_szPath);
 		formatFileNum( uiFileNum, szFileName);
-		gv_pFileSystem->pathAppend( pszPath, szFileName);
+		pFileSystem->pathAppend( pszPath, szFileName);
 	}
 
 	FINLINE FLMUINT getFileNum(
@@ -230,10 +231,11 @@ Desc:	Closes all data files associated with the object
 void F_MultiFileHdl::close(
 	FLMBOOL			bDelete)
 {
-	FLMUINT			uiLoop;
-	IF_DirHdl *		pDir = NULL;
-	char				szTmpPath[ F_PATH_MAX_SIZE];
-	RCODE				rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiLoop;
+	IF_DirHdl *			pDir = NULL;
+	char					szTmpPath[ F_PATH_MAX_SIZE];
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( !m_bOpen)
 	{
@@ -259,35 +261,29 @@ void F_MultiFileHdl::close(
 
 	if( bDelete)
 	{
-		if( RC_OK( gv_pFileSystem->openDir(
+		if( RC_OK( pFileSystem->openDir(
 			m_szPath, "*.64", &pDir)))
 		{
-			/*
-			Remove all data files
-			*/
+			// Remove all data files
 
 			for( rc = pDir->next(); !RC_BAD( rc) ; rc = pDir->next())
 			{
 				pDir->currentItemPath( szTmpPath);
 				f_assert( f_strstr( szTmpPath, ".64") != 0);
-				(void)gv_pFileSystem->deleteFile( szTmpPath);
+				(void)pFileSystem->deleteFile( szTmpPath);
 			}
 
 			pDir->Release();
 			pDir = NULL;
 		}
 
-		/*
-		Release and delete the lock file
-		*/
+		// Release and delete the lock file
 
 		(void)releaseLockFile( m_szPath, TRUE);
 
-		/*
-		Remove the directory
-		*/
+		// Remove the directory
 
-		(void)gv_pFileSystem->removeDir( m_szPath);
+		(void)pFileSystem->removeDir( m_szPath);
 	}
 	else
 	{
@@ -301,9 +297,10 @@ Desc:	Removes a 64-bit file
 RCODE F_MultiFileHdl::deleteMultiFile(
 	const char *	pszPath)
 {
-	IF_DirHdl *		pDir = NULL;
-	char				szTmpPath[ F_PATH_MAX_SIZE];
-	RCODE				rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	IF_DirHdl *			pDir = NULL;
+	char					szTmpPath[ F_PATH_MAX_SIZE];
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	// Can't use this handle to delete something if we already
 	// have a file open.
@@ -316,19 +313,17 @@ RCODE F_MultiFileHdl::deleteMultiFile(
 		return( RC_SET_AND_ASSERT( NE_FLM_FAILURE));
 	}
 
-	if( RC_BAD( rc = gv_pFileSystem->doesFileExist( pszPath)))
+	if( RC_BAD( rc = pFileSystem->doesFileExist( pszPath)))
 	{
 		goto Exit;
 	}
 
-	if( !gv_pFileSystem->isDir( pszPath))
+	if( !pFileSystem->isDir( pszPath))
 	{
-		/*
-		If the path specifies a single file rather than a
-		64-bit directory, just go ahead and delete the file.
-		*/
+		// If the path specifies a single file rather than a
+		// 64-bit directory, just go ahead and delete the file.
 
-		rc = gv_pFileSystem->deleteFile( pszPath);
+		rc = pFileSystem->deleteFile( pszPath);
 		goto Exit;
 	}
 
@@ -337,17 +332,15 @@ RCODE F_MultiFileHdl::deleteMultiFile(
 		goto Exit;
 	}
 
-	if( RC_OK( gv_pFileSystem->openDir( pszPath, "*.64", &pDir)))
+	if( RC_OK( pFileSystem->openDir( pszPath, "*.64", &pDir)))
 	{
-		/*
-		Remove all data files
-		*/
+		// Remove all data files
 
 		for( rc = pDir->next(); !RC_BAD( rc) ; rc = pDir->next())
 		{
 			pDir->currentItemPath( szTmpPath);
 			f_assert( f_strstr( szTmpPath, ".64") != 0);
-			(void)gv_pFileSystem->deleteFile( szTmpPath);
+			(void)pFileSystem->deleteFile( szTmpPath);
 		}
 
 		pDir->Release();
@@ -355,17 +348,13 @@ RCODE F_MultiFileHdl::deleteMultiFile(
 		rc = NE_FLM_OK;
 	}
 
-	/*
-	Release and delete the lock file
-	*/
+	// Release and delete the lock file
 
 	(void)releaseLockFile( pszPath, TRUE);
 
-	/*
-	Remove the directory
-	*/
+	// Remove the directory
 
-	(void)gv_pFileSystem->removeDir( pszPath);
+	(void)pFileSystem->removeDir( pszPath);
 
 Exit:
 
@@ -380,8 +369,9 @@ Desc: Creates a new 64-bit "file"
 RCODE F_MultiFileHdl::create(
 	const char *	pszPath)
 {
-	FLMBOOL	bCreatedDir = FALSE;
-	RCODE		rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	FLMBOOL				bCreatedDir = FALSE;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( m_bOpen)
 	{
@@ -389,7 +379,7 @@ RCODE F_MultiFileHdl::create(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = gv_pFileSystem->createDir( pszPath)))
+	if( RC_BAD( rc = pFileSystem->createDir( pszPath)))
 	{
 		goto Exit;
 	}
@@ -397,18 +387,14 @@ RCODE F_MultiFileHdl::create(
 	f_strcpy( m_szPath, pszPath);
 	bCreatedDir = TRUE;
 
-	/*
-	Create the lock file
-	*/
+	// Create the lock file
 
 	if( RC_BAD( rc = createLockFile( m_szPath)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Initialize the EOF to 0 and set the state to open
-	*/
+	// Initialize the EOF to 0 and set the state to open
 
 	m_ui64EOF = 0;
 	m_bOpen = TRUE;
@@ -424,7 +410,7 @@ Exit:
 		(void)releaseLockFile( m_szPath, TRUE);
 		if( bCreatedDir)
 		{
-			(void)gv_pFileSystem->removeDir( m_szPath);
+			(void)pFileSystem->removeDir( m_szPath);
 		}
 	}
 
@@ -435,18 +421,19 @@ Exit:
 Desc:	Creates a new 64-bit file with a unique, generated name
 ****************************************************************************/
 RCODE F_MultiFileHdl::createUnique(
-	const char *	pszPath,					// Directory where the file is to be created
-	const char *	pszFileExtension)		// Extension to be used on the new file.
+	const char *		pszPath,					// Directory where the file is to be created
+	const char *		pszFileExtension)		// Extension to be used on the new file.
 {
-	FLMUINT		uiCount;
-	FLMBOOL		bModext = TRUE;
-	FLMBOOL		bCreatedDir = FALSE;
-	FLMUINT		uiBaseTime = 0;
-	FLMBYTE		ucHighByte = 0;
-	char			szDirName[ F_FILENAME_SIZE];
-	char			szTmpPath[ F_PATH_MAX_SIZE];
-	char			szBasePath[ F_PATH_MAX_SIZE];
-	RCODE			rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiCount;
+	FLMBOOL				bModext = TRUE;
+	FLMBOOL				bCreatedDir = FALSE;
+	FLMUINT				uiBaseTime = 0;
+	FLMBYTE				ucHighByte = 0;
+	char					szDirName[ F_FILENAME_SIZE];
+	char					szTmpPath[ F_PATH_MAX_SIZE];
+	char					szBasePath[ F_PATH_MAX_SIZE];
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( m_bOpen)
 	{
@@ -478,12 +465,12 @@ RCODE F_MultiFileHdl::createUnique(
 	szDirName[ 0] = '\0';
 	do
 	{
-		gv_pFileSystem->pathCreateUniqueName( &uiBaseTime, szDirName, pszFileExtension,
-										&ucHighByte, bModext);
+		pFileSystem->pathCreateUniqueName( &uiBaseTime, szDirName, 
+				pszFileExtension, &ucHighByte, bModext);
 
 		f_strcpy( szTmpPath, szBasePath);
-		gv_pFileSystem->pathAppend( szTmpPath, szDirName);
-		rc = gv_pFileSystem->createDir( szTmpPath);
+		pFileSystem->pathAppend( szTmpPath, szDirName);
+		rc = pFileSystem->createDir( szTmpPath);
 	} while ((rc != NE_FLM_OK) && (uiCount++ < 20));
 
 	if( RC_BAD( rc))
@@ -522,7 +509,7 @@ Exit:
 
 		if( bCreatedDir)
 		{
-			(void)gv_pFileSystem->removeDir( m_szPath);
+			(void)pFileSystem->removeDir( m_szPath);
 		}
 	}
 
@@ -535,11 +522,12 @@ Desc: Opens an existing 64-bit file
 RCODE F_MultiFileHdl::open(
 	const char *	pszPath)
 {
-	IF_DirHdl *		pDir = NULL;
-	FLMUINT			uiTmp;
-	FLMUINT			uiHighFileNum = 0;
-	FLMUINT64		ui64HighOffset = 0;
-	RCODE				rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	IF_DirHdl *			pDir = NULL;
+	FLMUINT				uiTmp;
+	FLMUINT				uiHighFileNum = 0;
+	FLMUINT64			ui64HighOffset = 0;
 
 	if( m_bOpen)
 	{
@@ -547,8 +535,8 @@ RCODE F_MultiFileHdl::open(
 		goto Exit;
 	}
 
-	if( RC_BAD( gv_pFileSystem->doesFileExist( pszPath)) ||
-		!gv_pFileSystem->isDir( pszPath))
+	if( RC_BAD( pFileSystem->doesFileExist( pszPath)) ||
+		!pFileSystem->isDir( pszPath))
 	{
 		rc = RC_SET( NE_FLM_IO_PATH_NOT_FOUND);
 		goto Exit;
@@ -569,8 +557,7 @@ RCODE F_MultiFileHdl::open(
 	Need to determine the current EOF
 	*/
 
-	if( RC_BAD( rc = gv_pFileSystem->openDir(
-		m_szPath, (char *)"*.64", &pDir)))
+	if( RC_BAD( rc = pFileSystem->openDir( m_szPath, (char *)"*.64", &pDir)))
 	{
 		goto Exit;
 	}
@@ -824,14 +811,15 @@ Exit:
 Desc: Returns the requested file handle
 ****************************************************************************/
 RCODE F_MultiFileHdl::getFileHdl(
-	FLMUINT			uiFileNum,
-	FLMBOOL			bGetForWrite,
-	IF_FileHdl **	ppFileHdl)
+	FLMUINT				uiFileNum,
+	FLMBOOL				bGetForWrite,
+	IF_FileHdl **		ppFileHdl)
 {
-	FLMUINT			uiSlot;
-	IF_FileHdl *	pTmpHdl;
-	char				szPath[ F_PATH_MAX_SIZE];
-	RCODE				rc = NE_FLM_OK;
+	RCODE					rc	= NE_FLM_OK;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	FLMUINT				uiSlot;
+	IF_FileHdl *		pTmpHdl;
+	char					szPath[ F_PATH_MAX_SIZE];
 
 	f_assert( m_bOpen);
 
@@ -857,12 +845,12 @@ RCODE F_MultiFileHdl::getFileHdl(
 	if( !pTmpHdl)
 	{
 		dataFilePath( uiFileNum, szPath);
-		if( RC_BAD( rc = gv_pFileSystem->openFile( szPath, 
+		if( RC_BAD( rc = pFileSystem->openFile( szPath, 
 			FLM_IO_RDWR, &pTmpHdl)))
 		{
 			if( rc == NE_FLM_IO_PATH_NOT_FOUND && bGetForWrite)
 			{
-				if( RC_BAD( rc = gv_pFileSystem->createFile( szPath,
+				if( RC_BAD( rc = pFileSystem->createFile( szPath,
  					FLM_IO_RDWR, &pTmpHdl)))
 				{
 					goto Exit;
@@ -953,15 +941,16 @@ Desc: This routine obtains exclusive access to a 64-bit file by creating
 		64-bit file is open.
 ****************************************************************************/
 RCODE F_MultiFileHdl::createLockFile(
-	const char *	pszBasePath)
+	const char *		pszBasePath)
 {
-	RCODE				rc = NE_FLM_OK;
-	char				szLockPath [F_PATH_MAX_SIZE];
-	F_FileHdl *		pLockFileHdl = NULL;
-	FLMUINT			uiIoFlags = FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW;
+	RCODE					rc = NE_FLM_OK;
+	char					szLockPath [F_PATH_MAX_SIZE];
+	F_FileHdl *			pLockFileHdl = NULL;
+	FLMUINT				uiIoFlags = FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	f_strcpy( szLockPath, pszBasePath);
-	gv_pFileSystem->pathAppend( szLockPath, "64.LCK");
+	pFileSystem->pathAppend( szLockPath, "64.LCK");
 
 	// Attempt to create the lock file.  If it fails, the lock file
 	// may have been left because of a crash.  Hence, we first try
@@ -984,7 +973,7 @@ RCODE F_MultiFileHdl::createLockFile(
 	if( RC_BAD( pLockFileHdl->create( szLockPath, uiIoFlags)))
 	{
 #ifndef FLM_UNIX
-		if (RC_BAD( gv_pFileSystem->deleteFile( szLockPath)))
+		if (RC_BAD( pFileSystem->deleteFile( szLockPath)))
 		{
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
@@ -1050,4 +1039,14 @@ RCODE F_MultiFileHdl::truncate(
 Exit:
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_MultiFileHdl::getPath(
+	char *	pszPath)
+{
+	f_strcpy( pszPath, m_szPath);
+	return( NE_FLM_OK);
 }

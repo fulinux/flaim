@@ -38,7 +38,7 @@
 /****************************************************************************
 Desc:	Decodes an ASCII base64 stream to binary
 ****************************************************************************/
-class F_Base64DecoderIStream : public F_IStream
+class F_Base64DecoderIStream : public IF_IStream
 {
 public:
 
@@ -437,6 +437,436 @@ private:
 	unsigned long	m_ulRemoteAddr;
 };
 	
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmAllocBufferIStream( 
+	IF_BufferIStream **		ppIStream)
+{
+	if( (*ppIStream = f_new F_BufferIStream) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmOpenBufferIStream( 
+	const char *				pucBuffer,
+	FLMUINT						uiLength,
+	IF_PosIStream **			ppIStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_BufferIStream *			pIStream = NULL;
+	
+	if( (pIStream = f_new F_BufferIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pucBuffer, uiLength)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmOpenBase64EncoderIStream(
+	IF_IStream *				pSourceIStream,
+	FLMBOOL						bLineBreaks,
+	IF_IStream **				ppIStream)
+{
+	RCODE								rc = NE_FLM_OK;
+	F_Base64EncoderIStream *	pIStream = NULL;
+	
+	if( (pIStream = f_new F_Base64EncoderIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pSourceIStream, bLineBreaks)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmOpenBase64DecoderIStream(
+	IF_IStream *				pSourceIStream,
+	IF_IStream **				ppIStream)
+{
+	RCODE								rc = NE_FLM_OK;
+	F_Base64DecoderIStream *	pIStream = NULL;
+	
+	if( (pIStream = f_new F_Base64DecoderIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pSourceIStream)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+		
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmOpenFileIStream(
+	const char *				pszPath,
+	IF_PosIStream **			ppIStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_FileIStream *			pIStream = NULL;
+	
+	if( (pIStream = f_new F_FileIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pszPath)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenMultiFileIStream(
+	const char *				pszDirectory,
+	const char *				pszBaseName,
+	IF_IStream **				ppIStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_MultiFileIStream *		pIStream = NULL;
+	
+	if( (pIStream = f_new F_MultiFileIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pszDirectory, pszBaseName)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenBufferedIStream(
+	IF_IStream *				pSourceIStream,
+	FLMUINT						uiBufferSize,
+	IF_IStream **				ppIStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_BufferedIStream *		pIStream = NULL;
+	
+	if( (pIStream = f_new F_BufferedIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pSourceIStream, uiBufferSize)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenUncompressingIStream(
+	IF_IStream *				pSourceIStream,
+	IF_IStream **				ppIStream)
+{
+	RCODE								rc = NE_FLM_OK;
+	F_UncompressingIStream *	pIStream = NULL;
+	
+	if( (pIStream = f_new F_UncompressingIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIStream->open( pSourceIStream)))
+	{
+		goto Exit;
+	}
+	
+	*ppIStream = pIStream;
+	pIStream = NULL;
+	
+Exit:
+
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenFileOStream(
+	const char *				pszPath,
+	FLMBOOL						bTruncateIfExists,
+	IF_OStream **				ppOStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_FileOStream *			pOStream = NULL;
+	
+	if( (pOStream = f_new F_FileOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pOStream->open( pszPath, bTruncateIfExists)))
+	{
+		goto Exit;
+	}
+	
+	*ppOStream = pOStream;
+	pOStream = NULL;
+	
+Exit:
+
+	if( pOStream)
+	{
+		pOStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenMultiFileOStream(
+	const char *				pszDirectory,
+	const char *				pszBaseName,
+	FLMUINT						uiMaxFileSize,
+	FLMBOOL						bOkToOverwrite,
+	IF_OStream **				ppOStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_MultiFileOStream *		pOStream = NULL;
+	
+	if( (pOStream = f_new F_MultiFileOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pOStream->create( pszDirectory, pszBaseName, 
+		uiMaxFileSize, bOkToOverwrite)))
+	{
+		goto Exit;
+	}
+	
+	*ppOStream = pOStream;
+	pOStream = NULL;
+	
+Exit:
+
+	if( pOStream)
+	{
+		pOStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenBufferedOStream(
+	IF_OStream *				pDestOStream,
+	FLMUINT						uiBufferSize,
+	IF_OStream **				ppOStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_BufferedOStream *		pOStream = NULL;
+	
+	if( (pOStream = f_new F_BufferedOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pOStream->open( pDestOStream, uiBufferSize)))
+	{
+		goto Exit;
+	}
+	
+	*ppOStream = pOStream;
+	pOStream = NULL;
+	
+Exit:
+
+	if( pOStream)
+	{
+		pOStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmOpenCompressingOStream(
+	IF_OStream *				pDestOStream,
+	IF_OStream **				ppOStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_CompressingOStream *	pOStream = NULL;
+	
+	if( (pOStream = f_new F_CompressingOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pOStream->open( pDestOStream)))
+	{
+		goto Exit;
+	}
+	
+	*ppOStream = pOStream;
+	pOStream = NULL;
+	
+Exit:
+
+	if( pOStream)
+	{
+		pOStream->Release();
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmRemoveMultiFileStream(
+	const char *				pszDirectory,
+	const char *				pszBaseName)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_MultiFileOStream *	pMultiStream = NULL;
+	
+	if( (pMultiStream = f_new F_MultiFileOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pMultiStream->processDirectory( 
+		pszDirectory, pszBaseName, TRUE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	if( pMultiStream)
+	{
+		pMultiStream->Release();
+	}
+
+	return( rc);
+}
+		
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -489,7 +919,7 @@ RCODE FLMAPI F_FileIStream::open(
 
 	close();
 
-	if( RC_BAD( rc = gv_pFileSystem->openFile( (char *)pszFilePath,
+	if( RC_BAD( rc = f_getFileSysPtr()->openFile( (char *)pszFilePath,
 		FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &m_pFileHdl)))
 	{
 		goto Exit;
@@ -738,10 +1168,11 @@ RCODE FLMAPI F_BufferedIStream::close( void)
 Desc:
 *****************************************************************************/
 RCODE FLMAPI F_FileOStream::open(
-	const char *	pszFilePath,
-	FLMBOOL			bTruncateIfExists)
+	const char *		pszFilePath,
+	FLMBOOL				bTruncateIfExists)
 {
-	RCODE			rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	if( m_pFileHdl)
 	{
@@ -751,7 +1182,7 @@ RCODE FLMAPI F_FileOStream::open(
 
 	if( bTruncateIfExists)
 	{
-		if( RC_BAD( rc = gv_pFileSystem->deleteFile( (char *)pszFilePath)))
+		if( RC_BAD( rc = pFileSystem->deleteFile( (char *)pszFilePath)))
 		{
 			if( rc != NE_FLM_IO_PATH_NOT_FOUND)
 			{
@@ -759,7 +1190,7 @@ RCODE FLMAPI F_FileOStream::open(
 			}
 		}
 
-		if( RC_BAD( rc = gv_pFileSystem->createFile( 
+		if( RC_BAD( rc = pFileSystem->createFile( 
 			(char *)pszFilePath, FLM_IO_RDWR, &m_pFileHdl)))
 		{
 			goto Exit;
@@ -767,7 +1198,7 @@ RCODE FLMAPI F_FileOStream::open(
 	}
 	else
 	{
-		if( RC_BAD( rc = gv_pFileSystem->openFile(
+		if( RC_BAD( rc = pFileSystem->openFile(
 			(char *)pszFilePath, FLM_IO_RDWR, &m_pFileHdl)))
 		{
 			if( rc != NE_FLM_IO_PATH_NOT_FOUND)
@@ -775,7 +1206,7 @@ RCODE FLMAPI F_FileOStream::open(
 				goto Exit;
 			}
 
-			if( RC_BAD( rc = gv_pFileSystem->createFile( 
+			if( RC_BAD( rc = pFileSystem->createFile( 
 				(char *)pszFilePath, FLM_IO_RDWR, &m_pFileHdl)))
 			{
 				goto Exit;
@@ -889,6 +1320,7 @@ RCODE F_MultiFileIStream::rollToNextFile( void)
 	FLMUINT					uiNewFileNum = 0;
 	char						szFilePath[ F_PATH_MAX_SIZE + 1];
 	char						szFileName[ F_PATH_MAX_SIZE + 1];
+	IF_FileSystem *		pFileSystem = f_getFileSysPtr();
 
 	if( m_pIStream)
 	{
@@ -914,7 +1346,7 @@ RCODE F_MultiFileIStream::rollToNextFile( void)
 	}
 
 	f_strcpy( szFilePath, m_szDirectory);
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( 
+	if( RC_BAD( rc = pFileSystem->pathAppend( 
 		(char *)szFilePath, (char *)szFileName)))
 	{
 		goto Exit;
@@ -1113,16 +1545,17 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE F_MultiFileOStream::processDirectory(
-	const char *	pszDirectory,
-	const char *	pszBaseName,
-	FLMBOOL			bOkToDelete)
+	const char *		pszDirectory,
+	const char *		pszBaseName,
+	FLMBOOL				bOkToDelete)
 {
-	RCODE				rc = NE_FLM_OK;
-	IF_DirHdl *		pDirHandle = NULL;
-	FLMUINT			uiBaseNameLen = f_strlen( pszBaseName);
-	const char *	pszName = NULL;
-	char				szSearchPattern[ F_PATH_MAX_SIZE + 1];
-	char				szFilePath[ F_PATH_MAX_SIZE + 1];
+	RCODE					rc = NE_FLM_OK;
+	IF_DirHdl *			pDirHandle = NULL;
+	FLMUINT				uiBaseNameLen = f_strlen( pszBaseName);
+	const char *		pszName = NULL;
+	char					szSearchPattern[ F_PATH_MAX_SIZE + 1];
+	char					szFilePath[ F_PATH_MAX_SIZE + 1];
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	f_sprintf( szSearchPattern, "%s*", pszBaseName);
 	
@@ -1131,7 +1564,7 @@ RCODE F_MultiFileOStream::processDirectory(
 		pszDirectory = ".";
 	}
 
-	if( RC_BAD( rc = gv_pFileSystem->openDir( 
+	if( RC_BAD( rc = pFileSystem->openDir( 
 		(char *)pszDirectory, szSearchPattern, &pDirHandle)))
 	{
 		goto Exit;
@@ -1168,13 +1601,13 @@ RCODE F_MultiFileOStream::processDirectory(
 
 			f_strcpy( szFilePath, pszDirectory);
 			
-			if( RC_BAD( rc = gv_pFileSystem->pathAppend( 
+			if( RC_BAD( rc = pFileSystem->pathAppend( 
 				szFilePath, pszName)))
 			{
 				goto Exit;
 			}
 
-			if( RC_BAD( gv_pFileSystem->deleteFile( szFilePath)))
+			if( RC_BAD( pFileSystem->deleteFile( szFilePath)))
 			{
 				if (rc != NE_FLM_IO_PATH_NOT_FOUND)
 				{
@@ -1208,6 +1641,7 @@ RCODE F_MultiFileOStream::rollToNextFile( void)
 	FLMUINT							uiNewFileNum = 0;
 	char								szFilePath[ F_PATH_MAX_SIZE + 1];
 	char								szFileName[ F_PATH_MAX_SIZE + 1];
+	IF_FileSystem *				pFileSystem = f_getFileSysPtr();
 
 	if( m_pOStream)
 	{
@@ -1239,7 +1673,7 @@ RCODE F_MultiFileOStream::rollToNextFile( void)
 
 	f_strcpy( szFilePath, m_szDirectory);
 
-	if( RC_BAD( rc = gv_pFileSystem->pathAppend( 
+	if( RC_BAD( rc = pFileSystem->pathAppend( 
 		(char *)szFilePath, (char *)szFileName)))
 	{
 		goto Exit;
@@ -1513,20 +1947,6 @@ RCODE FLMAPI F_BufferedOStream::close( void)
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmAllocBufferIStream( 
-	IF_BufferIStream **		ppIStream)
-{
-	if( (*ppIStream = f_new F_BufferIStream) == NULL)
-	{
-		return( RC_SET( NE_FLM_MEM));
-	}
-	
-	return( NE_FLM_OK);
-}
-
-/*****************************************************************************
-Desc:
-******************************************************************************/
 F_BufferIStream::~F_BufferIStream()
 {
 	close();
@@ -1536,11 +1956,11 @@ F_BufferIStream::~F_BufferIStream()
 Desc:
 ******************************************************************************/
 RCODE FLMAPI F_BufferIStream::open(
-	const FLMBYTE *	pucBuffer,
-	FLMUINT				uiLength,
-	FLMBYTE **			ppucAllocatedBuffer)
+	const char *	pucBuffer,
+	FLMUINT			uiLength,
+	char **			ppucAllocatedBuffer)
 {
-	RCODE			rc = NE_FLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	
 	f_assert( !m_pucBuffer);
 	
@@ -1553,14 +1973,14 @@ RCODE FLMAPI F_BufferIStream::open(
 		
 		if( ppucAllocatedBuffer)
 		{
-			*ppucAllocatedBuffer = (FLMBYTE *)m_pucBuffer;
+			*ppucAllocatedBuffer = (char *)m_pucBuffer;
 		}
 		
 		m_bAllocatedBuffer = TRUE;
 	}
 	else
 	{
-		m_pucBuffer = pucBuffer;
+		m_pucBuffer = (FLMBYTE *)pucBuffer;
 	}
 	
 	m_uiBufferLen = uiLength;
@@ -3176,4 +3596,47 @@ Exit:
 	m_bConnected = FALSE;
 	
 	return( NE_FLM_OK);
+}
+
+/******************************************************************************
+Desc: Read all data from input stream and write to the output stream.
+******************************************************************************/
+RCODE FLMAPI FlmWriteToOStream(
+	IF_IStream *	pIStream,
+	IF_OStream *	pOStream)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMBYTE			ucBuffer[ 512];
+	FLMUINT			uiBufferSize = sizeof( ucBuffer);
+	FLMUINT			uiBytesToWrite;
+	FLMUINT			uiBytesRead;
+
+	for (;;)
+	{
+		if( RC_BAD( rc = pIStream->read( 
+			ucBuffer, uiBufferSize, &uiBytesRead)))
+		{
+			if( rc != NE_FLM_EOF_HIT)
+			{
+				goto Exit;
+			}
+
+			rc = NE_FLM_OK;
+
+			if (!uiBytesRead)
+			{
+				goto Exit;
+			}
+		}
+
+		uiBytesToWrite = uiBytesRead;
+		if( RC_BAD( rc = pOStream->write( ucBuffer, uiBytesToWrite)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
 }

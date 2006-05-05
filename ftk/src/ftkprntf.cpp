@@ -767,3 +767,20 @@ FLMINT FLMAPI f_sprintf(
 
 	return( iLen);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI f_printf(
+	const char *	pszFormat,
+	...)
+{
+	FLMINT		iLen;
+	va_list		args;
+
+	va_start(args, pszFormat);
+	iLen = vprintf( pszFormat, args);
+	va_end(args);
+
+	return( iLen);
+}

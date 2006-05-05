@@ -40,7 +40,7 @@ typedef struct INI_LINE
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_IniFile : public IF_IniFile, public F_Base
+class F_IniFile : public IF_IniFile
 {
 public:
 
@@ -244,17 +244,18 @@ Exit:
 Desc:	Read the ini file and parse its contents
 ****************************************************************************/
 RCODE FLMAPI F_IniFile::read(
-	const char *	pszFileName)
+	const char *		pszFileName)
 {
-	RCODE				rc = NE_FLM_OK;
-	FLMBOOL			bMore = FALSE;
-	FLMBOOL			bEOF = FALSE;
+	RCODE					rc = NE_FLM_OK;
+	FLMBOOL				bMore = FALSE;
+	FLMBOOL				bEOF = FALSE;
 #define INITIAL_READ_BUF_SIZE	100
-	FLMUINT			uiReadBufSize = 0;
-	FLMUINT			uiBytesAvail = 0;
-	FLMUINT			uiBytesInLine = 0;
-	char *			pszReadBuf = NULL;
-	FLMUINT			uiLineNum = 0;
+	FLMUINT				uiReadBufSize = 0;
+	FLMUINT				uiBytesAvail = 0;
+	FLMUINT				uiBytesInLine = 0;
+	char *				pszReadBuf = NULL;
+	FLMUINT				uiLineNum = 0;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 	
 	f_assert( m_bReady);
 	f_assert( !m_pFileHdl);
@@ -271,7 +272,7 @@ RCODE FLMAPI F_IniFile::read(
 	// It's not an error if the file doesn't exist.  If it does exist,
 	// we'll read in its data.
 	
-	if( RC_BAD( gv_pFileSystem->openFile( pszFileName, 
+	if( RC_BAD( pFileSystem->openFile( pszFileName, 
 		FLM_IO_RDONLY, &m_pFileHdl)))
 	{		
 		goto Exit;
@@ -383,10 +384,11 @@ Desc:	Copies the data stored in the INI_LINE structs to the ini file
 ****************************************************************************/
 RCODE FLMAPI F_IniFile::write( void)
 {
-	RCODE			rc = NE_FLM_OK;
-	FLMUINT		uiBytesWritten;
-	INI_LINE *	pCurLine = NULL;
-	FLMBOOL		uiFileOffset = 0;		
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiBytesWritten;
+	INI_LINE *			pCurLine = NULL;
+	FLMBOOL				uiFileOffset = 0;		
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	f_assert( m_bReady);
 	
@@ -401,7 +403,7 @@ RCODE FLMAPI F_IniFile::write( void)
 	
 	f_assert( !m_pFileHdl);
 	
-	if (RC_BAD( rc = gv_pFileSystem->createFile( m_pszFileName,
+	if (RC_BAD( rc = pFileSystem->createFile( m_pszFileName,
 								FLM_IO_RDWR, &m_pFileHdl)))
 	{
 		goto Exit;

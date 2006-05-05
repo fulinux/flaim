@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_IOBufferMgr : public IF_IOBufferMgr, public F_Base
+class F_IOBufferMgr : public IF_IOBufferMgr
 {
 public:
 
@@ -94,6 +94,20 @@ private:
 friend class F_IOBuffer;
 
 };
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
+RCODE FLMAPI FlmAllocIOBufferMgr(
+	IF_IOBufferMgr **			ppIOBufferMgr)
+{
+	if( (*ppIOBufferMgr = f_new F_IOBufferMgr) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
 
 /****************************************************************************
 Desc:

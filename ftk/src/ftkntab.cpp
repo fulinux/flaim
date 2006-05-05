@@ -24,6 +24,7 @@
 //------------------------------------------------------------------------------
 
 #include "ftksys.h"
+#if 0
 
 #define MAX_ELEMENTS_TO_LOAD			0xFFFF
 #define MAX_ATTRIBUTES_TO_LOAD		0xFFFF
@@ -63,7 +64,7 @@ FSTATIC void sortTagTbl(
 /****************************************************************************
 Desc:	Class for name/number lookup.
 ****************************************************************************/
-class F_NameTable : public IF_NameTable, public F_Base
+class F_NameTable : public IF_NameTable
 {
 public:
 
@@ -1916,3 +1917,4 @@ FLMINT FLMAPI F_NameTable::Release( void)
 
 	return( iRefCnt);
 }
+#endif

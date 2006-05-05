@@ -24,6 +24,7 @@
 //------------------------------------------------------------------------------
 
 #include "ftksys.h"
+#if 0
 
 #define FLM_XML_BASE_CHAR			0x01
 #define FLM_XML_IDEOGRAPHIC		0x02
@@ -400,7 +401,7 @@ static CHAR_TBL charTbl[] =
 /****************************************************************************
 Desc: XML
 ****************************************************************************/
-class F_XML : public IF_XML, public virtual F_Base
+class F_XML : public IF_XML
 {
 public:
 
@@ -763,4 +764,4 @@ Exit:
 
 	return( bValid);
 }
-
+#endif

@@ -29,18 +29,48 @@ Desc:
 ****************************************************************************/
 int main( void)
 {
-	RCODE		rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	IF_DirHdl *			pDirHdl = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
 	
 	if( RC_BAD( rc = ftkStartup()))
 	{
 		goto Exit;
 	}
 	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pFileSystem->openDir( ".", "*.*", &pDirHdl)))
+	{
+		goto Exit;
+	}
+	
+	while( RC_OK( pDirHdl->next()))
+	{
+		f_printf( "%s\n", pDirHdl->currentItemName());
+	}
+	
+	pDirHdl->Release();
+	pDirHdl = NULL;
+	
 	FTXInit();
 	f_sleep( 1000);
 	FTXExit();
 	
 Exit:
+
+	if( pDirHdl)
+	{
+		pDirHdl->Release();
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
 
 	ftkShutdown();
 	return( (int)rc);

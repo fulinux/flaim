@@ -25,6 +25,19 @@
 
 #include "ftksys.h"
 
+#if defined( FLM_NLM)
+
+	extern "C" void ConvertTicksToSeconds(
+		LONG		ticks,
+		LONG *	seconds,
+		LONG *	tenthsOfSeconds);
+
+	extern "C" void ConvertSecondsToTicks(
+		LONG		seconds,
+		LONG		tenthsOfSeconds,
+		LONG *	ticks);
+#endif
+
 #define	BASEYR			1970				// all gmt calcs done since 1970
 #define	SECONDSPERDAY	86400l			// 24 hours * 60 minutes * 60 seconds
 #define	SECONDSPERHOUR	3600				// 60 minutes * 60 seconds
@@ -335,3 +348,104 @@ unsigned f_timeGetMilliTime()
 #endif
 }
 #endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI FLM_GET_TIMER( void)
+{
+#if defined( FLM_WIN)
+	return( (FLMUINT)GetTickCount());
+#elif defined( FLM_NLM)
+	return( (FLMUINT)GetCurrentTime());
+#else
+	return( f_timeGetMilliTime());
+#endif
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI FLM_ELAPSED_TIME(
+	FLMUINT			uiLaterTime,
+	FLMUINT			uiEarlierTime)
+{
+	// This method of calculating elapsed time accounts for the
+	// possibility of the time wrapping - which it will for some
+	// of our counters (FLM_WIN is milliseconds and wraps in 49.7 days).
+
+	return( (FLMUINT)(((uiLaterTime) >= (uiEarlierTime))
+					? (FLMUINT)((uiLaterTime) - (uiEarlierTime))
+					: (FLMUINT)((0xFFFFFFFF - (uiEarlierTime)) + (uiLaterTime))));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI FLM_SECS_TO_TIMER_UNITS( 
+	FLMUINT			uiSeconds)
+{
+#if defined( FLM_NLM)
+	LONG		uiTu;
+	
+	ConvertSecondsToTicks( (LONG)(uiSeconds), 0, &uiTU);
+	return( (FLMUINT)uiTU);
+#else
+	return( uiSeconds * 1000);
+#endif
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS( 
+	FLMUINT			uiTU)
+{
+#if defined( FLM_NLM)
+	LONG		udDummy;
+	LONG		uiSeconds;
+	
+	ConvertTicksToSeconds( (LONG)(uiTU), &uiSeconds, &udDummy);
+	return( (FLMUINT)uiSeconds);
+#else
+	return( uiTU / 1000);
+#endif
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLM_TIMER_UNITS_TO_MILLI( 
+	FLMUINT			uiTU)
+{
+#if defined( FLM_NLM)
+	LONG		udTenths;
+	LONG		udSeconds;
+	
+	ConvertTicksToSeconds( (LONG)(uiTU), &udSeconds, &udTenths);
+	return( (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100);
+#else
+	return( uiTU);
+#endif
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLM_MILLI_TO_TIMER_UNITS( 
+	FLMUINT			uiMilliSeconds)
+{
+#if defined( FLM_NLM)
+	LONG		udTenths;
+	LONG		udSeconds;
+	LONG		uiTU;
+	
+	udSeconds = ((LONG) uiMilliSeconds) / 1000;
+	udTenths = (((LONG) uiMilliSeconds) % 1000) / 100;
+	
+	ConvertSecondsToTicks( udSeconds, udTenths, &uiTU);
+	return( (FLMUINT)uiTU);
+#else
+	return( uiMilliSeconds);
+#endif
+}

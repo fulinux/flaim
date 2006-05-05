@@ -2616,7 +2616,7 @@ FLMUNICODE * FLMAPI f_unicpy(
 /****************************************************************************
 Desc: A rather trivial unicode monocase function.
 ****************************************************************************/
-FLMUNICODE FLMAPI f_unitolower(
+FLMUNICODE FLMAPI f_uniToLower(
 	FLMUNICODE		uChar)
 {
 	static const FLMUNICODE basicAlpha[ 0x600] =
@@ -4721,13 +4721,13 @@ FLMINT FLMAPI f_uniicmp(
 	const FLMUNICODE *	puzStr1,
 	const FLMUNICODE *	puzStr2)
 {
-	while( f_unitolower( *puzStr1) == f_unitolower( *puzStr2) && *puzStr1)
+	while( f_uniToLower( *puzStr1) == f_uniToLower( *puzStr2) && *puzStr1)
 	{
 		puzStr1++;
 		puzStr2++;
 	}
 
-	return( (FLMINT)f_unitolower( *puzStr1) - (FLMINT)f_unitolower( *puzStr2));
+	return( (FLMINT)f_uniToLower( *puzStr1) - (FLMINT)f_uniToLower( *puzStr2));
 }
 
 /****************************************************************************
@@ -4864,15 +4864,6 @@ FLMBOOL FLMAPI f_uniIsDecimalDigit(
 	}
 	
 	return( bRV);
-}
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-FLMUNICODE FLMAPI f_uniToLower(
-	FLMUNICODE	uzChar)
-{
-	return( f_unitolower( uzChar));
 }
 
 /***************************************************************************
@@ -5628,7 +5619,7 @@ RCODE FLMAPI f_getNextMetaphone(
 
 		if( uiInputLen < (MAX_METAPHONE_INPUT_CHARS - 5))
 		{
-			uzInput[ uiInputLen++] = f_unitolower( uChar);
+			uzInput[ uiInputLen++] = f_uniToLower( uChar);
 
 			if( !bSlavoGermanic &&
 				 (uChar == FLM_UNICODE_w ||
@@ -7263,7 +7254,7 @@ RCODE f_verifyMetaphoneRoutines( void)
 		}
 
 		if( RC_BAD( rc = pBufferStream->open( 
-			(FLMBYTE *)pMetaMap->pszWord, f_strlen( pMetaMap->pszWord))))
+			pMetaMap->pszWord, f_strlen( pMetaMap->pszWord))))
 		{
 			goto Exit;
 		}

@@ -32,7 +32,6 @@ Desc:
 ****************************************************************************/
 F_FileHdl::F_FileHdl()
 {
-	m_uiFileId = 0;
 	m_bFileOpened = FALSE;
 	m_bDeleteOnRelease = FALSE;
 	m_bOpenedReadOnly = FALSE;
@@ -88,13 +87,14 @@ RCODE F_FileHdl::openOrCreate(
    FLMUINT			uiAccess,
 	FLMBOOL			bCreateFlag)
 {
-	RCODE			rc = NE_FLM_OK;
-	char			szSaveFileName[ F_PATH_MAX_SIZE];
-	DWORD			udAccessMode = 0;
-	DWORD			udShareMode = 0;
-	DWORD			udCreateMode = 0;
-	DWORD			udAttrFlags = 0;
-	DWORD			udErrCode;
+	RCODE					rc = NE_FLM_OK;
+	char					szSaveFileName[ F_PATH_MAX_SIZE];
+	DWORD					udAccessMode = 0;
+	DWORD					udShareMode = 0;
+	DWORD					udCreateMode = 0;
+	DWORD					udAttrFlags = 0;
+	DWORD					udErrCode;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	m_bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
 
@@ -115,7 +115,7 @@ RCODE F_FileHdl::openOrCreate(
 		}
 		else
 		{
-			if (RC_BAD( rc = gv_pFileSystem->getSectorSize(
+			if (RC_BAD( rc = pFileSystem->getSectorSize(
 				pszFileName, &m_uiBytesPerSector)))
 			{
 				goto Exit;
@@ -218,10 +218,10 @@ Retry_Create:
 
 			// Remove the file name for which we are creating the directory.
 
-			if( RC_OK( gv_pFileSystem->pathReduce( szSaveFileName, 
+			if( RC_OK( pFileSystem->pathReduce( szSaveFileName, 
 				szDirPath, szTemp)))
 			{
-				if( RC_OK( rc = gv_pFileSystem->createDir( szDirPath)))
+				if( RC_OK( rc = pFileSystem->createDir( szDirPath)))
 				{
 					goto Retry_Create;
 				}
@@ -304,19 +304,20 @@ Exit:
 Desc:	Create a unique file name in the specified directory
 ****************************************************************************/
 RCODE F_FileHdl::createUnique(
-	char *			pszDirName,
-	const char *	pszFileExtension,
-	FLMUINT			uiIoFlags)
+	char *				pszDirName,
+	const char *		pszFileExtension,
+	FLMUINT				uiIoFlags)
 {
-	RCODE			rc = NE_FLM_OK;
-	char *		pszTmp;
-	FLMBOOL		bModext = TRUE;
-	FLMUINT		uiBaseTime = 0;
-	FLMBYTE		ucHighByte = 0;
-	char			szFileName[ F_FILENAME_SIZE];
-	char			szDirPath[ F_PATH_MAX_SIZE];
-	char			szTmpPath[ F_PATH_MAX_SIZE];
-	FLMUINT		uiCount;
+	RCODE					rc = NE_FLM_OK;
+	char *				pszTmp;
+	FLMBOOL				bModext = TRUE;
+	FLMUINT				uiBaseTime = 0;
+	FLMBYTE				ucHighByte = 0;
+	char					szFileName[ F_FILENAME_SIZE];
+	char					szDirPath[ F_PATH_MAX_SIZE];
+	char					szTmpPath[ F_PATH_MAX_SIZE];
+	FLMUINT				uiCount;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	szFileName[0] = '\0';
 	szTmpPath[0] = '\0';
@@ -365,11 +366,11 @@ RCODE F_FileHdl::createUnique(
 	uiCount = 0;
 	do
 	{
-		gv_pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName, 
+		pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName, 
 			pszFileExtension, &ucHighByte, bModext);
 
 		f_strcpy( szTmpPath, szDirPath);
-		gv_pFileSystem->pathAppend( szTmpPath, szFileName);
+		pFileSystem->pathAppend( szTmpPath, szFileName);
 		if( m_pszFileName)
 		{
 			f_free( &m_pszFileName);

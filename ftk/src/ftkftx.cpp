@@ -607,16 +607,17 @@ static FLMUINT ScanCodeToFKB[] = {
 Desc:		Initializes the FTX environment.
 ****************************************************************************/
 RCODE FLMAPI FTXInit(
-	const char *	pszAppName,
-	FLMUINT			uiCols,
-	FLMUINT			uiRows,
-	eColorType		backgroundColor,
-	eColorType		foregroundColor,
-	KEY_HANDLER		pKeyHandler,
-	void *			pvKeyHandlerData)
+	const char *		pszAppName,
+	FLMUINT				uiCols,
+	FLMUINT				uiRows,
+	eColorType			backgroundColor,
+	eColorType			foregroundColor,
+	KEY_HANDLER			pKeyHandler,
+	void *				pvKeyHandlerData)
 {
-	RCODE				rc = NE_FLM_OK;
-	FTX_INFO *		pFtxInfo;
+	RCODE					rc = NE_FLM_OK;
+	FTX_INFO *			pFtxInfo;
+	IF_ThreadMgr *		pThreadMgr = f_getThreadMgrPtr();
 
 	if( gv_bInitialized)
 	{
@@ -682,7 +683,7 @@ RCODE FLMAPI FTXInit(
 
 #endif
 
-	if( RC_BAD( rc = gv_pThreadMgr->createThread( &gv_pFtxInfo->pBackgroundThrd,
+	if( RC_BAD( rc = pThreadMgr->createThread( &gv_pFtxInfo->pBackgroundThrd,
 		_ftxBackgroundThread, "ftx_background")))
 	{
 		goto Exit;
@@ -691,7 +692,7 @@ RCODE FLMAPI FTXInit(
 	gv_pFtxInfo->backgroundColor = backgroundColor;
 	gv_pFtxInfo->foregroundColor = foregroundColor;
 
-	if( RC_BAD( rc = gv_pThreadMgr->createThread( &gv_pFtxInfo->pDisplayThrd,
+	if( RC_BAD( rc = pThreadMgr->createThread( &gv_pFtxInfo->pDisplayThrd,
 		_ftxDefaultDisplayHandler, "ftx_display")))
 	{
 		goto Exit;
@@ -704,7 +705,7 @@ RCODE FLMAPI FTXInit(
 	gv_pFtxInfo->pKeyHandler = pKeyHandler;
 	gv_pFtxInfo->pvKeyHandlerData = pvKeyHandlerData;
 
-	if( RC_BAD( rc = gv_pThreadMgr->createThread( &gv_pFtxInfo->pKeyboardThrd,
+	if( RC_BAD( rc = pThreadMgr->createThread( &gv_pFtxInfo->pKeyboardThrd,
 		_ftxDefaultKeyboardHandler, "ftx_keyboard")))
 	{
 		goto Exit;

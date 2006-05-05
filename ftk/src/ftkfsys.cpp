@@ -59,7 +59,7 @@ FINLINE void f_setupTime(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_FileSystem : public IF_FileSystem, public F_Base
+class F_FileSystem : public IF_FileSystem
 {
 public:
 
@@ -134,6 +134,14 @@ public:
 		FLMBOOL			bOverwrite,
 		FLMUINT64 *		pui64BytesCopied);
 
+	RCODE FLMAPI copyPartialFile(
+		IF_FileHdl *	pSrcFileHdl,
+		FLMUINT64		ui64SrcOffset,
+		FLMUINT64		ui64SrcSize,
+		IF_FileHdl *	pDestFileHdl,
+		FLMUINT64		ui64DestOffset,
+		FLMUINT64 *		pui64BytesCopiedRV);
+	
 	RCODE FLMAPI renameFile(
 		const char *	pszFileName,
 		const char *	pszNewFileName);
@@ -177,11 +185,10 @@ public:
 		const char *	pszFileName,
 		FLMBOOL			bReadOnly);
 
-	RCODE FLMAPI writeToOStream(
-		IF_IStream *	pIStream,
-		IF_OStream *	pOStream);
-		
 private:
+
+	RCODE removeEmptyDir(
+		const char *	pszDirName);
 
 #if defined( FLM_UNIX)
 	RCODE unix_RenameSafe(
@@ -392,7 +399,7 @@ Desc:
 RCODE FLMAPI FlmGetFileSystem(
 	IF_FileSystem **		ppFileSystem)
 {
-	*ppFileSystem = gv_pFileSystem;
+	*ppFileSystem = f_getFileSysPtr();
 	(*ppFileSystem)->AddRef();
 	return( NE_FLM_OK);
 }
@@ -712,7 +719,7 @@ RCODE FLMAPI F_FileSystem::removeDir(
 		pDirHdl = NULL;
 	}
 
-	if( RC_BAD( rc = removeDir( pszDirName)))
+	if( RC_BAD( rc = removeEmptyDir( pszDirName)))
 	{
 		goto Exit;
 	}
@@ -725,6 +732,65 @@ Exit:
 	}
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:	Remove an empty directory
+****************************************************************************/
+RCODE F_FileSystem::removeEmptyDir(
+	const char *			pszDirPath)
+{
+#if defined( FLM_WIN)
+
+	if( !RemoveDirectory( (LPTSTR)pszDirPath))
+	{
+		return( f_mapPlatformError( GetLastError(), NE_FLM_IO_DELETING_FILE));
+	}
+
+	return( NE_FLM_OK);
+
+#elif defined( FLM_UNIX)
+
+	 if( rmdir( pszDirPath) == -1 )
+	 {
+		 return( f_mapPlatformError( errno, NE_FLM_IO_DELETING_FILE));
+	 }
+
+    return( NE_FLM_OK);
+
+#elif defined( FLM_NLM)
+	RCODE			rc = NE_FLM_OK;
+	FLMBYTE		pucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
+	FLMBYTE		pucLNamePath[ F_PATH_MAX_SIZE];
+	LONG			lVolumeID;
+	LONG			lPathID;
+	LONG			lLNamePathCount;
+	LONG			lErrorCode;
+	
+	f_strcpy( (char *)&pucPseudoLNamePath[1], pszDirPath);
+	pucPseudoLNamePath[0] = (FLMBYTE)f_strlen( pszDirPath);
+	
+	if( (lErrorCode = ConvertPathString( 0, 0, pucPseudoLNamePath, &lVolumeID,		
+		&lPathID, pucLNamePath, &lLNamePathCount)) != 0)
+	{
+		goto Exit;
+	}
+
+	if( (lErrorCode = DeleteDirectory( 0, lVolumeID, lPathID, pucLNamePath,
+		lLNamePathCount, LONGNameSpace)) != 0)
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( lErrorCode)
+	{
+		rc = f_mapPlatformError( lErrorCode, NE_FLM_IO_DELETING_FILE);
+	}
+	
+	return( rc);
+#endif
 }
 
 /****************************************************************************
@@ -999,7 +1065,7 @@ RCODE FLMAPI F_FileSystem::copyFile(
 
 	// Do the copy.
 
-	if( RC_BAD( rc = f_copyPartial( pSrcFileHdl, 0, ui64SrcSize, 
+	if( RC_BAD( rc = copyPartialFile( pSrcFileHdl, 0, ui64SrcSize, 
 				pDestFileHdl, 0, pui64BytesCopied)))
 	{
 		goto Exit;
@@ -1029,6 +1095,121 @@ Exit:
 		*pui64BytesCopied = 0;
 	}
 	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Do a partial copy from one file into another file.
+****************************************************************************/
+RCODE FLMAPI F_FileSystem::copyPartialFile(
+	IF_FileHdl *	pSrcFileHdl,			// Source file handle.
+	FLMUINT64		ui64SrcOffset,			// Offset to start copying from.
+	FLMUINT64		ui64SrcSize,			// Bytes to copy
+	IF_FileHdl *	pDestFileHdl,			// Destination file handle
+	FLMUINT64		ui64DestOffset,		// Destination start offset.
+	FLMUINT64 *		pui64BytesCopiedRV)	// Returns number of bytes copied
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMBYTE *		pucBuffer = NULL;
+	FLMUINT			uiAllocSize = 65536;
+	FLMUINT			uiBytesToRead;
+	FLMUINT64		ui64CopySize;
+	FLMUINT64		ui64FileOffset;
+	FLMUINT			uiBytesRead;
+	FLMUINT			uiBytesWritten;
+
+	ui64CopySize = ui64SrcSize;
+	*pui64BytesCopiedRV = 0;
+
+	// Set the buffer size for use during the file copy
+
+	if( ui64CopySize < uiAllocSize)
+	{
+		uiAllocSize = (FLMUINT)ui64CopySize;
+	}
+
+	// Allocate a buffer
+
+	if( RC_BAD( rc = f_alloc( uiAllocSize, &pucBuffer)))
+	{
+		goto Exit;
+	}
+
+	// Position the file pointers
+
+	if( RC_BAD( rc = pSrcFileHdl->seek( ui64SrcOffset, FLM_IO_SEEK_SET,
+								&ui64FileOffset)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDestFileHdl->seek( ui64DestOffset, FLM_IO_SEEK_SET,
+								&ui64FileOffset)))
+	{
+		goto Exit;
+	}
+
+	// Begin copying the data
+
+	while( ui64CopySize)
+	{
+		if( ui64CopySize > uiAllocSize)
+		{
+			uiBytesToRead = uiAllocSize;
+		}
+		else
+		{
+			uiBytesToRead = (FLMUINT)ui64CopySize;
+		}
+		
+		rc = pSrcFileHdl->read( FLM_IO_CURRENT_POS, uiBytesToRead,
+										pucBuffer, &uiBytesRead);
+										
+		if (rc == NE_FLM_IO_END_OF_FILE)
+		{
+			rc = NE_FLM_OK;
+		}
+		
+		if (RC_BAD( rc))
+		{
+			rc = RC_SET( NE_FLM_IO_COPY_ERR);
+			goto Exit;
+		}
+
+		uiBytesWritten = 0;
+		if( RC_BAD( rc = pDestFileHdl->write( FLM_IO_CURRENT_POS, uiBytesRead,
+									pucBuffer, &uiBytesWritten)))
+		{
+			if (rc == NE_FLM_IO_DISK_FULL)
+			{
+				*pui64BytesCopiedRV += uiBytesWritten;
+			}
+			else
+			{
+				rc = RC_SET( NE_FLM_IO_COPY_ERR);
+			}
+			
+			goto Exit;
+		}
+		
+		*pui64BytesCopiedRV += uiBytesWritten;
+
+		if( uiBytesRead < uiBytesToRead)
+		{
+			rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+			goto Exit;
+		}
+
+		ui64CopySize -= uiBytesRead;
+	}
+	
+Exit:
+
+	if (pucBuffer)
+	{
+		(void)f_free( &pucBuffer);
+	}
+
 	return( rc);
 }
 
@@ -1344,121 +1525,6 @@ Exit:
 #endif
 
 /****************************************************************************
-Desc:	Do a partial copy from one file into another file.
-****************************************************************************/
-RCODE FLMAPI f_copyPartial(
-	IF_FileHdl *	pSrcFileHdl,			// Source file handle.
-	FLMUINT64		ui64SrcOffset,			// Offset to start copying from.
-	FLMUINT64		ui64SrcSize,			// Bytes to copy
-	IF_FileHdl *	pDestFileHdl,			// Destination file handle
-	FLMUINT64		ui64DestOffset,		// Destination start offset.
-	FLMUINT64 *		pui64BytesCopiedRV)	// Returns number of bytes copied
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMBYTE *		pucBuffer = NULL;
-	FLMUINT			uiAllocSize = 65536;
-	FLMUINT			uiBytesToRead;
-	FLMUINT64		ui64CopySize;
-	FLMUINT64		ui64FileOffset;
-	FLMUINT			uiBytesRead;
-	FLMUINT			uiBytesWritten;
-
-	ui64CopySize = ui64SrcSize;
-	*pui64BytesCopiedRV = 0;
-
-	// Set the buffer size for use during the file copy
-
-	if( ui64CopySize < uiAllocSize)
-	{
-		uiAllocSize = (FLMUINT)ui64CopySize;
-	}
-
-	// Allocate a buffer
-
-	if( RC_BAD( rc = f_alloc( uiAllocSize, &pucBuffer)))
-	{
-		goto Exit;
-	}
-
-	// Position the file pointers
-
-	if( RC_BAD( rc = pSrcFileHdl->seek( ui64SrcOffset, FLM_IO_SEEK_SET,
-								&ui64FileOffset)))
-	{
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = pDestFileHdl->seek( ui64DestOffset, FLM_IO_SEEK_SET,
-								&ui64FileOffset)))
-	{
-		goto Exit;
-	}
-
-	// Begin copying the data
-
-	while( ui64CopySize)
-	{
-		if( ui64CopySize > uiAllocSize)
-		{
-			uiBytesToRead = uiAllocSize;
-		}
-		else
-		{
-			uiBytesToRead = (FLMUINT)ui64CopySize;
-		}
-		
-		rc = pSrcFileHdl->read( FLM_IO_CURRENT_POS, uiBytesToRead,
-										pucBuffer, &uiBytesRead);
-										
-		if (rc == NE_FLM_IO_END_OF_FILE)
-		{
-			rc = NE_FLM_OK;
-		}
-		
-		if (RC_BAD( rc))
-		{
-			rc = RC_SET( NE_FLM_IO_COPY_ERR);
-			goto Exit;
-		}
-
-		uiBytesWritten = 0;
-		if( RC_BAD( rc = pDestFileHdl->write( FLM_IO_CURRENT_POS, uiBytesRead,
-									pucBuffer, &uiBytesWritten)))
-		{
-			if (rc == NE_FLM_IO_DISK_FULL)
-			{
-				*pui64BytesCopiedRV += uiBytesWritten;
-			}
-			else
-			{
-				rc = RC_SET( NE_FLM_IO_COPY_ERR);
-			}
-			
-			goto Exit;
-		}
-		
-		*pui64BytesCopiedRV += uiBytesWritten;
-
-		if( uiBytesRead < uiBytesToRead)
-		{
-			rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-			goto Exit;
-		}
-
-		ui64CopySize -= uiBytesRead;
-	}
-	
-Exit:
-
-	if (pucBuffer)
-	{
-		(void)f_free( &pucBuffer);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:
 ****************************************************************************/
 RCODE FLMAPI f_filecpy(
@@ -1513,12 +1579,13 @@ RCODE FLMAPI f_filecat(
 	IF_FileHdl *		pFileHdl = NULL;
 	FLMUINT64 			ui64FileSize = 0;
 	FLMUINT 				uiBytesWritten = 0;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
-	if (RC_BAD( rc = gv_pFileSystem->doesFileExist( pszSourceFile)))
+	if (RC_BAD( rc = pFileSystem->doesFileExist( pszSourceFile)))
 	{
 		if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
-			if( RC_BAD( rc = gv_pFileSystem->createFile( 
+			if( RC_BAD( rc = pFileSystem->createFile( 
 				pszSourceFile, FLM_IO_RDWR, &pFileHdl)))
 			{
 				goto Exit;
@@ -1531,7 +1598,7 @@ RCODE FLMAPI f_filecat(
 	}
 	else
 	{
-		if( RC_BAD( rc = gv_pFileSystem->openFile( pszSourceFile,
+		if( RC_BAD( rc = pFileSystem->openFile( pszSourceFile,
 			FLM_IO_RDWR, &pFileHdl)))
 		{
 			goto Exit;
@@ -1594,18 +1661,19 @@ Example:
 			pFileName "autoexec.ncf"
 ****************************************************************************/
 void FLMAPI F_FileSystem::pathParse(
-	const char *	pszInputPath,
-	char *			pszServer,
-	char *			pszVolume,
-	char *			pszDirPath,
-	char *			pszFileName)
+	const char *		pszInputPath,
+	char *				pszServer,
+	char *				pszVolume,
+	char *				pszDirPath,
+	char *				pszFileName)
 {
-	char			szInput[ F_PATH_MAX_SIZE];
-	char *		pszNext;
-	char *		pszColon;
-	char *		pszComponent;
-	FLMUINT		uiEndChar;
-	FLMBOOL		bUNC = FALSE;
+	char					szInput[ F_PATH_MAX_SIZE];
+	char *				pszNext;
+	char *				pszColon;
+	char *				pszComponent;
+	FLMUINT				uiEndChar;
+	FLMBOOL				bUNC = FALSE;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 	
 	// Initialize return buffers
 
@@ -1627,7 +1695,7 @@ void FLMAPI F_FileSystem::pathParse(
 		// Get the file name
 
 		*pszFileName = 0;
-		gv_pFileSystem->pathReduce( pszInputPath, szInput, pszFileName);
+		pFileSystem->pathReduce( pszInputPath, szInput, pszFileName);
 	}
 	else
 	{
@@ -2132,49 +2200,6 @@ Exit:
 	{
 		pMultiStream->Release();
 	}
-
-	return( rc);
-}
-
-/******************************************************************************
-Desc: Read all data from input stream and write to the output stream.
-******************************************************************************/
-RCODE FLMAPI F_FileSystem::writeToOStream(
-	IF_IStream *	pIStream,
-	IF_OStream *	pOStream)
-{
-	RCODE			rc = NE_FLM_OK;
-	FLMBYTE		ucBuffer[ 512];
-	FLMUINT		uiBufferSize = sizeof( ucBuffer);
-	FLMUINT		uiBytesToWrite;
-	FLMUINT		uiBytesRead;
-
-	for (;;)
-	{
-		if( RC_BAD( rc = pIStream->read( 
-			ucBuffer, uiBufferSize, &uiBytesRead)))
-		{
-			if( rc != NE_FLM_EOF_HIT)
-			{
-				goto Exit;
-			}
-
-			rc = NE_FLM_OK;
-
-			if (!uiBytesRead)
-			{
-				goto Exit;
-			}
-		}
-
-		uiBytesToWrite = uiBytesRead;
-		if( RC_BAD( rc = pOStream->write( ucBuffer, uiBytesToWrite)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
 
 	return( rc);
 }

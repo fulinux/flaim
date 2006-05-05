@@ -24,6 +24,7 @@
 //------------------------------------------------------------------------------
 
 #include "ftksys.h"
+#if 0
 
 FSTATIC FLMUINT btGetEntryDataLength(
 	FLMBYTE *			pucEntry,
@@ -505,7 +506,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_Btree : public IF_Btree, public F_Base
+class F_Btree : public IF_Btree
 {
 public:
 
@@ -12235,3 +12236,4 @@ Exit:
 	
 	return( rc);
 }
+#endif

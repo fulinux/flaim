@@ -130,7 +130,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	F_ResultSetBlk : public F_RefCount, public F_Base
+class	F_ResultSetBlk : public F_Object
 {
 public:
 
@@ -338,7 +338,7 @@ private:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-class F_ResultSet : public IF_ResultSet, public F_Base
+class F_ResultSet : public IF_ResultSet
 {
 public:
 
@@ -534,7 +534,8 @@ private:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-class F_BtResultSet : public IF_BtResultSet, public F_Base
+#if 0
+class F_BtResultSet : public IF_BtResultSet
 {
 public:
 
@@ -629,6 +630,7 @@ private:
 	IF_Btree *						m_pBtree;
 	IF_ResultSetCompare *		m_pCompare;
 };
+#endif
 
 /*****************************************************************************
 Desc:
@@ -913,7 +915,7 @@ RCODE FLMAPI F_ResultSet::setupResultSet(
 	{
 		f_strcpy( m_szIoFilePath1, m_szIoDefaultPath);
 
-		if( RC_BAD( rc = gv_pFileSystem->pathAppend( 
+		if( RC_BAD( rc = f_getFileSysPtr()->pathAppend( 
 			m_szIoFilePath1, pszInputFileName)))
 		{
 			goto Exit;
@@ -3866,6 +3868,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::addEntry(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyLength,
@@ -3893,10 +3896,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::modifyEntry(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyLength,
@@ -3917,10 +3922,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::deleteEntry(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyLength)
@@ -3939,10 +3946,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::findEntry(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyBufLen,
@@ -3979,10 +3988,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::getCurrent(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyLength,
@@ -4004,10 +4015,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::getNext(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyBufLen,
@@ -4039,10 +4052,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::getPrev(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyBufLen,
@@ -4074,10 +4089,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::getFirst(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyBufLen,
@@ -4110,10 +4127,12 @@ Exit:
 
 	return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if 0
 RCODE F_BtResultSet::getLast(
 	FLMBYTE *	pucKey,
 	FLMUINT		uiKeyBufLen,
@@ -4144,4 +4163,19 @@ RCODE F_BtResultSet::getLast(
 Exit:
 
 	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmAllocResultSet(
+	IF_ResultSet **			ppResultSet)
+{
+	if( (*ppResultSet = f_new F_ResultSet) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
 }

@@ -152,7 +152,7 @@ FSTATIC void freeMemTrackingInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_SlabManager : public IF_SlabManager, public F_Base
+class F_SlabManager : public IF_SlabManager
 {
 public:
 
@@ -288,7 +288,7 @@ friend class F_FixedAlloc;
 Desc:	Class to provide an efficient means of providing many allocations
 		of a fixed size.
 ****************************************************************************/
-class F_FixedAlloc : public IF_FixedAlloc, public F_Base
+class F_FixedAlloc : public IF_FixedAlloc
 {
 public:
 
@@ -476,7 +476,7 @@ friend class F_MultiAlloc;
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_BufferAlloc : public IF_BufferAlloc, public F_Base
+class F_BufferAlloc : public IF_BufferAlloc
 {
 public:
 
@@ -517,6 +517,11 @@ public:
 		FLMUINT				uiSize,
 		FLMBYTE *			pucBuffer);
 
+	FLMUINT FLMAPI getMaxCellSize( void)
+	{
+		return( MAX_CELL_SIZE);
+	}
+		
 	void FLMAPI defragmentMemory( void);
 	
 private:
@@ -531,7 +536,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_MultiAlloc : public IF_MultiAlloc, public F_Base
+class F_MultiAlloc : public IF_MultiAlloc
 {
 public:
 
@@ -548,7 +553,7 @@ public:
 	}
 
 	RCODE FLMAPI setup(
-		F_SlabManager *		pSlabManager,
+		IF_SlabManager *		pSlabManager,
 		FLMUINT *				puiCellSizes,
 		FLM_SLAB_USAGE *		pUsageStats);
 
@@ -610,7 +615,7 @@ private:
 /****************************************************************************
 Desc:	This class is used to do pool memory allocations.
 ****************************************************************************/
-class F_Pool : public IF_Pool, public F_Base
+class F_Pool : public IF_Pool
 {
 public:
 
@@ -723,6 +728,76 @@ private:
 	POOL_STATS *			m_pPoolStats;
 };
 
+/************************************************************************
+Desc:
+*************************************************************************/
+RCODE FLMAPI FlmAllocPool(
+	IF_Pool **		ppPool)
+{
+	if( (*ppPool = f_new F_Pool) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+	
+/****************************************************************************
+Desc:	
+****************************************************************************/
+RCODE FLMAPI FlmAllocSlabManager(
+	IF_SlabManager **			ppSlabManager)
+{
+	if( (*ppSlabManager = f_new F_SlabManager) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+	
+/****************************************************************************
+Desc:	
+****************************************************************************/
+RCODE FLMAPI FlmAllocFixedAllocator(
+	IF_FixedAlloc **			ppFixedAllocator)
+{
+	if( (*ppFixedAllocator = f_new F_FixedAlloc) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
+RCODE FLMAPI FlmAllocBufferAllocator(
+	IF_BufferAlloc **			ppBufferAllocator)
+{
+	if( (*ppBufferAllocator = f_new F_BufferAlloc) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
+RCODE FLMAPI FlmAllocMultiAllocator(
+	IF_MultiAlloc **			ppMultiAllocator)
+{
+	if( (*ppMultiAllocator = f_new F_MultiAlloc) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+		
 /************************************************************************
 Desc:
 *************************************************************************/
@@ -1318,7 +1393,8 @@ void logMemLeak(
 	}
 
 #ifdef FLM_WIN
-	FLMINT	iRet;
+	FLMINT				iRet;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	iRet =  MessageBox( NULL, (LPCTSTR)pszMessageBuffer, "WIN32 Memory Testing",
 					MB_ABORTRETRYIGNORE | MB_ICONINFORMATION | MB_TASKMODAL 
@@ -1335,7 +1411,7 @@ void logMemLeak(
 	gv_bLogLeaks = TRUE;
 #endif
 
-	if (gv_bLogLeaks && gv_pFileSystem)
+	if (gv_bLogLeaks && pFileSystem)
 	{
 		RCODE				rc;
 		FLMUINT			uiDummy;
@@ -1345,12 +1421,12 @@ void logMemLeak(
 		const char *	pszErrPath = "memtest.ert";
 #endif
 
-	if (RC_BAD( rc = gv_pFileSystem->openFile( pszErrPath, 
+	if (RC_BAD( rc = pFileSystem->openFile( pszErrPath, 
 		FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pFileHdl)))
 		{
 			if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
-				rc = gv_pFileSystem->createFile( pszErrPath, 
+				rc = pFileSystem->createFile( pszErrPath, 
 					FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pFileHdl);
 			}
 		}
@@ -1792,20 +1868,6 @@ void f_resetStackInfoImp(
 #endif
 }
 
-/************************************************************************
-Desc:
-*************************************************************************/
-RCODE FLMAPI FlmAllocPool(
-	IF_Pool **		ppPool)
-{
-	if( (*ppPool = f_new F_Pool) == NULL)
-	{
-		return( RC_SET( NE_FLM_MEM));
-	}
-	
-	return( NE_FLM_OK);
-}
-	
 /************************************************************************
 Desc:	Destructor
 *************************************************************************/
@@ -2695,6 +2757,11 @@ F_FixedAlloc::~F_FixedAlloc()
 	{
 		m_pSlabManager->Release();
 	}
+	
+	if( m_pRelocator)
+	{
+		m_pRelocator->Release();
+	}
 }
 
 /****************************************************************************
@@ -2713,9 +2780,16 @@ RCODE F_FixedAlloc::setup(
 	f_assert( pUsageStats != NULL);
 	
 	m_pUsageStats = pUsageStats;
+	
 	m_pSlabManager = pSlabManager;
 	m_pSlabManager->AddRef();
-	m_pRelocator = pRelocator;
+	
+	if( pRelocator)
+	{
+		m_pRelocator = pRelocator;
+		m_pRelocator->AddRef();
+	}
+	
 	m_uiCellSize = uiCellSize;
 	m_uiSlabSize = m_pSlabManager->getSlabSize();
 
@@ -3944,7 +4018,7 @@ IF_FixedAlloc * F_BufferAlloc::getAllocator(
 Desc:
 ****************************************************************************/ 
 RCODE F_MultiAlloc::setup(
-	F_SlabManager *		pSlabManager,
+	IF_SlabManager *		pSlabManager,
 	FLMUINT *				puiCellSizes,
 	FLM_SLAB_USAGE *		pUsageStats)
 {
@@ -4260,12 +4334,209 @@ Exit:
 	return( rc);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_freeAlignedBuffer(
+	void **			ppvAlloc)
+{
+	if( *ppvAlloc)
+	{
+#ifdef FLM_WIN
+		(void)VirtualFree( *ppvAlloc, 0, MEM_RELEASE);
+		*ppvAlloc = NULL;
+#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
+		free( *ppvAlloc);
+		*ppvAlloc = NULL;
+#else
+		f_free( ppvAlloc);
+#endif
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE f_getMemoryInfo(
+	FLMUINT64 *		pui64TotalPhysMem,
+	FLMUINT64 *		pui64AvailPhysMem)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT64		ui64TotalPhysMem = 0;
+	FLMUINT64		ui64AvailPhysMem = 0;
+
+#ifdef FLM_WIN
+	{
+		MEMORYSTATUS	MemStatus;
+		
+		GlobalMemoryStatus( &MemStatus);
+		
+		ui64TotalPhysMem = MemStatus.dwTotalPhys;
+		ui64AvailPhysMem = MemStatus.dwAvailPhys;
+		
+		// There could be more physical memory in the system than we could
+		// actually allocate in our virtual address space.  Thus, we need to
+		// make sure that we never exceed our total virtual address space.
+	
+		if (ui64TotalPhysMem > (FLMUINT)MemStatus.dwTotalVirtual)
+		{
+			ui64TotalPhysMem = (FLMUINT)MemStatus.dwTotalVirtual;
+		}
+		
+		if( ui64AvailPhysMem > ui64TotalPhysMem)
+		{
+			ui64AvailPhysMem = ui64TotalPhysMem;
+		}
+	}
+#elif defined( FLM_UNIX)
+	{
+		FLMUINT			uiProcMemLimit = HIGH_FLMUINT;
+		FLMUINT			uiProcVMemLimit = HIGH_FLMUINT;
+		
+		#if defined( RLIMIT_VMEM)
+		{
+			struct rlimit	rlim;
+
+			// Bump the process soft virtual limit up to the hard limit
+			
+			if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
+			{
+				if( rlim.rlim_cur < rlim.rlim_max)
+				{
+					rlim.rlim_cur = rlim.rlim_max;
+					(void)setrlimit( RLIMIT_VMEM, &rlim);
+					if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
+					{
+						rlim.rlim_cur = RLIM_INFINITY;
+						rlim.rlim_max = RLIM_INFINITY;
+					}
+				}
+
+				if( rlim.rlim_cur != RLIM_INFINITY)
+				{
+					uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
+				}
+			}
+		}
+		#endif
+
+		#if defined( RLIMIT_DATA)
+		{
+			struct rlimit	rlim;
+
+			// Bump the process soft heap limit up to the hard limit
+			
+			if( getrlimit( RLIMIT_DATA, &rlim) == 0)
+			{
+				if( rlim.rlim_cur < rlim.rlim_max)
+				{
+					rlim.rlim_cur = rlim.rlim_max;
+					(void)setrlimit( RLIMIT_DATA, &rlim);
+					if( getrlimit( RLIMIT_DATA, &rlim) != 0)
+					{
+						rlim.rlim_cur = RLIM_INFINITY;
+						rlim.rlim_max = RLIM_INFINITY;
+					}
+				}
+
+				if( rlim.rlim_cur != RLIM_INFINITY)
+				{
+					uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
+				}
+			}
+		}
+		#endif
+	
+		#ifdef FLM_AIX
+				struct vminfo		tmpvminfo;
+			#ifdef _SC_PAGESIZE
+				long		iPageSize = sysconf(_SC_PAGESIZE);
+			#else
+				long		iPageSize = 4096;
+			#endif
+		
+				if( iPageSize == -1)
+				{
+					// If sysconf returned an error, resort to using the default
+					// page size for the Power architecture.
+		
+					iPageSize = 4096;
+				}
+		
+				ui64TotalPhysMem = HIGH_FLMUINT;
+				ui64AvailPhysMem = HIGH_FLMUINT;
+				
+				if( vmgetinfo( &tmpvminfo, VMINFO, sizeof( tmpvminfo)) != -1)
+				{
+					ui64TotalPhysMem = tmpvminfo.memsizepgs * iPageSize;
+					ui64AvailPhysMem = tmpvminfo.numfrb * iPageSize;
+				}
+				
+		#elif defined( FLM_LINUX)
+		
+				flmGetLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
+		
+		#else
+
+			long		iPageSize = sysconf( _SC_PAGESIZE);
+	
+			// Get the amount of memory available to the system
+			
+			ui64TotalPhysMem = sysconf(_SC_PHYS_PAGES) * iPageSize;
+			ui64AvailPhysMem = sysconf(_SC_AVPHYS_PAGES) * iPageSize;
+	
+		#endif
+		
+		// The process might be limited in the amount of memory it
+		// can access.
+
+		if( ui64TotalPhysMem > uiProcMemLimit)
+		{
+			ui64TotalPhysMem = uiProcMemLimit;
+		}
+	
+		if( ui64TotalPhysMem > uiProcVMemLimit)
+		{
+			ui64TotalPhysMem = uiProcVMemLimit;
+		}
+	}
+#elif defined( FLM_NLM)
+	{
+		#ifndef _SC_PHYS_PAGES
+			#define _SC_PHYS_PAGES        56
+		#endif
+		#ifndef _SCAVPHYS_PAGES
+			#define _SC_AVPHYS_PAGES		57
+		#endif
+
+		long		iPageSize = sysconf( _SC_PAGESIZE);
+
+		// Get the amount of memory available to the system
+		
+		ui64TotalPhysMem = sysconf(_SC_PHYS_PAGES) * iPageSize;
+		ui64AvailPhysMem = sysconf(_SC_AVPHYS_PAGES) * iPageSize;
+	}
+#else
+	rc = RC_SET( NE_FLM_NOT_IMPLEMENTED);
+#endif
+
+	if( ui64AvailPhysMem > ui64TotalPhysMem)
+	{
+		ui64AvailPhysMem = ui64TotalPhysMem;
+	}
+	
+	*pui64TotalPhysMem = ui64TotalPhysMem;
+	*pui64AvailPhysMem = ui64AvailPhysMem;
+
+	return( rc);
+}
+
 #undef	new
 #undef	delete
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void * F_Base::operator new(
+void * F_Object::operator new(
 	FLMSIZET			uiSize,
 	const char *	pszFile,
 	int				iLine)
@@ -4287,7 +4558,7 @@ void * F_Base::operator new(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void * F_Base::operator new[](
+void * F_Object::operator new[](
 	FLMSIZET			uiSize,
 	const char *	pszFile,
 	int				iLine)
@@ -4309,7 +4580,7 @@ void * F_Base::operator new[](
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void F_Base::operator delete(
+void F_Object::operator delete(
 	void *			ptr)
 {
 	if( !ptr)
@@ -4323,7 +4594,7 @@ void F_Base::operator delete(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void F_Base::operator delete(
+void F_Object::operator delete(
 	void *			ptr,
 	const char *,	// file
 	int)				// line
@@ -4339,7 +4610,7 @@ void F_Base::operator delete(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void F_Base::operator delete[](
+void F_Object::operator delete[](
 	void *			ptr,
 	const char *,	// file
 	int)				// line

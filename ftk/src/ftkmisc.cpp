@@ -25,24 +25,26 @@
 
 #include "ftksys.h"
 
-FLMUINT						gv_uiStartupCount = 0;
-FLMUINT						gv_uiSerialInitCount = 0;
-F_MUTEX						gv_hSerialMutex = F_MUTEX_NULL;
-FLMBOOL						gv_bOkToDoAsyncWrites = TRUE;
-FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
-IF_FileSystem *			gv_pFileSystem = NULL;
-IF_RandomGenerator *		gv_pSerialRandom = NULL;
-IF_ThreadMgr *				gv_pThreadMgr = NULL;
+static FLMUINT						gv_uiStartupCount = 0;
+static FLMUINT						gv_uiSerialInitCount = 0;
+static F_MUTEX						gv_hSerialMutex = F_MUTEX_NULL;
+static IF_RandomGenerator *	gv_pSerialRandom = NULL;
+static FLMUINT32 *				gv_pui32CRCTbl = NULL;
+static IF_ThreadMgr *			gv_pThreadMgr = NULL;
+static IF_FileSystem *			gv_pFileSystem = NULL;
 
 #ifdef FLM_LINUX
-FLMUINT						gv_uiLinuxMajorVer = 0;
-FLMUINT						gv_uiLinuxMinorVer = 0;
-FLMUINT						gv_uiLinuxRevision = 0;
+static FLMUINT						gv_uiLinuxMajorVer = 0;
+static FLMUINT						gv_uiLinuxMinorVer = 0;
+static FLMUINT						gv_uiLinuxRevision = 0;
 #endif
 
 FSTATIC RCODE f_initSerialNumberGenerator( void);
 
 FSTATIC void f_freeSerialNumberGenerator( void);
+
+FSTATIC RCODE f_initCRCTable(
+	FLMUINT32 **	ppui32CRCTbl);
 
 #ifdef FLM_AIX
 	#ifndef nsleep
@@ -78,6 +80,11 @@ RCODE FLMAPI ftkStartup( void)
 	}
 	
 	if( RC_BAD( rc = f_initSerialNumberGenerator()))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = f_initCRCTable( &gv_pui32CRCTbl)))
 	{
 		goto Exit;
 	}
@@ -136,6 +143,11 @@ void FLMAPI ftkShutdown( void)
 	{
 		gv_pFileSystem->Release();
 		gv_pFileSystem = NULL;
+	}
+	
+	if( gv_pui32CRCTbl)
+	{
+		f_free( &gv_pui32CRCTbl);
 	}
 	
 	f_freeSerialNumberGenerator();
@@ -327,10 +339,10 @@ Exit:
 
 /****************************************************************************
 Desc: Generates a table of remainders for each 8-bit byte.  The resulting
-		table is used by flmUpdateCRC to calculate a CRC value.  The table
-		must be freed via a call to f_freeCRCTable.
+		table is used by f_updateCRC to calculate a CRC value.  The table
+		must be freed via a call to f_free.
 *****************************************************************************/
-RCODE f_initCRCTable(
+FSTATIC RCODE f_initCRCTable(
 	FLMUINT32 **	ppui32CRCTbl)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -393,19 +405,19 @@ Desc: Computes the CRC of the passed-in data buffer.  Multiple calls can
 		*pui32CRC should be initialized to 0xFFFFFFFF and the ones complement
 		of the resulting CRC should be computed.
 *****************************************************************************/
-void f_updateCRC(
-	FLMUINT32 *		pui32CRCTbl,
-	FLMBYTE *		pucBlk,
-	FLMUINT			uiBlkSize,
-	FLMUINT32 *		pui32CRC)
+void FLMAPI f_updateCRC(
+	const void *		pvBuffer,
+	FLMUINT				uiCount,
+	FLMUINT32 *			pui32CRC)
 {
-	FLMUINT32		ui32CRC = *pui32CRC;
-	FLMUINT			uiLoop;
+	FLMBYTE *			pucBuffer = (FLMBYTE *)pvBuffer;
+	FLMUINT32			ui32CRC = *pui32CRC;
+	FLMUINT				uiLoop;
 
-	for( uiLoop = 0; uiLoop < uiBlkSize; uiLoop++)
+	for( uiLoop = 0; uiLoop < uiCount; uiLoop++)
 	{
-		ui32CRC = (ui32CRC >> 8) ^ pui32CRCTbl[
-			((FLMBYTE)(ui32CRC & 0x000000FF)) ^ pucBlk[ uiLoop]];
+		ui32CRC = (ui32CRC >> 8) ^ gv_pui32CRCTbl[
+			((FLMBYTE)(ui32CRC & 0x000000FF)) ^ pucBuffer[ uiLoop]];
 	}
 
 	*pui32CRC = ui32CRC;
@@ -604,4 +616,405 @@ void FLMAPI f_qsortUINTSwap(
 
 	puiArray[ uiPos1] = puiArray[ uiPos2];
 	puiArray[ uiPos2] = uiTmp;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * FLMAPI f_memcpy(
+	void *			pvDest,
+	const void *	pvSrc,
+	FLMSIZET			iSize)
+{
+	if( iSize == 1)
+	{
+		*((FLMBYTE *)pvDest) = *((FLMBYTE *)pvSrc);
+		return( pvDest);
+	}
+	else
+	{
+		return( memcpy( pvDest, pvSrc, iSize));
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * FLMAPI f_memmove(
+	void *			pvDest,
+	const void *	pvSrc,
+	FLMSIZET			uiLength)
+{
+	return( memmove( pvDest, pvSrc, uiLength));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * FLMAPI f_memset(
+	void *				pvDest,
+	unsigned char		ucByte,
+	FLMSIZET				uiLength)
+{
+	return( memset( pvDest, ucByte, uiLength));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI f_memcmp(
+	const void *		pvMem1,
+	const void *		pvMem2,
+	FLMSIZET				uiLength)
+{
+	return( memcmp( pvMem1, pvMem2, uiLength));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strcpy(
+	char *			pszDest,
+	const char *	pszSrc)
+{
+	return( strcpy( pszDest, pszSrc));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strncpy(
+	char *			pszDest,
+	const char *	pszSrc,
+	FLMSIZET			uiLength)
+{
+	return( strncpy( pszDest, pszSrc, uiLength));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI f_strlen(
+	const char *	pszStr)
+{
+	return( strlen( pszStr));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI f_strcmp(
+	const char *		pszStr1,
+	const char *		pszStr2)
+{
+	return( strcmp( pszStr1, pszStr2));
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+FLMINT FLMAPI f_stricmp(
+	const char *		pszStr1,
+	const char *		pszStr2)
+{
+	return( _stricmp( pszStr1, pszStr2));
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI f_strncmp(
+	const char *		pszStr1,
+	const char *		pszStr2,
+	FLMSIZET				uiLength)
+{
+	return( strncmp( pszStr1, pszStr2, uiLength));
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+FLMINT FLMAPI f_strnicmp(
+	const char *		pszStr1,
+	const char *		pszStr2,
+	FLMSIZET				uiLength)
+{
+	return( _strnicmp( pszStr1, pszStr2, uiLength));
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strcat(
+	char *				pszDest,
+	const char *		pszSrc)
+{
+	return( strcat( pszDest, pszSrc));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strncat(
+	char *				pszDest,
+	const char *		pszSrc,
+	FLMSIZET				uiLength)
+{
+	return( strncat( pszDest, pszSrc, uiLength));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strchr(
+	const char *		pszStr,
+	unsigned char		ucByte)
+{
+	return( strchr( pszStr, ucByte));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strrchr(
+	const char *		pszStr,
+	unsigned char		ucByte)
+{
+	return( strrchr( pszStr, ucByte));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+char * FLMAPI f_strstr(
+	const char *		pszStr1,
+	const char *		pszStr2)
+{
+	return( strstr( pszStr1, pszStr2));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+char * FLMAPI f_strupr(
+	char *				pszStr)
+{
+	return( _strupr( pszStr));
+}
+#endif
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT32 FLMAPI f_atomicInc(
+	FLMATOMIC *			piTarget)
+{
+	#if defined( FLM_NLM)
+	{
+		return( (FLMINT32)nlm_AtomicIncrement( (volatile LONG *)piTarget));
+	}
+	#elif defined( FLM_WIN)
+	{
+		return( (FLMINT32)InterlockedIncrement( (volatile LONG *)piTarget));
+	}
+	#elif defined( FLM_AIX)
+	{
+		return( (FLMINT32)aix_atomic_add( piTarget, 1));
+	}
+	#elif defined( FLM_OSX)
+	{
+		return( (FLMINT32)OSAtomicIncrement32( (int32_t *)piTarget));
+	}
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	{
+		return( sparc_atomic_add_32( piTarget, 1));
+	}
+	#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
+	{
+		FLMINT32 			i32Tmp;
+		
+		__asm__ __volatile__ (
+						"lock;"
+						"xaddl %0, %1"
+							: "=r" (i32Tmp), "=m" (*piTarget)
+							: "0" (1), "m" (*piTarget));
+	
+		return( i32Tmp + 1);
+	}
+	#elif defined( FLM_UNIX)
+		return( posix_atomic_add_32( piTarget, 1));
+	#else
+		#error Atomic operations are not supported
+	#endif
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT32 FLMAPI f_atomicDec(
+	FLMATOMIC *			piTarget)
+{
+	#if defined( FLM_NLM)
+	{
+		return( (FLMINT32)nlm_AtomicDecrement( (volatile LONG *)piTarget));
+	}
+	#elif defined( FLM_WIN)
+	{
+		return( (FLMINT32)InterlockedDecrement( (volatile LONG *)piTarget));
+	}
+	#elif defined( FLM_AIX)
+	{
+		return( (FLMINT32)aix_atomic_add( piTarget, -1));
+	}
+	#elif defined( FLM_OSX)
+	{
+		return( (FLMINT32)OSAtomicDecrement32( (int32_t *)piTarget));
+	}
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	{
+		return( sparc_atomic_add_32( piTarget, -1));
+	}
+	#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
+	{
+		FLMINT32				i32Tmp;
+		
+		__asm__ __volatile__ (
+						"lock;" 
+						"xaddl %0, %1"
+							: "=r" (i32Tmp), "=m" (*piTarget)
+							: "0" (-1), "m" (*piTarget));
+	
+		return( i32Tmp - 1);
+	}
+	#elif defined( FLM_UNIX)
+		return( posix_atomic_add_32( piTarget, -1));
+	#else
+		#error Atomic operations are not supported
+	#endif
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT32 FLMAPI f_atomicExchange(
+	FLMATOMIC *			piTarget,
+	FLMINT32				i32NewVal)
+{
+	#if defined( FLM_NLM)
+	{
+		return( (FLMINT32)nlm_AtomicExchange( 
+			(volatile LONG *)piTarget, i32NewVal));
+	}
+	#elif defined( FLM_WIN)
+	{
+		return( (FLMINT32)InterlockedExchange( (volatile LONG *)piTarget,
+			i32NewVal));
+	}
+	#elif defined( FLM_AIX)
+	{
+		int		iOldVal;
+		
+		for( ;;)
+		{ 
+			iOldVal = (int)*piTarget;
+			
+			if( compare_and_swap( (int *)piTarget, &iOldVal, i32NewVal))
+			{
+				break;
+			}
+		}
+		
+		return( (FLMINT32)iOldVal);
+	}
+	#elif defined( FLM_OSX)
+	{
+		int32_t		iOldVal;
+
+		for( ;;)
+		{
+			iOldVal = (int32_t)*piTarget;
+
+			if( OSAtomicCompareAndSwap32( iOldVal, i32NewVal, 
+					(int32_t *)piTarget))
+			{
+				break;
+			}
+		}
+		
+		return( (FLMINT32)iOldVal);
+	}
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	{
+		return( sparc_atomic_xchg_32( piTarget, i32NewVal));
+	}
+	#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
+	{
+		FLMINT32 			i32OldVal;
+		
+		__asm__ __volatile__ (
+						"1:	lock;"
+						"		cmpxchgl %2, %0;"
+						"		jne 1b"
+							: "=m" (*piTarget), "=a" (i32OldVal)
+							: "r" (i32NewVal), "m" (*piTarget), "a" (*piTarget));
+	
+		return( i32OldVal);
+	}
+	#elif defined( FLM_UNIX)
+		return( posix_atomic_xchg_32( piTarget, i32NewVal));
+	#else
+		#error Atomic operations are not supported
+	#endif
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT FLMAPI F_Object::getRefCount( void)
+{
+	return( m_refCnt);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT FLMAPI F_Object::AddRef( void)
+{
+	return( ++m_refCnt);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT FLMAPI F_Object::Release( void)
+{
+	FLMINT		iRefCnt = --m_refCnt;
+
+	if( !iRefCnt)
+	{
+		delete this;
+	}
+
+	return( iRefCnt);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+IF_FileSystem * f_getFileSysPtr( void)
+{
+	return( gv_pFileSystem);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+IF_ThreadMgr * f_getThreadMgrPtr( void)
+{
+	return( gv_pThreadMgr);
 }

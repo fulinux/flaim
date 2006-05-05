@@ -66,7 +66,7 @@ implementation is correct.
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_RandomGenerator : public IF_RandomGenerator, public F_Base
+class F_RandomGenerator : public IF_RandomGenerator
 {
 public:
 

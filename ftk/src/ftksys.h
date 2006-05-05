@@ -41,17 +41,8 @@
 	Desc: Global data
 	****************************************************************************/
 
-	#ifndef ALLOCATE_SYS_DATA
-		extern IF_FileSystem *		gv_pFileSystem;
-		extern IF_ThreadMgr *		gv_pThreadMgr;
-	#else
-		IF_FileSystem *				gv_pFileSystem;
-		IF_ThreadMgr *					gv_pThreadMgr;
-	#endif
-	
 	#define FLM_DEFAULT_OPEN_THRESHOLD						100
 	#define FLM_DEFAULT_MAX_AVAIL_TIME						900
-	
 	#define FLM_MAX_KEY_SIZE									1024
 
 	/****************************************************************************
@@ -280,196 +271,6 @@
 	
 	#endif
 
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE void * FLMAPI f_memcpy(
-		void *			pvDest,
-		const void *	pvSrc,
-		FLMSIZET			iSize)
-	{
-		if( iSize == 1)
-		{
-			*((FLMBYTE *)pvDest) = *((FLMBYTE *)pvSrc);
-			return( pvDest);
-		}
-		else
-		{
-			return( memcpy( pvDest, pvSrc, iSize));
-		}
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE void * FLMAPI f_memmove(
-		void *			pvDest,
-		const void *	pvSrc,
-		FLMSIZET			uiLength)
-	{
-		return( memmove( pvDest, pvSrc, uiLength));
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE void * FLMAPI f_memset(
-		void *				pvDest,
-		unsigned char		ucByte,
-		FLMSIZET				uiLength)
-	{
-		return( memset( pvDest, ucByte, uiLength));
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE FLMINT FLMAPI f_memcmp(
-		const void *		pvMem1,
-		const void *		pvMem2,
-		FLMSIZET				uiLength)
-	{
-		return( memcmp( pvMem1, pvMem2, uiLength));
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strcpy(
-		char *			pszDest,
-		const char *	pszSrc)
-	{
-		return( strcpy( pszDest, pszSrc));
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strncpy(
-		char *			pszDest,
-		const char *	pszSrc,
-		FLMSIZET			uiLength)
-	{
-		return( strncpy( pszDest, pszSrc, uiLength));
-	}
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE FLMINT FLMAPI f_strlen(
-		const char *	pszStr)
-	{
-		return( strlen( pszStr));
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE FLMINT FLMAPI f_strcmp(
-		const char *		pszStr1,
-		const char *		pszStr2)
-	{
-		return( strcmp( pszStr1, pszStr2));
-	}
-		
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	#ifdef FLM_WIN
-	FINLINE FLMINT FLMAPI f_stricmp(
-		const char *		pszStr1,
-		const char *		pszStr2)
-	{
-		return( _stricmp( pszStr1, pszStr2));
-	}
-	#endif
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE FLMINT FLMAPI f_strncmp(
-		const char *		pszStr1,
-		const char *		pszStr2,
-		FLMSIZET				uiLength)
-	{
-		return( strncmp( pszStr1, pszStr2, uiLength));
-	}
-		
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	#ifdef FLM_WIN
-	FINLINE FLMINT FLMAPI f_strnicmp(
-		const char *		pszStr1,
-		const char *		pszStr2,
-		FLMSIZET				uiLength)
-	{
-		return( _strnicmp( pszStr1, pszStr2, uiLength));
-	}
-	#endif
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strcat(
-		char *				pszDest,
-		const char *		pszSrc)
-	{
-		return( strcat( pszDest, pszSrc));
-	}
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strncat(
-		char *				pszDest,
-		const char *		pszSrc,
-		FLMSIZET				uiLength)
-	{
-		return( strncat( pszDest, pszSrc, uiLength));
-	}
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strchr(
-		char *				pszStr,
-		unsigned char		ucByte)
-	{
-		return( strchr( pszStr, ucByte));
-	}
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strrchr(
-		char *				pszStr,
-		unsigned char		ucByte)
-	{
-		return( strrchr( pszStr, ucByte));
-	}
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	FINLINE char * FLMAPI f_strstr(
-		const char *		pszStr1,
-		const char *		pszStr2)
-	{
-		return( strstr( pszStr1, pszStr2));
-	}
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	#ifdef FLM_WIN
-	FINLINE char * FLMAPI f_strupr(
-		char *				pszStr)
-	{
-		return( _strupr( pszStr));
-	}
-	#endif
-
 	#if defined( __va_copy)
 		#define  f_va_copy(to, from) __va_copy(to, from)
 	#else
@@ -524,273 +325,14 @@
 		FLMINT32						iNewValue);
 	#endif
 	
-	/**********************************************************************
-	Desc:
-	**********************************************************************/
-	FINLINE FLMINT32 FLMAPI f_atomicInc(
-		FLMATOMIC *			piTarget)
-	{
-		#if defined( FLM_NLM)
-		{
-			return( (FLMINT32)nlm_AtomicIncrement( (volatile LONG *)piTarget));
-		}
-		#elif defined( FLM_WIN)
-		{
-			return( (FLMINT32)InterlockedIncrement( (volatile LONG *)piTarget));
-		}
-		#elif defined( FLM_AIX)
-		{
-			return( (FLMINT32)aix_atomic_add( piTarget, 1));
-		}
-		#elif defined( FLM_OSX)
-		{
-			return( (FLMINT32)OSAtomicIncrement32( (int32_t *)piTarget));
-		}
-		#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
-		{
-			return( sparc_atomic_add_32( piTarget, 1));
-		}
-		#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
-		{
-			FLMINT32 			i32Tmp;
-			
-			__asm__ __volatile__ (
-							"lock;"
-							"xaddl %0, %1"
-								: "=r" (i32Tmp), "=m" (*piTarget)
-								: "0" (1), "m" (*piTarget));
-		
-			return( i32Tmp + 1);
-		}
-		#elif defined( FLM_UNIX)
-			return( posix_atomic_add_32( piTarget, 1));
-		#else
-			#error Atomic operations are not supported
-		#endif
-	}
-	
-	/**********************************************************************
-	Desc:
-	**********************************************************************/
-	FINLINE FLMINT32 FLMAPI f_atomicDec(
-		FLMATOMIC *			piTarget)
-	{
-		#if defined( FLM_NLM)
-		{
-			return( (FLMINT32)nlm_AtomicDecrement( (volatile LONG *)piTarget));
-		}
-		#elif defined( FLM_WIN)
-		{
-			return( (FLMINT32)InterlockedDecrement( (volatile LONG *)piTarget));
-		}
-		#elif defined( FLM_AIX)
-		{
-			return( (FLMINT32)aix_atomic_add( piTarget, -1));
-		}
-		#elif defined( FLM_OSX)
-		{
-			return( (FLMINT32)OSAtomicDecrement32( (int32_t *)piTarget));
-		}
-		#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
-		{
-			return( sparc_atomic_add_32( piTarget, -1));
-		}
-		#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
-		{
-			FLMINT32				i32Tmp;
-			
-			__asm__ __volatile__ (
-							"lock;" 
-							"xaddl %0, %1"
-								: "=r" (i32Tmp), "=m" (*piTarget)
-								: "0" (-1), "m" (*piTarget));
-		
-			return( i32Tmp - 1);
-		}
-		#elif defined( FLM_UNIX)
-			return( posix_atomic_add_32( piTarget, -1));
-		#else
-			#error Atomic operations are not supported
-		#endif
-	}
-	
-	/**********************************************************************
-	Desc:
-	**********************************************************************/
-	FINLINE FLMINT32 FLMAPI f_atomicExchange(
-		FLMATOMIC *			piTarget,
-		FLMINT32				i32NewVal)
-	{
-		#if defined( FLM_NLM)
-		{
-			return( (FLMINT32)nlm_AtomicExchange( 
-				(volatile LONG *)piTarget, i32NewVal));
-		}
-		#elif defined( FLM_WIN)
-		{
-			return( (FLMINT32)InterlockedExchange( (volatile LONG *)piTarget,
-				i32NewVal));
-		}
-		#elif defined( FLM_AIX)
-		{
-			int		iOldVal;
-			
-			for( ;;)
-			{ 
-				iOldVal = (int)*piTarget;
-				
-				if( compare_and_swap( (int *)piTarget, &iOldVal, i32NewVal))
-				{
-					break;
-				}
-			}
-			
-			return( (FLMINT32)iOldVal);
-		}
-		#elif defined( FLM_OSX)
-		{
-			int32_t		iOldVal;
-
-			for( ;;)
-			{
-				iOldVal = (int32_t)*piTarget;
-
-				if( OSAtomicCompareAndSwap32( iOldVal, i32NewVal, 
-						(int32_t *)piTarget))
-				{
-					break;
-				}
-			}
-			
-			return( (FLMINT32)iOldVal);
-		}
-		#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
-		{
-			return( sparc_atomic_xchg_32( piTarget, i32NewVal));
-		}
-		#elif (defined( __i386__) || defined( __x86_64__)) && defined( FLM_GNUC)
-		{
-			FLMINT32 			i32OldVal;
-			
-			__asm__ __volatile__ (
-							"1:	lock;"
-							"		cmpxchgl %2, %0;"
-							"		jne 1b"
-								: "=m" (*piTarget), "=a" (i32OldVal)
-								: "r" (i32NewVal), "m" (*piTarget), "a" (*piTarget));
-		
-			return( i32OldVal);
-		}
-		#elif defined( FLM_UNIX)
-			return( posix_atomic_xchg_32( piTarget, i32NewVal));
-		#else
-			#error Atomic operations are not supported
-		#endif
-	}
-
 	/****************************************************************************
 	Desc: Mutex and semaphore routines
 	****************************************************************************/
 	#ifdef FLM_NLM
-		FINLINE RCODE FLMAPI f_mutexCreate(
-			F_MUTEX *	phMutex)
-		{
-			if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
-			{
-				return RC_SET( NE_FLM_MEM);
-			}
-
-			return NE_FLM_OK;
-		}
-	
-		FINLINE void FLMAPI f_mutexDestroy(
-			F_MUTEX *	phMutex)
-		{
-			if (*phMutex != F_MUTEX_NULL)
-			{
-				if( kMutexFree( (MUTEX)(*phMutex)))
-				{
-					f_assert( 0);
-				}
-				
-				*phMutex = F_MUTEX_NULL;
-			}
-		}
-	
-		FINLINE void FLMAPI f_mutexLock(
-			F_MUTEX		hMutex)
-		{
-			(void)kMutexLock( (MUTEX)hMutex);
-		}
-	
-		FINLINE void FLMAPI f_mutexUnlock(
-			F_MUTEX		hMutex)
-		{
-			(void)kMutexUnlock( (MUTEX)hMutex);
-		}
-	
-		FINLINE void FLMAPI f_assertMutexLocked(
-			F_MUTEX)
-		{
-		}
-
 		typedef SEMAPHORE				F_SEM;
 		typedef SEMAPHORE *			F_SEM_p;
 		#define F_SEM_NULL			0
-
-		FINLINE RCODE FLMAPI f_semCreate(
-			F_SEM *		phSem)
-		{
-			if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"NOVDB", 0)) == F_SEM_NULL)
-			{
-				return RC_SET( NE_FLM_MEM);
-			}
-	
-			return NE_FLM_OK;
-		}
-	
-		FINLINE void FLMAPI f_semDestroy(
-			F_SEM *		phSem)
-		{
-			if (*phSem != F_SEM_NULL)
-			{
-				(void)kSemaphoreFree( (SEMAPHORE)(*phSem));
-				*phSem = F_SEM_NULL;
-			}
-		}
-	
-		FINLINE RCODE FLMAPI f_semWait(
-			F_SEM			hSem,
-			FLMUINT		uiTimeout)
-		{
-			RCODE			rc = NE_FLM_OK;
-	
-			if( uiTimeout == F_SEM_WAITFOREVER)
-			{
-				if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
-				{
-					rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
-				}
-			}
-			else
-			{
-				if( kSemaphoreTimedWait( (SEMAPHORE)hSem, (UINT)uiTimeout) != 0)
-				{
-					rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
-				}
-			}
-	
-			return( rc);
-		}
-	
-		FINLINE void FLMAPI f_semSignal(
-			F_SEM			hSem)
-		{
-			(void)kSemaphoreSignal( (SEMAPHORE)hSem);
-		}
-	
 	#elif defined( FLM_WIN)
-	
 		typedef struct
 		{
 			FLMATOMIC						locked;
@@ -800,205 +342,7 @@
 			FLMATOMIC						waitCount;
 	#endif
 		} F_INTERLOCK;
-
-		RCODE FLMAPI f_mutexCreate(
-			F_MUTEX *	phMutex);
-	
-		void FLMAPI f_mutexDestroy(
-			F_MUTEX *	phMutex);
-			
-		FINLINE void FLMAPI f_mutexLock(
-			F_MUTEX		hMutex)
-		{
-			F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
-
-			while( f_atomicExchange( &pInterlock->locked, 1) != 0)
-			{
-		#ifdef FLM_DEBUG
-				f_atomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
-		#endif
-				Sleep( 0);
-			}
-	
-		#ifdef FLM_DEBUG
-			f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
-			((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
-			f_atomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
-		#endif
-		}
-		
-		FINLINE void FLMAPI f_mutexUnlock(
-			F_MUTEX		hMutex)
-		{
-			f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
-		#ifdef FLM_DEBUG
-			f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
-			((F_INTERLOCK *)hMutex)->uiThreadId = 0;
-		#endif
-			f_atomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
-		}
-	
-		FINLINE void FLMAPI f_assertMutexLocked(
-			F_MUTEX		hMutex)
-		{
-		#ifdef FLM_DEBUG
-			f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
-			f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
-		#else
-			F_UNREFERENCED_PARM( hMutex);
-		#endif
-		}
-		
-		FINLINE RCODE FLMAPI f_semCreate(
-			F_SEM *		phSem)
-		{
-			if( (*phSem = CreateSemaphore( (LPSECURITY_ATTRIBUTES)NULL,
-				0, 10000, NULL )) == NULL)
-			{
-				return( RC_SET( NE_FLM_COULD_NOT_CREATE_SEMAPHORE));
-			}
-	
-			return NE_FLM_OK;
-		}
-	
-		FINLINE void FLMAPI f_semDestroy(
-			F_SEM *		phSem)
-		{
-			if (*phSem != F_SEM_NULL)
-			{
-				CloseHandle( *phSem);
-				*phSem = F_SEM_NULL;
-			}
-		}
-	
-		FINLINE RCODE FLMAPI f_semWait(
-			F_SEM			hSem,
-			FLMUINT		uiTimeout)
-		{
-			if( WaitForSingleObject( hSem, uiTimeout ) == WAIT_OBJECT_0)
-			{
-				return( NE_FLM_OK);
-			}
-			else
-			{
-				return( RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE));
-			}
-		}
-	
-		FINLINE void FLMAPI f_semSignal(
-			F_SEM			hSem)
-		{
-			(void)ReleaseSemaphore( hSem, 1, NULL);
-		}
-	#elif defined( FLM_UNIX)
-		RCODE FLMAPI f_mutexCreate(
-			F_MUTEX *	phMutex);
-	
-		void f_mutexDestroy(
-			F_MUTEX *	phMutex);
-		
-		FINLINE void FLMAPI f_mutexLock(
-			F_MUTEX		hMutex)
-		{
-			(void)pthread_mutex_lock( (pthread_mutex_t *)hMutex);
-		}
-	
-		FINLINE void FLMAPI f_mutexUnlock(
-			F_MUTEX		hMutex)
-		{
-			(void)pthread_mutex_unlock( (pthread_mutex_t *)hMutex);
-		}
-	
-		FINLINE void FLMAPI f_assertMutexLocked(
-			F_MUTEX)
-		{
-		}
-
-		void FLMAPI f_semDestroy(
-			F_SEM *	phSem);
-	
-		RCODE FLMAPI f_semCreate(
-			F_SEM *	phSem);
-	
-		RCODE FLMAPI f_semWait(
-			F_SEM		hSem,
-			FLMUINT	uiTimeout);
-	
 	#endif
-
-	/****************************************************************************
-												Misc.
-	****************************************************************************/
-
-	FINLINE FLMBOOL f_isHexChar(
-		FLMBYTE		ucChar)
-	{
-		if( (ucChar >= '0' && ucChar <= '9') ||
-			(ucChar >= 'A' && ucChar <= 'F') ||
-			(ucChar >= 'a' && ucChar <= 'f'))
-		{
-			return( TRUE);
-		}
-
-		return( FALSE);
-	}
-
-	FINLINE FLMBOOL f_isHexChar(
-		FLMUNICODE		uChar)
-	{
-		if( uChar > 127)
-		{
-			return( FALSE);
-		}
-
-		return( f_isHexChar( f_tonative( (FLMBYTE)uChar)));
-	}
-
-	FINLINE FLMBYTE f_getHexVal(
-		FLMBYTE		ucChar)
-	{
-		if( ucChar >= '0' && ucChar <= '9')
-		{
-			return( (FLMBYTE)(ucChar - '0'));
-		}
-		else if( ucChar >= 'A' && ucChar <= 'F')
-		{
-			return( (FLMBYTE)((ucChar - 'A') + 10));
-		}
-		else if( ucChar >= 'a' && ucChar <= 'f')
-		{
-			return( (FLMBYTE)((ucChar - 'a') + 10));
-		}
-
-		return( 0);
-	}
-
-	FINLINE FLMBYTE f_getHexVal(
-		FLMUNICODE	uChar)
-	{
-		return( f_getHexVal( f_tonative( (FLMBYTE)uChar)));
-	}
-
-	FINLINE FLMBOOL f_isValidHexNum(
-		const FLMBYTE *	pszString)
-	{
-		if( *pszString == 0)
-		{
-			return( FALSE);
-		}
-
-		while( *pszString)
-		{
-			if( !f_isHexChar( *pszString))
-			{
-				return( TRUE);
-			}
-
-			pszString++;
-		}
-
-		return( TRUE);
-	}
 
 	/****************************************************************************
 										Process ID Functions
@@ -1110,9 +454,8 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_IOBuffer : public IF_IOBuffer, public F_Base
+	class F_IOBuffer : public IF_IOBuffer
 	{
-	#define MAX_BUFFER_BLOCKS	16
 	public:
 	
 		F_IOBuffer();
@@ -1151,14 +494,14 @@
 			FLMUINT	uiBlockNumber,
 			void *	pvData)
 		{
-			f_assert( uiBlockNumber < MAX_BUFFER_BLOCKS);
+			f_assert( uiBlockNumber < FLM_MAX_IO_BUFFER_BLOCKS);
 			m_UserData [uiBlockNumber] = pvData;
 		}
 	
 		FINLINE void * FLMAPI getCompletionCallbackData(
 			FLMUINT	uiBlockNumber)
 		{
-			f_assert( uiBlockNumber < MAX_BUFFER_BLOCKS);
+			f_assert( uiBlockNumber < FLM_MAX_IO_BUFFER_BLOCKS);
 			return( m_UserData [uiBlockNumber]);
 		}
 	
@@ -1214,7 +557,7 @@
 	
 		F_IOBufferMgr *		m_pIOBufferMgr;
 		FLMBYTE *				m_pucBuffer;
-		void *					m_UserData [MAX_BUFFER_BLOCKS];
+		void *					m_UserData[ FLM_MAX_IO_BUFFER_BLOCKS];
 		FLMUINT					m_uiBufferSize;
 		FLMUINT					m_uiBlockSize;
 		eBufferMgrList			m_eList;
@@ -1466,7 +809,7 @@
 	Desc:
 	***************************************************************************/
 	#ifdef FLM_WIN
-	class F_FileHdl : public IF_FileHdl, public F_Base
+	class F_FileHdl : public IF_FileHdl
 	{
 	public:
 	
@@ -1585,17 +928,6 @@
 			return( m_uiBytesPerSector);
 		}
 		
-		FINLINE void FLMAPI setFileId(
-			FLMUINT			uiFileId)
-		{
-			m_uiFileId = uiFileId;
-		}
-		
-		FINLINE FLMUINT FLMAPI getFileId( void)
-		{
-			return( m_uiFileId);
-		}
-	
 	private:
 	
 		RCODE create(
@@ -1663,7 +995,6 @@
 			
 		RCODE allocAlignedBuffer( void);
 	
-		FLMUINT				m_uiFileId;
 		FLMBOOL				m_bFileOpened;
 		FLMBOOL				m_bDeleteOnRelease;
 		FLMBOOL				m_bOpenedReadOnly;
@@ -1692,7 +1023,7 @@
 	Desc:
 	***************************************************************************/
 	#ifdef FLM_UNIX
-	class F_FileHdl : public IF_FileHdl, public F_Base
+	class F_FileHdl : public IF_FileHdl
 	{
 	public:
 	
@@ -1875,7 +1206,8 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	class F_FileHdlMgr : public IF_FileHdlMgr, public F_Base
+	#if 0
+	class F_FileHdlMgr : public IF_FileHdlMgr
 	{
 	public:
 	
@@ -1927,7 +1259,6 @@
 	
 		void FLMAPI findAvail(
 			FLMUINT			uiFileId,
-			FLMBOOL			bReadOnlyFlag,
 			IF_FileHdl **	ppFileHdl);
 	
 		void FLMAPI removeFileHdls(
@@ -1995,22 +1326,22 @@
 		}
 	
 		void insertInList(
-			FLMBOOL			bMutexAlreadyLocked,
-			IF_FileHdl *	pFileHdl,
-			FLMBOOL			bInsertAtEnd,
-			IF_FileHdl **	ppFirst,
-			IF_FileHdl **	ppLast,
-			FLMUINT *		puiCount);
+			FLMBOOL				bMutexAlreadyLocked,
+			IF_FileHdl *		pFileHdl,
+			FLMBOOL				bInsertAtEnd,
+			IF_FileHdl **		ppFirst,
+			IF_FileHdl **		ppLast,
+			FLMUINT *			puiCount);
 	
 		void removeFromList(
-			FLMBOOL			bMutexAlreadyLocked,
-			IF_FileHdl *	pFileHdl,
-			IF_FileHdl **	ppFirst,
-			IF_FileHdl **	ppLast,
-			FLMUINT *		puiCount);
+			FLMBOOL				bMutexAlreadyLocked,
+			IF_FileHdl *		pFileHdl,
+			IF_FileHdl **		ppFirst,
+			IF_FileHdl **		ppLast,
+			FLMUINT *			puiCount);
 	
 		FINLINE void lockMutex(
-			FLMBOOL			bMutexAlreadyLocked)
+			FLMBOOL				bMutexAlreadyLocked)
 		{
 			if (m_hMutex != F_MUTEX_NULL && !bMutexAlreadyLocked)
 			{
@@ -2019,7 +1350,7 @@
 		}
 	
 		FINLINE void unlockMutex(
-			FLMBOOL			bMutexAlreadyLocked)
+			FLMBOOL				bMutexAlreadyLocked)
 		{
 			if (m_hMutex != F_MUTEX_NULL && !bMutexAlreadyLocked)
 			{
@@ -2027,25 +1358,19 @@
 			}
 		}
 	
-		F_MUTEX				m_hMutex;
-		FLMUINT				m_uiOpenThreshold;	// FileHdl open threshold.
-		FLMUINT				m_uiMaxAvailTime;		// Time to close any available files.
-	
-		// Used list
-	
-		IF_FileHdl *		m_pFirstUsed;
-		IF_FileHdl *		m_pLastUsed;
-		FLMUINT				m_uiNumUsed;
-	
-		// Avail list
-	
-		IF_FileHdl *		m_pFirstAvail;
-		IF_FileHdl *		m_pLastAvail;
-		FLMUINT				m_uiNumAvail;
-	
-		FLMBOOL				m_bIsSetup;
-		FLMUINT				m_uiFileIdCounter;
+		F_MUTEX					m_hMutex;
+		FLMUINT					m_uiOpenThreshold;
+		FLMUINT					m_uiMaxAvailTime;
+		IF_FileHdl *			m_pFirstUsed;
+		IF_FileHdl *			m_pLastUsed;
+		FLMUINT					m_uiNumUsed;
+		IF_FileHdl *			m_pFirstAvail;
+		IF_FileHdl *			m_pLastAvail;
+		FLMUINT					m_uiNumAvail;
+		FLMBOOL					m_bIsSetup;
+		FLMUINT					m_uiFileIdCounter;
 	};
+	#endif
 
 	/****************************************************************************
 	Desc:
@@ -2083,7 +1408,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_DirHdl : public IF_DirHdl, public F_Base
+	class F_DirHdl : public IF_DirHdl
 	{
 	public:
 	
@@ -2131,7 +1456,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_IStream : public IF_IStream, public F_Base
+	class F_IStream : public IF_IStream
 	{
 	public:
 	
@@ -2143,7 +1468,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_OStream : public IF_OStream, public F_Base
+	class F_OStream : public IF_OStream
 	{
 	public:
 	
@@ -2156,7 +1481,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_PosIStream : public IF_PosIStream, public F_Base
+	class F_PosIStream : public IF_PosIStream
 	{
 	public:
 	
@@ -2169,7 +1494,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_BufferIStream : public IF_BufferIStream, public F_Base
+	class F_BufferIStream : public IF_BufferIStream
 	{
 	public:
 	
@@ -2185,9 +1510,9 @@
 		virtual ~F_BufferIStream();
 	
 		RCODE FLMAPI open(
-			const FLMBYTE *	pucBuffer,
+			const char *		pucBuffer,
 			FLMUINT				uiLength,
-			FLMBYTE **			ppucAllocatedBuffer = NULL);
+			char **				ppucAllocatedBuffer = NULL);
 	
 		FINLINE FLMUINT64 FLMAPI totalSize( void)
 		{
@@ -2226,6 +1551,16 @@
 			return( m_uiOffset);
 		}
 	
+		FINLINE void FLMAPI truncate(
+			FLMUINT64		ui64Offset)
+		{
+			f_assert( m_bIsOpen);
+			f_assert( ui64Offset >= m_uiOffset);
+			f_assert( ui64Offset <= m_uiBufferLen);
+			
+			m_uiBufferLen = (FLMUINT)ui64Offset;
+		}
+	
 		RCODE FLMAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
@@ -2237,22 +1572,12 @@
 			return( m_pucBuffer);
 		}
 		
-		FINLINE const FLMBYTE * getBufferAtCurrentOffset( void)
+		FINLINE const FLMBYTE * FLMAPI getBufferAtCurrentOffset( void)
 		{
 			f_assert( m_bIsOpen);
 			return( m_pucBuffer ? &m_pucBuffer[ m_uiOffset] : NULL);
 		}
 		
-		FINLINE void truncate(
-			FLMUINT		uiOffset)
-		{
-			f_assert( m_bIsOpen);
-			f_assert( uiOffset >= m_uiOffset);
-			f_assert( uiOffset <= m_uiBufferLen);
-			
-			m_uiBufferLen = uiOffset;
-		}
-	
 		FINLINE FLMBOOL isOpen( void)
 		{
 			return( m_bIsOpen);
@@ -2551,14 +1876,14 @@
 	
 		RCODE FLMAPI close( void);
 	
-	private:
-	
-		RCODE rollToNextFile( void);
-	
 		RCODE processDirectory(
 			const char *	pszDirectory,
 			const char *	pszBaseName,
 			FLMBOOL			bOkToDelete);
+	
+	private:
+	
+		RCODE rollToNextFile( void);
 	
 		F_OStream *		m_pOStream;
 		FLMBOOL			m_bOpen;
@@ -2579,100 +1904,6 @@
 	void flmDbgLogExit( void);
 	void flmDbgLogFlush( void);
 
-	/****************************************************************************
-	Desc:	Timers
-	****************************************************************************/
-	#if defined( FLM_NLM)
-	
-		extern "C" void ConvertTicksToSeconds(
-			LONG		ticks,
-			LONG *	seconds,
-			LONG *	tenthsOfSeconds);
-	
-		extern "C" void ConvertSecondsToTicks(
-			LONG		seconds,
-			LONG		tenthsOfSeconds,
-			LONG *	ticks);
-	
-		#define FLM_GET_TIMER()	\
-			(FLMUINT)GetCurrentTime()
-	
-		#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
-			ConvertSecondsToTicks( (LONG)(uiSeconds), 0, (LONG *)(&(uiTU)))
-	
-		#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
-		{ \
-			LONG	udDummy; \
-			ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(uiSeconds)), &udDummy); \
-		}
-	
-		#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
-		{ \
-			LONG	udTenths; \
-			LONG	udSeconds; \
-			ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(udSeconds)), &udTenths); \
-			uiMilli = (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100; \
-		}
-		
-		#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU) \
-		{ \
-			LONG udTenths, udSeconds; \
-			udSeconds = ((LONG) uiMilliSeconds) / 1000; \
-			udTenths = (((LONG) uiMilliSeconds) % 1000) / 100; \
-			ConvertSecondsToTicks( udSeconds, udTenths, (LONG *)(&(uiTU))); \
-		}
-	
-	#elif defined( FLM_UNIX)
-	
-		// gettimeofday() is actually 4 times faster than time() on
-		// Solaris. gethrtime() is even faster. On Linux time() is the
-		// fastest; gettimeofday() is 50% slower. clock() is the
-		// slowest on both Solaris and Linux. We use a new function for
-		// millisec resolution. The implementation is OS dependent.
-	
-		#define FLM_GET_TIMER() \
-			(FLMUINT) f_timeGetMilliTime()
-			
-		#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
-			 ((uiTU) = ((uiSeconds) * 1000))
-			 
-		#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
-			 ((uiSeconds) = ((uiTU) / 1000))
-			 
-		#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
-			 ((uiMilli) = (uiTU))
-			 
-		#define FLM_MILLI_TO_TIMER_UNITS( uiMilli, uiTU) \
-			 ((uiTU) = (uiMilli))
-
-	#elif defined( FLM_WIN)
-	
-		#define FLM_GET_TIMER() \
-			(FLMUINT)GetTickCount()
-	
-		#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
-			((uiTU) = (uiSeconds) * 1000)
-	
-		#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
-			((uiSeconds) = (uiTU) / 1000)
-	
-		#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
-			(uiMilli = (uiTU))
-	
-		#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU) \
-			(uiTU = (uiMilliSeconds))
-	
-	#endif
-	
-	// This macro for calculating elapsed time accounts for the
-	// possibility of the time wrapping - which it will for some
-	// of our counters (FLM_WIN is milliseconds and wraps in 49.7 days).
-	
-	#define FLM_ELAPSED_TIME(uiLaterTime,uiEarlierTime) \
-		(FLMUINT)(((uiLaterTime) >= (uiEarlierTime)) \
-					 ? (FLMUINT)((uiLaterTime) - (uiEarlierTime)) \
-					 : (FLMUINT)((0xFFFFFFFF - (uiEarlierTime)) + (uiLaterTime)))
-				 
 	/****************************************************************************
 	Desc:	Misc.
 	****************************************************************************/
@@ -2710,92 +1941,8 @@
 	RCODE f_allocDirHdl(
 		F_DirHdl **			ppDirHdl);
 		
-#if defined( FLM_NLM)
+	IF_FileSystem * f_getFileSysPtr( void);
 
-	extern "C"
-	{
-		void ConvertTicksToSeconds(
-			LONG		ticks,
-			LONG *	seconds,
-			LONG *	tenthsOfSeconds);
+	IF_ThreadMgr * f_getThreadMgrPtr( void);
 	
-		void ConvertSecondsToTicks(
-			LONG		seconds,
-			LONG		tenthsOfSeconds,
-			LONG *	ticks);
-	}
-
-	#define FLM_GET_TIMER()	(FLMUINT)GetCurrentTime()
-
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)	\
-		ConvertSecondsToTicks( (LONG)(uiSeconds), 0, (LONG *)(&(uiTU)))
-
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)	\
-	{ \
-		LONG	udDummy; \
-		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(uiSeconds)), &udDummy); \
-	}
-
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)	\
-	{ \
-		LONG	udTenths; \
-		LONG	udSeconds; \
-		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(udSeconds)), &udTenths); \
-		uiMilli = (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100; \
-	}
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU)	\
-	{ \
-		LONG udTenths, udSeconds; \
-		udSeconds = ((LONG) uiMilliSeconds) / 1000; \
-		udTenths = (((LONG) uiMilliSeconds) % 1000) / 100; \
-		ConvertSecondsToTicks( udSeconds, udTenths, (LONG *)(&(uiTU))); \
-	}
-
-#elif defined( FLM_UNIX)
-
-	// gettimeofday() is actually 4 times faster than time() on
-	// Solaris. gethrtime() is even faster. On Linux time() is the
-	// fastest; gettimeofday() is 50% slower. clock() is the
-	// slowest on both Solaris and Linux. We use a new function for
-	// millisec resolution. The implementation is OS dependent.
-
-	#define FLM_GET_TIMER() (FLMUINT) f_timeGetMilliTime()
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)  \
-       ((uiTU) = ((uiSeconds) * 1000))
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)  \
-       ((uiSeconds) = ((uiTU) / 1000))
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)   \
-		 ((uiMilli) = (uiTU))
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilli, uiTU)	\
-		 ((uiTU) = (uiMilli))
-#else /* FLM_WIN */
-
-	#define FLM_GET_TIMER() \
-		(FLMUINT)GetTickCount()
-
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
-		((uiTU) = (uiSeconds) * 1000)
-
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
-		((uiSeconds) = (uiTU) / 1000)
-
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
-		(uiMilli = (uiTU))
-
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU) \
-		(uiTU = (uiMilliSeconds))
-
-#endif
-
-// This macro for calculating elapsed time accounts for the
-// possibility of the time wrapping - which it will for some
-// of our counters (FLM_WIN is milliseconds and wraps in 49.7 days).
-
-#define FLM_ELAPSED_TIME(uiLaterTime,uiEarlierTime) \
-	(FLMUINT)(((uiLaterTime) >= (uiEarlierTime)) \
-				 ? (FLMUINT)((uiLaterTime) - (uiEarlierTime)) \
-				 : (FLMUINT)((0xFFFFFFFF - (uiEarlierTime)) + (uiLaterTime)))
-
-
-		
 #endif	// FTKSYS_H

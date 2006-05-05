@@ -36,7 +36,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_ERROR_CODE_MAP gv_FlmGeneralErrors[
+F_ERROR_CODE_MAP gv_FtkGeneralErrors[
 	NE_FLM_LAST_GENERAL_ERROR - NE_FLM_FIRST_GENERAL_ERROR - 1] =
 {
 	flmErrorCodeEntry( NE_FLM_NOT_IMPLEMENTED),
@@ -49,7 +49,6 @@ F_ERROR_CODE_MAP gv_FlmGeneralErrors[
 	flmErrorCodeEntry( NE_FLM_FAILURE),
 	flmErrorCodeEntry( NE_FLM_BOF_HIT),
 	flmErrorCodeEntry( NE_FLM_EOF_HIT),
-	flmErrorCodeEntry( NE_FLM_END),
 	flmErrorCodeEntry( NE_FLM_CONV_BAD_DIGIT),
 	flmErrorCodeEntry( NE_FLM_CONV_DEST_OVERFLOW),
 	flmErrorCodeEntry( NE_FLM_CONV_ILLEGAL),
@@ -79,13 +78,19 @@ F_ERROR_CODE_MAP gv_FlmGeneralErrors[
 	flmErrorCodeEntry( NE_FLM_BTREE_KEY_SIZE),
 	flmErrorCodeEntry( NE_FLM_BTREE_FULL),
 	flmErrorCodeEntry( NE_FLM_BTREE_BAD_STATE),
-	flmErrorCodeEntry( NE_FLM_COULD_NOT_CREATE_MUTEX)
+	flmErrorCodeEntry( NE_FLM_COULD_NOT_CREATE_MUTEX),
+	flmErrorCodeEntry( NE_FLM_DATA_ERROR),
+	flmErrorCodeEntry( NE_FLM_CLASS_NOT_AVAILABLE),
+	flmErrorCodeEntry( NE_FLM_BAD_DATA_TYPE),
+	flmErrorCodeEntry( NE_FLM_READ_ONLY),
+	flmErrorCodeEntry( NE_FLM_KEY_OVERFLOW),
+	flmErrorCodeEntry( NE_FLM_UNEXPECTED_END_OF_INPUT)
 };
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_ERROR_CODE_MAP gv_FlmIoErrors[
+F_ERROR_CODE_MAP gv_FtkIoErrors[
 	NE_FLM_LAST_IO_ERROR - NE_FLM_FIRST_IO_ERROR - 1] =
 {
 	flmErrorCodeEntry( NE_FLM_IO_ACCESS_DENIED),
@@ -136,7 +141,7 @@ F_ERROR_CODE_MAP gv_FlmIoErrors[
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_ERROR_CODE_MAP gv_FlmNetErrors[
+F_ERROR_CODE_MAP gv_FtkNetErrors[
 	NE_FLM_LAST_NET_ERROR - NE_FLM_FIRST_NET_ERROR - 1] =
 {
 	flmErrorCodeEntry( NE_FLM_NOIP_ADDR),
@@ -158,7 +163,7 @@ F_ERROR_CODE_MAP gv_FlmNetErrors[
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_ERROR_CODE_MAP gv_FlmStreamErrors[
+F_ERROR_CODE_MAP gv_FtkStreamErrors[
 	NE_FLM_LAST_STREAM_ERROR - NE_FLM_FIRST_STREAM_ERROR - 1] =
 {
 	flmErrorCodeEntry( NE_FLM_STREAM_DECOMPRESS_ERROR),
@@ -192,8 +197,6 @@ RCODE FLMAPI f_makeErr(
 			case NE_FLM_BOF_HIT:
 				break;
 			case NE_FLM_EOF_HIT:
-				break;
-			case NE_FLM_END:
 				break;
 			case NE_FLM_EXISTS:
 				break;
@@ -258,25 +261,25 @@ const char * FLMAPI f_errorString(
 	else if( rc > NE_FLM_FIRST_GENERAL_ERROR &&
 		rc < NE_FLM_LAST_GENERAL_ERROR)
 	{
-		pszErrorStr = gv_FlmGeneralErrors[
+		pszErrorStr = gv_FtkGeneralErrors[
 			rc - NE_FLM_FIRST_GENERAL_ERROR - 1].pszErrorStr;
 	}
 	else if( rc > NE_FLM_FIRST_IO_ERROR &&
 		rc < NE_FLM_LAST_IO_ERROR)
 	{
-		pszErrorStr = gv_FlmIoErrors[
+		pszErrorStr = gv_FtkIoErrors[
 			rc - NE_FLM_FIRST_IO_ERROR - 1].pszErrorStr;
 	}
 	else if( rc > NE_FLM_FIRST_NET_ERROR &&
 		rc < NE_FLM_LAST_NET_ERROR)
 	{
-		pszErrorStr = gv_FlmNetErrors[
+		pszErrorStr = gv_FtkNetErrors[
 			rc - NE_FLM_FIRST_NET_ERROR - 1].pszErrorStr;
 	}
 	else if( rc > NE_FLM_FIRST_STREAM_ERROR &&
 		rc < NE_FLM_LAST_STREAM_ERROR)
 	{
-		pszErrorStr = gv_FlmStreamErrors[
+		pszErrorStr = gv_FtkStreamErrors[
 			rc - NE_FLM_FIRST_STREAM_ERROR - 1].pszErrorStr;
 	}
 	else
@@ -455,7 +458,7 @@ RCODE f_checkErrorCodeTables( void)
 		uiLoop < (NE_FLM_LAST_GENERAL_ERROR - NE_FLM_FIRST_GENERAL_ERROR - 1);
 		uiLoop++)
 	{
-		if( gv_FlmGeneralErrors[ uiLoop].rc !=
+		if( gv_FtkGeneralErrors[ uiLoop].rc !=
 			(RCODE)(uiLoop + NE_FLM_FIRST_GENERAL_ERROR + 1))
 		{
 			rc = RC_SET_AND_ASSERT( NE_FLM_BAD_RCODE_TABLE);
@@ -467,7 +470,7 @@ RCODE f_checkErrorCodeTables( void)
 		uiLoop < (NE_FLM_LAST_IO_ERROR - NE_FLM_FIRST_IO_ERROR - 1);
 		uiLoop++)
 	{
-		if( gv_FlmIoErrors[ uiLoop].rc !=
+		if( gv_FtkIoErrors[ uiLoop].rc !=
 			(RCODE)(uiLoop + NE_FLM_FIRST_IO_ERROR + 1))
 		{
 			rc = RC_SET_AND_ASSERT( NE_FLM_BAD_RCODE_TABLE);
@@ -479,7 +482,7 @@ RCODE f_checkErrorCodeTables( void)
 		uiLoop < (NE_FLM_LAST_NET_ERROR - NE_FLM_FIRST_NET_ERROR - 1);
 		uiLoop++)
 	{
-		if( gv_FlmNetErrors[ uiLoop].rc !=
+		if( gv_FtkNetErrors[ uiLoop].rc !=
 			(RCODE)(uiLoop + NE_FLM_FIRST_NET_ERROR + 1))
 		{
 			rc = RC_SET_AND_ASSERT( NE_FLM_BAD_RCODE_TABLE);
@@ -491,7 +494,7 @@ RCODE f_checkErrorCodeTables( void)
 		uiLoop < (NE_FLM_LAST_STREAM_ERROR - NE_FLM_FIRST_STREAM_ERROR - 1);
 		uiLoop++)
 	{
-		if( gv_FlmStreamErrors[ uiLoop].rc !=
+		if( gv_FtkStreamErrors[ uiLoop].rc !=
 			(RCODE)(uiLoop + NE_FLM_FIRST_STREAM_ERROR + 1))
 		{
 			rc = RC_SET_AND_ASSERT( NE_FLM_BAD_RCODE_TABLE);

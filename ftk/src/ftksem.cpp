@@ -160,6 +160,38 @@ void FLMAPI f_mutexDestroy(
 #endif
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_UNIX
+void FLMAPI f_mutexLock(
+	F_MUTEX		hMutex)
+{
+	(void)pthread_mutex_lock( (pthread_mutex_t *)hMutex);
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_UNIX
+void FLMAPI f_mutexUnlock(
+	F_MUTEX		hMutex)
+{
+	(void)pthread_mutex_unlock( (pthread_mutex_t *)hMutex);
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_UNIX
+void FLMAPI f_assertMutexLocked(
+	F_MUTEX)
+{
+}
+#endif
+
+/****************************************************************************
 Desc:	Initializes a semaphore handle on UNIX
 ****************************************************************************/
 #if defined( FLM_UNIX)
@@ -401,11 +433,258 @@ void FLMAPI f_semSignal(
 #endif
 
 /****************************************************************************
-Desc:   Get the lock on a semaphore - p operation
+Desc:
 ****************************************************************************/
-#if defined( FLM_WATCOM_NLM)
-int gv_DummyFtksem(void)
+#ifdef FLM_NLM
+RCODE FLMAPI f_mutexCreate(
+	F_MUTEX *	phMutex)
 {
-	return( 0);
+	if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
+	{
+		return RC_SET( NE_FLM_MEM);
+	}
+
+	return NE_FLM_OK;
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_mutexDestroy(
+	F_MUTEX *	phMutex)
+{
+	if (*phMutex != F_MUTEX_NULL)
+	{
+		if( kMutexFree( (MUTEX)(*phMutex)))
+		{
+			f_assert( 0);
+		}
+		
+		*phMutex = F_MUTEX_NULL;
+	}
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_mutexLock(
+	F_MUTEX		hMutex)
+{
+	(void)kMutexLock( (MUTEX)hMutex);
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_mutexUnlock(
+	F_MUTEX		hMutex)
+{
+	(void)kMutexUnlock( (MUTEX)hMutex);
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_assertMutexLocked(
+	F_MUTEX)
+{
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+RCODE FLMAPI f_semCreate(
+	F_SEM *		phSem)
+{
+	if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"NOVDB", 0)) == F_SEM_NULL)
+	{
+		return RC_SET( NE_FLM_MEM);
+	}
+
+	return NE_FLM_OK;
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_semDestroy(
+	F_SEM *		phSem)
+{
+	if (*phSem != F_SEM_NULL)
+	{
+		(void)kSemaphoreFree( (SEMAPHORE)(*phSem));
+		*phSem = F_SEM_NULL;
+	}
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+RCODE FLMAPI f_semWait(
+	F_SEM			hSem,
+	FLMUINT		uiTimeout)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	if( uiTimeout == F_SEM_WAITFOREVER)
+	{
+		if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
+		{
+			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
+		}
+	}
+	else
+	{
+		if( kSemaphoreTimedWait( (SEMAPHORE)hSem, (UINT)uiTimeout) != 0)
+		{
+			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
+		}
+	}
+
+	return( rc);
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_NLM
+void FLMAPI f_semSignal(
+	F_SEM			hSem)
+{
+	(void)kSemaphoreSignal( (SEMAPHORE)hSem);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_mutexLock(
+	F_MUTEX		hMutex)
+{
+	F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
+
+	while( f_atomicExchange( &pInterlock->locked, 1) != 0)
+	{
+#ifdef FLM_DEBUG
+		f_atomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
+#endif
+		Sleep( 0);
+	}
+
+#ifdef FLM_DEBUG
+	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
+	((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
+	f_atomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
+#endif
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_mutexUnlock(
+	F_MUTEX		hMutex)
+{
+	f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
+#ifdef FLM_DEBUG
+	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+	((F_INTERLOCK *)hMutex)->uiThreadId = 0;
+#endif
+	f_atomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_assertMutexLocked(
+	F_MUTEX		hMutex)
+{
+#ifdef FLM_DEBUG
+	f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
+	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+#else
+	F_UNREFERENCED_PARM( hMutex);
+#endif
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+RCODE FLMAPI f_semCreate(
+	F_SEM *		phSem)
+{
+	if( (*phSem = CreateSemaphore( (LPSECURITY_ATTRIBUTES)NULL,
+		0, 10000, NULL )) == NULL)
+	{
+		return( RC_SET( NE_FLM_COULD_NOT_CREATE_SEMAPHORE));
+	}
+
+	return NE_FLM_OK;
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_semDestroy(
+	F_SEM *		phSem)
+{
+	if (*phSem != F_SEM_NULL)
+	{
+		CloseHandle( *phSem);
+		*phSem = F_SEM_NULL;
+	}
+}
+#endif
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+RCODE FLMAPI f_semWait(
+	F_SEM			hSem,
+	FLMUINT		uiTimeout)
+{
+	if( WaitForSingleObject( hSem, uiTimeout ) == WAIT_OBJECT_0)
+	{
+		return( NE_FLM_OK);
+	}
+	else
+	{
+		return( RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE));
+	}
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_semSignal(
+	F_SEM			hSem)
+{
+	(void)ReleaseSemaphore( hSem, 1, NULL);
 }
 #endif

@@ -463,6 +463,10 @@
 	#define FLM_CS_LANG								37			// Chinese-Simplified
 	#define FLM_LA_LANG								38			// another Asian language
 	
+	#define FLM_LAST_LANG 							(FLM_LA_LANG + 1)
+	#define FLM_FIRST_DBCS_LANG					(FLM_JP_LANG)
+	#define FLM_LAST_DBCS_LANG						(FLM_LA_LANG)
+
 	/****************************************************************************
 	Desc:	I/O Flags
 	****************************************************************************/
@@ -622,87 +626,67 @@
 	void FLMAPI ftkShutdown( void);
 
 	/****************************************************************************
-	Desc:	Reference Counting class
+	Desc:	Object base class
 	****************************************************************************/
-	class F_RefCount
+	flminterface IF_Object
+	{
+		virtual FLMINT FLMAPI getRefCount( void) = 0;
+
+		virtual FLMINT FLMAPI AddRef( void) = 0;
+
+		virtual FLMINT FLMAPI Release( void) = 0;
+	};
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_Object : public IF_Object
 	{
 	public:
 
-		F_RefCount()
+		F_Object()
 		{
 			m_refCnt = 1;
 		}
 
-		virtual ~F_RefCount()
+		virtual ~F_Object()
 		{
 		}
 
-		virtual FINLINE FLMINT FLMAPI getRefCount( void)
-		{
-			return( m_refCnt);
-		}
+		virtual FLMINT FLMAPI getRefCount( void);
 
-		virtual FINLINE FLMINT FLMAPI AddRef( void)
-		{
-			return( ++m_refCnt);
-		}
+		virtual FLMINT FLMAPI AddRef( void);
 
-		virtual FINLINE FLMINT FLMAPI Release( void)
-		{
-			FLMINT		iRefCnt = --m_refCnt;
+		virtual FLMINT FLMAPI Release( void);
 
-			if( !iRefCnt)
-			{
-				delete this;
-			}
-
-			return( iRefCnt);
-		}
+		void * FLMAPI operator new(
+			FLMSIZET			uiSize,
+			const char *	pszFile,
+			int				iLine);
+	
+		void * FLMAPI operator new[](
+			FLMSIZET			uiSize,
+			const char *	pszFile,
+			int				iLine);
+		
+		void FLMAPI operator delete(
+			void *			ptr);
+	
+		void FLMAPI operator delete(
+			void *			ptr,
+			const char *	file,
+			int				line);
+	
+		void FLMAPI operator delete[](
+			void *			ptr,
+			const char *	file,
+			int				line);
 
 	protected:
 
 		FLMATOMIC		m_refCnt;
 	};
-
-	/****************************************************************************
-	Desc:		Base class
-	****************************************************************************/
-	class F_Base
-	{
-	public:
 	
-		F_Base()
-		{
-		}
-	
-		virtual ~F_Base()
-		{
-		}
-		
-		void * operator new(
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
-	
-		void * operator new[](
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
-		
-		void operator delete(
-			void *			ptr);
-	
-		void operator delete(
-			void *			ptr,
-			const char *	file,
-			int				line);
-	
-		void operator delete[](
-			void *			ptr,
-			const char *	file,
-			int				line);
-	};
-
 	/****************************************************************************
 	Desc:		Internal base class
 	****************************************************************************/
@@ -794,6 +778,9 @@
 			
 		#define f_assert( c) \
 			(void)((c) ? 0 : f_enterDebugger( __FILE__, __LINE__))
+			
+		#define flmAssert( c) \
+			f_assert( c)
 	#else
 		#define RC_SET( rc)							(rc)
 		#define RC_SET_AND_ASSERT( rc)			(rc)
@@ -804,7 +791,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ThreadInfo : public F_RefCount
+	flminterface IF_ThreadInfo : public F_Object
 	{
 		virtual FLMUINT FLMAPI getNumThreads( void) = 0;
 
@@ -817,11 +804,14 @@
 			const char **			ppszThreadName,
 			const char **			ppszThreadStatus) = 0;
 	};
+	
+	RCODE FLMAPI FlmGetThreadInfo(
+		IF_ThreadInfo **			ppThreadInfo);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IStream : public F_RefCount
+	flminterface IF_IStream : public F_Object
 	{
 		virtual RCODE FLMAPI read(
 			void *					pvBuffer,
@@ -852,9 +842,9 @@
 	flminterface IF_BufferIStream : public IF_PosIStream
 	{
 		virtual RCODE FLMAPI open(
-			const FLMBYTE *	pucBuffer,
-			FLMUINT				uiLength,
-			FLMBYTE **			ppucAllocatedBuffer = NULL) = 0;
+			const char *			pucBuffer,
+			FLMUINT					uiLength,
+			char **					ppucAllocatedBuffer = NULL) = 0;
 	
 		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
 	
@@ -863,32 +853,89 @@
 		virtual RCODE FLMAPI close( void) = 0;
 	
 		virtual RCODE FLMAPI positionTo(
-			FLMUINT64		ui64Position) = 0;
+			FLMUINT64				ui64Position) = 0;
 	
 		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
 	
+		virtual void FLMAPI truncate(
+			FLMUINT64				ui64Offset) = 0;
+			
 		virtual RCODE FLMAPI read(
-			void *			pvBuffer,
-			FLMUINT			uiBytesToRead,
-			FLMUINT *		puiBytesRead) = 0;
+			void *					pvBuffer,
+			FLMUINT					uiBytesToRead,
+			FLMUINT *				puiBytesRead) = 0;
+			
+		virtual const FLMBYTE * FLMAPI getBufferAtCurrentOffset( void) = 0;
 	};
 
 	RCODE FLMAPI FlmAllocBufferIStream( 
 		IF_BufferIStream **		ppIStream);
 		
-	RCODE FLMAPI FlmAllocBase64EncoderIStream(
+	RCODE FLMAPI FlmOpenBufferIStream( 
+		const char *				pucBuffer,
+		FLMUINT						uiLength,
+		IF_PosIStream **			ppIStream);
+		
+	RCODE FLMAPI FlmOpenBase64EncoderIStream(
 		IF_IStream *				pSourceIStream,
 		FLMBOOL						bLineBreaks,
 		IF_IStream **				ppIStream);
 
-	RCODE FLMAPI FlmAllocBase64DecoderIStream(
+	RCODE FLMAPI FlmOpenBase64DecoderIStream(
 		IF_IStream *				pSourceIStream,
 		IF_IStream **				ppIStream);
 		
+	RCODE FLMAPI FlmOpenFileIStream(
+		const char *				pszPath,
+		IF_PosIStream **			ppIStream);
+		
+	RCODE FLMAPI FlmOpenMultiFileIStream(
+		const char *				pszDirectory,
+		const char *				pszBaseName,
+		IF_IStream **				ppIStream);
+		
+	RCODE FLMAPI FlmOpenBufferedIStream(
+		IF_IStream *				pSourceIStream,
+		FLMUINT						uiBufferSize,
+		IF_IStream **				ppIStream);
+		
+	RCODE FLMAPI FlmOpenUncompressingIStream(
+		IF_IStream *				pIStream,
+		IF_IStream **				ppIStream);
+		
+	RCODE FLMAPI FlmOpenFileOStream(
+		const char *				pszFileName,
+		FLMBOOL						bTruncateIfExists,
+		IF_OStream **				ppOStream);
+		
+	RCODE FLMAPI FlmOpenMultiFileOStream(
+		const char *				pszDirectory,
+		const char *				pszBaseName,
+		FLMUINT						uiMaxFileSize,
+		FLMBOOL						bOkToOverwrite,
+		IF_OStream **				ppStream);
+		
+	RCODE FLMAPI FlmOpenBufferedOStream(
+		IF_OStream *				pOStream,
+		FLMUINT						uiBufferSize,
+		IF_OStream **				ppOStream);
+		
+	RCODE FLMAPI FlmOpenCompressingOStream(
+		IF_OStream *				pOStream,
+		IF_OStream **				ppOStream);
+		
+	RCODE FLMAPI FlmRemoveMultiFileStream(
+		const char *				pszDirectory,
+		const char *				pszBaseName);
+			
+	RCODE FLMAPI FlmWriteToOStream(
+		IF_IStream *				pIStream,
+		IF_OStream *				pOStream);
+			
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_OStream : public F_RefCount
+	flminterface IF_OStream : public F_Object
 	{
 		virtual RCODE FLMAPI write(
 			const void *			pvBuffer,
@@ -908,7 +955,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_LoggerClient : public F_RefCount
+	flminterface IF_LoggerClient : public F_Object
 	{
 		virtual IF_LogMessageClient * FLMAPI beginMessage(
 			FLMUINT					uiMsgType) = 0;
@@ -917,7 +964,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_LogMessageClient : public F_RefCount
+	flminterface IF_LogMessageClient : public F_Object
 	{
 		virtual void FLMAPI changeColor(
 			eColorType				eForeColor,
@@ -942,7 +989,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_FileSystem : public F_RefCount
+	flminterface IF_FileSystem : public F_Object
 	{
 		virtual RCODE FLMAPI createFile(
 			const char *			pszFileName,
@@ -1007,6 +1054,14 @@
 			FLMBOOL					bOverwrite,
 			FLMUINT64 *				pui64BytesCopied) = 0;
 
+		virtual RCODE FLMAPI copyPartialFile(
+			IF_FileHdl *			pSrcFileHdl,
+			FLMUINT64				ui64SrcOffset,
+			FLMUINT64				ui64SrcSize,
+			IF_FileHdl *			pDestFileHdl,
+			FLMUINT64				ui64DestOffset,
+			FLMUINT64 *				pui64BytesCopiedRV) = 0;
+	
 		virtual RCODE FLMAPI renameFile(
 			const char *			pszFileName,
 			const char *			pszNewFileName) = 0;
@@ -1045,50 +1100,15 @@
 		virtual FLMBOOL FLMAPI doesFileMatch(
 			const char *			pszFileName,
 			const char *			pszTemplate) = 0;
-			
-		virtual RCODE FLMAPI writeToOStream(
-			IF_IStream *			pIStream,
-			IF_OStream *			pOStream) = 0;
 	};
 	
 	RCODE FLMAPI FlmGetFileSystem(
 		IF_FileSystem **		ppFileSystem);
 
-	/***************************************************************************
-	Desc:
-	***************************************************************************/
-	flminterface IF_FileHdlMgr : public F_RefCount
-	{
-		virtual void FLMAPI setOpenThreshold(
-			FLMUINT		uiOpenThreshold) = 0;
-	
-		virtual void FLMAPI setMaxAvailTime(
-			FLMUINT		uiMaxAvailTime) = 0;
-	
-		virtual FLMUINT FLMAPI getUniqueId( void) = 0;
-	
-		virtual void FLMAPI findAvail(
-			FLMUINT			uiFileId,
-			FLMBOOL			bReadOnlyFlag,
-			IF_FileHdl **	ppFileHdl) = 0;
-	
-		virtual void FLMAPI removeFileHdls(
-			FLMUINT			uiFileId) = 0;
-	
-		virtual void FLMAPI checkAgedFileHdls(
-			FLMUINT			uiMinSecondsOpened) = 0;
-	
-		virtual FLMUINT FLMAPI getOpenThreshold( void) = 0;
-	
-		virtual FLMUINT FLMAPI getOpenedFiles( void) = 0;
-	
-		virtual FLMUINT FLMAPI getMaxAvailTime( void) = 0;
-	};
-	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_FileHdl : public F_RefCount
+	flminterface IF_FileHdl : public F_Object
 	{
 		virtual RCODE FLMAPI flush( void) = 0;
 
@@ -1151,17 +1171,12 @@
 		virtual FLMUINT FLMAPI getSectorSize( void) = 0;
 			
 		virtual FLMBOOL FLMAPI isReadOnly( void) = 0;
-		
-		virtual void FLMAPI setFileId(
-			FLMUINT					uiFileId) = 0;
-			
-		virtual FLMUINT FLMAPI getFileId( void) = 0;
 	};
 	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_MultiFileHdl : public F_RefCount
+	flminterface IF_MultiFileHdl : public F_Object
 	{
 		virtual RCODE FLMAPI create(
 			const char *			pszPath) = 0;
@@ -1209,7 +1224,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IOBufferMgr : public F_RefCount
+	flminterface IF_IOBufferMgr : public F_Object
 	{
 		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;
 	
@@ -1234,6 +1249,8 @@
 	RCODE FLMAPI FlmAllocIOBufferMgr(
 		IF_IOBufferMgr **			ppBufferMgr);
 
+	#define FLM_MAX_IO_BUFFER_BLOCKS			16
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1243,7 +1260,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IOBuffer : public F_RefCount
+	flminterface IF_IOBuffer : public F_Object
 	{
 		typedef enum
 		{
@@ -1286,7 +1303,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DirHdl : public F_RefCount
+	flminterface IF_DirHdl : public F_Object
 	{
 		virtual RCODE FLMAPI next( void) = 0;
 
@@ -1303,7 +1320,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ResultSetCompare : public F_RefCount
+	flminterface IF_ResultSetCompare : public F_Object
 	{
 		virtual RCODE FLMAPI compare(
 			const void *			pvData1,
@@ -1316,7 +1333,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ResultSetSortStatus : public F_RefCount
+	flminterface IF_ResultSetSortStatus : public F_Object
 	{
 		virtual RCODE FLMAPI reportSortStatus(
 			FLMUINT64				ui64EstTotalUnits,
@@ -1326,7 +1343,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ResultSet : public F_RefCount
+	flminterface IF_ResultSet : public F_Object
 	{
 		virtual RCODE FLMAPI setupResultSet(
 			const char *				pszPath,
@@ -1405,7 +1422,7 @@
 	/*****************************************************************************
 	Desc:
 	*****************************************************************************/
-	flminterface IF_BtResultSet : public F_RefCount
+	flminterface IF_BtResultSet : public F_Object
 	{
 		virtual RCODE FLMAPI setupResultSet(
 			const char *				pszPath,
@@ -1415,73 +1432,73 @@
 			IF_ResultSetSortStatus *	pSortStatus) = 0;
 			
 		virtual RCODE FLMAPI addEntry(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyLength,
-			FLMBYTE *	pucEntry,
-			FLMUINT		uiEntryLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyLength,
+			FLMBYTE *				pucEntry,
+			FLMUINT					uiEntryLength) = 0;
 	
 		virtual RCODE FLMAPI modifyEntry(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyLength,
-			FLMBYTE *	pucEntry,
-			FLMUINT		uiEntryLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyLength,
+			FLMBYTE *				pucEntry,
+			FLMUINT					uiEntryLength) = 0;
 	
 		virtual RCODE FLMAPI getCurrent(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyLength,
-			FLMBYTE *	pucEntry,
-			FLMUINT		uiEntryLength,
-			FLMUINT *	puiReturnLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyLength,
+			FLMBYTE *				pucEntry,
+			FLMUINT					uiEntryLength,
+			FLMUINT *				puiReturnLength) = 0;
 	
 		virtual RCODE FLMAPI getNext(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyBufLen,
-			FLMUINT *	puiKeylen,
-			FLMBYTE *	pucBuffer,
-			FLMUINT		uiBufferLength,
-			FLMUINT *	puiReturnLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyBufLen,
+			FLMUINT *				puiKeylen,
+			FLMBYTE *				pucBuffer,
+			FLMUINT					uiBufferLength,
+			FLMUINT *				puiReturnLength) = 0;
 	
 		virtual RCODE FLMAPI getPrev(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyBufLen,
-			FLMUINT *	puiKeylen,
-			FLMBYTE *	pucBuffer,
-			FLMUINT		uiBufferLength,
-			FLMUINT *	puiReturnLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyBufLen,
+			FLMUINT *				puiKeylen,
+			FLMBYTE *				pucBuffer,
+			FLMUINT					uiBufferLength,
+			FLMUINT *				puiReturnLength) = 0;
 	
 		virtual RCODE FLMAPI getFirst(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyBufLen,
-			FLMUINT *	puiKeylen,
-			FLMBYTE *	pucBuffer,
-			FLMUINT		uiBufferLength,
-			FLMUINT *	puiReturnLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyBufLen,
+			FLMUINT *				puiKeylen,
+			FLMBYTE *				pucBuffer,
+			FLMUINT					uiBufferLength,
+			FLMUINT *				puiReturnLength) = 0;
 	
 		virtual RCODE FLMAPI getLast(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyBufLen,
-			FLMUINT *	puiKeylen,
-			FLMBYTE *	pucBuffer,
-			FLMUINT		uiBufferLength,
-			FLMUINT *	puiReturnLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyBufLen,
+			FLMUINT *				puiKeylen,
+			FLMBYTE *				pucBuffer,
+			FLMUINT					uiBufferLength,
+			FLMUINT *				puiReturnLength) = 0;
 	
 		virtual RCODE FLMAPI findEntry(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyBufLen,
-			FLMUINT *	puiKeylen,
-			FLMBYTE *	pucBuffer,
-			FLMUINT		uiBufferLength,
-			FLMUINT *	puiReturnLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyBufLen,
+			FLMUINT *				puiKeylen,
+			FLMBYTE *				pucBuffer,
+			FLMUINT					uiBufferLength,
+			FLMUINT *				puiReturnLength) = 0;
 	
 		virtual RCODE FLMAPI deleteEntry(
-			FLMBYTE *	pucKey,
-			FLMUINT		uiKeyLength) = 0;
+			FLMBYTE *				pucKey,
+			FLMUINT					uiKeyLength) = 0;
 	};
 
 	/****************************************************************************
 	Desc: Pool memory allocator
 	****************************************************************************/
-	flminterface IF_Pool : public F_RefCount
+	flminterface IF_Pool : public F_Object
 	{
 		virtual void FLMAPI poolInit(
 			FLMUINT					uiBlockSize) = 0;
@@ -1508,12 +1525,12 @@
 	};
 	
 	RCODE FLMAPI FlmAllocPool(
-		IF_Pool **		ppPool);
+		IF_Pool **					ppPool);
 	
 	/****************************************************************************
 	Desc: Dynamic buffer
 	****************************************************************************/
-	flminterface IF_DynaBuf : public F_RefCount
+	flminterface IF_DynaBuf : public F_Object
 	{
 		virtual void FLMAPI truncateData(
 			FLMUINT					uiSize) = 0;
@@ -1547,7 +1564,7 @@
 	/****************************************************************************
 	Desc: Random numbers
 	****************************************************************************/
-	flminterface IF_RandomGenerator : public F_RefCount
+	flminterface IF_RandomGenerator : public F_Object
 	{
 		virtual void FLMAPI randomize( void) = 0;
 
@@ -1623,7 +1640,7 @@
 	/****************************************************************************
 	Desc: Thread manager
 	****************************************************************************/
-	flminterface IF_ThreadMgr : public F_RefCount
+	flminterface IF_ThreadMgr : public F_Object
 	{
 		virtual RCODE FLMAPI setupThreadMgr( void) = 0;
 		
@@ -1661,15 +1678,17 @@
 	
 		virtual FLMUINT FLMAPI getThreadGroupCount(
 			FLMUINT					uiThreadGroup) = 0;
+			
+		virtual FLMUINT FLMAPI allocGroupId( void) = 0;
 	};
 	
 	RCODE FLMAPI FlmGetThreadMgr(
-		IF_ThreadMgr **		ppThreadMgr);
+		IF_ThreadMgr **			ppThreadMgr);
 
 	/****************************************************************************
 	Desc: Thread
 	****************************************************************************/
-	flminterface IF_Thread : public F_RefCount
+	flminterface IF_Thread : public F_Object
 	{
 		virtual RCODE FLMAPI startThread(
 			F_THREAD_FUNC			fnThread,
@@ -1726,7 +1745,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IniFile : public F_RefCount
+	flminterface IF_IniFile : public F_Object
 	{
 		virtual RCODE FLMAPI read(
 			const char *			pszFileName) = 0;
@@ -1828,16 +1847,19 @@
 		FLMUNICODE *				puzDestStr,
 		const FLMUNICODE *		puzSrcStr);
 
+	FLMBOOL FLMAPI f_uniIsUpper(
+		FLMUNICODE					uChar);
+		
 	FLMBOOL FLMAPI f_uniIsLower(
-		FLMUNICODE					uzChar);
+		FLMUNICODE					uChar);
 	
 	FLMBOOL FLMAPI f_uniIsAlpha(
-		FLMUNICODE					uzChar);
+		FLMUNICODE					uChar);
 	
 	FLMBOOL FLMAPI f_uniIsDecimalDigit(
-		FLMUNICODE					uzChar);
+		FLMUNICODE					uChar);
 	
-	FLMUNICODE FLMAPI f_unitolower(
+	FLMUNICODE FLMAPI f_uniToLower(
 		FLMUNICODE					uChar);
 
 	FLMINT FLMAPI f_unicmp(
@@ -2131,7 +2153,7 @@
 	FINLINE FLMBOOL f_isvowel(
 		FLMUNICODE		uChar)
 	{
-		uChar = f_unitolower( uChar);
+		uChar = f_uniToLower( uChar);
 
 		if( uChar == FLM_UNICODE_a ||
 			 uChar == FLM_UNICODE_e ||
@@ -2514,6 +2536,10 @@
 		const char *			pszFormat,
 		...);
 
+	FLMINT FLMAPI f_printf(
+		const char *			pszFormat,
+		...);
+		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -2589,7 +2615,7 @@
 		const char *		pszSrc,
 		FLMSIZET				uiLength);
 		
-	FLMINT FLMAPI f_strlen(
+	FLMUINT FLMAPI f_strlen(
 		const char *		pszStr);
 			
 	RCODE FLMAPI f_getCharFromUTF8Buf(
@@ -2689,6 +2715,10 @@
 	void FLMAPI f_freeAlignedBuffer(
 		void **			ppvAlloc);
 		
+	RCODE f_getMemoryInfo(
+		FLMUINT64 *		pui64TotalPhysMem,
+		FLMUINT64 *		pui64AvailPhysMem);
+	
 	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
@@ -2711,7 +2741,7 @@
 	/****************************************************************************
 	Desc: XML
 	****************************************************************************/
-	flminterface IF_XML : public F_RefCount
+	flminterface IF_XML : public F_Object
 	{
 	public:
 	
@@ -2758,7 +2788,7 @@
 	/****************************************************************************
 	Desc: Name table
 	****************************************************************************/
-	flminterface IF_NameTable : public F_RefCount
+	flminterface IF_NameTable : public F_Object
 	{
 		virtual RCODE FLMAPI setupNameTable( void) = 0;
 	
@@ -2830,7 +2860,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DeleteStatus : public F_RefCount
+	flminterface IF_DeleteStatus : public F_Object
 	{
 		virtual RCODE FLMAPI reportDelete(
 			FLMUINT					uiBlocksDeleted,
@@ -2840,7 +2870,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_Relocator : public F_RefCount
+	flminterface IF_Relocator : public F_Object
 	{
 		virtual void FLMAPI relocate(
 			void *					pvOldAlloc,
@@ -2853,7 +2883,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_SlabManager : public F_RefCount
+	flminterface IF_SlabManager : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			FLMUINT 					uiPreallocSize) = 0;
@@ -2899,7 +2929,7 @@
 	Desc:	Class to provide an efficient means of providing many allocations
 			of a fixed size.
 	****************************************************************************/
-	flminterface IF_FixedAlloc : public F_RefCount
+	flminterface IF_FixedAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			IF_Relocator *			pRelocator,
@@ -2926,10 +2956,13 @@
 		virtual void FLMAPI defragmentMemory( void) = 0;
 	};
 
+	RCODE FLMAPI FlmAllocFixedAllocator(
+		IF_FixedAlloc **			ppFixedAllocator);
+		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_BufferAlloc : public F_RefCount
+	flminterface IF_BufferAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
@@ -2965,10 +2998,13 @@
 		virtual void FLMAPI defragmentMemory( void) = 0;
 	};
 
+	RCODE FLMAPI FlmAllocBufferAllocator(
+		IF_BufferAlloc **			ppBufferAllocator);
+		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_MultiAlloc : public F_RefCount
+	flminterface IF_MultiAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
@@ -2995,13 +3031,14 @@
 		virtual FLMUINT FLMAPI getTrueSize(
 			FLMBYTE *				pucBuffer) = 0;
 	
-		virtual FLMUINT FLMAPI getMaxCellSize( void) = 0;
-		
 		virtual void FLMAPI lockMutex( void) = 0;
 	
 		virtual void FLMAPI unlockMutex( void) = 0;
 	};
 	
+	RCODE FLMAPI FlmAllocMultiAllocator(
+		IF_MultiAlloc **			ppMultiAllocator);
+		
 	/****************************************************************************
 	Desc: Misc.
 	****************************************************************************/
@@ -3017,6 +3054,76 @@
 	#define f_swap( a, b, tmp) \
 		((tmp) = (a), (a) = (b), (b) = (tmp))
 		
+	FINLINE FLMBOOL f_isHexChar(
+		FLMBYTE		ucChar)
+	{
+		if( (ucChar >= '0' && ucChar <= '9') ||
+			(ucChar >= 'A' && ucChar <= 'F') ||
+			(ucChar >= 'a' && ucChar <= 'f'))
+		{
+			return( TRUE);
+		}
+
+		return( FALSE);
+	}
+
+	FINLINE FLMBOOL f_isHexChar(
+		FLMUNICODE		uChar)
+	{
+		if( uChar > 127)
+		{
+			return( FALSE);
+		}
+
+		return( f_isHexChar( f_tonative( (FLMBYTE)uChar)));
+	}
+
+	FINLINE FLMBYTE f_getHexVal(
+		FLMBYTE		ucChar)
+	{
+		if( ucChar >= '0' && ucChar <= '9')
+		{
+			return( (FLMBYTE)(ucChar - '0'));
+		}
+		else if( ucChar >= 'A' && ucChar <= 'F')
+		{
+			return( (FLMBYTE)((ucChar - 'A') + 10));
+		}
+		else if( ucChar >= 'a' && ucChar <= 'f')
+		{
+			return( (FLMBYTE)((ucChar - 'a') + 10));
+		}
+
+		return( 0);
+	}
+
+	FINLINE FLMBYTE f_getHexVal(
+		FLMUNICODE	uChar)
+	{
+		return( f_getHexVal( f_tonative( (FLMBYTE)uChar)));
+	}
+
+	FINLINE FLMBOOL f_isValidHexNum(
+		const FLMBYTE *	pszString)
+	{
+		if( *pszString == 0)
+		{
+			return( FALSE);
+		}
+
+		while( *pszString)
+		{
+			if( !f_isHexChar( *pszString))
+			{
+				return( TRUE);
+			}
+
+			pszString++;
+		}
+
+		return( TRUE);
+	}
+
 	RCODE FLMAPI f_filecpy(
 		const char *				pszSourceFile,
 		const char *				pszData);
@@ -3025,14 +3132,6 @@
 		const char *				pszSourceFile,
 		const char *				pszData);
 
-	RCODE FLMAPI f_copyPartial(
-		IF_FileHdl *				pSrcFileHdl,
-		FLMUINT64					ui64SrcOffset,
-		FLMUINT64					ui64SrcSize,
-		IF_FileHdl *				pDestFileHdl,
-		FLMUINT64					ui64DestOffset,
-		FLMUINT64 *					pui64BytesCopiedRV);
-	
 	/****************************************************************************
 	Desc: Status and return codes
 	****************************************************************************/
@@ -3545,38 +3644,43 @@
 	#define NE_FLM_FAILURE										FTK_ERROR_BASE( 0x108)			// NE_RECOVERABLE_FAILURE - Internal failure.
 	#define NE_FLM_BOF_HIT										FTK_ERROR_BASE( 0x109)			// Beginning of results encountered.  This error is may be returned when reading query results in reverse order (from last to first).
 	#define NE_FLM_EOF_HIT										FTK_ERROR_BASE( 0x10A)			// End of results encountered.  This error may be returned when reading query results in forward order (first to last).
-	#define NE_FLM_END											FTK_ERROR_BASE( 0x10B)			// End of roll-forward log packets encountered.  NOTE: This error code should never be returned to an application.
-	#define NE_FLM_CONV_BAD_DIGIT								FTK_ERROR_BASE( 0x10C)			// Non-numeric digit found in text to numeric conversion.
-	#define NE_FLM_CONV_DEST_OVERFLOW						FTK_ERROR_BASE( 0x10D)			// Destination buffer not large enough to hold data.
-	#define NE_FLM_CONV_ILLEGAL								FTK_ERROR_BASE( 0x10E)			// Attempt to convert between data types is an unsupported conversion.
-	#define NE_FLM_CONV_NULL_SRC								FTK_ERROR_BASE( 0x10F)			// Data source cannot be NULL when doing data conversion.
-	#define NE_FLM_CONV_NUM_OVERFLOW							FTK_ERROR_BASE( 0x110)			// Numeric overflow (> upper bound) converting to numeric type.
-	#define NE_FLM_CONV_NUM_UNDERFLOW						FTK_ERROR_BASE( 0x111)			// Numeric underflow (< lower bound) converting to numeric type.
-	#define NE_FLM_SYNTAX										FTK_ERROR_BASE( 0x112)			// Syntax error while parsing XML or query.
-	#define NE_FLM_UNSUPPORTED_FEATURE						FTK_ERROR_BASE( 0x113)			// Attempting to use a feature for which full support has been disabled.
-	#define NE_FLM_FILE_EXISTS									FTK_ERROR_BASE( 0x114)			// Attempt to create a database, but the file already exists.
-	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				FTK_ERROR_BASE( 0x115)			// Could not create a semaphore.
-	#define NE_FLM_BAD_UTF8										FTK_ERROR_BASE( 0x116)			// An invalid byte sequence was found in a UTF-8 string
-	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				FTK_ERROR_BASE( 0x117)			// Error occurred while waiting on a sempahore.
-	#define NE_FLM_BAD_PLATFORM_FORMAT						FTK_ERROR_BASE( 0x118)			// Cannot support platform format.  NOTE: No need to document this one, it is strictly internal.
-	#define NE_FLM_BAD_SEN										FTK_ERROR_BASE( 0x119)			// Invalid simple encoded number.
-	#define NE_FLM_UNSUPPORTED_INTERFACE					FTK_ERROR_BASE( 0x11A)			// Requested COM interface is not supported.
-	#define NE_FLM_BAD_RCODE_TABLE							FTK_ERROR_BASE( 0x11B)			// The error code tables are incorrect.  NOTE: This is an internal error that does not need to be documented.
-	#define NE_FLM_BUFFER_OVERFLOW							FTK_ERROR_BASE( 0x11C)			// Buffer overflow.
-	#define NE_FLM_INVALID_XML									FTK_ERROR_BASE( 0x11D)			// Invalid XML encountered while parsing document.
-	#define NE_FLM_ILLEGAL_FLAG								FTK_ERROR_BASE( 0x11E)			// Illegal flag passed to getChildElement method.  Must be zero for elements that can have non-unique child elements.
-	#define NE_FLM_ILLEGAL_OP									FTK_ERROR_BASE( 0x11F)			// Illegal operation
-	#define NE_FLM_COULD_NOT_START_THREAD					FTK_ERROR_BASE( 0x120)			// Problem starting a new thread
-	#define NE_FLM_BAD_BASE64_ENCODING						FTK_ERROR_BASE( 0x121)			// Invalid base64 sequence encountered
-	#define NE_FLM_STREAM_EXISTS								FTK_ERROR_BASE( 0x122)			// Stream file already exists
-	#define NE_FLM_MULTIPLE_MATCHES							FTK_ERROR_BASE( 0x123)			// Multiple items matched but only one match was expected
-	#define NE_FLM_NOT_UNIQUE									FTK_ERROR_BASE( 0x124)			// Non-unique key
-	#define NE_FLM_BTREE_ERROR									FTK_ERROR_BASE( 0x125)			// Generic b-tree error
-	#define NE_FLM_BTREE_KEY_SIZE								FTK_ERROR_BASE( 0x126)			// Invalid b-tree key size
-	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x127)			// B-tree cannot grow beyond current size
-	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x128)			// B-tree operation cannot be completed
-	#define NE_FLM_COULD_NOT_CREATE_MUTEX					FTK_ERROR_BASE( 0x129)			// Mutex alloc / init failed
-	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x12A)			// NOTE: This is not an error code - do not document
+	#define NE_FLM_CONV_BAD_DIGIT								FTK_ERROR_BASE( 0x10B)			// Non-numeric digit found in text to numeric conversion.
+	#define NE_FLM_CONV_DEST_OVERFLOW						FTK_ERROR_BASE( 0x10C)			// Destination buffer not large enough to hold data.
+	#define NE_FLM_CONV_ILLEGAL								FTK_ERROR_BASE( 0x10D)			// Attempt to convert between data types is an unsupported conversion.
+	#define NE_FLM_CONV_NULL_SRC								FTK_ERROR_BASE( 0x10E)			// Data source cannot be NULL when doing data conversion.
+	#define NE_FLM_CONV_NUM_OVERFLOW							FTK_ERROR_BASE( 0x10F)			// Numeric overflow (> upper bound) converting to numeric type.
+	#define NE_FLM_CONV_NUM_UNDERFLOW						FTK_ERROR_BASE( 0x110)			// Numeric underflow (< lower bound) converting to numeric type.
+	#define NE_FLM_SYNTAX										FTK_ERROR_BASE( 0x111)			// Syntax error while parsing XML or query.
+	#define NE_FLM_UNSUPPORTED_FEATURE						FTK_ERROR_BASE( 0x112)			// Attempting to use a feature for which full support has been disabled.
+	#define NE_FLM_FILE_EXISTS									FTK_ERROR_BASE( 0x113)			// Attempt to create a database, but the file already exists.
+	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				FTK_ERROR_BASE( 0x114)			// Could not create a semaphore.
+	#define NE_FLM_BAD_UTF8										FTK_ERROR_BASE( 0x115)			// An invalid byte sequence was found in a UTF-8 string
+	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				FTK_ERROR_BASE( 0x116)			// Error occurred while waiting on a sempahore.
+	#define NE_FLM_BAD_PLATFORM_FORMAT						FTK_ERROR_BASE( 0x117)			// Cannot support platform format.  NOTE: No need to document this one, it is strictly internal.
+	#define NE_FLM_BAD_SEN										FTK_ERROR_BASE( 0x118)			// Invalid simple encoded number.
+	#define NE_FLM_UNSUPPORTED_INTERFACE					FTK_ERROR_BASE( 0x119)			// Requested COM interface is not supported.
+	#define NE_FLM_BAD_RCODE_TABLE							FTK_ERROR_BASE( 0x11A)			// The error code tables are incorrect.  NOTE: This is an internal error that does not need to be documented.
+	#define NE_FLM_BUFFER_OVERFLOW							FTK_ERROR_BASE( 0x11B)			// Buffer overflow.
+	#define NE_FLM_INVALID_XML									FTK_ERROR_BASE( 0x11C)			// Invalid XML encountered while parsing document.
+	#define NE_FLM_ILLEGAL_FLAG								FTK_ERROR_BASE( 0x11D)			// Illegal flag passed to getChildElement method.  Must be zero for elements that can have non-unique child elements.
+	#define NE_FLM_ILLEGAL_OP									FTK_ERROR_BASE( 0x11E)			// Illegal operation
+	#define NE_FLM_COULD_NOT_START_THREAD					FTK_ERROR_BASE( 0x11F)			// Problem starting a new thread
+	#define NE_FLM_BAD_BASE64_ENCODING						FTK_ERROR_BASE( 0x120)			// Invalid base64 sequence encountered
+	#define NE_FLM_STREAM_EXISTS								FTK_ERROR_BASE( 0x121)			// Stream file already exists
+	#define NE_FLM_MULTIPLE_MATCHES							FTK_ERROR_BASE( 0x122)			// Multiple items matched but only one match was expected
+	#define NE_FLM_NOT_UNIQUE									FTK_ERROR_BASE( 0x123)			// Non-unique key
+	#define NE_FLM_BTREE_ERROR									FTK_ERROR_BASE( 0x124)			// Generic b-tree error
+	#define NE_FLM_BTREE_KEY_SIZE								FTK_ERROR_BASE( 0x125)			// Invalid b-tree key size
+	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x126)			// B-tree cannot grow beyond current size
+	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x127)			// B-tree operation cannot be completed
+	#define NE_FLM_COULD_NOT_CREATE_MUTEX					FTK_ERROR_BASE( 0x128)			// Mutex alloc / init failed
+	#define NE_FLM_DATA_ERROR									FTK_ERROR_BASE( 0x129)
+	#define NE_FLM_CLASS_NOT_AVAILABLE						FTK_ERROR_BASE( 0x12A)
+	#define NE_FLM_BAD_DATA_TYPE								FTK_ERROR_BASE( 0x12B)
+	#define NE_FLM_READ_ONLY									FTK_ERROR_BASE( 0x12C)
+	#define NE_FLM_KEY_OVERFLOW								FTK_ERROR_BASE( 0x12D)
+	#define NE_FLM_UNEXPECTED_END_OF_INPUT					FTK_ERROR_BASE( 0x12E)
+	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x12F)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc: I/O Errors
