@@ -45,10 +45,6 @@
 	#include <sys/statvfs.h>
 #elif defined( FLM_LINUX)
 	#include <sys/vfs.h>
-
-	extern FLMUINT		gv_uiLinuxMajorVer;
-	extern FLMUINT		gv_uiLinuxMinorVer;
-	extern FLMUINT		gv_uiLinuxRevision;
 #elif defined( FLM_OSF)
 
 	// Tru64 4.0 does not have this declaration. Tru64 5.0 renames statfs
@@ -195,10 +191,12 @@ RCODE F_FileHdl::openOrCreate(
 			else
 			{
 #if defined( FLM_LINUX)
-				FLMUINT		uiMajor = gv_uiLinuxMajorVer;
-				FLMUINT		uiMinor = gv_uiLinuxMinorVer;
-				FLMUINT		uiRevision = gv_uiLinuxRevision;
-																																														
+				FLMUINT		uiMajor;
+				FLMUINT		uiMinor;
+				FLMUINT		uiRevision;
+
+				f_getLinuxKernelVersion( &uiMajor, &uiMinor, &uiRevision);
+
 				if( uiMajor > 2 || (uiMajor == 2 && uiMinor > 6) ||
 					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
 				{
@@ -1380,32 +1378,6 @@ Exit:
 	{
 		*puiRevision = uiRevision;
 	}
-}
-#endif
-
-/***************************************************************************
-Desc:	Determines if the linux system we are running on is 2.4 or greater.
-***************************************************************************/
-#ifdef FLM_LINUX
-FLMUINT f_getLinuxMaxFileSize( void)
-{
-#ifdef FLM_32BIT
-	return( FLM_MAXIMUM_FILE_SIZE);
-#else
-	FLMUINT	uiMaxFileSize = 0x7FF00000;
-	
-	f_assert( gv_uiLinuxMajorVer);
-	
-	// Is version 2.4 or greater?
-
-	if( gv_uiLinuxMajorVer > 2 || 
-		(gv_uiLinuxMajorVer == 2 && gv_uiLinuxMinorVer >= 4))
-	{
-		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
-	}
-	
-	return( uiMaxFileSize);
-#endif
 }
 #endif
 

@@ -96,9 +96,9 @@ RCODE FLMAPI ftkStartup( void)
 	}
 	
 #if defined( FLM_LINUX)
-	flmGetLinuxKernelVersion( &gv_uiLinuxMajorVer, &gv_uiLinuxMinorVer, 
+	f_getLinuxKernelVersion( &gv_uiLinuxMajorVer, &gv_uiLinuxMinorVer, 
 		&gv_uiLinuxRevision);
-	gv_ui64MaxFileSize = flmGetLinuxMaxFileSize();
+	gv_uiMaxFileSize = f_getLinuxMaxFileSize();
 #elif defined( FLM_AIX)
 
 	// Call set setrlimit to increase the max allowed file size.
@@ -1003,6 +1003,32 @@ FLMINT FLMAPI F_Object::Release( void)
 
 	return( iRefCnt);
 }
+
+/***************************************************************************
+Desc:	Determines if the linux system we are running on is 2.4 or greater.
+***************************************************************************/
+#ifdef FLM_LINUX
+FLMUINT f_getLinuxMaxFileSize( void)
+{
+#ifdef FLM_32BIT
+	return( FLM_MAXIMUM_FILE_SIZE);
+#else
+	FLMUINT	uiMaxFileSize = 0x7FF00000;
+	
+	f_assert( gv_uiLinuxMajorVer);
+	
+	// Is version 2.4 or greater?
+
+	if( gv_uiLinuxMajorVer > 2 || 
+		(gv_uiLinuxMajorVer == 2 && gv_uiLinuxMinorVer >= 4))
+	{
+		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
+	}
+	
+	return( uiMaxFileSize);
+#endif
+}
+#endif
 
 /**********************************************************************
 Desc:

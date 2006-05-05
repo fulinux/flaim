@@ -4474,7 +4474,7 @@ RCODE f_getMemoryInfo(
 				
 		#elif defined( FLM_LINUX)
 		
-				flmGetLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
+				f_getLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
 		
 		#elif defined( _SC_PAGESIZE) && defined( _SC_AVPHYS_PAGES)
 
