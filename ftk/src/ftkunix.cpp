@@ -59,6 +59,12 @@
 	#include <sys/mount.h>
 #endif
 
+#ifdef FLM_LINUX
+	static FLMUINT					gv_uiLinuxMajorVer = 0;
+	static FLMUINT					gv_uiLinuxMinorVer = 0;
+	static FLMUINT					gv_uiLinuxRevision = 0;
+#endif
+
 /******************************************************************************
 Desc:
 *******************************************************************************/
@@ -1312,7 +1318,15 @@ void f_getLinuxKernelVersion(
 	FLMUINT		uiMajorVer = 0;
 	FLMUINT		uiMinorVer = 0;
 	FLMUINT		uiRevision = 0;
-
+	
+	if( gv_uiLinuxMajorVer)
+	{
+		uiMajorVer = gv_uiLinuxMajorVer;
+		uiMinorVer = gv_uiLinuxMinorVer;
+		uiRevision = gv_uiLinuxRevision;
+		goto Exit;
+	}
+	
 	if( (fd = open( "/proc/version", O_RDONLY, 0600)) == -1)
 	{
 		goto Exit;
@@ -1378,6 +1392,43 @@ Exit:
 	{
 		*puiRevision = uiRevision;
 	}
+}
+#endif
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+#ifdef FLM_LINUX
+void f_setupLinuxKernelVersion( void)
+{
+	f_getLinuxKernelVersion( &gv_uiLinuxMajorVer, 
+		&gv_uiLinuxMinorVer, &gv_uiLinuxRevision);  
+}
+#endif
+
+/***************************************************************************
+Desc:	Determines if the linux system we are running on is 2.4 or greater.
+***************************************************************************/
+#ifdef FLM_LINUX
+FLMUINT f_getLinuxMaxFileSize( void)
+{
+#ifdef FLM_32BIT
+	return( FLM_MAXIMUM_FILE_SIZE);
+#else
+	FLMUINT	uiMaxFileSize = 0x7FF00000;
+	
+	f_assert( gv_uiLinuxMajorVer);
+	
+	// Is version 2.4 or greater?
+
+	if( gv_uiLinuxMajorVer > 2 || 
+		(gv_uiLinuxMajorVer == 2 && gv_uiLinuxMinorVer >= 4))
+	{
+		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
+	}
+	
+	return( uiMaxFileSize);
+#endif
 }
 #endif
 

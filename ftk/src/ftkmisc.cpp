@@ -32,13 +32,7 @@ static IF_RandomGenerator *	gv_pSerialRandom = NULL;
 static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 static IF_ThreadMgr *			gv_pThreadMgr = NULL;
 static IF_FileSystem *			gv_pFileSystem = NULL;
-static FLMUINT						gv_uiMaxFileSize = 0xFFFC0000;
-
-#ifdef FLM_LINUX
-static FLMUINT						gv_uiLinuxMajorVer = 0;
-static FLMUINT						gv_uiLinuxMinorVer = 0;
-static FLMUINT						gv_uiLinuxRevision = 0;
-#endif
+static FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
 
 FSTATIC RCODE f_initSerialNumberGenerator( void);
 
@@ -96,14 +90,13 @@ RCODE FLMAPI ftkStartup( void)
 	}
 	
 #if defined( FLM_LINUX)
-	f_getLinuxKernelVersion( &gv_uiLinuxMajorVer, &gv_uiLinuxMinorVer, 
-		&gv_uiLinuxRevision);
+	f_setupLinuxKernelVersion();
 	gv_uiMaxFileSize = f_getLinuxMaxFileSize();
 #elif defined( FLM_AIX)
 
-	// Call set setrlimit to increase the max allowed file size.
+	// Call setrlimit to increase the max allowed file size.
 	// We don't have a good way to deal with any errors returned by
-	// setrlimit(), so we just hope that there aren't any...
+	// setrlimit(), so we just hope that there aren't any ...
 	
 	struct rlimit rlim;
 	
@@ -1003,32 +996,6 @@ FLMINT FLMAPI F_Object::Release( void)
 
 	return( iRefCnt);
 }
-
-/***************************************************************************
-Desc:	Determines if the linux system we are running on is 2.4 or greater.
-***************************************************************************/
-#ifdef FLM_LINUX
-FLMUINT f_getLinuxMaxFileSize( void)
-{
-#ifdef FLM_32BIT
-	return( FLM_MAXIMUM_FILE_SIZE);
-#else
-	FLMUINT	uiMaxFileSize = 0x7FF00000;
-	
-	f_assert( gv_uiLinuxMajorVer);
-	
-	// Is version 2.4 or greater?
-
-	if( gv_uiLinuxMajorVer > 2 || 
-		(gv_uiLinuxMajorVer == 2 && gv_uiLinuxMinorVer >= 4))
-	{
-		uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
-	}
-	
-	return( uiMaxFileSize);
-#endif
-}
-#endif
 
 /**********************************************************************
 Desc:

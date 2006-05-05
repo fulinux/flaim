@@ -1916,6 +1916,9 @@
 		FLMBYTE *			pszFileName);
 		
 	#if defined( FLM_LINUX)
+
+		void f_setupLinuxKernelVersion( void);
+
 		void f_getLinuxKernelVersion(
 			FLMUINT *		puiMajor,
 			FLMUINT *		puiMinor,

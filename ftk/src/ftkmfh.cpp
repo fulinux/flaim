@@ -113,8 +113,6 @@ private:
 		F_UNREFERENCED_PARM( pszBasePath);
 #endif
 
-		IF_FileSystem *		pFileSystem = f_getFileSysPtr();
-
 		if( m_pLockFileHdl)
 		{
 
@@ -127,7 +125,8 @@ private:
 #ifdef FLM_UNIX
 			if( bDelete)
 			{
-				char		szTmpPath[ F_PATH_MAX_SIZE];
+				IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+				char					szTmpPath[ F_PATH_MAX_SIZE];
 
 				// Delete the lock file
 
@@ -403,9 +402,7 @@ RCODE F_MultiFileHdl::create(
 
 Exit:
 
-	/*
-	Release the lock file
-	*/
+	// Release the lock file
 
 	if( RC_BAD( rc))
 	{
@@ -483,27 +480,21 @@ RCODE F_MultiFileHdl::createUnique(
 	f_strcpy( m_szPath, szTmpPath);
 	bCreatedDir = TRUE;
 
-	/*
-	Create the lock file
-	*/
+	// Create the lock file
 
 	if( RC_BAD( rc = createLockFile( m_szPath)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Initialize the EOF to 0 and set the state to open
-	*/
+	// Initialize the EOF to 0 and set the state to open
 
 	m_ui64EOF = 0;
 	m_bOpen = TRUE;
 
 Exit:
 
-	/*
-	Release the lock file
-	*/
+	// Release the lock file
 
 	if( RC_BAD( rc))
 	{
@@ -546,27 +537,21 @@ RCODE F_MultiFileHdl::open(
 
 	f_strcpy( m_szPath, pszPath);
 
-	/*
-	Create the lock file
-	*/
+	// Create the lock file
 
 	if( RC_BAD( rc = createLockFile( m_szPath)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Need to determine the current EOF
-	*/
+	// Need to determine the current EOF
 
 	if( RC_BAD( rc = pFileSystem->openDir( m_szPath, (char *)"*.64", &pDir)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Find all data files to determine the EOF
-	*/
+	// Find all data files to determine the EOF
 
 	for( rc = pDir->next(); !RC_BAD( rc) ; rc = pDir->next())
 	{
@@ -591,9 +576,7 @@ Exit:
 		pDir->Release();
 	}
 
-	/*
-	Release the lock file
-	*/
+	// Release the lock file
 
 	if( RC_BAD( rc))
 	{
