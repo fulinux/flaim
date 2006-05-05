@@ -24,7 +24,6 @@
 //------------------------------------------------------------------------------
 
 #include "ftksys.h"
-#if 0
 
 #define FLM_XML_BASE_CHAR			0x01
 #define FLM_XML_IDEOGRAPHIC		0x02
@@ -33,11 +32,6 @@
 #define FLM_XML_EXTENDER			0x10
 #define FLM_XML_WHITESPACE			0x20
 
-typedef struct xmlChar
-{
-	FLMBYTE		ucFlags;
-} XMLCHAR;
-	
 typedef struct
 {
 	char *			pszEntity;
@@ -391,73 +385,6 @@ static CHAR_TBL charTbl[] =
    { 0, 0, 0}
 };
 
-//FSTATIC RCODE exportUniValue(
-//	IF_OStream *	pOStream,
-//	FLMUNICODE *	puzStr,
-//	FLMUINT			uiStrChars,
-//	FLMBOOL			bEncodeSpecialChars,
-//	FLMUINT			uiIndentCount);
-	
-/****************************************************************************
-Desc: XML
-****************************************************************************/
-class F_XML : public IF_XML
-{
-public:
-
-	F_XML();
-
-	virtual ~F_XML();
-	
-	RCODE FLMAPI setup( void);
-
-	FLMBOOL FLMAPI isPubidChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isQuoteChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isWhitespace(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isExtender(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isCombiningChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isNameChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isNCNameChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isIdeographic(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isBaseChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isDigit(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isLetter(
-		FLMUNICODE		uChar);
-
-	FLMBOOL FLMAPI isNameValid(
-		FLMUNICODE *	puzName,
-		FLMBYTE *		pszName);
-
-private:
-
-	void setCharFlag(
-		FLMUNICODE		uLowChar,
-		FLMUNICODE		uHighChar,
-		FLMUINT16		ui16Flag);
-
-	XMLCHAR *			m_pCharTable;
-};
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -764,4 +691,3 @@ Exit:
 
 	return( bValid);
 }
-#endif

@@ -387,7 +387,6 @@
 	/****************************************************************************
 									Forward References
 	****************************************************************************/
-	flminterface IF_DataVector;
 	flminterface IF_DirHdl;
 	flminterface IF_FileHdl;
 	flminterface IF_FileSystem;
@@ -404,7 +403,7 @@
 	flminterface IF_IOBuffer;
 
 	/****************************************************************************
-										CROSS PLATFORM DEFINITIONS
+	Desc: Cross-platform definitions
 	****************************************************************************/
 
 	#ifndef NULL
@@ -418,10 +417,13 @@
 	#ifndef FALSE
 		#define FALSE  0
 	#endif
+	
+	#define f_offsetof(s,m) \
+		(FLMSIZET)(FLMUINT)&(((s *)0)->m) 
 
-	//	Language definitions - to get rid of testing "US" or multiple bytes
-	//	will define needed languages as a number with backward conversions.
-	// Keep these defines synchronized with the table in wps6cmpc.c
+	/****************************************************************************
+	Desc:	Language constants
+	****************************************************************************/
 	
 	#define FLM_US_LANG								0			// English, United States
 	#define FLM_AF_LANG								1			// Afrikaans
@@ -468,6 +470,23 @@
 	#define FLM_LAST_DBCS_LANG						(FLM_LA_LANG)
 
 	/****************************************************************************
+	Desc:	Collation flags and constants
+	****************************************************************************/
+	
+	#define HAD_SUB_COLLATION				0x01				// Set if had sub-collating values-diacritics
+	#define HAD_LOWER_CASE					0x02				// Set if you hit a lowercase character
+	#define COLL_FIRST_SUBSTRING			0x03				// First substring marker
+	#define COLL_MARKER 						0x04				// Marks place of sub-collation
+	
+	#define SC_LOWER							0x00				// Only lowercase characters exist
+	#define SC_MIXED							0x01				// Lower/uppercase flags follow in next byte
+	#define SC_UPPER							0x02				// Only upper characters exist
+	#define SC_SUB_COL						0x03				// Sub-collation follows (diacritics|extCh)
+	
+	#define COLL_TRUNCATED					0x0C				// This key piece has been truncated from original
+	#define MAX_COL_OPCODE					COLL_TRUNCATED
+
+	/****************************************************************************
 	Desc:	I/O Flags
 	****************************************************************************/
 	#define FLM_IO_CURRENT_POS						FLM_MAX_UINT64
@@ -491,6 +510,10 @@
 	// Maximum file size
 
 	#define FLM_MAXIMUM_FILE_SIZE					0xFFFC0000
+	
+	// Maximum SEN (compressed number) length
+	
+	#define FLM_MAX_SEN_LEN							9
 	
 	// Retrieval flags
 	
@@ -932,6 +955,56 @@
 		IF_IStream *				pIStream,
 		IF_OStream *				pOStream);
 			
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+
+	typedef struct
+	{
+		FLMUINT64		ui64Position;
+		FLMUNICODE		uNextChar;
+	} F_CollStreamPos;
+
+	flminterface IF_CollIStream : public IF_PosIStream
+	{
+		virtual RCODE FLMAPI open(
+			IF_PosIStream *		pIStream,
+			FLMBOOL					bUnicodeStream,
+			FLMUINT					uiLanguage,
+			FLMUINT					uiCompareRules,
+			FLMBOOL					bMayHaveWildCards) = 0;
+			
+		virtual RCODE FLMAPI close( void) = 0;
+	
+		virtual RCODE FLMAPI read(
+			void *					pvBuffer,
+			FLMUINT					uiBytesToRead,
+			FLMUINT *				puiBytesRead) = 0;
+	
+		virtual RCODE FLMAPI read(
+			FLMBOOL					bAllowTwoIntoOne,
+			FLMUNICODE *			puChar,
+			FLMBOOL *				pbCharIsWild,
+			FLMUINT16 *				pui16Col,
+			FLMUINT16 *				pui16SubCol,
+			FLMBYTE *				pucCase) = 0;
+			
+		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
+	
+		virtual FLMUINT64 FLMAPI remainingSize( void) = 0;
+	
+		virtual RCODE FLMAPI positionTo(
+			FLMUINT64				ui64Position) = 0;
+	
+		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
+
+		virtual RCODE FLMAPI positionTo(
+			F_CollStreamPos *		pPos) = 0;
+
+		virtual void FLMAPI getCurrPosition(
+			F_CollStreamPos *		pPos) = 0;
+	};
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1888,9 +1961,123 @@
 		const FLMBYTE *			pszUTF8,
 		FLMUINT *					puiNumChars);
 	
+	FLMBOOL FLMAPI f_isWhitespace(
+		FLMUNICODE					ucChar);
+
+	FLMUNICODE FLMAPI f_convertChar(
+		FLMUNICODE					uzChar,
+		FLMUINT						uiCompareRules);
+	
+	RCODE FLMAPI f_wpToUnicode(
+		FLMUINT16					ui16WPChar,
+		FLMUNICODE *				puUniChar);
+	
+	FLMBOOL FLMAPI f_unicodeToWP(
+		FLMUNICODE					uUniChar,
+		FLMUINT16 *					pui16WPChar);
+		
+	RCODE FLMAPI f_wpCheckDoubleCollation(
+		IF_PosIStream *			pIStream,
+		FLMBOOL						bUnicodeStream,
+		FLMBOOL						bAllowTwoIntoOne,
+		FLMUNICODE *				puzChar,
+		FLMUNICODE *				puzChar2,
+		FLMBOOL *					pbTwoIntoOne,
+		FLMUINT						uiLanguage);
+	
+	RCODE FLMAPI f_asiaColStr2WPStr(
+		const FLMBYTE *			pucColStr,
+		FLMUINT						uiColStrLen,
+		FLMBYTE *					pucWPStr,
+		FLMUINT *					puiWPStrLen,
+		FLMUINT *					puiUnconvChars,
+		FLMBOOL *					pbDataTruncated,
+		FLMBOOL *					pbFirstSubstring);
+	
+	RCODE FLMAPI f_colStr2WPStr(
+		const FLMBYTE *			pucColStr,
+		FLMUINT						uiColStrLen,
+		FLMBYTE *					pucWPStr,
+		FLMUINT *					puiWPStrLen,
+		FLMUINT						uiLang,
+		FLMUINT *					puiUnconvChars,
+		FLMBOOL *					pbDataTruncated,
+		FLMBOOL *					pbFirstSubstring);
+	
+	RCODE FLMAPI f_asiaUTF8ToColText(
+		IF_PosIStream *			pIStream,
+		FLMBYTE *					pucColStr,
+		FLMUINT *					puiColStrLen,
+		FLMBOOL						bCaseInsensitive,
+		FLMUINT *					puiCollationLen,
+		FLMUINT *					puiCaseLen,
+		FLMUINT						uiCharLimit,
+		FLMBOOL						bFirstSubstring,
+		FLMBOOL						bDataTruncated,
+		FLMBOOL *					pbDataTruncated);
+	
+	RCODE FLMAPI f_compareUTF8Strings(
+		const FLMBYTE *			pucLString,
+		FLMUINT						uiLStrBytes,
+		FLMBOOL						bLeftWild,
+		const FLMBYTE *			pucRString,
+		FLMUINT						uiRStrBytes,
+		FLMBOOL						bRightWild,
+		FLMUINT						uiCompareRules,
+		FLMUINT						uiLanguage,
+		FLMINT *						piResult);
+			
+	RCODE FLMAPI f_compareUTF8Streams(
+		IF_PosIStream *			pLStream,
+		FLMBOOL						bLeftWild,
+		IF_PosIStream *			pRStream,
+		FLMBOOL						bRightWild,
+		FLMUINT						uiCompareRules,
+		FLMUINT						uiLanguage,
+		FLMINT *						piResult);
+		
+	RCODE FLMAPI f_compareUnicodeStrings(
+		const FLMUNICODE *		puzLString,
+		FLMUINT						uiLStrBytes,
+		FLMBOOL						bLeftWild,
+		const FLMUNICODE *		puzRString,
+		FLMUINT						uiRStrBytes,
+		FLMBOOL						bRightWild,
+		FLMUINT						uiCompareRules,
+		FLMUINT						uiLanguage,
+		FLMINT *						piResult);
+
+	RCODE FLMAPI f_compareUnicodeStreams(
+		IF_PosIStream *			pLStream,
+		FLMBOOL						bLeftWild,
+		IF_PosIStream *			pRStream,
+		FLMBOOL						bRightWild,
+		FLMUINT						uiCompareRules,
+		FLMUINT						uiLanguage,
+		FLMINT *						piResult);
+	
+	RCODE FLMAPI f_compareCollStreams(
+		IF_CollIStream *			pLStream,
+		IF_CollIStream *			pRStream,
+		FLMBOOL						bOpIsMatch,
+		FLMUINT						uiLanguage,
+		FLMINT *						piResult);
+		
+	RCODE FLMAPI f_utf8IsSubStr(
+		const FLMBYTE *			pszString,
+		const FLMBYTE *			pszSubString,
+		FLMUINT						uiCompareRules,
+		FLMUINT						uiLanguage,
+		FLMBOOL *					pbExists);
+		
 	RCODE FLMAPI f_readUTF8CharAsUnicode(
 		IF_IStream *				pStream,
 		FLMUNICODE *				puChar);
+	
+	RCODE FLMAPI f_readUTF8CharAsUTF8(
+		IF_IStream *				pIStream,
+		FLMBYTE *					pucBuf,
+		FLMUINT *					puiLen);
 	
 	RCODE FLMAPI f_formatUTF8Text(
 		IF_PosIStream *			pIStream,
@@ -1898,6 +2085,59 @@
 		FLMUINT						uiCompareRules,
 		IF_DynaBuf *				pDynaBuf);
 		
+	RCODE FLMAPI f_getNextMetaphone(
+		IF_IStream *				pIStream,
+		FLMUINT *					puiMetaphone,
+		FLMUINT *					puiAltMetaphone = NULL);
+	
+	FLMUINT FLMAPI f_getSENLength(
+		FLMBYTE 						ucByte);
+
+	FLMUINT FLMAPI f_getSENByteCount(
+		FLMUINT64					ui64Num);
+		
+	FLMUINT FLMAPI f_encodeSEN(
+		FLMUINT64					ui64Value,
+		FLMBYTE **					ppucBuffer,
+		FLMUINT						uiBytesWanted = 0);
+		
+	RCODE FLMAPI f_encodeSEN(
+		FLMUINT64					ui64Value,
+		FLMBYTE **					ppucBuffer,
+		FLMBYTE *					pucEnd);
+	
+	FLMUINT FLMAPI f_encodeSENKnownLength(
+		FLMUINT64					ui64Value,
+		FLMUINT						uiSenLen,
+		FLMBYTE **					ppucBuffer);
+
+	RCODE FLMAPI f_decodeSEN(
+		const FLMBYTE **			ppucBuffer,
+		const FLMBYTE *			pucEnd,
+		FLMUINT *					puiValue);
+	
+	RCODE FLMAPI f_decodeSEN64(
+		const FLMBYTE **			ppucBuffer,
+		const FLMBYTE *			pucEnd,
+		FLMUINT64 *					pui64Value);
+	
+	RCODE FLMAPI f_readSEN(
+		IF_IStream *				pIStream,
+		FLMUINT *					puiValue,
+		FLMUINT *					puiLength = NULL);
+		
+	RCODE FLMAPI f_readSEN64(
+		IF_IStream *				pIStream,
+		FLMUINT64 *					pui64Value,
+		FLMUINT *					puiLength = NULL);
+		
+	FLMUINT FLMAPI f_languageToNum(
+		const char *				pszLanguage);
+
+	void FLMAPI f_languageToStr(
+		FLMINT						iLangNum,
+		char *						pszLanguage);
+
 	/****************************************************************************
 	Desc: ASCII character constants and macros
 	****************************************************************************/
@@ -2736,8 +2976,6 @@
 	{
 	public:
 	
-		virtual RCODE FLMAPI setup( void) = 0;
-	
 		virtual FLMBOOL FLMAPI isPubidChar(
 			FLMUNICODE				uChar) = 0;
 	
@@ -2775,6 +3013,9 @@
 			FLMUNICODE *			puzName,
 			FLMBYTE *				pszName) = 0;
 	};
+	
+	RCODE FLMAPI FlmGetXMLObject(
+		IF_XML **					ppXmlObject);
 
 	/****************************************************************************
 	Desc: Name table
@@ -3140,188 +3381,185 @@
 		RCODE							rc);
 
 	/****************************************************************************
-	Desc:		Key definitions
-	****************************************************************************/
-	
-	#define FKB_ESCAPE      0xE01B            /* Escape (ESC) */
-	#define FKB_ESC         FKB_ESCAPE
-	#define FKB_SPACE       0x20
-	
-	#define FKB_HOME        0xE008            /* HOME key */
-	#define FKB_UP          0xE017            /* Up arrow */
-	#define FKB_PGUP        0xE059            /* Page Up */
-	#define FKB_LEFT        0xE019            /* Left arrow */
-	#define FKB_RIGHT       0xE018            /* Right arrow */
-	#define FKB_END         0xE055            /* END key */
-	#define FKB_DOWN        0xE01A            /* Down arrow */
-	#define FKB_PGDN        0xE05A            /* Page Down */
-	#define FKB_PLUS			0x002B				/* Plus (+) */
-	#define FKB_MINUS			0x002D				/* Minus (-) */
-	
-	#define FKB_INSERT      0xE05D            /* Insert key */
-	#define FKB_DELETE      0xE051            /* Delete key */
-	#define FKB_BACKSPACE   0xE050            /* Backspace */
-	#define FKB_TAB         0xE009            /* TAB */
-	
-	#define FKB_ENTER       0xE00a            /* Enter */
-	#define FKB_F1          0xE020            /* F1 */
-	#define FKB_F2          0xE021            /* F2 */
-	#define FKB_F3          0xE022            /* F3 */
-	#define FKB_F4          0xE023            /* F4 */
-	#define FKB_F5          0xE024            /* F5 */
-	#define FKB_F6          0xE025            /* F6 */
-	#define FKB_F7          0xE026            /* F7 */
-	#define FKB_F8          0xE027            /* F8 */
-	#define FKB_F9          0xE028            /* F9 */
-	#define FKB_F10         0xE029            /* F10 */
-	#define FKB_F11         0xE03A            /* F10 */
-	#define FKB_F12         0xE03B            /* F10 */
-	
-	#define FKB_STAB        0xE05E            /* Shift TAB */
-	
-	#define FKB_SF1         0xE02C            /* F1 */
-	#define FKB_SF2         0xE02D            /* F2 */
-	#define FKB_SF3         0xE02E            /* F3 */
-	#define FKB_SF4         0xE02F            /* F4 */
-	#define FKB_SF5         0xE030            /* F5 */
-	#define FKB_SF6         0xE031            /* F6 */
-	#define FKB_SF7         0xE032            /* F7 */
-	#define FKB_SF8         0xE033            /* F8 */
-	#define FKB_SF9         0xE034            /* F9 */
-	#define FKB_SF10        0xE035            /* F10 */
-	#define FKB_SF11        0xE036            /* F10 */
-	#define FKB_SF12        0xE037            /* F10 */
-	
-	#define FKB_ALT_A       0xFDDC
-	#define FKB_ALT_B       0xFDDD
-	#define FKB_ALT_C       0xFDDE
-	#define FKB_ALT_D       0xFDDF
-	#define FKB_ALT_E       0xFDE0
-	#define FKB_ALT_F       0xFDE1
-	#define FKB_ALT_G       0xFDE2
-	#define FKB_ALT_H       0xFDE3
-	#define FKB_ALT_I       0xFDE4
-	#define FKB_ALT_J       0xFDE5
-	#define FKB_ALT_K       0xFDE6
-	#define FKB_ALT_L       0xFDE7
-	#define FKB_ALT_M       0xFDE8
-	#define FKB_ALT_N       0xFDE9
-	#define FKB_ALT_O       0xFDEA
-	#define FKB_ALT_P       0xFDEB
-	#define FKB_ALT_Q       0xFDEC
-	#define FKB_ALT_R       0xFDED
-	#define FKB_ALT_S       0xFDEE
-	#define FKB_ALT_T       0xFDEF
-	#define FKB_ALT_U       0xFDF0
-	#define FKB_ALT_V       0xFDF1
-	#define FKB_ALT_W       0xFDF2
-	#define FKB_ALT_X       0xFDF3
-	#define FKB_ALT_Y       0xFDF4
-	#define FKB_ALT_Z       0xFDF5
-	
-	#define FKB_ALT_1       0xFDF7            /* ALT 1 */
-	#define FKB_ALT_2       0xFDF8            /* ALT 2 */
-	#define FKB_ALT_3       0xFDF9            /* ALT 3 */
-	#define FKB_ALT_4       0xFDFA            /* ALT 4 */
-	#define FKB_ALT_5       0xFDFB            /* ALT 5 */
-	#define FKB_ALT_6       0xFDFC            /* ALT 6 */
-	#define FKB_ALT_7       0xFDFD            /* ALT 7 */
-	#define FKB_ALT_8       0xFDFE            /* ALT 8 */
-	#define FKB_ALT_9       0xFDFF            /* ALT 9 */
-	#define FKB_ALT_0       0xFDF6            /* ALT 0 */
-	
-	#define FKB_ALT_MINUS   0xE061            /* ALT MINUS */
-	#define FKB_ALT_EQUAL   0xE06B            /* ALT EQUAL */
-	
-	#define FKB_ALT_F1      0xE038            /* ALT F1 */
-	#define FKB_ALT_F2      0xE039            /* ALT F2 */
-	#define FKB_ALT_F3      0xE03A            /* ALT F3 */
-	#define FKB_ALT_F4      0xE03B            /* ALT F4 */
-	#define FKB_ALT_F5      0xE03C            /* ALT F5 */
-	#define FKB_ALT_F6      0xE03D            /* ALT F6 */
-	#define FKB_ALT_F7      0xE03E            /* ALT F7 */
-	#define FKB_ALT_F8      0xE03F            /* ALT F8 */
-	#define FKB_ALT_F9      0xE040            /* ALT F9 */
-	#define FKB_ALT_F10     0xE041            /* ALT F10 -F11,F12 NOT SUPPORTED*/
-	
-	#define FKB_GOTO        0xE058            /* GOTO cntl-home */
-	#define FKB_CTRL_HOME   0xE058            /* CTRL Home */
-	#define FKB_CTRL_UP     0xE063            /* CTRL Up arrow */
-	#define FKB_CTRL_PGUP   0xE057            /* CTRL Page Up */
-	
-	#define FKB_CTRL_LEFT   0xE054            /* CTRL Left arrow */
-	#define FKB_CTRL_RIGHT  0xE053            /* CTRL Right arrow */
-	
-	#define FKB_CTRL_END    0xE00B            /* CTRL END */
-	#define FKB_CTRL_DOWN   0xE064            /* CTRL Down arrow */
-	#define FKB_CTRL_PGDN   0xE00C            /* CTRL Page Down */
-	#define FKB_CTRL_INSERT 0xE06E            /* CTRL Insert */
-	#define FKB_CTRL_DELETE 0xE06D            /* CTRL Delete */
-	
-	#define FKB_CTRL_ENTER  0xE05F            /* CTRL Enter */
-	
-	#define FKB_CTRL_A      0xE07C
-	#define FKB_CTRL_B      0xE07D
-	#define FKB_CTRL_C      0xE07E
-	#define FKB_CTRL_D      0xE07F
-	#define FKB_CTRL_E      0xE080
-	#define FKB_CTRL_F      0xE081
-	#define FKB_CTRL_G      0xE082
-	#define FKB_CTRL_H      0xE083
-	#define FKB_CTRL_I      0xE084
-	#define FKB_CTRL_J      0xE085
-	#define FKB_CTRL_K      0xE086
-	#define FKB_CTRL_L      0xE087
-	#define FKB_CTRL_M      0xE088
-	#define FKB_CTRL_N      0xE089
-	#define FKB_CTRL_O      0xE08A
-	#define FKB_CTRL_P      0xE08B
-	#define FKB_CTRL_Q      0xE08C
-	#define FKB_CTRL_R      0xE08D
-	#define FKB_CTRL_S      0xE08E
-	#define FKB_CTRL_T      0xE08F
-	#define FKB_CTRL_U      0xE090
-	#define FKB_CTRL_V      0xE091
-	#define FKB_CTRL_W      0xE092
-	#define FKB_CTRL_X      0xE093
-	#define FKB_CTRL_Y      0xE094
-	#define FKB_CTRL_Z      0xE095
-	
-	#define FKB_CTRL_1      0xE06B            /* F1 - NOT SUPPORTED IN WP TO F10*/
-	#define FKB_CTRL_2      0xE06C            /* F2 */
-	#define FKB_CTRL_3      0xE06D            /* F3 */
-	#define FKB_CTRL_4      0xE06E            /* F4 */
-	#define FKB_CTRL_5      0xE06F            /* F5 */
-	#define FKB_CTRL_6      0xE070            /* F6 */
-	#define FKB_CTRL_7      0xE071            /* F7 */
-	#define FKB_CTRL_8      0xE072            /* F8 */
-	#define FKB_CTRL_9      0xE073            /* F9 */
-	#define FKB_CTRL_0      0xE074            /* F10 */
-	
-	#define FKB_CTRL_MINUS  0xE060            /* MINUS */
-	#define FKB_CTRL_EQUAL  0xE061            /* EQUAL - NOT SUPPORTED IN WP */
-	
-	#define FKB_CTRL_F1     0xE038            /* F1 */
-	#define FKB_CTRL_F2     0xE039            /* F2 */
-	#define FKB_CTRL_F3     0xE03A            /* F3 */
-	#define FKB_CTRL_F4     0xE03B            /* F4 */
-	#define FKB_CTRL_F5     0xE03C            /* F5 */
-	#define FKB_CTRL_F6     0xE03D            /* F6 */
-	#define FKB_CTRL_F7     0xE03E            /* F7 */
-	#define FKB_CTRL_F8     0xE03F            /* F8 */
-	#define FKB_CTRL_F9     0xE040            /* F9 */
-	#define FKB_CTRL_F10    0xE041            /* F10 */
-
-	/****************************************************************************
 	Desc:	FTX
 	****************************************************************************/
 	
-	#define	FLM_CURSOR_BLOCK			0x01
-	#define	FLM_CURSOR_UNDERLINE		0x02
-	#define	FLM_CURSOR_INVISIBLE		0x04
-	#define	FLM_CURSOR_VISIBLE		0x08
+	#define FKB_ESCAPE      			0xE01B
+	#define FKB_ESC         			FKB_ESCAPE
+	#define FKB_SPACE       			0x20
+	
+	#define FKB_HOME        			0xE008
+	#define FKB_UP          			0xE017
+	#define FKB_PGUP        			0xE059
+	#define FKB_LEFT        			0xE019
+	#define FKB_RIGHT       			0xE018
+	#define FKB_END         			0xE055
+	#define FKB_DOWN        			0xE01A
+	#define FKB_PGDN        			0xE05A
+	#define FKB_PLUS						0x002B
+	#define FKB_MINUS						0x002D
+	
+	#define FKB_INSERT      			0xE05D
+	#define FKB_DELETE      			0xE051
+	#define FKB_BACKSPACE   			0xE050
+	#define FKB_TAB         			0xE009
+	
+	#define FKB_ENTER       			0xE00A
+	#define FKB_F1          			0xE020
+	#define FKB_F2          			0xE021
+	#define FKB_F3          			0xE022
+	#define FKB_F4          			0xE023
+	#define FKB_F5          			0xE024
+	#define FKB_F6          			0xE025
+	#define FKB_F7          			0xE026
+	#define FKB_F8          			0xE027
+	#define FKB_F9          			0xE028
+	#define FKB_F10         			0xE029
+	#define FKB_F11         			0xE03A
+	#define FKB_F12         			0xE03B
+	
+	#define FKB_STAB        			0xE05E
+	
+	#define FKB_SF1         			0xE02C
+	#define FKB_SF2         			0xE02D
+	#define FKB_SF3         			0xE02E
+	#define FKB_SF4         			0xE02F
+	#define FKB_SF5         			0xE030
+	#define FKB_SF6         			0xE031
+	#define FKB_SF7         			0xE032
+	#define FKB_SF8         			0xE033
+	#define FKB_SF9         			0xE034
+	#define FKB_SF10        			0xE035
+	#define FKB_SF11        			0xE036
+	#define FKB_SF12        			0xE037
+	
+	#define FKB_ALT_A       			0xFDDC
+	#define FKB_ALT_B       			0xFDDD
+	#define FKB_ALT_C       			0xFDDE
+	#define FKB_ALT_D       			0xFDDF
+	#define FKB_ALT_E       			0xFDE0
+	#define FKB_ALT_F       			0xFDE1
+	#define FKB_ALT_G       			0xFDE2
+	#define FKB_ALT_H       			0xFDE3
+	#define FKB_ALT_I       			0xFDE4
+	#define FKB_ALT_J       			0xFDE5
+	#define FKB_ALT_K       			0xFDE6
+	#define FKB_ALT_L       			0xFDE7
+	#define FKB_ALT_M       			0xFDE8
+	#define FKB_ALT_N       			0xFDE9
+	#define FKB_ALT_O       			0xFDEA
+	#define FKB_ALT_P       			0xFDEB
+	#define FKB_ALT_Q       			0xFDEC
+	#define FKB_ALT_R       			0xFDED
+	#define FKB_ALT_S       			0xFDEE
+	#define FKB_ALT_T       			0xFDEF
+	#define FKB_ALT_U       			0xFDF0
+	#define FKB_ALT_V       			0xFDF1
+	#define FKB_ALT_W       			0xFDF2
+	#define FKB_ALT_X       			0xFDF3
+	#define FKB_ALT_Y       			0xFDF4
+	#define FKB_ALT_Z       			0xFDF5
+	
+	#define FKB_ALT_1       			0xFDF7
+	#define FKB_ALT_2       			0xFDF8
+	#define FKB_ALT_3       			0xFDF9
+	#define FKB_ALT_4       			0xFDFA
+	#define FKB_ALT_5       			0xFDFB
+	#define FKB_ALT_6       			0xFDFC
+	#define FKB_ALT_7       			0xFDFD
+	#define FKB_ALT_8       			0xFDFE
+	#define FKB_ALT_9       			0xFDFF
+	#define FKB_ALT_0       			0xFDF6
+	
+	#define FKB_ALT_MINUS   			0xE061
+	#define FKB_ALT_EQUAL   			0xE06B
+	
+	#define FKB_ALT_F1      			0xE038
+	#define FKB_ALT_F2      			0xE039
+	#define FKB_ALT_F3      			0xE03A
+	#define FKB_ALT_F4      			0xE03B
+	#define FKB_ALT_F5      			0xE03C
+	#define FKB_ALT_F6      			0xE03D
+	#define FKB_ALT_F7      			0xE03E
+	#define FKB_ALT_F8      			0xE03F
+	#define FKB_ALT_F9      			0xE040
+	#define FKB_ALT_F10     			0xE041
+	
+	#define FKB_GOTO        			0xE058
+	#define FKB_CTRL_HOME   			0xE058
+	#define FKB_CTRL_UP     			0xE063
+	#define FKB_CTRL_PGUP   			0xE057
+	
+	#define FKB_CTRL_LEFT   			0xE054
+	#define FKB_CTRL_RIGHT  			0xE053
+	
+	#define FKB_CTRL_END    			0xE00B
+	#define FKB_CTRL_DOWN   			0xE064
+	#define FKB_CTRL_PGDN   			0xE00C
+	#define FKB_CTRL_INSERT 			0xE06E
+	#define FKB_CTRL_DELETE 			0xE06D
+	
+	#define FKB_CTRL_ENTER  			0xE05F
+	
+	#define FKB_CTRL_A      			0xE07C
+	#define FKB_CTRL_B      			0xE07D
+	#define FKB_CTRL_C      			0xE07E
+	#define FKB_CTRL_D      			0xE07F
+	#define FKB_CTRL_E      			0xE080
+	#define FKB_CTRL_F      			0xE081
+	#define FKB_CTRL_G      			0xE082
+	#define FKB_CTRL_H      			0xE083
+	#define FKB_CTRL_I      			0xE084
+	#define FKB_CTRL_J      			0xE085
+	#define FKB_CTRL_K      			0xE086
+	#define FKB_CTRL_L      			0xE087
+	#define FKB_CTRL_M      			0xE088
+	#define FKB_CTRL_N      			0xE089
+	#define FKB_CTRL_O      			0xE08A
+	#define FKB_CTRL_P      			0xE08B
+	#define FKB_CTRL_Q      			0xE08C
+	#define FKB_CTRL_R      			0xE08D
+	#define FKB_CTRL_S      			0xE08E
+	#define FKB_CTRL_T      			0xE08F
+	#define FKB_CTRL_U      			0xE090
+	#define FKB_CTRL_V      			0xE091
+	#define FKB_CTRL_W      			0xE092
+	#define FKB_CTRL_X      			0xE093
+	#define FKB_CTRL_Y      			0xE094
+	#define FKB_CTRL_Z      			0xE095
+	
+	#define FKB_CTRL_1      			0xE06B
+	#define FKB_CTRL_2      			0xE06C
+	#define FKB_CTRL_3      			0xE06D
+	#define FKB_CTRL_4      			0xE06E
+	#define FKB_CTRL_5      			0xE06F
+	#define FKB_CTRL_6      			0xE070
+	#define FKB_CTRL_7      			0xE071
+	#define FKB_CTRL_8      			0xE072
+	#define FKB_CTRL_9      			0xE073
+	#define FKB_CTRL_0      			0xE074
+	
+	#define FKB_CTRL_MINUS  			0xE060
+	#define FKB_CTRL_EQUAL  			0xE061
+	
+	#define FKB_CTRL_F1     			0xE038
+	#define FKB_CTRL_F2     			0xE039
+	#define FKB_CTRL_F3     			0xE03A
+	#define FKB_CTRL_F4     			0xE03B
+	#define FKB_CTRL_F5     			0xE03C
+	#define FKB_CTRL_F6     			0xE03D
+	#define FKB_CTRL_F7     			0xE03E
+	#define FKB_CTRL_F8     			0xE03F
+	#define FKB_CTRL_F9     			0xE040
+	#define FKB_CTRL_F10    			0xE041
+
+	#define FLM_CURSOR_BLOCK			0x01
+	#define FLM_CURSOR_UNDERLINE		0x02
+	#define FLM_CURSOR_INVISIBLE		0x04
+	#define FLM_CURSOR_VISIBLE			0x08
 	
 	typedef struct FTX_SCREEN	FTX_SCREEN;
+	
 	typedef struct FTX_WINDOW	FTX_WINDOW;
 	
 	typedef FLMBOOL (FLMAPI * KEY_HANDLER)(

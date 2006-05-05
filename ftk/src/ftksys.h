@@ -1902,6 +1902,243 @@
 	};
 	
 	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_CollIStream : public IF_CollIStream
+	{
+	public:
+	
+		F_CollIStream()
+		{
+			m_pIStream = NULL;
+			m_uiLanguage = 0;
+			m_bMayHaveWildCards = FALSE;
+			m_bUnicodeStream = FALSE;
+			m_uNextChar = 0;
+		}
+	
+		virtual ~F_CollIStream()
+		{
+			if( m_pIStream)
+			{
+				m_pIStream->Release();
+			}
+		}
+	
+		RCODE FLMAPI open(
+			IF_PosIStream *	pIStream,
+			FLMBOOL				bUnicodeStream,
+			FLMUINT				uiLanguage,
+			FLMUINT				uiCompareRules,
+			FLMBOOL				bMayHaveWildCards)
+		{
+			if( m_pIStream)
+			{
+				m_pIStream->Release();
+			}
+	
+			m_pIStream = pIStream;
+			m_pIStream->AddRef();
+			m_uiLanguage = uiLanguage;
+			m_uiCompareRules = uiCompareRules;
+			m_bCaseSensitive = (uiCompareRules & FLM_COMP_CASE_INSENSITIVE)
+									  ? FALSE
+									  : TRUE;
+			m_bMayHaveWildCards = bMayHaveWildCards;
+			m_bUnicodeStream = bUnicodeStream;		
+			m_ui64EndOfLeadingSpacesPos = 0;
+			return( NE_FLM_OK);
+		}
+	
+		RCODE FLMAPI close( void)
+		{
+			if( m_pIStream)
+			{
+				m_pIStream->Release();
+				m_pIStream = NULL;
+			}
+			
+			return( NE_FLM_OK);
+		}
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead)
+		{
+			RCODE		rc = NE_FLM_OK;
+	
+			if( RC_BAD( rc = m_pIStream->read( pvBuffer, 
+				uiBytesToRead, puiBytesRead)))
+			{
+				goto Exit;
+			}
+	
+		Exit:
+	
+			return( rc);
+		}
+	
+		RCODE FLMAPI read(
+			FLMBOOL			bAllowTwoIntoOne,
+			FLMUNICODE *	puChar,
+			FLMBOOL *		pbCharIsWild,
+			FLMUINT16 *		pui16Col,
+			FLMUINT16 *		pui16SubCol,
+			FLMBYTE *		pucCase);
+			
+		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		{
+			if( m_pIStream)
+			{
+				return( m_pIStream->totalSize());
+			}
+	
+			return( 0);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		{
+			if( m_pIStream)
+			{
+				return( m_pIStream->remainingSize());
+			}
+	
+			return( 0);
+		}
+	
+		FINLINE RCODE FLMAPI positionTo(
+			FLMUINT64)
+		{
+			return( RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED));
+		}
+	
+		FINLINE RCODE FLMAPI positionTo(
+			F_CollStreamPos *	pPos)
+		{
+			
+			// Should never be able to position back to before the
+			// leading spaces.
+			
+			m_uNextChar = pPos->uNextChar;
+			flmAssert( pPos->ui64Position >= m_ui64EndOfLeadingSpacesPos);
+			return( m_pIStream->positionTo( pPos->ui64Position));
+		}
+	
+		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		{
+			flmAssert( 0);
+			return( 0);
+		}
+	
+		void FLMAPI getCurrPosition(
+			F_CollStreamPos *		pPos);
+	
+	private:
+	
+		FINLINE RCODE readCharFromStream(
+			FLMUNICODE *		puChar)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_bUnicodeStream)
+			{
+				if( RC_BAD( rc = m_pIStream->read( puChar, sizeof( FLMUNICODE), NULL)))
+				{
+					goto Exit;
+				}
+			}
+			else
+			{
+				if( RC_BAD( rc = f_readUTF8CharAsUnicode( 
+					m_pIStream, puChar)))
+				{
+					goto Exit;
+				}
+			}
+			
+		Exit:
+		
+			return( rc);
+		}
+			
+		IF_PosIStream *	m_pIStream;
+		FLMUINT				m_uiLanguage;
+		FLMBOOL				m_bCaseSensitive;
+		FLMUINT				m_uiCompareRules;
+		FLMUINT64			m_ui64EndOfLeadingSpacesPos;
+		FLMBOOL				m_bMayHaveWildCards;
+		FLMBOOL				m_bUnicodeStream;
+		FLMUNICODE			m_uNextChar;
+	};
+
+	/****************************************************************************
+	Desc: XML
+	****************************************************************************/
+
+	typedef struct xmlChar
+	{
+		FLMBYTE		ucFlags;
+	} XMLCHAR;
+	
+	class F_XML : public IF_XML
+	{
+	public:
+	
+		F_XML();
+	
+		virtual ~F_XML();
+		
+		RCODE FLMAPI setup( void);
+	
+		FLMBOOL FLMAPI isPubidChar(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isQuoteChar(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isWhitespace(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isExtender(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isCombiningChar(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isNameChar(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isNCNameChar(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isIdeographic(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isBaseChar(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isDigit(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isLetter(
+			FLMUNICODE		uChar);
+	
+		FLMBOOL FLMAPI isNameValid(
+			FLMUNICODE *	puzName,
+			FLMBYTE *		pszName);
+	
+	private:
+	
+		void setCharFlag(
+			FLMUNICODE		uLowChar,
+			FLMUNICODE		uHighChar,
+			FLMUINT16		ui16Flag);
+	
+		XMLCHAR *			m_pCharTable;
+	};
+
+	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
 
@@ -1952,5 +2189,13 @@
 	IF_FileSystem * f_getFileSysPtr( void);
 
 	IF_ThreadMgr * f_getThreadMgrPtr( void);
+	
+	RCODE f_verifyMetaphoneRoutines( void);
+	
+	RCODE f_initCharMappingTables( void);
+	
+	void f_freeCharMappingTables( void);
+	
+	IF_XML * f_getXmlObjPtr( void);
 	
 #endif	// FTKSYS_H

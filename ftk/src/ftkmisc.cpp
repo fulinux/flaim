@@ -33,6 +33,7 @@ static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 static IF_ThreadMgr *			gv_pThreadMgr = NULL;
 static IF_FileSystem *			gv_pFileSystem = NULL;
 static FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
+static F_XML *						gv_pXml = NULL;
 
 FSTATIC RCODE f_initSerialNumberGenerator( void);
 
@@ -53,6 +54,46 @@ FSTATIC RCODE f_initCRCTable(
 /****************************************************************************
 Desc:
 ****************************************************************************/
+static FLMBYTE gv_ucSENLengthArray[] =
+{
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 0   - 15
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 16  - 31
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 32  - 47
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 48  - 63
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 64  - 79
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 80  - 95
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 96  - 111
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 112 - 127
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 128 - 143
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 144 - 159
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 160 - 175
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 176 - 191
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,		// 192 - 207
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,		// 208 - 223
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,		// 224 - 239
+	5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 9		// 240 - 255
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+static FLMBYTE ucSENPrefixArray[] =
+{
+	0,
+	0,
+	0x80,
+	0xC0,
+	0xE0,
+	0xF0,
+	0xF8,
+	0xFC,
+	0xFE,
+	0xFF
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 RCODE FLMAPI ftkStartup( void)
 {
 	RCODE		rc = NE_FLM_OK;
@@ -63,6 +104,11 @@ RCODE FLMAPI ftkStartup( void)
 	}
 	
 	f_memoryInit();
+	
+	if( RC_BAD( rc = f_initCharMappingTables()))
+	{
+		goto Exit;
+	}
 	
 	if( RC_BAD( rc = f_allocFileSystem( &gv_pFileSystem)))
 	{
@@ -84,10 +130,28 @@ RCODE FLMAPI ftkStartup( void)
 		goto Exit;
 	}
 	
+	if( (gv_pXml = f_new F_XML) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+		
+	if( RC_BAD( rc = gv_pXml->setup()))
+	{
+		goto Exit;
+	}
+
 	if( RC_BAD( rc = f_checkErrorCodeTables()))
 	{
 		goto Exit;
 	}
+	
+#ifdef FLM_DEBUG
+	if( RC_BAD( rc = f_verifyMetaphoneRoutines()))
+	{
+		goto Exit;
+	}
+#endif
 	
 #if defined( FLM_LINUX)
 	f_setupLinuxKernelVersion();
@@ -144,7 +208,13 @@ void FLMAPI ftkShutdown( void)
 		f_free( &gv_pui32CRCTbl);
 	}
 	
+	if( gv_pXml)
+	{
+		gv_pXml->Release();
+	}
+	
 	f_freeSerialNumberGenerator();
+	f_freeCharMappingTables();
 	f_memoryCleanup();
 }
 
@@ -1019,4 +1089,405 @@ Desc:
 FLMUINT64 FLMAPI f_getMaxFileSize( void)
 {
 	return( gv_uiMaxFileSize);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI f_readSEN(
+	IF_IStream *	pIStream,
+	FLMUINT *		puiValue,
+	FLMUINT *		puiLength)
+{
+	RCODE				rc;
+	FLMUINT64		ui64Tmp;
+
+	if( RC_BAD( rc = f_readSEN64( pIStream, &ui64Tmp, puiLength)))
+	{
+		goto Exit;
+	}
+
+	if( ui64Tmp > ~((FLMUINT)0))
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_CONV_DEST_OVERFLOW);
+		goto Exit;
+	}
+
+	if( puiValue)
+	{
+		*puiValue = (FLMUINT)ui64Tmp;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI f_readSEN64(
+	IF_IStream *		pIStream,
+	FLMUINT64 *			pui64Value,
+	FLMUINT *			puiLength)
+{
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiLen;
+	FLMUINT				uiSENLength;
+	FLMBYTE				ucBuffer[ 16];
+	const FLMBYTE *	pucBuffer;
+
+	uiLen = 1;
+	if( RC_BAD( rc = pIStream->read( 
+		(char *)&ucBuffer[ 0], uiLen, &uiLen)))
+	{
+		goto Exit;
+	}
+
+	uiSENLength = 	gv_ucSENLengthArray[ ucBuffer[ 0]];
+	uiLen = uiSENLength - 1;
+
+	if( puiLength)
+	{
+		*puiLength = uiSENLength;
+	}
+
+	if( pui64Value)
+	{
+		pucBuffer = &ucBuffer[ 1];
+	}
+	else
+	{
+		pucBuffer = NULL;
+	}
+
+	if( uiLen)
+	{
+		if( RC_BAD( rc = pIStream->read( 
+			(char *)pucBuffer, uiLen, &uiLen)))
+		{
+			goto Exit;
+		}
+	}
+
+	if( pui64Value)
+	{
+		pucBuffer = &ucBuffer[ 0];
+		if( RC_BAD( rc = f_decodeSEN64( &pucBuffer,
+			&ucBuffer[ sizeof( ucBuffer)], pui64Value)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+FLMUINT FLMAPI f_getSENLength(
+	FLMBYTE 					ucByte)
+{
+	return( gv_ucSENLengthArray[ ucByte]);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_decodeSEN64(
+	const FLMBYTE **		ppucBuffer,
+	const FLMBYTE *		pucEnd,
+	FLMUINT64 *				pui64Value)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiSENLength;
+	const FLMBYTE *		pucBuffer = *ppucBuffer;
+
+	uiSENLength = gv_ucSENLengthArray[ *pucBuffer];
+	if( pucBuffer + uiSENLength > pucEnd)
+	{
+		if (pui64Value)
+		{
+			*pui64Value = 0;
+		}
+		rc = RC_SET( NE_FLM_BAD_SEN);
+		goto Exit;
+	}
+
+	if (pui64Value)
+	{
+		switch( uiSENLength)
+		{
+			case 1:
+				*pui64Value = *pucBuffer;
+				break;
+	
+			case 2:
+				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x3F)) << 8) + pucBuffer[ 1];
+				break;
+	
+			case 3:
+				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x1F)) << 16) +
+					(((FLMUINT64)pucBuffer[ 1]) << 8) + pucBuffer[ 2];
+				break;
+	
+			case 4:
+				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x0F)) << 24) +
+					(((FLMUINT64)pucBuffer[ 1]) << 16) +
+					(((FLMUINT64)pucBuffer[ 2]) << 8) + pucBuffer[ 3];
+				break;
+	
+			case 5:
+				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x07)) << 32) +
+					(((FLMUINT64)pucBuffer[ 1]) << 24) +
+					(((FLMUINT64)pucBuffer[ 2]) << 16) +
+					(((FLMUINT64)pucBuffer[ 3]) << 8) + pucBuffer[ 4];
+				break;
+	
+			case 6:
+				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x03)) << 40) +
+					(((FLMUINT64)pucBuffer[ 1]) << 32) +
+					(((FLMUINT64)pucBuffer[ 2]) << 24) +
+					(((FLMUINT64)pucBuffer[ 3]) << 16) +
+					(((FLMUINT64)pucBuffer[ 4]) << 8) + pucBuffer[ 5];
+				break;
+	
+			case 7:
+				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x01)) << 48) +
+					(((FLMUINT64)pucBuffer[ 1]) << 40) +
+					(((FLMUINT64)pucBuffer[ 2]) << 32) +
+					(((FLMUINT64)pucBuffer[ 3]) << 24) +
+					(((FLMUINT64)pucBuffer[ 4]) << 16) +
+					(((FLMUINT64)pucBuffer[ 5]) << 8) + pucBuffer[ 6];
+				break;
+	
+			case 8:
+				*pui64Value = (((FLMUINT64)pucBuffer[ 1]) << 48) +
+					(((FLMUINT64)pucBuffer[ 2]) << 40) +
+					(((FLMUINT64)pucBuffer[ 3]) << 32) +
+					(((FLMUINT64)pucBuffer[ 4]) << 24) +
+					(((FLMUINT64)pucBuffer[ 5]) << 16) +
+					(((FLMUINT64)pucBuffer[ 6]) << 8) + pucBuffer[ 7];
+				break;
+	
+			case 9:
+				*pui64Value = (((FLMUINT64)pucBuffer[ 1]) << 56) +
+					(((FLMUINT64)pucBuffer[ 2]) << 48) +
+					(((FLMUINT64)pucBuffer[ 3]) << 40) +
+					(((FLMUINT64)pucBuffer[ 4]) << 32) +
+					(((FLMUINT64)pucBuffer[ 5]) << 24) +
+					(((FLMUINT64)pucBuffer[ 6]) << 16) +
+					(((FLMUINT64)pucBuffer[ 7]) << 8) + pucBuffer[ 8];
+				break;
+	
+			default:
+				*pui64Value = 0;
+				flmAssert( 0);
+				break;
+		}
+	}
+
+Exit:
+
+	*ppucBuffer = pucBuffer + uiSENLength;
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_decodeSEN(
+	const FLMBYTE **		ppucBuffer,
+	const FLMBYTE *		pucEnd,
+	FLMUINT *				puiValue)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT64		ui64Value;
+	
+	if( RC_BAD( rc = f_decodeSEN64( ppucBuffer, pucEnd, &ui64Value)))
+	{
+		return( rc);
+	}
+	
+	if( ui64Value > FLM_MAX_UINT)
+	{
+		return( RC_SET_AND_ASSERT( NE_FLM_CONV_NUM_OVERFLOW));
+	}
+	
+	if( puiValue)
+	{
+		*puiValue = (FLMUINT)ui64Value;
+	}
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+FINLINE FLMBYTE f_shiftRightRetByte(
+	FLMUINT64	ui64Num,
+	FLMBYTE		ucBits)
+{
+	return( ucBits < 64 ? (FLMBYTE)(ui64Num >> ucBits) : 0);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI f_getSENByteCount(
+	FLMUINT64	ui64Num)
+{
+	FLMUINT		uiCount = 0;
+
+	if( ui64Num < 0x80)
+	{
+		return( 1);
+	}
+
+	while( ui64Num)
+	{
+		uiCount++;
+		ui64Num >>= 7;
+	}
+
+	// If the high bit is set, the counter will be incremented 1 beyond
+	// the actual number of bytes need to represent the SEN.  We will need
+	// to re-visit this if we ever go beyond 64-bits.
+
+	return( uiCount < FLM_MAX_SEN_LEN ? uiCount : FLM_MAX_SEN_LEN);
+}
+
+/****************************************************************************
+Desc:		Encodes a number as a SEN
+****************************************************************************/
+FLMUINT FLMAPI f_encodeSEN(
+	FLMUINT64		ui64Value,
+	FLMBYTE **		ppucBuffer,
+	FLMUINT			uiSizeWanted)
+{
+	FLMBYTE *		pucBuffer = *ppucBuffer;
+	FLMUINT			uiSenLen = f_getSENByteCount( ui64Value);
+
+	flmAssert( uiSizeWanted <= FLM_MAX_SEN_LEN && 
+				  (!uiSizeWanted || uiSizeWanted >= uiSenLen));
+
+	uiSenLen = uiSizeWanted > uiSenLen ? uiSizeWanted : uiSenLen;
+
+	if( uiSenLen == 1)
+	{
+		*pucBuffer++ = (FLMBYTE)ui64Value;
+	}
+	else
+	{
+		FLMUINT			uiTmp = (uiSenLen - 1) << 3;
+
+		*pucBuffer++ = ucSENPrefixArray[ uiSenLen] + 
+							f_shiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
+		while( uiTmp)
+		{
+			uiTmp -= 8;
+			*pucBuffer++ = f_shiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
+		}
+	}
+
+	*ppucBuffer = pucBuffer;
+	return( uiSenLen);
+}
+
+/****************************************************************************
+Desc:		Encodes a number as a SEN
+****************************************************************************/
+RCODE FLMAPI f_encodeSEN(
+	FLMUINT64		ui64Value,
+	FLMBYTE **		ppucBuffer,
+	FLMBYTE *		pucEnd)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMBYTE *		pucBuffer = *ppucBuffer;
+	FLMUINT			uiSenLen = f_getSENByteCount( ui64Value);
+	
+	if( *ppucBuffer + uiSenLen > pucEnd)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_CONV_DEST_OVERFLOW);
+		goto Exit;
+	}
+
+	if( uiSenLen == 1)
+	{
+		*pucBuffer++ = (FLMBYTE)ui64Value;
+	}
+	else
+	{
+		FLMUINT			uiTmp = (uiSenLen - 1) << 3;
+
+		*pucBuffer++ = ucSENPrefixArray[ uiSenLen] + 
+							f_shiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
+		while( uiTmp)
+		{
+			uiTmp -= 8;
+			*pucBuffer++ = f_shiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
+		}
+	}
+
+	*ppucBuffer = pucBuffer;
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Encodes a number as a SEN
+****************************************************************************/
+FLMUINT FLMAPI f_encodeSENKnownLength(
+	FLMUINT64		ui64Value,
+	FLMUINT			uiSenLen,
+	FLMBYTE **		ppucBuffer)
+{
+	FLMBYTE *			pucBuffer = *ppucBuffer;
+
+	if( uiSenLen == 1)
+	{
+		*pucBuffer++ = (FLMBYTE)ui64Value;
+	}
+	else
+	{
+		FLMUINT			uiTmp = (uiSenLen - 1) << 3;
+
+		*pucBuffer++ = ucSENPrefixArray[ uiSenLen] + 
+							f_shiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
+		while( uiTmp)
+		{
+			uiTmp -= 8;
+			*pucBuffer++ = f_shiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
+		}
+	}
+
+	*ppucBuffer = pucBuffer;
+	return( uiSenLen);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmGetXMLObject(
+	IF_XML **				ppXmlObject)
+{
+	*ppXmlObject = gv_pXml;
+	(*ppXmlObject)->AddRef();
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+IF_XML * f_getXmlObjPtr( void)
+{
+	return( gv_pXml);
 }

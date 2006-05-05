@@ -2199,40 +2199,10 @@ const unsigned char UnicodeProperties[ 32768] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FINLINE FLMBOOL f_isWhitespace(
+FLMBOOL FLMAPI f_isWhitespace(
 	FLMUNICODE		uzChar)
 {
-	return( (uzChar == ' ' || uzChar == '\t' ||
-			   uzChar == '\n' || uzChar == '\r') ? TRUE : FALSE);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FINLINE FLMUNICODE f_convertChar(
-	FLMUNICODE	uzChar,
-	FLMUINT		uiCompareRules)
-{
-	if (uzChar == ASCII_SPACE ||
-		 (uzChar == ASCII_UNDERSCORE &&
-		  (uiCompareRules & FLM_COMP_NO_UNDERSCORES)) ||
-		 (f_isWhitespace( uzChar) &&
-		  (uiCompareRules & FLM_COMP_WHITESPACE_AS_SPACE)))
-	{
-		return( (FLMUNICODE)((uiCompareRules &
-									 (FLM_COMP_NO_WHITESPACE |
-									  FLM_COMP_IGNORE_LEADING_SPACE))
-									 ? (FLMUNICODE)0
-									 : (FLMUNICODE)ASCII_SPACE));
-	}
-	else if (uzChar == ASCII_DASH && (uiCompareRules & FLM_COMP_NO_DASHES))
-	{
-		return( (FLMUNICODE)0);
-	}
-	else
-	{
-		return( uzChar);
-	}
+	return( f_getXmlObjPtr()->isWhitespace( uzChar));
 }
 
 /****************************************************************************
@@ -7287,3 +7257,334 @@ Exit:
 	return( rc);
 }
 #endif
+
+/*****************************************************************************
+Desc:
+Notes:	pucBuf must be able to contain at least 3 bytes
+******************************************************************************/
+RCODE FLMAPI f_readUTF8CharAsUTF8(
+	IF_IStream *	pIStream,
+	FLMBYTE *		pucBuf,
+	FLMUINT *		puiLen)
+{
+	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiLen;
+
+	if( *puiLen == 0)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_CONV_DEST_OVERFLOW);
+		goto Exit;
+	}
+
+	uiLen = 1;
+	if( RC_BAD( rc = pIStream->read( pucBuf, uiLen, &uiLen)))
+	{
+		goto Exit;
+	}
+
+	if( pucBuf[ 0] <= 0x7F)
+	{
+		if( !pucBuf[ 0])
+		{
+			rc = RC_SET( NE_FLM_EOF_HIT);
+			goto Exit;
+		}
+		
+		*puiLen = 1;
+		goto Exit;
+	}
+
+	if( *puiLen < 2)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_CONV_DEST_OVERFLOW);
+		goto Exit;
+	}
+
+	uiLen = 1;
+	if( RC_BAD( rc = pIStream->read( &pucBuf[ 1], uiLen, &uiLen)))
+	{
+		if( rc == NE_FLM_EOF_HIT)
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_BAD_UTF8);
+		}
+		goto Exit;
+	}
+
+	if( (pucBuf[ 1] >> 6) != 0x02)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_BAD_UTF8);
+		goto Exit;
+	}
+
+	if( (pucBuf[ 0] >> 5) == 0x06)
+	{
+		*puiLen = 2;
+		goto Exit;
+	}
+
+	if( *puiLen < 3)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_CONV_DEST_OVERFLOW);
+		goto Exit;
+	}
+
+	uiLen = 1;
+	if( RC_BAD( rc = pIStream->read( &pucBuf[ 2], uiLen, &uiLen)))
+	{
+		if( rc == NE_FLM_EOF_HIT)
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_BAD_UTF8);
+		}
+		goto Exit;
+	}
+
+	if( (pucBuf[ 0] >> 4) != 0x0E || (pucBuf[ 2] >> 6) != 0x02)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_BAD_UTF8);
+		goto Exit;
+	}
+
+	*puiLen = 3;
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_compareUnicodeStrings(
+	const FLMUNICODE *	puzLString,
+	FLMUINT					uiLStrBytes,
+	FLMBOOL					bLeftWild,
+	const FLMUNICODE *	puzRString,
+	FLMUINT					uiRStrBytes,
+	FLMBOOL					bRightWild,
+	FLMUINT					uiCompareRules,
+	FLMUINT					uiLanguage,
+	FLMINT *					piResult)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_BufferIStream 		bufferLStream;
+	F_BufferIStream		bufferRStream;
+	F_CollIStream			lStream;
+	F_CollIStream			rStream;
+
+	if( RC_BAD( rc = bufferLStream.open( 
+		(const char *)puzLString, uiLStrBytes)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = bufferRStream.open( 
+		(const char *)puzRString, uiRStrBytes)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = lStream.open( &bufferLStream, TRUE, uiLanguage,
+		uiCompareRules, bLeftWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = rStream.open( &bufferRStream, TRUE, uiLanguage,
+		uiCompareRules, bRightWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = f_compareCollStreams( 
+		(IF_CollIStream *)&lStream, (IF_CollIStream *)&rStream,
+		(bLeftWild || bRightWild) ? TRUE : FALSE, uiLanguage, piResult)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_compareUTF8Strings(
+	const FLMBYTE *		pucLString,
+	FLMUINT					uiLStrBytes,
+	FLMBOOL					bLeftWild,
+	const FLMBYTE *		pucRString,
+	FLMUINT					uiRStrBytes,
+	FLMBOOL					bRightWild,
+	FLMUINT					uiCompareRules,
+	FLMUINT					uiLanguage,
+	FLMINT *					piResult)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_BufferIStream		bufferLStream;
+	F_BufferIStream		bufferRStream;
+	F_CollIStream			lStream;
+	F_CollIStream			rStream;
+
+	if (RC_BAD( rc = bufferLStream.open( 
+		(const char *)pucLString, uiLStrBytes)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = bufferRStream.open( 
+		(const char *)pucRString, uiRStrBytes)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = lStream.open( &bufferLStream, FALSE, uiLanguage,
+								uiCompareRules, bLeftWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = rStream.open( &bufferRStream, FALSE, uiLanguage,
+								uiCompareRules, bRightWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = f_compareCollStreams( 
+		(IF_CollIStream *)&lStream, (IF_CollIStream *)&rStream,
+		(bLeftWild || bRightWild) ? TRUE : FALSE,
+		uiLanguage, piResult)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_compareUTF8Streams(
+	IF_PosIStream *			pLStream,
+	FLMBOOL						bLeftWild,
+	IF_PosIStream *			pRStream,
+	FLMBOOL						bRightWild,
+	FLMUINT						uiCompareRules,
+	FLMUINT						uiLanguage,
+	FLMINT *						piResult)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_CollIStream			lStream;
+	F_CollIStream			rStream;
+
+	if( RC_BAD( rc = lStream.open( pLStream, FALSE, uiLanguage,
+								uiCompareRules, bLeftWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = rStream.open( pRStream, FALSE, uiLanguage,
+								uiCompareRules, bRightWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = f_compareCollStreams( 
+		&lStream, &rStream, (bLeftWild || bRightWild) ? TRUE : FALSE,
+		uiLanguage, piResult)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_compareUnicodeStreams(
+	IF_PosIStream *			pLStream,
+	FLMBOOL						bLeftWild,
+	IF_PosIStream *			pRStream,
+	FLMBOOL						bRightWild,
+	FLMUINT						uiCompareRules,
+	FLMUINT						uiLanguage,
+	FLMINT *						piResult)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_CollIStream			lStream;
+	F_CollIStream			rStream;
+
+	if( RC_BAD( rc = lStream.open( pLStream, TRUE, uiLanguage,
+								uiCompareRules, bLeftWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = rStream.open( pRStream, TRUE, uiLanguage,
+								uiCompareRules, bRightWild)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = f_compareCollStreams( 
+		&lStream, &rStream, (bLeftWild || bRightWild) ? TRUE : FALSE,
+		uiLanguage, piResult)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_utf8IsSubStr(
+	const FLMBYTE *	pszString,
+	const FLMBYTE *	pszSubString,
+	FLMUINT				uiCompareRules,
+	FLMUINT				uiLanguage,
+	FLMBOOL *			pbExists)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMINT			iResult = 0;
+	FLMBYTE *		pszSearch = NULL;
+	FLMUINT			uiSubStringLen = f_strlen( (const char *)pszSubString);
+	
+	if( RC_BAD( rc = f_alloc( uiSubStringLen + 3, &pszSearch)))
+	{
+		goto Exit;
+	}
+	
+	pszSearch[0] = '*';
+	f_memcpy( &pszSearch[ 1], pszSubString, uiSubStringLen);
+	pszSearch[ uiSubStringLen + 1] = '*';
+	pszSearch[ uiSubStringLen + 2] = '\0';
+
+	if( RC_BAD( rc = f_compareUTF8Strings( 
+		pszString, f_strlen( (const char *)pszString), FALSE, pszSearch, 
+		uiSubStringLen + 2, TRUE, uiCompareRules, uiLanguage, &iResult)))
+	{
+		goto Exit;
+	}
+	
+	*pbExists = (iResult)?FALSE:TRUE;
+
+Exit:
+
+	if( pszSearch)
+	{
+		f_free( &pszSearch);
+	}
+	
+	return( rc);
+}
+
