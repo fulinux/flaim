@@ -41,9 +41,6 @@
 
 #include <fcntl.h>
 
-extern FLMUINT		gv_uiMaxFileSize;
-extern FLMBOOL		gv_bOkToDoAsyncWrites;
-
 #if defined( FLM_SOLARIS)
 	#include <sys/statvfs.h>
 #elif defined( FLM_LINUX)
@@ -79,7 +76,7 @@ F_FileHdl::F_FileHdl()
 	m_fd = -1;
 	m_bDoDirectIO = FALSE;
 	m_uiExtendSize = 0;
-	m_uiMaxAutoExtendSize = gv_uiMaxFileSize;
+	m_uiMaxAutoExtendSize = f_getMaxFileSize();
 	m_uiBytesPerSector = 0;
 	m_ui64NotOnSectorBoundMask = 0;
 	m_ui64GetSectorBoundMask = 0;
@@ -120,18 +117,20 @@ RCODE F_FileHdl::openOrCreate(
    FLMUINT			uiAccess,
 	FLMBOOL			bCreateFlag)
 {
-	RCODE			rc = NE_FLM_OK;
-	FLMBOOL		bDoDirectIO = FALSE;
-	char			szSaveFileName[ F_PATH_MAX_SIZE];
-	int         openFlags = O_RDONLY;
+	RCODE					rc = NE_FLM_OK;
+	FLMBOOL				bDoDirectIO = FALSE;
+	char					szSaveFileName[ F_PATH_MAX_SIZE];
+	int         		openFlags = O_RDONLY;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
-#if !defined( FLM_UNIX) || defined( FLM_LINUX) || defined( FLM_SOLARIS)
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS)
 	bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
-// HPUX needs this defined to access files larger than 2 GB.  The Linux
-// man pages *say* it's needed although as of Suse 9.1 it actually
-// isn't.  Including this flag on Linux anyway just it case...
+	// HPUX needs this defined to access files larger than 2 GB.  The Linux
+	// man pages *say* it's needed although as of Suse 9.1 it actually
+	// isn't.  Including this flag on Linux anyway just it case...
+	
 #if defined( FLM_HPUX) || defined( FLM_LINUX)
 	openFlags |= O_LARGEFILE;
 #endif
@@ -176,7 +175,7 @@ RCODE F_FileHdl::openOrCreate(
 		}
 		else
 		{
-			if( RC_BAD( rc = gv_pFileSystem->getSectorSize( 
+			if( RC_BAD( rc = pFileSystem->getSectorSize(
 				pszFileName, &m_uiBytesPerSector)))
 			{
 				goto Exit;
@@ -204,21 +203,14 @@ RCODE F_FileHdl::openOrCreate(
 					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
 				{
 					openFlags |= O_DIRECT;
-					
-					if( gv_bOkToDoAsyncWrites)
-					{
-						m_bCanDoAsync = TRUE;
-					}
+					m_bCanDoAsync = TRUE;
 				}
 				else
 				{
 					bDoDirectIO = FALSE;
 				}
 #elif defined( FLM_SOLARIS)
-				if( gv_bOkToDoAsyncWrites)
-				{
-					m_bCanDoAsync = TRUE;
-				}
+				m_bCanDoAsync = TRUE;
 #endif
 			}
 		}
@@ -239,10 +231,10 @@ Retry_Create:
 
 			// Remove the file name for which we are creating the directory
 
-			if( RC_OK( gv_pFileSystem->pathReduce( szSaveFileName,
+			if( RC_OK( pFileSystem->pathReduce( szSaveFileName,
 													szIoDirPath, szTemp)))
 			{
-				if( RC_OK( rc = gv_pFileSystem->createDir( szIoDirPath)))
+				if( RC_OK( rc = pFileSystem->createDir( szIoDirPath)))
 				{
 					goto Retry_Create;
 				}
@@ -262,7 +254,7 @@ Retry_Create:
 		}
 #endif
 		
-		rc = MapPlatformError( errno, NE_FLM_OPENING_FILE);
+		rc = f_mapPlatformError( errno, NE_FLM_OPENING_FILE);
 		goto Exit;
 	}
 
@@ -338,21 +330,22 @@ Exit:
 Desc:
 ******************************************************************************/
 RCODE FLMAPI F_FileHdl::createUnique(
-	char *			pszDirName,
-	const char *	pszFileExtension,
-	FLMUINT			uiIoFlags)
+	char *				pszDirName,
+	const char *		pszFileExtension,
+	FLMUINT				uiIoFlags)
 {
-	RCODE				rc = NE_FLM_OK;
-	char *			pszTmp;
-	FLMBOOL			bModext = TRUE;
-	FLMUINT			uiBaseTime = 0;
-	FLMBYTE			ucHighByte = 0;
-	char				szFileName[ F_FILENAME_SIZE];
-	char *			pszDirPath;
-	char				szDirPath[ F_PATH_MAX_SIZE];
-	char				szTmpPath[ F_PATH_MAX_SIZE];
-	FLMUINT			uiCount;
-
+	RCODE					rc = NE_FLM_OK;
+	char *				pszTmp;
+	FLMBOOL				bModext = TRUE;
+	FLMUINT				uiBaseTime = 0;
+	FLMBYTE				ucHighByte = 0;
+	char					szFileName[ F_FILENAME_SIZE];
+	char *				pszDirPath;
+	char					szDirPath[ F_PATH_MAX_SIZE];
+	char					szTmpPath[ F_PATH_MAX_SIZE];
+	FLMUINT				uiCount;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	
 	f_assert( !m_bFileOpened);
 	f_memset( szFileName, 0, sizeof( szFileName));
 
@@ -405,12 +398,12 @@ RCODE FLMAPI F_FileHdl::createUnique(
 	uiCount = 0;
 	do
 	{
-		gv_pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName,
+		pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName,
 										pszFileExtension,
 										&ucHighByte, bModext);
 
 		f_strcpy( szTmpPath, pszDirPath);
-		gv_pFileSystem->pathAppend( szTmpPath, szFileName);
+		pFileSystem->pathAppend( szTmpPath, szFileName);
 		if( m_pszFileName)
 		{
 			f_free( &m_pszFileName);
@@ -420,7 +413,7 @@ RCODE FLMAPI F_FileHdl::createUnique(
 		
 		if (rc == NE_FLM_IO_DISK_FULL)
 		{
-			gv_pFileSystem->deleteFile( pszDirPath);
+			pFileSystem->deleteFile( pszDirPath);
 			goto Exit;
 		}
 		
@@ -542,7 +535,7 @@ RCODE FLMAPI F_FileHdl::close( void)
 
 		if( bDeleteAllowed)
 		{
-			gv_pFileSystem->deleteFile( m_pszFileName);
+			f_getFileSysPtr()->deleteFile( m_pszFileName);
 		}
 		m_bDeleteOnRelease = FALSE;
 
@@ -584,7 +577,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 
 	if( fdatasync( m_fd) != 0)
 	{
-		 return( MapPlatformError( errno, NE_FLM_FLUSHING_FILE));
+		 return( f_mapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 	}
 #else
 	if( !m_bDoDirectIO)
@@ -595,7 +588,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 		if( fdatasync( m_fd) != 0)
 	#endif
 		{
-			 return( MapPlatformError( errno, NE_FLM_FLUSHING_FILE));
+			 return( f_mapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 		}
 	}
 #endif
@@ -686,7 +679,7 @@ RCODE F_FileHdl::directRead(
 		if( (iTmp = pread( m_fd, pucReadBuffer,
 			uiMaxBytesToRead, getSectorStartOffset( ui64ReadOffset))) == -1)
 		{
-			rc = MapPlatformError( errno, NE_FLM_READING_FILE);
+			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
 			goto Exit;
 		}
 		uiBytesRead = (FLMUINT)iTmp;
@@ -785,7 +778,7 @@ RCODE FLMAPI F_FileHdl::read(
 	if( (iBytesRead = pread( m_fd, pvBuffer, 
 		uiBytesToRead, ui64ReadOffset)) == -1)
 	{
-		rc = MapPlatformError(errno, NE_FLM_READING_FILE);
+		rc = f_mapPlatformError(errno, NE_FLM_READING_FILE);
 		goto Exit;
 	}
 
@@ -890,7 +883,7 @@ RCODE FLMAPI F_FileHdl::size(
 
    if( fstat( m_fd, &statBuf) == -1)
    {
-      rc = MapPlatformError( errno, NE_FLM_GETTING_FILE_SIZE);
+      rc = f_mapPlatformError( errno, NE_FLM_GETTING_FILE_SIZE);
 		goto Exit;
    }
 	
@@ -923,7 +916,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 
 	if( ftruncate( m_fd, ui64Size) == -1)
 	{
-		rc = MapPlatformError( errno, NE_FLM_TRUNCATING_FILE);
+		rc = f_mapPlatformError( errno, NE_FLM_TRUNCATING_FILE);
 		goto Exit;
 	}
 
@@ -961,7 +954,7 @@ RCODE FLMAPI F_FileHdl::write(
   	if( (iBytesWritten = pwrite( m_fd, pvBuffer,
 		uiBytesToWrite, ui64WriteOffset)) == -1)
 	{
-		rc = MapPlatformError(errno, NE_FLM_WRITING_FILE);
+		rc = f_mapPlatformError(errno, NE_FLM_WRITING_FILE);
 		goto Exit;
 	}
 
@@ -1013,7 +1006,7 @@ RCODE F_FileHdl::allocAlignedBuffer( void)
 #endif
 	{
 		m_uiAlignedBuffSize = 0;
-		rc = MapPlatformError( errno, NE_FLM_MEM);
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
 		goto Exit;
 	}
 	
@@ -1180,7 +1173,7 @@ RCODE F_FileHdl::directWrite(
 			if( (iBytesWritten = pwrite( m_fd, 
 				pucWriteBuffer, uiMaxBytesToWrite, uiLastWriteOffset)) == -1)
 			{
-				rc = MapPlatformError( errno, NE_FLM_WRITING_FILE);
+				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 
@@ -1204,7 +1197,7 @@ RCODE F_FileHdl::directWrite(
 			
 			if( aio_write( pAio) == -1)
 			{
-				rc = MapPlatformError( errno, NE_FLM_WRITING_FILE);
+				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 			

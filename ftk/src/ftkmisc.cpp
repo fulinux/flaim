@@ -32,6 +32,7 @@ static IF_RandomGenerator *	gv_pSerialRandom = NULL;
 static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 static IF_ThreadMgr *			gv_pThreadMgr = NULL;
 static IF_FileSystem *			gv_pFileSystem = NULL;
+static FLMUINT						gv_uiMaxFileSize = 0xFFFC0000;
 
 #ifdef FLM_LINUX
 static FLMUINT						gv_uiLinuxMajorVer = 0;
@@ -97,7 +98,7 @@ RCODE FLMAPI ftkStartup( void)
 #if defined( FLM_LINUX)
 	flmGetLinuxKernelVersion( &gv_uiLinuxMajorVer, &gv_uiLinuxMinorVer, 
 		&gv_uiLinuxRevision);
-	gv_uiMaxFileSize = flmGetLinuxMaxFileSize();
+	gv_ui64MaxFileSize = flmGetLinuxMaxFileSize();
 #elif defined( FLM_AIX)
 
 	// Call set setrlimit to increase the max allowed file size.
@@ -321,10 +322,10 @@ RCODE FLMAPI f_createSerialNumber(
 
 	f_mutexLock( gv_hSerialMutex);
 
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 0]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 4]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 8]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getInt32(), &pszSerialNum[ 12]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 0]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 4]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 8]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 12]);
 
 	f_mutexUnlock( gv_hSerialMutex);
 
@@ -1017,4 +1018,12 @@ Desc:
 IF_ThreadMgr * f_getThreadMgrPtr( void)
 {
 	return( gv_pThreadMgr);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMUINT64 FLMAPI f_getMaxFileSize( void)
+{
+	return( gv_uiMaxFileSize);
 }

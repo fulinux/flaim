@@ -2360,17 +2360,6 @@
 	Desc: File path functions and macros
 	****************************************************************************/
 
-	// This defines the maximum file size we can support for ANY
-	// platform, ANY file type.  It is not 4Gb because of a bug in direct IO
-	// on Netware.  The limitation is that in direct IO mode (on the legacy file
-	// system) we are not allowed room for the last block.  If the block
-	// size were 64K for example, direct IO only lets us expand to a size of
-	// 0xFFFF0000.  Since we can't anticipate what the block size will be,
-	// we have to set a maximum that accounts for the maximum block size we
-	// may ever see.  At this point, we are assuming it won't ever be more
-	// than 256K on legacy file systems.  Thus, our limit of 0xFFFC0000.
-	// (See define of F_MAXIMUM_FILE_SIZE in xflaim.h)
-
 	#if defined( FLM_WIN) || defined( FLM_NLM)
 		#define FWSLASH     		'/'
 		#define SLASH       		'\\'
@@ -2408,6 +2397,8 @@
 			#define CURRENT_DIR 	"."
 		#endif
 	#endif
+	
+	FLMUINT64 FLMAPI f_getMaxFileSize( void);
 
 	/****************************************************************************
 	Desc: CPU release and sleep functions

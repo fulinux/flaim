@@ -1123,6 +1123,11 @@
 			m_uiBlockSize = uiBlockSize;
 		}
 		
+		FINLINE FLMUINT FLMAPI getBlockSize( void)
+		{
+			return( m_uiBlockSize);
+		}
+		
 		FINLINE FLMUINT FLMAPI getSectorSize( void)
 		{
 			return( m_uiBytesPerSector);

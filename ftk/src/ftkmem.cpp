@@ -1223,14 +1223,15 @@ Desc: Log memory leaks.
 *********************************************************************/
 #ifdef FLM_DEBUG
 void logMemLeak(
-	F_MEM_HDR *		pHdr)
+	F_MEM_HDR *			pHdr)
 {
-	char				szTmpBuffer [1024];
-	FLMUINT			uiMsgBufSize;
-	char *			pszMessageBuffer;
-	char *			pszTmp;
-	IF_FileHdl *	pFileHdl = NULL;
-	FLMBOOL			bSaveTrackLeaks = gv_bTrackLeaks;
+	char					szTmpBuffer [1024];
+	FLMUINT				uiMsgBufSize;
+	char *				pszMessageBuffer;
+	char *				pszTmp;
+	IF_FileHdl *		pFileHdl = NULL;
+	FLMBOOL				bSaveTrackLeaks = gv_bTrackLeaks;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	gv_bTrackLeaks = FALSE;
 
@@ -1394,7 +1395,6 @@ void logMemLeak(
 
 #ifdef FLM_WIN
 	FLMINT				iRet;
-	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	iRet =  MessageBox( NULL, (LPCTSTR)pszMessageBuffer, "WIN32 Memory Testing",
 					MB_ABORTRETRYIGNORE | MB_ICONINFORMATION | MB_TASKMODAL 
@@ -4390,8 +4390,8 @@ RCODE f_getMemoryInfo(
 	}
 #elif defined( FLM_UNIX)
 	{
-		FLMUINT			uiProcMemLimit = HIGH_FLMUINT;
-		FLMUINT			uiProcVMemLimit = HIGH_FLMUINT;
+		FLMUINT			uiProcMemLimit = FLM_MAX_UINT;
+		FLMUINT			uiProcVMemLimit = FLM_MAX_UINT;
 		
 		#if defined( RLIMIT_VMEM)
 		{
@@ -4476,14 +4476,18 @@ RCODE f_getMemoryInfo(
 		
 				flmGetLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
 		
-		#else
+		#elif defined( _SC_PAGESIZE) && defined( _SC_AVPHYS_PAGES)
 
 			long		iPageSize = sysconf( _SC_PAGESIZE);
 	
 			// Get the amount of memory available to the system
 			
-			ui64TotalPhysMem = sysconf(_SC_PHYS_PAGES) * iPageSize;
-			ui64AvailPhysMem = sysconf(_SC_AVPHYS_PAGES) * iPageSize;
+			ui64TotalPhysMem = sysconf( _SC_PHYS_PAGES) * iPageSize;
+			ui64AvailPhysMem = sysconf( _SC_AVPHYS_PAGES) * iPageSize;
+			
+		#else
+		
+			return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
 	
 		#endif
 		
@@ -4517,7 +4521,7 @@ RCODE f_getMemoryInfo(
 		ui64AvailPhysMem = sysconf(_SC_AVPHYS_PAGES) * iPageSize;
 	}
 #else
-	rc = RC_SET( NE_FLM_NOT_IMPLEMENTED);
+	return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
 #endif
 
 	if( ui64AvailPhysMem > ui64TotalPhysMem)

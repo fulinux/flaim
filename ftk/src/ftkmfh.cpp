@@ -113,6 +113,8 @@ private:
 		F_UNREFERENCED_PARM( pszBasePath);
 #endif
 
+		IF_FileSystem *		pFileSystem = f_getFileSysPtr();
+
 		if( m_pLockFileHdl)
 		{
 
