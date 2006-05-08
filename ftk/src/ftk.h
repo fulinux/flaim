@@ -349,41 +349,6 @@
 	
 	#define flminterface struct flmnovtbl
 	
-	FLM_DEFINE_GUID( Internal_IID_FLMIUnknown, 0x00000000, 0x0000, 0x0000,
-			0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46);
-	
-	flminterface FLMIUnknown
-	{
-		virtual ~FLMIUnknown()
-		{
-		}
-		
-		virtual RCODE FLMAPI QueryInterface( 
-			RFLMIID					riid,
-			void **					ppv) = 0;
-			
-		virtual FLMINT FLMAPI AddRef( void) = 0;
-		
-		virtual FLMINT FLMAPI Release( void) = 0;
-	};
-	
-	// FLMIClassFactory
-	// uuid: 00000001-0000-0000-C000-000000000046 (same as MSCOM IClassFactory)
-	
-	FLM_DEFINE_GUID( Internal_IID_FLMIClassFactory, 0x00000001, 0x0000, 0x0000,
-			0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46);
-	
-	flminterface FLMIClassFactory : public FLMIUnknown
-	{
-		virtual RCODE FLMAPI CreateInstance( 
-			FLMIUnknown *			piuouter,
-			RFLMIID 					riid,
-			void **					ppv) = 0;
-			
-		virtual RCODE FLMAPI LockServer( 
-			bool						lockf) = 0;
-	};
-
 	/****************************************************************************
 									Forward References
 	****************************************************************************/
@@ -473,18 +438,18 @@
 	Desc:	Collation flags and constants
 	****************************************************************************/
 	
-	#define HAD_SUB_COLLATION				0x01				// Set if had sub-collating values-diacritics
-	#define HAD_LOWER_CASE					0x02				// Set if you hit a lowercase character
-	#define COLL_FIRST_SUBSTRING			0x03				// First substring marker
-	#define COLL_MARKER 						0x04				// Marks place of sub-collation
+	#define HAD_SUB_COLLATION						0x01				// Set if had sub-collating values-diacritics
+	#define HAD_LOWER_CASE							0x02				// Set if you hit a lowercase character
+	#define COLL_FIRST_SUBSTRING					0x03				// First substring marker
+	#define COLL_MARKER 								0x04				// Marks place of sub-collation
 	
-	#define SC_LOWER							0x00				// Only lowercase characters exist
-	#define SC_MIXED							0x01				// Lower/uppercase flags follow in next byte
-	#define SC_UPPER							0x02				// Only upper characters exist
-	#define SC_SUB_COL						0x03				// Sub-collation follows (diacritics|extCh)
+	#define SC_LOWER									0x00				// Only lowercase characters exist
+	#define SC_MIXED									0x01				// Lower/uppercase flags follow in next byte
+	#define SC_UPPER									0x02				// Only upper characters exist
+	#define SC_SUB_COL								0x03				// Sub-collation follows (diacritics|extCh)
 	
-	#define COLL_TRUNCATED					0x0C				// This key piece has been truncated from original
-	#define MAX_COL_OPCODE					COLL_TRUNCATED
+	#define COLL_TRUNCATED							0x0C				// This key piece has been truncated from original
+	#define MAX_COL_OPCODE							COLL_TRUNCATED
 
 	/****************************************************************************
 	Desc:	I/O Flags
@@ -561,44 +526,33 @@
 		FLM_NUM_COLORS
 	} eColorType;
 	
-	#define F_BLACK			"%0C"
-	#define F_BLUE				"%1C"
-	#define F_GREEN			"%2C"
-	#define F_CYAN				"%3C"
-	#define F_RED 				"%4C"
-	#define F_PURPLE			"%5C"
-	#define F_BROWN			"%6C"
-	#define F_LIGHTGRAY		"%7C"
-	#define F_DARKGRAY		"%8C"
-	#define F_LIGHTBLUE		"%9C"
-	#define F_LIGHTGREEN 	"%10C"
-	#define F_LIGHTCYAN		"%11C"
-	#define F_LIGHTRED		"%12C"
-	#define F_LIGHTPURPLE	"%13C"
-	#define F_YELLOW			"%14C"
-	#define F_WHITE			"%15C"
+	#define F_BLACK									"%0C"
+	#define F_BLUE										"%1C"
+	#define F_GREEN									"%2C"
+	#define F_CYAN										"%3C"
+	#define F_RED 										"%4C"
+	#define F_PURPLE									"%5C"
+	#define F_BROWN									"%6C"
+	#define F_LIGHTGRAY								"%7C"
+	#define F_DARKGRAY								"%8C"
+	#define F_LIGHTBLUE								"%9C"
+	#define F_LIGHTGREEN 							"%10C"
+	#define F_LIGHTCYAN								"%11C"
+	#define F_LIGHTRED								"%12C"
+	#define F_LIGHTPURPLE							"%13C"
+	#define F_YELLOW									"%14C"
+	#define F_WHITE									"%15C"
 	
-	#define F_PUSHFORECOLOR	"%+0C"
-	#define F_PUSHBACKCOLOR	"%+1C"
-	#define F_POPFORECOLOR	"%-0C"
-	#define F_POPBACKCOLOR	"%-1C"
+	#define F_PUSHFORECOLOR							"%+0C"
+	#define F_PUSHBACKCOLOR							"%+1C"
+	#define F_POPFORECOLOR							"%-0C"
+	#define F_POPBACKCOLOR							"%-1C"
 	
-	#define F_PUSHCOLOR		F_PUSHFORECOLOR F_PUSHBACKCOLOR
-	#define F_POPCOLOR		F_POPFORECOLOR F_POPBACKCOLOR
+	#define F_PUSHCOLOR								F_PUSHFORECOLOR F_PUSHBACKCOLOR
+	#define F_POPCOLOR								F_POPFORECOLOR F_POPBACKCOLOR
 	
-	#define F_BLUE_ON_WHITE	"%1.15C"
+	#define F_BLUE_ON_WHITE							"%1.15C"
 
-	/****************************************************************************
-	Desc:	Data types
-	****************************************************************************/
-	typedef enum
-	{
-		FLM_NODATA_TYPE = 0,
-		FLM_TEXT_TYPE,
-		FLM_NUMBER_TYPE,
-		FLM_BINARY_TYPE
-	} eFlmDataType;
-	
 	/****************************************************************************
 	Desc:	Slab stats
 	****************************************************************************/
@@ -695,15 +649,19 @@
 		void FLMAPI operator delete(
 			void *			ptr);
 	
+	#ifndef FLM_WATCOM_NLM
 		void FLMAPI operator delete(
 			void *			ptr,
 			const char *	file,
 			int				line);
+	#endif
 	
+	#ifndef FLM_WATCOM_NLM
 		void FLMAPI operator delete[](
 			void *			ptr,
 			const char *	file,
 			int				line);
+	#endif
 
 	protected:
 
@@ -739,15 +697,19 @@
 		void operator delete(
 			void *			ptr);
 	
+	#ifndef FLM_WATCOM_NLM
 		void operator delete(
 			void *			ptr,
 			const char *	file,
 			int				line);
+	#endif
 	
+	#ifndef FLM_WATCOM_NLM
 		void operator delete[](
 			void *			ptr,
 			const char *	file,
 			int				line);
+	#endif
 			
 		virtual FINLINE FLMINT FLMAPI AddRef( void)
 		{
@@ -1173,6 +1135,8 @@
 		virtual FLMBOOL FLMAPI doesFileMatch(
 			const char *			pszFileName,
 			const char *			pszTemplate) = 0;
+			
+		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
 	};
 	
 	RCODE FLMAPI FlmGetFileSystem(
@@ -1355,7 +1319,7 @@
 	
 		virtual void FLMAPI notifyComplete(
 			RCODE						rc) = 0;
-	
+			
 		virtual void FLMAPI setCompletionCallback(
 			WRITE_COMPLETION_CB 	fnCompletion) = 0;
 	
@@ -1371,6 +1335,13 @@
 		virtual eBufferMgrList FLMAPI getList( void) = 0;
 	
 		virtual void FLMAPI makePending( void) = 0;
+		
+		virtual void FLMAPI startTimer(
+			void *					pvStats) = 0;
+			
+		virtual void * FLMAPI getStats( void) = 0;
+		
+		virtual FLMUINT64 FLMAPI getElapTime( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1598,7 +1569,8 @@
 	};
 	
 	RCODE FLMAPI FlmAllocPool(
-		IF_Pool **					ppPool);
+		IF_Pool **					ppPool,
+		FLMUINT						uiBlockSize = 0);
 	
 	/****************************************************************************
 	Desc: Dynamic buffer
@@ -3376,9 +3348,25 @@
 	#endif
 
 	#define FTK_ERROR_BASE(e)		((RCODE)((int)(0x81055000+(e))))
+	#define FTK_ERROR_END			((RCODE)((int)(0x81055FFF)))
 	
 	const char * FLMAPI f_errorString(
 		RCODE							rc);
+
+	RCODE FLMAPI f_mapPlatformError(
+		FLMINT						iError,
+		RCODE							defaultRc);
+		
+	FINLINE FLMBOOL FLMAPI f_isToolkitError(
+		RCODE							rc)
+	{
+		if( rc > FTK_ERROR_BASE( 0) && rc < FTK_ERROR_END)
+		{
+			return( TRUE);
+		}
+		
+		return( FALSE);
+	}
 
 	/****************************************************************************
 	Desc:	FTX
@@ -3991,13 +3979,5 @@
 	#define NE_FLM_STREAM_NOT_COMPRESSED					FTK_ERROR_BASE( 0x402)			// Attempting to decompress a data stream that is not compressed.
 	#define NE_FLM_STREAM_TOO_MANY_FILES					FTK_ERROR_BASE( 0x403)			// Too many files in input stream.
 	#define NE_FLM_LAST_STREAM_ERROR							FTK_ERROR_BASE( 0x404)			// NOTE: This is not an error code - do not document
-
-	/****************************************************************************
-	Desc:	Stream Errors
-	****************************************************************************/
-	
-	RCODE f_mapPlatformError(
-		FLMINT		iError,
-		RCODE			defaultRc);
 
 #endif // FTK_H

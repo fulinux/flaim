@@ -359,6 +359,7 @@ F_IOBuffer::F_IOBuffer()
 #elif defined( FLM_NLM)
 	m_hSem = F_SEM_NULL;
 #endif
+	m_pStats = NULL;
 }
 
 /****************************************************************************
@@ -624,3 +625,32 @@ void FLMAPI F_IOBuffer::signalComplete(
 	kSemaphoreSignal( (SEMAPHORE)m_hSem);
 }
 #endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_IOBuffer::startTimer(
+	void *		pStats)
+{
+	if ((m_pStats = pStats) != NULL)
+	{
+		m_ui64ElapMilli = 0;
+		f_timeGetTimeStamp( &m_StartTime);
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT64 FLMAPI F_IOBuffer::getElapTime( void)
+{
+	return( m_ui64ElapMilli);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * FLMAPI F_IOBuffer::getStats( void)
+{
+	return( m_pStats);
+}

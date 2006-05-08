@@ -137,7 +137,7 @@ RCODE F_FileHdl::openOrCreate(
 
 	// Only enable asynchronous writes if direct I/O is enabled.
 
-	if (m_bDoDirectIO)
+	if (m_bDoDirectIO && pFileSystem->canDoAsync())
 	{
 		m_bCanDoAsync = TRUE;
 	}

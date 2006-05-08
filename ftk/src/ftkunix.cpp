@@ -207,14 +207,20 @@ RCODE F_FileHdl::openOrCreate(
 					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
 				{
 					openFlags |= O_DIRECT;
-					m_bCanDoAsync = TRUE;
+					if( pFileSystem->canDoAsync())
+					{
+						m_bCanDoAsync = TRUE;
+					}
 				}
 				else
 				{
 					bDoDirectIO = FALSE;
 				}
 #elif defined( FLM_SOLARIS)
-				m_bCanDoAsync = TRUE;
+				if( pFileSystem->canDoAsync())
+				{
+					m_bCanDoAsync = TRUE;
+				}
 #endif
 			}
 		}

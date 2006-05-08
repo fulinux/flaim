@@ -65,11 +65,14 @@ public:
 
 	F_FileSystem()
 	{
+		m_bCanDoAsync = FALSE;
 	}
 
 	virtual ~F_FileSystem()
 	{
 	}
+	
+	RCODE setup( void);
 
 	RCODE FLMAPI createFile(
 		const char *	pszFileName,
@@ -185,6 +188,8 @@ public:
 		const char *	pszFileName,
 		FLMBOOL			bReadOnly);
 
+	FLMBOOL FLMAPI canDoAsync( void);
+		
 private:
 
 	RCODE removeEmptyDir(
@@ -199,6 +204,8 @@ private:
 		const char	*	tpath,
 		FLMBOOL *		isdir);
 #endif
+
+	FLMBOOL				m_bCanDoAsync;
 };
 	
 FSTATIC FLMBOOL f_canReducePath(
@@ -415,6 +422,35 @@ RCODE f_allocFileHdl(
 		return( RC_SET( NE_FLM_MEM));
 	}
 	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileSystem::setup( void)
+{
+#if defined( FLM_WIN)
+	OSVERSIONINFO		versionInfo;
+
+	versionInfo.dwOSVersionInfoSize = sizeof( OSVERSIONINFO);
+	if( !GetVersionEx( &versionInfo))
+	{
+		return( f_mapPlatformError( GetLastError(), NE_FLM_FAILURE));
+	}
+
+	// Async writes are not supported on Win32s (3.1) or
+	// Win95, 98, ME, etc.
+
+	m_bCanDoAsync =
+		(versionInfo.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS &&
+		 versionInfo.dwPlatformId != VER_PLATFORM_WIN32s)
+		 ? TRUE
+		 : FALSE;
+#else
+	m_bCanDoAsync = TRUE;
+#endif
+
 	return( NE_FLM_OK);
 }
 	
@@ -1449,6 +1485,14 @@ RCODE F_FileSystem::setReadOnly(
 Exit:
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc: stat tpath to see if it is a directory
+****************************************************************************/
+FLMBOOL FLMAPI F_FileSystem::canDoAsync( void)
+{
+	return( m_bCanDoAsync);
 }
 
 /****************************************************************************

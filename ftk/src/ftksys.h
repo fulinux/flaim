@@ -29,6 +29,7 @@
 
 	#include "ftk.h"
 
+	class F_FileHdl;
 	class F_Thread;
 	class F_ThreadMgr;
 	class F_IOBufferMgr;
@@ -330,8 +331,6 @@
 	****************************************************************************/
 	#ifdef FLM_NLM
 		typedef SEMAPHORE				F_SEM;
-		typedef SEMAPHORE *			F_SEM_p;
-		#define F_SEM_NULL			0
 	#elif defined( FLM_WIN)
 		typedef struct
 		{
@@ -517,6 +516,13 @@
 	
 		void FLMAPI makePending( void);
 	
+		void FLMAPI startTimer(
+			void *					pvStats);
+			
+		void * FLMAPI getStats( void);
+		
+		FLMUINT64 FLMAPI getElapTime( void);
+		
 	#ifdef FLM_WIN
 		FINLINE OVERLAPPED * getOverlapped( void)
 		{
@@ -578,6 +584,7 @@
 		RCODE						m_completionRc;
 		F_TMSTAMP				m_StartTime;
 		FLMUINT64				m_ui64ElapMilli;
+		void *					m_pStats;
 	
 		friend class F_IOBufferMgr;
 	};

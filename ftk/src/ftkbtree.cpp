@@ -12237,3 +12237,9 @@ Exit:
 	return( rc);
 }
 #endif
+
+#ifdef FLM_WATCOM_NLM
+void gv_ftkbtree( void)
+{
+}
+#endif

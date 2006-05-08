@@ -732,11 +732,17 @@ private:
 Desc:
 *************************************************************************/
 RCODE FLMAPI FlmAllocPool(
-	IF_Pool **		ppPool)
+	IF_Pool **		ppPool,
+	FLMUINT			uiBlockSize)
 {
 	if( (*ppPool = f_new F_Pool) == NULL)
 	{
 		return( RC_SET( NE_FLM_MEM));
+	}
+
+	if( uiBlockSize)
+	{
+		(*ppPool)->poolInit( uiBlockSize);
 	}
 	
 	return( NE_FLM_OK);
