@@ -768,7 +768,12 @@ FLMINT FLMAPI f_stricmp(
 #ifdef FLM_WIN
 	return( _stricmp( pszStr1, pszStr2));
 #else 
-	return( stricmp( pszStr1, pszStr2));
+	while( f_toupper( *pszStr1) == f_toupper( *pszStr2) && *pszStr1)
+	{
+		pszStr1++;
+		pszStr2++;
+	}
+	return( (FLMINT)( f_toupper( *pszStr1) - f_toupper( *pszStr2)));
 #endif
 }
 
@@ -794,7 +799,26 @@ FLMINT FLMAPI f_strnicmp(
 #ifdef FLM_WIN
 	return( _strnicmp( pszStr1, pszStr2, uiLength));
 #else
-	return( strnicmp( pszStr1, pszStr2, uiLength));
+	FLMINT				iLen = (FLMINT)uiLength;
+
+	if( !pszStr1 || !pszStr2)
+	{
+		return( (pszStr1 == pszStr2) 
+						? 0 
+						: (pszStr1 ? 1 : -1));
+	}
+
+	while( iLen-- && *pszStr1 && *pszStr2 && 
+		(f_toupper( *pszStr1) == f_toupper( *pszStr2)))
+	{
+		pszStr1++;
+		pszStr2++;
+	}
+
+	return(	(iLen == -1)
+					?	0
+					:	(f_toupper( *pszStr1) - f_toupper( *pszStr2)));
+
 #endif
 }
 
