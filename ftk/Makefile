@@ -1002,8 +1002,16 @@ ifdef netware_target
 	endif
 
 	ifndef wc_dir
-      $(error Target operating system could not be determined)
+      $(error Watcom compiler could not be found.  Please define wc_dir.)
 	endif
+	
+	wc_dir := $(call normpath,$(wc_dir))
+	
+	ifndef ndk_dir
+      $(error Netware SDK could not be found.  Please define ndk_dir.)
+	endif
+	
+	ndk_dir := $(call normpath,$(ndk_dir))
 
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
 	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
@@ -1024,6 +1032,9 @@ ifdef netware_target
 
 	libflags += /b /q /p=256
 	link_flags = /m /l /v /s
+	
+	inc_dirs += $(ndk_dir)/libc/include \
+					$(ndk_dir)/libc/include/winsock
 
 	export include = $(foreach inc_dir,$(strip $(inc_dirs)),$(call hostpath,$(inc_dir));)
 	export INCLUDE = $(include)
@@ -1036,18 +1047,25 @@ ifdef netware_target
 		$(ec)$(gprintf) "option synchronize\n" >> $(4)
 		$(ec)$(gprintf) "option nod\n" >> $(4)
 		$(ec)$(gprintf) "option map\n" >> $(4)
-		$(ec)$(gprintf) "option start=FlmLoad, exit=FlmUnload, caseexact\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
 		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
 		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "option start = _LibCPrelude\n" >> $(4)
+		$(ec)$(gprintf) "option exit = _LibCPostlude\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
 		
 		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(ndk_dir)/libc/imports/libcpre.obj)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(ftk_static_lib))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/netware/libc3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "import CurrentProcess\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(4)
    endef
 
    define flm_exe_link_cmd
@@ -1452,6 +1470,7 @@ status:
 	$(ec)$(gprintf) "Target Path..................... $(call ppath,$(target_path))\n"
 	$(ec)$(gprintf) "Compiler........................ $(call ppath,$(compiler))\n"
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
+	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(include))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
 
@@ -1486,9 +1505,11 @@ allutils: status dircheck libs $(util_targets)
 
 .PHONY : test
 test:	status dircheck $(ftk_static_lib) $(test_targets)
+ifndef netware_target
 	$(ec)$(gprintf) "Running unit tests ... \n"
 	$(ec)$(call runtest,ftktest)
 	$(ec)$(gprintf) "Done.\n"
+endif
 
 .PHONY : debug
 debug:
