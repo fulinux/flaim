@@ -1208,6 +1208,10 @@
 		virtual FLMUINT FLMAPI getSectorSize( void) = 0;
 			
 		virtual FLMBOOL FLMAPI isReadOnly( void) = 0;
+		
+		virtual RCODE FLMAPI lock( void) = 0;
+	
+		virtual RCODE FLMAPI unlock( void) = 0;
 	};
 	
 	/****************************************************************************

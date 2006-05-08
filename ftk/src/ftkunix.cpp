@@ -1267,7 +1267,7 @@ RCODE FLMAPI F_FileHdl::lock( void)
 	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
 
-	// Lock first byte in file
+	// Lock the first byte in file
 
 	f_memset( &LockStruct, 0, sizeof( LockStruct));
 	LockStruct.l_type   = F_WRLCK;
@@ -1294,7 +1294,7 @@ RCODE FLMAPI F_FileHdl::unlock( void)
 	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
 
-	// Lock first byte in file
+	// Unlock the first byte in file
 
 	f_memset( &LockStruct, 0, sizeof( LockStruct));
 	LockStruct.l_type   = F_UNLCK;

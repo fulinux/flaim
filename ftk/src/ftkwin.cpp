@@ -1561,6 +1561,46 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+RCODE FLMAPI F_FileHdl::lock( void)
+{
+	RCODE				rc = NE_FLM_OK;
+
+	// Lock the first byte in file
+
+	if( !LockFile( m_FileHandle, 0, 0, 1, 1))
+	{
+		rc = RC_SET( NE_FLM_IO_FILE_LOCK_ERR);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::unlock( void)
+{
+	RCODE				rc = NE_FLM_OK;
+
+	// Unlock the first byte in file
+
+	if( !UnlockFile( m_FileHandle, 0, 0, 1, 1))
+	{
+		rc = RC_SET( NE_FLM_IO_FILE_LOCK_ERR);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
 void FLMAPI f_yieldCPU( void)
 {
 	Sleep( 0);
