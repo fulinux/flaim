@@ -3292,7 +3292,6 @@ RCODE F_TCPStream::socketPeek(
 		#pragma warning( pop)
 #endif
 
-		FD_SET( m_iSocket, &GenDescriptors);
 		iMaxDescs = (int)(m_iSocket + 1);
 		DescrRead = bPeekRead ? &GenDescriptors : NULL;
 		DescrWrt  = bPeekRead ? NULL : &GenDescriptors;
