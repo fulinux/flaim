@@ -1329,10 +1329,10 @@
 	
 		virtual void FLMAPI setCompletionCallbackData(
 			FLMUINT					uiBlockNumber,
-			void *					pvData);
+			void *					pvData) = 0;
 	
 		virtual void * FLMAPI getCompletionCallbackData(
-			FLMUINT					uiBlockNumber);
+			FLMUINT					uiBlockNumber) = 0;
 	
 		virtual RCODE FLMAPI getCompletionCode( void) = 0;
 	
