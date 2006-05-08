@@ -27,39 +27,41 @@
 
 #if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 
-static unsigned long gv_mmxCheckSumFlag = 1;
-
-#if defined( FLM_WATCOM_NLM)
-
-	extern void FastBlockCheckSumMMX(
-			void *			pBlk,
-			unsigned long *puiChecksum,	
-			unsigned long *puiXORdata,
-			unsigned long	uiNumberOfBytes);
+	static unsigned long gv_mmxCheckSumFlag = 1;
 	
-	extern void FastBlockCheckSum386(
-			void *			pBlk,
-			unsigned long *puiChecksum,	
-			unsigned long *puiXORdata,
-			unsigned long	uiNumberOfBytes);
+	#if defined( FLM_WATCOM_NLM)
 	
-	extern unsigned long GetMMXSupported(void);
+		extern void FastBlockCheckSumMMX(
+				void *			pBlk,
+				unsigned long *puiChecksum,	
+				unsigned long *puiXORdata,
+				unsigned long	uiNumberOfBytes);
+		
+		extern void FastBlockCheckSum386(
+				void *			pBlk,
+				unsigned long *puiChecksum,	
+				unsigned long *puiXORdata,
+				unsigned long	uiNumberOfBytes);
+		
+		extern unsigned long GetMMXSupported(void);
+		
+	#else
 	
-#else
-
-	static void FastBlockCheckSumMMX(
-			void *			pBlk,
-			unsigned long *puiChecksum,	
-			unsigned long *puiXORdata,
-			unsigned long	uiNumberOfBytes);
-	
-	static void FastBlockCheckSum386(
-			void *			pBlk,
-			unsigned long *puiChecksum,	
-			unsigned long *puiXORdata,
-			unsigned long	uiNumberOfBytes);
-	
-	static unsigned long GetMMXSupported(void);
+		static void FastBlockCheckSumMMX(
+				void *			pBlk,
+				unsigned long *puiChecksum,	
+				unsigned long *puiXORdata,
+				unsigned long	uiNumberOfBytes);
+		
+		static void FastBlockCheckSum386(
+				void *			pBlk,
+				unsigned long *puiChecksum,	
+				unsigned long *puiXORdata,
+				unsigned long	uiNumberOfBytes);
+		
+		static unsigned long GetMMXSupported(void);
+		
+	#endif
 	
 #endif
 
@@ -78,7 +80,7 @@ Ret:	0 or 1 if CPU supports MMX
 		0x0F 0x95 0xC0                      /* setnz	al  		*/\
 		modify exact [EAX EBX ECX EDX];
 
-#else
+#elif defined( FLM_WIN) && !defined( FLM_64BIT)
 
 	unsigned long GetMMXSupported( void)
 	{
@@ -184,7 +186,7 @@ Desc: Performs part of the FLAIM block checksum algorithm
 		parm [ESI] [eax] [ebx] [ecx]	\
 		modify exact [eax ebx ecx edx ESI EDI];
 
-#else
+#elif defined( FLM_WIN) && !defined( FLM_64BIT)
 
 	static void FastBlockCheckSumMMX(
 			void *				pBlk,
@@ -381,7 +383,8 @@ Desc: Performs part of the FLAIM block checksum algorithm
 	0x89 0x17                       /* mov		[edi], edx 									*/\
 	parm [ESI] [eax] [ebx] [ecx]	\
 	modify exact [eax ebx ecx edx ESI EDI];
-#else
+
+#elif defined( FLM_WIN) && !defined( FLM_64BIT)
 
 	static void FastBlockCheckSum386(
 			void *			pBlk,
@@ -471,7 +474,7 @@ Desc: Performs part of the FLAIM block checksum algorithm
 Note:	FastBlockCheckSum will start with the checksum and xordata you
 		pass in.  It assumes that the data is already dword aligned.
 ******************************************************************************/
-
+#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 void FastBlockCheckSum(
 		void *			pBlk,
 		FLMUINT *		puiChecksum,	
@@ -489,12 +492,14 @@ void FastBlockCheckSum(
 					(unsigned long *) puiXORdata, (unsigned long) uiNumberOfBytes);
 	}
 }
+#endif
 
 /******************************************************************************
 Desc: Sets the global variable to check if MMX instructions are allowed.
 ******************************************************************************/
 void F_DbSystem::initFastBlockCheckSum( void)
 {
+#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 	// NOTE that GetMMXSupported assumes that we are running on at least a
 	// pentium.  The check to see if we are on a pentium requires that  we
 	// modify the flags register, and we can't do that if we are running
@@ -505,9 +510,8 @@ void F_DbSystem::initFastBlockCheckSum( void)
 	// will be on at least a P5.
 
 	gv_mmxCheckSumFlag = GetMMXSupported();
-}
-
 #endif
+}
 
 /********************************************************************
 Desc: Calculate the checksum for a packet.
