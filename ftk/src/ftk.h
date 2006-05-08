@@ -2610,7 +2610,7 @@
 		#endif
 	#endif
 	
-	FLMUINT64 FLMAPI f_getMaxFileSize( void);
+	FLMUINT FLMAPI f_getMaxFileSize( void);
 
 	/****************************************************************************
 	Desc: CPU release and sleep functions

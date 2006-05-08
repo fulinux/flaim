@@ -761,14 +761,16 @@ FLMINT FLMAPI f_strcmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_WIN
 FLMINT FLMAPI f_stricmp(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
+#ifdef FLM_WIN
 	return( _stricmp( pszStr1, pszStr2));
-}
+#else 
+	return( stricmp( pszStr1, pszStr2));
 #endif
+}
 
 /****************************************************************************
 Desc:
@@ -784,15 +786,17 @@ FLMINT FLMAPI f_strncmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_WIN
 FLMINT FLMAPI f_strnicmp(
 	const char *		pszStr1,
 	const char *		pszStr2,
 	FLMSIZET				uiLength)
 {
+#ifdef FLM_WIN
 	return( _strnicmp( pszStr1, pszStr2, uiLength));
-}
+#else
+	return( strnicmp( pszStr1, pszStr2, uiLength));
 #endif
+}
 
 /****************************************************************************
 Desc:
@@ -1069,7 +1073,7 @@ IF_ThreadMgr * f_getThreadMgrPtr( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMUINT64 FLMAPI f_getMaxFileSize( void)
+FLMUINT FLMAPI f_getMaxFileSize( void)
 {
 	return( gv_uiMaxFileSize);
 }
