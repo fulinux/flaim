@@ -1618,13 +1618,13 @@
 		virtual void FLMAPI randomize( void) = 0;
 
 		virtual void FLMAPI setSeed(
-			FLMINT32					i32seed) = 0;
+			FLMUINT32				ui32seed) = 0;
 			
-		virtual FLMINT32 FLMAPI getSeed( void) = 0;
+		virtual FLMUINT32 FLMAPI getSeed( void) = 0;
 
-		virtual FLMINT32 FLMAPI getINT32(
-			FLMINT32 				i32Low = FLM_MIN_INT32,
-			FLMINT32 				i32High = FLM_MAX_INT32) = 0;
+		virtual FLMUINT32 FLMAPI getUINT32(
+			FLMUINT32 				ui32Low = 0,
+			FLMUINT32 				ui32High = FLM_MAX_UINT32) = 0;
 
 		virtual FLMBOOL FLMAPI getBoolean( void) = 0;
 	};

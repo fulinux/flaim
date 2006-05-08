@@ -534,7 +534,7 @@ RCODE IBinaryTestImpl::encryptionTest(
 	{
 		if ( uiTotalBytesRead < ui64TotalSize)
 		{
-			uiChunkSize = pRand->getINT32( 1, 
+			uiChunkSize = pRand->getUINT32( 1, 
 									(FLMUINT32)(ui64TotalSize - uiTotalBytesRead));
 
 			if ( pszBuffer)

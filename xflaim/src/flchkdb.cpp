@@ -95,7 +95,7 @@ RCODE F_DbCheck::createAndOpenResultSetDb( void)
 		// Generate a random file name
 		
 		f_sprintf( m_szResultSetDibName,
-					  "%d.db", (int)m_pRandGen->getINT32( 100, 20000));
+					  "%d.db", (int)m_pRandGen->getUINT32( 100, 20000));
 		
 		if (RC_OK( rc = dbSystem.dbCreate( m_szResultSetDibName, NULL, NULL,
 								NULL, NULL, &createOpts, TRUE,
@@ -189,7 +189,7 @@ RCODE F_DbCheck::getBtResultSet(
 
 		// Now create a new collection.  Randomly select a collection number to use.
 		
-		uiCollection = m_pRandGen->getINT32( 100, XFLM_MAX_COLLECTION_NUM);
+		uiCollection = m_pRandGen->getUINT32( 100, XFLM_MAX_COLLECTION_NUM);
 	
 		// Check to see if it already exists.
 		

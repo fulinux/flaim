@@ -132,7 +132,7 @@ TryAgain:
 
 			// Randomly select a collection number to use.
 
-			uiCollection = pRandGen->getINT32( 100, XFLM_MAX_COLLECTION_NUM);
+			uiCollection = pRandGen->getUINT32( 100, XFLM_MAX_COLLECTION_NUM);
 
 			// Check to see if it already exists.
 			if (RC_BAD( rc = pDatabase->lFileCreate( m_pResultSetDb,

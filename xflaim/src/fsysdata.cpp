@@ -135,8 +135,8 @@ RCODE flmAllocHashTbl(
 	{
 		for( uiCnt = 0; uiCnt < uiHashTblSize - 1; uiCnt++)
 		{
-			uiRandVal = (FLMBYTE) pRandGen->getINT32( (FLMINT32)uiCnt,
-										(FLMINT32)(uiHashTblSize - 1));
+			uiRandVal = (FLMBYTE) pRandGen->getUINT32( (FLMUINT32)uiCnt,
+										(FLMUINT32)(uiHashTblSize - 1));
 			if( uiRandVal != uiCnt)
 			{
 				uiTempVal = (FLMBYTE)pHashTbl [uiCnt].uiHashValue;
