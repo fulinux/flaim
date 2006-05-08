@@ -195,12 +195,12 @@ private:
 	RCODE removeEmptyDir(
 		const char *	pszDirName);
 
-#if defined( FLM_UNIX)
-	RCODE unix_RenameSafe(
+#if defined( FLM_UNIX) || defined( FLM_NLM)
+	RCODE renameSafe(
 		const char *	pszSrcFile,
 		const char *	pszDestFile);
 
-	RCODE unix_TargetIsDir(
+	RCODE targetIsDir(
 		const char	*	tpath,
 		FLMBOOL *		isdir);
 #endif
@@ -785,7 +785,7 @@ RCODE F_FileSystem::removeEmptyDir(
 
 	return( NE_FLM_OK);
 
-#elif defined( FLM_UNIX)
+#elif defined( FLM_UNIX) || defined( FLM_NLM)
 
 	 if( rmdir( pszDirPath) == -1 )
 	 {
@@ -793,39 +793,6 @@ RCODE F_FileSystem::removeEmptyDir(
 	 }
 
     return( NE_FLM_OK);
-
-#elif defined( FLM_NLM)
-	RCODE			rc = NE_FLM_OK;
-	FLMBYTE		pucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
-	FLMBYTE		pucLNamePath[ F_PATH_MAX_SIZE];
-	LONG			lVolumeID;
-	LONG			lPathID;
-	LONG			lLNamePathCount;
-	LONG			lErrorCode;
-	
-	f_strcpy( (char *)&pucPseudoLNamePath[1], pszDirPath);
-	pucPseudoLNamePath[0] = (FLMBYTE)f_strlen( pszDirPath);
-	
-	if( (lErrorCode = ConvertPathString( 0, 0, pucPseudoLNamePath, &lVolumeID,		
-		&lPathID, pucLNamePath, &lLNamePathCount)) != 0)
-	{
-		goto Exit;
-	}
-
-	if( (lErrorCode = DeleteDirectory( 0, lVolumeID, lPathID, pucLNamePath,
-		lLNamePathCount, LONGNameSpace)) != 0)
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	if( lErrorCode)
-	{
-		rc = f_mapPlatformError( lErrorCode, NE_FLM_IO_DELETING_FILE);
-	}
-	
-	return( rc);
 #endif
 }
 
@@ -835,11 +802,7 @@ Desc:	Determine if a file or directory exists.
 RCODE FLMAPI F_FileSystem::doesFileExist(
 	const char *	pszPath)
 {
-#if defined( FLM_NLM)
-
-	return( flmNetWareTestIfFileExists( pszPath));
-
-#elif defined( FLM_WIN)
+#if defined( FLM_WIN)
 
 	DWORD		dwFileAttr = GetFileAttributes( (LPTSTR)pszPath);
 
@@ -877,11 +840,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 	const char *	pszPath,
 	FLMUINT *		puiTimeStamp)
 {
-#if defined( FLM_NLM)
-	
-	return( flmNetWareGetFileTimeStamp( pszPath, puiTimeStamp));
- 
-#elif defined( FLM_WIN)
+#if defined( FLM_WIN)
 
 	WIN32_FIND_DATA find_data;
 	FILETIME			ftLocalFileTime;
@@ -1005,11 +964,7 @@ Desc:    Delete a file or directory
 RCODE FLMAPI F_FileSystem::deleteFile(
 	const char *		pszFileName)
 {
-#if defined( FLM_NLM)
-
-	return( flmNetWareDeleteFile( pszFileName));
-
-#elif defined( FLM_WIN)
+#if defined( FLM_WIN)
 
 	if( DeleteFile( (LPTSTR)pszFileName) == FALSE)
 	{
@@ -1256,11 +1211,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 	const char *		pszFileName,
 	const char *		pszNewFileName)
 {
-#if defined( FLM_NLM)
-
-	return( flmNetWareRenameFile( pszFileName, pszNewFileName));
-
-#elif defined( FLM_WIN)
+#if defined( FLM_WIN)
 
 	DWORD			error;
 	RCODE			rc = NE_FLM_OK;
@@ -1299,14 +1250,14 @@ RCODE FLMAPI F_FileSystem::renameFile(
 	FLMBOOL		bSrcIsDir;
 	FLMUINT64	ui64BytesCopied;
 
-	if( RC_BAD( rc = unix_TargetIsDir( (char*)pszFileName, &bSrcIsDir)))
+	if( RC_BAD( rc = targetIsDir( (char*)pszFileName, &bSrcIsDir)))
 	{
 		return( rc);
 	}
 
 	errno = 0;
 
-	if( RC_BAD( unix_RenameSafe( pszFileName, pszNewFileName)))
+	if( RC_BAD( renameSafe( pszFileName, pszNewFileName)))
 	{
 		switch( errno)
 		{
@@ -1356,7 +1307,7 @@ RCODE FLMAPI F_FileSystem::getSectorSize(
 #ifdef FLM_NLM
 
 	F_UNREFERENCED_PARM( pszFileName);
-	*puiSectorSize = NETWARE_SECTOR_SIZE;
+	*puiSectorSize = F_NETWARE_SECTOR_SIZE;
 	return( NE_FLM_OK);
 	
 #elif defined( FLM_WIN)
@@ -1423,31 +1374,7 @@ RCODE F_FileSystem::setReadOnly(
 {
 	RCODE				rc = NE_FLM_OK;
 
-#if defined( FLM_UNIX)
-	struct stat		filestatus;
-
-	if( stat( (char *)pszFileName, &filestatus))
-	{
-		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
-		goto Exit;
-	}
-	
-	if ( bReadOnly)
-	{
-		filestatus.st_mode &= ~S_IWUSR;
-	}
-	else
-	{
-		filestatus.st_mode |= S_IWUSR;
-	}
-	
-	if ( chmod( (char *)pszFileName, filestatus.st_mode))
-	{
-		rc = RC_SET( NE_FLM_FAILURE);
-		goto Exit;
-	}
-	
-#elif defined( FLM_WIN)
+#if defined( FLM_WIN)
 
 	DWORD				dwAttr;
 
@@ -1472,10 +1399,27 @@ RCODE F_FileSystem::setReadOnly(
 		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 		goto Exit;
 	}
-#elif defined( FLM_NLM)
+#elif defined( FLM_UNIX) || defined( FLM_NLM)
+	struct stat		filestatus;
 
-	if ( RC_BAD( rc = flmNetWareSetReadOnly( pszFileName, bReadOnly)))
+	if( stat( (char *)pszFileName, &filestatus))
 	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+		goto Exit;
+	}
+	
+	if ( bReadOnly)
+	{
+		filestatus.st_mode &= ~S_IWUSR;
+	}
+	else
+	{
+		filestatus.st_mode |= S_IWUSR;
+	}
+	
+	if ( chmod( (char *)pszFileName, filestatus.st_mode))
+	{
+		rc = RC_SET( NE_FLM_FAILURE);
 		goto Exit;
 	}
 #else
@@ -1498,8 +1442,8 @@ FLMBOOL FLMAPI F_FileSystem::canDoAsync( void)
 /****************************************************************************
 Desc: stat tpath to see if it is a directory
 ****************************************************************************/
-#if defined( FLM_UNIX)
-RCODE F_FileSystem::unix_TargetIsDir(
+#if defined( FLM_UNIX) || defined( FLM_NLM)
+RCODE F_FileSystem::targetIsDir(
 	const char	*	tpath,
 	FLMBOOL *		isdir)
 {
@@ -1528,8 +1472,8 @@ Desc:	Rename an existing file (typically an "X" locked file to an
 		CREAT and EXCL options, (ensuring a unique file name)).  Then,
 		the source file will be renamed to new name.
 ****************************************************************************/
-#if defined( FLM_UNIX)
-RCODE F_FileSystem::unix_RenameSafe(
+#if defined( FLM_UNIX) || defined( FLM_NLM)
+RCODE F_FileSystem::renameSafe(
 	const char *	pszSrcFile,
 	const char *	pszDestFile)
 {

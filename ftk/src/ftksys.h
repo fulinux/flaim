@@ -59,14 +59,20 @@
 			
 			#pragma warning 549 9
 			
-			// Disable "Warning! W656: col(1) define this function inside its class
+			// Disable "Warning! W656: col(XX) define this function inside its class
 			// definition (may improve code quality)"
 			
 			#pragma warning 656 9
+			
+			// Disable Warning! W555: col(XX) expression for 'while' is always
+			// "false"
+			
+			#pragma warning 555 9
 		#endif
+		
+		#define _POSIX_SOURCE
 
 		#include <stdio.h>
-		#include <stdlib.h>
 		#include <string.h>
 		#include <pthread.h>
 		#include <unistd.h>
@@ -76,6 +82,10 @@
 		#include <sys/stat.h>
 		#include <sys/unistd.h>
 		#include <glob.h>
+		#include <netware.h>
+		#include <semaphore.h>
+		#include <malloc.h>
+		#include <novsock2.h>
 
 		// The typedef for va_list in stdarg.h do not function properly when
 		// a va_list is passed down multiple layers as a pointer (va_list *).
@@ -120,48 +130,14 @@
 		#ifndef UINT
 			#define UINT	unsigned int
 		#endif
-	
-		typedef void * 			SEMAPHORE;
-		typedef unsigned long 	ERROR;
-
-		extern "C" SEMAPHORE kSemaphoreAlloc(
-			BYTE *		pSemaName,
-			UINT			SemaCount);
-			
-		extern "C" ERROR kSemaphoreFree(
-			SEMAPHORE	SemaHandle);
-			
-		extern "C" ERROR kSemaphoreWait(
-			SEMAPHORE	SemaHandle);
-			
-		extern "C" ERROR kSemaphoreTimedWait(
-			SEMAPHORE	SemaHandle,
-			UINT			MilliSecondTimeOut);
-			
-		extern "C" ERROR kSemaphoreSignal(
-			SEMAPHORE	SemaHandle);
-			
-		extern "C" UINT kSemaphoreExamineCount(
-			SEMAPHORE	SemaHandle);
-	
-		extern "C" MUTEX kMutexAlloc(
-			BYTE *		MutexName);
-			
-		extern "C" ERROR kMutexFree(
-			MUTEX			MutexHandle);
-			
-		extern "C" ERROR kMutexLock(
-			MUTEX			MutexHandle);
-			
-		extern "C" ERROR kMutexUnlock(
-			MUTEX			MutexHandle);
-	
-		extern "C" FLMUINT f_getNLMHandle( void);
 		
-		extern "C" RCODE f_netwareStartup( void);
-
-		extern "C" void f_netwareShutdown( void);
-			
+		#define F_NETWARE_SECTOR_SIZE			512
+		
+		FINLINE void * f_getNLMHandle( void)
+		{
+			return( getnlmhandle());
+		}
+	
 	#endif
 
 	/****************************************************************************
@@ -329,9 +305,7 @@
 	/****************************************************************************
 	Desc: Mutex and semaphore routines
 	****************************************************************************/
-	#ifdef FLM_NLM
-		typedef SEMAPHORE				F_SEM;
-	#elif defined( FLM_WIN)
+	#if defined( FLM_WIN)
 		typedef struct
 		{
 			FLMATOMIC						locked;
@@ -364,10 +338,10 @@
 		}
 
 	#elif defined( FLM_NLM)
-
+	
 		FINLINE FLMUINT f_getpid() 
 		{ 
-			return( f_getNLMHandle());
+			return( (FLMUINT)f_getNLMHandle());
 		}
 		
 	#else
@@ -543,11 +517,6 @@
 		}
 	#endif
 	
-	#ifdef FLM_NLM
-		void signalComplete(
-			RCODE		rc);
-	#endif
-	
 	private:
 	
 		// Only called by the buffer manager
@@ -574,9 +543,6 @@
 	#endif
 	#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
 		struct aiocb			m_aio;
-	#endif
-	#ifdef FLM_NLM
-		F_SEM						m_hSem;
 	#endif
 		F_IOBuffer *			m_pNext;
 		F_IOBuffer *			m_pPrev;
@@ -1029,7 +995,7 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	#ifdef FLM_UNIX
+	#if defined( FLM_UNIX) || defined( FLM_NLM) 
 	class F_FileHdl : public IF_FileHdl
 	{
 	public:
@@ -1110,9 +1076,8 @@
 		}
 	
 		FINLINE void FLMAPI setMaxAutoExtendSize(
-			FLMUINT				uiMaxAutoExtendSize)
+			FLMUINT)
 		{
-			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 		}
 	
 		RCODE FLMAPI lock( void);
@@ -1204,7 +1169,6 @@
 		FLMUINT64				m_ui64GetSectorBoundMask;
 		FLMUINT64				m_ui64CurrentPos;
 		FLMUINT					m_uiExtendSize;
-		FLMUINT					m_uiMaxAutoExtendSize;
 		FLMBOOL					m_bCanDoAsync;
 		FLMBOOL					m_bDoDirectIO;
 		FLMBYTE *				m_pucAlignedBuff;

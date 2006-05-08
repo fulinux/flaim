@@ -265,11 +265,11 @@ void FLMAPI f_sleep(
 {
 	if( !uiMilliseconds )
 	{
-		kYieldThread();
+		pthread_yield();
 	}
 	else
 	{
-		kDelayThread( uiMilliseconds);
+		delay( uiMilliseconds);
 	}
 }
 #endif
@@ -297,7 +297,7 @@ FSTATIC RCODE f_initSerialNumberGenerator( void)
 
 	f_timeGetSeconds( &uiTime );
 
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 	
 	if( RC_BAD( rc = FlmAllocRandomGenerator( &gv_pSerialRandom)))
 	{
@@ -361,23 +361,7 @@ RCODE FLMAPI f_createSerialNumber(
 		goto Exit;
 	}
 
-#elif defined( FLM_NLM)
-
-	NWGUID	guidVal;
-	int		err = SGUIDCreate( &guidVal);
-
-	if( !err || err == 1) // NOTE: 1 == SGUID_WARN_RANDOM_NODE
-	{
-		UD2FBA( guidVal.time_low, &pszSerialNum[ 0]);
-		UW2FBA( guidVal.time_mid, &pszSerialNum[ 4]);
-		UW2FBA( guidVal.time_hi_and_version, &pszSerialNum[ 6]);
-		pszSerialNum[ 8] = guidVal.clk_seq_hi_res;
-		pszSerialNum[ 9] = guidVal.clk_seq_low;
-		f_memcpy( &pszSerialNum[ 10], (FLMBYTE *)guidVal.node, 6);
-		goto Exit;
-	}
-
-#elif defined( FLM_UNIX)
+#elif defined( FLM_UNIX) || defined( FLM_NLM)
 
 	// Generate a pseudo GUID value
 
@@ -394,7 +378,7 @@ RCODE FLMAPI f_createSerialNumber(
 
 #endif
 
-#if defined( FLM_WIN) || defined( FLM_NLM)
+#if defined( FLM_WIN)
 Exit:
 #endif
 
@@ -880,7 +864,7 @@ FLMINT32 FLMAPI f_atomicInc(
 {
 	#if defined( FLM_NLM)
 	{
-		return( (FLMINT32)nlm_AtomicIncrement( (volatile LONG *)piTarget));
+		return( (FLMINT32)atomic_retadd( (unsigned long *)piTarget, 1));
 	}
 	#elif defined( FLM_WIN)
 	{
@@ -925,7 +909,7 @@ FLMINT32 FLMAPI f_atomicDec(
 {
 	#if defined( FLM_NLM)
 	{
-		return( (FLMINT32)nlm_AtomicDecrement( (volatile LONG *)piTarget));
+		return( (FLMINT32)atomic_retadd( (unsigned long *)piTarget, -1));
 	}
 	#elif defined( FLM_WIN)
 	{
@@ -971,8 +955,7 @@ FLMINT32 FLMAPI f_atomicExchange(
 {
 	#if defined( FLM_NLM)
 	{
-		return( (FLMINT32)nlm_AtomicExchange( 
-			(volatile LONG *)piTarget, i32NewVal));
+		return( (FLMINT32)atomic_xchg( (unsigned long *)piTarget, i32NewVal));
 	}
 	#elif defined( FLM_WIN)
 	{

@@ -1918,3 +1918,9 @@ FLMINT FLMAPI F_NameTable::Release( void)
 	return( iRefCnt);
 }
 #endif
+
+#if defined( FLM_WATCOM_NLM)
+void gv_ftkntab( void)
+{
+}
+#endif

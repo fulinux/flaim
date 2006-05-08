@@ -270,7 +270,7 @@
 		#define FLM_MIN_INT16						((FLMINT16)(0x8000))
 		#define FLM_MAX_UINT8						((FLMUINT8)0xFF)
 	
-		#if( _MSC_VER >= 1200) && (_MSC_VER < 1300)
+		#if ((_MSC_VER >= 1200) && (_MSC_VER < 1300)) || defined( FLM_NLM)
 			#define FLM_MAX_UINT64					((FLMUINT64)(0xFFFFFFFFFFFFFFFFL))
 			#define FLM_MAX_INT64					((FLMINT64)(0x7FFFFFFFFFFFFFFFL))
 			#define FLM_MIN_INT64					((FLMINT64)(0x8000000000000000L))

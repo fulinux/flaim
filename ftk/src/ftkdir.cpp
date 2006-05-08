@@ -723,7 +723,6 @@ FSTATIC FLMBOOL f_fileMeetsFindCriteria(
 Desc:		Search for file names matching FindTemplate (UNIX)
 ****************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_NLM)
-
 FSTATIC int Find1(
 	char *				FindTemplate,
 	F_IO_FIND_DATA *	DirInfo)
@@ -739,7 +738,7 @@ FSTATIC int Find1(
 
 	// If supplied template is illegal, return immediately
 
-	if( (FindTemplate == (char*)NULL) || !( uiFindLen = f_strlen( FindTemplate)))
+	if( (FindTemplate == NULL) || (uiFindLen = f_strlen( FindTemplate)) == 0)
 	{
 		return( EINVAL);
 	}

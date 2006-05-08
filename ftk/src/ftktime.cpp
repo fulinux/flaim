@@ -333,7 +333,7 @@ FLMINT f_timeCompareTimeStamps(
 /****************************************************************************
 Desc:		Get the current time in milliseconds.
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 unsigned f_timeGetMilliTime()
 {
 #if defined( FLM_SOLARIS)
@@ -343,8 +343,8 @@ unsigned f_timeGetMilliTime()
 	
 	gettimeofday(&tv, 0);
 
-	return( (((FLMUINT64)tv.tv_sec * (FLMUINT64)1000000) +
-		(FLMUINT64)tv.tv_usec) / 1000);
+	return( (unsigned)((((FLMUINT64)tv.tv_sec * (FLMUINT64)1000000) +
+		(FLMUINT64)tv.tv_usec) / 1000));
 #endif
 }
 #endif
@@ -356,8 +356,6 @@ FLMUINT FLMAPI FLM_GET_TIMER( void)
 {
 #if defined( FLM_WIN)
 	return( (FLMUINT)GetTickCount());
-#elif defined( FLM_NLM)
-	return( (FLMUINT)GetCurrentTime());
 #else
 	return( f_timeGetMilliTime());
 #endif
@@ -385,14 +383,7 @@ Desc:
 FLMUINT FLMAPI FLM_SECS_TO_TIMER_UNITS( 
 	FLMUINT			uiSeconds)
 {
-#if defined( FLM_NLM)
-	LONG		uiTu;
-	
-	ConvertSecondsToTicks( (LONG)(uiSeconds), 0, &uiTU);
-	return( (FLMUINT)uiTU);
-#else
 	return( uiSeconds * 1000);
-#endif
 }
 
 /****************************************************************************
@@ -401,15 +392,7 @@ Desc:
 FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS( 
 	FLMUINT			uiTU)
 {
-#if defined( FLM_NLM)
-	LONG		udDummy;
-	LONG		uiSeconds;
-	
-	ConvertTicksToSeconds( (LONG)(uiTU), &uiSeconds, &udDummy);
-	return( (FLMUINT)uiSeconds);
-#else
 	return( uiTU / 1000);
-#endif
 }
 
 /****************************************************************************
@@ -418,15 +401,7 @@ Desc:
 FLMUINT FLM_TIMER_UNITS_TO_MILLI( 
 	FLMUINT			uiTU)
 {
-#if defined( FLM_NLM)
-	LONG		udTenths;
-	LONG		udSeconds;
-	
-	ConvertTicksToSeconds( (LONG)(uiTU), &udSeconds, &udTenths);
-	return( (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100);
-#else
 	return( uiTU);
-#endif
 }
 	
 /****************************************************************************
@@ -435,17 +410,5 @@ Desc:
 FLMUINT FLM_MILLI_TO_TIMER_UNITS( 
 	FLMUINT			uiMilliSeconds)
 {
-#if defined( FLM_NLM)
-	LONG		udTenths;
-	LONG		udSeconds;
-	LONG		uiTU;
-	
-	udSeconds = ((LONG) uiMilliSeconds) / 1000;
-	udTenths = (((LONG) uiMilliSeconds) % 1000) / 100;
-	
-	ConvertSecondsToTicks( udSeconds, udTenths, &uiTU);
-	return( (FLMUINT)uiTU);
-#else
 	return( uiMilliSeconds);
-#endif
 }

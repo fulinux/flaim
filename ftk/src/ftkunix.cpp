@@ -25,7 +25,7 @@
 
 #include "ftksys.h"
 
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 
 #ifdef FLM_AIX
 	#ifndef _LARGE_FILES
@@ -35,7 +35,7 @@
 #endif
 
 #include <sys/types.h>
-#ifndef FLM_OSX
+#if !defined( FLM_OSX) && !defined( FLM_NLM)
 	#include <aio.h>
 #endif
 
@@ -57,6 +57,10 @@
 
 	struct statfs;
 	#include <sys/mount.h>
+#elif defined( FLM_NLM)
+	#define pread 			pread64
+	#define pwrite 		pwrite64
+	#define ftruncate		ftruncate64
 #endif
 
 #ifdef FLM_LINUX
@@ -78,7 +82,6 @@ F_FileHdl::F_FileHdl()
 	m_fd = -1;
 	m_bDoDirectIO = FALSE;
 	m_uiExtendSize = 0;
-	m_uiMaxAutoExtendSize = f_getMaxFileSize();
 	m_uiBytesPerSector = 0;
 	m_ui64NotOnSectorBoundMask = 0;
 	m_ui64GetSectorBoundMask = 0;
@@ -292,7 +295,7 @@ Exit:
 /******************************************************************************
 Desc:	Create a file 
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::create(
+RCODE F_FileHdl::create(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
@@ -339,7 +342,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::createUnique(
+RCODE F_FileHdl::createUnique(
 	char *				pszDirName,
 	const char *		pszFileExtension,
 	FLMUINT				uiIoFlags)
@@ -462,7 +465,7 @@ Exit:
 /******************************************************************************
 Desc:	Open a file
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::open(
+RCODE F_FileHdl::open(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
@@ -686,8 +689,8 @@ RCODE F_FileHdl::directRead(
 
 		bHitEOF = FALSE;
 
-		if( (iTmp = pread( m_fd, pucReadBuffer,
-			uiMaxBytesToRead, getSectorStartOffset( ui64ReadOffset))) == -1)
+		if( (iTmp = pread( m_fd, pucReadBuffer, uiMaxBytesToRead, 
+			getSectorStartOffset( ui64ReadOffset))) == -1)
 		{
 			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
 			goto Exit;
@@ -1008,7 +1011,7 @@ RCODE F_FileHdl::allocAlignedBuffer( void)
 #if defined( FLM_SOLARIS)
 	if( (m_pucAlignedBuff = (FLMBYTE *)memalign( 
 		sysconf( _SC_PAGESIZE), m_uiAlignedBuffSize)) == NULL)
-#elif defined( FLM_OSX)
+#elif defined( FLM_OSX) || defined( FLM_NLM)
 	if( (m_pucAlignedBuff = (FLMBYTE *)malloc( m_uiAlignedBuffSize)) == NULL)
 #else
 	if( posix_memalign( (void **)&m_pucAlignedBuff, 
@@ -1193,6 +1196,7 @@ RCODE F_FileHdl::directWrite(
 				goto Exit;
 			}
 		}
+#ifndef FLM_NLM
 		else
 		{
 			struct aiocb *		pAio = pBufferObj->getAIOStruct();
@@ -1214,6 +1218,7 @@ RCODE F_FileHdl::directWrite(
 			pBufferObj->makePending();
 			bDidAsync = TRUE;
 		}
+#endif
 
 		uiBytesToWrite -= uiBytesBeingOutput;
 		if( puiBytesWrittenRV)

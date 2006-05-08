@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 typedef struct
 {
 	pthread_mutex_t		lock;
@@ -82,7 +82,7 @@ void FLMAPI f_mutexDestroy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *			phMutex)
 {
@@ -139,7 +139,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void FLMAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
@@ -162,7 +162,7 @@ void FLMAPI f_mutexDestroy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_UNIX
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void FLMAPI f_mutexLock(
 	F_MUTEX		hMutex)
 {
@@ -173,7 +173,7 @@ void FLMAPI f_mutexLock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_UNIX
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void FLMAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
@@ -184,7 +184,7 @@ void FLMAPI f_mutexUnlock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_UNIX
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void FLMAPI f_assertMutexLocked(
 	F_MUTEX)
 {
@@ -194,7 +194,7 @@ void FLMAPI f_assertMutexLocked(
 /****************************************************************************
 Desc:	Initializes a semaphore handle on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 FINLINE int sema_init(
 	sema_t *			pSem)
 {
@@ -222,7 +222,7 @@ Exit:
 /****************************************************************************
 Desc:	Frees a semaphore handle on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 FINLINE void sema_destroy(
 	sema_t *			pSem)
 {
@@ -234,7 +234,7 @@ FINLINE void sema_destroy(
 /****************************************************************************
 Desc:	Waits for a semaphore to be signaled on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 FINLINE int sema_wait(
 	sema_t *			pSem)
 {
@@ -243,7 +243,7 @@ FINLINE int sema_wait(
 	pthread_mutex_lock( &pSem->lock);
 	while( !pSem->count)
 	{
-		if( (iErr = pthread_cond_wait( &pSem->cond, &pSem->lock)))
+		if( (iErr = pthread_cond_wait( &pSem->cond, &pSem->lock)) != 0)
 		{
 			if( iErr == EINTR)
 			{
@@ -270,7 +270,7 @@ Exit:
 Desc:	Waits a specified number of milliseconds for a semaphore
 		to be signaled on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 FINLINE int sema_timedwait(
 	sema_t *			pSem,
 	unsigned int	msecs)
@@ -298,7 +298,7 @@ Restart:
 	while( !pSem->count)
 	{
 		if( (iErr = pthread_cond_timedwait( &pSem->cond,
-			&pSem->lock, &abstime)))
+			&pSem->lock, &abstime)) != 0)
 		{
 			if( iErr == EINTR)
 			{
@@ -322,7 +322,7 @@ Exit:
 /****************************************************************************
 Desc:	Signals a semaphore on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 int sema_signal(
 	sema_t *			pSem)
 {
@@ -339,7 +339,7 @@ int sema_signal(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 RCODE f_semCreate(
 	F_SEM *		phSem)
 {
@@ -369,7 +369,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void f_semDestroy(
 	F_SEM  *		phSem)
 {
@@ -387,7 +387,7 @@ void f_semDestroy(
 /****************************************************************************
 Desc:   Get the lock on a semaphore - p operation
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 RCODE f_semWait(
 	F_SEM			hSem,
 	FLMUINT		uiTimeout)
@@ -424,149 +424,11 @@ RCODE f_semWait(
 /****************************************************************************
 Desc:   Get the lock on a semaphore - p operation
 ****************************************************************************/
-#if defined( FLM_UNIX)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void FLMAPI f_semSignal(
 	F_SEM			hSem)
 {
 	(void)sema_signal( (sema_t *)hSem);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-RCODE FLMAPI f_mutexCreate(
-	F_MUTEX *	phMutex)
-{
-	if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
-	{
-		return RC_SET( NE_FLM_MEM);
-	}
-
-	return NE_FLM_OK;
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void FLMAPI f_mutexDestroy(
-	F_MUTEX *	phMutex)
-{
-	if (*phMutex != F_MUTEX_NULL)
-	{
-		if( kMutexFree( (MUTEX)(*phMutex)))
-		{
-			f_assert( 0);
-		}
-		
-		*phMutex = F_MUTEX_NULL;
-	}
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void FLMAPI f_mutexLock(
-	F_MUTEX		hMutex)
-{
-	(void)kMutexLock( (MUTEX)hMutex);
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void FLMAPI f_mutexUnlock(
-	F_MUTEX		hMutex)
-{
-	(void)kMutexUnlock( (MUTEX)hMutex);
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void FLMAPI f_assertMutexLocked(
-	F_MUTEX)
-{
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-RCODE FLMAPI f_semCreate(
-	F_SEM *		phSem)
-{
-	if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"NOVDB", 0)) == F_SEM_NULL)
-	{
-		return RC_SET( NE_FLM_MEM);
-	}
-
-	return NE_FLM_OK;
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void FLMAPI f_semDestroy(
-	F_SEM *		phSem)
-{
-	if (*phSem != F_SEM_NULL)
-	{
-		(void)kSemaphoreFree( (SEMAPHORE)(*phSem));
-		*phSem = F_SEM_NULL;
-	}
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-RCODE FLMAPI f_semWait(
-	F_SEM			hSem,
-	FLMUINT		uiTimeout)
-{
-	RCODE			rc = NE_FLM_OK;
-
-	if( uiTimeout == F_SEM_WAITFOREVER)
-	{
-		if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
-		{
-			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
-		}
-	}
-	else
-	{
-		if( kSemaphoreTimedWait( (SEMAPHORE)hSem, (UINT)uiTimeout) != 0)
-		{
-			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
-		}
-	}
-
-	return( rc);
-}
-#endif
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void FLMAPI f_semSignal(
-	F_SEM			hSem)
-{
-	(void)kSemaphoreSignal( (SEMAPHORE)hSem);
 }
 #endif
 

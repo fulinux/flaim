@@ -123,7 +123,7 @@ typedef struct FTX_INFO
 #if defined( FLM_WIN)
 	PCHAR_INFO   		pCells;
 #elif defined( FLM_NLM)
-	void *				pvScreenHandle;
+	scr_t					hScreen;
 	NLM_CHAR_INFO *	pCells;
 #endif
 
@@ -365,98 +365,6 @@ static FTX_INFO *		gv_pFtxInfo = NULL;
 
 #elif defined( FLM_NLM)
 
-	extern "C"
-	{
-		LONG AllocateResourceTag(
-			LONG		pvLoadRecord,
-			BYTE *	pvResourceDescriptionString,
-			LONG		ResourceSignature);
-		
-		#ifndef ScreenSignature
-			#define ScreenSignature		0x4E524353			/* 'NRCS' */
-		#endif
-		
-		int OpenScreen(
-			void *	pvScreenName,
-			void *	pvResourceTag,
-			void **	pvScreenHandle);
-		
-		void CloseScreen(
-			void *	pvScreenHandle);
-		
-		void ActivateScreen(
-			void *	pvScreenHandle);
-		
-		void ClearScreen(
-			void *	pvScreenHandle);
-		
-		void GetScreenSize(
-			WORD *	swScreenHeight,
-			WORD *	swScreenWidth);
-		
-		void PositionInputCursor(
-			void *	pvScreenHandle,
-			WORD		swRow,
-			WORD		swColumn);
-		
-		void EnableInputCursor(
-			void *	pvScreenHandle);
-		
-		void DisableInputCursor(
-			void *	pvScreenHandle);
-		
-		LONG PositionOutputCursor(
-			void *	pvScreenHandle,
-			WORD		swRow,
-			WORD		swColumn);
-		
-		void GetOutputCursorPosition(
-			void *	pvScreenHandle,
-			WORD *	row,
-			WORD *	column);
-		
-		void SetInputToOutputCursorPosition(
-			void *	pvScreenHandle);
-		
-		void GetKey(
-			void *	pvScreenHandle,
-			BYTE *	pucKeyType,
-			BYTE *	pucKeyValue,
-			BYTE *	pucKeyStatus,
-			BYTE *	pucScanCode,
-			LONG		sdLinesToProtect);
-		
-		LONG UngetKey(
-				struct ScreenStruct *screenID,
-				BYTE keyType,
-				BYTE keyValue,
-				BYTE keyStatus,
-				BYTE scanCode);
-		
-		LONG CheckKeyStatus(
-			void *	pvScreenHandle);
-		
-		LONG DisplayScreenTextWithAttribute(
-			void *	pvScreenHandleD,
-			LONG		sdLine,
-			LONG		sdColumn,
-			LONG		sdLength,
-			BYTE		ucLineAttribute,
-			BYTE *	pszText);
-		
-		LONG WriteScreenCharacterAttribute(
-			void *	pvScreenHandle,
-			LONG		sdLine,
-			LONG		sdColumn,
-			BYTE		ucCharacter,
-			BYTE		ucAttribute);
-		
-		void SetCursorStyle(
-			void *	pvScreenHandle,
-			WORD		swNewCursorStyle);
-	
-	}	// extern "C"
-
 	FSTATIC void ftxNLMRefresh( void);
 
 #else
@@ -638,13 +546,12 @@ RCODE FLMAPI FTXInit(
 
 #ifdef FLM_NLM
 
-		g_pvScreenTag = (void *)AllocateResourceTag(
-				(LONG)f_getNLMHandle(),
-				(BYTE *)"Screen", (LONG)ScreenSignature);
+		g_pvScreenTag = AllocateResourceTag( 
+			f_getNLMHandle(), "Screen", ScreenSignature);
 
 		(void)OpenScreen( pszAppName,
-			g_pvScreenTag, &gv_pFtxInfo->pvScreenHandle);
-		ActivateScreen( gv_pFtxInfo->pvScreenHandle);
+			g_pvScreenTag, &gv_pFtxInfo->hScreen);
+		ActivateScreen( gv_pFtxInfo->hScreen);
 
 #endif
 
@@ -765,7 +672,7 @@ void FLMAPI FTXExit( void)
 
 #elif defined( FLM_NLM)
 
-	CloseScreen( gv_pFtxInfo->pvScreenHandle);
+	CloseScreen( gv_pFtxInfo->hScreen);
 
 #endif
 
@@ -3436,12 +3343,12 @@ FSTATIC void ftxNLMRefresh( void)
 	FTX_WINDOW *		pWinImage;
 	FTX_WINDOW *		pWinScreen;
 	FLMBOOL				bModified;
-	LONG					udCnt;
-	LONG					udStartColumn;
+	FLMUINT				uiCnt;
+	FLMUINT				uiStartColumn;
 	FLMUINT				uiStartOffset;
-	BYTE *				pucStartValue;
-	BYTE					attribute;
-	BYTE					ucStartAttr;
+	char *				pucStartValue;
+	char					attribute;
+	char					ucStartAttr;
 
 	ftxSyncImage();
 	pWinImage = gv_pFtxInfo->pScreenCur->pWinImage;
@@ -3466,26 +3373,26 @@ FSTATIC void ftxNLMRefresh( void)
 				{
 					if (bModified)
 					{
-						(void)DisplayScreenTextWithAttribute( gv_pFtxInfo->pvScreenHandle,
-							(LONG)uiLoop, (LONG)udStartColumn, udCnt, ucStartAttr,
+						DisplayScreenTextWithAttribute( gv_pFtxInfo->hScreen,
+							uiLoop, uiStartColumn, uiCnt, ucStartAttr,
 							pucStartValue);
 					}
 					ucStartAttr = attribute;
-					udCnt = 0;
+					uiCnt = 0;
 					uiStartOffset = uiOffset;
-					udStartColumn = (LONG)uiSubLoop;
+					uiStartColumn = uiSubLoop;
 					bModified = TRUE;
-					pucStartValue = (BYTE *)&pWinImage->pszBuffer[ uiOffset];
+					pucStartValue = &pWinImage->pszBuffer[ uiOffset];
 				}
-				udCnt++;
+				uiCnt++;
 			}
 			else
 			{
 				if (bModified)
 				{
 					bModified = FALSE;
-					(void)DisplayScreenTextWithAttribute( gv_pFtxInfo->pvScreenHandle,
-						(LONG)uiLoop, (LONG)udStartColumn, udCnt, ucStartAttr,
+					(void)DisplayScreenTextWithAttribute( gv_pFtxInfo->hScreen,
+						uiLoop, uiStartColumn, uiCnt, ucStartAttr,
 						pucStartValue);
 				}
 			}
@@ -3493,9 +3400,8 @@ FSTATIC void ftxNLMRefresh( void)
 		if (bModified)
 		{
 			bModified = FALSE;
-			(void)DisplayScreenTextWithAttribute( gv_pFtxInfo->pvScreenHandle,
-				(LONG)uiLoop, (LONG)udStartColumn, udCnt, ucStartAttr,
-				pucStartValue);
+			DisplayScreenTextWithAttribute( gv_pFtxInfo->hScreen,
+				uiLoop, uiStartColumn, uiCnt, ucStartAttr, pucStartValue);
 		}
 	}
 }
@@ -4182,7 +4088,7 @@ FSTATIC void ftxDisplayReset( void)
 #elif defined( FLM_UNIX)
 	ftxUnixDisplayReset();
 #elif defined( FLM_NLM)
-	ClearScreen( gv_pFtxInfo->pvScreenHandle);
+	ClearScreen( gv_pFtxInfo->hScreen);
 #else
 	clrscr();
 #endif
@@ -4210,13 +4116,13 @@ FSTATIC void ftxDisplayGetSize(
 	ftxUnixDisplayGetSize( puiNumColsRV, puiNumRowsRV);
 #else
 
-	WORD	screenHeight;
-	WORD	screenWidth;
+	FLMUINT16	ui16ScreenHeight;
+	FLMUINT16	ui16ScreenWidth;
 
-	GetScreenSize( &screenHeight, &screenWidth);
+	GetScreenSize( &ui16ScreenHeight, &ui16ScreenWidth);
 
-	*puiNumColsRV = (FLMUINT)screenWidth;
-	*puiNumRowsRV = (FLMUINT)screenHeight;
+	*puiNumColsRV = ui16ScreenWidth;
+	*puiNumRowsRV = ui16ScreenHeight;
 #endif
 }
 
@@ -4256,17 +4162,17 @@ FSTATIC FLMBOOL ftxDisplaySetCursorType(
 
 	if (uiType & FLM_CURSOR_INVISIBLE)
 	{
-		DisableInputCursor( gv_pFtxInfo->pvScreenHandle);
+		DisableInputCursor( gv_pFtxInfo->hScreen);
 	}
 	else if (uiType & FLM_CURSOR_BLOCK)
 	{
-		EnableInputCursor( gv_pFtxInfo->pvScreenHandle);
-		SetCursorStyle( pFtxInfo->pvScreenHandle, 0x0c00); // CURSOR_BLOCK
+		EnableInputCursor( gv_pFtxInfo->hScreen);
+		SetCursorStyle( gv_pFtxInfo->hScreen, CURSOR_BLOCK);
 	}
 	else
 	{
-		EnableInputCursor( gv_pFtxInfo->pvScreenHandle);
-		SetCursorStyle( pFtxInfo->pvScreenHandle, 0x0c0B); // CURSOR_NORMAL
+		EnableInputCursor( gv_pFtxInfo->hScreen);
+		SetCursorStyle( gv_pFtxInfo->hScreen, CURSOR_NORMAL);
 	}
 
 	return( TRUE);
@@ -4288,14 +4194,13 @@ FSTATIC void ftxDisplaySetCursorPos(
 	}
 
 #if defined( FLM_NLM)
-	PositionOutputCursor( gv_pFtxInfo->pvScreenHandle,
-			(WORD)uiRow, (WORD)uiCol);
+	PositionOutputCursor( gv_pFtxInfo->hScreen, 
+		(FLMUINT16)uiRow, (FLMUINT16)uiCol);
 
 	// Wake up the input thread and send it a special code to
 	// cause the cursor to be re-positioned.
 	
-	UngetKey( (struct ScreenStruct *)gv_pFtxInfo->pvScreenHandle,
-		0xFE, (BYTE)uiRow, (BYTE)uiCol, 0);
+	UngetKey( gv_pFtxInfo->hScreen, 0xFE, (FLMBYTE)uiRow, (FLMBYTE)uiCol, 0);
 		
 #elif defined( FLM_WIN)
 
@@ -4386,9 +4291,7 @@ get_key:
 
 	// Get a key
 
-	GetKey( gv_pFtxInfo->pvScreenHandle,
-		&keyType, &keyValue,
-		&keyStatus, &scanCode, 0);
+	GetKey( gv_pFtxInfo->hScreen, &keyType, &keyValue, &keyStatus, &scanCode, 0);
 
 	switch (keyType)
 	{
@@ -4539,8 +4442,7 @@ get_key:
 			break;
 		case 0xFE:
 			// Re-position the input cursor
-			PositionInputCursor( gv_pFtxInfo->pvScreenHandle,
-				(WORD)keyValue, (WORD)keyStatus);
+			PositionInputCursor( gv_pFtxInfo->hScreen, keyValue, keyStatus);
 			goto get_key;
 		case 0xFF:
 			// Ping
@@ -4646,7 +4548,7 @@ Exit:
 	return( bKeyHit);
 #elif defined( FLM_NLM)
 
-	return( (FLMBOOL)CheckKeyStatus( gv_pFtxInfo->pvScreenHandle));
+	return( (FLMBOOL)CheckKeyStatus( gv_pFtxInfo->hScreen));
 
 #else
 
@@ -5000,8 +4902,7 @@ RCODE _ftxBackgroundThread(
 		if( gv_pFtxInfo->bEnablePingChar)
 		{
 #if defined( FLM_NLM)
-			UngetKey( (struct ScreenStruct *)gv_pFtxInfo->pvScreenHandle,
-					0xFF, 0, 0, 0);
+			UngetKey( gv_pFtxInfo->hScreen, 0xFF, 0, 0, 0);
 #elif defined( FLM_WIN)
 			{
 				INPUT_RECORD		inputRec;

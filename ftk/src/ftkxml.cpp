@@ -428,6 +428,7 @@ Desc: Builds a character lookup table
 RCODE FLMAPI F_XML::setup( void)
 {
 	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiLoop;
 
 	if( m_pCharTable)
 	{
@@ -439,7 +440,7 @@ RCODE FLMAPI F_XML::setup( void)
 		goto Exit;
 	}
 
-   for (FLMUINT uiLoop = 0; charTbl[uiLoop].ui16Flag; uiLoop++)
+   for( uiLoop = 0; charTbl[uiLoop].ui16Flag; uiLoop++)
    {
       setCharFlag( charTbl[uiLoop].uLowChar,
                 charTbl[uiLoop].uHighChar,

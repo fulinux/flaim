@@ -518,7 +518,13 @@ FLMINT FLMAPI f_enterDebugger(
 	fprintf( stderr, "Assertion failed in %s on line %d\n", pszFile, iLine);
 	fflush( stderr);
 	DebugBreak();
+#elif defined( FLM_NLM)
+	(void)pszFile;
+	(void)iLine;
+	EnterDebugger();
 #else
+	fprintf( stderr, "Assertion failed in %s on line %d\n", pszFile, iLine);
+	fflush( stderr);
 	assert( 0);
 #endif
 

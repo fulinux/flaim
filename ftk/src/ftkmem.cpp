@@ -127,15 +127,6 @@ static FLMBOOL		gv_bLogLeaks = FALSE;
 	#define F_PICKET_FENCE_SIZE		0
 #endif
 
-#ifdef FLM_NLM
-	extern "C"
-	{
-		void GetClosestSymbol(
-			BYTE *	szBuffer,
-			LONG		udAddress);
-	}
-#endif
-
 FSTATIC FLMBOOL initMemTracking( void);
 
 FSTATIC void saveMemTrackingInfo(
@@ -1329,11 +1320,6 @@ void logMemLeak(
 									(char *)(&pImgHlpSymbol->Name [0]),
 									udDisplacement);
 				}
-			}
-#elif defined( FLM_NLM)
-			{
-				szFuncName [0] = '\t';
-				GetClosestSymbol( (BYTE *)(&szFuncName[1]), (LONG)(*puiStack));
 			}
 #else
 
@@ -4604,6 +4590,7 @@ void F_Object::operator delete(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
+#if !defined( FLM_WATCOM_NLM)
 void F_Object::operator delete(
 	void *			ptr,
 	const char *,	// file
@@ -4616,10 +4603,12 @@ void F_Object::operator delete(
 
 	f_freeImp( &ptr, TRUE);
 }
+#endif
 
 /****************************************************************************
 Desc:	
 ****************************************************************************/
+#if !defined( FLM_WATCOM_NLM)
 void F_Object::operator delete[](
 	void *			ptr,
 	const char *,	// file
@@ -4632,6 +4621,7 @@ void F_Object::operator delete[](
 
 	f_freeImp( &ptr, TRUE);
 }
+#endif
 
 /****************************************************************************
 Desc:	
@@ -4656,6 +4646,7 @@ void F_OSBase::operator delete(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
+#if !defined( FLM_WATCOM_NLM)
 void F_OSBase::operator delete(
 	void *			ptr,
 	const char *,	// file
@@ -4663,10 +4654,12 @@ void F_OSBase::operator delete(
 {
 	free( &ptr);
 }
+#endif
 
 /****************************************************************************
 Desc:	
 ****************************************************************************/
+#if !defined( FLM_WATCOM_NLM)
 void F_OSBase::operator delete[](
 	void *			ptr,
 	const char *,	// file
@@ -4674,3 +4667,4 @@ void F_OSBase::operator delete[](
 {
 	free( &ptr);
 }
+#endif
