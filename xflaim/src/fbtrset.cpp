@@ -70,7 +70,7 @@ RCODE F_BtResultSet::getBTree(
 	RCODE							rc = NE_XFLM_OK;
 	FLMUINT						uiCollHash;
 	BT_COLLECTION_XREF *		pCollPtr = NULL;
-	F_RandomGenerator *		pRandGen  = NULL;
+	IF_RandomGenerator *		pRandGen  = NULL;
 	F_Database *				pDatabase;
 	FLMUINT						uiCollection;
 	
@@ -106,14 +106,13 @@ RCODE F_BtResultSet::getBTree(
 			pDatabase = m_pResultSetDb->m_pDatabase;
 
 			// Will need a random number generator.
-
-			if (( pRandGen = f_new F_RandomGenerator) == NULL)
+			
+			if( RC_BAD( rc = FlmAllocRandomGenerator( &pRandGen)))
 			{
-				rc = RC_SET( NE_XFLM_MEM);
 				goto Exit;
 			}
 
-			pRandGen->randomSetSeed( (FLMINT32)pSrcIxd->uiIndexNum);
+			pRandGen->setSeed( (FLMINT32)pSrcIxd->uiIndexNum);
 
 			// Allocate a new collection key context and create a new
 			// collection for it.
@@ -133,7 +132,7 @@ TryAgain:
 
 			// Randomly select a collection number to use.
 
-			uiCollection = pRandGen->randomChoice( 100, XFLM_MAX_COLLECTION_NUM);
+			uiCollection = pRandGen->getINT32( 100, XFLM_MAX_COLLECTION_NUM);
 
 			// Check to see if it already exists.
 			if (RC_BAD( rc = pDatabase->lFileCreate( m_pResultSetDb,

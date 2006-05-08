@@ -34,7 +34,7 @@ Notes: The size of the database file is reduced by freeing a specified
 		 available block list is empty, FLAIM will attemp to add blocks to
 		 the list by freeing log extent blocks.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::reduceSize(
+RCODE FLMAPI F_Db::reduceSize(
 	FLMUINT			uiCount,
 	FLMUINT *		puiCount)
 {
@@ -137,13 +137,13 @@ RCODE XFLMAPI F_Db::reduceSize(
 			FLMUINT64		ui64FileSize;
 			FLMUINT64		ui64Temp;
 
-			if (RC_BAD( rc = m_pSFileHdl->GetFileHdl(
+			if (RC_BAD( rc = m_pSFileHdl->getFileHdl(
 										uiFileNumber, TRUE, &pFileHdl)))
 			{
 				goto Exit;
 			}
 
-			if (RC_BAD( rc = pFileHdl->Size( &ui64FileSize)))
+			if (RC_BAD( rc = pFileHdl->size( &ui64FileSize)))
 			{
 				goto Exit;
 			}
@@ -219,13 +219,13 @@ RCODE XFLMAPI F_Db::reduceSize(
 
 			// Compute the end of the previous block file.
 
-			if (RC_BAD( rc = m_pSFileHdl->GetFileHdl(
+			if (RC_BAD( rc = m_pSFileHdl->getFileHdl(
 										uiFileNumber, TRUE, &pFileHdl)))
 			{
 				goto Exit;
 			}
 
-			if (RC_BAD( rc = pFileHdl->Size( &ui64FileOffset)))
+			if (RC_BAD( rc = pFileHdl->size( &ui64FileOffset)))
 			{
 				goto Exit;
 			}
@@ -327,7 +327,7 @@ RCODE F_Db::readBlkHdr(
 	F_CachedBlock *		pBlkSCache;
 	XFLM_LFILE_STATS *	pLFileStats;
 	F_TMSTAMP				StartTime;
-	FLMUINT64				ui64ElapMilli;
+	FLMUINT64				ui64ElapMilli = 0;
 
 	// First see if the block is in cache.
 	// Previous writes may not have been forced out to cache.
@@ -351,10 +351,10 @@ RCODE F_Db::readBlkHdr(
 			f_timeGetTimeStamp( &StartTime);
 		}
 
-		if (RC_OK( rc = m_pSFileHdl->GetFileHdl(
+		if (RC_OK( rc = m_pSFileHdl->getFileHdl(
 								FSGetFileNumber( uiBlkAddress), TRUE, &pTmpFileHdl)))
 		{
-			rc = pTmpFileHdl->Read( FSGetFileOffset( uiBlkAddress),
+			rc = pTmpFileHdl->read( FSGetFileOffset( uiBlkAddress),
 					SIZEOF_LARGEST_BLK_HDR, pBlkHdr, &uiBytesRead);
 		}
 
@@ -412,9 +412,9 @@ RCODE F_Db::readBlkHdr(
 
 		if (RC_BAD( rc))
 		{
-			if (rc != NE_XFLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
+			if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
 			{
-				m_pSFileHdl->ReleaseFile( FSGetFileNumber( uiBlkAddress),
+				m_pSFileHdl->releaseFile( FSGetFileNumber( uiBlkAddress),
 														TRUE);
 			}
 			goto Exit;
@@ -447,7 +447,7 @@ RCODE F_Database::moveBtreeBlk(
 	IXD *							pIxd;
 	LFILE *						pLFile;
 	F_COLLECTION *				pCollection = NULL;
-	F_CachedBlock *			pFreeSCache;
+	F_CachedBlock *			pFreeSCache = NULL;
 	FLMBOOL						bReleaseCache = FALSE;
 	F_Btree *					pbtree = NULL;
 	FLMBOOL						bHaveCounts;
@@ -587,7 +587,7 @@ RCODE F_Database::moveLFHBlk(
 	RCODE					rc;
 	F_CachedBlock *	pSCache;
 	FLMBOOL				bReleaseCache = FALSE;
-	F_CachedBlock *	pFreeSCache;
+	F_CachedBlock *	pFreeSCache = NULL;
 	FLMBOOL				bReleaseCache2 = FALSE;
 	F_BLK_HDR *			pBlkHdr;
 	F_LF_HDR *			pLfHdr;

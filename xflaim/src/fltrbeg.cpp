@@ -594,7 +594,7 @@ Exit:
 Area : TRANSACTION
 Desc : Starts a transaction.
 *END************************************************************************/
-RCODE XFLMAPI F_Db::transBegin(
+RCODE FLMAPI F_Db::transBegin(
 	eDbTransType	eTransType,
 		// [IN] Specifies the type of transaction to begin.
 		// Possible values are:
@@ -668,7 +668,7 @@ Exit:
 Area : TRANSACTION
 Desc : Starts a transaction.
 *END************************************************************************/
-RCODE XFLMAPI F_Db::transBegin(
+RCODE FLMAPI F_Db::transBegin(
 	IF_Db *	pDb
 		// [IN] Start a transaction that has the same view as whatever
 		// transaction is running on this database.  NOTE: If pDb is
@@ -712,7 +712,7 @@ Exit:
 Area : TRANSACTION
 Desc : Obtains a a lock on the database.
 *END************************************************************************/
-RCODE XFLMAPI F_Db::dbLock(
+RCODE FLMAPI F_Db::dbLock(
 	eDbLockType		eLockType,
 		// [IN] Type of lock request - must be FLM_LOCK_EXCLUSIVE or
 		// FLM_LOCK_SHARED
@@ -774,7 +774,7 @@ Exit:
 Area : TRANSACTION
 Desc : Releases a lock on the database
 *END************************************************************************/
-RCODE XFLMAPI F_Db::dbUnlock( void)
+RCODE FLMAPI F_Db::dbUnlock( void)
 {
 	RCODE	rc = NE_XFLM_OK;
 
@@ -815,7 +815,7 @@ Area : TRANSACTION
 Desc : Returns information about current and pending locks on the
 		 database.
 *END************************************************************************/
-RCODE XFLMAPI F_Db::getLockInfo(
+RCODE FLMAPI F_Db::getLockInfo(
 	FLMINT			iPriority,
 		// [IN] A count of all locks with a priority >= to this priority
 		// level will be returned in pLockInfo.
@@ -847,7 +847,7 @@ Exit:
 Desc : Returns information about the lock held by the specified database
 		 handle.
 *END************************************************************************/
-RCODE XFLMAPI F_Db::getLockType(
+RCODE FLMAPI F_Db::getLockType(
 	eDbLockType *	peLockType,
 	FLMBOOL *		pbImplicit)
 {
@@ -899,7 +899,7 @@ Exit:
 Area : TRANSACTION
 Desc : Forces a checkpoint on the database.
 *END************************************************************************/
-RCODE XFLMAPI F_Db::doCheckpoint(
+RCODE FLMAPI F_Db::doCheckpoint(
 	FLMUINT	uiTimeout
 		// [IN] Seconds to wait to obtain lock on the database.
 		// XFLM_NO_TIMEOUT means that it will wait forever for

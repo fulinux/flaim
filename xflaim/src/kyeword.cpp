@@ -94,7 +94,7 @@ FSTATIC RCODE flmGetCharacter(
 
 	for( ;;)
 	{
-		if (RC_BAD( rc = flmReadUTF8CharAsUnicode( pIStream, &uChar)))
+		if (RC_BAD( rc = f_readUTF8CharAsUnicode( pIStream, &uChar)))
 		{
 			if (rc != NE_XFLM_EOF_HIT)
 			{
@@ -118,7 +118,7 @@ FSTATIC RCODE flmGetCharacter(
 			break;
 		}
 
-		if ((uChar = flmConvertChar( uChar, uiCompareRules)) == 0)
+		if ((uChar = f_convertChar( uChar, uiCompareRules)) == 0)
 		{
 			continue;
 		}
@@ -175,7 +175,7 @@ FSTATIC RCODE flmGetCharacter(
 
 	if (pui16WPValue)
 	{
-		if (!flmUnicodeToWP( uChar, pui16WPValue))
+		if (!f_unicodeToWP( uChar, pui16WPValue))
 		{
 			*pui16WPValue = 0;
 		}
@@ -240,7 +240,7 @@ RCODE KYSubstringParse(
 		uiCharCnt++;
 
 		uiSize = uiDestSize - uiDestOffset;
-		if (RC_BAD( rc = flmUni2UTF8( uChar, &pucSubstrBuf[ uiDestOffset], &uiSize)))
+		if (RC_BAD( rc = f_uni2UTF8( uChar, &pucSubstrBuf[ uiDestOffset], &uiSize)))
 		{
 			goto Exit;
 		}
@@ -328,7 +328,7 @@ RCODE KYEachWordParse(
 				bSkippingDelim = FALSE;
 				uiLimit--;
 				uiSize = uiWordBufSize - uiWordLen;
-				if (RC_BAD( rc = flmUni2UTF8( uChar, &pucWordBuf [uiWordLen],
+				if (RC_BAD( rc = f_uni2UTF8( uChar, &pucWordBuf [uiWordLen],
 												&uiSize)))
 				{
 					goto Exit;
@@ -347,7 +347,7 @@ RCODE KYEachWordParse(
 				break;
 			}
 			uiSize = uiWordBufSize - uiWordLen;
-			if (RC_BAD( rc = flmUni2UTF8( uChar, &pucWordBuf [uiWordLen],
+			if (RC_BAD( rc = f_uni2UTF8( uChar, &pucWordBuf [uiWordLen],
 											&uiSize)))
 			{
 				goto Exit;

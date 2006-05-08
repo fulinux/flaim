@@ -33,7 +33,7 @@ FSTATIC void ScaNotify(
 	RCODE					NotifyRc);
 
 FSTATIC void scaWriteComplete(
-	F_IOBuffer *	pIOBuffer);
+	IF_IOBuffer *	pIOBuffer);
 
 #ifdef SCACHE_LINK_CHECKING
 FSTATIC void scaVerify(
@@ -64,7 +64,7 @@ FINLINE FLMINT scaCompare(
 Desc:	Compare two cache blocks during a sort to determine which 
 		one has lower address.
 *****************************************************************************/
-FINLINE FLMINT scaSortCompare(
+FINLINE FLMINT FLMAPI scaSortCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -76,7 +76,7 @@ FINLINE FLMINT scaSortCompare(
 /***************************************************************************
 Desc:	Swap two entries in cache table during sort.
 *****************************************************************************/
-FINLINE void scaSortSwap(
+FINLINE void FLMAPI scaSortSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -109,19 +109,9 @@ void F_CachedBlock::linkToLogList( void)
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-	
 	if ((m_pNextInReplaceList = m_pDatabase->m_pFirstInLogList) != NULL)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->unprotectCachedItem();
-#endif
 		m_pNextInReplaceList->m_pPrevInReplaceList = this;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
@@ -130,11 +120,6 @@ void F_CachedBlock::linkToLogList( void)
 
 	setFlags( CA_IN_FILE_LOG_LIST);
 	m_pPrevInReplaceList = NULL;
-
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-	
 	m_pDatabase->m_pFirstInLogList = this;
 	m_pDatabase->m_uiLogListCount++;
 
@@ -155,13 +140,7 @@ void F_CachedBlock::unlinkFromLogList( void)
 
 	if (m_pNextInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->unprotectCachedItem();
-#endif
 		m_pNextInReplaceList->m_pPrevInReplaceList = m_pPrevInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
@@ -170,29 +149,16 @@ void F_CachedBlock::unlinkFromLogList( void)
 
 	if (m_pPrevInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 		m_pPrevInReplaceList->m_pNextInReplaceList = m_pNextInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
 		m_pDatabase->m_pFirstInLogList = m_pNextInReplaceList;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_pNextInReplaceList = NULL;
 	m_pPrevInReplaceList = NULL;
 	clearFlags( CA_IN_FILE_LOG_LIST);
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-	
 	m_pDatabase->m_uiLogListCount--;
 }
 
@@ -216,29 +182,16 @@ void F_CachedBlock::linkToNewList( void)
 	{
 		flmAssert( scaCompare( m_pDatabase->m_pLastInNewList, this) < 0);
 
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 		m_pPrevInReplaceList->m_pNextInReplaceList = this;
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
 		m_pDatabase->m_pFirstInNewList = this;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_pNextInReplaceList = NULL;
 	m_pDatabase->m_pLastInNewList = this;
 	setFlags( CA_IN_NEW_LIST);
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-	
 	m_pDatabase->m_uiNewCount++;
 }
 
@@ -255,13 +208,7 @@ void F_CachedBlock::unlinkFromNewList( void)
 
 	if (m_pNextInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->unprotectCachedItem();
-#endif
 		m_pNextInReplaceList->m_pPrevInReplaceList = m_pPrevInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
@@ -270,29 +217,16 @@ void F_CachedBlock::unlinkFromNewList( void)
 
 	if (m_pPrevInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 		m_pPrevInReplaceList->m_pNextInReplaceList = m_pNextInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
 		m_pDatabase->m_pFirstInNewList = m_pNextInReplaceList;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_pNextInReplaceList = NULL;
 	m_pPrevInReplaceList = NULL;
 	clearFlags( CA_IN_NEW_LIST);
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-	
 	m_pDatabase->m_uiNewCount--;
 }
 
@@ -308,13 +242,7 @@ void F_CachedBlock::unlinkFromReplaceList( void)
 
 	if( m_pNextInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->unprotectCachedItem();
-#endif
 		m_pNextInReplaceList->m_pPrevInReplaceList = m_pPrevInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
@@ -323,27 +251,15 @@ void F_CachedBlock::unlinkFromReplaceList( void)
 
 	if( m_pPrevInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 		m_pPrevInReplaceList->m_pNextInReplaceList = m_pNextInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInReplaceList->protectCachedItem();
-#endif
 	}
 	else
 	{
 		gv_XFlmSysData.pBlockCacheMgr->m_pMRUReplace = m_pNextInReplaceList;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_pNextInReplaceList = NULL;
 	m_pPrevInReplaceList = NULL;
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 
 	flmAssert( gv_XFlmSysData.pBlockCacheMgr->m_uiReplaceableCount);
 	gv_XFlmSysData.pBlockCacheMgr->m_uiReplaceableCount--;
@@ -451,21 +367,12 @@ void F_CachedBlock::linkToDatabase(
 	F_Database *	pDatabase)
 {
 	flmAssert( !m_pDatabase);
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 
 	if (m_ui16Flags & CA_WRITE_PENDING)
 	{
 		if ((m_pNextInDatabase = pDatabase->m_pPendingWriteList) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInDatabase->unprotectCachedItem();
-#endif
 			m_pNextInDatabase->m_pPrevInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInDatabase->protectCachedItem();
-#endif
 		}
 
 		pDatabase->m_pPendingWriteList = this;
@@ -500,24 +407,12 @@ void F_CachedBlock::linkToDatabase(
 
 		if ((m_pNextInDatabase = pNextSCache) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pNextSCache->unprotectCachedItem();
-#endif
 			pNextSCache->m_pPrevInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-			pNextSCache->protectCachedItem();
-#endif
 		}
 	
 		if ((m_pPrevInDatabase = pPrevSCache) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pPrevSCache->unprotectCachedItem();
-#endif
 			pPrevSCache->m_pNextInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-			pPrevSCache->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -526,9 +421,6 @@ void F_CachedBlock::linkToDatabase(
 	}
 
 	m_pDatabase = pDatabase;
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 
 /****************************************************************************
@@ -538,21 +430,12 @@ Desc:	Unlink a cache block from its F_Database object.  This routine assumes
 void F_CachedBlock::unlinkFromDatabase( void)
 {
 	flmAssert( m_pDatabase);
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 
 	if (m_ui16Flags & CA_IN_WRITE_PENDING_LIST)
 	{
 		if (m_pPrevInDatabase)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInDatabase->unprotectCachedItem();
-#endif
 			m_pPrevInDatabase->m_pNextInDatabase = m_pNextInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInDatabase->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -561,13 +444,7 @@ void F_CachedBlock::unlinkFromDatabase( void)
 
 		if (m_pNextInDatabase)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInDatabase->unprotectCachedItem();
-#endif
 			m_pNextInDatabase->m_pPrevInDatabase = m_pPrevInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInDatabase->protectCachedItem();
-#endif
 		}
 
 		clearFlags( CA_IN_WRITE_PENDING_LIST);
@@ -591,24 +468,12 @@ void F_CachedBlock::unlinkFromDatabase( void)
 
 		if (m_pNextInDatabase)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInDatabase->unprotectCachedItem();
-#endif
 			m_pNextInDatabase->m_pPrevInDatabase = m_pPrevInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInDatabase->protectCachedItem();
-#endif
 		}
 
 		if (m_pPrevInDatabase)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInDatabase->unprotectCachedItem();
-#endif
 			m_pPrevInDatabase->m_pNextInDatabase = m_pNextInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInDatabase->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -620,9 +485,6 @@ void F_CachedBlock::unlinkFromDatabase( void)
 	}
 
 	m_pDatabase = NULL;
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 
 /****************************************************************************
@@ -650,28 +512,16 @@ void F_CachedBlock::linkToFreeList(
 
 	if ((m_pNextInDatabase = gv_XFlmSysData.pBlockCacheMgr->m_pFirstFree) != NULL)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInDatabase->unprotectCachedItem();
-#endif
 		m_pNextInDatabase->m_pPrevInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInDatabase->protectCachedItem();
-#endif
 	}
 	else
 	{
 		gv_XFlmSysData.pBlockCacheMgr->m_pLastFree = this;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_pPrevInDatabase = NULL;
 	m_uiBlkAddress = uiFreeTime;
 	m_ui16Flags = CA_FREE;
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 	
 	gv_XFlmSysData.pBlockCacheMgr->m_pFirstFree = this;
 	gv_XFlmSysData.pBlockCacheMgr->m_uiFreeBytes += memSize();
@@ -691,13 +541,7 @@ void F_CachedBlock::unlinkFromFreeList( void)
 
 	if( m_pNextInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInDatabase->unprotectCachedItem();
-#endif
 		m_pNextInDatabase->m_pPrevInDatabase = m_pPrevInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInDatabase->protectCachedItem();
-#endif
 	}
 	else
 	{
@@ -706,29 +550,17 @@ void F_CachedBlock::unlinkFromFreeList( void)
 
 	if( m_pPrevInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInDatabase->unprotectCachedItem();
-#endif
 		m_pPrevInDatabase->m_pNextInDatabase = m_pNextInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInDatabase->protectCachedItem();
-#endif
 	}
 	else
 	{
 		gv_XFlmSysData.pBlockCacheMgr->m_pFirstFree = m_pNextInDatabase;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_pNextInDatabase = NULL;
 	m_pPrevInDatabase = NULL;
 	m_ui16Flags &= ~CA_FREE;
 	flmAssert( !m_ui16Flags);
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 
 	flmAssert( gv_XFlmSysData.pBlockCacheMgr->m_uiFreeBytes >= uiSize);
 	gv_XFlmSysData.pBlockCacheMgr->m_uiFreeBytes -= uiSize;
@@ -935,9 +767,6 @@ void F_CachedBlock::unlinkCache(
 	FLMBOOL			bFreeIt,
 	RCODE				NotifyRc)
 {
-#ifdef FLM_CACHE_PROTECT	
-	FLMBOOL			bProtectItem = FALSE;
-#endif
 #ifdef FLM_DEBUG
 	SCACHE_USE *	pUse;
 #endif
@@ -952,11 +781,6 @@ void F_CachedBlock::unlinkCache(
 					(CA_DIRTY | CA_WRITE_TO_LOG | CA_LOG_FOR_CP |
 					CA_WAS_DIRTY | CA_IN_FILE_LOG_LIST | CA_IN_NEW_LIST)));
 	}
-#endif
-
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-	bProtectItem = TRUE;
 #endif
 
 	unlinkFromGlobalList();
@@ -991,14 +815,7 @@ void F_CachedBlock::unlinkCache(
 									CA_WAS_DIRTY | CA_IN_FILE_LOG_LIST | CA_IN_NEW_LIST)));
 				}
 #endif
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInVersionList->unprotectCachedItem();
-#endif
 				m_pNextInVersionList->m_pPrevInVersionList = NULL;
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInVersionList->protectCachedItem();
-#endif
-				
 				m_pNextInVersionList->linkToHashBucket( ppSCacheBucket);
 				m_pNextInVersionList->verifyCache( 2100);
 				m_pNextInVersionList = NULL;
@@ -1009,15 +826,9 @@ void F_CachedBlock::unlinkCache(
 			verifyCache( 2000);
 			savePrevBlkAddress();
 
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInVersionList->unprotectCachedItem();
-#endif
 			m_pPrevInVersionList->m_pNextInVersionList = m_pNextInVersionList;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInVersionList->protectCachedItem();
-#endif
-
 			m_pPrevInVersionList->verifyCache( 2200);
+
 			if (m_pNextInVersionList)
 			{
 				// Older version better not be dirty or not yet logged.
@@ -1029,14 +840,7 @@ void F_CachedBlock::unlinkCache(
 									(CA_WRITE_TO_LOG | CA_DIRTY | CA_WAS_DIRTY)));
 				}
 #endif
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInVersionList->unprotectCachedItem();
-#endif
 				m_pNextInVersionList->m_pPrevInVersionList = m_pPrevInVersionList;
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInVersionList->protectCachedItem();
-#endif
-				
 				m_pNextInVersionList->verifyCache( 2300);
 			}
 
@@ -1103,18 +907,8 @@ void F_CachedBlock::unlinkCache(
 		}
 #endif
 
-#ifdef FLM_CACHE_PROTECT	
-		bProtectItem = FALSE;
-#endif
 		delete this;
 	}
-
-#ifdef FLM_CACHE_PROTECT	
-	if( bProtectItem)
-	{
-		protectCachedItem();
-	}
-#endif
 }
 
 /****************************************************************************
@@ -1166,15 +960,8 @@ void F_Database::unlinkTransLogBlocks( void)
 		// Perhaps we don't really need to set these pointers to NULL,
 		// but it helps keep things clean.
 
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->unprotectCachedItem();
-#endif
 		pSCache->m_pNextInHashBucket = NULL;
 		pSCache->m_pPrevInHashBucket = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->protectCachedItem();
-#endif
-
 		pSCache = pNextSCache;
 	}
 	m_pTransLogList = NULL;
@@ -1226,13 +1013,7 @@ void F_CachedBlock::unlinkFromTransLogList( void)
 
 	if (m_pPrevInHashBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInHashBucket->unprotectCachedItem();
-#endif
 		m_pPrevInHashBucket->m_pNextInHashBucket = m_pNextInHashBucket;
-#ifdef FLM_CACHE_PROTECT	
-		m_pPrevInHashBucket->protectCachedItem();
-#endif
 	}
 	else
 	{
@@ -1241,13 +1022,7 @@ void F_CachedBlock::unlinkFromTransLogList( void)
 
 	if (m_pNextInHashBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInHashBucket->unprotectCachedItem();
-#endif
 		m_pNextInHashBucket->m_pPrevInHashBucket = m_pPrevInHashBucket;
-#ifdef FLM_CACHE_PROTECT	
-		m_pNextInHashBucket->protectCachedItem();
-#endif
 	}
 
 	m_pNextInHashBucket = NULL;
@@ -1436,7 +1211,7 @@ RCODE F_Database::flushLogBlocks(
 #endif
 
 	m_uiCurrLogWriteOffset = 0;
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->CanDoAsync())
+	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
 				  ? TRUE
 				  : FALSE;
 
@@ -2068,14 +1843,14 @@ Exit:
 Desc:	This routine is called whenever a write of a dirty block completes.
 ****************************************************************************/
 FSTATIC void scaWriteComplete(
-	F_IOBuffer *	pIOBuffer)
+	IF_IOBuffer *	pIOBuffer)
 {
 	RCODE					rc = pIOBuffer->getCompletionCode();
 	FLMUINT				uiNumBlocks = pIOBuffer->getBufferSize() /
 											pIOBuffer->getBlockSize();
 	F_CachedBlock *	pSCache;
 	F_Database *		pDatabase;
-	XFLM_DB_STATS *	pDbStats = pIOBuffer->getDbStats();
+	XFLM_DB_STATS *	pDbStats = (XFLM_DB_STATS *)pIOBuffer->getStats();
 	FLMUINT				uiMilliPerBlock = 0;
 	FLMUINT				uiExtraMilli = 0;
 
@@ -2675,10 +2450,6 @@ F_CachedBlock::F_CachedBlock(
 	m_uiChecksum = 0;
 	m_pUseList = NULL;
 #endif
-
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 
 /****************************************************************************
@@ -3034,7 +2805,7 @@ RCODE F_Database::readTheBlock(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if (RC_BAD( rc = pDb->m_pSFileHdl->ReadBlock( uiFilePos,
+	if (RC_BAD( rc = pDb->m_pSFileHdl->readBlock( uiFilePos,
 								 m_uiBlockSize, pBlkHdr, &uiBytesRead)))
 	{
 		if (pDbStats)
@@ -3042,7 +2813,7 @@ RCODE F_Database::readTheBlock(
 			pDbStats->uiReadErrors++;
 		}
 
-		if (rc == NE_XFLM_IO_END_OF_FILE)
+		if (rc == NE_FLM_IO_END_OF_FILE)
 		{
 
 			// Should only be possible when reading a root block,
@@ -3964,14 +3735,7 @@ Do_Free_Pass:
 					(pSCache->m_pNextInVersionList->m_ui16Flags & CA_DIRTY))
 				{
 					pResetDirty = pSCache->m_pNextInVersionList;
-
-#ifdef FLM_CACHE_PROTECT	
-					pResetDirty->unprotectCachedItem();
-#endif
 					pResetDirty->m_ui16Flags &= ~CA_DIRTY;
-#ifdef FLM_CACHE_PROTECT	
-					pResetDirty->protectCachedItem();
-#endif
 				}
 #endif
 
@@ -3980,13 +3744,7 @@ Do_Free_Pass:
 #ifdef FLM_DEBUG
 				if( pResetDirty)
 				{
-#ifdef FLM_CACHE_PROTECT	
-					pResetDirty->unprotectCachedItem();
-#endif
 					pResetDirty->m_ui16Flags |= CA_DIRTY;
-#ifdef FLM_CACHE_PROTECT	
-					pResetDirty->protectCachedItem();
-#endif
 				}
 #endif
 				pSCache = pNextSCache;
@@ -4012,19 +3770,18 @@ Desc:	Write an IO buffer to disk.
 RCODE F_Database::writeContiguousBlocks(
 	XFLM_DB_STATS *	pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
-	F_IOBuffer *		pIOBuffer,
+	IF_IOBuffer *		pIOBuffer,
 	FLMUINT				uiBlkAddress,
 	FLMBOOL				bDoAsync)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMBYTE *			pucWriteBuffer;
-	F_IOBuffer *		pAsyncBuffer;
+	IF_IOBuffer *		pAsyncBuffer;
 	FLMUINT				uiBytesWritten;
 	FLMUINT				uiWriteLen;
 
 	pucWriteBuffer = pIOBuffer->getBuffer();
 
-#if defined( FLM_NLM) || defined( FLM_WIN)
 	if (!bDoAsync)
 	{
 		pAsyncBuffer = NULL;
@@ -4033,10 +3790,6 @@ RCODE F_Database::writeContiguousBlocks(
 	{
 		pAsyncBuffer = pIOBuffer;
 	}
-#else
-	F_UNREFERENCED_PARM( bDoAsync);
-	pAsyncBuffer = NULL;
-#endif
 
 	// Determine how many bytes to write
 
@@ -4047,10 +3800,10 @@ RCODE F_Database::writeContiguousBlocks(
 	pIOBuffer->startTimer( pDbStats);
 
 	// NOTE: No guarantee that pIOBuffer will still be around
-	// after the call to WriteBlock, unless we are doing
+	// after the call to writeBlock, unless we are doing
 	// non-asynchronous write.
 
-	rc = pSFileHdl->WriteBlock( uiBlkAddress, uiWriteLen,
+	rc = pSFileHdl->writeBlock( uiBlkAddress, uiWriteLen,
 					pucWriteBuffer, pIOBuffer->getBufferSize(),
 					pAsyncBuffer, &uiBytesWritten);
 	if (!pAsyncBuffer)
@@ -4066,6 +3819,7 @@ RCODE F_Database::writeContiguousBlocks(
 			pDbStats->bHaveStats = TRUE;
 			pDbStats->uiWriteErrors++;
 		}
+		
 		goto Exit;
 	}
 
@@ -4141,8 +3895,8 @@ RCODE F_Database::writeSortedBlocks(
 	FLMUINT				uiContiguousBlocks = 0;
 	FLMUINT				uiNumSortedBlocksProcessed;
 	FLMUINT				uiBlockCount;
-	F_CachedBlock *	ppContiguousBlocks [MAX_BUFFER_BLOCKS];
-	FLMBOOL				bBlockDirty [MAX_BUFFER_BLOCKS];
+	F_CachedBlock *	ppContiguousBlocks[ FLM_MAX_IO_BUFFER_BLOCKS];
+	FLMBOOL				bBlockDirty[ FLM_MAX_IO_BUFFER_BLOCKS];
 	FLMUINT				uiOffset;
 	FLMUINT				uiTmpOffset;
 	FLMUINT				uiLoop;
@@ -4150,7 +3904,7 @@ RCODE F_Database::writeSortedBlocks(
 	FLMUINT				uiCopyLen;
 	FLMBOOL				bForceCheckpoint = *pbForceCheckpoint;
 	F_CachedBlock *	pSCache;
-	F_IOBuffer *		pIOBuffer = NULL;
+	IF_IOBuffer *		pIOBuffer = NULL;
 	FLMBYTE *			pucBuffer;
 
 	uiOffset = 0;
@@ -4202,7 +3956,7 @@ Add_Contiguous_Block:
 				ppContiguousBlocks [uiContiguousBlocks] = pSCache;
 				bBlockDirty [uiContiguousBlocks++] = TRUE;
 				uiNumSortedBlocksProcessed++;
-				if (uiContiguousBlocks == MAX_BUFFER_BLOCKS)
+				if (uiContiguousBlocks == FLM_MAX_IO_BUFFER_BLOCKS)
 				{
 					break;
 				}
@@ -4248,7 +4002,7 @@ Add_Contiguous_Block:
 				// request, don't try to fill it.
 
 				if (uiContiguousBlocks + uiGap / m_uiBlockSize + 1 >
-						MAX_BUFFER_BLOCKS)
+						FLM_MAX_IO_BUFFER_BLOCKS)
 				{
 					break;
 				}
@@ -4541,7 +4295,7 @@ RCODE F_Database::flushDirtyBlocks(
 
 	// See if we can do async IO.
 
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->CanDoAsync())
+	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
 				  ? TRUE
 				  : FALSE;
 
@@ -4818,7 +4572,7 @@ RCODE F_Database::reduceDirtyCache(
 	// See if we can do async IO.
 
 	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && 
-					pSFileHdl->CanDoAsync())
+					pSFileHdl->canDoAsync())
 						? TRUE
 						: FALSE;
 
@@ -4985,7 +4739,7 @@ RCODE F_Database::reduceNewBlocks(
 
 	// See if we can do async IO.
 
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->CanDoAsync())
+	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
 				  ? TRUE
 				  : FALSE;
 
@@ -5245,14 +4999,8 @@ void F_Database::releaseLogBlocks( void)
 		// Perhaps we don't really need to set these pointers to NULL,
 		// but it helps keep things clean.
 
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->unprotectCachedItem();
-#endif
 		pSCache->m_pNextInHashBucket = NULL;
 		pSCache->m_pPrevInHashBucket = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->protectCachedItem();
-#endif
 		
 		// If the block is no longer needed by a read transaction,
 		// and it does not need to be logged for the checkpoint,
@@ -5576,8 +5324,8 @@ RCODE F_Database::createBlock(
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT				uiBlkAddress;
 	F_BLK_HDR *			pBlkHdr;
-	F_CachedBlock *	pSCache;
-	F_CachedBlock *	pOldSCache;
+	F_CachedBlock *	pSCache = NULL;
+	F_CachedBlock *	pOldSCache = NULL;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMBOOL				bLocalCacheAllocation = FALSE;
 	FLMUINT				uiOldLogicalEOF;
@@ -5621,7 +5369,7 @@ RCODE F_Database::createBlock(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pDb->m_pSFileHdl->CreateFile( uiFileNumber)))
+		if (RC_BAD( rc = pDb->m_pSFileHdl->createFile( uiFileNumber)))
 		{
 			goto Exit;
 		}
@@ -5635,7 +5383,7 @@ RCODE F_Database::createBlock(
 
 	if( !gv_XFlmSysData.pGlobalCacheMgr->cacheOverLimit())
 	{
-		gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.lockMutex();
+		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->lockMutex();
 
 		if( (pSCache = new( uiBlockSize, TRUE) F_CachedBlock( uiBlockSize)) == NULL)
 		{
@@ -5643,14 +5391,8 @@ RCODE F_Database::createBlock(
 			goto Exit;
 		}
 
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->unprotectCachedItem();
-#endif
 		pSCache->m_uiUseCount++;
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->protectCachedItem();
-#endif
-		gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.unlockMutex();
+		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->unlockMutex();
 		bLocalCacheAllocation = TRUE;
 	}
 
@@ -5708,13 +5450,7 @@ RCODE F_Database::createBlock(
 
 		// Set use count to one so the block cannot be replaced.
 
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->unprotectCachedItem();
-#endif
 		pSCache->m_uiUseCount--;
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->protectCachedItem();
-#endif
 		pSCache->useForThread( 0);
 	}
 	else
@@ -5935,7 +5671,7 @@ RCODE F_Database::logPhysBlk(
 	RCODE 				rc = NE_XFLM_OK;
 	F_CachedBlock *	pSCache = *ppSCacheRV;
 	F_BLK_HDR *			pBlkHdr = pSCache->m_pBlkHdr;
-	F_CachedBlock *	pNewSCache;
+	F_CachedBlock *	pNewSCache = NULL;
 	FLMBOOL				bLockedMutex = FALSE;
 	FLMBOOL				bLocalCacheAllocation = FALSE;
 	FLMUINT				uiBlockSize = getBlockSize();
@@ -6012,7 +5748,7 @@ RCODE F_Database::logPhysBlk(
 
 	if( !gv_XFlmSysData.pGlobalCacheMgr->cacheOverLimit())
 	{
-		gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.lockMutex();
+		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->lockMutex();
 
 		if( (pNewSCache = new( uiBlockSize, TRUE) F_CachedBlock( uiBlockSize)) == NULL)
 		{
@@ -6020,26 +5756,14 @@ RCODE F_Database::logPhysBlk(
 			goto Exit;
 		}
 
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->unprotectCachedItem();
-#endif
 		pNewSCache->m_uiUseCount++;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->protectCachedItem();
-#endif
-		gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.unlockMutex();
+		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->unlockMutex();
 		bLocalCacheAllocation = TRUE;
 
 		// Copy the old block's data into this one.
 
 		pBlkHdr = pNewSCache->m_pBlkHdr;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->unprotectCachedItem();
-#endif
 		f_memcpy( pBlkHdr, pSCache->m_pBlkHdr, m_uiBlockSize);
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->protectCachedItem();
-#endif
 	}
 
 	f_mutexLock( gv_XFlmSysData.hBlockCacheMutex);
@@ -6060,13 +5784,7 @@ RCODE F_Database::logPhysBlk(
 
 		// Set use count to one so the block cannot be replaced.
 
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->unprotectCachedItem();
-#endif
 		pNewSCache->m_uiUseCount--;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->protectCachedItem();
-#endif
 		pNewSCache->useForThread( 0);
 	}
 	else
@@ -6080,13 +5798,7 @@ RCODE F_Database::logPhysBlk(
 		// Copy the old block's data into this one.
 
 		pBlkHdr = pNewSCache->m_pBlkHdr;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->unprotectCachedItem();
-#endif
 		f_memcpy( pBlkHdr, pSCache->m_pBlkHdr, m_uiBlockSize);
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->protectCachedItem();
-#endif
 	}
 
 #ifdef FLM_DEBUG
@@ -6208,13 +5920,7 @@ RCODE F_Database::logPhysBlk(
 	pSCache->m_pPrevInHashBucket = NULL;
 	if ((pSCache->m_pNextInHashBucket = m_pTransLogList) != NULL)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->m_pNextInHashBucket->unprotectCachedItem();
-#endif
 		pSCache->m_pNextInHashBucket->m_pPrevInHashBucket = pSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pSCache->m_pNextInHashBucket->protectCachedItem();
-#endif
 	}
 	m_pTransLogList = pSCache;
 
@@ -6277,6 +5983,7 @@ Desc:	Constructor for block cache manager.
 ****************************************************************************/
 F_BlockCacheMgr::F_BlockCacheMgr()
 {
+	m_pBlockAllocator = NULL;
 	m_pMRUReplace = NULL;
 	m_pLRUReplace = NULL;
 	m_pFirstFree = NULL;
@@ -6363,8 +6070,13 @@ RCODE F_BlockCacheMgr::initCache( void)
 
 	uiBlockSizes[ uiLoop] = 0;
 
-	if (RC_BAD( rc = m_blockAllocator.setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, TRUE, uiBlockSizes,
+	if( RC_BAD( rc = FlmAllocMultiAllocator( &m_pBlockAllocator)))
+	{
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = m_pBlockAllocator->setup(
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, uiBlockSizes,
 		&m_Usage.slabUsage)))
 	{
 		goto Exit;
@@ -6709,6 +6421,12 @@ F_BlockCacheMgr::~F_BlockCacheMgr()
 		gv_XFlmSysData.pGlobalCacheMgr->decrTotalBytes( f_msize( m_ppHashBuckets));
 		f_free( &m_ppHashBuckets);
 	}
+
+	if( m_pBlockAllocator)
+	{
+		m_pBlockAllocator->Release();
+	}
+
 	flmAssert( !m_MRUList.m_pMRUItem && !m_MRUList.m_pLRUItem);
 }
 
@@ -6920,8 +6638,8 @@ RCODE F_Database::finishCheckpoint(
 											 ? TRUE
 											 : FALSE;
 
-		FLM_SECS_TO_TIMER_UNITS( 300, ui5MinutesTime);
-		FLM_SECS_TO_TIMER_UNITS( 30, ui30SecTime);
+		ui5MinutesTime = FLM_SECS_TO_TIMER_UNITS( 300);
+		ui30SecTime = FLM_SECS_TO_TIMER_UNITS( 30);
 
 		if (m_pCPInfo && bMustTruncate)
 		{
@@ -6986,7 +6704,7 @@ RCODE F_Database::finishCheckpoint(
 				if ((pLogMsg = flmBeginLogMessage( XFLM_GENERAL_MESSAGE)) != NULL)
 				{
 					uiElapTime = FLM_ELAPSED_TIME( uiTime, uiFirstDbInactiveTime);
-					FLM_TIMER_UNITS_TO_SECS( uiElapTime, uiFirstDbInactiveSecs);
+					uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 					f_sprintf( szMsgBuf,
 						"Killed transaction %I64u."
@@ -6996,7 +6714,7 @@ RCODE F_Database::finishCheckpoint(
 						(unsigned)uiFirstDbThreadId,
 						(unsigned)uiFirstDbInactiveSecs);
 
-					pLogMsg->changeColor( XFLM_YELLOW, XFLM_BLACK);
+					pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 					pLogMsg->appendString( szMsgBuf);
 					flmEndLogMessage( &pLogMsg);
 				}
@@ -7030,7 +6748,7 @@ RCODE F_Database::finishCheckpoint(
 					if ((pLogMsg = flmBeginLogMessage( XFLM_GENERAL_MESSAGE)) != NULL)
 					{
 						uiElapTime = FLM_ELAPSED_TIME( uiTime, uiFirstDbInactiveTime);
-						FLM_TIMER_UNITS_TO_SECS( uiElapTime, uiFirstDbInactiveSecs);
+						uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 						f_sprintf( szMsgBuf,
 							"Waiting for transaction %I64u to complete."
@@ -7040,7 +6758,7 @@ RCODE F_Database::finishCheckpoint(
 							(unsigned)uiFirstDbThreadId,
 							(unsigned)uiFirstDbInactiveSecs);
 
-						pLogMsg->changeColor( XFLM_YELLOW, XFLM_BLACK);
+						pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 						pLogMsg->appendString( szMsgBuf);
 						flmEndLogMessage( &pLogMsg);
 					}
@@ -7217,14 +6935,14 @@ RCODE F_Database::finishCheckpoint(
 
 		if (uiHighLogFileNumber)
 		{
-			(void)pSFileHdl->TruncateFiles(
+			(void)pSFileHdl->truncateFiles(
 					FIRST_LOG_BLOCK_FILE_NUMBER,
 					uiHighLogFileNumber);
 		}
 
-		if (RC_OK( pSFileHdl->GetFileHdl( 0, TRUE, &pCFileHdl)))
+		if (RC_OK( pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
 		{
-			(void)pCFileHdl->Truncate( LOG_THRESHOLD_SIZE);
+			(void)pCFileHdl->truncate( LOG_THRESHOLD_SIZE);
 		}
 	}
 
@@ -7285,10 +7003,11 @@ RCODE F_Database::finishCheckpoint(
 			{
 				break;
 			}
-			if (RC_BAD( TempRc = gv_pFileSystem->Delete( szLogFilePath)))
+			if (RC_BAD( TempRc = gv_XFlmSysData.pFileSystem->deleteFile( 
+				szLogFilePath)))
 			{
-				if (TempRc != NE_XFLM_IO_PATH_NOT_FOUND &&
-					 TempRc != NE_XFLM_IO_INVALID_FILENAME)
+				if (TempRc != NE_FLM_IO_PATH_NOT_FOUND &&
+					 TempRc != NE_FLM_IO_INVALID_FILENAME)
 				{
 					break;
 				}
@@ -7332,7 +7051,7 @@ RCODE F_Database::finishCheckpoint(
 
 	if (bDoTruncate)
 	{
-		if (RC_BAD( rc = pSFileHdl->TruncateFile(
+		if (RC_BAD( rc = pSFileHdl->truncateFile(
 									(FLMUINT)pCommittedDbHdr->ui32LogicalEOF)))
 		{
 			goto Exit;
@@ -7367,7 +7086,7 @@ RCODE F_Database::finishCheckpoint(
 		// Get elapsed time in milliseconds - only calculate a new maximum if
 		// we did at least a half second worth of writing.
 
-		FLM_TIMER_UNITS_TO_MILLI( uiCPElapsedTime, uiElapsedMilli);
+		uiElapsedMilli = FLM_TIMER_UNITS_TO_MILLI( uiCPElapsedTime);
 
 		if (uiElapsedMilli >= 500)
 		{
@@ -7376,7 +7095,7 @@ RCODE F_Database::finishCheckpoint(
 			// to that.  If calculated maximum is zero, we will not change
 			// the current maximum.
 
-			FLM_SECS_TO_TIMER_UNITS( 15, ui15Seconds);
+			ui15Seconds = FLM_SECS_TO_TIMER_UNITS( 15);
 
 			uiMaximum = (FLMUINT)(((FLMUINT64)uiTotalToWrite *
 							 (FLMUINT64)ui15Seconds) / (FLMUINT64)uiCPElapsedTime);
@@ -7602,112 +7321,52 @@ void F_BlockRelocator::relocate(
 
 	if( pNewSCache->m_pPrevInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInDatabase->unprotectCachedItem();
-#endif
 		pNewSCache->m_pPrevInDatabase->m_pNextInDatabase = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInDatabase->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pNextInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInDatabase->unprotectCachedItem();
-#endif
 		pNewSCache->m_pNextInDatabase->m_pPrevInDatabase = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInDatabase->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pPrevInGlobal)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInGlobal->unprotectCachedItem();
-#endif
 		pNewSCache->m_pPrevInGlobal->m_pNextInGlobal = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInGlobal->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pNextInGlobal)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInGlobal->unprotectCachedItem();
-#endif
 		pNewSCache->m_pNextInGlobal->m_pPrevInGlobal = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInGlobal->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pPrevInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 		pNewSCache->m_pPrevInReplaceList->m_pNextInReplaceList = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInReplaceList->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pNextInReplaceList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInReplaceList->unprotectCachedItem();
-#endif
 		pNewSCache->m_pNextInReplaceList->m_pPrevInReplaceList = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInReplaceList->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pPrevInHashBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInHashBucket->unprotectCachedItem();
-#endif
 		pNewSCache->m_pPrevInHashBucket->m_pNextInHashBucket = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInHashBucket->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pNextInHashBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInHashBucket->unprotectCachedItem();
-#endif
 		pNewSCache->m_pNextInHashBucket->m_pPrevInHashBucket = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInHashBucket->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pPrevInVersionList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInVersionList->unprotectCachedItem();
-#endif
 		pNewSCache->m_pPrevInVersionList->m_pNextInVersionList = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pPrevInVersionList->protectCachedItem();
-#endif
 	}
 
 	if( pNewSCache->m_pNextInVersionList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInVersionList->unprotectCachedItem();
-#endif
 		pNewSCache->m_pNextInVersionList->m_pPrevInVersionList = pNewSCache;
-#ifdef FLM_CACHE_PROTECT	
-		pNewSCache->m_pNextInVersionList->protectCachedItem();
-#endif
 	}
 
 	if( pDatabase)
@@ -8184,17 +7843,13 @@ void * F_CachedBlock::operator new(
 	void *	pvPtr;
 	
 	flmAssert( uiSize == sizeof( F_CachedBlock));
-	if( RC_BAD( gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.allocBuf(
+	if( RC_BAD( gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->allocBuf(
 		&gv_XFlmSysData.pBlockCacheMgr->m_blockRelocator,
 		uiSize + uiBlockSize, (FLMBYTE **)&pvPtr, bAllocMutexLocked)))
 	{
 		pvPtr = NULL;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.unprotectBuffer( 
-		pvPtr, bAllocMutexLocked);
-#endif
 	return( pvPtr);
 }
 
@@ -8270,10 +7925,7 @@ void F_CachedBlock::operator delete(
 		return;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.protectBuffer( ptr);
-#endif
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.freeBuf( (FLMBYTE **)&ptr);
+	gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->freeBuf( (FLMBYTE **)&ptr);
 }
 
 /****************************************************************************
@@ -8284,72 +7936,3 @@ void F_CachedBlock::operator delete[](
 {
 	flmAssert( 0);
 }
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_CachedBlock::operator delete(
-	void *,			// ptr
-	FLMSIZET,		// uiSize,
-	const char *,	// pszFileName,
-	int)				// iLine
-{
-	flmAssert( 0);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_CachedBlock::operator delete( 
-	void *			ptr,
-	const char *,	// pszFileName
-	int)				// iLineNum
-{
-	if( !ptr)
-	{
-		return;
-	}
-
-#ifdef FLM_CACHE_PROTECT	
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.protectBuffer( ptr);
-#endif
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.freeBuf( (FLMBYTE **)&ptr);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_CachedBlock::operator delete( 
-	void *			ptr,
-	FLMUINT,			// uiBlockSize,
-	FLMBOOL)			// bAllocMutexLocked)
-{
-	if( !ptr)
-	{
-		return;
-	}
-
-#ifdef FLM_CACHE_PROTECT	
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.protectBuffer( ptr);
-#endif
-	gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.freeBuf( (FLMBYTE **)&ptr);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_CachedBlock::operator delete[](
-	void *,			// ptr,
-	const char *,	// pszFileName
-	int)				// iLineNum
-{
-	flmAssert( 0);
-}
-#endif

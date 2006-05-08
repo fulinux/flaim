@@ -35,7 +35,7 @@ typedef struct
 
 // Local classes
 
-class	F_BackerStream : public XF_RefCount, public XF_Base
+class	F_BackerStream : public F_Object
 {
 public:
 
@@ -87,10 +87,10 @@ private:
 	RCODE _setup( void);
 
 	static RCODE readThread(
-		F_Thread *			pThread);
+		IF_Thread *			pThread);
 
 	static RCODE writeThread(
-		F_Thread *			pThread);
+		IF_Thread *			pThread);
 
 	// Data
 
@@ -102,7 +102,7 @@ private:
 	IF_RestoreClient *	m_pRestoreObj;
 	F_SEM						m_hDataSem;
 	F_SEM						m_hIdleSem;
-	F_Thread *				m_pThread;
+	IF_Thread *				m_pThread;
 	RCODE						m_rc;
 	FLMBYTE *				m_pucInBuf;
 	FLMUINT *				m_puiInOffset;
@@ -117,7 +117,7 @@ private:
 // Constants
 
 #define FLM_BACKER_SIGNATURE_OFFSET			0
-#define		FLM_BACKER_SIGNATURE				((FLMBYTE *) "!DB_BACKUP_FILE!")
+#define		FLM_BACKER_SIGNATURE				"!DB_BACKUP_FILE!"
 #define		FLM_BACKER_SIGNATURE_SIZE		16
 #define FLM_BACKER_VERSION_OFFSET			16
 #define		FLM_BACKER_VERSION_5_0_0		500
@@ -426,6 +426,10 @@ RCODE F_Backup::backup(
 		*puiIncSeqNum = 0;
 	}
 
+	// Setup the status callback info
+
+	f_memset( &backupInfo, 0, sizeof( DB_BACKUP_INFO));
+
 	// Make sure a backup attempt has not been made with this
 	// backup handle.
 
@@ -495,10 +499,6 @@ RCODE F_Backup::backup(
 	{
 		goto Exit;
 	}
-
-	// Setup the status callback info
-
-	f_memset( &backupInfo, 0, sizeof( DB_BACKUP_INFO));
 
 	// Setup the backup file header
 
@@ -1073,7 +1073,8 @@ RCODE F_DbSystem::dbRestore(
 
 	// Create the control file and set up the super file object
 
-	if( RC_BAD( rc = gv_pFileSystem->Create( pszDbPath, XFLM_IO_RDWR, &pFileHdl)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( 
+		pszDbPath, FLM_IO_RDWR, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1087,8 +1088,7 @@ RCODE F_DbSystem::dbRestore(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSFile->Setup( 
-		pDatabase->m_pFileIdList, pszDbPath, pszDataDir)))
+	if( RC_BAD( rc = pSFile->setup( pszDbPath, pszDataDir)))
 	{
 		goto Exit;
 	}
@@ -1135,7 +1135,7 @@ RCODE F_DbSystem::dbRestore(
 			uiCurrentIncNum = uiNextIncNum;
 			if( RC_BAD( rc = pRestoreObj->openIncFile( uiCurrentIncNum)))
 			{
-				if( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+				if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 				{
 					rc = NE_XFLM_OK;
 					break;
@@ -1215,7 +1215,7 @@ RCODE F_DbSystem::dbRestore(
 
 	// Force everything out to disk
 
-	if( RC_BAD( rc = pSFile->Flush()))
+	if( RC_BAD( rc = pSFile->flush()))
 	{
 		goto Exit;
 	}
@@ -1412,14 +1412,14 @@ FSTATIC RCODE flmRestoreFile(
 
 	// Get the path of the .DB file (file 0).
 
-	if( RC_BAD( rc = pSFile->GetFilePath( 0, szPath)))
+	if( RC_BAD( rc = pSFile->getFilePath( 0, szPath)))
 	{
 		goto Exit;
 	}
 
 	// Get the sector size
 
-	if( RC_BAD( rc = gv_pFileSystem->GetSectorSize(
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->getSectorSize(
 		szPath, &uiSectorSize)))
 	{
 		goto Exit;
@@ -1433,20 +1433,11 @@ FSTATIC RCODE flmRestoreFile(
 	{
 		uiBlkBufSize = (((uiBlkBufSize / uiSectorSize) + 1) * uiSectorSize);
 	}
-
-#ifdef FLM_WIN
-	if ((pucBlkBuf = (FLMBYTE *)VirtualAlloc( NULL,
-		(DWORD)uiBlkBufSize, MEM_COMMIT, PAGE_READWRITE)) == NULL)
-	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_XFLM_MEM);
-		goto Exit;
-	}
-#else
-	if (RC_BAD( rc = f_alloc( uiBlkBufSize, &pucBlkBuf)))
+	
+	if( RC_BAD( rc = f_allocAlignedBuffer( uiBlkBufSize, (void **)&pucBlkBuf)))
 	{
 		goto Exit;
 	}
-#endif
 
 	// Read and verify the backup header
 
@@ -1462,7 +1453,7 @@ FSTATIC RCODE flmRestoreFile(
 		goto Exit;
 	}
 
-	if( f_strncmp( &pucBlkBuf[ FLM_BACKER_SIGNATURE_OFFSET],
+	if( f_strncmp( (const char *)&pucBlkBuf[ FLM_BACKER_SIGNATURE_OFFSET],
 		FLM_BACKER_SIGNATURE, FLM_BACKER_SIGNATURE_SIZE) != 0)
 	{
 		rc = RC_SET( NE_XFLM_UNSUPPORTED_VERSION);
@@ -1586,7 +1577,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	if( !bIncremental)
 	{
-		pSFile->SetBlockSize( uiBlockSize);
+		pSFile->setBlockSize( uiBlockSize);
 	}
 
 	// Make sure the maximum block file size matches what was read from the
@@ -1634,7 +1625,7 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup sequence number to the value in the
 		// database's DB header.
 
-		if( RC_BAD( rc = pSFile->ReadHeader( 0, sizeof( XFLM_DB_HDR),
+		if( RC_BAD( rc = pSFile->readHeader( 0, sizeof( XFLM_DB_HDR),
 											&dbHdr, &uiTmp)))
 		{
 			goto Exit;
@@ -1696,7 +1687,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	// Write the database header
 
-	if( RC_BAD( rc = pSFile->WriteHeader( 0,
+	if( RC_BAD( rc = pSFile->writeHeader( 0,
 		uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 	{
 		goto Exit;
@@ -1780,17 +1771,17 @@ FSTATIC RCODE flmRestoreFile(
 		// block buffer is less than a full sector, the Unix SectorWrite will only
 		// write out the amount requested, not a full sector.
 
-		if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,
+		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
 			uiBlockSize, pucBlkBuf, uiBlockSize,
 			NULL, &uiBytesWritten)))
 #else
-		if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,
+		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
 			uiBlockSize, pucBlkBuf, uiBlkBufSize,
 			NULL, &uiBytesWritten)))
 #endif
 		{
-			if( rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-				 rc == NE_XFLM_IO_INVALID_FILENAME)
+			if( rc == NE_FLM_IO_PATH_NOT_FOUND ||
+				 rc == NE_FLM_IO_INVALID_FILENAME)
 			{
 				// Create a new block file
 
@@ -1800,18 +1791,17 @@ FSTATIC RCODE flmRestoreFile(
 					goto Exit;
 				}
 
-				if( RC_BAD( rc = pSFile->CreateFile(
-					FSGetFileNumber( uiBlkAddr))))
+				if( RC_BAD( rc = pSFile->createFile( FSGetFileNumber( uiBlkAddr))))
 				{
 					goto Exit;
 				}
 
 #ifdef FLM_UNIX
-				if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,
+				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
 					uiBlockSize, pucBlkBuf, uiBlockSize,
 					NULL, &uiBytesWritten)))
 #else
-				if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,
+				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
 					uiBlockSize, pucBlkBuf, uiBlkBufSize,
 					NULL, &uiBytesWritten)))
 #endif
@@ -1869,11 +1859,7 @@ Exit:
 
 	if( pucBlkBuf)
 	{
-#ifdef FLM_WIN
-		(void)VirtualFree( pucBlkBuf, 0, MEM_RELEASE);
-#else
-		f_free( &pucBlkBuf);
-#endif
+		f_freeAlignedBuffer( (void **)&pucBlkBuf);
 	}
 
 	if( pBackerStream)
@@ -1890,7 +1876,7 @@ Desc: Constructor
 F_DefaultBackupClient::F_DefaultBackupClient(
 	const char *	pszBackupPath)
 {
-	m_pFileHdl64 = NULL;
+	m_pMultiFileHdl = NULL;
 	m_ui64Offset = 0;
 	m_rc = NE_XFLM_OK;
 
@@ -1902,10 +1888,10 @@ Desc: Destructor
 ****************************************************************************/
 F_DefaultBackupClient::~F_DefaultBackupClient()
 {
-	if (m_pFileHdl64)
+	if (m_pMultiFileHdl)
 	{
-		m_pFileHdl64->Close();
-		m_pFileHdl64->Release();
+		m_pMultiFileHdl->close();
+		m_pMultiFileHdl->Release();
 	}
 }
 
@@ -1925,34 +1911,33 @@ RCODE F_DefaultBackupClient::WriteData(
 		goto Exit;
 	}
 
-	if( m_pFileHdl64 == 0)
+	if( m_pMultiFileHdl == 0)
 	{
 		// Remove any existing backup files
-
-		if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+		
+		if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl)))
 		{
-			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = m_pFileHdl64->Delete( m_szPath)) &&
-			rc != NE_XFLM_IO_PATH_NOT_FOUND &&
-			rc != NE_XFLM_IO_INVALID_FILENAME)
+		if( RC_BAD( rc = m_pMultiFileHdl->deleteMultiFile( m_szPath)) &&
+			rc != NE_FLM_IO_PATH_NOT_FOUND &&
+			rc != NE_FLM_IO_INVALID_FILENAME)
 		{
-			m_pFileHdl64->Release();
-			m_pFileHdl64 = NULL;
+			m_pMultiFileHdl->Release();
+			m_pMultiFileHdl = NULL;
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = m_pFileHdl64->Create( m_szPath)))
+		if( RC_BAD( rc = m_pMultiFileHdl->create( m_szPath)))
 		{
-			m_pFileHdl64->Release();
-			m_pFileHdl64 = NULL;
+			m_pMultiFileHdl->Release();
+			m_pMultiFileHdl = NULL;
 			goto Exit;
 		}
 	}
 
-	rc = m_pFileHdl64->Write( m_ui64Offset,
+	rc = m_pMultiFileHdl->write( m_ui64Offset,
 		uiBytesToWrite, (FLMBYTE *)pvBuffer, &uiBytesWritten);
 	m_ui64Offset += uiBytesWritten;
 
@@ -1961,10 +1946,10 @@ Exit:
 	if( RC_BAD( rc))
 	{
 		m_rc = rc;
-		if( m_pFileHdl64)
+		if( m_pMultiFileHdl)
 		{
-			m_pFileHdl64->Release();
-			m_pFileHdl64 = NULL;
+			m_pMultiFileHdl->Release();
+			m_pMultiFileHdl = NULL;
 		}
 	}
 
@@ -2067,18 +2052,18 @@ RCODE F_BackerStream::startThreads( void)
 
 	if( m_pClient)
 	{
-		if( RC_BAD( rc = f_threadCreate( &m_pThread,
+		if( RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( &m_pThread,
 			F_BackerStream::writeThread, "backup",
-			FLM_DEFAULT_THREAD_GROUP, 0, (void *)this)))
+			0, 0, (void *)this)))
 		{
 			goto Exit;
 		}
 	}
 	else if( m_pRestoreObj)
 	{
-		if( RC_BAD( rc = f_threadCreate( &m_pThread,
+		if( RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( &m_pThread,
 			F_BackerStream::readThread, "restore",
-			FLM_DEFAULT_THREAD_GROUP, 0, (void *)this)))
+			0, 0, (void *)this)))
 		{
 			goto Exit;
 		}
@@ -2105,7 +2090,9 @@ void F_BackerStream::shutdownThreads( void)
 
 		m_pThread->setShutdownFlag();
 		f_semSignal( m_hDataSem);
-		f_threadDestroy( &m_pThread);
+		m_pThread->stopThread();
+		m_pThread->Release();
+		m_pThread = NULL;
 
 		// Now that the thread has terminated, it is safe
 		// to destroy the data and idle semaphores.
@@ -2461,7 +2448,7 @@ RCODE F_BackerStream::signalThread( void)
 
 		// Check the error code
 
-		if( rc == NE_XFLM_IO_END_OF_FILE && !m_bFinalRead)
+		if( rc == NE_FLM_IO_END_OF_FILE && !m_bFinalRead)
 		{
 			m_bFinalRead = TRUE;
 		}
@@ -2498,7 +2485,7 @@ Exit:
 Desc: This thread reads data in the background
 ****************************************************************************/
 RCODE F_BackerStream::readThread(
-	F_Thread *			pThread)
+	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 	RCODE					rc = NE_XFLM_OK;
@@ -2537,7 +2524,7 @@ Exit:
 Desc: This thread writes data in the background
 ****************************************************************************/
 RCODE F_BackerStream::writeThread(
-	F_Thread *			pThread)
+	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 	RCODE					rc = NE_XFLM_OK;

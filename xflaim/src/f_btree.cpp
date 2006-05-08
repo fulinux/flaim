@@ -545,9 +545,6 @@ RCODE btFreeBlockChain(
 		{
 			uiStatusCounter = 0;
 			if( RC_BAD( rc = ifpDeleteStatus->reportDelete( 
-					pLFile->uiLfNum, pLFile->eLfType == XFLM_LF_INDEX 
-													? TRUE 
-													: FALSE,
 					uiTreeBlocksFreed + uiDataBlocksFreed,
 					pDatabase->getBlockSize())))
 			{
@@ -917,7 +914,7 @@ RCODE F_Btree::btReplaceEntry(
 	RCODE					rc = NE_XFLM_OK;
 	FLMBYTE *			pucEntry;
 	F_BLK_HDR *			pBlkHdr;
-	const FLMBYTE *	pucLocalData;
+	const FLMBYTE *	pucLocalData = NULL;
 	FLMUINT				uiOADataLength = 0;
 	FLMBYTE				pucDOAddr[ 4];
 
@@ -2781,11 +2778,9 @@ RCODE F_Btree::createNewLevel( void)
 
 	pRootStack->pBlkHdr->ui16NumKeys++;
 
-	pRootStack->pBlkHdr->stdBlkHdr.ui16BlkBytesAvail -=
-											(FLMUINT16)(uiEntrySize + 2);
+	pRootStack->pBlkHdr->stdBlkHdr.ui16BlkBytesAvail -= (FLMUINT16)uiEntrySize + 2;
 
-	pRootStack->pBlkHdr->ui16HeapSize -=
-											(FLMUINT16)(uiEntrySize + 2);
+	pRootStack->pBlkHdr->ui16HeapSize -= (FLMUINT16)uiEntrySize + 2;
 
 	m_uiStackLevels++;
 	m_uiRootLevel++;
@@ -4613,7 +4608,7 @@ FLMUINT F_Btree::getEntryKeyLength(
 	const FLMBYTE **	ppucKeyRV)
 {
 	FLMUINT				uiKeyLength;
-	FLMBYTE *			pucTmp;
+	FLMBYTE *			pucTmp = NULL;
 
 	// The way we get the key length depends on the type of block we have.
 

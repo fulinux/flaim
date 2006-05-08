@@ -28,7 +28,7 @@
 /*API~***********************************************************************
 Desc:	Creates a new FLAIM database.
 *END************************************************************************/
-RCODE XFLMAPI F_DbSystem::dbCreate(
+RCODE FLMAPI F_DbSystem::dbCreate(
 	const char *			pszFilePath,
 		// [IN] Full path file name of the database which is to be created.
 	const char *			pszDataDir,
@@ -67,7 +67,7 @@ RCODE XFLMAPI F_DbSystem::dbCreate(
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_Db *			pDb = NULL;
-	F_Database *	pDatabase;
+	F_Database *	pDatabase = NULL;
 	FLMBOOL			bDatabaseCreated = FALSE;
 	FLMBOOL			bNewDatabase = FALSE;
 	FLMBOOL			bMutexLocked = FALSE;
@@ -77,7 +77,7 @@ RCODE XFLMAPI F_DbSystem::dbCreate(
 	
 	if (!pszFilePath || !pszFilePath [0])
 	{
-		rc = RC_SET( NE_XFLM_IO_INVALID_FILENAME);
+		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
 		goto Exit;
 	}
 
@@ -118,7 +118,7 @@ RCODE XFLMAPI F_DbSystem::dbCreate(
 
 		if (pDatabase->m_uiOpenIFDbCount || (pDatabase->m_uiFlags & DBF_BEING_OPENED))
 		{
-			rc = RC_SET( NE_XFLM_IO_ACCESS_DENIED);
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
 
@@ -154,15 +154,15 @@ RCODE XFLMAPI F_DbSystem::dbCreate(
 
 	if (pCreateOpts != NULL)
 	{
-		pDb->m_pSFileHdl->SetBlockSize(
+		pDb->m_pSFileHdl->setBlockSize(
 			flmAdjustBlkSize( pCreateOpts->uiBlockSize));
 	}
 	else
 	{
-		pDb->m_pSFileHdl->SetBlockSize( XFLM_DEFAULT_BLKSIZ);
+		pDb->m_pSFileHdl->setBlockSize( XFLM_DEFAULT_BLKSIZ);
 	}
 
-	if (RC_OK( gv_pFileSystem->Exists( pszFilePath)))
+	if (RC_OK( gv_XFlmSysData.pFileSystem->doesFileExist( pszFilePath)))
 	{
 		rc = RC_SET( NE_XFLM_FILE_EXISTS);
 		goto Exit;
@@ -172,7 +172,7 @@ RCODE XFLMAPI F_DbSystem::dbCreate(
 
 	pDb->m_pSFileHdl->setMaxAutoExtendSize( gv_XFlmSysData.uiMaxFileSize);
 	pDb->m_pSFileHdl->setExtendSize( pDb->m_pDatabase->m_uiFileExtendSize);
-	if (RC_BAD( rc = pDb->m_pSFileHdl->CreateFile( 0)))
+	if (RC_BAD( rc = pDb->m_pSFileHdl->createFile( 0)))
 	{
 		goto Exit;
 	}
@@ -327,7 +327,7 @@ RCODE F_Db::initDbFiles(
 
 	if (!m_pDatabase->m_bTempDb)
 	{
-		if (RC_BAD( rc = m_pSFileHdl->CreateFile( 1)))
+		if (RC_BAD( rc = m_pSFileHdl->createFile( 1)))
 		{
 			goto Exit;
 		}
@@ -406,7 +406,7 @@ RCODE F_Db::initDbFiles(
 	if (!m_pDatabase->m_bTempDb)
 	{
 		pBlkHdr->ui32BlkCRC = calcBlkCRC( pBlkHdr, SIZEOF_STD_BLK_HDR);
-		if (RC_BAD( rc = m_pSFileHdl->WriteBlock(
+		if (RC_BAD( rc = m_pSFileHdl->writeBlock(
 									(FLMUINT)pBlkHdr->ui32BlkAddr,
 									uiBlkSize, pucBuf, uiBlkSize, NULL,
 									&uiWriteBytes)))
@@ -416,7 +416,7 @@ RCODE F_Db::initDbFiles(
 
 		// Force things to disk.
 
-		if (RC_BAD( rc = m_pSFileHdl->Flush()))
+		if (RC_BAD( rc = m_pSFileHdl->flush()))
 		{
 			goto Exit;
 		}

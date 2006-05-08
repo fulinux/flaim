@@ -32,110 +32,8 @@ FSTATIC char base24ToDigit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_FileIdList::F_FileIdList()
-{
-	m_hMutex = F_MUTEX_NULL;
-	m_uiFileIdTblSize = 0;
-	m_puiFileIdTbl = NULL;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_FileIdList::~F_FileIdList()
-{
-	if( m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexDestroy( &m_hMutex);
-	}
-
-	if( m_puiFileIdTbl)
-	{
-		for( FLMUINT uiLoop = 0; uiLoop < m_uiFileIdTblSize; uiLoop++)
-		{
-			if( m_puiFileIdTbl[ uiLoop])
-			{
-				(void)gv_XFlmSysData.pFileHdlMgr->removeFileHdls(
-					m_puiFileIdTbl[ uiLoop]);
-			}
-		}
-
-		f_free( &m_puiFileIdTbl);
-	}
-}
-
-/****************************************************************************
-Desc: Allocates the mutex used by the file ID list object
-****************************************************************************/
-RCODE F_FileIdList::setup( void)
-{
-	RCODE			rc = NE_XFLM_OK;
-
-	flmAssert( m_hMutex == F_MUTEX_NULL);
-
-	if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc: Translates a database file number into a file ID.
-****************************************************************************/
-RCODE F_FileIdList::getFileId(
-	FLMUINT		uiFileNumber,
-	FLMUINT *	puiFileId)
-{
-	RCODE			rc = NE_XFLM_OK;
-	FLMBOOL		bMutexLocked = TRUE;
-	FLMUINT		uiLoop = 0;
-
-	f_mutexLock( m_hMutex);
-	bMutexLocked = TRUE;
-
-	if( uiFileNumber >= m_uiFileIdTblSize)
-	{
-		FLMUINT	uiOldTableSize = m_uiFileIdTblSize;
-
-		/*
-		Re-size the table
-		*/
-
-		if( RC_BAD( rc = f_recalloc( (uiFileNumber + 1) * sizeof( FLMUINT),
-			&m_puiFileIdTbl)))
-		{
-			goto Exit;
-		}
-		m_uiFileIdTblSize = uiFileNumber + 1;
-
-		for( uiLoop = uiOldTableSize; uiLoop < m_uiFileIdTblSize; uiLoop++)
-		{
-			m_puiFileIdTbl[ uiLoop] = gv_XFlmSysData.pFileHdlMgr->getUniqueId();
-		}
-	}
-
-	*puiFileId = m_puiFileIdTbl[ uiFileNumber];
-
-Exit:
-
-	if( bMutexLocked)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 F_SuperFileHdl::F_SuperFileHdl( void)
 {
-	m_pFileIdList = NULL;
 	m_pszDbFileName = NULL;
 	m_pszDataFileNameBase = NULL;
 	f_memset( &m_CheckedOutFileHdls[ 0], 0, sizeof( m_CheckedOutFileHdls));
@@ -157,22 +55,9 @@ Desc:
 ****************************************************************************/
 F_SuperFileHdl::~F_SuperFileHdl()
 {
-	/*
-	Release any file handles still being held and close the files.
-	*/
-
 	if( m_bSetupCalled)
 	{
-		(void)ReleaseFiles( TRUE);
-	}
-
-	/*
-	Release the ID list
-	*/
-
-	if( m_pFileIdList)
-	{
-		m_pFileIdList->Release();
+		(void)releaseFiles( TRUE);
 	}
 
 	if (m_pszDbFileName)
@@ -184,8 +69,7 @@ F_SuperFileHdl::~F_SuperFileHdl()
 /****************************************************************************
 Desc:	Configures the super file object
 ****************************************************************************/
-RCODE F_SuperFileHdl::Setup(
-	F_FileIdList *		pFileIdList,
+RCODE F_SuperFileHdl::setup(
 	const char *		pszDbFileName,
 	const char *		pszDataDir)
 {
@@ -199,44 +83,20 @@ RCODE F_SuperFileHdl::Setup(
 
 	if( !pszDbFileName && *pszDbFileName == 0)
 	{
-		rc = RC_SET( NE_XFLM_IO_INVALID_FILENAME);
+		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
 		goto Exit;
-	}
-
-	if( !pFileIdList)
-	{
-		if( (m_pFileIdList = f_new F_FileIdList) == NULL)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( RC_BAD( rc = m_pFileIdList->setup()))
-		{
-			FLMUINT		uiRefCnt;
-
-			uiRefCnt = m_pFileIdList->Release();
-			flmAssert( !uiRefCnt);
-			m_pFileIdList = NULL;
-			goto Exit;
-		}
-	}
-	else
-	{
-		pFileIdList->AddRef();
-		m_pFileIdList = pFileIdList;
 	}
 
 	uiNameLen = f_strlen( pszDbFileName);
 	if (pszDataDir && *pszDataDir)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->pathReduce( 
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
 			pszDbFileName, szDir, szBaseName)))
 		{
 			goto Exit;
 		}
 		f_strcpy( szDir, pszDataDir);
-		if (RC_BAD( rc = gv_pFileSystem->pathAppend( 
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
 			szDir, szBaseName)))
 		{
 			goto Exit;
@@ -278,74 +138,48 @@ Exit:
 /****************************************************************************
 Desc: Creates a file
 ****************************************************************************/
-RCODE F_SuperFileHdl::CreateFile(
+RCODE F_SuperFileHdl::createFile(
 	FLMUINT			uiFileNumber)
 {
-	char				szFilePath[ F_PATH_MAX_SIZE];
-	F_FileHdl *		pFileHdl = NULL;
-	FLMUINT			uiFileId;
 	RCODE				rc = NE_XFLM_OK;
+	char				szFilePath[ F_PATH_MAX_SIZE];
+	IF_FileHdl *	pFileHdl = NULL;
+//	FLMUINT			uiFileId;
 
-	/*
-	Sanity checks
-	*/
+	// Sanity checks
 
 	flmAssert( m_bSetupCalled && m_uiBlockSize);
 	flmAssert( uiFileNumber <= MAX_LOG_BLOCK_FILE_NUMBER);
 
-	/*
-	See if we already have an open file handle (or if we can open the file).
-	If so, truncate the file and use it.
-	*/
+	// See if we already have an open file handle (or if we can open the file).
+	// If so, truncate the file and use it.
 
-	if( RC_OK( rc = GetFileHdl( uiFileNumber, TRUE, (IF_FileHdl **)&pFileHdl)))
+	if( RC_OK( rc = getFileHdl( uiFileNumber, TRUE, &pFileHdl)))
 	{
-		rc = pFileHdl->Truncate( 0);
-		pFileHdl = NULL; // Don't want to release the file handle at exit
+		rc = pFileHdl->truncate( 0);
+		pFileHdl = NULL;
 		goto Exit;
 	}
-	else if( rc != NE_XFLM_IO_PATH_NOT_FOUND)
+	else if( rc != NE_FLM_IO_PATH_NOT_FOUND)
 	{
 		goto Exit;
 	}
-
-	// The file was not found above.  Allocate a new file handle.
-
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	pFileHdl->SetBlockSize( m_uiBlockSize);
-
-	// Configure the file handle.
-
-	if( RC_BAD( rc = m_pFileIdList->getFileId( uiFileNumber, &uiFileId)))
-	{
-		goto Exit;
-	}
-
-	flmAssert( uiFileId); // File ID should always be non-zero
-
-	pFileHdl->setupFileHdl( uiFileId, FALSE);
 
 	// Build the file path
 
-	if( RC_BAD( rc = GetFilePath( uiFileNumber, szFilePath)))
+	if( RC_BAD( rc = getFilePath( uiFileNumber, szFilePath)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->Create( szFilePath,
-		XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_DIRECT | XFLM_IO_SH_DENYNONE)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( szFilePath,
+		FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_DIRECT | FLM_IO_SH_DENYNONE,
+		&pFileHdl)))
 	{
 		goto Exit;
 	}
-
-	// Insert into the file handle manager
-
-	gv_XFlmSysData.pFileHdlMgr->insertInUsedList( FALSE, pFileHdl, TRUE);
+	
+	pFileHdl->setBlockSize( m_uiBlockSize);
 
 Exit:
 
@@ -360,7 +194,7 @@ Exit:
 /****************************************************************************
 Desc:	Reads a database block into a buffer
 ****************************************************************************/
-RCODE F_SuperFileHdl::ReadBlock(
+RCODE F_SuperFileHdl::readBlock(
 	FLMUINT			uiBlkAddress,
 	FLMUINT			uiBytesToRead,
 	void *			pvBuffer,
@@ -371,19 +205,19 @@ RCODE F_SuperFileHdl::ReadBlock(
 
 	flmAssert( m_bSetupCalled && m_uiBlockSize);
 
-	if( RC_BAD( rc = GetFileHdl(
+	if( RC_BAD( rc = getFileHdl(
 		FSGetFileNumber( uiBlkAddress), FALSE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->SectorRead(
+	if( RC_BAD( rc = pFileHdl->sectorRead(
 		FSGetFileOffset( uiBlkAddress), uiBytesToRead,
 		pvBuffer, puiBytesRead)))
 	{
-		if (rc != NE_XFLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
 		{
-			ReleaseFile( FSGetFileNumber( uiBlkAddress), TRUE);
+			releaseFile( FSGetFileNumber( uiBlkAddress), TRUE);
 		}
 		goto Exit;
 	}
@@ -396,12 +230,12 @@ Exit:
 /****************************************************************************
 Desc: Writes a block to the database
 ****************************************************************************/
-RCODE F_SuperFileHdl::WriteBlock(
+RCODE F_SuperFileHdl::writeBlock(
 	FLMUINT			uiBlkAddress,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
 	FLMUINT			uiBufferSize,
-	F_IOBuffer *	pIOBuffer,
+	IF_IOBuffer *	pIOBuffer,
 	FLMUINT *		puiBytesWritten)
 {
 	IF_FileHdl *	pFileHdl = NULL;
@@ -410,12 +244,12 @@ RCODE F_SuperFileHdl::WriteBlock(
 	flmAssert( m_bSetupCalled && m_uiBlockSize);
 
 Get_Handle:
-	if( RC_BAD( rc = GetFileHdl(
+	if( RC_BAD( rc = getFileHdl(
 		FSGetFileNumber( uiBlkAddress), TRUE, &pFileHdl)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
-			if (RC_BAD( rc = CreateFile( FSGetFileNumber( uiBlkAddress))))
+			if (RC_BAD( rc = createFile( FSGetFileNumber( uiBlkAddress))))
 			{
 				goto Exit;
 			}
@@ -429,13 +263,13 @@ Get_Handle:
 
 	pFileHdl->setExtendSize( m_uiExtendSize);
 	pFileHdl->setMaxAutoExtendSize( m_uiMaxAutoExtendSize);
-	if( RC_BAD( rc = pFileHdl->SectorWrite(
+	if( RC_BAD( rc = pFileHdl->sectorWrite(
 		FSGetFileOffset( uiBlkAddress), uiBytesToWrite,
 		pvBuffer, uiBufferSize, pIOBuffer, puiBytesWritten)))
 	{
-		if (rc != NE_XFLM_IO_DISK_FULL && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_XFLM_MEM)
 		{
-			ReleaseFile( FSGetFileNumber( uiBlkAddress), TRUE);
+			releaseFile( FSGetFileNumber( uiBlkAddress), TRUE);
 		}
 		goto Exit;
 	}
@@ -448,7 +282,7 @@ Exit:
 /****************************************************************************
 Desc:	Reads data from the database header
 ****************************************************************************/
-RCODE F_SuperFileHdl::ReadHeader(
+RCODE F_SuperFileHdl::readHeader(
 	FLMUINT			uiOffset,
 	FLMUINT			uiBytesToRead,
 	void *			pvBuffer,
@@ -460,27 +294,25 @@ RCODE F_SuperFileHdl::ReadHeader(
 #ifdef FLM_DEBUG
 	if( m_uiBlockSize)
 	{
-		/*
-		Note: Block size may not be set because we are in the process of
-		opening the file for the first time and we don't know the block
-		size until after the header has been read.
-		*/
+		// Note: Block size may not be set because we are in the process of
+		// opening the file for the first time and we don't know the block
+		// size until after the header has been read.
 
 		flmAssert( (FLMUINT)(uiOffset + uiBytesToRead) <= m_uiBlockSize);
 	}
 #endif
 
-	if( RC_BAD( rc = GetFileHdl( 0, TRUE, &pFileHdl)))
+	if( RC_BAD( rc = getFileHdl( 0, TRUE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->Read( uiOffset,
+	if( RC_BAD( rc = pFileHdl->read( uiOffset,
 		uiBytesToRead, pvBuffer, puiBytesRead)))
 	{
-		if (rc != NE_XFLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
 		{
-			ReleaseFile( (FLMUINT)0, TRUE);
+			releaseFile( (FLMUINT)0, TRUE);
 		}
 		goto Exit;
 	}
@@ -493,7 +325,7 @@ Exit:
 /****************************************************************************
 Desc:	Writes data to the database header
 ****************************************************************************/
-RCODE F_SuperFileHdl::WriteHeader(
+RCODE F_SuperFileHdl::writeHeader(
 	FLMUINT			uiOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
@@ -509,17 +341,17 @@ RCODE F_SuperFileHdl::WriteHeader(
 	}
 #endif
 
-	if( RC_BAD( rc = GetFileHdl( 0, TRUE, &pFileHdl)))
+	if( RC_BAD( rc = getFileHdl( 0, TRUE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->Write( uiOffset,
+	if( RC_BAD( rc = pFileHdl->write( uiOffset,
 		uiBytesToWrite, pvBuffer, puiBytesWritten)))
 	{
-		if (rc != NE_XFLM_IO_DISK_FULL && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_XFLM_MEM)
 		{
-			ReleaseFile( (FLMUINT)0, TRUE);
+			releaseFile( (FLMUINT)0, TRUE);
 		}
 		goto Exit;
 	}
@@ -532,7 +364,7 @@ Exit:
 /****************************************************************************
 Desc:	Releases all file handle objects and optionally closes the files
 ****************************************************************************/
-RCODE F_SuperFileHdl::ReleaseFile(
+RCODE F_SuperFileHdl::releaseFile(
 	FLMUINT		uiFileNum,
 	FLMBOOL		bCloseFile)
 {
@@ -543,7 +375,7 @@ RCODE F_SuperFileHdl::ReleaseFile(
 	pCkoFileHdl = getCkoFileHdlPtr( uiFileNum, &uiSlot);
 	if( pCkoFileHdl->uiFileNumber == uiFileNum)
 	{
-		if( RC_BAD( rc = ReleaseFile( pCkoFileHdl, bCloseFile)))
+		if( RC_BAD( rc = releaseFile( pCkoFileHdl, bCloseFile)))
 		{
 			goto Exit;
 		}
@@ -557,7 +389,7 @@ Exit:
 /****************************************************************************
 Desc:	Releases all file handle objects and optionally closes the files
 ****************************************************************************/
-RCODE F_SuperFileHdl::ReleaseFiles(
+RCODE F_SuperFileHdl::releaseFiles(
 	FLMBOOL		bCloseFiles)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -567,7 +399,7 @@ RCODE F_SuperFileHdl::ReleaseFiles(
 
 	for( uiLoop = 0; uiLoop <= m_uiHighestUsedSlot; uiLoop++)
 	{
-		if( RC_BAD( rc = ReleaseFile(
+		if( RC_BAD( rc = releaseFile(
 			&m_CheckedOutFileHdls[ uiLoop], bCloseFiles)))
 		{
 			goto Exit;
@@ -582,44 +414,28 @@ Exit:
 /****************************************************************************
 Desc:	Releases a file handle object
 ****************************************************************************/
-RCODE F_SuperFileHdl::ReleaseFile(
+RCODE F_SuperFileHdl::releaseFile(
 	CHECKED_OUT_FILE_HDL *		pCkoFileHdl,
 	FLMBOOL							bCloseFile)
 {
 	RCODE				rc = NE_XFLM_OK;
-	F_FileHdl *		pFileHdl = (F_FileHdl *)pCkoFileHdl->pFileHdl;
+	IF_FileHdl *	pFileHdl = pCkoFileHdl->pFileHdl;
 
 	if( pFileHdl)
 	{
-		flmAssert( pFileHdl->getFileId());
+//		flmAssert( pFileHdl->getFileId());
 
 		if( pCkoFileHdl->bDirty)
 		{
-			(void)pFileHdl->Flush();
+			(void)pFileHdl->flush();
 		}
 
 		if( bCloseFile)
 		{
 			FLMUINT		uiRefCnt;
 
-			/*
-			We must remove this handle from all lists and release
-			the file handle.
-			*/
-
-			gv_XFlmSysData.pFileHdlMgr->removeFileHdls( pFileHdl->getFileId());
 			uiRefCnt = pFileHdl->Release();
-			flmAssert( uiRefCnt == 0);			// pFileHdl should have been freed.
-		}
-		else
-		{
-
-			// Link out of the used list and move to the available list.
-
-			gv_XFlmSysData.pFileHdlMgr->makeAvailAndRelease( FALSE, pFileHdl);
-
-			// NOTE: makeAvailAndRelease will perform a release on the
-			// file handle object for the caller.
+			flmAssert( uiRefCnt == 0);
 		}
 
 		clearCkoFileHdl( pCkoFileHdl);
@@ -669,7 +485,7 @@ void F_SuperFileHdl::copyCkoFileHdls(
 			{
 				if (m_pCheckedOutFileHdls [uiNewSlot].uiFileNumber)
 				{
-					ReleaseFile( &m_pCheckedOutFileHdls [uiNewSlot], FALSE);
+					releaseFile( &m_pCheckedOutFileHdls [uiNewSlot], FALSE);
 				}
 				f_memcpy( &m_pCheckedOutFileHdls [uiNewSlot], pSrcCkoArray,
 							 sizeof( CHECKED_OUT_FILE_HDL));
@@ -701,7 +517,7 @@ void F_SuperFileHdl::copyCkoFileHdls(
 			}
 			else
 			{
-				ReleaseFile( pSrcCkoArray, FALSE);
+				releaseFile( pSrcCkoArray, FALSE);
 			}
 		}
 	}
@@ -733,7 +549,7 @@ void F_SuperFileHdl::disableFlushMinimize( void)
 /****************************************************************************
 Desc:	Flush dirty files to disk.
 ****************************************************************************/
-RCODE F_SuperFileHdl::Flush( void)
+RCODE F_SuperFileHdl::flush( void)
 {
 	RCODE		rc = NE_XFLM_OK;
 	FLMUINT	uiLoop;
@@ -749,10 +565,10 @@ RCODE F_SuperFileHdl::Flush( void)
 			RCODE	tmpRc;
 
 			if (RC_BAD( tmpRc =
-						m_pCheckedOutFileHdls[ uiLoop].pFileHdl->Flush()))
+						m_pCheckedOutFileHdls[ uiLoop].pFileHdl->flush()))
 			{
 				rc = tmpRc;
-				ReleaseFile( &m_pCheckedOutFileHdls [uiLoop], TRUE);
+				releaseFile( &m_pCheckedOutFileHdls [uiLoop], TRUE);
 			}
 			m_pCheckedOutFileHdls[ uiLoop].bDirty = FALSE;
 		}
@@ -767,7 +583,7 @@ Desc:	Truncates back to an end of file block address.
 		This may only be called from reduce() because there cannot
 		be any other cases to reduce a 3x block file.
 ****************************************************************************/
-RCODE	F_SuperFileHdl::TruncateFile(
+RCODE	F_SuperFileHdl::truncateFile(
 	FLMUINT			uiEOFBlkAddress)
 {
 	RCODE 			rc = NE_XFLM_OK;
@@ -775,39 +591,35 @@ RCODE	F_SuperFileHdl::TruncateFile(
 	FLMUINT			uiBlockOffset = (FLMUINT)FSGetFileOffset( uiEOFBlkAddress);
 	IF_FileHdl *	pFileHdl;
 
-	/*
-	Truncate the current block file.
-	*/
+	// Truncate the current block file.
 
-	if( RC_BAD( rc = GetFileHdl( uiFileNumber, TRUE, &pFileHdl)))
+	if( RC_BAD( rc = getFileHdl( uiFileNumber, TRUE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->Truncate( uiBlockOffset)))
+	if( RC_BAD( rc = pFileHdl->truncate( uiBlockOffset)))
 	{
-		ReleaseFile( uiFileNumber, TRUE);
+		releaseFile( uiFileNumber, TRUE);
 		goto Exit;
 	}
 
-	/*
-	Visit the rest of the high block files until a NULL file hdl is hit.
-	*/
+	// Visit the rest of the high block files until a NULL file hdl is hit.
 
 	for( ;;)
 	{
-		if( RC_BAD( GetFileHdl( ++uiFileNumber, TRUE, &pFileHdl)))
+		if( RC_BAD( getFileHdl( ++uiFileNumber, TRUE, &pFileHdl)))
 		{
 			break;
 		}
 
-		if( RC_BAD( rc = pFileHdl->Truncate( (FLMUINT)0 )))
+		if( RC_BAD( rc = pFileHdl->truncate( (FLMUINT)0 )))
 		{
-			ReleaseFile( uiFileNumber, TRUE);
+			releaseFile( uiFileNumber, TRUE);
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = ReleaseFile( uiFileNumber, TRUE)))
+		if( RC_BAD( rc = releaseFile( uiFileNumber, TRUE)))
 		{
 			goto Exit;
 		}
@@ -822,7 +634,7 @@ Exit:
 Desc:	Truncate to zero length any files between the specified start
 		and end files.
 ****************************************************************************/
-void F_SuperFileHdl::TruncateFiles(
+void F_SuperFileHdl::truncateFiles(
 	FLMUINT	uiStartFileNum,
 	FLMUINT	uiEndFileNum)
 {
@@ -833,10 +645,10 @@ void F_SuperFileHdl::TruncateFiles(
 		  uiFileNumber <= uiEndFileNum;
 		  uiFileNumber++ )
 	{
-		if( RC_OK( GetFileHdl( uiFileNumber, TRUE, &pFileHdl )))
+		if( RC_OK( getFileHdl( uiFileNumber, TRUE, &pFileHdl )))
 		{
-			(void)pFileHdl->Truncate( (FLMUINT)0 );
-			(void)ReleaseFile( uiFileNumber, TRUE);
+			(void)pFileHdl->truncate( (FLMUINT)0 );
+			(void)releaseFile( uiFileNumber, TRUE);
 		}
 	}
 }
@@ -844,7 +656,7 @@ void F_SuperFileHdl::TruncateFiles(
 /****************************************************************************
 Desc:	Returns the physical size of a file
 ****************************************************************************/
-RCODE F_SuperFileHdl::GetFileSize(
+RCODE F_SuperFileHdl::getFileSize(
 	FLMUINT			uiFileNumber,
 	FLMUINT64 *		pui64FileSize)
 {
@@ -858,14 +670,14 @@ RCODE F_SuperFileHdl::GetFileSize(
 
 	// Get the file handle.
 
-	if( RC_BAD( rc = GetFileHdl( uiFileNumber, FALSE, &pFileHdl)))
+	if( RC_BAD( rc = getFileHdl( uiFileNumber, FALSE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->Size( pui64FileSize)))
+	if( RC_BAD( rc = pFileHdl->size( pui64FileSize)))
 	{
-		ReleaseFile( uiFileNumber, TRUE);
+		releaseFile( uiFileNumber, TRUE);
 		goto Exit;
 	}
 
@@ -877,7 +689,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the path of a file given its file number
 ****************************************************************************/
-RCODE F_SuperFileHdl::GetFilePath(
+RCODE F_SuperFileHdl::getFilePath(
 	FLMUINT			uiFileNumber,
 	char *			pszIoPath)
 {
@@ -975,21 +787,16 @@ Exit:
 /****************************************************************************
 Desc:	Returns a file handle given the file's number
 ****************************************************************************/
-RCODE F_SuperFileHdl::GetFileHdl(
+RCODE F_SuperFileHdl::getFileHdl(
 	FLMUINT			uiFileNum,
 	FLMBOOL			bGetForUpdate,
 	IF_FileHdl **	ppFileHdl)
 {
-	F_FileHdl *					pFileHdl = NULL;
-	FLMUINT						uiFileId;
+	RCODE							rc = NE_XFLM_OK;
+	IF_FileHdl *				pFileHdl = NULL;
 	CHECKED_OUT_FILE_HDL *	pCkoFileHdl;
 	char							szFilePath[ F_PATH_MAX_SIZE];
 	FLMUINT						uiSlot;
-	RCODE							rc = NE_XFLM_OK;
-
-	/*
-	Get the file handle
-	*/
 
 	pCkoFileHdl = getCkoFileHdlPtr( uiFileNum, &uiSlot);
 	if( pCkoFileHdl->uiFileNumber != uiFileNum &&
@@ -1012,7 +819,7 @@ RCODE F_SuperFileHdl::GetFileHdl(
 		}
 		else
 		{
-			if( RC_BAD( rc = ReleaseFile( pCkoFileHdl, FALSE)))
+			if( RC_BAD( rc = releaseFile( pCkoFileHdl, FALSE)))
 			{
 				goto Exit;
 			}
@@ -1021,67 +828,28 @@ RCODE F_SuperFileHdl::GetFileHdl(
 
 	if( !pCkoFileHdl->pFileHdl)
 	{
-		/*
-		Get the file ID
-		*/
-
-		if( RC_BAD( rc = m_pFileIdList->getFileId( uiFileNum, &uiFileId)))
-		{
-			goto Exit;
-		}
-
-		/*
-		Look for an available file handle if not opening exclusive.
-		NOTE: AddRef() performed for caller by findAvail if a file
-				handle is found.
-		*/
-
-		gv_XFlmSysData.pFileHdlMgr->findAvail( uiFileId, FALSE, &pFileHdl);
-			
 		if (!pFileHdl)
 		{
-			/*
-			Allocate a new file handle, open the file and
-			link into the used directory.
-			*/
-
-			if ((pFileHdl = f_new F_FileHdl) == NULL)
-			{
-				rc = RC_SET( NE_XFLM_MEM);
-				goto Exit;
-			}
-
-			/*
-			If m_uiBlockSize is 0, direct I/O will not be used
-			*/
-
-			pFileHdl->SetBlockSize( m_uiBlockSize);
-
-			flmAssert( uiFileId); // File ID must be non-zero
-
-			pFileHdl->setupFileHdl( uiFileId, FALSE);
-
 			// Build the file path
 
-			if( RC_BAD( rc = GetFilePath( uiFileNum, szFilePath)))
+			if( RC_BAD( rc = getFilePath( uiFileNum, szFilePath)))
 			{
 				goto Exit;
 			}
 
 			// Open the file
 
-			if( RC_BAD( rc = pFileHdl->Open( szFilePath,
-				XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT)))
+			if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( szFilePath,
+				FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+				&pFileHdl)))
 			{
 				goto Exit;
 			}
 
-			// Insert into the manager
-
-			gv_XFlmSysData.pFileHdlMgr->insertInUsedList( FALSE, pFileHdl, TRUE);
+			pFileHdl->setBlockSize( m_uiBlockSize);
 		}
 
-		pCkoFileHdl->pFileHdl = (IF_FileHdl *)pFileHdl;
+		pCkoFileHdl->pFileHdl = pFileHdl;
 		pFileHdl = NULL;
 		pCkoFileHdl->uiFileNumber = uiFileNum;
 		pCkoFileHdl->bDirty = FALSE;

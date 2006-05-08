@@ -53,7 +53,7 @@ RCODE FDynSearchSet::setup(
 	}
 	else
 	{
-		f_memset( &m_szFileName, 0, F_PATH_MAX_SIZE);
+		f_memset( m_szFileName, 0, F_PATH_MAX_SIZE);
 	}
 	m_uiEntrySize = uiEntrySize;
 

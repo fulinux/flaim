@@ -104,11 +104,13 @@ RCODE F_DbSystem::dbRename(
 	// There must be either no directory specified for the new name, or
 	// it must be identical to the old directory.
 
-	if (RC_BAD( rc = gv_pFileSystem->pathReduce( pszDbName, pszOldName, szOldBase)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
+		pszDbName, pszOldName, szOldBase)))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = gv_pFileSystem->pathReduce( pszNewDbName, pszNewName, szNewBase)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
+		pszNewDbName, pszNewName, szNewBase)))
 	{
 		goto Exit;
 	}
@@ -121,7 +123,8 @@ RCODE F_DbSystem::dbRename(
 		goto Exit;
 	}
 	f_strcpy( pszNewName, pszOldName);
-	if (RC_BAD( rc = gv_pFileSystem->pathAppend( pszNewName, szNewBase)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+		pszNewName, szNewBase)))
 	{
 		goto Exit;
 	}
@@ -133,11 +136,13 @@ RCODE F_DbSystem::dbRename(
 	{
 		f_strcpy( pszOldDataName, pszDataDir);
 		f_strcpy( pszNewDataName, pszDataDir);
-		if (RC_BAD( rc = gv_pFileSystem->pathAppend( pszOldDataName, szOldBase)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+			pszOldDataName, szOldBase)))
 		{
 			goto Exit;
 		}
-		if (RC_BAD( rc = gv_pFileSystem->pathAppend( pszNewDataName, szNewBase)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+			pszNewDataName, szNewBase)))
 		{
 			goto Exit;
 		}
@@ -313,8 +318,8 @@ Exit:
 
 		if (RC_BAD( rc))
 		{
-			gv_pFileSystem->Rename( pRenameFile->Info.szDstFileName,
-														  pRenameFile->Info.szSrcFileName);
+			gv_XFlmSysData.pFileSystem->renameFile( 
+				pRenameFile->Info.szDstFileName, pRenameFile->Info.szSrcFileName);
 		}
 		f_free( &pRenameFile);
 	}
@@ -343,7 +348,8 @@ FSTATIC RCODE flmRenameFile(
 
 	if (f_stricmp( pszSrcFileName, pszDstFileName) == 0)
 	{
-		if (gv_pFileSystem->Exists( pszSrcFileName) == NE_XFLM_OK)
+		if (gv_XFlmSysData.pFileSystem->doesFileExist( 
+			pszSrcFileName) == NE_XFLM_OK)
 		{
 			*pbFileFound = TRUE;
 		}
@@ -360,20 +366,20 @@ FSTATIC RCODE flmRenameFile(
 
 	if (bOverwriteDestOk)
 	{
-		if (gv_pFileSystem->IsDir( pszDstFileName))
+		if (gv_XFlmSysData.pFileSystem->isDir( pszDstFileName))
 		{
-			if (RC_BAD( rc = gv_pFileSystem->RemoveDir(
-											pszDstFileName, TRUE)))
+			if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->removeDir( 
+				pszDstFileName, TRUE)))
 			{
 				goto Exit;
 			}
 		}
 		else
 		{
-			if (RC_BAD( rc = gv_pFileSystem->Delete(
-											pszDstFileName)))
+			if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( 
+				pszDstFileName)))
 			{
-				if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+				if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 				{
 					rc = NE_XFLM_OK;
 				}
@@ -388,10 +394,10 @@ FSTATIC RCODE flmRenameFile(
 	// If names are the same, no need to actually do the
 	// rename.
 
-	if (RC_BAD( rc = gv_pFileSystem->Rename( pszSrcFileName,
-																	pszDstFileName)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->renameFile( 
+			pszSrcFileName, pszDstFileName)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 		{
 			if (bPathNotFoundOk)
 			{

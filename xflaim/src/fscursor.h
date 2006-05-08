@@ -37,7 +37,7 @@ typedef struct KeyPosition
 /*============================================================================
 Desc: 	File system implementation of a cursor for an index.
 ============================================================================*/
-class FSIndexCursor : public XF_RefCount, public XF_Base
+class FSIndexCursor : public F_Object
 {
 public:
 
@@ -198,7 +198,7 @@ private:
 /*============================================================================
 Desc:	File system implementation of a cursor for a collection.
 ============================================================================*/
-class FSCollectionCursor : public XF_RefCount, public XF_Base
+class FSCollectionCursor : public F_Object
 {
 public:
 

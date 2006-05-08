@@ -38,7 +38,6 @@
 struct IXD;
 struct ICD;
 class F_Database;
-class F_Pool;
 class F_CCS;
 class F_AttrItem;
 
@@ -84,7 +83,7 @@ typedef struct ExtAttrElmDef
 /*****************************************************************************
 Desc:		Dictionary definition info object
 *****************************************************************************/
-class F_AttrElmInfo : public XF_RefCount, public XF_Base
+class F_AttrElmInfo : public F_Object
 {
 public:
 
@@ -212,10 +211,10 @@ typedef struct LFILE
 
 	FLMUINT   	uiRootBlk;			// Address of root block.
 	FLMUINT		uiBlkAddress;		// Block address of LFile entry.
-	FLMUINT		uiOffsetInBlk;			// Offset within block of entry.
-	FLMUINT		uiLfNum;					// Index number or collection number.
-	eLFileType	eLfType; 				// Type of logical file
-	FLMUINT		uiEncId;					// Encryption Id (0 if not encrypted)
+	FLMUINT		uiOffsetInBlk;		// Offset within block of entry.
+	FLMUINT		uiLfNum;				// Index number or collection number.
+	eLFileType	eLfType; 			// Type of logical file
+	FLMUINT		uiEncId;				// Encryption Id (0 if not encrypted)
 } LFILE;
 
 /****************************************************************************
@@ -402,7 +401,7 @@ typedef struct ReservedTag
 /**************************************************************************
 Desc:	This class is the FLAIM dictionary class.
 **************************************************************************/
-class F_Dict : public XF_RefCount, public XF_Base
+class F_Dict : public F_Object
 {
 public:
 
@@ -411,6 +410,8 @@ public:
 	F_Dict();
 
 	~F_Dict();
+	
+	RCODE setup( void);
 
 	void resetDict( void);
 
@@ -924,7 +925,7 @@ private:
 													// to a database.
 	FLMUINT					m_uiDictSeq;	// This is the sequence number of the
 													// dictionary
-	F_Pool 					m_dictPool;		// Pool for all allocations except tables.
+	IF_Pool *  				m_pDictPool;		// Pool for all allocations except tables.
 
 	// Fixed element definition table - used for elements whose tag numbers
 	// are less than or equal to FLM_HIGH_FIXED_ELEMENT_NUM

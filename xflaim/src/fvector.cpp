@@ -66,7 +66,7 @@ Desc:	Clear the data vector, but don't free any buffers that have been
 		method is so that we can get efficient re-use of the vector.  So, if
 		it has allocated buffers, etc. we don't want to free them.
 ****************************************************************************/
-void XFLMAPI F_DataVector::reset( void)
+void FLMAPI F_DataVector::reset( void)
 {
 	m_ui64DocumentID = 0;
 	m_uiNumElements = 0;
@@ -250,7 +250,7 @@ Exit:
 /****************************************************************************
 Desc:	Set the id for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setID(
+RCODE FLMAPI F_DataVector::setID(
 	FLMUINT		uiElementNumber,
 	FLMUINT64	ui64ID)
 {
@@ -276,7 +276,7 @@ Exit:
 /****************************************************************************
 Desc:	Set the name id for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setNameId(
+RCODE FLMAPI F_DataVector::setNameId(
 	FLMUINT	uiElementNumber,
 	FLMUINT	uiNameId,
 	FLMBOOL	bIsAttr,
@@ -320,7 +320,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMINT value for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setINT(
+RCODE FLMAPI F_DataVector::setINT(
 	FLMUINT	uiElementNumber,
 	FLMINT	iNum)
 {
@@ -367,7 +367,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMINT64 value for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setINT64(
+RCODE FLMAPI F_DataVector::setINT64(
 	FLMUINT		uiElementNumber,
 	FLMINT64		i64Num)
 {
@@ -403,7 +403,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMUINT value for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setUINT(
+RCODE FLMAPI F_DataVector::setUINT(
 	FLMUINT	uiElementNumber,
 	FLMUINT	uiNum)
 {
@@ -443,7 +443,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMUINT64 value for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setUINT64(
+RCODE FLMAPI F_DataVector::setUINT64(
 	FLMUINT		uiElementNumber,
 	FLMUINT64	ui64Num)
 {
@@ -472,7 +472,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMUNICODE value for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setUnicode(
+RCODE FLMAPI F_DataVector::setUnicode(
 	FLMUINT					uiElementNumber,
 	const FLMUNICODE *	puzUnicode)
 {
@@ -544,7 +544,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a UTF8 value for a vector element.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::setUTF8(
+RCODE FLMAPI F_DataVector::setUTF8(
 	FLMUINT				uiElementNumber,
 	const FLMBYTE *	pszUTF8,
 	FLMUINT				uiBytesInBuffer)
@@ -615,7 +615,7 @@ Exit:
 /****************************************************************************
 Desc:	Get a pointer to the UTF8 - no conversions are done.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::getUTF8Ptr(
+RCODE FLMAPI F_DataVector::getUTF8Ptr(
 	FLMUINT				uiElementNumber,
 	const FLMBYTE **	ppszUTF8,
 	FLMUINT *			puiBufLen)
@@ -674,7 +674,7 @@ Exit:
 /****************************************************************************
 Desc:	Allocate data for a unicode element and retrieve it.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::getUnicode(
+RCODE FLMAPI F_DataVector::getUnicode(
 	FLMUINT			uiElementNumber,
 	FLMUNICODE **	ppuzUnicode)
 {
@@ -719,7 +719,7 @@ Exit:
 /****************************************************************************
 Desc:	Compose a key buffer from the vector's components.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::outputKey(
+RCODE FLMAPI F_DataVector::outputKey(
 	IF_Db *			ifpDb,
 	FLMUINT			uiIndexNum,
 	FLMUINT,			// uiMatchFlags,	//VISIT: Need to remove this from the interface.
@@ -780,6 +780,7 @@ RCODE F_DataVector::outputKey(
 	FLMBYTE *				pucTmpSen;
 	FLMUINT					uiSenLen;
 	FLMUINT					uiIDMatchFlags = uiMatchFlags & (XFLM_MATCH_IDS | XFLM_MATCH_DOC_ID);
+	IF_BufferIStream *	pBufferStream = NULL;
 
 	if (uiIDMatchFlags)
 	{
@@ -792,12 +793,12 @@ RCODE F_DataVector::outputKey(
 		
 		if (sizeof( ucIDBuf) - uiIDLen >= 9)
 		{
-			uiIDLen += flmEncodeSEN( m_ui64DocumentID, &pucToKey);
+			uiIDLen += f_encodeSEN( m_ui64DocumentID, &pucToKey);
 		}
 		else
 		{
 			pucTmpSen = &ucTmpSen [0];
-			uiSenLen = flmEncodeSEN( m_ui64DocumentID, &pucTmpSen);
+			uiSenLen = f_encodeSEN( m_ui64DocumentID, &pucTmpSen);
 			if (uiSenLen + uiIDLen > sizeof( ucIDBuf))
 			{
 				rc = RC_SET( NE_XFLM_CONV_DEST_OVERFLOW);
@@ -824,12 +825,12 @@ RCODE F_DataVector::outputKey(
 				
 				if (sizeof( ucIDBuf) - uiIDLen >= 9)
 				{
-					uiIDLen += flmEncodeSEN( ui64Id, &pucToKey);
+					uiIDLen += f_encodeSEN( ui64Id, &pucToKey);
 				}
 				else
 				{
 					pucTmpSen = &ucTmpSen [0];
-					uiSenLen = flmEncodeSEN( ui64Id, &pucTmpSen);
+					uiSenLen = f_encodeSEN( ui64Id, &pucTmpSen);
 					if (uiSenLen + uiIDLen > sizeof( ucIDBuf))
 					{
 						rc = RC_SET( NE_XFLM_CONV_DEST_OVERFLOW);
@@ -856,12 +857,12 @@ RCODE F_DataVector::outputKey(
 				
 				if (sizeof( ucIDBuf) - uiIDLen >= 9)
 				{
-					uiIDLen += flmEncodeSEN( ui64Id, &pucToKey);
+					uiIDLen += f_encodeSEN( ui64Id, &pucToKey);
 				}
 				else
 				{
 					pucTmpSen = &ucTmpSen [0];
-					uiSenLen = flmEncodeSEN( ui64Id, &pucTmpSen);
+					uiSenLen = f_encodeSEN( ui64Id, &pucTmpSen);
 					if (uiSenLen + uiIDLen > sizeof( ucIDBuf))
 					{
 						rc = RC_SET( NE_XFLM_CONV_DEST_OVERFLOW);
@@ -889,12 +890,12 @@ RCODE F_DataVector::outputKey(
 				
 				if (sizeof( ucIDBuf) - uiIDLen >= 9)
 				{
-					uiIDLen += flmEncodeSEN( ui64Id, &pucToKey);
+					uiIDLen += f_encodeSEN( ui64Id, &pucToKey);
 				}
 				else
 				{
 					pucTmpSen = &ucTmpSen [0];
-					uiSenLen = flmEncodeSEN( ui64Id, &pucTmpSen);
+					uiSenLen = f_encodeSEN( ui64Id, &pucTmpSen);
 					if (uiSenLen + uiIDLen > sizeof( ucIDBuf))
 					{
 						rc = RC_SET( NE_XFLM_CONV_DEST_OVERFLOW);
@@ -963,7 +964,8 @@ RCODE F_DataVector::outputKey(
 					rc = RC_SET( NE_XFLM_CONV_DEST_OVERFLOW);
 					goto Exit;
 				}
-				longToByte( (FLMUINT32)uiNum, pucToKey);
+				
+				f_UINT32ToByte( (FLMUINT32)uiNum, pucToKey);
 				uiToKeyLen = 4;
 			}
 			else if (pIcd->uiFlags & ICD_METAPHONE)
@@ -971,7 +973,6 @@ RCODE F_DataVector::outputKey(
 				FLMUINT					uiMeta;
 				FLMBYTE					ucStorageBuf[ FLM_MAX_NUM_BUF_SIZE];
 				FLMUINT					uiStorageLen;
-				F_BufferIStream		bufferStream;
 
 				if (uiDataType != XFLM_TEXT_TYPE)
 				{
@@ -986,13 +987,22 @@ RCODE F_DataVector::outputKey(
 					{
 						goto Exit;
 					}
+					
+					if( !pBufferStream)
+					{
+						if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferStream)))
+						{
+							goto Exit;
+						}
+					}
 	
-					if (RC_BAD( rc = bufferStream.open( pucDataPtr, uiDataLen)))
+					if (RC_BAD( rc = pBufferStream->open( 
+						(const char *)pucDataPtr, uiDataLen)))
 					{
 						goto Exit;
 					}
 	
-					if (RC_BAD( rc = flmGetNextMetaphone( &bufferStream, &uiMeta)))
+					if (RC_BAD( rc = f_getNextMetaphone( pBufferStream, &uiMeta)))
 					{
 						if( rc == NE_XFLM_EOF_HIT)
 						{
@@ -1001,7 +1011,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 	
-					bufferStream.close();
+					pBufferStream->close();
 				}
 				else if (pVector->uiDataType == XFLM_NUMBER_TYPE)
 				{
@@ -1025,7 +1035,16 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 
-					if (RC_BAD( rc = bufferStream.open( ucStorageBuf, uiStorageLen)))
+					if( !pBufferStream)
+					{
+						if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferStream)))
+						{
+							goto Exit;
+						}
+					}
+					
+					if (RC_BAD( rc = pBufferStream->open( 
+						(const char *)ucStorageBuf, uiStorageLen)))
 					{
 						goto Exit;
 					}
@@ -1034,19 +1053,19 @@ RCODE F_DataVector::outputKey(
 
 					uiToKeyLen = uiMaxKeySize - uiKeyLen;
 					if( RC_BAD( rc = KYCollateValue( pucToKey, &uiToKeyLen,
-						&bufferStream, XFLM_NUMBER_TYPE,
+						pBufferStream, XFLM_NUMBER_TYPE,
 						pIcd->uiFlags, pIcd->uiCompareRules, pIcd->uiLimit,
 						NULL, NULL, uiLanguage,
 						FALSE, FALSE, &bDataTruncated, NULL)))
 					{
 						goto Exit;
 					}
+					
+					pBufferStream->close();
 				}
 			}
 			else
 			{
-				F_BufferIStream	bufferStream;
-
 				if (uiDataType == XFLM_TEXT_TYPE)
 				{
 					if (RC_BAD( rc = getUTF8Ptr( uiKeyComponent,
@@ -1060,16 +1079,26 @@ RCODE F_DataVector::outputKey(
 					pucDataPtr = (FLMBYTE *)getDataPtr( pVector);
 					uiDataLen = pVector->uiDataLength;
 				}
+				
 				if (uiDataLen)
 				{
-					if (RC_BAD( rc = bufferStream.open( pucDataPtr, uiDataLen)))
+					if( !pBufferStream)
+					{
+						if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferStream)))
+						{
+							goto Exit;
+						}
+					}
+					
+					if (RC_BAD( rc = pBufferStream->open( 
+						(const char *)pucDataPtr, uiDataLen)))
 					{
 						goto Exit;
 					}
 
 					uiToKeyLen = uiMaxKeySize - uiKeyLen;
 					if( RC_BAD( rc = KYCollateValue( pucToKey, &uiToKeyLen,
-						&bufferStream, uiDataType,
+						pBufferStream, uiDataType,
 						pIcd->uiFlags, pIcd->uiCompareRules, pIcd->uiLimit,
 						NULL, NULL, uiLanguage,
 						(FLMBOOL) ((pIcd->uiFlags & ICD_SUBSTRING)
@@ -1081,6 +1110,8 @@ RCODE F_DataVector::outputKey(
 					{
 						goto Exit;
 					}
+					
+					pBufferStream->close();					
 				}
 			}
 
@@ -1126,13 +1157,19 @@ RCODE F_DataVector::outputKey(
 
 Exit:
 
+	if( pBufferStream)
+	{
+		pBufferStream->Release();
+		pBufferStream = NULL;
+	}
+
 	return( rc);
 }
 
 /****************************************************************************
 Desc:	Populate a vector's components from the key part of an index key.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::inputKey(
+RCODE FLMAPI F_DataVector::inputKey(
 	IF_Db *				ifpDb,
 	FLMUINT				uiIndexNum,
 	const FLMBYTE *	pucKey,
@@ -1223,7 +1260,7 @@ RCODE F_DataVector::inputKey(
 					rc = RC_SET_AND_ASSERT( NE_XFLM_BTREE_ERROR);
 					goto Exit;
 				}
-				uiNum = (FLMUINT)byteToLong( pucKey);
+				uiNum = (FLMUINT)f_byteToUINT32( pucKey);
 	
 				// What is stored in the key better match the dictionary
 				// number of the ICD.
@@ -1407,7 +1444,7 @@ RCODE F_DataVector::inputKey(
 	
 	// See if we have a document ID.
 	
-	if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, &m_ui64DocumentID)))
+	if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, &m_ui64DocumentID)))
 	{
 		goto Exit;
 	}
@@ -1421,7 +1458,7 @@ RCODE F_DataVector::inputKey(
 		
 		// Extract the component node ID
 
-		if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, &ui64Id)))
+		if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, &ui64Id)))
 		{
 			goto Exit;
 		}
@@ -1447,7 +1484,7 @@ RCODE F_DataVector::inputKey(
 
 		// Extract the component node ID
 
-		if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, &ui64Id)))
+		if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, &ui64Id)))
 		{
 			goto Exit;
 		}
@@ -1483,7 +1520,7 @@ RCODE F_DataVector::inputKey(
 
 		// Extract the component node ID
 
-		if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, &ui64Id)))
+		if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, &ui64Id)))
 		{
 			goto Exit;
 		}
@@ -1519,7 +1556,7 @@ Exit:
 /****************************************************************************
 Desc:	Compose a data buffer from the vector's components.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::outputData(
+RCODE FLMAPI F_DataVector::outputData(
 	IF_Db *		ifpDb,
 	FLMUINT		uiIndexNum,
 	FLMBYTE *	pucDataBuf,
@@ -1585,7 +1622,7 @@ RCODE F_DataVector::outputData(
 
 		// Output the length of the data as a SEN value
 
-		uiSENLen = flmEncodeSEN( uiDataLength, &pucTmpSen);
+		uiSENLen = f_encodeSEN( uiDataLength, &pucTmpSen);
 		if (uiTotalLength + uiSENLen > uiDataBufSize)
 		{
 			rc = RC_SET( NE_XFLM_CONV_DEST_OVERFLOW);
@@ -1625,7 +1662,7 @@ Exit:
 /****************************************************************************
 Desc:	Populate a vector's data components from the data part of a key.
 ****************************************************************************/
-RCODE XFLMAPI F_DataVector::inputData(
+RCODE FLMAPI F_DataVector::inputData(
 	IF_Db *				ifpDb,
 	FLMUINT				uiIndexNum,
 	const FLMBYTE *	pucData,
@@ -1672,14 +1709,14 @@ RCODE F_DataVector::inputData(
 
 		// Get the data length - it is stored as a SEN
 
-		uiSENLen = flmGetSENLength( *pucData);
+		uiSENLen = f_getSENLength( *pucData);
 		if (uiSENLen > uiInputLen)
 		{
 			rc = RC_SET( NE_XFLM_DATA_ERROR);
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = flmDecodeSEN( &pucData,
+		if( RC_BAD( rc = f_decodeSEN( &pucData,
 			&pucData[ uiSENLen], &uiDataLength)))
 		{
 			goto Exit;
@@ -1745,7 +1782,7 @@ Exit:
 /****************************************************************************
 Desc:		Create and empty data vector and return it's interface...
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::createIFDataVector(
+RCODE FLMAPI F_DbSystem::createIFDataVector(
 		IF_DataVector **		ifppDV)
 {
 	RCODE					rc = NE_XFLM_OK;

@@ -192,10 +192,10 @@ FSTATIC RCODE chkReadBlkFromDisk(
 	FLMUINT		uiBlkSize = (FLMUINT)pDbHdr->ui16BlockSize;
 	F_Dict *		pDict;
 
-	if (RC_BAD( rc = pSFileHdl->ReadBlock( uiFilePos, uiBlkSize,
+	if (RC_BAD( rc = pSFileHdl->readBlock( uiFilePos, uiBlkSize,
 								(FLMBYTE *)pBlkHdr, &uiBytesRead)))
 	{
-		if (rc == NE_XFLM_IO_END_OF_FILE)
+		if (rc == NE_FLM_IO_END_OF_FILE)
 		{
 			rc = RC_SET( NE_XFLM_DATA_ERROR);
 		}

@@ -37,7 +37,7 @@ Desc:	Provides the ability to scan a FLAIM database to delete or check
 		for usage of elements and attributes.
 ****************************************************************************/
 RCODE F_Db::sweep(
-	F_Thread *					pThread)
+	IF_Thread *					pThread)
 {
 	RCODE							rc = NE_XFLM_OK;
 	FLMBOOL						bStartedTrans = FALSE;
@@ -47,7 +47,7 @@ RCODE F_Db::sweep(
 	FLMUINT						uiCollection;
 	F_Btree *					pbtree = NULL;
 	FLMBYTE						ucKey [FLM_MAX_NUM_BUF_SIZE];
-	FLMUINT						uiKeyLen;
+	FLMUINT						uiKeyLen = 0;
 	FLMUINT64					ui64NodeId;
 	FLMBOOL						bNeg;
 	FLMUINT						uiBytesProcessed;

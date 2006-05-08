@@ -86,7 +86,7 @@ Class:	ServerLockManager
 Desc:		The ServerLockManager class manages ServerLockObject objects.
 ===========================================================================*/
 
-class ServerLockManager : public XF_RefCount, public XF_Base
+class ServerLockManager : public F_Object
 {
 public:
 
@@ -183,7 +183,7 @@ friend class ServerLockObject;
 Class:	F_ItemId
 Desc:		The item id that identifies a particular object.
 ===========================================================================*/
-class F_ItemId : public XF_RefCount, public XF_Base
+class F_ItemId : public F_Object
 {
 public:
 	F_ItemId();								// F_ItemId Constructor
@@ -316,7 +316,7 @@ private:
 Desc:		The ServerLockObject is used to lock and unlock a particular
 			object.
 ===========================================================================*/
-class ServerLockObject : public XF_RefCount, public XF_Base
+class ServerLockObject : public F_Object
 {
 public:
 	ServerLockObject();					// ServerLockObject Constructor
@@ -356,7 +356,7 @@ public:
 												// Decrement ref count, when it gets
 												// down to 1, put it in the avail list.
 
-	FLMINT XFLMAPI Release( void)
+	FLMINT FLMAPI Release( void)
 	{
 		return( Release( FALSE));
 	}

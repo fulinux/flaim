@@ -99,7 +99,7 @@ FINLINE void bldFreeCachedNode(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-class F_RebuildNodeIStream : public IF_IStream, public XF_Base
+class F_RebuildNodeIStream : public IF_IStream
 {
 public:
 
@@ -121,9 +121,9 @@ public:
 		F_DbRebuild *		pRebuild,
 		FLMBOOL				bRecovDictionary);
 
-	RCODE XFLMAPI close( void);
+	RCODE FLMAPI close( void);
 	
-	RCODE XFLMAPI read(
+	RCODE FLMAPI read(
 		void *				pvBuffer,
 		FLMUINT				uiBytesToRead,
 		FLMUINT *			puiBytesRead);
@@ -198,9 +198,9 @@ private:
 /***************************************************************************
 Desc:	Comparison object for node result sets
 ***************************************************************************/
-class F_NodeResultSetCompare : public IF_ResultSetCompare, public XF_Base
+class F_NodeResultSetCompare : public IF_ResultSetCompare
 {
-	inline RCODE XFLMAPI compare(
+	inline RCODE FLMAPI compare(
 		const void *			pvData1,
 		FLMUINT					uiLength1,
 		const void *			pvData2,
@@ -231,8 +231,8 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare, public XF_Base
 		}
 		else
 		{
-			uiCollection1 = byteToLong( &pucData1[ 1]);
-			uiCollection2 = byteToLong( &pucData2[ 1]);
+			uiCollection1 = f_byteToUINT32( &pucData1[ 1]);
+			uiCollection2 = f_byteToUINT32( &pucData2[ 1]);
 
 			if( uiCollection1 < uiCollection2)
 			{
@@ -244,8 +244,8 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare, public XF_Base
 			}
 			else
 			{
-				ui64NodeId1 = byteToLong64( &pucData1[ 5]);
-				ui64NodeId2 = byteToLong64( &pucData2[ 5]);
+				ui64NodeId1 = f_byteToUINT64( &pucData1[ 5]);
+				ui64NodeId2 = f_byteToUINT64( &pucData2[ 5]);
 
 				if( ui64NodeId1 < ui64NodeId2)
 				{
@@ -265,12 +265,12 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare, public XF_Base
 		return( NE_XFLM_OK);
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FLMINT FLMAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}
@@ -481,8 +481,7 @@ Retry:
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = m_pSFileHdl->Setup( NULL,
-		pszSourceDbPath, pszSourceDataDir)))
+	if( RC_BAD( rc = m_pSFileHdl->setup( pszSourceDbPath, pszSourceDataDir)))
 	{
 		goto Exit;
 	}
@@ -610,7 +609,7 @@ Retry:
 	if( RC_BAD( rc = dbSystem.dbRemove( pszDestDbPath, pszDestDataDir,
 		pszDestRflDir, TRUE)))
 	{
-		if( rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+		if( rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 		{
 			rc = NE_XFLM_OK;
 		}
@@ -628,7 +627,7 @@ Retry:
 		pCreateOpts->uiBlockSize = m_dbHdr.ui16BlockSize;
 	}
 
-	m_pSFileHdl->SetBlockSize( m_dbHdr.ui16BlockSize);
+	m_pSFileHdl->setBlockSize( m_dbHdr.ui16BlockSize);
 
 	// Create the destination database
 
@@ -777,7 +776,7 @@ Exit:
 
 	if( pLockFileHdl)
 	{
-		(void)pLockFileHdl->Close();
+		pLockFileHdl->close();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -915,8 +914,8 @@ RCODE F_DbRebuild::recoverNodes(
 	FLMBOOL						bRecoverDictionary)
 {
 	RCODE							rc = NE_XFLM_OK;
-	FResultSet *				pRootRSet = NULL;
-	FResultSet *				pNonRootRSet = NULL;
+	IF_ResultSet *				pRootRSet = NULL;
+	IF_ResultSet *				pNonRootRSet = NULL;
 	F_CachedNode *				pRecovRoot = NULL;
 	F_RebuildNodeIStream *	pIStream = NULL;
 	FLMUINT64					ui64RootCount;
@@ -946,27 +945,25 @@ RCODE F_DbRebuild::recoverNodes(
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
-
-	if( (pRootRSet = f_new FResultSet( REBUILD_BLK_SIZE)) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocResultSet( &pRootRSet)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pRootRSet->setupResultSet( (char *)".", 
-		pCompareRSEntry, 0, TRUE, FALSE)))
+	if( RC_BAD( rc = pRootRSet->setupResultSet( ".", pCompareRSEntry, 0,
+		TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmAllocResultSet( &pNonRootRSet)))
 	{
 		goto Exit;
 	}
 
-	if( (pNonRootRSet = f_new FResultSet( REBUILD_BLK_SIZE)) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = pNonRootRSet->setupResultSet( (char *)".", 
-		pCompareRSEntry, 0, TRUE, FALSE)))
+	if( RC_BAD( rc = pNonRootRSet->setupResultSet( ".", pCompareRSEntry, 0,
+		TRUE, FALSE)))
 	{
 		goto Exit;
 	}
@@ -1054,7 +1051,7 @@ RCODE F_DbRebuild::recoverNodes(
 	}
 	
 	m_callbackData.ui64TotNodes = ui64RootCount + ui64NonRootCount;
-	FLM_SECS_TO_TIMER_UNITS( 30, uiMaxTransTime);
+	uiMaxTransTime = FLM_SECS_TO_TIMER_UNITS( 30);
 
 	// Add the nodes to the destination database
 
@@ -1225,7 +1222,7 @@ Desc:
 *****************************************************************************/
 RCODE F_DbRebuild::recoverTree(
 	F_RebuildNodeIStream *	pIStream,
-	FResultSet *				pNonRootRSet,
+	IF_ResultSet *				pNonRootRSet,
 	F_DOMNode *					pParentNode,
 	F_CachedNode *				pRecovCachedNode,
 	FLMBYTE *					pucNodeIV)
@@ -1770,7 +1767,7 @@ Notes: All the important stuff is handled by the F_DbRebuild::dbRebuild
 		 function (below).  All this call does is create an F_DbRebuild object,
 		 call dbRebuild on it, delete the obj and return the RCODE.
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::dbRebuild(
+RCODE FLMAPI F_DbSystem::dbRebuild(
 	const char *				pszSourceDbPath,
 	const char *				pszSourceDataDir,
 	const char *				pszDestDbPath,
@@ -1907,14 +1904,14 @@ RCODE F_RebuildNodeIStream::readBlock(
 	
 	if( !pFileHdl)
 	{
-		if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->GetFileHdl( 
+		if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->getFileHdl( 
 			uiFileNumber, FALSE, &pFileHdl)))
 		{
 			goto Exit;
 		}
 	}
 	
-	if( RC_BAD( rc = pFileHdl->SectorRead( uiFileOffset, uiBlockSize, 
+	if( RC_BAD( rc = pFileHdl->sectorRead( uiFileOffset, uiBlockSize, 
 		pucBlk, NULL)))
 	{
 		goto Exit;
@@ -2047,11 +2044,11 @@ TryNextFile:
 				goto Exit;
 			}
 	
-			if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->GetFileHdl( 
+			if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->getFileHdl( 
 				pScanState->uiFileNumber, FALSE, &pFileHdl)))
 			{
-				if( rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-					 rc == NE_XFLM_IO_INVALID_FILENAME)
+				if( rc == NE_FLM_IO_PATH_NOT_FOUND ||
+					 rc == NE_FLM_IO_INVALID_FILENAME)
 				{
 					rc = NE_XFLM_OK;
 					uiTryNextCount++;
@@ -2069,7 +2066,7 @@ TryNextFile:
 		if( RC_BAD( rc = readBlock( pFileHdl, pScanState->uiFileNumber, 
 			pScanState->uiFileOffset, pScanState)))
 		{
-			if( rc == NE_XFLM_IO_END_OF_FILE)
+			if( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				rc = NE_XFLM_OK;
 				goto TryNextFile;
@@ -2782,10 +2779,10 @@ TryNextFile:
 			uiOffset = 0;
 			uiFileNumber++;
 
-			if( RC_BAD( rc = m_pSFileHdl->GetFileHdl( uiFileNumber, 
+			if( RC_BAD( rc = m_pSFileHdl->getFileHdl( uiFileNumber, 
 				FALSE, &pFileHdl)))
 			{
-				if( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+				if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 				{
 					rc = NE_XFLM_OK;
 					break;
@@ -2795,7 +2792,7 @@ TryNextFile:
 			}
 		}
 
-		if( RC_BAD( rc = pFileHdl->Read( uiOffset, 
+		if( RC_BAD( rc = pFileHdl->read( uiOffset, 
 			SIZEOF_STD_BLK_HDR, &blkHdr, &uiBytesRead)))
 		{
 			if( rc != NE_XFLM_EOF_HIT)

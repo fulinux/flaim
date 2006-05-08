@@ -130,8 +130,8 @@ typedef struct RflWaiterTag
 
 typedef struct
 {
-	F_IOBufferMgr *	pBufferMgr;				// Write buffer manager
-	F_IOBuffer *		pIOBuffer;
+	IF_IOBufferMgr *	pBufferMgr;				// Write buffer manager
+	IF_IOBuffer *		pIOBuffer;
 	FLMUINT				uiCurrFileNum;			// Current file number.
 	FLMUINT				uiRflBufBytes;			// Number of bytes currently in the
 														//	pIOBuffer.  Always points to
@@ -156,7 +156,7 @@ typedef struct
 Desc:	This class handles all of the roll-forward logging for FLAIM.  There
 		is one of these objects allocated per F_Database.
 **************************************************************************/
-class F_Rfl : public XF_RefCount, public XF_Base
+class F_Rfl : public F_Object
 {
 public:
 
@@ -435,7 +435,7 @@ public:
 		}
 		if (m_pFileHdl)
 		{
-			m_pFileHdl->Close();
+			m_pFileHdl->close();
 			m_pFileHdl->Release();
 			m_pFileHdl = NULL;
 			m_pCurrentBuf->uiCurrFileNum = 0;

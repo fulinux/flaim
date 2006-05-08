@@ -145,7 +145,7 @@ RCODE FSIndexCursor::allocDupCheckSet( void)
 	}
 	if (RC_BAD( rc = dbSystem.getTempDir( szTmpDir)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
 			rc = NE_XFLM_OK;
 		}
@@ -157,7 +157,7 @@ RCODE FSIndexCursor::allocDupCheckSet( void)
 
 	if (!szTmpDir [0] && m_pDb)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->pathReduce( 
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
 					m_pDb->m_pDatabase->m_pszDbPath, szTmpDir, NULL)))
 		{
 			goto Exit;
@@ -544,12 +544,11 @@ RCODE FSIndexCursor::setKeyPosition(
 	FLMUINT *		puiDataLen,
 	F_Btree *		pBTree,			// BTree to use.  NULL means use our
 											// internal one.
-	FLMUINT *		puiAbsolutePos
-	)
+	FLMUINT *		puiAbsolutePos)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FLMUINT	uiDataLen;
-	FLMINT	iCompare;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiDataLen;
+	FLMINT			iCompare = 0;
 
 	// if pBTree is NULL, we are to use m_pbTree.  Otherwise, we
 	// need to open the pBTree and use it.
@@ -902,15 +901,16 @@ RCODE FSIndexCursor::nextKey(
 	F_DataVector *	pKey,
 	FLMBOOL			bSkipCurrKey)
 {
-	RCODE		rc = NE_XFLM_OK;
-	KEYPOS	saveCurrentKey;
-	FLMUINT	uiDataLen;
-	FLMINT	iCompare;
+	RCODE				rc = NE_XFLM_OK;
+	KEYPOS			saveCurrentKey;
+	FLMUINT			uiDataLen;
+	FLMINT			iCompare;
 
 	if (RC_BAD( rc = checkTransaction( pDb)))
 	{
 		goto Exit;
 	}
+	
 	flmAssert( m_bSetup);
 	if (m_bAtEOF)
 	{
@@ -1140,21 +1140,24 @@ RCODE FSIndexCursor::prevKey(
 	F_DataVector *	pKey,
 	FLMBOOL			bSkipCurrKey)
 {
-	RCODE		rc = NE_XFLM_OK;
-	KEYPOS	saveCurrentKey;
-	FLMUINT	uiDataLen;
-	FLMINT	iCompare;
+	RCODE				rc = NE_XFLM_OK;
+	KEYPOS			saveCurrentKey;
+	FLMUINT			uiDataLen;
+	FLMINT			iCompare;
 
 	if (RC_BAD( rc = checkTransaction( pDb)))
 	{
 		goto Exit;
 	}
+	
 	flmAssert( m_bSetup);
+	
 	if (m_bAtBOF)
 	{
 		rc = RC_SET( NE_XFLM_BOF_HIT);
 		goto Exit;
 	}
+	
 	if (m_bAtEOF || !m_curKey.uiKeyLen)
 	{
 		rc = lastKey( pDb, pKey);

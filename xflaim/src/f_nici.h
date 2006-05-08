@@ -65,7 +65,7 @@
 /*-----------------------------------------------------------------------
  * CCS Interface.
  *-----------------------------------------------------------------------*/
-class IF_CCS
+class IF_CCS : public F_Object
 {
 public:
 
@@ -97,7 +97,7 @@ public:
 
 
 
-class F_CCS : public IF_CCS, public XF_Base, public XF_RefCount
+class F_CCS : public IF_CCS
 {
 public:
 

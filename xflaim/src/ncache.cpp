@@ -36,6 +36,9 @@ Desc:	Constructor
 ****************************************************************************/
 F_NodeCacheMgr::F_NodeCacheMgr()
 {
+	m_pNodeAllocator = NULL;
+	m_pBufAllocator = NULL;
+	m_pAttrItemAllocator = NULL;
 	m_pPurgeList = NULL;
 	m_pHeapList = NULL;
 	m_pOldList = NULL;
@@ -89,10 +92,6 @@ F_CachedNode::F_CachedNode()
 	m_uiFlags = 0;
 	
 	f_memset( &m_nodeInfo, 0, sizeof( F_NODE_INFO));
-	
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 
 /****************************************************************************
@@ -136,7 +135,7 @@ F_CachedNode::~F_CachedNode()
 	if (m_pucData)
 	{
 		pucActualAlloc = getActualPointer( m_pucData);
-		gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 							m_uiDataBufSize, &pucActualAlloc);
 		m_pucData = NULL;
 	}
@@ -144,7 +143,7 @@ F_CachedNode::~F_CachedNode()
 	if (m_pNodeList)
 	{
 		pucActualAlloc = getActualPointer( m_pNodeList);
-		gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 							calcNodeListBufSize( m_nodeInfo.uiChildElmCount),
 							&pucActualAlloc);
 		m_pNodeList = NULL;
@@ -162,7 +161,7 @@ F_CachedNode::~F_CachedNode()
 		flmAssert( !m_uiTotalAttrSize);
 
 		pucActualAlloc = getActualPointer( m_ppAttrList);
-		gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 							calcAttrListBufSize( m_uiAttrCount),
 							&pucActualAlloc);
 		m_ppAttrList = NULL;
@@ -193,10 +192,6 @@ void F_CachedNode::freePurged( void)
 	// Free the F_CachedNode object.
 
 	unsetPurged();
-
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 
 	delete this;
 }
@@ -249,25 +244,13 @@ void F_CachedNode::freeCache(
 
 	if (!bPutInPurgeList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		delete this;
 	}
 	else
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		if ((m_pNextInGlobal = gv_XFlmSysData.pNodeCacheMgr->m_pPurgeList) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInGlobal->unprotectCachedItem();
-#endif
 			m_pNextInGlobal->m_pPrevInGlobal = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInGlobal->protectCachedItem();
-#endif
 		}
 		gv_XFlmSysData.pNodeCacheMgr->m_pPurgeList = this;
 		
@@ -276,9 +259,6 @@ void F_CachedNode::freeCache(
 		
 		m_uiFlags &= ~(FDOM_DIRTY | FDOM_NEW);
 		setPurged();
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 		flmAssert( !m_pPrevInGlobal);
 	}
 }
@@ -305,26 +285,40 @@ RCODE F_NodeCacheMgr::initCache( void)
 
 	// Set up the F_CachedNode object allocator
 
-	if (RC_BAD( rc = m_nodeAllocator.setup( &m_nodeRelocator,
+	if( RC_BAD( rc = FlmAllocFixedAllocator( &m_pNodeAllocator)))
+	{
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = m_pNodeAllocator->setup( &m_nodeRelocator,
 		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, 
-		TRUE, sizeof( F_CachedNode), &m_Usage.slabUsage)))
+		sizeof( F_CachedNode), &m_Usage.slabUsage)))
 	{
 		goto Exit;
 	}
 
 	// Set up the buffer allocator for F_CachedNode objects
 
-	if (RC_BAD( rc = m_bufAllocator.setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, FALSE,
-		&m_Usage.slabUsage)))
+	if( RC_BAD( rc = FlmAllocBufferAllocator( &m_pBufAllocator)))
+	{
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = m_pBufAllocator->setup(
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_Usage.slabUsage)))
 	{
 		goto Exit;
 	}
 
 	// Set up the allocator for attribute items
 
-	if( RC_BAD( rc = m_attrItemAllocator.setup( &m_attrItemRelocator,
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, FALSE,
+	if( RC_BAD( rc = FlmAllocFixedAllocator( &m_pAttrItemAllocator)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = m_pAttrItemAllocator->setup( &m_attrItemRelocator,
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager,
 		sizeof( F_AttrItem), &m_Usage.slabUsage)))
 	{
 		goto Exit;
@@ -404,134 +398,62 @@ void F_NodeRelocator::relocate(
 
 	if (pNewNode->m_pPrevInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInDatabase->unprotectCachedItem();
-#endif
 		pNewNode->m_pPrevInDatabase->m_pNextInDatabase = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInDatabase->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pNextInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInDatabase->unprotectCachedItem();
-#endif
 		pNewNode->m_pNextInDatabase->m_pPrevInDatabase = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInDatabase->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pPrevInGlobal)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInGlobal->unprotectCachedItem();
-#endif
 		pNewNode->m_pPrevInGlobal->m_pNextInGlobal = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInGlobal->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pNextInGlobal)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInGlobal->unprotectCachedItem();
-#endif
 		pNewNode->m_pNextInGlobal->m_pPrevInGlobal = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInGlobal->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pPrevInBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInBucket->unprotectCachedItem();
-#endif
 		pNewNode->m_pPrevInBucket->m_pNextInBucket = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInBucket->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pNextInBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInBucket->unprotectCachedItem();
-#endif
 		pNewNode->m_pNextInBucket->m_pPrevInBucket = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInBucket->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pOlderVersion)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pOlderVersion->unprotectCachedItem();
-#endif
 		pNewNode->m_pOlderVersion->m_pNewerVersion = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pOlderVersion->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pNewerVersion)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNewerVersion->unprotectCachedItem();
-#endif
 		pNewNode->m_pNewerVersion->m_pOlderVersion = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNewerVersion->protectCachedItem();
-#endif
 	}
 	
 	if (pNewNode->m_pPrevInHeapList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInHeapList->unprotectCachedItem();
-#endif
 		pNewNode->m_pPrevInHeapList->m_pNextInHeapList = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInHeapList->protectCachedItem();
-#endif
 	}
 	
 	if (pNewNode->m_pNextInHeapList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInHeapList->unprotectCachedItem();
-#endif
 		pNewNode->m_pNextInHeapList->m_pPrevInHeapList = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInHeapList->protectCachedItem();
-#endif
 	}
 
 	if (pNewNode->m_pPrevInOldList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInOldList->unprotectCachedItem();
-#endif
 		pNewNode->m_pPrevInOldList->m_pNextInOldList = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pPrevInOldList->protectCachedItem();
-#endif
 	}
 	
 	if (pNewNode->m_pNextInOldList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInOldList->unprotectCachedItem();
-#endif
 		pNewNode->m_pNextInOldList->m_pPrevInOldList = pNewNode;
-#ifdef FLM_CACHE_PROTECT	
-		pNewNode->m_pNextInOldList->protectCachedItem();
-#endif
 	}
 	
 	if( pDatabase)
@@ -913,6 +835,23 @@ F_NodeCacheMgr::~F_NodeCacheMgr()
 		
 		f_free( &m_ppHashBuckets);
 		gv_XFlmSysData.pGlobalCacheMgr->decrTotalBytes( uiTotalMemory);
+	}
+
+	// Free the allocators
+
+	if (m_pNodeAllocator)
+	{
+		m_pNodeAllocator->Release();
+	}
+
+	if( m_pBufAllocator)
+	{
+		m_pBufAllocator->Release();
+	}
+
+	if( m_pAttrItemAllocator)
+	{
+		m_pAttrItemAllocator->Release();
 	}
 }
 
@@ -1630,7 +1569,7 @@ RCODE F_CachedNode::resizeDataBuffer(
 	if (!m_pucData)
 	{
 		pucActualAlloc = NULL;
-		if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.allocBuf(
+		if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->allocBuf(
 			&gv_XFlmSysData.pNodeCacheMgr->m_nodeDataRelocator,
 			uiDataBufSize, &pvThis, sizeof( void *), 
 			&pucActualAlloc, &bHeapAlloc)))
@@ -1641,7 +1580,7 @@ RCODE F_CachedNode::resizeDataBuffer(
 	else
 	{
 		pucActualAlloc = getActualPointer( m_pucData);
-		if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.reallocBuf(
+		if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->reallocBuf(
 			&gv_XFlmSysData.pNodeCacheMgr->m_nodeDataRelocator,
 			m_uiDataBufSize, uiDataBufSize, &pvThis, sizeof( void *),
 			&pucActualAlloc, &bHeapAlloc)))
@@ -1652,15 +1591,7 @@ RCODE F_CachedNode::resizeDataBuffer(
 	
 	flmAssert( *((F_CachedNode **)pucActualAlloc) == this);
 	setNodeAndDataPtr( pucActualAlloc);
-
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_uiDataBufSize = uiDataBufSize;
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-		
 	uiNewSize = memSize();
 	
 	if (m_ui64HighTransId != FLM_MAX_UINT64)
@@ -1706,20 +1637,12 @@ RCODE F_CachedNode::resizeChildElmList(
 	FLMBYTE *	pucActualAlloc;
 	FLMBOOL		bHeapAlloc = FALSE;
 	void *		pvThis = this;
-#ifdef FLM_CACHE_PROTECT	
-	FLMBOOL		bProtectNode = FALSE;
-#endif
 	
 	if( uiChildElmCount == m_nodeInfo.uiChildElmCount)
 	{
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-	bProtectNode = TRUE;
-#endif
-	
 	if( !bMutexAlreadyLocked)
 	{
 		flmAssert( nodeInUse());
@@ -1736,7 +1659,7 @@ RCODE F_CachedNode::resizeChildElmList(
 		flmAssert( m_nodeInfo.uiChildElmCount);
 		
 		pucActualAlloc = getActualPointer( m_pNodeList);
-		gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 							calcNodeListBufSize( m_nodeInfo.uiChildElmCount),
 							&pucActualAlloc);
 	}
@@ -1745,7 +1668,7 @@ RCODE F_CachedNode::resizeChildElmList(
 		if( !m_nodeInfo.uiChildElmCount)
 		{
 			pucActualAlloc = NULL;
-			rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.allocBuf(
+			rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->allocBuf(
 								&gv_XFlmSysData.pNodeCacheMgr->m_nodeListRelocator,
 								calcNodeListBufSize( uiChildElmCount),
 								&pvThis, sizeof( void *), &pucActualAlloc, &bHeapAlloc);
@@ -1753,7 +1676,7 @@ RCODE F_CachedNode::resizeChildElmList(
 		else
 		{
 			pucActualAlloc = getActualPointer( m_pNodeList);
-			rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.reallocBuf(
+			rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->reallocBuf(
 								&gv_XFlmSysData.pNodeCacheMgr->m_nodeListRelocator,
 								calcNodeListBufSize( m_nodeInfo.uiChildElmCount),
 								calcNodeListBufSize( uiChildElmCount),
@@ -1812,13 +1735,6 @@ RCODE F_CachedNode::resizeChildElmList(
 
 Exit:
 
-#ifdef FLM_CACHE_PROTECT	
-	if( bProtectNode)
-	{
-		protectCachedItem();
-	}
-#endif
-	
 	return( rc);
 }
 
@@ -1834,20 +1750,12 @@ RCODE F_CachedNode::resizeAttrList(
 	FLMBYTE *	pucActualAlloc;
 	FLMBOOL		bHeapAlloc = FALSE;
 	void *		pvThis = this;
-#ifdef FLM_CACHE_PROTECT	
-	FLMBOOL		bProtectNode = FALSE;
-#endif
 	
 	if( uiAttrCount == m_uiAttrCount)
 	{
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-	bProtectNode = TRUE;
-#endif
-	
 	if( !bMutexAlreadyLocked)
 	{
 		flmAssert( nodeInUse());
@@ -1863,7 +1771,7 @@ RCODE F_CachedNode::resizeAttrList(
 		
 		flmAssert( m_uiAttrCount);
 		pucActualAlloc = getActualPointer( m_ppAttrList);
-		gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 							calcAttrListBufSize( m_uiAttrCount),
 							&pucActualAlloc);
 	}
@@ -1872,7 +1780,7 @@ RCODE F_CachedNode::resizeAttrList(
 		if( !m_uiAttrCount)
 		{
 			pucActualAlloc = NULL;
-			rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.allocBuf(
+			rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->allocBuf(
 								&gv_XFlmSysData.pNodeCacheMgr->m_attrListRelocator,
 								calcAttrListBufSize( uiAttrCount),
 								&pvThis, sizeof( void *), &pucActualAlloc, &bHeapAlloc);
@@ -1880,7 +1788,7 @@ RCODE F_CachedNode::resizeAttrList(
 		else
 		{
 			pucActualAlloc = getActualPointer( m_ppAttrList);
-			rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.reallocBuf(
+			rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->reallocBuf(
 								&gv_XFlmSysData.pNodeCacheMgr->m_attrListRelocator,
 								calcAttrListBufSize( m_uiAttrCount),
 								calcAttrListBufSize( uiAttrCount),
@@ -1939,13 +1847,6 @@ RCODE F_CachedNode::resizeAttrList(
 
 Exit:
 
-#ifdef FLM_CACHE_PROTECT	
-	if( bProtectNode)
-	{
-		protectCachedItem();
-	}
-#endif
-	
 	return( rc);
 }
 
@@ -2081,10 +1982,6 @@ Start_Find:
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	pNode->unprotectCachedItem();
-#endif
-	
 	pNode->m_nodeInfo.ui64NodeId = ui64NodeId;
 	pNode->m_nodeInfo.uiCollection = uiCollection;
 
@@ -2142,9 +2039,6 @@ Start_Find:
 							  : pNode), rc);
 	}
 	pNode->decrNodeUseCount();
-#ifdef FLM_CACHE_PROTECT	
-	pNode->protectCachedItem();
-#endif
 
 	// If we did not succeed, free the F_CachedNode structure.
 
@@ -2296,10 +2190,6 @@ RCODE F_NodeCacheMgr::createNode(
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	pNode->unprotectCachedItem();
-#endif
-
 	pNode->m_nodeInfo.ui64NodeId = ui64NodeId;
 	pNode->m_nodeInfo.uiCollection = uiCollection;
 	pNode->m_uiOffsetIndex = 0;
@@ -2341,10 +2231,6 @@ RCODE F_NodeCacheMgr::createNode(
 	(*ppDOMNode)->m_pCachedNode = pNode;
 	pNode->incrNodeUseCount();
 
-#ifdef FLM_CACHE_PROTECT	
-	pNode->protectCachedItem();
-#endif
-
 Exit:
 
 	if (bMutexLocked)
@@ -2367,9 +2253,6 @@ RCODE F_NodeCacheMgr::_makeWriteCopy(
 	F_CachedNode *		pNewerNode = NULL;
 	F_CachedNode *		pOlderNode = *ppCachedNode;
 	FLMBOOL				bMutexLocked = FALSE;
-#ifdef FLM_CACHE_PROTECT	
-	FLMBOOL				bProtectNewerNode = FALSE;
-#endif
 	
 	flmAssert( pOlderNode->m_ui64HighTransId == FLM_MAX_UINT64);
 	flmAssert( !pOlderNode->m_pNewerVersion);
@@ -2402,11 +2285,6 @@ RCODE F_NodeCacheMgr::_makeWriteCopy(
 	pOlderNode->unlinkFromDatabase();
 	pOlderNode->linkToDatabaseAtHead( pDatabase);
 
-#ifdef FLM_CACHE_PROTECT	
-	pNewerNode->unprotectCachedItem();
-	bProtectNewerNode = TRUE;
-#endif
-	
 	pNewerNode->m_pDatabase = pDatabase;
 	pNewerNode->m_uiFlags = pOlderNode->m_uiFlags;
 	pNewerNode->m_uiOffsetIndex = pOlderNode->m_uiOffsetIndex;
@@ -2495,11 +2373,6 @@ RCODE F_NodeCacheMgr::_makeWriteCopy(
 	*ppCachedNode = pNewerNode;
 	pNewerNode->incrNodeUseCount();
 
-#ifdef FLM_CACHE_PROTECT	
-	pNewerNode->protectCachedItem();
-	bProtectNewerNode = FALSE;
-#endif
-	
 	// Set pNewerNode to NULL so it won't get freed at Exit
 
 	pNewerNode = NULL;
@@ -2947,10 +2820,6 @@ void F_CachedNode::setNodeDirty(
 	F_Db *		pDb,
 	FLMBOOL		bNew)
 {
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-	
 	if (!nodeIsDirty())
 	{
 		f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
@@ -2990,10 +2859,6 @@ void F_CachedNode::setNodeDirty(
 	{
 		m_uiFlags |= FDOM_NEW;
 	}
-
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 	
 /****************************************************************************
@@ -3003,10 +2868,6 @@ void F_CachedNode::unsetNodeDirtyAndNew(
 	F_Db *			pDb,
 	FLMBOOL			bMutexAlreadyLocked)
 {
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-	
 	// When outputting a binary or text stream, it is possible that the
 	// dirty flag was unset when the last buffer was output
 	
@@ -3035,10 +2896,6 @@ void F_CachedNode::unsetNodeDirtyAndNew(
 			f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
 		}
 	}
-
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 	
 /*****************************************************************************
@@ -3049,7 +2906,7 @@ FINLINE void flmAddInfoSenLen(
 	FLMUINT64					ui64Num,
 	FLMUINT *					puiTotalOverhead)
 {
-	FLMUINT	uiSenLen = flmGetSENByteCount( ui64Num);
+	FLMUINT	uiSenLen = f_getSENByteCount( ui64Num);
 
 	pInfoItem->ui64Bytes += (FLMUINT64)uiSenLen;
 	pInfoItem->ui64Count++;
@@ -3399,14 +3256,14 @@ RCODE F_CachedNode::headerToBuf(
 							
 			// Document ID
 
-			flmEncodeSEN( ui64DocId, &pucBuf);
+			f_encodeSEN( ui64DocId, &pucBuf);
 			
 			// Encode the base ID if it isn't equal to the document ID
 
 			if( ui64BaseId != ui64DocId)
 			{
 				uiStorageFlags |= NSF_HAVE_BASE_ID_BIT;
-				flmEncodeSEN( ui64BaseId, &pucBuf);
+				f_encodeSEN( ui64BaseId, &pucBuf);
 			}
 			
 			// Parent ID
@@ -3416,18 +3273,18 @@ RCODE F_CachedNode::headerToBuf(
 				ui64Tmp = ui64NodeId;
 			}
 
-			flmEncodeSEN( ui64Tmp - ui64BaseId, &pucBuf);
+			f_encodeSEN( ui64Tmp - ui64BaseId, &pucBuf);
 			
 			// Name ID
 
-			flmEncodeSEN( uiNameId, &pucBuf);
+			f_encodeSEN( uiNameId, &pucBuf);
 
 			// Prefix ID
 
 			if( uiPrefixId)
 			{
 				uiStorageFlags |= NSF_EXT_HAVE_PREFIX_BIT;
-				flmEncodeSEN( uiPrefixId, &pucBuf);
+				f_encodeSEN( uiPrefixId, &pucBuf);
 			}
 			
 			// Metavalue
@@ -3435,7 +3292,7 @@ RCODE F_CachedNode::headerToBuf(
 			if( ui64MetaValue)
 			{
 				uiStorageFlags |= NSF_HAVE_META_VALUE_BIT;
-				flmEncodeSEN( ui64MetaValue, &pucBuf);
+				f_encodeSEN( ui64MetaValue, &pucBuf);
 			}
 			
 			// Previous and next siblings
@@ -3447,14 +3304,14 @@ RCODE F_CachedNode::headerToBuf(
 					ui64Tmp = ui64NodeId;
 				}
 
-				flmEncodeSEN( ui64Tmp - ui64BaseId, &pucBuf);
+				f_encodeSEN( ui64Tmp - ui64BaseId, &pucBuf);
 
 				if( (ui64Tmp = ui64NextSibId) == 0)
 				{
 					ui64Tmp = ui64NodeId;
 				}
 
-				flmEncodeSEN( ui64Tmp - ui64BaseId, &pucBuf);
+				f_encodeSEN( ui64Tmp - ui64BaseId, &pucBuf);
 				uiStorageFlags |= NSF_HAVE_SIBLINGS_BIT;
 			}
 			
@@ -3464,13 +3321,13 @@ RCODE F_CachedNode::headerToBuf(
 			{
 				flmAssert( ui64LastChildId);
 				
-				flmEncodeSEN( ui64FirstChildId - ui64BaseId, &pucBuf);
-				flmEncodeSEN( ui64LastChildId - ui64BaseId, &pucBuf);
+				f_encodeSEN( ui64FirstChildId - ui64BaseId, &pucBuf);
+				f_encodeSEN( ui64LastChildId - ui64BaseId, &pucBuf);
 				uiStorageFlags |= NSF_HAVE_CHILDREN_BIT;
 				
 				if( uiDataChildCount)
 				{
-					flmEncodeSEN( uiDataChildCount, &pucBuf);
+					f_encodeSEN( uiDataChildCount, &pucBuf);
 					uiStorageFlags |= NSF_EXT_HAVE_DCHILD_COUNT_BIT;
 				}
 			}
@@ -3484,7 +3341,7 @@ RCODE F_CachedNode::headerToBuf(
 				// the fact that all of the child elements must have unique
 				// name IDs.
 				
-				flmEncodeSEN( m_nodeInfo.uiChildElmCount, &pucBuf);
+				f_encodeSEN( m_nodeInfo.uiChildElmCount, &pucBuf);
 			}
 			
 			// Encryption ID
@@ -3492,7 +3349,7 @@ RCODE F_CachedNode::headerToBuf(
 			if( uiEncDefId)
 			{
 				uiStorageFlags |= NSF_EXT_ENCRYPTED_BIT;
-				flmEncodeSEN( uiEncDefId, &pucBuf);
+				f_encodeSEN( uiEncDefId, &pucBuf);
 			}
 			
 			// Annotation ID
@@ -3500,7 +3357,7 @@ RCODE F_CachedNode::headerToBuf(
 			if( ui64AnnotationId)
 			{
 				uiStorageFlags |= NSF_EXT_ANNOTATION_BIT;
-				flmEncodeSEN( ui64AnnotationId - ui64BaseId, &pucBuf);
+				f_encodeSEN( ui64AnnotationId - ui64BaseId, &pucBuf);
 			}
 			
 			// Output the data length if needed
@@ -3509,16 +3366,16 @@ RCODE F_CachedNode::headerToBuf(
 				(uiEncDefId || (uiFlags & FDOM_HAVE_CELM_LIST) || m_uiAttrCount))
 			{
 				uiStorageFlags |= NSF_HAVE_DATA_LEN_BIT;
-				flmEncodeSEN( uiDataLength, &pucBuf);
+				f_encodeSEN( uiDataLength, &pucBuf);
 			}
 			
 			// Output the storage flags (inverted SEN)
 
-			uiFlagsLen = flmGetSENByteCount( uiStorageFlags);
+			uiFlagsLen = f_getSENByteCount( uiStorageFlags);
 			if( uiFlagsLen > 1)
 			{
 				pucTmpSEN = ucTmpSEN;
-				flmEncodeSEN( uiStorageFlags, &pucTmpSEN);
+				f_encodeSEN( uiStorageFlags, &pucTmpSEN);
 				
 				for( uiLoop = uiFlagsLen; uiLoop > 0; uiLoop--)
 				{
@@ -3547,7 +3404,7 @@ RCODE F_CachedNode::headerToBuf(
 			pNodeInfo->nodeAndDataType.ui64Bytes++;
 			pNodeInfo->nodeAndDataType.ui64Count++;
 
-			pNodeInfo->documentId.ui64Bytes += flmGetSENByteCount( ui64DocId);
+			pNodeInfo->documentId.ui64Bytes += f_getSENByteCount( ui64DocId);
 			pNodeInfo->documentId.ui64Count++;
 
 			uiTotalOverhead = 3;
@@ -4004,7 +3861,7 @@ RCODE flmReadNodeInfo(
 		// Get the storage flags
 		
 		uiStorageFlags = pucHeader[ uiHeaderStorageSize - 1];
-		uiStorageFlagsLen = flmGetSENLength( (FLMBYTE)uiStorageFlags);
+		uiStorageFlagsLen = f_getSENLength( (FLMBYTE)uiStorageFlags);
 
 		if( uiStorageFlagsLen > 1)
 		{
@@ -4015,7 +3872,7 @@ RCODE flmReadNodeInfo(
 			}
 
 			pucTmpSEN = ucTmpSEN;	
-			if( RC_BAD( rc = flmDecodeSEN( (const FLMBYTE **)&pucTmpSEN, 
+			if( RC_BAD( rc = f_decodeSEN( (const FLMBYTE **)&pucTmpSEN, 
 				pucTmpSEN + uiStorageFlagsLen, &uiStorageFlags)))
 			{
 				goto Exit;
@@ -4053,7 +3910,7 @@ RCODE flmReadNodeInfo(
 		
 		// Document ID
 
-		if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd,
+		if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd,
 			&pNodeInfo->ui64DocumentId)))
 		{
 			goto Exit;
@@ -4063,7 +3920,7 @@ RCODE flmReadNodeInfo(
 
 		if( uiStorageFlags & NSF_HAVE_BASE_ID_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, 
 				pucHeaderEnd, &ui64BaseId)))
 			{
 				goto Exit;
@@ -4076,7 +3933,7 @@ RCODE flmReadNodeInfo(
 		
 		// Parent ID
 
-		if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, 
+		if( RC_BAD( rc = f_decodeSEN64( &pucHeader, 
 			pucHeaderEnd, &pNodeInfo->ui64ParentId)))
 		{
 			goto Exit;
@@ -4089,7 +3946,7 @@ RCODE flmReadNodeInfo(
 		
 		// Name ID
 		
-		if( RC_BAD( rc = flmDecodeSEN( &pucHeader, pucHeaderEnd,
+		if( RC_BAD( rc = f_decodeSEN( &pucHeader, pucHeaderEnd,
 			&pNodeInfo->uiNameId)))
 		{
 			goto Exit;
@@ -4099,7 +3956,7 @@ RCODE flmReadNodeInfo(
 
 		if( uiStorageFlags & NSF_EXT_HAVE_PREFIX_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN( &pucHeader, pucHeaderEnd,
+			if( RC_BAD( rc = f_decodeSEN( &pucHeader, pucHeaderEnd,
 				&pNodeInfo->uiPrefixId)))
 			{
 				goto Exit;
@@ -4114,7 +3971,7 @@ RCODE flmReadNodeInfo(
 
 		if( uiStorageFlags & NSF_HAVE_META_VALUE_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd, 
 				&pNodeInfo->ui64MetaValue)))
 			{
 				goto Exit;
@@ -4129,7 +3986,7 @@ RCODE flmReadNodeInfo(
 
 		if( uiStorageFlags & NSF_HAVE_SIBLINGS_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd,
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd,
 				&pNodeInfo->ui64PrevSibId)))
 			{
 				goto Exit;
@@ -4140,7 +3997,7 @@ RCODE flmReadNodeInfo(
 				pNodeInfo->ui64PrevSibId = 0;
 			}
 
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd, 
 				&pNodeInfo->ui64NextSibId)))
 			{
 				goto Exit;
@@ -4161,7 +4018,7 @@ RCODE flmReadNodeInfo(
 
 		if( uiStorageFlags & NSF_HAVE_CHILDREN_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd, 
 				&pNodeInfo->ui64FirstChildId)))
 			{
 				goto Exit;
@@ -4169,7 +4026,7 @@ RCODE flmReadNodeInfo(
 			
 			pNodeInfo->ui64FirstChildId += ui64BaseId;
 
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd, 
 				&pNodeInfo->ui64LastChildId)))
 			{
 				goto Exit;
@@ -4179,7 +4036,7 @@ RCODE flmReadNodeInfo(
 			
 			if( uiStorageFlags & NSF_EXT_HAVE_DCHILD_COUNT_BIT)
 			{
-				if( RC_BAD( rc = flmDecodeSEN( &pucHeader, pucHeaderEnd, 
+				if( RC_BAD( rc = f_decodeSEN( &pucHeader, pucHeaderEnd, 
 					&pNodeInfo->uiDataChildCount)))
 				{
 					goto Exit;
@@ -4226,7 +4083,7 @@ RCODE flmReadNodeInfo(
 			// We should also enforce that no children have the same
 			// name id.
 			
-			if( RC_BAD( rc = flmDecodeSEN( &pucHeader, pucHeaderEnd,
+			if( RC_BAD( rc = f_decodeSEN( &pucHeader, pucHeaderEnd,
 				&pNodeInfo->uiChildElmCount)))
 			{
 				goto Exit;
@@ -4262,7 +4119,7 @@ RCODE flmReadNodeInfo(
 	
 		if( uiStorageFlags & NSF_EXT_ENCRYPTED_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN( &pucHeader, pucHeaderEnd,
+			if( RC_BAD( rc = f_decodeSEN( &pucHeader, pucHeaderEnd,
 				&pNodeInfo->uiEncDefId)))
 			{
 				goto Exit;
@@ -4277,7 +4134,7 @@ RCODE flmReadNodeInfo(
 
 		if( uiStorageFlags & NSF_EXT_ANNOTATION_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucHeader, pucHeaderEnd, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucHeader, pucHeaderEnd, 
 				&pNodeInfo->ui64AnnotationId)))
 			{
 				goto Exit;
@@ -4292,7 +4149,7 @@ RCODE flmReadNodeInfo(
 		
 		if( uiStorageFlags & NSF_HAVE_DATA_LEN_BIT)
 		{
-			if( RC_BAD( rc = flmDecodeSEN( &pucHeader, pucHeaderEnd,
+			if( RC_BAD( rc = f_decodeSEN( &pucHeader, pucHeaderEnd,
 				&pNodeInfo->uiDataLength)))
 			{
 				goto Exit;
@@ -4453,7 +4310,7 @@ RCODE F_CachedNode::readNode(
 				  uiLoop < m_nodeInfo.uiChildElmCount;
 				  uiLoop++, pElmNode++)
 			{
-				if( RC_BAD( rc = flmReadSEN( pIStream, &pElmNode->uiNameId,
+				if( RC_BAD( rc = f_readSEN( pIStream, &pElmNode->uiNameId,
 					&uiLen)))
 				{
 					goto Exit;
@@ -4462,7 +4319,7 @@ RCODE F_CachedNode::readNode(
 				pElmNode->uiNameId += uiPrevNameId;
 				uiPrevNameId = pElmNode->uiNameId;
 				
-				if( RC_BAD( rc = flmReadSEN64( pIStream, 
+				if( RC_BAD( rc = f_readSEN64( pIStream, 
 					&pElmNode->ui64NodeId, &uiLen)))
 				{
 					goto Exit;
@@ -4541,7 +4398,8 @@ RCODE F_CachedNode::readNode(
 		// the node.  Always align on 8 byte boundaries - just to be safe.
 		// It is the highest alignment we support.
 		
-		if( calcDataBufSize( uiStorageLength) <= MAX_CELL_SIZE ||
+		if( calcDataBufSize( uiStorageLength) <= 
+				gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getMaxCellSize() ||
 			m_nodeInfo.eNodeType == ELEMENT_NODE)
 		{
 			if( RC_BAD( rc = resizeDataBuffer( uiStorageLength, FALSE)))
@@ -4689,7 +4547,7 @@ RCODE F_CachedNode::importAttributeList(
 	
 	// Determine the number of attributes
 
-	if( RC_BAD( rc = flmReadSEN( pIStream, &uiAttrCount)))
+	if( RC_BAD( rc = f_readSEN( pIStream, &uiAttrCount)))
 	{
 		goto Exit;
 	}
@@ -4701,14 +4559,14 @@ RCODE F_CachedNode::importAttributeList(
 
 	// Import the attributes
 	
-	if( RC_BAD( rc = flmReadSEN( pIStream, &uiBaseNameId)))
+	if( RC_BAD( rc = f_readSEN( pIStream, &uiBaseNameId)))
 	{
 		goto Exit;
 	}
 
 	for( uiLoop = 0; uiLoop < uiAttrCount; uiLoop++)
 	{
-		if( RC_BAD( rc = flmReadSEN( pIStream, &uiNameId)))
+		if( RC_BAD( rc = f_readSEN( pIStream, &uiNameId)))
 		{
 			goto Exit;
 		}
@@ -4725,7 +4583,7 @@ RCODE F_CachedNode::importAttributeList(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = flmReadSEN( pIStream, &uiStorageFlags)))
+		if( RC_BAD( rc = f_readSEN( pIStream, &uiStorageFlags)))
 		{
 			goto Exit;
 		}
@@ -4742,7 +4600,7 @@ RCODE F_CachedNode::importAttributeList(
 
 		if( uiStorageFlags & ASF_HAVE_PREFIX_BIT)
 		{
-			if( RC_BAD( rc = flmReadSEN( pIStream, &pAttrItem->m_uiPrefixId)))
+			if( RC_BAD( rc = f_readSEN( pIStream, &pAttrItem->m_uiPrefixId)))
 			{
 				goto Exit;
 			}
@@ -4752,7 +4610,7 @@ RCODE F_CachedNode::importAttributeList(
 
 		if( uiPayloadLength == ASF_HAVE_PAYLOAD_LEN_SEN)
 		{
-			if( RC_BAD( rc = flmReadSEN( pIStream, &uiPayloadLength)))
+			if( RC_BAD( rc = f_readSEN( pIStream, &uiPayloadLength)))
 			{
 				goto Exit;
 			}
@@ -4769,12 +4627,12 @@ RCODE F_CachedNode::importAttributeList(
 		{
 			F_ENCDEF *	pEncDef;
 			
-			if( RC_BAD( rc = flmReadSEN( pIStream, &pAttrItem->m_uiEncDefId)))
+			if( RC_BAD( rc = f_readSEN( pIStream, &pAttrItem->m_uiEncDefId)))
 			{
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = flmReadSEN( pIStream, 
+			if( RC_BAD( rc = f_readSEN( pIStream, 
 				&pAttrItem->m_uiDecryptedDataLen)))
 			{
 				goto Exit;
@@ -4918,7 +4776,7 @@ void F_AttrItem::getAttrSizeNeeded(
 	FLMUINT	uiOverhead = 0;
 	FLMUINT	uiStorageFlags;
 
-	uiNameSize = flmGetSENByteCount( m_uiNameId - uiBaseNameId);
+	uiNameSize = f_getSENByteCount( m_uiNameId - uiBaseNameId);
 	uiOverhead += uiNameSize;
 							
 	uiStorageFlags = getAttrStorageFlags();
@@ -4927,12 +4785,12 @@ void F_AttrItem::getAttrSizeNeeded(
 		*puiSaveStorageFlags = uiStorageFlags;
 	}
 
-	uiFlagsSize = flmGetSENByteCount( uiStorageFlags);
+	uiFlagsSize = f_getSENByteCount( uiStorageFlags);
 	uiOverhead += uiFlagsSize;
 
 	if( m_uiPrefixId)
 	{
-		uiPrefixSize = flmGetSENByteCount( m_uiPrefixId);
+		uiPrefixSize = f_getSENByteCount( m_uiPrefixId);
 		uiOverhead += uiPrefixSize;
 	}
 	else
@@ -4945,7 +4803,7 @@ void F_AttrItem::getAttrSizeNeeded(
 	
 	if( uiPayloadLength > ASF_MAX_EMBEDDED_PAYLOAD_LEN)
 	{
-		uiPayloadLenSize = flmGetSENByteCount( uiPayloadLength);
+		uiPayloadLenSize = f_getSENByteCount( uiPayloadLength);
 		uiOverhead += uiPayloadLenSize;
 	}
 	else
@@ -4957,9 +4815,9 @@ void F_AttrItem::getAttrSizeNeeded(
 	{
 		flmAssert( uiPayloadLength);
 		
-		uiEncIdSize = flmGetSENByteCount( m_uiEncDefId);
+		uiEncIdSize = f_getSENByteCount( m_uiEncDefId);
 		uiOverhead += uiEncIdSize;
-		uiUnencLenSize = flmGetSENByteCount( m_uiDecryptedDataLen);
+		uiUnencLenSize = f_getSENByteCount( m_uiDecryptedDataLen);
 		uiOverhead += uiUnencLenSize;
 	}
 	else
@@ -5104,15 +4962,15 @@ RCODE F_CachedNode::exportAttributeList(
 	if (pNodeInfo)
 	{
 		flmAssert( !pDynaBuf);
-		pNodeInfo->attrCount.ui64Bytes += flmGetSENByteCount( m_uiAttrCount);
+		pNodeInfo->attrCount.ui64Bytes += f_getSENByteCount( m_uiAttrCount);
 		pNodeInfo->attrCount.ui64Count++;
-		pNodeInfo->attrBaseId.ui64Bytes += flmGetSENByteCount( uiBaseNameId);
+		pNodeInfo->attrBaseId.ui64Bytes += f_getSENByteCount( uiBaseNameId);
 		pNodeInfo->attrBaseId.ui64Count++;
 	}
 	else
 	{
-		uiSizeNeeded += flmGetSENByteCount( m_uiAttrCount);
-		uiSizeNeeded += flmGetSENByteCount( uiBaseNameId);
+		uiSizeNeeded += f_getSENByteCount( m_uiAttrCount);
+		uiSizeNeeded += f_getSENByteCount( uiBaseNameId);
 		flmAssert( pDynaBuf);
 
 		if( RC_BAD( rc = pDynaBuf->allocSpace( uiSizeNeeded, (void **)&pucBuf)))
@@ -5123,12 +4981,12 @@ RCODE F_CachedNode::exportAttributeList(
 		pucStart = pucBuf;
 		pucEnd = pucStart + uiSizeNeeded;
 
-		if( RC_BAD( rc = flmEncodeSEN( m_uiAttrCount, &pucBuf, pucEnd)))
+		if( RC_BAD( rc = f_encodeSEN( m_uiAttrCount, &pucBuf, pucEnd)))
 		{
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = flmEncodeSEN( uiBaseNameId, &pucBuf, pucEnd)))
+		if( RC_BAD( rc = f_encodeSEN( uiBaseNameId, &pucBuf, pucEnd)))
 		{
 			goto Exit;
 		}
@@ -5138,7 +4996,7 @@ RCODE F_CachedNode::exportAttributeList(
 		for (uiLoop = 0; uiLoop < m_uiAttrCount; uiLoop++)
 		{
 			pAttrItem = m_ppAttrList [uiLoop];
-			if( RC_BAD( rc = flmEncodeSEN( pAttrItem->m_uiNameId - uiBaseNameId,
+			if( RC_BAD( rc = f_encodeSEN( pAttrItem->m_uiNameId - uiBaseNameId,
 				&pucBuf, pucEnd)))
 			{
 				goto Exit;
@@ -5151,14 +5009,14 @@ RCODE F_CachedNode::exportAttributeList(
 									? storageFlagsList [uiLoop]
 									: pAttrItem->getAttrStorageFlags();
 
-			if( RC_BAD( rc = flmEncodeSEN( uiStorageFlags, &pucBuf, pucEnd)))
+			if( RC_BAD( rc = f_encodeSEN( uiStorageFlags, &pucBuf, pucEnd)))
 			{
 				goto Exit;
 			}
 			
 			if( pAttrItem->m_uiPrefixId)
 			{
-				if( RC_BAD( rc = flmEncodeSEN( pAttrItem->m_uiPrefixId,
+				if( RC_BAD( rc = f_encodeSEN( pAttrItem->m_uiPrefixId,
 					&pucBuf, pucEnd)))
 				{
 					goto Exit;
@@ -5169,7 +5027,7 @@ RCODE F_CachedNode::exportAttributeList(
 
 			if( uiPayloadLength > ASF_MAX_EMBEDDED_PAYLOAD_LEN)
 			{
-				if( RC_BAD( rc = flmEncodeSEN( uiPayloadLength, &pucBuf, pucEnd)))
+				if( RC_BAD( rc = f_encodeSEN( uiPayloadLength, &pucBuf, pucEnd)))
 				{
 					goto Exit;
 				}
@@ -5179,13 +5037,13 @@ RCODE F_CachedNode::exportAttributeList(
 			{
 				flmAssert( uiPayloadLength);
 				
-				if( RC_BAD( rc = flmEncodeSEN( pAttrItem->m_uiEncDefId,
+				if( RC_BAD( rc = f_encodeSEN( pAttrItem->m_uiEncDefId,
 					&pucBuf, pucEnd)))
 				{
 					goto Exit;
 				}
 
-				if( RC_BAD( rc = flmEncodeSEN( pAttrItem->m_uiDecryptedDataLen,
+				if( RC_BAD( rc = f_encodeSEN( pAttrItem->m_uiDecryptedDataLen,
 					&pucBuf, pucEnd)))
 				{
 					goto Exit;
@@ -5258,7 +5116,7 @@ void F_CachedNode::resetNode( void)
 		if( m_pucData)
 		{
 			pucActualAlloc = getActualPointer( m_pucData);
-			gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+			gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 								m_uiDataBufSize, &pucActualAlloc);
 			m_pucData = NULL;
 			m_uiDataBufSize = 0;
@@ -5267,7 +5125,7 @@ void F_CachedNode::resetNode( void)
 		if( m_pNodeList)
 		{
 			pucActualAlloc = getActualPointer( m_pNodeList);
-			gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+			gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 								calcNodeListBufSize( m_nodeInfo.uiChildElmCount),
 								&pucActualAlloc);
 			m_pNodeList = NULL;
@@ -5282,7 +5140,7 @@ void F_CachedNode::resetNode( void)
 				delete m_ppAttrList [uiLoop];
 			}
 			pucActualAlloc = getActualPointer( m_ppAttrList);
-			gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf(
+			gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf(
 								calcAttrListBufSize( m_uiAttrCount), &pucActualAlloc);
 			m_ppAttrList = NULL;
 			m_uiAttrCount = 0;
@@ -5318,24 +5176,14 @@ void * F_CachedNode::operator new(
 	throw()
 #endif
 {
-	void *		pvCell;
-
 #ifndef FLM_DEBUG
 	F_UNREFERENCED_PARM( uiSize);
 #endif
 	flmAssert( uiSize == sizeof( F_CachedNode));
 	f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
 
-	if( (pvCell = 
-		gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.allocCell(
-				&gv_XFlmSysData.pNodeCacheMgr->m_nodeRelocator)) != NULL)
-	{
-#ifdef FLM_CACHE_PROTECT	
-		gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.unprotectCell( pvCell);
-#endif
-	}
-
-	return( pvCell);
+	return( gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->allocCell(
+				&gv_XFlmSysData.pNodeCacheMgr->m_nodeRelocator));
 }
 
 /****************************************************************************
@@ -5396,54 +5244,17 @@ void F_CachedNode::operator delete(
 		return;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.protectCell( ptr);
-#endif
-	gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.freeCell( (FLMBYTE *)ptr, FALSE);
+	gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->freeCell( (FLMBYTE *)ptr, FALSE);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void F_CachedNode::operator delete[](
-	void *		// ptr)
-	)
+	void *)		// ptr)
 {
 	flmAssert( 0);
 }
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_CachedNode::operator delete( 
-	void *			ptr,
-	const char *,	// pszFileName
-	int				// iLineNum
-	)
-{
-	if( !ptr)
-	{
-		return;
-	}
-
-	gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.freeCell( (FLMBYTE *)ptr, FALSE);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_CachedNode::operator delete[](
-	void *,			// ptr,
-	const char *,	// pszFileName
-	int				// iLineNum
-	)
-{
-	flmAssert( 0);
-}
-#endif
 
 /****************************************************************************
 Desc:
@@ -5467,7 +5278,7 @@ F_AttrItem::~F_AttrItem()
 	if( m_uiPayloadLen > sizeof( FLMBYTE *))
 	{
 		m_pucPayload -= sizeof( F_AttrItem *);
-		gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf( 
+		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf( 
 			m_uiPayloadLen + sizeof( F_AttrItem *),
 			&m_pucPayload);
 	}
@@ -5482,24 +5293,14 @@ void * F_AttrItem::operator new(
 	throw()
 #endif
 {
-	void *		pvCell;
-
 #ifndef FLM_DEBUG
 	F_UNREFERENCED_PARM( uiSize);
 #endif
 	flmAssert( uiSize == sizeof( F_AttrItem));
 	f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
 
-	if( (pvCell = 
-		gv_XFlmSysData.pNodeCacheMgr->m_attrItemAllocator.allocCell(
-				&gv_XFlmSysData.pNodeCacheMgr->m_attrItemRelocator)) != NULL)
-	{
-#ifdef FLM_CACHE_PROTECT	
-		gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.unprotectCell( pvCell);
-#endif
-	}
-
-	return( pvCell);
+	return( gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->allocCell(
+				&gv_XFlmSysData.pNodeCacheMgr->m_attrItemRelocator));
 }
 
 /****************************************************************************
@@ -5560,51 +5361,14 @@ void F_AttrItem::operator delete(
 		return;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	gv_XFlmSysData.pNodeCacheMgr->m_attrItemAllocator.protectCell( ptr);
-#endif
-	gv_XFlmSysData.pNodeCacheMgr->m_attrItemAllocator.freeCell( (FLMBYTE *)ptr, FALSE);
+	gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->freeCell( (FLMBYTE *)ptr, FALSE);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void F_AttrItem::operator delete[](
-	void *		// ptr)
-	)
+	void *)		// ptr)
 {
 	flmAssert( 0);
 }
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_AttrItem::operator delete( 
-	void *			ptr,
-	const char *,	// pszFileName
-	int				// iLineNum
-	)
-{
-	if( !ptr)
-	{
-		return;
-	}
-
-	gv_XFlmSysData.pNodeCacheMgr->m_attrItemAllocator.freeCell( (FLMBYTE *)ptr, FALSE);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-void F_AttrItem::operator delete[](
-	void *,			// ptr,
-	const char *,	// pszFileName
-	int				// iLineNum
-	)
-{
-	flmAssert( 0);
-}
-#endif

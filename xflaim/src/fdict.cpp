@@ -48,17 +48,17 @@ FSTATIC void fdictRemoveFromIcdChain(
 	ICD *		pIcd);
 
 FSTATIC RCODE fdictCopyCollection(
-	F_Pool *				pDictPool,
+	IF_Pool *			pDictPool,
 	F_COLLECTION **	ppDestCollection,
 	F_COLLECTION *		pSrcCollection);
 
 FSTATIC RCODE fdictCopyPrefix(
-	F_Pool *				pDictPool,
+	IF_Pool *			pDictPool,
 	F_PREFIX **			ppDestPrefix,
 	F_PREFIX *			pSrcPrefix);
 
 FSTATIC RCODE fdictCopyEncDef(
-	F_Pool *				pDictPool,
+	IF_Pool *			pDictPool,
 	F_ENCDEF **			ppDestEncDef,
 	F_ENCDEF *			pSrcEncDef);
 
@@ -94,7 +94,7 @@ F_Dict::F_Dict()
 	m_pPrev = NULL;
 	m_pDatabase = NULL;
 	m_uiDictSeq = 0;
-	m_dictPool.poolInit( 1024);
+	m_pDictPool = NULL;
 
 	m_pElementDefTbl = NULL;
 	m_uiLowestElementNum = 0;
@@ -157,11 +157,35 @@ F_Dict::F_Dict()
 }
 
 /***************************************************************************
-Desc:	Destructor
+Desc:
 ***************************************************************************/
 F_Dict::~F_Dict()
 {
 	resetDict();
+	
+	if( m_pDictPool)
+	{
+		m_pDictPool->Release();
+	}
+}
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+RCODE F_Dict::setup( void)
+{
+	RCODE		rc = NE_XFLM_OK;
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pDictPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pDictPool->poolInit( 1024);
+	
+Exit:
+
+	return( rc);
 }
 
 /***************************************************************************
@@ -241,8 +265,11 @@ void F_Dict::resetDict( void)
 	m_pDataCollection = NULL;
 	m_pMaintCollection = NULL;
 
-	m_dictPool.poolFree();
-	m_dictPool.poolInit( 1024);
+	if( m_pDictPool)
+	{
+		m_pDictPool->poolFree();
+		m_pDictPool->poolInit( 1024);
+	}
 
 	if (m_pNameTable)
 	{
@@ -2265,7 +2292,7 @@ RCODE F_Dict::copyIXD(
 
 	// Allocate the IXD structure
 
-	if (RC_BAD( rc = m_dictPool.poolAlloc( sizeof( IXD), (void **)&pDestIxd)))
+	if (RC_BAD( rc = m_pDictPool->poolAlloc( sizeof( IXD), (void **)&pDestIxd)))
 	{
 		goto Exit;
 	}
@@ -2288,7 +2315,7 @@ RCODE F_Dict::copyIXD(
 	pSrcIcd = pSrcIxd->pIcdTree;
 	while (pSrcIcd)
 	{
-		if (RC_BAD( rc = m_dictPool.poolAlloc( sizeof( ICD),
+		if (RC_BAD( rc = m_pDictPool->poolAlloc( sizeof( ICD),
 											(void **)&pDestIcd)))
 		{
 			goto Exit;
@@ -2503,11 +2530,11 @@ Exit:
 Desc:	Copies a collection
 ****************************************************************************/
 FSTATIC RCODE fdictCopyCollection(
-	F_Pool *				pDictPool,
+	IF_Pool *			pDictPool,
 	F_COLLECTION **	ppDestCollection,
 	F_COLLECTION *		pSrcCollection)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE					rc = NE_XFLM_OK;
 
 	if (!pSrcCollection)
 	{
@@ -2532,7 +2559,7 @@ Exit:
 Desc:	Copies a prefix
 ****************************************************************************/
 FSTATIC RCODE fdictCopyPrefix(
-	F_Pool *				pDictPool,
+	IF_Pool *			pDictPool,
 	F_PREFIX **			ppDestPrefix,
 	F_PREFIX *			pSrcPrefix)
 {
@@ -2575,7 +2602,7 @@ Exit:
 Desc:	Copies an encryption def (F_ENCDEF)
 ****************************************************************************/
 FSTATIC RCODE fdictCopyEncDef(
-	F_Pool *				pDictPool,
+	IF_Pool *			pDictPool,
 	F_ENCDEF **			ppDestEncDef,
 	F_ENCDEF *			pSrcEncDef)
 {
@@ -2852,21 +2879,21 @@ RCODE F_Dict::cloneDict(
 
 	// Copy the pre-defined collections
 
-	if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
+	if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
 								&m_pDictCollection,
 								pSrcDict->m_pDictCollection)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
+	if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
 								&m_pDataCollection,
 								pSrcDict->m_pDataCollection)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
+	if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
 								&m_pMaintCollection,
 								pSrcDict->m_pMaintCollection)))
 	{
@@ -2890,7 +2917,7 @@ RCODE F_Dict::cloneDict(
 
 		for (uiLoop = 0; uiLoop < uiCount; uiLoop++)
 		{
-			if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
+			if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
 										&m_ppCollectionTbl [uiLoop],
 										pSrcDict->m_ppCollectionTbl [uiLoop])))
 			{
@@ -2916,7 +2943,7 @@ RCODE F_Dict::cloneDict(
 
 		for (uiLoop = 0; uiLoop < uiCount; uiLoop++)
 		{
-			if (RC_BAD( rc = fdictCopyPrefix( &m_dictPool,
+			if (RC_BAD( rc = fdictCopyPrefix( m_pDictPool,
 										&m_ppPrefixTbl [uiLoop],
 										pSrcDict->m_ppPrefixTbl [uiLoop])))
 			{
@@ -2942,7 +2969,7 @@ RCODE F_Dict::cloneDict(
 
 		for (uiLoop = 0; uiLoop < uiCount; uiLoop++)
 		{
-			if (RC_BAD( rc = fdictCopyEncDef( &m_dictPool,
+			if (RC_BAD( rc = fdictCopyEncDef( m_pDictPool,
 										&m_ppEncDefTbl [uiLoop],
 										pSrcDict->m_ppEncDefTbl [uiLoop])))
 			{
@@ -3275,8 +3302,7 @@ Desc:	Maps a string to an element or attribute data type.
 ***************************************************************************/
 RCODE fdictGetDataType(
 	char *		pszDataType,
-	FLMUINT *	puiDataType
-	)
+	FLMUINT *	puiDataType)
 {
 	RCODE		rc = NE_XFLM_OK;
 	FLMUINT	uiDataType;
@@ -3913,7 +3939,7 @@ RCODE F_Db::getElmAttrInfo(
 	F_DOMNode *		pDocNode = NULL;
 	F_DOMNode *		pAttr = NULL;
 	F_CachedNode *	pCachedDocNode;
-	FLMBYTE			szTmpBuf[ 80];
+	char				szTmpBuf[ 80];
 	FLMUINT			uiNameId;
 	FLMUNICODE *	puzName = NULL;
 	FLMBOOL			bNamespaceDecl = FALSE;
@@ -4023,7 +4049,7 @@ RCODE F_Db::getElmAttrInfo(
 
 				case ATTR_TYPE_TAG:
 				{
-					if( RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf, 
+					if( RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf, 
 						sizeof( szTmpBuf), 0,  ~((FLMUINT)0))))
 					{
 						goto Exit;
@@ -4048,7 +4074,8 @@ RCODE F_Db::getElmAttrInfo(
 				case ATTR_STATE_TAG:
 				{
 					if (RC_BAD( rc = pAttr->getUTF8( 
-						this, szTmpBuf, sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
+						this, (FLMBYTE *)szTmpBuf, 
+						sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 					{
 						goto Exit;
 					}
@@ -4108,7 +4135,7 @@ RCODE F_Db::getElmAttrInfo(
 						goto Exit;
 					}
 					bHadUniqueSubElementTag = TRUE;
-					if( RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+					if( RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 						sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 					{
 						goto Exit;
@@ -5070,7 +5097,7 @@ RCODE F_Db::getIndexDef(
 	F_DOMNode *		pAttr = NULL;
 	FLMBOOL			bHadIndexNumber = FALSE;
 	FLMBOOL			bHadIndexName = FALSE;
-	FLMBYTE			szTmpBuf[ 80];
+	char				szTmpBuf[ 80];
 	FLMUNICODE *	puzCollectionName = NULL;
 	FLMUINT			uiNameCollectionNum = 0;
 	FLMUINT			uiNameId;
@@ -5234,30 +5261,29 @@ RCODE F_Db::getIndexDef(
 
 			case ATTR_LANGUAGE_TAG:
 			{
-				if( RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+				if( RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 							sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 				{
 					goto Exit;
 				}
 
-				*puiLanguage = F_DbSystem::languageToNum( (char *)szTmpBuf);
+				*puiLanguage = f_languageToNum( (char *)szTmpBuf);
 				break;
 			}
 
 			case ATTR_INDEX_OPTIONS_TAG:
 			{
-				FLMBYTE *	pszTmp;
-				FLMBYTE *	pszOption;
+				char *	pszTmp;
+				char *	pszOption;
 
-				if( RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+				if( RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 							sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 				{
 					goto Exit;
 				}
 
 				pszTmp = &szTmpBuf [0];
-				while ((pszOption = 
-					(FLMBYTE *)fdictGetOption( (char **)&pszTmp)) != NULL)
+				while ((pszOption = fdictGetOption( (char **)&pszTmp)) != NULL)
 				{
 					if (f_stricmp( pszOption,
 									XFLM_ABS_POS_OPTION_STR) == 0)
@@ -5277,13 +5303,13 @@ RCODE F_Db::getIndexDef(
 			{
 				FLMUINT	uiState;
 
-				if (RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+				if (RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 					sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 				{
 					goto Exit;
 				}
 
-				if (RC_BAD( rc = fdictGetIndexState( (char *)szTmpBuf, &uiState)))
+				if (RC_BAD( rc = fdictGetIndexState( szTmpBuf, &uiState)))
 				{
 					goto Exit;
 				}
@@ -5440,15 +5466,15 @@ RCODE F_Db::getIndexComponentDef(
 	F_CachedNode *	pCachedNode;
 	ICD *				pTmpIcd;
 	ICD *				pPrevIcd;
-	FLMBYTE			szTmpBuf[ 200];
+	char				szTmpBuf[ 200];
+	char *			pszTmp;
+	char *			pszOption;
 	FLMUNICODE *	puzName = NULL;
 	FLMUNICODE *	puzNamespace = NULL;
 	FLMUINT			uiKeyComponent;
 	FLMUINT			uiDataComponent;
 	FLMUINT			uiNameDictNumber = 0;
 	FLMUINT			uiDataType= 0;
-	FLMBYTE *		pszTmp;
-	FLMBYTE *		pszOption;
 	FLMBOOL			bLimitSet = FALSE;
 	FLMBOOL			bRequiredSet = FALSE;
 	FLMBOOL			bIndexOnSet = FALSE;
@@ -5539,7 +5565,7 @@ RCODE F_Db::getIndexComponentDef(
 				break;
 
 			case ATTR_INDEX_ON_TAG:
-				if( RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+				if( RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 					sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 				{
 					goto Exit;
@@ -5583,7 +5609,7 @@ RCODE F_Db::getIndexComponentDef(
 				break;
 
 			case ATTR_REQUIRED_TAG:
-				if( RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+				if( RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 					sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 				{
 					goto Exit;
@@ -5617,15 +5643,14 @@ RCODE F_Db::getIndexComponentDef(
 				break;
 
 			case ATTR_COMPARE_RULES_TAG:
-				if (RC_BAD( rc = pAttr->getUTF8( this, szTmpBuf,
+				if (RC_BAD( rc = pAttr->getUTF8( this, (FLMBYTE *)szTmpBuf,
 					sizeof( szTmpBuf), 0, ~((FLMUINT)0))))
 				{
 					goto Exit;
 				}
 
 				pszTmp = &szTmpBuf [0];
-				while ((pszOption = 
-					(FLMBYTE *)fdictGetOption( (char **)&pszTmp)) != NULL)
+				while ((pszOption = fdictGetOption( &pszTmp)) != NULL)
 				{
 					if (f_stricmp( pszOption,
 							XFLM_CASE_INSENSITIVE_OPTION_STR) == 0)
@@ -6266,7 +6291,7 @@ RCODE F_Dict::updateIndexDef(
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
-	void *			pvMark = m_dictPool.poolMark();
+	void *			pvMark = m_pDictPool->poolMark();
 	FLMUNICODE *	puzIndexName = NULL;
 	F_DOMNode *		pNode = NULL;
 	FLMUINT			uiElementId;
@@ -6389,7 +6414,7 @@ RCODE F_Dict::updateIndexDef(
 
 	// Allocate a new IXD
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( IXD), (void **)&pIxd)))
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( IXD), (void **)&pIxd)))
 	{
 		goto Exit;
 	}
@@ -6445,7 +6470,7 @@ RCODE F_Dict::updateIndexDef(
 
 			// Allocate an ICD and link in
 
-			if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( ICD),
+			if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( ICD),
 													(void **)&pIcd)))
 			{
 				goto Exit;
@@ -6698,7 +6723,7 @@ Get_Sibling:
 
 		// Discard the new IXD, it is not needed.
 
-		m_dictPool.poolReset( pvMark);
+		m_pDictPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -6810,7 +6835,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		m_dictPool.poolReset( pvMark);
+		m_pDictPool->poolReset( pvMark);
 	}
 
 	return( rc);
@@ -7047,7 +7072,7 @@ RCODE F_Dict::updateCollectionDef(
 
 	// Allocate a new collection
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_COLLECTION),
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_COLLECTION),
 								(void **)&pCollection)))
 	{
 		goto Exit;
@@ -7211,7 +7236,7 @@ RCODE F_Db::getPrefixDef(
 					}
 
 					uiBufferSize = sizeof( FLMUNICODE) * (uiPrefixLen + 1);
-					if( RC_BAD( rc = pDict->m_dictPool.poolAlloc( uiBufferSize,
+					if( RC_BAD( rc = pDict->m_pDictPool->poolAlloc( uiBufferSize,
 						(void **)ppuzPrefixName)))
 					{
 						goto Exit;
@@ -7313,7 +7338,7 @@ RCODE F_Dict::updatePrefixDef(
 	F_PREFIX *		pOldPrefix = NULL;
 	FLMUNICODE *	puzPrefixName = NULL;
 	FLMUINT			uiTmp;
-	void *			pvMark = m_dictPool.poolMark();
+	void *			pvMark = m_pDictPool->poolMark();
 
 	if (bOpeningDict)
 	{
@@ -7359,7 +7384,7 @@ RCODE F_Dict::updatePrefixDef(
 
 	// Allocate a new prefix
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_PREFIX),
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_PREFIX),
 												(void **)&pPrefix)))
 	{
 		goto Exit;
@@ -7419,7 +7444,7 @@ Exit:
 	{
 		if( pvMark)
 		{
-			m_dictPool.poolReset( pvMark);
+			m_pDictPool->poolReset( pvMark);
 		}
 	}
 
@@ -7520,7 +7545,7 @@ RCODE F_Db::getEncDefDef(
 					}
 
 					uiBufferSize = sizeof( FLMUNICODE) * (uiEncDefLen + 1);
-					if( RC_BAD( rc = pDict->m_dictPool.poolAlloc( uiBufferSize,
+					if( RC_BAD( rc = pDict->m_pDictPool->poolAlloc( uiBufferSize,
 						(void **)ppuzEncDefName)))
 					{
 						goto Exit;
@@ -7884,7 +7909,7 @@ RCODE F_Dict::updateEncDef(
 	F_ENCDEF *		pOldEncDef;
 	FLMUNICODE *	puzEncDefName = NULL;
 	FLMUINT			uiTmp;
-	void *			pvMark = m_dictPool.poolMark();
+	void *			pvMark = m_pDictPool->poolMark();
 	F_CCS *			pCcs = NULL;
 	FLMUINT			uiEncKeySize = 0;
 
@@ -7938,7 +7963,7 @@ RCODE F_Dict::updateEncDef(
 	{
 		// Allocate a new encdef
 
-		if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_ENCDEF),
+		if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_ENCDEF),
 													(void **)&pEncDef)))
 		{
 			goto Exit;
@@ -8006,7 +8031,7 @@ Exit:
 	{
 		if( pvMark)
 		{
-			m_dictPool.poolReset( pvMark);
+			m_pDictPool->poolReset( pvMark);
 		}
 	}
 
@@ -8199,7 +8224,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Allocate memory for the predefined collections
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_COLLECTION) * 3,
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_COLLECTION) * 3,
 											(void **)&m_pDictCollection)))
 	{
 		goto Exit;
@@ -8220,7 +8245,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Allocate IXDs for the predefined indexes.
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( IXD) * 2,
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( IXD) * 2,
 											(void **)&m_pNameIndex)))
 	{
 		goto Exit;
@@ -8273,7 +8298,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Set up the ICDs for the name index
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( ICD) * 4,
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( ICD) * 4,
 											(void **)&m_pNameIndex->pIcdTree)))
 	{
 		goto Exit;
@@ -8368,7 +8393,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Set up the ICDs for the number index
 
-	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( ICD) * 2,
+	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( ICD) * 2,
 											(void **)&m_pNumberIndex->pIcdTree)))
 	{
 		goto Exit;
@@ -9228,7 +9253,7 @@ RCODE F_Db::dictReadLFH( void)
 	RCODE					rc = NE_XFLM_OK;
 	LFILE *				pLFile;
 	F_COLLECTION *		pCollection;
-	F_CachedBlock *	pSCache;
+	F_CachedBlock *	pSCache = NULL;
 	FLMBOOL				bReleaseCache = FALSE;
 	F_BLK_HDR *			pBlkHdr;
 	FLMUINT				uiBlkAddress;
@@ -9709,6 +9734,11 @@ RCODE F_Db::dictOpen( void)
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = m_pDict->setup()))
+	{
+		goto Exit;
+	}
 
 	// Allocate the name table
 
@@ -9870,7 +9900,7 @@ RCODE F_Db::dictCreate(
 	char *					pszXMLBuffer = NULL;
 	FLMUINT64				ui64FileSize;
 	FLMUINT					uiBytesRead;
-	F_BufferIStream		stream;
+	IF_BufferIStream *	pStream = NULL;
 
 	// This should never be called for a temporary database.
 
@@ -9925,8 +9955,8 @@ RCODE F_Db::dictCreate(
 
 	if (!pszDictBuf && pszDictPath)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->Open(
-				pszDictPath, XFLM_IO_RDONLY, &pDictFileHdl)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile(
+				pszDictPath, FLM_IO_RDONLY, &pDictFileHdl)))
 		{
 			goto Exit;
 		}
@@ -9934,7 +9964,7 @@ RCODE F_Db::dictCreate(
 
 		// Get the file size and allocate a buffer to hold the entire thing.
 
-		if (RC_BAD( rc = pDictFileHdl->Size( &ui64FileSize)))
+		if (RC_BAD( rc = pDictFileHdl->size( &ui64FileSize)))
 		{
 			goto Exit;
 		}
@@ -9948,7 +9978,7 @@ RCODE F_Db::dictCreate(
 
 		// Read the entire file into the buffer
 
-		if (RC_BAD( rc = pDictFileHdl->Read( 0, (FLMUINT)ui64FileSize, 
+		if (RC_BAD( rc = pDictFileHdl->read( 0, (FLMUINT)ui64FileSize, 
 			pszXMLBuffer, &uiBytesRead)))
 		{
 			goto Exit;
@@ -9970,13 +10000,18 @@ RCODE F_Db::dictCreate(
 	// and calls documentDone when the document is complete.
 	// The documentDone method checks the dictionary syntax,
 	// adds to the dictionary, etc.
-
-	if (RC_BAD( rc = stream.open( (FLMBYTE *)pszDictBuf, 0)))
+	
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pStream)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( import( &stream, XFLM_DICT_COLLECTION)))
+	if (RC_BAD( rc = pStream->open( pszDictBuf, 0)))
+	{
+		goto Exit;
+	}
+
+	if (RC_BAD( import( pStream, XFLM_DICT_COLLECTION)))
 	{
 		goto Exit;
 	}
@@ -9985,17 +10020,22 @@ RCODE F_Db::dictCreate(
 
 Exit:
 
-	if (bFileOpen)
+	if( pStream)
 	{
-		pDictFileHdl->Close();
+		pStream->Release();
 	}
 
-	if (pDictFileHdl)
+	if( bFileOpen)
+	{
+		pDictFileHdl->close();
+	}
+
+	if( pDictFileHdl)
 	{
 		pDictFileHdl->Release();
 	}
 
-	if (pszXMLBuffer)
+	if( pszXMLBuffer)
 	{
 		f_free( pszXMLBuffer);
 	}

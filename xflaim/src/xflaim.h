@@ -26,466 +26,60 @@
 #ifndef XFLAIM_H
 #define XFLAIM_H
 
-	#ifndef FLM_PLATFORM_CONFIGURED
-		#define FLM_PLATFORM_CONFIGURED
-	
-		// Determine the build platform
-	
-		#undef FLM_WIN
-		#undef FLM_NLM
-		#undef FLM_UNIX
-		#undef FLM_AIX
-		#undef FLM_LINUX
-		#undef FLM_SOLARIS
-		#undef FLM_SPARC
-		#undef FLM_HPUX
-		#undef FLM_OSX
-		#undef FLM_BIG_ENDIAN
-		#undef FLM_PPC
-		#undef FLM_STRICT_ALIGNMENT
-		#undef FLM_S390
-		#undef FLM_IA64
-		#undef FLM_GNUC
-		
-		#if defined( __GNUC__)
-			#define FLM_GNUC
-		#endif		
-	
-		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
-			#define FLM_NLM
-			#define FLM_OSTYPE_STR "NetWare"
-			#if defined( __WATCOMC__)
-				#define FLM_WATCOM_NLM
-			#elif defined( __MWERKS__)
-				#define FLM_MWERKS_NLM
-			#endif
-		#elif defined( _WIN64)
-			#define FLM_WIN
-			#define FLM_OSTYPE_STR "Windows"
-			#ifndef FLM_64BIT
-				#define FLM_64BIT
-			#endif
-			#define FLM_STRICT_ALIGNMENT
-		#elif defined( _WIN32)
-			#define FLM_WIN
-			#define FLM_OSTYPE_STR "Windows"
-		#elif defined( _AIX)
-			#define FLM_AIX
-			#define FLM_OSTYPE_STR "AIX"
-			#define FLM_UNIX
-			#define FLM_BIG_ENDIAN
-			#define FLM_STRICT_ALIGNMENT
-		#elif defined( linux)
-			#define FLM_LINUX
-			#define FLM_OSTYPE_STR "Linux"
-			#define FLM_UNIX
-			#if defined( __PPC__) || defined( __ppc__)
-				#define FLM_PPC
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( __s390__)
-				#define FLM_S390
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( __s390x__)
-				#define FLM_S390
-				#ifndef FLM_64BIT
-					#define FLM_64BIT
-				#endif
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( __ia64__)
-				#define FLM_IA64
-				#ifndef FLM_64BIT
-					#define FLM_64BIT
-				#endif
-				#define FLM_STRICT_ALIGNMENT
-			#endif
-		#elif defined( sun)
-			#define FLM_SOLARIS
-			#define FLM_OSTYPE_STR "Solaris"
-			#define FLM_UNIX
-			#define FLM_STRICT_ALIGNMENT
-			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
-				#define FLM_SPARC
-				#define FLM_BIG_ENDIAN
-			#endif
-		#elif defined( __hpux) || defined( hpux)
-			#define FLM_HPUX
-			#define FLM_OSTYPE_STR "HPUX"
-			#define FLM_UNIX
-			#define FLM_BIG_ENDIAN
-			#define FLM_STRICT_ALIGNMENT
-		#elif defined( __APPLE__)
-			#define FLM_OSX
-			#define FLM_OSTYPE_STR "OSX"
-			#define FLM_UNIX
-			#if (defined( __ppc__) || defined( __ppc64__))
-				#define FLM_PPC
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT			
-			#endif
-		#else
-				#error Platform architecture is undefined.
-		#endif
-	
-		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
-			#if defined( FLM_UNIX)
-				#if defined( __x86_64__) || defined( _LP64) || \
-					 defined( __LP64__) || defined( __sparcv9)
-					#define FLM_64BIT
-				#endif
-			#endif
-		#endif
-		
-		#if !defined( FLM_64BIT)
-			#define FLM_32BIT
-		#elif defined( FLM_32BIT)
-			#error Cannot define both FLM_32BIT and FLM_64BIT
-		#endif
-
-		// Debug or release build?
-	
-		#ifndef FLM_DEBUG
-			#if defined( DEBUG) || (defined( PRECHECKIN) && PRECHECKIN != 0)
-				#define FLM_DEBUG
-			#endif
-		#endif
-
-		// Alignment
-	
-		#if defined( FLM_UNIX) || defined( FLM_64BIT)
-			#define FLM_ALLOC_ALIGN			0x0007
-			#define FLM_ALIGN_SIZE			8
-		#elif defined( FLM_WIN) || defined( FLM_NLM)
-			#define FLM_ALLOC_ALIGN			0x0003
-			#define FLM_ALIGN_SIZE			4
-		#else
-			#error Platform not supported
-		#endif
-
-		// Basic type definitions
-
-		#if defined( FLM_UNIX)
-			typedef unsigned long				FLMUINT;
-			typedef long							FLMINT;
-			typedef unsigned char				FLMBYTE;
-			typedef unsigned short				FLMUNICODE;
-
-			typedef unsigned long long			FLMUINT64;
-			typedef unsigned int					FLMUINT32;
-			typedef unsigned short				FLMUINT16;
-			typedef unsigned char				FLMUINT8;
-			typedef long long						FLMINT64;
-			typedef int								FLMINT32;
-			typedef short							FLMINT16;
-			typedef signed char					FLMINT8;
-
-			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
-				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
-				typedef unsigned long			FLMSIZET;
-			#else
-				typedef unsigned 					FLMSIZET;
-			#endif
-		#else
-		
-			#if defined( FLM_WIN)
-			
-				#if defined( FLM_64BIT)
-					typedef unsigned __int64		FLMUINT;
-					typedef __int64					FLMINT;
-					typedef unsigned __int64		FLMSIZET;
-					typedef unsigned int				FLMUINT32;
-				#elif _MSC_VER >= 1300
-					typedef unsigned long __w64	FLMUINT;
-					typedef long __w64				FLMINT;
-					typedef unsigned int				FLMUINT32;
-					typedef __w64 unsigned int		FLMSIZET;
-				#else
-					typedef unsigned long			FLMUINT;
-					typedef long						FLMINT;
-					typedef unsigned int				FLMUINT32;
-					typedef __w64 unsigned int		FLMSIZET;
-				#endif
-				
-			#elif defined( FLM_NLM)
-			
-				typedef unsigned long int		FLMUINT;
-				typedef long int					FLMINT;
-				typedef unsigned long int		FLMUINT32;
-				typedef unsigned					FLMSIZET;
-			#else
-				#error Platform not supported
-			#endif
-
-			typedef unsigned char				FLMBYTE;
-			typedef unsigned short int			FLMUNICODE;
-
-			typedef unsigned short int			FLMUINT16;
-			typedef unsigned char				FLMUINT8;
-			typedef signed int					FLMINT32;
-			typedef signed short int			FLMINT16;
-			typedef signed char					FLMINT8;
-
-			#if defined( __MWERKS__)
-				typedef unsigned long long		FLMUINT64;
-				typedef long long					FLMINT64;
-			#else
-				typedef unsigned __int64 		FLMUINT64;
-				typedef __int64 					FLMINT64;
-			#endif
-
-		#endif
-
-		#if defined( FLM_WIN) || defined( FLM_NLM)
-			#define FLMATOMIC		volatile long
-		#else
-			#define FLMATOMIC		volatile int
-		#endif
-	
-		typedef FLMINT								RCODE;
-		typedef FLMINT								FLMBOOL;
-		
-		#define F_FILENAME_SIZE					256
-		#define F_PATH_MAX_SIZE					256
-
-		#define FLM_MAX_UINT						((FLMUINT)(-1L))
-		#define FLM_MAX_INT						((FLMINT)(((FLMUINT)(-1L)) >> 1))
-		#define FLM_MIN_INT						((FLMINT)((((FLMUINT)(-1L)) >> 1) + 1))
-		#define FLM_MAX_UINT32					((FLMUINT32)(0xFFFFFFFFL))
-		#define FLM_MAX_INT32					((FLMINT32)(0x7FFFFFFFL))
-		#define FLM_MIN_INT32					((FLMINT32)(0x80000000L))
-		#define FLM_MAX_UINT16					((FLMUINT16)(0xFFFF))
-		#define FLM_MAX_INT16					((FLMINT16)(0x7FFF))
-		#define FLM_MIN_INT16					((FLMINT16)(0x8000))
-		#define FLM_MAX_UINT8					((FLMUINT8)0xFF)
-	
-		#if( _MSC_VER >= 1200) && (_MSC_VER < 1300)
-			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFL))
-			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFL))
-			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000L))
-		#else
-			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFLL))
-			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFLL))
-			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000LL))
-		#endif
-	
-	#endif
-
-	// xpcselany keeps MS compilers from complaining about multiple definitions
-	
-	#if defined(_MSC_VER)
-		#define xpcselany __declspec(selectany)
-	#else
-		#define xpcselany
-	#endif
-	
-	typedef struct
-	{
-		FLMUINT32	l;
-		FLMUINT16	w1;
-		FLMUINT16	w2;
-		FLMUINT8		b[ 8];
-	} XFLM_GUID;
-	
-	#define RXFLMIID		const XFLM_GUID &
-	#define RXFLMCLSID	const XFLM_GUID &
-	#define XFLMGUID		XFLM_GUID
-	#define XFLMCLSID		XFLM_GUID
-	
-	// XFLM_DEFINE_GUID may be used to define or declare a GUID
-	// #define XFLM_INIT_GUID before including this header file when
-	// you want to define the guid, all other inclusions will only declare
-	// the guid, not define it.
-	
-	#if !defined( PCOM_INIT_GUID)
-		#define XFLM_DEFINE_GUID( name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-				extern const XFLMGUID name
-	#else
-		#define XFLM_DEFINE_GUID( name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-				extern const xpcselany XFLMGUID name \
-						= { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-	#endif
-	
-	#define XFLMEXTC				extern "C"
-
-	#if defined( FLM_WIN)
-		#define XFLMAPI     		__stdcall
-		#define XFLMEXP			__declspec(dllexport)
-		#ifdef FLM_DEBUG
-			#define FINLINE		inline
-		#else
-			#define FINLINE		__forceinline
-		#endif
-	#elif defined( FLM_NLM)
-		#define XFLMAPI     		__stdcall
-		#define XFLMEXP			XFLMEXTC
-		#define FINLINE			inline
-	#elif defined( FLM_UNIX)
-		#define XFLMAPI     		
-		#define XFLMEXP			XFLMEXTC
-		#define FINLINE			inline
-	#else
-		#error Platform not supported
-	#endif
-
-	// xflmnovtbl keeps MS compilers from generating vtables for interfaces
-	
-	#ifdef _MSC_VER
-		#define xflmnovtbl 		__declspec( novtable)
-	#else
-		#define xflmnovtbl
-	#endif
-	
-	#define xflminterface struct xflmnovtbl
-	
-	XFLM_DEFINE_GUID( Internal_IID_XFLMIUnknown, 0x00000000, 0x0000, 0x0000,
-			0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46);
-	
-	xflminterface XFLMIUnknown
-	{
-		virtual ~XFLMIUnknown()
-		{
-		}
-		
-		virtual RCODE XFLMAPI QueryInterface( 
-			RXFLMIID					riid,
-			void **					ppv) = 0;
-			
-		virtual FLMINT XFLMAPI AddRef( void) = 0;
-		
-		virtual FLMINT XFLMAPI Release( void) = 0;
-	};
-	
-	// XFLMIClassFactory
-	// uuid: 00000001-0000-0000-C000-000000000046 (same as MSCOM IClassFactory)
-	
-	XFLM_DEFINE_GUID( Internal_IID_XFLMIClassFactory, 0x00000001, 0x0000, 0x0000,
-			0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46);
-	
-	xflminterface XFLMIClassFactory : public XFLMIUnknown
-	{
-		virtual RCODE XFLMAPI CreateInstance( 
-			XFLMIUnknown *			piuouter,
-			RXFLMIID 				riid,
-			void **					ppv) = 0;
-			
-		virtual RCODE XFLMAPI LockServer( 
-			bool						lockf) = 0;
-	};
+	#include "ftk.h"
 
 	/****************************************************************************
 									Forward References
 	****************************************************************************/
-	xflminterface IF_Backup;
-	xflminterface IF_DataVector;
-	xflminterface IF_Db;
-	xflminterface IF_DbInfo;
-	xflminterface IF_DirHdl;
-	xflminterface IF_DOMNode;
-	xflminterface IF_FileHdl;
-	xflminterface IF_FileSystem;
-	xflminterface IF_IStream;
-	xflminterface IF_PosIStream;
-	xflminterface IF_ResultSet;
-	xflminterface IF_Query;
-	xflminterface IF_ThreadInfo;
-	xflminterface IF_Pool;
-	xflminterface IF_DynaBuf;
-	xflminterface IF_NodeInfo;
-	xflminterface IF_BTreeInfo;
+	flminterface IF_Backup;
+	flminterface IF_DataVector;
+	flminterface IF_Db;
+	flminterface IF_DbInfo;
+	flminterface IF_DirHdl;
+	flminterface IF_DOMNode;
+	flminterface IF_FileHdl;
+	flminterface IF_FileSystem;
+	flminterface IF_IStream;
+	flminterface IF_PosIStream;
+	flminterface IF_ResultSet;
+	flminterface IF_Query;
+	flminterface IF_ThreadInfo;
+	flminterface IF_Pool;
+	flminterface IF_DynaBuf;
+	flminterface IF_NodeInfo;
+	flminterface IF_BTreeInfo;
 
 	// These are interfaces that need to be implemented by
 	// applications.  XFlaim uses them to report status or to do
 	// callbacks of various kinds.
 
-	xflminterface IF_OStream;
-	xflminterface IF_BackupClient;
-	xflminterface IF_BackupStatus;
-	xflminterface IF_CommitClient;
-	xflminterface IF_DbCheckStatus;
-	xflminterface IF_DbCopyStatus;
-	xflminterface IF_DbRebuildStatus;
-	xflminterface IF_DbRenameStatus;
-	xflminterface IF_DeleteStatus;
-	xflminterface IF_EventClient;
-	xflminterface IF_IxClient;
-	xflminterface IF_IxStatus;
-	xflminterface IF_LockInfoClient;
-	xflminterface IF_LoggerClient;
-	xflminterface IF_LogMessageClient;
-	xflminterface IF_OperandComparer;
-	xflminterface IF_RestoreClient;
-	xflminterface IF_RestoreStatus;
-	xflminterface IF_ResultSetSortStatus;
-	xflminterface IF_ResultSetCompare;
-	xflminterface IF_QueryStatus;
-	xflminterface IF_QueryValidator;
-	xflminterface IF_QueryValFunc;
-	xflminterface IF_QueryNodeSource;
-	xflminterface IF_UpgradeClient;
-	xflminterface IF_BTreeInfoStatus;
+	flminterface IF_OStream;
+	flminterface IF_BackupClient;
+	flminterface IF_BackupStatus;
+	flminterface IF_CommitClient;
+	flminterface IF_DbCheckStatus;
+	flminterface IF_DbCopyStatus;
+	flminterface IF_DbRebuildStatus;
+	flminterface IF_DbRenameStatus;
+	flminterface IF_DeleteStatus;
+	flminterface IF_EventClient;
+	flminterface IF_IxClient;
+	flminterface IF_IxStatus;
+	flminterface IF_LockInfoClient;
+	flminterface IF_LoggerClient;
+	flminterface IF_LogMessageClient;
+	flminterface IF_OperandComparer;
+	flminterface IF_RestoreClient;
+	flminterface IF_RestoreStatus;
+	flminterface IF_ResultSetSortStatus;
+	flminterface IF_ResultSetCompare;
+	flminterface IF_QueryStatus;
+	flminterface IF_QueryValidator;
+	flminterface IF_QueryValFunc;
+	flminterface IF_QueryNodeSource;
+	flminterface IF_UpgradeClient;
+	flminterface IF_BTreeInfoStatus;
 
-	/****************************************************************************
-										CROSS PLATFORM DEFINITIONS
-	****************************************************************************/
-
-	#ifndef NULL
-		#define NULL   0
-	#endif
-
-	#ifndef TRUE
-		#define TRUE   1
-	#endif
-
-	#ifndef FALSE
-		#define FALSE  0
-	#endif
-
-	//	Language definitions - to get rid of testing "US" or multiple bytes
-	//	will define needed languages as a number with backward conversions.
-	// Keep these defines synchronized with the table in wps6cmpc.c
-	
-	#define XFLM_US_LANG				0			// English, United States
-	#define XFLM_AF_LANG				1			// Afrikaans
-	#define XFLM_AR_LANG				2			// Arabic
-	#define XFLM_CA_LANG				3			// Catalan
-	#define XFLM_HR_LANG				4			// Croatian
-	#define XFLM_CZ_LANG				5			// Czech
-	#define XFLM_DK_LANG				6			// Danish
-	#define XFLM_NL_LANG				7			// Dutch
-	#define XFLM_OZ_LANG				8			// English, Australia
-	#define XFLM_CE_LANG				9			// English, Canada
-	#define XFLM_UK_LANG				10			// English, United Kingdom
-	#define XFLM_FA_LANG 			11			// Farsi
-	#define XFLM_SU_LANG				12			// Finnish
-	#define XFLM_CF_LANG				13			// French, Canada
-	#define XFLM_FR_LANG				14			// French, France
-	#define XFLM_GA_LANG				15			// Galician
-	#define XFLM_DE_LANG				16			// German, Germany
-	#define XFLM_SD_LANG				17			// German, Switzerland
-	#define XFLM_GR_LANG				18			// Greek
-	#define XFLM_HE_LANG				19			// Hebrew
-	#define XFLM_HU_LANG				20			// Hungarian
-	#define XFLM_IS_LANG				21			// Icelandic
-	#define XFLM_IT_LANG				22			// Italian
-	#define XFLM_NO_LANG				23			// Norwegian
-	#define XFLM_PL_LANG				24			// Polish
-	#define XFLM_BR_LANG				25			// Portuguese, Brazil
-	#define XFLM_PO_LANG				26			// Portuguese, Portugal
-	#define XFLM_RU_LANG				27			// Russian
-	#define XFLM_SL_LANG				28			// Slovak
-	#define XFLM_ES_LANG				29			// Spanish
-	#define XFLM_SV_LANG				30			// Swedish
-	#define XFLM_YK_LANG				31			// Ukrainian
-	#define XFLM_UR_LANG				32			// Urdu
-	#define XFLM_TK_LANG				33			// Turkey
-	#define XFLM_JP_LANG				34			// Japanese
-	#define XFLM_KO_LANG				35			// Korean
-	#define XFLM_CT_LANG				36			// Chinese-Traditional
-	#define XFLM_CS_LANG				37			// Chinese-Simplified
-	#define XFLM_LA_LANG				38			// another Asian language
-	
 	/****************************************************************************
 	Desc:    This structure is used as a parameter to dbCreate to specify
 				the create options for a database.  It is also optionally returned
@@ -494,25 +88,22 @@
 	typedef struct
 	{
 		FLMUINT		uiBlockSize;
-	#define XFLM_DEFAULT_BLKSIZ				4096
-
-		FLMUINT		uiVersionNum;	// Database version number
-	#define XFLM_VER_5_12						512
-	#define XFLM_CURRENT_VERSION_NUM			XFLM_VER_5_12
-	#define XFLM_CURRENT_VER_STR				"5.12"
-
-		FLMUINT		uiMinRflFileSize;		// Minimum bytes per RFL file
+	#define XFLM_DEFAULT_BLKSIZ						4096
+		FLMUINT		uiVersionNum;
+	#define XFLM_VER_5_12								512
+	#define XFLM_CURRENT_VERSION_NUM					XFLM_VER_5_12
+	#define XFLM_CURRENT_VER_STR						"5.12"
+		FLMUINT		uiMinRflFileSize;
 	#define XFLM_DEFAULT_MIN_RFL_FILE_SIZE			((FLMUINT)100 * (FLMUINT)1024 * (FLMUINT)1024)
-		FLMUINT		uiMaxRflFileSize;		// Maximum bytes per RFL file
-	#define XFLM_DEFAULT_MAX_RFL_FILE_SIZE			XFLM_MAXIMUM_FILE_SIZE
-		FLMBOOL		bKeepRflFiles;			// Keep RFL files?
+		FLMUINT		uiMaxRflFileSize;
+	#define XFLM_DEFAULT_MAX_RFL_FILE_SIZE			FLM_MAXIMUM_FILE_SIZE
+		FLMBOOL		bKeepRflFiles;
 	#define XFLM_DEFAULT_KEEP_RFL_FILES_FLAG		FALSE
-		FLMBOOL		bLogAbortedTransToRfl;	// Log aborted transactions to RFL?
+		FLMBOOL		bLogAbortedTransToRfl;
 	#define XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG	FALSE
 
 		FLMUINT		uiDefaultLanguage;
-	#define XFLM_DEFAULT_LANG							(XFLM_US_LANG)
-
+	#define XFLM_DEFAULT_LANG							(FLM_US_LANG)
 	} XFLM_CREATE_OPTS, F_CREATE_OPTS;
 	
 	typedef enum
@@ -610,7 +201,7 @@
 		// that its copy of these items inside the FDB structure are current.
 
 		FLMBYTE		szSignature[ 8];					// Contains the string "FLAIMDB"
-	#define XFLM_DB_SIGNATURE	"FLAIMDB"
+	#define XFLM_DB_SIGNATURE						"FLAIMDB"
 		FLMUINT8		ui8IsLittleEndian;				// Non-zero if DB is little-endian
 	#ifdef FLM_BIG_ENDIAN
 		#define XFLM_NATIVE_IS_LITTLE_ENDIAN	0
@@ -737,26 +328,6 @@
 	#define XFLM_DB_HDR_DbKey											256
 	} XFLM_DB_HDR;
 	
-	/****************************************************************************
-	Desc:		IO Flags
-	****************************************************************************/
-	#define XFLM_IO_CURRENT_POS			FLM_MAX_UINT64
-
-	#define XFLM_IO_RDONLY					0x0001
-	#define XFLM_IO_RDWR						0x0002
-	#define XFLM_IO_EXCL						0x0004
-	#define XFLM_IO_CREATE_DIR				0x0008
-	#define XFLM_IO_SH_DENYRW				0x0010
-	#define XFLM_IO_SH_DENYWR				0x0020
-	#define XFLM_IO_SH_DENYNONE			0x0040
-	#define XFLM_IO_DIRECT					0x0080
-
-	// File Positioning Definitions
-
-	#define XFLM_IO_SEEK_SET				0			// Beginning of File
-	#define XFLM_IO_SEEK_CUR				1			// Current File Pointer Position
-	#define XFLM_IO_SEEK_END				2			// End of File
-
 	// uiFlags values for keyRetrieve() method
 
 	#define XFLM_INCL							0x0010
@@ -777,10 +348,6 @@
 	#define XFLM_SKIP_DOM_LINK_CHECK		0x0200	// Used only in dbCheck.
 	#define XFLM_ALLOW_LIMITED_MODE		0x0400
 
-	// Maximum file size
-
-	#define XFLM_MAXIMUM_FILE_SIZE		0xFFFC0000
-	
 	// Maximum key size
 
 	#define XFLM_MAX_KEY_SIZE				1024
@@ -954,28 +521,6 @@
 		XFLM_NUM_MESSAGE_TYPES
 	} eLogMessageType;
 
-	typedef enum
-	{
-		XFLM_CURRENT_COLOR,
-		XFLM_BLACK,
-		XFLM_BLUE,
-		XFLM_GREEN,
-		XFLM_CYAN,
-		XFLM_RED,
-		XFLM_PURPLE,
-		XFLM_BROWN,
-		XFLM_LIGHTGRAY,
-		XFLM_DARKGRAY,
-		XFLM_LIGHTBLUE,
-		XFLM_LIGHTGREEN,
-		XFLM_LIGHTCYAN,
-		XFLM_LIGHTRED,
-		XFLM_LIGHTPURPLE,
-		XFLM_YELLOW,
-		XFLM_WHITE,
-		XFLM_NUM_COLORS
-	} eColorType;
-
 	typedef struct
 	{
 		FLMBOOL		bRunning;
@@ -996,14 +541,6 @@
 
 	typedef struct
 	{
-		FLMUINT64			ui64Slabs;
-		FLMUINT64			ui64SlabBytes;
-		FLMUINT64			ui64AllocatedCells;
-		FLMUINT64			ui64FreeCells;
-	} XFLM_SLAB_USAGE;
-
-	typedef struct
-	{
 		FLMUINT				uiByteCount;
 		FLMUINT				uiCount;
 		FLMUINT				uiOldVerCount;
@@ -1012,7 +549,7 @@
 		FLMUINT				uiCacheHitLooks;
 		FLMUINT				uiCacheFaults;
 		FLMUINT				uiCacheFaultLooks;
-		XFLM_SLAB_USAGE	slabUsage;
+		FLM_SLAB_USAGE		slabUsage;
 	} XFLM_CACHE_USAGE;
 
 	typedef struct
@@ -1336,25 +873,25 @@
 
 	// Comparison rules for strings
 
-	#define XFLM_COMP_CASE_INSENSITIVE			0x0001
-	#define XFLM_COMP_COMPRESS_WHITESPACE		0x0002
+	#define XFLM_COMP_CASE_INSENSITIVE			FLM_COMP_CASE_INSENSITIVE
+	#define XFLM_COMP_COMPRESS_WHITESPACE		FLM_COMP_COMPRESS_WHITESPACE
 		// Compress consecutive spaces to single space
-	#define XFLM_COMP_NO_WHITESPACE				0x0004
+	#define XFLM_COMP_NO_WHITESPACE				FLM_COMP_NO_WHITESPACE
 		// Ignore all whitespace.  This and
 		// COMP_COMPRESS_WHITESPACE cannot be used
 		// together.
-	#define XFLM_COMP_NO_UNDERSCORES				0x0008
+	#define XFLM_COMP_NO_UNDERSCORES				FLM_COMP_NO_UNDERSCORES
 		// Convert underscores to whitespace.  NOTE: This
 		// should be applied before COMP_COMPRESS_WHITESPACE
 		// or COMP_NO_WHITESPACE
-	#define XFLM_COMP_NO_DASHES					0x0010
+	#define XFLM_COMP_NO_DASHES					FLM_COMP_NO_DASHES
 		// Remove all dashes
-	#define XFLM_COMP_WHITESPACE_AS_SPACE		0x0020
+	#define XFLM_COMP_WHITESPACE_AS_SPACE		FLM_COMP_WHITESPACE_AS_SPACE
 		// Convert tab, NL, and CR characters
 		// to space
-	#define XFLM_COMP_IGNORE_LEADING_SPACE		0x0040
+	#define XFLM_COMP_IGNORE_LEADING_SPACE		FLM_COMP_IGNORE_LEADING_SPACE
 		// Ignore leading space characters
-	#define XFLM_COMP_IGNORE_TRAILING_SPACE	0x0080
+	#define XFLM_COMP_IGNORE_TRAILING_SPACE	FLM_COMP_IGNORE_TRAILING_SPACE
 		// Ignore trailing space characters
 
 	typedef enum
@@ -1705,65 +1242,6 @@
 	#define XFLM_INI_MAX_DIRTY_CACHE				"maxdirtycache"
 	#define XFLM_INI_LOW_DIRTY_CACHE				"lowdirtycache"
 
-	/****************************************************************************
-	Desc:	Reference Counting class
-	****************************************************************************/
-	class XF_RefCount
-	{
-	public:
-
-		XF_RefCount()
-		{
-			m_refCnt = 1;
-		}
-
-		virtual ~XF_RefCount()
-		{
-		}
-
-		virtual FINLINE FLMUINT getRefCount( void)
-		{
-			return( m_refCnt);
-		}
-
-		virtual FINLINE FLMINT XFLMAPI AddRef( void)
-		{
-			return( ++m_refCnt);
-		}
-
-		virtual FINLINE FLMINT XFLMAPI Release( void)
-		{
-			FLMINT		iRefCnt = --m_refCnt;
-
-			if( !iRefCnt)
-			{
-				delete this;
-			}
-
-			return( iRefCnt);
-		}
-
-	protected:
-
-		FLMATOMIC		m_refCnt;
-	};
-
-	// Class ID for the F_DbSystemFactory class (which is defined in fcompub.h).
-	// We don't need a separate interface definition because it implements the
-	// well-known PCIClassFactory interface.
-
-	// {EBF905EE-43F1-45e1-A477-6C459AF26F76}
-	XFLM_DEFINE_GUID( Internal_CLSID_F_DbSystemFactory, 0xebf905ee, 0x43f1,
-		0x45e1, 0xa4, 0x77, 0x6c, 0x45, 0x9a, 0xf2, 0x6f, 0x76);
-
-	#define CLSID_F_DbSystemFactory (s_guid &)(Internal_CLSID_F_DbSystemFactory)
-
-	// {B3A01545-F5F9-4618-AC6E-5FD606BF8F92}
-	XFLM_DEFINE_GUID(Internal_IID_IF_DbSystem, 0xb3a01545, 0xf5f9, 0x4618,
-		0xac, 0x6e, 0x5f, 0xd6, 0x6, 0xbf, 0x8f, 0x92);
-
-	#define IID_IF_DbSystem (s_guid &)(Internal_IID_IF_DbSystem)
-
 	// Defaults for certain other settable items in the IF_DbSystem
 	
 	#define XFLM_DEFAULT_MAX_CP_INTERVAL					180
@@ -1795,7 +1273,7 @@
 	 * intermittently or throughout the life of the database system.  The class id for
 	 * this interface is CLSID_F_DbSystemFactory and the interface id is IID_IF_DbSystem.
 	 */
-	xflminterface IF_DbSystem : public XFLMIUnknown
+	flminterface IF_DbSystem : public F_Object
 	{
 		/**
 		 * @brief Initializes the database system object.
@@ -1805,9 +1283,9 @@
 		 * method is called, there must be a corresponding call to exit.  The database engine
 		 * will only shut down on the last call to exit.
 		 */
-		virtual RCODE XFLMAPI init( void) = 0;
+		virtual RCODE FLMAPI init( void) = 0;
 
-		virtual RCODE XFLMAPI updateIniFile(
+		virtual RCODE FLMAPI updateIniFile(
 			const char *	pszParamName,
 			const char *	pszValue) = 0;
 		
@@ -1817,7 +1295,7 @@
 		 * The exit method is used to shutdown the database system engine. This routine allows
 		 * itself to be called multiple times, even before init is called or if the call to init fails.
 		 */
-		virtual void XFLMAPI exit() = 0;
+		virtual void FLMAPI exit() = 0;
 
 		/**
 		 * @brief Return an IF_FileSystem object for performing file system operations.
@@ -1828,7 +1306,7 @@
 		 * @param ppFileSystem A pointer to a file system object that can 
 		 * be used to perform various operations on files.
 		 */
-		virtual void XFLMAPI getFileSystem(
+		virtual void FLMAPI getFileSystem(
 			IF_FileSystem **		ppFileSystem) = 0;
 
 		/**
@@ -1862,7 +1340,7 @@
 		 * @param ppDb A pointer to a database object that references the newly created database.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbCreate(
+		virtual RCODE FLMAPI dbCreate(
 			const char *			pszDbFileName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1891,7 +1369,7 @@
 		 * @param ppDb A pointer to a database object that references the newly created database.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbOpen(
+		virtual RCODE FLMAPI dbOpen(
 			const char *			pszDbFileName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1943,7 +1421,7 @@
 		 * @param pui64NodesDiscardedDocs The total number of documents that couldn't be recovered.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbRebuild(
+		virtual RCODE FLMAPI dbRebuild(
 			const char *			pszSourceDbPath,
 			const char *			pszSourceDataDir,
 			const char *			pszDestDbPath,
@@ -1984,7 +1462,7 @@
 		 * a B-tree, number of keys, etc.  Methods of the  IF_DbInfo object provide for retrieval of this information.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbCheck(
+		virtual RCODE FLMAPI dbCheck(
 			const char *			pszDbFileName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -2030,7 +1508,7 @@
 		 * methods of that interface.  Those methods may be called by dbCopy to report copy progress.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbCopy(
+		virtual RCODE FLMAPI dbCopy(
 			const char *			pszSrcDbName,
 			const char *			pszSrcDataDir,
 			const char *			pszSrcRflDir,
@@ -2070,7 +1548,7 @@
 		 * interface and implements the pure virtual methods of that interface.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbRename(
+		virtual RCODE FLMAPI dbRename(
 			const char *			pszDbName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -2098,7 +1576,7 @@
 		 * @param bRemoveRflFiles A flag that indicate whether or not the RFL file(s) should be removed as well.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbRemove(
+		virtual RCODE FLMAPI dbRemove(
 			const char *			pszDbName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -2134,7 +1612,7 @@
 		 * The application is responsible for implementing this object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbRestore(
+		virtual RCODE FLMAPI dbRestore(
 			const char *			pszDbPath,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -2167,7 +1645,7 @@
 		 * @param ppDb A new database object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI dbDup(
+		virtual RCODE FLMAPI dbDup(
 			IF_Db *					pDb,
 			IF_Db **					ppDb) = 0;
 
@@ -2180,7 +1658,7 @@
 		 * @param rc The RCODE to be translated.
 		 * @return const char *
 		 */
-		virtual const char *	XFLMAPI errorString(
+		virtual const char *	FLMAPI errorString(
 			RCODE						rc) = 0;
 
 		/**
@@ -2192,7 +1670,7 @@
 		 * @param iErrCode The error code to be translated.
 		 * @return const char *
 		 */
-		virtual const char * XFLMAPI checkErrorToStr(
+		virtual const char * FLMAPI checkErrorToStr(
 			FLMINT	iCheckErrorCode) = 0;
 
 		/**
@@ -2207,7 +1685,7 @@
 		 * @param ppIStream The input stream object used to read the data in.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI openBufferIStream(
+		virtual RCODE FLMAPI openBufferIStream(
 			const char *			pucBuffer,
 			FLMUINT					uiLength,
 			IF_PosIStream **		ppIStream) = 0;
@@ -2223,7 +1701,7 @@
 		 * @param ppIStream The input stream object used to read the data in.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI openFileIStream(
+		virtual RCODE FLMAPI openFileIStream(
 			const char *			pszPath,
 			IF_PosIStream **		ppIStream) = 0;
 
@@ -2235,7 +1713,7 @@
 		 * more files to read from.  File names start with pszBaseName, then
 		 * pszBaseName.00000001, pszBaseName.00000002, etc.  The extension is a hex number.
 		 */
-		virtual RCODE XFLMAPI openMultiFileIStream(
+		virtual RCODE FLMAPI openMultiFileIStream(
 			const char *			pszDirectory,
 			const char *			pszBaseName,
 			IF_IStream **			ppIStream) = 0;
@@ -2249,7 +1727,7 @@
 		 * until pIStream has no more data to return.  This method allows any input stream
 		 * to be turned into a buffered stream.
 		 */
-		virtual RCODE XFLMAPI openBufferedIStream(
+		virtual RCODE FLMAPI openBufferedIStream(
 			IF_IStream *			pIStream,
 			FLMUINT					uiBufferSize,
 			IF_IStream **			ppIStream) = 0;
@@ -2260,7 +1738,7 @@
 		 * When (*ppIStream)->read() is called, it will read and uncompress data from 
 		 * pIStream.
 		 */
-		virtual RCODE XFLMAPI openUncompressingIStream(
+		virtual RCODE FLMAPI openUncompressingIStream(
 			IF_IStream *			pIStream,
 			IF_IStream **			ppIStream) = 0;
 			
@@ -2272,7 +1750,7 @@
 		 * Data is written out to the specified file.  The file may be created, overwritten, or
 		 * appended to, depending on iAccessFlags.
 		 */
-		virtual RCODE XFLMAPI openFileOStream(
+		virtual RCODE FLMAPI openFileOStream(
 			const char *		pszFileName,
 			FLMBOOL				bTruncateIfExists,
 			IF_OStream **		ppOStream) = 0;
@@ -2285,7 +1763,7 @@
 		 * be created by appending a suffix with an incrementing HEX number.  The
 		 * bOverwrite flag indicates whether to overwrite files that already exist.
 		 */
-		virtual RCODE XFLMAPI openMultiFileOStream(
+		virtual RCODE FLMAPI openMultiFileOStream(
 			const char *		pszDirectory,
 			const char *		pszBaseName,
 			FLMUINT				uiMaxFileSize,
@@ -2295,7 +1773,7 @@
 		/**
 		 * @brief Remove a multi-file stream
 		 */
-		virtual RCODE XFLMAPI removeMultiFileStream(
+		virtual RCODE FLMAPI removeMultiFileStream(
 			const char *		pszDirectory,
 			const char *		pszBaseName) = 0;
 			
@@ -2305,7 +1783,7 @@
 		 * As data is written to *ppOStream, it is buffered before ultimately being
 		 * written to pOStream.
 		 */
-		virtual RCODE XFLMAPI openBufferedOStream(
+		virtual RCODE FLMAPI openBufferedOStream(
 			IF_OStream *		pOStream,
 			FLMUINT				uiBufferSize,
 			IF_OStream **		ppOStream) = 0;
@@ -2316,7 +1794,7 @@
 		 * As data is written to *ppOStream, it is compressed before ultimately being
 		 * written to pOStream.
 		 */
-		virtual RCODE XFLMAPI openCompressingOStream(
+		virtual RCODE FLMAPI openCompressingOStream(
 			IF_OStream *		pOStream,
 			IF_OStream **		ppOStream) = 0;
 			
@@ -2324,7 +1802,7 @@
 		 * @brief All data is read from the input stream (pIStream) and written
 		 * to the output stream (pOStream).  This goes until pIStream returns EOF.
 		 */
-		virtual RCODE XFLMAPI writeToOStream(
+		virtual RCODE FLMAPI writeToOStream(
 			IF_IStream *		pIStream,
 			IF_OStream *		pOStream) = 0;
 			
@@ -2340,7 +1818,7 @@
 		 * @param ppEncodedStream The stream object used to read the encoded data.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI openBase64Encoder(
+		virtual RCODE FLMAPI openBase64Encoder(
 			IF_IStream *			pInputStream,
 			FLMBOOL					bInsertLineBreaks,
 			IF_IStream **			ppEncodedStream) = 0;
@@ -2355,7 +1833,7 @@
 		 * @param ppDecodedStream The stream object used to read the decoded data.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI openBase64Decoder(
+		virtual RCODE FLMAPI openBase64Decoder(
 			IF_IStream *			pInputStream,
 			IF_IStream **			ppDecodedStream) = 0;
 
@@ -2368,7 +1846,7 @@
 		 * @param ifppDV The IF_DataVector object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI createIFDataVector(
+		virtual RCODE FLMAPI createIFDataVector(
 			IF_DataVector **		ifppDV) = 0;
 
 		/**
@@ -2379,7 +1857,7 @@
 		 * @param ifppResultSet The IF_ResultSet object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI createIFResultSet(
+		virtual RCODE FLMAPI createIFResultSet(
 			IF_ResultSet **		ifppResultSet) = 0;
 
 		/**
@@ -2390,7 +1868,7 @@
 		 * @param ifppQuery The IF_Query object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI createIFQuery(
+		virtual RCODE FLMAPI createIFQuery(
 			IF_Query **				ifppQuery) = 0;
 
 		/**
@@ -2403,7 +1881,7 @@
 		 * @param ppMem Pointer to the pointer of the memory to be freed.  When the memory is
 		 * successfully freed, the pointer will be set to NULL
 		 */
-		virtual void XFLMAPI freeMem(
+		virtual void FLMAPI freeMem(
 			void **					ppMem) = 0;
 
 		// Various configuration routines
@@ -2427,7 +1905,7 @@
 		 * That calculated number becomes the effective maximum to adjust to.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI setDynamicMemoryLimit(
+		virtual RCODE FLMAPI setDynamicMemoryLimit(
 			FLMUINT					uiCacheAdjustPercent,
 			FLMUINT					uiCacheAdjustMin,
 			FLMUINT					uiCacheAdjustMax,
@@ -2463,7 +1941,7 @@
 		 * starts up, rather than allow it to grow as needed.  The default value to FALSE.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI setHardMemoryLimit(
+		virtual RCODE FLMAPI setHardMemoryLimit(
 			FLMUINT					uiPercent,
 			FLMBOOL					bPercentOfAvail,
 			FLMUINT					uiMin,
@@ -2479,7 +1957,7 @@
 		 *
 		 * @return FLMBOOL TRUE=supported or FALSE=not supported.
 		 */
-		virtual FLMBOOL XFLMAPI getDynamicCacheSupported( void) = 0;
+		virtual FLMBOOL FLMAPI getDynamicCacheSupported( void) = 0;
 		
 		/**
 		 * @brief Query the database system for information regarding the current cache usage.
@@ -2488,7 +1966,7 @@
 		 *
 		 * @param pCacheInfo The cache info structure.
 		 */
-		virtual void XFLMAPI getCacheInfo(
+		virtual void FLMAPI getCacheInfo(
 			XFLM_CACHE_INFO *		pCacheInfo) = 0;
 
 		/**
@@ -2499,7 +1977,7 @@
 		 *
 		 * @param bDebug A boolean to indicate whether to enable or disable cache debug mode.
 		 */
-		virtual void XFLMAPI enableCacheDebug(
+		virtual void FLMAPI enableCacheDebug(
 			FLMBOOL					bDebug) = 0;
 
 		/**
@@ -2509,7 +1987,7 @@
 		 *
 		 * @return FLMBOOL True or False
 		 */
-		virtual FLMBOOL XFLMAPI cacheDebugEnabled( void) = 0;
+		virtual FLMBOOL FLMAPI cacheDebugEnabled( void) = 0;
 
 		/**
 		 * @brief Close all file handles (descriptors) that have not been used for a specified
@@ -2524,68 +2002,29 @@
 		 * (descriptors), regardless of how long they have been unused.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI closeUnusedFiles(
+		virtual RCODE FLMAPI closeUnusedFiles(
 			FLMUINT					uiSeconds) = 0;
-
-		/**
-		 * @brief Set the threshold for the number of file handles (descriptors) that can be
-		 * opened by the database system.
-		 *
-		 * This is a method to set the maximum number of file handles (descriptors) that can
-		 * be kept open by the database system.
-		 *
-		 * @param uiThreshold The number of file handles (descriptors) that can be open at any
-		 * one time. The default threshold is 65535.  IMPORTANT NOTE: It is possible for the
-		 * database system to temporarily have more file handles (descriptors) open than the
-		 * specified threshold.  It does this when all available file handles (descriptors)
-		 * are in use and it needs to open a file to perform database work.  However, as soon as
-		 * it can, the database system will close file handles (descriptors) until it comes back
-		 * down below the specified threshold.
-		 */
-		virtual void XFLMAPI setOpenThreshold(
-			FLMUINT					uiThreshold) = 0;
-
-		/**
-		 * @brief Get the threshold for the number of file handles that can be opened by the
-		 * database system.
-		 *
-		 * This method returns the threshold for the number of file handles (descriptors) that
-		 * can be held open by the database system.
-		 *
-		 * @return FLMUINT The open threshold.
-		 */
-		virtual FLMUINT XFLMAPI getOpenThreshold( void) = 0;
-
-		/**
-		 * @brief Get the number of files that are currently open in the database system.
-		 *
-		 * This method returns the number of file handles (descriptors) that are currently
-		 * open in the database system.
-		 *
-		 * @return FLMUINT The open file count
-		 */
-		virtual FLMUINT XFLMAPI getOpenFileCount( void) = 0;
 
 		/**
 		 * @brief Start the collection of statistics on the database system.
 		 *
 		 * This method starts the collection of statistics on the database system.
 		 */
-		virtual void XFLMAPI startStats( void) = 0;
+		virtual void FLMAPI startStats( void) = 0;
 
 		/**
 		 * @brief Stop the collection of statistics on the database system.
 		 *
 		 * This method stops the collection of statistics on the database system.
 		 */
-		virtual void XFLMAPI stopStats( void) = 0;
+		virtual void FLMAPI stopStats( void) = 0;
 
 		/**
 		 * @brief Reset the statistics counters on the database system.
 		 *
 		 * This method resets the statistics counters on the database system.
 		 */
-		virtual void XFLMAPI resetStats( void) = 0;
+		virtual void FLMAPI resetStats( void) = 0;
 
 		/**
 		 * @brief Retrieve the statistics from the database system.
@@ -2595,7 +2034,7 @@
 		 * @param pFlmStats The structure where statistics are returned.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI getStats(
+		virtual RCODE FLMAPI getStats(
 			XFLM_STATS *			pFlmStats) = 0;
 
 		/**
@@ -2607,7 +2046,7 @@
 		 *
 		 * @param pFlmStats The statistics structure whose memory allocations are to be freed.
 		 */
-		virtual void XFLMAPI freeStats(
+		virtual void FLMAPI freeStats(
 			XFLM_STATS *			pFlmStats) = 0;
 
 		/**
@@ -2618,19 +2057,19 @@
 		 * @param pszPath The temporary directory path.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI setTempDir(
+		virtual RCODE FLMAPI setTempDir(
 			const char *			pszPath) = 0;
 
 		/**
 		 * @brief Get the directory where temporary files are created.
 		 *
 		 * This method returns the directory name where temporary files are created.
-		 * If no temporary directory is set, this function returns NE_XFLM_IO_PATH_NOT_FOUND.
+		 * If no temporary directory is set, this function returns NE_FLM_IO_PATH_NOT_FOUND.
 		 *
 		 * @param pszPath The temporary directory path is returned here.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI getTempDir(
+		virtual RCODE FLMAPI getTempDir(
 			char *					pszPath) = 0;
 
 		/**
@@ -2667,7 +2106,7 @@
 		 * active. If an update transaction is active and runs for a long time, the time
 		 * between completed checkpoints could exceed the time specified in this method.
 		 */
-		virtual void XFLMAPI setCheckpointInterval(
+		virtual void FLMAPI setCheckpointInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2676,7 +2115,7 @@
 		 * This method returns the current  checkpoint interval.
 		 * @return FLMUINT The current checkpoint interval (seconds).
 		 */
-		virtual FLMUINT XFLMAPI getCheckpointInterval( void) = 0;
+		virtual FLMUINT FLMAPI getCheckpointInterval( void) = 0;
 
 		/**
 		 * @brief Set the time interval for dynamically adjusting the cache limit.
@@ -2685,7 +2124,7 @@
 		 *
 		 * @param uiSeconds The time interval for dynamically adjusting the cache limit.
 		 */
-		virtual void XFLMAPI setCacheAdjustInterval(
+		virtual void FLMAPI setCacheAdjustInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2695,7 +2134,7 @@
 		 *
 		 * @return FLMUINT The curernt cache adjust interval (seconds).
 		 */
-		virtual FLMUINT XFLMAPI getCacheAdjustInterval( void) = 0;
+		virtual FLMUINT FLMAPI getCacheAdjustInterval( void) = 0;
 
 		/**
 		 * @brief Set the time interval for dynamically cleaning out old cache blocks from block cache.
@@ -2704,7 +2143,7 @@
 		 *
 		 * @param uiSeconds The time interval for dynamically cleaning out old cache blocks.
 		 */
-		virtual void XFLMAPI setCacheCleanupInterval(
+		virtual void FLMAPI setCacheCleanupInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2714,7 +2153,7 @@
 		 *
 		 * @return FLMUINT The current cache cleanup inerval (seconds).
 		 */
-		virtual FLMUINT XFLMAPI getCacheCleanupInterval( void) = 0;
+		virtual FLMUINT FLMAPI getCacheCleanupInterval( void) = 0;
 
 		/**
 		 * @brief Set time interval for cleaning up unused resources (such as file handles).
@@ -2723,7 +2162,7 @@
 		 *
 		 * @param uiSeconds  	The time interval for cleaning up unused resources (such as file handles).
 		 */
-		virtual void XFLMAPI setUnusedCleanupInterval(
+		virtual void FLMAPI setUnusedCleanupInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2733,7 +2172,7 @@
 		 *
 		 * @return FLMUINT The current unused cleanup interval (seconds).
 		 */
-		virtual FLMUINT XFLMAPI getUnusedCleanupInterval( void) = 0;
+		virtual FLMUINT FLMAPI getUnusedCleanupInterval( void) = 0;
 
 		/**
 		 * @brief Set maximum time for a resource (such as a file handle) to be unused before it is cleaned up.
@@ -2744,7 +2183,7 @@
 		 * @param uiSeconds The maximum time for a resource (such as a file handle) to be unused before it is
 		 * cleaned up.
 		 */
-		virtual void XFLMAPI setMaxUnusedTime(
+		virtual void FLMAPI setMaxUnusedTime(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2755,14 +2194,14 @@
 		 *
 		 * @return FLMUINT The current maximum unused time (seconds).
 		 */
-		virtual FLMUINT XFLMAPI getMaxUnusedTime( void) = 0;
+		virtual FLMUINT FLMAPI getMaxUnusedTime( void) = 0;
 
 		/**
 		 * @brief Set the logger client.
 		 *
 		 * @param pLogger Pointer to the logger client object.
 		 */
-		virtual void XFLMAPI setLogger(
+		virtual void FLMAPI setLogger(
 			IF_LoggerClient *		pLogger) = 0;
 
 		/**
@@ -2771,7 +2210,7 @@
 		 * @param bEnable A boolean flag.  When TRUE, Extended Server Memory is enabled.
 		 * When FALSE, Extended Server Memory is disabled.
 		 */
-		virtual void XFLMAPI enableExtendedServerMemory(
+		virtual void FLMAPI enableExtendedServerMemory(
 			FLMBOOL					bEnable) = 0;
 
 		/**
@@ -2779,7 +2218,7 @@
 		 *
 		 * @return FLMBOOL True if enabled, otherwise False.
 		 */
-		virtual FLMBOOL XFLMAPI extendedServerMemoryEnabled( void) = 0;
+		virtual FLMBOOL FLMAPI extendedServerMemoryEnabled( void) = 0;
 
 		/**
 		 * @brief Deactivate open database objects, forcing the database(s) to eventually be closed.
@@ -2797,7 +2236,7 @@
 		 * (as specified by the pszDbFileName parameter). See the XFlaim Concepts/Database Files for
 		 * a discussion on the different database files.
 		 */
-		virtual void XFLMAPI deactivateOpenDb(
+		virtual void FLMAPI deactivateOpenDb(
 			const char *			pszDatabasePath,
 			const char *			pszDataFilePath) = 0;
 
@@ -2808,7 +2247,7 @@
 		 *
 		 * @param uiMaxToSave The maximum number of queries to save.
 		 */
-		virtual void XFLMAPI setQuerySaveMax(
+		virtual void FLMAPI setQuerySaveMax(
 			FLMUINT					uiMaxToSave) = 0;
 
 		/**
@@ -2818,7 +2257,7 @@
 		 *
 		 * @return FLMUINT The maximum number of queries to save.
 		 */
-		virtual FLMUINT XFLMAPI getQuerySaveMax( void) = 0;
+		virtual FLMUINT FLMAPI getQuerySaveMax( void) = 0;
 
 		/**
 		 * @brief Set the minimum and maximum dirty cache limits.
@@ -2849,7 +2288,7 @@
 		 * @param uiMaxDirty The maximum amount (in bytes) of dirty cache allowed.
 		 * @param uiLowDirty The low threshold (in bytes) for dirty cache.
 		 */
-		virtual void XFLMAPI setDirtyCacheLimits(
+		virtual void FLMAPI setDirtyCacheLimits(
 			FLMUINT					uiMaxDirty,
 			FLMUINT					uiLowDirty) = 0;
 
@@ -2861,7 +2300,7 @@
 		 * @param puiMaxDirty The maximum number of dirty blocks allowed in the cache.
 		 * @param puiLowDirty The low threshold for the number of dirty blocks in cache.
 		 */
-		virtual void XFLMAPI getDirtyCacheLimits(
+		virtual void FLMAPI getDirtyCacheLimits(
 			FLMUINT *				puiMaxDirty,
 			FLMUINT *				puiLowDirty) = 0;
 
@@ -2876,7 +2315,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI getThreadInfo(
+		virtual RCODE FLMAPI getThreadInfo(
 			IF_ThreadInfo **		ifppThreadInfo) = 0;
 
 		/**
@@ -2889,7 +2328,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI registerForEvent(
+		virtual RCODE FLMAPI registerForEvent(
 			eEventCategory			eCategory,
 			IF_EventClient *		ifpEventClient) = 0;
 
@@ -2905,7 +2344,7 @@
 		 * registered for an event, XFlaim can know exactly which object to
 		 * deregister.
 		 */
-		virtual void XFLMAPI deregisterForEvent(
+		virtual void FLMAPI deregisterForEvent(
 			eEventCategory			eCategory,
 			IF_EventClient *		ifpEventClient) = 0;
 
@@ -2922,7 +2361,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI getNextMetaphone(
+		virtual RCODE FLMAPI getNextMetaphone(
 			IF_IStream *			ifpIStream,
 			FLMUINT *				puiMetaphone,
 			FLMUINT *				puiAltMetaphone = NULL) = 0;
@@ -2930,13 +2369,13 @@
 		/**
 		 * @brief Return an IF_Pool object for memory allocations
 		 */
-		virtual RCODE XFLMAPI createMemoryPool(
+		virtual RCODE FLMAPI createMemoryPool(
 			IF_Pool **			ppPool) = 0;
 			
 		/**
 		 * @brief Compares two UTF-8 strings
 		 */
-		virtual RCODE XFLMAPI compareUTF8Strings(
+		virtual RCODE FLMAPI compareUTF8Strings(
 			const FLMBYTE *	pucLString,
 			FLMUINT				uiLStrBytes,
 			FLMBOOL				bLeftWild,
@@ -2950,7 +2389,7 @@
 		/**
 		 * @brief Compares two Unicode strings
 		 */
-		virtual RCODE XFLMAPI compareUnicodeStrings(
+		virtual RCODE FLMAPI compareUnicodeStrings(
 			const FLMUNICODE *	puzLString,
 			FLMUINT					uiLStrBytes,
 			FLMBOOL					bLeftWild,
@@ -2961,26 +2400,26 @@
 			FLMUINT					uiLanguage,
 			FLMINT *					piResult) = 0;
 
-		virtual RCODE XFLMAPI utf8IsSubStr(
+		virtual RCODE FLMAPI utf8IsSubStr(
 			const FLMBYTE *	pszString,
 			const FLMBYTE *	pszSubString,
 			FLMUINT				uiCompareRules,
 			FLMUINT				uiLanguage,
 			FLMBOOL *			pbExists) = 0;
 		
-		virtual FLMBOOL XFLMAPI uniIsUpper(
+		virtual FLMBOOL FLMAPI uniIsUpper(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMBOOL XFLMAPI uniIsLower(
+		virtual FLMBOOL FLMAPI uniIsLower(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMBOOL XFLMAPI uniIsAlpha(
+		virtual FLMBOOL FLMAPI uniIsAlpha(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMBOOL XFLMAPI uniIsDecimalDigit(
+		virtual FLMBOOL FLMAPI uniIsDecimalDigit(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMUNICODE XFLMAPI uniToLower(
+		virtual FLMUNICODE FLMAPI uniToLower(
 			FLMUNICODE			uzChar) = 0;
 			
 		// When the nextUCS2Char method is called, the UCS-2 version of the character 
@@ -2990,12 +2429,12 @@
 		// Note: Remember to keep a copy of the pointer to the start of the
 		// string, because whatever is passed in as ppszUTF8 will be modified.
 		
-		virtual RCODE XFLMAPI nextUCS2Char(
+		virtual RCODE FLMAPI nextUCS2Char(
 			const FLMBYTE **	ppszUTF8,
 			const FLMBYTE *	pszEndOfUTF8String,
 			FLMUNICODE *		puzChar) = 0;
 			
-		virtual RCODE XFLMAPI numUCS2Chars(
+		virtual RCODE FLMAPI numUCS2Chars(
 			const FLMBYTE *	pszUTF8,
 			FLMUINT *			puiNumChars) = 0;
 			
@@ -3007,7 +2446,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI waitToClose(
+		virtual RCODE FLMAPI waitToClose(
 			const char *	pszDbFileName) = 0;
 
 		/**
@@ -3018,7 +2457,7 @@
 		 * @param ifppNodeInfo The IF_NodeInfo object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI createIFNodeInfo(
+		virtual RCODE FLMAPI createIFNodeInfo(
 			IF_NodeInfo **				ifppNodeInfo) = 0;
 			
 		/**
@@ -3029,7 +2468,7 @@
 		 * @param ifppBTreeInfo The IF_BTreeInfo object.
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI createIFBTreeInfo(
+		virtual RCODE FLMAPI createIFBTreeInfo(
 			IF_BTreeInfo **			ifppBTreeInfo) = 0;
 
 		/**
@@ -3042,7 +2481,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE XFLMAPI clearCache(
+		virtual RCODE FLMAPI clearCache(
 			IF_Db *					pDb) = 0;
 	};
 
@@ -3059,45 +2498,45 @@
 	 * using COM.
 	 * -------------------------------------------------------------------- */
 
-	XFLMEXP RCODE XFLMAPI FlmAllocDbSystem(
+	FLMEXP RCODE FLMAPI FlmAllocDbSystem(
 		IF_DbSystem **				ppDbSystem);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_Db : public XF_RefCount
+	flminterface IF_Db : public F_Object
 	{
-		virtual RCODE XFLMAPI transBegin(
+		virtual RCODE FLMAPI transBegin(
 			eDbTransType			eTransType,
 			FLMUINT					uiMaxLockWait = XFLM_NO_TIMEOUT,
 			FLMUINT					uiFlags = 0,
 			XFLM_DB_HDR *			pDbHeader = NULL) = 0;
 
-		virtual RCODE XFLMAPI transBegin(
+		virtual RCODE FLMAPI transBegin(
 			IF_Db *					pDb) = 0;
 
-		virtual RCODE XFLMAPI transCommit(
+		virtual RCODE FLMAPI transCommit(
 			FLMBOOL *				pbEmpty = NULL) = 0;
 
-		virtual RCODE XFLMAPI transAbort( void) = 0;
+		virtual RCODE FLMAPI transAbort( void) = 0;
 
-		virtual eDbTransType XFLMAPI getTransType( void) = 0;
+		virtual eDbTransType FLMAPI getTransType( void) = 0;
 
-		virtual RCODE XFLMAPI doCheckpoint(
+		virtual RCODE FLMAPI doCheckpoint(
 			FLMUINT					uiTimeout) = 0;
 
-		virtual RCODE XFLMAPI dbLock(
+		virtual RCODE FLMAPI dbLock(
 			eDbLockType				eLockType,
 			FLMINT					iPriority,
 			FLMUINT					uiTimeout) = 0;
 
-		virtual RCODE XFLMAPI dbUnlock( void) = 0;
+		virtual RCODE FLMAPI dbUnlock( void) = 0;
 
-		virtual RCODE XFLMAPI getLockType(
+		virtual RCODE FLMAPI getLockType(
 			eDbLockType *			peLockType,
 			FLMBOOL *				pbImplicit) = 0;
 
-		virtual RCODE XFLMAPI getLockInfo(
+		virtual RCODE FLMAPI getLockInfo(
 			FLMINT					iPriority,
 			eDbLockType *			peCurrLockType,
 			FLMUINT *				puiThreadId,
@@ -3105,204 +2544,204 @@
 			FLMUINT *				puiNumSharedQueued,
 			FLMUINT *				puiPriorityCount) = 0;
 
-		virtual RCODE XFLMAPI indexStatus(
+		virtual RCODE FLMAPI indexStatus(
 			FLMUINT					uiIndexNum,
 			XFLM_INDEX_STATUS *	pIndexStatus) = 0;
 
-		virtual RCODE XFLMAPI indexGetNext(
+		virtual RCODE FLMAPI indexGetNext(
 			FLMUINT *				puiIndexNum) = 0;
 
-		virtual RCODE XFLMAPI indexSuspend(
+		virtual RCODE FLMAPI indexSuspend(
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE XFLMAPI indexResume(
+		virtual RCODE FLMAPI indexResume(
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE XFLMAPI keyRetrieve(
+		virtual RCODE FLMAPI keyRetrieve(
 			FLMUINT					uiIndex,
 			IF_DataVector *		pSearchKey,
 			FLMUINT					uiFlags,
 			IF_DataVector *		pFoundKey) = 0;
 
-		virtual RCODE XFLMAPI enableEncryption( void) = 0;
+		virtual RCODE FLMAPI enableEncryption( void) = 0;
 
-		virtual RCODE XFLMAPI wrapKey(
+		virtual RCODE FLMAPI wrapKey(
 			const char *	pszPassword = NULL) = 0;
 		
-		virtual RCODE XFLMAPI rollOverDbKey( void) = 0;
+		virtual RCODE FLMAPI rollOverDbKey( void) = 0;
 			
-		virtual RCODE XFLMAPI changeItemState(
+		virtual RCODE FLMAPI changeItemState(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNum,
 			const char *			pszState) = 0;
 
-		virtual RCODE XFLMAPI reduceSize(
+		virtual RCODE FLMAPI reduceSize(
 			FLMUINT					uiCount,
 			FLMUINT *				puiCount) = 0;
 
-		virtual RCODE XFLMAPI upgrade(
+		virtual RCODE FLMAPI upgrade(
 			IF_UpgradeClient *	pUpgradeClient) = 0;
 
-		virtual RCODE XFLMAPI createRootElement(
+		virtual RCODE FLMAPI createRootElement(
 			FLMUINT					uiCollection,
 			FLMUINT					uiNameId,
 			IF_DOMNode **			ppElementNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE XFLMAPI createDocument(
+		virtual RCODE FLMAPI createDocument(
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE XFLMAPI getFirstDocument(
+		virtual RCODE FLMAPI getFirstDocument(
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE XFLMAPI getLastDocument(
+		virtual RCODE FLMAPI getLastDocument(
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE XFLMAPI getDocument(
+		virtual RCODE FLMAPI getDocument(
 			FLMUINT					uiCollection,
 			FLMUINT					uiFlags,
 			FLMUINT64				ui64DocumentId,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE XFLMAPI documentDone(
+		virtual RCODE FLMAPI documentDone(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64RootId) = 0;
 
-		virtual RCODE XFLMAPI documentDone(
+		virtual RCODE FLMAPI documentDone(
 			IF_DOMNode *			pDocNode) = 0;
 
-		virtual RCODE XFLMAPI createElementDef(
+		virtual RCODE FLMAPI createElementDef(
 			const char *			pszNamespaceURI,
 			const char *			pszElementName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI createElementDef(
+		virtual RCODE FLMAPI createElementDef(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzElementName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI createUniqueElmDef(
+		virtual RCODE FLMAPI createUniqueElmDef(
 			const char *			pszNamespaceURI,
 			const char *			pszElementName,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI createUniqueElmDef(
+		virtual RCODE FLMAPI createUniqueElmDef(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzElementName,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI getElementNameId(
+		virtual RCODE FLMAPI getElementNameId(
 			const char *			pszNamespaceURI,
 			const char *			pszElementName,
 			FLMUINT *				puiElementNameId) = 0;
 
-		virtual RCODE XFLMAPI getElementNameId(
+		virtual RCODE FLMAPI getElementNameId(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzElementName,
 			FLMUINT *				puiElementNameId) = 0;
 
-		virtual RCODE XFLMAPI createAttributeDef(
+		virtual RCODE FLMAPI createAttributeDef(
 			const char *			pszNamespaceURI,
 			const char *			pszAttributeName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiAttributeNameId,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI createAttributeDef(
+		virtual RCODE FLMAPI createAttributeDef(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzAttributeName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiAttributeNameId,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI getAttributeNameId(
+		virtual RCODE FLMAPI getAttributeNameId(
 			const char *			pszNamespaceURI,
 			const char *			pszAttributeName,
 			FLMUINT *				puiAttributeNameId) = 0;
 
-		virtual RCODE XFLMAPI getAttributeNameId(
+		virtual RCODE FLMAPI getAttributeNameId(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzAttributeName,
 			FLMUINT *				puiAttributeNameId) = 0;
 
-		virtual RCODE XFLMAPI createPrefixDef(
+		virtual RCODE FLMAPI createPrefixDef(
 			const char *			pszPrefixName,
 			FLMUINT * 				puiPrefixNumber) = 0;
 
-		virtual RCODE XFLMAPI createPrefixDef(
+		virtual RCODE FLMAPI createPrefixDef(
 			const FLMUNICODE *	puzPrefixName,
 			FLMUINT * 				puiPrefixNumber) = 0;
 
-		virtual RCODE XFLMAPI getPrefixId(
+		virtual RCODE FLMAPI getPrefixId(
 			const char *			pszPrefixName,
 			FLMUINT *				puiPrefixNumber) = 0;
 
-		virtual RCODE XFLMAPI getPrefixId(
+		virtual RCODE FLMAPI getPrefixId(
 			const FLMUNICODE *	puzPrefixName,
 			FLMUINT *				puiPrefixNumber) = 0;
 
-		virtual RCODE XFLMAPI createEncDef(
+		virtual RCODE FLMAPI createEncDef(
 			const char *			pszEncType,
 			const char *			pszEncName,
 			FLMUINT					uiKeySize,
 			FLMUINT *				puiEncDefNumber) = 0;
 
-		virtual RCODE XFLMAPI createEncDef(
+		virtual RCODE FLMAPI createEncDef(
 			const FLMUNICODE *	puzEncType,
 			const FLMUNICODE *	puzEncName,
 			FLMUINT					uiKeySize,
 			FLMUINT *				puiEncDefNumber) = 0;
 
-		virtual RCODE XFLMAPI getEncDefId(
+		virtual RCODE FLMAPI getEncDefId(
 			const char *			pszEncDefName,
 			FLMUINT *				puiPrefixNumber) = 0;
 
-		virtual RCODE XFLMAPI getEncDefId(
+		virtual RCODE FLMAPI getEncDefId(
 			const FLMUNICODE *	puzEncDefName,
 			FLMUINT *				puiEncDefNumber) = 0;
 
-		virtual RCODE XFLMAPI createCollectionDef(
+		virtual RCODE FLMAPI createCollectionDef(
 			const char *			pszCollectionName,
 			FLMUINT * 				puiCollectionNumber,
 			FLMUINT					uiEncNumber = 0) = 0;
 
-		virtual RCODE XFLMAPI createCollectionDef(
+		virtual RCODE FLMAPI createCollectionDef(
 			const FLMUNICODE *	puzCollectionName,
 			FLMUINT * 				puiCollectionNumber,
 			FLMUINT					uiEncNumber = 0) = 0;
 
-		virtual RCODE XFLMAPI getCollectionNumber(
+		virtual RCODE FLMAPI getCollectionNumber(
 			const char *			pszCollectionName,
 			FLMUINT *				puiCollectionNumber) = 0;
 
-		virtual RCODE XFLMAPI getCollectionNumber(
+		virtual RCODE FLMAPI getCollectionNumber(
 			const FLMUNICODE *	puzCollectionName,
 			FLMUINT *				puiCollectionNumber) = 0;
 
-		virtual RCODE XFLMAPI getIndexNumber(
+		virtual RCODE FLMAPI getIndexNumber(
 			const char *			pszIndexName,
 			FLMUINT *				puiIndexNumber) = 0;
 
-		virtual RCODE XFLMAPI getIndexNumber(
+		virtual RCODE FLMAPI getIndexNumber(
 			const FLMUNICODE *	puzIndexName,
 			FLMUINT *				puiIndexNumber) = 0;
 
-		virtual RCODE XFLMAPI getDictionaryDef(
+		virtual RCODE FLMAPI getDictionaryDef(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE XFLMAPI getDictionaryName(
+		virtual RCODE FLMAPI getDictionaryName(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber,
 			char *					pszName,
@@ -3310,7 +2749,7 @@
 			char *					pszNamespace = NULL,
 			FLMUINT *				puiNamespaceBufSize = NULL) = 0;
 
-		virtual RCODE XFLMAPI getDictionaryName(
+		virtual RCODE FLMAPI getDictionaryName(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber,
 			FLMUNICODE *			puzName,
@@ -3318,176 +2757,176 @@
 			FLMUNICODE *			puzNamespace = NULL,
 			FLMUINT *				puiNamespaceBufSize = NULL) = 0;
 
-		virtual RCODE XFLMAPI getNode(
+		virtual RCODE FLMAPI getNode(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId,
 			IF_DOMNode **			ppNode) = 0;
 
-		virtual RCODE XFLMAPI getAttribute(
+		virtual RCODE FLMAPI getAttribute(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ElementNodeId,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppNode) = 0;
 
-		virtual RCODE XFLMAPI getDataType(
+		virtual RCODE FLMAPI getDataType(
 			FLMUINT					uiDictType,
 			FLMUINT					uiNameId,
 			FLMUINT *				puiDataType) = 0;
 
-		virtual RCODE XFLMAPI backupBegin(
+		virtual RCODE FLMAPI backupBegin(
 			eDbBackupType			eBackupType,
 			eDbTransType			eTransType,
 			FLMUINT					uiMaxLockWait,
 			IF_Backup **			ppBackup) = 0;
 
-		virtual void XFLMAPI getRflFileName(
+		virtual void FLMAPI getRflFileName(
 			FLMUINT					uiFileNum,
 			FLMBOOL					bBaseOnly,
 			char *					pszFileName,
 			FLMUINT *				puiFileNameBufSize,
 			FLMBOOL *				pbNameTruncated = NULL) = 0;
 
-		virtual RCODE XFLMAPI import(
+		virtual RCODE FLMAPI import(
 			IF_IStream *			pIStream,
 			FLMUINT					uiCollection,
 			IF_DOMNode *			pNodeToLinkTo = NULL,
 			eNodeInsertLoc			eInsertLoc = XFLM_LAST_CHILD,
 			XFLM_IMPORT_STATS *	pImportStats = NULL) = 0;
 
-		virtual RCODE XFLMAPI importDocument(
+		virtual RCODE FLMAPI importDocument(
 			IF_IStream *			ifpStream,
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode = NULL,
 			XFLM_IMPORT_STATS *	pImportStats = NULL) = 0;
 
-		virtual RCODE XFLMAPI exportXML(
+		virtual RCODE FLMAPI exportXML(
 			IF_DOMNode *			pStartNode,
 			IF_OStream *			pOStream,
 			eExportFormatType		eFormat = XFLM_EXPORT_INDENT) = 0;
 			
-		virtual RCODE XFLMAPI setNextNodeId(
+		virtual RCODE FLMAPI setNextNodeId(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NextNodeId) = 0;
 
-		virtual RCODE XFLMAPI setNextDictNum(
+		virtual RCODE FLMAPI setNextDictNum(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber) = 0;
 
 		// Configuration "set" and "get" methods
 
-		virtual RCODE XFLMAPI setRflKeepFilesFlag(
+		virtual RCODE FLMAPI setRflKeepFilesFlag(
 			FLMBOOL					bKeep) = 0;
 
-		virtual RCODE XFLMAPI getRflKeepFlag(
+		virtual RCODE FLMAPI getRflKeepFlag(
 			FLMBOOL *				pbKeep) = 0;
 
-		virtual RCODE XFLMAPI setRflDir(
+		virtual RCODE FLMAPI setRflDir(
 			const char *			pszNewRflDir) = 0;
 
-		virtual void XFLMAPI getRflDir(
+		virtual void FLMAPI getRflDir(
 			char *					pszRflDir) = 0;
 
-		virtual RCODE XFLMAPI getRflFileNum(
+		virtual RCODE FLMAPI getRflFileNum(
 			FLMUINT *				puiRflFileNum) = 0;
 
-		virtual RCODE XFLMAPI getHighestNotUsedRflFileNum(
+		virtual RCODE FLMAPI getHighestNotUsedRflFileNum(
 			FLMUINT *				puiHighestNotUsedRflFileNum) = 0;
 
-		virtual RCODE XFLMAPI setRflFileSizeLimits(
+		virtual RCODE FLMAPI setRflFileSizeLimits(
 			FLMUINT					uiMinRflSize,
 			FLMUINT					uiMaxRflSize) = 0;
 
-		virtual RCODE XFLMAPI getRflFileSizeLimits(
+		virtual RCODE FLMAPI getRflFileSizeLimits(
 			FLMUINT *				puiRflMinFileSize,
 			FLMUINT *				puiRflMaxFileSize) = 0;
 
-		virtual RCODE XFLMAPI rflRollToNextFile( void) = 0;
+		virtual RCODE FLMAPI rflRollToNextFile( void) = 0;
 
-		virtual RCODE XFLMAPI setKeepAbortedTransInRflFlag(
+		virtual RCODE FLMAPI setKeepAbortedTransInRflFlag(
 			FLMBOOL					bKeep) = 0;
 
-		virtual RCODE XFLMAPI getKeepAbortedTransInRflFlag(
+		virtual RCODE FLMAPI getKeepAbortedTransInRflFlag(
 			FLMBOOL *				pbKeep) = 0;
 
-		virtual RCODE XFLMAPI setAutoTurnOffKeepRflFlag(
+		virtual RCODE FLMAPI setAutoTurnOffKeepRflFlag(
 			FLMBOOL					bAutoTurnOff) = 0;
 
-		virtual RCODE XFLMAPI getAutoTurnOffKeepRflFlag(
+		virtual RCODE FLMAPI getAutoTurnOffKeepRflFlag(
 			FLMBOOL *				pbAutoTurnOff) = 0;
 
-		virtual void XFLMAPI setFileExtendSize(
+		virtual void FLMAPI setFileExtendSize(
 			FLMUINT					uiFileExtendSize) = 0;
 
-		virtual FLMUINT XFLMAPI getFileExtendSize( void) = 0;
+		virtual FLMUINT FLMAPI getFileExtendSize( void) = 0;
 
-		virtual void XFLMAPI setAppData(
+		virtual void FLMAPI setAppData(
 			void *			pvAppData) = 0;
 
-		virtual void * XFLMAPI getAppData( void) = 0;
+		virtual void * FLMAPI getAppData( void) = 0;
 
-		virtual void XFLMAPI setDeleteStatusObject(
+		virtual void FLMAPI setDeleteStatusObject(
 			IF_DeleteStatus *		pDeleteStatus) = 0;
 
-		virtual void XFLMAPI setCommitClientObject(
+		virtual void FLMAPI setCommitClientObject(
 			IF_CommitClient *		pCommitClient) = 0;
 
-		virtual void XFLMAPI setIndexingClientObject(
+		virtual void FLMAPI setIndexingClientObject(
 			IF_IxClient *			pIxClient) = 0;
 
-		virtual void XFLMAPI setIndexingStatusObject(
+		virtual void FLMAPI setIndexingStatusObject(
 			IF_IxStatus *			pIxStatus) = 0;
 
 		// Configuration information getting methods
 
-		virtual FLMUINT XFLMAPI getDbVersion( void) = 0;
+		virtual FLMUINT FLMAPI getDbVersion( void) = 0;
 
-		virtual FLMUINT XFLMAPI getBlockSize( void) = 0;
+		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
 
-		virtual FLMUINT XFLMAPI getDefaultLanguage( void) = 0;
+		virtual FLMUINT FLMAPI getDefaultLanguage( void) = 0;
 
-		virtual FLMUINT64 XFLMAPI getTransID( void) = 0;
+		virtual FLMUINT64 FLMAPI getTransID( void) = 0;
 
-		virtual void XFLMAPI getCheckpointInfo(
+		virtual void FLMAPI getCheckpointInfo(
 			XFLM_CHECKPOINT_INFO *	pCheckpointInfo) = 0;
 
-		virtual RCODE XFLMAPI getDbControlFileName(
+		virtual RCODE FLMAPI getDbControlFileName(
 			char *					pszControlFileName,
 			FLMUINT					uiControlFileBufSize) = 0;
 
-		virtual RCODE XFLMAPI getLockWaiters(
+		virtual RCODE FLMAPI getLockWaiters(
 			IF_LockInfoClient *	pLockInfo) = 0;
 
-		virtual RCODE XFLMAPI getLastBackupTransID(
+		virtual RCODE FLMAPI getLastBackupTransID(
 			FLMUINT64 *				pui64LastBackupTransID) = 0;
 
-		virtual RCODE XFLMAPI getBlocksChangedSinceBackup(
+		virtual RCODE FLMAPI getBlocksChangedSinceBackup(
 			FLMUINT *				puiBlocksChangedSinceBackup) = 0;
 
-		virtual RCODE XFLMAPI getNextIncBackupSequenceNum(
+		virtual RCODE FLMAPI getNextIncBackupSequenceNum(
 			FLMUINT *				puiNextIncBackupSequenceNum) = 0;
 
-		virtual void XFLMAPI getSerialNumber(
+		virtual void FLMAPI getSerialNumber(
 			char *					pucSerialNumber) = 0;
 
-		virtual RCODE XFLMAPI getDiskSpaceUsage(
+		virtual RCODE FLMAPI getDiskSpaceUsage(
 			FLMUINT64 *				pui64DataSize,
 			FLMUINT64 *				pui64RollbackSize,
 			FLMUINT64 *				pui64RflSize) = 0;
 
-		virtual RCODE XFLMAPI getMustCloseRC( void) = 0;
+		virtual RCODE FLMAPI getMustCloseRC( void) = 0;
 
-		virtual RCODE XFLMAPI getAbortRC( void) = 0;
+		virtual RCODE FLMAPI getAbortRC( void) = 0;
 
-		virtual void XFLMAPI setMustAbortTrans(
+		virtual void FLMAPI setMustAbortTrans(
 			RCODE						rc) = 0;
 	};
 	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_DOMNode : public XF_RefCount
+	flminterface IF_DOMNode : public F_Object
 	{
-		virtual RCODE XFLMAPI createNode(
+		virtual RCODE FLMAPI createNode(
 			IF_Db *					pDb,
 			eDomNodeType			eNodeType,
 			FLMUINT					uiNameId,
@@ -3495,146 +2934,146 @@
 			IF_DOMNode **			ppNewNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE XFLMAPI createChildElement(
+		virtual RCODE FLMAPI createChildElement(
 			IF_Db *					pDb,
 			FLMUINT					uiChildElementNameId,
 			eNodeInsertLoc			eLocation,
 			IF_DOMNode **			ppNewChildElementNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 			
-		virtual RCODE XFLMAPI deleteNode(
+		virtual RCODE FLMAPI deleteNode(
 			IF_Db *					pDb) = 0;
 
-		virtual RCODE XFLMAPI deleteChildren(
+		virtual RCODE FLMAPI deleteChildren(
 			IF_Db *					pDb,
 			FLMUINT					uiNameId = 0) = 0;
 			
-		virtual RCODE XFLMAPI createAttribute(
+		virtual RCODE FLMAPI createAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE XFLMAPI getFirstAttribute(
+		virtual RCODE FLMAPI getFirstAttribute(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE XFLMAPI getLastAttribute(
+		virtual RCODE FLMAPI getLastAttribute(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE XFLMAPI getAttribute(
+		virtual RCODE FLMAPI getAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE XFLMAPI deleteAttribute(
+		virtual RCODE FLMAPI deleteAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId) = 0;
 
-		virtual RCODE XFLMAPI hasAttribute(
+		virtual RCODE FLMAPI hasAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppAttrNode = NULL) = 0;
 
-		virtual RCODE XFLMAPI hasAttributes(
+		virtual RCODE FLMAPI hasAttributes(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasAttrs) = 0;
 
-		virtual RCODE XFLMAPI hasNextSibling(
+		virtual RCODE FLMAPI hasNextSibling(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasNextSibling) = 0;
 
-		virtual RCODE XFLMAPI hasPreviousSibling(
+		virtual RCODE FLMAPI hasPreviousSibling(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasPreviousSibling) = 0;
 
-		virtual RCODE XFLMAPI hasChildren(
+		virtual RCODE FLMAPI hasChildren(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasChildren) = 0;
 
-		virtual RCODE XFLMAPI isNamespaceDecl(
+		virtual RCODE FLMAPI isNamespaceDecl(
 			IF_Db *					pDb,
 			FLMBOOL *				pbIsNamespaceDecl) = 0;
 
-		virtual eDomNodeType XFLMAPI getNodeType( void) = 0;
+		virtual eDomNodeType FLMAPI getNodeType( void) = 0;
 			
-		virtual RCODE XFLMAPI getNodeId(
+		virtual RCODE FLMAPI getNodeId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64NodeId) = 0;
 
-		virtual RCODE XFLMAPI getParentId(
+		virtual RCODE FLMAPI getParentId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64ParentId) = 0;
 			
-		virtual RCODE XFLMAPI getDocumentId(
+		virtual RCODE FLMAPI getDocumentId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64DocumentId) = 0;
 
-		virtual RCODE XFLMAPI getPrevSibId(
+		virtual RCODE FLMAPI getPrevSibId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64PrevSibId) = 0;
 
-		virtual RCODE XFLMAPI getNextSibId(
+		virtual RCODE FLMAPI getNextSibId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64NextSibId) = 0;
 
-		virtual RCODE XFLMAPI getFirstChildId(
+		virtual RCODE FLMAPI getFirstChildId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64FirstChildId) = 0;
 
-		virtual RCODE XFLMAPI getLastChildId(
+		virtual RCODE FLMAPI getLastChildId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64LastChildId) = 0;
 
-		virtual RCODE XFLMAPI getNameId(
+		virtual RCODE FLMAPI getNameId(
 			IF_Db *					pDb,
 			FLMUINT *				puiNameId) = 0;
 
-		virtual RCODE XFLMAPI getEncDefId(
+		virtual RCODE FLMAPI getEncDefId(
 			IF_Db *					pDb,
 			FLMUINT *				puiEncDefId) = 0;
 
-		virtual RCODE XFLMAPI getDataType(
+		virtual RCODE FLMAPI getDataType(
 			IF_Db *					pDb,
 			FLMUINT *				puiDataType) = 0;
 
-		virtual RCODE XFLMAPI getDataLength(
+		virtual RCODE FLMAPI getDataLength(
 			IF_Db *					pDb,
 			FLMUINT *				puiLength) = 0;
 
-		virtual RCODE XFLMAPI getUINT32(
+		virtual RCODE FLMAPI getUINT32(
 			IF_Db *					pDb,
 			FLMUINT32 *				pui32Value) = 0;
 			
-		virtual RCODE XFLMAPI getUINT(
+		virtual RCODE FLMAPI getUINT(
 			IF_Db *					pDb,
 			FLMUINT *				puiValue) = 0;
 
-		virtual RCODE XFLMAPI getUINT64(
+		virtual RCODE FLMAPI getUINT64(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64Value) = 0;
 
-		virtual RCODE XFLMAPI getINT32(
+		virtual RCODE FLMAPI getINT32(
 			IF_Db *					pDb,
 			FLMINT32 *				pi32Value) = 0;
 			
-		virtual RCODE XFLMAPI getINT(
+		virtual RCODE FLMAPI getINT(
 			IF_Db *					pDb,
 			FLMINT *					piValue) = 0;
 
-		virtual RCODE XFLMAPI getINT64(
+		virtual RCODE FLMAPI getINT64(
 			IF_Db *					pDb,
 			FLMINT64 *				pi64Value) = 0;
 
-		virtual RCODE XFLMAPI getMetaValue(
+		virtual RCODE FLMAPI getMetaValue(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64Value) = 0;
 			
-		virtual RCODE XFLMAPI getUnicodeChars(
+		virtual RCODE FLMAPI getUnicodeChars(
 			IF_Db *					pDb,
 			FLMUINT *				puiNumChars) = 0;
 
-		virtual RCODE XFLMAPI getUnicode(
+		virtual RCODE FLMAPI getUnicode(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzValueBuffer,
 			FLMUINT					uiBufferSize,
@@ -3643,15 +3082,15 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE XFLMAPI getUnicode(
+		virtual RCODE FLMAPI getUnicode(
 			IF_Db *					pDb,
 			FLMUNICODE **			ppuzUnicodeValue) = 0;
 
-		virtual RCODE XFLMAPI getUnicode(
+		virtual RCODE FLMAPI getUnicode(
 			IF_Db *					pDb,
 			IF_DynaBuf *			pDynaBuf) = 0;
 			
-		virtual RCODE XFLMAPI getUTF8(
+		virtual RCODE FLMAPI getUTF8(
 			IF_Db *					pDb,
 			FLMBYTE *				pucValueBuffer,
 			FLMUINT					uiBufferSize,
@@ -3660,81 +3099,81 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE XFLMAPI getUTF8(
+		virtual RCODE FLMAPI getUTF8(
 			IF_Db *					pDb,
 			FLMBYTE **				ppszUTF8Value) = 0;
 			
-		virtual RCODE XFLMAPI getUTF8(
+		virtual RCODE FLMAPI getUTF8(
 			IF_Db *					pDb,
 			IF_DynaBuf *			pDynaBuf) = 0;
 
-		virtual RCODE XFLMAPI getBinary(
+		virtual RCODE FLMAPI getBinary(
 			IF_Db *					pDb,
 			void *					pvValue,
 			FLMUINT					uiByteOffset,
 			FLMUINT					uiBytesRequested,
 			FLMUINT *				puiBytesReturned) = 0;
 
-		virtual RCODE XFLMAPI getBinary(
+		virtual RCODE FLMAPI getBinary(
 			IF_Db *					pDb,
 			IF_DynaBuf *			pBuffer) = 0;
 			
-		virtual RCODE XFLMAPI getAttributeValueUINT32(
+		virtual RCODE FLMAPI getAttributeValueUINT32(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT32 *				pui32Num) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUINT32(
+		virtual RCODE FLMAPI getAttributeValueUINT32(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT32 *				pui32Num,
 			FLMUINT32				ui32NotFoundDefault) = 0;
 			
-		virtual RCODE XFLMAPI getAttributeValueUINT(
+		virtual RCODE FLMAPI getAttributeValueUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT *				puiNum) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUINT(
+		virtual RCODE FLMAPI getAttributeValueUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT *				puiNum,
 			FLMUINT					uiNotFoundDefault) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUINT64(
+		virtual RCODE FLMAPI getAttributeValueUINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT64 *				pui64Num) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUINT64(
+		virtual RCODE FLMAPI getAttributeValueUINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT64 *				pui64Num,
 			FLMUINT64				ui64NotFoundDefault) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueINT(
+		virtual RCODE FLMAPI getAttributeValueINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT *					piNum) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueINT(
+		virtual RCODE FLMAPI getAttributeValueINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT *					piNum,
 			FLMINT					iNotFoundDefault) = 0;
 			
-		virtual RCODE XFLMAPI getAttributeValueINT64(
+		virtual RCODE FLMAPI getAttributeValueINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT64 *				pi64Num) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueINT64(
+		virtual RCODE FLMAPI getAttributeValueINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT64 *				pi64Num,
 			FLMINT64					i64NotFoundDefault) = 0;
 			
-		virtual RCODE XFLMAPI getAttributeValueUnicode(
+		virtual RCODE FLMAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUNICODE *			puzValueBuffer,
@@ -3742,17 +3181,17 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUnicode(
+		virtual RCODE FLMAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUNICODE **			ppuzValueBuffer) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUnicode(
+		virtual RCODE FLMAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DynaBuf *			pDynaBuf) = 0;
 			
-		virtual RCODE XFLMAPI getAttributeValueUTF8(
+		virtual RCODE FLMAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMBYTE *				pucValueBuffer,
@@ -3760,285 +3199,285 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueUTF8(
+		virtual RCODE FLMAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMBYTE **				ppszValueBuffer) = 0;
 			
-		virtual RCODE XFLMAPI getAttributeValueUTF8(
+		virtual RCODE FLMAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DynaBuf *			pDynaBuf) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueBinary(
+		virtual RCODE FLMAPI getAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			void *					pvValueBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiValueLength) = 0;
 
-		virtual RCODE XFLMAPI getAttributeValueBinary(
+		virtual RCODE FLMAPI getAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DynaBuf *			pDynaBuf) = 0;
 			
-		virtual RCODE XFLMAPI setUINT(
+		virtual RCODE FLMAPI setUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setUINT64(
+		virtual RCODE FLMAPI setUINT64(
 			IF_Db *					pDb,
 			FLMUINT64				ui64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setINT(
+		virtual RCODE FLMAPI setINT(
 			IF_Db *					pDb,
 			FLMINT					iValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setINT64(
+		virtual RCODE FLMAPI setINT64(
 			IF_Db *					pDb,
 			FLMINT64					i64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setMetaValue(
+		virtual RCODE FLMAPI setMetaValue(
 			IF_Db *					pDb,
 			FLMUINT64				ui64Value) = 0;
 
-		virtual RCODE XFLMAPI setUnicode(
+		virtual RCODE FLMAPI setUnicode(
 			IF_Db *					pDb,
 			const FLMUNICODE *	puzValue,
 			FLMUINT					uiValueLength = 0,
 			FLMBOOL					bLast = TRUE,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setUTF8(
+		virtual RCODE FLMAPI setUTF8(
 			IF_Db *					pDb,
 			const FLMBYTE *		pszValue,
 			FLMUINT					uiValueLength = 0,
 			FLMBOOL					bLast = TRUE,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setBinary(
+		virtual RCODE FLMAPI setBinary(
 			IF_Db *					pDb,
 			const void *			pvValue,
 			FLMUINT					uiValueLength,
 			FLMBOOL					bLast = TRUE,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueUINT(
+		virtual RCODE FLMAPI setAttributeValueUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT					uiValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueUINT64(
+		virtual RCODE FLMAPI setAttributeValueUINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT64				ui64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueINT(
+		virtual RCODE FLMAPI setAttributeValueINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT					iValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueINT64(
+		virtual RCODE FLMAPI setAttributeValueINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT64					i64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueUnicode(
+		virtual RCODE FLMAPI setAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			const FLMUNICODE *	puzValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueUTF8(
+		virtual RCODE FLMAPI setAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			const FLMBYTE *		pucValue,
 			FLMUINT					uiLength = 0,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI setAttributeValueBinary(
+		virtual RCODE FLMAPI setAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			const void *			pvValue,
 			FLMUINT					uiLength,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE XFLMAPI getDocumentNode(
+		virtual RCODE FLMAPI getDocumentNode(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppDocument) = 0;
 
-		virtual RCODE XFLMAPI getNextDocument(
+		virtual RCODE FLMAPI getNextDocument(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNextDocument) = 0;
 
-		virtual RCODE XFLMAPI getPreviousDocument(
+		virtual RCODE FLMAPI getPreviousDocument(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppPrevDocument) = 0;
 
-		virtual RCODE XFLMAPI getParentNode(
+		virtual RCODE FLMAPI getParentNode(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppParent) = 0;
 
-		virtual RCODE XFLMAPI getFirstChild(
+		virtual RCODE FLMAPI getFirstChild(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppFirstChild) = 0;
 
-		virtual RCODE XFLMAPI getLastChild(
+		virtual RCODE FLMAPI getLastChild(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppLastChild) = 0;
 
-		virtual RCODE XFLMAPI getNextSibling(
+		virtual RCODE FLMAPI getNextSibling(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNextSibling) = 0;
 
-		virtual RCODE XFLMAPI getPreviousSibling(
+		virtual RCODE FLMAPI getPreviousSibling(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppPrevSibling) = 0;
 
-		virtual RCODE XFLMAPI getChild(
+		virtual RCODE FLMAPI getChild(
 			IF_Db *					pDb,
 			eDomNodeType			eNodeType,
 			IF_DOMNode **			ppChild) = 0;
 
-		virtual RCODE XFLMAPI getChildElement(
+		virtual RCODE FLMAPI getChildElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			IF_DOMNode **			ppChild,
 			FLMUINT					uiFlags = 0) = 0;
 
-		virtual RCODE XFLMAPI getSiblingElement(
+		virtual RCODE FLMAPI getSiblingElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			FLMBOOL					bNext,
 			IF_DOMNode **			ppSibling) = 0;
 
-		virtual RCODE XFLMAPI getAncestorElement(
+		virtual RCODE FLMAPI getAncestorElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			IF_DOMNode **			ppAncestor) = 0;
 			
-		virtual RCODE XFLMAPI getDescendantElement(
+		virtual RCODE FLMAPI getDescendantElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			IF_DOMNode **			ppDescendant) = 0;
 			
-		virtual RCODE XFLMAPI insertBefore(
+		virtual RCODE FLMAPI insertBefore(
 			IF_Db *					pDb,
 			IF_DOMNode *			pNewChild,
 			IF_DOMNode *			pRefChild) = 0;
 
-		virtual RCODE XFLMAPI getPrefix(
+		virtual RCODE FLMAPI getPrefix(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzPrefixBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getPrefix(
+		virtual RCODE FLMAPI getPrefix(
 			IF_Db *					pDb,
 			char *					pszPrefixBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getPrefixId(
+		virtual RCODE FLMAPI getPrefixId(
 			IF_Db *					pDb,
 			FLMUINT *				puiPrefixId) = 0;
 
-		virtual RCODE XFLMAPI setPrefix(
+		virtual RCODE FLMAPI setPrefix(
 			IF_Db *					pDb,
 			const FLMUNICODE *	puzPrefix) = 0;
 
-		virtual RCODE XFLMAPI setPrefix(
+		virtual RCODE FLMAPI setPrefix(
 			IF_Db *					pDb,
 			const char *			pszPrefix) = 0;
 
-		virtual RCODE XFLMAPI setPrefixId(
+		virtual RCODE FLMAPI setPrefixId(
 			IF_Db *					pDb,
 			FLMUINT					uiPrefixId) = 0;
 
-		virtual RCODE XFLMAPI getNamespaceURI(
+		virtual RCODE FLMAPI getNamespaceURI(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzNamespaceURIBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getNamespaceURI(
+		virtual RCODE FLMAPI getNamespaceURI(
 			IF_Db *					pDb,
 			char *					pszNamespaceURIBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getLocalName(
+		virtual RCODE FLMAPI getLocalName(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzLocalNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getLocalName(
+		virtual RCODE FLMAPI getLocalName(
 			IF_Db *					pDb,
 			char *					pszLocalNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getQualifiedName(
+		virtual RCODE FLMAPI getQualifiedName(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzQualifiedNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getQualifiedName(
+		virtual RCODE FLMAPI getQualifiedName(
 			IF_Db *					pDb,
 			char *					pszQualifiedNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE XFLMAPI getCollection(
+		virtual RCODE FLMAPI getCollection(
 			IF_Db *					pDb,
 			FLMUINT *				puiCollection) = 0;
 
-		virtual RCODE XFLMAPI createAnnotation(
+		virtual RCODE FLMAPI createAnnotation(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAnnotation,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE XFLMAPI getAnnotation(
+		virtual RCODE FLMAPI getAnnotation(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAnnotation) = 0;
 
-		virtual RCODE XFLMAPI getAnnotationId(
+		virtual RCODE FLMAPI getAnnotationId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64AnnotationId) = 0;
 			
-		virtual RCODE XFLMAPI hasAnnotation(
+		virtual RCODE FLMAPI hasAnnotation(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasAnnotation) = 0;
 
-		virtual RCODE XFLMAPI getIStream(
+		virtual RCODE FLMAPI getIStream(
 			IF_Db *					pDb,
 			IF_PosIStream **		ppIStream,
 			FLMUINT *				puiDataType = NULL,
 			FLMUINT *				puiDataLength = NULL) = 0;
 
-		virtual RCODE XFLMAPI getTextIStream(
+		virtual RCODE FLMAPI getTextIStream(
 			IF_Db *					pDb,
 			IF_PosIStream **		ppIStream,
 			FLMUINT *				puiNumChars = NULL) = 0;
 
-		virtual FLMUINT XFLMAPI compareNode(
+		virtual FLMUINT FLMAPI compareNode(
 			IF_DOMNode *			pNode,
 			IF_Db *					pDb1,
 			IF_Db *					pDb2,
 			char *					pszErrBuff,
 			FLMUINT					uiErrBuffLen) = 0;
 
-		virtual RCODE XFLMAPI isDataLocalToNode(
+		virtual RCODE FLMAPI isDataLocalToNode(
 			IF_Db *					pDb,
 			FLMBOOL *				pbDataIsLocal) = 0;
 	};
@@ -4046,137 +3485,137 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_DataVector : public XF_RefCount
+	flminterface IF_DataVector : public F_Object
 	{
-		virtual void XFLMAPI setDocumentID(
+		virtual void FLMAPI setDocumentID(
 			FLMUINT64				ui64DocumentID) = 0;
 
-		virtual RCODE XFLMAPI setID(
+		virtual RCODE FLMAPI setID(
 			FLMUINT					uiElementNumber,
 			FLMUINT64				ui64ID) = 0;
 
-		virtual RCODE XFLMAPI setNameId(
+		virtual RCODE FLMAPI setNameId(
 			FLMUINT					uiElementNumber,
 			FLMUINT					uiNameId,
 			FLMBOOL					bIsAttr,
 			FLMBOOL					bIsData) = 0;
 
-		virtual RCODE XFLMAPI setINT(
+		virtual RCODE FLMAPI setINT(
 			FLMUINT					uiElementNumber,
 			FLMINT					iNum) = 0;
 
-		virtual RCODE XFLMAPI setINT64(
+		virtual RCODE FLMAPI setINT64(
 			FLMUINT					uiElementNumber,
 			FLMINT64					i64Num) = 0;
 
-		virtual RCODE XFLMAPI setUINT(
+		virtual RCODE FLMAPI setUINT(
 			FLMUINT					uiElementNumber,
 			FLMUINT					uiNum) = 0;
 
-		virtual RCODE XFLMAPI setUINT64(
+		virtual RCODE FLMAPI setUINT64(
 			FLMUINT					uiElementNumber,
 			FLMUINT64				ui64Num) = 0;
 
-		virtual RCODE XFLMAPI setUnicode(
+		virtual RCODE FLMAPI setUnicode(
 			FLMUINT					uiElementNumber,
 			const FLMUNICODE *	puzUnicode) = 0;
 
-		virtual RCODE XFLMAPI setUTF8(
+		virtual RCODE FLMAPI setUTF8(
 			FLMUINT					uiElementNumber,
 			const FLMBYTE *		pszUtf8,
 			FLMUINT					uiBytesInBuffer = 0) = 0;			
 
-		virtual RCODE XFLMAPI setBinary(
+		virtual RCODE FLMAPI setBinary(
 			FLMUINT					uiElementNumber,
 			const void *			pvBinary,
 			FLMUINT					uiBinaryLen) = 0;
 		
-		virtual void XFLMAPI setRightTruncated(
+		virtual void FLMAPI setRightTruncated(
 			FLMUINT					uiElementNumber) = 0;
 		
-		virtual void XFLMAPI setLeftTruncated(
+		virtual void FLMAPI setLeftTruncated(
 			FLMUINT					uiElementNumber) = 0;
 		
-		virtual void XFLMAPI clearRightTruncated(
+		virtual void FLMAPI clearRightTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual void XFLMAPI clearLeftTruncated(
+		virtual void FLMAPI clearLeftTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL XFLMAPI isRightTruncated(
+		virtual FLMBOOL FLMAPI isRightTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL XFLMAPI isLeftTruncated(
+		virtual FLMBOOL FLMAPI isLeftTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT64 XFLMAPI getDocumentID( void) = 0;
+		virtual FLMUINT64 FLMAPI getDocumentID( void) = 0;
 
-		virtual FLMUINT64 XFLMAPI getID(
+		virtual FLMUINT64 FLMAPI getID(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT XFLMAPI getNameId(
+		virtual FLMUINT FLMAPI getNameId(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL XFLMAPI isAttr(
+		virtual FLMBOOL FLMAPI isAttr(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL XFLMAPI isDataComponent(
+		virtual FLMBOOL FLMAPI isDataComponent(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL XFLMAPI isKeyComponent(
+		virtual FLMBOOL FLMAPI isKeyComponent(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT XFLMAPI getDataLength(
+		virtual FLMUINT FLMAPI getDataLength(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT XFLMAPI getDataType(
+		virtual FLMUINT FLMAPI getDataType(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual RCODE XFLMAPI getUTF8Ptr(
+		virtual RCODE FLMAPI getUTF8Ptr(
 			FLMUINT					uiElementNumber,
 			const FLMBYTE **		ppszUTF8,
 			FLMUINT *				puiBufLen) = 0;
 
-		virtual RCODE XFLMAPI getINT(
+		virtual RCODE FLMAPI getINT(
 			FLMUINT					uiElementNumber,
 			FLMINT *					piNum) = 0;
 
-		virtual RCODE XFLMAPI getINT64(
+		virtual RCODE FLMAPI getINT64(
 			FLMUINT					uiElementNumber,
 			FLMINT64 *				pi64Num) = 0;
 
-		virtual RCODE XFLMAPI getUINT(
+		virtual RCODE FLMAPI getUINT(
 			FLMUINT					uiElementNumber,
 			FLMUINT *				puiNum) = 0;
 
-		virtual RCODE XFLMAPI getUINT64(
+		virtual RCODE FLMAPI getUINT64(
 			FLMUINT					uiElementNumber,
 			FLMUINT64 *				pui64Num) = 0;
 
-		virtual RCODE XFLMAPI getUnicode(
+		virtual RCODE FLMAPI getUnicode(
 			FLMUINT					uiElementNumber,
 			FLMUNICODE **			ppuzUnicode) = 0;
 
-		virtual RCODE XFLMAPI getUnicode(
+		virtual RCODE FLMAPI getUnicode(
 			FLMUINT					uiElementNumber,
 			FLMUNICODE *			puzUnicode,
 			FLMUINT *				puiBufLen) = 0;
 
-		virtual RCODE XFLMAPI getUnicode(
+		virtual RCODE FLMAPI getUnicode(
 			FLMUINT					uiElementNumber,
 			IF_DynaBuf *			pBuffer) = 0;
 			
-		virtual RCODE XFLMAPI getUTF8(
+		virtual RCODE FLMAPI getUTF8(
 			FLMUINT					uiElementNumber,
 			FLMBYTE *				pszUTF8,
 			FLMUINT *				puiBufLen) = 0;
 
-		virtual RCODE XFLMAPI getBinary(
+		virtual RCODE FLMAPI getBinary(
 			FLMUINT					uiElementNumber,
 			void *					pvBuffer,
 			FLMUINT *				puiBufferLen) = 0;
 
-		virtual RCODE XFLMAPI outputKey(
+		virtual RCODE FLMAPI outputKey(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			FLMUINT					uiMatchFlags,
@@ -4184,20 +3623,20 @@
 			FLMUINT					uiKeyBufSize,
 			FLMUINT *				puiKeyLen) = 0;
 
-		virtual RCODE XFLMAPI outputData(
+		virtual RCODE FLMAPI outputData(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			FLMBYTE *				pucDataBuf,
 			FLMUINT					uiDataBufSize,
 			FLMUINT *				puiDataLen) = 0;
 
-		virtual RCODE XFLMAPI inputKey(
+		virtual RCODE FLMAPI inputKey(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			const FLMBYTE *		pucKey,
 			FLMUINT					uiKeyLen) = 0;
 
-		virtual RCODE XFLMAPI inputData(
+		virtual RCODE FLMAPI inputData(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			const FLMBYTE *		pucData,
@@ -4205,107 +3644,31 @@
 
 		// Miscellaneous methods
 
-		virtual void XFLMAPI reset( void) = 0;
+		virtual void FLMAPI reset( void) = 0;
 
-		virtual const void * XFLMAPI getDataPtr(
+		virtual const void * FLMAPI getDataPtr(
 			FLMUINT					uiElementNumber) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_Backup : public XF_RefCount
+	flminterface IF_Backup : public F_Object
 	{
-		virtual FLMUINT64 XFLMAPI getBackupTransId( void) = 0;
+		virtual FLMUINT64 FLMAPI getBackupTransId( void) = 0;
 
-		virtual FLMUINT64 XFLMAPI getLastBackupTransId( void) = 0;
+		virtual FLMUINT64 FLMAPI getLastBackupTransId( void) = 0;
 
-		virtual RCODE XFLMAPI backup(
+		virtual RCODE FLMAPI backup(
 			const char *			pszBackupPath,
 			const char *			pszPassword,
 			IF_BackupClient *		ifpClient,
 			IF_BackupStatus *		ifpStatus,
 			FLMUINT *				puiIncSeqNum) = 0;
 
-		virtual RCODE XFLMAPI endBackup( void) = 0;
+		virtual RCODE FLMAPI endBackup( void) = 0;
 	};
 
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_ThreadInfo : public XF_RefCount
-	{
-		virtual FLMUINT XFLMAPI getNumThreads( void) = 0;
-
-		virtual void XFLMAPI getThreadInfo(
-			FLMUINT					uiThreadNum,
-			FLMUINT *				puiThreadId,
-			FLMUINT *				puiThreadGroup,
-			FLMUINT *				puiAppId,
-			FLMUINT *				puiStartTime,
-			const char **			ppszThreadName,
-			const char **			ppszThreadStatus) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_IStream : public XF_RefCount
-	{
-		/**
-		 * @brief Reads data from the input stream.
-		 *
-		 */
-		virtual RCODE XFLMAPI read(
-			void *					pvBuffer,
-			FLMUINT					uiBytesToRead,
-			FLMUINT *				puiBytesRead = NULL) = 0;
-
-		/**
-		 * @brief Close the input stream.
-		 *
-		 */
-		virtual RCODE XFLMAPI close( void) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_PosIStream : public IF_IStream
-	{
-		virtual FLMUINT64 XFLMAPI totalSize( void) = 0;
-			
-		virtual FLMUINT64 XFLMAPI remainingSize( void) = 0;
-
-		virtual RCODE XFLMAPI positionTo(
-			FLMUINT64				ui64Position) = 0;
-
-		virtual FLMUINT64 XFLMAPI getCurrPosition( void) = 0;
-	};
-
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_OStream : public XF_RefCount
-	{
-		/**
-		 * @brief Writes data to the output stream.
-		 *
-		 */
-		virtual RCODE XFLMAPI write(
-			const void *	pvBuffer,
-			FLMUINT			uiBytesToWrite,
-			FLMUINT *		puiBytesWritten = NULL) = 0;
-
-		/**
-		 * @brief Close the output stream.
-		 *
-		 */
-		virtual RCODE XFLMAPI close( void) = 0;
-	};
-
-	
 	// Note:  Any interfaces ending in Client or Status are interfaces
 	// that XFlaim does not provide implementations of.  They exist to
 	// allow XFlaim to pass data back to the client.  Interfaces ending in
@@ -4316,9 +3679,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_BackupClient : public XF_RefCount
+	flminterface IF_BackupClient : public F_Object
 	{
-		virtual RCODE XFLMAPI WriteData(
+		virtual RCODE FLMAPI WriteData(
 			const void *			pvBuffer,
 			FLMUINT					uiBytesToWrite) = 0;
 	};
@@ -4326,9 +3689,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_BackupStatus : public XF_RefCount
+	flminterface IF_BackupStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI backupStatus(
+		virtual RCODE FLMAPI backupStatus(
 			FLMUINT64				ui64BytesToDo,
 			FLMUINT64				ui64BytesDone) = 0;
 	};
@@ -4336,18 +3699,18 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_CommitClient : public XF_RefCount
+	flminterface IF_CommitClient : public F_Object
 	{
-		virtual void XFLMAPI commit( 
+		virtual void FLMAPI commit( 
 			IF_Db *					pDb) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_EventClient : public XF_RefCount
+	flminterface IF_EventClient : public F_Object
 	{
-		virtual void XFLMAPI catchEvent(
+		virtual void FLMAPI catchEvent(
 			eEventType				eEvent,
 			IF_Db *					pDb,
 			FLMUINT					uiThreadId,
@@ -4360,9 +3723,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_IxClient : public XF_RefCount
+	flminterface IF_IxClient : public F_Object
 	{
-		virtual RCODE XFLMAPI doIndexing(
+		virtual RCODE FLMAPI doIndexing(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			FLMUINT					uiCollectionNum,
@@ -4372,12 +3735,12 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_LockInfoClient : public XF_RefCount
+	flminterface IF_LockInfoClient : public F_Object
 	{
-		virtual FLMBOOL XFLMAPI setLockCount(	// Return TRUE to continue, FALSE to stop
+		virtual FLMBOOL FLMAPI setLockCount(	// Return TRUE to continue, FALSE to stop
 			FLMUINT					uiTotalLocks) = 0;
 
-		virtual FLMBOOL XFLMAPI addLockInfo(	// Return TRUE to continue, FALSE to stop
+		virtual FLMBOOL FLMAPI addLockInfo(	// Return TRUE to continue, FALSE to stop
 			FLMUINT					uiLockNum,		// Position in queue (0 = lock holder,
 															// 1 ... n = lock waiter)
 			FLMUINT					uiThreadID,		// Thread ID of the lock holder/waiter
@@ -4391,73 +3754,39 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_LoggerClient : public XF_RefCount
+	flminterface IF_RestoreStatus : public F_Object
 	{
-		virtual IF_LogMessageClient * XFLMAPI beginMessage(
-			eLogMessageType		eMsgType) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_LogMessageClient : public XF_RefCount
-	{
-		virtual void XFLMAPI changeColor(
-			eColorType				eForeColor,
-			eColorType				eBackColor) = 0;
-
-		virtual void XFLMAPI appendString(
-			const char *			pszStr) = 0;
-
-		virtual void XFLMAPI newline( void) = 0;
-
-		virtual void XFLMAPI endMessage( void) = 0;
-
-		virtual void XFLMAPI pushForegroundColor( void) = 0;
-
-		virtual void XFLMAPI popForegroundColor( void) = 0;
-
-		virtual void XFLMAPI pushBackgroundColor( void) = 0;
-
-		virtual void XFLMAPI popBackgroundColor( void) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_RestoreStatus : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI reportProgress(
+		virtual RCODE FLMAPI reportProgress(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64BytesToDo,
 			FLMUINT64				ui64BytesDone) = 0;
 
-		virtual RCODE XFLMAPI reportError(
+		virtual RCODE FLMAPI reportError(
 			eRestoreAction *		peAction,
 			RCODE						rcErr) = 0;
 
-		virtual RCODE XFLMAPI reportOpenRflFile(
+		virtual RCODE FLMAPI reportOpenRflFile(
 			eRestoreAction *		peAction,
 			FLMUINT					uiFileNum) = 0;
 
-		virtual RCODE XFLMAPI reportRflRead(
+		virtual RCODE FLMAPI reportRflRead(
 			eRestoreAction *		peAction,
 			FLMUINT					uiFileNum,
 			FLMUINT					uiBytesRead) = 0;
 
-		virtual RCODE XFLMAPI reportBeginTrans(
+		virtual RCODE FLMAPI reportBeginTrans(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE XFLMAPI reportCommitTrans(
+		virtual RCODE FLMAPI reportCommitTrans(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE XFLMAPI reportAbortTrans(
+		virtual RCODE FLMAPI reportAbortTrans(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE XFLMAPI reportBlockChainFree(
+		virtual RCODE FLMAPI reportBlockChainFree(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT64				ui64MaintDocNum,
@@ -4465,66 +3794,66 @@
 			FLMUINT					uiEndBlkAddr,
 			FLMUINT					uiCount) = 0;
 
-		virtual RCODE XFLMAPI reportIndexSuspend(
+		virtual RCODE FLMAPI reportIndexSuspend(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE XFLMAPI reportIndexResume(
+		virtual RCODE FLMAPI reportIndexResume(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE XFLMAPI reportReduce(
+		virtual RCODE FLMAPI reportReduce(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCount) = 0;
 
-		virtual RCODE XFLMAPI reportUpgrade(
+		virtual RCODE FLMAPI reportUpgrade(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiOldDbVersion,
 			FLMUINT					uiNewDbVersion) = 0;
 
-		virtual RCODE XFLMAPI reportEnableEncryption(
+		virtual RCODE FLMAPI reportEnableEncryption(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE XFLMAPI reportWrapKey(
+		virtual RCODE FLMAPI reportWrapKey(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 			
-		virtual RCODE XFLMAPI reportRollOverDbKey(
+		virtual RCODE FLMAPI reportRollOverDbKey(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 			
-		virtual RCODE XFLMAPI reportDocumentDone(
+		virtual RCODE FLMAPI reportDocumentDone(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64DocumentId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeDelete(
+		virtual RCODE FLMAPI reportNodeDelete(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId) = 0;
 			
-		virtual RCODE XFLMAPI reportAttributeDelete(
+		virtual RCODE FLMAPI reportAttributeDelete(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ElementId,
 			FLMUINT					uiAttrNameId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeChildrenDelete(
+		virtual RCODE FLMAPI reportNodeChildrenDelete(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ParentNodeId,
 			FLMUINT					uiNameId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeCreate(
+		virtual RCODE FLMAPI reportNodeCreate(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -4533,7 +3862,7 @@
 			FLMUINT					uiNameId,
 			eNodeInsertLoc			eLocation) = 0;
 			
-		virtual RCODE XFLMAPI reportInsertBefore(
+		virtual RCODE FLMAPI reportInsertBefore(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -4541,26 +3870,26 @@
 			FLMUINT64				ui64NewChildNodeId,
 			FLMUINT64				ui64RefChildNodeId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeUpdate(
+		virtual RCODE FLMAPI reportNodeUpdate(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeSetValue(
+		virtual RCODE FLMAPI reportNodeSetValue(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId) = 0;
 			
-		virtual RCODE XFLMAPI reportAttributeSetValue(
+		virtual RCODE FLMAPI reportAttributeSetValue(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ElementNodeId,
 			FLMUINT					uiAttrNameId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeFlagsUpdate(
+		virtual RCODE FLMAPI reportNodeFlagsUpdate(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -4568,7 +3897,7 @@
 			FLMUINT					uiFlags,
 			FLMBOOL					bAdd) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeSetPrefixId(
+		virtual RCODE FLMAPI reportNodeSetPrefixId(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -4576,14 +3905,14 @@
 			FLMUINT					uiAttrNameId,
 			FLMUINT					uiPrefixId) = 0;
 			
-		virtual RCODE XFLMAPI reportNodeSetMetaValue(
+		virtual RCODE FLMAPI reportNodeSetMetaValue(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId,
 			FLMUINT64				ui64MetaValue) = 0;
 			
-		virtual RCODE XFLMAPI reportSetNextNodeId(
+		virtual RCODE FLMAPI reportSetNextNodeId(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -4593,52 +3922,40 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_RestoreClient : public XF_RefCount
+	flminterface IF_RestoreClient : public F_Object
 	{
-		virtual RCODE XFLMAPI openBackupSet( void) = 0;
+		virtual RCODE FLMAPI openBackupSet( void) = 0;
 
-		virtual RCODE XFLMAPI openRflFile(					// Open an RFL file
+		virtual RCODE FLMAPI openRflFile(					// Open an RFL file
 			FLMUINT					uiFileNum) = 0;
 
-		virtual RCODE XFLMAPI openIncFile(					// Open an incremental backup file
+		virtual RCODE FLMAPI openIncFile(					// Open an incremental backup file
 			FLMUINT					uiFileNum) = 0;
 
-		virtual RCODE XFLMAPI read(
+		virtual RCODE FLMAPI read(
 			FLMUINT					uiLength,					// Number of bytes to read
 			void *					pvBuffer,					// Buffer to place read bytes into
 			FLMUINT *				puiBytesRead) = 0;		// [out] Number of bytes read
 
-		virtual RCODE XFLMAPI close( void) = 0;			// Close the current file
+		virtual RCODE FLMAPI close( void) = 0;			// Close the current file
 
-		virtual RCODE XFLMAPI abortFile( void) = 0;		// Abort processing the file
+		virtual RCODE FLMAPI abortFile( void) = 0;		// Abort processing the file
 																		// and close file handles, etc.
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_UpgradeClient : public XF_RefCount
+	flminterface IF_UpgradeClient : public F_Object
 	{
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_DeleteStatus : public XF_RefCount
+	flminterface IF_DbCopyStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI reportDelete(
-			FLMUINT					uiIndexOrCollectionNum,
-			FLMBOOL					bIsIndex,
-			FLMUINT					uiBlocksDeleted,
-			FLMUINT					uiBlockSize) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_DbCopyStatus : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI dbCopyStatus(
+		virtual RCODE FLMAPI dbCopyStatus(
 			FLMUINT64				ui64BytesToCopy,
 			FLMUINT64				ui64BytesCopied,
 			FLMBOOL					bNewSrcFile,
@@ -4649,24 +3966,24 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_DbRebuildStatus : public XF_RefCount
+	flminterface IF_DbRebuildStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI reportRebuild(
+		virtual RCODE FLMAPI reportRebuild(
 			XFLM_REBUILD_INFO *	pRebuild) = 0;
 		
-		virtual RCODE XFLMAPI reportRebuildErr(
+		virtual RCODE FLMAPI reportRebuildErr(
 			XFLM_CORRUPT_INFO *	pCorruptInfo) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_DbCheckStatus : public XF_RefCount
+	flminterface IF_DbCheckStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI reportProgress(
+		virtual RCODE FLMAPI reportProgress(
 			XFLM_PROGRESS_CHECK_INFO *	pProgCheck) = 0;
 		
-		virtual RCODE XFLMAPI reportCheckErr(
+		virtual RCODE FLMAPI reportCheckErr(
 			XFLM_CORRUPT_INFO *	pCorruptInfo,
 			FLMBOOL *				pbFix) = 0;
 			// [OUT] - If the client sets this to true, then XFlaim will
@@ -4680,9 +3997,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_DbRenameStatus : public XF_RefCount
+	flminterface IF_DbRenameStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI dbRenameStatus(
+		virtual RCODE FLMAPI dbRenameStatus(
 			const char *			pszSrcFileName,
 			const char *			pszDstFileName) = 0;
 	};
@@ -4690,270 +4007,47 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_IxStatus : public XF_RefCount
+	flminterface IF_IxStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI reportIndex(
+		virtual RCODE FLMAPI reportIndex(
 			FLMUINT64 				ui64LastDocumentId) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_FileSystem : public XF_RefCount
+	flminterface IF_DbInfo : public F_Object
 	{
-		virtual RCODE XFLMAPI Create(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags,
-			IF_FileHdl **			ppFileHdl) = 0;
-
-		virtual RCODE XFLMAPI CreateBlockFile(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags,
-			FLMUINT					uiBlockSize,
-			IF_FileHdl **			ppFileHdl) = 0;
-
-		virtual RCODE XFLMAPI CreateUnique(
-			const char *			pszDirName,
-			const char *			pszFileExtension,
-			FLMUINT					uiIoFlags,
-			IF_FileHdl **			ppFileHdl) = 0;
-
-		virtual RCODE XFLMAPI Open(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags,
-			IF_FileHdl **			ppFileHdl) = 0;
-
-		virtual RCODE XFLMAPI OpenBlockFile(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags,
-			FLMUINT					uiBlockSize,
-			IF_FileHdl **			ppFileHdl) = 0;
-
-		virtual RCODE XFLMAPI OpenDir(
-			const char *			pszDirName,
-			const char *			pszPattern,
-			IF_DirHdl **			ppDirHdl) = 0;
-
-		virtual RCODE XFLMAPI CreateDir(
-			const char *			pszDirName) = 0;
-
-		virtual RCODE XFLMAPI RemoveDir(
-			const char *			pszDirName,
-			FLMBOOL					bClear = FALSE) = 0;
-
-		virtual RCODE XFLMAPI Exists(
-			const char *			pszFileName) = 0;
-
-		virtual FLMBOOL XFLMAPI IsDir(
-			const char *			pszFileName) = 0;
-
-		virtual RCODE XFLMAPI GetTimeStamp(
-			const char *			pszFileName,
-			FLMUINT *				puiTimeStamp) = 0;
-
-		virtual RCODE XFLMAPI Delete(
-			const char *			pszFileName) = 0;
-
-		virtual RCODE XFLMAPI Copy(
-			const char *			pszSrcFileName,
-			const char *			pszDestFileName,
-			FLMBOOL					bOverwrite,
-			FLMUINT64 *				pui64BytesCopied) = 0;
-
-		virtual RCODE XFLMAPI Rename(
-			const char *			pszFileName,
-			const char *			pszNewFileName) = 0;
-
-		virtual RCODE XFLMAPI GetSectorSize(
-			const char *			pszFileName,
-			FLMUINT *				puiSectorSize) = 0;
-
-		virtual void XFLMAPI pathParse(
-			const char *			pszPath,
-			char *					pszServer,
-			char *					pszVolume,
-			char *					pszDirPath,
-			char *					pszFileName) = 0;
-
-		virtual RCODE XFLMAPI pathReduce(
-			const char *			pszSourcePath,
-			char *					pszDestPath,
-			char *					pszString) = 0;
-
-		virtual RCODE XFLMAPI pathAppend(
-			char *					pszPath,
-			const char *			pszPathComponent) = 0;
-
-		virtual RCODE XFLMAPI pathToStorageString(
-			const char *			pPath,
-			char *					pszString) = 0;
-
-		virtual void XFLMAPI pathCreateUniqueName(
-			FLMUINT *				puiTime,
-			char *					pFileName,
-			const char *			pFileExt,
-			FLMBYTE *				pHighChars,
-			FLMBOOL					bModext) = 0;
-
-		virtual FLMBOOL XFLMAPI doesFileMatch(
-			const char *			pszFileName,
-			const char *			pszTemplate) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_FileHdl : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI Close( void) = 0;
-
-		virtual RCODE XFLMAPI Create(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags) = 0;
-
-		virtual RCODE XFLMAPI CreateUnique(
-			const char *			pszDirName,
-			const char *			pszFileExtension,
-			FLMUINT					uiIoFlags) = 0;
-
-		virtual RCODE XFLMAPI Open(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags) = 0;
-
-		virtual RCODE XFLMAPI Flush( void) = 0;
-
-		virtual RCODE XFLMAPI Read(
-			FLMUINT64				ui64Offset,
-			FLMUINT					uiLength,
-			void *					pvBuffer,
-			FLMUINT *				puiBytesRead) = 0;
-
-		virtual RCODE XFLMAPI Seek(
-			FLMUINT64				ui64Offset,
-			FLMINT					iWhence,
-			FLMUINT64 *				pui64NewOffset) = 0;
-
-		virtual RCODE XFLMAPI Size(
-			FLMUINT64 *				pui64Size) = 0;
-
-		virtual RCODE XFLMAPI Tell(
-			FLMUINT64 *				pui64Offset) = 0;
-
-		virtual RCODE XFLMAPI Truncate(
-			FLMUINT64				ui64Size) = 0;
-
-		virtual RCODE XFLMAPI Write(
-			FLMUINT64				ui64Offset,
-			FLMUINT					uiLength,
-			const void *			pvBuffer,
-			FLMUINT *				puiBytesWritten) = 0;
-
-		// Some I/O subsystems (such as direct IO) can only read and write sectors
-		// (512 byte chunks).  If uiOffset is not on a sector boundary or
-		// uiLength is not an exact multiple of a sector size, the I/O system
-		// would have to try to read or write a partial sector - something that
-		// requires extra overhead, particularly for write operations - because
-		// in order to write a partial sector, the I/O subsystem first has to
-		// read the sector in to memory before writing it out in order to
-		// preserve the part of the sector that was not being written to.
-
-		// The SectorRead and SectorWrite routines are provided to allow
-		// the caller to tell the I/O subsystem that it is OK to do full
-		// sector reads or writes if it needs to, because pvBuffer is
-		// guaranteed to be a multiple of 512 bytes big.  If the I/O
-		// subsystem can only do sector reads and writes, it can use the
-		// extra buffer space in pvBuffer.  When a program calls SectorWrite
-		// it is also telling the I/O subsystem that it does not need to
-		// read a partially written sector from disk before writing it out.
-		// It will be OK to write whatever data is in the pvBuffer to fill out
-		// the sector.
-
-		virtual RCODE XFLMAPI SectorRead(
-			FLMUINT64				ui64ReadOffset,
-			FLMUINT					uiBytesToRead,
-			void *					pvBuffer,
-			FLMUINT *				puiBytesReadRV) = 0;
-
-		virtual RCODE XFLMAPI SectorWrite(
-			FLMUINT64				ui64WriteOffset,
-			FLMUINT					uiBytesToWrite,
-			const void *			pvBuffer,
-			FLMUINT					uiBufferSize,
-			void *					pvBufferObj,
-			FLMUINT *				puiBytesWrittenRV,
-			FLMBOOL					bZeroFill = TRUE) = 0;
-
-		virtual FLMBOOL XFLMAPI CanDoAsync( void) = 0;
-
-		virtual void XFLMAPI setExtendSize(
-			FLMUINT					uiExtendSize) = 0;
-
-		virtual void XFLMAPI setMaxAutoExtendSize(
-			FLMUINT					uiMaxAutoExtendSize) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_DirHdl : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI Next( void) = 0;
-
-		virtual const char * XFLMAPI CurrentItemName( void) = 0;
-
-		virtual void XFLMAPI CurrentItemPath(
-			char *					pszPath) = 0;
-
-		virtual FLMUINT64 XFLMAPI CurrentItemSize( void) = 0;
-
-		virtual FLMBOOL XFLMAPI CurrentItemIsDir( void) = 0;
-
-		virtual RCODE XFLMAPI OpenDir(
-			const char  *			pszDirName,
-			const char *			pszPattern) = 0;
-
-		virtual RCODE XFLMAPI CreateDir(
-			const char *			pDirName) = 0;
-
-		virtual RCODE XFLMAPI RemoveDir(
-			const char *			pDirPath) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_DbInfo : public XF_RefCount
-	{
-		virtual FLMUINT XFLMAPI getNumCollections( void) = 0;
+		virtual FLMUINT FLMAPI getNumCollections( void) = 0;
 		
-		virtual FLMUINT XFLMAPI getNumIndexes( void) = 0;
+		virtual FLMUINT FLMAPI getNumIndexes( void) = 0;
 
-		virtual FLMUINT XFLMAPI getNumLogicalFiles( void) = 0;
+		virtual FLMUINT FLMAPI getNumLogicalFiles( void) = 0;
 
-		virtual FLMUINT64 XFLMAPI getFileSize( void) = 0;
+		virtual FLMUINT64 FLMAPI getFileSize( void) = 0;
 
-		virtual const XFLM_DB_HDR * XFLMAPI getDbHdr( void) = 0;
+		virtual const XFLM_DB_HDR * FLMAPI getDbHdr( void) = 0;
 
-		virtual void XFLMAPI getAvailBlockStats(
+		virtual void FLMAPI getAvailBlockStats(
 			FLMUINT64 *				pui64BytesUsed,
 			FLMUINT *				puiBlockCount,
 			FLMINT *					piLastError,
 			FLMUINT *				puiNumErrors) = 0;
 
-		virtual void XFLMAPI getLFHBlockStats(
+		virtual void FLMAPI getLFHBlockStats(
 			FLMUINT64 *				pui64BytesUsed,
 			FLMUINT *				puiBlockCount,
 			FLMINT *					piLastError,
 			FLMUINT *				puiNumErrors) = 0;
 
-		virtual void XFLMAPI getBTreeInfo(
+		virtual void FLMAPI getBTreeInfo(
 			FLMUINT					uiNthLogicalFile,
 			FLMUINT *				puiLfNum,
 			eLFileType *			peLfType,
 			FLMUINT *				puiRootBlkAddress,
 			FLMUINT *				puiNumLevels) = 0;
 
-		virtual void XFLMAPI getBTreeBlockStats(
+		virtual void FLMAPI getBTreeBlockStats(
 			FLMUINT					uiNthLogicalFile,
 			FLMUINT					uiLevel,
 			FLMUINT64 *				pui64KeyCount,
@@ -4969,123 +4063,20 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_ResultSetCompare : public XF_RefCount
+	flminterface IF_QueryStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI compare(
-			const void *			pvData1,
-			FLMUINT					uiLength1,
-			const void *			pvData2,
-			FLMUINT					uiLength2,
-			FLMINT *					piCompare) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_ResultSetSortStatus : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI reportSortStatus(
-			FLMUINT64				ui64EstTotalUnits,
-			FLMUINT64				ui64UnitsDone) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_ResultSet : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI setupResultSet(
-			const char *				pszPath,
-			IF_ResultSetCompare *	pCompare,
-			FLMUINT						uiEntrySize,
-			FLMBOOL						bDropDuplicates = TRUE,
-			FLMBOOL						bEntriesInOrder = FALSE,
-			const char *				pszFileName = NULL) = 0;
-
-		virtual void XFLMAPI setSortStatus(
-			IF_ResultSetSortStatus *	pSortStatus) = 0;
-
-		virtual FLMUINT64 XFLMAPI getTotalEntries( void) = 0;
-
-		// Methods for building a result set.
-
-		virtual RCODE XFLMAPI addEntry(
-			const void *			pvEntry,
-			FLMUINT					uiEntryLength = 0) = 0;
-
-		virtual RCODE XFLMAPI finalizeResultSet(
-			FLMUINT64 *				pui64TotalEntries = NULL) = 0;
-
-		// Methods for reading entries from a result set
-
-		virtual RCODE XFLMAPI getFirst(
-			void *					pvEntryBuffer,
-			FLMUINT					uiBufferLength = 0,
-			FLMUINT *				puiEntryLength = NULL) = 0;
-
-		virtual RCODE XFLMAPI getNext(
-			void *					pvEntryBuffer,
-			FLMUINT					uiBufferLength = 0,
-			FLMUINT *				puiEntryLength = NULL) = 0;
-
-		virtual RCODE XFLMAPI getLast(
-			void *					pvEntryBuffer,
-			FLMUINT					uiBufferLength = 0,
-			FLMUINT *				puiEntryLength = NULL) = 0;
-
-		virtual RCODE XFLMAPI getPrev(
-			void *					pvEntryBuffer,
-			FLMUINT					uiBufferLength = 0,
-			FLMUINT *				puiEntryLength = NULL) = 0;
-
-		virtual RCODE XFLMAPI getCurrent(
-			void *					pvEntryBuffer,
-			FLMUINT					uiBufferLength = 0,
-			FLMUINT *				puiEntryLength = NULL) = 0;
-
-		virtual RCODE XFLMAPI findMatch(
-			const void *			pvMatchEntry,
-			void *					pvFoundEntry) = 0;
-
-		virtual RCODE XFLMAPI findMatch(
-			const void *			pvMatchEntry,
-			FLMUINT					uiMatchEntryLength,
-			void *					pvFoundEntry,
-			FLMUINT *				puiFoundEntryLength) = 0;
-
-		virtual RCODE XFLMAPI modifyCurrent(
-			const void *			pvEntry,
-			FLMUINT					uiEntryLength = 0) = 0;
-
-		virtual FLMUINT64 XFLMAPI getPosition( void) = 0;
-
-		virtual RCODE XFLMAPI setPosition(
-			FLMUINT64				ui64Position) = 0;
-
-		virtual RCODE XFLMAPI resetResultSet(
-			FLMBOOL					bDelete = TRUE) = 0;
-
-		virtual RCODE XFLMAPI flushToFile( void) = 0;
-
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	xflminterface IF_QueryStatus : public XF_RefCount
-	{
-		virtual RCODE XFLMAPI queryStatus(
+		virtual RCODE FLMAPI queryStatus(
 			XFLM_OPT_INFO *		pOptInfo) = 0;
 
-		virtual RCODE XFLMAPI newSource(
+		virtual RCODE FLMAPI newSource(
 			XFLM_OPT_INFO *		pOptInfo) = 0;
 			
-		virtual RCODE XFLMAPI resultSetStatus(
+		virtual RCODE FLMAPI resultSetStatus(
 			FLMUINT64	ui64TotalDocsRead,
 			FLMUINT64	ui64TotalDocsPassed,
 			FLMBOOL		bCanRetrieveDocs) = 0;
 			
-		virtual RCODE XFLMAPI resultSetComplete(
+		virtual RCODE FLMAPI resultSetComplete(
 			FLMUINT64	ui64TotalDocsRead,
 			FLMUINT64	ui64TotalDocsPassed) = 0;
 	};
@@ -5093,9 +4084,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_QueryValidator : public XF_RefCount
+	flminterface IF_QueryValidator : public F_Object
 	{
-		virtual RCODE XFLMAPI validateNode(
+		virtual RCODE FLMAPI validateNode(
 			IF_Db *					pDb,
 			IF_DOMNode *			pNode,
 			FLMBOOL *				pbPassed) = 0;
@@ -5104,14 +4095,14 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_QueryValFunc : public XF_RefCount
+	flminterface IF_QueryValFunc : public F_Object
 	{
 		// NOTE: pDynaBuf should only be used when returning XFLM_UTF8_VAL or
 		// XFLM_BINARY_VAL.  pvVal should be used for all other types.
 		// If there are no more values, return NE_XFLM_EOF_HIT or
 		// NE_XFLM_BOF_HIT, depending on eValueToGet.
 		
-		virtual RCODE XFLMAPI getValue(
+		virtual RCODE FLMAPI getValue(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			ValIterator				eValueToGet,
@@ -5120,7 +4111,7 @@
 			void *					pvVal,
 			IF_DynaBuf *			pDynaBuf = NULL) = 0;
 			
-		virtual RCODE XFLMAPI cloneSelf(
+		virtual RCODE FLMAPI cloneSelf(
 			IF_QueryValFunc **	ppNewObj) = 0;
 	};
 	
@@ -5129,14 +4120,14 @@
 			XFLAIM uses to allow an application to embed a node source
 			inside an XPATH component.
 	============================================================================*/
-	xflminterface IF_QueryNodeSource : public XF_RefCount
+	flminterface IF_QueryNodeSource : public F_Object
 	{
 	public:
 
 		// Method that returns the search cost of this object in providing
 		// nodes for a query.
 
-		virtual RCODE XFLMAPI searchCost(
+		virtual RCODE FLMAPI searchCost(
 			IF_Db *					pDb,
 			FLMBOOL					bNotted,
 			FLMUINT *				puiCost,
@@ -5144,7 +4135,7 @@
 
 		// Position to and return the first node that satisfies the predicate.
 
-		virtual RCODE XFLMAPI getFirst(
+		virtual RCODE FLMAPI getFirst(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -5153,7 +4144,7 @@
 
 		// Position to and return the last node that satisfies the predicate.
 
-		virtual RCODE XFLMAPI getLast(
+		virtual RCODE FLMAPI getLast(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -5164,7 +4155,7 @@
 		// If no prior positioning has been done,
 		// position to and return the first node.
 
-		virtual RCODE XFLMAPI getNext(
+		virtual RCODE FLMAPI getNext(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -5175,7 +4166,7 @@
 		// If no prior positioning has been done,
 		// position to and return the last node.
 
-		virtual RCODE XFLMAPI getPrev(
+		virtual RCODE FLMAPI getPrev(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -5184,16 +4175,16 @@
 
 		// Return index being used, 0 if none.
 
-		virtual RCODE XFLMAPI getIndex(
+		virtual RCODE FLMAPI getIndex(
 			IF_Db *					pDb,
 			FLMUINT *				puiIndex,
 			FLMBOOL *				pbHaveMultiple) = 0;
 			
-		virtual RCODE XFLMAPI getOptInfoCount(
+		virtual RCODE FLMAPI getOptInfoCount(
 			IF_Db *					pDb,
 			FLMUINT *				puiOptInfoCount) = 0;
 		
-		virtual RCODE XFLMAPI getOptInfo(
+		virtual RCODE FLMAPI getOptInfo(
 			IF_Db *					pDb,
 			XFLM_OPT_INFO *		pOptInfoArray,
 			FLMUINT					uiNumOptInfoStructsToGet) = 0;
@@ -5212,9 +4203,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_OperandComparer : public XF_RefCount
+	flminterface IF_OperandComparer : public F_Object
 	{
-		virtual RCODE XFLMAPI compare(
+		virtual RCODE FLMAPI compare(
 			IF_PosIStream *		pLeftOperandStream,
 			IF_PosIStream *		pRightOperandStream,
 			FLMINT *					piCompare) = 0;
@@ -5225,119 +4216,119 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_Query : public XF_RefCount
+	flminterface IF_Query : public F_Object
 	{
-		virtual RCODE XFLMAPI setLanguage(
+		virtual RCODE FLMAPI setLanguage(
 			FLMUINT					uiLanguage) = 0;
 
-		virtual RCODE XFLMAPI setCollection(
+		virtual RCODE FLMAPI setCollection(
 			FLMUINT					uiCollection) = 0;
 
-		virtual RCODE XFLMAPI setupQueryExpr(
+		virtual RCODE FLMAPI setupQueryExpr(
 			IF_Db *					pDb,
 			const FLMUNICODE *	puzQuery) = 0;
 
-		virtual RCODE XFLMAPI setupQueryExpr(
+		virtual RCODE FLMAPI setupQueryExpr(
 			IF_Db *					pDb,
 			const char *			pszQueryExpr) = 0;
 
-		virtual RCODE XFLMAPI copyCriteria(
+		virtual RCODE FLMAPI copyCriteria(
 			IF_Query *				pSrcQuery) = 0;
 
-		virtual RCODE XFLMAPI addXPathComponent(
+		virtual RCODE FLMAPI addXPathComponent(
 			eXPathAxisTypes		eXPathAxis,
 			eDomNodeType			eNodeType,
 			FLMUINT					uiNameId,
 			IF_QueryNodeSource *	pNodeSource = NULL) = 0;
 
-		virtual RCODE XFLMAPI addOperator(
+		virtual RCODE FLMAPI addOperator(
 			eQueryOperators		eOperator,
 			FLMUINT					uiCompareRules = 0,
 			IF_OperandComparer *	pOpComparer = NULL) = 0;
 
-		virtual RCODE XFLMAPI addUnicodeValue(
+		virtual RCODE FLMAPI addUnicodeValue(
 			const FLMUNICODE *	puzVal) = 0;
 
-		virtual RCODE XFLMAPI addUTF8Value(
+		virtual RCODE FLMAPI addUTF8Value(
 			const char *			pszVal,
 			FLMUINT					uiUTF8Len = 0) = 0;
 
-		virtual RCODE XFLMAPI addBinaryValue(
+		virtual RCODE FLMAPI addBinaryValue(
 			const void *			pvVal,
 			FLMUINT					uiValLen) = 0;
 
-		virtual RCODE XFLMAPI addUINTValue(
+		virtual RCODE FLMAPI addUINTValue(
 			FLMUINT					uiVal) = 0;
 
-		virtual RCODE XFLMAPI addINTValue(
+		virtual RCODE FLMAPI addINTValue(
 			FLMINT					iVal) = 0;
 
-		virtual RCODE XFLMAPI addUINT64Value(
+		virtual RCODE FLMAPI addUINT64Value(
 			FLMUINT64				ui64Val) = 0;
 			
-		virtual RCODE XFLMAPI addINT64Value(
+		virtual RCODE FLMAPI addINT64Value(
 			FLMINT64					i64Val) = 0;
 
-		virtual RCODE XFLMAPI addBoolean(
+		virtual RCODE FLMAPI addBoolean(
 			FLMBOOL					bVal,
 			FLMBOOL					bUnknown = FALSE) = 0;
 
-		virtual RCODE XFLMAPI addFunction(
+		virtual RCODE FLMAPI addFunction(
 			eQueryFunctions		eFunction) = 0;
 
-		virtual RCODE XFLMAPI addFunction(
+		virtual RCODE FLMAPI addFunction(
 			IF_QueryValFunc *		pFuncObj,
 			FLMBOOL					bHasXPathExpr) = 0;
 
-		virtual RCODE XFLMAPI getFirst(
+		virtual RCODE FLMAPI getFirst(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0) = 0;	// milliseconds
 
-		virtual RCODE XFLMAPI getLast(
+		virtual RCODE FLMAPI getLast(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0) = 0;	// milliseconds
 
-		virtual RCODE XFLMAPI getNext(
+		virtual RCODE FLMAPI getNext(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0,		// milliseconds
 			FLMUINT					uiNumToSkip = 0,
 			FLMUINT *				puiNumSkipped = NULL) = 0;
 
-		virtual RCODE XFLMAPI getPrev(
+		virtual RCODE FLMAPI getPrev(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0,		// milliseconds
 			FLMUINT					uiNumToSkip = 0,
 			FLMUINT *				puiNumSkipped = NULL) = 0;
 
-		virtual RCODE XFLMAPI getCurrent(
+		virtual RCODE FLMAPI getCurrent(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode) = 0;
 
-		virtual void XFLMAPI resetQuery( void) = 0;
+		virtual void FLMAPI resetQuery( void) = 0;
 
-		virtual RCODE XFLMAPI getStatsAndOptInfo(
+		virtual RCODE FLMAPI getStatsAndOptInfo(
 			FLMUINT *				puiNumOptInfos,
 			XFLM_OPT_INFO **		ppOptInfo) = 0;
 
-		virtual void XFLMAPI freeStatsAndOptInfo(
+		virtual void FLMAPI freeStatsAndOptInfo(
 			XFLM_OPT_INFO **		ppOptInfo) = 0;
 
-		virtual void XFLMAPI setDupHandling(
+		virtual void FLMAPI setDupHandling(
 			FLMBOOL					bRemoveDups) = 0;
 
-		virtual RCODE XFLMAPI setIndex(
+		virtual RCODE FLMAPI setIndex(
 			FLMUINT					uiIndex) = 0;
 
-		virtual RCODE XFLMAPI getIndex(
+		virtual RCODE FLMAPI getIndex(
 			IF_Db *					pDb,
 			FLMUINT *				puiIndex,
 			FLMBOOL *				pbHaveMultiple) = 0;
 
-		virtual RCODE XFLMAPI addSortKey(
+		virtual RCODE FLMAPI addSortKey(
 			void *			pvSortKeyContext,
 			FLMBOOL			bChildToContext,
 			FLMBOOL			bElement,
@@ -5349,32 +4340,32 @@
 			FLMBOOL			bSortMissingHigh,
 			void **			ppvContext) = 0;
 			
-		virtual RCODE XFLMAPI enablePositioning( void) = 0;
+		virtual RCODE FLMAPI enablePositioning( void) = 0;
 		
-		virtual RCODE XFLMAPI positionTo(
+		virtual RCODE FLMAPI positionTo(
 			IF_Db *			pDb,
 			IF_DOMNode **	ppNode,
 			FLMUINT			uiTimeLimit,
 			FLMUINT			uiPosition) = 0;
 			
-		virtual RCODE XFLMAPI positionTo(
+		virtual RCODE FLMAPI positionTo(
 			IF_Db *				pDb,
 			IF_DOMNode **		ppNode,
 			FLMUINT				uiTimeLimit,
 			IF_DataVector *	pSearchKey,
 			FLMUINT				uiFlags) = 0;
 
-		virtual RCODE XFLMAPI getPosition(
+		virtual RCODE FLMAPI getPosition(
 			IF_Db *				pDb,
 			FLMUINT *			puiPosition) = 0;
 			
-		virtual RCODE XFLMAPI buildResultSet(
+		virtual RCODE FLMAPI buildResultSet(
 			IF_Db *	pDb,
 			FLMUINT	uiTimeLimit) = 0;
 			
-		virtual void XFLMAPI stopBuildingResultSet( void) = 0;
+		virtual void FLMAPI stopBuildingResultSet( void) = 0;
 		
-		virtual RCODE XFLMAPI getCounts(
+		virtual RCODE FLMAPI getCounts(
 			IF_Db *		pDb,
 			FLMUINT		uiTimeLimit,
 			FLMBOOL		bPartialCountOk,
@@ -5383,61 +4374,14 @@
 			FLMUINT *	puiPositionableToCount,
 			FLMBOOL *	pbDoneBuildingResultSet = NULL) = 0;
 			
-		virtual void XFLMAPI enableResultSetEncryption( void) = 0;
+		virtual void FLMAPI enableResultSetEncryption( void) = 0;
 
-		virtual void XFLMAPI setQueryStatusObject(
+		virtual void FLMAPI setQueryStatusObject(
 			IF_QueryStatus *		pQueryStatus) = 0;
 	
-		virtual void XFLMAPI setQueryValidatorObject(
+		virtual void FLMAPI setQueryValidatorObject(
 			IF_QueryValidator *		pQueryValidator) = 0;
 	};
-
-	/****************************************************************************
-	Desc:    Pool memory allocator
-	****************************************************************************/
-	xflminterface IF_Pool : public XF_RefCount
-	{
-		virtual void poolInit(
-			FLMUINT					uiBlockSize) = 0;
-
-		virtual RCODE poolAlloc(
-			FLMUINT					uiSize,
-			void **					ppvPtr) = 0;
-
-		virtual RCODE poolCalloc(
-  			FLMUINT					uiSize,
-			void **					ppvPtr) = 0;
-
-		virtual void poolFree( void) = 0;
-
-		virtual void poolReset(
-			void *					pvMark,
-			FLMBOOL					bReduceFirstBlock = FALSE) = 0;
-
-		virtual void * poolMark( void) = 0;
-
-		virtual FLMUINT getBlockSize( void) = 0;
-
-		virtual FLMUINT getBytesAllocated( void) = 0;
-	};
-	
-	/****************************************************************************
-	Desc:    Dynamic buffer
-	****************************************************************************/
-	xflminterface IF_DynaBuf : public XF_RefCount
-	{
-		virtual void truncateData(
-			FLMUINT					uiSize) = 0;
-			
-		virtual RCODE appendData(
-			const void *			pvData,
-			FLMUINT					uiSize) = 0;
-			
-		virtual RCODE allocSpace(
-			FLMUINT					uiSize,
-			void **					ppvAlloc) = 0;
-	};
-
 
 	typedef struct XFLM_NODE_INFO_ITEM
 	{
@@ -5497,19 +4441,19 @@
 	/****************************************************************************
 	Desc:	Node Info. Gatherer
 	****************************************************************************/
-	xflminterface IF_NodeInfo : public XF_RefCount
+	flminterface IF_NodeInfo : public F_Object
 	{
-		virtual void XFLMAPI clearNodeInfo( void) = 0;
+		virtual void FLMAPI clearNodeInfo( void) = 0;
 		
-		virtual RCODE XFLMAPI addNodeInfo(
+		virtual RCODE FLMAPI addNodeInfo(
 			IF_Db *			pDb,
 			IF_DOMNode *	pNode,
 			FLMBOOL			bDoSubTree,
 			FLMBOOL			bDoSelf = TRUE) = 0;
 			
-		virtual FLMUINT64 XFLMAPI getTotalNodeCount( void) = 0;
+		virtual FLMUINT64 FLMAPI getTotalNodeCount( void) = 0;
 		
-		virtual void XFLMAPI getNodeInfo(
+		virtual void FLMAPI getNodeInfo(
 			XFLM_NODE_INFO *	pNodeInfo) = 0;
 	};
 	
@@ -5550,9 +4494,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	xflminterface IF_BTreeInfoStatus : public XF_RefCount
+	flminterface IF_BTreeInfoStatus : public F_Object
 	{
-		virtual RCODE XFLMAPI infoStatus(
+		virtual RCODE FLMAPI infoStatus(
 			FLMUINT		uiCurrLfNum,
 			FLMBOOL		bIsCollection,
 			char *		pszCurrLfName,
@@ -5565,42 +4509,42 @@
 	/****************************************************************************
 	Desc:	BTree Info. Gatherer
 	****************************************************************************/
-	xflminterface IF_BTreeInfo : public XF_RefCount
+	flminterface IF_BTreeInfo : public F_Object
 	{
-		virtual void XFLMAPI clearBTreeInfo( void) = 0;
+		virtual void FLMAPI clearBTreeInfo( void) = 0;
 		
-		virtual RCODE XFLMAPI collectIndexInfo(
+		virtual RCODE FLMAPI collectIndexInfo(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			IF_BTreeInfoStatus *	pInfoStatus) = 0;
 			
-		virtual RCODE XFLMAPI collectCollectionInfo(
+		virtual RCODE FLMAPI collectCollectionInfo(
 			IF_Db *					pDb,
 			FLMUINT					uiCollectionNum,
 			IF_BTreeInfoStatus *	pInfoStatus) = 0;
 			
-		virtual FLMUINT XFLMAPI getNumIndexes( void) = 0;
+		virtual FLMUINT FLMAPI getNumIndexes( void) = 0;
 			
-		virtual FLMUINT XFLMAPI getNumCollections( void) = 0;
+		virtual FLMUINT FLMAPI getNumCollections( void) = 0;
 
-		virtual FLMBOOL XFLMAPI getIndexInfo(
+		virtual FLMBOOL FLMAPI getIndexInfo(
 			FLMUINT		uiNthIndex,
 			FLMUINT *	puiIndexNum,
 			char **		ppszIndexName,
 			FLMUINT *	puiNumLevels) = 0;
 			
-		virtual FLMBOOL XFLMAPI getCollectionInfo(
+		virtual FLMBOOL FLMAPI getCollectionInfo(
 			FLMUINT		uiNthCollection,
 			FLMUINT *	puiCollectionNum,
 			char **		ppszCollectionName,
 			FLMUINT *	puiNumLevels) = 0;
 			
-		virtual FLMBOOL XFLMAPI getIndexLevelInfo(
+		virtual FLMBOOL FLMAPI getIndexLevelInfo(
 			FLMUINT						uiNthIndex,
 			FLMUINT						uiBTreeLevel,
 			XFLM_BTREE_LEVEL_INFO *	pLevelInfo) = 0;
 
-		virtual FLMBOOL XFLMAPI getCollectionLevelInfo(
+		virtual FLMBOOL FLMAPI getCollectionLevelInfo(
 			FLMUINT						uiNthCollection,
 			FLMUINT						uiBTreeLevel,
 			XFLM_BTREE_LEVEL_INFO *	pLevelInfo) = 0;
@@ -5609,218 +4553,202 @@
 	/****************************************************************************
 	Desc:    Status and return codes
 	****************************************************************************/
-	#ifndef RC_OK
-		#define RC_OK( rc)			((rc) == 0)
-	#endif
-
-	#ifndef RC_BAD
-		#define RC_BAD( rc)        ((rc) != 0)
-	#endif
 
 	#define XFLM_ERROR_BASE(e)		((RCODE)((int)(0x81050000+(e))))
 
-	/****************************************************************************
-	Desc:		General FLAIM errors
-	****************************************************************************/
-	#define NE_XFLM_OK											0
+	#define NE_XFLM_NOT_IMPLEMENTED							NE_FLM_NOT_IMPLEMENTED
+	#define NE_XFLM_MEM											NE_FLM_MEM
+	#define NE_XFLM_INVALID_PARM								NE_FLM_INVALID_PARM
+	#define NE_XFLM_TIMEOUT										NE_FLM_TIMEOUT
+	#define NE_XFLM_NOT_FOUND									NE_FLM_NOT_FOUND
+	#define NE_XFLM_EXISTS										NE_FLM_EXISTS
+	#define NE_XFLM_USER_ABORT									NE_FLM_USER_ABORT
+	#define NE_XFLM_FAILURE										NE_FLM_FAILURE
+	#define NE_XFLM_BOF_HIT										NE_FLM_BOF_HIT
+	#define NE_XFLM_EOF_HIT										NE_FLM_EOF_HIT
+	#define NE_XFLM_CONV_BAD_DIGIT							NE_FLM_CONV_BAD_DIGIT
+	#define NE_XFLM_CONV_DEST_OVERFLOW						NE_FLM_CONV_DEST_OVERFLOW
+	#define NE_XFLM_CONV_ILLEGAL								NE_FLM_CONV_ILLEGAL
+	#define NE_XFLM_CONV_NULL_SRC								NE_FLM_CONV_NULL_SRC
+	#define NE_XFLM_CONV_NUM_OVERFLOW						NE_FLM_CONV_NUM_OVERFLOW
+	#define NE_XFLM_CONV_NUM_UNDERFLOW						NE_FLM_CONV_NUM_UNDERFLOW
+	#define NE_XFLM_SYNTAX										NE_FLM_SYNTAX
+	#define NE_XFLM_UNSUPPORTED_FEATURE						NE_FLM_UNSUPPORTED_FEATURE
+	#define NE_XFLM_FILE_EXISTS								NE_FLM_FILE_EXISTS
+	#define NE_XFLM_COULD_NOT_CREATE_SEMAPHORE			NE_FLM_COULD_NOT_CREATE_SEMAPHORE
+	#define NE_XFLM_BAD_UTF8									NE_FLM_BAD_UTF8
+	#define NE_XFLM_ERROR_WAITING_ON_SEMPAHORE			NE_FLM_ERROR_WAITING_ON_SEMPAHORE
+	#define NE_XFLM_BAD_PLATFORM_FORMAT						NE_FLM_BAD_PLATFORM_FORMAT
+	#define NE_XFLM_BAD_SEN										NE_FLM_BAD_SEN
+	#define NE_XFLM_UNSUPPORTED_INTERFACE					NE_FLM_UNSUPPORTED_INTERFACE
+	#define NE_XFLM_BAD_RCODE_TABLE							NE_FLM_BAD_RCODE_TABLE
+	#define NE_XFLM_BUFFER_OVERFLOW							NE_FLM_BUFFER_OVERFLOW
+	#define NE_XFLM_INVALID_XML								NE_FLM_INVALID_XML
+	#define NE_XFLM_ILLEGAL_FLAG								NE_FLM_ILLEGAL_FLAG
+	#define NE_XFLM_ILLEGAL_OP									NE_FLM_ILLEGAL_OP
+	#define NE_XFLM_COULD_NOT_START_THREAD					NE_FLM_COULD_NOT_START_THREAD
+	#define NE_XFLM_BAD_BASE64_ENCODING						NE_FLM_BAD_BASE64_ENCODING
+	#define NE_XFLM_STREAM_EXISTS								NE_FLM_STREAM_EXISTS
+	#define NE_XFLM_MULTIPLE_MATCHES							NE_FLM_MULTIPLE_MATCHES
+	#define NE_XFLM_NOT_UNIQUE									NE_FLM_NOT_UNIQUE
+	#define NE_XFLM_BTREE_ERROR								NE_FLM_BTREE_ERROR
+	#define NE_XFLM_BTREE_KEY_SIZE							NE_FLM_BTREE_KEY_SIZE
+	#define NE_XFLM_BTREE_FULL									NE_FLM_BTREE_FULL
+	#define NE_XFLM_BTREE_BAD_STATE							NE_FLM_BTREE_BAD_STATE
+	#define NE_XFLM_COULD_NOT_CREATE_MUTEX					NE_FLM_COULD_NOT_CREATE_MUTEX
+	#define NE_XFLM_DATA_ERROR									NE_FLM_DATA_ERROR
+	#define NE_XFLM_BAD_DATA_TYPE								NE_FLM_BAD_DATA_TYPE
+	#define NE_XFLM_READ_ONLY									NE_FLM_READ_ONLY
+	#define NE_XFLM_KEY_OVERFLOW								NE_FLM_KEY_OVERFLOW
+	#define NE_XFLM_UNEXPECTED_END_OF_INPUT				NE_FLM_UNEXPECTED_END_OF_INPUT
+	#define NE_XFLM_IO_PATH_NOT_FOUND						NE_FLM_IO_PATH_NOT_FOUND
+	#define NE_XFLM_IO_END_OF_FILE							NE_FLM_IO_END_OF_FILE
+	#define NE_XFLM_IO_NO_MORE_FILES							NE_FLM_IO_NO_MORE_FILES
 	
-	#define NE_XFLM_FIRST_COMMON_ERROR						XFLM_ERROR_BASE( 0x0000)			// NOTE: This is not an error code - do not document it
-	#define NE_XFLM_NOT_IMPLEMENTED							XFLM_ERROR_BASE( 0x0001)			// NE_NOT_IMPLEMENTED - Attempt was made to use a feature that is not implemented.
-	#define NE_XFLM_MEM											XFLM_ERROR_BASE( 0x0002)			// NE_INSUFFICIENT_MEMORY - Attempt to allocate memory failed.
-	#define NE_XFLM_INVALID_PARM								XFLM_ERROR_BASE( 0x0005)			// NE_INVALID_PARAMETER - Invalid parameter passed into a function.
-	#define NE_XFLM_TIMEOUT										XFLM_ERROR_BASE( 0x0009)			// NE_WAIT_TIMEOUT - Database operation timed out (usually a query operation).
-	#define NE_XFLM_NOT_FOUND									XFLM_ERROR_BASE( 0x000A)			// NE_OBJECT_NOT_FOUND - An object was not found.
-	#define NE_XFLM_EXISTS										XFLM_ERROR_BASE( 0x000C)			// NE_OBJECT_ALREADY_EXISTS - Object already exists.
-	#define NE_XFLM_USER_ABORT									XFLM_ERROR_BASE( 0x0010)			// NE_CALLBACK_CANCELLED - User or application aborted (canceled) the operation
-	#define NE_XFLM_FAILURE										XFLM_ERROR_BASE( 0x0011)			// NE_RECOVERABLE_FAILURE - Internal failure.
-	#define NE_XFLM_LAST_COMMON_ERROR						XFLM_ERROR_BASE( 0x0012)			// NOTE: This is not an error code - do not document.
+	/****************************************************************************
+	Desc:		General XFLAIM errors
+	****************************************************************************/
+	#define NE_XFLM_OK											NE_FLM_OK
 	
 	#define NE_XFLM_FIRST_GENERAL_ERROR						XFLM_ERROR_BASE( 0x0100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_BOF_HIT										XFLM_ERROR_BASE( 0x0101)			// Beginning of results encountered.  This error is may be returned when reading query results in reverse order (from last to first).
-	#define NE_XFLM_EOF_HIT										XFLM_ERROR_BASE( 0x0102)			// End of results encountered.  This error may be returned when reading query results in forward order (first to last).
-	#define NE_XFLM_END											XFLM_ERROR_BASE( 0x0103)			// End of roll-forward log packets encountered.  NOTE: This error code should never be returned to an application.
-	#define NE_XFLM_BAD_PREFIX									XFLM_ERROR_BASE( 0x0104)			// Invalid XLM namespace prefix specified.  Either a prefix name or number that was specified was not defined.
-	#define NE_XFLM_ATTRIBUTE_PURGED							XFLM_ERROR_BASE( 0x0105)			// XML attribute cannot be used - it is being deleted from the database.
-	#define NE_XFLM_BAD_COLLECTION							XFLM_ERROR_BASE( 0x0106)			// Invalid collection number specified.  Collection is not defined.
-	#define NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT				XFLM_ERROR_BASE( 0x0107)			// Request to lock the database timed out.
-	#define NE_XFLM_ILLEGAL_DATA_COMPONENT					XFLM_ERROR_BASE( 0x0108)			// Cannot use ELM_ROOT_TAG as a data component in an index.
-	#define NE_XFLM_BAD_DATA_TYPE								XFLM_ERROR_BASE( 0x0109)			// Attempt to set/get data on an XML element or attribute using a data type that is incompatible with the data type specified in the dictionary.
-	#define NE_XFLM_MUST_INDEX_ON_PRESENCE					XFLM_ERROR_BASE( 0x010A)			// When using ELM_ROOT_TAG in an index component, must specify PRESENCE indexing only.
-	#define NE_XFLM_BAD_IX										XFLM_ERROR_BASE( 0x010B)			// Invalid index number specified.  Index is not defined.
-	#define NE_XFLM_BACKUP_ACTIVE								XFLM_ERROR_BASE( 0x010C)			// Operation could not be performed because a backup is currently in progress.
-	#define NE_XFLM_SERIAL_NUM_MISMATCH						XFLM_ERROR_BASE( 0x010D)			// Serial number on backup file does not match the serial number that is expected.
-	#define NE_XFLM_BAD_RFL_DB_SERIAL_NUM					XFLM_ERROR_BASE( 0x010E)			// Bad database serial number in roll-forward log file header.
-	#define NE_XFLM_BTREE_ERROR								XFLM_ERROR_BASE( 0x010F)			// A B-Tree in the database is bad.
-	#define NE_XFLM_BTREE_FULL									XFLM_ERROR_BASE( 0x0110)			// A B-tree in the database is full, or a b-tree being used for a temporary result set is full.
-	#define NE_XFLM_BAD_RFL_FILE_NUMBER						XFLM_ERROR_BASE( 0x0111)			// Bad roll-forward log file number in roll-forward log file header.
-	#define NE_XFLM_CANNOT_DEL_ELEMENT						XFLM_ERROR_BASE( 0x0112)			// Cannot delete an XML element definition in the dictionary because it is in use.
-	#define NE_XFLM_CANNOT_MOD_DATA_TYPE					XFLM_ERROR_BASE( 0x0113)			// Cannot modify the data type for an XML element or attribute definition in the dictionary.
-	#define NE_XFLM_CANNOT_INDEX_DATA_TYPE					XFLM_ERROR_BASE( 0x0114)			// Data type of XML element or attribute is not one that can be indexed.
-	#define NE_XFLM_CONV_BAD_DIGIT							XFLM_ERROR_BASE( 0x0115)			// Non-numeric digit found in text to numeric conversion.
-	#define NE_XFLM_CONV_DEST_OVERFLOW						XFLM_ERROR_BASE( 0x0116)			// Destination buffer not large enough to hold data.
-	#define NE_XFLM_CONV_ILLEGAL								XFLM_ERROR_BASE( 0x0117)			// Attempt to convert between data types is an unsupported conversion.
-	#define NE_XFLM_CONV_NULL_SRC								XFLM_ERROR_BASE( 0x0118)			// Data source cannot be NULL when doing data conversion.
-	#define NE_XFLM_CONV_NUM_OVERFLOW						XFLM_ERROR_BASE( 0x0119)			// Numeric overflow (> upper bound) converting to numeric type.
-	#define NE_XFLM_CONV_NUM_UNDERFLOW						XFLM_ERROR_BASE( 0x011A)			// Numeric underflow (< lower bound) converting to numeric type.
-	#define NE_XFLM_BAD_ELEMENT_NUM							XFLM_ERROR_BASE( 0x011B)			// Bad element number specified - element not defined in dictionary.
-	#define NE_XFLM_BAD_ATTRIBUTE_NUM						XFLM_ERROR_BASE( 0x011C)			// Bad attribute number specified - attribute not defined in dictionary.
-	#define NE_XFLM_BAD_ENCDEF_NUM							XFLM_ERROR_BASE( 0x011D)			// Bad encryption number specified - encryption definition not defined in dictionary.
-	#define NE_XFLM_DATA_ERROR									XFLM_ERROR_BASE( 0x011E)			// Encountered data in the database that was corrupted.
-	#define NE_XFLM_INVALID_FILE_SEQUENCE					XFLM_ERROR_BASE( 0x011F)			// Incremental backup file number provided during a restore is invalid.
-	#define NE_XFLM_ILLEGAL_OP									XFLM_ERROR_BASE( 0x0120)			// Attempt to perform an illegal operation.
-	#define NE_XFLM_DUPLICATE_ELEMENT_NUM					XFLM_ERROR_BASE( 0x0121)			// Element number specified in element definition is already in use.
-	#define NE_XFLM_ILLEGAL_TRANS_TYPE						XFLM_ERROR_BASE( 0x0122)			// Illegal transaction type specified for transaction begin operation.
-	#define NE_XFLM_UNSUPPORTED_VERSION						XFLM_ERROR_BASE( 0x0123)			// Version of database found in database header is not supported.
-	#define NE_XFLM_ILLEGAL_TRANS_OP							XFLM_ERROR_BASE( 0x0124)			// Illegal operation for transaction type.
-	#define NE_XFLM_INCOMPLETE_LOG							XFLM_ERROR_BASE( 0x0125)			// Incomplete rollback log.
-	#define NE_XFLM_ILLEGAL_INDEX_DEF						XFLM_ERROR_BASE( 0x0126)			// Index definition document is illegal - does not conform to the expected form of an index definition document.
-	#define NE_XFLM_ILLEGAL_INDEX_ON							XFLM_ERROR_BASE( 0x0127)			// The "IndexOn" attribute of an index definition has an illegal value.
-	#define NE_XFLM_ILLEGAL_STATE_CHANGE					XFLM_ERROR_BASE( 0x0128)			// Attempted an illegal state change on an element or attribute definition.
-	#define NE_XFLM_BAD_RFL_SERIAL_NUM						XFLM_ERROR_BASE( 0x0129)			// Serial number in roll-forward log file header does not match expected serial number.
-	#define NE_XFLM_NEWER_FLAIM								XFLM_ERROR_BASE( 0x012A)			// Running old code on a newer version of database.  Newer code must be used.
-	#define NE_XFLM_CANNOT_MOD_ELEMENT_STATE				XFLM_ERROR_BASE( 0x012B)			// Attempted to change state of a predefined element definition.
-	#define NE_XFLM_CANNOT_MOD_ATTRIBUTE_STATE			XFLM_ERROR_BASE( 0x012C)			// Attempted to change state of a predefined attribute definition.
-	#define NE_XFLM_NO_MORE_ELEMENT_NUMS					XFLM_ERROR_BASE( 0x012D)			// The highest element number has already been used, cannot create more element definitions.
-	#define NE_XFLM_NO_TRANS_ACTIVE							XFLM_ERROR_BASE( 0x012E)			// Operation must be performed inside a database transaction.
-	#define NE_XFLM_NOT_UNIQUE									XFLM_ERROR_BASE( 0x012F)			// Attempt was made to insert a key into a b-tree that was already in the b-tree.
-	#define NE_XFLM_NOT_FLAIM									XFLM_ERROR_BASE( 0x0130)			// The file specified is not a FLAIM database.
-	#define NE_XFLM_OLD_VIEW									XFLM_ERROR_BASE( 0x0131)			// Unable to maintain read transaction's view of the database.
-	#define NE_XFLM_SHARED_LOCK								XFLM_ERROR_BASE( 0x0132)			// Attempted to perform an operation on the database that requires exclusive access, but cannot because there is a shared lock.
-	#define NE_XFLM_SYNTAX										XFLM_ERROR_BASE( 0x0133)			// Syntax error while parsing XML or query.
-	#define NE_XFLM_TRANS_ACTIVE								XFLM_ERROR_BASE( 0x0134)			// Operation cannot be performed while a transaction is active.
-	#define NE_XFLM_RFL_TRANS_GAP								XFLM_ERROR_BASE( 0x0135)			// A gap was found in the transaction sequence in the roll-forward log.
-	#define NE_XFLM_BAD_COLLATED_KEY							XFLM_ERROR_BASE( 0x0136)			// Something in collated key is bad.
-	#define NE_XFLM_UNSUPPORTED_FEATURE						XFLM_ERROR_BASE( 0x0137)			// Attempting to use a feature for which full support has been disabled.
-	#define NE_XFLM_MUST_DELETE_INDEXES						XFLM_ERROR_BASE( 0x0138)			// Attempting to delete a collection that has indexes defined for it.  Associated indexes must be deleted before the collection can be deleted.
-	#define NE_XFLM_RFL_INCOMPLETE							XFLM_ERROR_BASE( 0x0139)			// Roll-forward log file is incomplete.
-	#define NE_XFLM_CANNOT_RESTORE_RFL_FILES				XFLM_ERROR_BASE( 0x013A)			// Cannot restore roll-forward log files - not using multiple roll-forward log files.
-	#define NE_XFLM_INCONSISTENT_BACKUP						XFLM_ERROR_BASE( 0x013B)			// A problem (corruption, etc.) was detected in a backup set.
-	#define NE_XFLM_BLOCK_CRC									XFLM_ERROR_BASE( 0x013C)			// CRC for database block was invalid.  May indicate problems in reading from or writing to disk.
-	#define NE_XFLM_ABORT_TRANS								XFLM_ERROR_BASE( 0x013D)			// Attempted operation after a critical error - transaction should be aborted.
-	#define NE_XFLM_NOT_RFL										XFLM_ERROR_BASE( 0x013E)			// File was not a roll-forward log file as expected.
-	#define NE_XFLM_BAD_RFL_PACKET							XFLM_ERROR_BASE( 0x013F)			// Roll-forward log file packet was bad.
-	#define NE_XFLM_DATA_PATH_MISMATCH						XFLM_ERROR_BASE( 0x0140)			// Bad data path specified to open database.  Does not match data path specified for prior opens of the database.
-	#define NE_XFLM_STREAM_EXISTS								XFLM_ERROR_BASE( 0x0141)			// Attempt to create stream, but the file(s) already exists.
-	#define NE_XFLM_FILE_EXISTS								XFLM_ERROR_BASE( 0x0142)			// Attempt to create a database, but the file already exists.
-	#define NE_XFLM_COULD_NOT_CREATE_SEMAPHORE			XFLM_ERROR_BASE( 0x0143)			// Could not create a semaphore.
-	#define NE_XFLM_MUST_CLOSE_DATABASE						XFLM_ERROR_BASE( 0x0144)			// Database must be closed due to a critical error.
-	#define NE_XFLM_INVALID_ENCKEY_CRC						XFLM_ERROR_BASE( 0x0145)			// Encryption key CRC could not be verified.
-	#define NE_XFLM_BAD_UTF8									XFLM_ERROR_BASE( 0x0146)			// An invalid byte sequence was found in a UTF-8 string
-	#define NE_XFLM_COULD_NOT_CREATE_MUTEX					XFLM_ERROR_BASE( 0x0147)			// Could not create a mutex.
-	#define NE_XFLM_ERROR_WAITING_ON_SEMPAHORE			XFLM_ERROR_BASE( 0x0148)			// Error occurred while waiting on a sempahore.
-	#define NE_XFLM_BAD_PLATFORM_FORMAT						XFLM_ERROR_BASE( 0x0149)			// Cannot support platform format.  NOTE: No need to document this one, it is strictly internal.
-	#define NE_XFLM_HDR_CRC										XFLM_ERROR_BASE( 0x014A)			// Database header has a bad CRC.
-	#define NE_XFLM_NO_NAME_TABLE								XFLM_ERROR_BASE( 0x014B)			// No name table was set up for the database.
-	#define NE_XFLM_MULTIPLE_MATCHES							XFLM_ERROR_BASE( 0x014C)			// Multiple entries match the name in the name table.  Need to pass a namespace to disambiguate.
-	#define NE_XFLM_UNALLOWED_UPGRADE						XFLM_ERROR_BASE( 0x014D)			// Cannot upgrade database from one version to another.
-	#define NE_XFLM_BTREE_BAD_STATE							XFLM_ERROR_BASE( 0x014E)			// Btree function called before proper setup steps taken.
-	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NUM				XFLM_ERROR_BASE( 0x014F)			// Attribute number specified in attribute definition is already in use.
-	#define NE_XFLM_DUPLICATE_INDEX_NUM						XFLM_ERROR_BASE( 0x0150)			// Index number specified in index definition is already in use.
-	#define NE_XFLM_DUPLICATE_COLLECTION_NUM				XFLM_ERROR_BASE( 0x0151)			// Collection number specified in collection definition is already in use.
-	#define NE_XFLM_DUPLICATE_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0152)			// Element name+namespace specified in element definition is already in use.
-	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NAME				XFLM_ERROR_BASE( 0x0153)			// Attribute name+namespace specified in attribute definition is already in use.
-	#define NE_XFLM_DUPLICATE_INDEX_NAME					XFLM_ERROR_BASE( 0x0154)			// Index name specified in index definition is already in use.
-	#define NE_XFLM_DUPLICATE_COLLECTION_NAME				XFLM_ERROR_BASE( 0x0155)			// Collection name specified in collection definition is already in use.
-	#define NE_XFLM_ELEMENT_PURGED							XFLM_ERROR_BASE( 0x0156)			// XML element cannot be used - it is deleted from the database.
-	#define NE_XFLM_TOO_MANY_OPEN_DATABASES				XFLM_ERROR_BASE( 0x0157)			// Too many open databases, cannot open another one.
-	#define NE_XFLM_DATABASE_OPEN								XFLM_ERROR_BASE( 0x0158)			// Operation cannot be performed because the database is currently open.
-	#define NE_XFLM_CACHE_ERROR								XFLM_ERROR_BASE( 0x0159)			// Cached database block has been compromised while in cache.
-	#define NE_XFLM_BTREE_KEY_SIZE							XFLM_ERROR_BASE( 0x015A)			// Key too large to insert/lookup in a b-tree.
-	#define NE_XFLM_DB_FULL										XFLM_ERROR_BASE( 0x015B)			// Database is full, cannot create more blocks.
-	#define NE_XFLM_QUERY_SYNTAX								XFLM_ERROR_BASE( 0x015C)			// Query expression had improper syntax.
-	#define NE_XFLM_COULD_NOT_START_THREAD					XFLM_ERROR_BASE( 0x015D)			// Error occurred while attempting to start a thread.
-	#define NE_XFLM_INDEX_OFFLINE								XFLM_ERROR_BASE( 0x015E)			// Index is offline, cannot be used in a query.
-	#define NE_XFLM_RFL_DISK_FULL								XFLM_ERROR_BASE( 0x015F)			// Disk which contains roll-forward log is full.
-	#define NE_XFLM_MUST_WAIT_CHECKPOINT					XFLM_ERROR_BASE( 0x0160)			// Must wait for a checkpoint before starting transaction - due to disk problems - usually in disk containing roll-forward log files.
-	#define NE_XFLM_MISSING_ENC_ALGORITHM					XFLM_ERROR_BASE( 0x0161)			// Encryption definition is missing an encryption algorithm.
-	#define NE_XFLM_INVALID_ENC_ALGORITHM					XFLM_ERROR_BASE( 0x0162)			// Invalid encryption algorithm specified in encryption definition.
-	#define NE_XFLM_INVALID_ENC_KEY_SIZE					XFLM_ERROR_BASE( 0x0163)			// Invalid key size specified in encryption definition.
-	#define NE_XFLM_ILLEGAL_DATA_TYPE						XFLM_ERROR_BASE( 0x0164)			// Data type specified for XML element or attribute definition is illegal.
-	#define NE_XFLM_ILLEGAL_STATE								XFLM_ERROR_BASE( 0x0165)			// State specified for index definition or XML element or attribute definition is illegal.
-	#define NE_XFLM_ILLEGAL_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0166)			// XML element name specified in element definition is illegal.
-	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NAME					XFLM_ERROR_BASE( 0x0167)			// XML attribute name specified in attribute definition is illegal.
-	#define NE_XFLM_ILLEGAL_COLLECTION_NAME				XFLM_ERROR_BASE( 0x0168)			// Collection name specified in collection definition is illegal.
-	#define NE_XFLM_ILLEGAL_INDEX_NAME						XFLM_ERROR_BASE( 0x0169)			// Index name specified is illegal
-	#define NE_XFLM_ILLEGAL_ELEMENT_NUMBER					XFLM_ERROR_BASE( 0x016A)			// Element number specified in element definition or index definition is illegal.
-	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NUMBER				XFLM_ERROR_BASE( 0x016B)			// Attribute number specified in attribute definition or index definition is illegal.
-	#define NE_XFLM_ILLEGAL_COLLECTION_NUMBER				XFLM_ERROR_BASE( 0x016C)			// Collection number specified in collection definition or index definition is illegal.
-	#define NE_XFLM_ILLEGAL_INDEX_NUMBER					XFLM_ERROR_BASE( 0x016D)			// Index number specified in index definition is illegal.
-	#define NE_XFLM_ILLEGAL_ENCDEF_NUMBER					XFLM_ERROR_BASE( 0x016E)			// Encryption definition number specified in encryption definition is illegal.
-	#define NE_XFLM_COLLECTION_NAME_MISMATCH				XFLM_ERROR_BASE( 0x016F)			// Collection name and number specified in index definition do not correspond to each other.
-	#define NE_XFLM_ELEMENT_NAME_MISMATCH					XFLM_ERROR_BASE( 0x0170)			// Element name+namespace and number specified in index definition do not correspond to each other.
-	#define NE_XFLM_ATTRIBUTE_NAME_MISMATCH				XFLM_ERROR_BASE( 0x0171)			// Attribute name+namespace and number specified in index definition do not correspond to each other.
-	#define NE_XFLM_INVALID_COMPARE_RULE					XFLM_ERROR_BASE( 0x0172)			// Invalid comparison rule specified in index definition.
-	#define NE_XFLM_DUPLICATE_KEY_COMPONENT				XFLM_ERROR_BASE( 0x0173)			// Duplicate key component number specified in index definition.
-	#define NE_XFLM_DUPLICATE_DATA_COMPONENT				XFLM_ERROR_BASE( 0x0174)			// Duplicate data component number specified in index definition.
-	#define NE_XFLM_MISSING_KEY_COMPONENT					XFLM_ERROR_BASE( 0x0175)			// Index definition is missing a key component.
-	#define NE_XFLM_MISSING_DATA_COMPONENT					XFLM_ERROR_BASE( 0x0176)			// Index definition is missing a data component.
-	#define NE_XFLM_INVALID_INDEX_OPTION					XFLM_ERROR_BASE( 0x0177)			// Invalid index option specified on index definition.
-	#define NE_XFLM_NO_MORE_ATTRIBUTE_NUMS					XFLM_ERROR_BASE( 0x0178)			// The highest attribute number has already been used, cannot create more.
-	#define NE_XFLM_MISSING_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0179)			// Missing element name in XML element definition.
-	#define NE_XFLM_MISSING_ATTRIBUTE_NAME					XFLM_ERROR_BASE( 0x017A)			// Missing attribute name in XML attribute definition.
-	#define NE_XFLM_MISSING_ELEMENT_NUMBER					XFLM_ERROR_BASE( 0x017B)			// Missing element number in XML element definition.
-	#define NE_XFLM_MISSING_ATTRIBUTE_NUMBER				XFLM_ERROR_BASE( 0x017C)			// Missing attribute number from XML attribute definition.
-	#define NE_XFLM_MISSING_INDEX_NAME						XFLM_ERROR_BASE( 0x017D)			// Missing index name in index definition.
-	#define NE_XFLM_MISSING_INDEX_NUMBER					XFLM_ERROR_BASE( 0x017E)			// Missing index number in index definition.
-	#define NE_XFLM_MISSING_COLLECTION_NAME				XFLM_ERROR_BASE( 0x017F)			// Missing collection name in collection definition.
-	#define NE_XFLM_MISSING_COLLECTION_NUMBER				XFLM_ERROR_BASE( 0x0180)			// Missing collection number in collection definition.
-	#define NE_XFLM_BAD_SEN										XFLM_ERROR_BASE( 0x0181)			// Invalid simple encoded number.
-	#define NE_XFLM_MISSING_ENCDEF_NAME						XFLM_ERROR_BASE( 0x0182)			// Missing encryption definition name in encryption definition.
-	#define NE_XFLM_MISSING_ENCDEF_NUMBER					XFLM_ERROR_BASE( 0x0183)			// Missing encryption definition number in encryption definition.
-	#define NE_XFLM_NO_MORE_INDEX_NUMS						XFLM_ERROR_BASE( 0x0184)			// The highest index number has already been used, cannot create more.
-	#define NE_XFLM_NO_MORE_COLLECTION_NUMS				XFLM_ERROR_BASE( 0x0185)			// The highest collection number has already been used, cannot create more.
-	#define NE_XFLM_CANNOT_DEL_ATTRIBUTE					XFLM_ERROR_BASE( 0x0186)			// Cannot delete an XML attribute definition because it is in use.
-	#define NE_XFLM_TOO_MANY_PENDING_NODES					XFLM_ERROR_BASE( 0x0187)			// Too many documents in the pending document list.
-	#define NE_XFLM_UNSUPPORTED_INTERFACE					XFLM_ERROR_BASE( 0x0188)			// Requested COM interface is not supported.
-	#define NE_XFLM_BAD_USE_OF_ELM_ROOT_TAG				XFLM_ERROR_BASE( 0x0189)			// ELM_ROOT_TAG, if used, must be the sole root component of an index definition.
-	#define NE_XFLM_DUP_SIBLING_IX_COMPONENTS				XFLM_ERROR_BASE( 0x018A)			// Sibling components in an index definition cannot have the same XML element or attribute number.
-	#define NE_XFLM_RFL_FILE_NOT_FOUND						XFLM_ERROR_BASE( 0x018B)			// Could not open a roll-forward log file - was not found in the roll-forward log directory.
-	#define NE_XFLM_BAD_RCODE_TABLE							XFLM_ERROR_BASE( 0x018C)			// The error code tables are incorrect.  NOTE: This is an internal error that does not need to be documented.
-	#define NE_XFLM_ILLEGAL_KEY_COMPONENT_NUM				XFLM_ERROR_BASE( 0x018D)			// Key component of zero in index definition is not allowed.
-	#define NE_XFLM_ILLEGAL_DATA_COMPONENT_NUM			XFLM_ERROR_BASE( 0x018E)			// Data component of zero in index definition is not allowed.
-	#define NE_XFLM_CLASS_NOT_AVAILABLE						XFLM_ERROR_BASE( 0x018F)			// Requested COM class is not available.
-	#define NE_XFLM_BUFFER_OVERFLOW							XFLM_ERROR_BASE( 0x0190)			// Buffer overflow.
-	#define NE_XFLM_ILLEGAL_PREFIX_NUMBER					XFLM_ERROR_BASE( 0x0191)			// Prefix number specified in prefix definition is illegal.
-	#define NE_XFLM_MISSING_PREFIX_NAME						XFLM_ERROR_BASE( 0x0192)			// Missing prefix name in prefix definition.
-	#define NE_XFLM_MISSING_PREFIX_NUMBER					XFLM_ERROR_BASE( 0x0193)			// Missing prefix number in prefix definition.
-	#define NE_XFLM_UNDEFINED_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0194)			// XML element name+namespace that was specified in index definition or XML document is not defined in dictionary.
-	#define NE_XFLM_UNDEFINED_ATTRIBUTE_NAME				XFLM_ERROR_BASE( 0x0195)			// XML attribute name+namespace that was specified in index definition or XML document is not defined in dictionary.
-	#define NE_XFLM_DUPLICATE_PREFIX_NAME					XFLM_ERROR_BASE( 0x0196)			// Prefix name specified in prefix definition is already in use.
-	#define NE_XFLM_KEY_OVERFLOW								XFLM_ERROR_BASE( 0x0197)			// Generated index key too large.
-	#define NE_XFLM_UNESCAPED_METACHAR						XFLM_ERROR_BASE( 0x0198)			// Unescaped metacharacter in regular expression.
-	#define NE_XFLM_ILLEGAL_QUANTIFIER						XFLM_ERROR_BASE( 0x0199)			// Illegal quantifier in regular expression.
-	#define NE_XFLM_UNEXPECTED_END_OF_EXPR					XFLM_ERROR_BASE( 0x019A)			// Unexpected end of regular expression.
-	#define NE_XFLM_ILLEGAL_MIN_COUNT						XFLM_ERROR_BASE( 0x019B)			// Illegal minimum count in regular expression quantifier.
-	#define NE_XFLM_ILLEGAL_MAX_COUNT						XFLM_ERROR_BASE( 0x019C)			// Illegal maximum count in regular expression quantifier.
-	#define NE_XFLM_EMPTY_BRANCH_IN_EXPR					XFLM_ERROR_BASE( 0x019D)			// Illegal empty branch in a regular expression.
-	#define NE_XFLM_ILLEGAL_RPAREN_IN_EXPR					XFLM_ERROR_BASE( 0x019E)			// Illegal right paren in a regular expression.
-	#define NE_XFLM_ILLEGAL_CLASS_SUBTRACTION				XFLM_ERROR_BASE( 0x019F)			// Illegal class subtraction in regular expression.
-	#define NE_XFLM_ILLEGAL_CHAR_RANGE_IN_EXPR			XFLM_ERROR_BASE( 0x01A0)			// Illegal character range in regular expression.
-	#define NE_XFLM_BAD_BASE64_ENCODING						XFLM_ERROR_BASE( 0x01A1)			// Illegal character(s) found in a base64 stream.
-	#define NE_XFLM_NAMESPACE_NOT_ALLOWED					XFLM_ERROR_BASE( 0x01A2)			// Cannot define a namespace for XML attributes whose name begins with "xmlns:" or that is equal to "xmlns"
-	#define NE_XFLM_INVALID_NAMESPACE_DECL					XFLM_ERROR_BASE( 0x01A3)			// Name for namespace declaration attribute must be "xmlns" or begin with "xmlns:"
-	#define NE_XFLM_ILLEGAL_NAMESPACE_DECL_DATATYPE		XFLM_ERROR_BASE( 0x01A4)			// Data type for XML attributes that are namespace declarations must be text.
-	#define NE_XFLM_UNEXPECTED_END_OF_INPUT				XFLM_ERROR_BASE( 0x01A5)		   // Encountered unexpected end of input when parsing XPATH expression.
-	#define NE_XFLM_NO_MORE_PREFIX_NUMS						XFLM_ERROR_BASE( 0x01A6)			// The highest prefix number has already been used, cannot create more.
-	#define NE_XFLM_NO_MORE_ENCDEF_NUMS						XFLM_ERROR_BASE( 0x01A7)			// The highest encryption definition number has already been used, cannot create more.
-	#define NE_XFLM_COLLECTION_OFFLINE						XFLM_ERROR_BASE( 0x01A8)			// Collection is encrypted, cannot be accessed while in operating in limited mode.
-	#define NE_XFLM_INVALID_XML								XFLM_ERROR_BASE( 0x01A9)			// Invalid XML encountered while parsing document.
-	#define NE_XFLM_READ_ONLY									XFLM_ERROR_BASE( 0x01AA)			// Item is read-only and cannot be updated.
-	#define NE_XFLM_DELETE_NOT_ALLOWED						XFLM_ERROR_BASE( 0x01AB)			// Item cannot be deleted.
-	#define NE_XFLM_RESET_NEEDED								XFLM_ERROR_BASE( 0x01AC)			// Used during check operations to indicate we need to reset the view.  NOTE: This is an internal error code and should not be documented.
-	#define NE_XFLM_ILLEGAL_REQUIRED_VALUE					XFLM_ERROR_BASE( 0x01AD)			// An illegal value was specified for the "Required" attribute in an index definition.
-	#define NE_XFLM_ILLEGAL_INDEX_COMPONENT				XFLM_ERROR_BASE( 0x01AE)			// A leaf index component in an index definition was not marked as a data component or key component.
-	#define NE_XFLM_ILLEGAL_UNIQUE_SUB_ELEMENT_VALUE	XFLM_ERROR_BASE( 0x01AF)			// Illegal value for the "UniqueSubElements" attribute in an element definition.
-	#define NE_XFLM_DATA_TYPE_MUST_BE_NO_DATA				XFLM_ERROR_BASE( 0x01B0)			// Data type for an element definition with UniqueSubElements="yes" must be nodata.
-	#define NE_XFLM_ILLEGAL_FLAG								XFLM_ERROR_BASE( 0x01B1)			// Illegal flag passed to getChildElement method.  Must be zero for elements that can have non-unique child elements.
-	#define NE_XFLM_CANNOT_SET_REQUIRED						XFLM_ERROR_BASE( 0x01B2)			// Cannot set the "Required" attribute on a non-key index component in index definition.
-	#define NE_XFLM_CANNOT_SET_LIMIT							XFLM_ERROR_BASE( 0x01B3)			// Cannot set the "Limit" attribute on a non-key index component in index definition.
-	#define NE_XFLM_CANNOT_SET_INDEX_ON						XFLM_ERROR_BASE( 0x01B4)			// Cannot set the "IndexOn" attribute on a non-key index component in index definition.
-	#define NE_XFLM_CANNOT_SET_COMPARE_RULES				XFLM_ERROR_BASE( 0x01B5)			// Cannot set the "CompareRules" on a non-key index component in index definition.
-	#define NE_XFLM_INPUT_PENDING								XFLM_ERROR_BASE( 0x01B6)			// Attempt to set a value while an input stream is still open.
-	#define NE_XFLM_INVALID_NODE_TYPE						XFLM_ERROR_BASE( 0x01B7)			// Bad node type
-	#define NE_XFLM_INVALID_CHILD_ELM_NODE_ID				XFLM_ERROR_BASE( 0x01B8)			// Attempt to insert a unique child element that has a lower node ID than the parent element
-	#define NE_XFLM_LAST_GENERAL_ERROR						XFLM_ERROR_BASE( 0x01B9)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_BAD_PREFIX									XFLM_ERROR_BASE( 0x0101)			// Invalid XLM namespace prefix specified.  Either a prefix name or number that was specified was not defined.
+	#define NE_XFLM_ATTRIBUTE_PURGED							XFLM_ERROR_BASE( 0x0102)			// XML attribute cannot be used - it is being deleted from the database.
+	#define NE_XFLM_BAD_COLLECTION							XFLM_ERROR_BASE( 0x0103)			// Invalid collection number specified.  Collection is not defined.
+	#define NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT				XFLM_ERROR_BASE( 0x0104)			// Request to lock the database timed out.
+	#define NE_XFLM_ILLEGAL_DATA_COMPONENT					XFLM_ERROR_BASE( 0x0105)			// Cannot use ELM_ROOT_TAG as a data component in an index.
+	#define NE_XFLM_MUST_INDEX_ON_PRESENCE					XFLM_ERROR_BASE( 0x0106)			// When using ELM_ROOT_TAG in an index component, must specify PRESENCE indexing only.
+	#define NE_XFLM_BAD_IX										XFLM_ERROR_BASE( 0x0107)			// Invalid index number specified.  Index is not defined.
+	#define NE_XFLM_BACKUP_ACTIVE								XFLM_ERROR_BASE( 0x0108)			// Operation could not be performed because a backup is currently in progress.
+	#define NE_XFLM_SERIAL_NUM_MISMATCH						XFLM_ERROR_BASE( 0x0109)			// Serial number on backup file does not match the serial number that is expected.
+	#define NE_XFLM_BAD_RFL_DB_SERIAL_NUM					XFLM_ERROR_BASE( 0x010A)			// Bad database serial number in roll-forward log file header.
+	#define NE_XFLM_BAD_RFL_FILE_NUMBER						XFLM_ERROR_BASE( 0x010B)			// Bad roll-forward log file number in roll-forward log file header.
+	#define NE_XFLM_CANNOT_DEL_ELEMENT						XFLM_ERROR_BASE( 0x010C)			// Cannot delete an XML element definition in the dictionary because it is in use.
+	#define NE_XFLM_CANNOT_MOD_DATA_TYPE					XFLM_ERROR_BASE( 0x010D)			// Cannot modify the data type for an XML element or attribute definition in the dictionary.
+	#define NE_XFLM_CANNOT_INDEX_DATA_TYPE					XFLM_ERROR_BASE( 0x010E)			// Data type of XML element or attribute is not one that can be indexed.
+	#define NE_XFLM_BAD_ELEMENT_NUM							XFLM_ERROR_BASE( 0x010F)			// Bad element number specified - element not defined in dictionary.
+	#define NE_XFLM_BAD_ATTRIBUTE_NUM						XFLM_ERROR_BASE( 0x0110)			// Bad attribute number specified - attribute not defined in dictionary.
+	#define NE_XFLM_BAD_ENCDEF_NUM							XFLM_ERROR_BASE( 0x0111)			// Bad encryption number specified - encryption definition not defined in dictionary.
+	#define NE_XFLM_INVALID_FILE_SEQUENCE					XFLM_ERROR_BASE( 0x0112)			// Incremental backup file number provided during a restore is invalid.
+	#define NE_XFLM_DUPLICATE_ELEMENT_NUM					XFLM_ERROR_BASE( 0x0113)			// Element number specified in element definition is already in use.
+	#define NE_XFLM_ILLEGAL_TRANS_TYPE						XFLM_ERROR_BASE( 0x0114)			// Illegal transaction type specified for transaction begin operation.
+	#define NE_XFLM_UNSUPPORTED_VERSION						XFLM_ERROR_BASE( 0x0115)			// Version of database found in database header is not supported.
+	#define NE_XFLM_ILLEGAL_TRANS_OP							XFLM_ERROR_BASE( 0x0116)			// Illegal operation for transaction type.
+	#define NE_XFLM_INCOMPLETE_LOG							XFLM_ERROR_BASE( 0x0117)			// Incomplete rollback log.
+	#define NE_XFLM_ILLEGAL_INDEX_DEF						XFLM_ERROR_BASE( 0x0118)			// Index definition document is illegal - does not conform to the expected form of an index definition document.
+	#define NE_XFLM_ILLEGAL_INDEX_ON							XFLM_ERROR_BASE( 0x0119)			// The "IndexOn" attribute of an index definition has an illegal value.
+	#define NE_XFLM_ILLEGAL_STATE_CHANGE					XFLM_ERROR_BASE( 0x011A)			// Attempted an illegal state change on an element or attribute definition.
+	#define NE_XFLM_BAD_RFL_SERIAL_NUM						XFLM_ERROR_BASE( 0x011B)			// Serial number in roll-forward log file header does not match expected serial number.
+	#define NE_XFLM_NEWER_FLAIM								XFLM_ERROR_BASE( 0x011C)			// Running old code on a newer version of database.  Newer code must be used.
+	#define NE_XFLM_CANNOT_MOD_ELEMENT_STATE				XFLM_ERROR_BASE( 0x011D)			// Attempted to change state of a predefined element definition.
+	#define NE_XFLM_CANNOT_MOD_ATTRIBUTE_STATE			XFLM_ERROR_BASE( 0x011E)			// Attempted to change state of a predefined attribute definition.
+	#define NE_XFLM_NO_MORE_ELEMENT_NUMS					XFLM_ERROR_BASE( 0x011F)			// The highest element number has already been used, cannot create more element definitions.
+	#define NE_XFLM_NO_TRANS_ACTIVE							XFLM_ERROR_BASE( 0x0120)			// Operation must be performed inside a database transaction.
+	#define NE_XFLM_NOT_FLAIM									XFLM_ERROR_BASE( 0x0121)			// The file specified is not a FLAIM database.
+	#define NE_XFLM_OLD_VIEW									XFLM_ERROR_BASE( 0x0122)			// Unable to maintain read transaction's view of the database.
+	#define NE_XFLM_SHARED_LOCK								XFLM_ERROR_BASE( 0x0123)			// Attempted to perform an operation on the database that requires exclusive access, but cannot because there is a shared lock.
+	#define NE_XFLM_TRANS_ACTIVE								XFLM_ERROR_BASE( 0x0124)			// Operation cannot be performed while a transaction is active.
+	#define NE_XFLM_RFL_TRANS_GAP								XFLM_ERROR_BASE( 0x0125)			// A gap was found in the transaction sequence in the roll-forward log.
+	#define NE_XFLM_BAD_COLLATED_KEY							XFLM_ERROR_BASE( 0x0126)			// Something in collated key is bad.
+	#define NE_XFLM_MUST_DELETE_INDEXES						XFLM_ERROR_BASE( 0x0127)			// Attempting to delete a collection that has indexes defined for it.  Associated indexes must be deleted before the collection can be deleted.
+	#define NE_XFLM_RFL_INCOMPLETE							XFLM_ERROR_BASE( 0x0128)			// Roll-forward log file is incomplete.
+	#define NE_XFLM_CANNOT_RESTORE_RFL_FILES				XFLM_ERROR_BASE( 0x0129)			// Cannot restore roll-forward log files - not using multiple roll-forward log files.
+	#define NE_XFLM_INCONSISTENT_BACKUP						XFLM_ERROR_BASE( 0x012A)			// A problem (corruption, etc.) was detected in a backup set.
+	#define NE_XFLM_BLOCK_CRC									XFLM_ERROR_BASE( 0x012B)			// CRC for database block was invalid.  May indicate problems in reading from or writing to disk.
+	#define NE_XFLM_ABORT_TRANS								XFLM_ERROR_BASE( 0x012C)			// Attempted operation after a critical error - transaction should be aborted.
+	#define NE_XFLM_NOT_RFL										XFLM_ERROR_BASE( 0x012D)			// File was not a roll-forward log file as expected.
+	#define NE_XFLM_BAD_RFL_PACKET							XFLM_ERROR_BASE( 0x012E)			// Roll-forward log file packet was bad.
+	#define NE_XFLM_DATA_PATH_MISMATCH						XFLM_ERROR_BASE( 0x012F)			// Bad data path specified to open database.  Does not match data path specified for prior opens of the database.
+	#define NE_XFLM_MUST_CLOSE_DATABASE						XFLM_ERROR_BASE( 0x0130)			// Database must be closed due to a critical error.
+	#define NE_XFLM_INVALID_ENCKEY_CRC						XFLM_ERROR_BASE( 0x0131)			// Encryption key CRC could not be verified.
+	#define NE_XFLM_HDR_CRC										XFLM_ERROR_BASE( 0x0132)			// Database header has a bad CRC.
+	#define NE_XFLM_NO_NAME_TABLE								XFLM_ERROR_BASE( 0x0133)			// No name table was set up for the database.
+	#define NE_XFLM_UNALLOWED_UPGRADE						XFLM_ERROR_BASE( 0x0134)			// Cannot upgrade database from one version to another.
+	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NUM				XFLM_ERROR_BASE( 0x0135)			// Attribute number specified in attribute definition is already in use.
+	#define NE_XFLM_DUPLICATE_INDEX_NUM						XFLM_ERROR_BASE( 0x0136)			// Index number specified in index definition is already in use.
+	#define NE_XFLM_DUPLICATE_COLLECTION_NUM				XFLM_ERROR_BASE( 0x0137)			// Collection number specified in collection definition is already in use.
+	#define NE_XFLM_DUPLICATE_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0138)			// Element name+namespace specified in element definition is already in use.
+	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NAME				XFLM_ERROR_BASE( 0x0139)			// Attribute name+namespace specified in attribute definition is already in use.
+	#define NE_XFLM_DUPLICATE_INDEX_NAME					XFLM_ERROR_BASE( 0x013A)			// Index name specified in index definition is already in use.
+	#define NE_XFLM_DUPLICATE_COLLECTION_NAME				XFLM_ERROR_BASE( 0x013B)			// Collection name specified in collection definition is already in use.
+	#define NE_XFLM_ELEMENT_PURGED							XFLM_ERROR_BASE( 0x013C)			// XML element cannot be used - it is deleted from the database.
+	#define NE_XFLM_TOO_MANY_OPEN_DATABASES				XFLM_ERROR_BASE( 0x013D)			// Too many open databases, cannot open another one.
+	#define NE_XFLM_DATABASE_OPEN								XFLM_ERROR_BASE( 0x013E)			// Operation cannot be performed because the database is currently open.
+	#define NE_XFLM_CACHE_ERROR								XFLM_ERROR_BASE( 0x013F)			// Cached database block has been compromised while in cache.
+	#define NE_XFLM_DB_FULL										XFLM_ERROR_BASE( 0x0140)			// Database is full, cannot create more blocks.
+	#define NE_XFLM_QUERY_SYNTAX								XFLM_ERROR_BASE( 0x0141)			// Query expression had improper syntax.
+	#define NE_XFLM_INDEX_OFFLINE								XFLM_ERROR_BASE( 0x0142)			// Index is offline, cannot be used in a query.
+	#define NE_XFLM_RFL_DISK_FULL								XFLM_ERROR_BASE( 0x0143)			// Disk which contains roll-forward log is full.
+	#define NE_XFLM_MUST_WAIT_CHECKPOINT					XFLM_ERROR_BASE( 0x0144)			// Must wait for a checkpoint before starting transaction - due to disk problems - usually in disk containing roll-forward log files.
+	#define NE_XFLM_MISSING_ENC_ALGORITHM					XFLM_ERROR_BASE( 0x0145)			// Encryption definition is missing an encryption algorithm.
+	#define NE_XFLM_INVALID_ENC_ALGORITHM					XFLM_ERROR_BASE( 0x0146)			// Invalid encryption algorithm specified in encryption definition.
+	#define NE_XFLM_INVALID_ENC_KEY_SIZE					XFLM_ERROR_BASE( 0x0147)			// Invalid key size specified in encryption definition.
+	#define NE_XFLM_ILLEGAL_DATA_TYPE						XFLM_ERROR_BASE( 0x0148)			// Data type specified for XML element or attribute definition is illegal.
+	#define NE_XFLM_ILLEGAL_STATE								XFLM_ERROR_BASE( 0x0149)			// State specified for index definition or XML element or attribute definition is illegal.
+	#define NE_XFLM_ILLEGAL_ELEMENT_NAME					XFLM_ERROR_BASE( 0x014A)			// XML element name specified in element definition is illegal.
+	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NAME					XFLM_ERROR_BASE( 0x014B)			// XML attribute name specified in attribute definition is illegal.
+	#define NE_XFLM_ILLEGAL_COLLECTION_NAME				XFLM_ERROR_BASE( 0x014C)			// Collection name specified in collection definition is illegal.
+	#define NE_XFLM_ILLEGAL_INDEX_NAME						XFLM_ERROR_BASE( 0x014D)			// Index name specified is illegal
+	#define NE_XFLM_ILLEGAL_ELEMENT_NUMBER					XFLM_ERROR_BASE( 0x014E)			// Element number specified in element definition or index definition is illegal.
+	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NUMBER				XFLM_ERROR_BASE( 0x014F)			// Attribute number specified in attribute definition or index definition is illegal.
+	#define NE_XFLM_ILLEGAL_COLLECTION_NUMBER				XFLM_ERROR_BASE( 0x0150)			// Collection number specified in collection definition or index definition is illegal.
+	#define NE_XFLM_ILLEGAL_INDEX_NUMBER					XFLM_ERROR_BASE( 0x0151)			// Index number specified in index definition is illegal.
+	#define NE_XFLM_ILLEGAL_ENCDEF_NUMBER					XFLM_ERROR_BASE( 0x0152)			// Encryption definition number specified in encryption definition is illegal.
+	#define NE_XFLM_COLLECTION_NAME_MISMATCH				XFLM_ERROR_BASE( 0x0153)			// Collection name and number specified in index definition do not correspond to each other.
+	#define NE_XFLM_ELEMENT_NAME_MISMATCH					XFLM_ERROR_BASE( 0x0154)			// Element name+namespace and number specified in index definition do not correspond to each other.
+	#define NE_XFLM_ATTRIBUTE_NAME_MISMATCH				XFLM_ERROR_BASE( 0x0155)			// Attribute name+namespace and number specified in index definition do not correspond to each other.
+	#define NE_XFLM_INVALID_COMPARE_RULE					XFLM_ERROR_BASE( 0x0156)			// Invalid comparison rule specified in index definition.
+	#define NE_XFLM_DUPLICATE_KEY_COMPONENT				XFLM_ERROR_BASE( 0x0157)			// Duplicate key component number specified in index definition.
+	#define NE_XFLM_DUPLICATE_DATA_COMPONENT				XFLM_ERROR_BASE( 0x0158)			// Duplicate data component number specified in index definition.
+	#define NE_XFLM_MISSING_KEY_COMPONENT					XFLM_ERROR_BASE( 0x0159)			// Index definition is missing a key component.
+	#define NE_XFLM_MISSING_DATA_COMPONENT					XFLM_ERROR_BASE( 0x015A)			// Index definition is missing a data component.
+	#define NE_XFLM_INVALID_INDEX_OPTION					XFLM_ERROR_BASE( 0x015B)			// Invalid index option specified on index definition.
+	#define NE_XFLM_NO_MORE_ATTRIBUTE_NUMS					XFLM_ERROR_BASE( 0x015C)			// The highest attribute number has already been used, cannot create more.
+	#define NE_XFLM_MISSING_ELEMENT_NAME					XFLM_ERROR_BASE( 0x015D)			// Missing element name in XML element definition.
+	#define NE_XFLM_MISSING_ATTRIBUTE_NAME					XFLM_ERROR_BASE( 0x015E)			// Missing attribute name in XML attribute definition.
+	#define NE_XFLM_MISSING_ELEMENT_NUMBER					XFLM_ERROR_BASE( 0x015F)			// Missing element number in XML element definition.
+	#define NE_XFLM_MISSING_ATTRIBUTE_NUMBER				XFLM_ERROR_BASE( 0x0160)			// Missing attribute number from XML attribute definition.
+	#define NE_XFLM_MISSING_INDEX_NAME						XFLM_ERROR_BASE( 0x0161)			// Missing index name in index definition.
+	#define NE_XFLM_MISSING_INDEX_NUMBER					XFLM_ERROR_BASE( 0x0162)			// Missing index number in index definition.
+	#define NE_XFLM_MISSING_COLLECTION_NAME				XFLM_ERROR_BASE( 0x0163)			// Missing collection name in collection definition.
+	#define NE_XFLM_MISSING_COLLECTION_NUMBER				XFLM_ERROR_BASE( 0x0164)			// Missing collection number in collection definition.
+	#define NE_XFLM_MISSING_ENCDEF_NAME						XFLM_ERROR_BASE( 0x0165)			// Missing encryption definition name in encryption definition.
+	#define NE_XFLM_MISSING_ENCDEF_NUMBER					XFLM_ERROR_BASE( 0x0166)			// Missing encryption definition number in encryption definition.
+	#define NE_XFLM_NO_MORE_INDEX_NUMS						XFLM_ERROR_BASE( 0x0167)			// The highest index number has already been used, cannot create more.
+	#define NE_XFLM_NO_MORE_COLLECTION_NUMS				XFLM_ERROR_BASE( 0x0168)			// The highest collection number has already been used, cannot create more.
+	#define NE_XFLM_CANNOT_DEL_ATTRIBUTE					XFLM_ERROR_BASE( 0x0169)			// Cannot delete an XML attribute definition because it is in use.
+	#define NE_XFLM_TOO_MANY_PENDING_NODES					XFLM_ERROR_BASE( 0x016A)			// Too many documents in the pending document list.
+	#define NE_XFLM_BAD_USE_OF_ELM_ROOT_TAG				XFLM_ERROR_BASE( 0x016B)			// ELM_ROOT_TAG, if used, must be the sole root component of an index definition.
+	#define NE_XFLM_DUP_SIBLING_IX_COMPONENTS				XFLM_ERROR_BASE( 0x016C)			// Sibling components in an index definition cannot have the same XML element or attribute number.
+	#define NE_XFLM_RFL_FILE_NOT_FOUND						XFLM_ERROR_BASE( 0x016D)			// Could not open a roll-forward log file - was not found in the roll-forward log directory.
+	#define NE_XFLM_ILLEGAL_KEY_COMPONENT_NUM				XFLM_ERROR_BASE( 0x016E)			// Key component of zero in index definition is not allowed.
+	#define NE_XFLM_ILLEGAL_DATA_COMPONENT_NUM			XFLM_ERROR_BASE( 0x016F)			// Data component of zero in index definition is not allowed.
+	#define NE_XFLM_ILLEGAL_PREFIX_NUMBER					XFLM_ERROR_BASE( 0x0170)			// Prefix number specified in prefix definition is illegal.
+	#define NE_XFLM_MISSING_PREFIX_NAME						XFLM_ERROR_BASE( 0x0171)			// Missing prefix name in prefix definition.
+	#define NE_XFLM_MISSING_PREFIX_NUMBER					XFLM_ERROR_BASE( 0x0172)			// Missing prefix number in prefix definition.
+	#define NE_XFLM_UNDEFINED_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0173)			// XML element name+namespace that was specified in index definition or XML document is not defined in dictionary.
+	#define NE_XFLM_UNDEFINED_ATTRIBUTE_NAME				XFLM_ERROR_BASE( 0x0174)			// XML attribute name+namespace that was specified in index definition or XML document is not defined in dictionary.
+	#define NE_XFLM_DUPLICATE_PREFIX_NAME					XFLM_ERROR_BASE( 0x0175)			// Prefix name specified in prefix definition is already in use.
+	#define NE_XFLM_NAMESPACE_NOT_ALLOWED					XFLM_ERROR_BASE( 0x0176)			// Cannot define a namespace for XML attributes whose name begins with "xmlns:" or that is equal to "xmlns"
+	#define NE_XFLM_INVALID_NAMESPACE_DECL					XFLM_ERROR_BASE( 0x0177)			// Name for namespace declaration attribute must be "xmlns" or begin with "xmlns:"
+	#define NE_XFLM_ILLEGAL_NAMESPACE_DECL_DATATYPE		XFLM_ERROR_BASE( 0x0178)			// Data type for XML attributes that are namespace declarations must be text.
+	#define NE_XFLM_NO_MORE_PREFIX_NUMS						XFLM_ERROR_BASE( 0x0179)			// The highest prefix number has already been used, cannot create more.
+	#define NE_XFLM_NO_MORE_ENCDEF_NUMS						XFLM_ERROR_BASE( 0x017A)			// The highest encryption definition number has already been used, cannot create more.
+	#define NE_XFLM_COLLECTION_OFFLINE						XFLM_ERROR_BASE( 0x017B)			// Collection is encrypted, cannot be accessed while in operating in limited mode.
+	#define NE_XFLM_DELETE_NOT_ALLOWED						XFLM_ERROR_BASE( 0x017C)			// Item cannot be deleted.
+	#define NE_XFLM_RESET_NEEDED								XFLM_ERROR_BASE( 0x017D)			// Used during check operations to indicate we need to reset the view.  NOTE: This is an internal error code and should not be documented.
+	#define NE_XFLM_ILLEGAL_REQUIRED_VALUE					XFLM_ERROR_BASE( 0x017E)			// An illegal value was specified for the "Required" attribute in an index definition.
+	#define NE_XFLM_ILLEGAL_INDEX_COMPONENT				XFLM_ERROR_BASE( 0x017F)			// A leaf index component in an index definition was not marked as a data component or key component.
+	#define NE_XFLM_ILLEGAL_UNIQUE_SUB_ELEMENT_VALUE	XFLM_ERROR_BASE( 0x0180)			// Illegal value for the "UniqueSubElements" attribute in an element definition.
+	#define NE_XFLM_DATA_TYPE_MUST_BE_NO_DATA				XFLM_ERROR_BASE( 0x0181)			// Data type for an element definition with UniqueSubElements="yes" must be nodata.
+	#define NE_XFLM_CANNOT_SET_REQUIRED						XFLM_ERROR_BASE( 0x0182)			// Cannot set the "Required" attribute on a non-key index component in index definition.
+	#define NE_XFLM_CANNOT_SET_LIMIT							XFLM_ERROR_BASE( 0x0183)			// Cannot set the "Limit" attribute on a non-key index component in index definition.
+	#define NE_XFLM_CANNOT_SET_INDEX_ON						XFLM_ERROR_BASE( 0x0184)			// Cannot set the "IndexOn" attribute on a non-key index component in index definition.
+	#define NE_XFLM_CANNOT_SET_COMPARE_RULES				XFLM_ERROR_BASE( 0x0185)			// Cannot set the "CompareRules" on a non-key index component in index definition.
+	#define NE_XFLM_INPUT_PENDING								XFLM_ERROR_BASE( 0x0186)			// Attempt to set a value while an input stream is still open.
+	#define NE_XFLM_INVALID_NODE_TYPE						XFLM_ERROR_BASE( 0x0187)			// Bad node type
+	#define NE_XFLM_INVALID_CHILD_ELM_NODE_ID				XFLM_ERROR_BASE( 0x0188)			// Attempt to insert a unique child element that has a lower node ID than the parent element
+	#define NE_XFLM_RFL_END										XFLM_ERROR_BASE( 0x0189)			// Hit the end of the RFL
+	#define NE_XFLM_LAST_GENERAL_ERROR						XFLM_ERROR_BASE( 0x018A)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc:		DOM Errors
@@ -5837,161 +4765,80 @@
 	#define NE_XFLM_LAST_DOM_ERROR							XFLM_ERROR_BASE( 0x1108)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
-	Desc:		I/O Errors
-	****************************************************************************/
-
-	#define NE_XFLM_FIRST_IO_ERROR							XFLM_ERROR_BASE( 0x2100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_IO_ACCESS_DENIED							XFLM_ERROR_BASE( 0x2101)			// Access to file is denied. Caller is not allowed access to a file.
-	#define NE_XFLM_IO_BAD_FILE_HANDLE						XFLM_ERROR_BASE( 0x2102)			// Bad file handle or file descriptor.
-	#define NE_XFLM_IO_COPY_ERR								XFLM_ERROR_BASE( 0x2103)			// Error occurred while copying a file.
-	#define NE_XFLM_IO_DISK_FULL								XFLM_ERROR_BASE( 0x2104)			// Disk full.
-	#define NE_XFLM_IO_END_OF_FILE							XFLM_ERROR_BASE( 0x2105)			// End of file reached while reading from the file.
-	#define NE_XFLM_IO_OPEN_ERR								XFLM_ERROR_BASE( 0x2106)			// Error while opening the file.
-	#define NE_XFLM_IO_SEEK_ERR								XFLM_ERROR_BASE( 0x2107)			// Error occurred while positioning (seeking) within a file.
-	#define NE_XFLM_IO_DIRECTORY_ERR							XFLM_ERROR_BASE( 0x2108)			// Error occurred while accessing or deleting a directory.
-	#define NE_XFLM_IO_PATH_NOT_FOUND						XFLM_ERROR_BASE( 0x2109)			// File not found.
-	#define NE_XFLM_IO_TOO_MANY_OPEN_FILES					XFLM_ERROR_BASE( 0x210A)			// Too many files open.
-	#define NE_XFLM_IO_PATH_TOO_LONG							XFLM_ERROR_BASE( 0x210B)			// File name too long.
-	#define NE_XFLM_IO_NO_MORE_FILES							XFLM_ERROR_BASE( 0x210C)			// No more files in directory.
-	#define NE_XFLM_IO_DELETING_FILE							XFLM_ERROR_BASE( 0x210D)			// Error occurred while deleting a file.
-	#define NE_XFLM_IO_FILE_LOCK_ERR							XFLM_ERROR_BASE( 0x210E)			// Error attempting to acquire a byte-range lock on a file.
-	#define NE_XFLM_IO_FILE_UNLOCK_ERR						XFLM_ERROR_BASE( 0x210F)			// Error attempting to release a byte-range lock on a file.
-	#define NE_XFLM_IO_PATH_CREATE_FAILURE					XFLM_ERROR_BASE( 0x2110)			// Error occurred while attempting to create a directory or sub-directory.
-	#define NE_XFLM_IO_RENAME_FAILURE						XFLM_ERROR_BASE( 0x2111)			// Error occurred while renaming a file.
-	#define NE_XFLM_IO_INVALID_PASSWORD						XFLM_ERROR_BASE( 0x2112)			// Invalid file password.
-	#define NE_XFLM_SETTING_UP_FOR_READ						XFLM_ERROR_BASE( 0x2113)			// Error occurred while setting up to perform a file read operation.
-	#define NE_XFLM_SETTING_UP_FOR_WRITE					XFLM_ERROR_BASE( 0x2114)			// Error occurred while setting up to perform a file write operation.
-	#define NE_XFLM_IO_CANNOT_REDUCE_PATH					XFLM_ERROR_BASE( 0x2115)			// Cannot reduce file name into more components.
-	#define NE_XFLM_INITIALIZING_IO_SYSTEM					XFLM_ERROR_BASE( 0x2116)			// Error occurred while setting up to access the file system.
-	#define NE_XFLM_FLUSHING_FILE								XFLM_ERROR_BASE( 0x2117)			// Error occurred while flushing file data buffers to disk.
-	#define NE_XFLM_IO_INVALID_FILENAME						XFLM_ERROR_BASE( 0x2118)			// Invalid file name.
-	#define NE_XFLM_IO_CONNECT_ERROR							XFLM_ERROR_BASE( 0x2119)			// Error connecting to a remote network resource.
-	#define NE_XFLM_OPENING_FILE								XFLM_ERROR_BASE( 0x211A)			// Unexpected error occurred while opening a file.
-	#define NE_XFLM_DIRECT_OPENING_FILE						XFLM_ERROR_BASE( 0x211B)			// Unexpected error occurred while opening a file in direct access mode.
-	#define NE_XFLM_CREATING_FILE								XFLM_ERROR_BASE( 0x211C)			// Unexpected error occurred while creating a file.
-	#define NE_XFLM_DIRECT_CREATING_FILE					XFLM_ERROR_BASE( 0x211D)			// Unexpected error occurred while creating a file in direct access mode.
-	#define NE_XFLM_READING_FILE								XFLM_ERROR_BASE( 0x211E)			// Unexpected error occurred while reading a file.
-	#define NE_XFLM_DIRECT_READING_FILE						XFLM_ERROR_BASE( 0x211F)			// Unexpected error occurred while reading a file in direct access mode.
-	#define NE_XFLM_WRITING_FILE								XFLM_ERROR_BASE( 0x2120)			// Unexpected error occurred while writing to a file.
-	#define NE_XFLM_DIRECT_WRITING_FILE						XFLM_ERROR_BASE( 0x2121)			// Unexpected error occurred while writing a file in direct access mode.
-	#define NE_XFLM_POSITIONING_IN_FILE						XFLM_ERROR_BASE( 0x2122)			// Unexpected error occurred while positioning within a file.
-	#define NE_XFLM_GETTING_FILE_SIZE						XFLM_ERROR_BASE( 0x2123)			// Unexpected error occurred while getting a file's size.
-	#define NE_XFLM_TRUNCATING_FILE							XFLM_ERROR_BASE( 0x2124)			// Unexpected error occurred while truncating a file.
-	#define NE_XFLM_PARSING_FILE_NAME						XFLM_ERROR_BASE( 0x2125)			// Unexpected error occurred while parsing a file's name.
-	#define NE_XFLM_CLOSING_FILE								XFLM_ERROR_BASE( 0x2126)			// Unexpected error occurred while closing a file.
-	#define NE_XFLM_GETTING_FILE_INFO						XFLM_ERROR_BASE( 0x2127)			// Unexpected error occurred while getting information about a file.
-	#define NE_XFLM_EXPANDING_FILE							XFLM_ERROR_BASE( 0x2128)			// Unexpected error occurred while expanding a file.
-	#define NE_XFLM_CHECKING_FILE_EXISTENCE				XFLM_ERROR_BASE( 0x2129)			// Unexpected error occurred while checking to see if a file exists.
-	#define NE_XFLM_RENAMING_FILE								XFLM_ERROR_BASE( 0x212A)			// Unexpected error occurred while renaming a file.
-	#define NE_XFLM_SETTING_FILE_INFO						XFLM_ERROR_BASE( 0x212B)			// Unexpected error occurred while setting a file's information.
-	#define NE_XFLM_LAST_IO_ERROR								XFLM_ERROR_BASE( 0x212C)			// NOTE: This is not an error code - do not document
-
-	/****************************************************************************
-	Desc:		Network Errors
-	****************************************************************************/
-
-	#define NE_XFLM_FIRST_NET_ERROR							XFLM_ERROR_BASE( 0x3100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_NOIP_ADDR									XFLM_ERROR_BASE( 0x3101)			// IP address not found
-	#define NE_XFLM_SOCKET_FAIL								XFLM_ERROR_BASE( 0x3102)			// IP socket failure
-	#define NE_XFLM_CONNECT_FAIL								XFLM_ERROR_BASE( 0x3103)			// TCP/IP connection failure
-	#define NE_XFLM_BIND_FAIL									XFLM_ERROR_BASE( 0x3104)			// The TCP/IP services on your system may not be configured or installed.  If this POA is not to run Client/Server, use the /notcpip startup switch or disable TCP/IP through the NWADMIN snapin
-	#define NE_XFLM_LISTEN_FAIL								XFLM_ERROR_BASE( 0x3105)			// TCP/IP listen failed
-	#define NE_XFLM_ACCEPT_FAIL								XFLM_ERROR_BASE( 0x3106)			// TCP/IP accept failed
-	#define NE_XFLM_SELECT_ERR									XFLM_ERROR_BASE( 0x3107)			// TCP/IP select failed
-	#define NE_XFLM_SOCKET_SET_OPT_FAIL						XFLM_ERROR_BASE( 0x3108)			// TCP/IP socket operation failed
-	#define NE_XFLM_SOCKET_DISCONNECT						XFLM_ERROR_BASE( 0x3109)			// TCP/IP disconnected
-	#define NE_XFLM_SOCKET_READ_FAIL							XFLM_ERROR_BASE( 0x310A)			// TCP/IP read failed
-	#define NE_XFLM_SOCKET_WRITE_FAIL						XFLM_ERROR_BASE( 0x310B)			// TCP/IP write failed
-	#define NE_XFLM_SOCKET_READ_TIMEOUT						XFLM_ERROR_BASE( 0x310C)			// TCP/IP read timeout
-	#define NE_XFLM_SOCKET_WRITE_TIMEOUT					XFLM_ERROR_BASE( 0x310D)			// TCP/IP write timeout
-	#define NE_XFLM_SOCKET_ALREADY_CLOSED					XFLM_ERROR_BASE( 0x310E)			// Connection already closed
-	#define NE_XFLM_LAST_NET_ERROR							XFLM_ERROR_BASE( 0x310F)			// NOTE: This is not an error code - do not document
-
-	/****************************************************************************
 	Desc:	Query Errors
 	****************************************************************************/
 
-	#define NE_XFLM_FIRST_QUERY_ERROR						XFLM_ERROR_BASE( 0x4100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_Q_UNMATCHED_RPAREN						XFLM_ERROR_BASE( 0x4101)			// Query setup error: Unmatched right paren.
-	#define NE_XFLM_Q_UNEXPECTED_LPAREN						XFLM_ERROR_BASE( 0x4102)			// Query setup error: Unexpected left paren.
-	#define NE_XFLM_Q_UNEXPECTED_RPAREN						XFLM_ERROR_BASE( 0x4103)			// Query setup error: Unexpected right paren.
-	#define NE_XFLM_Q_EXPECTING_OPERAND						XFLM_ERROR_BASE( 0x4104)			// Query setup error: Expecting an operand.
-	#define NE_XFLM_Q_EXPECTING_OPERATOR					XFLM_ERROR_BASE( 0x4105)			// Query setup error: Expecting an operator.
-	#define NE_XFLM_Q_UNEXPECTED_COMMA						XFLM_ERROR_BASE( 0x4106)			// Query setup error: Unexpected comma.
-	#define NE_XFLM_Q_EXPECTING_LPAREN						XFLM_ERROR_BASE( 0x4107)			// Query setup error: Expecting a left paren.
-	#define NE_XFLM_Q_UNEXPECTED_VALUE						XFLM_ERROR_BASE( 0x4108)			// Query setup error: Unexpected value.
-	#define NE_XFLM_Q_INVALID_NUM_FUNC_ARGS				XFLM_ERROR_BASE( 0x4109)			// Query setup error: Invalid number of arguments for a function.
-	#define NE_XFLM_Q_UNEXPECTED_XPATH_COMPONENT			XFLM_ERROR_BASE( 0x410A)			// Query setup error: Unexpected XPATH componenent.
-	#define NE_XFLM_Q_ILLEGAL_LBRACKET						XFLM_ERROR_BASE( 0x410B)			// Query setup error: Illegal left bracket ([).
-	#define NE_XFLM_Q_ILLEGAL_RBRACKET						XFLM_ERROR_BASE( 0x410C)			// Query setup error: Illegal right bracket (]).
-	#define NE_XFLM_Q_ILLEGAL_OPERAND						XFLM_ERROR_BASE( 0x410D)			// Query setup error: Operand for some operator is not valid for that operator type.
-	#define NE_XFLM_Q_ALREADY_OPTIMIZED						XFLM_ERROR_BASE( 0x410E)			// Operation is illegal, cannot change certain things after query has been optimized.
-	#define NE_XFLM_Q_MISMATCHED_DB							XFLM_ERROR_BASE( 0x410F)			// Database handle passed in does not match database associated with query.
-	#define NE_XFLM_Q_ILLEGAL_OPERATOR						XFLM_ERROR_BASE( 0x4110)			// Illegal operator - cannot pass this operator into the addOperator method.
-	#define NE_XFLM_Q_ILLEGAL_COMPARE_RULES				XFLM_ERROR_BASE( 0x4111)			// Illegal combination of comparison rules passed to addOperator method.
-	#define NE_XFLM_Q_INCOMPLETE_QUERY_EXPR				XFLM_ERROR_BASE( 0x4112)			// Query setup error: Query expression is incomplete.
-	#define NE_XFLM_Q_NOT_POSITIONED							XFLM_ERROR_BASE( 0x4113)			// Query not positioned due to previous error, cannot call getNext, getPrev, or getCurrent
-	#define NE_XFLM_Q_INVALID_NODE_ID_VALUE				XFLM_ERROR_BASE( 0x4114)			// Query setup error: Invalid type of value constant used for node id value comparison.
-	#define NE_XFLM_Q_INVALID_META_DATA_TYPE				XFLM_ERROR_BASE( 0x4115)			// Query setup error: Invalid meta data type specified.
-	#define NE_XFLM_Q_NEW_EXPR_NOT_ALLOWED					XFLM_ERROR_BASE( 0x4116)			// Query setup error: Cannot add an expression to an XPATH component after having added an expression that tests context position.
-	#define NE_XFLM_Q_INVALID_CONTEXT_POS					XFLM_ERROR_BASE( 0x4117)			// Invalid context position value encountered - must be a positive number.
-	#define NE_XFLM_Q_INVALID_FUNC_ARG						XFLM_ERROR_BASE( 0x4118)			// Query setup error: Parameter to user-defined functions must be a single XPATH only.
-	#define NE_XFLM_Q_EXPECTING_RPAREN						XFLM_ERROR_BASE( 0x4119)			// Query setup error: Expecting right paren.
-	#define NE_XFLM_Q_TOO_LATE_TO_ADD_SORT_KEYS			XFLM_ERROR_BASE( 0x411A)			// Query setup error: Cannot add sort keys after having called getFirst, getLast, getNext, or getPrev.
-	#define NE_XFLM_Q_INVALID_SORT_KEY_COMPONENT			XFLM_ERROR_BASE( 0x411B)			// Query setup error: Invalid sort key component number specified in query.
-	#define NE_XFLM_Q_DUPLICATE_SORT_KEY_COMPONENT		XFLM_ERROR_BASE( 0x411C)			// Query setup error: Duplicate sort key component number specified in query.
-	#define NE_XFLM_Q_MISSING_SORT_KEY_COMPONENT			XFLM_ERROR_BASE( 0x411D)			// Query setup error: Missing sort key component number in sort keys that were specified for query.
-	#define NE_XFLM_Q_NO_SORT_KEY_COMPONENTS_SPECIFIED	XFLM_ERROR_BASE( 0x411E)			// Query setup error: addSortKeys was called, but no sort key components were specified.
-	#define NE_XFLM_Q_SORT_KEY_CONTEXT_MUST_BE_ELEMENT	XFLM_ERROR_BASE( 0x411F)			// Query setup error: A sort key context cannot be an XML attribute.
-	#define NE_XFLM_Q_INVALID_ELEMENT_NUM_IN_SORT_KEYS XFLM_ERROR_BASE( 0x4120)			// Query setup error: The XML element number specified for a sort key in a query is invalid - no element definition in the dictionary.
-	#define NE_XFLM_Q_INVALID_ATTR_NUM_IN_SORT_KEYS 	XFLM_ERROR_BASE( 0x4121)			// Query setup error: The XML attribute number specified for a sort key in a query is invalid - no attribute definition in the dictionary.
-	#define NE_XFLM_Q_NON_POSITIONABLE_QUERY				XFLM_ERROR_BASE( 0x4122)			// Attempt is being made to position in a query that is not positionable.
-	#define NE_XFLM_Q_INVALID_POSITION						XFLM_ERROR_BASE( 0x4123)			// Attempt is being made to position to an invalid position in the result set.
-	#define NE_XFLM_LAST_QUERY_ERROR							XFLM_ERROR_BASE( 0x4124)			// NOTE: This is not an error code - do not document
-
-	/****************************************************************************
-	Desc:	Stream Errors
-	****************************************************************************/
-
-	#define NE_XFLM_FIRST_STREAM_ERROR						XFLM_ERROR_BASE( 0x6100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_STREAM_DECOMPRESS_ERROR				XFLM_ERROR_BASE( 0x6101)			// Error decompressing data stream.
-	#define NE_XFLM_STREAM_NOT_COMPRESSED					XFLM_ERROR_BASE( 0x6102)			// Attempting to decompress a data stream that is not compressed.
-	#define NE_XFLM_STREAM_TOO_MANY_FILES					XFLM_ERROR_BASE( 0x6103)			// Too many files in input stream.
-	#define NE_XFLM_LAST_STREAM_ERROR						XFLM_ERROR_BASE( 0x6104)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_FIRST_QUERY_ERROR						XFLM_ERROR_BASE( 0x2100)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_Q_UNMATCHED_RPAREN						XFLM_ERROR_BASE( 0x2101)			// Query setup error: Unmatched right paren.
+	#define NE_XFLM_Q_UNEXPECTED_LPAREN						XFLM_ERROR_BASE( 0x2102)			// Query setup error: Unexpected left paren.
+	#define NE_XFLM_Q_UNEXPECTED_RPAREN						XFLM_ERROR_BASE( 0x2103)			// Query setup error: Unexpected right paren.
+	#define NE_XFLM_Q_EXPECTING_OPERAND						XFLM_ERROR_BASE( 0x2104)			// Query setup error: Expecting an operand.
+	#define NE_XFLM_Q_EXPECTING_OPERATOR					XFLM_ERROR_BASE( 0x2105)			// Query setup error: Expecting an operator.
+	#define NE_XFLM_Q_UNEXPECTED_COMMA						XFLM_ERROR_BASE( 0x2106)			// Query setup error: Unexpected comma.
+	#define NE_XFLM_Q_EXPECTING_LPAREN						XFLM_ERROR_BASE( 0x2107)			// Query setup error: Expecting a left paren.
+	#define NE_XFLM_Q_UNEXPECTED_VALUE						XFLM_ERROR_BASE( 0x2108)			// Query setup error: Unexpected value.
+	#define NE_XFLM_Q_INVALID_NUM_FUNC_ARGS				XFLM_ERROR_BASE( 0x2109)			// Query setup error: Invalid number of arguments for a function.
+	#define NE_XFLM_Q_UNEXPECTED_XPATH_COMPONENT			XFLM_ERROR_BASE( 0x210A)			// Query setup error: Unexpected XPATH componenent.
+	#define NE_XFLM_Q_ILLEGAL_LBRACKET						XFLM_ERROR_BASE( 0x210B)			// Query setup error: Illegal left bracket ([).
+	#define NE_XFLM_Q_ILLEGAL_RBRACKET						XFLM_ERROR_BASE( 0x210C)			// Query setup error: Illegal right bracket (]).
+	#define NE_XFLM_Q_ILLEGAL_OPERAND						XFLM_ERROR_BASE( 0x210D)			// Query setup error: Operand for some operator is not valid for that operator type.
+	#define NE_XFLM_Q_ALREADY_OPTIMIZED						XFLM_ERROR_BASE( 0x210E)			// Operation is illegal, cannot change certain things after query has been optimized.
+	#define NE_XFLM_Q_MISMATCHED_DB							XFLM_ERROR_BASE( 0x210F)			// Database handle passed in does not match database associated with query.
+	#define NE_XFLM_Q_ILLEGAL_OPERATOR						XFLM_ERROR_BASE( 0x2110)			// Illegal operator - cannot pass this operator into the addOperator method.
+	#define NE_XFLM_Q_ILLEGAL_COMPARE_RULES				XFLM_ERROR_BASE( 0x2111)			// Illegal combination of comparison rules passed to addOperator method.
+	#define NE_XFLM_Q_INCOMPLETE_QUERY_EXPR				XFLM_ERROR_BASE( 0x2112)			// Query setup error: Query expression is incomplete.
+	#define NE_XFLM_Q_NOT_POSITIONED							XFLM_ERROR_BASE( 0x2113)			// Query not positioned due to previous error, cannot call getNext, getPrev, or getCurrent
+	#define NE_XFLM_Q_INVALID_NODE_ID_VALUE				XFLM_ERROR_BASE( 0x2114)			// Query setup error: Invalid type of value constant used for node id value comparison.
+	#define NE_XFLM_Q_INVALID_META_DATA_TYPE				XFLM_ERROR_BASE( 0x2115)			// Query setup error: Invalid meta data type specified.
+	#define NE_XFLM_Q_NEW_EXPR_NOT_ALLOWED					XFLM_ERROR_BASE( 0x2116)			// Query setup error: Cannot add an expression to an XPATH component after having added an expression that tests context position.
+	#define NE_XFLM_Q_INVALID_CONTEXT_POS					XFLM_ERROR_BASE( 0x2117)			// Invalid context position value encountered - must be a positive number.
+	#define NE_XFLM_Q_INVALID_FUNC_ARG						XFLM_ERROR_BASE( 0x2118)			// Query setup error: Parameter to user-defined functions must be a single XPATH only.
+	#define NE_XFLM_Q_EXPECTING_RPAREN						XFLM_ERROR_BASE( 0x2119)			// Query setup error: Expecting right paren.
+	#define NE_XFLM_Q_TOO_LATE_TO_ADD_SORT_KEYS			XFLM_ERROR_BASE( 0x211A)			// Query setup error: Cannot add sort keys after having called getFirst, getLast, getNext, or getPrev.
+	#define NE_XFLM_Q_INVALID_SORT_KEY_COMPONENT			XFLM_ERROR_BASE( 0x211B)			// Query setup error: Invalid sort key component number specified in query.
+	#define NE_XFLM_Q_DUPLICATE_SORT_KEY_COMPONENT		XFLM_ERROR_BASE( 0x211C)			// Query setup error: Duplicate sort key component number specified in query.
+	#define NE_XFLM_Q_MISSING_SORT_KEY_COMPONENT			XFLM_ERROR_BASE( 0x211D)			// Query setup error: Missing sort key component number in sort keys that were specified for query.
+	#define NE_XFLM_Q_NO_SORT_KEY_COMPONENTS_SPECIFIED	XFLM_ERROR_BASE( 0x211E)			// Query setup error: addSortKeys was called, but no sort key components were specified.
+	#define NE_XFLM_Q_SORT_KEY_CONTEXT_MUST_BE_ELEMENT	XFLM_ERROR_BASE( 0x211F)			// Query setup error: A sort key context cannot be an XML attribute.
+	#define NE_XFLM_Q_INVALID_ELEMENT_NUM_IN_SORT_KEYS XFLM_ERROR_BASE( 0x2120)			// Query setup error: The XML element number specified for a sort key in a query is invalid - no element definition in the dictionary.
+	#define NE_XFLM_Q_INVALID_ATTR_NUM_IN_SORT_KEYS 	XFLM_ERROR_BASE( 0x2121)			// Query setup error: The XML attribute number specified for a sort key in a query is invalid - no attribute definition in the dictionary.
+	#define NE_XFLM_Q_NON_POSITIONABLE_QUERY				XFLM_ERROR_BASE( 0x2122)			// Attempt is being made to position in a query that is not positionable.
+	#define NE_XFLM_Q_INVALID_POSITION						XFLM_ERROR_BASE( 0x2123)			// Attempt is being made to position to an invalid position in the result set.
+	#define NE_XFLM_LAST_QUERY_ERROR							XFLM_ERROR_BASE( 0x2124)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Desc:	NICI / Encryption Errors
 	****************************************************************************/
 
-	#define NE_XFLM_FIRST_NICI_ERROR							XFLM_ERROR_BASE( 0x7100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_NICI_CONTEXT								XFLM_ERROR_BASE( 0x7101)			// Error occurred while creating NICI context for encryption/decryption.
-	#define NE_XFLM_NICI_ATTRIBUTE_VALUE					XFLM_ERROR_BASE( 0x7102)			// Error occurred while accessing an attribute on a NICI encryption key.
-	#define NE_XFLM_NICI_BAD_ATTRIBUTE						XFLM_ERROR_BASE( 0x7103)			// Value retrieved from an attribute on a NICI encryption key was bad.
-	#define NE_XFLM_NICI_WRAPKEY_FAILED						XFLM_ERROR_BASE( 0x7104)			// Error occurred while wrapping a NICI encryption key in another NICI encryption key.
-	#define NE_XFLM_NICI_UNWRAPKEY_FAILED					XFLM_ERROR_BASE( 0x7105)			// Error occurred while unwrapping a NICI encryption key that is wrapped in another NICI encryption key.
-	#define NE_XFLM_NICI_INVALID_ALGORITHM					XFLM_ERROR_BASE( 0x7106)			// Attempt to use invalid NICI encryption algorithm. 
-	#define NE_XFLM_NICI_GENKEY_FAILED						XFLM_ERROR_BASE( 0x7107)			// Error occurred while attempting to generate a NICI encryption key.
-	#define NE_XFLM_NICI_BAD_RANDOM							XFLM_ERROR_BASE( 0x7108)			// Error occurred while generating random data using NICI.
-	#define NE_XFLM_PBE_ENCRYPT_FAILED						XFLM_ERROR_BASE( 0x7109)			// Error occurred while attempting to wrap a NICI encryption key in a password.
-	#define NE_XFLM_PBE_DECRYPT_FAILED						XFLM_ERROR_BASE( 0x710A)			// Error occurred while attempting to unwrap a NICI encryption key that was previously wrapped in a password.
-	#define NE_XFLM_DIGEST_INIT_FAILED						XFLM_ERROR_BASE( 0x710B)			// Error occurred while attempting to initialize the NICI digest functionality.
-	#define NE_XFLM_DIGEST_FAILED								XFLM_ERROR_BASE( 0x710C)			// Error occurred while attempting to create a NICI digest. 
-	#define NE_XFLM_INJECT_KEY_FAILED						XFLM_ERROR_BASE( 0x710D)			// Error occurred while attempting to inject an encryption key into NICI. 
-	#define NE_XFLM_NICI_FIND_INIT							XFLM_ERROR_BASE( 0x710E)			// Error occurred while attempting to initialize NICI to find information on a NICI encryption key.
-	#define NE_XFLM_NICI_FIND_OBJECT							XFLM_ERROR_BASE( 0x710F)			// Error occurred while attempting to find information on a NICI encryption key.
-	#define NE_XFLM_NICI_KEY_NOT_FOUND						XFLM_ERROR_BASE( 0x7110)			// Could not find the NICI encryption key or information on the NICI encryption key.
-	#define NE_XFLM_NICI_ENC_INIT_FAILED					XFLM_ERROR_BASE( 0x7111)			// Error occurred while initializing NICI to encrypt data.
-	#define NE_XFLM_NICI_ENCRYPT_FAILED						XFLM_ERROR_BASE( 0x7112)			// Error occurred while encrypting data.
-	#define NE_XFLM_NICI_DECRYPT_INIT_FAILED				XFLM_ERROR_BASE( 0x7113)			// Error occurred while initializing NICI to decrypt data.
-	#define NE_XFLM_NICI_DECRYPT_FAILED						XFLM_ERROR_BASE( 0x7114)			// Error occurred while decrypting data.
-	#define NE_XFLM_NICI_WRAPKEY_NOT_FOUND					XFLM_ERROR_BASE( 0x7115)			// Could not find the NICI encryption key used to wrap another NICI encryption key.
-	#define NE_XFLM_NOT_EXPECTING_PASSWORD					XFLM_ERROR_BASE( 0x7116)			// Password supplied when none was expected.
-	#define NE_XFLM_EXPECTING_PASSWORD						XFLM_ERROR_BASE( 0x7117)			// No password supplied when one was required.
-	#define NE_XFLM_EXTRACT_KEY_FAILED						XFLM_ERROR_BASE( 0x7118)			// Error occurred while attempting to extract a NICI encryption key.
-	#define NE_XFLM_NICI_INIT_FAILED							XFLM_ERROR_BASE( 0x7119)			// Error occurred while initializing NICI.
-	#define NE_XFLM_BAD_ENCKEY_SIZE							XFLM_ERROR_BASE( 0x711A)			// Bad encryption key size found in roll-forward log packet.
-	#define NE_XFLM_ENCRYPTION_UNAVAILABLE					XFLM_ERROR_BASE( 0x711B)			// Attempt was made to encrypt data when NICI is unavailable.
-	#define NE_XFLM_LAST_NICI_ERROR							XFLM_ERROR_BASE( 0x711C)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_FIRST_NICI_ERROR							XFLM_ERROR_BASE( 0x3100)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_NICI_CONTEXT								XFLM_ERROR_BASE( 0x3101)			// Error occurred while creating NICI context for encryption/decryption.
+	#define NE_XFLM_NICI_ATTRIBUTE_VALUE					XFLM_ERROR_BASE( 0x3102)			// Error occurred while accessing an attribute on a NICI encryption key.
+	#define NE_XFLM_NICI_BAD_ATTRIBUTE						XFLM_ERROR_BASE( 0x3103)			// Value retrieved from an attribute on a NICI encryption key was bad.
+	#define NE_XFLM_NICI_WRAPKEY_FAILED						XFLM_ERROR_BASE( 0x3104)			// Error occurred while wrapping a NICI encryption key in another NICI encryption key.
+	#define NE_XFLM_NICI_UNWRAPKEY_FAILED					XFLM_ERROR_BASE( 0x3105)			// Error occurred while unwrapping a NICI encryption key that is wrapped in another NICI encryption key.
+	#define NE_XFLM_NICI_INVALID_ALGORITHM					XFLM_ERROR_BASE( 0x3106)			// Attempt to use invalid NICI encryption algorithm. 
+	#define NE_XFLM_NICI_GENKEY_FAILED						XFLM_ERROR_BASE( 0x3107)			// Error occurred while attempting to generate a NICI encryption key.
+	#define NE_XFLM_NICI_BAD_RANDOM							XFLM_ERROR_BASE( 0x3108)			// Error occurred while generating random data using NICI.
+	#define NE_XFLM_PBE_ENCRYPT_FAILED						XFLM_ERROR_BASE( 0x3109)			// Error occurred while attempting to wrap a NICI encryption key in a password.
+	#define NE_XFLM_PBE_DECRYPT_FAILED						XFLM_ERROR_BASE( 0x310A)			// Error occurred while attempting to unwrap a NICI encryption key that was previously wrapped in a password.
+	#define NE_XFLM_DIGEST_INIT_FAILED						XFLM_ERROR_BASE( 0x310B)			// Error occurred while attempting to initialize the NICI digest functionality.
+	#define NE_XFLM_DIGEST_FAILED								XFLM_ERROR_BASE( 0x310C)			// Error occurred while attempting to create a NICI digest. 
+	#define NE_XFLM_INJECT_KEY_FAILED						XFLM_ERROR_BASE( 0x310D)			// Error occurred while attempting to inject an encryption key into NICI. 
+	#define NE_XFLM_NICI_FIND_INIT							XFLM_ERROR_BASE( 0x310E)			// Error occurred while attempting to initialize NICI to find information on a NICI encryption key.
+	#define NE_XFLM_NICI_FIND_OBJECT							XFLM_ERROR_BASE( 0x310F)			// Error occurred while attempting to find information on a NICI encryption key.
+	#define NE_XFLM_NICI_KEY_NOT_FOUND						XFLM_ERROR_BASE( 0x3110)			// Could not find the NICI encryption key or information on the NICI encryption key.
+	#define NE_XFLM_NICI_ENC_INIT_FAILED					XFLM_ERROR_BASE( 0x3111)			// Error occurred while initializing NICI to encrypt data.
+	#define NE_XFLM_NICI_ENCRYPT_FAILED						XFLM_ERROR_BASE( 0x3112)			// Error occurred while encrypting data.
+	#define NE_XFLM_NICI_DECRYPT_INIT_FAILED				XFLM_ERROR_BASE( 0x3113)			// Error occurred while initializing NICI to decrypt data.
+	#define NE_XFLM_NICI_DECRYPT_FAILED						XFLM_ERROR_BASE( 0x3114)			// Error occurred while decrypting data.
+	#define NE_XFLM_NICI_WRAPKEY_NOT_FOUND					XFLM_ERROR_BASE( 0x3115)			// Could not find the NICI encryption key used to wrap another NICI encryption key.
+	#define NE_XFLM_NOT_EXPECTING_PASSWORD					XFLM_ERROR_BASE( 0x3116)			// Password supplied when none was expected.
+	#define NE_XFLM_EXPECTING_PASSWORD						XFLM_ERROR_BASE( 0x3117)			// No password supplied when one was required.
+	#define NE_XFLM_EXTRACT_KEY_FAILED						XFLM_ERROR_BASE( 0x3118)			// Error occurred while attempting to extract a NICI encryption key.
+	#define NE_XFLM_NICI_INIT_FAILED							XFLM_ERROR_BASE( 0x3119)			// Error occurred while initializing NICI.
+	#define NE_XFLM_BAD_ENCKEY_SIZE							XFLM_ERROR_BASE( 0x311A)			// Bad encryption key size found in roll-forward log packet.
+	#define NE_XFLM_ENCRYPTION_UNAVAILABLE					XFLM_ERROR_BASE( 0x311B)			// Attempt was made to encrypt data when NICI is unavailable.
+	#define NE_XFLM_LAST_NICI_ERROR							XFLM_ERROR_BASE( 0x311C)			// NOTE: This is not an error code - do not document
 
 	/****************************************************************************
 	Dictionary Document Definitions - below are comments that document valid 

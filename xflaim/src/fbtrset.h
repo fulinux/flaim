@@ -47,7 +47,7 @@ typedef struct BtCollXref
 Desc:	Result set class that uses an independant database.  The name is randomly
 		generated.
 =============================================================================*/
-class F_BtResultSet : public XF_RefCount, public XF_Base
+class F_BtResultSet : public F_Object
 {
 public:
 

@@ -27,7 +27,7 @@
 Desc:	Utility class to help prepare a character buffer for printing when the
 		output buffer size is not known in advance.
 *****************************************************************************/
-class F_DynamicBuffer : public XF_RefCount, public XF_Base
+class F_DynamicBuffer : public F_Object
 {
 public:
 

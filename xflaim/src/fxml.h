@@ -26,72 +26,10 @@
 #ifndef FXML_H
 #define FXML_H
 
-typedef struct xmlChar
-{
-	FLMBYTE		ucFlags;
-} XMLCHAR;
-
-class F_XML : public XF_RefCount, public virtual XF_Base
-{
-public:
-
-	F_XML();
-
-	~F_XML();
-
-	FLMBOOL isPubidChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isQuoteChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isWhitespace(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isExtender(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isCombiningChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isNameChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isNCNameChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isIdeographic(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isBaseChar(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isDigit(
-		FLMUNICODE		uChar);
-
-	FLMBOOL isLetter(
-		FLMUNICODE		uChar);
-
-	void setCharFlag(
-		FLMUNICODE		uLowChar,
-		FLMUNICODE		uHighChar,
-		FLMUINT16		ui16Flag);
-
-	FLMBOOL isNameValid(
-		FLMUNICODE *	puzName,
-		FLMBYTE *		pszName);
-
-	RCODE buildCharTable( void);
-
-private:
-
-	XMLCHAR *			m_pCharTable;
-};
-
 /*============================================================================
 Desc: 	FLAIM's XML namespace class
 ============================================================================*/
-class F_XMLNamespace : public XF_RefCount, public XF_Base
+class F_XMLNamespace : public F_Object
 {
 public:
 
@@ -150,7 +88,7 @@ friend class F_XMLNamespaceMgr;
 /*============================================================================
 Desc: 	Namespace manager class
 ============================================================================*/
-class F_XMLNamespaceMgr : public XF_RefCount, public virtual XF_Base
+class F_XMLNamespaceMgr : public F_Object
 {
 public:
 
@@ -203,7 +141,7 @@ typedef RCODE (* XML_STATUS_HOOK)(
 /*============================================================================
 Desc: 	FLAIM's XML import class
 ============================================================================*/
-class F_XMLImport: public F_XML, public F_XMLNamespaceMgr
+class F_XMLImport : public F_XMLNamespaceMgr
 {
 public:
 
@@ -216,7 +154,7 @@ public:
 	void reset( void);
 
 	RCODE import(
-		F_IStream *					pStream,
+		IF_IStream *				pStream,
 		F_Db *						pDb,
 		FLMUINT						uiCollection,
 		FLMUINT						uiFlags,
@@ -454,7 +392,11 @@ private:
 	{
 		m_pFirstAttr = NULL;
 		m_pLastAttr = NULL;
-		m_attrPool.poolReset( NULL);
+
+		if( m_pAttrPool)
+		{
+			m_pAttrPool->poolReset( NULL);
+		}
 	}
 
 	RCODE allocAttribute(
@@ -463,7 +405,7 @@ private:
 		XML_ATTR *	pAttr = NULL;
 		RCODE			rc = NE_XFLM_OK;
 
-		if( RC_BAD( rc = m_attrPool.poolCalloc( 
+		if( RC_BAD( rc = m_pAttrPool->poolCalloc( 
 			sizeof( XML_ATTR), (void **)&pAttr)))
 		{
 			goto Exit;
@@ -501,7 +443,7 @@ private:
 
 		uiStrLen = f_unilen( puzPrefix);
 
-		if( RC_BAD( rc = m_attrPool.poolAlloc( 
+		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
 			sizeof( FLMUNICODE) * (uiStrLen + 1), (void **)&pAttr->puzPrefix)))
 		{
 			goto Exit;
@@ -530,7 +472,7 @@ private:
 
 		uiStrLen = f_unilen( puzLocalName);
 
-		if( RC_BAD( rc = m_attrPool.poolAlloc( 
+		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
 			sizeof( FLMUNICODE) * (uiStrLen + 1), 
 			(void **)&pAttr->puzLocalName)))
 		{
@@ -560,7 +502,7 @@ private:
 
 		uiStrLen = f_unilen( puzUnicode);
 
-		if( RC_BAD( rc = m_attrPool.poolAlloc( 
+		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
 			sizeof( FLMUNICODE) * (uiStrLen + 1), 
 			(void **)&pAttr->puzVal)))
 		{
@@ -607,7 +549,7 @@ private:
 #define FLM_XML_MAX_CHARS		128
 	FLMUNICODE					m_uChars[ FLM_XML_MAX_CHARS];
 	FLMBOOL						m_bSetup;
-	F_IStream *					m_pStream;
+	IF_IStream *				m_pStream;
 	FLMBYTE *					m_pucValBuf;
 	FLMUINT						m_uiValBufSize; // Number of Unicode characters
 	FLMUINT						m_uiFlags;
@@ -616,13 +558,13 @@ private:
 	XML_STATUS_HOOK			m_fnStatus;
 	void *						m_pvCallbackData;
 	XFLM_IMPORT_STATS			m_importStats;
-	F_Pool						m_tmpPool;
+	IF_Pool *					m_pTmpPool;
 
 	// Attribute management
 
 	XML_ATTR *					m_pFirstAttr;
 	XML_ATTR *					m_pLastAttr;
-	F_Pool 						m_attrPool;
+	IF_Pool * 					m_pAttrPool;
 };
 
 #define FLM_XML_EXTEND_DICT_FLAG				0x00000001

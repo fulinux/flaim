@@ -31,7 +31,7 @@ Desc: Constructor
 F_FSRestore::F_FSRestore()
 {
 	m_pFileHdl = NULL;
-	m_pFileHdl64 = NULL;
+	m_pMultiFileHdl = NULL;
 	m_ui64Offset = 0;
 	m_bSetupCalled = FALSE;
 	m_szDbPath[ 0] = 0;
@@ -86,18 +86,17 @@ RCODE F_FSRestore::openBackupSet( void)
 	RCODE			rc = NE_XFLM_OK;
 
 	flmAssert( m_bSetupCalled);
-	flmAssert( !m_pFileHdl64);
-
-	if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+	flmAssert( !m_pMultiFileHdl);
+	
+	if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pFileHdl64->Open( m_szBackupSetPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->open( m_szBackupSetPath)))
 	{
-		m_pFileHdl64->Release();
-		m_pFileHdl64 = NULL;
+		m_pMultiFileHdl->Release();
+		m_pMultiFileHdl = NULL;
 		goto Exit;
 	}
 
@@ -131,8 +130,8 @@ RCODE F_FSRestore::openRflFile(
 	if( !m_uiDbVersion)
 	{
 
-		if( RC_BAD( rc = gv_pFileSystem->Open( m_szDbPath,
-			XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT, &pFileHdl)))
+		if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( m_szDbPath,
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pFileHdl)))
 		{
 			goto Exit;
 		}
@@ -142,7 +141,7 @@ RCODE F_FSRestore::openRflFile(
 			goto Exit;
 		}
 
-		pFileHdl->Close();
+		pFileHdl->close();
 		pFileHdl->Release();
 		pFileHdl = NULL;
 
@@ -158,12 +157,12 @@ RCODE F_FSRestore::openRflFile(
 
 	uiBaseNameSize = sizeof( szBaseName);
 	rflGetBaseFileName( uiFileNum, szBaseName, &uiBaseNameSize, NULL);
-	gv_pFileSystem->pathAppend( szRflPath, szBaseName);
+	gv_XFlmSysData.pFileSystem->pathAppend( szRflPath, szBaseName);
 
 	// Open the file.
 
-	if( RC_BAD( rc = gv_pFileSystem->OpenBlockFile( szRflPath,
-		XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT, 512, &m_pFileHdl)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openBlockFile( szRflPath,
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 512, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -192,35 +191,32 @@ RCODE F_FSRestore::openIncFile(
 	RCODE			rc = NE_XFLM_OK;
 
 	flmAssert( m_bSetupCalled);
-	flmAssert( !m_pFileHdl64);
+	flmAssert( !m_pMultiFileHdl);
 
-	/*
-	Since this is a non-interactive restore, we will "guess"
-	that incremental backups are located in the same parent
-	directory as the main backup set.  We will further assume
-	that the incremental backup sets have been named XXXXXXXX.INC,
-	where X is a hex digit.
-	*/
+	// Since this is a non-interactive restore, we will "guess"
+	// that incremental backups are located in the same parent
+	// directory as the main backup set.  We will further assume
+	// that the incremental backup sets have been named XXXXXXXX.INC,
+	// where X is a hex digit.
 
-	if( RC_BAD( rc = gv_pFileSystem->pathReduce( m_szBackupSetPath,
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( m_szBackupSetPath,
 		szIncPath, NULL)))
 	{
 		goto Exit;
 	}
 
 	f_sprintf( szIncFile, "%08X.INC", (unsigned)uiFileNum);
-	gv_pFileSystem->pathAppend( szIncPath, szIncFile);
-
-	if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+	gv_XFlmSysData.pFileSystem->pathAppend( szIncPath, szIncFile);
+	
+	if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pFileHdl64->Open( szIncPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->open( szIncPath)))
 	{
-		m_pFileHdl64->Release();
-		m_pFileHdl64 = NULL;
+		m_pMultiFileHdl->Release();
+		m_pMultiFileHdl = NULL;
 		goto Exit;
 	}
 
@@ -244,11 +240,11 @@ RCODE F_FSRestore::read(
 	RCODE			rc = NE_XFLM_OK;
 
 	flmAssert( m_bSetupCalled);
-	flmAssert( m_pFileHdl || m_pFileHdl64);
+	flmAssert( m_pFileHdl || m_pMultiFileHdl);
 
-	if( m_pFileHdl64)
+	if( m_pMultiFileHdl)
 	{
-		if( RC_BAD( rc = m_pFileHdl64->Read( m_ui64Offset,
+		if( RC_BAD( rc = m_pMultiFileHdl->read( m_ui64Offset,
 			uiLength, pvBuffer, &uiBytesRead)))
 		{
 			goto Exit;
@@ -256,7 +252,7 @@ RCODE F_FSRestore::read(
 	}
 	else
 	{
-		if( RC_BAD( rc = m_pFileHdl->Read( (FLMUINT)m_ui64Offset,
+		if( RC_BAD( rc = m_pFileHdl->read( (FLMUINT)m_ui64Offset,
 			uiLength, pvBuffer, &uiBytesRead)))
 		{
 			goto Exit;
@@ -282,10 +278,10 @@ RCODE F_FSRestore::close( void)
 {
 	flmAssert( m_bSetupCalled);
 
-	if( m_pFileHdl64)
+	if( m_pMultiFileHdl)
 	{
-		m_pFileHdl64->Release();
-		m_pFileHdl64 = NULL;
+		m_pMultiFileHdl->Release();
+		m_pMultiFileHdl = NULL;
 	}
 
 	if( m_pFileHdl)

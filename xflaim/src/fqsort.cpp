@@ -35,7 +35,7 @@ FSTATIC RCODE fqGetDocId(
 /***************************************************************************
 Desc:	Add a sort key to the query.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addSortKey(
+RCODE FLMAPI F_Query::addSortKey(
 	void *			pvSortKeyContext,
 	FLMBOOL			bChildToContext,
 	FLMBOOL			bElement,
@@ -77,7 +77,7 @@ RCODE XFLMAPI F_Query::addSortKey(
 	
 	if (!m_pSortIxd)
 	{
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( IXD), (void **)&m_pSortIxd)))
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( IXD), (void **)&m_pSortIxd)))
 		{
 			goto Exit;
 		}
@@ -90,7 +90,7 @@ RCODE XFLMAPI F_Query::addSortKey(
 	
 	// Allocate an ICD structure.
 	
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( ICD),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( ICD),
 										(void **)&pSortIcd)))
 	{
 		goto Exit;
@@ -400,7 +400,7 @@ RCODE F_Query::addToResultSet( void)
 				goto Exit;
 			}
 			pucTmp = &ucKey [uiKeyLen];
-			uiIDLen = flmEncodeSEN( ui64DocId, &pucTmp);
+			uiIDLen = f_encodeSEN( ui64DocId, &pucTmp);
 			
 			// Output a zero SEN (which is one byte) for all of the other node IDs.
 			
@@ -432,13 +432,13 @@ RCODE F_Query::addToResultSet( void)
 		
 		flmAssert( m_bPositioningEnabled);
 		ui32Count++;
-		longToByte( ui32Count, ucKey);
+		f_UINT32ToByte( ui32Count, ucKey);
 		pucTmp = &ucKey [4];
 		if (RC_BAD( rc = m_pCurrDoc->getDocumentId( (IF_Db *)m_pDb, &ui64DocId)))
 		{
 			goto Exit;
 		}
-		uiIDLen = flmEncodeSEN( ui64DocId, &pucTmp);
+		uiIDLen = f_encodeSEN( ui64DocId, &pucTmp);
 		if (RC_BAD( rc = m_pSortResultSet->addEntry( ucKey, uiIDLen + 4,
 								TRUE)))
 		{
@@ -514,7 +514,7 @@ RCODE F_QueryResultSet::initResultSet(
 		{
 			break;
 		}
-		if (rc == NE_XFLM_FILE_EXISTS || rc == NE_XFLM_IO_ACCESS_DENIED)
+		if (rc == NE_XFLM_FILE_EXISTS || rc == NE_FLM_IO_ACCESS_DENIED)
 		{
 			
 			// Try again with a slightly altered number.
@@ -1072,7 +1072,7 @@ FINLINE RCODE getRemainingTimeMilli(
 	else
 	{
 		uiRemainingTimeTU = uiTimeLimitTU - uiElapsedTimeTU;
-		FLM_TIMER_UNITS_TO_MILLI( uiRemainingTimeTU, *puiRemainingTimeMilli);
+		*puiRemainingTimeMilli = FLM_TIMER_UNITS_TO_MILLI( uiRemainingTimeTU);
 	}
 Exit:
 	return( rc);
@@ -1134,7 +1134,7 @@ RCODE F_Query::buildResultSet(
 	
 	if (uiTimeLimit)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+		uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		uiStartTimeTU = FLM_GET_TIMER();
 		uiRemainingTimeMilli = uiTimeLimit;
 	}
@@ -1318,7 +1318,7 @@ Exit:
 /***************************************************************************
 Desc:	Stop building the result set.
 ***************************************************************************/
-void XFLMAPI F_Query::stopBuildingResultSet( void)
+void FLMAPI F_Query::stopBuildingResultSet( void)
 {
 	if (m_pSortResultSet)
 	{
@@ -1351,7 +1351,7 @@ void XFLMAPI F_Query::stopBuildingResultSet( void)
 Desc:	Build the query result set.  This is the method that applications
 		can call.  It implies enabling of positioning.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::buildResultSet(
+RCODE FLMAPI F_Query::buildResultSet(
 	IF_Db *	pDb,
 	FLMUINT	uiTimeLimit)
 {
@@ -1475,7 +1475,7 @@ FSTATIC RCODE fqGetDocId(
 		
 		// Should be positioned on document ID
 		
-		if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, pui64DocId)))
+		if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, pui64DocId)))
 		{
 			goto Exit;
 		}
@@ -1493,7 +1493,7 @@ FSTATIC RCODE fqGetDocId(
 			rc = RC_SET( NE_XFLM_BAD_COLLATED_KEY);
 			goto Exit;
 		}
-		if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, pui64DocId)))
+		if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, pui64DocId)))
 		{
 			goto Exit;
 		}
@@ -1615,7 +1615,7 @@ RCODE F_Query::waitResultSetBuild(
 	if (uiTimeLimit)
 	{
 		waiter.uiWaitStartTime = FLM_GET_TIMER();
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, waiter.uiTimeLimit);
+		waiter.uiTimeLimit = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 	}
 	else
 	{
@@ -1685,7 +1685,7 @@ RCODE F_Query::getFirstFromResultSet(
 	
 	if (uiTimeLimit)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+		uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		uiStartTimeTU = FLM_GET_TIMER();
 		uiRemainingTimeMilli = uiTimeLimit;
 	}
@@ -1803,7 +1803,7 @@ RCODE F_Query::getLastFromResultSet(
 	
 	if (uiTimeLimit)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+		uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		uiStartTimeTU = FLM_GET_TIMER();
 		uiRemainingTimeMilli = uiTimeLimit;
 	}
@@ -1903,7 +1903,7 @@ RCODE F_Query::getNextFromResultSet(
 	
 	if (uiTimeLimit)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+		uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		uiStartTimeTU = FLM_GET_TIMER();
 		uiRemainingTimeMilli = uiTimeLimit;
 	}
@@ -2061,7 +2061,7 @@ RCODE F_Query::getPrevFromResultSet(
 	
 	if (uiTimeLimit)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+		uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		uiStartTimeTU = FLM_GET_TIMER();
 		uiRemainingTimeMilli = uiTimeLimit;
 	}
@@ -2256,7 +2256,7 @@ Exit:
 /***************************************************************************
 Desc:	Get previous node/document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::positionTo(
+RCODE FLMAPI F_Query::positionTo(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
@@ -2283,7 +2283,7 @@ RCODE XFLMAPI F_Query::positionTo(
 		
 		if (uiTimeLimit)
 		{
-			FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+			uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 			uiStartTimeTU = FLM_GET_TIMER();
 			uiRemainingTimeMilli = uiTimeLimit;
 		}
@@ -2420,7 +2420,7 @@ Exit:
 /***************************************************************************
 Desc:	Get previous node/document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::positionTo(
+RCODE FLMAPI F_Query::positionTo(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ppNode,
 	FLMUINT				uiTimeLimit,
@@ -2448,7 +2448,7 @@ RCODE XFLMAPI F_Query::positionTo(
 		
 		if (uiTimeLimit)
 		{
-			FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, uiTimeLimitTU);
+			uiTimeLimitTU = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 			uiStartTimeTU = FLM_GET_TIMER();
 			uiRemainingTimeMilli = uiTimeLimit;
 		}
@@ -2569,7 +2569,7 @@ Exit:
 /***************************************************************************
 Desc:	Get current position.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getPosition(
+RCODE FLMAPI F_Query::getPosition(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiPosition
 	)
@@ -2648,7 +2648,7 @@ Exit:
 /***************************************************************************
 Desc:	Get count.  Only works for queries that are building result sets.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getCounts(
+RCODE FLMAPI F_Query::getCounts(
 	IF_Db *		ifpDb,
 	FLMUINT		uiTimeLimit,
 	FLMBOOL		bPartialCountOk,

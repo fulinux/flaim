@@ -119,7 +119,7 @@ typedef enum
 	END_TOKEN												// 88
 } eXPathTokenType;
 
-class F_XPathBase : public virtual XF_Base
+class F_XPathBase : public F_Object
 {
 public:
 

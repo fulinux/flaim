@@ -40,7 +40,7 @@ RCODE flmGetHdrInfo(
 	RCODE				rc = NE_XFLM_OK;
 	IF_FileHdl *	pCFileHdl;
 
-	if( RC_BAD( rc = pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	if( RC_BAD( rc = pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
 	{
 		goto Exit;
 	}

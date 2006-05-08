@@ -819,7 +819,7 @@ RCODE F_DbCheck::reportIxError(
 	// memory for new CDL entries from the DB pool.  If the pool is not
 	// reset, it grows during the check and becomes VERY large.
 
-	pDbPoolMark = m_pDb->m_TempPool.poolMark();
+	pDbPoolMark = m_pDb->m_pTempPool->poolMark();
 
 	// Set up the KRef so that flmGetRecKeys will work
 	
@@ -868,7 +868,7 @@ Exit:
 
 	// Reset the index check pool
 
-	m_pDb->m_TempPool.poolReset(pDbPoolMark);
+	m_pDb->m_pTempPool->poolReset(pDbPoolMark);
 
 	return( rc);
 }

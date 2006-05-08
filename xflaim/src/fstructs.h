@@ -36,17 +36,13 @@ class HRequest;
 class F_BtPool;
 class F_XMLImport;
 class F_XMLExport;
-class F_FileIdList;
 class F_Rfl;
 class F_SuperFileHdl;
 class F_Btree;
 class F_DbRebuild;
 class F_DbCheck;
-class F_XML;
 class ServerLockManager;
 class ServerLockObject;
-class F_FileHdlMgr;
-class F_ThreadMgr;
 class F_Cursor;
 class F_MultiAlloc;
 class F_CachedNode;
@@ -61,92 +57,6 @@ class F_NodeDataRelocator;
 class F_NodeListRelocator;	
 class F_AttrItemRelocator;	
 class F_AttrBufferRelocator;	
-
-#if defined( FLM_NLM)
-
-	extern "C"
-	{
-		void ConvertTicksToSeconds(
-			LONG		ticks,
-			LONG *	seconds,
-			LONG *	tenthsOfSeconds);
-	
-		void ConvertSecondsToTicks(
-			LONG		seconds,
-			LONG		tenthsOfSeconds,
-			LONG *	ticks);
-	}
-
-	#define FLM_GET_TIMER()	(FLMUINT)GetCurrentTime()
-
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)	\
-		ConvertSecondsToTicks( (LONG)(uiSeconds), 0, (LONG *)(&(uiTU)))
-
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)	\
-	{ \
-		LONG	udDummy; \
-		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(uiSeconds)), &udDummy); \
-	}
-
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)	\
-	{ \
-		LONG	udTenths; \
-		LONG	udSeconds; \
-		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(udSeconds)), &udTenths); \
-		uiMilli = (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100; \
-	}
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU)	\
-	{ \
-		LONG udTenths, udSeconds; \
-		udSeconds = ((LONG) uiMilliSeconds) / 1000; \
-		udTenths = (((LONG) uiMilliSeconds) % 1000) / 100; \
-		ConvertSecondsToTicks( udSeconds, udTenths, (LONG *)(&(uiTU))); \
-	}
-
-#elif defined( FLM_UNIX)
-
-	// gettimeofday() is actually 4 times faster than time() on
-	// Solaris. gethrtime() is even faster. On Linux time() is the
-	// fastest; gettimeofday() is 50% slower. clock() is the
-	// slowest on both Solaris and Linux. We use a new function for
-	// millisec resolution. The implementation is OS dependent.
-
-	#define FLM_GET_TIMER() (FLMUINT) f_timeGetMilliTime()
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)  \
-       ((uiTU) = ((uiSeconds) * 1000))
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)  \
-       ((uiSeconds) = ((uiTU) / 1000))
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)   \
-		 ((uiMilli) = (uiTU))
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilli, uiTU)	\
-		 ((uiTU) = (uiMilli))
-#else /* FLM_WIN */
-
-	#define FLM_GET_TIMER() \
-		(FLMUINT)GetTickCount()
-
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
-		((uiTU) = (uiSeconds) * 1000)
-
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
-		((uiSeconds) = (uiTU) / 1000)
-
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
-		(uiMilli = (uiTU))
-
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU) \
-		(uiTU = (uiMilliSeconds))
-
-#endif
-
-// This macro for calculating elapsed time accounts for the
-// possibility of the time wrapping - which it will for some
-// of our counters (FLM_WIN is milliseconds and wraps in 49.7 days).
-
-#define FLM_ELAPSED_TIME(uiLaterTime,uiEarlierTime) \
-	(FLMUINT)(((uiLaterTime) >= (uiEarlierTime)) \
-				 ? (FLMUINT)((uiLaterTime) - (uiEarlierTime)) \
-				 : (FLMUINT)((0xFFFFFFFF - (uiEarlierTime)) + (uiLaterTime)))
 
 /****************************************************************************
 Desc:	Tests to see if database is NOT in native platform format.
@@ -522,7 +432,7 @@ typedef struct
 /****************************************************************************
 Desc:	 	Node list
 ****************************************************************************/
-class F_NodeList : public XF_RefCount, public XF_Base
+class F_NodeList : public F_Object
 {
 public:
 
@@ -721,7 +631,7 @@ Desc:		This is a temporary structure that is used when building compound
 ****************************************************************************/
 typedef struct IxContextTag
 {
-	F_Pool *			pPool;
+	IF_Pool *		pPool;
 	CDL_HDR *		pCdlTbl;
 	CDL *				pCdlList;
 	IxContextTag *	pNext;
@@ -798,7 +708,7 @@ typedef struct Tmp_Read_Stats
 /*****************************************************************************
 Desc: Shared database object - only to be used internally
 *****************************************************************************/
-class F_Database : public XF_RefCount, public XF_Base
+class F_Database : public F_Object
 {
 public:
 
@@ -857,7 +767,7 @@ public:
 	RCODE startCPThread( void);
 
 	FLMBOOL tryCheckpoint(
-		F_Thread *		pThread,
+		IF_Thread *		pThread,
 		CP_INFO *		pCPInfo);
 
 	void newDatabaseFinish(
@@ -1118,7 +1028,7 @@ private:
 	RCODE writeContiguousBlocks(
 		XFLM_DB_STATS *		pDbStats,
 		F_SuperFileHdl *		pSFileHdl,
-		F_IOBuffer *			pIOBuffer,
+		IF_IOBuffer *			pIOBuffer,
 		FLMUINT					uiBlkAddress,
 		FLMBOOL					bDoAsync);
 
@@ -1216,7 +1126,7 @@ private:
 		FLMBOOL				bHaveData);
 
 	static RCODE maintenanceThread(
-		F_Thread *			pThread);
+		IF_Thread *			pThread);
 
 	F_Database *			m_pNext;					// Next F_Database structure in in name hash
 															// bucket, dependent store hash
@@ -1297,7 +1207,7 @@ private:
 															// because of a critical error.
 	RCODE						m_rcMustClose;			// Return code that caused bMustClose to
 															// be set.
-	F_Pool 					m_krefPool;				// Kref pool to be used during update
+	IF_Pool * 				m_pKrefPool;			// Kref pool to be used during update
 															// transactions.
 	FLMUINT					m_uiSigBitsInBlkSize;// Significant bits in the database's
 															// block size.
@@ -1311,12 +1221,9 @@ private:
 	XFLM_DB_HDR				m_uncommittedDbHdr;	// This is the uncommitted DB header.
 															// It is used by the current update
 															// transaction.
-	F_FileIdList *			m_pFileIdList;			// List of unique IDs that have been
-															// assigned to the physical files that
-															// are mananaged by the FFILE.
-	F_IOBufferMgr *		m_pBufferMgr;
+	IF_IOBufferMgr *		m_pBufferMgr;
 
-	F_IOBuffer *			m_pCurrLogBuffer;
+	IF_IOBuffer *			m_pCurrLogBuffer;
 	FLMUINT					m_uiCurrLogWriteOffset;	// Offset in current write buffer
 	FLMUINT					m_uiCurrLogBlkAddr;
 															// Address of first block in the current
@@ -1374,7 +1281,7 @@ private:
 	FLMUINT					m_uiLastCheckpointTime;
 															// Last time we successfully completed a
 															// checkpoint.
-	F_Thread *				m_pCPThrd;				// Checkpoint thread.
+	IF_Thread *				m_pCPThrd;				// Checkpoint thread.
 	CP_INFO *				m_pCPInfo;				// Pointer to checkpoint thread's
 															// information buffer - used for
 															// communicating information to the
@@ -1388,7 +1295,7 @@ private:
 	FLMBOOL					m_bBackupActive;		// Backup is currently being run against the
 															// database.
 	F_NodeList				m_DocumentList;		// List of documents modified in a transaction
-	F_Thread *				m_pMaintThrd;			// Background maintenance thread
+	IF_Thread *				m_pMaintThrd;			// Background maintenance thread
 	F_SEM						m_hMaintSem;			// Maintenance thread "work-to-do" semaphore
 	FLMBYTE *				m_pszDbPasswd;			// The database encryption password
 	F_CCS *					m_pWrappingKey;		// The database wrapping key
@@ -1481,7 +1388,7 @@ typedef enum
 /*===========================================================================
 Desc: FLAIM object base class
 ===========================================================================*/
-class F_HashObject : public XF_RefCount, public XF_Base
+class F_HashObject : public F_Object
 {
 public:
 
@@ -1557,7 +1464,7 @@ friend class F_HashTable;
 /*===========================================================================
 Desc: FLAIM hash table
 ===========================================================================*/
-class F_HashTable : public XF_RefCount, public XF_Base
+class F_HashTable : public F_Object
 {
 public:
 
@@ -1567,8 +1474,7 @@ public:
 
 	RCODE setupHashTable(
 		FLMBOOL				bMultithreaded,
-		FLMUINT				uiNumBuckets,
-		FLMUINT32 *			pCRCTable);
+		FLMUINT				uiNumBuckets);
 
 	RCODE addObject(
 		F_HashObject *		pObject);
@@ -1616,8 +1522,6 @@ private:
 	F_HashObject *		m_pGlobalList;
 	F_HashObject **	m_ppHashTable;
 	FLMUINT				m_uiBuckets;
-	FLMUINT32 *			m_pCRCTable;
-	FLMBOOL				m_bOwnCRCTable;
 };
 
 typedef struct node_loc
@@ -1648,8 +1552,6 @@ typedef struct FlmSystemData
 	F_MUTEX					hBlockCacheMutex;
 													// Mutex for controlling access to
 													// block cache.
-	F_FileHdlMgr *			pFileHdlMgr;	// Used to Manage all FileHdl objects
-
 	FLMBOOL					bTempDirSet;	// TRUE if temporary directory has been set
 
 	FLMBOOL					bOkToDoAsyncWrites;
@@ -1669,8 +1571,8 @@ typedef struct FlmSystemData
 													// to reallocate a cache manager's hash
 													// table before trying again.
 	F_NodePool *			pNodePool;		// Pool of nodes that can be re-used
-	F_Thread *				pMonitorThrd;	// Monitor thread
-	F_Thread *				pCacheCleanupThrd;
+	IF_Thread *				pMonitorThrd;	// Monitor thread
+	IF_Thread *				pCacheCleanupThrd;
 	XFLM_STATS				Stats;			// Statistics structure
 	F_MUTEX					hStatsMutex;	// Mutex for statistics structure
 
@@ -1699,19 +1601,13 @@ typedef struct FlmSystemData
 													// unused structures in memory before
 													// freeing them.
 	FEVENT_HDR				EventHdrs [XFLM_MAX_EVENT_CATEGORIES];
-	F_Pool *					pKRefPool;		// Memory Pool that is only used by
+	IF_Pool *				pKRefPool;		// Memory Pool that is only used by
 													// record updaters for key building
 
 	FLMUINT					uiMaxFileSize;
 	IF_LoggerClient *		pLogger;
 	FLMUINT					uiPendingLogMessages;
 	F_MUTEX					hLoggerMutex;
-
-#ifdef FLM_LINUX
-	FLMUINT					uiLinuxMajorVer;
-	FLMUINT					uiLinuxMinorVer;
-	FLMUINT					uiLinuxRevision;
-#endif
 
 #ifdef FLM_DEBUG
 	// Variables for memory allocation tracking.
@@ -1727,70 +1623,25 @@ typedef struct FlmSystemData
 	FLMUINT					uiMemNumPtrs;
 	FLMUINT					uiMemNextPtrSlotToUse;
 	FLMUINT					uiAllocCnt;
-	#if defined( FLM_WIN)
-		HANDLE				hMemProcess;
-	#endif
-
-	#ifdef DEBUG_SIM_OUT_OF_MEM
-		FLMUINT				uiOutOfMemSimEnabledFlag;
-		// We pick a random number for the flag so that it is hard to accidentally
-		// turn this flag on by writing memory out-of-bounds.
-		
-		#define OUT_OF_MEM_SIM_ENABLED_FLAG 2149614134UL
-		
-		F_RandomGenerator	memSimRandomGen;
-		FLMUINT			uiSimOutOfMemFailTotal;
-		FLMUINT			uiSimOutOfMemFailSequence;
-	#endif
 #endif
 
-	F_MUTEX			hIniMutex;
-	F_ThreadMgr *	pThreadMgr;
-	F_MUTEX			hHttpSessionMutex;
-	F_BtPool *		pBtPool;
-	F_XML *			pXml;
-#ifdef FLM_NLM
-	FLMBOOL			bUseNSSFileHdls;
-#endif
+	F_MUTEX					hIniMutex;
+	F_MUTEX					hHttpSessionMutex;
+	F_BtPool *				pBtPool;
+	IF_XML *					pXml;
+	IF_FileSystem	*		pFileSystem;
+	IF_ThreadMgr *			pThreadMgr;
+	FLMUINT					uiIndexingThreadGroup;
+	FLMUINT					uiDbThreadGroup;
+	FLMUINT					uiCheckpointThreadGroup;
+
 } FLMSYSDATA;
 
 #ifndef ALLOCATE_SYS_DATA
-	extern FLMSYSDATA		gv_XFlmSysData;
+	extern FLMSYSDATA			gv_XFlmSysData;
 #else
-	FLMSYSDATA				gv_XFlmSysData;
+	FLMSYSDATA					gv_XFlmSysData;
 #endif
-
-FINLINE FLMBOOL f_isWhiteSpace(
-	FLMBYTE	ucChar)
-{
-	return( ucChar == ASCII_SPACE || ucChar == ASCII_TAB ? TRUE : FALSE);
-}
-
-FINLINE FLMUNICODE flmConvertChar(
-	FLMUNICODE	uzChar,
-	FLMUINT		uiCompareRules)
-{
-	if (uzChar == ASCII_SPACE ||
-		 (uzChar == ASCII_UNDERSCORE &&
-		  (uiCompareRules & XFLM_COMP_NO_UNDERSCORES)) ||
-		 (gv_XFlmSysData.pXml->isWhitespace( uzChar) &&
-		  (uiCompareRules & XFLM_COMP_WHITESPACE_AS_SPACE)))
-	{
-		return( (FLMUNICODE)((uiCompareRules &
-									 (XFLM_COMP_NO_WHITESPACE |
-									  XFLM_COMP_IGNORE_LEADING_SPACE))
-									 ? (FLMUNICODE)0
-									 : (FLMUNICODE)ASCII_SPACE));
-	}
-	else if (uzChar == ASCII_DASH && (uiCompareRules & XFLM_COMP_NO_DASHES))
-	{
-		return( (FLMUNICODE)0);
-	}
-	else
-	{
-		return( uzChar);
-	}
-}
 
 #if defined( FLM_WIN) || defined( FLM_NLM) || defined( FLM_LINUX)
 	#pragma pack(pop)

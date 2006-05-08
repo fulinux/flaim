@@ -259,7 +259,7 @@ typedef struct
 
 class F_BtPool;
 
-class F_Btree : public XF_RefCount, public XF_Base
+class F_Btree : public F_Object
 {
 public:
 

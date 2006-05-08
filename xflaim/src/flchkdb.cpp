@@ -95,7 +95,7 @@ RCODE F_DbCheck::createAndOpenResultSetDb( void)
 		// Generate a random file name
 		
 		f_sprintf( m_szResultSetDibName,
-					  "%d.db", (int)m_pRandGen->randomChoice( 100, 20000));
+					  "%d.db", (int)m_pRandGen->getINT32( 100, 20000));
 		
 		if (RC_OK( rc = dbSystem.dbCreate( m_szResultSetDibName, NULL, NULL,
 								NULL, NULL, &createOpts, TRUE,
@@ -103,7 +103,7 @@ RCODE F_DbCheck::createAndOpenResultSetDb( void)
 		{
 			break;
 		}
-		if (rc == NE_XFLM_FILE_EXISTS || rc == NE_XFLM_IO_ACCESS_DENIED)
+		if (rc == NE_XFLM_FILE_EXISTS || rc == NE_FLM_IO_ACCESS_DENIED)
 		{
 			rc = NE_XFLM_OK;
 		}
@@ -189,7 +189,7 @@ RCODE F_DbCheck::getBtResultSet(
 
 		// Now create a new collection.  Randomly select a collection number to use.
 		
-		uiCollection = m_pRandGen->randomChoice( 100, XFLM_MAX_COLLECTION_NUM);
+		uiCollection = m_pRandGen->getINT32( 100, XFLM_MAX_COLLECTION_NUM);
 	
 		// Check to see if it already exists.
 		
@@ -343,14 +343,13 @@ RCODE F_DbCheck::dbCheck(
 	}
 	
 	// Setup the result set database.
-
-	if ((m_pRandGen = f_new F_RandomGenerator) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &m_pRandGen)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
-	m_pRandGen->randomSetSeed( 9768);
+	m_pRandGen->setSeed( 9768);
 
 	if (RC_BAD( rc = createAndOpenResultSetDb()))
 	{
@@ -388,7 +387,7 @@ Begin_Check:
 		  uiLoop <= MAX_DATA_BLOCK_FILE_NUMBER;
 		  uiLoop++)
 	{
-		if (RC_BAD( m_pDb->m_pSFileHdl->GetFileSize( uiLoop, &ui64TmpSize)))
+		if (RC_BAD( m_pDb->m_pSFileHdl->getFileSize( uiLoop, &ui64TmpSize)))
 		{
 			break;
 		}
@@ -786,7 +785,7 @@ Exit:
 Desc:	Returns the next B-Tree information that was collected during the
 		database check.
 ****************************************************************************/
-void XFLMAPI F_DbInfo::getBTreeInfo(
+void FLMAPI F_DbInfo::getBTreeInfo(
 	FLMUINT			uiNthLogicalFile,
 	FLMUINT *		puiLfNum,
 	eLFileType *	peLfType,
@@ -817,7 +816,7 @@ void XFLMAPI F_DbInfo::getBTreeInfo(
 Desc:	Returns block information on the specified b-tree and level within
 		that b-tree.
 ****************************************************************************/
-void XFLMAPI F_DbInfo::getBTreeBlockStats(
+void FLMAPI F_DbInfo::getBTreeBlockStats(
 	FLMUINT		uiNthLogicalFile,
 	FLMUINT		uiLevel,
 	FLMUINT64 *	pui64KeyCount,
@@ -868,7 +867,7 @@ Note:	The routine verifies the database by first reading through
 		verify the linked lists, we can keep ourselves from getting into
 		an infinite loop if there is a loop in the lists.
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::dbCheck(
+RCODE FLMAPI F_DbSystem::dbCheck(
 	const char *			pszDbFileName,
 		// [IN] Full path and file name of the database which
 		// is to be checked.  NULL can be passed as the value of

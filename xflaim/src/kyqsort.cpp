@@ -37,15 +37,6 @@ FSTATIC RCODE ixKeyGetNodeId(
 	FLMUINT				uiKeyComponent,
 	FLMUINT64 *			pui64NodeId);
 	
-FSTATIC RCODE ixKeyCompareUnicode(
-	ICD *					pIcd,
-	FLMUINT				uiLanguage,
-	FLMUNICODE *		puzStr1,
-	FLMUINT				uiByteLen1,
-	FLMUNICODE *		puzStr2,
-	FLMUINT				uiByteLen2,
-	FLMINT *				piCompare);
-	
 FSTATIC RCODE ixKeyGetUnicode(
 	F_Db *				pDb,
 	ICD *					pIcd,
@@ -128,7 +119,7 @@ FSTATIC RCODE ixKeyGetNodeId(
 
 	// Skip past the document ID
 
-	if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, NULL)))
+	if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, NULL)))
 	{
 		goto Exit;
 	}
@@ -145,7 +136,7 @@ FSTATIC RCODE ixKeyGetNodeId(
 		// Skip the component node ID - passing a NULL for the last
 		// parameter is cheaper than getting it out.
 		
-		if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, NULL)))
+		if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, NULL)))
 		{
 			goto Exit;
 		}
@@ -158,59 +149,7 @@ FSTATIC RCODE ixKeyGetNodeId(
 			
 	// Should now be positioned on the one we want, extract it.
 	
-	if (RC_BAD( rc = flmDecodeSEN64( &pucKey, pucKeyEnd, pui64NodeId)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/***************************************************************************
-Desc:	Compares result set entries during the finalization stage to allow
-		the result set to be sorted and to remove duplicates.
-*****************************************************************************/
-FSTATIC RCODE ixKeyCompareUnicode(
-	ICD *				pIcd,
-	FLMUINT			uiLanguage,
-	FLMUNICODE *	puzStr1,
-	FLMUINT			uiByteLen1,
-	FLMUNICODE *	puzStr2,
-	FLMUINT			uiByteLen2,
-	FLMINT *			piCompare)
-{
-	RCODE						rc = NE_XFLM_OK;
-	F_BufferIStream		bufferLStream;
-	F_BufferIStream		bufferRStream;
-	F_CollIStream			lStream;
-	F_CollIStream			rStream;
-	
-	if (RC_BAD( rc = bufferLStream.open( (FLMBYTE *)puzStr1, uiByteLen1)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = bufferRStream.open( (FLMBYTE *)puzStr2, uiByteLen2)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = lStream.open( &bufferLStream, TRUE, uiLanguage,
-		pIcd->uiCompareRules, FALSE)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = rStream.open( &bufferRStream, TRUE, uiLanguage,
-		pIcd->uiCompareRules, FALSE)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = fqCompareCollStreams( &lStream, &rStream, FALSE,
-								uiLanguage, piCompare)))
+	if (RC_BAD( rc = f_decodeSEN64( &pucKey, pucKeyEnd, pui64NodeId)))
 	{
 		goto Exit;
 	}
@@ -706,12 +645,15 @@ RCODE ixKeyCompare(
 							{
 								goto Exit;
 							}
-							if (RC_BAD( rc = ixKeyCompareUnicode( pIcd,
-														pIxd->uiLanguage,
+							
+							if (RC_BAD( rc = f_compareUnicodeStrings(
 														dynaBuf1.getUnicodePtr(),
 														dynaBuf1.getDataLength(),
+														FALSE,
 														dynaBuf2.getUnicodePtr(),
-														dynaBuf2.getDataLength(), piCompare)))
+														dynaBuf2.getDataLength(),
+														FALSE, pIcd->uiCompareRules,
+														pIxd->uiLanguage, piCompare)))
 							{
 								goto Exit;
 							}
@@ -890,11 +832,11 @@ Test_Exclusive:
 			// At this point, both keys should be positioned to
 			// get the document ID.
 			
-			if (RC_BAD( rc = flmDecodeSEN64( &pucKey1, pucKeyEnd1, &ui64DocId1)))
+			if (RC_BAD( rc = f_decodeSEN64( &pucKey1, pucKeyEnd1, &ui64DocId1)))
 			{
 				goto Exit;
 			}
-			if (RC_BAD( rc = flmDecodeSEN64( &pucKey2, pucKeyEnd2, &ui64DocId2)))
+			if (RC_BAD( rc = f_decodeSEN64( &pucKey2, pucKeyEnd2, &ui64DocId2)))
 			{
 				goto Exit;
 			}
@@ -1066,7 +1008,7 @@ RCODE F_Db::keysCommit(
 	if (m_bKrefSetup)
 	{
 		LFILE *			pLFile = NULL;
-		IXD *				pIxd;
+		IXD *				pIxd = NULL;
 		FLMUINT			uiTotal = m_uiKrefCount;
 		KREF_ENTRY *	pKref;
 		KREF_ENTRY **	pKrefTbl = m_pKrefTbl;

@@ -27,9 +27,7 @@
 #define ALLOCATE_SYS_DATA
 #define ALLOC_ERROR_TABLES
 
-#include <stddef.h>
 #include "flaimsys.h"
-#include "inifile.h"
 
 #define HIGH_FLMUINT				(~((FLMUINT)0))
 #define FLM_MIN_FREE_BYTES		(2 * 1024 * 1024)
@@ -53,20 +51,14 @@
 FLMATOMIC			F_DbSystem::m_flmSysSpinLock = 0;
 FLMUINT				F_DbSystem::m_uiFlmSysStartupCount = 0;
 
-static FLMBYTE		ucSENPrefixArray[] =
-								{0, 0, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
-
-// Local Function Prototypes
-
-#ifdef FLM_CAN_GET_PHYS_MEM
-FSTATIC FLMUINT flmGetCacheBytes(
-	FLMUINT		uiPercent,
-	FLMUINT		uiMin,
-	FLMUINT		uiMax,
-	FLMUINT		uiMinToLeave,
-	FLMBOOL		bCalcOnAvailMem,
-	FLMUINT		uiBytesCurrentlyInUse);
-#endif
+FSTATIC RCODE flmGetCacheBytes(
+	FLMUINT			uiPercent,
+	FLMUINT			uiMin,
+	FLMUINT			uiMax,
+	FLMUINT			uiMinToLeave,
+	FLMBOOL			bCalcOnAvailMem,
+	FLMUINT			uiBytesCurrentlyInUse,
+	FLMUINT *		puiCacheBytes);
 
 FSTATIC RCODE flmVerifyDiskStructOffsets( void);
 
@@ -78,7 +70,7 @@ FSTATIC void flmFreeEvent(
 FSTATIC void flmGetStringParam(
 	const char *	pszParamName,
 	char **			ppszValue,
-	F_IniFile *		pIniFile);
+	IF_IniFile *	pIniFile);
 
 FSTATIC void flmGetNumParam(
 	char **		ppszParam,
@@ -88,402 +80,19 @@ FSTATIC void flmGetUintParam(
 	const char *	pszParamName,
 	FLMUINT			uiDefaultValue,
 	FLMUINT *		puiUint,
-	F_IniFile *		pIniFile);
+	IF_IniFile *	pIniFile);
 
 void flmGetBoolParam(
 	const char *	pszParamName,
 	FLMBOOL			uiDefaultValue,
 	FLMBOOL *		pbBool,
-	F_IniFile *		pIniFile);
+	IF_IniFile *	pIniFile);
 
 FSTATIC RCODE flmGetIniFileName(
 	FLMBYTE *		pszIniFileName,
 	FLMUINT			uiBufferSz);
 
-/****************************************************************************
-Desc:		Error code to string mapping tables
-****************************************************************************/
-typedef struct
-{
-	RCODE				rc;
-	const char *	pszErrorStr;
-} F_ERROR_CODE_MAP;
-
-#define flmErrorCodeEntry(c)		{ c, #c }
-
-#ifdef FLM_NLM
-	FLMBOOL gv_bNetWareStartupCalled = FALSE;
-#endif
-
-F_ERROR_CODE_MAP gv_FlmCommonErrors[
-	NE_XFLM_LAST_COMMON_ERROR - NE_XFLM_FIRST_COMMON_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_NOT_IMPLEMENTED),
-	flmErrorCodeEntry( NE_XFLM_MEM),
-	{ XFLM_ERROR_BASE( 0x0003), "NotUsed"},
-	{ XFLM_ERROR_BASE( 0x0004), "NotUsed"},
-	flmErrorCodeEntry( NE_XFLM_INVALID_PARM),
-	{ XFLM_ERROR_BASE( 0x0006), "NotUsed"},
-	{ XFLM_ERROR_BASE( 0x0007), "NotUsed"},
-	{ XFLM_ERROR_BASE( 0x0008), "NotUsed"},
-	flmErrorCodeEntry( NE_XFLM_TIMEOUT),
-	flmErrorCodeEntry( NE_XFLM_NOT_FOUND),
-	{ XFLM_ERROR_BASE( 0x000B), "NotUsed"},
-	flmErrorCodeEntry( NE_XFLM_EXISTS),
-	{ XFLM_ERROR_BASE( 0x000D), "NotUsed"},
-	{ XFLM_ERROR_BASE( 0x000E), "NotUsed"},
-	{ XFLM_ERROR_BASE( 0x000F), "NotUsed"},
-	flmErrorCodeEntry( NE_XFLM_USER_ABORT),
-	flmErrorCodeEntry( NE_XFLM_FAILURE)
-};
-
-F_ERROR_CODE_MAP gv_FlmGeneralErrors[
-	NE_XFLM_LAST_GENERAL_ERROR - NE_XFLM_FIRST_GENERAL_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_BOF_HIT),
-	flmErrorCodeEntry( NE_XFLM_EOF_HIT),
-	flmErrorCodeEntry( NE_XFLM_END),
-	flmErrorCodeEntry( NE_XFLM_BAD_PREFIX),
-	flmErrorCodeEntry( NE_XFLM_ATTRIBUTE_PURGED),
-	flmErrorCodeEntry( NE_XFLM_BAD_COLLECTION),
-	flmErrorCodeEntry( NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_DATA_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_BAD_DATA_TYPE),
-	flmErrorCodeEntry( NE_XFLM_MUST_INDEX_ON_PRESENCE),
-	flmErrorCodeEntry( NE_XFLM_BAD_IX),
-	flmErrorCodeEntry( NE_XFLM_BACKUP_ACTIVE),
-	flmErrorCodeEntry( NE_XFLM_SERIAL_NUM_MISMATCH),
-	flmErrorCodeEntry( NE_XFLM_BAD_RFL_DB_SERIAL_NUM),
-	flmErrorCodeEntry( NE_XFLM_BTREE_ERROR),
-	flmErrorCodeEntry( NE_XFLM_BTREE_FULL),
-	flmErrorCodeEntry( NE_XFLM_BAD_RFL_FILE_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_DEL_ELEMENT),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_MOD_DATA_TYPE),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_INDEX_DATA_TYPE),
-	flmErrorCodeEntry( NE_XFLM_CONV_BAD_DIGIT),
-	flmErrorCodeEntry( NE_XFLM_CONV_DEST_OVERFLOW),
-	flmErrorCodeEntry( NE_XFLM_CONV_ILLEGAL),
-	flmErrorCodeEntry( NE_XFLM_CONV_NULL_SRC),
-	flmErrorCodeEntry( NE_XFLM_CONV_NUM_OVERFLOW),
-	flmErrorCodeEntry( NE_XFLM_CONV_NUM_UNDERFLOW),
-	flmErrorCodeEntry( NE_XFLM_BAD_ELEMENT_NUM),
-	flmErrorCodeEntry( NE_XFLM_BAD_ATTRIBUTE_NUM),
-	flmErrorCodeEntry( NE_XFLM_BAD_ENCDEF_NUM),
-	flmErrorCodeEntry( NE_XFLM_DATA_ERROR),
-	flmErrorCodeEntry( NE_XFLM_INVALID_FILE_SEQUENCE),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_OP),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_ELEMENT_NUM),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_TRANS_TYPE),
-	flmErrorCodeEntry( NE_XFLM_UNSUPPORTED_VERSION),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_TRANS_OP),
-	flmErrorCodeEntry( NE_XFLM_INCOMPLETE_LOG),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_INDEX_DEF),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_INDEX_ON),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_STATE_CHANGE),
-	flmErrorCodeEntry( NE_XFLM_BAD_RFL_SERIAL_NUM),
-	flmErrorCodeEntry( NE_XFLM_NEWER_FLAIM),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_MOD_ELEMENT_STATE),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_MOD_ATTRIBUTE_STATE),
-	flmErrorCodeEntry( NE_XFLM_NO_MORE_ELEMENT_NUMS),
-	flmErrorCodeEntry( NE_XFLM_NO_TRANS_ACTIVE),
-	flmErrorCodeEntry( NE_XFLM_NOT_UNIQUE),
-	flmErrorCodeEntry( NE_XFLM_NOT_FLAIM),
-	flmErrorCodeEntry( NE_XFLM_OLD_VIEW),
-	flmErrorCodeEntry( NE_XFLM_SHARED_LOCK),
-	flmErrorCodeEntry( NE_XFLM_SYNTAX),
-	flmErrorCodeEntry( NE_XFLM_TRANS_ACTIVE),
-	flmErrorCodeEntry( NE_XFLM_RFL_TRANS_GAP),
-	flmErrorCodeEntry( NE_XFLM_BAD_COLLATED_KEY),
-	flmErrorCodeEntry( NE_XFLM_UNSUPPORTED_FEATURE),
-	flmErrorCodeEntry( NE_XFLM_MUST_DELETE_INDEXES),
-	flmErrorCodeEntry( NE_XFLM_RFL_INCOMPLETE),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_RESTORE_RFL_FILES),
-	flmErrorCodeEntry( NE_XFLM_INCONSISTENT_BACKUP),
-	flmErrorCodeEntry( NE_XFLM_BLOCK_CRC),
-	flmErrorCodeEntry( NE_XFLM_ABORT_TRANS),
-	flmErrorCodeEntry( NE_XFLM_NOT_RFL),
-	flmErrorCodeEntry( NE_XFLM_BAD_RFL_PACKET),
-	flmErrorCodeEntry( NE_XFLM_DATA_PATH_MISMATCH),
-	flmErrorCodeEntry( NE_XFLM_STREAM_EXISTS),
-	flmErrorCodeEntry( NE_XFLM_FILE_EXISTS),
-	flmErrorCodeEntry( NE_XFLM_COULD_NOT_CREATE_SEMAPHORE),
-	flmErrorCodeEntry( NE_XFLM_MUST_CLOSE_DATABASE),
-	flmErrorCodeEntry( NE_XFLM_INVALID_ENCKEY_CRC),
-	flmErrorCodeEntry( NE_XFLM_BAD_UTF8),
-	flmErrorCodeEntry( NE_XFLM_COULD_NOT_CREATE_MUTEX),
-	flmErrorCodeEntry( NE_XFLM_ERROR_WAITING_ON_SEMPAHORE),
-	flmErrorCodeEntry( NE_XFLM_BAD_PLATFORM_FORMAT),
-	flmErrorCodeEntry( NE_XFLM_HDR_CRC),
-	flmErrorCodeEntry( NE_XFLM_NO_NAME_TABLE),
-	flmErrorCodeEntry( NE_XFLM_MULTIPLE_MATCHES),
-	flmErrorCodeEntry( NE_XFLM_UNALLOWED_UPGRADE),
-	flmErrorCodeEntry( NE_XFLM_BTREE_BAD_STATE),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_ATTRIBUTE_NUM),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_INDEX_NUM),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_COLLECTION_NUM),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_ELEMENT_NAME),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_ATTRIBUTE_NAME),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_INDEX_NAME),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_COLLECTION_NAME),
-	flmErrorCodeEntry( NE_XFLM_ELEMENT_PURGED),
-	flmErrorCodeEntry( NE_XFLM_TOO_MANY_OPEN_DATABASES),
-	flmErrorCodeEntry( NE_XFLM_DATABASE_OPEN),
-	flmErrorCodeEntry( NE_XFLM_CACHE_ERROR),
-	flmErrorCodeEntry( NE_XFLM_BTREE_KEY_SIZE),
-	flmErrorCodeEntry( NE_XFLM_DB_FULL),
-	flmErrorCodeEntry( NE_XFLM_QUERY_SYNTAX),
-	flmErrorCodeEntry( NE_XFLM_COULD_NOT_START_THREAD),
-	flmErrorCodeEntry( NE_XFLM_INDEX_OFFLINE),
-	flmErrorCodeEntry( NE_XFLM_RFL_DISK_FULL),
-	flmErrorCodeEntry( NE_XFLM_MUST_WAIT_CHECKPOINT),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ENC_ALGORITHM),
-	flmErrorCodeEntry( NE_XFLM_INVALID_ENC_ALGORITHM),
-	flmErrorCodeEntry( NE_XFLM_INVALID_ENC_KEY_SIZE),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_DATA_TYPE),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_STATE),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_ELEMENT_NAME),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_ATTRIBUTE_NAME),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_COLLECTION_NAME),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_INDEX_NAME),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_ELEMENT_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_ATTRIBUTE_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_COLLECTION_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_INDEX_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_ENCDEF_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_COLLECTION_NAME_MISMATCH),
-	flmErrorCodeEntry( NE_XFLM_ELEMENT_NAME_MISMATCH),
-	flmErrorCodeEntry( NE_XFLM_ATTRIBUTE_NAME_MISMATCH),
-	flmErrorCodeEntry( NE_XFLM_INVALID_COMPARE_RULE),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_KEY_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_DATA_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_MISSING_KEY_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_MISSING_DATA_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_INVALID_INDEX_OPTION),
-	flmErrorCodeEntry( NE_XFLM_NO_MORE_ATTRIBUTE_NUMS),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ELEMENT_NAME),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ATTRIBUTE_NAME),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ELEMENT_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ATTRIBUTE_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_MISSING_INDEX_NAME),
-	flmErrorCodeEntry( NE_XFLM_MISSING_INDEX_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_MISSING_COLLECTION_NAME),
-	flmErrorCodeEntry( NE_XFLM_MISSING_COLLECTION_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_BAD_SEN),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ENCDEF_NAME),
-	flmErrorCodeEntry( NE_XFLM_MISSING_ENCDEF_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_NO_MORE_INDEX_NUMS),
-	flmErrorCodeEntry( NE_XFLM_NO_MORE_COLLECTION_NUMS),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_DEL_ATTRIBUTE),
-	flmErrorCodeEntry( NE_XFLM_TOO_MANY_PENDING_NODES),
-	flmErrorCodeEntry( NE_XFLM_UNSUPPORTED_INTERFACE),
-	flmErrorCodeEntry( NE_XFLM_BAD_USE_OF_ELM_ROOT_TAG),
-	flmErrorCodeEntry( NE_XFLM_DUP_SIBLING_IX_COMPONENTS),
-	flmErrorCodeEntry( NE_XFLM_RFL_FILE_NOT_FOUND),
-	flmErrorCodeEntry( NE_XFLM_BAD_RCODE_TABLE),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_KEY_COMPONENT_NUM),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_DATA_COMPONENT_NUM),
-	flmErrorCodeEntry( NE_XFLM_CLASS_NOT_AVAILABLE),
-	flmErrorCodeEntry( NE_XFLM_BUFFER_OVERFLOW),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_PREFIX_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_MISSING_PREFIX_NAME),
-	flmErrorCodeEntry( NE_XFLM_MISSING_PREFIX_NUMBER),
-	flmErrorCodeEntry( NE_XFLM_UNDEFINED_ELEMENT_NAME),
-	flmErrorCodeEntry( NE_XFLM_UNDEFINED_ATTRIBUTE_NAME),
-	flmErrorCodeEntry( NE_XFLM_DUPLICATE_PREFIX_NAME),
-	flmErrorCodeEntry( NE_XFLM_KEY_OVERFLOW),
-	flmErrorCodeEntry( NE_XFLM_UNESCAPED_METACHAR),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_QUANTIFIER),
-	flmErrorCodeEntry( NE_XFLM_UNEXPECTED_END_OF_EXPR),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_MIN_COUNT),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_MAX_COUNT),
-	flmErrorCodeEntry( NE_XFLM_EMPTY_BRANCH_IN_EXPR),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_RPAREN_IN_EXPR),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_CLASS_SUBTRACTION),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_CHAR_RANGE_IN_EXPR),
-	flmErrorCodeEntry( NE_XFLM_BAD_BASE64_ENCODING),
-	flmErrorCodeEntry( NE_XFLM_NAMESPACE_NOT_ALLOWED),
-	flmErrorCodeEntry( NE_XFLM_INVALID_NAMESPACE_DECL),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_NAMESPACE_DECL_DATATYPE),
-	flmErrorCodeEntry( NE_XFLM_UNEXPECTED_END_OF_INPUT),
-	flmErrorCodeEntry( NE_XFLM_NO_MORE_PREFIX_NUMS),
-	flmErrorCodeEntry( NE_XFLM_NO_MORE_ENCDEF_NUMS),
-	flmErrorCodeEntry( NE_XFLM_COLLECTION_OFFLINE),
-	flmErrorCodeEntry( NE_XFLM_INVALID_XML),
-	flmErrorCodeEntry( NE_XFLM_READ_ONLY),
-	flmErrorCodeEntry( NE_XFLM_DELETE_NOT_ALLOWED),
-	flmErrorCodeEntry( NE_XFLM_RESET_NEEDED),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_REQUIRED_VALUE),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_INDEX_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_UNIQUE_SUB_ELEMENT_VALUE),
-	flmErrorCodeEntry( NE_XFLM_DATA_TYPE_MUST_BE_NO_DATA),
-	flmErrorCodeEntry( NE_XFLM_ILLEGAL_FLAG),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_SET_REQUIRED),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_SET_LIMIT),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_SET_INDEX_ON),
-	flmErrorCodeEntry( NE_XFLM_CANNOT_SET_COMPARE_RULES),
-	flmErrorCodeEntry( NE_XFLM_INPUT_PENDING),
-	flmErrorCodeEntry( NE_XFLM_INVALID_NODE_TYPE),
-	flmErrorCodeEntry( NE_XFLM_INVALID_CHILD_ELM_NODE_ID)
-};
-
-F_ERROR_CODE_MAP gv_FlmDomErrors[
-	NE_XFLM_LAST_DOM_ERROR - NE_XFLM_FIRST_DOM_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_DOM_HIERARCHY_REQUEST_ERR),
-	flmErrorCodeEntry( NE_XFLM_DOM_WRONG_DOCUMENT_ERR),
-	flmErrorCodeEntry( NE_XFLM_DOM_DATA_ERROR),
-	flmErrorCodeEntry( NE_XFLM_DOM_NODE_NOT_FOUND),
-	flmErrorCodeEntry( NE_XFLM_DOM_INVALID_CHILD_TYPE),
-	flmErrorCodeEntry( NE_XFLM_DOM_NODE_DELETED),
-	flmErrorCodeEntry( NE_XFLM_DOM_DUPLICATE_ELEMENT)
-};
-
-F_ERROR_CODE_MAP gv_FlmIoErrors[
-	NE_XFLM_LAST_IO_ERROR - NE_XFLM_FIRST_IO_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_IO_ACCESS_DENIED),
-	flmErrorCodeEntry( NE_XFLM_IO_BAD_FILE_HANDLE),
-	flmErrorCodeEntry( NE_XFLM_IO_COPY_ERR),
-	flmErrorCodeEntry( NE_XFLM_IO_DISK_FULL),
-	flmErrorCodeEntry( NE_XFLM_IO_END_OF_FILE),
-	flmErrorCodeEntry( NE_XFLM_IO_OPEN_ERR),
-	flmErrorCodeEntry( NE_XFLM_IO_SEEK_ERR),
-	flmErrorCodeEntry( NE_XFLM_IO_DIRECTORY_ERR),
-	flmErrorCodeEntry( NE_XFLM_IO_PATH_NOT_FOUND),
-	flmErrorCodeEntry( NE_XFLM_IO_TOO_MANY_OPEN_FILES),
-	flmErrorCodeEntry( NE_XFLM_IO_PATH_TOO_LONG),
-	flmErrorCodeEntry( NE_XFLM_IO_NO_MORE_FILES),
-	flmErrorCodeEntry( NE_XFLM_IO_DELETING_FILE),
-	flmErrorCodeEntry( NE_XFLM_IO_FILE_LOCK_ERR),
-	flmErrorCodeEntry( NE_XFLM_IO_FILE_UNLOCK_ERR),
-	flmErrorCodeEntry( NE_XFLM_IO_PATH_CREATE_FAILURE),
-	flmErrorCodeEntry( NE_XFLM_IO_RENAME_FAILURE),
-	flmErrorCodeEntry( NE_XFLM_IO_INVALID_PASSWORD),
-	flmErrorCodeEntry( NE_XFLM_SETTING_UP_FOR_READ),
-	flmErrorCodeEntry( NE_XFLM_SETTING_UP_FOR_WRITE),
-	flmErrorCodeEntry( NE_XFLM_IO_CANNOT_REDUCE_PATH),
-	flmErrorCodeEntry( NE_XFLM_INITIALIZING_IO_SYSTEM),
-	flmErrorCodeEntry( NE_XFLM_FLUSHING_FILE),
-	flmErrorCodeEntry( NE_XFLM_IO_INVALID_FILENAME),
-	flmErrorCodeEntry( NE_XFLM_IO_CONNECT_ERROR),
-	flmErrorCodeEntry( NE_XFLM_OPENING_FILE),
-	flmErrorCodeEntry( NE_XFLM_DIRECT_OPENING_FILE),
-	flmErrorCodeEntry( NE_XFLM_CREATING_FILE),
-	flmErrorCodeEntry( NE_XFLM_DIRECT_CREATING_FILE),
-	flmErrorCodeEntry( NE_XFLM_READING_FILE),
-	flmErrorCodeEntry( NE_XFLM_DIRECT_READING_FILE),
-	flmErrorCodeEntry( NE_XFLM_WRITING_FILE),
-	flmErrorCodeEntry( NE_XFLM_DIRECT_WRITING_FILE),
-	flmErrorCodeEntry( NE_XFLM_POSITIONING_IN_FILE),
-	flmErrorCodeEntry( NE_XFLM_GETTING_FILE_SIZE),
-	flmErrorCodeEntry( NE_XFLM_TRUNCATING_FILE),
-	flmErrorCodeEntry( NE_XFLM_PARSING_FILE_NAME),
-	flmErrorCodeEntry( NE_XFLM_CLOSING_FILE),
-	flmErrorCodeEntry( NE_XFLM_GETTING_FILE_INFO),
-	flmErrorCodeEntry( NE_XFLM_EXPANDING_FILE),
-	flmErrorCodeEntry( NE_XFLM_CHECKING_FILE_EXISTENCE),
-	flmErrorCodeEntry( NE_XFLM_RENAMING_FILE),
-	flmErrorCodeEntry( NE_XFLM_SETTING_FILE_INFO)
-};
-
-F_ERROR_CODE_MAP gv_FlmNetErrors[
-	NE_XFLM_LAST_NET_ERROR - NE_XFLM_FIRST_NET_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_NOIP_ADDR),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_FAIL),
-	flmErrorCodeEntry( NE_XFLM_CONNECT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_BIND_FAIL),
-	flmErrorCodeEntry( NE_XFLM_LISTEN_FAIL),
-	flmErrorCodeEntry( NE_XFLM_ACCEPT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SELECT_ERR),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_SET_OPT_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_DISCONNECT),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_READ_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_WRITE_FAIL),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_READ_TIMEOUT),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_WRITE_TIMEOUT),
-	flmErrorCodeEntry( NE_XFLM_SOCKET_ALREADY_CLOSED)
-};
-
-F_ERROR_CODE_MAP gv_FlmQueryErrors[
-	NE_XFLM_LAST_QUERY_ERROR - NE_XFLM_FIRST_QUERY_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_Q_UNMATCHED_RPAREN),
-	flmErrorCodeEntry( NE_XFLM_Q_UNEXPECTED_LPAREN),
-	flmErrorCodeEntry( NE_XFLM_Q_UNEXPECTED_RPAREN),
-	flmErrorCodeEntry( NE_XFLM_Q_EXPECTING_OPERAND),
-	flmErrorCodeEntry( NE_XFLM_Q_EXPECTING_OPERATOR),
-	flmErrorCodeEntry( NE_XFLM_Q_UNEXPECTED_COMMA),
-	flmErrorCodeEntry( NE_XFLM_Q_EXPECTING_LPAREN),
-	flmErrorCodeEntry( NE_XFLM_Q_UNEXPECTED_VALUE),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_NUM_FUNC_ARGS),
-	flmErrorCodeEntry( NE_XFLM_Q_UNEXPECTED_XPATH_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_Q_ILLEGAL_LBRACKET),
-	flmErrorCodeEntry( NE_XFLM_Q_ILLEGAL_RBRACKET),
-	flmErrorCodeEntry( NE_XFLM_Q_ILLEGAL_OPERAND),
-	flmErrorCodeEntry( NE_XFLM_Q_ALREADY_OPTIMIZED),
-	flmErrorCodeEntry( NE_XFLM_Q_MISMATCHED_DB),
-	flmErrorCodeEntry( NE_XFLM_Q_ILLEGAL_OPERATOR),
-	flmErrorCodeEntry( NE_XFLM_Q_ILLEGAL_COMPARE_RULES),
-	flmErrorCodeEntry( NE_XFLM_Q_INCOMPLETE_QUERY_EXPR),
-	flmErrorCodeEntry( NE_XFLM_Q_NOT_POSITIONED),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_NODE_ID_VALUE),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_META_DATA_TYPE),
-	flmErrorCodeEntry( NE_XFLM_Q_NEW_EXPR_NOT_ALLOWED),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_CONTEXT_POS),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_FUNC_ARG),
-	flmErrorCodeEntry( NE_XFLM_Q_EXPECTING_RPAREN),
-	flmErrorCodeEntry( NE_XFLM_Q_TOO_LATE_TO_ADD_SORT_KEYS),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_SORT_KEY_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_Q_DUPLICATE_SORT_KEY_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_Q_MISSING_SORT_KEY_COMPONENT),
-	flmErrorCodeEntry( NE_XFLM_Q_NO_SORT_KEY_COMPONENTS_SPECIFIED),
-	flmErrorCodeEntry( NE_XFLM_Q_SORT_KEY_CONTEXT_MUST_BE_ELEMENT),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_ELEMENT_NUM_IN_SORT_KEYS),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_ATTR_NUM_IN_SORT_KEYS),
-	flmErrorCodeEntry( NE_XFLM_Q_NON_POSITIONABLE_QUERY),
-	flmErrorCodeEntry( NE_XFLM_Q_INVALID_POSITION)
-};
-
-F_ERROR_CODE_MAP gv_FlmStreamErrors[
-	NE_XFLM_LAST_STREAM_ERROR - NE_XFLM_FIRST_STREAM_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_STREAM_DECOMPRESS_ERROR),
-	flmErrorCodeEntry( NE_XFLM_STREAM_NOT_COMPRESSED),
-	flmErrorCodeEntry( NE_XFLM_STREAM_TOO_MANY_FILES)
-};
-
-F_ERROR_CODE_MAP gv_FlmNiciErrors[
-	NE_XFLM_LAST_NICI_ERROR - NE_XFLM_FIRST_NICI_ERROR - 1] =
-{
-	flmErrorCodeEntry( NE_XFLM_NICI_CONTEXT),
-	flmErrorCodeEntry( NE_XFLM_NICI_ATTRIBUTE_VALUE),
-	flmErrorCodeEntry( NE_XFLM_NICI_BAD_ATTRIBUTE),
-	flmErrorCodeEntry( NE_XFLM_NICI_WRAPKEY_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_UNWRAPKEY_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_INVALID_ALGORITHM),
-	flmErrorCodeEntry( NE_XFLM_NICI_GENKEY_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_BAD_RANDOM),
-	flmErrorCodeEntry( NE_XFLM_PBE_ENCRYPT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_PBE_DECRYPT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_DIGEST_INIT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_DIGEST_FAILED),
-	flmErrorCodeEntry( NE_XFLM_INJECT_KEY_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_FIND_INIT),
-	flmErrorCodeEntry( NE_XFLM_NICI_FIND_OBJECT),
-	flmErrorCodeEntry( NE_XFLM_NICI_KEY_NOT_FOUND),
-	flmErrorCodeEntry( NE_XFLM_NICI_ENC_INIT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_ENCRYPT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_DECRYPT_INIT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_DECRYPT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_WRAPKEY_NOT_FOUND),
-	flmErrorCodeEntry( NE_XFLM_NOT_EXPECTING_PASSWORD),
-	flmErrorCodeEntry( NE_XFLM_EXPECTING_PASSWORD),
-	flmErrorCodeEntry( NE_XFLM_EXTRACT_KEY_FAILED),
-	flmErrorCodeEntry( NE_XFLM_NICI_INIT_FAILED),
-	flmErrorCodeEntry( NE_XFLM_BAD_ENCKEY_SIZE),
-	flmErrorCodeEntry( NE_XFLM_ENCRYPTION_UNAVAILABLE)
-};
+FLMBOOL		gv_bToolkitStarted = FALSE;
 
 /****************************************************************************
 Desc: This routine allocates and initializes a hash table.
@@ -492,13 +101,13 @@ RCODE flmAllocHashTbl(
 	FLMUINT		uiHashTblSize,
 	FBUCKET **	ppHashTblRV)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FBUCKET *			pHashTbl = NULL;
-	F_RandomGenerator	RandGen;
-	FLMUINT				uiCnt;
-	FLMUINT				uiRandVal;
-	FLMUINT				uiTempVal;
-
+	RCODE						rc = NE_XFLM_OK;
+	FBUCKET *				pHashTbl = NULL;
+	IF_RandomGenerator *	pRandGen = NULL;
+	FLMUINT					uiCnt;
+	FLMUINT					uiRandVal;
+	FLMUINT					uiTempVal;
+	
 	// Allocate memory for the hash table
 
 	if (RC_BAD( rc = f_calloc(
@@ -507,9 +116,14 @@ RCODE flmAllocHashTbl(
 		goto Exit;
 	}
 
-	// Initialize the hash table
+	// Set up the random number generator
+	
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &pRandGen)))
+	{
+		goto Exit;
+	}
 
-	RandGen.randomSetSeed( 1);
+	pRandGen->setSeed( 1);
 
 	for (uiCnt = 0; uiCnt < uiHashTblSize; uiCnt++)
 	{
@@ -521,7 +135,7 @@ RCODE flmAllocHashTbl(
 	{
 		for( uiCnt = 0; uiCnt < uiHashTblSize - 1; uiCnt++)
 		{
-			uiRandVal = (FLMBYTE) RandGen.randomChoice( (FLMINT32)uiCnt,
+			uiRandVal = (FLMBYTE) pRandGen->getINT32( (FLMINT32)uiCnt,
 										(FLMINT32)(uiHashTblSize - 1));
 			if( uiRandVal != uiCnt)
 			{
@@ -534,11 +148,15 @@ RCODE flmAllocHashTbl(
 
 Exit:
 
+	if( pRandGen)
+	{
+		pRandGen->Release();
+	}
+
 	*ppHashTblRV = pHashTbl;
 	return( rc);
 }
 
-#ifdef FLM_CAN_GET_PHYS_MEM
 /****************************************************************************
 Desc: This routine determines the number of cache bytes to use for caching
 		based on a percentage of available physical memory or a percentage
@@ -548,201 +166,39 @@ Desc: This routine determines the number of cache bytes to use for caching
 		on the available memory.
 		Lower limit is 1 megabyte.
 ****************************************************************************/
-FSTATIC FLMUINT flmGetCacheBytes(
+FSTATIC RCODE flmGetCacheBytes(
 	FLMUINT		uiPercent,
 	FLMUINT		uiMin,
 	FLMUINT		uiMax,
 	FLMUINT		uiMinToLeave,
 	FLMBOOL		bCalcOnAvailMem,
-	FLMUINT		uiBytesCurrentlyInUse
-	)
+	FLMUINT		uiBytesCurrentlyInUse,
+	FLMUINT *	puiCacheBytes)
 {
-	FLMUINT			uiMem;
-#ifdef FLM_WIN
-	MEMORYSTATUS	MemStatus;
-#elif defined( FLM_UNIX)
-	FLMUINT			uiProcMemLimit = HIGH_FLMUINT;
-	FLMUINT			uiProcVMemLimit = HIGH_FLMUINT;
-#endif
-
-#ifdef FLM_WIN
-	GlobalMemoryStatus( &MemStatus);
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiMem = 0;
+	FLMUINT64		ui64TotalPhysMem;
+	FLMUINT64		ui64AvailPhysMem;
+	
+	if( RC_BAD( rc = f_getMemoryInfo( &ui64TotalPhysMem, &ui64AvailPhysMem)))
+	{
+		goto Exit;
+	}
+	
+	if( ui64TotalPhysMem > HIGH_FLMUINT)
+	{
+		ui64TotalPhysMem = HIGH_FLMUINT;
+	}
+	
+	if( ui64AvailPhysMem > ui64TotalPhysMem)
+	{
+		ui64AvailPhysMem = ui64TotalPhysMem;
+	}
+	
 	uiMem = (FLMUINT)((bCalcOnAvailMem)
-							? (FLMUINT)MemStatus.dwAvailPhys
-							: (FLMUINT)MemStatus.dwTotalPhys);
-#elif defined( FLM_UNIX)
-	{
-		#if defined( RLIMIT_VMEM)
-			{
-				struct rlimit	rlim;
+							? (FLMUINT)ui64TotalPhysMem
+							: (FLMUINT)ui64AvailPhysMem);
 	
-				// Bump the process soft virtual limit up to the hard limit
-				
-				if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
-				{
-					if( rlim.rlim_cur < rlim.rlim_max)
-					{
-						rlim.rlim_cur = rlim.rlim_max;
-						(void)setrlimit( RLIMIT_VMEM, &rlim);
-						if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
-						{
-							rlim.rlim_cur = RLIM_INFINITY;
-							rlim.rlim_max = RLIM_INFINITY;
-						}
-					}
-	
-					if( rlim.rlim_cur != RLIM_INFINITY)
-					{
-						uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
-					}
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_DATA)
-			{
-				struct rlimit	rlim;
-	
-				// Bump the process soft heap limit up to the hard limit
-				
-				if( getrlimit( RLIMIT_DATA, &rlim) == 0)
-				{
-					if( rlim.rlim_cur < rlim.rlim_max)
-					{
-						rlim.rlim_cur = rlim.rlim_max;
-						(void)setrlimit( RLIMIT_DATA, &rlim);
-						if( getrlimit( RLIMIT_DATA, &rlim) != 0)
-						{
-							rlim.rlim_cur = RLIM_INFINITY;
-							rlim.rlim_max = RLIM_INFINITY;
-						}
-					}
-	
-					if( rlim.rlim_cur != RLIM_INFINITY)
-					{
-						uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
-					}
-				}
-			}
-		#endif
-	
-#ifdef FLM_AIX
-		struct vminfo		tmpvminfo;
-	#ifdef _SC_PAGESIZE
-		long		iPageSize = sysconf(_SC_PAGESIZE);
-	#else
-		long		iPageSize = 4096;
-	#endif
-
-		if( iPageSize == -1)
-		{
-			// If sysconf returned an error, resort to using the default
-			// page size for the Power architecture.
-
-			iPageSize = 4096;
-		}
-
-		uiMem = HIGH_FLMUINT;
-		
-		if( vmgetinfo( &tmpvminfo, VMINFO, sizeof( tmpvminfo)) != -1)
-		{
-			if( bCalcOnAvailMem)
-			{
-				if( tmpvminfo.numfrb < HIGH_FLMUINT)
-				{
-					uiMem = (FLMUINT)tmpvminfo.numfrb;
-				}
-			}
-			else
-			{
-				if( tmpvminfo.memsizepgs < HIGH_FLMUINT)
-				{
-					uiMem = (FLMUINT)tmpvminfo.memsizepgs;
-				}
-			}
-		}
-		
-		if (HIGH_FLMUINT / (FLMUINT)iPageSize >= uiMem)
-		{
-			uiMem *= (FLMUINT)iPageSize;
-		}
-		else
-		{
-			uiMem = HIGH_FLMUINT;
-		}
-#elif defined( FLM_LINUX)
-
-		FLMUINT64		ui64TotalMem;
-		FLMUINT64		ui64AvailMem;
-		FLMUINT64		ui64Mem;
-		
-		flmGetLinuxMemInfo( &ui64TotalMem, &ui64AvailMem);
-		
-		ui64Mem = bCalcOnAvailMem
-								? ui64AvailMem
-								: ui64TotalMem;
-								
-		if( HIGH_FLMUINT >= ui64Mem)
-		{
-			uiMem = (FLMUINT)ui64Mem;
-		}
-		else
-		{
-			uiMem = HIGH_FLMUINT;
-		}
-
-#else
-
-		long		iPageSize = sysconf( _SC_PAGESIZE);
-
-		// Get the amount of memory available to the system
-
-		uiMem = (FLMUINT)((bCalcOnAvailMem)
-								? (FLMUINT)sysconf(_SC_AVPHYS_PAGES)
-								: (FLMUINT)sysconf(_SC_PHYS_PAGES));
-
-		if (HIGH_FLMUINT / (FLMUINT)iPageSize >= uiMem)
-		{
-			uiMem *= (FLMUINT)iPageSize;
-		}
-		else
-		{
-			uiMem = HIGH_FLMUINT;
-		}
-#endif
-	}
-#elif defined( FLM_NLM)
-	{
-
-		#ifndef _SC_PHYS_PAGES
-			#define _SC_PHYS_PAGES        56
-		#endif
-		#ifndef _SCAVPHYS_PAGES
-			#define _SC_AVPHYS_PAGES		57
-		#endif
-
-		long				iPageSize = sysconf(_SC_PAGESIZE);
-
-		// Get the amount of memory available to the system
-
-		uiMem = (FLMUINT)((bCalcOnAvailMem)
-								? (FLMUINT)sysconf(_SC_AVPHYS_PAGES)
-								: (FLMUINT)sysconf(_SC_PHYS_PAGES));
-
-
-		if (HIGH_FLMUINT / (FLMUINT)iPageSize >= uiMem)
-		{
-			uiMem *= (FLMUINT)iPageSize;
-		}
-		else
-		{
-			uiMem = HIGH_FLMUINT;
-		}
-	}
-#else
-	#error Getting physical memory is not supported by this platform.
-#endif
-
 	// If we are basing the calculation on available physical memory,
 	// take in to account what has already been allocated.
 
@@ -757,38 +213,6 @@ FSTATIC FLMUINT flmGetCacheBytes(
 			uiMem += uiBytesCurrentlyInUse;
 		}
 	}
-
-	// Determine if there are limits on the amount of memory the
-	// process can access and reset uiMem accordingly.  There may
-	// be more available memory than the process is able to access.
-
-#ifdef FLM_WIN
-
-	// There could be more physical memory in the system than we could
-	// actually allocate in our virtual address space.  Thus, we need to
-	// make sure that we never exceed our total virtual address space.
-
-	if (uiMem > (FLMUINT)MemStatus.dwTotalVirtual)
-	{
-		uiMem = (FLMUINT)MemStatus.dwTotalVirtual;
-	}
-
-#elif defined( FLM_UNIX)
-
-	// The process might be limited in the amount of memory it
-	// can access.
-
-	if ( uiMem > uiProcMemLimit)
-	{
-		uiMem = uiProcMemLimit;
-	}
-
-	if( uiMem > uiProcVMemLimit)
-	{
-		uiMem = uiProcVMemLimit;
-	}
-
-#endif
 
 	// If uiMax is zero, use uiMinToLeave to calculate the maximum.
 
@@ -827,9 +251,12 @@ FSTATIC FLMUINT flmGetCacheBytes(
 	{
 		uiMem = uiMin;
 	}
-	return( uiMem);
+	
+Exit:
+
+	*puiCacheBytes = uiMem;
+	return( rc);
 }
-#endif
 
 /***************************************************************************
 Desc:	Verify that the distance (in bytes) between pvStart and pvEnd is
@@ -838,8 +265,7 @@ Desc:	Verify that the distance (in bytes) between pvStart and pvEnd is
 FINLINE void flmVerifyOffset(
 	FLMUINT		uiCompilerOffset,
 	FLMUINT		uiOffset,
-	RCODE *		pRc
-	)
+	RCODE *		pRc)
 {
 	if (RC_OK( *pRc))
 	{
@@ -862,79 +288,79 @@ FSTATIC RCODE flmVerifyDiskStructOffsets( void)
 
 	// Verify the XFLM_DB_HDR offsets.
 
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, szSignature[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, szSignature[0]),
 						  XFLM_DB_HDR_szSignature_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui8IsLittleEndian),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui8IsLittleEndian),
 						  XFLM_DB_HDR_ui8IsLittleEndian_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui8DefaultLanguage),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui8DefaultLanguage),
 						  XFLM_DB_HDR_ui8DefaultLanguage_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui16BlockSize),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui16BlockSize),
 						  XFLM_DB_HDR_ui16BlockSize_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32DbVersion),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32DbVersion),
 						  XFLM_DB_HDR_ui32DbVersion_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui8BlkChkSummingEnabled),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui8BlkChkSummingEnabled),
 						  XFLM_DB_HDR_ui8BlkChkSummingEnabled_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui8RflKeepFiles),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui8RflKeepFiles),
 						  XFLM_DB_HDR_ui8RflKeepFiles_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui8RflAutoTurnOffKeep),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui8RflAutoTurnOffKeep),
 						  XFLM_DB_HDR_ui8RflAutoTurnOffKeep_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui8RflKeepAbortedTrans),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui8RflKeepAbortedTrans),
 						  XFLM_DB_HDR_ui8RflKeepAbortedTrans_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflCurrFileNum),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflCurrFileNum),
 						  XFLM_DB_HDR_ui32RflCurrFileNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui64LastRflCommitID),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui64LastRflCommitID),
 						  XFLM_DB_HDR_ui64LastRflCommitID_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflLastFileNumDeleted),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflLastFileNumDeleted),
 						  XFLM_DB_HDR_ui32RflLastFileNumDeleted_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflLastTransOffset),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflLastTransOffset),
 						  XFLM_DB_HDR_ui32RflLastTransOffset_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflLastCPFileNum),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflLastCPFileNum),
 						  XFLM_DB_HDR_ui32RflLastCPFileNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflLastCPOffset),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflLastCPOffset),
 						  XFLM_DB_HDR_ui32RflLastCPOffset_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui64RflLastCPTransID),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui64RflLastCPTransID),
 						  XFLM_DB_HDR_ui64RflLastCPTransID_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflMinFileSize),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflMinFileSize),
 						  XFLM_DB_HDR_ui32RflMinFileSize_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RflMaxFileSize),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RflMaxFileSize),
 						  XFLM_DB_HDR_ui32RflMaxFileSize_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui64CurrTransID),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui64CurrTransID),
 						  XFLM_DB_HDR_ui64CurrTransID_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui64TransCommitCnt),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui64TransCommitCnt),
 						  XFLM_DB_HDR_ui64TransCommitCnt_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RblEOF),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RblEOF),
 						  XFLM_DB_HDR_ui32RblEOF_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32RblFirstCPBlkAddr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32RblFirstCPBlkAddr),
 						  XFLM_DB_HDR_ui32RblFirstCPBlkAddr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32FirstAvailBlkAddr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32FirstAvailBlkAddr),
 						  XFLM_DB_HDR_ui32FirstAvailBlkAddr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32FirstLFBlkAddr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32FirstLFBlkAddr),
 						  XFLM_DB_HDR_ui32FirstLFBlkAddr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32LogicalEOF),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32LogicalEOF),
 						  XFLM_DB_HDR_ui32LogicalEOF_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32MaxFileSize),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32MaxFileSize),
 						  XFLM_DB_HDR_ui32MaxFileSize_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui64LastBackupTransID),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui64LastBackupTransID),
 						  XFLM_DB_HDR_ui64LastBackupTransID_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32IncBackupSeqNum),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32IncBackupSeqNum),
 						  XFLM_DB_HDR_ui32IncBackupSeqNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32BlksChangedSinceBackup),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32BlksChangedSinceBackup),
 						  XFLM_DB_HDR_ui32BlksChangedSinceBackup_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ucDbSerialNum[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ucDbSerialNum[0]),
 						  XFLM_DB_HDR_ucDbSerialNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ucLastTransRflSerialNum[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ucLastTransRflSerialNum[0]),
 						  XFLM_DB_HDR_ucLastTransRflSerialNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ucNextRflSerialNum[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ucNextRflSerialNum[0]),
 						  XFLM_DB_HDR_ucNextRflSerialNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ucIncBackupSerialNum[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ucIncBackupSerialNum[0]),
 						  XFLM_DB_HDR_ucIncBackupSerialNum_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32DbKeyLen),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32DbKeyLen),
 						  XFLM_DB_HDR_ui32DbKeyLen, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ucReserved[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ucReserved[0]),
 						  XFLM_DB_HDR_ucReserved_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, ui32HdrCRC),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, ui32HdrCRC),
 						  XFLM_DB_HDR_ui32HdrCRC_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(XFLM_DB_HDR, DbKey[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(XFLM_DB_HDR, DbKey[0]),
 						  XFLM_DB_HDR_DbKey, &rc);
 
 	// Have to use a variable for sizeof.  If we don't, compiler barfs
@@ -948,23 +374,23 @@ FSTATIC RCODE flmVerifyDiskStructOffsets( void)
 
 	// Verify the offsets in the F_BLK_HDR structure.
 
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32BlkAddr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32BlkAddr),
 						  F_BLK_HDR_ui32BlkAddr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32PrevBlkInChain),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32PrevBlkInChain),
 						  F_BLK_HDR_ui32PrevBlkInChain_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32NextBlkInChain),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32NextBlkInChain),
 						  F_BLK_HDR_ui32NextBlkInChain_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32PriorBlkImgAddr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32PriorBlkImgAddr),
 						  F_BLK_HDR_ui32PriorBlkImgAddr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui64TransID),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui64TransID),
 						  F_BLK_HDR_ui64TransID_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32BlkCRC),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui32BlkCRC),
 						  F_BLK_HDR_ui32BlkCRC_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui16BlkBytesAvail),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui16BlkBytesAvail),
 						  F_BLK_HDR_ui16BlkBytesAvail_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui8BlkFlags),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui8BlkFlags),
 						  F_BLK_HDR_ui8BlkFlags_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui8BlkType),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.stdBlkHdr.ui8BlkType),
 						  F_BLK_HDR_ui8BlkType_OFFSET, &rc);
 
 	// Have to use a variable for sizeof.  If we don't, compiler barfs
@@ -978,17 +404,17 @@ FSTATIC RCODE flmVerifyDiskStructOffsets( void)
 
 	// Verify the offsets in the F_BTREE_BLK_HDR structure
 
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.stdBlkHdr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.stdBlkHdr),
 						  F_BTREE_BLK_HDR_stdBlkHdr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui16LogicalFile),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui16LogicalFile),
 						  F_BTREE_BLK_HDR_ui16LogicalFile_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui16NumKeys),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui16NumKeys),
 						  F_BTREE_BLK_HDR_ui16NumKeys_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui8BlkLevel),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui8BlkLevel),
 						  F_BTREE_BLK_HDR_ui8BlkLevel_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui8BTreeFlags),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui8BTreeFlags),
 						  F_BTREE_BLK_HDR_ui8BTreeFlags_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui16HeapSize),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LARGEST_BLK_HDR, all.BTreeBlkHdr.ui16HeapSize),
 						  F_BTREE_BLK_HDR_ui16HeapSize_OFFSET, &rc);
 
 	// Have to use a variable for sizeof.  If we don't, compiler barfs
@@ -1011,21 +437,21 @@ FSTATIC RCODE flmVerifyDiskStructOffsets( void)
 
 	// Verify the offsets in the F_LF_HDR structure
 
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui32LfNumber),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui32LfNumber),
 						  F_LF_HDR_ui32LfNumber_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui32LfType),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui32LfType),
 						  F_LF_HDR_ui32LfType_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui32RootBlkAddr),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui32RootBlkAddr),
 						  F_LF_HDR_ui32RootBlkAddr_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui32EncId),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui32EncId),
 						  F_LF_HDR_ui32EncId_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui64NextNodeId),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui64NextNodeId),
 						  F_LF_HDR_ui64NextNodeId_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui64FirstDocId),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui64FirstDocId),
 						  F_LF_HDR_ui64FirstDocId_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ui64LastDocId),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ui64LastDocId),
 						  F_LF_HDR_ui64LastDocId_OFFSET, &rc);
-	flmVerifyOffset( (FLMUINT)offsetof(F_LF_HDR, ucZeroes[0]),
+	flmVerifyOffset( (FLMUINT)f_offsetof(F_LF_HDR, ucZeroes[0]),
 						  F_LF_HDR_ucZeroes_OFFSET, &rc);
 
 	// Have to use a variable for sizeof.  If we don't, compiler barfs
@@ -1063,7 +489,7 @@ void F_Database::logMustCloseReason(
 				(unsigned)m_rcMustClose,
 				pszFileName, (int)iLineNumber);
 
-			pLogMsg->changeColor( XFLM_YELLOW, XFLM_BLACK);
+			pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 			pLogMsg->appendString( pszMsgBuf);
 		}
 		flmEndLogMessage( &pLogMsg);
@@ -1116,7 +542,7 @@ void F_Database::shutdownDatabaseThreads( void)
 	RCODE					rc = NE_XFLM_OK;
 	F_BKGND_IX	*		pBackgroundIx;
 	F_Db *				pDb;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	FLMUINT				uiThreadId;
 	FLMUINT				uiThreadCount;
 	FLMBOOL				bMutexLocked = TRUE;
@@ -1135,7 +561,7 @@ void F_Database::shutdownDatabaseThreads( void)
 		for( ;;)
 		{
 			if( RC_BAD( rc = gv_XFlmSysData.pThreadMgr->getNextGroupThread(
-				&pThread, FLM_BACKGROUND_INDEXING_THREAD_GROUP, &uiThreadId)))
+				&pThread, gv_XFlmSysData.uiIndexingThreadGroup, &uiThreadId)))
 			{
 				if( rc == NE_XFLM_NOT_FOUND)
 				{
@@ -1169,7 +595,7 @@ void F_Database::shutdownDatabaseThreads( void)
 		for( ;;)
 		{
 			if( RC_BAD( rc = gv_XFlmSysData.pThreadMgr->getNextGroupThread(
-				&pThread, FLM_DB_THREAD_GROUP, &uiThreadId)))
+				&pThread, gv_XFlmSysData.uiDbThreadGroup, &uiThreadId)))
 			{
 				if( rc == NE_XFLM_NOT_FOUND)
 				{
@@ -1372,14 +798,6 @@ Note: This routine assumes that the calling routine has locked the global
 ****************************************************************************/
 void F_DbSystem::checkNotUsedObjects( void)
 {
-
-	// Look for unused file handles
-
-	if( gv_XFlmSysData.pFileHdlMgr)
-	{
-		gv_XFlmSysData.pFileHdlMgr->checkAgedFileHdls(
-			gv_XFlmSysData.pFileHdlMgr->getMaxAvailTime());
-	}
 }
 
 /****************************************************************************
@@ -1423,7 +841,7 @@ RCODE F_Db::linkToDatabase(
 
 		// Set up the super file
 
-		if( RC_BAD( rc = m_pSFileHdl->Setup( pDatabase->m_pFileIdList,
+		if( RC_BAD( rc = m_pSFileHdl->setup(
 			pDatabase->m_pszDbPath, pDatabase->m_pszDataDir)))
 		{
 			goto Exit;
@@ -1431,7 +849,7 @@ RCODE F_Db::linkToDatabase(
 
 		if( pDatabase->m_lastCommittedDbHdr.ui32DbVersion)
 		{
-			m_pSFileHdl->SetBlockSize( pDatabase->m_uiBlockSize);
+			m_pSFileHdl->setBlockSize( pDatabase->m_uiBlockSize);
 		}
 	}
 
@@ -1487,11 +905,6 @@ RCODE F_GlobalCacheMgr::adjustCache(
 	FLMUINT *	puiCurrTime,
 	FLMUINT *	puiLastCacheAdjustTime)
 {
-#ifndef FLM_CAN_GET_PHYS_MEM
-	F_UNREFERENCED_PARM( puiCurrTime);
-	F_UNREFERENCED_PARM( puiLastCacheAdjustTime);
-	return( RC_SET( NE_XFLM_NOT_IMPLEMENTED));
-#else
 	RCODE		rc = NE_XFLM_OK;
 	FLMUINT	uiCurrTime = *puiCurrTime;
 	FLMUINT	uiLastCacheAdjustTime = *puiLastCacheAdjustTime;
@@ -1510,9 +923,13 @@ RCODE F_GlobalCacheMgr::adjustCache(
 			 FLM_ELAPSED_TIME( uiCurrTime, uiLastCacheAdjustTime) >=
 				m_uiCacheAdjustInterval)
 		{
-			uiCacheBytes = flmGetCacheBytes( m_uiCacheAdjustPercent,
-									m_uiCacheAdjustMin, m_uiCacheAdjustMax,
-									m_uiCacheAdjustMinToLeave, TRUE, totalBytes());
+			if( RC_BAD( rc = flmGetCacheBytes( m_uiCacheAdjustPercent,
+				m_uiCacheAdjustMin, m_uiCacheAdjustMax,
+				m_uiCacheAdjustMinToLeave, TRUE, totalBytes(), &uiCacheBytes)))
+			{
+				goto Exit;
+			}
+			
 			if (RC_BAD( rc = setCacheLimit( uiCacheBytes, FALSE)))
 			{
 				unlockMutex();
@@ -1526,7 +943,6 @@ RCODE F_GlobalCacheMgr::adjustCache(
 Exit:
 
 	return( rc);
-#endif
 }
 
 /****************************************************************************
@@ -1535,13 +951,11 @@ Desc: This routine functions as a thread.  It monitors open files and
 		close time.
 ****************************************************************************/
 RCODE F_DbSystem::monitorThrd(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	FLMUINT		uiLastUnusedCleanupTime = 0;
 	FLMUINT		uiCurrTime;
-#ifdef FLM_CAN_GET_PHYS_MEM
 	FLMUINT		uiLastCacheAdjustTime = 0;
-#endif
 
 	for (;;)
 	{
@@ -1580,10 +994,8 @@ RCODE F_DbSystem::monitorThrd(
 
 		// Check the adjusting cache limit
 
-#ifdef FLM_CAN_GET_PHYS_MEM
 		(void)gv_XFlmSysData.pGlobalCacheMgr->adjustCache( &uiCurrTime,
 								&uiLastCacheAdjustTime);
-#endif
 
 		f_sleep( 1000);
 	}
@@ -1595,7 +1007,7 @@ RCODE F_DbSystem::monitorThrd(
 Desc:
 ****************************************************************************/
 RCODE F_DbSystem::cacheCleanupThrd(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	FLMUINT		uiCurrTime;
 	FLMUINT		uiLastDefragTime = 0;
@@ -1604,7 +1016,7 @@ RCODE F_DbSystem::cacheCleanupThrd(
 	FLMUINT		uiCleanupInterval = gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval;
 	FLMBOOL		bDoNodeCacheFirst = TRUE;
 	
-	FLM_SECS_TO_TIMER_UNITS( 120, uiDefragInterval);
+	uiDefragInterval = FLM_SECS_TO_TIMER_UNITS( 120);
 	
 	for (;;)
 	{
@@ -1736,8 +1148,6 @@ F_HashTable::F_HashTable()
 	m_pGlobalList = NULL;
 	m_ppHashTable = NULL;
 	m_uiBuckets = 0;
-	m_pCRCTable = NULL;
-	m_bOwnCRCTable = FALSE;
 }
 
 /****************************************************************************
@@ -1766,11 +1176,6 @@ F_HashTable::~F_HashTable()
 	{
 		f_mutexDestroy( &m_hMutex);
 	}
-
-	if( m_pCRCTable && m_bOwnCRCTable)
-	{
-		f_freeCRCTable( &m_pCRCTable);
-	}
 }
 
 /****************************************************************************
@@ -1778,8 +1183,7 @@ Desc:	Configures the hash table prior to first use
 ****************************************************************************/
 RCODE F_HashTable::setupHashTable(
 	FLMBOOL			bMultithreaded,
-	FLMUINT			uiNumBuckets,
-	FLMUINT32 *		pCRCTable)
+	FLMUINT			uiNumBuckets)
 {
 	RCODE			rc = NE_XFLM_OK;
 
@@ -1804,21 +1208,6 @@ RCODE F_HashTable::setupHashTable(
 		{
 			goto Exit;
 		}
-	}
-
-	if( !pCRCTable)
-	{
-		// Initialize the CRC table
-
-		if( RC_BAD( rc = f_initCRCTable( &m_pCRCTable)))
-		{
-			goto Exit;
-		}
-		m_bOwnCRCTable = TRUE;
-	}
-	else
-	{
-		m_pCRCTable = pCRCTable;
 	}
 
 Exit:
@@ -2088,7 +1477,7 @@ FLMUINT F_HashTable::getHashBucket(
 {
 	FLMUINT32	ui32CRC = 0;
 
-	f_updateCRC( m_pCRCTable, (FLMBYTE *)pvKey, uiLen, &ui32CRC);
+	f_updateCRC( (FLMBYTE *)pvKey, uiLen, &ui32CRC);
 	if( pui32KeyCRC)
 	{
 		*pui32KeyCRC = ui32CRC;
@@ -2194,7 +1583,7 @@ void F_DbSystem::lockSysData( void)
 {
 	// Obtain the spin lock
 
-	while( flmAtomicExchange( &m_flmSysSpinLock, 1) == 1)
+	while( f_atomicExchange( &m_flmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
@@ -2206,7 +1595,7 @@ Desc:	Unlock the system data structure for access - called only by startup
 ***************************************************************************/
 void F_DbSystem::unlockSysData( void)
 {
-	(void)flmAtomicExchange( &m_flmSysSpinLock, 0);
+	(void)f_atomicExchange( &m_flmSysSpinLock, 0);
 }
 
 /****************************************************************************
@@ -2217,31 +1606,19 @@ F_GlobalCacheMgr::F_GlobalCacheMgr()
 	m_pSlabManager = NULL;
 	m_bCachePreallocated = FALSE;
 	
-#ifdef FLM_CAN_GET_PHYS_MEM
 	m_bDynamicCacheAdjust = TRUE;
 	m_uiCacheAdjustPercent = XFLM_DEFAULT_CACHE_ADJUST_PERCENT;
 	m_uiCacheAdjustMin = XFLM_DEFAULT_CACHE_ADJUST_MIN;
 	m_uiCacheAdjustMax = XFLM_DEFAULT_CACHE_ADJUST_MAX;
 	m_uiCacheAdjustMinToLeave = XFLM_DEFAULT_CACHE_ADJUST_MIN_TO_LEAVE;
-	FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_CACHE_ADJUST_INTERVAL,
-		m_uiCacheAdjustInterval);
-	m_uiMaxBytes = flmGetCacheBytes( m_uiCacheAdjustPercent,
-												m_uiCacheAdjustMin,
-												m_uiCacheAdjustMax,
-												m_uiCacheAdjustMinToLeave, TRUE, 0);
-#else
-	m_bDynamicCacheAdjust = FALSE;
-	m_uiCacheAdjustPercent = 0;
-	m_uiCacheAdjustMin = 0;
-	m_uiCacheAdjustMax = 0;
-	m_uiCacheAdjustMinToLeave = 0;
-	m_uiCacheAdjustInterval = 0;
-	m_uiMaxBytes = XFLM_DEFAULT_CACHE_ADJUST_MIN;
-#endif
-	FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_CACHE_CLEANUP_INTERVAL,
-		m_uiCacheCleanupInterval);
-	FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_UNUSED_CLEANUP_INTERVAL,
-		m_uiUnusedCleanupInterval);
+	m_uiCacheAdjustInterval = FLM_SECS_TO_TIMER_UNITS( 
+										XFLM_DEFAULT_CACHE_ADJUST_INTERVAL);
+	flmGetCacheBytes( m_uiCacheAdjustPercent, m_uiCacheAdjustMin,
+		m_uiCacheAdjustMax, m_uiCacheAdjustMinToLeave, TRUE, 0, &m_uiMaxBytes);
+	m_uiCacheCleanupInterval = FLM_SECS_TO_TIMER_UNITS( 
+											XFLM_DEFAULT_CACHE_CLEANUP_INTERVAL);
+	m_uiUnusedCleanupInterval = FLM_SECS_TO_TIMER_UNITS( 
+											XFLM_DEFAULT_UNUSED_CLEANUP_INTERVAL);
 	m_hMutex = F_MUTEX_NULL;
 	m_uiMaxSlabs = 0;
 }
@@ -2255,6 +1632,7 @@ F_GlobalCacheMgr::~F_GlobalCacheMgr()
 	{
 		m_pSlabManager->Release();
 	}
+
 	if (m_hMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &m_hMutex);
@@ -2276,9 +1654,8 @@ RCODE F_GlobalCacheMgr::setup( void)
 		goto Exit;
 	}
 	
-	if( (m_pSlabManager = f_new F_SlabManager) == NULL)
+	if( RC_BAD( rc = FlmAllocSlabManager( &m_pSlabManager)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 	
@@ -2429,45 +1806,46 @@ RCODE F_DbSystem::init( void)
 	{
 		goto Exit;
 	}
-
-#ifdef FLM_NLM
-	gv_bNetWareStartupCalled = TRUE;
-	if( RC_BAD( rc = f_netwareStartup()))
+	
+	if( RC_BAD( rc = ftkStartup()))
 	{
 		goto Exit;
 	}
-#endif
+	gv_bToolkitStarted = TRUE;
 
+	// The memset needs to be first.
+
+	f_memset( &gv_XFlmSysData, 0, sizeof( FLMSYSDATA));
+	gv_XFlmSysData.uiMaxFileSize = f_getMaxFileSize();
+
+	// Get the thread manager
+
+	if( RC_BAD( rc = FlmGetThreadMgr( &gv_XFlmSysData.pThreadMgr)))
+	{
+		goto Exit;
+	}
+
+	// Get the file system manager
+
+	if( RC_BAD( rc = FlmGetFileSystem( &gv_XFlmSysData.pFileSystem)))
+	{
+		goto Exit;
+	}
+	
+	gv_XFlmSysData.uiIndexingThreadGroup = 
+		gv_XFlmSysData.pThreadMgr->allocGroupId();
+		
+	gv_XFlmSysData.uiDbThreadGroup = 
+		gv_XFlmSysData.pThreadMgr->allocGroupId();
+		
+	gv_XFlmSysData.uiCheckpointThreadGroup = 
+		gv_XFlmSysData.pThreadMgr->allocGroupId(); 
+	
 	// Sanity check -- make sure we are using the correct
 	// byte-swap macros for this platform
 
 	flmAssert( FB2UD( (FLMBYTE *)"\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
 	flmAssert( FB2UW( (FLMBYTE *)"\x0A\x0B") == 0x0B0A);
-
-	// The memset needs to be first.
-
-	f_memset( &gv_XFlmSysData, 0, sizeof( FLMSYSDATA));
-	
-#if defined( FLM_LINUX)
-	flmGetLinuxKernelVersion( &gv_XFlmSysData.uiLinuxMajorVer,
-									  &gv_XFlmSysData.uiLinuxMinorVer, 
-									  &gv_XFlmSysData.uiLinuxRevision);
-	gv_XFlmSysData.uiMaxFileSize = flmGetLinuxMaxFileSize();
-#elif defined( FLM_AIX)
-	// Call set setrlimit to increase the max allowed file size.
-	// We don't have a good way to deal with any errors returned by
-	// setrlimit(), so we just hope that there aren't any...
-	struct rlimit rlim;
-	rlim.rlim_cur = RLIM_INFINITY;
-	rlim.rlim_max = RLIM_INFINITY;
-	setrlimit( RLIMIT_FSIZE, &rlim);
-	gv_XFlmSysData.uiMaxFileSize = XFLM_MAXIMUM_FILE_SIZE;
-#else
-	gv_XFlmSysData.uiMaxFileSize = XFLM_MAXIMUM_FILE_SIZE;
-#endif
-
-	// Initialize memory tracking variables - should be done before
-	// call to f_memoryInit().
 
 #ifdef FLM_DEBUG
 
@@ -2475,9 +1853,6 @@ RCODE F_DbSystem::init( void)
 
 	gv_XFlmSysData.bTrackLeaks = TRUE;
 	gv_XFlmSysData.hMemTrackingMutex = F_MUTEX_NULL;
-#ifdef DEBUG_SIM_OUT_OF_MEM
-	gv_XFlmSysData.memSimRandomGen.randomSetSeed( 1);
-#endif
 #endif
 
 	gv_XFlmSysData.hNodeCacheMutex = F_MUTEX_NULL;
@@ -2496,13 +1871,7 @@ RCODE F_DbSystem::init( void)
 		gv_XFlmSysData.EventHdrs [iEventCategory].hMutex = F_MUTEX_NULL;
 	}
 
-	// Memory initialization should be first.
-
-	f_memoryInit();
-
-#if defined( FLM_NLM) || (defined( FLM_WIN) && !defined( FLM_64BIT))
 	initFastBlockCheckSum();
-#endif
 
 	if (RC_BAD( rc = flmVerifyDiskStructOffsets()))
 	{
@@ -2518,13 +1887,13 @@ RCODE F_DbSystem::init( void)
 
 	// Initialize all of the fields
 
-	FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_MAX_UNUSED_TIME,
-		gv_XFlmSysData.uiMaxUnusedTime);
-	FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_MAX_CP_INTERVAL,
-		gv_XFlmSysData.uiMaxCPInterval);
+	gv_XFlmSysData.uiMaxUnusedTime = FLM_SECS_TO_TIMER_UNITS( 
+			XFLM_DEFAULT_MAX_UNUSED_TIME);
+	gv_XFlmSysData.uiMaxCPInterval = FLM_SECS_TO_TIMER_UNITS( 
+			XFLM_DEFAULT_MAX_CP_INTERVAL);
 		
-	FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_REHASH_BACKOFF_INTERVAL,
-		gv_XFlmSysData.uiRehashAfterFailureBackoffTime);
+	gv_XFlmSysData.uiRehashAfterFailureBackoffTime = 
+			FLM_SECS_TO_TIMER_UNITS( XFLM_DEFAULT_REHASH_BACKOFF_INTERVAL);
 		
 	if ((gv_XFlmSysData.pGlobalCacheMgr = f_new F_GlobalCacheMgr) == NULL)
 	{
@@ -2533,33 +1902,6 @@ RCODE F_DbSystem::init( void)
 	}
 
 	if( RC_BAD( rc = gv_XFlmSysData.pGlobalCacheMgr->setup()))
-	{
-		goto Exit;
-	}
-
-	// Initialize the thread manager
-
-	if( (gv_XFlmSysData.pThreadMgr = f_new F_ThreadMgr) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = gv_XFlmSysData.pThreadMgr->setupThreadMgr()))
-	{
-		goto Exit;
-	}
-
-	// Initialize the serial number generator
-
-	if( RC_BAD( rc = f_initSerialNumberGenerator()))
-	{
-		goto Exit;
-	}
-
-	// Initialize the Unicode<->WP mapping tables
-
-	if( RC_BAD( rc = initCharMappingTables()))
 	{
 		goto Exit;
 	}
@@ -2632,53 +1974,9 @@ RCODE F_DbSystem::init( void)
 	{
 		goto Exit;
 	}
-
-	// Allocate and Initialize FLAIM Shared File Handle Manager
-
-	if ((gv_XFlmSysData.pFileHdlMgr = f_new F_FileHdlMgr) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = gv_XFlmSysData.pFileHdlMgr->setupFileHdlMgr(
-										XFLM_DEFAULT_OPEN_THRESHOLD,
-										XFLM_DEFAULT_MAX_UNUSED_TIME)))
-	{
-		goto Exit;
-	}
-
-	// Allocate and Initialize FLAIM Shared File System object
-
-	if ((gv_pFileSystem = f_new F_FileSystem) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
+	
 #ifdef FLM_DBG_LOG
 	flmDbgLogInit();
-#endif
-
-#if defined( FLM_WIN)
-	OSVERSIONINFO		versionInfo;
-
-	versionInfo.dwOSVersionInfoSize = sizeof( OSVERSIONINFO);
-	if( !GetVersionEx( &versionInfo))
-	{
-		return( MapWinErrorToFlaim( GetLastError(), NE_XFLM_FAILURE));
-	}
-
-	// Async writes are not supported on Win32s (3.1) or
-	// Win95, 98, ME, etc.
-
-	gv_XFlmSysData.bOkToDoAsyncWrites =
-		(versionInfo.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS &&
-		 versionInfo.dwPlatformId != VER_PLATFORM_WIN32s)
-		 ? TRUE
-		 : FALSE;
-#else
-	gv_XFlmSysData.bOkToDoAsyncWrites = TRUE;
 #endif
 
 	// Allocate and Initialize FLAIM Server Lock Manager.
@@ -2715,7 +2013,8 @@ RCODE F_DbSystem::init( void)
 
 	// Start the monitor thread
 
-	if (RC_BAD( rc = f_threadCreate( &gv_XFlmSysData.pMonitorThrd,
+	if (RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( 
+		&gv_XFlmSysData.pMonitorThrd,
 		F_DbSystem::monitorThrd, "DB Monitor")))
 	{
 		goto Exit;
@@ -2723,7 +2022,8 @@ RCODE F_DbSystem::init( void)
 
 	// Start the cache cleanup thread
 
-	if (RC_BAD( rc = f_threadCreate( &gv_XFlmSysData.pCacheCleanupThrd,
+	if (RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( 
+		&gv_XFlmSysData.pCacheCleanupThrd,
 		F_DbSystem::cacheCleanupThrd, "Cache Cleanup Thread")))
 	{
 		goto Exit;
@@ -2750,26 +2050,11 @@ RCODE F_DbSystem::init( void)
 	{
 		goto Exit;
 	}
-
-	if( (gv_XFlmSysData.pXml = f_new F_XML) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = gv_XFlmSysData.pXml->buildCharTable()))
+	
+	if( RC_BAD( rc = FlmGetXMLObject( &gv_XFlmSysData.pXml)))
 	{
 		goto Exit;
 	}
-
-	// Check the metaphone routines
-
-#ifdef FLM_DEBUG
-	if( RC_BAD( rc = flmVerifyMetaphoneRoutines()))
-	{
-		goto Exit;
-	}
-#endif
 
 #ifdef FLM_USE_NICI
 	iHandle  = f_getpid();
@@ -2786,19 +2071,6 @@ RCODE F_DbSystem::init( void)
 	// Initialize the XFlaim cache settings from the .ini file (if present)
 
 	readIniFile();
-
-#ifdef FLM_NLM
-	// Detect if we are running in RING0.  If so, use NSS File Handles
-#define MAX_ADDRSPACE_NAMELEN 63
-	char			szAddrSpaceName[ MAX_ADDRSPACE_NAMELEN + 1];
-	if( getaddressspacename( getaddressspace(), szAddrSpaceName) != NULL)
-	{
-		if( f_strcmp( szAddrSpaceName, "OS") == 0)
-		{
-			gv_XFlmSysData.bUseNSSFileHdls = TRUE;
-		}
-	}
-#endif
 
 Exit:
 
@@ -2878,13 +2150,31 @@ void F_DbSystem::cleanup( void)
 	}
 
 	// Shut down the monitor thread, if there is one.
-
-	f_threadDestroy( &gv_XFlmSysData.pMonitorThrd);
+	
+	if( gv_XFlmSysData.pMonitorThrd)
+	{
+		gv_XFlmSysData.pMonitorThrd->stopThread();
+		gv_XFlmSysData.pMonitorThrd->Release();
+		gv_XFlmSysData.pMonitorThrd = NULL;
+	}
 	
 	// Shut down the cache reduce thread
-
-	f_threadDestroy( &gv_XFlmSysData.pCacheCleanupThrd);
 	
+	if( gv_XFlmSysData.pCacheCleanupThrd)
+	{
+		gv_XFlmSysData.pCacheCleanupThrd->stopThread();
+		gv_XFlmSysData.pCacheCleanupThrd->Release();
+		gv_XFlmSysData.pCacheCleanupThrd = NULL;
+	}
+
+	// Release the thread manager
+
+	if( gv_XFlmSysData.pThreadMgr)
+	{
+		gv_XFlmSysData.pThreadMgr->Release();
+		gv_XFlmSysData.pThreadMgr = NULL;
+	}
+
 	// Free all of the files and associated structures
 
 	if (gv_XFlmSysData.pDatabaseHashTbl)
@@ -2933,24 +2223,6 @@ void F_DbSystem::cleanup( void)
 	if (gv_XFlmSysData.hStatsMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &gv_XFlmSysData.hStatsMutex);
-	}
-
-	// Free (release) FLAIM's File Shared File Handles.
-
-	if (gv_XFlmSysData.pFileHdlMgr)
-	{
-		FLMUINT	uiRefCnt = gv_XFlmSysData.pFileHdlMgr->Release();
-
-		// No one else should have a reference to the file handle manager
-		// after this point.
-
-#ifdef FLM_DEBUG
-		flmAssert( 0 == uiRefCnt);
-#else
-		// Quiet the compiler about the unused variable
-		(void)uiRefCnt;
-#endif
-		gv_XFlmSysData.pFileHdlMgr = NULL;
 	}
 
 	// Free (release) FLAIM's Server Lock Manager.
@@ -3025,30 +2297,17 @@ void F_DbSystem::cleanup( void)
 		}
 	}
 
-	// Free (release) FLAIM's File Shared File System Object.
+	// Release the file system object
 
-	if (gv_pFileSystem)
+	if (gv_XFlmSysData.pFileSystem)
 	{
-		FLMUINT	uiRefCnt = gv_pFileSystem->Release();
-
-		// No one else should have a reference to the file system
-		// after this point.
-
-#ifdef FLM_DEBUG
-		flmAssert( 0 == uiRefCnt);
-#else
-		// Quiet the compiler about the unused variable
-		(void)uiRefCnt;
-#endif
-		gv_pFileSystem = NULL;
+		gv_XFlmSysData.pFileSystem->Release();
+		gv_XFlmSysData.pFileSystem = NULL;
 	}
+
 #ifdef FLM_DBG_LOG
 	flmDbgLogExit();
 #endif
-
-	// Free the serial number generator
-
-	f_freeSerialNumberGenerator();
 
 	// Release the logger
 	
@@ -3064,14 +2323,6 @@ void F_DbSystem::cleanup( void)
 		f_mutexDestroy( &gv_XFlmSysData.hLoggerMutex);
 	}
 	
-	// Release the thread manager
-
-	if( gv_XFlmSysData.pThreadMgr)
-	{
-		gv_XFlmSysData.pThreadMgr->Release();
-		gv_XFlmSysData.pThreadMgr = NULL;
-	}
-
 	// Free the btree pool
 
 	if( gv_XFlmSysData.pBtPool)
@@ -3106,10 +2357,6 @@ void F_DbSystem::cleanup( void)
 		gv_XFlmSysData.pGlobalCacheMgr = NULL;
 	}
 
-	// Free the Unicode<->WP tables
-
-	freeCharMappingTables();
-
 #ifdef FLM_USE_NICI
 	CCS_Shutdown();
 #endif
@@ -3138,20 +2385,12 @@ void F_DbSystem::cleanup( void)
 	{
 		f_mutexDestroy( &gv_XFlmSysData.hIniMutex);
 	}
-
-	// Memory cleanup
-
-	f_memoryCleanup();
-
-	// Shutdown the NetWare interfaces
-
-#ifdef FLM_NLM
-	if( gv_bNetWareStartupCalled)
+	
+	if( gv_bToolkitStarted)
 	{
-		f_netwareShutdown();
-		gv_bNetWareStartupCalled = FALSE;
+		ftkShutdown();
+		gv_bToolkitStarted = FALSE;
 	}
-#endif
 }
 
 /****************************************************************************
@@ -3163,31 +2402,35 @@ RCODE F_GlobalCacheMgr::setDynamicMemoryLimit(
 	FLMUINT	uiCacheAdjustMax,
 	FLMUINT	uiCacheAdjustMinToLeave)
 {
-#ifndef FLM_CAN_GET_PHYS_MEM
-	F_UNREFERENCED_PARM( uiCacheAdjustPercent);
-	F_UNREFERENCED_PARM( uiCacheAdjustMin);
-	F_UNREFERENCED_PARM( uiCacheAdjustMax);
-	F_UNREFERENCED_PARM( uiCacheAdjustMinToLeave);
-	return( RC_SET( NE_XFLM_NOT_IMPLEMENTED));
-#else
 	RCODE		rc = NE_XFLM_OK;
 	FLMUINT	uiCacheBytes;
 
 	lockMutex();
+	
 	m_bDynamicCacheAdjust = TRUE;
 	flmAssert( uiCacheAdjustPercent > 0 && uiCacheAdjustPercent <= 100);
 	m_uiCacheAdjustPercent = uiCacheAdjustPercent;
 	m_uiCacheAdjustMin = uiCacheAdjustMin;
 	m_uiCacheAdjustMax = uiCacheAdjustMax;
 	m_uiCacheAdjustMinToLeave = uiCacheAdjustMinToLeave;
-	uiCacheBytes = flmGetCacheBytes( m_uiCacheAdjustPercent,
+	
+	if( RC_BAD( rc = flmGetCacheBytes( m_uiCacheAdjustPercent,
 							m_uiCacheAdjustMin, m_uiCacheAdjustMax,
-							m_uiCacheAdjustMinToLeave, TRUE, totalBytes());
+							m_uiCacheAdjustMinToLeave, TRUE, totalBytes(), 
+							&uiCacheBytes)))
+	{
+		goto Exit;
+	}
 
-	rc = setCacheLimit( uiCacheBytes, FALSE);
+	if( RC_BAD( rc = setCacheLimit( uiCacheBytes, FALSE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+	
 	unlockMutex();
 	return( rc);
-#endif
 }
 
 /****************************************************************************
@@ -3204,29 +2447,35 @@ RCODE F_GlobalCacheMgr::setHardMemoryLimit(
 	RCODE		rc = NE_XFLM_OK;
 
 	lockMutex();
+	
 	m_bDynamicCacheAdjust = FALSE;
 	if (uiPercent)
 	{
-#ifndef FLM_CAN_GET_PHYS_MEM
-		F_UNREFERENCED_PARM( bPercentOfAvail);
-		F_UNREFERENCED_PARM( uiMin);
-		F_UNREFERENCED_PARM( uiMinToLeave);
-		rc = RC_SET( NE_XFLM_NOT_IMPLEMENTED);
-#else
 		FLMUINT	uiCacheBytes;
 
-		uiCacheBytes = flmGetCacheBytes( uiPercent, uiMin, uiMax, uiMinToLeave,
-										bPercentOfAvail, totalBytes());
-		rc = setCacheLimit( uiCacheBytes, bPreallocate);
-#endif
+		if( RC_BAD( rc = flmGetCacheBytes( uiPercent, uiMin,
+			uiMax, uiMinToLeave, bPercentOfAvail, 
+			totalBytes(), &uiCacheBytes)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = setCacheLimit( uiCacheBytes, bPreallocate)))
+		{
+			goto Exit;
+		}
 	}
 	else
 	{
-		rc = setCacheLimit( uiMax, bPreallocate);
+		if( RC_BAD( rc = setCacheLimit( uiMax, bPreallocate)))
+		{
+			goto Exit;
+		}
 	}
+	
+Exit:
 
 	unlockMutex();
-
 	return( rc);
 }
 
@@ -3315,18 +2564,10 @@ void F_GlobalCacheMgr::getCacheInfo(
 }
 
 /****************************************************************************
-Desc:		Returns the number of open databases
-****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getOpenFileCount( void)
-{
-	return( gv_XFlmSysData.pFileHdlMgr->getOpenedFiles());
-}
-
-/****************************************************************************
 Desc:		Close all files in the file handle manager that have not been
 			used for the specified number of seconds.
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::closeUnusedFiles(
+RCODE FLMAPI F_DbSystem::closeUnusedFiles(
 	FLMUINT		uiSeconds)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -3336,8 +2577,7 @@ RCODE XFLMAPI F_DbSystem::closeUnusedFiles(
 
 	// Convert seconds to timer units
 
-	FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiValue);
-	gv_XFlmSysData.pFileHdlMgr->checkAgedFileHdls( uiValue);
+	uiValue = FLM_SECS_TO_TIMER_UNITS( uiSeconds);
 
 	// Free any other unused structures that have not been used for the
 	// specified amount of time.
@@ -3362,27 +2602,9 @@ RCODE XFLMAPI F_DbSystem::closeUnusedFiles(
 }
 
 /****************************************************************************
-Desc:		Set threshold for number of file handles that are opened by
-			the file handle manager
-****************************************************************************/
-void XFLMAPI F_DbSystem::setOpenThreshold(
-	FLMUINT		uiThreshold)
-{
-	gv_XFlmSysData.pFileHdlMgr->setOpenThreshold( uiThreshold);
-}
-
-/****************************************************************************
-Desc:		Get the maximum number of file handles available.
-****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getOpenThreshold( void)
-{
-	return( gv_XFlmSysData.pFileHdlMgr->getOpenThreshold());
-}
-
-/****************************************************************************
 Desc:		Enable/disable cache debugging mode
 ****************************************************************************/
-void XFLMAPI F_DbSystem::enableCacheDebug(
+void FLMAPI F_DbSystem::enableCacheDebug(
 	FLMBOOL		bDebug)
 {
 #ifdef FLM_DEBUG
@@ -3396,7 +2618,7 @@ void XFLMAPI F_DbSystem::enableCacheDebug(
 /****************************************************************************
 Desc:		Returns cache debugging mode
 ****************************************************************************/
-FLMBOOL XFLMAPI F_DbSystem::cacheDebugEnabled( void)
+FLMBOOL FLMAPI F_DbSystem::cacheDebugEnabled( void)
 {
 #ifdef FLM_DEBUG
 		return( gv_XFlmSysData.pBlockCacheMgr->m_bDebug ||
@@ -3409,7 +2631,7 @@ FLMBOOL XFLMAPI F_DbSystem::cacheDebugEnabled( void)
 /****************************************************************************
 Desc:		Start gathering statistics.
 ****************************************************************************/
-void XFLMAPI F_DbSystem::startStats( void)
+void FLMAPI F_DbSystem::startStats( void)
 {
 	f_mutexLock( gv_XFlmSysData.hStatsMutex);
 	flmStatStart( &gv_XFlmSysData.Stats);
@@ -3430,7 +2652,7 @@ void XFLMAPI F_DbSystem::startStats( void)
 /****************************************************************************
 Desc:		Stop gathering statistics.
 ****************************************************************************/
-void XFLMAPI F_DbSystem::stopStats( void)
+void FLMAPI F_DbSystem::stopStats( void)
 {
 	f_mutexLock( gv_XFlmSysData.hStatsMutex);
 	flmStatStop( &gv_XFlmSysData.Stats);
@@ -3455,7 +2677,7 @@ void XFLMAPI F_DbSystem::stopStats( void)
 /****************************************************************************
 Desc:		Reset statistics.
 ****************************************************************************/
-void XFLMAPI F_DbSystem::resetStats( void)
+void FLMAPI F_DbSystem::resetStats( void)
 {
 	FLMUINT		uiSaveMax;
 
@@ -3506,7 +2728,7 @@ void XFLMAPI F_DbSystem::resetStats( void)
 Desc:		Returns statistics that have been collected for a share.
 Notes:	The statistics returned will be the statistics for ALL databases
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::getStats(
+RCODE FLMAPI F_DbSystem::getStats(
 	XFLM_STATS *				pFlmStats)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -3529,7 +2751,7 @@ Exit:
 /****************************************************************************
 Desc:		Frees memory allocated to a FLM_STATS structure
 ****************************************************************************/
-void XFLMAPI F_DbSystem::freeStats(
+void FLMAPI F_DbSystem::freeStats(
 	XFLM_STATS *			pFlmStats)
 {
 	flmStatFree( pFlmStats);
@@ -3540,7 +2762,7 @@ Desc:		Sets the path for all temporary files that come into use within a
 			FLAIM share structure.  The share mutex should be locked when
 			settting when called from FlmConfig().
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::setTempDir(
+RCODE FLMAPI F_DbSystem::setTempDir(
 	const char *		pszPath)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -3549,7 +2771,7 @@ RCODE XFLMAPI F_DbSystem::setTempDir(
 
 	// First, test the path
 
-	if( RC_BAD( rc = gv_pFileSystem->Exists( pszPath)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->doesFileExist( pszPath)))
 	{
 		goto Exit;
 	}
@@ -3566,7 +2788,7 @@ Exit:
 /****************************************************************************
 Desc:		Get the temporary directory.
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::getTempDir(
+RCODE FLMAPI F_DbSystem::getTempDir(
 	char *		pszPath)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -3576,7 +2798,7 @@ RCODE XFLMAPI F_DbSystem::getTempDir(
 	if( !gv_XFlmSysData.bTempDirSet )
 	{
 		*pszPath = 0;
-		rc = RC_SET( NE_XFLM_IO_PATH_NOT_FOUND);
+		rc = RC_SET( NE_FLM_IO_PATH_NOT_FOUND);
 		goto Exit;
 	}
 	else
@@ -3593,146 +2815,101 @@ Exit:
 /****************************************************************************
 Desc:		Sets the maximum seconds between checkpoints
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setCheckpointInterval(
+void FLMAPI F_DbSystem::setCheckpointInterval(
 	FLMUINT						uiSeconds)
 {
-	FLM_SECS_TO_TIMER_UNITS( uiSeconds, gv_XFlmSysData.uiMaxCPInterval);
+	gv_XFlmSysData.uiMaxCPInterval = FLM_SECS_TO_TIMER_UNITS( uiSeconds);
 }
 
 /****************************************************************************
 Desc:		Gets the maximum seconds between checkpoints
 ****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getCheckpointInterval( void)
+FLMUINT FLMAPI F_DbSystem::getCheckpointInterval( void)
 {
-	FLMUINT		uiTmp;
-
-	FLM_TIMER_UNITS_TO_SECS( gv_XFlmSysData.uiMaxCPInterval, uiTmp);
-	return( uiTmp);
+	return( FLM_TIMER_UNITS_TO_SECS( gv_XFlmSysData.uiMaxCPInterval));
 }
 
 /****************************************************************************
 Desc:		Sets the interval for dynamically adjusting the cache limit.
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setCacheAdjustInterval(
+void FLMAPI F_DbSystem::setCacheAdjustInterval(
 	FLMUINT						uiSeconds)
 {
-	FLM_SECS_TO_TIMER_UNITS( uiSeconds,
-			gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheAdjustInterval);
+	gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheAdjustInterval = 
+		FLM_SECS_TO_TIMER_UNITS( uiSeconds);
 }
 
 /****************************************************************************
 Desc:		Sets the interval for dynamically adjusting the cache limit.
 ****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getCacheAdjustInterval( void)
+FLMUINT FLMAPI F_DbSystem::getCacheAdjustInterval( void)
 {
-	FLMUINT		uiTmp;
-
-	FLM_TIMER_UNITS_TO_SECS(
-		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheAdjustInterval, uiTmp);
-	return( uiTmp);
+	return( FLM_TIMER_UNITS_TO_SECS(
+		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheAdjustInterval));
 }
 
 /****************************************************************************
 Desc:		Sets the interval for dynamically cleaning out old
 			cache blocks and records
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setCacheCleanupInterval(
+void FLMAPI F_DbSystem::setCacheCleanupInterval(
 	FLMUINT						uiSeconds)
 {
-	FLM_SECS_TO_TIMER_UNITS( uiSeconds,
-		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval);
+	gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval = 
+		FLM_SECS_TO_TIMER_UNITS( uiSeconds);
 }
 
 /****************************************************************************
 Desc:		Gets the interval for dynamically cleaning out old
 			cache blocks and records
 ****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getCacheCleanupInterval( void)
+FLMUINT FLMAPI F_DbSystem::getCacheCleanupInterval( void)
 {
-	FLMUINT		uiTmp;
-
-	FLM_TIMER_UNITS_TO_SECS(
-		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval, uiTmp);
-	return( uiTmp);
+	return( FLM_TIMER_UNITS_TO_SECS(
+		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval));
 }
 
 /****************************************************************************
 Desc:		Set interval for cleaning up unused structures
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setUnusedCleanupInterval(
+void FLMAPI F_DbSystem::setUnusedCleanupInterval(
 	FLMUINT						uiSeconds)
 {
-	FLM_SECS_TO_TIMER_UNITS( uiSeconds,
-		gv_XFlmSysData.pGlobalCacheMgr->m_uiUnusedCleanupInterval);
+	gv_XFlmSysData.pGlobalCacheMgr->m_uiUnusedCleanupInterval = 
+		FLM_SECS_TO_TIMER_UNITS( uiSeconds);
 }
 
 /****************************************************************************
 Desc:		Gets the interval for cleaning up unused structures
 ****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getUnusedCleanupInterval( void)
+FLMUINT FLMAPI F_DbSystem::getUnusedCleanupInterval( void)
 {
-	FLMUINT		uiTmp;
-
-	FLM_TIMER_UNITS_TO_SECS(
-		gv_XFlmSysData.pGlobalCacheMgr->m_uiUnusedCleanupInterval, uiTmp);
-	return( uiTmp);
+	return( FLM_TIMER_UNITS_TO_SECS(
+		gv_XFlmSysData.pGlobalCacheMgr->m_uiUnusedCleanupInterval));
 }
 
 /****************************************************************************
 Desc:		Set the maximum time for an item to be unused before it is
 			cleaned up
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setMaxUnusedTime(
+void FLMAPI F_DbSystem::setMaxUnusedTime(
 	FLMUINT						uiSeconds)
 {
-	FLM_SECS_TO_TIMER_UNITS( uiSeconds, gv_XFlmSysData.uiMaxUnusedTime);
+	gv_XFlmSysData.uiMaxUnusedTime = FLM_SECS_TO_TIMER_UNITS( uiSeconds);
 }
 
 /****************************************************************************
 Desc:		Gets the maximum time for an item to be unused
 ****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getMaxUnusedTime( void)
+FLMUINT FLMAPI F_DbSystem::getMaxUnusedTime( void)
 {
-	FLMUINT		uiTmp;
-
-	FLM_TIMER_UNITS_TO_SECS( gv_XFlmSysData.uiMaxUnusedTime, uiTmp);
-	return( uiTmp);
-}
-
-/****************************************************************************
-Desc:		Enables or disables out-of-memory simulation
-****************************************************************************/
-void F_DbSystem::enableOutOfMemorySimulation(
-	FLMBOOL						bEnable)
-{
-#ifdef DEBUG_SIM_OUT_OF_MEM
-	gv_XFlmSysData.uiOutOfMemSimEnabledFlag = bEnable
-												? OUT_OF_MEM_SIM_ENABLED_FLAG
-												: 0;
-#else
-	F_UNREFERENCED_PARM( bEnable);
-#endif
-}
-
-/****************************************************************************
-Desc:		Returns the state of out-of-memory simulation
-****************************************************************************/
-FLMBOOL F_DbSystem::outOfMemorySimulationEnabled( void)
-{
-#ifdef DEBUG_SIM_OUT_OF_MEM
-	if( gv_XFlmSysData.uiOutOfMemSimEnabledFlag == OUT_OF_MEM_SIM_ENABLED_FLAG)
-	{
-		return( TRUE);
-	}
-#endif
-
-	return( FALSE);
+	return( FLM_TIMER_UNITS_TO_SECS( gv_XFlmSysData.uiMaxUnusedTime));
 }
 
 /****************************************************************************
 Desc:		Sets the logging object to be used for internal status messages
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setLogger(
+void FLMAPI F_DbSystem::setLogger(
 	IF_LoggerClient *		pLogger)
 {
 	IF_LoggerClient *		pOldLogger = NULL;
@@ -3783,7 +2960,7 @@ void XFLMAPI F_DbSystem::setLogger(
 /****************************************************************************
 Desc:		Enables or disables the use of ESM (if available)
 ****************************************************************************/
-void XFLMAPI F_DbSystem::enableExtendedServerMemory(
+void FLMAPI F_DbSystem::enableExtendedServerMemory(
 	FLMBOOL						bEnable)
 {
 	gv_XFlmSysData.bOkToUseESM = bEnable;
@@ -3792,7 +2969,7 @@ void XFLMAPI F_DbSystem::enableExtendedServerMemory(
 /****************************************************************************
 Desc:		Returns the state of ESM
 ****************************************************************************/
-FLMBOOL XFLMAPI F_DbSystem::extendedServerMemoryEnabled( void)
+FLMBOOL FLMAPI F_DbSystem::extendedServerMemoryEnabled( void)
 {
 	return( gv_XFlmSysData.bOkToUseESM);
 }
@@ -3803,7 +2980,7 @@ Desc:		Deactivates open database handles, forcing the database to be
 Notes:	Passing NULL for the path values will cause all active database
 			handles to be deactivated
 ****************************************************************************/
-void XFLMAPI F_DbSystem::deactivateOpenDb(
+void FLMAPI F_DbSystem::deactivateOpenDb(
 	const char *	pszDbFileName,
 	const char *	pszDataDir)
 {
@@ -3847,7 +3024,7 @@ void XFLMAPI F_DbSystem::deactivateOpenDb(
 /****************************************************************************
 Desc:		Sets the maximum number of queries to save
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setQuerySaveMax(
+void FLMAPI F_DbSystem::setQuerySaveMax(
 	FLMUINT						uiMaxToSave)
 {
 	f_mutexLock( gv_XFlmSysData.hQueryMutex);
@@ -3859,7 +3036,7 @@ void XFLMAPI F_DbSystem::setQuerySaveMax(
 /****************************************************************************
 Desc:		Gets the maximum number of queries to save
 ****************************************************************************/
-FLMUINT XFLMAPI F_DbSystem::getQuerySaveMax( void)
+FLMUINT FLMAPI F_DbSystem::getQuerySaveMax( void)
 {
 	return( gv_XFlmSysData.uiMaxQueries);
 }
@@ -3867,7 +3044,7 @@ FLMUINT XFLMAPI F_DbSystem::getQuerySaveMax( void)
 /****************************************************************************
 Desc:		Sets the maximum amount of dirty cache allowed
 ****************************************************************************/
-void XFLMAPI F_DbSystem::setDirtyCacheLimits(
+void FLMAPI F_DbSystem::setDirtyCacheLimits(
 	FLMUINT	uiMaxDirty,
 	FLMUINT	uiLowDirty)
 {
@@ -3898,7 +3075,7 @@ void XFLMAPI F_DbSystem::setDirtyCacheLimits(
 /****************************************************************************
 Desc:		Gets the maximum amount of dirty cache allowed
 ****************************************************************************/
-void XFLMAPI F_DbSystem::getDirtyCacheLimits(
+void FLMAPI F_DbSystem::getDirtyCacheLimits(
 	FLMUINT *	puiMaxDirty,
 	FLMUINT *	puiLowDirty)
 {
@@ -3919,48 +3096,30 @@ void XFLMAPI F_DbSystem::getDirtyCacheLimits(
 /****************************************************************************
 Desc:		Returns information about threads owned by the database engine
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::getThreadInfo(
-	IF_ThreadInfo **	ppThreadInfo
-	)
+RCODE FLMAPI F_DbSystem::getThreadInfo(
+	IF_ThreadInfo **	ppThreadInfo)
 {
-	RCODE				rc = NE_XFLM_OK;
-	F_ThreadInfo *	pThreadInfo = NULL;
+	return( FlmGetThreadInfo( ppThreadInfo));
+}
 
-	if ((pThreadInfo = f_new F_ThreadInfo) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = gv_XFlmSysData.pThreadMgr->getThreadInfo(
-								&pThreadInfo->m_Pool,
-								&pThreadInfo->m_pThreadInfoArray,
-								&pThreadInfo->m_uiNumThreads)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	if (RC_BAD( rc) && pThreadInfo)
-	{
-		pThreadInfo->Release();
-		pThreadInfo = NULL;
-	}
-
-	*ppThreadInfo = (IF_ThreadInfo *)pThreadInfo;
-	return( rc);
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_DbSystem::getFileSystem(
+	IF_FileSystem **		ppFileSystem)
+{
+	FlmGetFileSystem( ppFileSystem);
 }
 
 /****************************************************************************
 Desc:		Registers for an event
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::registerForEvent(
-	eEventCategory		eCategory,
+RCODE FLMAPI F_DbSystem::registerForEvent(
+	eEventCategory			eCategory,
 	IF_EventClient *		pEventClient)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FEVENT *	pEvent;
+	RCODE				rc = NE_XFLM_OK;
+	FEVENT *			pEvent;
 
 	// Make sure it is a legal event category to register for.
 
@@ -4004,7 +3163,7 @@ Exit:
 /****************************************************************************
 Desc:		De-registers for an event
 ****************************************************************************/
-void XFLMAPI F_DbSystem::deregisterForEvent(
+void FLMAPI F_DbSystem::deregisterForEvent(
 	eEventCategory		eCategory,
 	IF_EventClient *		pEventClient)
 {
@@ -4030,12 +3189,12 @@ void XFLMAPI F_DbSystem::deregisterForEvent(
 Desc:		Returns TRUE if the specified error indicates that the database
 			is corrupt
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::getNextMetaphone(
+RCODE FLMAPI F_DbSystem::getNextMetaphone(
 	IF_IStream *	pIStream,
 	FLMUINT *		puiMetaphone,
 	FLMUINT *		puiAltMetaphone)
 {
-	return( flmGetNextMetaphone( 
+	return( f_getNextMetaphone( 
 		pIStream, puiMetaphone, puiAltMetaphone));
 }
 
@@ -4043,7 +3202,7 @@ RCODE XFLMAPI F_DbSystem::getNextMetaphone(
 Desc:		Returns TRUE if the specified error indicates that the database
 			is corrupt
 ****************************************************************************/
-FLMBOOL XFLMAPI F_DbSystem::errorIsFileCorrupt(
+FLMBOOL FLMAPI F_DbSystem::errorIsFileCorrupt(
 	RCODE						rc)
 {
 	FLMBOOL		bIsCorrupt = FALSE;
@@ -4066,285 +3225,11 @@ FLMBOOL XFLMAPI F_DbSystem::errorIsFileCorrupt(
 }
 
 /****************************************************************************
-Desc:
-****************************************************************************/
-FINLINE FLMBYTE flmShiftRightRetByte(
-	FLMUINT64	ui64Num,
-	FLMBYTE		ucBits)
-{
-	return( ucBits < 64 ? (FLMBYTE)(ui64Num >> ucBits) : 0);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FLMUINT flmGetSENByteCount(
-	FLMUINT64	ui64Num)
-{
-	FLMUINT		uiCount = 0;
-
-	if( ui64Num < 0x80)
-	{
-		return( 1);
-	}
-
-	while( ui64Num)
-	{
-		uiCount++;
-		ui64Num >>= 7;
-	}
-
-	// If the high bit is set, the counter will be incremented 1 beyond
-	// the actual number of bytes need to represent the SEN.  We will need
-	// to re-visit this if we ever go beyond 64-bits.
-
-	return( uiCount < FLM_MAX_SEN_LEN ? uiCount : FLM_MAX_SEN_LEN);
-}
-
-/****************************************************************************
-Desc:		Encodes a number as a SEN
-****************************************************************************/
-FLMUINT flmEncodeSEN(
-	FLMUINT64		ui64Value,
-	FLMBYTE **		ppucBuffer,
-	FLMUINT			uiSizeWanted)
-{
-	FLMBYTE *			pucBuffer = *ppucBuffer;
-	FLMUINT				uiSenLen = flmGetSENByteCount( ui64Value);
-
-	flmAssert( uiSizeWanted <= FLM_MAX_SEN_LEN && 
-				  (!uiSizeWanted || uiSizeWanted >= uiSenLen));
-
-	uiSenLen = uiSizeWanted > uiSenLen ? uiSizeWanted : uiSenLen;
-
-	if( uiSenLen == 1)
-	{
-		*pucBuffer++ = (FLMBYTE)ui64Value;
-	}
-	else
-	{
-		FLMUINT			uiTmp = (uiSenLen - 1) << 3;
-
-		*pucBuffer++ = ucSENPrefixArray[ uiSenLen] + 
-							flmShiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
-		while( uiTmp)
-		{
-			uiTmp -= 8;
-			*pucBuffer++ = flmShiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
-		}
-	}
-
-	*ppucBuffer = pucBuffer;
-	return( uiSenLen);
-}
-
-/****************************************************************************
-Desc:		Encodes a number as a SEN
-****************************************************************************/
-RCODE flmEncodeSEN(
-	FLMUINT64		ui64Value,
-	FLMBYTE **		ppucBuffer,
-	FLMBYTE *		pucEnd)
-{
-	RCODE				rc = NE_XFLM_OK;
-	FLMBYTE *		pucBuffer = *ppucBuffer;
-	FLMUINT			uiSenLen = flmGetSENByteCount( ui64Value);
-	
-	if( *ppucBuffer + uiSenLen > pucEnd)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_CONV_DEST_OVERFLOW);
-		goto Exit;
-	}
-
-	if( uiSenLen == 1)
-	{
-		*pucBuffer++ = (FLMBYTE)ui64Value;
-	}
-	else
-	{
-		FLMUINT			uiTmp = (uiSenLen - 1) << 3;
-
-		*pucBuffer++ = ucSENPrefixArray[ uiSenLen] + 
-							flmShiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
-		while( uiTmp)
-		{
-			uiTmp -= 8;
-			*pucBuffer++ = flmShiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
-		}
-	}
-
-	*ppucBuffer = pucBuffer;
-	
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:		Encodes a number as a SEN
-****************************************************************************/
-FLMUINT flmEncodeSENKnownLength(
-	FLMUINT64		ui64Value,
-	FLMUINT			uiSenLen,
-	FLMBYTE **		ppucBuffer)
-{
-	FLMBYTE *			pucBuffer = *ppucBuffer;
-
-	if( uiSenLen == 1)
-	{
-		*pucBuffer++ = (FLMBYTE)ui64Value;
-	}
-	else
-	{
-		FLMUINT			uiTmp = (uiSenLen - 1) << 3;
-
-		*pucBuffer++ = ucSENPrefixArray[ uiSenLen] + 
-							flmShiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
-		while( uiTmp)
-		{
-			uiTmp -= 8;
-			*pucBuffer++ = flmShiftRightRetByte( ui64Value, (FLMBYTE)uiTmp);
-		}
-	}
-
-	*ppucBuffer = pucBuffer;
-	return( uiSenLen);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE flmDecodeSEN64(
-	const FLMBYTE **		ppucBuffer,
-	const FLMBYTE *		pucEnd,
-	FLMUINT64 *				pui64Value)
-{
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiSENLength;
-	const FLMBYTE *	pucBuffer = *ppucBuffer;
-
-	uiSENLength = gv_ucSENLengthArray[ *pucBuffer];
-	if( pucBuffer + uiSENLength > pucEnd)
-	{
-		if (pui64Value)
-		{
-			*pui64Value = 0;
-		}
-		rc = RC_SET( NE_XFLM_BAD_SEN);
-		goto Exit;
-	}
-
-	if (pui64Value)
-	{
-		switch( uiSENLength)
-		{
-			case 1:
-				*pui64Value = *pucBuffer;
-				break;
-	
-			case 2:
-				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x3F)) << 8) + pucBuffer[ 1];
-				break;
-	
-			case 3:
-				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x1F)) << 16) +
-					(((FLMUINT64)pucBuffer[ 1]) << 8) + pucBuffer[ 2];
-				break;
-	
-			case 4:
-				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x0F)) << 24) +
-					(((FLMUINT64)pucBuffer[ 1]) << 16) +
-					(((FLMUINT64)pucBuffer[ 2]) << 8) + pucBuffer[ 3];
-				break;
-	
-			case 5:
-				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x07)) << 32) +
-					(((FLMUINT64)pucBuffer[ 1]) << 24) +
-					(((FLMUINT64)pucBuffer[ 2]) << 16) +
-					(((FLMUINT64)pucBuffer[ 3]) << 8) + pucBuffer[ 4];
-				break;
-	
-			case 6:
-				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x03)) << 40) +
-					(((FLMUINT64)pucBuffer[ 1]) << 32) +
-					(((FLMUINT64)pucBuffer[ 2]) << 24) +
-					(((FLMUINT64)pucBuffer[ 3]) << 16) +
-					(((FLMUINT64)pucBuffer[ 4]) << 8) + pucBuffer[ 5];
-				break;
-	
-			case 7:
-				*pui64Value = (((FLMUINT64)(*pucBuffer & 0x01)) << 48) +
-					(((FLMUINT64)pucBuffer[ 1]) << 40) +
-					(((FLMUINT64)pucBuffer[ 2]) << 32) +
-					(((FLMUINT64)pucBuffer[ 3]) << 24) +
-					(((FLMUINT64)pucBuffer[ 4]) << 16) +
-					(((FLMUINT64)pucBuffer[ 5]) << 8) + pucBuffer[ 6];
-				break;
-	
-			case 8:
-				*pui64Value = (((FLMUINT64)pucBuffer[ 1]) << 48) +
-					(((FLMUINT64)pucBuffer[ 2]) << 40) +
-					(((FLMUINT64)pucBuffer[ 3]) << 32) +
-					(((FLMUINT64)pucBuffer[ 4]) << 24) +
-					(((FLMUINT64)pucBuffer[ 5]) << 16) +
-					(((FLMUINT64)pucBuffer[ 6]) << 8) + pucBuffer[ 7];
-				break;
-	
-			case 9:
-				*pui64Value = (((FLMUINT64)pucBuffer[ 1]) << 56) +
-					(((FLMUINT64)pucBuffer[ 2]) << 48) +
-					(((FLMUINT64)pucBuffer[ 3]) << 40) +
-					(((FLMUINT64)pucBuffer[ 4]) << 32) +
-					(((FLMUINT64)pucBuffer[ 5]) << 24) +
-					(((FLMUINT64)pucBuffer[ 6]) << 16) +
-					(((FLMUINT64)pucBuffer[ 7]) << 8) + pucBuffer[ 8];
-				break;
-	
-			default:
-				*pui64Value = 0;
-				flmAssert( 0);
-				break;
-		}
-	}
-
-Exit:
-
-	*ppucBuffer = pucBuffer + uiSENLength;
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:		COM query interface
-****************************************************************************/
-RCODE XFLMAPI F_DbSystem::QueryInterface(
-	RXFLMIID	riid,
-	void **		ppvInt)
-{
-	RCODE		rc = NE_XFLM_OK;
-	
-	if( (f_memcmp(&riid, &Internal_IID_IF_DbSystem,
-				   sizeof( Internal_IID_IF_DbSystem)) == 0)  ||
-		 (f_memcmp(&riid, &Internal_IID_XFLMIUnknown,
-		 		   sizeof( Internal_IID_XFLMIUnknown)) == 0) )
-	{
-		*ppvInt = this;
-		AddRef();
-	}
-	else
-	{
-		rc = RC_SET( NE_XFLM_UNSUPPORTED_INTERFACE);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:		Increment the database system use count
 ****************************************************************************/
-FLMINT XFLMAPI F_DbSystem::AddRef(void)
+FLMINT FLMAPI F_DbSystem::AddRef(void)
 {
-	FLMINT		iRefCnt = flmAtomicInc( &m_refCnt);
+	FLMINT		iRefCnt = f_atomicInc( &m_refCnt);
 
 	// Note: We don't bother with a call to LockModule() here because
 	// it's done in the constructor.  In fact, it's unlikely that
@@ -4358,9 +3243,9 @@ FLMINT XFLMAPI F_DbSystem::AddRef(void)
 /****************************************************************************
 Desc:		Decrement the database system use count
 ****************************************************************************/
-FLMINT XFLMAPI F_DbSystem::Release(void)
+FLMINT FLMAPI F_DbSystem::Release(void)
 {
-	FLMINT	iRefCnt = flmAtomicDec( &m_refCnt);
+	FLMINT	iRefCnt = f_atomicDec( &m_refCnt);
 
 	if (iRefCnt == 0)
 	{
@@ -4371,180 +3256,14 @@ FLMINT XFLMAPI F_DbSystem::Release(void)
 }
 
 /****************************************************************************
-Desc:		Returns a pointer to the ASCII string representation
-			of a return code.
-****************************************************************************/
-const char * F_DbSystem::errorString(
-	RCODE			rc)
-{
-	const char *		pszErrorStr;
-
-	if( rc == NE_XFLM_OK)
-	{
-		pszErrorStr = "NE_XFLM_OK";
-	}
-	else if( rc > NE_XFLM_FIRST_COMMON_ERROR &&
-		rc < NE_XFLM_LAST_COMMON_ERROR)
-	{
-		pszErrorStr = gv_FlmCommonErrors[
-			rc - NE_XFLM_FIRST_COMMON_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_GENERAL_ERROR &&
-		rc < NE_XFLM_LAST_GENERAL_ERROR)
-	{
-		pszErrorStr = gv_FlmGeneralErrors[
-			rc - NE_XFLM_FIRST_GENERAL_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_DOM_ERROR &&
-		rc < NE_XFLM_LAST_DOM_ERROR)
-	{
-		pszErrorStr = gv_FlmDomErrors[
-			rc - NE_XFLM_FIRST_DOM_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_IO_ERROR &&
-		rc < NE_XFLM_LAST_IO_ERROR)
-	{
-		pszErrorStr = gv_FlmIoErrors[
-			rc - NE_XFLM_FIRST_IO_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_NET_ERROR &&
-		rc < NE_XFLM_LAST_NET_ERROR)
-	{
-		pszErrorStr = gv_FlmNetErrors[
-			rc - NE_XFLM_FIRST_NET_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_QUERY_ERROR &&
-		rc < NE_XFLM_LAST_QUERY_ERROR)
-	{
-		pszErrorStr = gv_FlmQueryErrors[
-			rc - NE_XFLM_FIRST_QUERY_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_STREAM_ERROR &&
-		rc < NE_XFLM_LAST_STREAM_ERROR)
-	{
-		pszErrorStr = gv_FlmStreamErrors[
-			rc - NE_XFLM_FIRST_STREAM_ERROR - 1].pszErrorStr;
-	}
-	else if( rc > NE_XFLM_FIRST_NICI_ERROR &&
-		rc < NE_XFLM_LAST_NICI_ERROR)
-	{
-		pszErrorStr = gv_FlmNiciErrors[
-			rc - NE_XFLM_FIRST_NICI_ERROR - 1].pszErrorStr;
-	}
-	else
-	{
-		pszErrorStr = "Unknown error";
-	}
-
-	return( pszErrorStr);
-}
-
-/****************************************************************************
-Desc:		Checks the error code mapping tables on startup
-****************************************************************************/
-RCODE F_DbSystem::checkErrorCodeTables( void)
-{
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiLoop;
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_GENERAL_ERROR - NE_XFLM_FIRST_GENERAL_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmGeneralErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_GENERAL_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_DOM_ERROR - NE_XFLM_FIRST_DOM_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmDomErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_DOM_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_IO_ERROR - NE_XFLM_FIRST_IO_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmIoErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_IO_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_NET_ERROR - NE_XFLM_FIRST_NET_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmNetErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_NET_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_QUERY_ERROR - NE_XFLM_FIRST_QUERY_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmQueryErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_QUERY_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_STREAM_ERROR - NE_XFLM_FIRST_STREAM_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmStreamErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_STREAM_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-	for( uiLoop = 0;
-		uiLoop < (NE_XFLM_LAST_NICI_ERROR - NE_XFLM_FIRST_NICI_ERROR - 1);
-		uiLoop++)
-	{
-		if( gv_FlmNiciErrors[ uiLoop].rc !=
-			(RCODE)(uiLoop + NE_XFLM_FIRST_NICI_ERROR + 1))
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_RCODE_TABLE);
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:	Allocates an F_DbSystem object for non-COM applications
 ****************************************************************************/
-XFLMEXP RCODE XFLMAPI FlmAllocDbSystem(
+FLMEXP RCODE FLMAPI FlmAllocDbSystem(
 	IF_DbSystem **			ppDbSystem)
 {
 	flmAssert( ppDbSystem && *ppDbSystem == NULL);
 
-	if( (*ppDbSystem = (IF_DbSystem *)f_new F_DbSystem) == NULL)
+	if( (*ppDbSystem = f_new F_DbSystem) == NULL)
 	{
 		return( RC_SET( NE_XFLM_MEM));
 	}
@@ -4595,21 +3314,15 @@ RCODE F_DbSystem::readIniFile()
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMBOOL			bMutexLocked = FALSE;
-	F_IniFile *		pIniFile = NULL;
+	IF_IniFile *	pIniFile = NULL;
 	char				szIniFileName [F_PATH_MAX_SIZE];
 	FLMUINT			uiParamValue;
 	FLMUINT			uiMaxDirtyCache;
 	FLMUINT			uiLowDirtyCache;
 
 	// Initialize the ini file object...
-
-	if ((pIniFile = f_new F_IniFile) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = pIniFile->Init()))
+	
+	if( RC_BAD( rc = FlmAllocIniFile( &pIniFile)))
 	{
 		goto Exit;
 	}
@@ -4625,7 +3338,7 @@ RCODE F_DbSystem::readIniFile()
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pIniFile->Read( szIniFileName)))
+	if (RC_BAD( rc = pIniFile->read( szIniFileName)))
 	{
 		goto Exit;
 	}
@@ -4673,21 +3386,15 @@ Desc: 	Given a tag and a value this function will open/create the
 			NOTE: This function expects gv_XFlmSysData.hIniMutex to already be
 			locked!
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::updateIniFile(
+RCODE FLMAPI F_DbSystem::updateIniFile(
 	const char *	pszParamName,
 	const char *	pszValue)
 {
 	RCODE				rc = NE_XFLM_OK;
-	F_IniFile *		pIniFile = NULL;
+	IF_IniFile *	pIniFile = NULL;
 	char				szIniFileName [F_PATH_MAX_SIZE];
-
-	if ((pIniFile = f_new F_IniFile) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = pIniFile->Init()))
+	
+	if( RC_BAD( rc = FlmAllocIniFile( &pIniFile)))
 	{
 		goto Exit;
 	}
@@ -4698,17 +3405,17 @@ RCODE XFLMAPI F_DbSystem::updateIniFile(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pIniFile->Read( szIniFileName)))
+	if (RC_BAD( rc = pIniFile->read( szIniFileName)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pIniFile->SetParam( pszParamName, pszValue)))
+	if (RC_BAD( rc = pIniFile->setParam( pszParamName, pszValue)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pIniFile->Write()))
+	if (RC_BAD( rc = pIniFile->write()))
 	{
 		goto Exit;
 	}
@@ -4723,7 +3430,7 @@ Exit:
 Desc:	Sets the parameters for controlling cache.
 ****************************************************************************/
 RCODE F_DbSystem::setCacheParams(
-	F_IniFile *			pIniFile)
+	IF_IniFile *	pIniFile)
 {
 	RCODE				rc = NE_XFLM_OK;
 	char *			pszCacheParam = NULL;
@@ -4930,12 +3637,12 @@ Exit:
 Desc:	Gets a string parameter from the .ini file.
 ****************************************************************************/
 FSTATIC void flmGetStringParam(
-	const char *	pszParamName,
-	char **			ppszValue,
-	F_IniFile *		pIniFile)
+	const char *		pszParamName,
+	char **				ppszValue,
+	IF_IniFile *		pIniFile)
 {
 	flmAssert( pIniFile);
-	(void)pIniFile->GetParam( pszParamName, ppszValue);
+	(void)pIniFile->getParam( pszParamName, ppszValue);
 }
 
 /****************************************************************************
@@ -4987,10 +3694,10 @@ FSTATIC void flmGetUintParam(
 	const char *	pszParamName,
 	FLMUINT			uiDefaultValue,
 	FLMUINT *		puiUint,
-	F_IniFile *		pIniFile)
+	IF_IniFile *	pIniFile)
 {
 	flmAssert( pIniFile);
-	if (!pIniFile->GetParam( pszParamName, puiUint))
+	if (!pIniFile->getParam( pszParamName, puiUint))
 	{
 		*puiUint = uiDefaultValue;
 	}
@@ -5003,10 +3710,10 @@ void flmGetBoolParam(
 	const char *	pszParamName,
 	FLMBOOL			bDefaultValue,
 	FLMBOOL *		pbBool,
-	F_IniFile *		pIniFile)
+	IF_IniFile *	pIniFile)
 {
 	flmAssert( pIniFile);
-	if (!pIniFile->GetParam( pszParamName, pbBool))
+	if (!pIniFile->getParam( pszParamName, pbBool))
 	{
 		*pbBool = bDefaultValue;
 	}
@@ -5017,12 +3724,11 @@ Desc:
 ****************************************************************************/
 FSTATIC RCODE flmGetIniFileName(
 	FLMBYTE *		pszIniFileName,
-	FLMUINT			uiBufferSz
-	)
+	FLMUINT			uiBufferSz)
 {
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiFileNameLen = 0;
-	F_DirHdl *	pDirHdl = NULL;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiFileNameLen = 0;
+	IF_DirHdl *		pDirHdl = NULL;
 
 	if (!uiBufferSz)
 	{
@@ -5041,21 +3747,16 @@ FSTATIC RCODE flmGetIniFileName(
 	{
 		// Perhaps we can find a data directory.  If there is one, we will
 		// look in there.
-
-		if( (pDirHdl = f_new F_DirHdl) == NULL)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
 		
-		if( RC_OK( rc = pDirHdl->OpenDir( (char *)".", (char *)"data")))
+		if( RC_OK( rc = gv_XFlmSysData.pFileSystem->openDir( 
+			(char *)".", (char *)"data", &pDirHdl)))
 		{
-			if (RC_OK( rc = pDirHdl->Next()))
+			if (RC_OK( rc = pDirHdl->next()))
 			{
-				if (pDirHdl->CurrentItemIsDir())
+				if (pDirHdl->currentItemIsDir())
 				{
 					// Directory exists.  We will look there.
-					f_strcpy( pszIniFileName, "data");
+					f_strcpy( (char *)pszIniFileName, "data");
 				}
 				else
 				{
@@ -5074,11 +3775,12 @@ NoDataDir:
 			// Data directory does not exist.  We will look in the
 			// current (default) dir.
 
-			f_strcpy( pszIniFileName, ".");
+			f_strcpy( (char *)pszIniFileName, ".");
 		}
 	}
 
-	gv_pFileSystem->pathAppend( (char *)pszIniFileName, XFLM_INI_FILE_NAME);
+	gv_XFlmSysData.pFileSystem->pathAppend( 
+		(char *)pszIniFileName, XFLM_INI_FILE_NAME);
 
 Exit:
 
@@ -5088,4 +3790,220 @@ Exit:
 	}
 	
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openBufferIStream(
+	const char *			pucBuffer,
+	FLMUINT					uiLength,
+	IF_PosIStream **		ppIStream)
+{
+	return( FlmOpenBufferIStream( pucBuffer, uiLength, ppIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openFileIStream(
+	const char *			pszPath,
+	IF_PosIStream **		ppIStream)
+{
+	return( FlmOpenFileIStream( pszPath, ppIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openMultiFileIStream(
+	const char *			pszDirectory,
+	const char *			pszBaseName,
+	IF_IStream **			ppIStream)
+{
+	return( FlmOpenMultiFileIStream( pszDirectory, pszBaseName, ppIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openBufferedIStream(
+	IF_IStream *			pSourceIStream,
+	FLMUINT					uiBufferSize,
+	IF_IStream **			ppIStream)
+{
+	return( FlmOpenBufferedIStream( pSourceIStream, uiBufferSize, ppIStream)); 
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openUncompressingIStream(
+	IF_IStream *			pIStream,
+	IF_IStream **			ppIStream)
+{
+	return( FlmOpenUncompressingIStream( pIStream, ppIStream));
+}
+			
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openFileOStream(
+	const char *		pszFileName,
+	FLMBOOL				bTruncateIfExists,
+	IF_OStream **		ppOStream)
+{
+	return( FlmOpenFileOStream( pszFileName, bTruncateIfExists, ppOStream));
+}
+			
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openMultiFileOStream(
+	const char *		pszDirectory,
+	const char *		pszBaseName,
+	FLMUINT				uiMaxFileSize,
+	FLMBOOL				bOkToOverwrite,
+	IF_OStream **		ppStream)
+{
+	return( FlmOpenMultiFileOStream( pszDirectory, pszBaseName, 
+		uiMaxFileSize, bOkToOverwrite, ppStream));
+}
+			
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::removeMultiFileStream(
+	const char *		pszDirectory,
+	const char *		pszBaseName)
+{
+	return( FlmRemoveMultiFileStream( pszDirectory, pszBaseName));
+}
+			
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openBufferedOStream(
+	IF_OStream *		pOStream,
+	FLMUINT				uiBufferSize,
+	IF_OStream **		ppOStream)
+{
+	return( FlmOpenBufferedOStream( pOStream, uiBufferSize, ppOStream));
+}
+			
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openCompressingOStream(
+	IF_OStream *		pOStream,
+	IF_OStream **		ppOStream)
+{
+	return( FlmOpenCompressingOStream( pOStream, ppOStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::writeToOStream(
+	IF_IStream *		pIStream,
+	IF_OStream *		pOStream)
+{
+	return( FlmWriteToOStream( pIStream, pOStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openBase64Encoder(
+	IF_IStream *			pInputStream,
+	FLMBOOL					bInsertLineBreaks,
+	IF_IStream **			ppEncodedStream)
+{
+	return( FlmOpenBase64EncoderIStream( pInputStream, 
+		bInsertLineBreaks, ppEncodedStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::openBase64Decoder(
+	IF_IStream *			pInputStream,
+	IF_IStream **			ppDecodedStream)
+{
+	return( FlmOpenBase64DecoderIStream( pInputStream, ppDecodedStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::createIFResultSet(
+	IF_ResultSet **		ifppResultSet)
+{
+	return( FlmAllocResultSet( ifppResultSet));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI F_DbSystem::uniIsUpper(
+	FLMUNICODE			uChar)
+{
+	return( f_uniIsUpper( uChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI F_DbSystem::uniIsLower(
+	FLMUNICODE			uChar)
+{
+	return( f_uniIsLower( uChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI F_DbSystem::uniIsAlpha(
+	FLMUNICODE			uChar)
+{
+	return( f_uniIsAlpha( uChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI F_DbSystem::uniIsDecimalDigit(
+	FLMUNICODE			uChar)
+{
+	return( f_uniIsDecimalDigit( uChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUNICODE FLMAPI F_DbSystem::uniToLower(
+	FLMUNICODE			uChar)
+{
+	return( f_uniToLower( uChar));
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::nextUCS2Char(
+	const FLMBYTE **	ppszUTF8,
+	const FLMBYTE *	pszEndOfUTF8String,
+	FLMUNICODE *		puzChar)
+{
+	return( f_nextUCS2Char( ppszUTF8, pszEndOfUTF8String, puzChar));
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_DbSystem::numUCS2Chars(
+	const FLMBYTE *	pszUTF8,
+	FLMUINT *			puiNumChars)
+{
+	return( f_numUCS2Chars( pszUTF8, puiNumChars));
 }

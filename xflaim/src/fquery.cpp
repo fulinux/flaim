@@ -61,10 +61,6 @@ FINLINE FLMUINT getPrecedence(
 	return( uiPrecedenceTable [eOperator - XFLM_AND_OP]);
 }
 
-F_Pool::POOL_STATS	gv_QueryPoolStats = {0,0};
-
-// Local Function Prototypes
-
 FSTATIC void fqUnlinkFromParent(
 	FQNODE *	pQNode);
 
@@ -196,8 +192,8 @@ Desc:	Constructor
 ***************************************************************************/
 F_Query::F_Query()
 {
-	m_Pool.smartPoolInit( &gv_QueryPoolStats);
-	m_uiLanguage = XFLM_US_LANG;
+	m_pPool = NULL;
+	m_uiLanguage = FLM_US_LANG;
 	m_uiCollection = XFLM_DATA_COLLECTION;
 	initVars();
 }
@@ -208,7 +204,30 @@ Desc:	Destructor
 F_Query::~F_Query()
 {
 	clearQuery();
-	m_Pool.poolFree();
+	
+	if( m_pPool)
+	{
+		m_pPool->Release();
+	}
+}
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+RCODE F_Query::setup( void)
+{
+	RCODE		rc = NE_XFLM_OK;
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pPool->poolInit( 1024);
+	
+Exit:
+
+	return( rc);
 }
 
 /***************************************************************************
@@ -414,13 +433,17 @@ void F_Query::initVars( void)
 	m_ppObjectList = NULL;
 	m_uiObjectListSize = 0;
 	m_uiObjectCount = 0;
-	m_Pool.poolReset( NULL);
 	m_bRemoveDups = FALSE;
 	m_pDocIdSet = NULL;
 	m_uiIndex = 0;
 	m_bIndexSet = FALSE;
 	m_uiTimeLimit = 0;
 	m_uiStartTime = 0;
+
+	if( m_pPool)
+	{
+		m_pPool->poolReset( NULL);
+	}
 }
 
 /***************************************************************************
@@ -433,7 +456,7 @@ RCODE F_Query::allocExprState( void)
 
 	if (!m_pCurExprState || !m_pCurExprState->pNext)
 	{
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( EXPR_STATE),
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( EXPR_STATE),
 												(void **)&pExprState)))
 		{
 			goto Exit;
@@ -471,8 +494,7 @@ Desc:	Unlinks a node from its parent and siblings.  This routine assumes
 		that the test has already been made that the node has a parent.
 ***************************************************************************/
 FSTATIC void fqUnlinkFromParent(
-	FQNODE *	pQNode
-	)
+	FQNODE *		pQNode)
 {
 	flmAssert( pQNode->pParent);
 	if (pQNode->pPrevSib)
@@ -629,7 +651,7 @@ RCODE F_Query::allocValueNode(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQNODE),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
 									(void **)ppQNode)))
 	{
 		goto Exit;
@@ -645,7 +667,7 @@ RCODE F_Query::allocValueNode(
 	if (uiValLen &&
 		 (eValType == XFLM_UTF8_VAL || eValType == XFLM_BINARY_VAL))
 	{
-		if (RC_BAD( rc = m_Pool.poolAlloc( uiValLen,
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiValLen,
 												(void **)&pQNode->currVal.val.pucBuf)))
 		{
 			goto Exit;
@@ -672,7 +694,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a unicode value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addUnicodeValue(
+RCODE FLMAPI F_Query::addUnicodeValue(
 	const FLMUNICODE *	puzVal)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -763,7 +785,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a UTF8 value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addUTF8Value(
+RCODE FLMAPI F_Query::addUTF8Value(
 	const char *	pszVal,
 	FLMUINT			uiUTF8Len)
 {
@@ -807,7 +829,7 @@ RCODE XFLMAPI F_Query::addUTF8Value(
 		bHaveWildCards = FALSE;
 		for (;;)
 		{
-			if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pszTmp, pucEnd, &uzChar)))
+			if (RC_BAD( rc = f_getCharFromUTF8Buf( &pszTmp, pucEnd, &uzChar)))
 			{
 				goto Exit;
 			}
@@ -818,7 +840,7 @@ RCODE XFLMAPI F_Query::addUTF8Value(
 				// Skip over the next character no matter what
 				// because it is escaped.
 
-				if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pszTmp, pucEnd, &uzChar)))
+				if (RC_BAD( rc = f_getCharFromUTF8Buf( &pszTmp, pucEnd, &uzChar)))
 				{
 					goto Exit;
 				}
@@ -872,7 +894,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a binary value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addBinaryValue(
+RCODE FLMAPI F_Query::addBinaryValue(
 	const void *		pvVal,
 	FLMUINT				uiValLen)
 {
@@ -899,7 +921,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a UINT value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addUINTValue(
+RCODE FLMAPI F_Query::addUINTValue(
 	FLMUINT	uiVal
 	)
 {
@@ -922,7 +944,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds an INT value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addINTValue(
+RCODE FLMAPI F_Query::addINTValue(
 	FLMINT	iVal
 	)
 {
@@ -945,7 +967,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a UINT64 value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addUINT64Value(
+RCODE FLMAPI F_Query::addUINT64Value(
 	FLMUINT64	ui64Val
 	)
 {
@@ -968,7 +990,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds an INT64 value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addINT64Value(
+RCODE FLMAPI F_Query::addINT64Value(
 	FLMINT64	i64Val
 	)
 {
@@ -991,7 +1013,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a BOOL value to the query criteria.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addBoolean(
+RCODE FLMAPI F_Query::addBoolean(
 	FLMBOOL	bVal,
 	FLMBOOL	bUnknown
 	)
@@ -1019,7 +1041,7 @@ Exit:
 /***************************************************************************
 Desc:	Add an XPATH component
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addXPathComponent(
+RCODE FLMAPI F_Query::addXPathComponent(
 	eXPathAxisTypes		eXPathAxis,
 	eDomNodeType			eNodeType,
 	FLMUINT					uiDictNum,
@@ -1080,7 +1102,7 @@ RCODE XFLMAPI F_Query::addXPathComponent(
 
 	// Allocate an XPATH component
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( XPATH_COMPONENT),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( XPATH_COMPONENT),
 										(void **)&pXPathComponent)))
 	{
 		goto Exit;
@@ -1111,12 +1133,12 @@ RCODE XFLMAPI F_Query::addXPathComponent(
 
 		// Need to allocate a node and an XPATH
 
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQNODE),
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
 											(void **)&pQNode)))
 		{
 			goto Exit;
 		}
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FXPATH),
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FXPATH),
 											(void **)&pXPath)))
 		{
 			goto Exit;
@@ -1173,16 +1195,15 @@ Desc:	Keep track of objects supplied by the application that we use
 		for callbacks, etc.
 ***************************************************************************/
 RCODE F_Query::objectAddRef(
-	XF_RefCount *	pObject
-	)
+	F_Object *		pObject)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
 
 	// If object list is full, make room for 20 more
 
 	if (m_uiObjectCount == m_uiObjectListSize)
 	{
-		if (RC_BAD( rc = f_realloc( sizeof( XFLMIUnknown *) *
+		if (RC_BAD( rc = f_realloc( sizeof( F_Object *) *
 											(m_uiObjectListSize + 20),
 											&m_ppObjectList)))
 		{
@@ -1190,6 +1211,7 @@ RCODE F_Query::objectAddRef(
 		}
 		m_uiObjectListSize += 20;
 	}
+	
 	m_ppObjectList [m_uiObjectCount++] = pObject;
 	pObject->AddRef();
 
@@ -1271,7 +1293,7 @@ FINLINE FLMBOOL hasContextPosTest(
 /***************************************************************************
 Desc:	Add an operator to the query expression
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addOperator(
+RCODE FLMAPI F_Query::addOperator(
 	eQueryOperators		eOperator,
 	FLMUINT					uiCompareRules,
 	IF_OperandComparer *	pOpComparer)
@@ -1357,7 +1379,7 @@ RCODE XFLMAPI F_Query::addOperator(
 					// Allocate an expression node and link it to the
 					// function.
 
-					if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQEXPR),
+					if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQEXPR),
 												(void **)&pQExpr)))
 					{
 						goto Exit;
@@ -1447,7 +1469,7 @@ RCODE XFLMAPI F_Query::addOperator(
 
 			// Allocate an expression node and link it to the
 
-			if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQEXPR),
+			if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQEXPR),
 										(void **)&pQExpr)))
 			{
 				goto Exit;
@@ -1594,7 +1616,7 @@ RCODE XFLMAPI F_Query::addOperator(
 					// Create an AND node and link the existing expression with
 					// this new expression as children of this new AND node.
 
-					if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQNODE),
+					if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
 															(void **)&pQNode)))
 					{
 						goto Exit;
@@ -1686,7 +1708,7 @@ RCODE XFLMAPI F_Query::addOperator(
 
 	// Make a QNODE and find a place for it in the query tree
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQNODE),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
 											(void **)&pQNode)))
 	{
 		goto Exit;
@@ -1813,7 +1835,7 @@ Exit:
 /***************************************************************************
 Desc:	Add a function to the query expression
 ***************************************************************************/
-RCODE XFLMAPI F_Query::addFunction(
+RCODE FLMAPI F_Query::addFunction(
 	eQueryFunctions	eFunction,
 	IF_QueryValFunc *	pFuncObj,
 	FLMBOOL				bHaveXPathExpr)
@@ -1849,12 +1871,12 @@ RCODE XFLMAPI F_Query::addFunction(
 
 	// Allocate a function node
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQNODE),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
 											(void **)&pQNode)))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQFUNCTION),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQFUNCTION),
 											(void **)&pQFunction)))
 	{
 		goto Exit;
@@ -2332,7 +2354,7 @@ RCODE F_Query::intersectPredicates(
 
 	// Add a new predicate to the context path
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( PATH_PRED),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( PATH_PRED),
 												(void **)&pPred)))
 	{
 		goto Exit;
@@ -2419,7 +2441,7 @@ Exit:
 	{
 		PATH_PRED_NODE *	pPathPredNode;
 
-		if (RC_OK( rc = m_Pool.poolCalloc( sizeof( PATH_PRED_NODE),
+		if (RC_OK( rc = m_pPool->poolCalloc( sizeof( PATH_PRED_NODE),
 										(void **)&pPathPredNode)))
 		{
 			pPathPredNode->pXPathNode = pXPathNode;
@@ -2821,7 +2843,7 @@ RCODE F_Query::unionPredicates(
 
 	// Add a new predicate to the context path
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( PATH_PRED),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( PATH_PRED),
 											(void **)&pPred)))
 	{
 		goto Exit;
@@ -2908,7 +2930,7 @@ Exit:
 	{
 		PATH_PRED_NODE *	pPathPredNode;
 
-		if (RC_OK( rc = m_Pool.poolCalloc( sizeof( PATH_PRED_NODE),
+		if (RC_OK( rc = m_pPool->poolCalloc( sizeof( PATH_PRED_NODE),
 										(void **)&pPathPredNode)))
 		{
 			pPathPredNode->pXPathNode = pXPathNode;
@@ -3061,7 +3083,7 @@ RCODE F_Query::addPredicateToContext(
 
 	if (!pContextPath)
 	{
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( CONTEXT_PATH),
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( CONTEXT_PATH),
 									(void **)&pContextPath)))
 		{
 			goto Exit;
@@ -3288,7 +3310,7 @@ RCODE F_Query::createOpContext(
 	// Allocate a new context and link it in as a child
 	// to the current context.
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( OP_CONTEXT),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( OP_CONTEXT),
 									(void **)&pContext)))
 	{
 		goto Exit;
@@ -4549,6 +4571,7 @@ RCODE F_Query::optimizePredicate(
 	FLMUINT					uiTotalRefs;
 	FLMBOOL					bTotalsEstimated;
 	FLMUINT					uiCost;
+	IF_BufferIStream *	pBufferIStream = NULL;
 	F_AttrElmInfo			defInfo;
 
 	// Special handling for app. defined source nodes
@@ -4948,16 +4971,20 @@ RCODE F_Query::optimizePredicate(
 			 pIcd->uiFlags & ICD_METAPHONE &&
 			 pPred->pFromValue->eValType == XFLM_UTF8_VAL)
 		{
-			F_BufferIStream	bufferIStream;
 			FLMUINT				uiMeta;
 			FLMUINT				uiAltMeta;
 			FQVALUE				metaValue;
 			FQVALUE *			pSaveValue = pPred->pFromValue;
 			FLMUINT				uiMetaCost;
+			
+			if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+			{
+				goto Exit;
+			}
 
 			uiCost = 0;
-			if (RC_BAD( rc = bufferIStream.open( 
-				pPred->pFromValue->val.pucBuf,
+			if (RC_BAD( rc = pBufferIStream->open( 
+				(const char *)pPred->pFromValue->val.pucBuf,
 				pPred->pFromValue->uiDataLen)))
 			{
 				goto Exit;
@@ -4972,8 +4999,8 @@ RCODE F_Query::optimizePredicate(
 			metaValue.eValType = XFLM_UTF8_VAL;
 			for (;;)
 			{
-				if( RC_BAD( rc = flmGetNextMetaphone( 
-					&bufferIStream, &uiMeta, &uiAltMeta)))
+				if( RC_BAD( rc = f_getNextMetaphone( 
+					pBufferIStream, &uiMeta, &uiAltMeta)))
 				{
 					if (rc != NE_XFLM_EOF_HIT)
 					{
@@ -5046,6 +5073,13 @@ RCODE F_Query::optimizePredicate(
 					}
 				}
 			}
+			
+			if( pBufferIStream)
+			{
+				pBufferIStream->Release();
+				pBufferIStream = NULL;
+			}
+			
 			bTmpCanCompareOnKey = FALSE;
 			bDoNodeMatch = TRUE;
 		}
@@ -5149,6 +5183,12 @@ RCODE F_Query::optimizePredicate(
 
 Exit:
 
+	if( pBufferIStream)
+	{
+		pBufferIStream->Release();
+		pBufferIStream = NULL;
+	}
+	
 	if (pFSIndexCursor)
 	{
 		pFSIndexCursor->Release();
@@ -6552,7 +6592,7 @@ RCODE F_Query::getNodeSourceNode(
 		}
 		else
 		{
-			FLM_TIMER_UNITS_TO_MILLI( (m_uiTimeLimit - uiElapsedTime), uiTimeLimit);
+			uiTimeLimit = FLM_TIMER_UNITS_TO_MILLI( (m_uiTimeLimit - uiElapsedTime));
 				
 			// Always give at least one milli-second.
 				
@@ -9163,8 +9203,7 @@ RCODE F_Query::getNextFunctionValue(
 	IF_DOMNode *		pContextNode,
 	FLMBOOL				bForward,
 	FQNODE *				pCurrNode,
-	F_DynaBuf *			pDynaBuf
-	)
+	IF_DynaBuf *		pDynaBuf)
 {
 	RCODE				rc = NE_XFLM_OK;
 	ValIterator		eIterator;
@@ -9208,7 +9247,7 @@ RCODE F_Query::getNextFunctionValue(
 	pDynaBuf->truncateData( 0);
 	if (RC_BAD( rc = pCurrNode->nd.pQFunction->pFuncObj->getValue( (IF_Db *)m_pDb,
 								pNode, eIterator, &pCurrNode->currVal.eValType,
-								&pCurrNode->bLastValue, &ucValBuf, (IF_DynaBuf *)pDynaBuf)))
+								&pCurrNode->bLastValue, ucValBuf, (IF_DynaBuf *)pDynaBuf)))
 	{
 		goto Exit;
 	}
@@ -9554,11 +9593,10 @@ RCODE F_Query::getFuncValue(
 	FLMBOOL				bForward,
 	FQNODE **			ppCurrNode,
 	FLMBOOL *			pbGetNodeValue,
-	F_DynaBuf *			pDynaBuf
-	)
+	IF_DynaBuf *		pDynaBuf)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FQNODE *	pCurrNode = *ppCurrNode;
+	RCODE					rc = NE_XFLM_OK;
+	FQNODE *				pCurrNode = *ppCurrNode;
 	
 	// We currently only support user-defined functions.
 				
@@ -10089,7 +10127,7 @@ FSTATIC void fqReleaseQueryExpr(
 /***************************************************************************
 Desc:	Release the resources of a query
 ***************************************************************************/
-void XFLMAPI F_Query::resetQuery( void)
+void FLMAPI F_Query::resetQuery( void)
 {
 	if (m_pQuery)
 	{
@@ -10451,7 +10489,7 @@ RCODE F_Query::getAppNode(
 			}
 			else
 			{
-				FLM_TIMER_UNITS_TO_MILLI( (m_uiTimeLimit - uiElapsedTime), uiTimeLimit);
+				uiTimeLimit = FLM_TIMER_UNITS_TO_MILLI( (m_uiTimeLimit - uiElapsedTime));
 				
 				// Always give at least one milli-second.
 				
@@ -10791,8 +10829,7 @@ RCODE F_Query::testKey(
 	F_DataVector *	pKey,
 	PATH_PRED *		pPred,
 	FLMBOOL *		pbPasses,
-	IF_DOMNode **	ppPassedNode
-	)
+	IF_DOMNode **	ppPassedNode)
 {
 	RCODE			rc = NE_XFLM_OK;
 	FLMUINT64	ui64NodeId;
@@ -12594,7 +12631,7 @@ Exit:
 /***************************************************************************
 Desc:	Get first node/document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getFirst(
+RCODE FLMAPI F_Query::getFirst(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit
@@ -12691,7 +12728,7 @@ RCODE XFLMAPI F_Query::getFirst(
 
 	if ((m_uiTimeLimit = uiTimeLimit) != 0)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, m_uiTimeLimit);
+		m_uiTimeLimit = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		m_uiStartTime = FLM_GET_TIMER();
 	}
 	if (m_bScan)
@@ -12782,7 +12819,7 @@ Exit:
 /***************************************************************************
 Desc:	Get last node/document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getLast(
+RCODE FLMAPI F_Query::getLast(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit
@@ -12877,7 +12914,7 @@ RCODE XFLMAPI F_Query::getLast(
 
 	if ((m_uiTimeLimit = uiTimeLimit) != 0)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, m_uiTimeLimit);
+		m_uiTimeLimit = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		m_uiStartTime = FLM_GET_TIMER();
 	}
 	if (m_bScan)
@@ -12968,7 +13005,7 @@ Exit:
 /***************************************************************************
 Desc:	Get next node/document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getNext(
+RCODE FLMAPI F_Query::getNext(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
@@ -13088,7 +13125,7 @@ RCODE XFLMAPI F_Query::getNext(
 
 	if ((m_uiTimeLimit = uiTimeLimit) != 0)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, m_uiTimeLimit);
+		m_uiTimeLimit = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		m_uiStartTime = FLM_GET_TIMER();
 	}
 	if (m_bScan || m_bScanIndex)
@@ -13141,7 +13178,7 @@ Exit:
 /***************************************************************************
 Desc:	Get previous node/document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getPrev(
+RCODE FLMAPI F_Query::getPrev(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
@@ -13261,7 +13298,7 @@ RCODE XFLMAPI F_Query::getPrev(
 
 	if ((m_uiTimeLimit = uiTimeLimit) != 0)
 	{
-		FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit, m_uiTimeLimit);
+		m_uiTimeLimit = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		m_uiStartTime = FLM_GET_TIMER();
 	}
 	if (m_bScan || m_bScanIndex)
@@ -13314,7 +13351,7 @@ Exit:
 /***************************************************************************
 Desc:	Get current document that passes query expression.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getCurrent(
+RCODE FLMAPI F_Query::getCurrent(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ppNode)
 {
@@ -13429,7 +13466,7 @@ Exit:
 /***************************************************************************
 Desc:	Get statistics and optimization information.
 ***************************************************************************/
-RCODE XFLMAPI F_Query::getStatsAndOptInfo(
+RCODE FLMAPI F_Query::getStatsAndOptInfo(
 	FLMUINT *			puiNumOptInfos,
 	XFLM_OPT_INFO **	ppOptInfo)
 {
@@ -13533,7 +13570,7 @@ Exit:
 /***************************************************************************
 Desc:	Free the optimization info structure.
 ***************************************************************************/
-void XFLMAPI F_Query::freeStatsAndOptInfo(
+void FLMAPI F_Query::freeStatsAndOptInfo(
 	XFLM_OPT_INFO **	ppOptInfo)
 {
 	if (*ppOptInfo)
@@ -13546,18 +13583,32 @@ void XFLMAPI F_Query::freeStatsAndOptInfo(
 /****************************************************************************
 Desc:		Create an empty query object and return it's interface...
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::createIFQuery(
-	IF_Query **	ppQuery)
+RCODE FLMAPI F_DbSystem::createIFQuery(
+	IF_Query **			ppQuery)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE					rc = NE_XFLM_OK;
+	F_Query *			pQuery = NULL;
 
-	if ((*ppQuery = f_new F_Query) == NULL)
+	if ((pQuery = f_new F_Query) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 	
+	if( RC_BAD( rc = pQuery->setup()))
+	{
+		goto Exit;
+	}
+	
+	*ppQuery = pQuery;
+	pQuery = NULL;
+	
 Exit:
+
+	if( pQuery)
+	{
+		pQuery->Release();
+	}
 
 	return( rc);
 }
@@ -13647,7 +13698,7 @@ RCODE F_Query::allocDupCheckSet( void)
 	}
 	if (RC_BAD( rc = dbSystem.getTempDir( szTmpDir)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
 			rc = NE_XFLM_OK;
 		}
@@ -13659,7 +13710,7 @@ RCODE F_Query::allocDupCheckSet( void)
 
 	if (!szTmpDir [0])
 	{
-		if (RC_BAD( rc = gv_pFileSystem->pathReduce( 
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
 					m_pDb->m_pDatabase->m_pszDbPath, szTmpDir, NULL)))
 		{
 			goto Exit;
@@ -13743,7 +13794,7 @@ Exit:
 /****************************************************************************
 Desc:	Setup duplicate handling for a query.
 ****************************************************************************/
-void XFLMAPI F_Query::setDupHandling(
+void FLMAPI F_Query::setDupHandling(
 	FLMBOOL	bRemoveDups
 	)
 {
@@ -13761,7 +13812,7 @@ void XFLMAPI F_Query::setDupHandling(
 /****************************************************************************
 Desc:	Set an index for the query.
 ****************************************************************************/
-RCODE XFLMAPI F_Query::setIndex(
+RCODE FLMAPI F_Query::setIndex(
 	FLMUINT	uiIndex
 	)
 {
@@ -13785,7 +13836,7 @@ Exit:
 /****************************************************************************
 Desc:	Set an index for the query.
 ****************************************************************************/
-RCODE XFLMAPI F_Query::getIndex(
+RCODE FLMAPI F_Query::getIndex(
 	IF_Db *		ifpDb,
 	FLMUINT *	puiIndex,
 	FLMBOOL *	pbHaveMultiple
@@ -13955,7 +14006,7 @@ RCODE F_Query::copyValue(
 		case XFLM_UTF8_VAL:
 			if (pDestValue->uiDataLen)
 			{
-				if (RC_BAD( rc = m_Pool.poolAlloc( pDestValue->uiDataLen,
+				if (RC_BAD( rc = m_pPool->poolAlloc( pDestValue->uiDataLen,
 													(void **)&pDestValue->val.pucBuf)))
 				{
 					goto Exit;
@@ -13988,7 +14039,7 @@ RCODE F_Query::copyXPath(
 	XPATH_COMPONENT *	pXPathComponent;
 	XPATH_COMPONENT *	pTmpXPathComponent;
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FXPATH),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FXPATH),
 								(void **)&pDestXPath)))
 	{
 		goto Exit;
@@ -13997,7 +14048,7 @@ RCODE F_Query::copyXPath(
 	pXPathComponent = pSrcXPath->pFirstComponent;
 	while (pXPathComponent)
 	{
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( XPATH_COMPONENT),
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( XPATH_COMPONENT),
 									(void **)&pTmpXPathComponent)))
 		{
 			goto Exit;
@@ -14076,7 +14127,7 @@ RCODE F_Query::copyFunction(
 	FQEXPR *				pExpr;
 	FQEXPR *				pTmpExpr;
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQFUNCTION),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQFUNCTION),
 								(void **)&pDestFunc)))
 	{
 		goto Exit;
@@ -14107,7 +14158,7 @@ RCODE F_Query::copyFunction(
 	pExpr = pSrcFunc->pFirstArg;
 	while (pExpr)
 	{
-		if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQEXPR),
+		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQEXPR),
 										(void **)&pTmpExpr)))
 		{
 			goto Exit;
@@ -14146,7 +14197,7 @@ RCODE F_Query::copyNode(
 	RCODE		rc = NE_XFLM_OK;
 	FQNODE *	pDestNode;
 
-	if (RC_BAD( rc = m_Pool.poolCalloc( sizeof( FQNODE), (void **)&pDestNode)))
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE), (void **)&pDestNode)))
 	{
 		goto Exit;
 	}
@@ -14281,7 +14332,7 @@ Exit:
 /****************************************************************************
 Desc:	Copy criteria from another query object.
 ****************************************************************************/
-RCODE XFLMAPI F_Query::copyCriteria(
+RCODE FLMAPI F_Query::copyCriteria(
 	IF_Query *	pSrcQuery
 	)
 {

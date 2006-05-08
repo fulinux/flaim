@@ -28,7 +28,7 @@
 
 #include "f_btree.h"
 
-class F_BtPool : public XF_RefCount, public XF_Base
+class F_BtPool : public F_Object
 {
 public:
 	F_BtPool( void)

@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:	Set the RFL keep files flag.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::setRflKeepFilesFlag(
+RCODE FLMAPI F_Db::setRflKeepFilesFlag(
 	FLMBOOL	bKeepFiles)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -122,7 +122,7 @@ Exit:
 /****************************************************************************
 Desc:	Set the RFL directory for a database.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::setRflDir(
+RCODE FLMAPI F_Db::setRflDir(
 	const char *	pszNewRflDir)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -159,9 +159,9 @@ RCODE XFLMAPI F_Db::setRflDir(
 
 	if (pszNewRflDir && *pszNewRflDir)
 	{
-		if (!gv_pFileSystem->IsDir( pszNewRflDir))
+		if (!gv_XFlmSysData.pFileSystem->isDir( pszNewRflDir))
 		{
-			rc = RC_SET( NE_XFLM_IO_INVALID_FILENAME);
+			rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
 			goto Exit;
 		}
 	}
@@ -224,7 +224,7 @@ Exit:
 /****************************************************************************
 Desc:	Set the RFL file size limits for a database.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::setRflFileSizeLimits(
+RCODE FLMAPI F_Db::setRflFileSizeLimits(
 	FLMUINT	uiMinRflSize,
 	FLMUINT	uiMaxRflSize)
 {
@@ -299,7 +299,7 @@ Exit:
 /****************************************************************************
 Desc:	Roll to the next RFL file for this database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::rflRollToNextFile( void)
+RCODE FLMAPI F_Db::rflRollToNextFile( void)
 {
 	RCODE	rc = NE_XFLM_OK;
 
@@ -326,7 +326,7 @@ Exit:
 /****************************************************************************
 Desc:	Set keep aborted transactions in RFL flag.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::setKeepAbortedTransInRflFlag(
+RCODE FLMAPI F_Db::setKeepAbortedTransInRflFlag(
 	FLMBOOL	bKeep
 	)
 {
@@ -381,7 +381,7 @@ Exit:
 /****************************************************************************
 Desc:	Set auto turn off keep RFL flag.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::setAutoTurnOffKeepRflFlag(
+RCODE FLMAPI F_Db::setAutoTurnOffKeepRflFlag(
 	FLMBOOL	bAutoTurnOff
 	)
 {
@@ -458,7 +458,7 @@ void F_Database::getCPInfo(
 
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 							m_pCPInfo->uiStartTime);
-				FLM_TIMER_UNITS_TO_MILLI( uiElapTime, pCheckpointInfo->uiRunningTime);
+				pCheckpointInfo->uiRunningTime = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 			}
 			else
 			{
@@ -471,8 +471,8 @@ void F_Database::getCPInfo(
 				uiCurrTime = FLM_GET_TIMER();
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 							m_pCPInfo->uiForceCheckpointStartTime);
-				FLM_TIMER_UNITS_TO_MILLI( uiElapTime,
-					pCheckpointInfo->uiForceCheckpointRunningTime);
+				pCheckpointInfo->uiForceCheckpointRunningTime = 
+					FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 			}
 			else
 			{
@@ -496,8 +496,8 @@ void F_Database::getCPInfo(
 
 			uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 						m_pCPInfo->uiStartWaitTruncateTime);
-			FLM_TIMER_UNITS_TO_MILLI( uiElapTime,
-				pCheckpointInfo->uiWaitTruncateTime);
+			pCheckpointInfo->uiWaitTruncateTime = 
+				FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 		}
 		else
 		{
@@ -509,7 +509,7 @@ void F_Database::getCPInfo(
 /****************************************************************************
 Desc: Retrieves the Checkpoint info for the database.
 *****************************************************************************/
-void XFLMAPI F_Db::getCheckpointInfo(
+void FLMAPI F_Db::getCheckpointInfo(
 	XFLM_CHECKPOINT_INFO *	pCheckpointInfo)
 {
 	m_pDatabase->lockMutex();
@@ -520,7 +520,7 @@ void XFLMAPI F_Db::getCheckpointInfo(
 /****************************************************************************
 Desc:	Returns current RFL file number
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getRflFileNum(
+RCODE FLMAPI F_Db::getRflFileNum(
 	FLMUINT *	puiRflFileNum
 	)
 {
@@ -578,7 +578,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns highest not used RFL file number
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getHighestNotUsedRflFileNum(
+RCODE FLMAPI F_Db::getHighestNotUsedRflFileNum(
 	FLMUINT *	puiHighestNotUsedRflFileNum
 	)
 {
@@ -635,7 +635,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns RFL file size limits for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getRflFileSizeLimits(
+RCODE FLMAPI F_Db::getRflFileSizeLimits(
 	FLMUINT *	puiRflMinFileSize,
 	FLMUINT *	puiRflMaxFileSize
 	)
@@ -689,7 +689,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns RFL keep flag for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getRflKeepFlag(
+RCODE FLMAPI F_Db::getRflKeepFlag(
 	FLMBOOL *	pbKeep
 	)
 {
@@ -735,7 +735,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns last backup transaction ID for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getLastBackupTransID(
+RCODE FLMAPI F_Db::getLastBackupTransID(
 	FLMUINT64 *	pui64LastBackupTransID
 	)
 {
@@ -780,7 +780,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns blocks changed since the last backup for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getBlocksChangedSinceBackup(
+RCODE FLMAPI F_Db::getBlocksChangedSinceBackup(
 	FLMUINT *	puiBlocksChangedSinceBackup
 	)
 {
@@ -825,7 +825,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the auto-turn-off-keep-RFL flag for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getAutoTurnOffKeepRflFlag(
+RCODE FLMAPI F_Db::getAutoTurnOffKeepRflFlag(
 	FLMBOOL *	pbAutoTurnOff
 	)
 {
@@ -871,7 +871,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the keep aborted transactions in RFL flag for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getKeepAbortedTransInRflFlag(
+RCODE FLMAPI F_Db::getKeepAbortedTransInRflFlag(
 	FLMBOOL *	pbKeep
 	)
 {
@@ -917,7 +917,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns disk space usage for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getDiskSpaceUsage(
+RCODE FLMAPI F_Db::getDiskSpaceUsage(
 	FLMUINT64 *		pui64DataSize,
 	FLMUINT64 *		pui64RollbackSize,
 	FLMUINT64 *		pui64RflSize)
@@ -968,11 +968,11 @@ RCODE XFLMAPI F_Db::getDiskSpaceUsage(
 
 		// Get the actual size of the last file.
 
-		if (RC_BAD( rc = m_pSFileHdl->GetFileSize( uiLastFileNumber,
+		if (RC_BAD( rc = m_pSFileHdl->getFileSize( uiLastFileNumber,
 										&ui64LastFileSize)))
 		{
-			if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-				 rc == NE_XFLM_IO_INVALID_FILENAME)
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+				 rc == NE_FLM_IO_INVALID_FILENAME)
 			{
 				if (uiLastFileNumber > 1)
 				{
@@ -1041,11 +1041,11 @@ RCODE XFLMAPI F_Db::getDiskSpaceUsage(
 
 		// Get the size of the last file number.
 
-		if (RC_BAD( rc = m_pSFileHdl->GetFileSize( uiLastFileNumber,
+		if (RC_BAD( rc = m_pSFileHdl->getFileSize( uiLastFileNumber,
 										&ui64LastFileSize)))
 		{
-			if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-				 rc == NE_XFLM_IO_INVALID_FILENAME)
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+				 rc == NE_FLM_IO_INVALID_FILENAME)
 			{
 				if (uiLastFileNumber)
 				{
@@ -1128,21 +1128,21 @@ RCODE XFLMAPI F_Db::getDiskSpaceUsage(
 
 		// See if the directory exists.  If not, we are done.
 
-		if (gv_pFileSystem->IsDir( szRflDir))
+		if (gv_XFlmSysData.pFileSystem->isDir( szRflDir))
 		{
 
 			// Open the directory and scan for RFL files.
 
-			if (RC_BAD( rc = gv_pFileSystem->OpenDir( szRflDir,
+			if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openDir( szRflDir,
 											"*", &pDirHdl)))
 			{
 				goto Exit;
 			}
 			for (;;)
 			{
-				if (RC_BAD( rc = pDirHdl->Next()))
+				if (RC_BAD( rc = pDirHdl->next()))
 				{
-					if (rc == NE_XFLM_IO_NO_MORE_FILES)
+					if (rc == NE_FLM_IO_NO_MORE_FILES)
 					{
 						rc = NE_XFLM_OK;
 						break;
@@ -1152,23 +1152,23 @@ RCODE XFLMAPI F_Db::getDiskSpaceUsage(
 						goto Exit;
 					}
 				}
-				pDirHdl->CurrentItemPath( szTmpName);
+				pDirHdl->currentItemPath( szTmpName);
 
 				// If the item looks like an RFL file name, get
 				// its size.
 
-				if (!pDirHdl->CurrentItemIsDir() &&
+				if (!pDirHdl->currentItemIsDir() &&
 					  rflGetFileNum( szTmpName, &uiLastFileNumber))
 				{
 
 					// Open the file and get its size.
 
-					if (RC_BAD( rc = gv_pFileSystem->OpenBlockFile(
-							szTmpName, XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT,
+					if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openBlockFile(
+							szTmpName, FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
 							512, &pFileHdl)))
 					{
-						if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-							 rc == NE_XFLM_IO_INVALID_FILENAME)
+						if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+							 rc == NE_FLM_IO_INVALID_FILENAME)
 						{
 							rc = NE_XFLM_OK;
 							ui64LastFileSize = 0;
@@ -1180,7 +1180,7 @@ RCODE XFLMAPI F_Db::getDiskSpaceUsage(
 					}
 					else
 					{
-						if (RC_BAD( rc = pFileHdl->Size( &ui64LastFileSize)))
+						if (RC_BAD( rc = pFileHdl->size( &ui64LastFileSize)))
 						{
 							goto Exit;
 						}
@@ -1219,7 +1219,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the next incremental backup sequence number for the database
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getNextIncBackupSequenceNum(
+RCODE FLMAPI F_Db::getNextIncBackupSequenceNum(
 	FLMUINT *	puiNextIncBackupSequenceNum
 	)
 {
@@ -1265,7 +1265,7 @@ Exit:
 Desc:	Returns list of lock waiters in an object that allows caller to
 		iterate through the list.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getLockWaiters(
+RCODE FLMAPI F_Db::getLockWaiters(
 	IF_LockInfoClient *	pLockInfo
 	)
 {
@@ -1285,7 +1285,7 @@ RCODE XFLMAPI F_Db::getLockWaiters(
 /****************************************************************************
 Desc:	Returns RFL directory for the database
 ****************************************************************************/
-void XFLMAPI F_Db::getRflDir(
+void FLMAPI F_Db::getRflDir(
 	char *	pszRflDir
 	)
 {
@@ -1297,7 +1297,7 @@ void XFLMAPI F_Db::getRflDir(
 /****************************************************************************
 Desc:	Returns database serial number
 ****************************************************************************/
-void XFLMAPI F_Db::getSerialNumber(
+void FLMAPI F_Db::getSerialNumber(
 	char *	pucSerialNumber)
 {
 	m_pDatabase->lockMutex();

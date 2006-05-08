@@ -223,13 +223,13 @@ RCODE F_Database::lFileCreate(
 	FLMUINT			uiEncId)
 {
 	RCODE					rc = NE_XFLM_OK;
-	F_CachedBlock *	pNewSCache;
+	F_CachedBlock *	pNewSCache = NULL;
 	F_CachedBlock *	pSCache = NULL;
-	F_BLK_HDR *			pBlkHdr;
-	FLMUINT				uiBlkAddress;
+	F_BLK_HDR *			pBlkHdr = NULL;
+	FLMUINT				uiBlkAddress = 0;
 	FLMUINT				uiNextBlkAddress;
-	FLMUINT				uiEndPos;
-	FLMUINT				uiPos;
+	FLMUINT				uiEndPos = 0;
+	FLMUINT				uiPos = 0;
 	FLMBOOL				bReleaseCache2 = FALSE;
 	FLMBOOL				bReleaseCache = FALSE;
 	F_Btree *			pbTree = NULL;

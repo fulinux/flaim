@@ -1040,286 +1040,20 @@ FSTATIC void fqOpSUMinus(
 /***************************************************************************
 Desc:  	Compare two entire strings.
 ****************************************************************************/
-RCODE fqCompareCollStreams(
-	F_CollIStream *	pLStream,
-	F_CollIStream *	pRStream,
-	FLMBOOL				bOpIsMatch,
-	FLMUINT				uiLanguage,
-	FLMINT *				piResult)
-{
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT16			ui16RCol;
-	FLMUINT16			ui16LCol;
-	FLMUINT16			ui16RSubCol;
-	FLMUINT16			ui16LSubCol;
-	FLMBYTE				ucRCase;
-	FLMBYTE				ucLCase;
-	F_CollStreamPos	savedRPos;
-	F_CollStreamPos	savedLPos;
-	F_CollStreamPos	startLPos;
-	FLMUNICODE			uLChar = 0;
-	FLMBOOL				bLCharIsWild = FALSE;
-	FLMUNICODE			uRChar = 0;
-	FLMBOOL				bRCharIsWild = FALSE;
-	FLMBOOL				bPrevLWasWild = FALSE;
-	FLMBOOL				bPrevRWasWild = FALSE;
-	FLMBOOL				bAllowTwoIntoOne;
-
-	// If we are doing a "match" operation, we don't want two
-	// character sequences like Ch, ae, etc. turned into a single
-	// a single collation, because then matches that involve wildcards
-	// like "aetna == a*" would not match properly.
-	// When not doing a match operation, we WANT two character sequences
-	// turned into a single collation value so that we can know if
-	// something is > or <.  When doing match operations, all we care
-	// about is if they are equal or not, so there is no need to look
-	// at double character collation properties.
-
-	bAllowTwoIntoOne = bOpIsMatch ? FALSE : TRUE;
-
-	for( ;;)
-	{
-GetNextLChar:
-
-		if( bLCharIsWild)
-		{
-			bPrevLWasWild = TRUE;
-		}
-
-		pLStream->getCurrPosition( &startLPos);
-		if( RC_BAD( rc = pLStream->read( 
-			bAllowTwoIntoOne,
-			&uLChar, &bLCharIsWild, &ui16LCol, &ui16LSubCol, &ucLCase)))
-		{
-			if( rc == NE_XFLM_EOF_HIT)
-			{
-				rc = NE_XFLM_OK;
-
-				// If the last character was a wildcard, we have a match!
-
-				if( bPrevLWasWild)
-				{
-					*piResult = 0;
-					goto Exit;
-				}
-
-				for( ;;)
-				{
-					if( RC_BAD( rc = pRStream->read( 
-						bAllowTwoIntoOne,
-						&uRChar, &bRCharIsWild, &ui16RCol, &ui16RSubCol, &ucRCase)))
-					{
-						if( rc == NE_XFLM_EOF_HIT)
-						{
-							rc = NE_XFLM_OK;
-							*piResult = 0;
-						}
-
-						goto Exit;
-					}
-
-					// Break out when we hit a non-wild character
-
-					if( !bRCharIsWild)
-					{
-						break;
-					}
-				}
-
-				*piResult = -1;
-			}
-
-			goto Exit;
-		}
-
-		if( bLCharIsWild)
-		{
-			// Consume multiple wildcards
-
-			if( bPrevLWasWild)
-			{
-				goto GetNextLChar;
-			}
-
-			// See if we match anywhere on the remaining right string
-
-			for( ;;)
-			{
-				pRStream->getCurrPosition( &savedRPos);
-				pLStream->getCurrPosition( &savedLPos);
-
-				if( RC_BAD( rc = fqCompareCollStreams( pLStream, pRStream,
-					bOpIsMatch, uiLanguage, piResult)))
-				{
-					goto Exit;
-				}
-
-				if( !(*piResult))
-				{
-					goto Exit;
-				}
-
-				if( RC_BAD( rc = pRStream->positionTo( &savedRPos)))
-				{
-					goto Exit;
-				}
-
-				if( RC_BAD( rc = pRStream->read( 
-					bAllowTwoIntoOne, 
-					NULL, NULL, NULL, NULL, NULL)))
-				{
-					if( rc == NE_XFLM_EOF_HIT)
-					{
-						rc = NE_XFLM_OK;
-						break;
-					}
-					goto Exit;
-				}
-
-				if( RC_BAD( rc = pLStream->positionTo( &savedLPos)))
-				{
-					goto Exit;
-				}
-			}
-
-			*piResult = 1;
-			goto Exit;
-		}
-
-GetNextRChar:
-
-		if( bRCharIsWild)
-		{
-			bPrevRWasWild = TRUE;
-		}
-
-		if( RC_BAD( rc = pRStream->read( 
-			bAllowTwoIntoOne, 
-			&uRChar, &bRCharIsWild, &ui16RCol, &ui16RSubCol, &ucRCase)))
-		{
-			if( rc == NE_XFLM_EOF_HIT)
-			{
-				rc = NE_XFLM_OK;
-
-				// If the last character was a wildcard, we have a match!
-
-				if( bPrevRWasWild)
-				{
-					*piResult = 0;
-				}
-				else
-				{
-					*piResult = 1;
-				}
-			}
-
-			goto Exit;
-		}
-
-		if( bRCharIsWild)
-		{
-			if( bPrevRWasWild)
-			{
-				goto GetNextRChar;
-			}
-
-			// See if we match anywhere on the remaining left string
-
-			if( RC_BAD( rc = pLStream->positionTo( &startLPos)))
-			{
-				goto Exit;
-			}
-
-			for( ;;)
-			{
-				pLStream->getCurrPosition( &savedLPos);
-				pRStream->getCurrPosition( &savedRPos);
-
-				if( RC_BAD( rc = fqCompareCollStreams( pLStream, pRStream,
-					bOpIsMatch, uiLanguage, piResult)))
-				{
-					goto Exit;
-				}
-
-				if( !(*piResult))
-				{
-					goto Exit;
-				}
-
-				if( RC_BAD( rc = pRStream->positionTo( &savedRPos)))
-				{
-					goto Exit;
-				}
-
-				if( RC_BAD( rc = pLStream->positionTo( &savedLPos)))
-				{
-					goto Exit;
-				}
-
-				// Skip the character we just processed
-
-				if( RC_BAD( rc = pLStream->read( 
-					bAllowTwoIntoOne,
-					NULL, NULL, NULL, NULL, NULL)))
-				{
-					if( rc == NE_XFLM_EOF_HIT)
-					{
-						rc = NE_XFLM_OK;
-						break;
-					}
-					goto Exit;
-				}
-			}
-
-			*piResult = -1;
-			goto Exit;
-		}
-
-		if( ui16LCol != ui16RCol)
-		{
-			*piResult = ui16LCol < ui16RCol ? -1 : 1;
-			goto Exit;
-		}
-		else if( ui16LSubCol != ui16RSubCol)
-		{
-			*piResult = ui16LSubCol < ui16RSubCol ? -1 : 1;
-			goto Exit;
-		}
-		else if( ucLCase != ucRCase) 
-		{
-			// NOTE: If we are doing a case insensitive comparison,
-			// ucLCase and ucRCase should be equal (both will have been
-			// set to zero
-			
-			*piResult = ucLCase < ucRCase ? -1 : 1;
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/***************************************************************************
-Desc:  	Compare two entire strings.
-****************************************************************************/
 FSTATIC RCODE fqCompareText(
-	IF_OperandComparer *	pOpComparer,
-	FQVALUE *				pLValue,
-	FQVALUE *				pRValue,
-	FLMUINT					uiCompareRules,
-	FLMBOOL					bOpIsMatch,
-	FLMUINT					uiLanguage,
-	FLMINT *					piResult)
+	IF_OperandComparer *		pOpComparer,
+	FQVALUE *					pLValue,
+	FQVALUE *					pRValue,
+	FLMUINT						uiCompareRules,
+	FLMBOOL						bOpIsMatch,
+	FLMUINT						uiLanguage,
+	FLMINT *						piResult)
 {
-	RCODE								rc = NE_XFLM_OK;
-	F_BufferIStream				bufferLStream;
-	IF_PosIStream *				pLStream;
-	F_BufferIStream				bufferRStream;
-	IF_PosIStream *				pRStream;
-	F_CollIStream					lStream;
-	F_CollIStream					rStream;
+	RCODE							rc = NE_XFLM_OK;
+	IF_BufferIStream *		pBufferLStream = NULL;
+	IF_PosIStream *			pLStream;
+	IF_BufferIStream *		pBufferRStream = NULL;
+	IF_PosIStream *			pRStream;
 
 	// Types must be text
 
@@ -1334,13 +1068,18 @@ FSTATIC RCODE fqCompareText(
 
 	if( !(pLValue->uiFlags & VAL_IS_STREAM))
 	{
-		if (RC_BAD( rc = bufferLStream.open( pLValue->val.pucBuf,
-											pLValue->uiDataLen)))
+		if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferLStream)))
+		{
+			goto Exit;
+		}
+		
+		if (RC_BAD( rc = pBufferLStream->open( 
+			(const char *)pLValue->val.pucBuf, pLValue->uiDataLen)))
 		{
 			goto Exit;
 		}
 
-		pLStream = &bufferLStream;
+		pLStream = pBufferLStream;
 	}
 	else
 	{
@@ -1349,12 +1088,17 @@ FSTATIC RCODE fqCompareText(
 
 	if( !(pRValue->uiFlags & VAL_IS_STREAM))
 	{
-		if( RC_BAD( rc = bufferRStream.open( pRValue->val.pucBuf,
-											pRValue->uiDataLen)))
+		if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferRStream)))
 		{
 			goto Exit;
 		}
-		pRStream = &bufferRStream;
+		
+		if( RC_BAD( rc = pBufferRStream->open( 
+			(const char *)pRValue->val.pucBuf, pRValue->uiDataLen)))
+		{
+			goto Exit;
+		}
+		pRStream = pBufferRStream;
 	}
 	else
 	{
@@ -1366,29 +1110,29 @@ FSTATIC RCODE fqCompareText(
 		rc = pOpComparer->compare( pLStream, pRStream, piResult);
 		goto Exit;
 	}
-
-	// Open up the collated streams
-
-	if (RC_BAD( rc = lStream.open( pLStream, FALSE, uiLanguage, uiCompareRules,
-		(bOpIsMatch && (pLValue->uiFlags & VAL_IS_CONSTANT)) ? TRUE : FALSE)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = rStream.open( pRStream, FALSE, uiLanguage, uiCompareRules,
-		(bOpIsMatch && (pRValue->uiFlags & VAL_IS_CONSTANT)) ? TRUE : FALSE)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = fqCompareCollStreams(  &lStream, &rStream,
-		bOpIsMatch, uiLanguage, piResult)))
+	
+	if( RC_BAD( rc = f_compareUTF8Streams( 
+		pLStream, 
+		(bOpIsMatch && (pLValue->uiFlags & VAL_IS_CONSTANT)) ? TRUE : FALSE,
+		pRStream,
+		(bOpIsMatch && (pRValue->uiFlags & VAL_IS_CONSTANT)) ? TRUE : FALSE,
+		uiCompareRules, uiLanguage, piResult)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
+	if( pBufferLStream)
+	{
+		pBufferLStream->Release();
+	}
+	
+	if( pBufferRStream)
+	{
+		pBufferRStream->Release();
+	}
+	
 	return( rc);
 }
 
@@ -1396,18 +1140,18 @@ Exit:
 Desc:	Approximate compare - only works for strings right now.
 ****************************************************************************/
 FSTATIC RCODE fqApproxCompare(
-	FQVALUE *			pLValue,
-	FQVALUE *			pRValue,
-	FLMINT *				piResult)
+	FQVALUE *				pLValue,
+	FQVALUE *				pRValue,
+	FLMINT *					piResult)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiLMeta;
-	FLMUINT				uiRMeta;
-	FLMUINT64			ui64StartPos;
-	F_BufferIStream	bufferLStream;
-	IF_PosIStream *	pLStream;
-	F_BufferIStream	bufferRStream;
-	IF_PosIStream *	pRStream;
+	RCODE						rc = NE_XFLM_OK;
+	FLMUINT					uiLMeta;
+	FLMUINT					uiRMeta;
+	FLMUINT64				ui64StartPos;
+	IF_BufferIStream *	pBufferLStream = NULL;
+	IF_PosIStream *		pLStream;
+	IF_BufferIStream *	pBufferRStream = NULL;
+	IF_PosIStream *		pRStream;
 
 	// Types must be text
 
@@ -1422,13 +1166,18 @@ FSTATIC RCODE fqApproxCompare(
 
 	if (!(pLValue->uiFlags & VAL_IS_STREAM))
 	{
-		if (RC_BAD( rc = bufferLStream.open( pLValue->val.pucBuf,
-											pLValue->uiDataLen)))
+		if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferLStream)))
+		{
+			goto Exit;
+		}
+		
+		if (RC_BAD( rc = pBufferLStream->open( 
+			(const char *)pLValue->val.pucBuf, pLValue->uiDataLen)))
 		{
 			goto Exit;
 		}
 
-		pLStream = &bufferLStream;
+		pLStream = pBufferLStream;
 	}
 	else
 	{
@@ -1437,12 +1186,18 @@ FSTATIC RCODE fqApproxCompare(
 
 	if (!(pRValue->uiFlags & VAL_IS_STREAM))
 	{
-		if( RC_BAD( rc = bufferRStream.open( pRValue->val.pucBuf,
-											pRValue->uiDataLen)))
+		if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferRStream)))
 		{
 			goto Exit;
 		}
-		pRStream = &bufferRStream;
+		
+		if( RC_BAD( rc = pBufferRStream->open( 
+			(const char *)pRValue->val.pucBuf, pRValue->uiDataLen)))
+		{
+			goto Exit;
+		}
+		
+		pRStream = pBufferRStream;
 	}
 	else
 	{
@@ -1454,7 +1209,7 @@ FSTATIC RCODE fqApproxCompare(
 	{
 		for( ;;)
 		{
-			if( RC_BAD( rc = flmGetNextMetaphone( pLStream, &uiLMeta)))
+			if( RC_BAD( rc = f_getNextMetaphone( pLStream, &uiLMeta)))
 			{
 				if( rc == NE_XFLM_EOF_HIT)
 				{
@@ -1468,7 +1223,7 @@ FSTATIC RCODE fqApproxCompare(
 
 			for( ;;)
 			{
-				if( RC_BAD( rc = flmGetNextMetaphone( pRStream, &uiRMeta)))
+				if( RC_BAD( rc = f_getNextMetaphone( pRStream, &uiRMeta)))
 				{
 					if( rc == NE_XFLM_EOF_HIT)
 					{
@@ -1496,7 +1251,7 @@ FSTATIC RCODE fqApproxCompare(
 	{
 		for( ;;)
 		{
-			if( RC_BAD( rc = flmGetNextMetaphone( pRStream, &uiRMeta)))
+			if( RC_BAD( rc = f_getNextMetaphone( pRStream, &uiRMeta)))
 			{
 				if( rc == NE_XFLM_EOF_HIT)
 				{
@@ -1510,7 +1265,7 @@ FSTATIC RCODE fqApproxCompare(
 
 			for( ;;)
 			{
-				if( RC_BAD( rc = flmGetNextMetaphone( pLStream, &uiLMeta)))
+				if( RC_BAD( rc = f_getNextMetaphone( pLStream, &uiLMeta)))
 				{
 					if( rc == NE_XFLM_EOF_HIT)
 					{
@@ -1537,6 +1292,16 @@ FSTATIC RCODE fqApproxCompare(
 
 Exit:
 
+	if( pBufferLStream)
+	{
+		pBufferLStream->Release();
+	}
+	
+	if( pBufferRStream)
+	{
+		pBufferRStream->Release();
+	}
+
 	return( rc);
 }
 	
@@ -1550,15 +1315,15 @@ FSTATIC RCODE fqCompareBinary(
 	FQVALUE *				pRValue,
 	FLMINT *					piResult)
 {
-	RCODE					rc = NE_XFLM_OK;
-	F_BufferIStream	bufferLStream;
-	IF_PosIStream *	pLStream;
-	F_BufferIStream	bufferRStream;
-	IF_PosIStream *	pRStream;
-	FLMBYTE				ucLByte;
-	FLMBYTE				ucRByte;
-	FLMUINT				uiOffset = 0;
-	FLMBOOL				bLEmpty = FALSE;
+	RCODE						rc = NE_XFLM_OK;
+	IF_BufferIStream *	pBufferLStream = NULL;
+	IF_PosIStream *		pLStream;
+	IF_BufferIStream *	pBufferRStream = NULL;
+	IF_PosIStream *		pRStream;
+	FLMBYTE					ucLByte;
+	FLMBYTE					ucRByte;
+	FLMUINT					uiOffset = 0;
+	FLMBOOL					bLEmpty = FALSE;
 
 	*piResult = 0;
 
@@ -1575,13 +1340,18 @@ FSTATIC RCODE fqCompareBinary(
 
 	if( !(pLValue->uiFlags & VAL_IS_STREAM))
 	{
-		if (RC_BAD( rc = bufferLStream.open( pLValue->val.pucBuf,
-											pLValue->uiDataLen)))
+		if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferLStream)))
+		{
+			goto Exit;
+		}
+		
+		if (RC_BAD( rc = pBufferLStream->open( 
+			(const char *)pLValue->val.pucBuf, pLValue->uiDataLen)))
 		{
 			goto Exit;
 		}
 
-		pLStream = &bufferLStream;
+		pLStream = pBufferLStream;
 	}
 	else
 	{
@@ -1590,12 +1360,12 @@ FSTATIC RCODE fqCompareBinary(
 
 	if( !(pRValue->uiFlags & VAL_IS_STREAM))
 	{
-		if( RC_BAD( rc = bufferRStream.open( pRValue->val.pucBuf,
-											pRValue->uiDataLen)))
+		if( RC_BAD( rc = pBufferRStream->open( 
+			(const char *)pRValue->val.pucBuf, pRValue->uiDataLen)))
 		{
 			goto Exit;
 		}
-		pRStream = &bufferRStream;
+		pRStream = pBufferRStream;
 	}
 	else
 	{
@@ -1658,6 +1428,16 @@ FSTATIC RCODE fqCompareBinary(
 
 Exit:
 
+	if( pBufferLStream)
+	{
+		pBufferLStream->Release();
+	}
+	
+	if( pBufferRStream)
+	{
+		pBufferRStream->Release();
+	}
+	
 	return( rc);
 }
 
@@ -2048,519 +1828,5 @@ RCODE fqArithmeticOperator(
 
 Exit:
 
-	return( rc);
-}
-
-/*****************************************************************************
-Desc:
-******************************************************************************/
-RCODE F_CollIStream::read(
-	FLMBOOL			bAllowTwoIntoOne,
-	FLMUNICODE *	puChar,
-	FLMBOOL *		pbCharIsWild,
-	FLMUINT16 *		pui16Col,
-	FLMUINT16 *		pui16SubCol,
-	FLMBYTE *		pucCase)
-{
-	RCODE					rc = NE_XFLM_OK;
-	FLMUNICODE			uChar;
-	FLMUINT16			ui16WpChar;
-	FLMUINT16			ui16NextWpChar;
-	FLMUINT16			ui16Col;
-	FLMUINT16			ui16SubCol;
-	FLMBOOL				bTwoIntoOne;
-	FLMBYTE				ucCase;
-	FLMBOOL				bAsian;
-	FLMBOOL				bLastCharWasSpace = FALSE;
-	FLMUINT64			ui64AfterLastSpacePos = 0;
-	FLMUINT64			ui64CurrCharPos = 0;
-
-	if (pbCharIsWild)
-	{
-		*pbCharIsWild = FALSE;
-	}
-
-	// Is this a double-byte (Asian) character set?
-
-	bAsian = (m_uiLanguage >= FIRST_DBCS_LANG && m_uiLanguage <= LAST_DBCS_LANG)
-				? TRUE
-				: FALSE;
-
-	// Get the next character from the stream
-
-GetNextChar:
-
-	ui16WpChar = 0;
-	ui16NextWpChar = 0;
-	ui16Col = 0;
-	ui16SubCol = 0;
-	bTwoIntoOne = FALSE;
-	ucCase = 0;
-
-	if (m_uNextChar)
-	{
-		uChar = m_uNextChar;
-		m_uNextChar = 0;
-	}
-	else
-	{
-		ui64CurrCharPos = m_pIStream->getCurrPosition();
-		if( RC_BAD( rc = readCharFromStream( &uChar)))
-		{
-			if (rc != NE_XFLM_EOF_HIT)
-			{
-				goto Exit;
-			}
-			
-			// If we were skipping spaces, we need to
-			// process a single space character, unless we are
-			// ignoring trailing white space.
-			
-			if (bLastCharWasSpace &&
-				 !(m_uiCompareRules & XFLM_COMP_IGNORE_TRAILING_SPACE))
-			{
-				// bLastCharWasSpace flag can only be TRUE if either
-				// XFLM_COMP_IGNORE_TRAILING_SPACE is set or
-				// XFLM_COMP_COMPRESS_WHITESPACE is set.
-				
-				flmAssert( m_uiCompareRules & XFLM_COMP_COMPRESS_WHITESPACE);
-				uChar = ASCII_SPACE;
-				rc = NE_XFLM_OK;
-				goto Process_Char;
-			}
-			goto Exit;
-		}
-	}
-
-	if ((uChar = flmConvertChar( uChar, m_uiCompareRules)) == 0)
-	{
-		goto GetNextChar;
-	}
-
-	// Deal with spaces
-
-	if (uChar == ASCII_SPACE)
-	{
-		if (m_uiCompareRules & XFLM_COMP_COMPRESS_WHITESPACE)
-		{
-			bLastCharWasSpace = TRUE;
-			ui64AfterLastSpacePos = m_pIStream->getCurrPosition();
-			goto GetNextChar;
-		}
-		else if (m_uiCompareRules & XFLM_COMP_IGNORE_TRAILING_SPACE)
-		{
-			if (!bLastCharWasSpace)
-			{
-				bLastCharWasSpace = TRUE;
-				
-				// Save where we are at so that if this doesn't turn out
-				// to be trailing spaces, we can restore this position.
-				
-				ui64AfterLastSpacePos = m_pIStream->getCurrPosition();
-			}
-			goto GetNextChar;
-		}
-	}
-	else
-	{
-		if (m_uiCompareRules & XFLM_COMP_IGNORE_LEADING_SPACE)
-		{
-			m_ui64EndOfLeadingSpacesPos = ui64CurrCharPos;
-			m_uiCompareRules &= (~(XFLM_COMP_IGNORE_LEADING_SPACE));
-		}
-		
-		// If the last character was a space, we need to process it.
-		
-		if (bLastCharWasSpace)
-		{
-			
-			// Position back to after the last space, and process a space
-			// character.
-			
-			if (RC_BAD( rc = m_pIStream->positionTo( ui64AfterLastSpacePos)))
-			{
-				goto Exit;
-			}
-			
-			uChar = ASCII_SPACE;
-			bLastCharWasSpace = FALSE;
-		}
-		else if (uChar == ASCII_BACKSLASH)
-		{
-			// If wildcards are allowed, the backslash should be treated
-			// as an escape character, and the next character is the one
-			// we want.  Otherwise, it should be treated as
-			// the actual character we want returned.
-			
-			if (m_bMayHaveWildCards)
-			{
-			
-				// Got a backslash.  Means the next character is to be taken
-				// no matter what because it is escaped.
-			
-				if (RC_BAD( rc = readCharFromStream( &uChar)))
-				{
-					if (rc != NE_XFLM_EOF_HIT)
-					{
-						goto Exit;
-					}
-					rc = NE_XFLM_OK;
-					uChar = ASCII_BACKSLASH;
-				}
-			}
-		}
-		else if (uChar == ASCII_WILDCARD)
-		{
-			if (m_bMayHaveWildCards && pbCharIsWild)
-			{
-				*pbCharIsWild = TRUE;
-			}
-		}
-	}
-	
-Process_Char:
-
-	if (!bAsian)
-	{
-		
-		// Must check for double characters if non-US and non-Asian
-		// character set
-
-		if (m_uiLanguage != XFLM_US_LANG)
-		{
-			if (RC_BAD( rc = flmWPCheckDoubleCollation( 
-				m_pIStream, m_bUnicodeStream, bAllowTwoIntoOne, 
-				&uChar, &m_uNextChar, &bTwoIntoOne, m_uiLanguage)))
-			{
-				goto Exit;
-			}
-		}
-	}
-	else
-	{
-		if (RC_BAD( rc = readCharFromStream( &m_uNextChar)))
-		{
-			if (rc == NE_XFLM_EOF_HIT)
-			{
-				rc = NE_XFLM_OK;
-				m_uNextChar = 0;
-			}
-			else
-			{
-				RC_UNEXPECTED_ASSERT( rc);
-				goto Exit;
-			}
-		}
-	}
-
-	// Convert each character to its WP equivalent
-
-	if (!flmUnicodeToWP( uChar, &ui16WpChar))
-	{
-		ui16WpChar = 0;
-	}
-
-	if (!flmUnicodeToWP( m_uNextChar, &ui16NextWpChar))
-	{
-		ui16NextWpChar = 0;
-	}
-
-	// If we have an unconvertible UNICODE character, the collation
-	// value for it will be COLS0
-
-	if (!ui16WpChar)
-	{
-		if (!bAsian)
-		{
-			ui16Col = COLS0;
-		}
-		else
-		{
-			if (uChar < 0x20)
-			{
-				ui16Col = 0xFFFF;
-				ui16SubCol = uChar;
-			}
-			else
-			{
-				ui16Col = uChar;
-				ui16SubCol = 0;
-			}
-		}
-	}
-	else
-	{
-		if (!bAsian)
-		{
-			ui16Col = flmWPGetCollation( ui16WpChar, m_uiLanguage);
-			if (bTwoIntoOne)
-			{
-				// Since two characters were merged into one, increment
-				// the collation value by one.  In the case of something
-				// like 'ch', there is a collation value between 'c' and
-				// 'd'.  flmWPGetCollation would have returned the
-				// collation value for 'c' ... incrementing by one gives
-				// us the proper collation value for 'ch' (i.e., the
-				// collation value between 'c' and 'd').
-
-				ui16Col++;
-			}
-		}
-		else
-		{
-			if (flmWPAsiaGetCollation( ui16WpChar, ui16NextWpChar, ui16Col,
-					&ui16Col, &ui16SubCol, &ucCase, !m_bCaseSensitive) == 2)
-			{
-				
-				// Next character was consumed by collation
-
-				m_uNextChar = 0;
-			}
-		}
-	}
-
-	if (pui16Col)
-	{
-		*pui16Col = ui16Col;
-	}
-
-	// Consume m_uNextChar if two characters merged into one
-
-	if (bTwoIntoOne)
-	{
-		m_uNextChar = 0;
-	}
-	
-	// Subcollation
-
-	if( pui16SubCol)
-	{
-		if( uChar > 127 && !bAsian)
-		{
-			ui16SubCol = ui16WpChar
-							  ? flmWPGetSubCol( ui16WpChar, ui16Col, m_uiLanguage)
-							  : uChar;
-
-			if( !m_bCaseSensitive)
-			{
-				// If the sub-collation value is the original
-				// character, it means that the collation could not
-				// distinguish the characters and sub-collation is being
-				// used to do it.  However, this creates a problem when the
-				// characters are the same character except for case.  In that
-				// scenario, we incorrectly return a not-equal when we are
-				// doing a case-insensitive comparison.  So, at this point,
-				// we need to use the sub-collation for the upper-case of the
-				// character instead of the sub-collation for the character
-				// itself.
-
-				if( ui16WpChar && ui16SubCol == ui16WpChar)
-				{
-					ui16SubCol = flmWPGetSubCol(
-												flmWPUpper( ui16WpChar),
-												ui16Col, m_uiLanguage);
-				}
-			}
-		}
-
-		*pui16SubCol = ui16SubCol;
-	}
-
-	// Case
-
-	if( pucCase)
-	{
-		if (!m_bCaseSensitive)
-		{
-			*pucCase = 0;
-		}
-		else
-		{
-			if (!bAsian && ui16WpChar)
-			{
-				// flmWPIsUpper() returns FALSE if the character is lower or
-				// TRUE if the character is not lower case.
-	
-				if( flmWPIsUpper( ui16WpChar))
-				{
-					if( bTwoIntoOne)
-					{
-						if( flmWPIsUpper( ui16NextWpChar))
-						{
-							ucCase = 0x03;
-						}
-						else
-						{
-							ucCase = 0x10;
-						}
-					}
-					else
-					{
-						ucCase = 0x01;
-					}
-				}
-			}
-			*pucCase = ucCase;
-		}
-	}
-
-	if (puChar)
-	{
-		*puChar = uChar;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-RCODE F_DbSystem::compareUTF8Strings(
-	const FLMBYTE *		pucLString,
-	FLMUINT					uiLStrBytes,
-	FLMBOOL					bLeftWild,
-	const FLMBYTE *		pucRString,
-	FLMUINT					uiRStrBytes,
-	FLMBOOL					bRightWild,
-	FLMUINT					uiCompareRules,
-	FLMUINT					uiLanguage,
-	FLMINT *					piResult)
-{
-	RCODE						rc = NE_XFLM_OK;
-	F_BufferIStream		bufferLStream;
-	F_BufferIStream		bufferRStream;
-	F_CollIStream			lStream;
-	F_CollIStream			rStream;
-
-	if (RC_BAD( rc = bufferLStream.open( pucLString, uiLStrBytes)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = bufferRStream.open( pucRString, uiRStrBytes)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = lStream.open( &bufferLStream, FALSE, uiLanguage,
-								uiCompareRules, bLeftWild)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = rStream.open( &bufferRStream, FALSE, uiLanguage,
-								uiCompareRules, bRightWild)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = fqCompareCollStreams( &lStream, &rStream,
-		(bLeftWild || bRightWild) ? TRUE : FALSE,
-		uiLanguage, piResult)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-RCODE F_DbSystem::compareUnicodeStrings(
-	const FLMUNICODE *	puzLString,
-	FLMUINT					uiLStrBytes,
-	FLMBOOL					bLeftWild,
-	const FLMUNICODE *	puzRString,
-	FLMUINT					uiRStrBytes,
-	FLMBOOL					bRightWild,
-	FLMUINT					uiCompareRules,
-	FLMUINT					uiLanguage,
-	FLMINT *					piResult)
-{
-	RCODE						rc = NE_XFLM_OK;
-	F_BufferIStream		bufferLStream;
-	F_BufferIStream		bufferRStream;
-	F_CollIStream			lStream;
-	F_CollIStream			rStream;
-
-	if( RC_BAD( rc = bufferLStream.open( (FLMBYTE *)puzLString, uiLStrBytes)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = bufferRStream.open( (FLMBYTE *)puzRString, uiRStrBytes)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = lStream.open( &bufferLStream, TRUE, uiLanguage,
-		uiCompareRules, bLeftWild)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = rStream.open( &bufferRStream, TRUE, uiLanguage,
-		uiCompareRules, bRightWild)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = fqCompareCollStreams( &lStream, &rStream,
-		(bLeftWild || bRightWild) ? TRUE : FALSE, uiLanguage, piResult)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-RCODE XFLMAPI F_DbSystem::utf8IsSubStr(
-	const FLMBYTE *	pszString,
-	const FLMBYTE *	pszSubString,
-	FLMUINT				uiCompareRules,
-	FLMUINT				uiLanguage,
-	FLMBOOL *			pbExists)
-{
-	RCODE				rc = NE_XFLM_OK;
-	FLMINT			iResult = 0;
-	FLMBYTE *		pszSearch = NULL;
-	FLMUINT			uiSubStringLen = f_strlen( pszSubString);
-	
-	if( RC_BAD( rc = f_alloc( uiSubStringLen + 3, &pszSearch)))
-	{
-		goto Exit;
-	}
-	
-	pszSearch[0] = '*';
-	f_memcpy( &pszSearch[ 1], pszSubString, uiSubStringLen);
-	pszSearch[ uiSubStringLen + 1] = '*';
-	pszSearch[ uiSubStringLen + 2] = '\0';
-
-	if( RC_BAD( rc = compareUTF8Strings( 
-		pszString, f_strlen( pszString), FALSE, pszSearch, 
-		uiSubStringLen + 2, TRUE, uiCompareRules, uiLanguage, &iResult)))
-	{
-		goto Exit;
-	}
-	
-	*pbExists = (iResult)?FALSE:TRUE;
-
-Exit:
-
-	if( pszSearch)
-	{
-		f_free( &pszSearch);
-	}
-	
 	return( rc);
 }

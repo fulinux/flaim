@@ -96,7 +96,7 @@ RCODE F_XPathTokenizer::getChar(
 	}
 	else
 	{
-		if( RC_BAD( rc = flmReadUTF8CharAsUnicode( m_pIStream, puChar)))
+		if( RC_BAD( rc = f_readUTF8CharAsUnicode( m_pIStream, puChar)))
 		{
 			if( rc != NE_XFLM_EOF_HIT)
 			{
@@ -129,7 +129,7 @@ RCODE F_XPathTokenizer::peekChar(
 	}
 	else
 	{
-		if( RC_BAD( rc = flmReadUTF8CharAsUnicode( m_pIStream, puChar)))
+		if( RC_BAD( rc = f_readUTF8CharAsUnicode( m_pIStream, puChar)))
 		{
 			if( rc == NE_XFLM_EOF_HIT)
 			{
@@ -1626,7 +1626,7 @@ Exit:
 /***************************************************************************
 Desc:	Class for handling query validator calls
 ***************************************************************************/
-class XFLAIM_QueryValFunc : public IF_QueryValFunc, public XF_Base
+class XFLAIM_QueryValFunc : public IF_QueryValFunc
 {
 public:
 
@@ -1638,7 +1638,7 @@ public:
 	{
 	}
 	
-	RCODE XFLMAPI getValue(
+	RCODE FLMAPI getValue(
 		IF_Db *					pDb,
 		IF_DOMNode *			pContextNode,
 		ValIterator				eValueToGet,
@@ -1647,7 +1647,7 @@ public:
 		void *					pvVal,
 		IF_DynaBuf *			pDynaBuf = NULL);
 			
-	RCODE XFLMAPI cloneSelf(
+	RCODE FLMAPI cloneSelf(
 		IF_QueryValFunc **	ppNewObj);
 };
 
@@ -1656,7 +1656,7 @@ Desc:	Get the next value for a query function.  Since this is really just
 		code to test the callback, it always returns a value whose type
 		is boolean and whose value is true.
 ****************************************************************************/
-RCODE XFLMAPI XFLAIM_QueryValFunc::getValue(
+RCODE FLMAPI XFLAIM_QueryValFunc::getValue(
 	IF_Db *,			// pDb,
 	IF_DOMNode *,	// pContextNode,
 	ValIterator		eValueToGet,
@@ -1692,7 +1692,7 @@ Exit:
 /****************************************************************************
 Desc:	Copy self to create a new object.
 ****************************************************************************/
-RCODE XFLMAPI XFLAIM_QueryValFunc::cloneSelf(
+RCODE FLMAPI XFLAIM_QueryValFunc::cloneSelf(
 	IF_QueryValFunc **	ppNewObj)
 {
 	
@@ -2443,20 +2443,31 @@ RCODE F_XPath::parseQuery(
 	char *			pszQuery,
 	IF_Query *		pQuery)
 {
-	RCODE					rc = NE_XFLM_OK;
-	F_BufferIStream	istream;
-
-	if( RC_BAD( rc= istream.open( (FLMBYTE *)pszQuery, f_strlen( pszQuery))))
+	RCODE						rc = NE_XFLM_OK;
+	IF_BufferIStream *	pBufferStream;
+	
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferStream)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = parseQuery( pDb, &istream, pQuery)))
+	if( RC_BAD( rc = pBufferStream->open( 
+		(const char *)pszQuery, f_strlen( pszQuery))))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = parseQuery( pDb, pBufferStream, pQuery)))
 	{
 		goto Exit;
 	}
 
 Exit:
+
+	if( pBufferStream)
+	{
+		pBufferStream->Release();
+	}
 
 	return( rc);
 }

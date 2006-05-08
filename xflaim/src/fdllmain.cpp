@@ -24,31 +24,15 @@
 //------------------------------------------------------------------------------
 
 #include "flaimsys.h"
-#include "fcomfact.h"
 
 static F_DbSystem *			gv_pDbSystem = NULL;
 static FLMATOMIC				gv_lockCount = 0;
 
-XFLMEXTC RCODE XFLMAPI DllCanUnloadNow( void);
-
-XFLMEXTC RCODE XFLMAPI DllGetClassObject(
-	RXFLMCLSID		rclsid,
-	RXFLMIID			riid,
-	void **			ppv);
-
-XFLMEXTC RCODE XFLMAPI DllStart( void);
-
-XFLMEXTC RCODE XFLMAPI DllStop( void);
+FLMEXTC RCODE FLMAPI DllCanUnloadNow( void);
+FLMEXTC RCODE FLMAPI DllStart( void);
+FLMEXTC RCODE FLMAPI DllStop( void);
 
 #if defined( FLM_UNIX)
-
-#ifdef __GNUC__
-	void __attribute__ ((constructor)) flaim_init( void) {}
-	void __attribute__ ((destructor)) flaim_fini( void) {}
-#elif !defined( FLM_SOLARIS)
-	extern "C" void _init(void) {}
-	extern "C" void _fini(void) {}
-#endif
 
 #elif defined( FLM_WIN)
 
@@ -56,13 +40,9 @@ XFLMEXTC RCODE XFLMAPI DllStop( void);
 		#define WIN32_LEAN_AND_MEAN
 	#endif
 	
-	static HMODULE s_module;
-	
 	#pragma comment(linker, "/export:DllCanUnloadNow=_DllCanUnloadNow@0,PRIVATE")
-	#pragma comment(linker, "/export:DllGetClassObject=_DllGetClassObject@12,PRIVATE")
 	#pragma comment(linker, "/export:DllStart=_DllStart@0,PRIVATE")
 	#pragma comment(linker, "/export:DllStop=_DllStop@0,PRIVATE")
-	#pragma comment(linker, "/export:_XTCOM_Table,DATA")
 
 #elif !defined( FLM_NLM)
 	#error platform not supported.
@@ -73,7 +53,7 @@ Desc:
 ******************************************************************************/
 void LockModule(void)
 {
-	flmAtomicInc( &gv_lockCount);
+	f_atomicInc( &gv_lockCount);
 }
 
 /******************************************************************************
@@ -81,14 +61,14 @@ Desc:
 ******************************************************************************/
 void UnlockModule(void)
 {
-	flmAtomicDec( &gv_lockCount);
+	f_atomicDec( &gv_lockCount);
 }
 
 /******************************************************************************
 Desc:	Returns 0 if it's okay to unload, or a non-zero status
 		code if not.
 ******************************************************************************/
-XFLMEXTC RCODE XFLMAPI DllCanUnloadNow( void)
+FLMEXTC RCODE FLMAPI DllCanUnloadNow( void)
 {
 	RCODE		rc = NE_XFLM_OK;
 
@@ -100,11 +80,7 @@ XFLMEXTC RCODE XFLMAPI DllCanUnloadNow( void)
 	}
 	else
 	{
-		// gv_lockCount should be 1 because gv_pDbSystem is non-null.
-
 		flmAssert( gv_lockCount == 1);
-
-		// Check for open databases
 
 		f_mutexLock( gv_XFlmSysData.hShareMutex);
 
@@ -132,34 +108,13 @@ XFLMEXTC RCODE XFLMAPI DllCanUnloadNow( void)
 }
 
 /******************************************************************************
-Desc:	Returns the desired interface to the class object for
-		the specified service class.
-******************************************************************************/
-XFLMEXTC RCODE XFLMAPI DllGetClassObject(
-	RXFLMCLSID		rclsid,
-	RXFLMIID			riid,
-	void **			ppv)
-{
-	static F_DbSystemFactory	gv_DbSysFactory;
-
-	if( f_memcmp( &rclsid, &Internal_CLSID_F_DbSystemFactory,
-		sizeof( Internal_CLSID_F_DbSystemFactory)) == 0)
-	{
-		return( gv_DbSysFactory.QueryInterface( riid, ppv));
-	}
-
-	*ppv = NULL;
-	return( RC_SET( NE_XFLM_CLASS_NOT_AVAILABLE));
-}
-
-/******************************************************************************
 Desc:	Called by PSA when it loads the library.  Must return 0 for
 		success, or a non-zero error code.
 ******************************************************************************/
-XFLMEXTC RCODE XFLMAPI DllStart( void)
+FLMEXTC RCODE FLMAPI DllStart( void)
 {
 	RCODE		rc = NE_XFLM_OK;
-
+	
 	if( (gv_pDbSystem = f_new F_DbSystem) == NULL)
 	{
 		rc = NE_XFLM_MEM;
@@ -189,7 +144,7 @@ Exit:
 Desc:	Called by PSA when it unloads the library.  The return value
 		is ignored.
 ******************************************************************************/
-XFLMEXTC RCODE XFLMAPI DllStop( void)
+FLMEXTC RCODE FLMAPI DllStop( void)
 {
 	if( gv_pDbSystem)
 	{
@@ -206,7 +161,7 @@ XFLMEXTC RCODE XFLMAPI DllStop( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-XFLMEXTC RCODE XFLMAPI DllRegisterServer(
+FLMEXTC RCODE FLMAPI DllRegisterServer(
 	const char *)
 {
 	return( NE_XFLM_OK);
@@ -215,16 +170,7 @@ XFLMEXTC RCODE XFLMAPI DllRegisterServer(
 /******************************************************************************
 Desc:
 ******************************************************************************/
-XFLMEXTC RCODE XFLMAPI DllUnregisterServer( void) 
+FLMEXTC RCODE FLMAPI DllUnregisterServer( void) 
 {
 	return( NE_XFLM_OK);
 }
-
-/******************************************************************************
-Desc:	This is an array of all the CLSID's that XFlaim implements.
-******************************************************************************/
-extern "C" const XFLMCLSID * XTCOM_Table[] =
-{
-	&Internal_CLSID_F_DbSystemFactory,
-	0
-};

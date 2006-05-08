@@ -149,7 +149,7 @@ Desc:	Constructor
 ****************************************************************************/
 F_NameTable::F_NameTable()
 {
-	m_pool.poolInit( 1024);
+	m_pPool = NULL;
 	m_uiMemoryAllocated = 0;
 	m_ppSortedByTagTypeAndName = NULL;
 	m_ppSortedByTagTypeAndNum = NULL;
@@ -176,6 +176,11 @@ Desc:	Destructor
 F_NameTable::~F_NameTable()
 {
 	clearTable( 0);
+
+	if( m_pPool)
+	{
+		m_pPool->Release();
+	}
 }
 
 /****************************************************************************
@@ -184,20 +189,36 @@ Desc:	Setup name table.  This routine should be called immediately after
 ****************************************************************************/
 RCODE F_NameTable::setupNameTable( void)
 {
-	return( NE_XFLM_OK);
+	RCODE		rc = NE_XFLM_OK;
+
+	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
+	{
+		goto Exit;
+	}
+
+	m_pPool->poolInit( 1024);
+
+Exit:
+
+	return( rc);
 }
 
 /****************************************************************************
 Desc:	Free everything in the table
 ****************************************************************************/
 void F_NameTable::clearTable(
-	FLMUINT	uiPoolBlkSize)
+	FLMUINT		uiPoolBlkSize)
 {
-	m_pool.poolFree();
+	if( m_pPool)
+	{
+		m_pPool->poolFree();
+	}
+	
 	if (uiPoolBlkSize)
 	{
-		m_pool.poolInit( uiPoolBlkSize);
+		m_pPool->poolInit( uiPoolBlkSize);
 	}
+	
 	m_uiMemoryAllocated = 0;
 
 	// NOTE: Only one allocation is used for m_ppSortedByTagTypeAndName and
@@ -280,8 +301,8 @@ FSTATIC FLMINT tagNameCompare(
 			else if (uzChar1 != uzChar2)
 			{
 Test_Case:
-				uzLowerChar1 = f_unitolower( uzChar1);
-				uzLowerChar2 = f_unitolower( uzChar2);
+				uzLowerChar1 = f_uniToLower( uzChar1);
+				uzLowerChar2 = f_uniToLower( uzChar2);
 
 				if (uzLowerChar1 < uzLowerChar2)
 				{
@@ -1101,9 +1122,9 @@ RCODE F_NameTable::allocTag(
 
 	// Create a new tag info structure.
 
-	pvMark = m_pool.poolMark();
+	pvMark = m_pPool->poolMark();
 	uiSaveMemoryAllocated = m_uiMemoryAllocated;
-	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FLM_TAG_INFO),
+	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FLM_TAG_INFO),
 										(void **)&pTagInfo)))
 	{
 		goto Exit;
@@ -1115,7 +1136,7 @@ RCODE F_NameTable::allocTag(
 	if (puzTagName)
 	{
 		uiNameSize = (f_unilen( puzTagName) + 1) * sizeof( FLMUNICODE);
-		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
 											(void **)&pTagInfo->puzTagName)))
 		{
 			goto Exit;
@@ -1126,7 +1147,7 @@ RCODE F_NameTable::allocTag(
 	else
 	{
 		uiNameSize = (f_strlen( pszTagName) + 1) * sizeof( FLMUNICODE);
-		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
 										(void **)&pTagInfo->puzTagName)))
 		{
 			goto Exit;
@@ -1160,7 +1181,7 @@ RCODE F_NameTable::allocTag(
 											&uiNamespaceInsertPos)) == NULL)
 			{
 				uiNameSize = (f_unilen( puzNamespace) + 1) * sizeof( FLMUNICODE);
-				if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+				if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
 											(void **)&puzTblNamespace)))
 				{
 					goto Exit;
@@ -1178,7 +1199,7 @@ RCODE F_NameTable::allocTag(
 				// allocated if the pool is reset at Exit due to a later
 				// error.
 
-				pvMark = m_pool.poolMark();
+				pvMark = m_pPool->poolMark();
 				uiSaveMemoryAllocated = m_uiMemoryAllocated;
 			}
 			pTagInfo->puzNamespace = puzTblNamespace;
@@ -1189,7 +1210,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		m_pool.poolReset( pvMark);
+		m_pPool->poolReset( pvMark);
 		m_uiMemoryAllocated = uiSaveMemoryAllocated;
 		pTagInfo = NULL;
 	}
@@ -2391,19 +2412,19 @@ Exit:
 /****************************************************************************
 Desc:	Increment use count on this object.
 ****************************************************************************/
-FLMINT XFLMAPI F_NameTable::AddRef( void)
+FLMINT FLMAPI F_NameTable::AddRef( void)
 {
-	return( flmAtomicInc( &m_refCnt));
+	return( f_atomicInc( &m_refCnt));
 }
 
 /****************************************************************************
 Desc:	Decrement the use count and delete if use count goes to zero.
 ****************************************************************************/
-FLMINT XFLMAPI F_NameTable::Release( void)
+FLMINT FLMAPI F_NameTable::Release( void)
 {
 	FLMINT		iRefCnt;
 
-	if ((iRefCnt = flmAtomicDec( &m_refCnt)) == 0)
+	if ((iRefCnt = f_atomicDec( &m_refCnt)) == 0)
 	{
 		delete this;
 	}
@@ -2469,7 +2490,7 @@ Exit:
 /****************************************************************************
 Desc:	Get the name for a dictionary item.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getDictionaryName(
+RCODE FLMAPI F_Db::getDictionaryName(
 	FLMUINT					uiDictType,
 	FLMUINT					uiDictNumber,
 	char *					pszName,
@@ -2520,7 +2541,7 @@ Exit:
 /****************************************************************************
 Desc:	Get the name for a dictionary item.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::getDictionaryName(
+RCODE FLMAPI F_Db::getDictionaryName(
 	FLMUINT					uiDictType,
 	FLMUINT					uiDictNumber,
 	FLMUNICODE *			puzName,

@@ -53,7 +53,7 @@ RCODE F_DbSystem::dbRemove(
 
 	if( !pszDbName || !(*pszDbName))
 	{
-		rc = RC_SET( NE_XFLM_IO_INVALID_FILENAME);
+		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
 		goto Exit;
 	}
 
@@ -79,12 +79,14 @@ RCODE F_DbSystem::dbRemove(
 
 	if (pszDataDir && *pszDataDir)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->pathReduce( pszDbName, pszDataName, pszBaseName)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
+			pszDbName, pszDataName, pszBaseName)))
 		{
 			goto Exit;
 		}
 		f_strcpy( pszDataName, pszDataDir);
-		if (RC_BAD( rc = gv_pFileSystem->pathAppend( pszDataName, pszBaseName)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+			pszDataName, pszBaseName)))
 		{
 			goto Exit;
 		}
@@ -97,9 +99,9 @@ RCODE F_DbSystem::dbRemove(
 
 	// Start deleting files, beginning with the main DB file.
 
-	if (RC_BAD( rc = gv_pFileSystem->Delete( pszDbName)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( pszDbName)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 		{
 			rc = NE_XFLM_OK;
 		}
@@ -132,9 +134,9 @@ RCODE F_DbSystem::dbRemove(
 	// Delete the .lck file, if any
 
 	f_strcpy( pszExt, ".lck");
-	if (RC_BAD( rc = gv_pFileSystem->Delete( pszTmpName)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( pszTmpName)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 		{
 			rc = NE_XFLM_OK;
 		}
@@ -151,9 +153,9 @@ RCODE F_DbSystem::dbRemove(
 	{
 		bldSuperFileExtension( uiFileNumber, pszDataExt);
 
-		if (RC_BAD( rc = gv_pFileSystem->Delete( pszDataName)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( pszDataName)))
 		{
-			if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 			{
 				rc = NE_XFLM_OK;
 				break;
@@ -177,9 +179,9 @@ RCODE F_DbSystem::dbRemove(
 	{
 		bldSuperFileExtension( uiFileNumber, pszExt);
 
-		if (RC_BAD( rc = gv_pFileSystem->Delete( pszTmpName)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( pszTmpName)))
 		{
-			if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 			{
 				rc = NE_XFLM_OK;
 				break;
@@ -212,18 +214,18 @@ RCODE F_DbSystem::dbRemove(
 
 		// See if the directory exists.  If not, we are done.
 
-		if (!gv_pFileSystem->IsDir( pszRflDirName))
+		if (!gv_XFlmSysData.pFileSystem->isDir( pszRflDirName))
 		{
 			goto Exit;	// Should return NE_XFLM_OK
 		}
 
 		// Open the directory and scan for RFL files.
-		// NOTE: DO NOT just call RemoveDir.  There may be other
+		// NOTE: DO NOT just call removeDir.  There may be other
 		// things in the directory that we do not want to delete.
 		// Look specifically for files that match our expected
 		// name format for RFL files.
 
-		if (RC_BAD( rc = gv_pFileSystem->OpenDir( pszRflDirName,
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openDir( pszRflDirName,
 										"*", &pDirHdl)))
 		{
 			goto Exit;
@@ -236,9 +238,9 @@ RCODE F_DbSystem::dbRemove(
 		bCanDeleteDir = TRUE;
 		for (;;)
 		{
-			if (RC_BAD( rc = pDirHdl->Next()))
+			if (RC_BAD( rc = pDirHdl->next()))
 			{
-				if (rc == NE_XFLM_IO_NO_MORE_FILES)
+				if (rc == NE_FLM_IO_NO_MORE_FILES)
 				{
 					rc = NE_XFLM_OK;
 					break;
@@ -248,8 +250,8 @@ RCODE F_DbSystem::dbRemove(
 					goto Exit;
 				}
 			}
-			pDirHdl->CurrentItemPath( pszTmpName);
-			if (pDirHdl->CurrentItemIsDir())
+			pDirHdl->currentItemPath( pszTmpName);
+			if (pDirHdl->currentItemIsDir())
 			{
 				bCanDeleteDir = FALSE;
 			}
@@ -260,10 +262,10 @@ RCODE F_DbSystem::dbRemove(
 			else
 			{
 				if( RC_BAD( rc =
-							gv_pFileSystem->Delete( pszTmpName)))
+							gv_XFlmSysData.pFileSystem->deleteFile( pszTmpName)))
 				{
-					if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-						 rc == NE_XFLM_IO_INVALID_FILENAME)
+					if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+						 rc == NE_FLM_IO_INVALID_FILENAME)
 					{
 						rc = NE_XFLM_OK;
 					}
@@ -289,14 +291,10 @@ RCODE F_DbSystem::dbRemove(
 				pDirHdl->Release();
 				pDirHdl = NULL;
 			}
-			if ((pDirHdl = f_new F_DirHdl) == NULL)
+			
+			if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->removeDir( pszRflDirName)))
 			{
-				rc = RC_SET( NE_XFLM_MEM);
-				goto Exit;
-			}
-			if (RC_BAD( rc = pDirHdl->RemoveDir( pszRflDirName)))
-			{
-				if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+				if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 				{
 					rc = NE_XFLM_OK;
 				}

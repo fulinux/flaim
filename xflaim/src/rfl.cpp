@@ -71,7 +71,7 @@ public:
 		}
 	}
 
-	RCODE XFLMAPI write(
+	RCODE FLMAPI write(
 		const void *		pvBuffer,
 		FLMUINT				uiBytesToWrite,
 		FLMUINT *			puiBytesWritten = NULL);
@@ -79,7 +79,7 @@ public:
 	RCODE write(
 		IF_PosIStream *	pIStream);
 
-	FINLINE RCODE XFLMAPI close( void)
+	FINLINE RCODE FLMAPI close( void)
 	{
 		if( m_pRfl)
 		{
@@ -177,7 +177,7 @@ F_Rfl::~F_Rfl()
 
 	if (m_pFileHdl)
 	{
-		m_pFileHdl->Close();
+		m_pFileHdl->close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 		m_pDatabase = NULL;
@@ -399,11 +399,11 @@ RCODE F_Rfl::positionTo(
 		m_pCurrentBuf->uiRflBufBytes = MOD_512( uiFileOffset);
 		if (m_pCurrentBuf->uiRflBufBytes)
 		{
-			if (RC_BAD( rc = m_pFileHdl->SectorRead( 
+			if (RC_BAD( rc = m_pFileHdl->sectorRead( 
 				m_pCurrentBuf->uiRflFileOffset, m_pCurrentBuf->uiRflBufBytes,
 				m_pCurrentBuf->pIOBuffer->getBuffer(), &uiBytesRead)))
 			{
-				if (rc == NE_XFLM_IO_END_OF_FILE)
+				if (rc == NE_FLM_IO_END_OF_FILE)
 				{
 					rc = RC_SET( NE_XFLM_NOT_RFL);
 				}
@@ -445,7 +445,7 @@ RCODE rflGetDirAndPrefix(
 
 	// Parse the database name into directory and base name
 
-	if (RC_BAD( rc = gv_pFileSystem->pathReduce( pszDbFileName,
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( pszDbFileName,
 							szDbPath, szBaseName)))
 	{
 		goto Exit;
@@ -471,7 +471,7 @@ RCODE rflGetDirAndPrefix(
 
 	f_strcpy( szBaseName, szPrefix);
 	f_strcat( szBaseName, ".rfl");
-	gv_pFileSystem->pathAppend( pszRflDirOut, szBaseName);
+	gv_XFlmSysData.pFileSystem->pathAppend( pszRflDirOut, szBaseName);
 
 Exit:
 
@@ -525,7 +525,8 @@ RCODE rflGetFileName(
 	uiBaseNameSize = sizeof( szBaseName);
 	rflGetBaseFileName( uiFileNum, szBaseName, &uiBaseNameSize, NULL);
 	
-	if (RC_BAD( rc = gv_pFileSystem->pathAppend( pszRflFileName, szBaseName)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+		pszRflFileName, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -548,7 +549,8 @@ FLMBOOL rflGetFileNum(
 	char *		pszTmp;
 	FLMUINT		uiCharCnt;
 
-	if( RC_BAD( gv_pFileSystem->pathReduce( pszRflFileName, szDir, szBaseName)))
+	if( RC_BAD( gv_XFlmSysData.pFileSystem->pathReduce( 
+		pszRflFileName, szDir, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -640,17 +642,17 @@ RCODE F_Rfl::setup(
 	{
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_Buf1.pBufferMgr)))
+	{
+		goto Exit;
+	}
 
-	if( (m_Buf1.pBufferMgr = f_new F_IOBufferMgr) == NULL)
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_Buf2.pBufferMgr)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
-	if( (m_Buf2.pBufferMgr = f_new F_IOBufferMgr) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	
 	m_Buf1.pBufferMgr->enableKeepBuffer();
 	m_Buf1.pBufferMgr->setMaxBuffers( m_uiRflWriteBufs);
 	m_Buf1.pBufferMgr->setMaxBytes( m_uiRflWriteBufs * m_uiBufferSize);
@@ -741,11 +743,7 @@ RCODE F_Rfl::waitForWrites(
 
 	if (RC_BAD( TempRc = f_semWait( Waiter.hESem, F_SEM_WAITFOREVER)))
 	{
-#ifdef FLM_NLM
-		EnterDebugger();
-#else
 		RC_UNEXPECTED_ASSERT( TempRc);
-#endif
 		rc = TempRc;
 	}
 	else
@@ -755,11 +753,7 @@ RCODE F_Rfl::waitForWrites(
 
 		if (rc == NE_XFLM_FAILURE)
 		{
-#ifdef FLM_NLM
-			EnterDebugger();
-#else
 			RC_UNEXPECTED_ASSERT( rc);
-#endif
 		}
 	}
 
@@ -838,20 +832,20 @@ RCODE F_Rfl::writeHeader(
 		XFLM_SERIAL_NUM_SIZE);
 	f_memcpy( &ucBuf [RFL_NEXT_FILE_SERIAL_NUM_POS], pucNextSerialNum,
 		XFLM_SERIAL_NUM_SIZE);
-	f_strcpy( &ucBuf [RFL_KEEP_SIGNATURE_POS],
+	f_strcpy( (char *)&ucBuf [RFL_KEEP_SIGNATURE_POS],
 		(char *)((bKeepSignature)
 						? RFL_KEEP_SIGNATURE
 						: RFL_NOKEEP_SIGNATURE));
 
 	// Write out the header
 
-	if (RC_BAD( rc = m_pFileHdl->SectorWrite( 0L, 512,
+	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512,
 										ucBuf, sizeof( ucBuf),
 										NULL, &uiBytesWritten)))
 	{
 		// Remap disk full error
 
-		if (rc == NE_XFLM_IO_DISK_FULL)
+		if (rc == NE_FLM_IO_DISK_FULL)
 		{
 			rc = RC_SET( NE_XFLM_RFL_DISK_FULL);
 			m_bRflVolumeFull = TRUE;
@@ -862,11 +856,11 @@ RCODE F_Rfl::writeHeader(
 
 	// Flush the file handle to ensure it is forced to disk.
 
-	if (RC_BAD( rc = m_pFileHdl->Flush()))
+	if (RC_BAD( rc = m_pFileHdl->flush()))
 	{
 		// Remap disk full error
 
-		if (rc == NE_XFLM_IO_DISK_FULL)
+		if (rc == NE_FLM_IO_DISK_FULL)
 		{
 			rc = RC_SET( NE_XFLM_RFL_DISK_FULL);
 			m_bRflVolumeFull = TRUE;
@@ -1005,8 +999,8 @@ RCODE F_Rfl::openFile(
 
 	// Open the file.
 
-	if (RC_BAD( rc = gv_pFileSystem->OpenBlockFile( szRflFileName,
-			  			   XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT,
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openBlockFile( szRflFileName,
+			  			   FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
 							512, &m_pFileHdl)))
 	{
 		goto Exit;
@@ -1014,10 +1008,10 @@ RCODE F_Rfl::openFile(
 
 	// Read the header.
 
-	if (RC_BAD( rc = m_pFileHdl->SectorRead( 0, 512, ucBuf,
+	if (RC_BAD( rc = m_pFileHdl->sectorRead( 0, 512, ucBuf,
 								&uiBytesRead)))
 	{
-		if (rc == NE_XFLM_IO_END_OF_FILE)
+		if (rc == NE_FLM_IO_END_OF_FILE)
 		{
 			rc = RC_SET( NE_XFLM_NOT_RFL);
 		}
@@ -1095,7 +1089,7 @@ RCODE F_Rfl::createFile(
 	// Delete the file if it already exists - don't care
 	// about return code here
 
-	(void)gv_pFileSystem->Delete( szRflFileName);
+	(void)gv_XFlmSysData.pFileSystem->deleteFile( szRflFileName);
 
 	// If DB is 4.3 or greater and we are in the same directory as
 	// our database files, see if we need to create the
@@ -1110,17 +1104,17 @@ RCODE F_Rfl::createFile(
 
 		// If it already exists, don't attempt to create it.
 
-		if (RC_BAD( rc = gv_pFileSystem->Exists( m_szRflDir)))
+		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->doesFileExist( m_szRflDir)))
 		{
-			if (rc != NE_XFLM_IO_PATH_NOT_FOUND && 
-				 rc != NE_XFLM_IO_INVALID_FILENAME)
+			if (rc != NE_FLM_IO_PATH_NOT_FOUND && 
+				 rc != NE_FLM_IO_INVALID_FILENAME)
 			{
 				goto Exit;
 			}
 			else
 			{
 				if (RC_BAD( rc =
-						gv_pFileSystem->CreateDir( m_szRflDir)))
+						gv_XFlmSysData.pFileSystem->createDir( m_szRflDir)))
 				{
 					goto Exit;
 				}
@@ -1131,8 +1125,8 @@ RCODE F_Rfl::createFile(
 
 	// Create the file
 
-	if (RC_BAD( rc = gv_pFileSystem->CreateBlockFile( szRflFileName,
-			 XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT,
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->createBlockFile( szRflFileName,
+			 FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
 			512, &m_pFileHdl)))
 	{
 		goto Exit;
@@ -1156,7 +1150,7 @@ Exit:
 	if (RC_BAD( rc))
 	{
 		closeFile();
-		(void)gv_pFileSystem->Delete( szRflFileName);
+		(void)gv_XFlmSysData.pFileSystem->deleteFile( szRflFileName);
 	}
 	return( rc);
 }
@@ -1253,8 +1247,8 @@ RCODE F_Rfl::flush(
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiBytesWritten;
-	F_IOBuffer *	pNewBuffer;
-	F_IOBuffer *	pAsyncBuf = NULL;
+	IF_IOBuffer *	pNewBuffer = NULL;
+	IF_IOBuffer *	pAsyncBuf = NULL;
 	FLMBYTE *		pucOldBuffer;
 	FLMUINT			uiFileOffset;
 	FLMUINT			uiBufBytes;
@@ -1272,7 +1266,7 @@ RCODE F_Rfl::flush(
 			}
 		}
 
-		if (m_uiRflWriteBufs > 1 && m_pFileHdl->CanDoAsync())
+		if (m_uiRflWriteBufs > 1 && m_pFileHdl->canDoAsync())
 		{
 			pAsyncBuf = pBuffer->pIOBuffer;
 		}
@@ -1308,7 +1302,7 @@ RCODE F_Rfl::flush(
 			}
 		}
 
-		rc = m_pFileHdl->SectorWrite( uiFileOffset, uiBufBytes,
+		rc = m_pFileHdl->sectorWrite( uiFileOffset, uiBufBytes,
 						pucOldBuffer,
 						m_uiBufferSize, pAsyncBuf,
 						&uiBytesWritten, FALSE);
@@ -1351,7 +1345,7 @@ RCODE F_Rfl::flush(
 		{
 			// Remap disk full error
 
-			if (rc == NE_XFLM_IO_DISK_FULL)
+			if (rc == NE_FLM_IO_DISK_FULL)
 			{
 				rc = RC_SET( NE_XFLM_RFL_DISK_FULL);
 				m_bRflVolumeFull = TRUE;
@@ -1742,12 +1736,12 @@ RCODE F_Rfl::completeTransWrites(
 
 	if (m_pFileHdl)
 	{
-		if (RC_BAD( tmpRc = m_pFileHdl->Flush()))
+		if (RC_BAD( tmpRc = m_pFileHdl->flush()))
 		{
 
 			// Remap disk full error
 
-			if (tmpRc == NE_XFLM_IO_DISK_FULL)
+			if (tmpRc == NE_FLM_IO_DISK_FULL)
 			{
 				rc = RC_SET( NE_XFLM_RFL_DISK_FULL);
 				m_bRflVolumeFull = TRUE;
@@ -1953,14 +1947,14 @@ RCODE F_Rfl::seeIfNeedNewFile(
 			uiCurrFileEOF = ROUND_DOWN_TO_NEAREST_512( uiCurrFileEOF) + 512;
 		}
 		
-		if (RC_BAD( rc = m_pFileHdl->Truncate( uiCurrFileEOF)))
+		if (RC_BAD( rc = m_pFileHdl->truncate( uiCurrFileEOF)))
 		{
 			goto Exit;
 		}
 
 		// Close the file handle.
 
-		m_pFileHdl->Close();
+		m_pFileHdl->close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
@@ -2100,7 +2094,7 @@ RCODE F_Rfl::finishCurrFile(
 	else if (RC_BAD( rc = openFile( pDb->m_hWaitSem, uiTransFileNum,
 		m_ucCurrSerialNum)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 		{
 			rc = NE_XFLM_OK;
 			if (!bNewKeepState)
@@ -2138,14 +2132,14 @@ RCODE F_Rfl::finishCurrFile(
 		{
 			uiTruncateSize = ROUND_DOWN_TO_NEAREST_512( uiTruncateSize) + 512;
 		}
-		if (RC_BAD( rc = m_pFileHdl->Truncate( uiTruncateSize)))
+		if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
 		{
 			goto Exit;
 		}
 
 		// Close the file handle.
 
-		m_pFileHdl->Close();
+		m_pFileHdl->close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
@@ -2342,14 +2336,14 @@ RCODE F_Rfl::truncate(
 	if (RC_BAD( rc = openFile( hWaitSem, uiFileNum,
 				m_pDatabase->m_lastCommittedDbHdr.ucLastTransRflSerialNum)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND || rc == NE_XFLM_IO_INVALID_FILENAME)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
 		{
 			rc = NE_XFLM_OK;
 		}
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = m_pFileHdl->Truncate( uiTruncateSize)))
+	if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
 	{
 		m_bRflVolumeOk = FALSE;
 		goto Exit;
@@ -2410,7 +2404,7 @@ RCODE F_Rfl::setupTransaction(
 	else if (RC_BAD( rc = openFile( pDb->m_hWaitSem, 
 		uiFileNum, m_ucCurrSerialNum)))
 	{
-		if (rc != NE_XFLM_IO_PATH_NOT_FOUND && rc != NE_XFLM_IO_INVALID_FILENAME)
+		if (rc != NE_FLM_IO_PATH_NOT_FOUND && rc != NE_FLM_IO_INVALID_FILENAME)
 		{
 			goto Exit;
 		}
@@ -2576,7 +2570,7 @@ RCODE F_Rfl::logBeginTransaction(
 
 	// Output the transaction ID.
 
-	flmEncodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
+	f_encodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
 
 	// Finish the packet
 
@@ -2768,7 +2762,7 @@ Throw_Away_Transaction:
 											&uiFileNameSize, &bNameTruncated);
 				if (!bNameTruncated)
 				{
-					(void)gv_pFileSystem->Delete( szRflFileName);
+					(void)gv_XFlmSysData.pFileSystem->deleteFile( szRflFileName);
 				}
 				uiLowFileNum++;
 			}
@@ -2817,7 +2811,7 @@ Throw_Away_Transaction:
 
 		// Output the transaction ID.
 
-		flmEncodeSEN( m_ui64CurrTransID, &pucPacketBody);
+		f_encodeSEN( m_ui64CurrTransID, &pucPacketBody);
 
 		// Finish the packet
 
@@ -2900,19 +2894,19 @@ RCODE F_Rfl::logBlockChainFree(
 
 	// Output the maintenance document ID
 
-	flmEncodeSEN( ui64MaintDocID, &pucPacketBody);
+	f_encodeSEN( ui64MaintDocID, &pucPacketBody);
 
 	// Output the starting block address
 
-	flmEncodeSEN( uiStartBlkAddr, &pucPacketBody);
+	f_encodeSEN( uiStartBlkAddr, &pucPacketBody);
 
 	// Output the ending block address
 
-	flmEncodeSEN( uiEndBlkAddr, &pucPacketBody);
+	f_encodeSEN( uiEndBlkAddr, &pucPacketBody);
 
 	// Output the block count
 
-	flmEncodeSEN( uiCount, &pucPacketBody);
+	f_encodeSEN( uiCount, &pucPacketBody);
 
 	// Finish the packet
 
@@ -2947,22 +2941,22 @@ RCODE F_Rfl::recovBlockChainFree(
 	FLMUINT				uiBlocksFreed;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64MaintDocNum)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64MaintDocNum)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiStartBlkAddr)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiStartBlkAddr)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiEndBlkAddr)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiEndBlkAddr)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCount)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCount)))
 	{
 		goto Exit;
 	}
@@ -3060,7 +3054,7 @@ RCODE F_Rfl::logIndexSuspendOrResume(
 	// Output the index number.
 
 	flmAssert( uiIndexNum <= FLM_MAX_UINT16);
-	flmEncodeSEN( uiIndexNum, &pucPacketBody);
+	f_encodeSEN( uiIndexNum, &pucPacketBody);
 
 	// Finish the packet
 
@@ -3091,7 +3085,7 @@ RCODE F_Rfl::recovIndexSuspendResume(
 	FLMUINT				uiIndexNum;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiIndexNum)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiIndexNum)))
 	{
 		goto Exit;
 	}
@@ -3199,11 +3193,11 @@ RCODE F_Rfl::logReduce(
 
 	// Output the transaction ID.
 
-	flmEncodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
+	f_encodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
 
 	// Output the count
 
-	flmEncodeSEN( uiCount, &pucPacketBody);
+	f_encodeSEN( uiCount, &pucPacketBody);
 
 	// Finish the packet
 
@@ -3238,7 +3232,7 @@ RCODE F_Rfl::recovReduce(
 	FLMUINT				uiCount;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCount)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCount)))
 	{
 		goto Exit;
 	}
@@ -3335,15 +3329,15 @@ RCODE F_Rfl::logUpgrade(
 
 	// Output the transaction ID
 
-	flmEncodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
+	f_encodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
 
 	// Output the old database version
 
-	flmEncodeSEN( uiOldVersion, &pucPacketBody);
+	f_encodeSEN( uiOldVersion, &pucPacketBody);
 
 	// Output the new database version
 
-	flmEncodeSEN( XFLM_CURRENT_VERSION_NUM, &pucPacketBody);
+	f_encodeSEN( XFLM_CURRENT_VERSION_NUM, &pucPacketBody);
 
 	// Finish the packet
 
@@ -3497,11 +3491,11 @@ RCODE F_Rfl::logEncryptionKey(
 
 	// Output the transaction ID
 
-	flmEncodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
+	f_encodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
 
 	// Store the length of the key
 	
-	flmEncodeSEN( ui32KeyLen, &pucPacketBody);
+	f_encodeSEN( ui32KeyLen, &pucPacketBody);
 	
 	// If we were built without encryption, the key length will be zero,
 	// so no need to store the key.
@@ -3546,7 +3540,7 @@ RCODE F_Rfl::recovEncryptionKey(
 	XFLM_DB_HDR *		pUncommittedLogHdr = &m_pDatabase->m_uncommittedDbHdr;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiDBKeyLen)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiDBKeyLen)))
 	{
 		goto Exit;
 	}
@@ -3608,7 +3602,7 @@ RCODE F_Rfl::recovEncryptionKey(
 			goto Exit;
 		}
 
-		f_memcpy( &pUncommittedLogHdr->DbKey, pucPacketBody, uiDBKeyLen);
+		f_memcpy( pUncommittedLogHdr->DbKey, pucPacketBody, uiDBKeyLen);
 		pUncommittedLogHdr->ui32DbKeyLen = (FLMUINT32)uiDBKeyLen;
 
 		pDb->m_bHadUpdOper = TRUE;
@@ -3698,15 +3692,15 @@ RCODE F_Rfl::logEncDefKey(
 
 	// Output the encryption definition ID
 
-	flmEncodeSEN( uiEncDefId, &pucPacketBody);
+	f_encodeSEN( uiEncDefId, &pucPacketBody);
 	
 	// Output the key size (number of bits)
 	
-	flmEncodeSEN( uiKeySize, &pucPacketBody);
+	f_encodeSEN( uiKeySize, &pucPacketBody);
 
 	// Output the key value length
 
-	flmEncodeSEN( uiKeyValueLen, &pucPacketBody);
+	f_encodeSEN( uiKeyValueLen, &pucPacketBody);
 
 	// Output the key
 
@@ -3746,17 +3740,17 @@ RCODE F_Rfl::recovEncDefKey(
 	FLMUINT				uiKeyValueLen;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64RootId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64RootId)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiKeySize)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiKeySize)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiKeyValueLen)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiKeyValueLen)))
 	{
 		goto Exit;
 	}
@@ -3892,7 +3886,7 @@ RCODE F_Rfl::logRollOverDbKey(
 
 	// Output the transaction ID
 
-	flmEncodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
+	f_encodeSEN( pDb->m_ui64CurrTransID, &pucPacketBody);
 
 	// Finish the packet
 
@@ -4009,11 +4003,11 @@ RCODE F_Rfl::logDocumentDone(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the document ID
 
-	flmEncodeSEN( ui64RootId, &pucPacketBody);
+	f_encodeSEN( ui64RootId, &pucPacketBody);
 
 	// Finish the packet
 
@@ -4045,12 +4039,12 @@ RCODE F_Rfl::recovDocumentDone(
 	FLMUINT64			ui64RootId;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64RootId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64RootId)))
 	{
 		goto Exit;
 	}
@@ -4139,11 +4133,11 @@ RCODE F_Rfl::logNodeDelete(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Finish the packet
 
@@ -4176,12 +4170,12 @@ RCODE F_Rfl::recovNodeDelete(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
@@ -4287,15 +4281,15 @@ RCODE F_Rfl::logAttributeDelete(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the element ID
 
-	flmEncodeSEN( ui64ElementId, &pucPacketBody);
+	f_encodeSEN( ui64ElementId, &pucPacketBody);
 
 	// Output the attribute name
 
-	flmEncodeSEN( uiAttrName, &pucPacketBody);
+	f_encodeSEN( uiAttrName, &pucPacketBody);
 	
 	// Finish the packet
 
@@ -4329,17 +4323,17 @@ RCODE F_Rfl::recovAttributeDelete(
 	F_DOMNode *			pElementNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64ElementId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64ElementId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiAttrName)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiAttrName)))
 	{
 		goto Exit;
 	}
@@ -4445,15 +4439,15 @@ RCODE F_Rfl::logNodeChildrenDelete(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Output the name ID
 
-	flmEncodeSEN( uiNameId, &pucPacketBody);
+	f_encodeSEN( uiNameId, &pucPacketBody);
 	
 	// Finish the packet
 
@@ -4487,17 +4481,17 @@ RCODE F_Rfl::recovNodeChildrenDelete(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiNameId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiNameId)))
 	{
 		goto Exit;
 	}
@@ -4607,19 +4601,19 @@ RCODE F_Rfl::logNodeCreate(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the reference node ID
 
-	flmEncodeSEN( ui64RefNodeId, &pucPacketBody);
+	f_encodeSEN( ui64RefNodeId, &pucPacketBody);
 	
 	// Output the name ID 
 
-	flmEncodeSEN( uiNameId, &pucPacketBody);
+	f_encodeSEN( uiNameId, &pucPacketBody);
 	
 	// Output the node ID
 	
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Output the node type
 	
@@ -4668,22 +4662,22 @@ RCODE F_Rfl::recovNodeCreate(
 	IF_DOMNode *		pRefNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64RefNodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64RefNodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiNameId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiNameId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, 
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, 
 		pucEnd, &ui64ExpectedNodeId)))
 	{
 		goto Exit;
@@ -4816,19 +4810,19 @@ RCODE F_Rfl::logAttributeCreate(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the element node ID
 
-	flmEncodeSEN( ui64ElementNodeId, &pucPacketBody);
+	f_encodeSEN( ui64ElementNodeId, &pucPacketBody);
 	
 	// Output the name ID 
 
-	flmEncodeSEN( uiNameId, &pucPacketBody);
+	f_encodeSEN( uiNameId, &pucPacketBody);
 	
 	// Output the next attribute's name ID
 	
-	flmEncodeSEN( uiNextAttrNameId, &pucPacketBody);
+	f_encodeSEN( uiNextAttrNameId, &pucPacketBody);
 
 	// Finish the packet
 
@@ -4864,22 +4858,22 @@ RCODE F_Rfl::recovAttributeCreate(
 	IF_DOMNode *		pElementNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64ElementId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64ElementId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiAttrNameId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiAttrNameId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiNextAttrNameId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiNextAttrNameId)))
 	{
 		goto Exit;
 	}
@@ -4986,19 +4980,19 @@ RCODE F_Rfl::logInsertBefore(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the parent ID
 
-	flmEncodeSEN( ui64Parent, &pucPacketBody);
+	f_encodeSEN( ui64Parent, &pucPacketBody);
 
 	// Output the child ID
 
-	flmEncodeSEN( ui64Child, &pucPacketBody);
+	f_encodeSEN( ui64Child, &pucPacketBody);
 	
 	// Output the ref child ID
 
-	flmEncodeSEN( ui64RefChild, &pucPacketBody);
+	f_encodeSEN( ui64RefChild, &pucPacketBody);
 	
 	// Finish the packet
 
@@ -5035,22 +5029,22 @@ RCODE F_Rfl::recovInsertBefore(
 	F_DOMNode *			pRefChild = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64Parent)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64Parent)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NewChild)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NewChild)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64RefChild)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64RefChild)))
 	{
 		goto Exit;
 	}
@@ -5198,17 +5192,17 @@ RCODE F_Rfl::logEncryptedNodeUpdate(
 
 	// Output the collection number
 
-	flmEncodeSEN( pCachedNode->getCollection(), &pucPacketBody);
+	f_encodeSEN( pCachedNode->getCollection(), &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( pCachedNode->getNodeId(), &pucPacketBody);
+	f_encodeSEN( pCachedNode->getNodeId(), &pucPacketBody);
 	
 	// Output the stream length
 
 	uiDataLength = (FLMUINT)pIStream->remainingSize();
 	flmAssert( uiDataLength);	
-	flmEncodeSEN( uiDataLength, &pucPacketBody);
+	f_encodeSEN( uiDataLength, &pucPacketBody);
 
 	// Finish the packet
 
@@ -5266,17 +5260,17 @@ RCODE F_Rfl::recovEncryptedNodeUpdate(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiDataLen)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiDataLen)))
 	{
 		goto Exit;
 	}
@@ -5530,7 +5524,7 @@ RCODE F_Rfl::logNodeSetValue(
 			goto Exit;
 		}
 
-		uiSENLen = flmGetSENLength( ucSEN);
+		uiSENLen = f_getSENLength( ucSEN);
 		if( uiSENLen > 1)
 		{
 			if( RC_BAD( rc = pIStream->read( NULL, uiSENLen - 1, NULL)))
@@ -5571,19 +5565,19 @@ RCODE F_Rfl::logNodeSetValue(
 
 	// Output the collection number
 
-	flmEncodeSEN( pCachedNode->getCollection(), &pucPacketBody);
+	f_encodeSEN( pCachedNode->getCollection(), &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( pCachedNode->getNodeId(), &pucPacketBody);
+	f_encodeSEN( pCachedNode->getNodeId(), &pucPacketBody);
 	
 	// Output the data length
 
-	flmEncodeSEN( uiDataLength, &pucPacketBody);
+	f_encodeSEN( uiDataLength, &pucPacketBody);
 	
 	// Output the data packet flag
 	
-	flmEncodeSEN( bUseDataPackets ? 1 : 0, &pucPacketBody);
+	f_encodeSEN( bUseDataPackets ? 1 : 0, &pucPacketBody);
 	
 	// Output the data if we aren't using data packets
 	
@@ -5655,22 +5649,22 @@ RCODE F_Rfl::recovNodeSetValue(
 	FLMBOOL				bUseDataOnlyBlocks;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiDataLen)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiDataLen)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiHaveDataPackets)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiHaveDataPackets)))
 	{
 		goto Exit;
 	}
@@ -5899,19 +5893,19 @@ RCODE F_Rfl::logNodeFlagsUpdate(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Output the attribute name ID
 
-	flmEncodeSEN( uiAttrNameId, &pucPacketBody);
+	f_encodeSEN( uiAttrNameId, &pucPacketBody);
 
 	// Output the flags
 
-	flmEncodeSEN( uiFlags, &pucPacketBody);
+	f_encodeSEN( uiFlags, &pucPacketBody);
 	
 	// Output the "add" flag
 	
@@ -5952,22 +5946,22 @@ RCODE F_Rfl::recovNodeFlagsUpdate(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiAttrNameId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiAttrNameId)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiFlags)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiFlags)))
 	{
 		goto Exit;
 	}
@@ -6092,19 +6086,19 @@ RCODE F_Rfl::logNodeSetPrefixId(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Output the attribute name (if any)
 
-	flmEncodeSEN( uiAttrName, &pucPacketBody);
+	f_encodeSEN( uiAttrName, &pucPacketBody);
 
 	// Output the prefix ID
 
-	flmEncodeSEN( uiPrefixId, &pucPacketBody);
+	f_encodeSEN( uiPrefixId, &pucPacketBody);
 	
 	// Finish the packet
 
@@ -6139,22 +6133,22 @@ RCODE F_Rfl::recovNodeSetPrefixId(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiAttrName)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiAttrName)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiPrefix)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiPrefix)))
 	{
 		goto Exit;
 	}
@@ -6272,15 +6266,15 @@ RCODE F_Rfl::logNodeSetMetaValue(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Output the meta value
 
-	flmEncodeSEN( ui64MetaValue, &pucPacketBody);
+	f_encodeSEN( ui64MetaValue, &pucPacketBody);
 	
 	// Finish the packet
 
@@ -6314,17 +6308,17 @@ RCODE F_Rfl::recovNodeSetMetaValue(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64MetaValue)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64MetaValue)))
 	{
 		goto Exit;
 	}
@@ -6430,11 +6424,11 @@ RCODE F_Rfl::logSetNextNodeId(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the next node ID
 
-	flmEncodeSEN( ui64NextNodeId, &pucPacketBody);
+	f_encodeSEN( ui64NextNodeId, &pucPacketBody);
 
 	// Finish the packet
 
@@ -6466,12 +6460,12 @@ RCODE F_Rfl::recovSetNextNodeId(
 	FLMUINT64			ui64NextNodeId;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NextNodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NextNodeId)))
 	{
 		goto Exit;
 	}
@@ -6562,15 +6556,15 @@ RCODE F_Rfl::logNodeSetNumberValue(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 	
 	// Output the number
 	
-	flmEncodeSEN( ui64Value, &pucPacketBody);
+	f_encodeSEN( ui64Value, &pucPacketBody);
 	
 	// Output the sign flag
 	
@@ -6610,17 +6604,17 @@ RCODE F_Rfl::recovNodeSetNumberValue(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64Value)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64Value)))
 	{
 		goto Exit;
 	}
@@ -6757,36 +6751,36 @@ RCODE F_Rfl::logAttrSetValue(
 
 	// Output the collection number
 
-	flmEncodeSEN( pCachedNode->getCollection(), &pucPacketBody);
+	f_encodeSEN( pCachedNode->getCollection(), &pucPacketBody);
 
 	// Output the element node ID
 
-	flmEncodeSEN( pCachedNode->getNodeId(), &pucPacketBody);
+	f_encodeSEN( pCachedNode->getNodeId(), &pucPacketBody);
 	
 	// Output the name ID
 
-	flmEncodeSEN( uiAttrName, &pucPacketBody);
+	f_encodeSEN( uiAttrName, &pucPacketBody);
 
 	// Output the encryption definition ID
 
-	flmEncodeSEN( pAttrItem->m_uiEncDefId, &pucPacketBody);
+	f_encodeSEN( pAttrItem->m_uiEncDefId, &pucPacketBody);
 	
 	// Output the initialization vector length and the
 	// decrypted data length
 	
 	if( pAttrItem->m_uiEncDefId)
 	{
-		flmEncodeSEN( pAttrItem->m_uiIVLen, &pucPacketBody);
-		flmEncodeSEN( pAttrItem->m_uiDecryptedDataLen, &pucPacketBody);
+		f_encodeSEN( pAttrItem->m_uiIVLen, &pucPacketBody);
+		f_encodeSEN( pAttrItem->m_uiDecryptedDataLen, &pucPacketBody);
 	}
 	
 	// Output the payload length
 	
-	flmEncodeSEN( uiPayloadLen, &pucPacketBody);
+	f_encodeSEN( uiPayloadLen, &pucPacketBody);
 	
 	// Output the data packet flag
 	
-	flmEncodeSEN( bUseDataPackets ? 1 : 0, &pucPacketBody);
+	f_encodeSEN( bUseDataPackets ? 1 : 0, &pucPacketBody);
 	
 	// Output the data if we aren't using data packets
 	
@@ -6831,68 +6825,68 @@ Exit:
 Desc:
 *********************************************************************/
 RCODE F_Rfl::recovAttrSetValue(
-	F_Db *				pDb,
-	const FLMBYTE *	pucPacketBody,
-	FLMUINT				uiPacketBodyLen,
-	eRestoreAction *	peAction)
+	F_Db *					pDb,
+	const FLMBYTE *		pucPacketBody,
+	FLMUINT					uiPacketBodyLen,
+	eRestoreAction *		peAction)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiCollection;
-	FLMUINT				uiAttrNameId;
-	FLMUINT				uiEncDefId;
-	FLMUINT				uiPayloadLen;
-	FLMUINT				uiDecryptedDataLen = 0;
-	FLMUINT				uiIVLen = 0;
-	FLMUINT				uiHaveDataPackets;
-	FLMUINT				uiTmp;
-	FLMUINT64			ui64ElementId;
-	FLMBYTE *			pucData = NULL;
-	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
-	FLMBYTE				ucIV[ 16];
-	F_DOMNode *			pElementNode = NULL;
-	F_AttrElmInfo		defInfo;
-	F_BufferIStream	bufferIStream;
+	RCODE						rc = NE_XFLM_OK;
+	FLMUINT					uiCollection;
+	FLMUINT					uiAttrNameId;
+	FLMUINT					uiEncDefId;
+	FLMUINT					uiPayloadLen;
+	FLMUINT					uiDecryptedDataLen = 0;
+	FLMUINT					uiIVLen = 0;
+	FLMUINT					uiHaveDataPackets;
+	FLMUINT					uiTmp;
+	FLMUINT64				ui64ElementId;
+	FLMBYTE *				pucData = NULL;
+	const FLMBYTE *		pucEnd = pucPacketBody + uiPacketBodyLen;
+	FLMBYTE					ucIV[ 16];
+	F_DOMNode *				pElementNode = NULL;
+	F_AttrElmInfo			defInfo;
+	IF_BufferIStream *	pBufferIStream = NULL;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64ElementId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64ElementId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiAttrNameId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiAttrNameId)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiEncDefId)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiEncDefId)))
 	{
 		goto Exit;
 	}
 	
 	if( uiEncDefId)
 	{
-		if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiIVLen)))
+		if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiIVLen)))
 		{
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, 
+		if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, 
 			&uiDecryptedDataLen)))
 		{
 			goto Exit;
 		}
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiPayloadLen)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiPayloadLen)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiHaveDataPackets)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiHaveDataPackets)))
 	{
 		goto Exit;
 	}
@@ -6945,9 +6939,15 @@ RCODE F_Rfl::recovAttrSetValue(
 		goto Exit;
 	}
 
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+	{
+		goto Exit;
+	}
+		
 	if( !uiHaveDataPackets)
 	{
-		if( RC_BAD( rc = bufferIStream.open( pucPacketBody, uiPayloadLen)))
+		if( RC_BAD( rc = pBufferIStream->open( 
+			(const char *)pucPacketBody, uiPayloadLen)))
 		{
 			goto Exit;
 		}
@@ -6959,7 +6959,8 @@ RCODE F_Rfl::recovAttrSetValue(
 		FLMUINT				uiDataPacketBodyLen;
 		const FLMBYTE *	pucDataPacketBody;
 
-		if( RC_BAD( rc = bufferIStream.open( NULL, uiPayloadLen, &pucData)))
+		if( RC_BAD( rc = pBufferIStream->open( NULL, uiPayloadLen, 
+			(char **)&pucData)))
 		{
 			goto Exit;
 		}
@@ -6998,7 +6999,7 @@ RCODE F_Rfl::recovAttrSetValue(
 	
 	if( uiEncDefId)
 	{
-		if( RC_BAD( rc = bufferIStream.read( ucIV, uiIVLen, NULL)))
+		if( RC_BAD( rc = pBufferIStream->read( ucIV, uiIVLen, NULL)))
 		{
 			goto Exit;
 		}
@@ -7006,28 +7007,28 @@ RCODE F_Rfl::recovAttrSetValue(
 		flmAssert( pucData);
 		
 		if( RC_BAD( rc = pDb->decryptData(
-			uiEncDefId, ucIV, pucData, (FLMUINT)bufferIStream.remainingSize(), 
-			pucData, (FLMUINT)bufferIStream.remainingSize())))
+			uiEncDefId, ucIV, pucData, (FLMUINT)pBufferIStream->remainingSize(), 
+			pucData, (FLMUINT)pBufferIStream->remainingSize())))
 		{
 			goto Exit;
 		}
 		
-		bufferIStream.truncate( 
-			(FLMUINT)(bufferIStream.getCurrPosition() + uiDecryptedDataLen));
+		pBufferIStream->truncate( 
+			(FLMUINT)(pBufferIStream->getCurrPosition() + uiDecryptedDataLen));
 	}
 
 	switch( defInfo.getDataType())
 	{
 		case XFLM_TEXT_TYPE:
 		{
-			FLMUINT				uiTextLength = (FLMUINT)bufferIStream.remainingSize();
+			FLMUINT				uiTextLength = (FLMUINT)pBufferIStream->remainingSize();
 			const FLMBYTE *	pucTmp;
 			
-			pucTmp = bufferIStream.getBufferAtCurrentOffset();
+			pucTmp = pBufferIStream->getBufferAtCurrentOffset();
 
 			// Skip the leading SEN
 
-			uiTmp = flmGetSENLength( pucTmp[ 0]);
+			uiTmp = f_getSENLength( pucTmp[ 0]);
 
 			if( uiTmp > uiTextLength)
 			{
@@ -7050,8 +7051,8 @@ RCODE F_Rfl::recovAttrSetValue(
 		case XFLM_BINARY_TYPE:
 		{
 			if( RC_BAD( rc = pElementNode->setAttributeValueBinary(
-				pDb, uiAttrNameId, bufferIStream.getBufferAtCurrentOffset(),
-				(FLMUINT)bufferIStream.remainingSize())))
+				pDb, uiAttrNameId, pBufferIStream->getBufferAtCurrentOffset(),
+				(FLMUINT)pBufferIStream->remainingSize())))
 			{
 				goto Exit;
 			}
@@ -7064,7 +7065,7 @@ RCODE F_Rfl::recovAttrSetValue(
 			FLMUINT64		ui64Value;
 			FLMBOOL			bNeg;
 			
-			if( RC_BAD( rc = flmReadStorageAsNumber( &bufferIStream, 
+			if( RC_BAD( rc = flmReadStorageAsNumber( pBufferIStream, 
 				XFLM_NUMBER_TYPE, &ui64Value, &bNeg)))
 			{
 				goto Exit;
@@ -7098,6 +7099,11 @@ RCODE F_Rfl::recovAttrSetValue(
 	}
 	
 Exit:
+
+	if( pBufferIStream)
+	{
+		pBufferIStream->Release();
+	}
 
 	if( pElementNode)
 	{
@@ -7162,15 +7168,15 @@ RCODE F_Rfl::logNodeClearValue(
 
 	// Output the collection number
 
-	flmEncodeSEN( uiCollection, &pucPacketBody);
+	f_encodeSEN( uiCollection, &pucPacketBody);
 
 	// Output the node ID
 
-	flmEncodeSEN( ui64NodeId, &pucPacketBody);
+	f_encodeSEN( ui64NodeId, &pucPacketBody);
 
 	// Output the attribute name (if any)
 
-	flmEncodeSEN( uiAttrName, &pucPacketBody);
+	f_encodeSEN( uiAttrName, &pucPacketBody);
 
 	// Finish the packet
 
@@ -7204,17 +7210,17 @@ RCODE F_Rfl::recovNodeClearValue(
 	F_DOMNode *			pNode = NULL;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiCollection)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
+	if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64NodeId)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = flmDecodeSEN( &pucPacketBody, pucEnd, &uiAttrName)))
+	if( RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiAttrName)))
 	{
 		goto Exit;
 	}
@@ -7290,7 +7296,7 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE XFLMAPI F_RflOStream::write(
+RCODE FLMAPI F_RflOStream::write(
 	const void *	pvBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -7582,7 +7588,7 @@ RCODE F_Rfl::readPacket(
 			&(m_pCurrentBuf->pIOBuffer->getBuffer()[ 
 				m_pCurrentBuf->uiRflBufBytes]), &uiBytesRead)))
 		{
-			if( rc == NE_XFLM_IO_END_OF_FILE)
+			if( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				rc = NE_XFLM_OK;
 			}
@@ -7667,11 +7673,11 @@ RCODE F_Rfl::readPacket(
 
 		// Read to get the entire packet.
 
-		if( RC_BAD( rc = m_pFileHdl->SectorRead( m_pCurrentBuf->uiRflFileOffset,
+		if( RC_BAD( rc = m_pFileHdl->sectorRead( m_pCurrentBuf->uiRflFileOffset,
 									uiReadLen, m_pCurrentBuf->pIOBuffer->getBuffer(),
 									&uiBytesRead)))
 		{
-			if( rc == NE_XFLM_IO_END_OF_FILE)
+			if( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				rc = NE_XFLM_OK;
 			}
@@ -7739,7 +7745,7 @@ Get_Next_File:
 
 				if( m_pCurrentBuf->uiCurrFileNum == m_uiLastRecoverFileNum)
 				{
-					rc = RC_SET( NE_XFLM_END);
+					rc = RC_SET( NE_XFLM_RFL_END);
 					goto Exit;
 				}
 				else if( (m_pCurrentBuf->uiCurrFileNum + 1 ) ==
@@ -7753,7 +7759,7 @@ Get_Next_File:
 					// fully at the time of the server crash.
 
 					m_pCurrentBuf->uiCurrFileNum = m_uiLastRecoverFileNum;
-					rc = RC_SET( NE_XFLM_END);
+					rc = RC_SET( NE_XFLM_RFL_END);
 					goto Exit;
 				}
 
@@ -7762,9 +7768,9 @@ Get_Next_File:
 				if( RC_BAD( rc = openFile( pDb->m_hWaitSem,
 					m_pCurrentBuf->uiCurrFileNum + 1, m_ucNextSerialNum)))
 				{
-					if( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+					if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 					{
-						rc = RC_SET( NE_XFLM_END);
+						rc = RC_SET( NE_XFLM_RFL_END);
 					}
 					
 					goto Exit;
@@ -7803,9 +7809,9 @@ Get_Next_File:
 				if( RC_BAD( rc = m_pRestore->openRflFile(
 												m_pCurrentBuf->uiCurrFileNum + 1)))
 				{
-					if( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+					if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 					{
-						rc = RC_SET( NE_XFLM_END);
+						rc = RC_SET( NE_XFLM_RFL_END);
 					}
 					
 					goto Exit;
@@ -7903,7 +7909,7 @@ Get_Next_File:
 			// point, we had better not be doing a restore.
 
 			flmAssert( m_pRestore == NULL && !bForceNextFile);
-			rc = RC_SET( NE_XFLM_END);
+			rc = RC_SET( NE_XFLM_RFL_END);
 			goto Exit;
 		}
 	}
@@ -7973,7 +7979,7 @@ Get_Next_File:
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, 
+		if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, 
 			pucPacketBodyEnd, &m_ui64CurrTransID)))
 		{
 			goto Exit;
@@ -8006,7 +8012,7 @@ Get_Next_File:
 		{
 			FLMUINT64		ui64Tmp;
 
-			if( RC_BAD( rc = flmDecodeSEN64( &pucPacketBody, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucPacketBody, 
 				pucPacketBodyEnd, &ui64Tmp)))
 			{
 				goto Exit;
@@ -8193,7 +8199,7 @@ Retry_Open:
 		flmAssert( uiStartFileNum);
 		if( RC_BAD( rc = m_pRestore->openRflFile( uiStartFileNum)))
 		{
-			if( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+			if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
 				// Need to set m_pCurrentBuf->uiCurrFileNum in case the first
 				// call to openRflFile fails.  This will cause the code at the
@@ -8402,7 +8408,7 @@ Retry_Open:
 		
 		if( RC_BAD( rc))
 		{
-			if( rc == NE_XFLM_END)
+			if( rc == NE_XFLM_RFL_END)
 			{
 				if( !m_pRestore)
 				{
@@ -9129,7 +9135,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the name of an RFL file given its number
 ****************************************************************************/
-void XFLMAPI F_Db::getRflFileName(
+void FLMAPI F_Db::getRflFileName(
 	FLMUINT		uiFileNum,
 	FLMBOOL		bBaseOnly,
 	char *		pszFileName,

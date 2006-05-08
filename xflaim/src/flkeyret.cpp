@@ -46,7 +46,7 @@ RCODE	F_Db::keyRetrieve(
 	LFILE *			pLFile;
 	FLMBYTE *		pucSearchKey = NULL;
 	FLMBYTE *		pucFoundKey = NULL;
-	void *			pvMark = m_TempPool.poolMark();
+	void *			pvMark = m_pTempPool->poolMark();
 	FLMUINT			uiSearchKeyLen = 0;
 	FLMUINT			uiFoundKeyLen;
 	FLMUINT			uiOriginalFlags;
@@ -91,14 +91,14 @@ RCODE	F_Db::keyRetrieve(
 
 	if (pSearchKey)
 	{
-		if (RC_BAD( rc = m_TempPool.poolAlloc( XFLM_MAX_KEY_SIZE,
+		if (RC_BAD( rc = m_pTempPool->poolAlloc( XFLM_MAX_KEY_SIZE,
 												(void **)&pucSearchKey)))
 		{
 			goto Exit;
 		}
 	}
 
-	if (RC_BAD( rc = m_TempPool.poolAlloc( XFLM_MAX_KEY_SIZE, (void **)&pucFoundKey)))
+	if (RC_BAD( rc = m_pTempPool->poolAlloc( XFLM_MAX_KEY_SIZE, (void **)&pucFoundKey)))
 	{
 		goto Exit;
 	}
@@ -288,7 +288,7 @@ RCODE	F_Db::keyRetrieve(
 			else
 			{
 				uiDataBufSize = uiDataLen;
-				if (RC_BAD( rc = m_TempPool.poolAlloc( uiDataBufSize,
+				if (RC_BAD( rc = m_pTempPool->poolAlloc( uiDataBufSize,
 											(void **)&pucData)))
 				{
 					goto Exit;
@@ -315,7 +315,7 @@ RCODE	F_Db::keyRetrieve(
 
 Exit:
 
-	m_TempPool.poolReset( pvMark);
+	m_pTempPool->poolReset( pvMark);
 
 	if (pbtree)
 	{

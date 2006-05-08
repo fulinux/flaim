@@ -67,10 +67,10 @@ RCODE F_Db::readRollbackLog(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if (RC_BAD( rc = m_pSFileHdl->ReadBlock( uiFilePos,
+	if (RC_BAD( rc = m_pSFileHdl->readBlock( uiFilePos,
 			uiBlkSize, (FLMBYTE *)pBlkHdr, &uiBytesRead)))
 	{
-		if (rc == NE_XFLM_IO_END_OF_FILE)
+		if (rc == NE_FLM_IO_END_OF_FILE)
 		{
 			rc = RC_SET( NE_XFLM_INCOMPLETE_LOG);
 		}
@@ -248,7 +248,7 @@ RCODE F_Db::processBeforeImage(
 
 	m_pSFileHdl->setMaxAutoExtendSize( m_pDatabase->m_uiMaxFileSize);
 	m_pSFileHdl->setExtendSize( m_pDatabase->m_uiFileExtendSize);
-	rc = m_pSFileHdl->WriteBlock( uiBlkAddress, uiBlkLength, pBlkHdr,
+	rc = m_pSFileHdl->writeBlock( uiBlkAddress, uiBlkLength, pBlkHdr,
 						 m_pDatabase->m_uiBlockSize, NULL, &uiBytesWritten);
 #ifdef FLM_DBG_LOG
 	flmDbgLogWrite( m_pDatabase, uiBlkAddress, 0, ui64TransID,
@@ -290,7 +290,7 @@ RCODE F_Database::writeDbHdr(
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiBytesWritten;
-	F_FileHdl *		pCFileHdl = NULL;
+	IF_FileHdl *	pCFileHdl = NULL;
 	XFLM_DB_HDR *	pTmpDbHdr;
 	F_TMSTAMP		StartTime;
 
@@ -301,7 +301,7 @@ RCODE F_Database::writeDbHdr(
 	// header is updated because the header will generally have
 	// been modified to point to the new things that were added.
 
-	if (RC_BAD( rc = pSFileHdl->Flush()))
+	if (RC_BAD( rc = pSFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -354,15 +354,14 @@ RCODE F_Database::writeDbHdr(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if( RC_BAD( rc = pSFileHdl->GetFileHdl( 0, TRUE,
-								(IF_FileHdl **)&pCFileHdl)))
+	if( RC_BAD( rc = pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pCFileHdl->SectorWrite( 0,
+	if( RC_BAD( rc = pCFileHdl->sectorWrite( 0,
 								 uiBytesWritten, pTmpDbHdr, 
-								 pCFileHdl->GetSectorSize(),
+								 pCFileHdl->getSectorSize(),
 								 NULL, &uiBytesWritten, FALSE)))
 	{
 		if (pDbStats)
@@ -380,7 +379,7 @@ RCODE F_Database::writeDbHdr(
 
 	// Finally, force the header to disk.
 
-	if (RC_BAD( rc = pCFileHdl->Flush()))
+	if (RC_BAD( rc = pCFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -427,22 +426,12 @@ RCODE F_Db::physRollback(
 	}
 
 	// Allocate a buffer to be used for reading.
-
-#ifdef FLM_WIN
-	if ((pucBlk = (FLMBYTE *)VirtualAlloc( NULL,
-		(DWORD)m_pDatabase->m_uiBlockSize,
-		MEM_COMMIT, PAGE_READWRITE)) == NULL)
-	{
-		rc = MapWinErrorToFlaim( GetLastError(), NE_XFLM_MEM);
-		goto Exit;
-	}
-#else
-	if (RC_BAD( rc = f_alloc( m_pDatabase->m_uiBlockSize,
-							&pucBlk)))
+	
+	if( RC_BAD( rc = f_allocAlignedBuffer( m_pDatabase->m_uiBlockSize,
+		(void **)&pucBlk)))
 	{
 		goto Exit;
 	}
-#endif
 
 	// Start from beginning of log and read to EOF restoring before-image
 	// blocks along the way.
@@ -461,7 +450,7 @@ RCODE F_Db::physRollback(
 
 	// Force the writes to the file.
 
-	if (RC_BAD( rc = m_pSFileHdl->Flush()))
+	if (RC_BAD( rc = m_pSFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -473,11 +462,8 @@ Exit:
 
 	if (pucBlk)
 	{
-#ifdef FLM_WIN
-		(void)VirtualFree( pucBlk, 0, MEM_RELEASE);
-#else
-		f_free( &pucBlk);
-#endif
+		f_freeAlignedBuffer( (void **)&pucBlk);
 	}
+	
 	return( rc);
 }

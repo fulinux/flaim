@@ -65,7 +65,7 @@ void flmInitDbHdr(
 
 	// If pCreateOpts is non-NULL, copy it into the file header.
 
-	f_strcpy( pDbHdr->szSignature, XFLM_DB_SIGNATURE);
+	f_strcpy( (char *)pDbHdr->szSignature, XFLM_DB_SIGNATURE);
 	pDbHdr->ui8IsLittleEndian = XFLM_NATIVE_IS_LITTLE_ENDIAN;
 
 	if (pCreateOpts)
@@ -395,10 +395,10 @@ RCODE flmReadAndVerifyHdrInfo(
 	// Read the database header.
 
 	f_memset( pDbHdr, 0, sizeof( XFLM_DB_HDR));
-	if (RC_BAD( rc = pFileHdl->Read( (FLMUINT)0, sizeof( XFLM_DB_HDR),
+	if (RC_BAD( rc = pFileHdl->read( (FLMUINT)0, sizeof( XFLM_DB_HDR),
 									pDbHdr, &uiBytesRead)))
 	{
-		if (rc != NE_XFLM_IO_END_OF_FILE)
+		if (rc != NE_FLM_IO_END_OF_FILE)
 		{
 			if (pDbStats)
 			{

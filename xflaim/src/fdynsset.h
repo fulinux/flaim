@@ -81,7 +81,7 @@ typedef enum eBlkTypes FBlkTypes;
 /*===========================================================================
 	Virtual FFixedBlk
 ===========================================================================*/
-class	FFixedBlk : public XF_RefCount, public XF_Base
+class	FFixedBlk : public F_Object
 {
 public:
 
@@ -152,7 +152,7 @@ protected:
 **		Source: fdynsset.cpp
 *****
 *****************************************************************************/
-class FDynSearchSet : public XF_RefCount, public XF_Base
+class FDynSearchSet : public F_Object
 {
 
 public:

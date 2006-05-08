@@ -191,30 +191,31 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	FLMUINT *		puiUntilKeyLen,
 	FLMBOOL *		pbCanCompareOnKey)
 {
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiFromKeyLen = 0;
-	FLMUINT		uiUntilKeyLen = 0;
-	FLMBYTE *	pucFromKeyLenPos = pucFromKey;
-	FLMBYTE *	pucUntilKeyLenPos = pucUntilKey;
-	FLMBOOL		bDataTruncated;
-	FLMBYTE *	pucFromBuf;
-	FLMUINT		uiFromBufLen;
-	FLMBYTE *	pucUntilBuf;
-	FLMUINT		uiUntilBufLen;
-	FLMBYTE		ucFromNumberBuf [FLM_MAX_NUM_BUF_SIZE];
-	FLMBYTE		ucUntilNumberBuf [FLM_MAX_NUM_BUF_SIZE];
-	FLMUINT		uiValue;
-	FLMINT		iValue;
-	FLMBOOL		bNeg;
-	FLMUINT64	ui64Value;
-	FLMINT64		i64Value;
-	FLMUINT		uiFromFlags = 0;
-	FLMUINT		uiUntilFlags = 0;
-	FQVALUE *	pFromValue;
-	FQVALUE *	pUntilValue;
-	FLMBOOL		bInclFrom;
-	FLMBOOL		bInclUntil;
-	FLMBOOL		bAscending = (pIcd->uiFlags & ICD_DESCENDING) ? FALSE: TRUE;
+	RCODE						rc = NE_XFLM_OK;
+	FLMUINT					uiFromKeyLen = 0;
+	FLMUINT					uiUntilKeyLen = 0;
+	FLMBYTE *				pucFromKeyLenPos = pucFromKey;
+	FLMBYTE *				pucUntilKeyLenPos = pucUntilKey;
+	FLMBOOL					bDataTruncated;
+	FLMBYTE *				pucFromBuf;
+	FLMUINT					uiFromBufLen;
+	FLMBYTE *				pucUntilBuf;
+	FLMUINT					uiUntilBufLen;
+	FLMBYTE					ucFromNumberBuf [FLM_MAX_NUM_BUF_SIZE];
+	FLMBYTE					ucUntilNumberBuf [FLM_MAX_NUM_BUF_SIZE];
+	FLMUINT					uiValue;
+	FLMINT					iValue;
+	FLMBOOL					bNeg;
+	FLMUINT64				ui64Value;
+	FLMINT64					i64Value;
+	FLMUINT					uiFromFlags = 0;
+	FLMUINT					uiUntilFlags = 0;
+	FQVALUE *				pFromValue;
+	FQVALUE *				pUntilValue;
+	FLMBOOL					bInclFrom;
+	FLMBOOL					bInclUntil;
+	FLMBOOL					bAscending = (pIcd->uiFlags & ICD_DESCENDING) ? FALSE: TRUE;
+	IF_BufferIStream *	pBufferIStream = NULL;
 	
 	// Leave room for the component length
 
@@ -225,14 +226,12 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 
 	if (pIcd->uiFlags & ICD_PRESENCE)
 	{
-		longToByte( (FLMUINT32)pIcd->uiDictNum, pucFromKey);
+		f_UINT32ToByte( (FLMUINT32)pIcd->uiDictNum, pucFromKey);
 		uiFromKeyLen = uiUntilKeyLen = 4;
 		f_memcpy( pucUntilKey, pucFromKey, uiUntilKeyLen);
 	}
 	else if (pIcd->uiFlags & ICD_METAPHONE)
 	{
-		F_BufferIStream	bufferIStream;
-
 		if (pPred->eOperator != XFLM_APPROX_EQ_OP ||
 			 pPred->pFromValue->eValType != XFLM_UTF8_VAL)
 		{
@@ -259,8 +258,17 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			goto Exit;
 		}
 		pucFromBuf = &ucFromNumberBuf [0];
+		
+		if( !pBufferIStream)
+		{
+			if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+			{
+				goto Exit;
+			}
+		}
 
-		if (RC_BAD( rc = bufferIStream.open( pucFromBuf, uiFromBufLen)))
+		if (RC_BAD( rc = pBufferIStream->open( 
+			(const char *)pucFromBuf, uiFromBufLen)))
 		{
 			goto Exit;
 		}
@@ -271,7 +279,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		// Pass 0 for compare rules because it is non-text
 		
 		if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
-								&bufferIStream, XFLM_NUMBER_TYPE,
+								pBufferIStream, XFLM_NUMBER_TYPE,
 								pIcd->uiFlags, 0,
 								pIcd->uiLimit, NULL, NULL, 
 								pIxd->uiLanguage, FALSE, FALSE,
@@ -279,6 +287,8 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		{
 			goto Exit;
 		}
+		
+		pBufferIStream->close();
 		
 		if (bDataTruncated)
 		{
@@ -620,9 +630,16 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		}
 		else
 		{
-			F_BufferIStream	bufferIStream;
-
-			if (RC_BAD( rc = bufferIStream.open( pucFromBuf, uiFromBufLen)))
+			if( !pBufferIStream)
+			{
+				if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+				{
+					goto Exit;
+				}
+			}
+			
+			if (RC_BAD( rc = pBufferIStream->open( 
+				(const char *)pucFromBuf, uiFromBufLen)))
 			{
 				goto Exit;
 			}
@@ -633,7 +650,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			// Pass 0 for compare rules on non-text component.
 			
 			if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
-									&bufferIStream, icdGetDataType( pIcd),
+									pBufferIStream, icdGetDataType( pIcd),
 									pIcd->uiFlags, 0,
 									pIcd->uiLimit, NULL, NULL, 
 									pIxd->uiLanguage, FALSE, FALSE,
@@ -641,6 +658,8 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			{
 				goto Exit;
 			}
+			
+			pBufferIStream->close();
 
 			if (bDataTruncated)
 			{
@@ -703,9 +722,16 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		}
 		else
 		{
-			F_BufferIStream	bufferIStream;
-
-			if (RC_BAD( rc = bufferIStream.open( pucUntilBuf, uiUntilBufLen)))
+			if( !pBufferIStream)
+			{
+				if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+				{
+					goto Exit;
+				}
+			}
+			
+			if (RC_BAD( rc = pBufferIStream->open( 
+				(const char *)pucUntilBuf, uiUntilBufLen)))
 			{
 				goto Exit;
 			}
@@ -715,7 +741,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			// Pass 0 for compare rule because it is a non-text piece.
 			
 			if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilKeyLen,
-									&bufferIStream, icdGetDataType( pIcd),
+									pBufferIStream, icdGetDataType( pIcd),
 									pIcd->uiFlags, 0,
 									pIcd->uiLimit, NULL, NULL, 
 									pIxd->uiLanguage, FALSE, FALSE,
@@ -723,6 +749,8 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			{
 				goto Exit;
 			}
+			
+			pBufferIStream->close();
 
 			if (bDataTruncated)
 			{
@@ -780,6 +808,11 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	
 Exit:
 
+	if( pBufferIStream)
+	{
+		pBufferIStream->Release();
+	}
+
 	return( rc);
 }
 
@@ -803,7 +836,7 @@ FSTATIC RCODE flmUTF8FindWildcard(
 	for( ;;)
 	{
 		pucSaveVal = pucValue;
-		if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucValue, NULL, &uzChar)))
+		if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucValue, NULL, &uzChar)))
 		{
 			goto Exit;
 		}
@@ -813,7 +846,7 @@ FSTATIC RCODE flmUTF8FindWildcard(
 			break;
 		}
 		
-		if ((uzChar = flmConvertChar( uzChar, uiCompareRules)) == 0)
+		if ((uzChar = f_convertChar( uzChar, uiCompareRules)) == 0)
 		{
 			continue;
 		}
@@ -834,7 +867,7 @@ FSTATIC RCODE flmUTF8FindWildcard(
 	
 				// Skip the escaped character
 	
-				if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucValue, NULL, &uzChar)))
+				if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucValue, NULL, &uzChar)))
 				{
 					goto Exit;
 				}
@@ -875,7 +908,7 @@ FSTATIC RCODE flmCountCharacters(
 
 	while (uiNumChars < uiMaxToCount)
 	{
-		if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucValue, pucEnd, &uzChar)))
+		if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucValue, pucEnd, &uzChar)))
 		{
 			goto Exit;
 		}
@@ -904,7 +937,7 @@ FSTATIC RCODE flmCountCharacters(
 			break;
 		}
 		
-		if ((uzChar = flmConvertChar( uzChar, uiCompareRules)) == 0)
+		if ((uzChar = f_convertChar( uzChar, uiCompareRules)) == 0)
 		{
 			continue;
 		}
@@ -951,7 +984,7 @@ FSTATIC RCODE flmCountCharacters(
 				// to count one character here.  A backslash followed by any
 				// character is only a single character.
 	
-				if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucValue, pucEnd, &uzChar)))
+				if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucValue, pucEnd, &uzChar)))
 				{
 					goto Exit;
 				}
@@ -1018,7 +1051,7 @@ FSTATIC RCODE flmSelectBestSubstr(
 	// Skip past the wildcard
 
 	pucTmp = &pucValue [uiWildcardPos];
-	if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucTmp, pucEnd, &uzDummy)))
+	if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucTmp, pucEnd, &uzDummy)))
 	{
 		goto Exit;
 	}
@@ -1048,7 +1081,7 @@ FSTATIC RCODE flmSelectBestSubstr(
 	while (uiBestNumChars < GOOD_ENOUGH_CHARS)
 	{
 		pucTmp = pucCurValue;
-		if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucTmp, pucEnd, &uzChar)))
+		if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucTmp, pucEnd, &uzChar)))
 		{
 			goto Exit;
 		}
@@ -1109,7 +1142,7 @@ FSTATIC RCODE flmSelectBestSubstr(
 			// Skip past the wildcard
 
 			pucTmp = &pucCurValue[ uiWildcardPos];
-			if (RC_BAD( rc = flmGetCharFromUTF8Buf( &pucTmp, pucEnd, &uzDummy)))
+			if (RC_BAD( rc = f_getCharFromUTF8Buf( &pucTmp, pucEnd, &uzDummy)))
 			{
 				goto Exit;
 			}
@@ -1297,40 +1330,41 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	FLMUINT *		puiUntilKeyLen,
 	FLMBOOL *		pbCanCompareOnKey)
 {
-	RCODE       		rc = NE_XFLM_OK;
-	FLMUINT				uiFromKeyLen = 0;
-	FLMUINT				uiUntilKeyLen = 0;
-	FLMBYTE *			pucFromKeyLenPos = pucFromKey;
-	FLMBYTE *			pucUntilKeyLenPos = pucUntilKey;
-	FLMUINT				uiLanguage = pIxd->uiLanguage;
-	FLMUINT				uiCollationLen = 0;
-	FLMUINT				uiCharCount;
-	FLMUINT				uiCaseLen;
-	FLMBOOL				bOriginalCharsLost = FALSE;
-	FLMBOOL				bIsDBCS = (uiLanguage >= FIRST_DBCS_LANG &&
-								  uiLanguage <= LAST_DBCS_LANG)
+	RCODE       			rc = NE_XFLM_OK;
+	FLMUINT					uiFromKeyLen = 0;
+	FLMUINT					uiUntilKeyLen = 0;
+	FLMBYTE *				pucFromKeyLenPos = pucFromKey;
+	FLMBYTE *				pucUntilKeyLenPos = pucUntilKey;
+	FLMUINT					uiLanguage = pIxd->uiLanguage;
+	FLMUINT					uiCollationLen = 0;
+	FLMUINT					uiCharCount;
+	FLMUINT					uiCaseLen;
+	FLMBOOL					bOriginalCharsLost = FALSE;
+	FLMBOOL					bIsDBCS = (uiLanguage >= FLM_FIRST_DBCS_LANG &&
+								  uiLanguage <= FLM_LAST_DBCS_LANG)
 								  ? TRUE
 								  : FALSE;
 
-	FLMBOOL				bCaseInsensitive = (FLMBOOL)((pPred->uiCompareRules &
+	FLMBOOL					bCaseInsensitive = (FLMBOOL)((pPred->uiCompareRules &
 															XFLM_COMP_CASE_INSENSITIVE)
 															? TRUE
 															: FALSE);
-	FLMBOOL				bDoFirstSubstring = (FLMBOOL)((pIcd->uiFlags & ICD_SUBSTRING)
+	FLMBOOL					bDoFirstSubstring = (FLMBOOL)((pIcd->uiFlags & ICD_SUBSTRING)
 															 ? TRUE
 															 : FALSE);
-	FLMBOOL				bDoMatchBegin = FALSE;
-	FLMBOOL				bTrailingWildcard = FALSE;
-	const FLMBYTE *	pucFromUTF8Buf = NULL;
-	FLMUINT				uiFromBufLen = 0;
-	const FLMBYTE *	pucUntilUTF8Buf = NULL;
-	FLMUINT				uiUntilBufLen = 0;
-	FLMUINT				uiWildcardPos;
-	FLMBOOL				bDataTruncated;
-	FLMUINT				uiFromFlags = 0;
-	FLMUINT				uiUntilFlags = 0;
-	FLMUINT				uiCompareRules;
-	FLMBOOL				bAscending = (pIcd->uiFlags & ICD_DESCENDING) ? FALSE: TRUE;
+	FLMBOOL					bDoMatchBegin = FALSE;
+	FLMBOOL					bTrailingWildcard = FALSE;
+	const FLMBYTE *		pucFromUTF8Buf = NULL;
+	FLMUINT					uiFromBufLen = 0;
+	const FLMBYTE *		pucUntilUTF8Buf = NULL;
+	FLMUINT					uiUntilBufLen = 0;
+	FLMUINT					uiWildcardPos;
+	FLMBOOL					bDataTruncated;
+	FLMUINT					uiFromFlags = 0;
+	FLMUINT					uiUntilFlags = 0;
+	FLMUINT					uiCompareRules;
+	FLMBOOL					bAscending = (pIcd->uiFlags & ICD_DESCENDING) ? FALSE: TRUE;
+	IF_BufferIStream *	pBufferIStream = NULL;
 
 	switch (pPred->eOperator)
 	{
@@ -1573,9 +1607,16 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	}
 	else
 	{
-		F_BufferIStream	bufferIStream;
-
-		if (RC_BAD( rc = bufferIStream.open( pucFromUTF8Buf, uiFromBufLen)))
+		if( !pBufferIStream)
+		{
+			if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+			{
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = pBufferIStream->open( 
+			(const char *)pucFromUTF8Buf, uiFromBufLen)))
 		{
 			goto Exit;
 		}
@@ -1586,7 +1627,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		uiFromKeyLen = XFLM_MAX_KEY_SIZE - 2;
 		bDataTruncated = FALSE;
 		if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
-								&bufferIStream, XFLM_TEXT_TYPE,
+								pBufferIStream, XFLM_TEXT_TYPE,
 							pIcd->uiFlags | ICD_ESC_CHAR, pIcd->uiCompareRules,
 							pIcd->uiLimit,
 							&uiCollationLen, &uiCaseLen,
@@ -1596,6 +1637,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		{
 			goto Exit;
 		}
+		
+		pBufferIStream->close();
 		
 		if (bDataTruncated)
 		{
@@ -1804,9 +1847,16 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	}
 	else if (pucFromUTF8Buf != pucUntilUTF8Buf)
 	{
-		F_BufferIStream	bufferIStream;
-
-		if (RC_BAD( rc = bufferIStream.open( pucUntilUTF8Buf, uiUntilBufLen)))
+		if( !pBufferIStream)
+		{
+			if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+			{
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = pBufferIStream->open( 
+			(const char *)pucUntilUTF8Buf, uiUntilBufLen)))
 		{
 			goto Exit;
 		}
@@ -1817,7 +1867,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		uiUntilKeyLen = XFLM_MAX_KEY_SIZE - 2;
 		bDataTruncated = FALSE;
 		if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilKeyLen,
-								&bufferIStream, XFLM_TEXT_TYPE,
+							pBufferIStream, XFLM_TEXT_TYPE,
 							pIcd->uiFlags | ICD_ESC_CHAR, pIcd->uiCompareRules,
 							pIcd->uiLimit,
 							&uiCollationLen, &uiCaseLen,
@@ -1827,6 +1877,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		{
 			goto Exit;
 		}
+		
+		pBufferIStream->close();
 		
 		if (bDataTruncated)
 		{
@@ -1895,6 +1947,11 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	}
 	
 Exit:
+
+	if( pBufferIStream)
+	{
+		pBufferIStream->close();
+	}
 	
 	return( rc);
 }
@@ -1914,8 +1971,7 @@ RCODE flmBuildFromAndUntilKeys(
 	FLMBYTE *		pucUntilKey,
 	FLMUINT *		puiUntilKeyLen,
 	FLMBOOL *		pbDoNodeMatch,
-	FLMBOOL *		pbCanCompareOnKey
-	)
+	FLMBOOL *		pbCanCompareOnKey)
 {
 	RCODE	rc = NE_XFLM_OK;
 	ICD *	pIcd = pIxd->pFirstKey;

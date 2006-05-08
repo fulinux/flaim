@@ -1072,7 +1072,7 @@ RCODE FBtreeBlk::readBlk(
 	RCODE			rc = NE_XFLM_OK;
 	FLMUINT		uiBytesRead;
 
-	if (RC_BAD( rc = pFileHdl->Read( 
+	if (RC_BAD( rc = pFileHdl->read( 
 						uiBlkAddr * DYNSSET_BLOCK_SIZE, DYNSSET_BLOCK_SIZE, 
 						m_pucBlkBuf, &uiBytesRead)))
 	{
@@ -1103,7 +1103,7 @@ RCODE FBtreeBlk::writeBlk(
 	FLMUINT		uiBytesWritten;
 	FLMUINT		uiBlkAddr = blkAddr();
 			
-	if (RC_BAD( rc = pFileHdl->Write( 
+	if (RC_BAD( rc = pFileHdl->write( 
 						uiBlkAddr * DYNSSET_BLOCK_SIZE,
 						DYNSSET_BLOCK_SIZE, 
 						m_pucBlkBuf,
@@ -1176,9 +1176,9 @@ RCODE FBtreeRoot::openFile( void)
 
 	if (!m_pFileHdl)
 	{
-		rc = gv_pFileSystem->CreateUnique( m_pszFileName,
+		rc = gv_XFlmSysData.pFileSystem->createUniqueFile( m_pszFileName,
 								FRSET_FILENAME_EXTENSION,
-								XFLM_IO_RDWR | XFLM_IO_CREATE_DIR, &m_pFileHdl);
+								FLM_IO_RDWR | FLM_IO_CREATE_DIR, &m_pFileHdl);
 	}
 	return( rc);
 }
@@ -1190,8 +1190,8 @@ void FBtreeRoot::closeFile( void)
 {
 	if (m_pFileHdl)
 	{
-		m_pFileHdl->Close();
-		gv_pFileSystem->Delete( m_pszFileName);
+		m_pFileHdl->close();
+		gv_XFlmSysData.pFileSystem->deleteFile( m_pszFileName);
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}

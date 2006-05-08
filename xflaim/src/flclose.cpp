@@ -68,6 +68,11 @@ F_Db::~F_Db()
 		f_free( &m_pKrefTbl);
 		m_uiKrefTblSize = 0;
 	}
+	
+	if( m_pKrefPool)
+	{
+		m_pKrefPool->Release();
+	}
 		
 	if( m_pucKrefKeyBuf)
 	{
@@ -108,6 +113,16 @@ F_Db::~F_Db()
 	{
 		f_semDestroy( &m_hWaitSem);
 	}
+	
+	if (m_pTmpKrefPool)
+	{
+		m_pTmpKrefPool->Release();
+	}
+	
+	if( m_pTempPool)
+	{
+		m_pTempPool->Release();
+	}
 
 	// Unlink the F_Db from the F_Database and F_Dict structures.
 	// IMPORTANT NOTE: The call to unlinkFromDatabase needs to
@@ -129,7 +144,7 @@ F_Db::~F_Db()
 /****************************************************************************
 Desc:	Wait for a specific database to close
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::waitToClose(
+RCODE FLMAPI F_DbSystem::waitToClose(
 	const char *		pszDbPath)
 {
 	RCODE					rc = NE_XFLM_OK;
@@ -145,7 +160,7 @@ RCODE XFLMAPI F_DbSystem::waitToClose(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = gv_pFileSystem->pathToStorageString( 
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString( 
 		pszDbPath, szDbPathStr1)))
 	{
 		goto Exit;

@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc : Upgrades a database to the latest FLAIM version.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::upgrade(
+RCODE FLMAPI F_Db::upgrade(
 	IF_UpgradeClient *	// pUpgradeClient
 	)
 {
@@ -220,7 +220,7 @@ Exit:
 /************************************************************************
 Desc : Enable encryption on the database.
 *************************************************************************/
-RCODE XFLMAPI F_Db::enableEncryption( void)
+RCODE FLMAPI F_Db::enableEncryption( void)
 {
 	RCODE					rc = NE_XFLM_OK;
 	F_Rfl *				pRfl = m_pDatabase->m_pRfl;
@@ -352,7 +352,7 @@ Desc : Change the database key from wrapped in the NICI server
 		 NICI server key.  If a password is specified, the key will be
 		 shrouded in it.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::wrapKey(
+RCODE FLMAPI F_Db::wrapKey(
 	const char *		pszPassword)
 {
 	RCODE					rc = NE_XFLM_OK;
@@ -554,7 +554,7 @@ Desc : Generate a new database key and re-wrap all existing keys in it
 		 NOTE:  New database key will be wrapped in NICI server key,
 		 even if the previous key was wrapped in a password.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::rollOverDbKey( void)
+RCODE FLMAPI F_Db::rollOverDbKey( void)
 {
 	RCODE					rc = NE_XFLM_OK;
 	F_Rfl *				pRfl = m_pDatabase->m_pRfl;
@@ -564,7 +564,7 @@ RCODE XFLMAPI F_Db::rollOverDbKey( void)
 	F_ENCDEF *			pEncDef;
 	F_DOMNode *			pNode = NULL;
 	F_DOMNode *			pAttrNode = NULL;
-	FLMBYTE *			pucBuf;
+	FLMBYTE *			pucBuf = NULL;
 	FLMBOOL				bLocked = FALSE;
 	FLMBOOL				bStartedTrans = FALSE;
 	FLMUINT32			ui32BufLen = 0;
@@ -612,7 +612,7 @@ RCODE XFLMAPI F_Db::rollOverDbKey( void)
 		goto Exit;
 	}
 	
-	f_memcpy( &m_pDatabase->m_uncommittedDbHdr.DbKey, 
+	f_memcpy( m_pDatabase->m_uncommittedDbHdr.DbKey, 
 		pucWrappingKey, ui32KeyLen);
 	m_pDatabase->m_uncommittedDbHdr.ui32DbKeyLen = ui32KeyLen;
 

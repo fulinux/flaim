@@ -25,10 +25,6 @@
 
 #include "flaimsys.h"
 
-// External data
-
-extern FLMBYTE 	gv_ucSENLengthArray[];
-
 // Local constants
 
 #define SEN_RESERVE_BYTES					5
@@ -56,7 +52,7 @@ FINLINE RCODE F_Db::attrIsInIndexDef(
 Desc: This class converts a text stream of Unicode or UTF8 to an ASCII
 		text stream.
 ******************************************************************************/
-class F_AsciiIStream : public IF_IStream, public XF_Base
+class F_AsciiIStream : public IF_IStream
 {
 public:
 
@@ -84,12 +80,12 @@ public:
 	{
 	}
 		
-	RCODE XFLMAPI read(
+	RCODE FLMAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE XFLMAPI close( void)
+	FINLINE RCODE FLMAPI close( void)
 	{
 		return( NE_XFLM_OK);
 	}
@@ -106,7 +102,7 @@ private:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-FLMINT XFLMAPI F_BTreeIStream::Release( void)
+FLMINT FLMAPI F_BTreeIStream::Release( void)
 {
 	FLMATOMIC	refCnt = --m_refCnt;
 	
@@ -203,7 +199,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT XFLMAPI F_DOMNode::Release( void)
+FLMINT FLMAPI F_DOMNode::Release( void)
 {
 	FLMINT	iRefCnt = --m_refCnt;
 	
@@ -945,7 +941,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getDataLength(
+RCODE FLMAPI F_DOMNode::getDataLength(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiLength)
 {
@@ -1019,7 +1015,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::insertBefore(
+RCODE FLMAPI F_DOMNode::insertBefore(
 	IF_Db *				ifpDb,
 	IF_DOMNode *		ifpNewChild,
 	IF_DOMNode *		ifpRefChild)
@@ -1873,9 +1869,9 @@ RCODE F_DOMNode::setNumber64(
 			f_i64toa( i64Value, (char *)&ucNumBuf[ 1]);
 		}
 		
-		uiValLen = f_strlen( ucNumBuf);
+		uiValLen = f_strlen( (const char *)ucNumBuf);
 		pucSen = &ucNumBuf[ 0];
-		uiSenLen = flmEncodeSEN( uiValLen, &pucSen, (FLMUINT)0);
+		uiSenLen = f_encodeSEN( uiValLen, &pucSen, (FLMUINT)0);
 		flmAssert( uiSenLen == 1);
 		uiValLen += uiSenLen + 1;
 
@@ -2301,19 +2297,11 @@ RCODE F_CachedNode::openPendingInput(
 	
 	flmAssert( m_ui64LowTransId == pDb->m_ui64CurrTransID);
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-
 	m_nodeInfo.uiDataLength = 0;
 	m_nodeInfo.uiDataType = uiNewDataType;
 	unsetFlags( FDOM_UNSIGNED_QUICK_VAL | FDOM_SIGNED_QUICK_VAL);
 	setFlags( FDOM_VALUE_ON_DISK | FDOM_FIXED_SIZE_HEADER);
 
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-	
 	flmAssert( !pDatabase->m_uiUpdByteCount);
 	flmAssert( !pDatabase->m_uiUpdCharCount);
 
@@ -2344,10 +2332,6 @@ RCODE F_CachedNode::flushPendingInput(
 	F_Database *		pDatabase = pDb->m_pDatabase;
 	FLMUINT				uiOutputLength;
 	FLMUINT				uiLeftoverLength;
-
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 
 	uiKeyLen = sizeof( ucKey);
 	if( RC_BAD( rc = flmNumber64ToStorage( m_nodeInfo.ui64NodeId, 
@@ -2553,10 +2537,6 @@ RCODE F_CachedNode::flushPendingInput(
 
 Exit:
 
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-	
 	if( RC_BAD( rc))
 	{
 		pDb->setMustAbortTrans( rc);
@@ -2568,7 +2548,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::setMetaValue(
+RCODE FLMAPI F_DOMNode::setMetaValue(
 	IF_Db *					ifpDb,
 	FLMUINT64				ui64Value)
 {
@@ -2671,7 +2651,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getMetaValue(
+RCODE FLMAPI F_DOMNode::getMetaValue(
 	IF_Db *					ifpDb,
 	FLMUINT64 *				pui64Value)
 {
@@ -2705,7 +2685,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::isDataLocalToNode(
+RCODE FLMAPI F_DOMNode::isDataLocalToNode(
 	IF_Db *					ifpDb,
 	FLMBOOL *				pbDataIsLocal)
 {
@@ -2779,7 +2759,7 @@ RCODE F_AsciiIStream::read(
 		}
 		else	// UTF8
 		{
-			if( RC_BAD( rc = flmGetCharFromUTF8Buf( 
+			if( RC_BAD( rc = f_getCharFromUTF8Buf( 
 				&m_pucCurrPtr, m_pucEnd, &uzChar)))
 			{
 				goto Exit;
@@ -2818,7 +2798,7 @@ Exit:
 Desc: This class converts a storage text stream to an ASCII
 		text stream.
 ******************************************************************************/
-class F_AsciiStorageStream : public IF_IStream, public XF_Base
+class F_AsciiStorageStream : public IF_IStream
 {
 public:
 
@@ -2832,12 +2812,12 @@ public:
 		close();
 	}
 		
-	RCODE XFLMAPI read(
+	RCODE FLMAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE XFLMAPI close( void)
+	FINLINE RCODE FLMAPI close( void)
 	{
 		if( m_pIStream)
 		{
@@ -2883,7 +2863,7 @@ RCODE F_AsciiStorageStream::open(
 		goto Exit;
 	}
 
-	if( (uiSENLen = flmGetSENLength( ucSENBuf[ 0])) > 1)
+	if( (uiSENLen = f_getSENLength( ucSENBuf[ 0])) > 1)
 	{
 		uiLen = uiSENLen - 1;
 		if( RC_BAD( rc = m_pIStream->read( 
@@ -2925,7 +2905,7 @@ RCODE F_AsciiStorageStream::read(
 
 	while( uiBytesRead < uiBytesToRead)
 	{
-		if( RC_BAD( rc = flmReadUTF8CharAsUnicode( m_pIStream, &uzChar)))
+		if( RC_BAD( rc = f_readUTF8CharAsUnicode( m_pIStream, &uzChar)))
 		{
 			if( rc == NE_XFLM_EOF_HIT)
 			{
@@ -2971,7 +2951,7 @@ Exit:
 Desc: This class converts a binary stream to an ASCII text storage
 		stream.
 ******************************************************************************/
-class F_BinaryToTextStream : public IF_IStream, public XF_Base
+class F_BinaryToTextStream : public IF_IStream
 {
 public:
 
@@ -2985,12 +2965,12 @@ public:
 		close();
 	}
 		
-	RCODE XFLMAPI read(
+	RCODE FLMAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE XFLMAPI close( void)
+	FINLINE RCODE FLMAPI close( void)
 	{
 		if( m_pEncoderStream)
 		{
@@ -3008,10 +2988,10 @@ public:
 		
 private:
 
-	FLMBYTE							m_ucSENBuf [16];
-	FLMUINT							m_uiSENLen;
-	FLMUINT							m_uiCurrOffset;
-	F_Base64EncoderIStream *	m_pEncoderStream;
+	FLMBYTE					m_ucSENBuf [16];
+	FLMUINT					m_uiSENLen;
+	FLMUINT					m_uiCurrOffset;
+	IF_IStream *			m_pEncoderStream;
 };
 
 /*****************************************************************************
@@ -3042,7 +3022,7 @@ RCODE F_BinaryToTextStream::open(
 	}
 	
 	pucSen = &m_ucSENBuf [0];
-	m_uiSENLen = flmEncodeSEN( (FLMUINT64)uiOutputLen, &pucSen, (FLMUINT)0);
+	m_uiSENLen = f_encodeSEN( (FLMUINT64)uiOutputLen, &pucSen, (FLMUINT)0);
 	m_uiCurrOffset = 0;
 	
 	// Need to include the data length, SEN length, and the terminating null
@@ -3052,13 +3032,8 @@ RCODE F_BinaryToTextStream::open(
 	
 	// Set up the encoder stream
 	
-	if( (m_pEncoderStream = f_new F_Base64EncoderIStream) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = m_pEncoderStream->open( pIStream, FALSE)))
+	if( RC_BAD( rc = FlmOpenBase64EncoderIStream( pIStream, 
+		FALSE, &m_pEncoderStream)))
 	{
 		goto Exit;
 	}
@@ -3294,23 +3269,24 @@ RCODE F_DOMNode::storeTextAsBinary(
 	FLMUINT					uiNumBytesInBuffer,
 	FLMUINT					uiEncDefId)
 {
-	RCODE							rc = NE_XFLM_OK;
-	FLMBYTE						ucBuf[ 64];
-	F_AsciiIStream				asciiStream( (FLMBYTE *)pvValue, 
+	RCODE						rc = NE_XFLM_OK;
+	FLMBYTE					ucBuf[ 64];
+	F_AsciiIStream			asciiStream( (FLMBYTE *)pvValue, 
 														uiNumBytesInBuffer, XFLM_UTF8_TEXT);
-	F_Base64DecoderIStream	decoderStream;
-	FLMBYTE						ucDynaBuf[ 64];
-	F_DynaBuf					dynaBuf( ucDynaBuf, sizeof( ucDynaBuf));
-	FLMUINT						uiBytesRead;
+	IF_IStream *			pDecoderStream = NULL;
+	FLMBYTE					ucDynaBuf[ 64];
+	F_DynaBuf				dynaBuf( ucDynaBuf, sizeof( ucDynaBuf));
+	FLMUINT					uiBytesRead;
 	
-	if( RC_BAD( rc = decoderStream.open( &asciiStream)))
+	if( RC_BAD( rc = FlmOpenBase64DecoderIStream( 
+		&asciiStream, &pDecoderStream)))
 	{
 		goto Exit;
 	}
-		
+	
 	for( ;;)
 	{
-		if( RC_BAD( rc = decoderStream.read( ucBuf, sizeof( ucBuf), &uiBytesRead)))
+		if( RC_BAD( rc = pDecoderStream->read( ucBuf, sizeof( ucBuf), &uiBytesRead)))
 		{
 			if( rc != NE_XFLM_EOF_HIT)
 			{
@@ -3336,6 +3312,11 @@ RCODE F_DOMNode::storeTextAsBinary(
 	
 Exit:
 
+	if( pDecoderStream)
+	{
+		pDecoderStream->Release();
+	}
+
 	return( rc);
 }
 
@@ -3350,25 +3331,27 @@ RCODE F_DOMNode::storeBinaryAsText(
 {
 	RCODE							rc = NE_XFLM_OK;
 	FLMBYTE						ucBuf[ 64];
-	F_BufferIStream			bufferStream;
-	F_Base64EncoderIStream	encoderStream;
+	IF_PosIStream *			pIStream = NULL;
+	IF_IStream * 				pEncoderStream = NULL;
 	FLMBYTE						ucDynaBuf[ 64];
 	F_DynaBuf					dynaBuf( ucDynaBuf, sizeof( ucDynaBuf));
 	FLMUINT						uiBytesRead;
 	
-	if( RC_BAD( rc = bufferStream.open( (FLMBYTE *)pvValue, uiLength)))
+	if( RC_BAD( rc = FlmOpenBufferIStream( 
+		(const char *)pvValue, uiLength, &pIStream)))
 	{
 		goto Exit;
 	}
-
-	if( RC_BAD( rc = encoderStream.open( &bufferStream, FALSE)))
+	
+	if( RC_BAD( rc = FlmOpenBase64EncoderIStream( pIStream, 
+		FALSE, &pEncoderStream)))
 	{
 		goto Exit;
 	}
 
 	for( ;;)
 	{
-		if( RC_BAD( rc = encoderStream.read( 
+		if( RC_BAD( rc = pEncoderStream->read( 
 			ucBuf, sizeof( ucBuf), &uiBytesRead)))
 		{
 			if( rc != NE_XFLM_EOF_HIT)
@@ -3393,6 +3376,16 @@ RCODE F_DOMNode::storeBinaryAsText(
 	}
 	
 Exit:
+
+	if( pEncoderStream)
+	{
+		pEncoderStream->Release();
+	}
+	
+	if( pIStream)
+	{
+		pIStream->Release();
+	}
 
 	return( rc);
 }
@@ -3607,7 +3600,7 @@ RCODE F_DOMNode::setTextStreaming(
 				while( *puCurChar && uiNumBytesInBuffer >= sizeof( FLMUNICODE))
 				{
 					uiLen = uiUpdBufferSize - pDatabase->m_uiUpdByteCount;
-					if( RC_BAD( rc = flmUni2UTF8( *puCurChar,
+					if( RC_BAD( rc = f_uni2UTF8( *puCurChar,
 						&pucUpdBuffer[ pDatabase->m_uiUpdByteCount], &uiLen)))
 					{
 						if( rc == NE_XFLM_CONV_DEST_OVERFLOW)
@@ -3646,7 +3639,7 @@ RCODE F_DOMNode::setTextStreaming(
 						}
 					}
 					
-					if( RC_BAD( rc = flmGetUTF8CharFromUTF8Buf( &pucCurByte,
+					if( RC_BAD( rc = f_getUTF8CharFromUTF8Buf( &pucCurByte,
 						pucEnd, &pucUpdBuffer[ pDatabase->m_uiUpdByteCount], &uiLen)))
 					{
 						goto Exit;
@@ -3704,7 +3697,7 @@ RCODE F_DOMNode::setTextStreaming(
 				// output a padded SEN.
 
 				pucTmp = ucTmpSen;
-				flmEncodeSEN( pDatabase->m_uiUpdCharCount, &pucTmp);
+				f_encodeSEN( pDatabase->m_uiUpdCharCount, &pucTmp);
 				uiSenLen = (FLMUINT)(pucTmp - ucTmpSen);
 
 				// Copy the value into the node
@@ -3760,7 +3753,7 @@ RCODE F_DOMNode::setTextStreaming(
 			}
 
 			pucTmp = ucTmpSen;
-			flmEncodeSEN( pDatabase->m_uiUpdCharCount,
+			f_encodeSEN( pDatabase->m_uiUpdCharCount,
 				&pucTmp, SEN_RESERVE_BYTES);
 			flmAssert( (FLMUINT)(pucTmp - ucTmpSen) == SEN_RESERVE_BYTES);
 			
@@ -3941,7 +3934,7 @@ RCODE F_DOMNode::setTextFastPath(
 				else
 				{
 					uiReadLen = sizeof( ucUTFCharBuf);
-					if( RC_BAD( rc = flmUni2UTF8( *puCurChar, 
+					if( RC_BAD( rc = f_uni2UTF8( *puCurChar, 
 						ucUTFCharBuf, &uiReadLen)))
 					{
 						goto Exit;
@@ -3970,7 +3963,7 @@ RCODE F_DOMNode::setTextFastPath(
 	}
 	else if( eTextType == XFLM_UTF8_TEXT)
 	{
-		if( RC_BAD( rc = flmGetUTF8Length( (FLMBYTE *)pvValue, uiNumBytesInBuffer,
+		if( RC_BAD( rc = f_getUTF8Length( (FLMBYTE *)pvValue, uiNumBytesInBuffer,
 			&uiNumBytesInBuffer, &uiNumCharsInBuffer)))
 		{
 			goto Exit;
@@ -4144,7 +4137,7 @@ RCODE F_DOMNode::setTextFastPath(
 			bNullTerminate = TRUE;
 		}
 		
-		uiSenLen = flmGetSENByteCount( uiNumCharsInBuffer);
+		uiSenLen = f_getSENByteCount( uiNumCharsInBuffer);
 		uiValLen = uiNumBytesInBuffer + uiSenLen + (bNullTerminate ? 1 : 0);
 
 		if( calcDataBufSize( uiValLen) > getDataBufSize())
@@ -4156,7 +4149,7 @@ RCODE F_DOMNode::setTextFastPath(
 		}
 
 		pucTmp = getDataPtr();
-		flmEncodeSENKnownLength( uiNumCharsInBuffer, uiSenLen, &pucTmp);
+		f_encodeSENKnownLength( uiNumCharsInBuffer, uiSenLen, &pucTmp);
 		f_memcpy( pucTmp, pucValue, uiNumBytesInBuffer);
 		
 		if( bNullTerminate)
@@ -4940,7 +4933,7 @@ RCODE F_CachedNode::getIStream(
 	FLMUINT *					puiDataLength)
 {
 	RCODE					rc = NE_XFLM_OK;
-	F_PosIStream *		pIStream = NULL;
+	IF_PosIStream *	pIStream = NULL;
 	F_DOMNode *			pNode = NULL;
 	F_CachedNode *		pCachedNode = this;
 	eDomNodeType		eNodeType = getNodeType();
@@ -5067,8 +5060,9 @@ RCODE F_CachedNode::getIStream(
 		
 		pIStream = pNodeBufferIStream;
 
-		if( RC_BAD( rc = pNodeBufferIStream->open( pCachedNode->getDataPtr(),
-									pCachedNode->getDataLength())))
+		if( RC_BAD( rc = pNodeBufferIStream->open( 
+			(const char *)pCachedNode->getDataPtr(), 
+			pCachedNode->getDataLength())))
 		{
 			goto Exit;
 		}
@@ -5119,7 +5113,7 @@ RCODE F_CachedNode::getRawIStream(
 	IF_PosIStream **	ppIStream)
 {
 	RCODE					rc = NE_XFLM_OK;
-	F_PosIStream *		pIStream = NULL;
+	IF_PosIStream *	pIStream = NULL;
 	F_BTreeIStream *	pBTreeIStream;
 	eDomNodeType		eNodeType = getNodeType();
 	
@@ -5296,7 +5290,7 @@ RCODE F_DOMNode::getTextIStream(
 
 	if( (*ppIStream)->remainingSize())
 	{
-		if( RC_BAD( rc = flmReadSEN( *ppIStream, puiNumChars)))
+		if( RC_BAD( rc = f_readSEN( *ppIStream, puiNumChars)))
 		{
 			goto Exit;
 		}
@@ -5419,7 +5413,7 @@ Exit:
 /*****************************************************************************
 Desc:		Allocate data for a unicode element and retrieve it.
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getUnicode(
+RCODE FLMAPI F_DOMNode::getUnicode(
 	IF_Db *			ifpDb,
 	FLMUNICODE **	ppuzUnicode)
 {
@@ -5481,7 +5475,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getUnicode(
+RCODE FLMAPI F_DOMNode::getUnicode(
 	IF_Db *					ifpDb,
 	FLMUNICODE *			puzBuffer,
 	FLMUINT					uiBufSize,
@@ -5544,7 +5538,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getUnicode(
+RCODE FLMAPI F_DOMNode::getUnicode(
 	IF_Db *			ifpDb,
 	IF_DynaBuf *	pBuffer)
 {
@@ -5593,7 +5587,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getUTF8(
+RCODE FLMAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
 	FLMBYTE *		pszValue,
 	FLMUINT 			uiBufferSize,
@@ -5702,7 +5696,7 @@ SlowDecode:
 
 		if( pucBuffer)
 		{
-			if( RC_BAD( rc = flmDecodeSEN( &pucBuffer, pucEnd, &uiCharCount)))
+			if( RC_BAD( rc = f_decodeSEN( &pucBuffer, pucEnd, &uiCharCount)))
 			{
 				goto Exit;
 			}
@@ -5762,7 +5756,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getUTF8(
+RCODE FLMAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
 	FLMBYTE **		ppszUTF8)
 {
@@ -5814,7 +5808,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getUTF8(
+RCODE FLMAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
 	IF_DynaBuf *	pBuffer)
 {
@@ -5862,7 +5856,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getBinary(
+RCODE FLMAPI F_DOMNode::getBinary(
 	IF_Db *					ifpDb,
 	void *					pvValue,
 	FLMUINT					uiByteOffset,
@@ -5872,6 +5866,7 @@ RCODE XFLMAPI F_DOMNode::getBinary(
 	RCODE						rc = NE_XFLM_OK;
 	FLMBYTE *				pucValue = (FLMBYTE *)pvValue;
 	IF_PosIStream *		pIStream = NULL;
+	IF_IStream *			pDecoderStream = NULL;
 	F_NodeBufferIStream	bufferIStream;
 	F_Db *					pDb = (F_Db *)ifpDb;
 	FLMUINT					uiTmp;
@@ -5928,15 +5923,14 @@ RCODE XFLMAPI F_DOMNode::getBinary(
 		}
 		else
 		{
-			F_Base64DecoderIStream	decoderStream;
-
-			if( RC_BAD( rc = decoderStream.open( &asciiStream)))
+			if( RC_BAD( rc = FlmOpenBase64DecoderIStream( 
+				&asciiStream, &pDecoderStream)))
 			{
 				goto Exit;
 			}
-		
+
 			if( RC_BAD( rc = flmReadStorageAsBinary( 
-				&decoderStream, (FLMBYTE *)pucValue,
+				pDecoderStream, (FLMBYTE *)pucValue,
 				uiBytesRequested, uiByteOffset, puiBytesReturned)))
 			{
 				goto Exit;
@@ -5955,6 +5949,11 @@ RCODE XFLMAPI F_DOMNode::getBinary(
 
 Exit:
 
+	if( pDecoderStream)
+	{
+		pDecoderStream->Release();
+	}
+
 	if( pIStream)
 	{
 		pIStream->Release();
@@ -5971,7 +5970,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getBinary(
+RCODE FLMAPI F_DOMNode::getBinary(
 	IF_Db *			ifpDb,
 	IF_DynaBuf *	pBuffer)
 {
@@ -6117,7 +6116,7 @@ RCODE F_DOMNode::getAttributeValueText(
 	
 			if( pucStart)
 			{
-				if( RC_BAD( rc = flmDecodeSEN( &pucStart, pucEnd, &uiCharCount)))
+				if( RC_BAD( rc = f_decodeSEN( &pucStart, pucEnd, &uiCharCount)))
 				{
 					goto Exit;
 				}
@@ -6182,7 +6181,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAttributeValueUnicode(
+RCODE FLMAPI F_DOMNode::getAttributeValueUnicode(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName,
 	IF_DynaBuf *	pBuffer)
@@ -6218,7 +6217,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAttributeValueUnicode(
+RCODE FLMAPI F_DOMNode::getAttributeValueUnicode(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	FLMUNICODE **			ppuzUnicode)
@@ -6258,7 +6257,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAttributeValueUTF8(
+RCODE FLMAPI F_DOMNode::getAttributeValueUTF8(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	FLMBYTE **				ppszValue)
@@ -6298,7 +6297,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAttributeValueUTF8(
+RCODE FLMAPI F_DOMNode::getAttributeValueUTF8(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName,
 	IF_DynaBuf *	pBuffer)
@@ -6334,7 +6333,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAttributeValueBinary(
+RCODE FLMAPI F_DOMNode::getAttributeValueBinary(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	void *					pvValue,
@@ -6380,7 +6379,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAttributeValueBinary(
+RCODE FLMAPI F_DOMNode::getAttributeValueBinary(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	IF_DynaBuf *			pBuffer)
@@ -6554,7 +6553,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::setAttributeValueUnicode(
+RCODE FLMAPI F_DOMNode::setAttributeValueUnicode(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	const FLMUNICODE *	puzValue,
@@ -6618,7 +6617,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::setAttributeValueBinary(
+RCODE FLMAPI F_DOMNode::setAttributeValueBinary(
 	IF_Db *				ifpDb,
 	FLMUINT				uiAttrName,
 	const void *		pvValue,
@@ -6735,7 +6734,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::setAttributeValueUTF8(
+RCODE FLMAPI F_DOMNode::setAttributeValueUTF8(
 	IF_Db *				ifpDb,
 	FLMUINT				uiAttrName,
 	const FLMBYTE *	pucValue,
@@ -6793,7 +6792,7 @@ RCODE XFLMAPI F_DOMNode::setAttributeValueUTF8(
 
 		bMustAbortOnError = TRUE;
 
-		if( RC_BAD( rc = flmGetUTF8Length( pucValue, uiLength,
+		if( RC_BAD( rc = f_getUTF8Length( pucValue, uiLength,
 			&uiLength, &uiNumCharsInBuffer)))
 		{
 			goto Exit;
@@ -7469,7 +7468,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::deleteAttribute(
+RCODE FLMAPI F_DOMNode::deleteAttribute(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName)
 {
@@ -7666,7 +7665,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::hasAttribute(
+RCODE FLMAPI F_DOMNode::hasAttribute(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	IF_DOMNode **		ifppAttr)
@@ -8270,7 +8269,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::createChildElement(
+RCODE FLMAPI F_DOMNode::createChildElement(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	eNodeInsertLoc		eLocation,
@@ -8779,7 +8778,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::hasAnnotation(
+RCODE FLMAPI F_DOMNode::hasAnnotation(
 	IF_Db *				ifpDb,
 	FLMBOOL *			pbHasAnnotation)
 {
@@ -8862,7 +8861,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getDocumentId(
+RCODE FLMAPI F_DOMNode::getDocumentId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64DocId)
 {
@@ -8896,7 +8895,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getNodeId(
+RCODE FLMAPI F_DOMNode::getNodeId(
 	IF_Db *			ifpDb,
 	FLMUINT64 *		pui64NodeId)
 {
@@ -8979,7 +8978,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getParentId(
+RCODE FLMAPI F_DOMNode::getParentId(
 	IF_Db *			ifpDb,
 	FLMUINT64 *		pui64ParentId)
 {
@@ -9014,7 +9013,7 @@ Exit:
 Desc:	COM version of the getPrevSibId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getPrevSibId(
+RCODE FLMAPI F_DOMNode::getPrevSibId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64PrevSibId)
 {
@@ -9056,7 +9055,7 @@ Exit:
 Desc:	COM version of the getNextSibId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getNextSibId(
+RCODE FLMAPI F_DOMNode::getNextSibId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64NextSibId)
 {
@@ -9097,7 +9096,7 @@ Exit:
 Desc:	COM version of the getFirstChildId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getFirstChildId(
+RCODE FLMAPI F_DOMNode::getFirstChildId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64FirstChildId)
 {
@@ -9139,7 +9138,7 @@ Exit:
 Desc:	COM version of the getLastChildId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getLastChildId(
+RCODE FLMAPI F_DOMNode::getLastChildId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64LastChildId)
 {
@@ -9179,7 +9178,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::isNamespaceDecl(
+RCODE FLMAPI F_DOMNode::isNamespaceDecl(
 	IF_Db *				ifpDb,
 	FLMBOOL *			pbIsNamespaceDecl)
 {
@@ -9443,7 +9442,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getPrefixId(
+RCODE FLMAPI F_DOMNode::getPrefixId(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiPrefixId)
 {
@@ -9629,7 +9628,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getAncestorElement(
+RCODE FLMAPI F_DOMNode::getAncestorElement(
 	IF_Db *					ifpDb,
 	FLMUINT					uiNameId,
 	IF_DOMNode **			ifppAncestor)
@@ -9713,7 +9712,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getDescendantElement(
+RCODE FLMAPI F_DOMNode::getDescendantElement(
 	IF_Db *			ifpDb,
 	FLMUINT			uiNameId,
 	IF_DOMNode **	ifppDescendant)
@@ -9825,7 +9824,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getDocumentNode(
+RCODE FLMAPI F_DOMNode::getDocumentNode(
 	IF_Db *					ifpDb,
 	IF_DOMNode **			ifppDoc)
 {
@@ -9878,7 +9877,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getParentNode(
+RCODE FLMAPI F_DOMNode::getParentNode(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppParent)
 {
@@ -9922,7 +9921,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getFirstChild(
+RCODE FLMAPI F_DOMNode::getFirstChild(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppChild)
 {
@@ -9966,7 +9965,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getLastChild(
+RCODE FLMAPI F_DOMNode::getLastChild(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppChild)
 {
@@ -10010,7 +10009,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getChild(
+RCODE FLMAPI F_DOMNode::getChild(
 	IF_Db *			ifpDb,
 	eDomNodeType	eNodeType,
 	IF_DOMNode **	ppChild)
@@ -10106,7 +10105,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getChildElement(
+RCODE FLMAPI F_DOMNode::getChildElement(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	IF_DOMNode **		ppChild,
@@ -10251,7 +10250,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getSiblingElement(
+RCODE FLMAPI F_DOMNode::getSiblingElement(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	FLMBOOL				bNext,
@@ -10340,7 +10339,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getPreviousSibling(
+RCODE FLMAPI F_DOMNode::getPreviousSibling(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppSib)
 {
@@ -10401,7 +10400,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getNextSibling(
+RCODE FLMAPI F_DOMNode::getNextSibling(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppSib)
 {
@@ -10462,7 +10461,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getPreviousDocument(
+RCODE FLMAPI F_DOMNode::getPreviousDocument(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppDoc)
 {
@@ -10632,7 +10631,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_DOMNode::getNextDocument(
+RCODE FLMAPI F_DOMNode::getNextDocument(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppDoc)
 {
@@ -10802,266 +10801,6 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE flmReadSEN(
-	IF_IStream *	pIStream,
-	FLMUINT *		puiValue,
-	FLMUINT *		puiLength)
-{
-	RCODE			rc;
-	FLMUINT64	ui64Tmp;
-
-	if( RC_BAD( rc = flmReadSEN64( pIStream, &ui64Tmp, puiLength)))
-	{
-		goto Exit;
-	}
-
-	if( ui64Tmp > ~((FLMUINT)0))
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_CONV_DEST_OVERFLOW);
-		goto Exit;
-	}
-
-	if( puiValue)
-	{
-		*puiValue = (FLMUINT)ui64Tmp;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/*****************************************************************************
-Desc:
-******************************************************************************/
-RCODE flmReadSEN64(
-	IF_IStream *	pIStream,
-	FLMUINT64 *		pui64Value,
-	FLMUINT *		puiLength)
-{
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiLen;
-	FLMUINT				uiSENLength;
-	FLMBYTE				ucBuffer[ FLM_MAX_NUM_BUF_SIZE];
-	const FLMBYTE *	pucBuffer;
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( 
-		(char *)&ucBuffer[ 0], uiLen, &uiLen)))
-	{
-		goto Exit;
-	}
-
-	uiSENLength = 	gv_ucSENLengthArray[ ucBuffer[ 0]];
-	uiLen = uiSENLength - 1;
-
-	if( puiLength)
-	{
-		*puiLength = uiSENLength;
-	}
-
-	if( pui64Value)
-	{
-		pucBuffer = &ucBuffer[ 1];
-	}
-	else
-	{
-		pucBuffer = NULL;
-	}
-
-	if( uiLen)
-	{
-		if( RC_BAD( rc = pIStream->read( 
-			(char *)pucBuffer, uiLen, &uiLen)))
-		{
-			goto Exit;
-		}
-	}
-
-	if( pui64Value)
-	{
-		pucBuffer = &ucBuffer[ 0];
-		if( RC_BAD( rc = flmDecodeSEN64( &pucBuffer,
-			&ucBuffer[ FLM_MAX_NUM_BUF_SIZE], pui64Value)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Reads the next UTF-8 character from the stream
-****************************************************************************/
-RCODE flmReadUTF8CharAsUnicode(
-	IF_IStream *	pIStream,
-	FLMUNICODE *	puChar)
-{
-	RCODE			rc = NE_XFLM_OK;
-	FLMBYTE		ucBuf[ 3];
-	FLMUINT		uiLen;
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( &ucBuf[ 0], uiLen, &uiLen)))
-	{
-		goto Exit;
-	}
-
-	if( ucBuf[ 0] <= 0x7F)
-	{
-		if( !ucBuf [0])
-		{
-			rc = RC_SET( NE_XFLM_EOF_HIT);
-			goto Exit;
-		}
-		*puChar = (FLMUNICODE)ucBuf[ 0];
-		goto Exit;
-	}
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( &ucBuf[ 1], uiLen, &uiLen)))
-	{
-		goto Exit;
-	}
-
-	if( (ucBuf[ 1] >> 6) != 0x02)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_UTF8);
-		goto Exit;
-	}
-
-	if( (ucBuf[ 0] >> 5) == 0x06)
-	{
-		*puChar = ((FLMUNICODE)( ucBuf[ 0] - 0xC0) << 6) +
-							(FLMUNICODE)(ucBuf[ 1] - 0x80);
-		goto Exit;
-	}
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( &ucBuf[ 2], uiLen, &uiLen)))
-	{
-		goto Exit;
-	}
-
-	if( (ucBuf[ 0] >> 4) != 0x0E || (ucBuf[ 2] >> 6) != 0x02)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_UTF8);
-		goto Exit;
-	}
-
-	*puChar = ((FLMUNICODE)(ucBuf[ 0] - 0xE0) << 12) +
-						((FLMUNICODE)(ucBuf[ 1] - 0x80) << 6) +
-						(FLMUNICODE)(ucBuf[ 2] - 0x80);
-
-Exit:
-
-	if( RC_BAD( rc))
-	{
-		*puChar = 0;
-	}
-
-	return( rc);
-}
-
-/*****************************************************************************
-Desc:
-Notes:	pucBuf must be able to contain at least 3 bytes
-******************************************************************************/
-RCODE flmReadUTF8CharAsUTF8(
-	IF_IStream *	pIStream,
-	FLMBYTE *		pucBuf,
-	FLMUINT *		puiLen)
-{
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiLen;
-
-	if( *puiLen == 0)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_CONV_DEST_OVERFLOW);
-		goto Exit;
-	}
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( pucBuf, uiLen, &uiLen)))
-	{
-		goto Exit;
-	}
-
-	if( pucBuf[ 0] <= 0x7F)
-	{
-		if( !pucBuf[ 0])
-		{
-			rc = RC_SET( NE_XFLM_EOF_HIT);
-			goto Exit;
-		}
-		
-		*puiLen = 1;
-		goto Exit;
-	}
-
-	if( *puiLen < 2)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_CONV_DEST_OVERFLOW);
-		goto Exit;
-	}
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( &pucBuf[ 1], uiLen, &uiLen)))
-	{
-		if( rc == NE_XFLM_EOF_HIT)
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_UTF8);
-		}
-		goto Exit;
-	}
-
-	if( (pucBuf[ 1] >> 6) != 0x02)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_UTF8);
-		goto Exit;
-	}
-
-	if( (pucBuf[ 0] >> 5) == 0x06)
-	{
-		*puiLen = 2;
-		goto Exit;
-	}
-
-	if( *puiLen < 3)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_CONV_DEST_OVERFLOW);
-		goto Exit;
-	}
-
-	uiLen = 1;
-	if( RC_BAD( rc = pIStream->read( &pucBuf[ 2], uiLen, &uiLen)))
-	{
-		if( rc == NE_XFLM_EOF_HIT)
-		{
-			rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_UTF8);
-		}
-		goto Exit;
-	}
-
-	if( (pucBuf[ 0] >> 4) != 0x0E || (pucBuf[ 2] >> 6) != 0x02)
-	{
-		rc = RC_SET_AND_ASSERT( NE_XFLM_BAD_UTF8);
-		goto Exit;
-	}
-
-	*puiLen = 3;
-
-Exit:
-
-	return( rc);
-}
-
-/*****************************************************************************
-Desc:
-******************************************************************************/
 RCODE flmReadStorageAsText(
 	IF_IStream *		pIStream,
 	FLMBYTE *			pucStorageData,
@@ -11090,7 +10829,7 @@ RCODE flmReadStorageAsText(
 	FLMBYTE						ucConvBuf[ 64];
 	FLMUINT						uiLastUTFLen = 0;
 	IF_IStream *				pStream = pIStream;
-	F_BufferIStream			convStream;
+	IF_BufferIStream *		pConvStream = NULL;
 	F_BinaryToTextStream		binaryToTextStream;
 
 	// If the value is a number, convert to text
@@ -11136,24 +10875,35 @@ RCODE flmReadStorageAsText(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = convStream.open( ucConvBuf, uiDataLen)))
+		if( RC_BAD( rc = FlmAllocBufferIStream( &pConvStream)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pConvStream->open( (const char *)ucConvBuf, uiDataLen)))
 		{
 			goto Exit;
 		}
 
-		pStream = &convStream;
+		pStream = pConvStream;
 		pucStorageData = NULL;
 	}
 	else if( uiDataType == XFLM_BINARY_TYPE)
 	{
 		if( !pStream)
 		{
-			if( RC_BAD( rc = convStream.open( pucStorageData, uiDataLen)))
+			if( RC_BAD( rc = FlmAllocBufferIStream( &pConvStream)))
 			{
 				goto Exit;
 			}
 			
-			pStream = &convStream;
+			if( RC_BAD( rc = pConvStream->open( 
+				(const char *)pucStorageData, uiDataLen)))
+			{
+				goto Exit;
+			}
+			
+			pStream = pConvStream;
 		}
 		
 		if( RC_BAD( rc = binaryToTextStream.open( pStream, 
@@ -11225,7 +10975,7 @@ Empty_String:
 		uiDataLen--;
 	}
 
-	if( (uiSENLen = flmGetSENLength( ucSENBuf[ 0])) > 1)
+	if( (uiSENLen = f_getSENLength( ucSENBuf[ 0])) > 1)
 	{
 		uiLen = uiSENLen - 1;
 		
@@ -11253,7 +11003,7 @@ Empty_String:
 	}
 
 	pucTmp = &ucSENBuf[ 0];
-	if( RC_BAD( rc = flmDecodeSEN(
+	if( RC_BAD( rc = f_decodeSEN(
 		&pucTmp, &ucSENBuf[ uiSENLen], &uiNumChars)))
 	{
 		goto Exit;
@@ -11349,7 +11099,7 @@ Empty_String:
 		{
 			if( pStream)
 			{
-				if( RC_BAD( rc = flmReadUTF8CharAsUnicode( pStream, &uChar)))
+				if( RC_BAD( rc = f_readUTF8CharAsUnicode( pStream, &uChar)))
 				{
 					if( rc == NE_XFLM_EOF_HIT)
 					{
@@ -11487,7 +11237,7 @@ Unicode_EOF_Hit:
 			
 			if( pStream)
 			{
-				if( RC_BAD( rc = flmReadUTF8CharAsUTF8(
+				if( RC_BAD( rc = f_readUTF8CharAsUTF8(
 					pStream, pszOutBuf, &uiLen)))
 				{
 					if( rc == NE_XFLM_CONV_DEST_OVERFLOW)
@@ -11666,6 +11416,11 @@ Overflow_Error:
 
 Exit:
 
+	if( pConvStream)
+	{
+		pConvStream->Release();
+	}
+
 	if( puiCharsRead)
 	{
 		*puiCharsRead = uiCharsOutput;
@@ -11779,7 +11534,7 @@ RCODE flmReadStorageAsNumber(
 
 			// Skip the character count
 
-			if( RC_BAD( rc = flmReadSEN64( pIStream, NULL, NULL)))
+			if( RC_BAD( rc = f_readSEN64( pIStream, NULL, NULL)))
 			{
 				if( rc == NE_XFLM_EOF_HIT)
 				{
@@ -11792,7 +11547,7 @@ RCODE flmReadStorageAsNumber(
 
 			for( uiLoop = 0;; uiLoop++)
 			{
-				if( RC_BAD( rc = flmReadUTF8CharAsUnicode( 
+				if( RC_BAD( rc = f_readUTF8CharAsUnicode( 
 					pIStream, &uChar)))
 				{
 					if( rc == NE_XFLM_EOF_HIT)
@@ -11923,7 +11678,7 @@ RCODE flmReadLine(
 	{
 		if( RC_BAD( rc = pIStream->read( (char *)&ucByte, 1, NULL)))
 		{
-			if( rc == NE_XFLM_IO_END_OF_FILE)
+			if( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				rc = NE_XFLM_OK;
 				break;
@@ -12084,7 +11839,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_BTreeIStream::positionTo(
+RCODE FLMAPI F_BTreeIStream::positionTo(
 	FLMUINT64		ui64Position)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -12788,7 +12543,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getQualifiedName(
+RCODE FLMAPI F_DOMNode::getQualifiedName(
 	IF_Db *			ifpDb,
 	FLMUNICODE *	puzQualifiedName,
 	FLMUINT			uiBufSize,
@@ -12865,7 +12620,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::getQualifiedName(
+RCODE FLMAPI F_DOMNode::getQualifiedName(
 	IF_Db *			ifpDb,
 	char *			pszQualifiedName,
 	FLMUINT			uiBufSize,
@@ -13046,7 +12801,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_DOMNode::setPrefixId(
+RCODE FLMAPI F_DOMNode::setPrefixId(
 	IF_Db *			ifpDb,
 	FLMUINT			uiPrefixId)
 {
@@ -13195,7 +12950,7 @@ Exit:
 /****************************************************************************
 Desc:	Method to compare two dom nodes.
 *****************************************************************************/
-FLMUINT XFLMAPI F_DOMNode::compareNode(
+FLMUINT FLMAPI F_DOMNode::compareNode(
 	IF_DOMNode *	pNode,
 	IF_Db *			pDb1,
 	IF_Db *			pDb2,
@@ -13620,7 +13375,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_Db::getDictionaryDef(
+RCODE FLMAPI F_Db::getDictionaryDef(
 	FLMUINT			uiDictType,
 	FLMUINT			uiDictNumber,
 	IF_DOMNode **	ppDocumentNode)
@@ -13674,7 +13429,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getElementNameId(
+RCODE FLMAPI F_Db::getElementNameId(
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzElementName,
 	FLMUINT *				puiElementNameId)
@@ -13718,7 +13473,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getElementNameId(
+RCODE FLMAPI F_Db::getElementNameId(
 	const char *			pszNamespaceURI,
 	const char *			pszElementName,
 	FLMUINT *				puiElementNameId)
@@ -13791,7 +13546,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getAttributeNameId(
+RCODE FLMAPI F_Db::getAttributeNameId(
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzAttributeName,
 	FLMUINT *				puiAttributeNameId)
@@ -13835,7 +13590,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getAttributeNameId(
+RCODE FLMAPI F_Db::getAttributeNameId(
 	const char *			pszNamespaceURI,
 	const char *			pszAttributeName,
 	FLMUINT *				puiAttributeNameId)
@@ -13908,7 +13663,7 @@ Exit:
 /*****************************************************************************
 Desc: Get a collection number from collection name.
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getCollectionNumber(
+RCODE FLMAPI F_Db::getCollectionNumber(
 	const char *			pszCollectionName,
 	FLMUINT *				puiCollectionNumber)
 {
@@ -13951,7 +13706,7 @@ Exit:
 /*****************************************************************************
 Desc: Get a collection number from collection name.
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getCollectionNumber(
+RCODE FLMAPI F_Db::getCollectionNumber(
 	const FLMUNICODE *	puzCollectionName,
 	FLMUINT *				puiCollectionNumber)
 {
@@ -13994,7 +13749,7 @@ Exit:
 /*****************************************************************************
 Desc: Get an index number from index name.
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getIndexNumber(
+RCODE FLMAPI F_Db::getIndexNumber(
 	const char *			pszIndexName,
 	FLMUINT *				puiIndexNumber)
 {
@@ -14037,7 +13792,7 @@ Exit:
 /*****************************************************************************
 Desc: Get an index number from index name.
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getIndexNumber(
+RCODE FLMAPI F_Db::getIndexNumber(
 	const FLMUNICODE *	puzIndexName,
 	FLMUINT *				puiIndexNumber)
 {
@@ -14468,10 +14223,10 @@ RCODE F_Db::flushNode(
 			flmAssert( pNodeItem->uiNameId > uiPrevNameId);
 			flmAssert( pNodeItem->ui64NodeId > ui64ElmNodeId);
 			
-			uiTmpOffset += flmEncodeSEN( pNodeItem->uiNameId - uiPrevNameId,
+			uiTmpOffset += f_encodeSEN( pNodeItem->uiNameId - uiPrevNameId,
 												  &pucTmp);
 												  
-			uiTmpOffset += flmEncodeSEN( pNodeItem->ui64NodeId - ui64ElmNodeId, 
+			uiTmpOffset += f_encodeSEN( pNodeItem->ui64NodeId - ui64ElmNodeId, 
 												  &pucTmp);
 
 			uiPrevNameId = pNodeItem->uiNameId;												  
@@ -15163,7 +14918,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getAttribute(
+RCODE FLMAPI F_Db::getAttribute(
 	FLMUINT					uiCollection,
 	FLMUINT64				ui64ElementId,
 	FLMUINT					uiAttrName,
@@ -15245,7 +15000,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getFirstDocument(
+RCODE FLMAPI F_Db::getFirstDocument(
 	FLMUINT					uiCollection,
 	IF_DOMNode **			ppDocumentNode)
 {
@@ -15288,7 +15043,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getLastDocument(
+RCODE FLMAPI F_Db::getLastDocument(
 	FLMUINT					uiCollection,
 	IF_DOMNode **			ppDocumentNode)
 {
@@ -15331,7 +15086,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE XFLMAPI F_Db::getDocument(
+RCODE FLMAPI F_Db::getDocument(
 	FLMUINT					uiCollection,
 	FLMUINT					uiFlags,
 	FLMUINT64				ui64DocumentId,
@@ -15807,7 +15562,6 @@ RCODE F_Db::import(
 	F_XMLImport		xmlImport;
 	F_DOMNode *		pNode = NULL;
 	F_DOMNode *		pNewNode = NULL;
-	F_IStream *		pStream = (F_IStream *)ifpStream;
 
 	if( RC_BAD( rc = xmlImport.setup()))
 	{
@@ -15821,7 +15575,7 @@ RCODE F_Db::import(
 
 	for( ;;)
 	{
-		if( RC_BAD( rc = xmlImport.import( pStream, this, uiCollection,
+		if( RC_BAD( rc = xmlImport.import( ifpStream, this, uiCollection,
 			FLM_XML_COMPRESS_WHITESPACE_FLAG |
 			FLM_XML_TRANSLATE_ESC_FLAG |
 			FLM_XML_EXTEND_DICT_FLAG, pNode, eInsertLoc,
@@ -15893,7 +15647,6 @@ RCODE F_Db::importDocument(
 	RCODE				rc = NE_XFLM_OK;
 	F_XMLImport		xmlImport;
 	F_DOMNode *		pNode = NULL;
-	F_IStream *		pIStream = (F_IStream *)ifpStream;
 
 	if( pNode)
 	{
@@ -15905,7 +15658,7 @@ RCODE F_Db::importDocument(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = xmlImport.import( pIStream, this, uiCollection,
+	if( RC_BAD( rc = xmlImport.import( ifpStream, this, uiCollection,
 		FLM_XML_COMPRESS_WHITESPACE_FLAG |
 		FLM_XML_TRANSLATE_ESC_FLAG |
 		FLM_XML_EXTEND_DICT_FLAG, NULL, XFLM_LAST_CHILD, &pNode, pImportStats)))
@@ -16403,7 +16156,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_Db::getPrefixId(
+RCODE FLMAPI F_Db::getPrefixId(
 	const FLMUNICODE *	puzPrefixName,
 	FLMUINT *				puiPrefixNumber)
 {
@@ -16434,7 +16187,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_Db::getPrefixId(
+RCODE FLMAPI F_Db::getPrefixId(
 	const char *			pszPrefixName,
 	FLMUINT *				puiPrefixNumber)
 {
@@ -16465,7 +16218,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_Db::getEncDefId(
+RCODE FLMAPI F_Db::getEncDefId(
 	const char *	pszEncDefName,
 	FLMUINT *		puiEncDefNumber)
 {
@@ -16496,7 +16249,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE XFLMAPI F_Db::getEncDefId(
+RCODE FLMAPI F_Db::getEncDefId(
 	const FLMUNICODE *	puzEncDefName,
 	FLMUINT *				puiEncDefNumber)
 {
@@ -16690,9 +16443,6 @@ RCODE F_Db::flushDirtyNodes( void)
 		// Need to increment the use count on the node to prevent it from
 		// being moved while we are flushing it to disk.
 		
-#ifdef FLM_CACHE_PROTECT	
-		pNode->unprotectCachedItem();
-#endif
 		pNode->incrNodeUseCount();
 		f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
 
@@ -16714,9 +16464,6 @@ RCODE F_Db::flushDirtyNodes( void)
 
 		f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 		pNode->decrNodeUseCount();
-#ifdef FLM_CACHE_PROTECT	
-		pNode->protectCachedItem();
-#endif
 
 		if( rc == NE_XFLM_NOT_FOUND)
 		{
@@ -16776,10 +16523,6 @@ RCODE F_Db::flushDirtyNode(
 	f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 	bMutexLocked = TRUE;
 
-#ifdef FLM_CACHE_PROTECT	
-	pNode->unprotectCachedItem();
-#endif
-
 	pNode->incrNodeUseCount();
 	f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
 	bMutexLocked = FALSE;
@@ -16790,9 +16533,6 @@ RCODE F_Db::flushDirtyNode(
 	bMutexLocked = TRUE;
 
 	pNode->decrNodeUseCount();
-#ifdef FLM_CACHE_PROTECT	
-	pNode->protectCachedItem();
-#endif
 
 	if( RC_BAD( rc))
 	{
@@ -17381,9 +17121,9 @@ RCODE F_CachedNode::setNumber64(
 				f_ui64toa( ui64Value, (char *)&ucNumBuf[ 1]);
 			}
 			
-			uiValLen = f_strlen( &ucNumBuf[ 1]);
+			uiValLen = f_strlen( (const char *)&ucNumBuf[ 1]);
 			pucSen = &ucNumBuf [0];
-			uiSenLen = flmEncodeSEN( uiValLen, &pucSen, (FLMUINT)0);
+			uiSenLen = f_encodeSEN( uiValLen, &pucSen, (FLMUINT)0);
 			flmAssert( uiSenLen == 1);
 			uiValLen += uiSenLen + 1;
 			break;
@@ -17712,7 +17452,7 @@ RCODE F_CachedNode::setUTF8(
 			bNullTerminate = TRUE;
 		}
 		
-		uiSenLen = flmGetSENByteCount( uiNumCharsInValue);
+		uiSenLen = f_getSENByteCount( uiNumCharsInValue);
 		uiValLen = uiNumBytesInValue + uiSenLen + (bNullTerminate ? 1 : 0);
 	}
 	else
@@ -17731,7 +17471,7 @@ RCODE F_CachedNode::setUTF8(
 	{
 		FLMBYTE *	pucTmp = pAttrItem->getAttrDataPtr();
 		
-		flmEncodeSENKnownLength( uiNumCharsInValue, uiSenLen, &pucTmp);
+		f_encodeSENKnownLength( uiNumCharsInValue, uiSenLen, &pucTmp);
 		f_memcpy( pucTmp, pucValue, uiNumBytesInValue);
 		
 		if( bNullTerminate)
@@ -17970,7 +17710,7 @@ RCODE F_CachedNode::getIStream(
 		flmAssert( pAttrItem->m_uiIVLen);
 		
 		if( RC_BAD( rc = pNodeBufferIStream->open( NULL, 
-			pAttrItem->getAttrDataBufferSize(), &pucAllocatedBuffer)))
+			pAttrItem->getAttrDataBufferSize(), (char **)&pucAllocatedBuffer)))
 		{
 			goto Exit;
 		}
@@ -17988,7 +17728,8 @@ RCODE F_CachedNode::getIStream(
 	else
 	{
 		if( RC_BAD( rc = pNodeBufferIStream->open(
-			pAttrItem->getAttrDataPtr(), pAttrItem->getAttrDataLength())))
+			(const char *)pAttrItem->getAttrDataPtr(),
+			pAttrItem->getAttrDataLength())))
 		{
 			goto Exit;
 		}
@@ -18058,7 +17799,7 @@ RCODE F_AttrItem::resizePayloadBuffer(
 					bMutexLocked = TRUE;
 				}
 				m_pucPayload -= sizeof( F_AttrItem *);
-				gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.freeBuf( m_uiPayloadLen + 
+				gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf( m_uiPayloadLen + 
 					sizeof( F_AttrItem *), &m_pucPayload);
 			}
 			else
@@ -18087,7 +17828,7 @@ RCODE F_AttrItem::resizePayloadBuffer(
 			if( uiCurrentSize && uiCurrentSize > sizeof( FLMBYTE *))
 			{
 				m_pucPayload -= sizeof( F_AttrItem *);
-				if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.reallocBuf(
+				if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->reallocBuf(
 					&gv_XFlmSysData.pNodeCacheMgr->m_attrBufferRelocator,
 					m_uiPayloadLen + sizeof( F_AttrItem *), 
 					uiTotalNeeded + sizeof( F_AttrItem *), 
@@ -18098,7 +17839,7 @@ RCODE F_AttrItem::resizePayloadBuffer(
 			}
 			else
 			{
-				if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.allocBuf(
+				if( RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->allocBuf(
 					&gv_XFlmSysData.pNodeCacheMgr->m_attrBufferRelocator,
 					uiTotalNeeded + sizeof( F_AttrItem *),
 					&pAttrItem, sizeof( F_AttrItem *), &m_pucPayload)))
@@ -18212,5 +17953,40 @@ RCODE F_AttrItem::setupAttribute(
 
 Exit:
 
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_NodeBufferIStream::open(
+	const char *		pucBuffer,
+	FLMUINT				uiLength,
+	char **				ppucAllocatedBuffer)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_BufferIStream *	pBufferIStream = NULL;
+	
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pBufferIStream->open( pucBuffer, 
+		uiLength, ppucAllocatedBuffer)))
+	{
+		goto Exit;
+	}
+	
+	m_pBufferIStream = pBufferIStream;
+	pBufferIStream = NULL;
+	
+Exit:
+
+	if( pBufferIStream)
+	{
+		pBufferIStream->Release();
+	}
+	
 	return( rc);
 }

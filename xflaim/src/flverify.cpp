@@ -1199,12 +1199,11 @@ RCODE F_DbCheck::verifyBTrees(
 	
 	if (RC_BAD( rc = dbSystem.getTempDir( szTmpIoPath)))
 	{
-		if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-			 rc == NE_XFLM_IO_INVALID_FILENAME)
+		if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+			 rc == NE_FLM_IO_INVALID_FILENAME)
 		{
-			if (RC_BAD( rc = gv_pFileSystem->pathReduce( m_pDb->m_pDatabase->m_pszDbPath,
-													 szTmpIoPath,
-													 szBaseName)))
+			if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
+				m_pDb->m_pDatabase->m_pszDbPath, szTmpIoPath, szBaseName)))
 			{
 				goto Exit;
 			}
@@ -4084,7 +4083,7 @@ FSTATIC FLMBYTE * getEntryEnd(
 Desc:	Compare two cache blocks during a sort to determine which 
 		one has lower address.
 *****************************************************************************/
-FINLINE FLMINT blkSortCompare(
+FINLINE FLMINT FLMAPI blkSortCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -4109,7 +4108,7 @@ FINLINE FLMINT blkSortCompare(
 /***************************************************************************
 Desc:	Swap two entries in cache table during sort.
 *****************************************************************************/
-FINLINE void blkSortSwap(
+FINLINE void FLMAPI blkSortSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -4408,12 +4407,12 @@ RCODE F_NodeVerifier::finalize(
 	FLMBOOL				bSkipDOMLinkCheck,
 	FLMINT *				piElmErrCodeRV)
 {
-	RCODE					rc	= NE_XFLM_OK;
-	NODE_RS_ENTRY *	pRSEntry = NULL;
-	FLMUINT				uiRSBufIndex;
-	FLMUINT				uiStorageFlags;
-	F_NameTable *		pNameTable = pDict->getNameTable();
-	F_BufferIStream	bufferStream;
+	RCODE						rc	= NE_XFLM_OK;
+	NODE_RS_ENTRY *		pRSEntry = NULL;
+	FLMUINT					uiRSBufIndex;
+	FLMUINT					uiStorageFlags;
+	F_NameTable *			pNameTable = pDict->getNameTable();
+	IF_BufferIStream *	pBufferStream = NULL;
 
 	*piElmErrCodeRV = 0;
 	
@@ -4425,13 +4424,19 @@ RCODE F_NodeVerifier::finalize(
 	
 	f_memset( &m_nodeInfo, 0, sizeof( F_NODE_INFO));
 	
-	if( RC_BAD( rc = bufferStream.open( m_pucBuf, m_uiBytesInBuf)))
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferStream)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pBufferStream->open( 
+		(const char *)m_pucBuf, m_uiBytesInBuf)))
 	{
 		goto Exit;
 	}
 	
 	if( RC_BAD( rc = flmReadNodeInfo( uiCollection, ui64NodeId, 
-		&bufferStream, m_uiOverallLength, FALSE, &m_nodeInfo, &uiStorageFlags)))
+		pBufferStream, m_uiOverallLength, FALSE, &m_nodeInfo, &uiStorageFlags)))
 	{
 		goto Exit;
 	}
@@ -4563,6 +4568,11 @@ RCODE F_NodeVerifier::finalize(
 	}
 
 Exit:
+
+	if( pBufferStream)
+	{
+		pBufferStream->Release();
+	}
 
 	if( pRSEntry)
 	{

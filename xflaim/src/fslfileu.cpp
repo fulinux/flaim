@@ -818,6 +818,11 @@ RCODE F_Db::dictClone( void)
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = pNewDict->setup()))
+	{
+		goto Exit;
+	}
 
 	// Nothing to do is not a legal state.
 
@@ -949,7 +954,7 @@ void flmLogIndexingProgress(
 
 	if( (pLogMsg = flmBeginLogMessage( XFLM_GENERAL_MESSAGE)) != NULL)
 	{
-		pLogMsg->changeColor( XFLM_YELLOW, XFLM_BLACK);
+		pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 		if (ui64LastDocumentId)
 		{
 			f_sprintf( (char *)szMsg,
@@ -1134,7 +1139,7 @@ RCODE F_Db::indexDocument(
 	IX_CONTEXT *	pIxContext;
 	F_DOMNode *		pTmpNode = NULL;
 	F_TRAV *			pTrav = NULL;
-	void *			pvMark = m_TempPool.poolMark();
+	void *			pvMark = m_pTempPool->poolMark();
 	CDL_HDR *		pCdlHdr;
 	FLMUINT64		ui64DocId;
 
@@ -1190,7 +1195,7 @@ RCODE F_Db::indexDocument(
 
 	// Do an in-order traversal of the document.
 
-	if (RC_BAD( rc = m_TempPool.poolCalloc( sizeof( F_TRAV), (void **)&pTrav)))
+	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( F_TRAV), (void **)&pTrav)))
 	{
 		goto Exit;
 	}
@@ -1322,12 +1327,12 @@ RCODE F_Db::indexDocument(
 						pIxContextList->pPrev = pIxContext;
 					}
 					pIxContextList = pIxContext;
-
-					if ((pIxContext->pPool = f_new F_Pool) == NULL)
+					
+					if( RC_BAD( rc = FlmAllocPool( &pIxContext->pPool)))
 					{
-						rc = RC_SET( NE_XFLM_MEM);
 						goto Exit;
 					}
+
 					pIxContext->pPool->poolInit( 512);
 
 					if (RC_BAD( rc = pIxContext->pPool->poolCalloc(
@@ -1500,7 +1505,7 @@ Setup_Child:
 				{
 					F_TRAV *	pNewTrav;
 
-					if (RC_BAD( rc = m_TempPool.poolCalloc( sizeof( F_TRAV),
+					if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( F_TRAV),
 														(void **)&pNewTrav)))
 					{
 						goto Exit;
@@ -1725,7 +1730,7 @@ Exit:
 		kyFreeIxContext( pIxd, pIxContextList, &pIxContextList);
 	}
 
-	m_TempPool.poolReset( pvMark);
+	m_pTempPool->poolReset( pvMark);
 	return( rc);
 }
 
@@ -1740,7 +1745,7 @@ RCODE F_Db::indexSetOfDocuments(
 	IF_IxClient *			ifpIxClient,
 	XFLM_INDEX_STATUS *	pIndexStatus,
 	FLMBOOL *				pbHitEnd,
-	F_Thread *				pThread)
+	IF_Thread *				pThread)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT64		ui64DocumentId;
@@ -1760,14 +1765,14 @@ RCODE F_Db::indexSetOfDocuments(
 	FLMBOOL			bRelinquish = FALSE;
 	FLMBYTE			ucKey[ FLM_MAX_NUM_BUF_SIZE];
 	FLMUINT			uiKeyLen;
-	void *			pvTmpPoolMark = m_TempPool.poolMark();
+	void *			pvTmpPoolMark = m_pTempPool->poolMark();
 	F_Btree *		pbtree = NULL;
 	FLMBOOL			bNeg;
 	FLMUINT			uiBytesProcessed;
 	F_DOMNode *		pNode = NULL;
 
-	FLM_MILLI_TO_TIMER_UNITS( 500, uiMinTU); // 1/2 second
-	FLM_SECS_TO_TIMER_UNITS( 10, uiStatusIntervalTU); // 10 seconds
+	uiMinTU = FLM_MILLI_TO_TIMER_UNITS( 500);
+	uiStatusIntervalTU = FLM_SECS_TO_TIMER_UNITS( 10);
 	uiStartTime = FLM_GET_TIMER();
 
 	if (RC_BAD( rc = krefCntrlCheck()))
@@ -2071,7 +2076,7 @@ Exit:
 	}
 
 	krefCntrlFree();
-	m_TempPool.poolReset( pvTmpPoolMark);
+	m_pTempPool->poolReset( pvTmpPoolMark);
 
 	if (pbtree)
 	{
@@ -2472,7 +2477,7 @@ RCODE F_Database::startMaintThread( void)
 
 	// Generate the thread name
 
-	if( RC_BAD( rc = gv_pFileSystem->pathReduce( 
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
 		m_pszDbPath, szThreadName, szBaseName)))
 	{
 		goto Exit;
@@ -2489,9 +2494,9 @@ RCODE F_Database::startMaintThread( void)
 
 	// Start the thread.
 
-	if( RC_BAD( rc = f_threadCreate( &m_pMaintThrd,
+	if( RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( &m_pMaintThrd,
 		F_Database::maintenanceThread, szThreadName,
-		FLM_DEFAULT_THREAD_GROUP, 0, this, NULL, 32000)))
+		0, 0, this, NULL, 32000)))
 	{
 		goto Exit;
 	}
@@ -2517,7 +2522,7 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE F_Db::beginBackgroundTrans(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE		rc = NE_XFLM_OK;
 
@@ -2609,7 +2614,7 @@ Desc:		Thread that will build an index in the background.
 			freed at the conclusion of the routine.
 ****************************************************************************/
 RCODE F_Database::maintenanceThread(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_Database *	pDatabase = (F_Database *)pThread->getParm1();

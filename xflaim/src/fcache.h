@@ -26,14 +26,11 @@
 #ifndef FCACHE_H
 #define FCACHE_H
 
-#include "flfixed.h"
-
 class F_Rfl;
 class F_DOMNode;
 class F_Db;
 class F_DbSystem;
 class F_Database;
-class F_MultiAlloc;
 class F_LocalNodeCache;
 class F_CachedNode;
 class F_CachedBlock;
@@ -117,7 +114,7 @@ FINLINE FLMBOOL checkHashFailTime(
 /*****************************************************************************
 Desc:	Cached item
 ******************************************************************************/
-class F_CachedItem
+class F_CachedItem : public F_Object
 {
 public:
 
@@ -131,12 +128,6 @@ public:
 	{
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	virtual void protectCachedItem( void) = 0;
-
-	virtual void unprotectCachedItem( void) = 0;
-#endif
-	
 private:
 
 	F_CachedItem *	m_pPrevInGlobal;
@@ -188,19 +179,9 @@ public:
 	FINLINE void linkGlobalAsMRU(
 		F_CachedItem *	pItem)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pItem->unprotectCachedItem();
-#endif
-
 		if ((pItem->m_pNextInGlobal = m_pMRUItem) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pNextInGlobal->unprotectCachedItem();
-#endif
 			pItem->m_pNextInGlobal->m_pPrevInGlobal = pItem;
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pNextInGlobal->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -209,9 +190,6 @@ public:
 		}
 
 		pItem->m_pPrevInGlobal = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		pItem->protectCachedItem();
-#endif
 		m_pMRUItem = pItem;
 		flmAssert( pItem != pItem->m_pPrevInGlobal);
 		flmAssert( pItem != pItem->m_pNextInGlobal);
@@ -233,19 +211,9 @@ public:
 		
 		flmAssert( m_pLastMRUItem);
 
-#ifdef FLM_CACHE_PROTECT	
-		pItem->unprotectCachedItem();
-#endif
-
 		if( m_pLastMRUItem->m_pNextInGlobal)
 		{
-#ifdef FLM_CACHE_PROTECT
-			m_pLastMRUItem->m_pNextInGlobal->unprotectCachedItem();
-#endif
 			m_pLastMRUItem->m_pNextInGlobal->m_pPrevInGlobal = pItem;
-#ifdef FLM_CACHE_PROTECT
-			m_pLastMRUItem->m_pNextInGlobal->protectCachedItem();
-#endif
 			pItem->m_pNextInGlobal = m_pLastMRUItem->m_pNextInGlobal;
 		}
 		else
@@ -254,20 +222,9 @@ public:
 			m_pLRUItem = pItem;
 		}
 
-#ifdef FLM_CACHE_PROTECT
-		m_pLastMRUItem->unprotectCachedItem();
-#endif
 		m_pLastMRUItem->m_pNextInGlobal = pItem;
-#ifdef FLM_CACHE_PROTECT
-		m_pLastMRUItem->protectCachedItem();
-#endif
-
 		pItem->m_pPrevInGlobal = m_pLastMRUItem;
 		m_pLastMRUItem = pItem;
-
-#ifdef FLM_CACHE_PROTECT	
-		pItem->protectCachedItem();
-#endif
 
 		flmAssert( pItem != pItem->m_pPrevInGlobal);
 		flmAssert( pItem != pItem->m_pNextInGlobal);
@@ -280,19 +237,9 @@ public:
 	FINLINE void linkGlobalAsLRU(
 		F_CachedItem *	pItem)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pItem->unprotectCachedItem();
-#endif
-
 		if ((pItem->m_pPrevInGlobal = m_pLRUItem) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pPrevInGlobal->unprotectCachedItem();
-#endif
 			pItem->m_pPrevInGlobal->m_pNextInGlobal = pItem;
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pPrevInGlobal->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -304,9 +251,6 @@ public:
 		}
 
 		pItem->m_pNextInGlobal = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		pItem->protectCachedItem();
-#endif
 		m_pLRUItem = pItem;
 
 		flmAssert( pItem != pItem->m_pPrevInGlobal);
@@ -336,13 +280,7 @@ public:
 		{
 			flmAssert( pItem != m_pLRUItem);
 
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pNextInGlobal->unprotectCachedItem();
-#endif
 			pItem->m_pNextInGlobal->m_pPrevInGlobal = pItem->m_pPrevInGlobal;
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pNextInGlobal->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -353,27 +291,15 @@ public:
 		{
 			flmAssert( pItem != m_pMRUItem);
 
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pPrevInGlobal->unprotectCachedItem();
-#endif
 			pItem->m_pPrevInGlobal->m_pNextInGlobal = pItem->m_pNextInGlobal;
-#ifdef FLM_CACHE_PROTECT	
-			pItem->m_pPrevInGlobal->protectCachedItem();
-#endif
 		}
 		else
 		{
 			m_pMRUItem = pItem->m_pNextInGlobal;
 		}
 		
-#ifdef FLM_CACHE_PROTECT	
-		pItem->unprotectCachedItem();
-#endif
 		pItem->m_pNextInGlobal = NULL; 
 		pItem->m_pPrevInGlobal = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		pItem->protectCachedItem();
-#endif
 	}
 
 	// Moves a cached item one step closer to the MRU slot in the global list.
@@ -394,57 +320,27 @@ public:
 		
 			if (pPrevItem->m_pPrevInGlobal)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				pPrevItem->m_pPrevInGlobal->unprotectCachedItem();
-#endif
 				pPrevItem->m_pPrevInGlobal->m_pNextInGlobal = pItem;
-#ifdef FLM_CACHE_PROTECT	
-				pPrevItem->m_pPrevInGlobal->protectCachedItem();
-#endif
 			}
 			else
 			{
 				m_pMRUItem = pItem;
 			}
 	
-#ifdef FLM_CACHE_PROTECT	
-			pItem->unprotectCachedItem();
-#endif
 			pItem->m_pPrevInGlobal = pPrevItem->m_pPrevInGlobal;
-#ifdef FLM_CACHE_PROTECT	
-			pItem->protectCachedItem();
-#endif
-#ifdef FLM_CACHE_PROTECT	
-			pPrevItem->unprotectCachedItem();
-#endif
 			pPrevItem->m_pPrevInGlobal = pItem;
 			pPrevItem->m_pNextInGlobal = pItem->m_pNextInGlobal;
-#ifdef FLM_CACHE_PROTECT	
-			pPrevItem->protectCachedItem();
-#endif
 
 			if (pItem->m_pNextInGlobal)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				pItem->m_pNextInGlobal->unprotectCachedItem();
-#endif
 				pItem->m_pNextInGlobal->m_pPrevInGlobal = pPrevItem;
-#ifdef FLM_CACHE_PROTECT	
-				pItem->m_pNextInGlobal->protectCachedItem();
-#endif
 			}
 			else
 			{
 				m_pLRUItem = pPrevItem;
 			}
 
-#ifdef FLM_CACHE_PROTECT	
-			pItem->unprotectCachedItem();
-#endif
 			pItem->m_pNextInGlobal = pPrevItem;
-#ifdef FLM_CACHE_PROTECT	
-			pItem->protectCachedItem();
-#endif
 		}
 	}
 	
@@ -470,7 +366,7 @@ friend class F_BlockRelocator;
 /***************************************************************************
 Desc:	Global cache manager for XFLAIM.
 ***************************************************************************/
-class F_GlobalCacheMgr : public XF_RefCount, public XF_Base
+class F_GlobalCacheMgr : public F_Object
 {
 public:
 	F_GlobalCacheMgr();
@@ -556,7 +452,7 @@ public:
 	
 private:
 
-	F_SlabManager *	m_pSlabManager;
+	IF_SlabManager *	m_pSlabManager;
 	FLMUINT				m_uiMaxBytes;
 	FLMUINT				m_uiMaxSlabs;
 	FLMBOOL				m_bCachePreallocated;
@@ -604,18 +500,18 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
 /****************************************************************************
 Desc:	This class manages block cache.
 ****************************************************************************/
-class F_BlockCacheMgr : public XF_RefCount, public XF_Base
+class F_BlockCacheMgr : public F_Object
 {
 public:
 	F_BlockCacheMgr();
@@ -661,7 +557,7 @@ public:
 			f_mutexLock( gv_XFlmSysData.hBlockCacheMutex);
 		}
 
-		m_blockAllocator.defragmentMemory();
+		m_pBlockAllocator->defragmentMemory();
 
 		if( !bMutexLocked)
 		{
@@ -670,10 +566,10 @@ public:
 	}
 
 	FINLINE void getUsageStats(
-		XFLM_SLAB_USAGE *		pUsage)
+		FLM_SLAB_USAGE *		pUsage)
 	{
 		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->lockMutex();
-		f_memcpy( pUsage, &m_Usage, sizeof( XFLM_SLAB_USAGE));
+		f_memcpy( pUsage, &m_Usage, sizeof( FLM_SLAB_USAGE));
 		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->unlockMutex();
 	}
 
@@ -741,7 +637,7 @@ private:
 												// retry again.
 	FLMUINT				m_uiHashMask;	// Bits that are significant
 												// for the number of hash buckets.
-	F_MultiAlloc		m_blockAllocator;	
+	IF_MultiAlloc *	m_pBlockAllocator;	
 												// Fixed size allocators for cache blocks
 	F_BlockRelocator	m_blockRelocator;
 												// Relocator for cache blocks
@@ -847,23 +743,9 @@ public:
 	
 	~F_CachedBlock();
 	
-#ifdef FLM_CACHE_PROTECT	
-	FINLINE void protectCachedItem( void)
-	{
-		gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.protectBuffer( this);
-	}
-#endif
-	
-#ifdef FLM_CACHE_PROTECT	
-	FINLINE void unprotectCachedItem( void)
-	{
-		gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.unprotectBuffer( this);
-	}
-#endif
-	
 	FINLINE FLMUINT memSize( void)
 	{
-		return( gv_XFlmSysData.pBlockCacheMgr->m_blockAllocator.getTrueSize( 
+		return( gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->getTrueSize( 
 				(FLMBYTE *)this));
 	}
 	
@@ -929,13 +811,7 @@ public:
 			gv_XFlmSysData.pBlockCacheMgr->m_Usage.uiOldVerCount--;
 		}
 
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_ui64HighTransID = ui64NewTransID;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Determines if a cache block is needed by a read transaction.
@@ -954,27 +830,14 @@ public:
 		if ((m_pNextInReplaceList = 
 			gv_XFlmSysData.pBlockCacheMgr->m_pMRUReplace) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInReplaceList->unprotectCachedItem();
-#endif
 			m_pNextInReplaceList->m_pPrevInReplaceList = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInReplaceList->protectCachedItem();
-#endif
 		}
 		else
 		{
 			gv_XFlmSysData.pBlockCacheMgr->m_pLRUReplace = this;
 		}
 		
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_pPrevInReplaceList = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
-
 		gv_XFlmSysData.pBlockCacheMgr->m_pMRUReplace = this;
 		gv_XFlmSysData.pBlockCacheMgr->m_uiReplaceableCount++;
 		gv_XFlmSysData.pBlockCacheMgr->m_uiReplaceableBytes += memSize();
@@ -988,26 +851,14 @@ public:
 	
 		if ((m_pPrevInReplaceList = gv_XFlmSysData.pBlockCacheMgr->m_pLRUReplace) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 			m_pPrevInReplaceList->m_pNextInReplaceList = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInReplaceList->protectCachedItem();
-#endif
 		}
 		else
 		{
 			gv_XFlmSysData.pBlockCacheMgr->m_pMRUReplace = this;
 		}
 
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_pNextInReplaceList = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 		gv_XFlmSysData.pBlockCacheMgr->m_pLRUReplace = this;
 		gv_XFlmSysData.pBlockCacheMgr->m_uiReplaceableCount++;
 		gv_XFlmSysData.pBlockCacheMgr->m_uiReplaceableBytes += memSize();
@@ -1023,19 +874,9 @@ public:
 	
 		if( (pPrevSCache = m_pPrevInReplaceList) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			unprotectCachedItem();
-#endif
-			
 			if( pPrevSCache->m_pPrevInReplaceList)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				pPrevSCache->m_pPrevInReplaceList->unprotectCachedItem();
-#endif
 				pPrevSCache->m_pPrevInReplaceList->m_pNextInReplaceList = this;
-#ifdef FLM_CACHE_PROTECT	
-				pPrevSCache->m_pPrevInReplaceList->protectCachedItem();
-#endif
 			}
 			else
 			{
@@ -1044,24 +885,12 @@ public:
 	
 			m_pPrevInReplaceList = pPrevSCache->m_pPrevInReplaceList;
 
-#ifdef FLM_CACHE_PROTECT	
-			pPrevSCache->unprotectCachedItem();
-#endif
 			pPrevSCache->m_pPrevInReplaceList = this;
 			pPrevSCache->m_pNextInReplaceList = m_pNextInReplaceList;
-#ifdef FLM_CACHE_PROTECT	
-			pPrevSCache->protectCachedItem();
-#endif
 			
 			if( m_pNextInReplaceList)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInReplaceList->unprotectCachedItem();
-#endif
 				m_pNextInReplaceList->m_pPrevInReplaceList = pPrevSCache;
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInReplaceList->protectCachedItem();
-#endif
 			}
 			else
 			{
@@ -1069,9 +898,6 @@ public:
 			}
 
 			m_pNextInReplaceList = pPrevSCache;
-#ifdef FLM_CACHE_PROTECT	
-			protectCachedItem();
-#endif
 		}
 	}
 
@@ -1082,9 +908,6 @@ public:
 	{
 		if( m_ui16Flags)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			unprotectCachedItem();
-#endif
 			if( (m_ui16Flags &= ~ui16FlagsToClear) == 0)
 			{
 				if( !m_pPrevInGlobal ||
@@ -1098,9 +921,6 @@ public:
 					linkToReplaceListAsLRU();
 				}
 			}
-#ifdef FLM_CACHE_PROTECT	
-			protectCachedItem();
-#endif
 		}
 	}
 
@@ -1112,18 +932,12 @@ public:
 	{
 		flmAssert( ui16FlagsToSet);
 	
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		if( !m_ui16Flags)
 		{
 			unlinkFromReplaceList();
 		}
 
 		m_ui16Flags |= ui16FlagsToSet;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	// Set the dirty flag on a cache block.
@@ -1194,9 +1008,6 @@ public:
 		FLMUINT)		// uiThreadId)
 	#endif
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 
 	#ifdef FLM_DEBUG
 		if (m_pUseList ||
@@ -1252,10 +1063,6 @@ public:
 				gv_XFlmSysData.pBlockCacheMgr->m_uiBlocksUsed--;
 			}
 		}
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	// Tests if a block can be freed from cache.
@@ -1377,39 +1184,9 @@ public:
 	void operator delete(
 		void *			ptr);
 
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete(
-		void *			ptr,
-		FLMSIZET			uiSize,
-		const char *	pszFileName,
-		int				iLine);
-#endif
-
 	void operator delete[](
 		void *			ptr);
 
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete(
-		void *			ptr,
-		FLMUINT			uiBlockSize,
-		FLMBOOL			bAllocMutexLocked);
-#endif
-
-
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete(
-		void *			ptr,
-		const char *	file,
-		int				line);
-#endif
-
-#if !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete[](
-		void *			ptr,
-		const char *	pszFileName,
-		int				iLineNum);
-#endif
-	
 private:
 
 	void unlinkFromReplaceList( void);
@@ -1522,29 +1299,15 @@ private:
 	FINLINE void linkToHashBucket(
 		F_CachedBlock **	ppSCacheBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-
 	#ifdef SCACHE_LINK_CHECKING
 		checkHashLinks( ppSCacheBucket);
 	#endif
 		m_pPrevInHashBucket = NULL;
 		if ((m_pNextInHashBucket = *ppSCacheBucket) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInHashBucket->unprotectCachedItem();
-#endif
 			m_pNextInHashBucket->m_pPrevInHashBucket = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInHashBucket->protectCachedItem();
-#endif
 		}
 		*ppSCacheBucket = this;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Unlink a cache block from its hash bucket.  This routine assumes
@@ -1552,10 +1315,6 @@ private:
 	FINLINE void unlinkFromHashBucket(
 		F_CachedBlock **	ppSCacheBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 	#ifdef SCACHE_LINK_CHECKING
 		checkHashUnlinks( ppSCacheBucket);
 	#endif
@@ -1566,24 +1325,12 @@ private:
 
 		if (m_pNextInHashBucket)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInHashBucket->unprotectCachedItem();
-#endif
 			m_pNextInHashBucket->m_pPrevInHashBucket = m_pPrevInHashBucket;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInHashBucket->protectCachedItem();
-#endif
 		}
 	
 		if (m_pPrevInHashBucket)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInHashBucket->unprotectCachedItem();
-#endif
 			m_pPrevInHashBucket->m_pNextInHashBucket = m_pNextInHashBucket;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInHashBucket->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -1592,10 +1339,6 @@ private:
 	
 		m_pNextInHashBucket = NULL;
 		m_pPrevInHashBucket = NULL;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	void unlinkCache(
@@ -1695,11 +1438,11 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1718,11 +1461,11 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1741,11 +1484,11 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1764,11 +1507,11 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1787,11 +1530,11 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1810,11 +1553,11 @@ public:
 	{
 	}
 
-	void relocate(
+	void FLMAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL canRelocate(
+	FLMBOOL FLMAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1824,7 +1567,7 @@ Desc:	 	This structure defines the header information that is used to
 			control the FLAIM record cache.  This structure will be embedded
 			in the FLMSYSDATA structure.
 ****************************************************************************/
-class F_NodeCacheMgr : public XF_RefCount, public XF_Base
+class F_NodeCacheMgr : public F_Object
 {
 public:
 	F_NodeCacheMgr();
@@ -1894,9 +1637,9 @@ public:
 			f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 		}
 
-		m_nodeAllocator.defragmentMemory();
-		m_bufAllocator.defragmentMemory();
-		m_attrItemAllocator.defragmentMemory();
+		m_pNodeAllocator->defragmentMemory();
+		m_pBufAllocator->defragmentMemory();
+		m_pAttrItemAllocator->defragmentMemory();
 
 		if( !bMutexLocked)
 		{
@@ -1905,10 +1648,10 @@ public:
 	}
 
 	FINLINE void getUsageStats(
-		XFLM_SLAB_USAGE *		pUsage)
+		FLM_SLAB_USAGE *		pUsage)
 	{
 		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->lockMutex();
-		f_memcpy( pUsage, &m_Usage, sizeof( XFLM_SLAB_USAGE));
+		f_memcpy( pUsage, &m_Usage, sizeof( FLM_SLAB_USAGE));
 		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->unlockMutex();
 	}
 	
@@ -1984,11 +1727,11 @@ private:
 	FLMUINT				m_uiIoWaits;		// Number of times multiple threads
 													// were reading the same node from
 													// disk at the same time.
-	F_FixedAlloc		m_nodeAllocator;	// Fixed size allocator for F_CachedNode
+	IF_FixedAlloc *	m_pNodeAllocator;	// Fixed size allocator for F_CachedNode
 													// objects
-	F_BufferAlloc		m_bufAllocator;	// Buffer allocator for buffers in
+	IF_BufferAlloc *	m_pBufAllocator;	// Buffer allocator for buffers in
 													// F_CachedNode objects
-	F_FixedAlloc		m_attrItemAllocator;
+	IF_FixedAlloc *	m_pAttrItemAllocator;
 													// Allocator for attribute list items
 	F_NodeRelocator			m_nodeRelocator;
 	F_NodeDataRelocator		m_nodeDataRelocator;
@@ -2219,11 +1962,11 @@ public:
 
 	FINLINE FLMUINT memSize( void)
 	{
-		FLMUINT	uiSize = gv_XFlmSysData.pNodeCacheMgr->m_attrItemAllocator.getCellSize();
+		FLMUINT	uiSize = gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->getCellSize();
 
 		if( m_uiPayloadLen > sizeof( FLMBYTE *))
 		{
-			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.getTrueSize( 
+			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getTrueSize( 
 				m_uiPayloadLen + sizeof( F_AttrItem *),
 				m_pucPayload - sizeof( F_AttrItem *));
 		}
@@ -2307,20 +2050,6 @@ public:
 	void operator delete[](
 		void *			ptr);
 
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete(
-		void *			ptr,
-		const char *	file,
-		int				line);
-#endif
-
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete[](
-		void *			ptr,
-		const char *	pszFileName,
-		int				iLineNum);
-#endif
-	
 private:
 
 	F_CachedNode *		m_pCachedNode;
@@ -2444,18 +2173,6 @@ public:
 	
 	~F_CachedNode();
 
-#ifdef FLM_CACHE_PROTECT	
-	FINLINE void protectCachedItem( void)
-	{
-		gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.protectCell( this);
-	}
-
-	FINLINE void unprotectCachedItem( void)
-	{
-		gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.unprotectCell( this);
-	}
-#endif
-	
 	// This method assumes that the node cache mutex has been locked.
 
 	FINLINE FLMBOOL canBeFreed( void)
@@ -2536,40 +2253,22 @@ public:
 	FINLINE void setNodeAndDataPtr(
 		FLMBYTE *	pucActualAlloc)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		*((F_CachedNode **)(pucActualAlloc)) = this;
 		m_pucData = pucActualAlloc + allocOverhead();
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE void setNodeListPtr(
 		FLMBYTE *	pucActualAlloc)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		*((F_CachedNode **)(pucActualAlloc)) = this;
 		m_pNodeList = (NODE_ITEM *)(pucActualAlloc + allocOverhead());
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE void setAttrListPtr(
 		FLMBYTE *	pucActualAlloc)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		*((F_CachedNode **)(pucActualAlloc)) = this;
 		m_ppAttrList = (F_AttrItem **)(pucActualAlloc + allocOverhead());
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMBYTE * getDataPtr( void)
@@ -2595,25 +2294,13 @@ public:
 	FINLINE void setFlags(
 		FLMUINT	uiFlags)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiFlags |= uiFlags;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE void unsetFlags(
 		FLMUINT	uiFlags)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiFlags &= ~uiFlags;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getNodeId( void)
@@ -2639,13 +2326,7 @@ public:
 	FINLINE void setNodeType(
 		eDomNodeType eNodeType)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.eNodeType = eNodeType;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT getDataType( void)
@@ -2656,13 +2337,7 @@ public:
 	FINLINE void setDataType(
 		FLMUINT	uiDataType)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.uiDataType = uiDataType;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT getNameId( void)
@@ -2673,13 +2348,7 @@ public:
 	FINLINE void setNameId(
 		FLMUINT	uiNameId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.uiNameId = uiNameId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT getPrefixId( void)
@@ -2690,13 +2359,7 @@ public:
 	FINLINE void setPrefixId(
 		FLMUINT	uiPrefixId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.uiPrefixId = uiPrefixId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getDocumentId( void)
@@ -2714,13 +2377,7 @@ public:
 	FINLINE void setDocumentId(
 		FLMUINT64	ui64DocumentId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64DocumentId = ui64DocumentId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getParentId( void)
@@ -2731,13 +2388,7 @@ public:
 	FINLINE void setParentId(
 		FLMUINT64	ui64ParentId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64ParentId = ui64ParentId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getNextSibId( void)
@@ -2748,13 +2399,7 @@ public:
 	FINLINE void setNextSibId(
 		FLMUINT64	ui64NextSibId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64NextSibId = ui64NextSibId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getPrevSibId( void)
@@ -2765,27 +2410,15 @@ public:
 	FINLINE void setPrevSibId(
 		FLMUINT64	ui64PrevSibId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64PrevSibId = ui64PrevSibId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE void setSibIds(
 		FLMUINT64	ui64PrevSibId,
 		FLMUINT64	ui64NextSibId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64NextSibId = ui64NextSibId;
 		m_nodeInfo.ui64PrevSibId = ui64PrevSibId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getFirstChildId( void)
@@ -2796,13 +2429,7 @@ public:
 	FINLINE void setFirstChildId(
 		FLMUINT64	ui64FirstChildId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64FirstChildId = ui64FirstChildId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getLastChildId( void)
@@ -2813,27 +2440,15 @@ public:
 	FINLINE void setLastChildId(
 		FLMUINT64	ui64LastChildId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64LastChildId = ui64LastChildId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE void setChildIds(
 		FLMUINT64	ui64FirstChildId,
 		FLMUINT64	ui64LastChildId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64FirstChildId = ui64FirstChildId;
 		m_nodeInfo.ui64LastChildId = ui64LastChildId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT getDataChildCount( void)
@@ -2844,16 +2459,8 @@ public:
 	FINLINE void setDataChildCount(
 		FLMUINT		uiDataChildCount)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-
 		flmAssert( m_nodeInfo.ui64FirstChildId);
 		m_nodeInfo.uiDataChildCount = uiDataChildCount;
-		
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT64 getAnnotationId( void)
@@ -2864,13 +2471,7 @@ public:
 	FINLINE void setAnnotationId(
 		FLMUINT64	ui64AnnotationId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64AnnotationId = ui64AnnotationId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMBOOL hasAttributes( void)
@@ -2929,13 +2530,7 @@ public:
 	FINLINE void setDataLength(
 		FLMUINT	uiDataLength)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.uiDataLength = uiDataLength;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT getEncDefId( void)
@@ -2946,13 +2541,7 @@ public:
 	FINLINE void setEncDefId(
 		FLMUINT	uiEncDefId)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.uiEncDefId = uiEncDefId;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMBOOL getQuickNumber64(
@@ -3003,41 +2592,23 @@ public:
 	FINLINE void setUINT64(
 		FLMUINT64	ui64Value)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_numberVal.ui64Val = ui64Value;
 		m_uiFlags &= ~FDOM_SIGNED_QUICK_VAL;
 		m_uiFlags |= FDOM_UNSIGNED_QUICK_VAL;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE void setINT64(
 		FLMINT64	i64Value)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_numberVal.i64Val = i64Value;
 		m_uiFlags &= ~FDOM_UNSIGNED_QUICK_VAL;
 		m_uiFlags |= FDOM_SIGNED_QUICK_VAL;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE void setMetaValue(
 		FLMUINT64		ui64Value)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_nodeInfo.ui64MetaValue = ui64Value;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	FINLINE FLMUINT64 getMetaValue( void)
@@ -3053,13 +2624,7 @@ public:
 	FINLINE void setOffsetIndex(
 		FLMUINT	uiOffsetIndex)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiOffsetIndex = uiOffsetIndex;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT32 getBlkAddr( void)
@@ -3070,13 +2635,7 @@ public:
 	FINLINE void setBlkAddr(
 		FLMUINT32	ui32BlkAddr)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_ui32BlkAddr = ui32BlkAddr;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMBOOL isRightVersion(
@@ -3140,69 +2699,31 @@ public:
 	void operator delete[](
 		void *			ptr);
 
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete(
-		void *			ptr,
-		const char *	file,
-		int				line);
-#endif
-
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__) && !defined( FLM_SOLARIS)
-	void operator delete[](
-		void *			ptr,
-		const char *	pszFileName,
-		int				iLineNum);
-#endif
-	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void incrNodeUseCount( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags = (m_uiCacheFlags & (~(NCA_COUNTER_BITS))) |
 						 (((m_uiCacheFlags & NCA_COUNTER_BITS) + 1));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void decrNodeUseCount( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags = (m_uiCacheFlags & (~(NCA_COUNTER_BITS))) |
 						 (((m_uiCacheFlags & NCA_COUNTER_BITS) - 1));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void incrStreamUseCount( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiStreamUseCount++;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void decrStreamUseCount( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		flmAssert( m_uiStreamUseCount);
 		m_uiStreamUseCount--;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT getStreamUseCount( void)
@@ -3464,49 +2985,25 @@ private:
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void setReadingIn( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags |= NCA_READING_IN;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unsetReadingIn( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags &= (~(NCA_READING_IN));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void setUncommitted( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags |= NCA_UNCOMMITTED;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unsetUncommitted( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags &= (~(NCA_UNCOMMITTED));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
@@ -3518,49 +3015,25 @@ private:
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void setLatestVer( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags |= NCA_LATEST_VER;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unsetLatestVer( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags &= (~(NCA_LATEST_VER));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void setPurged( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags |= NCA_PURGED;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unsetPurged( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags &= (~(NCA_PURGED));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
@@ -3572,25 +3045,13 @@ private:
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void setLinkedToDatabase( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags |= NCA_LINKED_TO_DATABASE;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unsetLinkedToDatabase( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_uiCacheFlags &= (~(NCA_LINKED_TO_DATABASE));
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
@@ -3605,24 +3066,12 @@ private:
 	{
 		if (m_pNextInGlobal)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInGlobal->unprotectCachedItem();
-#endif
 			m_pNextInGlobal->m_pPrevInGlobal = m_pPrevInGlobal;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInGlobal->protectCachedItem();
-#endif
 		}
 
 		if (m_pPrevInGlobal)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInGlobal->unprotectCachedItem();
-#endif
 			m_pPrevInGlobal->m_pNextInGlobal = m_pNextInGlobal;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInGlobal->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -3630,14 +3079,8 @@ private:
 				(F_CachedNode *)m_pNextInGlobal;
 		}
 
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		m_pPrevInGlobal = NULL;
 		m_pNextInGlobal = NULL;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Link a node to an F_Database list at the head of the list.
@@ -3645,22 +3088,12 @@ private:
 	FINLINE void linkToDatabaseAtHead(
 		F_Database *	pDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		if (!pDatabase->m_pLastDirtyNode || nodeIsDirty())
 		{
 			m_pPrevInDatabase = NULL;
 			if ((m_pNextInDatabase = pDatabase->m_pFirstNode) != NULL)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				pDatabase->m_pFirstNode->unprotectCachedItem();
-#endif
 				pDatabase->m_pFirstNode->m_pPrevInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-				pDatabase->m_pFirstNode->protectCachedItem();
-#endif
 			}
 			else
 			{
@@ -3682,22 +3115,10 @@ private:
 			m_pPrevInDatabase = pDatabase->m_pLastDirtyNode;
 			m_pNextInDatabase = m_pPrevInDatabase->m_pNextInDatabase;
 
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInDatabase->unprotectCachedItem();
-#endif
 			m_pPrevInDatabase->m_pNextInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInDatabase->protectCachedItem();
-#endif
 			if (m_pNextInDatabase)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInDatabase->unprotectCachedItem();
-#endif
 				m_pNextInDatabase->m_pPrevInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInDatabase->protectCachedItem();
-#endif
 			}
 			else
 			{
@@ -3707,9 +3128,6 @@ private:
 
 		m_pDatabase = pDatabase;
 		setLinkedToDatabase();
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Link a node to an F_Database list at the end of the list.
@@ -3717,9 +3135,6 @@ private:
 	FINLINE void linkToDatabaseAtEnd(
 		F_Database *	pDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		
 		// Node cannot be a dirty node.
 		
@@ -3727,13 +3142,7 @@ private:
 		m_pNextInDatabase = NULL;
 		if( (m_pPrevInDatabase = pDatabase->m_pLastNode) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pDatabase->m_pLastNode->unprotectCachedItem();
-#endif
 			pDatabase->m_pLastNode->m_pNextInDatabase = this;
-#ifdef FLM_CACHE_PROTECT	
-			pDatabase->m_pLastNode->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -3743,10 +3152,6 @@ private:
 		pDatabase->m_pLastNode = this;
 		m_pDatabase = pDatabase;
 		setLinkedToDatabase();
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Unlink a node from its F_Database list.
@@ -3755,9 +3160,6 @@ private:
 	{
 		if( nodeLinkedToDatabase())
 		{
-#ifdef FLM_CACHE_PROTECT	
-			unprotectCachedItem();
-#endif
 			
 			// If this is the last dirty node, change the database's
 			// last dirty pointer to point to the previous node, if any.
@@ -3772,13 +3174,7 @@ private:
 			
 			if( m_pNextInDatabase)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInDatabase->unprotectCachedItem();
-#endif
 				m_pNextInDatabase->m_pPrevInDatabase = m_pPrevInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-				m_pNextInDatabase->protectCachedItem();
-#endif
 			}
 			else
 			{
@@ -3787,13 +3183,7 @@ private:
 
 			if( m_pPrevInDatabase)
 			{
-#ifdef FLM_CACHE_PROTECT	
-				m_pPrevInDatabase->unprotectCachedItem();
-#endif
 				m_pPrevInDatabase->m_pNextInDatabase = m_pNextInDatabase;
-#ifdef FLM_CACHE_PROTECT	
-				m_pPrevInDatabase->protectCachedItem();
-#endif
 			}
 			else
 			{
@@ -3804,10 +3194,6 @@ private:
 			m_pNextInDatabase = NULL;
 			m_pDatabase = NULL;
 			unsetLinkedToDatabase();
-
-#ifdef FLM_CACHE_PROTECT	
-			protectCachedItem();
-#endif
 		}
 	}
 	
@@ -3818,28 +3204,15 @@ private:
 		F_CachedNode ** ppHashBucket = gv_XFlmSysData.pNodeCacheMgr->nodeHash( 
 													m_nodeInfo.ui64NodeId);
 		
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		flmAssert( m_pNewerVersion == NULL);
 	
 		m_pPrevInBucket = NULL;
 
 		if ((m_pNextInBucket = *ppHashBucket) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInBucket->unprotectCachedItem();
-#endif
 			m_pNextInBucket->m_pPrevInBucket = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInBucket->protectCachedItem();
-#endif
 		}
 
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 		*ppHashBucket = this;
 	}
 	
@@ -3847,32 +3220,16 @@ private:
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unlinkFromHashBucket( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		flmAssert( m_pNewerVersion == NULL);
 		
 		if (m_pNextInBucket)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInBucket->unprotectCachedItem();
-#endif
 			m_pNextInBucket->m_pPrevInBucket = m_pPrevInBucket;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInBucket->protectCachedItem();
-#endif
 		}
 
 		if (m_pPrevInBucket)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInBucket->unprotectCachedItem();
-#endif
 			m_pPrevInBucket->m_pNextInBucket = m_pNextInBucket;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInBucket->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -3885,10 +3242,6 @@ private:
 
 		m_pPrevInBucket = NULL;
 		m_pNextInBucket = NULL;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Unlink a node from its version list.
@@ -3897,73 +3250,33 @@ private:
 		F_CachedNode *	pNewerVer,
 		F_CachedNode *	pOlderVer)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-
 		if( (m_pNewerVersion = pNewerVer) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pNewerVer->unprotectCachedItem();
-#endif
 			pNewerVer->m_pOlderVersion = this;
-#ifdef FLM_CACHE_PROTECT	
-			pNewerVer->protectCachedItem();
-#endif
 		}
 
 		if ((m_pOlderVersion = pOlderVer) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			pOlderVer->unprotectCachedItem();
-#endif
 			pOlderVer->m_pNewerVersion = this;
-#ifdef FLM_CACHE_PROTECT	
-			pOlderVer->protectCachedItem();
-#endif
 		}
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Unlink a node from its version list.  This routine
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unlinkFromVerList( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		if (m_pNewerVersion)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNewerVersion->unprotectCachedItem();
-#endif
 			m_pNewerVersion->m_pOlderVersion = m_pOlderVersion;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNewerVersion->protectCachedItem();
-#endif
 		}
 
 		if (m_pOlderVersion)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pOlderVersion->unprotectCachedItem();
-#endif
 			m_pOlderVersion->m_pNewerVersion = m_pNewerVersion;
-#ifdef FLM_CACHE_PROTECT	
-			m_pOlderVersion->protectCachedItem();
-#endif
 		}
 
 		m_pNewerVersion = NULL;
 		m_pOlderVersion = NULL;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	// Link a node into the heap list
@@ -3973,28 +3286,14 @@ private:
 		flmAssert( !m_pPrevInHeapList);
 		flmAssert( (m_uiFlags & FDOM_HEAP_ALLOC) == 0);
 	
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-
 		if( (m_pNextInHeapList = 
 			gv_XFlmSysData.pNodeCacheMgr->m_pHeapList) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			gv_XFlmSysData.pNodeCacheMgr->m_pHeapList->unprotectCachedItem();
-#endif
 			gv_XFlmSysData.pNodeCacheMgr->m_pHeapList->m_pPrevInHeapList = this;
-#ifdef FLM_CACHE_PROTECT	
-			gv_XFlmSysData.pNodeCacheMgr->m_pHeapList->protectCachedItem();
-#endif
 		}
 		
 		gv_XFlmSysData.pNodeCacheMgr->m_pHeapList = this;
 		m_uiFlags |= FDOM_HEAP_ALLOC;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Unlink a node from the heap list
@@ -4003,30 +3302,14 @@ private:
 	{
 		flmAssert( m_uiFlags & FDOM_HEAP_ALLOC);
 	
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		if (m_pNextInHeapList)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInHeapList->unprotectCachedItem();
-#endif
 			m_pNextInHeapList->m_pPrevInHeapList = m_pPrevInHeapList;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInHeapList->protectCachedItem();
-#endif
 		}
 		
 		if (m_pPrevInHeapList)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInHeapList->unprotectCachedItem();
-#endif
 			m_pPrevInHeapList->m_pNextInHeapList = m_pNextInHeapList;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInHeapList->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -4036,10 +3319,6 @@ private:
 		m_pPrevInHeapList = NULL;
 		m_pNextInHeapList = NULL;
 		m_uiFlags &= ~FDOM_HEAP_ALLOC;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
@@ -4047,56 +3326,26 @@ private:
 	{
 		flmAssert( !m_pPrevInOldList);
 	
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		if( (m_pNextInOldList = 
 			gv_XFlmSysData.pNodeCacheMgr->m_pOldList) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			gv_XFlmSysData.pNodeCacheMgr->m_pOldList->unprotectCachedItem();
-#endif
 			gv_XFlmSysData.pNodeCacheMgr->m_pOldList->m_pPrevInOldList = this;
-#ifdef FLM_CACHE_PROTECT	
-			gv_XFlmSysData.pNodeCacheMgr->m_pOldList->protectCachedItem();
-#endif
 		}
 		
 		gv_XFlmSysData.pNodeCacheMgr->m_pOldList = this;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
 	FINLINE void unlinkFromOldList( void)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
-		
 		if (m_pNextInOldList)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInOldList->unprotectCachedItem();
-#endif
 			m_pNextInOldList->m_pPrevInOldList = m_pPrevInOldList;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInOldList->protectCachedItem();
-#endif
 		}
 		
 		if (m_pPrevInOldList)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInOldList->unprotectCachedItem();
-#endif
 			m_pPrevInOldList->m_pNextInOldList = m_pNextInOldList;
-#ifdef FLM_CACHE_PROTECT	
-			m_pPrevInOldList->protectCachedItem();
-#endif
 		}
 		else
 		{
@@ -4105,32 +3354,28 @@ private:
 		
 		m_pPrevInOldList = NULL;
 		m_pNextInOldList = NULL;
-
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 	
 	FINLINE FLMUINT memSize( void)
 	{
-		FLMUINT	uiSize = gv_XFlmSysData.pNodeCacheMgr->m_nodeAllocator.getCellSize(); 
+		FLMUINT	uiSize = gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->getCellSize(); 
 				
 		if (m_pucData)
 		{
-			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.getTrueSize( 
+			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getTrueSize( 
 				m_uiDataBufSize, getActualPointer( m_pucData));
 		}
 
 		if( m_pNodeList)
 		{
-			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.getTrueSize(
+			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getTrueSize(
 				calcNodeListBufSize( m_nodeInfo.uiChildElmCount),
 				getActualPointer( m_pNodeList));
 		}
 
 		if( m_ppAttrList)
 		{
-			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_bufAllocator.getTrueSize(
+			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getTrueSize(
 				calcAttrListBufSize( m_uiAttrCount),
 				getActualPointer( m_ppAttrList));
 		}
@@ -4145,10 +3390,6 @@ private:
 		FLMUINT64		ui64NewTransID)
 	{
 		FLMUINT	uiSize;
-		
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		
 		if (m_ui64HighTransId == FLM_MAX_UINT64 &&
 			 ui64NewTransID != FLM_MAX_UINT64)
@@ -4170,9 +3411,6 @@ private:
 		}
 
 		m_ui64HighTransId = ui64NewTransID;
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 	}
 
 	void freePurged( void);

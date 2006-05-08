@@ -78,14 +78,6 @@ void ScaReleaseCache(
 	F_CachedBlock *	pSCache,
 	FLMBOOL				bMutexAlreadyLocked);
 
-#if defined( FLM_NLM) || defined( FLM_WIN)
-	void FastBlockCheckSum(
-			void *		pBlk,
-			FLMUINT *	puiChecksum,
-			FLMUINT *	puiXORData,
-			FLMUINT		uiNumberOfBytes);
-#endif
-
 /*============================================================================
 							File system Btree Cache Routines
 ============================================================================*/
@@ -189,87 +181,6 @@ void flmDoEventCallback(
 	FLMUINT64				ui64NodeId,
 	RCODE						rc);
 
-#define FLM_MAX_SEN_LEN						9
-	
-FLMUINT flmGetSENByteCount(
-	FLMUINT64				ui64Num);
-	
-FLMUINT flmEncodeSEN(
-	FLMUINT64				ui64Value,
-	FLMBYTE **				ppucBuffer,
-	FLMUINT					uiBytesWanted = 0);
-	
-RCODE flmEncodeSEN(
-	FLMUINT64				ui64Value,
-	FLMBYTE **				ppucBuffer,
-	FLMBYTE *				pucEnd);
-
-FLMUINT flmEncodeSENKnownLength(
-	FLMUINT64				ui64Value,
-	FLMUINT					uiSenLen,
-	FLMBYTE **				ppucBuffer);
-
-RCODE flmDecodeSEN64(
-	const FLMBYTE **		ppucBuffer,
-	const FLMBYTE *		pucEnd,
-	FLMUINT64 *				pui64Value);
-
-FINLINE RCODE flmDecodeSEN(
-	const FLMBYTE **		ppucBuffer,
-	const FLMBYTE *		pucEnd,
-	FLMUINT *				puiValue)
-{
-	RCODE				rc = NE_XFLM_OK;
-	FLMUINT64		ui64Value;
-	
-	if( RC_BAD( rc = flmDecodeSEN64( ppucBuffer, pucEnd, &ui64Value)))
-	{
-		return( rc);
-	}
-	
-	if( ui64Value > FLM_MAX_UINT)
-	{
-		return( RC_SET_AND_ASSERT( NE_XFLM_CONV_NUM_OVERFLOW));
-	}
-	
-	if( puiValue)
-	{
-		*puiValue = (FLMUINT)ui64Value;
-	}
-
-	return( rc);
-}
-	
-#ifdef ALLOCATE_SYS_DATA
-	FLMBYTE gv_ucSENLengthArray[] =
-	{
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 0   - 15
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 16  - 31
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 32  - 47
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 48  - 63
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 64  - 79
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 80  - 95
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 96  - 111
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		// 112 - 127
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 128 - 143
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 144 - 159
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 160 - 175
-		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,		// 176 - 191
-		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,		// 192 - 207
-		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,		// 208 - 223
-		4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,		// 224 - 239
-		5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 9		// 240 - 255
-	};
-#else
-	extern FLMBYTE gv_ucSENLengthArray[];
-#endif
-
-FINLINE FLMUINT flmGetSENLength(
-	FLMBYTE 					ucByte)
-{
-	return( gv_ucSENLengthArray[ ucByte]);
-}
-
 void flmLogError(
 	RCODE						rc,
 	const char *			pszDoing,
@@ -327,13 +238,6 @@ RCODE KYCollateValue(
 	FLMBOOL *				pbDataTruncated,
 	FLMBOOL *				pbOriginalCharsLost);
 
-RCODE flmGetNextMetaphone(
-	IF_IStream *			pIStream,
-	FLMUINT *				puiMetaphone,
-	FLMUINT *				puiAltMetaphone = NULL);
-
-RCODE flmVerifyMetaphoneRoutines( void);
-
 #define UNDF_CHR			0x0000		// Undefined char - ignore for now
 #define IGNR_CHR			0x0001		// Ignore this char
 #define SDWD_CHR			0x0002		// Space delimited word chr
@@ -382,7 +286,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	FLMUINT *				puiThreadId = NULL);
 
 RCODE flmGetHdrInfo(
-	F_SuperFileHdl_p		pSFileHdl,
+	F_SuperFileHdl *		pSFileHdl,
 	XFLM_DB_HDR *			pDbHdr,
 	FLMUINT32 *				pui32CalcCRC = NULL);
 

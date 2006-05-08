@@ -31,8 +31,8 @@ FSTATIC void flmFreeCPInfo(
 	CP_INFO **	ppCPInfoRV);
 
 FSTATIC RCODE flmCPThread(
-	F_Thread *		pThread);
-
+	IF_Thread *		pThread);
+	
 /***************************************************************************
 Desc:	Does most of the actual work of opening an existing database, but
 		 doesn't	provide COM interfaces...
@@ -50,7 +50,7 @@ RCODE F_DbSystem::openDb(
 	*ppDb = NULL;
 	if (!pszDbFileName || *pszDbFileName == 0)
 	{
-		rc = RC_SET( NE_XFLM_IO_INVALID_FILENAME);
+		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
 		goto Exit;
 	}
 
@@ -129,8 +129,34 @@ F_Db::F_Db(
 	m_bKrefCompoundKey = FALSE;
 	m_pKrefReset = NULL;
 	
-	m_tmpKrefPool.poolInit( 8192);
-	m_TempPool.poolInit( XFLM_MAX_KEY_SIZE * 4);
+	m_pTmpKrefPool = NULL;
+	m_pTempPool = NULL;
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_Db::setup( void)
+{
+	RCODE		rc = NE_XFLM_OK;
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pTmpKrefPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pTmpKrefPool->poolInit( 8192);
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pTempPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pTempPool->poolInit( XFLM_MAX_KEY_SIZE * 4);
+	
+Exit:
+
+	return( rc);
 }
 
 /***************************************************************************
@@ -151,6 +177,11 @@ RCODE F_DbSystem::allocDb(
 	if ((pDb = f_new F_Db( bInternalOpen)) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDb->setup()))
+	{
 		goto Exit;
 	}
 	
@@ -467,7 +498,7 @@ RCODE F_Database::verifyOkToUse(
 
 	if (m_uiFlags & DBF_BEING_CLOSED)
 	{
-		rc = RC_SET( NE_XFLM_IO_ACCESS_DENIED);
+		rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 		goto Exit;
 	}
 
@@ -522,11 +553,11 @@ RCODE flmCreateLckFile(
 	char				szLockPath [F_PATH_MAX_SIZE];
 	char				szDbBaseName [F_FILENAME_SIZE];
 	char *			pszFileExt;
-	F_FileHdl *		pLockFileHdl = NULL;
+	IF_FileHdl *	pLockFileHdl = NULL;
 	char				szFilePathStr[ F_PATH_MAX_SIZE];
+	FLMUINT			uiIoFlags;
 
-
-	if( RC_BAD( rc = gv_pFileSystem->pathToStorageString( 
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString( 
 		pszFilePath, szFilePathStr)))
 	{
 		goto Exit;
@@ -535,7 +566,8 @@ RCODE flmCreateLckFile(
 	// Extract the 8.3 name and put a .lck extension on it to create
 	// the full path for the .lck file.
 
-	if (RC_BAD( rc = gv_pFileSystem->pathReduce( szFilePathStr, szLockPath, szDbBaseName)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
+		szFilePathStr, szLockPath, szDbBaseName)))
 	{
 		goto Exit;
 	}
@@ -544,7 +576,8 @@ RCODE flmCreateLckFile(
 		pszFileExt++;
 	f_strcpy( pszFileExt, ".lck");
 
-	if (RC_BAD( rc = gv_pFileSystem->pathAppend( szLockPath, szDbBaseName)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+		szLockPath, szDbBaseName)))
 	{
 		goto Exit;
 	}
@@ -556,52 +589,41 @@ RCODE flmCreateLckFile(
 	// then attempt to create the file again.  If it, or the 2nd create
 	// fail, we simply return an access denied error.
 
-	if ((pLockFileHdl = f_new F_FileHdl) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
+uiIoFlags = FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW;
 #ifndef FLM_UNIX
-	pLockFileHdl->setupFileHdl( 0, TRUE);
-#else
-
-	// On Unix, we do not want to delete the file because it
-	// will succeed even if someone else has the file open.
-
-	pLockFileHdl->setupFileHdl( 0, FALSE);
+	uiIoFlags |= FLM_IO_DELETE_ON_RELEASE;
 #endif
 
-	if( RC_BAD( pLockFileHdl->Create( szLockPath,
-									XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYRW)))
+	if( RC_BAD( gv_XFlmSysData.pFileSystem->createFile( 
+		szLockPath, uiIoFlags, &pLockFileHdl)))
 	{
 #ifndef FLM_UNIX
-		if (RC_BAD( gv_pFileSystem->Delete( szLockPath)))
+		if (RC_BAD( gv_XFlmSysData.pFileSystem->deleteFile( szLockPath)))
 		{
-			rc = RC_SET( NE_XFLM_IO_ACCESS_DENIED);
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
-		else if (RC_BAD( pLockFileHdl->Create( szLockPath,
-									XFLM_IO_RDWR  | XFLM_IO_EXCL | XFLM_IO_SH_DENYRW)))
+		else if (RC_BAD( gv_XFlmSysData.pFileSystem->createFile( 
+			szLockPath, uiIoFlags, &pLockFileHdl)))
 		{
-			rc = RC_SET( NE_XFLM_IO_ACCESS_DENIED);
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
 #else
 
-		if( RC_BAD( pLockFileHdl->Open( szLockPath,
-										XFLM_IO_RDWR | XFLM_IO_SH_DENYRW)))
+		if( RC_BAD( gv_XFlmSysData.pFileSystem->openFile( 
+			szLockPath, FLM_IO_RDWR | FLM_IO_SH_DENYRW, &pLockFileHdl)))
 		{
-			rc = RC_SET( NE_XFLM_IO_ACCESS_DENIED);
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
 #endif
 	}
 
 #ifdef FLM_UNIX
-	if( RC_BAD( pLockFileHdl->Lock()))
+	if( RC_BAD( pLockFileHdl->lock()))
 	{
-		rc = RC_SET( NE_XFLM_IO_ACCESS_DENIED);
+		rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 		goto Exit;
 	}
 #endif
@@ -611,7 +633,7 @@ RCODE flmCreateLckFile(
 Exit:
 	if (pLockFileHdl)
 	{
-		(void)pLockFileHdl->Close();
+		(void)pLockFileHdl->close();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -801,7 +823,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		(void)pDb->m_pSFileHdl->ReleaseFiles( TRUE);
+		(void)pDb->m_pSFileHdl->releaseFiles( TRUE);
 	}
 
 	return( rc);
@@ -861,7 +883,8 @@ RCODE F_DbSystem::findDatabase(
 	// NOTE: On non-UNIX, non-WIN platforms, this will basically convert
 	// the string to upper case.
 
-	if (RC_BAD( rc = gv_pFileSystem->pathToStorageString( pszDbPath, szDbPathStr1)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString( 
+		pszDbPath, szDbPathStr1)))
 	{
 		goto Exit;
 	}
@@ -896,7 +919,7 @@ Retry:
 
 			if (pszDataDir && *pszDataDir)
 			{
-				if (RC_BAD( rc = gv_pFileSystem->pathToStorageString(
+				if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString(
 					pszDataDir, szDbPathStr2)))
 				{
 					goto Exit;
@@ -1054,11 +1077,13 @@ F_Database::F_Database(
 	{
 		m_uiFileExtendSize = 65536;
 	}
+	
 	m_pRfl = NULL;
+	
 	f_memset( &m_lastCommittedDbHdr, 0, sizeof( m_lastCommittedDbHdr));
 	f_memset( &m_checkpointDbHdr, 0, sizeof( m_checkpointDbHdr));
 	f_memset( &m_uncommittedDbHdr, 0, sizeof( m_uncommittedDbHdr));
-	m_pFileIdList = NULL;
+	
 	m_pBufferMgr = NULL;
 	m_pCurrLogBuffer = NULL;
 	m_uiCurrLogWriteOffset = 0;
@@ -1248,18 +1273,6 @@ F_Database::~F_Database()
 	freeBlockCache();
 	freeNodeCache();
 	
-	// Free the database ID list.  This will also remove all file handles
-	// associated with this database.
-
-	if (m_pFileIdList)
-	{
-		FLMUINT		uiRefCnt;
-
-		uiRefCnt = m_pFileIdList->Release();
-		flmAssert( !uiRefCnt);
-		m_pFileIdList = NULL;
-	}
-
 	// Release the lock objects.
 
 	if (m_pWriteLockObj)
@@ -1278,7 +1291,7 @@ F_Database::~F_Database()
 
 	if (m_pLockFileHdl)
 	{
-		(void)m_pLockFileHdl->Close();
+		(void)m_pLockFileHdl->close();
 		m_pLockFileHdl->Release();
 		m_pLockFileHdl = NULL;
 	}
@@ -1295,15 +1308,7 @@ F_Database::~F_Database()
 
 	if (m_pDbHdrWriteBuf)
 	{
-#ifdef FLM_WIN
-		(void)VirtualFree( m_pDbHdrWriteBuf, 0, MEM_RELEASE);
-		m_pDbHdrWriteBuf = NULL;
-#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
-		free( m_pDbHdrWriteBuf);
-		m_pDbHdrWriteBuf = NULL;
-#else
-		f_free( &m_pDbHdrWriteBuf);
-#endif
+		f_freeAlignedBuffer( (void **)&m_pDbHdrWriteBuf);
 	}
 
 	// Free the update buffer
@@ -1313,8 +1318,12 @@ F_Database::~F_Database()
 		f_free( &m_pucUpdBuffer);
 		m_uiUpdBufferSize = 0;
 	}
+	
+	if( m_pKrefPool)
+	{
+		m_pKrefPool->Release();
+	}
 
-	m_krefPool.poolFree();
 	if (m_ppBlocksDone)
 	{
 		f_free( &m_ppBlocksDone);
@@ -1410,7 +1419,7 @@ RCODE F_Database::setupDatabase(
 	char				szDbPathStr[ F_PATH_MAX_SIZE];
 	char				szDataDirStr[ F_PATH_MAX_SIZE];
 
-	if( RC_BAD( rc = gv_pFileSystem->pathToStorageString( 
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString( 
 		pszDbPath, szDbPathStr)))
 	{
 		goto Exit;
@@ -1419,7 +1428,7 @@ RCODE F_Database::setupDatabase(
 
 	if( pszDataDir && *pszDataDir)
 	{
-		if( RC_BAD( rc = gv_pFileSystem->pathToStorageString( 
+		if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString( 
 			pszDataDir, szDataDirStr)))
 		{
 			goto Exit;
@@ -1445,8 +1454,13 @@ RCODE F_Database::setupDatabase(
 	{
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pKrefPool)))
+	{
+		goto Exit;
+	}
 
-	m_krefPool.poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE * 8);
+	m_pKrefPool->poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE * 8);
 
 	// Allocate a buffer for writing the DB header
 	// If we are a temporary database, there is no need
@@ -1454,43 +1468,17 @@ RCODE F_Database::setupDatabase(
 
 	if (!m_bTempDb)
 	{
-#ifdef FLM_WIN
-		if ((m_pDbHdrWriteBuf = (XFLM_DB_HDR *)VirtualAlloc( NULL,
-			XFLM_MAX_BLOCK_SIZE, MEM_COMMIT, PAGE_READWRITE)) == NULL)
-		{
-			rc = MapWinErrorToFlaim( GetLastError(), NE_XFLM_MEM);
-			goto Exit;
-		}
-		f_memset( m_pDbHdrWriteBuf, 0, XFLM_MAX_BLOCK_SIZE);
-#elif defined( FLM_LINUX)
-		if( posix_memalign( (void **)&m_pDbHdrWriteBuf, 
-			sysconf( _SC_PAGESIZE), XFLM_MAX_BLOCK_SIZE) != 0)
-		{
-			rc = MapErrnoToFlaimErr( errno, NE_XFLM_MEM);
-			goto Exit;
-		}
-		f_memset( m_pDbHdrWriteBuf, 0, XFLM_MAX_BLOCK_SIZE);
-#elif defined( FLM_SOLARIS)
-		if( (m_pDbHdrWriteBuf = (XFLM_DB_HDR *)memalign( 
-			sysconf( _SC_PAGESIZE), XFLM_MAX_BLOCK_SIZE)) == NULL)
-		{
-			rc = MapErrnoToFlaimErr( errno, NE_XFLM_MEM);
-			goto Exit;
-		}
-		f_memset( m_pDbHdrWriteBuf, 0, XFLM_MAX_BLOCK_SIZE);
-#else
-		if (RC_BAD( rc = f_calloc( XFLM_MAX_BLOCK_SIZE, &m_pDbHdrWriteBuf)))
+		if( RC_BAD( rc = f_allocAlignedBuffer( 
+			XFLM_MAX_BLOCK_SIZE, (void **)&m_pDbHdrWriteBuf)))
 		{
 			goto Exit;
 		}
-#endif
 	}
 
 	// Setup the write buffer managers.
-
-	if ((m_pBufferMgr = f_new F_IOBufferMgr) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_pBufferMgr)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
@@ -1531,19 +1519,6 @@ RCODE F_Database::setupDatabase(
 	if ((pFileItemId2 = f_new FFileItemId( this, FALSE)) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	// Allocate and initialize the file ID list
-
-	if ((m_pFileIdList = f_new F_FileIdList) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = m_pFileIdList->setup()))
-	{
 		goto Exit;
 	}
 
@@ -1636,7 +1611,7 @@ RCODE F_Database::readDbHdr(
 	RCODE				rc = NE_XFLM_OK;
 	IF_FileHdl *	pCFileHdl = NULL;
 
-	if (RC_BAD( rc = pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	if (RC_BAD( rc = pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1662,11 +1637,13 @@ RCODE F_Database::readDbHdr(
 		{
 			f_free( &m_pszDbPasswd);
 		}
-		if ( RC_BAD( rc = f_alloc( (f_strlen( pszPassword) + 1), &m_pszDbPasswd)))
+		if ( RC_BAD( rc = f_alloc( 
+			(f_strlen( (const char *)pszPassword) + 1), &m_pszDbPasswd)))
 		{
 			goto Exit;
 		}
-		f_strcpy(m_pszDbPasswd, pszPassword);
+		
+		f_strcpy( (char *)m_pszDbPasswd, (const char *)pszPassword);
 	}
 
 	if ((m_pWrappingKey = f_new F_CCS()) == NULL)
@@ -1709,8 +1686,8 @@ Exit:
 
 	if (pCFileHdl)
 	{
-		(void)pSFileHdl->ReleaseFile( (FLMUINT)0, TRUE);
-		pSFileHdl->SetBlockSize( m_uiBlockSize);
+		(void)pSFileHdl->releaseFile( (FLMUINT)0, TRUE);
+		pSFileHdl->setBlockSize( m_uiBlockSize);
 	}
 
 	return( rc);
@@ -1783,15 +1760,14 @@ RCODE F_Database::startCPThread( void)
 
 	// Set up the super file
 
-	if (RC_BAD( rc = pCPInfo->pSFileHdl->Setup( m_pFileIdList,
-									m_pszDbPath, m_pszDataDir)))
+	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( m_pszDbPath, m_pszDataDir)))
 	{
 		goto Exit;
 	}
 
 	if (m_lastCommittedDbHdr.ui32DbVersion)
 	{
-		pCPInfo->pSFileHdl->SetBlockSize( m_uiBlockSize);
+		pCPInfo->pSFileHdl->setBlockSize( m_uiBlockSize);
 	}
 
 	f_memset( &pCPInfo->Stats, 0, sizeof( XFLM_STATS));
@@ -1799,7 +1775,7 @@ RCODE F_Database::startCPThread( void)
 
 	// Generate the thread name
 
-	if (RC_BAD( rc = gv_pFileSystem->pathReduce( m_pszDbPath, 
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( m_pszDbPath, 
 		szThreadName, szBaseName)))
 	{
 		goto Exit;
@@ -1809,9 +1785,9 @@ RCODE F_Database::startCPThread( void)
 
 	// Start the checkpoint thread.
 
-	if (RC_BAD( rc = f_threadCreate( &m_pCPThrd,
-		flmCPThread, szThreadName,
-		FLM_CHECKPOINT_THREAD_GROUP, 0, pCPInfo, NULL, 32000)))
+	if (RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( &m_pCPThrd,
+		flmCPThread, szThreadName, gv_XFlmSysData.uiCheckpointThreadGroup,
+		0, pCPInfo, NULL, 32000)))
 	{
 		goto Exit;
 	}
@@ -1834,7 +1810,7 @@ Desc: Try to perform a checkpoint on the database.  Returns TRUE if we need
 		to terminate.
 ****************************************************************************/
 FLMBOOL F_Database::tryCheckpoint(
-	F_Thread *			pThread,
+	IF_Thread *			pThread,
 	CP_INFO *			pCPInfo)
 {
 	RCODE					rc = NE_XFLM_OK;
@@ -1978,7 +1954,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		close time.
 ****************************************************************************/
 FSTATIC RCODE flmCPThread(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	CP_INFO *			pCPInfo = (CP_INFO *)pThread->getParm1();
 	F_Database *		pDatabase = pCPInfo->pDatabase;

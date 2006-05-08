@@ -46,7 +46,6 @@ typedef struct
 
 
 FSTATIC RCODE flmCopyFile(
-	F_FileSystem *			pFileSystem,
 	DB_COPY_INFO *			pDbCopyInfo,
 	COPIED_NAME **			ppCopiedListRV,
 	FLMBOOL					bOkToTruncate,
@@ -210,7 +209,7 @@ RCODE F_DbSystem::copyDb(
 	// Set up the super file object for the source database.
 	// Must at least open the control file.
 
-	if (RC_BAD( rc = SrcSFileHdl.Setup( NULL, pszSrcDbName, pszSrcDataDir)))
+	if (RC_BAD( rc = SrcSFileHdl.setup( pszSrcDbName, pszSrcDataDir)))
 	{
 		goto Exit;
 	}
@@ -317,8 +316,7 @@ retry:
 
 	// Set up the super file object for the destination database.
 
-	if (RC_BAD( rc = DestSFileHdl.Setup( NULL, pszDestDbName,
-											pszDestDataDir)))
+	if (RC_BAD( rc = DestSFileHdl.setup( pszDestDbName, pszDestDataDir)))
 	{
 		goto Exit;
 	}
@@ -328,11 +326,11 @@ retry:
 	uiHighFileNumber = 0;
 	for (;;)
 	{
-		if ((RC_BAD( rc = SrcSFileHdl.GetFileSize(
+		if ((RC_BAD( rc = SrcSFileHdl.getFileSize(
 			uiHighFileNumber, &ui64FileSize))) || !ui64FileSize )
 		{
-			if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-				 rc == NE_XFLM_IO_INVALID_FILENAME ||
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+				 rc == NE_FLM_IO_INVALID_FILENAME ||
 				 !ui64FileSize)
 			{
 				// If the control file doesn't exist, we will return
@@ -363,11 +361,11 @@ retry:
 	uiHighLogFileNumber = FIRST_LOG_BLOCK_FILE_NUMBER;
 	for (;;)
 	{
-		if ((RC_BAD( rc = SrcSFileHdl.GetFileSize(
+		if ((RC_BAD( rc = SrcSFileHdl.getFileSize(
 			uiHighLogFileNumber, &ui64FileSize))) || !ui64FileSize)
 		{
-			if (rc == NE_XFLM_IO_PATH_NOT_FOUND ||
-				 rc == NE_XFLM_IO_INVALID_FILENAME ||
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+				 rc == NE_FLM_IO_INVALID_FILENAME ||
 				 !ui64FileSize)
 			{
 				if (uiHighLogFileNumber ==
@@ -401,7 +399,7 @@ retry:
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = gv_pFileSystem->OpenDir(
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openDir(
 								pszActualSrcRflPath, (char *)"*", &pDirHdl)))
 	{
 		goto Exit;
@@ -409,9 +407,9 @@ retry:
 
 	for (;;)
 	{
-		if (RC_BAD( rc = pDirHdl->Next()))
+		if (RC_BAD( rc = pDirHdl->next()))
 		{
-			if (rc == NE_XFLM_IO_NO_MORE_FILES)
+			if (rc == NE_FLM_IO_NO_MORE_FILES)
 			{
 				rc = NE_XFLM_OK;
 				break;
@@ -424,9 +422,9 @@ retry:
 
 		// If the current file is an RFL file, increment ui64BytesToCopy
 
-		if (rflGetFileNum( pDirHdl->CurrentItemName(), &uiFileNumber))
+		if (rflGetFileNum( pDirHdl->currentItemName(), &uiFileNumber))
 		{
-			DbCopyInfo.ui64BytesToCopy += (FLMUINT64)pDirHdl->CurrentItemSize();
+			DbCopyInfo.ui64BytesToCopy += (FLMUINT64)pDirHdl->currentItemSize();
 		}
 	}
 
@@ -435,8 +433,8 @@ retry:
 
 	// Close all file handles in the source and destination
 
-	SrcSFileHdl.ReleaseFiles( TRUE);
-	DestSFileHdl.ReleaseFiles( TRUE);
+	SrcSFileHdl.releaseFiles( TRUE);
+	DestSFileHdl.releaseFiles( TRUE);
 
 	// Copy the database files.
 
@@ -445,21 +443,20 @@ retry:
 
 		// Get the source file path and destination file path.
 
-		if( RC_BAD( rc = SrcSFileHdl.GetFilePath(
+		if( RC_BAD( rc = SrcSFileHdl.getFilePath(
 			uiFileNumber, DbCopyInfo.szSrcFileName)))
 		{
 			goto Exit;
 		}
-		if( RC_BAD( rc = DestSFileHdl.GetFilePath(
+		if( RC_BAD( rc = DestSFileHdl.getFilePath(
 			uiFileNumber, DbCopyInfo.szDestFileName)))
 		{
 			goto Exit;
 		}
 
 		DbCopyInfo.bNewSrcFile = TRUE;
-		if (RC_BAD( rc = flmCopyFile( gv_pFileSystem,
-									&DbCopyInfo, &pCopiedList, TRUE,
-									ifpStatus)))
+		if (RC_BAD( rc = flmCopyFile(
+			&DbCopyInfo, &pCopiedList, TRUE, ifpStatus)))
 		{
 			goto Exit;
 		}
@@ -473,22 +470,21 @@ retry:
 
 		// Get the source file path and destination file path.
 
-		if (RC_BAD( rc = SrcSFileHdl.GetFilePath( uiFileNumber,
+		if (RC_BAD( rc = SrcSFileHdl.getFilePath( uiFileNumber,
 									DbCopyInfo.szSrcFileName)))
 		{
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = DestSFileHdl.GetFilePath( uiFileNumber,
+		if (RC_BAD( rc = DestSFileHdl.getFilePath( uiFileNumber,
 			DbCopyInfo.szDestFileName)))
 		{
 			goto Exit;
 		}
 
 		DbCopyInfo.bNewSrcFile = TRUE;
-		if (RC_BAD( rc = flmCopyFile( gv_pFileSystem,
-									&DbCopyInfo, &pCopiedList, TRUE,
-									ifpStatus)))
+		if (RC_BAD( rc = flmCopyFile( 
+			&DbCopyInfo, &pCopiedList, TRUE, ifpStatus)))
 		{
 			goto Exit;
 		}
@@ -508,18 +504,18 @@ retry:
 		goto Exit;
 	}
 
-	if( RC_OK( gv_pFileSystem->Exists( pszActualDestRflPath)))
+	if( RC_OK( gv_XFlmSysData.pFileSystem->doesFileExist( pszActualDestRflPath)))
 	{
-		if( gv_pFileSystem->IsDir( pszActualDestRflPath))
+		if( gv_XFlmSysData.pFileSystem->isDir( pszActualDestRflPath))
 		{
 			// Remove the existing directory and all files, etc.
 
-			(void)gv_pFileSystem->RemoveDir(
+			(void)gv_XFlmSysData.pFileSystem->removeDir(
 				pszActualDestRflPath, TRUE);
 		}
 		else
 		{
-			(void)gv_pFileSystem->Delete( pszActualDestRflPath);
+			(void)gv_XFlmSysData.pFileSystem->deleteFile( pszActualDestRflPath);
 		}
 	}
 
@@ -530,14 +526,14 @@ retry:
 	// when we try to create the destination files (below), the FLAIM file
 	// file system code will try to create any necessary directories.
 
-	(void)gv_pFileSystem->CreateDir( pszActualDestRflPath);
+	(void)gv_XFlmSysData.pFileSystem->createDir( pszActualDestRflPath);
 	bCreatedDestRflDir = TRUE;
 
 	// Copy the RFL files.  NOTE:  We need to copy all of the RFL files
 	// in the source RFL directory so that they will be available
 	// when performing a database restore operation.
 
-	if (RC_BAD( rc = gv_pFileSystem->OpenDir(
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openDir(
 								pszActualSrcRflPath, (char *)"*", &pDirHdl)))
 	{
 		goto Exit;
@@ -545,9 +541,9 @@ retry:
 
 	for (;;)
 	{
-		if( RC_BAD( rc = pDirHdl->Next()))
+		if( RC_BAD( rc = pDirHdl->next()))
 		{
-			if (rc == NE_XFLM_IO_NO_MORE_FILES)
+			if (rc == NE_FLM_IO_NO_MORE_FILES)
 			{
 				rc = NE_XFLM_OK;
 				break;
@@ -560,7 +556,7 @@ retry:
 
 		// If the current file is an RFL file, copy it to the destination
 
-		if( rflGetFileNum( pDirHdl->CurrentItemName(), &uiFileNumber))
+		if( rflGetFileNum( pDirHdl->currentItemName(), &uiFileNumber))
 		{
 			// Get the source file path and the destination file path.
 
@@ -579,9 +575,8 @@ retry:
 			}
 
 			DbCopyInfo.bNewSrcFile = TRUE;
-			if (RC_BAD( rc = flmCopyFile( gv_pFileSystem,
-										&DbCopyInfo, &pCopiedList, TRUE,
-										ifpStatus)))
+			if (RC_BAD( rc = flmCopyFile(
+				&DbCopyInfo, &pCopiedList, TRUE, ifpStatus)))
 			{
 				goto Exit;
 			}
@@ -643,7 +638,7 @@ Exit:
 
 	if (pLockFileHdl)
 	{
-		(void)pLockFileHdl->Close();
+		(void)pLockFileHdl->close();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -670,7 +665,7 @@ Exit:
 
 		if (RC_BAD( rc))
 		{
-			(void)gv_pFileSystem->Delete( pCopiedList->szPath);
+			(void)gv_XFlmSysData.pFileSystem->deleteFile( pCopiedList->szPath);
 		}
 
 		f_free( &pCopiedList);
@@ -679,7 +674,7 @@ Exit:
 
 	if (RC_BAD( rc) && bCreatedDestRflDir)
 	{
-		(void)gv_pFileSystem->RemoveDir( pszActualDestRflPath);
+		(void)gv_XFlmSysData.pFileSystem->removeDir( pszActualDestRflPath);
 	}
 
 	if (pszActualSrcRflPath)
@@ -699,7 +694,6 @@ Exit:
 Desc:	Copy a file that is one of the files of the database.
 *****************************************************************************/
 FSTATIC RCODE flmCopyFile(
-	F_FileSystem *			pFileSystem,
 	DB_COPY_INFO *			pDbCopyInfo,
 	COPIED_NAME **			ppCopiedListRV,
 	FLMBOOL					bOkToTruncate,
@@ -718,8 +712,9 @@ FSTATIC RCODE flmCopyFile(
 
 	// Open the source file.
 
-	if( RC_BAD( rc = pFileSystem->Open( pDbCopyInfo->szSrcFileName,
-		XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT,
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( 
+		pDbCopyInfo->szSrcFileName,
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
 		&pSrcFileHdl)))
 	{
 		goto Exit;
@@ -729,19 +724,20 @@ FSTATIC RCODE flmCopyFile(
 	// First attempt to open the destination file.  If it does
 	// not exist, attempt to create it.
 
-	if (RC_BAD( rc = pFileSystem->Open( pDbCopyInfo->szDestFileName,
-			XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT,
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( pDbCopyInfo->szDestFileName,
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
 			&pDestFileHdl)))
 	{
-		if (rc != NE_XFLM_IO_PATH_NOT_FOUND &&
-			 rc != NE_XFLM_IO_INVALID_FILENAME)
+		if (rc != NE_FLM_IO_PATH_NOT_FOUND &&
+			 rc != NE_FLM_IO_INVALID_FILENAME)
 		{
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = pFileSystem->Create( pDbCopyInfo->szDestFileName,
-								XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYNONE |
-								XFLM_IO_CREATE_DIR | XFLM_IO_DIRECT,
+		if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( 
+								pDbCopyInfo->szDestFileName,
+								FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE |
+								FLM_IO_CREATE_DIR | FLM_IO_DIRECT,
 								&pDestFileHdl)))
 		{
 			goto Exit;
@@ -769,10 +765,10 @@ FSTATIC RCODE flmCopyFile(
 
 		// Read data from source file.
 
-		if (RC_BAD( rc = pSrcFileHdl->SectorRead( uiOffset, uiBytesToRead,
+		if (RC_BAD( rc = pSrcFileHdl->sectorRead( uiOffset, uiBytesToRead,
 									pucBuffer, &uiBytesRead)))
 		{
-			if (rc == NE_XFLM_IO_END_OF_FILE)
+			if (rc == NE_FLM_IO_END_OF_FILE)
 			{
 				rc = NE_XFLM_OK;
 				if (!uiBytesRead)
@@ -788,7 +784,7 @@ FSTATIC RCODE flmCopyFile(
 
 		// Write data to destination file.
 
-		if (RC_BAD( rc = pDestFileHdl->Write( uiOffset,
+		if (RC_BAD( rc = pDestFileHdl->write( uiOffset,
 									uiBytesRead, pucBuffer, &uiBytesWritten)))
 		{
 			goto Exit;
@@ -834,7 +830,7 @@ FSTATIC RCODE flmCopyFile(
 
 	if (!bCreatedDestFile && bOkToTruncate)
 	{
-		if (RC_BAD( rc = pDestFileHdl->Truncate( uiOffset)))
+		if (RC_BAD( rc = pDestFileHdl->truncate( uiOffset)))
 		{
 			goto Exit;
 		}
@@ -872,7 +868,7 @@ Exit:
 
 	if (pDestFileHdl)
 	{
-		pDestFileHdl->Flush();
+		pDestFileHdl->flush();
 		pDestFileHdl->Release();
 	}
 
@@ -881,7 +877,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		(void)pFileSystem->Delete( pDbCopyInfo->szDestFileName);
+		(void)gv_XFlmSysData.pFileSystem->deleteFile( pDbCopyInfo->szDestFileName);
 	}
 
 	return( rc);

@@ -26,7 +26,7 @@
 #include "flaimsys.h"
 
 FSTATIC void lgWriteComplete(
-	F_IOBuffer *	pIOBuffer);
+	IF_IOBuffer *	pIOBuffer);
 
 #ifdef FLM_DBG_LOG
 /****************************************************************************
@@ -70,8 +70,7 @@ Desc:	This is the callback routine that is called when a disk write is
 		completed.
 ****************************************************************************/
 FSTATIC void lgWriteComplete(
-	F_IOBuffer *	pIOBuffer
-	)
+	IF_IOBuffer *	pIOBuffer)
 {
 	F_Database *		pDatabase =
 								(F_Database *)pIOBuffer->getCompletionCallbackData( 0);
@@ -80,7 +79,7 @@ FSTATIC void lgWriteComplete(
 	FLMUINT				uiLength = pIOBuffer->getBufferSize();
 	char *				pszEvent;
 #endif
-	XFLM_DB_STATS *	pDbStats = pIOBuffer->getDbStats();
+	XFLM_DB_STATS *	pDbStats = (XFLM_DB_STATS *)pIOBuffer->getStats();
 
 #ifdef FLM_DBG_LOG
 	pszEvent = (char *)(RC_OK( pIOBuffer->getCompletionCode())
@@ -112,9 +111,8 @@ RCODE F_Database::lgFlushLogBuffer(
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiBytesWritten;
-	F_IOBuffer *	pAsyncBuffer;
+	IF_IOBuffer *	pAsyncBuffer;
 
-#if defined( FLM_NLM) || defined( FLM_WIN)
 	if (!bDoAsync)
 	{
 		pAsyncBuffer = NULL;
@@ -123,10 +121,6 @@ RCODE F_Database::lgFlushLogBuffer(
 	{
 		pAsyncBuffer = m_pCurrLogBuffer;
 	}
-#else
-	F_UNREFERENCED_PARM( bDoAsync);
-	pAsyncBuffer = NULL;
-#endif
 
 	if (pDbStats)
 	{
@@ -145,7 +139,7 @@ RCODE F_Database::lgFlushLogBuffer(
 	// after the call to WriteBlock, unless we are doing
 	// non-asynchronous write.
 
-	rc = pSFileHdl->WriteBlock( m_uiCurrLogBlkAddr,
+	rc = pSFileHdl->writeBlock( m_uiCurrLogBlkAddr,
 				m_uiCurrLogWriteOffset,
 				m_pCurrLogBuffer->getBuffer(),
 				m_pCurrLogBuffer->getBufferSize(),
@@ -227,7 +221,7 @@ RCODE F_Database::lgOutputBlock(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pSFileHdl->CreateFile( uiFileNumber )))
+		if (RC_BAD( rc = pSFileHdl->createFile( uiFileNumber )))
 		{
 			goto Exit;
 		}

@@ -200,8 +200,9 @@ RCODE F_BTreeInfo::collectBlockInfo(
 						// Subtract from uiIODataLen - should go to exactly
 						// zero by the time we leave this loop.
 							
-						uiOADataLen -= (m_uiBlockSize - sizeofDOBlkHdr( pCachedBlock->m_pBlkHdr) -
-											pCachedBlock->m_pBlkHdr->ui16BlkBytesAvail);
+						uiOADataLen -= (m_uiBlockSize - 
+												sizeofDOBlkHdr( pCachedBlock->m_pBlkHdr) -
+												pCachedBlock->m_pBlkHdr->ui16BlkBytesAvail);
 											
 						uiBlkAddr = (FLMUINT)pCachedBlock->m_pBlkHdr->ui32NextBlkInChain;
 						
@@ -343,7 +344,8 @@ RCODE F_BTreeInfo::collectBTreeInfo(
 		// Allocate a name buffer.
 		
 		uiNameBufSize = f_strlen( pszName) + 1;
-		if (RC_BAD( rc = m_pool.poolAlloc( uiNameBufSize, (void **)(&pBTreeInfo->pszLfName))))
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameBufSize, 
+			(void **)(&pBTreeInfo->pszLfName))))
 		{
 			goto Exit;
 		}
@@ -355,7 +357,8 @@ RCODE F_BTreeInfo::collectBTreeInfo(
 		// Allocate a name buffer.
 		
 		uiNameBufSize++;
-		if (RC_BAD( rc = m_pool.poolAlloc( uiNameBufSize, (void **)(&pBTreeInfo->pszLfName))))
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameBufSize, 
+			(void **)(&pBTreeInfo->pszLfName))))
 		{
 			goto Exit;
 		}
@@ -364,8 +367,8 @@ RCODE F_BTreeInfo::collectBTreeInfo(
 		
 		if (RC_BAD( rc = pDb->m_pDict->m_pNameTable->getFromTagTypeAndNum(
 								pDb, pIxd ? ELM_INDEX_TAG : ELM_COLLECTION_TAG,
-								pLFile->uiLfNum, NULL, pBTreeInfo->pszLfName, &uiNameBufSize,
-								NULL, NULL, NULL, NULL, TRUE)))
+								pLFile->uiLfNum, NULL, pBTreeInfo->pszLfName,
+								&uiNameBufSize, NULL, NULL, NULL, NULL, TRUE)))
 		{
 			goto Exit;
 		}
@@ -536,7 +539,7 @@ Desc:	Collect b-tree information for an index.  If uiIndexNum is zero,
 		If we already have information on the index, we will clear the
 		information and get it again.
 ****************************************************************************/
-RCODE XFLMAPI F_BTreeInfo::collectIndexInfo(
+RCODE FLMAPI F_BTreeInfo::collectIndexInfo(
 	IF_Db *					ifpDb,
 	FLMUINT					uiIndexNum,
 	IF_BTreeInfoStatus *	pInfoStatus)
@@ -635,8 +638,8 @@ RCODE XFLMAPI F_BTreeInfo::collectIndexInfo(
 			
 			if (m_uiNumIndexes == m_uiIndexArraySize)
 			{
-				if (RC_BAD( rc = f_realloc( sizeof( BTREE_INFO) * (m_uiIndexArraySize + 5),
-											&m_pIndexArray)))
+				if (RC_BAD( rc = f_realloc( 
+					sizeof( BTREE_INFO) * (m_uiIndexArraySize + 5), &m_pIndexArray)))
 				{
 					goto Exit;
 				}
@@ -672,7 +675,7 @@ Desc:	Collect b-tree information for a collection.  If uiCollectionNum is
 		If we already have information on the collection, we will clear the
 		information and get it again.
 ****************************************************************************/
-RCODE XFLMAPI F_BTreeInfo::collectCollectionInfo(
+RCODE FLMAPI F_BTreeInfo::collectCollectionInfo(
 	IF_Db *					ifpDb,
 	FLMUINT					uiCollectionNum,
 	IF_BTreeInfoStatus *	pInfoStatus)
@@ -709,13 +712,15 @@ RCODE XFLMAPI F_BTreeInfo::collectCollectionInfo(
 		m_uiNumCollections = 0;
 		for (;;)
 		{
-			if ((pCollection = pDb->m_pDict->getNextCollection( uiCollectionNum, TRUE)) == NULL)
+			if ((pCollection = pDb->m_pDict->getNextCollection(
+				uiCollectionNum, TRUE)) == NULL)
 			{
 				break;
 			}
 			uiCollectionNum = pCollection->lfInfo.uiLfNum;
 			
-			if (RC_BAD( rc = collectCollectionInfo( ifpDb, uiCollectionNum, pInfoStatus)))
+			if (RC_BAD( rc = collectCollectionInfo( 
+				ifpDb, uiCollectionNum, pInfoStatus)))
 			{
 				goto Exit;
 			}
@@ -727,7 +732,8 @@ RCODE XFLMAPI F_BTreeInfo::collectCollectionInfo(
 		
 		uiLoop = 0;
 		pCollectionInfo = m_pCollectionArray;
-		while (uiLoop < m_uiNumCollections && pCollectionInfo->uiLfNum != uiCollectionNum)
+		while (uiLoop < m_uiNumCollections && 
+				 pCollectionInfo->uiLfNum != uiCollectionNum)
 		{
 			uiLoop++;
 			pCollectionInfo++;
@@ -739,7 +745,8 @@ RCODE XFLMAPI F_BTreeInfo::collectCollectionInfo(
 		
 		// See if the index is defined in the database
 		
-		if (RC_BAD( rc = pDb->m_pDict->getCollection( uiCollectionNum, &pCollection, TRUE)))
+		if (RC_BAD( rc = pDb->m_pDict->getCollection(
+			uiCollectionNum, &pCollection, TRUE)))
 		{
 			if (rc == NE_XFLM_BAD_COLLECTION)
 			{
@@ -771,8 +778,9 @@ RCODE XFLMAPI F_BTreeInfo::collectCollectionInfo(
 			
 			if (m_uiNumCollections == m_uiCollectionArraySize)
 			{
-				if (RC_BAD( rc = f_realloc( sizeof( BTREE_INFO) * (m_uiCollectionArraySize + 5),
-											&m_pCollectionArray)))
+				if (RC_BAD( rc = f_realloc( 
+					sizeof( BTREE_INFO) * (m_uiCollectionArraySize + 5),
+					&m_pCollectionArray)))
 				{
 					goto Exit;
 				}
@@ -805,19 +813,32 @@ Exit:
 /****************************************************************************
 Desc:	Create an empty b-tree info. object and return it's interface...
 ****************************************************************************/
-RCODE XFLMAPI F_DbSystem::createIFBTreeInfo(
+RCODE FLMAPI F_DbSystem::createIFBTreeInfo(
 	IF_BTreeInfo **	ppBTreeInfo)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE					rc = NE_XFLM_OK;
+	F_BTreeInfo *		pBTreeInfo;
 
-	if ((*ppBTreeInfo = f_new F_BTreeInfo) == NULL)
+	if ((pBTreeInfo = f_new F_BTreeInfo) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 	
+	if( RC_BAD( rc = pBTreeInfo->setup()))
+	{
+		goto Exit;
+	}
+	
+	*ppBTreeInfo = pBTreeInfo;
+	pBTreeInfo = NULL;
+	
 Exit:
+
+	if( pBTreeInfo)
+	{
+		pBTreeInfo->Release();
+	}
 
 	return( rc);
 }
-

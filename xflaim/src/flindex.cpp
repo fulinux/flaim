@@ -26,13 +26,13 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE flmBackgroundIndexBuildThrd(
-	F_Thread *		pThread);
-
+	IF_Thread *		pThread);
+	
 /****************************************************************************
 Desc : Return the status of the index.
 Notes:
 ****************************************************************************/
-RCODE XFLMAPI F_Db::indexStatus(
+RCODE FLMAPI F_Db::indexStatus(
 	FLMUINT					uiIndexNum,
 	XFLM_INDEX_STATUS *	pIndexStatus)
 {
@@ -133,7 +133,7 @@ Exit:
 Desc:	Return the number of the next index.  Pass in zero to get the
 		first index.
 ****************************************************************************/
-RCODE XFLMAPI F_Db::indexGetNext(
+RCODE FLMAPI F_Db::indexGetNext(
 	FLMUINT *	puiIndexNum)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -832,7 +832,7 @@ RCODE F_Db::startIndexBuild(
 
 	// Generate the thread name
 
-	if (RC_BAD( rc = gv_pFileSystem->pathReduce( m_pDatabase->m_pszDbPath,
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( m_pDatabase->m_pszDbPath,
 							szThreadName, szBaseName)))
 	{
 		goto Exit;
@@ -844,9 +844,9 @@ RCODE F_Db::startIndexBuild(
 	// Start the thread in the background indexing thread group.
 	// The new thread will cleanup pBackgroundIx on termination.
 
-	if (RC_BAD( rc = f_threadCreate( NULL,
+	if (RC_BAD( rc = gv_XFlmSysData.pThreadMgr->createThread( NULL,
 						flmBackgroundIndexBuildThrd, szThreadName,
-						FLM_BACKGROUND_INDEXING_THREAD_GROUP, uiIndexNum,
+						gv_XFlmSysData.uiIndexingThreadGroup, uiIndexNum,
 						(void *)pBackgroundIx, NULL, 24000)))
 	{
 		goto Exit;
@@ -867,10 +867,9 @@ Desc:	This routine is called by the thread that performs background
 		indexing.
 ****************************************************************************/
 RCODE F_Db::backgroundIndexBuild(
-	F_Thread *		pThread,
+	IF_Thread *		pThread,
 	FLMBOOL *		pbShutdown,
-	FLMINT *			piErrorLine
-	)
+	FLMINT *			piErrorLine)
 {
 	RCODE					rc = NE_XFLM_OK;
 	IXD *					pIxd;
@@ -1019,7 +1018,7 @@ Desc:		Thread that will build an index in the background.
 			freed at the conclusion of the routine.
 ****************************************************************************/
 FSTATIC RCODE flmBackgroundIndexBuildThrd(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_BKGND_IX *	pBackgroundIx = (F_BKGND_IX *)pThread->getParm1();
@@ -1084,7 +1083,7 @@ Exit:
 
 	if (RC_BAD(rc) && !bForcedShutdown)
 	{
-		if (rc == NE_XFLM_MEM || rc == NE_XFLM_IO_DISK_FULL ||
+		if (rc == NE_XFLM_MEM || rc == NE_FLM_IO_DISK_FULL ||
 			 rc == NE_XFLM_MUST_WAIT_CHECKPOINT)
 		{
 			// Log the error
@@ -1138,7 +1137,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	FLMUINT *		puiThreadId)
 {
 	RCODE					rc = NE_XFLM_OK;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	FLMUINT				uiThreadId;
 	F_BKGND_IX *		pBackgroundIx = NULL;
 
@@ -1151,7 +1150,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	for( ;;)
 	{
 		if (RC_BAD( rc = gv_XFlmSysData.pThreadMgr->getNextGroupThread(
-			&pThread, FLM_BACKGROUND_INDEXING_THREAD_GROUP, &uiThreadId)))
+			&pThread, gv_XFlmSysData.uiIndexingThreadGroup, &uiThreadId)))
 		{
 			if( rc == NE_XFLM_NOT_FOUND)
 			{

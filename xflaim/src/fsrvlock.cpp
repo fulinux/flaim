@@ -456,7 +456,8 @@ void FFileItemId::GetFileName(
 	// _ExtractFileName( m_pFile, pszFileNameRV);
 	char		szTmpPath[ F_PATH_MAX_SIZE];
 
-	(void)gv_pFileSystem->pathReduce( m_pDatabase->m_pszDbPath, szTmpPath, pszFileNameRV);
+	(void)gv_XFlmSysData.pFileSystem->pathReduce( 
+			m_pDatabase->m_pszDbPath, szTmpPath, pszFileNameRV);
 
 	// Convert to upper case for consistency when hashing.
 
@@ -745,8 +746,7 @@ RCODE ServerLockObject::Lock(
 		}
 		else
 		{
-			FLM_SECS_TO_TIMER_UNITS( uiMaxWaitSecs,
-				LockWait.uiWaitTime);
+			LockWait.uiWaitTime = FLM_SECS_TO_TIMER_UNITS( uiMaxWaitSecs);
 		}
 
 		// Link to list of global waiters - ordered by end time.
@@ -773,11 +773,7 @@ RCODE ServerLockObject::Lock(
 
 		if (RC_BAD( TempRc = f_semWait( LockWait.hESem, F_SEM_WAITFOREVER)))
 		{
-#ifdef FLM_NLM
-			EnterDebugger();
-#else
 			RC_UNEXPECTED_ASSERT( TempRc);
-#endif
 			rc = TempRc;
 		}
 		else
@@ -787,11 +783,7 @@ RCODE ServerLockObject::Lock(
 
 			if (rc == NE_XFLM_FAILURE)
 			{
-#ifdef FLM_NLM
-				EnterDebugger();
-#else
 				RC_UNEXPECTED_ASSERT( rc);
-#endif
 			}
 		}
 
@@ -1153,7 +1145,7 @@ RCODE ServerLockObject::GetLockInfo(
 	// Output the lock holder first.
 
 	uiElapTime = FLM_ELAPSED_TIME( uiCurrTime, m_uiLockTime);
-	FLM_TIMER_UNITS_TO_MILLI( uiElapTime, uiMilli);
+	uiMilli = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 	if( pLockInfo->addLockInfo( 0, m_uiLockThreadId, uiMilli) == FALSE)
 	{
 		goto Exit;
@@ -1166,7 +1158,7 @@ RCODE ServerLockObject::GetLockInfo(
 	while( pLockWaiter && uiCnt)
 	{
 		uiElapTime = FLM_ELAPSED_TIME( uiCurrTime, pLockWaiter->uiWaitStartTime);
-		FLM_TIMER_UNITS_TO_MILLI( uiElapTime, uiMilli);
+		uiMilli = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 		if( pLockInfo->addLockInfo( (m_uiNumWaiters - uiCnt) + 1,
 			pLockWaiter->uiThreadId, uiMilli) == FALSE)
 		{

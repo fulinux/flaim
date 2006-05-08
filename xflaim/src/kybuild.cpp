@@ -71,7 +71,7 @@ FSTATIC RCODE kySeeIfRepeatingSibs(
 
 FSTATIC RCODE kyFindChildNode(
 	F_Db *			pDb,
-	F_Pool *			pPool,
+	IF_Pool *		pPool,
 	NODE_TRAV **	ppTrav,
 	FLMBOOL *		pbGotChild,
 	FLMBOOL *		pbHadRepeatingSib);
@@ -119,12 +119,12 @@ FSTATIC RCODE kyAddIDsToKey(
 	
 	if (uiIDBufSize - uiIDLen >= 9)
 	{
-		uiIDLen += flmEncodeSEN( ui64DocumentID, &pucIDs);
+		uiIDLen += f_encodeSEN( ui64DocumentID, &pucIDs);
 	}
 	else
 	{
 		pucTmpSen = &ucTmpSen [0];
-		uiSenLen = flmEncodeSEN( ui64DocumentID, &pucTmpSen);
+		uiSenLen = f_encodeSEN( ui64DocumentID, &pucTmpSen);
 		if (uiSenLen + uiIDLen > uiIDBufSize)
 		{
 			rc = RC_SET( NE_XFLM_KEY_OVERFLOW);
@@ -150,12 +150,12 @@ FSTATIC RCODE kyAddIDsToKey(
 		
 		if (uiIDBufSize - uiIDLen >= 9)
 		{
-			uiIDLen += flmEncodeSEN( ui64Id, &pucIDs);
+			uiIDLen += f_encodeSEN( ui64Id, &pucIDs);
 		}
 		else
 		{
 			pucTmpSen = &ucTmpSen [0];
-			uiSenLen = flmEncodeSEN( ui64Id, &pucTmpSen);
+			uiSenLen = f_encodeSEN( ui64Id, &pucTmpSen);
 			if (uiSenLen + uiIDLen > uiIDBufSize)
 			{
 				rc = RC_SET( NE_XFLM_KEY_OVERFLOW);
@@ -182,12 +182,12 @@ FSTATIC RCODE kyAddIDsToKey(
 		
 		if (uiIDBufSize - uiIDLen >= 9)
 		{
-			uiIDLen += flmEncodeSEN( ui64Id, &pucIDs);
+			uiIDLen += f_encodeSEN( ui64Id, &pucIDs);
 		}
 		else
 		{
 			pucTmpSen = &ucTmpSen [0];
-			uiSenLen = flmEncodeSEN( ui64Id, &pucTmpSen);
+			uiSenLen = f_encodeSEN( ui64Id, &pucTmpSen);
 			if (uiSenLen + uiIDLen > uiIDBufSize)
 			{
 				rc = RC_SET( NE_XFLM_KEY_OVERFLOW);
@@ -214,12 +214,12 @@ FSTATIC RCODE kyAddIDsToKey(
 		
 		if (uiIDBufSize - uiIDLen >= 9)
 		{
-			uiIDLen += flmEncodeSEN( ui64Id, &pucIDs);
+			uiIDLen += f_encodeSEN( ui64Id, &pucIDs);
 		}
 		else
 		{
 			pucTmpSen = &ucTmpSen [0];
-			uiSenLen = flmEncodeSEN( ui64Id, &pucTmpSen);
+			uiSenLen = f_encodeSEN( ui64Id, &pucTmpSen);
 			if (uiSenLen + uiIDLen > uiIDBufSize)
 			{
 				rc = RC_SET( NE_XFLM_KEY_OVERFLOW);
@@ -247,7 +247,30 @@ F_OldNodeList::~F_OldNodeList()
 	{
 		f_free( &m_pNodeList);
 	}
-	m_pool.poolFree();
+	
+	if( m_pPool)
+	{
+		m_pPool->Release();
+	}
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE F_OldNodeList::setup( void)
+{
+	RCODE			rc = NE_XFLM_OK;
+	
+	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
+	{
+		goto Exit;
+	}
+	
+	m_pPool->poolInit( 512);
+
+Exit:
+
+	return( rc);
 }
 
 /*****************************************************************************
@@ -455,7 +478,7 @@ RCODE F_OldNodeList::addNodeToList(
 			
 			// Allocate the space needed.
 			
-			if (RC_BAD( rc = m_pool.poolAlloc( uiBufSize,
+			if (RC_BAD( rc = m_pPool->poolAlloc( uiBufSize,
 										(void **)&m_pNodeList [uiInsertPos].pucData)))
 			{
 				goto Exit;
@@ -485,7 +508,7 @@ RCODE F_OldNodeList::addNodeToList(
 			// Allocate the space needed.
 			
 			uiBufSize = (uiChars + 1) * sizeof( FLMUNICODE);
-			if (RC_BAD( rc = m_pool.poolAlloc( uiBufSize,
+			if (RC_BAD( rc = m_pPool->poolAlloc( uiBufSize,
 										(void **)&m_pNodeList [uiInsertPos].pucData)))
 			{
 				goto Exit;
@@ -514,7 +537,11 @@ Desc: Release all of the nodes in the list.
 *****************************************************************************/
 void F_OldNodeList::resetList( void)
 {
-	m_pool.poolReset( NULL);
+	if( m_pPool)
+	{
+		m_pPool->poolReset( NULL);
+	}
+
 	m_uiNodeCount = 0;
 }
 
@@ -768,7 +795,7 @@ RCODE F_Db::buildData(
 		// Output the length of the data as a SEN value
 
 		pucTmpSen = &ucTmpSen [0];
-		uiSENLen = flmEncodeSEN( uiDataComponentLen, &pucTmpSen);
+		uiSENLen = f_encodeSEN( uiDataComponentLen, &pucTmpSen);
 		if (uiDataComponentLen + uiSENLen + uiDataLen > m_keyGenInfo.uiDataBufSize)
 		{
 			FLMUINT	uiNewSize = uiDataComponentLen + uiSENLen + uiDataLen + 512;
@@ -1102,7 +1129,6 @@ RCODE F_Db::genTextKeyComponents(
 	RCODE						rc = NE_XFLM_OK;
 	IF_PosIStream *		pIStream = NULL;
 	FLMUINT					uiNumChars;
-	F_BufferIStream		bufferStream;
 	FLMUINT					uiStrBytes;
 	FLMUINT					uiSubstrChars;
 	FLMUINT					uiMeta;
@@ -1117,6 +1143,7 @@ RCODE F_Db::genTextKeyComponents(
 	FLMUINT					uiKeyLenPos = uiKeyLen;
 	FLMUINT					uiCompareRules = pIcd->uiCompareRules;
 	F_NodeBufferIStream	nodeBufferIStream;
+	IF_BufferIStream *	pBufferIStream = NULL;
 	
 	uiKeyLen += 2;
 	uiSaveKeyLen = uiKeyLen;
@@ -1124,6 +1151,11 @@ RCODE F_Db::genTextKeyComponents(
 	if (!pNode)
 	{
 		goto No_Strings;
+	}
+	
+	if( RC_BAD( rc = FlmAllocBufferIStream( &pBufferIStream)))
+	{
+		goto Exit;
 	}
 	
 	if (RC_BAD( rc = pNode->getTextIStream( this, 
@@ -1198,9 +1230,9 @@ No_Strings:
 		{
 			if (*ppucTmpBuf == NULL)
 			{
-				*ppvMark = m_TempPool.poolMark();
+				*ppvMark = m_pTempPool->poolMark();
 				*puiTmpBufSize = (FLMUINT)XFLM_MAX_KEY_SIZE + 8;
-				if (RC_BAD( rc = m_TempPool.poolAlloc( *puiTmpBufSize,
+				if (RC_BAD( rc = m_pTempPool->poolAlloc( *puiTmpBufSize,
 												(void **)ppucTmpBuf)))
 				{
 					goto Exit;
@@ -1223,7 +1255,8 @@ No_Strings:
 				break;
 			}
 
-			if (RC_BAD( rc = bufferStream.open( *ppucTmpBuf, uiStrBytes)))
+			if (RC_BAD( rc = pBufferIStream->open( 
+				(const char *)*ppucTmpBuf, uiStrBytes)))
 			{
 				goto Exit;
 			}
@@ -1234,14 +1267,14 @@ No_Strings:
 			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 										&uiElmLen,
-										&bufferStream, XFLM_TEXT_TYPE,
+										pBufferIStream, XFLM_TEXT_TYPE,
 										pIcd->uiFlags,
 										pIcd->uiCompareRules & XFLM_COMP_CASE_INSENSITIVE,
 										pIcd->uiLimit,
 										NULL, NULL,
 										m_keyGenInfo.pIxd->uiLanguage,
 										FALSE, FALSE, &bDataTruncated, NULL);
-			bufferStream.close();
+			pBufferIStream->close();
 
 			if( RC_BAD( rc))
 			{
@@ -1255,7 +1288,7 @@ No_Strings:
 			FLMBYTE	ucStorageBuf[ FLM_MAX_NUM_BUF_SIZE];
 			FLMUINT	uiStorageLen;
 
-			if( RC_BAD( rc = flmGetNextMetaphone( pIStream, &uiMeta)))
+			if( RC_BAD( rc = f_getNextMetaphone( pIStream, &uiMeta)))
 			{
 				if( rc != NE_XFLM_EOF_HIT)
 				{
@@ -1276,7 +1309,8 @@ No_Strings:
 				goto Exit;
 			}
 
-			if (RC_BAD( rc = bufferStream.open( ucStorageBuf, uiStorageLen)))
+			if (RC_BAD( rc = pBufferIStream->open( 
+				(const char *)ucStorageBuf, uiStorageLen)))
 			{
 				goto Exit;
 			}
@@ -1286,13 +1320,13 @@ No_Strings:
 			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 										&uiElmLen,
-										&bufferStream, XFLM_NUMBER_TYPE,
+										pBufferIStream, XFLM_NUMBER_TYPE,
 										pIcd->uiFlags, 0,
 										pIcd->uiLimit,
 										NULL, NULL,
 										m_keyGenInfo.pIxd->uiLanguage,
 										FALSE, FALSE, NULL, NULL);
-			bufferStream.close();
+			pBufferIStream->close();
 
 			if( RC_BAD( rc))
 			{
@@ -1306,9 +1340,9 @@ No_Strings:
 			flmAssert( bSubstring);
 			if (*ppucTmpBuf == NULL)
 			{
-				*ppvMark = m_TempPool.poolMark();
+				*ppvMark = m_pTempPool->poolMark();
 				*puiTmpBufSize = (FLMUINT)XFLM_MAX_KEY_SIZE + 8;
-				if (RC_BAD( rc = m_TempPool.poolAlloc( *puiTmpBufSize,
+				if (RC_BAD( rc = m_pTempPool->poolAlloc( *puiTmpBufSize,
 												(void **)ppucTmpBuf)))
 				{
 					goto Exit;
@@ -1336,7 +1370,8 @@ No_Strings:
 				break;
 			}
 
-			if (RC_BAD( rc = bufferStream.open( *ppucTmpBuf, uiStrBytes)))
+			if (RC_BAD( rc = pBufferIStream->open( 
+				(const char *)*ppucTmpBuf, uiStrBytes)))
 			{
 				goto Exit;
 			}
@@ -1347,7 +1382,7 @@ No_Strings:
 			uiElmLen = XFLM_MAX_KEY_SIZE - uiKeyLen;
 			rc = KYCollateValue( &m_keyGenInfo.pucKeyBuf [uiKeyLen],
 										&uiElmLen,
-										&bufferStream, XFLM_TEXT_TYPE,
+										pBufferIStream, XFLM_TEXT_TYPE,
 										pIcd->uiFlags,
 										pIcd->uiCompareRules & XFLM_COMP_CASE_INSENSITIVE,
 										pIcd->uiLimit,
@@ -1356,7 +1391,7 @@ No_Strings:
 										bHadAtLeastOneString ? FALSE : TRUE, FALSE,
 										&bDataTruncated, NULL);
 
-			bufferStream.close();
+			pBufferIStream->close();
 
 			if( RC_BAD( rc))
 			{
@@ -1392,6 +1427,11 @@ No_Strings:
 						rc = RC_SET( NE_XFLM_MEM);
 						goto Exit;
 					}
+					
+					if( RC_BAD( rc = m_pOldNodeList->setup()))
+					{
+						goto Exit;
+					}
 				}
 				if (RC_BAD( rc = m_pOldNodeList->addNodeToList( this, pNode)))
 				{
@@ -1412,6 +1452,11 @@ No_Strings:
 	}
 	
 Exit:
+
+	if( pBufferIStream)
+	{
+		pBufferIStream->Release();
+	}
 
 	if (pIStream)
 	{
@@ -1465,7 +1510,8 @@ No_Data:
 				goto Exit;
 			}
 		}
-		longToByte( (FLMUINT32)uiNameId, &m_keyGenInfo.pucKeyBuf [uiKeyLen]);
+		
+		f_UINT32ToByte( (FLMUINT32)uiNameId, &m_keyGenInfo.pucKeyBuf [uiKeyLen]);
 		uiKeyLen += 4;
 		
 		// Save the key component length.
@@ -1530,6 +1576,11 @@ No_Data:
 					if ((m_pOldNodeList = f_new F_OldNodeList) == NULL)
 					{
 						rc = RC_SET( NE_XFLM_MEM);
+						goto Exit;
+					}
+					
+					if( RC_BAD( rc = m_pOldNodeList->setup()))
+					{
 						goto Exit;
 					}
 				}
@@ -1676,7 +1727,7 @@ Exit:
 
 	if (pvMark)
 	{
-		m_TempPool.poolReset( pvMark);
+		m_pTempPool->poolReset( pvMark);
 	}
 
 	// Restore the CDL table entry to point to the
@@ -1759,8 +1810,8 @@ RCODE F_Db::buildKeys(
 							  
 	m_keyGenInfo.ui64DocumentID = ui64DocumentID;
 	m_keyGenInfo.pIxd = pIxd;
-	m_keyGenInfo.bIsAsia = (FLMBOOL)(pIxd->uiLanguage >= FIRST_DBCS_LANG &&
-							  					pIxd->uiLanguage <= LAST_DBCS_LANG)
+	m_keyGenInfo.bIsAsia = (FLMBOOL)(pIxd->uiLanguage >= FLM_FIRST_DBCS_LANG &&
+							  					pIxd->uiLanguage <= FLM_LAST_DBCS_LANG)
 											  ? TRUE
 											  : FALSE;
 	m_keyGenInfo.bIsCompound = pIxd->uiNumKeyComponents > 1 ? TRUE : FALSE;
@@ -1889,7 +1940,7 @@ Desc:	Get a child node for current traversal node.
 ****************************************************************************/
 FSTATIC RCODE kyFindChildNode(
 	F_Db *			pDb,
-	F_Pool *			pPool,
+	IF_Pool *		pPool,
 	NODE_TRAV **	ppTrav,
 	FLMBOOL *		pbGotChild,
 	FLMBOOL *		pbHadRepeatingSib)
@@ -2492,7 +2543,7 @@ RCODE F_Db::genIndexKeys(
 	// match what we have in the index definition, then this node
 	// is irrelevant to generating keys in this index.
 
-	if (RC_BAD( rc = m_TempPool.poolCalloc( sizeof( ANCHOR_NODE),
+	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( ANCHOR_NODE),
 												(void **)&pAnchorNode)))
 	{
 		goto Exit;
@@ -2560,7 +2611,7 @@ RCODE F_Db::genIndexKeys(
 			}
 		}
 		
-		if (RC_BAD( rc = m_TempPool.poolCalloc( sizeof( ANCHOR_NODE),
+		if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( ANCHOR_NODE),
 													(void **)&pAnchorNode)))
 		{
 			goto Exit;
@@ -2576,7 +2627,7 @@ RCODE F_Db::genIndexKeys(
 
 	// Allocate a CDL table for the index.
 
-	if (RC_BAD( rc = m_TempPool.poolCalloc( sizeof( CDL_HDR) *
+	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( CDL_HDR) *
 								pIxd->uiNumIcds, (void **)&pCdlTbl)))
 	{
 		goto Exit;
@@ -2584,7 +2635,7 @@ RCODE F_Db::genIndexKeys(
 
 	// Create a traversal node for the root node we arrived at.
 
-	if (RC_BAD( rc = m_TempPool.poolCalloc( sizeof( NODE_TRAV),
+	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( NODE_TRAV),
 											(void **)&pTrav)))
 	{
 		goto Exit;
@@ -2783,7 +2834,7 @@ Get_First_Attribute:
 		}
 		else
 		{
-			if (RC_BAD( rc = m_TempPool.poolAlloc( sizeof( CDL),
+			if (RC_BAD( rc = m_pTempPool->poolAlloc( sizeof( CDL),
 											(void **)&pCdl)))
 			{
 				goto Exit;
@@ -2802,7 +2853,7 @@ Get_First_Attribute:
 		pChildIcd = pTrav->pIcd->pFirstChild;
 		while (pChildIcd)
 		{
-			if (RC_BAD( rc = m_TempPool.poolAlloc(
+			if (RC_BAD( rc = m_pTempPool->poolAlloc(
 										sizeof( CDL), (void **)&pCdl)))
 			{
 				goto Exit;
@@ -2821,7 +2872,7 @@ Next_Node:
 		if (pTrav->bTraverseChildren)
 		{
 			bInNodeSubtree = pTrav->bInNodeSubtree;
-			if (RC_BAD( rc = kyFindChildNode( this, &m_TempPool,
+			if (RC_BAD( rc = kyFindChildNode( this, m_pTempPool,
 									&pTrav, &bGotNode, &bHadRepeatingSib)))
 			{
 				goto Exit;
@@ -3159,7 +3210,7 @@ RCODE F_Db::updateIndexKeys(
 
 	// The node may be indexed so we need to process the ICD list
 
-	pvMark = m_TempPool.poolMark();
+	pvMark = m_pTempPool->poolMark();
 	bIsIndexed = TRUE;
 	ui64DocumentID = pNode->getDocumentId();
 
@@ -3242,7 +3293,7 @@ RCODE F_Db::updateIndexKeys(
 
 Next_Index:
 
-		m_TempPool.poolReset( pvMark);
+		m_pTempPool->poolReset( pvMark);
 		if ((pIcd = pIcd->pNextInChain) == NULL)
 		{
 			if (!bIsRoot || uiIcdDictNum == ELM_ROOT_TAG)
@@ -3264,7 +3315,7 @@ Exit:
 
 	if( pvMark)
 	{
-		m_TempPool.poolReset( pvMark);
+		m_pTempPool->poolReset( pvMark);
 	}
 
 	if (pNode)
