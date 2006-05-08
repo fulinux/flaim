@@ -53,7 +53,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if ( ( *ppTest = new IDirtyExitTest2Impl) == NULL)
+	if( (*ppTest = f_new IDirtyExitTest2Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;

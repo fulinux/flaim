@@ -56,7 +56,7 @@ RCODE getTest( IFlmTest ** ppTest)
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IIndexTest2Impl) == NULL)
+	if( (*ppTest = f_new IIndexTest2Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -159,11 +159,11 @@ RCODE IIndexTest2Impl::runSuite1( void)
 	
 	for( i = 0; i < sizeof(pszFirstNames)/sizeof(pszFirstNames[0]); i++)
 	{
-		pszFirstPlusLastNames[i] = new char[ strlen( pszFirstNames[i]) +
-			strlen( pszLastNames[i]) + 1];
+		pszFirstPlusLastNames[i] = new char[ f_strlen( pszFirstNames[i]) +
+			f_strlen( pszLastNames[i]) + 1];
 
-		strcpy( pszFirstPlusLastNames[i], pszFirstNames[i]);
-		strcat( pszFirstPlusLastNames[i], pszLastNames[i]);
+		f_strcpy( pszFirstPlusLastNames[i], pszFirstNames[i]);
+		f_strcat( pszFirstPlusLastNames[i], pszLastNames[i]);
 	}
 
 	firstNamePlusLastNameFlags.init( (FLMBYTE **)pszFirstPlusLastNames, i);
@@ -284,7 +284,7 @@ RCODE IIndexTest2Impl::runSuite1( void)
 			goto Exit;
 		}
 
-		strcpy( (char *)pucTemp, (char *)szBuf);
+		f_strcpy( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal( 1, szBuf, 
 			sizeof( szBuf), NULL)))
@@ -293,7 +293,7 @@ RCODE IIndexTest2Impl::runSuite1( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( !firstNamePlusLastNameFlags.setElemFlag( pucTemp))
 		{
@@ -385,7 +385,7 @@ RCODE IIndexTest2Impl::runSuite1( void)
 			goto Exit;
 		}
 
-		strcpy( (char *)pucTemp, (char *)szBuf);
+		f_strcpy( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal( 1, szBuf, 
 			sizeof( szBuf), NULL)))
@@ -394,7 +394,7 @@ RCODE IIndexTest2Impl::runSuite1( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( !firstNamePlusLastNameFlags.setElemFlag( pucTemp))
 		{

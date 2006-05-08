@@ -74,7 +74,7 @@ RCODE getTest( IFlmTest ** ppTest)
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new SortKeyTest2Impl) == NULL)
+	if( (*ppTest = f_new SortKeyTest2Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;

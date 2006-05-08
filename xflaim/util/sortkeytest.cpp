@@ -84,7 +84,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new SortKeyTestImpl) == NULL)
+	if( (*ppTest = f_new SortKeyTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -124,7 +124,7 @@ RCODE	SortKeyTestImpl::verifyQuery(
 	FLMUINT				uiLoop;
 	FLMUINT				uiPos;
 	char					szBuf[ 100];
-	F_DataVector		searchKey;
+	IF_DataVector *	pSearchKey = NULL;
 	char					szTestName[ 200];
 	static FLMUINT		uiCallCount = 0;
 	const char *		pszTestNameFormat = 
@@ -134,7 +134,7 @@ RCODE	SortKeyTestImpl::verifyQuery(
 
 	uiCallCount++;
 
-	sprintf( szTestName, pszTestNameFormat, uiCallCount,
+	f_sprintf( szTestName, pszTestNameFormat, uiCallCount,
 		pszQuery, (unsigned)bFirstAscending, (unsigned)bLastAscending,
 		"positioning");
 
@@ -237,7 +237,7 @@ RCODE	SortKeyTestImpl::verifyQuery(
 
 	endTest("PASS");
 
-	sprintf( szTestName, pszTestNameFormat, uiCallCount,
+	f_sprintf( szTestName, pszTestNameFormat, uiCallCount,
 		pszQuery, (unsigned)bFirstAscending, (unsigned)bLastAscending,
 		"search key positioning");
 
@@ -245,6 +245,11 @@ RCODE	SortKeyTestImpl::verifyQuery(
 		"Ensure queries return proper results in proper order",
 		"No Additional Info",
 		"");
+		
+	if( RC_BAD( rc = m_pDbSystem->createIFDataVector( &pSearchKey)))
+	{
+		goto Exit;
+	}
 
 	// positioning tests 2
 
@@ -254,7 +259,7 @@ RCODE	SortKeyTestImpl::verifyQuery(
 		if ( uiLoop == 0)
 		{
 			if ( RC_BAD( rc = pQuery->positionTo( 
-				m_pDb, &pResultNode, 0, &searchKey, XFLM_FIRST)))
+				m_pDb, &pResultNode, 0, pSearchKey, XFLM_FIRST)))
 			{
 				MAKE_FLM_ERROR_STRING( "positionTo failed.", m_szDetails, rc);
 				goto Exit;
@@ -262,14 +267,14 @@ RCODE	SortKeyTestImpl::verifyQuery(
 		}
 		else
 		{
-			if ( RC_BAD( rc = searchKey.setUTF8( 0, 
+			if ( RC_BAD( rc = pSearchKey->setUTF8( 0, 
 				(FLMBYTE *)ppszNames[uiLoop][0])))
 			{
 				MAKE_FLM_ERROR_STRING( "setUTF8 failed.", m_szDetails, rc);
 				goto Exit;
 			}
 
-			if ( RC_BAD( rc = searchKey.setUTF8( 1, 
+			if ( RC_BAD( rc = pSearchKey->setUTF8( 1, 
 				(FLMBYTE *)ppszNames[uiLoop][1])))
 			{
 				MAKE_FLM_ERROR_STRING( "setUTF8 failed.", m_szDetails, rc);
@@ -277,7 +282,7 @@ RCODE	SortKeyTestImpl::verifyQuery(
 			}
 
 			if ( RC_BAD( rc = pQuery->positionTo( 
-				m_pDb, &pResultNode, 0, &searchKey, XFLM_EXACT)))
+				m_pDb, &pResultNode, 0, pSearchKey, XFLM_EXACT)))
 			{
 				MAKE_FLM_ERROR_STRING( "positionTo failed.", m_szDetails, rc);
 				goto Exit;
@@ -342,24 +347,29 @@ RCODE	SortKeyTestImpl::verifyQuery(
 
 Exit:
 
-	if ( RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
 		endTest("FAIL");
 	}
 
-	if ( pResultNode)
+	if( pResultNode)
 	{
 		pResultNode->Release();
 	}
 
-	if ( pFirstNameNode)
+	if( pFirstNameNode)
 	{
 		pFirstNameNode->Release();
 	}
 
-	if ( pLastNameNode)
+	if( pLastNameNode)
 	{
 		pLastNameNode->Release();
+	}
+	
+	if( pSearchKey)
+	{
+		pSearchKey->Release();
 	}
 
 	return rc;

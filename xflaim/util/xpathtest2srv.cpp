@@ -66,7 +66,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IXPATHTest2Impl) == NULL)
+	if( (*ppTest = f_new IXPATHTest2Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -293,7 +293,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* First Query ************************************/
-	strcpy( szQueryString, 
+	f_strcpy( szQueryString, 
 		"/chairman/president/groupvp[@empID == \"emp9801\"]/director[3]/name");
 	pszQueryResult = "John Tippett";
 
@@ -316,7 +316,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Second Query ************************************/
-	strcpy( szQueryString, "/chairman/president[2]/groupvp[1]/director[3]/name");
+	f_strcpy( szQueryString, "/chairman/president[2]/groupvp[1]/director[3]/name");
 	pszQueryResult = "Peter Porzuczek";
 
 	beginTest( 
@@ -338,7 +338,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Third Query ************************************/
-	strcpy( szQueryString, "/chairman/president/groupvp[4 - 2]/name");
+	f_strcpy( szQueryString, "/chairman/president/groupvp[4 - 2]/name");
 
 	beginTest( 
 		"Node Subscript Test 2",
@@ -359,7 +359,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Fourth Query ************************************/
-	strcpy( szQueryString, 
+	f_strcpy( szQueryString, 
 		"/groupvp[ @empID == \"emp7216\"]/director[2 * 3 - 4]/region");
 	pszQueryResult = "Asia";
 
@@ -389,7 +389,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 		"in preparation for the first meta axis test.",
 		"");
 
-	strcpy( szQueryString, "/chairman/president[@empID == \"emp4238\"]"
+	f_strcpy( szQueryString, "/chairman/president[@empID == \"emp4238\"]"
 						 "/groupvp/director[@empID == \"emp7634\"]/region[. == \"Asia\"]");
 
 	if ( RC_BAD( rc = pQuery->setupQueryExpr( m_pDb, szQueryString)))
@@ -435,15 +435,10 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 	
 	// Generate a new query to validate the meta::parentid axis
-#ifdef FLM_WIN
-	sprintf( szQueryString, 
+	
+	f_sprintf( szQueryString, 
 				"/chairman/president/groupvp/director/region[meta::parentid == %I64u]", 
 				ui64ParentId);
-#else
-	sprintf( szQueryString, 
-				"/chairman/president/groupvp/director/region[meta::parentid == %llu]", 
-				ui64ParentId);
-#endif
 
 	/********************* Sixth Query ************************************/
 	beginTest( 
@@ -483,11 +478,8 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	/********************* Seventh Query ************************************/
 
 	// Generate a new query to validate the meta::nodeid axis
-#ifdef FLM_WIN
-	sprintf( szQueryString, "/chairman/president//director/region[meta::nodeid == %I64u]", ui64NodeId);
-#else
-	sprintf( szQueryString, "/chairman/president//director/region[meta::nodeid == %llu]", ui64NodeId);
-#endif
+	
+	f_sprintf( szQueryString, "/chairman/president//director/region[meta::nodeid == %I64u]", ui64NodeId);
 
 	beginTest( 
 		"Meta Axis #2",
@@ -525,11 +517,8 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	/********************* Eighth Query ************************************/
 
 	// Generate a new query to validate the meta::prevsiblingid axis
-#ifdef FLM_WIN
-	sprintf( szQueryString, "///region[meta::prevsiblingid == %I64u]", ui64PrevSiblingId);
-#else
-	sprintf( szQueryString, "///region[meta::prevsiblingid == %llu]", ui64PrevSiblingId);
-#endif
+	
+	f_sprintf( szQueryString, "///region[meta::prevsiblingid == %I64u]", ui64PrevSiblingId);
 
 	beginTest( 
 		"Meta Axis #3",
@@ -567,11 +556,8 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 
 	/********************* Ninth Query ************************************/
 	// Generate a new query to validate the meta::documentid
-#ifdef FLM_WIN
-	sprintf( szQueryString, "///region[meta::documentid == %I64u]", ui64DocumentId);
-#else
-	sprintf( szQueryString, "///region[meta::documentid == %llu]", ui64DocumentId);
-#endif
+
+	f_sprintf( szQueryString, "///region[meta::documentid == %I64u]", ui64DocumentId);
 
 	beginTest(
 		"Meta Axis #9",
@@ -608,7 +594,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Tenth Query ************************************/
-	strcpy( szQueryString, "///director[@empID ==\"emp5443\"]");
+	f_strcpy( szQueryString, "///director[@empID ==\"emp5443\"]");
 
 	beginTest(
 		"Meta Axis Pretest #2",
@@ -662,11 +648,8 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 
 	/********************* Eleventh Query ************************************/
 	// Generate a new query to validate the meta::firstchildid
-#ifdef FLM_WIN
-	sprintf( szQueryString, "///director[meta::firstchildid == %I64u]", ui64FirstChildId);
-#else
-	sprintf( szQueryString, "///director[meta::firstchildid == %llu]", ui64FirstChildId);
-#endif
+	
+	f_sprintf( szQueryString, "///director[meta::firstchildid == %I64u]", ui64FirstChildId);
 
 	beginTest( "Meta Axis #3",
 		szQueryString,
@@ -703,11 +686,8 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 
 	/********************* Twelfth Query ************************************/
 	// Generate a new query to validate the meta::lastchildid
-#ifdef FLM_WIN
-	sprintf( szQueryString, "///director[meta::lastchildid == %I64u]", ui64LastChildId);
-#else
-	sprintf( szQueryString, "///director[meta::lastchildid == %llu]", ui64LastChildId);
-#endif
+
+	f_sprintf( szQueryString, "///director[meta::lastchildid == %I64u]", ui64LastChildId);
 
 	beginTest( "Meta Axis #4",
 		szQueryString,
@@ -744,11 +724,8 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 
 	/********************* Thirteenth Query ************************************/
 	// Generate a new query to validate the meta::nextsiblingid
-#ifdef FLM_WIN
-	sprintf( szQueryString, "///director[meta::nextsiblingid == %I64u]", ui64NextSiblingId);
-#else
-	sprintf( szQueryString, "///director[meta::nextsiblingid == %llu]", ui64NextSiblingId);
-#endif
+
+	f_sprintf( szQueryString, "///director[meta::nextsiblingid == %I64u]", ui64NextSiblingId);
 
 	beginTest("Meta Axis #5", szQueryString, "Do a meta::nextsiblingid query", "");
 
@@ -787,7 +764,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 
 
 	/********************* Seventeenth Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"name[. == \"John Thorson\"]/parent::*/[@empID==\"emp4320\"]/attribute::empdate");
 
 	beginTest( "Parent and Attribute Axes Test", szQueryString, "Do a parent axis query", "");
@@ -806,7 +783,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Eighteenth Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"division[. == \"Domestic\"]/preceding::name");
 
 	beginTest( "Previous Axis Test", szQueryString, "Do a previous axis query", ""); 
@@ -839,7 +816,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	// Therefore, Kim Akers, who appears first in the document is actually
 	// last in our query results.
 
-	if ( strcmp( szBuffer, "Kim Akers") != 0)
+	if ( f_strcmp( szBuffer, "Kim Akers") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "getUTF8 failed.", m_szDetails, rc);
@@ -859,7 +836,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 		goto Exit;
 	} 
 
-	if ( strcmp( szBuffer, "Steve Masters") != 0)
+	if ( f_strcmp( szBuffer, "Steve Masters") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "getUTF8 failed.", m_szDetails, rc);
@@ -869,7 +846,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Nineteenth Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"name[.==\"Neil Charney\"]/following-sibling::*");
 
 	beginTest( "Following-Sibling Test", szQueryString, 
@@ -887,7 +864,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Twentieth Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"name[.==\"Neil Charney\"]/following::region");
 
 	beginTest("Following Axis Test", szQueryString, "Do a following axis query", "");
@@ -905,7 +882,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Twenty-first Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"president[@empID==\"emp4390\"]/descendant::department");
 
 	beginTest( "Descendant Axis Test", szQueryString, "Do a descendant axis query", "");
@@ -923,7 +900,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Twenty-second Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"region[.==\"Europe\"]/preceding-sibling::*");
 
 	pszQueryResult = "Peter Porzuczek";
@@ -944,7 +921,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Twenty-third Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"name[.==\"Beth Silverberg\"]/ancestor::*/attribute::empID");
 
 	beginTest( "Ancestor Axis Test", szQueryString, "Do a Ancestor axis query", "");
@@ -962,7 +939,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/********************* Twenty-fourth Query ************************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"name[.==\"Beth Silverberg\"]/preceding::president/name");
 
 	pszQueryResult = "Steve Masters";
@@ -982,7 +959,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/*********************** Twenty-fifth Query ********************************/
-	sprintf( szQueryString, "true() and ///chairman/president/name[.== \"Steve Masters\"]"
+	f_sprintf( szQueryString, "true() and ///chairman/president/name[.== \"Steve Masters\"]"
 		"/meta::documentid[.==%u]", (unsigned)ui64DocumentId);
 
 	pszQueryResult = "Steve Masters";
@@ -1003,7 +980,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 	endTest("PASS");
 
 	/*********************** Twenty-sixth Query ********************************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"(///groupvp[@empID==\"emp9801\" and @empdate==\"1981-09-01\"]"
 		"/director[@empID==\"emp2348\" or @empdate==\"1995-05-26\"]"
 		"/name[.==\"Michelle Votava\" or .==\"John Tippett\"]==\"John Tippett\""
@@ -1040,7 +1017,7 @@ RCODE IXPATHTest2Impl::runSuite1( void)
 
 	/*********************** Twenty-seventh Query ********************************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"name[.==\"Marea Angela Castaneda\"]/following::department[preceding-sibling::*]");
 
 	pszQueryResult = "Marketing";
@@ -1177,7 +1154,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 
 	/****************************Wildcard Defect Test***************************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"track[.==\"Yo*re the nearest thing*heaven\"]");
 
 	beginTest( "Wildcard Defect Test", szQueryString, 
@@ -1203,7 +1180,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 
 	/****************************Double Period Defect Test**********************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"track[.==\"Hey good looking\"]/../track[@index==\"6\"]");
 
 	beginTest( "Double Period Defect Test", szQueryString, 
@@ -1231,7 +1208,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 
 	/****************************Anonymous Parent Axis Defect Test*****************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"//track[parent::*]");
 
 	beginTest( "Anonymous parent axis defect test", szQueryString, 
@@ -1272,7 +1249,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 
 	/****************************Self Axis Defect Test**************************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"track[self::track==\"Come in, stranger\"]");
 
 	beginTest( "Self Axis Defect Test", szQueryString, 
@@ -1305,7 +1282,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 	// The following query should select the first track node in the document
 	// if it has an index attribute with a value equal to 1 (which it does).
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"track[1][@index==\"1\"]");
 
 	beginTest( "Multiple subscript Defect Test", szQueryString, 
@@ -1331,7 +1308,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 
 	/****************************Preceding wildcard Defect Test*****************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"descendant::track[preceding::*]");
 
 	beginTest( "Preceding Wildcard Defect Test", szQueryString, 
@@ -1369,7 +1346,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 	}
 
 	/****************Descendant or Self Wildcard Defect Test**********************/
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"//descendant-or-self::*[self::id!=\"gibberish\" or self::id==\"7005c60b\"]");
 
 	beginTest( "Descendant or Self Wildcard Defect Test", szQueryString, 
@@ -1396,7 +1373,7 @@ RCODE IXPATHTest2Impl::runSuite2( void)
 
 	/****************Descendant or Self Assert Defect Test**********************/
 
-	sprintf( szQueryString, 
+	f_sprintf( szQueryString, 
 		"descendant-or-self::track[.==\"Hey good looking\" or "
 		"preceding-sibling::track==\"Give my love to Rose\"]/@offset[preceding::id!=\"gibberish\"]");
 
@@ -1695,7 +1672,7 @@ RCODE IXPATHTest2Impl::runSuite4( void)
 
 	FLMBOOL		bDibCreated = FALSE;
 
-	sprintf( szQueryString, "!(/foo/bar[@baz==1]) && (/foo/bar[@baz==42])");
+	f_sprintf( szQueryString, "!(/foo/bar[@baz==1]) && (/foo/bar[@baz==42])");
 	beginTest( "Notted Optimization Defect Test", szQueryString, 
 		"Verify a defect that was causing an improper optimization "
 		"with notted nodes has been fixed", 

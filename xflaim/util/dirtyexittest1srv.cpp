@@ -51,7 +51,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IDirtyExitTest1Impl) == NULL)
+	if( (*ppTest = f_new IDirtyExitTest1Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -192,7 +192,7 @@ RCODE IDirtyExitTest1Impl::execute( void)
 
 	if ( RC_BAD( rc = m_pDbSystem->openBufferIStream( 
 		pszDocument, 
-		strlen( pszDocument),
+		f_strlen( pszDocument),
 		&pBufferIStream)))
 	{
 		MAKE_FLM_ERROR_STRING("Failed to open file istream", m_szDetails, rc);

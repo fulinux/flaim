@@ -51,7 +51,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IDictDefTestImpl) == NULL)
+	if( (*ppTest = f_new IDictDefTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -463,7 +463,7 @@ RCODE IDictDefTestImpl::execute( void)
 		goto Exit;
 	}
 
-	if ( strcmp( (char *)szBuf, "active"))
+	if ( f_strcmp( (char *)szBuf, "active"))
 	{
 		MAKE_ERROR_STRING( "unexpected \"state\" value. Expected: \"active\"",
 			m_szDetails, rc);
@@ -567,7 +567,7 @@ RCODE IDictDefTestImpl::execute( void)
 		goto Exit;
 	}
 
-	if ( strcmp( (char *)szBuf, "active"))
+	if ( f_strcmp( (char *)szBuf, "active"))
 	{
 		MAKE_ERROR_STRING( "Invalid state value. Should be \"active\".",
 			m_szDetails, rc);
@@ -918,10 +918,10 @@ RCODE IDictDefTestImpl::execute( void)
 
 	//NOTE: There is a define FLM_INDEX_SUSPENDED_STR in flaim.h
 	//should I have access to it in flaimpub.h?
-	if ( strcmp( (char *)szBuf, "suspended"))
+	if ( f_strcmp( (char *)szBuf, "suspended"))
 	{
 		//MAKE_ERROR_STRING macro won't work here.
-		sprintf(
+		f_sprintf(
 			(char*)m_szDetails,
 			"index state: %s. expected \"suspended\". "
 			"rc == %X. File: %s. Line# %u. ",
@@ -954,11 +954,11 @@ RCODE IDictDefTestImpl::execute( void)
 		MAKE_ERROR_STRING( "getUTF8 failed.", m_szDetails, rc);
 		goto Exit;
 	}
-	if ( strcmp( (char *)szBuf, "online") &&
-		strcmp( (char *)szBuf, "offline")) //VISIT - may still be offline ?
+	if ( f_strcmp( (char *)szBuf, "online") &&
+		f_strcmp( (char *)szBuf, "offline")) //VISIT - may still be offline ?
 	{
 		//MAKE_ERROR_STRING macro won't work here.
-		sprintf(
+		f_sprintf(
 			(char*)m_szDetails,
 			"index state: %s. expected \"online\" or \"offline\". "
 			"rc == %X. File: %s. Line# %u. ",
@@ -1004,7 +1004,7 @@ RCODE IDictDefTestImpl::execute( void)
 			goto Exit;
 		}
 	
-		if( !strcmp( (char *)szBuf, "active"))
+		if( !f_strcmp( (char *)szBuf, "active"))
 		{
 			break;
 		}
@@ -1053,7 +1053,7 @@ RCODE IDictDefTestImpl::execute( void)
 			goto Exit;
 		}
 		
-		if( !strcmp( (char *)szBuf, "active"))
+		if( !f_strcmp( (char *)szBuf, "active"))
 		{
 			break;
 		}
@@ -1081,7 +1081,7 @@ RCODE IDictDefTestImpl::execute( void)
 	//delete the IndexDef
 	if ( RC_BAD( rc = pIndex->deleteNode( m_pDb)))
 	{
-		sprintf(
+		f_sprintf(
 			(char*)m_szDetails,
 			"failed to delete index definition."
 			"Line# %u. rc == %X.",

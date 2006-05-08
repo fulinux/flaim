@@ -59,7 +59,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IFlmTestImpl) == NULL)
+	if( (*ppTest = f_new IFlmTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -85,7 +85,7 @@ RCODE IFlmTestImpl::execute()
 {
 	RCODE						rc = NE_XFLM_OK;
 	char						szMsgBuf[ 64];
-	FLMUINT					uiTmp;
+	FLMUINT					uiTmp = 0;
 	FLMUINT64				ui64Tmp;
 	FLMUINT					uiLoop;
 	FLMUINT					uiHighNode;
@@ -177,10 +177,9 @@ RCODE IFlmTestImpl::execute()
 	// Generate a large text value
 
 	uiLargeTextSize = 1024;
-	if( (pucLargeBuf = (FLMBYTE *)malloc( uiLargeTextSize)) == NULL)
+	if( RC_BAD( rc = f_alloc( uiLargeTextSize, &pucLargeBuf)))
 	{
-		rc = NE_XFLM_MEM;
-		MAKE_FLM_ERROR_STRING( "malloc failed", m_szDetails, rc);
+		MAKE_FLM_ERROR_STRING( "f_alloc failed", m_szDetails, rc);
 		goto Exit;
 	}
 	
@@ -300,7 +299,7 @@ RCODE IFlmTestImpl::execute()
 			goto Exit;
 		}
 		
-		memset( pucLargeBuf, 0, uiLargeTextSize);
+		f_memset( pucLargeBuf, 0, uiLargeTextSize);
 
 		if( RC_BAD( rc = pAttr->getUTF8( m_pDb, pucLargeBuf,
 			uiLargeTextSize, 0, uiLargeTextSize - 1)))
@@ -327,11 +326,7 @@ RCODE IFlmTestImpl::execute()
 					goto Exit;
 				}
 				
-#ifdef FLM_WIN
-				sprintf( szMsgBuf, "Node count = %I64u", ui64Tmp);
-#else
-				sprintf( szMsgBuf, "Node count = %llu", ui64Tmp);
-#endif
+				f_sprintf( szMsgBuf, "Node count = %I64u", ui64Tmp);
 				display( szMsgBuf);
 			}
 		}
@@ -365,11 +360,7 @@ RCODE IFlmTestImpl::execute()
 		{
 			if ( m_bDisplayVerbose)
 			{
-#ifdef FLM_WIN
-				sprintf( szMsgBuf, "Read = %I64u", (FLMUINT64)uiLoop);
-#else
-				sprintf( szMsgBuf, "Read = %llu", (FLMUINT64)uiLoop);
-#endif
+				f_sprintf( szMsgBuf, "Read = %I64u", (FLMUINT64)uiLoop);
 				display( szMsgBuf);
 			}
 		}
@@ -405,11 +396,6 @@ RCODE IFlmTestImpl::execute()
 	m_pDb = NULL;
 
 	endTest("PASS");
-	
-	if( uiTmp)
-	{
-		goto Exit;
-	}
 	
 	// Tests for unique child elements.
 
@@ -970,12 +956,12 @@ Exit:
 	
 	if( pucLargeBuf)
 	{
-		free( pucLargeBuf);
+		f_free( &pucLargeBuf);
 	}
 
 	if( RC_BAD( rc))
 	{
-		sprintf( szMsgBuf, "Error %04X -- %s\n", (unsigned)rc,
+		f_sprintf( szMsgBuf, "Error %04X -- %s\n", (unsigned)rc,
 			m_pDbSystem->errorString( rc));
 		display( szMsgBuf);
 		log( szMsgBuf);

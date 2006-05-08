@@ -60,7 +60,7 @@ RCODE getTest( IFlmTest ** ppTest)
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if ( ( *ppTest = new IMetaphoneTestImpl) == NULL)
+	if( (*ppTest = f_new IMetaphoneTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -264,12 +264,12 @@ RCODE IMetaphoneTestImpl::suite1( void)
 		goto Exit;
 	}
 
-	strcpy( m_szDetails, "Words: ");
+	f_strcpy( m_szDetails, "Words: ");
 	for ( uiLoop = 0; uiLoop < uiNumWords; uiLoop++)
 	{
 		if ( RC_BAD( rc = m_pDbSystem->openBufferIStream( 
 			commonMisspellings[uiLoop].pszWord1,
-			strlen( commonMisspellings[uiLoop].pszWord1),
+			f_strlen( commonMisspellings[uiLoop].pszWord1),
 			&pMetaphoneIStream)))
 		{
 			MAKE_FLM_ERROR_STRING( "openBufferIStream failed.", m_szDetails, rc);
@@ -286,7 +286,7 @@ RCODE IMetaphoneTestImpl::suite1( void)
 
 		if ( RC_BAD( rc = m_pDbSystem->openBufferIStream( 
 			commonMisspellings[uiLoop].pszWord2,
-			strlen( commonMisspellings[uiLoop].pszWord2),
+			f_strlen( commonMisspellings[uiLoop].pszWord2),
 			&pMetaphoneIStream)))
 		{
 			MAKE_FLM_ERROR_STRING( "openBufferIStream failed.", m_szDetails, rc);
@@ -307,16 +307,16 @@ RCODE IMetaphoneTestImpl::suite1( void)
 		if ( uiMetaphone1 == uiMetaphone2)
 		{
 
-			if ( (sizeof( m_szDetails) - strlen( m_szDetails)) > 
-			(strlen( commonMisspellings[uiLoop].pszWord1) + 
-				strlen( " vs. ") + 
-						strlen( commonMisspellings[uiLoop].pszWord2) + 
-							strlen( " ")))
+			if ( (sizeof( m_szDetails) - f_strlen( m_szDetails)) > 
+			(f_strlen( commonMisspellings[uiLoop].pszWord1) + 
+				f_strlen( " vs. ") + 
+						f_strlen( commonMisspellings[uiLoop].pszWord2) + 
+							f_strlen( " ")))
 			{
-				strcat( m_szDetails, commonMisspellings[uiLoop].pszWord1);
-				strcat( m_szDetails, " vs. ");
-				strcat( m_szDetails, commonMisspellings[uiLoop].pszWord2);
-				strcat( m_szDetails, " ");
+				f_strcat( m_szDetails, commonMisspellings[uiLoop].pszWord1);
+				f_strcat( m_szDetails, " vs. ");
+				f_strcat( m_szDetails, commonMisspellings[uiLoop].pszWord2);
+				f_strcat( m_szDetails, " ");
 			}
 
 			if ( RC_BAD( rc = pSearchKey->setUTF8( 0, 
@@ -329,12 +329,12 @@ RCODE IMetaphoneTestImpl::suite1( void)
 			if ( RC_BAD( rc = m_pDb->keyRetrieve( 77, pSearchKey, XFLM_EXACT, pFoundKey)))
 			{
 				char szTemp[128];
-				sprintf( szTemp, "\n\"%s\" indexed but cannot find \"%s\"!", 
+				f_sprintf( szTemp, "\n\"%s\" indexed but cannot find \"%s\"!", 
 					commonMisspellings[uiLoop].pszWord1, 
 					commonMisspellings[uiLoop].pszWord2);
 
 				MAKE_FLM_ERROR_STRING( "keyRetrieve failed. ", m_szDetails, rc);
-				strcpy( m_szDetails, szTemp);
+				f_strcpy( m_szDetails, szTemp);
 
 				goto Exit;
 			}

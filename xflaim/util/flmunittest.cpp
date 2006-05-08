@@ -64,9 +64,9 @@ struct TEST_INFO
 		bVerboseDisplay = FALSE;
 		pNext = NULL;
 		pszLogfile[0] = '\0';
-		strcpy( pszEnvironment, PLATPROC_STR);
-		strcpy( pszBuild, __DATE__);
-		strcpy( pszUser, "defaultUser");
+		f_strcpy( pszEnvironment, PLATPROC_STR);
+		f_strcpy( pszBuild, __DATE__);
+		f_strcpy( pszUser, "defaultUser");
 		pszConfig [0] = 0;
 	}
 };
@@ -180,7 +180,7 @@ Desc:
 void IFlmTestDisplayer::appendString( 
 	const char * 	pszString)
 {
-	printf( pszString);
+	f_printf( pszString);
 }
 
 /****************************************************************************
@@ -188,16 +188,15 @@ Desc:
 ****************************************************************************/
 void printHelp()
 {
-	printf( "\nCommand-line usage:");
-	printf( "\n\n[-l<log file>] [-d]");
-	printf( "[-c<config>] [-b<build>] [-u<user>]");
-	printf( "\n-l - Specifies a log file to print to");
-	printf( "\n-d - Display output");
-	printf( "\n-t - Specifies configuration file for reporting");
-	printf( "\n-b - Specifies the build number");
-	printf( "\n-u - Specifies the user running the unit test");
-	printf( "\n-i - Interactive mode (pause before exit)");
-	printf( "\n-h - Shows this screen");
+	f_printf( "\nCommand-line usage:");
+	f_printf( "\n\n[-l<log file>] [-d]");
+	f_printf( "[-c<config>] [-b<build>] [-u<user>]");
+	f_printf( "\n-l - Specifies a log file to print to");
+	f_printf( "\n-d - Display output");
+	f_printf( "\n-t - Specifies configuration file for reporting");
+	f_printf( "\n-b - Specifies the build number");
+	f_printf( "\n-u - Specifies the user running the unit test");
+	f_printf( "\n-h - Shows this screen");
 }
 
 /****************************************************************************
@@ -210,7 +209,6 @@ int main( int argc, char ** argv)
 	unsigned int	i = 1;
 	ArgList			args;
 	TEST_INFO		testInfo;
-	FLMBOOL			bPauseBeforeExit = FALSE;
 
 	//parse the command line
 	//format:
@@ -218,7 +216,7 @@ int main( int argc, char ** argv)
 	/*
 	if ( argc < 2)
 	{
-		printf("You must specify at least one test to run");
+		f_printf("You must specify at least one test to run");
 		printHelp();
 		goto Exit;
 	}
@@ -226,8 +224,8 @@ int main( int argc, char ** argv)
 
 	if ( argc > 1)
 	{
-		if ( ( strcmp( argv[1], "--help") == 0)||
-			( strcmp( argv[1], "-h") == 0))
+		if ( ( f_strcmp( argv[1], "--help") == 0)||
+			( f_strcmp( argv[1], "-h") == 0))
 		{
 			printHelp();
 			goto Exit;
@@ -246,7 +244,7 @@ int main( int argc, char ** argv)
 		if ( ( args[i][1] == 'l') || ( args[i][1] == 'L'))
 		{
 			testInfo.bLog = true;
-			strcpy( testInfo.pszLogfile, &args[i][2]);
+			f_strcpy( testInfo.pszLogfile, &args[i][2]);
 		}
 		else if ( ( args[i][1] == 'd') || ( args[i][1] == 'D'))
 		{
@@ -255,42 +253,37 @@ int main( int argc, char ** argv)
 		else if ( ( args[i][1] == 'c') || ( args[i][1] == 'C'))
 		{
 			//config file
-			strcpy( testInfo.pszConfig, &args[i][2]);
+			f_strcpy( testInfo.pszConfig, &args[i][2]);
 		}
 		else if ( ( args[i][1] == 'b') || ( args[i][1] == 'B'))
 		{
 			//build
-			strcpy( testInfo.pszBuild, &args[i][2]);
+			f_strcpy( testInfo.pszBuild, &args[i][2]);
 		}
 		else if ( ( args[i][1] == 'u') || ( args[i][1] == 'U'))
 		{
 			//user
-			strcpy( testInfo.pszUser, &args[i][2]);
+			f_strcpy( testInfo.pszUser, &args[i][2]);
 		}
 		else if ( ( args[i][1] == 'v') || ( args[i][1] == 'V'))
 		{
 			//verbose
 			testInfo.bVerboseDisplay = TRUE;
 		}
-		else if ( ( args[i][1] == 'i') || ( args[i][1] == 'I'))
-		{
-			// pause
-			bPauseBeforeExit = TRUE;
-		}		
 		else
 		{
-			printf( "\nInvalid parameter");
+			f_printf( "\nInvalid parameter");
 			printHelp();
 			goto Exit;
 		}
 		i++;
 	}
 
-	printf("Running %s\n", argv[0]);
+	f_printf("Running %s\n", argv[0]);
 
 	if ( RC_BAD( rc = getTest( &pTest)))
 	{
-		printf( "ERROR: Unable to create test instance\n");
+		f_printf( "ERROR: Unable to create test instance\n");
 		goto Exit;
 	}
 
@@ -304,13 +297,13 @@ int main( int argc, char ** argv)
 		testInfo.pszBuild,
 		testInfo.pszUser) != 0)
 	{
-		printf( "\nTest initialization failed");
+		f_printf( "\nTest initialization failed");
 		goto Exit;
 	}
 
 	if ( RC_BAD( rc = pTest->execute()))
 	{
-		// printf("\nTest Failed.");
+		// f_printf("\nTest Failed.");
 		goto Exit;
 	}
 
@@ -319,12 +312,6 @@ Exit:
 	if ( pTest)
 	{
 		pTest->Release();
-	}
-
-	if ( bPauseBeforeExit)
-	{
-		printf( "Press any key to exit.\n");
-		getchar();
 	}
 
 	return( (int)rc);
@@ -423,16 +410,16 @@ FLMBOOL FlagSet::removeElem( FLMBYTE * pElem)
 
 	for ( FLMUINT uiLoop = 0; uiLoop < m_uiNumElems; uiLoop++)
 	{
-		if ( strcmp( (char *)pElem, (char *)m_ppucElemArray[ uiLoop]) == 0)
+		if ( f_strcmp( (char *)pElem, (char *)m_ppucElemArray[ uiLoop]) == 0)
 		{
 			bElemExisted = TRUE;
 			if ( uiLoop < m_uiNumElems - 1)
 			{
 				delete[] m_ppucElemArray[ uiLoop];
-				memmove( &m_ppucElemArray[ uiLoop], 
+				f_memmove( &m_ppucElemArray[ uiLoop], 
 					&m_ppucElemArray[ uiLoop + 1], 
 					( m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
-				memmove( &m_pbFlagArray[ uiLoop], 
+				f_memmove( &m_pbFlagArray[ uiLoop], 
 					&m_pbFlagArray[ uiLoop + 1], 
 					( m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
 			}
@@ -458,10 +445,10 @@ FLMBOOL FlagSet::removeElemContaining( FLMBYTE * pszSubString)
 			bElemExisted = TRUE;
 			if ( uiLoop < m_uiNumElems - 1)
 			{
-				memmove( &m_ppucElemArray[ uiLoop], 
+				f_memmove( &m_ppucElemArray[ uiLoop], 
 					&m_ppucElemArray[ uiLoop + 1], 
 					( m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
-				memmove( &m_pbFlagArray[ uiLoop], 
+				f_memmove( &m_pbFlagArray[ uiLoop], 
 					&m_pbFlagArray[ uiLoop + 1], 
 					( m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
 			}
@@ -486,7 +473,7 @@ FLMBOOL FlagSet::setElemFlag( FLMBYTE * pElem)
 
 	for ( FLMUINT uiLoop = 0; uiLoop < m_uiNumElems; uiLoop++)
 	{
-		if ( strcmp( (char *)pElem, (char *)m_ppucElemArray[ uiLoop]) == 0 &&
+		if ( f_strcmp( (char *)pElem, (char *)m_ppucElemArray[ uiLoop]) == 0 &&
 			  !m_pbFlagArray [uiLoop])
 		{
 			m_pbFlagArray[ uiLoop] = TRUE;
@@ -513,11 +500,11 @@ FlagSet FlagSet::crossProduct( FlagSet& fs2)
 		{
 			FLMUINT uiIndex = uiLoop1 * fs2.getNumElements() + uiLoop2; 
 			ppszCross[ uiIndex] = new FLMBYTE[ 
-				strlen((char *)this->m_ppucElemArray[ uiLoop1]) + 
-					strlen((char *)fs2.m_ppucElemArray[ uiLoop2]) + 1];
+				f_strlen( (char *)this->m_ppucElemArray[ uiLoop1]) + 
+					f_strlen( (char *)fs2.m_ppucElemArray[ uiLoop2]) + 1];
 
-			strcpy( (char *)ppszCross[ uiIndex], (char *)this->m_ppucElemArray[ uiLoop1]);
-			strcat( (char *)ppszCross[ uiIndex], (char *)fs2.m_ppucElemArray[ uiLoop2]);
+			f_strcpy( (char *)ppszCross[ uiIndex], (char *)this->m_ppucElemArray[ uiLoop1]);
+			f_strcat( (char *)ppszCross[ uiIndex], (char *)fs2.m_ppucElemArray[ uiLoop2]);
 		}
 	}
 	fsCross.init( ppszCross, uiCrossProductElems);
@@ -554,11 +541,11 @@ FlagSet::FlagSet( const FlagSet& fs)
 {
 	m_ppucElemArray = new FLMBYTE*[ fs.m_uiNumElems];
 	m_pbFlagArray = new FLMBOOL[ fs.m_uiNumElems];
-	memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * fs.m_uiNumElems);
+	f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * fs.m_uiNumElems);
 	for ( FLMUINT uiLoop = 0; uiLoop < fs.m_uiNumElems; uiLoop++)
 	{
-		m_ppucElemArray[uiLoop] = new FLMBYTE[ strlen( (char *)fs.m_ppucElemArray[uiLoop]) + 1];
-		strcpy( (char *)m_ppucElemArray[uiLoop], (char *)fs.m_ppucElemArray[uiLoop]);
+		m_ppucElemArray[uiLoop] = new FLMBYTE[ f_strlen( (char *)fs.m_ppucElemArray[uiLoop]) + 1];
+		f_strcpy( (char *)m_ppucElemArray[uiLoop], (char *)fs.m_ppucElemArray[uiLoop]);
 	}
 	m_uiNumElems = fs.m_uiNumElems;
 }
@@ -588,11 +575,11 @@ void FlagSet::init( FLMBYTE ** ppucElemArray, FLMUINT uiNumElems)
 	reset();
 	m_ppucElemArray = new FLMBYTE*[ uiNumElems];
 	m_pbFlagArray = new FLMBOOL[ uiNumElems];
-	memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * uiNumElems);
+	f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * uiNumElems);
 	for ( FLMUINT uiLoop = 0; uiLoop < uiNumElems; uiLoop++)
 	{
-		m_ppucElemArray[uiLoop] = new FLMBYTE[ strlen( (char *)ppucElemArray[uiLoop]) + 1];
-		strcpy( (char *)m_ppucElemArray[uiLoop], (char *)ppucElemArray[uiLoop]);
+		m_ppucElemArray[uiLoop] = new FLMBYTE[ f_strlen( (char *)ppucElemArray[uiLoop]) + 1];
+		f_strcpy( (char *)m_ppucElemArray[uiLoop], (char *)ppucElemArray[uiLoop]);
 	}
 	m_uiNumElems = uiNumElems;
 }
@@ -601,30 +588,29 @@ void FlagSet::init( FLMBYTE ** ppucElemArray, FLMUINT uiNumElems)
 Desc:
 ****************************************************************************/
 RCODE createUnitTest(
-	const char *	configPath, 
-	const char *	buildNum, 
-	const char *	environment,  
-	const char *	user, 
-	unitTestData *	uTD)
+	const char *		configPath, 
+	const char *		buildNum, 
+	const char *		environment,  
+	const char *		user, 
+	unitTestData *		uTD)
 {
-	RCODE				rc = NE_XFLM_OK;
-	F_FileHdl		configFileHdl;
-	F_FileHdl		csvFileHdl;
-	char				buffer[ MAX_BUFFER_SIZE] = "";
-	FLMUINT			size = MAX_BUFFER_SIZE;
-	FLMUINT64		ui64Tmp;
-	char *			strPos1 = NULL;
-	char *			strPos2 = NULL;
+	RCODE					rc = NE_XFLM_OK;
+	IF_FileSystem *	pFileSystem = NULL;
+	IF_FileHdl *		pConfigFileHdl = NULL;
+	IF_FileHdl *		pCSVFileHdl = NULL;
+	char					buffer[ MAX_BUFFER_SIZE] = "";
+	FLMUINT				size = MAX_BUFFER_SIZE;
+	FLMUINT64			ui64Tmp;
+	char *				strPos1 = NULL;
+	char *				strPos2 = NULL;
 
-	//printf("Starting the Unit Test Recorder\n");
-	if (!configPath || !buildNum || !environment || !uTD || !user)
+	if( !configPath || !buildNum || !environment || !uTD || !user)
 	{
 		flmAssert(0);
 	}
 
-	if(f_strlen(user) > MAX_SMALL_BUFFER_SIZE)
+	if( f_strlen(user) > MAX_SMALL_BUFFER_SIZE)
 	{
-		//printf(" ERROR user is too large.\n");
 		rc = RC_SET( NE_XFLM_BUFFER_OVERFLOW);
 		goto Exit;
 	}
@@ -633,9 +619,8 @@ RCODE createUnitTest(
 		f_strcpy(uTD->userName, user);
 	}
 
-	if(f_strlen(environment) > MAX_SMALL_BUFFER_SIZE)
+	if( f_strlen(environment) > MAX_SMALL_BUFFER_SIZE)
 	{
-		//printf(" ERROR environment is too large.\n");
 		rc = RC_SET( NE_XFLM_BUFFER_OVERFLOW);
 		goto Exit;
 	}
@@ -644,9 +629,8 @@ RCODE createUnitTest(
 		f_strcpy(uTD->environment, environment);
 	}
 
-	if(f_strlen(buildNum) > MAX_SMALL_BUFFER_SIZE)
+	if( f_strlen(buildNum) > MAX_SMALL_BUFFER_SIZE)
 	{
-		//printf(" ERROR bulidNum is too large.\n");
 		rc = RC_SET( NE_XFLM_BUFFER_OVERFLOW);
 		goto Exit;
 	}
@@ -654,33 +638,28 @@ RCODE createUnitTest(
 	{
 		f_strcpy(uTD->buildNumber, buildNum);
 	}
-
-	/* Now read the configuration data from the configPath
-		Config Format:
-		FOLDER:	folder1\folder2
-		ATTRIBUTES: Attr1, Attr2
-		CSVFILE: csvfile
-	*/
 	
-	if (configPath [0])
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
 	{
-		// VISIT: if the config file doesn't exist, just ignore the error and continue
+		goto Exit;
+	}
 
-		if ( RC_BAD( rc = configFileHdl.Open( 
-			configPath, 
-			XFLM_IO_RDONLY | XFLM_IO_SH_DENYNONE)))
+	if( configPath [0])
+	{
+		if( RC_BAD( rc = pFileSystem->openFile( configPath, 
+			FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &pConfigFileHdl)))
 		{
 			goto Exit;
 		}
 
-		if ( RC_BAD( rc = configFileHdl.Size( &ui64Tmp)))
+		if ( RC_BAD( rc = pConfigFileHdl->size( &ui64Tmp)))
 		{
 			goto Exit;
 		}
 		
 		size = (FLMUINT)ui64Tmp;
 
-		if ( RC_BAD( rc = configFileHdl.Read(
+		if ( RC_BAD( rc = pConfigFileHdl->read(
 			0, size, buffer, &size)))
 		{
 			goto Exit;
@@ -784,13 +763,12 @@ RCODE createUnitTest(
 		f_strncpy(uTD->csvFilename, strPos1, strPos2-strPos1);
 		uTD->csvFilename[strPos2-strPos1] = '\0';
 
-		rc = csvFileHdl.Open( 
-			uTD->csvFilename, 
-			XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE);
+		rc = pFileSystem->openFile( 
+			uTD->csvFilename, FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pCSVFileHdl);
 
 		if( RC_BAD( rc))
 		{
-			if ( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+			if ( rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
 				// Create the file and write the header
 				
@@ -808,6 +786,16 @@ RCODE createUnitTest(
 
 Exit:
 
+	if( pConfigFileHdl)
+	{
+		pConfigFileHdl->Release();
+	}
+	
+	if( pCSVFileHdl)
+	{
+		pCSVFileHdl->Release();
+	}
+	
 	return( rc);
 }
 
@@ -870,11 +858,10 @@ RCODE TestBase::init(
 	const char *	pszBuild,
 	const char *	pszUser)
 {
-	RCODE		rc = NE_XFLM_MEM;
-
-	if( (m_pDbSystem = f_new F_DbSystem) == NULL)
+	RCODE				rc = NE_XFLM_MEM;
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &m_pDbSystem)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
@@ -973,7 +960,7 @@ void TestBase::beginTest(
 	}
 
 	f_strcpy( m_szDetails, pszDetails);
-	FLM_TIMER_UNITS_TO_SECS( FLM_GET_TIMER(), m_ui64StartMs);
+	m_ui64StartMs = FLM_TIMER_UNITS_TO_SECS( FLM_GET_TIMER());
 }
 
 /****************************************************************************
@@ -982,7 +969,7 @@ Desc:
 void TestBase::endTest( 
 	const char * 	pszTestResult)
 {
-	FLM_TIMER_UNITS_TO_SECS( FLM_GET_TIMER(), m_ui64EndMs);
+	m_ui64EndMs = FLM_TIMER_UNITS_TO_SECS( FLM_GET_TIMER());
 	outputAll( pszTestResult, m_ui64EndMs - m_ui64StartMs);
 }
 
@@ -1036,17 +1023,17 @@ void TestBase::displayTime(
 	
 	if( pszIntro)
 	{
-		pszTempBuf = new char[ strlen( pszIntro) + sizeof( szTimeBuf)];
-		strcpy( pszTempBuf, pszIntro);
+		pszTempBuf = new char[ f_strlen( pszIntro) + sizeof( szTimeBuf)];
+		f_strcpy( pszTempBuf, pszIntro);
 	}
 	else
 	{
-		pszTempBuf = new char[ strlen( pszDefault) + sizeof( szTimeBuf)];
-		strcpy( pszTempBuf, pszDefault);
+		pszTempBuf = new char[ f_strlen( pszDefault) + sizeof( szTimeBuf)];
+		f_strcpy( pszTempBuf, pszDefault);
 	}
 	
 	normalizeTime( ui64Milli, szTimeBuf);
-	strcat( pszTempBuf, szTimeBuf);
+	f_strcat( pszTempBuf, szTimeBuf);
 	displayLine( pszTempBuf);
 }
 
@@ -1121,9 +1108,11 @@ RCODE TestBase::openTestState(
 	IF_FileSystem *		pFileSys = NULL;
 	RCODE						rc = NE_XFLM_OK;
 
-	m_pDbSystem->getFileSystem( &pFileSys);
-
-	if ( RC_BAD( rc = pFileSys->Exists( pszDibName)))
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSys)))
+	{
+		goto Exit;
+	}
+	if ( RC_BAD( rc = pFileSys->doesFileExist( pszDibName)))
 	{
 		// Create the database
 
@@ -1841,13 +1830,18 @@ Desc:
 RCODE ArgList::expandFileArgs( 
 	const char *		pszFilename)
 {
-	RCODE				rc = NE_XFLM_OK;
-	char				token[64];
-	F_FileSystem	fileSystem;
-	F_FileHdl *		pFileHdl = NULL;
+	RCODE					rc = NE_XFLM_OK;
+	char					token[64];
+	IF_FileSystem *	pFileSystem = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
-	if( RC_BAD( rc = fileSystem.Open( pszFilename, XFLM_IO_RDWR,
-		(IF_FileHdl **)&pFileHdl)))
+	if( RC_BAD( rc = pFileSystem->openFile( pszFilename, FLM_IO_RDWR,
+		&pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1871,7 +1865,7 @@ RCODE ArgList::expandFileArgs(
 		}
 	}
 	
-	if( rc == NE_XFLM_IO_END_OF_FILE)
+	if( rc == NE_FLM_IO_END_OF_FILE)
 	{
 		rc = NE_XFLM_OK;
 	}
@@ -1881,6 +1875,11 @@ Exit:
 	if( pFileHdl)
 	{
 		pFileHdl->Release();
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 
 	return( rc);
@@ -1932,7 +1931,7 @@ Desc:
 ****************************************************************************/
 RCODE ArgList::getTokenFromFile(
 	char * 			pszToken,
-	F_FileHdl * 	pFileHdl)
+	IF_FileHdl * 	pFileHdl)
 {
 	RCODE			rc = NE_XFLM_OK;
 	FLMUINT		uiSize = 1;
@@ -1944,7 +1943,7 @@ RCODE ArgList::getTokenFromFile(
 	{
 Skip_WS_And_Comments:
 
-		if ( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+		if ( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 		{
 			goto Exit;
 		}
@@ -1953,7 +1952,7 @@ Skip_WS_And_Comments:
 		
 		while( isWhitespace(c))
 		{
-			if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+			if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 			{
 				goto Exit;
 			}
@@ -1965,7 +1964,7 @@ Skip_WS_And_Comments:
 
 			for (;;)
 			{
-				if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+				if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 				{
 					goto Exit;
 				}
@@ -1983,7 +1982,7 @@ Skip_WS_And_Comments:
 				if( c == 0x0D)
 				{
 
-					if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+					if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 					{
 						goto Exit;
 					}
@@ -2001,15 +2000,15 @@ Skip_WS_And_Comments:
 						ui64Offset = 0;
 						ui64TrueOffset = 0;
 
-						if( RC_BAD( rc = pFileHdl->Tell( &ui64Offset)))
+						if( RC_BAD( rc = pFileHdl->tell( &ui64Offset)))
 						{
 							goto Exit;
 						}
 						
 						ui64Offset--;
 
-						if( RC_BAD( rc = pFileHdl->Seek( ui64Offset, 
-							XFLM_IO_SEEK_SET, &ui64TrueOffset)))
+						if( RC_BAD( rc = pFileHdl->seek( ui64Offset, 
+							FLM_IO_SEEK_SET, &ui64TrueOffset)))
 						{
 							goto Exit;
 						}
@@ -2029,7 +2028,7 @@ Skip_WS_And_Comments:
 			}
 
 			*pszToken++ = c;
-			if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+			if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 			{
 				goto Exit;
 			}
@@ -2037,14 +2036,14 @@ Skip_WS_And_Comments:
 
 		// Put the char back
 		
-		if( RC_BAD( rc = pFileHdl->Tell( &ui64Offset)))
+		if( RC_BAD( rc = pFileHdl->tell( &ui64Offset)))
 		{
 			goto Exit;
 		}
 		ui64Offset--;
 
-		if( RC_BAD( rc = pFileHdl->Seek( ui64Offset, 
-			XFLM_IO_SEEK_SET, &ui64TrueOffset)))
+		if( RC_BAD( rc = pFileHdl->seek( ui64Offset, 
+			FLM_IO_SEEK_SET, &ui64TrueOffset)))
 		{
 			goto Exit;
 		}

@@ -54,7 +54,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IDictChangeTestImpl) == NULL)
+	if( (*ppTest = f_new IDictChangeTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;

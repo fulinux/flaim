@@ -51,7 +51,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new INamespaceTestImpl) == NULL)
+	if( (*ppTest = f_new INamespaceTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -148,7 +148,7 @@ RCODE INamespaceTestImpl::execute( void)
 		goto Exit;
 	}
 
-	if ( strcmp( szNamespace, "http://www.novell.com/Bogus") != 0)
+	if ( f_strcmp( szNamespace, "http://www.novell.com/Bogus") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "element has unexpected namespace", m_szDetails, rc);
@@ -204,7 +204,7 @@ RCODE INamespaceTestImpl::execute( void)
 		goto Exit;
 	}
 
-	if ( strcmp( szNamespace, "http://www.novell.com/Bogus") != 0)
+	if ( f_strcmp( szNamespace, "http://www.novell.com/Bogus") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "element has unexpected namespace", m_szDetails, rc);

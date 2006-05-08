@@ -72,7 +72,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IDOMNodeTestImpl) == NULL)
+	if( (*ppTest = f_new IDOMNodeTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -256,7 +256,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 	{
 		// Record the iteration number for output purposes.
 
-		sprintf( szTemp, " Iteration #%lu.", uiLoop);
+		f_sprintf( szTemp, " Iteration #%lu.", uiLoop);
 		
 		// Make a bunch of sibling nodes
 		
@@ -268,7 +268,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			&pDOMNode2)))
 		{
 			MAKE_ERROR_STRING( "createNode failed.", m_szDetails, rc);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			goto Exit;
 		}
 		
@@ -279,7 +279,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			rc = RC_SET( NE_XFLM_FAILURE);
 			MAKE_ERROR_STRING( "Illegal node type.", 
 				m_szDetails, eNodeType);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			goto Exit;
 		}
 	
@@ -294,7 +294,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			rc = RC_SET( NE_XFLM_FAILURE);
 			MAKE_ERROR_STRING( "Node erroneously claims to have children.", 
 				m_szDetails, rc);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			goto Exit;
 		}
 
@@ -307,7 +307,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 		{
 			MAKE_ERROR_STRING( "createAttribute failed.", 
 				m_szDetails, rc);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			goto Exit;
 		}
 
@@ -324,7 +324,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			{
 				MAKE_ERROR_STRING( "hasAttribute failed.", m_szDetails, rc);
 			}
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			goto Exit;
 		}
 
@@ -337,7 +337,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 		{
 			MAKE_ERROR_STRING( "getDataType failed.", 
 				m_szDetails, rc);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			goto Exit;
 		}
 
@@ -369,7 +369,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 					rc = RC_SET( NE_XFLM_FAILURE);
 					MAKE_ERROR_STRING( "UINT Data corruption detected.", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 				break;
@@ -397,7 +397,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 					rc = RC_SET( NE_XFLM_FAILURE);
 					MAKE_ERROR_STRING( "UINT64 Data corruption detected", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 				break;
@@ -425,7 +425,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 					rc = RC_SET( NE_XFLM_FAILURE);
 					MAKE_ERROR_STRING( "INT Data corruption detected", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 				break;
@@ -453,7 +453,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 					rc = RC_SET( NE_XFLM_FAILURE);
 					MAKE_ERROR_STRING( "INT64 Data corruption detected", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 				break;
@@ -476,16 +476,16 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 				{
 					MAKE_ERROR_STRING( "getUTF8 error", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 
-				if ( strcmp( pszValue, pszValueRV) != 0)
+				if ( f_strcmp( pszValue, pszValueRV) != 0)
 				{
 					rc = NE_XFLM_FAILURE;
 					MAKE_ERROR_STRING( "Native Data corruption detected", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 				break;
@@ -511,7 +511,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 				{
 					MAKE_ERROR_STRING( "getUnicode error", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 
@@ -529,7 +529,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 						rc = NE_XFLM_FAILURE;
 						MAKE_ERROR_STRING( "Unicode data corruption detected", 
 							m_szDetails, rc);
-						strcat( m_szDetails, szTemp);
+						f_strcat( m_szDetails, szTemp);
 						goto Exit;
 					}
 				}
@@ -558,16 +558,16 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 				{
 					MAKE_ERROR_STRING( "getUTF8 error", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 
-				if ( strcmp( pszValue, pszValueRV) != 0)
+				if ( f_strcmp( pszValue, pszValueRV) != 0)
 				{
 					rc = NE_XFLM_FAILURE;
 					MAKE_ERROR_STRING( "UTF8 data corruption detected", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 
 				}
@@ -593,12 +593,12 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 					goto Exit;
 				}
 
-				if ( memcmp( pucBinValue, pucBinValueRV, 10))
+				if ( f_memcmp( pucBinValue, pucBinValueRV, 10))
 				{
 					rc = NE_XFLM_FAILURE;
 					MAKE_ERROR_STRING( "Binary data corruption detected", 
 						m_szDetails, rc);
-					strcat( m_szDetails, szTemp);
+					f_strcat( m_szDetails, szTemp);
 					goto Exit;
 				}
 				break;
@@ -618,7 +618,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			{
 				MAKE_ERROR_STRING( "getFirstAttribute failed", 
 					m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 		}
@@ -632,7 +632,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			{
 				MAKE_ERROR_STRING( "getAttribute failed", 
 					m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 		}
@@ -646,7 +646,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 		{
 			MAKE_ERROR_STRING( "getPreviousSibling returned invalid rc. ", 
 					m_szDetails, rc);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			if ( RC_OK( rc))
 			{
 				rc = NE_XFLM_FAILURE;
@@ -660,7 +660,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 		{
 			MAKE_ERROR_STRING( "getNextSibling returned invalid rc. ", 
 					m_szDetails, rc);
-			strcat( m_szDetails, szTemp);
+			f_strcat( m_szDetails, szTemp);
 			if ( RC_OK( rc))
 			{
 				rc = NE_XFLM_FAILURE;
@@ -678,7 +678,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 	{
 		MAKE_ERROR_STRING( "hasChildren failed. ", 
 				m_szDetails, rc);
-		strcat( m_szDetails, szTemp);
+		f_strcat( m_szDetails, szTemp);
 		goto Exit;
 	}
 	
@@ -687,7 +687,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 		rc = RC_SET( NE_XFLM_FAILURE);
 		MAKE_ERROR_STRING( "Document root erroneously claims to have no children. ", 
 			m_szDetails, rc);
-		strcat( m_szDetails, szTemp);
+		f_strcat( m_szDetails, szTemp);
 		goto Exit;
 	}
 
@@ -697,7 +697,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 
 	for ( uiLoop = 0; uiLoop < NUM_CHILD_NODES; uiLoop++)
 	{
-		sprintf( szTemp, " Iteration #%lu.", uiLoop);
+		f_sprintf( szTemp, " Iteration #%lu.", uiLoop);
 
 		if ( uiLoop == 0)
 		{
@@ -709,7 +709,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			{
 				MAKE_ERROR_STRING( "getFirstChild failed.", 
 					m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 		}
@@ -723,7 +723,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 			{
 				MAKE_ERROR_STRING( "getNextSibling failed.", 
 					m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 		}
@@ -732,7 +732,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 		{
 				MAKE_ERROR_STRING( "getParentId failed.", 
 					m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 		}
 
@@ -741,7 +741,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 				rc = RC_SET( NE_XFLM_FAILURE);
 				MAKE_ERROR_STRING( "Incorrect parent ID.", 
 					m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				rc = NE_XFLM_FAILURE;
 				goto Exit;
 		}
@@ -755,7 +755,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 	{
 		MAKE_ERROR_STRING( "Invalid rc returned from getNextSibling.", 
 			m_szDetails, rc);
-		strcat( m_szDetails, szTemp);
+		f_strcat( m_szDetails, szTemp);
 		if ( RC_OK( rc))
 		{
 			rc = NE_XFLM_FAILURE;
@@ -784,7 +784,7 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 				&pDOMNode1)))
 			{
 				MAKE_ERROR_STRING( "getLastChild failed.", m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 		}
@@ -797,14 +797,14 @@ RCODE IDOMNodeTestImpl::domNodeWorkout( void)
 				&pDOMNode2)))
 			{
 				MAKE_ERROR_STRING( "getPreviousSibling failed.", m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 
 			if ( RC_BAD( rc = pDOMNode1->deleteNode( m_pDb)))
 			{
 				MAKE_ERROR_STRING( "deleteNode failed.", m_szDetails, rc);
-				strcat( m_szDetails, szTemp);
+				f_strcat( m_szDetails, szTemp);
 				goto Exit;
 			}
 			

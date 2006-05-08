@@ -591,10 +591,18 @@ endif
 # a sibling to the top directory - which is how it is set up in the
 # subversion repository.
 
-ifeq "$(wildcard $(topdir)/tools*)" ""
+ifeq "$(wildcard $(topdir)/tools)" ""
 	tooldir := $(dir $(topdir))tools/$(host_os_family)
 else
 	tooldir := $(topdir)/tools/$(host_os_family)
+endif
+
+# Determine the toolkit directory
+
+ifeq "$(wildcard $(topdir)/ftk)" ""
+	ftkdir := $(dir $(topdir))ftk
+else
+	ftkdir := $(topdir)/ftk
 endif
 
 # Files and Directories
@@ -657,7 +665,7 @@ ifdef JAVA_HOME
 	jhome := $(subst \,/,$(JAVA_HOME))
 endif
 
-inc_dirs = src util
+inc_dirs = src util $(ftkdir)/src
 
 ifdef jhome
 	jni_src_dir = java/jni
@@ -1032,9 +1040,13 @@ ifdef netware_target
 		wc_dir = $(WC_DIR)
 	endif
 
-	ifndef wc_dir
-      $(error Target operating system could not be determined)
+	wc_dir := $(call normpath,$(wc_dir))
+	
+	ifndef ndk_dir
+      $(error Netware SDK could not be found.  Please define ndk_dir.)
 	endif
+	
+	ndk_dir := $(call normpath,$(ndk_dir))
 
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
 	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
@@ -1056,6 +1068,9 @@ ifdef netware_target
 	libflags += /b /q /p=256
 	link_flags = /m /l /v /s
 
+	inc_dirs += $(ndk_dir)/libc/include \
+					$(ndk_dir)/libc/include/winsock
+					
 	export include = $(foreach inc_dir,$(strip $(inc_dirs)),$(call hostpath,$(inc_dir));)
 	export INCLUDE = $(include)
 	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
@@ -1067,18 +1082,25 @@ ifdef netware_target
 		$(ec)$(gprintf) "option synchronize\n" >> $(4)
 		$(ec)$(gprintf) "option nod\n" >> $(4)
 		$(ec)$(gprintf) "option map\n" >> $(4)
-		$(ec)$(gprintf) "option start=FlmLoad, exit=FlmUnload, caseexact\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
 		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
 		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "option start = _LibCPrelude\n" >> $(4)
+		$(ec)$(gprintf) "option exit = _LibCPostlude\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
 		
 		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(ndk_dir)/libc/imports/libcpre.obj)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(xflaim_static_lib))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/netware/libc3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "import CurrentProcess\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(4)
    endef
 
    define flm_exe_link_cmd
@@ -1093,6 +1115,9 @@ endif
 
 xflaim_src = \
 	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
+	
+ftk_src = \
+	$(patsubst $(ftkdir)/src/%.cpp,%.cpp,$(wildcard $(ftkdir)/src/*.cpp))
 
 xflaim_jni_src = \
 	$(patsubst java/jni/%.cpp,%.cpp,$(wildcard java/jni/*.cpp))
@@ -1222,6 +1247,7 @@ ut_xpathtest2_src = \
 	
 # -- XFLAIM library --
 
+ftk_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(ftk_src))
 xflaim_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_src))
 xflaim_jni_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
 xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
@@ -1278,7 +1304,7 @@ sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample java/jni 
+vpath %.cpp src util sample java/jni ../ftk/src 
 vpath %.java jni/java/xflaim
 
 # -- Default target --
@@ -1331,7 +1357,7 @@ $(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
 
 # -- xflaim.lib and libxflaim.a --
 
-$(xflaim_static_lib) : $(xflaim_obj)
+$(xflaim_static_lib) : $(xflaim_obj) $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(libr) /NOLOGO $(call hostpath,$+) /OUT:$(call hostpath,$@)
@@ -1351,7 +1377,7 @@ endif
 
 # -- xflaim.dll and libxflaim.so --
 
-$(xflaim_shared_lib) : $(xflaim_obj) $(xflaim_jni_obj)
+$(xflaim_shared_lib) : $(xflaim_obj) $(ftk_obj) $(xflaim_jni_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
@@ -1625,6 +1651,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
+	$(ec)$(call dircopycmd,$(dir $(topdir))ftk,$(package_stage_dir)/ftk)
 ifneq ($(host_os_family),win)
 	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
 endif
@@ -1862,6 +1889,7 @@ status:
 	$(ec)$(gprintf) "SVN Revision.................... $(svn_revision)\n"
 	$(ec)$(gprintf) "Host Operating System Family.... $(host_os_family)\n"
 	$(ec)$(gprintf) "Top Directory................... $(call ppath,$(topdir))\n"
+	$(ec)$(gprintf) "Toolkit Directory............... $(call ppath,$(ftkdir))\n"
 	$(ec)$(gprintf) "Target Operating System Family.. $(target_os_family)\n"
 	$(ec)$(gprintf) "Target Processor Family......... $(target_processor_family)\n"
 	$(ec)$(gprintf) "Target Word Size................ $(target_word_size)\n"
@@ -1906,6 +1934,7 @@ allutils: status dircheck libs $(util_targets)
 
 .PHONY : test
 test:	status dircheck $(xflaim_static_lib) $(test_targets)
+ifndef netware_target
 	$(ec)$(call copycmd,util/xmlfiles/*.xml,$(test_dir))
 	$(ec)$(call runtest,basictest)
 	$(ec)$(call runtest,binarytest)
@@ -1929,6 +1958,7 @@ test:	status dircheck $(xflaim_static_lib) $(test_targets)
 	$(ec)$(call runtest,sortkeytest2)
 	$(ec)$(call runtest,xpathtest1)
 	$(ec)$(call runtest,xpathtest2)
+endif
 
 .PHONY : debug
 debug:

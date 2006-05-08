@@ -62,7 +62,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IXPathTest1Impl) == NULL)
+	if( (*ppTest = f_new IXPathTest1Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -411,7 +411,7 @@ RCODE IXPathTest1Impl::execute( void)
 		goto Exit;
 	}
 
-	if( strcmp( szBuffer, "One night only") != 0)
+	if( f_strcmp( szBuffer, "One night only") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "Unexpected query result.", m_szDetails, rc);
@@ -454,7 +454,7 @@ RCODE IXPathTest1Impl::execute( void)
 		goto Exit;
 	}
 
-	if( strcmp( szBuffer, "1080") != 0)
+	if( f_strcmp( szBuffer, "1080") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "Unexpected query result.", m_szDetails, rc);
@@ -496,7 +496,7 @@ RCODE IXPathTest1Impl::execute( void)
 		goto Exit;
 	}
 
-	if( strcmp( szBuffer, "Polydor") != 0)
+	if( f_strcmp( szBuffer, "Polydor") != 0)
 	{
 		rc = NE_XFLM_FAILURE;
 		MAKE_FLM_ERROR_STRING( "Unexpected query result.", m_szDetails, rc);

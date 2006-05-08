@@ -95,7 +95,7 @@ RCODE getTest( IFlmTest ** ppTest)
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IEncTestImpl) == NULL)
+	if( (*ppTest = f_new IEncTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;

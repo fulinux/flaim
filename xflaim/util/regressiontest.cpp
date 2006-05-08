@@ -63,7 +63,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IRegressionTestImpl) == NULL)
+	if( (*ppTest = f_new IRegressionTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;

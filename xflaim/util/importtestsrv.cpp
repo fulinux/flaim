@@ -51,7 +51,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IImportTestImpl) == NULL)
+	if( (*ppTest = f_new IImportTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -156,7 +156,7 @@ const char * pszIndexDef1 = "<xflaim:Index "
 		"	</xflaim:ElementComponent> "
 		"</xflaim:Index> ";
 
-	strcpy( m_szDetails, "No additional details.");
+	f_strcpy( m_szDetails, "No additional details.");
 
 	beginTest(	
 		"Import Test Init",
@@ -220,7 +220,7 @@ const char * pszIndexDef1 = "<xflaim:Index "
 
 	m_pDbSystem->getFileSystem( &pFileSystem);
 
-	if( RC_BAD( rc = pFileSystem->OpenDir( ".", ".xml", &pDirHdl)))
+	if( RC_BAD( rc = pFileSystem->openDir( ".", ".xml", &pDirHdl)))
 	{
 		MAKE_FLM_ERROR_STRING( "OpenDir failed.", m_szDetails, rc);
 		goto Exit;
@@ -229,7 +229,7 @@ const char * pszIndexDef1 = "<xflaim:Index "
 	m_szDetails[ 0] = '\0';
 	for (;;)
 	{
-		if( RC_BAD( rc = pDirHdl->Next()))
+		if( RC_BAD( rc = pDirHdl->next()))
 		{
 			if ( rc == NE_XFLM_IO_NO_MORE_FILES)
 			{
@@ -241,14 +241,14 @@ const char * pszIndexDef1 = "<xflaim:Index "
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = importFile( pDirHdl->CurrentItemName(), 
+		if( RC_BAD( rc = importFile( pDirHdl->currentItemName(), 
 			XFLM_DATA_COLLECTION)))
 		{
 			goto Exit;
 		}
 
-		f_sprintf( szTemp, "Imported: %s. ", pDirHdl->CurrentItemName());
-		uiCharCount += strlen( szTemp);
+		f_sprintf( szTemp, "Imported: %s. ", pDirHdl->currentItemName());
+		uiCharCount += f_strlen( szTemp);
 
 		if( uiCharCount < DETAILS_BUF_SIZ)
 		{

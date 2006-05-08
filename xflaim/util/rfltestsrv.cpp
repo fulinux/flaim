@@ -61,7 +61,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IFlmTestImpl) == NULL)
+	if( (*ppTest = f_new IFlmTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -331,7 +331,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		sprintf( szMsgBuf, "Error %04X -- %s\n", (unsigned)rc,
+		f_sprintf( szMsgBuf, "Error %04X -- %s\n", (unsigned)rc,
 			m_pDbSystem->errorString( rc));
 		display( szMsgBuf);
 		log( szMsgBuf);

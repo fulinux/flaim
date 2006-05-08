@@ -51,7 +51,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if( (*ppTest = new IIndexTest1Impl) == NULL)
+	if( (*ppTest = f_new IIndexTest1Impl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -318,7 +318,7 @@ RCODE IIndexTest1Impl::execute( void)
 	{
 		if( RC_BAD( rc = addName( m_pDb, pBeatlesNode, uiFNDef, 
 			(FLMBYTE *)pszFirstNames1[ uiLoop],
-			( strcmp( pszFirstNames1[ uiLoop], "John")  == 0) 
+			( f_strcmp( pszFirstNames1[ uiLoop], "John")  == 0) 
 				? &ui64JohnId 
 				: NULL)))
 		{
@@ -555,7 +555,7 @@ RCODE IIndexTest1Impl::execute( void)
 	{
 		if( RC_BAD( rc = addName( m_pDb, pBeatlesNode, uiLNDef, 
 			(FLMBYTE *)pszLastNames1[ uiLoop],  
-			(strcmp( pszLastNames1[ uiLoop], "Lennon") == 0) 
+			(f_strcmp( pszLastNames1[ uiLoop], "Lennon") == 0) 
 			? &ui64LennonId
 			: NULL)))
 		{
@@ -585,7 +585,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcpy( (char *)pucTemp, (char *)szBuf);
+		f_strcpy( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal(
 			1, szBuf, sizeof( szBuf), NULL)))
@@ -594,7 +594,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( !FNPlusLNFlags.setElemFlag( pucTemp))
 		{
@@ -672,7 +672,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcpy( (char *)pucTemp, (char *)szBuf);
+		f_strcpy( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal(
 			1, szBuf, sizeof( szBuf), NULL)))
@@ -681,7 +681,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( !FNPlusLNFlags.setElemFlag( pucTemp))
 		{
@@ -747,7 +747,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcpy( (char *)pucTemp, (char *)szBuf);
+		f_strcpy( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal( 1, szBuf, 
 			sizeof( szBuf), NULL)))
@@ -756,7 +756,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( !FNPlusLNFlags.setElemFlag( pucTemp))
 		{
@@ -850,7 +850,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcpy( (char *)pucTemp, (char *)szBuf);
+		f_strcpy( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal(
 			1, szBuf, sizeof( szBuf), NULL)))
@@ -859,7 +859,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal(
 			2, szBuf, sizeof( szBuf), NULL)))
@@ -868,7 +868,7 @@ RCODE IIndexTest1Impl::execute( void)
 			goto Exit;
 		}
 
-		strcat( (char *)pucTemp, (char *)szBuf);
+		f_strcat( (char *)pucTemp, (char *)szBuf);
 
 		if( !contextFlags.setElemFlag( pucTemp))
 		{

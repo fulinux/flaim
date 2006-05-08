@@ -26,11 +26,15 @@
 #ifndef FLMUNITTEST_H
 #define FLMUNITTEST_H
 
-#include <stdio.h>
-#include "flaimsys.h"
+#include "xflaim.h"
 
 // Status codes passed to recordUnitTestResults
 
+#if defined( FLM_WIN)
+	// Inherits via dominance
+	#pragma warning( disable : 4250)
+#endif
+	
 #define PASS								"PASS"
 #define FAIL								"FAIL"
 
@@ -46,26 +50,26 @@
 #endif
 
 #define MAKE_ERR_STRING( str, buf) \
-	sprintf( buf, str" file: %s. line: %u.", __FILE__, __LINE__); \
+	f_sprintf( buf, str" file: %s. line: %u.", __FILE__, __LINE__); \
 	flmAssert( 0)
 
 #define MAKE_ERROR_STRING( str, buf, rcode) \
-	sprintf( buf, str" "#rcode" == %X. file: %s. line: %u.", \
+	f_sprintf( buf, str" "#rcode" == %X. file: %s. line: %u.", \
 		(unsigned)rcode, __FILE__, __LINE__); \
 	flmAssert( 0)
 
 #define MAKE_FLM_ERROR_STRING( str, buf, rcode) \
-	sprintf( buf, str" "#rcode" == %X : %s. file: %s. line: %u.", \
+	f_sprintf( buf, str" "#rcode" == %X : %s. file: %s. line: %u.", \
 		(unsigned)rcode, m_pDbSystem->errorString( rcode), __FILE__, __LINE__); \
 	flmAssert( 0);
 	
 #define MAKE_GENERIC_ERROR_STRING( str, buf, num) \
-	sprintf( buf, str": %lX  file: %s. line: %u.", \
+	f_sprintf( buf, str": %lX  file: %s. line: %u.", \
 		(unsigned long)num, __FILE__, __LINE__); \
 	flmAssert( 0);
 	
 #define MAKE_GENERIC_ERROR_STRING64( str, buf, num) \
-	sprintf( buf, str": %llX  file: %s. line: %u.", \
+	f_sprintf( buf, str": %llX  file: %s. line: %u.", \
 		(unsigned long long)num, __FILE__, __LINE__); \
 	flmAssert( 0);
 
@@ -124,7 +128,7 @@ RCODE recordUnitTestResults(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class IFlmTest : public XF_RefCount
+class IFlmTest : public F_Object
 {
 public:
 
@@ -146,7 +150,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class IFlmTestDisplayer : public XF_Base, public XF_RefCount
+class IFlmTestDisplayer : public F_Object
 {
 public:
 
@@ -161,7 +165,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class ITestReporter : public XF_Base, public XF_RefCount
+class ITestReporter : public F_Object
 {
 	unitTestData 	m_uTD;
 	FLMBOOL 			m_bInitialized;
@@ -194,7 +198,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class IFlmTestLogger : public XF_Base, public XF_RefCount
+class IFlmTestLogger : public F_Object
 {
 private:
 
@@ -378,7 +382,7 @@ public:
 
 	FINLINE void unsetAllFlags( void)
 	{
-		memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * m_uiNumElems);
+		f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * m_uiNumElems);
 	}
 
 	FINLINE FLMUINT getNumElements( void)
@@ -390,7 +394,7 @@ public:
 	
 	void clearFlags( void)
 	{
-		memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * m_uiNumElems);
+		f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * m_uiNumElems);
 	}
 	
 	void init( 
@@ -655,8 +659,8 @@ private:
 	RCODE resize( void);
 	
 	RCODE getTokenFromFile( 
-		char *		pszToken,
-		F_FileHdl * pFileHdl);
+		char *			pszToken,
+		IF_FileHdl * 	pFileHdl);
 
 	FLMBOOL isWhitespace( 
 		char 			c)

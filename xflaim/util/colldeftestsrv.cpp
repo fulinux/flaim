@@ -76,7 +76,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if ( ( *ppTest = new ICollDefTestImpl) == NULL)
+	if( (*ppTest = f_new ICollDefTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -625,7 +625,7 @@ RCODE ICollDefTestImpl::execute( void)
 		"3) create some encrypted collection definitions.",
 		"none");
 
-	strcpy (m_szDetails, "No Additional Info.");
+	f_strcpy (m_szDetails, "No Additional Info.");
 
 	if ( RC_BAD( rc = initCleanTestState( DB_NAME_STR)))
 	{

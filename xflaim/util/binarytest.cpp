@@ -65,7 +65,7 @@ RCODE getTest(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	if ( ( *ppTest = new IBinaryTestImpl) == NULL)
+	if( (*ppTest = f_new IBinaryTestImpl) == NULL)
 	{
 		rc = NE_XFLM_MEM;
 		goto Exit;
@@ -140,8 +140,8 @@ RCODE IBinaryTestImpl::execute( void)
 
 	m_pDbSystem->getFileSystem( &pFileSystem);
 
-	if ( RC_BAD( rc = pFileSystem->Open( 
-		BIG_FILE, XFLM_IO_RDONLY, &pFileHdl)))
+	if ( RC_BAD( rc = pFileSystem->openFile( 
+		BIG_FILE, FLM_IO_RDONLY, &pFileHdl)))
 	{
 		MAKE_ERROR_STRING( "Failed to open file.", m_szDetails, rc);
 		goto Exit;
@@ -168,13 +168,13 @@ RCODE IBinaryTestImpl::execute( void)
 	
 	for(;;)
 	{
-		if ( RC_BAD( rc = pFileHdl->Read( 
+		if ( RC_BAD( rc = pFileHdl->read( 
 			uiTotalBytesRead, 
 			sizeof(szBuffer), 
 			szBuffer,
 			&uiBytesRead)))
 		{
-			if  ( rc == NE_XFLM_IO_END_OF_FILE)
+			if  ( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				bLast = TRUE;
 			}
@@ -313,7 +313,8 @@ Exit:
 		pNode->Release();
 	}
 
-	pFileSystem->Delete( BIG_FILE);
+	pFileSystem->deleteFile( BIG_FILE);
+	
 	if ( pFileSystem)
 	{
 		pFileSystem->Release();
@@ -344,9 +345,10 @@ RCODE IBinaryTestImpl::buildBinaryFile( void)
 
 	m_pDbSystem->getFileSystem( &pFileSystem);
 
-	pFileSystem->Delete( BIG_FILE);
-	if ( RC_BAD( rc = pFileSystem->Create( 
-		BIG_FILE, XFLM_IO_RDWR, &pFileHdl)))
+	pFileSystem->deleteFile( BIG_FILE);
+	
+	if ( RC_BAD( rc = pFileSystem->createFile( 
+		BIG_FILE, FLM_IO_RDWR, &pFileHdl)))
 	{
 		MAKE_ERROR_STRING( "File create failed", m_szDetails, rc);
 		goto Exit;
@@ -357,8 +359,8 @@ RCODE IBinaryTestImpl::buildBinaryFile( void)
 		uiBytesToWrite = f_min( uiSpaceLeft, sizeof(szChunk));
 		f_memset( szChunk, c++, uiBytesToWrite);
 
-		if ( RC_BAD( rc = pFileHdl->Write( 
-			XFLM_IO_CURRENT_POS,
+		if ( RC_BAD( rc = pFileHdl->write( 
+			FLM_IO_CURRENT_POS,
 			uiBytesToWrite,
 			szChunk,
 			&uiBytesWritten)))
@@ -414,13 +416,13 @@ RCODE IBinaryTestImpl::verifyData(
 
 	for(;;)
 	{
-		if ( RC_BAD( rc = pFileHdl->Read( 
+		if ( RC_BAD( rc = pFileHdl->read( 
 			uiTotalBytesRead, 
 			sizeof(szBuf1), 
 			szBuf1,
 			&uiBytesRead1)))
 		{
-			if  ( rc == NE_XFLM_IO_END_OF_FILE)
+			if  ( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				bLast = TRUE;
 			}
@@ -485,16 +487,16 @@ RCODE IBinaryTestImpl::encryptionTest(
 	IF_FileHdl *	pFileHdl, 
 	FLMUINT64		ui64NodeId)
 {
-	F_RandomGenerator rand;
-	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiEncDef = 0;
-	FLMUINT64			ui64TotalSize;
-	char *				pszBuffer = NULL;
-	FLMBOOL				bLast = FALSE;
-	FLMUINT				uiTotalBytesRead = 0;
-	FLMUINT				uiChunkSize;
-	FLMUINT				uiBytesRead;
-	IF_DOMNode *		pNode = NULL;
+	RCODE						rc = NE_XFLM_OK;
+	IF_RandomGenerator * pRand = NULL;
+	FLMUINT					uiEncDef = 0;
+	FLMUINT64				ui64TotalSize;
+	char *					pszBuffer = NULL;
+	FLMBOOL					bLast = FALSE;
+	FLMUINT					uiTotalBytesRead = 0;
+	FLMUINT					uiChunkSize;
+	FLMUINT					uiBytesRead;
+	IF_DOMNode *			pNode = NULL;
 
 #ifdef FLM_USE_NICI
 	if ( RC_BAD( rc = m_pDb->createEncDef(
@@ -509,7 +511,12 @@ RCODE IBinaryTestImpl::encryptionTest(
 	}
 #endif
 
-	rand.randomSetSeed( START_SEED);
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &pRand)))
+	{
+		goto Exit;
+	}
+	
+	pRand->setSeed( START_SEED);
 
 	if( RC_BAD( rc = m_pDb->getNode( XFLM_DATA_COLLECTION, ui64NodeId, &pNode)))
 	{
@@ -517,7 +524,7 @@ RCODE IBinaryTestImpl::encryptionTest(
 		goto Exit;
 	}
 
-	if ( RC_BAD( rc = pFileHdl->Size( &ui64TotalSize)))
+	if ( RC_BAD( rc = pFileHdl->size( &ui64TotalSize)))
 	{
 		MAKE_ERROR_STRING( "Failed to get file size", m_szDetails, rc);
 		goto Exit;
@@ -527,7 +534,7 @@ RCODE IBinaryTestImpl::encryptionTest(
 	{
 		if ( uiTotalBytesRead < ui64TotalSize)
 		{
-			uiChunkSize = rand.randomChoice( 1, 
+			uiChunkSize = pRand->getINT32( 1, 
 									(FLMUINT32)(ui64TotalSize - uiTotalBytesRead));
 
 			if ( pszBuffer)
@@ -541,7 +548,7 @@ RCODE IBinaryTestImpl::encryptionTest(
 				goto Exit;
 			}
 
-			if ( RC_BAD( rc = pFileHdl->Read( 
+			if ( RC_BAD( rc = pFileHdl->read( 
 				uiTotalBytesRead, 
 				uiChunkSize, 
 				pszBuffer,
@@ -591,7 +598,7 @@ RCODE IBinaryTestImpl::encryptionTest(
 		goto Exit;
 	}
 
-	if ( RC_BAD( rc = pFileHdl->Read( 0, uiTotalBytesRead, 
+	if ( RC_BAD( rc = pFileHdl->read( 0, uiTotalBytesRead, 
 		pszBuffer, &uiBytesRead)))
 	{
 		MAKE_ERROR_STRING( "Failed to read from file", m_szDetails, rc);
@@ -624,6 +631,11 @@ Exit:
 	if( pNode)
 	{
 		pNode->Release();
+	}
+	
+	if( pRand)
+	{
+		pRand->Release();
 	}
 
 	return( rc);
