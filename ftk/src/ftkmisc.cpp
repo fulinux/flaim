@@ -369,10 +369,10 @@ RCODE FLMAPI f_createSerialNumber(
 
 	f_mutexLock( gv_hSerialMutex);
 
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 0]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 4]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 8]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getINT32(), &pszSerialNum[ 12]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 0]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 4]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 8]);
+	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 12]);
 
 	f_mutexUnlock( gv_hSerialMutex);
 
