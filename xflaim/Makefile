@@ -151,7 +151,7 @@ endif
 
 version = $(major_version).$(minor_version).$(svn_revision)
 
-so_current = 1
+so_current = 2
 so_revision = 0
 so_age = 0
 shared_lib_version =
