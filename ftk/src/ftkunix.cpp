@@ -1554,10 +1554,10 @@ FLMINT32 posix_atomic_add_32(
 {
 	FLMINT32		i32RetVal;
 	
-	pthread_mutex_lock( gv_atomicMutex);
+	pthread_mutex_lock( &gv_atomicMutex);
 	(*piTarget) += iDelta;
 	i32RetVal = *piTarget;
-	pthread_mutex_unlock( gv_atomicMutex);
+	pthread_mutex_unlock( &gv_atomicMutex);
 	
 	return( i32RetVal);
 }
@@ -1571,10 +1571,10 @@ FLMINT32 posix_atomic_xchg_32(
 {
 	FLMINT32		i32RetVal;
 	
-	pthread_mutex_lock( gv_atomicMutex);
+	pthread_mutex_lock( &gv_atomicMutex);
 	i32RetVal = *piTarget;
 	*piTarget = iNewValue;
-	pthread_mutex_unlock( gv_atomicMutex);
+	pthread_mutex_unlock( &gv_atomicMutex);
 	
 	return( i32RetVal);
 }

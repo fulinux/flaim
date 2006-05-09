@@ -609,6 +609,10 @@
 	****************************************************************************/
 	flminterface IF_Object
 	{
+		virtual ~IF_Object()
+		{
+		}
+
 		virtual FLMINT FLMAPI getRefCount( void) = 0;
 
 		virtual FLMINT FLMAPI AddRef( void) = 0;
