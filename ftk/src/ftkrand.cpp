@@ -61,8 +61,6 @@ implement SWB, nor does he give any simple test to determine whether an SWB
 implementation is correct.
 ****************************************************************************/
 
-#define MAX_RANDOM  2147483646L
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -115,7 +113,7 @@ void	F_RandomGenerator::randomize( void)
 	FLMUINT	uiTime;
 
 	f_timeGetSeconds( &uiTime );
-	setSeed( (FLMUINT32)(((FLMUINT32)uiTime % MAX_RANDOM) + 1));
+	setSeed( (FLMUINT32)(((FLMUINT32)uiTime % FLM_MAX_RANDOM) + 1));
 }
 
 /*************************************************************************
@@ -124,23 +122,20 @@ Desc:	initialize the seed to a known value
 void F_RandomGenerator::setSeed(
 	FLMUINT32				ui32Seed)
 {
-	if( ui32Seed > 0 && ui32Seed <= MAX_RANDOM)
+	if( ui32Seed > 0 && ui32Seed <= FLM_MAX_RANDOM)
 	{
 		m_ui32Seed = ui32Seed;
 	}
 	else
 	{
-		setSeed( ui32Seed > MAX_RANDOM 
-						? ui32Seed - MAX_RANDOM 
+		setSeed( ui32Seed > FLM_MAX_RANDOM 
+						? ui32Seed - FLM_MAX_RANDOM 
 						: 1);
 	}
 }
 
 /*************************************************************************
 Desc:	Generate the next number in the pseudo-random sequence
-		i.e.,	"f_randomLong( &r) > MAX_RANDOM/2" will be true half the
-		time,	on average.  Likewise, "f_randomLong( &r) & 0x1" has a 50-50
-		chance of being true.
 *************************************************************************/
 FLMUINT32 F_RandomGenerator::getUINT32( void)
 {
@@ -184,12 +179,15 @@ FLMUINT32 F_RandomGenerator::getUINT32(
 	
 	if( ui32Low > ui32High)
 	{
-		ui32Range = ui32Low - ui32High + 1;
+		return( 0);
 	}
-	else
+	
+	if( ui32High > FLM_MAX_RANDOM)
 	{
-		ui32Range = ui32High - ui32Low + 1;
+		ui32High = FLM_MAX_RANDOM;
 	}
+	
+	ui32Range = ui32High - ui32Low + 1;
 
 	if( ui32Range < (1L << 20))
 	{

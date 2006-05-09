@@ -1613,6 +1613,9 @@
 	/****************************************************************************
 	Desc: Random numbers
 	****************************************************************************/
+	
+	#define FLM_MAX_RANDOM  2147483646L
+
 	flminterface IF_RandomGenerator : public F_Object
 	{
 		virtual void FLMAPI randomize( void) = 0;
@@ -1624,7 +1627,7 @@
 
 		virtual FLMUINT32 FLMAPI getUINT32(
 			FLMUINT32 				ui32Low = 0,
-			FLMUINT32 				ui32High = FLM_MAX_UINT32) = 0;
+			FLMUINT32 				ui32High = FLM_MAX_RANDOM) = 0;
 
 		virtual FLMBOOL FLMAPI getBoolean( void) = 0;
 	};
