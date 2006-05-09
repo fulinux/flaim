@@ -69,6 +69,8 @@
 	static FLMUINT					gv_uiLinuxRevision = 0;
 #endif
 
+static pthread_mutex_t			gv_atomicMutex = PTHREAD_MUTEX_INITIALIZER;
+
 /******************************************************************************
 Desc:
 *******************************************************************************/
@@ -1541,6 +1543,40 @@ Desc:
 ****************************************************************************/
 void FLMAPI f_yieldCPU( void)
 {
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT32 posix_atomic_add_32(
+	volatile FLMINT32 *		piTarget,
+	FLMINT32						iDelta)
+{
+	FLMINT32		i32RetVal;
+	
+	pthread_mutex_lock( gv_atomicMutex);
+	(*piTarget) += iDelta;
+	i32RetVal = *piTarget;
+	pthread_mutex_unlock( gv_atomicMutex);
+	
+	return( i32RetVal);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FLMINT32 posix_atomic_xchg_32(
+	volatile FLMINT32 *		piTarget,
+	FLMINT32						iNewValue)
+{
+	FLMINT32		i32RetVal;
+	
+	pthread_mutex_lock( gv_atomicMutex);
+	i32RetVal = *piTarget;
+	*piTarget = iNewValue;
+	pthread_mutex_unlock( gv_atomicMutex);
+	
+	return( i32RetVal);
 }
 
 #endif // FLM_UNIX

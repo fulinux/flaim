@@ -293,7 +293,7 @@
 	Desc:
 	**********************************************************************/
 	#if defined( FLM_UNIX)
-	extern "C" FLMINT32 posix_atomic_add_32(
+	FLMINT32 posix_atomic_add_32(
 		volatile FLMINT32 *		piTarget,
 		FLMINT32						iDelta);
 	#endif
@@ -302,7 +302,7 @@
 	Desc:
 	**********************************************************************/
 	#if defined( FLM_UNIX)
-	extern "C" FLMINT32 posix_atomic_xchg_32(
+	FLMINT32 posix_atomic_xchg_32(
 		volatile FLMINT32 *		piTarget,
 		FLMINT32						iNewValue);
 	#endif
