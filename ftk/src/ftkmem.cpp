@@ -1498,6 +1498,8 @@ void f_memoryInit( void)
 		}
 	}
 }
+#elif defined( FLM_OSX)
+	#error OS X should provide support for RLIMIT_DATA
 #endif
 }
 
