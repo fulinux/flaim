@@ -509,15 +509,15 @@ RCODE F_Backup::backup(
 
 	UD2FBA( FLM_BACKER_VERSION,
 		&pucBlkBuf[ FLM_BACKER_VERSION_OFFSET]);
-	UD2FBA( m_uiBlockSize,
+	UD2FBA( (FLMUINT32)m_uiBlockSize,
 		&pucBlkBuf[ FLM_BACKER_DB_BLOCK_SIZE_OFFSET]);
 	uiMaxFileSize = (FLMUINT)m_dbHdr.ui32MaxFileSize;
-	UD2FBA( uiMaxFileSize,
+	UD2FBA( (FLMUINT32)uiMaxFileSize,
 		&pucBlkBuf[ FLM_BACKER_BFMAX_OFFSET]);
-	UD2FBA( FLM_BACKER_MTU_SIZE,
+	UD2FBA( (FLMUINT32)FLM_BACKER_MTU_SIZE,
 		&pucBlkBuf[ FLM_BACKER_MTU_OFFSET]);
 	f_timeGetSeconds( &uiTime);
-	UD2FBA( uiTime,
+	UD2FBA( (FLMUINT32)uiTime,
 		&pucBlkBuf[ FLM_BACKER_TIME_OFFSET]);
 
 	uiCount = f_strlen( m_szDbPath);

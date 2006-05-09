@@ -2890,7 +2890,7 @@ RCODE F_Btree::updateParentCounts(
 	pParentSCache = *ppParentSCache;
 	pucCounts = BtEntry( (FLMBYTE *)pParentSCache->m_pBlkHdr, uiParentElm);
 	pucCounts += 4;
-	UD2FBA( uiCounts, pucCounts);
+	UD2FBA( (FLMUINT32)uiCounts, pucCounts);
 
 Exit:
 
@@ -3323,8 +3323,8 @@ RCODE F_Btree::buildAndStoreEntry(
 	FLMUINT				uiBufferSize,
 	FLMUINT *			puiEntrySize)
 {
-	RCODE				rc = NE_XFLM_OK;
-	FLMBYTE *		pucTemp = pucBuffer;
+	RCODE					rc = NE_XFLM_OK;
+	FLMBYTE *			pucTemp = pucBuffer;
 
 	if( puiEntrySize)
 	{
@@ -3344,7 +3344,7 @@ RCODE F_Btree::buildAndStoreEntry(
 		{
 			// No Data in this entry, so it is easy to make.
 
-			UW2FBA( uiKeyLen, pucTemp);
+			UW2FBA( (FLMUINT16)uiKeyLen, pucTemp);
 			pucTemp += 2;
 			
 			f_memcpy( pucTemp, pucKey, uiKeyLen);
@@ -3395,7 +3395,7 @@ RCODE F_Btree::buildAndStoreEntry(
 
 			if( uiFlags & BTE_FLAG_KEY_LEN)
 			{
-				UW2FBA( uiKeyLen, pucTemp);
+				UW2FBA( (FLMUINT16)uiKeyLen, pucTemp);
 				pucTemp += 2;
 			}
 			else
@@ -3406,7 +3406,7 @@ RCODE F_Btree::buildAndStoreEntry(
 
 			if( uiFlags & BTE_FLAG_DATA_LEN)
 			{
-				UW2FBA( uiDataLen, pucTemp);
+				UW2FBA( (FLMUINT16)uiDataLen, pucTemp);
 				pucTemp += 2;
 			}
 			else
@@ -3417,7 +3417,7 @@ RCODE F_Btree::buildAndStoreEntry(
 
 			if( uiFlags & BTE_FLAG_OA_DATA_LEN)
 			{
-				UD2FBA( uiOADataLen, pucTemp);
+				UD2FBA( (FLMUINT32)uiOADataLen, pucTemp);
 				pucTemp += 4;
 			}
 
@@ -3440,20 +3440,20 @@ RCODE F_Btree::buildAndStoreEntry(
 			pucTemp = pucBuffer;
 
 			flmAssert( uiChildBlkAddr);
-			UD2FBA( uiChildBlkAddr, pucTemp);
+			UD2FBA( (FLMUINT32)uiChildBlkAddr, pucTemp);
 			pucTemp += 4;
 
 			// Counts - 4 bytes
 
 			if( uiBlkType == BT_NON_LEAF_COUNTS)
 			{
-				UD2FBA( uiCounts, pucTemp);
+				UD2FBA( (FLMUINT32)uiCounts, pucTemp);
 				pucTemp += 4;
 			}
 
 			// KeyLen field - 2 bytes
 
-			UW2FBA( uiKeyLen, pucTemp);
+			UW2FBA( (FLMUINT16)uiKeyLen, pucTemp);
 			pucTemp += 2;
 
 			// Key - variable length (uiKeyLen)
@@ -4428,7 +4428,7 @@ RCODE F_Btree::moveToNext(
 			f_memcpy( pucDstEntry, m_pucTempBlk, uiEntrySize);
 
 			bteSetEntryOffset( pui16DstOffsetA, 0, 
-				pucDstEntry - (FLMBYTE *)pDstBlkHdr);
+				(FLMUINT16)(pucDstEntry - (FLMBYTE *)pDstBlkHdr));
 
 			pDstBlkHdr->ui16NumKeys++;
 
@@ -4452,7 +4452,7 @@ RCODE F_Btree::moveToNext(
 			pui16DstOffsetA--;
 
 			bteSetEntryOffset( pui16DstOffsetA, 0,
-									 pucDstEntry - (FLMBYTE *)pDstBlkHdr);
+									 (FLMUINT16)(pucDstEntry - (FLMBYTE *)pDstBlkHdr));
 
 			pDstBlkHdr->ui16NumKeys++;
 			pDstBlkHdr->stdBlkHdr.ui16BlkBytesAvail -= (FLMUINT16)uiEntrySize;
@@ -5936,7 +5936,8 @@ RCODE F_Btree::defragmentBlock(
 			pucCurEntry = BtEntry( (FLMBYTE *)pOldBlk, uiIndex);
 			uiAmtToMove = actualEntrySize( getEntrySize( (FLMBYTE *)pOldBlk, uiIndex));
 			pucHeap -= uiAmtToMove;
-			bteSetEntryOffset( pui16OffsetArray, uiIndex, pucHeap - (FLMBYTE *)pBlk);
+			bteSetEntryOffset( pui16OffsetArray, uiIndex,
+				(FLMUINT16)(pucHeap - (FLMBYTE *)pBlk));
 			uiIndex++;
 
 			while( uiIndex < uiNumKeys)
@@ -5955,7 +5956,7 @@ RCODE F_Btree::defragmentBlock(
 					pucHeap -= uiTempToMove;
 					uiAmtToMove += uiTempToMove;
 					bteSetEntryOffset( pui16OffsetArray, uiIndex, 
-							pucHeap - (FLMBYTE *)pBlk);
+							(FLMUINT16)(pucHeap - (FLMBYTE *)pBlk));
 					uiIndex++;
 				}
 			}
@@ -5983,7 +5984,7 @@ RCODE F_Btree::defragmentBlock(
 				// can move a larger block of data instead of one entry.
 
 				bteSetEntryOffset( pui16OffsetArray, uiIndex, 
-						pucHeap - (FLMBYTE *)pBlk);
+						(FLMUINT16)(pucHeap - (FLMBYTE *)pBlk));
 				uiIndex++;
 
 				while( uiIndex < uiNumKeys)
@@ -6003,7 +6004,7 @@ RCODE F_Btree::defragmentBlock(
 						pucHeap -= uiTempToMove;
 						uiAmtToMove += uiTempToMove;
 						bteSetEntryOffset( pui16OffsetArray, 
-							uiIndex, (pucHeap - (FLMBYTE *)pBlk));
+							uiIndex, (FLMUINT16)(pucHeap - (FLMBYTE *)pBlk));
 						uiIndex++;
 					}
 				}
@@ -8679,7 +8680,7 @@ RCODE F_Btree::replaceMultiples(
 
 			if( bteDataLenFlag( pucEntry))
 			{
-				UW2FBA( uiAmtCopied, pucTmp);
+				UW2FBA( (FLMUINT16)uiAmtCopied, pucTmp);
 				pucTmp += 2;
 			}
 			else
@@ -8731,7 +8732,7 @@ RCODE F_Btree::replaceMultiples(
 				pucTmp++;
 			}
 
-			UD2FBA( uiOADataLength, pucTmp);
+			UD2FBA( (FLMUINT32)uiOADataLength, pucTmp);
 		}
 
 		// If we just updated the last member of this entry so break out.
@@ -10182,7 +10183,7 @@ RCODE F_Btree::combineEntries(
 	if( uiSrcKeyLen > ONE_BYTE_SIZE)
 	{
 		uiFlags |= BTE_FLAG_KEY_LEN;
-		UW2FBA( uiSrcKeyLen, pucTmp);
+		UW2FBA( (FLMUINT16)uiSrcKeyLen, pucTmp);
 		pucTmp += 2;
 		uiEntrySize += 2;
 	}
@@ -10202,7 +10203,7 @@ RCODE F_Btree::combineEntries(
 	if( (uiSrcDataLen + uiDstDataLen) > ONE_BYTE_SIZE)
 	{
 		uiFlags |= BTE_FLAG_DATA_LEN;
-		UW2FBA( (uiSrcDataLen + uiDstDataLen), pucTmp);
+		UW2FBA( (FLMUINT16)(uiSrcDataLen + uiDstDataLen), pucTmp);
 		pucTmp += 2;
 		uiEntrySize += 2;
 	}
@@ -10219,7 +10220,7 @@ RCODE F_Btree::combineEntries(
 			(uiSrcOADataLen > (uiSrcDataLen + uiDstDataLen)))
 	{
 		uiFlags |= BTE_FLAG_OA_DATA_LEN;
-		UD2FBA( uiSrcOADataLen, pucTmp);
+		UD2FBA( (FLMUINT32)uiSrcOADataLen, pucTmp);
 		pucTmp += 4;
 		uiEntrySize += 4;
 	}
@@ -10227,7 +10228,7 @@ RCODE F_Btree::combineEntries(
 			(uiDstOADataLen > (uiSrcDataLen + uiDstDataLen)))
 	{
 		uiFlags |= BTE_FLAG_OA_DATA_LEN;
-		UD2FBA( uiDstOADataLen, pucTmp);
+		UD2FBA( (FLMUINT32)uiDstOADataLen, pucTmp);
 		pucTmp += 4;
 		uiEntrySize += 4;
 	}

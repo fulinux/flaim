@@ -113,7 +113,7 @@ FINLINE FLMUINT32 bteGetBlkAddr(
 FINLINE void bteSetEntryOffset(
 	FLMUINT16 *			pui16OffsetArray,
 	FLMUINT				uiOffsetIndex,
-	FLMUINT				ui16Offset)
+	FLMUINT16			ui16Offset)
 {
 	UW2FBA( ui16Offset, (FLMBYTE *)&pui16OffsetArray[ uiOffsetIndex]);
 }

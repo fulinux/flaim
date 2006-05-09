@@ -3077,12 +3077,12 @@ RCODE F_CachedNode::headerToBuf(
 
 			// Name ID
 
-			UD2FBA( uiNameId, pucBuf);
+			UD2FBA( (FLMUINT32)uiNameId, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 			
 			// Prefix ID
 
-			UD2FBA( uiPrefixId, pucBuf);
+			UD2FBA( (FLMUINT32)uiPrefixId, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 
 			// Metavalue
@@ -3108,22 +3108,22 @@ RCODE F_CachedNode::headerToBuf(
 
 			// Data child count
 
-			UD2FBA( uiDataChildCount, pucBuf);
+			UD2FBA( (FLMUINT32)uiDataChildCount, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 
 			// Child element count
 
-			UD2FBA( m_nodeInfo.uiChildElmCount, pucBuf);
+			UD2FBA( (FLMUINT32)m_nodeInfo.uiChildElmCount, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 			
 			// Data length 
 
-			UD2FBA( uiDataLength, pucBuf);
+			UD2FBA( (FLMUINT32)uiDataLength, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 
 			// Encryption definition ID
 				
-			UD2FBA( uiEncDefId, pucBuf);
+			UD2FBA( (FLMUINT32)uiEncDefId, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 
 			// Annotation ID
@@ -3133,7 +3133,7 @@ RCODE F_CachedNode::headerToBuf(
 
 			// Storage flags
 
-			UD2FBA( uiStorageFlags, pucBuf);
+			UD2FBA( (FLMUINT32)uiStorageFlags, pucBuf);
 			pucBuf += sizeof( FLMUINT32);
 
 			flmAssert( (FLMUINT)(pucBuf - pucStart) == FIXED_DOM_HEADER_SIZE);
