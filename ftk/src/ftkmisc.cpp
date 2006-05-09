@@ -369,10 +369,10 @@ RCODE FLMAPI f_createSerialNumber(
 
 	f_mutexLock( gv_hSerialMutex);
 
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 0]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 4]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 8]);
-	UD2FBA( (FLMUINT32)gv_pSerialRandom->getUINT32(), &pszSerialNum[ 12]);
+	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 0]);
+	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 4]);
+	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 8]);
+	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 12]);
 
 	f_mutexUnlock( gv_hSerialMutex);
 
@@ -850,7 +850,7 @@ char * FLMAPI f_strchr(
 	const char *		pszStr,
 	unsigned char		ucByte)
 {
-	return( strchr( pszStr, ucByte));
+	return( (char *)strchr( pszStr, ucByte));
 }
 
 /****************************************************************************
@@ -860,7 +860,7 @@ char * FLMAPI f_strrchr(
 	const char *		pszStr,
 	unsigned char		ucByte)
 {
-	return( strrchr( pszStr, ucByte));
+	return( (char *)strrchr( pszStr, ucByte));
 }
 
 /****************************************************************************
@@ -870,7 +870,7 @@ char * FLMAPI f_strstr(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
-	return( strstr( pszStr1, pszStr2));
+	return( (char *)strstr( pszStr1, pszStr2));
 }
 
 /****************************************************************************

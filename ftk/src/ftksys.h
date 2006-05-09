@@ -200,11 +200,11 @@
 			#ifndef _LARGE_FILES
 				#define _LARGE_FILES
 			#endif
-			#include <stdio.h>
-			#include <fcntl.h>
 			#include <sys/vminfo.h>
 		#endif
 
+		#include <stdio.h>
+		#include <fcntl.h>
 		#include <assert.h>
 		#include <pthread.h>
 		#include <errno.h>
@@ -238,6 +238,10 @@
 		#ifdef FLM_OSX
 			#include <sys/resource.h>
 			#include <libkern/OSAtomic.h>
+		#endif
+
+		#ifdef FLM_SOLARIS
+			#include <signal.h>
 		#endif
 
 		#define f_va_start			va_start

@@ -184,6 +184,8 @@
 			typedef signed char						FLMINT8;
 			#if defined( FLM_GNUC)
 				typedef __builtin_va_list			f_va_list;
+			#elif defined( FLM_SOLARIS)
+				typedef void *							f_va_list;
 			#else
 				typedef char *							f_va_list;
 			#endif
@@ -1614,7 +1616,7 @@
 	Desc: Random numbers
 	****************************************************************************/
 	
-	#define FLM_MAX_RANDOM  2147483646L
+	#define FLM_MAX_RANDOM  ((FLMUINT32)2147483646)
 
 	flminterface IF_RandomGenerator : public F_Object
 	{

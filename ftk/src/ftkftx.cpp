@@ -3487,7 +3487,7 @@ FSTATIC void ftxRefresh( void)
 				ftxDisplaySetBackFore( (eColorType)pucSBackAttrib[ uiChangeStart],
 					(eColorType)pucSForeAttrib[ uiChangeStart]);
 				ftxDisplayStrOut( &(pszSBuf[ uiChangeStart]), uiTempAttrib);
-				pszSBuf[ uiChangeEnd + 1] = uiSaveChar;
+				pszSBuf[ uiChangeEnd + 1] = (char)uiSaveChar;
 			}
 
 			uiSubloop++;
@@ -4177,6 +4177,7 @@ FSTATIC FLMBOOL ftxDisplaySetCursorType(
 
 	return( TRUE);
 #else
+	F_UNREFERENCED_PARM( uiType);
 	return( FALSE);
 #endif
 }
@@ -5281,7 +5282,7 @@ FSTATIC void ftxUnixDisplayChar(
 	FLMUINT			uiChar,
 	FLMUINT			uiAttr)
 {
-	addch( (chtype)uiChar | flm_to_curses_attr(uiAttr));
+	addch( (chtype)(uiChar | flm_to_curses_attr( (int)uiAttr)));
 }
 #endif
 
@@ -5314,7 +5315,7 @@ FSTATIC void ftxUnixDisplaySetCursorPos(
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
 {
-	move( uiRow, uiCol);
+	move( (int)uiRow, (int)uiCol);
 	refresh();
 }
 #endif
@@ -5563,7 +5564,7 @@ static FLMUINT ftxUnixHandleEsc( void)
 			}
 			else if( (c2 >= 1) && (c <= 032))
 			{
-				c = ftxUnixSimulatedKey(c2);
+				c = (int)ftxUnixSimulatedKey( (int)c2);
 			}
 			else if( c2 >= KEY_F(1) && c2 <= KEY_F( 10))
 			{
@@ -5644,7 +5645,7 @@ Again:
 	}
 	else if ((c >= 128) && (c <= (128 + 032)))
 	{
-		c = ftxUnixSimulatedKey(c - 128);
+		c = (int)ftxUnixSimulatedKey( (int)(c - 128));
 	}
 	else if (c >= KEY_F(1) && c <= KEY_F(10))
 	{
@@ -5672,7 +5673,7 @@ Again:
 	
 			case 033:
 			{
-				c = ftxUnixHandleEsc();
+				c = (int)ftxUnixHandleEsc();
 				break;
 			}
 			
