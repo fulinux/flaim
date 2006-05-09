@@ -236,6 +236,7 @@
 		#endif
 
 		#ifdef FLM_OSX
+			#include <sys/resource.h>
 			#include <libkern/OSAtomic.h>
 		#endif
 
