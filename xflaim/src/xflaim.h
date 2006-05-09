@@ -1650,18 +1650,6 @@
 			IF_Db **					ppDb) = 0;
 
 		/**
-		 * @brief Converts an  RCODE error number to a string equivalent.
-		 *
-		 * This method converts an  RCODE error number to a string equivalent that can then be printed in
-		 * a diagnostic log or some other human readable output.
-		 *
-		 * @param rc The RCODE to be translated.
-		 * @return const char *
-		 */
-		virtual const char *	FLMAPI errorString(
-			RCODE						rc) = 0;
-
-		/**
 		 * @brief Converts a corruption code to a string equivalent.
 		 *
 		 * This method converts a corruption code to a string equivalent that can then be printed in
@@ -4554,38 +4542,20 @@
 	Desc:    Status and return codes
 	****************************************************************************/
 
-	#define XFLM_ERROR_BASE(e)		((RCODE)((int)(0x81050000+(e))))
-
 	#define NE_XFLM_NOT_IMPLEMENTED							NE_FLM_NOT_IMPLEMENTED
 	#define NE_XFLM_MEM											NE_FLM_MEM
 	#define NE_XFLM_INVALID_PARM								NE_FLM_INVALID_PARM
-	#define NE_XFLM_TIMEOUT										NE_FLM_TIMEOUT
 	#define NE_XFLM_NOT_FOUND									NE_FLM_NOT_FOUND
 	#define NE_XFLM_EXISTS										NE_FLM_EXISTS
-	#define NE_XFLM_USER_ABORT									NE_FLM_USER_ABORT
 	#define NE_XFLM_FAILURE										NE_FLM_FAILURE
 	#define NE_XFLM_BOF_HIT										NE_FLM_BOF_HIT
 	#define NE_XFLM_EOF_HIT										NE_FLM_EOF_HIT
-	#define NE_XFLM_CONV_BAD_DIGIT							NE_FLM_CONV_BAD_DIGIT
 	#define NE_XFLM_CONV_DEST_OVERFLOW						NE_FLM_CONV_DEST_OVERFLOW
 	#define NE_XFLM_CONV_ILLEGAL								NE_FLM_CONV_ILLEGAL
-	#define NE_XFLM_CONV_NULL_SRC								NE_FLM_CONV_NULL_SRC
 	#define NE_XFLM_CONV_NUM_OVERFLOW						NE_FLM_CONV_NUM_OVERFLOW
-	#define NE_XFLM_CONV_NUM_UNDERFLOW						NE_FLM_CONV_NUM_UNDERFLOW
 	#define NE_XFLM_SYNTAX										NE_FLM_SYNTAX
-	#define NE_XFLM_UNSUPPORTED_FEATURE						NE_FLM_UNSUPPORTED_FEATURE
-	#define NE_XFLM_FILE_EXISTS								NE_FLM_FILE_EXISTS
-	#define NE_XFLM_COULD_NOT_CREATE_SEMAPHORE			NE_FLM_COULD_NOT_CREATE_SEMAPHORE
-	#define NE_XFLM_BAD_UTF8									NE_FLM_BAD_UTF8
-	#define NE_XFLM_ERROR_WAITING_ON_SEMPAHORE			NE_FLM_ERROR_WAITING_ON_SEMPAHORE
-	#define NE_XFLM_BAD_PLATFORM_FORMAT						NE_FLM_BAD_PLATFORM_FORMAT
-	#define NE_XFLM_BAD_SEN										NE_FLM_BAD_SEN
-	#define NE_XFLM_UNSUPPORTED_INTERFACE					NE_FLM_UNSUPPORTED_INTERFACE
-	#define NE_XFLM_BAD_RCODE_TABLE							NE_FLM_BAD_RCODE_TABLE
-	#define NE_XFLM_BUFFER_OVERFLOW							NE_FLM_BUFFER_OVERFLOW
-	#define NE_XFLM_INVALID_XML								NE_FLM_INVALID_XML
-	#define NE_XFLM_ILLEGAL_FLAG								NE_FLM_ILLEGAL_FLAG
 	#define NE_XFLM_ILLEGAL_OP									NE_FLM_ILLEGAL_OP
+	#define NE_XFLM_BAD_SEN										NE_FLM_BAD_SEN
 	#define NE_XFLM_COULD_NOT_START_THREAD					NE_FLM_COULD_NOT_START_THREAD
 	#define NE_XFLM_BAD_BASE64_ENCODING						NE_FLM_BAD_BASE64_ENCODING
 	#define NE_XFLM_STREAM_EXISTS								NE_FLM_STREAM_EXISTS
@@ -4597,248 +4567,254 @@
 	#define NE_XFLM_BTREE_BAD_STATE							NE_FLM_BTREE_BAD_STATE
 	#define NE_XFLM_COULD_NOT_CREATE_MUTEX					NE_FLM_COULD_NOT_CREATE_MUTEX
 	#define NE_XFLM_DATA_ERROR									NE_FLM_DATA_ERROR
-	#define NE_XFLM_BAD_DATA_TYPE								NE_FLM_BAD_DATA_TYPE
-	#define NE_XFLM_READ_ONLY									NE_FLM_READ_ONLY
-	#define NE_XFLM_KEY_OVERFLOW								NE_FLM_KEY_OVERFLOW
-	#define NE_XFLM_UNEXPECTED_END_OF_INPUT				NE_FLM_UNEXPECTED_END_OF_INPUT
 	#define NE_XFLM_IO_PATH_NOT_FOUND						NE_FLM_IO_PATH_NOT_FOUND
 	#define NE_XFLM_IO_END_OF_FILE							NE_FLM_IO_END_OF_FILE
 	#define NE_XFLM_IO_NO_MORE_FILES							NE_FLM_IO_NO_MORE_FILES
+	#define NE_XFLM_COULD_NOT_CREATE_SEMAPHORE			NE_FLM_COULD_NOT_CREATE_SEMAPHORE
+	#define NE_XFLM_BAD_UTF8									NE_FLM_BAD_UTF8
+	#define NE_XFLM_ERROR_WAITING_ON_SEMPAHORE			NE_FLM_ERROR_WAITING_ON_SEMPAHORE
 	
 	/****************************************************************************
 	Desc:		General XFLAIM errors
 	****************************************************************************/
 	#define NE_XFLM_OK											NE_FLM_OK
 	
-	#define NE_XFLM_FIRST_GENERAL_ERROR						XFLM_ERROR_BASE( 0x0100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_BAD_PREFIX									XFLM_ERROR_BASE( 0x0101)			// Invalid XLM namespace prefix specified.  Either a prefix name or number that was specified was not defined.
-	#define NE_XFLM_ATTRIBUTE_PURGED							XFLM_ERROR_BASE( 0x0102)			// XML attribute cannot be used - it is being deleted from the database.
-	#define NE_XFLM_BAD_COLLECTION							XFLM_ERROR_BASE( 0x0103)			// Invalid collection number specified.  Collection is not defined.
-	#define NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT				XFLM_ERROR_BASE( 0x0104)			// Request to lock the database timed out.
-	#define NE_XFLM_ILLEGAL_DATA_COMPONENT					XFLM_ERROR_BASE( 0x0105)			// Cannot use ELM_ROOT_TAG as a data component in an index.
-	#define NE_XFLM_MUST_INDEX_ON_PRESENCE					XFLM_ERROR_BASE( 0x0106)			// When using ELM_ROOT_TAG in an index component, must specify PRESENCE indexing only.
-	#define NE_XFLM_BAD_IX										XFLM_ERROR_BASE( 0x0107)			// Invalid index number specified.  Index is not defined.
-	#define NE_XFLM_BACKUP_ACTIVE								XFLM_ERROR_BASE( 0x0108)			// Operation could not be performed because a backup is currently in progress.
-	#define NE_XFLM_SERIAL_NUM_MISMATCH						XFLM_ERROR_BASE( 0x0109)			// Serial number on backup file does not match the serial number that is expected.
-	#define NE_XFLM_BAD_RFL_DB_SERIAL_NUM					XFLM_ERROR_BASE( 0x010A)			// Bad database serial number in roll-forward log file header.
-	#define NE_XFLM_BAD_RFL_FILE_NUMBER						XFLM_ERROR_BASE( 0x010B)			// Bad roll-forward log file number in roll-forward log file header.
-	#define NE_XFLM_CANNOT_DEL_ELEMENT						XFLM_ERROR_BASE( 0x010C)			// Cannot delete an XML element definition in the dictionary because it is in use.
-	#define NE_XFLM_CANNOT_MOD_DATA_TYPE					XFLM_ERROR_BASE( 0x010D)			// Cannot modify the data type for an XML element or attribute definition in the dictionary.
-	#define NE_XFLM_CANNOT_INDEX_DATA_TYPE					XFLM_ERROR_BASE( 0x010E)			// Data type of XML element or attribute is not one that can be indexed.
-	#define NE_XFLM_BAD_ELEMENT_NUM							XFLM_ERROR_BASE( 0x010F)			// Bad element number specified - element not defined in dictionary.
-	#define NE_XFLM_BAD_ATTRIBUTE_NUM						XFLM_ERROR_BASE( 0x0110)			// Bad attribute number specified - attribute not defined in dictionary.
-	#define NE_XFLM_BAD_ENCDEF_NUM							XFLM_ERROR_BASE( 0x0111)			// Bad encryption number specified - encryption definition not defined in dictionary.
-	#define NE_XFLM_INVALID_FILE_SEQUENCE					XFLM_ERROR_BASE( 0x0112)			// Incremental backup file number provided during a restore is invalid.
-	#define NE_XFLM_DUPLICATE_ELEMENT_NUM					XFLM_ERROR_BASE( 0x0113)			// Element number specified in element definition is already in use.
-	#define NE_XFLM_ILLEGAL_TRANS_TYPE						XFLM_ERROR_BASE( 0x0114)			// Illegal transaction type specified for transaction begin operation.
-	#define NE_XFLM_UNSUPPORTED_VERSION						XFLM_ERROR_BASE( 0x0115)			// Version of database found in database header is not supported.
-	#define NE_XFLM_ILLEGAL_TRANS_OP							XFLM_ERROR_BASE( 0x0116)			// Illegal operation for transaction type.
-	#define NE_XFLM_INCOMPLETE_LOG							XFLM_ERROR_BASE( 0x0117)			// Incomplete rollback log.
-	#define NE_XFLM_ILLEGAL_INDEX_DEF						XFLM_ERROR_BASE( 0x0118)			// Index definition document is illegal - does not conform to the expected form of an index definition document.
-	#define NE_XFLM_ILLEGAL_INDEX_ON							XFLM_ERROR_BASE( 0x0119)			// The "IndexOn" attribute of an index definition has an illegal value.
-	#define NE_XFLM_ILLEGAL_STATE_CHANGE					XFLM_ERROR_BASE( 0x011A)			// Attempted an illegal state change on an element or attribute definition.
-	#define NE_XFLM_BAD_RFL_SERIAL_NUM						XFLM_ERROR_BASE( 0x011B)			// Serial number in roll-forward log file header does not match expected serial number.
-	#define NE_XFLM_NEWER_FLAIM								XFLM_ERROR_BASE( 0x011C)			// Running old code on a newer version of database.  Newer code must be used.
-	#define NE_XFLM_CANNOT_MOD_ELEMENT_STATE				XFLM_ERROR_BASE( 0x011D)			// Attempted to change state of a predefined element definition.
-	#define NE_XFLM_CANNOT_MOD_ATTRIBUTE_STATE			XFLM_ERROR_BASE( 0x011E)			// Attempted to change state of a predefined attribute definition.
-	#define NE_XFLM_NO_MORE_ELEMENT_NUMS					XFLM_ERROR_BASE( 0x011F)			// The highest element number has already been used, cannot create more element definitions.
-	#define NE_XFLM_NO_TRANS_ACTIVE							XFLM_ERROR_BASE( 0x0120)			// Operation must be performed inside a database transaction.
-	#define NE_XFLM_NOT_FLAIM									XFLM_ERROR_BASE( 0x0121)			// The file specified is not a FLAIM database.
-	#define NE_XFLM_OLD_VIEW									XFLM_ERROR_BASE( 0x0122)			// Unable to maintain read transaction's view of the database.
-	#define NE_XFLM_SHARED_LOCK								XFLM_ERROR_BASE( 0x0123)			// Attempted to perform an operation on the database that requires exclusive access, but cannot because there is a shared lock.
-	#define NE_XFLM_TRANS_ACTIVE								XFLM_ERROR_BASE( 0x0124)			// Operation cannot be performed while a transaction is active.
-	#define NE_XFLM_RFL_TRANS_GAP								XFLM_ERROR_BASE( 0x0125)			// A gap was found in the transaction sequence in the roll-forward log.
-	#define NE_XFLM_BAD_COLLATED_KEY							XFLM_ERROR_BASE( 0x0126)			// Something in collated key is bad.
-	#define NE_XFLM_MUST_DELETE_INDEXES						XFLM_ERROR_BASE( 0x0127)			// Attempting to delete a collection that has indexes defined for it.  Associated indexes must be deleted before the collection can be deleted.
-	#define NE_XFLM_RFL_INCOMPLETE							XFLM_ERROR_BASE( 0x0128)			// Roll-forward log file is incomplete.
-	#define NE_XFLM_CANNOT_RESTORE_RFL_FILES				XFLM_ERROR_BASE( 0x0129)			// Cannot restore roll-forward log files - not using multiple roll-forward log files.
-	#define NE_XFLM_INCONSISTENT_BACKUP						XFLM_ERROR_BASE( 0x012A)			// A problem (corruption, etc.) was detected in a backup set.
-	#define NE_XFLM_BLOCK_CRC									XFLM_ERROR_BASE( 0x012B)			// CRC for database block was invalid.  May indicate problems in reading from or writing to disk.
-	#define NE_XFLM_ABORT_TRANS								XFLM_ERROR_BASE( 0x012C)			// Attempted operation after a critical error - transaction should be aborted.
-	#define NE_XFLM_NOT_RFL										XFLM_ERROR_BASE( 0x012D)			// File was not a roll-forward log file as expected.
-	#define NE_XFLM_BAD_RFL_PACKET							XFLM_ERROR_BASE( 0x012E)			// Roll-forward log file packet was bad.
-	#define NE_XFLM_DATA_PATH_MISMATCH						XFLM_ERROR_BASE( 0x012F)			// Bad data path specified to open database.  Does not match data path specified for prior opens of the database.
-	#define NE_XFLM_MUST_CLOSE_DATABASE						XFLM_ERROR_BASE( 0x0130)			// Database must be closed due to a critical error.
-	#define NE_XFLM_INVALID_ENCKEY_CRC						XFLM_ERROR_BASE( 0x0131)			// Encryption key CRC could not be verified.
-	#define NE_XFLM_HDR_CRC										XFLM_ERROR_BASE( 0x0132)			// Database header has a bad CRC.
-	#define NE_XFLM_NO_NAME_TABLE								XFLM_ERROR_BASE( 0x0133)			// No name table was set up for the database.
-	#define NE_XFLM_UNALLOWED_UPGRADE						XFLM_ERROR_BASE( 0x0134)			// Cannot upgrade database from one version to another.
-	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NUM				XFLM_ERROR_BASE( 0x0135)			// Attribute number specified in attribute definition is already in use.
-	#define NE_XFLM_DUPLICATE_INDEX_NUM						XFLM_ERROR_BASE( 0x0136)			// Index number specified in index definition is already in use.
-	#define NE_XFLM_DUPLICATE_COLLECTION_NUM				XFLM_ERROR_BASE( 0x0137)			// Collection number specified in collection definition is already in use.
-	#define NE_XFLM_DUPLICATE_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0138)			// Element name+namespace specified in element definition is already in use.
-	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NAME				XFLM_ERROR_BASE( 0x0139)			// Attribute name+namespace specified in attribute definition is already in use.
-	#define NE_XFLM_DUPLICATE_INDEX_NAME					XFLM_ERROR_BASE( 0x013A)			// Index name specified in index definition is already in use.
-	#define NE_XFLM_DUPLICATE_COLLECTION_NAME				XFLM_ERROR_BASE( 0x013B)			// Collection name specified in collection definition is already in use.
-	#define NE_XFLM_ELEMENT_PURGED							XFLM_ERROR_BASE( 0x013C)			// XML element cannot be used - it is deleted from the database.
-	#define NE_XFLM_TOO_MANY_OPEN_DATABASES				XFLM_ERROR_BASE( 0x013D)			// Too many open databases, cannot open another one.
-	#define NE_XFLM_DATABASE_OPEN								XFLM_ERROR_BASE( 0x013E)			// Operation cannot be performed because the database is currently open.
-	#define NE_XFLM_CACHE_ERROR								XFLM_ERROR_BASE( 0x013F)			// Cached database block has been compromised while in cache.
-	#define NE_XFLM_DB_FULL										XFLM_ERROR_BASE( 0x0140)			// Database is full, cannot create more blocks.
-	#define NE_XFLM_QUERY_SYNTAX								XFLM_ERROR_BASE( 0x0141)			// Query expression had improper syntax.
-	#define NE_XFLM_INDEX_OFFLINE								XFLM_ERROR_BASE( 0x0142)			// Index is offline, cannot be used in a query.
-	#define NE_XFLM_RFL_DISK_FULL								XFLM_ERROR_BASE( 0x0143)			// Disk which contains roll-forward log is full.
-	#define NE_XFLM_MUST_WAIT_CHECKPOINT					XFLM_ERROR_BASE( 0x0144)			// Must wait for a checkpoint before starting transaction - due to disk problems - usually in disk containing roll-forward log files.
-	#define NE_XFLM_MISSING_ENC_ALGORITHM					XFLM_ERROR_BASE( 0x0145)			// Encryption definition is missing an encryption algorithm.
-	#define NE_XFLM_INVALID_ENC_ALGORITHM					XFLM_ERROR_BASE( 0x0146)			// Invalid encryption algorithm specified in encryption definition.
-	#define NE_XFLM_INVALID_ENC_KEY_SIZE					XFLM_ERROR_BASE( 0x0147)			// Invalid key size specified in encryption definition.
-	#define NE_XFLM_ILLEGAL_DATA_TYPE						XFLM_ERROR_BASE( 0x0148)			// Data type specified for XML element or attribute definition is illegal.
-	#define NE_XFLM_ILLEGAL_STATE								XFLM_ERROR_BASE( 0x0149)			// State specified for index definition or XML element or attribute definition is illegal.
-	#define NE_XFLM_ILLEGAL_ELEMENT_NAME					XFLM_ERROR_BASE( 0x014A)			// XML element name specified in element definition is illegal.
-	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NAME					XFLM_ERROR_BASE( 0x014B)			// XML attribute name specified in attribute definition is illegal.
-	#define NE_XFLM_ILLEGAL_COLLECTION_NAME				XFLM_ERROR_BASE( 0x014C)			// Collection name specified in collection definition is illegal.
-	#define NE_XFLM_ILLEGAL_INDEX_NAME						XFLM_ERROR_BASE( 0x014D)			// Index name specified is illegal
-	#define NE_XFLM_ILLEGAL_ELEMENT_NUMBER					XFLM_ERROR_BASE( 0x014E)			// Element number specified in element definition or index definition is illegal.
-	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NUMBER				XFLM_ERROR_BASE( 0x014F)			// Attribute number specified in attribute definition or index definition is illegal.
-	#define NE_XFLM_ILLEGAL_COLLECTION_NUMBER				XFLM_ERROR_BASE( 0x0150)			// Collection number specified in collection definition or index definition is illegal.
-	#define NE_XFLM_ILLEGAL_INDEX_NUMBER					XFLM_ERROR_BASE( 0x0151)			// Index number specified in index definition is illegal.
-	#define NE_XFLM_ILLEGAL_ENCDEF_NUMBER					XFLM_ERROR_BASE( 0x0152)			// Encryption definition number specified in encryption definition is illegal.
-	#define NE_XFLM_COLLECTION_NAME_MISMATCH				XFLM_ERROR_BASE( 0x0153)			// Collection name and number specified in index definition do not correspond to each other.
-	#define NE_XFLM_ELEMENT_NAME_MISMATCH					XFLM_ERROR_BASE( 0x0154)			// Element name+namespace and number specified in index definition do not correspond to each other.
-	#define NE_XFLM_ATTRIBUTE_NAME_MISMATCH				XFLM_ERROR_BASE( 0x0155)			// Attribute name+namespace and number specified in index definition do not correspond to each other.
-	#define NE_XFLM_INVALID_COMPARE_RULE					XFLM_ERROR_BASE( 0x0156)			// Invalid comparison rule specified in index definition.
-	#define NE_XFLM_DUPLICATE_KEY_COMPONENT				XFLM_ERROR_BASE( 0x0157)			// Duplicate key component number specified in index definition.
-	#define NE_XFLM_DUPLICATE_DATA_COMPONENT				XFLM_ERROR_BASE( 0x0158)			// Duplicate data component number specified in index definition.
-	#define NE_XFLM_MISSING_KEY_COMPONENT					XFLM_ERROR_BASE( 0x0159)			// Index definition is missing a key component.
-	#define NE_XFLM_MISSING_DATA_COMPONENT					XFLM_ERROR_BASE( 0x015A)			// Index definition is missing a data component.
-	#define NE_XFLM_INVALID_INDEX_OPTION					XFLM_ERROR_BASE( 0x015B)			// Invalid index option specified on index definition.
-	#define NE_XFLM_NO_MORE_ATTRIBUTE_NUMS					XFLM_ERROR_BASE( 0x015C)			// The highest attribute number has already been used, cannot create more.
-	#define NE_XFLM_MISSING_ELEMENT_NAME					XFLM_ERROR_BASE( 0x015D)			// Missing element name in XML element definition.
-	#define NE_XFLM_MISSING_ATTRIBUTE_NAME					XFLM_ERROR_BASE( 0x015E)			// Missing attribute name in XML attribute definition.
-	#define NE_XFLM_MISSING_ELEMENT_NUMBER					XFLM_ERROR_BASE( 0x015F)			// Missing element number in XML element definition.
-	#define NE_XFLM_MISSING_ATTRIBUTE_NUMBER				XFLM_ERROR_BASE( 0x0160)			// Missing attribute number from XML attribute definition.
-	#define NE_XFLM_MISSING_INDEX_NAME						XFLM_ERROR_BASE( 0x0161)			// Missing index name in index definition.
-	#define NE_XFLM_MISSING_INDEX_NUMBER					XFLM_ERROR_BASE( 0x0162)			// Missing index number in index definition.
-	#define NE_XFLM_MISSING_COLLECTION_NAME				XFLM_ERROR_BASE( 0x0163)			// Missing collection name in collection definition.
-	#define NE_XFLM_MISSING_COLLECTION_NUMBER				XFLM_ERROR_BASE( 0x0164)			// Missing collection number in collection definition.
-	#define NE_XFLM_MISSING_ENCDEF_NAME						XFLM_ERROR_BASE( 0x0165)			// Missing encryption definition name in encryption definition.
-	#define NE_XFLM_MISSING_ENCDEF_NUMBER					XFLM_ERROR_BASE( 0x0166)			// Missing encryption definition number in encryption definition.
-	#define NE_XFLM_NO_MORE_INDEX_NUMS						XFLM_ERROR_BASE( 0x0167)			// The highest index number has already been used, cannot create more.
-	#define NE_XFLM_NO_MORE_COLLECTION_NUMS				XFLM_ERROR_BASE( 0x0168)			// The highest collection number has already been used, cannot create more.
-	#define NE_XFLM_CANNOT_DEL_ATTRIBUTE					XFLM_ERROR_BASE( 0x0169)			// Cannot delete an XML attribute definition because it is in use.
-	#define NE_XFLM_TOO_MANY_PENDING_NODES					XFLM_ERROR_BASE( 0x016A)			// Too many documents in the pending document list.
-	#define NE_XFLM_BAD_USE_OF_ELM_ROOT_TAG				XFLM_ERROR_BASE( 0x016B)			// ELM_ROOT_TAG, if used, must be the sole root component of an index definition.
-	#define NE_XFLM_DUP_SIBLING_IX_COMPONENTS				XFLM_ERROR_BASE( 0x016C)			// Sibling components in an index definition cannot have the same XML element or attribute number.
-	#define NE_XFLM_RFL_FILE_NOT_FOUND						XFLM_ERROR_BASE( 0x016D)			// Could not open a roll-forward log file - was not found in the roll-forward log directory.
-	#define NE_XFLM_ILLEGAL_KEY_COMPONENT_NUM				XFLM_ERROR_BASE( 0x016E)			// Key component of zero in index definition is not allowed.
-	#define NE_XFLM_ILLEGAL_DATA_COMPONENT_NUM			XFLM_ERROR_BASE( 0x016F)			// Data component of zero in index definition is not allowed.
-	#define NE_XFLM_ILLEGAL_PREFIX_NUMBER					XFLM_ERROR_BASE( 0x0170)			// Prefix number specified in prefix definition is illegal.
-	#define NE_XFLM_MISSING_PREFIX_NAME						XFLM_ERROR_BASE( 0x0171)			// Missing prefix name in prefix definition.
-	#define NE_XFLM_MISSING_PREFIX_NUMBER					XFLM_ERROR_BASE( 0x0172)			// Missing prefix number in prefix definition.
-	#define NE_XFLM_UNDEFINED_ELEMENT_NAME					XFLM_ERROR_BASE( 0x0173)			// XML element name+namespace that was specified in index definition or XML document is not defined in dictionary.
-	#define NE_XFLM_UNDEFINED_ATTRIBUTE_NAME				XFLM_ERROR_BASE( 0x0174)			// XML attribute name+namespace that was specified in index definition or XML document is not defined in dictionary.
-	#define NE_XFLM_DUPLICATE_PREFIX_NAME					XFLM_ERROR_BASE( 0x0175)			// Prefix name specified in prefix definition is already in use.
-	#define NE_XFLM_NAMESPACE_NOT_ALLOWED					XFLM_ERROR_BASE( 0x0176)			// Cannot define a namespace for XML attributes whose name begins with "xmlns:" or that is equal to "xmlns"
-	#define NE_XFLM_INVALID_NAMESPACE_DECL					XFLM_ERROR_BASE( 0x0177)			// Name for namespace declaration attribute must be "xmlns" or begin with "xmlns:"
-	#define NE_XFLM_ILLEGAL_NAMESPACE_DECL_DATATYPE		XFLM_ERROR_BASE( 0x0178)			// Data type for XML attributes that are namespace declarations must be text.
-	#define NE_XFLM_NO_MORE_PREFIX_NUMS						XFLM_ERROR_BASE( 0x0179)			// The highest prefix number has already been used, cannot create more.
-	#define NE_XFLM_NO_MORE_ENCDEF_NUMS						XFLM_ERROR_BASE( 0x017A)			// The highest encryption definition number has already been used, cannot create more.
-	#define NE_XFLM_COLLECTION_OFFLINE						XFLM_ERROR_BASE( 0x017B)			// Collection is encrypted, cannot be accessed while in operating in limited mode.
-	#define NE_XFLM_DELETE_NOT_ALLOWED						XFLM_ERROR_BASE( 0x017C)			// Item cannot be deleted.
-	#define NE_XFLM_RESET_NEEDED								XFLM_ERROR_BASE( 0x017D)			// Used during check operations to indicate we need to reset the view.  NOTE: This is an internal error code and should not be documented.
-	#define NE_XFLM_ILLEGAL_REQUIRED_VALUE					XFLM_ERROR_BASE( 0x017E)			// An illegal value was specified for the "Required" attribute in an index definition.
-	#define NE_XFLM_ILLEGAL_INDEX_COMPONENT				XFLM_ERROR_BASE( 0x017F)			// A leaf index component in an index definition was not marked as a data component or key component.
-	#define NE_XFLM_ILLEGAL_UNIQUE_SUB_ELEMENT_VALUE	XFLM_ERROR_BASE( 0x0180)			// Illegal value for the "UniqueSubElements" attribute in an element definition.
-	#define NE_XFLM_DATA_TYPE_MUST_BE_NO_DATA				XFLM_ERROR_BASE( 0x0181)			// Data type for an element definition with UniqueSubElements="yes" must be nodata.
-	#define NE_XFLM_CANNOT_SET_REQUIRED						XFLM_ERROR_BASE( 0x0182)			// Cannot set the "Required" attribute on a non-key index component in index definition.
-	#define NE_XFLM_CANNOT_SET_LIMIT							XFLM_ERROR_BASE( 0x0183)			// Cannot set the "Limit" attribute on a non-key index component in index definition.
-	#define NE_XFLM_CANNOT_SET_INDEX_ON						XFLM_ERROR_BASE( 0x0184)			// Cannot set the "IndexOn" attribute on a non-key index component in index definition.
-	#define NE_XFLM_CANNOT_SET_COMPARE_RULES				XFLM_ERROR_BASE( 0x0185)			// Cannot set the "CompareRules" on a non-key index component in index definition.
-	#define NE_XFLM_INPUT_PENDING								XFLM_ERROR_BASE( 0x0186)			// Attempt to set a value while an input stream is still open.
-	#define NE_XFLM_INVALID_NODE_TYPE						XFLM_ERROR_BASE( 0x0187)			// Bad node type
-	#define NE_XFLM_INVALID_CHILD_ELM_NODE_ID				XFLM_ERROR_BASE( 0x0188)			// Attempt to insert a unique child element that has a lower node ID than the parent element
-	#define NE_XFLM_RFL_END										XFLM_ERROR_BASE( 0x0189)			// Hit the end of the RFL
-	#define NE_XFLM_LAST_GENERAL_ERROR						XFLM_ERROR_BASE( 0x018A)			// NOTE: This is not an error code - do not document
-
+	#define NE_XFLM_USER_ABORT									0xD100			// User or application aborted (canceled) operation.
+	#define NE_XFLM_BAD_PREFIX									0xD101			// Invalid XLM namespace prefix specified.  Either a prefix name or number that was specified was not defined.
+	#define NE_XFLM_ATTRIBUTE_PURGED							0xD102			// XML attribute cannot be used - it is being deleted from the database.
+	#define NE_XFLM_BAD_COLLECTION							0xD103			// Invalid collection number specified.  Collection is not defined.
+	#define NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT				0xD104			// Request to lock the database timed out.
+	#define NE_XFLM_ILLEGAL_DATA_COMPONENT					0xD105			// Cannot use ELM_ROOT_TAG as a data component in an index.
+	#define NE_XFLM_MUST_INDEX_ON_PRESENCE					0xD106			// When using ELM_ROOT_TAG in an index component, must specify PRESENCE indexing only.
+	#define NE_XFLM_BAD_IX										0xD107			// Invalid index number specified.  Index is not defined.
+	#define NE_XFLM_BACKUP_ACTIVE								0xD108			// Operation could not be performed because a backup is currently in progress.
+	#define NE_XFLM_SERIAL_NUM_MISMATCH						0xD109			// Serial number on backup file does not match the serial number that is expected.
+	#define NE_XFLM_BAD_RFL_DB_SERIAL_NUM					0xD10A			// Bad database serial number in roll-forward log file header.
+	#define NE_XFLM_BAD_RFL_FILE_NUMBER						0xD10B			// Bad roll-forward log file number in roll-forward log file header.
+	#define NE_XFLM_CANNOT_DEL_ELEMENT						0xD10C			// Cannot delete an XML element definition in the dictionary because it is in use.
+	#define NE_XFLM_CANNOT_MOD_DATA_TYPE					0xD10D			// Cannot modify the data type for an XML element or attribute definition in the dictionary.
+	#define NE_XFLM_CANNOT_INDEX_DATA_TYPE					0xD10E			// Data type of XML element or attribute is not one that can be indexed.
+	#define NE_XFLM_BAD_ELEMENT_NUM							0xD10F			// Bad element number specified - element not defined in dictionary.
+	#define NE_XFLM_BAD_ATTRIBUTE_NUM						0xD110			// Bad attribute number specified - attribute not defined in dictionary.
+	#define NE_XFLM_BAD_ENCDEF_NUM							0xD111			// Bad encryption number specified - encryption definition not defined in dictionary.
+	#define NE_XFLM_INVALID_FILE_SEQUENCE					0xD112			// Incremental backup file number provided during a restore is invalid.
+	#define NE_XFLM_DUPLICATE_ELEMENT_NUM					0xD113			// Element number specified in element definition is already in use.
+	#define NE_XFLM_ILLEGAL_TRANS_TYPE						0xD114			// Illegal transaction type specified for transaction begin operation.
+	#define NE_XFLM_UNSUPPORTED_VERSION						0xD115			// Version of database found in database header is not supported.
+	#define NE_XFLM_ILLEGAL_TRANS_OP							0xD116			// Illegal operation for transaction type.
+	#define NE_XFLM_INCOMPLETE_LOG							0xD117			// Incomplete rollback log.
+	#define NE_XFLM_ILLEGAL_INDEX_DEF						0xD118			// Index definition document is illegal - does not conform to the expected form of an index definition document.
+	#define NE_XFLM_ILLEGAL_INDEX_ON							0xD119			// The "IndexOn" attribute of an index definition has an illegal value.
+	#define NE_XFLM_ILLEGAL_STATE_CHANGE					0xD11A			// Attempted an illegal state change on an element or attribute definition.
+	#define NE_XFLM_BAD_RFL_SERIAL_NUM						0xD11B			// Serial number in roll-forward log file header does not match expected serial number.
+	#define NE_XFLM_NEWER_FLAIM								0xD11C			// Running old code on a newer version of database.  Newer code must be used.
+	#define NE_XFLM_CANNOT_MOD_ELEMENT_STATE				0xD11D			// Attempted to change state of a predefined element definition.
+	#define NE_XFLM_CANNOT_MOD_ATTRIBUTE_STATE			0xD11E			// Attempted to change state of a predefined attribute definition.
+	#define NE_XFLM_NO_MORE_ELEMENT_NUMS					0xD11F			// The highest element number has already been used, cannot create more element definitions.
+	#define NE_XFLM_NO_TRANS_ACTIVE							0xD120			// Operation must be performed inside a database transaction.
+	#define NE_XFLM_NOT_FLAIM									0xD121			// The file specified is not a FLAIM database.
+	#define NE_XFLM_OLD_VIEW									0xD122			// Unable to maintain read transaction's view of the database.
+	#define NE_XFLM_SHARED_LOCK								0xD123			// Attempted to perform an operation on the database that requires exclusive access, but cannot because there is a shared lock.
+	#define NE_XFLM_TRANS_ACTIVE								0xD124			// Operation cannot be performed while a transaction is active.
+	#define NE_XFLM_RFL_TRANS_GAP								0xD125			// A gap was found in the transaction sequence in the roll-forward log.
+	#define NE_XFLM_BAD_COLLATED_KEY							0xD126			// Something in collated key is bad.
+	#define NE_XFLM_MUST_DELETE_INDEXES						0xD127			// Attempting to delete a collection that has indexes defined for it.  Associated indexes must be deleted before the collection can be deleted.
+	#define NE_XFLM_RFL_INCOMPLETE							0xD128			// Roll-forward log file is incomplete.
+	#define NE_XFLM_CANNOT_RESTORE_RFL_FILES				0xD129			// Cannot restore roll-forward log files - not using multiple roll-forward log files.
+	#define NE_XFLM_INCONSISTENT_BACKUP						0xD12A			// A problem (corruption), etc. was detected in a backup set.
+	#define NE_XFLM_BLOCK_CRC									0xD12B			// CRC for database block was invalid.  May indicate problems in reading from or writing to disk.
+	#define NE_XFLM_ABORT_TRANS								0xD12C			// Attempted operation after a critical error - transaction should be aborted.
+	#define NE_XFLM_NOT_RFL										0xD12D			// File was not a roll-forward log file as expected.
+	#define NE_XFLM_BAD_RFL_PACKET							0xD12E			// Roll-forward log file packet was bad.
+	#define NE_XFLM_DATA_PATH_MISMATCH						0xD12F			// Bad data path specified to open database.  Does not match data path specified for prior opens of the database.
+	#define NE_XFLM_MUST_CLOSE_DATABASE						0xD130			// Database must be closed due to a critical error.
+	#define NE_XFLM_INVALID_ENCKEY_CRC						0xD131			// Encryption key CRC could not be verified.
+	#define NE_XFLM_HDR_CRC										0xD132			// Database header has a bad CRC.
+	#define NE_XFLM_NO_NAME_TABLE								0xD133			// No name table was set up for the database.
+	#define NE_XFLM_UNALLOWED_UPGRADE						0xD134			// Cannot upgrade database from one version to another.
+	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NUM				0xD135			// Attribute number specified in attribute definition is already in use.
+	#define NE_XFLM_DUPLICATE_INDEX_NUM						0xD136			// Index number specified in index definition is already in use.
+	#define NE_XFLM_DUPLICATE_COLLECTION_NUM				0xD137			// Collection number specified in collection definition is already in use.
+	#define NE_XFLM_DUPLICATE_ELEMENT_NAME					0xD138			// Element name+namespace specified in element definition is already in use.
+	#define NE_XFLM_DUPLICATE_ATTRIBUTE_NAME				0xD139			// Attribute name+namespace specified in attribute definition is already in use.
+	#define NE_XFLM_DUPLICATE_INDEX_NAME					0xD13A			// Index name specified in index definition is already in use.
+	#define NE_XFLM_DUPLICATE_COLLECTION_NAME				0xD13B			// Collection name specified in collection definition is already in use.
+	#define NE_XFLM_ELEMENT_PURGED							0xD13C			// XML element cannot be used - it is deleted from the database.
+	#define NE_XFLM_TOO_MANY_OPEN_DATABASES				0xD13D			// Too many open databases, cannot open another one.
+	#define NE_XFLM_DATABASE_OPEN								0xD13E			// Operation cannot be performed because the database is currently open.
+	#define NE_XFLM_CACHE_ERROR								0xD13F			// Cached database block has been compromised while in cache.
+	#define NE_XFLM_DB_FULL										0xD140			// Database is full, cannot create more blocks.
+	#define NE_XFLM_QUERY_SYNTAX								0xD141			// Query expression had improper syntax.
+	#define NE_XFLM_INDEX_OFFLINE								0xD142			// Index is offline, cannot be used in a query.
+	#define NE_XFLM_RFL_DISK_FULL								0xD143			// Disk which contains roll-forward log is full.
+	#define NE_XFLM_MUST_WAIT_CHECKPOINT					0xD144			// Must wait for a checkpoint before starting transaction - due to disk problems - usually in disk containing roll-forward log files.
+	#define NE_XFLM_MISSING_ENC_ALGORITHM					0xD145			// Encryption definition is missing an encryption algorithm.
+	#define NE_XFLM_INVALID_ENC_ALGORITHM					0xD146			// Invalid encryption algorithm specified in encryption definition.
+	#define NE_XFLM_INVALID_ENC_KEY_SIZE					0xD147			// Invalid key size specified in encryption definition.
+	#define NE_XFLM_ILLEGAL_DATA_TYPE						0xD148			// Data type specified for XML element or attribute definition is illegal.
+	#define NE_XFLM_ILLEGAL_STATE								0xD149			// State specified for index definition or XML element or attribute definition is illegal.
+	#define NE_XFLM_ILLEGAL_ELEMENT_NAME					0xD14A			// XML element name specified in element definition is illegal.
+	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NAME					0xD14B			// XML attribute name specified in attribute definition is illegal.
+	#define NE_XFLM_ILLEGAL_COLLECTION_NAME				0xD14C			// Collection name specified in collection definition is illegal.
+	#define NE_XFLM_ILLEGAL_INDEX_NAME						0xD14D			// Index name specified is illegal
+	#define NE_XFLM_ILLEGAL_ELEMENT_NUMBER					0xD14E			// Element number specified in element definition or index definition is illegal.
+	#define NE_XFLM_ILLEGAL_ATTRIBUTE_NUMBER				0xD14F			// Attribute number specified in attribute definition or index definition is illegal.
+	#define NE_XFLM_ILLEGAL_COLLECTION_NUMBER				0xD150			// Collection number specified in collection definition or index definition is illegal.
+	#define NE_XFLM_ILLEGAL_INDEX_NUMBER					0xD151			// Index number specified in index definition is illegal.
+	#define NE_XFLM_ILLEGAL_ENCDEF_NUMBER					0xD152			// Encryption definition number specified in encryption definition is illegal.
+	#define NE_XFLM_COLLECTION_NAME_MISMATCH				0xD153			// Collection name and number specified in index definition do not correspond to each other.
+	#define NE_XFLM_ELEMENT_NAME_MISMATCH					0xD154			// Element name+namespace and number specified in index definition do not correspond to each other.
+	#define NE_XFLM_ATTRIBUTE_NAME_MISMATCH				0xD155			// Attribute name+namespace and number specified in index definition do not correspond to each other.
+	#define NE_XFLM_INVALID_COMPARE_RULE					0xD156			// Invalid comparison rule specified in index definition.
+	#define NE_XFLM_DUPLICATE_KEY_COMPONENT				0xD157			// Duplicate key component number specified in index definition.
+	#define NE_XFLM_DUPLICATE_DATA_COMPONENT				0xD158			// Duplicate data component number specified in index definition.
+	#define NE_XFLM_MISSING_KEY_COMPONENT					0xD159			// Index definition is missing a key component.
+	#define NE_XFLM_MISSING_DATA_COMPONENT					0xD15A			// Index definition is missing a data component.
+	#define NE_XFLM_INVALID_INDEX_OPTION					0xD15B			// Invalid index option specified on index definition.
+	#define NE_XFLM_NO_MORE_ATTRIBUTE_NUMS					0xD15C			// The highest attribute number has already been used, cannot create more.
+	#define NE_XFLM_MISSING_ELEMENT_NAME					0xD15D			// Missing element name in XML element definition.
+	#define NE_XFLM_MISSING_ATTRIBUTE_NAME					0xD15E			// Missing attribute name in XML attribute definition.
+	#define NE_XFLM_MISSING_ELEMENT_NUMBER					0xD15F			// Missing element number in XML element definition.
+	#define NE_XFLM_MISSING_ATTRIBUTE_NUMBER				0xD160			// Missing attribute number from XML attribute definition.
+	#define NE_XFLM_MISSING_INDEX_NAME						0xD161			// Missing index name in index definition.
+	#define NE_XFLM_MISSING_INDEX_NUMBER					0xD162			// Missing index number in index definition.
+	#define NE_XFLM_MISSING_COLLECTION_NAME				0xD163			// Missing collection name in collection definition.
+	#define NE_XFLM_MISSING_COLLECTION_NUMBER				0xD164			// Missing collection number in collection definition.
+	#define NE_XFLM_MISSING_ENCDEF_NAME						0xD165			// Missing encryption definition name in encryption definition.
+	#define NE_XFLM_MISSING_ENCDEF_NUMBER					0xD166			// Missing encryption definition number in encryption definition.
+	#define NE_XFLM_NO_MORE_INDEX_NUMS						0xD167			// The highest index number has already been used, cannot create more.
+	#define NE_XFLM_NO_MORE_COLLECTION_NUMS				0xD168			// The highest collection number has already been used, cannot create more.
+	#define NE_XFLM_CANNOT_DEL_ATTRIBUTE					0xD169			// Cannot delete an XML attribute definition because it is in use.
+	#define NE_XFLM_TOO_MANY_PENDING_NODES					0xD16A			// Too many documents in the pending document list.
+	#define NE_XFLM_BAD_USE_OF_ELM_ROOT_TAG				0xD16B			// ELM_ROOT_TAG, if used, must be the sole root component of an index definition.
+	#define NE_XFLM_DUP_SIBLING_IX_COMPONENTS				0xD16C			// Sibling components in an index definition cannot have the same XML element or attribute number.
+	#define NE_XFLM_RFL_FILE_NOT_FOUND						0xD16D			// Could not open a roll-forward log file - was not found in the roll-forward log directory.
+	#define NE_XFLM_ILLEGAL_KEY_COMPONENT_NUM				0xD16E			// Key component of zero in index definition is not allowed.
+	#define NE_XFLM_ILLEGAL_DATA_COMPONENT_NUM			0xD16F			// Data component of zero in index definition is not allowed.
+	#define NE_XFLM_ILLEGAL_PREFIX_NUMBER					0xD170			// Prefix number specified in prefix definition is illegal.
+	#define NE_XFLM_MISSING_PREFIX_NAME						0xD171			// Missing prefix name in prefix definition.
+	#define NE_XFLM_MISSING_PREFIX_NUMBER					0xD172			// Missing prefix number in prefix definition.
+	#define NE_XFLM_UNDEFINED_ELEMENT_NAME					0xD173			// XML element name+namespace that was specified in index definition or XML document is not defined in dictionary.
+	#define NE_XFLM_UNDEFINED_ATTRIBUTE_NAME				0xD174			// XML attribute name+namespace that was specified in index definition or XML document is not defined in dictionary.
+	#define NE_XFLM_DUPLICATE_PREFIX_NAME					0xD175			// Prefix name specified in prefix definition is already in use.
+	#define NE_XFLM_NAMESPACE_NOT_ALLOWED					0xD176			// Cannot define a namespace for XML attributes whose name begins with "xmlns:" or that is equal to "xmlns"
+	#define NE_XFLM_INVALID_NAMESPACE_DECL					0xD177			// Name for namespace declaration attribute must be "xmlns" or begin with "xmlns:"
+	#define NE_XFLM_ILLEGAL_NAMESPACE_DECL_DATATYPE		0xD178			// Data type for XML attributes that are namespace declarations must be text.
+	#define NE_XFLM_NO_MORE_PREFIX_NUMS						0xD179			// The highest prefix number has already been used, cannot create more.
+	#define NE_XFLM_NO_MORE_ENCDEF_NUMS						0xD17A			// The highest encryption definition number has already been used, cannot create more.
+	#define NE_XFLM_COLLECTION_OFFLINE						0xD17B			// Collection is encrypted, cannot be accessed while in operating in limited mode.
+	#define NE_XFLM_DELETE_NOT_ALLOWED						0xD17C			// Item cannot be deleted.
+	#define NE_XFLM_RESET_NEEDED								0xD17D			// Used during check operations to indicate we need to reset the view.  NOTE: This is an internal error code and should not be documented.
+	#define NE_XFLM_ILLEGAL_REQUIRED_VALUE					0xD17E			// An illegal value was specified for the "Required" attribute in an index definition.
+	#define NE_XFLM_ILLEGAL_INDEX_COMPONENT				0xD17F			// A leaf index component in an index definition was not marked as a data component or key component.
+	#define NE_XFLM_ILLEGAL_UNIQUE_SUB_ELEMENT_VALUE	0xD180			// Illegal value for the "UniqueSubElements" attribute in an element definition.
+	#define NE_XFLM_DATA_TYPE_MUST_BE_NO_DATA				0xD181			// Data type for an element definition with UniqueSubElements="yes" must be nodata.
+	#define NE_XFLM_CANNOT_SET_REQUIRED						0xD182			// Cannot set the "Required" attribute on a non-key index component in index definition.
+	#define NE_XFLM_CANNOT_SET_LIMIT							0xD183			// Cannot set the "Limit" attribute on a non-key index component in index definition.
+	#define NE_XFLM_CANNOT_SET_INDEX_ON						0xD184			// Cannot set the "IndexOn" attribute on a non-key index component in index definition.
+	#define NE_XFLM_CANNOT_SET_COMPARE_RULES				0xD185			// Cannot set the "CompareRules" on a non-key index component in index definition.
+	#define NE_XFLM_INPUT_PENDING								0xD186			// Attempt to set a value while an input stream is still open.
+	#define NE_XFLM_INVALID_NODE_TYPE						0xD187			// Bad node type
+	#define NE_XFLM_INVALID_CHILD_ELM_NODE_ID				0xD188			// Attempt to insert a unique child element that has a lower node ID than the parent element
+	#define NE_XFLM_RFL_END										0xD189			// Hit the end of the RFL
+	#define NE_XFLM_ILLEGAL_FLAG								0xD18A			// Illegal flag passed to getChildElement method.  Must be zero for elements that can have non-unique child elements.
+	#define NE_XFLM_TIMEOUT										0xD18B			// Operation timed out.
+	#define NE_XFLM_CONV_BAD_DIGIT							0xD18C			// Non-numeric digit found in text to numeric conversion.
+	#define NE_XFLM_CONV_NULL_SRC								0xD18D			// Data source cannot be NULL when doing data conversion.
+	#define NE_XFLM_CONV_NUM_UNDERFLOW						0xD18E			// Numeric underflow (< lower bound) converting to numeric type.
+	#define NE_XFLM_UNSUPPORTED_FEATURE						0xD18F			// Attempting to use a feature for which full support has been disabled.
+	#define NE_XFLM_FILE_EXISTS								0xD190			// Attempt to create a database, but the file already exists.
+	#define NE_XFLM_BUFFER_OVERFLOW							0xD191			// Buffer overflow.
+	#define NE_XFLM_INVALID_XML								0xD192			// Invalid XML encountered while parsing document.
+	#define NE_XFLM_BAD_DATA_TYPE								0xD193			// Attempt to set/get data on an XML element or attribute using a data type that is incompatible with the data type specified in the dictionary.
+	#define NE_XFLM_READ_ONLY									0xD194			// Item is read-only and cannot be updated.
+	#define NE_XFLM_KEY_OVERFLOW								0xD195			// Generated index key too large.
+	#define NE_XFLM_UNEXPECTED_END_OF_INPUT				0xD196			// Encountered unexpected end of input when parsing XPATH expression.
+	#define NE_XFLM_BAD_PLATFORM_FORMAT						0xD197			// Cannot support platform format.  NOTE: No need to document this one, it is strictly internal.
+	
 	/****************************************************************************
 	Desc:		DOM Errors
 	****************************************************************************/
 
-	#define NE_XFLM_FIRST_DOM_ERROR							XFLM_ERROR_BASE( 0x1100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_DOM_HIERARCHY_REQUEST_ERR				XFLM_ERROR_BASE( 0x1101)			// Attempt to insert a DOM node somewhere it doesn't belong.
-	#define NE_XFLM_DOM_WRONG_DOCUMENT_ERR					XFLM_ERROR_BASE( 0x1102)			// A DOM node is being used in a different document than the one that created it.
-	#define NE_XFLM_DOM_DATA_ERROR							XFLM_ERROR_BASE( 0x1103)			// Links between DOM nodes in a document are corrupt.
-	#define NE_XFLM_DOM_NODE_NOT_FOUND						XFLM_ERROR_BASE( 0x1104)			// The requested DOM node does not exist.
-	#define NE_XFLM_DOM_INVALID_CHILD_TYPE					XFLM_ERROR_BASE( 0x1105)			// Attempting to insert a child DOM node whose type cannot be inserted as a child node.
-	#define NE_XFLM_DOM_NODE_DELETED							XFLM_ERROR_BASE( 0x1106)			// DOM node being accessed has been deleted.
-	#define NE_XFLM_DOM_DUPLICATE_ELEMENT					XFLM_ERROR_BASE( 0x1107)			// Node already has a child element with the given name id - this node's child nodes must all be unique.
-	#define NE_XFLM_LAST_DOM_ERROR							XFLM_ERROR_BASE( 0x1108)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_DOM_HIERARCHY_REQUEST_ERR				0xD201			// Attempt to insert a DOM node somewhere it doesn't belong.
+	#define NE_XFLM_DOM_WRONG_DOCUMENT_ERR					0xD202			// A DOM node is being used in a different document than the one that created it.
+	#define NE_XFLM_DOM_DATA_ERROR							0xD203			// Links between DOM nodes in a document are corrupt.
+	#define NE_XFLM_DOM_NODE_NOT_FOUND						0xD204			// The requested DOM node does not exist.
+	#define NE_XFLM_DOM_INVALID_CHILD_TYPE					0xD205			// Attempting to insert a child DOM node whose type cannot be inserted as a child node.
+	#define NE_XFLM_DOM_NODE_DELETED							0xD206			// DOM node being accessed has been deleted.
+	#define NE_XFLM_DOM_DUPLICATE_ELEMENT					0xD207			// Node already has a child element with the given name id - this node's child nodes must all be unique.
 
 	/****************************************************************************
 	Desc:	Query Errors
 	****************************************************************************/
 
-	#define NE_XFLM_FIRST_QUERY_ERROR						XFLM_ERROR_BASE( 0x2100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_Q_UNMATCHED_RPAREN						XFLM_ERROR_BASE( 0x2101)			// Query setup error: Unmatched right paren.
-	#define NE_XFLM_Q_UNEXPECTED_LPAREN						XFLM_ERROR_BASE( 0x2102)			// Query setup error: Unexpected left paren.
-	#define NE_XFLM_Q_UNEXPECTED_RPAREN						XFLM_ERROR_BASE( 0x2103)			// Query setup error: Unexpected right paren.
-	#define NE_XFLM_Q_EXPECTING_OPERAND						XFLM_ERROR_BASE( 0x2104)			// Query setup error: Expecting an operand.
-	#define NE_XFLM_Q_EXPECTING_OPERATOR					XFLM_ERROR_BASE( 0x2105)			// Query setup error: Expecting an operator.
-	#define NE_XFLM_Q_UNEXPECTED_COMMA						XFLM_ERROR_BASE( 0x2106)			// Query setup error: Unexpected comma.
-	#define NE_XFLM_Q_EXPECTING_LPAREN						XFLM_ERROR_BASE( 0x2107)			// Query setup error: Expecting a left paren.
-	#define NE_XFLM_Q_UNEXPECTED_VALUE						XFLM_ERROR_BASE( 0x2108)			// Query setup error: Unexpected value.
-	#define NE_XFLM_Q_INVALID_NUM_FUNC_ARGS				XFLM_ERROR_BASE( 0x2109)			// Query setup error: Invalid number of arguments for a function.
-	#define NE_XFLM_Q_UNEXPECTED_XPATH_COMPONENT			XFLM_ERROR_BASE( 0x210A)			// Query setup error: Unexpected XPATH componenent.
-	#define NE_XFLM_Q_ILLEGAL_LBRACKET						XFLM_ERROR_BASE( 0x210B)			// Query setup error: Illegal left bracket ([).
-	#define NE_XFLM_Q_ILLEGAL_RBRACKET						XFLM_ERROR_BASE( 0x210C)			// Query setup error: Illegal right bracket (]).
-	#define NE_XFLM_Q_ILLEGAL_OPERAND						XFLM_ERROR_BASE( 0x210D)			// Query setup error: Operand for some operator is not valid for that operator type.
-	#define NE_XFLM_Q_ALREADY_OPTIMIZED						XFLM_ERROR_BASE( 0x210E)			// Operation is illegal, cannot change certain things after query has been optimized.
-	#define NE_XFLM_Q_MISMATCHED_DB							XFLM_ERROR_BASE( 0x210F)			// Database handle passed in does not match database associated with query.
-	#define NE_XFLM_Q_ILLEGAL_OPERATOR						XFLM_ERROR_BASE( 0x2110)			// Illegal operator - cannot pass this operator into the addOperator method.
-	#define NE_XFLM_Q_ILLEGAL_COMPARE_RULES				XFLM_ERROR_BASE( 0x2111)			// Illegal combination of comparison rules passed to addOperator method.
-	#define NE_XFLM_Q_INCOMPLETE_QUERY_EXPR				XFLM_ERROR_BASE( 0x2112)			// Query setup error: Query expression is incomplete.
-	#define NE_XFLM_Q_NOT_POSITIONED							XFLM_ERROR_BASE( 0x2113)			// Query not positioned due to previous error, cannot call getNext, getPrev, or getCurrent
-	#define NE_XFLM_Q_INVALID_NODE_ID_VALUE				XFLM_ERROR_BASE( 0x2114)			// Query setup error: Invalid type of value constant used for node id value comparison.
-	#define NE_XFLM_Q_INVALID_META_DATA_TYPE				XFLM_ERROR_BASE( 0x2115)			// Query setup error: Invalid meta data type specified.
-	#define NE_XFLM_Q_NEW_EXPR_NOT_ALLOWED					XFLM_ERROR_BASE( 0x2116)			// Query setup error: Cannot add an expression to an XPATH component after having added an expression that tests context position.
-	#define NE_XFLM_Q_INVALID_CONTEXT_POS					XFLM_ERROR_BASE( 0x2117)			// Invalid context position value encountered - must be a positive number.
-	#define NE_XFLM_Q_INVALID_FUNC_ARG						XFLM_ERROR_BASE( 0x2118)			// Query setup error: Parameter to user-defined functions must be a single XPATH only.
-	#define NE_XFLM_Q_EXPECTING_RPAREN						XFLM_ERROR_BASE( 0x2119)			// Query setup error: Expecting right paren.
-	#define NE_XFLM_Q_TOO_LATE_TO_ADD_SORT_KEYS			XFLM_ERROR_BASE( 0x211A)			// Query setup error: Cannot add sort keys after having called getFirst, getLast, getNext, or getPrev.
-	#define NE_XFLM_Q_INVALID_SORT_KEY_COMPONENT			XFLM_ERROR_BASE( 0x211B)			// Query setup error: Invalid sort key component number specified in query.
-	#define NE_XFLM_Q_DUPLICATE_SORT_KEY_COMPONENT		XFLM_ERROR_BASE( 0x211C)			// Query setup error: Duplicate sort key component number specified in query.
-	#define NE_XFLM_Q_MISSING_SORT_KEY_COMPONENT			XFLM_ERROR_BASE( 0x211D)			// Query setup error: Missing sort key component number in sort keys that were specified for query.
-	#define NE_XFLM_Q_NO_SORT_KEY_COMPONENTS_SPECIFIED	XFLM_ERROR_BASE( 0x211E)			// Query setup error: addSortKeys was called, but no sort key components were specified.
-	#define NE_XFLM_Q_SORT_KEY_CONTEXT_MUST_BE_ELEMENT	XFLM_ERROR_BASE( 0x211F)			// Query setup error: A sort key context cannot be an XML attribute.
-	#define NE_XFLM_Q_INVALID_ELEMENT_NUM_IN_SORT_KEYS XFLM_ERROR_BASE( 0x2120)			// Query setup error: The XML element number specified for a sort key in a query is invalid - no element definition in the dictionary.
-	#define NE_XFLM_Q_INVALID_ATTR_NUM_IN_SORT_KEYS 	XFLM_ERROR_BASE( 0x2121)			// Query setup error: The XML attribute number specified for a sort key in a query is invalid - no attribute definition in the dictionary.
-	#define NE_XFLM_Q_NON_POSITIONABLE_QUERY				XFLM_ERROR_BASE( 0x2122)			// Attempt is being made to position in a query that is not positionable.
-	#define NE_XFLM_Q_INVALID_POSITION						XFLM_ERROR_BASE( 0x2123)			// Attempt is being made to position to an invalid position in the result set.
-	#define NE_XFLM_LAST_QUERY_ERROR							XFLM_ERROR_BASE( 0x2124)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_Q_UNMATCHED_RPAREN						0xD301			// Query setup error: Unmatched right paren.
+	#define NE_XFLM_Q_UNEXPECTED_LPAREN						0xD302			// Query setup error: Unexpected left paren.
+	#define NE_XFLM_Q_UNEXPECTED_RPAREN						0xD303			// Query setup error: Unexpected right paren.
+	#define NE_XFLM_Q_EXPECTING_OPERAND						0xD304			// Query setup error: Expecting an operand.
+	#define NE_XFLM_Q_EXPECTING_OPERATOR					0xD305			// Query setup error: Expecting an operator.
+	#define NE_XFLM_Q_UNEXPECTED_COMMA						0xD306			// Query setup error: Unexpected comma.
+	#define NE_XFLM_Q_EXPECTING_LPAREN						0xD307			// Query setup error: Expecting a left paren.
+	#define NE_XFLM_Q_UNEXPECTED_VALUE						0xD308			// Query setup error: Unexpected value.
+	#define NE_XFLM_Q_INVALID_NUM_FUNC_ARGS				0xD309			// Query setup error: Invalid number of arguments for a function.
+	#define NE_XFLM_Q_UNEXPECTED_XPATH_COMPONENT			0xD30A			// Query setup error: Unexpected XPATH componenent.
+	#define NE_XFLM_Q_ILLEGAL_LBRACKET						0xD30B			// Query setup error: Illegal left bracket ([).
+	#define NE_XFLM_Q_ILLEGAL_RBRACKET						0xD30C			// Query setup error: Illegal right bracket (]).
+	#define NE_XFLM_Q_ILLEGAL_OPERAND						0xD30D			// Query setup error: Operand for some operator is not valid for that operator type.
+	#define NE_XFLM_Q_ALREADY_OPTIMIZED						0xD30E			// Operation is illegal, cannot change certain things after query has been optimized.
+	#define NE_XFLM_Q_MISMATCHED_DB							0xD30F			// Database handle passed in does not match database associated with query.
+	#define NE_XFLM_Q_ILLEGAL_OPERATOR						0xD310			// Illegal operator - cannot pass this operator into the addOperator method.
+	#define NE_XFLM_Q_ILLEGAL_COMPARE_RULES				0xD311			// Illegal combination of comparison rules passed to addOperator method.
+	#define NE_XFLM_Q_INCOMPLETE_QUERY_EXPR				0xD312			// Query setup error: Query expression is incomplete.
+	#define NE_XFLM_Q_NOT_POSITIONED							0xD313			// Query not positioned due to previous error, cannot call getNext, getPrev, or getCurrent
+	#define NE_XFLM_Q_INVALID_NODE_ID_VALUE				0xD314			// Query setup error: Invalid type of value constant used for node id value comparison.
+	#define NE_XFLM_Q_INVALID_META_DATA_TYPE				0xD315			// Query setup error: Invalid meta data type specified.
+	#define NE_XFLM_Q_NEW_EXPR_NOT_ALLOWED					0xD316			// Query setup error: Cannot add an expression to an XPATH component after having added an expression that tests context position.
+	#define NE_XFLM_Q_INVALID_CONTEXT_POS					0xD317			// Invalid context position value encountered - must be a positive number.
+	#define NE_XFLM_Q_INVALID_FUNC_ARG						0xD318			// Query setup error: Parameter to user-defined functions must be a single XPATH only.
+	#define NE_XFLM_Q_EXPECTING_RPAREN						0xD319			// Query setup error: Expecting right paren.
+	#define NE_XFLM_Q_TOO_LATE_TO_ADD_SORT_KEYS			0xD31A			// Query setup error: Cannot add sort keys after having called getFirst, getLast, getNext, or getPrev.
+	#define NE_XFLM_Q_INVALID_SORT_KEY_COMPONENT			0xD31B			// Query setup error: Invalid sort key component number specified in query.
+	#define NE_XFLM_Q_DUPLICATE_SORT_KEY_COMPONENT		0xD31C			// Query setup error: Duplicate sort key component number specified in query.
+	#define NE_XFLM_Q_MISSING_SORT_KEY_COMPONENT			0xD31D			// Query setup error: Missing sort key component number in sort keys that were specified for query.
+	#define NE_XFLM_Q_NO_SORT_KEY_COMPONENTS_SPECIFIED	0xD31E			// Query setup error: addSortKeys was called, but no sort key components were specified.
+	#define NE_XFLM_Q_SORT_KEY_CONTEXT_MUST_BE_ELEMENT	0xD31F			// Query setup error: A sort key context cannot be an XML attribute.
+	#define NE_XFLM_Q_INVALID_ELEMENT_NUM_IN_SORT_KEYS 0xD320			// Query setup error: The XML element number specified for a sort key in a query is invalid - no element definition in the dictionary.
+	#define NE_XFLM_Q_INVALID_ATTR_NUM_IN_SORT_KEYS 	0xD321			// Query setup error: The XML attribute number specified for a sort key in a query is invalid - no attribute definition in the dictionary.
+	#define NE_XFLM_Q_NON_POSITIONABLE_QUERY				0xD322			// Attempt is being made to position in a query that is not positionable.
+	#define NE_XFLM_Q_INVALID_POSITION						0xD323			// Attempt is being made to position to an invalid position in the result set.
 
 	/****************************************************************************
 	Desc:	NICI / Encryption Errors
 	****************************************************************************/
 
-	#define NE_XFLM_FIRST_NICI_ERROR							XFLM_ERROR_BASE( 0x3100)			// NOTE: This is not an error code - do not document
-	#define NE_XFLM_NICI_CONTEXT								XFLM_ERROR_BASE( 0x3101)			// Error occurred while creating NICI context for encryption/decryption.
-	#define NE_XFLM_NICI_ATTRIBUTE_VALUE					XFLM_ERROR_BASE( 0x3102)			// Error occurred while accessing an attribute on a NICI encryption key.
-	#define NE_XFLM_NICI_BAD_ATTRIBUTE						XFLM_ERROR_BASE( 0x3103)			// Value retrieved from an attribute on a NICI encryption key was bad.
-	#define NE_XFLM_NICI_WRAPKEY_FAILED						XFLM_ERROR_BASE( 0x3104)			// Error occurred while wrapping a NICI encryption key in another NICI encryption key.
-	#define NE_XFLM_NICI_UNWRAPKEY_FAILED					XFLM_ERROR_BASE( 0x3105)			// Error occurred while unwrapping a NICI encryption key that is wrapped in another NICI encryption key.
-	#define NE_XFLM_NICI_INVALID_ALGORITHM					XFLM_ERROR_BASE( 0x3106)			// Attempt to use invalid NICI encryption algorithm. 
-	#define NE_XFLM_NICI_GENKEY_FAILED						XFLM_ERROR_BASE( 0x3107)			// Error occurred while attempting to generate a NICI encryption key.
-	#define NE_XFLM_NICI_BAD_RANDOM							XFLM_ERROR_BASE( 0x3108)			// Error occurred while generating random data using NICI.
-	#define NE_XFLM_PBE_ENCRYPT_FAILED						XFLM_ERROR_BASE( 0x3109)			// Error occurred while attempting to wrap a NICI encryption key in a password.
-	#define NE_XFLM_PBE_DECRYPT_FAILED						XFLM_ERROR_BASE( 0x310A)			// Error occurred while attempting to unwrap a NICI encryption key that was previously wrapped in a password.
-	#define NE_XFLM_DIGEST_INIT_FAILED						XFLM_ERROR_BASE( 0x310B)			// Error occurred while attempting to initialize the NICI digest functionality.
-	#define NE_XFLM_DIGEST_FAILED								XFLM_ERROR_BASE( 0x310C)			// Error occurred while attempting to create a NICI digest. 
-	#define NE_XFLM_INJECT_KEY_FAILED						XFLM_ERROR_BASE( 0x310D)			// Error occurred while attempting to inject an encryption key into NICI. 
-	#define NE_XFLM_NICI_FIND_INIT							XFLM_ERROR_BASE( 0x310E)			// Error occurred while attempting to initialize NICI to find information on a NICI encryption key.
-	#define NE_XFLM_NICI_FIND_OBJECT							XFLM_ERROR_BASE( 0x310F)			// Error occurred while attempting to find information on a NICI encryption key.
-	#define NE_XFLM_NICI_KEY_NOT_FOUND						XFLM_ERROR_BASE( 0x3110)			// Could not find the NICI encryption key or information on the NICI encryption key.
-	#define NE_XFLM_NICI_ENC_INIT_FAILED					XFLM_ERROR_BASE( 0x3111)			// Error occurred while initializing NICI to encrypt data.
-	#define NE_XFLM_NICI_ENCRYPT_FAILED						XFLM_ERROR_BASE( 0x3112)			// Error occurred while encrypting data.
-	#define NE_XFLM_NICI_DECRYPT_INIT_FAILED				XFLM_ERROR_BASE( 0x3113)			// Error occurred while initializing NICI to decrypt data.
-	#define NE_XFLM_NICI_DECRYPT_FAILED						XFLM_ERROR_BASE( 0x3114)			// Error occurred while decrypting data.
-	#define NE_XFLM_NICI_WRAPKEY_NOT_FOUND					XFLM_ERROR_BASE( 0x3115)			// Could not find the NICI encryption key used to wrap another NICI encryption key.
-	#define NE_XFLM_NOT_EXPECTING_PASSWORD					XFLM_ERROR_BASE( 0x3116)			// Password supplied when none was expected.
-	#define NE_XFLM_EXPECTING_PASSWORD						XFLM_ERROR_BASE( 0x3117)			// No password supplied when one was required.
-	#define NE_XFLM_EXTRACT_KEY_FAILED						XFLM_ERROR_BASE( 0x3118)			// Error occurred while attempting to extract a NICI encryption key.
-	#define NE_XFLM_NICI_INIT_FAILED							XFLM_ERROR_BASE( 0x3119)			// Error occurred while initializing NICI.
-	#define NE_XFLM_BAD_ENCKEY_SIZE							XFLM_ERROR_BASE( 0x311A)			// Bad encryption key size found in roll-forward log packet.
-	#define NE_XFLM_ENCRYPTION_UNAVAILABLE					XFLM_ERROR_BASE( 0x311B)			// Attempt was made to encrypt data when NICI is unavailable.
-	#define NE_XFLM_LAST_NICI_ERROR							XFLM_ERROR_BASE( 0x311C)			// NOTE: This is not an error code - do not document
+	#define NE_XFLM_NICI_CONTEXT								0xD401			// Error occurred while creating NICI context for encryption/decryption.
+	#define NE_XFLM_NICI_ATTRIBUTE_VALUE					0xD402			// Error occurred while accessing an attribute on a NICI encryption key.
+	#define NE_XFLM_NICI_BAD_ATTRIBUTE						0xD403			// Value retrieved from an attribute on a NICI encryption key was bad.
+	#define NE_XFLM_NICI_WRAPKEY_FAILED						0xD404			// Error occurred while wrapping a NICI encryption key in another NICI encryption key.
+	#define NE_XFLM_NICI_UNWRAPKEY_FAILED					0xD405			// Error occurred while unwrapping a NICI encryption key that is wrapped in another NICI encryption key.
+	#define NE_XFLM_NICI_INVALID_ALGORITHM					0xD406			// Attempt to use invalid NICI encryption algorithm. 
+	#define NE_XFLM_NICI_GENKEY_FAILED						0xD407			// Error occurred while attempting to generate a NICI encryption key.
+	#define NE_XFLM_NICI_BAD_RANDOM							0xD408			// Error occurred while generating random data using NICI.
+	#define NE_XFLM_PBE_ENCRYPT_FAILED						0xD409			// Error occurred while attempting to wrap a NICI encryption key in a password.
+	#define NE_XFLM_PBE_DECRYPT_FAILED						0xD40A			// Error occurred while attempting to unwrap a NICI encryption key that was previously wrapped in a password.
+	#define NE_XFLM_DIGEST_INIT_FAILED						0xD40B			// Error occurred while attempting to initialize the NICI digest functionality.
+	#define NE_XFLM_DIGEST_FAILED								0xD40C			// Error occurred while attempting to create a NICI digest. 
+	#define NE_XFLM_INJECT_KEY_FAILED						0xD40D			// Error occurred while attempting to inject an encryption key into NICI. 
+	#define NE_XFLM_NICI_FIND_INIT							0xD40E			// Error occurred while attempting to initialize NICI to find information on a NICI encryption key.
+	#define NE_XFLM_NICI_FIND_OBJECT							0xD40F			// Error occurred while attempting to find information on a NICI encryption key.
+	#define NE_XFLM_NICI_KEY_NOT_FOUND						0xD410			// Could not find the NICI encryption key or information on the NICI encryption key.
+	#define NE_XFLM_NICI_ENC_INIT_FAILED					0xD411			// Error occurred while initializing NICI to encrypt data.
+	#define NE_XFLM_NICI_ENCRYPT_FAILED						0xD412			// Error occurred while encrypting data.
+	#define NE_XFLM_NICI_DECRYPT_INIT_FAILED				0xD413			// Error occurred while initializing NICI to decrypt data.
+	#define NE_XFLM_NICI_DECRYPT_FAILED						0xD414			// Error occurred while decrypting data.
+	#define NE_XFLM_NICI_WRAPKEY_NOT_FOUND					0xD415			// Could not find the NICI encryption key used to wrap another NICI encryption key.
+	#define NE_XFLM_NOT_EXPECTING_PASSWORD					0xD416			// Password supplied when none was expected.
+	#define NE_XFLM_EXPECTING_PASSWORD						0xD417			// No password supplied when one was required.
+	#define NE_XFLM_EXTRACT_KEY_FAILED						0xD418			// Error occurred while attempting to extract a NICI encryption key.
+	#define NE_XFLM_NICI_INIT_FAILED							0xD419			// Error occurred while initializing NICI.
+	#define NE_XFLM_BAD_ENCKEY_SIZE							0xD41A			// Bad encryption key size found in roll-forward log packet.
+	#define NE_XFLM_ENCRYPTION_UNAVAILABLE					0xD41B			// Attempt was made to encrypt data when NICI is unavailable.
 
 	/****************************************************************************
 	Dictionary Document Definitions - below are comments that document valid 

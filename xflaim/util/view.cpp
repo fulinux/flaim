@@ -644,8 +644,7 @@ Path_Not_Found:
 		else
 		{
 Other_Error:
-			f_strcpy( szTBuf, "Error opening file: ");
-			f_strcpy( &szTBuf [f_strlen( szTBuf)], F_DbSystem::_errorString( rc));
+			f_sprintf( szTBuf, "Error opening file: 0x%04X", (unsigned)rc);
 			if (ViewGetChar( szTBuf,
 				"Open file in DIRECT MODE anyway? (Y/N, Default=Y): ",
 				'Y') == 'Y')

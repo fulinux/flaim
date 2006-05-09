@@ -1888,13 +1888,6 @@ RCODE F_DbSystem::init( void)
 		goto Exit;
 	}
 
-	// Check the error code tables
-
-	if( RC_BAD( rc = checkErrorCodeTables()))
-	{
-		goto Exit;
-	}
-
 	// Initialize all of the fields
 
 	gv_XFlmSysData.uiMaxUnusedTime = FLM_SECS_TO_TIMER_UNITS( 

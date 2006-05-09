@@ -2956,6 +2956,9 @@ RCODE F_DomEditor::displayMessage(
 	FLMUINT				uiForeground)
 {
 	RCODE				rc = NE_XFLM_OK;
+	char				szErr [20];
+	
+	f_sprintf( szErr, "Error=0x%04X", (unsigned)rcOfMessage);
 
 	flmAssert( m_bSetupCalled == TRUE);
 
@@ -2965,8 +2968,7 @@ RCODE F_DomEditor::displayMessage(
 	}
 
 	FTXDisplayMessage( m_pScreen, m_bMonochrome ? WPS_LIGHTGRAY : uiBackground,
-		m_bMonochrome ? WPS_BLACK : uiForeground,
-		pszMessage, F_DbSystem::_errorString( rcOfMessage), puiTermChar);
+		m_bMonochrome ? WPS_BLACK : uiForeground, szErr, puiTermChar);
 
 	return( rc);
 }

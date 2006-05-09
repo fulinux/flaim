@@ -5039,19 +5039,8 @@ public:
 		return( dbSystem.errorIsFileCorrupt( rc));
 	}
 
-	const char * FLMAPI errorString(
-		RCODE						rc);
-
 	const char * FLMAPI checkErrorToStr(
 		FLMINT					iCheckErrorCode);
-
-	static const char * _errorString(
-		RCODE						rc)
-	{
-		F_DbSystem		dbSystem;
-
-		return( dbSystem.errorString( rc));
-	}
 
 	RCODE FLMAPI openBufferIStream(
 		const char *			pucBuffer,
@@ -5268,8 +5257,6 @@ private:
 	void unlockSysData( void);
 	
 	void initFastBlockCheckSum( void);
-
-	RCODE checkErrorCodeTables( void);
 
 	RCODE allocDb(
 		F_Db **				ppDb,

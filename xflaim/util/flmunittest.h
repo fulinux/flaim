@@ -59,8 +59,8 @@
 	flmAssert( 0)
 
 #define MAKE_FLM_ERROR_STRING( str, buf, rcode) \
-	f_sprintf( buf, str" "#rcode" == %X : %s. file: %s. line: %u.", \
-		(unsigned)rcode, m_pDbSystem->errorString( rcode), __FILE__, __LINE__); \
+	f_sprintf( buf, str" "#rcode" == 0x%04X. file: %s. line: %u.", \
+		(unsigned)rcode, __FILE__, __LINE__); \
 	flmAssert( 0);
 	
 #define MAKE_GENERIC_ERROR_STRING( str, buf, num) \

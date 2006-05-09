@@ -13236,16 +13236,16 @@ FLMUINT FLMAPI F_DOMNode::compareNode(
 			
 				if( RC_BAD( rc = pLeftNode->getUnicode( pDb1, &puzVal1)))
 				{
-					f_sprintf( szBuffer, "getUnicode failed with rc==(%u)%s.",
-						rc, F_DbSystem::_errorString( rc));
+					f_sprintf( szBuffer, "getUnicode failed with rc==0x%04X.",
+						(unsigned)rc);
 					uiEqual = NODE_NOT_EQUAL;
 					goto Exit;
 				}
 
 				if(  RC_BAD( rc = pRightNode->getUnicode( pDb2, &puzVal2)))
 				{
-					f_sprintf( szBuffer, "getUnicode failed with rc==(%u)%s.",
-						rc, F_DbSystem::_errorString( rc));
+					f_sprintf( szBuffer, "getUnicode failed with rc==0x%04X.",
+						(unsigned)rc);
 					uiEqual = NODE_NOT_EQUAL;
 					goto Exit;
 				}
@@ -13264,16 +13264,16 @@ FLMUINT FLMAPI F_DOMNode::compareNode(
 			{
 				if( RC_BAD( rc = pLeftNode->getUINT64( pDb1, &ui64Tmp1)))
 				{
-					f_sprintf( szBuffer, "getUINT64 failed with rc==(%u)%s.",
-						rc, F_DbSystem::_errorString( rc));
+					f_sprintf( szBuffer, "getUINT64 failed with rc==0x%04X.",
+						(unsigned)rc);
 					uiEqual = NODE_NOT_EQUAL;
 					goto Exit;
 				}
 			
 				if( RC_BAD( rc = pRightNode->getUINT64( pDb2, &ui64Tmp2)))
 				{
-					f_sprintf( szBuffer, "getUINT64 failed with rc==(%u)%s.",
-						rc, F_DbSystem::_errorString( rc));
+					f_sprintf( szBuffer, "getUINT64 failed with rc==0x%04X.",
+						(unsigned)rc);
 					uiEqual = NODE_NOT_EQUAL;
 					goto Exit;
 				}
@@ -13303,8 +13303,8 @@ FLMUINT FLMAPI F_DOMNode::compareNode(
 				if( RC_BAD( rc = pLeftNode->getBinary( pDb1, pucBinary1,
 					0, uiDataLen1, &uiBytesReturned1)))
 				{
-					f_sprintf( szBuffer, "getBinary failed with rc==(%u)%s.",
-						rc, F_DbSystem::_errorString( rc));
+					f_sprintf( szBuffer, "getBinary failed with rc==0x%04X.",
+						(unsigned)rc);
 					uiEqual = NODE_NOT_EQUAL;
 					goto Exit;
 				}
@@ -13312,8 +13312,8 @@ FLMUINT FLMAPI F_DOMNode::compareNode(
 				if( RC_BAD( rc = pRightNode->getBinary(
 					pDb2, pucBinary2, 0, uiDataLen2, &uiBytesReturned2)))
 				{
-					f_sprintf( szBuffer, "getBinary failed with rc==(%u)%s.",
-						rc, F_DbSystem::_errorString( rc));
+					f_sprintf( szBuffer, "getBinary failed with rc==0x%04X.",
+						(unsigned)rc);
 					uiEqual = NODE_NOT_EQUAL;
 					goto Exit;
 				}

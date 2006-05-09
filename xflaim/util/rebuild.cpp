@@ -289,9 +289,8 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 		}
 		else
 		{
-			f_strcpy( szErrMsg, "Error creating log file: ");
-			f_strcpy( &szErrMsg[ f_strlen( szErrMsg)], 
-				dbSystem.errorString( rc));
+			f_sprintf( szErrMsg, "Error creating log file: 0x%04X",
+				(unsigned)rc);
 			bldShowError( szErrMsg);
 			bOk = FALSE;
 			goto Exit;
@@ -303,9 +302,8 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	if (RC_BAD( rc = dbSystem.setHardMemoryLimit(
 								0, FALSE, 0, gv_uiCacheSize * 1024, 0, FALSE)))
 	{
-		f_strcpy( szErrMsg, "Error setting cache size for FLAIM share: ");
-		f_strcpy( &szErrMsg[ f_strlen( szErrMsg)], 
-			dbSystem.errorString( rc));
+		f_sprintf( szErrMsg, "Error setting cache size for FLAIM share: 0x%04X",
+				(unsigned)rc);
 		bldShowError( szErrMsg);
 		bOk = FALSE;
 		goto Exit;
@@ -429,9 +427,8 @@ FSTATIC void bldShowResults(
 		{
 			f_strcpy( szErrMsg, "Error calling ");
 			f_strcpy( &szErrMsg[ f_strlen( szErrMsg)], pszFuncName);
-			f_strcpy( &szErrMsg[ f_strlen( szErrMsg)], ": ");
-			f_strcpy( &szErrMsg[ f_strlen( szErrMsg)], 
-				dbSystem.errorString( rc));
+			f_sprintf( &szErrMsg[ f_strlen( szErrMsg)], ": 0x%04X",
+				(unsigned)rc);
 			bldShowError( szErrMsg);
 			if( gv_bLoggingEnabled)
 			{

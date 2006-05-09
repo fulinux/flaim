@@ -66,7 +66,6 @@ void ViewShowRCError(
 {
 	char	szTBuf [100];
 
-	f_sprintf( szTBuf, "Error %s: %s", pszWhat, 
-		F_DbSystem::_errorString( rc));
+	f_sprintf( szTBuf, "Error %s: 0x%04X", pszWhat, (unsigned)rc); 
 	ViewShowError( szTBuf);
 }

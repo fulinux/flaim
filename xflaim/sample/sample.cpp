@@ -840,9 +840,8 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		sprintf( (char *)ucMsgBuf, "Error %04X -- %s\n",
-											(unsigned)rc,
-											(char *)pDbSystem->errorString( rc));
+		sprintf( (char *)ucMsgBuf, "Error 0x%04X\n",
+											(unsigned)rc);
 		printMessage( (char *)ucMsgBuf);
 	}
 

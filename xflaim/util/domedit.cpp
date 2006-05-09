@@ -257,7 +257,7 @@ void UIMain( void * pData)
 	{
 		FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
 			"This Utility Has Expired",
-			F_DbSystem::_errorString( RC_SET( NE_XFLM_ILLEGAL_OP)), &uiDummy);
+			"NE_XFLM_ILLEGAL_OP", &uiDummy);
 		f_sleep( 5000);
 		iResCode = 1;
 		goto Exit;
@@ -273,9 +273,11 @@ void UIMain( void * pData)
 		if( RC_BAD( rc = dbSystem.dbOpen( gv_szDbPath, NULL, gv_szRflDir,
 			(IF_Db **)&pDb, gv_szPassword, gv_bAllowLimited)))
 		{
+			char	szErr [20];
+			
+			f_sprintf( szErr, "Error=0x%04X", (unsigned)rc);
 			FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
-				"Unable to open the database",
-				dbSystem.errorString( rc), &uiDummy);
+				"Unable to open the database", szErr, &uiDummy);
 			iResCode = 1;
 			goto Exit;
 		}
@@ -285,9 +287,11 @@ void UIMain( void * pData)
 		if( RC_BAD( rc = dbSystem.dbOpen( szDbPath, NULL, gv_szRflDir,
 			(IF_Db **)&pDb, gv_szPassword, gv_bAllowLimited)))
 		{
+			char	szErr [20];
+			
+			f_sprintf( szErr, "Error=0x%04X", (unsigned)rc);
 			FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
-				"Unable to open the database",
-				F_DbSystem::_errorString( rc), &uiDummy);
+				"Unable to open the database", szErr, &uiDummy);
 			iResCode = 1;
 			goto Exit;
 		}

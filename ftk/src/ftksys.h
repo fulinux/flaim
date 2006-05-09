@@ -2152,8 +2152,6 @@
 	
 	void f_memoryCleanup( void);
 	
-	RCODE f_checkErrorCodeTables( void);
-
 	RCODE f_allocFileSystem(
 		IF_FileSystem **	ppFileSystem);
 		

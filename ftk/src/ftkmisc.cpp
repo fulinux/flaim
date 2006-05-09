@@ -141,11 +141,6 @@ RCODE FLMAPI ftkStartup( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = f_checkErrorCodeTables()))
-	{
-		goto Exit;
-	}
-	
 #ifdef FLM_DEBUG
 	if( RC_BAD( rc = f_verifyMetaphoneRoutines()))
 	{

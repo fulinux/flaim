@@ -2944,8 +2944,8 @@ RCODE F_LocalRestoreStatus::reportError(
 
 	FTXWinSetCursorPos( pWin, 0, 6);
 	FTXWinClearToEOL( pWin);
-	FTXWinPrintf( pWin, "Error: %s.  Retry (Y/N): ",
-		F_DbSystem::_errorString( (RCODE)rcErr));
+	FTXWinPrintf( pWin, "Error: 0x%04X.  Retry (Y/N): ",
+		(unsigned)rcErr);
 	if( FTXWinInputChar( pWin, &uiChar) != FTXRC_SUCCESS)
 	{
 		uiChar = 0;
@@ -5461,8 +5461,8 @@ RetryLoad:
 			{
 				if( rc != NE_XFLM_EOF_HIT)
 				{
-					pShell->con_printf( "Error importing: %s ... %s\n",
-						szTmpPath, F_DbSystem::_errorString( rc));
+					pShell->con_printf( "Error importing: %s ... 0x%04X\n",
+						szTmpPath, (unsigned)rc);
 
 					if( pImportStats)
 					{

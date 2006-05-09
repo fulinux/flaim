@@ -364,9 +364,7 @@ FSTATIC FLMBOOL CheckDatabase( void)
 						gv_szRflDir, gv_szPassword, XFLM_ALLOW_LIMITED_MODE,
 						(IF_Db **)&gv_pDb)))
 		{
-			f_strcpy( szTmpBuf, "Error opening database: ");
-			f_strcpy( &szTmpBuf[ f_strlen( szTmpBuf)],
-				dbSystem.errorString( rc));
+			f_sprintf( szTmpBuf, "Error opening database: 0x%04X", (unsigned)rc);
 			CheckShowError( szTmpBuf, TRUE);
 			bOk = FALSE;
 			goto Exit;
@@ -593,8 +591,7 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	}
 	else
 	{
-		f_strcpy( szTmpBuf, "RETURN CODE: ");
-		f_strcpy( &szTmpBuf[ f_strlen( szTmpBuf)], dbSystem.errorString( rc));
+		f_sprintf( szTmpBuf, "RETURN CODE: 0x%04X", (unsigned)rc);
 	}
 	
 	uiStatus = CheckShowError( szTmpBuf, TRUE);
@@ -666,8 +663,7 @@ FSTATIC FLMBOOL DoCheck( void)
 		}
 		else
 		{
-			f_strcpy( szTmpBuf, "Error creating log file: ");
-			f_strcpy( &szTmpBuf[ f_strlen( szTmpBuf)], dbSystem.errorString( rc));
+			f_sprintf( szTmpBuf, "Error creating log file: 0x%04X", (unsigned)rc);
 			CheckShowError( szTmpBuf, FALSE);
 			bOk = FALSE;
 			goto Exit;

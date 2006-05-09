@@ -705,14 +705,13 @@ void f_sprintfErrorFormatter(
 	if( ucFormatChar == 'e')
 	{
 		pInfo->pszDestStr +=
-			f_sprintf( (char *)pInfo->pszDestStr, "%s (%04X)",
-				(char *)f_errorString( (RCODE)uiErrorCode),
+			f_sprintf( (char *)pInfo->pszDestStr, "0x%04X",
 				(unsigned)uiErrorCode);
 	}
 	else
 	{
 		pInfo->pszDestStr +=
-			f_sprintf( (char *)pInfo->pszDestStr, "%04X",
+			f_sprintf( (char *)pInfo->pszDestStr, "0x%04X",
 			(unsigned)uiErrorCode);
 	}
 }

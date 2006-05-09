@@ -331,8 +331,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		f_sprintf( szMsgBuf, "Error %04X -- %s\n", (unsigned)rc,
-			m_pDbSystem->errorString( rc));
+		f_sprintf( szMsgBuf, "Error 0x%04X\n", (unsigned)rc);
 		display( szMsgBuf);
 		log( szMsgBuf);
 

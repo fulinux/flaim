@@ -392,45 +392,48 @@
 	Desc:	Language constants
 	****************************************************************************/
 	
-	#define FLM_US_LANG								0			// English, United States
-	#define FLM_AF_LANG								1			// Afrikaans
-	#define FLM_AR_LANG								2			// Arabic
-	#define FLM_CA_LANG								3			// Catalan
-	#define FLM_HR_LANG								4			// Croatian
-	#define FLM_CZ_LANG								5			// Czech
-	#define FLM_DK_LANG								6			// Danish
-	#define FLM_NL_LANG								7			// Dutch
-	#define FLM_OZ_LANG								8			// English, Australia
-	#define FLM_CE_LANG								9			// English, Canada
-	#define FLM_UK_LANG								10			// English, United Kingdom
-	#define FLM_FA_LANG 								11			// Farsi
-	#define FLM_SU_LANG								12			// Finnish
-	#define FLM_CF_LANG								13			// French, Canada
-	#define FLM_FR_LANG								14			// French, France
-	#define FLM_GA_LANG								15			// Galician
-	#define FLM_DE_LANG								16			// German, Germany
-	#define FLM_SD_LANG								17			// German, Switzerland
-	#define FLM_GR_LANG								18			// Greek
-	#define FLM_HE_LANG								19			// Hebrew
-	#define FLM_HU_LANG								20			// Hungarian
-	#define FLM_IS_LANG								21			// Icelandic
-	#define FLM_IT_LANG								22			// Italian
-	#define FLM_NO_LANG								23			// Norwegian
-	#define FLM_PL_LANG								24			// Polish
-	#define FLM_BR_LANG								25			// Portuguese, Brazil
-	#define FLM_PO_LANG								26			// Portuguese, Portugal
-	#define FLM_RU_LANG								27			// Russian
-	#define FLM_SL_LANG								28			// Slovak
-	#define FLM_ES_LANG								29			// Spanish
-	#define FLM_SV_LANG								30			// Swedish
-	#define FLM_YK_LANG								31			// Ukrainian
-	#define FLM_UR_LANG								32			// Urdu
-	#define FLM_TK_LANG								33			// Turkey
-	#define FLM_JP_LANG								34			// Japanese
-	#define FLM_KO_LANG								35			// Korean
-	#define FLM_CT_LANG								36			// Chinese-Traditional
-	#define FLM_CS_LANG								37			// Chinese-Simplified
-	#define FLM_LA_LANG								38			// another Asian language
+	/// \addtogroup flm_languages
+	/// @{
+	#define FLM_US_LANG								0			///< English, United States
+	#define FLM_AF_LANG								1			///< Afrikaans
+	#define FLM_AR_LANG								2			///< Arabic
+	#define FLM_CA_LANG								3			///< Catalan
+	#define FLM_HR_LANG								4			///< Croatian
+	#define FLM_CZ_LANG								5			///< Czech
+	#define FLM_DK_LANG								6			///< Danish
+	#define FLM_NL_LANG								7			///< Dutch
+	#define FLM_OZ_LANG								8			///< English, Australia
+	#define FLM_CE_LANG								9			///< English, Canada
+	#define FLM_UK_LANG								10			///< English, United Kingdom
+	#define FLM_FA_LANG 								11			///< Farsi
+	#define FLM_SU_LANG								12			///< Finnish
+	#define FLM_CF_LANG								13			///< French, Canada
+	#define FLM_FR_LANG								14			///< French, France
+	#define FLM_GA_LANG								15			///< Galician
+	#define FLM_DE_LANG								16			///< German, Germany
+	#define FLM_SD_LANG								17			///< German, Switzerland
+	#define FLM_GR_LANG								18			///< Greek
+	#define FLM_HE_LANG								19			///< Hebrew
+	#define FLM_HU_LANG								20			///< Hungarian
+	#define FLM_IS_LANG								21			///< Icelandic
+	#define FLM_IT_LANG								22			///< Italian
+	#define FLM_NO_LANG								23			///< Norwegian
+	#define FLM_PL_LANG								24			///< Polish
+	#define FLM_BR_LANG								25			///< Portuguese, Brazil
+	#define FLM_PO_LANG								26			///< Portuguese, Portugal
+	#define FLM_RU_LANG								27			///< Russian
+	#define FLM_SL_LANG								28			///< Slovak
+	#define FLM_ES_LANG								29			///< Spanish
+	#define FLM_SV_LANG								30			///< Swedish
+	#define FLM_YK_LANG								31			///< Ukrainian
+	#define FLM_UR_LANG								32			///< Urdu
+	#define FLM_TK_LANG								33			///< Turkey
+	#define FLM_JP_LANG								34			///< Japanese
+	#define FLM_KO_LANG								35			///< Korean
+	#define FLM_CT_LANG								36			///< Chinese-Traditional
+	#define FLM_CS_LANG								37			///< Chinese-Simplified
+	#define FLM_LA_LANG								38			///< another Asian language
+	/// @}
 	
 	#define FLM_LAST_LANG 							(FLM_LA_LANG + 1)
 	#define FLM_FIRST_DBCS_LANG					(FLM_JP_LANG)
@@ -3352,38 +3355,6 @@
 		const char *				pszData);
 
 	/****************************************************************************
-	Desc: Status and return codes
-	****************************************************************************/
-	#ifndef RC_OK
-		#define RC_OK( rc)			((rc) == 0)
-	#endif
-
-	#ifndef RC_BAD
-		#define RC_BAD( rc)        ((rc) != 0)
-	#endif
-
-	#define FTK_ERROR_BASE(e)		((RCODE)((int)(0x81055000+(e))))
-	#define FTK_ERROR_END			((RCODE)((int)(0x81055FFF)))
-	
-	const char * FLMAPI f_errorString(
-		RCODE							rc);
-
-	RCODE FLMAPI f_mapPlatformError(
-		FLMINT						iError,
-		RCODE							defaultRc);
-		
-	FINLINE FLMBOOL FLMAPI f_isToolkitError(
-		RCODE							rc)
-	{
-		if( rc > FTK_ERROR_BASE( 0) && rc < FTK_ERROR_END)
-		{
-			return( TRUE);
-		}
-		
-		return( FALSE);
-	}
-
-	/****************************************************************************
 	Desc:	FTX
 	****************************************************************************/
 	
@@ -3863,136 +3834,129 @@
 	/****************************************************************************
 	Desc: General errors
 	****************************************************************************/
-	#define NE_FLM_OK												0
+	/// \addtogroup ftk_errors
+	/// @{
+		
+	#define NE_FLM_OK												0					///< 0 - Operation was successful.
 	
-	#define NE_FLM_FIRST_GENERAL_ERROR						FTK_ERROR_BASE( 0x100)			// NOTE: This is not an error code - do not document
-	#define NE_FLM_NOT_IMPLEMENTED							FTK_ERROR_BASE( 0x101)			// NE_NOT_IMPLEMENTED - Attempt was made to use a feature that is not implemented.
-	#define NE_FLM_MEM											FTK_ERROR_BASE( 0x102)			// NE_INSUFFICIENT_MEMORY - Attempt to allocate memory failed.
-	#define NE_FLM_INVALID_PARM								FTK_ERROR_BASE( 0x103)			// NE_INVALID_PARAMETER - Invalid parameter passed into a function.
-	#define NE_FLM_TIMEOUT										FTK_ERROR_BASE( 0x104)			// NE_WAIT_TIMEOUT - Database operation timed out (usually a query operation).
-	#define NE_FLM_NOT_FOUND									FTK_ERROR_BASE( 0x105)			// NE_OBJECT_NOT_FOUND - An object was not found.
-	#define NE_FLM_EXISTS										FTK_ERROR_BASE( 0x106)			// NE_OBJECT_ALREADY_EXISTS - Object already exists.
-	#define NE_FLM_USER_ABORT									FTK_ERROR_BASE( 0x107)			// NE_CALLBACK_CANCELLED - User or application aborted (canceled) the operation
-	#define NE_FLM_FAILURE										FTK_ERROR_BASE( 0x108)			// NE_RECOVERABLE_FAILURE - Internal failure.
-	#define NE_FLM_BOF_HIT										FTK_ERROR_BASE( 0x109)			// Beginning of results encountered.  This error is may be returned when reading query results in reverse order (from last to first).
-	#define NE_FLM_EOF_HIT										FTK_ERROR_BASE( 0x10A)			// End of results encountered.  This error may be returned when reading query results in forward order (first to last).
-	#define NE_FLM_CONV_BAD_DIGIT								FTK_ERROR_BASE( 0x10B)			// Non-numeric digit found in text to numeric conversion.
-	#define NE_FLM_CONV_DEST_OVERFLOW						FTK_ERROR_BASE( 0x10C)			// Destination buffer not large enough to hold data.
-	#define NE_FLM_CONV_ILLEGAL								FTK_ERROR_BASE( 0x10D)			// Attempt to convert between data types is an unsupported conversion.
-	#define NE_FLM_CONV_NULL_SRC								FTK_ERROR_BASE( 0x10E)			// Data source cannot be NULL when doing data conversion.
-	#define NE_FLM_CONV_NUM_OVERFLOW							FTK_ERROR_BASE( 0x10F)			// Numeric overflow (> upper bound) converting to numeric type.
-	#define NE_FLM_CONV_NUM_UNDERFLOW						FTK_ERROR_BASE( 0x110)			// Numeric underflow (< lower bound) converting to numeric type.
-	#define NE_FLM_SYNTAX										FTK_ERROR_BASE( 0x111)			// Syntax error while parsing XML or query.
-	#define NE_FLM_UNSUPPORTED_FEATURE						FTK_ERROR_BASE( 0x112)			// Attempting to use a feature for which full support has been disabled.
-	#define NE_FLM_FILE_EXISTS									FTK_ERROR_BASE( 0x113)			// Attempt to create a database, but the file already exists.
-	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				FTK_ERROR_BASE( 0x114)			// Could not create a semaphore.
-	#define NE_FLM_BAD_UTF8										FTK_ERROR_BASE( 0x115)			// An invalid byte sequence was found in a UTF-8 string
-	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				FTK_ERROR_BASE( 0x116)			// Error occurred while waiting on a sempahore.
-	#define NE_FLM_BAD_PLATFORM_FORMAT						FTK_ERROR_BASE( 0x117)			// Cannot support platform format.  NOTE: No need to document this one, it is strictly internal.
-	#define NE_FLM_BAD_SEN										FTK_ERROR_BASE( 0x118)			// Invalid simple encoded number.
-	#define NE_FLM_UNSUPPORTED_INTERFACE					FTK_ERROR_BASE( 0x119)			// Requested COM interface is not supported.
-	#define NE_FLM_BAD_RCODE_TABLE							FTK_ERROR_BASE( 0x11A)			// The error code tables are incorrect.  NOTE: This is an internal error that does not need to be documented.
-	#define NE_FLM_BUFFER_OVERFLOW							FTK_ERROR_BASE( 0x11B)			// Buffer overflow.
-	#define NE_FLM_INVALID_XML									FTK_ERROR_BASE( 0x11C)			// Invalid XML encountered while parsing document.
-	#define NE_FLM_ILLEGAL_FLAG								FTK_ERROR_BASE( 0x11D)			// Illegal flag passed to getChildElement method.  Must be zero for elements that can have non-unique child elements.
-	#define NE_FLM_ILLEGAL_OP									FTK_ERROR_BASE( 0x11E)			// Illegal operation
-	#define NE_FLM_COULD_NOT_START_THREAD					FTK_ERROR_BASE( 0x11F)			// Problem starting a new thread
-	#define NE_FLM_BAD_BASE64_ENCODING						FTK_ERROR_BASE( 0x120)			// Invalid base64 sequence encountered
-	#define NE_FLM_STREAM_EXISTS								FTK_ERROR_BASE( 0x121)			// Stream file already exists
-	#define NE_FLM_MULTIPLE_MATCHES							FTK_ERROR_BASE( 0x122)			// Multiple items matched but only one match was expected
-	#define NE_FLM_NOT_UNIQUE									FTK_ERROR_BASE( 0x123)			// Non-unique key
-	#define NE_FLM_BTREE_ERROR									FTK_ERROR_BASE( 0x124)			// Generic b-tree error
-	#define NE_FLM_BTREE_KEY_SIZE								FTK_ERROR_BASE( 0x125)			// Invalid b-tree key size
-	#define NE_FLM_BTREE_FULL									FTK_ERROR_BASE( 0x126)			// B-tree cannot grow beyond current size
-	#define NE_FLM_BTREE_BAD_STATE							FTK_ERROR_BASE( 0x127)			// B-tree operation cannot be completed
-	#define NE_FLM_COULD_NOT_CREATE_MUTEX					FTK_ERROR_BASE( 0x128)			// Mutex alloc / init failed
-	#define NE_FLM_DATA_ERROR									FTK_ERROR_BASE( 0x129)
-	#define NE_FLM_CLASS_NOT_AVAILABLE						FTK_ERROR_BASE( 0x12A)
-	#define NE_FLM_BAD_DATA_TYPE								FTK_ERROR_BASE( 0x12B)
-	#define NE_FLM_READ_ONLY									FTK_ERROR_BASE( 0x12C)
-	#define NE_FLM_KEY_OVERFLOW								FTK_ERROR_BASE( 0x12D)
-	#define NE_FLM_UNEXPECTED_END_OF_INPUT					FTK_ERROR_BASE( 0x12E)
-	#define NE_FLM_LAST_GENERAL_ERROR						FTK_ERROR_BASE( 0x12F)			// NOTE: This is not an error code - do not document
+	// Error codes that need to be the same as they were for FLAIM
+	
+	#define NE_FLM_BOF_HIT										0xC001			///< 0xC001 - Beginning of results encountered.
+	#define NE_FLM_EOF_HIT										0xC002			///< 0xC002 - End of results encountered.
+	#define NE_FLM_EXISTS										0xC004			///< 0xC004 - Object already exists.
+	#define NE_FLM_FAILURE										0xC005			///< 0xC005 - Internal failure.
+	#define NE_FLM_NOT_FOUND									0xC006			///< 0xC006 - An object was not found.
+	#define NE_FLM_BTREE_ERROR									0xC012			///< 0xC012 - Corruption found in b-tree.
+	#define NE_FLM_BTREE_FULL									0xC013			///< 0xC013 - B-tree cannot grow beyond current size.
+	#define NE_FLM_CONV_DEST_OVERFLOW						0xC01C			///< 0xC01C - Destination buffer not large enough to hold data.
+	#define NE_FLM_CONV_ILLEGAL								0xC01D			///< 0xC01D - Attempt to convert between data types is an unsupported conversion.
+	#define NE_FLM_CONV_NUM_OVERFLOW							0xC020			///< 0xC020 - Numeric overflow (> upper bound) converting to numeric type.
+	#define NE_FLM_DATA_ERROR									0xC022			///< 0xC022 - Corruption found in b-tree.
+	#define NE_FLM_ILLEGAL_OP									0xC026			///< 0xC026 - Illegal operation
+	#define NE_FLM_MEM											0xC037			///< 0xC037 - Attempt to allocate memory failed.
+	#define NE_FLM_NOT_UNIQUE									0xC03E			///< 0xC03E - Non-unique key.
+	#define NE_FLM_SYNTAX										0xC045			///< 0xC045 - Syntax error while parsing.
+	#define NE_FLM_NOT_IMPLEMENTED							0xC05F			///< 0xC05F - Attempt was made to use a feature that is not implemented.
+	#define NE_FLM_INVALID_PARM								0xC08B			///< 0xC08B - Invalid parameter passed into a function.
+	
+	// I/O Errors - Must be the same as they were for FLAIM.
+
+	#define NE_FLM_IO_ACCESS_DENIED							0xC201			///< 0xC201 - Access to file is denied.\  Caller is not allowed access to a file.
+	#define NE_FLM_IO_BAD_FILE_HANDLE						0xC202			///< 0xC202 - Bad file handle or file descriptor.
+	#define NE_FLM_IO_COPY_ERR									0xC203			///< 0xC203 - Error occurred while copying a file.
+	#define NE_FLM_IO_DISK_FULL								0xC204			///< 0xC204 - Disk full.
+	#define NE_FLM_IO_END_OF_FILE								0xC205			///< 0xC205 - End of file reached while reading from the file.
+	#define NE_FLM_IO_OPEN_ERR									0xC206			///< 0xC206 - Error while opening the file.
+	#define NE_FLM_IO_SEEK_ERR									0xC207			///< 0xC207 - Error occurred while positioning (seeking) within a file.
+	#define NE_FLM_IO_DIRECTORY_ERR							0xC208			///< 0xC208 - Error occurred while accessing or deleting a directory.
+	#define NE_FLM_IO_PATH_NOT_FOUND							0xC209			///< 0xC209 - File not found.
+	#define NE_FLM_IO_TOO_MANY_OPEN_FILES					0xC20A			///< 0xC20A - Too many files open.
+	#define NE_FLM_IO_PATH_TOO_LONG							0xC20B			///< 0xC20B - File name too long.
+	#define NE_FLM_IO_NO_MORE_FILES							0xC20C			///< 0xC20C - No more files in directory.
+	#define NE_FLM_IO_DELETING_FILE							0xC20D			///< 0xC20D - Error occurred while deleting a file.
+	#define NE_FLM_IO_FILE_LOCK_ERR							0xC20E			///< 0xC20E - Error attempting to acquire a byte-range lock on a file.
+	#define NE_FLM_IO_FILE_UNLOCK_ERR						0xC20F			///< 0xC20F - Error attempting to release a byte-range lock on a file.
+	#define NE_FLM_IO_PATH_CREATE_FAILURE					0xC210			///< 0xC210 - Error occurred while attempting to create a directory or sub-directory.
+	#define NE_FLM_IO_RENAME_FAILURE							0xC211			///< 0xC211 - Error occurred while renaming a file.
+	#define NE_FLM_IO_INVALID_PASSWORD						0xC212			///< 0xC212 - Invalid file password.
+	#define NE_FLM_SETTING_UP_FOR_READ						0xC213			///< 0xC213 - Error occurred while setting up to perform a file read operation.
+	#define NE_FLM_SETTING_UP_FOR_WRITE						0xC214			///< 0xC214 - Error occurred while setting up to perform a file write operation.
+	#define NE_FLM_IO_CANNOT_REDUCE_PATH					0xC215			///< 0xC215 - Cannot reduce file name into more components.
+	#define NE_FLM_INITIALIZING_IO_SYSTEM					0xC216			///< 0xC216 - Error occurred while setting up to access the file system.
+	#define NE_FLM_FLUSHING_FILE								0xC217			///< 0xC217 - Error occurred while flushing file data buffers to disk.
+	#define NE_FLM_IO_INVALID_FILENAME						0xC218			///< 0xC218 - Invalid file name.
+	#define NE_FLM_IO_CONNECT_ERROR							0xC219			///< 0xC219 - Error connecting to a remote network resource.
+	#define NE_FLM_OPENING_FILE								0xC21A			///< 0xC21A - Unexpected error occurred while opening a file.
+	#define NE_FLM_DIRECT_OPENING_FILE						0xC21B			///< 0xC21B - Unexpected error occurred while opening a file in direct access mode.
+	#define NE_FLM_CREATING_FILE								0xC21C			///< 0xC21C - Unexpected error occurred while creating a file.
+	#define NE_FLM_DIRECT_CREATING_FILE						0xC21D			///< 0xC21D - Unexpected error occurred while creating a file in direct access mode.
+	#define NE_FLM_READING_FILE								0xC21E			///< 0xC21E - Unexpected error occurred while reading a file.
+	#define NE_FLM_DIRECT_READING_FILE						0xC21F			///< 0xC21F - Unexpected error occurred while reading a file in direct access mode.
+	#define NE_FLM_WRITING_FILE								0xC220			///< 0xC220 - Unexpected error occurred while writing to a file.
+	#define NE_FLM_DIRECT_WRITING_FILE						0xC221			///< 0xC221 - Unexpected error occurred while writing a file in direct access mode.
+	#define NE_FLM_POSITIONING_IN_FILE						0xC222			///< 0xC222 - Unexpected error occurred while positioning within a file.
+	#define NE_FLM_GETTING_FILE_SIZE							0xC223			///< 0xC223 - Unexpected error occurred while getting a file's size.
+	#define NE_FLM_TRUNCATING_FILE							0xC224			///< 0xC224 - Unexpected error occurred while truncating a file.
+	#define NE_FLM_PARSING_FILE_NAME							0xC225			///< 0xC225 - Unexpected error occurred while parsing a file's name.
+	#define NE_FLM_CLOSING_FILE								0xC226			///< 0xC226 - Unexpected error occurred while closing a file.
+	#define NE_FLM_GETTING_FILE_INFO							0xC227			///< 0xC227 - Unexpected error occurred while getting information about a file.
+	#define NE_FLM_EXPANDING_FILE								0xC228			///< 0xC228 - Unexpected error occurred while expanding a file.
+	#define NE_FLM_CHECKING_FILE_EXISTENCE					0xC229			///< 0xC229 - Unexpected error occurred while checking to see if a file exists.
+	#define NE_FLM_RENAMING_FILE								0xC22A			///< 0xC22A - Unexpected error occurred while renaming a file.
+	#define NE_FLM_SETTING_FILE_INFO							0xC22B			///< 0xC22B - Unexpected error occurred while setting a file's information.
+
+	// Stream Errors - These are new
+
+	#define NE_FLM_STREAM_DECOMPRESS_ERROR					0xC400			///< 0xC400 - Error decompressing data stream.
+	#define NE_FLM_STREAM_NOT_COMPRESSED					0xC401			///< 0xC401 - Attempting to decompress a data stream that is not compressed.
+	#define NE_FLM_STREAM_TOO_MANY_FILES					0xC402			///< 0xC402 - Too many files in input stream.
+	
+	// Miscellaneous new toolkit errors
+	
+	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				0xC500			///< 0xC500 - Could not create a semaphore.
+	#define NE_FLM_BAD_UTF8										0xC501			///< 0xC501 - An invalid byte sequence was found in a UTF-8 string
+	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				0xC502			///< 0xC502 - Error occurred while waiting on a sempahore.
+	#define NE_FLM_BAD_SEN										0xC503			///< 0xC503 - Invalid simple encoded number.
+	#define NE_FLM_COULD_NOT_START_THREAD					0xC504			///< 0xC504 - Problem starting a new thread.
+	#define NE_FLM_BAD_BASE64_ENCODING						0xC505			///< 0xC505 - Invalid base64 sequence encountered.
+	#define NE_FLM_STREAM_EXISTS								0xC506			///< 0xC506 - Stream file already exists.
+	#define NE_FLM_MULTIPLE_MATCHES							0xC507			///< 0xC507 - Multiple items matched but only one match was expected.
+	#define NE_FLM_BTREE_KEY_SIZE								0xC508			///< 0xC508 - Invalid b-tree key size.
+	#define NE_FLM_BTREE_BAD_STATE							0xC509			///< 0xC509 - B-tree operation cannot be completed.
+	#define NE_FLM_COULD_NOT_CREATE_MUTEX					0xC50A			///< 0xC50A - Error occurred while creating or initializing a mutex.
+	
+	// Network Errors - Must be the same as they were for FLAIM
+
+	#define NE_FLM_NOIP_ADDR									0xC900			///< 0xC900 - IP address not found
+	#define NE_FLM_SOCKET_FAIL									0xC901			///< 0xC901 - IP socket failure
+	#define NE_FLM_CONNECT_FAIL								0xC902			///< 0xC902 - TCP/IP connection failure
+	#define NE_FLM_BIND_FAIL									0xC903			///< 0xC903 - The TCP/IP services on your system may not be configured or installed.
+	#define NE_FLM_LISTEN_FAIL									0xC904			///< 0xC904 - TCP/IP listen failed
+	#define NE_FLM_ACCEPT_FAIL									0xC905			///< 0xC905 - TCP/IP accept failed
+	#define NE_FLM_SELECT_ERR									0xC906			///< 0xC906 - TCP/IP select failed
+	#define NE_FLM_SOCKET_SET_OPT_FAIL						0xC907			///< 0xC907 - TCP/IP socket operation failed
+	#define NE_FLM_SOCKET_DISCONNECT							0xC908			///< 0xC908 - TCP/IP disconnected
+	#define NE_FLM_SOCKET_READ_FAIL							0xC909			///< 0xC909 - TCP/IP read failed
+	#define NE_FLM_SOCKET_WRITE_FAIL							0xC90A			///< 0xC90A - TCP/IP write failed
+	#define NE_FLM_SOCKET_READ_TIMEOUT						0xC90B			///< 0xC90B - TCP/IP read timeout
+	#define NE_FLM_SOCKET_WRITE_TIMEOUT						0xC90C			///< 0xC90C - TCP/IP write timeout
+	#define NE_FLM_SOCKET_ALREADY_CLOSED					0xC90D			///< 0xC90D - Connection already closed
+
+	/// @}
 
 	/****************************************************************************
-	Desc: I/O Errors
+	Desc: Status and return codes
 	****************************************************************************/
+	#ifndef RC_OK
+		#define RC_OK( rc)			((rc) == NE_FLM_OK)
+	#endif
 
-	#define NE_FLM_FIRST_IO_ERROR								FTK_ERROR_BASE( 0x200)			// NOTE: This is not an error code - do not document
-	#define NE_FLM_IO_ACCESS_DENIED							FTK_ERROR_BASE( 0x201)			// Access to file is denied. Caller is not allowed access to a file.
-	#define NE_FLM_IO_BAD_FILE_HANDLE						FTK_ERROR_BASE( 0x202)			// Bad file handle or file descriptor.
-	#define NE_FLM_IO_COPY_ERR									FTK_ERROR_BASE( 0x203)			// Error occurred while copying a file.
-	#define NE_FLM_IO_DISK_FULL								FTK_ERROR_BASE( 0x204)			// Disk full.
-	#define NE_FLM_IO_END_OF_FILE								FTK_ERROR_BASE( 0x205)			// End of file reached while reading from the file.
-	#define NE_FLM_IO_OPEN_ERR									FTK_ERROR_BASE( 0x206)			// Error while opening the file.
-	#define NE_FLM_IO_SEEK_ERR									FTK_ERROR_BASE( 0x207)			// Error occurred while positioning (seeking) within a file.
-	#define NE_FLM_IO_DIRECTORY_ERR							FTK_ERROR_BASE( 0x208)			// Error occurred while accessing or deleting a directory.
-	#define NE_FLM_IO_PATH_NOT_FOUND							FTK_ERROR_BASE( 0x209)			// File not found.
-	#define NE_FLM_IO_TOO_MANY_OPEN_FILES					FTK_ERROR_BASE( 0x20A)			// Too many files open.
-	#define NE_FLM_IO_PATH_TOO_LONG							FTK_ERROR_BASE( 0x20B)			// File name too long.
-	#define NE_FLM_IO_NO_MORE_FILES							FTK_ERROR_BASE( 0x20C)			// No more files in directory.
-	#define NE_FLM_IO_DELETING_FILE							FTK_ERROR_BASE( 0x20D)			// Error occurred while deleting a file.
-	#define NE_FLM_IO_FILE_LOCK_ERR							FTK_ERROR_BASE( 0x20E)			// Error attempting to acquire a byte-range lock on a file.
-	#define NE_FLM_IO_FILE_UNLOCK_ERR						FTK_ERROR_BASE( 0x20F)			// Error attempting to release a byte-range lock on a file.
-	#define NE_FLM_IO_PATH_CREATE_FAILURE					FTK_ERROR_BASE( 0x210)			// Error occurred while attempting to create a directory or sub-directory.
-	#define NE_FLM_IO_RENAME_FAILURE							FTK_ERROR_BASE( 0x211)			// Error occurred while renaming a file.
-	#define NE_FLM_IO_INVALID_PASSWORD						FTK_ERROR_BASE( 0x212)			// Invalid file password.
-	#define NE_FLM_SETTING_UP_FOR_READ						FTK_ERROR_BASE( 0x213)			// Error occurred while setting up to perform a file read operation.
-	#define NE_FLM_SETTING_UP_FOR_WRITE						FTK_ERROR_BASE( 0x214)			// Error occurred while setting up to perform a file write operation.
-	#define NE_FLM_IO_CANNOT_REDUCE_PATH					FTK_ERROR_BASE( 0x215)			// Cannot reduce file name into more components.
-	#define NE_FLM_INITIALIZING_IO_SYSTEM					FTK_ERROR_BASE( 0x216)			// Error occurred while setting up to access the file system.
-	#define NE_FLM_FLUSHING_FILE								FTK_ERROR_BASE( 0x217)			// Error occurred while flushing file data buffers to disk.
-	#define NE_FLM_IO_INVALID_FILENAME						FTK_ERROR_BASE( 0x218)			// Invalid file name.
-	#define NE_FLM_IO_CONNECT_ERROR							FTK_ERROR_BASE( 0x219)			// Error connecting to a remote network resource.
-	#define NE_FLM_OPENING_FILE								FTK_ERROR_BASE( 0x21A)			// Unexpected error occurred while opening a file.
-	#define NE_FLM_DIRECT_OPENING_FILE						FTK_ERROR_BASE( 0x21B)			// Unexpected error occurred while opening a file in direct access mode.
-	#define NE_FLM_CREATING_FILE								FTK_ERROR_BASE( 0x21C)			// Unexpected error occurred while creating a file.
-	#define NE_FLM_DIRECT_CREATING_FILE						FTK_ERROR_BASE( 0x21D)			// Unexpected error occurred while creating a file in direct access mode.
-	#define NE_FLM_READING_FILE								FTK_ERROR_BASE( 0x21E)			// Unexpected error occurred while reading a file.
-	#define NE_FLM_DIRECT_READING_FILE						FTK_ERROR_BASE( 0x21F)			// Unexpected error occurred while reading a file in direct access mode.
-	#define NE_FLM_WRITING_FILE								FTK_ERROR_BASE( 0x220)			// Unexpected error occurred while writing to a file.
-	#define NE_FLM_DIRECT_WRITING_FILE						FTK_ERROR_BASE( 0x221)			// Unexpected error occurred while writing a file in direct access mode.
-	#define NE_FLM_POSITIONING_IN_FILE						FTK_ERROR_BASE( 0x222)			// Unexpected error occurred while positioning within a file.
-	#define NE_FLM_GETTING_FILE_SIZE							FTK_ERROR_BASE( 0x223)			// Unexpected error occurred while getting a file's size.
-	#define NE_FLM_TRUNCATING_FILE							FTK_ERROR_BASE( 0x224)			// Unexpected error occurred while truncating a file.
-	#define NE_FLM_PARSING_FILE_NAME							FTK_ERROR_BASE( 0x225)			// Unexpected error occurred while parsing a file's name.
-	#define NE_FLM_CLOSING_FILE								FTK_ERROR_BASE( 0x226)			// Unexpected error occurred while closing a file.
-	#define NE_FLM_GETTING_FILE_INFO							FTK_ERROR_BASE( 0x227)			// Unexpected error occurred while getting information about a file.
-	#define NE_FLM_EXPANDING_FILE								FTK_ERROR_BASE( 0x228)			// Unexpected error occurred while expanding a file.
-	#define NE_FLM_CHECKING_FILE_EXISTENCE					FTK_ERROR_BASE( 0x229)			// Unexpected error occurred while checking to see if a file exists.
-	#define NE_FLM_RENAMING_FILE								FTK_ERROR_BASE( 0x22A)			// Unexpected error occurred while renaming a file.
-	#define NE_FLM_SETTING_FILE_INFO							FTK_ERROR_BASE( 0x22B)			// Unexpected error occurred while setting a file's information.
-	#define NE_FLM_LAST_IO_ERROR								FTK_ERROR_BASE( 0x22C)			// NOTE: This is not an error code - do not document
+	#ifndef RC_BAD
+		#define RC_BAD( rc)        ((rc) != NE_FLM_OK)
+	#endif
 
-	/****************************************************************************
-	Desc: Network Errors
-	****************************************************************************/
-
-	#define NE_FLM_FIRST_NET_ERROR							FTK_ERROR_BASE( 0x300)			// NOTE: This is not an error code - do not document
-	#define NE_FLM_NOIP_ADDR									FTK_ERROR_BASE( 0x301)			// IP address not found
-	#define NE_FLM_SOCKET_FAIL									FTK_ERROR_BASE( 0x302)			// IP socket failure
-	#define NE_FLM_CONNECT_FAIL								FTK_ERROR_BASE( 0x303)			// TCP/IP connection failure
-	#define NE_FLM_BIND_FAIL									FTK_ERROR_BASE( 0x304)			// The TCP/IP services on your system may not be configured or installed.
-	#define NE_FLM_LISTEN_FAIL									FTK_ERROR_BASE( 0x305)			// TCP/IP listen failed
-	#define NE_FLM_ACCEPT_FAIL									FTK_ERROR_BASE( 0x306)			// TCP/IP accept failed
-	#define NE_FLM_SELECT_ERR									FTK_ERROR_BASE( 0x307)			// TCP/IP select failed
-	#define NE_FLM_SOCKET_SET_OPT_FAIL						FTK_ERROR_BASE( 0x308)			// TCP/IP socket operation failed
-	#define NE_FLM_SOCKET_DISCONNECT							FTK_ERROR_BASE( 0x309)			// TCP/IP disconnected
-	#define NE_FLM_SOCKET_READ_FAIL							FTK_ERROR_BASE( 0x30A)			// TCP/IP read failed
-	#define NE_FLM_SOCKET_WRITE_FAIL							FTK_ERROR_BASE( 0x30B)			// TCP/IP write failed
-	#define NE_FLM_SOCKET_READ_TIMEOUT						FTK_ERROR_BASE( 0x30C)			// TCP/IP read timeout
-	#define NE_FLM_SOCKET_WRITE_TIMEOUT						FTK_ERROR_BASE( 0x30D)			// TCP/IP write timeout
-	#define NE_FLM_SOCKET_ALREADY_CLOSED					FTK_ERROR_BASE( 0x30E)			// Connection already closed
-	#define NE_FLM_LAST_NET_ERROR								FTK_ERROR_BASE( 0x30F)			// NOTE: This is not an error code - do not document
-
-	/****************************************************************************
-	Desc:	Stream Errors
-	****************************************************************************/
-
-	#define NE_FLM_FIRST_STREAM_ERROR						FTK_ERROR_BASE( 0x400)			// NOTE: This is not an error code - do not document
-	#define NE_FLM_STREAM_DECOMPRESS_ERROR					FTK_ERROR_BASE( 0x401)			// Error decompressing data stream.
-	#define NE_FLM_STREAM_NOT_COMPRESSED					FTK_ERROR_BASE( 0x402)			// Attempting to decompress a data stream that is not compressed.
-	#define NE_FLM_STREAM_TOO_MANY_FILES					FTK_ERROR_BASE( 0x403)			// Too many files in input stream.
-	#define NE_FLM_LAST_STREAM_ERROR							FTK_ERROR_BASE( 0x404)			// NOTE: This is not an error code - do not document
-
+	RCODE FLMAPI f_mapPlatformError(
+		FLMINT						iError,
+		RCODE							defaultRc);
+		
 #endif // FTK_H
