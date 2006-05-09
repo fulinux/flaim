@@ -2925,10 +2925,12 @@
 	void FLMAPI f_freeAlignedBuffer(
 		void **			ppvAlloc);
 		
-	RCODE f_getMemoryInfo(
+	RCODE FLMAPI f_getMemoryInfo(
 		FLMUINT64 *		pui64TotalPhysMem,
 		FLMUINT64 *		pui64AvailPhysMem);
 	
+	FLMBOOL FLMAPI f_canGetMemoryInfo( void);
+
 	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/

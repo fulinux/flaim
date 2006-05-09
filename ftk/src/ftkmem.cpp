@@ -1465,6 +1465,40 @@ void f_memoryInit( void)
 #ifdef FLM_DEBUG
 	(void)initMemTracking();
 #endif
+
+#if defined( FLM_UNIX) && defined( RLIMIT_VMEM)
+{
+	struct rlimit	rlim;
+
+	// Bump the process soft virtual limit up to the hard limit
+	
+	if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
+	{
+		if( rlim.rlim_cur < rlim.rlim_max)
+		{
+			rlim.rlim_cur = rlim.rlim_max;
+			(void)setrlimit( RLIMIT_VMEM, &rlim);
+		}
+	}
+}
+#endif
+
+#if defined( FLM_UNIX) && defined( RLIMIT_DATA)
+{
+	struct rlimit	rlim;
+
+	// Bump the process soft heap limit up to the hard limit
+	
+	if( getrlimit( RLIMIT_DATA, &rlim) == 0)
+	{
+		if( rlim.rlim_cur < rlim.rlim_max)
+		{
+			rlim.rlim_cur = rlim.rlim_max;
+			(void)setrlimit( RLIMIT_DATA, &rlim);
+		}
+	}
+}
+#endif
 }
 
 /********************************************************************
@@ -4349,7 +4383,20 @@ void FLMAPI f_freeAlignedBuffer(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE f_getMemoryInfo(
+FLMBOOL FLMAPI f_canGetMemoryInfo( void)
+{
+	if( RC_OK( f_getMemoryInfo( NULL, NULL)))
+	{
+		return( TRUE);
+	}
+	
+	return( FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_getMemoryInfo(
 	FLMUINT64 *		pui64TotalPhysMem,
 	FLMUINT64 *		pui64AvailPhysMem)
 {
@@ -4391,23 +4438,15 @@ RCODE f_getMemoryInfo(
 
 			// Bump the process soft virtual limit up to the hard limit
 			
-			if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
+			if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
 			{
-				if( rlim.rlim_cur < rlim.rlim_max)
-				{
-					rlim.rlim_cur = rlim.rlim_max;
-					(void)setrlimit( RLIMIT_VMEM, &rlim);
-					if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
-					{
-						rlim.rlim_cur = RLIM_INFINITY;
-						rlim.rlim_max = RLIM_INFINITY;
-					}
-				}
+				rlim.rlim_cur = RLIM_INFINITY;
+				rlim.rlim_max = RLIM_INFINITY;
+			}
 
-				if( rlim.rlim_cur != RLIM_INFINITY)
-				{
-					uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
-				}
+			if( rlim.rlim_cur != RLIM_INFINITY)
+			{
+				uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
 			}
 		}
 		#endif
@@ -4418,23 +4457,15 @@ RCODE f_getMemoryInfo(
 
 			// Bump the process soft heap limit up to the hard limit
 			
-			if( getrlimit( RLIMIT_DATA, &rlim) == 0)
+			if( getrlimit( RLIMIT_DATA, &rlim) != 0)
 			{
-				if( rlim.rlim_cur < rlim.rlim_max)
-				{
-					rlim.rlim_cur = rlim.rlim_max;
-					(void)setrlimit( RLIMIT_DATA, &rlim);
-					if( getrlimit( RLIMIT_DATA, &rlim) != 0)
-					{
-						rlim.rlim_cur = RLIM_INFINITY;
-						rlim.rlim_max = RLIM_INFINITY;
-					}
-				}
+				rlim.rlim_cur = RLIM_INFINITY;
+				rlim.rlim_max = RLIM_INFINITY;
+			}
 
-				if( rlim.rlim_cur != RLIM_INFINITY)
-				{
-					uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
-				}
+			if( rlim.rlim_cur != RLIM_INFINITY)
+			{
+				uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
 			}
 		}
 		#endif
@@ -4521,11 +4552,117 @@ RCODE f_getMemoryInfo(
 		ui64AvailPhysMem = ui64TotalPhysMem;
 	}
 	
-	*pui64TotalPhysMem = ui64TotalPhysMem;
-	*pui64AvailPhysMem = ui64AvailPhysMem;
+	if( pui64TotalPhysMem)
+	{
+		*pui64TotalPhysMem = ui64TotalPhysMem;
+	}
+	
+	if( pui64AvailPhysMem)
+	{
+		*pui64AvailPhysMem = ui64AvailPhysMem;
+	}
 
 	return( rc);
 }
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+#ifdef FLM_LINUX
+FINLINE FLMUINT64 f_getLinuxMemInfoValue(
+	char *			pszMemInfoBuffer,
+	char *			pszTag)
+{
+	char *			pszTmp;
+	FLMUINT64		ui64Bytes = 0;
+
+	if( (pszTmp = f_strstr( pszMemInfoBuffer, pszTag)) == NULL)
+	{
+		return( 0);
+	}
+	
+	pszTmp += f_strlen( pszTag);
+	
+	while( *pszTmp == ASCII_SPACE)
+	{
+		pszTmp++;
+	}
+
+	while( *pszTmp >= '0' && *pszTmp <= '9')
+	{
+		ui64Bytes *= 10;
+		ui64Bytes += (FLMUINT)(*pszTmp - '0');
+		pszTmp++;
+	}
+	
+	return( ui64Bytes * 1024);
+}
+#endif
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+#ifdef FLM_LINUX
+void f_getLinuxMemInfo(
+	FLMUINT64 *		pui64TotalMem,
+	FLMUINT64 *		pui64AvailMem)
+{
+	int				fd = -1;
+	int				iBytesRead;
+	int				iMemInfoBufSize = 4096;
+	char *			pszMemInfoBuf = NULL;
+	FLMUINT64		ui64TotalMem = 0;
+	FLMUINT64		ui64AvailMem = 0;
+
+	if( (pszMemInfoBuf = (char *)malloc( iMemInfoBufSize)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	if( (fd = open( "/proc/meminfo", O_RDONLY, 0600)) == -1)
+	{
+		goto Exit;
+	}
+
+	if( (iBytesRead = read( fd, pszMemInfoBuf, iMemInfoBufSize - 1)) == -1)
+	{
+		goto Exit;
+	}
+	
+	pszMemInfoBuf[ iBytesRead] = 0;
+	
+	if( (ui64TotalMem = 
+		f_getLinuxMemInfoValue( pszMemInfoBuf, "MemTotal:")) != 0)
+	{
+		ui64AvailMem = 
+				f_getLinuxMemInfoValue( pszMemInfoBuf, "MemFree:") +
+				f_getLinuxMemInfoValue( pszMemInfoBuf, "Buffers:") +
+				f_getLinuxMemInfoValue( pszMemInfoBuf, "Cached:");
+	}
+	
+Exit:
+
+	if( pui64TotalMem)
+	{
+		*pui64TotalMem = ui64TotalMem;
+	}
+	
+	if( pui64AvailMem)
+	{
+		*pui64AvailMem = ui64AvailMem;
+	}
+
+	if( pszMemInfoBuf)
+	{
+		free( pszMemInfoBuf);
+	}
+	
+	if( fd != -1)
+	{
+		close( fd);
+	}
+}
+#endif
 
 #undef	new
 #undef	delete
