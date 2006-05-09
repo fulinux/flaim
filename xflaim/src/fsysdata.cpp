@@ -905,9 +905,10 @@ RCODE F_GlobalCacheMgr::adjustCache(
 	FLMUINT *	puiCurrTime,
 	FLMUINT *	puiLastCacheAdjustTime)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FLMUINT	uiCurrTime = *puiCurrTime;
-	FLMUINT	uiLastCacheAdjustTime = *puiLastCacheAdjustTime;
+	RCODE			rc = NE_XFLM_OK;
+	FLMUINT		uiCurrTime = *puiCurrTime;
+	FLMUINT		uiLastCacheAdjustTime = *puiLastCacheAdjustTime;
+	FLMBOOL		bMutexLocked = FALSE;
 	
 	if (m_bDynamicCacheAdjust &&
 		 FLM_ELAPSED_TIME( uiCurrTime, uiLastCacheAdjustTime) >=
@@ -916,6 +917,7 @@ RCODE F_GlobalCacheMgr::adjustCache(
 		FLMUINT	uiCacheBytes;
 		
 		lockMutex();
+		bMutexLocked = TRUE;
 
 		// Make sure the dynamic adjust flag is still set.
 
@@ -936,11 +938,19 @@ RCODE F_GlobalCacheMgr::adjustCache(
 				goto Exit;
 			}
 		}
+		
 		unlockMutex();
+		bMutexLocked = FALSE;
+		
 		*puiCurrTime = *puiLastCacheAdjustTime = FLM_GET_TIMER();
 	}
 	
 Exit:
+
+	if( bMutexLocked)
+	{
+		unlockMutex();
+	}
 
 	return( rc);
 }
@@ -1606,7 +1616,7 @@ F_GlobalCacheMgr::F_GlobalCacheMgr()
 	m_pSlabManager = NULL;
 	m_bCachePreallocated = FALSE;
 	
-	m_bDynamicCacheAdjust = TRUE;
+	m_bDynamicCacheAdjust = f_canGetMemoryInfo();
 	m_uiCacheAdjustPercent = XFLM_DEFAULT_CACHE_ADJUST_PERCENT;
 	m_uiCacheAdjustMin = XFLM_DEFAULT_CACHE_ADJUST_MIN;
 	m_uiCacheAdjustMax = XFLM_DEFAULT_CACHE_ADJUST_MAX;
@@ -1986,6 +1996,7 @@ RCODE F_DbSystem::init( void)
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = gv_XFlmSysData.pServerLockMgr->setupLockMgr()))
 	{
 		goto Exit;
@@ -2397,15 +2408,23 @@ void F_DbSystem::cleanup( void)
 Desc:	Configures how memory will be dynamically regulated.
 ****************************************************************************/
 RCODE F_GlobalCacheMgr::setDynamicMemoryLimit(
-	FLMUINT	uiCacheAdjustPercent,
-	FLMUINT	uiCacheAdjustMin,
-	FLMUINT	uiCacheAdjustMax,
-	FLMUINT	uiCacheAdjustMinToLeave)
+	FLMUINT		uiCacheAdjustPercent,
+	FLMUINT		uiCacheAdjustMin,
+	FLMUINT		uiCacheAdjustMax,
+	FLMUINT		uiCacheAdjustMinToLeave)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FLMUINT	uiCacheBytes;
+	RCODE			rc = NE_XFLM_OK;
+	FLMUINT		uiCacheBytes;
+	FLMBOOL		bMutexLocked = FALSE;
+	
+	if( !f_canGetMemoryInfo())
+	{
+		rc = RC_SET( NE_XFLM_NOT_IMPLEMENTED);
+		goto Exit;
+	}
 
 	lockMutex();
+	bMutexLocked = TRUE;
 	
 	m_bDynamicCacheAdjust = TRUE;
 	flmAssert( uiCacheAdjustPercent > 0 && uiCacheAdjustPercent <= 100);
@@ -2429,7 +2448,11 @@ RCODE F_GlobalCacheMgr::setDynamicMemoryLimit(
 	
 Exit:
 	
-	unlockMutex();
+	if( bMutexLocked)
+	{
+		unlockMutex();
+	}
+	
 	return( rc);
 }
 
@@ -2437,16 +2460,18 @@ Exit:
 Desc:		Sets a hard memory limit for cache.
 ****************************************************************************/
 RCODE F_GlobalCacheMgr::setHardMemoryLimit(
-	FLMUINT	uiPercent,
-	FLMBOOL	bPercentOfAvail,
-	FLMUINT	uiMin,
-	FLMUINT	uiMax,
-	FLMUINT	uiMinToLeave,
-	FLMBOOL	bPreallocate)
+	FLMUINT		uiPercent,
+	FLMBOOL		bPercentOfAvail,
+	FLMUINT		uiMin,
+	FLMUINT		uiMax,
+	FLMUINT		uiMinToLeave,
+	FLMBOOL		bPreallocate)
 {
-	RCODE		rc = NE_XFLM_OK;
+	RCODE			rc = NE_XFLM_OK;
+	FLMBOOL		bMutexLocked = FALSE;
 
 	lockMutex();
+	bMutexLocked = TRUE;
 	
 	m_bDynamicCacheAdjust = FALSE;
 	if (uiPercent)
@@ -2475,7 +2500,11 @@ RCODE F_GlobalCacheMgr::setHardMemoryLimit(
 	
 Exit:
 
-	unlockMutex();
+	if( bMutexLocked)
+	{
+		unlockMutex();
+	}
+	
 	return( rc);
 }
 
