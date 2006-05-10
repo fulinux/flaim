@@ -1002,13 +1002,13 @@ ifdef netware_target
 	endif
 
 	ifndef wc_dir
-      $(error Watcom compiler could not be found.  Please define wc_dir.)
+      $(error Watcom compiler could not be found.  Please define wc_dir)
 	endif
 	
 	wc_dir := $(call normpath,$(wc_dir))
 	
 	ifndef ndk_dir
-      $(error Netware SDK could not be found.  Please define ndk_dir.)
+      $(error Netware SDK could not be found.  Please define ndk_dir)
 	endif
 	
 	ndk_dir := $(call normpath,$(ndk_dir))

@@ -28,6 +28,17 @@
 #define FTKSYS_H
 
 	#include "ftk.h"
+	
+	#ifdef FLM_NLM
+		#define FLM_RING_0_NLM
+	#endif
+//	#ifndef FLM_RING_0_NLM
+//		#define FLM_LIBC_NLM
+//	#endif
+	
+	#if defined( FLM_RING_0_NLM) && defined( FLM_LIBC_NLM)
+		#error Cannot target both LIBC and RING 0
+	#endif
 
 	class F_FileHdl;
 	class F_Thread;
@@ -45,99 +56,13 @@
 	#define FLM_DEFAULT_OPEN_THRESHOLD						100
 	#define FLM_DEFAULT_MAX_AVAIL_TIME						900
 	#define FLM_MAX_KEY_SIZE									1024
+	#define FLM_NLM_SECTOR_SIZE								512
 
 	/****************************************************************************
 	Desc:		NLM
 	****************************************************************************/
 	#if defined( FLM_NLM)
-	
-		#if defined( FLM_WATCOM_NLM)
-			#pragma warning 007 9
-	
-			// Disable "Warning! W549: col(XX) 'sizeof' operand contains
-			// compiler generated information"
-			
-			#pragma warning 549 9
-			
-			// Disable "Warning! W656: col(XX) define this function inside its class
-			// definition (may improve code quality)"
-			
-			#pragma warning 656 9
-			
-			// Disable Warning! W555: col(XX) expression for 'while' is always
-			// "false"
-			
-			#pragma warning 555 9
-		#endif
-		
-		#define _POSIX_SOURCE
-
-		#include <stdio.h>
-		#include <string.h>
-		#include <pthread.h>
-		#include <unistd.h>
-		#include <errno.h>
-		#include <library.h>
-		#include <fcntl.h>
-		#include <sys/stat.h>
-		#include <sys/unistd.h>
-		#include <glob.h>
-		#include <netware.h>
-		#include <semaphore.h>
-		#include <malloc.h>
-		#include <novsock2.h>
-
-		// The typedef for va_list in stdarg.h do not function properly when
-		// a va_list is passed down multiple layers as a pointer (va_list *).
-		// Therefore, the following definitions/typedefs were taken from a
-		// "fixed" version of stdarg.h implemented by DS.
-
-		// typedef unsigned long f_va_list;
-		
-		#define f_argsize(x) \
-			((sizeof(x)+sizeof(int)-1) & ~(sizeof(int)-1))
-			
-		#define f_va_start(ap, parmN) \
-			((void)((ap) = (unsigned long)&(parmN) + f_argsize(parmN)))
-			
-		#define f_va_arg(ap, type) \
-			(*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
-			
-		#define f_va_end(ap) ((void)0)
-
-		#ifndef _SIZE_T
-			#define _SIZE_T
-			typedef unsigned int size_t;
-		#endif
-
-		#ifndef _WCHAR_T
-			#define _WCHAR_T
-			typedef unsigned short wchar_t;
-		#endif
-
-		#ifndef WCHAR
-			#define WCHAR wchar_t
-		#endif
-
-		#ifndef LONG
-			#define LONG unsigned long	
-		#endif
-
-		#ifndef BYTE
-			#define BYTE unsigned char
-		#endif
-
-		#ifndef UINT
-			#define UINT	unsigned int
-		#endif
-		
-		#define F_NETWARE_SECTOR_SIZE			512
-		
-		FINLINE void * f_getNLMHandle( void)
-		{
-			return( getnlmhandle());
-		}
-	
+		#include "ftknlm.h"
 	#endif
 
 	/****************************************************************************
@@ -181,9 +106,6 @@
 		#pragma warning( disable : 4710) 
 		
 		#define ENDLINE			ENDLINE_CRLF
-		#define f_va_start		va_start
-		#define f_va_arg			va_arg
-		#define f_va_end			va_end
 		
 	#endif
 
@@ -243,10 +165,6 @@
 		#ifdef FLM_SOLARIS
 			#include <signal.h>
 		#endif
-
-		#define f_va_start			va_start
-		#define f_va_arg				va_arg
-		#define f_va_end				va_end
 
 		typedef int						SOCKET;
 		#define INVALID_SOCKET		-1
@@ -1004,7 +922,7 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	#if defined( FLM_UNIX) || defined( FLM_NLM) 
+	#if defined( FLM_UNIX)
 	class F_FileHdl : public IF_FileHdl
 	{
 	public:
@@ -1183,6 +1101,207 @@
 		FLMBYTE *				m_pucAlignedBuff;
 		FLMUINT					m_uiAlignedBuffSize;
 		
+		friend class F_FileSystem;
+		friend class F_MultiFileHdl;
+	};
+	#endif
+	
+	/***************************************************************************
+	Desc:
+	***************************************************************************/
+	#if defined( FLM_NLM)
+	class F_FileHdl : public IF_FileHdl
+	{
+	public:
+	
+		F_FileHdl();
+	
+		virtual ~F_FileHdl();
+	
+		RCODE FLMAPI flush( void);
+	
+		RCODE FLMAPI read(
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE FLMAPI seek(
+			FLMUINT64			ui64Offset,
+			FLMINT				iWhence,
+			FLMUINT64 *			pui64NewOffset);
+	
+		RCODE FLMAPI size(
+			FLMUINT64 *			pui64Size);
+	
+		RCODE FLMAPI tell(
+			FLMUINT64 *			pui64Offset);
+	
+		RCODE FLMAPI truncate(
+			FLMUINT64			ui64Size);
+	
+		RCODE FLMAPI write(
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			const void *		pvBuffer,
+			FLMUINT *			puiBytesWritten);
+	
+		RCODE FLMAPI sectorRead(
+			FLMUINT64			ui64ReadOffset,
+			FLMUINT				uiBytesToRead,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesReadRV);
+	
+		RCODE FLMAPI sectorWrite(
+			FLMUINT64			ui64WriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			FLMUINT				uiBufferSize,
+			void *				pvBufferObj,
+			FLMUINT *			puiBytesWrittenRV,
+			FLMBOOL				bZeroFill = TRUE);
+	
+		RCODE FLMAPI close( void);
+													
+		FLMBOOL FLMAPI canDoAsync( void);
+	
+		FINLINE void FLMAPI setExtendSize(
+			FLMUINT				uiExtendSize)
+		{
+			m_uiExtendSize = uiExtendSize;
+		}
+	
+		FINLINE void FLMAPI setMaxAutoExtendSize(
+			FLMUINT				uiMaxAutoExtendSize)
+		{
+			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
+		}
+	
+		FINLINE void FLMAPI setSuballocation(
+			FLMBOOL				bDoSuballocation)
+		{
+			m_bDoSuballocation = bDoSuballocation;
+		}
+	
+		FINLINE FLMUINT FLMAPI getSectorSize( void)
+		{
+			return( FLM_NLM_SECTOR_SIZE);
+		}
+	
+		FINLINE FLMUINT FLMAPI getBlockSize( void)
+		{
+			return( m_uiBlockSize);
+		}
+		
+		FINLINE FLMBOOL FLMAPI isReadOnly( void)
+		{
+			return( m_bOpenedReadOnly);
+		}
+		
+		RCODE FLMAPI lock( void);
+	
+		RCODE FLMAPI unlock( void);
+		
+		FINLINE void FLMAPI setBlockSize(
+			FLMUINT				uiBlockSize)
+		{
+			m_uiBlockSize = uiBlockSize;
+		}
+		
+	private:
+	
+		RCODE setup( void);							
+	
+		RCODE create(
+			const char *		pszFileName,
+			FLMUINT				uiIoFlags);
+			
+		RCODE createUnique(
+			char *				pszDirName,
+			const char *		pszFileExtension,
+			FLMUINT				uiIoFlags);
+	
+		RCODE open(
+			const char *		pszFileName,
+			FLMUINT				uiIoFlags);
+			
+		RCODE openOrCreate(
+			const char	*		pszFileName,
+			FLMUINT				uiAccess,
+			FLMBOOL				bCreateFlag);
+	
+		RCODE _read(
+			FLMUINT				uiOffset,
+			FLMUINT				uiLength,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE _directIORead(
+			FLMUINT				uiOffset,
+			FLMUINT				uiLength,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE _directIOSectorRead(
+			FLMUINT				uiReadOffset,
+			FLMUINT				uiBytesToRead,	
+			void *				pvBuffer,
+			FLMUINT *			puiBytesReadRV);
+	
+		RCODE _write(
+			FLMUINT				uiWriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			FLMUINT *			puiBytesWrittenRV);
+	
+		RCODE _directIOWrite(
+			FLMUINT				uiWriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			FLMUINT *			puiBytesWrittenRV);
+	
+		RCODE expand(
+			LONG					lStartSector,
+			LONG					lSectorsToAlloc);
+	
+		RCODE writeSectors(
+			void *				pvBuffer,
+			LONG					lStartSector,
+			LONG					lSectorCount,
+			IF_IOBuffer *		pBufferObj,
+			FLMBOOL *			pbDidAsync = NULL);
+	
+		RCODE _directIOSectorWrite(
+			FLMUINT				uiWriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			IF_IOBuffer *		pBufferObj,
+			FLMUINT *			puiBytesWrittenRV,
+			FLMBOOL				bZeroFill);
+	
+		char *					m_pszIoPath;
+		FLMBOOL					m_bDeleteOnClose;
+		FLMUINT					m_uiMaxFileSize;
+		FLMBOOL					m_bFileOpened;
+		FLMBOOL					m_bOpenedExclusive;
+		FLMBOOL					m_bOpenedReadOnly;
+		FLMUINT					m_uiBlockSize;
+		
+		LONG						m_lFileHandle;
+		LONG						m_lOpenAttr;
+		LONG						m_lVolumeID;
+		LONG						m_lLNamePathCount;
+		FLMBOOL					m_bDoSuballocation;
+		FLMUINT					m_uiExtendSize;
+		FLMUINT					m_uiMaxAutoExtendSize;
+		FLMBOOL					m_bDoDirectIO;
+		LONG						m_lSectorsPerBlock;
+		LONG						m_lMaxBlocks;
+		FLMUINT					m_uiCurrentPos;
+		FLMBOOL					m_bNSS;
+		FLMINT64					m_NssKey;
+		FLMBOOL					m_bNSSFileOpen;
+
 		friend class F_FileSystem;
 		friend class F_MultiFileHdl;
 	};
@@ -1371,7 +1490,7 @@
 			 FLMUINT					uiSearchAttrib;
 		} F_IO_FIND_DATA;
 	
-	#elif defined( FLM_UNIX) || defined( FLM_NLM)
+	#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	
 		typedef struct
 		{
@@ -1384,6 +1503,18 @@
 			char			dirpath[ F_PATH_MAX_SIZE];
 			glob_t      globbuf;
 		} F_IO_FIND_DATA;
+		
+	#elif defined( FLM_RING_0_NLM)
+	
+		typedef struct
+		{
+			LONG									m_lVolumeNumber;
+			LONG									m_lDirectoryNumber;
+			LONG									m_lCurrentEntryNumber;
+			struct DirectoryStructure *	m_pCurrentItem;
+			char									m_ucTempBuffer[ F_FILENAME_SIZE];
+		} F_IO_FIND_DATA;
+		
 	#else
 	
 		#error Platform not supported
@@ -2164,8 +2295,6 @@
 	RCODE f_allocDirHdl(
 		F_DirHdl **			ppDirHdl);
 		
-	IF_FileSystem * f_getFileSysPtr( void);
-
 	IF_ThreadMgr * f_getThreadMgrPtr( void);
 	
 	RCODE f_verifyMetaphoneRoutines( void);
@@ -2175,5 +2304,18 @@
 	void f_freeCharMappingTables( void);
 	
 	IF_XML * f_getXmlObjPtr( void);
+		
+	RCODE f_netwareRemoveDir( 
+		const char *		pszDirName);
+	
+	RCODE f_netwareTestIfFileExists(
+		const char *		pPath);
+		
+	RCODE f_netwareDeleteFile(
+		const char *		pPath);
+		
+	RCODE f_netwareRenameFile(
+		const char *		pOldFilePath,
+		const char *		pNewFilePath);
 	
 #endif	// FTKSYS_H

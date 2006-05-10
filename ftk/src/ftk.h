@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	FLAIM toolkit definitions and interfaces
+// Desc:	FLAIM's cross-platform toolkit public definitions and interfaces
 //
 // Tabs:	3
 //
@@ -146,7 +146,11 @@
 			#error Cannot define both FLM_32BIT and FLM_64BIT
 		#endif
 		
-		#define FSTATIC		static
+		#ifdef FLM_NLM
+			#define FSTATIC
+		#else
+			#define FSTATIC		static
+		#endif
 		
 		// Debug or release build?
 	
@@ -321,26 +325,49 @@
 						= { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 	#endif
 	
-	#define FLMEXTC				extern "C"
+	#define FLMEXTC								extern "C"
 
 	#if defined( FLM_WIN)
-		#define FLMAPI     		__stdcall
-		#define FLMEXP				__declspec(dllexport)
+		#define FLMAPI     						__stdcall
+		#define FLMEXP								__declspec(dllexport)
 		#ifdef FLM_DEBUG
-			#define FINLINE		inline
+			#define FINLINE						inline
 		#else
-			#define FINLINE		__forceinline
+			#define FINLINE						__forceinline
 		#endif
 	#elif defined( FLM_NLM)
-		#define FLMAPI     		__stdcall
-		#define FLMEXP				FLMEXTC
-		#define FINLINE			inline
+		#define FLMAPI     						__stdcall
+		#define FLMEXP								FLMEXTC
+		#define FINLINE							inline
 	#elif defined( FLM_UNIX)
 		#define FLMAPI     		
-		#define FLMEXP				FLMEXTC
-		#define FINLINE			inline
+		#define FLMEXP								FLMEXTC
+		#define FINLINE							inline
 	#else
 		#error Platform not supported
+	#endif
+	
+	#define f_alignedsize(n) \
+		((sizeof(n) + FLM_ALIGN_SIZE - 1) & ~(FLM_ALIGN_SIZE - 1) )
+	
+	#if defined( FLM_GNUC)
+		#define f_va_start( list, name) \
+			__builtin_va_start( list, name)
+			
+		#define f_va_arg( list, type) \
+			__builtin_va_arg( list, type)
+			
+		#define f_va_end( list) \
+			__builtin_va_end( list)
+	#else
+		#define f_va_start( list, name) \
+			(list = (f_va_list)&(name) + f_alignedsize( name))
+			
+		#define f_va_arg( list, type) \
+			(*(type *)((list += f_alignedsize( type)) - f_alignedsize( type)))
+			
+		#define f_va_end( list) \
+			(list = (f_va_list)0)
 	#endif
 
 	// flmnovtbl keeps MS compilers from generating vtables for interfaces
@@ -1117,6 +1144,10 @@
 			const char *			pszFileName,
 			const char *			pszNewFileName) = 0;
 
+		virtual RCODE FLMAPI setReadOnly(
+			const char *			pszFileName,
+			FLMBOOL					bReadOnly) = 0;
+			
 		virtual RCODE FLMAPI getSectorSize(
 			const char *			pszFileName,
 			FLMUINT *				puiSectorSize) = 0;
@@ -1157,6 +1188,8 @@
 	
 	RCODE FLMAPI FlmGetFileSystem(
 		IF_FileSystem **		ppFileSystem);
+
+	IF_FileSystem * FLMAPI f_getFileSysPtr( void);
 
 	/****************************************************************************
 	Desc:
@@ -1650,6 +1683,10 @@
 	
 	RCODE FLMAPI FlmAllocRandomGenerator(
 		IF_RandomGenerator **	ppRandomGenerator);
+		
+	FLMUINT32 FLMAPI f_getRandomUINT32(
+		FLMUINT32					ui32Low = 0,
+		FLMUINT32					ui32High = FLM_MAX_RANDOM);
 	
 	/**********************************************************************
 	Desc:	Atomic operations
@@ -3837,6 +3874,40 @@
 		char *			pszResponse,
 		FLMUINT			uiMaxRespLen,
 		FLMUINT *		puiTermChar);
+
+	void FLMAPI FTXBeep( void);
+
+	/****************************************************************************
+	Desc: Status and return codes
+	****************************************************************************/
+	#ifndef RC_OK
+		#define RC_OK( rc)			((rc) == 0)
+	#endif
+
+	#ifndef RC_BAD
+		#define RC_BAD( rc)        ((rc) != 0)
+	#endif
+
+	#define FTK_ERROR_BASE(e)		((RCODE)((int)(0x81055000+(e))))
+	#define FTK_ERROR_END			((RCODE)((int)(0x81055FFF)))
+	
+	const char * FLMAPI f_errorString(
+		RCODE							rc);
+
+	RCODE FLMAPI f_mapPlatformError(
+		FLMINT						iError,
+		RCODE							defaultRc);
+		
+	FINLINE FLMBOOL FLMAPI f_isToolkitError(
+		RCODE							rc)
+	{
+		if( rc > FTK_ERROR_BASE( 0) && rc < FTK_ERROR_END)
+		{
+			return( TRUE);
+		}
+		
+		return( FALSE);
+	}
 
 	/****************************************************************************
 	Desc: General errors

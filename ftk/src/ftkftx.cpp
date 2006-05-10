@@ -437,14 +437,15 @@ FSTATIC void ftxDisplaySetBackFore(
 	eColorType		backgroundColor,
 	eColorType		foregroundColor);
 
+FSTATIC FLMUINT ftxMapFlmColorToWin32(
+	eColorType		uiColor);
+	
 RCODE _ftxBackgroundThread(
 	IF_Thread *		pThread);
 
 FLMBOOL ftxKBTest( void);
 
 FLMUINT ftxKBGetChar( void);
-
-FLMBOOL ftxBeep( void);
 
 RCODE _ftxDefaultDisplayHandler(
 	IF_Thread *		pThread);
@@ -3301,8 +3302,10 @@ FSTATIC void ftxWin32Refresh( void)
 				pWinScreen->uiCols) + (uiSubloop + pWinImage->uiUlx)]);
 			paCell->Char.AsciiChar = pWinImage->pszBuffer[ uiOffset];
 			paCell->Attributes =
-				(WORD)(((pWinImage->pucForeAttrib[ uiOffset] & 0x8F) |
-				((pWinImage->pucBackAttrib[ uiOffset] << 4) & 0x7F)));
+				(ftxMapFlmColorToWin32( 
+					(eColorType)pWinImage->pucForeAttrib[ uiOffset]) & 0x8F) |
+				((ftxMapFlmColorToWin32( 
+					(eColorType)pWinImage->pucBackAttrib[ uiOffset]) << 4) & 0x7F);
 		}
 	}
 
@@ -4242,6 +4245,51 @@ FSTATIC FLMUINT ftxDisplayStrOut(
 /****************************************************************************
 Desc:		Set the background and foreground colors of the "physical" screen
 ****************************************************************************/
+FSTATIC FLMUINT ftxMapFlmColorToWin32(
+	eColorType		uiColor)
+{
+	switch( uiColor)
+	{
+		case FLM_BLACK:
+			return( 0);
+		case FLM_BLUE:
+			return( 1);
+		case FLM_GREEN:
+			return( 2);
+		case FLM_CYAN:
+			return( 3);
+		case FLM_RED:
+			return( 4);
+		case FLM_MAGENTA:
+			return( 5);
+		case FLM_BROWN:
+			return( 6);
+		case FLM_LIGHTGRAY:
+			return( 7);
+		case FLM_DARKGRAY:
+			return( 8);
+		case FLM_LIGHTBLUE:
+			return( 9);
+		case FLM_LIGHTGREEN:
+			return( 10);
+		case FLM_LIGHTCYAN:
+			return( 11);
+		case FLM_LIGHTRED:
+			return( 12);
+		case FLM_LIGHTMAGENTA:
+			return( 13);
+		case FLM_YELLOW:
+			return( 14);
+		case FLM_WHITE:
+			return( 15);
+		default:
+			return( 0);
+	}
+}
+
+/****************************************************************************
+Desc:		Set the background and foreground colors of the "physical" screen
+****************************************************************************/
 FSTATIC void ftxDisplaySetBackFore(
 	eColorType	backgroundColor,
 	eColorType	foregroundColor)
@@ -4251,7 +4299,8 @@ FSTATIC void ftxDisplaySetBackFore(
 
 	FLMUINT	uiAttrib = 0;
 
-	uiAttrib = (foregroundColor & 0x8F) | ((backgroundColor << 4) & 0x7F);
+	uiAttrib = (ftxMapFlmColorToWin32( foregroundColor) & 0x8F) |
+				  ((ftxMapFlmColorToWin32( backgroundColor) << 4) & 0x7F);
 	SetConsoleTextAttribute( gv_hStdOut, (WORD)uiAttrib);
 
 #else
@@ -4562,16 +4611,11 @@ Exit:
 Desc:		Causes the console to "beep"
 Ret:		If the console does not support this feature, FALSE is returned.
 ****************************************************************************/
-FLMBOOL ftxBeep( void)
+void FLMAPI FTXBeep( void)
 {
 #if defined( FLM_WIN)
 
 	Beep( (DWORD)2000, (DWORD)250);
-	return( TRUE);
-
-#else
-
-	return( FALSE);
 
 #endif
 }

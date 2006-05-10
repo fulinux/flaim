@@ -184,7 +184,7 @@ public:
 		const char *	pszFileName,
 		FLMUINT *		puiSectorSize);
 
-	RCODE setReadOnly(
+	RCODE FLMAPI setReadOnly(
 		const char *	pszFileName,
 		FLMBOOL			bReadOnly);
 
@@ -785,7 +785,7 @@ RCODE F_FileSystem::removeEmptyDir(
 
 	return( NE_FLM_OK);
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	 if( rmdir( pszDirPath) == -1 )
 	 {
@@ -793,6 +793,11 @@ RCODE F_FileSystem::removeEmptyDir(
 	 }
 
     return( NE_FLM_OK);
+	 
+#elif defined( FLM_RING_0_NLM)
+
+	return( f_netwareRemoveDir( pszDirPath));
+
 #endif
 }
 
@@ -811,7 +816,7 @@ RCODE FLMAPI F_FileSystem::doesFileExist(
 
 	return NE_FLM_OK;
 
-#else
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
    if( access( pszPath, F_OK) == -1)
 	{
@@ -819,6 +824,10 @@ RCODE FLMAPI F_FileSystem::doesFileExist(
 	}
 
 	return( NE_FLM_OK);
+	
+#elif defined( FLM_RING_0_NLM)
+
+	return( f_netwareTestIfFileExists( pszPath));
 	
 #endif
 }
@@ -913,7 +922,7 @@ Exit:
 
    return( rc);
 
-#else
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	struct stat   	filestatus;
 
@@ -924,6 +933,80 @@ Exit:
 
 	*puiTimeStamp = (FLMUINT)filestatus.st_mtime; // st_mtime is UTC
 	return NE_FLM_OK;
+	
+#elif defined( FLM_RING_0_NLM)
+
+	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiTmp;
+	FLMBYTE		ucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
+	FLMBYTE		ucLNamePath[ F_PATH_MAX_SIZE];
+	LONG			lVolumeID;
+	LONG			lPathID;
+	LONG			lLNamePathCount;
+	LONG			lDirectoryID;
+	LONG			lErrorCode;
+	struct DirectoryStructure * pFileInfo = NULL;
+
+	flmAssert( puiTimeStamp);
+	*puiTimeStamp = 0;
+	
+	f_strcpy( (char *)&ucPseudoLNamePath[1], pszPath);
+	ucPseudoLNamePath[ 0] = (FLMBYTE)f_strlen( pszPath );
+	
+	if( (lErrorCode = ConvertPathString( 0, 0, ucPseudoLNamePath, &lVolumeID,    
+		&lPathID, ucLNamePath, &lLNamePathCount)) != 0)
+	{
+		goto Exit;
+	}
+	
+	if( (lErrorCode = GetEntryFromPathStringBase( 0, lVolumeID, 0, ucLNamePath,
+		lLNamePathCount, LONGNameSpace, LONGNameSpace, &pFileInfo, 
+		&lDirectoryID)) != 0)
+	{
+		goto Exit;
+	}
+
+	if( pFileInfo)
+	{
+		FLMUINT			uiTime;
+		FLMUINT			uiDate;
+		F_TMSTAMP		dateTime;
+		LONG				DayMask = 0x001F; 
+		LONG				MonthMask = 0x01E0; 
+		LONG				YearMask = 0xFE00;
+		LONG				SecMask = 0x001F; 
+		LONG				MinMask = 0x07E0;
+		LONG				HourMask = 0xF800;
+		
+		//Get the low-order 16 bits
+		
+		uiTime = (FLMUINT)pFileInfo->DLastUpdatedDateAndTime;
+		
+		//Get the high-order 16 bits
+		
+		uiDate = (FLMUINT)(pFileInfo->DLastUpdatedDateAndTime >> 16);
+
+		f_memset( &dateTime, 0, sizeof( dateTime));
+		dateTime.second = (FLMBYTE) ((uiTime & SecMask) * 2);
+		dateTime.minute = (FLMBYTE) ((uiTime & MinMask) >> 5);
+		dateTime.hour = (FLMBYTE) ((uiTime & HourMask) >> 11);
+		dateTime.day = (FLMBYTE) (uiDate & DayMask);
+		dateTime.month = (FLMBYTE) ((uiDate & MonthMask) >> 5)-1;
+		dateTime.year = (FLMUINT16)(((uiDate & YearMask) >> 9) + 1980);
+		
+		f_timeDateToSeconds( &dateTime, &uiTmp);
+		*puiTimeStamp = uiTmp;
+		*puiTimeStamp = f_localTimeToUTC(*puiTimeStamp);
+	}
+
+Exit:
+
+	if( lErrorCode != 0 )
+	{
+		rc = f_mapPlatformError( lErrorCode, NE_FLM_PARSING_FILE_NAME);
+	}
+	
+	return( rc);
 
 #endif
 }
@@ -945,7 +1028,7 @@ FLMBOOL FLMAPI F_FileSystem::isDir(
 
 	return (FileAttr & FILE_ATTRIBUTE_DIRECTORY) ? TRUE : FALSE;
 
-#else
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	struct stat     filestatus;
 
@@ -955,6 +1038,32 @@ FLMBOOL FLMAPI F_FileSystem::isDir(
 	}
 
 	return ( S_ISDIR( filestatus.st_mode)) ? TRUE : FALSE;
+	
+#elif defined( FLM_RING_0_NLM)
+	
+	LONG			lIsFile;
+	FLMBYTE		ucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
+	FLMBYTE		ucLNamePath[ F_PATH_MAX_SIZE];
+	LONG			lVolumeID;
+	LONG			lPathID;
+	LONG			lLNamePathCount;
+	LONG			lDirectoryID;
+	FLMBOOL		bIsDir = FALSE;
+
+	f_strcpy( (char *)&ucPseudoLNamePath[1], pszDirName);
+	ucPseudoLNamePath[0] = (FLMBYTE)f_strlen( pszDirName);
+	if( ConvertPathString( 0, 0, ucPseudoLNamePath, &lVolumeID, &lPathID,      
+		ucLNamePath, &lLNamePathCount) == 0)
+	{
+		if( MapPathToDirectoryNumber( 0, lVolumeID, 0, ucLNamePath, 
+			lLNamePathCount, LONGNameSpace, &lDirectoryID, &lIsFile) == 0)
+		{
+			bIsDir = (FLMBOOL)((lIsFile == 0) ? (FLMBOOL)TRUE : (FLMBOOL)FALSE);
+		}
+	}
+	
+	return( bIsDir);
+	
 #endif
 }
 
@@ -973,7 +1082,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 	
 	return( NE_FLM_OK);
 
-#else
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	struct stat FileStat;
 
@@ -997,6 +1106,10 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 	}
 
 	return( NE_FLM_OK);
+	
+#elif defined( FLM_RING_0_NLM)
+
+	return( f_netwareDeleteFile( pszFileName));
 	 
 #endif
 }
@@ -1244,7 +1357,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 
 	return( rc);
 
-#else
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	RCODE			rc;
 	FLMBOOL		bSrcIsDir;
@@ -1294,6 +1407,11 @@ RCODE FLMAPI F_FileSystem::renameFile(
 	}
 
 	return( NE_FLM_OK);
+	
+#elif defined( FLM_RING_0_NLM)
+
+	return( f_netwareRenameFile( pszFileName, pszNewFileName));
+
 #endif
 }
 
@@ -1307,7 +1425,7 @@ RCODE FLMAPI F_FileSystem::getSectorSize(
 #ifdef FLM_NLM
 
 	F_UNREFERENCED_PARM( pszFileName);
-	*puiSectorSize = F_NETWARE_SECTOR_SIZE;
+	*puiSectorSize = FLM_NLM_SECTOR_SIZE;
 	return( NE_FLM_OK);
 	
 #elif defined( FLM_WIN)
@@ -1368,7 +1486,7 @@ Exit:
 /****************************************************************************
 Desc: Set the Read-Only Attribute (not supported on all platforms).
 ****************************************************************************/
-RCODE F_FileSystem::setReadOnly(
+RCODE FLMAPI F_FileSystem::setReadOnly(
 	const char *	pszFileName,
 	FLMBOOL			bReadOnly)
 {

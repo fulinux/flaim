@@ -26,18 +26,18 @@
 #include "ftksys.h"
 
 static FLMUINT						gv_uiStartupCount = 0;
-static FLMUINT						gv_uiSerialInitCount = 0;
-static F_MUTEX						gv_hSerialMutex = F_MUTEX_NULL;
-static IF_RandomGenerator *	gv_pSerialRandom = NULL;
+static FLMUINT						gv_uiRandomGenInitCount = 0;
+static F_MUTEX						gv_hRandomGenMutex = F_MUTEX_NULL;
+static IF_RandomGenerator *	gv_pRandomGenerator = NULL;
 static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 static IF_ThreadMgr *			gv_pThreadMgr = NULL;
 static IF_FileSystem *			gv_pFileSystem = NULL;
 static FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
 static F_XML *						gv_pXml = NULL;
 
-FSTATIC RCODE f_initSerialNumberGenerator( void);
+FSTATIC RCODE f_initRandomGenerator( void);
 
-FSTATIC void f_freeSerialNumberGenerator( void);
+FSTATIC void f_freeRandomGenerator( void);
 
 FSTATIC RCODE f_initCRCTable(
 	FLMUINT32 **	ppui32CRCTbl);
@@ -120,7 +120,7 @@ RCODE FLMAPI ftkStartup( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = f_initSerialNumberGenerator()))
+	if( RC_BAD( rc = f_initRandomGenerator()))
 	{
 		goto Exit;
 	}
@@ -208,7 +208,7 @@ void FLMAPI ftkShutdown( void)
 		gv_pXml->Release();
 	}
 	
-	f_freeSerialNumberGenerator();
+	f_freeRandomGenerator();
 	f_freeCharMappingTables();
 	f_memoryCleanup();
 }
@@ -270,22 +270,19 @@ void FLMAPI f_sleep(
 #endif
 
 /****************************************************************************
-Desc:		This routine initializes the serial number generator.  If the O/S
-			does not provide support for GUID generation or if the GUID
-			routines fail for some reason, a pseudo-GUID will be generated.
-Notes:	This routine should only be called once by the process.
+Desc:
 ****************************************************************************/
-FSTATIC RCODE f_initSerialNumberGenerator( void)
+FSTATIC RCODE f_initRandomGenerator( void)
 {
 	FLMUINT					uiTime;
 	RCODE						rc = NE_FLM_OK;
 
-	if (++gv_uiSerialInitCount > 1)
+	if (++gv_uiRandomGenInitCount > 1)
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = f_mutexCreate( &gv_hSerialMutex)))
+	if( RC_BAD( rc = f_mutexCreate( &gv_hRandomGenMutex)))
 	{
 		goto Exit;
 	}
@@ -294,12 +291,12 @@ FSTATIC RCODE f_initSerialNumberGenerator( void)
 
 #if defined( FLM_UNIX) || defined( FLM_NLM)
 	
-	if( RC_BAD( rc = FlmAllocRandomGenerator( &gv_pSerialRandom)))
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &gv_pRandomGenerator)))
 	{
 		goto Exit;
 	}
 
-	gv_pSerialRandom->setSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
+	gv_pRandomGenerator->setSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
 #endif
 
 Exit:
@@ -310,22 +307,22 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC void f_freeSerialNumberGenerator( void)
+FSTATIC void f_freeRandomGenerator( void)
 {
-	if( (--gv_uiSerialInitCount) > 0)
+	if( (--gv_uiRandomGenInitCount) > 0)
 	{
 		return;
 	}
 	
-	if( gv_pSerialRandom)
+	if( gv_pRandomGenerator)
 	{
-		gv_pSerialRandom->Release();
-		gv_pSerialRandom = NULL;
+		gv_pRandomGenerator->Release();
+		gv_pRandomGenerator = NULL;
 	}
 
-	if( gv_hSerialMutex != F_MUTEX_NULL)
+	if( gv_hRandomGenMutex != F_MUTEX_NULL)
 	{
-		f_mutexDestroy( &gv_hSerialMutex);
+		f_mutexDestroy( &gv_hRandomGenMutex);
 	}
 }
 
@@ -360,16 +357,10 @@ RCODE FLMAPI f_createSerialNumber(
 
 	// Generate a pseudo GUID value
 
-	f_assert( gv_hSerialMutex != F_MUTEX_NULL);
-
-	f_mutexLock( gv_hSerialMutex);
-
-	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 0]);
-	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 4]);
-	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 8]);
-	UD2FBA( gv_pSerialRandom->getUINT32(), &pszSerialNum[ 12]);
-
-	f_mutexUnlock( gv_hSerialMutex);
+	UD2FBA( f_getRandomUINT32(), &pszSerialNum[ 0]);
+	UD2FBA( f_getRandomUINT32(), &pszSerialNum[ 4]);
+	UD2FBA( f_getRandomUINT32(), &pszSerialNum[ 8]);
+	UD2FBA( f_getRandomUINT32(), &pszSerialNum[ 12]);
 
 #endif
 
@@ -1076,7 +1067,7 @@ FLMINT FLMAPI F_Object::Release( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-IF_FileSystem * f_getFileSysPtr( void)
+IF_FileSystem * FLMAPI f_getFileSysPtr( void)
 {
 	return( gv_pFileSystem);
 }
@@ -1496,4 +1487,14 @@ Desc:
 IF_XML * f_getXmlObjPtr( void)
 {
 	return( gv_pXml);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT32 FLMAPI f_getRandomUINT32(
+	FLMUINT32		ui32Low,
+	FLMUINT32		ui32High)
+{
+	return( gv_pRandomGenerator->getUINT32( ui32Low, ui32High));
 }

@@ -25,8 +25,12 @@
 
 #include "ftksys.h"
 
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 	void * threadStub(
+		void *	pvThread);
+#elif defined( FLM_RING_0_NLM)
+	void * threadStub(
+		void *	pvUnused,
 		void *	pvThread);
 #elif defined( FLM_WIN)
 	unsigned __stdcall threadStub(
@@ -396,9 +400,14 @@ RCODE FLMAPI F_Thread::startThread(
 	RCODE						rc = NE_FLM_OK;
 	F_ThreadMgr *			pThreadMgr = (F_ThreadMgr *)f_getThreadMgrPtr();
 	FLMBOOL					bManagerMutexLocked = FALSE;
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 	pthread_attr_t			thread_attr;
 	pthread_t				uiThreadId;
+#endif
+#ifdef FLM_RING_0_NLM
+#ifdef FLM_NLM
+	void *					hThread = NULL;
+#endif
 #endif
 #ifdef FLM_WIN
 	unsigned					uiThreadId;
@@ -495,7 +504,7 @@ RCODE FLMAPI F_Thread::startThread(
 		goto Exit;
 	}
 	m_uiThreadId = (FLMUINT)uiThreadId;
-#elif defined( FLM_NLM)
+#elif defined( FLM_LIBC_NLM)
 		pthread_attr_init( &thread_attr);
 		pthread_attr_setdetachstate( &thread_attr, PTHREAD_CREATE_DETACHED);
 
@@ -508,6 +517,33 @@ RCODE FLMAPI F_Thread::startThread(
 
 		m_uiThreadId = (FLMUINT)uiThreadId;
 		pthread_attr_destroy( &thread_attr);
+#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_NLM)
+	if( (hThread = kCreateThread( 
+		(BYTE *)((m_pszThreadName)
+			? (BYTE *)m_pszThreadName 
+			: (BYTE *)"NDSDB"),
+		threadStub, NULL, (LONG)m_uiStackSize,
+		(void *)this)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_COULD_NOT_START_THREAD);
+		goto Exit;
+	}
+	m_uiThreadId = (FLMUINT)hThread;
+
+	if( kSetThreadLoadHandle( hThread, (LONG)f_getNLMHandle()) != 0)
+	{
+		(void)kDestroyThread( hThread);
+		rc = RC_SET( NE_FLM_COULD_NOT_START_THREAD);
+		goto Exit;
+	}
+			
+   if( kScheduleThread( hThread) != 0)
+	{
+		(void)kDestroyThread( hThread);
+		rc = RC_SET( NE_FLM_COULD_NOT_START_THREAD);
+		goto Exit;
+	}
 #elif defined( FLM_UNIX)
 	#ifdef  _POSIX_THREADS
 		pthread_attr_init( &thread_attr);
@@ -592,8 +628,12 @@ void FLMAPI F_Thread::stopThread( void)
 Desc:    Begins a new thread of execution and calls the passed function.
 			Performs generic thread init and cleanup functions.
 ****************************************************************************/
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 void * threadStub(
+	void *	pvThread)
+#elif defined( FLM_RING_0_NLM)
+void * threadStub(
+	void *	pvUnused,
 	void *	pvThread)
 #elif defined( FLM_WIN)
 unsigned __stdcall threadStub(
@@ -606,7 +646,11 @@ void * threadStub(
 	F_Thread *			pThread = (F_Thread *)pvThread;
 	F_ThreadMgr *		pThreadMgr = (F_ThreadMgr *)f_getThreadMgrPtr();
 
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#ifdef FLM_RING_0_NLM
+	F_UNREFERENCED_PARM( pvUnused);
+#endif
+
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	// Block all signals (main thread will handle all signals)
 
 	sigset_t mask;
@@ -660,6 +704,8 @@ void * threadStub(
 #if defined( FLM_WIN)
 	_endthreadex( 0);
 	return( 0);
+#elif defined( FLM_RING_0_NLM)
+	kExitThread( NULL);
 #endif
 
 #if defined( FLM_NLM) || defined( FLM_UNIX)
@@ -1324,8 +1370,10 @@ FLMUINT FLMAPI f_threadId( void)
 {
 #ifdef FLM_WIN
 	return( (FLMUINT)_threadid);
-#elif defined( FLM_NLM) || defined( FLM_UNIX)
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	return( (FLMUINT)pthread_self());
+#elif defined( FLM_RING_0_NLM)
+	return( (FLMUINT)kCurrentThread());
 #else
 	#error Platform not supprted
 #endif

@@ -41,7 +41,7 @@
 	FSTATIC FLMBOOL f_fileMeetsFindCriteria(
 		F_IO_FIND_DATA *		pFindData);
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	#define F_IO_FA_NORMAL			0x01	// Normal file, no attributes
 	#define F_IO_FA_RDONLY			0x02	// Read only attribute
@@ -66,7 +66,7 @@
 		char *			FilePath,
 		struct stat	*	StatusRec);
 
-#else
+#elif !defined( FLM_RING_0_NLM)
 
 	#error Platform not supported
 
@@ -157,9 +157,24 @@ Desc:
 ****************************************************************************/
 FLMBOOL FLMAPI F_DirHdl::currentItemIsDir( void)
 {
+#if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+
 	return( ((m_uiAttrib & F_IO_FA_DIRECTORY)
 						 ? TRUE
 						 : FALSE));
+						 
+#elif defined( FLM_NLM)
+
+	if( !m_FindData.m_pCurrentItem)
+	{
+		return( FALSE);
+	}
+
+	return( (m_FindData.m_pCurrentItem->DFileAttributes & SUBDIRECTORY_BIT)
+							? TRUE 
+							: FALSE);
+		
+#endif
 }
 
 /****************************************************************************
@@ -174,8 +189,13 @@ FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
 #if defined( FLM_WIN)
 		ui64Size = (((FLMUINT64)m_FindData.findBuffer.nFileSizeHigh) << 32) + 
 						m_FindData.findBuffer.nFileSizeLow;
-#elif defined( FLM_UNIX) || defined ( FLM_NLM)
+#elif defined( FLM_UNIX) || defined ( FLM_LIBC_NLM)
 		ui64Size = m_FindData.FileStat.st_size;
+#elif defined( FLM_RING_0_NLM)
+		if( m_FindData.m_pCurrentItem != NULL )
+		{
+			ui64Size = m_FindData.m_pCurrentItem->DFileSize;
+		}
 #endif
 	}
 	return( ui64Size);
@@ -184,6 +204,7 @@ FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
 /****************************************************************************
 Desc:	Get the next item in a directory
 ****************************************************************************/
+#if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 RCODE FLMAPI F_DirHdl::next( void)
 {
 	char					szFoundPath[ F_PATH_MAX_SIZE];
@@ -206,8 +227,8 @@ RCODE FLMAPI F_DirHdl::next( void)
 		{
 			m_bFirstTime = FALSE;
 
-			if( RC_BAD( m_rc = f_fileFindFirst( m_szDirectoryPath, uiSearchAttributes,
-				&m_FindData, szFoundPath, &uiFoundAttrib)))
+			if( RC_BAD( m_rc = f_fileFindFirst( m_szDirectoryPath, 
+				uiSearchAttributes, &m_FindData, szFoundPath, &uiFoundAttrib)))
 			{
 				goto Exit;
 			}
@@ -242,6 +263,54 @@ Exit:
 
 	return( m_rc);
 }
+#endif
+
+/****************************************************************************
+Desc:	Get the next item in a directory
+****************************************************************************/
+#if defined( FLM_RING_0_NLM)
+RCODE FLMAPI F_DirHdl::next( void)
+{
+	LONG					lError = 0;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	
+	if( RC_BAD( m_rc))
+	{
+		goto Exit;
+	}
+
+	for( ;;)
+	{
+		if( (lError = DirectorySearch( 0, m_FindData.m_lVolumeNumber, 
+			m_FindData.m_lDirectoryNumber, LONGNameSpace, 
+			m_FindData.m_lCurrentEntryNumber, (BYTE *)"\x02\xFF*",
+			-1, &m_FindData.m_pCurrentItem, 
+			&m_FindData.m_lCurrentEntryNumber)) != 0)
+		{
+			if( (lError == ERR_NO_FILES_FOUND) || (lError == ERR_INVALID_PATH))
+			{
+				m_rc = RC_SET( NE_FLM_IO_NO_MORE_FILES);
+			}
+			else
+			{
+				m_rc = f_mapPlatformError(lError, NE_FLM_READING_FILE);
+			}
+			
+			break;
+		}
+
+		if( pFileSystem->doesFileMatch( 
+			(const char *)m_FindData.m_pCurrentItem->DFileName, m_szPattern))
+		{
+			break;
+		}
+	}
+	
+Exit:
+
+	return( m_rc);
+}
+#endif
 
 /****************************************************************************
 Desc:	Open a directory
@@ -279,6 +348,7 @@ Exit:
 /****************************************************************************
 Desc:	Create a directory (and parent directories if necessary).
 ****************************************************************************/
+#if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 RCODE FLMAPI F_DirHdl::createDir(
 	const char *	pszDirPath)
 {
@@ -335,7 +405,7 @@ RCODE FLMAPI F_DirHdl::createDir(
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_CREATING_FILE);
 	}
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	if( mkdir( (char *)pszDirPath, 0777) == -1)
 	{
@@ -353,6 +423,51 @@ Exit:
 	
 	return( rc);
 }
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_0_NLM)
+RCODE FLMAPI F_DirHdl::createDir(
+	const char *	pszDirPath)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMBYTE			pucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
+	FLMBYTE			pucLNamePath[ F_PATH_MAX_SIZE];
+	LONG				lVolumeID;
+	LONG				lPathID;
+	LONG				lLNamePathCount;
+	LONG				lNewDirectoryID;
+	void *			pNotUsed;
+	LONG				lErrorCode;
+	
+	f_strcpy( (char *)&pucPseudoLNamePath[1], pszDirPath);
+	pucPseudoLNamePath[0] = (FLMBYTE)f_strlen( pszDirPath);
+	
+	if( (lErrorCode = ConvertPathString( 0, 0, pucPseudoLNamePath, &lVolumeID,		
+		&lPathID, pucLNamePath, &lLNamePathCount)) != 0)
+	{
+		goto Exit;
+	}
+
+	if( (lErrorCode = CreateDirectory( 0, lVolumeID, lPathID, pucLNamePath,
+		lLNamePathCount, LONGNameSpace, MaximumDirectoryAccessBits, 
+		&lNewDirectoryID, &pNotUsed)) != 0)
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( lErrorCode)
+	{
+		rc = f_mapPlatformError( lErrorCode, NE_FLM_CREATING_FILE);
+	}
+	
+	return( rc);
+}
+#endif
 
 /****************************************************************************
 Desc:		Remove a directory
@@ -370,7 +485,7 @@ RCODE FLMAPI F_DirHdl::removeDir(
 
 	return( NE_FLM_OK);
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 	 if( rmdir( (char *)pszDirName) == -1)
 	 {
@@ -378,13 +493,59 @@ RCODE FLMAPI F_DirHdl::removeDir(
 	 }
 
     return( NE_FLM_OK);
+	 
+#elif defined( FLM_RING_0_NLM)
+
+	return( f_netwareRemoveDir( pszDirName));
 
 #endif
 }
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_0_NLM)
+RCODE f_netwareRemoveDir( 
+	const char *		pszDirName)
+{
+	RCODE			rc = NE_FLM_OK;
+	FLMBYTE		pucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
+	FLMBYTE		pucLNamePath[ F_PATH_MAX_SIZE];
+	LONG			lVolumeID;
+	LONG			lPathID;
+	LONG			lLNamePathCount;
+	LONG			lErrorCode;
+	
+	f_strcpy( (char *)&pucPseudoLNamePath[1], pszDirName);
+	pucPseudoLNamePath[0] = (FLMBYTE)f_strlen( pszDirName);
+	
+	if( (lErrorCode = ConvertPathString( 0, 0, pucPseudoLNamePath, &lVolumeID,		
+		&lPathID, pucLNamePath, &lLNamePathCount)) != 0)
+	{
+		goto Exit;
+	}
+
+	if( (lErrorCode = DeleteDirectory( 0, lVolumeID, lPathID, pucLNamePath,
+		lLNamePathCount, LONGNameSpace)) != 0)
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( lErrorCode)
+	{
+		rc = f_mapPlatformError( lErrorCode, NE_FLM_IO_DELETING_FILE);
+	}
+	
+	return( rc);
+}
+#endif
+	
+/****************************************************************************
 Desc:		Find the first file that matches the supplied criteria
 ****************************************************************************/
+#ifdef FLM_WIN
 RCODE f_fileFindFirst(
 	char *				pszSearchPath,
    FLMUINT				uiSearchAttrib,
@@ -392,7 +553,6 @@ RCODE f_fileFindFirst(
    char *				pszFoundPath,
 	FLMUINT *			puiFoundAttrib)
 {
-#ifdef FLM_WIN
 	RCODE					rc = NE_FLM_OK;
 	char 					szTmpPath[ F_PATH_MAX_SIZE];
    char *				pszWildCard = "*.*";
@@ -469,9 +629,20 @@ Exit:
 	}
 
 	return( rc);
+}
+#endif
 
-#else
-	
+/****************************************************************************
+Desc:		Find the first file that matches the supplied criteria
+****************************************************************************/
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+RCODE f_fileFindFirst(
+	char *				pszSearchPath,
+   FLMUINT				uiSearchAttrib,
+	F_IO_FIND_DATA	*	pFindData,
+   char *				pszFoundPath,
+	FLMUINT *			puiFoundAttrib)
+{
 	RCODE					rc = NE_FLM_OK;
 	char 					szTmpPath[ F_PATH_MAX_SIZE];
 	FSTATIC char		pszWildCard[] = {'*',0};
@@ -571,12 +742,13 @@ Exit:
 Exit:
 
 	return( rc);
-#endif
 }
+#endif
 
 /****************************************************************************
 Desc:		Find the next file that matches the supplied criteria
 ****************************************************************************/
+#ifdef FLM_WIN
 RCODE f_fileFindNext(
 	F_IO_FIND_DATA *	pFindData,
 	char *				pszFoundPath,
@@ -584,8 +756,6 @@ RCODE f_fileFindNext(
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
-
-#ifdef FLM_WIN
 
    if( FindNextFile( pFindData->findHandle,
 		&(pFindData->findBuffer)) == FALSE)
@@ -625,8 +795,24 @@ RCODE f_fileFindNext(
 
    *puiFoundAttrib = pFindData->findBuffer.dwFileAttributes;
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
-	int	iRetVal;
+Exit:
+
+   return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:		Find the next file that matches the supplied criteria
+****************************************************************************/
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+RCODE f_fileFindNext(
+	F_IO_FIND_DATA *	pFindData,
+	char *				pszFoundPath,
+	FLMUINT *			puiFoundAttrib)
+{
+	RCODE					rc = NE_FLM_OK;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	int					iRetVal;
 
 	if( (iRetVal =  Find2( pFindData)) != 0)
 	{
@@ -655,24 +841,20 @@ RCODE f_fileFindNext(
 
 	*puiFoundAttrib = (FLMUINT)ReturnAttributes(
 			pFindData->FileStat.st_mode, pszFoundPath);
-#else
-	rc = RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED);
-	goto Exit;
-#endif
 
 Exit:
 
    return( rc);
 }
+#endif
 
 /****************************************************************************
 Desc:		Releases any memory allocated to an F_IO_FIND_DATA structure
 ****************************************************************************/
+#ifdef FLM_WIN
 void f_fileFindClose(
 	F_IO_FIND_DATA *	pFindData)
 {
-#ifdef FLM_WIN
-
 	// Don't call it on an already closed or invalid handle.
 
 	if( pFindData->findHandle != INVALID_HANDLE_VALUE)
@@ -680,15 +862,24 @@ void f_fileFindClose(
 		FindClose( pFindData->findHandle );
 		pFindData->findHandle = INVALID_HANDLE_VALUE;
 	}
-#elif defined( FLM_UNIX) || defined ( FLM_NLM)
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_UNIX) || defined ( FLM_LIBC_NLM)
+void f_fileFindClose(
+	F_IO_FIND_DATA *	pFindData)
+{
 	if( pFindData->globbuf.gl_pathv)
 	{
 		pFindData->globbuf.gl_offs = 0;
 		globfree( &pFindData->globbuf);
 		pFindData->globbuf.gl_pathv = 0;
 	}
-#endif
 }
+#endif
 
 /****************************************************************************
 Desc:		Find the next file that matches the supplied criteria
@@ -722,7 +913,7 @@ FSTATIC FLMBOOL f_fileMeetsFindCriteria(
 /****************************************************************************
 Desc:		Search for file names matching FindTemplate (UNIX)
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 FSTATIC int Find1(
 	char *				FindTemplate,
 	F_IO_FIND_DATA *	DirInfo)
@@ -826,7 +1017,7 @@ FSTATIC int Find1(
 /****************************************************************************
 Desc:		Search for file names matching FindTemplate (UNIX)
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 FSTATIC int Find2(
 	F_IO_FIND_DATA *		DirStuff)
 {
@@ -916,7 +1107,7 @@ FSTATIC int Find2(
 /****************************************************************************
 Desc: Return file's attributes (UNIX)
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 FSTATIC FLMBYTE ReturnAttributes(
 	mode_t	FileMode,
 	char *	fileName)
@@ -948,7 +1139,7 @@ FSTATIC FLMBYTE ReturnAttributes(
 /****************************************************************************
 Desc: Return file's attributes (UNIX) || (NetWare)
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 FSTATIC int RetrieveFileStat(
 	char *			FilePath,
 	struct stat	*	StatusRec)

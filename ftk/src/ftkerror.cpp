@@ -58,7 +58,7 @@ RCODE FLMAPI f_makeErr(
 /***************************************************************************
 Desc:   Map POSIX errno to Flaim IO errors.
 ***************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 RCODE FLMAPI f_mapPlatformError(
 	FLMINT	iError,
 	RCODE		defaultRc)
