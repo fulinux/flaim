@@ -437,8 +437,10 @@ FSTATIC void ftxDisplaySetBackFore(
 	eColorType		backgroundColor,
 	eColorType		foregroundColor);
 
+#ifdef FLM_WIN
 FSTATIC FLMUINT ftxMapFlmColorToWin32(
 	eColorType		uiColor);
+#endif
 	
 RCODE _ftxBackgroundThread(
 	IF_Thread *		pThread);
@@ -4245,6 +4247,7 @@ FSTATIC FLMUINT ftxDisplayStrOut(
 /****************************************************************************
 Desc:		Set the background and foreground colors of the "physical" screen
 ****************************************************************************/
+#ifdef FLM_WIN
 FSTATIC FLMUINT ftxMapFlmColorToWin32(
 	eColorType		uiColor)
 {
@@ -4286,6 +4289,7 @@ FSTATIC FLMUINT ftxMapFlmColorToWin32(
 			return( 0);
 	}
 }
+#endif
 
 /****************************************************************************
 Desc:		Set the background and foreground colors of the "physical" screen
@@ -5242,7 +5246,7 @@ FSTATIC void ftxUnixDisplayInit( void)
 		flm2curses[ FLM_GREEN] = COLOR_GREEN;
 		flm2curses[ FLM_CYAN] = COLOR_CYAN;
 		flm2curses[ FLM_RED] = COLOR_RED;
-		flm2curses[ FLM_PURPLE] = COLOR_MAGENTA;
+		flm2curses[ FLM_MAGENTA] = COLOR_MAGENTA;
 		flm2curses[ FLM_BROWN] = COLOR_YELLOW;
 		flm2curses[ FLM_LIGHTGRAY] = COLOR_WHITE;
 

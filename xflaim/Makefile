@@ -973,7 +973,7 @@ ifdef unix_target
 	exe_link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
-		lib_link_libs += -lrt -lstdc++ -ldl
+		lib_link_libs += -lrt -lstdc++ -ldl -lncurses
 		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
@@ -991,23 +991,23 @@ ifdef unix_target
 			endif
 		endif
 
-		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
+		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
-		lib_link_libs += -lm -lc
+		lib_link_libs += -lm -lc -lcurses
 		exe_link_libs += -lm -lc -lcurses
 	endif
 
 	ifeq ($(target_os_family),hpux)
-		lib_link_libs += -lm -lc -lrt
+		lib_link_libs += -lm -lc -lrt -lcurses
 		exe_link_libs += -lm -lc -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
-		lib_link_libs += -lstdc++ -ldl
+		lib_link_libs += -lstdc++ -ldl -lncurses
 		exe_link_libs += -lstdc++ -ldl -lncurses
 		shared_link_flags += -dynamiclib
 		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)

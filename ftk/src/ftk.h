@@ -550,7 +550,7 @@
 		FLM_GREEN,						///< 3 = Green
 		FLM_CYAN,						///< 4 = Cyan
 		FLM_RED,							///< 5 = Red
-		FLM_PURPLE,						///< 6 = Purple
+		FLM_MAGENTA,					///< 6 = Magenta
 		FLM_BROWN,						///< 7 = Brown
 		FLM_LIGHTGRAY,					///< 8 = Light Gray
 		FLM_DARKGRAY,					///< 9 = Dark Gray
@@ -558,7 +558,7 @@
 		FLM_LIGHTGREEN,				///< 11 = Light Green
 		FLM_LIGHTCYAN,					///< 12 = Light Cyan
 		FLM_LIGHTRED,					///< 13 = Light Red
-		FLM_LIGHTPURPLE,				///< 14 = Light Purple
+		FLM_LIGHTMAGENTA,				///< 14 = Light Magenta
 		FLM_YELLOW,						///< 15 = Light Yellow
 		FLM_WHITE,						///< 16 = White
 		FLM_NUM_COLORS
@@ -569,7 +569,7 @@
 	#define F_GREEN									"%2C"
 	#define F_CYAN										"%3C"
 	#define F_RED 										"%4C"
-	#define F_PURPLE									"%5C"
+	#define F_MAGENTA									"%5C"
 	#define F_BROWN									"%6C"
 	#define F_LIGHTGRAY								"%7C"
 	#define F_DARKGRAY								"%8C"
@@ -577,7 +577,7 @@
 	#define F_LIGHTGREEN 							"%10C"
 	#define F_LIGHTCYAN								"%11C"
 	#define F_LIGHTRED								"%12C"
-	#define F_LIGHTPURPLE							"%13C"
+	#define F_LIGHTMAGENTA							"%13C"
 	#define F_YELLOW									"%14C"
 	#define F_WHITE									"%15C"
 	

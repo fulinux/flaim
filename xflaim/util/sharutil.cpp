@@ -279,7 +279,7 @@ RCODE FlmStringAcc::printf(
 {
 	f_va_list		args;
 	char *			pDestStr = NULL;
-	const size_t	iSize = 4096;
+	FLMSIZET		iSize = 4096;
 	RCODE				rc = NE_XFLM_OK;
 
 	if( RC_BAD( rc = f_alloc( iSize, &pDestStr)))
@@ -311,7 +311,7 @@ RCODE FlmStringAcc::appendf(
 {
 	f_va_list		args;
 	char *			pDestStr = NULL;
-	const size_t	iSize = 4096;
+	FLMSIZET			iSize = 4096;
 	RCODE				rc = NE_XFLM_OK;
 
 	if( RC_BAD( rc = f_alloc( iSize, &pDestStr)))

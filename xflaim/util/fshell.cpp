@@ -25,6 +25,9 @@
 
 #include "fshell.h"
 #include "domedit.h"
+#ifdef FLM_UNIX
+	#include <unistd.h>
+#endif
 
 #ifdef FLM_WIN
 	#include <direct.h>

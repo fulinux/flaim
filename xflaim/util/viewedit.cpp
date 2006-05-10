@@ -526,7 +526,7 @@ FLMBOOL ViewEdit(
 			}
 			else
 			{
-				U642FBA( ui64Num, szTempBuf);
+				U642FBA( ui64Num, (FLMBYTE *)szTempBuf);
 			}
 			break;
 		case MOD_FLMUINT32:
@@ -543,7 +543,7 @@ FLMBOOL ViewEdit(
 			}
 			else
 			{
-				UD2FBA( ui32Num, szTempBuf);
+				UD2FBA( ui32Num, (FLMBYTE *)szTempBuf);
 			}
 			break;
 		case MOD_FLMUINT16:
@@ -560,7 +560,7 @@ FLMBOOL ViewEdit(
 			}
 			else
 			{
-				UW2FBA( ui16Num, szTempBuf);
+				UW2FBA( ui16Num, (FLMBYTE *)szTempBuf);
 			}
 			break;
 		case MOD_FLMBYTE:
@@ -610,7 +610,7 @@ FLMBOOL ViewEdit(
 				return( FALSE);
 			}
 			uiBytesToWrite = 4;
-			UD2FBA( uiNum, szTempBuf);
+			UD2FBA( uiNum, (FLMBYTE *)szTempBuf);
 			break;
 		case MOD_BITS:
 			if (!ViewEditBits( (FLMBYTE *)&szTempBuf[ 0],
