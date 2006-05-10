@@ -28,7 +28,6 @@
 #define VIEW_H
 
 #include "flaimsys.h"
-#include "ftx.h"
 #include "sharutil.h"
 
 #ifdef MAIN_MODULE
@@ -341,10 +340,10 @@ typedef struct View_Menu_Item
 	FLMUINT		uiCol;
 	FLMUINT		uiRow;
 	FLMUINT		uiOption;
-	FLMUINT		uiUnselectBackColor;
-	FLMUINT		uiUnselectForeColor;
-	FLMUINT		uiSelectBackColor;
-	FLMUINT		uiSelectForeColor;
+	eColorType	uiUnselectBackColor;
+	eColorType	uiUnselectForeColor;
+	eColorType	uiSelectBackColor;
+	eColorType	uiSelectForeColor;
 	FLMINT		iLabelIndex;	// Signed number
 	FLMUINT		uiLabelWidth;
 	FLMUINT		uiHorizCurPos;
@@ -447,7 +446,7 @@ EXTERN FLMBOOL						gv_bViewSearching
 	= FALSE
 #endif
 	;
-EXTERN F_Db *						gv_hViewDb
+EXTERN IF_Db *						gv_hViewDb
 #ifdef MAIN_MODULE
 	= NULL
 #endif
@@ -465,7 +464,7 @@ EXTERN FLMUINT						gv_uiViewSearchLfNum;
 EXTERN FLMUINT						gv_uiViewSearchLfType;
 EXTERN FLMBYTE						gv_ucViewSearchKey[ XFLM_MAX_KEY_SIZE];
 EXTERN FLMUINT						gv_uiViewSearchKeyLen;
-EXTERN F_Pool						gv_ViewPool;
+EXTERN IF_Pool *					gv_pViewPool;
 EXTERN FLMUINT						gv_uiViewTopRow;
 EXTERN FLMUINT						gv_uiViewBottomRow;
 EXTERN F_TMSTAMP					gv_ViewLastTime;
@@ -578,10 +577,10 @@ FLMBOOL ViewAddMenuItem(				// Source: viewmenu.cpp
 	FLMUINT		uiCol,
 	FLMUINT		uiRow,
 	FLMUINT		uiOption,
-	FLMUINT		uiUnselectBackColor,
-	FLMUINT		uiUnselectForeColor,
-	FLMUINT		uiSelectBackColor,
-	FLMUINT		uiSelectForeColor);
+	eColorType	uiUnselectBackColor,
+	eColorType	uiUnselectForeColor,
+	eColorType	uiSelectBackColor,
+	eColorType	uiSelectForeColor);
 
 FLMUINT ViewGetMenuOption( void);	// Source: viewmenu.cpp
 
@@ -702,7 +701,7 @@ void FormatLFType(						// Source: viewlfil.cpp
 
 void ViewAskInput(						// Source: view.cpp
 	const char *	pszPrompt,
-	const char *	pszBuffer,
+	char *			pszBuffer,
 	FLMUINT			uiBufLen);
 
 FLMBOOL ViewEdit(							// Source: viewedit.cpp

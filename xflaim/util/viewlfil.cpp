@@ -67,26 +67,25 @@ Desc:	This routine outputs the information in a single LFH - for a
 		single logical file - FLAIM 1.5 and above.
 *****************************************************************************/
 FSTATIC FLMBOOL ViewOutputLFH(
-	FLMUINT		uiCol,
-	FLMUINT *	puiRow,
-	F_LF_HDR *	pLfHdr,
-	FLMUINT		uiLfCount,
-	FLMUINT		uiFileOffset
-	)
+	FLMUINT			uiCol,
+	FLMUINT *		puiRow,
+	F_LF_HDR *		pLfHdr,
+	FLMUINT			uiLfCount,
+	FLMUINT			uiFileOffset)
 {
-	FLMBOOL		bOk = FALSE;
-	FLMUINT		uiLabelWidth = 35;
-	FLMUINT		uiRow = *puiRow;
-	FLMUINT		uiBlkAddress;
-	char			szTempBuf [80];
-	FLMUINT		uiBackColor = WPS_BLACK;
-	FLMUINT		uiForeColor = WPS_LIGHTGRAY;
-	FLMUINT		uiUnselectBackColor = WPS_BLACK;
-	FLMUINT		uiUnselectForeColor = WPS_WHITE;
-	FLMUINT		uiSelectBackColor = WPS_BLUE;
-	FLMUINT		uiSelectForeColor = WPS_WHITE;
-	FLMUINT		uiOption;
-	FLMUINT		uiLfNum;
+	FLMBOOL			bOk = FALSE;
+	FLMUINT			uiLabelWidth = 35;
+	FLMUINT			uiRow = *puiRow;
+	FLMUINT			uiBlkAddress;
+	char				szTempBuf [80];
+	eColorType		uiBackColor = FLM_BLACK;
+	eColorType		uiForeColor = FLM_LIGHTGRAY;
+	eColorType		uiUnselectBackColor = FLM_BLACK;
+	eColorType		uiUnselectForeColor = FLM_WHITE;
+	eColorType		uiSelectBackColor = FLM_BLUE;
+	eColorType		uiSelectForeColor = FLM_WHITE;
+	FLMUINT			uiOption;
+	FLMUINT			uiLfNum;
 
 	// Output Logical File Name
 
@@ -132,8 +131,8 @@ FSTATIC FLMBOOL ViewOutputLFH(
 				(FLMUINT64)((FLMUINT)(&szTempBuf [0])), 0,
 				0, VIEW_INVALID_FILE_OFFSET, (FLMUINT)f_strlen( szTempBuf),
 				MOD_DISABLED,
-				uiCol, uiRow++, 0, WPS_GREEN, WPS_WHITE,
-				WPS_GREEN, WPS_WHITE))
+				uiCol, uiRow++, 0, FLM_GREEN, FLM_WHITE,
+				FLM_GREEN, FLM_WHITE))
 	{
 		goto Exit;
 	}
@@ -186,10 +185,10 @@ FSTATIC FLMBOOL ViewOutputLFH(
 			0, uiFileOffset + F_LF_HDR_ui32RootBlkAddr_OFFSET, 0,
 			MOD_FLMUINT32 | MOD_HEX | MOD_NATIVE,
 			uiCol, uiRow++, uiOption,
-			(FLMBYTE)(!uiOption ? uiBackColor : uiUnselectBackColor),
-			(FLMBYTE)(!uiOption ? uiForeColor : uiUnselectForeColor),
-			(FLMBYTE)(!uiOption ? uiBackColor : uiSelectBackColor),
-			(FLMBYTE)(!uiOption ? uiForeColor : uiSelectForeColor)))
+			(!uiOption ? uiBackColor : uiUnselectBackColor),
+			(!uiOption ? uiForeColor : uiUnselectForeColor),
+			(!uiOption ? uiBackColor : uiSelectBackColor),
+			(!uiOption ? uiForeColor : uiSelectForeColor)))
 	{
 		goto Exit;
 	}
@@ -334,7 +333,7 @@ void ViewLogicalFile(
 							pMenuItem = pMenuItem->pNextItem;
 						}
 						pszTmp = (FLMBYTE *)((FLMUINT)pMenuItem->ui64Value);
-						if (f_stricmp( pszTmp, COLLECTION_STRING) == 0)
+						if (f_stricmp( (const char *)pszTmp, COLLECTION_STRING) == 0)
 						{
 							gv_uiViewSearchLfType = XFLM_LF_COLLECTION;
 						}

@@ -45,7 +45,7 @@ DOMEdit prototypes
 void UIMain( void * pData);
 
 RCODE _domEditBackgroundThread(
-	F_Thread *			pThread);
+	IF_Thread *			pThread);
 
 RCODE domEditVerifyRun( void);
 
@@ -63,7 +63,7 @@ Imported global data
 
 FTX_INFO *									gv_pFtxInfo = NULL;
 FLMBOOL										gv_bShutdown = FALSE;
-static F_Thread *							gv_pBackgroundThrd = NULL;
+static IF_Thread *						gv_pBackgroundThrd = NULL;
 char											gv_szDbPath[ F_PATH_MAX_SIZE];
 char											gv_szRflDir[ F_PATH_MAX_SIZE];
 char 											gv_szPassword[ 128];
@@ -199,8 +199,7 @@ void UIMain( void * pData)
 		"DOMEdit for XFLAIM [DB=%s/BUILD=%s]",
 		XFLM_CURRENT_VER_STR, __DATE__);
 
-	if( FTXInit( szTitle, 80, 50,
-		WPS_BLUE, WPS_WHITE, NULL, NULL, &gv_pFtxInfo) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXInit( szTitle, 80, 50, WPS_BLUE, WPS_WHITE, NULL, NULL)))
 	{
 		iResCode = 1;
 		goto Exit;
@@ -242,7 +241,7 @@ void UIMain( void * pData)
 	}
 
 
-	if( RC_BAD( f_threadCreate( &gv_pBackgroundThrd,
+	if( RC_BAD( pThreadMgr->createThread( &gv_pBackgroundThrd,
 		_domEditBackgroundThread, "domedit_refresh")))
 	{
 		iResCode = 1;
@@ -341,22 +340,21 @@ Exit:
 	}
 
 	gv_bShutdown = TRUE;
+	
 	if (pDb)
 	{
 		pDb->Release();
 	}
 
-	/*
-	Shut down the display and keyboard
-	*/
-
-	f_threadDestroy( &gv_pBackgroundThrd);
-
-	/*
-	Free FTX
-	*/
-
-	FTXFree( &gv_pFtxInfo);
+	if( gv_pBackgroundThread)
+	{
+		gv_pBackgroundThrd->Release();
+	}
+	
+	if( pThreadMgr)
+	{
+		pThreadMgr->Release();
+	}
 
 	dbSystem.exit();
 }

@@ -27,8 +27,6 @@
 #ifndef SHARUTIL_H
 #define SHARUTIL_H
 
-#include "ftx.h"
-
 /* Current utility version */
 
 #define UTIL_VER			((FLMUINT)300)
@@ -92,7 +90,7 @@ Desc:	treat this vector class like an array, except that you will never
 		leave holes in the elements, the intermediate elements will
 		be filled with 0's.
 ****************************************************************************/
-class FlmVector : public XF_RefCount, public XF_Base
+class FlmVector : public F_Object
 {
 public:
 	FlmVector()
@@ -120,7 +118,7 @@ Desc:	a class to safely build up a string accumulation, without worrying
 		about buffer overflows.
 ****************************************************************************/
 #define FSA_QUICKBUF_BUFFER_SIZE 128
-class FlmStringAcc : public XF_RefCount, public XF_Base
+class FlmStringAcc : public F_Object
 {
 public:
 	FlmStringAcc()
@@ -205,7 +203,7 @@ private:
 Class:	FlmContext
 Desc:		This class manages a context or environment of variables.
 ===========================================================================*/
-class FlmContext : public XF_RefCount, public XF_Base
+class FlmContext : public F_Object
 {
 public:
 	FlmContext( void);
@@ -244,7 +242,7 @@ typedef FLMUINT (* THREAD_FUNC_p)(
 Class:	FlmThreadContext
 Desc:		This class manages a thread.
 ===========================================================================*/
-class FlmThreadContext : public XF_RefCount, public XF_Base
+class FlmThreadContext : public F_Object
 {
 public:
 	FlmThreadContext( void);
@@ -289,12 +287,12 @@ public:
 	FINLINE void setWindow( FTX_WINDOW * pWindow) { m_pWindow = pWindow; }
 	FINLINE FTX_WINDOW * getWindow( void) { return( m_pWindow); }
 
-	FINLINE void setFlmThread( F_Thread * pThread)
+	FINLINE void setFlmThread( IF_Thread * pThread)
 	{
 		m_pThread = pThread;
 	}
 
-	FINLINE F_Thread * getFlmThread( void)
+	FINLINE IF_Thread * getFlmThread( void)
 	{
 		return( m_pThread);
 	}
@@ -330,7 +328,7 @@ private:
 	FlmThreadContext *	m_pNext;
 	FlmThreadContext *	m_pPrev;
 	F_MUTEX					m_hMutex;
-	F_Thread *				m_pThread;
+	IF_Thread *				m_pThread;
 	THREAD_FUNC_p			m_pThrdFunc;
 	void *					m_pvAppData;
 #define MAX_THREAD_NAME_LEN	64
@@ -350,13 +348,7 @@ public:
 	~FlmSharedContext( void);
 
 	RCODE init(								// Initialized the share object.
-		FlmSharedContext *	pSharedContext,
-		FTX_INFO *				pFtxInfo);
-
-	FINLINE FTX_INFO * getFtxInfo( void)
-	{
-		return( m_pFtxInfo);
-	}
+		FlmSharedContext *	pSharedContext);
 
 	FINLINE void setShutdownFlag( FLMBOOL * pbShutdownFlag)
 	{
@@ -402,25 +394,25 @@ private:
 
 	FlmSharedContext *	m_pParentContext;
 	FLMBOOL					m_bPrivateShare;
-	FTX_INFO *				m_pFtxInfo;
-	F_MUTEX					m_hMutex;	// Semaphore for controlling multi-thread
-												// access.
+	F_MUTEX					m_hMutex;
 	F_SEM						m_hSem;
-	FlmThreadContext *	m_pThreadList;	// List of registered threads
+	FlmThreadContext *	m_pThreadList;
 	FLMBOOL					m_bLocalShutdownFlag;
 	FLMBOOL *				m_pbShutdownFlag;
 	FLMUINT					m_uiNextProcID;
 };
 
 void utilOutputLine( char * pszData, void * pvUserData);
+
 void utilPressAnyKey( char * pszPressAnyKeyMessage, void * pvUserData);
+
 RCODE utilInitWindow(
 	char *			pszTitle,
 	FLMUINT *		puiScreenRows,
-	FTX_INFO **		ppFtxInfo,
 	FTX_WINDOW **	ppMainWindow,
 	FLMBOOL *		pbShutdown);
-void utilShutdownWindow( FTX_INFO * pFtxInfo);
+	
+void utilShutdownWindow();
 
 RCODE fileToString(
 	char *	pszFile,
@@ -443,19 +435,132 @@ FLMUINT utilGetTimeString(
 //  |
 //  `----
 RCODE utilWriteProperty(
-	char *		pszFile,
-	char *		pszProp,
-	char *		pszValue);
+	char *					pszFile,
+	char *					pszProp,
+	char *					pszValue);
 
 RCODE utilReadProperty(
-	char *			pszFile,
-	char *			pszProp,
-	FlmStringAcc *	pAcc);
+	char *					pszFile,
+	char *					pszProp,
+	FlmStringAcc *			pAcc);
 
 void scramble( 
-	F_RandomGenerator * pRandGen, 
-	FLMUINT * puiArray, 
-	FLMUINT uiNumElems);
+	IF_RandomGenerator * pRandGen, 
+	FLMUINT * 				puiArray, 
+	FLMUINT 					uiNumElems);
 
+typedef struct wps_screen
+{
+	FLMBOOL					bPrivate;
+	FLMUINT					uiScreenId;
+	FTX_SCREEN *			pScreen;
+	FTX_WINDOW *			pTitleWin;
+	FTX_WINDOW *			pWin;
+	struct wps_screen *	pNext;
+	void *					hThis;
+} WPSSCREEN, * WPSSCREEN_p;
+
+void WpsInit(
+	FLMUINT			rows,
+	FLMUINT			cols,
+	const char *	title);
+
+void WpsExit( void);
+
+void WpsThrdInitUsingScreen(
+	FTX_SCREEN *	pScreen,
+	const char *	screenTitle);
+
+#define WpsThrdInit(a) \
+	WpsThrdInitUsingScreen( NULL, (a))
+
+void WpsThrdExit( void);
+
+void WpsWPOut(
+	FLMINT			WPChr);
+
+void WpsStrOut(
+	const char *	string);
+
+void WpsPrintf(
+	const char * 	pucFormat, ...);
+
+void WpsCPrintf(
+	eColorType		background,
+	eColorType		foreground,
+	const char *	pucFormat, ...);
+
+void WpsOptimize( void);
+
+void WpsScrReset( void);
+
+#define WpsScrReset() \
+	(WpsScrClr(0,0))
+
+void WpsScrClr(
+	FLMUINT			col,
+	FLMUINT			row);
+
+void WpsScrPos(
+	FLMUINT			col,
+	FLMUINT			row);
+
+void WpsScrBackFor(
+	eColorType		  background,
+	eColorType		  forground);
+
+void WpsLineClr(
+	FLMUINT			col,
+	FLMUINT			row);
+
+FLMUINT WpsLineEd(
+	char *   		string,
+	FLMUINT     	maxLen,
+	FLMBOOL *		pbShutdown);
+
+FLMUINT WpsLineEditExt(
+	char *			pbyBuffer,
+	FLMUINT			wBufSize,
+	FLMUINT			wMaxWidth,
+	FLMBOOL *		pbShutdown,
+	FLMUINT *		pwTermChar);
+
+void WpsStrOutXY(
+	const char *   string,
+	FLMUINT			col,
+	FLMUINT			row);
+
+#define WpsStrOutXY( string, col, row) \
+	(WpsScrPos( col, row), WpsStrOut( string))
+
+void WpsDrawBorder( void);
+
+void WpsCursorSetType(
+	FLMUINT			uiType);
+
+void WpsCurOff( void);
+
+void WpsCurOn( void);
+
+void WpsScrSize(
+	FLMUINT *		puiNumColsRV,
+	FLMUINT *		puiNumRowsRV);
+
+FLMUINT WpsCurrRow( void);
+
+FLMUINT WpsCurrCol( void);
+
+FLMUINT WpkIncar( void);
+
+FLMUINT WpkGetChar(
+	FLMBOOL *		pbShutdown);
+
+FLMUINT WpkTestKB( void);
+
+FTX_SCREEN * WpsGetThrdScreen( void);
+
+void WpsSetShutdown(
+	FLMBOOL *    	pbShutdown);
+	
 #endif // SHARUTIL_H
 

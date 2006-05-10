@@ -73,7 +73,7 @@ Class definitions
 
 #ifdef __cplusplus
 
-class	F_DynamicList : public XF_RefCount, public XF_Base
+class	F_DynamicList : public F_Object
 {
 private:
 

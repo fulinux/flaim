@@ -133,7 +133,7 @@ FLMBOOL ViewGetKey( void)
 		{
 			goto Exit;
 		}
-		longToByte( ui32Num, gv_ucViewSearchKey);
+		f_UINT32ToByte( ui32Num, gv_ucViewSearchKey);
 		gv_uiViewSearchKeyLen = 4;
 		bOk = TRUE;
 		goto Exit;

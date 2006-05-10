@@ -89,9 +89,9 @@ void ViewFreeMenuMemory( void)
 {
 	if (gv_pViewMenuFirstItem)
 	{
-		gv_ViewPool.poolFree();
-		gv_pViewMenuFirstItem =
-		gv_pViewMenuLastItem =
+		gv_pViewPool->poolFree();
+		gv_pViewMenuFirstItem = NULL;
+		gv_pViewMenuLastItem = NULL;
 		gv_pViewMenuCurrItem = NULL;
 	}
 }
@@ -106,7 +106,7 @@ void ViewMenuInit(
 
 	// Clear the screen and display the menu title
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, 0);
 
 	// Display the title in the middle of the top line of the screen
@@ -198,7 +198,7 @@ FSTATIC void ViewDispMenuItem(
 		f_sprintf( (char *)szTempBuf, "%03u:%08X",
 				(unsigned)pMenuItem->uiModFileNumber,
 				(unsigned)pMenuItem->uiModFileOffset);
-		WpsScrBackFor( WPS_WHITE, WPS_GREEN);
+		WpsScrBackFor( FLM_WHITE, FLM_GREEN);
 		WpsStrOutXY( szTempBuf, 0, uiRow);
 	}
 
@@ -417,11 +417,10 @@ FLMBOOL ViewAddMenuItem(
 	FLMUINT		uiCol,
 	FLMUINT		uiRow,
 	FLMUINT		uiOption,
-	FLMUINT		uiUnselectBackColor,
-	FLMUINT		uiUnselectForeColor,
-	FLMUINT		uiSelectBackColor,
-	FLMUINT		uiSelectForeColor
-	)
+	eColorType	uiUnselectBackColor,
+	eColorType	uiUnselectForeColor,
+	eColorType	uiSelectBackColor,
+	eColorType	uiSelectForeColor)
 {
 	FLMBOOL				bOk = FALSE;
 	VIEW_MENU_ITEM_p	pMenuItem;
@@ -431,13 +430,13 @@ FLMBOOL ViewAddMenuItem(
 
 	if ((uiValueType & 0x0F) == VAL_IS_TEXT_PTR)
 	{
-		uiSize += (f_strlen( (FLMBYTE *)((FLMUINT)ui64Value)) + 1);
+		uiSize += (f_strlen( (const char *)((FLMUINT)ui64Value)) + 1);
 	}
 	else if ((uiValueType & 0x0F) == VAL_IS_BINARY)
 	{
 		uiSize += uiValueLen;
 	}
-	if (RC_BAD( gv_ViewPool.poolAlloc(uiSize, (void **)&pMenuItem)))
+	if (RC_BAD( gv_pViewPool->poolAlloc(uiSize, (void **)&pMenuItem)))
 	{
 		ViewShowError( "Could not allocate memory for menu value");
 		goto Exit;
@@ -464,8 +463,8 @@ FLMBOOL ViewAddMenuItem(
 	if ((uiValueType & 0x0F) == VAL_IS_TEXT_PTR)
 	{
 		pMenuItem->ui64Value = (FLMUINT64)((FLMUINT)&pMenuItem[ 1]);
-		f_strcpy( (FLMBYTE *)(FLMUINT)pMenuItem->ui64Value,
-			(FLMBYTE *)(FLMUINT)ui64Value);
+		f_strcpy( (char *)(FLMUINT)pMenuItem->ui64Value,
+			(const char *)(FLMUINT)ui64Value);
 	}
 	else if ((uiValueType & 0x0F) == VAL_IS_BINARY)
 	{
@@ -513,11 +512,11 @@ void ViewEscPrompt( void)
 	FLMUINT	uiNumRows;
 
 	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 1);
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
+	WpsScrBackFor( FLM_RED, FLM_WHITE);
 	WpsStrOutXY( "ESC=Exit, ?=Help", 0, uiNumRows - 1);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsStrOutXY( "File: ", 20, uiNumRows - 1);
 	WpsStrOutXY( gv_szViewFileName, 26, uiNumRows - 1);
 	gv_uiViewLastFileOffset = VIEW_INVALID_FILE_OFFSET;
@@ -545,7 +544,7 @@ FSTATIC void ViewRefreshMenu(
 
 		// Refresh the entire screen
 
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsScrClr( 0, 1);
 
 		pMenuItem = gv_pViewMenuFirstItem;
@@ -586,7 +585,7 @@ FSTATIC void UpdateHorizCursor(
 	szTempBuf[ 2] = 0;
 	if (bOnFlag)
 	{
-		WpsScrBackFor( WPS_RED, WPS_WHITE);
+		WpsScrBackFor( FLM_RED, FLM_WHITE);
 	}
 	else
 	{
@@ -868,7 +867,7 @@ FSTATIC void ViewHelpScreen( void)
 
 	// Clear the screen and display the menu title
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, 1);
 	WpsScrPos( 0, 3);
 	WpsStrOut( "     RECOGNIZED KEYBOARD CHARACTERS\n");
@@ -976,37 +975,37 @@ FLMUINT ViewGetMenuOption( void)
 		}
 		switch( uiChar)
 		{
-			case WPK_ESCAPE:
+			case FKB_ESCAPE:
 				return( ESCAPE_OPTION);
-			case WPK_UP:
+			case FKB_UP:
 			case 'U':
 			case 'u':
 			case '8':
 				DoUpArrow();
 				break;
-			case WPK_DOWN:
+			case FKB_DOWN:
 			case 'D':
 			case 'd':
 			case '2':
 				DoDownArrow();
 				break;
-			case WPK_PGDN:
+			case FKB_PGDN:
 			case '+':
 			case '3':
 				DoPageDown();
 				break;
-			case WPK_PGUP:
+			case FKB_PGUP:
 			case '-':
 			case '9':
 				DoPageUp();
 				break;
-			case WPK_HOME:
+			case FKB_HOME:
 			case 'H':
 			case 'h':
 			case '7':
 				DoHome();
 				break;
-			case WPK_END:
+			case FKB_END:
 			case 'Z':
 			case 'z':
 			case '1':
@@ -1014,7 +1013,7 @@ FLMUINT ViewGetMenuOption( void)
 				break;
 			case '\n':
 			case '\r':
-			case WPK_ENTER:
+			case FKB_ENTER:
 				if (gv_pViewMenuCurrItem->uiOption)
 				{
 					return( gv_pViewMenuCurrItem->uiOption);
@@ -1024,13 +1023,13 @@ FLMUINT ViewGetMenuOption( void)
 			case 'g':
 			case 7:  /* Control-G */
 				return( GOTO_BLOCK_OPTION);
-			case WPK_RIGHT:
+			case FKB_RIGHT:
 			case 'R':
 			case 'r':
 			case '6':
 				DoRightArrow();
 				break;
-			case WPK_LEFT:
+			case FKB_LEFT:
 			case 'L':
 			case 'l':
 			case '4':
@@ -1086,7 +1085,7 @@ void ViewUpdateDate(
 						 Months [CurrTime.month],
 						 (unsigned)CurrTime.day,
 						 (unsigned)CurrTime.year);
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsStrOutXY( szTempBuf, 0, 0);
 	}
 
@@ -1121,7 +1120,7 @@ void ViewUpdateDate(
 						(unsigned)uiHour,
 						(unsigned)CurrTime.minute,
 						(unsigned)CurrTime.second, szAmPm);
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsStrOutXY( szTempBuf, 66, 0);
 	}
 
@@ -1155,7 +1154,7 @@ void ViewUpdateDate(
 								(unsigned)gv_uiViewLastFileNumber,
 								(unsigned)gv_uiViewLastFileOffset);
 		}
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsStrOutXY( szTempBuf, 47, uiNumRows - 1);
 	}
 

@@ -23,11 +23,8 @@
 // $Id: rebuild.cpp 3129 2006-01-25 11:46:17 -0700 (Wed, 25 Jan 2006) ahodgkinson $
 //------------------------------------------------------------------------------
 
-#include "flaimsys.h"
-#include "ftx.h"
+#include "xflaim.h"
 #include "sharutil.h"
-#include "ffilesys.h"
-#include "ffilehdl.h"
 
 #define UTIL_ID					"REBUILD"
 
@@ -62,10 +59,10 @@ public:
 	{
 	}
 
-	RCODE XFLMAPI reportRebuild(
+	RCODE FLMAPI reportRebuild(
 		XFLM_REBUILD_INFO *	pRebuild);
 	
-	RCODE XFLMAPI reportRebuildErr(
+	RCODE FLMAPI reportRebuildErr(
 		XFLM_CORRUPT_INFO *		pCorruptInfo);
 
 private:
@@ -163,6 +160,7 @@ static XFLM_CREATE_OPTS		gv_DefaultCreateOpts;
 static FLMBOOL				gv_bFixHdrInfo;
 static FLMBOOL				gv_bRunning;
 static FLMBOOL				gv_bPauseBeforeExiting = FALSE;
+static IF_DbSystem *		gv_pDbSystem = NULL;
 
 
 #ifdef FLM_NLM
@@ -177,12 +175,11 @@ typedef LONG (* RBLD_VOID_FUNC_p )(void);
 Desc: ?
 *********************************************************************/
 extern "C" int main(
-	int			iArgC,
-	char **		ppszArgV)
+	int				iArgC,
+	char **			ppszArgV)
 {
-	int			iRetCode = 0;
-	F_Pool		LogPool;
-	F_DbSystem	dbSystem;
+	int				iRetCode = 0;
+	IF_Pool *		pLogPool = NULL;
 
 	gv_bBatchMode = FALSE;
 	gv_bRunning = TRUE;
@@ -195,17 +192,22 @@ extern "C" int main(
 
 #endif
 
-	if( RC_BAD( dbSystem.init()))
+	if( RC_BAD( FlmAllocDbSystem( &gv_pDbSystem)))
 	{
-		iRetCode = -1;
 		goto Exit;
 	}
 
 	WpsInit( 0xFFFF, 0xFFFF, "XFLAIM Database Rebuild");
 	WpsOptimize();
-
-	LogPool.poolInit( 1024);
-	if (RC_BAD( LogPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
+	
+	if( RC_BAD( FlmAllocPool( &pLogPool)))
+	{
+		goto Exit;
+	}
+	
+	pLogPool->poolInit( 1024);
+	
+	if (RC_BAD( pLogPool->poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
 	{
 		WpsStrOut(
 			"\nCould not allocate log buffer\n");
@@ -218,7 +220,8 @@ extern "C" int main(
 			iRetCode = 1;
 		}
 	}
-	LogPool.poolFree();
+	
+	pLogPool->poolFree();
 
 Exit:
 
@@ -239,9 +242,18 @@ Exit:
 			bldGiveUpCPU();
 		}
 	}
+	
+	if( pLogPool)
+	{
+		pLogPool->Release();
+	}
 
 	WpsExit();
-	dbSystem.exit();
+	
+	if( gv_pDbSystem)
+	{
+		gv_pDbSystem->Release();
+	}
 
 #ifdef FLM_NLM
 	if (!gv_bSynchronized)
@@ -264,7 +276,12 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	char *							pszDestRflDir;
 	RCODE								rc;
 	F_LocalRebuildStatus			dbRebuildStatus;
-	F_DbSystem						dbSystem;
+	IF_FileSystem *				pFileSystem = NULL;
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
 	gv_ui64BytesDone = 0;
 	gv_ui64DictNodesRecovered = 0;
@@ -273,7 +290,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	gv_ui64TotalNodes = 0;
 	gv_ui64NodesRecovered = 0;
 
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 	WpsScrClr( 0, 0);
 
 	gv_bLoggingEnabled = FALSE;
@@ -281,8 +298,8 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 
 	if( gv_szLogFileName[ 0])
 	{
-		gv_pFileSystem->Delete( gv_szLogFileName);
-		if (RC_OK( rc = gv_pFileSystem->Create( gv_szLogFileName, XFLM_IO_RDWR,
+		pFileSystem->deleteFile( gv_szLogFileName);
+		if (RC_OK( rc = pFileSystem->createFile( gv_szLogFileName, FLM_IO_RDWR,
 									&gv_pLogFile)))
 		{
 			gv_bLoggingEnabled = TRUE;
@@ -299,7 +316,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 
 	/* Configure FLAIM */
 
-	if (RC_BAD( rc = dbSystem.setHardMemoryLimit(
+	if (RC_BAD( rc = gv_pDbSystem->setHardMemoryLimit(
 								0, FALSE, 0, gv_uiCacheSize * 1024, 0, FALSE)))
 	{
 		f_sprintf( szErrMsg, "Error setting cache size for FLAIM share: 0x%04X",
@@ -309,7 +326,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 		goto Exit;
 	}
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	if( gv_bLoggingEnabled)
 	{
 		bldLogString( NULL);
@@ -374,7 +391,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 										 : NULL);
 
 	//VISIT: Implement a proper IF_DbRebuildClient!!!
-	rc = dbSystem.dbRebuild( gv_szSrcFileName,
+	rc = gv_pDbSystem->dbRebuild( gv_szSrcFileName,
 										 gv_szSrcDataDir,
 										 gv_szDestFileName,
 										 gv_szDestDataDir,
@@ -399,9 +416,14 @@ Exit:
 	if( gv_bLoggingEnabled)
 	{
 		bldLogFlush();
-		gv_pLogFile->Close();
+		gv_pLogFile->close();
 		gv_pLogFile->Release();
 		gv_pLogFile = NULL;
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 
 	return( bOk);
@@ -419,11 +441,10 @@ FSTATIC void bldShowResults(
 	FLMUINT64		ui64DiscardedDocs)
 {
 	char				szErrMsg[ 100];
-	F_DbSystem		dbSystem;
 
 	if( RC_BAD( rc))
 	{
-		if( rc != NE_XFLM_FAILURE)
+		if( rc != NE_FLM_FAILURE)
 		{
 			f_strcpy( szErrMsg, "Error calling ");
 			f_strcpy( &szErrMsg[ f_strlen( szErrMsg)], pszFuncName);
@@ -803,7 +824,6 @@ FSTATIC FLMBOOL bldParseHdrInfo(
 	FLMBOOL				bHaveParam;
 	XFLM_CREATE_OPTS	CreateOpts;
 	FLMUINT				uiFieldNum;
-	F_DbSystem			dbSystem;
 
 	f_memcpy( &CreateOpts, &gv_DefaultCreateOpts, sizeof( XFLM_CREATE_OPTS));
 	uiFieldNum = 1;
@@ -838,7 +858,7 @@ FSTATIC FLMBOOL bldParseHdrInfo(
 			szTmpBuf[ uiTmpLen] = 0;
 			if( uiTmpLen)
 			{
-				uiNum = dbSystem.languageToNum( szTmpBuf);
+				uiNum = f_languageToNum( szTmpBuf);
 				if( (!uiNum) && (f_stricmp( szTmpBuf, "US") != 0))
 				{
 					bldShowError( "Illegal language in header information");
@@ -874,7 +894,7 @@ FSTATIC FLMBOOL bldParseHdrInfo(
 			switch( uiFieldNum)
 			{
 				case 1:
-					if( uiNum != 0 && !dbSystem.validBlockSize( uiNum))
+					if( uiNum != 0 && uiNum != 4096 && uiNum != 8192)
 					{
 						bldShowError( "Illegal block size");
 						return( FALSE);
@@ -928,7 +948,7 @@ FSTATIC void bldOutLabel(
 
 	f_memset( szMsg, '.', uiLen);
 	szMsg[ uiLen] = 0;
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 	WpsStrOutXY( szMsg, uiCol, uiRow);
 	WpsStrOutXY( pszLabel, uiCol, uiRow);
 
@@ -965,7 +985,7 @@ FSTATIC void bldOutValue(
 	FLMUINT			uiRow,
 	const char *	pszValue)
 {
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 	WpsStrOutXY( pszValue, VALUE_COLUMN, uiRow);
 }
 
@@ -998,7 +1018,7 @@ FSTATIC RCODE bldGetUserInput(
 	{
 		if( gv_bShutdown)
 		{
-			uiChar = WPK_ESCAPE;
+			uiChar = FKB_ESCAPE;
 			break;
 		}
 		else if( WpkTestKB())
@@ -1012,13 +1032,13 @@ FSTATIC RCODE bldGetUserInput(
 		bldGiveUpCPU();
 	}
 
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 	WpsScrClr( 0, 22);
 	switch( uiChar)
 	{
 		case 'q':
 		case 'Q':
-		case WPK_ESCAPE:
+		case FKB_ESCAPE:
 			return( RC_SET( NE_XFLM_USER_ABORT));
 		default:
 			break;
@@ -1056,7 +1076,6 @@ FSTATIC void bldLogCorruptError(
 	XFLM_CORRUPT_INFO *	pCorruptInfo)
 {
 	char			szBuf[ 100];
-	F_DbSystem	dbSystem;
 
 	// Log the container number
 
@@ -1106,7 +1125,7 @@ FSTATIC void bldLogCorruptError(
 
 	// Log the error message
 
-	f_strcpy( szBuf, dbSystem.checkErrorToStr( pCorruptInfo->iErrCode));
+	f_strcpy( szBuf, gv_pDbSystem->checkErrorToStr( pCorruptInfo->iErrCode));
 	f_sprintf( (&szBuf [f_strlen( szBuf)]), " (%d)",
 		(int)pCorruptInfo->iErrCode);
 	bldLogStr( 2, szBuf);
@@ -1172,11 +1191,11 @@ RCODE F_LocalRebuildStatus::reportRebuild(
 	}
 
 	// See if they pressed an ESC character
-	if ((WpkTestKB()) && (WpkIncar() == WPK_ESCAPE))
+	if ((WpkTestKB()) && (WpkIncar() == FKB_ESCAPE))
 	{
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 		WpsScrClr( 0, 22);
-		WpsScrBackFor (WPS_RED, WPS_WHITE);
+		WpsScrBackFor (FLM_RED, FLM_WHITE);
 		WpsStrOutXY( "ESCAPE key pressed", 0, 22);
 		rc = bldGetUserInput();
 		goto Exit;
@@ -1195,11 +1214,11 @@ RCODE F_LocalRebuildStatus::reportRebuildErr(
 
 	// See if they pressed an ESC character
 
-	if ((WpkTestKB()) && (WpkIncar() == WPK_ESCAPE))
+	if ((WpkTestKB()) && (WpkIncar() == FKB_ESCAPE))
 	{
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 		WpsScrClr( 0, 22);
-		WpsScrBackFor (WPS_RED, WPS_WHITE);
+		WpsScrBackFor (FLM_RED, FLM_WHITE);
 		WpsStrOutXY( "ESCAPE key pressed", 0, 22);
 		rc = bldGetUserInput();
 		goto Exit;
@@ -1221,9 +1240,9 @@ FSTATIC void bldShowError(
 
 	if( !gv_bBatchMode)
 	{
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 		WpsScrClr( 0, 22);
-		WpsScrBackFor (WPS_RED, WPS_WHITE);
+		WpsScrBackFor (FLM_RED, FLM_WHITE);
 		WpsStrOutXY( pszMessage, 0, 22);
 		WpsStrOutXY( "Press any character to continue, ESCAPE to quit: ", 0, 23);
 		for (;;)
@@ -1232,13 +1251,13 @@ FSTATIC void bldShowError(
 				break;
 			else if (WpkTestKB())
 			{
-				if (WpkIncar() == WPK_ESCAPE)
+				if (WpkIncar() == FKB_ESCAPE)
 					gv_bShutdown = TRUE;
 				break;
 			}
 			bldGiveUpCPU();
 		}
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
+		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 		WpsScrClr( 0, 22);
 	}
 }
@@ -1254,7 +1273,7 @@ FSTATIC void bldLogFlush(
 
 	if( gv_uiLogBufferCount)
 	{
-		gv_pLogFile->Write( XFLM_IO_CURRENT_POS,
+		gv_pLogFile->write( FLM_IO_CURRENT_POS,
 			gv_uiLogBufferCount, gv_pszLogBuffer, &uiBytesWritten);
 		gv_uiLogBufferCount = 0;
 	}

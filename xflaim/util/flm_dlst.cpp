@@ -24,7 +24,6 @@
 //------------------------------------------------------------------------------
 
 #include "flaimsys.h"
-#include "ftx.h"
 #include "flm_dlst.h"
 #include "sharutil.h"
 
@@ -73,7 +72,7 @@ Desc:	Allocates the list window and prepares the object for use
 *****************************************************************************/
 RCODE F_DynamicList::setup( FTX_WINDOW * pInitializedWindow)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 
 	flmAssert( pInitializedWindow != NULL);
 	m_pListWin = pInitializedWindow;
@@ -83,7 +82,7 @@ RCODE F_DynamicList::setup( FTX_WINDOW * pInitializedWindow)
 	*/
 	FTXWinClear( m_pListWin);
 
-	FTXWinSetCursorType( m_pListWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( m_pListWin, FLM_CURSOR_INVISIBLE);
 	FTXWinSetScroll( m_pListWin, FALSE);
 	FTXWinSetLineWrap( m_pListWin, FALSE);
 	FTXWinGetCanvasSize( m_pListWin, &m_uiListCols, &m_uiListRows);
@@ -101,13 +100,13 @@ RCODE F_DynamicList::insert(
 	void *					pvData,
 	FLMUINT					uiDataLen)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	DLIST_NODE *	pTmp;
 	DLIST_NODE *	pNew = NULL;
 
 	if( getNode( uiKey) != NULL)
 	{
-		rc = RC_SET( NE_XFLM_EXISTS);
+		rc = RC_SET( NE_FLM_EXISTS);
 		goto Exit;
 	}
 
@@ -214,7 +213,7 @@ RCODE F_DynamicList::update(
 	FLMUINT					uiDataLen)
 {
 	DLIST_NODE *	pTmp;
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 
 	if( (pTmp = getNode( uiKey)) == NULL)
 	{
@@ -260,11 +259,11 @@ RCODE F_DynamicList::remove(
 	FLMUINT	uiKey)
 {
 	DLIST_NODE *	pTmp;
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 
 	if( (pTmp = getNode( uiKey)) == NULL)
 	{
-		rc = RC_SET( NE_XFLM_NOT_FOUND);
+		rc = RC_SET( NE_FLM_NOT_FOUND);
 		goto Exit;
 	}
 
@@ -327,13 +326,13 @@ void F_DynamicList::refresh( void)
 		return;
 	}
 
-	if ( FTXWinGetScreen( m_pListWin, &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinGetScreen( m_pListWin, &pScreen)))
 	{
 		flmAssert( 0);
 		goto Exit;
 	}
 
-	FTXSetRefreshState( pScreen->pFtxInfo, TRUE);
+	FTXSetRefreshState( TRUE);
 	pTmp = m_pCur;
 	uiLoop = m_uiRow;
 	while( pTmp && uiLoop > 0)
@@ -362,8 +361,10 @@ void F_DynamicList::refresh( void)
 	{
 		FTXWinClearXY( m_pListWin, 0, uiLoop);
 	}
-	FTXSetRefreshState( pScreen->pFtxInfo, FALSE);
+	
+	FTXSetRefreshState( FALSE);
 	m_bChanged = FALSE;
+	
 Exit:
 	;
 }
@@ -519,28 +520,28 @@ void F_DynamicList::defaultKeyAction(
 {
 	switch( uiKey)
 	{
-		case WPK_UP:
+		case FKB_UP:
 			cursorUp();
 			break;
-		case WPK_DOWN:
+		case FKB_DOWN:
 			cursorDown();
 			break;
-		case WPK_PGUP:
+		case FKB_PGUP:
 			pageUp();
 			break;
-		case WPK_PGDN:
+		case FKB_PGDN:
 			pageDown();
 			break;
-		case WPK_HOME:
+		case FKB_HOME:
 			home();
 			break;
-		case WPK_END:
+		case FKB_END:
 			end();
 			break;
 		case 'd':
 		case 'D':
 		{
-			RCODE rc = NE_XFLM_OK;
+			RCODE rc = NE_FLM_OK;
 			rc = this->dumpToFile();
 			break;
 		}
@@ -584,7 +585,6 @@ void F_DynamicList::freeNode(
 }
 
 /****************************************************************************
-Name:	dlistDefaultDisplayHook
 Desc:
 *****************************************************************************/
 RCODE dlistDefaultDisplayHook(
@@ -596,8 +596,8 @@ RCODE dlistDefaultDisplayHook(
 	FLMUINT				uiDataLen,
 	F_DynamicList*		pDynamicList)
 {
-	FLMUINT	uiBack = WPS_CYAN;
-	FLMUINT	uiFore = WPS_WHITE;
+	eColorType	uiBack = FLM_CYAN;
+	eColorType	uiFore = FLM_WHITE;
 
 	F_UNREFERENCED_PARM( uiKey);
 	F_UNREFERENCED_PARM( uiDataLen);
@@ -614,22 +614,30 @@ RCODE dlistDefaultDisplayHook(
 	{
 		FTXWinPaintRow( pWin, &uiBack, &uiFore, uiRow);
 	}
-	return( NE_XFLM_OK);
+	return( NE_FLM_OK);
 }
 
+/****************************************************************************
+Desc:
+*****************************************************************************/
 RCODE F_DynamicList::dumpToFile()
 {
-	DLIST_NODE *	pTmp;
-	FLMUINT			uiLoop;
-	IF_FileHdl *	pFileHdl = NULL;
-	RCODE				rc = NE_XFLM_OK;
-	F_FileSystem	FileSystem;
+	RCODE					rc = NE_FLM_OK;
+	DLIST_NODE *		pTmp;
+	FLMUINT				uiLoop;
+	IF_FileHdl *		pFileHdl = NULL;
 #define DLST_RESP_SIZE 256
-	char				szResponse[ DLST_RESP_SIZE];
-	FLMUINT			uiTermChar;
-	FTX_SCREEN *	pScreen;
+	char					szResponse[ DLST_RESP_SIZE];
+	FLMUINT				uiTermChar;
+	FTX_SCREEN *		pScreen;
+	IF_FileSystem *	pFileSystem = NULL;
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
-	f_strcpy( szResponse, DLIST_DUMPFILE_PATH);
+	f_strcpy( szResponse, (const char *)DLIST_DUMPFILE_PATH);
 
 	FTXWinGetScreen( m_pListWin, &pScreen);
 	FTXGetInput(
@@ -639,17 +647,17 @@ RCODE F_DynamicList::dumpToFile()
 		DLST_RESP_SIZE-1,
 		&uiTermChar);
 
-	if ( uiTermChar != WPK_ENTER)
+	if ( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = FileSystem.Exists( szResponse)))
+	if (RC_BAD( rc = pFileSystem->doesFileExist( szResponse)))
 	{
 		//create file if it doesn't already exist
-		if ( rc == NE_XFLM_IO_PATH_NOT_FOUND)
+		if ( rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
-			rc = FileSystem.Create( szResponse, XFLM_IO_RDWR, &pFileHdl);
+			rc = pFileSystem->createFile( szResponse, FLM_IO_RDWR, &pFileHdl);
 		}
 		else
 		{
@@ -658,7 +666,7 @@ RCODE F_DynamicList::dumpToFile()
 	}
 	else
 	{
-		rc = FileSystem.Open( szResponse, XFLM_IO_RDWR, &pFileHdl);
+		rc = pFileSystem->openFile( szResponse, FLM_IO_RDWR, &pFileHdl);
 	}
 
 	TEST_RC_LOCAL( rc);
@@ -669,7 +677,7 @@ RCODE F_DynamicList::dumpToFile()
 
 		//figure out size of file currently, so you can append to it
 		
-		pFileHdl->Size( &ui64FileSize);
+		pFileHdl->size( &ui64FileSize);
 		pTmp = m_pFirst;
 
 		uiLoop = 0;
@@ -677,15 +685,15 @@ RCODE F_DynamicList::dumpToFile()
 		{
 			FLMBYTE * pszNextLine = (FLMBYTE*)(pTmp->pvData);
 
-			TEST_RC_LOCAL( rc = pFileHdl->Write(
+			TEST_RC_LOCAL( rc = pFileHdl->write(
 				ui64FileSize,					//offset to current file size
-				f_strlen( pszNextLine),
+				f_strlen( (const char *)pszNextLine),
 				pszNextLine,
 				&uiBytesWritten));
 
 			ui64FileSize += uiBytesWritten;
 
-			TEST_RC_LOCAL( rc = pFileHdl->Write(
+			TEST_RC_LOCAL( rc = pFileHdl->write(
 				ui64FileSize,					//add in newline
 				1,
 				(FLMBYTE*)"\n",
@@ -695,7 +703,7 @@ RCODE F_DynamicList::dumpToFile()
 			pTmp = pTmp->pNext;
 		}
 
-		(void)pFileHdl->Close();
+		(void)pFileHdl->close();
 
 	}
 
@@ -716,16 +724,23 @@ Exit_local:
 			f_sprintf( szMessage, "error rc=%u dumping to file %s",
 				(unsigned)rc, DLIST_DUMPFILE_PATH);
 		}
-		FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE, szMessage,
+		FTXDisplayMessage( pScreen, FLM_RED, FLM_WHITE, szMessage,
 			"press ESC or ENTER to close dialog", &uiChar);
 	}
 
 
 Exit:
+
 	if (pFileHdl)
 	{
 		pFileHdl->Release();
 		pFileHdl = NULL;
 	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+	
 	return rc;
 }

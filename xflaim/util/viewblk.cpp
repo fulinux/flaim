@@ -39,12 +39,12 @@ FSTATIC FLMBOOL TestStatusBit(
 FSTATIC FLMBOOL OutBlkHdrExpNum(
 	FLMUINT		uiCol,
 	FLMUINT *	puiRow,
-	FLMUINT		uiBackColor,
-	FLMUINT		uiForeColor,
-	FLMUINT		uiUnselectBackColor,
-	FLMUINT		uiUnselectForeColor,
-	FLMUINT		uiSelectBackColor,
-	FLMUINT		uiSelectForeColor,
+	eColorType	uiBackColor,
+	eColorType	uiForeColor,
+	eColorType	uiUnselectBackColor,
+	eColorType	uiUnselectForeColor,
+	eColorType	uiSelectBackColor,
+	eColorType	uiSelectForeColor,
 	FLMUINT		uiLabelWidth,
 	FLMINT		iLabelIndex,
 	FLMUINT		uiFileNumber,
@@ -64,8 +64,8 @@ FSTATIC void FormatBlkType(
 FSTATIC FLMBOOL OutputStatus(
 	FLMUINT		uiCol,
 	FLMUINT *	puiRow,
-	FLMUINT		uiBackColor,
-	FLMUINT		uiForeColor,
+	eColorType	uiBackColor,
+	eColorType	uiForeColor,
 	FLMUINT		uiLabelWidth,
 	FLMINT		iLabelIndex,
 	FLMBYTE *	pucStatusFlags
@@ -98,8 +98,8 @@ FSTATIC FLMBOOL OutputNonLeafElements(
 FSTATIC FLMBOOL OutputDomNode(
 	FLMUINT			uiCol,
 	FLMUINT *		puiRow,
-	FLMUINT			uiBackColor,
-	FLMUINT			uiForeColor,
+	eColorType		uiBackColor,
+	eColorType		uiForeColor,
 	FLMBYTE *		pucVal,
 	STATE_INFO *	pStateInfo);
 
@@ -175,8 +175,8 @@ Desc: This routine outputs all of the status bits which were set for
 FSTATIC FLMBOOL OutputStatus(
 	FLMUINT		uiCol,
 	FLMUINT  *	puiRow,
-	FLMUINT		uiBackColor,
-	FLMUINT		uiForeColor,
+	eColorType	uiBackColor,
+	eColorType	uiForeColor,
 	FLMUINT		uiLabelWidth,
 	FLMINT		iLabelIndex,
 	FLMBYTE *	pucStatusFlags
@@ -200,8 +200,8 @@ FSTATIC FLMBOOL OutputStatus(
 							VAL_IS_ERR_INDEX, (FLMUINT64)iError, 0,
 							0, VIEW_INVALID_FILE_OFFSET, 0, MOD_DISABLED,
 							uiCol, uiRow++, 0,
-							WPS_RED, WPS_LIGHTGRAY,
-							WPS_RED, WPS_LIGHTGRAY))
+							FLM_RED, FLM_LIGHTGRAY,
+							FLM_RED, FLM_LIGHTGRAY))
 				{
 					goto Exit;
 				}
@@ -274,7 +274,7 @@ FLMBOOL ViewBlkRead(
 
 	// Read the block into memory
 	
-	if (RC_BAD( rc = gv_pSFileHdl->ReadBlock( uiBlkAddress, uiReadLen,
+	if (RC_BAD( rc = gv_pSFileHdl->readBlock( uiBlkAddress, uiReadLen,
 												pBlkHdr, puiBytesRead)))
 	{
 		if (rc == NE_XFLM_IO_END_OF_FILE)
@@ -473,25 +473,24 @@ Desc: This routine outputs one of the number fields in the block
 		in the block header where we expect certain values.
 *****************************************************************************/
 FSTATIC FLMBOOL OutBlkHdrExpNum(
-	FLMUINT		uiCol,
-	FLMUINT *	puiRow,
-	FLMUINT		uiBackColor,
-	FLMUINT		uiForeColor,
-	FLMUINT		uiUnselectBackColor,
-	FLMUINT		uiUnselectForeColor,
-	FLMUINT		uiSelectBackColor,
-	FLMUINT		uiSelectForeColor,
-	FLMUINT		uiLabelWidth,
-	FLMINT		iLabelIndex,
-	FLMUINT		uiFileNumber,
-	FLMUINT		uiFileOffset,
-	void *		pvValue,
-	FLMUINT		uiValueType,
-	FLMUINT		uiModType,
-	FLMUINT64	ui64ExpNum,
-	FLMUINT64	ui64IgnoreExpNum,
-	FLMUINT		uiOption
-	)
+	FLMUINT			uiCol,
+	FLMUINT *		puiRow,
+	eColorType		uiBackColor,
+	eColorType		uiForeColor,
+	eColorType		uiUnselectBackColor,
+	eColorType		uiUnselectForeColor,
+	eColorType		uiSelectBackColor,
+	eColorType		uiSelectForeColor,
+	FLMUINT			uiLabelWidth,
+	FLMINT			iLabelIndex,
+	FLMUINT			uiFileNumber,
+	FLMUINT			uiFileOffset,
+	void *			pvValue,
+	FLMUINT			uiValueType,
+	FLMUINT			uiModType,
+	FLMUINT64		ui64ExpNum,
+	FLMUINT64		ui64IgnoreExpNum,
+	FLMUINT			uiOption)
 {
 	FLMBOOL		bOk = FALSE;
 	FLMUINT		uiRow = *puiRow;
@@ -534,8 +533,8 @@ FSTATIC FLMBOOL OutBlkHdrExpNum(
 					uiValueType, ui64ExpNum, 0,
 					0, VIEW_INVALID_FILE_OFFSET, 0, MOD_DISABLED,
 					uiCol + uiLabelWidth + 1, uiRow++, 0,
-					WPS_RED, WPS_LIGHTGRAY,
-					WPS_RED, WPS_LIGHTGRAY))
+					FLM_RED, FLM_LIGHTGRAY,
+					FLM_RED, FLM_LIGHTGRAY))
 		{
 			goto Exit;
 		}
@@ -599,31 +598,31 @@ FLMBOOL ViewOutBlkHdr(
 	FLMUINT32	ui32BlkCRC
 	)
 {
-	FLMBOOL		bOk = FALSE;
-	FLMUINT		uiLabelWidth = 35;
-	FLMUINT		uiRow = *puiRow;
-	char			szTempBuf [80];
-	FLMUINT		uiBlkAddress;
-	FLMUINT		uiEndOfBlock;
-	FLMUINT		uiBytesUsed;
-	FLMUINT		uiPercentFull;
-	FLMUINT		uiOption;
-	FLMUINT		uiBackColor = WPS_BLACK;
-	FLMUINT		uiForeColor = WPS_LIGHTGRAY;
-	FLMUINT		uiUnselectBackColor = WPS_BLACK;
-	FLMUINT		uiUnselectForeColor = WPS_WHITE;
-	FLMUINT		uiSelectBackColor = WPS_BLUE;
-	FLMUINT		uiSelectForeColor = WPS_WHITE;
-	F_LF_HDR		lfHdr;
-	char			szLfName [80];
-	FLMUINT		uiLfNum;
-	eLFileType	eLfType;
-	FLMUINT		uiTempFileOffset;
+	FLMBOOL			bOk = FALSE;
+	FLMUINT			uiLabelWidth = 35;
+	FLMUINT			uiRow = *puiRow;
+	char				szTempBuf [80];
+	FLMUINT			uiBlkAddress;
+	FLMUINT			uiEndOfBlock;
+	FLMUINT			uiBytesUsed;
+	FLMUINT			uiPercentFull;
+	FLMUINT			uiOption;
+	eColorType		uiBackColor = FLM_BLACK;
+	eColorType		uiForeColor = FLM_LIGHTGRAY;
+	eColorType		uiUnselectBackColor = FLM_BLACK;
+	eColorType		uiUnselectForeColor = FLM_WHITE;
+	eColorType		uiSelectBackColor = FLM_BLUE;
+	eColorType		uiSelectForeColor = FLM_WHITE;
+	F_LF_HDR			lfHdr;
+	char				szLfName [80];
+	FLMUINT			uiLfNum;
+	eLFileType		eLfType;
+	FLMUINT			uiTempFileOffset;
 
 	// Output the block Header address
 
-	if (!OutBlkHdrExpNum( uiCol, &uiRow, WPS_RED, WPS_LIGHTGRAY,
-			WPS_RED, WPS_WHITE, uiSelectBackColor, uiSelectForeColor,
+	if (!OutBlkHdrExpNum( uiCol, &uiRow, FLM_RED, FLM_LIGHTGRAY,
+			FLM_RED, FLM_WHITE, uiSelectBackColor, uiSelectForeColor,
 			uiLabelWidth, LBL_BLOCK_ADDRESS_BLOCK_HEADER,
 			FSGetFileNumber( pBlkExp->uiBlkAddr), 
 			FSGetFileOffset( pBlkExp->uiBlkAddr),
@@ -710,10 +709,10 @@ FLMBOOL ViewOutBlkHdr(
 				F_BLK_HDR_ui32PriorBlkImgAddr_OFFSET, 0,
 				MOD_FLMUINT32 | MOD_HEX | MOD_NATIVE,
 				uiCol, uiRow++, uiOption,
-				(FLMBYTE)(!uiOption ? uiBackColor : uiUnselectBackColor),
-				(FLMBYTE)(!uiOption ? uiForeColor : uiUnselectForeColor),
-				(FLMBYTE)(!uiOption ? uiBackColor : uiSelectBackColor),
-				(FLMBYTE)(!uiOption ? uiForeColor : uiSelectForeColor)))
+				(!uiOption ? uiBackColor : uiUnselectBackColor),
+				(!uiOption ? uiForeColor : uiUnselectForeColor),
+				(!uiOption ? uiBackColor : uiSelectBackColor),
+				(!uiOption ? uiForeColor : uiSelectForeColor)))
 	{
 		goto Exit;
 	}
@@ -928,18 +927,10 @@ FLMBOOL ViewOutBlkHdr(
 					F_BTREE_BLK_HDR_ui16LogicalFile_OFFSET, 0,
 					MOD_FLMUINT16 | MOD_DECIMAL | MOD_NATIVE,
 					uiCol, uiRow++, uiOption,
-					(FLMBYTE)(!uiOption ?
-								 (FLMBYTE)uiBackColor
-								 : (FLMBYTE)uiUnselectBackColor),
-					(FLMBYTE)(!uiOption
-								 ? (FLMBYTE)uiForeColor
-								 : (FLMBYTE)uiUnselectForeColor),
-					(FLMBYTE)(!uiOption
-								 ? (FLMBYTE)uiBackColor
-								 : (FLMBYTE)uiSelectBackColor),
-					(FLMBYTE)(!uiOption
-								 ? (FLMBYTE)uiForeColor
-								 : (FLMBYTE)uiSelectForeColor)))
+					(!uiOption ? uiBackColor : uiUnselectBackColor),
+					(!uiOption ? uiForeColor : uiUnselectForeColor),
+					(!uiOption ? uiBackColor : uiSelectBackColor),
+					(!uiOption ? uiForeColor : uiSelectForeColor)))
 		{
 			goto Exit;
 		}
@@ -1132,17 +1123,16 @@ Desc: This routine outputs a stream of FLMBYTEs in hex format.  This
 		element.
 *****************************************************************************/
 FLMBOOL OutputHexValue(
-	FLMUINT		uiCol,
-	FLMUINT *	puiRow,
-	FLMUINT		uiBackColor,
-	FLMUINT		uiForeColor,
-	FLMINT		iLabelIndex,
-	FLMUINT		uiFileNumber,
-	FLMUINT		uiFileOffset,
-	FLMBYTE *	pucVal,
-	FLMUINT		uiValLen,
-	FLMBOOL		bCopyVal
-	)
+	FLMUINT			uiCol,
+	FLMUINT *		puiRow,
+	eColorType		uiBackColor,
+	eColorType		uiForeColor,
+	FLMINT			iLabelIndex,
+	FLMUINT			uiFileNumber,
+	FLMUINT			uiFileOffset,
+	FLMBYTE *		pucVal,
+	FLMUINT			uiValLen,
+	FLMBOOL			bCopyVal)
 {
 	FLMBOOL		bOk = FALSE;
 	FLMUINT		uiRow = *puiRow;
@@ -1202,8 +1192,8 @@ Desc: This routine outputs the content of a DOM node in the Element
 FSTATIC FLMBOOL OutputDomNode(
 	FLMUINT				uiCol,
 	FLMUINT *			puiRow,
-	FLMUINT				uiBackColor,
-	FLMUINT				uiForeColor,
+	eColorType			uiBackColor,
+	eColorType			uiForeColor,
 	FLMBYTE *			pucVal,
 	STATE_INFO *		pStateInfo)
 {
@@ -1317,10 +1307,10 @@ FSTATIC FLMBOOL OutputDomNode(
 	else
 	{
 		pucTmp = pucData;
-		uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+		uiSENLength = f_getSENLength( *pucTmp);
 		if (uiNumBytes >= uiSENLength)
 		{
-			if( RC_BAD( rc = flmDecodeSEN( &pucTmp, 
+			if( RC_BAD( rc = f_decodeSEN( &pucTmp, 
 				&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &uiValue)))
 			{
 				goto Exit;
@@ -1377,10 +1367,10 @@ FSTATIC FLMBOOL OutputDomNode(
 		else
 		{
 			pucTmp = pucData;
-			uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+			uiSENLength = f_getSENLength( *pucTmp);
 			if (uiNumBytes >= uiSENLength)
 			{
-				if( RC_BAD( rc = flmDecodeSEN( &pucTmp, 
+				if( RC_BAD( rc = f_decodeSEN( &pucTmp, 
 					&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &uiValue)))
 				{
 					goto Exit;
@@ -1437,10 +1427,10 @@ FSTATIC FLMBOOL OutputDomNode(
 	{
 		// Base ID (required)
 		pucTmp = pucData;
-		uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+		uiSENLength = f_getSENLength( *pucTmp);
 		if (uiNumBytes >= uiSENLength)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 				&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 			{
 				goto Exit;
@@ -1494,10 +1484,10 @@ FSTATIC FLMBOOL OutputDomNode(
 	else
 	{
 		pucTmp = pucData;
-		uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+		uiSENLength = f_getSENLength( *pucTmp);
 		if (uiNumBytes >= uiSENLength)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 				&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 			{
 				goto Exit;
@@ -1550,10 +1540,10 @@ FSTATIC FLMBOOL OutputDomNode(
 	else
 	{
 		pucTmp = pucData;
-		uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+		uiSENLength = f_getSENLength( *pucTmp);
 		if (uiNumBytes >= uiSENLength)
 		{
-			if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+			if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 				&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 			{
 				goto Exit;
@@ -1610,10 +1600,10 @@ FSTATIC FLMBOOL OutputDomNode(
 		{
 			// Previous
 			pucTmp = pucData;
-			uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+			uiSENLength = f_getSENLength( *pucTmp);
 			if (uiNumBytes >= uiSENLength)
 			{
-				if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+				if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 					&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 				{
 					goto Exit;
@@ -1668,10 +1658,10 @@ FSTATIC FLMBOOL OutputDomNode(
 		{
 			// Next
 			pucTmp = pucData;
-			uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+			uiSENLength = f_getSENLength( *pucTmp);
 			if (uiNumBytes >= uiSENLength)
 			{
-				if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+				if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 					&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 				{
 					goto Exit;
@@ -1729,10 +1719,10 @@ FSTATIC FLMBOOL OutputDomNode(
 		else
 		{
 			pucTmp = pucData;
-			uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+			uiSENLength = f_getSENLength( *pucTmp);
 			if (uiNumBytes >= uiSENLength)
 			{
-				if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+				if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 					&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 				{
 					goto Exit;
@@ -1787,10 +1777,10 @@ FSTATIC FLMBOOL OutputDomNode(
 		else
 		{
 			pucTmp = pucData;
-			uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+			uiSENLength = f_getSENLength( *pucTmp);
 			if (uiNumBytes >= uiSENLength)
 			{
-				if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+				if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 					&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 				{
 					goto Exit;
@@ -1847,10 +1837,10 @@ FSTATIC FLMBOOL OutputDomNode(
 		else
 		{
 			pucTmp = pucData;
-			uiSENLength = gv_ucSENLengthArray[ *pucTmp];
+			uiSENLength = f_getSENLength( *pucTmp);
 			if (uiNumBytes >= uiSENLength)
 			{
-				if( RC_BAD( rc = flmDecodeSEN64( &pucTmp, 
+				if( RC_BAD( rc = f_decodeSEN64( &pucTmp, 
 					&pucTmp[ FLM_MAX_NUM_BUF_SIZE], &ui64Value)))
 				{
 					goto Exit;
@@ -1930,12 +1920,12 @@ FSTATIC FLMBOOL OutputLeafElements(
 //				what this is used for and find a way to make it meaningful.
 	FLMBOOL		bOk = FALSE;
 	FLMUINT		uiLabelWidth = 30;
-	FLMUINT		uiBackColor = WPS_BLACK;
-	FLMUINT		uiForeColor = WPS_LIGHTGRAY;
-	FLMUINT		uiUnselectBackColor = WPS_BLACK;
-	FLMUINT		uiUnselectForeColor = WPS_WHITE;
-	FLMUINT		uiSelectBackColor = WPS_BLUE;
-	FLMUINT		uiSelectForeColor = WPS_WHITE;
+	eColorType	uiBackColor = FLM_BLACK;
+	eColorType	uiForeColor = FLM_LIGHTGRAY;
+	eColorType	uiUnselectBackColor = FLM_BLACK;
+	eColorType	uiUnselectForeColor = FLM_WHITE;
+	eColorType	uiSelectBackColor = FLM_BLUE;
+	eColorType	uiSelectForeColor = FLM_WHITE;
 	FLMUINT		uiRow = *puiRow;
 	FLMUINT		uiElementCount = 0;
 	FLMINT		iErrorCode;
@@ -2016,8 +2006,8 @@ FSTATIC FLMBOOL OutputLeafElements(
 					VIEW_INVALID_FILE_OFFSET,
 					0, MOD_DISABLED,
 					uiCol, uiRow++, 0,
-					WPS_GREEN, WPS_WHITE,
-					WPS_GREEN, WPS_WHITE))
+					FLM_GREEN, FLM_WHITE,
+					FLM_GREEN, FLM_WHITE))
 			{
 				goto Exit;
 			}
@@ -2197,10 +2187,10 @@ FSTATIC FLMBOOL OutputLeafElements(
 								FSGetFileOffset( StateInfo.ui32BlkAddress) +
 									StateInfo.uiElmDataOffset, 
 								0, MOD_DISABLED, uiCol, uiRow++, uiOption,
-								(FLMBYTE)(!uiOption ? uiBackColor : uiUnselectBackColor),
-								(FLMBYTE)(!uiOption ? uiForeColor : uiUnselectForeColor),
-								(FLMBYTE)(!uiOption ? uiBackColor : uiSelectBackColor),
-								(FLMBYTE)(!uiOption ? uiForeColor : uiSelectForeColor)))
+								(!uiOption ? uiBackColor : uiUnselectBackColor),
+								(!uiOption ? uiForeColor : uiUnselectForeColor),
+								(!uiOption ? uiBackColor : uiSelectBackColor),
+								(!uiOption ? uiForeColor : uiSelectForeColor)))
 					{
 						goto Exit;
 					}
@@ -2288,8 +2278,8 @@ FSTATIC FLMBOOL OutputDataOnlyElements(
 {
 	FLMBOOL		bOk = FALSE;
 	FLMUINT		uiLabelWidth = 30;
-	FLMUINT		uiBackColor = WPS_BLACK;
-	FLMUINT		uiForeColor = WPS_LIGHTGRAY;
+	eColorType	uiBackColor = FLM_BLACK;
+	eColorType	uiForeColor = FLM_LIGHTGRAY;
 	FLMUINT		uiRow = *puiRow;
 	FLMINT		iErrorCode;
 //	LFileType	eLfType = LF_INVALID;
@@ -2604,12 +2594,12 @@ FSTATIC FLMBOOL OutputNonLeafElements(
 {
 	FLMBOOL		bOk = FALSE;
 	FLMUINT		uiLabelWidth = 30;
-	FLMUINT		uiBackColor = WPS_BLACK;
-	FLMUINT		uiForeColor = WPS_LIGHTGRAY;
-	FLMUINT		uiUnselectBackColor = WPS_BLACK;
-	FLMUINT		uiUnselectForeColor = WPS_WHITE;
-	FLMUINT		uiSelectBackColor = WPS_BLUE;
-	FLMUINT		uiSelectForeColor = WPS_WHITE;
+	eColorType	uiBackColor = FLM_BLACK;
+	eColorType	uiForeColor = FLM_LIGHTGRAY;
+	eColorType	uiUnselectBackColor = FLM_BLACK;
+	eColorType	uiUnselectForeColor = FLM_WHITE;
+	eColorType	uiSelectBackColor = FLM_BLUE;
+	eColorType	uiSelectForeColor = FLM_WHITE;
 	FLMUINT		uiRow = *puiRow;
 	FLMUINT		uiElementCount = 0;
 //	FLMBYTE *	pucTmpAddr;
@@ -2724,8 +2714,8 @@ FSTATIC FLMBOOL OutputNonLeafElements(
 						VIEW_INVALID_FILE_OFFSET,
 						0, MOD_DISABLED,
 						uiCol, uiRow++, 0,
-						WPS_GREEN, WPS_WHITE,
-						WPS_GREEN, WPS_WHITE))
+						FLM_GREEN, FLM_WHITE,
+						FLM_GREEN, FLM_WHITE))
 			{
 				goto Exit;
 			}
@@ -2778,10 +2768,10 @@ FSTATIC FLMBOOL OutputNonLeafElements(
 						FSGetFileOffset( StateInfo.ui32BlkAddress) +
 																StateInfo.uiElmOffset,
 						0, MOD_CHILD_BLK, uiCol, uiRow++, uiOption,
-						(FLMBYTE)(!uiOption ? uiBackColor : uiUnselectBackColor),
-						(FLMBYTE)(!uiOption ? uiForeColor : uiUnselectForeColor),
-						(FLMBYTE)(!uiOption ? uiBackColor : uiSelectBackColor),
-						(FLMBYTE)(!uiOption ? uiForeColor : uiSelectForeColor)))
+						(!uiOption ? uiBackColor : uiUnselectBackColor),
+						(!uiOption ? uiForeColor : uiUnselectForeColor),
+						(!uiOption ? uiBackColor : uiSelectBackColor),
+						(!uiOption ? uiForeColor : uiSelectForeColor)))
 			{
 				goto Exit;
 			}
@@ -2996,8 +2986,8 @@ void ViewHexBlock(
 				(FLMUINT)pucBlk, uiNumBytes,
 				uiFileNumber, uiFileOffset, uiNumBytes, MOD_BINARY,
 				uiCol, uiRow++, 0,
-				WPS_BLACK, WPS_LIGHTGRAY,
-				WPS_BLACK, WPS_LIGHTGRAY))
+				FLM_BLACK, FLM_LIGHTGRAY,
+				FLM_BLACK, FLM_LIGHTGRAY))
 		{
 			return;
 		}
@@ -3247,7 +3237,7 @@ Switch_Statement:
 									pMenuItem = pMenuItem->pNextItem;
 								}
 								pszTmp = (FLMBYTE *)((FLMUINT)pMenuItem->ui64Value);
-								if (f_stricmp( pszTmp, COLLECTION_STRING) == 0)
+								if (f_stricmp( (const char *)pszTmp, COLLECTION_STRING) == 0)
 								{
 									gv_uiViewSearchLfType = XFLM_LF_COLLECTION;
 								}
@@ -3354,7 +3344,7 @@ FLMBOOL GetBlockAddrType(
 	for (;;)
 	{
 		bBadDigit = FALSE;
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsScrClr( 0, uiNumRows - 2);
 		ViewAskInput( 
 			"Enter Block Address (in hex): ", 

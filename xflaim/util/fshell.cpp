@@ -32,7 +32,6 @@
 
 // Imported global variables.
 
-extern FTX_INFO *							gv_pFtxInfo;
 extern FLMBOOL								gv_bShutdown;
 
 // XML Import Error Handling
@@ -226,7 +225,7 @@ public:
 	FLMUINT				m_uiAttrListSize;
 	FLMUINT				m_uiNumAttrs;
 	F_NodeInfo			m_nodeInfo;
-	F_Pool				m_Pool;
+	IF_Pool *			m_pPool;
 };
 
 // Local prototypes
@@ -263,7 +262,7 @@ RCODE importXmlFiles(
 	XFLM_IMPORT_STATS *		pImportStats);
 
 RCODE	getErrFromFile(
-	F_FileIStream *	fileIStream,
+	IF_PosIStream *	pFileIStream,
 	FLMUINT				uiCurrLineFilePos,
 	FLMUINT				uiCurrLineBytes,
 	XMLEncoding			eXMLEncoding,
@@ -331,13 +330,13 @@ public:
 			pszBackupSetPath, pszRflDir));
 	}
 
-	FINLINE RCODE XFLMAPI openRflFile(
+	FINLINE RCODE FLMAPI openRflFile(
 		FLMUINT	uiFileNum)
 	{
 		return( F_FSRestore::openRflFile( uiFileNum));
 	}
 
-	FINLINE RCODE XFLMAPI read(
+	FINLINE RCODE FLMAPI read(
 		FLMUINT			uiLength,
 		void *			pvBuffer,
 		FLMUINT *		puiBytesRead)
@@ -371,28 +370,28 @@ public:
 		m_ui64RflBytesRead = 0;
 	}
 
-	RCODE XFLMAPI reportProgress(
+	RCODE FLMAPI reportProgress(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64BytesToDo,
 		FLMUINT64			ui64BytesDone);
 
-	RCODE XFLMAPI reportError(
+	RCODE FLMAPI reportError(
 		eRestoreAction *	peAction,
 		RCODE					rcErr);
 
-	RCODE XFLMAPI reportBeginTrans(
+	RCODE FLMAPI reportBeginTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportCommitTrans(
+	RCODE FLMAPI reportCommitTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportAbortTrans(
+	RCODE FLMAPI reportAbortTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportOpenRflFile(
+	RCODE FLMAPI reportOpenRflFile(
 		eRestoreAction *	peAction,
 		FLMUINT				uiFileNum)
 	{
@@ -403,7 +402,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE XFLMAPI reportRflRead(
+	RCODE FLMAPI reportRflRead(
 		eRestoreAction *	peAction,
 		FLMUINT				uiFileNum,
 		FLMUINT				uiBytesRead)
@@ -416,7 +415,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE XFLMAPI reportBlockChainFree(
+	RCODE FLMAPI reportBlockChainFree(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT64,				// ui64MaintDocNum,
@@ -429,15 +428,15 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE XFLMAPI reportEnableEncryption(
+	RCODE FLMAPI reportEnableEncryption(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportWrapKey(
+	RCODE FLMAPI reportWrapKey(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportRollOverDbKey(
+	RCODE FLMAPI reportRollOverDbKey(
 		eRestoreAction *	peAction,
 		FLMUINT64)			// ui64TransId)
 	{
@@ -445,7 +444,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportDocumentDone(
+	RCODE FLMAPI reportDocumentDone(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -455,7 +454,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeCreate(
+	RCODE FLMAPI reportNodeCreate(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -468,7 +467,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeDelete(
+	RCODE FLMAPI reportNodeDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -478,7 +477,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeChildrenDelete(
+	RCODE FLMAPI reportNodeChildrenDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -489,7 +488,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportInsertBefore(
+	RCODE FLMAPI reportInsertBefore(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -501,7 +500,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeUpdate(
+	RCODE FLMAPI reportNodeUpdate(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -511,7 +510,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeSetValue(
+	RCODE FLMAPI reportNodeSetValue(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -521,7 +520,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeFlagsUpdate(
+	RCODE FLMAPI reportNodeFlagsUpdate(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -533,7 +532,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportNodeSetPrefixId(
+	RCODE FLMAPI reportNodeSetPrefixId(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -544,7 +543,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE XFLMAPI reportSetNextNodeId(
+	RCODE FLMAPI reportSetNextNodeId(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -554,7 +553,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE XFLMAPI reportNodeSetMetaValue(
+	RCODE FLMAPI reportNodeSetMetaValue(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -566,7 +565,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE XFLMAPI reportAttributeDelete(
+	RCODE FLMAPI reportAttributeDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -577,7 +576,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE XFLMAPI reportAttributeSetValue(
+	RCODE FLMAPI reportAttributeSetValue(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -588,7 +587,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE XFLMAPI reportNodeSetPrefixId(
+	RCODE FLMAPI reportNodeSetPrefixId(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -643,7 +642,7 @@ private:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-class F_LocalBackupStatus : public IF_BackupStatus, public XF_Base
+class F_LocalBackupStatus : public IF_BackupStatus
 {
 public:
 
@@ -653,21 +652,21 @@ public:
 		m_pShell = pShell;
 	}
 
-	RCODE XFLMAPI backupStatus(
+	RCODE FLMAPI backupStatus(
 		FLMUINT64		ui64BytesToDo,
 		FLMUINT64		ui64BytesDone);
 
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_BackupStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_BackupStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_BackupStatus::Release());
 	}
@@ -682,8 +681,14 @@ Desc:
 *****************************************************************************/
 FlmShell::FlmShell( void) : FlmThreadContext()
 {
-	m_HistPool.poolInit( 512);
-	m_ArgPool.poolInit( 512);
+	m_pHistPool = NULL;
+	m_pArgPool = NULL;
+	
+	FlmAllocPool( &m_pHistPool);
+	FlmAllocPool( &m_pArgPool);
+	
+	m_pHistPool->poolInit( 512);
+	m_pArgPool->poolInit( 512);
 
 	f_memset( m_DbList, 0, MAX_SHELL_OPEN_DB * sizeof( IF_Db *));
 	m_pTitleWin = NULL;
@@ -703,8 +708,15 @@ FlmShell::~FlmShell( void)
 {
 	FLMUINT		uiLoop;
 
-	m_HistPool.poolFree();
-	m_ArgPool.poolFree();
+	if( m_pHistPool)
+	{
+		m_pHistPool->Release();
+	}
+	
+	if( m_pArgPool)
+	{
+		m_pArgPool->Release();
+	}
 
 	// Free the command objects.
 
@@ -1129,7 +1141,7 @@ RCODE FlmShell::parseCmdLine(
 	FlmParse		Parser;
 	RCODE			rc = NE_XFLM_OK;
 
-	m_ArgPool.poolReset( NULL);
+	m_pArgPool->poolReset( NULL);
 	m_iCurrArgC = 0;
 	m_ppCurrArgV = NULL;
 	m_pszOutputFile = NULL;
@@ -1140,7 +1152,7 @@ RCODE FlmShell::parseCmdLine(
 		uiArgCount++;
 	}
 
-	if (RC_BAD( rc = m_ArgPool.poolCalloc( uiArgCount * sizeof( char *),
+	if (RC_BAD( rc = m_pArgPool->poolCalloc( uiArgCount * sizeof( char *),
 		(void **)&m_ppCurrArgV)))
 	{
 		goto Exit;
@@ -1161,7 +1173,7 @@ RCODE FlmShell::parseCmdLine(
 		uiTokenLen = f_strlen( pszCurrToken);
 		if (!bQuoted && uiTokenLen >= 2 && *pszCurrToken == '>' && !m_pszOutputFile)
 		{
-			if (RC_BAD( rc = m_ArgPool.poolCalloc( uiTokenLen,
+			if (RC_BAD( rc = m_pArgPool->poolCalloc( uiTokenLen,
 				(void **)&m_pszOutputFile)))
 			{
 				goto Exit;
@@ -1170,7 +1182,7 @@ RCODE FlmShell::parseCmdLine(
 		}
 		else
 		{
-			if (RC_BAD( rc = m_ArgPool.poolCalloc( uiTokenLen + 1,
+			if (RC_BAD( rc = m_pArgPool->poolCalloc( uiTokenLen + 1,
 				(void **)&m_ppCurrArgV [uiCurrToken])))
 			{
 				goto Exit;
@@ -1199,9 +1211,10 @@ Desc:
 *****************************************************************************/
 RCODE FlmShell::executeCmdLine( void)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMBOOL				bValidCommand = FALSE;
-	FLMUINT				uiLoop;
+	RCODE						rc = NE_XFLM_OK;
+	FLMBOOL					bValidCommand = FALSE;
+	FLMUINT					uiLoop;
+	IF_BufferIStream *	pBufIStream = NULL;
 
 	if( !m_iCurrArgC)
 	{
@@ -1290,10 +1303,9 @@ RCODE FlmShell::executeCmdLine( void)
 	}
 	else if( f_stricmp( m_ppCurrArgV[ 0], "qp") == 0)
 	{
-		F_XPath				xpathObj;
-		F_BufferIStream	bufIStream;
-		F_Query				query;
-		RCODE					tmpRc;
+		F_XPath					xpathObj;
+		F_Query					query;
+		RCODE						tmpRc;
 
 		bValidCommand = TRUE;
 		if( m_iCurrArgC != 3)
@@ -1311,16 +1323,24 @@ RCODE FlmShell::executeCmdLine( void)
 				con_printf( "Invalid database ID.\n\n");
 				goto Exit;
 			}
-
-			bufIStream.open( (FLMBYTE *)m_ppCurrArgV[ 2],
-									f_strlen( m_ppCurrArgV[ 2]));
-			tmpRc = xpathObj.parseQuery( pDb, &bufIStream, &query);
+			
+			if( !pBufIStream)
+			{
+				if( RC_BAD( rc = FlmAllocBufferIStream( &pBufIStream)))
+				{
+					goto Exit;
+				}
+			}
+			
+			pBufIStream->open( m_ppCurrArgV[ 2], f_strlen( m_ppCurrArgV[ 2]));
+			tmpRc = xpathObj.parseQuery( pDb, pBufIStream, &query);
+			pBufIStream->close();
+			
 			con_printf( "Result: 0x%08X\n\n", (unsigned)tmpRc);
 		}
 	}
 	else if( f_stricmp( m_ppCurrArgV[ 0], "meta") == 0)
 	{
-		F_BufferIStream	bufIStream;
 		FLMUINT				uiMeta;
 		FLMUINT				uiAltMeta;
 		RCODE					tmpRc;
@@ -1332,11 +1352,18 @@ RCODE FlmShell::executeCmdLine( void)
 		}
 		else
 		{
-			bufIStream.open( (FLMBYTE *)m_ppCurrArgV[ 1],
-							f_strlen( m_ppCurrArgV[ 1]));
+			if( !pBufIStream)
+			{
+				if( RC_BAD( rc = FlmAllocBufferIStream( &pBufIStream)))
+				{
+					goto MetaExit;
+				}
+			}
+			
+			pBufIStream->open( m_ppCurrArgV[ 1], f_strlen( m_ppCurrArgV[ 1]));
 			for( ;;)
 			{
-				if( RC_BAD( tmpRc = flmGetNextMetaphone( &bufIStream, 
+				if( RC_BAD( tmpRc = f_getNextMetaphone( pBufIStream, 
 					&uiMeta, &uiAltMeta)))
 				{
 					if( tmpRc == NE_XFLM_EOF_HIT)
@@ -1357,6 +1384,11 @@ MetaExit:
 			if( RC_BAD( tmpRc))
 			{
 				con_printf( "Error: 0x%04X\n", tmpRc);
+			}
+			
+			if( pBufIStream)
+			{
+				pBufIStream->close();
 			}
 		}
 	}
@@ -1424,6 +1456,11 @@ MetaExit:
 	}
 
 Exit:
+
+	if( pBufIStream)
+	{
+		pBufIStream->Release();
+	}
 
 	return( rc);
 }
@@ -1545,28 +1582,22 @@ RCODE FlmShell::execute( void)
 	char						szDir [F_PATH_MAX_SIZE];
 	DirectoryIterator		directoryIterator;
 	char *					pszTabCompleteBegin = NULL;
+	IF_PosIStream *		pFileIStream = NULL;
 
 
-	if( FTXScreenInit( m_pSharedContext->getFtxInfo(),
-		"xshell main", &m_pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXScreenInit( "xshell main", &m_pScreen)))
 	{
-		rc = RC_SET( NE_XFLM_FAILURE);
 		goto Exit;
 	}
 
-	if( FTXScreenInitStandardWindows( m_pScreen, WPS_RED, WPS_WHITE, WPS_BLUE,
-		WPS_WHITE, FALSE, FALSE, NULL, &m_pTitleWin, &m_pWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXScreenInitStandardWindows( m_pScreen, 
+		FLM_RED, FLM_WHITE, FLM_BLUE, FLM_WHITE, FALSE, FALSE, 
+		NULL, &m_pTitleWin, &m_pWindow)))
 	{
-		rc = RC_SET( NE_XFLM_FAILURE);
 		goto Exit;
 	}
 
-	if( FTXScreenDisplay( m_pScreen) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_FAILURE);
-		goto Exit;
-	}
-
+	FTXScreenDisplay( m_pScreen);
 	FTXScreenSetShutdownFlag( m_pScreen, getShutdownFlagAddr());
 
 	szBuffer[ 0] = '\0';
@@ -1613,7 +1644,7 @@ RCODE FlmShell::execute( void)
 			break;
 		}
 
-		if( uiTermChar == WPK_TAB)
+		if( uiTermChar == FKB_TAB)
 		{
 			char	szBase[ 255];
 			char	szWildcard[ 255];
@@ -1652,7 +1683,7 @@ RCODE FlmShell::execute( void)
 			}
 			else
 			{
-				ftxBeep();
+				FTXBeep();
 			}
 
 			// If the completed path contains spaces, quote it
@@ -1669,7 +1700,7 @@ RCODE FlmShell::execute( void)
 
 		directoryIterator.reset();
 
-		if( uiTermChar == WPK_UP)
+		if( uiTermChar == FKB_UP)
 		{
 			for(; uiLastHistorySlot > 0; uiLastHistorySlot--)
 			{
@@ -1684,7 +1715,7 @@ RCODE FlmShell::execute( void)
 			continue;
 		}
 
-		if( uiTermChar == WPK_DOWN)
+		if( uiTermChar == FKB_DOWN)
 		{
 			for(; uiLastHistorySlot < MAX_SHELL_HISTORY_ITEMS - 1; uiLastHistorySlot++)
 			{
@@ -1698,31 +1729,30 @@ RCODE FlmShell::execute( void)
 			continue;
 		}
 
-		if( uiTermChar == WPK_ESCAPE)
+		if( uiTermChar == FKB_ESCAPE)
 		{
 			szBuffer[ 0] = '\0';
 			continue;
 		}
 
-		if( uiTermChar == WPK_F1)
+		if( uiTermChar == FKB_F1)
 		{
 			FLMUINT				uiLen;
-			F_FileIStream		fileIStream;
 
 			addCmdHistory( szBuffer);
 
-			if( RC_BAD( rc = fileIStream.open( szBuffer)))
+			if( RC_BAD( rc = FlmOpenFileIStream( szBuffer, &pFileIStream)))
 			{
 				goto BatchError;
 			}
-
+			
 			for( ;;)
 			{
 				FTXWinPrintf( m_pWindow, "\n");
 
 				uiLen = MAX_CMD_LINE_LEN;
 				if( RC_BAD( rc = flmReadLine( 
-					&fileIStream, (FLMBYTE *)szBuffer, &uiLen)))
+					pFileIStream, (FLMBYTE *)szBuffer, &uiLen)))
 				{
 					if( rc == NE_XFLM_EOF_HIT)
 					{
@@ -1772,6 +1802,11 @@ BatchError:
 	}
 
 Exit:
+
+	if( pFileIStream)
+	{
+		pFileIStream->Release();
+	}
 
 	if( m_pWindow)
 	{
@@ -1929,7 +1964,7 @@ FLMINT FlmDbOpenCommand::execute(
 	if( RC_BAD( rc = dbSystem.dbOpen( ppszArgV[ 1],
 		NULL, pszRflDir, pszPassword, bAllowLimited, &pDb)))
 	{
-		if( rc != NE_XFLM_IO_PATH_NOT_FOUND)
+		if( rc != NE_FLM_IO_PATH_NOT_FOUND)
 		{
 			goto Exit;
 		}
@@ -2300,7 +2335,7 @@ public:
 	{
 	}
 
-	RCODE XFLMAPI dbCopyStatus(
+	RCODE FLMAPI dbCopyStatus(
 		FLMUINT64		ui64BytesToCopy,
 		FLMUINT64		ui64BytesCopied,
 		FLMBOOL			bNewSrcFile,
@@ -2328,12 +2363,12 @@ public:
 		f_sleep( 0);
 	#endif
 
-		if (FTXWinTestKB( m_pWin) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( m_pWin)))
 		{
 			FLMUINT	uiChar;
 
 			FTXWinInputChar( m_pWin, &uiChar);
-			if (uiChar == WPK_ESC)
+			if (uiChar == FKB_ESC)
 			{
 				rc = RC_SET( NE_XFLM_USER_ABORT);
 				goto Exit;
@@ -2367,7 +2402,7 @@ public:
 	{
 	}
 
-	FINLINE RCODE XFLMAPI dbRenameStatus(
+	FINLINE RCODE FLMAPI dbRenameStatus(
 		const char *	pszSrcFileName,
 		const char *	pszDstFileName)
 	{
@@ -2656,12 +2691,12 @@ RCODE F_LocalBackupStatus::backupStatus(
 	f_sleep( 0);
 #endif
 
-	if( pWin && FTXWinTestKB( pWin) == FTXRC_SUCCESS)
+	if( pWin && RC_OK( FTXWinTestKB( pWin)))
 	{
 		FLMUINT	uiChar;
 
 		FTXWinInputChar( pWin, &uiChar);
-		if (uiChar == WPK_ESC)
+		if (uiChar == FKB_ESC)
 		{
 			rc = RC_SET( NE_XFLM_USER_ABORT);
 			goto Exit;
@@ -2712,7 +2747,7 @@ RCODE flmBackupProgFunc(
 		FLMUINT	uiChar;
 
 		FTXWinInputChar( pWin, &uiChar);
-		if (uiChar == WPK_ESC)
+		if (uiChar == FKB_ESC)
 		{
 			rc = RC_SET( NE_XFLM_USER_ABORT);
 			goto Exit;
@@ -2881,12 +2916,12 @@ RCODE F_LocalRestoreStatus::report_postamble(
 
 	f_yieldCPU();
 
-	if( pWin && FTXWinTestKB( pWin) == FTXRC_SUCCESS)
+	if( pWin && RC_OK( FTXWinTestKB( pWin)))
 	{
 		FLMUINT	uiChar;
 
 		FTXWinInputChar( pWin, &uiChar);
-		if (uiChar == WPK_ESC)
+		if (uiChar == FKB_ESC)
 		{
 			rc = RC_SET( NE_XFLM_USER_ABORT);
 			goto Exit;
@@ -2946,7 +2981,8 @@ RCODE F_LocalRestoreStatus::reportError(
 	FTXWinClearToEOL( pWin);
 	FTXWinPrintf( pWin, "Error: 0x%04X.  Retry (Y/N): ",
 		(unsigned)rcErr);
-	if( FTXWinInputChar( pWin, &uiChar) != FTXRC_SUCCESS)
+		
+	if( RC_BAD( FTXWinInputChar( pWin, &uiChar)))
 	{
 		uiChar = 0;
 		goto Exit;
@@ -3542,198 +3578,20 @@ FLMINT FlmSysInfoCommand::execute(
 	RCODE					rc = NE_XFLM_OK;
 	FTX_WINDOW *		pWin = pShell->getWindow();
 	FLMUINT				uiLoop;
-#ifdef FLM_WIN
-	DWORD					dwSectorsPerCluster;
-	DWORD					dwBytesPerSector;
-	DWORD					dwNumberOfFreeClusters;
-	DWORD					dwTotalNumberOfClusters;
-	FLMUINT				uiLogicalDrives;
-	SYSTEM_INFO			sysInfo;
-	MEMORYSTATUS		memStatus;
-	char					szBuf[ 128];
-#endif
 	IF_ThreadInfo *	pThreadInfo = NULL;
 	F_DbSystem			dbSystem;
 
 	if( iArgC < 2)
 	{
-#ifdef FLM_WIN
-
-		GlobalMemoryStatus( &memStatus);
-
-		pShell->con_printf( "Size of MEMORYSTATUS..... %,u\n",
-			(unsigned)memStatus.dwLength);
-		pShell->con_printf( "Memory load.............. %,u\n",
-			(unsigned)memStatus.dwMemoryLoad);
-		pShell->con_printf( "Total Physical Memory.... %,u\n",
-			(unsigned)memStatus.dwTotalPhys);
-		pShell->con_printf( "Avail Physical Memory.... %,u\n",
-			(unsigned)memStatus.dwAvailPhys);
-		pShell->con_printf( "Total Page File.......... %,u\n",
-			(unsigned)memStatus.dwTotalPageFile);
-		pShell->con_printf( "Avail Page File.......... %,u\n",
-			(unsigned)memStatus.dwAvailPageFile);
-		pShell->con_printf( "Total Virtual............ %,u\n",
-			(unsigned)memStatus.dwTotalVirtual);
-		pShell->con_printf( "Avail Virtual............ %,u\n",
-			(unsigned)memStatus.dwAvailVirtual);
-
-		GetSystemInfo( &sysInfo);
-		pShell->con_printf( "Processors .............. %,u\n",
-			sysInfo.dwNumberOfProcessors);
-		pShell->con_printf( "Processor type .......... %,u\n",
-			(unsigned)sysInfo.dwProcessorType);
-		pShell->con_printf( "Processor level ......... %,u\n",
-			(unsigned)sysInfo.wProcessorLevel);
-		pShell->con_printf( "Processor revision ...... %,u\n",
-			(unsigned)sysInfo.wProcessorRevision);
-		pShell->con_printf( "Page size ............... %,u (granularity for protection and commitment)\n",
-			sysInfo.dwPageSize);
-		pShell->con_printf( "Allocation granularity .. %,u (size of addr space reserved by VirtualAlloc)\n\n",
-			sysInfo.dwAllocationGranularity);
-
-		uiLogicalDrives = (FLMUINT)GetLogicalDrives();
-
-		for( uiLoop = 0; uiLoop < 32; uiLoop++)
-		{
-			if( uiLogicalDrives & (0x00000001 << uiLoop))
-			{
-				f_sprintf( (char *)szBuf, "%c:\\", (char)('A' + uiLoop));
-
-				if( GetDriveType( (char *)szBuf) == DRIVE_FIXED &&
-					GetDiskFreeSpace( (char *)szBuf, &dwSectorsPerCluster, &dwBytesPerSector,
-					&dwNumberOfFreeClusters, &dwTotalNumberOfClusters))
-				{
-					pShell->con_printf( "Drive   Sectors/Cluster   Bytes/Sector   Free Clusters   Total Clusters\n");
-					pShell->con_printf( "-----   ---------------   ------------   -------------   --------------\n");
-					pShell->con_printf( "%c       %,-12u      %,-12u   %,-12u    %,-12u\n",
-						szBuf[ 0],
-						(unsigned)dwSectorsPerCluster,
-						(unsigned)dwBytesPerSector,
-						(unsigned)dwNumberOfFreeClusters,
-						(unsigned)dwTotalNumberOfClusters);
-				}
-			}
-		}
-#elif defined( FLM_UNIX)
-	{
-
-		#if defined( FLM_LINUX)
-				FLMUINT64			ui64TotalMem;
-				FLMUINT64			ui64AvailMem;
-			
-				flmGetLinuxMemInfo( &ui64TotalMem, &ui64AvailMem);
-				
-				pShell->con_printf( "Total Memory ............. %,I64u\n",
-					ui64TotalMem);
-				pShell->con_printf( "Available Memory ......... %,I64u\n",
-					ui64AvailMem);
-		#endif
-				
-
-		#if defined( _SC_AVPHYS_PAGES)
-			{
-				FLMUINT				uiPageSize = (FLMUINT)sysconf(_SC_PAGESIZE);
-				FLMUINT				uiAvailPhysPages = (FLMUINT)sysconf(_SC_AVPHYS_PAGES);
-				FLMUINT				uiTotalPhysPages = (FLMUINT)sysconf(_SC_PHYS_PAGES);
-
-				pShell->con_printf( "Page Size ................ %,u (0x%08X)\n",
-					(unsigned)uiPageSize, (unsigned)uiPageSize);
-				pShell->con_printf( "Available Pages .......... %,u (0x%08X)\n",
-					(unsigned)uiAvailPhysPages, (unsigned)uiAvailPhysPages);
-				pShell->con_printf( "Total Pages .............. %,u (0x%08X)\n",
-					(unsigned)uiTotalPhysPages, (unsigned)uiTotalPhysPages);
-
-				pShell->con_printf( "Total Memory (may wrap) .. %,u (0x%08X)\n",
-					(unsigned)(uiTotalPhysPages * uiPageSize),
-					(unsigned)(uiTotalPhysPages * uiPageSize));
-				pShell->con_printf( "Avail Memory (may wrap) .. %,u (0x%08X)\n",
-					(unsigned)(uiAvailPhysPages * uiPageSize),
-					(unsigned)(uiAvailPhysPages * uiPageSize));
-
-			}
-		#endif
-
-		#if defined( RUSAGE_SELF)
-			{
-				struct rusage		resourceUsage;
-				if( getrusage( RUSAGE_SELF, &resourceUsage) == 0)
-				{
-					pShell->con_printf( "Mem. used by process...... %,u (0x%08X)\n",
-						(unsigned)resourceUsage.ru_idrss,
-						(unsigned)resourceUsage.ru_idrss);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_DATA)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_DATA, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_DATA (cur)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_DATA (max)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_FSIZE)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_FSIZE, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_FSIZE (cur)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_FSIZE (max)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_STACK)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_STACK, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_STACK (cur)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_STACK (max)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_VMEM)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_VMEM (cur)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_VMEM (max)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_AS)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_AS, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_AS (cur)........... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_AS (max)........... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-	}
-#else
-		pShell->con_printf( "No information available.\n");
-#endif
+		FLMUINT64			ui64TotalMem;
+		FLMUINT64			ui64AvailMem;
+	
+		f_getMemoryInfo( &ui64TotalMem, &ui64AvailMem);
+		
+		pShell->con_printf( "Total Memory ............. %,I64u\n",
+			ui64TotalMem);
+		pShell->con_printf( "Available Memory ......... %,I64u\n",
+			ui64AvailMem);
 	}
 	else
 	{
@@ -3783,14 +3641,14 @@ FLMINT FlmSysInfoCommand::execute(
 					f_yieldCPU();
 				}
 
-				FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
+				uiMilli = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime);
 				pShell->con_printf( "Allocations: %u ms, %,u count, %,u bytes\n",
 					(unsigned)uiMilli, (unsigned)uiLoop,
 					(unsigned)(uiCount * uiBlockSize));
 
 				if( iArgC > 4 && !f_stricmp( ppszArgV[ 4], "pause"))
 				{
-					FTXDisplayMessage( pShell->getScreen(), WPS_BLUE, WPS_WHITE,
+					FTXDisplayMessage( pShell->getScreen(), FLM_BLUE, FLM_WHITE,
 						"Press <ENTER> to continue ...",
 						NULL, NULL);
 				}
@@ -3803,7 +3661,7 @@ FLMINT FlmSysInfoCommand::execute(
 					f_free( &pvAlloc);
 					f_yieldCPU();
 				}
-				FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
+				uiMilli = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime);
 				pShell->con_printf( "Frees: %u ms, %u count, %u bytes\n",
 					(unsigned)uiMilli, (unsigned)uiLoop,
 					(unsigned)(uiLoop * uiBlockSize));
@@ -3853,7 +3711,7 @@ FLMINT FlmSysInfoCommand::execute(
 
 			for( ;;)
 			{
-				if( FTXWinTestKB( pWin) == FTXRC_SUCCESS)
+				if( RC_OK( FTXWinTestKB( pWin)))
 				{
 					break;
 				}
@@ -3960,24 +3818,23 @@ FLMBOOL FlmSysInfoCommand::canPerformCommand(
 Desc:
 *****************************************************************************/
 FLMINT fshellFileSystemTest(
-	FLMINT		iArgC,
-	char **		ppszArgV,
-	FlmShell *	pShell)
+	FLMINT				iArgC,
+	char **				ppszArgV,
+	FlmShell *			pShell)
 {
-	FLMINT		iExitCode = 0;
-	RCODE			rc = NE_XFLM_OK;
-	F_FileHdl *	pFileHdl = NULL;
-	FLMUINT		uiBlockSize = 4096;
-	FLMUINT		uiFileSize = (1024 * 1024 * 100); // 100 MB
-	FLMUINT		uiOffset = 0;
-	FLMUINT		uiBytesWritten;
-	FLMUINT		uiBytesRead;
-	FLMUINT		uiStartTime;
-	FLMUINT		uiMilli;
-	FLMUINT		uiTotal;
-	FLMUINT		uiCount;
-	FLMBYTE *	pucBuf = NULL;
-	F_RandomGenerator	randGen;
+	FLMINT						iExitCode = 0;
+	RCODE							rc = NE_XFLM_OK;
+	IF_FileHdl *				pFileHdl = NULL;
+	FLMUINT						uiBlockSize = 4096;
+	FLMUINT						uiFileSize = (1024 * 1024 * 100); // 100 MB
+	FLMUINT						uiOffset = 0;
+	FLMUINT						uiBytesWritten;
+	FLMUINT						uiBytesRead;
+	FLMUINT						uiStartTime;
+	FLMUINT						uiMilli;
+	FLMUINT						uiTotal;
+	FLMUINT						uiCount;
+	FLMBYTE *					pucBuf = NULL;
 
 	if( iArgC < 2)
 	{
@@ -3992,42 +3849,35 @@ FLMINT fshellFileSystemTest(
 	}
 
 	f_memset( pucBuf, 0xFF, uiBlockSize);
-	randGen.randomize();
-
-	if ((pFileHdl = f_new F_FileHdl) == NULL)
+	
+	if( RC_OK( f_getFileSysPtr()->doesFileExist( ppszArgV[ 1])))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-#ifdef FLM_WIN
-	pFileHdl->SetBlockSize( uiBlockSize);
-#endif
-
-	if( RC_OK( gv_pFileSystem->Exists( ppszArgV[ 1])))
-	{
-		if( RC_BAD( rc = pFileHdl->Open( ppszArgV[ 1],
-			XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT)))
+		if( RC_BAD( rc = f_getFileSysPtr()->openFile( ppszArgV[ 1],
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pFileHdl)))
 		{
 			goto Exit;
 		}
-
-		// VISIT: get file size -- make sure it is a multiple of uiBlockSize
+		
+		pFileHdl->setBlockSize( uiBlockSize);
 	}
 	else
 	{
 		pShell->con_printf( "Creating %s\n", ppszArgV[ 1]);
 
 		uiStartTime = FLM_GET_TIMER();
-		if( RC_BAD( rc = pFileHdl->Create( ppszArgV[ 1],
-			XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT)))
+		if( RC_BAD( rc = f_getFileSysPtr()->createFile( ppszArgV[ 1],
+			FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+			&pFileHdl)))
 		{
 			goto Exit;
 		}
+		
+		pFileHdl->setBlockSize( uiBlockSize);
 
 		uiOffset = 0;
 		while( uiOffset < uiFileSize)
 		{
-			if( RC_BAD( rc = pFileHdl->Write( uiOffset, uiBlockSize,
+			if( RC_BAD( rc = pFileHdl->write( uiOffset, uiBlockSize,
 				pucBuf, &uiBytesWritten)))
 			{
 				goto Exit;
@@ -4035,7 +3885,7 @@ FLMINT fshellFileSystemTest(
 
 			uiOffset += uiBytesWritten;
 
-			FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
+			uiMilli = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime);
 			pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
 				(unsigned)uiOffset, (unsigned)uiFileSize,
 				(unsigned)uiMilli > 1000 ? (uiOffset / (uiMilli / 1000)) : 0);
@@ -4056,9 +3906,9 @@ FLMINT fshellFileSystemTest(
 	uiStartTime = FLM_GET_TIMER();
 	while( uiCount)
 	{
-		uiOffset = (FLMUINT)((randGen.randomChoice( 1,
+		uiOffset = (FLMUINT)((f_getRandomUINT32( 1,
 			(FLMUINT32)uiCount) - 1) * uiBlockSize);
-		if( RC_BAD( rc = pFileHdl->Write( uiOffset, uiBlockSize,
+		if( RC_BAD( rc = pFileHdl->write( uiOffset, uiBlockSize,
 			pucBuf, &uiBytesWritten)))
 		{
 			goto Exit;
@@ -4067,7 +3917,7 @@ FLMINT fshellFileSystemTest(
 		uiCount--;
 		uiTotal += uiBytesWritten;
 
-		FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
+		uiMilli = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime);
 		pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
 			(unsigned)uiTotal, (unsigned)uiFileSize,
 			(unsigned)uiMilli > 1000 ? (uiTotal / (uiMilli / 1000)) : 0);
@@ -4080,14 +3930,14 @@ FLMINT fshellFileSystemTest(
 	uiStartTime = FLM_GET_TIMER();
 	while( uiOffset < uiFileSize)
 	{
-		if( RC_BAD( rc = pFileHdl->Read( uiOffset, uiBlockSize,
+		if( RC_BAD( rc = pFileHdl->read( uiOffset, uiBlockSize,
 			pucBuf, &uiBytesRead)))
 		{
 			goto Exit;
 		}
 
 		uiOffset += uiBytesRead;
-		FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
+		uiMilli = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime);
 		pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
 			(unsigned)uiOffset, (unsigned)uiFileSize,
 			(unsigned)uiMilli > 1000 ? (uiOffset / (uiMilli / 1000)) : 0);
@@ -4106,9 +3956,9 @@ FLMINT fshellFileSystemTest(
 	uiStartTime = FLM_GET_TIMER();
 	while( uiCount)
 	{
-		uiOffset = (FLMUINT)((randGen.randomChoice( 1, (FLMUINT32)uiCount)
+		uiOffset = (FLMUINT)((f_getRandomUINT32( 1, (FLMUINT32)uiCount)
 			- 1) * uiBlockSize);
-		if( RC_BAD( rc = pFileHdl->Read( uiOffset, uiBlockSize,
+		if( RC_BAD( rc = pFileHdl->read( uiOffset, uiBlockSize,
 			pucBuf, &uiBytesRead)))
 		{
 			goto Exit;
@@ -4117,7 +3967,7 @@ FLMINT fshellFileSystemTest(
 		uiCount--;
 		uiTotal += uiBytesRead;
 
-		FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
+		uiMilli = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime);
 		pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
 			(unsigned)uiTotal, (unsigned)uiFileSize,
 			(unsigned)uiMilli > 1000 ? (uiTotal / (uiMilli / 1000)) : 0);
@@ -4125,7 +3975,7 @@ FLMINT fshellFileSystemTest(
 
 	pShell->con_printf( "\nFinished random scan.\n");
 
-	if( RC_BAD( rc = pFileHdl->Close()))
+	if( RC_BAD( rc = pFileHdl->close()))
 	{
 		goto Exit;
 	}
@@ -4349,6 +4199,7 @@ FLMINT FlmFileSysCommand::execute(
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiLoop = 0;
 	FLMBOOL			bForce = FALSE;
+	IF_DirHdl *		pDir = NULL;
 
 	// Delete the file
 
@@ -4387,11 +4238,11 @@ FLMINT FlmFileSysCommand::execute(
 
 		if( bForce)
 		{
-			gv_pFileSystem->SetReadOnly( 
+			f_getFileSysPtr()->setReadOnly( 
 				ppszArgV[uiLoop], FALSE);	
 		}
 
-		if( RC_BAD( rc = gv_pFileSystem->Delete( ppszArgV[ uiLoop])))
+		if( RC_BAD( rc = f_getFileSysPtr()->deleteFile( ppszArgV[ uiLoop])))
 		{
 			goto Exit;
 		}
@@ -4467,23 +4318,23 @@ FLMINT FlmFileSysCommand::execute(
 			goto Exit;
 		}
 
-		if ( RC_BAD( rc = gv_pFileSystem->Exists( ppszArgV[uiLoop])))
+		if ( RC_BAD( rc = f_getFileSysPtr()->doesFileExist( ppszArgV[uiLoop])))
 		{
 			goto Exit;
 		}
 
-		if ( gv_pFileSystem->IsDir( ppszArgV[uiLoop + 1]))
+		if ( f_getFileSysPtr()->isDir( ppszArgV[uiLoop + 1]))
 		{
 			char	szFilename[ F_FILENAME_SIZE];
 
 			// If the second param is a directory we'll assume the user wants to
 			// move the file into it with the same filename.
 
-			gv_pFileSystem->pathReduce( ppszArgV[uiLoop], NULL, szFilename);
-			gv_pFileSystem->pathAppend( szFilename, ppszArgV[uiLoop + 1]);
+			f_getFileSysPtr()->pathReduce( ppszArgV[uiLoop], NULL, szFilename);
+			f_getFileSysPtr()->pathAppend( szFilename, ppszArgV[uiLoop + 1]);
 		}
 
-		if( RC_OK( gv_pFileSystem->Exists( ppszArgV[uiLoop + 1])))
+		if( RC_OK( f_getFileSysPtr()->doesFileExist( ppszArgV[uiLoop + 1])))
 		{
 			if ( !bOverwrite)
 			{
@@ -4492,7 +4343,7 @@ FLMINT FlmFileSysCommand::execute(
 				pShell->con_printf( "%s exists. Overwrite? (Y/N)", ppszArgV[ uiLoop + 1]);
 				for(;;)
 				{
-					if (FTXWinTestKB( pShell->getWindow()) == FTXRC_SUCCESS)
+					if( RC_OK( FTXWinTestKB( pShell->getWindow())))
 					{
 						FTXWinInputChar( pShell->getWindow(), &uiChar);
 
@@ -4516,12 +4367,13 @@ FLMINT FlmFileSysCommand::execute(
 			{
 				if ( bForce)
 				{
-					gv_pFileSystem->SetReadOnly( ppszArgV[uiLoop + 1], FALSE);
+					f_getFileSysPtr()->setReadOnly( ppszArgV[uiLoop + 1], FALSE);
 					pShell->con_printf( "Error changing file attributes. ");
 					goto Exit;
 				}
 
-				if ( RC_BAD( rc = gv_pFileSystem->Delete( ppszArgV[uiLoop + 1])))
+				if ( RC_BAD( rc = f_getFileSysPtr()->deleteFile( 
+					ppszArgV[uiLoop + 1])))
 				{
 					pShell->con_printf( "Error removing destination file. ");
 					goto Exit;
@@ -4529,7 +4381,7 @@ FLMINT FlmFileSysCommand::execute(
 			}
 		}
 
-		if ( RC_BAD( rc = gv_pFileSystem->Rename( ppszArgV[uiLoop], 
+		if ( RC_BAD( rc = f_getFileSysPtr()->renameFile( ppszArgV[uiLoop], 
 			ppszArgV[uiLoop + 1])))
 		{
 			goto Exit;
@@ -4581,23 +4433,23 @@ FLMINT FlmFileSysCommand::execute(
 			goto Exit;
 		}
 
-		if ( RC_BAD( rc = gv_pFileSystem->Exists( ppszArgV[uiLoop])))
+		if ( RC_BAD( rc = f_getFileSysPtr()->doesFileExist( ppszArgV[uiLoop])))
 		{
 			goto Exit;
 		}
 
-		if ( gv_pFileSystem->IsDir( ppszArgV[uiLoop + 1]))
+		if ( f_getFileSysPtr()->isDir( ppszArgV[uiLoop + 1]))
 		{
 			char	szFilename[ F_FILENAME_SIZE];
 
 			// If the second param is a directory we'll assume the user wants to
 			// copy the file into it with the same filename.
 
-			gv_pFileSystem->pathReduce( ppszArgV[uiLoop], NULL, szFilename);
-			gv_pFileSystem->pathAppend( szFilename, ppszArgV[uiLoop + 1]);
+			f_getFileSysPtr()->pathReduce( ppszArgV[uiLoop], NULL, szFilename);
+			f_getFileSysPtr()->pathAppend( szFilename, ppszArgV[uiLoop + 1]);
 		}
 
-		if ( RC_OK( gv_pFileSystem->Exists( ppszArgV[uiLoop + 1])))
+		if ( RC_OK( f_getFileSysPtr()->doesFileExist( ppszArgV[uiLoop + 1])))
 		{
 			if ( !bOverwrite)
 			{
@@ -4606,7 +4458,7 @@ FLMINT FlmFileSysCommand::execute(
 				pShell->con_printf( "%s exists. Overwrite? (Y/N)", ppszArgV[ uiLoop + 1]);
 				for(;;)
 				{
-					if (FTXWinTestKB( pShell->getWindow()) == FTXRC_SUCCESS)
+					if( RC_OK( FTXWinTestKB( pShell->getWindow())))
 					{
 						FTXWinInputChar( pShell->getWindow(), &uiChar);
 
@@ -4635,17 +4487,14 @@ FLMINT FlmFileSysCommand::execute(
 
 				if ( bForce)
 				{
-					gv_pFileSystem->SetReadOnly( 
+					f_getFileSysPtr()->setReadOnly( 
 						ppszArgV[uiLoop + 1], FALSE);
 				}
 			}
 		}
 
-		if ( RC_BAD( rc = gv_pFileSystem->Copy( 
-			ppszArgV[uiLoop],						// Name of source file to be copied.
-			ppszArgV[uiLoop +1],					// Name of destination file.
-			bOverwrite,								// Overwrite destination file?
-			&ui64BytesCopied)))						// Returns number of bytes copied.
+		if ( RC_BAD( rc = f_getFileSysPtr()->copyFile( 
+			ppszArgV[uiLoop], ppszArgV[uiLoop +1], bOverwrite, &ui64BytesCopied)))
 		{
 			goto Exit;
 		}
@@ -4656,7 +4505,6 @@ FLMINT FlmFileSysCommand::execute(
 	else if (f_stricmp( "ls", ppszArgV [0]) == 0 ||
 				f_stricmp( "dir", ppszArgV [0]) == 0)
 	{
-		F_DirHdl			dir;
 		char				szDir [F_PATH_MAX_SIZE];
 		char				szBaseName [F_FILENAME_SIZE];
 		FLMUINT			uiLineCount;
@@ -4670,7 +4518,8 @@ FLMINT FlmFileSysCommand::execute(
 
 		if( iArgC > 1)
 		{
-			if (RC_BAD( rc = gv_pFileSystem->pathReduce( ppszArgV [1], szDir, szBaseName)))
+			if (RC_BAD( rc = f_getFileSysPtr()->pathReduce( 
+				ppszArgV [1], szDir, szBaseName)))
 			{
 				goto Exit;
 			}
@@ -4678,14 +4527,16 @@ FLMINT FlmFileSysCommand::execute(
 			{
 				f_strcpy( szDir, ".");
 			}
-			if (RC_BAD( rc = dir.OpenDir( szDir, (char *)szBaseName)))
+			
+			if (RC_BAD( rc = f_getFileSysPtr()->openDir( szDir, 
+				(char *)szBaseName, &pDir)))
 			{
 				goto Exit;
 			}
 		}
 		else
 		{
-			if (RC_BAD( rc = dir.OpenDir( ".", NULL)))
+			if (RC_BAD( rc = f_getFileSysPtr()->openDir( ".", NULL, &pDir)))
 			{
 				goto Exit;
 			}
@@ -4694,9 +4545,9 @@ FLMINT FlmFileSysCommand::execute(
 		uiLineCount = 1;
 		for (;;)
 		{
-			if (RC_BAD( rc = dir.Next()))
+			if (RC_BAD( rc = pDir->next()))
 			{
-				if (rc == NE_XFLM_IO_NO_MORE_FILES)
+				if (rc == NE_FLM_IO_NO_MORE_FILES)
 				{
 					rc = NE_XFLM_OK;
 					break;
@@ -4713,19 +4564,19 @@ FLMINT FlmFileSysCommand::execute(
 				uiChar = 0;
 				for (;;)
 				{
-					if (FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+					if( RC_OK( FTXWinTestKB( pWindow)))
 					{
 						FTXWinInputChar( pWindow, &uiChar);
 						break;
 					}
 					if (pShell->getShutdownFlag())
 					{
-						uiChar = WPK_ESC;
+						uiChar = FKB_ESC;
 						break;
 					}
 					f_yieldCPU();
 				}
-				if (uiChar == WPK_ESC)
+				if (uiChar == FKB_ESC)
 				{
 					break;
 				}
@@ -4733,18 +4584,17 @@ FLMINT FlmFileSysCommand::execute(
 					"\r                                                       \r");
 				uiLineCount = 0;
 			}
-			if (dir.CurrentItemIsDir())
+			if (pDir->currentItemIsDir())
 			{
-				pShell->con_printf( "%-20s %25s\n", dir.CurrentItemName(),
+				pShell->con_printf( "%-20s %25s\n", pDir->currentItemName(),
 					"<DIR>");
 			}
 			else
 			{
 				char	szTmpBuf [60];
 
-				format64BitNum( (FLMUINT64)dir.CurrentItemSize(),
-					szTmpBuf, FALSE, TRUE);
-				pShell->con_printf( "%-20s %25s\n", dir.CurrentItemName(),
+				format64BitNum( pDir->currentItemSize(), szTmpBuf, FALSE, TRUE);
+				pShell->con_printf( "%-20s %25s\n", pDir->currentItemName(),
 					szTmpBuf);
 			}
 			uiLineCount++;
@@ -4757,6 +4607,11 @@ FLMINT FlmFileSysCommand::execute(
 	}
 
 Exit:
+
+	if( pDir)
+	{
+		pDir->Release();
+	}
 
 	if( RC_BAD( rc))
 	{
@@ -4861,16 +4716,16 @@ FLMINT FlmHexConvertCommand::execute(
 
 	// Open the source file
 
-	if( RC_BAD( rc = gv_pFileSystem->Open( ppszArgV[ 1],
-		XFLM_IO_RDONLY | XFLM_IO_SH_DENYNONE, &pSrcFile)))
+	if( RC_BAD( rc = f_getFileSysPtr()->openFile( ppszArgV[ 1],
+		FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &pSrcFile)))
 	{
 		goto Exit;
 	}
 
 	// Create the destination file
 
-	if( RC_BAD( rc = gv_pFileSystem->Create( ppszArgV[ 2],
-		XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE, &pDestFile)))
+	if( RC_BAD( rc = f_getFileSysPtr()->createFile( ppszArgV[ 2],
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pDestFile)))
 	{
 		goto Exit;
 	}
@@ -4881,9 +4736,10 @@ FLMINT FlmHexConvertCommand::execute(
 
 	for( ;;)
 	{
-		if( RC_BAD( rc = pSrcFile->Read( uiSrcOffset, 1, ucTmpBuf, &uiBytesRead)))
+		if( RC_BAD( rc = pSrcFile->read( uiSrcOffset, 1,
+			ucTmpBuf, &uiBytesRead)))
 		{
-			if( rc == NE_XFLM_IO_END_OF_FILE)
+			if( rc == NE_FLM_IO_END_OF_FILE)
 			{
 				rc = NE_XFLM_OK;
 				break;
@@ -4900,7 +4756,7 @@ FLMINT FlmHexConvertCommand::execute(
 			uiLineOffset = 0;
 			f_sprintf( szOutputBuf,",\n");
 
-			if( RC_BAD( rc = pDestFile->Write( uiDestOffset,
+			if( RC_BAD( rc = pDestFile->write( uiDestOffset,
 				f_strlen( szOutputBuf), (FLMBYTE *)szOutputBuf, &uiBytesWritten)))
 			{
 				goto Exit;
@@ -4917,7 +4773,7 @@ FLMINT FlmHexConvertCommand::execute(
 		f_sprintf( szOutputBuf,
 			"%s0x%02X", szPreamble, (unsigned)ucTmpBuf[ 0]);
 
-		if( RC_BAD( rc = pDestFile->Write( uiDestOffset,
+		if( RC_BAD( rc = pDestFile->write( uiDestOffset,
 			f_strlen( szOutputBuf), (FLMBYTE *)szOutputBuf, &uiBytesWritten)))
 		{
 			goto Exit;
@@ -4998,8 +4854,8 @@ FLMINT FlmBase64ConvertCommand::execute(
 	FLMUINT							uiDestOffset = 0;
 	FLMUINT							uiBytesWritten;
 	IF_FileHdl *					pDestFile = NULL;
-	F_FileIStream *				pSrcIStream = NULL;
-	F_IStream *						pBase64Stream = NULL;
+	IF_PosIStream *				pSrcIStream = NULL;
+	IF_IStream *					pBase64Stream = NULL;
 
 	if( iArgC < 2 || iArgC > 4)
 	{
@@ -5009,14 +4865,8 @@ FLMINT FlmBase64ConvertCommand::execute(
 	}
 
 	// Open the source file
-
-	if( (pSrcIStream = f_new F_FileIStream) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pSrcIStream->open( ppszArgV[ 1])))
+	
+	if( RC_BAD( rc = FlmOpenFileIStream( ppszArgV[ 1], &pSrcIStream)))
 	{
 		goto Exit;
 	}
@@ -5029,29 +4879,17 @@ FLMINT FlmBase64ConvertCommand::execute(
 			iExitCode = -1;
 			goto Exit;
 		}
-
-		if( (pBase64Stream = f_new F_Base64DecoderIStream) == NULL)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( RC_BAD( rc = ((F_Base64DecoderIStream *)pBase64Stream)->open( 
-			pSrcIStream)))
+		
+		if( RC_BAD( rc = FlmOpenBase64DecoderIStream( 
+			pSrcIStream, &pBase64Stream)))
 		{
 			goto Exit;
 		}
 	}
 	else
 	{
-		if( (pBase64Stream = f_new F_Base64EncoderIStream) == NULL)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( RC_BAD( rc = ((F_Base64EncoderIStream *)pBase64Stream)->open( 
-			pSrcIStream, TRUE)))
+		if( RC_BAD( rc = FlmOpenBase64EncoderIStream( 
+			pSrcIStream, TRUE, &pBase64Stream)))
 		{
 			goto Exit;
 		}
@@ -5061,8 +4899,8 @@ FLMINT FlmBase64ConvertCommand::execute(
 
 	if( iArgC >= 3)
 	{
-		if( RC_BAD( rc = gv_pFileSystem->Create( ppszArgV[ 2],
-			XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE, &pDestFile)))
+		if( RC_BAD( rc = f_getFileSysPtr()->createFile( ppszArgV[ 2],
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pDestFile)))
 		{
 			goto Exit;
 		}
@@ -5090,7 +4928,7 @@ FLMINT FlmBase64ConvertCommand::execute(
 
 		if( pDestFile)
 		{
-			if( RC_BAD( rc = pDestFile->Write( uiDestOffset,
+			if( RC_BAD( rc = pDestFile->write( uiDestOffset,
 				uiBytesRead, ucReadBuf, &uiBytesWritten)))
 			{
 				goto Exit;
@@ -5196,7 +5034,7 @@ RCODE flmXmlImportStatus(
 Desc:
 *****************************************************************************/
 RCODE	getErrFromFile(
-	F_FileIStream *	pFileIStream,
+	IF_PosIStream *	pFileIStream,
 	FLMUINT				uiCurrLineFilePos,
 	FLMUINT				uiCurrLineBytes,
 	FLMUINT *			puiErrLineOffset,
@@ -5230,7 +5068,8 @@ RCODE	getErrFromFile(
 	{
 		goto Exit;
 	}
-	if ( RC_BAD( rc = pFileIStream->read( pucSrcBuff, uiCurrLineBytes, &uiBytesRead)))
+	if ( RC_BAD( rc = pFileIStream->read( pucSrcBuff, 
+		uiCurrLineBytes, &uiBytesRead)))
 	{
 		goto Exit;
 	}
@@ -5242,7 +5081,7 @@ RCODE	getErrFromFile(
 	{
 		for( ;;)
 		{
-			if( RC_BAD( rc = flmGetCharFromUTF8Buf( &pucSrcCur, 
+			if( RC_BAD( rc = f_getCharFromUTF8Buf( &pucSrcCur, 
 					pucSrcBuff + uiBytesRead,
 					&uzChar)))
 			{
@@ -5341,13 +5180,17 @@ RCODE importXmlFiles(
 	FLMBOOL					bTransActive = FALSE;
 	IF_DOMNode *			pRoot = NULL;
 	IF_DOMNode *			pSource = NULL;
-	F_Pool					pool;
-	F_FileIStream			fileIStream;
+	IF_Pool *				pPool = NULL;
+	IF_PosIStream *		pFileIStream = NULL;
 	FLMBOOL					bUseSafeMode = FALSE;
 	char						szErrorString[ MAX_IMPORT_ERROR_STRING + 1];
 	FLMUINT					uiIndentCount = 0;
 	FLMUINT					uiNewErrLineOffset = 0;
-	pool.poolInit( 256);
+	
+	if( RC_BAD( rc = FlmAllocPool( &pPool, 256)))
+	{
+		goto Exit;
+	}
 
 RetryLoad:
 
@@ -5359,11 +5202,11 @@ RetryLoad:
 	}
 
 	flmAssert( !bTransActive);
-	pool.poolReset( NULL);
+	pPool->poolReset( NULL);
 
-	if( gv_pFileSystem->IsDir( pszPath))
+	if( f_getFileSysPtr()->isDir( pszPath))
 	{
-		if( RC_BAD( rc = gv_pFileSystem->OpenDir(
+		if( RC_BAD( rc = f_getFileSysPtr()->openDir(
 			pszPath, (char *)"*", &pDirHdl)))
 		{
 			goto Exit;
@@ -5376,13 +5219,13 @@ RetryLoad:
 
 	for( ;;)
 	{
-		pool.poolReset( NULL);
-		if( pWin && FTXWinTestKB( pWin) == FTXRC_SUCCESS)
+		pPool->poolReset( NULL);
+		if( pWin && RC_OK( FTXWinTestKB( pWin)))
 		{
 			FLMUINT	uiChar;
 
 			FTXWinInputChar( pWin, &uiChar);
-			if (uiChar == WPK_ESC)
+			if (uiChar == FKB_ESC)
 			{
 				rc = RC_SET( NE_XFLM_USER_ABORT);
 				goto Exit;
@@ -5391,9 +5234,9 @@ RetryLoad:
 
 		if( pDirHdl)
 		{
-			if( RC_BAD( rc = pDirHdl->Next()))
+			if( RC_BAD( rc = pDirHdl->next()))
 			{
-				if (rc == NE_XFLM_IO_NO_MORE_FILES)
+				if (rc == NE_FLM_IO_NO_MORE_FILES)
 				{
 					rc = NE_XFLM_OK;
 					break;
@@ -5407,8 +5250,8 @@ RetryLoad:
 
 		if( pDirHdl)
 		{
-			pDirHdl->CurrentItemPath( szTmpPath);
-			if( pDirHdl->CurrentItemIsDir())
+			pDirHdl->currentItemPath( szTmpPath);
+			if( pDirHdl->currentItemIsDir())
 			{
 				if( bTransActive)
 				{
@@ -5436,8 +5279,8 @@ RetryLoad:
 			}
 			bTransActive = TRUE;
 		}
-
-		if( RC_BAD( rc = fileIStream.open( szTmpPath)))
+		
+		if( RC_BAD( rc = FlmOpenFileIStream( szTmpPath, &pFileIStream)))
 		{
 			goto Exit;
 		}
@@ -5456,8 +5299,7 @@ RetryLoad:
 			}
 
 			if( RC_BAD( rc = pDb->importDocument( 
-				&fileIStream, uiCollection,
-				&pRoot, pImportStats)))
+				pFileIStream, uiCollection, &pRoot, pImportStats)))
 			{
 				if( rc != NE_XFLM_EOF_HIT)
 				{
@@ -5476,7 +5318,7 @@ RetryLoad:
 						}
 
 						uiNewErrLineOffset = pImportStats->uiErrLineOffset;
-						if( RC_OK( rc = getErrFromFile( &fileIStream,
+						if( RC_OK( rc = getErrFromFile( pFileIStream,
 														pImportStats->uiErrLineFilePos,
 														pImportStats->uiErrLineBytes,
 														&uiNewErrLineOffset,
@@ -5514,7 +5356,7 @@ RetryLoad:
 				break;
 			}
 
-			gv_pFileSystem->pathReduce( szTmpPath, szTmpPath2, szFile);
+			f_getFileSysPtr()->pathReduce( szTmpPath, szTmpPath2, szFile);
 
 			if( RC_BAD( rc = pRoot->createAttribute( pDb, ATTR_SOURCE_TAG, &pSource)))
 			{
@@ -5588,7 +5430,6 @@ Exit:
 	if( pDirHdl)
 	{
 		pDirHdl->Release();
-		pDirHdl = NULL;
 	}
 
 	if( pSource)
@@ -5605,8 +5446,12 @@ Exit:
 	{
 		pDb->transAbort();
 	}
+	
+	if( pPool)
+	{
+		pPool->Release();
+	}
 
-	pool.poolFree();
 	return( rc);
 }
 
@@ -5838,37 +5683,22 @@ FLMINT FlmDomEditCommand::execute(
 		"DOMEdit for XFLAIM [DB=%s/BUILD=%s]",
 		XFLM_CURRENT_VER_STR, __DATE__);
 
-	if( FTXScreenInit( gv_pFtxInfo, szTitle, &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( szTitle, &pScreen)))
 	{
 		iExitCode = -1;
 		goto Exit;
 	}
 
-	if( FTXWinInit( pScreen, 0, 1, &pTitleWin) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, 0, 1, &pTitleWin)))
 	{
 		iExitCode = -1;
 		goto Exit;
 	}
 
-	if( FTXWinPaintBackground( pTitleWin, WPS_RED) != FTXRC_SUCCESS)
-	{
-		iExitCode = -1;
-		goto Exit;
-	}
-
-	if( FTXWinPrintStr( pTitleWin, szTitle) != FTXRC_SUCCESS)
-	{
-		iExitCode = -1;
-		goto Exit;
-	}
-	
-	FTXWinSetCursorType( pTitleWin, WPS_CURSOR_INVISIBLE);
-
-	if( FTXWinOpen( pTitleWin) != FTXRC_SUCCESS)
-	{
-		iExitCode = -1;
-		goto Exit;
-	}
+	FTXWinPaintBackground( pTitleWin, FLM_RED);
+	FTXWinPrintStr( pTitleWin, szTitle);
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
+	FTXWinOpen( pTitleWin);
 
 	if ((pDomEditor = f_new F_DomEditor()) == NULL)
 	{
@@ -6274,13 +6104,13 @@ FSTATIC void domDisplayError(
 	FTXWinGetScreen( pWindow, &pScreen);
 	if (errRc == NE_XFLM_OK)
 	{
-		FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
+		FTXDisplayMessage( pScreen, FLM_RED, FLM_WHITE,
 								pszError, NULL, &uiTermChar);
 	}
 	else
 	{
 		f_sprintf( szErrBuf, "%s: %e", pszError, errRc);
-		FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
+		FTXDisplayMessage( pScreen, FLM_RED, FLM_WHITE,
 								szErrBuf, NULL, &uiTermChar);
 	}
 }
@@ -6383,17 +6213,17 @@ FLMBOOL domDisplayNodeInfo(
 
 	if (pszOutputFileName && *pszOutputFileName)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->Delete( pszOutputFileName)))
+		if (RC_BAD( rc = f_getFileSysPtr()->deleteFile( pszOutputFileName)))
 		{
-			if (rc != NE_XFLM_IO_PATH_NOT_FOUND)
+			if (rc != NE_FLM_IO_PATH_NOT_FOUND)
 			{
 				domDisplayError( pWindow, "Error deleting output file", rc);
 				goto Exit;
 			}
 		}
-		if (RC_BAD( rc = gv_pFileSystem->Create( pszOutputFileName,
-								XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYNONE |
-								XFLM_IO_CREATE_DIR, &pFileHdl)))
+		if (RC_BAD( rc = f_getFileSysPtr()->createFile( pszOutputFileName,
+								FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE |
+								FLM_IO_CREATE_DIR, &pFileHdl)))
 		{
 			domDisplayError( pWindow, "Error creating output file", rc);
 			goto Exit;
@@ -6446,10 +6276,10 @@ FLMBOOL domDisplayNodeInfo(
 		FTXWinPrintf( pWindow, "\n");
 		for (;;)
 		{
-			if (FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+			if( RC_OK( FTXWinTestKB( pWindow)))
 			{
 				FTXWinInputChar( pWindow, &uiChar);
-				if (uiChar == WPK_ESC)
+				if (uiChar == FKB_ESC)
 				{
 					FTXWinPrintf( pWindow, "\nESCAPE PRESSED, stopped reading documents\n");
 					break;
@@ -6643,13 +6473,14 @@ Exit:
 	{
 		pNodeInfo->Release();
 	}
+	
 	if (pNode)
 	{
 		pNode->Release();
 	}
+	
 	if (pFileHdl)
 	{
-		pFileHdl->Close();
 		pFileHdl->Release();
 	}
 	return( bOk);
@@ -6680,7 +6511,9 @@ Entry_Info::Entry_Info()
 	m_pAttrList = NULL;
 	m_uiAttrListSize = 0;
 	m_uiNumAttrs = 0;
-	m_Pool.poolInit( 512);
+	
+	m_pPool = NULL;
+	FlmAllocPool( &m_pPool, 512);
 }
 	
 /****************************************************************************
@@ -6692,7 +6525,11 @@ Entry_Info::~Entry_Info()
 	{
 		f_free( &m_pAttrList);
 	}
-	m_Pool.poolFree();
+	
+	if( m_pPool)
+	{
+		m_pPool->Release();
+	}
 }
 	
 /****************************************************************************
@@ -7042,7 +6879,8 @@ RCODE Entry_Info::getDirAttrInfo(
 			goto Exit;
 		}
 		uiNameSize++;
-		if (RC_BAD( rc = m_Pool.poolAlloc( uiNameSize, (void **)&pAttrNodeInfo->pszAttrName)))
+		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
+			(void **)&pAttrNodeInfo->pszAttrName)))
 		{
 			goto Exit;
 		}
@@ -7265,14 +7103,14 @@ FSTATIC void domDisplayLine(
 	}
 	if (pFileHdl)
 	{
-		if (RC_BAD( rc = pFileHdl->Write( XFLM_IO_CURRENT_POS,
+		if (RC_BAD( rc = pFileHdl->write( FLM_IO_CURRENT_POS,
 						f_strlen( pszLine), pszLine, &uiBytesWritten)))
 		{
 			domDisplayError( pWindow, "Error writing to output file", rc);
 			*puiLineCount = FLM_MAX_UINT;
 			return;
 		}
-		if (RC_BAD( rc = pFileHdl->Write( XFLM_IO_CURRENT_POS, 1, (void *)"\n",
+		if (RC_BAD( rc = pFileHdl->write( FLM_IO_CURRENT_POS, 1, (void *)"\n",
 						&uiBytesWritten)))
 		{
 			domDisplayError( pWindow, "Error writing to output file", rc);
@@ -7294,12 +7132,13 @@ FSTATIC void domDisplayLine(
 			{
 				FTXWinPrintf( pWindow, "...more, press any key to continue, ESC to quit: ");
 			}
-			if (FTXWinInputChar( pWindow, &uiChar) == FTXRC_SHUTDOWN)
+			
+			if( RC_BAD( FTXWinInputChar( pWindow, &uiChar)))
 			{
 				*puiLineCount = FLM_MAX_UINT;
 				return;
 			}
-			if (uiChar == WPK_ESC)
+			if (uiChar == FKB_ESC)
 			{
 				*puiLineCount = FLM_MAX_UINT;
 				return;
@@ -7421,17 +7260,17 @@ FLMBOOL domDisplayEntryInfo(
 
 	if (pszOutputFileName && *pszOutputFileName)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->Delete( pszOutputFileName)))
+		if (RC_BAD( rc = f_getFileSysPtr()->deleteFile( pszOutputFileName)))
 		{
-			if (rc != NE_XFLM_IO_PATH_NOT_FOUND)
+			if (rc != NE_FLM_IO_PATH_NOT_FOUND)
 			{
 				domDisplayError( pWindow, "Error deleting output file", rc);
 				goto Exit;
 			}
 		}
-		if (RC_BAD( rc = gv_pFileSystem->Create( pszOutputFileName,
-								XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYNONE |
-								XFLM_IO_CREATE_DIR, &pFileHdl)))
+		if (RC_BAD( rc = f_getFileSysPtr()->createFile( pszOutputFileName,
+								FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE |
+								FLM_IO_CREATE_DIR, &pFileHdl)))
 		{
 			domDisplayError( pWindow, "Error creating output file", rc);
 			goto Exit;
@@ -7497,10 +7336,10 @@ FLMBOOL domDisplayEntryInfo(
 		FTXWinPrintf( pWindow, "\n");
 		for (;;)
 		{
-			if (FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+			if( RC_OK( FTXWinTestKB( pWindow)))
 			{
 				FTXWinInputChar( pWindow, &uiChar);
-				if (uiChar == WPK_ESC)
+				if (uiChar == FKB_ESC)
 				{
 					FTXWinPrintf( pWindow, "\nESCAPE PRESSED, stopped reading documents\n");
 					break;
@@ -7897,11 +7736,12 @@ Exit:
 	{
 		pEntryNode->Release();
 	}
+	
 	if (pFileHdl)
 	{
-		pFileHdl->Close();
 		pFileHdl->Release();
 	}
+	
 	return( bOk);
 }
 
@@ -8113,7 +7953,7 @@ public:
 	{
 	}
 	
-	RCODE XFLMAPI infoStatus(
+	RCODE FLMAPI infoStatus(
 		FLMUINT		uiCurrLfNum,
 		FLMBOOL		bIsCollection,
 		char *		pszCurrLfName,
@@ -8185,7 +8025,7 @@ private:
 Desc: Callback function that is called while gathering data on an index
 		or collection.
 *****************************************************************************/
-RCODE XFLMAPI SH_BTreeInfoStatus::infoStatus(
+RCODE FLMAPI SH_BTreeInfoStatus::infoStatus(
 	FLMUINT		uiCurrLfNum,
 	FLMBOOL		bIsCollection,
 	char *		pszCurrLfName,
@@ -8199,10 +8039,10 @@ RCODE XFLMAPI SH_BTreeInfoStatus::infoStatus(
 	
 	// See if user pressed escape
 	
-	if (FTXWinTestKB( m_pWindow) == FTXRC_SUCCESS)
+	if( RC_OK( FTXWinTestKB( m_pWindow)))
 	{
 		FTXWinInputChar( m_pWindow, &uiChar);
-		if (uiChar == WPK_ESC)
+		if (uiChar == FKB_ESC)
 		{
 			FTXWinPrintf( m_pWindow, "\nESCAPE PRESSED, stopped reading documents\n");
 			rc = RC_SET( NE_XFLM_USER_ABORT);
@@ -8302,17 +8142,17 @@ FLMBOOL domDisplayBTreeInfo(
 
 	if (pszOutputFileName && *pszOutputFileName)
 	{
-		if (RC_BAD( rc = gv_pFileSystem->Delete( pszOutputFileName)))
+		if (RC_BAD( rc = f_getFileSysPtr()->deleteFile( pszOutputFileName)))
 		{
-			if (rc != NE_XFLM_IO_PATH_NOT_FOUND)
+			if (rc != NE_FLM_IO_PATH_NOT_FOUND)
 			{
 				domDisplayError( pWindow, "Error deleting output file", rc);
 				goto Exit;
 			}
 		}
-		if (RC_BAD( rc = gv_pFileSystem->Create( pszOutputFileName,
-								XFLM_IO_RDWR | XFLM_IO_EXCL | XFLM_IO_SH_DENYNONE |
-								XFLM_IO_CREATE_DIR, &pFileHdl)))
+		if (RC_BAD( rc = f_getFileSysPtr()->createFile( pszOutputFileName,
+								FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE |
+								FLM_IO_CREATE_DIR, &pFileHdl)))
 		{
 			domDisplayError( pWindow, "Error creating output file", rc);
 			goto Exit;
@@ -8640,9 +8480,9 @@ Exit:
 	{
 		pBTreeInfo->Release();
 	}
+	
 	if (pFileHdl)
 	{
-		pFileHdl->Close();
 		pFileHdl->Release();
 	}
 	return( bOk);
@@ -8969,18 +8809,16 @@ RCODE DirectoryIterator::setupForSearch(
 
 	if ( !m_pDirHdl)
 	{
-		m_pDirHdl = f_new F_DirHdl;
-	}
-
-	if ( RC_BAD( m_pDirHdl->OpenDir( m_pszResolvedDir, 
-		(char *)pszPattern)))
-	{
-		goto Exit;
+		if( RC_BAD( rc = f_getFileSysPtr()->openDir( m_pszResolvedDir, 
+			pszPattern, &m_pDirHdl)))
+		{
+			goto Exit;
+		}
 	}
 
 	// First pass - determine the number of matches
 
-	while( RC_OK( m_pDirHdl->Next()))
+	while( RC_OK( m_pDirHdl->next()))
 	{
 		m_uiTotalMatches++;
 	}
@@ -8994,25 +8832,28 @@ RCODE DirectoryIterator::setupForSearch(
 	f_memset( m_ppszMatchList, 0, m_uiTotalMatches * sizeof( char *));
 
 	// Reopen the directory and copy the matches
+	
+	m_pDirHdl->Release();
+	m_pDirHdl = NULL;
 		
-	if ( RC_BAD( m_pDirHdl->OpenDir( m_pszResolvedDir, 
-		(char *)pszPattern)))
+	if( RC_BAD( rc = f_getFileSysPtr()->openDir( m_pszResolvedDir, 
+		pszPattern, &m_pDirHdl)))
 	{
 		goto Exit;
 	}
-
+	
 	m_uiCurrentMatch = 0;
-	while ( RC_OK( m_pDirHdl->Next()))
+	while ( RC_OK( m_pDirHdl->next()))
 	{
 		if( RC_BAD( rc = f_alloc( 
-			f_strlen( m_pDirHdl->CurrentItemName()) + 1,
+			f_strlen( m_pDirHdl->currentItemName()) + 1,
 			&m_ppszMatchList[m_uiCurrentMatch])))
 		{
 			goto Exit;
 		}
 
 		f_strcpy( m_ppszMatchList[m_uiCurrentMatch], 
-			m_pDirHdl->CurrentItemName());
+			m_pDirHdl->currentItemName());
 
 		m_uiCurrentMatch++;
 	}
@@ -9111,10 +8952,9 @@ Desc:
 *****************************************************************************/
 RCODE DirectoryIterator::resolveDir()
 {
-	RCODE			rc = NE_XFLM_OK;
-	F_DirHdl		dirHdl;
-	FLMUINT		uiIndex = 0;
-	char			szTemp[ MAX_PATH_SIZE];
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiIndex = 0;
+	char				szTemp[ MAX_PATH_SIZE];
 
 	if ( !m_pszExtendedDir)
 	{
@@ -9161,7 +9001,7 @@ RCODE DirectoryIterator::resolveDir()
 				uiIndex++;
 			}
 	
-			gv_pFileSystem->pathReduce( m_pszBaseDir, szTemp, NULL);
+			f_getFileSysPtr()->pathReduce( m_pszBaseDir, szTemp, NULL);
 			f_strcpy( m_pszBaseDir, szTemp);
 			if ( m_pszBaseDir[ f_strlen(m_pszBaseDir) - 1] != SLASH)
 			{
@@ -9184,6 +9024,7 @@ RCODE DirectoryIterator::resolveDir()
 	f_strcat( m_pszResolvedDir, &m_pszExtendedDir[uiIndex]);
 
 Exit:
+
 	return rc;
 }
 
@@ -9381,7 +9222,7 @@ void extractBaseDirAndWildcard(
 		f_strchr( pszPath, SLASH) && //it contains directories
 		pszPath[ f_strlen( pszPath) - 1] != SLASH) //does not end with a slash
 	{
-		gv_pFileSystem->pathReduce( pszPath,
+		f_getFileSysPtr()->pathReduce( pszPath,
 			pszBase, pszWildcard);
 
 		// Darn thing sometimes removes the trailing slash. Put it back.

@@ -57,7 +57,7 @@ typedef struct DBContextTag
 /*===========================================================================
 Desc:		This class is used by the shell to perform commands it has parsed.
 ===========================================================================*/
-class FlmCommand : public XF_RefCount, public XF_Base
+class FlmCommand : public F_Object
 {
 public:
 	FlmCommand( void){}
@@ -84,7 +84,7 @@ public:
 Desc:		This class manages a database context - FLAIM session and #N
 			open databases.
 ===========================================================================*/
-class FlmDbContext : public XF_RefCount, public XF_Base
+class FlmDbContext : public F_Object
 {
 #define MAX_DBCONTEXT_OPEN_DB		9
 public:
@@ -152,7 +152,7 @@ private:
 /*===========================================================================
 Desc:		This class parses a command line
 ===========================================================================*/
-class FlmParse : public XF_RefCount, public XF_Base
+class FlmParse : public F_Object
 {
 public:
 
@@ -239,8 +239,8 @@ private:
 	FlmSharedContext *	m_pSharedContext;
 	FTX_WINDOW *			m_pTitleWin;
 	IF_Db *					m_DbList[ MAX_SHELL_OPEN_DB];
-	F_Pool					m_HistPool;
-	F_Pool					m_ArgPool;
+	IF_Pool *				m_pHistPool;
+	IF_Pool *				m_pArgPool;
 	FLMINT					m_iCurrArgC;
 	char **					m_ppCurrArgV;
 	char *					m_pszOutputFile;
@@ -865,14 +865,14 @@ private:
 
 	RCODE resolveDir( void);
 
-	FLMBOOL		m_bInitialized;
-	char *		m_pszBaseDir;
-	char *		m_pszExtendedDir;
-	char *		m_pszResolvedDir;
-	F_DirHdl *	m_pDirHdl;
-	char **		m_ppszMatchList;
-	FLMUINT		m_uiCurrentMatch;
-	FLMUINT		m_uiTotalMatches;
+	FLMBOOL			m_bInitialized;
+	char *			m_pszBaseDir;
+	char *			m_pszExtendedDir;
+	char *			m_pszResolvedDir;
+	IF_DirHdl *		m_pDirHdl;
+	char **			m_ppszMatchList;
+	FLMUINT			m_uiCurrentMatch;
+	FLMUINT			m_uiTotalMatches;
 };
 
 char * positionToPath(

@@ -24,14 +24,10 @@
 //------------------------------------------------------------------------------
 
 #include "flaimsys.h"
-#include "ftx.h"
 #include "flm_lutl.h"
 #include "domedit.h"
 #include "fdynbuf.h"
 #include "fxpath.h"
-#ifdef FLM_UNIX
-#include "ctype.h"
-#endif
 
 static char * pszDomeditMonths [12] =
 {
@@ -197,29 +193,16 @@ FSTATIC RCODE setupIndexRow(
 	FLMUINT				uiFlag,
 	DME_ROW_INFO **	ppTmpRow);
 
-/*
-DOMEdit prototypes
-*/
-
 RCODE _domEditBackgroundThread(
-	F_Thread *			pThread);
+	IF_Thread *			pThread);
 
 RCODE domEditVerifyRun( void);
 
-// Imported global variable(s)...
 extern FLMBOOL								gv_bShutdown;
-
-/*
-Local prototypes
-*/
 
 #define FLM_START_STATS
 #define FLM_STOP_STATS
 #define FLM_RESET_STATS
-
-/*
-Function / Method Implementations
-*/
 
 /****************************************************************************
 Desc:	Default constructor
@@ -458,9 +441,9 @@ Desc:
 RCODE F_DomEditor::setTitle(
 	char *	pszTitle)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FLMUINT	uiBack;
-	FLMUINT	uiFore;
+	RCODE			rc = NE_XFLM_OK;
+	eColorType	uiBack;
+	eColorType	uiFore;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
@@ -471,19 +454,11 @@ RCODE F_DomEditor::setTitle(
 
 	if (m_pEditWindow)
 	{
-		uiBack = (FLMUINT)((m_bMonochrome)
-								 ? (FLMUINT)WPS_BLACK
-								 : (FLMUINT)WPS_BLUE);
-		uiFore = (FLMUINT)WPS_WHITE;
-		if( FTXWinSetTitle( m_pEditWindow, m_szTitle,
-								uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		uiBack = m_bMonochrome ? FLM_BLACK : FLM_BLUE;
+		uiFore = FLM_WHITE;
+		FTXWinSetTitle( m_pEditWindow, m_szTitle, uiBack, uiFore);
 	}
 
-Exit:
 	return( rc);
 }
 
@@ -582,25 +557,25 @@ public:
 		}
 	}
 
-	RCODE XFLMAPI queryStatus(
+	RCODE FLMAPI queryStatus(
 		XFLM_OPT_INFO *	pOptInfo);
 
-	RCODE XFLMAPI newSource(
+	RCODE FLMAPI newSource(
 		XFLM_OPT_INFO *	pOptInfo);
 
-	RCODE XFLMAPI resultSetStatus(
+	RCODE FLMAPI resultSetStatus(
 		FLMUINT64	ui64TotalDocsRead,
 		FLMUINT64	ui64TotalDocsPassed,
 		FLMBOOL		bCanRetrieveDocs);
 		
-	RCODE XFLMAPI resultSetComplete(
+	RCODE FLMAPI resultSetComplete(
 		FLMUINT64	ui64TotalDocsRead,
 		FLMUINT64	ui64TotalDocsPassed);
 		
 	void createQueryStatusWindow(
 		FTX_SCREEN *		pScreen,
-		FLMUINT				uiBack,
-		FLMUINT				uiFore,
+		eColorType			uiBack,
+		eColorType			uiFore,
 		char *				pszQuery);
 
 	RCODE testEscape(
@@ -624,17 +599,17 @@ public:
 		FLMUINT64			ui64TotalDocsPassed,
 		FLMBOOL				bCanRetrieveDocs);
 
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_QueryStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_QueryStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_QueryStatus::Release());
 	}
@@ -682,8 +657,8 @@ Desc: Displays a message window
 *****************************************************************************/
 void EditQueryStatus::createQueryStatusWindow(
 	FTX_SCREEN *		pScreen,
-	FLMUINT				uiBack,
-	FLMUINT				uiFore,
+	eColorType			uiBack,
+	eColorType			uiFore,
 	char *				pszQuery)
 {
 	FLMBOOL	bOk = FALSE;
@@ -691,65 +666,39 @@ void EditQueryStatus::createQueryStatusWindow(
 	FLMUINT	uiNumRows;
 	FLMUINT	uiQueryStrLen = f_strlen( pszQuery);
 
-	if (FTXScreenGetSize( pScreen, &uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
+	FTXScreenGetSize( pScreen, &uiNumCols, &uiNumRows);
 	m_uiNumCols = uiNumCols - 8;
 	m_uiNumRows = uiNumRows - 4;
 
-	if (FTXWinInit( pScreen, m_uiNumCols, m_uiNumRows,
-							&m_pWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, m_uiNumCols, m_uiNumRows, &m_pWindow)))
 	{
 		goto Exit;
 	}
 
-	if (FTXWinSetScroll( m_pWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
+	FTXWinSetScroll( m_pWindow, FALSE);
+	FTXWinSetCursorType( m_pWindow, FLM_CURSOR_INVISIBLE);
+	FTXWinSetBackFore( m_pWindow, uiBack, uiFore);
+	FTXWinClear( m_pWindow);
+	FTXWinDrawBorder( m_pWindow);
 
-	FTXWinSetCursorType( m_pWindow, WPS_CURSOR_INVISIBLE);
+	FTXWinMove( m_pWindow, (FLMUINT)((uiNumCols - m_uiNumCols) / 2),
+		(FLMUINT)((uiNumRows - m_uiNumRows) / 2));
 
-	if (FTXWinSetBackFore( m_pWindow, uiBack, uiFore) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if (FTXWinClear( m_pWindow) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if (FTXWinDrawBorder( m_pWindow) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if (FTXWinMove( m_pWindow, (FLMUINT)((uiNumCols - m_uiNumCols) / 2),
-		(FLMUINT)((uiNumRows - m_uiNumRows) / 2)) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if (FTXWinOpen( m_pWindow) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
+	FTXWinOpen( m_pWindow);
 
 	if (RC_BAD( f_alloc( uiQueryStrLen + 1, &m_pszQuery)))
 	{
 		goto Exit;
 	}
+	
 	f_memcpy( m_pszQuery, pszQuery, uiQueryStrLen + 1);
+	
 	if (uiQueryStrLen > m_uiNumCols - 2 - DATA_COLUMN)
 	{
 		m_pszQuery [m_uiNumCols - 2 - DATA_COLUMN] = 0;
 	}
 
-	FTXRefresh( pScreen->pFtxInfo);
-
+	FTXRefresh();
 	bOk = TRUE;
 
 Exit:
@@ -861,7 +810,7 @@ void EditQueryStatus::refreshStatus(
 				outputLabel( USING_LINE, "Using Index");
 				if (m_optInfo.szIxName [0])
 				{
-					FLMUINT	uiStrLen = f_strlen( m_optInfo.szIxName);
+					FLMUINT	uiStrLen = f_strlen( (const char *)m_optInfo.szIxName);
 					if (uiStrLen > m_uiNumCols - 2 - DATA_COLUMN)
 					{
 						m_optInfo.szIxName [m_uiNumCols - 2 - DATA_COLUMN] = 0;
@@ -1038,19 +987,19 @@ RCODE EditQueryStatus::testEscape(
 			}
 			FTXWinInputChar( m_pWindow, puiChar);
 		}
-		else if (FTXWinTestKB( m_pWindow) == FTXRC_SUCCESS)
+		else if( RC_OK( FTXWinTestKB( m_pWindow)))
 		{
 			FLMUINT		uiChar;
 
 			FTXWinInputChar( m_pWindow, &uiChar);
 
-			if (uiChar == WPK_ESCAPE)
+			if (uiChar == FKB_ESCAPE)
 			{
 				FTXWinSetCursorPos( m_pWindow, LABEL_COLUMN, MESSAGE_LINE);
 				FTXWinPrintf( m_pWindow,
 					"Escape pressed, exit? (Y=Show results, ESC=quit): ");
-				if (FTXWinInputChar( m_pWindow, &uiChar) == FTXRC_SHUTDOWN ||
-					 uiChar == WPK_ESCAPE)
+				if( RC_BAD( FTXWinInputChar( m_pWindow, &uiChar)) ||
+					uiChar == FKB_ESCAPE)
 				{
 					rc = RC_SET( NE_XFLM_USER_ABORT);
 					m_bKeepResults = FALSE;
@@ -1136,7 +1085,7 @@ Exit:
 /****************************************************************************
 Desc:	Query status callback
 *****************************************************************************/
-RCODE XFLMAPI EditQueryStatus::resultSetStatus(
+RCODE FLMAPI EditQueryStatus::resultSetStatus(
 	FLMUINT64	ui64TotalDocsRead,
 	FLMUINT64	ui64TotalDocsPassed,
 	FLMBOOL		bCanRetrieveDocs)
@@ -1164,7 +1113,7 @@ Exit:
 /****************************************************************************
 Desc:	Query status callback
 *****************************************************************************/
-RCODE XFLMAPI EditQueryStatus::resultSetComplete(
+RCODE FLMAPI EditQueryStatus::resultSetComplete(
 	FLMUINT64	ui64TotalDocsRead,
 	FLMUINT64	ui64TotalDocsPassed)
 {
@@ -1216,13 +1165,14 @@ RCODE F_DomEditor::interactiveEdit(
 	FLMBOOL				bDoneEditing = FALSE;
 	RCODE					rc = NE_XFLM_OK;
 	RCODE					tmpRc = NE_XFLM_OK;
-	FLMUINT				uiFore;
-	FLMUINT				uiBack;
-	F_Thread *			pIxManagerThrd = NULL;
-	F_Thread *			pMemManagerThrd = NULL;
+	eColorType			uiFore;
+	eColorType			uiBack;
+	IF_Thread *			pIxManagerThrd = NULL;
+	IF_Thread *			pMemManagerThrd = NULL;
 	char *				pszQuery = NULL;
 	FLMUINT				uiSzQueryBufSize;
 	F_DbSystem			dbSystem;
+	IF_ThreadMgr *		pThreadMgr = NULL;
 
 	flmAssert( m_bSetupCalled == TRUE);
 	flmAssert( m_pScreen != NULL);
@@ -1231,11 +1181,18 @@ RCODE F_DomEditor::interactiveEdit(
 	m_pScrFirstRow = NULL;
 	m_uiLastKey = 0;
 	uiSzQueryBufSize = 1024;
+	
 	if (RC_BAD( rc = f_alloc( uiSzQueryBufSize, &pszQuery)))
 	{
 		goto Exit;
 	}
+	
 	*pszQuery = 0;
+	
+	if( RC_BAD( rc = FlmGetThreadMgr( &pThreadMgr)))
+	{
+		goto Exit;
+	}
 
 	if( !m_pNameTable)
 	{
@@ -1247,12 +1204,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 	if( !uiLRX && !uiLRY)
 	{
-		if( FTXScreenGetSize( m_pScreen,
-			&uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 
 		uiNumRows -= uiULY;
 		uiNumCols -= uiULX;
@@ -1273,114 +1225,49 @@ RCODE F_DomEditor::interactiveEdit(
 	m_uiLRX = uiLRX;
 	m_uiLRY = uiLRY;
 
-	if( FTXWinInit( m_pScreen, uiNumCols,
-		uiNumRows, &m_pEditWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumCols,
+		uiNumRows, &m_pEditWindow)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
-	if( FTXWinMove( m_pEditWindow, uiStartCol, uiULY) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinMove( m_pEditWindow, uiStartCol, uiULY);
+	FTXWinSetScroll( m_pEditWindow, FALSE);
+	FTXWinSetLineWrap( m_pEditWindow, FALSE);
+	FTXWinSetCursorType( m_pEditWindow, FLM_CURSOR_INVISIBLE);
 
-	if( FTXWinSetScroll( m_pEditWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetLineWrap( m_pEditWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	FTXWinSetCursorType( m_pEditWindow, WPS_CURSOR_INVISIBLE);
-
-	uiBack = (FLMUINT)((m_bMonochrome)
-							 ? (FLMUINT)WPS_BLACK
-							 : (FLMUINT)WPS_BLUE);
-	uiFore = (FLMUINT)WPS_WHITE;
-	if( FTXWinSetBackFore( m_pEditWindow, uiBack, uiFore) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinClear( m_pEditWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	uiBack = m_bMonochrome ? FLM_BLACK : FLM_BLUE;
+	uiFore = FLM_WHITE;
+	
+	FTXWinSetBackFore( m_pEditWindow, uiBack, uiFore);
+	FTXWinClear( m_pEditWindow);
 
 	if( bBorder)
 	{
-		if( FTXWinDrawBorder( m_pEditWindow) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		FTXWinDrawBorder( m_pEditWindow);
 	}
 
-	if( FTXWinSetTitle( m_pEditWindow, m_szTitle,
-							uiBack, uiFore) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinSetTitle( m_pEditWindow, m_szTitle, uiBack, uiFore);
 
 	if( uiStatusLines)
 	{
-		if( FTXWinInit( m_pScreen, uiNumCols, uiStatusLines,
-			&m_pEditStatusWin) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinMove( m_pEditStatusWin, uiULX,
-			uiULY + uiNumRows) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinSetScroll( m_pEditStatusWin, FALSE) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumCols, uiStatusLines,
+			&m_pEditStatusWin)))
 		{
 			goto Exit;
 		}
 
-		FTXWinSetCursorType( m_pEditStatusWin, WPS_CURSOR_INVISIBLE);
+		FTXWinMove( m_pEditStatusWin, uiULX, uiULY + uiNumRows);
+		FTXWinSetScroll( m_pEditStatusWin, FALSE);
+		FTXWinSetCursorType( m_pEditStatusWin, FLM_CURSOR_INVISIBLE);
+		FTXWinSetBackFore( m_pEditStatusWin,
+			m_bMonochrome ? FLM_BLACK : FLM_GREEN, FLM_WHITE);
 
-		if( FTXWinSetBackFore( m_pEditStatusWin,
-			m_bMonochrome ? WPS_BLACK : WPS_GREEN,
-			WPS_WHITE) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinClear( m_pEditStatusWin) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinOpen( m_pEditStatusWin) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		FTXWinClear( m_pEditStatusWin);
+		FTXWinOpen( m_pEditStatusWin);
 	}
 	
-	if( FTXWinOpen( m_pEditWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinOpen( m_pEditWindow);
 
 	FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols, &uiNumRows);
 	m_uiEditCanvasRows = uiNumRows;
@@ -1406,7 +1293,7 @@ RCODE F_DomEditor::interactiveEdit(
 			0, m_EventData);
 	}
 
-	FTXRefresh( m_pScreen->pFtxInfo);
+	FTXRefresh();
 	while( !bDoneEditing && !isExiting())
 	{
 		if( bRefreshEditWindow)
@@ -1420,12 +1307,8 @@ RCODE F_DomEditor::interactiveEdit(
 				m_bMonochrome = m_pParent->isMonochrome();
 			}
 
-			if( FTXWinPaintBackground( m_pEditWindow,
-				m_bMonochrome ? WPS_BLACK : WPS_BLUE) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( NE_XFLM_MEM);
-				goto Exit;
-			}
+			FTXWinPaintBackground( m_pEditWindow,
+				m_bMonochrome ? FLM_BLACK : FLM_BLUE);
 
 			if( m_pEventHook)
 			{
@@ -1448,13 +1331,9 @@ RCODE F_DomEditor::interactiveEdit(
 			Update the status window
 			*/
 
-			if( FTXWinSetBackFore( m_pEditStatusWin,
-				m_bMonochrome ? WPS_LIGHTGRAY : WPS_GREEN,
-				m_bMonochrome ? WPS_BLACK : WPS_WHITE) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( NE_XFLM_MEM);
-				goto Exit;
-			}
+			FTXWinSetBackFore( m_pEditStatusWin,
+				m_bMonochrome ? FLM_LIGHTGRAY : FLM_GREEN,
+				m_bMonochrome ? FLM_BLACK : FLM_WHITE);
 
 			FTXWinSetCursorPos( m_pEditStatusWin, 0, 0);
 
@@ -1525,11 +1404,11 @@ RCODE F_DomEditor::interactiveEdit(
 			}
 
 			FTXWinClearToEOL( m_pEditStatusWin);
-			FTXRefresh( m_pScreen->pFtxInfo);
+			FTXRefresh();
 			bRefreshStatusWindow = FALSE;
 		}
 
-		if( uiHelpKey || FTXWinTestKB( m_pEditWindow) == FTXRC_SUCCESS)
+		if( uiHelpKey || RC_OK( FTXWinTestKB( m_pEditWindow)))
 		{
 			FLMUINT	uiChar;
 
@@ -1551,13 +1430,13 @@ RCODE F_DomEditor::interactiveEdit(
 				{
 					m_pKeyHook( this, m_pCurRow, uiChar, &uiChar, m_KeyData);
 				}
-				if (uiChar != WPK_TAB)
+				if (uiChar != FKB_TAB)
 				{
 					m_uiLastKey = uiChar;
 				}
 			}
 
-			if( uiChar == WPK_TAB)
+			if( uiChar == FKB_TAB)
 			{
 				// Grab the last keystroke that was passed to the editor.
 				// This is needed in environments where the ALT and
@@ -1584,7 +1463,7 @@ RCODE F_DomEditor::interactiveEdit(
 					break;
 				}
 
-				case WPK_ENTER:
+				case FKB_ENTER:
 				{
 					if( !m_pCurRow)
 					{
@@ -1600,12 +1479,12 @@ RCODE F_DomEditor::interactiveEdit(
 					else if( !canEditRow( m_pCurRow))
 					{
 						displayMessage( "The row cannot be edited",
-							RC_SET( NE_XFLM_ILLEGAL_OP), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( NE_XFLM_ILLEGAL_OP), NULL, FLM_RED, FLM_WHITE);
 					}
 					else if( RC_BAD( tmpRc = editRow( m_uiCurRow, m_pCurRow)))
 					{
 						displayMessage( "The field could not be edited", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 
 					bRefreshEditWindow = TRUE;
@@ -1631,7 +1510,7 @@ RCODE F_DomEditor::interactiveEdit(
 					if( RC_BAD( tmpRc = editRow( m_uiCurRow, m_pCurRow, TRUE)))
 					{
 						displayMessage( "The field could not be edited", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 
 					bRefreshEditWindow = TRUE;
@@ -1639,7 +1518,7 @@ RCODE F_DomEditor::interactiveEdit(
 				}
 
 				// Expand the current row.
-				case WPK_RIGHT:
+				case FKB_RIGHT:
 				{
 					DME_ROW_INFO *		pLastRow = NULL;
 					if (!m_pCurRow->bExpanded)
@@ -1647,7 +1526,7 @@ RCODE F_DomEditor::interactiveEdit(
 						if (RC_BAD( tmpRc = expandRow( m_pCurRow, TRUE, &pLastRow)))
 						{
 							displayMessage( "Error expanding current row", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 						if (m_pCurRow->bExpanded)
@@ -1679,7 +1558,7 @@ RCODE F_DomEditor::interactiveEdit(
 				}
 
 				// Expand the current row.
-				case WPK_PLUS:
+				case FKB_PLUS:
 				{
 					DME_ROW_INFO *		pLastRow = NULL;
 					if (!m_pCurRow->bExpanded)
@@ -1717,15 +1596,15 @@ RCODE F_DomEditor::interactiveEdit(
 
 				// Collapse the current row.
 
-				case WPK_LEFT:
-				case WPK_MINUS:
+				case FKB_LEFT:
+				case FKB_MINUS:
 				{
 					if (m_pCurRow->bExpanded)
 					{
 						if (RC_BAD( tmpRc = collapseRow( &m_pCurRow)))
 						{
 							displayMessage( "Error collapsing current row", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 						bRefreshEditWindow = TRUE;
@@ -1735,7 +1614,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 				// Move field cursor to the next row
 
-				case WPK_DOWN:
+				case FKB_DOWN:
 				{
 					if (RC_BAD( tmpRc = getNextRow( m_pCurRow,
 															  &pTmpRow,
@@ -1743,7 +1622,7 @@ RCODE F_DomEditor::interactiveEdit(
 															  m_pCurRow ? !m_pCurRow->bExpanded : FALSE)))
 					{
 						displayMessage( "Failed to retrieve a new row.", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 						break;
 					}
 
@@ -1768,14 +1647,14 @@ RCODE F_DomEditor::interactiveEdit(
 
 				// Move field cursor to the prior row
 
-				case WPK_UP:
+				case FKB_UP:
 				{
 					if (RC_BAD( tmpRc = getPrevRow( m_pCurRow,
 															  &pTmpRow,
 															  TRUE)))
 					{
 						displayMessage( "Failed to retrieve a previous row.", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 						break;
 					}
 					if( pTmpRow != NULL)
@@ -1802,7 +1681,7 @@ RCODE F_DomEditor::interactiveEdit(
 				Page up
 				*/
 
-				case WPK_PGUP:
+				case FKB_PGUP:
 				{
 					for( uiLoop = 0; uiLoop < uiNumRows; uiLoop++)
 					{
@@ -1812,7 +1691,7 @@ RCODE F_DomEditor::interactiveEdit(
 																  TRUE)))
 						{
 							displayMessage( "Failed to retrieve a previous row.", tmpRc,
-													NULL, WPS_RED, WPS_WHITE);
+													NULL, FLM_RED, FLM_WHITE);
 							break;;
 						}
 						
@@ -1837,7 +1716,7 @@ RCODE F_DomEditor::interactiveEdit(
 				Page down
 				*/
 
-				case WPK_PGDN:
+				case FKB_PGDN:
 				{
 					FLMBOOL	bIgnoreAnchor = !m_pCurRow->bExpanded;
 					for( uiLoop = 0; uiLoop < uiNumRows; uiLoop++)
@@ -1848,7 +1727,7 @@ RCODE F_DomEditor::interactiveEdit(
 															  bIgnoreAnchor)))
 						{
 							displayMessage( "Failed to retrieve a next row.", tmpRc,
-												NULL, WPS_RED, WPS_WHITE);
+												NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 						if (pTmpRow != NULL)
@@ -1876,7 +1755,7 @@ RCODE F_DomEditor::interactiveEdit(
 				Go to the top of the buffer
 				*/
 #if 0  // Removed functionality
-				case WPK_HOME:
+				case FKB_HOME:
 				{
 					m_pCurRow = m_pScrFirstRow;
 					m_uiCurRow = 0;
@@ -1890,7 +1769,7 @@ RCODE F_DomEditor::interactiveEdit(
 				Jump to the end of the buffer
 				*/
 
-				case WPK_END:
+				case FKB_END:
 				{
 					m_uiCurRow = uiMaxRow;
 					for( ;;)
@@ -1916,7 +1795,7 @@ RCODE F_DomEditor::interactiveEdit(
 				}
 #endif
 
-				case WPK_END:
+				case FKB_END:
 				{
 					if( m_pEditStatusWin)
 					{
@@ -1937,7 +1816,7 @@ RCODE F_DomEditor::interactiveEdit(
 																	TRUE)))
 						{
 							displayMessage( "Failed to retrieve a next row.", tmpRc,
-														NULL, WPS_RED, WPS_WHITE);
+														NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 						if (pTmpRow != NULL)
@@ -1961,7 +1840,7 @@ RCODE F_DomEditor::interactiveEdit(
 				Jump to the top of the buffer
 				*/
 
-				case WPK_HOME:
+				case FKB_HOME:
 				{
 					if( m_pEditStatusWin)
 					{
@@ -1982,7 +1861,7 @@ RCODE F_DomEditor::interactiveEdit(
 																	TRUE)))
 						{
 							displayMessage( "Failed to retrieve a previous row.", tmpRc,
-													NULL, WPS_RED, WPS_WHITE);
+													NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 						if (pTmpRow != NULL)
@@ -2006,12 +1885,12 @@ RCODE F_DomEditor::interactiveEdit(
 				// Add something
 				case 'N':
 				case 'n':
-				case WPK_ALT_A:
+				case FKB_ALT_A:
 				{
 					if (RC_BAD( tmpRc = addSomething( &m_pCurRow)))
 					{
 						displayMessage( "Add/Insert operation failed",
-							RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 						break;
 					}
 					bRefreshEditWindow = TRUE;
@@ -2026,7 +1905,7 @@ RCODE F_DomEditor::interactiveEdit(
 					{
 						displayMessage(
 							"Attributes could not be displayed",
-							RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 					}
 					break;
 				}
@@ -2039,7 +1918,7 @@ RCODE F_DomEditor::interactiveEdit(
 					{
 						displayMessage(
 							"Node information could not be displayed",
-							RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 					}
 					break;
 				}
@@ -2051,7 +1930,7 @@ RCODE F_DomEditor::interactiveEdit(
 					{
 						displayMessage(
 							"Node could not be exported",
-							RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 					}
 					break;
 				}
@@ -2061,7 +1940,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 				case 'I':
 				case 'i':
-				case WPK_ALT_I:
+				case FKB_ALT_I:
 				{
 					if( m_pDb == NULL)
 					{
@@ -2073,8 +1952,8 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Index List Operation Failed",
 											 RC_SET(tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 					bRefreshEditWindow = TRUE;
@@ -2086,7 +1965,7 @@ RCODE F_DomEditor::interactiveEdit(
 				*/
 				case 'L':
 				case 'l':
-				case WPK_ALT_L:
+				case FKB_ALT_L:
 				{
 
 					FLMUINT		uiCollection = m_uiCollection;
@@ -2106,12 +1985,12 @@ RCODE F_DomEditor::interactiveEdit(
 							displayMessage( "Error getting collection",
 												 RC_SET(tmpRc),
 												 NULL,
-												 WPS_RED,
-												 WPS_WHITE);
+												 FLM_RED,
+												 FLM_WHITE);
 							break;
 						}
 						
-						if( uiTermChar != WPK_ENTER)
+						if( uiTermChar != FKB_ENTER)
 						{
 							break;
 						}
@@ -2130,12 +2009,12 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Unable to retrieve document list",
 											 RC_SET(tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 
-					if( uiTermChar != WPK_ENTER)
+					if( uiTermChar != FKB_ENTER)
 					{
 						break;
 					}
@@ -2150,8 +2029,8 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Document already selected",
 											 NE_XFLM_FAILURE,
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 
@@ -2175,8 +2054,8 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Unable to retrieve selected document",
 											 RC_SET( tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 
@@ -2190,8 +2069,8 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Unable to add document to document list",
 											 RC_SET(tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 
@@ -2205,7 +2084,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 				case 'R':
 				case 'r':
-				case WPK_ALT_R:
+				case FKB_ALT_R:
 				{
 					FLMUINT		uiCollection;
 					char			szResponse[ 32];
@@ -2220,7 +2099,7 @@ RCODE F_DomEditor::interactiveEdit(
 									  sizeof( szResponse),
 									  &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -2236,8 +2115,8 @@ RCODE F_DomEditor::interactiveEdit(
 							displayMessage( "Invalid node number",
 												 RC_SET( tmpRc),
 												 NULL,
-												 WPS_RED,
-												 WPS_WHITE);
+												 FLM_RED,
+												 FLM_WHITE);
 							break;
 						}
 						uiNodeId = (FLMUINT)ui64Tmp;
@@ -2253,12 +2132,12 @@ RCODE F_DomEditor::interactiveEdit(
 							displayMessage( "Error getting collection",
 												 RC_SET(tmpRc),
 												 NULL,
-												 WPS_RED,
-												 WPS_WHITE);
+												 FLM_RED,
+												 FLM_WHITE);
 							break;
 						}
 						
-						if( uiTermChar != WPK_ENTER)
+						if( uiTermChar != FKB_ENTER)
 						{
 							break;
 						}
@@ -2275,8 +2154,8 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Unable to retrieve node",
 											 RC_SET( tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 
@@ -2292,7 +2171,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 				case 'F':
 				case 'f':
-				case WPK_ALT_F:
+				case FKB_ALT_F:
 					doQuery( pszQuery, uiSzQueryBufSize);
 					break;
 
@@ -2303,7 +2182,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 				case 'C':
 				case 'c':
-				case WPK_ALT_C:
+				case FKB_ALT_C:
 				{
 					char			szResponse[ 2];
 					FLMUINT		uiTermChar;
@@ -2313,7 +2192,7 @@ RCODE F_DomEditor::interactiveEdit(
 						"Clear buffer and discard modifications? (Y/N)",
 						szResponse, 2, &uiTermChar);
 					
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -2342,7 +2221,7 @@ RCODE F_DomEditor::interactiveEdit(
 						"Statistics (b = begin, e = end, r = reset)",
 						szAction, sizeof( szAction), &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -2367,8 +2246,8 @@ RCODE F_DomEditor::interactiveEdit(
 							displayMessage( "Error Starting Statistics",
 												 RC_SET( tmpRc),
 												 NULL,
-												 WPS_RED,
-												 WPS_WHITE);
+												 FLM_RED,
+												 FLM_WHITE);
 							break;
 						}
 					}
@@ -2387,8 +2266,8 @@ RCODE F_DomEditor::interactiveEdit(
 							displayMessage( "Error Stopping Statistics",
 												 RC_SET( tmpRc),
 												 NULL,
-												 WPS_RED,
-												 WPS_WHITE);
+												 FLM_RED,
+												 FLM_WHITE);
 							break;
 						}
 					}
@@ -2406,8 +2285,8 @@ RCODE F_DomEditor::interactiveEdit(
 							displayMessage( "Error Resetting Statistics",
 												 RC_SET( tmpRc),
 												 NULL,
-												 WPS_RED,
-												 WPS_WHITE);
+												 FLM_RED,
+												 FLM_WHITE);
 							break;
 						}
 					}
@@ -2416,8 +2295,8 @@ RCODE F_DomEditor::interactiveEdit(
 						displayMessage( "Invalid Request",
 											 RC_SET( NE_XFLM_FAILURE),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 					bRefreshStatusWindow = TRUE;
@@ -2430,7 +2309,7 @@ RCODE F_DomEditor::interactiveEdit(
 					break;
 				}
 
-				case WPK_F10:
+				case FKB_F10:
 				{
 					if( m_bMonochrome)
 					{
@@ -2445,7 +2324,7 @@ RCODE F_DomEditor::interactiveEdit(
 					break;
 				}
 
-				case WPK_F8: /* Index Manager */
+				case FKB_F8: /* Index Manager */
 				{
 					char			szDbPath [F_PATH_MAX_SIZE];
 					F_Db *		pTmpDb = NULL;
@@ -2455,7 +2334,11 @@ RCODE F_DomEditor::interactiveEdit(
 						break;
 					}
 
-					f_threadDestroy( &pIxManagerThrd);
+					if( pIxManagerThrd)
+					{
+						pIxManagerThrd->Release();
+						pIxManagerThrd = NULL;
+					}
 
 					(void)m_pDb->getDbControlFileName( szDbPath, sizeof( szDbPath));
 
@@ -2464,53 +2347,56 @@ RCODE F_DomEditor::interactiveEdit(
 																		NULL, NULL, TRUE,
 																		(IF_Db **)&pTmpDb)))
 					{
-						f_threadCreate( &pIxManagerThrd,
-							flstIndexManagerThread, 
-							"index_manager",
-							FLM_DEFAULT_THREAD_GROUP, 0,
-							(void *)pTmpDb);
+						pThreadMgr->createThread( &pIxManagerThrd,
+							flstIndexManagerThread,
+							"index_manager", 0, 0, (void *)pTmpDb);
 					}
 					else
 					{
 						displayMessage( "Failed to open database",
 											 RC_SET( tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 					}
 					break;
 				}
 
-				case WPK_F9: /* Memory Manager */
+				case FKB_F9: /* Memory Manager */
 				{
-					f_threadDestroy( &pMemManagerThrd);
-					f_threadCreate( &pMemManagerThrd,
+					if( pMemManagerThrd)
+					{
+						pMemManagerThrd->Release();
+						pMemManagerThrd = NULL;
+					}
+					
+					pThreadMgr->createThread( &pMemManagerThrd,
 						flstMemoryManagerThread, "memory_manager");
 					break;
 				}
 
-				case WPK_DELETE:
+				case FKB_DELETE:
 				{
   					if (RC_BAD( tmpRc = deleteRow( &m_pCurRow)))
 					{
 						displayMessage( "Delete operation failed",
 											 RC_SET( tmpRc),
 											 NULL,
-											 WPS_RED,
-											 WPS_WHITE);
+											 FLM_RED,
+											 FLM_WHITE);
 						break;
 					}
 					bRefreshEditWindow = TRUE;
 					break;
 				}
 
-				case WPK_ESCAPE:
+				case FKB_ESCAPE:
 				case 'Q':
 				case 'q':
 				case 'Z':
 				case 'z':
-				case WPK_ALT_Q:
-				case WPK_ALT_Z:
+				case FKB_ALT_Q:
+				case FKB_ALT_Z:
 				{
 					bDoneEditing = TRUE;
 					break;
@@ -2536,8 +2422,20 @@ Exit:
 
 	f_free( &pszQuery);
 
-	f_threadDestroy( &pIxManagerThrd);
-	f_threadDestroy( &pMemManagerThrd);
+	if( pIxManagerThrd)
+	{
+		pIxManagerThrd->Release();
+	}
+
+	if( pMemManagerThrd)
+	{
+		pMemManagerThrd->Release();
+	}
+	
+	if( pThreadMgr)
+	{
+		pThreadMgr->Release();
+	}
 
 	if( m_pEditWindow)
 	{
@@ -2636,7 +2534,7 @@ RCODE F_DomEditor::refreshEditWindow(
 
 	// Turn display refresh off temporarily
 
-	FTXSetRefreshState( m_pScreen->pFtxInfo, TRUE);
+	FTXSetRefreshState( TRUE);
 
 	// Start a transaction
 
@@ -2681,7 +2579,7 @@ Exit:
 	Re-enable display refresh
 	*/
 
-	FTXSetRefreshState( m_pScreen->pFtxInfo, FALSE);
+	FTXSetRefreshState( FALSE);
 	return( rc);
 }
 
@@ -2904,8 +2802,9 @@ RCODE F_DomEditor::refreshRow(
 
 	if( bSelected)
 	{	
-		FLMUINT uiBackground = m_bMonochrome ? WPS_LIGHTGRAY : WPS_CYAN;
-		FLMUINT uiForeground = m_bMonochrome ? WPS_BLACK : WPS_WHITE;
+		eColorType 	uiBackground = m_bMonochrome ? FLM_LIGHTGRAY : FLM_CYAN;
+		eColorType 	uiForeground = m_bMonochrome ? FLM_BLACK : FLM_WHITE;
+		
 		FTXWinPaintRow( m_pEditWindow, &uiBackground, &uiForeground, uiRow);
 	}
 
@@ -2952,8 +2851,8 @@ RCODE F_DomEditor::displayMessage(
 	char *				pszMessage,
 	RCODE					rcOfMessage,
 	FLMUINT *			puiTermChar,
-	FLMUINT				uiBackground,
-	FLMUINT				uiForeground)
+	eColorType			uiBackground,
+	eColorType			uiForeground)
 {
 	RCODE				rc = NE_XFLM_OK;
 	char				szErr [20];
@@ -2967,8 +2866,8 @@ RCODE F_DomEditor::displayMessage(
 		*puiTermChar = 0;
 	}
 
-	FTXDisplayMessage( m_pScreen, m_bMonochrome ? WPS_LIGHTGRAY : uiBackground,
-		m_bMonochrome ? WPS_BLACK : uiForeground, szErr, puiTermChar);
+	FTXDisplayMessage( m_pScreen, m_bMonochrome ? FLM_LIGHTGRAY : uiBackground,
+		m_bMonochrome ? FLM_BLACK : uiForeground, pszMessage, szErr, puiTermChar);
 
 	return( rc);
 }
@@ -2994,7 +2893,7 @@ RCODE F_DomEditor::openNewDb( void)
 			goto Exit;
 		}
 
-		if (uiChar == WPK_ESCAPE)
+		if (uiChar == FKB_ESCAPE)
 		{
 			break;
 		}
@@ -3002,7 +2901,7 @@ RCODE F_DomEditor::openNewDb( void)
 			(IF_Db **)&m_pDb)))
 		{
 			displayMessage( "Unable to open database", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			m_pDb = NULL;
 			continue;
 		}
@@ -3026,105 +2925,73 @@ RCODE F_DomEditor::requestInput(
 	FLMUINT				uiMaxRespLen,
 	FLMUINT *			puiTermChar)
 {
-	FLMUINT			uiNumCols;
-	FLMUINT			uiNumRows;
-	FLMUINT			uiNumWinRows = 3;
-	FLMUINT			uiNumWinCols;
-	FTX_WINDOW *	pWindow = NULL;
-	IF_FileHdl *	pFileHdl = NULL;
-	RCODE				rc = NE_XFLM_OK;
+	RCODE					rc = NE_XFLM_OK;
+	FLMUINT				uiNumCols;
+	FLMUINT				uiNumRows;
+	FLMUINT				uiNumWinRows = 3;
+	FLMUINT				uiNumWinCols;
+	FTX_WINDOW *		pWindow = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
 
 	flmAssert( m_bSetupCalled == TRUE);
-
-	if( FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+
+	FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 
 	uiNumWinCols = uiNumCols - 8;
 
-	if( FTXWinInit( m_pScreen, uiNumWinCols,
-		uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetScroll( pWindow, FALSE) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+		uiNumWinRows, &pWindow)))
 	{
 		goto Exit;
 	}
 
-	FTXWinSetCursorType( pWindow, WPS_CURSOR_UNDERLINE);
+	FTXWinSetScroll( pWindow, FALSE);
+	FTXWinSetCursorType( pWindow, FLM_CURSOR_UNDERLINE);
 
-	if( FTXWinSetBackFore( pWindow, m_bMonochrome ? WPS_BLACK : WPS_CYAN,
-		WPS_WHITE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinSetBackFore( pWindow, m_bMonochrome ? FLM_BLACK : FLM_CYAN, FLM_WHITE);
+	FTXWinClear( pWindow);
+	FTXWinDrawBorder( pWindow);
 
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinMove( pWindow, (uiNumCols - uiNumWinCols) / 2,
+		(uiNumRows - uiNumWinRows) / 2);
 
-	if( FTXWinDrawBorder( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinMove( pWindow, (uiNumCols - uiNumWinCols) / 2,
-		(uiNumRows - uiNumWinRows) / 2) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinOpen( pWindow);
 
 	for( ;;)
 	{
-		if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
-
+		FTXWinClear( pWindow);
 		FTXWinPrintf( pWindow, "%s: ", pszMessage);
 
-		if( FTXLineEdit( pWindow, pszResponse, uiMaxRespLen, uiMaxRespLen,
-			NULL, puiTermChar) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXLineEdit( pWindow, pszResponse, 
+			uiMaxRespLen, uiMaxRespLen, NULL, puiTermChar)))
 		{
-			rc = RC_SET( NE_XFLM_FAILURE);
 			goto Exit;
 		}
 
-		if( *puiTermChar == WPK_F1)
+		if( *puiTermChar == FKB_F1)
 		{
 			FLMUINT		uiBytesRead;
 			char *		pszSrc;
 			char *		pszDest;
 
-			if( RC_BAD( rc = gv_pFileSystem->Open( pszResponse, XFLM_IO_RDONLY,
+			if( RC_BAD( rc = pFileSystem->openFile( pszResponse, FLM_IO_RDONLY,
 				&pFileHdl)))
 			{
 				displayMessage( "Unable to open file", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 				continue;
 			}
 
-			if( RC_BAD( rc = pFileHdl->Read( 0, uiMaxRespLen,
+			if( RC_BAD( rc = pFileHdl->read( 0, uiMaxRespLen,
 				pszResponse, &uiBytesRead)))
 			{
-				if( rc == NE_XFLM_IO_END_OF_FILE)
+				if( rc == NE_FLM_IO_END_OF_FILE)
 				{
 					rc = NE_XFLM_OK;
 				}
@@ -3177,6 +3044,11 @@ Exit:
 	if( pFileHdl)
 	{
 		pFileHdl->Release();
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 
 	if( pWindow)
@@ -5067,7 +4939,7 @@ RCODE F_DomEditor::displayAttributes(
 	{
 		displayMessage(
 							"Node DOM Nodes to display attributes for",
-							NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+							NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -5075,7 +4947,7 @@ RCODE F_DomEditor::displayAttributes(
 	{
 		displayMessage(
 							"DOM Node is not an ELEMENT_NODE",
-							NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+							NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -5083,7 +4955,7 @@ RCODE F_DomEditor::displayAttributes(
 	{
 		displayMessage(
 							"DOM Node does not have attributes",
-							NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+							NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -5252,8 +5124,9 @@ FSTATIC void domGetOutputFileName(
 
 	*pszOutputFileName = 0;
 	FTXWinPrintf( pWindow, "Enter Output File Name: ");
-	if (FTXLineEdit( pWindow, pszOutputFileName, uiOutputFileNameBufSize - 1,
-					uiOutputFileNameBufSize - 1, NULL, &uiChar) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXLineEdit( pWindow, pszOutputFileName, 
+		uiOutputFileNameBufSize - 1, uiOutputFileNameBufSize - 1,
+		NULL, &uiChar)))
 	{
 		*pszOutputFileName = 0;
 	}
@@ -5275,7 +5148,7 @@ RCODE F_DomEditor::displayNodeInfo(
 
 	if (RC_BAD( rc = createStatusWindow(
 		"Node Information",
-		WPS_GREEN, WPS_WHITE, NULL, NULL, &pWindow)))
+		FLM_GREEN, FLM_WHITE, NULL, NULL, &pWindow)))
 	{
 		goto Exit;
 	}
@@ -5306,8 +5179,8 @@ RCODE F_DomEditor::displayNodeInfo(
 				}
 				else
 				{
-					FTXDisplayMessage( m_pScreen, m_bMonochrome ? WPS_LIGHTGRAY : WPS_RED,
-						m_bMonochrome ? WPS_BLACK : WPS_WHITE,
+					FTXDisplayMessage( m_pScreen, m_bMonochrome ? FLM_LIGHTGRAY : FLM_RED,
+						m_bMonochrome ? FLM_BLACK : FLM_WHITE,
 						"Invalid option", NULL, &uiTermChar);
 					uiChar = 0;
 				}
@@ -5319,15 +5192,15 @@ RCODE F_DomEditor::displayNodeInfo(
 				break;
 			case 'N':
 			case 'n':
-			case WPK_ENTER:
+			case FKB_ENTER:
 				domGetOutputFileName( pWindow, szOutputFile, sizeof( szOutputFile));
 				domDisplayNodeInfo( pWindow, szOutputFile, m_pDb, m_uiCollection, pRow->ui64NodeId, FALSE, TRUE);
 				break;
-			case WPK_ESC:
+			case FKB_ESC:
 				break;
 			default:
-				FTXDisplayMessage( m_pScreen, m_bMonochrome ? WPS_LIGHTGRAY : WPS_RED,
-					m_bMonochrome ? WPS_BLACK : WPS_WHITE,
+				FTXDisplayMessage( m_pScreen, m_bMonochrome ? FLM_LIGHTGRAY : FLM_RED,
+					m_bMonochrome ? FLM_BLACK : FLM_WHITE,
 					"Invalid option", NULL, &uiTermChar);
 				uiChar = 0;
 				break;
@@ -5368,7 +5241,7 @@ RCODE F_DomEditor::exportNode(
 
 	if (RC_BAD( rc = createStatusWindow(
 		"Export Node Subtree",
-		WPS_GREEN, WPS_WHITE, NULL, NULL, &pWindow)))
+		FLM_GREEN, FLM_WHITE, NULL, NULL, &pWindow)))
 	{
 		goto Exit;
 	}
@@ -5381,9 +5254,9 @@ RCODE F_DomEditor::exportNode(
 		FTXWinSetCursorPos( pWindow, 2, 1);
 		FTXWinClearLine( pWindow, 2, 1);
 		FTXWinPrintf( pWindow, "Enter Export File Name: ");
-		if ((rc = FTXLineEdit( pWindow, szFileName, sizeof( szFileName) - 1,
-						sizeof( szFileName) - 1,
-			NULL, &uiChar)) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXLineEdit( pWindow, szFileName, 
+			sizeof( szFileName) - 1, sizeof( szFileName) - 1,
+			NULL, &uiChar)))
 		{
 			goto Exit;
 		}
@@ -5393,7 +5266,7 @@ RCODE F_DomEditor::exportNode(
 		}
 		if (RC_BAD( rc = dbSystem.openFileOStream( szFileName, TRUE, &pFileOStream)))
 		{
-			displayMessage( "Error creating export file", rc, NULL, WPS_RED, WPS_WHITE);
+			displayMessage( "Error creating export file", rc, NULL, FLM_RED, FLM_WHITE);
 		}
 		else
 		{
@@ -5413,7 +5286,7 @@ RCODE F_DomEditor::exportNode(
 		{
 			case 'I':
 			case 'i':
-			case WPK_ENTER:
+			case FKB_ENTER:
 				eFormat = XFLM_EXPORT_INDENT;
 				FTXWinPrintf( pWindow, "I");
 				break;
@@ -5432,11 +5305,11 @@ RCODE F_DomEditor::exportNode(
 				eFormat = XFLM_EXPORT_NO_FORMAT;
 				FTXWinPrintf( pWindow, "X");
 				break;
-			case WPK_ESC:
+			case FKB_ESC:
 				goto Exit;
 			default:
-				FTXDisplayMessage( m_pScreen, m_bMonochrome ? WPS_LIGHTGRAY : WPS_RED,
-					m_bMonochrome ? WPS_BLACK : WPS_WHITE,
+				FTXDisplayMessage( m_pScreen, m_bMonochrome ? FLM_LIGHTGRAY : FLM_RED,
+					m_bMonochrome ? FLM_BLACK : FLM_WHITE,
 					"Invalid option", NULL, &uiTermChar);
 				uiChar = 0;
 				break;
@@ -5459,12 +5332,12 @@ RCODE F_DomEditor::exportNode(
 	}
 	if (RC_BAD( rc))
 	{
-		displayMessage( "Error getting node", rc, NULL, WPS_RED, WPS_WHITE);
+		displayMessage( "Error getting node", rc, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 	if( RC_BAD( rc = m_pDb->exportXML( pNode, pFileOStream, eFormat)))
 	{
-		displayMessage( "Error exporting data", rc, NULL, WPS_RED, WPS_WHITE);
+		displayMessage( "Error exporting data", rc, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 	FTXWinSetCursorPos( pWindow, 2, 3);
@@ -6108,7 +5981,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 	
 	asciiToUnicode( "UP              Position cursor to the previous field", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_UP, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_UP, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6123,7 +5996,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "DOWN            Position cursor to the next field", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_DOWN, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_DOWN, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6139,7 +6012,7 @@ RCODE F_DomEditor::showHelp(
 
 
 	asciiToUnicode( "PG UP           Position cursor to the previous page", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_PGUP, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_PGUP, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6154,7 +6027,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "PG DOWN         Position cursor to the next page", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_PGDN, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_PGDN, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6169,7 +6042,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "HOME            Position cursor to the top of the buffer", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_HOME, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_HOME, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6184,7 +6057,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "END             Position cursor to the bottom of the buffer", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_END, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_END, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6199,7 +6072,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "DELETE          Delete the current node", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_DELETE, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_DELETE, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6386,7 +6259,7 @@ RCODE F_DomEditor::showHelp(
 
 
 	asciiToUnicode( "RIGHT           Expand context one level", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_RIGHT, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_RIGHT, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6401,7 +6274,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "LEFT            Collapse context", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_LEFT, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_LEFT, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6416,7 +6289,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "PLUS            Expand to full context", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_PLUS, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_PLUS, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6431,7 +6304,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "MINUS           collapse context", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_MINUS, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_MINUS, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6446,7 +6319,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "ENTER           Edit the current node's value", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_ENTER, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_ENTER, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6462,7 +6335,7 @@ RCODE F_DomEditor::showHelp(
 
 
 	asciiToUnicode( "F8              Index manager", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_F8, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_F8, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6477,7 +6350,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "F9              Memory manager", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_F9, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_F9, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6492,7 +6365,7 @@ RCODE F_DomEditor::showHelp(
 	pTmpRow = NULL;
 
 	asciiToUnicode( "F10             Toggle display colors on/off", &uzItemName[0]);
-	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], WPK_F10, TRUE)))
+	if (RC_BAD( rc = makeNewRow( &pTmpRow, &uzItemName[0], FKB_F10, TRUE)))
 	{
 		goto Exit;
 	}
@@ -6543,7 +6416,7 @@ RCODE F_DomEditor::showHelp(
 		goto Exit;
 	}
 
-	if( pHelpList->getLastKey() != WPK_ENTER)
+	if( pHelpList->getLastKey() != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -6595,8 +6468,8 @@ Desc:	Creates a window for displaying an operation's status
 *****************************************************************************/
 RCODE F_DomEditor::createStatusWindow(
 	char *				pszTitle,
-	FLMUINT				uiBack,
-	FLMUINT				uiFore,
+	eColorType			uiBack,
+	eColorType			uiFore,
 	FLMUINT *			puiCols,
 	FLMUINT *			puiRows,
 	FTX_WINDOW **		ppWindow)
@@ -6610,16 +6483,7 @@ RCODE F_DomEditor::createStatusWindow(
 
 	*ppWindow = NULL;
 
-	/*
-	Create a status window
-	*/
-
-	if( FTXScreenGetSize( m_pScreen,
-		&uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 
 	if( puiCols)
 	{
@@ -6637,10 +6501,9 @@ RCODE F_DomEditor::createStatusWindow(
 		uiNumWinRows = uiNumRows - 2;
 	}
 
-	if( FTXWinInit( m_pScreen, uiNumWinCols,
-		uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+		uiNumWinRows, &pWindow)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
@@ -6654,65 +6517,30 @@ RCODE F_DomEditor::createStatusWindow(
 		*puiRows = uiNumWinRows;
 	}
 
-	if( FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
-		(FLMUINT)((uiNumRows - uiNumWinRows) / 2)) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
+		(FLMUINT)((uiNumRows - uiNumWinRows) / 2));
 
-	if( FTXWinSetScroll( pWindow, TRUE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if( FTXWinSetLineWrap( pWindow, TRUE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	FTXWinSetCursorType( pWindow, WPS_CURSOR_INVISIBLE);
+	FTXWinSetScroll( pWindow, TRUE);
+	FTXWinSetLineWrap( pWindow, TRUE);
+	FTXWinSetCursorType( pWindow, FLM_CURSOR_INVISIBLE);
 
 	if( m_bMonochrome)
 	{
-		uiBack = WPS_LIGHTGRAY;
-		uiFore = WPS_BLACK;
-		if( FTXWinSetBackFore( pWindow,
-			uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		uiBack = FLM_LIGHTGRAY;
+		uiFore = FLM_BLACK;
+		FTXWinSetBackFore( pWindow, uiBack, uiFore);
 	}
 	else
 	{
-		if( FTXWinSetBackFore( pWindow,
-			uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		FTXWinSetBackFore( pWindow, uiBack, uiFore);
 	}
 
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinDrawBorder( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinClear( pWindow);
+	FTXWinDrawBorder( pWindow);
 
 	if( pszTitle)
 	{
-		if( FTXWinSetTitle( pWindow, pszTitle, uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( NE_XFLM_MEM);
-			goto Exit;
-		}
+		FTXWinSetTitle( pWindow, pszTitle, uiBack, uiFore);
 	}
 
 	*ppWindow = pWindow;
@@ -6721,7 +6549,6 @@ Exit:
 
 	return( rc);
 }
-
 	
 
 /****************************************************************************
@@ -6739,20 +6566,20 @@ FSTATIC RCODE f_ViewOnlyKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_HOME:
-		case WPK_END:
-		case WPK_UP:
-		case WPK_DOWN:
-		case WPK_PGUP:
-		case WPK_PGDN:
-		case WPK_ESCAPE:
+		case FKB_HOME:
+		case FKB_END:
+		case FKB_UP:
+		case FKB_DOWN:
+		case FKB_PGUP:
+		case FKB_PGDN:
+		case FKB_ESCAPE:
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
 		}
 
 		// Special case
-		case WPK_DELETE:
+		case FKB_DELETE:
 		{
 			*puiKeyOut = 0;
 			if (pCurRow->uiFlags & F_DOMEDIT_FLAG_COMMENT)
@@ -6795,7 +6622,7 @@ FSTATIC RCODE f_KeyEditorKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_UP:
+		case FKB_UP:
 		{
 			(void)pDomEditor->getCurrentRow( &uiCurRow);
 			if (uiCurRow)
@@ -6820,7 +6647,7 @@ FSTATIC RCODE f_KeyEditorKeyHook(
 			*puiKeyOut = 0;
 			break;
 		}
-		case WPK_DOWN:
+		case FKB_DOWN:
 		{
 			(void)pDomEditor->getCurrentRow( &uiCurRow);
 
@@ -6841,24 +6668,24 @@ FSTATIC RCODE f_KeyEditorKeyHook(
 			*puiKeyOut = 0;
 			break;
 		}
-		case WPK_ENTER:
+		case FKB_ENTER:
 		{
 			if( !pDomEditor->canEditRow( pCurRow))
 			{
 				pDomEditor->displayMessage( "The row cannot be edited",
-					RC_SET( NE_XFLM_ILLEGAL_OP), NULL, WPS_RED, WPS_WHITE);
+					RC_SET( NE_XFLM_ILLEGAL_OP), NULL, FLM_RED, FLM_WHITE);
 			}
 			else if( RC_BAD( rc = pDomEditor->editIndexRow( pCurRow)))
 			{
 				pDomEditor->displayMessage( "The field could not be edited", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			}
 			*puiKeyOut = 0;
 			break;
 		}
-		case WPK_ESCAPE:		/* Quit key editor */
-//		case WPK_ALT_Q:		/* Done editing keys */
-		case WPK_ALT_Z:		/* Done, but don't quit */
+		case FKB_ESCAPE:		/* Quit key editor */
+//		case FKB_ALT_Q:		/* Done editing keys */
+		case FKB_ALT_Z:		/* Done, but don't quit */
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
@@ -6871,12 +6698,12 @@ FSTATIC RCODE f_KeyEditorKeyHook(
 			if( !pDomEditor->canEditRow( pCurRow))
 			{
 				pDomEditor->displayMessage( "The row cannot be edited",
-					RC_SET( NE_XFLM_ILLEGAL_OP), NULL, WPS_RED, WPS_WHITE);
+					RC_SET( NE_XFLM_ILLEGAL_OP), NULL, FLM_RED, FLM_WHITE);
 			}
 			else if( RC_BAD( rc = pDomEditor->editIndexNode( pCurRow)))
 			{
 				pDomEditor->displayMessage( "The field could not be edited", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			}
 			*puiKeyOut = 0;
 			break;
@@ -6909,15 +6736,15 @@ RCODE F_DomEditorSelectionKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_HOME:
-		case WPK_END:
-		case WPK_UP:
-		case WPK_DOWN:
-		case WPK_PGUP:
-		case WPK_PGDN:
-		case WPK_ESCAPE:
-		case WPK_ENTER:
-		case WPK_DELETE:
+		case FKB_HOME:
+		case FKB_END:
+		case FKB_UP:
+		case FKB_DOWN:
+		case FKB_PGUP:
+		case FKB_PGDN:
+		case FKB_ESCAPE:
+		case FKB_ENTER:
+		case FKB_DELETE:
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
@@ -7604,7 +7431,7 @@ FSTATIC char * domeditSkipChars(
 Desc:
 ****************************************************************************/
 RCODE _domEditBackgroundThread(
-	F_Thread *			pThread)
+	IF_Thread *			pThread)
 {
 	FLMUINT		uiCount = 0;
 
@@ -8278,17 +8105,17 @@ FSTATIC RCODE formatDocumentNode(
 	F_DOMNode *			pAnnotation = NULL;
 	FLMUNICODE *		puzAttrValue = NULL;
 	char *				pszString = NULL;
-	FLMUINT				uiForeground;
+	eColorType			uiForeground;
 
 	if (pRow->pDomNode)
 	{
 		uiForeground = pRow->pDomNode->isQuarantined() 
-							? WPS_LIGHTCYAN
-							: WPS_YELLOW;
+							? FLM_LIGHTCYAN
+							: FLM_YELLOW;
 	}
 	else
 	{
-		uiForeground = WPS_YELLOW;
+		uiForeground = FLM_YELLOW;
 	}
 
 
@@ -8310,8 +8137,8 @@ FSTATIC RCODE formatDocumentNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%s", pRow->bExpanded ? "-" : pRow->bHasChildren ? "+" : " ");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8329,8 +8156,8 @@ FSTATIC RCODE formatDocumentNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%u", pRow->uiLevel);
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + (pRow->uiLevel * 2) + 1;
 		(*puiNumVals)++;
 	}
@@ -8354,8 +8181,8 @@ FSTATIC RCODE formatDocumentNode(
 	}
 
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = pDomEditor->isMonochrome() ? WPS_WHITE : uiForeground;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = pDomEditor->isMonochrome() ? FLM_WHITE : uiForeground;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + (pRow->uiLevel * 2) + 1;
 	(*puiNumVals)++;
 
@@ -8382,8 +8209,8 @@ FSTATIC RCODE formatDocumentNode(
 	}
 
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = pDomEditor->isMonochrome() ? WPS_WHITE : uiForeground;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = pDomEditor->isMonochrome() ? FLM_WHITE : uiForeground;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	(*puiNumVals)++;
 
 Exit:
@@ -8423,7 +8250,7 @@ FSTATIC RCODE formatElementNode(
 	FLMBOOL					bGotFirstAttr = FALSE;
 	F_Db *					pDb = NULL;
 	FLMUINT					uiAttrLen;
-	FLMUINT					uiForeground;
+	eColorType				uiForeground;
 	FLMBOOL					bHasLocalData;
 
 	if (RC_BAD( rc = pRow->pDomNode->isDataLocalToNode( pDomEditor->getDb(), &bHasLocalData)))
@@ -8434,12 +8261,12 @@ FSTATIC RCODE formatElementNode(
 	if (pRow->pDomNode)
 	{
 		uiForeground = pRow->pDomNode->isQuarantined() 
-							? WPS_LIGHTCYAN
-							: WPS_WHITE;
+							? FLM_LIGHTCYAN
+							: FLM_WHITE;
 	}
 	else
 	{
-		uiForeground = WPS_WHITE;
+		uiForeground = FLM_WHITE;
 	}
 
 	if ((pDispVals = pDomEditor->getDispColumns()) == NULL)
@@ -8462,10 +8289,10 @@ FSTATIC RCODE formatElementNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%s", pRow->bExpanded ? "-" : (pRow->bHasChildren || bHasLocalData) ? "+" : " ");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
 		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() 
-																	? WPS_BLACK
-																	: WPS_BLUE;
+																	? FLM_BLACK
+																	: FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8483,10 +8310,10 @@ FSTATIC RCODE formatElementNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%u", pRow->uiLevel);
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
 		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() 
-																	? WPS_BLACK
-																	: WPS_BLUE;
+																	? FLM_BLACK
+																	: FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8524,8 +8351,8 @@ FSTATIC RCODE formatElementNode(
 	pDispVals[ *puiNumVals].uiCol = uiCol;
 	pDispVals[ *puiNumVals].uiForeground = uiForeground;
 	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() 
-										? WPS_BLACK
-										: WPS_BLUE;
+										? FLM_BLACK
+										: FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString);
 	(*puiNumVals)++;
 
@@ -8613,8 +8440,8 @@ FSTATIC RCODE formatElementNode(
 		}
 
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_LIGHTRED;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_LIGHTRED;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString);
 		(*puiNumVals)++;
 	}
@@ -8625,7 +8452,7 @@ FSTATIC RCODE formatElementNode(
 
 	pDispVals[ *puiNumVals].uiCol = uiCol;
 	pDispVals[ *puiNumVals].uiForeground = uiForeground;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString);
 	(*puiNumVals)++;
 
@@ -8690,8 +8517,8 @@ FSTATIC RCODE formatAttributeNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%s", pRow->bExpanded ? "-" : pRow->bHasChildren ? "+" : " ");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8709,8 +8536,8 @@ FSTATIC RCODE formatAttributeNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%u", pRow->uiLevel);
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8745,8 +8572,8 @@ FSTATIC RCODE formatAttributeNode(
 	}
 
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString);
 	(*puiNumVals)++;
 
@@ -8773,8 +8600,8 @@ FSTATIC RCODE formatAttributeNode(
 
 
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_LIGHTRED;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_LIGHTRED;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString)+1;
 	(*puiNumVals)++;
 
@@ -8783,8 +8610,8 @@ FSTATIC RCODE formatAttributeNode(
 	f_sprintf( pDispVals[ *puiNumVals].szString, pRow->bHasChildren ? ">" : "/>");
 
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	(*puiNumVals)++;
 
 Exit:
@@ -8821,17 +8648,17 @@ FSTATIC RCODE formatDataNode(
 	char *				pszString;
 	FLMUINT				uiCol;
 	DME_DISP_COLUMN *	pDispVals;
-	FLMUINT				uiForeground;
+	eColorType			uiForeground;
 
 	if (pRow->pDomNode)
 	{
 		uiForeground = pRow->pDomNode->isQuarantined() 
-							? WPS_LIGHTCYAN
-							: WPS_WHITE;
+							? FLM_LIGHTCYAN
+							: FLM_WHITE;
 	}
 	else
 	{
-		uiForeground = WPS_WHITE;
+		uiForeground = FLM_WHITE;
 	}
 
 	if ((pDispVals = pDomEditor->getDispColumns()) == NULL)
@@ -8854,8 +8681,8 @@ FSTATIC RCODE formatDataNode(
 			f_sprintf( pDispVals[ *puiNumVals].szString,
 				"%s", pRow->bExpanded ? "-" : "+");
 			pDispVals[ *puiNumVals].uiCol = uiCol;
-			pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-			pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+			pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+			pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 			uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 			(*puiNumVals)++;
 		}
@@ -8874,8 +8701,8 @@ FSTATIC RCODE formatDataNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%u", pRow->uiLevel);
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8907,7 +8734,7 @@ FSTATIC RCODE formatDataNode(
 
 		pDispVals[ *puiNumVals].uiCol = uiCol;
 		pDispVals[ *puiNumVals].uiForeground = uiForeground;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		(*puiNumVals)++;
 	}
 
@@ -8953,8 +8780,8 @@ FSTATIC RCODE formatProcessingInstruction(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%s", pRow->bExpanded ? "-" : "+");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -8972,8 +8799,8 @@ FSTATIC RCODE formatProcessingInstruction(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%u", pRow->uiLevel);
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -9003,8 +8830,8 @@ FSTATIC RCODE formatProcessingInstruction(
 		goto Exit;
 	}
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 	(*puiNumVals)++;
 
@@ -9015,8 +8842,8 @@ FSTATIC RCODE formatProcessingInstruction(
 		goto Exit;
 	}
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	(*puiNumVals)++;
 
 Exit:
@@ -9059,8 +8886,8 @@ FSTATIC RCODE formatRow(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%s", pRow->bExpanded ? "-" : "+");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -9078,8 +8905,8 @@ FSTATIC RCODE formatRow(
 		f_sprintf( pDispVals[ *puiNumVals].szString,
 			"%u", pRow->uiLevel);
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -9095,8 +8922,8 @@ FSTATIC RCODE formatRow(
 	}
 
 	pDispVals[ *puiNumVals].uiCol = (uiFlags & F_DOMEDIT_FLAG_COMMENT ? 0 : uiCol);
-	pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	(*puiNumVals)++;
 
 Exit:
@@ -9393,71 +9220,33 @@ RCODE F_DomEditor::editTextBuffer(
 	FLMUINT			uiNumWinRows = 3;
 	FLMUINT			uiNumWinCols;
 	FTX_WINDOW *	pWindow = NULL;
-	F_FileHdl *		pFileHdl = NULL;
+	IF_FileHdl *	pFileHdl = NULL;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
+	FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 	uiNumWinCols = uiNumCols - 8;
 
-	if( FTXWinInit( m_pScreen, uiNumWinCols,
-		uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetScroll( pWindow, FALSE) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+		uiNumWinRows, &pWindow)))
 	{
 		goto Exit;
 	}
 
-	FTXWinSetCursorType( pWindow, WPS_CURSOR_UNDERLINE);
+	FTXWinSetScroll( pWindow, FALSE);
+	FTXWinSetCursorType( pWindow, FLM_CURSOR_UNDERLINE);
+	FTXWinSetBackFore( pWindow, m_bMonochrome ? FLM_BLACK : FLM_CYAN, FLM_WHITE);
+	FTXWinClear( pWindow);
+	FTXWinDrawBorder( pWindow);
 
-	if( FTXWinSetBackFore( pWindow, m_bMonochrome ? WPS_BLACK : WPS_CYAN,
-		WPS_WHITE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinMove( pWindow, (uiNumCols - uiNumWinCols) / 2,
+		(uiNumRows - uiNumWinRows) / 2);
 
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinDrawBorder( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinMove( pWindow, (uiNumCols - uiNumWinCols) / 2,
-		(uiNumRows - uiNumWinRows) / 2) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
+	FTXWinOpen( pWindow);
+	FTXWinClear( pWindow);
 
 	// Adjust the buffer size if needed.
+	
 	if (uiBufSize < MIN_BUFSIZE)
 	{
 		if (RC_BAD( rc = f_realloc( MIN_BUFSIZE, ppszBuffer)))
@@ -9472,8 +9261,8 @@ RCODE F_DomEditor::editTextBuffer(
 		uiBufSize = MIN_BUFSIZE;
 	}
 
-	if( FTXLineEdit( pWindow, pszBuffer, uiBufSize, uiBufSize,
-		NULL, puiTermChar) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXLineEdit( pWindow, pszBuffer, uiBufSize, uiBufSize,
+		NULL, puiTermChar)))
 	{
 		rc = RC_SET( NE_XFLM_FAILURE);
 		goto Exit;
@@ -9558,12 +9347,8 @@ RCODE F_DomEditor::editRow(
 
 				uiRows = uiBufSize / (m_uiEditCanvasCols - 4) + 3;
 
-				if (RC_BAD( rc = FTXDisplayScrollWindow( m_pScreen->pFtxInfo,
-																	  m_pScreen,
-																	  "View",
-																	  pszBuffer,
-																	  m_uiEditCanvasCols - 4,
-																	  uiRows > 10 ? 10 : uiRows)))
+				if (RC_BAD( rc = FTXDisplayScrollWindow( m_pScreen, "View",
+					pszBuffer, m_uiEditCanvasCols - 4, uiRows > 10 ? 10 : uiRows)))
 				{
 					goto Exit;
 				}
@@ -9577,7 +9362,7 @@ RCODE F_DomEditor::editRow(
 			}
 
 			// Save the results?
-			if (uiTermChar == WPK_ENTER && !bReadOnly)
+			if (uiTermChar == FKB_ENTER && !bReadOnly)
 			{
 
 				// Begin a transaction
@@ -9619,7 +9404,7 @@ RCODE F_DomEditor::editRow(
 						if( RC_BAD( rc = getNumber( pszBuffer, &ui64Value, NULL)))
 						{
 							displayMessage( "Invalid number", rc,
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 							goto Exit;
 						}
 
@@ -9688,12 +9473,8 @@ RCODE F_DomEditor::editRow(
 
 				uiRows = uiBufSize / (m_uiEditCanvasCols - 4) + 3;
 
-				if (RC_BAD( rc = FTXDisplayScrollWindow( m_pScreen->pFtxInfo,
-																	  m_pScreen,
-																	  "View",
-																	  pszBuffer,
-																	  m_uiEditCanvasCols - 4,
-																	  uiRows > 10 ? 10 : uiRows)))
+				if (RC_BAD( rc = FTXDisplayScrollWindow( m_pScreen, "View",
+					pszBuffer, m_uiEditCanvasCols - 4, uiRows > 10 ? 10 : uiRows)))
 				{
 					goto Exit;
 				}
@@ -9707,7 +9488,7 @@ RCODE F_DomEditor::editRow(
 			}
 
 			// Save the results?
-			if (uiTermChar == WPK_ENTER && !bReadOnly)
+			if (uiTermChar == FKB_ENTER && !bReadOnly)
 			{
 				// Get a new unicode buffer....
 				f_free( &puzBuffer);
@@ -9874,7 +9655,7 @@ RCODE F_DomEditor::editIndexRow(
 	}
 
 	// Save the results?
-	if (uiTermChar == WPK_ENTER)
+	if (uiTermChar == FKB_ENTER)
 	{
 		switch( pVector->getDataType( uiElementNumber))
 		{
@@ -9963,7 +9744,7 @@ RCODE F_DomEditor::editIndexNode(
 	}
 
 	// Save the results?
-	if (uiTermChar == WPK_ENTER)
+	if (uiTermChar == FKB_ENTER)
 	{
 		FLMUINT64		ui64Num = f_atou64( pszBuffer);
 
@@ -10015,7 +9796,7 @@ RCODE F_DomEditor::selectElementAttribute(
 	if (pRow->uiFlags & F_DOMEDIT_FLAG_ENDTAG)
 	{
 		rc = displayMessage( "Cannot edit Element end tag",
-			NE_XFLM_FAILURE, puiTermChar, WPS_RED, WPS_WHITE);
+			NE_XFLM_FAILURE, puiTermChar, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -10067,7 +9848,7 @@ RCODE F_DomEditor::selectElementAttribute(
 	if (pRow->pDomNode->getNodeType() != ELEMENT_NODE)
 	{
 		rc = displayMessage( "Invalid node type",
-			NE_XFLM_FAILURE, puiTermChar, WPS_RED, WPS_WHITE);
+			NE_XFLM_FAILURE, puiTermChar, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -10258,7 +10039,7 @@ RCODE F_DomEditor::deleteRow(
 	requestInput(	szMessage,
 						&szResponse[ 0], sizeof( szResponse), &uiTermChar);
 
-	if( uiTermChar == WPK_ESCAPE || szResponse[ 0] == 'N' || szResponse[ 0] == 'n')
+	if( uiTermChar == FKB_ESCAPE || szResponse[ 0] == 'N' || szResponse[ 0] == 'n')
 	{
 		goto Exit;
 	}
@@ -10473,7 +10254,7 @@ RCODE F_DomEditor::addSomething(
 		goto Exit;
 	}
 	
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -10565,7 +10346,7 @@ RCODE F_DomEditor::createDocumentNode(
 	requestInput( "Document Title / Comment",
 						szResponse, sizeof( szResponse), &uiTermChar);
 
-	if( uiTermChar == WPK_ESCAPE)
+	if( uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -10693,10 +10474,10 @@ RCODE F_DomEditor::createRootElementNode(
 	if( RC_BAD( tmpRc = selectCollection( &uiCollection, &uiTermChar)))
 	{
 		displayMessage( "Error getting collection", tmpRc,
-			NULL, WPS_RED, WPS_WHITE);
+			NULL, FLM_RED, FLM_WHITE);
 	}
 	
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -10708,7 +10489,7 @@ RCODE F_DomEditor::createRootElementNode(
 						sizeof( szResponse),
 						&uiTermChar);
 
-	if( uiTermChar == WPK_ESCAPE)
+	if( uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -10729,7 +10510,7 @@ RCODE F_DomEditor::createRootElementNode(
 		goto Exit;
 	}
 
-	if( uiTermChar == WPK_ESCAPE)
+	if( uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -10863,7 +10644,7 @@ RCODE F_DomEditor::createElementNode(
 						sizeof( szResponse),
 						&uiTermChar);
 
-	if( uiTermChar == WPK_ESCAPE)
+	if( uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -10877,7 +10658,7 @@ RCODE F_DomEditor::createElementNode(
 	if (!pRow)
 	{
 		displayMessage( "No DOM Node to add to.",
-			NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+			NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -10887,7 +10668,7 @@ RCODE F_DomEditor::createElementNode(
 		 pRow->eType != ELEMENT_NODE)
 	{
 		displayMessage( "Invalid DOM node type",
-			NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+			NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -10897,7 +10678,7 @@ RCODE F_DomEditor::createElementNode(
 		goto Exit;
 	}
 
-	if (uiTermChar == WPK_ESCAPE)
+	if (uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -10941,7 +10722,7 @@ RCODE F_DomEditor::createElementNode(
 			requestInput( "Insert as Sibling node?",
 				szResponse, sizeof( szResponse), &uiTermChar);
 
-			if (uiTermChar == WPK_ESCAPE)
+			if (uiTermChar == FKB_ESCAPE)
 			{
 				goto Exit;
 			}
@@ -11087,7 +10868,7 @@ RCODE F_DomEditor::createTextNode(
 		 pRow->eType != ELEMENT_NODE)
 	{
 		displayMessage( "Invalid DOM node type",
-			NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+			NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -11095,7 +10876,7 @@ RCODE F_DomEditor::createTextNode(
 	requestInput( "Text",
 				szTextBuffer, uiTextBufLen, &uiTermChar);
 
-	if (uiTermChar == WPK_ESCAPE)
+	if (uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -11140,7 +10921,7 @@ RCODE F_DomEditor::createTextNode(
 			requestInput( "Insert as Sibling node?",
 				szResponse, sizeof( szResponse), &uiTermChar);
 
-			if (uiTermChar == WPK_ESCAPE)
+			if (uiTermChar == FKB_ESCAPE)
 			{
 				goto Exit;
 			}
@@ -11297,7 +11078,7 @@ RCODE F_DomEditor::createAttributeNode(
 	if (pRow->eType != ELEMENT_NODE)
 	{
 		displayMessage( "Invalid DOM node type",
-			NE_XFLM_FAILURE, NULL, WPS_RED, WPS_WHITE);
+			NE_XFLM_FAILURE, NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -11307,7 +11088,7 @@ RCODE F_DomEditor::createAttributeNode(
 		goto Exit;
 	}
 
-	if (uiTermChar == WPK_ESCAPE)
+	if (uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -11316,7 +11097,7 @@ RCODE F_DomEditor::createAttributeNode(
 	requestInput( "Attribute Value",
 		szAttrValue, sizeof(szAttrValue), &uiTermChar);
 
-	if (uiTermChar == WPK_ESCAPE)
+	if (uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -11327,7 +11108,7 @@ RCODE F_DomEditor::createAttributeNode(
 		goto Exit;
 	}
 
-	if (uiTermChar == WPK_ESCAPE)
+	if (uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -11393,7 +11174,7 @@ RCODE F_DomEditor::createAttributeNode(
 			if( RC_BAD( rc = getNumber( &szAttrValue[ 0], &ui64Value, NULL)))
 			{
 				displayMessage( "Invalid node number", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 				goto Exit;
 			}
 
@@ -12287,7 +12068,7 @@ RCODE F_DomEditor::selectIndex(
 		*puiTermChar = pIndexList->getLastKey();
 	}
 
-	if( pIndexList->getLastKey() == WPK_ESCAPE)
+	if( pIndexList->getLastKey() == FKB_ESCAPE)
 	{
 		rc = RC_SET( NE_XFLM_NOT_FOUND);
 		goto Exit;
@@ -12341,7 +12122,7 @@ RCODE F_DomEditor::indexList( void)
 		goto Exit;
 	}
 
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -12484,14 +12265,14 @@ ix_list_retry:
 		goto Exit;
 	}
 
-	if( pKeyEditor->getLastKey() == WPK_ESCAPE)
+	if( pKeyEditor->getLastKey() == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = createStatusWindow(
 		" Key Retrieval Status (Press ESC to Interrupt) ",
-		WPS_GREEN, WPS_WHITE, NULL, NULL, &pStatusWindow)))
+		FLM_GREEN, FLM_WHITE, NULL, NULL, &pStatusWindow)))
 	{
 		goto Exit;
 	}
@@ -12577,11 +12358,11 @@ ix_list_retry:
 
 		// Test for the escape key
 
-		if( FTXWinTestKB( pStatusWindow) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pStatusWindow)))
 		{
 			FLMUINT	uiChar;
 			FTXWinInputChar( pStatusWindow, &uiChar);
-			if( uiChar == WPK_ESCAPE)
+			if( uiChar == FKB_ESCAPE)
 			{
 				break;
 			}
@@ -12699,7 +12480,7 @@ ix_list_retry:
 	{
 		displayMessage(
 			"No Keys Found Within Specified Range", rc,
-			NULL, WPS_RED, WPS_WHITE);
+			NULL, FLM_RED, FLM_WHITE);
 		pKeyEditor->setCurrentAtTop();
 		goto ix_list_retry;
 	}
@@ -12744,7 +12525,7 @@ Exit:
 		if( rc == NE_XFLM_EOF_HIT)
 		{
 			displayMessage( "The index is empty", rc,
-				NULL, WPS_RED, WPS_WHITE);
+				NULL, FLM_RED, FLM_WHITE);
 			rc = NE_XFLM_OK;
 		}
 	}
@@ -12834,7 +12615,7 @@ Retrieve_Node:
 
 		case 'F':
 		case 'f':
-		case WPK_ALT_F:
+		case FKB_ALT_F:
 
 			// Don't allow to start another query.
 			*puiKeyOut = 0;
@@ -12885,7 +12666,7 @@ void F_DomEditor::doQuery(
 	requestInput(
 		"XPATH Query", pszQuery, uiQueryBufSize, &uiTermChar);
 
-	if (uiTermChar == WPK_ESCAPE)
+	if (uiTermChar == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -12893,7 +12674,7 @@ void F_DomEditor::doQuery(
 	// Create a window for displaying query progress.
 
 	queryStatus.createQueryStatusWindow( m_pScreen,
-					WPS_GREEN, WPS_WHITE, pszQuery);
+					FLM_GREEN, FLM_WHITE, pszQuery);
 
 	if (RC_BAD( rc = dbSystem.createIFQuery( &pQuery)))
 	{
@@ -12912,7 +12693,7 @@ void F_DomEditor::doQuery(
 		goto Exit;
 	}
 
-	if (uiTermChar != WPK_ENTER)
+	if (uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -13090,7 +12871,7 @@ Exit:
 	if (RC_BAD( rc))
 	{
 		displayMessage( "Error", RC_SET( rc),
-				NULL, WPS_RED, WPS_WHITE);
+				NULL, FLM_RED, FLM_WHITE);
 	}
 
 	if (pQuery)
@@ -13300,8 +13081,8 @@ FSTATIC RCODE formatIndexKeyNode(
 	{
 		f_sprintf( pDispVals[ *puiNumVals].szString, "D)");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_CYAN;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_CYAN;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -13309,8 +13090,8 @@ FSTATIC RCODE formatIndexKeyNode(
 	{
 		f_sprintf( pDispVals[ *puiNumVals].szString, "K)");
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_CYAN;
-		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].uiForeground = FLM_CYAN;
+		pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 		(*puiNumVals)++;
 	}
@@ -13327,8 +13108,8 @@ FSTATIC RCODE formatIndexKeyNode(
 		goto Exit;
 	}
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_WHITE;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 	(*puiNumVals)++;
 
@@ -13409,8 +13190,8 @@ FSTATIC RCODE formatIndexKeyNode(
 		}
 	}
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_YELLOW;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_YELLOW;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 	(*puiNumVals)++;
 
@@ -13424,8 +13205,8 @@ FSTATIC RCODE formatIndexKeyNode(
 		f_sprintf( pDispVals[ *puiNumVals].szString, "NULL");
 	}
 	pDispVals[ *puiNumVals].uiCol = uiCol;
-	pDispVals[ *puiNumVals].uiForeground = WPS_LIGHTRED;
-	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+	pDispVals[ *puiNumVals].uiForeground = FLM_LIGHTRED;
+	pDispVals[ *puiNumVals].uiBackground = pDomEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 	uiCol += f_strlen( pDispVals[ *puiNumVals].szString) + 2;
 	(*puiNumVals)++;
 

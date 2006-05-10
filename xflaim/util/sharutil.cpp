@@ -26,13 +26,33 @@
 #include "flaimsys.h"
 #include "sharutil.h"
 
+FSTATIC FTX_WINDOW * wpsGetThrdWin( void);
+
+FINLINE void wpsLock(
+	F_MUTEX	*	phMutex)
+{
+	f_mutexLock( *phMutex);
+}
+
+FINLINE void wpsUnlock(
+	F_MUTEX	*	phMutex)
+{
+	f_mutexUnlock( *phMutex);
+}
+
+static FLMBOOL						gv_bShutdown = FALSE;
+static FLMBOOL						gv_bInitialized = FALSE;
+static FLMBOOL						gv_bOptimize = FALSE;
+static WPSSCREEN *				gv_pScreenList = NULL;
+static F_MUTEX						gv_hDispMutex = F_MUTEX_NULL;
+
 FSTATIC RCODE propertyExists(
 	char *	pszProperty,
 	char *	pszBuffer,
 	char **	ppszValue);
 
 FSTATIC RCODE _flmWrapperFunc(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 /********************************************************************
 Desc: Parses command-line parameters
@@ -166,9 +186,9 @@ Desc:	appending text to the accumulator safely.  all other methods in
 ****************************************************************************/
 RCODE FlmStringAcc::appendTEXT( const FLMBYTE * pszVal)
 {	
-	RCODE rc = NE_XFLM_OK;
-	FLMUINT uiIncomingStrLen;
-	FLMUINT uiStrLen;
+	RCODE 			rc = NE_XFLM_OK;
+	FLMUINT 			uiIncomingStrLen;
+	FLMUINT 			uiStrLen;
 
 	//be forgiving if they pass in a NULL
 	if ( !pszVal)
@@ -176,7 +196,7 @@ RCODE FlmStringAcc::appendTEXT( const FLMBYTE * pszVal)
 		goto Exit;
 	}
 	//also be forgiving if they pass a 0-length string
-	else if ( (uiIncomingStrLen = f_strlen( pszVal)) == 0)
+	else if( (uiIncomingStrLen = f_strlen( (const char *)pszVal)) == 0)
 	{
 		goto Exit;
 	}
@@ -194,7 +214,7 @@ RCODE FlmStringAcc::appendTEXT( const FLMBYTE * pszVal)
 	//just use small buffer if it's small enough
 	if ( uiStrLen < FSA_QUICKBUF_BUFFER_SIZE)
 	{
-		f_strcat( m_szQuickBuf, pszVal);
+		f_strcat( m_szQuickBuf, (const char *)pszVal);
 		m_bQuickBufActive = TRUE;
 	}
 	//we are exceeding the quickbuf size, so get the bytes from the heap
@@ -243,7 +263,7 @@ RCODE FlmStringAcc::appendTEXT( const FLMBYTE * pszVal)
 		}		
 
 		//copy over the string
-		f_strcat( m_pszVal, pszVal);
+		f_strcat( m_pszVal, (const char *)pszVal);
 	}
 	m_uiValStrLen = uiStrLen;
 Exit:
@@ -370,7 +390,7 @@ RCODE FlmContext::setCurrDir(
 	flmAssert( m_bIsSetup);
 
 	lock();
-	f_strcpy( m_szCurrDir, pszCurrDir);
+	f_strcpy( (char *)m_szCurrDir, (const char *)pszCurrDir);
 	unlock();
 
 	return( rc);
@@ -387,7 +407,7 @@ RCODE FlmContext::getCurrDir(
 	flmAssert( m_bIsSetup);
 
 	lock();
-	f_strcpy( pszCurrDir, m_szCurrDir);
+	f_strcpy( (char *)pszCurrDir, (const char *)m_szCurrDir);
 	unlock();
 
 	return( rc);
@@ -580,7 +600,6 @@ Desc:
 FlmSharedContext::FlmSharedContext( void)
 {
 	m_pParentContext = NULL;
-	m_pFtxInfo = NULL;
 	m_pThreadList = NULL;
 	m_bLocalShutdownFlag = FALSE;
 	m_pbShutdownFlag = &m_bLocalShutdownFlag;
@@ -608,8 +627,7 @@ FlmSharedContext::~FlmSharedContext( void)
 Desc:
 *****************************************************************************/
 RCODE FlmSharedContext::init(
-	FlmSharedContext *	pSharedContext,
-	FTX_INFO *				pFtxInfo)
+	FlmSharedContext *	pSharedContext)
 {
 	RCODE		rc = NE_XFLM_OK;
 
@@ -618,8 +636,6 @@ RCODE FlmSharedContext::init(
 	{
 		goto Exit;
 	}
-
-	m_pFtxInfo = pFtxInfo;
 
 	if( RC_BAD( rc = f_semCreate( &m_hSem)))
 	{
@@ -698,14 +714,20 @@ RCODE FlmSharedContext::spawn(
 	FlmThreadContext *	pThread,
 	FLMUINT *				puiThreadID)
 {
-	char				szName[ MAX_THREAD_NAME_LEN + 1];
-	RCODE				rc = NE_XFLM_OK;
+	RCODE						rc = NE_XFLM_OK;
+	char						szName[ MAX_THREAD_NAME_LEN + 1];
+	IF_ThreadMgr *			pThreadMgr = NULL;
 
 	registerThread( pThread);
 	pThread->getName( szName);
-	if( RC_BAD( rc = f_threadCreate( NULL,
-		_flmWrapperFunc, szName,
-		FLM_DEFAULT_THREAD_GROUP, 0, pThread)))
+	
+	if( RC_BAD( rc = FlmGetThreadMgr( &pThreadMgr)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pThreadMgr->createThread( NULL,
+		_flmWrapperFunc, szName, 0, 0, pThread)))
 	{
 		goto Exit;
 	}
@@ -716,6 +738,11 @@ RCODE FlmSharedContext::spawn(
 	}
 
 Exit:
+
+	if( pThreadMgr)
+	{
+		pThreadMgr->Release();
+	}
 
 	return( rc);
 }
@@ -842,7 +869,7 @@ RCODE FlmSharedContext::killThread(
 
 	// Wait for the thread to exit
 	uiStartTime = FLM_GET_TIMER();
-	FLM_SECS_TO_TIMER_UNITS( uiMaxWait, uiMaxWait);
+	uiMaxWait = FLM_SECS_TO_TIMER_UNITS( uiMaxWait);
 	for( ;;)
 	{
 		(void)f_semWait( m_hSem, 200);
@@ -967,7 +994,7 @@ RCODE FlmSharedContext::getThread(
 Desc:
 *****************************************************************************/
 RCODE _flmWrapperFunc(
-	F_Thread *		pFlmThread)
+	IF_Thread *		pFlmThread)
 {
 	FlmThreadContext *	pThread = (FlmThreadContext *)pFlmThread->getParm1();
 	FlmSharedContext *	pSharedContext = pThread->getSharedContext();
@@ -991,10 +1018,13 @@ Exit:
 /****************************************************************************
 Desc:	callback to use to output a line
 ****************************************************************************/
-void utilOutputLine( char * pszData, void * pvUserData)
+void utilOutputLine( 
+	char *				pszData, 
+	void * 				pvUserData)
 {
-	FTX_WINDOW * pMainWindow = (FTX_WINDOW*)pvUserData;
-	FLMUINT uiBack, uiFore;
+	FTX_WINDOW * 		pMainWindow = (FTX_WINDOW*)pvUserData;
+	eColorType			uiBack, uiFore;
+		
 	FTXWinGetBackFore( pMainWindow, &uiBack, &uiFore);
 	FTXWinCPrintf( pMainWindow, uiBack, uiFore, "%s\n", pszData);
 }
@@ -1006,14 +1036,15 @@ Desc:	callback to serve as a 'pager' function when the Usage: help
 ****************************************************************************/ 
 void utilPressAnyKey( char * pszMessage, void * pvUserData)
 {
-	FTX_WINDOW * pMainWindow = (FTX_WINDOW*)pvUserData;
-	FLMUINT uiChar;
-	FLMUINT uiBack, uiFore;
+	FTX_WINDOW *		pMainWindow = (FTX_WINDOW*)pvUserData;
+	FLMUINT 				uiChar;
+	eColorType			uiBack, uiFore;
+	
 	FTXWinGetBackFore( pMainWindow, &uiBack, &uiFore);
 	FTXWinCPrintf( pMainWindow, uiBack, uiFore, pszMessage);
-	while ( FTXWinTestKB( pMainWindow) != FTXRC_SUCCESS)
+	while( RC_BAD( FTXWinTestKB( pMainWindow)))
 	{
-		f_sleep( 100); //don't hog the cpu
+		f_sleep( 100);
 	}
 	FTXWinCPrintf( pMainWindow, uiBack, uiFore,
 		"\r                                                                  ");
@@ -1028,7 +1059,6 @@ Desc:	routine to startup the TUI
 RCODE utilInitWindow(
 	char *			pszTitle,
 	FLMUINT *		puiScreenRows,
-	FTX_INFO **		ppFtxInfo,
 	FTX_WINDOW **	ppMainWindow,
 	FLMBOOL *		pbShutdown)
 {
@@ -1037,30 +1067,30 @@ RCODE utilInitWindow(
 	FLMUINT			uiCols;
 	int				iResCode = 0;
 
-	if( FTXInit( pszTitle, (FLMBYTE)80, (FLMBYTE)50,
-		WPS_BLUE, WPS_WHITE, NULL, NULL, ppFtxInfo) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXInit( pszTitle, (FLMBYTE)80, (FLMBYTE)50,
+		FLM_BLUE, FLM_WHITE, NULL, NULL)))
 	{
 		iResCode = 1;
 		goto Exit;
 	}
 
-	FTXSetShutdownFlag( *ppFtxInfo, pbShutdown);
+	FTXSetShutdownFlag( pbShutdown);
 
-	if( FTXScreenInit( *ppFtxInfo, pszTitle, &pScreen)
-		!= FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( pszTitle, &pScreen)))
 	{
 		iResCode = 1;
 		goto Exit;
 	}
-	if( FTXScreenGetSize( pScreen, &uiCols, puiScreenRows) != FTXRC_SUCCESS)
+	
+	if( RC_BAD( FTXScreenGetSize( pScreen, &uiCols, puiScreenRows)))
 	{
 		iResCode = 1;
 		goto Exit;
 	}
 
-	if ( FTXScreenInitStandardWindows( pScreen, WPS_RED, WPS_WHITE,
-		WPS_BLUE, WPS_WHITE, FALSE, FALSE, pszTitle,
-		&pTitleWin, ppMainWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInitStandardWindows( pScreen, FLM_RED, FLM_WHITE,
+		FLM_BLUE, FLM_WHITE, FALSE, FALSE, pszTitle,
+		&pTitleWin, ppMainWindow)))
 	{
 		iResCode = 1;
 		goto Exit;
@@ -1074,9 +1104,9 @@ Exit:
 Name:	utilShutdownWindow
 Desc:	routine to shutdown the TUI
 ****************************************************************************/
-void utilShutdownWindow( FTX_INFO * pFtxInfo)
+void utilShutdownWindow()
 {
-	FTXFree( &pFtxInfo);
+	FTXExit();
 }
 	
 /****************************************************************************
@@ -1086,19 +1116,24 @@ RCODE fileToString(
 	char *	pszFile,
 	char **	ppszReturnString)
 {
-	char *			pszBuffer = NULL;
-	IF_FileHdl *	pFileHdl = NULL;
-	F_FileSystem	fileSystem;
-	FLMUINT64		ui64FileSize = 0;
-	FLMUINT			uiBytesRead = 0;
-	RCODE				rc = NE_XFLM_OK;
+	RCODE					rc = NE_XFLM_OK;
+	char *				pszBuffer = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
+	FLMUINT64			ui64FileSize = 0;
+	FLMUINT				uiBytesRead = 0;
+	IF_FileSystem *	pFileSystem = NULL;
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
-	if (RC_BAD(rc = fileSystem.Open( pszFile, XFLM_IO_RDONLY, &pFileHdl)))
+	if (RC_BAD(rc = pFileSystem->openFile( pszFile, FLM_IO_RDONLY, &pFileHdl)))
 	{
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = pFileHdl->Size( &ui64FileSize)))
+	if (RC_BAD( rc = pFileHdl->size( &ui64FileSize)))
 	{
 		goto Exit;
 	}
@@ -1113,7 +1148,7 @@ RCODE fileToString(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pFileHdl->Read( 0, (FLMUINT)ui64FileSize,
+	if (RC_BAD( rc = pFileHdl->read( 0, (FLMUINT)ui64FileSize,
 		pszBuffer, &uiBytesRead)))
 	{
 		goto Exit;
@@ -1124,10 +1159,14 @@ RCODE fileToString(
 	
 Exit:
 
-	if(pFileHdl)
+	if( pFileHdl)
 	{
-		pFileHdl->Close();
 		pFileHdl->Release();
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 	
 	if ( RC_BAD( rc) && pszBuffer)
@@ -1241,17 +1280,22 @@ RCODE utilWriteProperty(
 	char *		pszProp,
 	char *		pszValue)
 {
-	RCODE				rc = NE_XFLM_OK;
-	char *			pszContents = NULL;
-	char *			pszExistingProperty;
-	FlmStringAcc	newContents;
-	F_FileSystem	fileSys;
+	RCODE					rc = NE_XFLM_OK;
+	char *				pszContents = NULL;
+	char *				pszExistingProperty;
+	FlmStringAcc		newContents;
+	IF_FileSystem *	pFileSystem = NULL;
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
 	//can't have newlines in the props or values
 	flmAssert( !f_strchr( pszProp, '\n'));
 	flmAssert( !f_strchr( pszValue, '\n'));
 
-	if ( RC_BAD( fileSys.Exists( pszFile)))
+	if ( RC_BAD( pFileSystem->doesFileExist( pszFile)))
 	{
 		//add trailing newline
 		TEST_RC( rc = f_filecpy( pszFile, "")); 
@@ -1320,6 +1364,12 @@ RCODE utilWriteProperty(
 	rc = f_filecpy( pszFile, newContents.getTEXT());
 	
 Exit:
+
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+
 	if ( pszContents)
 	{
 		f_free( &pszContents);
@@ -1332,12 +1382,17 @@ RCODE utilReadProperty(
 	char *			pszProp,
 	FlmStringAcc *	pAcc)
 {
-	RCODE				rc = NE_XFLM_OK;
-	F_FileSystem	fileSys;
-	char *			pszContents = NULL;
-	char *			pszValue = NULL;
+	RCODE					rc = NE_XFLM_OK;
+	char *				pszContents = NULL;
+	char *				pszValue = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
 	
-	if ( RC_BAD( fileSys.Exists( pszFile)))
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+	
+	if ( RC_BAD( pFileSystem->doesFileExist( pszFile)))
 	{
 		//be nice here.  simply don't append anything into FlmStringAcc
 		goto Exit;
@@ -1351,22 +1406,28 @@ RCODE utilReadProperty(
 
 Exit:
 
-	if ( pszValue)
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+
+	if( pszValue)
 	{
 		f_free( &pszValue);
 	}
 
-	if ( pszContents)
+	if( pszContents)
 	{
 		f_free( &pszContents);
 	}
-	return rc; 
+	
+	return( rc); 
 }
 
 void scramble( 
-	F_RandomGenerator * pRandGen, 
-	FLMUINT * puiArray, 
-	FLMUINT uiNumElems)
+	IF_RandomGenerator * pRandGen, 
+	FLMUINT *				puiArray, 
+	FLMUINT					uiNumElems)
 {
 	FLMUINT		uiLoop;
 	FLMUINT		uiTmp;
@@ -1374,10 +1435,648 @@ void scramble(
 	
 	for( uiLoop = 0; uiLoop < uiNumElems; uiLoop++)
 	{
-		uiIndex = pRandGen->randomChoice( 0, uiNumElems - 1);
+		uiIndex = pRandGen->getUINT32( 0, uiNumElems - 1);
 		f_swap( 
 			puiArray[uiLoop], 
 			puiArray[uiIndex],
 			uiTmp); 
 	}
+}
+
+/****************************************************************************
+Desc: Initialize and set the title
+****************************************************************************/
+void WpsInit(
+	FLMUINT			uiRows,				// 0xFFFF means use current screen height.
+	FLMUINT			uiCols,				// 0xFFFF means use current screen width.
+	const char *	pszScreenTitle)
+{
+	char	szTitleAndVer[ 100];
+
+	if( gv_bInitialized)
+	{
+		return;
+	}
+
+	// Setup utilities title which includes the software version.
+#ifdef SECURE_UTIL
+	f_sprintf( (char *)szTitleAndVer, "%s - %s (%u)",
+						pszScreenTitle, SRC_VER_STR, (unsigned)UTIL_VER);
+#else
+	f_sprintf( (char *)szTitleAndVer, "%s - %s (UNSECURE:%u)",
+						pszScreenTitle, SRC_VER_STR, (unsigned)UTIL_VER);
+#endif
+
+	FTXInit( szTitleAndVer, uiCols, uiRows, FLM_BLACK, FLM_LIGHTGRAY,
+		NULL, NULL);
+
+	if( RC_BAD( f_mutexCreate( &gv_hDispMutex)))
+	{
+		flmAssert( 0);
+	}
+
+	WpsThrdInit( szTitleAndVer);
+	gv_bInitialized = TRUE;
+}
+
+
+/****************************************************************************
+Desc: Initialize WPS using an existing FTX environment
+****************************************************************************/
+void WpsInitFTX( void)
+{
+	if( gv_bInitialized)
+	{
+		return;
+	}
+
+	if( RC_BAD( f_mutexCreate( &gv_hDispMutex)))
+	{
+		flmAssert( 0);
+	}
+
+	gv_bInitialized = TRUE;
+}
+
+
+/****************************************************************************
+Desc: Restores the screen to an initial state
+****************************************************************************/
+void WpsExit( void)
+{
+	if( !gv_bInitialized)
+	{
+		return;
+	}
+
+	gv_bShutdown = TRUE;
+	WpsThrdExit();
+	f_mutexDestroy( &gv_hDispMutex);
+	FTXExit();
+	gv_bInitialized = FALSE;
+}
+
+/****************************************************************************
+Desc: Initialize and set the title of a thread's screen
+***************************************************************************/
+void WpsThrdInitUsingScreen(
+	FTX_SCREEN *	pFtxScreen,
+	const char *	pszScreenTitle)
+{
+	FLMUINT			uiRows;
+	FLMUINT			uiThrdId;
+	WPSSCREEN *		pCurScreen = NULL;
+
+	wpsLock( &gv_hDispMutex);
+
+	uiThrdId = f_threadId();
+	pCurScreen = gv_pScreenList;
+	while( pCurScreen != NULL)
+	{
+		if( pCurScreen->uiScreenId == uiThrdId)
+		{
+			break;
+		}
+		pCurScreen = pCurScreen->pNext;
+	}
+
+	if( pCurScreen == NULL)
+	{
+		if( RC_BAD( f_calloc( sizeof( WPSSCREEN), &pCurScreen)))
+		{
+			flmAssert( 0);
+		}
+		pCurScreen->uiScreenId = uiThrdId;
+		pCurScreen->pNext = gv_pScreenList;
+		gv_pScreenList = pCurScreen;
+
+		if( pFtxScreen != NULL)
+		{
+			pCurScreen->pScreen = pFtxScreen;
+			pCurScreen->bPrivate = FALSE;
+		}
+		else
+		{
+			if( RC_BAD( FTXScreenInit( pszScreenTitle,
+				&(pCurScreen->pScreen))))
+			{
+				flmAssert( 0);
+			}
+			pCurScreen->bPrivate = TRUE;
+		}
+
+		if( RC_BAD( FTXScreenGetSize( pCurScreen->pScreen, NULL, &uiRows)))
+		{
+			flmAssert( 0);
+		}
+
+		if( RC_BAD( FTXWinInit( pCurScreen->pScreen, 0,
+			(FLMBYTE)(uiRows - 1), &(pCurScreen->pWin))))
+		{
+			flmAssert( 0);
+		}
+
+		FTXWinMove( pCurScreen->pWin, 0, 1);
+
+		if( RC_BAD( FTXWinInit( pCurScreen->pScreen, 0,
+			1, &(pCurScreen->pTitleWin))))
+		{
+			flmAssert( 0);
+		}
+
+		FTXWinPaintBackground( pCurScreen->pTitleWin, FLM_RED);
+		FTXWinPrintStr( pCurScreen->pTitleWin, pszScreenTitle);
+		FTXWinOpen( pCurScreen->pTitleWin);
+		FTXWinOpen( pCurScreen->pWin);
+	}
+
+	wpsUnlock( &gv_hDispMutex);
+}
+
+
+/****************************************************************************
+Desc: Frees all screen resources allocated to a thread
+Ret:
+****************************************************************************/
+void WpsThrdExit( void)
+{
+	FLMUINT			uiThrdId;
+	WPSSCREEN *		pPrevScreen = NULL;
+	WPSSCREEN *		pCurScreen = NULL;
+
+
+	wpsLock( &gv_hDispMutex);
+
+	uiThrdId = f_threadId();
+	pCurScreen = gv_pScreenList;
+	while( pCurScreen != NULL)
+	{
+		if( pCurScreen->uiScreenId == uiThrdId)
+		{
+			break;
+		}
+		pPrevScreen = pCurScreen;
+		pCurScreen = pCurScreen->pNext;
+	}
+
+	if( pCurScreen != NULL)
+	{
+		if( pCurScreen == gv_pScreenList)
+		{
+			gv_pScreenList = pCurScreen->pNext;
+		}
+
+		if( pPrevScreen != NULL)
+		{
+			pPrevScreen->pNext = pCurScreen->pNext;
+		}
+
+		if( pCurScreen->bPrivate == TRUE)
+		{
+			 FTXScreenFree( &(pCurScreen->pScreen));
+		}
+		else
+		{
+			FTXWinFree( &(pCurScreen->pTitleWin));
+			FTXWinFree( &(pCurScreen->pWin));
+		}
+
+		f_free( &pCurScreen);
+	}
+
+	wpsUnlock( &gv_hDispMutex);
+}
+
+
+/****************************************************************************
+Desc: Returns the size of the screen in columns and rows.
+****************************************************************************/
+void WpsScrSize(
+	FLMUINT *	puiNumColsRV,
+	FLMUINT *	puiNumRowsRV
+	)
+{
+	FTXWinGetCanvasSize( wpsGetThrdWin(), puiNumColsRV, puiNumRowsRV);
+}
+
+
+/****************************************************************************
+Desc:	Output a string at present cursor location.
+****************************************************************************/
+void WpsStrOut(
+	const char *	pszString)
+{
+	FTXWinPrintStr( wpsGetThrdWin(), pszString);
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+/****************************************************************************
+Desc:	Output a formatted string at present cursor location.
+****************************************************************************/
+void WpsPrintf(
+	const char *	pszFormat, ...)
+{
+	char			szBuffer[ 512];
+	f_va_list	args;
+
+	f_va_start( args, pszFormat);
+	f_vsprintf( szBuffer, pszFormat, &args);
+	f_va_end( args);
+	FTXWinPrintStr( wpsGetThrdWin(), szBuffer);
+
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+
+/****************************************************************************
+Desc:	Output a formatted string at present cursor location with color
+****************************************************************************/
+void WpsCPrintf(
+	eColorType			uiBack,
+	eColorType			uiFore,
+	const char *		pszFormat, ...)
+{
+	char				szBuffer[ 512];
+	f_va_list		args;
+	eColorType		uiOldBack;
+	eColorType		uiOldFore;
+
+	f_va_start( args, pszFormat);
+	f_vsprintf( szBuffer, pszFormat, &args);
+	f_va_end( args);
+
+	FTXWinGetBackFore( wpsGetThrdWin(), &uiOldBack, &uiOldFore);
+	FTXWinSetBackFore( wpsGetThrdWin(), uiBack, uiFore);
+	FTXWinPrintStr( wpsGetThrdWin(), szBuffer);
+	FTXWinSetBackFore( wpsGetThrdWin(), uiOldBack, uiOldFore);
+
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+
+/****************************************************************************
+Desc: Output a character to the screen at the current location. If char is
+		a LineFeed then a CarriageReturn will be inserted before the LineFeed.
+Notes:On NLM becomes a blocking function if the char is the newline character.
+****************************************************************************/
+void WpsChrOut(
+	char	chr
+	)
+{
+	FTXWinPrintChar( wpsGetThrdWin(), (FLMUINT)chr);
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+
+/****************************************************************************
+Desc:    Clear the screen from the col/row down
+Notes:   If col==row==0 then clear entire screen
+****************************************************************************/
+void WpsScrClr(
+	FLMUINT	uiCol,
+	FLMUINT	uiRow
+	)
+{
+	FTX_WINDOW *	pThrdWin;
+	FLMUINT			uiCurrCol;
+	FLMUINT			uiCurrRow;
+
+
+	pThrdWin = wpsGetThrdWin();
+	FTXWinGetCursorPos( pThrdWin, &uiCurrCol, &uiCurrRow);
+
+	if( uiCol == 255)
+	{
+		uiCol = uiCurrCol;
+	}
+
+	if( uiRow == 255)
+	{
+		uiRow = uiCurrRow;
+	}
+
+	FTXWinClearXY( pThrdWin, uiCol, uiRow);
+	FTXWinSetCursorPos( pThrdWin, uiCol, uiRow);
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+/****************************************************************************
+Desc:    Position to the column and row specified.
+Notes:   The NLM could call GetPositionOfOutputCursor(&r,&c);
+****************************************************************************/
+void WpsScrPos(
+	FLMUINT	uiCol,
+	FLMUINT	uiRow
+	)
+{
+	FTX_WINDOW *	pThrdWin;
+	FLMUINT			uiCurrCol;
+	FLMUINT			uiCurrRow;
+
+
+	pThrdWin = wpsGetThrdWin();
+	FTXWinGetCursorPos( pThrdWin, &uiCurrCol, &uiCurrRow);
+
+	if( uiCol == 255)
+	{
+		uiCol = uiCurrCol;
+	}
+
+	if( uiRow == 255)
+	{
+		uiRow = uiCurrRow;
+	}
+
+	FTXWinSetCursorPos( pThrdWin, uiCol, uiRow);
+}
+
+
+/****************************************************************************
+Desc:    Clear from input cursor to end of line
+****************************************************************************/
+void WpsLineClr(
+	FLMUINT	uiCol,
+	FLMUINT	uiRow
+	)
+{
+	FTX_WINDOW *	pThrdWin;
+	FLMUINT			uiCurrCol;
+	FLMUINT			uiCurrRow;
+
+
+	pThrdWin = wpsGetThrdWin();
+	FTXWinGetCursorPos( pThrdWin, &uiCurrCol, &uiCurrRow);
+
+	if( uiCol == 255)
+	{
+		uiCol = uiCurrCol;
+	}
+
+	if( uiRow == 255)
+	{
+		uiRow = uiCurrRow;
+	}
+
+	FTXWinClearLine( pThrdWin, uiCol, uiRow);
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+/****************************************************************************
+Desc:    Edit a line of data like gets(s).  Newline replaced by NULL character.
+Ret:     WPK Character
+Notes:   Does not support WP extended character input - but could easily!
+****************************************************************************/
+FLMUINT WpsLineEd(
+	char *		pszString,
+	FLMUINT		uiMaxLen,
+	FLMBOOL *	pbShutdown
+	)
+{
+	FLMUINT		uiCharCount;
+	FLMUINT		uiCursorType;
+
+
+	uiCursorType = FTXWinGetCursorType( wpsGetThrdWin());
+	FTXWinSetCursorType( wpsGetThrdWin(), FLM_CURSOR_UNDERLINE);
+	FTXSetShutdownFlag( pbShutdown);
+	uiCharCount = FTXLineEd( wpsGetThrdWin(), pszString, uiMaxLen);
+	FTXSetShutdownFlag( NULL);
+	FTXWinSetCursorType( wpsGetThrdWin(), uiCursorType);
+
+	return( uiCharCount);
+}
+
+
+/****************************************************************************
+Desc:    Sets the FTX shutdown flag pointer
+Ret:
+****************************************************************************/
+void WpsSetShutdown(
+	FLMBOOL *    pbShutdown
+	)
+{
+	FTXSetShutdownFlag( pbShutdown);
+}
+
+
+/****************************************************************************
+Desc:    Edit a line of data with advanced features.
+Ret:     Number of characters input.
+****************************************************************************/
+FLMUINT WpsLineEditExt(
+	char *		pszBuffer,
+	FLMUINT		uiBufSize,
+	FLMUINT		uiMaxWidth,
+	FLMBOOL *	pbShutdown,
+	FLMUINT *	puiTermChar
+	)
+{
+	FLMUINT		uiCharCount = 0;
+	FLMUINT		uiCursorType;
+
+
+	uiCursorType = FTXWinGetCursorType( wpsGetThrdWin());
+	FTXWinSetCursorType( wpsGetThrdWin(), FLM_CURSOR_UNDERLINE);
+	FTXSetShutdownFlag( pbShutdown);
+	FTXLineEdit( wpsGetThrdWin(), pszBuffer, uiBufSize, uiMaxWidth,
+		&uiCharCount, puiTermChar);
+	FTXSetShutdownFlag( NULL);
+	FTXWinSetCursorType( wpsGetThrdWin(), uiCursorType);
+
+	return( (FLMINT)uiCharCount);
+}
+
+
+/****************************************************************************
+Desc:	Get the current X coordinate of the cursor
+****************************************************************************/
+FLMUINT WpsCurrCol( void)
+{
+	FLMUINT		uiCol;
+
+	FTXWinGetCursorPos( wpsGetThrdWin(), &uiCol, NULL);
+	return( uiCol);
+}
+
+
+/****************************************************************************
+Desc:	Get the current Y coordinate of the cursor
+****************************************************************************/
+FLMUINT WpsCurrRow( void)
+{
+	FLMUINT		uiRow;
+
+	FTXWinGetCursorPos( wpsGetThrdWin(), NULL, &uiRow);
+	return( uiRow);
+}
+
+/****************************************************************************
+Desc:    Set the background and foreground colors
+Ret:     None
+****************************************************************************/
+void WpsScrBackFor(
+	eColorType	backColor,
+	eColorType	foreColor)
+{
+	FTXWinSetBackFore( wpsGetThrdWin(), backColor, foreColor);
+}
+
+
+/****************************************************************************
+Desc : Sets the cursor attributes.
+****************************************************************************/
+void WpsCursorSetType(
+	FLMUINT		uiType)
+{
+	FTXWinSetCursorType( wpsGetThrdWin(), uiType);
+	FTXRefresh();
+}
+
+/****************************************************************************
+Desc:    Specifies that display performance (throughput) should be
+			optimal.
+****************************************************************************/
+void WpsOptimize( void)
+{
+	gv_bOptimize = TRUE;
+}
+
+
+/****************************************************************************
+Desc: Draws a border around the current thread's screen
+Ret:  none
+****************************************************************************/
+void WpsDrawBorder( void)
+{
+	FTXWinDrawBorder( wpsGetThrdWin());
+	if( !gv_bOptimize)
+	{
+		FTXRefresh();
+	}
+}
+
+
+/****************************************************************************
+Desc:    Convert keyboard sequences/scan codes to WPK key strokes.
+Notes:   Does not support WP extended character input - but could easily!
+****************************************************************************/
+FLMUINT WpkIncar( void)
+{
+	FLMUINT		uiChar;
+
+	FTXWinInputChar( wpsGetThrdWin(), &uiChar);
+	return( uiChar);
+}
+
+
+/****************************************************************************
+Desc:    Convert keyboard sequences/scan codes to WPK key strokes.  This
+			routine accepts a pointer to a shutdown flag.
+****************************************************************************/
+FLMUINT WpkGetChar(
+	FLMBOOL *		pbShutdown
+	)
+{
+	FLMUINT		uiChar;
+
+	FTXSetShutdownFlag( pbShutdown);
+	FTXWinInputChar( wpsGetThrdWin(), &uiChar);
+	FTXSetShutdownFlag( NULL);
+
+	return( uiChar);
+}
+
+
+/****************************************************************************
+Desc:    Tests the keyboard for a pending character
+Ret:		1 if key available, 0 if no key available
+****************************************************************************/
+FLMUINT WpkTestKB( void)
+{
+	FLMUINT		uiCharAvail;
+
+	uiCharAvail = (FLMUINT)(FTXWinTestKB( wpsGetThrdWin()) ==
+		NE_FLM_OK ? 1 : 0);
+	return( uiCharAvail);
+}
+
+
+/****************************************************************************
+Desc:		Returns a pointer to a thread's screen
+****************************************************************************/
+FTX_SCREEN * WpsGetThrdScreen( void)
+{
+	FLMUINT			uiThrdId;
+	WPSSCREEN *		pCurScreen = NULL;
+
+	wpsLock( &gv_hDispMutex);
+
+	uiThrdId = f_threadId();
+
+	pCurScreen = gv_pScreenList;
+	while( pCurScreen != NULL)
+	{
+		if( pCurScreen->uiScreenId == uiThrdId)
+		{
+			break;
+		}
+		pCurScreen = pCurScreen->pNext;
+	}
+
+	if( pCurScreen == NULL)
+	{
+		flmAssert( 0);
+	}
+
+	wpsUnlock( &gv_hDispMutex);
+	return( pCurScreen->pScreen);
+}
+
+/****************************************************************************
+Desc:		Returns a pointer to a thread's screen
+****************************************************************************/
+FSTATIC FTX_WINDOW * wpsGetThrdWin( void)
+{
+	FLMUINT			uiThrdId;
+	WPSSCREEN *		pCurScreen = NULL;
+
+
+	wpsLock( &gv_hDispMutex);
+
+	uiThrdId = f_threadId();
+	pCurScreen = gv_pScreenList;
+	while( pCurScreen != NULL)
+	{
+		if( pCurScreen->uiScreenId == uiThrdId)
+		{
+			break;
+		}
+		pCurScreen = pCurScreen->pNext;
+	}
+
+	if( pCurScreen == NULL)
+	{
+		flmAssert( 0);
+	}
+
+	wpsUnlock( &gv_hDispMutex);
+	return( pCurScreen->pWin);
 }

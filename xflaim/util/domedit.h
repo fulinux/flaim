@@ -94,8 +94,8 @@ typedef struct
 {
 	char			szString[ MAX_DISPLAY_SEGMENT];
 	FLMUINT		uiCol;
-	FLMUINT		uiForeground;
-	FLMUINT		uiBackground;
+	eColorType	uiForeground;
+	eColorType	uiBackground;
 } DME_DISP_COLUMN;
 
 // Structure to hold an entire row
@@ -161,10 +161,7 @@ typedef RCODE (* F_DOMEDIT_EVENT_HOOK)(
 	void *				EventData,
 	void *				UserData);
 
-/*
-Class definitions
-*/
-class	F_DomEditor : public XF_RefCount, public XF_Base
+class	F_DomEditor : public F_Object
 {
 public:
 
@@ -337,22 +334,23 @@ public:
 		char *		pszMessage,
 		RCODE			rcOfMessage,
 		FLMUINT *	puiTermChar,
-		FLMUINT		uiBackground,
-		FLMUINT		uiForeground);
+		eColorType	uiBackground,
+		eColorType	uiForeground);
 
 	RCODE globalConfig(
 		FLMUINT		uiOption);
 
 	RCODE createStatusWindow(
 		char *			pszTitle,
-		FLMUINT			uiBack,
-		FLMUINT			uiFore,
+		eColorType		uiBack,
+		eColorType		uiFore,
 		FLMUINT *		puiCols,
 		FLMUINT *		puiRows,
 		FTX_WINDOW **	ppWindow);
 
 
 	FLMUINT getULX( void);
+	
 	FLMUINT getULY( void);
 
 	RCODE openNewDb();

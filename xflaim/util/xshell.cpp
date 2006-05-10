@@ -27,7 +27,6 @@
 #include "fshell.h"
 
 static FlmSharedContext *				gv_pSharedContext = NULL;
-FTX_INFO *									gv_pFtxInfo = NULL;
 FLMBOOL										gv_bShutdown = FALSE;
 FLMBOOL										gv_bRunning = TRUE;
 
@@ -64,7 +63,7 @@ int __cdecl main(
 {
 	RCODE						rc = NE_XFLM_OK;
 	FlmShell *				pShell = NULL;
-	F_DbSystem				dbSystem;
+	IF_DbSystem *			pDbSystem = NULL;
 
 #ifdef FLM_NLM
 
@@ -77,19 +76,18 @@ int __cdecl main(
 
 #endif
 
-	if( RC_BAD( rc = dbSystem.init()))
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
 	{
 		goto Exit;
 	}
 
-	if( FTXInit( "X-FLAIM Shell", (FLMBYTE)80, (FLMBYTE)50,
-		WPS_BLUE, WPS_WHITE, NULL, NULL, &gv_pFtxInfo) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXInit( "X-FLAIM Shell", (FLMBYTE)80, (FLMBYTE)50,
+		FLM_BLUE, FLM_WHITE, NULL, NULL)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
-	FTXSetShutdownFlag( gv_pFtxInfo, &gv_bShutdown);
+	FTXSetShutdownFlag( &gv_bShutdown);
 
 	if( (gv_pSharedContext = f_new FlmSharedContext) == NULL)
 	{
@@ -97,7 +95,7 @@ int __cdecl main(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = gv_pSharedContext->init( NULL, gv_pFtxInfo)))
+	if( RC_BAD( rc = gv_pSharedContext->init( NULL)))
 	{
 		goto Exit;
 	}
@@ -123,15 +121,13 @@ Exit:
 		gv_pSharedContext->Release();
 	}
 
-	// Free FTX
+	FTXExit();
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
-	FTXFree( &gv_pFtxInfo);
-
-	// Shut down the FLAIM database engine.  This call must be made
-	// even if the init call failed.  No more FLAIM calls should be made
-	// by the application.
-
-	dbSystem.exit();
 	gv_bRunning = FALSE;
 	return( 0);
 }

@@ -72,6 +72,7 @@ FSTATIC FLMBOOL ViewOpenFileDirect( void);
 static FLMBOOL		bPauseBeforeExiting = FALSE;
 FLMUINT				gv_uiTopLine = 0;
 FLMUINT				gv_uiBottomLine = 0;
+IF_DbSystem *		gv_pDbSystem = NULL;
 
 /********************************************************************
 Desc: ?
@@ -91,16 +92,14 @@ int __cdecl main(
 #endif
 {
 #define MAX_ARGS     30
-	FLMUINT		uiArg;
-	FLMINT		iArgCnt = (FLMINT)iArgC;
-	F_DbSystem	dbSystem;
-	char *		ppszArgs [MAX_ARGS];
-	char			szCommandBuffer [300];
-	RCODE			rc = NE_XFLM_OK;
-
-	if( RC_BAD( rc = dbSystem.init()))
+	RCODE					rc = NE_XFLM_OK;
+	FLMUINT				uiArg;
+	FLMINT				iArgCnt = (FLMINT)iArgC;
+	char *				ppszArgs [MAX_ARGS];
+	char					szCommandBuffer [300];
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &gv_pDbSystem)))
 	{
-		ViewShowRCError( "calling dbsystem.init()", rc);
 		goto Exit;
 	}
 
@@ -270,9 +269,15 @@ int __cdecl main(
 		}
 		uiArg++;
 	}
+	
+	if( RC_BAD( rc = FlmAllocPool( &gv_pViewPool)))
+	{
+		goto Exit;
+	}
 
-	gv_ViewPool.poolInit(2048);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	gv_pViewPool->poolInit(2048);
+	
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, 0);
 
 	// Open the file
@@ -323,9 +328,18 @@ Exit:
 			viewGiveUpCPU();
 		}
 	}
+	
+	if( gv_pViewPool)
+	{
+		gv_pViewPool->Release();
+	}
 
 	WpsExit();
-	dbSystem.exit();
+	
+	if( gv_pDbSystem)
+	{
+		gv_pDbSystem->Release();
+	}
 
 #ifdef FLM_NLM
 	if (!gv_bSynchronized)
@@ -412,9 +426,9 @@ FSTATIC FLMUINT ViewGetChar(
 	FLMUINT	uiNumRows;
 
 	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 2);
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
+	WpsScrBackFor( FLM_RED, FLM_WHITE);
 	if (pszMessage1)
 	{
 		WpsStrOutXY( pszMessage1, 0, uiNumRows - 2);
@@ -424,7 +438,7 @@ FSTATIC FLMUINT ViewGetChar(
 	{
 		if (gv_bShutdown)
 		{
-			uiChar = WPK_ESCAPE;
+			uiChar = FKB_ESCAPE;
 			break;
 		}
 		else if (WpkTestKB())
@@ -434,9 +448,9 @@ FSTATIC FLMUINT ViewGetChar(
 		}
 		viewGiveUpCPU();
 	}
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 2);
-	if (uiChar == WPK_ENTER)
+	if (uiChar == FKB_ENTER)
 	{
 		uiChar = uiDefaultChar;
 	}
@@ -464,8 +478,7 @@ Desc: Read the header information from the database -- this includes
 		the file header and the log header.
 *****************************************************************************/
 void ViewReadHdr(
-	FLMUINT32 *	pui32CalcCRC
-	)
+	FLMUINT32 *	pui32CalcCRC)
 {
 	RCODE		rc;
 	FLMUINT	uiNumCols;
@@ -485,7 +498,7 @@ void ViewReadHdr(
 
 	// Make sure we have a valid block size
 
-	if (!F_DbSystem::validBlockSize((FLMUINT)gv_ViewDbHdr.ui16BlockSize))
+	if( gv_ViewDbHdr.ui16BlockSize != 4096 && gv_ViewDbHdr.ui16BlockSize != 8192)
 	{
 		gv_ViewDbHdr.ui16BlockSize = XFLM_DEFAULT_BLKSIZ;
 	}
@@ -496,7 +509,7 @@ Desc:	Ask for input from the user
 *********************************************************************/
 void ViewAskInput(
 	const char *	pszPrompt,
-	const char *	pszBuffer,
+	char *			pszBuffer,
 	FLMUINT			uiBufLen)
 {
 	char	szTempBuf [80];
@@ -508,7 +521,7 @@ void ViewAskInput(
 	}
 	szTempBuf [0] = 0;
 	WpsLineEd( szTempBuf, uiBufLen, &gv_bShutdown);
-	f_strcpy( pszBuffer, szTempBuf);
+	f_strcpy( (char *)pszBuffer, szTempBuf);
 }
 
 /***************************************************************************
@@ -521,7 +534,7 @@ FSTATIC FLMBOOL ViewGetFileName(
 {
 	const char *	pszPrompt = "Enter database file name: ";
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( uiCol, uiRow);
 	if (bDispOnly)
 	{
@@ -551,7 +564,7 @@ FSTATIC FLMBOOL ViewOpenFileDirect( void)
 	RCODE				rc;
 	IF_FileHdl *	pCFileHdl;
 
-	if (RC_BAD( rc = gv_pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	if (RC_BAD( rc = gv_pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
 	{
 		ViewShowRCError( "opening file in direct mode", rc);
 		return( FALSE);
@@ -568,7 +581,6 @@ FSTATIC FLMBOOL ViewOpenFile( void)
 {
 	RCODE			rc;
 	FLMBOOL		bOk = FALSE;
-	F_DbSystem	dbSystem;
 
 Get_File_Name:
 
@@ -601,7 +613,7 @@ Get_File_Name:
 		ViewShowRCError( "creating super file handle", rc);
 		goto Exit;
 	}
-	if (RC_BAD( rc = gv_pSFileHdl->Setup( NULL, gv_szViewFileName, gv_szDataDir)))
+	if (RC_BAD( rc = gv_pSFileHdl->setup( gv_szViewFileName, gv_szDataDir)))
 	{
 		ViewShowRCError( "setting up super file handle", rc);
 		goto Exit;
@@ -609,8 +621,8 @@ Get_File_Name:
 
 	rc = ViewReadAndVerifyHdrInfo( NULL);
 
-	gv_pSFileHdl->ReleaseFiles(TRUE);
-	gv_pSFileHdl->SetBlockSize( (FLMUINT)gv_ViewDbHdr.ui16BlockSize);
+	gv_pSFileHdl->releaseFiles(TRUE);
+	gv_pSFileHdl->setBlockSize( (FLMUINT)gv_ViewDbHdr.ui16BlockSize);
 	if (RC_BAD( rc))
 	{
 		if (rc == NE_XFLM_IO_PATH_NOT_FOUND)
@@ -623,9 +635,9 @@ Get_File_Name:
 		}
 	}
 
-	if (RC_BAD( rc = dbSystem.openDb( gv_szViewFileName, gv_szDataDir,
-										 gv_szRflDir, gv_szPassword, XFLM_DONT_REDO_LOG,
-										 (IF_Db **)&gv_hViewDb)))
+	if (RC_BAD( rc = gv_pDbSystem->dbOpen( gv_szViewFileName, gv_szDataDir,
+					gv_szRflDir, gv_szPassword, XFLM_DONT_REDO_LOG,
+					&gv_hViewDb)))
 	{
 		char		szTBuf[ 100];
 
@@ -697,7 +709,7 @@ Desc:	This routine gets the dictionary information for a database and
 RCODE ViewGetDictInfo( void)
 {
 	RCODE			rc = NE_XFLM_OK;
-	F_Db *		pDb = gv_hViewDb;
+	IF_Db *		pDb = gv_hViewDb;
 //	FLMUINT		uiSaveFlags;
 	FLMUINT		uiFlags;
 
@@ -758,8 +770,8 @@ FSTATIC FLMBOOL ViewSetupMainMenu( void)
 												VAL_IS_EMPTY, 0, 0,
 												0, 0xFFFFFFFF, 0, MOD_DISABLED,
 												uiCol, uiRow++, MAIN_MENU_DB_HEADER,
-												WPS_BLACK, WPS_WHITE,
-												WPS_BLUE, WPS_WHITE))
+												FLM_BLACK, FLM_WHITE,
+												FLM_BLUE, FLM_WHITE))
 	{
 		goto Exit;
 	}
@@ -770,8 +782,8 @@ FSTATIC FLMBOOL ViewSetupMainMenu( void)
 									VAL_IS_LABEL_INDEX, (FLMUINT)LBL_NONE, 0,
 									0, 0xFFFFFFFF, 0, MOD_DISABLED,
 									uiCol, uiRow++, 0,
-									WPS_BLACK, WPS_LIGHTGRAY,
-									WPS_BLUE, WPS_LIGHTGRAY))
+									FLM_BLACK, FLM_LIGHTGRAY,
+									FLM_BLUE, FLM_LIGHTGRAY))
 		{
 			goto Exit;
 		}
@@ -782,8 +794,8 @@ FSTATIC FLMBOOL ViewSetupMainMenu( void)
 									VAL_IS_EMPTY, 0, 0,
 									0, 0xFFFFFFFF, 0, MOD_DISABLED,
 									uiCol, uiRow++, MAIN_MENU_LOGICAL_FILES,
-									WPS_BLACK, WPS_WHITE,
-									WPS_BLUE, WPS_WHITE))
+									FLM_BLACK, FLM_WHITE,
+									FLM_BLUE, FLM_WHITE))
 		{
 			goto Exit;
 		}

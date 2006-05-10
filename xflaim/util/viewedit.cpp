@@ -67,12 +67,12 @@ FLMBOOL ViewGetNum(
 	for (;;)
 	{
 		bGetOK = TRUE;
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsScrClr( 0, uiNumRows - 2);
 		ViewAskInput( pszPrompt, szTempBuf, sizeof( szTempBuf));
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsScrClr( 0, uiNumRows - 2);
-		if (f_stricmp( szTempBuf, (FLMBYTE *)"\\") == 0)
+		if (f_stricmp( szTempBuf, "\\") == 0)
 		{
 			*pbValEntered = FALSE;
 			goto Exit;
@@ -220,12 +220,13 @@ FLMBOOL ViewEditText(
 	FLMUINT	uiNumRows;
 
 	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 2);
 	ViewAskInput( pszPrompt, szTempBuf, sizeof( szTempBuf) - 1);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 2);
-	if (f_stricmp( szTempBuf, (FLMBYTE *)"\\") == 0)
+	
+	if (f_stricmp( szTempBuf, "\\") == 0)
 	{
 		*pbValEntered = FALSE;
 		return( FALSE);
@@ -278,7 +279,7 @@ FLMBOOL ViewEditLanguage(
 			{
 				szTempBuf [1] = szTempBuf [1] - 'a' + 'A';
 			}
-			uiTempNum = F_DbSystem::languageToNum( szTempBuf);
+			uiTempNum = f_languageToNum( szTempBuf);
 		}
 		if (uiTempNum == 0 &&
 			 (szTempBuf [0] != 'U' || szTempBuf [1] != 'S'))
@@ -318,10 +319,10 @@ FLMBOOL ViewEditBinary(
 	}
 	for (;;)
 	{
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsScrClr( 0, uiNumRows - 2);
 		ViewAskInput( pszPrompt, szTempBuf, sizeof( szTempBuf));
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 		WpsScrClr( 0, uiNumRows - 2);
 		if( f_stricmp( szTempBuf, "\\") == 0)
 		{
@@ -493,7 +494,7 @@ FLMBOOL ViewEdit(
 			}
 
 			// Need to know make a SEN out of this first.
-			uiSENLen = flmEncodeSEN( ui64Num, &pucSENBuffer);
+			uiSENLen = f_encodeSEN( ui64Num, &pucSENBuffer);
 			break;
 
 		case MOD_SEN9:
@@ -507,7 +508,7 @@ FLMBOOL ViewEdit(
 			}
 
 			// Need to know make a SEN out of this first.
-			uiSENLen = flmEncodeSEN( ui64Num, &pucSENBuffer);
+			uiSENLen = f_encodeSEN( ui64Num, &pucSENBuffer);
 			break;
 
 		case MOD_FLMUINT64:
@@ -689,14 +690,14 @@ FLMBOOL ViewEdit(
 			FLMUINT64			ui64Value;
 			FLMUINT				uiOrigSENLen;
 
-			if (RC_BAD( rc = flmDecodeSEN64( &pucOrigSEN,
+			if (RC_BAD( rc = f_decodeSEN64( &pucOrigSEN,
 													 (FLMBYTE *)pBlkHdr +
 															gv_ViewDbHdr.ui16BlockSize,
 													 &ui64Value)))
 			{
 				ViewShowRCError( "Decoding original SEN value", rc);
 			}
-			uiOrigSENLen = flmEncodeSEN( ui64Value, &pucBuffer);
+			uiOrigSENLen = f_encodeSEN( ui64Value, &pucBuffer);
 
 			if (uiOrigSENLen != uiSENLen)
 			{
@@ -747,19 +748,19 @@ FLMBOOL ViewEdit(
 		}
 	}
 	
-	if (RC_BAD( rc = gv_pSFileHdl->GetFileHdl( uiFileNumber, TRUE, &pFileHdl)))
+	if (RC_BAD( rc = gv_pSFileHdl->getFileHdl( uiFileNumber, TRUE, &pFileHdl)))
 	{
 		ViewShowRCError( "getting file handle", rc);
 	}
 
 	// Write the data out to the file
 
-	else if (RC_BAD( rc = pFileHdl->Write( uiFileOffset, uiBytesToWrite,
+	else if (RC_BAD( rc = pFileHdl->write( uiFileOffset, uiBytesToWrite,
 							pBlkHdr, &uiBytesWritten)))
 	{
 		ViewShowRCError( "updating file", rc);
 	}
-	else if (RC_BAD( rc = pFileHdl->Flush()))
+	else if (RC_BAD( rc = pFileHdl->flush()))
 	{
 		ViewShowRCError( "flushing data to file", rc);
 	}

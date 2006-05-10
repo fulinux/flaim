@@ -24,7 +24,6 @@
 //------------------------------------------------------------------------------
 
 #include "flaimsys.h"
-#include "ftx.h"
 #include "sharutil.h"
 
 #define UTIL_ID		"CHECKDB"
@@ -89,10 +88,10 @@ public:
 		m_uiLastRefresh = 0;
 	}
 
-	RCODE XFLMAPI reportProgress(
+	RCODE FLMAPI reportProgress(
 		XFLM_PROGRESS_CHECK_INFO *	pProgCheck);
 	
-	RCODE XFLMAPI reportCheckErr(
+	RCODE FLMAPI reportCheckErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo,
 		FLMBOOL *				pbFix);
 
@@ -234,6 +233,7 @@ static FLMBOOL				gv_bRunning;
 static FLMBOOL				gv_bPauseBeforeExiting = FALSE;
 static FLMBOOL				gv_bSkipDomLinkVerify = FALSE;
 static char					gv_szPassword[256];
+static IF_DbSystem *		gv_pDbSystem = NULL;
 
 #ifdef FLM_WATCOM_NLM
 	#define main		nlm_main
@@ -243,12 +243,11 @@ static char					gv_szPassword[256];
 Desc:
 *********************************************************************/
 extern "C" int main(
-	int			iArgC,
-	char **		ppszArgV)
+	int					iArgC,
+	char **				ppszArgV)
 {
-	int			iResCode = 0;
-	F_Pool		LogPool;
-	F_DbSystem	dbSystem;
+	int					iResCode = 0;
+	IF_Pool *			pLogPool = NULL;
 
 	gv_bBatchMode = FALSE;
 	gv_bShutdown = FALSE;
@@ -265,21 +264,28 @@ extern "C" int main(
 
 #endif
 
-	if( RC_BAD( dbSystem.init()))
+	if( RC_BAD( FlmAllocDbSystem( &gv_pDbSystem)))
 	{
 		WpsStrOut( "\nCould not initialize FLAIM.\n");
 		goto Exit;
 	}
-
+	
 	WpsInit( 0xFFFF, 0xFFFF, "FLAIM Database Check");
 	WpsOptimize();
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsDrawBorder();
 	WpsScrClr( 0, 0);
 	WpsScrSize( NULL, &gv_uiMaxRow);
+	
+	if( RC_BAD( FlmAllocPool( &pLogPool)))
+	{
+		WpsStrOut( "\nCould not create pool.\n");
+		goto Exit;
+	}
 
-	LogPool.poolInit( 1024);
-	if (RC_BAD( LogPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
+	pLogPool->poolInit( 1024);
+	
+	if (RC_BAD( pLogPool->poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
 	{
 		WpsStrOut( "\nFailed to allocatae memory pool\n");
 		goto Exit;
@@ -292,15 +298,16 @@ extern "C" int main(
 			iResCode = 1;
 		}
 	}
-
-	LogPool.poolFree();
+	
+	pLogPool->Release();
+	pLogPool = NULL;
 
 	if( (gv_bPauseBeforeExiting) && (!gv_bShutdown))
 	{
 		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( WPS_RED, WPS_WHITE);
+		WpsScrBackFor( FLM_RED, FLM_WHITE);
 		if( gv_szLastError[ 0] != '\0')
 		{
 			WpsStrOut( gv_szLastError);
@@ -327,16 +334,18 @@ Exit:
 	{
 		gv_pDbInfo->Release();
 	}
+	
+	if( pLogPool)
+	{
+		pLogPool->Release();
+	}
 
 	WpsExit();
-	dbSystem.exit();
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
+	
+	if( gv_pDbSystem)
 	{
-//		SynchronizeStart();
-		gv_bSynchronized = TRUE;
+		gv_pDbSystem->Release();
 	}
-#endif
 
 	gv_bRunning = FALSE;
 	return( iResCode);
@@ -353,13 +362,12 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	FLMUINT					uiCheckFlags;
 	FLMBOOL					bOk = TRUE;
 	IF_DbCheckStatus *	pDbCheckStatus = NULL;
-	F_DbSystem				dbSystem;
 
 	// Open the database - so we can have access to its name table
 
 	if (!gv_pDb)
 	{
-		if( RC_BAD( rc = dbSystem.dbOpen(
+		if( RC_BAD( rc = gv_pDbSystem->dbOpen(
 						gv_szDbFileName, gv_szDataDir,
 						gv_szRflDir, gv_szPassword, XFLM_ALLOW_LIMITED_MODE,
 						(IF_Db **)&gv_pDb)))
@@ -382,7 +390,7 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	gv_ui64BytesDone = 0;
 	gv_ui64FileSize = 0;
 	gv_uiOldViewCount = 0;
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 
 	if (gv_bLoggingEnabled)
 	{
@@ -580,7 +588,7 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	{
 		F_LocalCheckStatus dbCheckStatus;
 
-		rc = dbSystem.dbCheck( gv_szDbFileName, gv_szDataDir, gv_szRflDir, NULL,
+		rc = gv_pDbSystem->dbCheck( gv_szDbFileName, gv_szDataDir, gv_szRflDir, NULL,
 										uiCheckFlags, &gv_pDbInfo, &dbCheckStatus);
 	}
 
@@ -596,7 +604,7 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	
 	uiStatus = CheckShowError( szTmpBuf, TRUE);
 
-	if( ((uiStatus != WPK_ESCAPE) || (gv_bLoggingEnabled)) &&
+	if( ((uiStatus != FKB_ESCAPE) || (gv_bLoggingEnabled)) &&
 		 (gv_bShowStats) &&
 		 ((rc == NE_XFLM_OK) ||
 		  (rc == NE_XFLM_DATA_ERROR) ||
@@ -637,12 +645,17 @@ Desc: Function to coordinate check of the database.
 *********************************************************************/
 FSTATIC FLMBOOL DoCheck( void)
 {
-	FLMBOOL		bOk = TRUE;
-	char			szTmpBuf[ 100];
-	RCODE       rc = NE_XFLM_OK;
-	F_DbSystem	dbSystem;
+	RCODE       		rc = NE_XFLM_OK;
+	FLMBOOL				bOk = TRUE;
+	char					szTmpBuf[ 100];
+	IF_FileSystem *	pFileSystem = NULL;
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsScrClr( 0, 0);
 	gv_bContinue = TRUE;
 	gv_uiLineCount = 0;
@@ -655,9 +668,9 @@ FSTATIC FLMBOOL DoCheck( void)
 
 	if( gv_szLogFileName[ 0])
 	{
-		gv_pFileSystem->Delete( gv_szLogFileName);
-		if( RC_OK( rc = gv_pFileSystem->Create( gv_szLogFileName,
-			XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE, &gv_pLogFile)))
+		pFileSystem->deleteFile( gv_szLogFileName);
+		if( RC_OK( rc = pFileSystem->createFile( gv_szLogFileName,
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &gv_pLogFile)))
 		{
 			gv_bLoggingEnabled = TRUE;
 		}
@@ -670,7 +683,7 @@ FSTATIC FLMBOOL DoCheck( void)
 		}
 	}
 
-	WpsCursorSetType( WPS_CURSOR_INVISIBLE);
+	WpsCursorSetType( FLM_CURSOR_INVISIBLE);
 	for( ;;)
 	{
 		// Check the database...
@@ -685,17 +698,21 @@ FSTATIC FLMBOOL DoCheck( void)
 			break;
 		}
 	}
-	WpsCursorSetType( WPS_CURSOR_UNDERLINE);
+	WpsCursorSetType( FLM_CURSOR_UNDERLINE);
 
 	if( gv_bLoggingEnabled)
 	{
 		LogFlush();
-		gv_pLogFile->Close();
 		gv_pLogFile->Release();
 		gv_pLogFile = NULL;
 	}
 
 Exit:
+
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
 
 	return( bOk);
 }
@@ -848,7 +865,7 @@ FSTATIC FLMBOOL GetParams(
 				{
 					if( CheckShowError( 
 						"Log file name not specified in parameter",
-						FALSE) == WPK_ESCAPE)
+						FALSE) == FKB_ESCAPE)
 					{
 						return( FALSE);
 					}
@@ -865,7 +882,7 @@ FSTATIC FLMBOOL GetParams(
 				{
 					if( CheckShowError(
 						"Temporary directory not specified in parameter",
-						FALSE) == WPK_ESCAPE)
+						FALSE) == FKB_ESCAPE)
 					{
 						return( FALSE);
 					}
@@ -889,7 +906,7 @@ FSTATIC FLMBOOL GetParams(
 				else
 				{
 					f_sprintf( szTmpBuf, "Invalid option %s", pszTmp - 1);
-					if( CheckShowError( szTmpBuf, FALSE) == WPK_ESCAPE)
+					if( CheckShowError( szTmpBuf, FALSE) == FKB_ESCAPE)
 					{
 						return( FALSE);
 					}
@@ -950,7 +967,7 @@ FSTATIC FLMBOOL GetParams(
 			else
 			{
 				f_sprintf( szTmpBuf, "Invalid option %s", pszTmp);
-				if( CheckShowError( szTmpBuf, FALSE) == WPK_ESCAPE)
+				if( CheckShowError( szTmpBuf, FALSE) == FKB_ESCAPE)
 				{
 					return( FALSE);
 				}
@@ -1005,7 +1022,7 @@ FSTATIC void LogFlush(
 
 	if( gv_uiLogBufferCount)
 	{
-		gv_pLogFile->Write( XFLM_IO_CURRENT_POS,
+		gv_pLogFile->write( FLM_IO_CURRENT_POS,
 							 gv_uiLogBufferCount, (FLMBYTE *)gv_pszLogBuffer,
 							 &uiBytesWritten);
 		gv_uiLogBufferCount = 0;
@@ -1067,16 +1084,16 @@ FSTATIC void OutLine(
 			if( gv_uiLineCount == 20)
 			{
 				WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
-				WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+				WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 				WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 1));
-				WpsScrBackFor( WPS_RED, WPS_WHITE);
+				WpsScrBackFor( FLM_RED, FLM_WHITE);
 				WpsStrOut(
 					"Press: ESC to quit, anything else to continue");
 				for( ;;)
 				{
 					if( gv_bShutdown)
 					{
-						uiChar = WPK_ESCAPE;
+						uiChar = FKB_ESCAPE;
 						break;
 					}
 					else if( WpkTestKB())
@@ -1086,13 +1103,13 @@ FSTATIC void OutLine(
 					}
 				}
 				
-				if( uiChar == WPK_ESCAPE)
+				if( uiChar == FKB_ESCAPE)
 				{
 					gv_bContinue = FALSE;
 				}
 				else
 				{
-					WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+					WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 					WpsScrClr( 0, 0);
 				}
 				
@@ -1193,7 +1210,6 @@ FSTATIC void OutOneBlockStat(
 	FLMUINT64	ui64TotalBytes;
 	FLMUINT		uiPercent;
 	FLMUINT		uiAvgElementSize;
-	F_DbSystem	dbSystem;
 
 	ui64TotalBytes = (FLMUINT64)uiBlockCount * (FLMUINT64)uiBlockSize;
 	if( ui64ElementCount)
@@ -1261,7 +1277,7 @@ FSTATIC void OutOneBlockStat(
 	{
 		f_strcpy( szTmpBuf, "    LAST ERROR: ");
 		f_strcpy( &szTmpBuf[ f_strlen( szTmpBuf)],
-			dbSystem.checkErrorToStr( iLastError));
+			gv_pDbSystem->checkErrorToStr( iLastError));
 		OutLine( szTmpBuf);
 		f_sprintf( szTmpBuf,
 			"    TOTAL ERRORS: %u", (unsigned)uiNumErrors);
@@ -1359,7 +1375,7 @@ FSTATIC void PrintInfo(
 	FLMUINT					uiNumErrors;
 	const XFLM_DB_HDR *	pDbHdr = pDbInfo->getDbHdr();
 
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsScrClr( 0, 0);
 
 	OutUINT( "Default Language",
@@ -1433,9 +1449,9 @@ FSTATIC FLMUINT CheckShowError(
 	else
 	{
 		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( WPS_RED, WPS_WHITE);
+		WpsScrBackFor( FLM_RED, FLM_WHITE);
 		WpsStrOut( pszMessage);
 		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
 		WpsStrOut( "Press ENTER to continue, ESC to quit");
@@ -1443,20 +1459,20 @@ FSTATIC FLMUINT CheckShowError(
 		{
 			if( gv_bShutdown)
 			{
-				uiResKey = WPK_ESCAPE;
+				uiResKey = FKB_ESCAPE;
 				break;
 			}
 			else if( WpkTestKB())
 			{
 				uiResKey = WpkIncar();
-				if( (uiResKey == WPK_ENTER) || (uiResKey == WPK_ESCAPE))
+				if( (uiResKey == FKB_ENTER) || (uiResKey == FKB_ESCAPE))
 				{
 					break;
 				}
 			}
 		}
 		
-		WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
 	}
 
@@ -1477,12 +1493,12 @@ FSTATIC void OutLabel(
 	char			szTmpBuf[ 100];
 	FLMUINT		uiLoop;
 
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsStrOutXY( pszLabel, uiCol, uiRow);
 
 	for( uiLoop = WpsCurrCol(); uiLoop < VALUE_COLUMN - 1; uiLoop++)
 	{
-		WpsChrOut( '.');
+		WpsStrOut( ".");
 	}
 	
 
@@ -1519,7 +1535,7 @@ FSTATIC void DisplayValue(
 	FLMUINT			uiRow,
 	const char *	pszValue)
 {
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsStrOutXY( pszValue, VALUE_COLUMN, uiRow);
 	WpsLineClr( 255, 255);
 }
@@ -1548,16 +1564,16 @@ FSTATIC RCODE GetUserInput(
 	FLMUINT		uiChar;
 
 	WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 1));
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
+	WpsScrBackFor( FLM_RED, FLM_WHITE);
 
 	WpsStrOut( "Q,ESC=Quit, Other=Continue");
 	for( ;;)
 	{
 		if( gv_bShutdown)
 		{
-			uiChar = WPK_ESCAPE;
+			uiChar = FKB_ESCAPE;
 			break;
 		}
 		else if( WpkTestKB())
@@ -1567,14 +1583,14 @@ FSTATIC RCODE GetUserInput(
 		}
 	}
 
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 1));
 
 	switch( uiChar)
 	{
 		case 'q':
 		case 'Q':
-		case WPK_ESCAPE:
+		case FKB_ESCAPE:
 			return( RC_SET( NE_XFLM_FAILURE));
 		default:
 			break;
@@ -1593,10 +1609,9 @@ RCODE F_LocalCheckStatus::reportProgress(
 	XFLM_CACHE_INFO	cacheInfo;
 	char					szWhat[ 256];
 	char					szLfName[ 128];
-	F_DbSystem			dbSystem;
 	FLMUINT				uiCurrentTime;
 
-	FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER(), uiCurrentTime);
+	uiCurrentTime = FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER());
 
 	if( (uiCurrentTime - m_uiLastRefresh < SCREEN_REFRESH_RATE) &&
 		!pProgCheck->bStartFlag)
@@ -1609,7 +1624,7 @@ RCODE F_LocalCheckStatus::reportProgress(
 
 	m_uiLastRefresh = uiCurrentTime;
 
-	dbSystem.getCacheInfo( &cacheInfo);
+	gv_pDbSystem->getCacheInfo( &cacheInfo);
 	DisplayNumValue( CACHE_USED_ROW, cacheInfo.BlockCache.uiByteCount);
 	DisplayNumValue( ECACHE_USED_ROW, cacheInfo.ECache.ui64TotalBytesAllocated);
 
@@ -1699,19 +1714,19 @@ RCODE F_LocalCheckStatus::reportProgress(
 		}
 
 		szWhat[ 45] = '\0';
-		WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 		DisplayValue( DOING_ROW, szWhat);
 	}
-	else if( (WpkTestKB()) && (WpkIncar() == WPK_ESCAPE))
+	else if( (WpkTestKB()) && (WpkIncar() == FKB_ESCAPE))
 	{
-		WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
 		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( WPS_RED, WPS_WHITE);
+		WpsScrBackFor( FLM_RED, FLM_WHITE);
 		WpsStrOut( "ESCAPE key pressed.\n");
 		rc = GetUserInput();
 		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -1726,9 +1741,8 @@ RCODE F_LocalCheckStatus::reportCheckErr(
 {
 	RCODE					rc = NE_XFLM_OK;
 	XFLM_CACHE_INFO	cacheInfo;
-	F_DbSystem			dbSystem;
 
-	dbSystem.getCacheInfo( &cacheInfo);
+	gv_pDbSystem->getCacheInfo( &cacheInfo);
 	DisplayNumValue( CACHE_USED_ROW, cacheInfo.BlockCache.uiByteCount);
 	DisplayNumValue( ECACHE_USED_ROW, cacheInfo.ECache.ui64TotalBytesAllocated);
 	
@@ -1739,7 +1753,7 @@ RCODE F_LocalCheckStatus::reportCheckErr(
 		LogCorruptError( pCorruptInfo);
 	}
 
-	WpsScrBackFor( WPS_BLUE, WPS_WHITE);
+	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
 	if( pCorruptInfo->iErrCode == FLM_OLD_VIEW)
 	{
 		gv_uiOldViewCount++;
@@ -1791,7 +1805,6 @@ FSTATIC void LogCorruptError(
 {
 	char			szWhat[ 20];
 	char			szTmpBuf[ 100];
-	F_DbSystem	dbSystem;
 
 	switch( pCorrupt->uiErrLocale)
 	{
@@ -1938,7 +1951,7 @@ FSTATIC void LogCorruptError(
 		LogStr( 2, szTmpBuf);
 	}
 
-	f_strcpy( szTmpBuf, dbSystem.checkErrorToStr( pCorrupt->iErrCode));
+	f_strcpy( szTmpBuf, gv_pDbSystem->checkErrorToStr( pCorrupt->iErrCode));
 	f_sprintf( &szTmpBuf[ f_strlen( szTmpBuf)], " (%d)",
 		(int)pCorrupt->iErrCode);
 	LogStr( 2, szTmpBuf);
@@ -1946,7 +1959,7 @@ FSTATIC void LogCorruptError(
 	
 	if( gv_bLoggingEnabled)
 	{
-		gv_pLogFile->Flush();
+		gv_pLogFile->flush();
 	}
 }
 
@@ -2161,9 +2174,7 @@ FSTATIC FLMBOOL NumToName(
 /****************************************************************************
 Desc: This routine shuts down all threads in the NLM.
 ****************************************************************************/
-FSTATIC void chkCleanup(
-	void
-	)
+FSTATIC void chkCleanup( void)
 {
 	gv_bShutdown = TRUE;
 	while( gv_bRunning)

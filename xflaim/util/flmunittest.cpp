@@ -865,13 +865,6 @@ RCODE TestBase::init(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pDbSystem->init()))
-	{
-		goto Exit;
-	}
-	
-	// VISIT: here -- disable asserts on FLAIM errors via a config call!!!
-
 	m_bLog = bLog;
 	m_bDisplay = bDisplay;
 
@@ -1580,7 +1573,6 @@ TestBase::~TestBase()
 
 	if( m_pDbSystem)
 	{
-		m_pDbSystem->exit();
 		m_pDbSystem->Release();
 	}
 }

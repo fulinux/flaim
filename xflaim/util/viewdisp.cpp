@@ -37,20 +37,20 @@ void ViewShowError(
 	FLMUINT	uiNumRows;
 
 	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 2);
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
+	WpsScrBackFor( FLM_RED, FLM_WHITE);
 	WpsStrOutXY( pszMessage, 0, uiNumRows - 2);
 	WpsStrOutXY( "Press ENTER to continue: ", 0, uiNumRows - 1);
 	for (;;)
 	{
 		uiChar = (FLMUINT)WpkIncar();
-		if (uiChar == WPK_ENTER || uiChar == WPK_ESCAPE)
+		if (uiChar == FKB_ENTER || uiChar == FKB_ESCAPE)
 		{
 			break;
 		}
 	}
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
 	WpsScrClr( 0, uiNumRows - 2);
 	ViewEscPrompt();
 }

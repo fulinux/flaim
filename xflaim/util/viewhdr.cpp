@@ -106,18 +106,18 @@ Desc: This routine displays the information found in a log header and
 FSTATIC FLMBOOL ViewSetupDbHdrMenu( void)
 {
 #define LABEL_WIDTH  35
-	FLMBOOL		bOk = FALSE;
-	FLMUINT		uiRow;
-	FLMUINT		uiCol;
-	FLMUINT		uiBackColor = WPS_BLACK;
-	FLMUINT		uiForeColor = WPS_LIGHTGRAY;
-	FLMUINT		uiUnselectBackColor = WPS_BLACK;
-	FLMUINT		uiUnselectForeColor = WPS_WHITE;
-	FLMUINT		uiSelectBackColor = WPS_BLUE;
-	FLMUINT		uiSelectForeColor = WPS_WHITE;
-	FLMUINT		uiOption;
-	char			szBuf [64];
-	FLMUINT32	ui32CalcCRC;
+	FLMBOOL			bOk = FALSE;
+	FLMUINT			uiRow;
+	FLMUINT			uiCol;
+	eColorType		uiBackColor = FLM_BLACK;
+	eColorType		uiForeColor = FLM_LIGHTGRAY;
+	eColorType		uiUnselectBackColor = FLM_BLACK;
+	eColorType		uiUnselectForeColor = FLM_WHITE;
+	eColorType		uiSelectBackColor = FLM_BLUE;
+	eColorType		uiSelectForeColor = FLM_WHITE;
+	FLMUINT			uiOption;
+	char				szBuf [64];
+	FLMUINT32		ui32CalcCRC;
 
 	// Re-read the header information in case it has changed.
 
@@ -156,7 +156,7 @@ FSTATIC FLMBOOL ViewSetupDbHdrMenu( void)
 	}
 
 	// Display the default language
-	F_DbSystem::languageToStr(	(FLMUINT)gv_ViewDbHdr.ui8DefaultLanguage, szBuf);
+	f_languageToStr(	(FLMUINT)gv_ViewDbHdr.ui8DefaultLanguage, szBuf);
 	if (!ViewAddMenuItem( LBL_DEFAULT_LANGUAGE, LABEL_WIDTH,
 			VAL_IS_TEXT_PTR,
 			(FLMUINT64)((FLMUINT)(&szBuf[ 0])), 0,
