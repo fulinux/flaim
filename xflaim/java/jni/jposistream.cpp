@@ -28,7 +28,7 @@
 #include "jniftk.h"
 
 #define THIS_STREAM() \
-	((F_PosIStream *)(FLMUINT)lThis)
+	((IF_PosIStream *)(FLMUINT)lThis)
 	
 /****************************************************************************
 Desc:

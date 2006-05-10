@@ -111,7 +111,7 @@ RCODE F_SuperFileHdl::setup(
 
 		f_memcpy( m_pszDbFileName, pszDbFileName, uiNameLen + 1);
 		m_pszDataFileNameBase = m_pszDbFileName + uiNameLen + 1;
-		F_DbSystem::getDbBasePath( m_pszDataFileNameBase, szDir, &m_uiDataExtOffset);
+		flmGetDbBasePath( m_pszDataFileNameBase, szDir, &m_uiDataExtOffset);
 		m_uiExtOffset = uiNameLen - (uiDataNameLen - m_uiDataExtOffset);
 	}
 	else
@@ -123,7 +123,7 @@ RCODE F_SuperFileHdl::setup(
 
 		f_memcpy( m_pszDbFileName, pszDbFileName, uiNameLen + 1);
 		m_pszDataFileNameBase = m_pszDbFileName + uiNameLen + 1;
-		F_DbSystem::getDbBasePath( m_pszDataFileNameBase, 
+		flmGetDbBasePath( m_pszDataFileNameBase, 
 			m_pszDbFileName, &m_uiDataExtOffset);
 		m_uiExtOffset = m_uiDataExtOffset;
 	}

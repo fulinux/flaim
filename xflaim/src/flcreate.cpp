@@ -256,9 +256,7 @@ Exit:
 	{
 		if (bDatabaseCreated)
 		{
-			F_DbSystem	dbSystem;
-
-			dbSystem.dbRemove( pszFilePath, pszDataDir, pszRflDir, TRUE);
+			gv_pXFlmDbSystem->dbRemove( pszFilePath, pszDataDir, pszRflDir, TRUE);
 		}
 	}
 	else if( uiRflToken)

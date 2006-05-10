@@ -29,7 +29,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreClient::openBackupSet( void)
+RCODE FLMAPI JNIRestoreClient::openBackupSet( void)
 {
 	RCODE				rc = NE_XFLM_OK;
 	JNIEnv *			pEnv;
@@ -74,7 +74,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreClient::openRflFile(
+RCODE FLMAPI JNIRestoreClient::openRflFile(
 	FLMUINT			uiFileNum)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -121,7 +121,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreClient::openIncFile(
+RCODE FLMAPI JNIRestoreClient::openIncFile(
 	FLMUINT			uiFileNum)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -167,7 +167,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreClient::read(
+RCODE FLMAPI JNIRestoreClient::read(
 	FLMUINT			uiLength,
 	void *			pvBuffer,
 	FLMUINT *		puiBytesRead)
@@ -229,7 +229,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreClient::close( void)
+RCODE FLMAPI JNIRestoreClient::close( void)
 {
 	RCODE				rc = NE_XFLM_OK;
 	JNIEnv *			pEnv;
@@ -274,7 +274,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreClient::abortFile( void)
+RCODE FLMAPI JNIRestoreClient::abortFile( void)
 {
 	RCODE				rc = NE_XFLM_OK;
 	JNIEnv *			pEnv;
@@ -319,7 +319,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportProgress(
+RCODE FLMAPI JNIRestoreStatus::reportProgress(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64BytesToDo,
 	FLMUINT64				ui64BytesDone)
@@ -366,7 +366,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportError(
+RCODE FLMAPI JNIRestoreStatus::reportError(
 	eRestoreAction *		peAction,
 	RCODE						rcErr)
 {
@@ -410,7 +410,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportBeginTrans(
+RCODE FLMAPI JNIRestoreStatus::reportBeginTrans(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId)
 {
@@ -455,7 +455,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportCommitTrans(
+RCODE FLMAPI JNIRestoreStatus::reportCommitTrans(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId)
 {
@@ -500,7 +500,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportAbortTrans(
+RCODE FLMAPI JNIRestoreStatus::reportAbortTrans(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId)
 {
@@ -545,7 +545,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportBlockChainFree(
+RCODE FLMAPI JNIRestoreStatus::reportBlockChainFree(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId,
 	FLMUINT64				ui64MaintDocNum,
@@ -595,7 +595,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportIndexSuspend(
+RCODE FLMAPI JNIRestoreStatus::reportIndexSuspend(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId,
 	FLMUINT					uiIndexNum)
@@ -641,7 +641,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportIndexResume(
+RCODE FLMAPI JNIRestoreStatus::reportIndexResume(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId,
 	FLMUINT					uiIndexNum)
@@ -687,7 +687,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportReduce(
+RCODE FLMAPI JNIRestoreStatus::reportReduce(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId,
 	FLMUINT					uiCount)
@@ -733,7 +733,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportUpgrade(
+RCODE FLMAPI JNIRestoreStatus::reportUpgrade(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId,
 	FLMUINT					uiOldDbVersion,
@@ -781,7 +781,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportOpenRflFile(
+RCODE FLMAPI JNIRestoreStatus::reportOpenRflFile(
 	eRestoreAction *		peAction,
 	FLMUINT					uiFileNum)
 {
@@ -826,7 +826,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportRflRead(
+RCODE FLMAPI JNIRestoreStatus::reportRflRead(
 	eRestoreAction *		peAction,
 	FLMUINT					uiFileNum,
 	FLMUINT					uiBytesRead)
@@ -872,7 +872,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportEnableEncryption(
+RCODE FLMAPI JNIRestoreStatus::reportEnableEncryption(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId)
 {
@@ -917,7 +917,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportWrapKey(
+RCODE FLMAPI JNIRestoreStatus::reportWrapKey(
 	eRestoreAction *		peAction,
 	FLMUINT64				ui64TransId)
 {
@@ -962,7 +962,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportSetNextNodeId(
+RCODE FLMAPI JNIRestoreStatus::reportSetNextNodeId(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1010,7 +1010,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeSetMetaValue(
+RCODE FLMAPI JNIRestoreStatus::reportNodeSetMetaValue(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1059,7 +1059,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeSetPrefixId(
+RCODE FLMAPI JNIRestoreStatus::reportNodeSetPrefixId(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1109,7 +1109,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeFlagsUpdate(
+RCODE FLMAPI JNIRestoreStatus::reportNodeFlagsUpdate(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1159,7 +1159,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportAttributeSetValue(
+RCODE FLMAPI JNIRestoreStatus::reportAttributeSetValue(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1208,7 +1208,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeSetValue(
+RCODE FLMAPI JNIRestoreStatus::reportNodeSetValue(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1255,7 +1255,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeUpdate(
+RCODE FLMAPI JNIRestoreStatus::reportNodeUpdate(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1302,7 +1302,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportInsertBefore(
+RCODE FLMAPI JNIRestoreStatus::reportInsertBefore(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1352,7 +1352,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeCreate(
+RCODE FLMAPI JNIRestoreStatus::reportNodeCreate(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1403,7 +1403,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeChildrenDelete(
+RCODE FLMAPI JNIRestoreStatus::reportNodeChildrenDelete(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1452,7 +1452,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportAttributeDelete(
+RCODE FLMAPI JNIRestoreStatus::reportAttributeDelete(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1501,7 +1501,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportNodeDelete(
+RCODE FLMAPI JNIRestoreStatus::reportNodeDelete(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1548,7 +1548,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportDocumentDone(
+RCODE FLMAPI JNIRestoreStatus::reportDocumentDone(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId,
 	FLMUINT				uiCollection,
@@ -1595,7 +1595,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE XFLMAPI JNIRestoreStatus::reportRollOverDbKey(
+RCODE FLMAPI JNIRestoreStatus::reportRollOverDbKey(
 	eRestoreAction *	peAction,
 	FLMUINT64			ui64TransId)
 {

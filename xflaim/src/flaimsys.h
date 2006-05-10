@@ -151,6 +151,12 @@ GV_EXTERN FLMUINT64 gv_ui64MaxSignedIntVal
 #endif
 	;
 
+GV_EXTERN F_DbSystem * gv_pXFlmDbSystem
+#ifdef DEFINE_NUMBER_MAXIMUMS
+		= NULL
+#endif
+	;
+	
 // A global module lock allows us to properly implement DllCanUnloadNow
 // This is only used in a COM environment.  The functions are actually
 // defined in fdllmain.cpp
@@ -1793,7 +1799,7 @@ typedef struct OLD_NODE_DATA
 } OLD_NODE_DATA;
 
 /*****************************************************************************
-Desc: Thread's database object - returned by dbOpen, dbCreate in F_DbSystem class
+Desc:
 *****************************************************************************/
 class F_OldNodeList : public F_Object
 {
@@ -1840,7 +1846,7 @@ private:
 };
 
 /*****************************************************************************
-Desc: Thread's database object - returned by dbOpen, dbCreate in F_DbSystem class
+Desc:
 *****************************************************************************/
 class F_Db : public IF_Db
 {
@@ -4716,34 +4722,30 @@ friend class F_IStream;
 };
 
 /*****************************************************************************
-Desc:		FLAIM database system object
+Desc:
 ******************************************************************************/
-class F_DbSystem : public IF_DbSystem
+class F_DbSystem : public IF_DbSystem, public F_OSBase
 {
 public:
 
-	F_DbSystem() 
-	{
-		m_refCnt = 1;
-		LockModule();
-	}
+	F_DbSystem(); 
 
-	virtual ~F_DbSystem()
-	{
-		UnlockModule();
-	}
+	virtual ~F_DbSystem();
 
 	virtual FLMINT FLMAPI AddRef( void);
 
 	virtual FLMINT FLMAPI Release( void);
+	
+	virtual FLMINT FLMAPI getRefCount( void)
+	{
+		return( (FLMINT)m_refCnt);
+	}
 
 	RCODE FLMAPI init( void);
 
 	RCODE FLMAPI updateIniFile(
 		const char *			pszParamName,
 		const char *			pszValue);
-
-	void FLMAPI exit();
 
 	void FLMAPI getFileSystem(
 		IF_FileSystem **		ppFileSystem);
@@ -5031,14 +5033,6 @@ public:
 	FLMBOOL FLMAPI errorIsFileCorrupt(
 		RCODE						rc);
 
-	static FLMBOOL _errorIsFileCorrupt(
-		RCODE						rc)
-	{
-		F_DbSystem		dbSystem;
-
-		return( dbSystem.errorIsFileCorrupt( rc));
-	}
-
 	const char * FLMAPI checkErrorToStr(
 		FLMINT					iCheckErrorCode);
 
@@ -5158,11 +5152,6 @@ public:
 		return( FALSE);
 	}
 
-	static void getDbBasePath(
-		char *					pszBaseDbName,
-		const char *			pszDbName,
-		FLMUINT *				puiBaseDbNameLen);
-
 	RCODE FLMAPI compareUTF8Strings(
 		const FLMBYTE *		pucLString,
 		FLMUINT					uiLStrBytes,
@@ -5252,10 +5241,6 @@ private:
 		return( rc);
 	}
 
-	void lockSysData( void);
-	
-	void unlockSysData( void);
-	
 	void initFastBlockCheckSum( void);
 
 	RCODE allocDb(
@@ -5307,8 +5292,7 @@ private:
 
 	static void checkNotUsedObjects( void);
 
-	static FLMATOMIC			m_flmSysSpinLock;
-	static FLMUINT				m_uiFlmSysStartupCount;
+	FLMATOMIC					m_refCnt;
 
 friend class F_Db;
 friend class F_Database;
@@ -5316,6 +5300,11 @@ friend class F_DbRebuild;
 friend class F_DbCheck;
 };
 
+void flmGetDbBasePath(
+	char *			pszBaseDbName,
+	const char *	pszDbName,
+	FLMUINT *		puiBaseDbNameLen);
+	
 // Supported text types
 
 typedef enum
@@ -8200,8 +8189,7 @@ typedef struct
 #define REBUILD_RSET_ENTRY_SIZE		21
 
 /*=============================================================================
-Desc: Class to rebuild a broken database.  This class is used by
-		F_DbSystem::dbRebuild()
+Desc: Class to rebuild a broken database.
 =============================================================================*/
 class F_DbRebuild : public F_Object
 {

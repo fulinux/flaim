@@ -82,7 +82,7 @@ RCODE F_DbCheck::blkRead(
 
 		// If we didn't get a corruption error, jump to exit.
 
-		if( !F_DbSystem::_errorIsFileCorrupt( rc))
+		if( !gv_pXFlmDbSystem->errorIsFileCorrupt( rc))
 		{
 			goto Exit;
 		}

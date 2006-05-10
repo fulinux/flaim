@@ -275,7 +275,7 @@ Desc:	Returns the length of the base part of a database name.  If the
 		name ends with a '.' or ".db", this will not be included in the
 		returned length.
 ****************************************************************************/
-void F_DbSystem::getDbBasePath(
+void flmGetDbBasePath(
 	char *			pszBaseDbName,
 	const char *	pszDbName,
 	FLMUINT *		puiBaseDbNameLen)

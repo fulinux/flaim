@@ -78,7 +78,6 @@ RCODE F_DbCheck::createAndOpenResultSetDb( void)
 {
 	RCODE					rc = NE_XFLM_OK;
 	XFLM_CREATE_OPTS	createOpts;
-	F_DbSystem			dbSystem;
 
 	if (m_pResultSetDb)
 	{
@@ -97,9 +96,9 @@ RCODE F_DbCheck::createAndOpenResultSetDb( void)
 		f_sprintf( m_szResultSetDibName,
 					  "%d.db", (int)m_pRandGen->getUINT32( 100, 20000));
 		
-		if (RC_OK( rc = dbSystem.dbCreate( m_szResultSetDibName, NULL, NULL,
-								NULL, NULL, &createOpts, TRUE,
-								(IF_Db **)&m_pResultSetDb)))
+		if (RC_OK( rc = gv_pXFlmDbSystem->dbCreate( 
+				m_szResultSetDibName, NULL, NULL, NULL, NULL, 
+				&createOpts, TRUE, (IF_Db **)&m_pResultSetDb)))
 		{
 			break;
 		}
@@ -129,7 +128,6 @@ Desc:	Close the database file and delete it.
 RCODE F_DbCheck::closeAndDeleteResultSetDb( void)
 {
 	RCODE				rc = NE_XFLM_OK;
-	F_DbSystem		dbSystem;
 	
 	if (m_pResultSetDb)
 	{
@@ -141,7 +139,8 @@ RCODE F_DbCheck::closeAndDeleteResultSetDb( void)
 		m_pResultSetDb = NULL;
 	}
 
-	if (RC_BAD( rc = dbSystem.dbRemove( m_szResultSetDibName, NULL, NULL, TRUE)))
+	if (RC_BAD( rc = gv_pXFlmDbSystem->dbRemove( 
+		m_szResultSetDibName, NULL, NULL, TRUE)))
 	{
 		goto Exit;
 	}
@@ -286,9 +285,8 @@ RCODE F_DbCheck::dbCheck(
 	FLMBOOL							bAllowLimitedMode =  ( uiFlags & XFLM_ALLOW_LIMITED_MODE)
 																		? TRUE
 																		: FALSE;
-	F_DbSystem						dbSystem;
 
-	if (RC_BAD( rc = dbSystem.dbOpen( pszDbFileName, pszDataDir,
+	if (RC_BAD( rc = gv_pXFlmDbSystem->dbOpen( pszDbFileName, pszDataDir,
 		pszRflDir, pszPassword, bAllowLimitedMode, (IF_Db **)&m_pDb)))
 	{
 		goto Exit;
@@ -453,7 +451,7 @@ Begin_Check:
 Exit:
 
 	if ((m_bPhysicalCorrupt || m_bIndexCorrupt) &&
-		 !F_DbSystem::_errorIsFileCorrupt( rc))
+		 !gv_pXFlmDbSystem->errorIsFileCorrupt( rc))
 	{
 		rc = RC_SET( NE_XFLM_DATA_ERROR);
 	}

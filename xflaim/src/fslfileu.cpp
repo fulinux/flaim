@@ -2618,35 +2618,24 @@ RCODE F_Database::maintenanceThread(
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_Database *	pDatabase = (F_Database *)pThread->getParm1();
-	F_Db *			pDb;
-	F_DOMNode *		pDoc;
-	F_DOMNode *		pNextDoc;
+	F_Db *			pDb = NULL;
+	F_DOMNode *		pDoc = NULL;
+	F_DOMNode *		pNextDoc = NULL;
 	FLMUINT64		ui64DocId;
 	FLMUINT64		ui64TmpTransId;
 	FLMUINT64		ui64SweepTransId;
 	FLMUINT			uiNameId;
 	FLMBOOL			bStartedTrans;
 	FLMBOOL			bShutdown;
-	F_DbSystem *	pDbSystem = NULL;
 
 Retry:
 	
-	rc = NE_XFLM_OK;
-	pDb = NULL;
-	pDoc = NULL;
-	pNextDoc = NULL;
 	bStartedTrans = FALSE;
 	bShutdown = FALSE;
 
-	if( (pDbSystem = f_new F_DbSystem) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
 	pThread->setThreadStatus( FLM_THREAD_STATUS_INITIALIZING);
 
-	if( RC_BAD( rc = pDbSystem->internalDbOpen( pDatabase, &pDb)))
+	if( RC_BAD( rc = gv_pXFlmDbSystem->internalDbOpen( pDatabase, &pDb)))
 	{
 		// If the file is being closed, this is not an error.
 
@@ -2655,10 +2644,9 @@ Retry:
 			rc = NE_XFLM_OK;
 			bShutdown = TRUE;
 		}
+
 		goto Exit;
 	}
-	pDbSystem->Release();
-	pDbSystem = NULL;
 
 	for( ;;)
 	{
@@ -2816,19 +2804,16 @@ Exit:
 
 	pThread->setThreadStatus( FLM_THREAD_STATUS_TERMINATING);
 
-	if( pDbSystem)
-	{
-		pDbSystem->Release();
-	}
-
 	if( pDoc)
 	{
 		pDoc->Release();
+		pDoc = NULL;
 	}
 	
 	if( pNextDoc)
 	{
 		pNextDoc->Release();
+		pNextDoc = NULL;
 	}
 
 	if( bStartedTrans)

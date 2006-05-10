@@ -25,7 +25,6 @@
 
 #include "flaimsys.h"
 
-static F_DbSystem *			gv_pDbSystem = NULL;
 static FLMATOMIC				gv_lockCount = 0;
 
 FLMEXTC RCODE FLMAPI DllCanUnloadNow( void);
@@ -70,41 +69,12 @@ Desc:	Returns 0 if it's okay to unload, or a non-zero status
 ******************************************************************************/
 FLMEXTC RCODE FLMAPI DllCanUnloadNow( void)
 {
-	RCODE		rc = NE_XFLM_OK;
-
-	flmAssert( gv_pDbSystem);
-
 	if( gv_lockCount > 1)
 	{
-		rc = RC_SET( NE_XFLM_FAILURE);
-	}
-	else
-	{
-		flmAssert( gv_lockCount == 1);
-
-		f_mutexLock( gv_XFlmSysData.hShareMutex);
-
-		if (gv_XFlmSysData.pDatabaseHashTbl)
-		{
-			FBUCKET *   pDatabaseHashTbl;
-			FLMUINT		uiCnt;
-
-			for (uiCnt = 0, pDatabaseHashTbl = gv_XFlmSysData.pDatabaseHashTbl;
-				uiCnt < FILE_HASH_ENTRIES;
-				uiCnt++, pDatabaseHashTbl++)
-			{
-				if (pDatabaseHashTbl->pFirstInBucket != NULL)
-				{
-					rc = RC_SET( NE_XFLM_FAILURE);
-					break;
-				}
-			}
-		}
-
-		f_mutexUnlock( gv_XFlmSysData.hShareMutex);
+		return( RC_SET( NE_XFLM_FAILURE));
 	}
 
-	return( rc);
+	return( NE_XFLM_OK);
 }
 
 /******************************************************************************
@@ -113,31 +83,7 @@ Desc:	Called by PSA when it loads the library.  Must return 0 for
 ******************************************************************************/
 FLMEXTC RCODE FLMAPI DllStart( void)
 {
-	RCODE		rc = NE_XFLM_OK;
-	
-	if( (gv_pDbSystem = f_new F_DbSystem) == NULL)
-	{
-		rc = NE_XFLM_MEM;
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = gv_pDbSystem->init()))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	if( RC_BAD( rc))
-	{
-		if( gv_pDbSystem)
-		{
-			gv_pDbSystem->Release();
-			gv_pDbSystem = NULL;
-		}
-	}
-
-	return( rc);
+	return( NE_XFLM_OK);
 }
 
 /******************************************************************************
@@ -146,15 +92,6 @@ Desc:	Called by PSA when it unloads the library.  The return value
 ******************************************************************************/
 FLMEXTC RCODE FLMAPI DllStop( void)
 {
-	if( gv_pDbSystem)
-	{
-		flmAssert( gv_lockCount == 1);
-
-		gv_pDbSystem->exit();
-		gv_pDbSystem->Release();
-		gv_pDbSystem = NULL;
-	}
-
 	return( NE_XFLM_OK);
 }
 

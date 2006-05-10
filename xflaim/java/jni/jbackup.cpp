@@ -46,21 +46,21 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE XFLMAPI JNIBackupClient::WriteData(
+	RCODE FLMAPI JNIBackupClient::WriteData(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite);
 		
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_BackupClient::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_BackupClient::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_BackupClient::Release());
 	}
@@ -88,21 +88,21 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE XFLMAPI backupStatus(
+	RCODE FLMAPI backupStatus(
 		FLMUINT64	ui64BytesToDo,
 		FLMUINT64	ui64BytesDone);
 	
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_BackupStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_BackupStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_BackupStatus::Release());
 	}
@@ -140,13 +140,13 @@ RCODE JNIBackupClient::WriteData(
 	}
 	
 	Cls = pEnv->GetObjectClass( m_jClient);
-	MId = pEnv->GetMethodID( Cls, "WriteData", "([B)I");
+	MId = pEnv->GetMethodID( Cls, "writeData", "([B)I");
 	
 	flmAssert( MId);
 	
-	jBuff = pEnv->NewByteArray( uiBytesToWrite);
+	jBuff = pEnv->NewByteArray( (jsize)uiBytesToWrite);
 	pvBuff = pEnv->GetPrimitiveArrayCritical(jBuff, NULL);
-	memcpy(pvBuff, pvBuffer, uiBytesToWrite);
+	f_memcpy(pvBuff, pvBuffer, uiBytesToWrite);
 	pEnv->ReleasePrimitiveArrayCritical( jBuff, pvBuff, 0);
 	
 	if( RC_BAD( rc = (RCODE)pEnv->CallIntMethod( m_jClient, MId, jBuff)))
@@ -238,7 +238,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 	flmAssert( Client);
 	
 	pEnv->GetJavaVM( &pJvm);
-	if( (pClient = new JNIBackupClient( Client, pJvm)) == NULL)
+	if( (pClient = f_new JNIBackupClient( Client, pJvm)) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		ThrowError( rc, pEnv);
@@ -257,7 +257,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 	
 	if (Status)
 	{
-		if( (pStatus = new JNIBackupStatus( Status, pJvm)) == NULL)
+		if( (pStatus = f_new JNIBackupStatus( Status, pJvm)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			ThrowError( rc, pEnv);

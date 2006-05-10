@@ -693,7 +693,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getPrefix(
 		goto Exit;
 	}
 	
-	sPrefix = pEnv->NewString( puzPrefix, uiNumChars);
+	sPrefix = pEnv->NewString( puzPrefix, (jsize)uiNumChars);
 	
 Exit:
 
@@ -1015,7 +1015,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getNamespaceURI(
 		goto Exit;
 	}
 	
-	sNamespaceURI = pEnv->NewString( puzNamespaceURI, uiNumChars);
+	sNamespaceURI = pEnv->NewString( puzNamespaceURI, (jsize)uiNumChars);
 	
 Exit:
 
@@ -1070,7 +1070,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getLocalName(
 		goto Exit;
 	}
 	
-	sLocalName = pEnv->NewString( puzLocalName, uiNumChars);
+	sLocalName = pEnv->NewString( puzLocalName, (jsize)uiNumChars);
 	
 Exit:
 
@@ -1125,7 +1125,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getQualifiedName(
 		goto Exit;
 	}
 	
-	sLocalName = pEnv->NewString( puzQualName, uiNumChars);
+	sLocalName = pEnv->NewString( puzQualName, (jsize)uiNumChars);
 	
 Exit:
 
@@ -1229,7 +1229,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getString(
 		goto Exit;
 	}
 	
-	sBuf = pEnv->NewString( puzBuf, uiNumChars);	
+	sBuf = pEnv->NewString( puzBuf, (jsize)uiNumChars);	
 	
 Exit:
 
@@ -1288,7 +1288,7 @@ JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getDataType(
 	
 Exit:
 
-	return( uiType);
+	return( (jint)uiType);
 }
 	
 /****************************************************************************
@@ -1339,7 +1339,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary(
 		goto Exit;
 	}	
 
-	Data = pEnv->NewByteArray( uiLength);
+	Data = pEnv->NewByteArray( (jsize)uiLength);
 	
 	if ( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)
 	{

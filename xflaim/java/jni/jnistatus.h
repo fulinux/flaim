@@ -30,7 +30,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class JNIRenameStatus : public IF_DbRenameStatus, public XF_Base
+class JNIRenameStatus : public IF_DbRenameStatus
 {
 public:
 
@@ -44,21 +44,21 @@ public:
 		m_pJvm = pJvm;
 	}
 
-	RCODE XFLMAPI dbRenameStatus(
+	RCODE FLMAPI dbRenameStatus(
 		const char *	pszSrcFileName,
 		const char *	pszDstFileName);
 
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_DbRenameStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_DbRenameStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_DbRenameStatus::Release());
 	}
@@ -72,7 +72,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class JNICopyStatus : public IF_DbCopyStatus, public XF_Base
+class JNICopyStatus : public IF_DbCopyStatus
 {
 public:
 
@@ -86,24 +86,24 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE XFLMAPI dbCopyStatus(
+	RCODE FLMAPI dbCopyStatus(
 		FLMUINT64		ui64BytesToCopy,
 		FLMUINT64		ui64BytesCopied,
 		FLMBOOL			bNewSrcFile,
 		const char *	pszSrcFileName,
 		const char *	pszDestFileName);
 		
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_DbCopyStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_DbCopyStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_DbCopyStatus::Release());
 	}
@@ -117,7 +117,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class JNICheckStatus : public IF_DbCheckStatus, public XF_Base
+class JNICheckStatus : public IF_DbCheckStatus
 {
 public:
 
@@ -131,24 +131,24 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE XFLMAPI reportProgress(
+	RCODE FLMAPI reportProgress(
 		XFLM_PROGRESS_CHECK_INFO *	pProgCheck);
 
-	RCODE XFLMAPI reportCheckErr(
+	RCODE FLMAPI reportCheckErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo,
 		FLMBOOL *				pbFix);
 		
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_DbCheckStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_DbCheckStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_DbCheckStatus::Release());
 	}

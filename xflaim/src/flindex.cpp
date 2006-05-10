@@ -1020,17 +1020,16 @@ Desc:		Thread that will build an index in the background.
 FSTATIC RCODE flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread)
 {
-	RCODE				rc = NE_XFLM_OK;
-	F_BKGND_IX *	pBackgroundIx = (F_BKGND_IX *)pThread->getParm1();
-	F_Db *			pDb = NULL;
-	FLMBOOL			bForcedShutdown = FALSE;
-	FLMUINT			uiIndexNum;
-	char				szMsg [128];
-	FLMINT			iErrorLine = 0;
-	F_DbSystem		dbSystem;
+	RCODE					rc = NE_XFLM_OK;
+	F_BKGND_IX *		pBackgroundIx = (F_BKGND_IX *)pThread->getParm1();
+	F_Db *				pDb = NULL;
+	FLMBOOL				bForcedShutdown = FALSE;
+	FLMUINT				uiIndexNum;
+	char					szMsg [128];
+	FLMINT				iErrorLine = 0;
 
 	pThread->setThreadStatus( FLM_THREAD_STATUS_INITIALIZING);
-
+	
 Loop_Again:
 
 	rc = NE_XFLM_OK;
@@ -1047,7 +1046,7 @@ Loop_Again:
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = dbSystem.internalDbOpen( 
+	if( RC_BAD( rc = gv_pXFlmDbSystem->internalDbOpen( 
 		pBackgroundIx->pDatabase, &pDb)))
 	{
 
@@ -1119,7 +1118,7 @@ Exit:
 	pThread->setParm1( NULL);
 	f_mutexUnlock( gv_XFlmSysData.hShareMutex);
 	f_free( &pBackgroundIx);
-
+	
 	return( rc);
 }
 

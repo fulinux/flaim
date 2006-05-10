@@ -1125,7 +1125,6 @@ xflaim_jni_src = \
 util_common_src = \
 	flm_dlst.cpp \
 	flm_lutl.cpp \
-	ftx.cpp \
 	sharutil.cpp
 
 checkdb_src = \

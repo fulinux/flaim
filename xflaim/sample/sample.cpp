@@ -132,13 +132,6 @@ int main(
 		goto Exit;
 	}
 
-	// Initialize the database system
-
-	if( RC_BAD( rc = pDbSystem->init()))
-	{
-		goto Exit;
-	}
-
 	// Create the database.  This code will remove the database first if it
 	// exists.  Once removed, it will try to create it.  If that fails for
 	// any reason other than the database already exists, it will exit.
@@ -845,12 +838,10 @@ Exit:
 		printMessage( (char *)ucMsgBuf);
 	}
 
-	// Shut down the XFlaim database engine.  This call must be made
-	// even if the init call failed.  No more XFlaim calls should be made
-	// by the application.
-
-	pDbSystem->exit();
-	pDbSystem->Release();
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
 	return( 0);
 }

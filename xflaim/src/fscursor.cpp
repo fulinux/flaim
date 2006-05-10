@@ -124,7 +124,6 @@ Desc:	Allocate a result set for duplicate checking.
 RCODE FSIndexCursor::allocDupCheckSet( void)
 {
 	RCODE			rc = NE_XFLM_OK;
-	F_DbSystem	dbSystem;
 	char			szTmpDir [F_PATH_MAX_SIZE];
 
 	// If it is not a compound index, no need for a result set.
@@ -143,7 +142,7 @@ RCODE FSIndexCursor::allocDupCheckSet( void)
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
-	if (RC_BAD( rc = dbSystem.getTempDir( szTmpDir)))
+	if (RC_BAD( rc = gv_pXFlmDbSystem->getTempDir( szTmpDir)))
 	{
 		if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{

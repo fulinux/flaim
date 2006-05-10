@@ -342,7 +342,6 @@ RCODE F_DbRebuild::dbRebuild(
 	FLMUINT					uiPriorityCount;
 	FLMBOOL					bUsedDatabase = FALSE;
  	FLMBOOL					bWaited;
-	F_DbSystem				dbSystem;
 	FLMBYTE *				pucWrappingKey = NULL;
 	FLMUINT32				ui32KeyLen;
 	F_SEM						hWaitSem = F_SEM_NULL;
@@ -364,8 +363,8 @@ Retry:
 	// See if there is a database object for this file
 	// May unlock and re-lock the global mutex.
 	
-	if( RC_BAD( rc = dbSystem.findDatabase( pszSourceDbPath, pszSourceDataDir,
-		&pDatabase)))
+	if( RC_BAD( rc = gv_pXFlmDbSystem->findDatabase( 
+		pszSourceDbPath, pszSourceDataDir, &pDatabase)))
 	{
 		goto Exit;
 	}
@@ -509,7 +508,7 @@ Retry:
 			goto Exit;
 		}
 		else if( rc == NE_XFLM_NOT_FLAIM ||
-			!F_DbSystem::validBlockSize( m_dbHdr.ui16BlockSize))
+			!gv_pXFlmDbSystem->validBlockSize( m_dbHdr.ui16BlockSize))
 		{
 			FLMUINT	uiSaveBlockSize;
 			FLMUINT	uiCalcBlockSize;
@@ -606,7 +605,7 @@ Retry:
 
 	// Delete the destination database in case it already exists.
 
-	if( RC_BAD( rc = dbSystem.dbRemove( pszDestDbPath, pszDestDataDir,
+	if( RC_BAD( rc = gv_pXFlmDbSystem->dbRemove( pszDestDbPath, pszDestDataDir,
 		pszDestRflDir, TRUE)))
 	{
 		if( rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_FILENAME)
@@ -631,7 +630,7 @@ Retry:
 
 	// Create the destination database
 
-	if( RC_BAD( rc = dbSystem.dbCreate( pszDestDbPath, pszDestDataDir,
+	if( RC_BAD( rc = gv_pXFlmDbSystem->dbCreate( pszDestDbPath, pszDestDataDir,
 		pszDestRflDir, pszDictPath, NULL, pCreateOpts,
 		(IF_Db **)&m_pDb)))
 	{
@@ -685,7 +684,7 @@ Retry:
 		m_pDb->Release();
 		m_pDb = NULL;
 		
-		if( RC_BAD( rc = dbSystem.openDb( pszDestDbPath, pszDestDataDir,
+		if( RC_BAD( rc = gv_pXFlmDbSystem->openDb( pszDestDbPath, pszDestDataDir,
 			pszDestRflDir, pszPassword, 0, (IF_Db **)&m_pDb)))
 		{
 			goto Exit;

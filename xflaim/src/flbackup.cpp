@@ -1022,7 +1022,7 @@ RCODE F_DbSystem::dbRestore(
 
 	// Get the base path
 
-	getDbBasePath( (char *)szBasePath, pszDbPath, NULL);
+	flmGetDbBasePath( (char *)szBasePath, pszDbPath, NULL);
 
 	// Lock the global mutex
 

@@ -464,15 +464,13 @@ F_QueryResultSet::~F_QueryResultSet()
 	}
 	if (m_pResultSetDb)
 	{
-		F_DbSystem		dbSystem;
-		
 		if (m_pResultSetDb->getTransType() != XFLM_NO_TRANS)
 		{
 			m_pResultSetDb->transAbort();
 		}
 		m_pResultSetDb->Release();
 		m_pResultSetDb = NULL;
-		(void)dbSystem.dbRemove( m_szResultSetDibName, NULL, NULL, TRUE);
+		gv_pXFlmDbSystem->dbRemove( m_szResultSetDibName, NULL, NULL, TRUE);
 	}
 	
 	if (m_hMutex != F_MUTEX_NULL)
@@ -490,7 +488,6 @@ RCODE F_QueryResultSet::initResultSet(
 {
 	RCODE					rc = NE_XFLM_OK;
 	XFLM_CREATE_OPTS	createOpts;
-	F_DbSystem			dbSystem;
 	FLMUINT				uiNum = (FLMUINT)this;
 	
 	flmAssert( !m_pResultSetDb);
@@ -509,8 +506,9 @@ RCODE F_QueryResultSet::initResultSet(
 		// Generate a random file name
 		
 		f_sprintf( m_szResultSetDibName, "%x.db", (unsigned)uiNum);
-		if (RC_OK( rc = dbSystem.dbCreate( m_szResultSetDibName, NULL, NULL,
-								NULL, NULL, &createOpts, TRUE, (IF_Db **)&m_pResultSetDb)))
+		if (RC_OK( rc = gv_pXFlmDbSystem->dbCreate( m_szResultSetDibName, 
+			NULL, NULL, NULL, NULL, &createOpts, 
+			TRUE, (IF_Db **)&m_pResultSetDb)))
 		{
 			break;
 		}

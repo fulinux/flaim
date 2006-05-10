@@ -26,7 +26,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class JNIRestoreClient : public IF_RestoreClient, public XF_Base
+class JNIRestoreClient : public IF_RestoreClient
 {
 public:
 
@@ -40,34 +40,34 @@ public:
 		m_pJvm = pJvm;
 	}
 
-	RCODE XFLMAPI openBackupSet( void);
+	RCODE FLMAPI openBackupSet( void);
 
-	RCODE XFLMAPI openRflFile(
+	RCODE FLMAPI openRflFile(
 		FLMUINT			uiFileNum);
 
-	RCODE XFLMAPI openIncFile(
+	RCODE FLMAPI openIncFile(
 		FLMUINT			uiFileNum);
 
-	RCODE XFLMAPI read(
+	RCODE FLMAPI read(
 		FLMUINT			uiLength,
 		void *			pvBuffer,
 		FLMUINT *		puiBytesRead);
 
-	RCODE XFLMAPI close( void);
+	RCODE FLMAPI close( void);
 
-	RCODE XFLMAPI abortFile( void);
+	RCODE FLMAPI abortFile( void);
 	
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_RestoreClient::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_RestoreClient::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_RestoreClient::Release());
 	}
@@ -81,7 +81,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class JNIRestoreStatus : public IF_RestoreStatus, public XF_Base
+class JNIRestoreStatus : public IF_RestoreStatus
 {
 public:
 
@@ -95,37 +95,37 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE XFLMAPI reportProgress(
+	RCODE FLMAPI reportProgress(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64BytesToDo,
 		FLMUINT64			ui64BytesDone);
 
-	RCODE XFLMAPI reportError(
+	RCODE FLMAPI reportError(
 		eRestoreAction *	peAction,
 		RCODE					rcErr);
 
-	RCODE XFLMAPI reportOpenRflFile(
+	RCODE FLMAPI reportOpenRflFile(
 		eRestoreAction *	peAction,
 		FLMUINT				uiFileNum);
 
-	RCODE XFLMAPI reportRflRead(
+	RCODE FLMAPI reportRflRead(
 		eRestoreAction *	peAction,
 		FLMUINT				uiFileNum,
 		FLMUINT				uiBytesRead);
 
-	RCODE XFLMAPI reportBeginTrans(
+	RCODE FLMAPI reportBeginTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportCommitTrans(
+	RCODE FLMAPI reportCommitTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportAbortTrans(
+	RCODE FLMAPI reportAbortTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportBlockChainFree(
+	RCODE FLMAPI reportBlockChainFree(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT64			ui64MaintDocNum,
@@ -133,66 +133,66 @@ public:
 		FLMUINT				uiEndBlkAddr,
 		FLMUINT				uiCount);
 
-	RCODE XFLMAPI reportIndexSuspend(
+	RCODE FLMAPI reportIndexSuspend(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiIndexNum);
 
-	RCODE XFLMAPI reportIndexResume(
+	RCODE FLMAPI reportIndexResume(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiIndexNum);
 
-	RCODE XFLMAPI reportReduce(
+	RCODE FLMAPI reportReduce(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCount);
 
-	RCODE XFLMAPI reportUpgrade(
+	RCODE FLMAPI reportUpgrade(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiOldDbVersion,
 		FLMUINT				uiNewDbVersion);
 
-	RCODE XFLMAPI reportEnableEncryption(
+	RCODE FLMAPI reportEnableEncryption(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE XFLMAPI reportWrapKey(
+	RCODE FLMAPI reportWrapKey(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 		
-	RCODE XFLMAPI reportRollOverDbKey(
+	RCODE FLMAPI reportRollOverDbKey(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 		
-	RCODE XFLMAPI reportDocumentDone(
+	RCODE FLMAPI reportDocumentDone(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NodeId);
 		
-	RCODE XFLMAPI reportNodeDelete(
+	RCODE FLMAPI reportNodeDelete(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NodeId);
 		
-	RCODE XFLMAPI reportAttributeDelete(
+	RCODE FLMAPI reportAttributeDelete(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64ElementId,
 		FLMUINT				uiAttrNameId);
 			
-	RCODE XFLMAPI reportNodeChildrenDelete(
+	RCODE FLMAPI reportNodeChildrenDelete(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NodeId,
 		FLMUINT				uiNameId);
 		
-	RCODE XFLMAPI reportNodeCreate(
+	RCODE FLMAPI reportNodeCreate(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
@@ -201,7 +201,7 @@ public:
 		FLMUINT				uiNameId,
 		eNodeInsertLoc		eLocation);
 		
-	RCODE XFLMAPI reportInsertBefore(
+	RCODE FLMAPI reportInsertBefore(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
@@ -209,26 +209,26 @@ public:
 		FLMUINT64			ui64NewChildId,
 		FLMUINT64			ui64RefChildId);
 		
-	RCODE XFLMAPI reportNodeUpdate(
+	RCODE FLMAPI reportNodeUpdate(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NodeId);
 		
-	RCODE XFLMAPI reportNodeSetValue(
+	RCODE FLMAPI reportNodeSetValue(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NodeId);
 		
-	RCODE XFLMAPI reportAttributeSetValue(
+	RCODE FLMAPI reportAttributeSetValue(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64ElementNodeId,
 		FLMUINT				uiAttrNameId);
 		
-	RCODE XFLMAPI reportNodeFlagsUpdate(
+	RCODE FLMAPI reportNodeFlagsUpdate(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
@@ -236,7 +236,7 @@ public:
 		FLMUINT				uiFlags,
 		FLMBOOL				bAdd);
 		
-	RCODE XFLMAPI reportNodeSetPrefixId(
+	RCODE FLMAPI reportNodeSetPrefixId(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
@@ -244,30 +244,30 @@ public:
 		FLMUINT				uiAttrNameId,
 		FLMUINT				uiPrefixId);
 			
-	RCODE XFLMAPI reportNodeSetMetaValue(
+	RCODE FLMAPI reportNodeSetMetaValue(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NodeId,
 		FLMUINT64			ui64MetaValue);
 		
-	RCODE XFLMAPI reportSetNextNodeId(
+	RCODE FLMAPI reportSetNextNodeId(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId,
 		FLMUINT				uiCollection,
 		FLMUINT64			ui64NextNodeId);
 
-	FINLINE FLMUINT getRefCount( void)
+	FINLINE FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_RestoreStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI AddRef( void)
+	virtual FINLINE FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_RestoreStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT XFLMAPI Release( void)
+	virtual FINLINE FLMINT FLMAPI Release( void)
 	{
 		return( IF_RestoreStatus::Release());
 	}

@@ -39,46 +39,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createDbSystem(
 	JNIEnv *				pEnv,
 	jobject)				// obj)
 {
-	F_DbSystem * pDbSystem;
+	IF_DbSystem * 		pDbSystem;
 	
-	if( (pDbSystem = new F_DbSystem()) == NULL)
+	if( RC_BAD( FlmAllocDbSystem( &pDbSystem)))
 	{
 		ThrowError( NE_XFLM_MEM, pEnv);
 	}
 	
 	return( (jlong)(FLMUINT)pDbSystem);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1init(
-	JNIEnv * 			pEnv,
-	jobject,				// obj,
-	jlong					lThis)
-{
-	RCODE					rc = NE_XFLM_OK;
-
-	if (RC_BAD( rc = THIS_DBSYS()->init()))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-	
-Exit:
-
-	return;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1exit(
-	JNIEnv *,			// pEnv,
-	jobject,				// obj,
-	jlong					lThis)
-{
-	THIS_DBSYS()->exit();
 }
 
 /****************************************************************************
@@ -361,7 +329,7 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 	}
 	
 	flmAssert( RestoreClient);
-	if ((pRestoreClient = new JNIRestoreClient( RestoreClient, pJvm)) == NULL)
+	if ((pRestoreClient = f_new JNIRestoreClient( RestoreClient, pJvm)) == NULL)
 	{
 		ThrowError( NE_XFLM_MEM, pEnv);
 		goto Exit;
@@ -369,7 +337,7 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 	
 	if (RestoreStatus != NULL)
 	{
-		if ((pRestoreStatus = new JNIRestoreStatus( RestoreStatus, pJvm)) == NULL)
+		if ((pRestoreStatus = f_new JNIRestoreStatus( RestoreStatus, pJvm)) == NULL)
 		{
 			ThrowError( NE_XFLM_MEM, pEnv);
 			goto Exit;
@@ -458,7 +426,7 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRename(
 	if (Status != NULL)
 	{
 		pEnv->GetJavaVM( &pJvm);
-		if ((pStatus = new JNIRenameStatus( Status, pJvm)) == NULL)
+		if ((pStatus = f_new JNIRenameStatus( Status, pJvm)) == NULL)
 		{
 			ThrowError( NE_XFLM_MEM, pEnv);
 			goto Exit;	
@@ -547,7 +515,7 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy(
 	if (Status)
 	{
 		pEnv->GetJavaVM( &pJvm);
-		if ( (pStatus = new JNICopyStatus( Status, pJvm)) == NULL)
+		if ( (pStatus = f_new JNICopyStatus( Status, pJvm)) == NULL)
 		{
 			ThrowError( NE_XFLM_MEM, pEnv);
 			goto Exit;
@@ -639,7 +607,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCheck(
 		
 		pEnv->GetJavaVM( &pJvm);
 		
-		if ((pStatus = new JNICheckStatus( Status, pJvm)) == NULL)
+		if ((pStatus = f_new JNICheckStatus( Status, pJvm)) == NULL)
 		{
 			ThrowError( NE_XFLM_MEM, pEnv);
 			goto Exit;

@@ -48,8 +48,9 @@
 	#define FLM_MAX_CACHE_SIZE			(~((FLMUINT)0))
 #endif
 
-FLMATOMIC			F_DbSystem::m_flmSysSpinLock = 0;
-FLMUINT				F_DbSystem::m_uiFlmSysStartupCount = 0;
+static FLMATOMIC		gv_flmSysSpinLock = 0;
+static FLMBOOL			gv_bFlmStarted = FALSE;
+static FLMBOOL			gv_bToolkitStarted = FALSE;
 
 FSTATIC RCODE flmGetCacheBytes(
 	FLMUINT			uiPercent,
@@ -82,6 +83,10 @@ FSTATIC void flmGetUintParam(
 	FLMUINT *		puiUint,
 	IF_IniFile *	pIniFile);
 
+FSTATIC void lockSysData( void);
+
+FSTATIC void unlockSysData( void);
+	
 void flmGetBoolParam(
 	const char *	pszParamName,
 	FLMBOOL			uiDefaultValue,
@@ -91,8 +96,6 @@ void flmGetBoolParam(
 FSTATIC RCODE flmGetIniFileName(
 	FLMBYTE *		pszIniFileName,
 	FLMUINT			uiBufferSz);
-
-FLMBOOL		gv_bToolkitStarted = FALSE;
 
 /****************************************************************************
 Desc: This routine allocates and initializes a hash table.
@@ -1589,11 +1592,9 @@ Desc:	Lock the system data structure for access - called only by startup
 		and shutdown.  NOTE: On platforms that do not support atomic exchange
 		this is less than perfect - won't handle tight race conditions.
 ***************************************************************************/
-void F_DbSystem::lockSysData( void)
+void lockSysData( void)
 {
-	// Obtain the spin lock
-
-	while( f_atomicExchange( &m_flmSysSpinLock, 1) == 1)
+	while( f_atomicExchange( &gv_flmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
@@ -1603,9 +1604,9 @@ void F_DbSystem::lockSysData( void)
 Desc:	Unlock the system data structure for access - called only by startup
 		and shutdown.
 ***************************************************************************/
-void F_DbSystem::unlockSysData( void)
+void unlockSysData( void)
 {
-	(void)f_atomicExchange( &m_flmSysSpinLock, 0);
+	(void)f_atomicExchange( &gv_flmSysSpinLock, 0);
 }
 
 /****************************************************************************
@@ -1793,6 +1794,26 @@ Exit:
 }
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+F_DbSystem::F_DbSystem() 
+{
+	m_refCnt = 1;
+	LockModule();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_DbSystem::~F_DbSystem()
+{
+	lockSysData();
+	cleanup();
+	unlockSysData();
+	UnlockModule();
+}
+	
+/****************************************************************************
 Desc : Startup the database engine.
 Notes: This routine may be called multiple times.  However, if that is done
 		 exit() should be called for each time this is called successfully.
@@ -1807,16 +1828,10 @@ RCODE F_DbSystem::init( void)
 	int				iHandle;
 #endif
 
-	lockSysData();
+	flmAssert( !gv_bFlmStarted);
 
-	// See if FLAIM has already been started.  If so,
-	// we are done.
+	// Start the toolkit
 
-	if (++m_uiFlmSysStartupCount > 1)
-	{
-		goto Exit;
-	}
-	
 	if( RC_BAD( rc = ftkStartup()))
 	{
 		goto Exit;
@@ -1827,7 +1842,7 @@ RCODE F_DbSystem::init( void)
 
 	f_memset( &gv_XFlmSysData, 0, sizeof( FLMSYSDATA));
 	gv_XFlmSysData.uiMaxFileSize = f_getMaxFileSize();
-
+	
 	// Get the thread manager
 
 	if( RC_BAD( rc = FlmGetThreadMgr( &gv_XFlmSysData.pThreadMgr)))
@@ -2085,22 +2100,7 @@ Exit:
 		cleanup();
 	}
 
-	unlockSysData();
 	return( rc);
-}
-
-/****************************************************************************
-Desc:		Shuts the database engine down.
-Notes:	This routine allows itself to be called multiple times, even before
-			init() is called or if  init() fails.  May not handle race
-			conditions very well on platforms that do not support atomic
-			exchange.
-****************************************************************************/
-void F_DbSystem::exit( void)
-{
-	lockSysData();
-	cleanup();
-	unlockSysData();
 }
 
 /************************************************************************
@@ -2112,30 +2112,10 @@ void F_DbSystem::cleanup( void)
 {
 	FLMUINT		uiCnt;
 	FLMINT		iEventCategory;
-
-	// NOTE: We are checking and decrementing a global variable here.
-	// However, on platforms that properly support atomic exchange,
-	// we are OK, because the caller has obtained a spin lock before
-	// calling this routine, so we are guaranteed to be the only thread
-	// executing this code at this point.  On platforms that don't
-	// support atomic exchange, our spin lock will be less reliable for
-	// really tight race conditions.  But in reality, nobody should be
-	// calling FlmStartup and FlmShutdown in race conditions like that
-	// anyway.  We are only doing the spin lock stuff to try and be
-	// nice about it if they are.
-
-	// This check allows FlmShutdown to be called before calling
-	// FlmStartup, or even if FlmStartup fails.
-
-	if (!m_uiFlmSysStartupCount)
-	{
-		return;
-	}
-
-	// If we decrement the count and it doesn't go to zero, we are not
-	// ready to do cleanup yet.
-
-	if (--m_uiFlmSysStartupCount > 0)
+	
+	// If the toolkit wasn't started, nothing was done in XFLAIM
+	
+	if( !gv_bToolkitStarted)
 	{
 		return;
 	}
@@ -2395,6 +2375,8 @@ void F_DbSystem::cleanup( void)
 		ftkShutdown();
 		gv_bToolkitStarted = FALSE;
 	}
+	
+	gv_bFlmStarted = FALSE;
 }
 
 /****************************************************************************
@@ -3251,14 +3233,11 @@ Desc:		Increment the database system use count
 ****************************************************************************/
 FLMINT FLMAPI F_DbSystem::AddRef(void)
 {
-	FLMINT		iRefCnt = f_atomicInc( &m_refCnt);
-
-	// Note: We don't bother with a call to LockModule() here because
-	// it's done in the constructor.  In fact, it's unlikely that
-	// this AddRef() will ever be called, because the constructor
-	// already sets the ref count to 1 and it's unlikely that there
-	// will be to references to the same DbSystem object...
-
+	FLMINT		iRefCnt;
+	
+	iRefCnt = f_atomicInc( &m_refCnt);
+	LockModule();
+	
 	return( iRefCnt);
 }
 
@@ -3267,13 +3246,16 @@ Desc:		Decrement the database system use count
 ****************************************************************************/
 FLMINT FLMAPI F_DbSystem::Release(void)
 {
-	FLMINT	iRefCnt = f_atomicDec( &m_refCnt);
+	FLMINT	iRefCnt;
+	
+	iRefCnt = f_atomicDec( &m_refCnt);
 
 	if (iRefCnt == 0)
 	{
 		delete this;	
 	}
 
+	UnlockModule();
 	return( iRefCnt);
 }
 
@@ -3283,14 +3265,41 @@ Desc:	Allocates an F_DbSystem object for non-COM applications
 FLMEXP RCODE FLMAPI FlmAllocDbSystem(
 	IF_DbSystem **			ppDbSystem)
 {
+	RCODE						rc = NE_XFLM_OK;
+	F_DbSystem *			pDbSystem = NULL;
+	
 	flmAssert( ppDbSystem && *ppDbSystem == NULL);
-
-	if( (*ppDbSystem = f_new F_DbSystem) == NULL)
+	lockSysData();
+	
+	if( !gv_pXFlmDbSystem)
 	{
-		return( RC_SET( NE_XFLM_MEM));
+		if( (pDbSystem = f_new F_DbSystem) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pDbSystem->init()))
+		{
+			goto Exit;
+		}
+		
+		gv_pXFlmDbSystem = pDbSystem;
+		pDbSystem = NULL;
 	}
+	
+	*ppDbSystem = gv_pXFlmDbSystem;
+	(*ppDbSystem)->AddRef();
+	
+Exit:
 
-	return( NE_XFLM_OK);
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
+	
+	unlockSysData();
+	return( rc);
 }
 
 /****************************************************************************

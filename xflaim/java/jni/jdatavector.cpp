@@ -503,7 +503,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DataVector__1getString(
 		goto Exit;
 	}
 	
-	sBuf = pEnv->NewString( puzBuf, uiBufSize / sizeof( FLMUNICODE));
+	sBuf = pEnv->NewString( puzBuf, (jsize)(uiBufSize / sizeof( FLMUNICODE)));
 	
 Exit:
 
@@ -532,7 +532,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1getBinary(
 	FLMBOOL			bMustRelease = false;
 	
 	uiLength = THIS_VECTOR()->getDataLength( (FLMUINT)iElementNumber);
-	Data = pEnv->NewByteArray( uiLength);
+	Data = pEnv->NewByteArray( (jsize)uiLength);
 	
 	if ( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)
 	{
@@ -589,7 +589,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputKey(
 	FLMBOOL			bMustRelease = false;
 	
 	uiLength = XFLM_MAX_KEY_SIZE;
-	Key = pEnv->NewByteArray( uiLength);
+	Key = pEnv->NewByteArray( (jsize)uiLength);
 	
 	if( (pvKey = pEnv->GetPrimitiveArrayCritical( Key, &bIsCopy)) == NULL)
 	{
@@ -646,7 +646,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputData(
 	FLMBOOL			bMustRelease = false;
 	
 	uiLength = XFLM_MAX_KEY_SIZE;
-	Data = pEnv->NewByteArray( uiLength);
+	Data = pEnv->NewByteArray( (jsize)uiLength);
 	
 	if ( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)
 	{

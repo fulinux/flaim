@@ -311,7 +311,7 @@ Exit:
 	}
 	
 	pEnv->ReleaseStringCritical( sElementName, pszElementName);
-	return( (jlong)uiNameId);
+	return( (jint)uiNameId);
 }
 
 /****************************************************************************

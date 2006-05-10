@@ -1180,7 +1180,6 @@ RCODE F_DbCheck::verifyBTrees(
 	char								szTmpIoPath [F_PATH_MAX_SIZE];
 	char								szBaseName [F_FILENAME_SIZE];
 	F_NodeVerifier *				pNodeVerifier = NULL;
-	F_DbSystem						dbSystem;
 	F_BLK_HDR *						pBlkHdr = NULL;
 	F_CachedBlock *				pSCache = NULL;
 	
@@ -1197,7 +1196,7 @@ RCODE F_DbCheck::verifyBTrees(
 	// szTmpIoPath is the directory where the result sets containing
 	// node data will be stored.
 	
-	if (RC_BAD( rc = dbSystem.getTempDir( szTmpIoPath)))
+	if (RC_BAD( rc = gv_pXFlmDbSystem->getTempDir( szTmpIoPath)))
 	{
 		if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
 			 rc == NE_FLM_IO_INVALID_FILENAME)

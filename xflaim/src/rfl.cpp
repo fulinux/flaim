@@ -437,11 +437,10 @@ RCODE rflGetDirAndPrefix(
 	const char *	pszRflDirIn,
 	char *			pszRflDirOut)
 {
-	RCODE			rc = NE_XFLM_OK;
-	char			szDbPath [F_PATH_MAX_SIZE];
-	char			szBaseName [F_FILENAME_SIZE];
-	char			szPrefix [F_FILENAME_SIZE];
-	F_DbSystem	dbSystem;
+	RCODE				rc = NE_XFLM_OK;
+	char				szDbPath [F_PATH_MAX_SIZE];
+	char				szBaseName [F_FILENAME_SIZE];
+	char				szPrefix [F_FILENAME_SIZE];
 
 	// Parse the database name into directory and base name
 
@@ -453,7 +452,7 @@ RCODE rflGetDirAndPrefix(
 
 	// Get the base path
 
-	F_DbSystem::getDbBasePath( szPrefix, szBaseName, NULL);
+	flmGetDbBasePath( szPrefix, szBaseName, NULL);
 
 	// Determine the RFL directory.  If one was
 	// specified, it is whatever was specified.

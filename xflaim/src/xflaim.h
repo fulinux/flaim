@@ -1273,30 +1273,12 @@
 	 * intermittently or throughout the life of the database system.  The class id for
 	 * this interface is CLSID_F_DbSystemFactory and the interface id is IID_IF_DbSystem.
 	 */
-	flminterface IF_DbSystem : public F_Object
+	flminterface IF_DbSystem : public IF_Object
 	{
-		/**
-		 * @brief Initializes the database system object.
-		 *
-		 * The init method is used to startup the database system engine. This routine may
-		 * be called multiple times within the same process space.  For each time the init
-		 * method is called, there must be a corresponding call to exit.  The database engine
-		 * will only shut down on the last call to exit.
-		 */
-		virtual RCODE FLMAPI init( void) = 0;
-
 		virtual RCODE FLMAPI updateIniFile(
 			const char *	pszParamName,
 			const char *	pszValue) = 0;
 		
-		/**
-		 * @brief Shuts down the database system and closes any open databases.
-		 *
-		 * The exit method is used to shutdown the database system engine. This routine allows
-		 * itself to be called multiple times, even before init is called or if the call to init fails.
-		 */
-		virtual void FLMAPI exit() = 0;
-
 		/**
 		 * @brief Return an IF_FileSystem object for performing file system operations.
 		 *
@@ -2480,11 +2462,6 @@
 		XFLM_EXPORT_INDENT =				0x02,		// Indent Elements
 		XFLM_EXPORT_INDENT_DATA =		0x03		// Indent Data - this changes the data
 	} eExportFormatType;
-
-	/* --------------------------------------------------------------------
-	 * An alternative way to get a DbSystem object when not
-	 * using COM.
-	 * -------------------------------------------------------------------- */
 
 	FLMEXP RCODE FLMAPI FlmAllocDbSystem(
 		IF_DbSystem **				ppDbSystem);
