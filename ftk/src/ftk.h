@@ -23,6 +23,8 @@
 // $Id$
 //------------------------------------------------------------------------------
 
+/// \file
+
 #ifndef FTK_H
 #define FTK_H
 
@@ -497,37 +499,41 @@
 	/****************************************************************************
 	Desc:	Comparison flags for strings
 	****************************************************************************/
-	#define FLM_COMP_CASE_INSENSITIVE			0x0001
-	#define FLM_COMP_COMPRESS_WHITESPACE		0x0002
-	#define FLM_COMP_NO_WHITESPACE				0x0004
-	#define FLM_COMP_NO_UNDERSCORES				0x0008
-	#define FLM_COMP_NO_DASHES						0x0010
-	#define FLM_COMP_WHITESPACE_AS_SPACE		0x0020
-	#define FLM_COMP_IGNORE_LEADING_SPACE		0x0040
-	#define FLM_COMP_IGNORE_TRAILING_SPACE		0x0080
+	/// \addtogroup compare_rules
+	/// @{
+	#define FLM_COMP_CASE_INSENSITIVE			0x0001		///< 0x0001 = Do case sensitive comparison.
+	#define FLM_COMP_COMPRESS_WHITESPACE		0x0002		///< 0x0002 = Compare multiple whitespace characters as a single space.
+	#define FLM_COMP_NO_WHITESPACE				0x0004		///< 0x0004 = Ignore all whitespace during comparison.
+	#define FLM_COMP_NO_UNDERSCORES				0x0008		///< 0x0008 = Ignore all underscore characters during comparison.
+	#define FLM_COMP_NO_DASHES						0x0010		///< 0x0010 = Ignore all dash characters during comparison.
+	#define FLM_COMP_WHITESPACE_AS_SPACE		0x0020		///< 0x0020 = Treat newlines and tabs as spaces during comparison.
+	#define FLM_COMP_IGNORE_LEADING_SPACE		0x0040		///< 0x0040 = Ignore leading space characters during comparison.
+	#define FLM_COMP_IGNORE_TRAILING_SPACE		0x0080		///< 0x0080 = Ignore trailing space characters during comparison.
+	/// @}
 
 	/****************************************************************************
 	Desc:	Colors
 	****************************************************************************/
+	/// Colors used for logging messages
 	typedef enum
 	{
-		FLM_CURRENT_COLOR,
-		FLM_BLACK,
-		FLM_BLUE,
-		FLM_GREEN,
-		FLM_CYAN,
-		FLM_RED,
-		FLM_PURPLE,
-		FLM_BROWN,
-		FLM_LIGHTGRAY,
-		FLM_DARKGRAY,
-		FLM_LIGHTBLUE,
-		FLM_LIGHTGREEN,
-		FLM_LIGHTCYAN,
-		FLM_LIGHTRED,
-		FLM_LIGHTPURPLE,
-		FLM_YELLOW,
-		FLM_WHITE,
+		FLM_CURRENT_COLOR = 0,
+		FLM_BLACK,						///< 1 = Black
+		FLM_BLUE,						///< 2 = Blue
+		FLM_GREEN,						///< 3 = Green
+		FLM_CYAN,						///< 4 = Cyan
+		FLM_RED,							///< 5 = Red
+		FLM_PURPLE,						///< 6 = Purple
+		FLM_BROWN,						///< 7 = Brown
+		FLM_LIGHTGRAY,					///< 8 = Light Gray
+		FLM_DARKGRAY,					///< 9 = Dark Gray
+		FLM_LIGHTBLUE,					///< 10 = Light Blue
+		FLM_LIGHTGREEN,				///< 11 = Light Green
+		FLM_LIGHTCYAN,					///< 12 = Light Cyan
+		FLM_LIGHTRED,					///< 13 = Light Red
+		FLM_LIGHTPURPLE,				///< 14 = Light Purple
+		FLM_YELLOW,						///< 15 = Light Yellow
+		FLM_WHITE,						///< 16 = White
 		FLM_NUM_COLORS
 	} eColorType;
 	
@@ -561,12 +567,13 @@
 	/****************************************************************************
 	Desc:	Slab stats
 	****************************************************************************/
+	/// Structure for reporting slab usage information in cache.
 	typedef struct
 	{
-		FLMUINT64			ui64Slabs;
-		FLMUINT64			ui64SlabBytes;
-		FLMUINT64			ui64AllocatedCells;
-		FLMUINT64			ui64FreeCells;
+		FLMUINT64			ui64Slabs;						///< Total slabs currently allocated.
+		FLMUINT64			ui64SlabBytes;					///< Total bytes currently allocated in slabs.
+		FLMUINT64			ui64AllocatedCells;			///< Total cells allocated within slabs.
+		FLMUINT64			ui64FreeCells;					///< Total cells that are free within slabs.
 	} FLM_SLAB_USAGE;
 
 	/****************************************************************************
