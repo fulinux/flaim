@@ -1906,13 +1906,17 @@
 		FLMBYTE *					pszSerialNumber);
 
 	/****************************************************************************
-	Desc: CRC
+	Desc: Checksum
 	****************************************************************************/
 	void FLMAPI f_updateCRC(
 		const void *				pvBuffer,
-		FLMUINT						uiCount,
+		FLMUINT						uiLength,
 		FLMUINT32 *					pui32CRC);
 		
+	FLMUINT32 FLMAPI f_calcFastChecksum(
+		const void *				pvBuffer,
+		FLMUINT						uiLength);
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/

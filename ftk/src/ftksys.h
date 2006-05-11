@@ -2282,6 +2282,12 @@
 	
 	void f_memoryCleanup( void);
 	
+	void f_initFastCheckSum( void);
+	
+	RCODE f_initCRCTable( void);
+
+	void f_freeCRCTable( void);
+	
 	RCODE f_allocFileSystem(
 		IF_FileSystem **	ppFileSystem);
 		

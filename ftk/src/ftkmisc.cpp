@@ -29,7 +29,6 @@ static FLMUINT						gv_uiStartupCount = 0;
 static FLMUINT						gv_uiRandomGenInitCount = 0;
 static F_MUTEX						gv_hRandomGenMutex = F_MUTEX_NULL;
 static IF_RandomGenerator *	gv_pRandomGenerator = NULL;
-static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 static IF_ThreadMgr *			gv_pThreadMgr = NULL;
 static IF_FileSystem *			gv_pFileSystem = NULL;
 static FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
@@ -38,9 +37,6 @@ static F_XML *						gv_pXml = NULL;
 FSTATIC RCODE f_initRandomGenerator( void);
 
 FSTATIC void f_freeRandomGenerator( void);
-
-FSTATIC RCODE f_initCRCTable(
-	FLMUINT32 **	ppui32CRCTbl);
 
 #ifdef FLM_AIX
 	#ifndef nsleep
@@ -125,10 +121,12 @@ RCODE FLMAPI ftkStartup( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = f_initCRCTable( &gv_pui32CRCTbl)))
+	if( RC_BAD( rc = f_initCRCTable()))
 	{
 		goto Exit;
 	}
+	
+	f_initFastCheckSum();
 	
 	if( (gv_pXml = f_new F_XML) == NULL)
 	{
@@ -198,10 +196,7 @@ void FLMAPI ftkShutdown( void)
 		gv_pFileSystem = NULL;
 	}
 	
-	if( gv_pui32CRCTbl)
-	{
-		f_free( &gv_pui32CRCTbl);
-	}
+	f_freeCRCTable();
 	
 	if( gv_pXml)
 	{
@@ -384,92 +379,6 @@ Exit:
 #endif
 
 	return( rc);
-}
-
-/****************************************************************************
-Desc: Generates a table of remainders for each 8-bit byte.  The resulting
-		table is used by f_updateCRC to calculate a CRC value.  The table
-		must be freed via a call to f_free.
-*****************************************************************************/
-FSTATIC RCODE f_initCRCTable(
-	FLMUINT32 **	ppui32CRCTbl)
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMUINT32 *		pTable;
-	FLMUINT32		ui32Val;
-	FLMUINT32		ui32Loop;
-	FLMUINT32		ui32SubLoop;
-
-	// Use the standard degree-32 polynomial used by
-	// Ethernet, PKZIP, etc. for computing the CRC of
-	// a data stream.  This is the little-endian
-	// representation of the polynomial.  The big-endian
-	// representation is 0x04C11DB7.
-
-#define CRC_POLYNOMIAL		((FLMUINT32)0xEDB88320)
-
-	*ppui32CRCTbl = NULL;
-
-	if( RC_BAD( rc = f_alloc( 256 * sizeof( FLMUINT32), &pTable)))
-	{
-		goto Exit;
-	}
-
-	for( ui32Loop = 0; ui32Loop < 256; ui32Loop++)
-	{
-		ui32Val = ui32Loop;
-		for( ui32SubLoop = 0; ui32SubLoop < 8; ui32SubLoop++)
-		{
-			if( ui32Val & 0x00000001)
-			{
-				ui32Val = CRC_POLYNOMIAL ^ (ui32Val >> 1);
-			}
-			else
-			{
-				ui32Val >>= 1;
-			}
-		}
-
-		pTable[ ui32Loop] = ui32Val;
-	}
-
-	*ppui32CRCTbl = pTable;
-	pTable = NULL;
-
-Exit:
-
-	if( pTable)
-	{
-		f_free( &pTable);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc: Computes the CRC of the passed-in data buffer.  Multiple calls can
-		be made to this routine to build a CRC over multiple data buffers.
-		On the first call, *pui32CRC must be initialized to something
-		(0, etc.).  For generating CRCs that are compatible with PKZIP,
-		*pui32CRC should be initialized to 0xFFFFFFFF and the ones complement
-		of the resulting CRC should be computed.
-*****************************************************************************/
-void FLMAPI f_updateCRC(
-	const void *		pvBuffer,
-	FLMUINT				uiCount,
-	FLMUINT32 *			pui32CRC)
-{
-	FLMBYTE *			pucBuffer = (FLMBYTE *)pvBuffer;
-	FLMUINT32			ui32CRC = *pui32CRC;
-	FLMUINT				uiLoop;
-
-	for( uiLoop = 0; uiLoop < uiCount; uiLoop++)
-	{
-		ui32CRC = (ui32CRC >> 8) ^ gv_pui32CRCTbl[
-			((FLMBYTE)(ui32CRC & 0x000000FF)) ^ pucBuffer[ uiLoop]];
-	}
-
-	*pui32CRC = ui32CRC;
 }
 
 /****************************************************************************
