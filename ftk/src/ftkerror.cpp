@@ -126,6 +126,76 @@ RCODE FLMAPI f_mapPlatformError(
 /***************************************************************************
 Desc:
 ***************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+RCODE FLMAPI f_mapPlatformError(
+	FLMINT	iErrCode,
+	RCODE		defaultRc)
+{
+	RCODE		rc;
+	
+	switch (iErrCode)
+	{
+		case 128: // ERR_LOCK_FAIL
+		case 147: // ERR_NO_READ_PRIVILEGE
+		case 148: // ERR_NO_WRITE_PRIVILEGE
+		case 168: // ERR_ACCESS_DENIED
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
+			break;
+
+		case 136: //ERR_INVALID_FILE_HANDLE
+			rc = RC_SET( NE_FLM_IO_BAD_FILE_HANDLE);
+			break;
+
+		case 001: //ERR_INSUFFICIENT_SPACE
+		case 153: //ERR_DIRECTORY_FULL
+			rc = RC_SET( NE_FLM_IO_DISK_FULL);
+			break;
+
+		case 130: //ERR_NO_OPEN_PRIVILEGE
+		case 165: //ERR_INVALID_OPENCREATE_MODE
+			rc = RC_SET( NE_FLM_IO_OPEN_ERR);
+			break;
+
+		case 156: //ERR_INVALID_PATH
+		case 158: //ERR_BAD_FILE_NAME
+			rc = RC_SET( NE_FLM_IO_PATH_NOT_FOUND);
+			break;
+
+		case 129: //ERR_OUT_OF_HANDLES
+			rc = RC_SET( NE_FLM_IO_TOO_MANY_OPEN_FILES);
+			break;
+
+		case 139: //ERR_NO_RENAME_PRIVILEGE
+		case 154: //ERR_RENAME_ACROSS_VOLUME
+		case 164: //ERR_RENAME_DIR_INVALID
+			rc = RC_SET( NE_FLM_IO_RENAME_FAILURE);
+			break;
+
+		case 222: //ERR_BAD_PASSWORD
+		case 223: //ERR_PASSWORD_EXPIRED
+			rc = RC_SET( NE_FLM_IO_INVALID_PASSWORD);
+			break;
+
+		case 122: //ERR_CONNECTION_ALREADY_TEMPORARY
+		case 123: //ERR_CONNECTION_ALREADY_LOGGED_IN
+		case 124: //ERR_CONNECTION_NOT_AUTHENTICATED
+		case 125: //ERR_CONNECTION_NOT_LOGGED_IN
+		case 224: //ERR_NO_LOGIN_CONNECTIONS_AVAILABLE
+			rc = RC_SET( NE_FLM_IO_CONNECT_ERROR);
+			break;
+
+		default:
+			rc = RC_SET( defaultRc);
+			break;
+	}
+	
+	return( rc);
+}
+#endif
+
+/***************************************************************************
+Desc:
+***************************************************************************/
 #ifdef FLM_WIN
 RCODE FLMAPI f_mapPlatformError(
 	FLMINT	iErrCode,

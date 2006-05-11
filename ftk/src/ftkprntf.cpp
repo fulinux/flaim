@@ -774,6 +774,7 @@ FLMINT FLMAPI f_printf(
 	const char *	pszFormat,
 	...)
 {
+#ifndef FLM_RING_ZERO_NLM
 	FLMINT		iLen;
 	va_list		args;
 
@@ -782,4 +783,8 @@ FLMINT FLMAPI f_printf(
 	va_end(args);
 
 	return( iLen);
+#else
+	F_UNREFERENCED_PARM( pszFormat);
+	return( 0);
+#endif
 }

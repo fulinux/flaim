@@ -359,6 +359,17 @@
 			
 		#define f_va_end( list) \
 			__builtin_va_end( list)
+	#elif defined( FLM_NLM)
+		#define f_argsize(x) \
+			((sizeof(x)+sizeof(int)-1) & ~(sizeof(int)-1))
+
+		#define f_va_start(ap, parmN) \
+			((void)((ap) = (unsigned long)&(parmN) + f_argsize(parmN)))
+			
+		#define f_va_arg(ap, type) \
+			(*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
+			
+		#define f_va_end(ap) ((void)0)
 	#else
 		#define f_va_start( list, name) \
 			(list = (f_va_list)&(name) + f_alignedsize( name))

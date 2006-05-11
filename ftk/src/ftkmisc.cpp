@@ -254,7 +254,7 @@ void FLMAPI f_sleep(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 void FLMAPI f_sleep( 
 	FLMUINT		uiMilliseconds)
 {
@@ -265,6 +265,24 @@ void FLMAPI f_sleep(
 	else
 	{
 		delay( uiMilliseconds);
+	}
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+void FLMAPI f_sleep( 
+	FLMUINT	uiMilliseconds)
+{
+	if( !uiMilliseconds)
+	{
+		kYieldThread();
+	}
+	else
+	{
+		kDelayThread( uiMilliseconds);
 	}
 }
 #endif
@@ -289,15 +307,12 @@ FSTATIC RCODE f_initRandomGenerator( void)
 
 	f_timeGetSeconds( &uiTime );
 
-#if defined( FLM_UNIX) || defined( FLM_NLM)
-	
 	if( RC_BAD( rc = FlmAllocRandomGenerator( &gv_pRandomGenerator)))
 	{
 		goto Exit;
 	}
 
-	gv_pRandomGenerator->setSeed( (FLMUINT32)(uiTime ^ (FLMUINT)getpid()));
-#endif
+	gv_pRandomGenerator->setSeed( (FLMUINT32)(uiTime ^ (FLMUINT)f_getpid()));
 
 Exit:
 
@@ -665,10 +680,13 @@ void * FLMAPI f_memcpy(
 		*((FLMBYTE *)pvDest) = *((FLMBYTE *)pvSrc);
 		return( pvDest);
 	}
-	else
-	{
+	
+#ifdef FLM_RING_ZERO_NLM
+		CMoveFast( pvSrc, pvDest, iSize);
+		return( pvDest);
+#else
 		return( memcpy( pvDest, pvSrc, iSize));
-	}
+#endif
 }
 
 /****************************************************************************
@@ -679,18 +697,135 @@ void * FLMAPI f_memmove(
 	const void *	pvSrc,
 	FLMSIZET			uiLength)
 {
+#ifndef FLM_RING_ZERO_NLM
+
 	return( memmove( pvDest, pvSrc, uiLength));
+	
+#else
+
+	#define CMOVB_THRESHOLD		16
+	char			*s = (char *)pvSrc;
+	char			*d = (char *)pvDest;
+	unsigned		uDiff;
+
+	if( (char *)(s + uiLength) < d || (char *)(d + uiLength) < s)
+	{
+		// The source and destination do not overlap.
+
+		CMoveFast( (void *)s, d, (LONG)uiLength);
+	}
+	else if( s < d)
+	{
+		// Source preceeds the destination, with overlap.
+
+		uDiff = (unsigned)(d - s);
+		d += uiLength;
+		s += uiLength;
+		if( uDiff >= CMOVB_THRESHOLD)
+		{
+			for( ;;)
+			{
+				if( uiLength < uDiff)
+				{
+					break;
+				}
+
+				// Copy the tail
+
+				s -= uDiff;
+				d -= uDiff;
+				uiLength -= uDiff;
+				CMoveFast( (void *)s, d, (LONG)uDiff);
+			}
+		}
+
+		// Copy remaining bytes.
+
+		while( uiLength--)
+		{
+			*--d = *--s;
+		}
+	}
+	else if( s > d)
+	{
+		// Source follows the destination, with overlap.
+
+		uDiff = (unsigned)(s - d);
+		if( uDiff >= CMOVB_THRESHOLD)
+		{
+			for( ;;)
+			{
+				if( uiLength < uDiff)
+				{
+					break;
+				}
+
+				// Copy the head
+
+				CMoveFast( (void *)s, d, (LONG)uDiff);
+				uiLength -= uDiff;
+				d += uDiff;
+				s += uDiff;
+			}
+		}
+
+		// Copy the remaining bytes
+
+		while( uiLength--)
+		{
+			*d++ = *s++;
+		}
+	}
+
+	// Else, the regions overlap completely (s == d).  Do nothing.
+
+	return( pvDest);
+
+#endif
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void * FLMAPI f_memset(
-	void *				pvDest,
+	void *				pvMem,
 	unsigned char		ucByte,
 	FLMSIZET				uiLength)
 {
-	return( memset( pvDest, ucByte, uiLength));
+#ifndef FLM_RING_ZERO_NLM
+	return( memset( pvMem, ucByte, uiLength));
+#else
+	char *			cp = (char *)pvMem;
+	unsigned			dwordLength;
+	unsigned long	dwordVal;
+
+	dwordVal = ((unsigned long)ucByte << 24) |
+		((unsigned long)ucByte << 16) |
+		((unsigned long)ucByte << 8) |
+		(unsigned long)ucByte;
+
+	while( uiLength && ((long)cp & 3L))
+	{
+		*cp++ = (char)ucByte;
+		uiLength--;
+	}
+
+	dwordLength = uiLength >> 2;
+	if(  dwordLength != 0)
+	{
+		CSetD( dwordVal, (void *)cp, dwordLength);
+		cp += (dwordLength << 2);
+		uiLength -= (dwordLength << 2);
+	}
+
+	while( uiLength)
+	{
+		*cp++ = (char)ucByte;
+		uiLength--;
+	}
+
+	return( pvMem);
+#endif
 }
 
 /****************************************************************************
@@ -701,7 +836,31 @@ FLMINT FLMAPI f_memcmp(
 	const void *		pvMem2,
 	FLMSIZET				uiLength)
 {
+#ifndef FLM_NLM
 	return( memcmp( pvMem1, pvMem2, uiLength));
+#else
+	unsigned char *	s1;
+	unsigned char *	s2;
+
+	for (s1 = (unsigned char *)pvMem1, s2 = (unsigned char *)pvMem2; 
+		uiLength > 0; uiLength--, s1++, s2++)
+	{
+		if (*s1 == *s2)
+		{
+			continue;
+		}
+		else if( *s1 > *s2)
+		{
+			return( 1);
+		}
+		else
+		{
+			return( -1);
+		}
+	}
+
+	return( 0);
+#endif
 }
 
 /****************************************************************************
@@ -711,7 +870,12 @@ char * FLMAPI f_strcpy(
 	char *			pszDest,
 	const char *	pszSrc)
 {
+#ifndef FLM_NLM
 	return( strcpy( pszDest, pszSrc));
+#else
+	while ((*pszDest++ = *pszSrc++) != 0);
+	return( pszDest);
+#endif
 }
 
 /****************************************************************************
@@ -722,7 +886,23 @@ char * FLMAPI f_strncpy(
 	const char *	pszSrc,
 	FLMSIZET			uiLength)
 {
+#ifndef FLM_NLM
 	return( strncpy( pszDest, pszSrc, uiLength));
+#else
+	while( uiLength)
+	{
+		*pszDest++ = *pszSrc;
+		if( *pszSrc)
+		{
+			pszSrc++;
+		}
+		
+		uiLength--;
+	}
+
+	*pszDest = 0;
+	return( pszDest);
+#endif
 }
 
 /****************************************************************************
@@ -731,7 +911,18 @@ Desc:
 FLMUINT FLMAPI f_strlen(
 	const char *	pszStr)
 {
+#ifndef FLM_NLM
 	return( strlen( pszStr));
+#else
+	const char *	pszStart = pszStr;
+
+	while( *pszStr)
+	{
+		pszStr++;
+	}
+
+	return( pszStr - pszStart);
+#endif
 }
 
 /****************************************************************************
@@ -741,7 +932,17 @@ FLMINT FLMAPI f_strcmp(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
+#ifndef FLM_NLM
 	return( strcmp( pszStr1, pszStr2));
+#else
+	while( *pszStr1 == *pszStr2 && *pszStr1)
+	{
+		pszStr1++;
+		pszStr2++;
+	}
+	
+	return( (FLMINT)(*pszStr1 - *pszStr2));
+#endif
 }
 	
 /****************************************************************************
@@ -771,7 +972,23 @@ FLMINT FLMAPI f_strncmp(
 	const char *		pszStr2,
 	FLMSIZET				uiLength)
 {
+#ifndef FLM_NLM
 	return( strncmp( pszStr1, pszStr2, uiLength));
+#else
+	while( *pszStr1 == *pszStr2 && *pszStr1 && uiLength)
+	{
+		pszStr1++;
+		pszStr2++;
+		uiLength--;
+	}
+
+	if( uiLength)
+	{
+		return( (*pszStr1 - *pszStr2));
+	}
+
+	return( 0);
+#endif
 }
 	
 /****************************************************************************
@@ -815,7 +1032,18 @@ char * FLMAPI f_strcat(
 	char *				pszDest,
 	const char *		pszSrc)
 {
+#ifndef FLM_NLM
 	return( strcat( pszDest, pszSrc));
+#else
+	const char *	p = pszSrc;
+	char * 			q = pszDest;
+	
+	while (*q++);
+	q--;
+	while( (*q++ = *p++) != 0);
+	
+	return( pszDest);
+#endif
 }
 
 /****************************************************************************
@@ -826,7 +1054,29 @@ char * FLMAPI f_strncat(
 	const char *		pszSrc,
 	FLMSIZET				uiLength)
 {
+#ifndef FLM_NLM
 	return( strncat( pszDest, pszSrc, uiLength));
+#else
+	const char *		p = pszSrc;
+	char *				q = pszDest;
+	
+	while (*q++);
+	
+	q--;
+	uiLength++;
+	
+	while( --uiLength)
+	{
+		if( (*q++ = *p++) == 0)
+		{
+			q--;
+			break;
+		}
+	}
+	
+	*q = 0;
+	return( pszDest);
+#endif
 }
 
 /****************************************************************************
@@ -836,7 +1086,23 @@ char * FLMAPI f_strchr(
 	const char *		pszStr,
 	unsigned char		ucByte)
 {
+#ifndef FLM_NLM
 	return( (char *)strchr( pszStr, ucByte));
+#else
+	if( !pszStr)
+	{
+		return( NULL);
+	}
+
+	while (*pszStr && *pszStr != ucByte)
+	{
+		pszStr++;
+	}
+
+	return( (char *)((*pszStr == ucByte) 
+								? pszStr
+								: NULL));
+#endif
 }
 
 /****************************************************************************
@@ -846,7 +1112,33 @@ char * FLMAPI f_strrchr(
 	const char *		pszStr,
 	unsigned char		ucByte)
 {
+#ifndef FLM_NLM
 	return( (char *)strrchr( pszStr, ucByte));
+#else
+	const char * pszLast = NULL;
+
+	if( !pszStr)
+	{
+		return( NULL);
+	}
+
+	while (*pszStr)
+	{
+		if( *pszStr == ucByte)
+		{
+			pszLast = pszStr;
+		}
+		
+		pszStr++;
+	}
+	
+	if( ucByte == '\0')
+	{
+		pszLast = pszStr;
+	}
+
+	return( (char *)pszLast);
+#endif
 }
 
 /****************************************************************************
@@ -856,19 +1148,54 @@ char * FLMAPI f_strstr(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
+#ifndef FLM_NLM
 	return( (char *)strstr( pszStr1, pszStr2));
+#else
+	FLMUINT 			i;
+	FLMUINT			j;
+	FLMUINT			k;
+
+	if ( !pszStr1 || !pszStr2)
+	{
+		return( NULL);
+	}
+
+	for( i = 0; pszStr1[i] != '\0'; i++)
+	{
+		for( j=i, k=0; pszStr2[k] != '\0' &&
+			pszStr1[j] == pszStr2[k]; j++, k++)
+		{
+			;
+		}
+
+		if ( k > 0 && pszStr2[k] == '\0')
+		{
+			return( (char *)&pszStr1[i]);
+		}
+	}
+
+	return( NULL);
+#endif
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_WIN
 char * FLMAPI f_strupr(
 	char *				pszStr)
 {
+#ifdef FLM_WIN
 	return( _strupr( pszStr));
-}
+#else
+	while( *pszStr)
+	{
+		*pszStr = f_toupper( *pszStr);
+		pszStr++;
+	}
+
+	return( pszStr);
 #endif
+}
 
 /**********************************************************************
 Desc:
@@ -876,9 +1203,13 @@ Desc:
 FLMINT32 FLMAPI f_atomicInc(
 	FLMATOMIC *			piTarget)
 {
-	#if defined( FLM_NLM)
+	#if defined( FLM_LIBC_NLM)
 	{
 		return( (FLMINT32)atomic_retadd( (unsigned long *)piTarget, 1));
+	}
+	#elif defined( FLM_RING_ZERO_NLM)
+	{
+		return( nlm_AtomicIncrement( (volatile LONG *)piTarget)); 
 	}
 	#elif defined( FLM_WIN)
 	{
@@ -921,9 +1252,13 @@ Desc:
 FLMINT32 FLMAPI f_atomicDec(
 	FLMATOMIC *			piTarget)
 {
-	#if defined( FLM_NLM)
+	#if defined( FLM_LIBC_NLM)
 	{
 		return( (FLMINT32)atomic_retadd( (unsigned long *)piTarget, -1));
+	}
+	#elif defined( FLM_RING_ZERO_NLM)
+	{
+		return( nlm_AtomicDecrement( (volatile LONG *)piTarget)); 
 	}
 	#elif defined( FLM_WIN)
 	{

@@ -28,7 +28,7 @@
 #ifdef FLM_LIBC_NLM
 	void * threadStub(
 		void *	pvThread);
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 	void * threadStub(
 		void *	pvUnused,
 		void *	pvThread);
@@ -404,7 +404,7 @@ RCODE FLMAPI F_Thread::startThread(
 	pthread_attr_t			thread_attr;
 	pthread_t				uiThreadId;
 #endif
-#ifdef FLM_RING_0_NLM
+#ifdef FLM_RING_ZERO_NLM
 #ifdef FLM_NLM
 	void *					hThread = NULL;
 #endif
@@ -517,7 +517,7 @@ RCODE FLMAPI F_Thread::startThread(
 
 		m_uiThreadId = (FLMUINT)uiThreadId;
 		pthread_attr_destroy( &thread_attr);
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 #elif defined( FLM_NLM)
 	if( (hThread = kCreateThread( 
 		(BYTE *)((m_pszThreadName)
@@ -631,7 +631,7 @@ Desc:    Begins a new thread of execution and calls the passed function.
 #ifdef FLM_LIBC_NLM
 void * threadStub(
 	void *	pvThread)
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 void * threadStub(
 	void *	pvUnused,
 	void *	pvThread)
@@ -646,7 +646,7 @@ void * threadStub(
 	F_Thread *			pThread = (F_Thread *)pvThread;
 	F_ThreadMgr *		pThreadMgr = (F_ThreadMgr *)f_getThreadMgrPtr();
 
-#ifdef FLM_RING_0_NLM
+#ifdef FLM_RING_ZERO_NLM
 	F_UNREFERENCED_PARM( pvUnused);
 #endif
 
@@ -704,7 +704,7 @@ void * threadStub(
 #if defined( FLM_WIN)
 	_endthreadex( 0);
 	return( 0);
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 	kExitThread( NULL);
 #endif
 
@@ -1372,7 +1372,7 @@ FLMUINT FLMAPI f_threadId( void)
 	return( (FLMUINT)_threadid);
 #elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	return( (FLMUINT)pthread_self());
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 	return( (FLMUINT)kCurrentThread());
 #else
 	#error Platform not supprted

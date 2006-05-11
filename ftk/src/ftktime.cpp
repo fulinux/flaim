@@ -25,7 +25,7 @@
 
 #include "ftksys.h"
 
-#if defined( FLM_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 
 	extern "C" void ConvertTicksToSeconds(
 		LONG		ticks,
@@ -36,6 +36,22 @@
 		LONG		seconds,
 		LONG		tenthsOfSeconds,
 		LONG *	ticks);
+		
+	FINLINE unsigned long time(
+		unsigned long *	pulSeconds)
+	{
+		clockAndStatus clock;
+
+		GetCurrentClock( &clock);
+
+		if (pulSeconds)
+		{
+			*pulSeconds = (unsigned long)clock [0];
+		}
+
+		return ( (unsigned long)clock[0]);
+	}
+		
 #endif
 
 #define	BASEYR			1970				// all gmt calcs done since 1970
@@ -88,6 +104,7 @@ void	f_timeGetTimeStamp(
 	F_TMSTAMP *		pTimeStamp)
 {
 #if defined( FLM_WIN)
+
 	SYSTEMTIME	rightnow;
 
 	GetLocalTime( &rightnow );
@@ -101,20 +118,26 @@ void	f_timeGetTimeStamp(
 	pTimeStamp->second = (FLMUINT8)rightnow.wSecond;
 	pTimeStamp->hundredth = rightnow.wMilliseconds / 10;
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
-	time_t now;
-	struct tm rightnow;
+#elif defined( FLM_RING_ZERO_NLM)
+
+	f_timeSecondsToDate( (FLMUINT)
+		time( NULL) - f_timeGetLocalOffset(), pTimeStamp);
+
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+
+	time_t 		now;
+	struct tm 	rightnow;
 
 	now = time( (time_t *) 0 );
 	(void)localtime_r( &now, &rightnow );
 
-	pTimeStamp->year        = rightnow.tm_year + 1900;
-	pTimeStamp->month       = rightnow.tm_mon;
-	pTimeStamp->day         = rightnow.tm_mday;
-	pTimeStamp->hour        = rightnow.tm_hour;
-	pTimeStamp->minute      = rightnow.tm_min;
-	pTimeStamp->second      = rightnow.tm_sec;
-	pTimeStamp->hundredth   = 0;
+	pTimeStamp->year = rightnow.tm_year + 1900;
+	pTimeStamp->month = rightnow.tm_mon;
+	pTimeStamp->day = rightnow.tm_mday;
+	pTimeStamp->hour = rightnow.tm_hour;
+	pTimeStamp->minute = rightnow.tm_min;
+	pTimeStamp->second = rightnow.tm_sec;
+	pTimeStamp->hundredth = 0;
 #else
 	#error Platform not supported
 #endif
@@ -141,7 +164,23 @@ FLMINT f_timeGetLocalOffset( void)
 				: tzInfo.Bias) * 60;
 	}
 
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
+
+	Synchronized_Clock_T    SynchronizedClock;
+
+	f_memset( &SynchronizedClock, 0, sizeof( SynchronizedClock));
+	GetSyncClockFields(
+		SYNCCLOCK_DAYLIGHT_BIT | SYNCCLOCK_DAYLIGHT_OFFSET_BIT |
+		SYNCCLOCK_DAYLIGHT_ON_OFF_BIT | SYNCCLOCK_TIMEZONE_OFFSET_BIT,
+		&SynchronizedClock);
+
+	iOffset = (FLMINT)SynchronizedClock.timezoneOffset;
+	if( SynchronizedClock.daylight && SynchronizedClock.daylightOnOff)
+	{
+		iOffset += (FLMINT)SynchronizedClock.daylightOffset;
+	}
+	
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	time_t		gmtTime;
 	time_t		localTime;
 	struct tm	gmtTm;
@@ -333,7 +372,7 @@ FLMINT f_timeCompareTimeStamps(
 /****************************************************************************
 Desc:		Get the current time in milliseconds.
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 unsigned f_timeGetMilliTime()
 {
 #if defined( FLM_SOLARIS)
@@ -356,6 +395,8 @@ FLMUINT FLMAPI FLM_GET_TIMER( void)
 {
 #if defined( FLM_WIN)
 	return( (FLMUINT)GetTickCount());
+#elif defined( FLM_RING_ZERO_NLM)
+	return( (FLMUINT)GetCurrentTime());
 #else
 	return( f_timeGetMilliTime());
 #endif
@@ -383,7 +424,14 @@ Desc:
 FLMUINT FLMAPI FLM_SECS_TO_TIMER_UNITS( 
 	FLMUINT			uiSeconds)
 {
+#ifndef FLM_RING_ZERO_NLM
 	return( uiSeconds * 1000);
+#else
+	LONG		uiTU;
+
+	ConvertSecondsToTicks( (LONG)(uiSeconds), 0, &uiTU);
+	return( (FLMUINT)uiTU);
+#endif
 }
 
 /****************************************************************************
@@ -392,7 +440,15 @@ Desc:
 FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS( 
 	FLMUINT			uiTU)
 {
+#ifndef FLM_RING_ZERO_NLM
 	return( uiTU / 1000);
+#else
+	LONG	uiSeconds;
+	LONG	udDummy;
+	
+	ConvertTicksToSeconds( (LONG)uiTU, &uiSeconds, &udDummy);
+	return( (FLMUINT)uiSeconds);
+#endif
 }
 
 /****************************************************************************
@@ -401,7 +457,15 @@ Desc:
 FLMUINT FLM_TIMER_UNITS_TO_MILLI( 
 	FLMUINT			uiTU)
 {
+#ifndef FLM_RING_ZERO_NLM
 	return( uiTU);
+#else
+	LONG		udTenths;
+	LONG		udSeconds;
+	
+	ConvertTicksToSeconds( (LONG)uiTU, &udSeconds, &udTenths);
+	return( (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100);
+#endif
 }
 	
 /****************************************************************************
@@ -410,5 +474,17 @@ Desc:
 FLMUINT FLM_MILLI_TO_TIMER_UNITS( 
 	FLMUINT			uiMilliSeconds)
 {
+#ifndef FLM_RING_ZERO_NLM
 	return( uiMilliSeconds);
+#else
+	LONG 		udTenths;
+	LONG 		udSeconds;
+	LONG		uiTU;
+	
+	udSeconds = ((LONG) uiMilliSeconds) / 1000;
+	udTenths = (((LONG) uiMilliSeconds) % 1000) / 100;
+	
+	ConvertSecondsToTicks( udSeconds, udTenths, &uiTU);
+	return( uiTU);
+#endif
 }

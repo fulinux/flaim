@@ -54,6 +54,29 @@
 
 #define NUM_BUF_ALLOCATORS	22
 
+#if defined( FLM_RING_ZERO_NLM)
+
+	extern rtag_t gv_lAllocRTag;
+	
+	#define os_malloc(size) \
+		Alloc( (size), gv_lAllocRTag)
+
+	void * nlm_realloc(
+		void	*	pMemory,
+		size_t	newSize);
+
+	#define os_realloc		nlm_realloc
+
+	#define os_free			Free
+
+#else
+
+	#define os_malloc			malloc
+	#define os_realloc		realloc
+	#define os_free			free
+
+#endif
+
 /************************************************************************
 Desc:
 *************************************************************************/
@@ -94,7 +117,7 @@ Desc:
 /************************************************************************
 Desc:
 *************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM) || defined( FLM_WIN)
+#if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_NLM)
 	#define PTR_IN_MBLK(p,bp,offs) \
 		(((FLMBYTE *)(p) > (FLMBYTE *)(bp)) && \
 				((FLMBYTE *)(p) <= (FLMBYTE *)(bp) + (offs)))
@@ -803,8 +826,11 @@ FLMUINT f_msize(
 {
 #if defined( FLM_UNIX)
 	return( pvPtr ? F_GET_MEM_DATA_SIZE( (pvPtr)) : 0);
-#elif defined( FLM_NLM)
+#elif defined( FLM_LIBC_NLM)
 		return( pvPtr ? msize( (F_GET_ALLOC_PTR( (pvPtr)))) : 0);
+#elif defined( FLM_RING_ZERO_NLM)
+	return( pvPtr ? (unsigned)SizeOfAllocBlock(
+		(F_GET_ALLOC_PTR( (pvPtr)))) : 0);
 #else
 		return( pvPtr ? _msize( (F_GET_ALLOC_PTR( (pvPtr)))) : 0);
 #endif
@@ -889,7 +915,7 @@ FLMUINT * memWalkStack()
 		uiRtnAddr = (FLMUINT) memValueAtStackOffset( (void *) uiEbp, 4);
 	}
 	uiAddresses [uiLoop] = 0;
-	if ((puiAddresses = (FLMUINT *)malloc( 
+	if ((puiAddresses = (FLMUINT *)os_malloc( 
 		sizeof( FLMUINT) * (uiLoop+1))) != NULL)
 	{
 		f_memcpy( puiAddresses, &uiAddresses [0], sizeof( FLMUINT) * (uiLoop + 1));
@@ -978,7 +1004,7 @@ nextinstr:
 	f_mutexUnlock( gv_hMemTrackingMutex);
 
 	uiAddresses [uiLoop] = 0;
-	if ((puiAddresses = (FLMUINT *)malloc( 
+	if ((puiAddresses = (FLMUINT *)os_malloc( 
 		sizeof( FLMUINT) * (uiLoop+1))) != NULL)
 	{
 		f_memcpy( puiAddresses, &uiAddresses [0], sizeof( FLMUINT) * (uiLoop + 1));
@@ -1079,7 +1105,7 @@ FSTATIC void saveMemTrackingInfo(
 			uiNewCnt = (FLMUINT)((!gv_uiMemTrackingPtrArraySize)
 										? MEM_PTR_INIT_ARRAY_SIZE
 										: gv_uiMemTrackingPtrArraySize * 2);
-			if ((pNew = (void **)malloc( sizeof( void *) * uiNewCnt)) != NULL)
+			if ((pNew = (void **)os_malloc( sizeof( void *) * uiNewCnt)) != NULL)
 			{
 
 				// Copy the pointers from the old array, if any,
@@ -1089,7 +1115,7 @@ FSTATIC void saveMemTrackingInfo(
 				{
 					f_memcpy( pNew, gv_ppvMemTrackingPtrs,
 							sizeof( void *) * gv_uiMemTrackingPtrArraySize);
-					free( gv_ppvMemTrackingPtrs);
+					os_free( gv_ppvMemTrackingPtrs);
 					gv_ppvMemTrackingPtrs = NULL;
 				}
 				f_memset( &pNew [gv_uiMemTrackingPtrArraySize], 0,
@@ -1162,7 +1188,7 @@ FSTATIC void updateMemTrackingInfo(
 {
 	if (pHdr->puiStack)
 	{
-		free( pHdr->puiStack);
+		os_free( pHdr->puiStack);
 		pHdr->puiStack = NULL;
 	}
 	if (gv_bTrackLeaks && gv_bStackWalk)
@@ -1210,7 +1236,7 @@ FSTATIC void freeMemTrackingInfo(
 
 	if (puiStack)
 	{
-		free( puiStack);
+		os_free( puiStack);
 	}
 }
 #endif
@@ -1235,7 +1261,7 @@ void logMemLeak(
 	// Need a big buffer to show an entire stack.
 
 	uiMsgBufSize = 20480;
-	if ((pszMessageBuffer = (char *)malloc( uiMsgBufSize)) == NULL)
+	if ((pszMessageBuffer = (char *)os_malloc( uiMsgBufSize)) == NULL)
 	{
 		pszMessageBuffer = &szTmpBuffer [0];
 		uiMsgBufSize = sizeof( szTmpBuffer);
@@ -1293,7 +1319,7 @@ void logMemLeak(
 #ifdef FLM_WIN
 		IMAGEHLP_SYMBOL *	pImgHlpSymbol;
 
-		pImgHlpSymbol = (IMAGEHLP_SYMBOL *)malloc(
+		pImgHlpSymbol = (IMAGEHLP_SYMBOL *)os_malloc(
 									sizeof( IMAGEHLP_SYMBOL) + 100);
 #endif
 
@@ -1380,7 +1406,7 @@ void logMemLeak(
 #ifdef FLM_WIN
 		if (pImgHlpSymbol)
 		{
-			free( pImgHlpSymbol);
+			os_free( pImgHlpSymbol);
 		}
 #endif
 	}
@@ -1450,7 +1476,7 @@ void logMemLeak(
 
 	if (pszMessageBuffer != &szTmpBuffer [0])
 	{
-		free( pszMessageBuffer);
+		os_free( pszMessageBuffer);
 	}
 
 	gv_bTrackLeaks = bSaveTrackLeaks;
@@ -1526,7 +1552,7 @@ void f_memoryCleanup( void)
 
 		// Free the memory pointer array.
 
-		free( gv_ppvMemTrackingPtrs);
+		os_free( gv_ppvMemTrackingPtrs);
 		gv_ppvMemTrackingPtrs = NULL;
 		gv_uiMemTrackingPtrArraySize = 0;
 		gv_uiNumMemPtrs = 0;
@@ -1562,7 +1588,7 @@ RCODE FLMAPI f_allocImp(
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pHdr;
 
-	if( (pHdr = (F_MEM_HDR *)malloc( uiSize + sizeof( F_MEM_HDR) +
+	if( (pHdr = (F_MEM_HDR *)os_malloc( uiSize + sizeof( F_MEM_HDR) +
 												F_PICKET_FENCE_SIZE)) == NULL)
 	{
 		rc = RC_SET( NE_FLM_MEM);
@@ -1602,7 +1628,7 @@ RCODE FLMAPI f_callocImp(
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pHdr;
 
-	if ((pHdr = (F_MEM_HDR *)malloc( uiSize + sizeof( F_MEM_HDR) +
+	if ((pHdr = (F_MEM_HDR *)os_malloc( uiSize + sizeof( F_MEM_HDR) +
 											F_PICKET_FENCE_SIZE)) == NULL)
 	{
 		rc = RC_SET( NE_FLM_MEM);
@@ -1684,7 +1710,7 @@ RCODE FLMAPI f_reallocImp(
 	puiOldStack = pOldHdr->puiStack;
 #endif
 
-	if ((pNewHdr = (F_MEM_HDR *)realloc( F_GET_ALLOC_PTR( *ppvPtr),
+	if ((pNewHdr = (F_MEM_HDR *)os_realloc( F_GET_ALLOC_PTR( *ppvPtr),
 											uiSize + sizeof( F_MEM_HDR) +
 											F_PICKET_FENCE_SIZE)) == NULL)
 	{
@@ -1778,7 +1804,7 @@ RCODE FLMAPI f_recallocImp(
 #endif
 
 	uiOldSize = F_GET_MEM_DATA_SIZE( *ppvPtr);
-	if ((pNewHdr = (F_MEM_HDR *)realloc( F_GET_ALLOC_PTR( *ppvPtr),
+	if ((pNewHdr = (F_MEM_HDR *)os_realloc( F_GET_ALLOC_PTR( *ppvPtr),
 											uiSize + sizeof( F_MEM_HDR) +
 											F_PICKET_FENCE_SIZE)) == NULL)
 	{
@@ -1863,7 +1889,7 @@ void FLMAPI f_freeImp(
 		freeMemTrackingInfo( FALSE, pHdr->uiAllocationId, pHdr->puiStack);
 #endif
 
-		free( F_GET_ALLOC_PTR( *ppvPtr));
+		os_free( F_GET_ALLOC_PTR( *ppvPtr));
 		*ppvPtr = NULL;
 	}
 }
@@ -3036,7 +3062,7 @@ void F_FixedAlloc::freeCell(
 #ifdef FLM_DEBUG
 	if( pHeader->puiStack)
 	{
-		free( pHeader->puiStack);
+		os_free( pHeader->puiStack);
 		pHeader->puiStack = NULL;
 	}
 #endif
@@ -4529,7 +4555,7 @@ RCODE FLMAPI f_getMemoryInfo(
 			ui64TotalPhysMem = uiProcVMemLimit;
 		}
 	}
-#elif defined( FLM_NLM)
+#elif defined( FLM_LIBC_NLM)
 	{
 		#ifndef _SC_PHYS_PAGES
 			#define _SC_PHYS_PAGES        56
@@ -4545,8 +4571,33 @@ RCODE FLMAPI f_getMemoryInfo(
 		ui64TotalPhysMem = sysconf(_SC_PHYS_PAGES) * iPageSize;
 		ui64AvailPhysMem = sysconf(_SC_AVPHYS_PAGES) * iPageSize;
 	}
+#elif defined( FLM_RING_ZERO_NLM)
+	{
+		FLMUINT	uiCacheBufferSize = GetCacheBufferSize();
+		
+		ui64TotalPhysMem = GetOriginalNumberOfCacheBuffers() * uiCacheBufferSize;
+		ui64AvailPhysMem = GetCurrentNumberOfCacheBuffers() * uiCacheBufferSize;
+		
+		// Get available memory in local process pool
+
+		{
+			FLMUINT	uiFreeBytes;
+			FLMUINT	uiFreeNodes;
+			FLMUINT	uiAllocatedBytes;
+			FLMUINT	uiAllocatedNodes;
+			FLMUINT	uiTotalMemory;
+
+			if (GetNLMAllocMemoryCounts( f_getNLMHandle(),
+									&uiFreeBytes, &uiFreeNodes,
+									&uiAllocatedBytes, &uiAllocatedNodes,
+									&uiTotalMemory) == 0)
+			{
+				ui64AvailPhysMem += uiFreeBytes;
+			}
+		}
+	}
 #else
-	return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
+	rc = RC_SET( NE_FLM_NOT_IMPLEMENTED);
 #endif
 
 	if( ui64AvailPhysMem > ui64TotalPhysMem)
@@ -4616,7 +4667,7 @@ void f_getLinuxMemInfo(
 	FLMUINT64		ui64TotalMem = 0;
 	FLMUINT64		ui64AvailMem = 0;
 
-	if( (pszMemInfoBuf = (char *)malloc( iMemInfoBufSize)) == NULL)
+	if( (pszMemInfoBuf = (char *)os_malloc( iMemInfoBufSize)) == NULL)
 	{
 		goto Exit;
 	}
@@ -4656,13 +4707,56 @@ Exit:
 
 	if( pszMemInfoBuf)
 	{
-		free( pszMemInfoBuf);
+		os_free( pszMemInfoBuf);
 	}
 	
 	if( fd != -1)
 	{
 		close( fd);
 	}
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+void * nlm_realloc(
+	void	*	pMemory,
+	size_t	newSize)
+{
+	void *		pNewMemory;
+	LONG			lSize;
+
+ 	if( !pMemory)
+ 	{
+ 		pNewMemory = Alloc( newSize, gv_lAllocRTag);
+		goto Exit;
+	}
+
+	lSize = SizeOfAllocBlock( pMemory);
+
+	pNewMemory = os_malloc( newSize);
+	if( !pNewMemory)
+	{
+		goto Exit;
+	}
+
+	if( lSize > newSize)
+	{
+		lSize = newSize;
+	}
+	
+	f_memcpy( pNewMemory, pMemory, lSize);
+
+	if( pMemory)
+	{
+		Free( pMemory);
+	}
+
+Exit:
+
+	return( pNewMemory);
 }
 #endif
 
@@ -4770,7 +4864,7 @@ void * F_OSBase::operator new(
 	const char *,	// pszFile,
 	int)				// iLine)
 {
-	return( malloc( uiSize));
+	return( os_malloc( uiSize));
 }
 
 /************************************************************************
@@ -4779,7 +4873,7 @@ Desc:
 void F_OSBase::operator delete(
 	void *			ptr)
 {
-	free( ptr);
+	os_free( ptr);
 }
 
 /****************************************************************************
@@ -4791,7 +4885,7 @@ void F_OSBase::operator delete(
 	const char *,	// file
 	int)				// line
 {
-	free( &ptr);
+	os_free( ptr);
 }
 #endif
 
@@ -4804,6 +4898,6 @@ void F_OSBase::operator delete[](
 	const char *,	// file
 	int)				// line
 {
-	free( &ptr);
+	os_free( ptr);
 }
 #endif

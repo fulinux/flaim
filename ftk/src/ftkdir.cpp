@@ -66,7 +66,7 @@
 		char *			FilePath,
 		struct stat	*	StatusRec);
 
-#elif !defined( FLM_RING_0_NLM)
+#elif !defined( FLM_RING_ZERO_NLM)
 
 	#error Platform not supported
 
@@ -118,10 +118,12 @@ Desc:
 ****************************************************************************/
 F_DirHdl::~F_DirHdl()
 {
+#ifndef FLM_RING_ZERO_NLM
 	if( m_bFindOpen)
 	{
 		f_fileFindClose( &m_FindData);
 	}
+#endif
 }
 
 /****************************************************************************
@@ -191,7 +193,7 @@ FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
 						m_FindData.findBuffer.nFileSizeLow;
 #elif defined( FLM_UNIX) || defined ( FLM_LIBC_NLM)
 		ui64Size = m_FindData.FileStat.st_size;
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 		if( m_FindData.m_pCurrentItem != NULL )
 		{
 			ui64Size = m_FindData.m_pCurrentItem->DFileSize;
@@ -268,7 +270,7 @@ Exit:
 /****************************************************************************
 Desc:	Get the next item in a directory
 ****************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 RCODE FLMAPI F_DirHdl::next( void)
 {
 	LONG					lError = 0;
@@ -326,6 +328,12 @@ RCODE FLMAPI F_DirHdl::openDir(
 	m_bFindOpen = FALSE;
 	m_uiAttrib = 0;
 
+	f_memset( &m_FindData, 0, sizeof( m_FindData));
+	
+#ifdef FLM_RING_ZERO_NLM
+	m_FindData.m_lCurrentEntryNumber = 0xFFFFFFFFL;
+#endif
+
 	f_strcpy( m_szDirectoryPath, pszDirName);
 
 	if( pszPattern)
@@ -342,7 +350,6 @@ RCODE FLMAPI F_DirHdl::openDir(
 Exit:
 
 	return( rc);
-
 }
 
 /****************************************************************************
@@ -428,7 +435,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 RCODE FLMAPI F_DirHdl::createDir(
 	const char *	pszDirPath)
 {
@@ -494,7 +501,7 @@ RCODE FLMAPI F_DirHdl::removeDir(
 
     return( NE_FLM_OK);
 	 
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	return( f_netwareRemoveDir( pszDirName));
 
@@ -504,7 +511,7 @@ RCODE FLMAPI F_DirHdl::removeDir(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 RCODE f_netwareRemoveDir( 
 	const char *		pszDirName)
 {

@@ -195,7 +195,7 @@ private:
 	RCODE removeEmptyDir(
 		const char *	pszDirName);
 
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	RCODE renameSafe(
 		const char *	pszSrcFile,
 		const char *	pszDestFile);
@@ -794,7 +794,7 @@ RCODE F_FileSystem::removeEmptyDir(
 
     return( NE_FLM_OK);
 	 
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	return( f_netwareRemoveDir( pszDirPath));
 
@@ -825,7 +825,7 @@ RCODE FLMAPI F_FileSystem::doesFileExist(
 
 	return( NE_FLM_OK);
 	
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	return( f_netwareTestIfFileExists( pszPath));
 	
@@ -934,7 +934,7 @@ Exit:
 	*puiTimeStamp = (FLMUINT)filestatus.st_mtime; // st_mtime is UTC
 	return NE_FLM_OK;
 	
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiTmp;
@@ -1039,7 +1039,7 @@ FLMBOOL FLMAPI F_FileSystem::isDir(
 
 	return ( S_ISDIR( filestatus.st_mode)) ? TRUE : FALSE;
 	
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 	
 	LONG			lIsFile;
 	FLMBYTE		ucPseudoLNamePath[ F_PATH_MAX_SIZE + 1];
@@ -1107,7 +1107,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 
 	return( NE_FLM_OK);
 	
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	return( f_netwareDeleteFile( pszFileName));
 	 
@@ -1408,7 +1408,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 
 	return( NE_FLM_OK);
 	
-#elif defined( FLM_RING_0_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	return( f_netwareRenameFile( pszFileName, pszNewFileName));
 
@@ -1517,7 +1517,7 @@ RCODE FLMAPI F_FileSystem::setReadOnly(
 		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 		goto Exit;
 	}
-#elif defined( FLM_UNIX) || defined( FLM_NLM)
+#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	struct stat		filestatus;
 
 	if( stat( (char *)pszFileName, &filestatus))
@@ -1526,7 +1526,7 @@ RCODE FLMAPI F_FileSystem::setReadOnly(
 		goto Exit;
 	}
 	
-	if ( bReadOnly)
+	if( bReadOnly)
 	{
 		filestatus.st_mode &= ~S_IWUSR;
 	}
@@ -1535,13 +1535,17 @@ RCODE FLMAPI F_FileSystem::setReadOnly(
 		filestatus.st_mode |= S_IWUSR;
 	}
 	
-	if ( chmod( (char *)pszFileName, filestatus.st_mode))
+	if( chmod( (char *)pszFileName, filestatus.st_mode))
 	{
 		rc = RC_SET( NE_FLM_FAILURE);
 		goto Exit;
 	}
 #else
+	F_UNREFERENCED_PARM( pszFileName);
+	F_UNREFERENCED_PARM( bReadOnly);
+
 	rc = RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED);
+	goto Exit;
 #endif
 
 Exit:
@@ -1560,7 +1564,7 @@ FLMBOOL FLMAPI F_FileSystem::canDoAsync( void)
 /****************************************************************************
 Desc: stat tpath to see if it is a directory
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 RCODE F_FileSystem::targetIsDir(
 	const char	*	tpath,
 	FLMBOOL *		isdir)
@@ -1590,7 +1594,7 @@ Desc:	Rename an existing file (typically an "X" locked file to an
 		CREAT and EXCL options, (ensuring a unique file name)).  Then,
 		the source file will be renamed to new name.
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 RCODE F_FileSystem::renameSafe(
 	const char *	pszSrcFile,
 	const char *	pszDestFile)
@@ -2066,6 +2070,7 @@ RCODE FLMAPI F_FileSystem::pathToStorageString(
 	char *			pszStorageString)
 {
 #ifdef FLM_WIN
+
 	char *	pszNamePart;
 
 	if (GetFullPathName( (LPCSTR)pszPath,
@@ -2084,9 +2089,22 @@ RCODE FLMAPI F_FileSystem::pathToStorageString(
 			*pszStorageString++ = *pszPath;
 			pszPath++;
 		}
+		
 		*pszStorageString = 0;
 	}
-	return NE_FLM_OK;
+	
+	return( NE_FLM_OK);
+
+#elif defined( FLM_RING_ZERO_NLM)
+
+	while (*pszPath)
+	{
+		*pszStorageString++ = f_toupper( *pszPath);
+		pszPath++;
+	}
+	*pszStorageString = 0;
+	return( NE_FLM_OK);
+	
 #else
 
 	char			szFile[ F_PATH_MAX_SIZE];
@@ -2137,6 +2155,7 @@ Exit:
 	}
 
 	return( rc);
+
 #endif
 }
 

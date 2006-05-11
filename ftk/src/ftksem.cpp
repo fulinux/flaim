@@ -191,6 +191,59 @@ void FLMAPI f_assertMutexLocked(
 }
 #endif
 
+/*************************************************************************
+Desc:
+*************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE FLMAPI f_mutexCreate(
+	F_MUTEX *	phMutex)
+{
+	if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+
+	return( NE_FLM_OK);
+}
+#endif
+
+/*************************************************************************
+Desc:
+*************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+void FLMAPI f_mutexDestroy(
+	F_MUTEX *	phMutex)
+{
+	if (*phMutex != F_MUTEX_NULL)
+	{
+		(void)kMutexFree( (MUTEX)(*phMutex));
+		*phMutex = F_MUTEX_NULL;
+	}
+}
+#endif
+
+/*************************************************************************
+Desc:
+*************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+void FLMAPI f_mutexLock( 
+	F_MUTEX		hMutex)
+{
+	(void)kMutexLock( (MUTEX)hMutex);
+}
+#endif
+
+/*************************************************************************
+Desc:
+*************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+void FLMAPI f_mutexUnlock(
+	F_MUTEX		hMutex)
+{
+	(void)kMutexUnlock( (MUTEX)hMutex);
+}
+#endif
+	
 /****************************************************************************
 Desc:	Initializes a semaphore handle on UNIX
 ****************************************************************************/
@@ -435,7 +488,7 @@ void FLMAPI f_semSignal(
 /*************************************************************************
 Desc:
 *************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 RCODE FLMAPI f_semCreate(
 	F_SEM *		phSem)
 {
@@ -451,7 +504,7 @@ RCODE FLMAPI f_semCreate(
 /*************************************************************************
 Desc:
 *************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 void FLMAPI f_semDestroy(
 	F_SEM *		phSem)
 {
@@ -466,7 +519,7 @@ void FLMAPI f_semDestroy(
 /*************************************************************************
 Desc:
 *************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 RCODE FLMAPI f_semWait(
 	F_SEM			hSem,
 	FLMUINT		uiTimeout)
@@ -495,7 +548,7 @@ RCODE FLMAPI f_semWait(
 /*************************************************************************
 Desc:
 *************************************************************************/
-#if defined( FLM_RING_0_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 void FLMAPI f_semSignal(
 	F_SEM			hSem)
 {

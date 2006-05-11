@@ -30,14 +30,13 @@
 	#include "ftk.h"
 	
 	#ifdef FLM_NLM
-		#define FLM_RING_0_NLM
-	#endif
-//	#ifndef FLM_RING_0_NLM
-//		#define FLM_LIBC_NLM
-//	#endif
+		#if !defined( FLM_RING_ZERO_NLM) && !defined( FLM_LIBC_NLM)
+			#define FLM_LIBC_NLM
+		#endif
 	
-	#if defined( FLM_RING_0_NLM) && defined( FLM_LIBC_NLM)
-		#error Cannot target both LIBC and RING 0
+		#if defined( FLM_RING_ZERO_NLM) && defined( FLM_LIBC_NLM)
+			#error Cannot target both LIBC and RING 0
+		#endif
 	#endif
 
 	class F_FileHdl;
@@ -922,7 +921,7 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	#if defined( FLM_UNIX)
+	#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	class F_FileHdl : public IF_FileHdl
 	{
 	public:
@@ -1109,7 +1108,7 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	#if defined( FLM_NLM)
+	#if defined( FLM_RING_ZERO_NLM)
 	class F_FileHdl : public IF_FileHdl
 	{
 	public:
@@ -1504,7 +1503,7 @@
 			glob_t      globbuf;
 		} F_IO_FIND_DATA;
 		
-	#elif defined( FLM_RING_0_NLM)
+	#elif defined( FLM_RING_ZERO_NLM)
 	
 		typedef struct
 		{

@@ -25,7 +25,7 @@
 
 #include "ftksys.h"
 
-#if defined( FLM_UNIX) || defined( FLM_NLM)
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
 #ifdef FLM_AIX
 	#ifndef _LARGE_FILES
