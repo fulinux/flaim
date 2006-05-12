@@ -44,8 +44,6 @@
 	flminterface IF_ResultSet;
 	flminterface IF_Query;
 	flminterface IF_ThreadInfo;
-	flminterface IF_Pool;
-	flminterface IF_DynaBuf;
 	flminterface IF_NodeInfo;
 	flminterface IF_BTreeInfo;
 
@@ -2337,12 +2335,6 @@
 			FLMUINT *				puiAltMetaphone = NULL) = 0;
 			
 		/**
-		 * @brief Return an IF_Pool object for memory allocations
-		 */
-		virtual RCODE FLMAPI createMemoryPool(
-			IF_Pool **			ppPool) = 0;
-			
-		/**
 		 * @brief Compares two UTF-8 strings
 		 */
 		virtual RCODE FLMAPI compareUTF8Strings(
@@ -3053,7 +3045,7 @@
 
 		virtual RCODE FLMAPI getUnicode(
 			IF_Db *					pDb,
-			IF_DynaBuf *			pDynaBuf) = 0;
+			F_DynaBuf *				pDynaBuf) = 0;
 			
 		virtual RCODE FLMAPI getUTF8(
 			IF_Db *					pDb,
@@ -3070,7 +3062,7 @@
 			
 		virtual RCODE FLMAPI getUTF8(
 			IF_Db *					pDb,
-			IF_DynaBuf *			pDynaBuf) = 0;
+			F_DynaBuf *				pDynaBuf) = 0;
 
 		virtual RCODE FLMAPI getBinary(
 			IF_Db *					pDb,
@@ -3081,7 +3073,7 @@
 
 		virtual RCODE FLMAPI getBinary(
 			IF_Db *					pDb,
-			IF_DynaBuf *			pBuffer) = 0;
+			F_DynaBuf *				pBuffer) = 0;
 			
 		virtual RCODE FLMAPI getAttributeValueUINT32(
 			IF_Db *					pDb,
@@ -3154,7 +3146,7 @@
 		virtual RCODE FLMAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
-			IF_DynaBuf *			pDynaBuf) = 0;
+			F_DynaBuf *				pDynaBuf) = 0;
 			
 		virtual RCODE FLMAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
@@ -3172,7 +3164,7 @@
 		virtual RCODE FLMAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
-			IF_DynaBuf *			pDynaBuf) = 0;
+			F_DynaBuf *				pDynaBuf) = 0;
 
 		virtual RCODE FLMAPI getAttributeValueBinary(
 			IF_Db *					pDb,
@@ -3184,7 +3176,7 @@
 		virtual RCODE FLMAPI getAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
-			IF_DynaBuf *			pDynaBuf) = 0;
+			F_DynaBuf *				pDynaBuf) = 0;
 			
 		virtual RCODE FLMAPI setUINT(
 			IF_Db *					pDb,
@@ -3568,7 +3560,7 @@
 
 		virtual RCODE FLMAPI getUnicode(
 			FLMUINT					uiElementNumber,
-			IF_DynaBuf *			pBuffer) = 0;
+			F_DynaBuf *				pBuffer) = 0;
 			
 		virtual RCODE FLMAPI getUTF8(
 			FLMUINT					uiElementNumber,
@@ -4074,7 +4066,7 @@
 			eValTypes *				peValType,
 			FLMBOOL *				pbLastValue,
 			void *					pvVal,
-			IF_DynaBuf *			pDynaBuf = NULL) = 0;
+			F_DynaBuf *				pDynaBuf = NULL) = 0;
 			
 		virtual RCODE FLMAPI cloneSelf(
 			IF_QueryValFunc **	ppNewObj) = 0;

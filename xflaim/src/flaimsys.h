@@ -416,8 +416,6 @@ public:
 
 	~F_NameTable();
 
-	RCODE setupNameTable( void);
-
 	void clearTable(
 		FLMUINT					uiPoolBlkSize);
 
@@ -554,7 +552,7 @@ private:
 		FLMUNICODE *			puzNamespace,
 		FLMUINT					uiInsertPos);
 
-	IF_Pool *					m_pPool;
+	F_Pool						m_pool;
 	FLMUINT						m_uiMemoryAllocated;
 	FLM_TAG_INFO **			m_ppSortedByTagTypeAndName;
 	FLM_TAG_INFO **			m_ppSortedByTagTypeAndNum;
@@ -639,7 +637,7 @@ RCODE flmStorage2Unicode(
 	FLMUINT					uiType,
 	FLMUINT					uiStorageLength,
 	const FLMBYTE *		pucStorageBuffer,
-	IF_DynaBuf *			pBuffer);
+	F_DynaBuf *				pBuffer);
 
 RCODE	flmUnicode2Storage(
 	const FLMUNICODE *	puzStr,
@@ -1085,7 +1083,7 @@ public:
 
 	FINLINE RCODE FLMAPI getUnicode(
 		FLMUINT			uiElementNumber,
-		IF_DynaBuf *	pBuffer)
+		F_DynaBuf *		pBuffer)
 	{
 		F_VECTOR_ELEMENT *	pVector;
 
@@ -1157,7 +1155,7 @@ public:
 
 	FINLINE RCODE FLMAPI getBinary(
 		FLMUINT				uiElementNumber,
-		IF_DynaBuf *		pBuffer)
+		F_DynaBuf *			pBuffer)
 	{
 		F_VECTOR_ELEMENT *	pVector;
 
@@ -1810,7 +1808,7 @@ public:
 		m_pNodeList = NULL;
 		m_uiListSize = 0;
 		m_uiNodeCount = 0;
-		m_pPool = NULL;
+		m_pool.poolInit( 512);
 	}
 	
 	~F_OldNodeList();
@@ -1840,7 +1838,7 @@ public:
 private:
 
 	OLD_NODE_DATA *	m_pNodeList;
-	IF_Pool *			m_pPool;
+	F_Pool				m_pool;
 	FLMUINT				m_uiListSize;
 	FLMUINT				m_uiNodeCount;
 };
@@ -1857,8 +1855,6 @@ public:
 		
 	virtual ~F_Db();
 	
-	RCODE setup( void);
-
 	RCODE FLMAPI transBegin(
 		eDbTransType			eTransType,
 		FLMUINT					uiMaxLockWait = XFLM_NO_TIMEOUT,
@@ -3179,12 +3175,12 @@ private:
 															// in the pool.
 	FLMBYTE *				m_pucKrefKeyBuf;	// Pointer to temporary key buffer.
 	FLMBOOL					m_bKrefSetup;		// True if the KRef table has been initialized.
-	IF_Pool *				m_pKrefPool;		// Memory pool to use
+	F_Pool *					m_pKrefPool;		// Memory pool to use
 	FLMBOOL					m_bReuseKrefPool;	// Reuse pool instead of free it?
 	FLMBOOL					m_bKrefCompoundKey;	// True if a compound key has been processed.
 	void *					m_pKrefReset;			// Used to reset the Kref pool on
 														// indexing failures
-	IF_Pool *				m_pTmpKrefPool;	// KREF pool to be used during
+	F_Pool					m_tmpKrefPool;		// KREF pool to be used during
 														// read transactions - only used when
 														// checking indexes.
 
@@ -3233,7 +3229,7 @@ private:
 														// 2) a 'purge' element or attribute
 														//		can be deleted
 
-	IF_Pool *				m_pTempPool;		// Temporary memory pool.  It
+	F_Pool					m_tempPool;			// Temporary memory pool.  It
 														// is only used for the duration of
 														// a FLAIM operation and then reset.
 														// The first block in the pool is
@@ -3495,7 +3491,7 @@ public:
 		m_pCollectionArray = NULL;
 		m_uiCollectionArraySize = 0;
 		m_uiNumCollections = 0;
-		m_pPool = NULL;
+		m_pool.poolInit( 512);
 	}
 	
 	virtual ~F_BTreeInfo()
@@ -3508,16 +3504,7 @@ public:
 		{
 			f_free( &m_pCollectionArray);
 		}
-		
-		if( m_pPool)
-		{
-			m_pPool->Release();
-		}
-	}
-	
-	FINLINE RCODE setup( void)
-	{
-		return( FlmAllocPool( &m_pPool, 512));
+		m_pool.poolFree();
 	}
 	
 	FINLINE void FLMAPI clearBTreeInfo( void)
@@ -3664,7 +3651,7 @@ private:
 	BTREE_INFO *			m_pCollectionArray;
 	FLMUINT					m_uiCollectionArraySize;
 	FLMUINT					m_uiNumCollections;
-	IF_Pool *				m_pPool;
+	F_Pool					m_pool;
 	
 	// Items for the callback function.
 	
@@ -3949,8 +3936,6 @@ public:
 	
 	virtual ~F_Query();
 	
-	RCODE setup( void);
-
 	// Methods for constructing a query
 
 	FINLINE RCODE FLMAPI setLanguage(
@@ -4479,14 +4464,14 @@ private:
 		IF_DOMNode *			pContextNode,
 		FLMBOOL					bForward,
 		FQNODE *					pCurrNode,
-		IF_DynaBuf *			pDynaBuf);
+		F_DynaBuf *				pDynaBuf);
 		
 	RCODE getFuncValue(
 		IF_DOMNode *			pContextNode,
 		FLMBOOL					bForward,
 		FQNODE **				ppCurrNode,
 		FLMBOOL *				pbGetNodeValue,
-		IF_DynaBuf *			pDynaBuf);
+		F_DynaBuf *				pDynaBuf);
 		
 	RCODE getXPathValue(
 		IF_DOMNode *			pContextNode,
@@ -4688,7 +4673,7 @@ private:
 	FLMUINT64					m_ui64RSDocsRead;
 	FLMUINT64					m_ui64RSDocsPassed;
 	EXPR_STATE *				m_pCurExprState;
-	IF_Pool *					m_pPool;
+	F_Pool						m_pool;
 	FLMBOOL						m_bOptimized;
 	FLMUINT						m_uiLanguage;
 	FLMUINT						m_uiCollection;
@@ -5097,12 +5082,6 @@ public:
 		IF_IStream *			pInputStream,
 		IF_IStream **			ppDecodedStream);
 
-	FINLINE RCODE FLMAPI createMemoryPool(
-		IF_Pool **				ppPool)
-	{
-		return( FlmAllocPool( ppPool));
-	}
-		
 	RCODE FLMAPI createIFDataVector(
 		IF_DataVector **		ifppDV);
 
@@ -5873,7 +5852,7 @@ public:
 
 	RCODE FLMAPI getUnicode(
 		IF_Db *				pDb,
-		IF_DynaBuf *		pDynaBuf);
+		F_DynaBuf *			pDynaBuf);
 
 	RCODE FLMAPI getUTF8(
 		IF_Db *				pDb,
@@ -5890,7 +5869,7 @@ public:
 		
 	RCODE FLMAPI getUTF8(
 		IF_Db *				pDb,
-		IF_DynaBuf *		pDynaBuf);
+		F_DynaBuf *			pDynaBuf);
 
 	RCODE FLMAPI getBinary(
 		IF_Db *				pDb,
@@ -5901,7 +5880,7 @@ public:
 
 	RCODE FLMAPI getBinary(
 		IF_Db *				pDb,
-		IF_DynaBuf *		pBuffer);
+		F_DynaBuf *			pBuffer);
 
 	FINLINE RCODE FLMAPI getAttributeValueUINT32(
 		IF_Db *					pDb,
@@ -6128,7 +6107,7 @@ public:
 	RCODE FLMAPI getAttributeValueUnicode(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
-		IF_DynaBuf *			pDynaBuf);
+		F_DynaBuf *				pDynaBuf);
 		
 	RCODE FLMAPI getAttributeValueUTF8(
 		IF_Db *					pDb,
@@ -6150,7 +6129,7 @@ public:
 	RCODE FLMAPI getAttributeValueUTF8(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
-		IF_DynaBuf *			pDynaBuf);
+		F_DynaBuf *				pDynaBuf);
 		
 	RCODE FLMAPI getAttributeValueBinary(
 		IF_Db *					pDb,
@@ -6162,7 +6141,7 @@ public:
 	RCODE FLMAPI getAttributeValueBinary(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
-		IF_DynaBuf *			pDynaBuf);
+		F_DynaBuf *				pDynaBuf);
 		
 	FINLINE RCODE FLMAPI setUINT(
 		IF_Db *				pDb,
@@ -7417,7 +7396,7 @@ typedef struct Recov_Dict_Node
 typedef struct Recov_Dict_Info
 {
 	RECOV_DICT_NODE *	pRecovNodes;
-	IF_Pool *			pPool;
+	F_Pool *				pPool;
 } RECOV_DICT_INFO;
 
 typedef struct RSIxKeyTag
@@ -8471,228 +8450,5 @@ FINLINE RCODE F_NodeCacheMgr::makeWriteCopy(
 	
 	return( NE_XFLM_OK);
 }
-	
-/****************************************************************************
-Desc:
-*****************************************************************************/
-class F_DynaBuf : public IF_DynaBuf
-{
-public:
-
-	F_DynaBuf(
-		FLMBYTE *		pucBuffer,
-		FLMUINT			uiBufferSize)
-	{
-		m_pucBuffer = pucBuffer;
-		m_uiBufferSize = uiBufferSize;
-		m_uiOffset = 0;
-		m_bAllocatedBuffer = FALSE;
-	}
-	
-	virtual ~F_DynaBuf()
-	{
-		if( m_bAllocatedBuffer)
-		{
-			f_free( &m_pucBuffer);
-		}
-	}
-	
-	FINLINE void FLMAPI truncateData(
-		FLMUINT			uiSize)
-	{
-		if( uiSize < m_uiOffset)
-		{
-			m_uiOffset = uiSize;
-		}
-	}
-	
-	FINLINE RCODE FLMAPI allocSpace(
-		FLMUINT		uiSize,
-		void **		ppvPtr)
-	{
-		RCODE		rc = NE_FLM_OK;
-		
-		if( m_uiOffset + uiSize >= m_uiBufferSize)
-		{
-			if( RC_BAD( rc = resizeBuffer( m_uiOffset + uiSize + 512)))
-			{
-				goto Exit;
-			}
-		}
-		
-		*ppvPtr = &m_pucBuffer[ m_uiOffset];
-		m_uiOffset += uiSize;
-		
-	Exit:
-	
-		return( rc);
-	}
-	
-	FINLINE RCODE FLMAPI appendData(
-		const void *		pvData,
-		FLMUINT				uiSize)
-	{
-		RCODE		rc = NE_FLM_OK;
-		void *	pvTmp;
-		
-		if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
-		{
-			goto Exit;
-		}
-
-		if( uiSize == 1)
-		{
-			*((FLMBYTE *)pvTmp) = *((FLMBYTE *)pvData);
-		}
-		else
-		{
-			f_memcpy( pvTmp, pvData, uiSize);
-		}
-		
-	Exit:
-	
-		return( rc);
-	}
-		
-	FINLINE RCODE FLMAPI appendByte(
-		FLMBYTE		ucChar)
-	{
-		RCODE			rc = NE_FLM_OK;
-		FLMBYTE *	pucTmp;
-		
-		if( RC_BAD( rc = allocSpace( 1, (void **)&pucTmp)))
-		{
-			goto Exit;
-		}
-		
-		*pucTmp = ucChar;
-		
-	Exit:
-	
-		return( rc);
-	}
-	
-	FINLINE RCODE FLMAPI appendUniChar(
-		FLMUNICODE	uChar)
-	{
-		RCODE				rc = NE_FLM_OK;
-		FLMUNICODE *	puTmp;
-		
-		if( RC_BAD( rc = allocSpace( sizeof( FLMUNICODE), (void **)&puTmp)))
-		{
-			goto Exit;
-		}
-		
-		*puTmp = uChar;
-		
-	Exit:
-	
-		return( rc);
-	}
-	
-	FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
-	{
-		return( m_pucBuffer);
-	}
-	
-	FINLINE FLMUNICODE * FLMAPI getUnicodePtr( void)
-	{
-		if( m_uiOffset >= sizeof( FLMUNICODE))
-		{
-			return( (FLMUNICODE *)m_pucBuffer);
-		}
-		
-		return( NULL);
-	}
-	
-	FINLINE FLMUINT FLMAPI getUnicodeLength( void)
-	{
-		if( m_uiOffset <= sizeof( FLMUNICODE))
-		{
-			return( 0);
-		}
-		
-		return( (m_uiOffset >> 1) - 1);
-	}
-	
-	FINLINE FLMUINT FLMAPI getDataLength( void)
-	{
-		return( m_uiOffset);
-	}
-	
-	FINLINE RCODE FLMAPI copyFromBuffer(
-		IF_DynaBuf *		pSource)
-	{
-		RCODE		rc = NE_FLM_OK;
-		
-		if( RC_BAD( rc = resizeBuffer( 
-			((F_DynaBuf *)pSource)->m_uiBufferSize)))
-		{
-			goto Exit;
-		}
-		
-		if( (m_uiOffset = ((F_DynaBuf *)pSource)->m_uiOffset) != 0)
-		{
-			f_memcpy( m_pucBuffer, ((F_DynaBuf *)pSource)->m_pucBuffer, 
-				((F_DynaBuf *)pSource)->m_uiOffset);
-		}
-		
-	Exit:
-		
-		return( rc);
-	}		
-	
-private:
-
-	FINLINE RCODE resizeBuffer(
-		FLMUINT		uiNewSize)
-	{
-		RCODE	rc = NE_FLM_OK;
-		
-		if( !m_bAllocatedBuffer)
-		{
-			if( uiNewSize > m_uiBufferSize)
-			{
-				FLMBYTE *		pucOriginalBuf = m_pucBuffer;
-				
-				if( RC_BAD( rc = f_alloc( uiNewSize, &m_pucBuffer)))
-				{
-					m_pucBuffer = pucOriginalBuf;
-					goto Exit;
-				}
-				
-				m_bAllocatedBuffer = TRUE;
-				
-				if( m_uiOffset)
-				{
-					f_memcpy( m_pucBuffer, pucOriginalBuf, m_uiOffset);
-				}
-			}
-		}
-		else
-		{
-			if( RC_BAD( rc = f_realloc( uiNewSize, &m_pucBuffer)))
-			{
-				goto Exit;
-			}
-			
-			if( uiNewSize < m_uiOffset)
-			{
-				m_uiOffset = uiNewSize;
-			}
-		}
-		
-		m_uiBufferSize = uiNewSize;
-		
-	Exit:
-	
-		return( rc);
-	}
-
-	FLMBOOL		m_bAllocatedBuffer;
-	FLMBYTE *	m_pucBuffer;
-	FLMUINT		m_uiBufferSize;
-	FLMUINT		m_uiOffset;
-};
 	
 #endif // FLAIMSYS_H

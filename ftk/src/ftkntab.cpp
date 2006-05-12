@@ -72,8 +72,6 @@ public:
 
 	virtual ~F_NameTable();
 
-	RCODE FLMAPI setupNameTable( void);
-
 	void FLMAPI clearTable(
 		FLMUINT					uiPoolBlkSize);
 
@@ -192,7 +190,7 @@ private:
 		FLMUNICODE *			puzNamespace,
 		FLMUINT					uiInsertPos);
 
-	IF_Pool *					m_pPool;
+	F_Pool						m_pool;
 	FLMUINT						m_uiMemoryAllocated;
 	FLM_TAG_INFO **			m_ppSortedByTagTypeAndName;
 	FLM_TAG_INFO **			m_ppSortedByTagTypeAndNum;
@@ -210,7 +208,7 @@ Desc:
 ****************************************************************************/
 F_NameTable::F_NameTable()
 {
-	m_pPool = NULL;
+	m_pool.poolInit( 1024);
 	m_uiMemoryAllocated = 0;
 	m_ppSortedByTagTypeAndName = NULL;
 	m_ppSortedByTagTypeAndNum = NULL;
@@ -229,36 +227,10 @@ Desc:
 F_NameTable::~F_NameTable()
 {
 	clearTable( 0);
-	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-	}
-	
 	if( m_hRefMutex)
 	{
 		f_mutexDestroy( &m_hRefMutex);
 	}
-}
-
-/****************************************************************************
-Desc:	Setup name table.  This routine should be called immediately after
-		the object is allocated.
-****************************************************************************/
-RCODE FLMAPI F_NameTable::setupNameTable( void)
-{
-	RCODE		rc = NE_FLM_OK;
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pPool->poolInit( 1024);
-
-Exit:
-
-	return( rc);
 }
 
 /****************************************************************************
@@ -267,11 +239,11 @@ Desc:	Free everything in the table
 void FLMAPI F_NameTable::clearTable(
 	FLMUINT	uiPoolBlkSize)
 {
-	m_pPool->poolFree();
+	m_pool.poolFree();
 	
 	if (uiPoolBlkSize)
 	{
-		m_pPool->poolInit( uiPoolBlkSize);
+		m_pool.poolInit( uiPoolBlkSize);
 	}
 	
 	m_uiMemoryAllocated = 0;
@@ -1153,9 +1125,9 @@ RCODE F_NameTable::allocTag(
 
 	// Create a new tag info structure.
 
-	pvMark = m_pPool->poolMark();
+	pvMark = m_pool.poolMark();
 	uiSaveMemoryAllocated = m_uiMemoryAllocated;
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FLM_TAG_INFO),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FLM_TAG_INFO),
 										(void **)&pTagInfo)))
 	{
 		goto Exit;
@@ -1167,7 +1139,7 @@ RCODE F_NameTable::allocTag(
 	if (puzTagName)
 	{
 		uiNameSize = (f_unilen( puzTagName) + 1) * sizeof( FLMUNICODE);
-		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
 											(void **)&pTagInfo->puzTagName)))
 		{
 			goto Exit;
@@ -1178,7 +1150,7 @@ RCODE F_NameTable::allocTag(
 	else
 	{
 		uiNameSize = (f_strlen( pszTagName) + 1) * sizeof( FLMUNICODE);
-		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
 										(void **)&pTagInfo->puzTagName)))
 		{
 			goto Exit;
@@ -1207,7 +1179,7 @@ RCODE F_NameTable::allocTag(
 										&uiNamespaceInsertPos)) == NULL)
 		{
 			uiNameSize = (f_unilen( puzNamespace) + 1) * sizeof( FLMUNICODE);
-			if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
+			if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
 										(void **)&puzTblNamespace)))
 			{
 				goto Exit;
@@ -1225,7 +1197,7 @@ RCODE F_NameTable::allocTag(
 			// allocated if the pool is reset at Exit due to a later
 			// error.
 
-			pvMark = m_pPool->poolMark();
+			pvMark = m_pool.poolMark();
 			uiSaveMemoryAllocated = m_uiMemoryAllocated;
 		}
 		
@@ -1236,7 +1208,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		m_pPool->poolReset( pvMark);
+		m_pool.poolReset( pvMark);
 		m_uiMemoryAllocated = uiSaveMemoryAllocated;
 		pTagInfo = NULL;
 	}

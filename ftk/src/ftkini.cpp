@@ -48,7 +48,7 @@ public:
 	
 	virtual ~F_IniFile();
 	
-	RCODE init( void);
+	void init( void);
 	
 	RCODE FLMAPI read(
 		const char *		pszFileName);
@@ -134,7 +134,7 @@ private:
 		return( ucChar == 32 || ucChar == 9 ? TRUE : FALSE);
 	}
 	
-	IF_Pool *			m_pPool;
+	F_Pool				m_pool;
 	IF_FileHdl * 		m_pFileHdl;
 	char *				m_pszFileName;
 	INI_LINE *			m_pFirstLine;	
@@ -155,7 +155,7 @@ F_IniFile::F_IniFile()
 	m_bModified = FALSE;
 	m_pszFileName = NULL;
 	m_pFileHdl = NULL;
-	m_pPool = NULL;
+	m_pool.poolInit( 512);
 }
 
 /****************************************************************************
@@ -168,10 +168,7 @@ F_IniFile::~F_IniFile()
 		f_free( &m_pszFileName);
 	}
 	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-	}
+	m_pool.poolFree();
 	
 	if( m_pFileHdl)
 	{
@@ -194,10 +191,7 @@ RCODE FLMAPI FlmAllocIniFile(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIniFile->init()))
-	{
-		goto Exit;
-	}
+	pIniFile->init();
 	
 	*ppIniFile = pIniFile;
 	pIniFile = NULL;
@@ -215,29 +209,13 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_IniFile::init()
+void F_IniFile::init( void)
 {
-	RCODE		rc = NE_FLM_OK;
-	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-		m_pPool = NULL;
-	}
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pPool->poolInit( 512);
+	m_pool.poolFree();	
+	m_pool.poolInit( 512);
 	m_pFirstLine = NULL;
 	m_pLastLine = NULL;
 	m_bReady = TRUE;
-
-Exit:
-
-	return( rc);
 }
 
 /****************************************************************************
@@ -929,7 +907,7 @@ Comment:
 	
 	if( pszNameStart || pszCommentStart)
 	{
-		if( RC_BAD( rc = m_pPool->poolCalloc( sizeof( INI_LINE),
+		if( RC_BAD( rc = m_pool.poolCalloc( sizeof( INI_LINE),
 										(void **)&pLine)))
 		{
 			goto Exit;
@@ -938,7 +916,7 @@ Comment:
 		if( pszNameStart)
 		{
 			uiStrLen = pszNameEnd - pszNameStart + 1;
-			if( RC_BAD( rc = m_pPool->poolAlloc( uiStrLen + 1,
+			if( RC_BAD( rc = m_pool.poolAlloc( uiStrLen + 1,
 								(void **)&pLine->pszParamName)))
 			{
 				goto Exit;
@@ -951,7 +929,7 @@ Comment:
 		if( pszValStart)
 		{
 			uiStrLen = pszValEnd - pszValStart + 1;
-			if( RC_BAD( rc = m_pPool->poolAlloc( uiStrLen + 1,
+			if( RC_BAD( rc = m_pool.poolAlloc( uiStrLen + 1,
 						(void **)&pLine->pszParamValue)))
 			{
 				goto Exit;
@@ -964,7 +942,7 @@ Comment:
 		if (pszCommentStart)
 		{
 			uiStrLen = uiNumBytes-(pszCommentStart-pszBuf);
-			if (RC_BAD( rc = m_pPool->poolAlloc( uiStrLen + 1,
+			if (RC_BAD( rc = m_pool.poolAlloc( uiStrLen + 1,
 										(void **)&pLine->pszComment)))
 			{
 				goto Exit;
@@ -1030,7 +1008,7 @@ RCODE F_IniFile::setParamCommon(
 	RCODE				rc = NE_FLM_OK;
 	INI_LINE *		pLine;
 
-	if( RC_BAD( rc = m_pPool->poolCalloc( 
+	if( RC_BAD( rc = m_pool.poolCalloc( 
 		sizeof( INI_LINE), (void **)&pLine)))
 	{
 		goto Exit;
@@ -1049,7 +1027,7 @@ RCODE F_IniFile::setParamCommon(
 		m_pFirstLine = pLine;
 	}
 
-	if( RC_BAD( rc = m_pPool->poolAlloc( f_strlen(pszParamName)+1,
+	if( RC_BAD( rc = m_pool.poolAlloc( f_strlen(pszParamName)+1,
 								(void **)&pLine->pszParamName)))
 	{
 		goto Exit;
@@ -1162,7 +1140,7 @@ RCODE F_IniFile::toAscii(
 
 	f_sprintf( szTemp, "%*.*lu", sizeof(szTemp), sizeof(szTemp), puiVal);
 
-	if( RC_BAD( rc = m_pPool->poolAlloc( f_strlen( szTemp),
+	if( RC_BAD( rc = m_pool.poolAlloc( f_strlen( szTemp),
 		(void **)ppszParamValue)))
 	{
 		goto Exit;
@@ -1186,7 +1164,7 @@ RCODE F_IniFile::toAscii(
 {
 	RCODE		rc = NE_FLM_OK;
 	
-	if( RC_BAD( rc = m_pPool->poolAlloc( 6, (void **)ppszParamValue)))
+	if( RC_BAD( rc = m_pool.poolAlloc( 6, (void **)ppszParamValue)))
 	{
 		goto Exit;
 	}
@@ -1217,7 +1195,7 @@ RCODE F_IniFile::toAscii(
 {
 	RCODE		rc = NE_FLM_OK;
 	
-	if( RC_BAD( rc = m_pPool->poolAlloc( f_strlen( pszVal),
+	if( RC_BAD( rc = m_pool.poolAlloc( f_strlen( pszVal),
 							(void **)ppszParamValue)))
 	{
 		goto Exit;

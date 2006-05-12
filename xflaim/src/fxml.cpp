@@ -118,8 +118,8 @@ F_XMLImport::F_XMLImport()
 	m_bSetup = FALSE;
 	m_fnStatus = NULL;
 	m_pvCallbackData = NULL;
-	m_pTmpPool = NULL;
-	m_pAttrPool = NULL;
+	m_tmpPool.poolInit( 4096);
+	m_attrPool.poolInit( 4096);
 	m_puzCurrLineBuf = NULL;
 	m_uiCurrLineBufMaxChars = 0;
 	reset();
@@ -142,15 +142,8 @@ F_XMLImport::~F_XMLImport()
 		f_free( &m_puzCurrLineBuf);
 	}
 
-	if( m_pTmpPool)
-	{
-		m_pTmpPool->Release();
-	}
-
-	if( m_pAttrPool)
-	{
-		m_pAttrPool->Release();
-	}
+	m_tmpPool.poolFree();
+	m_attrPool.poolFree();
 }
 
 /****************************************************************************
@@ -172,10 +165,7 @@ void F_XMLImport::reset( void)
 	f_memset( &m_importStats, 0, sizeof( XFLM_IMPORT_STATS));
 	popNamespaces( getNamespaceCount());
 
-	if( m_pTmpPool)
-	{
-		m_pTmpPool->poolReset( NULL);
-	}
+	m_tmpPool.poolReset( NULL);
 
 	resetAttrList();
 }
@@ -193,20 +183,6 @@ RCODE F_XMLImport::setup( void)
 	{
 		goto Exit;
 	}
-
-	if( RC_BAD( rc = FlmAllocPool( &m_pTmpPool)))
-	{
-		goto Exit;
-	}
-
-	m_pTmpPool->poolInit( 4096);
-
-	if( RC_BAD( rc = FlmAllocPool( &m_pAttrPool)))
-	{
-		goto Exit;
-	}
-
-	m_pAttrPool->poolInit( 4096);
 	m_bSetup = TRUE;
 
 Exit:
@@ -953,7 +929,7 @@ RCODE F_XMLImport::processSTag(
 	FLMUNICODE *		puzLocal = NULL;
 	FLMUINT				uiNameId;
 	FLMUINT				uiAllocSize;
-	void *				pvMark = m_pTmpPool->poolMark();
+	void *				pvMark = m_tmpPool.poolMark();
 	RCODE					rc = NE_XFLM_OK;
 	FLMBOOL				bNamespaceDecl;
 	FLMUINT				uiSavedLineNum;
@@ -998,7 +974,7 @@ RCODE F_XMLImport::processSTag(
 	}
 
 	uiAllocSize = (f_unilen( puzTmpLocal) + 1) * sizeof( FLMUNICODE);
-	if( RC_BAD( rc = m_pTmpPool->poolAlloc( uiAllocSize, (void **)&puzLocal)))
+	if( RC_BAD( rc = m_tmpPool.poolAlloc( uiAllocSize, (void **)&puzLocal)))
 	{
 		goto Exit;
 	}
@@ -1011,7 +987,7 @@ RCODE F_XMLImport::processSTag(
 		// continues, the scratch buffer will be overwritten
 
 		uiAllocSize = (f_unilen( puzTmpPrefix) + 1) * sizeof( FLMUNICODE);
-		if( RC_BAD( rc = m_pTmpPool->poolAlloc( uiAllocSize, (void **)&puzPrefix)))
+		if( RC_BAD( rc = m_tmpPool.poolAlloc( uiAllocSize, (void **)&puzPrefix)))
 		{
 			goto Exit;
 		}
@@ -1184,7 +1160,7 @@ Exit:
 		pNamespace->Release();
 	}
 
-	m_pTmpPool->poolReset( pvMark);
+	m_tmpPool.poolReset( pvMark);
 	return( rc);
 }
 

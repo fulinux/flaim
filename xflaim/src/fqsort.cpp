@@ -77,7 +77,7 @@ RCODE FLMAPI F_Query::addSortKey(
 	
 	if (!m_pSortIxd)
 	{
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( IXD), (void **)&m_pSortIxd)))
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( IXD), (void **)&m_pSortIxd)))
 		{
 			goto Exit;
 		}
@@ -90,7 +90,7 @@ RCODE FLMAPI F_Query::addSortKey(
 	
 	// Allocate an ICD structure.
 	
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( ICD),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( ICD),
 										(void **)&pSortIcd)))
 	{
 		goto Exit;

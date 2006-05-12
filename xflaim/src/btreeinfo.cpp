@@ -344,7 +344,7 @@ RCODE F_BTreeInfo::collectBTreeInfo(
 		// Allocate a name buffer.
 		
 		uiNameBufSize = f_strlen( pszName) + 1;
-		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameBufSize, 
+		if (RC_BAD( rc = m_pool.poolAlloc( uiNameBufSize, 
 			(void **)(&pBTreeInfo->pszLfName))))
 		{
 			goto Exit;
@@ -357,7 +357,7 @@ RCODE F_BTreeInfo::collectBTreeInfo(
 		// Allocate a name buffer.
 		
 		uiNameBufSize++;
-		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameBufSize, 
+		if (RC_BAD( rc = m_pool.poolAlloc( uiNameBufSize, 
 			(void **)(&pBTreeInfo->pszLfName))))
 		{
 			goto Exit;
@@ -822,11 +822,6 @@ RCODE FLMAPI F_DbSystem::createIFBTreeInfo(
 	if ((pBTreeInfo = f_new F_BTreeInfo) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = pBTreeInfo->setup()))
-	{
 		goto Exit;
 	}
 	

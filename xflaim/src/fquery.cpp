@@ -192,7 +192,7 @@ Desc:	Constructor
 ***************************************************************************/
 F_Query::F_Query()
 {
-	m_pPool = NULL;
+	m_pool.poolInit( 1024);
 	m_uiLanguage = FLM_US_LANG;
 	m_uiCollection = XFLM_DATA_COLLECTION;
 	initVars();
@@ -204,30 +204,7 @@ Desc:	Destructor
 F_Query::~F_Query()
 {
 	clearQuery();
-	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-	}
-}
-
-/***************************************************************************
-Desc:
-***************************************************************************/
-RCODE F_Query::setup( void)
-{
-	RCODE		rc = NE_XFLM_OK;
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pPool->poolInit( 1024);
-	
-Exit:
-
-	return( rc);
+	m_pool.poolFree();
 }
 
 /***************************************************************************
@@ -439,11 +416,7 @@ void F_Query::initVars( void)
 	m_bIndexSet = FALSE;
 	m_uiTimeLimit = 0;
 	m_uiStartTime = 0;
-
-	if( m_pPool)
-	{
-		m_pPool->poolReset( NULL);
-	}
+	m_pool.poolReset( NULL);
 }
 
 /***************************************************************************
@@ -456,7 +429,7 @@ RCODE F_Query::allocExprState( void)
 
 	if (!m_pCurExprState || !m_pCurExprState->pNext)
 	{
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( EXPR_STATE),
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( EXPR_STATE),
 												(void **)&pExprState)))
 		{
 			goto Exit;
@@ -651,7 +624,7 @@ RCODE F_Query::allocValueNode(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQNODE),
 									(void **)ppQNode)))
 	{
 		goto Exit;
@@ -667,7 +640,7 @@ RCODE F_Query::allocValueNode(
 	if (uiValLen &&
 		 (eValType == XFLM_UTF8_VAL || eValType == XFLM_BINARY_VAL))
 	{
-		if (RC_BAD( rc = m_pPool->poolAlloc( uiValLen,
+		if (RC_BAD( rc = m_pool.poolAlloc( uiValLen,
 												(void **)&pQNode->currVal.val.pucBuf)))
 		{
 			goto Exit;
@@ -1102,7 +1075,7 @@ RCODE FLMAPI F_Query::addXPathComponent(
 
 	// Allocate an XPATH component
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( XPATH_COMPONENT),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( XPATH_COMPONENT),
 										(void **)&pXPathComponent)))
 	{
 		goto Exit;
@@ -1133,12 +1106,12 @@ RCODE FLMAPI F_Query::addXPathComponent(
 
 		// Need to allocate a node and an XPATH
 
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQNODE),
 											(void **)&pQNode)))
 		{
 			goto Exit;
 		}
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FXPATH),
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FXPATH),
 											(void **)&pXPath)))
 		{
 			goto Exit;
@@ -1379,7 +1352,7 @@ RCODE FLMAPI F_Query::addOperator(
 					// Allocate an expression node and link it to the
 					// function.
 
-					if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQEXPR),
+					if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQEXPR),
 												(void **)&pQExpr)))
 					{
 						goto Exit;
@@ -1469,7 +1442,7 @@ RCODE FLMAPI F_Query::addOperator(
 
 			// Allocate an expression node and link it to the
 
-			if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQEXPR),
+			if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQEXPR),
 										(void **)&pQExpr)))
 			{
 				goto Exit;
@@ -1616,7 +1589,7 @@ RCODE FLMAPI F_Query::addOperator(
 					// Create an AND node and link the existing expression with
 					// this new expression as children of this new AND node.
 
-					if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
+					if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQNODE),
 															(void **)&pQNode)))
 					{
 						goto Exit;
@@ -1708,7 +1681,7 @@ RCODE FLMAPI F_Query::addOperator(
 
 	// Make a QNODE and find a place for it in the query tree
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQNODE),
 											(void **)&pQNode)))
 	{
 		goto Exit;
@@ -1871,12 +1844,12 @@ RCODE FLMAPI F_Query::addFunction(
 
 	// Allocate a function node
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQNODE),
 											(void **)&pQNode)))
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQFUNCTION),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQFUNCTION),
 											(void **)&pQFunction)))
 	{
 		goto Exit;
@@ -2354,7 +2327,7 @@ RCODE F_Query::intersectPredicates(
 
 	// Add a new predicate to the context path
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( PATH_PRED),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( PATH_PRED),
 												(void **)&pPred)))
 	{
 		goto Exit;
@@ -2441,7 +2414,7 @@ Exit:
 	{
 		PATH_PRED_NODE *	pPathPredNode;
 
-		if (RC_OK( rc = m_pPool->poolCalloc( sizeof( PATH_PRED_NODE),
+		if (RC_OK( rc = m_pool.poolCalloc( sizeof( PATH_PRED_NODE),
 										(void **)&pPathPredNode)))
 		{
 			pPathPredNode->pXPathNode = pXPathNode;
@@ -2843,7 +2816,7 @@ RCODE F_Query::unionPredicates(
 
 	// Add a new predicate to the context path
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( PATH_PRED),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( PATH_PRED),
 											(void **)&pPred)))
 	{
 		goto Exit;
@@ -2930,7 +2903,7 @@ Exit:
 	{
 		PATH_PRED_NODE *	pPathPredNode;
 
-		if (RC_OK( rc = m_pPool->poolCalloc( sizeof( PATH_PRED_NODE),
+		if (RC_OK( rc = m_pool.poolCalloc( sizeof( PATH_PRED_NODE),
 										(void **)&pPathPredNode)))
 		{
 			pPathPredNode->pXPathNode = pXPathNode;
@@ -3083,7 +3056,7 @@ RCODE F_Query::addPredicateToContext(
 
 	if (!pContextPath)
 	{
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( CONTEXT_PATH),
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( CONTEXT_PATH),
 									(void **)&pContextPath)))
 		{
 			goto Exit;
@@ -3310,7 +3283,7 @@ RCODE F_Query::createOpContext(
 	// Allocate a new context and link it in as a child
 	// to the current context.
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( OP_CONTEXT),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( OP_CONTEXT),
 									(void **)&pContext)))
 	{
 		goto Exit;
@@ -9203,7 +9176,7 @@ RCODE F_Query::getNextFunctionValue(
 	IF_DOMNode *		pContextNode,
 	FLMBOOL				bForward,
 	FQNODE *				pCurrNode,
-	IF_DynaBuf *		pDynaBuf)
+	F_DynaBuf *			pDynaBuf)
 {
 	RCODE				rc = NE_XFLM_OK;
 	ValIterator		eIterator;
@@ -9247,7 +9220,7 @@ RCODE F_Query::getNextFunctionValue(
 	pDynaBuf->truncateData( 0);
 	if (RC_BAD( rc = pCurrNode->nd.pQFunction->pFuncObj->getValue( (IF_Db *)m_pDb,
 								pNode, eIterator, &pCurrNode->currVal.eValType,
-								&pCurrNode->bLastValue, ucValBuf, (IF_DynaBuf *)pDynaBuf)))
+								&pCurrNode->bLastValue, ucValBuf, pDynaBuf)))
 	{
 		goto Exit;
 	}
@@ -9593,7 +9566,7 @@ RCODE F_Query::getFuncValue(
 	FLMBOOL				bForward,
 	FQNODE **			ppCurrNode,
 	FLMBOOL *			pbGetNodeValue,
-	IF_DynaBuf *		pDynaBuf)
+	F_DynaBuf *			pDynaBuf)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FQNODE *				pCurrNode = *ppCurrNode;
@@ -13595,11 +13568,6 @@ RCODE FLMAPI F_DbSystem::createIFQuery(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pQuery->setup()))
-	{
-		goto Exit;
-	}
-	
 	*ppQuery = pQuery;
 	pQuery = NULL;
 	
@@ -14005,7 +13973,7 @@ RCODE F_Query::copyValue(
 		case XFLM_UTF8_VAL:
 			if (pDestValue->uiDataLen)
 			{
-				if (RC_BAD( rc = m_pPool->poolAlloc( pDestValue->uiDataLen,
+				if (RC_BAD( rc = m_pool.poolAlloc( pDestValue->uiDataLen,
 													(void **)&pDestValue->val.pucBuf)))
 				{
 					goto Exit;
@@ -14038,7 +14006,7 @@ RCODE F_Query::copyXPath(
 	XPATH_COMPONENT *	pXPathComponent;
 	XPATH_COMPONENT *	pTmpXPathComponent;
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FXPATH),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FXPATH),
 								(void **)&pDestXPath)))
 	{
 		goto Exit;
@@ -14047,7 +14015,7 @@ RCODE F_Query::copyXPath(
 	pXPathComponent = pSrcXPath->pFirstComponent;
 	while (pXPathComponent)
 	{
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( XPATH_COMPONENT),
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( XPATH_COMPONENT),
 									(void **)&pTmpXPathComponent)))
 		{
 			goto Exit;
@@ -14126,7 +14094,7 @@ RCODE F_Query::copyFunction(
 	FQEXPR *				pExpr;
 	FQEXPR *				pTmpExpr;
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQFUNCTION),
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQFUNCTION),
 								(void **)&pDestFunc)))
 	{
 		goto Exit;
@@ -14157,7 +14125,7 @@ RCODE F_Query::copyFunction(
 	pExpr = pSrcFunc->pFirstArg;
 	while (pExpr)
 	{
-		if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQEXPR),
+		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQEXPR),
 										(void **)&pTmpExpr)))
 		{
 			goto Exit;
@@ -14196,7 +14164,7 @@ RCODE F_Query::copyNode(
 	RCODE		rc = NE_XFLM_OK;
 	FQNODE *	pDestNode;
 
-	if (RC_BAD( rc = m_pPool->poolCalloc( sizeof( FQNODE), (void **)&pDestNode)))
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( FQNODE), (void **)&pDestNode)))
 	{
 		goto Exit;
 	}

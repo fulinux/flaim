@@ -125,6 +125,7 @@ Desc:
 	#error Platform not supported
 #endif
 
+#ifdef FLM_DEBUG
 static FLMBOOL		gv_bMemTrackingInitialized = FALSE;
 static FLMUINT		gv_uiInitThreadId = 0;
 static F_MUTEX		gv_hMemTrackingMutex = F_MUTEX_NULL;
@@ -136,6 +137,8 @@ static FLMUINT		gv_uiNextMemPtrSlotToUse = 0;
 static FLMUINT		gv_uiAllocCnt = 0;
 static FLMBOOL		gv_bStackWalk = FALSE;
 static FLMBOOL		gv_bLogLeaks = FALSE;
+#endif
+
 #ifdef FLM_WIN
 	static HANDLE	gv_hMemProcess;
 #endif
@@ -150,6 +153,7 @@ static FLMBOOL		gv_bLogLeaks = FALSE;
 	#define F_PICKET_FENCE_SIZE		0
 #endif
 
+#ifdef FLM_DEBUG
 FSTATIC FLMBOOL initMemTracking( void);
 
 FSTATIC void saveMemTrackingInfo(
@@ -162,6 +166,7 @@ FSTATIC void freeMemTrackingInfo(
 	FLMBOOL			bMutexAlreadyLocked,
 	FLMUINT			uiId,
 	FLMUINT *		puiStack);
+#endif
 
 /****************************************************************************
 Desc:
@@ -626,142 +631,6 @@ private:
 	IF_FixedAlloc **			m_ppAllocators;
 };
 
-/****************************************************************************
-Desc:	This class is used to do pool memory allocations.
-****************************************************************************/
-class F_Pool : public IF_Pool
-{
-public:
-
-	typedef struct PoolMemoryBlock
-	{
-		PoolMemoryBlock *		pPrevBlock;
-		FLMUINT					uiBlockSize;
-		FLMUINT					uiFreeOffset;
-		FLMUINT					uiFreeSize;
-	} MBLK;
-
-	typedef struct
-	{
-		FLMUINT	uiAllocBytes;
-		FLMUINT	uiCount;
-	} POOL_STATS;
-
-	F_Pool()
-	{
-		m_uiBytesAllocated = 0;
-		m_pLastBlock = NULL;
-		m_pPoolStats = NULL;
-		m_uiBlockSize = 0;
-	}
-
-	virtual ~F_Pool();
-
-	FINLINE void FLMAPI poolInit(
-		FLMUINT			uiBlockSize)
-	{
-		m_uiBlockSize = uiBlockSize;
-	}
-
-	void smartPoolInit(
-		POOL_STATS *	pPoolStats);
-
-	RCODE FLMAPI poolAlloc(
-		FLMUINT			uiSize,
-		void **			ppvPtr);
-
-	RCODE FLMAPI poolCalloc(
-		FLMUINT			uiSize,
-		void **			ppvPtr);
-
-	void FLMAPI poolFree( void);
-
-	void FLMAPI poolReset(
-		void *			pvMark,
-		FLMBOOL			bReduceFirstBlock = FALSE);
-
-	FINLINE void * FLMAPI poolMark( void)
-	{
-		return (void *)(m_pLastBlock
-							 ? (FLMBYTE *)m_pLastBlock + m_pLastBlock->uiFreeOffset
-							 : NULL);
-	}
-
-	FINLINE FLMUINT FLMAPI getBlockSize( void)
-	{
-		return( m_uiBlockSize);
-	}
-
-	FINLINE FLMUINT FLMAPI getBytesAllocated( void)
-	{
-		return( m_uiBytesAllocated);
-	}
-
-private:
-
-	FINLINE void updateSmartPoolStats( void)
-	{
-		if (m_uiBytesAllocated)
-		{
-			if( (m_pPoolStats->uiAllocBytes + m_uiBytesAllocated) >= 0xFFFF0000)
-			{
-				m_pPoolStats->uiAllocBytes =
-					(m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount) * 100;
-				m_pPoolStats->uiCount = 100;
-			}
-			else
-			{
-				m_pPoolStats->uiAllocBytes += m_uiBytesAllocated;
-				m_pPoolStats->uiCount++;
-			}
-			m_uiBytesAllocated = 0;
-		}
-	}
-
-	FINLINE void setInitialSmartPoolBlkSize( void)
-	{
-		// Determine starting block size:
-		// 1) average of bytes allocated / # of frees/resets (average size needed)
-		// 2) add 10% - to minimize extra allocs 
-
-		m_uiBlockSize = (m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount);
-		m_uiBlockSize += (m_uiBlockSize / 10);
-
-		if (m_uiBlockSize < 512)
-		{
-			m_uiBlockSize = 512;
-		}
-	}
-
-	void freeToMark(
-		void *		pvMark);
-
-	PoolMemoryBlock *		m_pLastBlock;
-	FLMUINT					m_uiBlockSize;
-	FLMUINT					m_uiBytesAllocated;
-	POOL_STATS *			m_pPoolStats;
-};
-
-/************************************************************************
-Desc:
-*************************************************************************/
-RCODE FLMAPI FlmAllocPool(
-	IF_Pool **		ppPool,
-	FLMUINT			uiBlockSize)
-{
-	if( (*ppPool = f_new F_Pool) == NULL)
-	{
-		return( RC_SET( NE_FLM_MEM));
-	}
-
-	if( uiBlockSize)
-	{
-		(*ppPool)->poolInit( uiBlockSize);
-	}
-	
-	return( NE_FLM_OK);
-}
-	
 /****************************************************************************
 Desc:	
 ****************************************************************************/
@@ -1674,11 +1543,7 @@ RCODE FLMAPI f_reallocImp(
 
 	if (!(*ppvPtr))
 	{
-#ifdef FLM_DEBUG
 		rc = f_allocImp( uiSize, ppvPtr, FALSE, pszFileName, iLineNumber);
-#else
-		rc = f_allocImp( uiSize, ppvPtr);
-#endif
 		goto Exit;
 	}
 
@@ -1766,11 +1631,7 @@ RCODE FLMAPI f_recallocImp(
 
 	if (!(*ppvPtr))
 	{
-#ifdef FLM_DEBUG
 		rc = f_callocImp( uiSize, ppvPtr, pszFileName, iLineNumber);
-#else
-		rc = f_callocImp( uiSize, ppvPtr);
-#endif
 		goto Exit;
 	}
 
@@ -4772,15 +4633,7 @@ void * F_Object::operator new(
 {
 	void *	pvReturnPtr = NULL;
 
-#ifdef FLM_DEBUG
 	f_allocImp( uiSize, &pvReturnPtr, TRUE, pszFile, iLine);
-#else
-	F_UNREFERENCED_PARM( pszFile);
-	F_UNREFERENCED_PARM( iLine);
-
-	f_allocImp( uiSize, &pvReturnPtr);
-#endif
-
 	return( pvReturnPtr);
 }
 
@@ -4794,15 +4647,7 @@ void * F_Object::operator new[](
 {
 	void *	pvReturnPtr = NULL;
 
-#ifdef FLM_DEBUG
 	f_allocImp( uiSize, &pvReturnPtr, TRUE, pszFile, iLine);
-#else
-	F_UNREFERENCED_PARM( pszFile);
-	F_UNREFERENCED_PARM( iLine);
-
-	f_allocImp( uiSize, &pvReturnPtr);
-#endif
-
 	return( pvReturnPtr);
 }
 

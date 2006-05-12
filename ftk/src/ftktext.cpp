@@ -5195,7 +5195,7 @@ RCODE FLMAPI f_formatUTF8Text(
 	IF_PosIStream *	pIStream,
 	FLMBOOL				bAllowEscapes,
 	FLMUINT				uiCompareRules,
-	IF_DynaBuf *		pDynaBuf)
+	F_DynaBuf *			pDynaBuf)
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiFirstSpaceCharPos = FLM_MAX_UINT;

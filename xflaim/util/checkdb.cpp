@@ -246,9 +246,10 @@ extern "C" int main(
 	int					iArgC,
 	char **				ppszArgV)
 {
-	int					iResCode = 0;
-	IF_Pool *			pLogPool = NULL;
+	int		iResCode = 0;
+	F_Pool	logPool;
 
+	logPool.poolInit( 1024);
 	gv_bBatchMode = FALSE;
 	gv_bShutdown = FALSE;
 	gv_bRunning = TRUE;
@@ -277,15 +278,7 @@ extern "C" int main(
 	WpsScrClr( 0, 0);
 	WpsScrSize( NULL, &gv_uiMaxRow);
 	
-	if( RC_BAD( FlmAllocPool( &pLogPool)))
-	{
-		WpsStrOut( "\nCould not create pool.\n");
-		goto Exit;
-	}
-
-	pLogPool->poolInit( 1024);
-	
-	if (RC_BAD( pLogPool->poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
+	if (RC_BAD( logPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
 	{
 		WpsStrOut( "\nFailed to allocatae memory pool\n");
 		goto Exit;
@@ -299,8 +292,7 @@ extern "C" int main(
 		}
 	}
 	
-	pLogPool->Release();
-	pLogPool = NULL;
+	logPool.poolReset( NULL);
 
 	if( (gv_bPauseBeforeExiting) && (!gv_bShutdown))
 	{
@@ -334,11 +326,8 @@ Exit:
 	{
 		gv_pDbInfo->Release();
 	}
-	
-	if( pLogPool)
-	{
-		pLogPool->Release();
-	}
+
+	logPool.poolFree();	
 
 	WpsExit();
 	

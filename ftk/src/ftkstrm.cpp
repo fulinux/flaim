@@ -231,7 +231,7 @@ public:
 
 	F_CompressingOStream()
 	{
-		m_pPool = NULL;
+		m_pool.poolInit( 64 * 1024);
 		m_pOStream = NULL;
 		m_ppHashTbl = NULL;
 	}
@@ -265,7 +265,7 @@ private:
 		FLMUINT16		ui16CurrentCode,
 		FLMBYTE			ucChar);
 
-	IF_Pool *			m_pPool;
+	F_Pool				m_pool;
 	IF_OStream *		m_pOStream;
 	LZWODictItem **	m_ppHashTbl;
 	FLMUINT				m_uiHashTblSize;
@@ -2378,15 +2378,6 @@ RCODE FLMAPI F_CompressingOStream::open(
 		goto Exit;
 	}
 	
-	// Create a pool for temporary allocations
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pPool->poolInit( 64 * 1024);
-
 	f_memset( m_ppHashTbl, 0, sizeof( LZWODictItem *) * m_uiHashTblSize);
 
 	// Output a magic number so the stream can be identified
@@ -2508,7 +2499,7 @@ RCODE FLMAPI F_CompressingOStream::write(
 			if( m_ui16FreeCode < LZW_MAX_CODE)
 			{
 				uiBucket = getHashBucket( m_ui16CurrentCode, *pucBuffer);
-				if( RC_BAD( rc = m_pPool->poolAlloc( 
+				if( RC_BAD( rc = m_pool.poolAlloc( 
 					sizeof( LZWODictItem), (void **)&pDictItem)))
 				{
 					goto Exit;
@@ -2583,7 +2574,7 @@ RCODE FLMAPI F_CompressingOStream::write(
 
 						// Reset the dictionary
 
-						m_pPool->poolReset( NULL);
+						m_pool.poolReset( NULL);
 						f_memset( m_ppHashTbl, 0, sizeof( LZWODictItem *) * m_uiHashTblSize);
 						m_ui16FreeCode = LZW_START_CODE;
 					}
@@ -2671,11 +2662,7 @@ RCODE FLMAPI F_CompressingOStream::close( void)
 		m_uiHashTblSize = 0;
 	}
 	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-		m_pPool = NULL;
-	}
+	m_pool.poolFree();
 
 	return( rc);
 }

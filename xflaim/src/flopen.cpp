@@ -129,34 +129,8 @@ F_Db::F_Db(
 	m_bKrefCompoundKey = FALSE;
 	m_pKrefReset = NULL;
 	
-	m_pTmpKrefPool = NULL;
-	m_pTempPool = NULL;
-}
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-RCODE F_Db::setup( void)
-{
-	RCODE		rc = NE_XFLM_OK;
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pTmpKrefPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pTmpKrefPool->poolInit( 8192);
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pTempPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pTempPool->poolInit( XFLM_MAX_KEY_SIZE * 4);
-	
-Exit:
-
-	return( rc);
+	m_tmpKrefPool.poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE);
+	m_tempPool.poolInit( XFLM_MAX_KEY_SIZE * 4);
 }
 
 /***************************************************************************
@@ -177,11 +151,6 @@ RCODE F_DbSystem::allocDb(
 	if ((pDb = f_new F_Db( bInternalOpen)) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = pDb->setup()))
-	{
 		goto Exit;
 	}
 	
@@ -1033,6 +1002,7 @@ Desc: Constructor for F_Database object.
 F_Database::F_Database(
 	FLMBOOL	bTempDb)
 {
+	m_krefPool.poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE * 8);
 	m_pNext = NULL;
 	m_pPrev = NULL;
 	m_pFirstQuery = NULL;
@@ -1319,10 +1289,7 @@ F_Database::~F_Database()
 		m_uiUpdBufferSize = 0;
 	}
 	
-	if( m_pKrefPool)
-	{
-		m_pKrefPool->Release();
-	}
+	m_krefPool.poolFree();
 
 	if (m_ppBlocksDone)
 	{
@@ -1455,13 +1422,6 @@ RCODE F_Database::setupDatabase(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = FlmAllocPool( &m_pKrefPool)))
-	{
-		goto Exit;
-	}
-
-	m_pKrefPool->poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE * 8);
-
 	// Allocate a buffer for writing the DB header
 	// If we are a temporary database, there is no need
 	// for this allocation.

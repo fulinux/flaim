@@ -71,7 +71,7 @@ FSTATIC RCODE kySeeIfRepeatingSibs(
 
 FSTATIC RCODE kyFindChildNode(
 	F_Db *			pDb,
-	IF_Pool *		pPool,
+	F_Pool *			pPool,
 	NODE_TRAV **	ppTrav,
 	FLMBOOL *		pbGotChild,
 	FLMBOOL *		pbHadRepeatingSib);
@@ -247,30 +247,7 @@ F_OldNodeList::~F_OldNodeList()
 	{
 		f_free( &m_pNodeList);
 	}
-	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-	}
-}
-
-/*****************************************************************************
-Desc:
-*****************************************************************************/
-RCODE F_OldNodeList::setup( void)
-{
-	RCODE			rc = NE_XFLM_OK;
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pPool->poolInit( 512);
-
-Exit:
-
-	return( rc);
+	m_pool.poolFree();
 }
 
 /*****************************************************************************
@@ -478,7 +455,7 @@ RCODE F_OldNodeList::addNodeToList(
 			
 			// Allocate the space needed.
 			
-			if (RC_BAD( rc = m_pPool->poolAlloc( uiBufSize,
+			if (RC_BAD( rc = m_pool.poolAlloc( uiBufSize,
 										(void **)&m_pNodeList [uiInsertPos].pucData)))
 			{
 				goto Exit;
@@ -508,7 +485,7 @@ RCODE F_OldNodeList::addNodeToList(
 			// Allocate the space needed.
 			
 			uiBufSize = (uiChars + 1) * sizeof( FLMUNICODE);
-			if (RC_BAD( rc = m_pPool->poolAlloc( uiBufSize,
+			if (RC_BAD( rc = m_pool.poolAlloc( uiBufSize,
 										(void **)&m_pNodeList [uiInsertPos].pucData)))
 			{
 				goto Exit;
@@ -537,11 +514,7 @@ Desc: Release all of the nodes in the list.
 *****************************************************************************/
 void F_OldNodeList::resetList( void)
 {
-	if( m_pPool)
-	{
-		m_pPool->poolReset( NULL);
-	}
-
+	m_pool.poolReset( NULL);
 	m_uiNodeCount = 0;
 }
 
@@ -1230,9 +1203,9 @@ No_Strings:
 		{
 			if (*ppucTmpBuf == NULL)
 			{
-				*ppvMark = m_pTempPool->poolMark();
+				*ppvMark = m_tempPool.poolMark();
 				*puiTmpBufSize = (FLMUINT)XFLM_MAX_KEY_SIZE + 8;
-				if (RC_BAD( rc = m_pTempPool->poolAlloc( *puiTmpBufSize,
+				if (RC_BAD( rc = m_tempPool.poolAlloc( *puiTmpBufSize,
 												(void **)ppucTmpBuf)))
 				{
 					goto Exit;
@@ -1340,9 +1313,9 @@ No_Strings:
 			flmAssert( bSubstring);
 			if (*ppucTmpBuf == NULL)
 			{
-				*ppvMark = m_pTempPool->poolMark();
+				*ppvMark = m_tempPool.poolMark();
 				*puiTmpBufSize = (FLMUINT)XFLM_MAX_KEY_SIZE + 8;
-				if (RC_BAD( rc = m_pTempPool->poolAlloc( *puiTmpBufSize,
+				if (RC_BAD( rc = m_tempPool.poolAlloc( *puiTmpBufSize,
 												(void **)ppucTmpBuf)))
 				{
 					goto Exit;
@@ -1425,11 +1398,6 @@ No_Strings:
 					if ((m_pOldNodeList = f_new F_OldNodeList) == NULL)
 					{
 						rc = RC_SET( NE_XFLM_MEM);
-						goto Exit;
-					}
-					
-					if( RC_BAD( rc = m_pOldNodeList->setup()))
-					{
 						goto Exit;
 					}
 				}
@@ -1578,11 +1546,6 @@ No_Data:
 						rc = RC_SET( NE_XFLM_MEM);
 						goto Exit;
 					}
-					
-					if( RC_BAD( rc = m_pOldNodeList->setup()))
-					{
-						goto Exit;
-					}
 				}
 				
 				if (RC_BAD( rc = m_pOldNodeList->addNodeToList( this, pNode)))
@@ -1727,7 +1690,7 @@ Exit:
 
 	if (pvMark)
 	{
-		m_pTempPool->poolReset( pvMark);
+		m_tempPool.poolReset( pvMark);
 	}
 
 	// Restore the CDL table entry to point to the
@@ -1940,7 +1903,7 @@ Desc:	Get a child node for current traversal node.
 ****************************************************************************/
 FSTATIC RCODE kyFindChildNode(
 	F_Db *			pDb,
-	IF_Pool *		pPool,
+	F_Pool *			pPool,
 	NODE_TRAV **	ppTrav,
 	FLMBOOL *		pbGotChild,
 	FLMBOOL *		pbHadRepeatingSib)
@@ -2543,7 +2506,7 @@ RCODE F_Db::genIndexKeys(
 	// match what we have in the index definition, then this node
 	// is irrelevant to generating keys in this index.
 
-	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( ANCHOR_NODE),
+	if (RC_BAD( rc = m_tempPool.poolCalloc( sizeof( ANCHOR_NODE),
 												(void **)&pAnchorNode)))
 	{
 		goto Exit;
@@ -2611,7 +2574,7 @@ RCODE F_Db::genIndexKeys(
 			}
 		}
 		
-		if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( ANCHOR_NODE),
+		if (RC_BAD( rc = m_tempPool.poolCalloc( sizeof( ANCHOR_NODE),
 													(void **)&pAnchorNode)))
 		{
 			goto Exit;
@@ -2627,7 +2590,7 @@ RCODE F_Db::genIndexKeys(
 
 	// Allocate a CDL table for the index.
 
-	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( CDL_HDR) *
+	if (RC_BAD( rc = m_tempPool.poolCalloc( sizeof( CDL_HDR) *
 								pIxd->uiNumIcds, (void **)&pCdlTbl)))
 	{
 		goto Exit;
@@ -2635,7 +2598,7 @@ RCODE F_Db::genIndexKeys(
 
 	// Create a traversal node for the root node we arrived at.
 
-	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( NODE_TRAV),
+	if (RC_BAD( rc = m_tempPool.poolCalloc( sizeof( NODE_TRAV),
 											(void **)&pTrav)))
 	{
 		goto Exit;
@@ -2834,7 +2797,7 @@ Get_First_Attribute:
 		}
 		else
 		{
-			if (RC_BAD( rc = m_pTempPool->poolAlloc( sizeof( CDL),
+			if (RC_BAD( rc = m_tempPool.poolAlloc( sizeof( CDL),
 											(void **)&pCdl)))
 			{
 				goto Exit;
@@ -2853,7 +2816,7 @@ Get_First_Attribute:
 		pChildIcd = pTrav->pIcd->pFirstChild;
 		while (pChildIcd)
 		{
-			if (RC_BAD( rc = m_pTempPool->poolAlloc(
+			if (RC_BAD( rc = m_tempPool.poolAlloc(
 										sizeof( CDL), (void **)&pCdl)))
 			{
 				goto Exit;
@@ -2872,7 +2835,7 @@ Next_Node:
 		if (pTrav->bTraverseChildren)
 		{
 			bInNodeSubtree = pTrav->bInNodeSubtree;
-			if (RC_BAD( rc = kyFindChildNode( this, m_pTempPool,
+			if (RC_BAD( rc = kyFindChildNode( this, &m_tempPool,
 									&pTrav, &bGotNode, &bHadRepeatingSib)))
 			{
 				goto Exit;
@@ -3210,7 +3173,7 @@ RCODE F_Db::updateIndexKeys(
 
 	// The node may be indexed so we need to process the ICD list
 
-	pvMark = m_pTempPool->poolMark();
+	pvMark = m_tempPool.poolMark();
 	bIsIndexed = TRUE;
 	ui64DocumentID = pNode->getDocumentId();
 
@@ -3293,7 +3256,7 @@ RCODE F_Db::updateIndexKeys(
 
 Next_Index:
 
-		m_pTempPool->poolReset( pvMark);
+		m_tempPool.poolReset( pvMark);
 		if ((pIcd = pIcd->pNextInChain) == NULL)
 		{
 			if (!bIsRoot || uiIcdDictNum == ELM_ROOT_TAG)
@@ -3315,7 +3278,7 @@ Exit:
 
 	if( pvMark)
 	{
-		m_pTempPool->poolReset( pvMark);
+		m_tempPool.poolReset( pvMark);
 	}
 
 	if (pNode)

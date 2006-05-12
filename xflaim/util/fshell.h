@@ -239,8 +239,8 @@ private:
 	FlmSharedContext *	m_pSharedContext;
 	FTX_WINDOW *			m_pTitleWin;
 	IF_Db *					m_DbList[ MAX_SHELL_OPEN_DB];
-	IF_Pool *				m_pHistPool;
-	IF_Pool *				m_pArgPool;
+	F_Pool					m_histPool;
+	F_Pool					m_argPool;
 	FLMINT					m_iCurrArgC;
 	char **					m_ppCurrArgV;
 	char *					m_pszOutputFile;

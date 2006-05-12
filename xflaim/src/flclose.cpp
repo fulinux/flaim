@@ -69,11 +69,6 @@ F_Db::~F_Db()
 		m_uiKrefTblSize = 0;
 	}
 	
-	if( m_pKrefPool)
-	{
-		m_pKrefPool->Release();
-	}
-		
 	if( m_pucKrefKeyBuf)
 	{
 		f_free( &m_pucKrefKeyBuf);
@@ -113,16 +108,9 @@ F_Db::~F_Db()
 	{
 		f_semDestroy( &m_hWaitSem);
 	}
-	
-	if (m_pTmpKrefPool)
-	{
-		m_pTmpKrefPool->Release();
-	}
-	
-	if( m_pTempPool)
-	{
-		m_pTempPool->Release();
-	}
+
+	m_tmpKrefPool.poolFree();	
+	m_tempPool.poolFree();
 
 	// Unlink the F_Db from the F_Database and F_Dict structures.
 	// IMPORTANT NOTE: The call to unlinkFromDatabase needs to

@@ -819,11 +819,6 @@ RCODE F_Db::dictClone( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pNewDict->setup()))
-	{
-		goto Exit;
-	}
-
 	// Nothing to do is not a legal state.
 
 	if (!m_pDict)
@@ -1139,7 +1134,7 @@ RCODE F_Db::indexDocument(
 	IX_CONTEXT *	pIxContext;
 	F_DOMNode *		pTmpNode = NULL;
 	F_TRAV *			pTrav = NULL;
-	void *			pvMark = m_pTempPool->poolMark();
+	void *			pvMark = m_tempPool.poolMark();
 	CDL_HDR *		pCdlHdr;
 	FLMUINT64		ui64DocId;
 
@@ -1195,7 +1190,7 @@ RCODE F_Db::indexDocument(
 
 	// Do an in-order traversal of the document.
 
-	if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( F_TRAV), (void **)&pTrav)))
+	if (RC_BAD( rc = m_tempPool.poolCalloc( sizeof( F_TRAV), (void **)&pTrav)))
 	{
 		goto Exit;
 	}
@@ -1328,8 +1323,9 @@ RCODE F_Db::indexDocument(
 					}
 					pIxContextList = pIxContext;
 					
-					if( RC_BAD( rc = FlmAllocPool( &pIxContext->pPool)))
+					if ((pIxContext->pPool = f_new F_Pool) == NULL)
 					{
+						rc = RC_SET( NE_XFLM_MEM);
 						goto Exit;
 					}
 
@@ -1505,7 +1501,7 @@ Setup_Child:
 				{
 					F_TRAV *	pNewTrav;
 
-					if (RC_BAD( rc = m_pTempPool->poolCalloc( sizeof( F_TRAV),
+					if (RC_BAD( rc = m_tempPool.poolCalloc( sizeof( F_TRAV),
 														(void **)&pNewTrav)))
 					{
 						goto Exit;
@@ -1730,7 +1726,7 @@ Exit:
 		kyFreeIxContext( pIxd, pIxContextList, &pIxContextList);
 	}
 
-	m_pTempPool->poolReset( pvMark);
+	m_tempPool.poolReset( pvMark);
 	return( rc);
 }
 
@@ -1765,7 +1761,7 @@ RCODE F_Db::indexSetOfDocuments(
 	FLMBOOL			bRelinquish = FALSE;
 	FLMBYTE			ucKey[ FLM_MAX_NUM_BUF_SIZE];
 	FLMUINT			uiKeyLen;
-	void *			pvTmpPoolMark = m_pTempPool->poolMark();
+	void *			pvTmpPoolMark = m_tempPool.poolMark();
 	F_Btree *		pbtree = NULL;
 	FLMBOOL			bNeg;
 	FLMUINT			uiBytesProcessed;
@@ -2076,7 +2072,7 @@ Exit:
 	}
 
 	krefCntrlFree();
-	m_pTempPool->poolReset( pvTmpPoolMark);
+	m_tempPool.poolReset( pvTmpPoolMark);
 
 	if (pbtree)
 	{

@@ -244,11 +244,11 @@ FSTATIC RCODE ixKeyGetUnicode(
 			FLMBYTE *		pucData;
 			FLMUINT			uiDataLen;
 			FLMUINT			uiDummy;
-			void *			pvBuffer;
 
 			if( pOldNodeList->findNodeInList( eNodeType, uiCollection,
 				ui64NodeId, pIcd->uiDictNum, &pucData, &uiDataLen, &uiDummy))
 			{
+				void *	pvBuffer = NULL;
 				
 				// Allocate the space needed.
 				
@@ -341,11 +341,11 @@ FSTATIC RCODE ixKeyGetBinary(
 			FLMBYTE *		pucData;
 			FLMUINT			uiDataLen;
 			FLMUINT			uiDummy;
-			void *			pvBuffer;
 
 			if( pOldNodeList->findNodeInList( eNodeType, uiCollection,
 					ui64NodeId, pIcd->uiDictNum, &pucData, &uiDataLen, &uiDummy))
 			{
+				void *	pvBuffer = NULL;
 				
 				// Allocate the space needed.
 				

@@ -5540,13 +5540,13 @@ Desc:
 *****************************************************************************/
 RCODE FLMAPI F_DOMNode::getUnicode(
 	IF_Db *			ifpDb,
-	IF_DynaBuf *	pBuffer)
+	F_DynaBuf *		pBuffer)
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_Db *			pDb = (F_Db *)ifpDb;
 	FLMUINT			uiBufSize;
 	FLMUINT			uiChars;
-	void *			pvBuffer;
+	void *			pvBuffer = NULL;
 	FLMBOOL			bStartedTrans = FALSE;
 
 	if( RC_BAD( rc = pDb->checkTransaction( 
@@ -5810,12 +5810,12 @@ Desc:
 *****************************************************************************/
 RCODE FLMAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
-	IF_DynaBuf *	pBuffer)
+	F_DynaBuf *		pBuffer)
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_Db *			pDb = (F_Db *)ifpDb;
 	FLMUINT			uiBufSize;
-	void *			pvBuffer;
+	void *			pvBuffer = NULL;
 	FLMBOOL			bStartedTrans = FALSE;
 
 	if( RC_BAD( rc = pDb->checkTransaction( 
@@ -5972,12 +5972,12 @@ Desc:
 *****************************************************************************/
 RCODE FLMAPI F_DOMNode::getBinary(
 	IF_Db *			ifpDb,
-	IF_DynaBuf *	pBuffer)
+	F_DynaBuf *		pBuffer)
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_Db *			pDb = (F_Db *)ifpDb;
 	FLMUINT			uiBufSize;
-	void *			pvBuffer;
+	void *			pvBuffer = NULL;
 	FLMBOOL			bStartedTrans = FALSE;
 
 	if( RC_BAD( rc = pDb->checkTransaction( 
@@ -6184,11 +6184,11 @@ Desc:
 RCODE FLMAPI F_DOMNode::getAttributeValueUnicode(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName,
-	IF_DynaBuf *	pBuffer)
+	F_DynaBuf *		pBuffer)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiBufSize;
-	void *			pvBuffer;
+	void *			pvBuffer = NULL;
 	
 	pBuffer->truncateData( 0);
 	
@@ -6300,11 +6300,11 @@ Desc:
 RCODE FLMAPI F_DOMNode::getAttributeValueUTF8(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName,
-	IF_DynaBuf *	pBuffer)
+	F_DynaBuf *		pBuffer)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiBufSize;
-	void *			pvBuffer;
+	void *			pvBuffer = NULL;
 	
 	pBuffer->truncateData( 0);
 	
@@ -6380,14 +6380,14 @@ Exit:
 Desc:
 ******************************************************************************/
 RCODE FLMAPI F_DOMNode::getAttributeValueBinary(
-	IF_Db *					ifpDb,
-	FLMUINT					uiAttrName,
-	IF_DynaBuf *			pBuffer)
+	IF_Db *				ifpDb,
+	FLMUINT				uiAttrName,
+	F_DynaBuf *			pBuffer)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMBOOL				bStartedTrans = FALSE;
 	FLMUINT				uiBufSize;
-	void *				pvBuffer;
+	void *				pvBuffer = NULL;
 	
 	pBuffer->truncateData( 0);
 

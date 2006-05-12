@@ -741,7 +741,7 @@ RCODE flmStorage2Unicode(
 	FLMUINT				uiType,
 	FLMUINT				uiStorageLength,
 	const FLMBYTE *	pucStorageBuffer,
-	IF_DynaBuf *		pBuffer)
+	F_DynaBuf *			pBuffer)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMBYTE				ucTempBuf[ 80];

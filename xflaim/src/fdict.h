@@ -411,8 +411,6 @@ public:
 
 	~F_Dict();
 	
-	RCODE setup( void);
-
 	void resetDict( void);
 
 	RCODE getElement(
@@ -925,7 +923,7 @@ private:
 													// to a database.
 	FLMUINT					m_uiDictSeq;	// This is the sequence number of the
 													// dictionary
-	IF_Pool *  				m_pDictPool;		// Pool for all allocations except tables.
+	F_Pool  					m_dictPool;		// Pool for all allocations except tables.
 
 	// Fixed element definition table - used for elements whose tag numbers
 	// are less than or equal to FLM_HIGH_FIXED_ELEMENT_NUM

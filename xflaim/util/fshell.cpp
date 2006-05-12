@@ -228,7 +228,7 @@ public:
 	FLMUINT				m_uiAttrListSize;
 	FLMUINT				m_uiNumAttrs;
 	F_NodeInfo			m_nodeInfo;
-	IF_Pool *			m_pPool;
+	F_Pool				m_pool;
 };
 
 // Local prototypes
@@ -684,15 +684,9 @@ Desc:
 *****************************************************************************/
 FlmShell::FlmShell( void) : FlmThreadContext()
 {
-	m_pHistPool = NULL;
-	m_pArgPool = NULL;
+	m_histPool.poolInit( 512);
+	m_argPool.poolInit( 512);
 	
-	FlmAllocPool( &m_pHistPool);
-	FlmAllocPool( &m_pArgPool);
-	
-	m_pHistPool->poolInit( 512);
-	m_pArgPool->poolInit( 512);
-
 	f_memset( m_DbList, 0, MAX_SHELL_OPEN_DB * sizeof( IF_Db *));
 	m_pTitleWin = NULL;
 	m_iCurrArgC = 0;
@@ -711,15 +705,8 @@ FlmShell::~FlmShell( void)
 {
 	FLMUINT		uiLoop;
 
-	if( m_pHistPool)
-	{
-		m_pHistPool->Release();
-	}
-	
-	if( m_pArgPool)
-	{
-		m_pArgPool->Release();
-	}
+	m_histPool.poolFree();
+	m_argPool.poolFree();
 
 	// Free the command objects.
 
@@ -1144,7 +1131,7 @@ RCODE FlmShell::parseCmdLine(
 	FlmParse		Parser;
 	RCODE			rc = NE_XFLM_OK;
 
-	m_pArgPool->poolReset( NULL);
+	m_argPool.poolReset( NULL);
 	m_iCurrArgC = 0;
 	m_ppCurrArgV = NULL;
 	m_pszOutputFile = NULL;
@@ -1155,7 +1142,7 @@ RCODE FlmShell::parseCmdLine(
 		uiArgCount++;
 	}
 
-	if (RC_BAD( rc = m_pArgPool->poolCalloc( uiArgCount * sizeof( char *),
+	if (RC_BAD( rc = m_argPool.poolCalloc( uiArgCount * sizeof( char *),
 		(void **)&m_ppCurrArgV)))
 	{
 		goto Exit;
@@ -1176,7 +1163,7 @@ RCODE FlmShell::parseCmdLine(
 		uiTokenLen = f_strlen( pszCurrToken);
 		if (!bQuoted && uiTokenLen >= 2 && *pszCurrToken == '>' && !m_pszOutputFile)
 		{
-			if (RC_BAD( rc = m_pArgPool->poolCalloc( uiTokenLen,
+			if (RC_BAD( rc = m_argPool.poolCalloc( uiTokenLen,
 				(void **)&m_pszOutputFile)))
 			{
 				goto Exit;
@@ -1185,7 +1172,7 @@ RCODE FlmShell::parseCmdLine(
 		}
 		else
 		{
-			if (RC_BAD( rc = m_pArgPool->poolCalloc( uiTokenLen + 1,
+			if (RC_BAD( rc = m_argPool.poolCalloc( uiTokenLen + 1,
 				(void **)&m_ppCurrArgV [uiCurrToken])))
 			{
 				goto Exit;
@@ -1346,7 +1333,6 @@ RCODE FlmShell::executeCmdLine( void)
 	{
 		FLMUINT				uiMeta;
 		FLMUINT				uiAltMeta;
-		RCODE					tmpRc;
 
 		bValidCommand = TRUE;
 		if( m_iCurrArgC != 2)
@@ -1366,29 +1352,23 @@ RCODE FlmShell::executeCmdLine( void)
 			pBufIStream->open( m_ppCurrArgV[ 1], f_strlen( m_ppCurrArgV[ 1]));
 			for( ;;)
 			{
+				RCODE	tmpRc;
+				
 				if( RC_BAD( tmpRc = f_getNextMetaphone( pBufIStream, 
 					&uiMeta, &uiAltMeta)))
 				{
-					if( tmpRc == NE_XFLM_EOF_HIT)
+					if( tmpRc != NE_XFLM_EOF_HIT)
 					{
-						tmpRc = NE_XFLM_OK;
-						break;
+						con_printf( "Error: 0x%04X\n", tmpRc);
 					}
-
-					goto MetaExit;
+					break;
 				}
-
 				con_printf( "Meta = 0x%04X, AltMeta = 0x%04X\n",
 					uiMeta, uiAltMeta);
 			}
 
 MetaExit:
 
-			if( RC_BAD( tmpRc))
-			{
-				con_printf( "Error: 0x%04X\n", tmpRc);
-			}
-			
 			if( pBufIStream)
 			{
 				pBufIStream->close();
@@ -5183,17 +5163,14 @@ RCODE importXmlFiles(
 	FLMBOOL					bTransActive = FALSE;
 	IF_DOMNode *			pRoot = NULL;
 	IF_DOMNode *			pSource = NULL;
-	IF_Pool *				pPool = NULL;
+	F_Pool					pool;
 	IF_PosIStream *		pFileIStream = NULL;
 	FLMBOOL					bUseSafeMode = FALSE;
 	char						szErrorString[ MAX_IMPORT_ERROR_STRING + 1];
 	FLMUINT					uiIndentCount = 0;
 	FLMUINT					uiNewErrLineOffset = 0;
 	
-	if( RC_BAD( rc = FlmAllocPool( &pPool, 256)))
-	{
-		goto Exit;
-	}
+	pool.poolInit( 256);
 
 RetryLoad:
 
@@ -5205,7 +5182,7 @@ RetryLoad:
 	}
 
 	flmAssert( !bTransActive);
-	pPool->poolReset( NULL);
+	pool.poolReset( NULL);
 
 	if( f_getFileSysPtr()->isDir( pszPath))
 	{
@@ -5222,7 +5199,7 @@ RetryLoad:
 
 	for( ;;)
 	{
-		pPool->poolReset( NULL);
+		pool.poolReset( NULL);
 		if( pWin && RC_OK( FTXWinTestKB( pWin)))
 		{
 			FLMUINT	uiChar;
@@ -5450,10 +5427,7 @@ Exit:
 		pDb->transAbort();
 	}
 	
-	if( pPool)
-	{
-		pPool->Release();
-	}
+	pool.poolFree();
 
 	return( rc);
 }
@@ -6515,8 +6489,7 @@ Entry_Info::Entry_Info()
 	m_uiAttrListSize = 0;
 	m_uiNumAttrs = 0;
 	
-	m_pPool = NULL;
-	FlmAllocPool( &m_pPool, 512);
+	m_pool.poolInit( 512);
 }
 	
 /****************************************************************************
@@ -6528,11 +6501,7 @@ Entry_Info::~Entry_Info()
 	{
 		f_free( &m_pAttrList);
 	}
-	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-	}
+	m_pool.poolFree();
 }
 	
 /****************************************************************************
@@ -6882,7 +6851,7 @@ RCODE Entry_Info::getDirAttrInfo(
 			goto Exit;
 		}
 		uiNameSize++;
-		if (RC_BAD( rc = m_pPool->poolAlloc( uiNameSize,
+		if (RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
 			(void **)&pAttrNodeInfo->pszAttrName)))
 		{
 			goto Exit;

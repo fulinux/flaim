@@ -109,7 +109,6 @@ libxflaim_la_SOURCES = \
   flerror.cpp \
   flerrstr.cpp \
   flfixed.cpp \
-  flfixed.h \
   flgethdr.cpp \
   flindex.cpp \
   flkeyret.cpp \

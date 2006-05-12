@@ -1189,7 +1189,7 @@ private:
 		FLMUINT32				ui32ToBlkAddr);
 
 	IF_BlockMgr *				m_pBlockMgr;
-	IF_Pool *					m_pPool;
+	F_Pool						m_pool;
 	FLMUINT						m_uiRootBlkAddr;
 	FLMBOOL						m_bCounts;
 	FLMBOOL						m_bData;
@@ -1478,7 +1478,7 @@ Desc:
 F_Btree::F_Btree( void)
 {
 	m_pBlockMgr = NULL;
-	m_pPool = NULL;
+	m_pool.poolInit( 4096);
 	m_bOpened = FALSE;
 	m_uiRootBlkAddr = 0;
 	m_pStack = NULL;
@@ -1526,6 +1526,7 @@ F_Btree::~F_Btree( void)
 	{
 		btClose();
 	}
+	m_pool.poolFree();
 }
 
 /***************************************************************************
@@ -1664,14 +1665,10 @@ RCODE F_Btree::btOpen(
 	m_bSetupForWrite = FALSE;
 	m_bSetupForReplace = FALSE;
 	
-	if( RC_BAD( rc = FlmAllocPool( &m_pPool)))
-	{
-		goto Exit;
-	}
+	m_pool.poolFree();
+	m_pool.poolInit( m_uiBlockSize);
 	
-	m_pPool->poolInit( m_uiBlockSize);
-	
-	if( RC_BAD( rc = m_pPool->poolAlloc( 
+	if( RC_BAD( rc = m_pool.poolAlloc( 
 		sizeof( BTREE_REPLACE_STRUCT) * F_BTREE_MAX_LEVELS, 
 		(void **)&m_pReplaceStruct)))
 	{
@@ -1729,12 +1726,9 @@ void F_Btree::btClose()
 		m_pBlockMgr->Release();
 		m_pBlockMgr = NULL;
 	}
-	
-	if( m_pPool)
-	{
-		m_pPool->Release();
-		m_pPool = NULL;
-	}
+
+	m_pool.poolFree();
+	m_pool.poolInit( 4096);	
 
 	m_uiRootBlkAddr = 0;
 	m_bOpened = FALSE;
@@ -4858,7 +4852,7 @@ RCODE F_Btree::moveToPrev(
 	FLMUINT						uiEntrySize;
 	FLMUINT						uiIndex;
 	FLMBOOL						bEntriesCombined = FALSE;
-	void *						pvPoolMark = m_pPool->poolMark();
+	void *						pvPoolMark = m_pool.poolMark();
 
 	// Make sure we have logged the block we are changing.
 	// Note that the source block will be logged in the removeRange method.
@@ -4871,7 +4865,7 @@ RCODE F_Btree::moveToPrev(
 	pui16DstOffsetA = BtOffsetArray( *ppPrevBlock, 0);
 	pucDstEntry = getBlockEnd( *ppPrevBlock);
 	
-	if( RC_BAD( rc = m_pPool->poolAlloc( m_uiBlockSize, (void **)&pucTempBlk)))
+	if( RC_BAD( rc = m_pool.poolAlloc( m_uiBlockSize, (void **)&pucTempBlk)))
 	{
 		goto Exit;
 	}
@@ -4956,7 +4950,7 @@ RCODE F_Btree::moveToPrev(
 
 Exit:
 
-	m_pPool->poolReset( pvPoolMark);
+	m_pool.poolReset( pvPoolMark);
 	return( rc);
 }
 
@@ -5217,16 +5211,16 @@ RCODE F_Btree::moveToNext(
 	FLMBYTE *					pucBuffer = NULL;
 	FLMBYTE *					pucTmpBlk = NULL;
 	FLMUINT						uiBufferSize = 0;
-	void *						pvPoolMark = m_pPool->poolMark();
+	void *						pvPoolMark = m_pool.poolMark();
 	
 	uiBufferSize = m_uiBlockSize * 2;
 	
-	if( RC_BAD( rc = m_pPool->poolAlloc( uiBufferSize, (void **)&pucBuffer)))
+	if( RC_BAD( rc = m_pool.poolAlloc( uiBufferSize, (void **)&pucBuffer)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pPool->poolAlloc( m_uiBlockSize, (void **)&pucTmpBlk)))
+	if( RC_BAD( rc = m_pool.poolAlloc( m_uiBlockSize, (void **)&pucTmpBlk)))
 	{
 		goto Exit;
 	}
@@ -5357,7 +5351,7 @@ RCODE F_Btree::moveToNext(
 
 Exit:
 
-	m_pPool->poolReset( pvPoolMark);
+	m_pool.poolReset( pvPoolMark);
 	return( rc);
 }
 
@@ -6672,7 +6666,7 @@ RCODE F_Btree::defragmentBlock(
 	FLMBYTE *					pucHeap;
 	FLMBYTE *					pucBlkEnd;
 	IF_Block *					pOldBlock = NULL;
-	void *						pvPoolMark = m_pPool->poolMark();
+	void *						pvPoolMark = m_pool.poolMark();
 
 	f_assert( pBlock->getBytesAvail() != pBlock->getHeapSize());
 
@@ -6745,7 +6739,7 @@ RCODE F_Btree::defragmentBlock(
 
 		if( pOldBlock == pBlock)
 		{
-			if( RC_BAD( rc = m_pPool->poolAlloc( m_uiBlockSize, 
+			if( RC_BAD( rc = m_pool.poolAlloc( m_uiBlockSize, 
 				(void **)&pucTempDefragBlk)))
 			{
 				goto Exit;
@@ -6871,7 +6865,7 @@ Exit:
 		pOldBlock->Release();
 	}
 	
-	m_pPool->poolReset( pvPoolMark);
+	m_pool.poolReset( pvPoolMark);
 	return( rc);
 }
 #endif
@@ -7851,7 +7845,7 @@ RCODE F_Btree::replaceOldEntry(
 	FLMUINT				uiOldOADataLen = 0;
 	FLMBOOL				bRemoveOADataAllowance = FALSE;
 	FLMBYTE *			pucTmpBlk = NULL;
-	void *				pvPoolMark = m_pPool->poolMark();
+	void *				pvPoolMark = m_pool.poolMark();
 
 	uiOldEntrySize = actualEntrySize( getEntrySize( m_pStack->pBlock,
 												  m_pStack->uiCurOffset, &pucEntry));
@@ -7931,7 +7925,7 @@ RCODE F_Btree::replaceOldEntry(
 		{
 			if( !pucTmpBlk)
 			{
-				if( RC_BAD( rc = m_pPool->poolAlloc( m_uiBlockSize, (void **)&pucTmpBlk)))
+				if( RC_BAD( rc = m_pool.poolAlloc( m_uiBlockSize, (void **)&pucTmpBlk)))
 				{
 					goto Exit;
 				}
@@ -8153,7 +8147,7 @@ RCODE F_Btree::replaceOldEntry(
 
 Exit:
 
-	m_pPool->poolReset( pvPoolMark);
+	m_pool.poolReset( pvPoolMark);
 	return( rc);
 }
 

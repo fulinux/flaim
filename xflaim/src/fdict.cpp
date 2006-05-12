@@ -48,17 +48,17 @@ FSTATIC void fdictRemoveFromIcdChain(
 	ICD *		pIcd);
 
 FSTATIC RCODE fdictCopyCollection(
-	IF_Pool *			pDictPool,
+	F_Pool *				pDictPool,
 	F_COLLECTION **	ppDestCollection,
 	F_COLLECTION *		pSrcCollection);
 
 FSTATIC RCODE fdictCopyPrefix(
-	IF_Pool *			pDictPool,
+	F_Pool *				pDictPool,
 	F_PREFIX **			ppDestPrefix,
 	F_PREFIX *			pSrcPrefix);
 
 FSTATIC RCODE fdictCopyEncDef(
-	IF_Pool *			pDictPool,
+	F_Pool *				pDictPool,
 	F_ENCDEF **			ppDestEncDef,
 	F_ENCDEF *			pSrcEncDef);
 
@@ -94,7 +94,7 @@ F_Dict::F_Dict()
 	m_pPrev = NULL;
 	m_pDatabase = NULL;
 	m_uiDictSeq = 0;
-	m_pDictPool = NULL;
+	m_dictPool.poolInit( 1024);
 
 	m_pElementDefTbl = NULL;
 	m_uiLowestElementNum = 0;
@@ -162,30 +162,6 @@ Desc:
 F_Dict::~F_Dict()
 {
 	resetDict();
-	
-	if( m_pDictPool)
-	{
-		m_pDictPool->Release();
-	}
-}
-
-/***************************************************************************
-Desc:
-***************************************************************************/
-RCODE F_Dict::setup( void)
-{
-	RCODE		rc = NE_XFLM_OK;
-	
-	if( RC_BAD( rc = FlmAllocPool( &m_pDictPool)))
-	{
-		goto Exit;
-	}
-	
-	m_pDictPool->poolInit( 1024);
-	
-Exit:
-
-	return( rc);
 }
 
 /***************************************************************************
@@ -265,11 +241,8 @@ void F_Dict::resetDict( void)
 	m_pDataCollection = NULL;
 	m_pMaintCollection = NULL;
 
-	if( m_pDictPool)
-	{
-		m_pDictPool->poolFree();
-		m_pDictPool->poolInit( 1024);
-	}
+	m_dictPool.poolFree();
+	m_dictPool.poolInit( 1024);
 
 	if (m_pNameTable)
 	{
@@ -288,10 +261,7 @@ RCODE F_Dict::allocNameTable( void)
 	{
 		return( RC_SET( NE_XFLM_MEM));
 	}
-	else
-	{
-		return( m_pNameTable->setupNameTable());
-	}
+	return( NE_XFLM_OK);
 }
 
 /***************************************************************************
@@ -2292,7 +2262,7 @@ RCODE F_Dict::copyIXD(
 
 	// Allocate the IXD structure
 
-	if (RC_BAD( rc = m_pDictPool->poolAlloc( sizeof( IXD), (void **)&pDestIxd)))
+	if (RC_BAD( rc = m_dictPool.poolAlloc( sizeof( IXD), (void **)&pDestIxd)))
 	{
 		goto Exit;
 	}
@@ -2315,7 +2285,7 @@ RCODE F_Dict::copyIXD(
 	pSrcIcd = pSrcIxd->pIcdTree;
 	while (pSrcIcd)
 	{
-		if (RC_BAD( rc = m_pDictPool->poolAlloc( sizeof( ICD),
+		if (RC_BAD( rc = m_dictPool.poolAlloc( sizeof( ICD),
 											(void **)&pDestIcd)))
 		{
 			goto Exit;
@@ -2530,7 +2500,7 @@ Exit:
 Desc:	Copies a collection
 ****************************************************************************/
 FSTATIC RCODE fdictCopyCollection(
-	IF_Pool *			pDictPool,
+	F_Pool *				pDictPool,
 	F_COLLECTION **	ppDestCollection,
 	F_COLLECTION *		pSrcCollection)
 {
@@ -2559,7 +2529,7 @@ Exit:
 Desc:	Copies a prefix
 ****************************************************************************/
 FSTATIC RCODE fdictCopyPrefix(
-	IF_Pool *			pDictPool,
+	F_Pool *				pDictPool,
 	F_PREFIX **			ppDestPrefix,
 	F_PREFIX *			pSrcPrefix)
 {
@@ -2602,7 +2572,7 @@ Exit:
 Desc:	Copies an encryption def (F_ENCDEF)
 ****************************************************************************/
 FSTATIC RCODE fdictCopyEncDef(
-	IF_Pool *			pDictPool,
+	F_Pool *				pDictPool,
 	F_ENCDEF **			ppDestEncDef,
 	F_ENCDEF *			pSrcEncDef)
 {
@@ -2879,21 +2849,21 @@ RCODE F_Dict::cloneDict(
 
 	// Copy the pre-defined collections
 
-	if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
+	if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
 								&m_pDictCollection,
 								pSrcDict->m_pDictCollection)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
+	if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
 								&m_pDataCollection,
 								pSrcDict->m_pDataCollection)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
+	if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
 								&m_pMaintCollection,
 								pSrcDict->m_pMaintCollection)))
 	{
@@ -2917,7 +2887,7 @@ RCODE F_Dict::cloneDict(
 
 		for (uiLoop = 0; uiLoop < uiCount; uiLoop++)
 		{
-			if (RC_BAD( rc = fdictCopyCollection( m_pDictPool,
+			if (RC_BAD( rc = fdictCopyCollection( &m_dictPool,
 										&m_ppCollectionTbl [uiLoop],
 										pSrcDict->m_ppCollectionTbl [uiLoop])))
 			{
@@ -2943,7 +2913,7 @@ RCODE F_Dict::cloneDict(
 
 		for (uiLoop = 0; uiLoop < uiCount; uiLoop++)
 		{
-			if (RC_BAD( rc = fdictCopyPrefix( m_pDictPool,
+			if (RC_BAD( rc = fdictCopyPrefix( &m_dictPool,
 										&m_ppPrefixTbl [uiLoop],
 										pSrcDict->m_ppPrefixTbl [uiLoop])))
 			{
@@ -2969,7 +2939,7 @@ RCODE F_Dict::cloneDict(
 
 		for (uiLoop = 0; uiLoop < uiCount; uiLoop++)
 		{
-			if (RC_BAD( rc = fdictCopyEncDef( m_pDictPool,
+			if (RC_BAD( rc = fdictCopyEncDef( &m_dictPool,
 										&m_ppEncDefTbl [uiLoop],
 										pSrcDict->m_ppEncDefTbl [uiLoop])))
 			{
@@ -6291,7 +6261,7 @@ RCODE F_Dict::updateIndexDef(
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
-	void *			pvMark = m_pDictPool->poolMark();
+	void *			pvMark = m_dictPool.poolMark();
 	FLMUNICODE *	puzIndexName = NULL;
 	F_DOMNode *		pNode = NULL;
 	FLMUINT			uiElementId;
@@ -6414,7 +6384,7 @@ RCODE F_Dict::updateIndexDef(
 
 	// Allocate a new IXD
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( IXD), (void **)&pIxd)))
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( IXD), (void **)&pIxd)))
 	{
 		goto Exit;
 	}
@@ -6470,7 +6440,7 @@ RCODE F_Dict::updateIndexDef(
 
 			// Allocate an ICD and link in
 
-			if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( ICD),
+			if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( ICD),
 													(void **)&pIcd)))
 			{
 				goto Exit;
@@ -6723,7 +6693,7 @@ Get_Sibling:
 
 		// Discard the new IXD, it is not needed.
 
-		m_pDictPool->poolReset( pvMark);
+		m_dictPool.poolReset( pvMark);
 	}
 	else
 	{
@@ -6835,7 +6805,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		m_pDictPool->poolReset( pvMark);
+		m_dictPool.poolReset( pvMark);
 	}
 
 	return( rc);
@@ -7072,7 +7042,7 @@ RCODE F_Dict::updateCollectionDef(
 
 	// Allocate a new collection
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_COLLECTION),
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_COLLECTION),
 								(void **)&pCollection)))
 	{
 		goto Exit;
@@ -7236,7 +7206,7 @@ RCODE F_Db::getPrefixDef(
 					}
 
 					uiBufferSize = sizeof( FLMUNICODE) * (uiPrefixLen + 1);
-					if( RC_BAD( rc = pDict->m_pDictPool->poolAlloc( uiBufferSize,
+					if( RC_BAD( rc = pDict->m_dictPool.poolAlloc( uiBufferSize,
 						(void **)ppuzPrefixName)))
 					{
 						goto Exit;
@@ -7338,7 +7308,7 @@ RCODE F_Dict::updatePrefixDef(
 	F_PREFIX *		pOldPrefix = NULL;
 	FLMUNICODE *	puzPrefixName = NULL;
 	FLMUINT			uiTmp;
-	void *			pvMark = m_pDictPool->poolMark();
+	void *			pvMark = m_dictPool.poolMark();
 
 	if (bOpeningDict)
 	{
@@ -7384,7 +7354,7 @@ RCODE F_Dict::updatePrefixDef(
 
 	// Allocate a new prefix
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_PREFIX),
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_PREFIX),
 												(void **)&pPrefix)))
 	{
 		goto Exit;
@@ -7444,7 +7414,7 @@ Exit:
 	{
 		if( pvMark)
 		{
-			m_pDictPool->poolReset( pvMark);
+			m_dictPool.poolReset( pvMark);
 		}
 	}
 
@@ -7545,7 +7515,7 @@ RCODE F_Db::getEncDefDef(
 					}
 
 					uiBufferSize = sizeof( FLMUNICODE) * (uiEncDefLen + 1);
-					if( RC_BAD( rc = pDict->m_pDictPool->poolAlloc( uiBufferSize,
+					if( RC_BAD( rc = pDict->m_dictPool.poolAlloc( uiBufferSize,
 						(void **)ppuzEncDefName)))
 					{
 						goto Exit;
@@ -7909,7 +7879,7 @@ RCODE F_Dict::updateEncDef(
 	F_ENCDEF *		pOldEncDef;
 	FLMUNICODE *	puzEncDefName = NULL;
 	FLMUINT			uiTmp;
-	void *			pvMark = m_pDictPool->poolMark();
+	void *			pvMark = m_dictPool.poolMark();
 	F_CCS *			pCcs = NULL;
 	FLMUINT			uiEncKeySize = 0;
 
@@ -7963,7 +7933,7 @@ RCODE F_Dict::updateEncDef(
 	{
 		// Allocate a new encdef
 
-		if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_ENCDEF),
+		if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_ENCDEF),
 													(void **)&pEncDef)))
 		{
 			goto Exit;
@@ -8031,7 +8001,7 @@ Exit:
 	{
 		if( pvMark)
 		{
-			m_pDictPool->poolReset( pvMark);
+			m_dictPool.poolReset( pvMark);
 		}
 	}
 
@@ -8224,7 +8194,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Allocate memory for the predefined collections
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( F_COLLECTION) * 3,
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( F_COLLECTION) * 3,
 											(void **)&m_pDictCollection)))
 	{
 		goto Exit;
@@ -8245,7 +8215,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Allocate IXDs for the predefined indexes.
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( IXD) * 2,
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( IXD) * 2,
 											(void **)&m_pNameIndex)))
 	{
 		goto Exit;
@@ -8298,7 +8268,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Set up the ICDs for the name index
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( ICD) * 4,
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( ICD) * 4,
 											(void **)&m_pNameIndex->pIcdTree)))
 	{
 		goto Exit;
@@ -8393,7 +8363,7 @@ RCODE F_Dict::setupPredefined(
 
 	// Set up the ICDs for the number index
 
-	if (RC_BAD( rc = m_pDictPool->poolCalloc( sizeof( ICD) * 2,
+	if (RC_BAD( rc = m_dictPool.poolCalloc( sizeof( ICD) * 2,
 											(void **)&m_pNumberIndex->pIcdTree)))
 	{
 		goto Exit;
@@ -9735,11 +9705,6 @@ RCODE F_Db::dictOpen( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = m_pDict->setup()))
-	{
-		goto Exit;
-	}
-
 	// Allocate the name table
 
 	if (RC_BAD( rc = m_pDict->allocNameTable()))

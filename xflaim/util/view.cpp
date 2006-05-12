@@ -270,8 +270,9 @@ int __cdecl main(
 		uiArg++;
 	}
 	
-	if( RC_BAD( rc = FlmAllocPool( &gv_pViewPool)))
+	if( (gv_pViewPool = f_new F_Pool) == NULL)
 	{
+		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 

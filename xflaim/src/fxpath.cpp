@@ -1645,7 +1645,7 @@ public:
 		eValTypes *				peValType,
 		FLMBOOL *				pbLastValue,
 		void *					pvVal,
-		IF_DynaBuf *			pDynaBuf = NULL);
+		F_DynaBuf *				pDynaBuf = NULL);
 			
 	RCODE FLMAPI cloneSelf(
 		IF_QueryValFunc **	ppNewObj);
@@ -1663,7 +1663,7 @@ RCODE FLMAPI XFLAIM_QueryValFunc::getValue(
 	eValTypes *		peValType,
 	FLMBOOL *		pbLastValue,
 	void *			pvVal,
-	IF_DynaBuf *	pDynaBuf)
+	F_DynaBuf *		pDynaBuf)
 {
 	RCODE	rc = NE_XFLM_OK;
 	

@@ -631,7 +631,7 @@ Desc:		This is a temporary structure that is used when building compound
 ****************************************************************************/
 typedef struct IxContextTag
 {
-	IF_Pool *		pPool;
+	F_Pool *			pPool;
 	CDL_HDR *		pCdlTbl;
 	CDL *				pCdlList;
 	IxContextTag *	pNext;
@@ -1207,7 +1207,7 @@ private:
 															// because of a critical error.
 	RCODE						m_rcMustClose;			// Return code that caused bMustClose to
 															// be set.
-	IF_Pool * 				m_pKrefPool;			// Kref pool to be used during update
+	F_Pool 					m_krefPool;				// Kref pool to be used during update
 															// transactions.
 	FLMUINT					m_uiSigBitsInBlkSize;// Significant bits in the database's
 															// block size.
@@ -1601,7 +1601,7 @@ typedef struct FlmSystemData
 													// unused structures in memory before
 													// freeing them.
 	FEVENT_HDR				EventHdrs [XFLM_MAX_EVENT_CATEGORIES];
-	IF_Pool *				pKRefPool;		// Memory Pool that is only used by
+	F_Pool *					pKRefPool;		// Memory Pool that is only used by
 													// record updaters for key building
 
 	FLMUINT					uiMaxFileSize;

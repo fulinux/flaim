@@ -401,13 +401,13 @@
 	flminterface IF_PosIStream;
 	flminterface IF_ResultSet;
 	flminterface IF_ThreadInfo;
-	flminterface IF_Pool;
-	flminterface IF_DynaBuf;
 	flminterface IF_OStream;
 	flminterface IF_IOStream;
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
 	flminterface IF_IOBuffer;
+	class F_Pool;
+	class F_DynaBuf;
 
 	/****************************************************************************
 	Desc: Cross-platform definitions
@@ -825,7 +825,83 @@
 		#define RC_SET_AND_ASSERT( rc)			(rc)
 		#define RC_UNEXPECTED_ASSERT( rc)
 		#define f_assert(c)
+		#define flmAssert(c)
 	#endif
+
+	/****************************************************************************
+	Desc: Memory
+	****************************************************************************/
+	
+	RCODE FLMAPI f_allocImp(
+		FLMUINT			uiSize,
+		void **			ppvPtr,
+		FLMBOOL			bFromNewOp,
+		const char *	pszFile,
+		int				iLine);
+		
+	#define f_alloc(s,p) \
+		f_allocImp( (s), (void **)(p), FALSE, __FILE__, __LINE__)
+		
+	RCODE FLMAPI f_callocImp(
+		FLMUINT			uiSize,
+		void **			ppvPtr,
+		const char *	pszFile,
+		int				iLine);
+	
+	#define f_calloc(s,p) \
+		f_callocImp( (s), (void **)(p), __FILE__, __LINE__)
+		
+	RCODE FLMAPI f_reallocImp(
+		FLMUINT			uiSize,
+		void **			ppvPtr,
+		const char *	pszFile,
+		int				iLine);
+		
+	#define f_realloc(s,p) \
+		f_reallocImp( (s), (void **)(p), __FILE__, __LINE__)
+		
+	RCODE FLMAPI f_recallocImp(
+		FLMUINT			uiSize,
+		void **			ppvPtr,
+		const char *	pszFile,
+		int				iLine);
+		
+	#define f_recalloc(s,p) \
+		f_recallocImp( (s), (void **)(p), __FILE__, __LINE__)
+		
+	#define f_new \
+		new( __FILE__, __LINE__)
+	
+	void FLMAPI f_freeImp(
+		void **			ppvPtr,
+		FLMBOOL			bFromDelOp);
+		
+	#define f_free(p) \
+		f_freeImp( (void **)(p), FALSE)
+		
+	void f_resetStackInfoImp(
+		void *			pvPtr,
+		const char *	pszFileName,
+		int				iLineNumber);
+		
+	#define f_resetStackInfo(p) \
+		f_resetStackInfoImp( (p), __FILE__, __LINE__)
+		
+	FLMUINT f_msize(
+		void *			pvPtr);
+		
+	RCODE FLMAPI f_allocAlignedBuffer(
+		FLMUINT			uiMinSize,
+		void **			ppvAlloc);
+		
+	void FLMAPI f_freeAlignedBuffer(
+		void **			ppvAlloc);
+		
+	RCODE FLMAPI f_getMemoryInfo(
+		FLMUINT64 *		pui64TotalPhysMem,
+		FLMUINT64 *		pui64AvailPhysMem);
+	
+	FLMBOOL FLMAPI f_canGetMemoryInfo( void);
 
 	/****************************************************************************
 	Desc:
@@ -1604,73 +1680,6 @@
 	};
 
 	/****************************************************************************
-	Desc: Pool memory allocator
-	****************************************************************************/
-	flminterface IF_Pool : public F_Object
-	{
-		virtual void FLMAPI poolInit(
-			FLMUINT					uiBlockSize) = 0;
-
-		virtual RCODE FLMAPI poolAlloc(
-			FLMUINT					uiSize,
-			void **					ppvPtr) = 0;
-
-		virtual RCODE FLMAPI poolCalloc(
-  			FLMUINT					uiSize,
-			void **					ppvPtr) = 0;
-
-		virtual void FLMAPI poolFree( void) = 0;
-
-		virtual void FLMAPI poolReset(
-			void *					pvMark,
-			FLMBOOL					bReduceFirstBlock = FALSE) = 0;
-
-		virtual void * FLMAPI poolMark( void) = 0;
-
-		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
-
-		virtual FLMUINT FLMAPI getBytesAllocated( void) = 0;
-	};
-	
-	RCODE FLMAPI FlmAllocPool(
-		IF_Pool **					ppPool,
-		FLMUINT						uiBlockSize = 0);
-	
-	/****************************************************************************
-	Desc: Dynamic buffer
-	****************************************************************************/
-	flminterface IF_DynaBuf : public F_Object
-	{
-		virtual void FLMAPI truncateData(
-			FLMUINT					uiSize) = 0;
-		
-		virtual RCODE FLMAPI allocSpace(
-			FLMUINT					uiSize,
-			void **					ppvPtr) = 0;
-		
-		virtual RCODE FLMAPI appendData(
-			const void *			pvData,
-			FLMUINT					uiSize) = 0;
-			
-		virtual RCODE FLMAPI appendByte(
-			FLMBYTE					ucChar) = 0;
-		
-		virtual RCODE FLMAPI appendUniChar(
-			FLMUNICODE				uChar) = 0;
-		
-		virtual FLMBYTE * FLMAPI getBufferPtr( void) = 0;
-		
-		virtual FLMUNICODE * FLMAPI getUnicodePtr( void) = 0;
-		
-		virtual FLMUINT FLMAPI getUnicodeLength( void) = 0;
-		
-		virtual FLMUINT FLMAPI getDataLength( void) = 0;
-		
-		virtual RCODE FLMAPI copyFromBuffer(
-			IF_DynaBuf *			pSource) = 0;
-	};
-	
-	/****************************************************************************
 	Desc: Random numbers
 	****************************************************************************/
 	
@@ -1788,7 +1797,7 @@
 			FLMUINT *				puiThreadId) = 0;
 	
 		virtual RCODE FLMAPI getThreadInfo(
-			IF_Pool *				pPool,
+			F_Pool *					pPool,
 			F_THREAD_INFO **		ppThreadInfo,
 			FLMUINT *				puiNumThreads) = 0;
 	
@@ -2130,7 +2139,7 @@
 		IF_PosIStream *			pIStream,
 		FLMBOOL						bAllowEscapes,
 		FLMUINT						uiCompareRules,
-		IF_DynaBuf *				pDynaBuf);
+		F_DynaBuf *					pDynaBuf);
 		
 	RCODE FLMAPI f_getNextMetaphone(
 		IF_IStream *				pIStream,
@@ -2819,7 +2828,7 @@
 		...);
 		
 	/****************************************************************************
-	Desc:
+	Desc:	Memory copying, moving, setting
 	****************************************************************************/
 	
 	void * FLMAPI f_memcpy(
@@ -2925,81 +2934,6 @@
 		FLMUINT *			puiBufLength);
 	
 	/****************************************************************************
-	Desc: Memory
-	****************************************************************************/
-	
-	RCODE FLMAPI f_allocImp(
-		FLMUINT			uiSize,
-		void **			ppvPtr,
-		FLMBOOL			bFromNewOp,
-		const char *	pszFile,
-		int				iLine);
-		
-	#define f_alloc(s,p) \
-		f_allocImp( (s), (void **)(p), FALSE, __FILE__, __LINE__)
-		
-	RCODE FLMAPI f_callocImp(
-		FLMUINT			uiSize,
-		void **			ppvPtr,
-		const char *	pszFile,
-		int				iLine);
-	
-	#define f_calloc(s,p) \
-		f_callocImp( (s), (void **)(p), __FILE__, __LINE__)
-		
-	RCODE FLMAPI f_reallocImp(
-		FLMUINT			uiSize,
-		void **			ppvPtr,
-		const char *	pszFile,
-		int				iLine);
-		
-	#define f_realloc(s,p) \
-		f_reallocImp( (s), (void **)(p), __FILE__, __LINE__)
-		
-	RCODE FLMAPI f_recallocImp(
-		FLMUINT			uiSize,
-		void **			ppvPtr,
-		const char *	pszFile,
-		int				iLine);
-		
-	#define f_recalloc(s,p) \
-		f_recallocImp( (s), (void **)(p), __FILE__, __LINE__)
-		
-	#define f_new \
-		new( __FILE__, __LINE__)
-	
-	void FLMAPI f_freeImp(
-		void **			ppvPtr,
-		FLMBOOL			bFromDelOp);
-		
-	#define f_free(p) \
-		f_freeImp( (void **)(p), FALSE)
-		
-	void f_resetStackInfoImp(
-		void *			pvPtr,
-		const char *	pszFileName,
-		int				iLineNumber);
-		
-	#define f_resetStackInfo(p) \
-		f_resetStackInfoImp( (p), __FILE__, __LINE__)
-		
-	FLMUINT f_msize(
-		void *			pvPtr);
-		
-	RCODE FLMAPI f_allocAlignedBuffer(
-		FLMUINT			uiMinSize,
-		void **			ppvAlloc);
-		
-	void FLMAPI f_freeAlignedBuffer(
-		void **			ppvAlloc);
-		
-	RCODE FLMAPI f_getMemoryInfo(
-		FLMUINT64 *		pui64TotalPhysMem,
-		FLMUINT64 *		pui64AvailPhysMem);
-	
-	FLMBOOL FLMAPI f_canGetMemoryInfo( void);
-
-	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
 
@@ -3071,8 +3005,6 @@
 	****************************************************************************/
 	flminterface IF_NameTable : public F_Object
 	{
-		virtual RCODE FLMAPI setupNameTable( void) = 0;
-	
 		virtual void FLMAPI clearTable(
 			FLMUINT					uiPoolBlkSize) = 0;
 	
@@ -4052,4 +3984,341 @@
 		FLMINT						iError,
 		RCODE							defaultRc);
 		
+	/****************************************************************************
+	Desc:	This class is used to do pool memory allocations.
+	****************************************************************************/
+	class F_Pool : public F_Object
+	{
+	public:
+	
+		typedef struct PoolMemoryBlock
+		{
+			PoolMemoryBlock *		pPrevBlock;
+			FLMUINT					uiBlockSize;
+			FLMUINT					uiFreeOffset;
+			FLMUINT					uiFreeSize;
+		} MBLK;
+	
+		typedef struct
+		{
+			FLMUINT	uiAllocBytes;
+			FLMUINT	uiCount;
+		} POOL_STATS;
+	
+		F_Pool()
+		{
+			m_uiBytesAllocated = 0;
+			m_pLastBlock = NULL;
+			m_pPoolStats = NULL;
+			m_uiBlockSize = 0;
+		}
+	
+		virtual ~F_Pool();
+	
+		FINLINE void FLMAPI poolInit(
+			FLMUINT			uiBlockSize)
+		{
+			m_uiBlockSize = uiBlockSize;
+		}
+	
+		void smartPoolInit(
+			POOL_STATS *	pPoolStats);
+	
+		RCODE FLMAPI poolAlloc(
+			FLMUINT			uiSize,
+			void **			ppvPtr);
+	
+		RCODE FLMAPI poolCalloc(
+			FLMUINT			uiSize,
+			void **			ppvPtr);
+	
+		void FLMAPI poolFree( void);
+	
+		void FLMAPI poolReset(
+			void *			pvMark,
+			FLMBOOL			bReduceFirstBlock = FALSE);
+	
+		FINLINE void * FLMAPI poolMark( void)
+		{
+			return (void *)(m_pLastBlock
+								 ? (FLMBYTE *)m_pLastBlock + m_pLastBlock->uiFreeOffset
+								 : NULL);
+		}
+	
+		FINLINE FLMUINT FLMAPI getBlockSize( void)
+		{
+			return( m_uiBlockSize);
+		}
+	
+		FINLINE FLMUINT FLMAPI getBytesAllocated( void)
+		{
+			return( m_uiBytesAllocated);
+		}
+	
+	private:
+	
+		FINLINE void updateSmartPoolStats( void)
+		{
+			if (m_uiBytesAllocated)
+			{
+				if( (m_pPoolStats->uiAllocBytes + m_uiBytesAllocated) >= 0xFFFF0000)
+				{
+					m_pPoolStats->uiAllocBytes =
+						(m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount) * 100;
+					m_pPoolStats->uiCount = 100;
+				}
+				else
+				{
+					m_pPoolStats->uiAllocBytes += m_uiBytesAllocated;
+					m_pPoolStats->uiCount++;
+				}
+				m_uiBytesAllocated = 0;
+			}
+		}
+	
+		FINLINE void setInitialSmartPoolBlkSize( void)
+		{
+			// Determine starting block size:
+			// 1) average of bytes allocated / # of frees/resets (average size needed)
+			// 2) add 10% - to minimize extra allocs 
+	
+			m_uiBlockSize = (m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount);
+			m_uiBlockSize += (m_uiBlockSize / 10);
+	
+			if (m_uiBlockSize < 512)
+			{
+				m_uiBlockSize = 512;
+			}
+		}
+	
+		void freeToMark(
+			void *		pvMark);
+	
+		PoolMemoryBlock *		m_pLastBlock;
+		FLMUINT					m_uiBlockSize;
+		FLMUINT					m_uiBytesAllocated;
+		POOL_STATS *			m_pPoolStats;
+	};
+
+	/****************************************************************************
+	Desc:
+	*****************************************************************************/
+	class F_DynaBuf : public F_Object
+	{
+	public:
+	
+		F_DynaBuf(
+			FLMBYTE *		pucBuffer,
+			FLMUINT			uiBufferSize)
+		{
+			m_pucBuffer = pucBuffer;
+			m_uiBufferSize = uiBufferSize;
+			m_uiOffset = 0;
+			m_bAllocatedBuffer = FALSE;
+		}
+		
+		virtual ~F_DynaBuf()
+		{
+			if( m_bAllocatedBuffer)
+			{
+				f_free( &m_pucBuffer);
+			}
+		}
+		
+		FINLINE void FLMAPI truncateData(
+			FLMUINT			uiSize)
+		{
+			if( uiSize < m_uiOffset)
+			{
+				m_uiOffset = uiSize;
+			}
+		}
+		
+		FINLINE RCODE FLMAPI allocSpace(
+			FLMUINT		uiSize,
+			void **		ppvPtr)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_uiOffset + uiSize >= m_uiBufferSize)
+			{
+				if( RC_BAD( rc = resizeBuffer( m_uiOffset + uiSize + 512)))
+				{
+					goto Exit;
+				}
+			}
+			
+			*ppvPtr = &m_pucBuffer[ m_uiOffset];
+			m_uiOffset += uiSize;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE RCODE FLMAPI appendData(
+			const void *		pvData,
+			FLMUINT				uiSize)
+		{
+			RCODE		rc = NE_FLM_OK;
+			void *	pvTmp = NULL;
+			
+			if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
+			{
+				goto Exit;
+			}
+	
+			if( uiSize == 1)
+			{
+				*((FLMBYTE *)pvTmp) = *((FLMBYTE *)pvData);
+			}
+			else
+			{
+				f_memcpy( pvTmp, pvData, uiSize);
+			}
+			
+		Exit:
+		
+			return( rc);
+		}
+			
+		FINLINE RCODE FLMAPI appendByte(
+			FLMBYTE		ucChar)
+		{
+			RCODE			rc = NE_FLM_OK;
+			FLMBYTE *	pucTmp;
+			
+			if( RC_BAD( rc = allocSpace( 1, (void **)&pucTmp)))
+			{
+				goto Exit;
+			}
+			
+			*pucTmp = ucChar;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE RCODE FLMAPI appendUniChar(
+			FLMUNICODE	uChar)
+		{
+			RCODE				rc = NE_FLM_OK;
+			FLMUNICODE *	puTmp;
+			
+			if( RC_BAD( rc = allocSpace( sizeof( FLMUNICODE), (void **)&puTmp)))
+			{
+				goto Exit;
+			}
+			
+			*puTmp = uChar;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
+		{
+			return( m_pucBuffer);
+		}
+		
+		FINLINE FLMUNICODE * FLMAPI getUnicodePtr( void)
+		{
+			if( m_uiOffset >= sizeof( FLMUNICODE))
+			{
+				return( (FLMUNICODE *)m_pucBuffer);
+			}
+			
+			return( NULL);
+		}
+		
+		FINLINE FLMUINT FLMAPI getUnicodeLength( void)
+		{
+			if( m_uiOffset <= sizeof( FLMUNICODE))
+			{
+				return( 0);
+			}
+			
+			return( (m_uiOffset >> 1) - 1);
+		}
+		
+		FINLINE FLMUINT FLMAPI getDataLength( void)
+		{
+			return( m_uiOffset);
+		}
+		
+		FINLINE RCODE FLMAPI copyFromBuffer(
+			F_DynaBuf *		pSource)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( RC_BAD( rc = resizeBuffer( pSource->m_uiBufferSize)))
+			{
+				goto Exit;
+			}
+			
+			if( (m_uiOffset = pSource->m_uiOffset) != 0)
+			{
+				f_memcpy( m_pucBuffer, pSource->m_pucBuffer, pSource->m_uiOffset);
+			}
+			
+		Exit:
+			
+			return( rc);
+		}		
+		
+	private:
+	
+		FINLINE RCODE resizeBuffer(
+			FLMUINT		uiNewSize)
+		{
+			RCODE	rc = NE_FLM_OK;
+			
+			if( !m_bAllocatedBuffer)
+			{
+				if( uiNewSize > m_uiBufferSize)
+				{
+					FLMBYTE *		pucOriginalBuf = m_pucBuffer;
+					
+					if( RC_BAD( rc = f_alloc( uiNewSize, &m_pucBuffer)))
+					{
+						m_pucBuffer = pucOriginalBuf;
+						goto Exit;
+					}
+					
+					m_bAllocatedBuffer = TRUE;
+					
+					if( m_uiOffset)
+					{
+						f_memcpy( m_pucBuffer, pucOriginalBuf, m_uiOffset);
+					}
+				}
+			}
+			else
+			{
+				if( RC_BAD( rc = f_realloc( uiNewSize, &m_pucBuffer)))
+				{
+					goto Exit;
+				}
+				
+				if( uiNewSize < m_uiOffset)
+				{
+					m_uiOffset = uiNewSize;
+				}
+			}
+			
+			m_uiBufferSize = uiNewSize;
+			
+		Exit:
+		
+			return( rc);
+		}
+	
+		FLMBOOL		m_bAllocatedBuffer;
+		FLMBYTE *	m_pucBuffer;
+		FLMUINT		m_uiBufferSize;
+		FLMUINT		m_uiOffset;
+	};
+
 #endif // FTK_H

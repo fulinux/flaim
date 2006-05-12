@@ -179,8 +179,9 @@ extern "C" int main(
 	char **			ppszArgV)
 {
 	int				iRetCode = 0;
-	IF_Pool *		pLogPool = NULL;
+	F_Pool			logPool;
 
+	logPool.poolInit( 1024);
 	gv_bBatchMode = FALSE;
 	gv_bRunning = TRUE;
 
@@ -200,14 +201,7 @@ extern "C" int main(
 	WpsInit( 0xFFFF, 0xFFFF, "XFLAIM Database Rebuild");
 	WpsOptimize();
 	
-	if( RC_BAD( FlmAllocPool( &pLogPool)))
-	{
-		goto Exit;
-	}
-	
-	pLogPool->poolInit( 1024);
-	
-	if (RC_BAD( pLogPool->poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
+	if (RC_BAD( logPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
 	{
 		WpsStrOut(
 			"\nCould not allocate log buffer\n");
@@ -221,8 +215,6 @@ extern "C" int main(
 		}
 	}
 	
-	pLogPool->poolFree();
-
 Exit:
 
 	if (gv_bPauseBeforeExiting && !gv_bShutdown)
@@ -243,10 +235,7 @@ Exit:
 		}
 	}
 	
-	if( pLogPool)
-	{
-		pLogPool->Release();
-	}
+	logPool.poolFree();
 
 	WpsExit();
 	

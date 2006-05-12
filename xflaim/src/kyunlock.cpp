@@ -59,19 +59,17 @@ RCODE F_Db::krefCntrlCheck( void)
 
 		if (m_eTransType == XFLM_UPDATE_TRANS)
 		{
-			m_pKrefPool = m_pDatabase->m_pKrefPool;
-			m_pKrefPool->AddRef();
+			m_pKrefPool = &m_pDatabase->m_krefPool;
 			
 			m_bReuseKrefPool = TRUE;
 			m_pKrefPool->poolReset( NULL, TRUE);
 		}
 		else
 		{
-			m_pKrefPool = m_pTmpKrefPool;
-			m_pKrefPool->AddRef();
-			
+			m_tmpKrefPool.poolFree();
+			m_tmpKrefPool.poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE);
+			m_pKrefPool = &m_tmpKrefPool;
 			m_bReuseKrefPool = FALSE;
-			m_pKrefPool->poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE);
 		}
 
 		if( !m_pKrefTbl)
@@ -121,9 +119,8 @@ void F_Db::krefCntrlFree( void)
 		else
 		{
 			m_pKrefPool->poolFree();
+			m_pKrefPool->poolInit( DEFAULT_KREF_POOL_BLOCK_SIZE);
 		}
-		
-		m_pKrefPool->Release();
 		m_pKrefPool = NULL;
 
 		if( m_pKrefTbl && m_uiKrefTblSize != DEFAULT_KREF_TBL_SIZE)

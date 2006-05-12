@@ -87,7 +87,7 @@ public:
 		FLMUINT *			puiThreadId);
 
 	RCODE FLMAPI getThreadInfo(
-		IF_Pool *			pPool,
+		F_Pool *			pPool,
 		F_THREAD_INFO **	ppThreadInfo,
 		FLMUINT *			puiNumThreads);
 
@@ -265,17 +265,14 @@ public:
 
 	F_ThreadInfo()
 	{
-		m_pPool = NULL;
+		m_pool.poolInit( 512);
 		m_uiNumThreads = 0;
 		m_pThreadInfoArray = NULL;
 	}
 
 	virtual ~F_ThreadInfo()
 	{
-		if( m_pPool)
-		{
-			m_pPool->Release();
-		}
+		m_pool.poolFree();
 	}
 
 	FLMUINT FLMAPI getNumThreads( void)
@@ -314,7 +311,7 @@ public:
 		}
 	}
 
-	IF_Pool *			m_pPool;
+	F_Pool				m_pool;
 	F_THREAD_INFO *	m_pThreadInfoArray;
 	FLMUINT				m_uiNumThreads;
 };
@@ -1029,7 +1026,7 @@ Desc:		Allocates an array of F_THREAD_INFO structures and populates them
 			with information about the threads being managed by this object.
 ****************************************************************************/
 RCODE FLMAPI F_ThreadMgr::getThreadInfo(
-	IF_Pool *				pPool,
+	F_Pool *				pPool,
 	F_THREAD_INFO **		ppThreadInfo,
 	FLMUINT *				puiNumThreads)
 {
@@ -1394,13 +1391,8 @@ RCODE FLMAPI FlmGetThreadInfo(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = FlmAllocPool( &pThreadInfo->m_pPool)))
-	{
-		goto Exit;
-	}
-	
 	if( RC_BAD( rc = f_getThreadMgrPtr()->getThreadInfo(
-								pThreadInfo->m_pPool,
+								&pThreadInfo->m_pool,
 								&pThreadInfo->m_pThreadInfoArray,
 								&pThreadInfo->m_uiNumThreads)))
 	{

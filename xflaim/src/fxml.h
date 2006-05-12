@@ -393,10 +393,7 @@ private:
 		m_pFirstAttr = NULL;
 		m_pLastAttr = NULL;
 
-		if( m_pAttrPool)
-		{
-			m_pAttrPool->poolReset( NULL);
-		}
+		m_attrPool.poolReset( NULL);
 	}
 
 	RCODE allocAttribute(
@@ -405,7 +402,7 @@ private:
 		XML_ATTR *	pAttr = NULL;
 		RCODE			rc = NE_XFLM_OK;
 
-		if( RC_BAD( rc = m_pAttrPool->poolCalloc( 
+		if( RC_BAD( rc = m_attrPool.poolCalloc( 
 			sizeof( XML_ATTR), (void **)&pAttr)))
 		{
 			goto Exit;
@@ -443,7 +440,7 @@ private:
 
 		uiStrLen = f_unilen( puzPrefix);
 
-		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
+		if( RC_BAD( rc = m_attrPool.poolAlloc( 
 			sizeof( FLMUNICODE) * (uiStrLen + 1), (void **)&pAttr->puzPrefix)))
 		{
 			goto Exit;
@@ -472,7 +469,7 @@ private:
 
 		uiStrLen = f_unilen( puzLocalName);
 
-		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
+		if( RC_BAD( rc = m_attrPool.poolAlloc( 
 			sizeof( FLMUNICODE) * (uiStrLen + 1), 
 			(void **)&pAttr->puzLocalName)))
 		{
@@ -502,7 +499,7 @@ private:
 
 		uiStrLen = f_unilen( puzUnicode);
 
-		if( RC_BAD( rc = m_pAttrPool->poolAlloc( 
+		if( RC_BAD( rc = m_attrPool.poolAlloc( 
 			sizeof( FLMUNICODE) * (uiStrLen + 1), 
 			(void **)&pAttr->puzVal)))
 		{
@@ -558,13 +555,13 @@ private:
 	XML_STATUS_HOOK			m_fnStatus;
 	void *						m_pvCallbackData;
 	XFLM_IMPORT_STATS			m_importStats;
-	IF_Pool *					m_pTmpPool;
+	F_Pool						m_tmpPool;
 
 	// Attribute management
 
 	XML_ATTR *					m_pFirstAttr;
 	XML_ATTR *					m_pLastAttr;
-	IF_Pool * 					m_pAttrPool;
+	F_Pool 						m_attrPool;
 };
 
 #define FLM_XML_EXTEND_DICT_FLAG				0x00000001

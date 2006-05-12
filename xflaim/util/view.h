@@ -464,7 +464,7 @@ EXTERN FLMUINT						gv_uiViewSearchLfNum;
 EXTERN FLMUINT						gv_uiViewSearchLfType;
 EXTERN FLMBYTE						gv_ucViewSearchKey[ XFLM_MAX_KEY_SIZE];
 EXTERN FLMUINT						gv_uiViewSearchKeyLen;
-EXTERN IF_Pool *					gv_pViewPool;
+EXTERN F_Pool *					gv_pViewPool;
 EXTERN FLMUINT						gv_uiViewTopRow;
 EXTERN FLMUINT						gv_uiViewBottomRow;
 EXTERN F_TMSTAMP					gv_ViewLastTime;
