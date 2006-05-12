@@ -154,6 +154,8 @@ static FLMBOOL		gv_bLogLeaks = FALSE;
 #endif
 
 #ifdef FLM_DEBUG
+FSTATIC FLMUINT * memWalkStack( void);
+
 FSTATIC FLMBOOL initMemTracking( void);
 
 FSTATIC void saveMemTrackingInfo(
@@ -748,11 +750,12 @@ Desc:	Returns the value at SS:[POS+OFFSET].
 	
 #endif
 
+#ifdef FLM_DEBUG
 /************************************************************************
 Desc:
 *************************************************************************/
 #ifdef FLM_NLM
-FLMUINT * memWalkStack()
+FSTATIC FLMUINT * memWalkStack( void)
 {
 	FLMUINT		uiLoop;
  	FLMUINT		uiRtnAddr;
@@ -797,7 +800,7 @@ FLMUINT * memWalkStack()
 Desc: Walk the call stack.
 *********************************************************************/
 #ifdef FLM_WIN
-FLMUINT * memWalkStack()
+FSTATIC FLMUINT * memWalkStack( void)
 {
 	STACKFRAME64	stackFrame;
 	CONTEXT			context;
@@ -886,10 +889,11 @@ nextinstr:
 Desc:
 *********************************************************************/
 #ifdef FLM_UNIX
-FLMUINT * memWalkStack()
+FSTATIC FLMUINT * memWalkStack( void)
 {
 	return( NULL);
 }
+#endif
 #endif
 
 /********************************************************************
@@ -1457,6 +1461,12 @@ RCODE FLMAPI f_allocImp(
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pHdr;
 
+#ifndef FLM_DEBUG
+	F_UNREFERENCED_PARM( bAllocFromNewOp);
+	F_UNREFERENCED_PARM( pszFileName);
+	F_UNREFERENCED_PARM( iLineNumber);
+#endif
+
 	if( (pHdr = (F_MEM_HDR *)os_malloc( uiSize + sizeof( F_MEM_HDR) +
 												F_PICKET_FENCE_SIZE)) == NULL)
 	{
@@ -1477,7 +1487,6 @@ RCODE FLMAPI f_allocImp(
 		f_memcpy( ((FLMBYTE *)(*ppvPtr)) + uiSize,
 					F_PICKET_FENCE, F_PICKET_FENCE_SIZE);
 	#endif
-
 #endif
 
 Exit:
@@ -1497,6 +1506,10 @@ RCODE FLMAPI f_callocImp(
 	RCODE			rc = NE_FLM_OK;
 	F_MEM_HDR *	pHdr;
 
+#ifndef FLM_DEBUG
+	F_UNREFERENCED_PARM( pszFileName);
+	F_UNREFERENCED_PARM( iLineNumber);
+#endif
 	if ((pHdr = (F_MEM_HDR *)os_malloc( uiSize + sizeof( F_MEM_HDR) +
 											F_PICKET_FENCE_SIZE)) == NULL)
 	{
