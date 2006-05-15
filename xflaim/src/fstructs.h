@@ -1228,8 +1228,7 @@ private:
 	FLMUINT					m_uiCurrLogBlkAddr;
 															// Address of first block in the current
 															// buffer.
-	XFLM_DB_HDR *			m_pDbHdrWriteBuf;		// Aligned buffer (on win32) for writing
-															// the DB header.
+	XFLM_DB_HDR *			m_pDbHdrWriteBuf;		// Aligned buffer for writing the DB header.
 	FLMBYTE *				m_pucUpdBuffer;		// Buffer for writing out records.
 	FLMUINT					m_uiUpdBufferSize;	// Size of update buffer.
 	FLMBYTE					m_ucIV [16];			// Used when outputting encrypted data.

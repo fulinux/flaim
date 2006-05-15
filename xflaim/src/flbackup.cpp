@@ -1361,7 +1361,7 @@ FSTATIC RCODE flmRestoreFile(
 	FLMUINT				uiBackupMaxFileSize;
 	FLMUINT				uiPriorBlkFile = 0;
 	FLMUINT				uiSectorSize;
-	XFLM_DB_HDR *			pDbHdr;
+	XFLM_DB_HDR *		pDbHdr;
 	FLMBYTE				ucIncSerialNum[ XFLM_SERIAL_NUM_SIZE];
 	FLMBYTE				ucNextIncSerialNum[ XFLM_SERIAL_NUM_SIZE];
 	FLMUINT				uiIncSeqNum;
@@ -1383,19 +1383,6 @@ FSTATIC RCODE flmRestoreFile(
 	{
 		*pbOKToRetry = TRUE;
 	}
-
-#ifdef FLM_WIN
-
-	// Don't want to do extra file extensions or flush when file
-	// is extended.  Setting the extend size to ~0 has the effect
-	// of not updating the directory entry (a time-consuming operation)
-	// on Windows platforms.  On all other platforms, we will just
-	// go with the default behavior.
-
-	pSFile->setExtendSize( (FLMUINT)(~0));
-
-#endif
-
 
 	// Set up the backer stream object
 

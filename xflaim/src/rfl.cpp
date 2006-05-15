@@ -9153,3 +9153,97 @@ void FLMAPI F_Db::getRflFileName(
 					pbNameTruncated);
 	}
 }
+
+/********************************************************************
+Desc: Calculate the checksum for a packet.
+*********************************************************************/
+FLMBYTE RflCalcChecksum(
+	FLMBYTE *	pucPacket,
+	FLMUINT		uiPacketBodyLen)
+{
+	FLMUINT		uiBytesToChecksum;
+	FLMUINT		uiChecksum;
+	FLMBYTE *	pucStart;
+	
+	// Checksum is calculated for every byte in the packet that
+	// comes after the checksum byte.
+
+	uiBytesToChecksum = (FLMUINT)(uiPacketBodyLen +
+									RFL_PACKET_OVERHEAD -
+									(RFL_PACKET_CHECKSUM_OFFSET + 1));
+									
+	pucStart = &pucPacket [RFL_PACKET_CHECKSUM_OFFSET + 1];
+
+	FLMBYTE *	pucEnd;
+	FLMBYTE *	pucSectionEnd;
+	FLMBYTE *	pucCur;
+	FLMBYTE		ucTmp;
+	
+	uiChecksum = 0;
+	pucCur = pucStart;
+	pucEnd = pucStart + uiBytesToChecksum;
+
+#ifdef FLM_64BIT
+	pucSectionEnd = pucStart + (sizeof( FLMUINT) - ((FLMUINT)pucStart & 0x7));
+#else
+	pucSectionEnd = pucStart + (sizeof( FLMUINT) - ((FLMUINT)pucStart & 0x3));
+#endif
+
+	if( pucSectionEnd > pucEnd)
+	{
+		pucSectionEnd = pucEnd;
+	}
+
+	while( pucCur < pucSectionEnd)
+	{
+		uiChecksum = (uiChecksum << 8) + *pucCur++;
+	}
+
+#ifdef FLM_64BIT
+	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
+#else
+	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
+#endif
+
+	while( pucCur < pucSectionEnd)
+	{
+		uiChecksum ^= *((FLMUINT *)pucCur);
+		pucCur += sizeof( FLMUINT);
+	}
+
+	while( pucCur < pucEnd)
+	{
+		uiChecksum ^= *pucCur++;
+	}
+
+	ucTmp = (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+#ifdef FLM_64BIT
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+#endif
+
+	ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
+
+	if( (uiChecksum = (FLMUINT)ucTmp) == 0)
+	{
+		uiChecksum = 1;
+	}
+
+	return( (FLMBYTE)uiChecksum);
+}
