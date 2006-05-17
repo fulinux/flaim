@@ -139,9 +139,6 @@ FLMUINT32 calcBlkCRC(
 	F_BLK_HDR *				pBlkHdr,
 	FLMUINT					uiBlkEnd);
 
-FLMUINT32 calcDbHdrCRC(
-	XFLM_DB_HDR *			pDbHdr);
-
 FLMUINT flmAdjustBlkSize(
 	FLMUINT					uiBlkSize);
 
@@ -413,6 +410,60 @@ FINLINE void flmTransEventCallback(
 {
 	flmDoEventCallback( XFLM_EVENT_UPDATES, eEventType, (IF_Db *)pDb,
 					f_threadId(), ui64TransId, 0, 0, rc);
+}
+
+/********************************************************************
+Desc:	Calculate the CRC for the database header.
+*********************************************************************/
+FINLINE FLMUINT32 calcDbHdrCRC(
+	XFLM_DB_HDR *			pDbHdr)
+{
+	FLMUINT32	ui32SaveCRC;
+	FLMUINT32	ui32Checksum;
+
+	// Checksum everything except for the ui32HdrCRC value.
+
+	ui32SaveCRC = pDbHdr->ui32HdrCRC;
+	pDbHdr->ui32HdrCRC = 0;
+	
+	// Calculate the checksum
+
+	ui32Checksum = f_calcFastChecksum( pDbHdr, sizeof( XFLM_DB_HDR));
+	
+	// Restore the checksum that was in the header
+
+	pDbHdr->ui32HdrCRC = ui32SaveCRC;
+	return( ui32Checksum);
+}
+
+/********************************************************************
+Desc:	Calculate the checksum for a block.  NOTE: This is ALWAYS done
+		on the raw image that will be written to disk.  This means
+		that if the block needs to be converted before writing it out,
+		it should be done before calculating the checksum.
+*********************************************************************/
+FINLINE FLMUINT32 calcBlkCRC(
+	F_BLK_HDR *		pBlkHdr,
+	FLMUINT			uiBlkEnd)
+{
+	FLMUINT32		ui32SaveCRC;
+	FLMUINT32		ui32Checksum;
+
+	// Calculate CRC on everything except for the ui32BlkCRC value.
+	// To do this, we temporarily change it to zero.  The saved
+	// value will be restored after calculating the CRC.
+
+	ui32SaveCRC = pBlkHdr->ui32BlkCRC;
+	pBlkHdr->ui32BlkCRC = 0;
+
+	// Calculate the checksum
+
+	ui32Checksum = f_calcFastChecksum( pBlkHdr, uiBlkEnd);
+	
+	// Restore the CRC that was in the block.
+
+	pBlkHdr->ui32BlkCRC = ui32SaveCRC;
+	return( ui32Checksum);
 }
 
 #endif	// FILESYS_H

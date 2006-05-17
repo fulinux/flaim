@@ -4542,6 +4542,7 @@
 	#define NE_XFLM_COULD_NOT_CREATE_SEMAPHORE			NE_FLM_COULD_NOT_CREATE_SEMAPHORE
 	#define NE_XFLM_BAD_UTF8									NE_FLM_BAD_UTF8
 	#define NE_XFLM_ERROR_WAITING_ON_SEMPAHORE			NE_FLM_ERROR_WAITING_ON_SEMPAHORE
+	#define NE_XFLM_BAD_PLATFORM_FORMAT						NE_FLM_BAD_PLATFORM_FORMAT						
 	
 	/****************************************************************************
 	Desc:		General XFLAIM errors
@@ -4699,7 +4700,6 @@
 	#define NE_XFLM_READ_ONLY									0xD194			// Item is read-only and cannot be updated.
 	#define NE_XFLM_KEY_OVERFLOW								0xD195			// Generated index key too large.
 	#define NE_XFLM_UNEXPECTED_END_OF_INPUT				0xD196			// Encountered unexpected end of input when parsing XPATH expression.
-	#define NE_XFLM_BAD_PLATFORM_FORMAT						0xD197			// Cannot support platform format.  NOTE: No need to document this one, it is strictly internal.
 	
 	/****************************************************************************
 	Desc:		DOM Errors

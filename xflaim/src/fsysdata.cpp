@@ -1896,8 +1896,6 @@ RCODE F_DbSystem::init( void)
 		gv_XFlmSysData.EventHdrs [iEventCategory].hMutex = F_MUTEX_NULL;
 	}
 
-	initFastBlockCheckSum();
-
 	if (RC_BAD( rc = flmVerifyDiskStructOffsets()))
 	{
 		goto Exit;

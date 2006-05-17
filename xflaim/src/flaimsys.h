@@ -5220,8 +5220,6 @@ private:
 		return( rc);
 	}
 
-	void initFastBlockCheckSum( void);
-
 	RCODE allocDb(
 		F_Db **				ppDb,
 		FLMBOOL				bInternalOpen);
