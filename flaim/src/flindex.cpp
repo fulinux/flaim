@@ -307,7 +307,7 @@ Transmission_Error:
 	}
 
 	if (RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS,
-		FDB_TRANS_GOING_OK, FLM_AUTO_TRANS | 15, &bStartedTrans)))
+		FDB_TRANS_GOING_OK, FLM_AUTO_TRANS | FLM_NO_TIMEOUT, &bStartedTrans)))
 	{
 		goto Exit;
 	}
@@ -531,7 +531,7 @@ Transmission_Error:
 	}
 
 	if (RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS,
-		FDB_TRANS_GOING_OK, FLM_AUTO_TRANS | 15, &bStartedTrans)))
+		FDB_TRANS_GOING_OK, FLM_AUTO_TRANS | FLM_NO_TIMEOUT, &bStartedTrans)))
 	{
 		goto Exit;
 	}

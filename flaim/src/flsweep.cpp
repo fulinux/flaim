@@ -703,9 +703,9 @@ RCODE DbWalk::UpdateRecord(
 
 	rc = ( pRecord)
 			? FlmRecordModify( m_pDb, m_SwpInfo.uiContainer,
-										uiDrn, pRecord, FLM_AUTO_TRANS | 25)
+										uiDrn, pRecord, FLM_AUTO_TRANS | FLM_NO_TIMEOUT)
 			: FlmRecordDelete( m_pDb,	m_SwpInfo.uiContainer,
-										uiDrn, FLM_AUTO_TRANS | 25);
+										uiDrn, FLM_AUTO_TRANS | FLM_NO_TIMEOUT);
 	if( RC_BAD( rc))
 	{
 		goto Exit;

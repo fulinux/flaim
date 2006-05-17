@@ -4361,7 +4361,7 @@ RCODE F_RecordMgrPage::display(
 			else
 			{
 				rc = FlmRecordModify( hDb, uiContainer, uiDrn, pInRec, 
-					FLM_AUTO_TRANS | 5);
+					FLM_AUTO_TRANS | FLM_NO_TIMEOUT);
 			}
 		}
 	}
@@ -4380,7 +4380,7 @@ RCODE F_RecordMgrPage::display(
 			else
 			{
 				rc = FlmRecordAdd( hDb, uiContainer, &uiDrn, pInRec, 
-					FLM_AUTO_TRANS | 5);
+					FLM_AUTO_TRANS | FLM_NO_TIMEOUT);
 			}
 		}
 	}

@@ -223,7 +223,7 @@ void F_ProcessRecordPage::addRecord(
 		goto Exit;
 	}
 
-	uiAutoTrans = FLM_AUTO_TRANS | 5;  // Wait at most 5 seconds
+	uiAutoTrans = FLM_AUTO_TRANS | FLM_NO_TIMEOUT;
 	if (RC_BAD( rc = FlmRecordAdd( hDb, uiContainer, &uiDrn, pRec, uiAutoTrans)))
 	{
 		displayRecordPage( pFlmSession, hDb, pszDbKey, pRec, bReadOnly,rc);
@@ -350,7 +350,7 @@ void F_ProcessRecordPage::modifyRecord(
 		goto Exit;
 	}
 
-	uiAutoTrans = FLM_AUTO_TRANS | 5;  // Wait at most 5 seconds
+	uiAutoTrans = FLM_AUTO_TRANS | FLM_NO_TIMEOUT;
 	if (RC_BAD( rc = FlmRecordModify( hDb, uiContainer, uiDrn, pRec, uiAutoTrans)))
 	{
 		displayRecordPage( pFlmSession, hDb, pszDbKey, pRec, bReadOnly, rc);
@@ -595,7 +595,7 @@ void F_ProcessRecordPage::deleteRecord(
 	if (RC_OK( rc = FlmRecordRetrieve(
 		hDb, uiContainer, uiDrn, FO_EXACT, (FlmRecord **)&pRec, &uiDrn)))
 	{
-		uiAutoTrans = FLM_AUTO_TRANS | 5;  // Wait at most 5 seconds
+		uiAutoTrans = FLM_AUTO_TRANS | FLM_NO_TIMEOUT;
 		if (RC_BAD( rc = FlmRecordDelete( hDb, uiContainer, uiDrn, uiAutoTrans)))
 		{
 			uiRc = rc;

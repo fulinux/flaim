@@ -228,7 +228,7 @@ RCODE flmDbRebuildFile(
 	bFdbInitialized = TRUE;
 	if (RC_BAD( fdbInit( pDb, FLM_UPDATE_TRANS,
 									FDB_DONT_RESET_DIAG,
-									FLM_AUTO_TRANS | 5, &bStartedTrans)))
+									FLM_AUTO_TRANS | FLM_NO_TIMEOUT, &bStartedTrans)))
 	{
 		goto Exit;
 	}

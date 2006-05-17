@@ -565,7 +565,7 @@ Transmission_Error:
 
 			bDbInitialized = TRUE;
 			if (RC_BAD( rc = fdbInit( pDb, FLM_UPDATE_TRANS,
-				0, 5 | FLM_AUTO_TRANS, &bStartedTrans)))
+				0, FLM_AUTO_TRANS | FLM_NO_TIMEOUT, &bStartedTrans)))
 			{
 				goto Exit;
 			}
