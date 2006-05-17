@@ -2081,6 +2081,8 @@
 	
 	RCODE f_verifyMetaphoneRoutines( void);
 	
+	RCODE f_verifyDiskStructOffsets( void);
+
 	RCODE f_initCharMappingTables( void);
 	
 	void f_freeCharMappingTables( void);

@@ -406,6 +406,8 @@
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
 	flminterface IF_IOBuffer;
+	flminterface IF_Block;
+	
 	class F_Pool;
 	class F_DynaBuf;
 
@@ -1606,15 +1608,8 @@
 	/*****************************************************************************
 	Desc:
 	*****************************************************************************/
-	flminterface IF_BtResultSet : public F_Object
+	flminterface IF_BTreeResultSet : public F_Object
 	{
-		virtual RCODE FLMAPI setupResultSet(
-			const char *				pszPath,
-			IF_ResultSetCompare *	pCompare) = 0;
-
-		virtual void FLMAPI setSortStatus(
-			IF_ResultSetSortStatus *	pSortStatus) = 0;
-			
 		virtual RCODE FLMAPI addEntry(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLength,
@@ -3006,7 +3001,7 @@
 	flminterface IF_NameTable : public F_Object
 	{
 		virtual void FLMAPI clearTable(
-			FLMUINT					uiPoolBlkSize) = 0;
+			FLMUINT					uiPoolBlockSize) = 0;
 	
 		virtual RCODE FLMAPI getNextTagTypeAndNumOrder(
 			FLMUINT					uiType,
@@ -3252,6 +3247,185 @@
 	RCODE FLMAPI FlmAllocMultiAllocator(
 		IF_MultiAlloc **			ppMultiAllocator);
 		
+	/****************************************************************************
+	Desc:	Block
+	****************************************************************************/
+	flminterface IF_Block : public F_Object
+	{
+	};
+
+	/****************************************************************************
+	Desc:	Block manager
+	****************************************************************************/
+	flminterface IF_BlockMgr : public F_Object
+	{
+		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
+		
+		virtual RCODE FLMAPI getBlock(
+			FLMUINT32				ui32BlockId,
+			IF_Block **				ppBlock,
+			FLMBYTE **				ppucBlock) = 0;
+			
+		virtual RCODE FLMAPI createBlock(
+			IF_Block **				ppBlock,
+			FLMBYTE **				ppucBlock,
+			FLMUINT32 *				pui32BlockId) = 0;
+		
+		virtual RCODE FLMAPI freeBlock(
+			IF_Block **				ppBlock,
+			FLMBYTE **				ppucBlock) = 0;
+		
+		virtual RCODE FLMAPI prepareForUpdate(
+			IF_Block **				ppBlock,
+			FLMBYTE **				ppucBlock) = 0;
+	};
+	
+	RCODE FLMAPI FlmAllocBlockMgr(
+		FLMUINT						uiBlockSize,
+		IF_BlockMgr **				ppBlockMgr);
+	
+	/****************************************************************************
+	Desc:	B-Tree
+	****************************************************************************/
+	flminterface IF_BTree : public F_Object
+	{
+		virtual RCODE FLMAPI btCreate(
+			FLMUINT16					ui16BtreeId,
+			FLMBOOL						bCounts,
+			FLMBOOL						bData,
+			FLMUINT32 *					pui32RootBlockId) = 0;
+	
+		virtual RCODE FLMAPI btOpen(
+			FLMUINT32					ui32RootBlockId,
+			FLMBOOL						bCounts,
+			FLMBOOL						bData,
+			IF_ResultSetCompare *	pCompare = NULL) = 0;
+	
+		virtual void FLMAPI btClose( void) = 0;
+	
+		virtual RCODE FLMAPI btDeleteTree(
+			IF_DeleteStatus *			ifpDeleteStatus = NULL) = 0;
+	
+		virtual RCODE FLMAPI btGetBlockChains(
+			FLMUINT *					puiBlockChains,
+			FLMUINT *					puiNumLevels) = 0;
+	
+		virtual RCODE FLMAPI btRemoveEntry(
+			const FLMBYTE *			pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT						uiKeyLen) = 0;
+	
+		virtual RCODE FLMAPI btInsertEntry(
+			const FLMBYTE *			pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT						uiKeyLen,
+			const FLMBYTE *			pucData,
+			FLMUINT						uiDataLen,
+			FLMBOOL						bFirst,
+			FLMBOOL						bLast,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btReplaceEntry(
+			const FLMBYTE *			pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT						uiKeyLen,
+			const FLMBYTE *			pucData,
+			FLMUINT						uiDataLen,
+			FLMBOOL						bFirst,
+			FLMBOOL						bLast,
+			FLMBOOL						bTruncate = TRUE,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btLocateEntry(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT *					puiKeyLen,
+			FLMUINT						uiMatch,
+			FLMUINT *					puiPosition = NULL,
+			FLMUINT *					puiDataLength = NULL,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btGetEntry(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyLen,
+			FLMBYTE *					pucData,
+			FLMUINT						uiDataBufSize,
+			FLMUINT *					puiDataLen) = 0;
+	
+		virtual RCODE FLMAPI btNextEntry(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT *					puiKeyLen,
+			FLMUINT *					puiDataLength = NULL,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btPrevEntry(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT *					puiKeyLen,
+			FLMUINT *					puiDataLength = NULL,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btFirstEntry(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT *					puiKeyLen,
+			FLMUINT *					puiDataLength = NULL,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btLastEntry(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT *					puiKeyLen,
+			FLMUINT *					puiDataLength = NULL,
+			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT *					puiOffsetIndex = NULL) = 0;
+	
+		virtual RCODE FLMAPI btSetReadPosition(
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyLen,
+			FLMUINT						uiPosition) = 0;
+	
+		virtual RCODE FLMAPI btGetReadPosition(
+			FLMUINT *					puiPosition) = 0;
+	
+		virtual RCODE FLMAPI btPositionTo(
+			FLMUINT						uiPosition,
+			FLMBYTE *					pucKey,
+			FLMUINT						uiKeyBufSize,
+			FLMUINT *					puiKeyLen) = 0;
+	
+		virtual RCODE FLMAPI btGetPosition(
+			FLMUINT *					puiPosition) = 0;
+	
+		virtual RCODE FLMAPI btRewind( void) = 0;
+	
+//		virtual RCODE FLMAPI btComputeCounts(
+//			IF_BTree *					pUntilBtree,
+//			FLMUINT *					puiBlockCount,
+//			FLMUINT *					puiKeyCount,
+//			FLMBOOL *					pbTotalsEstimated,
+//			FLMUINT						uiAvgBlockFullness) = 0;
+	
+		virtual FLMBOOL FLMAPI btHasCounts( void) = 0;
+	
+		virtual FLMBOOL FLMAPI btHasData( void) = 0;
+		
+		virtual void FLMAPI btResetBtree( void) = 0;
+		
+		virtual FLMUINT32 FLMAPI getRootBlockId( void) = 0;
+	};
+	
+	RCODE FLMAPI FlmAllocBTree(
+		IF_BlockMgr *					pBlockMgr,
+		IF_BTree **						ppBtree);
+
 	/****************************************************************************
 	Desc: Misc.
 	****************************************************************************/
@@ -3949,6 +4123,7 @@
 	#define NE_FLM_BTREE_KEY_SIZE								0xC508			///< 0xC508 - Invalid b-tree key size.
 	#define NE_FLM_BTREE_BAD_STATE							0xC509			///< 0xC509 - B-tree operation cannot be completed.
 	#define NE_FLM_COULD_NOT_CREATE_MUTEX					0xC50A			///< 0xC50A - Error occurred while creating or initializing a mutex.
+	#define NE_FLM_BAD_PLATFORM_FORMAT						0xC50B			///< 0xC50B	- In-memory alignment of disk structures is incorrect
 	
 	// Network Errors - Must be the same as they were for FLAIM
 
@@ -4076,7 +4251,7 @@
 			}
 		}
 	
-		FINLINE void setInitialSmartPoolBlkSize( void)
+		FINLINE void setInitialSmartPoolBlockSize( void)
 		{
 			// Determine starting block size:
 			// 1) average of bytes allocated / # of frees/resets (average size needed)

@@ -106,6 +106,11 @@ RCODE FLMAPI ftkStartup( void)
 		goto Exit;
 	}
 	
+	if( RC_BAD( rc = f_verifyDiskStructOffsets()))
+	{
+		goto Exit;
+	}
+	
 	if( RC_BAD( rc = f_allocFileSystem( &gv_pFileSystem)))
 	{
 		goto Exit;

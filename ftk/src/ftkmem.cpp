@@ -1819,7 +1819,7 @@ void F_Pool::smartPoolInit(
 	m_pPoolStats = pPoolStats;
 	if (m_pPoolStats && m_pPoolStats->uiCount)
 	{
-		setInitialSmartPoolBlkSize();
+		setInitialSmartPoolBlockSize();
 	}
 	else
 	{
@@ -2029,7 +2029,7 @@ void FLMAPI F_Pool::poolReset(
 
 	if (m_pPoolStats)
 	{
-		setInitialSmartPoolBlkSize();
+		setInitialSmartPoolBlockSize();
 	}
 }
 

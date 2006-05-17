@@ -32,6 +32,9 @@ int main( void)
 	RCODE					rc = NE_FLM_OK;
 	IF_DirHdl *			pDirHdl = NULL;
 	IF_FileSystem *	pFileSystem = NULL;
+	IF_BlockMgr *		pBlockMgr = NULL;
+	IF_BTree *			pBTree = NULL;
+	FLMUINT32			ui32RootBlkId;
 	
 	if( RC_BAD( rc = ftkStartup()))
 	{
@@ -56,9 +59,23 @@ int main( void)
 	pDirHdl->Release();
 	pDirHdl = NULL;
 	
-	FTXInit();
-	f_sleep( 1000);
-	FTXExit();
+	if( RC_BAD( rc = FlmAllocBlockMgr( 4096, &pBlockMgr)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmAllocBTree( pBlockMgr, &pBTree)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pBTree->btCreate( 1, FALSE, TRUE, &ui32RootBlkId)))
+	{
+		goto Exit;
+	}
+	
+	pBTree->btDeleteTree();
+	pBTree->Release();
 	
 Exit:
 
@@ -70,6 +87,11 @@ Exit:
 	if( pFileSystem)
 	{
 		pFileSystem->Release();
+	}
+	
+	if( pBlockMgr)
+	{
+		pBlockMgr->Release();
 	}
 
 	ftkShutdown();
