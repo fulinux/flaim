@@ -229,8 +229,12 @@ endif
 
 ifeq (,$(OSTYPE))
 	ifneq (,$(RPM_OS))
-		HOSTTYPE = $(RPM_OS)
+		OSTYPE = $(RPM_OS)
 	endif
+endif
+
+ifeq (,$(OSTYPE))
+	OSTYPE := uname -s
 endif
 
 ifndef host_os_family
@@ -258,6 +262,12 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
+	ifneq (,$(findstring Darwin,$(OSTYPE)))
+		host_os_family = osx
+	endif
+endif
+
+ifndef host_os_family
 	ifneq (,$(findstring aix,$(OSTYPE)))
 		host_os_family = aix
 	endif
@@ -270,7 +280,7 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
-   $(error Host operating system could not be determined.  You may need to export HOSTTYPE from the environment.)
+   $(error Host operating system could not be determined.  You may need to export OSTYPE from the environment.)
 endif
 
 # -- Target build type --
@@ -381,7 +391,10 @@ ifeq (,$(HOSTTYPE))
 	ifneq (,$(RPM_ARCH))
 		HOSTTYPE = $(RPM_ARCH)
 	endif
-   $(error HOSTTYPE environment variable has not been set)
+endif
+
+ifeq (,$(HOSTTYPE))
+	HOSTTYPE := uname -m
 endif
 
 ifeq (,$(HOSTTYPE))
