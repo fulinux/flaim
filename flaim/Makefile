@@ -256,6 +256,12 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
+	ifneq (,$(findstring SunOS,$(OSTYPE)))
+		host_os_family = solaris
+	endif
+endif
+
+ifndef host_os_family
 	ifneq (,$(findstring darwin,$(OSTYPE)))
 		host_os_family = osx
 	endif
@@ -394,7 +400,7 @@ ifeq (,$(HOSTTYPE))
 endif
 
 ifeq (,$(HOSTTYPE))
-	HOSTTYPE := $(shell uname -m)
+	HOSTTYPE := $(shell uname -p)
 endif
 
 ifeq (,$(HOSTTYPE))
