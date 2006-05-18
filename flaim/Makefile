@@ -234,7 +234,7 @@ ifeq (,$(OSTYPE))
 endif
 
 ifeq (,$(OSTYPE))
-	OSTYPE := uname -s
+	OSTYPE := $(shell uname -s)
 endif
 
 ifndef host_os_family
@@ -394,7 +394,7 @@ ifeq (,$(HOSTTYPE))
 endif
 
 ifeq (,$(HOSTTYPE))
-	HOSTTYPE := uname -m
+	HOSTTYPE := $(shell uname -m)
 endif
 
 ifeq (,$(HOSTTYPE))
@@ -482,6 +482,14 @@ ifndef host_native_word_size
 endif
 
 ifndef host_native_word_size
+	ifneq (,$(findstring Power,$(HOSTTYPE)))
+		host_processor_family = powerpc
+		host_native_word_size = 32
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
 	ifneq (,$(findstring rs6000,$(HOSTTYPE)))
 		host_processor_family = powerpc
 		host_native_word_size = 64
@@ -498,7 +506,7 @@ ifndef host_native_word_size
 endif
 
 ifndef host_native_word_size
-	$(error Unable to determine host word size)
+   $(error Unable to determine host word size. $(HOSTTYPE))
 endif
 
 # -- Target word size and processor --
