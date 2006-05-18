@@ -190,8 +190,6 @@
 			typedef signed char						FLMINT8;
 			#if defined( FLM_GNUC)
 				typedef __builtin_va_list			f_va_list;
-			#elif defined( FLM_SOLARIS)
-				typedef void *							f_va_list;
 			#else
 				typedef char *							f_va_list;
 			#endif

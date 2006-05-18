@@ -1157,9 +1157,10 @@ Desc:
 FINLINE void bteSetEntryOffset(
 	FLMUINT16 *			pui16OffsetArray,
 	FLMUINT				uiOffsetIndex,
-	FLMUINT				ui16Offset)
+	FLMUINT				uiOffset)
 {
-	UW2FBA( ui16Offset, (FLMBYTE *)&pui16OffsetArray[ uiOffsetIndex]);
+	UW2FBA( (FLMUINT16)uiOffset, 
+		(FLMBYTE *)&pui16OffsetArray[ uiOffsetIndex]);
 }
 	
 /***************************************************************************
@@ -1262,9 +1263,9 @@ Desc:
 ****************************************************************************/
 FINLINE void incHeapSize(
 	FLMBYTE *			pucBlock,
-	FLMUINT16			ui16IncAmount)
+	FLMUINT				uiIncAmount)
 {
-	((F_BTREE_BLK_HDR *)pucBlock)->ui16HeapSize += ui16IncAmount;
+	((F_BTREE_BLK_HDR *)pucBlock)->ui16HeapSize += (FLMUINT16)uiIncAmount;
 }
 
 /***************************************************************************
@@ -1272,9 +1273,9 @@ Desc:
 ****************************************************************************/
 FINLINE void decHeapSize(
 	FLMBYTE *			pucBlock,
-	FLMUINT16			ui16DecAmount)
+	FLMUINT				uiDecAmount)
 {
-	((F_BTREE_BLK_HDR *)pucBlock)->ui16HeapSize -= ui16DecAmount;
+	((F_BTREE_BLK_HDR *)pucBlock)->ui16HeapSize -= (FLMUINT16)uiDecAmount;
 }
 
 /***************************************************************************
@@ -1491,9 +1492,10 @@ Desc:
 ****************************************************************************/
 FINLINE void incBytesAvail(
 	FLMBYTE *			pucBlock,
-	FLMUINT16			ui16IncAmount)
+	FLMUINT				uiIncAmount)
 {
-	((F_STD_BLK_HDR *)pucBlock)->ui16BlockBytesAvail += ui16IncAmount;
+	((F_STD_BLK_HDR *)pucBlock)->ui16BlockBytesAvail += 
+		(FLMUINT16)uiIncAmount;
 }
 
 /***************************************************************************
@@ -1501,9 +1503,10 @@ Desc:
 ****************************************************************************/
 FINLINE void decBytesAvail(
 	FLMBYTE *			pucBlock,
-	FLMUINT16			ui16DecAmount)
+	FLMUINT				uiDecAmount)
 {
-	((F_STD_BLK_HDR *)pucBlock)->ui16BlockBytesAvail -= ui16DecAmount;
+	((F_STD_BLK_HDR *)pucBlock)->ui16BlockBytesAvail -= 
+		(FLMUINT16)uiDecAmount;
 }
 
 /***************************************************************************
@@ -1953,7 +1956,7 @@ RCODE F_BTree::btFreeBlockChain(
 			break;
 		}
 
-		if( RC_BAD( m_pBlockMgr->getBlock( uiCurrentBlockId, 
+		if( RC_BAD( m_pBlockMgr->getBlock( (FLMUINT32)uiCurrentBlockId, 
 			&pCurrentBlock, &pucCurrentBlock)))
 		{
 			goto Exit;
@@ -1986,7 +1989,7 @@ RCODE F_BTree::btFreeBlockChain(
 					while( uiDOBlockId)
 					{
 						if( RC_BAD( rc = m_pBlockMgr->getBlock( 
-							uiDOBlockId, &pDOBlock, &pucDOBlock)))
+							(FLMUINT32)uiDOBlockId, &pDOBlock, &pucDOBlock)))
 						{
 							goto Exit;
 						}
@@ -3428,7 +3431,7 @@ RCODE F_BTree::splitBlock(
 
 	if( uiBlockId)
 	{
-		if( RC_BAD( rc = m_pBlockMgr->getBlock( uiBlockId, &pPrevBlock, 
+		if( RC_BAD( rc = m_pBlockMgr->getBlock( (FLMUINT32)uiBlockId, &pPrevBlock, 
 			&pucPrevBlock)))
 		{
 			goto Exit;
@@ -4027,7 +4030,7 @@ RCODE F_BTree::updateParentCounts(
 
 	pucCounts = BtEntry( *ppucParentBlock, uiParentElm);
 	pucCounts += 4;
-	UD2FBA( uiCounts, pucCounts);
+	UD2FBA( (FLMUINT32)uiCounts, pucCounts);
 
 Exit:
 
@@ -4478,7 +4481,7 @@ RCODE F_BTree::buildAndStoreEntry(
 		{
 			// No Data in this entry, so it is easy to make.
 
-			UW2FBA( uiKeyLen, pucTemp);
+			UW2FBA( (FLMUINT16)uiKeyLen, pucTemp);
 			pucTemp += 2;
 			
 			f_memcpy( pucTemp, pucKey, uiKeyLen);
@@ -4529,7 +4532,7 @@ RCODE F_BTree::buildAndStoreEntry(
 
 			if( uiFlags & BTE_FLAG_KEY_LEN)
 			{
-				UW2FBA( uiKeyLen, pucTemp);
+				UW2FBA( (FLMUINT16)uiKeyLen, pucTemp);
 				pucTemp += 2;
 			}
 			else
@@ -4540,7 +4543,7 @@ RCODE F_BTree::buildAndStoreEntry(
 
 			if( uiFlags & BTE_FLAG_DATA_LEN)
 			{
-				UW2FBA( uiDataLen, pucTemp);
+				UW2FBA( (FLMUINT16)uiDataLen, pucTemp);
 				pucTemp += 2;
 			}
 			else
@@ -4551,7 +4554,7 @@ RCODE F_BTree::buildAndStoreEntry(
 
 			if( uiFlags & BTE_FLAG_OA_DATA_LEN)
 			{
-				UD2FBA( uiOADataLen, pucTemp);
+				UD2FBA( (FLMUINT32)uiOADataLen, pucTemp);
 				pucTemp += 4;
 			}
 
@@ -4574,20 +4577,20 @@ RCODE F_BTree::buildAndStoreEntry(
 			pucTemp = pucBuffer;
 
 			f_assert( uiChildBlockId);
-			UD2FBA( uiChildBlockId, pucTemp);
+			UD2FBA( (FLMUINT32)uiChildBlockId, pucTemp);
 			pucTemp += 4;
 
 			// Counts - 4 bytes
 
 			if( uiBlockType == F_BLK_TYPE_BT_NON_LEAF_COUNTS)
 			{
-				UD2FBA( uiCounts, pucTemp);
+				UD2FBA( (FLMUINT32)uiCounts, pucTemp);
 				pucTemp += 4;
 			}
 
 			// KeyLen field - 2 bytes
 
-			UW2FBA( uiKeyLen, pucTemp);
+			UW2FBA( (FLMUINT16)uiKeyLen, pucTemp);
 			pucTemp += 2;
 
 			// Key - variable length (uiKeyLen)
@@ -4684,7 +4687,7 @@ RCODE F_BTree::remove(
 			{
 				// We need to delete the data only blocks first.
 				
-				if( RC_BAD( rc = m_pBlockMgr->getBlock( uiBlockId, 
+				if( RC_BAD( rc = m_pBlockMgr->getBlock( (FLMUINT32)uiBlockId, 
 					&pBlock, &pucBlock)))
 				{
 					goto Exit;
@@ -4820,7 +4823,7 @@ RCODE F_BTree::removeRange(
 			{
 				// We need to delete the data only blocks first.
 				
-				if( RC_BAD( rc = m_pBlockMgr->getBlock( uiBlockId, 
+				if( RC_BAD( rc = m_pBlockMgr->getBlock( (FLMUINT32)uiBlockId, 
 					&pBlock, &pucBlock)))
 				{
 					goto Exit;
@@ -4961,7 +4964,7 @@ RCODE F_BTree::moveEntriesToPrevBlock(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pBlockMgr->getBlock( uiPrevBlockId, &pPrevBlock,
+	if( RC_BAD( rc = m_pBlockMgr->getBlock( (FLMUINT32)uiPrevBlockId, &pPrevBlock,
 		&pucPrevBlock)))
 	{
 		goto Exit;
@@ -5250,7 +5253,7 @@ RCODE F_BTree::moveEntriesToNextBlock(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pBlockMgr->getBlock( uiNextBlockId, 
+	if( RC_BAD( rc = m_pBlockMgr->getBlock( (FLMUINT32)uiNextBlockId, 
 		&pNextBlock, &pucNextBlock)))
 	{
 		goto Exit;
@@ -5407,7 +5410,7 @@ RCODE F_BTree::moveEntriesToNextBlock(
 				f_assert( uiNextBlockId);
 
 				if( RC_BAD( rc = m_pBlockMgr->getBlock( 
-					uiNextBlockId, &pParentBlock, &pucParentBlock)))
+					(FLMUINT32)uiNextBlockId, &pParentBlock, &pucParentBlock)))
 				{
 					goto Exit;
 				}
@@ -8658,7 +8661,7 @@ RCODE F_BTree::moveStackToPrev(
 
 				// Fetch the new block
 
-				if( RC_BAD( rc = m_pBlockMgr->getBlock( uiBlockId, 
+				if( RC_BAD( rc = m_pBlockMgr->getBlock( (FLMUINT32)uiBlockId, 
 					&pPrevBlock, &pucPrevBlock)))
 				{
 					goto Exit;
@@ -9761,7 +9764,7 @@ RCODE F_BTree::replaceMultiples(
 
 			if( bteDataLenFlag( pucEntry))
 			{
-				UW2FBA( uiAmtCopied, pucTmp);
+				UW2FBA( (FLMUINT16)uiAmtCopied, pucTmp);
 				pucTmp += 2;
 			}
 			else
@@ -9812,7 +9815,7 @@ RCODE F_BTree::replaceMultiples(
 				pucTmp++;
 			}
 
-			UD2FBA( uiOADataLength, pucTmp);
+			UD2FBA( (FLMUINT32)uiOADataLength, pucTmp);
 		}
 
 		// If we just updated the last member of this entry so break out.
@@ -10038,7 +10041,7 @@ Desc:	Private method to retrieve the previous block in the chain relative to
 		the  block that is passed in.  The block that is passed in is always
 		released prior to getting the previous block.
 ****************************************************************************/
-FINLINE RCODE F_BTree::getPrevBlock(
+RCODE F_BTree::getPrevBlock(
 	IF_Block **		ppBlock,
 	FLMBYTE **		ppucBlock)
 {
@@ -11236,7 +11239,7 @@ RCODE F_BTree::combineEntries(
 	if( uiSrcKeyLen > ONE_BYTE_SIZE)
 	{
 		uiFlags |= BTE_FLAG_KEY_LEN;
-		UW2FBA( uiSrcKeyLen, pucTmp);
+		UW2FBA( (FLMUINT16)uiSrcKeyLen, pucTmp);
 		pucTmp += 2;
 		uiEntrySize += 2;
 	}
@@ -11256,7 +11259,7 @@ RCODE F_BTree::combineEntries(
 	if( (uiSrcDataLen + uiDstDataLen) > ONE_BYTE_SIZE)
 	{
 		uiFlags |= BTE_FLAG_DATA_LEN;
-		UW2FBA( (uiSrcDataLen + uiDstDataLen), pucTmp);
+		UW2FBA( (FLMUINT16)(uiSrcDataLen + uiDstDataLen), pucTmp);
 		pucTmp += 2;
 		uiEntrySize += 2;
 	}
@@ -11273,7 +11276,7 @@ RCODE F_BTree::combineEntries(
 			(uiSrcOADataLen > (uiSrcDataLen + uiDstDataLen)))
 	{
 		uiFlags |= BTE_FLAG_OA_DATA_LEN;
-		UD2FBA( uiSrcOADataLen, pucTmp);
+		UD2FBA( (FLMUINT32)uiSrcOADataLen, pucTmp);
 		pucTmp += 4;
 		uiEntrySize += 4;
 	}
@@ -11281,7 +11284,7 @@ RCODE F_BTree::combineEntries(
 			(uiDstOADataLen > (uiSrcDataLen + uiDstDataLen)))
 	{
 		uiFlags |= BTE_FLAG_OA_DATA_LEN;
-		UD2FBA( uiDstOADataLen, pucTmp);
+		UD2FBA( (FLMUINT32)uiDstOADataLen, pucTmp);
 		pucTmp += 4;
 		uiEntrySize += 4;
 	}
@@ -12512,7 +12515,7 @@ RCODE F_BTree::verifyCounts(
 	while( uiNextLevelBlockId)
 	{
 		if( RC_BAD( rc = m_pBlockMgr->getBlock( 
-			uiNextLevelBlockId, &pCurrentBlock, &pucCurrentBlock)))
+			(FLMUINT32)uiNextLevelBlockId, &pCurrentBlock, &pucCurrentBlock)))
 		{
 			goto Exit;
 		}
@@ -12548,7 +12551,7 @@ RCODE F_BTree::verifyCounts(
 				uiParentCounts = FB2UD( pucEntry);
 
 				if( RC_BAD( rc = m_pBlockMgr->getBlock(
-					uiChildBlockId, &pChildBlock, &pucChildBlock)))
+					(FLMUINT32)uiChildBlockId, &pChildBlock, &pucChildBlock)))
 				{
 					goto Exit;
 				}
@@ -12588,7 +12591,7 @@ RCODE F_BTree::verifyCounts(
 			else
 			{
 				if( RC_BAD( rc = m_pBlockMgr->getBlock(
-					uiNextBlockId, &pCurrentBlock, &pucCurrentBlock)))
+					(FLMUINT32)uiNextBlockId, &pCurrentBlock, &pucCurrentBlock)))
 				{
 					goto Exit;
 				}
@@ -12730,6 +12733,8 @@ RCODE F_BlockMgr::setup(
 	{
 		goto Exit;
 	}
+
+	f_memset( m_pHashTbl, 0, sizeof( F_Block *) * m_uiBuckets);
 	
 Exit:
 
