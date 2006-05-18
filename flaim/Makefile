@@ -286,6 +286,12 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
+	ifneq (,$(findstring HP-UX,$(OSTYPE)))
+		host_os_family = hpux
+	endif
+endif
+
+ifndef host_os_family
    $(error Host operating system could not be determined.  You may need to export OSTYPE from the environment.)
 endif
 
@@ -401,6 +407,13 @@ endif
 
 ifeq (,$(HOSTTYPE))
 	HOSTTYPE := $(shell uname -p)
+	ifneq (,$(findstring nvalid,$(HOSTTYPE)))
+		HOSTTYPE := $(shell uname -m)
+	endif
+endif
+
+ifeq (,$(HOSTTYPE))
+	HOSTYPE := $(shell uname -p)
 endif
 
 ifeq (,$(HOSTTYPE))
@@ -505,6 +518,14 @@ endif
 
 ifndef host_native_word_size
 	ifneq (,$(findstring hppa,$(HOSTTYPE)))
+		host_processor_family = hppa
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
+	ifneq (,$(findstring 9000,$(HOSTTYPE)))
 		host_processor_family = hppa
 		host_native_word_size = 64
 		host_supported_word_sizes = 32 64
