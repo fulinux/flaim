@@ -46,7 +46,7 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE FLMAPI JNIBackupClient::WriteData(
+	RCODE FLMAPI WriteData(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite);
 		
