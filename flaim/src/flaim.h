@@ -245,6 +245,11 @@
 			#define FLMATOMIC		volatile int
 		#endif
 	
+		/// \addtogroup retcodes
+		/// @{
+		typedef FLMINT								RCODE;		///< Return code
+		/// @}
+		
 		typedef FLMINT								FLMBOOL;
 		
 		#define F_FILENAME_SIZE					256
@@ -305,6 +310,7 @@
 		#error Platform not supported
 	#endif
 
+	/// \defgroup retcodes Return Codes
 
 	/// \defgroup dbsystem FLAIM System Functions
 
@@ -407,288 +413,290 @@
 		#define FALSE	0
 	#endif
 
-	typedef void *							F_MUTEX;
-	typedef void *							F_SEM;
-	#define F_MUTEX_NULL					NULL
-	#define F_MAXIMUM_FILE_SIZE		0xFFFC0000
+	typedef void *									F_MUTEX;
+	typedef void *									F_SEM;
+	#define F_MUTEX_NULL							NULL
+	#define F_MAXIMUM_FILE_SIZE				0xFFFC0000
 
-	/// Return codes
-	typedef enum
-	{
-		FERR_OK = 0,						///< Operation succeeded
-		FIRST_FLAIM_ERROR = 0xC001,
-		FERR_BOF_HIT = 0xC001,			///< 0xC001 - Beginning of file or set hit.
-		FERR_EOF_HIT,						///< 0xC002 - End of file or set hit.
-		FERR_END,							///< 0xC003 - End of GEDCOM file - this is an internal error.
-		FERR_EXISTS,						///< 0xC004 - Record already exists.
-		FERR_FAILURE,						///< 0xC005 - Internal failure.
-		FERR_NOT_FOUND,					///< 0xC006 - A record, key, or key reference was not found.
-		FERR_BAD_DICT_ID,					///< 0xC007 - Invalid dictionary record number -- outside unreserved range.
-		FERR_BAD_CONTAINER,				///< 0xC008 - Invalid container number.
-		FERR_NO_ROOT_BLOCK,				///< 0xC009 - LFILE does not have a root block - always handled internally - never returned to application.
-		FERR_BAD_DRN,						///< 0xC00A - Cannot pass a zero DRN into modify or delete or 0xFFFFFFFF into add.
-		FERR_BAD_FIELD_NUM,				///< 0xC00B - Bad field number in record being added.
-		FERR_BAD_FIELD_TYPE,				///< 0xC00C - Bad field type in record being added.
-		FERR_BAD_HDL,						///< 0xC00D - Request contained bad db handle.
-		FERR_BAD_IX,						///< 0xC00E - Invalid index number.
-		FERR_BACKUP_ACTIVE,				///< 0xC00F - Operation could not be completed - a backup is being performed.
-		FERR_SERIAL_NUM_MISMATCH,		///< 0xC010 - Comparison of serial numbers failed.
-		FERR_BAD_RFL_DB_SERIAL_NUM,	///< 0xC011 - Bad database serial number in RFL file header.
-		FERR_BTREE_ERROR,					///< 0xC012 - A corruption was found in an index or container b-tree.
-		FERR_BTREE_FULL,					///< 0xC013 - An index or container b-tree is full.
-		FERR_BAD_RFL_FILE_NUMBER,		///< 0xC014 - Bad RFL file number in RFL file header.
-		FERR_CANNOT_DEL_ITEM,			///< 0xC015 - Cannot delete field definitions.
-		FERR_CANNOT_MOD_FIELD_TYPE,	///< 0xC016 - Cannot modify a field's type.
-		FERR_NOT_USED_C017,
-		FERR_CONV_BAD_DEST_TYPE,		///< 0xC018 - Bad destination type specified for conversion.
-		FERR_CONV_BAD_DIGIT,				///< 0xC019 - Non-numeric digit found in text to numeric conversion.
-		FERR_CONV_BAD_SRC_TYPE,			///< 0xC01A - Bad source type specified for conversion.
-		FERR_RFL_FILE_NOT_FOUND,		///< 0xC01B - Could not open an RFL file.
-		FERR_CONV_DEST_OVERFLOW,		///< 0xC01C - Destination buffer not large enough to hold converted data.
-		FERR_CONV_ILLEGAL,				///< 0xC01D - Illegal conversion -- not supported.
-		FERR_CONV_NULL_SRC,				///< 0xC01E - Source cannot be a NULL pointer in conversion.
-		FERR_CONV_NULL_DEST,				///< 0xC01F - Destination cannot be a NULL pointer in conversion.
-		FERR_CONV_NUM_OVERFLOW,			///< 0xC020 - Numeric overflow (GT upper bound) converting to numeric type.
-		FERR_CONV_NUM_UNDERFLOW,		///< 0xC021 - Numeric underflow (LT lower bound) converting to numeric type.
-		FERR_DATA_ERROR,					///< 0xC022 - Database corruption found.
-		FERR_NOT_USED_C023,
-		FERR_DD_ERROR,						///< 0xC024 - Corruption found in logical file block chain.
-		FERR_INVALID_FILE_SEQUENCE,	///< 0xC025 - Incremental backup file number provided during a restore is invalid.
-		FERR_ILLEGAL_OP,					///< 0xC026 - Illegal operation for database.
-		FERR_DUPLICATE_DICT_REC,		///< 0xC027 - Duplicate dictionary record found.
-		FERR_CANNOT_CONVERT,				///< 0xC028 - Condition occurred which prevents database conversion.
-		FERR_UNSUPPORTED_VERSION,		///< 0xC029 - Database version is not supported.
-		FERR_FILE_ER,						///< 0xC02A - File error in a GEDCOM routine.
-		FERR_BAD_FIELD_LEVEL,			///< 0xC02B - Invalid field level.
-		FERR_GED_BAD_RECID,				///< 0xC02C - Bad record ID syntax.
-		FERR_GED_BAD_VALUE,				///< 0xC02D - Bad or ambiguous/extra value in GEDCOM.
-		FERR_GED_MAXLVLNUM,				///< 0xC02E - Exceeded GED_MAXLVLNUM in gedcom routines.
-		FERR_GED_SKIP_LEVEL,				///< 0xC02F - Bad GEDCOM tree structure -- level skipped.
-		FERR_ILLEGAL_TRANS,				///< 0xC030 - Attempt to start an illegal type of transaction.
-		FERR_ILLEGAL_TRANS_OP,			///< 0xC031 - Illegal operation for transaction type.
-		FERR_INCOMPLETE_LOG,				///< 0xC032 - Incomplete log record encountered during recovery.
-		FERR_INVALID_BLOCK_LENGTH,		///< 0xC033 - Invalid block length.
-		FERR_INVALID_TAG,					///< 0xC034 - Invalid tag name.
-		FERR_KEY_NOT_FOUND,				///< 0xC035 - A key or reference is not found -- modify/delete error.
-		FERR_VALUE_TOO_LARGE,			///< 0xC036 - Value too large.
-		FERR_MEM,							///< 0xC037 - Memory allocation error.
-		FERR_BAD_RFL_SERIAL_NUM,		///< 0xC038 - Bad serial number in RFL file header.
-		FERR_NOT_USED_C039,
-		FERR_NEWER_FLAIM,					///< 0xC03A - Database version newer than this code base will support, must use newer version of code.
-		FERR_CANNOT_MOD_FIELD_STATE,	///< 0xC03B - Attempted to change a field state illegally.
-		FERR_NO_MORE_DRNS,				///< 0xC03C - The highest DRN number has already been used in an add.
-		FERR_NO_TRANS_ACTIVE,			///< 0xC03D - Attempted to updated database outside transaction.
-		FERR_NOT_UNIQUE,					///< 0xC03E - Found duplicate key for unique index.
-		FERR_NOT_FLAIM,					///< 0xC03F - File is not a FLAIM database.
-		FERR_NULL_RECORD,					///< 0xC040 - NULL record cannot be passed to add or modify.
-		FERR_NO_HTTP_STACK,				///< 0xC041 - No http stack was loaded.
-		FERR_OLD_VIEW,						///< 0xC042 - While reading was unable to get previous version of block or record.
-		FERR_PCODE_ERROR,					///< 0xC043 - Corruption found in dictionary.
-		FERR_PERMISSION,					///< 0xC044 - Invalid permission for file operation.
-		FERR_SYNTAX,						///< 0xC045 - Dictionary record has improper syntax, or syntax error in query criteria.
-		FERR_CALLBACK_FAILURE,			///< 0xC046 - Callback failure.
-		FERR_TRANS_ACTIVE,				///< 0xC047 - Attempted to close database while transaction was active.
-		FERR_RFL_TRANS_GAP,				///< 0xC048 - A gap was found in the transaction sequence in the RFL.
-		FERR_BAD_COLLATED_KEY,			///< 0xC049 - Something in collated key is bad.
-		FERR_UNSUPPORTED_FEATURE,		///< 0xC04A - Attempting a feature that is not supported for the database version.
-		FERR_MUST_DELETE_INDEXES,		///< 0xC04B - Attempting to delete a container that has indexes defined for it -- indexes must be deleted first.
-		FERR_RFL_INCOMPLETE,				///< 0xC04C - RFL file is incomplete.
-		FERR_CANNOT_RESTORE_RFL_FILES,///< 0xC04D - Cannot restore RFL files - not using multiple RFL files.
-		FERR_INCONSISTENT_BACKUP,		///< 0xC04E - A problem (corruption, etc) was detected in a backup set.
-		FERR_BLOCK_CHECKSUM,				///< 0xC04F - Block checksum error.
-		FERR_ABORT_TRANS,					///< 0xC050 - Attempted operation after a critical error - should abort transaction.
-		FERR_NOT_RFL,						///< 0xC051 - Attempted to open file which was not an RFL file.
-		FERR_BAD_RFL_PACKET,				///< 0xC052 - RFL packet was bad.
-		FERR_DATA_PATH_MISMATCH,		///< 0xC053 - Bad data path specified to open database.
-		FERR_HTTP_REGISTER_FAILURE,	///< 0xC054 - Call to FlmConfig() with FLM_HTTP_REGISTER_URL option failed.
-		FERR_HTTP_DEREG_FAILURE,		///< 0xC055 - Call to FlmConfig() with FLM_HTTP_DEREGISTER_URL option failed.
-		FERR_IX_FAILURE,					///< 0xC056 - Indexing process failed, non-unique data was found when a unique index was being created.
-		FERR_HTTP_SYMS_EXIST,			///< 0xC057 - Tried to import new http related symbols before unimporting the old ones.
-		FERR_NOT_USED_C058,
-		FERR_FILE_EXISTS,					///< 0xC059 - Attempt to create a database, but the database already exists.
-		FERR_SYM_RESOLVE_FAIL,			///< 0xC05A - Could not resolve a symbol needed to run.
-		FERR_BAD_SERVER_CONNECTION,	///< 0xC05B - Connection to FLAIM server is bad.
-		FERR_CLOSING_DATABASE,			///< 0xC05C - Database is being closed due to a critical error.
-		FERR_INVALID_CRC,					///< 0xC05D - CRC could not be verified.
-		FERR_KEY_OVERFLOW,				///< 0xC05E - Key generated by the record causes the maximum key size to be exceeded.
-		FERR_NOT_IMPLEMENTED,			///< 0xC05F - Functionality not implemented.
-		FERR_MUTEX_OPERATION_FAILED,	///< 0xC060 - Mutex operation failed.
-		FERR_MUTEX_UNABLE_TO_LOCK,		///< 0xC061 - Unable to get the mutex lock.
-		FERR_SEM_OPERATION_FAILED,		///< 0xC062 - Semaphore operation failed.
-		FERR_SEM_UNABLE_TO_LOCK,		///< 0xC063 - Unable to get the semaphore lock.
-		FERR_NOT_USED_C064,
-		FERR_NOT_USED_C065,
-		FERR_NOT_USED_C066,
-		FERR_NOT_USED_C067,
-		FERR_NOT_USED_C068,
-		FERR_BAD_REFERENCE,				///< 0xC069 - Bad reference in the dictionary.
-		FERR_NOT_USED_C06A,
-		FERR_NOT_USED_C06B,
-		FERR_NOT_USED_C06C,
-		FERR_NOT_USED_C06D,
-		FERR_NOT_USED_C06E,
-		FERR_NOT_USED_C06F,
-		FERR_UNALLOWED_UPGRADE,			///< 0xC070 - FlmDbUpgrade cannot upgrade the database.
-		FERR_NOT_USED_C071,
-		FERR_NOT_USED_C072,
-		FERR_NOT_USED_C073,
-		FERR_ID_RESERVED,					///< 0xC074 - Attempted to use a dictionary ID that has been reserved.
-		FERR_CANNOT_RESERVE_ID,			///< 0xC075 - Attempted to reserve a dictionary ID that has been used.
-		FERR_DUPLICATE_DICT_NAME,		///< 0xC076 - Dictionary record with duplicate name found.
-		FERR_CANNOT_RESERVE_NAME,		///< 0xC077 - Attempted to reserve a dictionary name that is in use.
-		FERR_BAD_DICT_DRN,				///< 0xC078 - Attempted to add, modify, or delete a dictionary DRN >= FLM_RESERVED_TAG_NUMS.
-		FERR_CANNOT_MOD_DICT_REC_TYPE,///< 0xC079 - Cannot modify a dictionary item into another type of item, must delete then add.
-		FERR_PURGED_FLD_FOUND,			///< 0xC07A - Record contained a field whose field definition has been marked as purged.
-		FERR_DUPLICATE_INDEX,			///< 0xC07B - Duplicate index.
-		FERR_TOO_MANY_OPEN_DBS,			///< 0xC07C - Too many open databases.
-		FERR_ACCESS_DENIED,				///< 0xC07D - Cannot access database.
-		FERR_NOT_USED_C07E,
-		FERR_CACHE_ERROR,					///< 0xC07F - Cache block is corrupt.
-		FERR_NOT_USED_C080,
-		FERR_BLOB_MISSING_FILE,			///< 0xC081 - Missing BLOB file on add/modify.
-		FERR_NO_REC_FOR_KEY,				///< 0xC082 - Record pointed to by an index key is missing.
-		FERR_DB_FULL,						///< 0xC083 - Database is full, cannot create more blocks.
-		FERR_TIMEOUT,						///< 0xC084 - Operation timed out (usually a query operation).
-		FERR_CURSOR_SYNTAX,				///< 0xC085 - Query criteria had improper syntax.
-		FERR_THREAD_ERR,					///< 0xC086 - Thread error.
-		FERR_UNIMPORT_SYMBOL,			///< 0xC086 - Failed to unimport a public symbol.
-		FERR_EMPTY_QUERY,					///< 0xC088 - Warning: Query has no results.
-		FERR_INDEX_OFFLINE,				///< 0xC089 - Warning: Index is offline and being rebuilt.
-		FERR_TRUNCATED_KEY,				///< 0xC08A - Warning: Can't evaluate truncated key against selection criteria.
-		FERR_INVALID_PARM,				///< 0xC08B - Invalid parameter.
-		FERR_USER_ABORT,					///< 0xC08C - User or application aborted the operation.
-		FERR_RFL_DEVICE_FULL,			///< 0xC08D - No space on RFL device for logging.
-		FERR_MUST_WAIT_CHECKPOINT,		///< 0xC08E - Must wait for a checkpoint before starting transaction - due to disk problems - usually in RFL volume.
-		FERR_NAMED_SEMAPHORE_ERR,		///< 0xC08F - Error occurred while accessing a named semaphore.
-		FERR_LOAD_LIBRARY,				///< 0xC090 - Failed to load a shared library module.
-		FERR_UNLOAD_LIBRARY,				///< 0xC091 - Failed to unload a shared library module.
-		FERR_IMPORT_SYMBOL,				///< 0xC092 - Failed to import a symbol from a shared library module.
-		FERR_BLOCK_FULL,					///< 0xC093 - Destination block for insert is full.
-		FERR_BAD_BASE64_ENCODING,		///< 0xC094 - Could not perform base 64 encoding.
-		FERR_MISSING_FIELD_TYPE,		///< 0xC095 - Field type not specified in field definition record.
-		FERR_BAD_DATA_LENGTH,			///< 0xC096 - Invalid field data length.
+	/****************************************************************************
+	Desc: General errors
+	****************************************************************************/
+	/// \addtogroup retcodes
+	/// @{
+		
+	#define FERR_OK								0			///< 0 - Operation succeeded
+	
+	#define FIRST_FLAIM_ERROR					0xC001	///< 0xC001 - Placeholder
+	#define FERR_BOF_HIT							0xC001	///< 0xC001 - Beginning of file or set hit.
+	#define FERR_EOF_HIT							0xC002	///< 0xC002 - End of file or set hit.
+	#define FERR_END								0xC003	///< 0xC003 - End of GEDCOM file - this is an internal error.
+	#define FERR_EXISTS							0xC004	///< 0xC004 - Record already exists.
+	#define FERR_FAILURE							0xC005	///< 0xC005 - Internal failure.
+	#define FERR_NOT_FOUND						0xC006	///< 0xC006 - A record, key, or key reference was not found.
+	#define FERR_BAD_DICT_ID					0xC007	///< 0xC007 - Invalid dictionary record number -- outside unreserved range.
+	#define FERR_BAD_CONTAINER					0xC008	///< 0xC008 - Invalid container number.
+	#define FERR_NO_ROOT_BLOCK					0xC009	///< 0xC009 - LFILE does not have a root block - always handled internally - never returned to application.
+	#define FERR_BAD_DRN							0xC00A	///< 0xC00A - Cannot pass a zero DRN into modify or delete or 0xFFFFFFFF into add.
+	#define FERR_BAD_FIELD_NUM					0xC00B	///< 0xC00B - Bad field number in record being added.
+	#define FERR_BAD_FIELD_TYPE				0xC00C	///< 0xC00C - Bad field type in record being added.
+	#define FERR_BAD_HDL							0xC00D	///< 0xC00D - Request contained bad db handle.
+	#define FERR_BAD_IX							0xC00E	///< 0xC00E - Invalid index number.
+	#define FERR_BACKUP_ACTIVE					0xC00F	///< 0xC00F - Operation could not be completed - a backup is being performed.
+	#define FERR_SERIAL_NUM_MISMATCH			0xC010	///< 0xC010 - Comparison of serial numbers failed.
+	#define FERR_BAD_RFL_DB_SERIAL_NUM		0xC011	///< 0xC011 - Bad database serial number in RFL file header.
+	#define FERR_BTREE_ERROR					0xC012	///< 0xC012 - A corruption was found in an index or container b-tree.
+	#define FERR_BTREE_FULL						0xC013	///< 0xC013 - An index or container b-tree is full.
+	#define FERR_BAD_RFL_FILE_NUMBER			0xC014	///< 0xC014 - Bad RFL file number in RFL file header.
+	#define FERR_CANNOT_DEL_ITEM				0xC015	///< 0xC015 - Cannot delete field definitions.
+	#define FERR_CANNOT_MOD_FIELD_TYPE		0xC016	///< 0xC016 - Cannot modify a field's type.
+	#define FERR_NOT_USED_C017					0xC017	///< 0xC017 - Not used
+	#define FERR_CONV_BAD_DEST_TYPE			0xC018	///< 0xC018 - Bad destination type specified for conversion.
+	#define FERR_CONV_BAD_DIGIT				0xC019	///< 0xC019 - Non-numeric digit found in text to numeric conversion.
+	#define FERR_CONV_BAD_SRC_TYPE			0xC01A	///< 0xC01A - Bad source type specified for conversion.
+	#define FERR_RFL_FILE_NOT_FOUND			0xC01B	///< 0xC01B - Could not open an RFL file.
+	#define FERR_CONV_DEST_OVERFLOW			0xC01C	///< 0xC01C - Destination buffer not large enough to hold converted data.
+	#define FERR_CONV_ILLEGAL					0xC01D	///< 0xC01D - Illegal conversion -- not supported.
+	#define FERR_CONV_NULL_SRC					0xC01E	///< 0xC01E - Source cannot be a NULL pointer in conversion.
+	#define FERR_CONV_NULL_DEST				0xC01F	///< 0xC01F - Destination cannot be a NULL pointer in conversion.
+	#define FERR_CONV_NUM_OVERFLOW			0xC020	///< 0xC020 - Numeric overflow (GT upper bound) converting to numeric type.
+	#define FERR_CONV_NUM_UNDERFLOW			0xC021	///< 0xC021 - Numeric underflow (LT lower bound) converting to numeric type.
+	#define FERR_DATA_ERROR						0xC022	///< 0xC022 - Database corruption found.
+	#define FERR_NOT_USED_C023					0xC023	///< 0xC023 - Not used
+	#define FERR_DD_ERROR						0xC024	///< 0xC024 - Corruption found in logical file block chain.
+	#define FERR_INVALID_FILE_SEQUENCE		0xC025	///< 0xC025 - Incremental backup file number provided during a restore is invalid.
+	#define FERR_ILLEGAL_OP						0xC026	///< 0xC026 - Illegal operation for database.
+	#define FERR_DUPLICATE_DICT_REC			0xC027	///< 0xC027 - Duplicate dictionary record found.
+	#define FERR_CANNOT_CONVERT				0xC028	///< 0xC028 - Condition occurred which prevents database conversion.
+	#define FERR_UNSUPPORTED_VERSION			0xC029	///< 0xC029 - Database version is not supported.
+	#define FERR_FILE_ER							0xC02A	///< 0xC02A - File error in a GEDCOM routine.
+	#define FERR_BAD_FIELD_LEVEL				0xC02B	///< 0xC02B - Invalid field level.
+	#define FERR_GED_BAD_RECID					0xC02C	///< 0xC02C - Bad record ID syntax.
+	#define FERR_GED_BAD_VALUE					0xC02D	///< 0xC02D - Bad or ambiguous/extra value in GEDCOM.
+	#define FERR_GED_MAXLVLNUM					0xC02E	///< 0xC02E - Exceeded GED_MAXLVLNUM in gedcom routines.
+	#define FERR_GED_SKIP_LEVEL				0xC02F	///< 0xC02F - Bad GEDCOM tree structure -- level skipped.
+	#define FERR_ILLEGAL_TRANS					0xC030	///< 0xC030 - Attempt to start an illegal type of transaction.
+	#define FERR_ILLEGAL_TRANS_OP				0xC031	///< 0xC031 - Illegal operation for transaction type.
+	#define FERR_INCOMPLETE_LOG				0xC032	///< 0xC032 - Incomplete log record encountered during recovery.
+	#define FERR_INVALID_BLOCK_LENGTH		0xC033	///< 0xC033 - Invalid block length.
+	#define FERR_INVALID_TAG					0xC034	///< 0xC034 - Invalid tag name.
+	#define FERR_KEY_NOT_FOUND					0xC035	///< 0xC035 - A key or reference is not found -- modify/delete error.
+	#define FERR_VALUE_TOO_LARGE				0xC036	///< 0xC036 - Value too large.
+	#define FERR_MEM								0xC037	///< 0xC037 - Memory allocation error.
+	#define FERR_BAD_RFL_SERIAL_NUM			0xC038	///< 0xC038 - Bad serial number in RFL file header.
+	#define FERR_NOT_USED_C039					0xC039	///< 0xC039 - Not used
+	#define FERR_NEWER_FLAIM					0xC03A	///< 0xC03A - Database version newer than this code base will support, must use newer version of code.
+	#define FERR_CANNOT_MOD_FIELD_STATE		0xC03B	///< 0xC03B - Attempted to change a field state illegally.
+	#define FERR_NO_MORE_DRNS					0xC03C	///< 0xC03C - The highest DRN number has already been used in an add.
+	#define FERR_NO_TRANS_ACTIVE				0xC03D	///< 0xC03D - Attempted to updated database outside transaction.
+	#define FERR_NOT_UNIQUE						0xC03E	///< 0xC03E - Found duplicate key for unique index.
+	#define FERR_NOT_FLAIM						0xC03F	///< 0xC03F - File is not a FLAIM database.
+	#define FERR_NULL_RECORD					0xC040	///< 0xC040 - NULL record cannot be passed to add or modify.
+	#define FERR_NO_HTTP_STACK					0xC041	///< 0xC041 - No http stack was loaded.
+	#define FERR_OLD_VIEW						0xC042	///< 0xC042 - While reading was unable to get previous version of block or record.
+	#define FERR_PCODE_ERROR					0xC043	///< 0xC043 - Corruption found in dictionary.
+	#define FERR_PERMISSION						0xC044	///< 0xC044 - Invalid permission for file operation.
+	#define FERR_SYNTAX							0xC045	///< 0xC045 - Dictionary record has improper syntax, or syntax error in query criteria.
+	#define FERR_CALLBACK_FAILURE				0xC046	///< 0xC046 - Callback failure.
+	#define FERR_TRANS_ACTIVE					0xC047	///< 0xC047 - Attempted to close database while transaction was active.
+	#define FERR_RFL_TRANS_GAP					0xC048	///< 0xC048 - A gap was found in the transaction sequence in the RFL.
+	#define FERR_BAD_COLLATED_KEY				0xC049	///< 0xC049 - Something in collated key is bad.
+	#define FERR_UNSUPPORTED_FEATURE			0xC04A	///< 0xC04A - Attempting a feature that is not supported for the database version.
+	#define FERR_MUST_DELETE_INDEXES			0xC04B	///< 0xC04B - Attempting to delete a container that has indexes defined for it -- indexes must be deleted first.
+	#define FERR_RFL_INCOMPLETE				0xC04C	///< 0xC04C - RFL file is incomplete.
+	#define FERR_CANNOT_RESTORE_RFL_FILES	0xC04D	///< 0xC04D - Cannot restore RFL files - not using multiple RFL files.
+	#define FERR_INCONSISTENT_BACKUP			0xC04E	///< 0xC04E - A problem (corruption, etc) was detected in a backup set.
+	#define FERR_BLOCK_CHECKSUM				0xC04F	///< 0xC04F - Block checksum error.
+	#define FERR_ABORT_TRANS					0xC050	///< 0xC050 - Attempted operation after a critical error - should abort transaction.
+	#define FERR_NOT_RFL							0xC051	///< 0xC051 - Attempted to open file which was not an RFL file.
+	#define FERR_BAD_RFL_PACKET				0xC052	///< 0xC052 - RFL packet was bad.
+	#define FERR_DATA_PATH_MISMATCH			0xC053	///< 0xC053 - Bad data path specified to open database.
+	#define FERR_HTTP_REGISTER_FAILURE		0xC054	///< 0xC054 - Call to FlmConfig() with FLM_HTTP_REGISTER_URL option failed.
+	#define FERR_HTTP_DEREG_FAILURE			0xC055	///< 0xC055 - Call to FlmConfig() with FLM_HTTP_DEREGISTER_URL option failed.
+	#define FERR_IX_FAILURE						0xC056	///< 0xC056 - Indexing process failed, non-unique data was found when a unique index was being created.
+	#define FERR_HTTP_SYMS_EXIST				0xC057	///< 0xC057 - Tried to import new http related symbols before unimporting the old ones.
+	#define FERR_NOT_USED_C058					0xC058	///< 0xC058 - Not used
+	#define FERR_FILE_EXISTS					0xC059	///< 0xC059 - Attempt to create a database, but the database already exists.
+	#define FERR_SYM_RESOLVE_FAIL				0xC05A	///< 0xC05A - Could not resolve a symbol needed to run.
+	#define FERR_BAD_SERVER_CONNECTION		0xC05B	///< 0xC05B - Connection to FLAIM server is bad.
+	#define FERR_CLOSING_DATABASE				0xC05C	///< 0xC05C - Database is being closed due to a critical error.
+	#define FERR_INVALID_CRC					0xC05D	///< 0xC05D - CRC could not be verified.
+	#define FERR_KEY_OVERFLOW					0xC05E	///< 0xC05E - Key generated by the record causes the maximum key size to be exceeded.
+	#define FERR_NOT_IMPLEMENTED				0xC05F	///< 0xC05F - Functionality not implemented.
+	#define FERR_MUTEX_OPERATION_FAILED		0xC060	///< 0xC060 - Mutex operation failed.
+	#define FERR_MUTEX_UNABLE_TO_LOCK		0xC061	///< 0xC061 - Unable to get the mutex lock.
+	#define FERR_SEM_OPERATION_FAILED		0xC062	///< 0xC062 - Semaphore operation failed.
+	#define FERR_SEM_UNABLE_TO_LOCK			0xC063	///< 0xC063 - Unable to get the semaphore lock.
+	#define FERR_NOT_USED_C064					0xC064	///< 0xC064 - Not used
+	#define FERR_NOT_USED_C065					0xC065	///< 0xC065 - Not used
+	#define FERR_NOT_USED_C066					0xC066	///< 0xC066 - Not used
+	#define FERR_NOT_USED_C067					0xC067	///< 0xC067 - Not used
+	#define FERR_NOT_USED_C068					0xC068	///< 0xC068 - Not used
+	#define FERR_BAD_REFERENCE					0xC069	///< 0xC069 - Bad reference in the dictionary.
+	#define FERR_NOT_USED_C06A					0xC06A	///< 0xC06A - Not used
+	#define FERR_NOT_USED_C06B					0xC06B	///< 0xC06B - Not used
+	#define FERR_NOT_USED_C06C					0xC06C	///< 0xC06C - Not used
+	#define FERR_NOT_USED_C06D					0xC06D	///< 0xC06D - Not used
+	#define FERR_NOT_USED_C06E					0xC06E	///< 0xC06E - Not used
+	#define FERR_NOT_USED_C06F					0xC06F	///< 0xC06F - Not used
+	#define FERR_UNALLOWED_UPGRADE			0xC070	///< 0xC070 - FlmDbUpgrade cannot upgrade the database.
+	#define FERR_NOT_USED_C071					0xC071	///< 0xC071 - Not used
+	#define FERR_NOT_USED_C072					0xC072	///< 0xC072 - Not used
+	#define FERR_NOT_USED_C073					0xC073	///< 0xC073 - Not used
+	#define FERR_ID_RESERVED					0xC074	///< 0xC074 - Attempted to use a dictionary ID that has been reserved.
+	#define FERR_CANNOT_RESERVE_ID			0xC075	///< 0xC075 - Attempted to reserve a dictionary ID that has been used.
+	#define FERR_DUPLICATE_DICT_NAME			0xC076	///< 0xC076 - Dictionary record with duplicate name found.
+	#define FERR_CANNOT_RESERVE_NAME			0xC077	///< 0xC077 - Attempted to reserve a dictionary name that is in use.
+	#define FERR_BAD_DICT_DRN					0xC078	///< 0xC078 - Attempted to add, modify, or delete a dictionary DRN >= FLM_RESERVED_TAG_NUMS.
+	#define FERR_CANNOT_MOD_DICT_REC_TYPE	0xC079	///< 0xC079 - Cannot modify a dictionary item into another type of item, must delete then add.
+	#define FERR_PURGED_FLD_FOUND				0xC07A	///< 0xC07A - Record contained a field whose field definition has been marked as purged.
+	#define FERR_DUPLICATE_INDEX				0xC07B	///< 0xC07B - Duplicate index.
+	#define FERR_TOO_MANY_OPEN_DBS			0xC07C	///< 0xC07C - Too many open databases.
+	#define FERR_ACCESS_DENIED					0xC07D	///< 0xC07D - Cannot access database.
+	#define FERR_NOT_USED_C07E					0xC07E	///< 0xC07E - Not used
+	#define FERR_CACHE_ERROR					0xC07F	///< 0xC07F - Cache block is corrupt.
+	#define FERR_NOT_USED_C080					0xC080	///< 0xC080 - Not used
+	#define FERR_BLOB_MISSING_FILE			0xC081	///< 0xC081 - Missing BLOB file on add/modify.
+	#define FERR_NO_REC_FOR_KEY				0xC082	///< 0xC082 - Record pointed to by an index key is missing.
+	#define FERR_DB_FULL							0xC083	///< 0xC083 - Database is full, cannot create more blocks.
+	#define FERR_TIMEOUT							0xC084	///< 0xC084 - Operation timed out (usually a query operation).
+	#define FERR_CURSOR_SYNTAX					0xC085	///< 0xC085 - Query criteria had improper syntax.
+	#define FERR_THREAD_ERR						0xC086	///< 0xC086 - Thread error.
+	#define FERR_UNIMPORT_SYMBOL				0xC087	///< 0xC087 - Failed to unimport a public symbol.
+	#define FERR_EMPTY_QUERY					0xC088	///< 0xC088 - Warning: Query has no results.
+	#define FERR_INDEX_OFFLINE					0xC089	///< 0xC089 - Warning: Index is offline and being rebuilt.
+	#define FERR_TRUNCATED_KEY					0xC08A	///< 0xC08A - Warning: Can't evaluate truncated key against selection criteria.
+	#define FERR_INVALID_PARM					0xC08B	///< 0xC08B - Invalid parameter.
+	#define FERR_USER_ABORT						0xC08C	///< 0xC08C - User or application aborted the operation.
+	#define FERR_RFL_DEVICE_FULL				0xC08D	///< 0xC08D - No space on RFL device for logging.
+	#define FERR_MUST_WAIT_CHECKPOINT		0xC08E	///< 0xC08E - Must wait for a checkpoint before starting transaction - due to disk problems - usually in RFL volume.
+	#define FERR_NAMED_SEMAPHORE_ERR			0xC08F	///< 0xC08F - Error occurred while accessing a named semaphore.
+	#define FERR_LOAD_LIBRARY					0xC090	///< 0xC090 - Failed to load a shared library module.
+	#define FERR_UNLOAD_LIBRARY				0xC091	///< 0xC091 - Failed to unload a shared library module.
+	#define FERR_IMPORT_SYMBOL					0xC092	///< 0xC092 - Failed to import a symbol from a shared library module.
+	#define FERR_BLOCK_FULL						0xC093	///< 0xC093 - Destination block for insert is full.
+	#define FERR_BAD_BASE64_ENCODING			0xC094	///< 0xC094 - Could not perform base 64 encoding.
+	#define FERR_MISSING_FIELD_TYPE			0xC095	///< 0xC095 - Field type not specified in field definition record.
+	#define FERR_BAD_DATA_LENGTH				0xC096	///< 0xC096 - Invalid field data length.
 
 		/****************************************************************************
 								IO Errors
 		****************************************************************************/
 
-		FERR_IO_ACCESS_DENIED = 0xC201,///< 0xC201 - Access denied. Caller is not allowed access to a file.
-		FERR_IO_BAD_FILE_HANDLE,		///< 0xC202 - Bad file handle.
-		FERR_IO_COPY_ERR,					///< 0xC203 - Copy error.
-		FERR_IO_DISK_FULL,				///< 0xC204 - Disk full.
-		FERR_IO_END_OF_FILE,				///< 0xC205 - End of file.
-		FERR_IO_OPEN_ERR,					///< 0xC206 - Error opening file.
-		FERR_IO_SEEK_ERR,					///< 0xC207 - File seek error.
-		FERR_IO_MODIFY_ERR,				///< 0xC208 - File modify error.
-		FERR_IO_PATH_NOT_FOUND,			///< 0xC209 - Path not found.
-		FERR_IO_TOO_MANY_OPEN_FILES,	///< 0xC20A - Too many files open.
-		FERR_IO_PATH_TOO_LONG,			///< 0xC20B - Path too long.
-		FERR_IO_NO_MORE_FILES,			///< 0xC20C - No more files in directory.
-		FERR_DELETING_FILE,				///< 0xC20D - Had error deleting a file.
-		FERR_IO_FILE_LOCK_ERR,			///< 0xC20E - File lock error.
-		FERR_IO_FILE_UNLOCK_ERR,		///< 0xC20F - File unlock error.
-		FERR_IO_PATH_CREATE_FAILURE,	///< 0xC210 - Path create failed.
-		FERR_IO_RENAME_FAILURE,			///< 0xC211 - File rename failed.
-		FERR_IO_INVALID_PASSWORD,		///< 0xC212 - Invalid file password.
-		FERR_SETTING_UP_FOR_READ,		///< 0xC213 - Had error setting up to do a read.
-		FERR_SETTING_UP_FOR_WRITE,		///< 0xC214 - Had error setting up to do a write.
-		FERR_IO_AT_PATH_ROOT,			///< 0xC215 - Currently positioned at the path root level.
-		FERR_INITIALIZING_IO_SYSTEM,	///< 0xC216 - Had error initializing the file system.
-		FERR_FLUSHING_FILE,				///< 0xC217 - Had error flushing a file.
-		FERR_IO_INVALID_PATH,			///< 0xC218 - Invalid path.
-		FERR_IO_CONNECT_ERROR,			///< 0xC219 - Failed to connect to a remote network resource.
-		FERR_OPENING_FILE,				///< 0xC21A - Had error opening a file.
-		FERR_DIRECT_OPENING_FILE,		///< 0xC21B - Had error opening a file for direct I/O.
-		FERR_CREATING_FILE,				///< 0xC21C - Had error creating a file.
-		FERR_DIRECT_CREATING_FILE,		///< 0xC21D - Had error creating a file for direct I/O.
-		FERR_READING_FILE,				///< 0xC21E - Had error reading a file.
-		FERR_DIRECT_READING_FILE,		///< 0xC21F - Had error reading a file using direct I/O.
-		FERR_WRITING_FILE,				///< 0xC220 - Had error writing to a file.
-		FERR_DIRECT_WRITING_FILE,		///< 0xC221 - Had error writing to a file using direct I/O.
-		FERR_POSITIONING_IN_FILE,		///< 0xC222 - Had error positioning within a file.
-		FERR_GETTING_FILE_SIZE,			///< 0xC223 - Had error getting file size.
-		FERR_TRUNCATING_FILE,			///< 0xC224 - Had error truncating a file.
-		FERR_PARSING_FILE_NAME,			///< 0xC225 - Had error parsing a file name.
-		FERR_CLOSING_FILE,				///< 0xC226 - Had error closing a file.
-		FERR_GETTING_FILE_INFO,			///< 0xC227 - Had error getting file information.
-		FERR_EXPANDING_FILE,				///< 0xC228 - Had error expanding a file (using direct I/O).
-		FERR_GETTING_FREE_BLOCKS,		///< 0xC229 - Had error getting free blocks from file system.
-		FERR_CHECKING_FILE_EXISTENCE,	///< 0xC22A - Had error checking if a file exists.
-		FERR_RENAMING_FILE,				///< 0xC22B - Had error renaming a file.
-		FERR_SETTING_FILE_INFO,			///< 0xC22C - Had error setting file information.
+	#define FERR_IO_ACCESS_DENIED				0xC201	///< 0xC201 - Access denied. Caller is not allowed access to a file.
+	#define FERR_IO_BAD_FILE_HANDLE			0xC202	///< 0xC202 - Bad file handle.
+	#define FERR_IO_COPY_ERR					0xC203	///< 0xC203 - Copy error.
+	#define FERR_IO_DISK_FULL					0xC204	///< 0xC204 - Disk full.
+	#define FERR_IO_END_OF_FILE				0xC205	///< 0xC205 - End of file.
+	#define FERR_IO_OPEN_ERR					0xC206	///< 0xC206 - Error opening file.
+	#define FERR_IO_SEEK_ERR					0xC207	///< 0xC207 - File seek error.
+	#define FERR_IO_MODIFY_ERR					0xC208	///< 0xC208 - File modify error.
+	#define FERR_IO_PATH_NOT_FOUND			0xC209	///< 0xC209 - Path not found.
+	#define FERR_IO_TOO_MANY_OPEN_FILES		0xC20A	///< 0xC20A - Too many files open.
+	#define FERR_IO_PATH_TOO_LONG				0xC20B	///< 0xC20B - Path too long.
+	#define FERR_IO_NO_MORE_FILES				0xC20C	///< 0xC20C - No more files in directory.
+	#define FERR_DELETING_FILE					0xC20D	///< 0xC20D - Had error deleting a file.
+	#define FERR_IO_FILE_LOCK_ERR				0xC20E	///< 0xC20E - File lock error.
+	#define FERR_IO_FILE_UNLOCK_ERR			0xC20F	///< 0xC20F - File unlock error.
+	#define FERR_IO_PATH_CREATE_FAILURE		0xC210	///< 0xC210 - Path create failed.
+	#define FERR_IO_RENAME_FAILURE			0xC211	///< 0xC211 - File rename failed.
+	#define FERR_IO_INVALID_PASSWORD			0xC212	///< 0xC212 - Invalid file password.
+	#define FERR_SETTING_UP_FOR_READ			0xC213	///< 0xC213 - Had error setting up to do a read.
+	#define FERR_SETTING_UP_FOR_WRITE		0xC214	///< 0xC214 - Had error setting up to do a write.
+	#define FERR_IO_AT_PATH_ROOT				0xC215	///< 0xC215 - Currently positioned at the path root level.
+	#define FERR_INITIALIZING_IO_SYSTEM		0xC216	///< 0xC216 - Had error initializing the file system.
+	#define FERR_FLUSHING_FILE					0xC217	///< 0xC217 - Had error flushing a file.
+	#define FERR_IO_INVALID_PATH				0xC218	///< 0xC218 - Invalid path.
+	#define FERR_IO_CONNECT_ERROR				0xC219	///< 0xC219 - Failed to connect to a remote network resource.
+	#define FERR_OPENING_FILE					0xC21A	///< 0xC21A - Had error opening a file.
+	#define FERR_DIRECT_OPENING_FILE			0xC21B	///< 0xC21B - Had error opening a file for direct I/O.
+	#define FERR_CREATING_FILE					0xC21C	///< 0xC21C - Had error creating a file.
+	#define FERR_DIRECT_CREATING_FILE		0xC21D	///< 0xC21D - Had error creating a file for direct I/O.
+	#define FERR_READING_FILE					0xC21E	///< 0xC21E - Had error reading a file.
+	#define FERR_DIRECT_READING_FILE			0xC21F	///< 0xC21F - Had error reading a file using direct I/O.
+	#define FERR_WRITING_FILE					0xC220	///< 0xC220 - Had error writing to a file.
+	#define FERR_DIRECT_WRITING_FILE			0xC221	///< 0xC221 - Had error writing to a file using direct I/O.
+	#define FERR_POSITIONING_IN_FILE			0xC222	///< 0xC222 - Had error positioning within a file.
+	#define FERR_GETTING_FILE_SIZE			0xC223	///< 0xC223 - Had error getting file size.
+	#define FERR_TRUNCATING_FILE				0xC224	///< 0xC224 - Had error truncating a file.
+	#define FERR_PARSING_FILE_NAME			0xC225	///< 0xC225 - Had error parsing a file name.
+	#define FERR_CLOSING_FILE					0xC226	///< 0xC226 - Had error closing a file.
+	#define FERR_GETTING_FILE_INFO			0xC227	///< 0xC227 - Had error getting file information.
+	#define FERR_EXPANDING_FILE				0xC228	///< 0xC228 - Had error expanding a file (using direct I/O).
+	#define FERR_GETTING_FREE_BLOCKS			0xC229	///< 0xC229 - Had error getting free blocks from file system.
+	#define FERR_CHECKING_FILE_EXISTENCE	0xC22A	///< 0xC22A - Had error checking if a file exists.
+	#define FERR_RENAMING_FILE					0xC22B	///< 0xC22B - Had error renaming a file.
+	#define FERR_SETTING_FILE_INFO			0xC22C	///< 0xC22C - Had error setting file information.
 
 		/****************************************************************************
 								Encryption / Decryption Errors
 		****************************************************************************/
-		FERR_NICI_CONTEXT = 0xC301,	///< 0xC301 - Failed to obtain a NICI context.
-		FERR_NICI_FIND_INIT,				///< 0xC302 - CCS_FindInit failed.
-		FERR_NICI_FIND_OBJECT,			///< 0xC303 - CCS_FindObject failed.
-		FERR_NICI_WRAPKEY_NOT_FOUND,	///< 0xC304 - Could not locate a wrapping key.
-		FERR_NICI_ATTRIBUTE_VALUE,		///< 0xC305 - CCS_AttributeValue failed.
-		FERR_NICI_BAD_ATTRIBUTE,		///< 0xC306 - Invalid attribute.
-		FERR_NICI_BAD_RANDOM,			///< 0xC307 - CCS_GetRandom failed.
-		FERR_NOT_USED_C308,
-		FERR_NICI_WRAPKEY_FAILED,		///< 0xC309 - CCS_WrapKey failed.
-		FERR_NICI_GENKEY_FAILED,		///< 0xC30A - CCS_GenerateKey failed.
-		FERR_REQUIRE_PASSWD,				///< 0xC30B - Password required to unwrap key.
-		FERR_NICI_SHROUDKEY_FAILED,	///< 0xC30C - CCS_pbeShroudPrivateKey failed.
-		FERR_NICI_UNSHROUDKEY_FAILED,	///< 0xC30D - CCS_pbdUnshroudPrivateKey failed.
-		FERR_NICI_UNWRAPKEY_FAILED,	///< 0xC30E - CCS_UnrapKey failed.
-		FERR_NICI_ENC_INIT_FAILED,		///< 0xC30F - CCS_DataEncryptInit failed.
-		FERR_NICI_ENCRYPT_FAILED,		///< 0xC310 - CCS_DataEncrypt failed.
-		FERR_NICI_DECRYPT_INIT_FAILED,///< 0xC311 - CCS_DataDecryptInit failed.
-		FERR_NICI_DECRYPT_FAILED,		///< 0xC312 - CCS_DataDecrypt failed.
-		FERR_NICI_INIT_FAILED,			///< 0xC313 - CCS_Init failed.
-		FERR_NICI_KEY_NOT_FOUND,		///< 0xC314 - Could not locate encryption/decryption key.
-		FERR_NICI_INVALID_ALGORITHM,	///< 0xC315 - Unsupported NICI ecncryption algorithm.
-		FERR_FLD_NOT_ENCRYPTED,			///< 0xC316 - Field is not encrypted.
-		FERR_CANNOT_SET_KEY,				///< 0xC317 - Attempted to set an encryption key for new encryption definition record.
-		FERR_MISSING_ENC_TYPE,			///< 0xC318 - Encryption type not specified in encryption definition record.
-		FERR_CANNOT_MOD_ENC_TYPE,		///< 0xC319 - Attempting to change the encryption type in encryption definition record.
-		FERR_MISSING_ENC_KEY,			///< 0xC31A - Encryption key must be present in modified encryption definition record.
-		FERR_CANNOT_CHANGE_KEY,			///< 0xC31B - Attempt to modify the encryption key in an encryption definition record.
-		FERR_BAD_ENC_KEY,					///< 0xC31C - Bad encryption key.
-		FERR_CANNOT_MOD_ENC_STATE,		///< 0xC31D - Illegal state change for an encryption definition record.
-		FERR_DATA_SIZE_MISMATCH,		///< 0xC31E - Calculated encrypted data length does not match the length returned from encryption/decryption routines.
-		FERR_ENCRYPTION_UNAVAILABLE,	///< 0xC31F - Encryption capabilities are not available for encrypting/decrypting data in database.
-		FERR_PURGED_ENCDEF_FOUND,		///< 0xC320 - Cannot use encryption ID for encryption of data - encryption definition record is marked as purged.
-		FERR_FLD_NOT_DECRYPTED,			///< 0xC321 - Attempting to access data from a field that is encrypted, field could not be decrypted for some reason - probably because encryption/decryption capabilities are not available.
-		FERR_BAD_ENCDEF_ID,				///< 0xC322 - Encryption ID is invalid - not defined in dictionary.
-		FERR_PBE_ENCRYPT_FAILED,		///< 0xC323 - Call to NICI function CCS_pbeEncrypt failed.
-		FERR_DIGEST_FAILED,				///< 0xC324 - Call to NICI function CCS_Digest failed.
-		FERR_DIGEST_INIT_FAILED,		///< 0xC325 - Call to NICI function CCS_DigestInit failed.
-		FERR_EXTRACT_KEY_FAILED,		///< 0xC326 - Call to NICI function CCS_ExtractKey failed.
-		FERR_INJECT_KEY_FAILED,			///< 0xC327 - Call to NICI function CCS_InjectKey failed.
-		FERR_PBE_DECRYPT_FAILED,		///< 0xC328 - Call to NICI function CCS_pbeDecrypt failed.
-		FERR_PASSWD_INVALID,				///< 0xC329 - Invalid password passed, database could not be opened.
+	#define FERR_NICI_CONTEXT					0xC301	///< 0xC301 - Failed to obtain a NICI context.
+	#define FERR_NICI_FIND_INIT				0xC302	///< 0xC302 - CCS_FindInit failed.
+	#define FERR_NICI_FIND_OBJECT				0xC303	///< 0xC303 - CCS_FindObject failed.
+	#define FERR_NICI_WRAPKEY_NOT_FOUND		0xC304	///< 0xC304 - Could not locate a wrapping key.
+	#define FERR_NICI_ATTRIBUTE_VALUE		0xC305	///< 0xC305 - CCS_AttributeValue failed.
+	#define FERR_NICI_BAD_ATTRIBUTE			0xC306	///< 0xC306 - Invalid attribute.
+	#define FERR_NICI_BAD_RANDOM				0xC307	///< 0xC307 - CCS_GetRandom failed.
+	#define FERR_NOT_USED_C308					0xC308	///< 0xC308 - Not used
+	#define FERR_NICI_WRAPKEY_FAILED			0xC309	///< 0xC309 - CCS_WrapKey failed.
+	#define FERR_NICI_GENKEY_FAILED			0xC30A	///< 0xC30A - CCS_GenerateKey failed.
+	#define FERR_REQUIRE_PASSWD				0xC30B	///< 0xC30B - Password required to unwrap key.
+	#define FERR_NICI_SHROUDKEY_FAILED		0xC30C	///< 0xC30C - CCS_pbeShroudPrivateKey failed.
+	#define FERR_NICI_UNSHROUDKEY_FAILED	0xC30D	///< 0xC30D - CCS_pbdUnshroudPrivateKey failed.
+	#define FERR_NICI_UNWRAPKEY_FAILED		0xC30E	///< 0xC30E - CCS_UnrapKey failed.
+	#define FERR_NICI_ENC_INIT_FAILED		0xC30F	///< 0xC30F - CCS_DataEncryptInit failed.
+	#define FERR_NICI_ENCRYPT_FAILED			0xC310	///< 0xC310 - CCS_DataEncrypt failed.
+	#define FERR_NICI_DECRYPT_INIT_FAILED	0xC311	///< 0xC311 - CCS_DataDecryptInit failed.
+	#define FERR_NICI_DECRYPT_FAILED			0xC312	///< 0xC312 - CCS_DataDecrypt failed.
+	#define FERR_NICI_INIT_FAILED				0xC313	///< 0xC313 - CCS_Init failed.
+	#define FERR_NICI_KEY_NOT_FOUND			0xC314	///< 0xC314 - Could not locate encryption/decryption key.
+	#define FERR_NICI_INVALID_ALGORITHM		0xC315	///< 0xC315 - Unsupported NICI ecncryption algorithm.
+	#define FERR_FLD_NOT_ENCRYPTED			0xC316	///< 0xC316 - Field is not encrypted.
+	#define FERR_CANNOT_SET_KEY				0xC317	///< 0xC317 - Attempted to set an encryption key for new encryption definition record.
+	#define FERR_MISSING_ENC_TYPE				0xC318	///< 0xC318 - Encryption type not specified in encryption definition record.
+	#define FERR_CANNOT_MOD_ENC_TYPE			0xC319	///< 0xC319 - Attempting to change the encryption type in encryption definition record.
+	#define FERR_MISSING_ENC_KEY				0xC31A	///< 0xC31A - Encryption key must be present in modified encryption definition record.
+	#define FERR_CANNOT_CHANGE_KEY			0xC31B	///< 0xC31B - Attempt to modify the encryption key in an encryption definition record.
+	#define FERR_BAD_ENC_KEY					0xC31C	///< 0xC31C - Bad encryption key.
+	#define FERR_CANNOT_MOD_ENC_STATE		0xC31D	///< 0xC31D - Illegal state change for an encryption definition record.
+	#define FERR_DATA_SIZE_MISMATCH			0xC31E	///< 0xC31E - Calculated encrypted data length does not match the length returned from encryption/decryption routines.
+	#define FERR_ENCRYPTION_UNAVAILABLE		0xC31F	///< 0xC31F - Encryption capabilities are not available for encrypting/decrypting data in database.
+	#define FERR_PURGED_ENCDEF_FOUND			0xC320	///< 0xC320 - Cannot use encryption ID for encryption of data - encryption definition record is marked as purged.
+	#define FERR_FLD_NOT_DECRYPTED			0xC321	///< 0xC321 - Attempting to access data from a field that is encrypted, field could not be decrypted for some reason - probably because encryption/decryption capabilities are not available.
+	#define FERR_BAD_ENCDEF_ID					0xC322	///< 0xC322 - Encryption ID is invalid - not defined in dictionary.
+	#define FERR_PBE_ENCRYPT_FAILED			0xC323	///< 0xC323 - Call to NICI function CCS_pbeEncrypt failed.
+	#define FERR_DIGEST_FAILED					0xC324	///< 0xC324 - Call to NICI function CCS_Digest failed.
+	#define FERR_DIGEST_INIT_FAILED			0xC325	///< 0xC325 - Call to NICI function CCS_DigestInit failed.
+	#define FERR_EXTRACT_KEY_FAILED			0xC326	///< 0xC326 - Call to NICI function CCS_ExtractKey failed.
+	#define FERR_INJECT_KEY_FAILED			0xC327	///< 0xC327 - Call to NICI function CCS_InjectKey failed.
+	#define FERR_PBE_DECRYPT_FAILED			0xC328	///< 0xC328 - Call to NICI function CCS_pbeDecrypt failed.
+	#define FERR_PASSWD_INVALID				0xC329	///< 0xC329 - Invalid password passed, database could not be opened.
 	
 
 		/*************************************************************************
 								Server TCP/IP Errors
 		*************************************************************************/
 
-		FERR_SVR_NOIP_ADDR = 0xC900,	///< 0xC900 - IP address not found.
-		FERR_SVR_SOCK_FAIL,				///< 0xC901 - IP socket failure.
-		FERR_SVR_CONNECT_FAIL,			///< 0xC902 - TCP/IP connection failure.
-		FERR_SVR_BIND_FAIL,				///< 0xC903 - The TCP/IP services on your system may not be configured or installed.
-		FERR_SVR_LISTEN_FAIL,			///< 0xC904 - TCP/IP listen failed.
-		FERR_SVR_ACCEPT_FAIL,			///< 0xC905 - TCP/IP accept failed.
-		FERR_SVR_SELECT_ERR,				///< 0xC906 - TCP/IP select failed.
-		FERR_SVR_SOCKOPT_FAIL,			///< 0xC907 - TCP/IP socket operation failed.
-		FERR_SVR_DISCONNECT,				///< 0xC908 - TCP/IP disconnected.
-		FERR_SVR_READ_FAIL,				///< 0xC909 - TCP/IP read failed.
-		FERR_SVR_WRT_FAIL,				///< 0xC90A - TCP/IP write failed.
-		FERR_SVR_READ_TIMEOUT,			///< 0xC90B - TCP/IP read timeout.
-		FERR_SVR_WRT_TIMEOUT,			///< 0xC90C - TCP/IP write timeout.
-		FERR_SVR_ALREADY_CLOSED,		///< 0xC90D - Connection already closed.
+	#define FERR_SVR_NOIP_ADDR					0xC900	///< 0xC900 - IP address not found.
+	#define FERR_SVR_SOCK_FAIL					0xC901	///< 0xC901 - IP socket failure.
+	#define FERR_SVR_CONNECT_FAIL				0xC902	///< 0xC902 - TCP/IP connection failure.
+	#define FERR_SVR_BIND_FAIL					0xC903	///< 0xC903 - The TCP/IP services on your system may not be configured or installed.
+	#define FERR_SVR_LISTEN_FAIL				0xC904	///< 0xC904 - TCP/IP listen failed.
+	#define FERR_SVR_ACCEPT_FAIL				0xC905	///< 0xC905 - TCP/IP accept failed.
+	#define FERR_SVR_SELECT_ERR				0xC906	///< 0xC906 - TCP/IP select failed.
+	#define FERR_SVR_SOCKOPT_FAIL				0xC907	///< 0xC907 - TCP/IP socket operation failed.
+	#define FERR_SVR_DISCONNECT				0xC908	///< 0xC908 - TCP/IP disconnected.
+	#define FERR_SVR_READ_FAIL					0xC909	///< 0xC909 - TCP/IP read failed.
+	#define FERR_SVR_WRT_FAIL					0xC90A	///< 0xC90A - TCP/IP write failed.
+	#define FERR_SVR_READ_TIMEOUT				0xC90B	///< 0xC90B - TCP/IP read timeout.
+	#define FERR_SVR_WRT_TIMEOUT				0xC90C	///< 0xC90C - TCP/IP write timeout.
+	#define FERR_SVR_ALREADY_CLOSED			0xC90D	///< 0xC90D - Connection already closed.
 
-		LAST_FLAIM_ERROR = 0xC90D,
+	#define LAST_FLAIM_ERROR					0xC90D	///< 0xC90D - Place holder		
+	#define FERR_BT_END_OF_DATA				0xFFFF	///< 0xFFFF	- Used internally
 
-		// Internal error codes only
-
-		FERR_BT_END_OF_DATA = 0xFFFF
-	} RCODE;
-
+	/// @}
+	
 	#ifndef RC_OK
 		#define RC_OK( rc)						((rc) == FERR_OK)
 	#endif
