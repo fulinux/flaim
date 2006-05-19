@@ -35,6 +35,7 @@ int main( void)
 	IF_BlockMgr *		pBlockMgr = NULL;
 	IF_BTree *			pBTree = NULL;
 	FLMUINT32			ui32RootBlkId;
+	char					szTmpBuf[ 128];
 	
 	if( RC_BAD( rc = ftkStartup()))
 	{
@@ -76,6 +77,9 @@ int main( void)
 	
 	pBTree->btDeleteTree();
 	pBTree->Release();
+
+	f_sprintf( szTmpBuf, "Hello, World! (You're number %u)\n", 1);
+	f_printf( szTmpBuf);
 	
 Exit:
 

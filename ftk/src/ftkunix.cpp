@@ -1579,6 +1579,17 @@ FLMINT32 posix_atomic_xchg_32(
 	return( i32RetVal);
 }
 
+/**********************************************************************
+Desc:
+**********************************************************************/
+#if defined( FLM_SOLARIS) && !defined( FLM_GNUC)
+void * f_va_arg_next(
+	f_va_list *					pList)		
+{
+	return( __builtin_va_arg_incr( *pList, NULL));
+}
+#endif
+
 #endif // FLM_UNIX
 
 #if defined( FLM_WATCOM_NLM)

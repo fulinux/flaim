@@ -190,6 +190,8 @@
 			typedef signed char						FLMINT8;
 			#if defined( FLM_GNUC)
 				typedef __builtin_va_list			f_va_list;
+			#elif defined( FLM_SOLARIS)
+				typedef void *							f_va_list;
 			#else
 				typedef char *							f_va_list;
 			#endif
@@ -368,15 +370,27 @@
 			(*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
 			
 		#define f_va_end(ap) ((void)0)
+	#elif defined( FLM_SOLARIS)
+		void * f_va_arg_next( 
+			f_va_list *	pList);
+
+		#define f_va_start( list, name) \
+			((void)((list) = (f_va_list)&__builtin_va_alist))
+
+		#define f_va_arg( list, type) \
+			(*((type *)f_va_arg_next( &list))) 
+
+		#define f_va_end( list) \
+			(void)(list)
 	#else
 		#define f_va_start( list, name) \
-			(list = (f_va_list)&(name) + f_alignedsize( name))
+			((list) = (f_va_list)&(name) + f_alignedsize( name))
 			
 		#define f_va_arg( list, type) \
 			(*(type *)((list += f_alignedsize( type)) - f_alignedsize( type)))
 			
 		#define f_va_end( list) \
-			(list = (f_va_list)0)
+			((list) = (f_va_list)0)
 	#endif
 
 	// flmnovtbl keeps MS compilers from generating vtables for interfaces

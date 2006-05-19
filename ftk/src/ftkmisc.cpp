@@ -100,6 +100,9 @@ RCODE FLMAPI ftkStartup( void)
 	}
 	
 	f_memoryInit();
+
+
+	f_assert( sizeof( f_va_list) == sizeof( va_list));
 	
 	if( RC_BAD( rc = f_initCharMappingTables()))
 	{
