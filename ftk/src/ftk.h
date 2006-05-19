@@ -371,14 +371,11 @@
 			
 		#define f_va_end(ap) ((void)0)
 	#elif defined( FLM_SOLARIS)
-		void * f_va_arg_next( 
-			f_va_list *	pList);
-
 		#define f_va_start( list, name) \
 			((void)((list) = (f_va_list)&__builtin_va_alist))
 
 		#define f_va_arg( list, type) \
-			(*((type *)f_va_arg_next( &list))) 
+			((type *)__builtin_va_arg_incr((type *)(list)))[0]
 
 		#define f_va_end( list) \
 			(void)(list)

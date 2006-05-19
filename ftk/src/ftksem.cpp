@@ -304,6 +304,7 @@ FINLINE int sema_wait(
 			}
 			else
 			{
+				f_assert( 0);
 				goto Exit;
 			}
 		}
