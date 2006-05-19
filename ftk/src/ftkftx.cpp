@@ -5235,7 +5235,7 @@ FSTATIC void ftxUnixDisplayInit( void)
 	move( 0, 0);
 	refresh();
 	
-	ungetChar = (chtype)ERR;
+	ungetChar = (int)ERR;
 	
 	if( has_colors())
 	{
