@@ -1091,7 +1091,7 @@ FLMBOOL ViewAvailBlk(
 							: NULL,
 							NULL, 0, BT_FREE, NULL);
 #endif
-	StateInfo.ui32BlkAddress = uiBlkAddress;
+	StateInfo.ui32BlkAddress = (FLMUINT32)uiBlkAddress;
 	StateInfo.pBlkHdr = pBlkHdr;
 #if 0
 	if ((iErrorCode = flmVerifyBlockHeader( &StateInfo, &BlockInfo,

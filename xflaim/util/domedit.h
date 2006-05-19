@@ -192,7 +192,7 @@ public:
 		DME_ROW_INFO *		pStartRow = NULL);
 
 	RCODE setTitle(
-		char *	pszTitle);
+		const char *	pszTitle);
 
 	void setCurrentAtTop( void);
 
@@ -325,23 +325,23 @@ public:
 		FLMUINT		uiAttrNameId);
 
 	RCODE requestInput(
-		char *		pszMessage,
-		char *		pszResponse,
-		FLMUINT		uiMaxRespLen,
-		FLMUINT *	puiTermChar);
+		const char *	pszMessage,
+		char *			pszResponse,
+		FLMUINT			uiMaxRespLen,
+		FLMUINT *		puiTermChar);
 
 	RCODE displayMessage(
-		char *		pszMessage,
-		RCODE			rcOfMessage,
-		FLMUINT *	puiTermChar,
-		eColorType	uiBackground,
-		eColorType	uiForeground);
+		const char *	pszMessage,
+		RCODE				rcOfMessage,
+		FLMUINT *		puiTermChar,
+		eColorType		uiBackground,
+		eColorType		uiForeground);
 
 	RCODE globalConfig(
 		FLMUINT		uiOption);
 
 	RCODE createStatusWindow(
-		char *			pszTitle,
+		const char *	pszTitle,
 		eColorType		uiBack,
 		eColorType		uiFore,
 		FLMUINT *		puiCols,
@@ -401,8 +401,8 @@ public:
 	RCODE abortTransaction( void);
 
 	void doQuery(
-		char *				pszQuery,
-		FLMUINT				uiQueryBufSize);
+		char *		pszQuery,
+		FLMUINT		uiQueryBufSize);
 
 	RCODE indexList( void);
 

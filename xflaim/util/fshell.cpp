@@ -44,8 +44,8 @@ extern FLMBOOL								gv_bShutdown;
 
 typedef struct
 {
-	RCODE			rc;
-	char *		pszErrorStr;
+	RCODE				rc;
+	const char *	pszErrorStr;
 } XSHELL_ERROR_CODE_MAP;
 
 XSHELL_ERROR_CODE_MAP gv_XMLParseErrors[
@@ -273,14 +273,14 @@ RCODE	getErrFromFile(
 
 FSTATIC void domDisplayError(
 	FTX_WINDOW *	pWindow,
-	char *			pszError,
+	const char *	pszError,
 	RCODE				errRc);
 
 FSTATIC void domOutputValues(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiLineCount,
 	IF_FileHdl *	pFileHdl,
-	char *			pszLabel,
+	const char *	pszLabel,
 	FLMUINT64		ui64Bytes,
 	FLMUINT			uiPercent,
 	FLMUINT64		ui64Count);
@@ -289,14 +289,14 @@ FSTATIC void domDisplayLine(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiLineCount,
 	IF_FileHdl *	pFileHdl,
-	char *			pszLine,
-	char *			pszWaitPrompt = NULL);
+	const char *	pszLine,
+	const char *	pszWaitPrompt = NULL);
 
 FSTATIC void domDisplayValue(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiLineCount,
 	IF_FileHdl *	pFileHdl,
-	char *			pszLabel,
+	const char *	pszLabel,
 	FLMUINT			uiPercent,
 	FLMUINT64		ui64Value);
 
@@ -304,12 +304,12 @@ FSTATIC void domDisplayInfo(
 	FTX_WINDOW *		pWindow,
 	FLMUINT *			puiLineCount,
 	IF_FileHdl *		pFileHdl,
-	char *				pszDomOverheadLabel,
-	char *				pszValueBytesLabel,
+	const char *		pszDomOverheadLabel,
+	const char *		pszValueBytesLabel,
 	OVERHEAD_INFO *	pInfo,
 	FLMUINT64			ui64TotalBytes);
 
-char * errorToString(
+const char * errorToString(
 	XMLParseError	errorType);
 
 /****************************************************************************
@@ -1101,10 +1101,10 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE FlmShell::con_printf(
-	char *	pszFormat, ...)
+	const char *	pszFormat, ...)
 {
-	char			szBuffer[ 512];
-	f_va_list	args;
+	char				szBuffer[ 512];
+	f_va_list		args;
 
 	if( m_pWindow)
 	{
@@ -4182,7 +4182,9 @@ FLMINT FlmFileSysCommand::execute(
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiLoop = 0;
 	FLMBOOL			bForce = FALSE;
+	FLMBOOL			bOverwrite;
 	IF_DirHdl *		pDir = NULL;
+	FLMUINT64		ui64BytesCopied;
 
 	// Delete the file
 
@@ -4262,9 +4264,8 @@ FLMINT FlmFileSysCommand::execute(
 			f_stricmp( "move", ppszArgV[0]) == 0 ||
 			f_stricmp( "mv", ppszArgV[0]) == 0 )
 	{
-		FLMUINT		uiLoop = 0;
-		FLMBOOL		bForce = FALSE;
-		FLMBOOL		bOverwrite = FALSE;
+		bForce = FALSE;
+		bOverwrite = FALSE;
 
 		for( uiLoop = 1; uiLoop < (FLMUINT)iArgC; uiLoop++)
 		{
@@ -4376,10 +4377,9 @@ FLMINT FlmFileSysCommand::execute(
 	else if(f_stricmp( "copy", ppszArgV[0]) == 0 ||
 				f_stricmp( "cp", ppszArgV[0]) == 0)
 	{
-		FLMUINT			uiLoop;
-		FLMBOOL			bForce = FALSE;
-		FLMBOOL			bOverwrite = FALSE;
-		FLMUINT64		ui64BytesCopied = 0;
+		bForce = FALSE;
+		bOverwrite = FALSE;
+		ui64BytesCopied = 0;
 
 		for( uiLoop = 1; uiLoop < (FLMUINT)iArgC; uiLoop++)
 		{
@@ -6071,7 +6071,7 @@ Desc: Display an error message on the screen
 *****************************************************************************/
 FSTATIC void domDisplayError(
 	FTX_WINDOW *	pWindow,
-	char *			pszError,
+	const char *	pszError,
 	RCODE				errRc)
 {
 	FTX_SCREEN *	pScreen;
@@ -6099,7 +6099,7 @@ FSTATIC void domOutputValues(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiLineCount,
 	IF_FileHdl *	pFileHdl,
-	char *			pszLabel,
+	const char *	pszLabel,
 	FLMUINT64		ui64Bytes,
 	FLMUINT			uiPercent,
 	FLMUINT64		ui64Count)
@@ -6146,7 +6146,7 @@ FINLINE void domOutputNodeInfoItem(
 	FTX_WINDOW *				pWindow,
 	FLMUINT *					puiLineCount,
 	IF_FileHdl *				pFileHdl,
-	char *						pszInfoType,
+	const char *				pszInfoType,
 	XFLM_NODE_INFO_ITEM *	pInfoItem,
 	FLMUINT64					ui64TotalBytes,
 	FLMBOOL						bForce = FALSE)
@@ -7060,8 +7060,8 @@ FSTATIC void domDisplayLine(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiLineCount,
 	IF_FileHdl *	pFileHdl,
-	char *			pszLine,
-	char *			pszWaitPrompt)
+	const char *	pszLine,
+	const char *	pszWaitPrompt)
 {
 	RCODE		rc;
 	FLMUINT	uiNumRows;
@@ -7133,7 +7133,7 @@ FSTATIC void domDisplayValue(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiLineCount,
 	IF_FileHdl *	pFileHdl,
-	char *			pszLabel,
+	const char *	pszLabel,
 	FLMUINT			uiPercent,
 	FLMUINT64		ui64Value)
 {
@@ -7163,8 +7163,8 @@ FSTATIC void domDisplayInfo(
 	FTX_WINDOW *		pWindow,
 	FLMUINT *			puiLineCount,
 	IF_FileHdl *		pFileHdl,
-	char *				pszDomOverheadLabel,
-	char *				pszValueBytesLabel,
+	const char *		pszDomOverheadLabel,
+	const char *		pszValueBytesLabel,
 	OVERHEAD_INFO *	pInfo,
 	FLMUINT64			ui64TotalBytes)
 {
@@ -7937,8 +7937,8 @@ public:
 private:
 
 	void outputLabel(
-		char *	pszLabel,
-		FLMUINT	uiRow)
+		const char *	pszLabel,
+		FLMUINT			uiRow)
 	{
 		char	szTmp [80];
 		FLMUINT	uiNumDots = DATA_COL - LABEL_COL;
@@ -7952,9 +7952,9 @@ private:
 	}
 
 	void outputStr(
-		char *	pszStr,
-		FLMUINT	uiRow,
-		FLMBOOL	bClearToEOL)
+		const char *	pszStr,
+		FLMUINT			uiRow,
+		FLMBOOL			bClearToEOL)
 	{
 		FTXWinSetCursorPos( m_pWindow, DATA_COL, uiRow);
 		if (bClearToEOL)
@@ -7965,8 +7965,8 @@ private:
 	}
 
 	void outputUINT(
-		FLMUINT	uiValue,
-		FLMUINT	uiRow)
+		FLMUINT			uiValue,
+		FLMUINT			uiRow)
 	{
 		char	szTmp [80];
 		
@@ -7975,8 +7975,8 @@ private:
 	}
 		
 	void outputUINT64(
-		FLMUINT64	ui64Value,
-		FLMUINT		uiRow)
+		FLMUINT64		ui64Value,
+		FLMUINT			uiRow)
 	{
 		char	szTmp [80];
 		
@@ -9219,10 +9219,10 @@ void extractBaseDirAndWildcard(
 	f_strcat( pszWildcard, "*");
 }
 
-char * errorToString(
+const char * errorToString(
 	XMLParseError	errorType)
 {
-	char *		pszErrorStr;
+	const char *		pszErrorStr;
 
 	if( errorType == XML_NO_ERROR)
 	{

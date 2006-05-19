@@ -250,7 +250,7 @@ public:
 
 	RCODE setup(
 		FlmSharedContext *	pSharedContext,
-		char *					pszThreadName,
+		const char *			pszThreadName,
 		THREAD_FUNC_p			pFunc,
 		void *					pvAppData);
 

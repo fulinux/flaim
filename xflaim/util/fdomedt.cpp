@@ -63,15 +63,15 @@ static char * pszDomeditFullMonthNames [12] =
 
 
 FSTATIC FLMBOOL domeditIsNum(
-	char *		pszToken,
-	FLMUINT *	puiNum);
+	const char *	pszToken,
+	FLMUINT *		puiNum);
 
 FSTATIC char * domeditSkipChars(
-	char *	pszStr,
-	char *	pszCharsToSkip);
+	const char *	pszStr,
+	const char *	pszCharsToSkip);
 
 FSTATIC FLMBOOL domeditStrToDate(
-	char *			s,
+	const char *	s,
 	FLMUINT *		puiYear,
 	FLMUINT *		puiMonth,
 	FLMUINT *		puiDay);
@@ -91,7 +91,7 @@ FSTATIC FLMUINT unicodeStrLen(
 	FLMUNICODE *		puzStr);
 
 FSTATIC void asciiToUnicode(
-	char *				pszAsciiString,
+	const char *		pszAsciiString,
 	FLMUNICODE *		puzString);
 
 FSTATIC RCODE unicodeToAscii(
@@ -102,8 +102,8 @@ FSTATIC RCODE unicodeToAscii(
 FSTATIC RCODE formatText(
 	FLMUNICODE *		puzBuf,
 	FLMBOOL				bQuoted,
-	char *				pszPreText,
-	char *				pszPostText,
+	const char *		pszPreText,
+	const char *		pszPostText,
 	char **				ppszString);
 
 FSTATIC RCODE formatDocumentNode(
@@ -129,8 +129,8 @@ FSTATIC RCODE formatDataNode(
 	DME_ROW_INFO *			pRow,
 	FLMUINT *				puiNumVals,
 	FLMUINT					uiFlags,
-	char *					pszPreText,
-	char *					pszPostText);
+	const char *			pszPreText,
+	const char *			pszPostText);
 
 FSTATIC RCODE formatProcessingInstruction(
 	F_DomEditor *			pDomEditor,
@@ -439,7 +439,7 @@ Name:	setTitle
 Desc:
 *****************************************************************************/
 RCODE F_DomEditor::setTitle(
-	char *	pszTitle)
+	const char *	pszTitle)
 {
 	RCODE			rc = NE_XFLM_OK;
 	eColorType	uiBack;
@@ -617,17 +617,16 @@ public:
 private:
 
 	void outputLabel(
-		FLMUINT	uiRow,
-		char *	pszLabel);
+		FLMUINT			uiRow,
+		const char *	pszLabel);
 
 	void outputStr(
-		FLMUINT	uiRow,
-		char *	pszValue);
+		FLMUINT			uiRow,
+		const char *	pszValue);
 
 	FINLINE void outputBool(
-		FLMUINT	uiRow,
-		FLMBOOL	bBool
-		)
+		FLMUINT			uiRow,
+		FLMBOOL			bBool)
 	{
 		outputStr( uiRow, (char *)(bBool ? (char *)"YES" : (char *)"NO"));
 	}
@@ -713,8 +712,8 @@ Exit:
 Desc:	Output a label on the query status screen.
 *****************************************************************************/
 void EditQueryStatus::outputLabel(
-	FLMUINT	uiRow,
-	char *	pszLabel
+	FLMUINT			uiRow,
+	const char *	pszLabel
 	)
 {
 	char		szLabel [50];
@@ -736,8 +735,8 @@ void EditQueryStatus::outputLabel(
 Desc:	Output a string value on the query status screen.
 *****************************************************************************/
 void EditQueryStatus::outputStr(
-	FLMUINT	uiRow,
-	char *	pszValue
+	FLMUINT			uiRow,
+	const char *	pszValue
 	)
 {
 	FTXWinSetCursorPos( m_pWindow, DATA_COLUMN, uiRow);
@@ -1968,10 +1967,9 @@ RCODE F_DomEditor::interactiveEdit(
 				case FKB_ALT_L:
 				{
 
-					FLMUINT		uiCollection = m_uiCollection;
-					FLMUINT64	ui64NodeId;
-					char			szResponse[ 32];
-					FLMUINT		uiTermChar;
+					FLMUINT				uiCollection = m_uiCollection;
+					FLMUINT64			ui64NodeId;
+					char					szResponse[ 32];
 					DME_ROW_INFO *		pDocList = m_pDocList;
 					
 					szResponse [0] = 0;
@@ -2088,7 +2086,6 @@ RCODE F_DomEditor::interactiveEdit(
 				{
 					FLMUINT		uiCollection;
 					char			szResponse[ 32];
-					FLMUINT		uiTermChar;
 					FLMUINT		uiSrcLen;
 					FLMUINT		uiNodeId;
 					FLMUINT64	ui64Tmp;
@@ -2185,7 +2182,6 @@ RCODE F_DomEditor::interactiveEdit(
 				case FKB_ALT_C:
 				{
 					char			szResponse[ 2];
-					FLMUINT		uiTermChar;
 
 					szResponse [0] = 0;
 					requestInput(
@@ -2848,7 +2844,7 @@ Name:	displayMessage
 Desc:
 *****************************************************************************/
 RCODE F_DomEditor::displayMessage(
-	char *				pszMessage,
+	const char *		pszMessage,
 	RCODE					rcOfMessage,
 	FLMUINT *			puiTermChar,
 	eColorType			uiBackground,
@@ -2920,7 +2916,7 @@ Name:	requestInput
 Desc:
 *****************************************************************************/
 RCODE F_DomEditor::requestInput(
-	char *				pszMessage,
+	const char *		pszMessage,
 	char *				pszResponse,
 	FLMUINT				uiMaxRespLen,
 	FLMUINT *			puiTermChar)
@@ -6467,7 +6463,7 @@ Name:	createStatusWindow
 Desc:	Creates a window for displaying an operation's status
 *****************************************************************************/
 RCODE F_DomEditor::createStatusWindow(
-	char *				pszTitle,
+	const char *		pszTitle,
 	eColorType			uiBack,
 	eColorType			uiFore,
 	FLMUINT *			puiCols,
@@ -6983,12 +6979,12 @@ Desc: Makes sure the utility is still allowed to run
 *****************************************************************************/
 RCODE domEditVerifyRun( void)
 {
-	F_TMSTAMP	curDate;
-	FLMUINT		uiExpireYear = 0;
-	FLMUINT		uiExpireMonth = 0;
-	FLMUINT		uiExpireDay = 0;
-	RCODE			rc = NE_XFLM_OK;
-	char *		pszDate = __DATE__;
+	F_TMSTAMP		curDate;
+	FLMUINT			uiExpireYear = 0;
+	FLMUINT			uiExpireMonth = 0;
+	FLMUINT			uiExpireDay = 0;
+	RCODE				rc = NE_XFLM_OK;
+	const char *	pszDate = __DATE__;
 
 	// Get the compilation date of this module.
 	// If cannot get it, return NE_XFLM_OK.
@@ -7060,11 +7056,10 @@ Exit:
 Desc: This routine converts the passed in string to a year, month, and day.
 ****************************************************************************/
 FSTATIC FLMBOOL domeditStrToDate(
-	char *			s,
+	const char *	s,
 	FLMUINT *		puiYear,
 	FLMUINT *		puiMonth,
-	FLMUINT *		puiDay
-	)
+	FLMUINT *		puiDay)
 {
 	char		szToken [80];
 	FLMUINT	uiLoop;
@@ -7293,13 +7288,12 @@ Desc: This routine determines if the passed in token is a number.  If so,
 		the number is returned.
 ****************************************************************************/
 FSTATIC FLMBOOL domeditIsNum(
-	char *		pszToken,	// Token being checked
-	FLMUINT *	puiNum		// Returned number - if token is a number
-	)
+	const char *	pszToken,
+	FLMUINT *		puiNum)
 {
-	FLMBOOL		bIsNum = FALSE;
-	char *		pszBuffer;
-	FLMUINT		uiLen;
+	FLMBOOL			bIsNum = FALSE;
+	const char *	pszBuffer;
+	FLMUINT			uiLen;
 
 	// Make sure all characters are between 0 and 9
 
@@ -7401,11 +7395,10 @@ Desc: This routine skips the characters in the string specified by
 		pszCharsToSkip.
 ****************************************************************************/
 FSTATIC char * domeditSkipChars(
-	char *	pszStr,
-	char *	pszCharsToSkip
-	)
+	const char *	pszStr,
+	const char *	pszCharsToSkip)
 {
-	char *	pszTmp;
+	const char *	pszTmp;
 
 	while (*pszStr)
 	{
@@ -7423,7 +7416,7 @@ FSTATIC char * domeditSkipChars(
 			break;
 		}
 	}
-	return( pszStr);
+	return( (char *)pszStr);
 }
 
 
@@ -7532,7 +7525,7 @@ Exit:
 Desc:	Convert an ascii string to unicode
 *============================================================================*/
 FSTATIC void asciiToUnicode(
-	char *				pszAsciiString,
+	const char *		pszAsciiString,
 	FLMUNICODE *		puzString)
 {
 	FLMUINT uiLoop = 0;
@@ -7542,7 +7535,7 @@ FSTATIC void asciiToUnicode(
 	{
 		if (*pszAsciiString == '&')
 		{
-			char *	pszTmp = pszAsciiString + 1;
+			const char *	pszTmp = pszAsciiString + 1;
 			if (*pszTmp == '#')
 			{
 				FLMUNICODE *	puzTmpPtr = &puzString[ uiLoop];
@@ -7899,10 +7892,9 @@ Desc:	Formats text.
 FSTATIC RCODE formatText(
 	FLMUNICODE *		puzBuf,
 	FLMBOOL				bQuoted,
-	char *				pszPreText,
-	char *				pszPostText,
-	char **				ppszString
-	)
+	const char *		pszPreText,
+	const char *		pszPostText,
+	char **				ppszString)
 {
 	RCODE						rc = NE_XFLM_OK;
 	FLMUNICODE *			puzTmp = NULL;
@@ -8638,9 +8630,8 @@ FSTATIC RCODE formatDataNode(
 	DME_ROW_INFO *			pRow,
 	FLMUINT *				puiNumVals,
 	FLMUINT					uiFlags,
-	char *					pszPreText,
-	char *					pszPostText
-	)
+	const char *			pszPreText,
+	const char *			pszPostText)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUNICODE *		puzValue = NULL;
@@ -12643,8 +12634,7 @@ Desc:	Allows doing a query and having the user expand the results of
 *****************************************************************************/
 void F_DomEditor::doQuery(
 	char *				pszQuery,
-	FLMUINT				uiQueryBufSize
-	)
+	FLMUINT				uiQueryBufSize)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT				uiCollection;
@@ -13412,5 +13402,4 @@ Exit:
 
 	return rc;
 }
-
 

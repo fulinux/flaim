@@ -610,7 +610,7 @@ FLMBOOL ViewEdit(
 				return( FALSE);
 			}
 			uiBytesToWrite = 4;
-			UD2FBA( uiNum, (FLMBYTE *)szTempBuf);
+			UD2FBA( (FLMUINT32)uiNum, (FLMBYTE *)szTempBuf);
 			break;
 		case MOD_BITS:
 			if (!ViewEditBits( (FLMBYTE *)&szTempBuf[ 0],

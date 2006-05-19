@@ -253,7 +253,6 @@ ifdef win_target
 		inc_dirs += $(subst $(sp),@,"$(jhome)/include/win32")
 	endif
 
-
 	# Libraries that our various components need to link against
 
 	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
@@ -377,8 +376,13 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),solaris)
+		ifdef jhome	
+			inc_dirs += $(subst $(sp),@,"$(jhome)/include")
+			inc_dirs += $(subst $(sp),@,"$(jhome)/include/solaris")
+		endif
+
 		ifeq ($(usenativecc),yes)
-			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse
+			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
 			else

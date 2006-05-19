@@ -504,7 +504,7 @@ Desc:
 *****************************************************************************/
 RCODE FlmThreadContext::setup(
 	FlmSharedContext *	pSharedContext,
-	char *					pszThreadName,
+	const char *			pszThreadName,
 	THREAD_FUNC_p			pFunc,
 	void *					pvAppData)
 {
@@ -1435,7 +1435,7 @@ void scramble(
 	
 	for( uiLoop = 0; uiLoop < uiNumElems; uiLoop++)
 	{
-		uiIndex = pRandGen->getUINT32( 0, uiNumElems - 1);
+		uiIndex = pRandGen->getUINT32( 0, (FLMUINT32)(uiNumElems - 1));
 		f_swap( 
 			puiArray[uiLoop], 
 			puiArray[uiIndex],
