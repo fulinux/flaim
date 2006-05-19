@@ -28,6 +28,8 @@
 #ifndef FTK_H
 #define FTK_H
 
+	/// \defgroup retcodes Return Codes
+	
 	#ifndef FLM_PLATFORM_CONFIGURED
 		#define FLM_PLATFORM_CONFIGURED
 	
@@ -261,7 +263,10 @@
 			#define FLMATOMIC		volatile int
 		#endif
 	
-		typedef FLMINT									RCODE;
+		/// \addtogroup retcodes
+		/// @{
+		typedef FLMINT									RCODE;			///< Return code
+		/// @}
 		typedef FLMINT									FLMBOOL;
 		
 		#define F_FILENAME_SIZE						256
@@ -347,6 +352,10 @@
 		#error Platform not supported
 	#endif
 	
+	/****************************************************************************
+	Desc:	Argument lists
+	****************************************************************************/
+	
 	#define f_alignedsize(n) \
 		((sizeof(n) + FLM_ALIGN_SIZE - 1) & ~(FLM_ALIGN_SIZE - 1) )
 	
@@ -401,8 +410,139 @@
 	#define flminterface struct flmnovtbl
 	
 	/****************************************************************************
-									Forward References
+	Desc: General errors
 	****************************************************************************/
+	/// \addtogroup retcodes
+	/// @{
+		
+	#define NE_FLM_OK												0					///< 0 - Operation was successful.
+	
+	// Error codes that need to be the same as they were for FLAIM
+	
+	#define NE_FLM_BOF_HIT										0xC001			///< 0xC001 - Beginning of results encountered.
+	#define NE_FLM_EOF_HIT										0xC002			///< 0xC002 - End of results encountered.
+	#define NE_FLM_EXISTS										0xC004			///< 0xC004 - Object already exists.
+	#define NE_FLM_FAILURE										0xC005			///< 0xC005 - Internal failure.
+	#define NE_FLM_NOT_FOUND									0xC006			///< 0xC006 - An object was not found.
+	#define NE_FLM_BTREE_ERROR									0xC012			///< 0xC012 - Corruption found in b-tree.
+	#define NE_FLM_BTREE_FULL									0xC013			///< 0xC013 - B-tree cannot grow beyond current size.
+	#define NE_FLM_CONV_DEST_OVERFLOW						0xC01C			///< 0xC01C - Destination buffer not large enough to hold data.
+	#define NE_FLM_CONV_ILLEGAL								0xC01D			///< 0xC01D - Attempt to convert between data types is an unsupported conversion.
+	#define NE_FLM_CONV_NUM_OVERFLOW							0xC020			///< 0xC020 - Numeric overflow (> upper bound) converting to numeric type.
+	#define NE_FLM_DATA_ERROR									0xC022			///< 0xC022 - Corruption found in b-tree.
+	#define NE_FLM_ILLEGAL_OP									0xC026			///< 0xC026 - Illegal operation
+	#define NE_FLM_MEM											0xC037			///< 0xC037 - Attempt to allocate memory failed.
+	#define NE_FLM_NOT_UNIQUE									0xC03E			///< 0xC03E - Non-unique key.
+	#define NE_FLM_SYNTAX										0xC045			///< 0xC045 - Syntax error while parsing.
+	#define NE_FLM_NOT_IMPLEMENTED							0xC05F			///< 0xC05F - Attempt was made to use a feature that is not implemented.
+	#define NE_FLM_INVALID_PARM								0xC08B			///< 0xC08B - Invalid parameter passed into a function.
+	
+	// I/O Errors - Must be the same as they were for FLAIM.
+
+	#define NE_FLM_IO_ACCESS_DENIED							0xC201			///< 0xC201 - Access to file is denied.\  Caller is not allowed access to a file.
+	#define NE_FLM_IO_BAD_FILE_HANDLE						0xC202			///< 0xC202 - Bad file handle or file descriptor.
+	#define NE_FLM_IO_COPY_ERR									0xC203			///< 0xC203 - Error occurred while copying a file.
+	#define NE_FLM_IO_DISK_FULL								0xC204			///< 0xC204 - Disk full.
+	#define NE_FLM_IO_END_OF_FILE								0xC205			///< 0xC205 - End of file reached while reading from the file.
+	#define NE_FLM_IO_OPEN_ERR									0xC206			///< 0xC206 - Error while opening the file.
+	#define NE_FLM_IO_SEEK_ERR									0xC207			///< 0xC207 - Error occurred while positioning (seeking) within a file.
+	#define NE_FLM_IO_DIRECTORY_ERR							0xC208			///< 0xC208 - Error occurred while accessing or deleting a directory.
+	#define NE_FLM_IO_PATH_NOT_FOUND							0xC209			///< 0xC209 - File not found.
+	#define NE_FLM_IO_TOO_MANY_OPEN_FILES					0xC20A			///< 0xC20A - Too many files open.
+	#define NE_FLM_IO_PATH_TOO_LONG							0xC20B			///< 0xC20B - File name too long.
+	#define NE_FLM_IO_NO_MORE_FILES							0xC20C			///< 0xC20C - No more files in directory.
+	#define NE_FLM_IO_DELETING_FILE							0xC20D			///< 0xC20D - Error occurred while deleting a file.
+	#define NE_FLM_IO_FILE_LOCK_ERR							0xC20E			///< 0xC20E - Error attempting to acquire a byte-range lock on a file.
+	#define NE_FLM_IO_FILE_UNLOCK_ERR						0xC20F			///< 0xC20F - Error attempting to release a byte-range lock on a file.
+	#define NE_FLM_IO_PATH_CREATE_FAILURE					0xC210			///< 0xC210 - Error occurred while attempting to create a directory or sub-directory.
+	#define NE_FLM_IO_RENAME_FAILURE							0xC211			///< 0xC211 - Error occurred while renaming a file.
+	#define NE_FLM_IO_INVALID_PASSWORD						0xC212			///< 0xC212 - Invalid file password.
+	#define NE_FLM_SETTING_UP_FOR_READ						0xC213			///< 0xC213 - Error occurred while setting up to perform a file read operation.
+	#define NE_FLM_SETTING_UP_FOR_WRITE						0xC214			///< 0xC214 - Error occurred while setting up to perform a file write operation.
+	#define NE_FLM_IO_CANNOT_REDUCE_PATH					0xC215			///< 0xC215 - Cannot reduce file name into more components.
+	#define NE_FLM_INITIALIZING_IO_SYSTEM					0xC216			///< 0xC216 - Error occurred while setting up to access the file system.
+	#define NE_FLM_FLUSHING_FILE								0xC217			///< 0xC217 - Error occurred while flushing file data buffers to disk.
+	#define NE_FLM_IO_INVALID_FILENAME						0xC218			///< 0xC218 - Invalid file name.
+	#define NE_FLM_IO_CONNECT_ERROR							0xC219			///< 0xC219 - Error connecting to a remote network resource.
+	#define NE_FLM_OPENING_FILE								0xC21A			///< 0xC21A - Unexpected error occurred while opening a file.
+	#define NE_FLM_DIRECT_OPENING_FILE						0xC21B			///< 0xC21B - Unexpected error occurred while opening a file in direct access mode.
+	#define NE_FLM_CREATING_FILE								0xC21C			///< 0xC21C - Unexpected error occurred while creating a file.
+	#define NE_FLM_DIRECT_CREATING_FILE						0xC21D			///< 0xC21D - Unexpected error occurred while creating a file in direct access mode.
+	#define NE_FLM_READING_FILE								0xC21E			///< 0xC21E - Unexpected error occurred while reading a file.
+	#define NE_FLM_DIRECT_READING_FILE						0xC21F			///< 0xC21F - Unexpected error occurred while reading a file in direct access mode.
+	#define NE_FLM_WRITING_FILE								0xC220			///< 0xC220 - Unexpected error occurred while writing to a file.
+	#define NE_FLM_DIRECT_WRITING_FILE						0xC221			///< 0xC221 - Unexpected error occurred while writing a file in direct access mode.
+	#define NE_FLM_POSITIONING_IN_FILE						0xC222			///< 0xC222 - Unexpected error occurred while positioning within a file.
+	#define NE_FLM_GETTING_FILE_SIZE							0xC223			///< 0xC223 - Unexpected error occurred while getting a file's size.
+	#define NE_FLM_TRUNCATING_FILE							0xC224			///< 0xC224 - Unexpected error occurred while truncating a file.
+	#define NE_FLM_PARSING_FILE_NAME							0xC225			///< 0xC225 - Unexpected error occurred while parsing a file's name.
+	#define NE_FLM_CLOSING_FILE								0xC226			///< 0xC226 - Unexpected error occurred while closing a file.
+	#define NE_FLM_GETTING_FILE_INFO							0xC227			///< 0xC227 - Unexpected error occurred while getting information about a file.
+	#define NE_FLM_EXPANDING_FILE								0xC228			///< 0xC228 - Unexpected error occurred while expanding a file.
+	#define NE_FLM_CHECKING_FILE_EXISTENCE					0xC229			///< 0xC229 - Unexpected error occurred while checking to see if a file exists.
+	#define NE_FLM_RENAMING_FILE								0xC22A			///< 0xC22A - Unexpected error occurred while renaming a file.
+	#define NE_FLM_SETTING_FILE_INFO							0xC22B			///< 0xC22B - Unexpected error occurred while setting a file's information.
+
+	// Stream Errors - These are new
+
+	#define NE_FLM_STREAM_DECOMPRESS_ERROR					0xC400			///< 0xC400 - Error decompressing data stream.
+	#define NE_FLM_STREAM_NOT_COMPRESSED					0xC401			///< 0xC401 - Attempting to decompress a data stream that is not compressed.
+	#define NE_FLM_STREAM_TOO_MANY_FILES					0xC402			///< 0xC402 - Too many files in input stream.
+	
+	// Miscellaneous new toolkit errors
+	
+	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				0xC500			///< 0xC500 - Could not create a semaphore.
+	#define NE_FLM_BAD_UTF8										0xC501			///< 0xC501 - An invalid byte sequence was found in a UTF-8 string
+	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				0xC502			///< 0xC502 - Error occurred while waiting on a sempahore.
+	#define NE_FLM_BAD_SEN										0xC503			///< 0xC503 - Invalid simple encoded number.
+	#define NE_FLM_COULD_NOT_START_THREAD					0xC504			///< 0xC504 - Problem starting a new thread.
+	#define NE_FLM_BAD_BASE64_ENCODING						0xC505			///< 0xC505 - Invalid base64 sequence encountered.
+	#define NE_FLM_STREAM_EXISTS								0xC506			///< 0xC506 - Stream file already exists.
+	#define NE_FLM_MULTIPLE_MATCHES							0xC507			///< 0xC507 - Multiple items matched but only one match was expected.
+	#define NE_FLM_BTREE_KEY_SIZE								0xC508			///< 0xC508 - Invalid b-tree key size.
+	#define NE_FLM_BTREE_BAD_STATE							0xC509			///< 0xC509 - B-tree operation cannot be completed.
+	#define NE_FLM_COULD_NOT_CREATE_MUTEX					0xC50A			///< 0xC50A - Error occurred while creating or initializing a mutex.
+	#define NE_FLM_BAD_PLATFORM_FORMAT						0xC50B			///< 0xC50B	- In-memory alignment of disk structures is incorrect
+	
+	// Network Errors - Must be the same as they were for FLAIM
+
+	#define NE_FLM_NOIP_ADDR									0xC900			///< 0xC900 - IP address not found
+	#define NE_FLM_SOCKET_FAIL									0xC901			///< 0xC901 - IP socket failure
+	#define NE_FLM_CONNECT_FAIL								0xC902			///< 0xC902 - TCP/IP connection failure
+	#define NE_FLM_BIND_FAIL									0xC903			///< 0xC903 - The TCP/IP services on your system may not be configured or installed.
+	#define NE_FLM_LISTEN_FAIL									0xC904			///< 0xC904 - TCP/IP listen failed
+	#define NE_FLM_ACCEPT_FAIL									0xC905			///< 0xC905 - TCP/IP accept failed
+	#define NE_FLM_SELECT_ERR									0xC906			///< 0xC906 - TCP/IP select failed
+	#define NE_FLM_SOCKET_SET_OPT_FAIL						0xC907			///< 0xC907 - TCP/IP socket operation failed
+	#define NE_FLM_SOCKET_DISCONNECT							0xC908			///< 0xC908 - TCP/IP disconnected
+	#define NE_FLM_SOCKET_READ_FAIL							0xC909			///< 0xC909 - TCP/IP read failed
+	#define NE_FLM_SOCKET_WRITE_FAIL							0xC90A			///< 0xC90A - TCP/IP write failed
+	#define NE_FLM_SOCKET_READ_TIMEOUT						0xC90B			///< 0xC90B - TCP/IP read timeout
+	#define NE_FLM_SOCKET_WRITE_TIMEOUT						0xC90C			///< 0xC90C - TCP/IP write timeout
+	#define NE_FLM_SOCKET_ALREADY_CLOSED					0xC90D			///< 0xC90D - Connection already closed
+
+	/// @}
+
+	/****************************************************************************
+	Desc: Return code functions and macros
+	****************************************************************************/
+	
+	#ifndef RC_OK
+		#define RC_OK( rc)			((rc) == NE_FLM_OK)
+	#endif
+
+	#ifndef RC_BAD
+		#define RC_BAD( rc)        ((rc) != NE_FLM_OK)
+	#endif
+
+	RCODE FLMAPI f_mapPlatformError(
+		FLMINT						iError,
+		RCODE							defaultRc);
+		
+	/****************************************************************************
+	Desc: Forward References
+	****************************************************************************/
+	
 	flminterface IF_DirHdl;
 	flminterface IF_FileHdl;
 	flminterface IF_FileSystem;
@@ -3436,6 +3576,343 @@
 		IF_BTree **						ppBtree);
 
 	/****************************************************************************
+	Desc:	This class is used to do pool memory allocations.
+	****************************************************************************/
+	class F_Pool : public F_Object
+	{
+	public:
+	
+		typedef struct PoolMemoryBlock
+		{
+			PoolMemoryBlock *		pPrevBlock;
+			FLMUINT					uiBlockSize;
+			FLMUINT					uiFreeOffset;
+			FLMUINT					uiFreeSize;
+		} MBLK;
+	
+		typedef struct
+		{
+			FLMUINT	uiAllocBytes;
+			FLMUINT	uiCount;
+		} POOL_STATS;
+	
+		F_Pool()
+		{
+			m_uiBytesAllocated = 0;
+			m_pLastBlock = NULL;
+			m_pPoolStats = NULL;
+			m_uiBlockSize = 0;
+		}
+	
+		virtual ~F_Pool();
+	
+		FINLINE void FLMAPI poolInit(
+			FLMUINT			uiBlockSize)
+		{
+			m_uiBlockSize = uiBlockSize;
+		}
+	
+		void smartPoolInit(
+			POOL_STATS *	pPoolStats);
+	
+		RCODE FLMAPI poolAlloc(
+			FLMUINT			uiSize,
+			void **			ppvPtr);
+	
+		RCODE FLMAPI poolCalloc(
+			FLMUINT			uiSize,
+			void **			ppvPtr);
+	
+		void FLMAPI poolFree( void);
+	
+		void FLMAPI poolReset(
+			void *			pvMark,
+			FLMBOOL			bReduceFirstBlock = FALSE);
+	
+		FINLINE void * FLMAPI poolMark( void)
+		{
+			return (void *)(m_pLastBlock
+								 ? (FLMBYTE *)m_pLastBlock + m_pLastBlock->uiFreeOffset
+								 : NULL);
+		}
+	
+		FINLINE FLMUINT FLMAPI getBlockSize( void)
+		{
+			return( m_uiBlockSize);
+		}
+	
+		FINLINE FLMUINT FLMAPI getBytesAllocated( void)
+		{
+			return( m_uiBytesAllocated);
+		}
+	
+	private:
+	
+		FINLINE void updateSmartPoolStats( void)
+		{
+			if (m_uiBytesAllocated)
+			{
+				if( (m_pPoolStats->uiAllocBytes + m_uiBytesAllocated) >= 0xFFFF0000)
+				{
+					m_pPoolStats->uiAllocBytes =
+						(m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount) * 100;
+					m_pPoolStats->uiCount = 100;
+				}
+				else
+				{
+					m_pPoolStats->uiAllocBytes += m_uiBytesAllocated;
+					m_pPoolStats->uiCount++;
+				}
+				m_uiBytesAllocated = 0;
+			}
+		}
+	
+		FINLINE void setInitialSmartPoolBlockSize( void)
+		{
+			// Determine starting block size:
+			// 1) average of bytes allocated / # of frees/resets (average size needed)
+			// 2) add 10% - to minimize extra allocs 
+	
+			m_uiBlockSize = (m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount);
+			m_uiBlockSize += (m_uiBlockSize / 10);
+	
+			if (m_uiBlockSize < 512)
+			{
+				m_uiBlockSize = 512;
+			}
+		}
+	
+		void freeToMark(
+			void *		pvMark);
+	
+		PoolMemoryBlock *		m_pLastBlock;
+		FLMUINT					m_uiBlockSize;
+		FLMUINT					m_uiBytesAllocated;
+		POOL_STATS *			m_pPoolStats;
+	};
+
+	/****************************************************************************
+	Desc:
+	*****************************************************************************/
+	class F_DynaBuf : public F_Object
+	{
+	public:
+	
+		F_DynaBuf(
+			FLMBYTE *		pucBuffer,
+			FLMUINT			uiBufferSize)
+		{
+			m_pucBuffer = pucBuffer;
+			m_uiBufferSize = uiBufferSize;
+			m_uiOffset = 0;
+			m_bAllocatedBuffer = FALSE;
+		}
+		
+		virtual ~F_DynaBuf()
+		{
+			if( m_bAllocatedBuffer)
+			{
+				f_free( &m_pucBuffer);
+			}
+		}
+		
+		FINLINE void FLMAPI truncateData(
+			FLMUINT			uiSize)
+		{
+			if( uiSize < m_uiOffset)
+			{
+				m_uiOffset = uiSize;
+			}
+		}
+		
+		FINLINE RCODE FLMAPI allocSpace(
+			FLMUINT		uiSize,
+			void **		ppvPtr)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_uiOffset + uiSize >= m_uiBufferSize)
+			{
+				if( RC_BAD( rc = resizeBuffer( m_uiOffset + uiSize + 512)))
+				{
+					goto Exit;
+				}
+			}
+			
+			*ppvPtr = &m_pucBuffer[ m_uiOffset];
+			m_uiOffset += uiSize;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE RCODE FLMAPI appendData(
+			const void *		pvData,
+			FLMUINT				uiSize)
+		{
+			RCODE		rc = NE_FLM_OK;
+			void *	pvTmp = NULL;
+			
+			if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
+			{
+				goto Exit;
+			}
+	
+			if( uiSize == 1)
+			{
+				*((FLMBYTE *)pvTmp) = *((FLMBYTE *)pvData);
+			}
+			else
+			{
+				f_memcpy( pvTmp, pvData, uiSize);
+			}
+			
+		Exit:
+		
+			return( rc);
+		}
+			
+		FINLINE RCODE FLMAPI appendByte(
+			FLMBYTE		ucChar)
+		{
+			RCODE			rc = NE_FLM_OK;
+			FLMBYTE *	pucTmp;
+			
+			if( RC_BAD( rc = allocSpace( 1, (void **)&pucTmp)))
+			{
+				goto Exit;
+			}
+			
+			*pucTmp = ucChar;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE RCODE FLMAPI appendUniChar(
+			FLMUNICODE	uChar)
+		{
+			RCODE				rc = NE_FLM_OK;
+			FLMUNICODE *	puTmp;
+			
+			if( RC_BAD( rc = allocSpace( sizeof( FLMUNICODE), (void **)&puTmp)))
+			{
+				goto Exit;
+			}
+			
+			*puTmp = uChar;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
+		{
+			return( m_pucBuffer);
+		}
+		
+		FINLINE FLMUNICODE * FLMAPI getUnicodePtr( void)
+		{
+			if( m_uiOffset >= sizeof( FLMUNICODE))
+			{
+				return( (FLMUNICODE *)m_pucBuffer);
+			}
+			
+			return( NULL);
+		}
+		
+		FINLINE FLMUINT FLMAPI getUnicodeLength( void)
+		{
+			if( m_uiOffset <= sizeof( FLMUNICODE))
+			{
+				return( 0);
+			}
+			
+			return( (m_uiOffset >> 1) - 1);
+		}
+		
+		FINLINE FLMUINT FLMAPI getDataLength( void)
+		{
+			return( m_uiOffset);
+		}
+		
+		FINLINE RCODE FLMAPI copyFromBuffer(
+			F_DynaBuf *		pSource)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( RC_BAD( rc = resizeBuffer( pSource->m_uiBufferSize)))
+			{
+				goto Exit;
+			}
+			
+			if( (m_uiOffset = pSource->m_uiOffset) != 0)
+			{
+				f_memcpy( m_pucBuffer, pSource->m_pucBuffer, pSource->m_uiOffset);
+			}
+			
+		Exit:
+			
+			return( rc);
+		}		
+		
+	private:
+	
+		FINLINE RCODE resizeBuffer(
+			FLMUINT		uiNewSize)
+		{
+			RCODE	rc = NE_FLM_OK;
+			
+			if( !m_bAllocatedBuffer)
+			{
+				if( uiNewSize > m_uiBufferSize)
+				{
+					FLMBYTE *		pucOriginalBuf = m_pucBuffer;
+					
+					if( RC_BAD( rc = f_alloc( uiNewSize, &m_pucBuffer)))
+					{
+						m_pucBuffer = pucOriginalBuf;
+						goto Exit;
+					}
+					
+					m_bAllocatedBuffer = TRUE;
+					
+					if( m_uiOffset)
+					{
+						f_memcpy( m_pucBuffer, pucOriginalBuf, m_uiOffset);
+					}
+				}
+			}
+			else
+			{
+				if( RC_BAD( rc = f_realloc( uiNewSize, &m_pucBuffer)))
+				{
+					goto Exit;
+				}
+				
+				if( uiNewSize < m_uiOffset)
+				{
+					m_uiOffset = uiNewSize;
+				}
+			}
+			
+			m_uiBufferSize = uiNewSize;
+			
+		Exit:
+		
+			return( rc);
+		}
+	
+		FLMBOOL		m_bAllocatedBuffer;
+		FLMBYTE *	m_pucBuffer;
+		FLMUINT		m_uiBufferSize;
+		FLMUINT		m_uiOffset;
+	};
+	
+	/****************************************************************************
 	Desc: Misc.
 	****************************************************************************/
 	#define F_UNREFERENCED_PARM( parm) \
@@ -4006,503 +4483,5 @@
 		FLMUINT *		puiTermChar);
 
 	void FLMAPI FTXBeep( void);
-
-	/****************************************************************************
-	Desc: Status and return codes
-	****************************************************************************/
-	#ifndef RC_OK
-		#define RC_OK( rc)			((rc) == 0)
-	#endif
-
-	#ifndef RC_BAD
-		#define RC_BAD( rc)        ((rc) != 0)
-	#endif
-
-	#define FTK_ERROR_BASE(e)		((RCODE)((int)(0x81055000+(e))))
-	#define FTK_ERROR_END			((RCODE)((int)(0x81055FFF)))
-	
-	const char * FLMAPI f_errorString(
-		RCODE							rc);
-
-	RCODE FLMAPI f_mapPlatformError(
-		FLMINT						iError,
-		RCODE							defaultRc);
-		
-	FINLINE FLMBOOL FLMAPI f_isToolkitError(
-		RCODE							rc)
-	{
-		if( rc > FTK_ERROR_BASE( 0) && rc < FTK_ERROR_END)
-		{
-			return( TRUE);
-		}
-		
-		return( FALSE);
-	}
-
-	/****************************************************************************
-	Desc: General errors
-	****************************************************************************/
-	/// \addtogroup ftk_errors
-	/// @{
-		
-	#define NE_FLM_OK												0					///< 0 - Operation was successful.
-	
-	// Error codes that need to be the same as they were for FLAIM
-	
-	#define NE_FLM_BOF_HIT										0xC001			///< 0xC001 - Beginning of results encountered.
-	#define NE_FLM_EOF_HIT										0xC002			///< 0xC002 - End of results encountered.
-	#define NE_FLM_EXISTS										0xC004			///< 0xC004 - Object already exists.
-	#define NE_FLM_FAILURE										0xC005			///< 0xC005 - Internal failure.
-	#define NE_FLM_NOT_FOUND									0xC006			///< 0xC006 - An object was not found.
-	#define NE_FLM_BTREE_ERROR									0xC012			///< 0xC012 - Corruption found in b-tree.
-	#define NE_FLM_BTREE_FULL									0xC013			///< 0xC013 - B-tree cannot grow beyond current size.
-	#define NE_FLM_CONV_DEST_OVERFLOW						0xC01C			///< 0xC01C - Destination buffer not large enough to hold data.
-	#define NE_FLM_CONV_ILLEGAL								0xC01D			///< 0xC01D - Attempt to convert between data types is an unsupported conversion.
-	#define NE_FLM_CONV_NUM_OVERFLOW							0xC020			///< 0xC020 - Numeric overflow (> upper bound) converting to numeric type.
-	#define NE_FLM_DATA_ERROR									0xC022			///< 0xC022 - Corruption found in b-tree.
-	#define NE_FLM_ILLEGAL_OP									0xC026			///< 0xC026 - Illegal operation
-	#define NE_FLM_MEM											0xC037			///< 0xC037 - Attempt to allocate memory failed.
-	#define NE_FLM_NOT_UNIQUE									0xC03E			///< 0xC03E - Non-unique key.
-	#define NE_FLM_SYNTAX										0xC045			///< 0xC045 - Syntax error while parsing.
-	#define NE_FLM_NOT_IMPLEMENTED							0xC05F			///< 0xC05F - Attempt was made to use a feature that is not implemented.
-	#define NE_FLM_INVALID_PARM								0xC08B			///< 0xC08B - Invalid parameter passed into a function.
-	
-	// I/O Errors - Must be the same as they were for FLAIM.
-
-	#define NE_FLM_IO_ACCESS_DENIED							0xC201			///< 0xC201 - Access to file is denied.\  Caller is not allowed access to a file.
-	#define NE_FLM_IO_BAD_FILE_HANDLE						0xC202			///< 0xC202 - Bad file handle or file descriptor.
-	#define NE_FLM_IO_COPY_ERR									0xC203			///< 0xC203 - Error occurred while copying a file.
-	#define NE_FLM_IO_DISK_FULL								0xC204			///< 0xC204 - Disk full.
-	#define NE_FLM_IO_END_OF_FILE								0xC205			///< 0xC205 - End of file reached while reading from the file.
-	#define NE_FLM_IO_OPEN_ERR									0xC206			///< 0xC206 - Error while opening the file.
-	#define NE_FLM_IO_SEEK_ERR									0xC207			///< 0xC207 - Error occurred while positioning (seeking) within a file.
-	#define NE_FLM_IO_DIRECTORY_ERR							0xC208			///< 0xC208 - Error occurred while accessing or deleting a directory.
-	#define NE_FLM_IO_PATH_NOT_FOUND							0xC209			///< 0xC209 - File not found.
-	#define NE_FLM_IO_TOO_MANY_OPEN_FILES					0xC20A			///< 0xC20A - Too many files open.
-	#define NE_FLM_IO_PATH_TOO_LONG							0xC20B			///< 0xC20B - File name too long.
-	#define NE_FLM_IO_NO_MORE_FILES							0xC20C			///< 0xC20C - No more files in directory.
-	#define NE_FLM_IO_DELETING_FILE							0xC20D			///< 0xC20D - Error occurred while deleting a file.
-	#define NE_FLM_IO_FILE_LOCK_ERR							0xC20E			///< 0xC20E - Error attempting to acquire a byte-range lock on a file.
-	#define NE_FLM_IO_FILE_UNLOCK_ERR						0xC20F			///< 0xC20F - Error attempting to release a byte-range lock on a file.
-	#define NE_FLM_IO_PATH_CREATE_FAILURE					0xC210			///< 0xC210 - Error occurred while attempting to create a directory or sub-directory.
-	#define NE_FLM_IO_RENAME_FAILURE							0xC211			///< 0xC211 - Error occurred while renaming a file.
-	#define NE_FLM_IO_INVALID_PASSWORD						0xC212			///< 0xC212 - Invalid file password.
-	#define NE_FLM_SETTING_UP_FOR_READ						0xC213			///< 0xC213 - Error occurred while setting up to perform a file read operation.
-	#define NE_FLM_SETTING_UP_FOR_WRITE						0xC214			///< 0xC214 - Error occurred while setting up to perform a file write operation.
-	#define NE_FLM_IO_CANNOT_REDUCE_PATH					0xC215			///< 0xC215 - Cannot reduce file name into more components.
-	#define NE_FLM_INITIALIZING_IO_SYSTEM					0xC216			///< 0xC216 - Error occurred while setting up to access the file system.
-	#define NE_FLM_FLUSHING_FILE								0xC217			///< 0xC217 - Error occurred while flushing file data buffers to disk.
-	#define NE_FLM_IO_INVALID_FILENAME						0xC218			///< 0xC218 - Invalid file name.
-	#define NE_FLM_IO_CONNECT_ERROR							0xC219			///< 0xC219 - Error connecting to a remote network resource.
-	#define NE_FLM_OPENING_FILE								0xC21A			///< 0xC21A - Unexpected error occurred while opening a file.
-	#define NE_FLM_DIRECT_OPENING_FILE						0xC21B			///< 0xC21B - Unexpected error occurred while opening a file in direct access mode.
-	#define NE_FLM_CREATING_FILE								0xC21C			///< 0xC21C - Unexpected error occurred while creating a file.
-	#define NE_FLM_DIRECT_CREATING_FILE						0xC21D			///< 0xC21D - Unexpected error occurred while creating a file in direct access mode.
-	#define NE_FLM_READING_FILE								0xC21E			///< 0xC21E - Unexpected error occurred while reading a file.
-	#define NE_FLM_DIRECT_READING_FILE						0xC21F			///< 0xC21F - Unexpected error occurred while reading a file in direct access mode.
-	#define NE_FLM_WRITING_FILE								0xC220			///< 0xC220 - Unexpected error occurred while writing to a file.
-	#define NE_FLM_DIRECT_WRITING_FILE						0xC221			///< 0xC221 - Unexpected error occurred while writing a file in direct access mode.
-	#define NE_FLM_POSITIONING_IN_FILE						0xC222			///< 0xC222 - Unexpected error occurred while positioning within a file.
-	#define NE_FLM_GETTING_FILE_SIZE							0xC223			///< 0xC223 - Unexpected error occurred while getting a file's size.
-	#define NE_FLM_TRUNCATING_FILE							0xC224			///< 0xC224 - Unexpected error occurred while truncating a file.
-	#define NE_FLM_PARSING_FILE_NAME							0xC225			///< 0xC225 - Unexpected error occurred while parsing a file's name.
-	#define NE_FLM_CLOSING_FILE								0xC226			///< 0xC226 - Unexpected error occurred while closing a file.
-	#define NE_FLM_GETTING_FILE_INFO							0xC227			///< 0xC227 - Unexpected error occurred while getting information about a file.
-	#define NE_FLM_EXPANDING_FILE								0xC228			///< 0xC228 - Unexpected error occurred while expanding a file.
-	#define NE_FLM_CHECKING_FILE_EXISTENCE					0xC229			///< 0xC229 - Unexpected error occurred while checking to see if a file exists.
-	#define NE_FLM_RENAMING_FILE								0xC22A			///< 0xC22A - Unexpected error occurred while renaming a file.
-	#define NE_FLM_SETTING_FILE_INFO							0xC22B			///< 0xC22B - Unexpected error occurred while setting a file's information.
-
-	// Stream Errors - These are new
-
-	#define NE_FLM_STREAM_DECOMPRESS_ERROR					0xC400			///< 0xC400 - Error decompressing data stream.
-	#define NE_FLM_STREAM_NOT_COMPRESSED					0xC401			///< 0xC401 - Attempting to decompress a data stream that is not compressed.
-	#define NE_FLM_STREAM_TOO_MANY_FILES					0xC402			///< 0xC402 - Too many files in input stream.
-	
-	// Miscellaneous new toolkit errors
-	
-	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				0xC500			///< 0xC500 - Could not create a semaphore.
-	#define NE_FLM_BAD_UTF8										0xC501			///< 0xC501 - An invalid byte sequence was found in a UTF-8 string
-	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				0xC502			///< 0xC502 - Error occurred while waiting on a sempahore.
-	#define NE_FLM_BAD_SEN										0xC503			///< 0xC503 - Invalid simple encoded number.
-	#define NE_FLM_COULD_NOT_START_THREAD					0xC504			///< 0xC504 - Problem starting a new thread.
-	#define NE_FLM_BAD_BASE64_ENCODING						0xC505			///< 0xC505 - Invalid base64 sequence encountered.
-	#define NE_FLM_STREAM_EXISTS								0xC506			///< 0xC506 - Stream file already exists.
-	#define NE_FLM_MULTIPLE_MATCHES							0xC507			///< 0xC507 - Multiple items matched but only one match was expected.
-	#define NE_FLM_BTREE_KEY_SIZE								0xC508			///< 0xC508 - Invalid b-tree key size.
-	#define NE_FLM_BTREE_BAD_STATE							0xC509			///< 0xC509 - B-tree operation cannot be completed.
-	#define NE_FLM_COULD_NOT_CREATE_MUTEX					0xC50A			///< 0xC50A - Error occurred while creating or initializing a mutex.
-	#define NE_FLM_BAD_PLATFORM_FORMAT						0xC50B			///< 0xC50B	- In-memory alignment of disk structures is incorrect
-	
-	// Network Errors - Must be the same as they were for FLAIM
-
-	#define NE_FLM_NOIP_ADDR									0xC900			///< 0xC900 - IP address not found
-	#define NE_FLM_SOCKET_FAIL									0xC901			///< 0xC901 - IP socket failure
-	#define NE_FLM_CONNECT_FAIL								0xC902			///< 0xC902 - TCP/IP connection failure
-	#define NE_FLM_BIND_FAIL									0xC903			///< 0xC903 - The TCP/IP services on your system may not be configured or installed.
-	#define NE_FLM_LISTEN_FAIL									0xC904			///< 0xC904 - TCP/IP listen failed
-	#define NE_FLM_ACCEPT_FAIL									0xC905			///< 0xC905 - TCP/IP accept failed
-	#define NE_FLM_SELECT_ERR									0xC906			///< 0xC906 - TCP/IP select failed
-	#define NE_FLM_SOCKET_SET_OPT_FAIL						0xC907			///< 0xC907 - TCP/IP socket operation failed
-	#define NE_FLM_SOCKET_DISCONNECT							0xC908			///< 0xC908 - TCP/IP disconnected
-	#define NE_FLM_SOCKET_READ_FAIL							0xC909			///< 0xC909 - TCP/IP read failed
-	#define NE_FLM_SOCKET_WRITE_FAIL							0xC90A			///< 0xC90A - TCP/IP write failed
-	#define NE_FLM_SOCKET_READ_TIMEOUT						0xC90B			///< 0xC90B - TCP/IP read timeout
-	#define NE_FLM_SOCKET_WRITE_TIMEOUT						0xC90C			///< 0xC90C - TCP/IP write timeout
-	#define NE_FLM_SOCKET_ALREADY_CLOSED					0xC90D			///< 0xC90D - Connection already closed
-
-	/// @}
-
-	/****************************************************************************
-	Desc: Status and return codes
-	****************************************************************************/
-	#ifndef RC_OK
-		#define RC_OK( rc)			((rc) == NE_FLM_OK)
-	#endif
-
-	#ifndef RC_BAD
-		#define RC_BAD( rc)        ((rc) != NE_FLM_OK)
-	#endif
-
-	RCODE FLMAPI f_mapPlatformError(
-		FLMINT						iError,
-		RCODE							defaultRc);
-		
-	/****************************************************************************
-	Desc:	This class is used to do pool memory allocations.
-	****************************************************************************/
-	class F_Pool : public F_Object
-	{
-	public:
-	
-		typedef struct PoolMemoryBlock
-		{
-			PoolMemoryBlock *		pPrevBlock;
-			FLMUINT					uiBlockSize;
-			FLMUINT					uiFreeOffset;
-			FLMUINT					uiFreeSize;
-		} MBLK;
-	
-		typedef struct
-		{
-			FLMUINT	uiAllocBytes;
-			FLMUINT	uiCount;
-		} POOL_STATS;
-	
-		F_Pool()
-		{
-			m_uiBytesAllocated = 0;
-			m_pLastBlock = NULL;
-			m_pPoolStats = NULL;
-			m_uiBlockSize = 0;
-		}
-	
-		virtual ~F_Pool();
-	
-		FINLINE void FLMAPI poolInit(
-			FLMUINT			uiBlockSize)
-		{
-			m_uiBlockSize = uiBlockSize;
-		}
-	
-		void smartPoolInit(
-			POOL_STATS *	pPoolStats);
-	
-		RCODE FLMAPI poolAlloc(
-			FLMUINT			uiSize,
-			void **			ppvPtr);
-	
-		RCODE FLMAPI poolCalloc(
-			FLMUINT			uiSize,
-			void **			ppvPtr);
-	
-		void FLMAPI poolFree( void);
-	
-		void FLMAPI poolReset(
-			void *			pvMark,
-			FLMBOOL			bReduceFirstBlock = FALSE);
-	
-		FINLINE void * FLMAPI poolMark( void)
-		{
-			return (void *)(m_pLastBlock
-								 ? (FLMBYTE *)m_pLastBlock + m_pLastBlock->uiFreeOffset
-								 : NULL);
-		}
-	
-		FINLINE FLMUINT FLMAPI getBlockSize( void)
-		{
-			return( m_uiBlockSize);
-		}
-	
-		FINLINE FLMUINT FLMAPI getBytesAllocated( void)
-		{
-			return( m_uiBytesAllocated);
-		}
-	
-	private:
-	
-		FINLINE void updateSmartPoolStats( void)
-		{
-			if (m_uiBytesAllocated)
-			{
-				if( (m_pPoolStats->uiAllocBytes + m_uiBytesAllocated) >= 0xFFFF0000)
-				{
-					m_pPoolStats->uiAllocBytes =
-						(m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount) * 100;
-					m_pPoolStats->uiCount = 100;
-				}
-				else
-				{
-					m_pPoolStats->uiAllocBytes += m_uiBytesAllocated;
-					m_pPoolStats->uiCount++;
-				}
-				m_uiBytesAllocated = 0;
-			}
-		}
-	
-		FINLINE void setInitialSmartPoolBlockSize( void)
-		{
-			// Determine starting block size:
-			// 1) average of bytes allocated / # of frees/resets (average size needed)
-			// 2) add 10% - to minimize extra allocs 
-	
-			m_uiBlockSize = (m_pPoolStats->uiAllocBytes / m_pPoolStats->uiCount);
-			m_uiBlockSize += (m_uiBlockSize / 10);
-	
-			if (m_uiBlockSize < 512)
-			{
-				m_uiBlockSize = 512;
-			}
-		}
-	
-		void freeToMark(
-			void *		pvMark);
-	
-		PoolMemoryBlock *		m_pLastBlock;
-		FLMUINT					m_uiBlockSize;
-		FLMUINT					m_uiBytesAllocated;
-		POOL_STATS *			m_pPoolStats;
-	};
-
-	/****************************************************************************
-	Desc:
-	*****************************************************************************/
-	class F_DynaBuf : public F_Object
-	{
-	public:
-	
-		F_DynaBuf(
-			FLMBYTE *		pucBuffer,
-			FLMUINT			uiBufferSize)
-		{
-			m_pucBuffer = pucBuffer;
-			m_uiBufferSize = uiBufferSize;
-			m_uiOffset = 0;
-			m_bAllocatedBuffer = FALSE;
-		}
-		
-		virtual ~F_DynaBuf()
-		{
-			if( m_bAllocatedBuffer)
-			{
-				f_free( &m_pucBuffer);
-			}
-		}
-		
-		FINLINE void FLMAPI truncateData(
-			FLMUINT			uiSize)
-		{
-			if( uiSize < m_uiOffset)
-			{
-				m_uiOffset = uiSize;
-			}
-		}
-		
-		FINLINE RCODE FLMAPI allocSpace(
-			FLMUINT		uiSize,
-			void **		ppvPtr)
-		{
-			RCODE		rc = NE_FLM_OK;
-			
-			if( m_uiOffset + uiSize >= m_uiBufferSize)
-			{
-				if( RC_BAD( rc = resizeBuffer( m_uiOffset + uiSize + 512)))
-				{
-					goto Exit;
-				}
-			}
-			
-			*ppvPtr = &m_pucBuffer[ m_uiOffset];
-			m_uiOffset += uiSize;
-			
-		Exit:
-		
-			return( rc);
-		}
-		
-		FINLINE RCODE FLMAPI appendData(
-			const void *		pvData,
-			FLMUINT				uiSize)
-		{
-			RCODE		rc = NE_FLM_OK;
-			void *	pvTmp = NULL;
-			
-			if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
-			{
-				goto Exit;
-			}
-	
-			if( uiSize == 1)
-			{
-				*((FLMBYTE *)pvTmp) = *((FLMBYTE *)pvData);
-			}
-			else
-			{
-				f_memcpy( pvTmp, pvData, uiSize);
-			}
-			
-		Exit:
-		
-			return( rc);
-		}
-			
-		FINLINE RCODE FLMAPI appendByte(
-			FLMBYTE		ucChar)
-		{
-			RCODE			rc = NE_FLM_OK;
-			FLMBYTE *	pucTmp;
-			
-			if( RC_BAD( rc = allocSpace( 1, (void **)&pucTmp)))
-			{
-				goto Exit;
-			}
-			
-			*pucTmp = ucChar;
-			
-		Exit:
-		
-			return( rc);
-		}
-		
-		FINLINE RCODE FLMAPI appendUniChar(
-			FLMUNICODE	uChar)
-		{
-			RCODE				rc = NE_FLM_OK;
-			FLMUNICODE *	puTmp;
-			
-			if( RC_BAD( rc = allocSpace( sizeof( FLMUNICODE), (void **)&puTmp)))
-			{
-				goto Exit;
-			}
-			
-			*puTmp = uChar;
-			
-		Exit:
-		
-			return( rc);
-		}
-		
-		FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
-		{
-			return( m_pucBuffer);
-		}
-		
-		FINLINE FLMUNICODE * FLMAPI getUnicodePtr( void)
-		{
-			if( m_uiOffset >= sizeof( FLMUNICODE))
-			{
-				return( (FLMUNICODE *)m_pucBuffer);
-			}
-			
-			return( NULL);
-		}
-		
-		FINLINE FLMUINT FLMAPI getUnicodeLength( void)
-		{
-			if( m_uiOffset <= sizeof( FLMUNICODE))
-			{
-				return( 0);
-			}
-			
-			return( (m_uiOffset >> 1) - 1);
-		}
-		
-		FINLINE FLMUINT FLMAPI getDataLength( void)
-		{
-			return( m_uiOffset);
-		}
-		
-		FINLINE RCODE FLMAPI copyFromBuffer(
-			F_DynaBuf *		pSource)
-		{
-			RCODE		rc = NE_FLM_OK;
-			
-			if( RC_BAD( rc = resizeBuffer( pSource->m_uiBufferSize)))
-			{
-				goto Exit;
-			}
-			
-			if( (m_uiOffset = pSource->m_uiOffset) != 0)
-			{
-				f_memcpy( m_pucBuffer, pSource->m_pucBuffer, pSource->m_uiOffset);
-			}
-			
-		Exit:
-			
-			return( rc);
-		}		
-		
-	private:
-	
-		FINLINE RCODE resizeBuffer(
-			FLMUINT		uiNewSize)
-		{
-			RCODE	rc = NE_FLM_OK;
-			
-			if( !m_bAllocatedBuffer)
-			{
-				if( uiNewSize > m_uiBufferSize)
-				{
-					FLMBYTE *		pucOriginalBuf = m_pucBuffer;
-					
-					if( RC_BAD( rc = f_alloc( uiNewSize, &m_pucBuffer)))
-					{
-						m_pucBuffer = pucOriginalBuf;
-						goto Exit;
-					}
-					
-					m_bAllocatedBuffer = TRUE;
-					
-					if( m_uiOffset)
-					{
-						f_memcpy( m_pucBuffer, pucOriginalBuf, m_uiOffset);
-					}
-				}
-			}
-			else
-			{
-				if( RC_BAD( rc = f_realloc( uiNewSize, &m_pucBuffer)))
-				{
-					goto Exit;
-				}
-				
-				if( uiNewSize < m_uiOffset)
-				{
-					m_uiOffset = uiNewSize;
-				}
-			}
-			
-			m_uiBufferSize = uiNewSize;
-			
-		Exit:
-		
-			return( rc);
-		}
-	
-		FLMBOOL		m_bAllocatedBuffer;
-		FLMBYTE *	m_pucBuffer;
-		FLMUINT		m_uiBufferSize;
-		FLMUINT		m_uiOffset;
-	};
 
 #endif // FTK_H
