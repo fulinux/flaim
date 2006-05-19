@@ -566,24 +566,24 @@
 	/// Colors used for logging messages
 	typedef enum
 	{
-		FLM_CURRENT_COLOR = 0,
-		FLM_BLACK,						///< 1 = Black
-		FLM_BLUE,						///< 2 = Blue
-		FLM_GREEN,						///< 3 = Green
-		FLM_CYAN,						///< 4 = Cyan
-		FLM_RED,							///< 5 = Red
-		FLM_MAGENTA,					///< 6 = Magenta
-		FLM_BROWN,						///< 7 = Brown
-		FLM_LIGHTGRAY,					///< 8 = Light Gray
-		FLM_DARKGRAY,					///< 9 = Dark Gray
-		FLM_LIGHTBLUE,					///< 10 = Light Blue
-		FLM_LIGHTGREEN,				///< 11 = Light Green
-		FLM_LIGHTCYAN,					///< 12 = Light Cyan
-		FLM_LIGHTRED,					///< 13 = Light Red
-		FLM_LIGHTMAGENTA,				///< 14 = Light Magenta
-		FLM_YELLOW,						///< 15 = Light Yellow
-		FLM_WHITE,						///< 16 = White
-		FLM_NUM_COLORS
+ 		FLM_BLACK = 0,					///< 0 = Black
+		FLM_BLUE,						///< 1 = Blue
+		FLM_GREEN,						///< 2 = Green
+		FLM_CYAN,						///< 3 = Cyan
+		FLM_RED,							///< 4 = Red
+		FLM_MAGENTA,					///< 5 = Magenta
+		FLM_BROWN,						///< 6 = Brown
+		FLM_LIGHTGRAY,					///< 7 = Light Gray
+		FLM_DARKGRAY,					///< 8 = Dark Gray
+		FLM_LIGHTBLUE,					///< 9 = Light Blue
+		FLM_LIGHTGREEN,				///< 10 = Light Green
+		FLM_LIGHTCYAN,					///< 11 = Light Cyan
+		FLM_LIGHTRED,					///< 12 = Light Red
+		FLM_LIGHTMAGENTA,				///< 13 = Light Magenta
+		FLM_YELLOW,						///< 14 = Light Yellow
+		FLM_WHITE,						///< 15 = White
+		FLM_NUM_COLORS,
+		FLM_CURRENT_COLOR
 	} eColorType;
 	
 	#define F_BLACK									"%0C"

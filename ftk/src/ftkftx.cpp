@@ -319,13 +319,13 @@ typedef struct FTX_INFO
 	
 	static int ungetChar;
 	
-	// Curses gives us only a limited number of color pairs.	 We use this
+	// Curses gives us only a limited number of color pairs.  We use this
 	// static color_pairs array for only the colors we need. flm2curses is
 	// used to convert from flaim colors to curses colors and last_pair
-	// is the last_pair is the last pair that we used.
+	// is the last_pair that we used.
 	
-	static short flm2curses[8];
-	static short color_pairs[8][8];
+	static short flm2curses[FLM_NUM_COLORS];
+	static short color_pairs[FLM_NUM_COLORS][FLM_NUM_COLORS];
 	short last_pair = 0;
 
 	FSTATIC void ftxUnixDisplayChar(
@@ -5228,11 +5228,11 @@ FSTATIC void ftxUnixDisplayInit( void)
 	initscr();
 	noecho();
 	cbreak();
-	halfdelay(4);
-	meta(stdscr, TRUE);
-	keypad(stdscr, TRUE);
-	scrollok(stdscr, FALSE);
-	move(0, 0);
+	halfdelay( 4);
+	meta( stdscr, TRUE);
+	keypad( stdscr, TRUE);
+	scrollok( stdscr, FALSE);
+	move( 0, 0);
 	refresh();
 	
 	ungetChar = (chtype)ERR;
@@ -5240,6 +5240,9 @@ FSTATIC void ftxUnixDisplayInit( void)
 	if( has_colors())
 	{
 		start_color();
+
+		f_memset( flm2curses, 0, sizeof( flm2curses));
+		f_memset( color_pairs, 0, sizeof( color_pairs));
 
 		flm2curses[ FLM_BLACK] = COLOR_BLACK;
 		flm2curses[ FLM_BLUE] = COLOR_BLUE;
@@ -5249,9 +5252,16 @@ FSTATIC void ftxUnixDisplayInit( void)
 		flm2curses[ FLM_MAGENTA] = COLOR_MAGENTA;
 		flm2curses[ FLM_BROWN] = COLOR_YELLOW;
 		flm2curses[ FLM_LIGHTGRAY] = COLOR_WHITE;
+		flm2curses[ FLM_DARKGRAY] = COLOR_WHITE;
+		flm2curses[ FLM_LIGHTBLUE] = COLOR_BLUE;
+		flm2curses[ FLM_LIGHTGREEN] = COLOR_GREEN;
+		flm2curses[ FLM_LIGHTCYAN] = COLOR_CYAN;
+		flm2curses[ FLM_LIGHTRED] = COLOR_RED;
+		flm2curses[ FLM_LIGHTMAGENTA] = COLOR_MAGENTA;
+		flm2curses[ FLM_YELLOW] = COLOR_YELLOW;
+		flm2curses[ FLM_WHITE] = COLOR_WHITE;
 
-		int defaultbg = A_NORMAL | ' ';
-		bkgd(defaultbg);
+		bkgd( A_NORMAL | ' ');
 	}
 }
 #endif
@@ -5284,17 +5294,16 @@ Desc:
 ****************************************************************************/
 #ifdef FLM_UNIX
 static int flm_to_curses_attr(
-	int				attr)
+	int		attr)
 {
-	int	fg;
-	int	bg;
-	int	curses_attr = 0;
+	int		fg;
+	int		bg;
+	int		curses_attr = 0;
 
-	fg = attr & 0x0f;
-	bg = (attr >> 4) & 0x07;
+	fg = attr & 0x0F;
+	bg = (attr >> 4) & 0x0F;
 
 	curses_attr = (fg > FLM_LIGHTGRAY) ? A_BOLD : 0;
-	fg &= 0x07;
 	
 	if (has_colors())
 	{
