@@ -356,9 +356,9 @@ int print_esc(
 			putchar (esc_value);
 		}
 	}
-	else if( *p == '0')
+	else if( isdigit( *p))
 	{
-		for( esc_length = 0, ++p;
+		for( esc_length = 0;
 			  esc_length < 3 && isodigit (*p);
 			  ++esc_length, ++p)
 		{
