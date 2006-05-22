@@ -3611,13 +3611,13 @@
 	
 		/// Header for blocks in a memory pool.  This structure is at the head of each block that belongs to a pool of
 		/// memory.
-		typedef struct MBLK
+		typedef struct PoolMemoryBlock
 		{
-			MBLK *			pPrevBlock;			///< Points to the previous memory block in the memory pool.
-			FLMUINT			uiBlockSize;		///< Total size of the memory block.
-			FLMUINT			uiFreeOffset;		///< Offset in block where next allocation should be made.
-			FLMUINT			uiFreeSize;			///< Amount of free memory left in block - from uiFreeOfs.
-		} MBLK;
+			PoolMemoryBlock *	pPrevBlock;		///< Points to the previous memory block in the memory pool.
+			FLMUINT				uiBlockSize;	///< Total size of the memory block.
+			FLMUINT				uiFreeOffset;	///< Offset in block where next allocation should be made.
+			FLMUINT				uiFreeSize;		///< Amount of free memory left in block - from uiFreeOfs.
+		} PoolMemoryBlock;
 
 		/// Pool memory manager.  This structure is used to keep track of a pool
 		/// of memory blocks that are used for pool memory allocation.

@@ -1837,11 +1837,11 @@ RCODE FLMAPI F_Pool::poolAlloc(
 	FLMUINT		uiSize,
 	void **		ppvPtr)
 {
-	RCODE			rc = NE_FLM_OK;
-	MBLK *		pBlock = m_pLastBlock;
-	MBLK *		pOldLastBlock = pBlock;
-	FLMBYTE *	pucFreePtr;
-	FLMUINT		uiBlockSize;
+	RCODE						rc = NE_FLM_OK;
+	PoolMemoryBlock *		pBlock = m_pLastBlock;
+	PoolMemoryBlock *		pOldLastBlock = pBlock;
+	FLMBYTE *				pucFreePtr;
+	FLMUINT					uiBlockSize;
 
 	// Adjust the size to a machine word boundary
 	// NOTE: ORed and ANDed 0x800.. & 0x7FFF to prevent partial
@@ -1886,7 +1886,7 @@ RCODE FLMAPI F_Pool::poolAlloc(
 
 		// Add in extra bytes for block overhead
 
-		uiBlockSize += sizeof( MBLK);
+		uiBlockSize += sizeof( PoolMemoryBlock);
 
 		if (RC_BAD( rc = f_alloc( uiBlockSize, &pBlock)))
 		{
@@ -1896,8 +1896,8 @@ RCODE FLMAPI F_Pool::poolAlloc(
 		// Initialize the block elements
 
 		pBlock->uiBlockSize = uiBlockSize;
-		pBlock->uiFreeOffset = sizeof( MBLK);
-		pBlock->uiFreeSize = uiBlockSize - sizeof( MBLK);
+		pBlock->uiFreeOffset = sizeof( PoolMemoryBlock);
+		pBlock->uiFreeSize = uiBlockSize - sizeof( PoolMemoryBlock);
 
 		// Link in newly allocated block
 
@@ -1946,8 +1946,8 @@ Note : All memory allocated to the pool is returned to the operating system.
 *****************************************************************************/
 void FLMAPI F_Pool::poolFree( void)
 {
-	MBLK *	pBlock = m_pLastBlock;
-	MBLK *	pPrevBlock;
+	PoolMemoryBlock *	pBlock = m_pLastBlock;
+	PoolMemoryBlock *	pPrevBlock;
 
 	// Free all blocks in chain
 
@@ -1977,8 +1977,8 @@ void FLMAPI F_Pool::poolReset(
 	void *		pvMark,
 	FLMBOOL		bReduceFirstBlock)
 {
-	MBLK *		pBlock = m_pLastBlock;
-	MBLK *		pPrevBlock;
+	PoolMemoryBlock *		pBlock = m_pLastBlock;
+	PoolMemoryBlock *		pPrevBlock;
 
 	if (!pBlock)
 	{
@@ -2009,7 +2009,8 @@ void FLMAPI F_Pool::poolReset(
 		pBlock = pPrevBlock;
 	}
 
-	if (pBlock->uiBlockSize - sizeof(MBLK) > m_uiBlockSize && bReduceFirstBlock)
+	if (pBlock->uiBlockSize - sizeof( PoolMemoryBlock) > 
+		 m_uiBlockSize && bReduceFirstBlock)
 	{
 		// The first block was not the default size, so free it
 
@@ -2020,8 +2021,8 @@ void FLMAPI F_Pool::poolReset(
 	{
 		// Reset the allocation pointers in the first block
 
-		pBlock->uiFreeOffset  = sizeof( MBLK);
-		pBlock->uiFreeSize = pBlock->uiBlockSize - sizeof( MBLK);
+		pBlock->uiFreeOffset  = sizeof( PoolMemoryBlock);
+		pBlock->uiFreeSize = pBlock->uiBlockSize - sizeof( PoolMemoryBlock);
 		m_pLastBlock = pBlock;
 	}
 
@@ -2039,8 +2040,8 @@ Desc:	Frees memory until the pvMark is found.
 void F_Pool::freeToMark(
 	void *		pvMark)
 {
-	MBLK *		pBlock = m_pLastBlock;
-	MBLK *		pPrevBlock;
+	PoolMemoryBlock *		pBlock = m_pLastBlock;
+	PoolMemoryBlock *		pPrevBlock;
 
 	// Initialize pool to no blocks
 
@@ -2074,7 +2075,7 @@ void F_Pool::freeToMark(
 
 		if (m_pPoolStats)
 		{
-			m_uiBytesAllocated -= (pBlock->uiFreeOffset - sizeof( MBLK));
+			m_uiBytesAllocated -= (pBlock->uiFreeOffset - sizeof( PoolMemoryBlock));
 		}
 
 		f_free( &pBlock);
