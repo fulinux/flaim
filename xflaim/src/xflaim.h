@@ -26,7 +26,11 @@
 #ifndef XFLAIM_H
 #define XFLAIM_H
 
-	#include "ftk.h"
+	#include "xflaimtk.h"
+	
+	#ifndef FTK_H
+		#include "ftk.h"
+	#endif
 
 	/****************************************************************************
 									Forward References
