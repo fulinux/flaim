@@ -495,6 +495,7 @@ dollar := \044
 question := \077
 asterisk := \052
 dash := \055
+backslash := \134
 
 # -- Tools --
 
@@ -2129,16 +2130,16 @@ doxyfile: dircheck
 	$(ec)$(gprintf) "USE_WINDOWS_ENCODING   = YES\n" >> $(doxyfile)
 	$(ec)$(gprintf) "BRIEF_MEMBER_DESC      = YES\n" >> $(doxyfile)
 	$(ec)$(gprintf) "REPEAT_BRIEF           = YES\n" >> $(doxyfile)
-	$(ec)$(gprintf) "ABBREVIATE_BRIEF       = \"The $(dollar)name class\" \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         \"The $(dollar)name widget\" \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         \"The $(dollar)name file\" \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         is \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         provides \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         specifies \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         contains \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         represents \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         a \\\n" >> $(doxyfile)
-	$(ec)$(gprintf) "                         an \\\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ABBREVIATE_BRIEF       = \"The $(dollar)name class\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         \"The $(dollar)name widget\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         \"The $(dollar)name file\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         is $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         provides $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         specifies $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         contains $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         represents $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         a $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         an $(backslash)\n" >> $(doxyfile)
 	$(ec)$(gprintf) "                         the\n" >> $(doxyfile)
 	$(ec)$(gprintf) "ALWAYS_DETAILED_SEC    = NO\n" >> $(doxyfile)
 	$(ec)$(gprintf) "INLINE_INHERITED_MEMB  = NO\n" >> $(doxyfile)
@@ -2191,7 +2192,7 @@ doxyfile: dircheck
 	$(ec)$(gprintf) "WARN_NO_PARAMDOC       = NO\n" >> $(doxyfile)
 	$(ec)$(gprintf) "WARN_FORMAT            = \"$(dollar)file:$(dollar)line: $(dollar)text\"\n" >> $(doxyfile)
 	$(ec)$(gprintf) "WARN_LOGFILE           = \n" >> $(doxyfile)
-	$(ec)$(gprintf) "INPUT                  = src/xflaim.h \\\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INPUT                  = src/xflaim.h $(backslash)\n" >> $(doxyfile)
 	$(ec)$(gprintf) "									$(ftkdir)/src/ftk.h\n" >> $(doxyfile)
 	$(ec)$(gprintf) "FILE_PATTERNS          = *.h\n" >> $(doxyfile)
 	$(ec)$(gprintf) "RECURSIVE              = NO\n" >> $(doxyfile)
