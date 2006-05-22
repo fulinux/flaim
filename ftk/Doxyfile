@@ -25,7 +25,7 @@
 #---------------------------------------------------------------------------
 # Project related configuration options
 #---------------------------------------------------------------------------
-PROJECT_NAME           = "XFLAIM"
+PROJECT_NAME           = "FTK"
 PROJECT_NUMBER         = 
 OUTPUT_DIRECTORY       = build/docs
 CREATE_SUBDIRS         = NO
@@ -104,7 +104,7 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = src/xflaim.h
+INPUT                  = src/ftk.h
 FILE_PATTERNS          = *.c \
                          *.cc \
                          *.cxx \

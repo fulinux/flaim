@@ -754,9 +754,8 @@
 	#define F_BLUE_ON_WHITE							"%1.15C"
 
 	/****************************************************************************
-	Desc:	Slab stats
-	****************************************************************************/
 	/// Structure for reporting slab usage information in cache.
+	****************************************************************************/
 	typedef struct
 	{
 		FLMUINT64			ui64Slabs;						///< Total slabs currently allocated.
@@ -766,18 +765,18 @@
 	} FLM_SLAB_USAGE;
 
 	/****************************************************************************
-	Desc:	Thread info
+	/// Structure returned from FlmGetThreadInfo() - contains information about a thread.
 	****************************************************************************/
 	typedef struct
 	{
-		FLMUINT				uiThreadId;
-		FLMUINT				uiThreadGroup;
-		FLMUINT				uiAppId;
-		FLMUINT				uiStartTime;
-		const char *		pszThreadName;
-		const char *		pszThreadStatus;
+		FLMUINT		uiThreadId;				///< Operating system thread ID.
+		FLMUINT		uiThreadGroup;			///< Thread group this thread belongs to.
+		FLMUINT		uiAppId;					///< Application ID that was assigned to the thread when it was started.
+		FLMUINT		uiStartTime;			///< Time the thread was started.
+		char *		pszThreadName;			///< Name of the thread.
+		char *		pszThreadStatus;		///< String indicating the last action the thread reported it was performing.
 	} F_THREAD_INFO;
-	
+
 	typedef enum
 	{
 		FLM_THREAD_STATUS_UNKNOWN = 0,
@@ -804,7 +803,8 @@
 	void FLMAPI ftkShutdown( void);
 
 	/****************************************************************************
-	Desc:	Object base class
+	/// This is a pure virtual base class that other classes inherit from.\   It
+	/// provides methods for reference counting (AddRef, Release).
 	****************************************************************************/
 	flminterface IF_Object
 	{
@@ -812,15 +812,17 @@
 		{
 		}
 
-		virtual FLMINT FLMAPI getRefCount( void) = 0;
-
 		virtual FLMINT FLMAPI AddRef( void) = 0;
 
 		virtual FLMINT FLMAPI Release( void) = 0;
+		
+		virtual FLMINT FLMAPI getRefCount( void) = 0;
 	};
 
 	/****************************************************************************
-	Desc:
+	/// This is the base class that all other classes inherit from.\   It
+	/// provides methods for reference counting (AddRef, Release) as well as
+	/// methods for overloading new and delete operators.
 	****************************************************************************/
 	class F_Object : public IF_Object
 	{
@@ -835,37 +837,60 @@
 		{
 		}
 
-		virtual FLMINT FLMAPI getRefCount( void);
-
+		/// Increment the reference count for this object.
+		/// The reference count is the number of pointers that are referencing this object.
+		/// Return value is the incremented reference count.
 		virtual FLMINT FLMAPI AddRef( void);
 
+		/// Decrement the reference count for this object.
+		/// The reference count is the number of pointers that are referencing this object.
+		/// Return value is the decremented reference count.  If the reference count goes to
+		/// zero, the object will be deleted.
 		virtual FLMINT FLMAPI Release( void);
 
+		/// Return the current reference count on the object.
+		virtual FLMINT FLMAPI getRefCount( void);
+
+		/// Overloaded new operator for objects of this class.
 		void * FLMAPI operator new(
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
+			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
+			const char *	pszFile,				///< Name of source file where this allocation is made.
+			int				iLine					///< Line number in source file where this allocation request is made.
+			);
 	
+		/// Overloaded new operator (array) for objects of this class (with source file and line number).
+		/// This new operator is called when an array of objects of this class are allocated.
+		/// This new operator passes in the current file and line number.  This information is
+		/// useful in tracking memory allocations to determine where memory leaks are coming from.
 		void * FLMAPI operator new[](
-			FLMSIZET			uiSize,
-			const char *	pszFile,
-			int				iLine);
+			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
+			const char *	pszFile,				///< Name of source file where this allocation is made.
+			int				iLine					///< Line number in source file where this allocation request is made.
+			);
 		
+		/// Overloaded delete operator for objects of this class.
 		void FLMAPI operator delete(
-			void *			ptr);
+			void *			ptr);					///< Pointer to object being freed.
 	
 	#ifndef FLM_WATCOM_NLM
+		/// Overloaded delete operator for objects of this class (with source file and line number).
+		/// This delete operator passes in the current file and line number.  This information is
+		/// useful in tracking memory allocations to determine where memory leaks are coming from.
 		void FLMAPI operator delete(
-			void *			ptr,
-			const char *	file,
-			int				line);
+			void *			ptr,					///< Pointer to object being freed.
+			const char *	file,					///< Name of source file where this delete occurs.
+			int				line);				///< Line number in source file where this delete occurs.
 	#endif
 	
 	#ifndef FLM_WATCOM_NLM
+		/// Overloaded delete operator (array) for objects of this class (with source file and line number).
+		/// This delete operator is called when an array of objects of this class is freed.
+		/// This delete operator passes in the current file and line number.  This information is
+		/// useful in tracking memory allocations to determine where memory leaks are coming from.
 		void FLMAPI operator delete[](
-			void *			ptr,
-			const char *	file,
-			int				line);
+			void *			ptr,					///< Pointer to object being freed.
+			const char *	file,					///< Name of source file where this delete occurs.
+			int				line);				///< Line number in source file where this delete occurs.
 	#endif
 
 	protected:
@@ -2057,6 +2082,8 @@
 	****************************************************************************/
 	RCODE FLMAPI f_createSerialNumber(
 		FLMBYTE *					pszSerialNumber);
+
+	#define F_SERIAL_NUM_SIZE				16
 
 	/****************************************************************************
 	Desc: Checksum
@@ -3582,18 +3609,24 @@
 	{
 	public:
 	
-		typedef struct PoolMemoryBlock
+		/// Header for blocks in a memory pool.  This structure is at the head of each block that belongs to a pool of
+		/// memory.
+		typedef struct MBLK
 		{
-			PoolMemoryBlock *		pPrevBlock;
-			FLMUINT					uiBlockSize;
-			FLMUINT					uiFreeOffset;
-			FLMUINT					uiFreeSize;
+			MBLK *			pPrevBlock;			///< Points to the previous memory block in the memory pool.
+			FLMUINT			uiBlockSize;		///< Total size of the memory block.
+			FLMUINT			uiFreeOffset;		///< Offset in block where next allocation should be made.
+			FLMUINT			uiFreeSize;			///< Amount of free memory left in block - from uiFreeOfs.
 		} MBLK;
-	
+
+		/// Pool memory manager.  This structure is used to keep track of a pool
+		/// of memory blocks that are used for pool memory allocation.
 		typedef struct
 		{
-			FLMUINT	uiAllocBytes;
-			FLMUINT	uiCount;
+		FLMUINT			uiAllocBytes;			///< Total number of bytes requested from
+														///< GedPoolAlloc and GedPoolCalloc calls
+		FLMUINT			uiCount;					///< Number of frees and resets performed on 
+														///< the pool
 		} POOL_STATS;
 	
 		F_Pool()
@@ -3606,8 +3639,11 @@
 	
 		virtual ~F_Pool();
 	
+		/// Initialize memory pool.
+		/// \ingroup pool
 		FINLINE void FLMAPI poolInit(
-			FLMUINT			uiBlockSize)
+			FLMUINT			uiBlockSize			///< Default block size for the memory pool.
+			)
 		{
 			m_uiBlockSize = uiBlockSize;
 		}
@@ -3615,20 +3651,33 @@
 		void smartPoolInit(
 			POOL_STATS *	pPoolStats);
 	
+		/// Allocate memory from a memory pool.
+		/// \ingroup pool
 		RCODE FLMAPI poolAlloc(
-			FLMUINT			uiSize,
-			void **			ppvPtr);
+			FLMUINT			uiSize,				///< Requested allocation size (in bytes).
+			void **			ppvPtr				///< Pointer to the allocation
+			);
 	
+		/// Allocate memory from a memory pool and initialize memory to zeroes.
+		/// \ingroup pool
 		RCODE FLMAPI poolCalloc(
-			FLMUINT			uiSize,
-			void **			ppvPtr);
+			FLMUINT			uiSize,				///< Requested allocation size (in bytes).
+			void **			ppvPtr);				///< Pointer to the allocation
 	
+		/// Free all memory blocks in a memory pool.
+		/// \ingroup pool
 		void FLMAPI poolFree( void);
 	
+		/// Reset a memory pool back to a mark.\   Free all memory blocks allocated after the mark.
+		/// \ingroup pool
 		void FLMAPI poolReset(
-			void *			pvMark,
+			void *			pvMark,				///< Mark that was obtained from GedPoolMark().
 			FLMBOOL			bReduceFirstBlock = FALSE);
 	
+		/// Obtain a mark in a memory pool.\   Returned mark remembers a location in the
+		/// pool which can later be passed to poolReset() to free all memory that was
+		/// allocated after the mark.
+		/// \ingroup pool
 		FINLINE void * FLMAPI poolMark( void)
 		{
 			return (void *)(m_pLastBlock
