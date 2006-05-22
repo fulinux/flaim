@@ -788,7 +788,7 @@ sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample java/jni ../ftk/src 
+vpath %.cpp src util sample java/jni $(ftkdir)/src 
 vpath %.java jni/java/xflaim
 
 # -- Default target --
@@ -1129,7 +1129,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call copycmd,Makefile,$(package_stage_dir))
 	$(ec)$(call copycmd,platform.mak,$(package_stage_dir))
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
-	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
+	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
@@ -1363,7 +1363,7 @@ rpms: dist spec
 .PHONY : docs
 docs: status clean dircheck
 	$(ec)$(gprintf) "Creating documentation ...\n"
-	$(ec)doxygen Doxyfile
+	$(ec)doxygen docs/Doxyfile
 	$(ec)$(gprintf) "Documentation created.\n"
 
 # -- misc. targets --
