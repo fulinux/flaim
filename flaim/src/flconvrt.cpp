@@ -526,7 +526,7 @@ Exit:
 			// a couple of lines down.
 
 			(void) fdbInit( (FDB *)hDb, FLM_UPDATE_TRANS,
-				0, FLM_AUTO_TRANS, &bStartedTrans);
+				0, FLM_NO_TIMEOUT | FLM_AUTO_TRANS, &bStartedTrans);
 			(void) flmWriteVersionNum( pDb->pSFileHdl, uiOldVersion);
 			(void) fdbExit( pDb);
 		}
