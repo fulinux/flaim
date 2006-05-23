@@ -1719,6 +1719,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
+	$(ec)$(call mkdircmd,$(package_stage_dir)/ftk)
 	$(ec)$(call dircopycmd,$(dir $(topdir))ftk/src,$(package_stage_dir)/ftk/src)
 ifneq ($(host_os_family),win)
 	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
