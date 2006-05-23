@@ -336,7 +336,7 @@ RCODE	flmAddRecord(
 
 	if( pLFile->uiLfNum == FLM_LOCAL_DICT_CONTAINER)
 	{
-		if( RC_OK( rc = flmLFileDictUpdate( pDb, pLFile, &uiDrn,
+		if( RC_OK( rc = flmLFileDictUpdate( pDb, &pLFile, &uiDrn,
 					pRecord, NULL, bDoInBackground, bCreateSuspended,
 					pbLogCompleteIndexSet)))
 		{
@@ -590,7 +590,8 @@ FLMEXP RCODE FLMAPI FlmRecordModify(
 
 		flmAssert( pRecord != pOldRecord);
 
-		if( RC_BAD( rc = flmLFileDictUpdate( pDb, pLFile, &uiDrn, pRecord, pOldRecord,
+		if( RC_BAD( rc = flmLFileDictUpdate( pDb, &pLFile, &uiDrn, 
+				pRecord, pOldRecord,
 				(uiAutoTrans & FLM_DO_IN_BACKGROUND) ? TRUE : FALSE, 
 				(uiAutoTrans & FLM_SUSPENDED) ? TRUE : FALSE,
 				&bLogCompleteIndexSet)))
@@ -936,7 +937,8 @@ RCODE	flmDeleteRecord(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = FSReadRecord( pDb, pLFile, uiDrn, &pOldRecord, NULL, NULL)))
+		if( RC_BAD( rc = FSReadRecord( pDb, pLFile, uiDrn, 
+			&pOldRecord, NULL, NULL)))
 		{
 			goto Exit;
 		}
@@ -944,11 +946,12 @@ RCODE	flmDeleteRecord(
 
 	if( uiContainer == FLM_LOCAL_DICT_CONTAINER )
 	{
-		if( RC_OK( rc = flmLFileDictUpdate( pDb, pLFile, 
+		if( RC_OK( rc = flmLFileDictUpdate( pDb, &pLFile, 
 			&uiDrn, NULL, pOldRecord, FALSE, FALSE, NULL)))
 		{
 			rc = flmRcaRemoveRec( pDb, uiContainer, uiDrn);
 		}
+		
 		goto Exit;
 	}
 

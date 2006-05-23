@@ -1967,7 +1967,7 @@ Do_Dict_Recs:
 
 			uiDictRecId = pDictRec->pRec->getID();
 
-			if (RC_BAD( flmLFileDictUpdate( pDb, pDictLFile,
+			if (RC_BAD( flmLFileDictUpdate( pDb, &pDictLFile,
 											&uiDictRecId, pDictRec->pRec,
 											NULL, FALSE, FALSE, NULL, TRUE)))
 			{

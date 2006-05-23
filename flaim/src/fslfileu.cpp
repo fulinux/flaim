@@ -94,7 +94,7 @@ Desc:		Verify that the action being attempted in a dictionary update
 ****************************************************************************/
 RCODE flmLFileDictUpdate(
 	FDB *			pDb,
-	LFILE *		pDictLFile,
+	LFILE **		ppDictLFile,
 	FLMUINT *	puiDrnRV,
 	FlmRecord *	pNewRecord,
 	FlmRecord *	pOldRecord,
@@ -284,7 +284,7 @@ RCODE flmLFileDictUpdate(
 	// It also makes sure we are not trying to change the key on EncDef records.
 	// It will make sure new keys are generated for new EncDef records.
 
-	if( RC_BAD( rc = fdictRecUpdate( pDb, pDictLFile, pDictIxLFile,
+	if( RC_BAD( rc = fdictRecUpdate( pDb, *ppDictLFile, pDictIxLFile,
 									puiDrnRV, pNewRecord, pOldRecord, bRebuildOp)))
 	{
 		goto Exit;
@@ -443,6 +443,15 @@ RCODE flmLFileDictUpdate(
 		{
 			goto Exit;
 		}
+		
+		// Re-get the dictionary LFILE
+		
+		if( RC_BAD( rc = fdictGetContainer( pDb->pDict, 
+			FLM_DICT_CONTAINER, ppDictLFile)))
+		{
+			goto Exit;
+		}
+		
 
 		if( pNewRecord && uiOldRecordType == FLM_INDEX_TAG)
 		{

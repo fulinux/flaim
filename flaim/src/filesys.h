@@ -1116,7 +1116,7 @@ struct UCUR;
 	
 	RCODE flmLFileDictUpdate(
 		FDB *					pDb,
-		LFILE *				pDictLFile,
+		LFILE **				ppDictLFile,
 		FLMUINT *			puiDrnRV,
 		FlmRecord * 		pNewDictRecord,
 		FlmRecord * 		pOldDictRecord,
