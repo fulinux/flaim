@@ -508,10 +508,12 @@ endif
 # Determine the toolkit directory
 
 ifeq "$(wildcard $(topdir)/ftk)" ""
-	ftkdir := $(dir $(topdir))ftk
+	ftk_dir := $(dir $(topdir))ftk
 else
-	ftkdir := $(topdir)/ftk
+	ftk_dir := $(topdir)/ftk
 endif
+
+ftk_src_dir = $(ftk_dir)/src
 
 # -- Subversion Revision --
 
@@ -595,7 +597,7 @@ ifdef calc_svn_revision
          $(error Mixed revisions in repository - please update before making distro)
 		endif
 
-		srevision := $(shell svnversion $(ftkdir) -n)
+		srevision := $(shell svnversion $(ftk_dir) -n)
 
 		ifneq (,$(findstring M,$(srevision)))
          $(error Local modifications found - please check in before making distro)
@@ -609,7 +611,7 @@ ifdef calc_svn_revision
 	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
 						$(subst 6,6 ,$(subst 5,5 ,$(subst 4,4 ,$(subst 3,3 ,\
 						$(subst 2,2 ,$(subst 1,1 ,$(subst 0,0 ,$(1))))))))))))
-	revision0 := $(shell svn info -R . $(ftkdir))
+	revision0 := $(shell svn info -R . $(ftk_dir))
 	revision1 = $(subst Last Changed Rev: ,LastChangedRev:,$(revision0))
 	revision2 = $(filter LastChangedRev:%,$(revision1))
 	revision3 = $(subst LastChangedRev:,,$(revision2))
@@ -742,7 +744,7 @@ ifdef JAVA_HOME
 	jhome := $(subst \,/,$(JAVA_HOME))
 endif
 
-inc_dirs = src util $(ftkdir)/src
+inc_dirs = src util $(ftk_src_dir)
 
 ifdef jhome
 	jni_src_dir = java/jni
@@ -751,7 +753,6 @@ endif
 
 xflaim_jni_jar = $(java_output_dir)/xflaimjni.jar
 
-docs_dir = $(target_path)/docs
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
 sample_dir = $(target_path)/sample
@@ -765,7 +766,7 @@ sample_obj_dir = $(sample_dir)/obj
 
 lib_obj_dir = $(lib_dir)/obj
 
-doxyfile = $(docs_dir)/Doxyfile
+doxyfile = $(docs_output_dir)/Doxyfile
 
 # -- Tools --
 
@@ -1185,7 +1186,7 @@ xflaim_src = \
 	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
 	
 ftk_src = \
-	$(patsubst $(ftkdir)/src/%.cpp,%.cpp,$(wildcard $(ftkdir)/src/*.cpp))
+	$(patsubst $(ftk_src_dir)/%.cpp,%.cpp,$(wildcard $(ftk_src_dir)/*.cpp))
 
 xflaim_jni_src = \
 	$(patsubst java/jni/%.cpp,%.cpp,$(wildcard java/jni/*.cpp))
@@ -1371,7 +1372,7 @@ sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample java/jni $(ftkdir)/src 
+vpath %.cpp src util sample java/jni $(ftk_src_dir) 
 vpath %.java jni/java/xflaim
 
 # -- Default target --
@@ -1718,7 +1719,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
-	$(ec)$(call dircopycmd,$(dir $(topdir))ftk,$(package_stage_dir)/ftk)
+	$(ec)$(call dircopycmd,$(dir $(topdir))ftk/src,$(package_stage_dir)/ftk/src)
 ifneq ($(host_os_family),win)
 	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
 endif
@@ -1756,7 +1757,7 @@ binpackage: status
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,src/xflaim.h,$(package_inc_stage_dir))
-	$(ec)$(call copycmd,$(ftkdir)/src/ftk.h,$(package_inc_stage_dir)/xflaimtk.h)
+	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_inc_stage_dir)/xflaimtk.h)
 	$(ec)$(call copycmd,$(xflaim_static_lib),$(package_static_lib_stage_dir))
 ifdef xflaim_shared_lib
 	$(ec)$(call copycmd,$(xflaim_shared_lib),$(package_shared_lib_stage_dir))
@@ -1962,7 +1963,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(lib_obj_dir))
 	$(ec)$(call mkdircmd,$(java_output_dir))
 	$(ec)$(call mkdircmd,$(java_class_output_dir))
-	$(ec)$(call mkdircmd,$(docs_dir))
+	$(ec)$(call mkdircmd,$(docs_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
@@ -2124,7 +2125,7 @@ status:
 doxyfile: dircheck
 	$(ec)$(gprintf) "PROJECT_NAME           = \"$(project_display_name)\"\n" > $(doxyfile)
 	$(ec)$(gprintf) "PROJECT_NUMBER         = \"$(version)\"\n" >> $(doxyfile)
-	$(ec)$(gprintf) "OUTPUT_DIRECTORY       = $(docs_dir)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OUTPUT_DIRECTORY       = $(docs_output_dir)\n" >> $(doxyfile)
 	$(ec)$(gprintf) "CREATE_SUBDIRS         = NO\n" >> $(doxyfile)
 	$(ec)$(gprintf) "OUTPUT_LANGUAGE        = English\n" >> $(doxyfile)
 	$(ec)$(gprintf) "USE_WINDOWS_ENCODING   = YES\n" >> $(doxyfile)
@@ -2193,7 +2194,7 @@ doxyfile: dircheck
 	$(ec)$(gprintf) "WARN_FORMAT            = \"$(dollar)file:$(dollar)line: $(dollar)text\"\n" >> $(doxyfile)
 	$(ec)$(gprintf) "WARN_LOGFILE           = \n" >> $(doxyfile)
 	$(ec)$(gprintf) "INPUT                  = src/xflaim.h $(backslash)\n" >> $(doxyfile)
-	$(ec)$(gprintf) "									$(ftkdir)/src/ftk.h\n" >> $(doxyfile)
+	$(ec)$(gprintf) "									$(ftk_src_dir)/ftk.h\n" >> $(doxyfile)
 	$(ec)$(gprintf) "FILE_PATTERNS          = *.h\n" >> $(doxyfile)
 	$(ec)$(gprintf) "RECURSIVE              = NO\n" >> $(doxyfile)
 	$(ec)$(gprintf) "EXCLUDE                = \n" >> $(doxyfile)
