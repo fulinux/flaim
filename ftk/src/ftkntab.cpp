@@ -1891,7 +1891,7 @@ FLMINT FLMAPI F_NameTable::Release( void)
 }
 #endif
 
-#if defined( FLM_WATCOM_NLM)
+#if defined( FLM_WATCOM_NLM) || defined( FLM_OSX)
 void gv_ftkntab( void)
 {
 }

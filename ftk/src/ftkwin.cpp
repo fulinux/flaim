@@ -1650,7 +1650,7 @@ Exit:
 /****************************************************************************
 Desc:	Deletes a file
 ****************************************************************************/
-#if defined( FLM_WATCOM_NLM)
+#if defined( FLM_WATCOM_NLM) || defined( FLM_OSX)
 int gv_ftkwinDummy(void)
 {
 	return( 0);
