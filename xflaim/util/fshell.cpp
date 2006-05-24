@@ -1223,30 +1223,6 @@ RCODE FlmShell::executeCmdLine( void)
 		setShutdownFlag();
 		bValidCommand = TRUE;
 	}
-#if defined (FLM_NLM)
-	else if( f_stricmp( m_ppCurrArgV[ 0], "realpath") == 0)
-	{
-		bValidCommand = TRUE;
-		char newPath[ 256];
-		int err = 0;
-
-		if( m_iCurrArgC !=2)
-		{
-			con_printf( "Wrong Number Of Params\n");
-		}
-		else
-		{
-			if( !realpath( m_ppCurrArgV[ 1], newPath))
-			{
-				con_printf("Error getting real path");
-			}
-			else
-			{
-				con_printf( "%s\n", newPath);
-			}
-		}
-	}
-#endif
 	else if( f_stricmp( m_ppCurrArgV[ 0], "echo") == 0)
 	{
 		FLMBOOL		bNewline = FALSE;
@@ -4238,25 +4214,10 @@ FLMINT FlmFileSysCommand::execute(
 	{
 		if (iArgC > 1)
 		{
-#if defined( FLM_WIN)
-			if (_chdir( (const char *)ppszArgV [1]) != 0)
+			if( RC_BAD( rc = f_chdir( (const char *)ppszArgV [1])))
 			{
 				pShell->con_printf( "Error changing directory\n");
 			}
-#elif defined( FLM_UNIX)
-			if (chdir( (char *)ppszArgV [1]) != 0)
-			{
-				pShell->con_printf( "Error changing directory\n");
-			}
-#elif defined( FLM_NLM)
-			if (chdir( (char *)ppszArgV [1]) != 0)
-			{
-				pShell->con_printf( "Error changing directory\n");
-			}
-#else
-		#error "This platform is not supported"
-
-#endif
 		}
 	}
 

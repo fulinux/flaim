@@ -123,17 +123,6 @@ FSTATIC void bldLogCorruptError(
 FSTATIC void bldShowError(
 	const char *	pszMessage);
 
-#ifdef FLM_NLM
-FLMBOOL						gv_bSynchronized = FALSE;
-FSTATIC void bldCleanup( void);
-#endif
-
-#ifdef FLM_NLM
-#define bldGiveUpCPU()     f_yieldCPU()
-#else
-#define bldGiveUpCPU()     f_sleep( 0)
-#endif
-
 FLMBOOL						gv_bShutdown = FALSE;
 static char *				gv_pszLogBuffer = NULL;
 static FLMUINT				gv_uiLogBufferCount = 0;
@@ -163,10 +152,6 @@ static FLMBOOL				gv_bPauseBeforeExiting = FALSE;
 static IF_DbSystem *		gv_pDbSystem = NULL;
 
 
-#ifdef FLM_NLM
-typedef LONG (* RBLD_VOID_FUNC_p )(void);
-#endif
-
 #ifdef FLM_WATCOM_NLM
 	#define main		nlm_main
 #endif
@@ -184,14 +169,6 @@ extern "C" int main(
 	logPool.poolInit( 1024);
 	gv_bBatchMode = FALSE;
 	gv_bRunning = TRUE;
-
-#ifdef FLM_NLM
-
-	// Setup the routines to be called when the NLM exits itself
-	
-	atexit( bldCleanup);
-
-#endif
 
 	if( RC_BAD( FlmAllocDbSystem( &gv_pDbSystem)))
 	{
@@ -231,7 +208,8 @@ Exit:
 				(void)WpkIncar();
 				break;
 			}
-			bldGiveUpCPU();
+			
+			f_yieldCPU();
 		}
 	}
 	
@@ -244,13 +222,6 @@ Exit:
 		gv_pDbSystem->Release();
 	}
 
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 	gv_bRunning = FALSE;
 	return( iRetCode);
 }
@@ -547,9 +518,6 @@ FSTATIC FLMBOOL bldGetParams(
 	char *		pszPtr;
 	char *		ppszArgs[ MAX_ARGS];
 	char			szCommandBuffer [300];
-#ifdef FLM_NLM
-	FLMBOOL		bWaitToSync = FALSE;
-#endif
 
 	gv_szSrcFileName [0] = 0;
 	gv_szSrcDataDir [0] = 0;
@@ -745,12 +713,6 @@ FSTATIC FLMBOOL bldGetParams(
 			{
 				gv_bBatchMode = TRUE;
 			}
-#ifdef FLM_NLM
-			else if (f_stricmp( pszPtr, "W") == 0)
-			{
-				bWaitToSync = TRUE;
-			}
-#endif
 			else if (f_stricmp( pszPtr, "?") == 0)
 			{
 				goto Show_Help;
@@ -765,13 +727,6 @@ FSTATIC FLMBOOL bldGetParams(
 		else if (f_stricmp( pszPtr, "?") == 0)
 		{
 Show_Help:
-#ifdef FLM_NLM
-			if (!gv_bSynchronized)
-			{
-				SynchronizeStart();
-				gv_bSynchronized = TRUE;
-			}
-#endif
 			bldShowHelp();
 			gv_bPauseBeforeExiting = TRUE;
 			return( FALSE);
@@ -786,14 +741,6 @@ Show_Help:
 		}
 		uiLoop++;
 	}
-
-#ifdef FLM_NLM
-	if (!bWaitToSync && !gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 
 	if (!gv_szSrcFileName [0] || !gv_szDestFileName [0])
 	{
@@ -1018,7 +965,8 @@ FSTATIC RCODE bldGetUserInput(
 				break;
 			}
 		}
-		bldGiveUpCPU();
+		
+		f_yieldCPU();
 	}
 
 	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
@@ -1189,8 +1137,11 @@ RCODE F_LocalRebuildStatus::reportRebuild(
 		rc = bldGetUserInput();
 		goto Exit;
 	}
-	bldGiveUpCPU();
+	
+	f_yieldCPU();
+	
 Exit:
+
 	return( rc);
 }
 
@@ -1213,7 +1164,7 @@ RCODE F_LocalRebuildStatus::reportRebuildErr(
 		goto Exit;
 	}
 
-	bldGiveUpCPU();
+	f_yieldCPU();
 
 Exit:
 
@@ -1244,8 +1195,10 @@ FSTATIC void bldShowError(
 					gv_bShutdown = TRUE;
 				break;
 			}
-			bldGiveUpCPU();
+			
+			f_yieldCPU();
 		}
+		
 		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
 		WpsScrClr( 0, 22);
 	}
@@ -1300,19 +1253,3 @@ FSTATIC void bldLogString(
 		}
 	}
 }
-
-#ifdef FLM_NLM
-/****************************************************************************
-Desc: This routine shuts down all threads in the NLM.
-****************************************************************************/
-FSTATIC void bldCleanup(
-	void
-	)
-{
-	gv_bShutdown = TRUE;
-	while( gv_bRunning)
-	{
-		bldGiveUpCPU();
-	}
-}
-#endif

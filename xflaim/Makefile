@@ -700,7 +700,7 @@ lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
 include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = $(topdir)/build
-docs_output_dir = $(build_output_dir)/docs
+doxygen_output_dir = $(build_output_dir)/docs
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
@@ -766,7 +766,7 @@ sample_obj_dir = $(sample_dir)/obj
 
 lib_obj_dir = $(lib_dir)/obj
 
-doxyfile = $(docs_output_dir)/Doxyfile
+doxyfile = $(doxygen_output_dir)/Doxyfile
 
 # -- Tools --
 
@@ -1507,7 +1507,7 @@ $(sample_exe): $(sample_obj) $(xflaim_static_lib)
 xshell: status clean dircheck libs $(xshell_exe)
 $(xshell_exe): $(xshell_obj) $(xflaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
+	$(call flm_exe_link_cmd,$(util_dir),xshell,$(xshell_obj))
 
 # -- basictest --
 
@@ -1717,7 +1717,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
-	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
+	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 	$(ec)$(call mkdircmd,$(package_stage_dir)/ftk)
 	$(ec)$(call dircopycmd,$(dir $(topdir))ftk/src,$(package_stage_dir)/ftk/src)
@@ -1964,7 +1964,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(lib_obj_dir))
 	$(ec)$(call mkdircmd,$(java_output_dir))
 	$(ec)$(call mkdircmd,$(java_class_output_dir))
-	$(ec)$(call mkdircmd,$(docs_output_dir))
+	$(ec)$(call mkdircmd,$(doxygen_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
@@ -2126,7 +2126,7 @@ status:
 doxyfile: dircheck
 	$(ec)$(gprintf) "PROJECT_NAME           = \"$(project_display_name)\"\n" > $(doxyfile)
 	$(ec)$(gprintf) "PROJECT_NUMBER         = \"$(version)\"\n" >> $(doxyfile)
-	$(ec)$(gprintf) "OUTPUT_DIRECTORY       = $(docs_output_dir)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OUTPUT_DIRECTORY       = $(doxygen_output_dir)\n" >> $(doxyfile)
 	$(ec)$(gprintf) "CREATE_SUBDIRS         = NO\n" >> $(doxyfile)
 	$(ec)$(gprintf) "OUTPUT_LANGUAGE        = English\n" >> $(doxyfile)
 	$(ec)$(gprintf) "USE_WINDOWS_ENCODING   = YES\n" >> $(doxyfile)

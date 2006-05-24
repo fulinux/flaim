@@ -57,18 +57,6 @@ FSTATIC FLMBOOL ViewSetupMainMenu( void);
 
 FSTATIC FLMBOOL ViewOpenFileDirect( void);
 
-#ifdef FLM_NLM
-	FLMBOOL						gv_bSynchronized = FALSE;
-	extern "C"
-	{
-	int nlm_main(
-		int		iArgC,
-		char **	ppszArgV);
-	}
-
-	FSTATIC void viewCleanup( void);
-#endif
-
 static FLMBOOL		bPauseBeforeExiting = FALSE;
 FLMUINT				gv_uiTopLine = 0;
 FLMUINT				gv_uiBottomLine = 0;
@@ -77,19 +65,9 @@ IF_DbSystem *		gv_pDbSystem = NULL;
 /********************************************************************
 Desc: ?
 *********************************************************************/
-#if defined (FLM_UNIX)
 int main(
 	int			iArgC,
 	char **		ppszArgV)
-#elif defined( FLM_NLM)
-int nlm_main(
-	int			iArgC,
-	char **		ppszArgV)
-#else
-int __cdecl main(
-	int			iArgC,
-	char **		ppszArgV)
-#endif
 {
 #define MAX_ARGS     30
 	RCODE					rc = NE_XFLM_OK;
@@ -127,21 +105,6 @@ int __cdecl main(
 	gv_bRunning = TRUE;
 	gv_pSFileHdl = NULL;
 
-#ifdef FLM_NLM
-
-	// Setup the routines to be called when the NLM exits itself
-
-	atexit( viewCleanup);
-
-#endif
-
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 	WpsInit( 0xFFFF, 0xFFFF, "FLAIM Database Viewer");
 	WpsOptimize();
 
@@ -342,13 +305,6 @@ Exit:
 		gv_pDbSystem->Release();
 	}
 
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 	gv_bRunning = FALSE;
 	return 0;
 }
@@ -360,13 +316,6 @@ FSTATIC void ViewShowHelp(
 	FLMBOOL	bShowFullUsage
 	)
 {
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 	WpsStrOut( "\n");
 	if (bShowFullUsage)
 	{
@@ -903,20 +852,3 @@ FSTATIC void ViewDoMainMenu( void)
 		}
 	}
 }
-
-#ifdef FLM_NLM
-/****************************************************************************
-Desc: This routine shuts down all threads in the VIEW NLM.
-****************************************************************************/
-FSTATIC void viewCleanup(
-	void
-	)
-{
-	gv_bShutdown = TRUE;
-	while (gv_bRunning)
-	{
-		viewGiveUpCPU();
-	}
-}
-#endif
-

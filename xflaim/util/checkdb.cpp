@@ -255,16 +255,6 @@ extern "C" int main(
 	gv_bRunning = TRUE;
 	gv_szLastError[ 0] = '\0';
 
-#ifdef FLM_NLM
-
-	/* Setup the routines to be called when the NLM exits itself */
-	
-	atexit( chkCleanup);
-
-	/* Register to see the DOWN server event. */
-
-#endif
-
 	if( RC_BAD( FlmAllocDbSystem( &gv_pDbSystem)))
 	{
 		WpsStrOut( "\nCould not initialize FLAIM.\n");

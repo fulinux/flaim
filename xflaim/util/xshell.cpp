@@ -30,51 +30,16 @@ static FlmSharedContext *				gv_pSharedContext = NULL;
 FLMBOOL										gv_bShutdown = FALSE;
 FLMBOOL										gv_bRunning = TRUE;
 
-#if defined( FLM_NLM)
-
-	extern "C"
-	{
-//		void SynchronizeStart( void);
-		void xshellCleanup( void);
-	}
-
-	void xshellCleanup( void)
-	{
-		while( gv_bRunning)
-		{
-			f_yieldCPU();
-		}
-	}
-
-#endif
-
 /***************************************************************************
 Desc:	Program entry point (main)
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_NLM)
-extern "C" int main(
+int main(
 	int, //			iArgC,
 	char **)		// ppucArgV
-#else
-int __cdecl main(
-	int, //		iArgC,
-	char **)		// ppucArgV
-#endif
 {
 	RCODE						rc = NE_XFLM_OK;
 	FlmShell *				pShell = NULL;
 	IF_DbSystem *			pDbSystem = NULL;
-
-#ifdef FLM_NLM
-
-	gv_bRunning = TRUE;
-
-	// Setup the routines to be called when the NLM exits
-
-	atexit( xshellCleanup);
-//	SynchronizeStart();
-
-#endif
 
 	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
 	{
