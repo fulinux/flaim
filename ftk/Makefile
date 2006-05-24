@@ -64,9 +64,8 @@ package_proj_name_and_ver = $(package_proj_name)-$(version)
 
 # -- Determine if we are only cleaning --
 
-util_targets = 
 test_targets = ftktest
-all_targets = rpms install libs all allutils test $(util_targets) $(test_targets)
+all_targets = rpms install libs all test $(test_targets)
 found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
 
 ifneq (,$(findstring clean,$(MAKECMDGOALS)))
@@ -115,7 +114,6 @@ package_bin_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
 package_lib_stage_dir = $(package_bin_stage_dir)/lib
 package_shared_lib_stage_dir = $(package_lib_stage_dir)/shared
 package_static_lib_stage_dir = $(package_lib_stage_dir)/static
-package_util_stage_dir = $(package_bin_stage_dir)/util
 package_inc_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/include
 
 src_package_dir = $(package_sources_dir)
@@ -131,19 +129,14 @@ rpm_name = $(package_proj_name_and_ver)-$(package_release_num).$(HOSTTYPE).rpm
 srpm_name = $(package_proj_name_and_ver)-$(package_release_num).src.rpm
 develrpm_name = $(package_proj_name)-devel-$(version)-$(package_release_num).$(HOSTTYPE).rpm
 
-inc_dirs = src util
+inc_dirs = src
 
-util_dir = $(target_path)/util
 test_dir = $(target_path)/test
-sample_dir = $(target_path)/sample
 lib_dir = $(target_path)/$(lib_dir_name)
 shared_lib_dir = $(lib_dir)/shared
 static_lib_dir = $(lib_dir)/static
 
-util_obj_dir = $(util_dir)/obj
 test_obj_dir = $(test_dir)/obj
-sample_obj_dir = $(sample_dir)/obj
-
 lib_obj_dir = $(lib_dir)/obj
 
 # -- Tools --
@@ -707,10 +700,6 @@ endif
 ftk_src = \
 	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
 
-sample_src = \
-	sample.cpp \
-	$(util_common_src)
-
 ftk_test_src = \
 	ftktest.cpp
 	
@@ -720,21 +709,15 @@ ftk_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(ftk_src))
 ftk_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
    ftk_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
-   ftk_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 endif
 
 # -- Unit tests  --
 
 ftk_test_obj = $(patsubst %.cpp,$(test_obj_dir)/%$(obj_suffix),$(ftk_test_src))
 
-# -- Utilities  --
-
-sample_obj = $(patsubst %.cpp,$(sample_obj_dir)/%$(obj_suffix),$(sample_src))
-sample_exe = $(sample_dir)/sample$(exe_suffix)
-
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util 
+vpath %.cpp src 
 
 # -- Default target --
 
@@ -766,7 +749,7 @@ $$($(1)_obj_dir)/%$(obj_suffix) : %.cpp
 endef
 endif
 
-$(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
+$(foreach tmpl,lib test,$(eval $(call cpp_to_obj_template,$(tmpl))))
 
 # -- ftk.lib and libftk.a --
 
@@ -790,7 +773,7 @@ endif
 
 # -- ftk.dll and libftk.so --
 
-$(ftk_shared_lib) : $(ftk_obj) $(ftk_jni_obj)
+$(ftk_shared_lib) : $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
@@ -800,27 +783,13 @@ ifdef unix_target
 	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
 
-# -- ftk.lib import library --
-
-$(ftk_shared_imp_lib) : $(ftk_shared_lib)
-	$(ec)$(gprintf) "Building $@ ...\n"
-
-# -- Utility link command --
+# -- Executable link command --
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
 		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
    endef
 endif
-
-# -- sample --
-
-.PHONY : sample
-sample: status clean dircheck libs $(sample_exe)
-$(sample_exe): $(sample_obj) $(ftk_static_lib)
-	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
-	$(ec)$(call copycmd,sample/xmlfiles/*.xml,$(sample_dir))
 
 # -- ftktest  --
 
@@ -855,8 +824,6 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
-	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
-	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 ifneq ($(host_os_family),win)
@@ -892,7 +859,6 @@ binpackage: status
 	$(ec)$(call mkdircmd,$(package_inc_stage_dir))
 	$(ec)$(call mkdircmd,$(package_shared_lib_stage_dir))
 	$(ec)$(call mkdircmd,$(package_static_lib_stage_dir))
-	$(ec)$(call mkdircmd,$(package_util_stage_dir))
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,src/ftk.h,$(package_inc_stage_dir))
@@ -900,13 +866,6 @@ binpackage: status
 ifdef ftk_shared_lib
 	$(ec)$(call copycmd,$(ftk_shared_lib),$(package_shared_lib_stage_dir))
 endif
-ifdef win_target
-	$(ec)$(call copycmd,$(ftk_shared_imp_lib),$(package_shared_lib_stage_dir))
-endif
-	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
-	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
-	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
-	$(ec)$(call copycmd,$(xshell_exe),$(package_util_stage_dir))
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
 		$(bin_package_dir)/$(bin_package_base_name), \
 		$(package_proj_name_and_ver))
@@ -1084,13 +1043,9 @@ docs: status clean dircheck
 
 .PHONY : dircheck
 dircheck:
-	$(ec)$(call mkdircmd,$(util_obj_dir))
 	$(ec)$(call mkdircmd,$(test_obj_dir))
-	$(ec)$(call mkdircmd,$(sample_obj_dir))
 	$(ec)$(call mkdircmd,$(lib_obj_dir))
-	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
-	$(ec)$(call mkdircmd,$(sample_dir))
 	$(ec)$(call mkdircmd,$(static_lib_dir))
 	$(ec)$(call mkdircmd,$(shared_lib_dir))
 	$(ec)$(call mkdircmd,$(package_dir))
@@ -1104,11 +1059,7 @@ dircheck:
 # -- phony targets --
 
 .PHONY : all
-all: libs allutils
-	$(ec)$(gprintf) ""
-
-.PHONY : allutils
-allutils: status dircheck libs $(util_targets)
+all: libs
 	$(ec)$(gprintf) ""
 
 .PHONY : test
