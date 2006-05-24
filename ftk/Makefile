@@ -1009,7 +1009,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
-		lib_link_libs += -lstdc++ -ldl
+		lib_link_libs += -lstdc++ -ldl -lncurses
 		exe_link_libs += -lstdc++ -ldl -lncurses
 		shared_link_flags += -dynamiclib
 		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
