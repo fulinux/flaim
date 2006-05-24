@@ -25,13 +25,6 @@
 
 #include "fshell.h"
 #include "domedit.h"
-#ifdef FLM_UNIX
-	#include <unistd.h>
-#endif
-
-#ifdef FLM_WIN
-	#include <direct.h>
-#endif
 
 // Imported global variables.
 
@@ -1579,21 +1572,10 @@ RCODE FlmShell::execute( void)
 		FTXWinSetCursorPos( m_pWindow, 0, uiRow);
 		FTXWinClearToEOL( m_pWindow);
 
-#if defined( FLM_NLM)
-		szDir [0] = 0;
-#elif defined( FLM_WIN)
-		if (_getcwd( (char *)szDir, F_PATH_MAX_SIZE) == NULL)
+		if( RC_BAD( f_getcwd( szDir)))
 		{
 			szDir [0] = '\0';
 		}
-#elif defined( FLM_UNIX)
-		if (getcwd( (char *)szDir, F_PATH_MAX_SIZE) == NULL)
-		{
-			szDir [0] = '\0';
-		}
-#else
-		#error "This platform is not supported"
-#endif
 
 		FTXWinPrintf( m_pWindow, "%s>", szDir);
 
@@ -2318,9 +2300,6 @@ public:
 		FTXWinPrintf( m_pWin, "  %,I64u of %,I64u bytes copied\r",
 						ui64BytesCopied, ui64BytesToCopy);
 		f_yieldCPU();
-	#ifdef FLM_WIN
-		f_sleep( 0);
-	#endif
 
 		if( RC_OK( FTXWinTestKB( m_pWin)))
 		{
@@ -2646,9 +2625,6 @@ RCODE F_LocalBackupStatus::backupStatus(
 	FTXWinPrintf( pWin, "%,I64u / %,I64u bytes backed up\r",
 					  ui64BytesDone, ui64BytesToDo);
 	f_yieldCPU();
-#ifdef FLM_WIN
-	f_sleep( 0);
-#endif
 
 	if( pWin && RC_OK( FTXWinTestKB( pWin)))
 	{
