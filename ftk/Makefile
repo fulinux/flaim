@@ -778,8 +778,7 @@ ifdef win_target
 		
 	# Libraries that our various components need to link against
 
-	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
-	exe_link_libs = $(lib_link_libs)
+	link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -971,12 +970,10 @@ ifdef unix_target
 		endif
 	endif
 
-	lib_link_libs = -lpthread
-	exe_link_libs = -lpthread
+	link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
-		lib_link_libs += -lrt -lstdc++ -ldl
-		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
+		link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
 	endif
@@ -993,24 +990,20 @@ ifdef unix_target
 			endif
 		endif
 
-		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
-		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
+		link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
-		lib_link_libs += -lm -lc
-		exe_link_libs += -lm -lc -lcurses
+		link_libs += -lm -lc -lcurses
 	endif
 
 	ifeq ($(target_os_family),hpux)
-		lib_link_libs += -lm -lc -lrt
-		exe_link_libs += -lm -lc -lrt -lcurses
+		link_libs += -lm -lc -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
-		lib_link_libs += -lstdc++ -ldl -lncurses
-		exe_link_libs += -lstdc++ -ldl -lncurses
+		link_libs += -lstdc++ -ldl -lncurses
 		shared_link_flags += -dynamiclib
 		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
 		shared_link_flags += -compatibility_version $(major_version).$(so_current).0
@@ -1351,18 +1344,18 @@ endif
 $(ftk_shared_lib) : $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
-	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(shared_linker) $+ $(shared_link_flags) $(link_libs)
 endif
 
 # -- Executable link command --
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
+		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(link_libs)
    endef
 endif
 
@@ -1586,7 +1579,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lftk -L$(dollar){libdir}\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Libs: $(link_libs) -lftk -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
 
 # -- SRCRPM --
