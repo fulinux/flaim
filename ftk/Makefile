@@ -1395,7 +1395,6 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call mkdircmd,$(package_stage_dir))
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,Makefile,$(package_stage_dir))
-	$(ec)$(call copycmd,platform.mak,$(package_stage_dir))
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
