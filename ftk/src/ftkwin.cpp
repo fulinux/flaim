@@ -1625,6 +1625,26 @@ Exit:
 	return( rc);
 }
 
+/**********************************************************************
+Desc:
+**********************************************************************/
+RCODE FLMAPI f_getcwd(
+	char *			pszDir)
+{
+	RCODE		rc = NE_FLM_OK;
+	
+	if( _getcwd( pszDir, F_PATH_MAX_SIZE) == NULL)
+	{
+		*pszDir = 0;
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_IO_PATH_NOT_FOUND);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
 #endif // FLM_WIN
 
 /****************************************************************************

@@ -4084,6 +4084,18 @@ RCODE FLMAPI f_chdir(
 }
 #endif
 	
+/**********************************************************************
+Desc:
+**********************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE FLMAPI f_getcwd(
+	char *			pszDir)
+{
+	*pszDir = NULL;
+	return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
+}
+#endif
+
 #endif // FLM_NLM
 
 /****************************************************************************

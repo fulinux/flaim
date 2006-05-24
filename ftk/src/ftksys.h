@@ -93,6 +93,7 @@
 			#include <imagehlp.h>
 			#include <malloc.h>
 			#include <stdio.h>
+			#include <direct.h>
 		#pragma pack( pop, enter_windows)
 		
 		// Conversion from XXX to YYY, possible loss of data

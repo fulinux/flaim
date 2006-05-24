@@ -1598,6 +1598,26 @@ Exit:
 	return( rc);
 }
 
+/**********************************************************************
+Desc:
+**********************************************************************/
+RCODE FLMAPI f_getcwd(
+	char *			pszDir)
+{
+	RCODE		rc = NE_FLM_OK;
+	
+	if( getcwd( pszDir, F_PATH_MAX_SIZE) == NULL)
+	{
+		*pszDir = 0;
+		rc = f_mapPlatformError( errno, NE_FLM_IO_PATH_NOT_FOUND);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
 #endif // FLM_UNIX
 
 #if defined( FLM_WATCOM_NLM)
