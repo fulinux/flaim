@@ -25,13 +25,13 @@
 
 #include "ftksys.h"
 
-FSTATIC FLMUINT btGetEntryDataLength(
+FSTATIC FLMUINT fbtGetEntryDataLength(
 	FLMBYTE *			pucEntry,
 	const FLMBYTE **	ppucDataRV,
 	FLMUINT *			puiOADataLengthRV,
 	FLMBOOL *			pbDOBlockRV);
 
-FSTATIC RCODE btGetEntryData(
+FSTATIC RCODE fbtGetEntryData(
 	FLMBYTE *			pucEntry,
 	FLMBYTE *			pucBufferRV,
 	FLMUINT				uiBufferSize,
@@ -78,7 +78,7 @@ typedef struct
 /****************************************************************************
 Desc:	B-Tree block header
 ****************************************************************************/
-typedef struct : F_STD_BLK_HDR
+typedef struct F_BTREE_BLK_HDR : F_STD_BLK_HDR
 {
 	FLMUINT16			ui16BtreeId;
 	FLMUINT16			ui16NumKeys;
@@ -117,7 +117,7 @@ typedef struct
 /****************************************************************************
 Desc:	Encrypted B-Tree block header
 ****************************************************************************/
-typedef struct : F_BTREE_BLK_HDR
+typedef struct F_ENC_BTREE_BLK_HDR : F_BTREE_BLK_HDR
 {
 	FLMUINT64			ui64Reserved;
 } F_ENC_BTREE_BLK_HDR;
@@ -125,7 +125,7 @@ typedef struct : F_BTREE_BLK_HDR
 /****************************************************************************
 Desc:	Encrypted data-only block header
 ****************************************************************************/
-typedef struct : F_STD_BLK_HDR
+typedef struct F_ENC_DO_BLK_HDR : F_STD_BLK_HDR
 {
 	FLMUINT32			ui32EncId;
 	FLMBYTE				ucReserved[ 12];
@@ -1979,7 +1979,7 @@ RCODE F_BTree::btFreeBlockChain(
 				{
 					// Get the data-only block address
 
-					if( RC_BAD( rc = btGetEntryData( 
+					if( RC_BAD( rc = fbtGetEntryData( 
 						pucEntry, &ucDOBlockId[ 0], 4, NULL)))
 					{
 						goto Exit;
@@ -2392,7 +2392,7 @@ RCODE F_BTree::btReplaceEntry(
 		
 		pucEntry = BtEntry( m_pStack->pucBlock, m_pStack->uiCurOffset);
 
-		btGetEntryDataLength( pucEntry, &pucLocalData,
+		fbtGetEntryDataLength( pucEntry, &pucLocalData,
 			&uiOADataLength, &m_bOrigInDOBlocks);
 
 	}
@@ -2607,7 +2607,7 @@ RCODE F_BTree::btLocateEntry(
 	if( puiDataLength && 
 		 getBlockType( m_pStack->pucBlock) == F_BLK_TYPE_BT_LEAF_DATA)
 	{
-		btGetEntryDataLength( pucEntry, NULL, puiDataLength, NULL);
+		fbtGetEntryDataLength( pucEntry, NULL, puiDataLength, NULL);
 	}                                               
 	else if (puiDataLength)
 	{
@@ -2692,7 +2692,7 @@ RCODE F_BTree::btGetEntry(
 	if( !m_bDataOnlyBlock)
 	{
 		pucEntry = BtEntry( m_pucBlock, m_uiCurOffset);
-		btGetEntryDataLength( pucEntry, 
+		fbtGetEntryDataLength( pucEntry, 
 			(const FLMBYTE **)&pucDataPtr, NULL, NULL);
 	}
 	else
@@ -2836,7 +2836,7 @@ RCODE F_BTree::btNextEntry(
 	
 	if( puiDataLength)
 	{
-		btGetEntryDataLength( pucEntry, NULL, puiDataLength, NULL);
+		fbtGetEntryDataLength( pucEntry, NULL, puiDataLength, NULL);
 	}
 	
 	if( RC_BAD( rc = setupReadState( m_pucBlock, pucEntry)))
@@ -2948,7 +2948,7 @@ RCODE F_BTree::btPrevEntry(
 	
 	if( puiDataLength)
 	{
-		btGetEntryDataLength( pucEntry, NULL, puiDataLength, NULL);
+		fbtGetEntryDataLength( pucEntry, NULL, puiDataLength, NULL);
 	}
 	
 	if( RC_BAD( rc = setupReadState( m_pucBlock, pucEntry)))
@@ -4676,7 +4676,7 @@ RCODE F_BTree::remove(
 
 			// Get the block address of the DO Block.
 			
-			if( RC_BAD( rc = btGetEntryData( pucEntry, ucDOBlockId,
+			if( RC_BAD( rc = fbtGetEntryData( pucEntry, ucDOBlockId,
 				sizeof( FLMUINT), NULL)))
 			{
 				goto Exit;
@@ -4813,7 +4813,7 @@ RCODE F_BTree::removeRange(
 
 			// Get the block address of the DO Block.
 			
-			if( RC_BAD( rc = btGetEntryData( pucEntry, ucDOBlockId, 4, NULL)))
+			if( RC_BAD( rc = fbtGetEntryData( pucEntry, ucDOBlockId, 4, NULL)))
 			{
 				goto Exit;
 			}
@@ -5833,7 +5833,7 @@ Desc:	Method to extract the data length from a given entry. The parameter
 		** assumes ** the entry is from a F_BLK_TYPE_BT_LEAF_DATA block.  No other block
 		type has any data.
 ****************************************************************************/
-FSTATIC FLMUINT btGetEntryDataLength(
+FSTATIC FLMUINT fbtGetEntryDataLength(
 	FLMBYTE *			pucEntry,
 	const FLMBYTE **	ppucDataRV,				// Optional
 	FLMUINT *			puiOADataLengthRV,	// Optional
@@ -5905,7 +5905,7 @@ Desc:	Method to extract the data value from a given block. This method
 		not read data across blocks.  The puiLenDataRV is an optional 
 		parameter that will hold the actual data size returned.
 ****************************************************************************/
-FSTATIC RCODE btGetEntryData(
+FSTATIC RCODE fbtGetEntryData(
 	FLMBYTE *		pucEntry,	// Pointer to the entry containing the data
 	FLMBYTE *		pucBufferRV,
 	FLMUINT			uiBufferSize,
@@ -5917,7 +5917,7 @@ FSTATIC RCODE btGetEntryData(
 
 	// Get the data length
 	
-	uiDataLength = btGetEntryDataLength( pucEntry, &pucData, NULL, NULL);
+	uiDataLength = fbtGetEntryDataLength( pucEntry, &pucData, NULL, NULL);
 
 	if( uiDataLength > uiBufferSize)
 	{
@@ -8054,7 +8054,7 @@ RCODE F_BTree::replaceEntry(
 
 			pucEntry = BtEntry( m_pStack->pucBlock, m_pStack->uiCurOffset);
 
-			btGetEntryDataLength( pucEntry, &pucData, NULL, NULL);
+			fbtGetEntryDataLength( pucEntry, &pucData, NULL, NULL);
 			ui32OrigDOAddr = bteGetBlockId( pucData);
 		}
 	}
@@ -8137,7 +8137,7 @@ RCODE F_BTree::replaceOldEntry(
 	{
 		bLastElement = bteLastElementFlag( pucEntry);
 
-		uiDataLen = btGetEntryDataLength( pucEntry, (const FLMBYTE **)&pucData, 
+		uiDataLen = fbtGetEntryDataLength( pucEntry, (const FLMBYTE **)&pucData, 
 			&uiOldOADataLen, NULL);
 
 		// Test to see if we need to worry about the bTruncate flag.
@@ -9298,7 +9298,7 @@ RCODE F_BTree::extractEntryData(
 					goto Exit;
 				}
 
-				m_uiDataRemaining = btGetEntryDataLength( pucEntry,
+				m_uiDataRemaining = fbtGetEntryDataLength( pucEntry,
 					(const FLMBYTE **)ppucDataPtr, NULL, NULL);
 					
 				m_uiDataLength = m_uiDataRemaining;
@@ -9351,7 +9351,7 @@ RCODE F_BTree::setupReadState(
 	{
 		// How large is the value for this entry?
 		
-		m_uiDataLength = btGetEntryDataLength( pucEntry, &pucData,
+		m_uiDataLength = fbtGetEntryDataLength( pucEntry, &pucData,
 									&m_uiOADataLength, &m_bDataOnlyBlock);
 
 		m_uiPrimaryDataLen = m_uiDataLength;
@@ -9722,7 +9722,7 @@ RCODE F_BTree::replaceMultiples(
 
 		// Determine the data size for this entry
 		
-		uiDataLength = btGetEntryDataLength( pucEntry, (const FLMBYTE **)&pucData,
+		uiDataLength = fbtGetEntryDataLength( pucEntry, (const FLMBYTE **)&pucData,
 								&uiOldOADataLength, NULL);
 
 		// Now over-write as much of the data as we can
@@ -9931,7 +9931,7 @@ RCODE F_BTree::replaceMultiNoTruncate(
 
 		// Determine the data size for this entry
 		
-		uiDataLength = btGetEntryDataLength( pucEntry, 
+		uiDataLength = fbtGetEntryDataLength( pucEntry, 
 							(const FLMBYTE **)&pucData, NULL, NULL);
 
 		// Now over-write as much of the data as we can.
@@ -11250,10 +11250,10 @@ RCODE F_BTree::combineEntries(
 		uiEntrySize++;
 	}
 
-	uiSrcDataLen = btGetEntryDataLength(
+	uiSrcDataLen = fbtGetEntryDataLength(
 		pucSrcEntry, &pucSrcData, &uiSrcOADataLen, NULL);
 
-	uiDstDataLen = btGetEntryDataLength(
+	uiDstDataLen = fbtGetEntryDataLength(
 		pucDstEntry, &pucDstData, &uiDstOADataLen, NULL);
 
 	if( (uiSrcDataLen + uiDstDataLen) > ONE_BYTE_SIZE)
@@ -11724,7 +11724,7 @@ RCODE F_BTree::moveDOBlock(
 			goto Exit;
 		}
 
-		uiDataLen = btGetEntryDataLength( pucEntry, &pucData,
+		uiDataLen = fbtGetEntryDataLength( pucEntry, &pucData,
 							&uiOADataLen, NULL);
 
 		ui32DOBlockId = bteGetBlockId( pucData);
@@ -11898,7 +11898,7 @@ RCODE F_BTree::btSetReadPosition(
 				goto Exit;
 			}
 
-			m_uiDataLength = btGetEntryDataLength( pucEntry, NULL, NULL, NULL);
+			m_uiDataLength = fbtGetEntryDataLength( pucEntry, NULL, NULL, NULL);
 			m_uiOffsetAtStart -= m_uiDataLength;
 		}
 	}
@@ -11973,7 +11973,7 @@ RCODE F_BTree::btSetReadPosition(
 			// Get the data length of the current entry.
 			
 			m_uiOffsetAtStart += m_uiDataLength;
-			m_uiDataLength = btGetEntryDataLength( pucEntry, NULL, NULL, NULL);
+			m_uiDataLength = fbtGetEntryDataLength( pucEntry, NULL, NULL, NULL);
 		}
 	}
 
@@ -12198,7 +12198,7 @@ RCODE F_BTree::btCheck(
 					
 					if( (uiCurKeySize != 0) ||
 						 (((getBlockType( pucCurrentBlock) == F_BLK_TYPE_BT_LEAF_DATA)) &&
-							(btGetEntryDataLength( pucEntry, NULL, NULL, NULL) > 0)))
+							(fbtGetEntryDataLength( pucEntry, NULL, NULL, NULL) > 0)))
 					{
 						localErrStruct.type = INFINITY_MARKER;
 						localErrStruct.uiBlockId = getBlockId( pucCurrentBlock);
@@ -12264,7 +12264,7 @@ RCODE F_BTree::btCheck(
 						{
 							FLMBYTE	ucDOBlockId[ 4];
 
-							if( RC_BAD( rc = btGetEntryData( pucEntry, 
+							if( RC_BAD( rc = fbtGetEntryData( pucEntry, 
 								&ucDOBlockId[ 0], 4, NULL)))
 							{
 								RC_UNEXPECTED_ASSERT( rc);

@@ -1606,6 +1606,25 @@ void FLMAPI f_yieldCPU( void)
 	Sleep( 0);
 }
 
+/**********************************************************************
+Desc:
+**********************************************************************/
+RCODE FLMAPI f_chdir(
+	const char *		pszDir)
+{
+	RCODE		rc = NE_FLM_OK;
+	
+	if( _chdir( pszDir) != 0)
+	{
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_IO_PATH_NOT_FOUND);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
 #endif // FLM_WIN
 
 /****************************************************************************

@@ -1579,6 +1579,25 @@ FLMINT32 posix_atomic_xchg_32(
 	return( i32RetVal);
 }
 
+/**********************************************************************
+Desc:
+**********************************************************************/
+RCODE FLMAPI f_chdir(
+	const char *		pszDir)
+{
+	RCODE		rc = NE_FLM_OK;
+	
+	if( chdir( pszDir) != 0)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_IO_PATH_NOT_FOUND);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
 #endif // FLM_UNIX
 
 #if defined( FLM_WATCOM_NLM)

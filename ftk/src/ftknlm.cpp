@@ -4072,6 +4072,18 @@ void * f_getNLMHandle( void)
 #endif
 }
 
+/**********************************************************************
+Desc:
+**********************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE FLMAPI f_chdir(
+	const char *		pszDir)
+{
+	F_UNREFERENCED_PARM( pszDir);
+	return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
+}
+#endif
+	
 #endif // FLM_NLM
 
 /****************************************************************************
