@@ -704,7 +704,7 @@ rpm_name = $(package_proj_name_and_ver)-$(package_release_num).$(HOSTTYPE).rpm
 srpm_name = $(package_proj_name_and_ver)-$(package_release_num).src.rpm
 develrpm_name = $(package_proj_name)-devel-$(version)-$(package_release_num).$(HOSTTYPE).rpm
 
-inc_dirs = src
+inc_dirs = src util
 
 test_dir = $(target_path)/test
 lib_dir = $(target_path)/$(lib_dir_name)
@@ -1292,7 +1292,7 @@ ftk_test_obj = $(patsubst %.cpp,$(test_obj_dir)/%$(obj_suffix),$(ftk_test_src))
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src 
+vpath %.cpp src util
 
 # -- Default target --
 
