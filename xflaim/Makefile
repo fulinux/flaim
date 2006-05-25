@@ -1794,16 +1794,6 @@ dist: status clean dircheck srcdist
 	$(ec)$(call rmcmd,$(package_dir)/$(src_package_name))
 	$(ec)$(gprintf) "Distribution created.\n"
 
-# -- pathinfo --
-
-.PHONY : pathinfo
-pathinfo:
-	$(ec)$(gprintf) "srcpackage = $(call ppath,$(src_package_dir)/$(src_package_name))\n"
-	$(ec)$(gprintf) "binpackage = $(call ppath,$(bin_package_dir)/$(bin_package_name))\n"
-	$(ec)$(gprintf) "rpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(rpm_name))\n"
-	$(ec)$(gprintf) "srcrpm = $(call ppath,$(package_srpms_dir)/$(srpm_name))\n"
-	$(ec)$(gprintf) "develrpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(develrpm_name))\n"
-	
 # -- Change log --
 
 .PHONY : changelog

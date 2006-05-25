@@ -231,8 +231,8 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare
 		}
 		else
 		{
-			uiCollection1 = f_byteToUINT32( &pucData1[ 1]);
-			uiCollection2 = f_byteToUINT32( &pucData2[ 1]);
+			uiCollection1 = f_bigEndianToUINT32( &pucData1[ 1]);
+			uiCollection2 = f_bigEndianToUINT32( &pucData2[ 1]);
 
 			if( uiCollection1 < uiCollection2)
 			{
@@ -244,8 +244,8 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare
 			}
 			else
 			{
-				ui64NodeId1 = f_byteToUINT64( &pucData1[ 5]);
-				ui64NodeId2 = f_byteToUINT64( &pucData2[ 5]);
+				ui64NodeId1 = f_bigEndianToUINT64( &pucData1[ 5]);
+				ui64NodeId2 = f_bigEndianToUINT64( &pucData2[ 5]);
 
 				if( ui64NodeId1 < ui64NodeId2)
 				{

@@ -8275,10 +8275,10 @@ private:
 	{
 		pucBuffer[ 0] = ucPrefix;
 		
-		f_UINT32ToByte( (FLMUINT32)uiCollection, &pucBuffer[ 1]);
-		f_UINT64ToByte( ui64NodeId, &pucBuffer[ 5]);
-		f_UINT32ToByte( (FLMUINT32)uiBlockAddr, &pucBuffer[ 13]);
-		f_UINT32ToByte( (FLMUINT32)uiElmNumber, &pucBuffer[ 17]);
+		f_UINT32ToBigEndian( (FLMUINT32)uiCollection, &pucBuffer[ 1]);
+		f_UINT64ToBigEndian( ui64NodeId, &pucBuffer[ 5]);
+		f_UINT32ToBigEndian( (FLMUINT32)uiBlockAddr, &pucBuffer[ 13]);
+		f_UINT32ToBigEndian( (FLMUINT32)uiElmNumber, &pucBuffer[ 17]);
 	}
 
 	FINLINE void extractRSetEntry(
@@ -8290,22 +8290,22 @@ private:
 	{
 		if( puiCollection)
 		{
-			*puiCollection = f_byteToUINT32( &pucBuffer[ 1]);
+			*puiCollection = f_bigEndianToUINT32( &pucBuffer[ 1]);
 		}
 
 		if( pui64NodeId)
 		{
-			*pui64NodeId = f_byteToUINT64( &pucBuffer[ 5]);
+			*pui64NodeId = f_bigEndianToUINT64( &pucBuffer[ 5]);
 		}
 
 		if( puiBlockAddr)
 		{
-			*puiBlockAddr = f_byteToUINT32( &pucBuffer[ 13]);
+			*puiBlockAddr = f_bigEndianToUINT32( &pucBuffer[ 13]);
 		}
 
 		if( puiElmNumber)
 		{
-			*puiElmNumber = f_byteToUINT32( &pucBuffer[ 17]);
+			*puiElmNumber = f_bigEndianToUINT32( &pucBuffer[ 17]);
 		}
 	}
 

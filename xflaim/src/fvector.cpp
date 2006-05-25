@@ -965,7 +965,7 @@ RCODE F_DataVector::outputKey(
 					goto Exit;
 				}
 				
-				f_UINT32ToByte( (FLMUINT32)uiNum, pucToKey);
+				f_UINT32ToBigEndian( (FLMUINT32)uiNum, pucToKey);
 				uiToKeyLen = 4;
 			}
 			else if (pIcd->uiFlags & ICD_METAPHONE)
@@ -1260,7 +1260,8 @@ RCODE F_DataVector::inputKey(
 					rc = RC_SET_AND_ASSERT( NE_XFLM_BTREE_ERROR);
 					goto Exit;
 				}
-				uiNum = (FLMUINT)f_byteToUINT32( pucKey);
+				
+				uiNum = (FLMUINT)f_bigEndianToUINT32( pucKey);
 	
 				// What is stored in the key better match the dictionary
 				// number of the ICD.

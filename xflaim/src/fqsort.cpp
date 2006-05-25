@@ -432,7 +432,7 @@ RCODE F_Query::addToResultSet( void)
 		
 		flmAssert( m_bPositioningEnabled);
 		ui32Count++;
-		f_UINT32ToByte( ui32Count, ucKey);
+		f_UINT32ToBigEndian( ui32Count, ucKey);
 		pucTmp = &ucKey [4];
 		if (RC_BAD( rc = m_pCurrDoc->getDocumentId( (IF_Db *)m_pDb, &ui64DocId)))
 		{

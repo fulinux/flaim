@@ -1479,7 +1479,8 @@ No_Data:
 			}
 		}
 		
-		f_UINT32ToByte( (FLMUINT32)uiNameId, &m_keyGenInfo.pucKeyBuf [uiKeyLen]);
+		f_UINT32ToBigEndian( (FLMUINT32)uiNameId, 
+			&m_keyGenInfo.pucKeyBuf [uiKeyLen]);
 		uiKeyLen += 4;
 		
 		// Save the key component length.

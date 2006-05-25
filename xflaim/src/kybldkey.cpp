@@ -226,7 +226,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 
 	if (pIcd->uiFlags & ICD_PRESENCE)
 	{
-		f_UINT32ToByte( (FLMUINT32)pIcd->uiDictNum, pucFromKey);
+		f_UINT32ToBigEndian( (FLMUINT32)pIcd->uiDictNum, pucFromKey);
 		uiFromKeyLen = uiUntilKeyLen = 4;
 		f_memcpy( pucUntilKey, pucFromKey, uiUntilKeyLen);
 	}
