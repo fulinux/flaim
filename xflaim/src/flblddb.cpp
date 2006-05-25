@@ -1039,12 +1039,12 @@ RCODE F_DbRebuild::recoverNodes(
 
 	// Sort the result sets
 
-	if( RC_BAD( rc = pRootRSet->finalizeResultSet( &ui64RootCount)))
+	if( RC_BAD( rc = pRootRSet->finalizeResultSet( NULL, &ui64RootCount)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pNonRootRSet->finalizeResultSet( &ui64NonRootCount)))
+	if( RC_BAD( rc = pNonRootRSet->finalizeResultSet( NULL, &ui64NonRootCount)))
 	{
 		goto Exit;
 	}
