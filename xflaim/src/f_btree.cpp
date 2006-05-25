@@ -666,7 +666,6 @@ Desc: Function to insert an entry into the Btree.
 ****************************************************************************/
 RCODE F_Btree::btInsertEntry(
 	const FLMBYTE *	pucKey,
-	FLMUINT				uiKeyBufSize,
 	FLMUINT				uiKeyLen,
 	const FLMBYTE *	pucData,
 	FLMUINT				uiDataLen,
@@ -844,7 +843,6 @@ Desc: Function to remove an entry into the Btree.
 ****************************************************************************/
 RCODE F_Btree::btRemoveEntry(
 	const FLMBYTE *	pucKey,
-	FLMUINT				uiKeyBufSize,
 	FLMUINT				uiKeyLen)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -897,7 +895,6 @@ Desc:	Function to provide a streaming interface for replacing large
 ****************************************************************************/
 RCODE F_Btree::btReplaceEntry(
 	const FLMBYTE *	pucKey,
-	FLMUINT				uiKeyBufSize,
 	FLMUINT				uiKeyLen,
 	const FLMBYTE *	pucData,
 	FLMUINT				uiDataLen,

@@ -13358,9 +13358,7 @@ RCODE F_DomEditor::viewOnlyDeleteIxKey( void	)
 
 
 	// Delete the key.
-	if (RC_BAD( rc = pBtree->btRemoveEntry( pucKeyBuf,
-														 XFLM_MAX_KEY_SIZE,
-														 uiKeyLen)))
+	if (RC_BAD( rc = pBtree->btRemoveEntry( pucKeyBuf, uiKeyLen)))
 	{
 		goto Exit;
 	}

@@ -587,7 +587,7 @@ RCODE F_QueryResultSet::addEntry(
 	
 	m_pBTree->btResetBtree();
 	
-	if (RC_BAD( rc = m_pBTree->btInsertEntry( pucKey, uiKeyLen, uiKeyLen, NULL,
+	if (RC_BAD( rc = m_pBTree->btInsertEntry( pucKey, uiKeyLen, NULL,
 								0, TRUE, TRUE)))
 	{
 		goto Exit;

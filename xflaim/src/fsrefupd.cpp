@@ -64,7 +64,6 @@ RCODE F_Db::refUpdate(
 		pbtree->btResetBtree();
 		if( RC_BAD( rc = pbtree->btInsertEntry(
 							(FLMBYTE *)&pKrefEntry [1], pKrefEntry->ui16KeyLen,
-							pKrefEntry->ui16KeyLen,
 							pKrefEntry->uiDataLen
 							? ((FLMBYTE *)(&pKrefEntry [1])) + 1 + pKrefEntry->ui16KeyLen
 							: NULL,
@@ -77,8 +76,7 @@ RCODE F_Db::refUpdate(
 	{
 		pbtree->btResetBtree();
 		if (RC_BAD( rc = pbtree->btRemoveEntry(
-							(FLMBYTE *)&pKrefEntry [1], pKrefEntry->ui16KeyLen,
-							pKrefEntry->ui16KeyLen)))
+							(FLMBYTE *)&pKrefEntry [1], pKrefEntry->ui16KeyLen)))
 		{
 			if (rc == NE_XFLM_NOT_FOUND)
 			{

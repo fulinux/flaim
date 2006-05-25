@@ -211,7 +211,7 @@ RCODE F_BtResultSet::addEntry(
 
 	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
-	if( RC_BAD( rc = pBTree->btInsertEntry( pucKey, uiKeyLength,
+	if( RC_BAD( rc = pBTree->btInsertEntry( pucKey,
 		uiKeyLength, pucEntry, uiEntryLength, TRUE, TRUE)))
 	{
 		if (rc == NE_XFLM_NOT_UNIQUE)
@@ -255,7 +255,7 @@ RCODE F_BtResultSet::modifyEntry(
 
 	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
-	if( RC_BAD( rc = pBTree->btReplaceEntry( pucKey, uiKeyLength,
+	if( RC_BAD( rc = pBTree->btReplaceEntry( pucKey,
 		uiKeyLength, pucEntry, uiEntryLength, TRUE, TRUE)))
 	{
 		goto Exit;
@@ -290,9 +290,7 @@ RCODE F_BtResultSet::deleteEntry(
 
 	flmAssert( uiKeyLength <= XFLM_MAX_KEY_SIZE);
 
-	if (RC_BAD( rc = pBTree->btRemoveEntry( pucKey,
-														 uiKeyLength,
-														 uiKeyLength)))
+	if (RC_BAD( rc = pBTree->btRemoveEntry( pucKey, uiKeyLength)))
 	{
 		goto Exit;
 	}

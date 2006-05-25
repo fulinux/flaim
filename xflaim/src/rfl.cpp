@@ -5385,7 +5385,7 @@ RCODE F_Rfl::recovEncryptedNodeUpdate(
 		{
 			if( bFirst && bUseDataOnlyBlocks)
 			{
-				if( RC_BAD( rc = pBTree->btReplaceEntry( ucKey, sizeof( ucKey),
+				if( RC_BAD( rc = pBTree->btReplaceEntry( ucKey,
 					uiKeyLen, pucDataPacketBody, uiDataPacketBodyLen,
 					bFirst, FALSE)))
 				{
@@ -5398,7 +5398,7 @@ RCODE F_Rfl::recovEncryptedNodeUpdate(
 			bLast = TRUE;
 		}
 		
-		if( RC_BAD( rc = pBTree->btReplaceEntry( ucKey, sizeof( ucKey), uiKeyLen,
+		if( RC_BAD( rc = pBTree->btReplaceEntry( ucKey, uiKeyLen,
 			pucDataPacketBody, uiDataPacketBodyLen, bFirst, bLast)))
 		{
 			goto Exit;

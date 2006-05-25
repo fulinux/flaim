@@ -290,12 +290,10 @@ public:
 
 	RCODE btRemoveEntry(
 		const FLMBYTE *		pucKey,
-		FLMUINT					uiKeyBufSize,
 		FLMUINT					uiKeyLen);
 
 	RCODE btInsertEntry(
 		const FLMBYTE *		pucKey,
-		FLMUINT					uiKeyBufSize,
 		FLMUINT					uiKeyLen,
 		const FLMBYTE *		pucData,
 		FLMUINT					uiDataLen,
@@ -306,7 +304,6 @@ public:
 
 	RCODE btReplaceEntry(
 		const FLMBYTE *		pucKey,
-		FLMUINT					uiKeyBufSize,
 		FLMUINT					uiKeyLen,
 		const FLMBYTE *		pucData,
 		FLMUINT					uiDataLen,

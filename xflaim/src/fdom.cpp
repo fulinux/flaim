@@ -2429,7 +2429,7 @@ RCODE F_CachedNode::flushPendingInput(
 			// b-tree.
 
 			if( RC_BAD( rc = pDatabase->m_pPendingBTree->btInsertEntry(
-							ucKey, sizeof( ucKey), uiKeyLen,
+							ucKey, uiKeyLen,
 							ucHeader, uiHeaderStorageSize + uiIVLen, TRUE, FALSE,
 							&m_ui32BlkAddr, &m_uiOffsetIndex)))
 			{
@@ -2443,7 +2443,7 @@ RCODE F_CachedNode::flushPendingInput(
 		else
 		{
 			if( RC_BAD( rc = pDatabase->m_pPendingBTree->btReplaceEntry(
-				ucKey, sizeof( ucKey), uiKeyLen,
+				ucKey, uiKeyLen,
 				ucHeader, uiHeaderStorageSize + uiIVLen, TRUE, FALSE, TRUE,
 				&m_ui32BlkAddr, &m_uiOffsetIndex)))
 			{
@@ -2495,7 +2495,7 @@ RCODE F_CachedNode::flushPendingInput(
 			// insert method to stream its data into the b-tree
 
 			if( RC_BAD( rc = pDatabase->m_pPendingBTree->btInsertEntry(
-							ucKey, sizeof( ucKey), uiKeyLen,
+							ucKey, uiKeyLen,
 							pDatabase->m_pucUpdBuffer, uiOutputLength,
 							FALSE, bLast,
 							&m_ui32BlkAddr, &m_uiOffsetIndex)))
@@ -2511,7 +2511,7 @@ RCODE F_CachedNode::flushPendingInput(
 		else
 		{
 			if( RC_BAD( rc = 	pDatabase->m_pPendingBTree->btReplaceEntry(
-				ucKey, sizeof( ucKey), uiKeyLen,
+				ucKey, uiKeyLen,
 				pDatabase->m_pucUpdBuffer, uiOutputLength,
 				FALSE, bLast, TRUE,
 				&m_ui32BlkAddr, &m_uiOffsetIndex)))
@@ -3783,7 +3783,7 @@ RCODE F_DOMNode::setTextStreaming(
 			uiOffsetIndex = getOffsetIndex();
 
 			if( RC_BAD( rc = 	pDatabase->m_pPendingBTree->btReplaceEntry(
-				ucKey, sizeof( ucKey), uiKeyLen,
+				ucKey, uiKeyLen,
 				pDatabase->m_pucUpdBuffer, uiHeaderStorageSize + SEN_RESERVE_BYTES,
 				TRUE, TRUE, FALSE, &ui32BlkAddr, &uiOffsetIndex)))
 			{
@@ -4491,7 +4491,7 @@ RCODE F_DOMNode::setBinaryStreaming(
 			uiOffsetIndex = getOffsetIndex();
 
 			if( RC_BAD( rc = 	pDatabase->m_pPendingBTree->btReplaceEntry(
-				ucKey, sizeof( ucKey), uiKeyLen,
+				ucKey, uiKeyLen,
 				pDatabase->m_pucUpdBuffer, uiHeaderStorageSize,
 				TRUE, TRUE, FALSE, &ui32BlkAddr, &uiOffsetIndex)))
 			{
@@ -14363,7 +14363,7 @@ RCODE F_Db::flushNode(
 		}
 		
 		if( RC_BAD( rc = pBTree->btInsertEntry(
-						ucKeyBuf, sizeof( ucKeyBuf), uiKeyLen,
+						ucKeyBuf, uiKeyLen,
 						dynaBuf.getBufferPtr(), dynaBuf.getDataLength(),
 						TRUE, TRUE, &ui32BlkAddr, &uiOffsetIndex)))
 		{
@@ -14380,7 +14380,7 @@ RCODE F_Db::flushNode(
 		// Replace the node on disk.
 
 		if( RC_BAD( rc = pBTree->btReplaceEntry(
-						ucKeyBuf, sizeof( ucKeyBuf), uiKeyLen,
+						ucKeyBuf, uiKeyLen,
 						dynaBuf.getBufferPtr(), dynaBuf.getDataLength(),
 						TRUE, TRUE, bTruncateOnReplace, &ui32BlkAddr,
 						&uiOffsetIndex)))
@@ -15344,7 +15344,7 @@ RCODE F_Db::purgeNode(
 
 	bMustAbortOnError = TRUE;
 
-	if( RC_BAD( rc = pBTree->btRemoveEntry( ucKey, sizeof( ucKey), uiKeyLen)))
+	if( RC_BAD( rc = pBTree->btRemoveEntry( ucKey, uiKeyLen)))
 	{
 		if( rc != NE_XFLM_NOT_FOUND)
 		{
