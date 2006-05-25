@@ -1363,6 +1363,37 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+RCODE FLMAPI f_threadCreate(
+	IF_Thread **			ppThread,
+	F_THREAD_FUNC			fnThread,
+	const char *			pszThreadName,
+	FLMUINT					uiThreadGroup,
+	FLMUINT					uiAppId,
+	void *					pvParm1,
+	void *					pvParm2,
+	FLMUINT					uiStackSize)
+{
+	return( f_getThreadMgrPtr()->createThread( ppThread, fnThread,
+		pszThreadName, uiThreadGroup, uiAppId, pvParm1, pvParm2, uiStackSize));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_threadDestroy(
+	IF_Thread **		ppThread)
+{
+	if( *ppThread != NULL)
+	{
+		(*ppThread)->stopThread();
+		(*ppThread)->Release();
+		*ppThread = NULL;
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 FLMUINT FLMAPI f_threadId( void)
 {
 #ifdef FLM_WIN

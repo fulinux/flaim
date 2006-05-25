@@ -1471,12 +1471,12 @@
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			void *					pvBuffer,
-			FLMUINT *				puiBytesRead) = 0;
+			FLMUINT *				puiBytesRead = NULL) = 0;
 
 		virtual RCODE FLMAPI seek(
 			FLMUINT64				ui64Offset,
 			FLMINT					iWhence,
-			FLMUINT64 *				pui64NewOffset) = 0;
+			FLMUINT64 *				pui64NewOffset = NULL) = 0;
 
 		virtual RCODE FLMAPI size(
 			FLMUINT64 *				pui64Size) = 0;
@@ -1491,13 +1491,13 @@
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			const void *			pvBuffer,
-			FLMUINT *				puiBytesWritten) = 0;
+			FLMUINT *				puiBytesWritten = NULL) = 0;
 
 		virtual RCODE FLMAPI sectorRead(
 			FLMUINT64				ui64ReadOffset,
 			FLMUINT					uiBytesToRead,
 			void *					pvBuffer,
-			FLMUINT *				puiBytesReadRV) = 0;
+			FLMUINT *				puiBytesReadRV = NULL) = 0;
 
 		virtual RCODE FLMAPI sectorWrite(
 			FLMUINT64				ui64WriteOffset,
@@ -1505,7 +1505,7 @@
 			const void *			pvBuffer,
 			FLMUINT					uiBufferSize,
 			void *					pvBufferObj,
-			FLMUINT *				puiBytesWrittenRV,
+			FLMUINT *				puiBytesWritten = NULL,
 			FLMBOOL					bZeroFill = TRUE) = 0;
 
 		virtual RCODE FLMAPI close( void) = 0;
@@ -1556,13 +1556,13 @@
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			void *					pvBuffer,
-			FLMUINT *				puiBytesRead) = 0;
+			FLMUINT *				puiBytesRead = NULL) = 0;
 	
 		virtual RCODE FLMAPI write(
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			void *					pvBuffer,
-			FLMUINT *				puiBytesWritten) = 0;
+			FLMUINT *				puiBytesWritten = NULL) = 0;
 	
 		virtual RCODE FLMAPI getPath(
 			char *					pszFilePath) = 0;
@@ -1719,9 +1719,6 @@
 			FLMBOOL						bEntriesInOrder = FALSE,
 			const char *				pszFileName = NULL) = 0;
 
-		virtual void FLMAPI setSortStatus(
-			IF_ResultSetSortStatus *	pSortStatus) = 0;
-
 		virtual FLMUINT64 FLMAPI getTotalEntries( void) = 0;
 
 		virtual RCODE FLMAPI addEntry(
@@ -1729,7 +1726,8 @@
 			FLMUINT					uiEntryLength = 0) = 0;
 
 		virtual RCODE FLMAPI finalizeResultSet(
-			FLMUINT64 *				pui64TotalEntries = NULL) = 0;
+			IF_ResultSetSortStatus *	pSortStatus = NULL,
+			FLMUINT64 *						pui64TotalEntries = NULL) = 0;
 
 		virtual RCODE FLMAPI getFirst(
 			void *					pvEntryBuffer,
@@ -2040,6 +2038,19 @@
 		virtual void FLMAPI cleanupThread( void) = 0;
 	};
 	
+	RCODE FLMAPI f_threadCreate(
+		IF_Thread **			ppThread,
+		F_THREAD_FUNC			fnThread,
+		const char *			pszThreadName = NULL,
+		FLMUINT					uiThreadGroup = 0,
+		FLMUINT					uiAppId = 0,
+		void *					pvParm1 = NULL,
+		void *					pvParm2 = NULL,
+		FLMUINT					uiStackSize = F_THREAD_DEFAULT_STACK_SIZE);
+	
+	void FLMAPI f_threadDestroy(
+		IF_Thread **			ppThread);
+	
 	FLMUINT FLMAPI f_threadId( void);
 
 	/****************************************************************************
@@ -2101,7 +2112,9 @@
 		
 	FLMUINT32 FLMAPI f_calcFastChecksum(
 		const void *				pvBuffer,
-		FLMUINT						uiLength);
+		FLMUINT						uiLength,
+		FLMUINT *					puiAdds = NULL,
+		FLMUINT *					puiXORs = NULL);
 	
 	/****************************************************************************
 	Desc:

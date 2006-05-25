@@ -357,21 +357,6 @@ public:
 		FLMBOOL						bEntriesInOrder = FALSE,
 		const char *				pszInputFileName = NULL);	
 
-	FINLINE void FLMAPI setSortStatus(
-		IF_ResultSetSortStatus *	pSortStatus)
-	{
-		if (m_pSortStatus)
-		{
-			m_pSortStatus->Release();
-			m_pSortStatus = NULL;
-		}
-		
-		if ((m_pSortStatus = pSortStatus) != NULL)
-		{
-			m_pSortStatus->AddRef();
-		}
-	}
-
 	FINLINE FLMUINT64 FLMAPI getTotalEntries( void)
 	{
 		F_ResultSetBlk	*	pBlk = m_pFirstRSBlk;
@@ -390,7 +375,8 @@ public:
 		FLMUINT			uiEntryLength = 0);
 
 	RCODE FLMAPI finalizeResultSet(
-		FLMUINT64 *		pui64TotalEntries = NULL);
+		IF_ResultSetSortStatus *	pSortStatus = NULL,
+		FLMUINT64 *						pui64TotalEntries = NULL);
 
 	RCODE FLMAPI getFirst(
 		void *			pvEntryBuffer,
@@ -1275,15 +1261,22 @@ Exit:
 Desc:	Done adding entries.  Sort all of the entries and perform a merge.
 *****************************************************************************/
 RCODE FLMAPI F_ResultSet::finalizeResultSet(
-	FLMUINT64 *		pui64TotalEntries)
+	IF_ResultSetSortStatus *	pSortStatus,
+	FLMUINT64 *						pui64TotalEntries)
 {
-	RCODE		rc = NE_FLM_OK;
-	FLMBOOL	bMergeSort;
+	RCODE				rc = NE_FLM_OK;
+	FLMBOOL			bMergeSort;
 
 	// Avoid being called more than once.
 
 	f_assert( !m_bFinalizeCalled);
-	f_assert( m_bSetupCalled );
+	f_assert( m_bSetupCalled);
+	f_assert( !m_pSortStatus);
+	
+	if ((m_pSortStatus = pSortStatus) != NULL)
+	{
+		m_pSortStatus->AddRef();
+	}
 
 	// Not a bug - but for future possibilities just check
 	// if there is more than one block and if so then
@@ -1498,8 +1491,12 @@ Exit:
 		}
 	}
 
-	// else on error finalize leaves the block list in an awful state.
-
+	if (m_pSortStatus)
+	{
+		m_pSortStatus->Release();
+		m_pSortStatus = NULL;
+	}
+	
 	return( rc);
 }
 

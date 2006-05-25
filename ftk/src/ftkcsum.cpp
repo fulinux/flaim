@@ -525,11 +525,23 @@ Desc:	Calculate the checksum for a block.  NOTE: This is ALWAYS done
 *********************************************************************/
 FLMUINT32 FLMAPI f_calcFastChecksum(
 	const void *	pvData,
-	FLMUINT			uiLength)
+	FLMUINT			uiLength,
+	FLMUINT *		puiAdds,
+	FLMUINT *		puiXORs)
 {
 	FLMUINT			uiAdds = 0;
 	FLMUINT			uiXORs = 0;
 	FLMBYTE *		pucData = (FLMBYTE *)pvData;
+	
+	if( puiAdds)
+	{
+		uiAdds = *puiAdds;
+	}
+	
+	if( puiXORs)
+	{
+		uiXORs = *puiXORs;
+	}
 
 #if defined( FLM_NLM) || (defined( FLM_WIN) && !defined( FLM_64BIT))
 
@@ -549,6 +561,16 @@ FLMUINT32 FLMAPI f_calcFastChecksum(
 	uiAdds &= 0xFF;
 #endif
 
+	if( puiAdds)
+	{
+		*puiAdds = uiAdds;
+	}
+	
+	if( puiXORs)
+	{
+		*puiXORs = uiXORs;
+	}
+	
 	return( (FLMUINT32)((uiAdds << 16) + uiXORs));
 }
 
