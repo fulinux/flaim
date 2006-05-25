@@ -36,66 +36,9 @@
 #define MULTI_FILE_OUT_STREAM_MAX_FILE_SIZE	2147483647
 
 /****************************************************************************
-Desc:	Decodes an ASCII base64 stream to binary
-****************************************************************************/
-class F_Base64DecoderIStream : public IF_IStream
-{
-public:
-
-	F_Base64DecoderIStream()
-	{
-		m_pIStream = NULL;
-		m_uiBufOffset = 0;
-		m_uiAvailBytes = 0;
-	}
-
-	virtual ~F_Base64DecoderIStream()
-	{
-		close();
-	}
-
-	RCODE FLMAPI open(
-		IF_IStream *	pIStream);
-	
-	RCODE FLMAPI read(
-		void *			pvBuffer,
-		FLMUINT			uiBytesToRead,
-		FLMUINT *		puiBytesRead);
-		
-	FINLINE RCODE FLMAPI close( void)
-	{
-		RCODE		rc = NE_FLM_OK;
-		
-		if( m_pIStream)
-		{
-			if( m_pIStream->getRefCount() == 1)
-			{
-				rc = m_pIStream->close();
-			}
-
-			m_pIStream->Release();
-			m_pIStream = NULL;
-		}
-		
-		m_uiAvailBytes = 0;
-		m_uiBufOffset = 0;
-		
-		return( rc);
-	}
-	
-private:
-
-	IF_IStream *		m_pIStream;
-	FLMUINT				m_uiBufOffset;
-	FLMUINT				m_uiAvailBytes;
-	FLMBYTE				m_ucBuffer[ 8];
-	static FLMBYTE		m_ucDecodeTable[ 256];
-};
-
-/****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE F_Base64DecoderIStream::m_ucDecodeTable[ 256] = 
+FLMBYTE gv_ucBase64DecodeTable[ 256] = 
 {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 0   .. 7
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 8   .. 15
@@ -132,66 +75,9 @@ FLMBYTE F_Base64DecoderIStream::m_ucDecodeTable[ 256] =
 };
 
 /****************************************************************************
-Desc:	Encodes a binary input stream into ASCII base64.
-****************************************************************************/
-class F_Base64EncoderIStream : public IF_IStream
-{
-public:
-
-	F_Base64EncoderIStream()
-	{
-		m_pIStream = NULL;
-	}
-
-	virtual ~F_Base64EncoderIStream()
-	{
-		close();
-	}
-
-	RCODE FLMAPI open(
-		IF_IStream *	pIStream,
-		FLMBOOL			bLineBreaks);
-	
-	RCODE FLMAPI read(
-		void *			pvBuffer,
-		FLMUINT			uiBytesToRead,
-		FLMUINT *		puiBytesRead);
-
-	FINLINE RCODE FLMAPI close( void)
-	{
-		RCODE		rc = NE_FLM_OK;
-		
-		if( m_pIStream)
-		{
-			if( m_pIStream->getRefCount() == 1)
-			{
-				rc = m_pIStream->close();
-			}
-
-			m_pIStream->Release();
-			m_pIStream = NULL;
-		}
-		
-		return( rc);
-	}
-	
-private:
-
-	IF_IStream *		m_pIStream;
-	FLMBOOL				m_bInputExhausted;
-	FLMBOOL				m_bLineBreaks;
-	FLMBOOL				m_bPriorLineEnd;
-	FLMUINT				m_uiBase64Count;
-	FLMUINT				m_uiBufOffset;
-	FLMUINT				m_uiAvailBytes;
-	FLMBYTE 				m_ucBuffer[ 8];
-	static FLMBYTE		m_ucEncodeTable[ 64];
-};
-
-/****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE F_Base64EncoderIStream::m_ucEncodeTable[ 64] = 
+FLMBYTE gv_ucBase64EncodeTable[ 64] = 
 {
 	ASCII_UPPER_A, ASCII_UPPER_B, ASCII_UPPER_C, ASCII_UPPER_D,
 	ASCII_UPPER_E, ASCII_UPPER_F, ASCII_UPPER_G, ASCII_UPPER_H,
@@ -214,131 +100,7 @@ FLMBYTE F_Base64EncoderIStream::m_ucEncodeTable[ 64] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-typedef struct LZWODictItem
-{
-	LZWODictItem *	pNext;
-	FLMUINT16		ui16Code;
-	FLMUINT16		ui16ParentCode;
-	FLMBYTE			ucChar;
-} LZWODictItem;
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class F_CompressingOStream : public F_OStream
-{
-public:
-
-	F_CompressingOStream()
-	{
-		m_pool.poolInit( 64 * 1024);
-		m_pOStream = NULL;
-		m_ppHashTbl = NULL;
-	}
-
-	virtual ~F_CompressingOStream()
-	{
-		close();
-	}
-
-	RCODE FLMAPI open(
-		IF_OStream *	pOStream);
-
-	RCODE FLMAPI write(
-		const void *	pvBuffer,
-		FLMUINT			uiBytesToWrite,
-		FLMUINT *		puiBytesWritten);
-
-	RCODE FLMAPI close( void);
-
-private:
-
-	FINLINE FLMUINT getHashBucket(
-		FLMUINT16	ui16CurrentCode,
-		FLMBYTE		ucChar)
-	{
-		return( ((((FLMUINT)ui16CurrentCode) << 8) | 
-			((FLMUINT)ucChar)) % m_uiHashTblSize);
-	}
-
-	LZWODictItem * findDictEntry( 
-		FLMUINT16		ui16CurrentCode,
-		FLMBYTE			ucChar);
-
-	F_Pool				m_pool;
-	IF_OStream *		m_pOStream;
-	LZWODictItem **	m_ppHashTbl;
-	FLMUINT				m_uiHashTblSize;
-	FLMUINT				m_uiLastRatio;
-	FLMUINT				m_uiBestRatio;
-	FLMUINT				m_uiCurrentBytesIn;
-	FLMUINT				m_uiTotalBytesIn;
-	FLMUINT				m_uiCurrentBytesOut;
-	FLMUINT				m_uiTotalBytesOut;
-	FLMBOOL				m_bStopCompression;
-	FLMUINT16			m_ui16CurrentCode;
-	FLMUINT16			m_ui16FreeCode;
-};
-
-typedef struct LZWIDictItem
-{
-	LZWODictItem *	pNext;
-	FLMUINT16		ui16ParentCode;
-	FLMBYTE			ucChar;
-} LZWIDictItem;
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class F_UncompressingIStream : public F_IStream
-{
-public:
-
-	F_UncompressingIStream()
-	{
-		m_pIStream = NULL;
-		m_pDict = NULL;
-		m_pucDecodeBuffer = NULL;
-	}
-
-	virtual ~F_UncompressingIStream()
-	{
-		close();
-	}
-
-	RCODE FLMAPI open(
-		IF_IStream *	pIStream);
-
-	RCODE FLMAPI read(
-		void *			pvBuffer,
-		FLMUINT			uiBytesToRead,
-		FLMUINT *		puiBytesRead);
-
-	RCODE FLMAPI close( void);
-	
-private:
-
-	RCODE readCode(
-		FLMUINT16 *		pui16Code);
-
-	RCODE decodeToBuffer(
-		FLMUINT16		ui16Code);
-
-	IF_IStream *		m_pIStream;
-	LZWIDictItem *		m_pDict;
-	FLMBYTE *			m_pucDecodeBuffer;
-	FLMUINT				m_uiDecodeBufferSize;
-	FLMUINT				m_uiDecodeBufferOffset;
-	FLMUINT16			m_ui16FreeCode;
-	FLMUINT16			m_ui16LastCode;
-	FLMBOOL				m_bStopCompression;
-	FLMBOOL				m_bEndOfStream;
-};
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class	F_TCPStream : public F_IStream, public F_OStream
+class	F_TCPStream : public IF_IStream, public IF_OStream
 {
 public:
 
@@ -867,48 +629,6 @@ Exit:
 	return( rc);
 }
 		
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_IStream::F_IStream()
-{
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_IStream::~F_IStream()
-{
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_PosIStream::F_PosIStream()
-{
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_PosIStream::~F_PosIStream()
-{
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_OStream::F_OStream()
-{
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-F_OStream::~F_OStream()
-{
-}
-
 /****************************************************************************
 Desc:
 *****************************************************************************/
@@ -2136,7 +1856,7 @@ RCODE FLMAPI F_Base64DecoderIStream::read(
 					goto Exit;
 				}
 				
-				if( m_ucDecodeTable[ ucQuadBuffer[ uiOffset]] == 0xFF)
+				if( gv_ucBase64DecodeTable[ ucQuadBuffer[ uiOffset]] == 0xFF)
 				{
 					FLMBYTE	ucTmp = ucQuadBuffer[ uiOffset];
 
@@ -2154,23 +1874,23 @@ RCODE FLMAPI F_Base64DecoderIStream::read(
 			}
 			
 			m_ucBuffer[ 0] = 
-				(m_ucDecodeTable[ ucQuadBuffer[ 0]] << 2) |
-				(m_ucDecodeTable[ ucQuadBuffer[ 1]] >> 4);
+				(gv_ucBase64DecodeTable[ ucQuadBuffer[ 0]] << 2) |
+				(gv_ucBase64DecodeTable[ ucQuadBuffer[ 1]] >> 4);
 			m_uiAvailBytes++;
 			
 			if( ucQuadBuffer[ 2] != '=')
 			{
 				m_ucBuffer[ 1] =
-					(m_ucDecodeTable[ ucQuadBuffer[ 1]] << 4) |
-					(m_ucDecodeTable[ ucQuadBuffer[ 2]] >> 2);
+					(gv_ucBase64DecodeTable[ ucQuadBuffer[ 1]] << 4) |
+					(gv_ucBase64DecodeTable[ ucQuadBuffer[ 2]] >> 2);
 				m_uiAvailBytes++;
 			}
 			
 			if( ucQuadBuffer[ 3] != '=')
 			{
 				m_ucBuffer[ 2] =
-					(m_ucDecodeTable[ ucQuadBuffer[ 2]] << 6) |
-					m_ucDecodeTable[ ucQuadBuffer[ 3]];
+					(gv_ucBase64DecodeTable[ ucQuadBuffer[ 2]] << 6) |
+					gv_ucBase64DecodeTable[ ucQuadBuffer[ 3]];
 				m_uiAvailBytes++;
 			}
 		}
@@ -2279,16 +1999,16 @@ RCODE FLMAPI F_Base64EncoderIStream::read(
 			if( uiBytesToEncode)
 			{
 				m_ucBuffer[ m_uiAvailBytes++] = 
-					m_ucEncodeTable[ ucTriBuffer[ 0] >> 2];
+					gv_ucBase64EncodeTable[ ucTriBuffer[ 0] >> 2];
 
 				m_ucBuffer[ m_uiAvailBytes++] = 
-					m_ucEncodeTable[ ((ucTriBuffer[ 0] & 0x03) << 4) |
+					gv_ucBase64EncodeTable[ ((ucTriBuffer[ 0] & 0x03) << 4) |
 					(ucTriBuffer[ 1] >> 4)];
 
 				if( uiBytesToEncode >= 2)
 				{
 					m_ucBuffer[ m_uiAvailBytes++] = 
-						m_ucEncodeTable[ ((ucTriBuffer[ 1] & 0x0F) << 2) |
+						gv_ucBase64EncodeTable[ ((ucTriBuffer[ 1] & 0x0F) << 2) |
 						(ucTriBuffer[ 2] >> 6)];
 				}
 				else
@@ -2299,7 +2019,7 @@ RCODE FLMAPI F_Base64EncoderIStream::read(
 				if( uiBytesToEncode == 3)
 				{
 					m_ucBuffer[ m_uiAvailBytes++] =
-						m_ucEncodeTable[ ucTriBuffer[ 2] & 0x3F];
+						gv_ucBase64EncodeTable[ ucTriBuffer[ 2] & 0x3F];
 				}
 				else
 				{

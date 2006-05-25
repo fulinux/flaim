@@ -346,7 +346,7 @@
 		#define FINLINE							inline
 	#elif defined( FLM_UNIX)
 		#define FLMAPI     		
-		#define FLMEXP								FLMEXTC
+		#define FLMEXP
 		#define FINLINE							inline
 	#else
 		#error Platform not supported
@@ -4700,5 +4700,815 @@
 		FLMUINT *		puiTermChar);
 
 	void FLMAPI FTXBeep( void);
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_BufferIStream : public IF_BufferIStream
+	{
+	public:
+	
+		F_BufferIStream()
+		{
+			m_pucBuffer = NULL;
+			m_uiBufferLen = 0;
+			m_uiOffset = 0;
+			m_bAllocatedBuffer = FALSE;
+			m_bIsOpen = FALSE;
+		}
+	
+		virtual ~F_BufferIStream();
+	
+		RCODE FLMAPI open(
+			const char *		pucBuffer,
+			FLMUINT				uiLength,
+			char **				ppucAllocatedBuffer = NULL);
+	
+		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		{
+			f_assert( m_bIsOpen);
+			return( m_uiBufferLen);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		{
+			f_assert( m_bIsOpen);
+			return( m_uiBufferLen - m_uiOffset);
+		}
+	
+		RCODE FLMAPI close( void);
+	
+		FINLINE RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position)
+		{
+			f_assert( m_bIsOpen);
+	
+			if( ui64Position < m_uiBufferLen)
+			{
+				m_uiOffset = (FLMUINT)ui64Position;
+			}
+			else
+			{
+				m_uiOffset = m_uiBufferLen;
+			}
+	
+			return( NE_FLM_OK);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		{
+			f_assert( m_bIsOpen);
+			return( m_uiOffset);
+		}
+	
+		FINLINE void FLMAPI truncate(
+			FLMUINT64		ui64Offset)
+		{
+			f_assert( m_bIsOpen);
+			f_assert( ui64Offset >= m_uiOffset);
+			f_assert( ui64Offset <= m_uiBufferLen);
+			
+			m_uiBufferLen = (FLMUINT)ui64Offset;
+		}
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+			
+		FINLINE const FLMBYTE * getBuffer( void)
+		{
+			f_assert( m_bIsOpen);
+			return( m_pucBuffer);
+		}
+		
+		FINLINE const FLMBYTE * FLMAPI getBufferAtCurrentOffset( void)
+		{
+			f_assert( m_bIsOpen);
+			return( m_pucBuffer ? &m_pucBuffer[ m_uiOffset] : NULL);
+		}
+		
+		FINLINE FLMBOOL isOpen( void)
+		{
+			return( m_bIsOpen);
+		}
+	
+	private:
+	
+		const FLMBYTE *	m_pucBuffer;
+		FLMUINT				m_uiBufferLen;
+		FLMUINT				m_uiOffset;
+		FLMBOOL				m_bAllocatedBuffer;
+		FLMBOOL				m_bIsOpen;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_FileIStream : public IF_PosIStream
+	{
+	public:
+	
+		F_FileIStream()
+		{
+			m_pFileHdl = NULL;
+			m_ui64FileOffset = 0;
+		}
+	
+		virtual ~F_FileIStream()
+		{
+			if( m_pFileHdl)
+			{
+				m_pFileHdl->Release();
+			}
+		}
+	
+		RCODE FLMAPI open(
+			const char *	pszPath);
+	
+		RCODE FLMAPI close( void);
+	
+		RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position);
+	
+		FLMUINT64 FLMAPI totalSize( void);
+	
+		FLMUINT64 FLMAPI remainingSize( void);
+	
+		FLMUINT64 FLMAPI getCurrPosition( void);
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+	
+	private:
+	
+		IF_FileHdl *		m_pFileHdl;
+		FLMUINT64			m_ui64FileOffset;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_BufferedIStream : public IF_PosIStream
+	{
+	public:
+	
+		F_BufferedIStream()
+		{
+			m_pIStream = NULL;
+			m_pucBuffer = NULL;
+		}
+	
+		virtual ~F_BufferedIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_IStream *		pIStream,
+			FLMUINT				uiBufferSize);
+	
+		RCODE FLMAPI read(
+			void *				pvBuffer,
+			FLMUINT				uiBytesToRead,
+			FLMUINT *			puiBytesRead);
+	
+		RCODE FLMAPI close( void);
+	
+		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		{
+			if (!m_pIStream)
+			{
+				f_assert( 0);
+				return( 0);
+			}
+	
+			return( m_uiBytesAvail);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		{
+			if( !m_pIStream)
+			{
+				f_assert( 0);
+				return( 0);
+			}
+	
+			return( m_uiBytesAvail - m_uiBufferOffset);
+		}
+	
+		FINLINE RCODE FLMAPI positionTo(
+			FLMUINT64		ui64Position)
+		{
+			if( !m_pIStream)
+			{
+				f_assert( 0);
+				return( RC_SET( NE_FLM_ILLEGAL_OP));
+			}
+	
+			if( ui64Position < m_uiBytesAvail)
+			{
+				m_uiBufferOffset = (FLMUINT)ui64Position;
+			}
+			else
+			{
+				m_uiBufferOffset = m_uiBytesAvail;
+			}
+	
+			return( NE_FLM_OK);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		{
+			if( !m_pIStream)
+			{
+				f_assert( 0);
+				return( 0);
+			}
+	
+			return( m_uiBufferOffset);
+		}
+	
+	private:
+	
+		IF_IStream *			m_pIStream;
+		FLMBYTE *				m_pucBuffer;
+		FLMUINT					m_uiBufferSize;
+		FLMUINT					m_uiBufferOffset;
+		FLMUINT					m_uiBytesAvail;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_BufferedOStream : public IF_OStream
+	{
+	public:
+	
+		F_BufferedOStream()
+		{
+			m_pOStream = NULL;
+			m_pucBuffer = NULL;
+		}
+	
+		virtual ~F_BufferedOStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_OStream *	pOStream,
+			FLMUINT			uiBufferSize);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+		RCODE FLMAPI flush( void);
+	
+	private:
+	
+		IF_OStream *		m_pOStream;
+		FLMBYTE *			m_pucBuffer;
+		FLMUINT				m_uiBufferSize;
+		FLMUINT				m_uiBufferOffset;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_FileOStream : public IF_OStream
+	{
+	public:
+	
+		F_FileOStream()
+		{
+			m_pFileHdl = NULL;
+		}
+	
+		virtual ~F_FileOStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			const char *	pszFilePath,
+			FLMBOOL			bTruncateIfExists);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+	private:
+	
+		IF_FileHdl *		m_pFileHdl;
+		FLMUINT64			m_ui64FileOffset;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_MultiFileIStream : public IF_IStream
+	{
+	public:
+	
+		F_MultiFileIStream()
+		{
+			m_pIStream = NULL;
+			m_bOpen = FALSE;
+		}
+	
+		virtual ~F_MultiFileIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			const char *	pszDirectory,
+			const char *	pszBaseName);
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+	
+		RCODE FLMAPI close( void);
+	
+	private:
+	
+		RCODE rollToNextFile( void);
+	
+		IF_IStream *		m_pIStream;
+		FLMBOOL				m_bOpen;
+		FLMBOOL				m_bEndOfStream;
+		FLMUINT				m_uiFileNum;
+		FLMUINT64			m_ui64FileOffset;
+		char 					m_szDirectory[ F_PATH_MAX_SIZE + 1];
+		char	 				m_szBaseName[ F_PATH_MAX_SIZE + 1];
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_MultiFileOStream : public IF_OStream
+	{
+	public:
+	
+		F_MultiFileOStream()
+		{
+			m_pOStream = NULL;
+			m_bOpen = FALSE;
+		}
+	
+		virtual ~F_MultiFileOStream()
+		{
+			close();
+		}
+	
+		RCODE create(
+			const char *	pszDirectory,
+			const char *	pszBaseName,
+			FLMUINT			uiMaxFileSize,
+			FLMBOOL			bOkToOverwrite);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+		RCODE processDirectory(
+			const char *	pszDirectory,
+			const char *	pszBaseName,
+			FLMBOOL			bOkToDelete);
+	
+	private:
+	
+		RCODE rollToNextFile( void);
+	
+		IF_OStream *	m_pOStream;
+		FLMBOOL			m_bOpen;
+		FLMUINT			m_uiFileNum;
+		FLMUINT64		m_ui64MaxFileSize;
+		FLMUINT64		m_ui64FileOffset;
+		char 				m_szDirectory[ F_PATH_MAX_SIZE + 1];
+		char 				m_szBaseName[ F_PATH_MAX_SIZE + 1];
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_CollIStream : public IF_CollIStream
+	{
+	public:
+	
+		F_CollIStream()
+		{
+			m_pIStream = NULL;
+			m_uiLanguage = 0;
+			m_bMayHaveWildCards = FALSE;
+			m_bUnicodeStream = FALSE;
+			m_uNextChar = 0;
+		}
+	
+		virtual ~F_CollIStream()
+		{
+			if( m_pIStream)
+			{
+				m_pIStream->Release();
+			}
+		}
+	
+		RCODE FLMAPI open(
+			IF_PosIStream *	pIStream,
+			FLMBOOL				bUnicodeStream,
+			FLMUINT				uiLanguage,
+			FLMUINT				uiCompareRules,
+			FLMBOOL				bMayHaveWildCards)
+		{
+			if( m_pIStream)
+			{
+				m_pIStream->Release();
+			}
+	
+			m_pIStream = pIStream;
+			m_pIStream->AddRef();
+			m_uiLanguage = uiLanguage;
+			m_uiCompareRules = uiCompareRules;
+			m_bCaseSensitive = (uiCompareRules & FLM_COMP_CASE_INSENSITIVE)
+									  ? FALSE
+									  : TRUE;
+			m_bMayHaveWildCards = bMayHaveWildCards;
+			m_bUnicodeStream = bUnicodeStream;		
+			m_ui64EndOfLeadingSpacesPos = 0;
+			return( NE_FLM_OK);
+		}
+	
+		RCODE FLMAPI close( void)
+		{
+			if( m_pIStream)
+			{
+				m_pIStream->Release();
+				m_pIStream = NULL;
+			}
+			
+			return( NE_FLM_OK);
+		}
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead)
+		{
+			RCODE		rc = NE_FLM_OK;
+	
+			if( RC_BAD( rc = m_pIStream->read( pvBuffer, 
+				uiBytesToRead, puiBytesRead)))
+			{
+				goto Exit;
+			}
+	
+		Exit:
+	
+			return( rc);
+		}
+	
+		RCODE FLMAPI read(
+			FLMBOOL			bAllowTwoIntoOne,
+			FLMUNICODE *	puChar,
+			FLMBOOL *		pbCharIsWild,
+			FLMUINT16 *		pui16Col,
+			FLMUINT16 *		pui16SubCol,
+			FLMBYTE *		pucCase);
+			
+		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		{
+			if( m_pIStream)
+			{
+				return( m_pIStream->totalSize());
+			}
+	
+			return( 0);
+		}
+	
+		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		{
+			if( m_pIStream)
+			{
+				return( m_pIStream->remainingSize());
+			}
+	
+			return( 0);
+		}
+	
+		FINLINE RCODE FLMAPI positionTo(
+			FLMUINT64)
+		{
+			return( RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED));
+		}
+	
+		FINLINE RCODE FLMAPI positionTo(
+			F_CollStreamPos *	pPos)
+		{
+			
+			// Should never be able to position back to before the
+			// leading spaces.
+			
+			m_uNextChar = pPos->uNextChar;
+			flmAssert( pPos->ui64Position >= m_ui64EndOfLeadingSpacesPos);
+			return( m_pIStream->positionTo( pPos->ui64Position));
+		}
+	
+		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		{
+			flmAssert( 0);
+			return( 0);
+		}
+	
+		void FLMAPI getCurrPosition(
+			F_CollStreamPos *		pPos);
+	
+	private:
+	
+		FINLINE RCODE readCharFromStream(
+			FLMUNICODE *		puChar)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_bUnicodeStream)
+			{
+				if( RC_BAD( rc = m_pIStream->read( puChar, sizeof( FLMUNICODE), NULL)))
+				{
+					goto Exit;
+				}
+			}
+			else
+			{
+				if( RC_BAD( rc = f_readUTF8CharAsUnicode( 
+					m_pIStream, puChar)))
+				{
+					goto Exit;
+				}
+			}
+			
+		Exit:
+		
+			return( rc);
+		}
+			
+		IF_PosIStream *	m_pIStream;
+		FLMUINT				m_uiLanguage;
+		FLMBOOL				m_bCaseSensitive;
+		FLMUINT				m_uiCompareRules;
+		FLMUINT64			m_ui64EndOfLeadingSpacesPos;
+		FLMBOOL				m_bMayHaveWildCards;
+		FLMBOOL				m_bUnicodeStream;
+		FLMUNICODE			m_uNextChar;
+	};
+
+	/****************************************************************************
+	Desc:	Decodes an ASCII base64 stream to binary
+	****************************************************************************/
+	class FLMEXP F_Base64DecoderIStream : public IF_IStream
+	{
+	public:
+	
+		F_Base64DecoderIStream()
+		{
+			m_pIStream = NULL;
+			m_uiBufOffset = 0;
+			m_uiAvailBytes = 0;
+		}
+	
+		virtual ~F_Base64DecoderIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_IStream *	pIStream);
+		
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+			
+		FINLINE RCODE FLMAPI close( void)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_pIStream)
+			{
+				if( m_pIStream->getRefCount() == 1)
+				{
+					rc = m_pIStream->close();
+				}
+	
+				m_pIStream->Release();
+				m_pIStream = NULL;
+			}
+			
+			m_uiAvailBytes = 0;
+			m_uiBufOffset = 0;
+			
+			return( rc);
+		}
+		
+	private:
+	
+		IF_IStream *		m_pIStream;
+		FLMUINT				m_uiBufOffset;
+		FLMUINT				m_uiAvailBytes;
+		FLMBYTE				m_ucBuffer[ 8];
+	};
+
+	/****************************************************************************
+	Desc:	Encodes a binary input stream into ASCII base64.
+	****************************************************************************/
+	class FLMEXP F_Base64EncoderIStream : public IF_IStream
+	{
+	public:
+	
+		F_Base64EncoderIStream()
+		{
+			m_pIStream = NULL;
+		}
+	
+		virtual ~F_Base64EncoderIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_IStream *	pIStream,
+			FLMBOOL			bLineBreaks);
+		
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+	
+		FINLINE RCODE FLMAPI close( void)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			if( m_pIStream)
+			{
+				if( m_pIStream->getRefCount() == 1)
+				{
+					rc = m_pIStream->close();
+				}
+	
+				m_pIStream->Release();
+				m_pIStream = NULL;
+			}
+			
+			return( rc);
+		}
+		
+	private:
+	
+		IF_IStream *		m_pIStream;
+		FLMBOOL				m_bInputExhausted;
+		FLMBOOL				m_bLineBreaks;
+		FLMBOOL				m_bPriorLineEnd;
+		FLMUINT				m_uiBase64Count;
+		FLMUINT				m_uiBufOffset;
+		FLMUINT				m_uiAvailBytes;
+		FLMBYTE 				m_ucBuffer[ 8];
+	};
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	typedef struct LZWODictItem
+	{
+		LZWODictItem *	pNext;
+		FLMUINT16		ui16Code;
+		FLMUINT16		ui16ParentCode;
+		FLMBYTE			ucChar;
+	} LZWODictItem;
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_CompressingOStream : public IF_OStream
+	{
+	public:
+	
+		F_CompressingOStream()
+		{
+			m_pool.poolInit( 64 * 1024);
+			m_pOStream = NULL;
+			m_ppHashTbl = NULL;
+		}
+	
+		virtual ~F_CompressingOStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_OStream *	pOStream);
+	
+		RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten);
+	
+		RCODE FLMAPI close( void);
+	
+	private:
+	
+		FINLINE FLMUINT getHashBucket(
+			FLMUINT16	ui16CurrentCode,
+			FLMBYTE		ucChar)
+		{
+			return( ((((FLMUINT)ui16CurrentCode) << 8) | 
+				((FLMUINT)ucChar)) % m_uiHashTblSize);
+		}
+	
+		LZWODictItem * findDictEntry( 
+			FLMUINT16		ui16CurrentCode,
+			FLMBYTE			ucChar);
+	
+		F_Pool				m_pool;
+		IF_OStream *		m_pOStream;
+		LZWODictItem **	m_ppHashTbl;
+		FLMUINT				m_uiHashTblSize;
+		FLMUINT				m_uiLastRatio;
+		FLMUINT				m_uiBestRatio;
+		FLMUINT				m_uiCurrentBytesIn;
+		FLMUINT				m_uiTotalBytesIn;
+		FLMUINT				m_uiCurrentBytesOut;
+		FLMUINT				m_uiTotalBytesOut;
+		FLMBOOL				m_bStopCompression;
+		FLMUINT16			m_ui16CurrentCode;
+		FLMUINT16			m_ui16FreeCode;
+	};
+	
+	typedef struct LZWIDictItem
+	{
+		LZWODictItem *	pNext;
+		FLMUINT16		ui16ParentCode;
+		FLMBYTE			ucChar;
+	} LZWIDictItem;
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_UncompressingIStream : public IF_IStream
+	{
+	public:
+	
+		F_UncompressingIStream()
+		{
+			m_pIStream = NULL;
+			m_pDict = NULL;
+			m_pucDecodeBuffer = NULL;
+		}
+	
+		virtual ~F_UncompressingIStream()
+		{
+			close();
+		}
+	
+		RCODE FLMAPI open(
+			IF_IStream *	pIStream);
+	
+		RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead);
+	
+		RCODE FLMAPI close( void);
+		
+	private:
+	
+		RCODE readCode(
+			FLMUINT16 *		pui16Code);
+	
+		RCODE decodeToBuffer(
+			FLMUINT16		ui16Code);
+	
+		IF_IStream *		m_pIStream;
+		LZWIDictItem *		m_pDict;
+		FLMBYTE *			m_pucDecodeBuffer;
+		FLMUINT				m_uiDecodeBufferSize;
+		FLMUINT				m_uiDecodeBufferOffset;
+		FLMUINT16			m_ui16FreeCode;
+		FLMUINT16			m_ui16LastCode;
+		FLMBOOL				m_bStopCompression;
+		FLMBOOL				m_bEndOfStream;
+	};
 
 #endif // FTK_H
