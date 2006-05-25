@@ -806,7 +806,7 @@
 	/// This is a pure virtual base class that other classes inherit from.\   It
 	/// provides methods for reference counting (AddRef, Release).
 	****************************************************************************/
-	flminterface IF_Object
+	flminterface FLMEXP IF_Object
 	{
 		virtual ~IF_Object()
 		{
@@ -824,7 +824,7 @@
 	/// provides methods for reference counting (AddRef, Release) as well as
 	/// methods for overloading new and delete operators.
 	****************************************************************************/
-	class F_Object : public IF_Object
+	class FLMEXP F_Object : public IF_Object
 	{
 	public:
 
@@ -901,7 +901,7 @@
 	/****************************************************************************
 	Desc:		Internal base class
 	****************************************************************************/
-	class F_OSBase
+	class FLMEXP F_OSBase
 	{
 	public:
 
@@ -1082,7 +1082,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ThreadInfo : public F_Object
+	flminterface FLMEXP IF_ThreadInfo : public F_Object
 	{
 		virtual FLMUINT FLMAPI getNumThreads( void) = 0;
 
@@ -1102,7 +1102,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IStream : public F_Object
+	flminterface FLMEXP IF_IStream : public F_Object
 	{
 		virtual RCODE FLMAPI read(
 			void *					pvBuffer,
@@ -1115,7 +1115,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_PosIStream : public IF_IStream
+	flminterface FLMEXP IF_PosIStream : public IF_IStream
 	{
 		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
 			
@@ -1130,7 +1130,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_BufferIStream : public IF_PosIStream
+	flminterface FLMEXP IF_BufferIStream : public IF_PosIStream
 	{
 		virtual RCODE FLMAPI open(
 			const char *			pucBuffer,
@@ -1233,7 +1233,7 @@
 		FLMUNICODE		uNextChar;
 	} F_CollStreamPos;
 
-	flminterface IF_CollIStream : public IF_PosIStream
+	flminterface FLMEXP IF_CollIStream : public IF_PosIStream
 	{
 		virtual RCODE FLMAPI open(
 			IF_PosIStream *		pIStream,
@@ -1276,7 +1276,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_OStream : public F_Object
+	flminterface FLMEXP IF_OStream : public F_Object
 	{
 		virtual RCODE FLMAPI write(
 			const void *			pvBuffer,
@@ -1289,14 +1289,14 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IOStream : public IF_IStream, public IF_OStream
+	flminterface FLMEXP IF_IOStream : public IF_IStream, public IF_OStream
 	{
 	};
 	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_LoggerClient : public F_Object
+	flminterface FLMEXP IF_LoggerClient : public F_Object
 	{
 		virtual IF_LogMessageClient * FLMAPI beginMessage(
 			FLMUINT					uiMsgType) = 0;
@@ -1305,7 +1305,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_LogMessageClient : public F_Object
+	flminterface FLMEXP IF_LogMessageClient : public F_Object
 	{
 		virtual void FLMAPI changeColor(
 			eColorType				eForeColor,
@@ -1330,7 +1330,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_FileSystem : public F_Object
+	flminterface FLMEXP IF_FileSystem : public F_Object
 	{
 		virtual RCODE FLMAPI createFile(
 			const char *			pszFileName,
@@ -1463,7 +1463,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_FileHdl : public F_Object
+	flminterface FLMEXP IF_FileHdl : public F_Object
 	{
 		virtual RCODE FLMAPI flush( void) = 0;
 
@@ -1535,7 +1535,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_MultiFileHdl : public F_Object
+	flminterface FLMEXP IF_MultiFileHdl : public F_Object
 	{
 		virtual RCODE FLMAPI create(
 			const char *			pszPath) = 0;
@@ -1583,7 +1583,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IOBufferMgr : public F_Object
+	flminterface FLMEXP IF_IOBufferMgr : public F_Object
 	{
 		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;
 	
@@ -1619,7 +1619,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IOBuffer : public F_Object
+	flminterface FLMEXP IF_IOBuffer : public F_Object
 	{
 		typedef enum
 		{
@@ -1669,7 +1669,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DirHdl : public F_Object
+	flminterface FLMEXP IF_DirHdl : public F_Object
 	{
 		virtual RCODE FLMAPI next( void) = 0;
 
@@ -1686,7 +1686,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ResultSetCompare : public F_Object
+	flminterface FLMEXP IF_ResultSetCompare : public F_Object
 	{
 		virtual RCODE FLMAPI compare(
 			const void *			pvData1,
@@ -1699,7 +1699,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ResultSetSortStatus : public F_Object
+	flminterface FLMEXP IF_ResultSetSortStatus : public F_Object
 	{
 		virtual RCODE FLMAPI reportSortStatus(
 			FLMUINT64				ui64EstTotalUnits,
@@ -1709,7 +1709,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_ResultSet : public F_Object
+	flminterface FLMEXP IF_ResultSet : public F_Object
 	{
 		virtual RCODE FLMAPI setupResultSet(
 			const char *				pszPath,
@@ -1788,7 +1788,7 @@
 	/*****************************************************************************
 	Desc:
 	*****************************************************************************/
-	flminterface IF_BTreeResultSet : public F_Object
+	flminterface FLMEXP IF_BTreeResultSet : public F_Object
 	{
 		virtual RCODE FLMAPI addEntry(
 			FLMBYTE *				pucKey,
@@ -1860,7 +1860,7 @@
 	
 	#define FLM_MAX_RANDOM  ((FLMUINT32)2147483646)
 
-	flminterface IF_RandomGenerator : public F_Object
+	flminterface FLMEXP IF_RandomGenerator : public F_Object
 	{
 		virtual void FLMAPI randomize( void) = 0;
 
@@ -1940,7 +1940,7 @@
 	/****************************************************************************
 	Desc: Thread manager
 	****************************************************************************/
-	flminterface IF_ThreadMgr : public F_Object
+	flminterface FLMEXP IF_ThreadMgr : public F_Object
 	{
 		virtual RCODE FLMAPI setupThreadMgr( void) = 0;
 		
@@ -1988,7 +1988,7 @@
 	/****************************************************************************
 	Desc: Thread
 	****************************************************************************/
-	flminterface IF_Thread : public F_Object
+	flminterface FLMEXP IF_Thread : public F_Object
 	{
 		virtual RCODE FLMAPI startThread(
 			F_THREAD_FUNC			fnThread,
@@ -2045,7 +2045,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IniFile : public F_Object
+	flminterface FLMEXP IF_IniFile : public F_Object
 	{
 		virtual RCODE FLMAPI read(
 			const char *			pszFileName) = 0;
@@ -2645,10 +2645,83 @@
 	Desc: Endian macros
 	****************************************************************************/
 
-	FINLINE FLMUINT16 f_byteToUINT16( 
+	FINLINE FLMUINT16 f_littleEndianToUINT16( 
 		const FLMBYTE *		pucBuf)
 	{
 		FLMUINT16		ui16Val = 0;
+		
+		ui16Val |= ((FLMUINT16)pucBuf[ 1]) << 8;
+		ui16Val |= ((FLMUINT16)pucBuf[ 0]);
+		
+		return( ui16Val);
+	}
+	
+	FINLINE FLMUINT32 f_littleEndianToUINT32(
+		const FLMBYTE *		pucBuf)
+	{
+		FLMUINT32		ui32Val = 0;
+
+		ui32Val |= ((FLMUINT32)pucBuf[ 3]) << 24;
+		ui32Val |= ((FLMUINT32)pucBuf[ 2]) << 16;
+		ui32Val |= ((FLMUINT32)pucBuf[ 1]) << 8;
+		ui32Val |= ((FLMUINT32)pucBuf[ 0]);
+
+		return( ui32Val);
+	}
+	
+	FINLINE FLMUINT64 f_littleEndianToUINT64(
+		const FLMBYTE *		pucBuf)
+	{
+		FLMUINT64		ui64Val = 0;
+
+		ui64Val |= ((FLMUINT64)pucBuf[ 7]) << 56;
+		ui64Val |= ((FLMUINT64)pucBuf[ 6]) << 48;
+		ui64Val |= ((FLMUINT64)pucBuf[ 5]) << 40;
+		ui64Val |= ((FLMUINT64)pucBuf[ 4]) << 32;
+		ui64Val |= ((FLMUINT64)pucBuf[ 3]) << 24;
+		ui64Val |= ((FLMUINT64)pucBuf[ 2]) << 16;
+		ui64Val |= ((FLMUINT64)pucBuf[ 1]) << 8;
+		ui64Val |= ((FLMUINT64)pucBuf[ 0]);
+
+		return( ui64Val);
+	}
+
+	FINLINE void f_UINT16ToLittleEndian(
+		FLMUINT16				ui16Num,
+		FLMBYTE *				pucBuf)
+	{
+		pucBuf[ 1] = (FLMBYTE) (ui16Num >>  8);
+		pucBuf[ 0] = (FLMBYTE) (ui16Num);
+	}
+	
+	FINLINE void f_UINT32ToLittleEndian(
+		FLMUINT32				ui32Num,
+		FLMBYTE *				pucBuf)
+	{
+		pucBuf[ 3] = (FLMBYTE) (ui32Num >> 24);
+		pucBuf[ 2] = (FLMBYTE) (ui32Num >> 16);
+		pucBuf[ 1] = (FLMBYTE) (ui32Num >>  8);
+		pucBuf[ 0] = (FLMBYTE) (ui32Num);
+	}
+	
+	FINLINE void f_UINT64ToLittleEndian(
+		FLMUINT64				ui64Num,
+		FLMBYTE *				pucBuf)
+	{
+		pucBuf[ 7] = (FLMBYTE) (ui64Num >> 56);
+		pucBuf[ 6] = (FLMBYTE) (ui64Num >> 48);
+		pucBuf[ 5] = (FLMBYTE) (ui64Num >> 40);
+		pucBuf[ 4] = (FLMBYTE) (ui64Num >> 32);
+		pucBuf[ 3] = (FLMBYTE) (ui64Num >> 24);
+		pucBuf[ 2] = (FLMBYTE) (ui64Num >> 16);
+		pucBuf[ 1] = (FLMBYTE) (ui64Num >>  8);
+		pucBuf[ 0] = (FLMBYTE) (ui64Num);
+	}
+	
+	FINLINE FLMUINT16 f_bigEndianToUINT16(
+		const FLMBYTE *		pucBuf)
+	{
+		FLMUINT16	ui16Val = 0;
 		
 		ui16Val |= ((FLMUINT16)pucBuf[ 0]) << 8;
 		ui16Val |= ((FLMUINT16)pucBuf[ 1]);
@@ -2656,7 +2729,7 @@
 		return( ui16Val);
 	}
 	
-	FINLINE FLMUINT32 f_byteToUINT32(
+	FINLINE FLMUINT32 f_bigEndianToUINT32( 
 		const FLMBYTE *		pucBuf)
 	{
 		FLMUINT32		ui32Val = 0;
@@ -2665,15 +2738,15 @@
 		ui32Val |= ((FLMUINT32)pucBuf[ 1]) << 16;
 		ui32Val |= ((FLMUINT32)pucBuf[ 2]) << 8;
 		ui32Val |= ((FLMUINT32)pucBuf[ 3]);
-
+		
 		return( ui32Val);
 	}
 	
-	FINLINE FLMUINT64 f_byteToUINT64(
+	FINLINE FLMUINT64 f_bigEndianToUINT64( 
 		const FLMBYTE *		pucBuf)
 	{
 		FLMUINT64		ui64Val = 0;
-
+	
 		ui64Val |= ((FLMUINT64)pucBuf[ 0]) << 56;
 		ui64Val |= ((FLMUINT64)pucBuf[ 1]) << 48;
 		ui64Val |= ((FLMUINT64)pucBuf[ 2]) << 40;
@@ -2682,19 +2755,52 @@
 		ui64Val |= ((FLMUINT64)pucBuf[ 5]) << 16;
 		ui64Val |= ((FLMUINT64)pucBuf[ 6]) << 8;
 		ui64Val |= ((FLMUINT64)pucBuf[ 7]);
-
+	
 		return( ui64Val);
 	}
-
-	FINLINE void f_UINT16ToByte(
-		FLMUINT16		ui16Num,
-		FLMBYTE *		pucBuf)
+	
+	FINLINE FLMINT16 f_bigEndianToINT16(
+		const FLMBYTE *		pucBuf)
 	{
-		pucBuf[ 0] = (FLMBYTE) (ui16Num >>  8);
-		pucBuf[ 1] = (FLMBYTE) (ui16Num);
+		FLMINT16			i16Val = 0;
+		
+		i16Val |= ((FLMINT16)pucBuf[ 0]) << 8;
+		i16Val |= ((FLMINT16)pucBuf[ 1]);
+		
+		return( i16Val);
 	}
 	
-	FINLINE void f_UINT32ToByte(
+	FINLINE FLMINT32 f_bigEndianToINT32( 
+		const FLMBYTE *		pucBuf)
+	{
+		FLMINT32			i32Val = 0;
+
+		i32Val |= ((FLMINT32)pucBuf[ 0]) << 24;
+		i32Val |= ((FLMINT32)pucBuf[ 1]) << 16;
+		i32Val |= ((FLMINT32)pucBuf[ 2]) << 8;
+		i32Val |= ((FLMINT32)pucBuf[ 3]);
+		
+		return( i32Val);
+	}
+	
+	FINLINE FLMINT64 f_bigEndianToINT64( 
+		const FLMBYTE *		pucBuf)
+	{
+		FLMINT64			i64Val = 0;
+	
+		i64Val |= ((FLMINT64)pucBuf[ 0]) << 56;
+		i64Val |= ((FLMINT64)pucBuf[ 1]) << 48;
+		i64Val |= ((FLMINT64)pucBuf[ 2]) << 40;
+		i64Val |= ((FLMINT64)pucBuf[ 3]) << 32;
+		i64Val |= ((FLMINT64)pucBuf[ 4]) << 24;
+		i64Val |= ((FLMINT64)pucBuf[ 5]) << 16;
+		i64Val |= ((FLMINT64)pucBuf[ 6]) << 8;
+		i64Val |= ((FLMINT64)pucBuf[ 7]);
+	
+		return( i64Val);
+	}
+	
+	FINLINE void f_UINT32ToBigEndian( 
 		FLMUINT32		ui32Num,
 		FLMBYTE *		pucBuf)
 	{
@@ -2704,7 +2810,31 @@
 		pucBuf[ 3] = (FLMBYTE) (ui32Num);
 	}
 	
-	FINLINE void f_UINT64ToByte(
+	FINLINE void f_INT32ToBigEndian( 
+		FLMINT32			i32Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (i32Num >> 24);
+		pucBuf[ 1] = (FLMBYTE) (i32Num >> 16);
+		pucBuf[ 2] = (FLMBYTE) (i32Num >>  8);
+		pucBuf[ 3] = (FLMBYTE) (i32Num);
+	}
+	
+	FINLINE void f_INT64ToBigEndian( 
+		FLMINT64			i64Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (i64Num >> 56);
+		pucBuf[ 1] = (FLMBYTE) (i64Num >> 48);
+		pucBuf[ 2] = (FLMBYTE) (i64Num >> 40);
+		pucBuf[ 3] = (FLMBYTE) (i64Num >> 32);
+		pucBuf[ 4] = (FLMBYTE) (i64Num >> 24);
+		pucBuf[ 5] = (FLMBYTE) (i64Num >> 16);
+		pucBuf[ 6] = (FLMBYTE) (i64Num >>  8);
+		pucBuf[ 7] = (FLMBYTE) (i64Num);
+	}
+	
+	FINLINE void f_UINT64ToBigEndian( 
 		FLMUINT64		ui64Num,
 		FLMBYTE *		pucBuf)
 	{
@@ -2716,6 +2846,22 @@
 		pucBuf[ 5] = (FLMBYTE) (ui64Num >> 16);
 		pucBuf[ 6] = (FLMBYTE) (ui64Num >>  8);
 		pucBuf[ 7] = (FLMBYTE) (ui64Num);
+	}
+	
+	FINLINE void f_INT16ToBigEndian( 
+		FLMINT16			i16Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (i16Num >> 8);
+		pucBuf[ 1] = (FLMBYTE) (i16Num);
+	}
+	
+	FINLINE void f_UINT16ToBigEndian( 
+		FLMUINT16		ui16Num,
+		FLMBYTE *		pucBuf)
+	{
+		pucBuf[ 0] = (FLMBYTE) (ui16Num >> 8);
+		pucBuf[ 1] = (FLMBYTE) (ui16Num);
 	}
 
 	#if defined( FLM_STRICT_ALIGNMENT) || defined( FLM_BIG_ENDIAN)
@@ -2885,6 +3031,21 @@
 	/****************************************************************************
 	Desc: Time, date, timestamp functions
 	****************************************************************************/
+
+	typedef struct
+	{
+		FLMUINT16   year;
+		FLMBYTE		month;
+		FLMBYTE		day;
+	} F_DATE;
+
+	typedef struct
+	{
+		FLMBYTE		hour;
+		FLMBYTE		minute;
+		FLMBYTE		second;
+		FLMBYTE		hundredth;
+	} F_TIME;
 
 	typedef struct
 	{
@@ -3132,7 +3293,7 @@
 	/****************************************************************************
 	Desc: XML
 	****************************************************************************/
-	flminterface IF_XML : public F_Object
+	flminterface FLMEXP IF_XML : public F_Object
 	{
 	public:
 	
@@ -3180,7 +3341,7 @@
 	/****************************************************************************
 	Desc: Name table
 	****************************************************************************/
-	flminterface IF_NameTable : public F_Object
+	flminterface FLMEXP IF_NameTable : public F_Object
 	{
 		virtual void FLMAPI clearTable(
 			FLMUINT					uiPoolBlockSize) = 0;
@@ -3250,7 +3411,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DeleteStatus : public F_Object
+	flminterface FLMEXP IF_DeleteStatus : public F_Object
 	{
 		virtual RCODE FLMAPI reportDelete(
 			FLMUINT					uiBlocksDeleted,
@@ -3260,7 +3421,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_Relocator : public F_Object
+	flminterface FLMEXP IF_Relocator : public F_Object
 	{
 		virtual void FLMAPI relocate(
 			void *					pvOldAlloc,
@@ -3273,7 +3434,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_SlabManager : public F_Object
+	flminterface FLMEXP IF_SlabManager : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			FLMUINT 					uiPreallocSize) = 0;
@@ -3319,7 +3480,7 @@
 	Desc:	Class to provide an efficient means of providing many allocations
 			of a fixed size.
 	****************************************************************************/
-	flminterface IF_FixedAlloc : public F_Object
+	flminterface FLMEXP IF_FixedAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			IF_Relocator *			pRelocator,
@@ -3352,7 +3513,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_BufferAlloc : public F_Object
+	flminterface FLMEXP IF_BufferAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
@@ -3394,7 +3555,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_MultiAlloc : public F_Object
+	flminterface FLMEXP IF_MultiAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
@@ -3432,14 +3593,14 @@
 	/****************************************************************************
 	Desc:	Block
 	****************************************************************************/
-	flminterface IF_Block : public F_Object
+	flminterface FLMEXP IF_Block : public F_Object
 	{
 	};
 
 	/****************************************************************************
 	Desc:	Block manager
 	****************************************************************************/
-	flminterface IF_BlockMgr : public F_Object
+	flminterface FLMEXP IF_BlockMgr : public F_Object
 	{
 		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
 		
@@ -3469,7 +3630,7 @@
 	/****************************************************************************
 	Desc:	B-Tree
 	****************************************************************************/
-	flminterface IF_BTree : public F_Object
+	flminterface FLMEXP IF_BTree : public F_Object
 	{
 		virtual RCODE FLMAPI btCreate(
 			FLMUINT16					ui16BtreeId,
@@ -3611,29 +3772,30 @@
 	/****************************************************************************
 	Desc:	This class is used to do pool memory allocations.
 	****************************************************************************/
-	class F_Pool : public F_Object
+	
+	/// Header for blocks in a memory pool.  This structure is at the head of each block that belongs to a pool of
+	/// memory.
+	typedef struct PoolMemoryBlock
+	{
+		PoolMemoryBlock *	pPrevBlock;		///< Points to the previous memory block in the memory pool.
+		FLMUINT				uiBlockSize;	///< Total size of the memory block.
+		FLMUINT				uiFreeOffset;	///< Offset in block where next allocation should be made.
+		FLMUINT				uiFreeSize;		///< Amount of free memory left in block - from uiFreeOfs.
+	} PoolMemoryBlock;
+
+	/// Pool memory manager.  This structure is used to keep track of a pool
+	/// of memory blocks that are used for pool memory allocation.
+	typedef struct
+	{
+	FLMUINT			uiAllocBytes;			///< Total number of bytes requested from
+													///< GedPoolAlloc and GedPoolCalloc calls
+	FLMUINT			uiCount;					///< Number of frees and resets performed on 
+													///< the pool
+	} POOL_STATS;
+
+	class FLMEXP F_Pool : public F_Object
 	{
 	public:
-	
-		/// Header for blocks in a memory pool.  This structure is at the head of each block that belongs to a pool of
-		/// memory.
-		typedef struct PoolMemoryBlock
-		{
-			PoolMemoryBlock *	pPrevBlock;		///< Points to the previous memory block in the memory pool.
-			FLMUINT				uiBlockSize;	///< Total size of the memory block.
-			FLMUINT				uiFreeOffset;	///< Offset in block where next allocation should be made.
-			FLMUINT				uiFreeSize;		///< Amount of free memory left in block - from uiFreeOfs.
-		} PoolMemoryBlock;
-
-		/// Pool memory manager.  This structure is used to keep track of a pool
-		/// of memory blocks that are used for pool memory allocation.
-		typedef struct
-		{
-		FLMUINT			uiAllocBytes;			///< Total number of bytes requested from
-														///< GedPoolAlloc and GedPoolCalloc calls
-		FLMUINT			uiCount;					///< Number of frees and resets performed on 
-														///< the pool
-		} POOL_STATS;
 	
 		F_Pool()
 		{
@@ -3749,7 +3911,7 @@
 	/****************************************************************************
 	Desc:
 	*****************************************************************************/
-	class F_DynaBuf : public F_Object
+	class FLMEXP F_DynaBuf : public F_Object
 	{
 	public:
 	
