@@ -130,7 +130,6 @@ typedef struct
 	F_BTREE_BLK_HDR *			pBlkHdr;
 	F_CachedBlock *			pSCache;
 	const FLMBYTE *			pucKeyBuf;
-	FLMUINT						uiKeyBufSize;
 	FLMUINT						uiKeyLen;
 	FLMUINT						uiCurOffset;
 	FLMUINT						uiLevel;

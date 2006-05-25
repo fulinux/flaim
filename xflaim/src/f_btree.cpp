@@ -356,7 +356,6 @@ void F_Btree::btClose()
 	for (uiLoop = 0; uiLoop < BH_MAX_LEVELS; uiLoop++)
 	{
 		m_Stack[ uiLoop].pucKeyBuf = NULL;
-		m_Stack[ uiLoop].uiKeyBufSize = 0;
 	}
 
 	// Release any blocks still held in the stack.
@@ -716,7 +715,6 @@ RCODE F_Btree::btInsertEntry(
 
 	if( bLast)
 	{
-		m_Stack[ 0].uiKeyBufSize = uiKeyBufSize;
 
 		// We need to locate where we should insert the new entry.
 		
@@ -873,8 +871,6 @@ RCODE F_Btree::btRemoveEntry(
 
 	btResetBtree();
 
-	m_Stack[ 0].uiKeyBufSize = uiKeyBufSize;
-
 	// We need to locate where we should remove the entry.
 	if (RC_BAD( rc = findEntry( pucKey,
 										 uiKeyLen,
@@ -955,7 +951,6 @@ RCODE F_Btree::btReplaceEntry(
 
 	if( bFirst || bLast)
 	{
-		m_Stack[ 0].uiKeyBufSize = uiKeyBufSize;
 
 		// We need to locate the entry we want to replace
 		
@@ -1171,8 +1166,6 @@ RCODE F_Btree::btLocateEntry(
 		rc = RC_SET_AND_ASSERT( NE_XFLM_NO_TRANS_ACTIVE);
 		goto Exit;
 	}
-
-	m_Stack[ 0].uiKeyBufSize = uiKeyBufSize;
 
 	// Find the entry we are interested in.
 	if (RC_BAD(rc = findEntry( pucKey,
@@ -1736,7 +1729,6 @@ RCODE F_Btree::btFirstEntry(
 	RCODE					rc = NE_XFLM_OK;
 
 	m_Stack[ 0].pucKeyBuf = pucKey;
-	m_Stack[ 0].uiKeyBufSize = uiKeyBufSize;
 
 	if( RC_BAD( rc = btLocateEntry( pucKey, uiKeyBufSize, puiKeyLen,
 		XFLM_FIRST, NULL, puiDataLength, pui32BlkAddr, puiOffsetIndex)))
@@ -1763,7 +1755,6 @@ RCODE F_Btree::btLastEntry(
 	RCODE				rc = NE_XFLM_OK;
 
 	m_Stack[ 0].pucKeyBuf = pucKey;
-	m_Stack[ 0].uiKeyBufSize = uiKeyBufSize;
 
 	if( RC_BAD( rc = btLocateEntry( pucKey, uiKeyBufSize, puiKeyLen,
 		XFLM_LAST, NULL, puiDataLength, pui32BlkAddr, puiOffsetIndex)))
@@ -5002,7 +4993,6 @@ RCODE F_Btree::findEntry(
 		pStack->uiLevel = uiLevel;
 		pStack->uiKeyLen = uiKeyLen;
 		pStack->pucKeyBuf = pucKey;
-		pStack->uiKeyBufSize = m_Stack[0].uiKeyBufSize;
 		pStack->pui16OffsetArray = BtOffsetArray( (FLMBYTE *)pStack->pBlkHdr, 0);
 
 		if( isRootBlk( pStack->pBlkHdr))
@@ -5196,7 +5186,6 @@ RCODE F_Btree::findInBlock(
 	pStack->uiLevel = 0;
 	pStack->uiKeyLen = uiKeyLen;
 	pStack->pucKeyBuf = pucKey;
-	pStack->uiKeyBufSize = m_Stack[0].uiKeyBufSize;
 	pStack->pui16OffsetArray = BtOffsetArray( (FLMBYTE *)pStack->pBlkHdr, 0);
 	pStack->uiCurOffset = puiOffsetIndex ? *puiOffsetIndex : 0;
 
