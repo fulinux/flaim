@@ -331,11 +331,11 @@ RCODE F_DbRebuild::dbRebuild(
 	F_Database *			pDatabase = NULL;
 	FLMBOOL					bDatabaseLocked = FALSE;
 	FLMBOOL					bWriteLocked = FALSE;
-	ServerLockObject *	pWriteLockObj = NULL;
-	ServerLockObject *	pDatabaseLockObj = NULL;
+	IF_LockObject *		pWriteLockObj = NULL;
+	IF_LockObject *		pDatabaseLockObj = NULL;
 	FLMBOOL					bMutexLocked = FALSE;
 	IF_FileHdl *			pLockFileHdl = NULL;
-	eDbLockType				eCurrLockType;
+	eLockType				currLockType;
 	FLMUINT					uiThreadId;
 	FLMUINT					uiNumExclQueued;
 	FLMUINT					uiNumSharedQueued;
@@ -416,18 +416,18 @@ Retry:
 		// make sure there is no write lock.  If there is,
 		// we cannot do the rebuild right now.
 
-		pDatabase->m_pDatabaseLockObj->GetLockInfo( (FLMINT)0, &eCurrLockType,
+		pDatabase->m_pDatabaseLockObj->getLockInfo( 0, &currLockType,
 			&uiThreadId, &uiNumExclQueued, &uiNumSharedQueued, &uiPriorityCount);
 			
-		if( eCurrLockType == XFLM_LOCK_EXCLUSIVE && uiThreadId == f_threadId())
+		if( currLockType == FLM_LOCK_EXCLUSIVE && uiThreadId == f_threadId())
 		{
 			// See if there is already a transaction going.
 
-			pDatabase->m_pWriteLockObj->GetLockInfo( (FLMINT)0, &eCurrLockType,
+			pDatabase->m_pWriteLockObj->getLockInfo( (FLMINT)0, &currLockType,
 				&uiThreadId, &uiNumExclQueued, &uiNumSharedQueued, 
 				&uiPriorityCount);
 				
-			if( eCurrLockType == XFLM_LOCK_EXCLUSIVE && 
+			if( currLockType == FLM_LOCK_EXCLUSIVE && 
 				 uiThreadId == f_threadId())
 			{
 				rc = RC_SET( NE_XFLM_TRANS_ACTIVE);
@@ -439,8 +439,8 @@ Retry:
 			pDatabaseLockObj = pDatabase->m_pDatabaseLockObj;
 			pDatabaseLockObj->AddRef();
 			
-			if (RC_BAD( rc = pDatabaseLockObj->Lock( NULL, hWaitSem, 
-				TRUE, FALSE, TRUE, XFLM_NO_TIMEOUT, 0)))
+			if (RC_BAD( rc = pDatabaseLockObj->lock( hWaitSem, 
+				TRUE, XFLM_NO_TIMEOUT, 0)))
 			{
 				goto Exit;
 			}
@@ -750,7 +750,7 @@ Exit:
 	{
 		RCODE	rc3;
 
-		if( RC_BAD( rc3 = pDatabaseLockObj->Unlock( TRUE, NULL)))
+		if( RC_BAD( rc3 = pDatabaseLockObj->unlock()))
 		{
 			if (RC_OK( rc))
 			{
@@ -763,13 +763,13 @@ Exit:
 
 	if( pWriteLockObj)
 	{
-		pWriteLockObj->Release( FALSE);
+		pWriteLockObj->Release();
 		pWriteLockObj = NULL;
 	}
 	
 	if( pDatabaseLockObj)
 	{
-		pDatabaseLockObj->Release( FALSE);
+		pDatabaseLockObj->Release();
 		pDatabaseLockObj = NULL;
 	}
 

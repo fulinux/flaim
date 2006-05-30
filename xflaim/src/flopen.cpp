@@ -524,7 +524,6 @@ RCODE flmCreateLckFile(
 	char *			pszFileExt;
 	IF_FileHdl *	pLockFileHdl = NULL;
 	char				szFilePathStr[ F_PATH_MAX_SIZE];
-	FLMUINT			uiIoFlags;
 
 	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathToStorageString( 
 		pszFilePath, szFilePathStr)))
@@ -545,67 +544,30 @@ RCODE flmCreateLckFile(
 		pszFileExt++;
 	f_strcpy( pszFileExt, ".lck");
 
-	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
 		szLockPath, szDbBaseName)))
 	{
 		goto Exit;
 	}
-
-	// Attempt to create the lock file.  If that succeeds, we are
-	// OK to use the database.  If it fails, the lock file may have
-	// been left because of a crash if FLAIM was not shut down properly.
-	// Hence, we first try to delete the file.  If that succeeds, we
-	// then attempt to create the file again.  If it, or the 2nd create
-	// fail, we simply return an access denied error.
-
-uiIoFlags = FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW;
-#ifndef FLM_UNIX
-	uiIoFlags |= FLM_IO_DELETE_ON_RELEASE;
-#endif
-
-	if( RC_BAD( gv_XFlmSysData.pFileSystem->createFile( 
-		szLockPath, uiIoFlags, &pLockFileHdl)))
+	
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createLockFile( 
+		szLockPath, &pLockFileHdl)))
 	{
-#ifndef FLM_UNIX
-		if (RC_BAD( gv_XFlmSysData.pFileSystem->deleteFile( szLockPath)))
-		{
-			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
-			goto Exit;
-		}
-		else if (RC_BAD( gv_XFlmSysData.pFileSystem->createFile( 
-			szLockPath, uiIoFlags, &pLockFileHdl)))
-		{
-			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
-			goto Exit;
-		}
-#else
-
-		if( RC_BAD( gv_XFlmSysData.pFileSystem->openFile( 
-			szLockPath, FLM_IO_RDWR | FLM_IO_SH_DENYRW, &pLockFileHdl)))
-		{
-			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
-			goto Exit;
-		}
-#endif
-	}
-
-#ifdef FLM_UNIX
-	if( RC_BAD( pLockFileHdl->lock()))
-	{
-		rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 		goto Exit;
 	}
-#endif
 
 	*ppLockFileHdlRV = (IF_FileHdl *)pLockFileHdl;
 	pLockFileHdl = NULL;
+	
 Exit:
+
 	if (pLockFileHdl)
 	{
 		(void)pLockFileHdl->close();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
+	
 	return( rc);
 }
 
@@ -869,7 +831,7 @@ Retry:
 	}
 
 	pBucket = gv_XFlmSysData.pDatabaseHashTbl;
-	uiBucket = flmStrHashBucket( szDbPathStr1, pBucket, FILE_HASH_ENTRIES);
+	uiBucket = f_strHashBucket( szDbPathStr1, pBucket, FILE_HASH_ENTRIES);
 	pDatabase = (F_Database *)pBucket [uiBucket].pFirstInBucket;
 	while (pDatabase)
 	{
@@ -1247,7 +1209,7 @@ F_Database::~F_Database()
 
 	if (m_pWriteLockObj)
 	{
-		m_pWriteLockObj->Release( FALSE);
+		m_pWriteLockObj->Release();
 		m_pWriteLockObj = NULL;
 	}
 
@@ -1381,8 +1343,6 @@ RCODE F_Database::setupDatabase(
 	FLMUINT			uiAllocLen;
 	FLMUINT			uiDbNameLen;
 	FLMUINT			uiDirNameLen;
-	FFileItemId *	pFileItemId1 = NULL;
-	FFileItemId *	pFileItemId2 = NULL;
 	char				szDbPathStr[ F_PATH_MAX_SIZE];
 	char				szDataDirStr[ F_PATH_MAX_SIZE];
 
@@ -1468,51 +1428,21 @@ RCODE F_Database::setupDatabase(
 		goto Exit;
 	}
 
-	// Allocate the lock objects - must be done AFTER setting up the
-	// file name stuff up above.
-
-	if ((pFileItemId1 = f_new FFileItemId( this, TRUE)) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-	if ((pFileItemId2 = f_new FFileItemId( this, FALSE)) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-
 	// Allocate a lock object for write locking.
-
-	if ((m_pWriteLockObj = gv_XFlmSysData.pServerLockMgr->GetLockObject(
-												pFileItemId1)) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocLockObject( &m_pWriteLockObj)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
-	m_pWriteLockObj->AddRef();
 
 	// Allocate a lock object for file locking.
-
-	if ((m_pDatabaseLockObj = gv_XFlmSysData.pServerLockMgr->GetLockObject(
-												pFileItemId2)) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocLockObject( &m_pDatabaseLockObj)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
-	m_pDatabaseLockObj->AddRef();
-	
+
 Exit:
-
-	if (pFileItemId1)
-	{
-		pFileItemId1->Release();
-	}
-
-	if (pFileItemId2)
-	{
-		pFileItemId2->Release();
-	}
 
 	return( rc);
 }
@@ -1883,7 +1813,7 @@ FLMBOOL F_Database::tryCheckpoint(
 			 m_lastCommittedDbHdr.ui64CurrTransID ||
 			 !m_pRfl->seeIfRflWritesDone( pCPInfo->hWaitSem, FALSE))
 		{
-			dbWriteUnlock( pDbStats);
+			dbWriteUnlock();
 			goto Exit;
 		}
 	}
@@ -1897,7 +1827,7 @@ FLMBOOL F_Database::tryCheckpoint(
 		(void)flmStatUpdate( &pCPInfo->Stats);
 	}
 
-	dbWriteUnlock( pDbStats);
+	dbWriteUnlock();
 
 	// Set the thread's status
 

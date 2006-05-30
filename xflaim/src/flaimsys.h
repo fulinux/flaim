@@ -98,7 +98,6 @@ class F_RebuildNodeIStream;
 #include "flmstat.h"
 #include "fxpath.h"
 #include "fbtrset.h"
-#include "fsrvlock.h"
 #include "fquery.h"
 #include "fcollate.h"
 #include "f_btree.h"
@@ -1878,19 +1877,19 @@ public:
 		FLMUINT					uiTimeout);
 
 	RCODE FLMAPI dbLock(
-		eDbLockType				eLockType,
+		eLockType				lockType,
 		FLMINT					iPriority,
 		FLMUINT					uiTimeout);
 
 	RCODE FLMAPI dbUnlock( void);
 
 	RCODE FLMAPI getLockType(
-		eDbLockType *			peLockType,
+		eLockType *				pLockType,
 		FLMBOOL *				pbImplicit);
 
 	RCODE FLMAPI getLockInfo(
 		FLMINT					iPriority,
-		eDbLockType *			peCurrLockType,
+		eLockType *				pCurrLockType,
 		FLMUINT *				puiThreadId,
 		FLMUINT *				puiNumExclQueued,
 		FLMUINT *				puiNumSharedQueued,
@@ -2425,7 +2424,7 @@ public:
 
 	FINLINE FLMBOOL threadWaitingLock( void)
 	{
-		return( m_pDatabase->m_pDatabaseLockObj->ThreadWaitingLock());
+		return( m_pDatabase->m_pDatabaseLockObj->getWaiterCount() ? TRUE : FALSE);
 	}
 
 	RCODE FLMAPI getLockWaiters(
@@ -3292,7 +3291,6 @@ friend class F_BlockCacheMgr;
 friend class F_NodeCacheMgr;
 friend class F_GlobalCacheMgr;
 friend class F_QueryResultSet;
-friend class ServerLockObject;
 friend class F_BTreeInfo;
 friend class F_AttrItem;
 };

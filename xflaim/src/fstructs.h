@@ -41,8 +41,6 @@ class F_SuperFileHdl;
 class F_Btree;
 class F_DbRebuild;
 class F_DbCheck;
-class ServerLockManager;
-class ServerLockObject;
 class F_Cursor;
 class F_MultiAlloc;
 class F_CachedNode;
@@ -728,8 +726,7 @@ public:
 		XFLM_DB_STATS *	pDbStats = NULL,
 		FLMUINT				uiTimeout = XFLM_NO_TIMEOUT);
 
-	void dbWriteUnlock(
-		XFLM_DB_STATS *	pDbStats = NULL);
+	void dbWriteUnlock( void);
 
 	void shutdownDatabaseThreads( void);
 
@@ -1254,8 +1251,8 @@ private:
 															// between blocks.
 	FLMBYTE *				m_pucReplaceStruct;	// Buffer used by the Btree to hold additional
 															// replace information during updates *only*.
-	ServerLockObject *	m_pDatabaseLockObj;	// Object for locking the database.
-	ServerLockObject *	m_pWriteLockObj;		// Object for locking to do writing.
+	IF_LockObject *		m_pDatabaseLockObj;	// Object for locking the database.
+	IF_LockObject *		m_pWriteLockObj;		// Object for locking to do writing.
 	IF_FileHdl *			m_pLockFileHdl;		// Lock file handle.
 	FNOTIFY *				m_pLockNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
@@ -1334,18 +1331,6 @@ friend class F_AttrItemRelocator;
 friend class F_AttrBufferRelocator;	
 friend class F_BlockRelocator;
 };
-
-/***************************************************************************
-Desc:		This is the hash bucket header structure.  Each bucket header
-			points to a list of items that belong to the bucket.
-***************************************************************************/
-typedef struct FBucket
-{
-	void *		pFirstInBucket;	// Pointer to first item in the bucket.
-											// The type of structure being pointed to
-											// depends on the usage of the hash bucket.
-	FLMUINT		uiHashValue;		// Hash value for this bucket.
-} FBUCKET;
 
 typedef struct QueryHdrTag
 {
@@ -1557,8 +1542,6 @@ typedef struct FlmSystemData
 													// OK To do async writes, if available.
 	FLMBOOL					bOkToUseESM;	// OK to use Extended Server Memory,
 													// if available
-	ServerLockManager *	pServerLockMgr;
-													// Pointer to server lock manager.
 	FLMUINT					uiMaxCPInterval;
 													// Maximum number of seconds to allow between
 													// checkpoints

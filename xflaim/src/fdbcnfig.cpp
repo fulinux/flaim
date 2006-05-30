@@ -64,7 +64,7 @@ RCODE FLMAPI F_Db::setRflKeepFilesFlag(
 
 	if (!(m_uiFlags & (FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_SHARED)))
 	{
-		if (RC_BAD( rc = dbLock( XFLM_LOCK_EXCLUSIVE, 0,
+		if (RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0,
 									XFLM_NO_TIMEOUT)))
 		{
 			goto Exit;
@@ -175,7 +175,7 @@ RCODE FLMAPI F_Db::setRflDir(
 
 	if (!(m_uiFlags & (FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_SHARED)))
 	{
-		if( RC_BAD( rc = dbLock( XFLM_LOCK_EXCLUSIVE, 0,
+		if( RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0,
 									XFLM_NO_TIMEOUT)))
 		{
 			goto Exit;
@@ -1273,7 +1273,7 @@ RCODE FLMAPI F_Db::getLockWaiters(
 
 	if (m_pDatabase->m_pDatabaseLockObj)
 	{
-		rc = m_pDatabase->m_pDatabaseLockObj->GetLockInfo( pLockInfo);
+		rc = m_pDatabase->m_pDatabaseLockObj->getLockInfo( pLockInfo);
 	}
 	else
 	{

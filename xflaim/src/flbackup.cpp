@@ -617,7 +617,8 @@ RCODE F_Backup::backup(
 		
 		if ((m_pDb->m_uiFlags & FDB_HAS_FILE_LOCK) == 0)
 		{
-			if	(RC_BAD( rc = m_pDb->dbLock(XFLM_LOCK_EXCLUSIVE, 0, XFLM_NO_TIMEOUT)))
+			if	(RC_BAD( rc = m_pDb->dbLock( FLM_LOCK_EXCLUSIVE, 
+				0, XFLM_NO_TIMEOUT)))
 			{
 				goto Exit;
 			}

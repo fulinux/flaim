@@ -1743,29 +1743,28 @@ RCODE F_Db::indexSetOfDocuments(
 	FLMBOOL *				pbHitEnd,
 	IF_Thread *				pThread)
 {
-	RCODE				rc = NE_XFLM_OK;
-	FLMUINT64		ui64DocumentId;
-	FLMUINT64		ui64LastDocumentId = 0;
-	IXD *				pIxd = NULL;
-	F_COLLECTION *	pCollection;
-	ServerLockObject *
-						pDatabaseLockObj = m_pDatabase->m_pDatabaseLockObj;
-	FLMBOOL			bHitEnd = FALSE;
-	FLMUINT			uiCurrTime;
-	FLMUINT			uiLastStatusTime = 0;
-	FLMUINT			uiStartTime;
-	FLMUINT			uiMinTU;
-	FLMUINT			uiStatusIntervalTU;
-	FLMUINT64		ui64DocumentsProcessed = 0;
-	FLMBOOL			bUpdateTracker = FALSE;
-	FLMBOOL			bRelinquish = FALSE;
-	FLMBYTE			ucKey[ FLM_MAX_NUM_BUF_SIZE];
-	FLMUINT			uiKeyLen;
-	void *			pvTmpPoolMark = m_tempPool.poolMark();
-	F_Btree *		pbtree = NULL;
-	FLMBOOL			bNeg;
-	FLMUINT			uiBytesProcessed;
-	F_DOMNode *		pNode = NULL;
+	RCODE						rc = NE_XFLM_OK;
+	FLMUINT64				ui64DocumentId;
+	FLMUINT64				ui64LastDocumentId = 0;
+	IXD *						pIxd = NULL;
+	F_COLLECTION *			pCollection;
+	IF_LockObject *		pDatabaseLockObj = m_pDatabase->m_pDatabaseLockObj;
+	FLMBOOL					bHitEnd = FALSE;
+	FLMUINT					uiCurrTime;
+	FLMUINT					uiLastStatusTime = 0;
+	FLMUINT					uiStartTime;
+	FLMUINT					uiMinTU;
+	FLMUINT					uiStatusIntervalTU;
+	FLMUINT64				ui64DocumentsProcessed = 0;
+	FLMBOOL					bUpdateTracker = FALSE;
+	FLMBOOL					bRelinquish = FALSE;
+	FLMBYTE					ucKey[ FLM_MAX_NUM_BUF_SIZE];
+	FLMUINT					uiKeyLen;
+	void *					pvTmpPoolMark = m_tempPool.poolMark();
+	F_Btree *				pbtree = NULL;
+	FLMBOOL					bNeg;
+	FLMUINT					uiBytesProcessed;
+	F_DOMNode *				pNode = NULL;
 
 	uiMinTU = FLM_MILLI_TO_TIMER_UNITS( 500);
 	uiStatusIntervalTU = FLM_SECS_TO_TIMER_UNITS( 10);
@@ -1924,7 +1923,7 @@ RCODE F_Db::indexSetOfDocuments(
 				break;
 			}
 
-			if (pDatabaseLockObj->ThreadWaitingLock())
+			if (pDatabaseLockObj->getWaiterCount())
 			{
 				// See if our minimum run time has elapsed
 
@@ -1961,7 +1960,7 @@ RCODE F_Db::indexSetOfDocuments(
 
 				if (FLM_ELAPSED_TIME( uiCurrTime, uiStartTime) >
 					gv_XFlmSysData.uiMaxCPInterval &&
-					m_pDatabase->m_pWriteLockObj->ThreadWaitingLock())
+					m_pDatabase->m_pWriteLockObj->getWaiterCount())
 				{
 					bRelinquish = TRUE;
 					break;
@@ -2528,9 +2527,9 @@ RetryLock:
 
 	flmAssert( !(m_uiFlags & FDB_HAS_FILE_LOCK));
 
-	if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->Lock( this, m_hWaitSem,
-		TRUE, FALSE, TRUE, XFLM_NO_TIMEOUT, FLM_BACKGROUND_LOCK_PRIORITY,
-		m_pDbStats)))
+	if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->lock( m_hWaitSem,
+		TRUE, FLM_NO_TIMEOUT, FLM_BACKGROUND_LOCK_PRIORITY,
+		m_pDbStats ? &m_pDbStats->LockStats : NULL)))
 	{
 		if( rc == NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT)
 		{
@@ -2558,7 +2557,7 @@ RetryLock:
 		{
 			goto Exit;
 		}
-		if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->Unlock( TRUE, this)))
+		if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->unlock()))
 		{
 			goto Exit;
 		}
@@ -2596,7 +2595,7 @@ Exit:
 	{
 		if( m_uiFlags & FDB_HAS_FILE_LOCK)
 		{
-			(void)m_pDatabase->m_pDatabaseLockObj->Unlock( TRUE, this);
+			(void)m_pDatabase->m_pDatabaseLockObj->unlock();
 			m_uiFlags &= ~(FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_IMPLICIT);
 		}
 	}

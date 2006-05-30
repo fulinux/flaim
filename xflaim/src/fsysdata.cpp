@@ -514,9 +514,8 @@ RCODE F_Database::dbWriteLock(
 {
 	RCODE					rc = NE_XFLM_OK;
 
-	if (RC_BAD( rc = m_pWriteLockObj->Lock( NULL, hWaitSem, FALSE,
-		(FLMBOOL)(uiTimeout ? TRUE : FALSE),
-		TRUE, uiTimeout, 0, pDbStats)))
+	if (RC_BAD( rc = m_pWriteLockObj->lock( hWaitSem,
+		TRUE, uiTimeout, 0, pDbStats ? &pDbStats->LockStats : NULL)))
 	{
 		goto Exit;
 	}
@@ -529,10 +528,9 @@ Exit:
 /****************************************************************************
 Desc: This routine unlocks the write lock on a database.
 ****************************************************************************/
-void F_Database::dbWriteUnlock(
-	XFLM_DB_STATS *		pDbStats)
+void F_Database::dbWriteUnlock( void)
 {
-	(void)m_pWriteLockObj->Unlock( FALSE, NULL, FALSE, pDbStats);
+	(void)m_pWriteLockObj->unlock();
 }
 
 /****************************************************************************
@@ -701,35 +699,6 @@ FSTATIC void flmFreeEvent(
 }
 
 /****************************************************************************
-Desc: This routine determines the hash bucket for a string.
-****************************************************************************/
-FLMUINT flmStrHashBucket(
-	char *		pszStr,			// Pointer to string to be hashed
-	FBUCKET *	pHashTbl,		// Hash table to use
-	FLMUINT		uiNumBuckets)	// Number of hash buckets
-{
-	FLMUINT	uiHashIndex;
-
-	if ((uiHashIndex = (FLMUINT)*pszStr) >= uiNumBuckets)
-	{
-		uiHashIndex -= uiNumBuckets;
-	}
-
-	while (*pszStr)
-	{
-		if ((uiHashIndex =
-			(FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ (FLMUINT)(f_toupper( *pszStr)))) >=
-				uiNumBuckets)
-		{
-			uiHashIndex -= uiNumBuckets;
-		}
-		pszStr++;
-	}
-
-	return( uiHashIndex);
-}
-
-/****************************************************************************
 Desc:		This routine links a notify request into a notification list and
 			then waits to be notified that the event has occurred.
 Notes:	This routine assumes that the shared mutex is locked and that
@@ -776,7 +745,7 @@ RCODE F_Database::linkToBucket( void)
 	FLMUINT			uiBucket;
 
 	pBucket = gv_XFlmSysData.pDatabaseHashTbl;
-	uiBucket = flmStrHashBucket( m_pszDbPath, pBucket, FILE_HASH_ENTRIES);
+	uiBucket = f_strHashBucket( m_pszDbPath, pBucket, FILE_HASH_ENTRIES);
 	pBucket = &pBucket [uiBucket];
 	if (pBucket->pFirstInBucket)
 	{
@@ -998,12 +967,6 @@ RCODE F_DbSystem::monitorThrd(
 
 			uiCurrTime = uiLastUnusedCleanupTime = FLM_GET_TIMER();
 		}
-
-		// Call the lock manager to check timeouts.  It is critial
-		// that this routine be called on a regular interval to
-		// timeout lock waiters that have expired.
-
-		gv_XFlmSysData.pServerLockMgr->CheckLockTimeouts( FALSE, FALSE);
 
 		// Check the adjusting cache limit
 
@@ -1995,26 +1958,6 @@ RCODE F_DbSystem::init( void)
 	flmDbgLogInit();
 #endif
 
-	// Allocate and Initialize FLAIM Server Lock Manager.
-
-	if ((gv_XFlmSysData.pServerLockMgr = f_new ServerLockManager) == NULL)
-	{
-		rc = RC_SET( NE_XFLM_MEM);
-		goto Exit;
-	}
-	
-	if (RC_BAD( rc = gv_XFlmSysData.pServerLockMgr->setupLockMgr()))
-	{
-		goto Exit;
-	}
-
-	// Set up hash table for lock manager.
-
-	if (RC_BAD( rc = gv_XFlmSysData.pServerLockMgr->SetupHashTbl()))
-	{
-		goto Exit;
-	}
-
 	// Set up mutexes for the event table.
 
 	for (iEventCategory = 0;
@@ -2205,33 +2148,6 @@ void F_DbSystem::cleanup( void)
 	if (gv_XFlmSysData.hStatsMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &gv_XFlmSysData.hStatsMutex);
-	}
-
-	// Free (release) FLAIM's Server Lock Manager.
-
-	if (gv_XFlmSysData.pServerLockMgr)
-	{
-		FLMUINT	uiRefCnt;
-
-		// Release all locks.
-
-		gv_XFlmSysData.pServerLockMgr->CheckLockTimeouts( FALSE, TRUE);
-
-		// Release the lock manager.
-
-		uiRefCnt = gv_XFlmSysData.pServerLockMgr->Release();
-
-		// No one else should have a reference to the server lock manager
-		// at this point, so lets trip a flmAssert if the object was really
-		// not deleted.
-
-#ifdef FLM_DEBUG
-		flmAssert( 0 == uiRefCnt);
-#else
-		// Quiet the compiler about the unused variable
-		(void)uiRefCnt;
-#endif
-		gv_XFlmSysData.pServerLockMgr = NULL;
 	}
 	
 	// Make sure the purge list is empty

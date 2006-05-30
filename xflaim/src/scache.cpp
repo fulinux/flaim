@@ -1259,7 +1259,7 @@ RCODE F_Database::flushLogBlocks(
 			}
 			else
 			{
-				if (m_pWriteLockObj->ThreadWaitingLock() &&
+				if (m_pWriteLockObj->getWaiterCount() &&
 					 uiDirtyCacheLeft <= uiMaxDirtyCache)
 				{
 					bDone = TRUE;
@@ -4193,7 +4193,7 @@ Add_Contiguous_Block:
 			}
 			else
 			{
-				if (m_pWriteLockObj->ThreadWaitingLock() &&
+				if (m_pWriteLockObj->getWaiterCount() &&
 					 *puiDirtyCacheLeft <= uiMaxDirtyCache)
 				{
 

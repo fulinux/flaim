@@ -656,9 +656,9 @@ Notes:	This routine DOES NOT assume that the global mutex is locked.  It
 			will lock and unlock the mutex as needed.
 ****************************************************************************/
 void F_Db::stopBackgroundIndexThread(
-	FLMUINT		uiIndexNum,
-	FLMBOOL		bWait,
-	FLMBOOL *	pbStopped)
+	FLMUINT			uiIndexNum,
+	FLMBOOL			bWait,
+	FLMBOOL *		pbStopped)
 {
 	F_BKGND_IX *	pBackgroundIx;
 	FLMUINT			uiThreadId;
@@ -702,8 +702,9 @@ void F_Db::stopBackgroundIndexThread(
 
 		// The thread may be waiting to start a transaction.
 
-		gv_XFlmSysData.pServerLockMgr->SignalLockWaiter( uiThreadId);
-
+		m_pDatabase->m_pDatabaseLockObj->timeoutLockWaiter( uiThreadId);
+		m_pDatabase->m_pWriteLockObj->timeoutLockWaiter( uiThreadId);
+		
 		if( !bWait)
 		{
 			break;

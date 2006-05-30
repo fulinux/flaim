@@ -63,7 +63,6 @@
 	flminterface IF_EventClient;
 	flminterface IF_IxClient;
 	flminterface IF_IxStatus;
-	flminterface IF_LockInfoClient;
 	flminterface IF_LoggerClient;
 	flminterface IF_LogMessageClient;
 	flminterface IF_OperandComparer;
@@ -394,13 +393,6 @@
 		XFLM_UPDATE_TRANS
 	} eDbTransType;
 
-	typedef enum
-	{
-		XFLM_LOCK_NONE = 0,
-		XFLM_LOCK_EXCLUSIVE,
-		XFLM_LOCK_SHARED
-	} eDbLockType;
-
 	// Transaction flags
 
 	#define XFLM_DONT_KILL_TRANS		0x1
@@ -586,14 +578,6 @@
 
 	typedef struct
 	{
-		FLMUINT64	ui64Count;							// Number of times operation
-																// was performed.
-		FLMUINT64	ui64ElapMilli;						// Total elapsed time for the
-																// operations.
-	} XFLM_COUNT_TIME_STAT;
-
-	typedef struct
-	{
 		FLMUINT64		ui64Count;						// Number of times read or
 																// write operation was
 																// performed.
@@ -606,16 +590,16 @@
 
 	typedef struct
 	{
-		XFLM_COUNT_TIME_STAT	CommittedTrans;		// Transactions committed
-		XFLM_COUNT_TIME_STAT	AbortedTrans;			// Transactions aborted
+		F_COUNT_TIME_STAT		CommittedTrans;		// Transactions committed
+		F_COUNT_TIME_STAT		AbortedTrans;			// Transactions aborted
 	} XFLM_RTRANS_STATS;
 
 	typedef struct
 	{
-		XFLM_COUNT_TIME_STAT	CommittedTrans;		// Transactions committed
-		XFLM_COUNT_TIME_STAT	GroupCompletes;		// Group completes.
+		F_COUNT_TIME_STAT		CommittedTrans;		// Transactions committed
+		F_COUNT_TIME_STAT		GroupCompletes;		// Group completes.
 		FLMUINT64				ui64GroupFinished;	// Transactions finished in group
-		XFLM_COUNT_TIME_STAT	AbortedTrans;			// Transactions aborted
+		F_COUNT_TIME_STAT		AbortedTrans;			// Transactions aborted
 	} XFLM_UTRANS_STATS;
 
 	typedef struct
@@ -701,10 +685,8 @@
 		FLMUINT					uiWriteErrors;					// Number of times we got write
 																		// errors.
 		// Lock statistics
-
-		XFLM_COUNT_TIME_STAT	NoLocks;							// Times when no lock was held
-		XFLM_COUNT_TIME_STAT	WaitingForLock;				// Time waiting for lock
-		XFLM_COUNT_TIME_STAT	HeldLock;						// Time holding lock
+		
+		F_LOCK_STATS			LockStats;
 
 	} XFLM_DB_STATS;
 
@@ -2483,19 +2465,19 @@
 			FLMUINT					uiTimeout) = 0;
 
 		virtual RCODE FLMAPI dbLock(
-			eDbLockType				eLockType,
+			eLockType				lockType,
 			FLMINT					iPriority,
 			FLMUINT					uiTimeout) = 0;
 
 		virtual RCODE FLMAPI dbUnlock( void) = 0;
 
 		virtual RCODE FLMAPI getLockType(
-			eDbLockType *			peLockType,
+			eLockType *				pLockType,
 			FLMBOOL *				pbImplicit) = 0;
 
 		virtual RCODE FLMAPI getLockInfo(
 			FLMINT					iPriority,
-			eDbLockType *			peCurrLockType,
+			eLockType *				pCurrLockType,
 			FLMUINT *				puiThreadId,
 			FLMUINT *				puiNumExclQueued,
 			FLMUINT *				puiNumSharedQueued,
@@ -3687,25 +3669,6 @@
 			FLMUINT					uiIndexNum,
 			FLMUINT					uiCollectionNum,
 			IF_DOMNode *			pDocNode) = 0;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	flminterface IF_LockInfoClient : public F_Object
-	{
-		virtual FLMBOOL FLMAPI setLockCount(	// Return TRUE to continue, FALSE to stop
-			FLMUINT					uiTotalLocks) = 0;
-
-		virtual FLMBOOL FLMAPI addLockInfo(	// Return TRUE to continue, FALSE to stop
-			FLMUINT					uiLockNum,		// Position in queue (0 = lock holder,
-															// 1 ... n = lock waiter)
-			FLMUINT					uiThreadID,		// Thread ID of the lock holder/waiter
-			FLMUINT					uiTime) = 0;	// For the lock holder, this is the
-															// time when the lock was obtained.
-															// For a lock waiter, this is the time
-															// that the waiter was placed in the queue.
-															// Both times are presented in milliseconds.
 	};
 
 	/****************************************************************************

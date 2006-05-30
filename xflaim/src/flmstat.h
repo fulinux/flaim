@@ -125,8 +125,8 @@ void flmAddElapTime(								// Source: flmstat.cpp
 	}
 
 	FINLINE void flmUpdateCountTimeStats(
-		XFLM_COUNT_TIME_STAT *	pDest,
-		XFLM_COUNT_TIME_STAT *	pSrc)
+		F_COUNT_TIME_STAT *	pDest,
+		F_COUNT_TIME_STAT *	pSrc)
 	{
 		pDest->ui64Count += pSrc->ui64Count;
 		pDest->ui64ElapMilli += pSrc->ui64ElapMilli;

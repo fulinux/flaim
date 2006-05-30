@@ -651,10 +651,12 @@ FSTATIC RCODE flmUpdateDbStats(
 	pDestDb->uiLogBlockChkErrs += pSrcDb->uiLogBlockChkErrs;
 	pDestDb->uiReadErrors += pSrcDb->uiReadErrors;
 	pDestDb->uiWriteErrors += pSrcDb->uiWriteErrors;
-	flmUpdateCountTimeStats( &pDestDb->NoLocks, &pSrcDb->NoLocks);
-	flmUpdateCountTimeStats( &pDestDb->WaitingForLock,
-		&pSrcDb->WaitingForLock);
-	flmUpdateCountTimeStats( &pDestDb->HeldLock, &pSrcDb->HeldLock);
+	flmUpdateCountTimeStats( &pDestDb->LockStats.NoLocks, 
+									 &pSrcDb->LockStats.NoLocks);
+	flmUpdateCountTimeStats( &pDestDb->LockStats.WaitingForLock,
+									 &pSrcDb->LockStats.WaitingForLock);
+	flmUpdateCountTimeStats( &pDestDb->LockStats.HeldLock,
+									 &pSrcDb->LockStats.HeldLock);
 
 	// Go through the LFILE statistics.
 

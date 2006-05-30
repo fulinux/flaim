@@ -27,8 +27,6 @@
 #ifndef FSUPERFL_H
 #define FSUPERFL_H
 
-#include "fsrvlock.h"
-
 #define MAX_CHECKED_OUT_FILE_HDLS	8
 
 void bldSuperFileExtension(
