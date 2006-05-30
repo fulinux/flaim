@@ -202,7 +202,7 @@ RCODE IndexTest3Impl::runSuite1( void)
 	}
 	bDibCreated = TRUE;
 
-	if( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
@@ -288,7 +288,7 @@ RCODE IndexTest3Impl::runSuite1( void)
 	}
 	bTransActive = FALSE;
 
-	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
@@ -347,7 +347,7 @@ RCODE IndexTest3Impl::runSuite1( void)
 	}
 	bTransActive = FALSE;
 
-	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
@@ -3176,7 +3176,7 @@ RCODE IndexTest3Impl::runSuite5( void)
 	}
 	bDibCreated = TRUE;
 
-	if ( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if ( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;

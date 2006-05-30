@@ -172,7 +172,7 @@ const char * pszIndexDef1 = "<xflaim:Index "
 	}
 	bDibCreated = TRUE;
 
-	if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
@@ -203,7 +203,7 @@ const char * pszIndexDef1 = "<xflaim:Index "
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;

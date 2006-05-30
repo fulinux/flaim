@@ -208,7 +208,7 @@ RCODE IDictChangeTestImpl::execute( void)
 		"Test for presence of attribute definition",
 		"");
 
-	if( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
@@ -270,7 +270,7 @@ RCODE IDictChangeTestImpl::execute( void)
 
 	// Start a transaction and set the state of the uiMyAttrId to "purge"
 
-	if( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin(XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_FLM_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;

@@ -634,7 +634,7 @@ RCODE ICollDefTestImpl::execute( void)
 	}
 
 #ifdef FLM_USE_NICI
-	if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;

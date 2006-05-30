@@ -444,7 +444,7 @@ RCODE IEncTestImpl::suite1( void)
 
 	// Set up element and attribute definitions of all data types
 
-	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
@@ -493,7 +493,7 @@ RCODE IEncTestImpl::suite1( void)
 		"Self-explanatory",
 		"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -547,7 +547,7 @@ RCODE IEncTestImpl::suite1( void)
 		"Self-explanatory",
 		"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -601,7 +601,7 @@ RCODE IEncTestImpl::suite1( void)
 		"Self-explanatory",
 		"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -655,7 +655,7 @@ RCODE IEncTestImpl::suite1( void)
 		"Self-explanatory",
 		"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -711,7 +711,7 @@ RCODE IEncTestImpl::suite1( void)
 
 		// "Direct" setter tests
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -762,7 +762,7 @@ RCODE IEncTestImpl::suite1( void)
 			"Self-explanatory",
 			"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -813,7 +813,7 @@ RCODE IEncTestImpl::suite1( void)
 			"Self-explanatory",
 			"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -864,7 +864,7 @@ RCODE IEncTestImpl::suite1( void)
 			"Self-explanatory",
 			"");
 
-		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 		{
 			MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 			goto Exit;
@@ -930,7 +930,8 @@ RCODE IEncTestImpl::suite1( void)
 				"Self-explanatory",
 				"");
 
-			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, 
+				FLM_NO_TIMEOUT)))
 			{
 				MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 				goto Exit;
@@ -993,7 +994,8 @@ RCODE IEncTestImpl::suite1( void)
 				"Self-explanatory",
 				"");
 
-			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, 
+				FLM_NO_TIMEOUT)))
 			{
 				MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 				goto Exit;
@@ -1052,7 +1054,8 @@ RCODE IEncTestImpl::suite1( void)
 				"Self-explanatory",
 				"");
 
-			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, 
+				FLM_NO_TIMEOUT)))
 			{
 				MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 				goto Exit;
@@ -1114,7 +1117,8 @@ RCODE IEncTestImpl::suite1( void)
 				"Self-explanatory",
 				"");
 
-			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, 
+				FLM_NO_TIMEOUT)))
 			{
 				MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 				goto Exit;
@@ -1177,7 +1181,8 @@ RCODE IEncTestImpl::suite1( void)
 				"Self-explanatory",
 				"");
 
-			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, 
+				FLM_NO_TIMEOUT)))
 			{
 				MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 				goto Exit;
@@ -1239,7 +1244,8 @@ RCODE IEncTestImpl::suite1( void)
 				"Self-explanatory",
 				"");
 
-			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+			if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, 
+				FLM_NO_TIMEOUT)))
 			{
 				MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 				goto Exit;
@@ -1538,7 +1544,7 @@ RCODE IEncTestImpl::suite2( void)
 
 	// Set up element and attribute definitions of all data types
 
-	if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if ( RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_ERROR_STRING( "transBegin failed.", m_szDetails, rc);
 		goto Exit;
