@@ -48,6 +48,7 @@ RCODE F_Db::commitTrans(
 	FLMBOOL			bOkToLogAbort = TRUE;
 	FLMBOOL			bIndexAfterCommit = FALSE;
 	F_Rfl *			pRfl = m_pDatabase->m_pRfl;
+	FLMUINT			uiRflToken = 0;
 	F_TABLE *		pTable;
 	FLMUINT			uiLfNum;
 		
@@ -89,6 +90,10 @@ RCODE F_Db::commitTrans(
 
 		goto Exit1;
 	}
+
+	// Disable RFL logging
+
+	pRfl->disableLogging( &uiRflToken);
 
 	// Disable DB header writes
 
@@ -146,6 +151,7 @@ RCODE F_Db::commitTrans(
 	if (!m_bHadUpdOper)
 	{
 		bOkToLogAbort = FALSE;
+		pRfl->enableLogging( &uiRflToken);
 
 		rc = pRfl->logEndTransaction( this, RFL_TRNS_COMMIT_PACKET, TRUE);
 
@@ -171,6 +177,10 @@ RCODE F_Db::commitTrans(
 		goto Exit1;
 	}
 
+	// Re-enable RFL logging
+
+	pRfl->enableLogging( &uiRflToken);
+	
 	// Log commit record to roll-forward log
 
 	bOkToLogAbort = FALSE;
@@ -509,6 +519,11 @@ Exit1:
 	}
 
 Exit:
+
+	if( uiRflToken)
+	{
+		pRfl->enableLogging( &uiRflToken);
+	}
 
 	return( rc);
 }

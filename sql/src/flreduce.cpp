@@ -49,7 +49,7 @@ RCODE F_Db::reduceSize(
 	FLMBOOL				bFlagSet;
 	FLMBOOL				bTransActive = FALSE;
 	FLMBOOL				bLockedDb = FALSE;
-	FLMBOOL				bEnableLogging = FALSE;
+	FLMUINT				uiRflToken = 0;
 
 	uiNumBlksMoved = 0;
 
@@ -92,8 +92,7 @@ RCODE F_Db::reduceSize(
 	// Disable RFL logging - don't want anything logged during reduce 
 	// except for the reduce packet.	
 	
-	bEnableLogging = pRfl->isLoggingEnabled();
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Keep looping to here until the count is satisfied or there
 	// are not any more log extent blocks to turn into avail blks.
@@ -240,7 +239,7 @@ RCODE F_Db::reduceSize(
 	// restore or recovery.  Will need to re-enable logging temporarily
 	// and then turn it back off after logging the packet.
 
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 
 	// Log the reduce.
 
@@ -251,7 +250,7 @@ RCODE F_Db::reduceSize(
 
 	// Turn logging back off.
 
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	if (RC_BAD( rc))
 	{
@@ -298,9 +297,9 @@ Exit:
 		*puiCount = uiNumBlksMoved;
 	}
 
-	if (bEnableLogging)
+	if (uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if (bLockedDb)

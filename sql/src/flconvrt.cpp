@@ -39,8 +39,8 @@ RCODE F_Db::upgrade(
 	F_Rfl *			pRfl = m_pDatabase->m_pRfl;
 	SFLM_DB_HDR *	pUncommittedDbHdr = &m_pDatabase->m_uncommittedDbHdr;
 	FLMUINT64		ui64SaveTransId;
+	FLMUINT			uiRflToken = 0;
 	FLMBOOL			bUpgradeNeeded = FALSE;
-	FLMUINT			uiDisableCount = 0;
 
 	// Lock the database if not already locked.
 	// Cannot lose exclusive access between the checkpoint and
@@ -89,7 +89,7 @@ RCODE F_Db::upgrade(
 	// Change state of logging OFF to TRUE - don't want anything
 	// logged during conversion except for the upgrade packet.
 
-	uiDisableCount = pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 	m_uiFlags |= FDB_UPGRADING;
 
 	ui64SaveTransId = m_pDatabase->m_lastCommittedDbHdr.ui64CurrTransID;
@@ -152,7 +152,7 @@ RCODE F_Db::upgrade(
 
 	// Log the upgrade packet to the RFL
 
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 
 	// Log the upgrade packet.
 
@@ -163,7 +163,7 @@ RCODE F_Db::upgrade(
 
 	// Turn logging off again
 
-	uiDisableCount = pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Change the FLAIM version number to the new version number.
 
@@ -200,9 +200,9 @@ Exit:
 		(void)abortTrans();
 	}
 
-	if (uiDisableCount)
+	if (uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	// Turn off the upgrade flag, in case it was turned on above.
@@ -229,7 +229,7 @@ RCODE F_Db::enableEncryption( void)
 	SFLM_DB_HDR *		pucUncommittedLogHdr = &m_pDatabase->m_uncommittedDbHdr;
 	FLMBOOL				bLocked = FALSE;
 	FLMBOOL				bStartedTrans = FALSE;
-	FLMBOOL				bEnableLogging = FALSE;
+	FLMUINT				uiRflToken = 0;
 
 	// We must will start our own transaction
 
@@ -251,8 +251,7 @@ RCODE F_Db::enableEncryption( void)
 
 	// Disable RFL logging
 
-	bEnableLogging = pRfl->isLoggingEnabled();
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Begin an update transaction.
 
@@ -290,9 +289,9 @@ RCODE F_Db::enableEncryption( void)
 	m_pDatabase->m_bInLimitedMode = FALSE;
 	m_pDatabase->m_bHaveEncKey = TRUE;
 
-	// Log the upgrade packet
+	// Log the encryption key packet
 
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 
 	if (RC_BAD( rc = pRfl->logEncryptionKey( this, 
 		RFL_ENABLE_ENCRYPTION_PACKET, pucWrappingKey, ui32KeyLen)))
@@ -302,7 +301,7 @@ RCODE F_Db::enableEncryption( void)
 
 	// Turn logging off again
 
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Commit the transaction and force a checkpoint
 
@@ -320,9 +319,9 @@ Exit:
 		transAbort();
 	}
 
-	if (bEnableLogging)
+	if( uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if( bLocked)
@@ -356,7 +355,7 @@ RCODE F_Db::wrapKey(
 	FLMUINT32			ui32KeyLen = SFLM_MAX_ENC_KEY_SIZE;
 	F_Rfl *				pRfl = m_pDatabase->m_pRfl;
 	FLMBOOL				bLocked = FALSE;
-	FLMBOOL				bEnableLogging = FALSE;
+	FLMUINT				uiRflToken = 0;
 	
 	if( getTransType() != SFLM_NO_TRANS)
 	{
@@ -375,8 +374,7 @@ RCODE F_Db::wrapKey(
 
 	// Turn off logging.  We only want to log the wrap key packet.
 
-	bEnableLogging = pRfl->isLoggingEnabled();
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Start the transaction
 
@@ -400,7 +398,7 @@ RCODE F_Db::wrapKey(
 
 	// Turn on logging.  We only want to log the wrap key packet.
 
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 
 	// Log a wrapped key packet to record that the key 
 	// has been wrapped/encrypted.
@@ -413,7 +411,7 @@ RCODE F_Db::wrapKey(
 
 	// Turn logging off again
 
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Make sure the log header gets written out...
 
@@ -456,9 +454,9 @@ Exit:
 		transAbort();
 	}
 
-	if( bEnableLogging)
+	if( uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if( bLocked)
@@ -565,7 +563,7 @@ RCODE F_Db::rollOverDbKey( void)
 	FLMUINT32			ui32BufLen = 0;
 	F_Row *				pRow = NULL;
 	FSTableCursor *	pTableCursor = NULL;
-	FLMBOOL				bEnableLogging = FALSE;
+	FLMUINT				uiRflToken = 0;
 	
 	if( getTransType() != SFLM_NO_TRANS)
 	{
@@ -585,8 +583,7 @@ RCODE F_Db::rollOverDbKey( void)
 
 	// Turn off logging
 
-	bEnableLogging = pRfl->isLoggingEnabled();
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Start the transaction
 
@@ -678,7 +675,7 @@ RCODE F_Db::rollOverDbKey( void)
 	}
 	bStartedTrans = FALSE;
 	
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 	
 	if( RC_BAD( rc = m_pDatabase->m_pRfl->logRollOverDbKey( this)))
 	{
@@ -692,9 +689,9 @@ Exit:
 		transAbort();
 	}
 
-	if( bEnableLogging)
+	if( uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if( bLocked)

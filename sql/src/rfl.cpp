@@ -134,7 +134,7 @@ F_Rfl::F_Rfl()
 	m_eLastLfType = SFLM_LF_INVALID;
 	m_pIxCompareObject = NULL;
 	m_pCompareObject = NULL;
-	m_uiDisabledCount = 0;
+	m_uiDisableCount = 0;
 }
 
 /********************************************************************
@@ -4714,6 +4714,7 @@ RCODE F_Rfl::recover(
 	FLMBOOL				bLastTransEndedAtFileEOF = FALSE;
 	FLMBOOL				bForceNextFile;
 	FLMBOOL				bHitEnd;
+	FLMUINT				uiRflToken = 0;
 
 	flmAssert( m_pDatabase);
 
@@ -4727,7 +4728,7 @@ RCODE F_Rfl::recover(
 
 	// Turn off logging.
 
-	disableLogging();
+	disableLogging( &uiRflToken);
 
 	// Set the replay flag on the database.
 
@@ -5489,7 +5490,7 @@ Finish_Recovery:
 	
 	m_pRestore = NULL;
 	m_pRestoreStatus = NULL;
-	enableLogging();
+	enableLogging( &uiRflToken);
 	
 	pDb->m_uiFlags &= ~FDB_REPLAYING_RFL;
 	

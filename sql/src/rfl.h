@@ -384,24 +384,25 @@ public:
 		FLMBOOL			bCommitting,
 		FLMBOOL			bOkToUnlock);
 		
-	FINLINE FLMBOOL isLoggingEnabled( void)
+	FINLINE void disableLogging(
+		FLMUINT *			puiToken)
 	{
-		return( m_uiDisabledCount ? FALSE : TRUE);
+		*puiToken = ++m_uiDisableCount;
 	}
 	
-	FINLINE FLMUINT disableLogging( void)
+	FINLINE void enableLogging(
+		FLMUINT * 			puiToken)
 	{
-		m_uiDisabledCount++;
-		return( m_uiDisabledCount);
+		flmAssert( m_uiDisableCount);
+		flmAssert( *puiToken && *puiToken == m_uiDisableCount);
+		
+		m_uiDisableCount--;
+		*puiToken = 0;
 	}
-
-	FINLINE FLMUINT enableLogging( void)
+	
+	FINLINE FLMBOOL isLoggingEnabled( void)
 	{
-		if (m_uiDisabledCount)
-		{
-			m_uiDisabledCount--;
-		}
-		return( m_uiDisabledCount);
+		return( m_uiDisableCount ? FALSE : TRUE);
 	}
 
 private:
@@ -629,7 +630,7 @@ private:
 	eLFileType					m_eLastLfType;			// The Last Lfile Type
 	IXKeyCompare *				m_pIxCompareObject;
 	IF_ResultSetCompare *	m_pCompareObject;
-	FLMUINT						m_uiDisabledCount;	// Is logging currently disabled
+	FLMUINT						m_uiDisableCount;		// Is logging currently disabled
 
 friend class F_RflOStream;
 };

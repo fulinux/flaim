@@ -146,7 +146,7 @@ RCODE F_Db::indexSuspend(
 	F_TABLE *		pTable;
 	FLMBOOL			bMustAbortOnError = FALSE;
 	F_Rfl *			pRfl = m_pDatabase->m_pRfl;
-	FLMBOOL			bEnableLogging = FALSE;
+	FLMUINT			uiRflToken = 0;
 
 	if (RC_BAD( rc = checkState( __FILE__, __LINE__)))
 	{
@@ -204,8 +204,7 @@ RCODE F_Db::indexSuspend(
 
 	// Disable RFL logging
 
-	bEnableLogging = pRfl->isLoggingEnabled();
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Must abort on error
 
@@ -242,7 +241,7 @@ RCODE F_Db::indexSuspend(
 
 	// Log the suspend packet to the RFL
 
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 
 	if (RC_BAD( rc = m_pDatabase->m_pRfl->logIndexSuspendOrResume(
 								this, uiIndexNum, RFL_INDEX_SUSPEND_PACKET)))
@@ -252,9 +251,9 @@ RCODE F_Db::indexSuspend(
 
 Exit:
 
-	if( bEnableLogging)
+	if( uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if( RC_BAD( rc))
@@ -289,7 +288,7 @@ RCODE F_Db::indexResume(
 	F_INDEX *	pIndex;
 	FLMBOOL		bStartedTrans = FALSE;
 	FLMBOOL		bMustAbortOnError = FALSE;
-	FLMBOOL		bEnableLogging = FALSE;
+	FLMUINT		uiRflToken = 0;
 	F_Rfl *		pRfl = m_pDatabase->m_pRfl;
 
 	if (RC_BAD( rc = checkState( __FILE__, __LINE__)))
@@ -346,8 +345,7 @@ RCODE F_Db::indexResume(
 
 	// Disable RFL logging
 
-	bEnableLogging = pRfl->isLoggingEnabled();
-	pRfl->disableLogging();
+	pRfl->disableLogging( &uiRflToken);
 
 	// Point of no return -- must abort on error
 
@@ -383,7 +381,7 @@ RCODE F_Db::indexResume(
 
 	// Log the resume packet to the RFL
 
-	pRfl->enableLogging();
+	pRfl->enableLogging( &uiRflToken);
 
 	if (RC_BAD( rc = pRfl->logIndexSuspendOrResume(
 								this, uiIndexNum, RFL_INDEX_RESUME_PACKET)))
@@ -393,9 +391,9 @@ RCODE F_Db::indexResume(
 
 Exit:
 
-	if( bEnableLogging)
+	if( uiRflToken)
 	{
-		pRfl->enableLogging();
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if( RC_BAD( rc))

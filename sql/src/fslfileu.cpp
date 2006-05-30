@@ -1042,10 +1042,11 @@ RCODE F_Db::maintBlockChainFree(
 	FLMUINT			uiExpectedEndBlkAddr,
 	FLMUINT *		puiBlocksFreed)
 {
-	RCODE		rc = NE_SFLM_OK;
-	FLMUINT	uiBlocksFreed = 0;
-	FLMUINT	uiEndBlkAddr = 0;
-	F_Row *	pRow = NULL;
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiBlocksFreed = 0;
+	FLMUINT		uiEndBlkAddr = 0;
+	F_Row *		pRow = NULL;
+	FLMUINT		uiRflToken = 0;
 
 	// Make sure an update transaction is going and that a
 	// non-zero number of blocks was specified
@@ -1056,6 +1057,8 @@ RCODE F_Db::maintBlockChainFree(
 		goto Exit;
 	}
 
+	m_pDatabase->m_pRfl->disableLogging( &uiRflToken);
+	
 	if( RC_BAD( rc = btFreeBlockChain( 
 		this, NULL, uiStartBlkAddr, uiBlocksToFree, 
 		&uiBlocksFreed, &uiEndBlkAddr, NULL)))
@@ -1095,6 +1098,11 @@ RCODE F_Db::maintBlockChainFree(
 		}
 	}
 
+	if (uiRflToken)
+	{
+		m_pDatabase->m_pRfl->enableLogging( &uiRflToken);
+	}
+	
 	if( RC_BAD( rc = m_pDatabase->m_pRfl->logBlockChainFree( 
 		this, ui64MaintRowId, uiStartBlkAddr, uiEndBlkAddr, uiBlocksFreed)))
 	{
@@ -1108,6 +1116,11 @@ RCODE F_Db::maintBlockChainFree(
 
 Exit:
 
+	if (uiRflToken)
+	{
+		m_pDatabase->m_pRfl->enableLogging( &uiRflToken);
+	}
+	
 	if (pRow)
 	{
 		pRow->ReleaseRow();

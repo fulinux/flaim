@@ -146,6 +146,7 @@ RCODE F_Db::beginTrans(
 	RCODE				rc = NE_SFLM_OK;
 	SFLM_DB_HDR *	pLastCommittedDbHdr;
 	F_Rfl *			pRfl = m_pDatabase->m_pRfl;
+	FLMUINT			uiRflToken = 0;
 	FLMBOOL			bMutexLocked = FALSE;
 
 	// Should not be calling on a temporary database
@@ -375,6 +376,11 @@ RCODE F_Db::beginTrans(
 
 	if (!m_pDict)
 	{
+		if (eTransType != SFLM_READ_TRANS)
+		{
+			pRfl->disableLogging( &uiRflToken);
+		}
+
 		if (RC_BAD( rc = readDictionary()))
 		{
 			goto Exit;
@@ -386,6 +392,11 @@ Exit:
 	if( bMutexLocked)
 	{
 		m_pDatabase->unlockMutex();
+	}
+
+	if( uiRflToken)
+	{
+		pRfl->enableLogging( &uiRflToken);
 	}
 
 	if (eTransType != SFLM_READ_TRANS)

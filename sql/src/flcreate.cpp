@@ -42,7 +42,7 @@ RCODE F_DbSystem::dbCreate(
 	FLMBOOL			bDatabaseCreated = FALSE;
 	FLMBOOL			bNewDatabase = FALSE;
 	FLMBOOL			bMutexLocked = FALSE;
-	FLMBOOL			bEnableLogging = FALSE;
+	FLMUINT			uiRflToken = 0;
 
 	// Make sure the path looks valid
 	
@@ -173,8 +173,7 @@ RCODE F_DbSystem::dbCreate(
 
 	if( pDatabase->m_pRfl)
 	{
-		bEnableLogging = pDatabase->m_pRfl->isLoggingEnabled();
-		pDatabase->m_pRfl->disableLogging();
+		pDatabase->m_pRfl->disableLogging( &uiRflToken);
 	}
 
 	// Set FFILE stuff to same state as a completed checkpoint.
@@ -232,9 +231,9 @@ Exit:
 			dbSystem.dbRemove( pszFilePath, pszDataDir, pszRflDir, TRUE);
 		}
 	}
-	else if (bEnableLogging)
+	else if( uiRflToken)
 	{
-		pDatabase->m_pRfl->enableLogging();
+		pDatabase->m_pRfl->enableLogging( &uiRflToken);
 	}
 
 	return( rc);
@@ -252,11 +251,11 @@ RCODE F_Db::initDbFiles(
 	FLMBYTE *			pucBuf = NULL;
 	FLMUINT				uiBlkSize;
 	FLMUINT				uiWriteBytes;
+	FLMUINT				uiRflToken = 0;
 	SFLM_DB_HDR *		pDbHdr;
 	F_BLK_HDR *			pBlkHdr;
 	F_CachedBlock *	pSCache = NULL;
 	FLMBYTE *			pucWrappingKey = NULL;
-	FLMBOOL				bEnableLogging = FALSE;
 #ifdef FLM_USE_NICI
 	FLMUINT32			ui32KeyLen = 0;
 #endif
@@ -405,8 +404,7 @@ RCODE F_Db::initDbFiles(
 		
 		// Disable RFL logging
 
-		bEnableLogging = m_pDatabase->m_pRfl->isLoggingEnabled();
-		m_pDatabase->m_pRfl->disableLogging();
+		m_pDatabase->m_pRfl->disableLogging( &uiRflToken);
 
 		// Start an update transaction and populate the dictionary.
 		// This also creates the default collections and indexes.
@@ -458,9 +456,9 @@ Exit:
 		abortTrans();
 	}
 
-	if( bEnableLogging)
+	if( uiRflToken)
 	{
-		m_pDatabase->m_pRfl->enableLogging();
+		m_pDatabase->m_pRfl->enableLogging( &uiRflToken);
 	}
 
 	if (pSCache)
