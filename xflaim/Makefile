@@ -928,6 +928,7 @@ ifdef unix_target
 		ccdefs += N_PLAT_UNIX _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64
 
 		ifdef jhome	
+			inc_dirs += $(subst $(sp),@,"$(jhome)/include")
 			inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
 		endif
 		
@@ -1842,7 +1843,7 @@ spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel java2-devel-packages\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
@@ -2109,6 +2110,7 @@ status:
 	$(ec)$(gprintf) "Target Path..................... $(call ppath,$(target_path))\n"
 	$(ec)$(gprintf) "Compiler........................ $(call ppath,$(compiler))\n"
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
+	$(ec)$(gprintf) "JAVA HOME....................... $(call ppath,$(jhome))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
 
