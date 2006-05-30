@@ -26,7 +26,6 @@
 #include "flaimsys.h"
 #include "flm_lutl.h"
 #include "domedit.h"
-#include "fdynbuf.h"
 #include "fxpath.h"
 
 static char * pszDomeditMonths [12] =
@@ -7898,11 +7897,11 @@ FSTATIC RCODE formatText(
 {
 	RCODE						rc = NE_XFLM_OK;
 	FLMUNICODE *			puzTmp = NULL;
-	F_DynamicBuffer *		pBuffer = NULL;
 	FLMUNICODE				uzNullChar;
 	char *					pszString;
 	FLMUINT					uiMaxStringLen = MAX_DISPLAY_SEGMENT;
 	FLMUINT					uiStringLen = 0;
+	F_DynaBuf				tmpBuf;
 
 	flmAssert( ppszString);
 
@@ -7922,10 +7921,6 @@ FSTATIC RCODE formatText(
 	{
 		puzTmp = puzBuf;
 	}
-	if ((pBuffer = f_new F_DynamicBuffer) == NULL)
-	{
-		goto Exit;
-	}
 
 	// If the first character is a carriage return, skip over it.
 
@@ -7933,16 +7928,17 @@ FSTATIC RCODE formatText(
 	{
 		puzTmp++;
 	}
+	
 	if (pszPreText)
 	{
-		if (RC_BAD( rc = pBuffer->addString( pszPreText)))
+		if (RC_BAD( rc = tmpBuf.appendString( pszPreText)))
 		{
 			goto Exit;
 		}
 	}
 	if (bQuoted)
 	{
-		if (RC_BAD( rc = pBuffer->addChar( '"')))
+		if (RC_BAD( rc = tmpBuf.appendByte( '"')))
 		{
 			goto Exit;
 		}
@@ -7967,12 +7963,17 @@ FSTATIC RCODE formatText(
 
 			// Output whatever buffer we have built up.
 
-			if (pBuffer->getBufferSize())
+			if (tmpBuf.getDataLength())
 			{
+				tmpBuf.appendByte( 0);
+				
 				f_sprintf( pszString, "%*.*s",
-					0, (uiStringLen <= uiMaxStringLen ? uiMaxStringLen - uiStringLen : 0), pBuffer->printBuffer());
-				pszString += pBuffer->getBufferSize();
-				uiStringLen += pBuffer->getBufferSize();
+					0, (uiStringLen <= uiMaxStringLen 
+								? uiMaxStringLen - uiStringLen 
+								: 0), 
+					tmpBuf.getBufferPtr());
+				pszString += tmpBuf.getDataLength() - 1;
+				uiStringLen += tmpBuf.getDataLength() - 1;
 
 				if ((uiStringLen + 1) < uiMaxStringLen)
 				{
@@ -7988,7 +7989,7 @@ FSTATIC RCODE formatText(
 			}
 
 			// Output a newline to end this line
-			pBuffer->reset();
+			tmpBuf.truncateData( 0);
 
 			// Have already skipped over the newline, so we just continue.
 
@@ -7999,7 +8000,7 @@ FSTATIC RCODE formatText(
 
 		if (*puzTmp >= 32 && *puzTmp <= 126)
 		{
-			if (RC_BAD( rc = pBuffer->addChar( (char)*puzTmp)))
+			if (RC_BAD( rc = tmpBuf.appendByte( (char)*puzTmp)))
 			{
 				goto Exit;
 			}
@@ -8010,13 +8011,19 @@ FSTATIC RCODE formatText(
 			// Allow browser to render these - flush what we have in
 			// our buffer up to this point, then output.
 
-			if (pBuffer->getBufferSize())
+			if (tmpBuf.getDataLength())
 			{
+				tmpBuf.appendByte( 0);
+				
 				f_sprintf( pszString, "%*.*s",
-					0, (uiStringLen <= uiMaxStringLen ? uiMaxStringLen - uiStringLen : 0), pBuffer->printBuffer());
-				pszString += pBuffer->getBufferSize();
-				uiStringLen += pBuffer->getBufferSize();
-				pBuffer->reset();
+					0, (uiStringLen <= uiMaxStringLen 
+								? uiMaxStringLen - uiStringLen 
+								: 0), 
+					tmpBuf.getBufferPtr());
+					
+				pszString += tmpBuf.getDataLength() - 1;
+				uiStringLen += tmpBuf.getDataLength() - 1;
+				tmpBuf.truncateData( 0);
 			}
 
 			if (uiStringLen + 7 < uiMaxStringLen)
@@ -8035,18 +8042,24 @@ FSTATIC RCODE formatText(
 		puzTmp++;
 	}
 
-	if (pBuffer->getBufferSize())
+	if (tmpBuf.getDataLength())
 	{
+		tmpBuf.appendByte( 0);
+		
 		f_sprintf( pszString, "%*.*s",
-			0, (uiStringLen <= uiMaxStringLen ? uiMaxStringLen - uiStringLen : 0), pBuffer->printBuffer());
-		pszString += pBuffer->getBufferSize();
-		uiStringLen += pBuffer->getBufferSize();
-		pBuffer->reset();
+			0, (uiStringLen <= uiMaxStringLen 
+						? uiMaxStringLen - uiStringLen 
+						: 0), 
+			tmpBuf.getBufferPtr());
+			
+		pszString += tmpBuf.getDataLength() - 1;
+		uiStringLen += tmpBuf.getDataLength() - 1;
+		tmpBuf.truncateData( 0);
 	}
 	
 	if (bQuoted)
 	{
-		if (RC_BAD( rc = pBuffer->addChar( '"')))
+		if (RC_BAD( rc = tmpBuf.appendByte( '"')))
 		{
 			goto Exit;
 		}
@@ -8054,28 +8067,27 @@ FSTATIC RCODE formatText(
 	
 	if (pszPostText)
 	{
-		if (RC_BAD( rc = pBuffer->addString( pszPostText)))
+		if (RC_BAD( rc = tmpBuf.appendString( pszPostText)))
 		{
 			goto Exit;
 		}
 	}
 
-	if (pBuffer->getBufferSize())
+	if (tmpBuf.getDataLength())
 	{
+		tmpBuf.appendByte( 0);
 		f_sprintf( pszString, "%*.*s",
-			0, (uiStringLen <= uiMaxStringLen ? uiMaxStringLen - uiStringLen : 0), pBuffer->printBuffer());
-		pszString += pBuffer->getBufferSize();
-		pBuffer->reset();
+			0, (uiStringLen <= uiMaxStringLen 
+					? uiMaxStringLen - uiStringLen 
+					: 0), 
+			tmpBuf.getBufferPtr());
+		pszString += tmpBuf.getDataLength() - 1;
+		tmpBuf.truncateData( 0);
 	}
 
 	*ppszString = pszString;
 
 Exit:
-
-	if (pBuffer)
-	{
-		pBuffer->Release();
-	}
 
 	return( rc);
 }
