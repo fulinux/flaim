@@ -80,7 +80,7 @@ RCODE FLMAPI F_Db::reduceSize(
 	if (!(m_uiFlags & FDB_HAS_FILE_LOCK))
 	{
 		if (RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->lock( m_hWaitSem,
-			TRUE, XFLM_NO_TIMEOUT, 0, m_pDbStats ? &m_pDbStats->LockStats : NULL)))
+			TRUE, FLM_NO_TIMEOUT, 0, m_pDbStats ? &m_pDbStats->LockStats : NULL)))
 		{
 			goto Exit;
 		}
@@ -105,7 +105,7 @@ RCODE FLMAPI F_Db::reduceSize(
 	// Start a database transaction
 
 	if( RC_BAD(rc = beginTrans( XFLM_UPDATE_TRANS, 
-		XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
+		FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
 	{
 		goto Exit;
 	}

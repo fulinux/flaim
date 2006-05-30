@@ -440,7 +440,7 @@ Retry:
 			pDatabaseLockObj->AddRef();
 			
 			if (RC_BAD( rc = pDatabaseLockObj->lock( hWaitSem, 
-				TRUE, XFLM_NO_TIMEOUT, 0)))
+				TRUE, FLM_NO_TIMEOUT, 0)))
 			{
 				goto Exit;
 			}
@@ -642,7 +642,7 @@ Retry:
 	if( pWrappingKey)
 	{
 		if( RC_BAD( rc = m_pDb->transBegin( 
-			XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT, 0)))
+			XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT, 0)))
 		{
 			goto Exit;
 		}

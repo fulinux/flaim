@@ -2577,7 +2577,7 @@ RetryLock:
 	// Start an update transaction
 
 	if( RC_BAD( rc = beginTrans( 
-		XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
+		XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
 	{
 		if( rc == NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT)
 		{

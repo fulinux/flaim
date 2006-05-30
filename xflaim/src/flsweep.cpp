@@ -73,7 +73,7 @@ RCODE F_Db::sweep(
 	// Start a read transaction
 
 	if (RC_BAD( rc = beginTrans( XFLM_READ_TRANS, 
-		XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
+		FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
 	{
 		goto Exit;
 	}
@@ -664,7 +664,7 @@ RCODE F_Db::sweepCheckElementState(
 		// Restart the read transaction.
 
 		if( RC_BAD( rc = beginTrans( XFLM_READ_TRANS, 
-			XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
+			FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
 		}
@@ -914,7 +914,7 @@ RCODE F_Db::sweepCheckAttributeStates(
 		// Restart the read transaction.
 	
 		if( RC_BAD( rc = beginTrans( XFLM_READ_TRANS, 
-			XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
+			FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
 		}

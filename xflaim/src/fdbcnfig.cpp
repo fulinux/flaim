@@ -64,8 +64,7 @@ RCODE FLMAPI F_Db::setRflKeepFilesFlag(
 
 	if (!(m_uiFlags & (FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_SHARED)))
 	{
-		if (RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0,
-									XFLM_NO_TIMEOUT)))
+		if (RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
@@ -88,7 +87,7 @@ RCODE FLMAPI F_Db::setRflKeepFilesFlag(
 	// go to a new RFL file so that the new RFL file gets new
 	// serial numbers and a new keep or no-keep flag.
 
-	if (RC_BAD( rc = doCheckpoint( XFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = doCheckpoint( FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
@@ -175,8 +174,7 @@ RCODE FLMAPI F_Db::setRflDir(
 
 	if (!(m_uiFlags & (FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_SHARED)))
 	{
-		if( RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0,
-									XFLM_NO_TIMEOUT)))
+		if( RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
@@ -192,7 +190,7 @@ RCODE FLMAPI F_Db::setRflDir(
 	// ensures that no more transactions will be logged to the current
 	// RFL file.
 
-	if (RC_BAD( rc = doCheckpoint( XFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = doCheckpoint( FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}

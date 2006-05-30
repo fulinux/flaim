@@ -1856,7 +1856,7 @@ public:
 	
 	RCODE FLMAPI transBegin(
 		eDbTransType			eTransType,
-		FLMUINT					uiMaxLockWait = XFLM_NO_TIMEOUT,
+		FLMUINT					uiMaxLockWait = FLM_NO_TIMEOUT,
 		FLMUINT					uiFlags = 0,
 		XFLM_DB_HDR *			pDbHeader = NULL);
 
@@ -2700,7 +2700,7 @@ private:
 
 	RCODE beginTrans(
 		eDbTransType		eTransType,
-		FLMUINT				uiMaxLockWait = XFLM_NO_TIMEOUT,
+		FLMUINT				uiMaxLockWait = FLM_NO_TIMEOUT,
 		FLMUINT				uiFlags = 0,
 		XFLM_DB_HDR *		pDbHdr = NULL);
 

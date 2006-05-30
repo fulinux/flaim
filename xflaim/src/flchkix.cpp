@@ -905,7 +905,7 @@ RCODE F_DbCheck::startUpdate( void)
 
 		// Try to start an update transaction
 	
-		if (RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT,
+		if (RC_BAD( rc = m_pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT,
 													 XFLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
@@ -948,7 +948,7 @@ Exit:
 		RCODE	rc2;
 		
 		m_pIxd = NULL;
-		if (RC_BAD( rc2 = m_pDb->transBegin( XFLM_READ_TRANS, XFLM_NO_TIMEOUT,
+		if (RC_BAD( rc2 = m_pDb->transBegin( XFLM_READ_TRANS, FLM_NO_TIMEOUT,
 									  XFLM_DONT_POISON_CACHE)))
 		{
 			if (RC_OK( rc))
@@ -1003,7 +1003,7 @@ Exit:
 		RCODE	rc2;
 		
 		if (RC_BAD( rc2 = m_pDb->transBegin( 
-			XFLM_READ_TRANS, XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
+			XFLM_READ_TRANS, FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE)))
 		{
 			if (RC_OK( rc))
 			{

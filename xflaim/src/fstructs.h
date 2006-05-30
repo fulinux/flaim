@@ -724,7 +724,7 @@ public:
 	RCODE dbWriteLock(
 		F_SEM					hWaitSem,
 		XFLM_DB_STATS *	pDbStats = NULL,
-		FLMUINT				uiTimeout = XFLM_NO_TIMEOUT);
+		FLMUINT				uiTimeout = FLM_NO_TIMEOUT);
 
 	void dbWriteUnlock( void);
 

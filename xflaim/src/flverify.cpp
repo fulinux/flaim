@@ -1514,7 +1514,7 @@ Reset:
 				// Try to start a new read transaction
 			
 				if (RC_BAD( rc = m_pDb->transBegin( XFLM_READ_TRANS,
-																XFLM_NO_TIMEOUT,
+																FLM_NO_TIMEOUT,
 																XFLM_DONT_POISON_CACHE)))
 				{
 					goto Exit;

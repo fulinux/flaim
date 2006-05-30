@@ -163,7 +163,7 @@ RetryCreate:
 	// made to the database, an UPDATE transaction is required.  It is best to
 	// keep transactions small if possible.
 
-	if( RC_BAD( rc = pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
@@ -500,7 +500,7 @@ RetryCreate:
 	// from...
 	// Start an update transaction
 
-	if( RC_BAD( rc = pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
@@ -542,7 +542,7 @@ RetryCreate:
 	// 	.
 	// </disc>
 
-	if( RC_BAD( rc = pDb->transBegin( XFLM_UPDATE_TRANS, XFLM_NO_TIMEOUT)))
+	if( RC_BAD( rc = pDb->transBegin( XFLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}

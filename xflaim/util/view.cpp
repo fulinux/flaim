@@ -684,7 +684,7 @@ RCODE ViewGetDictInfo( void)
 		uiFlags = DBF_BEING_OPENED;  // VISIT:  This needs the other flags...
 
 		// Start a read transaction.
-		if (RC_BAD( rc = pDb->transBegin( XFLM_READ_TRANS, XFLM_NO_TIMEOUT,
+		if (RC_BAD( rc = pDb->transBegin( XFLM_READ_TRANS, FLM_NO_TIMEOUT,
 			uiFlags, NULL)))
 		{
 			gv_bViewHaveDictInfo = FALSE;

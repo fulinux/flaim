@@ -719,7 +719,7 @@ RCODE FLMAPI F_Db::dbLock(
 	FLMINT			iPriority,
 		// [IN] Priority to be assigned to lock.
 	FLMUINT			uiTimeout
-		// [IN] Seconds to wait for lock to be granted.  XFLM_NO_TIMEOUT
+		// [IN] Seconds to wait for lock to be granted.  FLM_NO_TIMEOUT
 		// means that it will wait forever for the lock to be granted.
 	)
 {
@@ -903,7 +903,7 @@ Desc : Forces a checkpoint on the database.
 RCODE FLMAPI F_Db::doCheckpoint(
 	FLMUINT	uiTimeout
 		// [IN] Seconds to wait to obtain lock on the database.
-		// XFLM_NO_TIMEOUT means that it will wait forever for
+		// FLM_NO_TIMEOUT means that it will wait forever for
 		// the lock to be granted.
 	)
 {

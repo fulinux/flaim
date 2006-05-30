@@ -99,7 +99,7 @@ RCODE F_DbSystem::dbCopy(
 	// threads have the opportunity to get in and update the
 	// database.
 
-	if (RC_BAD( rc = pDb->dbLock( FLM_LOCK_EXCLUSIVE, 0, XFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = pDb->dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
@@ -107,7 +107,7 @@ RCODE F_DbSystem::dbCopy(
 
 	// Force a checkpoint
 
-	if (RC_BAD( rc = pDb->doCheckpoint( XFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = pDb->doCheckpoint( FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}

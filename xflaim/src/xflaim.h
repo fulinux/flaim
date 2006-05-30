@@ -398,10 +398,6 @@
 	#define XFLM_DONT_KILL_TRANS		0x1
 	#define XFLM_DONT_POISON_CACHE	0x2
 
-	// Defines used for uiMaxLockWait parameter
-
-	#define XFLM_NO_TIMEOUT				0xFF
-
 	// Backup types
 
 	typedef enum
@@ -2447,7 +2443,7 @@
 	{
 		virtual RCODE FLMAPI transBegin(
 			eDbTransType			eTransType,
-			FLMUINT					uiMaxLockWait = XFLM_NO_TIMEOUT,
+			FLMUINT					uiMaxLockWait = FLM_NO_TIMEOUT,
 			FLMUINT					uiFlags = 0,
 			XFLM_DB_HDR *			pDbHeader = NULL) = 0;
 

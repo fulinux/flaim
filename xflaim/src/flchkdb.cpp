@@ -512,7 +512,7 @@ RCODE F_DbCheck::getDictInfo()
 		// to the file's dictionary structures.
 
 		if (RC_BAD( rc = m_pDb->transBegin( XFLM_READ_TRANS,
-			XFLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE, &m_pDbInfo->m_dbHdr)))
+			FLM_NO_TIMEOUT, XFLM_DONT_POISON_CACHE, &m_pDbInfo->m_dbHdr)))
 		{
 			goto Exit;
 		}
