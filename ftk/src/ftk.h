@@ -5740,6 +5740,11 @@ RCODE FLMAPI f_allocHashTable(
 	FLMUINT					uiHashTblSize,
 	FBUCKET **				ppHashTblRV);
 	
+FLMUINT FLMAPI f_strHashBucket(
+	char *					pszStr,
+	FBUCKET *				pHashTbl,
+	FLMUINT					uiNumBuckets);
+	
 /**************************************************************************
 Desc:
 **************************************************************************/

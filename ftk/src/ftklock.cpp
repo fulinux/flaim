@@ -39,8 +39,8 @@ typedef struct F_LOCK_WAITER
 	FLMINT					iPriority;
 	F_TMSTAMP				StartTime;
 	F_LOCK_STATS *			pLockStats;
-	F_LOCK_WAITER *		pNext;
-	F_LOCK_WAITER *		pPrev;
+	F_LOCK_WAITER *		pNextInList;
+	F_LOCK_WAITER *		pPrevInList;
 	F_LOCK_WAITER *		pNextByTime;
 	F_LOCK_WAITER *		pPrevByTime;
 } F_LOCK_WAITER;
@@ -119,8 +119,10 @@ private:
 	FLMUINT						m_uiLockThreadId;
 	FLMUINT						m_uiLockTime;
 	FLMUINT						m_uiLockCount;
-	F_LOCK_WAITER *			m_pFirstLockWaiter;
-	F_LOCK_WAITER *			m_pLastLockWaiter;
+	F_LOCK_WAITER *			m_pFirstInList;
+	F_LOCK_WAITER *			m_pLastInList;
+	F_LOCK_WAITER *			m_pFirstToTimeout;
+	F_LOCK_WAITER *			m_pLastToTimeout;
 	FLMUINT						m_uiNumWaiters;
 	FLMUINT						m_uiSharedLockCnt;
 	FLMBOOL						m_bExclLock;
@@ -171,8 +173,10 @@ F_LockObject::F_LockObject()
 	m_uiLockThreadId = 0;
 	m_uiLockTime = 0;
 	m_uiLockCount = 0;
-	m_pFirstLockWaiter = NULL;
-	m_pLastLockWaiter = NULL;
+	m_pFirstInList = NULL;
+	m_pLastInList = NULL;
+	m_pFirstToTimeout = NULL;
+	m_pLastToTimeout = NULL;
 	m_uiNumWaiters = 0;
 	m_uiSharedLockCnt = 0;
 	m_bExclLock = FALSE;
@@ -264,32 +268,28 @@ RCODE F_LockObject::timeoutThread(
 {
 	RCODE					rc = NE_FLM_OK;
 	F_LockObject *		pThis = (F_LockObject *)pThread->getParm1();
+	FLMUINT				uiLoop;
 	FLMUINT				uiCurrTime;
 	F_LOCK_WAITER *	pLockWaiter;
 	
 	for( ;;)
 	{
-		if( pThread->getShutdownFlag())
-		{
-			break;
-		}
-		
-		if( pThis->m_pFirstLockWaiter && pThis->m_pFirstLockWaiter->uiWaitTime)
+		if( pThis->m_pFirstInList && pThis->m_pFirstInList->uiWaitTime)
 		{
 			f_mutexLock( pThis->m_hMutex);
 			uiCurrTime = FLM_GET_TIMER();
 		
-			while( pThis->m_pFirstLockWaiter && 
-					 pThis->m_pFirstLockWaiter->uiWaitTime &&
+			while( pThis->m_pFirstToTimeout && 
+					 pThis->m_pFirstToTimeout->uiWaitTime &&
 					 FLM_ELAPSED_TIME( uiCurrTime, 
-											 pThis->m_pFirstLockWaiter->uiWaitStartTime) >=
-								pThis->m_pFirstLockWaiter->uiWaitTime)
+											 pThis->m_pFirstToTimeout->uiWaitStartTime) >=
+								pThis->m_pFirstToTimeout->uiWaitTime)
 			{
-				f_assert( !pThis->m_pFirstLockWaiter->pPrevByTime);
+				f_assert( !pThis->m_pFirstToTimeout->pPrevByTime);
 		
 				// Lock waiter has timed out.
 		
-				pLockWaiter = pThis->m_pFirstLockWaiter;
+				pLockWaiter = pThis->m_pFirstToTimeout;
 		
 				// Remove the waiter from the list
 		
@@ -303,9 +303,19 @@ RCODE F_LockObject::timeoutThread(
 		
 			f_mutexUnlock( pThis->m_hMutex);
 		}
+
+		for( uiLoop = 0; uiLoop < 100; uiLoop++)
+		{
+			if( pThread->getShutdownFlag())
+			{
+				goto Exit;
+			}
 		
-		f_sleep( 1000);
+			f_sleep( 10);
+		}
 	}
+
+Exit:
 	
 	return( rc);
 }
@@ -323,7 +333,7 @@ void FLMAPI F_LockObject::timeoutLockWaiter(
 	f_mutexLock( m_hMutex);
 	uiCurrTime = FLM_GET_TIMER();
 
-	for( pLockWaiter = m_pFirstLockWaiter;
+	for( pLockWaiter = m_pFirstToTimeout;
 		pLockWaiter;
 		pLockWaiter = pNextWaiter)
 	{
@@ -356,9 +366,9 @@ void FLMAPI F_LockObject::timeoutAllWaiters( void)
 	
 	f_mutexLock( m_hMutex);
 	
-	while( m_pFirstLockWaiter) 
+	while( m_pFirstInList) 
 	{
-		pLockWaiter = m_pFirstLockWaiter;
+		pLockWaiter = m_pFirstInList;
 		removeWaiter( pLockWaiter);
 		*(pLockWaiter->pRc) = RC_SET( NE_FLM_LOCK_REQ_TIMEOUT);
 		f_semSignal( pLockWaiter->hWaitSem);
@@ -376,9 +386,22 @@ void F_LockObject::insertWaiter(
 {
 	F_LOCK_WAITER *	pPrevLockWaiter;
 
+	// Link into list of waiters on this object.
+
+	if( (pLockWaiter->pPrevInList = m_pLastInList) != NULL)
+	{
+		pLockWaiter->pPrevInList->pNextInList = pLockWaiter;
+	}
+	else
+	{
+		m_pFirstInList = pLockWaiter;
+	}
+	
+	m_pLastInList = pLockWaiter;
+
 	// Determine where in the list this lock waiter should go.
 
-	if ((pPrevLockWaiter = m_pFirstLockWaiter) != NULL)
+	if ((pPrevLockWaiter = m_pFirstToTimeout) != NULL)
 	{
 		FLMUINT	uiCurrTime = FLM_GET_TIMER();
 		FLMUINT	uiElapTime;
@@ -436,7 +459,10 @@ void F_LockObject::insertWaiter(
 				else
 				{
 					if (!pPrevLockWaiter->pNextByTime)
+					{
 						break;
+					}
+
 					pPrevLockWaiter = pPrevLockWaiter->pNextByTime;
 				}
 			}
@@ -456,13 +482,15 @@ void F_LockObject::insertWaiter(
 	}
 	else
 	{
-		if( (pLockWaiter->pNextByTime = m_pFirstLockWaiter) != NULL)
+		if( (pLockWaiter->pNextByTime = m_pFirstToTimeout) != NULL)
 		{
-			m_pFirstLockWaiter->pPrevByTime = pLockWaiter;
+			m_pFirstToTimeout->pPrevByTime = pLockWaiter;
 		}
 		
-		m_pFirstLockWaiter = pLockWaiter;
+		m_pFirstToTimeout = pLockWaiter;
 	}
+
+	m_uiNumWaiters++;
 }
 
 /****************************************************************************
@@ -482,25 +510,25 @@ void F_LockObject::removeWaiter(
 	}
 	else
 	{
-		m_pFirstLockWaiter = pLockWaiter->pNextByTime;
+		m_pFirstToTimeout = pLockWaiter->pNextByTime;
 	}
 	
-	if (pLockWaiter->pNext)
+	if (pLockWaiter->pNextInList)
 	{
-		pLockWaiter->pNext->pPrev = pLockWaiter->pPrev;
+		pLockWaiter->pNextInList->pPrevInList = pLockWaiter->pPrevInList;
 	}
 	else
 	{
-		m_pLastLockWaiter = pLockWaiter->pPrev;
+		m_pLastInList = pLockWaiter->pPrevInList;
 	}
 
-	if (pLockWaiter->pPrev)
+	if (pLockWaiter->pPrevInList)
 	{
-		pLockWaiter->pPrev->pNext = pLockWaiter->pNext;
+		pLockWaiter->pPrevInList->pNextInList = pLockWaiter->pNextInList;
 	}
 	else
 	{
-		m_pFirstLockWaiter = pLockWaiter->pNext;
+		m_pFirstInList = pLockWaiter->pNextInList;
 	}
 	
 	f_assert( m_uiNumWaiters > 0);
@@ -526,7 +554,7 @@ RCODE FLMAPI F_LockObject::lock(
 	f_mutexLock( m_hMutex);
 	bMutexLocked = TRUE;
 
-	if (m_pFirstLockWaiter || m_bExclLock || (bExclReq && m_uiSharedLockCnt))
+	if (m_pFirstInList || m_bExclLock || (bExclReq && m_uiSharedLockCnt))
 	{
 
 		// Object is locked by another thread, wait to get lock.
@@ -541,20 +569,6 @@ RCODE FLMAPI F_LockObject::lock(
 
 		f_memset( &LockWait, 0, sizeof( LockWait));
 		LockWait.hWaitSem = hWaitSem;
-
-		// Link into list of waiters on this object.
-
-		if( (LockWait.pPrev = m_pLastLockWaiter) != NULL)
-		{
-			LockWait.pPrev->pNext = &LockWait;
-		}
-		else
-		{
-			m_pFirstLockWaiter = &LockWait;
-		}
-		
-		m_pLastLockWaiter = &LockWait;
-		m_uiNumWaiters++;
 
 		LockWait.uiThreadId = f_threadId();
 		LockWait.pRc = &rc;
@@ -704,18 +718,18 @@ RCODE FLMAPI F_LockObject::unlock(
 
 	// See if we need to signal the next set of waiters
 
-	if( m_pFirstLockWaiter && !m_uiSharedLockCnt)
+	if( m_pFirstInList && !m_uiSharedLockCnt)
 	{
-		m_bExclLock = m_pFirstLockWaiter->bExclReq;
+		m_bExclLock = m_pFirstInList->bExclReq;
 		
-		while( m_pFirstLockWaiter)
+		while( m_pFirstInList)
 		{
 			if (!m_bExclLock)
 			{
 				m_uiSharedLockCnt++;
 			}
 
-			pLockWaiter = m_pFirstLockWaiter;
+			pLockWaiter = m_pFirstInList;
 			hWaitSem = pLockWaiter->hWaitSem;
 
 			// Unlink the waiter from the list of waiters on this lock object.
@@ -723,9 +737,9 @@ RCODE FLMAPI F_LockObject::unlock(
 			// IMPORTANT NOTE: Do NOT signal the semaphore until AFTER
 			// doing this unlinking.  This is because F_LOCK_WAITER
 			// structures exist only on the stack of the thread
-			// being signaled.  If we tried to assign m_pFirstLockWaiter after
+			// being signaled.  If we tried to assign m_pFirstInList after
 			// signaling the semaphore, the F_LOCK_WAITER structure could
-			// disappear and m_pFirstLockWaiter would get garbage.
+			// disappear and m_pFirstInList would get garbage.
 
 			removeWaiter( pLockWaiter);
 
@@ -763,7 +777,7 @@ RCODE FLMAPI F_LockObject::unlock(
 			// here.
 
 			if (m_bExclLock ||
-				 (m_pFirstLockWaiter && m_pFirstLockWaiter->bExclReq))
+				 (m_pFirstInList && m_pFirstInList->bExclReq))
 			{
 				break;
 			}
@@ -826,8 +840,8 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 
 	// Get information on pending lock requests.
 
-	pLockWaiter = m_pFirstLockWaiter;
-	for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNext)
+	pLockWaiter = m_pFirstInList;
+	for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNextInList)
 	{
 
 		// Count the number of exclusive and shared waiters.
@@ -895,7 +909,7 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 
 	// Output the lock waiters.
 
-	pLockWaiter = m_pFirstLockWaiter;
+	pLockWaiter = m_pFirstInList;
 	while( pLockWaiter && uiCnt)
 	{
 		uiElapTime = FLM_ELAPSED_TIME( uiCurrTime, pLockWaiter->uiWaitStartTime);
@@ -907,7 +921,7 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 			goto Exit;
 		}
 		
-		pLockWaiter = pLockWaiter->pNext;
+		pLockWaiter = pLockWaiter->pNextInList;
 		uiCnt--;
 	}
 	
@@ -930,8 +944,8 @@ FLMBOOL FLMAPI F_LockObject::haveHigherPriorityWaiter(
 
 	f_mutexLock( m_hMutex);
 
-	pLockWaiter = m_pFirstLockWaiter;
-	for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNext )
+	pLockWaiter = m_pFirstInList;
+	for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNextInList)
 	{
 		// If we find a waiter with a priority > the specified
 		// priority, we're done.

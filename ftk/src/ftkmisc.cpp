@@ -2165,3 +2165,32 @@ Exit:
 	*ppHashTblRV = pHashTbl;
 	return( rc);
 }
+
+/****************************************************************************
+Desc: This routine determines the hash bucket for a string.
+****************************************************************************/
+FLMUINT FLMAPI f_strHashBucket(
+	char *		pszStr,
+	FBUCKET *	pHashTbl,
+	FLMUINT		uiNumBuckets)
+{
+	FLMUINT	uiHashIndex;
+
+	if ((uiHashIndex = (FLMUINT)*pszStr) >= uiNumBuckets)
+	{
+		uiHashIndex -= uiNumBuckets;
+	}
+
+	while (*pszStr)
+	{
+		if ((uiHashIndex =
+			(FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ (FLMUINT)(f_toupper( *pszStr)))) >=
+				uiNumBuckets)
+		{
+			uiHashIndex -= uiNumBuckets;
+		}
+		pszStr++;
+	}
+
+	return( uiHashIndex);
+}
