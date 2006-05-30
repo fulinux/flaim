@@ -4808,15 +4808,6 @@ SYMDEB.386 in the NetWare source. We have three options:
 		an internal string buffer, then print the buffer.
 ****************************************************************************/
 
-#ifdef FLM_NLM
-	extern "C"
-	{
-		void GetClosestSymbol(
-			BYTE *	szBuffer,
-			LONG		udAddress);
-	}
-#endif
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -4891,8 +4882,8 @@ RCODE F_ObjRefTracker::setup(
 	f_strcat( pszTmpBuf, ".OTL");
 
 #ifdef FLM_NLM
-	f_strcpy( m_pLogPath, "SYS:SYSTEM");
-	f_pathAppend( m_pLogPath, pszTmpBuf);
+	f_strcpy( m_pLogPath, "SYS:\\SYSTEM\\");
+	f_strcat( m_pLogPath, pszTmpBuf);
 #else
 	f_strcpy( m_pLogPath, pszTmpBuf);
 #endif
@@ -5205,7 +5196,7 @@ void F_ObjRefTracker::formatAddress(
 		return;
 	}
 
-#if defined( FLM_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 
 	if( uiSize == 0)
 	{
@@ -5213,7 +5204,6 @@ void F_ObjRefTracker::formatAddress(
 	}
 
 	GetClosestSymbol( (BYTE *)pucBuffer, (LONG)pAddress);
-
 	return;
 
 #elif defined( FLM_WIN)
@@ -5243,27 +5233,27 @@ void F_ObjRefTracker::formatAddress(
 	f_free( &pihs);
 
 #else
-#ifdef HAVE_DLADDR
-	Dl_info dlip;
-	if (dladdr(pAddress, &dlip) != 0 && dlip.dli_sname)
-	{
-		const char *filename;
-		if (dlip.dli_saddr != pAddress)
+	#ifdef HAVE_DLADDR
+		Dl_info dlip;
+		if (dladdr(pAddress, &dlip) != 0 && dlip.dli_sname)
 		{
-			filename = strrchr(dlip.dli_fname, '/');
-			if (!filename)
-				filename = dlip.dli_fname;
+			const char *filename;
+			if (dlip.dli_saddr != pAddress)
+			{
+				filename = strrchr(dlip.dli_fname, '/');
+				if (!filename)
+					filename = dlip.dli_fname;
+				else
+					filename++;		// skip over slash
+				f_sprintf( pucBuffer, "0x%08x (%s)", (unsigned)((FLMUINT)pAddress),
+							filename); 
+			}
 			else
-				filename++;		// skip over slash
-			f_sprintf( pucBuffer, "0x%08x (%s)", (unsigned)((FLMUINT)pAddress),
-						filename); 
+				f_sprintf( pucBuffer, "%s", dlip.dli_sname);
+			return;
 		}
-		else
-			f_sprintf( pucBuffer, "%s", dlip.dli_sname);
-		return;
-	}
-#endif
-	f_sprintf( pucBuffer, "0x%08x", (unsigned)((FLMUINT)pAddress));
+	#endif
+		f_sprintf( pucBuffer, "0x%08x", (unsigned)((FLMUINT)pAddress));
 #endif
 }
 

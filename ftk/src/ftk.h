@@ -346,7 +346,7 @@
 		#endif
 	#elif defined( FLM_NLM)
 		#define FLMAPI     						__stdcall
-		#define FLMEXP								FLMEXTC
+		#define FLMEXP
 		#define FINLINE							inline
 	#elif defined( FLM_UNIX)
 		#define FLMAPI     		
@@ -3958,8 +3958,8 @@
 	public:
 	
 		F_DynaBuf(
-			FLMBYTE *		pucBuffer,
-			FLMUINT			uiBufferSize)
+			FLMBYTE *		pucBuffer = NULL,
+			FLMUINT			uiBufferSize = 0)
 		{
 			m_pucBuffer = pucBuffer;
 			m_uiBufferSize = uiBufferSize;
@@ -4006,32 +4006,6 @@
 			return( rc);
 		}
 		
-		FINLINE RCODE FLMAPI appendData(
-			const void *		pvData,
-			FLMUINT				uiSize)
-		{
-			RCODE		rc = NE_FLM_OK;
-			void *	pvTmp = NULL;
-			
-			if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
-			{
-				goto Exit;
-			}
-	
-			if( uiSize == 1)
-			{
-				*((FLMBYTE *)pvTmp) = *((FLMBYTE *)pvData);
-			}
-			else
-			{
-				f_memcpy( pvTmp, pvData, uiSize);
-			}
-			
-		Exit:
-		
-			return( rc);
-		}
-			
 		FINLINE RCODE FLMAPI appendByte(
 			FLMBYTE		ucChar)
 		{
@@ -4062,6 +4036,51 @@
 			}
 			
 			*puTmp = uChar;
+			
+		Exit:
+		
+			return( rc);
+		}
+		
+		FINLINE RCODE FLMAPI appendData(
+			const void *		pvData,
+			FLMUINT				uiSize)
+		{
+			RCODE		rc = NE_FLM_OK;
+			void *	pvTmp = NULL;
+			
+			if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
+			{
+				goto Exit;
+			}
+	
+			if( uiSize == 1)
+			{
+				*((FLMBYTE *)pvTmp) = *((FLMBYTE *)pvData);
+			}
+			else
+			{
+				f_memcpy( pvTmp, pvData, uiSize);
+			}
+			
+		Exit:
+		
+			return( rc);
+		}
+			
+		FINLINE RCODE FLMAPI appendString(
+			const char *		pszString)
+		{
+			RCODE			rc = NE_FLM_OK;
+			void *		pvTmp = NULL;
+			FLMUINT		uiSize = f_strlen( pszString);
+			
+			if( RC_BAD( rc = allocSpace( uiSize, &pvTmp)))
+			{
+				goto Exit;
+			}
+	
+			f_memcpy( pvTmp, pszString, uiSize);
 			
 		Exit:
 		
@@ -4315,8 +4334,7 @@
 	****************************************************************************/
 	typedef enum
 	{
-		FLM_LOCK_NONE,				///< No lock.\  NOTE: This is not a valid option for FlmDbLock(), but it may be returned by
-										///< FlmDbGetLockType().
+		FLM_LOCK_NONE,				///< No lock.
 		FLM_LOCK_EXCLUSIVE,		///< Exclusive lock.
 		FLM_LOCK_SHARED			///< Shared lock.
 	} eLockType;
@@ -4341,6 +4359,68 @@
 	};
 															
 	#define FLM_NO_TIMEOUT				0xFF
+	
+	/**************************************************************************
+	/// Structure used in gathering statistics to hold an operation count and an elapsed time.
+	**************************************************************************/
+	typedef struct
+	{
+		FLMUINT64	ui64Count;							///< Number of times operation was performed
+		FLMUINT64	ui64ElapMilli;						///< Total elapsed time (milliseconds) for the operations.
+	} F_COUNT_TIME_STAT;
+
+	
+	/**************************************************************************
+	/// Structure for returning lock statistics.
+	**************************************************************************/
+	typedef struct
+	{
+		F_COUNT_TIME_STAT	NoLocks;						///< Statistics on times when nobody was holding a lock on the database.
+		F_COUNT_TIME_STAT	WaitingForLock;			///< Statistics on times threads were waiting to obtain a database lock.
+		F_COUNT_TIME_STAT	HeldLock;					///< Statistics on times when a thread was holding a lock on the database.
+	} F_LOCK_STATS;
+			
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface IF_LockObject : public F_Object
+	{
+		virtual RCODE FLMAPI lock(
+			F_SEM						hWaitSem,
+			FLMBOOL					bExclLock,
+			FLMUINT					uiMaxWaitSecs,
+			FLMINT					iPriority,
+			F_LOCK_STATS *			pLockStats = NULL) = 0;
+	
+		virtual RCODE FLMAPI unlock(
+			F_LOCK_STATS *			pLockStats = NULL) = 0;
+			
+		virtual FLMUINT FLMAPI getLockCount( void) = 0;
+	
+		virtual FLMUINT FLMAPI getWaiterCount( void) = 0;
+		
+		virtual RCODE FLMAPI getLockInfo(
+			FLMINT					iPriority,
+			eLockType *				peCurrLockType,
+			FLMUINT *				puiThreadId,
+			FLMUINT *				puiNumExclQueued,
+			FLMUINT *				puiNumSharedQueued,
+			FLMUINT *				puiPriorityCount) = 0;
+	
+		virtual RCODE FLMAPI getLockInfo(
+			IF_LockInfoClient *	pLockInfo) = 0;
+	
+		virtual FLMBOOL FLMAPI haveHigherPriorityWaiter(
+			FLMINT					iPriority) = 0;
+	
+		virtual void FLMAPI timeoutLockWaiter(
+			FLMUINT					uiThreadId) = 0;
+	
+		virtual void FLMAPI timeoutAllWaiters( void) = 0;
+	};
+	
+	RCODE FLMAPI FlmAllocLockObject(
+		IF_LockObject **			ppLockObject);
 	
 	/****************************************************************************
 	Desc: Misc.
@@ -5724,82 +5804,23 @@
 		FLMBOOL				m_bEndOfStream;
 	};
 
-/***************************************************************************
-Desc: Hash tables
-***************************************************************************/
-
-typedef struct
-{
-	void *		pFirstInBucket;	// Pointer to first item in the bucket.
-											// The type of structure being pointed to
-											// depends on the usage of the hash bucket.
-	FLMUINT		uiHashValue;		// Hash value for this bucket.
-} FBUCKET;
-
-RCODE FLMAPI f_allocHashTable(
-	FLMUINT					uiHashTblSize,
-	FBUCKET **				ppHashTblRV);
+	/***************************************************************************
+	Desc: Hash tables
+	***************************************************************************/
 	
-FLMUINT FLMAPI f_strHashBucket(
-	char *					pszStr,
-	FBUCKET *				pHashTbl,
-	FLMUINT					uiNumBuckets);
+	typedef struct
+	{
+		void *		pFirstInBucket;
+		FLMUINT		uiHashValue;
+	} FBUCKET;
 	
-/// Structure used in gathering statistics to hold an operation count and an elapsed time.
-typedef struct
-{
-	FLMUINT64	ui64Count;			///< Number of times operation was performed
-	FLMUINT64	ui64ElapMilli;		///< Total elapsed time (milliseconds) for the operations.
-} F_COUNT_TIME_STAT;
-
-/// Structure for returning lock statistics.
-typedef struct
-{
-	F_COUNT_TIME_STAT	NoLocks;						///< Statistics on times when nobody was holding a lock on the database.
-	F_COUNT_TIME_STAT	WaitingForLock;			///< Statistics on times threads were waiting to obtain a database lock.
-	F_COUNT_TIME_STAT	HeldLock;					///< Statistics on times when a thread was holding a lock on the database.
-} F_LOCK_STATS;
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-flminterface IF_LockObject : public F_Object
-{
-	virtual RCODE FLMAPI lock(
-		F_SEM						hWaitSem,
-		FLMBOOL					bExclLock,
-		FLMUINT					uiMaxWaitSecs,
-		FLMINT					iPriority,
-		F_LOCK_STATS *			pLockStats = NULL) = 0;
-
-	virtual RCODE FLMAPI unlock(
-		F_LOCK_STATS *			pLockStats = NULL) = 0;
+	RCODE FLMAPI f_allocHashTable(
+		FLMUINT					uiHashTblSize,
+		FBUCKET **				ppHashTblRV);
 		
-	virtual FLMUINT FLMAPI getLockCount( void) = 0;
-
-	virtual FLMUINT FLMAPI getWaiterCount( void) = 0;
-	
-	virtual RCODE FLMAPI getLockInfo(
-		FLMINT					iPriority,
-		eLockType *				peCurrLockType,
-		FLMUINT *				puiThreadId,
-		FLMUINT *				puiNumExclQueued,
-		FLMUINT *				puiNumSharedQueued,
-		FLMUINT *				puiPriorityCount) = 0;
-
-	virtual RCODE FLMAPI getLockInfo(
-		IF_LockInfoClient *	pLockInfo) = 0;
-
-	virtual FLMBOOL FLMAPI haveHigherPriorityWaiter(
-		FLMINT					iPriority) = 0;
-
-	virtual void FLMAPI timeoutLockWaiter(
-		FLMUINT					uiThreadId) = 0;
-
-	virtual void FLMAPI timeoutAllWaiters( void) = 0;
-};
-
-RCODE FLMAPI FlmAllocLockObject(
-	IF_LockObject **			ppLockObject);
+	FLMUINT FLMAPI f_strHashBucket(
+		char *					pszStr,
+		FBUCKET *				pHashTbl,
+		FLMUINT					uiNumBuckets);
 	
 #endif // FTK_H
