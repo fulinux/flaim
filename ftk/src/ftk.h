@@ -104,6 +104,10 @@
 					#define FLM_64BIT
 				#endif
 				#define FLM_STRICT_ALIGNMENT
+			#elif defined( sparc) || defined( __sparc) || defined( __sparc__)
+				#define FLM_SPARC
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
 			#endif
 		#elif defined( sun)
 			#define FLM_SOLARIS
@@ -436,7 +440,7 @@
 	#define NE_FLM_SYNTAX										0xC045			///< 0xC045 - Syntax error while parsing.
 	#define NE_FLM_NOT_IMPLEMENTED							0xC05F			///< 0xC05F - Attempt was made to use a feature that is not implemented.
 	#define NE_FLM_INVALID_PARM								0xC08B			///< 0xC08B - Invalid parameter passed into a function.
-	
+
 	// I/O Errors - Must be the same as they were for FLAIM.
 
 	#define NE_FLM_IO_ACCESS_DENIED							0xC201			///< 0xC201 - Access to file is denied.\  Caller is not allowed access to a file.
@@ -503,6 +507,7 @@
 	#define NE_FLM_BTREE_BAD_STATE							0xC509			///< 0xC509 - B-tree operation cannot be completed.
 	#define NE_FLM_COULD_NOT_CREATE_MUTEX					0xC50A			///< 0xC50A - Error occurred while creating or initializing a mutex.
 	#define NE_FLM_BAD_PLATFORM_FORMAT						0xC50B			///< 0xC50B	- In-memory alignment of disk structures is incorrect
+	#define NE_FLM_LOCK_REQ_TIMEOUT							0xC50C			///< 0xC50C	- Timeout while waiting for a lock object
 	
 	// Network Errors - Must be the same as they were for FLAIM
 
@@ -559,6 +564,8 @@
 	
 	class F_Pool;
 	class F_DynaBuf;
+	class F_ListItem;
+	class F_ListManager;
 
 	/****************************************************************************
 	Desc: Cross-platform definitions
@@ -698,6 +705,7 @@
 	#define FLM_COMP_WHITESPACE_AS_SPACE		0x0020		///< 0x0020 = Treat newlines and tabs as spaces during comparison.
 	#define FLM_COMP_IGNORE_LEADING_SPACE		0x0040		///< 0x0040 = Ignore leading space characters during comparison.
 	#define FLM_COMP_IGNORE_TRAILING_SPACE		0x0080		///< 0x0080 = Ignore trailing space characters during comparison.
+	#define FLM_COMP_WILD							0x0100
 	/// @}
 
 	/****************************************************************************
@@ -1349,6 +1357,10 @@
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 
+		virtual RCODE FLMAPI createLockFile(
+			const char *			pszPath,
+			IF_FileHdl **			ppLockFileHdl) = 0;
+	
 		virtual RCODE FLMAPI openFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
@@ -2377,12 +2389,17 @@
 		FLMUINT64 *					pui64Value,
 		FLMUINT *					puiLength = NULL);
 		
+	/// Get the language string from a language code
+	/// \ingroup language
 	FLMUINT FLMAPI f_languageToNum(
 		const char *				pszLanguage);
 
+	/// Convert a language string to the appropriate language code.
+	/// \ingroup language
 	void FLMAPI f_languageToStr(
 		FLMINT						iLangNum,
-		char *						pszLanguage);
+		char *						pszLanguage		///< Language string that is to be converted to a code.
+		);
 
 	/****************************************************************************
 	Desc: ASCII character constants and macros
@@ -3119,6 +3136,10 @@
 	FLMUINT FLM_MILLI_TO_TIMER_UNITS( 
 		FLMUINT			uiMilliSeconds);
 		
+	void FLMAPI f_addElapsedTime(
+		F_TMSTAMP  *	pStartTime,
+		FLMUINT64 *		pui64ElapMilli);
+	
 	/****************************************************************************
 	Desc: Quick sort
 	****************************************************************************/
@@ -3284,6 +3305,13 @@
 		FLMBYTE *			pucBuf,
 		FLMUINT *			puiBufLength);
 	
+	FLMBYTE FLMAPI f_getBase24DigitChar( 
+		FLMBYTE				ucValue);
+		
+	#define shiftN(data,size,distance) \
+			f_memmove((FLMBYTE *)(data) + (FLMINT)(distance), \
+			(FLMBYTE *)(data), (unsigned)(size))
+
 	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
@@ -3530,7 +3558,8 @@
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
-			FLM_SLAB_USAGE *		pUsageStats) = 0;
+			FLM_SLAB_USAGE *		pUsageStats,
+			IF_Relocator *			pDefaultRelocator = NULL) = 0;
 	
 		virtual RCODE FLMAPI allocBuf(
 			IF_Relocator *			pRelocator,
@@ -3852,7 +3881,7 @@
 		/// Reset a memory pool back to a mark.\   Free all memory blocks allocated after the mark.
 		/// \ingroup pool
 		void FLMAPI poolReset(
-			void *			pvMark,				///< Mark that was obtained from GedPoolMark().
+			void *			pvMark = NULL,		///< Mark that was obtained from GedPoolMark().
 			FLMBOOL			bReduceFirstBlock = FALSE);
 	
 		/// Obtain a mark in a memory pool.\   Returned mark remembers a location in the
@@ -4141,6 +4170,177 @@
 		FLMUINT		m_uiBufferSize;
 		FLMUINT		m_uiOffset;
 	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	typedef struct
+	{
+		F_ListItem *		pPrevItem;
+		F_ListItem *		pNextItem;
+		FLMUINT				uiListCount;
+	} F_ListNode;
+	
+	#define FLM_ALL_LISTS			0xFFFF
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_ListItem : public F_Object
+	{
+	public:
+	
+		F_ListItem()
+		{
+			m_pListManager = NULL;
+			m_pListNodes = NULL;
+			m_uiListNodeCnt = 0;
+			m_bInList = FALSE;
+		}
+	
+		virtual ~F_ListItem();
+	
+		void setup(
+			F_ListManager *		pListMgr,
+			F_ListNode *			pListNodes,
+			FLMUINT					uiListNodeCnt);
+	
+		void removeFromList(
+			FLMUINT					uiList = 0);
+	
+		FINLINE F_ListItem * getNextListItem(
+			FLMUINT					uiList = 0)
+		{
+			return( m_pListNodes[ uiList].pNextItem);
+		}
+	
+		FINLINE F_ListItem * getPrevListItem(
+			FLMUINT					uiList = 0)
+		{
+			return( m_pListNodes[ uiList].pPrevItem);
+		}
+	
+		FINLINE F_ListItem * setNextListItem(
+			FLMUINT					uiList,	
+			F_ListItem *			pNewNext)
+		{
+			F_ListNode *			pListNode;
+	
+			pListNode = &m_pListNodes[ uiList];
+			pListNode->pNextItem = pNewNext;
+	
+			return( pNewNext);
+		}
+	
+		FINLINE F_ListItem * setPrevListItem(
+			FLMUINT					uiList,	
+			F_ListItem *			pNewPrev)
+		{
+			F_ListNode *			pListNode;
+	
+			pListNode = &m_pListNodes[ uiList];
+			pListNode->pPrevItem = pNewPrev;
+	
+			return( pNewPrev);
+		}
+		
+	private:
+	
+		F_ListManager *			m_pListManager;
+		FLMUINT						m_uiListNodeCnt;
+		F_ListNode *				m_pListNodes;
+		FLMBOOL						m_bInList;
+	
+		friend class F_ListManager;
+	};
+		
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_ListManager : public F_Object
+	{
+	public:
+	
+		F_ListManager(
+			F_ListNode *	pListNodes,
+			FLMUINT			uiListNodeCnt)
+		{
+			flmAssert( pListNodes && uiListNodeCnt );
+		
+			m_uiListNodeCnt = uiListNodeCnt;
+			m_pListNodes = pListNodes;
+			f_memset( pListNodes, 0, sizeof( F_ListNode) * uiListNodeCnt );
+		}
+	
+		virtual ~F_ListManager()
+		{
+			clearList( FLM_ALL_LISTS);
+		}
+	
+		void insertFirst(
+			FLMUINT			uiList,
+			F_ListItem *	pNewFirstItem);
+	
+		void insertLast(
+			FLMUINT			uiList,
+			F_ListItem *	pNewLastItem);
+	
+		F_ListItem * getItem(
+			FLMUINT			uiList,
+			FLMUINT			nth);
+	
+		void removeItem(
+			FLMUINT			uiList,
+			F_ListItem *	pItem);
+	
+		FINLINE FLMUINT getListCount( void)
+		{
+			return( m_uiListNodeCnt);
+		}
+	
+		FLMUINT getItemCount(
+			FLMUINT			uiList);
+	
+		void clearList(
+			FLMUINT			uiList = 0);
+	
+	private:
+	
+		FLMUINT				m_uiListNodeCnt;
+		F_ListNode *		m_pListNodes;
+	};
+
+	/****************************************************************************
+	/// Types of locks that may be requested
+	****************************************************************************/
+	typedef enum
+	{
+		FLM_LOCK_NONE,				///< No lock.\  NOTE: This is not a valid option for FlmDbLock(), but it may be returned by
+										///< FlmDbGetLockType().
+		FLM_LOCK_EXCLUSIVE,		///< Exclusive lock.
+		FLM_LOCK_SHARED			///< Shared lock.
+	} eLockType;
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface IF_LockInfoClient : public F_Object
+	{
+		virtual FLMBOOL FLMAPI setLockCount(	// Return TRUE to continue, FALSE to stop
+			FLMUINT					uiTotalLocks) = 0;
+
+		virtual FLMBOOL FLMAPI addLockInfo(	// Return TRUE to continue, FALSE to stop
+			FLMUINT					uiLockNum,		// Position in queue (0 = lock holder,
+															// 1 ... n = lock waiter)
+			FLMUINT					uiThreadID,		// Thread ID of the lock holder/waiter
+			FLMUINT					uiTime) = 0;	// For the lock holder, this is the
+															// time when the lock was obtained.
+															// For a lock waiter, this is the time
+															// that the waiter was placed in the queue.
+															// Both times are presented in milliseconds.
+	};
+															
+	#define FLM_NO_TIMEOUT				0xFF
 	
 	/****************************************************************************
 	Desc: Misc.
@@ -5524,4 +5724,81 @@
 		FLMBOOL				m_bEndOfStream;
 	};
 
+/***************************************************************************
+Desc: Hash tables
+***************************************************************************/
+
+typedef struct
+{
+	void *		pFirstInBucket;	// Pointer to first item in the bucket.
+											// The type of structure being pointed to
+											// depends on the usage of the hash bucket.
+	FLMUINT		uiHashValue;		// Hash value for this bucket.
+} FBUCKET;
+
+RCODE FLMAPI f_allocHashTable(
+	FLMUINT					uiHashTblSize,
+	FBUCKET **				ppHashTblRV);
+	
+/**************************************************************************
+Desc:
+**************************************************************************/
+typedef struct
+{
+	FLMUINT64				ui64Count;				// Number of times operation was performed.
+	FLMUINT64				ui64ElapMilli;			// Total elapsed time for the operations.
+} F_COUNT_TIME_STAT;
+
+/**************************************************************************
+Desc:
+**************************************************************************/
+typedef struct
+{
+	F_COUNT_TIME_STAT		NoLocks;					// Times when no lock was held
+	F_COUNT_TIME_STAT		WaitingForLock;		// Time waiting for lock
+	F_COUNT_TIME_STAT		HeldLock;				// Time holding lock
+} F_LOCK_STATS;
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+flminterface IF_LockObject : public F_Object
+{
+	virtual RCODE FLMAPI lock(
+		F_SEM						hWaitSem,
+		FLMBOOL					bExclLock,
+		FLMUINT					uiMaxWaitSecs,
+		FLMINT					iPriority,
+		F_LOCK_STATS *			pLockStats = NULL) = 0;
+
+	virtual RCODE FLMAPI unlock(
+		F_LOCK_STATS *			pLockStats = NULL) = 0;
+		
+	virtual FLMUINT FLMAPI getLockCount( void) = 0;
+
+	virtual FLMUINT FLMAPI getWaiterCount( void) = 0;
+	
+	virtual RCODE FLMAPI getLockInfo(
+		FLMINT					iPriority,
+		eLockType *				peCurrLockType,
+		FLMUINT *				puiThreadId,
+		FLMUINT *				puiNumExclQueued,
+		FLMUINT *				puiNumSharedQueued,
+		FLMUINT *				puiPriorityCount) = 0;
+
+	virtual RCODE FLMAPI getLockInfo(
+		IF_LockInfoClient *	pLockInfo) = 0;
+
+	virtual FLMBOOL FLMAPI haveHigherPriorityWaiter(
+		FLMINT					iPriority) = 0;
+
+	virtual void FLMAPI timeoutLockWaiter(
+		FLMUINT					uiThreadId) = 0;
+
+	virtual void FLMAPI timeoutAllWaiters( void) = 0;
+};
+
+RCODE FLMAPI FlmAllocLockObject(
+	IF_LockObject **			ppLockObject);
+	
 #endif // FTK_H

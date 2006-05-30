@@ -75,134 +75,138 @@ public:
 	RCODE setup( void);
 
 	RCODE FLMAPI createFile(
-		const char *	pszFileName,
-		FLMUINT			uiIoFlags,
-		IF_FileHdl **	ppFile);
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		IF_FileHdl **			ppFile);
 
 	RCODE FLMAPI createBlockFile(
-		const char *	pszFileName,
-		FLMUINT			uiIoFlags,
-		FLMUINT			uiBlockSize,
-		IF_FileHdl **	ppFile);
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		FLMUINT					uiBlockSize,
+		IF_FileHdl **			ppFile);
 
 	RCODE FLMAPI createUniqueFile(
-		char *			pszPath,
-		const char *	pszFileExtension,
-		FLMUINT			uiIoFlags,
-		IF_FileHdl **	ppFile);
+		char *					pszPath,
+		const char *			pszFileExtension,
+		FLMUINT					uiIoFlags,
+		IF_FileHdl **			ppFile);
 
+	RCODE FLMAPI createLockFile(
+		const char *			pszPath,
+		IF_FileHdl **			ppLockFileHdl);
+		
 	RCODE FLMAPI openFile(
-		const char *	pszFileName,
-		FLMUINT			uiIoFlags,
-		IF_FileHdl **	ppFile);
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		IF_FileHdl **			ppFile);
 
 	RCODE FLMAPI openBlockFile(
-		const char *	pszFileName,
-		FLMUINT			uiIoFlags,
-		FLMUINT			uiBlockSize,
-		IF_FileHdl **	ppFile);
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		FLMUINT					uiBlockSize,
+		IF_FileHdl **			ppFile);
 
 	RCODE FLMAPI openDir(
-		const char *	pszDirName,
-		const char *	pszPattern,
-		IF_DirHdl **	ppDir);
+		const char *			pszDirName,
+		const char *			pszPattern,
+		IF_DirHdl **			ppDir);
 
 	RCODE FLMAPI createDir(
-		const char *	pszDirName);
+		const char *			pszDirName);
 
 	RCODE FLMAPI removeDir(
-		const char *	pszDirName,
-		FLMBOOL			bClear = FALSE);
+		const char *			pszDirName,
+		FLMBOOL					bClear = FALSE);
 
 	RCODE FLMAPI doesFileExist(
-		const char *	pszFileName);
+		const char *			pszFileName);
 
 	FLMBOOL FLMAPI isDir(
-		const char *	pszFileName);
+		const char *			pszFileName);
 
 	RCODE FLMAPI getFileTimeStamp(
-		const char *	pszFileName,
-		FLMUINT *		puiTimeStamp);
+		const char *			pszFileName,
+		FLMUINT *				puiTimeStamp);
 
 	RCODE FLMAPI deleteFile(
-		const char *	pszFileName);
+		const char *			pszFileName);
 
 	RCODE FLMAPI deleteMultiFileStream(
-		const char *	pszDirectory,
-		const char *	pszBaseName);
+		const char *			pszDirectory,
+		const char *			pszBaseName);
 		
 	RCODE FLMAPI copyFile(
-		const char *	pszSrcFileName,
-		const char *	pszDestFileName,
-		FLMBOOL			bOverwrite,
-		FLMUINT64 *		pui64BytesCopied);
+		const char *			pszSrcFileName,
+		const char *			pszDestFileName,
+		FLMBOOL					bOverwrite,
+		FLMUINT64 *				pui64BytesCopied);
 
 	RCODE FLMAPI copyPartialFile(
-		IF_FileHdl *	pSrcFileHdl,
-		FLMUINT64		ui64SrcOffset,
-		FLMUINT64		ui64SrcSize,
-		IF_FileHdl *	pDestFileHdl,
-		FLMUINT64		ui64DestOffset,
-		FLMUINT64 *		pui64BytesCopiedRV);
+		IF_FileHdl *			pSrcFileHdl,
+		FLMUINT64				ui64SrcOffset,
+		FLMUINT64				ui64SrcSize,
+		IF_FileHdl *			pDestFileHdl,
+		FLMUINT64				ui64DestOffset,
+		FLMUINT64 *				pui64BytesCopiedRV);
 	
 	RCODE FLMAPI renameFile(
-		const char *	pszFileName,
-		const char *	pszNewFileName);
+		const char *			pszFileName,
+		const char *			pszNewFileName);
 
 	void FLMAPI pathParse(
-		const char *	pszPath,
-		char *			pszServer,
-		char *			pszVolume,
-		char *			pszDirPath,
-		char *			pszFileName);
+		const char *			pszPath,
+		char *					pszServer,
+		char *					pszVolume,
+		char *					pszDirPath,
+		char *					pszFileName);
 
 	RCODE FLMAPI pathReduce(
-		const char *	pszSourcePath,
-		char *			pszDestPath,
-		char *			pszString);
+		const char *			pszSourcePath,
+		char *					pszDestPath,
+		char *					pszString);
 
 	RCODE FLMAPI pathAppend(
-		char *			pszPath,
-		const char *	pszPathComponent);
+		char *					pszPath,
+		const char *			pszPathComponent);
 
 	RCODE FLMAPI pathToStorageString(
-		const char *	pszPath,
-		char *			pszString);
+		const char *			pszPath,
+		char *					pszString);
 
 	void FLMAPI pathCreateUniqueName(
-		FLMUINT *		puiTime,
-		char *			pszFileName,
-		const char *	pszFileExt,
-		FLMBYTE *		pHighChars,
-		FLMBOOL			bModext);
+		FLMUINT *				puiTime,
+		char *					pszFileName,
+		const char *			pszFileExt,
+		FLMBYTE *				pHighChars,
+		FLMBOOL					bModext);
 
 	FLMBOOL FLMAPI doesFileMatch(
-		const char *	pszFileName,
-		const char *	pszTemplate);
+		const char *			pszFileName,
+		const char *			pszTemplate);
 
 	RCODE FLMAPI getSectorSize(
-		const char *	pszFileName,
-		FLMUINT *		puiSectorSize);
+		const char *			pszFileName,
+		FLMUINT *				puiSectorSize);
 
 	RCODE FLMAPI setReadOnly(
-		const char *	pszFileName,
-		FLMBOOL			bReadOnly);
+		const char *			pszFileName,
+		FLMBOOL					bReadOnly);
 
 	FLMBOOL FLMAPI canDoAsync( void);
 		
 private:
 
 	RCODE removeEmptyDir(
-		const char *	pszDirName);
+		const char *			pszDirName);
 
 #if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 	RCODE renameSafe(
-		const char *	pszSrcFile,
-		const char *	pszDestFile);
+		const char *			pszSrcFile,
+		const char *			pszDestFile);
 
 	RCODE targetIsDir(
-		const char	*	tpath,
-		FLMBOOL *		isdir);
+		const char	*			pszPath,
+		FLMBOOL *				pbIsDir);
 #endif
 
 	FLMBOOL				m_bCanDoAsync;
@@ -1554,7 +1558,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc: stat tpath to see if it is a directory
+Desc:
 ****************************************************************************/
 FLMBOOL FLMAPI F_FileSystem::canDoAsync( void)
 {
@@ -1562,24 +1566,24 @@ FLMBOOL FLMAPI F_FileSystem::canDoAsync( void)
 }
 
 /****************************************************************************
-Desc: stat tpath to see if it is a directory
+Desc:
 ****************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 RCODE F_FileSystem::targetIsDir(
-	const char	*	tpath,
-	FLMBOOL *		isdir)
+	const char	*	pszPath,
+	FLMBOOL *		pbIsDir)
 {
 	struct stat		sbuf;
 	RCODE				rc = NE_FLM_OK;
 
-	*isdir = 0;
-	if( stat(tpath, &sbuf) < 0)
+	*pbIsDir = FALSE;
+	if( stat( pszPath, &sbuf) < 0)
 	{
 		rc = f_mapPlatformError( errno, NE_FLM_IO_ACCESS_DENIED);
 	}
 	else if( (sbuf.st_mode & S_IFMT) == S_IFDIR)
 	{
-		*isdir = 1;
+		*pbIsDir = TRUE;
 	}
 	
 	return( rc);
@@ -2324,6 +2328,77 @@ Exit:
 	if( pMultiStream)
 	{
 		pMultiStream->Release();
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc: This routine obtains exclusive access to a database by creating
+		a .lck file.  FLAIM holds the .lck file open as long as the database
+		is open.  When the database is finally closed, it deletes the .lck
+		file.  This is only used for 3.x databases.
+****************************************************************************/
+RCODE FLMAPI F_FileSystem::createLockFile(
+	const char *		pszPath,
+	IF_FileHdl **		ppLockFileHdl)
+{
+	RCODE					rc = NE_FLM_OK;
+	IF_FileHdl *		pLockFileHdl = NULL;
+
+	// Attempt to create the lock file.  If that succeeds, we have 
+	// the lock.  If it fails, the lock file may have been left because
+	// of a crash.  Hence, we first try to delete the file.  If that succeeds,
+	// we then attempt to create the file again.  If that, or the 2nd create
+	// fail, we simply return an access denied error.
+
+#ifdef FLM_UNIX
+	if( RC_BAD( createFile( pszPath,
+			FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW, 
+			&pLockFileHdl)))
+	{
+		if( RC_BAD( openFile( pszPath, 
+			FLM_IO_RDWR | FLM_IO_SH_DENYRW, &pLockFileHdl)))
+		{
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
+			goto Exit;
+		}
+	}
+
+	if( RC_BAD( pLockFileHdl->lock()))
+	{
+		rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
+		goto Exit;
+	}
+#else
+	if( RC_BAD( createFile( pszPath,
+		FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW | FLM_IO_DELETE_ON_RELEASE,
+		&pLockFileHdl)))
+	{
+		if( RC_BAD( deleteFile( pszPath)))
+		{
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
+			goto Exit;
+		}
+		else if( RC_BAD( createFile( pszPath, 
+			FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW | FLM_IO_DELETE_ON_RELEASE,
+			&pLockFileHdl)))
+		{
+			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
+			goto Exit;
+		}
+	}
+#endif
+
+	*ppLockFileHdl = pLockFileHdl;
+	pLockFileHdl = NULL;
+
+Exit:
+
+	if (pLockFileHdl)
+	{
+		pLockFileHdl->Release();
+		pLockFileHdl = NULL;
 	}
 
 	return( rc);

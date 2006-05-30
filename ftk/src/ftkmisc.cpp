@@ -1096,6 +1096,53 @@ char * FLMAPI f_strstr(
 }
 
 /****************************************************************************
+Desc:		Turn a base 24 digit's ordinal value into a native
+			alphanumeric value.
+Notes:	This is a base 24 alphanumeric value where 
+			{a, b, c, d, e, f, i, l, o, r, u, v } values are removed.
+****************************************************************************/
+FLMBYTE FLMAPI f_getBase24DigitChar( 
+	FLMBYTE		ucValue)
+{
+	flmAssert( ucValue <= 23);
+
+	if( ucValue <= 9)
+	{
+		ucValue += (FLMUINT) NATIVE_ZERO;
+	}
+	else
+	{
+		ucValue = f_toascii( ucValue) - 10 + f_toascii( 'g');
+		if( ucValue >= (FLMBYTE)'i')
+		{
+			ucValue++;
+			if( ucValue >= (FLMBYTE)'l')
+			{
+				ucValue++;
+				if( ucValue >= (FLMBYTE)'o')
+				{
+					ucValue++;
+					if( ucValue >= (FLMBYTE)'r')
+					{
+						ucValue++;
+						if( ucValue >= (FLMBYTE)'u')
+						{
+							ucValue++;
+							if( ucValue >= (FLMBYTE)'v')
+							{
+								ucValue++;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	return( ucValue);
+}
+
+/****************************************************************************
 Desc:
 ****************************************************************************/
 char * FLMAPI f_strupr(
@@ -1749,4 +1796,372 @@ FLMUINT32 FLMAPI f_getRandomUINT32(
 	FLMUINT32		ui32High)
 {
 	return( gv_pRandomGenerator->getUINT32( ui32Low, ui32High));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_ListManager::insertFirst(
+	FLMUINT				uiList,
+	F_ListItem *		pNewFirstItem)
+{
+	F_ListNode *		pListNode;
+	
+	flmAssert( uiList < m_uiListNodeCnt);
+	
+	pNewFirstItem->AddRef();
+	pListNode = &m_pListNodes[ uiList];
+	
+	if( !pListNode->pNextItem)
+	{
+		pListNode->pPrevItem = pNewFirstItem;
+		pNewFirstItem->setNextListItem( uiList, NULL);
+	}
+	else
+	{
+		// Add this new item to the first of the list.
+		
+		pListNode->pNextItem->setPrevListItem( uiList, pNewFirstItem);
+		pNewFirstItem->setNextListItem( uiList, pListNode->pNextItem);
+	}
+
+	pListNode->pNextItem = pNewFirstItem;
+	pNewFirstItem->setPrevListItem( uiList, NULL);
+	pNewFirstItem->m_bInList = TRUE;
+	pListNode->uiListCount++;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_ListManager::insertLast(
+	FLMUINT				uiList,
+	F_ListItem *		pNewLastItem)
+{
+	F_ListNode *		pListNode;
+	
+	flmAssert( uiList < m_uiListNodeCnt);
+	
+	pNewLastItem->AddRef();
+	pListNode = &m_pListNodes[ uiList];
+	
+	if( !pListNode->pPrevItem)
+	{
+		pListNode->pNextItem = pNewLastItem;
+		pNewLastItem->setPrevListItem( uiList, NULL);
+	}
+	else
+	{
+		// Add this new item to the end of the list.
+		
+		pListNode->pPrevItem->setNextListItem( uiList, pNewLastItem);
+		pNewLastItem->setPrevListItem( uiList, pListNode->pPrevItem);
+	}
+
+	pListNode->pPrevItem = pNewLastItem;
+	pNewLastItem->setNextListItem( uiList, NULL);
+	pNewLastItem->m_bInList = TRUE;
+	pListNode->uiListCount++;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_ListItem * F_ListManager::getItem(
+	FLMUINT				uiList,
+	FLMUINT				nth)
+{
+	F_ListNode *		pListNode;
+	F_ListItem *		pListItem;
+	
+	// Check bounds with assert.  
+	
+	flmAssert( uiList < m_uiListNodeCnt );
+
+	pListNode = &m_pListNodes[ uiList ];
+	pListItem = pListNode ? pListNode->pNextItem : NULL;
+	
+	while( nth--)
+	{
+		pListItem = pListItem->getNextListItem( uiList);
+	}
+	
+	return( pListItem);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_ListManager::removeItem(
+	FLMUINT				uiList,
+	F_ListItem *		pItem)
+{
+	F_ListNode *		pMgrListNode;
+	F_ListItem *		pPrevItem;
+	F_ListItem *		pNextItem;
+	
+	flmAssert( uiList < m_uiListNodeCnt);
+
+	pMgrListNode = &m_pListNodes[ uiList];
+
+	// Get this item's prev and next items
+
+	pPrevItem = pItem->getPrevListItem( uiList);
+	pNextItem = pItem->getNextListItem( uiList);
+
+	if( !pPrevItem && !pNextItem && pMgrListNode->pPrevItem != pItem && 
+		 pMgrListNode->pNextItem != pItem)
+	{
+		// If the item is not within the list then skip to the end
+		
+		goto Exit;
+	}
+
+	// Determine if this item is pointed to by the head or tail pointers
+	// that the list manager maintains
+
+	if( pMgrListNode->pPrevItem == pItem)
+	{
+		pMgrListNode->pPrevItem = pItem->getPrevListItem( uiList);
+	}
+
+	if( pMgrListNode->pNextItem == pItem)
+	{
+		pMgrListNode->pNextItem = pItem->getNextListItem( uiList);
+	}
+
+	// If there is a prev item - change it's next ptr to be items next ptr
+	
+	if( pPrevItem)
+	{
+		pPrevItem->setNextListItem( uiList, pItem->getNextListItem( uiList));
+	}
+
+	// If there is a next item - change it's prev ptr to be items prev ptr
+	
+	if( pNextItem)
+	{
+		pNextItem->setPrevListItem( uiList, pItem->getPrevListItem( uiList));
+	}
+
+	// Clear out this items prev and next links
+	
+	pItem->setPrevListItem( uiList, NULL);
+	pItem->setNextListItem( uiList, NULL);
+	pItem->m_bInList = FALSE;
+	pItem->Release();
+	pMgrListNode->uiListCount--;
+
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_ListManager::clearList(
+	FLMUINT			uiList)
+{
+	FLMUINT			uiListCnt;
+	F_ListNode *	pListNode;
+
+	flmAssert( (FLM_ALL_LISTS == uiList) || (uiList < m_uiListNodeCnt));
+
+	if( uiList == FLM_ALL_LISTS)
+	{
+		uiList = 0;
+		uiListCnt = m_uiListNodeCnt;
+		pListNode = m_pListNodes;
+	}
+	else
+	{
+		uiListCnt = 1;
+		pListNode = &m_pListNodes[ uiList ];
+	}
+	
+	for( ; uiListCnt--; pListNode++, uiList++)
+	{
+		F_ListItem *		pItem;
+		F_ListItem *		pNextItem;
+		
+		// Go through the list Releasing every list item.
+		
+		for( pItem = pListNode->pNextItem; pItem; pItem = pNextItem)
+		{
+			pNextItem = pItem->getNextListItem( uiList);
+			removeItem( uiList, pItem);
+		}
+
+		// At this point the ListCount should be at 0.
+		
+		flmAssert( !pListNode->uiListCount);
+
+		// Clear the managers head and tail list pointers.
+		
+		pListNode->pNextItem = pListNode->pPrevItem = NULL;
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT F_ListManager::getItemCount(
+	FLMUINT			uiList)
+{
+	FLMUINT			uiListNodeCnt;
+	FLMUINT			uiCount = 0;
+	F_ListNode *	pListNode;
+
+	flmAssert( (FLM_ALL_LISTS == uiList) || (uiList < m_uiListNodeCnt));
+
+	if( uiList == FLM_ALL_LISTS)
+	{
+		uiListNodeCnt = m_uiListNodeCnt;
+		pListNode = m_pListNodes;
+	}
+	else
+	{
+		uiListNodeCnt = 1;
+		pListNode = &m_pListNodes[ uiList];
+	}
+
+	for( ; uiListNodeCnt--; pListNode++)
+	{
+		uiCount += pListNode->uiListCount;
+	}
+
+	return( uiCount);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_ListItem::~F_ListItem()
+{
+#ifdef FLM_DEBUG
+	FLMUINT			uiLoop;
+	F_ListNode *	pTmpNd;
+
+	flmAssert( !m_bInList);
+
+	for( uiLoop = 0; uiLoop < m_uiListNodeCnt; uiLoop++)
+	{
+		pTmpNd = &m_pListNodes[ uiLoop];
+		flmAssert( !pTmpNd->pPrevItem && !pTmpNd->pNextItem);
+	}
+#endif
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_ListItem::setup(
+	F_ListManager *	pListMgr,
+	F_ListNode *		pListNodes,
+	FLMUINT				uiListNodeCnt)
+{
+	flmAssert( pListMgr);
+	flmAssert( pListNodes);
+	flmAssert( uiListNodeCnt);
+
+	m_pListManager = pListMgr;
+	m_uiListNodeCnt = uiListNodeCnt;
+	m_pListNodes = pListNodes;
+	
+	f_memset( pListNodes, 0, sizeof( F_ListNode) * uiListNodeCnt );
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_ListItem::removeFromList(
+	FLMUINT			uiList)
+{
+
+	flmAssert( (uiList < m_uiListNodeCnt) || (uiList == FLM_ALL_LISTS));
+
+	if( uiList == FLM_ALL_LISTS)
+	{
+		FLMUINT			uiListCnt = m_uiListNodeCnt;
+		F_ListNode *	pListNode = m_pListNodes;
+
+		uiList = 0;
+
+		// Remove this item from all lists
+
+		for( ; uiListCnt--; uiList++, pListNode++)
+		{
+			m_pListManager->removeItem( uiList, this);
+		}
+	}
+	else
+	{
+		// Remove item from a specific list
+		
+		m_pListManager->removeItem( uiList, this);
+	}
+}
+
+/****************************************************************************
+Desc: This routine allocates and initializes a hash table.
+****************************************************************************/
+RCODE FLMAPI f_allocHashTable(
+	FLMUINT					uiHashTblSize,
+	FBUCKET **				ppHashTblRV)
+{
+	RCODE						rc = NE_FLM_OK;
+	FBUCKET *				pHashTbl = NULL;
+	IF_RandomGenerator *	pRandGen = NULL;
+	FLMUINT					uiCnt;
+	FLMUINT					uiRandVal;
+	FLMUINT					uiTempVal;
+	
+	// Allocate memory for the hash table
+
+	if (RC_BAD( rc = f_calloc(
+		(FLMUINT)(sizeof( FBUCKET)) * uiHashTblSize, &pHashTbl)))
+	{
+		goto Exit;
+	}
+
+	// Set up the random number generator
+	
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &pRandGen)))
+	{
+		goto Exit;
+	}
+
+	pRandGen->setSeed( 1);
+
+	for (uiCnt = 0; uiCnt < uiHashTblSize; uiCnt++)
+	{
+		pHashTbl [uiCnt].uiHashValue = (FLMBYTE)uiCnt;
+		pHashTbl [uiCnt].pFirstInBucket = NULL;
+	}
+
+	if( uiHashTblSize <= 256)
+	{
+		for( uiCnt = 0; uiCnt < uiHashTblSize - 1; uiCnt++)
+		{
+			uiRandVal = (FLMBYTE) pRandGen->getUINT32( (FLMUINT32)uiCnt,
+										(FLMUINT32)(uiHashTblSize - 1));
+			if( uiRandVal != uiCnt)
+			{
+				uiTempVal = (FLMBYTE)pHashTbl [uiCnt].uiHashValue;
+				pHashTbl [uiCnt].uiHashValue = pHashTbl [uiRandVal].uiHashValue;
+				pHashTbl [uiRandVal].uiHashValue = uiTempVal;
+			}
+		}
+	}
+
+Exit:
+
+	if( pRandGen)
+	{
+		pRandGen->Release();
+	}
+
+	*ppHashTblRV = pHashTbl;
+	return( rc);
 }

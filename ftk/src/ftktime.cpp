@@ -488,3 +488,341 @@ FLMUINT FLM_MILLI_TO_TIMER_UNITS(
 	return( uiTU);
 #endif
 }
+
+/********************************************************************
+Desc: Determine if a given year is a leap year.
+*********************************************************************/
+FINLINE FLMUINT f_leapYear(
+	FLMUINT		uiYear)
+{
+	if (uiYear % 4 != 0)
+	{
+		return( 0);
+	}
+	
+	if (uiYear % 100 != 0)
+	{
+		return( 1);
+	}
+	
+	if (uiYear % 400 != 0)
+	{
+		return( 0);
+	}
+	
+	return( 1);
+}
+
+/********************************************************************
+Desc: Calculate days in a given month of a given year.
+*********************************************************************/
+FSTATIC FLMUINT f_daysInMonth(
+	FLMUINT		uiYear,
+	FLMUINT		uiMonth)
+{
+	switch (uiMonth + 1)
+	{
+		case 4:
+		case 6:
+		case 9:
+		case 11:
+			return( 30);
+		case 2:
+			return( 28 + f_leapYear( uiYear));
+		default:
+			return( 31);
+	}
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+FSTATIC void f_adjustTime(
+	F_TMSTAMP *	pTime,
+	FLMINT		iStartPoint)
+{
+	switch (iStartPoint)
+	{
+		case 1:
+			goto Adj_1;
+		case 2:
+			goto Adj_2;
+		case 3:
+			goto Adj_3;
+		case 4:
+			goto Adj_4;
+		case 5:
+			goto Adj_5;
+		case 6:
+			goto Adj_6;
+	}
+Adj_1:
+	if (pTime->hundredth >= 100)
+	{
+		pTime->second++;
+		pTime->hundredth = 0;
+	}
+Adj_2:
+	if (pTime->second == 60)
+	{
+		pTime->minute++;
+		pTime->second = 0;
+	}
+Adj_3:
+	if (pTime->minute == 60)
+	{
+		pTime->hour++;
+		pTime->minute = 0;
+	}
+Adj_4:
+	if (pTime->hour == 24)
+	{
+		pTime->day++;
+		pTime->hour = 0;
+	}
+Adj_5:
+	if ((FLMUINT)pTime->day > f_daysInMonth( pTime->year, pTime->month))
+	{
+		pTime->month++;
+		pTime->day = 1;
+	}
+Adj_6:
+	if (pTime->month > 11)
+	{
+		pTime->year++;
+		pTime->month = 1;
+	}
+}
+
+/****************************************************************************
+Desc: Calculate the elapsed time, including milliseconds.
+****************************************************************************/
+void FLMAPI f_addElapsedTime(
+	F_TMSTAMP *	pStartTime,
+	FLMUINT64 *	pui64ElapMilli)
+{
+	F_TMSTAMP	StartTime;
+	F_TMSTAMP	EndTime;
+	FLMUINT		uiSec = 0;
+	FLMUINT		uiHundredth = 0;
+
+	f_timeGetTimeStamp( &EndTime);
+	f_memcpy( &StartTime, pStartTime, sizeof( F_TMSTAMP));
+
+	if (StartTime.year < EndTime.year)
+	{
+		if (StartTime.hundredth)
+		{
+			uiHundredth += (FLMUINT)(100 - StartTime.hundredth);
+			StartTime.hundredth = 0;
+			StartTime.second++;
+			f_adjustTime( &StartTime, 2);
+		}
+		if (StartTime.second)
+		{
+			uiSec += (FLMUINT)(60 - StartTime.second);
+			StartTime.second = 0;
+			StartTime.minute++;
+			f_adjustTime( &StartTime, 3);
+		}
+		if (StartTime.minute)
+		{
+			uiSec += (FLMUINT)((60 - StartTime.minute) * 60);
+			StartTime.minute = 0;
+			StartTime.hour++;
+			f_adjustTime( &StartTime, 4);
+		}
+		if (StartTime.hour)
+		{
+			uiSec += (FLMUINT)((24 - StartTime.hour) * 3600);
+			StartTime.hour = 0;
+			StartTime.day++;
+			f_adjustTime( &StartTime, 5);
+		}
+		if (StartTime.day > 1)
+		{
+			uiSec += (FLMUINT)(f_daysInMonth( StartTime.year, StartTime.month) -
+									StartTime.day + 1) * (FLMUINT)86400;
+			StartTime.day = 1;
+			StartTime.month++;
+			f_adjustTime( &StartTime, 6);
+		}
+		if (StartTime.month > 1)
+		{
+			while (StartTime.month <= 11)
+			{
+				uiSec += (FLMUINT)((FLMUINT)f_daysInMonth( StartTime.year,
+										StartTime.month) * (FLMUINT)86400);
+				StartTime.month++;
+			}
+			StartTime.year++;
+		}
+		while (StartTime.year < EndTime.year)
+		{
+			uiSec += (FLMUINT)((FLMUINT)(365 + f_leapYear( StartTime.year)) *
+							(FLMUINT)86400);
+			StartTime.year++;
+		}
+	}
+
+	if (StartTime.month < EndTime.month)
+	{
+		if (StartTime.hundredth)
+		{
+			uiHundredth += (FLMUINT)(100 - StartTime.hundredth);
+			StartTime.hundredth = 0;
+			StartTime.second++;
+			f_adjustTime( &StartTime, 2);
+		}
+		if (StartTime.second)
+		{
+			uiSec += (FLMUINT)(60 - StartTime.second);
+			StartTime.second = 0;
+			StartTime.minute++;
+			f_adjustTime( &StartTime, 3);
+		}
+		if (StartTime.minute)
+		{
+			uiSec += (FLMUINT)((60 - StartTime.minute) * 60);
+			StartTime.minute = 0;
+			StartTime.hour++;
+			f_adjustTime( &StartTime, 4);
+		}
+		if (StartTime.hour)
+		{
+			uiSec += (FLMUINT)((24 - StartTime.hour) * 3600);
+			StartTime.hour = 0;
+			StartTime.day++;
+			f_adjustTime( &StartTime, 5);
+		}
+		if (StartTime.day > 1)
+		{
+			uiSec += (FLMUINT)(f_daysInMonth( StartTime.year, StartTime.month) -
+									StartTime.day + 1) * (FLMUINT)86400;
+			StartTime.day = 1;
+			StartTime.month++;
+			f_adjustTime( &StartTime, 6);
+		}
+		while (StartTime.month < EndTime.month)
+		{
+			uiSec += (FLMUINT)((FLMUINT)f_daysInMonth( StartTime.year,
+									StartTime.month) * (FLMUINT)86400);
+			StartTime.month++;
+		}
+	}
+
+	if (StartTime.day < EndTime.day)
+	{
+		if (StartTime.hundredth)
+		{
+			uiHundredth += (FLMUINT)(100 - StartTime.hundredth);
+			StartTime.hundredth = 0;
+			StartTime.second++;
+			f_adjustTime( &StartTime, 2);
+		}
+		if (StartTime.second)
+		{
+			uiSec += (FLMUINT)(60 - StartTime.second);
+			StartTime.second = 0;
+			StartTime.minute++;
+			f_adjustTime( &StartTime, 3);
+		}
+		if (StartTime.minute)
+		{
+			uiSec += (FLMUINT)((60 - StartTime.minute) * 60);
+			StartTime.minute = 0;
+			StartTime.hour++;
+			f_adjustTime( &StartTime, 4);
+		}
+		if (StartTime.hour)
+		{
+			uiSec += (FLMUINT)((24 - StartTime.hour) * 3600);
+			StartTime.hour = 0;
+			StartTime.day++;
+			f_adjustTime( &StartTime, 5);
+		}
+		uiSec += (FLMUINT)(EndTime.day - StartTime.day) * (FLMUINT)86400;
+		StartTime.day = 1;
+		StartTime.month++;
+		f_adjustTime( &StartTime, 6);
+	}
+
+	if (StartTime.hour < EndTime.hour)
+	{
+		if (StartTime.hundredth)
+		{
+			uiHundredth += (FLMUINT)(100 - StartTime.hundredth);
+			StartTime.hundredth = 0;
+			StartTime.second++;
+			f_adjustTime( &StartTime, 2);
+		}
+		if (StartTime.second)
+		{
+			uiSec += (FLMUINT)(60 - StartTime.second);
+			StartTime.second = 0;
+			StartTime.minute++;
+			f_adjustTime( &StartTime, 3);
+		}
+		if (StartTime.minute)
+		{
+			uiSec += (FLMUINT)((60 - StartTime.minute) * 60);
+			StartTime.minute = 0;
+			StartTime.hour++;
+			f_adjustTime( &StartTime, 4);
+		}
+		uiSec += (FLMUINT)((EndTime.hour - StartTime.hour) * 3600);
+		StartTime.hour = 0;
+		StartTime.day++;
+		f_adjustTime( &StartTime, 5);
+	}
+
+	if (StartTime.minute < EndTime.minute)
+	{
+		if (StartTime.hundredth)
+		{
+			uiHundredth += (FLMUINT)(100 - StartTime.hundredth);
+			StartTime.hundredth = 0;
+			StartTime.second++;
+			f_adjustTime( &StartTime, 2);
+		}
+		if (StartTime.second)
+		{
+			uiSec += (FLMUINT)(60 - StartTime.second);
+			StartTime.second = 0;
+			StartTime.minute++;
+			f_adjustTime( &StartTime, 3);
+		}
+		uiSec += (FLMUINT)((EndTime.minute - StartTime.minute) * 60);
+		StartTime.minute = 0;
+		StartTime.hour++;
+		f_adjustTime( &StartTime, 4);
+	}
+
+	if (StartTime.second < EndTime.second)
+	{
+		if (StartTime.hundredth)
+		{
+			uiHundredth += (FLMUINT)(100 - StartTime.hundredth);
+			StartTime.hundredth = 0;
+			StartTime.second++;
+			f_adjustTime( &StartTime, 2);
+		}
+		uiSec += (FLMUINT)(EndTime.second - StartTime.second);
+		StartTime.second = 0;
+		StartTime.minute++;
+		f_adjustTime( &StartTime, 3);
+	}
+
+	if (StartTime.hundredth < EndTime.hundredth)
+	{
+		uiHundredth += (FLMUINT)(EndTime.hundredth - StartTime.hundredth);
+	}
+	if (uiSec)
+	{
+		(*pui64ElapMilli) += (FLMUINT64)((uiHundredth * 10 + uiSec * 1000));
+	}
+	else
+	{
+		(*pui64ElapMilli) += (FLMUINT64)(uiHundredth * 10);
+	}
+}
