@@ -5745,25 +5745,21 @@ FLMUINT FLMAPI f_strHashBucket(
 	FBUCKET *				pHashTbl,
 	FLMUINT					uiNumBuckets);
 	
-/**************************************************************************
-Desc:
-**************************************************************************/
+/// Structure used in gathering statistics to hold an operation count and an elapsed time.
 typedef struct
 {
-	FLMUINT64				ui64Count;				// Number of times operation was performed.
-	FLMUINT64				ui64ElapMilli;			// Total elapsed time for the operations.
+	FLMUINT64	ui64Count;			///< Number of times operation was performed
+	FLMUINT64	ui64ElapMilli;		///< Total elapsed time (milliseconds) for the operations.
 } F_COUNT_TIME_STAT;
 
-/**************************************************************************
-Desc:
-**************************************************************************/
+/// Structure for returning lock statistics.
 typedef struct
 {
-	F_COUNT_TIME_STAT		NoLocks;					// Times when no lock was held
-	F_COUNT_TIME_STAT		WaitingForLock;		// Time waiting for lock
-	F_COUNT_TIME_STAT		HeldLock;				// Time holding lock
+	F_COUNT_TIME_STAT	NoLocks;						///< Statistics on times when nobody was holding a lock on the database.
+	F_COUNT_TIME_STAT	WaitingForLock;			///< Statistics on times threads were waiting to obtain a database lock.
+	F_COUNT_TIME_STAT	HeldLock;					///< Statistics on times when a thread was holding a lock on the database.
 } F_LOCK_STATS;
-		
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
