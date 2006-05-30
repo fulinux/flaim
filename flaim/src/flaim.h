@@ -102,6 +102,10 @@
 					#define FLM_64BIT
 				#endif
 				#define FLM_STRICT_ALIGNMENT
+			#elif defined( sparc) || defined( __sparc) || defined( __sparc__)
+				#define FLM_SPARC
+				#define FLM_BIG_ENDIAN
+				#define FLM_STRICT_ALIGNMENT
 			#endif
 		#elif defined( sun)
 			#define FLM_SOLARIS
