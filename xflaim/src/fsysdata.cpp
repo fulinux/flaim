@@ -505,35 +505,6 @@ void F_Database::logMustCloseReason(
 }
 
 /****************************************************************************
-Desc:	Acquires a write lock on the database
-****************************************************************************/
-RCODE F_Database::dbWriteLock(
-	F_SEM					hWaitSem,
-	XFLM_DB_STATS *	pDbStats,
-	FLMUINT				uiTimeout)
-{
-	RCODE					rc = NE_XFLM_OK;
-
-	if (RC_BAD( rc = m_pWriteLockObj->lock( hWaitSem,
-		TRUE, uiTimeout, 0, pDbStats ? &pDbStats->LockStats : NULL)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc: This routine unlocks the write lock on a database.
-****************************************************************************/
-void F_Database::dbWriteUnlock( void)
-{
-	(void)m_pWriteLockObj->unlock();
-}
-
-/****************************************************************************
 Desc: This shuts down the background threads
 Note:	This routine assumes that the global mutex is locked.  The mutex will
 		be unlocked internally, but will always be locked on exit.

@@ -721,12 +721,19 @@ public:
 		const char *	pszDbPath,
 		const char *	pszDataDir);
 
-	RCODE dbWriteLock(
+	FINLINE RCODE dbWriteLock(
 		F_SEM					hWaitSem,
 		XFLM_DB_STATS *	pDbStats = NULL,
-		FLMUINT				uiTimeout = FLM_NO_TIMEOUT);
+		FLMUINT				uiTimeout = FLM_NO_TIMEOUT)
+	{
+		return( m_pWriteLockObj->lock( hWaitSem,
+			TRUE, uiTimeout, 0, pDbStats ? &pDbStats->LockStats : NULL));
+	}
 
-	void dbWriteUnlock( void);
+	FINLINE void dbWriteUnlock( void)
+	{
+		(void)m_pWriteLockObj->unlock();
+	}
 
 	void shutdownDatabaseThreads( void);
 
