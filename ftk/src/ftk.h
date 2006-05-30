@@ -4329,16 +4329,14 @@
 		F_ListNode *		m_pListNodes;
 	};
 
-	/****************************************************************************
-	/// Types of locks that may be requested
-	****************************************************************************/
+	/// Types of locks that may be requested.
 	typedef enum
 	{
-		FLM_LOCK_NONE,				///< No lock.
-		FLM_LOCK_EXCLUSIVE,		///< Exclusive lock.
-		FLM_LOCK_SHARED			///< Shared lock.
+		FLM_LOCK_NONE = 0,
+		FLM_LOCK_EXCLUSIVE,		///< 1 = Exclusive lock.
+		FLM_LOCK_SHARED			///< 2 = Shared lock.
 	} eLockType;
-	
+
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
