@@ -1,4 +1,24 @@
 -------------------------------------------------------------------
+Tue May 30 11:37:12 MST 2006 - dsanders@novell.com
+
+- Added JNI support.
+- Added password parameter to the backup method.
+- Modified to use a common toolkit layer for various functions that are common to FLAIM and XFLAIM
+- Added support for Sparc Linux and OpenSuse 10.1
+- Various Makefile changes for HP-UX, OS X, and Solaris
+- Various code cleanups to support a common toolkit
+- Got rid of timeouts for internal transactions.
+- Fixed defect where partial blocks were being written at the end of database files
+- Fixed race condition that was causing memory to be double-freed.
+- Added better support for atomic operations on various Unix and Linux platforms.
+- Allow application to exceed hardcoded cache limits when setting a hard cache limit.
+- Changed all RCODE values so they are different from those in toolkit.
+- Fixed various compiler issues for solaris platform
+- Added support for Netware
+- Added support for building Windows binaries with Visual Studio 8.
+- Modified slab manager on Solaris to use regular malloc calls instead of mmap.
+
+-------------------------------------------------------------------
 Tue Feb 28 13:48:00 MST 2006 - dsanders@novell.com
 
 - Added support for Intel MAC platform and __sparc49 (64 bit solaris).
