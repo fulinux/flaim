@@ -20,7 +20,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: fcache.h 3108 2006-01-19 13:05:19 -0700 (Thu, 19 Jan 2006) dsanders $
+// $Id$
 //------------------------------------------------------------------------------
 
 #ifndef FCACHE_H

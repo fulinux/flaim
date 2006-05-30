@@ -20,7 +20,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: fdynsset.cpp 3112 2006-01-19 13:12:40 -0700 (Thu, 19 Jan 2006) dsanders $
+// $Id$
 //------------------------------------------------------------------------------
 
 #include "flaimsys.h"
