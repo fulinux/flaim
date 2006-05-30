@@ -1152,18 +1152,6 @@ friend class F_BlockRelocator;
 friend class SQLQuery;
 };
 
-/***************************************************************************
-Desc:		This is the hash bucket header structure.  Each bucket header
-			points to a list of items that belong to the bucket.
-***************************************************************************/
-typedef struct FBucket
-{
-	void *		pFirstInBucket;	// Pointer to first item in the bucket.
-											// The type of structure being pointed to
-											// depends on the usage of the hash bucket.
-	FLMUINT		uiHashValue;		// Hash value for this bucket.
-} FBUCKET;
-
 typedef struct QUERY_HDR
 {
 	F_Query *	pQuery;

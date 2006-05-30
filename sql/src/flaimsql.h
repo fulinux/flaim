@@ -1596,25 +1596,6 @@ flminterface IF_IxClient : public F_Object
 };
 
 /****************************************************************************
-Desc:
-****************************************************************************/
-flminterface IF_LockInfoClient : public F_Object
-{
-	virtual FLMBOOL setLockCount(	// Return TRUE to continue, FALSE to stop
-		FLMUINT					uiTotalLocks) = 0;
-
-	virtual FLMBOOL addLockInfo(	// Return TRUE to continue, FALSE to stop
-		FLMUINT					uiLockNum,		// Position in queue (0 = lock holder,
-														// 1 ... n = lock waiter)
-		FLMUINT					uiThreadID,		// Thread ID of the lock holder/waiter
-		FLMUINT					uiTime) = 0;	// For the lock holder, this is the
-														// time when the lock was obtained.
-														// For a lock waiter, this is the time
-														// that the waiter was placed in the queue.
-														// Both times are presented in milliseconds.
-};
-
-/****************************************************************************
 Desc:	Types of information that can be gathered about a B-Tree.
 ****************************************************************************/
 typedef struct SFLM_BTREE_LEVEL_INFO
