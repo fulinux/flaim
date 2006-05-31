@@ -3326,6 +3326,11 @@ RCODE F_Db::dictCreate( void)
 	{
 		goto Exit;
 	}
+	if (RC_BAD(rc = m_pDatabase->lFileCreate( this, &TempLFile,
+							SFLM_TBLNUM_BLOCK_CHAINS, SFLM_LF_TABLE, FALSE, TRUE, 0)))
+	{
+		goto Exit;
+	}
 	
 	// Create the dictionary indexes
 
@@ -3374,8 +3379,6 @@ RCODE F_Db::dictCreate( void)
 	{
 		goto Exit;
 	}
-
-//visit - create maintenance tables and indexes
 
 	// Create a new dictionary we can work with.
 
