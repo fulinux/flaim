@@ -79,8 +79,8 @@ RCODE F_Db::reduceSize(
 
 	if (!(m_uiFlags & FDB_HAS_FILE_LOCK))
 	{
-		if (RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->Lock( this, m_hWaitSem,
-			TRUE, FALSE, TRUE, SFLM_NO_TIMEOUT, 0, m_pDbStats)))
+		if (RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->lock( m_hWaitSem,
+			TRUE, FLM_NO_TIMEOUT, 0, m_pDbStats ? &m_pDbStats->LockStats : NULL)))
 		{
 			goto Exit;
 		}
@@ -105,7 +105,7 @@ RCODE F_Db::reduceSize(
 	// Start a database transaction
 
 	if( RC_BAD(rc = beginTrans( SFLM_UPDATE_TRANS, 
-		SFLM_NO_TIMEOUT, SFLM_DONT_POISON_CACHE)))
+		FLM_NO_TIMEOUT, SFLM_DONT_POISON_CACHE)))
 	{
 		goto Exit;
 	}
@@ -304,7 +304,7 @@ Exit:
 
 	if (bLockedDb)
 	{
-		(void)m_pDatabase->m_pDatabaseLockObj->Unlock( TRUE, this);
+		(void)m_pDatabase->m_pDatabaseLockObj->unlock();
 		m_uiFlags &= ~FDB_HAS_FILE_LOCK;
 	}
 

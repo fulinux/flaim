@@ -2027,7 +2027,7 @@ RCODE F_Rfl::finishCurrFile(
 	// Lock the database - need to prevent update
 	// transactions and checkpoint thread from running.
 
-	if (RC_BAD( rc = pDb->lockExclusive( SFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = pDb->lockExclusive( FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}

@@ -40,8 +40,6 @@ class F_SuperFileHdl;
 class F_Btree;
 class F_DbRebuild;
 class F_DbCheck;
-class ServerLockManager;
-class ServerLockObject;
 class F_FileHdlMgr;
 class F_Cursor;
 class F_MultiAlloc;
@@ -561,13 +559,19 @@ public:
 		const char *	pszDbPath,
 		const char *	pszDataDir);
 
-	RCODE dbWriteLock(
+	FINLINE RCODE dbWriteLock(
 		F_SEM					hWaitSem,
-		SFLM_DB_STATS *	pDbStats = NULL,
-		FLMUINT				uiTimeout = SFLM_NO_TIMEOUT);
+		SFLM_DB_STATS *	pDbStats,
+		FLMUINT				uiTimeout)
+	{
+		return( m_pWriteLockObj->lock( hWaitSem,
+			TRUE, uiTimeout, 0, pDbStats ? &pDbStats->LockStats : NULL));
+	}
 
-	void dbWriteUnlock(
-		SFLM_DB_STATS *	pDbStats = NULL);
+	FINLINE void dbWriteUnlock( void)
+	{
+		(void)m_pWriteLockObj->unlock();
+	}
 
 	void shutdownDatabaseThreads( void);
 
@@ -1074,8 +1078,8 @@ private:
 															// between blocks.
 	FLMBYTE *				m_pucReplaceStruct;	// Buffer used by the Btree to hold additional
 															// replace information during updates *only*.
-	ServerLockObject *	m_pDatabaseLockObj;	// Object for locking the database.
-	ServerLockObject *	m_pWriteLockObj;		// Object for locking to do writing.
+	IF_LockObject *		m_pDatabaseLockObj;	// Object for locking the database.
+	IF_LockObject *		m_pWriteLockObj;		// Object for locking to do writing.
 	IF_FileHdl *			m_pLockFileHdl;		// Lock file handle.
 	FNOTIFY *				m_pLockNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
@@ -1129,7 +1133,6 @@ friend class F_Btree;
 friend class F_Dict;
 friend class F_DbSystem;
 friend class F_Backup;
-friend class FFileItemId;
 friend class F_Row;
 friend class F_BTreeIStream;
 friend class F_DbRebuild;
@@ -1208,8 +1211,6 @@ typedef struct FLMSYSDATA
 													// OK To do async writes, if available.
 	FLMBOOL					bOkToUseESM;	// OK to use Extended Server Memory,
 													// if available
-	ServerLockManager *	pServerLockMgr;
-													// Pointer to server lock manager.
 	FLMUINT					uiMaxCPInterval;
 													// Maximum number of seconds to allow between
 													// checkpoints

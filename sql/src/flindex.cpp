@@ -632,7 +632,8 @@ void F_Db::stopBackgroundIndexThread(
 
 		// The thread may be waiting to start a transaction.
 
-		gv_SFlmSysData.pServerLockMgr->SignalLockWaiter( uiThreadId);
+		m_pDatabase->m_pDatabaseLockObj->timeoutLockWaiter( uiThreadId);
+		m_pDatabase->m_pWriteLockObj->timeoutLockWaiter( uiThreadId);
 
 		if( !bWait)
 		{

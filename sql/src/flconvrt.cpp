@@ -48,7 +48,7 @@ RCODE F_Db::upgrade(
 
 	if (!(m_uiFlags & FDB_HAS_FILE_LOCK))
 	{
-		if (RC_BAD( rc = dbLock( SFLM_LOCK_EXCLUSIVE, 0, 15)))
+		if (RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0, 15)))
 		{
 			goto Exit;
 		}
@@ -241,7 +241,7 @@ RCODE F_Db::enableEncryption( void)
 
 	if (!(m_uiFlags & FDB_HAS_FILE_LOCK))
 	{
-		if ( RC_BAD( rc = dbLock( SFLM_LOCK_EXCLUSIVE, 0, SFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
@@ -365,7 +365,7 @@ RCODE F_Db::wrapKey(
 
 	if( !(m_uiFlags & FDB_HAS_FILE_LOCK))
 	{
-		if ( RC_BAD( rc = dbLock( SFLM_LOCK_EXCLUSIVE, 0, SFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}
@@ -573,7 +573,7 @@ RCODE F_Db::rollOverDbKey( void)
 
 	if (!(m_uiFlags & FDB_HAS_FILE_LOCK))
 	{
-		if ( RC_BAD( rc = dbLock( SFLM_LOCK_EXCLUSIVE, 0, SFLM_NO_TIMEOUT)))
+		if ( RC_BAD( rc = dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 		{
 			goto Exit;
 		}

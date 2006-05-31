@@ -868,7 +868,7 @@ Retry:
 	}
 
 	pBucket = gv_SFlmSysData.pDatabaseHashTbl;
-	uiBucket = flmStrHashBucket( szDbPathStr1, pBucket, FILE_HASH_ENTRIES);
+	uiBucket = f_strHashBucket( szDbPathStr1, pBucket, FILE_HASH_ENTRIES);
 	pDatabase = (F_Database *)pBucket [uiBucket].pFirstInBucket;
 	while (pDatabase)
 	{
@@ -1241,7 +1241,7 @@ F_Database::~F_Database()
 
 	if (m_pWriteLockObj)
 	{
-		m_pWriteLockObj->Release( FALSE);
+		m_pWriteLockObj->Release();
 		m_pWriteLockObj = NULL;
 	}
 
@@ -1375,8 +1375,6 @@ RCODE F_Database::setupDatabase(
 	FLMUINT			uiAllocLen;
 	FLMUINT			uiDbNameLen;
 	FLMUINT			uiDirNameLen;
-	FFileItemId *	pFileItemId1 = NULL;
-	FFileItemId *	pFileItemId2 = NULL;
 	char				szDbPathStr[ F_PATH_MAX_SIZE];
 	char				szDataDirStr[ F_PATH_MAX_SIZE];
 
@@ -1462,51 +1460,21 @@ RCODE F_Database::setupDatabase(
 		goto Exit;
 	}
 
-	// Allocate the lock objects - must be done AFTER setting up the
-	// file name stuff up above.
-
-	if ((pFileItemId1 = f_new FFileItemId( this, TRUE)) == NULL)
-	{
-		rc = RC_SET( NE_SFLM_MEM);
-		goto Exit;
-	}
-	if ((pFileItemId2 = f_new FFileItemId( this, FALSE)) == NULL)
-	{
-		rc = RC_SET( NE_SFLM_MEM);
-		goto Exit;
-	}
-
 	// Allocate a lock object for write locking.
-
-	if ((m_pWriteLockObj = gv_SFlmSysData.pServerLockMgr->GetLockObject(
-												pFileItemId1)) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocLockObject( &m_pWriteLockObj)))
 	{
-		rc = RC_SET( NE_SFLM_MEM);
 		goto Exit;
 	}
-	m_pWriteLockObj->AddRef();
 
 	// Allocate a lock object for file locking.
-
-	if ((m_pDatabaseLockObj = gv_SFlmSysData.pServerLockMgr->GetLockObject(
-												pFileItemId2)) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocLockObject( &m_pDatabaseLockObj)))
 	{
-		rc = RC_SET( NE_SFLM_MEM);
 		goto Exit;
 	}
-	m_pDatabaseLockObj->AddRef();
-	
+
 Exit:
-
-	if (pFileItemId1)
-	{
-		pFileItemId1->Release();
-	}
-
-	if (pFileItemId2)
-	{
-		pFileItemId2->Release();
-	}
 
 	return( rc);
 }
@@ -1844,7 +1812,7 @@ FLMBOOL F_Database::tryCheckpoint(
 		  (m_uiDirtyCacheCount + m_uiLogCacheCount) * m_uiBlockSize >
 			gv_SFlmSysData.pBlockCacheMgr->m_uiMaxDirtyCache))
 	{
-		if (RC_BAD( rc = dbWriteLock( pCPInfo->hWaitSem, pDbStats)))
+		if (RC_BAD( rc = dbWriteLock( pCPInfo->hWaitSem, pDbStats, FLM_NO_TIMEOUT)))
 		{
 
 			// THIS SHOULD NEVER HAPPEN BECAUSE dbWriteLock will
@@ -1877,7 +1845,7 @@ FLMBOOL F_Database::tryCheckpoint(
 			 m_lastCommittedDbHdr.ui64CurrTransID ||
 			 !m_pRfl->seeIfRflWritesDone( pCPInfo->hWaitSem, FALSE))
 		{
-			dbWriteUnlock( pDbStats);
+			dbWriteUnlock();
 			goto Exit;
 		}
 	}
@@ -1891,7 +1859,7 @@ FLMBOOL F_Database::tryCheckpoint(
 		(void)flmStatUpdate( &pCPInfo->Stats);
 	}
 
-	dbWriteUnlock( pDbStats);
+	dbWriteUnlock();
 
 	// Set the thread's status
 

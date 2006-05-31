@@ -477,7 +477,6 @@ FINLINE RCODE FlmStorage2UTF8(
 #include "fcache.h"
 #include "flmstat.h"
 #include "fbtrset.h"
-#include "fsrvlock.h"
 #include "fcollate.h"
 #include "f_btree.h"
 #include "f_btpool.h"
@@ -1501,7 +1500,7 @@ public:
 	
 	RCODE transBegin(
 		eDbTransType			eTransType,
-		FLMUINT					uiMaxLockWait = SFLM_NO_TIMEOUT,
+		FLMUINT					uiMaxLockWait = FLM_NO_TIMEOUT,
 		FLMUINT					uiFlags = 0,
 		SFLM_DB_HDR *			pDbHeader = NULL);
 
@@ -1522,19 +1521,19 @@ public:
 		FLMUINT					uiTimeout);
 
 	RCODE dbLock(
-		eDbLockType				eLockType,
+		eLockType				eLockType,
 		FLMINT					iPriority,
 		FLMUINT					uiTimeout);
 
 	RCODE dbUnlock( void);
 
 	RCODE getLockType(
-		eDbLockType *			peLockType,
+		eLockType *				peLockType,
 		FLMBOOL *				pbImplicit);
 
 	RCODE getLockInfo(
 		FLMINT					iPriority,
-		eDbLockType *			peCurrLockType,
+		eLockType *				peCurrLockType,
 		FLMUINT *				puiThreadId,
 		FLMUINT *				puiNumExclQueued,
 		FLMUINT *				puiNumSharedQueued,
@@ -1773,11 +1772,6 @@ public:
 		return( rc);
 	}
 
-	FINLINE FLMBOOL threadWaitingLock( void)
-	{
-		return( m_pDatabase->m_pDatabaseLockObj->ThreadWaitingLock());
-	}
-
 	RCODE getLockWaiters(
 		IF_LockInfoClient *	pLockInfo);
 
@@ -1963,7 +1957,7 @@ private:
 
 	RCODE beginTrans(
 		eDbTransType		eTransType,
-		FLMUINT				uiMaxLockWait = SFLM_NO_TIMEOUT,
+		FLMUINT				uiMaxLockWait = FLM_NO_TIMEOUT,
 		FLMUINT				uiFlags = 0,
 		SFLM_DB_HDR *		pDbHdr = NULL);
 
@@ -2426,7 +2420,6 @@ friend class F_BlockCacheMgr;
 friend class F_RowCacheMgr;
 friend class F_GlobalCacheMgr;
 friend class F_QueryResultSet;
-friend class ServerLockObject;
 friend class F_BTreeInfo;
 friend class SQLQuery;
 };

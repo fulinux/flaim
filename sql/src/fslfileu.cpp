@@ -206,7 +206,7 @@ RCODE F_Db::indexSetOfRows(
 	FLMUINT64		ui64LastRowId = 0;
 	F_INDEX *		pIndex = NULL;
 	F_TABLE *		pTable;
-	ServerLockObject *
+	IF_LockObject *
 						pDatabaseLockObj = m_pDatabase->m_pDatabaseLockObj;
 	FLMBOOL			bHitEnd = FALSE;
 	FLMUINT			uiCurrTime;
@@ -334,7 +334,7 @@ RCODE F_Db::indexSetOfRows(
 				break;
 			}
 
-			if (pDatabaseLockObj->ThreadWaitingLock())
+			if (pDatabaseLockObj->getWaiterCount())
 			{
 				// See if our minimum run time has elapsed
 
@@ -371,7 +371,7 @@ RCODE F_Db::indexSetOfRows(
 
 				if (FLM_ELAPSED_TIME( uiCurrTime, uiStartTime) >
 					gv_SFlmSysData.uiMaxCPInterval &&
-					m_pDatabase->m_pWriteLockObj->ThreadWaitingLock())
+					m_pDatabase->m_pWriteLockObj->getWaiterCount())
 				{
 					bRelinquish = TRUE;
 					break;
@@ -789,9 +789,9 @@ RetryLock:
 
 	flmAssert( !(m_uiFlags & FDB_HAS_FILE_LOCK));
 
-	if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->Lock( this, m_hWaitSem,
-		TRUE, FALSE, TRUE, SFLM_NO_TIMEOUT, FLM_BACKGROUND_LOCK_PRIORITY,
-		m_pDbStats)))
+	if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->lock( m_hWaitSem,
+		TRUE, FLM_NO_TIMEOUT, FLM_BACKGROUND_LOCK_PRIORITY,
+		m_pDbStats ? &m_pDbStats->LockStats : NULL)))
 	{
 		if( rc == NE_SFLM_DATABASE_LOCK_REQ_TIMEOUT)
 		{
@@ -819,7 +819,7 @@ RetryLock:
 		{
 			goto Exit;
 		}
-		if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->Unlock( TRUE, this)))
+		if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->unlock()))
 		{
 			goto Exit;
 		}
@@ -839,7 +839,7 @@ RetryLock:
 	// Start an update transaction
 
 	if( RC_BAD( rc = beginTrans( 
-		SFLM_UPDATE_TRANS, SFLM_NO_TIMEOUT, SFLM_DONT_POISON_CACHE)))
+		SFLM_UPDATE_TRANS, FLM_NO_TIMEOUT, SFLM_DONT_POISON_CACHE)))
 	{
 		if( rc == NE_SFLM_DATABASE_LOCK_REQ_TIMEOUT)
 		{
@@ -857,7 +857,7 @@ Exit:
 	{
 		if( m_uiFlags & FDB_HAS_FILE_LOCK)
 		{
-			(void)m_pDatabase->m_pDatabaseLockObj->Unlock( TRUE, this);
+			(void)m_pDatabase->m_pDatabaseLockObj->unlock();
 			m_uiFlags &= ~(FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_IMPLICIT);
 		}
 	}

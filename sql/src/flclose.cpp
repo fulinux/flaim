@@ -158,7 +158,7 @@ Retry:
 	}
 
 	pBucket = gv_SFlmSysData.pDatabaseHashTbl;
-	uiBucket = flmStrHashBucket( szDbPathStr1, pBucket, FILE_HASH_ENTRIES);
+	uiBucket = f_strHashBucket( szDbPathStr1, pBucket, FILE_HASH_ENTRIES);
 	pDatabase = (F_Database *)pBucket [uiBucket].pFirstInBucket;
 	
 	while( pDatabase)

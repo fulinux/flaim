@@ -99,7 +99,7 @@ RCODE F_DbSystem::dbCopy(
 	// threads have the opportunity to get in and update the
 	// database.
 
-	if (RC_BAD( rc = pDb->dbLock( SFLM_LOCK_EXCLUSIVE, 0, SFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = pDb->dbLock( FLM_LOCK_EXCLUSIVE, 0, FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
@@ -107,7 +107,7 @@ RCODE F_DbSystem::dbCopy(
 
 	// Force a checkpoint
 
-	if (RC_BAD( rc = pDb->doCheckpoint( SFLM_NO_TIMEOUT)))
+	if (RC_BAD( rc = pDb->doCheckpoint( FLM_NO_TIMEOUT)))
 	{
 		goto Exit;
 	}
@@ -164,11 +164,11 @@ RCODE F_DbSystem::copyDb(
 	IF_DirHdl *				pDirHdl = NULL;
 	FLMBOOL					bDatabaseLocked = FALSE;
 	FLMBOOL					bWriteLocked = FALSE;
-	ServerLockObject *	pWriteLockObj = NULL;
-	ServerLockObject *	pDatabaseLockObj = NULL;
+	IF_LockObject *		pWriteLockObj = NULL;
+	IF_LockObject *		pDatabaseLockObj = NULL;
 	COPIED_NAME *			pCopiedList = NULL;
 	FLMBOOL					bUsedDatabase = FALSE;
-	eDbLockType				eCurrLockType;
+	eLockType				eCurrLockType;
 	FLMUINT					uiThreadId;
 	FLMUINT					uiNumExclQueued;
 	FLMUINT					uiNumSharedQueued;
@@ -271,19 +271,19 @@ retry:
 		// Lock the destination file object and transaction
 		// object, if not already locked.
 
-		pDatabase->m_pDatabaseLockObj->GetLockInfo( (FLMINT)0,
+		pDatabase->m_pDatabaseLockObj->getLockInfo( (FLMINT)0,
 										&eCurrLockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued,
 										&uiPriorityCount);
-		if (eCurrLockType != SFLM_LOCK_EXCLUSIVE ||
+		if (eCurrLockType != FLM_LOCK_EXCLUSIVE ||
 			 uiThreadId != f_threadId())
 		{
 			pDatabaseLockObj = pDatabase->m_pDatabaseLockObj;
 			pDatabaseLockObj->AddRef();
 			
-			if (RC_BAD( rc = pDatabaseLockObj->Lock( 
-				NULL, hWaitSem, TRUE, FALSE, TRUE, 15, 0)))
+			if (RC_BAD( rc = pDatabaseLockObj->lock( 
+				hWaitSem, TRUE, FLM_NO_TIMEOUT, 0)))
 			{
 				goto Exit;
 			}
@@ -292,12 +292,12 @@ retry:
 
 		// Lock the write object, if not already locked
 
-		pDatabase->m_pWriteLockObj->GetLockInfo( (FLMINT)0,
+		pDatabase->m_pWriteLockObj->getLockInfo( (FLMINT)0,
 										&eCurrLockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued,
 										&uiPriorityCount);
-		if (eCurrLockType != SFLM_LOCK_EXCLUSIVE ||
+		if (eCurrLockType != FLM_LOCK_EXCLUSIVE ||
 			 uiThreadId != (FLMUINT)f_threadId())
 		{
 			pWriteLockObj = pDatabase->m_pWriteLockObj;
@@ -306,7 +306,7 @@ retry:
 			// Only contention here is with the checkpoint thread - wait
 			// forever until the checkpoint thread gives it up.
 
-			if (RC_BAD( rc = pDatabase->dbWriteLock( hWaitSem)))
+			if (RC_BAD( rc = pDatabase->dbWriteLock( hWaitSem, NULL, FLM_NO_TIMEOUT)))
 			{
 				goto Exit;
 			}
@@ -616,7 +616,7 @@ Exit:
 	{
 		RCODE	rc3;
 
-		if (RC_BAD( rc3 = pDatabaseLockObj->Unlock( TRUE, NULL)))
+		if (RC_BAD( rc3 = pDatabaseLockObj->unlock()))
 		{
 			if (RC_OK( rc))
 				rc = rc3;
@@ -626,13 +626,13 @@ Exit:
 
 	if (pWriteLockObj)
 	{
-		pWriteLockObj->Release( FALSE);
+		pWriteLockObj->Release();
 		pWriteLockObj = NULL;
 	}
 
 	if (pDatabaseLockObj)
 	{
-		pDatabaseLockObj->Release( FALSE);
+		pDatabaseLockObj->Release();
 		pDatabaseLockObj = NULL;
 	}
 

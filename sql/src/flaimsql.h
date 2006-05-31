@@ -243,22 +243,10 @@ typedef enum
 	SFLM_UPDATE_TRANS			///< 2 = Update transaction
 } eDbTransType;
 
-/// Database lock types.
-typedef enum
-{
-	SFLM_LOCK_NONE = 0,
-	SFLM_LOCK_EXCLUSIVE,		///< 1 = Exclusive lock.
-	SFLM_LOCK_SHARED			///< 2 = Shared lock.
-} eDbLockType;
-
 // Transaction flags
 
 #define SFLM_DONT_KILL_TRANS		0x1
 #define SFLM_DONT_POISON_CACHE	0x2
-
-// Defines used for uiMaxLockWait parameter
-
-#define SFLM_NO_TIMEOUT				0xFF
 
 /// Backup types.
 typedef enum
@@ -586,13 +574,6 @@ typedef struct
 	SFLM_CACHE_USAGE	RowCache;						///< Information about row cache usage.			
 } SFLM_CACHE_INFO;
 
-/// Structure used in gathering statistics to hold an operation count and an elapsed time.
-typedef struct
-{
-	FLMUINT64	ui64Count;			///< Number of times operation was performed
-	FLMUINT64	ui64ElapMilli;		///< Total elapsed time (milliseconds) for the operations.
-} SFLM_COUNT_TIME_STAT;
-
 /// Structure used in gathering statistics to hold a operation count, a byte count, and an elapsed time.  This
 /// is typically used for I/O operations where it is useful to know the number of bytes that were read or
 /// written by the operation.
@@ -607,17 +588,17 @@ typedef struct
 /// Statistics for read transactions.
 typedef struct
 {
-	SFLM_COUNT_TIME_STAT	CommittedTrans;	///< Statistics for read transactions committed.
-	SFLM_COUNT_TIME_STAT	AbortedTrans;		///< Statistics for read transactions aborted.
+	F_COUNT_TIME_STAT	CommittedTrans;	///< Statistics for read transactions committed.
+	F_COUNT_TIME_STAT	AbortedTrans;		///< Statistics for read transactions aborted.
 } SFLM_RTRANS_STATS;
 
 /// Statistics for update transactions.
 typedef struct
 {
-	SFLM_COUNT_TIME_STAT	CommittedTrans;	///< Statistics for update transactions committed.
-	SFLM_COUNT_TIME_STAT	GroupCompletes;	///< Statistics for number of times multiple transactions were committed together.
-	FLMUINT64				ui64GroupFinished;///< Total update transactions that were committed in a group.
-	SFLM_COUNT_TIME_STAT	AbortedTrans;		///< Statistics for update transactions aborted.
+	F_COUNT_TIME_STAT	CommittedTrans;	///< Statistics for update transactions committed.
+	F_COUNT_TIME_STAT	GroupCompletes;	///< Statistics for number of times multiple transactions were committed together.
+	FLMUINT64			ui64GroupFinished;///< Total update transactions that were committed in a group.
+	F_COUNT_TIME_STAT	AbortedTrans;		///< Statistics for update transactions aborted.
 } SFLM_UTRANS_STATS;
 
 /// Statistics for block reads and writes.
@@ -680,17 +661,15 @@ typedef struct
 
 	// Lock statistics
 
-	SFLM_COUNT_TIME_STAT	NoLocks;						///< Statistics on times when nobody was holding a lock on the database.
-	SFLM_COUNT_TIME_STAT	WaitingForLock;			///< Statistics on times threads were waiting to obtain a database lock.
-	SFLM_COUNT_TIME_STAT	HeldLock;					///< Statistics on times when a thread was holding a lock on the database.
+	F_LOCK_STATS			LockStats;					///< Lock statistics.
 	
 	// Update statistics
 
-	SFLM_COUNT_TIME_STAT	RowInserts;					///< Number of row insert operations that have been performed on
+	F_COUNT_TIME_STAT		RowInserts;					///< Number of row insert operations that have been performed on
 																///< this database.
-	SFLM_COUNT_TIME_STAT	RowDeletes;					///< Number of row delete operations that have been performed
+	F_COUNT_TIME_STAT		RowDeletes;					///< Number of row delete operations that have been performed
 																///< on this database.
-	SFLM_COUNT_TIME_STAT	RowModifies;				///< Number of row modify operations that have been performed
+	F_COUNT_TIME_STAT		RowModifies;				///< Number of row modify operations that have been performed
 																///< on this database.
 } SFLM_DB_STATS;
 
