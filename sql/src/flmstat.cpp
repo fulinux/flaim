@@ -1056,8 +1056,6 @@ Exit:
 Desc:	This routine locates the appropriate SFLM_BLOCKIO_STATS structure for
 		a given block of data.  NULL is returned if an appropriate one cannot
 		be found.
-VISIT: uiBlkType passed in is a guess.  Remove this parm and start using
-		 pBlk.
 ****************************************************************************/
 SFLM_BLOCKIO_STATS * flmGetBlockIOStatPtr(
 	SFLM_DB_STATS *		pDbStats,
