@@ -523,7 +523,6 @@ RCODE flmCreateLckFile(
 	char *			pszFileExt;
 	IF_FileHdl *	pLockFileHdl = NULL;
 	char				szFilePathStr[ F_PATH_MAX_SIZE];
-	FLMUINT			uiIoFlags;
 
 	if( RC_BAD( rc = gv_SFlmSysData.pFileSystem->pathToStorageString( 
 		pszFilePath, szFilePathStr)))
@@ -550,54 +549,15 @@ RCODE flmCreateLckFile(
 		goto Exit;
 	}
 
-	// Attempt to create the lock file.  If that succeeds, we are
-	// OK to use the database.  If it fails, the lock file may have
-	// been left because of a crash if FLAIM was not shut down properly.
-	// Hence, we first try to delete the file.  If that succeeds, we
-	// then attempt to create the file again.  If it, or the 2nd create
-	// fail, we simply return an access denied error.
-
-uiIoFlags = FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYRW;
-#ifndef FLM_UNIX
-	uiIoFlags |= FLM_IO_DELETE_ON_RELEASE;
-#endif
-
-	if( RC_BAD( gv_SFlmSysData.pFileSystem->createFile( 
-		szLockPath, uiIoFlags, &pLockFileHdl)))
+	if( RC_BAD( rc = gv_SFlmSysData.pFileSystem->createLockFile( 
+		szLockPath, &pLockFileHdl)))
 	{
-#ifndef FLM_UNIX
-		if (RC_BAD( gv_SFlmSysData.pFileSystem->deleteFile( szLockPath)))
-		{
-			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
-			goto Exit;
-		}
-		else if (RC_BAD( gv_SFlmSysData.pFileSystem->createFile( 
-			szLockPath, uiIoFlags, &pLockFileHdl)))
-		{
-			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
-			goto Exit;
-		}
-#else
-
-		if( RC_BAD( gv_SFlmSysData.pFileSystem->openFile( 
-			szLockPath, FLM_IO_RDWR | FLM_IO_SH_DENYRW, &pLockFileHdl)))
-		{
-			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
-			goto Exit;
-		}
-#endif
-	}
-
-#ifdef FLM_UNIX
-	if( RC_BAD( pLockFileHdl->lock()))
-	{
-		rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 		goto Exit;
 	}
-#endif
 
 	*ppLockFileHdlRV = (IF_FileHdl *)pLockFileHdl;
 	pLockFileHdl = NULL;
+	
 Exit:
 	if (pLockFileHdl)
 	{
