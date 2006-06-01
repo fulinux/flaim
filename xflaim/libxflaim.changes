@@ -1,3 +1,7 @@
+Thu Jun 1 13:32:25 MST 2006 - dsanders@novell.com
+
+- Fixed compiler warnings for ia64 platform.
+
 -------------------------------------------------------------------
 Tue May 30 11:37:12 MST 2006 - dsanders@novell.com
 

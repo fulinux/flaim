@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Jun 1 13:30:07 MST 2006 - dsanders@novell.com
+
+- Fixed compiler warnings for ia64 platform.
+
+-------------------------------------------------------------------
 Tue May 30 11:37:12 MST 2006 - dsanders@novell.com
 
 - Added support for Sparc Linux and OpenSuse 10.1
