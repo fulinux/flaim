@@ -343,28 +343,6 @@ static FLMUINT			gv_uiMaxWPChar = 0;
 // Collation tables
 
 /****************************************************************************
-Desc:		Table of # of characters in each character set
-****************************************************************************/
-static FLMBYTE fwp_c60_max[] =
-{
-	ASC_N,	// ascii
-	ML1_N,	// multinational 1
-	ML2_N,	// multinational 2
-	BOX_N,	// line draw
-	TYP_N,	// typographic
-	ICN_N,	// icons
-	MTH_N,	// math
-	MTX_N,	// math extension
-	GRK_N,	// Greek
-	HEB_N,	// Hebrew
-	CYR_N,	// Cyrillic - Russian
-	KAN_N,	// Kana
-	USR_N,	// user
-	ARB_N,	// Arabic
-	ARS_N,	// Arabic Script
-};
-
-/****************************************************************************
 Desc:		Base character location table
 				Bit mapped table.	(1) - corresponding base char is in same
 				set as combined
