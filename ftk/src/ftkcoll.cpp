@@ -345,7 +345,7 @@ static FLMUINT			gv_uiMaxWPChar = 0;
 /****************************************************************************
 Desc:		Table of # of characters in each character set
 ****************************************************************************/
-FLMBYTE fwp_c60_max[] =
+static FLMBYTE fwp_c60_max[] =
 {
 	ASC_N,	// ascii
 	ML1_N,	// multinational 1
@@ -375,7 +375,7 @@ Notes:		In the following table, the bits are numbered from left
 						EX. 00000000b   ;0-7
 						bit#   01234567
 ****************************************************************************/
-FLMBYTE fwp_ml1_cb60[] =
+static FLMBYTE fwp_ml1_cb60[] =
 {
 	0x00,    // 0-7
 	0x00,    // 8-15
@@ -419,7 +419,7 @@ Desc:		Format of index:
 Notes:	Diacritical char is always in same set as composed char
 			base is in same set if other table indicates, else in ASCII
 ****************************************************************************/
-BASE_DIACRIT_TABLE fwp_ml1c_table[] =
+static BASE_DIACRIT_TABLE fwp_ml1c_table[] =
 {
 	{'A',acute},
 	{'a',acute},
@@ -642,7 +642,7 @@ BASE_DIACRIT_TABLE fwp_ml1c_table[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-BASE_DIACRIT fwp_ml1c =
+static BASE_DIACRIT fwp_ml1c =
 {
 	216,    	// # of characters in table
 	26,      // start char
@@ -844,7 +844,7 @@ Desc:		Format of index:
 Notes:	Diacritical char is always in same set as composed char
 			base is in same set
 ****************************************************************************/
-static BASE_DIACRIT_TABLE  fwp_rus_c_table[] =
+static BASE_DIACRIT_TABLE fwp_rus_c_table[] =
 {
 	{ 14, 204 },					// ZHE with right descender
 	{ 15, 204 },					// zhe with right descender
@@ -981,7 +981,7 @@ static BASE_DIACRIT fwp_rus_c =
 /****************************************************************************
 Desc:		Table of pointers to character component tables.
 ****************************************************************************/
-BASE_DIACRIT * fwp_car60_c[ NCHSETS] =
+static BASE_DIACRIT * fwp_car60_c[ NCHSETS] =
 {
 	(BASE_DIACRIT*)0,    // no composed characters for ascii.
 	&fwp_ml1c,
@@ -1003,7 +1003,7 @@ BASE_DIACRIT * fwp_car60_c[ NCHSETS] =
 /****************************************************************************
 Desc:		Map special chars in CharSet (x24) to collation values
 ****************************************************************************/
-BYTE_WORD_TBL fwp_Ch24ColTbl[] =	// Position in the table+1 is subColValue
+static BYTE_WORD_TBL fwp_Ch24ColTbl[] =
 {
 	{1,	COLLS+2},					// comma
 	{2,	COLLS+1},					// maru
@@ -1038,7 +1038,7 @@ Notes:
 				the subcollation area.
 				The original table is listed below.
 ****************************************************************************/
-FLMBYTE KanaSubColTbl[] =
+static FLMBYTE KanaSubColTbl[] =
 {
 	0,1,0,1,0,1,0,1,0,1,				// a    A   i   I   u   U   e   E   o   O
 	1,3,0,3,0,3,1,3,0,3,				// KA  GA  KI  GI  KU  GU  KE  GE  KO  GO
@@ -1059,7 +1059,7 @@ Desc:		Map katakana (CharSet x26) to collation values
 			kana collating values are two byte values
 			where the high byte is 0x01.
 ****************************************************************************/
-FLMBYTE KanaColTbl[] =
+static FLMBYTE KanaColTbl[] =
 {
 	 0, 0, 1, 1, 2, 2, 3, 3, 4, 4,		// a    A   i   I   u   U   e   E   o   O
  	 5, 5, 6, 6, 7, 7, 8, 8, 9, 9,		// KA  GA  KI  GI  KU  GU  KE  GE  KO  GO
@@ -1079,7 +1079,7 @@ FLMBYTE KanaColTbl[] =
 Desc:		Map KataKana collated value to vowel value for
 			use for the previous char.
 ****************************************************************************/
-FLMBYTE KanaColToVowel[] =
+static FLMBYTE KanaColToVowel[] =
 {
 	0,1,2,3,4,		//  a   i   u  e  o
 	0,1,2,3,4,		// ka  ki  ku ke ko
@@ -1099,7 +1099,7 @@ Desc:		Convert Zenkaku (double wide) to Hankaku (single wide)
 			This enables collation values to be found on some symbols.
 			This is also used to convert symbols from hankaku to Zen24.
 ****************************************************************************/
-BYTE_WORD_TBL Zen24ToHankaku[] =
+static BYTE_WORD_TBL Zen24ToHankaku[] =
 {
 	{	0  ,0x0020 },		// space
 	{	1  ,0x0b03 },		// japanese comma
@@ -1221,7 +1221,7 @@ Desc:		Maps CS26 to CharSet 11
 				0xC0 - add handakuten
 				0xFF - no mapping exists
 ****************************************************************************/
-FLMBYTE MapCS26ToCharSet11[ 86] =
+static FLMBYTE MapCS26ToCharSet11[ 86] =
 {
 	0x06,	// 0     a
 	0x10,	// 1     A
@@ -1327,7 +1327,7 @@ Desc:		Conversion from single (Hankaku) to double (Zenkaku) wide characters
 			Used in flmWPHanToZenkaku()
 			Maps from charset 11 to CS24 (punctuation) (starting from 11,0)
 ****************************************************************************/
-FLMBYTE From0AToZen[] =				// ' changed because of windows
+static FLMBYTE From0AToZen[] =
 {
  	0, 	9,		40,	0x53, 		// sp ! " #
  	0x4f, 0x52, 0x54,	38, 			// $ % & '
@@ -1339,7 +1339,7 @@ FLMBYTE From0AToZen[] =				// ' changed because of windows
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE From0BToZen[] =
+static FLMBYTE From0BToZen[] =
 {
 	6,		7,		0x42,	0x40,			// : ; < =
 	0x43,	8,		0x56					// > ? @
@@ -1348,7 +1348,7 @@ FLMBYTE From0BToZen[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE From0CToZen[] =
+static FLMBYTE From0CToZen[] =
 {
 	0x2d,	0x1f,	0x2e,	0x0f,	0x11,	0x0d	// [ BACKSLASH ] ^ _ `
 };
@@ -1356,7 +1356,7 @@ FLMBYTE From0CToZen[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE From0DToZen[] =
+static FLMBYTE From0DToZen[] =
 {
 	0x2f,	0x22,	0x30,	0x20 			// { | } ~
 };
@@ -1364,7 +1364,7 @@ FLMBYTE From0DToZen[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE  From8ToZen[] =
+static FLMBYTE  From8ToZen[] =
 {
 	0x5e, 0x7e, 0x5f, 0x7f, 0x5f, 0xFF, 0x60, 0x80,
 	0x61, 0x81, 0x62, 0x82, 0x63, 0x83, 0x64, 0x84,
@@ -1378,7 +1378,7 @@ FLMBYTE  From8ToZen[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE From11AToZen[] =	// 11 to 24 punctuation except dash
+static FLMBYTE From11AToZen[] =
 {
 	2,								// japanese period
 	0x35,							// left bracket
@@ -1390,7 +1390,7 @@ FLMBYTE From11AToZen[] =	// 11 to 24 punctuation except dash
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE From11BToZen[] =				// 11 to 26 (katakana) from 11,5
+static FLMBYTE From11BToZen[] =
 {
 	0x51,										// wo
 	0,2,4,6,8,0x42,0x44,0x46,0x22,	// small a i u e o ya yu yo tsu
@@ -1409,7 +1409,7 @@ FLMBYTE From11BToZen[] =				// 11 to 26 (katakana) from 11,5
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT16 fwp_indexi[] =
+static FLMUINT16 fwp_indexi[] =
 {
 	0,11,14,15,17,18,19,21,22,23,24,25,26,35,59
 };
@@ -1417,7 +1417,7 @@ FLMUINT16 fwp_indexi[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT16 fwp_indexj[] =	// DOUBLE CHAR AREA - LANGUAGES
+static FLMUINT16 fwp_indexj[] =
 {
 	FLM_CA_LANG,	// Catalan (0)
 	FLM_CF_LANG,	// Canadian French
@@ -1486,7 +1486,7 @@ FLMUINT16 fwp_indexj[] =	// DOUBLE CHAR AREA - LANGUAGES
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT16 fwp_valuea[] =
+static FLMUINT16 fwp_valuea[] =
 {
 //	DOUBLE CHAR STATE VALUES
 	STATE1,		// 00
@@ -1589,7 +1589,7 @@ FLMUINT16 fwp_valuea[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE fwp_asc60Tbl[ ASCTBLLEN + 2] =
+static FLMBYTE fwp_asc60Tbl[ ASCTBLLEN + 2] =
 {
 	0x20,			// initial character offset!!
 	ASCTBLLEN,	// len of this table
@@ -1693,7 +1693,7 @@ FLMBYTE fwp_asc60Tbl[ ASCTBLLEN + 2] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE fwp_mn60Tbl[ MNTBLLEN + 2] =		// multinational table
+static FLMBYTE fwp_mn60Tbl[ MNTBLLEN + 2] =
 {
 	23,			// initial character offset!!
 	MNTBLLEN,	// len of this table
@@ -1933,7 +1933,7 @@ FLMBYTE fwp_mn60Tbl[ MNTBLLEN + 2] =		// multinational table
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE fwp_sym60Tbl[ SYMTBLLEN + 2] =
+static FLMBYTE fwp_sym60Tbl[ SYMTBLLEN + 2] =
 {
 	11,			// initial character offset!!
 	SYMTBLLEN,	// len of this table
@@ -1951,7 +1951,7 @@ FLMBYTE fwp_sym60Tbl[ SYMTBLLEN + 2] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE fwp_grk60Tbl[ GRKTBLLEN + 2] =
+static FLMBYTE fwp_grk60Tbl[ GRKTBLLEN + 2] =
 {
 	0,					// starting offset
 	GRKTBLLEN,		// length
@@ -2200,7 +2200,7 @@ FLMBYTE fwp_grk60Tbl[ GRKTBLLEN + 2] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE fwp_cyrl60Tbl[ CYRLTBLLEN + 2] =
+static FLMBYTE fwp_cyrl60Tbl[ CYRLTBLLEN + 2] =
 {
 	0,					// starting offset
 	CYRLTBLLEN,		// len of table
@@ -2438,7 +2438,7 @@ FLMBYTE fwp_cyrl60Tbl[ CYRLTBLLEN + 2] =
 Desc:		The Hebrew characters are collated over the Russian characters
 			Therefore sorting both Hebrew and Russian is impossible to do.
 ****************************************************************************/
-FLMBYTE fwp_heb60TblA[ HEBTBL1LEN + 2] =
+static FLMBYTE fwp_heb60TblA[ HEBTBL1LEN + 2] =
 {
 	0,					// starting offset
 	HEBTBL1LEN,		// len of table
@@ -2476,7 +2476,7 @@ Desc:		This is the ANCIENT HEBREW SCRIPT piece.
 			The actual value will be stored in the subcollation.
 			This way we don't play diacritic/subcollation games.
 ****************************************************************************/
-FLMBYTE fwp_heb60TblB[ HEBTBL2LEN + 2] =
+static FLMBYTE fwp_heb60TblB[ HEBTBL2LEN + 2] =
 {
 	84,
 	HEBTBL2LEN,
@@ -2544,7 +2544,7 @@ Desc:		The Arabic characters are collated OVER the Russian characters
 			to add more collation values.  Some chars in CS14 are combined when
 			urdu, pashto and sindhi characters overlap.
 ****************************************************************************/
-FLMBYTE fwp_ar160Tbl[ AR1TBLLEN + 2] =
+static FLMBYTE fwp_ar160Tbl[ AR1TBLLEN + 2] =
 {
 	38,				// starting offset
 	AR1TBLLEN,		// len of table
@@ -2757,7 +2757,7 @@ Desc:		Alef needs a subcollation table.
 				[13,152]..[13,153] - taa marbuuTah - nosubcoll
 				[13,64] ..[13,67]  - taa - subcoll of 1
 ****************************************************************************/
-FLMBYTE fwp_alefSubColTbl[] =
+static FLMBYTE fwp_alefSubColTbl[] =
 {
 // [13,165]
 	1,		// ?? alif hamzah
@@ -2783,7 +2783,7 @@ FLMBYTE fwp_alefSubColTbl[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE fwp_ar260Tbl[ AR2TBLLEN + 2] =
+static FLMBYTE fwp_ar260Tbl[ AR2TBLLEN + 2] =
 {
 	41,				// starting offset
 	AR2TBLLEN,		// len of table
@@ -2991,7 +2991,7 @@ Desc:		If the bit position is set then save the character in the sub-col
 			FLAIM COLTBL1 to see which characters are combined with other
 			Arabic characters.
 ****************************************************************************/
-FLMBYTE fwp_ar2BitTbl[] =
+static FLMBYTE fwp_ar2BitTbl[] =
 {
 	// Start at character 64
 	// The only 'clean' areas uncollate to the correct place, they are...
@@ -3030,7 +3030,7 @@ FLMBYTE fwp_ar2BitTbl[] =
 Desc:		This table describes and gives addresses for collating 5.0
 			character sets.  Each line corresponds with a character set.
 ***************************************************************************/
-TBL_B_TO_BP fwp_col60Tbl[] =
+static TBL_B_TO_BP fwp_col60Tbl[] =
 {
 	{CHSASCI, fwp_asc60Tbl},	// ascii - " " - "~"
 	{CHSMUL1, fwp_mn60Tbl},		// multinational
@@ -3044,7 +3044,7 @@ TBL_B_TO_BP fwp_col60Tbl[] =
 Desc:		This table is for sorting the hebrew/arabic languages.
 			These values overlap the end of ASC/european and cyrillic tables.
 ****************************************************************************/
-TBL_B_TO_BP fwp_HebArabicCol60Tbl[] =
+static TBL_B_TO_BP fwp_HebArabicCol60Tbl[] =
 {
 	{CHSASCI,	fwp_asc60Tbl},		// ascii - " " - "~"
 	{CHSMUL1,	fwp_mn60Tbl},		// multinational
@@ -3072,7 +3072,7 @@ Desc:		The diacritical to collated table translates the first 26
 
 			This table is index by the diacritical value.
 ****************************************************************************/
-FLMBYTE	fwp_dia60Tbl[] =
+static FLMBYTE fwp_dia60Tbl[] =
 {
 	2,			// grave		offset = 0
 	16,		//	centerd	offset = 1
@@ -3129,7 +3129,7 @@ static FLMBYTE fwp_caseConvertableRange[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT16 colToWPChr[ COLS11 - COLLS] =
+static FLMUINT16 colToWPChr[ COLS11 - COLLS] =
 {
 	0x20,			// colls	-	<Spc>
 	0x2e,			// colls+1	-	.
@@ -3354,7 +3354,7 @@ FLMUINT16 colToWPChr[ COLS11 - COLLS] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT16 HebArabColToWPChr[] =
+static FLMUINT16 HebArabColToWPChr[] =
 {
 	// Start at COLS10a+0
 // [0]
@@ -3465,7 +3465,7 @@ FLMUINT16 HebArabColToWPChr[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT16 ArabSubColToWPChr[] =
+static FLMUINT16 ArabSubColToWPChr[] =
 {
 	0x0D00 +177,	// Alef maddah - default value - here for documentation
 	0x0D00 +165,	// Alef Hamzah
@@ -3481,7 +3481,7 @@ FLMUINT16 ArabSubColToWPChr[] =
 /****************************************************************************
 Desc:		Turns a collated diacritic value into the original diacritic value
 ****************************************************************************/
-FLMBYTE ml1_COLtoD[27] =
+static FLMBYTE ml1_COLtoD[27] =
 {
 	23,		// dbls	sort value = 0  sorts as 'ss'
 	6,			// acute	sort value = 1
@@ -3516,7 +3516,7 @@ FLMBYTE ml1_COLtoD[27] =
 Desc:
 Notes:		Only 48 values + 0x40, 0x41, 0x42 (169..171)
 ****************************************************************************/
-FLMBYTE ColToKanaTbl[ 48] =
+static FLMBYTE ColToKanaTbl[ 48] =
 {
 	 0,	// a=0, A=1
 	 2,	// i=2, I=3
@@ -3626,7 +3626,7 @@ Notes:	This table is used to convert a subset of Unicode characters to
 			contractions.
 ****************************************************************************/
 #define UTOWP60_ENTRIES			1502
-FLMUINT16 WP_UTOWP60[ UTOWP60_ENTRIES][2] =
+static FLMUINT16 WP_UTOWP60[ UTOWP60_ENTRIES][2] =
 {
 	{ 0x00A1, 0x0407 },		//   7 ,  4
 	{ 0x00A2, 0x0413 },		//  19 ,  4
@@ -9953,6 +9953,9 @@ Exit:
 	return( rc);
 }
 
+/**************************************************************************
+Desc:
+***************************************************************************/
 void FLMAPI F_CollIStream::getCurrPosition(
 	F_CollStreamPos *		pPos)
 {

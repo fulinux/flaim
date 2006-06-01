@@ -89,7 +89,7 @@ public:
 		FLMUINT *				puiNumExclQueued,
 		FLMUINT *				puiNumSharedQueued,
 		FLMUINT *				puiPriorityCount);
-
+		
 	RCODE FLMAPI getLockInfo(
 		IF_LockInfoClient *	pLockInfo);
 
@@ -868,7 +868,7 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 }
 
 /****************************************************************************
-Desc:	Return the lock waiters for this object.
+Desc:
 ****************************************************************************/
 RCODE FLMAPI F_LockObject::getLockInfo(
 	IF_LockInfoClient *	pLockInfo)

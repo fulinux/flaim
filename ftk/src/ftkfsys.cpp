@@ -74,6 +74,23 @@ public:
 	
 	RCODE setup( void);
 
+	FLMINT FLMAPI AddRef( void)
+	{
+		return( f_atomicInc( &m_refCnt));
+	}
+
+	FLMINT FLMAPI Release( void)
+	{
+		FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
+		
+		if( !iRefCnt)
+		{
+			delete this;
+		}
+		
+		return( iRefCnt);
+	}
+	
 	RCODE FLMAPI createFile(
 		const char *			pszFileName,
 		FLMUINT					uiIoFlags,
@@ -2401,5 +2418,67 @@ Exit:
 		pLockFileHdl = NULL;
 	}
 
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_filetobuf(
+	const char *		pszSourceFile,
+	char **				ppszBuffer)
+{
+	RCODE					rc = NE_FLM_OK;
+	char *				pszBuffer = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
+	FLMUINT64			ui64FileSize;
+	FLMUINT				uiBytesRead;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	
+	if( RC_BAD(rc = pFileSystem->openFile( pszSourceFile,
+		FLM_IO_RDONLY, &pFileHdl)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pFileHdl->size( &ui64FileSize)))
+	{
+		goto Exit;
+	}
+	
+	if( !ui64FileSize)
+	{
+		*pszBuffer = NULL;
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = f_alloc( ui64FileSize + 1, &pszBuffer)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pFileHdl->read( 0, (FLMUINT)ui64FileSize,
+		pszBuffer, &uiBytesRead)))
+	{
+		goto Exit;
+	}
+	
+	f_assert( (FLMUINT)ui64FileSize == uiBytesRead);
+	pszBuffer[ ui64FileSize] = 0;
+	*ppszBuffer = pszBuffer;
+	pszBuffer = NULL;
+	
+Exit:
+
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+	
+	if( pszBuffer)
+	{
+		f_free( &pszBuffer);
+	}
+	
 	return( rc);
 }

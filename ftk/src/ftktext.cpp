@@ -7588,3 +7588,32 @@ Exit:
 	return( rc);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_strdup(
+	const char *		pszSrc,
+	char **				ppszDup)
+{
+	RCODE					rc = NE_FLM_OK;
+	char * 				pszDup = NULL;
+
+	if( RC_BAD( rc = f_alloc( f_strlen( pszSrc) + 1, &pszDup)))
+	{
+		goto Exit;
+	}
+
+	f_strcpy( pszDup, pszSrc);
+	*ppszDup = pszDup;
+	pszDup = NULL;
+
+Exit:
+
+	if( pszDup)
+	{
+		f_free( &pszDup);
+	}
+
+	return( rc);
+}
+

@@ -25,7 +25,7 @@
 
 #include "ftksys.h"
 
-static FLMUINT						gv_uiStartupCount = 0;
+static FLMATOMIC					gv_startupCount = 0;
 static FLMUINT						gv_uiRandomGenInitCount = 0;
 static F_MUTEX						gv_hRandomGenMutex = F_MUTEX_NULL;
 static IF_RandomGenerator *	gv_pRandomGenerator = NULL;
@@ -94,13 +94,25 @@ RCODE FLMAPI ftkStartup( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
-	if( ++gv_uiStartupCount > 1)
+	if( f_atomicInc( &gv_startupCount) > 1)
 	{
 		goto Exit;
 	}
 	
+	// Sanity check -- make sure we are using the correct
+	// byte-swap macros for this platform
+
+	flmAssert( FB2UD( "\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
+	flmAssert( FB2UW( "\x0A\x0B") == 0x0B0A);
+
 	f_memoryInit();
 
+#if defined( FLM_RING_ZERO_NLM)
+	if( RC_BAD( rc = f_nssInitialize()))
+	{
+		goto Exit;
+	}
+#endif
 
 	f_assert( sizeof( f_va_list) == sizeof( va_list));
 	
@@ -187,7 +199,7 @@ Desc:
 ****************************************************************************/
 void FLMAPI ftkShutdown( void)
 {
-	if( !gv_uiStartupCount || --gv_uiStartupCount > 0)
+	if( !gv_startupCount || f_atomicDec( &gv_startupCount) > 0)
 	{
 		return;
 	}
@@ -213,6 +225,11 @@ void FLMAPI ftkShutdown( void)
 	
 	f_freeRandomGenerator();
 	f_freeCharMappingTables();
+	
+#if defined( FLM_RING_ZERO_NLM)
+	f_nssUninitialize();
+#endif
+	
 	f_memoryCleanup();
 }
 
@@ -2183,9 +2200,8 @@ FLMUINT FLMAPI f_strHashBucket(
 
 	while (*pszStr)
 	{
-		if ((uiHashIndex =
-			(FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ (FLMUINT)(f_toupper( *pszStr)))) >=
-				uiNumBuckets)
+		if ((uiHashIndex = (FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ 
+			(FLMUINT)(f_toupper( *pszStr)))) >= uiNumBuckets)
 		{
 			uiHashIndex -= uiNumBuckets;
 		}

@@ -182,7 +182,7 @@ public:
 
 	RCODE addEntry(
 		FLMBYTE *	pEntry,
-		FLMUINT		uiEntryLength );
+		FLMUINT		uiEntryLength);
 
 	RCODE modifyEntry(
 		FLMBYTE *	pEntry,

@@ -3276,6 +3276,10 @@
 		
 	FLMUINT FLMAPI f_strlen(
 		const char *		pszStr);
+
+	RCODE FLMAPI f_strdup(
+		const char *		pszSrc,
+		char **				ppszDup);
 			
 	RCODE FLMAPI f_getCharFromUTF8Buf(
 		const FLMBYTE **	ppucBuf,
@@ -3530,14 +3534,14 @@
 			FLM_SLAB_USAGE *		pUsageStats) = 0;
 	
 		virtual void * FLMAPI allocCell(
-			IF_Relocator *			pRelocator,
+			IF_Relocator *			pRelocator = NULL,
 			void *					pvInitialData = NULL,
 			FLMUINT					uiDataSize = 0,
 			FLMBOOL					bMutexLocked = FALSE) = 0;
 	
 		virtual void FLMAPI freeCell( 
 			void *					ptr,
-			FLMBOOL					bMutexLocked) = 0;
+			FLMBOOL					bMutexLocked = FALSE) = 0;
 	
 		virtual void FLMAPI freeUnused( void) = 0;
 	
@@ -4345,7 +4349,7 @@
 		virtual FLMBOOL FLMAPI setLockCount(	// Return TRUE to continue, FALSE to stop
 			FLMUINT					uiTotalLocks) = 0;
 
-		virtual FLMBOOL FLMAPI addLockInfo(	// Return TRUE to continue, FALSE to stop
+		virtual FLMBOOL FLMAPI addLockInfo(		// Return TRUE to continue, FALSE to stop
 			FLMUINT					uiLockNum,		// Position in queue (0 = lock holder,
 															// 1 ... n = lock waiter)
 			FLMUINT					uiThreadID,		// Thread ID of the lock holder/waiter
@@ -4401,10 +4405,10 @@
 			FLMINT					iPriority,
 			eLockType *				peCurrLockType,
 			FLMUINT *				puiThreadId,
-			FLMUINT *				puiNumExclQueued,
-			FLMUINT *				puiNumSharedQueued,
-			FLMUINT *				puiPriorityCount) = 0;
-	
+			FLMUINT *				puiNumExclQueued = NULL,
+			FLMUINT *				puiNumSharedQueued = NULL,
+			FLMUINT *				puiPriorityCount = NULL) = 0;
+			
 		virtual RCODE FLMAPI getLockInfo(
 			IF_LockInfoClient *	pLockInfo) = 0;
 	
@@ -4505,6 +4509,22 @@
 		return( TRUE);
 	}
 
+	FINLINE FLMUINT64 f_roundUp(
+		FLMUINT64		ui64ValueToRound,
+		FLMUINT64		ui64Boundary)
+	{
+		FLMUINT64	ui64RetVal;
+		
+		ui64RetVal = ((ui64ValueToRound / ui64Boundary) * ui64Boundary);	
+		
+		if( ui64RetVal < ui64ValueToRound)
+		{
+			ui64RetVal += ui64Boundary;
+		}
+		
+		return( ui64RetVal);
+	}
+	
 	RCODE FLMAPI f_filecpy(
 		const char *				pszSourceFile,
 		const char *				pszData);
@@ -4512,7 +4532,11 @@
 	RCODE FLMAPI f_filecat(
 		const char *				pszSourceFile,
 		const char *				pszData);
-
+		
+	RCODE FLMAPI f_filetobuf(
+		const char *				pszSourceFile,
+		char **						ppszBuffer);
+		
 	/****************************************************************************
 	Desc:	FTX
 	****************************************************************************/
@@ -4991,6 +5015,66 @@
 		FLMUINT *		puiTermChar);
 
 	void FLMAPI FTXBeep( void);
+
+	RCODE FLMAPI f_conInit(
+		FLMUINT			uiRows,
+		FLMUINT			uiCols,
+		const char *	pszTitle);
+	
+	void FLMAPI f_conExit( void);
+	
+	void FLMAPI f_conGetScreenSize(
+		FLMUINT *		puiNumColsRV,
+		FLMUINT *		puiNumRowsRV);
+	
+	void FLMAPI f_conDrawBorder( void);
+
+	void FLMAPI f_conStrOut(
+		const char *	pszString);
+	
+	void FLMAPI f_conStrOutXY(
+		const char *	pszString,
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI f_conPrintf(
+		const char *	pszFormat, ...);
+	
+	void FLMAPI f_conCPrintf(
+		eColorType		back,
+		eColorType		fore,
+		const char *	pszFormat, ...);
+	
+	void FLMAPI f_conClearScreen(
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI f_conClearLine(
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	void FLMAPI f_conSetBackFore(
+		eColorType		backColor,
+		eColorType		foreColor);
+	
+	FLMUINT FLMAPI f_conGetCursorColumn( void);
+
+	FLMUINT FLMAPI f_conGetCursorRow( void);
+	
+	void FLMAPI f_conSetCursorType(
+		FLMUINT			uiType);
+		
+	void FLMAPI f_conSetCursorPos(
+		FLMUINT			uiCol,
+		FLMUINT			uiRow);
+	
+	FLMUINT FLMAPI f_conGetKey( void);
+	
+	FLMBOOL FLMAPI f_conHaveKey( void);
+	
+	FLMUINT FLMAPI f_conLineEdit(
+		char *			pszString,
+		FLMUINT			uiMaxLen);
 
 	/****************************************************************************
 	Desc:

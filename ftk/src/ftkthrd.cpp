@@ -59,6 +59,23 @@ public:
 
 	RCODE FLMAPI setupThreadMgr( void);
 
+	FLMINT FLMAPI AddRef( void)
+	{
+		return( f_atomicInc( &m_refCnt));
+	}
+
+	FLMINT FLMAPI Release( void)
+	{
+		FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
+		
+		if( !iRefCnt)
+		{
+			delete this;
+		}
+		
+		return( iRefCnt);
+	}
+	
 	RCODE FLMAPI createThread(
 		IF_Thread **		ppThread,
 		F_THREAD_FUNC		fnThread,

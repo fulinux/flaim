@@ -354,10 +354,13 @@ typedef struct FTX_INFO
 	
 #endif
 
-static FLMBOOL			gv_bInitialized = FALSE;
+static FLMATOMIC		gv_ftxInitCount = 0;
 static FLMBOOL			gv_bDisplayInitialized = FALSE;
-static FLMUINT			gv_uiInitCount = 0;
 static FTX_INFO *		gv_pFtxInfo = NULL;
+static FLMATOMIC		gv_conInitCount = 0;
+static FTX_SCREEN *	gv_pConScreen = NULL;
+static FTX_WINDOW *	gv_pConWindow = NULL;
+static F_MUTEX			gv_hConMutex = F_MUTEX_NULL;
 
 #if defined( FLM_WIN)
 
@@ -530,9 +533,8 @@ RCODE FLMAPI FTXInit(
 	FTX_INFO *			pFtxInfo;
 	IF_ThreadMgr *		pThreadMgr = f_getThreadMgrPtr();
 
-	if( gv_bInitialized)
+	if( f_atomicInc( &gv_ftxInitCount) > 1)
 	{
-		gv_uiInitCount++;
 		goto Exit;
 	}
 
@@ -621,9 +623,6 @@ RCODE FLMAPI FTXInit(
 		goto Exit;
 	}
 
-	gv_bInitialized = TRUE;
-	gv_uiInitCount++;
-
 Exit:
 
 	return( rc);
@@ -637,50 +636,62 @@ void FLMAPI FTXExit( void)
 {
 	FTX_SCREEN *		pScreen;
 
-	if( !gv_bInitialized || --gv_uiInitCount > 0 || !gv_pFtxInfo)
+	if( !gv_ftxInitCount || 
+		 f_atomicDec( &gv_ftxInitCount) > 0 ||
+		 !gv_pFtxInfo)
 	{
 		return;
 	}
 
-	// Shut down the display, keyboard, and backgroudn threads
-
-	gv_pFtxInfo->pKeyboardThrd->stopThread();
-	gv_pFtxInfo->pKeyboardThrd->Release();
-	gv_pFtxInfo->pKeyboardThrd = NULL;
-	
-	gv_pFtxInfo->pDisplayThrd->stopThread();
-	gv_pFtxInfo->pDisplayThrd->Release();
-	gv_pFtxInfo->pDisplayThrd = NULL;
-	
-	gv_pFtxInfo->pBackgroundThrd->stopThread();
-	gv_pFtxInfo->pBackgroundThrd->Release();
-	gv_pFtxInfo->pBackgroundThrd = NULL;
-	
-	f_mutexLock( gv_pFtxInfo->hFtxMutex);
-
-	gv_bInitialized = FALSE;
-	gv_pFtxInfo->bExiting = TRUE;
-
-	while( (pScreen = gv_pFtxInfo->pScreenCur) != NULL)
+	if( gv_pFtxInfo->pKeyboardThrd)
 	{
-		ftxScreenFree( pScreen);
+		gv_pFtxInfo->pKeyboardThrd->stopThread();
+		gv_pFtxInfo->pKeyboardThrd->Release();
+		gv_pFtxInfo->pKeyboardThrd = NULL;
 	}
-
-	ftxDisplayReset();
-	ftxDisplayExit();
-
-#if defined( FLM_WIN)
-
-	f_free( &gv_pFtxInfo->pCells);
-
-#elif defined( FLM_NLM)
-
-	CloseScreen( gv_pFtxInfo->hScreen);
-
-#endif
-
-	f_mutexUnlock( gv_pFtxInfo->hFtxMutex);
-	f_mutexDestroy( &(gv_pFtxInfo->hFtxMutex));
+	
+	if( gv_pFtxInfo->pDisplayThrd)
+	{
+		gv_pFtxInfo->pDisplayThrd->stopThread();
+		gv_pFtxInfo->pDisplayThrd->Release();
+		gv_pFtxInfo->pDisplayThrd = NULL;
+	}
+	
+	if( gv_pFtxInfo->pBackgroundThrd)
+	{
+		gv_pFtxInfo->pBackgroundThrd->stopThread();
+		gv_pFtxInfo->pBackgroundThrd->Release();
+		gv_pFtxInfo->pBackgroundThrd = NULL;
+	}
+	
+	if( gv_pFtxInfo->hFtxMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( gv_pFtxInfo->hFtxMutex);
+	
+		gv_pFtxInfo->bExiting = TRUE;
+	
+		while( (pScreen = gv_pFtxInfo->pScreenCur) != NULL)
+		{
+			ftxScreenFree( pScreen);
+		}
+	
+		ftxDisplayReset();
+		ftxDisplayExit();
+	
+	#if defined( FLM_WIN)
+	
+		f_free( &gv_pFtxInfo->pCells);
+	
+	#elif defined( FLM_NLM)
+	
+		CloseScreen( gv_pFtxInfo->hScreen);
+	
+	#endif
+	
+		f_mutexUnlock( gv_pFtxInfo->hFtxMutex);
+		f_mutexDestroy( &(gv_pFtxInfo->hFtxMutex));
+	}
+	
 	f_free( &gv_pFtxInfo);
 }
 
@@ -5840,3 +5851,396 @@ FSTATIC FLMBOOL ftxUnixKBTest( void)
 	return( (c == ERR) ? FALSE : TRUE);
 }
 #endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_conInit(
+	FLMUINT			uiRows,
+	FLMUINT			uiCols,
+	const char *	pszTitle)
+{
+	RCODE				rc = NE_FLM_OK;
+	
+	if( f_atomicInc( &gv_conInitCount) > 1)
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FTXInit( pszTitle, uiCols, uiRows, 
+		FLM_BLACK, FLM_LIGHTGRAY, NULL, NULL)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = f_mutexCreate( &gv_hConMutex)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FTXScreenInit( pszTitle, &gv_pConScreen)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FTXWinInit( gv_pConScreen, gv_pConScreen->uiCols, 
+		gv_pConScreen->uiRows, &gv_pConWindow)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FTXWinOpen( gv_pConWindow)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( RC_BAD( rc))
+	{
+		f_conExit();
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_conExit( void)
+{
+	if( !gv_conInitCount || f_atomicDec( &gv_conInitCount) > 0)
+	{
+		return;
+	}
+	
+	if( gv_pConWindow)
+	{
+		FTXWinFree( &gv_pConWindow);
+	}
+	
+	if( gv_pConScreen)
+	{
+		FTXScreenFree( &gv_pConScreen);
+	}
+
+	if( gv_hConMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &gv_hConMutex);
+	}
+	
+	FTXExit();
+}
+
+/****************************************************************************
+Desc: Returns the size of the screen in columns and rows.
+****************************************************************************/
+void FLMAPI f_conGetScreenSize(
+	FLMUINT *	puiNumColsRV,
+	FLMUINT *	puiNumRowsRV)
+{
+	f_mutexLock( gv_hConMutex);
+	FTXWinGetCanvasSize( gv_pConWindow, puiNumColsRV, puiNumRowsRV);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_conStrOut(
+	const char *	pszString)
+{
+	f_mutexLock( gv_hConMutex);
+	FTXWinPrintStr( gv_pConWindow, pszString);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_conStrOutXY(
+	const char *	pszString,
+	FLMUINT			uiCol,
+	FLMUINT			uiRow)
+{
+	f_mutexLock( gv_hConMutex);
+	FTXWinPrintStrXY( gv_pConWindow, pszString, uiCol, uiRow);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:	Output a formatted string at present cursor location.
+****************************************************************************/
+void FLMAPI f_conPrintf(
+	const char *	pszFormat, ...)
+{
+	char			szBuffer[ 512];
+	f_va_list	args;
+
+	f_va_start( args, pszFormat);
+	f_vsprintf( szBuffer, pszFormat, &args);
+	f_va_end( args);
+
+	f_mutexLock( gv_hConMutex);
+	FTXWinPrintStr( gv_pConWindow, szBuffer);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:	Output a formatted string at present cursor location with color
+****************************************************************************/
+void FLMAPI f_conCPrintf(
+	eColorType			back,
+	eColorType			fore,
+	const char *		pszFormat, ...)
+{
+	char				szBuffer[ 512];
+	f_va_list		args;
+	eColorType		oldBack;
+	eColorType		oldFore;
+
+	f_va_start( args, pszFormat);
+	f_vsprintf( szBuffer, pszFormat, &args);
+	f_va_end( args);
+
+	f_mutexLock( gv_hConMutex);
+	FTXWinGetBackFore( gv_pConWindow, &oldBack, &oldFore);
+	FTXWinSetBackFore( gv_pConWindow, back, fore);
+	FTXWinPrintStr( gv_pConWindow, szBuffer);
+	FTXWinSetBackFore( gv_pConWindow, oldBack, oldFore);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:    Clear the screen from the col/row down
+****************************************************************************/
+void FLMAPI f_conClearScreen(
+	FLMUINT			uiCol,
+	FLMUINT			uiRow)
+{
+	FLMUINT			uiCurrCol;
+	FLMUINT			uiCurrRow;
+
+	f_mutexLock( gv_hConMutex);
+
+	FTXWinGetCursorPos( gv_pConWindow, &uiCurrCol, &uiCurrRow);
+
+	if( uiCol == 255)
+	{
+		uiCol = uiCurrCol;
+	}
+
+	if( uiRow == 255)
+	{
+		uiRow = uiCurrRow;
+	}
+
+	FTXWinClearXY( gv_pConWindow, uiCol, uiRow);
+	FTXWinSetCursorPos( gv_pConWindow, uiCol, uiRow);
+	
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:    Position to the column and row specified.
+Notes:   The NLM could call GetPositionOfOutputCursor(&r,&c);
+****************************************************************************/
+void FLMAPI f_conSetCursorPos(
+	FLMUINT			uiCol,
+	FLMUINT			uiRow)
+{
+	FLMUINT			uiCurrCol;
+	FLMUINT			uiCurrRow;
+
+	f_mutexLock( gv_hConMutex);
+	
+	FTXWinGetCursorPos( gv_pConWindow, &uiCurrCol, &uiCurrRow);
+
+	if( uiCol == 255)
+	{
+		uiCol = uiCurrCol;
+	}
+
+	if( uiRow == 255)
+	{
+		uiRow = uiCurrRow;
+	}
+
+	FTXWinSetCursorPos( gv_pConWindow, uiCol, uiRow);
+	
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_conClearLine(
+	FLMUINT			uiCol,
+	FLMUINT			uiRow)
+{
+	FLMUINT			uiCurrCol;
+	FLMUINT			uiCurrRow;
+
+	f_mutexLock( gv_hConMutex);
+	
+	FTXWinGetCursorPos( gv_pConWindow, &uiCurrCol, &uiCurrRow);
+
+	if( uiCol == 255)
+	{
+		uiCol = uiCurrCol;
+	}
+
+	if( uiRow == 255)
+	{
+		uiRow = uiCurrRow;
+	}
+
+	FTXWinClearLine( gv_pConWindow, uiCol, uiRow);
+	
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:    Edit a line of data like gets(s).  Newline replaced by NULL character.
+****************************************************************************/
+FLMUINT FLMAPI f_conLineEdit(
+	char *		pszString,
+	FLMUINT		uiMaxLen)
+{
+	FLMUINT		uiCharCount;
+	FLMUINT		uiCursorType;
+
+	f_mutexLock( gv_hConMutex);
+	
+	uiCursorType = FTXWinGetCursorType( gv_pConWindow);
+	FTXWinSetCursorType( gv_pConWindow, FLM_CURSOR_UNDERLINE);
+	uiCharCount = FTXLineEd( gv_pConWindow, pszString, uiMaxLen);
+	FTXWinSetCursorType( gv_pConWindow, uiCursorType);
+
+	f_mutexUnlock( gv_hConMutex);
+
+	return( uiCharCount);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_conSetShutdown(
+	FLMBOOL *    pbShutdown)
+{
+	FTXSetShutdownFlag( pbShutdown);
+}
+
+/****************************************************************************
+Desc:    Edit a line of data with advanced features.
+Ret:     Number of characters input.
+****************************************************************************/
+FLMUINT FLMAPI f_conLineEditExt(
+	char *		pszBuffer,
+	FLMUINT		uiBufSize,
+	FLMUINT		uiMaxWidth,
+	FLMUINT *	puiTermChar)
+{
+	FLMUINT		uiCharCount = 0;
+	FLMUINT		uiCursorType;
+
+	f_mutexLock( gv_hConMutex);
+	
+	uiCursorType = FTXWinGetCursorType( gv_pConWindow);
+	FTXWinSetCursorType( gv_pConWindow, FLM_CURSOR_UNDERLINE);
+	FTXLineEdit( gv_pConWindow, pszBuffer, uiBufSize, uiMaxWidth,
+		&uiCharCount, puiTermChar);
+	FTXWinSetCursorType( gv_pConWindow, uiCursorType);
+	f_mutexUnlock( gv_hConMutex);
+
+	return( (FLMINT)uiCharCount);
+}
+
+/****************************************************************************
+Desc:	Get the current X coordinate of the cursor
+****************************************************************************/
+FLMUINT FLMAPI f_conGetCursorColumn( void)
+{
+	FLMUINT		uiCol;
+
+	f_mutexLock( gv_hConMutex);
+	FTXWinGetCursorPos( gv_pConWindow, &uiCol, NULL);
+	f_mutexUnlock( gv_hConMutex);
+
+	return( uiCol);
+}
+
+/****************************************************************************
+Desc:	Get the current Y coordinate of the cursor
+****************************************************************************/
+FLMUINT FLMAPI f_conGetCursorRow( void)
+{
+	FLMUINT		uiRow;
+
+	f_mutexLock( gv_hConMutex);
+	FTXWinGetCursorPos( gv_pConWindow, NULL, &uiRow);
+	f_mutexUnlock( gv_hConMutex);
+
+	return( uiRow);
+}
+
+/****************************************************************************
+Desc:    Set the background and foreground colors
+****************************************************************************/
+void FLMAPI f_conSetBackFore(
+	eColorType		backColor,
+	eColorType		foreColor)
+{
+	f_mutexLock( gv_hConMutex);
+	FTXWinSetBackFore( gv_pConWindow, backColor, foreColor);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc : Sets the cursor attributes.
+****************************************************************************/
+void FLMAPI f_conSetCursorType(
+	FLMUINT		uiType)
+{
+	f_mutexLock( gv_hConMutex);
+	FTXWinSetCursorType( gv_pConWindow, uiType);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_conDrawBorder( void)
+{
+	f_mutexLock( gv_hConMutex);
+	FTXWinDrawBorder( gv_pConWindow);
+	f_mutexUnlock( gv_hConMutex);
+}
+
+/****************************************************************************
+Desc:
+Not*************************************************************************/
+FLMUINT FLMAPI f_conGetKey( void)
+{
+	FLMUINT		uiChar;
+
+	f_mutexLock( gv_hConMutex);
+	FTXWinInputChar( gv_pConWindow, &uiChar);
+	f_mutexUnlock( gv_hConMutex);
+	
+	return( uiChar);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI f_conHaveKey( void)
+{
+	FLMBOOL		bHaveKey;
+
+	f_mutexLock( gv_hConMutex);
+	bHaveKey = FTXWinTestKB( gv_pConWindow) == NE_FLM_OK ? TRUE : FALSE;
+	f_mutexUnlock( gv_hConMutex);
+
+	return( bHaveKey);
+}
