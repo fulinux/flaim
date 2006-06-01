@@ -2448,7 +2448,7 @@ RCODE FLMAPI f_filetobuf(
 	
 	if( !ui64FileSize)
 	{
-		*pszBuffer = NULL;
+		*ppszBuffer = NULL;
 		goto Exit;
 	}
 
