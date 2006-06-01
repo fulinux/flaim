@@ -27,7 +27,7 @@
 // WARNING:	ANY CHANGES MADE TO THE FlmCorruptStrings TABLE MUST BE
 // 			REFLECTED IN THE CHECK CODE DEFINES FOUND IN flaim.h
 
-char * FlmCorruptStrings[ FLM_LAST_CORRUPT_ERROR] =
+const char * FlmCorruptStrings[ FLM_LAST_CORRUPT_ERROR] =
 {
 	"OK",										// 0
 	"BAD_CHAR",								// 1

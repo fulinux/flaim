@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FlmCorruptStrings[ FLM_NUM_CORRUPT_ERRORS] =
+const char * FlmCorruptStrings[ FLM_NUM_CORRUPT_ERRORS] =
 {
 	"BAD_CHAR",								/*1*/
 	"BAD_ASIAN_CHAR",						/*2*/
