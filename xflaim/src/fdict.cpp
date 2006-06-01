@@ -27,7 +27,7 @@
 
 // Data type strings
 
-char * fdictDataTypes[ XFLM_NUM_OF_TYPES + 1] =
+const char * fdictDataTypes[ XFLM_NUM_OF_TYPES + 1] =
 {
 	XFLM_NODATA_OPTION_STR,
 	XFLM_STRING_OPTION_STR,
@@ -80,7 +80,7 @@ FSTATIC FLMBOOL indexDefsSame(
 // NOTE:  If you change the arrangement of the values in this array, make sure
 // you search the entire codebase for references to DDEncOpts and fdictLegalEncDefTypes
 // and verify that the changes won't cause problems.
-char * DDEncOpts[MAX_ENC_TYPES] = {
+const char * DDEncOpts[MAX_ENC_TYPES] = {
 	XFLM_ENC_AES_OPTION_STR,				/* AES */
 	XFLM_ENC_DES3_OPTION_STR				/* Triple DES */
 	};
@@ -3298,7 +3298,7 @@ Exit:
 /***************************************************************************
 Desc:	Maps a string to an element or attribute data type.
 ***************************************************************************/
-char * fdictGetDataTypeStr(
+const char * fdictGetDataTypeStr(
 	FLMUINT 		uiDataType
 	)
 {

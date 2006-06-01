@@ -1037,7 +1037,7 @@ RCODE fdictGetDataType(						// fdict.cpp
 	char *		pszDataType,
 	FLMUINT *	puiDataType);
 
-char * fdictGetDataTypeStr(				// fdict.cpp
+const char * fdictGetDataTypeStr(		// fdict.cpp
 	FLMUINT 		uiDataType);
 
 #endif // #ifndef FDICT_H

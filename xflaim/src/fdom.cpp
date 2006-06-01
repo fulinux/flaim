@@ -15788,7 +15788,7 @@ RCODE F_Db::createElemOrAttrDef(
 	}
 
 	if( RC_BAD( rc = pAttr->setUTF8( this, 
-		(FLMBYTE *)fdictGetDataTypeStr( uiDataType))))
+		(const FLMBYTE *)fdictGetDataTypeStr( uiDataType))))
 	{
 		goto Exit;
 	}
