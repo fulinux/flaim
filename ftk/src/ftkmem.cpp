@@ -4653,7 +4653,7 @@ Desc:
 #ifdef FLM_LINUX
 FINLINE FLMUINT64 f_getLinuxMemInfoValue(
 	char *			pszMemInfoBuffer,
-	char *			pszTag)
+	const char *	pszTag)
 {
 	char *			pszTmp;
 	FLMUINT64		ui64Bytes = 0;
