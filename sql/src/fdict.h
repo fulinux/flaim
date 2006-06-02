@@ -311,6 +311,23 @@ public:
 		return( NULL);
 	}
 	
+	FINLINE F_COLUMN * findColumn(
+		F_TABLE *		pTable,
+		const char *	pszColumnName)
+	{
+		NAME_INFO *	pNameInfo;
+		
+		if (pTable->pColumnNames)
+		{
+			if ((pNameInfo = pTable->pColumnNames->findName( pszColumnName,
+													NULL)) != NULL)
+			{
+				return( getColumn( pTable, pNameInfo->uiItemNum));
+			}
+		}
+		return( NULL);
+	}
+	
 	FINLINE F_INDEX * findIndex(
 		const char *	pszIndexName)
 	{

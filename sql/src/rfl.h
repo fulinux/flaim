@@ -44,6 +44,8 @@ class IXKeyCompare;
 #define RFL_DATA_PACKET							11
 #define RFL_ROLL_OVER_DB_KEY_PACKET			12
 #define RFL_ENC_DEF_KEY_PACKET				13
+#define RFL_INSERT_ROW_PACKET					14
+#define RFL_COLUMN_DATA_PACKET				15
 
 #define RFL_PACKET_TYPE_MASK					0x7F
 
@@ -199,6 +201,24 @@ public:
 	RCODE logRollOverDbKey(
 		F_Db *					pDb);
 	
+	RCODE logColumnValues(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum,
+		F_COLUMN_VALUE *	pColumnValues,
+		FLMUINT				uiNumColumnValues);
+		
+	RCODE logInsertRow(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum,
+		F_COLUMN_VALUE *	pColumnValues,
+		FLMUINT				uiNumColumnValues);
+		
+	RCODE recovInsertRow(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+		
 	RCODE recover(
 		F_Db *					pDb,
 		IF_RestoreClient *	pRestore,
@@ -631,6 +651,7 @@ private:
 	IXKeyCompare *				m_pIxCompareObject;
 	IF_ResultSetCompare *	m_pCompareObject;
 	FLMUINT						m_uiDisableCount;		// Is logging currently disabled
+	F_Pool						m_tmpPool;
 
 friend class F_RflOStream;
 };

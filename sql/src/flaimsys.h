@@ -485,6 +485,7 @@ FINLINE RCODE FlmStorage2UTF8(
 #include "filesys.h"
 #include "flog.h"
 #include "f_nici.h"
+#include "sqlstatement.h"
 
 /****************************************************************************
 Desc:
@@ -1905,6 +1906,11 @@ public:
 		FLMUINT		uiTableNum,
 		FLMUINT64	ui64TransId);
 		
+	RCODE insertRow(
+		FLMUINT				uiTableNum,
+		F_COLUMN_VALUE *	pColumnValues,
+		FLMUINT				uiNumColumnValues);
+		
 private:
 
 	// This routine assumes that the database mutex is locked
@@ -2422,6 +2428,7 @@ friend class F_GlobalCacheMgr;
 friend class F_QueryResultSet;
 friend class F_BTreeInfo;
 friend class SQLQuery;
+friend class SQLStatement;
 };
 
 typedef struct BTREE_INFO

@@ -74,6 +74,47 @@ typedef struct SFLM_CREATE_OPTS
 
 } SFLM_CREATE_OPTS;
 
+/// Errors that can occur when parsing an SQL statement.
+typedef enum
+{
+	SQL_NO_ERROR = 0,
+	SQL_ERR_EXPECTING_WHITESPACE,			///< 1 = Whitespace required.
+	SQL_ERR_EXPECTING_INTO,					///< 2 = Expecting "INTO" keyword.
+	SQL_ERR_ILLEGAL_TABLE_NAME_CHAR,		///< 3 = Illegal character in table name.
+	SQL_ERR_TABLE_NAME_TOO_LONG,			///< 4 = Table name is too long.
+	SQL_ERR_UNDEFINED_TABLE,				///< 5 = Table name that was specified is not defined.
+	SQL_ERR_TABLE_ALREADY_DEFINED,		///< 6 = Table name is already defined in the database.
+	SQL_ERR_EXPECTING_COMMA,				///< 7 = Expecting comma.
+	SQL_ERR_UNDEFINED_COLUMN,				///< 8 = Column name not defined for table.
+	SQL_ERR_EXPECTING_LPAREN,				///< 9 = Expecting left parenthesis.
+	SQL_ERR_EXPECTING_RPAREN,				///< 10 = Expecting right parenthesis.
+	SQL_ERR_EXPECTING_QUOTE_CHAR,			///< 11 = Expecting a quote character - strings must be quoted.
+	SQL_ERR_MISSING_QUOTE,					///< 12 = Terminating quote missing on a string.
+	SQL_ERR_INVALID_ESCAPED_CHARACTER,	///< 13 = Can only escape quote characters or backslashes in strings.
+	SQL_ERR_CANNOT_UPDATE_SYSTEM_TABLE,	///< 14 = Inserting, modifying, or deleting rows in a system table is not allowed.
+	SQL_ERR_NUMBER_VALUE_EMPTY,			///< 15 = Number value is empty.
+	SQL_ERR_NON_HEX_CHARACTER,				///< 16 = Invalid hex character in binary value.
+	SQL_ERR_NON_NUMERIC_CHARACTER,		///< 17 = Non-numeric character in number value.
+	SQL_ERR_ILLEGAL_HEX_DIGIT,				///< 18 = Illegal hex digit in number value.
+	SQL_ERR_NUMBER_OVERFLOW,				///< 19 = Number exceeds limits for 64 bit numbers.
+	SQL_ERR_BINARY_VALUE_EMPTY,			///< 20 = Binary value is empty.
+
+	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
+	SQL_NUM_ERRORS
+} SQLParseError;
+
+/// Statistics gathered while parsing and executing an SQL statement.
+typedef struct
+{
+	FLMUINT			uiLines;				///< Total lines read.
+	FLMUINT			uiChars;				///< Total characters read.
+	FLMUINT			uiErrLineNum;		///< Line number where error occurred.
+	FLMUINT			uiErrLineOffset;	///< Offset in line where error occurred.| NOTE: This is a zero-based offset.
+	SQLParseError	eErrorType;			///< Parsing error that occurred.
+	FLMUINT			uiErrLineFilePos;	///< Absolute offset in the file (or buffer) where the line containing the error occurred.
+	FLMUINT			uiErrLineBytes;	///< Number of bytes in the line that contains the error.
+} SQL_STATS;
+
 /// Database header.
 typedef struct SFLM_DB_HDR
 {
@@ -1152,7 +1193,8 @@ typedef struct
 #define NE_SFLM_RESET_NEEDED							0xE058	///< 0xE058 = Used during check operations to indicate we need to reset the view.\  NOTE: This is an internal error code.
 #define NE_SFLM_ILLEGAL_LANGUAGE						0xE059	///< 0xE059 = Invalid language specified in an index definition.
 #define NE_SFLM_ROW_DELETED							0xE05A	///< 0xE05A = Row being accessed has been deleted.
-#define NE_SFLM_ROW_NOT_FOUND							0xE05B	///< 0xE05B - Row being retrieved does not exist.
+#define NE_SFLM_ROW_NOT_FOUND							0xE05B	///< 0xE05B = Row being retrieved does not exist.
+#define NE_SFLM_INVALID_SQL							0xE05C	///< 0xE05C = SQL statement is invalid.
 
 // Dictionary definition errors.
 
@@ -1293,6 +1335,19 @@ flminterface IF_BackupStatus : public F_Object
 		FLMUINT64	ui64BytesDone) = 0;
 };
 
+/// Structure for sending data in for table columns.
+typedef struct F_COLUMN_VALUE
+{
+	FLMUINT		uiColumnNum;		///< Column data is for.
+	eDataType	eColumnDataType;	///< Column's data type.
+	FLMBYTE*		pucColumnValue;	///< Column's value.\  For string data it is a SEN followed by a UTF8 string.\  The SEN
+											///< gives the number of characters (as opposed to bytes) in the string.\  For number
+											///< data there are two pieces.\  The first byte is a 1 or 0, indicating if the
+											///< number is negative (1=negative, 0=positive).\  Following that byte is a
+											///< SEN that contains the absolute value of the number.\  Binary data may be anything.
+	FLMUINT		uiValueLen;			///< Length of column's value.
+} F_COLUMN_VALUE;
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -1374,6 +1429,12 @@ flminterface IF_RestoreStatus : public F_Object
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiTableNum,
 		FLMUINT64				ui64NextRowId) = 0;
+		
+	virtual RCODE reportInsertRow(
+		eRestoreAction *		peAction,
+		FLMUINT					uiTableNum,
+		F_COLUMN_VALUE *		pColumnValues,
+		FLMUINT					uiNumColumnValues) = 0;
 };
 
 /****************************************************************************
