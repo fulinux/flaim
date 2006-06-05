@@ -1981,6 +1981,11 @@
 			F_Pool *					pPool,
 			F_THREAD_INFO **		ppThreadInfo,
 			FLMUINT *				puiNumThreads) = 0;
+			
+		virtual RCODE FLMAPI getThreadName(
+			FLMUINT					uiThreadId,
+			char *					pszThreadName,
+			FLMUINT *				puiLength);
 	
 		virtual FLMUINT FLMAPI getThreadGroupCount(
 			FLMUINT					uiThreadGroup) = 0;

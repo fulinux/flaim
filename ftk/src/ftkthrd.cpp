@@ -104,10 +104,15 @@ public:
 		FLMUINT *			puiThreadId);
 
 	RCODE FLMAPI getThreadInfo(
-		F_Pool *			pPool,
+		F_Pool *				pPool,
 		F_THREAD_INFO **	ppThreadInfo,
 		FLMUINT *			puiNumThreads);
 
+	RCODE FLMAPI getThreadName(
+		FLMUINT				uiThreadId,
+		char *				pszThreadName,
+		FLMUINT *			puiLength);
+	
 	FLMUINT FLMAPI getThreadGroupCount(
 		FLMUINT				uiThreadGroup);
 		
@@ -127,6 +132,10 @@ public:
 		IF_Thread *		pThread,
 		FLMBOOL			bMutexLocked);
 
+	RCODE getThread(
+		FLMUINT				uiThreadId,
+		F_Thread **			ppThread);
+	
 private:
 
 	F_MUTEX			m_hMutex;
@@ -1048,8 +1057,8 @@ Desc:		Allocates an array of F_THREAD_INFO structures and populates them
 ****************************************************************************/
 RCODE FLMAPI F_ThreadMgr::getThreadInfo(
 	F_Pool *				pPool,
-	F_THREAD_INFO **		ppThreadInfo,
-	FLMUINT *				puiNumThreads)
+	F_THREAD_INFO **	ppThreadInfo,
+	FLMUINT *			puiNumThreads)
 {
 	RCODE					rc = NE_FLM_OK;
 	FLMUINT				uiOffset;
@@ -1162,6 +1171,98 @@ Exit:
 	return( rc);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_ThreadMgr::getThreadName(
+	FLMUINT			uiThreadId,
+	char *			pszThreadName,
+	FLMUINT *		puiLength)
+{
+	RCODE				rc = NE_FLM_OK;
+	F_Thread *		pThread = NULL;
+	FLMUINT			uiCopyLen;
+	
+	if( RC_BAD( rc = getThread( uiThreadId, &pThread)))
+	{
+		goto Exit;
+	}
+	
+	f_mutexLock( pThread->m_hMutex);
+
+	if( pThread->m_pszThreadName)
+	{
+		uiCopyLen = f_min( *puiLength - 1, 
+							f_strlen( pThread->m_pszThreadName));
+		f_strncpy( pszThreadName, pThread->m_pszThreadName, uiCopyLen);
+		*puiLength = uiCopyLen;
+	}
+	else
+	{
+		*pszThreadName = 0;
+	}
+			
+	f_mutexUnlock( pThread->m_hMutex);
+	
+	
+Exit:
+
+	if( pThread)
+	{
+		pThread->Release();
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_ThreadMgr::getThread(
+	FLMUINT			uiThreadId,
+	F_Thread **		ppThread)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMBOOL			bMutexLocked = FALSE;
+	F_Thread *		pCurThread;
+
+	f_assert( *ppThread == NULL);
+	
+	f_mutexLock( m_hMutex);
+	bMutexLocked = TRUE;
+
+	pCurThread = m_pThreadList;
+	while( pCurThread)
+	{
+		if( pCurThread->m_uiThreadId == uiThreadId)
+		{
+			*ppThread = pCurThread;
+			pCurThread->AddRef();
+			break;
+		}
+
+		pCurThread = pCurThread->m_pNext;
+	}
+
+	f_mutexUnlock( m_hMutex);
+	bMutexLocked = FALSE;
+	
+	if( !pCurThread)
+	{
+		rc = RC_SET( NE_FLM_NOT_FOUND);
+		goto Exit;
+	}
+	
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( rc);
+}
+	
 /****************************************************************************
 Desc:		Finds a thread based on user-specified identifiers
 ****************************************************************************/
