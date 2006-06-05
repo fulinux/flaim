@@ -542,6 +542,7 @@ ifdef unix_target
 	gprintf = printf
 else
 	gprintf = $(call hostpath,$(tooldir)/printf.exe)
+endif
 
 # Determine the toolkit directory
 
@@ -669,8 +670,6 @@ endif
 
 ifeq "$(svn_high_rev)" ""
 	svn_high_rev = $(svn_revision)
-endif
-
 endif
 
 # Files and Directories
