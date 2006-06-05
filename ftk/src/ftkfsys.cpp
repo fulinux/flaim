@@ -2384,7 +2384,7 @@ RCODE FLMAPI f_filetobuf(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = f_alloc( ui64FileSize + 1, &pszBuffer)))
+	if( RC_BAD( rc = f_alloc( (FLMUINT)(ui64FileSize + 1), &pszBuffer)))
 	{
 		goto Exit;
 	}

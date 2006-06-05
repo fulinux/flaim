@@ -105,16 +105,18 @@ RCODE FLMAPI ftkStartup( void)
 	flmAssert( FB2UD( "\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
 	flmAssert( FB2UW( "\x0A\x0B") == 0x0B0A);
 
-	f_memoryInit();
-
 #if defined( FLM_RING_ZERO_NLM)
-	if( RC_BAD( rc = f_nssInitialize()))
+	if( RC_BAD( rc = f_netwareStartup()))
 	{
 		goto Exit;
 	}
 #endif
 
+	f_memoryInit();
+
+#if !defined( FLM_RING_ZERO_NLM)
 	f_assert( sizeof( f_va_list) == sizeof( va_list));
+#endif
 	
 	if( RC_BAD( rc = f_initCharMappingTables()))
 	{
@@ -225,12 +227,11 @@ void FLMAPI ftkShutdown( void)
 	
 	f_freeRandomGenerator();
 	f_freeCharMappingTables();
+	f_memoryCleanup();
 	
 #if defined( FLM_RING_ZERO_NLM)
-	f_nssUninitialize();
+	f_netwareShutdown();
 #endif
-	
-	f_memoryCleanup();
 }
 
 /****************************************************************************
@@ -2210,3 +2211,31 @@ FLMUINT FLMAPI f_strHashBucket(
 
 	return( uiHashIndex);
 }
+
+/****************************************************************************
+Desc: This routine determines the hash bucket for a binary array of
+		characters.
+****************************************************************************/
+FLMUINT FLMAPI f_binHashBucket(
+	void *		pBuf,
+	FLMUINT		uiBufLen,
+	FBUCKET *	pHashTbl,
+	FLMUINT		uiNumBuckets)
+{
+	FLMUINT		uiHashIndex;
+	FLMBYTE *	ptr = (FLMBYTE *)pBuf;
+
+	if ((uiHashIndex = (FLMUINT)*ptr) >= uiNumBuckets)
+		uiHashIndex -= uiNumBuckets;
+	while (uiBufLen)
+	{
+		if ((uiHashIndex =
+				(FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ (FLMUINT)(*ptr))) >=
+					uiNumBuckets)
+			uiHashIndex -= uiNumBuckets;
+		ptr++;
+		uiBufLen--;
+	}
+	return( uiHashIndex);
+}
+

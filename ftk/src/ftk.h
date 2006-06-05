@@ -884,6 +884,10 @@
 		void FLMAPI operator delete(
 			void *			ptr);					///< Pointer to object being freed.
 	
+		/// Overloaded delete operator (array) for objects of this class.
+		void FLMAPI operator delete[](
+			void *			ptr);					///< Pointer to array of objects being freed.
+			
 	#ifndef FLM_WATCOM_NLM
 		/// Overloaded delete operator for objects of this class (with source file and line number).
 		/// This delete operator passes in the current file and line number.  This information is
@@ -939,6 +943,9 @@
 		void operator delete(
 			void *			ptr);
 	
+		void operator delete[](
+			void *			ptr);
+			
 	#ifndef FLM_WATCOM_NLM
 		void operator delete(
 			void *			ptr,
@@ -5937,6 +5944,12 @@
 		
 	FLMUINT FLMAPI f_strHashBucket(
 		char *					pszStr,
+		FBUCKET *				pHashTbl,
+		FLMUINT					uiNumBuckets);
+		
+	FLMUINT FLMAPI f_binHashBucket(
+		void *					pBuf,
+		FLMUINT					uiBufLen,
 		FBUCKET *				pHashTbl,
 		FLMUINT					uiNumBuckets);
 	

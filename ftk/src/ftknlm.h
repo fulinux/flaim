@@ -104,7 +104,7 @@
 		typedef FLMUINT16										uint16_t;
 		typedef FLMBYTE										uint8_t;
 	
-		typedef void (* FLM_EXIT_FUNC)( void);
+		typedef void (* F_EXIT_FUNC)( void);
 		
 		#define TimerSignature								0x524D4954
 		#define SemaphoreSignature							0x504D4553
@@ -406,11 +406,11 @@
 		/*************************************************************************
 		Desc:
 		*************************************************************************/
-		typedef struct LoadDefStruct
+		typedef struct LoadDefinitionStructure
 		{
-			struct LoadDefStruct *					LDLink;
-			struct LoadDefStruct *					LDKillLink;
-			struct LoadDefStruct *					LDScanLink;
+			struct LoadDefinitionStructure *		LDLink;
+			struct LoadDefinitionStructure *		LDKillLink;
+			struct LoadDefinitionStructure *		LDScanLink;
 			struct ResourceTagStructure *			LDResourceList;
 			LONG 											LDIdentificationNumber;
 			LONG 											LDCodeImageOffset;
@@ -500,7 +500,7 @@
 			LONG	 									MPKStubSize;
 			LONG 										LDBuildNumber;
 			void *									LDExtensionData;
-		} LoadDefStruct;
+		} LoadDefinitionStructure;
 		
 		/*************************************************************************
 		Desc:
@@ -641,11 +641,11 @@
 		*************************************************************************/
 		typedef struct
 		{
-			char **						ppszArgV;
-			char *						pszArgs;
-			char *						pszThreadName;
-			int							iArgC;
-			LoadDefStruct *			moduleHandle;
+			char **							ppszArgV;
+			char *							pszArgs;
+			char *							pszThreadName;
+			int								iArgC;
+			LoadDefinitionStructure *	moduleHandle;
 		} ARG_DATA;
 		
 		/*************************************************************************
@@ -876,7 +876,7 @@
 		extern "C" LONG GetRunningProcess( void);
 		
 		extern "C" void KillMe(
-			LoadDefStruct *	LoadRecord);
+			LoadDefinitionStructure *	LoadRecord);
 		
 		extern "C" void NWYieldIfTime( void);
 		
@@ -1167,7 +1167,7 @@
 		extern "C" void * CFindLoadModuleHandle( void *);
 	
 		extern "C" int atexit(
-			FLM_EXIT_FUNC	fnExit);
+			F_EXIT_FUNC		fnExit);
 			
 		extern "C" LONG LoadModule(
 			void *			screenID,

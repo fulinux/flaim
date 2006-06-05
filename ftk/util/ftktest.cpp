@@ -27,7 +27,11 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+extern "C" int nlm_main( void)
+#else
 int main( void)
+#endif
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_DirHdl *			pDirHdl = NULL;

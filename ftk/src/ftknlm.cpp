@@ -606,6 +606,13 @@
 	static FLMATOMIC						gv_NetWareStartupCount = 0;
 	rtag_t									gv_lAllocRTag = 0;
 	
+	static FLMINT64						gv_NssRootKey;
+	static FLMBOOL							gv_bNSSKeyInitialized = FALSE;
+	static SEMAPHORE						gv_lFlmSyncSem = 0;
+	static FLMBOOL							gv_bUnloadCalled = FALSE;
+	static FLMBOOL							gv_bMainRunning = FALSE;
+	static F_EXIT_FUNC					gv_fnExit = NULL;
+
 	struct OldPerCpuStruct
 	{
 		unsigned long reserved0[24];
@@ -650,11 +657,12 @@
 		FLMINT				lStatus,
 		RCODE					defaultRc);
 	
-	FLMINT64		gv_NssRootKey;
-	FLMBOOL		gv_bNSSKeyInitialized = FALSE;
-
+	extern "C" int nlm_main(
+		int					iArgC,
+		char **				ppszArgV);
+		
 #endif
-
+	
 /***************************************************************************
 Desc:
 ***************************************************************************/
@@ -4004,9 +4012,8 @@ RCODE f_netwareStartup( void)
 
 	// Allocate the needed resource tags
 
-	if( (gv_lAllocRTag = AllocateResourceTag(
-						gv_MyModuleHandle,
-						"NOVDB Memory", AllocSignature)) == NULL)
+	if( (gv_lAllocRTag = AllocateResourceTag( gv_MyModuleHandle,
+		"FLAIM Memory", AllocSignature)) == NULL)
 	{
 		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
@@ -4018,7 +4025,6 @@ RCODE f_netwareStartup( void)
 	{
 		goto Exit;
 	}
-
 
 Exit:
 
@@ -4044,7 +4050,7 @@ void f_netwareShutdown( void)
 		goto Exit;
 	}
 	
-	f_nssShutdown();
+	f_nssUninitialize();
 
 	if( gv_lAllocRTag)
 	{
@@ -4096,6 +4102,397 @@ RCODE FLMAPI f_getcwd(
 }
 #endif
 
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+extern "C" void f_fatalRuntimeError( void)
+{
+	EnterDebugger();
+}
+#endif
+
+/********************************************************************
+Desc: Startup routine for the NLM - that gets the main going in
+		its own thread.
+*********************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+extern "C" static void * f_nlmMainStub(
+	void *		hThread,
+	void *		pData)
+{
+	ARG_DATA *									pArgData = (ARG_DATA *)pData;
+	struct LoadDefinitionStructure *		moduleHandle = pArgData->moduleHandle;
+
+	(void)hThread;
+
+	(void)kSetThreadName( (void *)kCurrentThread(),
+		(BYTE *)pArgData->pszThreadName);
+
+	nlm_main( pArgData->iArgC, pArgData->ppszArgV);
+
+	Free( pArgData->ppszArgV);
+	Free( pArgData->pszArgs);
+	Free( pArgData->pszThreadName);
+	Free( pArgData);
+
+	gv_bMainRunning = FALSE;
+
+	if (!gv_bUnloadCalled)
+	{
+		KillMe( moduleHandle);
+	}
+	
+	kExitThread( NULL);
+	return( NULL);
+}
+#endif
+	
+/********************************************************************
+Desc: Startup routine for the NLM.
+*********************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+extern "C" LONG f_nlmEntryPoint(
+	struct LoadDefinitionStructure *		moduleHandle,
+	struct ScreenStruct *					initScreen,
+	char *										commandLine,
+	char *										loadDirectoryPath,
+	LONG											uninitializedDataLength,
+	LONG											fileHandle,
+	LONG											(*ReadRoutine)
+														(LONG		handle,
+														 LONG		offset,
+														 char *	buffer,
+														 LONG		length),
+	LONG											customDataOffset,
+	LONG											customDataSize)
+{
+	char *		pszTmp;
+	char *		pszArgStart;
+	int			iArgC;
+	int			iTotalArgChars;
+	int			iArgSize;
+	char **		ppszArgV = NULL;
+	char *		pszArgs = NULL;
+	char *		pszDestArg;
+	bool			bFirstPass = true;
+	char			cEnd;
+	ARG_DATA *	pArgData = NULL;
+	LONG			sdRet = 0;
+	char *		pszThreadName;
+	int			iTmpLen;
+	void *		hThread = NULL;
+
+	(void)initScreen;
+	(void)uninitializedDataLength;
+	(void)fileHandle;
+	(void)ReadRoutine;
+	(void)customDataOffset;
+	(void)customDataSize;
+
+	if( f_atomicInc( &gv_NetWareStartupCount) != 1)
+	{
+		goto Exit;
+	}
+	
+	gv_MyModuleHandle = moduleHandle;
+	gv_bUnloadCalled = FALSE;
+
+	// Allocate the needed resource tags
+	
+	if( (gv_lAllocRTag = AllocateResourceTag( gv_MyModuleHandle,
+		"FLAIM Memory", AllocSignature)) == NULL)
+	{
+		sdRet = 1;
+		goto Exit;
+	}
+
+	// Syncronized start
+
+	if (moduleHandle->LDFlags & 4)
+	{
+		gv_lFlmSyncSem = kSemaphoreAlloc( (BYTE *)"NOVDB", 0);
+	}
+
+	// Initialize NSS
+	
+	if( RC_BAD( f_nssInitialize()))
+	{
+		sdRet = 1;
+		goto Exit;
+	}
+
+	// First pass: Count the arguments in the command line
+	// and determine how big of a buffer we will need.
+	// Second pass: Put argments into allocated buffer.
+
+Parse_Args:
+
+	iTotalArgChars = 0;
+	iArgC = 0;
+
+	iArgSize = f_strlen( (const char *)loadDirectoryPath);
+	if (!bFirstPass)
+	{
+		ppszArgV [iArgC] = pszDestArg;
+		f_memcpy( pszDestArg, loadDirectoryPath, iArgSize);
+		pszDestArg [iArgSize] = 0;
+		pszDestArg += (iArgSize + 1);
+	}
+
+	iArgC++;
+	iTotalArgChars += iArgSize;
+	pszTmp = commandLine;
+
+	for (;;)
+	{
+		// Skip leading blanks.
+
+		while ((*pszTmp) && (*pszTmp == ' '))
+		{
+			pszTmp++;
+		}
+
+		if (!(*pszTmp))
+		{
+			break;
+		}
+
+		if ((*pszTmp == '"') || (*pszTmp == '\''))
+		{
+			cEnd = *pszTmp;
+			pszTmp++;
+		}
+		else
+		{
+			cEnd = ' ';
+		}
+		pszArgStart = pszTmp;
+		iArgSize = 0;
+
+		// Count the characters in the parameter.
+
+		while ((*pszTmp) && (*pszTmp != cEnd))
+		{
+			iArgSize++;
+			pszTmp++;
+		}
+
+		if ((!iArgSize) && (cEnd == ' '))
+		{
+			break;
+		}
+
+		// If 2nd pass, save the argument.
+
+		if (!bFirstPass)
+		{
+			ppszArgV [iArgC] = pszDestArg;
+			if (iArgSize)
+			{
+				f_memcpy( pszDestArg, pszArgStart, iArgSize);
+			}
+			pszDestArg [iArgSize] = 0;
+			pszDestArg += (iArgSize + 1);
+		}
+
+		iArgC++;
+		iTotalArgChars += iArgSize;
+
+		// Skip trailing quote or blank.
+
+		if (*pszTmp)
+		{
+			pszTmp++;
+		}
+	}
+
+	if (bFirstPass)
+	{
+		if ((ppszArgV = (char **)Alloc(  sizeof( char *) * iArgC, 
+			gv_lAllocRTag)) == NULL)
+		{
+			sdRet = 1;
+			goto Exit;
+		}
+
+		if ((pszArgs = (char *)Alloc( iTotalArgChars + iArgC, 
+			gv_lAllocRTag)) == NULL)
+		{
+			sdRet = 1;
+			goto Exit;
+		}
+		
+		pszDestArg = pszArgs;
+		bFirstPass = false;
+		goto Parse_Args;
+	}
+
+	pszTmp = (char *)(&moduleHandle->LDName [1]);
+	iTmpLen = (int)(moduleHandle->LDName [0]);
+	
+	if ((pszThreadName = (char *)Alloc( iTmpLen + 1, gv_lAllocRTag)) == NULL)
+	{
+		sdRet = 1;
+		goto Exit;
+	}
+	
+	f_memcpy( pszThreadName, pszTmp, iTmpLen);
+	pszThreadName [iTmpLen] = 0;
+
+	if ((pArgData = (ARG_DATA *)Alloc( sizeof( ARG_DATA), 
+		gv_lAllocRTag)) == NULL)
+	{
+		sdRet = 1;
+		goto Exit;
+	}
+	
+	pArgData->ppszArgV = ppszArgV;
+	pArgData->pszArgs = pszArgs;
+	pArgData->iArgC = iArgC;
+	pArgData->moduleHandle = moduleHandle;
+	pArgData->pszThreadName = pszThreadName;
+
+	gv_bMainRunning = TRUE;
+
+	if ((hThread = kCreateThread( (BYTE *)"FTK main",
+							f_nlmMainStub, NULL, 32768,
+							(void *)pArgData)) == NULL)
+	{
+		gv_bMainRunning = FALSE;
+		sdRet = 2;
+		goto Exit;
+	}
+
+	if (kSetThreadLoadHandle( hThread, (LONG)moduleHandle) != 0)
+	{
+		(void)kDestroyThread( hThread);
+		gv_bMainRunning = FALSE;
+		sdRet = 2;
+		goto Exit;
+	}
+			
+	if (kScheduleThread( hThread) != 0)
+	{
+		(void)kDestroyThread( hThread);
+		gv_bMainRunning = FALSE;
+		sdRet = 2;
+		goto Exit;
+	}
+	
+	// Synchronized start
+
+	if (moduleHandle->LDFlags & 4)
+	{
+		(void)kSemaphoreWait( gv_lFlmSyncSem);
+	}
+
+Exit:
+
+	if (sdRet != 0)
+	{
+		f_atomicDec( &gv_NetWareStartupCount);
+		
+		if (ppszArgV)
+		{
+			Free( ppszArgV);
+		}
+
+		if (pszArgs)
+		{
+			Free( pszArgs);
+		}
+
+		if (pszThreadName)
+		{
+			Free( pszThreadName);
+		}
+
+		if (pArgData)
+		{
+			Free( pArgData);
+		}
+
+		if (gv_lFlmSyncSem)
+		{
+			kSemaphoreFree( gv_lFlmSyncSem);
+			gv_lFlmSyncSem = 0;
+		}
+		
+		if (!gv_bUnloadCalled)
+		{
+			KillMe( moduleHandle);
+		}
+	}
+
+	return( sdRet);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+extern "C" void f_nlmExitPoint(void)
+{
+	if( f_atomicDec( &gv_NetWareStartupCount) > 0)
+	{
+		return;
+	}
+	
+	gv_bUnloadCalled = TRUE;
+
+	if( gv_fnExit)
+	{
+		(*gv_fnExit)();
+		gv_fnExit = NULL;
+	}
+
+	while( gv_bMainRunning)
+	{
+		kYieldThread();
+	}
+
+	f_nssUninitialize();
+	
+	if( gv_lFlmSyncSem)
+	{
+		kSemaphoreFree( gv_lFlmSyncSem);
+		gv_lFlmSyncSem = 0;
+	}
+
+	if( gv_lAllocRTag)
+	{
+		ReturnResourceTag( gv_lAllocRTag, 1);
+		gv_lAllocRTag = 0;
+	}
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+extern "C" void exit(
+	int		exitCode)
+{
+	(void)exitCode;
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+extern "C" int atexit(
+	F_EXIT_FUNC		fnExit)
+{
+	gv_fnExit = fnExit;
+	return( 0);
+}
+#endif
+	
 #endif // FLM_NLM
 
 /****************************************************************************

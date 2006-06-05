@@ -1410,6 +1410,10 @@
 	
 	void f_memoryCleanup( void);
 	
+	RCODE f_netwareStartup( void);
+	
+	void f_netwareShutdown( void);
+	
 	void f_initFastCheckSum( void);
 	
 	RCODE f_initCRCTable( void);

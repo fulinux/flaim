@@ -177,6 +177,7 @@ win_target =
 unix_target =
 netware_target =
 submake_targets =
+netware_ring_0_target =
 
 # -- Enable command echoing --
 
@@ -346,6 +347,11 @@ ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
 	netware_target = yes
 	target_os_family = netware
 	host_os_family = win
+	
+	ifneq (,$(findstring ring0,$(MAKECMDGOALS)))
+		submake_targets += ring0
+		netware_ring_0_target = yes
+	endif
 endif
 
 ifndef target_os_family
@@ -1041,8 +1047,10 @@ ifdef netware_target
 	
 	wc_dir := $(call normpath,$(wc_dir))
 	
-	ifndef ndk_dir
-      $(error Netware SDK could not be found.  Please define ndk_dir)
+	ifdef netware_ring_0_target
+		ifndef ndk_dir
+			$(error Netware SDK could not be found.  Please define ndk_dir)
+		endif
 	endif
 	
 	ndk_dir := $(call normpath,$(ndk_dir))
@@ -1054,6 +1062,10 @@ ifdef netware_target
 
 	ifneq ($(build),release)
 		ccdefs += FLM_DEBUG
+	endif
+	
+	ifdef netware_ring_0_target
+		ccdefs += FLM_RING_ZERO_NLM
 	endif
 
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
@@ -1075,7 +1087,43 @@ ifdef netware_target
 	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
 	export wcc386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
 
-   define make_lis_file_cmd
+   define make_ring_0_lis_file_cmd
+		$(ec)$(gprintf) "option verbose\n" > $(4)
+		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
+		$(ec)$(gprintf) "option synchronize\n" >> $(4)
+		$(ec)$(gprintf) "option nod\n" >> $(4)
+		$(ec)$(gprintf) "option map\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
+		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "option start = f_nlmEntryPoint\n" >> $(4)
+		$(ec)$(gprintf) "option exit = f_nlmExitPoint\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
+		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
+		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
+		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(ftk_static_lib))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(ctorarst)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(dtorarst)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(undefed)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(undefmbd)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(pure_err)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stablcl)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabact)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabactv)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabmod)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(prwdata)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(moddtorr)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabadt)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8d)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8m)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8s)\n" >> $(4)
+		$(ec)$(gprintf) "alias __wcpp_4_fatal_runtime_error_=f_fatalRuntimeError\n" >> $(4)
+   endef
+	
+   define make_libc_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
 		$(ec)$(gprintf) "option synchronize\n" >> $(4)
@@ -1086,23 +1134,19 @@ ifdef netware_target
 		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "option start = _LibCPrelude\n" >> $(4)
 		$(ec)$(gprintf) "option exit = _LibCPostlude\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
 		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
-		
 		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
 		$(ec)$(gprintf) "file $(call ppath,$(ndk_dir)/libc/imports/libcpre.obj)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(ftk_static_lib))\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/netware/libc3s.lib)\n" >> $(4)
-		$(ec)$(gprintf) "import CurrentProcess\n" >> $(4)
-		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(4)
-		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(4)
-		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(4)
    endef
-
-   define make_imp_file_cmd
+	
+   define make_ring_0_imp_file_cmd
 		$(ec)$(gprintf) "import __WSAFDIsSet\n" > $(1)
 		$(ec)$(gprintf) "import ActivateScreen\n" >> $(1)
 		$(ec)$(gprintf) "import Alloc\n" >> $(1)
@@ -1253,9 +1297,16 @@ ifdef netware_target
 		$(ec)$(gprintf) "import WSAStartup\n" >> $(1)
    endef
 	
+   define make_libc_imp_file_cmd
+		$(ec)$(gprintf) "import CurrentProcess\n" > $(1)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(1)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(1)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(1)
+   endef
+	
    define flm_exe_link_cmd
-		$(call make_imp_file_cmd,$(call hostpath,$(1)/$(2).imp))
-		$(call make_lis_file_cmd,$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
+		$(call $(if $(netware_ring_0_target),make_ring_0_imp_file_cmd,make_libc_imp_file_cmd),$(call hostpath,$(1)/$(2).imp))
+		$(call $(if $(netware_ring_0_target),make_ring_0_lis_file_cmd,make_libc_lis_file_cmd),$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
 		$(ec)$(call hostpath,$(exe_linker)) @$(call hostpath,$(1)/$(2).lis) @$(call hostpath,$(1)/$(2).imp)
 		$(ec)$(call rmcmd,$(target_path)/$(1).lis)
 		$(ec)$(call rmcmd,$(target_path)/$(1).imp)
@@ -1676,6 +1727,10 @@ osx:
 nlm:
 	$(ec)$(gprintf) ""
 
+.PHONY : ring0
+ring0:
+	$(ec)$(gprintf) ""
+	
 .PHONY : verbose
 verbose:
 	$(ec)$(gprintf) ""
