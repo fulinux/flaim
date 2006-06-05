@@ -199,7 +199,7 @@ void UIMain( void * pData)
 		"DOMEdit for XFLAIM [DB=%s/BUILD=%s]",
 		XFLM_CURRENT_VER_STR, __DATE__);
 
-	if( RC_BAD( FTXInit( szTitle, 80, 50, WPS_BLUE, WPS_WHITE, NULL, NULL)))
+	if( RC_BAD( FTXInit( szTitle, 80, 50, FLM_BLUE, FLM_WHITE, NULL, NULL)))
 	{
 		iResCode = 1;
 		goto Exit;
@@ -220,7 +220,7 @@ void UIMain( void * pData)
 		goto Exit;
 	}
 
-	if( FTXWinPaintBackground( pTitleWin, WPS_RED) != FTXRC_SUCCESS)
+	if( FTXWinPaintBackground( pTitleWin, FLM_RED) != FTXRC_SUCCESS)
 	{
 		iResCode = 1;
 		goto Exit;
@@ -232,7 +232,7 @@ void UIMain( void * pData)
 		goto Exit;
 	}
 
-	FTXWinSetCursorType( pTitleWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
 
 	if( FTXWinOpen( pTitleWin) != FTXRC_SUCCESS)
 	{
@@ -254,7 +254,7 @@ void UIMain( void * pData)
 
 	if( RC_BAD( rc = domEditVerifyRun()))
 	{
-		FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
+		FTXDisplayMessage( pScreen, FLM_RED, FLM_WHITE,
 			"This Utility Has Expired",
 			"NE_XFLM_ILLEGAL_OP", &uiDummy);
 		f_sleep( 5000);
@@ -275,7 +275,7 @@ void UIMain( void * pData)
 			char	szErr [20];
 			
 			f_sprintf( szErr, "Error=0x%04X", (unsigned)rc);
-			FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
+			FTXDisplayMessage( pScreen, FLM_RED, FLM_WHITE,
 				"Unable to open the database", szErr, &uiDummy);
 			iResCode = 1;
 			goto Exit;
@@ -289,7 +289,7 @@ void UIMain( void * pData)
 			char	szErr [20];
 			
 			f_sprintf( szErr, "Error=0x%04X", (unsigned)rc);
-			FTXDisplayMessage( pScreen, WPS_RED, WPS_WHITE,
+			FTXDisplayMessage( pScreen, FLM_RED, FLM_WHITE,
 				"Unable to open the database", szErr, &uiDummy);
 			iResCode = 1;
 			goto Exit;

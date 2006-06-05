@@ -998,9 +998,9 @@ RCODE F_Rfl::openFile(
 
 	// Open the file.
 
-	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openBlockFile( szRflFileName,
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( szRflFileName,
 			  			   FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-							512, &m_pFileHdl)))
+							&m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1124,9 +1124,9 @@ RCODE F_Rfl::createFile(
 
 	// Create the file
 
-	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->createBlockFile( szRflFileName,
-			 FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-			512, &m_pFileHdl)))
+	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( szRflFileName,
+			FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+			&m_pFileHdl)))
 	{
 		goto Exit;
 	}

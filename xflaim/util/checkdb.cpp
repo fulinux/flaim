@@ -194,11 +194,6 @@ FSTATIC FLMBOOL NumToName(
 	FLMUINT		uiType,
 	char *		pszBuf);
 
-#ifdef FLM_NLM
-FLMBOOL gv_bSynchronized = FALSE;
-FSTATIC void chkCleanup( void);
-#endif
-
 FLMBOOL						gv_bShutdown = FALSE;
 static IF_FileHdl *		gv_pLogFile = NULL;
 static IF_DbInfo *		gv_pDbInfo = NULL;
@@ -257,20 +252,19 @@ extern "C" int main(
 
 	if( RC_BAD( FlmAllocDbSystem( &gv_pDbSystem)))
 	{
-		WpsStrOut( "\nCould not initialize FLAIM.\n");
+		f_conStrOut( "\nCould not initialize FLAIM.\n");
 		goto Exit;
 	}
 	
-	WpsInit( 0xFFFF, 0xFFFF, "FLAIM Database Check");
-	WpsOptimize();
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsDrawBorder();
-	WpsScrClr( 0, 0);
-	WpsScrSize( NULL, &gv_uiMaxRow);
+	f_conInit( 0xFFFF, 0xFFFF, "FLAIM Database Check");
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conDrawBorder();
+	f_conClearScreen( 0, 0);
+	f_conGetScreenSize( NULL, &gv_uiMaxRow);
 	
 	if (RC_BAD( logPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
 	{
-		WpsStrOut( "\nFailed to allocatae memory pool\n");
+		f_conStrOut( "\nFailed to allocatae memory pool\n");
 		goto Exit;
 	}
 
@@ -286,25 +280,27 @@ extern "C" int main(
 
 	if( (gv_bPauseBeforeExiting) && (!gv_bShutdown))
 	{
-		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( FLM_RED, FLM_WHITE);
+		f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+		f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_RED, FLM_WHITE);
 		if( gv_szLastError[ 0] != '\0')
 		{
-			WpsStrOut( gv_szLastError);
+			f_conStrOut( gv_szLastError);
 		}
-		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
-		WpsStrOut( "Press any character to exit CHECKDB: ");
+		
+		f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
+		f_conStrOut( "Press any character to exit CHECKDB: ");
+		
 		for (;;)
 		{
 			if( gv_bShutdown)
 			{
 				break;
 			}
-			if (WpkTestKB())
+			if( f_conHaveKey())
 			{
-				(void)WpkIncar();
+				f_conGetKey();
 				break;
 			}
 		}
@@ -319,7 +315,7 @@ Exit:
 
 	logPool.poolFree();	
 
-	WpsExit();
+	f_conExit();
 	
 	if( gv_pDbSystem)
 	{
@@ -369,7 +365,7 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	gv_ui64BytesDone = 0;
 	gv_ui64FileSize = 0;
 	gv_uiOldViewCount = 0;
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
 
 	if (gv_bLoggingEnabled)
 	{
@@ -634,8 +630,8 @@ FSTATIC FLMBOOL DoCheck( void)
 		goto Exit;
 	}
 
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conClearScreen( 0, 0);
 	gv_bContinue = TRUE;
 	gv_uiLineCount = 0;
 	gv_bLoggingEnabled = FALSE;
@@ -662,7 +658,7 @@ FSTATIC FLMBOOL DoCheck( void)
 		}
 	}
 
-	WpsCursorSetType( FLM_CURSOR_INVISIBLE);
+	f_conSetCursorType( FLM_CURSOR_INVISIBLE);
 	for( ;;)
 	{
 		// Check the database...
@@ -677,7 +673,7 @@ FSTATIC FLMBOOL DoCheck( void)
 			break;
 		}
 	}
-	WpsCursorSetType( FLM_CURSOR_UNDERLINE);
+	f_conSetCursorType( FLM_CURSOR_UNDERLINE);
 
 	if( gv_bLoggingEnabled)
 	{
@@ -703,61 +699,57 @@ FSTATIC void CheckShowHelp(
 	FLMBOOL bShowFullUsage
 	)
 {
-	WpsStrOut( "\n");
+	f_conStrOut( "\n");
 	if (bShowFullUsage)
 	{
-		WpsStrOut( "Usage: checkdb <FileName> [Options]\n");
+		f_conStrOut( "Usage: checkdb <FileName> [Options]\n");
 	}
 	else
 	{
-		WpsStrOut( "Parameters: <FileName> [Options]\n\n");
+		f_conStrOut( "Parameters: <FileName> [Options]\n\n");
 	}
 
-	WpsStrOut(
+	f_conStrOut(
 "   FileName = Name of database to check.\n");
-	WpsStrOut(
+	f_conStrOut(
 "   Options\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -b           = Run in Batch Mode.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -c           = Repair logical corruptions.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -d           = Display/log detailed statistics.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -dr<Dir>     = RFL directory.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -dd<Dir>     = Data directory.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -i           = Perform a logical (index) check.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -l<FileName> = Log detailed information to <FileName>.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -m           = Multiple passes (continuous check).\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -o<FileName> = Output binary log information to <FileName>.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -p           = Pause before exiting.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -s           = Skip DOM link verification.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -t<Path>     = Temporary directory.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -u           = Run check in an update transaction.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -v<FileName> = Verify binary log information in <FileName>.  NOTE:\n");
-	WpsStrOut(
+	f_conStrOut(
 "                       The -v and -o options cannot both be specified.\n");
-	WpsStrOut(
+	f_conStrOut(
 "        -a<Password> = Database password.\n");
-#ifdef FLM_NLM
-	WpsStrOut(
-"        -w           = Wait to end to synchronize\n");
-#endif
-	WpsStrOut(
+	f_conStrOut(
 "        -?           = A '?' anywhere in the command line will cause this\n");
-	WpsStrOut(
+	f_conStrOut(
 "                       screen to be displayed.\n");
-	WpsStrOut(
+	f_conStrOut(
 "Options may be specified anywhere in the command line.\n");
 }
 
@@ -775,9 +767,6 @@ FSTATIC FLMBOOL GetParams(
 	char *		pszTmp;
 	char *		ppszArgs[ MAX_ARGS];
 	char			szCommandBuffer[ 300];
-#ifdef FLM_NLM
-	FLMBOOL		bWaitToSync = FALSE;
-#endif
 
 	gv_szDbFileName [0] = '\0';
 	gv_szDataDir [0] = '\0';
@@ -796,10 +785,9 @@ FSTATIC FLMBOOL GetParams(
 	{
 		for( ;;)
 		{
-			WpsStrOut( "CheckDB Params (enter ? for help): ");
+			f_conStrOut( "CheckDB Params (enter ? for help): ");
 			szCommandBuffer[ 0] = '\0';
-			WpsLineEd( szCommandBuffer, sizeof( szCommandBuffer) - 1,
-					&gv_bShutdown);
+			f_conLineEdit( szCommandBuffer, sizeof( szCommandBuffer) - 1);
 			if( gv_bShutdown)
 			{
 				return( FALSE);
@@ -923,22 +911,9 @@ FSTATIC FLMBOOL GetParams(
 			{
 				gv_bStartUpdate = TRUE;
 			}
-#ifdef FLM_NLM
-			else if (f_stricmp( pszTmp, "W") == 0)
-			{
-				bWaitToSync = TRUE;
-			}
-#endif
 			else if (f_stricmp( pszTmp, "?") == 0 ||
 						f_stricmp( pszTmp, "HELP") == 0)
 			{
-#ifdef FLM_NLM
-				if (!gv_bSynchronized)
-				{
-//					SynchronizeStart();
-					gv_bSynchronized = TRUE;
-				}
-#endif
 				CheckShowHelp( TRUE);
 				gv_bPauseBeforeExiting = TRUE;
 				return( FALSE);
@@ -955,13 +930,6 @@ FSTATIC FLMBOOL GetParams(
 		else if( f_stricmp( pszTmp, "?") == 0)
 		{
 Show_Help:
-#ifdef FLM_NLM
-			if (!gv_bSynchronized)
-			{
-//				SynchronizeStart();
-				gv_bSynchronized = TRUE;
-			}
-#endif
 			CheckShowHelp( TRUE);
 			gv_bPauseBeforeExiting = TRUE;
 			return( FALSE);
@@ -972,13 +940,6 @@ Show_Help:
 		}
 		uiLoop++;
 	}
-#ifdef FLM_NLM
-	if (!bWaitToSync && !gv_bSynchronized)
-	{
-//		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 
 	if( !gv_szDbFileName[ 0])
 	{
@@ -1062,11 +1023,11 @@ FSTATIC void OutLine(
 		{
 			if( gv_uiLineCount == 20)
 			{
-				WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
-				WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-				WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 1));
-				WpsScrBackFor( FLM_RED, FLM_WHITE);
-				WpsStrOut(
+				f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
+				f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+				f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 1));
+				f_conSetBackFore( FLM_RED, FLM_WHITE);
+				f_conStrOut(
 					"Press: ESC to quit, anything else to continue");
 				for( ;;)
 				{
@@ -1075,9 +1036,9 @@ FSTATIC void OutLine(
 						uiChar = FKB_ESCAPE;
 						break;
 					}
-					else if( WpkTestKB())
+					else if( f_conHaveKey())
 					{
-						uiChar = WpkIncar();
+						uiChar = f_conGetKey();
 						break;
 					}
 				}
@@ -1088,8 +1049,8 @@ FSTATIC void OutLine(
 				}
 				else
 				{
-					WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-					WpsScrClr( 0, 0);
+					f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+					f_conClearScreen( 0, 0);
 				}
 				
 				gv_uiLineCount = 0;
@@ -1098,7 +1059,7 @@ FSTATIC void OutLine(
 		
 		if( gv_bContinue)
 		{
-			WpsStrOutXY( pszBuf, 0, gv_uiLineCount);
+			f_conStrOutXY( pszBuf, 0, gv_uiLineCount);
 			gv_uiLineCount++;
 		}
 	}
@@ -1354,8 +1315,8 @@ FSTATIC void PrintInfo(
 	FLMUINT					uiNumErrors;
 	const XFLM_DB_HDR *	pDbHdr = pDbInfo->getDbHdr();
 
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conClearScreen( 0, 0);
 
 	OutUINT( "Default Language",
 		(FLMUINT)pDbHdr->ui8DefaultLanguage);
@@ -1427,13 +1388,13 @@ FSTATIC FLMUINT CheckShowError(
 	}
 	else
 	{
-		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( FLM_RED, FLM_WHITE);
-		WpsStrOut( pszMessage);
-		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
-		WpsStrOut( "Press ENTER to continue, ESC to quit");
+		f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+		f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_RED, FLM_WHITE);
+		f_conStrOut( pszMessage);
+		f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
+		f_conStrOut( "Press ENTER to continue, ESC to quit");
 		for( ;;)
 		{
 			if( gv_bShutdown)
@@ -1441,9 +1402,9 @@ FSTATIC FLMUINT CheckShowError(
 				uiResKey = FKB_ESCAPE;
 				break;
 			}
-			else if( WpkTestKB())
+			else if( f_conHaveKey())
 			{
-				uiResKey = WpkIncar();
+				uiResKey = f_conGetKey();
 				if( (uiResKey == FKB_ENTER) || (uiResKey == FKB_ESCAPE))
 				{
 					break;
@@ -1451,8 +1412,8 @@ FSTATIC FLMUINT CheckShowError(
 			}
 		}
 		
-		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+		f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 2));
 	}
 
 	return( uiResKey);
@@ -1472,12 +1433,12 @@ FSTATIC void OutLabel(
 	char			szTmpBuf[ 100];
 	FLMUINT		uiLoop;
 
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsStrOutXY( pszLabel, uiCol, uiRow);
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conStrOutXY( pszLabel, uiCol, uiRow);
 
-	for( uiLoop = WpsCurrCol(); uiLoop < VALUE_COLUMN - 1; uiLoop++)
+	for( uiLoop = f_conGetCursorColumn(); uiLoop < VALUE_COLUMN - 1; uiLoop++)
 	{
-		WpsStrOut( ".");
+		f_conStrOut( ".");
 	}
 	
 
@@ -1514,9 +1475,9 @@ FSTATIC void DisplayValue(
 	FLMUINT			uiRow,
 	const char *	pszValue)
 {
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsStrOutXY( pszValue, VALUE_COLUMN, uiRow);
-	WpsLineClr( 255, 255);
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conStrOutXY( pszValue, VALUE_COLUMN, uiRow);
+	f_conClearLine( 255, 255);
 }
 
 /********************************************************************
@@ -1542,12 +1503,12 @@ FSTATIC RCODE GetUserInput(
 {
 	FLMUINT		uiChar;
 
-	WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 1));
-	WpsScrBackFor( FLM_RED, FLM_WHITE);
+	f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 1));
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 1));
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
 
-	WpsStrOut( "Q,ESC=Quit, Other=Continue");
+	f_conStrOut( "Q,ESC=Quit, Other=Continue");
 	for( ;;)
 	{
 		if( gv_bShutdown)
@@ -1555,15 +1516,15 @@ FSTATIC RCODE GetUserInput(
 			uiChar = FKB_ESCAPE;
 			break;
 		}
-		else if( WpkTestKB())
+		else if( f_conHaveKey())
 		{
-			uiChar = WpkIncar();
+			uiChar = f_conGetKey();
 			break;
 		}
 	}
 
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-	WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 1));
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+	f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 1));
 
 	switch( uiChar)
 	{
@@ -1693,19 +1654,19 @@ RCODE F_LocalCheckStatus::reportProgress(
 		}
 
 		szWhat[ 45] = '\0';
-		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
+		f_conSetBackFore( FLM_BLUE, FLM_WHITE);
 		DisplayValue( DOING_ROW, szWhat);
 	}
-	else if( (WpkTestKB()) && (WpkIncar() == FKB_ESCAPE))
+	else if( f_conHaveKey() && (f_conGetKey() == FKB_ESCAPE))
 	{
-		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
-		WpsScrPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( FLM_RED, FLM_WHITE);
-		WpsStrOut( "ESCAPE key pressed.\n");
+		f_conSetBackFore( FLM_BLUE, FLM_WHITE);
+		f_conSetCursorPos( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_RED, FLM_WHITE);
+		f_conStrOut( "ESCAPE key pressed.\n");
 		rc = GetUserInput();
-		WpsScrClr( 0, (FLMUINT)(gv_uiMaxRow - 2));
-		WpsScrBackFor( FLM_BLUE, FLM_WHITE);
+		f_conClearScreen( 0, (FLMUINT)(gv_uiMaxRow - 2));
+		f_conSetBackFore( FLM_BLUE, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -1732,7 +1693,7 @@ RCODE F_LocalCheckStatus::reportCheckErr(
 		LogCorruptError( pCorruptInfo);
 	}
 
-	WpsScrBackFor( FLM_BLUE, FLM_WHITE);
+	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
 	if( pCorruptInfo->iErrCode == FLM_OLD_VIEW)
 	{
 		gv_uiOldViewCount++;
@@ -2148,17 +2109,3 @@ FSTATIC FLMBOOL NumToName(
 	return( FALSE);
 
 }
-
-#ifdef FLM_NLM
-/****************************************************************************
-Desc: This routine shuts down all threads in the NLM.
-****************************************************************************/
-FSTATIC void chkCleanup( void)
-{
-	gv_bShutdown = TRUE;
-	while( gv_bRunning)
-	{
-		f_yieldCPU();
-	}
-}
-#endif

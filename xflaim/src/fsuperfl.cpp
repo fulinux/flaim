@@ -26,9 +26,6 @@
 
 #include "flaimsys.h"
 
-FSTATIC char base24ToDigit(
-	FLMUINT	uiBaseValue);
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -179,8 +176,6 @@ RCODE F_SuperFileHdl::createFile(
 		goto Exit;
 	}
 	
-	pFileHdl->setBlockSize( m_uiBlockSize);
-
 Exit:
 
 	if( pFileHdl)
@@ -845,8 +840,6 @@ RCODE F_SuperFileHdl::getFileHdl(
 			{
 				goto Exit;
 			}
-
-			pFileHdl->setBlockSize( m_uiBlockSize);
 		}
 
 		pCkoFileHdl->pFileHdl = pFileHdl;
@@ -951,53 +944,8 @@ void bldSuperFileExtension(
 	}
 
 	*pszFileExtension++ = '.';
-	*pszFileExtension++ = (char)(base24ToDigit( (uiFileNum & 511) / 24));
-	*pszFileExtension++ = (char)(base24ToDigit( (uiFileNum & 511) % 24));
+	*pszFileExtension++ = (char)(f_getBase24DigitChar( (uiFileNum & 511) / 24));
+	*pszFileExtension++ = (char)(f_getBase24DigitChar( (uiFileNum & 511) % 24));
 	*pszFileExtension++ = ucLetter;
 	*pszFileExtension   = 0;
-}
-
-/****************************************************************************
-Desc:		Turn a base 24 value into a native alphanumeric value.
-Notes:	This is a base 24 alphanumeric value where
-			{a, b, c, d, e, f, i, l, o, r, u, v } values are removed.
-****************************************************************************/
-FSTATIC char base24ToDigit(
-	FLMUINT	uiValue)
-{
-	flmAssert( uiValue <= 23);
-
-	if( uiValue <= 9)
-	{
-		uiValue += (FLMUINT) NATIVE_ZERO;
-	}
-	else
-	{
-		uiValue = f_toascii(uiValue) - 10 + (FLMUINT)f_toascii('g');
-		if( uiValue >= (FLMUINT)'i')
-		{
-			uiValue++;
-			if( uiValue >= (FLMUINT)'l')
-			{
-				uiValue++;
-				if( uiValue >= (FLMUINT)'o')
-				{
-					uiValue++;
-					if( uiValue >= (FLMUINT)'r')
-					{
-						uiValue++;
-						if( uiValue >= (FLMUINT)'u')
-						{
-							uiValue++;
-							if( uiValue >= (FLMUINT)'v')
-							{
-								uiValue++;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return (char)uiValue;
 }

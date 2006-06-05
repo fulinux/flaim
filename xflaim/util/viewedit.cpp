@@ -47,7 +47,7 @@ FLMBOOL ViewGetNum(
 	FLMUINT			uiNumCols;
 	FLMUINT			uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	if (bEnterHexFlag)
 	{
@@ -67,11 +67,11 @@ FLMBOOL ViewGetNum(
 	for (;;)
 	{
 		bGetOK = TRUE;
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		ViewAskInput( pszPrompt, szTempBuf, sizeof( szTempBuf));
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		if (f_stricmp( szTempBuf, "\\") == 0)
 		{
 			*pbValEntered = FALSE;
@@ -219,12 +219,12 @@ FLMBOOL ViewEditText(
 	FLMUINT	uiNumCols;
 	FLMUINT	uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	ViewAskInput( pszPrompt, szTempBuf, sizeof( szTempBuf) - 1);
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	
 	if (f_stricmp( szTempBuf, "\\") == 0)
 	{
@@ -311,7 +311,7 @@ FLMBOOL ViewEditBinary(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	if (!pszPrompt)
 	{
@@ -319,11 +319,11 @@ FLMBOOL ViewEditBinary(
 	}
 	for (;;)
 	{
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		ViewAskInput( pszPrompt, szTempBuf, sizeof( szTempBuf));
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		if( f_stricmp( szTempBuf, "\\") == 0)
 		{
 			*pbValEntered = FALSE;

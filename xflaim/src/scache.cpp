@@ -6076,8 +6076,8 @@ RCODE F_BlockCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pBlockAllocator->setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, uiBlockSizes,
-		&m_Usage.slabUsage)))
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL, uiBlockSizes,
+		&m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}

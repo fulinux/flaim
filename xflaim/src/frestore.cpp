@@ -161,8 +161,8 @@ RCODE F_FSRestore::openRflFile(
 
 	// Open the file.
 
-	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openBlockFile( szRflPath,
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 512, &m_pFileHdl)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( szRflPath,
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &m_pFileHdl)))
 	{
 		goto Exit;
 	}

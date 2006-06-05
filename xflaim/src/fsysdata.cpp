@@ -29,7 +29,6 @@
 
 #include "flaimsys.h"
 
-#define HIGH_FLMUINT				(~((FLMUINT)0))
 #define FLM_MIN_FREE_BYTES		(2 * 1024 * 1024)
 
 #ifdef FLM_32BIT
@@ -188,9 +187,9 @@ FSTATIC RCODE flmGetCacheBytes(
 		goto Exit;
 	}
 	
-	if( ui64TotalPhysMem > HIGH_FLMUINT)
+	if( ui64TotalPhysMem > FLM_MAX_UINT)
 	{
-		ui64TotalPhysMem = HIGH_FLMUINT;
+		ui64TotalPhysMem = FLM_MAX_UINT;
 	}
 	
 	if( ui64AvailPhysMem > ui64TotalPhysMem)
@@ -207,9 +206,9 @@ FSTATIC RCODE flmGetCacheBytes(
 
 	if (bCalcOnAvailMem)
 	{
-		if (uiMem > HIGH_FLMUINT - uiBytesCurrentlyInUse)
+		if (uiMem > FLM_MAX_UINT - uiBytesCurrentlyInUse)
 		{
-			uiMem = HIGH_FLMUINT;
+			uiMem = FLM_MAX_UINT;
 		}
 		else
 		{
@@ -237,7 +236,7 @@ FSTATIC RCODE flmGetCacheBytes(
 
 	// Calculate memory as a percentage of memory.
 
-	uiMem = (FLMUINT)((uiMem > HIGH_FLMUINT / 100)
+	uiMem = (FLMUINT)((uiMem > FLM_MAX_UINT / 100)
 							? (FLMUINT)(uiMem / 100) * uiPercent
 							: (FLMUINT)(uiMem * uiPercent) / 100);
 

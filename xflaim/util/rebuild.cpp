@@ -28,8 +28,6 @@
 
 #define UTIL_ID					"REBUILD"
 
-/* Columns/Rows where things go on the screen. */
-
 #define LABEL_COLUMN    		5
 #define VALUE_COLUMN    		35
 
@@ -48,7 +46,7 @@
 #define DICT_RECOV_ROW			(RECOV_ROW + 1)
 #define DISCARD_ROW				(DICT_RECOV_ROW + 1)
 
-#define MAX_LOG_BUFF       2048
+#define MAX_LOG_BUFF       	2048
 
 // Local class definitions
 class F_LocalRebuildStatus : public IF_DbRebuildStatus
@@ -175,12 +173,11 @@ extern "C" int main(
 		goto Exit;
 	}
 
-	WpsInit( 0xFFFF, 0xFFFF, "XFLAIM Database Rebuild");
-	WpsOptimize();
+	f_conInit( 0xFFFF, 0xFFFF, "XFLAIM Database Rebuild");
 	
 	if (RC_BAD( logPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pszLogBuffer)))
 	{
-		WpsStrOut(
+		f_conStrOut(
 			"\nCould not allocate log buffer\n");
 		goto Exit;
 	}
@@ -196,16 +193,16 @@ Exit:
 
 	if (gv_bPauseBeforeExiting && !gv_bShutdown)
 	{
-		WpsStrOut( "\nPress any character to exit REBUILD: ");
+		f_conStrOut( "\nPress any character to exit REBUILD: ");
 		for (;;)
 		{
 			if (gv_bShutdown)
 			{
 				break;
 			}
-			if (WpkTestKB())
+			if (f_conHaveKey())
 			{
-				(void)WpkIncar();
+				f_conGetKey();
 				break;
 			}
 			
@@ -215,7 +212,7 @@ Exit:
 	
 	logPool.poolFree();
 
-	WpsExit();
+	f_conExit();
 	
 	if( gv_pDbSystem)
 	{
@@ -250,8 +247,8 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	gv_ui64TotalNodes = 0;
 	gv_ui64NodesRecovered = 0;
 
-	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+	f_conClearScreen( 0, 0);
 
 	gv_bLoggingEnabled = FALSE;
 	gv_uiLogBufferCount = 0;
@@ -286,7 +283,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 		goto Exit;
 	}
 
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
 	if( gv_bLoggingEnabled)
 	{
 		bldLogString( NULL);
@@ -296,8 +293,8 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 "==========================================================================");
 		bldLogString( "REBUILD PARAMETERS:");
 	}
-	WpsScrClr( 0, PARAM_ROW);
-	WpsStrOutXY( "REBUILD PARAMETERS:", LABEL_COLUMN, PARAM_ROW);
+	f_conClearScreen( 0, PARAM_ROW);
+	f_conStrOutXY( "REBUILD PARAMETERS:", LABEL_COLUMN, PARAM_ROW);
 	bldOutLabel( LABEL_COLUMN + 2, SOURCE_ROW, "Source DB",
 					 gv_szSrcFileName, 0, TRUE);
 	bldOutLabel( LABEL_COLUMN + 2, SOURCE_DATA_DIR_ROW,
@@ -456,52 +453,48 @@ FSTATIC void bldShowHelp(
 	void
 	)
 {
-	WpsStrOut( "\n");
-	WpsStrOut( 
+	f_conStrOut( "\n");
+	f_conStrOut( 
 "Parameters: <SourceName> <DestName> [Options]\n\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "SourceName = Name of database which is to be recovered.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "DestName   = Name of destination database to recover data to.  Recovered\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "             records are put in this database.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "Options    = (may be specified anywhere on command line): \n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -c<n>         = Cache (kilobytes) to use.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -sd<DirName>  = Data directory for source DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -dc<DictName> = Dictionary file to use to create destination DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -dd<DirName>  = Data directory for destination DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -dr<DirName>  = RFL directory for destination DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -l<FileName>  = Log detailed information to <FileName>.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -w<Password>  = Specifies a Security Password to be used.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -b            = Run in Batch Mode.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -h<HdrInfo>   = Fix file header information. HdrInfo is in the format\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                  BlkSiz:MinRfl:MaxRfl:Lang:FlmVer\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -q<FileName>  = Output binary log information to <FileName>.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -v<FileName>  = Verify binary log information in <FileName>.  NOTE: The\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                  -v and -q options cannot both be specified.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -p            = Pause before exiting.\n");
-#ifdef FLM_NLM
-	WpsStrOut( 
-"  -w            = Wait to end to synchronize\n");
-#endif
-	WpsStrOut( 
+	f_conStrOut( 
 "  -?           = A '?' anywhere in the command line will cause this help\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                 screen to be displayed, with or without the leading '-'.\n");
 }
 
@@ -545,10 +538,9 @@ FSTATIC FLMBOOL bldGetParams(
 	{
 		for (;;)
 		{
-			WpsStrOut( "\nRebuild Params (enter ? for help): ");
+			f_conStrOut( "\nRebuild Params (enter ? for help): ");
 			szCommandBuffer[ 0] = 0;
-			WpsLineEd( szCommandBuffer, sizeof( szCommandBuffer) - 1,
-							&gv_bShutdown);
+			f_conLineEdit( szCommandBuffer, sizeof( szCommandBuffer) - 1);
 			if( gv_bShutdown)
 			{
 				return( FALSE);
@@ -884,9 +876,9 @@ FSTATIC void bldOutLabel(
 
 	f_memset( szMsg, '.', uiLen);
 	szMsg[ uiLen] = 0;
-	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-	WpsStrOutXY( szMsg, uiCol, uiRow);
-	WpsStrOutXY( pszLabel, uiCol, uiRow);
+	f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+	f_conStrOutXY( szMsg, uiCol, uiRow);
+	f_conStrOutXY( pszLabel, uiCol, uiRow);
 
 	if( pszValue != NULL)
 	{
@@ -921,8 +913,8 @@ FSTATIC void bldOutValue(
 	FLMUINT			uiRow,
 	const char *	pszValue)
 {
-	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-	WpsStrOutXY( pszValue, VALUE_COLUMN, uiRow);
+	f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+	f_conStrOutXY( pszValue, VALUE_COLUMN, uiRow);
 }
 
 /********************************************************************
@@ -949,7 +941,7 @@ FSTATIC RCODE bldGetUserInput(
 {
 	FLMUINT		uiChar;
 
-	WpsStrOutXY( "Q,ESC=Quit, Other=Continue: ", 0, 23);
+	f_conStrOutXY( "Q,ESC=Quit, Other=Continue: ", 0, 23);
 	for (;;)
 	{
 		if( gv_bShutdown)
@@ -957,9 +949,9 @@ FSTATIC RCODE bldGetUserInput(
 			uiChar = FKB_ESCAPE;
 			break;
 		}
-		else if( WpkTestKB())
+		else if( f_conHaveKey())
 		{
-			uiChar = WpkIncar();
+			uiChar = f_conGetKey();
 			if( uiChar)
 			{
 				break;
@@ -969,8 +961,8 @@ FSTATIC RCODE bldGetUserInput(
 		f_yieldCPU();
 	}
 
-	WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-	WpsScrClr( 0, 22);
+	f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+	f_conClearScreen( 0, 22);
 	switch( uiChar)
 	{
 		case 'q':
@@ -1128,12 +1120,12 @@ RCODE F_LocalRebuildStatus::reportRebuild(
 	}
 
 	// See if they pressed an ESC character
-	if ((WpkTestKB()) && (WpkIncar() == FKB_ESCAPE))
+	if ((f_conHaveKey()) && (f_conGetKey() == FKB_ESCAPE))
 	{
-		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-		WpsScrClr( 0, 22);
-		WpsScrBackFor (FLM_RED, FLM_WHITE);
-		WpsStrOutXY( "ESCAPE key pressed", 0, 22);
+		f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
+		f_conSetBackFore (FLM_RED, FLM_WHITE);
+		f_conStrOutXY( "ESCAPE key pressed", 0, 22);
 		rc = bldGetUserInput();
 		goto Exit;
 	}
@@ -1154,12 +1146,12 @@ RCODE F_LocalRebuildStatus::reportRebuildErr(
 
 	// See if they pressed an ESC character
 
-	if ((WpkTestKB()) && (WpkIncar() == FKB_ESCAPE))
+	if ((f_conHaveKey()) && (f_conGetKey() == FKB_ESCAPE))
 	{
-		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-		WpsScrClr( 0, 22);
-		WpsScrBackFor (FLM_RED, FLM_WHITE);
-		WpsStrOutXY( "ESCAPE key pressed", 0, 22);
+		f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
+		f_conSetBackFore (FLM_RED, FLM_WHITE);
+		f_conStrOutXY( "ESCAPE key pressed", 0, 22);
 		rc = bldGetUserInput();
 		goto Exit;
 	}
@@ -1180,27 +1172,33 @@ FSTATIC void bldShowError(
 
 	if( !gv_bBatchMode)
 	{
-		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-		WpsScrClr( 0, 22);
-		WpsScrBackFor (FLM_RED, FLM_WHITE);
-		WpsStrOutXY( pszMessage, 0, 22);
-		WpsStrOutXY( "Press any character to continue, ESCAPE to quit: ", 0, 23);
+		f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
+		f_conSetBackFore (FLM_RED, FLM_WHITE);
+		f_conStrOutXY( pszMessage, 0, 22);
+		f_conStrOutXY( "Press any character to continue, ESCAPE to quit: ", 0, 23);
 		for (;;)
 		{
 			if (gv_bShutdown)
-				break;
-			else if (WpkTestKB())
 			{
-				if (WpkIncar() == FKB_ESCAPE)
+				break;
+			}
+			
+			else if (f_conHaveKey())
+			{
+				if (f_conGetKey() == FKB_ESCAPE)
+				{
 					gv_bShutdown = TRUE;
+				}
+				
 				break;
 			}
 			
 			f_yieldCPU();
 		}
 		
-		WpsScrBackFor (FLM_BLACK, FLM_LIGHTGRAY);
-		WpsScrClr( 0, 22);
+		f_conSetBackFore (FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
 	}
 }
 

@@ -36,22 +36,22 @@ void ViewShowError(
 	FLMUINT	uiNumCols;
 	FLMUINT	uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
-	WpsScrBackFor( FLM_RED, FLM_WHITE);
-	WpsStrOutXY( pszMessage, 0, uiNumRows - 2);
-	WpsStrOutXY( "Press ENTER to continue: ", 0, uiNumRows - 1);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
+	f_conStrOutXY( pszMessage, 0, uiNumRows - 2);
+	f_conStrOutXY( "Press ENTER to continue: ", 0, uiNumRows - 1);
 	for (;;)
 	{
-		uiChar = (FLMUINT)WpkIncar();
+		uiChar = f_conGetKey();
 		if (uiChar == FKB_ENTER || uiChar == FKB_ESCAPE)
 		{
 			break;
 		}
 	}
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	ViewEscPrompt();
 }
 

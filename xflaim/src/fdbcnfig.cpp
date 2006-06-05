@@ -1161,9 +1161,9 @@ RCODE FLMAPI F_Db::getDiskSpaceUsage(
 
 					// Open the file and get its size.
 
-					if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openBlockFile(
+					if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile(
 							szTmpName, FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-							512, &pFileHdl)))
+							&pFileHdl)))
 					{
 						if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
 							 rc == NE_FLM_IO_INVALID_FILENAME)

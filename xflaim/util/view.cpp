@@ -105,10 +105,9 @@ int main(
 	gv_bRunning = TRUE;
 	gv_pSFileHdl = NULL;
 
-	WpsInit( 0xFFFF, 0xFFFF, "FLAIM Database Viewer");
-	WpsOptimize();
-
-	WpsScrSize( NULL, &gv_uiBottomLine);
+	f_conInit( 0xFFFF, 0xFFFF, "FLAIM Database Viewer");
+	f_conGetScreenSize( NULL, &gv_uiBottomLine);
+	
 	gv_uiTopLine = 2;
 	gv_uiBottomLine -= 3;
 
@@ -119,10 +118,9 @@ int main(
 	{
 		for (;;)
 		{
-			WpsStrOut( "\nView Params (enter ? for help): ");
+			f_conStrOut( "\nView Params (enter ? for help): ");
 			szCommandBuffer [0] = 0;
-			WpsLineEd( szCommandBuffer,
-				sizeof( szCommandBuffer) - 1, &gv_bShutdown);
+			f_conLineEdit( szCommandBuffer, sizeof( szCommandBuffer) - 1);
 			if (f_stricmp( szCommandBuffer, "?") == 0)
 			{
 				ViewShowHelp( FALSE);
@@ -241,8 +239,8 @@ int main(
 
 	gv_pViewPool->poolInit(2048);
 	
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, 0);
 
 	// Open the file
 
@@ -277,16 +275,16 @@ Exit:
 
 	if ((bPauseBeforeExiting) && (!gv_bShutdown))
 	{
-		WpsStrOut( "\nPress any character to exit VIEW: ");
+		f_conStrOut( "\nPress any character to exit VIEW: ");
 		for (;;)
 		{
 			if (gv_bShutdown)
 			{
 				break;
 			}
-			if (WpkTestKB())
+			if (f_conHaveKey())
 			{
-				(void)WpkIncar();
+				f_conGetKey();
 				break;
 			}
 			viewGiveUpCPU();
@@ -298,7 +296,7 @@ Exit:
 		gv_pViewPool->Release();
 	}
 
-	WpsExit();
+	f_conExit();
 	
 	if( gv_pDbSystem)
 	{
@@ -316,50 +314,50 @@ FSTATIC void ViewShowHelp(
 	FLMBOOL	bShowFullUsage
 	)
 {
-	WpsStrOut( "\n");
+	f_conStrOut( "\n");
 	if (bShowFullUsage)
 	{
-		WpsStrOut( "Usage: view <DbName> [Options]\n");
+		f_conStrOut( "Usage: view <DbName> [Options]\n");
 	}
 	else
 	{
-		WpsStrOut( "Parameters: <DbName> [Options]\n\n");
+		f_conStrOut( "Parameters: <DbName> [Options]\n\n");
 	}
-	WpsStrOut( 
+	f_conStrOut( 
 "   DbName   = Name of database to view.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "   Options  =\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -dr<Dir>     = RFL directory.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -dd<Dir>     = Data directory.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -x           = Open database in exclusive mode.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -f           = Fix database header.  If the options below are not set,\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       defaults will be used.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -b<Size>     = Set block size to Size (only used if -f is specified).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -m<Size>     = Set minimum RFL file size to Size (only used if -f\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       option is used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -l<Size>     = Set maximum RFL file size to Size (only used if -f\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       option is used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -p           = Pause before exiting.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -pw<Passwd>  = Database password.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -?           = A '?' anywhere in the command line will cause this\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       screen to be displayed, with or without the leading '-'.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "Options may be specified anywhere in the command line.\n");
 }
 
@@ -375,15 +373,18 @@ FSTATIC FLMUINT ViewGetChar(
 	FLMUINT	uiNumCols;
 	FLMUINT	uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
-	WpsScrBackFor( FLM_RED, FLM_WHITE);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
+	
 	if (pszMessage1)
 	{
-		WpsStrOutXY( pszMessage1, 0, uiNumRows - 2);
+		f_conStrOutXY( pszMessage1, 0, uiNumRows - 2);
 	}
-	WpsStrOutXY( pszMessage2, 0, 23);
+	
+	f_conStrOutXY( pszMessage2, 0, 23);
+	
 	for (;;)
 	{
 		if (gv_bShutdown)
@@ -391,15 +392,15 @@ FSTATIC FLMUINT ViewGetChar(
 			uiChar = FKB_ESCAPE;
 			break;
 		}
-		else if (WpkTestKB())
+		else if (f_conHaveKey())
 		{
-			uiChar = (FLMUINT)WpkIncar();
+			uiChar = f_conGetKey();
 			break;
 		}
 		viewGiveUpCPU();
 	}
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	if (uiChar == FKB_ENTER)
 	{
 		uiChar = uiDefaultChar;
@@ -434,7 +435,7 @@ void ViewReadHdr(
 	FLMUINT	uiNumCols;
 	FLMUINT	uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	gv_bViewHdrRead = TRUE;
 	if (RC_OK( rc = ViewReadAndVerifyHdrInfo( pui32CalcCRC)))
@@ -464,13 +465,13 @@ void ViewAskInput(
 {
 	char	szTempBuf [80];
 
-	WpsStrOut( pszPrompt);
+	f_conStrOut( pszPrompt);
 	if (uiBufLen > sizeof( szTempBuf))
 	{
 		uiBufLen = sizeof( szTempBuf);
 	}
 	szTempBuf [0] = 0;
-	WpsLineEd( szTempBuf, uiBufLen, &gv_bShutdown);
+	f_conLineEdit( szTempBuf, uiBufLen);
 	f_strcpy( (char *)pszBuffer, szTempBuf);
 }
 
@@ -484,17 +485,17 @@ FSTATIC FLMBOOL ViewGetFileName(
 {
 	const char *	pszPrompt = "Enter database file name: ";
 
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( uiCol, uiRow);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( uiCol, uiRow);
 	if (bDispOnly)
 	{
-		WpsStrOutXY( pszPrompt, uiCol, uiRow);
-		WpsStrOutXY( gv_szViewFileName,
+		f_conStrOutXY( pszPrompt, uiCol, uiRow);
+		f_conStrOutXY( gv_szViewFileName,
 							uiCol + f_strlen( pszPrompt), uiRow);
 	}
 	else
 	{
-		WpsScrPos( uiCol, uiRow);
+		f_conSetCursorPos( uiCol, uiRow);
 		ViewAskInput( pszPrompt, gv_szViewFileName, 40);
 		if (!gv_szViewFileName [0] ||
 			 f_strcmp( gv_szViewFileName, "\\") == 0)
@@ -536,7 +537,7 @@ Get_File_Name:
 
 	// Prompt for file name if necessary
 
- 	WpsScrClr( 0, 1);
+ 	f_conClearScreen( 0, 1);
 	if (!gv_szViewFileName [0])
 	{
 		if (!ViewGetFileName( 5, 5, FALSE))

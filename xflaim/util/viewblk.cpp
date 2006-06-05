@@ -3337,15 +3337,15 @@ FLMBOOL GetBlockAddrType(
 	FLMUINT	uiNumCols;
 	FLMUINT	uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	// Get the block address
 
 	for (;;)
 	{
 		bBadDigit = FALSE;
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		ViewAskInput( 
 			"Enter Block Address (in hex): ", 
 			szTempBuf, sizeof( szTempBuf));
@@ -3394,7 +3394,7 @@ FLMBOOL GetBlockAddrType(
 		}
 	}
 
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conClearScreen( 0, uiNumRows - 2);
 	ViewEscPrompt();
 	return( bGotAddress);
 }

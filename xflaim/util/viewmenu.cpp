@@ -106,14 +106,14 @@ void ViewMenuInit(
 
 	// Clear the screen and display the menu title
 
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, 0);
 
 	// Display the title in the middle of the top line of the screen
 
 	uiCol = (80 - f_strlen( pszTitle)) / 2;
 
-	WpsStrOutXY( pszTitle, uiCol, 0);
+	f_conStrOutXY( pszTitle, uiCol, 0);
 	ViewUpdateDate( TRUE, &gv_ViewLastTime);
 
 	// Deallocate any old memory, if any
@@ -198,8 +198,8 @@ FSTATIC void ViewDispMenuItem(
 		f_sprintf( (char *)szTempBuf, "%03u:%08X",
 				(unsigned)pMenuItem->uiModFileNumber,
 				(unsigned)pMenuItem->uiModFileOffset);
-		WpsScrBackFor( FLM_WHITE, FLM_GREEN);
-		WpsStrOutXY( szTempBuf, 0, uiRow);
+		f_conSetBackFore( FLM_WHITE, FLM_GREEN);
+		f_conStrOutXY( szTempBuf, 0, uiRow);
 	}
 
 	// If the item is the current item, display it using the
@@ -213,18 +213,18 @@ FSTATIC void ViewDispMenuItem(
 		}
 		if (pMenuItem->uiOption)
 		{
-			WpsScrBackFor( pMenuItem->uiSelectBackColor,
+			f_conSetBackFore( pMenuItem->uiSelectBackColor,
 											 pMenuItem->uiSelectForeColor);
 		}
 		else
 		{
-			WpsScrBackFor( pMenuItem->uiUnselectForeColor,
+			f_conSetBackFore( pMenuItem->uiUnselectForeColor,
 											 pMenuItem->uiUnselectBackColor);
 		}
 	}
 	else
 	{
-		WpsScrBackFor( pMenuItem->uiUnselectBackColor,
+		f_conSetBackFore( pMenuItem->uiUnselectBackColor,
 										 pMenuItem->uiUnselectForeColor);
 	}
 
@@ -253,27 +253,27 @@ FSTATIC void ViewDispMenuItem(
 	{
 		if (pMenuItem->uiItemNum == gv_uiViewMenuCurrItemNum)
 		{
-			WpsStrOutXY( "*>", (uiCol - 2), uiRow);
+			f_conStrOutXY( "*>", (uiCol - 2), uiRow);
 		}
 		else
 		{
-			WpsStrOutXY( "* ", (uiCol - 2), uiRow);
+			f_conStrOutXY( "* ", (uiCol - 2), uiRow);
 		}
 	}
 	else
 	{
 		if (pMenuItem->uiItemNum == gv_uiViewMenuCurrItemNum)
 		{
-			WpsStrOutXY( " >", (uiCol - 2), uiRow);
+			f_conStrOutXY( " >", (uiCol - 2), uiRow);
 		}
 		else
 		{
-			WpsStrOutXY( "  ", (uiCol - 2), uiRow);
+			f_conStrOutXY( "  ", (uiCol - 2), uiRow);
 		}
 	}
 	if (szTempBuf[ 0])
 	{
-		WpsStrOutXY( szTempBuf, uiCol, uiRow);
+		f_conStrOutXY( szTempBuf, uiCol, uiRow);
 	}
 
 	// Now output the value
@@ -282,18 +282,18 @@ FSTATIC void ViewDispMenuItem(
 	switch (pMenuItem->uiValueType & 0x0F)
 	{
 		case VAL_IS_LABEL_INDEX:
-			WpsStrOutXY( (Labels[ pMenuItem->ui64Value]),
+			f_conStrOutXY( (Labels[ pMenuItem->ui64Value]),
 									 uiCol, uiRow);
 			break;
 		case VAL_IS_ERR_INDEX:
 			{
 			FLMUINT  ValIndex = (FLMUINT)pMenuItem->ui64Value;
-			WpsStrOutXY( dbSystem.checkErrorToStr( ValIndex),
+			f_conStrOutXY( dbSystem.checkErrorToStr( ValIndex),
 							uiCol, uiRow);
 			break;
 			}
 		case VAL_IS_TEXT_PTR:
-			WpsStrOutXY( ((char *)(FLMUINT)pMenuItem->ui64Value), uiCol, uiRow);
+			f_conStrOutXY( ((char *)(FLMUINT)pMenuItem->ui64Value), uiCol, uiRow);
 			break;
 		case VAL_IS_BINARY_HEX:
 		case VAL_IS_BINARY_PTR:
@@ -342,7 +342,7 @@ FSTATIC void ViewDispMenuItem(
 
 			// Output the line
 
-			WpsStrOutXY( szTempBuf, uiCol, uiRow);
+			f_conStrOutXY( szTempBuf, uiCol, uiRow);
 			if (pMenuItem->uiItemNum == gv_uiViewMenuCurrItemNum)
 			{
 				UpdateHorizCursor( TRUE);
@@ -393,7 +393,7 @@ FSTATIC void ViewDispMenuItem(
 					}
 					break;
 			}
-			WpsStrOutXY( szTempBuf, uiCol, uiRow);
+			f_conStrOutXY( szTempBuf, uiCol, uiRow);
 			break;
 		case VAL_IS_EMPTY:
 		default:
@@ -511,14 +511,14 @@ void ViewEscPrompt( void)
 	FLMUINT	uiNumCols;
 	FLMUINT	uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, uiNumRows - 1);
-	WpsScrBackFor( FLM_RED, FLM_WHITE);
-	WpsStrOutXY( "ESC=Exit, ?=Help", 0, uiNumRows - 1);
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsStrOutXY( "File: ", 20, uiNumRows - 1);
-	WpsStrOutXY( gv_szViewFileName, 26, uiNumRows - 1);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 1);
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
+	f_conStrOutXY( "ESC=Exit, ?=Help", 0, uiNumRows - 1);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conStrOutXY( "File: ", 20, uiNumRows - 1);
+	f_conStrOutXY( gv_szViewFileName, 26, uiNumRows - 1);
 	gv_uiViewLastFileOffset = VIEW_INVALID_FILE_OFFSET;
 }
 
@@ -544,8 +544,8 @@ FSTATIC void ViewRefreshMenu(
 
 		// Refresh the entire screen
 
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsScrClr( 0, 1);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, 1);
 
 		pMenuItem = gv_pViewMenuFirstItem;
 		while( pMenuItem)
@@ -585,18 +585,18 @@ FSTATIC void UpdateHorizCursor(
 	szTempBuf[ 2] = 0;
 	if (bOnFlag)
 	{
-		WpsScrBackFor( FLM_RED, FLM_WHITE);
+		f_conSetBackFore( FLM_RED, FLM_WHITE);
 	}
 	else
 	{
-		WpsScrBackFor( gv_pViewMenuCurrItem->uiUnselectForeColor,
+		f_conSetBackFore( gv_pViewMenuCurrItem->uiUnselectForeColor,
 									 gv_pViewMenuCurrItem->uiUnselectBackColor);
 	}
 
 	// Calculate row and column where the item is to be displayed
 
 	uiRow = gv_uiTopLine + (gv_pViewMenuCurrItem->uiRow - gv_uiViewTopRow);
-	WpsStrOutXY( (char *)szTempBuf, (uiCol + uiLoop * 3), uiRow);
+	f_conStrOutXY( (char *)szTempBuf, (uiCol + uiLoop * 3), uiRow);
 	if (((szTempBuf[ 0] = pucVal[ uiLoop]) < ' ') ||
 			(szTempBuf[ 0] > 127))
 	{
@@ -609,17 +609,17 @@ FSTATIC void UpdateHorizCursor(
 	}
 #endif
 	szTempBuf[ 1] = 0;
-	WpsStrOutXY( (char *)szTempBuf,
+	f_conStrOutXY( (char *)szTempBuf,
 			(uiCol + MAX_HORIZ_SIZE( uiCol) * 3 + 5 + uiLoop), uiRow);
-	WpsScrBackFor( gv_pViewMenuCurrItem->uiUnselectForeColor,
+	f_conSetBackFore( gv_pViewMenuCurrItem->uiUnselectForeColor,
 								 gv_pViewMenuCurrItem->uiUnselectBackColor);
 	if (bOnFlag)
 	{
-		WpsStrOutXY( ">", (uiCol + uiLoop * 3 - 1), uiRow);
+		f_conStrOutXY( ">", (uiCol + uiLoop * 3 - 1), uiRow);
 	}
 	else
 	{
-		WpsStrOutXY( " ", (uiCol + uiLoop * 3 - 1), uiRow);
+		f_conStrOutXY( " ", (uiCol + uiLoop * 3 - 1), uiRow);
 	}
 }
 
@@ -867,29 +867,29 @@ FSTATIC void ViewHelpScreen( void)
 
 	// Clear the screen and display the menu title
 
-	WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-	WpsScrClr( 0, 1);
-	WpsScrPos( 0, 3);
-	WpsStrOut( "     RECOGNIZED KEYBOARD CHARACTERS\n");
-	WpsStrOut( "\n");
-	WpsStrOut( "     ESCAPE              - Exit Screen\n");
-	WpsStrOut( "     U,u,8               - Up Arrow\n");
-	WpsStrOut( "     D,d,2               - Down Arrow\n");
-	WpsStrOut( "     +,3                 - Page Down\n");
-	WpsStrOut( "     R,r,6               - Right Arrow\n");
-	WpsStrOut( "     L,l,5               - Left Arrow\n");
-	WpsStrOut( "     -,9                 - Page Up\n");
-	WpsStrOut( "     H,h,7               - Home\n");
-	WpsStrOut( "     Z,z,1               - End\n");
-	WpsStrOut( "     E,e                 - Edit Data\n");
-	WpsStrOut( "     A,a                 - Edit Data in RAW Mode (no checksum)\n");
-	WpsStrOut( "     G,g                 - Goto Block\n");
-	WpsStrOut( "     X,x                 - Display Hex\n");
-	WpsStrOut( "     Y,y                 - Display Decrypted\n");
-	WpsStrOut( "     S,s                 - Search\n");
-	WpsStrOut( "     ?                   - Show this help screen\n");
-	WpsStrOut( "\n");
-	WpsStrOut( "     PRESS ANY CHARACTER TO EXIT HELP SCREEN\n");
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, 1);
+	f_conSetCursorPos( 0, 3);
+	f_conStrOut( "     RECOGNIZED KEYBOARD CHARACTERS\n");
+	f_conStrOut( "\n");
+	f_conStrOut( "     ESCAPE              - Exit Screen\n");
+	f_conStrOut( "     U,u,8               - Up Arrow\n");
+	f_conStrOut( "     D,d,2               - Down Arrow\n");
+	f_conStrOut( "     +,3                 - Page Down\n");
+	f_conStrOut( "     R,r,6               - Right Arrow\n");
+	f_conStrOut( "     L,l,5               - Left Arrow\n");
+	f_conStrOut( "     -,9                 - Page Up\n");
+	f_conStrOut( "     H,h,7               - Home\n");
+	f_conStrOut( "     Z,z,1               - End\n");
+	f_conStrOut( "     E,e                 - Edit Data\n");
+	f_conStrOut( "     A,a                 - Edit Data in RAW Mode (no checksum)\n");
+	f_conStrOut( "     G,g                 - Goto Block\n");
+	f_conStrOut( "     X,x                 - Display Hex\n");
+	f_conStrOut( "     Y,y                 - Display Decrypted\n");
+	f_conStrOut( "     S,s                 - Search\n");
+	f_conStrOut( "     ?                   - Show this help screen\n");
+	f_conStrOut( "\n");
+	f_conStrOut( "     PRESS ANY CHARACTER TO EXIT HELP SCREEN\n");
 
 	for (;;)
 	{
@@ -900,7 +900,7 @@ FSTATIC void ViewHelpScreen( void)
 
 		// See what character was pressed
 
-		uiChar = (!WpkTestKB()) ? 0 : (WpkIncar());
+		uiChar = (!f_conHaveKey()) ? 0 : (f_conGetKey());
 		if (gv_bShutdown)
 		{
 			return;
@@ -966,9 +966,9 @@ FLMUINT ViewGetMenuOption( void)
 		// See what character was pressed
 
 		viewGiveUpCPU();
-		uiChar = (FLMUINT)(!WpkTestKB()
+		uiChar = (FLMUINT)(!f_conHaveKey()
 								 ? (FLMUINT)0
-								 : (FLMUINT)WpkIncar());
+								 : (FLMUINT)f_conGetKey());
 		if (gv_bShutdown)
 		{
 			return( ESCAPE_OPTION);
@@ -1071,7 +1071,7 @@ void ViewUpdateDate(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 	f_timeGetTimeStamp( &CurrTime);
 
 	// Update the date, if it has changed or the bUpdateFlag is set
@@ -1085,8 +1085,8 @@ void ViewUpdateDate(
 						 Months [CurrTime.month],
 						 (unsigned)CurrTime.day,
 						 (unsigned)CurrTime.year);
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsStrOutXY( szTempBuf, 0, 0);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conStrOutXY( szTempBuf, 0, 0);
 	}
 
 	// Update the time, if it has changed or the bUpdateFlag is set
@@ -1120,8 +1120,8 @@ void ViewUpdateDate(
 						(unsigned)uiHour,
 						(unsigned)CurrTime.minute,
 						(unsigned)CurrTime.second, szAmPm);
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsStrOutXY( szTempBuf, 66, 0);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conStrOutXY( szTempBuf, 66, 0);
 	}
 
 	if (bUpdateFlag ||
@@ -1154,8 +1154,8 @@ void ViewUpdateDate(
 								(unsigned)gv_uiViewLastFileNumber,
 								(unsigned)gv_uiViewLastFileOffset);
 		}
-		WpsScrBackFor( FLM_BLACK, FLM_WHITE);
-		WpsStrOutXY( szTempBuf, 47, uiNumRows - 1);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conStrOutXY( szTempBuf, 47, uiNumRows - 1);
 	}
 
 	// Save the date and time

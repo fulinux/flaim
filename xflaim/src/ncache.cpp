@@ -290,9 +290,9 @@ RCODE F_NodeCacheMgr::initCache( void)
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = m_pNodeAllocator->setup( &m_nodeRelocator,
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, 
-		sizeof( F_CachedNode), &m_Usage.slabUsage)))
+	if (RC_BAD( rc = m_pNodeAllocator->setup( 
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_nodeRelocator, 
+		sizeof( F_CachedNode), &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}
@@ -305,7 +305,8 @@ RCODE F_NodeCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pBufAllocator->setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_Usage.slabUsage)))
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, 
+		NULL, &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}
@@ -317,9 +318,9 @@ RCODE F_NodeCacheMgr::initCache( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pAttrItemAllocator->setup( &m_attrItemRelocator,
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager,
-		sizeof( F_AttrItem), &m_Usage.slabUsage)))
+	if( RC_BAD( rc = m_pAttrItemAllocator->setup(
+		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_attrItemRelocator,
+		sizeof( F_AttrItem), &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}
