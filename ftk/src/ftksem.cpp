@@ -562,22 +562,29 @@ Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
 void FLMAPI f_mutexLock(
-	F_MUTEX		hMutex)
+	F_MUTEX			hMutex)
 {
 	F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
+
+#ifdef FLM_DEBUG
+	if( pInterlock->locked)
+	{
+		f_assert( pInterlock->uiThreadId != _threadid);
+	}
+#endif
 
 	while( f_atomicExchange( &pInterlock->locked, 1) != 0)
 	{
 #ifdef FLM_DEBUG
-		f_atomicInc( &(((F_INTERLOCK *)hMutex)->waitCount));
+		f_atomicInc( &pInterlock->waitCount);
 #endif
 		Sleep( 0);
 	}
 
 #ifdef FLM_DEBUG
-	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == 0);
-	((F_INTERLOCK *)hMutex)->uiThreadId = _threadid;
-	f_atomicInc( &(((F_INTERLOCK *)hMutex)->lockedCount));
+	f_assert( pInterlock->uiThreadId == 0);
+	pInterlock->uiThreadId = _threadid;
+	f_atomicInc( &pInterlock->lockedCount);
 #endif
 }
 #endif
@@ -589,12 +596,14 @@ Desc:
 void FLMAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
-	f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
+	F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
+
+	f_assert( pInterlock->locked == 1);
 #ifdef FLM_DEBUG
-	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
-	((F_INTERLOCK *)hMutex)->uiThreadId = 0;
+	f_assert( pInterlock->uiThreadId == _threadid);
+	pInterlock->uiThreadId = 0;
 #endif
-	f_atomicExchange( &(((F_INTERLOCK *)hMutex)->locked), 0);
+	f_atomicExchange( &pInterlock->locked, 0);
 }
 #endif
 

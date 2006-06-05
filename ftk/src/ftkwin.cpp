@@ -37,7 +37,6 @@ F_FileHdl::F_FileHdl()
 	m_bOpenedReadOnly = FALSE;
 	m_pszFileName = NULL;
 	m_FileHandle = INVALID_HANDLE_VALUE;
-	m_uiBlockSize = 0;
 	m_uiBytesPerSector = 0;
 	m_ui64NotOnSectorBoundMask = 0;
 	m_ui64GetSectorBoundMask = 0;
@@ -109,30 +108,14 @@ RCODE F_FileHdl::openOrCreate(
 
 	if (m_bDoDirectIO)
 	{
-		if (!m_uiBlockSize)
+		if (RC_BAD( rc = pFileSystem->getSectorSize(
+			pszFileName, &m_uiBytesPerSector)))
 		{
-			m_bDoDirectIO = FALSE;
+			goto Exit;
 		}
-		else
-		{
-			if (RC_BAD( rc = pFileSystem->getSectorSize(
-				pszFileName, &m_uiBytesPerSector)))
-			{
-				goto Exit;
-			}
-			
-			m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
-			m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
-
-			// Can't do direct IO if the block size isn't a multiple of
-			// the sector size.
-
-			if (m_uiBlockSize < m_uiBytesPerSector ||
-				 m_uiBlockSize % m_uiBytesPerSector != 0)
-			{
-				m_bDoDirectIO = FALSE;
-			}
-		}
+		
+		m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
+		m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
 	}
 
 	// Only enable asynchronous writes if direct I/O is enabled.
@@ -440,19 +423,9 @@ RCODE F_FileHdl::open(
 		m_bDeleteOnRelease = FALSE;
 	}
 
-	// Loop on error open conditions.
-
-	for(;;)
+	if( RC_BAD( rc = openOrCreate( pszFileName, uiIoFlags, FALSE)))
 	{
-		if( RC_OK( rc = openOrCreate( pszFileName, uiIoFlags, FALSE)))
-		{
-			break;
-		}
-
-		if( rc != NE_FLM_IO_TOO_MANY_OPEN_FILES )
-		{
-			goto Exit;
-		}
+		goto Exit;
 	}
 
 	m_bFileOpened = TRUE;

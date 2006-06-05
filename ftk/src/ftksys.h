@@ -589,17 +589,6 @@
 	
 		RCODE FLMAPI unlock( void);
 		
-		FINLINE void FLMAPI setBlockSize(
-			FLMUINT	uiBlockSize)
-		{
-			m_uiBlockSize = uiBlockSize;
-		}
-		
-		FINLINE FLMUINT FLMAPI getBlockSize( void)
-		{
-			return( m_uiBlockSize);
-		}
-		
 		FINLINE FLMUINT FLMAPI getSectorSize( void)
 		{
 			return( m_uiBytesPerSector);
@@ -678,7 +667,6 @@
 		FLMBOOL				m_bOpenedExclusive;
 		char *				m_pszFileName;
 		HANDLE				m_FileHandle;
-		FLMUINT				m_uiBlockSize;
 		FLMUINT				m_uiBytesPerSector;
 		FLMUINT64			m_ui64NotOnSectorBoundMask;
 		FLMUINT64			m_ui64GetSectorBoundMask;
@@ -793,17 +781,6 @@
 			return( m_bOpenedReadOnly);
 		}
 		
-		FINLINE void FLMAPI setBlockSize(
-			FLMUINT				uiBlockSize)
-		{
-			m_uiBlockSize = uiBlockSize;
-		}
-		
-		FINLINE FLMUINT FLMAPI getBlockSize( void)
-		{
-			return( m_uiBlockSize);
-		}
-		
 		FINLINE FLMUINT FLMAPI getSectorSize( void)
 		{
 			return( m_uiBytesPerSector);
@@ -867,7 +844,6 @@
 		FLMBOOL					m_bOpenedExclusive;
 		char *					m_pszFileName;
 		int				   	m_fd;
-		FLMUINT					m_uiBlockSize;
 		FLMUINT					m_uiBytesPerSector;
 		FLMUINT64				m_ui64NotOnSectorBoundMask;
 		FLMUINT64				m_ui64GetSectorBoundMask;
@@ -965,11 +941,6 @@
 			return( FLM_NLM_SECTOR_SIZE);
 		}
 	
-		FINLINE FLMUINT FLMAPI getBlockSize( void)
-		{
-			return( m_uiBlockSize);
-		}
-		
 		FINLINE FLMBOOL FLMAPI isReadOnly( void)
 		{
 			return( m_bOpenedReadOnly);
@@ -978,12 +949,6 @@
 		RCODE FLMAPI lock( void);
 	
 		RCODE FLMAPI unlock( void);
-		
-		FINLINE void FLMAPI setBlockSize(
-			FLMUINT				uiBlockSize)
-		{
-			m_uiBlockSize = uiBlockSize;
-		}
 		
 	private:
 	
@@ -1062,7 +1027,6 @@
 		FLMBOOL					m_bFileOpened;
 		FLMBOOL					m_bOpenedExclusive;
 		FLMBOOL					m_bOpenedReadOnly;
-		FLMUINT					m_uiBlockSize;
 		
 		LONG						m_lFileHandle;
 		LONG						m_lOpenAttr;

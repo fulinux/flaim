@@ -176,59 +176,46 @@ RCODE F_FileHdl::openOrCreate(
 
 	if( bDoDirectIO)
 	{
-		if( !m_uiBlockSize)
+		if( RC_BAD( rc = pFileSystem->getSectorSize(
+			pszFileName, &m_uiBytesPerSector)))
 		{
-			bDoDirectIO = FALSE;
+			goto Exit;
 		}
-		else
-		{
-			if( RC_BAD( rc = pFileSystem->getSectorSize(
-				pszFileName, &m_uiBytesPerSector)))
-			{
-				goto Exit;
-			}
-			
-			m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
-			m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
+		
+		m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
+		m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
 
-			// Can't do direct IO if the block size isn't a multiple of
-			// the sector size.
+		// Can't do direct IO if the block size isn't a multiple of
+		// the sector size.
 
-			if( m_uiBlockSize < m_uiBytesPerSector ||
-				 m_uiBlockSize % m_uiBytesPerSector != 0)
-			{
-				bDoDirectIO = FALSE;
-			}
-			else
-			{
 #if defined( FLM_LINUX)
-				FLMUINT		uiMajor;
-				FLMUINT		uiMinor;
-				FLMUINT		uiRevision;
+		{
+			FLMUINT		uiMajor;
+			FLMUINT		uiMinor;
+			FLMUINT		uiRevision;
 
-				f_getLinuxKernelVersion( &uiMajor, &uiMinor, &uiRevision);
+			f_getLinuxKernelVersion( &uiMajor, &uiMinor, &uiRevision);
 
-				if( uiMajor > 2 || (uiMajor == 2 && uiMinor > 6) ||
-					(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
-				{
-					openFlags |= O_DIRECT;
-					if( pFileSystem->canDoAsync())
-					{
-						m_bCanDoAsync = TRUE;
-					}
-				}
-				else
-				{
-					bDoDirectIO = FALSE;
-				}
-#elif defined( FLM_SOLARIS)
+			if( uiMajor > 2 || (uiMajor == 2 && uiMinor > 6) ||
+				(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
+			{
+				openFlags |= O_DIRECT;
 				if( pFileSystem->canDoAsync())
 				{
 					m_bCanDoAsync = TRUE;
 				}
-#endif
+			}
+			else
+			{
+				bDoDirectIO = FALSE;
 			}
 		}
+#elif defined( FLM_SOLARIS)
+		if( pFileSystem->canDoAsync())
+		{
+			m_bCanDoAsync = TRUE;
+		}
+#endif
 	}
 	
 Retry_Create:
@@ -488,24 +475,9 @@ RCODE F_FileHdl::open(
 		}
 	}
 
-	// Loop on error open conditions.
-
-	for( ;;)
+	if( RC_BAD( rc = openOrCreate( pszFileName, uiIoFlags, FALSE)))
 	{
-		if( RC_OK( rc = openOrCreate( pszFileName, uiIoFlags, FALSE)))
-		{
-			break;
-		}
-
-		if( rc != NE_FLM_IO_TOO_MANY_OPEN_FILES)
-		{
-			goto Exit;
-		}
-
-		// If for some reason we cannot open the file, then
-		// try to close some other file handle in the list.
-
-//		gv_XFlmSysData.pFileHdlMgr->releaseOneAvail( FALSE);
+		goto Exit;
 	}
 
 	m_bFileOpened = TRUE;

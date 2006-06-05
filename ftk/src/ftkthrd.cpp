@@ -150,6 +150,7 @@ public:
 		m_pszThreadName = NULL;
 		m_pszThreadStatus = NULL;
 		m_uiStatusBufLen = 0;
+		m_uiThreadGroup = F_INVALID_THREAD_GROUP;
 		m_pPrev = NULL;
 		m_pNext = NULL;
 		cleanupThread();
@@ -167,12 +168,12 @@ public:
 
 	RCODE FLMAPI startThread(
 		F_THREAD_FUNC	fnThread,
-		const char *	pszThreadName = NULL,
-		FLMUINT			uiThreadGroup = 0,
-		FLMUINT			uiAppId = 0,
-		void *			pvParm1 = NULL,
-		void *			pvParm2 = NULL,
-		FLMUINT        uiStackSize = F_THREAD_DEFAULT_STACK_SIZE);
+		const char *	pszThreadName,
+		FLMUINT			uiThreadGroup,
+		FLMUINT			uiAppId,
+		void *			pvParm1,
+		void *			pvParm2,
+		FLMUINT        uiStackSize);
 
 	void FLMAPI stopThread( void);
 
@@ -436,6 +437,7 @@ RCODE FLMAPI F_Thread::startThread(
 #endif
 
 	f_assert( fnThread != NULL && m_fnThread == NULL);
+	f_assert( uiThreadGroup != F_INVALID_THREAD_GROUP);
 
 	m_fnThread = fnThread;
 	m_pvParm1 = pvParm1;
@@ -758,7 +760,7 @@ void FLMAPI F_Thread::cleanupThread( void)
 	m_pvParm1 = NULL;
 	m_pvParm2 = NULL;
 	m_uiThreadId = 0;
-	m_uiThreadGroup = 0;
+	m_uiThreadGroup = F_INVALID_THREAD_GROUP;
 	m_uiAppId = 0;
 	m_uiStartTime = 0;
 	m_exitRc = NE_FLM_OK;
@@ -980,6 +982,8 @@ void FLMAPI F_ThreadMgr::shutdownThreadGroup(
 {
 	F_Thread *		pThread;
 	FLMUINT			uiCount;
+	
+	f_assert( uiThreadGroup != F_INVALID_THREAD_GROUP);
 
 	for( ;;)
 	{

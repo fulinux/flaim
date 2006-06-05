@@ -86,6 +86,7 @@ public:
 		FLMINT					iPriority,
 		eLockType *				peCurrLockType,
 		FLMUINT *				puiThreadId,
+		FLMUINT *				puiLockHeldTime,
 		FLMUINT *				puiNumExclQueued,
 		FLMUINT *				puiNumSharedQueued,
 		FLMUINT *				puiPriorityCount);
@@ -93,6 +94,9 @@ public:
 	RCODE FLMAPI getLockInfo(
 		IF_LockInfoClient *	pLockInfo);
 
+	RCODE FLMAPI getLockQueue(
+		F_LOCK_USER **			ppLockUsers);
+	
 	FLMBOOL FLMAPI haveHigherPriorityWaiter(
 		FLMINT					iPriority);
 
@@ -551,6 +555,8 @@ RCODE FLMAPI F_LockObject::lock(
 	F_LOCK_WAITER		LockWait;
 	FLMBOOL				bMutexLocked = FALSE;
 
+	f_assert( hWaitSem != F_SEM_NULL);
+
 	f_mutexLock( m_hMutex);
 	bMutexLocked = TRUE;
 
@@ -808,58 +814,109 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 	FLMINT				iPriority,
 	eLockType *			peCurrLockType,
 	FLMUINT *			puiThreadId,
+	FLMUINT *			puiLockHeldTime,
 	FLMUINT *			puiNumExclQueued,
 	FLMUINT *			puiNumSharedQueued,
 	FLMUINT *			puiPriorityCount)
 {
 	F_LOCK_WAITER *	pLockWaiter;
 
-	*puiNumExclQueued = 0;
-	*puiNumSharedQueued = 0;
-	*puiPriorityCount = 0;
+	if( puiNumExclQueued)
+	{
+		*puiNumExclQueued = 0;
+	}
 
+	if( puiNumSharedQueued)
+	{
+		*puiNumSharedQueued = 0;
+	}
+
+	if( puiPriorityCount)
+	{
+		*puiPriorityCount = 0;
+	}
+	
+	if( puiThreadId)
+	{
+		*puiThreadId = 0;
+	}
+	
+	if( puiLockHeldTime)
+	{
+		*puiLockHeldTime = 0;
+	}
+	
 	f_mutexLock( m_hMutex);
 
 	// Get the type of lock, if any.
 
 	if (m_bExclLock)
 	{
-		*peCurrLockType = FLM_LOCK_EXCLUSIVE;
-		*puiThreadId = m_uiLockThreadId;
+		if( peCurrLockType)
+		{
+			*peCurrLockType = FLM_LOCK_EXCLUSIVE;
+		}
+		
+		if( puiThreadId)
+		{
+			*puiThreadId = m_uiLockThreadId;
+		}
+
+		if( puiLockHeldTime)
+		{
+			*puiLockHeldTime = FLM_TIMER_UNITS_TO_MILLI( 
+						FLM_ELAPSED_TIME( FLM_GET_TIMER(), m_uiLockTime));
+		}
 	}
 	else if (m_uiSharedLockCnt)
 	{
-		*peCurrLockType = FLM_LOCK_SHARED;
-		*puiThreadId = 0;
+		if( peCurrLockType)
+		{
+			*peCurrLockType = FLM_LOCK_SHARED;
+		}
 	}
 	else
 	{
-		*peCurrLockType = FLM_LOCK_NONE;
-		*puiThreadId = 0;
+		if( peCurrLockType)
+		{
+			*peCurrLockType = FLM_LOCK_NONE;
+		}
 	}
 
 	// Get information on pending lock requests.
 
-	pLockWaiter = m_pFirstInList;
-	for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNextInList)
+	if( puiNumExclQueued || puiNumSharedQueued || puiPriorityCount)
 	{
-
-		// Count the number of exclusive and shared waiters.
-
-		if (pLockWaiter->bExclReq)
+		pLockWaiter = m_pFirstInList;
+		for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNextInList)
 		{
-			(*puiNumExclQueued)++;
-		}
-		else
-		{
-			(*puiNumSharedQueued)++;
-		}
 
-		// Count the number of waiters at or above input priority.
+			// Count the number of exclusive and shared waiters.
 
-		if (pLockWaiter->iPriority >= iPriority)
-		{
-			(*puiPriorityCount)++;
+			if (pLockWaiter->bExclReq)
+			{
+				if( puiNumExclQueued)
+				{
+					(*puiNumExclQueued)++;
+				}
+			}
+			else
+			{
+				if( puiNumSharedQueued)
+				{
+					(*puiNumSharedQueued)++;
+				}
+			}
+
+			// Count the number of waiters at or above input priority.
+
+			if (pLockWaiter->iPriority >= iPriority)
+			{
+				if( puiPriorityCount)
+				{
+					(*puiPriorityCount)++;
+				}
+			}
 		}
 	}
 
@@ -927,6 +984,72 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 	
 	f_assert( !pLockWaiter && !uiCnt);
 
+Exit:
+
+	f_mutexUnlock( m_hMutex);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Return a list that includes the current lock holder as well as
+		the lock waiters.
+****************************************************************************/
+RCODE FLMAPI F_LockObject::getLockQueue(
+	F_LOCK_USER **		ppLockUsers)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_LOCK_USER *		pLockUser;
+	F_LOCK_WAITER *	pLockWaiter;
+	FLMUINT				uiCnt;
+	FLMUINT				uiElapTime;
+	FLMUINT				uiCurrTime;
+
+	f_mutexLock( m_hMutex);
+	uiCurrTime = (FLMUINT)FLM_GET_TIMER();
+	
+	if( !m_uiNumWaiters && !m_uiLockThreadId)
+	{
+		*ppLockUsers = NULL;
+		goto Exit;
+	}
+	
+	uiCnt = m_uiNumWaiters + 1;
+
+	if( RC_BAD( rc = f_alloc( 
+		sizeof( F_LOCK_USER) * (uiCnt + 1), &pLockUser)))
+	{
+		goto Exit;
+	}
+
+	*ppLockUsers = pLockUser;
+
+	// Output the lock holder first.
+
+	pLockUser->uiThreadId = m_uiLockThreadId;
+	uiElapTime = FLM_ELAPSED_TIME( uiCurrTime, m_uiLockTime);
+	pLockUser->uiTime = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
+	pLockUser++;
+	uiCnt--;
+
+	// Output the lock waiters.
+
+	pLockWaiter = m_pFirstInList;
+	while( pLockWaiter && uiCnt)
+	{
+		pLockUser->uiThreadId = pLockWaiter->uiThreadId;
+		uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
+									pLockWaiter->uiWaitStartTime);
+		pLockUser->uiTime = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
+		pLockWaiter = pLockWaiter->pNextInList;
+		pLockUser++;
+		uiCnt--;
+	}
+	flmAssert( pLockWaiter == NULL && uiCnt == 0);
+
+	// Zero out the last one.
+
+	f_memset( pLockUser, 0, sizeof( F_LOCK_USER));
+	
 Exit:
 
 	f_mutexUnlock( m_hMutex);

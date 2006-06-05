@@ -318,10 +318,11 @@ public:
 	virtual ~F_FixedAlloc();
 
 	RCODE FLMAPI setup(
-		IF_Relocator *			pRelocator,
 		IF_SlabManager *		pSlabManager,
+		IF_Relocator *			pDefaultRelocator,
 		FLMUINT					uiCellSize,
-		FLM_SLAB_USAGE *		pUsageStats);
+		FLM_SLAB_USAGE *		pUsageStats,
+		FLMUINT *				puiTotalBytesAllocated);
 
 	FINLINE void * FLMAPI allocCell(
 		IF_Relocator *		pRelocator,
@@ -331,7 +332,7 @@ public:
 	{
 		void *	pvCell;
 		
-		f_assert( pRelocator);
+		f_assert( pRelocator || m_pDefaultRelocator);
 
 		if( !bMutexLocked)
 		{
@@ -478,7 +479,7 @@ private:
 	SLAB *					m_pLastSlab;
 	SLAB *					m_pFirstSlabWithAvailCells;
 	SLAB *					m_pLastSlabWithAvailCells;
-	IF_Relocator *			m_pRelocator;
+	IF_Relocator *			m_pDefaultRelocator;
 	FLMBOOL					m_bAvailListSorted;
 	FLMUINT					m_uiSlabsWithAvailCells;
 	FLMUINT					m_uiSlabHeaderSize;
@@ -489,6 +490,7 @@ private:
 	FLMUINT					m_uiCellsPerSlab;
 	FLMUINT					m_uiSlabSize;
 	FLM_SLAB_USAGE *		m_pUsageStats;
+	FLMUINT *				m_puiTotalBytesAllocated;
 	
 friend class F_BufferAlloc;
 friend class F_MultiAlloc;
@@ -505,15 +507,15 @@ public:
 	{
 		f_memset( m_ppAllocators, 0, sizeof( m_ppAllocators));
 		m_pSlabManager = NULL;
-		m_pDefaultRelocator = NULL;
 	}
 
 	virtual ~F_BufferAlloc();
 
 	RCODE FLMAPI setup(
 		IF_SlabManager *		pSlabManager,
+		IF_Relocator *			pDefaultRelocator,
 		FLM_SLAB_USAGE *		pUsageStats,
-		IF_Relocator *			pDefaultRelocator);
+		FLMUINT *				puiTotalBytesAllocated);
 
 	RCODE FLMAPI allocBuf(
 		IF_Relocator *			pRelocator,
@@ -554,7 +556,6 @@ private:
 
 	IF_SlabManager *			m_pSlabManager;
 	IF_FixedAlloc *			m_ppAllocators[ NUM_BUF_ALLOCATORS];
-	IF_Relocator *				m_pDefaultRelocator;
 };
 
 /****************************************************************************
@@ -578,20 +579,22 @@ public:
 
 	RCODE FLMAPI setup(
 		IF_SlabManager *		pSlabManager,
+		IF_Relocator *			pDefaultRelocator,
 		FLMUINT *				puiCellSizes,
-		FLM_SLAB_USAGE *		pUsageStats);
+		FLM_SLAB_USAGE *		pUsageStats,
+		FLMUINT *				puiTotalBytesAllocated);
 
 	RCODE FLMAPI allocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiSize,
 		FLMBYTE **				ppucBuffer,
-		FLMBOOL					bMutexLocked = FALSE);
+		FLMBOOL					bMutexLocked);
 
 	RCODE FLMAPI reallocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiNewSize,
 		FLMBYTE **				ppucBuffer,
-		FLMBOOL					bMutexLocked = FALSE);
+		FLMBOOL					bMutexLocked);
 
 	FINLINE void FLMAPI freeBuf(
 		FLMBYTE **				ppucBuffer)
@@ -2791,7 +2794,7 @@ F_FixedAlloc::F_FixedAlloc()
 	m_pSlabManager = NULL;
 	m_pFirstSlab = NULL;
 	m_pLastSlab = NULL;
-	m_pRelocator = NULL;
+	m_pDefaultRelocator = NULL;
 	m_pFirstSlabWithAvailCells = NULL;
 	m_pLastSlabWithAvailCells = NULL;
 	m_uiSlabsWithAvailCells = 0;
@@ -2799,6 +2802,7 @@ F_FixedAlloc::F_FixedAlloc()
 	m_uiTotalFreeCells = 0;
 	m_uiSlabSize = 0;
 	m_pUsageStats = NULL;
+	m_puiTotalBytesAllocated = NULL;
 }
 
 /****************************************************************************
@@ -2818,9 +2822,9 @@ F_FixedAlloc::~F_FixedAlloc()
 		m_pSlabManager->Release();
 	}
 	
-	if( m_pRelocator)
+	if( m_pDefaultRelocator)
 	{
-		m_pRelocator->Release();
+		m_pDefaultRelocator->Release();
 	}
 }
 
@@ -2828,10 +2832,11 @@ F_FixedAlloc::~F_FixedAlloc()
 Desc:	Setup method for any setup that can fail 
 ****************************************************************************/
 RCODE F_FixedAlloc::setup(
-	IF_Relocator *			pRelocator,
 	IF_SlabManager *		pSlabManager,
+	IF_Relocator *			pDefaultRelocator,
 	FLMUINT					uiCellSize,
-	FLM_SLAB_USAGE *		pUsageStats)
+	FLM_SLAB_USAGE *		pUsageStats,
+	FLMUINT *				puiTotalBytesAllocated)
 {
 	RCODE			rc = NE_FLM_OK;
 
@@ -2840,14 +2845,15 @@ RCODE F_FixedAlloc::setup(
 	f_assert( pUsageStats != NULL);
 	
 	m_pUsageStats = pUsageStats;
+	m_puiTotalBytesAllocated = puiTotalBytesAllocated;
 	
 	m_pSlabManager = pSlabManager;
 	m_pSlabManager->AddRef();
 	
-	if( pRelocator)
+	if( pDefaultRelocator)
 	{
-		m_pRelocator = pRelocator;
-		m_pRelocator->AddRef();
+		m_pDefaultRelocator = pDefaultRelocator;
+		m_pDefaultRelocator->AddRef();
 	}
 	
 	m_uiCellSize = uiCellSize;
@@ -2856,7 +2862,7 @@ RCODE F_FixedAlloc::setup(
 	// Get the alloc-aligned versions of all the sizes
 
 	m_uiSlabHeaderSize = getAllocAlignedSize( sizeof( SLAB));
-	if (pRelocator)
+	if (pDefaultRelocator)
 	{
 		m_uiCellHeaderSize = getAllocAlignedSize( sizeof( CELLHEADER));
 	}
@@ -3009,13 +3015,16 @@ void * F_FixedAlloc::getCell(
 		pHeader->puiStack = NULL;
 	}
 #endif
-	if (!m_pRelocator)
+	if (!m_pDefaultRelocator)
 	{
 		((CELLHEADER2 *)pHeader)->pRelocator = pRelocator;
 	}
 
-	m_pUsageStats->ui64AllocatedCells++;
-
+	if( m_pUsageStats)
+	{
+		m_pUsageStats->ui64AllocatedCells++;
+	}
+	
 Exit:
 
 	return( pCell);
@@ -3174,8 +3183,11 @@ void F_FixedAlloc::freeCell(
 			m_pFirstSlabWithAvailCells = pSlab;
 		}
 	}
-
-	m_pUsageStats->ui64AllocatedCells--;
+	
+	if( m_pUsageStats)
+	{
+		m_pUsageStats->ui64AllocatedCells--;
+	}
 
 Exit:
 
@@ -3203,7 +3215,16 @@ F_FixedAlloc::SLAB * F_FixedAlloc::getAnotherSlab( void)
 
 	f_memset( pSlab, 0, sizeof( SLAB));
 	pSlab->pvAllocator = (void *)this;
-	m_pUsageStats->ui64Slabs++;
+	
+	if( m_pUsageStats)
+	{
+		m_pUsageStats->ui64Slabs++;
+	}
+	
+	if( m_puiTotalBytesAllocated)
+	{
+		(*m_puiTotalBytesAllocated) += m_pSlabManager->getSlabSize();
+	}
 
 Exit:
 	
@@ -3291,8 +3312,20 @@ void F_FixedAlloc::freeSlab(
 	m_uiSlabsWithAvailCells--;
 	f_assert( m_uiTotalFreeCells >= pSlab->ui16AvailCellCount);
 	m_uiTotalFreeCells -= pSlab->ui16AvailCellCount;
-	m_pUsageStats->ui64Slabs--;
 	m_pSlabManager->freeSlab( (void **)&pSlab, TRUE);
+	
+	if( m_pUsageStats)
+	{
+		f_assert( m_pUsageStats->ui64Slabs);
+		m_pUsageStats->ui64Slabs--;
+	}
+	
+	if( m_puiTotalBytesAllocated)
+	{
+		f_assert( (*m_puiTotalBytesAllocated) >= m_pSlabManager->getSlabSize());
+		(*m_puiTotalBytesAllocated) -= m_pSlabManager->getSlabSize();
+	}
+	
 }
 
 /****************************************************************************
@@ -3320,7 +3353,16 @@ void F_FixedAlloc::freeAll( void)
 	m_uiSlabsWithAvailCells = 0;
 	m_bAvailListSorted = TRUE;
 	m_uiTotalFreeCells = 0;
-	f_memset( m_pUsageStats, 0, sizeof( FLM_SLAB_USAGE));
+	
+	if( m_pUsageStats)
+	{
+		f_memset( m_pUsageStats, 0, sizeof( FLM_SLAB_USAGE));
+	}
+	
+	if( m_puiTotalBytesAllocated)
+	{
+		m_puiTotalBytesAllocated = 0;
+	}
 	
 	m_pSlabManager->unlockMutex();	
 }
@@ -3464,7 +3506,7 @@ void F_FixedAlloc::defragmentMemory( void)
 			pCellHeader = (CELLHEADER *)
 				((FLMBYTE *)pCurSlab + m_uiSlabHeaderSize +
 					(uiLoop * m_uiSizeOfCellAndHeader));
-			if ((pRelocator = m_pRelocator) == NULL)
+			if ((pRelocator = m_pDefaultRelocator) == NULL)
 			{
 				pRelocator = ((CELLHEADER2 *)pCellHeader)->pRelocator;
 			}
@@ -3592,11 +3634,6 @@ F_BufferAlloc::~F_BufferAlloc()
 		}
 	}
 	
-	if( m_pDefaultRelocator)
-	{
-		m_pDefaultRelocator->Release();
-	}
-
 	if( m_pSlabManager)
 	{
 		m_pSlabManager->Release();
@@ -3608,23 +3645,18 @@ Desc:
 ****************************************************************************/ 
 RCODE F_BufferAlloc::setup(
 	IF_SlabManager *		pSlabManager,
+	IF_Relocator *			pDefaultRelocator,
 	FLM_SLAB_USAGE *		pUsageStats,
-	IF_Relocator *			pDefaultRelocator)
+	FLMUINT *				puiTotalBytesAllocated)
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiLoop;
 	FLMUINT		uiSize;
 	
 	f_assert( pSlabManager);
-	f_assert( !m_pDefaultRelocator);
 	
 	m_pSlabManager = pSlabManager;
 	m_pSlabManager->AddRef();
-	
-	if( (m_pDefaultRelocator = pDefaultRelocator) != NULL)
-	{
-		m_pDefaultRelocator->AddRef();
-	}
 	
 	for( uiLoop = 0; uiLoop < NUM_BUF_ALLOCATORS; uiLoop++)
 	{
@@ -3708,8 +3740,8 @@ RCODE F_BufferAlloc::setup(
 				goto Exit;
 		}
 
-		if (RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( NULL,
-			pSlabManager, uiSize, pUsageStats)))
+		if (RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( pSlabManager,
+			pDefaultRelocator, uiSize, pUsageStats, puiTotalBytesAllocated)))
 		{
 			goto Exit;
 		}
@@ -3737,11 +3769,6 @@ RCODE F_BufferAlloc::allocBuf(
 	if( pbAllocatedOnHeap)
 	{
 		*pbAllocatedOnHeap = FALSE;
-	}
-	
-	if( !pRelocator)
-	{
-		pRelocator = m_pDefaultRelocator;
 	}
 	
 	if( pAllocator)
@@ -3801,11 +3828,6 @@ RCODE F_BufferAlloc::reallocBuf(
 
 	f_assert( uiNewSize);
 	
-	if( !pRelocator)
-	{
-		pRelocator = m_pDefaultRelocator;
-	}
-
 	if( !uiOldSize)
 	{
 		rc = allocBuf( pRelocator, uiNewSize, pvInitialData, uiDataSize, 
@@ -3852,7 +3874,7 @@ RCODE F_BufferAlloc::reallocBuf(
 			}
 			
 			m_pSlabManager->incrementTotalBytesAllocated( 
-				f_msize( pucTmp), FALSE);
+				f_msize( pucTmp), bLockedMutex);
 			
 			if( pbAllocatedOnHeap)
 			{
@@ -3876,7 +3898,7 @@ RCODE F_BufferAlloc::reallocBuf(
 			}
 
 			m_pSlabManager->decrementTotalBytesAllocated( 
-					f_msize( *ppucBuffer), TRUE);			
+					f_msize( *ppucBuffer), bLockedMutex);			
 			f_free( ppucBuffer);
 			*ppucBuffer = pucTmp;
 		}
@@ -3893,9 +3915,10 @@ RCODE F_BufferAlloc::reallocBuf(
 			}
 			
 			m_pSlabManager->decrementTotalBytesAllocated( 
-				uiOldAllocSize, TRUE);
+				uiOldAllocSize, bLockedMutex);
+
 			m_pSlabManager->incrementTotalBytesAllocated( 
-				f_msize( *ppucBuffer), TRUE);
+				f_msize( *ppucBuffer), bLockedMutex);
 			
 			if( pbAllocatedOnHeap)
 			{
@@ -4102,8 +4125,10 @@ Desc:
 ****************************************************************************/ 
 RCODE F_MultiAlloc::setup(
 	IF_SlabManager *		pSlabManager,
+	IF_Relocator *			pDefaultRelocator,
 	FLMUINT *				puiCellSizes,
-	FLM_SLAB_USAGE *		pUsageStats)
+	FLM_SLAB_USAGE *		pUsageStats,
+	FLMUINT *				puiTotalBytesAllocated)
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiLoop;
@@ -4159,8 +4184,9 @@ RCODE F_MultiAlloc::setup(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( NULL,
-			pSlabManager, m_puiCellSizes[ uiLoop], pUsageStats)))
+		if( RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( pSlabManager,
+			pDefaultRelocator, m_puiCellSizes[ uiLoop], 
+			pUsageStats, puiTotalBytesAllocated)))
 		{
 			goto Exit;
 		}
@@ -4270,7 +4296,7 @@ RCODE F_MultiAlloc::reallocBuf(
 
 	if( !(*ppucBuffer))
 	{
-		rc = allocBuf( pRelocator, uiNewSize, ppucBuffer);
+		rc = allocBuf( pRelocator, uiNewSize, ppucBuffer, FALSE);
 		goto Exit;
 	}
 

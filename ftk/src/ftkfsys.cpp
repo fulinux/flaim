@@ -96,12 +96,6 @@ public:
 		FLMUINT					uiIoFlags,
 		IF_FileHdl **			ppFile);
 
-	RCODE FLMAPI createBlockFile(
-		const char *			pszFileName,
-		FLMUINT					uiIoFlags,
-		FLMUINT					uiBlockSize,
-		IF_FileHdl **			ppFile);
-
 	RCODE FLMAPI createUniqueFile(
 		char *					pszPath,
 		const char *			pszFileExtension,
@@ -115,12 +109,6 @@ public:
 	RCODE FLMAPI openFile(
 		const char *			pszFileName,
 		FLMUINT					uiIoFlags,
-		IF_FileHdl **			ppFile);
-
-	RCODE FLMAPI openBlockFile(
-		const char *			pszFileName,
-		FLMUINT					uiIoFlags,
-		FLMUINT					uiBlockSize,
 		IF_FileHdl **			ppFile);
 
 	RCODE FLMAPI openDir(
@@ -413,12 +401,30 @@ Desc:
 RCODE f_allocFileSystem(
 	IF_FileSystem **		ppFileSystem)
 {
-	if( (*ppFileSystem = f_new F_FileSystem) == NULL)
+	RCODE						rc = NE_FLM_OK;
+	F_FileSystem *			pFileSystem = NULL;
+
+	if( (pFileSystem = f_new F_FileSystem) == NULL)
 	{
 		return( RC_SET( NE_FLM_MEM));
 	}
+
+	if( RC_BAD( rc = pFileSystem->setup()))
+	{
+		goto Exit;
+	}
+
+	*ppFileSystem = pFileSystem;
+	pFileSystem = NULL;
+
+Exit:
+
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
 	
-	return( NE_FLM_OK);
+	return( rc);
 }
 	
 /****************************************************************************
@@ -510,43 +516,6 @@ Exit:
 }
 
 /****************************************************************************
-Desc:    Create a block-oriented file, return a file handle to created file.
-****************************************************************************/
-RCODE FLMAPI F_FileSystem::createBlockFile(
-	const char *	pszFileName,
-	FLMUINT			uiIoFlags,
-	FLMUINT			uiBlockSize,
-	IF_FileHdl **	ppFileHdl)
-{
-	RCODE				rc = NE_FLM_OK;
-	F_FileHdl *		pFileHdl = NULL;
-
-	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
-	{
-		goto Exit;
-	}
-
-	pFileHdl->setBlockSize( uiBlockSize);
-	
-	if (RC_BAD( rc = pFileHdl->create( pszFileName, uiIoFlags)))
-	{
-		goto Exit;
-	}
-	
-	*ppFileHdl = pFileHdl;
-	pFileHdl = NULL;
-
-Exit:
-
-	if( pFileHdl)
-	{
-		pFileHdl->Release();
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:	Create a unique file, return a file handle to created file.
 ****************************************************************************/
 RCODE FLMAPI F_FileSystem::createUniqueFile(
@@ -597,43 +566,6 @@ RCODE FLMAPI F_FileSystem::openFile(
 	{
 		goto Exit;
 	}
-	
-	if (RC_BAD( rc = pFileHdl->open( pszFileName, uiIoFlags)))
-	{
-		goto Exit;
-	}
-	
-	*ppFileHdl = pFileHdl;
-	pFileHdl = NULL;
-
-Exit:
-
-	if( pFileHdl)
-	{
-		pFileHdl->Release();
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Open a block-oriented file, return a file handle to opened file.
-****************************************************************************/
-RCODE FLMAPI F_FileSystem::openBlockFile(
-	const char *	pszFileName,
-	FLMUINT			uiIoFlags,
-	FLMUINT			uiBlockSize,
-	IF_FileHdl **	ppFileHdl)
-{
-	RCODE				rc = NE_FLM_OK;
-	F_FileHdl *		pFileHdl = NULL;
-
-	if( RC_BAD( rc = f_allocFileHdl( &pFileHdl)))
-	{
-		goto Exit;
-	}
-	
-	pFileHdl->setBlockSize( uiBlockSize);
 	
 	if (RC_BAD( rc = pFileHdl->open( pszFileName, uiIoFlags)))
 	{
@@ -2481,4 +2413,26 @@ Exit:
 	}
 	
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_pathReduce(
+	const char *			pszSourcePath,
+	char *					pszDestPath,
+	char *					pszString)
+{
+	return( f_getFileSysPtr()->pathReduce( 
+		pszSourcePath, pszDestPath, pszString));
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_pathAppend(
+	char *					pszPath,
+	const char *			pszPathComponent)
+{
+	return( f_getFileSysPtr()->pathAppend( pszPath, pszPathComponent)); 
 }

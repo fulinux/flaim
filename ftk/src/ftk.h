@@ -483,9 +483,10 @@
 	#define NE_FLM_CLOSING_FILE								0xC226			///< 0xC226 - Unexpected error occurred while closing a file.
 	#define NE_FLM_GETTING_FILE_INFO							0xC227			///< 0xC227 - Unexpected error occurred while getting information about a file.
 	#define NE_FLM_EXPANDING_FILE								0xC228			///< 0xC228 - Unexpected error occurred while expanding a file.
-	#define NE_FLM_CHECKING_FILE_EXISTENCE					0xC229			///< 0xC229 - Unexpected error occurred while checking to see if a file exists.
-	#define NE_FLM_RENAMING_FILE								0xC22A			///< 0xC22A - Unexpected error occurred while renaming a file.
-	#define NE_FLM_SETTING_FILE_INFO							0xC22B			///< 0xC22B - Unexpected error occurred while setting a file's information.
+	#define NE_FLM_GETTING_FREE_BLOCKS						0xC229			///< 0xC229 - Unexpected error getting free blocks from file system.
+	#define NE_FLM_CHECKING_FILE_EXISTENCE					0xC22A			///< 0xC22A - Unexpected error occurred while checking to see if a file exists.
+	#define NE_FLM_RENAMING_FILE								0xC22B			///< 0xC22B - Unexpected error occurred while renaming a file.
+	#define NE_FLM_SETTING_FILE_INFO							0xC22C			///< 0xC22C - Unexpected error occurred while setting a file's information.
 
 	// Stream Errors - These are new
 
@@ -799,6 +800,9 @@
 	
 	#define F_THREAD_MIN_STACK_SIZE				(16 * 1024)
 	#define F_THREAD_DEFAULT_STACK_SIZE			(16 * 1024)
+	
+	#define F_DEFAULT_THREAD_GROUP				0
+	#define F_INVALID_THREAD_GROUP				0xFFFFFFFF
 	
 	typedef RCODE (* F_THREAD_FUNC)(IF_Thread *);
 	
@@ -1345,12 +1349,6 @@
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 
-		virtual RCODE FLMAPI createBlockFile(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags,
-			FLMUINT					uiBlockSize,
-			IF_FileHdl **			ppFile) = 0;
-
 		virtual RCODE FLMAPI createUniqueFile(
 			char *					pszPath,
 			const char *			pszFileExtension,
@@ -1364,12 +1362,6 @@
 		virtual RCODE FLMAPI openFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
-			IF_FileHdl **			ppFile) = 0;
-
-		virtual RCODE FLMAPI openBlockFile(
-			const char *			pszFileName,
-			FLMUINT					uiIoFlags,
-			FLMUINT					uiBlockSize,
 			IF_FileHdl **			ppFile) = 0;
 
 		virtual RCODE FLMAPI openDir(
@@ -1472,6 +1464,15 @@
 	RCODE FLMAPI f_getcwd(
 		char *					pszDir);
 		
+	RCODE FLMAPI f_pathReduce(
+		const char *			pszSourcePath,
+		char *					pszDestPath,
+		char *					pszString);
+
+	RCODE FLMAPI f_pathAppend(
+		char *					pszPath,
+		const char *			pszPathComponent);
+			
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1530,11 +1531,6 @@
 		virtual void FLMAPI setMaxAutoExtendSize(
 			FLMUINT					uiMaxAutoExtendSize) = 0;
 			
-		virtual void FLMAPI setBlockSize(
-			FLMUINT					uiBlockSize) = 0;
-			
-		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
-		
 		virtual FLMUINT FLMAPI getSectorSize( void) = 0;
 			
 		virtual FLMBOOL FLMAPI isReadOnly( void) = 0;
@@ -2003,7 +1999,7 @@
 		virtual RCODE FLMAPI startThread(
 			F_THREAD_FUNC			fnThread,
 			const char *			pszThreadName = NULL,
-			FLMUINT					uiThreadGroup = 0,
+			FLMUINT					uiThreadGroup = F_DEFAULT_THREAD_GROUP,
 			FLMUINT					uiAppId = 0,
 			void *					pvParm1 = NULL,
 			void *					pvParm2 = NULL,
@@ -2054,7 +2050,7 @@
 		IF_Thread **			ppThread,
 		F_THREAD_FUNC			fnThread,
 		const char *			pszThreadName = NULL,
-		FLMUINT					uiThreadGroup = 0,
+		FLMUINT					uiThreadGroup = F_DEFAULT_THREAD_GROUP,
 		FLMUINT					uiAppId = 0,
 		void *					pvParm1 = NULL,
 		void *					pvParm2 = NULL,
@@ -3528,10 +3524,11 @@
 	flminterface FLMEXP IF_FixedAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
-			IF_Relocator *			pRelocator,
 			IF_SlabManager *		pSlabManager,
+			IF_Relocator *			pDefaultRelocator,
 			FLMUINT					uiCellSize,
-			FLM_SLAB_USAGE *		pUsageStats) = 0;
+			FLM_SLAB_USAGE *		pUsageStats,
+			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
 		virtual void * FLMAPI allocCell(
 			IF_Relocator *			pRelocator = NULL,
@@ -3562,8 +3559,9 @@
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
+			IF_Relocator *			pDefaultRelocator,
 			FLM_SLAB_USAGE *		pUsageStats,
-			IF_Relocator *			pDefaultRelocator = NULL) = 0;
+			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
 		virtual RCODE FLMAPI allocBuf(
 			IF_Relocator *			pRelocator,
@@ -3605,8 +3603,10 @@
 	{
 		virtual RCODE FLMAPI setup(
 			IF_SlabManager *		pSlabManager,
+			IF_Relocator *			pDefaultRelocator,
 			FLMUINT *				puiCellSizes,
-			FLM_SLAB_USAGE *		pUsageStats) = 0;
+			FLM_SLAB_USAGE *		pUsageStats,
+			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
 		virtual RCODE FLMAPI allocBuf(
 			IF_Relocator *			pRelocator,
@@ -4342,22 +4342,35 @@
 	} eLockType;
 
 	/****************************************************************************
-	Desc:
+	/// Abstract base class to get lock information.  The application must
+	/// implement this class.  A pointer to an object of this class is passed
+	/// into IF_LockObject::getLockInfo().
 	****************************************************************************/
 	flminterface IF_LockInfoClient : public F_Object
 	{
-		virtual FLMBOOL FLMAPI setLockCount(	// Return TRUE to continue, FALSE to stop
-			FLMUINT					uiTotalLocks) = 0;
+		/// Return the lock count.  This method is called by to tell the
+		/// application how many lock holders plus lock waiters there are.  This
+		/// gives the application an opportunity to allocate memory to hold the
+		/// information that will be returned via the 
+		/// IF_LockInfoClient::addLockInfo() method.  The application should
+		/// return TRUE from this method in order to continue, FALSE if it wants
+		/// to stop and return from the IF_LockObject::getLockInfo() function.
+		virtual FLMBOOL FLMAPI setLockCount(
+			FLMUINT					uiTotalLocks		///< Total number of lock holders plus lock waiters.
+			) = 0;
 
-		virtual FLMBOOL FLMAPI addLockInfo(		// Return TRUE to continue, FALSE to stop
-			FLMUINT					uiLockNum,		// Position in queue (0 = lock holder,
-															// 1 ... n = lock waiter)
-			FLMUINT					uiThreadID,		// Thread ID of the lock holder/waiter
-			FLMUINT					uiTime) = 0;	// For the lock holder, this is the
-															// time when the lock was obtained.
-															// For a lock waiter, this is the time
-															// that the waiter was placed in the queue.
-															// Both times are presented in milliseconds.
+		/// Return lock information for a lock holder or waiter.  This method
+		/// is called for each thread that is either holding the lock or waiting
+		/// to obtain the lock.  The application should return TRUE from this
+		/// method in order to continue, FALSE if it wants to stop and return
+		/// from the IF_LockObject::getLockInfo() function.
+		virtual FLMBOOL FLMAPI addLockInfo(
+			FLMUINT		uiLockNum,			///< Position in queue (0 = lock holder, 1..n = lock waiter).
+			FLMUINT		uiThreadID,			///< Thread ID of the lock holder/waiter.
+			FLMUINT		uiTime				///< For the lock holder, this is the amount of time the lock has been
+													///< held.\   For a lock waiter, this is the amount of time the thread
+													///< has been waiting to obtain the lock.\  Both times are milliseconds.
+			) = 0;
 	};
 															
 	#define FLM_NO_TIMEOUT				0xFF
@@ -4383,6 +4396,17 @@
 	} F_LOCK_STATS;
 			
 	/****************************************************************************
+	/// Structure that gives information on threads that are either waiting to
+	/// obtain a lock or have obtained a lock.
+	****************************************************************************/
+	typedef struct
+	{
+		FLMUINT		uiThreadId;							///< Thread id of thread that is waiting to obtain a lock or holds a lock.
+		FLMUINT		uiTime;								///< For lock holder, this is the time the lock was obtained.
+																///< For the lock waiter, this is the time he started waiting for the lock.
+	} F_LOCK_USER;
+	
+	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface IF_LockObject : public F_Object
@@ -4405,12 +4429,16 @@
 			FLMINT					iPriority,
 			eLockType *				peCurrLockType,
 			FLMUINT *				puiThreadId,
+			FLMUINT *				puiLockHeldTime = NULL,
 			FLMUINT *				puiNumExclQueued = NULL,
 			FLMUINT *				puiNumSharedQueued = NULL,
 			FLMUINT *				puiPriorityCount = NULL) = 0;
 			
 		virtual RCODE FLMAPI getLockInfo(
 			IF_LockInfoClient *	pLockInfo) = 0;
+	
+		virtual RCODE FLMAPI getLockQueue(
+			F_LOCK_USER **			ppLockUsers) = 0;
 	
 		virtual FLMBOOL FLMAPI haveHigherPriorityWaiter(
 			FLMINT					iPriority) = 0;
@@ -4759,6 +4787,8 @@
 	
 	void FLMAPI FTXSetRefreshState(
 		FLMBOOL			bDisable);
+		
+	FLMBOOL FLMAPI FTXRefreshDisabled( void);
 	
 	RCODE FLMAPI FTXAddKey(
 		FLMUINT			uiKey);

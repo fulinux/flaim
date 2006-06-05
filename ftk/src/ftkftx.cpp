@@ -754,6 +754,20 @@ void FLMAPI FTXSetRefreshState(
 }
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI FTXRefreshDisabled( void)
+{
+	FLMBOOL		bDisabled;
+	
+	f_mutexLock( gv_pFtxInfo->hFtxMutex);
+	bDisabled = gv_pFtxInfo->bRefreshDisabled;
+	f_mutexUnlock( gv_pFtxInfo->hFtxMutex);
+	
+	return( bDisabled);
+}
+
+/****************************************************************************
 Desc:		Allows a keyboard handler to add a key to the FTX key buffer
 ****************************************************************************/
 RCODE FLMAPI FTXAddKey(
