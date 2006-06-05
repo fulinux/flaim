@@ -5562,6 +5562,9 @@ void * F_Object::operator new(
 	FLMSIZET			uiSize,
 	const char *	pszFile,
 	int				iLine)
+#ifndef FLM_WATCOM_NLM
+		throw()
+#endif
 {
 	void *	pvReturnPtr = NULL;
 
@@ -5576,6 +5579,9 @@ void * F_Object::operator new[](
 	FLMSIZET			uiSize,
 	const char *	pszFile,
 	int				iLine)
+#ifndef FLM_WATCOM_NLM
+		throw()
+#endif
 {
 	void *	pvReturnPtr = NULL;
 
@@ -5654,6 +5660,9 @@ void * F_OSBase::operator new(
 	FLMSIZET			uiSize,
 	const char *,	// pszFile,
 	int)				// iLine)
+#ifndef FLM_WATCOM_NLM
+		throw()
+#endif
 {
 	return( os_malloc( uiSize));
 }
