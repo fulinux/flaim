@@ -1942,6 +1942,7 @@ status:
 	$(ec)$(gprintf) "Target Word Size................ $(target_word_size)\n"
 	$(ec)$(gprintf) "Target Build Type............... $(target_build_type)\n"
 	$(ec)$(gprintf) "Target Path..................... $(call ppath,$(target_path))\n"
+	$(ec)$(gprintf) "Toolkit Path.................... $(call ppath,$(ftk_dir))\n"
 	$(ec)$(gprintf) "Compiler........................ $(call ppath,$(compiler))\n"
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
