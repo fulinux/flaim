@@ -867,8 +867,11 @@
 		void * FLMAPI operator new(
 			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
 			const char *	pszFile,				///< Name of source file where this allocation is made.
-			int				iLine					///< Line number in source file where this allocation request is made.
-			);
+			int				iLine)					///< Line number in source file where this allocation request is made.
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 	
 		/// Overloaded new operator (array) for objects of this class (with source file and line number).
 		/// This new operator is called when an array of objects of this class are allocated.
@@ -877,8 +880,11 @@
 		void * FLMAPI operator new[](
 			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
 			const char *	pszFile,				///< Name of source file where this allocation is made.
-			int				iLine					///< Line number in source file where this allocation request is made.
-			);
+			int				iLine)				///< Line number in source file where this allocation request is made.
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 		
 		/// Overloaded delete operator for objects of this class.
 		void FLMAPI operator delete(
@@ -933,12 +939,20 @@
 		void * operator new(
 			FLMSIZET			uiSize,
 			const char *	pszFile,
-			int				iLine);
+			int				iLine)
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 	
 		void * operator new[](
 			FLMSIZET			uiSize,
 			const char *	pszFile,
-			int				iLine);
+			int				iLine)
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 		
 		void operator delete(
 			void *			ptr);
