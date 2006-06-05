@@ -23,7 +23,6 @@
 //-------------------------------------------------------------------------
 
 #include "sharutil.h"
-#include "wpscreen.h"
 
 FSTATIC RCODE propertyExists(
 	const char *		pszProperty,
@@ -332,8 +331,10 @@ void utilOutputLine(
 	const char * 		pszData, 
 	void * 				pvUserData)
 {
-	FTX_WINDOW * pMainWindow = (FTX_WINDOW*)pvUserData;
-	FLMUINT uiBack, uiFore;
+	FTX_WINDOW * 		pMainWindow = (FTX_WINDOW*)pvUserData;
+	eColorType	 		uiBack;
+	eColorType			uiFore;
+	
 	FTXWinGetBackFore( pMainWindow, &uiBack, &uiFore);
 	FTXWinCPrintf( pMainWindow, uiBack, uiFore, "%s\n", pszData);
 }
@@ -346,12 +347,15 @@ void utilPressAnyKey(
 	const char * 		pszMessage,
 	void * 				pvUserData)
 {
-	FTX_WINDOW * pMainWindow = (FTX_WINDOW*)pvUserData;
-	FLMUINT uiChar;
-	FLMUINT uiBack, uiFore;
+	FTX_WINDOW * 		pMainWindow = (FTX_WINDOW*)pvUserData;
+	FLMUINT 				uiChar;
+	eColorType			uiBack;
+	eColorType			uiFore;
+	
 	FTXWinGetBackFore( pMainWindow, &uiBack, &uiFore);
 	FTXWinCPrintf( pMainWindow, uiBack, uiFore, (char*)pszMessage);
-	while ( FTXWinTestKB( pMainWindow) != FTXRC_SUCCESS)
+	
+	while( RC_BAD( FTXWinTestKB( pMainWindow)))
 	{
 		f_sleep( 100); //don't hog the cpu
 	}
@@ -367,7 +371,6 @@ Desc:	routine to startup the TUI
 RCODE utilInitWindow(
 	const char *	pszTitle,
 	FLMUINT *		puiScreenRows,
-	FTX_INFO **		ppFtxInfo,
 	FTX_WINDOW **	ppMainWindow,
 	FLMBOOL *		pbShutdown)
 {
@@ -376,30 +379,25 @@ RCODE utilInitWindow(
 	FLMUINT			uiCols;
 	int				iResCode = 0;
 
-	if( FTXInit( pszTitle, 80, 50,
-		WPS_BLUE, WPS_WHITE, NULL, NULL, ppFtxInfo) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXInit( pszTitle, 80, 50, FLM_BLUE, FLM_WHITE, NULL, NULL)))
 	{
 		iResCode = 1;
 		goto Exit;
 	}
 
-	FTXSetShutdownFlag( *ppFtxInfo, pbShutdown);
+	FTXSetShutdownFlag( pbShutdown);
 
-	if( FTXScreenInit( *ppFtxInfo, pszTitle, &pScreen)
-		!= FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( pszTitle, &pScreen)))
 	{
 		iResCode = 1;
 		goto Exit;
 	}
-	if( FTXScreenGetSize( pScreen, &uiCols, puiScreenRows) != FTXRC_SUCCESS)
-	{
-		iResCode = 1;
-		goto Exit;
-	}
+	
+	FTXScreenGetSize( pScreen, &uiCols, puiScreenRows);
 
-	if ( FTXScreenInitStandardWindows( pScreen, WPS_RED, WPS_WHITE,
-		WPS_BLUE, WPS_WHITE, FALSE, FALSE, pszTitle,
-		&pTitleWin, ppMainWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInitStandardWindows( pScreen, FLM_RED, FLM_WHITE,
+		FLM_BLUE, FLM_WHITE, FALSE, FALSE, pszTitle,
+		&pTitleWin, ppMainWindow)))
 	{
 		iResCode = 1;
 		goto Exit;
@@ -412,93 +410,11 @@ Exit:
 /****************************************************************************
 Desc:	routine to shutdown the TUI
 ****************************************************************************/
-void utilShutdownWindow( FTX_INFO * pFtxInfo)
+void utilShutdownWindow( void)
 {
-	FTXFree( &pFtxInfo);
+	FTXExit();
 }
 	
-/****************************************************************************
-Desc:	read the contents of the argument file into the ppszReturnString buffer
-****************************************************************************/
-RCODE fileToString(
-	const char * 		pszFile,
-	char ** 				ppszReturnString)
-{
-	RCODE					rc = FERR_OK;
-	char *				pszBuffer = NULL;
-	F_FileHdl *			pFileHdl = NULL;
-	FLMUINT				uiFileSize = 0;
-	FLMUINT				uiBytesRead = 0;
-	
-	if (RC_BAD(rc = gv_FlmSysData.pFileSystem->Open(
-		pszFile, F_IO_RDONLY, &pFileHdl)))
-	{
-		goto Exit;
-	}
-	
-	if (RC_BAD( rc = pFileHdl->Size(&uiFileSize)))
-	{
-		goto Exit;
-	}
-	if( uiFileSize == 0)
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = f_alloc( uiFileSize + 1, &pszBuffer)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = pFileHdl->Read(0, uiFileSize,
-		pszBuffer, &uiBytesRead)))
-	{
-		goto Exit;
-	}
-	
-	flmAssert(uiFileSize == uiBytesRead);
-	pszBuffer[ uiFileSize] = 0;
-	
-Exit:
-
-	if(pFileHdl)
-	{
-		pFileHdl->Close();
-		pFileHdl->Release();
-	}
-	
-	if ( RC_BAD( rc) && pszBuffer)
-	{
-		f_free( &pszBuffer);
-	}
-	else if ( RC_OK( rc))
-	{
-		*ppszReturnString = pszBuffer;
-	}
-	
-	return rc;
-}
-
-/****************************************************************************
-Desc:	allocate a copy of the arg string and return it out
-****************************************************************************/
-char * getStringClone(
-	const char * pszSrcStr)
-{
-	char * 	pszReturnVal = NULL;
-
-	if( RC_BAD( f_alloc( f_strlen( pszSrcStr) + 1, &pszReturnVal)))
-	{
-		goto Exit;
-	}
-
-	f_strcpy( pszReturnVal, pszSrcStr);
-
-Exit:
-
-	return( pszReturnVal);
-}
-
 /****************************************************************************
 Desc:	fill a buffer with the current (or given) time
 ****************************************************************************/
@@ -559,13 +475,10 @@ FSTATIC RCODE propertyExists(
 		{
 			pszValue = (char *)(1 + f_strchr( pszValue, UTIL_PROP_DELIMITER));
 			
-			*ppszValue = getStringClone( pszValue);
-			
-			if ( !*ppszValue)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			 if( RC_BAD( rc = f_strdup( pszValue, ppszValue)))
+			 {
+				 goto Exit;
+			 }
 			
 			(f_strchr( *ppszValue, '\n'))[ 0] = 0; 
 		}
@@ -590,19 +503,25 @@ RCODE utilWriteProperty(
 	char *				pszContents = NULL;
 	char *				pszExistingProperty;
 	FlmStringAcc		newContents;
+	IF_FileSystem *	pFileSystem = NULL;
 
 	//can't have newlines in the props or values
 	
 	flmAssert( !f_strchr( pszProp, '\n'));
 	flmAssert( !f_strchr( pszValue, '\n'));
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
 
-	if( RC_BAD( gv_FlmSysData.pFileSystem->Exists( pszFile)))
+	if( RC_BAD( pFileSystem->doesFileExist( pszFile)))
 	{
 		//add trailing newline
 		TEST_RC( rc = f_filecpy( pszFile, "")); 
 	}
 	
-	if ( RC_BAD( fileToString( pszFile, &pszContents)))
+	if ( RC_BAD( f_filetobuf( pszFile, &pszContents)))
 	{
 		goto Exit;
 	}
@@ -674,11 +593,18 @@ RCODE utilWriteProperty(
 	rc = f_filecpy( pszFile, newContents.getTEXT());
 	
 Exit:
-	if ( pszContents)
+
+	if( pszContents)
 	{
 		f_free( &pszContents);
 	}
-	return rc; 
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+	
+	return( rc); 
 }
 
 /****************************************************************************
@@ -689,35 +615,45 @@ RCODE utilReadProperty(
 	const char *		pszProp,
 	FlmStringAcc *		pAcc)
 {
-	RCODE			rc = FERR_OK;
-	char *		pszContents = NULL;
-	char *		pszValue = NULL;
+	RCODE					rc = FERR_OK;
+	char *				pszContents = NULL;
+	char *				pszValue = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
 	
-	if( RC_BAD( gv_FlmSysData.pFileSystem->Exists( pszFile)))
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
 	{
-		//be nice here.  simply don't append anything into FlmStringAcc
 		goto Exit;
 	}
-	if ( RC_BAD( fileToString( pszFile, &pszContents)))
+	
+	if( RC_BAD( pFileSystem->doesFileExist( pszFile)))
+	{
+		goto Exit;
+	}
+	
+	if ( RC_BAD( f_filetobuf( pszFile, &pszContents)))
 	{
 		goto Exit;
 	}
 	
 	TEST_RC( rc = propertyExists( pszProp, pszContents, &pszValue));
-	
 	TEST_RC( rc = pAcc->appendTEXT( pszValue));
 
 Exit:
 
-	if ( pszValue)
+	if( pszValue)
 	{
 		f_free( &pszValue);
 	}
 	
-	if ( pszContents)
+	if( pszContents)
 	{
 		f_free( &pszContents);
 	}
 	
-	return rc; 
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+	
+	return( rc); 
 }

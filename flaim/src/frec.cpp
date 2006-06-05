@@ -24,15 +24,8 @@
 
 #include "flaimsys.h"
 
-#if defined( FLM_NLM) && !defined( __MWERKS__)
-	// Disable "Warning! W549: col(XX) 'sizeof' operand contains
-	// compiler generated information"
-	
-	#pragma warning 549 9
-#endif
-
 FSTATIC RCODE importTree( 
-	F_FileHdl *				pFileHdl,	
+	IF_FileHdl *			pFileHdl,	
 	char **					pBuf,
 	FLMUINT					uiBufSize,
 	F_NameTable *			pNameTable,
@@ -120,8 +113,8 @@ FlmRecord * FlmRecord::copy( void)
 	if( m_uiBufferSize)
 	{
 		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
-			m_uiBufferSize, &pNewRec, sizeof( FlmRecord *), &pNewRec->m_pucBuffer,
-			&bHeapAlloc)))
+			NULL, m_uiBufferSize, &pNewRec, sizeof( FlmRecord *), 
+			&pNewRec->m_pucBuffer, &bHeapAlloc)))
 		{
 			goto Exit;
 		}
@@ -141,9 +134,8 @@ FlmRecord * FlmRecord::copy( void)
 		FLMUINT	uiTableByteSize = fieldIdTableByteSize();
 		
 		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
-			uiTableByteSize,
-			&pNewRec, sizeof( FlmRecord *), &pNewRec->m_pucFieldIdTable,
-			&bHeapAlloc)))
+			NULL, uiTableByteSize, &pNewRec, sizeof( FlmRecord *),
+			&pNewRec->m_pucFieldIdTable, &bHeapAlloc)))
 		{
 			goto Exit;
 		}
@@ -1409,8 +1401,8 @@ RCODE FlmRecord::preallocSpace(
 	if( m_uiBufferSize < uiNewSize || (m_uiBufferSize - uiNewSize) >= 32)
 	{
 		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-			m_uiBufferSize, uiNewSize, &pThis, sizeof( FlmRecord *), &m_pucBuffer,
-			&bHeapAlloc)))
+			NULL, m_uiBufferSize, uiNewSize, &pThis, sizeof( FlmRecord *),
+			&m_pucBuffer, &bHeapAlloc)))
 		{
 			goto Exit;
 		}
@@ -1575,7 +1567,8 @@ RCODE FlmRecord::compressMemory( void)
 	// Re-allocate the buffer
 
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
-		uiNewSize, &pThis, sizeof( FlmRecord *), &pucNewBuf, &bHeapAlloc)))
+		NULL, uiNewSize, &pThis, sizeof( FlmRecord *),
+		&pucNewBuf, &bHeapAlloc)))
 	{
 		goto Exit;
 	}
@@ -1785,7 +1778,7 @@ RCODE FlmRecord::compactMemory( void)
 	// Temporarily increment the reference count so that we don't hit
 	// debug asserts while processing
 	
-	flmAtomicInc( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, TRUE); 
+	f_atomicInc( &m_refCnt); 
 	
 	if( !m_uiBufferSize ||
 		(!m_bHolesInData && m_uiDataBufOffset == getDataBufSize()))
@@ -1877,7 +1870,8 @@ RCODE FlmRecord::compactMemory( void)
 	// Allocate a new buffer
 
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf(
-		uiNewSize, &pThis, sizeof( FlmRecord *), &pucNewBuf, &bHeapAlloc)))
+		NULL, uiNewSize, &pThis, sizeof( FlmRecord *),
+		&pucNewBuf, &bHeapAlloc)))
 	{
 		goto Exit;
 	}
@@ -1885,10 +1879,9 @@ RCODE FlmRecord::compactMemory( void)
 	if (m_pucFieldIdTable)
 	{
 		uiFieldIdTableItemCount = getFieldIdTableItemCount( m_pucFieldIdTable);
-		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
-			calcFieldIdTableByteSize( uiFieldIdTableItemCount),
-			&pThis, sizeof( FlmRecord *), &pucNewFieldIdTable,
-			&bFieldIdHeapAlloc)))
+		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf(
+			NULL, calcFieldIdTableByteSize( uiFieldIdTableItemCount), &pThis,
+			sizeof( FlmRecord *), &pucNewFieldIdTable, &bFieldIdHeapAlloc)))
 		{
 			goto Exit;
 		}
@@ -2103,7 +2096,7 @@ Exit:
 			&pucNewFieldIdTable);
 	}
 	
-	flmAtomicDec( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, TRUE); 
+	f_atomicDec( &m_refCnt); 
 	return( rc);
 }
 
@@ -2151,7 +2144,7 @@ RCODE	FlmRecord::createField(
 			}
 
 			if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf(
-				m_uiBufferSize, uiNewSize, &pThis, sizeof( FlmRecord *), 
+				NULL, m_uiBufferSize, uiNewSize, &pThis, sizeof( FlmRecord *), 
 				&m_pucBuffer, &bHeapAlloc)))
 			{
 				goto Exit;
@@ -2421,8 +2414,8 @@ RCODE	FlmRecord::getNewDataPtr(
 									32;
 
 					if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-						m_uiBufferSize, uiNewSize,
-						&pThis, sizeof( FlmRecord *), &m_pucBuffer, &bHeapAlloc)))
+						NULL, m_uiBufferSize, uiNewSize, &pThis,
+						sizeof( FlmRecord *), &m_pucBuffer, &bHeapAlloc)))
 					{
 						goto Exit;
 					}
@@ -2481,7 +2474,7 @@ RCODE	FlmRecord::getNewDataPtr(
 								32;
 
 				if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-					m_uiBufferSize, uiNewSize,
+					NULL, m_uiBufferSize, uiNewSize,
 					&pThis, sizeof( FlmRecord *), &m_pucBuffer, &bHeapAlloc)))
 				{
 					goto Exit;
@@ -2637,7 +2630,7 @@ RCODE	FlmRecord::getNewDataPtr(
 									32;
 
 					if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-						m_uiBufferSize, uiNewSize,
+						NULL, m_uiBufferSize, uiNewSize,
 						&pThis, sizeof( FlmRecord *), &m_pucBuffer, &bHeapAlloc)))
 					{
 						goto Exit;
@@ -2770,7 +2763,7 @@ RCODE	FlmRecord::getNewDataPtr(
 										32;
 	
 						if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-							m_uiBufferSize, uiNewSize,
+							NULL, m_uiBufferSize, uiNewSize,
 							&pThis, sizeof( FlmRecord *), &m_pucBuffer, &bHeapAlloc)))
 						{
 							goto Exit;
@@ -2859,12 +2852,11 @@ Exit:
 /*****************************************************************************
 Desc:		Add a globally shared reference to this object.
 *****************************************************************************/
-FLMINT FlmRecord::AddRef(
-	FLMBOOL			bMutexLocked)
+FLMINT FLMAPI FlmRecord::AddRef( void)
 {
 	FLMINT		iRefCnt = 0;
 	
-	iRefCnt = flmAtomicInc( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, bMutexLocked);
+	iRefCnt = f_atomicInc( &m_refCnt);
 	flmAssert( iRefCnt > 1);
 	
 	return( iRefCnt);
@@ -2889,7 +2881,7 @@ FLMINT FlmRecord::Release(
 		}
 	}
 	
-	iRefCnt = flmAtomicDec( &m_refCnt, gv_FlmSysData.RCacheMgr.hMutex, bMutexLocked);
+	iRefCnt = f_atomicDec( &m_refCnt);
 
 	if( !iRefCnt)
 	{
@@ -3040,7 +3032,7 @@ void * FlmRecord::find(
 Desc:		Import a record from a file
 *****************************************************************************/
 RCODE FlmRecord::importRecord(
-	F_FileHdl *		pFileHdl,
+	IF_FileHdl *	pFileHdl,
 	F_NameTable *	pNameTable)
 {
 	char			ucBuffer[ 1024];
@@ -3074,7 +3066,7 @@ Desc : This function parses and builds one complete GEDCOM tree from a GEDCOM
 		 always start at zero.
 *****************************************************************************/
 FSTATIC RCODE importTree(
-	F_FileHdl *				pFileHdl,
+	IF_FileHdl *			pFileHdl,
 	char **					ppBuf,
 	FLMUINT					uiBufSize,
 	F_NameTable * 			pNameTable,
@@ -3087,7 +3079,7 @@ FSTATIC RCODE importTree(
 	FLMBYTE			nextChar;
 	FLMBOOL			bFirstFieldProcessed = FALSE;
 	RCODE				rc;
-	FLMUINT			startPos;
+	FLMUINT64		ui64StartPos;
 	
 	gedStream.pFileHdl = pFileHdl;
 	gedStream.pThis = *ppBuf;
@@ -3100,10 +3092,10 @@ FSTATIC RCODE importTree(
 	{
 		// Find 1st starting file position
 
-		if( RC_OK( pFileHdl->Seek( 0L, F_IO_SEEK_CUR, &gedStream.uiFilePos)))
+		if( RC_OK( pFileHdl->seek( 0, FLM_IO_SEEK_CUR, &gedStream.ui64FilePos)))
 		{
 			gedStream.pLast = gedStream.pBuf;
-			gedReadChar( &gedStream, gedStream.uiFilePos);
+			gedReadChar( &gedStream, gedStream.ui64FilePos);
 		}
 		else
 			return( RC_SET( FERR_FILE_ER));
@@ -3111,7 +3103,7 @@ FSTATIC RCODE importTree(
 	else
 	{
 		gedStream.errorIO = 0;
-		gedStream.uiFilePos = 0;
+		gedStream.ui64FilePos = 0;
 		gedStream.pLast = gedStream.pBuf + (uiBufSize - 1);
 		gedStream.thisC = f_toascii( *gedStream.pBuf);
 	}
@@ -3119,7 +3111,7 @@ FSTATIC RCODE importTree(
 	for(;;)
 	{
 		gedSkipBlankLines( &gedStream);
-		startPos = gedStream.uiFilePos;
+		ui64StartPos = gedStream.ui64FilePos;
 
 		if( f_isdigit( gedStream.thisC))
 		{
@@ -3183,9 +3175,9 @@ successful:
 				if( pFileHdl == NULL)
 				{
 					*ppBuf = gedStream.pThis + 
-									(FLMINT32)(startPos - gedStream.uiFilePos);
+									(FLMINT32)(ui64StartPos - gedStream.ui64FilePos);
 				}
-				gedStream.uiFilePos = startPos;
+				gedStream.ui64FilePos = ui64StartPos;
 				rc = FERR_OK;
 			}
 			else
@@ -3211,8 +3203,8 @@ successful:
 
 	if( pFileHdl)
 	{
-		pFileHdl->Seek( gedStream.uiFilePos, 
-			F_IO_SEEK_SET, &gedStream.uiFilePos);
+		pFileHdl->seek( gedStream.ui64FilePos, 
+			FLM_IO_SEEK_SET, &gedStream.ui64FilePos);
 	}
 
 	return( rc);
@@ -3228,7 +3220,7 @@ FSTATIC RCODE importField(
 	F_NameTable * 	pNameTable,
 	FlmRecord *		pRec)
 {
-	FLMUINT		startPos;
+	FLMUINT64	ui64StartPos;
 	RCODE			rc = FERR_OK;
 	FLMUINT		drn = 0;
 	FLMUINT		uiTagNum;
@@ -3239,7 +3231,7 @@ FSTATIC RCODE importField(
 
 	// Process optional xref-id
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 	if( pGedStream->thisC == ASCII_AT)
 	{
 		int badDRN;
@@ -3290,7 +3282,7 @@ FSTATIC RCODE importField(
 
 	// Determine the Tag Number and insert a new field
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 
 	if( !gedCopyTag( pGedStream, tagBuf))
 	{
@@ -3325,7 +3317,7 @@ FSTATIC RCODE importField(
 
 	// Alternate xref_ptr used instead of "value"
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 	if( pGedStream->thisC == ASCII_AT)
 	{
 		for( drn = 0; gedNextChar( pGedStream) != ASCII_AT;)
@@ -3358,8 +3350,8 @@ FSTATIC RCODE importField(
 	}
 	else
 	{
-		FLMINT	valLength;
-		FLMUINT	tempPos = pGedStream->uiFilePos;
+		FLMINT		valLength;
+		FLMUINT64	ui64TempPos = pGedStream->ui64FilePos;
 
 		if( (valLength = gedCopyValue( pGedStream, NULL)) > 0)
 		{
@@ -3371,16 +3363,17 @@ FSTATIC RCODE importField(
 			{
 				goto Exit;
 			}
-			gedReadChar( pGedStream, tempPos);
+			
+			gedReadChar( pGedStream, ui64TempPos);
 			gedCopyValue( pGedStream, (char *)vp);
 		}
 	}
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 
 Exit:
 
-	gedReadChar( pGedStream, startPos);
+	gedReadChar( pGedStream, ui64StartPos);
 	return( rc);
 }
 
@@ -3445,7 +3438,7 @@ FLMINT gedCopyValue(
 	FLMUINT		valLength = 0;
 	FLMUINT		wsCount;
 	FLMUINT		lineLength = 0;
-	FLMUINT		firstPos = 0;
+	FLMUINT64	ui64FirstPos = 0;
 	FLMBYTE		c;
 
 	for(;;)
@@ -3454,11 +3447,11 @@ FLMINT gedCopyValue(
 		if( pGedStream->thisC == ASCII_DQUOTE)
 		{
 			gedNextChar( pGedStream);
-			firstPos = pGedStream->uiFilePos;
+			ui64FirstPos = pGedStream->ui64FilePos;
 		}
 		else
 		{
-			firstPos = 0;
+			ui64FirstPos = 0;
 		}
 
 		for( lineLength = 0;;)
@@ -3489,7 +3482,7 @@ FLMINT gedCopyValue(
 								continue;
 
 							default:
-								gedReadChar( pGedStream, pGedStream->uiFilePos - 1);
+								gedReadChar( pGedStream, pGedStream->ui64FilePos - 1);
 								lineLength += wsCount;
 								goto valid;
 						}
@@ -3508,7 +3501,7 @@ eol:				if( lineLength)
 						valLength += lineLength;
 						if( dest)
 						{
-							gedReadChar( pGedStream, firstPos);
+							gedReadChar( pGedStream, ui64FirstPos);
 							while( lineLength--)
 							{
 								c = (FLMBYTE)pGedStream->thisC;
@@ -3559,9 +3552,9 @@ valid:
 						OEMcount += 1;
 					}
 
-					if( !firstPos)
+					if( !ui64FirstPos)
 					{
-						firstPos = pGedStream->uiFilePos;
+						ui64FirstPos = pGedStream->ui64FilePos;
 					}
 					lineLength++;
 					gedNextChar( pGedStream);
@@ -3634,7 +3627,7 @@ FLMINT gedNextChar(
 		FLMUINT	bytesRead;
 		RCODE		rc;
 
-		rc = pGedStream->pFileHdl->Read( F_IO_CURRENT_POS,
+		rc = pGedStream->pFileHdl->read( FLM_IO_CURRENT_POS,
 			pGedStream->uiBufSize, pGedStream->pBuf, &bytesRead);
 
 		if( rc == FERR_OK	|| (rc == FERR_IO_END_OF_FILE && bytesRead))
@@ -3642,7 +3635,7 @@ FLMINT gedNextChar(
 			pGedStream->pThis = pGedStream->pBuf;
 			pGedStream->pLast = pGedStream->pBuf + (bytesRead - 1);
 returnC:
-			pGedStream->uiFilePos++;
+			pGedStream->ui64FilePos++;
 			return( pGedStream->thisC = f_toascii( *pGedStream->pThis));
 		}
 		pGedStream->errorIO = rc != FERR_IO_END_OF_FILE;
@@ -3655,7 +3648,7 @@ Desc:	get an ASCII character at absolute file position and reset pointers
 *****************************************************************************/
 FLMINT gedReadChar(
 	GED_STREAM *	pGedStream,
-	FLMUINT			uiFilePos)
+	FLMUINT64		ui64FilePos)
 {
 	RCODE				rc = FERR_OK;
 	
@@ -3667,14 +3660,14 @@ FLMINT gedReadChar(
 		char *		pszTemp;
 		
 		pszTemp = pGedStream->pThis + 
-						(FLMINT32)(uiFilePos - pGedStream->uiFilePos);
+						(FLMINT32)(ui64FilePos - pGedStream->ui64FilePos);
 
 		if( pGedStream->pBuf == pGedStream->pLast ||
 			 pszTemp > pGedStream->pLast || pszTemp < pGedStream->pBuf)
 		{
-			if( RC_OK(rc = pGedStream->pFileHdl->Seek( uiFilePos,
-					F_IO_SEEK_SET, &pGedStream->uiFilePos)) &&
-				(RC_OK( rc = pGedStream->pFileHdl->Read( F_IO_CURRENT_POS, 
+			if( RC_OK(rc = pGedStream->pFileHdl->seek( ui64FilePos,
+					FLM_IO_SEEK_SET, &pGedStream->ui64FilePos)) &&
+				(RC_OK( rc = pGedStream->pFileHdl->read( FLM_IO_CURRENT_POS, 
 					pGedStream->uiBufSize, pGedStream->pBuf, &bytesRead)) ||
 					(rc == FERR_IO_END_OF_FILE && bytesRead)))
 			{
@@ -3690,19 +3683,19 @@ FLMINT gedReadChar(
 		}
 		else
 		{
-			pGedStream->uiFilePos = uiFilePos;
+			pGedStream->ui64FilePos = ui64FilePos;
 			pGedStream->pThis = pszTemp;
 			return( pGedStream->thisC = f_toascii( *pszTemp));
 		}
 	}
 
-	if( (pGedStream->pBuf + uiFilePos) > pGedStream->pLast)
+	if( (pGedStream->pBuf + ui64FilePos) > pGedStream->pLast)
 	{
 		return( pGedStream->thisC = '\0');
 	}
 
-	pGedStream->pThis = pGedStream->pBuf + uiFilePos;
-	pGedStream->uiFilePos = uiFilePos;
+	pGedStream->pThis = pGedStream->pBuf + ui64FilePos;
+	pGedStream->ui64FilePos = ui64FilePos;
 
 	return( pGedStream->thisC = f_toascii( *pGedStream->pThis));
 }
@@ -3805,7 +3798,7 @@ Desc:		Export the record to GEDCOM
 *****************************************************************************/
 RCODE FlmRecord::exportRecord(
 	HFDB			hDb,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppRoot)
 {
 	RCODE			rc = FERR_OK;
@@ -4655,22 +4648,16 @@ Desc:
 ****************************************************************************/
 void * FlmRecord::operator new(
 	FLMSIZET			uiSize)
-#ifndef FLM_NLM	
-	throw()
-#endif
 {
 	F_UNREFERENCED_PARM( uiSize);
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
-	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( objectAllocInit));
+	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( NULL, objectAllocInit));
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void * FlmRecord::operator new[]( FLMSIZET)
-#ifndef FLM_NLM	
-	throw()
-#endif
 {
 	flmAssert( 0);
 	return( NULL);
@@ -4684,12 +4671,9 @@ void * FlmRecord::operator new(
 	FLMSIZET			uiSize,
 	const char *,
 	int)
-#ifndef FLM_NLM	
-	throw()
-#endif
 {
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
-	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( objectAllocInit));
+	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( NULL, objectAllocInit));
 }
 #endif
 
@@ -4701,9 +4685,6 @@ void * FlmRecord::operator new[](
 	FLMSIZET,		// uiSize,
 	const char *,	// pszFile,
 	int)				// iLine)
-#ifndef FLM_NLM	
-	throw()
-#endif
 {
 	flmAssert( 0);
 	return( NULL);
@@ -5269,8 +5250,8 @@ RCODE FlmRecord::addToFieldIdTable(
 		if (!uiItemCount)
 		{
 			if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->allocBuf( 
-				uiNewByteSize, &pThis, sizeof( FlmRecord *), &m_pucFieldIdTable,
-				&bHeapAlloc)))
+				NULL, uiNewByteSize, &pThis, sizeof( FlmRecord *), 
+				&m_pucFieldIdTable, &bHeapAlloc)))
 			{
 				goto Exit;
 			}
@@ -5278,9 +5259,8 @@ RCODE FlmRecord::addToFieldIdTable(
 		else
 		{
 			if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-				fieldIdTableByteSize(),
-				uiNewByteSize, &pThis, sizeof( FlmRecord *),
-				&m_pucFieldIdTable, &bHeapAlloc)))
+				NULL, fieldIdTableByteSize(), uiNewByteSize, &pThis,
+				sizeof( FlmRecord *), &m_pucFieldIdTable, &bHeapAlloc)))
 			{
 				goto Exit;
 			}
@@ -5352,9 +5332,8 @@ RCODE FlmRecord::removeFromFieldIdTable(
 			if (uiTableSize > uiItemCount + 32)
 			{
 				if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-					fieldIdTableByteSize(), calcFieldIdTableByteSize( uiItemCount),
-					&pThis, sizeof( FlmRecord *),
-					&m_pucFieldIdTable, &bHeapAlloc)))
+					NULL, fieldIdTableByteSize(), calcFieldIdTableByteSize( uiItemCount),
+					&pThis, sizeof( FlmRecord *), &m_pucFieldIdTable, &bHeapAlloc)))
 				{
 					goto Exit;
 				}
@@ -5502,9 +5481,8 @@ RCODE FlmRecord::truncateFieldIdTable( void)
 		FlmRecord *	pThis = this;
 
 		if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->reallocBuf( 
-			fieldIdTableByteSize(), calcFieldIdTableByteSize( uiItemCount),
-			&pThis, sizeof( FlmRecord *),
-			&m_pucFieldIdTable, &bHeapAlloc)))
+			NULL, fieldIdTableByteSize(), calcFieldIdTableByteSize( uiItemCount),
+			&pThis, sizeof( FlmRecord *), &m_pucFieldIdTable, &bHeapAlloc)))
 		{
 			goto Exit;
 		}
@@ -5527,7 +5505,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class RecCursor : public F_Base
+class RecCursor : public F_Object
 {
 public:
 
@@ -6216,4 +6194,3 @@ RCODE flmDecrField(
 	
 	return( rc);
 }
-

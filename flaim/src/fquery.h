@@ -31,7 +31,6 @@
 
 class FSIndexCursor;
 class FSDataCursor;
-class FDynSearchSet;
 
 #define FLM_ALL_BOOL					(FLM_TRUE | FLM_FALSE | FLM_UNK)
 
@@ -324,7 +323,7 @@ typedef struct SUBQUERY
 	FLMUINT					uiNotEqualDrn;
 	FLMBOOL					bHaveDrnFlds;			// Part of query involved DRN==x
 	FLMUINT					uiLanguage;
-	POOL						OptPool;
+	F_Pool					OptPool;
 	FCURSOR_SUBQUERY_STATUS
 								SQStatus;
 	FlmRecord *				pRec;
@@ -362,12 +361,12 @@ typedef struct CURSOR
 	FLMUINT					uiLastPrcntOffs;
 	FLMBOOL					bUsePrcntPos;
 
-	FDynSearchSet *		pDRNSet;
+	IF_ResultSet *			pDRNSet;
 	FLMBOOL					bEliminateDups;
 	QTINFO					QTInfo;
 	RCODE						rc;
-	POOL						SQPool;
-	POOL						QueryPool;
+	F_Pool					SQPool;
+	F_Pool					QueryPool;
 	void *					pOptMark;
 	FLMBOOL					bOptimized;
 	FLMBOOL					bEmpty;
@@ -427,7 +426,7 @@ RCODE flmInitCurCS(
 RCODE flmCurGetAtomVal(
 	FlmRecord *		pRecord,
 	void *			pField,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QTYPES			eFldType,
 	FQATOM *			pResult);
 
@@ -502,7 +501,7 @@ FLMUINT flmTextMatch(
 RCODE flmCurMakeKeyFromRec(
 	FDB *				pDb,
 	IXD *				pIxd,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FlmRecord *		pRec,
 	FLMBYTE **		ppucKeyBuffer,
 	FLMUINT *		puiKeyLen);
@@ -515,7 +514,7 @@ RCODE flmCurCopyQNode(
 	FQNODE *			pSrcNode,
 	QTINFO *			pDestQTInfo,
 	FQNODE *  * 	ppDestNode,
-	POOL *			pPool);
+	F_Pool *			pPool);
 
 RCODE flmCurPrep(
 	CURSOR *			pCursor);
@@ -564,7 +563,7 @@ RCODE flmPutValInAtom(
 	FLMUINT			uiFlags);
 
 RCODE flmCurMakeQNode(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QTYPES			eType,
 	void *			pVal,
 	FLMUINT			uiStrLen,
@@ -572,7 +571,7 @@ RCODE flmCurMakeQNode(
 	FQNODE *  *		ppQNode);
 
 RCODE flmCurGraftNode(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FQNODE *			pQNode,
 	QTYPES			eGraftOp,
 	FQNODE *  *		ppQTree);

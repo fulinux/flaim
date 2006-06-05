@@ -25,10 +25,10 @@
 #include "flm_dlst.h"
 
 RCODE flstIndexManagerThread(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 RCODE flstMemoryManagerThread(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 RCODE flstTrackerMonitorThread(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);

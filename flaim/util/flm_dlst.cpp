@@ -26,8 +26,7 @@
 #include "flm_dlst.h"
 
 /****************************************************************************
-Name:	N/A
-Desc:	Default constructor
+Desc:
 *****************************************************************************/
 F_DynamicList::F_DynamicList( void)
 {
@@ -43,8 +42,7 @@ F_DynamicList::F_DynamicList( void)
 }
 
 /****************************************************************************
-Name:	N/A
-Desc:	Default destructor
+Desc:
 *****************************************************************************/
 F_DynamicList::~F_DynamicList( void)
 {
@@ -65,7 +63,6 @@ F_DynamicList::~F_DynamicList( void)
 }
 
 /****************************************************************************
-Name:	setup
 Desc:	Allocates the list window and prepares the object for use
 *****************************************************************************/
 RCODE F_DynamicList::setup( FTX_WINDOW * pInitializedWindow)
@@ -75,12 +72,8 @@ RCODE F_DynamicList::setup( FTX_WINDOW * pInitializedWindow)
 	flmAssert( pInitializedWindow != NULL);
 	m_pListWin = pInitializedWindow;
 
-	/*
-	Create the list window
-	*/
 	FTXWinClear( m_pListWin);
-	
-	FTXWinSetCursorType( m_pListWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( m_pListWin, FLM_CURSOR_INVISIBLE);
 	FTXWinSetScroll( m_pListWin, FALSE);
 	FTXWinSetLineWrap( m_pListWin, FALSE);
 	FTXWinGetCanvasSize( m_pListWin, &m_uiListCols, &m_uiListRows);
@@ -89,7 +82,6 @@ RCODE F_DynamicList::setup( FTX_WINDOW * pInitializedWindow)
 }
 
 /****************************************************************************
-Name:	insert
 Desc:	
 *****************************************************************************/
 RCODE F_DynamicList::insert( 
@@ -201,7 +193,6 @@ Exit:
 }
 
 /****************************************************************************
-Name:	update
 Desc:	
 *****************************************************************************/
 RCODE F_DynamicList::update( 
@@ -251,7 +242,6 @@ Exit:
 }
 
 /****************************************************************************
-Name:	remove
 Desc:	
 *****************************************************************************/
 RCODE F_DynamicList::remove( 
@@ -311,7 +301,6 @@ Exit:
 }
 
 /****************************************************************************
-Name:	refresh
 Desc:	
 *****************************************************************************/
 void F_DynamicList::refresh( void)
@@ -325,13 +314,13 @@ void F_DynamicList::refresh( void)
 		return;
 	}
 
-	if ( FTXWinGetScreen( m_pListWin, &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinGetScreen( m_pListWin, &pScreen)))
 	{
 		flmAssert( 0);
 		goto Exit;
 	}
 
-	FTXSetRefreshState( pScreen->pFtxInfo, TRUE);
+	FTXSetRefreshState( TRUE);
 	pTmp = m_pCur;
 	uiLoop = m_uiRow;
 	while( pTmp && uiLoop > 0)
@@ -360,14 +349,13 @@ void F_DynamicList::refresh( void)
 	{
 		FTXWinClearXY( m_pListWin, 0, uiLoop);
 	}
-	FTXSetRefreshState( pScreen->pFtxInfo, FALSE);
+	FTXSetRefreshState( FALSE);
 	m_bChanged = FALSE;
 Exit:
 	;
 }
 
 /****************************************************************************
-Name:	cursorUp
 Desc:	
 *****************************************************************************/
 void F_DynamicList::cursorUp( void)
@@ -384,7 +372,6 @@ void F_DynamicList::cursorUp( void)
 }
 
 /****************************************************************************
-Name:	cursorDown
 Desc:	
 *****************************************************************************/
 void F_DynamicList::cursorDown( void)
@@ -401,7 +388,6 @@ void F_DynamicList::cursorDown( void)
 }
 
 /****************************************************************************
-Name:	pageUp
 Desc:	
 *****************************************************************************/
 void F_DynamicList::pageUp( void)
@@ -440,7 +426,6 @@ void F_DynamicList::pageUp( void)
 }
 
 /****************************************************************************
-Name:	pageDown
 Desc:	
 *****************************************************************************/
 void F_DynamicList::pageDown( void)
@@ -474,7 +459,6 @@ void F_DynamicList::pageDown( void)
 }
 
 /****************************************************************************
-Name:	home
 Desc:	
 *****************************************************************************/
 void F_DynamicList::home( void)
@@ -485,7 +469,6 @@ void F_DynamicList::home( void)
 }
 
 /****************************************************************************
-Name:	end
 Desc:	
 *****************************************************************************/
 void F_DynamicList::end( void)
@@ -509,7 +492,6 @@ void F_DynamicList::end( void)
 }
 
 /****************************************************************************
-Name:	defaultKeyAction
 Desc:	
 *****************************************************************************/
 void F_DynamicList::defaultKeyAction( 
@@ -517,22 +499,22 @@ void F_DynamicList::defaultKeyAction(
 {
 	switch( uiKey)
 	{
-		case WPK_UP:
+		case FKB_UP:
 			cursorUp();
 			break;
-		case WPK_DOWN:
+		case FKB_DOWN:
 			cursorDown();
 			break;
-		case WPK_PGUP:
+		case FKB_PGUP:
 			pageUp();
 			break;
-		case WPK_PGDN:
+		case FKB_PGDN:
 			pageDown();
 			break;
-		case WPK_HOME:
+		case FKB_HOME:
 			home();
 			break;
-		case WPK_END:
+		case FKB_END:
 			end();
 			break;
 		case 'd':
@@ -547,7 +529,6 @@ void F_DynamicList::defaultKeyAction(
 }
 
 /****************************************************************************
-Name:	getNode
 Desc:	
 *****************************************************************************/
 DLIST_NODE * F_DynamicList::getNode(
@@ -568,7 +549,6 @@ DLIST_NODE * F_DynamicList::getNode(
 }
 
 /****************************************************************************
-Name:	freeNode
 Desc:	
 *****************************************************************************/
 void F_DynamicList::freeNode(
@@ -582,7 +562,6 @@ void F_DynamicList::freeNode(
 }
 
 /****************************************************************************
-Name:	dlistDefaultDisplayHook
 Desc:	
 *****************************************************************************/
 RCODE dlistDefaultDisplayHook(
@@ -592,22 +571,19 @@ RCODE dlistDefaultDisplayHook(
 	FLMUINT				uiKey,
 	void *				pvData,
 	FLMUINT				uiDataLen,
-	F_DynamicList*		pDynamicList)
+	F_DynamicList *	pDynamicList)
 {
-	FLMUINT	uiBack = WPS_CYAN;
-	FLMUINT	uiFore = WPS_WHITE;
+	eColorType			uiBack = FLM_CYAN;
+	eColorType			uiFore = FLM_WHITE;
 
 	F_UNREFERENCED_PARM( uiKey);
 	F_UNREFERENCED_PARM( uiDataLen);
 
 	FTXWinSetCursorPos( pWin, 0, uiRow);
+	
 	FTXWinClearToEOL( pWin);
-	FTXWinPrintf( pWin, "%s",
-		(FLMBYTE *)
-		(pvData ?
-			pvData :
-			//the following cast is required by gcc 2.96
-			(FLMBYTE*)"Unknown"));
+	
+	FTXWinPrintf( pWin, "%s", (FLMBYTE *) (pvData ? pvData : "Unknown"));
 	if( bSelected && pDynamicList->getShowHorizontalSelector())
 	{
 		FTXWinPaintRow( pWin, &uiBack, &uiFore, uiRow);
@@ -615,16 +591,20 @@ RCODE dlistDefaultDisplayHook(
 	return( FERR_OK);
 }
 
+/****************************************************************************
+Desc:	
+*****************************************************************************/
 RCODE F_DynamicList::dumpToFile()
 {
-	RCODE				rc = FERR_OK;
-	DLIST_NODE *	pTmp;
-	FLMUINT			uiLoop;
-	F_FileHdl *		pFileHdl = NULL;
+	RCODE					rc = FERR_OK;
+	DLIST_NODE *		pTmp;
+	FLMUINT				uiLoop;
+	IF_FileHdl *		pFileHdl = NULL;
 #define DLST_RESP_SIZE 256
-	char				pszResponse[ DLST_RESP_SIZE];
-	FLMUINT			uiTermChar;
-	FTX_SCREEN * pScreen;
+	char					pszResponse[ DLST_RESP_SIZE];
+	FLMUINT				uiTermChar;
+	FTX_SCREEN * 		pScreen;
+	IF_FileSystem *	pFileSystem = NULL;
 
 	f_strcpy( pszResponse, DLIST_DUMPFILE_PATH);
 	
@@ -632,18 +612,25 @@ RCODE F_DynamicList::dumpToFile()
 	FTXGetInput( pScreen, "enter filename to dump to", pszResponse,
 		DLST_RESP_SIZE - 1, &uiTermChar);
 	
-	if ( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Exists( pszResponse)))
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
 	{
-		//create file if it doesn't already exist
-		if ( rc == FERR_IO_PATH_NOT_FOUND)
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pFileSystem->doesFileExist( pszResponse)))
+	{
+		if( rc == FERR_IO_PATH_NOT_FOUND)
 		{
-			rc = gv_FlmSysData.pFileSystem->Create( 
-				pszResponse, F_IO_RDWR, &pFileHdl);
+			if( RC_BAD( rc = pFileSystem->createFile( 
+				pszResponse, FLM_IO_RDWR, &pFileHdl)))
+			{
+				goto Exit_local;
+			}
 		}
 		else
 		{
@@ -652,18 +639,18 @@ RCODE F_DynamicList::dumpToFile()
 	}
 	else
 	{
-		rc = gv_FlmSysData.pFileSystem->Open( pszResponse, 
-			F_IO_RDWR, &pFileHdl);
+		if( RC_BAD( rc = pFileSystem->openFile( 
+			pszResponse, FLM_IO_RDWR, &pFileHdl)))
+		{
+			goto Exit_local;
+		}
 	}
 
-	TEST_RC_LOCAL( rc);
-		
 	{
-		FLMUINT uiFileSize = 0;
-		FLMUINT uiBytesWritten = 0;
+		FLMUINT64 	ui64FileSize = 0;
+		FLMUINT 		uiBytesWritten = 0;
 
-		//figure out size of file currently, so you can append to it
-		pFileHdl->Size( &uiFileSize);
+		pFileHdl->size( &ui64FileSize);
 
 		pTmp = m_pFirst;
 
@@ -672,32 +659,31 @@ RCODE F_DynamicList::dumpToFile()
 		{
 			FLMBYTE * pszNextLine = (FLMBYTE*)(pTmp->pvData);
 
-			TEST_RC_LOCAL( rc = pFileHdl->Write(
-				uiFileSize,					//offset to current file size
-				f_strlen( (const char *)pszNextLine),
-				pszNextLine,
-				&uiBytesWritten));
+			if( RC_BAD( rc = pFileHdl->write( (FLMUINT)ui64FileSize,
+				f_strlen( (const char *)pszNextLine), pszNextLine,
+				&uiBytesWritten)))
+			{
+				goto Exit_local;
+			}
 
-			uiFileSize += uiBytesWritten;
+			ui64FileSize += uiBytesWritten;
 
-			TEST_RC_LOCAL( rc = pFileHdl->Write(
-				uiFileSize,					//add in newline
-				1,
-				(FLMBYTE*)"\n",
-				&uiBytesWritten));
+			if( RC_BAD( rc = pFileHdl->write( (FLMUINT)ui64FileSize, 1,
+				(FLMBYTE *)"\n", &uiBytesWritten)))
+			{
+				goto Exit_local;
+			}
 
-			uiFileSize += uiBytesWritten;
-			
+			ui64FileSize += uiBytesWritten;
 			pTmp = pTmp->pNext;
 		}
 
-		(void)pFileHdl->Close();
-
+		pFileHdl->close();
 	}
 
 Exit_local:
-	{//give success/fail message
-			
+
+	{
 		FTX_SCREEN * 	pTmpScreen;
 		char 				pszMessage[ 256];
 		FLMUINT 			uiChar;
@@ -715,16 +701,22 @@ Exit_local:
 				(unsigned)rc, DLIST_DUMPFILE_PATH);
 		}
 		
-		FTXDisplayMessage( pTmpScreen, WPS_RED, WPS_WHITE, pszMessage,
+		FTXDisplayMessage( pTmpScreen, FLM_RED, FLM_WHITE, pszMessage,
 			"press ESC or ENTER to close dialog", &uiChar);
 	}
-	 
 
 Exit:
-	if ( pFileHdl)
+
+	if( pFileHdl)
 	{
 		pFileHdl->Release();
 		pFileHdl = NULL;
 	}
-	return rc;
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+	
+	return( rc);
 }

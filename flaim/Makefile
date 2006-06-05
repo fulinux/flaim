@@ -37,124 +37,8 @@
 # -- Project --
 
 project_name = flaim
+project_display_name = FLAIM
 project_desc = An extensible, flexible, adaptable, embeddable database engine
-
-# -- Subversion Revision --
-
-calc_svn_revision =
-
-ifneq (,$(findstring ignore-local-mods,$(MAKECMDGOALS)))
-	submake_targets += ignore-local-mods
-	ignore_local_mods = 1
-endif
-
-ifneq (,$(findstring ilm,$(MAKECMDGOALS)))
-	submake_targets += ilm
-	ignore_local_mods = 1
-endif
-
-ifdef ignore_local_mods
-	local_mods_ok = 1
-else
-	local_mods_ok =
-endif
-
-ifneq (,$(findstring dist,$(MAKECMDGOALS)))
-	calc_svn_revision = 1
-	ifndef ignore_local_mods
-		local_mods_ok =
-	endif
-endif
-
-ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
-	calc_svn_revision = 1
-	ifndef ignore_local_mods
-		local_mods_ok =
-	endif
-endif
-
-ifneq (,$(findstring pathinfo,$(MAKECMDGOALS)))
-	calc_svn_revision = 1
-	ifndef ignore_local_mods
-		local_mods_ok =
-	endif
-endif
-
-ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
-
-	calc_svn_revision = 1
-
-	# Get the info for this directory
-
-	ifndef svn_user
-      $(error Must define svn_user=<user> in environment or as a parameter)
-	endif
-
-	ifndef svn_rev
-      $(error Must define svn_rev=<low[:high]> in environment or as a parameter)
-	endif
-
-	svnrevs = $(subst :, ,$(svn_rev))
-	svn_low_rev = $(word 1,$(svnrevs))
-	svn_high_rev = $(word 2,$(svnrevs))
-
-	svnurl0 := $(shell svn info)
-	svnurl1 = $(subst URL: ,URL:,$(svnurl0))
-	svnurl2 = $(filter URL:%,$(svnurl1))
-	svnurl3 = $(subst URL:,,$(svnurl2))
-	svnurl = $(subst ://,://$(svn_user)@,$(svnurl3))
-endif
-
-ifdef calc_svn_revision
-
-	# Get the info for all files.
-
-	ifndef local_mods_ok
-		srevision := $(shell svnversion . -n)
-
-		ifneq (,$(findstring M,$(srevision)))
-         $(error Local modifications found - please check in before making distro)
-		endif
-
-		ifneq (,$(findstring :,$(srevision)))
-         $(error Mixed revisions in repository - please update before making distro)
-		endif
-	endif
-
-	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
-						$(subst 6,6 ,$(subst 5,5 ,$(subst 4,4 ,$(subst 3,3 ,\
-						$(subst 2,2 ,$(subst 1,1 ,$(subst 0,0 ,$(1))))))))))))
-	revision0 := $(shell svn info -R)
-	revision1 = $(subst Last Changed Rev: ,LastChangedRev:,$(revision0))
-	revision2 = $(filter LastChangedRev:%,$(revision1))
-	revision3 = $(subst LastChangedRev:,,$(revision2))
-	revision4 = $(sort $(revision3))
-	revision5 = $(foreach num,$(revision4),$(call numdigits,$(num)):$(num))
-	revision6 = $(sort $(revision5))
-	revision7 = $(word $(words $(revision6)),$(revision6))
-	svn_revision = $(word 2,$(subst :, ,$(revision7)))
-
-else
-	ifeq "$(wildcard SVNRevision.*)" ""
-		svn_revision = 0
-	else
-		svn_revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
-	endif
-endif
-
-ifeq "$(svn_high_rev)" ""
-	svn_high_rev = $(svn_revision)
-endif
-
-# -- Paths initializations --
-
-ifndef rpm_build_root
-	ifneq (,$(DESTDIR))
-		rpm_build_root = $(DESTDIR)/
-	else
-		rpm_build_root =
-	endif
-endif
 
 # -- Versions --
 
@@ -650,6 +534,7 @@ dollar := \044
 question := \077
 asterisk := \052
 dash := \055
+backslash := \134
 
 # -- Tools --
 
@@ -657,6 +542,135 @@ ifdef unix_target
 	gprintf = printf
 else
 	gprintf = $(call hostpath,$(tooldir)/printf.exe)
+
+# Determine the toolkit directory
+
+ifeq "$(wildcard $(topdir)/ftk)" ""
+	ftk_dir := $(dir $(topdir))ftk
+else
+	ftk_dir := $(topdir)/ftk
+endif
+
+ftk_src_dir = $(ftk_dir)/src
+
+# -- Subversion Revision --
+
+calc_svn_revision =
+ignore_local_mods =
+
+ifneq (,$(findstring ignore-local-mods,$(MAKECMDGOALS)))
+	submake_targets += ignore-local-mods
+	ignore_local_mods = 1
+endif
+
+ifneq (,$(findstring ilm,$(MAKECMDGOALS)))
+	submake_targets += ilm
+	ignore_local_mods = 1
+endif
+
+ifdef ignore_local_mods
+	local_mods_ok = 1
+else
+	local_mods_ok =
+endif
+
+ifneq (,$(findstring dist,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
+ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
+ifneq (,$(findstring docs,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
+ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
+
+	calc_svn_revision = 1
+
+	# Get the info for this directory
+
+	ifndef svn_user
+      $(error Must define svn_user=<user> in environment or as a parameter)
+	endif
+
+	ifndef svn_rev
+      $(error Must define svn_rev=<low[:high]> in environment or as a parameter)
+	endif
+
+	svnrevs = $(subst :, ,$(svn_rev))
+	svn_low_rev = $(word 1,$(svnrevs))
+	svn_high_rev = $(word 2,$(svnrevs))
+
+	svnurl0 := $(shell svn info)
+	svnurl1 = $(subst URL: ,URL:,$(svnurl0))
+	svnurl2 = $(filter URL:%,$(svnurl1))
+	svnurl3 = $(subst URL:,,$(svnurl2))
+	svnurl = $(subst ://,://$(svn_user)@,$(svnurl3))
+endif
+
+ifdef calc_svn_revision
+
+	# Get the info for all files.
+
+	ifndef local_mods_ok
+		srevision := $(shell svnversion . -n)
+
+		ifneq (,$(findstring M,$(srevision)))
+         $(error Local modifications found - please check in before making distro)
+		endif
+
+		ifneq (,$(findstring :,$(srevision)))
+         $(error Mixed revisions in repository - please update before making distro)
+		endif
+
+		srevision := $(shell svnversion $(ftk_dir) -n)
+
+		ifneq (,$(findstring M,$(srevision)))
+         $(error Local modifications found - please check in before making distro)
+		endif
+
+		ifneq (,$(findstring :,$(srevision)))
+         $(error Mixed revisions in repository - please update before making distro)
+		endif
+	endif
+
+	numdigits = $(words $(subst 9,9 ,$(subst 8,8 ,$(subst 7,7 ,\
+						$(subst 6,6 ,$(subst 5,5 ,$(subst 4,4 ,$(subst 3,3 ,\
+						$(subst 2,2 ,$(subst 1,1 ,$(subst 0,0 ,$(1))))))))))))
+	revision0 := $(shell svn info -R . $(ftk_dir))
+	revision1 = $(subst Last Changed Rev: ,LastChangedRev:,$(revision0))
+	revision2 = $(filter LastChangedRev:%,$(revision1))
+	revision3 = $(subst LastChangedRev:,,$(revision2))
+	revision4 = $(sort $(revision3))
+	revision5 = $(foreach num,$(revision4),$(call numdigits,$(num)):$(num))
+	revision6 = $(sort $(revision5))
+	revision7 = $(word $(words $(revision6)),$(revision6))
+	svn_revision = $(word 2,$(subst :, ,$(revision7)))
+
+else
+	ifeq "$(wildcard SVNRevision.*)" ""
+		svn_revision = 0
+	else
+		svn_revision = $(word 2,$(subst ., ,$(wildcard SVNRevision.*)))
+	endif
+endif
+
+ifeq "$(svn_high_rev)" ""
+	svn_high_rev = $(svn_revision)
+endif
+
 endif
 
 # Files and Directories
@@ -671,11 +685,19 @@ ifndef lib_dir_name
 	lib_dir_name = lib
 endif
 
+ifndef rpm_build_root
+	ifneq (,$(DESTDIR))
+		rpm_build_root = $(DESTDIR)/
+	else
+		rpm_build_root =
+	endif
+endif
+
 lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
 include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = $(topdir)/build
-docs_output_dir = $(build_output_dir)/docs
+doxygen_output_dir = $(build_output_dir)/docs
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
@@ -712,7 +734,7 @@ rpm_name = $(package_proj_name_and_ver)-$(package_release_num).$(HOSTTYPE).rpm
 srpm_name = $(package_proj_name_and_ver)-$(package_release_num).src.rpm
 develrpm_name = $(package_proj_name)-devel-$(version)-$(package_release_num).$(HOSTTYPE).rpm
 
-inc_dirs = src util
+inc_dirs = src util $(ftk_src_dir)
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
 sample_dir = $(target_path)/sample
@@ -730,6 +752,8 @@ ifdef win_target
 else
 	lib_sobj_dir = $(lib_obj_dir)
 endif
+
+doxyfile = $(doxygen_output_dir)/Doxyfile
 
 # -- Tools --
 
@@ -913,7 +937,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),solaris)
 		ifeq ($(usenativecc),yes)
-			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse
+			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
 			else
@@ -945,6 +969,10 @@ ifdef unix_target
 
 			ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 		endif
+	endif
+
+	ifeq ($(target_os_family),osx)
+		ccdefs += OSX
 	endif
 
 	ccdefs += _REENTRANT
@@ -984,7 +1012,7 @@ ifdef unix_target
 	exe_link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
-		lib_link_libs += -lrt -lstdc++ -ldl
+		lib_link_libs += -lrt -lstdc++ -ldl -lncurses
 		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F).1 -o $@
@@ -1002,23 +1030,23 @@ ifdef unix_target
 			endif
 		endif
 
-		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt
+		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
-		lib_link_libs += -lm -lc
+		lib_link_libs += -lm -lc -lcurses
 		exe_link_libs += -lm -lc -lcurses
 	endif
 
 	ifeq ($(target_os_family),hpux)
-		lib_link_libs += -lm -lc -lrt
+		lib_link_libs += -lm -lc -lrt -lcurses
 		exe_link_libs += -lm -lc -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
-		lib_link_libs += -lstdc++ -ldl
+		lib_link_libs += -lstdc++ -ldl -lncurses
 		exe_link_libs += -lstdc++ -ldl -lncurses
 		shared_link_flags += -dynamiclib
 		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
@@ -1051,9 +1079,13 @@ ifdef netware_target
 		wc_dir = $(WC_DIR)
 	endif
 
-	ifndef wc_dir
-      $(error Target operating system could not be determined)
+	wc_dir := $(call normpath,$(wc_dir))
+
+	ifndef ndk_dir
+      $(error Netware SDK could not be found.  Please define ndk_dir.)
 	endif
+	
+	ndk_dir := $(call normpath,$(ndk_dir))
 
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
 	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
@@ -1075,10 +1107,193 @@ ifdef netware_target
 	libflags += /b /q /p=256
 	link_flags = /m /l /v /s
 
+	inc_dirs += $(ndk_dir)/libc/include \
+					$(ndk_dir)/libc/include/winsock
+
 	export include = $(foreach inc_dir,$(strip $(inc_dirs)),$(call hostpath,$(inc_dir));)
 	export INCLUDE = $(include)
 	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
 	export wcc386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
+
+#   define make_lis_file_cmd
+#		$(ec)$(gprintf) "option verbose\n" > $(4)
+#		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
+#		$(ec)$(gprintf) "option synchronize\n" >> $(4)
+#		$(ec)$(gprintf) "option nod\n" >> $(4)
+#		$(ec)$(gprintf) "option map\n" >> $(4)
+#		$(ec)$(gprintf) "option start=FlmLoad, exit=FlmUnload, caseexact\n" >> $(4)
+#		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+#		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
+#		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+#		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
+#		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
+#		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
+#
+#		$(ec)$(gprintf) "import __WSAFDIsSet\n" >> $(4)
+#		$(ec)$(gprintf) "import ActivateScreen\n" >> $(4)
+#		$(ec)$(gprintf) "import Alloc\n" >> $(4)
+#		$(ec)$(gprintf) "import AllocateResourceTag\n" >> $(4)
+#		$(ec)$(gprintf) "import atomic_dec\n" >> $(4)
+#		$(ec)$(gprintf) "import atomic_inc\n" >> $(4)
+#		$(ec)$(gprintf) "import atomic_xchg\n" >> $(4)
+#		$(ec)$(gprintf) "import BitTest\n" >> $(4)
+#		$(ec)$(gprintf) "import CEvaluateExpression\n" >> $(4)
+#		$(ec)$(gprintf) "import CFindLoadModuleHandle\n" >> $(4)
+#		$(ec)$(gprintf) "import CheckKeyStatus\n" >> $(4)
+#		$(ec)$(gprintf) "import ClearScreen\n" >> $(4)
+#		$(ec)$(gprintf) "import CloseFile\n" >> $(4)
+#		$(ec)$(gprintf) "import CloseScreen\n" >> $(4)
+#		$(ec)$(gprintf) "import CMovB\n" >> $(4)
+#		$(ec)$(gprintf) "import CMoveFast\n" >> $(4)
+#		$(ec)$(gprintf) "import ConvertPathString\n" >> $(4)
+#		$(ec)$(gprintf) "import ConvertSecondsToTicks\n" >> $(4)
+#		$(ec)$(gprintf) "import ConvertTicksToSeconds\n" >> $(4)
+#		$(ec)$(gprintf) "import CpuCurrentProcessor\n" >> $(4)
+#		$(ec)$(gprintf) "import CreateDirectory\n" >> $(4)
+#		$(ec)$(gprintf) "import CreateFile\n" >> $(4)
+#		$(ec)$(gprintf) "import CSetD\n" >> $(4)
+#		$(ec)$(gprintf) "import DebuggerSymbolList\n" >> $(4)
+#		$(ec)$(gprintf) "import DeleteDirectory\n" >> $(4)
+#		$(ec)$(gprintf) "import DirectorySearch\n" >> $(4)
+#		$(ec)$(gprintf) "import DirectReadFile\n" >> $(4)
+#		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(4)
+#		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(4)
+#		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(4)
+#		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(4)
+#		$(ec)$(gprintf) "import DisableInputCursor\n" >> $(4)
+#		$(ec)$(gprintf) "import DisplayScreenTextWithAttribute\n" >> $(4)
+#		$(ec)$(gprintf) "import DOSFirstByteBitMap\n" >> $(4)
+#		$(ec)$(gprintf) "import EnableInputCursor\n" >> $(4)
+#		$(ec)$(gprintf) "import EnterDebugger\n" >> $(4)
+#		$(ec)$(gprintf) "import EraseFile\n" >> $(4)
+#		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(4)
+#		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(4)
+#		$(ec)$(gprintf) "import ExportPublicSymbol\n" >> $(4)
+#		$(ec)$(gprintf) "import FindAndLoadNLM\n" >> $(4)
+#		$(ec)$(gprintf) "import Free\n" >> $(4)
+#		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(4)
+#		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(4)
+#		$(ec)$(gprintf) "import GetCacheBufferSize\n" >> $(4)
+#		$(ec)$(gprintf) "import GetClosestSymbol\n" >> $(4)
+#		$(ec)$(gprintf) "import GetCurrentClock\n" >> $(4)
+#		$(ec)$(gprintf) "import GetCurrentNumberOfCacheBuffers\n" >> $(4)
+#		$(ec)$(gprintf) "import GetCurrentTime\n" >> $(4)
+#		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(4)
+#		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(4)
+#		$(ec)$(gprintf) "import GetFileSize\n" >> $(4)
+#		$(ec)$(gprintf) "import GetKey\n" >> $(4)
+#		$(ec)$(gprintf) "import GetNLMAllocMemoryCounts\n" >> $(4)
+#		$(ec)$(gprintf) "import GetOriginalNumberOfCacheBuffers\n" >> $(4)
+#		$(ec)$(gprintf) "import GetProductMajorVersionNumber\n" >> $(4)
+#		$(ec)$(gprintf) "import GetRunningProcess\n" >> $(4)
+#		$(ec)$(gprintf) "import GetScreenSize\n" >> $(4)
+#		$(ec)$(gprintf) "import GetSyncClockFields\n" >> $(4)
+#		$(ec)$(gprintf) "import GetSystemConsoleScreen\n" >> $(4)
+#		$(ec)$(gprintf) "import ImportPublicSymbol\n" >> $(4)
+#		$(ec)$(gprintf) "import kCreateThread\n" >> $(4)
+#		$(ec)$(gprintf) "import kCurrentThread\n" >> $(4)
+#		$(ec)$(gprintf) "import kDelayThread\n" >> $(4)
+#		$(ec)$(gprintf) "import kDestroyThread\n" >> $(4)
+#		$(ec)$(gprintf) "import kExitThread\n" >> $(4)
+#		$(ec)$(gprintf) "import kGetThreadName\n" >> $(4)
+#		$(ec)$(gprintf) "import kGetThreadName\n" >> $(4)
+#		$(ec)$(gprintf) "import KillMe\n" >> $(4)
+#		$(ec)$(gprintf) "import kMutexAlloc\n" >> $(4)
+#		$(ec)$(gprintf) "import kMutexFree\n" >> $(4)
+#		$(ec)$(gprintf) "import kMutexLock\n" >> $(4)
+#		$(ec)$(gprintf) "import kMutexUnlock\n" >> $(4)
+#		$(ec)$(gprintf) "import kQueCount\n" >> $(4)
+#		$(ec)$(gprintf) "import kReturnCurrentProcessorID\n" >> $(4)
+#		$(ec)$(gprintf) "import kScheduleThread\n" >> $(4)
+#		$(ec)$(gprintf) "import kSemaphoreAlloc\n" >> $(4)
+#		$(ec)$(gprintf) "import kSemaphoreExamineCount\n" >> $(4)
+#		$(ec)$(gprintf) "import kSemaphoreFree\n" >> $(4)
+#		$(ec)$(gprintf) "import kSemaphoreSignal\n" >> $(4)
+#		$(ec)$(gprintf) "import kSemaphoreTimedWait\n" >> $(4)
+#		$(ec)$(gprintf) "import kSemaphoreWait\n" >> $(4)
+#		$(ec)$(gprintf) "import kSetThreadLoadHandle\n" >> $(4)
+#		$(ec)$(gprintf) "import kSetThreadName\n" >> $(4)
+#		$(ec)$(gprintf) "import kYieldIfTimeSliceUp\n" >> $(4)
+#		$(ec)$(gprintf) "import kYieldThread\n" >> $(4)
+#		$(ec)$(gprintf) "import LoadModule\n" >> $(4)
+#		$(ec)$(gprintf) "import LoadRules\n" >> $(4)
+#		$(ec)$(gprintf) "import MapFileHandleToFCB\n" >> $(4)
+#		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(4)
+#		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(4)
+#		$(ec)$(gprintf) "import MapVolumeNameToNumber\n" >> $(4)
+#		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(4)
+#		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(4)
+#		$(ec)$(gprintf) "import MountVolume\n" >> $(4)
+#		$(ec)$(gprintf) "import NDSCreateStreamFile\n" >> $(4)
+#		$(ec)$(gprintf) "import NDSDeleteStreamFile\n" >> $(4)
+#		$(ec)$(gprintf) "import NDSOpenStreamFile\n" >> $(4)
+#		$(ec)$(gprintf) "import NWLocalToUnicode\n" >> $(4)
+#		$(ec)$(gprintf) "import NWUnicodeToLocal\n" >> $(4)
+#		$(ec)$(gprintf) "import OpenFile\n" >> $(4)
+#		$(ec)$(gprintf) "import OpenScreen\n" >> $(4)
+#		$(ec)$(gprintf) "import OutputToScreen\n" >> $(4)
+#		$(ec)$(gprintf) "import PositionInputCursor\n" >> $(4)
+#		$(ec)$(gprintf) "import PositionOutputCursor\n" >> $(4)
+#		$(ec)$(gprintf) "import ReadFile\n" >> $(4)
+#		$(ec)$(gprintf) "import RenameEntry\n" >> $(4)
+#		$(ec)$(gprintf) "import RestartServer\n" >> $(4)
+#		$(ec)$(gprintf) "import ReturnResourceTag\n" >> $(4)
+#		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(4)
+#		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(4)
+#		$(ec)$(gprintf) "import RevokeFileHandleRights\n" >> $(4)
+#		$(ec)$(gprintf) "import SetCursorStyle\n" >> $(4)
+#		$(ec)$(gprintf) "import SetFileSize\n" >> $(4)
+#		$(ec)$(gprintf) "import SetFileSize\n" >> $(4)
+#		$(ec)$(gprintf) "import SGUIDCreate\n" >> $(4)
+#		$(ec)$(gprintf) "import SizeOfAllocBlock\n" >> $(4)
+#		$(ec)$(gprintf) "import StopBell\n" >> $(4)
+#		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(4)
+#		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(4)
+#		$(ec)$(gprintf) "import UngetKey\n" >> $(4)
+#		$(ec)$(gprintf) "import UnImportPublicSymbol\n" >> $(4)
+#		$(ec)$(gprintf) "import UnloadRules\n" >> $(4)
+#		$(ec)$(gprintf) "import VMGetDirectoryEntry\n" >> $(4)
+#		$(ec)$(gprintf) "import WorkToDoListHead\n" >> $(4)
+#		$(ec)$(gprintf) "import WriteFile\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_bind\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_closesocket\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_gethostbyaddr\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_gethostbyname\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_gethostname\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_htonl\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_htons\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_inet_addr\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_inet_ntoa\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_listen\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_recv\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_select\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_send\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_setsockopt\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_shutdown\n" >> $(4)
+#		$(ec)$(gprintf) "import WS2_32_socket\n" >> $(4)
+#		$(ec)$(gprintf) "import WSAAccept\n" >> $(4)
+#		$(ec)$(gprintf) "import WSACleanup\n" >> $(4)
+#		$(ec)$(gprintf) "import WSAConnect\n" >> $(4)
+#		$(ec)$(gprintf) "import WSAGetLastError\n" >> $(4)
+#		$(ec)$(gprintf) "import WSAStartup\n" >> $(4)
+#		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(ctorarst))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(dtorarst))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(undefed))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(undefmbd))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(pure_err))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stablcl))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabact))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabactv))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabmod))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(prwdata))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(moddtorr))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabadt))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8d))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8m))\n" >> $(4)
+#		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8s))\n" >> $(4)
+#		$(ec)$(gprintf) "library $(call ppath,$(flaim_static_lib))\n" >> $(4)
+#   endef
 
    define make_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
@@ -1086,181 +1301,27 @@ ifdef netware_target
 		$(ec)$(gprintf) "option synchronize\n" >> $(4)
 		$(ec)$(gprintf) "option nod\n" >> $(4)
 		$(ec)$(gprintf) "option map\n" >> $(4)
-		$(ec)$(gprintf) "option start=FlmLoad, exit=FlmUnload, caseexact\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
 		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
 		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "option start = _LibCPrelude\n" >> $(4)
+		$(ec)$(gprintf) "option exit = _LibCPostlude\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
-
-		$(ec)$(gprintf) "import __WSAFDIsSet\n" >> $(4)
-		$(ec)$(gprintf) "import ActivateScreen\n" >> $(4)
-		$(ec)$(gprintf) "import Alloc\n" >> $(4)
-		$(ec)$(gprintf) "import AllocateResourceTag\n" >> $(4)
-		$(ec)$(gprintf) "import atomic_dec\n" >> $(4)
-		$(ec)$(gprintf) "import atomic_inc\n" >> $(4)
-		$(ec)$(gprintf) "import atomic_xchg\n" >> $(4)
-		$(ec)$(gprintf) "import BitTest\n" >> $(4)
-		$(ec)$(gprintf) "import CEvaluateExpression\n" >> $(4)
-		$(ec)$(gprintf) "import CFindLoadModuleHandle\n" >> $(4)
-		$(ec)$(gprintf) "import CheckKeyStatus\n" >> $(4)
-		$(ec)$(gprintf) "import ClearScreen\n" >> $(4)
-		$(ec)$(gprintf) "import CloseFile\n" >> $(4)
-		$(ec)$(gprintf) "import CloseScreen\n" >> $(4)
-		$(ec)$(gprintf) "import CMovB\n" >> $(4)
-		$(ec)$(gprintf) "import CMoveFast\n" >> $(4)
-		$(ec)$(gprintf) "import ConvertPathString\n" >> $(4)
-		$(ec)$(gprintf) "import ConvertSecondsToTicks\n" >> $(4)
-		$(ec)$(gprintf) "import ConvertTicksToSeconds\n" >> $(4)
-		$(ec)$(gprintf) "import CpuCurrentProcessor\n" >> $(4)
-		$(ec)$(gprintf) "import CreateDirectory\n" >> $(4)
-		$(ec)$(gprintf) "import CreateFile\n" >> $(4)
-		$(ec)$(gprintf) "import CSetD\n" >> $(4)
-		$(ec)$(gprintf) "import DebuggerSymbolList\n" >> $(4)
-		$(ec)$(gprintf) "import DeleteDirectory\n" >> $(4)
-		$(ec)$(gprintf) "import DirectorySearch\n" >> $(4)
-		$(ec)$(gprintf) "import DirectReadFile\n" >> $(4)
-		$(ec)$(gprintf) "import DirectReadFile\n" >> $(4)
-		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(4)
-		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(4)
-		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(4)
-		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(4)
-		$(ec)$(gprintf) "import DisableInputCursor\n" >> $(4)
-		$(ec)$(gprintf) "import DisplayScreenTextWithAttribute\n" >> $(4)
-		$(ec)$(gprintf) "import DOSFirstByteBitMap\n" >> $(4)
-		$(ec)$(gprintf) "import EnableInputCursor\n" >> $(4)
-		$(ec)$(gprintf) "import EnterDebugger\n" >> $(4)
-		$(ec)$(gprintf) "import EraseFile\n" >> $(4)
-		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(4)
-		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(4)
-		$(ec)$(gprintf) "import ExportPublicSymbol\n" >> $(4)
-		$(ec)$(gprintf) "import FindAndLoadNLM\n" >> $(4)
-		$(ec)$(gprintf) "import Free\n" >> $(4)
-		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(4)
-		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(4)
-		$(ec)$(gprintf) "import GetCacheBufferSize\n" >> $(4)
-		$(ec)$(gprintf) "import GetClosestSymbol\n" >> $(4)
-		$(ec)$(gprintf) "import GetCurrentClock\n" >> $(4)
-		$(ec)$(gprintf) "import GetCurrentNumberOfCacheBuffers\n" >> $(4)
-		$(ec)$(gprintf) "import GetCurrentTime\n" >> $(4)
-		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(4)
-		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(4)
-		$(ec)$(gprintf) "import GetFileSize\n" >> $(4)
-		$(ec)$(gprintf) "import GetKey\n" >> $(4)
-		$(ec)$(gprintf) "import GetNLMAllocMemoryCounts\n" >> $(4)
-		$(ec)$(gprintf) "import GetOriginalNumberOfCacheBuffers\n" >> $(4)
-		$(ec)$(gprintf) "import GetProductMajorVersionNumber\n" >> $(4)
-		$(ec)$(gprintf) "import GetRunningProcess\n" >> $(4)
-		$(ec)$(gprintf) "import GetScreenSize\n" >> $(4)
-		$(ec)$(gprintf) "import GetSyncClockFields\n" >> $(4)
-		$(ec)$(gprintf) "import GetSystemConsoleScreen\n" >> $(4)
-		$(ec)$(gprintf) "import ImportPublicSymbol\n" >> $(4)
-		$(ec)$(gprintf) "import kCreateThread\n" >> $(4)
-		$(ec)$(gprintf) "import kCurrentThread\n" >> $(4)
-		$(ec)$(gprintf) "import kDelayThread\n" >> $(4)
-		$(ec)$(gprintf) "import kDestroyThread\n" >> $(4)
-		$(ec)$(gprintf) "import kExitThread\n" >> $(4)
-		$(ec)$(gprintf) "import kGetThreadName\n" >> $(4)
-		$(ec)$(gprintf) "import kGetThreadName\n" >> $(4)
-		$(ec)$(gprintf) "import KillMe\n" >> $(4)
-		$(ec)$(gprintf) "import kMutexAlloc\n" >> $(4)
-		$(ec)$(gprintf) "import kMutexFree\n" >> $(4)
-		$(ec)$(gprintf) "import kMutexLock\n" >> $(4)
-		$(ec)$(gprintf) "import kMutexUnlock\n" >> $(4)
-		$(ec)$(gprintf) "import kQueCount\n" >> $(4)
-		$(ec)$(gprintf) "import kReturnCurrentProcessorID\n" >> $(4)
-		$(ec)$(gprintf) "import kScheduleThread\n" >> $(4)
-		$(ec)$(gprintf) "import kSemaphoreAlloc\n" >> $(4)
-		$(ec)$(gprintf) "import kSemaphoreExamineCount\n" >> $(4)
-		$(ec)$(gprintf) "import kSemaphoreFree\n" >> $(4)
-		$(ec)$(gprintf) "import kSemaphoreSignal\n" >> $(4)
-		$(ec)$(gprintf) "import kSemaphoreTimedWait\n" >> $(4)
-		$(ec)$(gprintf) "import kSemaphoreWait\n" >> $(4)
-		$(ec)$(gprintf) "import kSetThreadLoadHandle\n" >> $(4)
-		$(ec)$(gprintf) "import kSetThreadName\n" >> $(4)
-		$(ec)$(gprintf) "import kYieldIfTimeSliceUp\n" >> $(4)
-		$(ec)$(gprintf) "import kYieldThread\n" >> $(4)
-		$(ec)$(gprintf) "import LoadModule\n" >> $(4)
-		$(ec)$(gprintf) "import LoadRules\n" >> $(4)
-		$(ec)$(gprintf) "import MapFileHandleToFCB\n" >> $(4)
-		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(4)
-		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(4)
-		$(ec)$(gprintf) "import MapVolumeNameToNumber\n" >> $(4)
-		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(4)
-		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(4)
-		$(ec)$(gprintf) "import MountVolume\n" >> $(4)
-		$(ec)$(gprintf) "import NDSCreateStreamFile\n" >> $(4)
-		$(ec)$(gprintf) "import NDSDeleteStreamFile\n" >> $(4)
-		$(ec)$(gprintf) "import NDSOpenStreamFile\n" >> $(4)
-		$(ec)$(gprintf) "import NWLocalToUnicode\n" >> $(4)
-		$(ec)$(gprintf) "import NWUnicodeToLocal\n" >> $(4)
-		$(ec)$(gprintf) "import OpenFile\n" >> $(4)
-		$(ec)$(gprintf) "import OpenScreen\n" >> $(4)
-		$(ec)$(gprintf) "import OutputToScreen\n" >> $(4)
-		$(ec)$(gprintf) "import PositionInputCursor\n" >> $(4)
-		$(ec)$(gprintf) "import PositionOutputCursor\n" >> $(4)
-		$(ec)$(gprintf) "import ReadFile\n" >> $(4)
-		$(ec)$(gprintf) "import RenameEntry\n" >> $(4)
-		$(ec)$(gprintf) "import RestartServer\n" >> $(4)
-		$(ec)$(gprintf) "import ReturnResourceTag\n" >> $(4)
-		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(4)
-		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(4)
-		$(ec)$(gprintf) "import RevokeFileHandleRights\n" >> $(4)
-		$(ec)$(gprintf) "import SetCursorStyle\n" >> $(4)
-		$(ec)$(gprintf) "import SetFileSize\n" >> $(4)
-		$(ec)$(gprintf) "import SetFileSize\n" >> $(4)
-		$(ec)$(gprintf) "import SGUIDCreate\n" >> $(4)
-		$(ec)$(gprintf) "import SizeOfAllocBlock\n" >> $(4)
-		$(ec)$(gprintf) "import StopBell\n" >> $(4)
-		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(4)
-		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(4)
-		$(ec)$(gprintf) "import UngetKey\n" >> $(4)
-		$(ec)$(gprintf) "import UnImportPublicSymbol\n" >> $(4)
-		$(ec)$(gprintf) "import UnloadRules\n" >> $(4)
-		$(ec)$(gprintf) "import VMGetDirectoryEntry\n" >> $(4)
-		$(ec)$(gprintf) "import WorkToDoListHead\n" >> $(4)
-		$(ec)$(gprintf) "import WriteFile\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_bind\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_closesocket\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_gethostbyaddr\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_gethostbyname\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_gethostname\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_htonl\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_htons\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_inet_addr\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_inet_ntoa\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_listen\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_recv\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_select\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_send\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_setsockopt\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_shutdown\n" >> $(4)
-		$(ec)$(gprintf) "import WS2_32_socket\n" >> $(4)
-		$(ec)$(gprintf) "import WSAAccept\n" >> $(4)
-		$(ec)$(gprintf) "import WSACleanup\n" >> $(4)
-		$(ec)$(gprintf) "import WSAConnect\n" >> $(4)
-		$(ec)$(gprintf) "import WSAGetLastError\n" >> $(4)
-		$(ec)$(gprintf) "import WSAStartup\n" >> $(4)
+		
 		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(ctorarst))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(dtorarst))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(undefed))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(undefmbd))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(pure_err))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stablcl))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabact))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabactv))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabmod))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(prwdata))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(moddtorr))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib(stabadt))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8d))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8m))\n" >> $(4)
-		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib(i8s))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(ndk_dir)/libc/imports/libcpre.obj)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(flaim_static_lib))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/netware/libc3s.lib)\n" >> $(4)
+		$(ec)$(gprintf) "import CurrentProcess\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(4)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(4)
    endef
-
+	
    define flm_exe_link_cmd
 		$(call make_lis_file_cmd,$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
 		$(ec)$(call hostpath,$(exe_linker)) @$(call hostpath,$(1)/$(2).lis)
@@ -1274,13 +1335,13 @@ endif
 flaim_src = \
 	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
 
+ftk_src = \
+	$(patsubst $(ftk_src_dir)/%.cpp,%.cpp,$(wildcard $(ftk_src_dir)/*.cpp))
+
 utilsup_src = \
 	flm_dlst.cpp \
 	flm_lutl.cpp \
-	ftx.cpp \
-	ftxunix.cpp \
-	sharutil.cpp \
-	wpscrnkb.cpp
+	sharutil.cpp
 
 checkdb_src = \
 	checkdb.cpp \
@@ -1317,6 +1378,7 @@ ut_basictest_src = \
 
 # -- FLAIM library --
 
+ftk_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(ftk_src))
 flaim_static_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(flaim_src))
 flaim_shared_obj = $(patsubst %.cpp,$(lib_sobj_dir)/%$(obj_suffix),$(flaim_src))
 flaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
@@ -1348,7 +1410,7 @@ sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths --
 
-vpath %.cpp src util sample
+vpath %.cpp src util sample java/jni $(ftk_src_dir) 
 
 # -- Default target --
 
@@ -1391,7 +1453,7 @@ endif
 
 # -- flaim.lib and libflaim.a --
 
-$(flaim_static_lib) : $(flaim_static_obj)
+$(flaim_static_lib) : $(flaim_static_obj) $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(libr) /NOLOGO $(call hostpath,$+) /OUT:$(call hostpath,$@)
@@ -1411,7 +1473,7 @@ endif
 
 # -- flaim.dll and libflaim.so --
 
-$(flaim_shared_lib) : $(flaim_shared_obj)
+$(flaim_shared_lib) : $(flaim_shared_obj) $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
@@ -1432,7 +1494,7 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status clean dircheck $(flaim_static_lib) $(checkdb_exe)
+checkdb: status clean dircheck libs $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
@@ -1440,7 +1502,7 @@ $(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status clean dircheck $(flaim_static_lib) $(rebuild_exe)
+rebuild: status clean dircheck libs $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
@@ -1448,7 +1510,7 @@ $(rebuild_exe): $(rebuild_obj) $(flaim_static_lib)
 # -- view --
 
 .PHONY : view
-view: status clean dircheck $(flaim_static_lib) $(view_exe)
+view: status clean dircheck libs $(view_exe)
 $(view_exe): $(view_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
@@ -1456,7 +1518,7 @@ $(view_exe): $(view_obj) $(flaim_static_lib)
 # -- dbshell --
 
 .PHONY : dbshell
-dbshell: status clean dircheck $(flaim_static_lib) $(dbshell_exe)
+dbshell: status clean dircheck libs $(dbshell_exe)
 $(dbshell_exe): $(dbshell_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),dbshell,$(dbshell_obj))
@@ -1465,7 +1527,7 @@ $(dbshell_exe): $(dbshell_obj) $(flaim_static_lib)
 
 .PHONY : sample
 ifndef netware_target
-sample: status clean dircheck $(flaim_static_lib) $(sample_exe)
+sample: status clean dircheck libs $(sample_exe)
 $(sample_exe): $(sample_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))
@@ -1477,7 +1539,7 @@ endif
 basictest: status clean dircheck $(flaim_static_lib) $(test_dir)/basictest$(exe_suffix)
 $(test_dir)/basictest$(exe_suffix): $(ut_basictest_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
-	$(call flm_exe_link_cmd,$(test_dir)basictest,$(ut_basictest_obj))
+	$(call flm_exe_link_cmd,$(test_dir),basictest,$(ut_basictest_obj))
 
 # -- version --
 
@@ -1498,17 +1560,20 @@ srcdist: status clean dircheck docs spec
    endif
 	-$(ec)$(call rmdircmd,$(package_stage_dir))
 	$(ec)$(call mkdircmd,$(package_stage_dir))
-	$(ec)$(call make_version_files,$(package_stage_dir))
+	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,Makefile,$(package_stage_dir))
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
-	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
+	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
+	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
+	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
+	$(ec)$(call mkdircmd,$(package_stage_dir)/ftk)
+	$(ec)$(call dircopycmd,$(dir $(topdir))ftk/src,$(package_stage_dir)/ftk/src)
 ifneq ($(host_os_family),win)
 	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
 endif
-	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 ifeq ($(host_os_family),win)
 	$(ec)$(call copycmd,make.exe,$(package_stage_dir))
 endif
@@ -1540,9 +1605,10 @@ binpackage: status
 	$(ec)$(call mkdircmd,$(package_shared_lib_stage_dir))
 	$(ec)$(call mkdircmd,$(package_static_lib_stage_dir))
 	$(ec)$(call mkdircmd,$(package_util_stage_dir))
-	$(ec)$(call make_version_files,$(package_stage_dir))
+	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
+	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_inc_stage_dir)/flaimtk.h)
 	$(ec)$(call copycmd,$(flaim_static_lib),$(package_static_lib_stage_dir))
 ifdef flaim_shared_lib
 	$(ec)$(call copycmd,$(flaim_shared_lib),$(package_shared_lib_stage_dir))
@@ -1600,6 +1666,7 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(flaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
+	install --mode=644 src/flaimtk.h $(include_install_dir)
 	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
@@ -1614,6 +1681,7 @@ ifneq ($(host_os_family),win)
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-rm -rf $(include_install_dir)/flaim.h
+	-rm -rf $(include_install_dir)/flaimtk.h
 	$(ec)$(gprintf) "Uninstalled.\n"
 endif
 
@@ -1686,6 +1754,7 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(static_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/include/flaim.h\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/include/flaimtk.h\n" >> $(spec_file)
 	$(ec)$(gprintf) "Created spec file.\n"
 
 # -- PKG-CONFIG --
@@ -1722,10 +1791,12 @@ rpms: dist spec
 # -- Documentation --
 
 .PHONY : docs
-docs: status clean dircheck
+docs: status clean dircheck doxyfile
 	$(ec)$(gprintf) "Creating documentation ...\n"
-	$(ec)doxygen Doxyfile
+	$(ec)doxygen $(doxyfile)
 	$(ec)$(gprintf) "Documentation created.\n"
+
+# -- misc. targets --
 
 .PHONY : dircheck
 dircheck:
@@ -1736,6 +1807,7 @@ dircheck:
 ifneq ($(lib_sobj_dir),$(lib_obj_dir))
 	$(ec)$(call mkdircmd,$(lib_sobj_dir))
 endif
+	$(ec)$(call mkdircmd,$(doxygen_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
@@ -1756,12 +1828,14 @@ all: libs allutils
 	$(ec)$(gprintf) ""
 
 .PHONY : allutils
-allutils: status clean dircheck $(util_targets)
+allutils: status dircheck libs $(util_targets)
 	$(ec)$(gprintf) ""
 
 .PHONY : test
-test:	status clean dircheck $(flaim_static_lib) $(test_targets)
+test:	status dircheck $(flaim_static_lib) $(test_targets)
+ifndef netware_target
 	$(ec)$(call runtest,basictest)
+endif
 
 .PHONY : debug
 debug:
@@ -1872,3 +1946,187 @@ status:
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
+
+.PHONY : doxyfile
+doxyfile: dircheck
+	$(ec)$(gprintf) "PROJECT_NAME           = \"$(project_display_name)\"\n" > $(doxyfile)
+	$(ec)$(gprintf) "PROJECT_NUMBER         = \"$(version)\"\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OUTPUT_DIRECTORY       = $(doxygen_output_dir)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CREATE_SUBDIRS         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OUTPUT_LANGUAGE        = English\n" >> $(doxyfile)
+	$(ec)$(gprintf) "USE_WINDOWS_ENCODING   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "BRIEF_MEMBER_DESC      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "REPEAT_BRIEF           = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ABBREVIATE_BRIEF       = \"The $(dollar)name class\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         \"The $(dollar)name widget\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         \"The $(dollar)name file\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         is $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         provides $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         specifies $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         contains $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         represents $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         a $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         an $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         the\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALWAYS_DETAILED_SEC    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INLINE_INHERITED_MEMB  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "FULL_PATH_NAMES        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "STRIP_FROM_PATH        = \"\"\n" >> $(doxyfile)
+	$(ec)$(gprintf) "STRIP_FROM_INC_PATH    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHORT_NAMES            = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "JAVADOC_AUTOBRIEF      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MULTILINE_CPP_IS_BRIEF = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DETAILS_AT_TOP         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INHERIT_DOCS           = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SEPARATE_MEMBER_PAGES  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TAB_SIZE               = 3\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALIASES                = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "OPTIMIZE_OUTPUT_FOR_C  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OPTIMIZE_OUTPUT_JAVA   = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "BUILTIN_STL_SUPPORT    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DISTRIBUTE_GROUP_DOC   = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SUBGROUPING            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_ALL            = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_PRIVATE        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_STATIC         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_LOCAL_CLASSES  = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_LOCAL_METHODS  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_UNDOC_MEMBERS     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_UNDOC_CLASSES     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_FRIEND_COMPOUNDS  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_IN_BODY_DOCS      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INTERNAL_DOCS          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CASE_SENSE_NAMES       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_SCOPE_NAMES       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHOW_INCLUDE_FILES     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INLINE_INFO            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SORT_MEMBER_DOCS       = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SORT_BRIEF_DOCS        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SORT_BY_SCOPE_NAME     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TODOLIST      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TESTLIST      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_BUGLIST       = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_DEPRECATEDLIST= YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ENABLED_SECTIONS       = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_INITIALIZER_LINES  = 30\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHOW_USED_FILES        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHOW_DIRECTORIES       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILE_VERSION_FILTER    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "QUIET                  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARNINGS               = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_IF_UNDOCUMENTED   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_IF_DOC_ERROR      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_NO_PARAMDOC       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_FORMAT            = \"$(dollar)file:$(dollar)line: $(dollar)text\"\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_LOGFILE           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "INPUT                  = src/flaim.h $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "									$(ftk_src_dir)/ftk.h\n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILE_PATTERNS          = *.h\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RECURSIVE              = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXCLUDE                = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXCLUDE_SYMLINKS       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXCLUDE_PATTERNS       = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXAMPLE_PATH           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXAMPLE_PATTERNS       = *\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXAMPLE_RECURSIVE      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "IMAGE_PATH             = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "INPUT_FILTER           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILTER_PATTERNS        = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILTER_SOURCE_FILES    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SOURCE_BROWSER         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INLINE_SOURCES         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "STRIP_CODE_COMMENTS    = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "REFERENCED_BY_RELATION = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "REFERENCES_RELATION    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "USE_HTAGS              = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "VERBATIM_HEADERS       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALPHABETICAL_INDEX     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COLS_IN_ALPHA_INDEX    = 5\n" >> $(doxyfile)
+	$(ec)$(gprintf) "IGNORE_PREFIX          = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_HTML          = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_OUTPUT            = html\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_FILE_EXTENSION    = .html\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_HEADER            = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_FOOTER            = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_STYLESHEET        = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_ALIGN_MEMBERS     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_HTMLHELP      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CHM_FILE               = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HHC_LOCATION           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_CHI           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "BINARY_TOC             = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TOC_EXPAND             = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DISABLE_INDEX          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ENUM_VALUES_PER_LINE   = 4\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TREEVIEW      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TREEVIEW_WIDTH         = 250\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_LATEX         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_OUTPUT           = latex\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_CMD_NAME         = latex\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAKEINDEX_CMD_NAME     = makeindex\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COMPACT_LATEX          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PAPER_TYPE             = a4wide\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRA_PACKAGES         = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_HEADER           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "PDF_HYPERLINKS         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "USE_PDFLATEX           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_BATCHMODE        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_HIDE_INDICES     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_RTF           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_OUTPUT             = rtf\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COMPACT_RTF            = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_HYPERLINKS         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_STYLESHEET_FILE    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_EXTENSIONS_FILE    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_MAN           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAN_OUTPUT             = man\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAN_EXTENSION          = .3\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAN_LINKS              = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_XML           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_OUTPUT             = xml\n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_SCHEMA             = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_DTD                = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_PROGRAMLISTING     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_AUTOGEN_DEF   = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_PERLMOD       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERLMOD_LATEX          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERLMOD_PRETTY         = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERLMOD_MAKEVAR_PREFIX = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "ENABLE_PREPROCESSING   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MACRO_EXPANSION        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXPAND_ONLY_PREDEF     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SEARCH_INCLUDES        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDE_PATH           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDE_FILE_PATTERNS  = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "PREDEFINED             = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXPAND_AS_DEFINED      = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "SKIP_FUNCTION_MACROS   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TAGFILES               = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TAGFILE       = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALLEXTERNALS           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTERNAL_GROUPS        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERL_PATH              = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "CLASS_DIAGRAMS         = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_UNDOC_RELATIONS   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HAVE_DOT               = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CLASS_GRAPH            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COLLABORATION_GRAPH    = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GROUP_GRAPHS           = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "UML_LOOK               = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TEMPLATE_RELATIONS     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDE_GRAPH          = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDED_BY_GRAPH      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CALL_GRAPH             = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GRAPHICAL_HIERARCHY    = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DIRECTORY_GRAPH        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_IMAGE_FORMAT       = png\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_PATH               = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOTFILE_DIRS           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_DOT_GRAPH_WIDTH    = 1024\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_DOT_GRAPH_HEIGHT   = 1024\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_DOT_GRAPH_DEPTH    = 1000\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_TRANSPARENT        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_MULTI_TARGETS      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_LEGEND        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_CLEANUP            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SEARCHENGINE           = NO\n" >> $(doxyfile)

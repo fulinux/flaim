@@ -24,64 +24,6 @@
 
 #include "flaimsys.h"
 
-// Global data
-
-char F_Base64Encoder::m_ucEncodeTable[ 64] =
-{
-	ASCII_UPPER_A, ASCII_UPPER_B, ASCII_UPPER_C, ASCII_UPPER_D,
-	ASCII_UPPER_E, ASCII_UPPER_F, ASCII_UPPER_G, ASCII_UPPER_H,
-	ASCII_UPPER_I, ASCII_UPPER_J, ASCII_UPPER_K, ASCII_UPPER_L,
-	ASCII_UPPER_M, ASCII_UPPER_N, ASCII_UPPER_O, ASCII_UPPER_P,
-	ASCII_UPPER_Q, ASCII_UPPER_R, ASCII_UPPER_S, ASCII_UPPER_T,
-	ASCII_UPPER_U, ASCII_UPPER_V, ASCII_UPPER_W, ASCII_UPPER_X,
-	ASCII_UPPER_Y, ASCII_UPPER_Z, ASCII_LOWER_A, ASCII_LOWER_B,
-	ASCII_LOWER_C, ASCII_LOWER_D, ASCII_LOWER_E, ASCII_LOWER_F,
-	ASCII_LOWER_G, ASCII_LOWER_H, ASCII_LOWER_I, ASCII_LOWER_J,
-	ASCII_LOWER_K, ASCII_LOWER_L, ASCII_LOWER_M, ASCII_LOWER_N,
-	ASCII_LOWER_O, ASCII_LOWER_P, ASCII_LOWER_Q, ASCII_LOWER_R,
-	ASCII_LOWER_S, ASCII_LOWER_T, ASCII_LOWER_U, ASCII_LOWER_V,
-	ASCII_LOWER_W, ASCII_LOWER_X, ASCII_LOWER_Y, ASCII_LOWER_Z,
-	ASCII_ZERO,    ASCII_ONE,     ASCII_TWO,     ASCII_THREE,
-	ASCII_FOUR,    ASCII_FIVE,    ASCII_SIX,     ASCII_SEVEN,
-	ASCII_EIGHT,   ASCII_NINE,    ASCII_PLUS,    ASCII_SLASH
-};
-
-FLMBYTE F_Base64Decoder::m_ucDecodeTable[ 256] =
-{
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 0   .. 7
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 8   .. 15
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 16  .. 23
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 24  .. 31
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 32  .. 39
-	0xFF, 0xFF, 0xFF, 0x3E, 0xFF, 0xFF, 0xFF, 0x3F,		// 40  .. 47
-	0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B,		// 48  .. 55
-	0x3C, 0x3D, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF,		// 56  .. 63
-	0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,		// 64  .. 71
-	0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,		// 72  .. 79
-	0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,		// 80  .. 87
-	0x17, 0x18, 0x19, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 88  .. 95
-	0xFF, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,		// 96  .. 103
-	0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,		// 104 .. 111
-	0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,		// 112 .. 119
-	0x31, 0x32, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 120 .. 127
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 128 .. 135
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 136 .. 143
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 144 .. 151
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 152 .. 159
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 160 .. 167
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 168 .. 175
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 176 .. 183
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 184 .. 191
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 192 .. 199
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 200 .. 207
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 208 .. 215
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 216 .. 223
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 224 .. 231
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 232 .. 239
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,		// 240 .. 247
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF		// 248 .. 255
-};
-
 #ifdef FLM_USE_NICI
 	FSTATIC void GetIV(
 		FLMBYTE *		pucIV,
@@ -1326,7 +1268,8 @@ RCODE F_CCS::getKeyToStore(
 	void *					pvB64Buffer = NULL;
 	FLMUINT32				ui32PaddedLength;
 	NICI_CC_HANDLE			context = 0;
-	F_Base64Encoder *		pB64Encoder = NULL;
+	IF_PosIStream *		pBufferIStream = NULL;
+	IF_IStream *			pB64Encoder = NULL;
 	FLMBYTE *				pucWrappedKey = NULL;
 	FLMUINT32				ui32WrappedKeyLen = 0;
 	char *					pszFormattedEncKeyPasswd = NULL;
@@ -1446,17 +1389,21 @@ RCODE F_CCS::getKeyToStore(
 		{
 			goto ExitCtx;
 		}
-
-		if( (pB64Encoder = f_new F_Base64Encoder( FALSE)) == NULL)
+		
+		if( RC_BAD( rc = FlmOpenBufferIStream( pucTmp, 
+			ui32PaddedLength, &pBufferIStream)))
 		{
-			rc = RC_SET( FERR_MEM);
-			goto ExitCtx;
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = FlmOpenBase64EncoderIStream( pBufferIStream, 
+			FALSE, &pB64Encoder)))
+		{
+			goto Exit;
 		}
 
-		// Only encode the data.
-		
-		if (RC_BAD( rc = pB64Encoder->read( pucTmp, ui32PaddedLength,
-			pvB64Buffer, ui32PaddedLength, &ui32B64Length)))
+		if (RC_BAD( rc = pB64Encoder->read( pvB64Buffer, 
+			ui32PaddedLength, &ui32B64Length)))
 		{
 			goto ExitCtx;
 		}
@@ -1497,7 +1444,12 @@ Exit:
 
 	if (pB64Encoder)
 	{
-		delete pB64Encoder;
+		pB64Encoder->Release();
+	}
+	
+	if (pBufferIStream)
+	{
+		pBufferIStream->Release();
 	}
 
 	if (pucWrappedKey)
@@ -2226,262 +2178,6 @@ Exit:
 	}
 #endif
 	return(rc);
-}
-
-
-/*****************************************************************************
-Desc:	Reads decoded binary from the base64 ASCII source buffer.
-*****************************************************************************/
-RCODE F_Base64Decoder::read(
-	FLMBYTE *				psSource,
-	FLMUINT					uiSourceLen,
-	void *					pvBuffer,
-	FLMUINT32				ui32BytesToRead,
-	FLMUINT32 *				pui32BytesRead)
-{
-	RCODE			rc = FERR_OK;
-	FLMBYTE *	pucOutBuf = (FLMBYTE *)pvBuffer;
-	FLMBYTE		ucQuadBuffer[ 4];
-	FLMBYTE *	pTmp = psSource;
-	FLMUINT		uiOffset = 0;
-	FLMUINT		uiBytesToCopy;
-
-	if( pui32BytesRead)
-	{
-		*pui32BytesRead = 0;
-	}
-
-	if( !psSource)
-	{
-		rc = RC_SET( FERR_EOF_HIT);
-		goto Exit;
-	}
-
-	while( ui32BytesToRead)
-	{
-		if( !m_uiAvailBytes)
-		{
-			m_uiBufOffset = 0;
-
-			for( uiOffset = 0; uiOffset < 4;)
-			{
-				if (pTmp > psSource + uiSourceLen)
-				{
-					if( uiOffset)
-					{
-						rc = RC_SET( FERR_BAD_BASE64_ENCODING);
-					}
-					goto Exit;
-				}
-				else
-				{
-					ucQuadBuffer[ uiOffset] = *pTmp;
-					pTmp++;
-				}
-
-				if( m_ucDecodeTable[ ucQuadBuffer[ uiOffset]] == 0xFF)
-				{
-					FLMBYTE	ucTmp = ucQuadBuffer[ uiOffset];
-
-					if( ucTmp == ASCII_TAB || ucTmp == ASCII_SPACE ||
-						ucTmp == ASCII_NEWLINE || ucTmp == ASCII_CR)
-					{
-						continue;
-					}
-
-					rc = RC_SET( FERR_BAD_BASE64_ENCODING);
-					goto Exit;
-				}
-
-				uiOffset++;
-			}
-
-			m_ucBuffer[ 0] =
-				(m_ucDecodeTable[ ucQuadBuffer[ 0]] << 2) |
-				(m_ucDecodeTable[ ucQuadBuffer[ 1]] >> 4);
-			m_uiAvailBytes++;
-
-			if( ucQuadBuffer[ 2] != '=')
-			{
-				m_ucBuffer[ 1] =
-					(m_ucDecodeTable[ ucQuadBuffer[ 1]] << 4) |
-					(m_ucDecodeTable[ ucQuadBuffer[ 2]] >> 2);
-				m_uiAvailBytes++;
-			}
-
-			if( ucQuadBuffer[ 3] != '=')
-			{
-				m_ucBuffer[ 2] =
-					(m_ucDecodeTable[ ucQuadBuffer[ 2]] << 6) |
-					m_ucDecodeTable[ ucQuadBuffer[ 3]];
-				m_uiAvailBytes++;
-			}
-		}
-
-		uiBytesToCopy = f_min( m_uiAvailBytes, ui32BytesToRead);
-
-		if( pucOutBuf)
-		{
-			f_memcpy( pucOutBuf, &m_ucBuffer[ m_uiBufOffset], uiBytesToCopy);
-		}
-
-		ui32BytesToRead -= (FLMUINT32)uiOffset;
-		m_uiAvailBytes -= uiBytesToCopy;
-		m_uiBufOffset += uiBytesToCopy;
-		pucOutBuf += uiBytesToCopy;
-
-		if( pui32BytesRead)
-		{
-			*pui32BytesRead += (FLMUINT32)uiBytesToCopy;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/*****************************************************************************
-Desc:	Reads ASCII base64 encoded binary from the source buffer.
-*****************************************************************************/
-RCODE F_Base64Encoder::read(
-	FLMBYTE *				psSource,
-	FLMUINT					uiSourceLen,
-	void *					pvBuffer,
-	FLMUINT32				ui32BytesToRead,
-	FLMUINT32 *				pui32BytesRead)
-{
-	RCODE			rc = FERR_OK;
-	FLMBYTE *	pucOutBuf = (FLMBYTE *)pvBuffer;
-	FLMUINT		uiBytesToCopy = 0;
-	FLMUINT		uiBytesToEncode = 0;
-	FLMBYTE		ucTriBuffer[ 3];
-	FLMBYTE *	pTmp = psSource;
-
-	if( *pui32BytesRead)
-	{
-		*pui32BytesRead = 0;
-	}
-
-	if( !psSource)
-	{
-		rc = RC_SET( FERR_EOF_HIT);
-		goto Exit;
-	}
-
-	while( ui32BytesToRead)
-	{
-		if( !m_uiAvailBytes)
-		{
-			// Reset the buffer
-			
-			f_memset( ucTriBuffer, 0, 3);
-
-			if( m_bInputExhausted)
-			{
-				rc = RC_SET( FERR_EOF_HIT);
-				goto Exit;
-			}
-
-			if (pTmp > psSource + uiSourceLen)
-			{
-				m_bInputExhausted = TRUE;
-			}
-			else if ((psSource + uiSourceLen) - pTmp >= 3)
-			{
-				f_memcpy( ucTriBuffer, pTmp, 3);
-				pTmp += 3;
-				uiBytesToEncode = 3;
-			}
-			else
-			{
-				uiBytesToEncode = (psSource + uiSourceLen) - pTmp;
-				f_memcpy( ucTriBuffer, pTmp, uiBytesToEncode);
-				pTmp += uiBytesToEncode;
-				m_bInputExhausted = TRUE;
-			}
-
-			if( uiBytesToEncode)
-			{
-				m_ucBuffer[ m_uiAvailBytes++] =
-					m_ucEncodeTable[ ucTriBuffer[ 0] >> 2];
-
-				m_ucBuffer[ m_uiAvailBytes++] =
-					m_ucEncodeTable[ ((ucTriBuffer[ 0] & 0x03) << 4) |
-					(ucTriBuffer[ 1] >> 4)];
-
-				if( uiBytesToEncode >= 2)
-				{
-					m_ucBuffer[ m_uiAvailBytes++] =
-						m_ucEncodeTable[ ((ucTriBuffer[ 1] & 0x0F) << 2) |
-						(ucTriBuffer[ 2] >> 6)];
-				}
-				else
-				{
-					m_ucBuffer[ m_uiAvailBytes++] = ASCII_EQUAL;
-				}
-
-				if( uiBytesToEncode == 3)
-				{
-					m_ucBuffer[ m_uiAvailBytes++] =
-						m_ucEncodeTable[ ucTriBuffer[ 2] & 0x3F];
-				}
-				else
-				{
-					m_ucBuffer[ m_uiAvailBytes++] = ASCII_EQUAL;
-				}
-
-				m_uiBase64Count += 4;
-			}
-
-			if( m_bLineBreaks)
-			{
-				if( (m_uiBase64Count % 72) == 0 ||
-					(m_bInputExhausted && !m_bPriorLineEnd))
-				{
-#if defined( FLM_OSX)
-					m_ucBuffer[ m_uiAvailBytes++] = ASCII_CR;
-#elif defined( FLM_UNIX)
-					m_ucBuffer[ m_uiAvailBytes++] = ASCII_NEWLINE;
-#else
-					m_ucBuffer[ m_uiAvailBytes++] = ASCII_CR;
-					m_ucBuffer[ m_uiAvailBytes++] = ASCII_NEWLINE;
-#endif
-					m_bPriorLineEnd = TRUE;
-				}
-				else
-				{
-					m_bPriorLineEnd = FALSE;
-				}
-			}
-
-			if( !m_uiAvailBytes)
-			{
-				rc = RC_SET( FERR_EOF_HIT);
-				goto Exit;
-			}
-		}
-
-		uiBytesToCopy = m_uiAvailBytes;
-
-		if( pucOutBuf != NULL)
-		{
-			f_memcpy( pucOutBuf, &m_ucBuffer[ 0], uiBytesToCopy);
-			pucOutBuf += uiBytesToCopy;
-		}
-
-		ui32BytesToRead -= (FLMUINT32)uiBytesToEncode;
-		m_uiAvailBytes -= uiBytesToCopy;
-
-		if( pui32BytesRead)
-		{
-			*pui32BytesRead += (FLMUINT32)uiBytesToCopy;
-		}
-	}
-
-Exit:
-
-	return( rc);
 }
 
 /****************************************************************************

@@ -37,6 +37,10 @@ FSTATIC RCODE tokenGet(
 	QTYPES *			peType,
 	FLMUINT *		puiTokenBufSize);
 
+FSTATIC FLMBOOL tokenIsNum(
+	const char *	pszToken,
+	FLMUINT *		puiNum);
+	
 FSTATIC FLMBOOL tokenIsOperator(
 	const char *	pszToken,
 	QTYPES *			peOperator);
@@ -1461,4 +1465,103 @@ Exit:
 	}
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:	Determine if a token is a number.
+****************************************************************************/
+FSTATIC FLMBOOL tokenIsNum(
+	const char *	pszToken,
+	FLMUINT *		puiNum)
+{
+	FLMBOOL		bIsNum = TRUE;
+	FLMUINT		uiNum;
+	FLMBOOL		bAllowHex = FALSE;
+
+	if (*pszToken == 0)
+	{
+		bIsNum = FALSE;
+		goto Exit;
+	}
+
+	if (*pszToken == '0' && 
+		(*(pszToken + 1) == 'x' || *(pszToken + 1) == 'X'))
+	{
+		pszToken += 2;
+		bAllowHex = TRUE;
+	}
+
+	uiNum = 0;
+	while (*pszToken)
+	{
+		if (*pszToken >= '0' && *pszToken <= '9')
+		{
+			if (!bAllowHex)
+			{
+				if (uiNum > (FLMUINT)(-1) / 10)
+				{
+
+					// Number would overflow.
+
+					bIsNum = FALSE;
+					goto Exit;
+				}
+				else
+				{
+					uiNum *= 10;
+				}
+			}
+			else
+			{
+				if (uiNum > (FLMUINT)(-1) >> 4)
+				{
+
+					// Number would overflow.
+
+					bIsNum = FALSE;
+					goto Exit;
+				}
+				uiNum <<= 4;
+			}
+			uiNum += (FLMUINT)(*pszToken - '0');
+		}
+		else if (bAllowHex)
+		{
+			if (uiNum > (FLMUINT)(-1) >> 4)
+			{
+
+				// Number would overflow.
+
+				bIsNum = FALSE;
+				goto Exit;
+			}
+			if (*pszToken >= 'A' && *pszToken <= 'F')
+			{
+				uiNum <<= 4;
+				uiNum += (FLMUINT)(*pszToken - 'A') + 10;
+			}
+			else if (*pszToken >= 'a' && *pszToken <= 'f')
+			{
+				uiNum <<= 4;
+				uiNum += (FLMUINT)(*pszToken - 'a') + 10;
+			}
+			else
+			{
+				bIsNum = FALSE;
+				goto Exit;
+			}
+		}
+		else
+		{
+			bIsNum = FALSE;
+			goto Exit;
+		}
+		pszToken++;
+	}
+
+	*puiNum = uiNum;
+
+Exit:
+
+	return( bIsNum);
 }

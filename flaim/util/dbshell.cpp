@@ -26,65 +26,9 @@
 #include "dbshell.h"
 #include "flm_edit.h"
 
-#ifdef FLM_WIN
-	#include <direct.h>
-#endif
-
-#ifdef FLM_UNIX
-	#ifdef FLM_AIX
-		#ifndef _LARGE_FILES
-			#define _LARGE_FILES
-		#endif
-		#include <stdio.h>
-	#endif
-	
-	#include <sys/types.h>
-	#ifndef FLM_OSX
-		#include <aio.h>
-	#endif
-	
-	#include <fcntl.h>
-	
-	#if defined( FLM_SOLARIS)
-		#include <sys/statvfs.h>
-	#elif defined( FLM_LINUX)
-		#include <sys/vfs.h>
-	#elif defined( FLM_OSF)
-	
-		// Tru64 4.0 does not have this declaration. Tru64 5.0 renames statfs
-		// in vague ways, so we put these declarations before including
-		// <sys/stat.h>
-	
-		// DSS NOTE: statfs declaration below conflicts with one found in
-		// sys/mount.h header file, so I commented it out.  This was when I
-		// compiled using the GNU compiler.
-	
-		struct statfs;
-		#include <sys/mount.h>
-	#endif
-#endif
-
 // Imported global variables.
 
-FTX_INFO *		gv_pFtxInfo = NULL;
 FLMBOOL			gv_bShutdown = FALSE;
-FLMBOOL			gv_bRunning = TRUE;
-
-// Local prototypes
-
-#ifdef FLM_LINUX
-FSTATIC FLMUINT64 flmGetLinuxMemInfoValue(
-	char *			pszMemInfoBuffer,
-	char *			pszTag);
-	
-FSTATIC void flmGetLinuxMemInfo(
-	FLMUINT64 *		pui64TotalMem,
-	FLMUINT64 *		pui64AvailMem);
-#endif
-	
-FSTATIC void fshellFileSystemTest(
-	const char *	pszFileName,
-	FlmShell *		pShell);
 
 FSTATIC RCODE copyStatusFunc(
 	eStatusType		eStatus,
@@ -117,10 +61,11 @@ FSTATIC void removeChars(
 FSTATIC char * positionToPath(
 	char *	pszCommandLine);
 	
-FSTATIC void extractBaseDirAndWildcard( 
-	char *	pszPath, 
-	char *	pszBase, 
-	char *	pszWildcard);
+FSTATIC void extractBaseDirAndWildcard(
+	IF_FileSystem *	pFileSystem,
+	char *				pszPath, 
+	char *				pszBase, 
+	char *				pszWildcard);
 	
 // Methods
 
@@ -132,7 +77,7 @@ FlmShell::FlmShell()
 	m_pScreen = NULL;
 	m_pWindow = NULL;
 	
-	GedPoolInit( &m_ArgPool, 512);
+	m_ArgPool.poolInit( 512);
 
 	f_memset( &m_DbList [0], 0, sizeof( m_DbList));
 	m_pTitleWin = NULL;
@@ -151,7 +96,7 @@ FlmShell::~FlmShell()
 {
 	FLMUINT		uiLoop;
 
-	GedPoolFree( &m_ArgPool);
+	m_ArgPool.poolFree();
 
 	// Free the command objects.
 
@@ -286,19 +231,6 @@ RCODE FlmShell::setup( void)
 	// Register database get config command
 
 	if( (pCommand = f_new FlmDbGetConfigCommand) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-	if( RC_BAD( rc = registerCmd( pCommand)))
-	{
-		goto Exit;
-	}
-	pCommand = NULL;
-
-	// Register sysinfo command
-
-	if( (pCommand = f_new FlmSysInfoCommand) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -448,7 +380,7 @@ RCODE FlmShell::parseCmdLine(
 	FlmParse		Parser;
 	RCODE			rc = FERR_OK;
 
-	GedPoolReset( &m_ArgPool, NULL);
+	m_ArgPool.poolReset();
 	m_iCurrArgC = 0;
 	m_ppCurrArgV = NULL;
 	m_pszOutputFile = NULL;
@@ -458,11 +390,10 @@ RCODE FlmShell::parseCmdLine(
 	{
 		uiArgCount++;
 	}
-
-	if ((m_ppCurrArgV = (char **)GedPoolCalloc( &m_ArgPool,
-								uiArgCount * sizeof( char *))) == NULL)
+	
+	if( RC_BAD( rc = m_ArgPool.poolCalloc( uiArgCount * sizeof( char *),
+		(void **)&m_ppCurrArgV)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -481,23 +412,22 @@ RCODE FlmShell::parseCmdLine(
 		uiTokenLen = f_strlen( pszCurrToken);
 		if (!bQuoted && uiTokenLen >= 2 && *pszCurrToken == '>' && !m_pszOutputFile)
 		{
-			if ((m_pszOutputFile = (char *)GedPoolCalloc( &m_ArgPool,
-							uiTokenLen)) == NULL)
+			if( RC_BAD( rc = m_ArgPool.poolCalloc( uiTokenLen, 
+				(void **)&m_pszOutputFile)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
 			f_strcpy( m_pszOutputFile, pszCurrToken + 1);
 		}
 		else
 		{
-			if ((m_ppCurrArgV [uiCurrToken] = (char *)GedPoolCalloc( &m_ArgPool,
-							uiTokenLen + 1)) == NULL)
+			if( RC_BAD( rc = m_ArgPool.poolCalloc( uiTokenLen + 1,
+				(void **)&m_ppCurrArgV [uiCurrToken])))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
-
+			
 			f_strcpy( m_ppCurrArgV[ uiCurrToken], pszCurrToken);
 
 			if( bQuoted)
@@ -752,24 +682,22 @@ RCODE FlmShell::execute( void)
 	char						szDir [F_PATH_MAX_SIZE];
 	DirectoryIterator		directoryIterator;
 	char *					pszTabCompleteBegin = NULL;
+	IF_FileSystem *		pFileSystem = NULL;
 
-	if( FTXScreenInit( gv_pFtxInfo,
-		"dbshell main", &m_pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXScreenInit( "dbshell main", &m_pScreen)))
 	{
-		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
 
-	if( FTXScreenInitStandardWindows( m_pScreen, WPS_RED, WPS_WHITE, WPS_BLUE,
-		WPS_WHITE, FALSE, FALSE, NULL, &m_pTitleWin, &m_pWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXScreenInitStandardWindows( m_pScreen, 
+		FLM_RED, FLM_WHITE, FLM_BLUE, FLM_WHITE, FALSE, FALSE,
+		NULL, &m_pTitleWin, &m_pWindow)))
 	{
-		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
 
-	if( FTXScreenDisplay( m_pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXScreenDisplay( m_pScreen)))
 	{
-		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -795,21 +723,10 @@ RCODE FlmShell::execute( void)
 		FTXWinSetCursorPos( m_pWindow, 0, uiRow);
 		FTXWinClearToEOL( m_pWindow);
 
-#if defined( FLM_NLM)
-		szDir [0] = 0;
-#elif defined( FLM_WIN)
-		if (_getcwd( (char *)szDir, F_PATH_MAX_SIZE) == NULL)
+		if( RC_BAD( f_getcwd( szDir)))
 		{
 			szDir [0] = '\0';
 		}
-#elif defined( FLM_UNIX)
-		if (getcwd( (char *)szDir, F_PATH_MAX_SIZE) == NULL)
-		{
-			szDir [0] = '\0';
-		}
-#else
-		#error "This platform is not supported"
-#endif
 
 		FTXWinPrintf( m_pWindow, "%s>", szDir);
 
@@ -819,7 +736,7 @@ RCODE FlmShell::execute( void)
 			break;
 		}
 
-		if( uiTermChar == WPK_TAB)
+		if( uiTermChar == FKB_TAB)
 		{
 			char	szBase[ 255];
 			char	szWildcard[ 255];
@@ -843,10 +760,12 @@ RCODE FlmShell::execute( void)
 				 !directoryIterator.isInSet( pszTabCompleteBegin))
 			{
 
-				extractBaseDirAndWildcard( pszTabCompleteBegin, szBase, szWildcard);
+				extractBaseDirAndWildcard( pFileSystem, pszTabCompleteBegin,
+					szBase, szWildcard);
 
 				directoryIterator.reset();
-				directoryIterator.setupForSearch( szDir, szBase, szWildcard);
+				directoryIterator.setupForSearch( pFileSystem,
+					szDir, szBase, szWildcard);
 			}
 
 			if ( !directoryIterator.isEmpty())
@@ -858,7 +777,7 @@ RCODE FlmShell::execute( void)
 			}
 			else
 			{
-				ftxBeep();
+				FTXBeep();
 			}
 
 			// If the completed path contains spaces, quote it
@@ -875,7 +794,7 @@ RCODE FlmShell::execute( void)
 
 		directoryIterator.reset();
 
-		if( uiTermChar == WPK_UP)
+		if( uiTermChar == FKB_UP)
 		{
 			for(; uiLastHistorySlot > 0; uiLastHistorySlot--)
 			{
@@ -890,7 +809,7 @@ RCODE FlmShell::execute( void)
 			continue;
 		}
 
-		if( uiTermChar == WPK_DOWN)
+		if( uiTermChar == FKB_DOWN)
 		{
 			for(; uiLastHistorySlot < MAX_SHELL_HISTORY_ITEMS - 1; uiLastHistorySlot++)
 			{
@@ -904,7 +823,7 @@ RCODE FlmShell::execute( void)
 			continue;
 		}
 
-		if( uiTermChar == WPK_ESCAPE)
+		if( uiTermChar == FKB_ESCAPE)
 		{
 			szBuffer[ 0] = '\0';
 			continue;
@@ -936,6 +855,11 @@ Exit:
 	if( m_pScreen)
 	{
 		FTXScreenFree( &m_pScreen);
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 
 	return( rc);
@@ -1476,12 +1400,12 @@ FSTATIC RCODE copyStatusFunc(
 		FTXWinPrintf( pWin, "  %,I64u of %,I64u bytes copied\r",
 						pCopyInfo->ui64BytesCopied, pCopyInfo->ui64BytesToCopy);
 
-		if (FTXWinTestKB( pWin) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pWin)))
 		{
 			FLMUINT	uiChar;
 
 			FTXWinInputChar( pWin, &uiChar);
-			if (uiChar == WPK_ESC)
+			if (uiChar == FKB_ESC)
 			{
 				rc = RC_SET( FERR_USER_ABORT);
 				goto Exit;
@@ -1653,12 +1577,12 @@ FSTATIC RCODE backupStatusFunc(
 		FTXWinPrintf( pWin, "%,I64u / %,I64u bytes backed up\r",
 						  pBackupInfo->ui64BytesDone, pBackupInfo->ui64BytesToDo);
 
-		if( FTXWinTestKB( pWin) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pWin)))
 		{
 			FLMUINT	uiChar;
 	
 			FTXWinInputChar( pWin, &uiChar);
-			if (uiChar == WPK_ESC)
+			if (uiChar == FKB_ESC)
 			{
 				rc = RC_SET( FERR_USER_ABORT);
 				goto Exit;
@@ -1954,12 +1878,12 @@ RCODE F_LocalRestore::report_postamble( void)
 
 	f_yieldCPU();
 
-	if( FTXWinTestKB( m_pWin) == FTXRC_SUCCESS)
+	if( RC_OK( FTXWinTestKB( m_pWin)))
 	{
 		FLMUINT	uiChar;
 
 		FTXWinInputChar( m_pWin, &uiChar);
-		if (uiChar == WPK_ESC)
+		if (uiChar == FKB_ESC)
 		{
 			rc = RC_SET( FERR_USER_ABORT);
 			goto Exit;
@@ -2056,7 +1980,8 @@ RCODE F_LocalRestore::reportError(
 	FTXWinClearToEOL( m_pWin);
 	FTXWinPrintf( m_pWin, "Error: %s.  Retry (Y/N): ",
 		FlmErrorString( rcErr));
-	if( FTXWinInputChar( m_pWin, &uiChar) != FTXRC_SUCCESS)
+		
+	if( RC_BAD( FTXWinInputChar( m_pWin, &uiChar)))
 	{
 		uiChar = 0;
 		goto Exit;
@@ -2619,7 +2544,8 @@ FLMINT FlmDbGetConfigCommand::execute(
 		{
 			goto Exit;
 		}
-		FlmGetLanguage( uiArg, szLang);
+		
+		f_languageToStr( uiArg, szLang);
 		pShell->con_printf( "Database Language = %s\n",
 			szLang);
 		bValidOption = TRUE;
@@ -2865,728 +2791,6 @@ FLMBOOL FlmDbGetConfigCommand::canPerformCommand(
 				: FALSE);
 }
 
-/***************************************************************************
-Desc:
-***************************************************************************/
-#ifdef FLM_LINUX
-FSTATIC FLMUINT64 flmGetLinuxMemInfoValue(
-	char *			pszMemInfoBuffer,
-	char *			pszTag)
-{
-	char *			pszTmp;
-	FLMUINT64		ui64Bytes = 0;
-
-	if( (pszTmp = (char *)f_strstr( 
-		(FLMBYTE *)pszMemInfoBuffer, (FLMBYTE *)pszTag)) == NULL)
-	{
-		return( 0);
-	}
-	
-	pszTmp += f_strlen( pszTag);
-	
-	while( *pszTmp == ASCII_SPACE)
-	{
-		pszTmp++;
-	}
-
-	while( *pszTmp >= '0' && *pszTmp <= '9')
-	{
-		ui64Bytes *= 10;
-		ui64Bytes += (FLMUINT)(*pszTmp - '0');
-		pszTmp++;
-	}
-	
-	return( ui64Bytes * 1024);
-}
-
-/***************************************************************************
-Desc:
-***************************************************************************/
-FSTATIC void flmGetLinuxMemInfo(
-	FLMUINT64 *		pui64TotalMem,
-	FLMUINT64 *		pui64AvailMem)
-{
-	int				fd = -1;
-	int				iBytesRead;
-	int				iMemInfoBufSize = 4096;
-	char *			pszMemInfoBuf = NULL;
-	FLMUINT64		ui64TotalMem = 0;
-	FLMUINT64		ui64AvailMem = 0;
-
-	if( (pszMemInfoBuf = (char *)malloc( iMemInfoBufSize)) == NULL)
-	{
-		goto Exit;
-	}
-	
-	if( (fd = open( "/proc/meminfo", O_RDONLY, 0600)) == -1)
-	{
-		goto Exit;
-	}
-
-	if( (iBytesRead = read( fd, pszMemInfoBuf, iMemInfoBufSize - 1)) == -1)
-	{
-		goto Exit;
-	}
-	
-	pszMemInfoBuf[ iBytesRead] = 0;
-	
-	if( (ui64TotalMem = 
-		flmGetLinuxMemInfoValue( pszMemInfoBuf, "MemTotal:")) != 0)
-	{
-		ui64AvailMem = 
-				flmGetLinuxMemInfoValue( pszMemInfoBuf, "MemFree:") +
-				flmGetLinuxMemInfoValue( pszMemInfoBuf, "Buffers:") +
-				flmGetLinuxMemInfoValue( pszMemInfoBuf, "Cached:");
-	}
-	
-Exit:
-
-	if( pui64TotalMem)
-	{
-		*pui64TotalMem = ui64TotalMem;
-	}
-	
-	if( pui64AvailMem)
-	{
-		*pui64AvailMem = ui64AvailMem;
-	}
-
-	if( pszMemInfoBuf)
-	{
-		free( pszMemInfoBuf);
-	}
-	
-	if( fd != -1)
-	{
-		close( fd);
-	}
-}
-#endif
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-FLMINT FlmSysInfoCommand::execute(
-	FLMINT		iArgC,
-	char **		ppszArgV,
-	FlmShell *	pShell)
-{
-	FLMINT				iExitCode = 0;
-	RCODE					rc = FERR_OK;
-	FTX_WINDOW *		pWin = pShell->getWindow();
-	FLMUINT				uiLoop;
-#ifdef FLM_WIN
-	DWORD					dwSectorsPerCluster;
-	DWORD					dwBytesPerSector;
-	DWORD					dwNumberOfFreeClusters;
-	DWORD					dwTotalNumberOfClusters;
-	FLMUINT				uiLogicalDrives;
-	SYSTEM_INFO			sysInfo;
-	MEMORYSTATUS		memStatus;
-	char					szBuf[ 128];
-#endif
-	POOL					pool;
-	
-	GedPoolInit( &pool, 512);
-
-	if( iArgC < 2)
-	{
-#ifdef FLM_WIN
-
-		GlobalMemoryStatus( &memStatus);
-
-		pShell->con_printf( "Size of MEMORYSTATUS..... %,u\n",
-			(unsigned)memStatus.dwLength);
-		pShell->con_printf( "Memory load.............. %,u\n",
-			(unsigned)memStatus.dwMemoryLoad);
-		pShell->con_printf( "Total Physical Memory.... %,u\n",
-			(unsigned)memStatus.dwTotalPhys);
-		pShell->con_printf( "Avail Physical Memory.... %,u\n",
-			(unsigned)memStatus.dwAvailPhys);
-		pShell->con_printf( "Total Page File.......... %,u\n",
-			(unsigned)memStatus.dwTotalPageFile);
-		pShell->con_printf( "Avail Page File.......... %,u\n",
-			(unsigned)memStatus.dwAvailPageFile);
-		pShell->con_printf( "Total Virtual............ %,u\n",
-			(unsigned)memStatus.dwTotalVirtual);
-		pShell->con_printf( "Avail Virtual............ %,u\n",
-			(unsigned)memStatus.dwAvailVirtual);
-
-		GetSystemInfo( &sysInfo);
-		pShell->con_printf( "Processors .............. %,u\n",
-			sysInfo.dwNumberOfProcessors);
-		pShell->con_printf( "Processor type .......... %,u\n",
-			(unsigned)sysInfo.dwProcessorType);
-		pShell->con_printf( "Processor level ......... %,u\n",
-			(unsigned)sysInfo.wProcessorLevel);
-		pShell->con_printf( "Processor revision ...... %,u\n",
-			(unsigned)sysInfo.wProcessorRevision);
-		pShell->con_printf( "Page size ............... %,u (granularity for protection and commitment)\n",
-			sysInfo.dwPageSize);
-		pShell->con_printf( "Allocation granularity .. %,u (size of addr space reserved by VirtualAlloc)\n\n",
-			sysInfo.dwAllocationGranularity);
-
-		uiLogicalDrives = (FLMUINT)GetLogicalDrives();
-
-		for( uiLoop = 0; uiLoop < 32; uiLoop++)
-		{
-			if( uiLogicalDrives & (0x00000001 << uiLoop))
-			{
-				f_sprintf( (char *)szBuf, "%c:\\", (char)('A' + uiLoop));
-
-				if( GetDriveType( (char *)szBuf) == DRIVE_FIXED &&
-					GetDiskFreeSpace( (char *)szBuf, &dwSectorsPerCluster, &dwBytesPerSector,
-					&dwNumberOfFreeClusters, &dwTotalNumberOfClusters))
-				{
-					pShell->con_printf( "Drive   Sectors/Cluster   Bytes/Sector   Free Clusters   Total Clusters\n");
-					pShell->con_printf( "-----   ---------------   ------------   -------------   --------------\n");
-					pShell->con_printf( "%c       %,-12u      %,-12u   %,-12u    %,-12u\n",
-						szBuf[ 0],
-						(unsigned)dwSectorsPerCluster,
-						(unsigned)dwBytesPerSector,
-						(unsigned)dwNumberOfFreeClusters,
-						(unsigned)dwTotalNumberOfClusters);
-				}
-			}
-		}
-#elif defined( FLM_UNIX)
-	{
-
-		#if defined( FLM_LINUX)
-				FLMUINT64			ui64TotalMem;
-				FLMUINT64			ui64AvailMem;
-			
-				flmGetLinuxMemInfo( &ui64TotalMem, &ui64AvailMem);
-				
-				pShell->con_printf( "Total Memory ............. %,I64u\n",
-					ui64TotalMem);
-				pShell->con_printf( "Available Memory ......... %,I64u\n",
-					ui64AvailMem);
-		#endif
-				
-
-		#if defined( _SC_AVPHYS_PAGES)
-			{
-				FLMUINT				uiPageSize = (FLMUINT)sysconf(_SC_PAGESIZE);
-				FLMUINT				uiAvailPhysPages = (FLMUINT)sysconf(_SC_AVPHYS_PAGES);
-				FLMUINT				uiTotalPhysPages = (FLMUINT)sysconf(_SC_PHYS_PAGES);
-
-				pShell->con_printf( "Page Size ................ %,u (0x%08X)\n",
-					(unsigned)uiPageSize, (unsigned)uiPageSize);
-				pShell->con_printf( "Available Pages .......... %,u (0x%08X)\n",
-					(unsigned)uiAvailPhysPages, (unsigned)uiAvailPhysPages);
-				pShell->con_printf( "Total Pages .............. %,u (0x%08X)\n",
-					(unsigned)uiTotalPhysPages, (unsigned)uiTotalPhysPages);
-
-				pShell->con_printf( "Total Memory (may wrap) .. %,u (0x%08X)\n",
-					(unsigned)(uiTotalPhysPages * uiPageSize),
-					(unsigned)(uiTotalPhysPages * uiPageSize));
-				pShell->con_printf( "Avail Memory (may wrap) .. %,u (0x%08X)\n",
-					(unsigned)(uiAvailPhysPages * uiPageSize),
-					(unsigned)(uiAvailPhysPages * uiPageSize));
-
-			}
-		#endif
-
-		#if defined( RUSAGE_SELF)
-			{
-				struct rusage		resourceUsage;
-				if( getrusage( RUSAGE_SELF, &resourceUsage) == 0)
-				{
-					pShell->con_printf( "Mem. used by process...... %,u (0x%08X)\n",
-						(unsigned)resourceUsage.ru_idrss,
-						(unsigned)resourceUsage.ru_idrss);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_DATA)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_DATA, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_DATA (cur)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_DATA (max)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_FSIZE)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_FSIZE, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_FSIZE (cur)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_FSIZE (max)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_STACK)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_STACK, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_STACK (cur)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_STACK (max)........ %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_VMEM)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_VMEM (cur)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_VMEM (max)......... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-
-		#if defined( RLIMIT_AS)
-			{
-				struct rlimit		rlim;
-				if( getrlimit( RLIMIT_AS, &rlim) == 0)
-				{
-					pShell->con_printf( "RLIMIT_AS (cur)........... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_cur, (unsigned)rlim.rlim_cur);
-					pShell->con_printf( "RLIMIT_AS (max)........... %,u (0x%08X)\n",
-						(unsigned)rlim.rlim_max, (unsigned)rlim.rlim_max);
-				}
-			}
-		#endif
-	}
-#else
-		pShell->con_printf( "No information available.\n");
-#endif
-	}
-	else
-	{
-		if( f_stricmp( ppszArgV[ 1], "memtest") == 0)
-		{
-			FLMUINT		uiBlockSize;
-			FLMUINT		uiCount;
-			FLMUINT		uiStartTime;
-			FLMUINT		uiMilli;
-			void *		pvHead = NULL;
-			void *		pvAlloc = NULL;
-
-			if( iArgC >= 4)
-			{
-				uiBlockSize = f_atol( ppszArgV[ 2]);
-				if( uiBlockSize < sizeof( void *))
-				{
-					uiBlockSize = sizeof( void *);
-				}
-
-				uiCount = f_atol( ppszArgV[ 3]);
-				if( uiCount < 1)
-				{
-					uiCount = 1;
-				}
-
-				uiStartTime = FLM_GET_TIMER();
-				for( uiLoop = 0; uiLoop < uiCount; uiLoop++)
-				{
-					if( RC_BAD( f_alloc( uiBlockSize, &pvAlloc)))
-					{
-						pShell->con_printf( "Unable to allocate block %u.\n",
-							(unsigned)uiLoop);
-						break;
-					}
-
-					if( !pvHead)
-					{
-						pvHead = pvAlloc;
-						*((FLMUINT *)pvAlloc) = 0;
-					}
-					else
-					{
-						*((FLMUINT *)pvAlloc) = (FLMUINT)pvHead;
-						pvHead = pvAlloc;
-					}
-					f_yieldCPU();
-				}
-
-				FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
-				pShell->con_printf( "Allocations: %u ms, %,u count, %,u bytes\n",
-					(unsigned)uiMilli, (unsigned)uiLoop,
-					(unsigned)(uiCount * uiBlockSize));
-
-				if( iArgC > 4 && f_stricmp( ppszArgV[ 4], "pause") == 0)
-				{
-					FTXDisplayMessage( pShell->getScreen(), WPS_BLUE, WPS_WHITE,
-						"Press <ENTER> to continue ...",
-						NULL, NULL);
-				}
-
-				uiStartTime = FLM_GET_TIMER();
-				while( pvHead)
-				{
-					pvAlloc = pvHead;
-					pvHead = (void *)(*((FLMUINT *)pvHead));
-					f_free( &pvAlloc);
-					f_yieldCPU();
-				}
-				FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
-				pShell->con_printf( "Frees: %u ms, %u count, %u bytes\n",
-					(unsigned)uiMilli, (unsigned)uiLoop,
-					(unsigned)(uiLoop * uiBlockSize));
-			}
-			else
-			{
-				pShell->con_printf( "Wrong number of arguments.\n");
-			}
-		}
-		else if( f_stricmp( ppszArgV[ 1], "fstest") == 0)
-		{
-			if( iArgC < 3)
-			{
-				pShell->con_printf( "Wrong number of arguments.\n");
-				iExitCode = -1;
-				goto Exit;
-			}
-
-			fshellFileSystemTest( ppszArgV [2], pShell);
-		}
-		else if( f_stricmp( ppszArgV[ 1], "guid") == 0)
-		{
-			FLMBYTE	ucGuid[ F_SERIAL_NUM_SIZE];
-
-			if( RC_BAD( rc = f_createSerialNumber( ucGuid)))
-			{
-				goto Exit;
-			}
-
-			pShell->con_printf(
-				"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
-				(unsigned)ucGuid[ 0],
-				(unsigned)ucGuid[ 1],
-				(unsigned)ucGuid[ 2],
-				(unsigned)ucGuid[ 3],
-				(unsigned)ucGuid[ 4],
-				(unsigned)ucGuid[ 5],
-				(unsigned)ucGuid[ 6],
-				(unsigned)ucGuid[ 7],
-				(unsigned)ucGuid[ 8],
-				(unsigned)ucGuid[ 9],
-				(unsigned)ucGuid[ 10],
-				(unsigned)ucGuid[ 11],
-				(unsigned)ucGuid[ 12],
-				(unsigned)ucGuid[ 13],
-				(unsigned)ucGuid[ 14],
-				(unsigned)ucGuid[ 15]);
-		}
-		else if( f_stricmp( ppszArgV[ 1], "threads") == 0)
-		{
-			FLMUINT				uiNumThreads;
-			FLMUINT				uiCurrentTime;
-			FLMUINT				uiRow;
-			F_THREAD_INFO *	pThreadInfo = NULL;
-			F_THREAD_INFO *	pThrd;
-
-			for( ;;)
-			{
-				if( FTXWinTestKB( pWin) == FTXRC_SUCCESS)
-				{
-					break;
-				}
-
-				FTXWinSetCursorPos( pWin, 0, 0);
-
-				if (pThreadInfo)
-				{
-					GedPoolReset( &pool, NULL);
-					pThreadInfo = NULL;
-				}
-
-				if( RC_BAD( rc = FlmGetThreadInfo( &pool, &pThreadInfo,
-										&uiNumThreads, NULL)))
-				{
-					goto Exit;
-				}
-
-				f_timeGetSeconds( &uiCurrentTime);
-				for( uiLoop = 0, pThrd = pThreadInfo;
-					  uiLoop < uiNumThreads;
-					  uiLoop++, pThrd++)
-				{
-					pShell->con_printf( "0x%08X 0x%08X (%-6u): 0x%08X %-20.20s %-15.15s",
-						(unsigned)pThrd->uiThreadId,
-						(unsigned)pThrd->uiThreadGroup,
-						(unsigned)(uiCurrentTime - pThrd->uiStartTime),
-						(unsigned)pThrd->uiAppId,
-						pThrd->pszThreadName
-							? pThrd->pszThreadName
-							: "Unknown",
-						pThrd->pszThreadStatus
-							? (char *)pThrd->pszThreadStatus
-							: "Unknown");
-					FTXWinClearToEOL( pWin);
-					pShell->con_printf( "\n");
-				}
-
-				(void)FTXWinGetCurrRow( pWin, &uiRow);
-				FTXWinClearXY( pWin, 0, uiRow);
-				f_sleep( 300);
-			}
-		}
-	}
-
-Exit:
-
-	if( RC_BAD( rc))
-	{
-		pShell->con_printf( "\nError: %e\n", rc);
-		if( !iExitCode)
-		{
-			iExitCode = rc;
-		}
-	}
-	
-	GedPoolFree( &pool);
-
-	return( iExitCode);
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-void FlmSysInfoCommand::displayHelp(
-	FlmShell *	pShell,
-	char *		pszCommand)
-{
-	if (!pszCommand)
-	{
-		pShell->displayCommand( "sysinfo", "Display system information");
-	}
-	else
-	{
-		pShell->con_printf("Usage:\n");
-		pShell->con_printf( "  %s [option]\n", pszCommand);
-		pShell->con_printf( "    Valid options are:\n");
-		pShell->con_printf( "      threads - show all background threads\n");
-		pShell->con_printf( "      memtest <sizeToAlloc> <allocCount> - run a memory test\n");
-		pShell->con_printf( "      fstest <filename> - run a file system test\n");
-		pShell->con_printf( "      guid - generate a guid\n");
-		pShell->con_printf( "    If no option is specified, various items of system\n");
-		pShell->con_printf( "    information is displayed.\n");
-	}
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-FLMBOOL FlmSysInfoCommand::canPerformCommand(
-	char *		pszCommand)
-{
-	return( (f_stricmp( "sysinfo", pszCommand) == 0)
-				? TRUE
-				: FALSE);
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-FSTATIC void fshellFileSystemTest(
-	const char *	pszFileName,
-	FlmShell *		pShell)
-{
-	RCODE					rc = FERR_OK;
-	F_FileHdl *			pFileHdl = NULL;
-	FLMUINT				uiBlockSize = 4096;
-	FLMUINT				uiFileSize = (1024 * 1024 * 100); // 100 MB
-	FLMUINT				uiOffset = 0;
-	FLMUINT				uiBytesWritten;
-	FLMUINT				uiBytesRead;
-	FLMUINT				uiStartTime;
-	FLMUINT				uiMilli;
-	FLMUINT				uiTotal;
-	FLMUINT				uiCount;
-	FLMBYTE *			pucBuf = NULL;
-	f_randomGenerator	randGen;
-	F_FileSystem *		pFileSystem = NULL;
-
-	if (RC_BAD( rc = FlmAllocFileSystem( &pFileSystem)))
-	{
-		goto Exit;
-	}
-	if( RC_BAD( rc = f_alloc( uiBlockSize, &pucBuf)))
-	{
-		goto Exit;
-	}
-
-	f_memset( pucBuf, 0xFF, uiBlockSize);
-	f_randomize( &randGen);
-
-	if( RC_OK( pFileSystem->Exists( pszFileName)))
-	{
-		if( RC_BAD( rc = pFileSystem->Open( pszFileName,
-			F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT, &pFileHdl)))
-		{
-			goto Exit;
-		}
-
-#ifdef FLM_WIN
-		((F_FileHdlImp *)pFileHdl)->SetBlockSize( uiBlockSize);
-#endif
-
-		// VISIT: get file size -- make sure it is a multiple of uiBlockSize
-	}
-	else
-	{
-		pShell->con_printf( "Creating %s\n", pszFileName);
-
-		uiStartTime = FLM_GET_TIMER();
-		if( RC_BAD( rc = pFileSystem->Create( pszFileName,
-			F_IO_RDWR | F_IO_EXCL | F_IO_SH_DENYNONE | F_IO_DIRECT,
-			&pFileHdl)))
-		{
-			goto Exit;
-		}
-		
-#ifdef FLM_WIN
-		((F_FileHdlImp *)pFileHdl)->SetBlockSize( uiBlockSize);
-#endif
-
-		uiOffset = 0;
-		while( uiOffset < uiFileSize)
-		{
-			if( RC_BAD( rc = pFileHdl->Write( uiOffset, uiBlockSize,
-				pucBuf, &uiBytesWritten)))
-			{
-				goto Exit;
-			}
-
-			uiOffset += uiBytesWritten;
-
-			FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
-			pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
-				(unsigned)uiOffset, (unsigned)uiFileSize,
-				(unsigned)uiMilli > 1000 ? (uiOffset / (uiMilli / 1000)) : 0);
-			if( gv_bShutdown)
-			{
-				rc = RC_SET( FERR_USER_ABORT);
-				goto Exit;
-			}
-		}
-		uiFileSize = uiOffset;
-
-		pShell->con_printf( "\nFile created.\n");
-	}
-
-	pShell->con_printf( "\nRandom writes ...\n");
-	uiCount = (uiFileSize / uiBlockSize);
-	uiTotal = 0;
-	uiStartTime = FLM_GET_TIMER();
-	while( uiCount)
-	{
-		uiOffset = (FLMUINT)((f_randomChoice( &randGen, 1,
-			(FLMUINT32)uiCount) - 1) * uiBlockSize);
-		if( RC_BAD( rc = pFileHdl->Write( uiOffset, uiBlockSize,
-			pucBuf, &uiBytesWritten)))
-		{
-			goto Exit;
-		}
-
-		uiCount--;
-		uiTotal += uiBytesWritten;
-
-		FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
-		pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
-			(unsigned)uiTotal, (unsigned)uiFileSize,
-			(unsigned)uiMilli > 1000 ? (uiTotal / (uiMilli / 1000)) : 0);
-	}
-
-	pShell->con_printf( "\nFinished random writes.\n");
-
-	pShell->con_printf( "\nSequential scan ...\n");
-	uiOffset = 0;
-	uiStartTime = FLM_GET_TIMER();
-	while( uiOffset < uiFileSize)
-	{
-		if( RC_BAD( rc = pFileHdl->Read( uiOffset, uiBlockSize,
-			pucBuf, &uiBytesRead)))
-		{
-			goto Exit;
-		}
-
-		uiOffset += uiBytesRead;
-		FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
-		pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
-			(unsigned)uiOffset, (unsigned)uiFileSize,
-			(unsigned)uiMilli > 1000 ? (uiOffset / (uiMilli / 1000)) : 0);
-		if( gv_bShutdown)
-		{
-			rc = RC_SET( FERR_USER_ABORT);
-			goto Exit;
-		}
-	}
-
-	pShell->con_printf( "\nFinished sequential scan.\n");
-
-	pShell->con_printf( "\nRandom scan ...\n");
-	uiCount = (uiFileSize / uiBlockSize);
-	uiTotal = 0;
-	uiStartTime = FLM_GET_TIMER();
-	while( uiCount)
-	{
-		uiOffset = (FLMUINT)((f_randomChoice( &randGen, 1, (FLMUINT32)uiCount)
-			- 1) * uiBlockSize);
-		if( RC_BAD( rc = pFileHdl->Read( uiOffset, uiBlockSize,
-			pucBuf, &uiBytesRead)))
-		{
-			goto Exit;
-		}
-
-		uiCount--;
-		uiTotal += uiBytesRead;
-
-		FLM_TIMER_UNITS_TO_MILLI( FLM_GET_TIMER() - uiStartTime, uiMilli);
-		pShell->con_printf( "%u / %u (%u bytes/sec)          \r",
-			(unsigned)uiTotal, (unsigned)uiFileSize,
-			(unsigned)uiMilli > 1000 ? (uiTotal / (uiMilli / 1000)) : 0);
-	}
-
-	pShell->con_printf( "\nFinished random scan.\n");
-
-	if( RC_BAD( rc = pFileHdl->Close()))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	if( pFileHdl)
-	{
-		pFileHdl->Release();
-	}
-
-	if( pucBuf)
-	{
-		f_free( &pucBuf);
-	}
-	
-	if (pFileSystem)
-	{
-		pFileSystem->Release();
-	}
-
-	if( RC_BAD( rc))
-	{
-		pShell->con_printf( "\nError: %e\n", rc);
-	}
-}
-
 /****************************************************************************
 Desc:	Constructor
 *****************************************************************************/
@@ -3784,14 +2988,14 @@ FLMINT FlmFileSysCommand::execute(
 	char **		ppszArgV,
 	FlmShell *	pShell)
 {
-	FLMINT			iExitCode = 0;
-	RCODE				rc = FERR_OK;
-	FLMUINT			uiLoop = 0;
-	FLMBOOL			bForce = FALSE;
-	F_FileSystem *	pFileSystem = NULL;
-	F_DirHdl *		pDir = NULL;
+	FLMINT				iExitCode = 0;
+	RCODE					rc = FERR_OK;
+	FLMUINT				uiLoop = 0;
+	FLMBOOL				bForce = FALSE;
+	IF_FileSystem *	pFileSystem = NULL;
+	IF_DirHdl *			pDir = NULL;
 
-	if (RC_BAD( rc = FlmAllocFileSystem( &pFileSystem)))
+	if (RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
 	{
 		goto Exit;
 	}
@@ -3833,11 +3037,10 @@ FLMINT FlmFileSysCommand::execute(
 
 		if( bForce)
 		{
-			pFileSystem->SetReadOnly( 
-				ppszArgV[uiLoop], FALSE);	
+			pFileSystem->setReadOnly( ppszArgV[uiLoop], FALSE);	
 		}
 
-		if( RC_BAD( rc = pFileSystem->Delete( ppszArgV[ uiLoop])))
+		if( RC_BAD( rc = pFileSystem->deleteFile( ppszArgV[ uiLoop])))
 		{
 			goto Exit;
 		}
@@ -3848,22 +3051,10 @@ FLMINT FlmFileSysCommand::execute(
 	{
 		if (iArgC > 1)
 		{
-#if defined( FLM_WIN)
-			if (_chdir( (const char *)ppszArgV [1]) != 0)
+			if( RC_BAD( f_chdir( (const char *)ppszArgV [1])))
 			{
 				pShell->con_printf( "Error changing directory\n");
 			}
-#elif defined( FLM_UNIX)
-			if (chdir( (char *)ppszArgV [1]) != 0)
-			{
-				pShell->con_printf( "Error changing directory\n");
-			}
-#elif defined( FLM_NLM)
-			pShell->con_printf( "Unable to change directory\n");
-#else
-		#error "This platform is not supported"
-
-#endif
 		}
 	}
 
@@ -3908,23 +3099,23 @@ FLMINT FlmFileSysCommand::execute(
 			goto Exit;
 		}
 
-		if ( RC_BAD( rc = pFileSystem->Exists( ppszArgV[uiLoop])))
+		if ( RC_BAD( rc = pFileSystem->doesFileExist( ppszArgV[uiLoop])))
 		{
 			goto Exit;
 		}
 
-		if ( pFileSystem->IsDir( ppszArgV[uiLoop + 1]))
+		if ( pFileSystem->isDir( ppszArgV[uiLoop + 1]))
 		{
 			char	szFilename[ F_FILENAME_SIZE];
 
 			// If the second param is a directory we'll assume the user wants to
 			// move the file into it with the same filename.
 
-			f_pathReduce( ppszArgV[uiLoop], NULL, szFilename);
-			f_pathAppend( szFilename, ppszArgV[uiLoop + 1]);
+			pFileSystem->pathReduce( ppszArgV[uiLoop], NULL, szFilename);
+			pFileSystem->pathAppend( szFilename, ppszArgV[uiLoop + 1]);
 		}
 
-		if( RC_OK( pFileSystem->Exists( ppszArgV[uiLoop + 1])))
+		if( RC_OK( pFileSystem->doesFileExist( ppszArgV[uiLoop + 1])))
 		{
 			if ( !bOverwrite)
 			{
@@ -3933,7 +3124,7 @@ FLMINT FlmFileSysCommand::execute(
 				pShell->con_printf( "%s exists. Overwrite? (Y/N)", ppszArgV[ uiLoop + 1]);
 				for(;;)
 				{
-					if (FTXWinTestKB( pShell->getWindow()) == FTXRC_SUCCESS)
+					if( RC_OK( FTXWinTestKB( pShell->getWindow())))
 					{
 						FTXWinInputChar( pShell->getWindow(), &uiChar);
 
@@ -3957,12 +3148,12 @@ FLMINT FlmFileSysCommand::execute(
 			{
 				if ( bForce)
 				{
-					pFileSystem->SetReadOnly( ppszArgV[uiLoop + 1], FALSE);
+					pFileSystem->setReadOnly( ppszArgV[uiLoop + 1], FALSE);
 					pShell->con_printf( "Error changing file attributes. ");
 					goto Exit;
 				}
 
-				if ( RC_BAD( rc = pFileSystem->Delete( ppszArgV[uiLoop + 1])))
+				if ( RC_BAD( rc = pFileSystem->deleteFile( ppszArgV[uiLoop + 1])))
 				{
 					pShell->con_printf( "Error removing destination file. ");
 					goto Exit;
@@ -3970,7 +3161,7 @@ FLMINT FlmFileSysCommand::execute(
 			}
 		}
 
-		if ( RC_BAD( rc = pFileSystem->Rename( ppszArgV[uiLoop], 
+		if ( RC_BAD( rc = pFileSystem->renameFile( ppszArgV[uiLoop], 
 			ppszArgV[uiLoop + 1])))
 		{
 			goto Exit;
@@ -3983,7 +3174,7 @@ FLMINT FlmFileSysCommand::execute(
 				f_stricmp( "cp", ppszArgV[0]) == 0)
 	{
 		FLMBOOL			bOverwrite = FALSE;
-		FLMUINT			uiBytesCopied = 0;
+		FLMUINT64		ui64BytesCopied = 0;
 
 		for( uiLoop = 1; uiLoop < (FLMUINT)iArgC; uiLoop++)
 		{
@@ -4020,23 +3211,23 @@ FLMINT FlmFileSysCommand::execute(
 			goto Exit;
 		}
 
-		if ( RC_BAD( rc = pFileSystem->Exists( ppszArgV[uiLoop])))
+		if ( RC_BAD( rc = pFileSystem->doesFileExist( ppszArgV[uiLoop])))
 		{
 			goto Exit;
 		}
 
-		if ( pFileSystem->IsDir( ppszArgV[uiLoop + 1]))
+		if ( pFileSystem->isDir( ppszArgV[uiLoop + 1]))
 		{
 			char	szFilename[ F_FILENAME_SIZE];
 
 			// If the second param is a directory we'll assume the user wants to
 			// copy the file into it with the same filename.
 
-			f_pathReduce( ppszArgV[uiLoop], NULL, szFilename);
-			f_pathAppend( szFilename, ppszArgV[uiLoop + 1]);
+			pFileSystem->pathReduce( ppszArgV[uiLoop], NULL, szFilename);
+			pFileSystem->pathAppend( szFilename, ppszArgV[uiLoop + 1]);
 		}
 
-		if ( RC_OK( pFileSystem->Exists( ppszArgV[uiLoop + 1])))
+		if ( RC_OK( pFileSystem->doesFileExist( ppszArgV[uiLoop + 1])))
 		{
 			if ( !bOverwrite)
 			{
@@ -4045,7 +3236,7 @@ FLMINT FlmFileSysCommand::execute(
 				pShell->con_printf( "%s exists. Overwrite? (Y/N)", ppszArgV[ uiLoop + 1]);
 				for(;;)
 				{
-					if (FTXWinTestKB( pShell->getWindow()) == FTXRC_SUCCESS)
+					if( RC_OK( FTXWinTestKB( pShell->getWindow())))
 					{
 						FTXWinInputChar( pShell->getWindow(), &uiChar);
 
@@ -4074,23 +3265,19 @@ FLMINT FlmFileSysCommand::execute(
 
 				if ( bForce)
 				{
-					pFileSystem->SetReadOnly( 
-						ppszArgV[uiLoop + 1], FALSE);
+					pFileSystem->setReadOnly( ppszArgV[ uiLoop + 1], FALSE);
 				}
 			}
 		}
 
-		if ( RC_BAD( rc = pFileSystem->Copy( 
-			ppszArgV[uiLoop],						// Name of source file to be copied.
-			ppszArgV[uiLoop +1],					// Name of destination file.
-			bOverwrite,								// Overwrite destination file?
-			&uiBytesCopied)))						// Returns number of bytes copied.
+		if ( RC_BAD( rc = pFileSystem->copyFile( 
+			ppszArgV[uiLoop], ppszArgV[uiLoop +1], bOverwrite, &ui64BytesCopied)))
 		{
 			goto Exit;
 		}
 
-		pShell->con_printf( "%s copied to %s (%u bytes copied)\n", 
-			ppszArgV[uiLoop], ppszArgV[uiLoop + 1], (unsigned)uiBytesCopied);
+		pShell->con_printf( "%s copied to %s (%I64u bytes copied)\n", 
+			ppszArgV[uiLoop], ppszArgV[uiLoop + 1], ui64BytesCopied);
 	}
 	else if (f_stricmp( "ls", ppszArgV [0]) == 0 ||
 				f_stricmp( "dir", ppszArgV [0]) == 0)
@@ -4103,32 +3290,31 @@ FLMINT FlmFileSysCommand::execute(
 		FLMUINT			uiNumCols;
 		FLMUINT			uiChar;
 
-		if (RC_BAD( rc = FlmAllocDirHdl( &pDir)))
-		{
-			goto Exit;
-		}
-		
 		FTXWinGetCanvasSize( pWindow, &uiNumCols, &uiMaxLines);
 		uiMaxLines--;
 
 		if( iArgC > 1)
 		{
-			if (RC_BAD( rc = f_pathReduce( ppszArgV [1], szDir, szBaseName)))
+			if (RC_BAD( rc = pFileSystem->pathReduce( 
+				ppszArgV [1], szDir, szBaseName)))
 			{
 				goto Exit;
 			}
+			
 			if (!szDir [0])
 			{
 				f_strcpy( szDir, ".");
 			}
-			if (RC_BAD( rc = pDir->OpenDir( szDir, (char *)szBaseName)))
+			
+			if (RC_BAD( rc = pFileSystem->openDir( szDir, 
+				(char *)szBaseName, &pDir)))
 			{
 				goto Exit;
 			}
 		}
 		else
 		{
-			if (RC_BAD( rc = pDir->OpenDir( ".", NULL)))
+			if (RC_BAD( rc = pFileSystem->openDir( ".", NULL, &pDir)))
 			{
 				goto Exit;
 			}
@@ -4137,7 +3323,7 @@ FLMINT FlmFileSysCommand::execute(
 		uiLineCount = 1;
 		for (;;)
 		{
-			if (RC_BAD( rc = pDir->Next()))
+			if (RC_BAD( rc = pDir->next()))
 			{
 				if (rc == FERR_IO_NO_MORE_FILES)
 				{
@@ -4156,19 +3342,19 @@ FLMINT FlmFileSysCommand::execute(
 				uiChar = 0;
 				for (;;)
 				{
-					if (FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+					if( RC_OK( FTXWinTestKB( pWindow)))
 					{
 						FTXWinInputChar( pWindow, &uiChar);
 						break;
 					}
 					if (gv_bShutdown)
 					{
-						uiChar = WPK_ESC;
+						uiChar = FKB_ESC;
 						break;
 					}
 					f_yieldCPU();
 				}
-				if (uiChar == WPK_ESC)
+				if (uiChar == FKB_ESC)
 				{
 					break;
 				}
@@ -4176,18 +3362,18 @@ FLMINT FlmFileSysCommand::execute(
 					"\r                                                       \r");
 				uiLineCount = 0;
 			}
-			if (pDir->CurrentItemIsDir())
+			if (pDir->currentItemIsDir())
 			{
-				pShell->con_printf( "%-20s %25s\n", pDir->CurrentItemName(),
+				pShell->con_printf( "%-20s %25s\n", pDir->currentItemName(),
 					"<DIR>");
 			}
 			else
 			{
 				char	szTmpBuf [60];
 
-				format64BitNum( (FLMUINT64)pDir->CurrentItemSize(),
+				format64BitNum( (FLMUINT64)pDir->currentItemSize(),
 					szTmpBuf, FALSE, TRUE);
-				pShell->con_printf( "%-20s %25s\n", pDir->CurrentItemName(),
+				pShell->con_printf( "%-20s %25s\n", pDir->currentItemName(),
 					szTmpBuf);
 			}
 			uiLineCount++;
@@ -4391,37 +3577,22 @@ FLMINT FlmEditCommand::execute(
 		"Database Edit for FLAIM [DB=%s/BUILD=%s]",
 		FLM_CUR_FILE_FORMAT_VER_STR, __DATE__);
 
-	if( FTXScreenInit( gv_pFtxInfo, szTitle, &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( szTitle, &pScreen)))
 	{
 		iExitCode = -1;
 		goto Exit;
 	}
 
-	if( FTXWinInit( pScreen, 0, 1, &pTitleWin) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, 0, 1, &pTitleWin)))
 	{
 		iExitCode = -1;
 		goto Exit;
 	}
 
-	if( FTXWinPaintBackground( pTitleWin, WPS_RED) != FTXRC_SUCCESS)
-	{
-		iExitCode = -1;
-		goto Exit;
-	}
-
-	if( FTXWinPrintStr( pTitleWin, szTitle) != FTXRC_SUCCESS)
-	{
-		iExitCode = -1;
-		goto Exit;
-	}
-	
-	FTXWinSetCursorType( pTitleWin, WPS_CURSOR_INVISIBLE);
-
-	if( FTXWinOpen( pTitleWin) != FTXRC_SUCCESS)
-	{
-		iExitCode = -1;
-		goto Exit;
-	}
+	FTXWinPaintBackground( pTitleWin, FLM_RED);
+	FTXWinPrintStr( pTitleWin, szTitle);
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
+	FTXWinOpen( pTitleWin);
 
 	if ((pRecEditor = f_new F_RecEditor()) == NULL)
 	{
@@ -4607,10 +3778,11 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE DirectoryIterator::setupForSearch( 
-	char *	pszBaseDir,
-	char *	pszExtendedDir,
-	char *	pszPattern)
+RCODE DirectoryIterator::setupForSearch(
+	IF_FileSystem *	pFileSystem,
+	char *				pszBaseDir,
+	char *				pszExtendedDir,
+	char *				pszPattern)
 {
 	RCODE		rc = FERR_OK;
 
@@ -4621,26 +3793,21 @@ RCODE DirectoryIterator::setupForSearch(
 
 	flmAssert( !m_pDirHdl && !m_ppszMatchList);
 
-	if ( !m_pDirHdl)
-	{
-		if (RC_BAD( rc = FlmAllocDirHdl( &m_pDirHdl)))
-		{
-			goto Exit;
-		}
-	}
-
-	if ( RC_BAD( m_pDirHdl->OpenDir( m_pszResolvedDir, 
-		(char *)pszPattern)))
+	if ( RC_BAD( pFileSystem->openDir( m_pszResolvedDir, 
+		(char *)pszPattern, &m_pDirHdl)))
 	{
 		goto Exit;
 	}
 
 	// First pass - determine the number of matches
 
-	while( RC_OK( m_pDirHdl->Next()))
+	while( RC_OK( m_pDirHdl->next()))
 	{
 		m_uiTotalMatches++;
 	}
+	
+	m_pDirHdl->Release();
+	m_pDirHdl = NULL;
 
 	if( RC_BAD( rc = f_alloc( 
 		sizeof( char *) * m_uiTotalMatches, &m_ppszMatchList)))
@@ -4649,35 +3816,37 @@ RCODE DirectoryIterator::setupForSearch(
 	}
 
 	f_memset( m_ppszMatchList, 0, m_uiTotalMatches * sizeof( char *));
-
+	
 	// Reopen the directory and copy the matches
 		
-	if ( RC_BAD( m_pDirHdl->OpenDir( m_pszResolvedDir, 
-		(char *)pszPattern)))
+	if ( RC_BAD( pFileSystem->openDir( m_pszResolvedDir, 
+		(char *)pszPattern, &m_pDirHdl)))
 	{
 		goto Exit;
 	}
 
 	m_uiCurrentMatch = 0;
-	while ( RC_OK( m_pDirHdl->Next()))
+	while ( RC_OK( m_pDirHdl->next()))
 	{
 		if( RC_BAD( rc = f_alloc( 
-			f_strlen( m_pDirHdl->CurrentItemName()) + 1,
+			f_strlen( m_pDirHdl->currentItemName()) + 1,
 			&m_ppszMatchList[m_uiCurrentMatch])))
 		{
 			goto Exit;
 		}
 
 		f_strcpy( m_ppszMatchList[m_uiCurrentMatch], 
-			m_pDirHdl->CurrentItemName());
+			m_pDirHdl->currentItemName());
 
 		m_uiCurrentMatch++;
 	}
+	
 	m_uiCurrentMatch = 0;
 	m_bInitialized = TRUE;
 
 Exit:
-	return rc;
+
+	return( rc);
 }
 
 /****************************************************************************
@@ -4766,21 +3935,26 @@ void DirectoryIterator::last(
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE DirectoryIterator::resolveDir()
+RCODE DirectoryIterator::resolveDir( void)
 {
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiIndex = 0;
-	char			szTemp[ MAX_PATH_SIZE];
+	RCODE					rc = FERR_OK;
+	FLMUINT				uiIndex = 0;
+	char					szTemp[ MAX_PATH_SIZE];
+	IF_FileSystem *	pFileSystem = NULL;
 
-	if ( !m_pszExtendedDir)
+	if( !m_pszExtendedDir)
 	{
 		f_strcpy( m_pszResolvedDir, m_pszBaseDir);
 		goto Exit;
 	}
 	
-	// Examine the extended dir.
-
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+	
 	// If it begins with a SLASH, just go to the root
+	
 	if ( m_pszExtendedDir[0] == SLASH) 
 	{
 		if( RC_BAD( rc = extractRoot( m_pszBaseDir, szTemp)))
@@ -4795,21 +3969,21 @@ RCODE DirectoryIterator::resolveDir()
 	}
 
 	// I think this can only happen on windows and NetWare
+	
 	else if (isDriveSpec( m_pszExtendedDir))
 	{
-		//We have been given a fully-specified drive path
+		// We have been given a fully-specified drive path
+		
 		f_strcpy( m_pszResolvedDir, m_pszExtendedDir);
 		goto Exit;
 	}
 
 	// For each ".." reduce the base path by one
+	
 	for(;;)
 	{
 		if( (f_strlen( &m_pszExtendedDir[uiIndex]) >= f_strlen( PARENT_DIR)) &&
-			f_memcmp( 
-				&m_pszExtendedDir[uiIndex], 
-				PARENT_DIR, 
-				f_strlen( PARENT_DIR)) == 0)
+			f_memcmp( &m_pszExtendedDir[uiIndex], PARENT_DIR, f_strlen( PARENT_DIR)) == 0)
 		{
 			uiIndex += f_strlen( PARENT_DIR);
 			if ( m_pszExtendedDir[uiIndex] == SLASH)
@@ -4817,7 +3991,7 @@ RCODE DirectoryIterator::resolveDir()
 				uiIndex++;
 			}
 	
-			f_pathReduce( m_pszBaseDir, szTemp, NULL);
+			pFileSystem->pathReduce( m_pszBaseDir, szTemp, NULL);
 			f_strcpy( m_pszBaseDir, szTemp);
 			if ( m_pszBaseDir[ f_strlen(m_pszBaseDir) - 1] != SLASH)
 			{
@@ -4831,52 +4005,61 @@ RCODE DirectoryIterator::resolveDir()
 	}
 
 	// Tack on whatever's left
+	
 	f_strcpy( m_pszResolvedDir, m_pszBaseDir);
 	if( m_pszResolvedDir[f_strlen( m_pszResolvedDir) - 1] != SLASH)
 	{
-		// Put the slash back on. f_pathReduce likes to take it off.
+		// Put the slash back on. pathReduce likes to take it off.
+		
 		f_strcat( m_pszResolvedDir, SSLASH);
 	}
+	
 	f_strcat( m_pszResolvedDir, &m_pszExtendedDir[uiIndex]);
 
 Exit:
 
-	return rc;
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
+
+	return( rc);
 }
 
 /****************************************************************************
 Desc:
 *****************************************************************************/
-void DirectoryIterator::reset()
+void DirectoryIterator::reset( void)
 {
 	if( m_pszBaseDir)
 	{
 		f_free( &m_pszBaseDir);
 	}
 
-	if (m_pszExtendedDir)
+	if( m_pszExtendedDir)
 	{
 		f_free( &m_pszExtendedDir);
 	}
 
-	if (m_pszResolvedDir)
+	if( m_pszResolvedDir)
 	{
 		f_free( &m_pszResolvedDir);
 		m_pszResolvedDir = NULL;
 	}
 
-	if ( m_pDirHdl)
+	if( m_pDirHdl)
 	{
 		m_pDirHdl->Release();
 		m_pDirHdl = NULL;
 	}
 
-	if ( m_ppszMatchList)
+	if( m_ppszMatchList)
 	{
-		for ( FLMUINT uiLoop = 0; uiLoop < m_uiTotalMatches; uiLoop++)
+		for( FLMUINT uiLoop = 0; uiLoop < m_uiTotalMatches; uiLoop++)
 		{
 			f_free( &m_ppszMatchList[uiLoop]);
 		}
+		
 		f_free( &m_ppszMatchList);
 		m_ppszMatchList = NULL;
 	}
@@ -4890,7 +4073,7 @@ void DirectoryIterator::reset()
 Desc:
 *****************************************************************************/
 FLMBOOL DirectoryIterator::isDriveSpec(
-	char *	pszPath)
+	char *		pszPath)
 {
 	FLMBOOL		bIsDriveSpec = FALSE;
 	char *		pszTemp = NULL;
@@ -4916,12 +4099,12 @@ FLMBOOL DirectoryIterator::isDriveSpec(
 Desc: 
 *****************************************************************************/
 RCODE DirectoryIterator::extractRoot( 
-	char *	pszPath,
-	char *	pszRoot)
+	char *		pszPath,
+	char *		pszRoot)
 {
+	RCODE			rc = FERR_OK;
 	FLMUINT		uiIndex = 0;
 	FLMUINT		uiLen	= f_strlen( pszPath);
-	RCODE			rc = FERR_OK;
 
 	for ( uiIndex = 0; uiIndex < uiLen; uiIndex++)
 	{
@@ -4932,10 +4115,13 @@ RCODE DirectoryIterator::extractRoot(
 			goto Exit;
 		}
 	}
+	
 	rc = RC_SET( FERR_NOT_FOUND);
 	pszRoot[0] = '\0';
+	
 Exit:
-	return rc;
+
+	return( rc);
 }
 
 /****************************************************************************
@@ -4976,19 +4162,18 @@ Desc:
 FSTATIC char * positionToPath(
 	char *	pszCommandLine)
 {
-	char *	pszPathBegin = 
-		pszCommandLine + f_strlen( pszCommandLine);
+	char *	pszPathBegin = pszCommandLine + f_strlen( pszCommandLine);
 
-	if ( f_strlen( pszCommandLine) != 0 && *(pszPathBegin - 1) != ASCII_SPACE)
+	if( f_strlen( pszCommandLine) != 0 && *(pszPathBegin - 1) != ASCII_SPACE)
 	{
-		if ( *(pszPathBegin - 1))
+		if( *(pszPathBegin - 1))
 		{
 			// Move to the beginning of the last token
 
-			while( ( pszPathBegin != pszCommandLine) && 
-				( *(pszPathBegin - 1) != ASCII_SPACE))
+			while( (pszPathBegin != pszCommandLine) && 
+				(*(pszPathBegin - 1) != ASCII_SPACE))
 			{
-				if ( *(pszPathBegin - 1) == '\"')
+				if( *(pszPathBegin - 1) == '\"')
 				{
 					// Find first whitespace after begin quote
 
@@ -5013,18 +4198,18 @@ FSTATIC char * positionToPath(
 		}
 	}
 
-	return pszPathBegin;
+	return( pszPathBegin);
 }
 
 /****************************************************************************
 Desc: Given a path, extract the base directory and a wildcard for searching
 *****************************************************************************/
-FSTATIC void extractBaseDirAndWildcard( 
-	char *	pszPath, 
-	char *	pszBase, 
-	char *	pszWildcard)
+FSTATIC void extractBaseDirAndWildcard(
+	IF_FileSystem *	pFileSystem,
+	char *				pszPath, 
+	char *				pszBase, 
+	char *				pszWildcard)
 {
-
 	flmAssert( pszBase && pszWildcard);
 
 	pszBase[0] = '\0';
@@ -5034,11 +4219,11 @@ FSTATIC void extractBaseDirAndWildcard(
 	// slash, this means that we will use the last portion of the
 	// path as our search pattern.
 
-	if ( pszPath && //we have a path
-		f_strchr( pszPath, SLASH) && //it contains directories
-		pszPath[ f_strlen( pszPath) - 1] != SLASH) //does not end with a slash
+	if( pszPath &&
+		f_strchr( pszPath, SLASH) &&
+		pszPath[ f_strlen( pszPath) - 1] != SLASH)
 	{
-		f_pathReduce( pszPath, pszBase, pszWildcard);
+		pFileSystem->pathReduce( pszPath, pszBase, pszWildcard);
 
 		// Darn thing sometimes removes the trailing slash. Put it back.
 
@@ -5065,45 +4250,26 @@ FSTATIC void extractBaseDirAndWildcard(
 /***************************************************************************
 Desc:	Program entry point (main)
 ****************************************************************************/
-#if defined( FLM_UNIX)
 int main(
 	int,		// iArgC,
 	char **	// ppszArgV
 	)
-#elif defined( FLM_NLM)
-extern "C" int nlm_main(
-	int,		// iArgC,
-	char **	// ppucArgV
-	)
-#else
-int __cdecl main(
-	int, 			// iArgC,
-	char **		// ppszArgV
-	)
-#endif
 {
 	RCODE			rc = FERR_OK;
 	FlmShell *	pShell = NULL;
-
-#ifdef FLM_NLM
-
-	gv_bRunning = TRUE;
-
-#endif
 
 	if( RC_BAD( rc = FlmStartup()))
 	{
 		goto Exit;
 	}
 
-	if( FTXInit( "FLAIM DB Shell", (FLMBYTE)80, (FLMBYTE)50,
-		WPS_BLUE, WPS_WHITE, NULL, NULL, &gv_pFtxInfo) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXInit( "FLAIM DB Shell", (FLMBYTE)80, (FLMBYTE)50,
+		FLM_BLUE, FLM_WHITE, NULL, NULL)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	FTXSetShutdownFlag( gv_pFtxInfo, &gv_bShutdown);
+	FTXSetShutdownFlag( &gv_bShutdown);
 
 	if( (pShell = f_new FlmShell) != NULL)
 	{
@@ -5121,16 +4287,9 @@ Exit:
 	}
 
 	gv_bShutdown = TRUE;
-
-	// Free FTX
-
-	FTXFree( &gv_pFtxInfo);
-
-	// Shut down the FLAIM database engine.  This call must be made
-	// even if FlmStartup fails.  No more FLAIM calls should be made
-	// by the application.
-
+	
+	FTXExit();
 	FlmShutdown();
-	gv_bRunning = FALSE;
+	
 	return( 0);
 }

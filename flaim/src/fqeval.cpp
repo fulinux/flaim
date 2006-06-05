@@ -29,7 +29,7 @@ FSTATIC FLMUINT flmCurEvalTrueFalse(
 
 FSTATIC RCODE flmCurGetAtomFromRec(
 	FDB *					pDb,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	FQATOM *				pTreeAtom,
 	FlmRecord *			pRecord,
 	QTYPES				eFldType,
@@ -39,7 +39,7 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 	
 FSTATIC RCODE flmFieldIterate(
 	FDB *					pDb,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	QTYPES				eFldType,
 	FQNODE *				pOpCB,
 	FlmRecord *			pRecord,
@@ -473,7 +473,7 @@ Desc:	Gets a value from the passed-in record field and stuffs it into the
 RCODE flmCurGetAtomVal(
 	FlmRecord *		pRecord,
 	void *			pField,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QTYPES			eFldType,
 	FQATOM *			pResult)
 {
@@ -511,8 +511,8 @@ RCODE flmCurGetAtomVal(
 				}
 				else
 				{
-					if ((pResult->val.pucBuf = (FLMBYTE *) GedPoolAlloc( 
-						pPool, 1)) == NULL)
+					if( RC_BAD( rc = pPool->poolAlloc( 1, 
+						(void **)&pResult->val.pucBuf)))
 					{
 						rc = RC_SET( FERR_MEM);
 						break;
@@ -662,10 +662,9 @@ RCODE flmCurGetAtomVal(
 						}
 						else
 						{
-							if ((pResult->val.pucBuf = (FLMBYTE *) GedPoolAlloc( 
-								pPool, 1)) == NULL)
+							if( RC_BAD( rc = pPool->poolAlloc( 1,
+								(void **)&pResult->val.pucBuf)))
 							{
-								rc = RC_SET( FERR_MEM);
 								break;
 							}
 
@@ -766,7 +765,7 @@ Desc: Given a list of FQATOMs containing alternate field paths, finds
 ****************************************************************************/
 FSTATIC RCODE flmCurGetAtomFromRec(
 	FDB *				pDb,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FQATOM *			pTreeAtom,
 	FlmRecord *		pRecord,
 	QTYPES			eFldType,
@@ -986,12 +985,12 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 				}
 				else if (pTmpResult->eType)
 				{
-					if ((pTmpResult->pNext =
-						(FQATOM *)GedPoolCalloc( pPool, sizeof( FQATOM))) == NULL)
+					if( RC_BAD( rc = pPool->poolCalloc( sizeof( FQATOM),
+						(void **)&pTmpResult->pNext)))
 					{
-						rc = RC_SET( FERR_MEM);
 						goto Exit;
 					}
+					
 					pTmpResult = pTmpResult->pNext;
 				}
 				
@@ -1096,7 +1095,7 @@ Desc: Iterate to the next occurrance of a field.
 ****************************************************************************/
 FSTATIC RCODE flmFieldIterate(
 	FDB *				pDb,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QTYPES			eFldType,
 	FQNODE *			pOpCB,
 	FlmRecord *		pRecord,
@@ -1208,7 +1207,7 @@ FSTATIC RCODE flmCurEvalArithOp(
 	FQNODE *		pRightOpCB = NULL;
 	FQNODE *		pLeftOpCB = NULL;
 	FQNODE *		pOpCB = NULL;
-	POOL *		pTmpPool = &pDb->TempPool;
+	F_Pool *		pTmpPool = &pDb->TempPool;
 	FLMBOOL		bSavedInvisTrans;
 	RCODE			TempRc;
 
@@ -1442,8 +1441,7 @@ Get_Operand:
 			if (pRightOpCB)
 			{
 				if (RC_BAD( rc = flmFieldIterate( pDb, pTmpPool, eFldType,
-							  pRightOpCB, pRecord, bHaveKey, TRUE, FLM_FLD_FIRST, pRhs
-							  )))
+						pRightOpCB, pRecord, bHaveKey, TRUE, FLM_FLD_FIRST, pRhs)))
 				{
 					goto Exit;
 				}
@@ -1456,10 +1454,9 @@ Get_Operand:
 
 		// Set up for next result
 
-		if ((pTmpQAtom->pNext = (FQATOM *) GedPoolCalloc( 
-				pTmpPool, sizeof( FQATOM))) == NULL)
+		if( RC_BAD( rc = pTmpPool->poolCalloc( sizeof( FQATOM),
+			(void **)&pTmpQAtom->pNext)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
@@ -1581,7 +1578,8 @@ void flmCompareOperands(
 			
 			case FLM_MATCH_OP:
 			{
-				if ((pLhs->uiFlags & FLM_WILD) || (pRhs->uiFlags & FLM_WILD))
+				if ((pLhs->uiFlags & FLM_COMP_WILD) || 
+					 (pRhs->uiFlags & FLM_COMP_WILD))
 				{
 					*puiTrueFalse = flmCurDoMatchOp( pLhs, pRhs, uiLang, FALSE, FALSE);
 				}
@@ -1701,8 +1699,8 @@ RCODE flmCurEvalCompareOp(
 	FQNODE *			pOpCB = NULL;
 	RCODE				TempRc;
 	FLMBOOL			bSavedInvisTrans;
-	POOL *			pTmpPool = &pDb->TempPool;
-	void *			pvMark = GedPoolMark( pTmpPool);
+	F_Pool *			pTmpPool = &pDb->TempPool;
+	void *			pvMark = pTmpPool->poolMark();
 
 	pResult->eType = FLM_BOOL_VAL;
 	pResult->pNext = NULL;
@@ -2158,7 +2156,7 @@ Exit:
 		}
 	}
 
-	GedPoolReset( pTmpPool, pvMark);
+	pTmpPool->poolReset( pvMark);
 	return (rc);
 }
 
@@ -2254,8 +2252,7 @@ Get_Operand:
 	else if (eType == FLM_FLD_PATH)
 	{
 		if (RC_BAD( rc = flmCurGetAtomFromRec( pDb, &pDb->TempPool,
-					  pTmpQNode->pQAtom, pRecord, NO_TYPE, FALSE, pTmpQAtom, bHaveKey
-					  )))
+			pTmpQNode->pQAtom, pRecord, NO_TYPE, FALSE, pTmpQAtom, bHaveKey)))
 		{
 			goto Exit;
 		}
@@ -2503,7 +2500,7 @@ RCODE flmCurEvalCriteria(
 	QTYPES			eType;
 	FDB *				pDb = pCursor->pDb;
 	FQNODE *			pQNode;
-	void *			pTmpMark = GedPoolMark( &pDb->TempPool);
+	void *			pTmpMark = pDb->TempPool.poolMark();
 	FLMUINT			uiResult = 0;
 	FQNODE *			pOpCB = NULL;
 	RCODE				TempRc;
@@ -2684,7 +2681,7 @@ Exit:
 		}
 	}
 
-	GedPoolReset( &pDb->TempPool, pTmpMark);
+	pDb->TempPool.poolReset( pTmpMark);
 	*puiResult = uiResult;
 	return (rc);
 }

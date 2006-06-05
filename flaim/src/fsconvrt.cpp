@@ -90,7 +90,7 @@ RCODE FSVersionConversion40(
 			FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 			pStack = stackBuf;
 			pStack->pKeyBuf = pKeyBuf;
-			flmUINT32ToBigEndian( 0, pDrnKey);
+			f_UINT32ToBigEndian( 0, pDrnKey);
 			if( RC_BAD(rc = FSBtSearch( pDb, pLFile, &pStack,
 												 pDrnKey, DIN_KEY_SIZ,0)))
 				goto Exit;
@@ -144,7 +144,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 	FLMUINT		uiBlkAddr;
 	
 	FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
-	flmUINT32ToBigEndian( 0, pDrnKey);
+	f_UINT32ToBigEndian( 0, pDrnKey);
 
 	/*
 	Free the b-tree blocks that are above this lowest non-leaf level.
@@ -286,7 +286,7 @@ FSTATIC RCODE FSConvertNonLeafTree(
 			// Do callback to report progress.
 			if (fnStatusCallback)
 			{
-				pDbConvertInfo->uiDrn = flmBigEndianToUINT32( pOldStack->pKeyBuf);
+				pDbConvertInfo->uiDrn = f_bigEndianToUINT32( pOldStack->pKeyBuf);
 				if (RC_BAD( rc = (*fnStatusCallback)( FLM_DB_UPGRADE_STATUS,
 											(void *) pDbConvertInfo,
 											(void *)0, UserData)))
@@ -334,7 +334,7 @@ FSTATIC void FSBuildNonLeafDataElement(
 		// Check for last element marker.
 		if( pOldElm[ BBE_PKC ] == 0 && pOldElm[ BBE_KL] == 0)
 		{
-			flmUINT32ToBigEndian( (FLMUINT32)DRN_LAST_MARKER, pElement);
+			f_UINT32ToBigEndian( (FLMUINT32)DRN_LAST_MARKER, pElement);
 		}
 		else
 		{

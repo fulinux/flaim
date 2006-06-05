@@ -80,12 +80,12 @@ FSTATIC FLMINT ViewSetupLogHeaderMenu(
 #define LABEL_WIDTH  35
 	FLMUINT     Row;
 	FLMUINT     Col;
-	FLMUINT		bc = WPS_BLACK;
-	FLMUINT		fc = WPS_LIGHTGRAY;
-	FLMUINT		mbc = WPS_BLACK;
-	FLMUINT		mfc = WPS_WHITE;
-	FLMUINT		sbc = WPS_BLUE;
-	FLMUINT		sfc = WPS_WHITE;
+	eColorType	bc = FLM_BLACK;
+	eColorType	fc = FLM_LIGHTGRAY;
+	eColorType	mbc = FLM_BLACK;
+	eColorType	mfc = FLM_WHITE;
+	eColorType	sbc = FLM_BLUE;
+	eColorType	sfc = FLM_WHITE;
 	FLMUINT		Option;
 	FLMUINT		uiTmp;
 	FLMUINT		uiDbVersion;

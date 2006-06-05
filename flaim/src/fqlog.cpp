@@ -844,8 +844,7 @@ Desc:	This routine logs the query criteria for a cursor.
 void flmLogQuery(
 	F_LogMessage *	pLogMsg,
 	FLMUINT			uiIndent,
-	CURSOR *			pCursor
-	)
+	CURSOR *			pCursor)
 {
 	SUBQUERY *	pSubQuery;
 	QTYPES		eParentOp = (pCursor->pSubQueryList &&

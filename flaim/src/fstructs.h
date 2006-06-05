@@ -27,7 +27,6 @@
 
 struct FFILE;
 struct FNOTIFY;
-struct FBUCKET;
 struct QUERY_HDR;
 struct CDL;
 struct FDICT;
@@ -41,19 +40,11 @@ struct IFD;
 // Typedefs for the http callback function and for the functions that register
 // and deregister the http callback function.
 
-#if defined( FLM_WIN)
-	typedef HMODULE FLM_MODULE_HANDLE;
-#elif defined( FLM_UNIX)
-	typedef void * FLM_MODULE_HANDLE;
-#elif defined( FLM_NLM)
-	typedef void * FLM_MODULE_HANDLE;
-#else
-	#error "Unsupported platform"
-#endif
+typedef void * FLM_MODULE_HANDLE;
 
 typedef int (* URLHandler)(
-	HRequest *	pHRequest,
-	void *		pvUserData); 
+	HRequest *		pHRequest,
+	void *			pvUserData); 
 
 typedef int (* REG_URL_HANDLER_FN)(
 	FLM_MODULE_HANDLE	hModule, 
@@ -68,10 +59,10 @@ typedef int (* DEREG_URL_HANDLER_FN)(
 	URLHandler		fnHandler);
 
 typedef const char * (* REQ_PATH_FN)(
-	HRequest *	pHRequest);
+	HRequest *		pHRequest);
 
 typedef const char * (* REQ_QUERY_FN)(
-	HRequest *	pHRequest);
+	HRequest *		pHRequest);
 
 typedef const char * (* REQ_HDR_VALUE_FN)(
 	HRequest *		pHRequest,
@@ -88,83 +79,84 @@ typedef int (* PRINTF_FN)(
 	... );
 
 typedef int (* EMIT_FN)(
-	HRequest *	pHRequest);
+	HRequest *		pHRequest);
 
 typedef void (* SET_NO_CACHE_FN)(
 	HRequest *		pHRequest,
 	const char *	pszHeader);
 
 typedef int (* SEND_HDR_FN)(
-	HRequest *	pHRequest,
-	int			iStatus);
+	HRequest *		pHRequest,
+	int				iStatus);
 
 typedef int (* SET_IO_MODE_FN)(
-	HRequest *	pHRequest,
-	int		bRaw,
-	int		bOutput);
+	HRequest *		pHRequest,
+	int				bRaw,
+	int				bOutput);
 
 typedef int (* SEND_BUFF_FN)(
-	HRequest *	hRequest,
+	HRequest *		hRequest,
 	const void *	pvBuf,
-	size_t			bufsz);
+	FLMSIZET			bufsz);
 
 typedef void * (* ACQUIRE_SESSION_FN)(
 	HRequest *		pHRequest);
 
 typedef void (* RELEASE_SESSION_FN)(
-	void *		pvHSession);
+	void *			pvHSession);
 
 typedef void * (* ACQUIRE_USER_FN)(
-	void *		pvHSession,
-	HRequest *	pHRequest);
+	void *			pvHSession,
+	HRequest *		pHRequest);
 
 typedef void (* RELEASE_USER_FN)(
-	void *		pvHUser);
+	void *			pvHUser);
 
 typedef int (* SET_SESSION_VALUE_FN)(
-	void *				pvHSession,
-	const char *		pcTag,
-	const void *		pvData,
-	size_t				uiSize);
+	void *			pvHSession,
+	const char *	pcTag,
+	const void *	pvData,
+	FLMSIZET			uiSize);
 
 typedef int (* GET_SESSION_VALUE_FN)(
-	void *				pvHSession,
-	const char *		pcTag,
-	void *				pvData,
-	size_t *				puiSize);
+	void *			pvHSession,
+	const char *	pcTag,
+	void *			pvData,
+	FLMSIZET *		puiSize);
 
 typedef int (* GET_GBL_VALUE_FN)(
-	const char *		pcTag,
-	void *				pvData,
-	size_t *				puiSize);
+	const char *	pcTag,
+	void *			pvData,
+	FLMSIZET *		puiSize);
 
 typedef int (* SET_GBL_VALUE_FN)(
-	const char *		pcTag,
-	const void *		pvData,
-	size_t				uiSize);
+	const char *	pcTag,
+	const void *	pvData,
+	FLMSIZET			uiSize);
 
 typedef int (* RECV_BUFFER_FN)(
-	HRequest *			pHRequest,
-	void *				pvBuf,
-	size_t *				puiBufSize);
+	HRequest *		pHRequest,
+	void *			pvBuf,
+	FLMSIZET *		puiBufSize);
 
 // These are flags that are passed to the http server during registration.
 // They're copied verbatum from John Calcote's code
-/* Which protocol stack, CLEAR or TLS (secure) - the default is both.*/
+
 #define HR_STK_BOTH		0x0000	/*	-- MUTUALLY EXCLUSIVE --			*/
 #define HR_STK_NOTLS		0x0001	/* register ONLY with CLEAR stack	*/
 #define HR_STK_NOCLEAR	0x0002	/* register ONLY with TLS stack		*/
 #define HR_STK_MASK		0x000F
 
-/* Which level of authentication is required - the default is NONE.	*/
+// Which level of authentication is required - the default is NONE
+
 #define HR_AUTH_NONE		0x0000	/*	-- NOT MUTUALLY EXCLUSIVE --		*/
 #define HR_AUTH_USER		0x0010	/* user authentication required		*/
 #define HR_AUTH_SADMIN	0x0020	/* SADMIN authentication required	*/
 #define HR_AUTH_USERSA	(HR_AUTH_USER|HR_AUTH_SADMIN)
 #define HR_AUTH_MASK		0x00F0
 
-/* Which authentication realm should be used - the default is none.
-**	A realm must be choosen if USER authentication level is specified.*/
+// Which authentication realm should be used - the default is none
+
 #define HR_REALM_NONE	0x0000	/* -- MUTUALLY EXCLUSIVE --			*/
 #define HR_REALM_HFIO	0x0100	/* http file through .htaccess		*/
 #define HR_REALM_NDS		0x0200	/* nds through dclient					*/
@@ -226,11 +218,11 @@ typedef int (* RECV_BUFFER_FN)(
 #define HTS_GATEWAY_TIMEOUT		504	/* 1.1 */
 #define HTS_BAD_HTTP_VERSION		505	/* 1.1 */
 
-/* Authentication Levels  - again, copied from John Calcote: httpdefs.h */
+// Authentication Levels  - again, copied from John Calcote: httpdefs.h
+
 #define HAL_NONE		0
 #define HAL_USER		1
 #define HAL_SADMIN	2
-
 
 // Flags for the uiQsortFlags parameter - used in sorting/indexing.
 
@@ -243,86 +235,14 @@ typedef int (* RECV_BUFFER_FN)(
 
 // Flags for the uiKrAction parameter - used in sorting/indexing.
 
-#define KREF_DEL_KEYS			0x01
-#define KREF_ADD_KEYS			0x02
-#define KREF_INDEXING_ONLY		0x04
-#define KREF_IN_MODIFY			0x10
-#define KREF_MISSING_KEYS_OK	0x20
-
-#if defined( FLM_NLM)
-
-	#define FLM_GET_TIMER()	(FLMUINT)GetCurrentTime()
-
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)	\
-		ConvertSecondsToTicks( (LONG)(uiSeconds), 0, (LONG *)(&(uiTU)))
-
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)	\
-	{ \
-		LONG	udDummy; \
-		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(uiSeconds)), &udDummy); \
-	}
-
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)	\
-	{ \
-		LONG	udTenths; \
-		LONG	udSeconds; \
-		ConvertTicksToSeconds( (LONG)(uiTU), (LONG *)(&(udSeconds)), &udTenths); \
-		uiMilli = (FLMUINT)(udSeconds) * 1000 + (FLMUINT)udTenths * 100; \
-	}
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU)	\
-	{ \
-		LONG udTenths, udSeconds; \
-		udSeconds = ((LONG) uiMilliSeconds) / 1000; \
-		udTenths = (((LONG) uiMilliSeconds) % 1000) / 100; \
-		ConvertSecondsToTicks( udSeconds, udTenths, (LONG *)(&(uiTU))); \
-	}
-
-#elif defined( FLM_UNIX)
-
-	// gettimeofday() is actually 4 times faster than time() on
-	// Solaris. gethrtime() is even faster. On Linux time() is the 
-	// fastest; gettimeofday() is 50% slower. clock() is the
-	// slowest on both Solaris and Linux. We use a new function for
-	// millisec resolution. The implementation is OS dependent.
-
-	#define FLM_GET_TIMER() (FLMUINT) f_timeGetMilliTime()
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU)  \
-       ((uiTU) = ((uiSeconds) * 1000))
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds)  \
-       ((uiSeconds) = ((uiTU) / 1000))
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli)   \
-		 ((uiMilli) = (uiTU))                         
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilli, uiTU)	\
-		 ((uiTU) = (uiMilli))
-#else /* FLM_WIN */
-
-	#define FLM_GET_TIMER() \
-		(FLMUINT)GetTickCount()
-
-	#define FLM_SECS_TO_TIMER_UNITS( uiSeconds, uiTU) \
-		((uiTU) = (uiSeconds) * 1000)
-
-	#define FLM_TIMER_UNITS_TO_SECS( uiTU, uiSeconds) \
-		((uiSeconds) = (uiTU) / 1000)
-
-	#define FLM_TIMER_UNITS_TO_MILLI( uiTU, uiMilli) \
-		(uiMilli = (uiTU))
-
-	#define FLM_MILLI_TO_TIMER_UNITS( uiMilliSeconds, uiTU) \
-		(uiTU = (uiMilliSeconds))
-
-#endif
-
-// This macro for calculating elapsed time accounts for the
-// possibility of the time wrapping - which it will for some
-// of our counters (WIN is milliseconds and wraps in 49.7 days).
-
-#define FLM_ELAPSED_TIME(uiLaterTime,uiEarlierTime) \
-	(FLMUINT)(((uiLaterTime) >= (uiEarlierTime)) \
-				 ? (FLMUINT)((uiLaterTime) - (uiEarlierTime)) \
-				 : (FLMUINT)((0xFFFFFFFF - (uiEarlierTime)) + (uiLaterTime)))
+#define KREF_DEL_KEYS							0x01
+#define KREF_ADD_KEYS							0x02
+#define KREF_INDEXING_ONLY						0x04
+#define KREF_IN_MODIFY							0x10
+#define KREF_MISSING_KEYS_OK					0x20
 
 #include "fpackon.h"
+
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
 
@@ -331,9 +251,9 @@ typedef int (* RECV_BUFFER_FN)(
 
 // C/S Address types
 
-#define FLM_CS_NO_ADDR					0x00
-#define FLM_CS_IP_ADDR					0x01
-#define FLM_CS_STREAM_ADDR				0x02
+#define FLM_CS_NO_ADDR							0x00
+#define FLM_CS_IP_ADDR							0x01
+#define FLM_CS_STREAM_ADDR						0x02
 
 // Define the overhead space required to manage encrypted fields.
 
@@ -346,7 +266,7 @@ typedef int (* RECV_BUFFER_FN)(
 
 // C/S Address sizes
 
-#define FLM_CS_MAX_ADDR_LEN			128
+#define FLM_CS_MAX_ADDR_LEN					128
 
 typedef void * (* ALLOC_PAGE_FUNC)(
 	FLMUINT	uiSizeToAllocate);
@@ -607,7 +527,7 @@ typedef struct SCACHE_MGR
 	FLMUINT				uiHashTblBits;
 											// Number of bits that are significant
 											// for the hash table size.
-	F_FixedAlloc *		pAllocators[ 2];	
+	IF_FixedAlloc *	pAllocators[ 2];	
 											// Fixed size allocators for cache blocks
 											// We only support 4K and 8K blocks
 
@@ -767,10 +687,10 @@ typedef struct RCACHE_MGR
 															// disk at the same time.
 	F_MUTEX				hMutex;						// Mutex for controlling record
 															// cache.
-	F_FixedAlloc *		pRCacheAlloc;				// RCACHE structure allocator
-	F_FixedAlloc *		pRecAlloc;					// Fixed size allocator for record
+	IF_FixedAlloc *	pRCacheAlloc;				// RCACHE structure allocator
+	IF_FixedAlloc *	pRecAlloc;					// Fixed size allocator for record
 															// objects
-	F_BufferAlloc *	pRecBufAlloc;				// Record buffer allocator
+	IF_BufferAlloc *	pRecBufAlloc;				// Record buffer allocator
 
 #ifdef FLM_DEBUG
 	FLMBOOL				bDebug;						// Debug mode?
@@ -885,20 +805,14 @@ typedef struct FLMSYSDATA
 												// Mutex for controlling access to
 												// the server lock manager.
 
-	F_FileHdlMgr *		pFileHdlMgr;	// Used to Manage all FileHdl objects
-
-	F_FileSystemImp *		pFileSystem;// File system used to configure options
+	IF_FileSystem *	pFileSystem;// File system used to configure options
 												// for interacting with OS file system.
 
 	FLMBOOL				bTempDirSet;	// TRUE if temporary directory has been set
 
 	FLMBOOL				bOkToDoAsyncWrites;
 												// OK To do async writes, if available.
-	FLMBOOL				bOkToUseESM;	// OK to use Extended Server Memory,
-												// if available
 	FLMBOOL				bCheckCache;	// Do extra checking of cache?
-	ServerLockManager *
-							pServerLockMgr;// Pointer to server lock manager.
 	FLMUINT				uiMaxCPInterval;
 												// Maximum number of seconds to allow between
 												// checkpoints
@@ -935,7 +849,7 @@ typedef struct FLMSYSDATA
 	FLMUINT				uiMaxCache;		// Maximum amount of record and block cache (in bytes)
 	SCACHE_MGR			SCacheMgr;		// Shared cache manager
 	RCACHE_MGR			RCacheMgr;		// Record cache manager
-	F_Thread *			pMonitorThrd;	// Monitor thread
+	IF_Thread *			pMonitorThrd;	// Monitor thread
 	FLM_STATS			Stats;			// Statistics structure
 
 	F_MUTEX				hQueryMutex;	// Mutex for managing query list
@@ -966,76 +880,35 @@ typedef struct FLMSYSDATA
 	FEVENT_HDR			LockEvents;		// Lock events
 	FEVENT_HDR			UpdateEvents;	// Update events
 	FEVENT_HDR			SizeEvents;		// Size threshold events
-	POOL					KRefPool;		// Memory Pool that is only used by 
+	F_Pool				KRefPool;		// Memory Pool that is only used by 
 												// record updaters for key building
 
 	HTTPCONFIGPARAMS	HttpConfigParms;
 	
 	FLMUINT				uiMaxFileSize;
 	F_Logger *			pLogger;
-	F_SlabManager *	pSlabManager;
+	IF_SlabManager *	pSlabManager;
 
-#ifdef FLM_DEBUG
-	// Variables for memory allocation tracking.
-
-	FLMBOOL			bTrackLeaks;
-	FLMBOOL			bLogLeaks;
-	FLMBOOL			bStackWalk;
-	FLMBOOL			bMemTrackingInitialized;
-	FLMUINT			uiInitThreadId;
-	F_MUTEX			hMemTrackingMutex;
-	void **			ppvMemTrackingPtrs;
-	FLMUINT			uiMemTrackingPtrArraySize;
-	FLMUINT			uiMemNumPtrs;
-	FLMUINT			uiMemNextPtrSlotToUse;
-	FLMUINT			uiAllocCnt;
-#if defined( FLM_WIN)
-	HANDLE			hMemProcess;
-#endif
-
-#ifdef DEBUG_SIM_OUT_OF_MEM
-	FLMUINT			uiOutOfMemSimEnabledFlag;
-	//we pick a random number for the flag so that it is hard to accidentally
-	//turn this flag on by writing memory out-of-bounds.
-#define OUT_OF_MEM_SIM_ENABLED_FLAG 2149614134UL
-	f_randomGenerator	memSimRandomGen;
-	FLMUINT			uiSimOutOfMemFailTotal;
-	FLMUINT			uiSimOutOfMemFailSequence;
-#endif //#ifdef DEBUG_SIM_OUT_OF_MEM
-#endif
-
-	F_ThreadMgr *	pThreadMgr;
-	F_SessionMgr *	pSessionMgr;
-	F_MUTEX			hHttpSessionMutex;
+	IF_ThreadMgr *		pThreadMgr;
+	F_SessionMgr *		pSessionMgr;
+	F_MUTEX				hHttpSessionMutex;
 	
-#ifdef FLM_LINUX
-	FLMUINT			uiLinuxMajorVer;
-	FLMUINT			uiLinuxMinorVer;
-	FLMUINT			uiLinuxRevision;
-#endif
-
-	FLMUINT			uiMaxStratifyIterations;
-	FLMUINT			uiMaxStratifyTime;
+	FLMUINT				uiMaxStratifyIterations;
+	FLMUINT				uiMaxStratifyTime;
 
 } FLMSYSDATA;
 
 #ifndef ALLOCATE_SYS_DATA
 	extern FLMSYSDATA		gv_FlmSysData;
+	extern FLMUINT			gv_uiBackIxThrdGroup;
+	extern FLMUINT			gv_uiCPThrdGrp;
+	extern FLMUINT			gv_uiDbThrdGrp;
 #else
 	FLMSYSDATA				gv_FlmSysData;
+	FLMUINT					gv_uiBackIxThrdGroup = F_INVALID_THREAD_GROUP;
+	FLMUINT					gv_uiCPThrdGrp = F_INVALID_THREAD_GROUP;
+	FLMUINT					gv_uiDbThrdGrp = F_INVALID_THREAD_GROUP;
 #endif
-
-/***************************************************************************
-Desc:		This is the hash bucket header structure.  Each bucket header
-			points to a list of items that belong to the bucket.
-***************************************************************************/
-typedef struct FBUCKET
-{
-	void *		pFirstInBucket;	// Pointer to first item in the bucket.
-											// The type of structure being pointed to
-											// depends on the usage of the hash bucket.
-	FLMUINT		uiHashValue;		// Hash value for this bucket.
-} FBUCKET;
 
 /****************************************************************************
 Desc:		This structure is used to sort keys before the keys are actually
@@ -1089,7 +962,7 @@ typedef struct KREF_CNTRL
 												// transaction.  It is used when doing
 					 							// duplicate checking.
 	FLMBOOL			bKrefSetup;			// True if the KRefCntrl has been initialized.
-	POOL *			pPool;				// GEDCOM pool to use
+	F_Pool *			pPool;				// GEDCOM pool to use
 	FLMBOOL			bReusePool;			// Reuse pool instead of free it?
 	FLMBOOL			bHaveCompoundKey;	// True if a compound key has been processed.
 	void *			pReset;				// Used to reset pool for failed records.
@@ -1148,7 +1021,7 @@ typedef struct CS_CONTEXT
 	FLMUINT			uiOpSeqNum;			// Operation Sequence Number -
 												// inremented for every operation that is
 												// performed.
-	POOL				pool;					// Pool to pass into Wire objects.
+	F_Pool			pool;					// Pool to pass into Wire objects.
 	char				pucAddr[ FLM_CS_MAX_ADDR_LEN];
 												// Stream address.  This is
 												// aligned on a 4-byte boundary
@@ -1378,7 +1251,7 @@ typedef struct FDB
 														// killed.
 	FLMUINT					uiKilledTime;		// Time transaction was killed, if
 														// non-zero.
-	POOL 						tmpKrefPool;		// GEDCOM KREF pool to be used during
+	F_Pool					tmpKrefPool;		// GEDCOM KREF pool to be used during
 														// read transactions - only used when
 														// checking indexes.
 	// Misc. DB Info.
@@ -1392,7 +1265,7 @@ typedef struct FDB
 
 	FDIAG						Diag;					// Diagnostic information from the
 														// last FLAIM operation.
-	POOL						TempPool;			// Temporary GEDCOM Memory Pool.  It
+	F_Pool					TempPool;			// Temporary GEDCOM Memory Pool.  It
 														// is only used for the duration of
 														// a FLAIM operation and then reset.
 														// The first block in the pool is
@@ -1430,6 +1303,9 @@ typedef struct FDB
 														// the conclusion of the transaction.
 	F_BKGND_IX *			pIxStopList;		// Indexing threads to stop at 
 														// the conclusion of the transaction.
+	F_SEM						hWaitSem;			// Semaphore used when waiting to
+														// acquire a file or write lock
+														// on the database
 #ifdef FLM_DEBUG
 
 	//NOTE: Always set - no need to be part of memset.
@@ -1579,7 +1455,7 @@ typedef struct FFILE
 															// because of a critical error.
 	RCODE						rcMustClose;			// Return code that caused bMustClose to
 															// be set.
-	POOL						krefPool;				// GEDCOM Kref pool to be used during update
+	F_Pool					krefPool;				// GEDCOM Kref pool to be used during update
 															// transactions.
 	FILE_HDR					FileHdr;					// This structure contains the file
 															// header information for the file.
@@ -1644,24 +1520,21 @@ typedef struct FFILE
 
 #define FLM_MAX_DB_ENC_KEY_LEN			256
 
-	F_FileIdList *			pFileIdList;			// List of unique IDs that have been
-															// assigned to the physical files that
-															// are mananaged by the FFILE.
-	F_IOBufferMgr *		pBufferMgr;
+	IF_IOBufferMgr *		pBufferMgr;
 
 #define MAX_WRITE_BUFFER_BYTES			(4 * 1024 * 1024)
 #define MAX_PENDING_WRITES					(MAX_WRITE_BUFFER_BYTES / 4096)
 #define MAX_LOG_BUFFER_SIZE				(256 * 1024)
 
-	F_IOBuffer *			pCurrLogBuffer;
+	IF_IOBuffer *			pCurrLogBuffer;
 	FLMUINT					uiCurrLogWriteOffset;// Offset in current write buffer
 	FLMUINT					uiCurrLogBlkAddr;		// Address of first block in the current
 															// buffer.
 	FLMBYTE *				pucLogHdrWriteBuf;	// Aligned buffer (on win) for writing
 															// the log header.
-	ServerLockObject *	pFileLockObj;			// Object for locking the file.
-	ServerLockObject *	pWriteLockObj;			// Object for locking to do writing.
-	F_FileHdlImp *			pLockFileHdl;			// Lock file handle for 3.x databases.
+	IF_LockObject *		pFileLockObj;			// Object for locking the file.
+	IF_LockObject *		pWriteLockObj;			// Object for locking to do writing.
+	IF_FileHdl *			pLockFileHdl;			// Lock file handle for 3.x databases.
 	FNOTIFY *				pLockNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// locked (points to a linked list of
@@ -1684,8 +1557,8 @@ typedef struct FFILE
 	FLMUINT					uiLastCheckpointTime;
 															// Last time we successfully completed a
 															// checkpoint.
-	F_Thread *				pMonitorThrd;			// Database monitor thread
-	F_Thread *				pCPThrd;					// Checkpoint thread.
+	IF_Thread *				pMonitorThrd;			// Database monitor thread
+	IF_Thread *				pCPThrd;					// Checkpoint thread.
 	CP_INFO *				pCPInfo;					// Pointer to checkpoint thread's
 															// information buffer - used for
 															// communicating information to the
@@ -1703,7 +1576,6 @@ typedef struct FFILE
 #define DBF_BEING_CLOSED	0x04					// Database is being closed - cannot open.
 	FLMBOOL					bBackupActive;			// Backup is currently being run against the
 															// database.
-	FlmECache *				pECacheMgr;				// Extended cache manager
 	F_CCS *					pDbWrappingKey;		// Master Wrapping Key
 	FLMBOOL					bInLimitedMode;		// Set to true if we're running
 															// in limited mode.
@@ -1712,7 +1584,7 @@ typedef struct FFILE
 															// want to override the bAllowLimitedMode parameter on the open.  If 
 															// the version of flaim supports encryption, but the database was not
 															// built with encryption, we will set the database into limited mode.
-	F_Thread *				pMaintThrd;				// Processes background jobs queued in
+	IF_Thread *				pMaintThrd;				// Processes background jobs queued in
 															// the tracker (except indexing)
 	F_SEM						hMaintSem;				// Used to signal the maintenance thread
 															// that there may be some work to do
@@ -1850,9 +1722,9 @@ Desc:
 ****************************************************************************/
 typedef struct GED_STREAM
 {
-	F_FileHdl *		pFileHdl;
+	IF_FileHdl *	pFileHdl;
 	FLMUINT			uiBufSize;
-	FLMUINT			uiFilePos;
+	FLMUINT64		ui64FilePos;
 	char *			pBuf;
 	char *			pThis;
 	char *			pLast;
@@ -1877,14 +1749,14 @@ Desc:
 ****************************************************************************/
 typedef struct EXP_IMP_INFO
 {
-	F_FileHdl *	pFileHdl;
-	FLMBYTE *	pBuf;
-	FLMUINT		uiBufSize;
-	FLMUINT		uiBufUsed;
-	FLMUINT		uiCurrBuffOffset;
-	FLMUINT		uiFilePos;
-	FLMBOOL		bDictRecords;
-	FLMBOOL		bBufDirty;
+	IF_FileHdl *	pFileHdl;
+	FLMBYTE *		pBuf;
+	FLMUINT			uiBufSize;
+	FLMUINT			uiBufUsed;
+	FLMUINT			uiCurrBuffOffset;
+	FLMUINT64		ui64FilePos;
+	FLMBOOL			bDictRecords;
+	FLMBOOL			bBufDirty;
 } EXP_IMP_INFO;
 
 /****************************************************************************
@@ -1920,7 +1792,7 @@ typedef enum
 /****************************************************************************
 Desc: FLAIM object base class
 ****************************************************************************/
-class F_HashObject : public F_Base
+class F_HashObject : public F_Object
 {
 public:
 
@@ -2073,24 +1945,14 @@ public:
 		FFILE *				pFile,
 		F_NameTable **		ppNameTable);
 
-	FINLINE F_XMLImport * getXmlImport( void)
-	{
-		return( m_pXmlImport);
-	}
-
-	FINLINE F_XMLExport * getXmlExport( void)
-	{
-		return( m_pXmlExport);
-	}
-
 	FLMUINT getNextToken( void);
 
 	void * getKey(
 		FLMUINT *	puiKeyLen = NULL);
 
-	FLMINT AddRef();
+	FLMINT FLMAPI AddRef();
 
-	FLMINT Release();
+	FLMINT FLMAPI Release();
 
 	FINLINE eHashObjType objectType( void)
 	{
@@ -2118,8 +1980,6 @@ private:
 	FNOTIFY *			m_pNotifyList;
 	F_NameTable *		m_pNameTable;
 	FLMUINT				m_uiDictSeqNum;
-	F_XMLImport *		m_pXmlImport;
-	F_XMLExport *		m_pXmlExport;
 	FLMUINT				m_uiNameTableFFileId;
 	FLMUINT				m_uiNextToken;
 	F_HashTable *		m_pDbTable;
@@ -2132,7 +1992,7 @@ friend class F_SessionMgr;
 /****************************************************************************
 Desc: FLAIM session manager object
 ****************************************************************************/
-class F_SessionMgr : public F_Base
+class F_SessionMgr : public F_Object
 {
 public:
 
@@ -2140,7 +2000,6 @@ public:
 	{
 		m_hMutex = F_MUTEX_NULL;
 		m_pSessionTable = NULL;
-		m_pCRCTable = NULL;
 		m_uiNextId = 1;
 		f_timeGetSeconds( &m_uiNextToken);
 	}
@@ -2180,16 +2039,10 @@ public:
 		return( uiToken);
 	}
 
-	FINLINE FLMUINT32 * getCRCTable( void)
-	{
-		return( m_pCRCTable);
-	}
-
 private:
 
 	F_MUTEX				m_hMutex;
 	FLMUINT				m_uiNextId;
-	FLMUINT32 *			m_pCRCTable;
 	F_HashTable *		m_pSessionTable;
 	FLMUINT				m_uiNextToken;
 };
@@ -2197,7 +2050,7 @@ private:
 /****************************************************************************
 Desc: FLAIM hash table
 ****************************************************************************/
-class F_HashTable : public F_Base
+class F_HashTable : public F_Object
 {
 public:
 
@@ -2207,8 +2060,7 @@ public:
 
 	RCODE setupHashTable(
 		FLMBOOL				bMultithreaded,
-		FLMUINT				uiNumBuckets,
-		FLMUINT32 *			pCRCTable);
+		FLMUINT				uiNumBuckets);
 
 	RCODE addObject(
 		F_HashObject *		pObject);
@@ -2248,14 +2100,10 @@ private:
 		FLMUINT				uiKeyLen,
 		F_HashObject **	ppObject);
 
-	// Data
-
 	F_MUTEX 				m_hMutex;
 	F_HashObject *		m_pGlobalList;
 	F_HashObject **	m_ppHashTable;
 	FLMUINT				m_uiBuckets;
-	FLMUINT32 *			m_pCRCTable;
-	FLMBOOL				m_bOwnCRCTable;
 };
 
 #include "fpackoff.h"

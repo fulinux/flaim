@@ -29,7 +29,7 @@ Desc:	Obtains a a lock on the database.
 ****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbLock(
 	HFDB				hDb,
-	FLOCK_TYPE		eLockType,
+	eLockType		lockType,
 	FLMINT			iPriority,
 	FLMUINT			uiTimeout)
 {
@@ -57,7 +57,7 @@ FLMEXP RCODE FLMAPI FlmDbLock(
 		}
 
 		if (RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER1, 
-			(FLMUINT)eLockType)))
+			(FLMUINT)lockType)))
 		{
 			goto Transmission_Error;
 		}
@@ -104,9 +104,9 @@ Transmission_Error:
 		goto Exit;
 	}
 
-	// eLockType better be exclusive or shared
+	// lockType better be exclusive or shared
 
-	if ((eLockType != FLM_LOCK_EXCLUSIVE) && (eLockType != FLM_LOCK_SHARED))
+	if ((lockType != FLM_LOCK_EXCLUSIVE) && (lockType != FLM_LOCK_SHARED))
 	{
 		rc = RC_SET( FERR_ILLEGAL_OP);
 		goto Exit;
@@ -125,19 +125,19 @@ Transmission_Error:
 
 	// Attempt to acquire the lock.
 
-	if (RC_BAD( rc = pDb->pFile->pFileLockObj->Lock( TRUE, pDb, FALSE,
-							(FLMBOOL)((eLockType == FLM_LOCK_EXCLUSIVE)
-									  ? (FLMBOOL)TRUE
-									  : (FLMBOOL)FALSE),
-									  uiTimeout, iPriority,
-									  pDb->pDbStats)))
+	if (RC_BAD( rc = pDb->pFile->pFileLockObj->lock( pDb->hWaitSem,
+			(FLMBOOL)((lockType == FLM_LOCK_EXCLUSIVE)
+					  ? (FLMBOOL)TRUE
+					  : (FLMBOOL)FALSE),
+			uiTimeout, iPriority, 
+			pDb->pDbStats ? &pDb->pDbStats->LockStats : NULL)))
 	{
 		goto Exit;
 	}
 	
 	pDb->uiFlags |= FDB_HAS_FILE_LOCK;
 	
-	if (eLockType == FLM_LOCK_SHARED)
+	if (lockType == FLM_LOCK_SHARED)
 	{
 		pDb->uiFlags |= FDB_FILE_LOCK_SHARED;
 	}
@@ -221,7 +221,7 @@ Transmission_Error:
 
 	// Unlock the file.
 
-	if (RC_BAD( rc = pDb->pFile->pFileLockObj->Unlock( TRUE, pDb)))
+	if (RC_BAD( rc = pDb->pFile->pFileLockObj->unlock()))
 	{
 		goto Exit;
 	}
@@ -242,55 +242,21 @@ Exit:
 }
 
 /****************************************************************************
-Desc : Returns information about current and pending locks on the
-		 database.
-****************************************************************************/
-FLMEXP RCODE FLMAPI FlmDbGetLockInfo(
-	HFDB				hDb,
-	FLMINT			iPriority,
-	FLOCK_INFO *	pLockInfo)
-{
-	RCODE		rc = FERR_OK;
-	FDB *		pDb = NULL;
-	FLMBOOL	bIgnore;
-
-	if (IsInCSMode( hDb))
-	{
-		rc = RC_SET( FERR_NOT_IMPLEMENTED);
-		goto Exit;
-	}
-
-	pDb = (FDB *)hDb;
-	if (RC_BAD( rc = fdbInit( pDb, FLM_NO_TRANS,
-									  FDB_TRANS_GOING_OK, 0, &bIgnore)))
-	{
-		goto Exit;
-	}
-
-	pDb->pFile->pFileLockObj->GetLockInfo( iPriority, pLockInfo);
-
-Exit:
-
-	flmExit( FLM_DB_GET_LOCK_INFO, pDb, rc);
-	return( rc);
-}
-
-/****************************************************************************
 Desc : Returns information about the lock held by the specified database
 		 handle.
 ****************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbGetLockType(
 	HFDB				hDb,
-	FLOCK_TYPE *	peLockType,
+	eLockType *		pLockType,
 	FLMBOOL *		pbImplicit)
 {
 	RCODE		rc = FERR_OK;
 	FDB *		pDb = NULL;
 	FLMBOOL	bIgnore;
 
-	if( peLockType)
+	if( pLockType)
 	{
-		*peLockType = FLM_LOCK_NONE;
+		*pLockType = FLM_LOCK_NONE;
 	}
 
 	if( pbImplicit)
@@ -313,15 +279,15 @@ FLMEXP RCODE FLMAPI FlmDbGetLockType(
 
 	if( pDb->uiFlags & FDB_HAS_FILE_LOCK)
 	{
-		if( peLockType)
+		if( pLockType)
 		{
 			if( pDb->uiFlags & FDB_FILE_LOCK_SHARED)
 			{
-				*peLockType = FLM_LOCK_SHARED;
+				*pLockType = FLM_LOCK_SHARED;
 			}
 			else
 			{
-				*peLockType = FLM_LOCK_EXCLUSIVE;
+				*pLockType = FLM_LOCK_EXCLUSIVE;
 			}
 		}
 		
@@ -363,8 +329,8 @@ RCODE dbLock(
 
 	if (!(pDb->uiFlags & FDB_HAS_FILE_LOCK))
 	{
-		if (RC_BAD( rc = pFile->pFileLockObj->Lock( TRUE, pDb, FALSE, TRUE,
-									uiMaxLockWait, 0, pDb->pDbStats)))
+		if (RC_BAD( rc = pFile->pFileLockObj->lock( pDb->hWaitSem, TRUE,
+			uiMaxLockWait, 0, pDb->pDbStats ? &pDb->pDbStats->LockStats : NULL)))
 		{
 			goto Exit;
 		}
@@ -372,10 +338,13 @@ RCODE dbLock(
 		pDb->uiFlags |= (FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_IMPLICIT);
 	}
 
-	if( RC_OK( rc = dbWriteLock( pFile, pDb->pDbStats)))
+	if (RC_BAD( rc = pFile->pWriteLockObj->lock( pDb->hWaitSem, TRUE,
+		uiMaxLockWait, 0, pDb->pDbStats ? &pDb->pDbStats->LockStats : NULL)))
 	{
-		pDb->uiFlags |= FDB_HAS_WRITE_LOCK;
+		goto Exit;
 	}
+		
+	pDb->uiFlags |= FDB_HAS_WRITE_LOCK;
 
 Exit:
 
@@ -383,7 +352,7 @@ Exit:
 	{
 		if (bGotFileLock)
 		{
-			(void)pFile->pFileLockObj->Unlock( TRUE, pDb);
+			(void)pFile->pFileLockObj->unlock();
 			pDb->uiFlags &= (~(FDB_HAS_FILE_LOCK | 
 				FDB_FILE_LOCK_IMPLICIT | FDB_HAS_WRITE_LOCK));
 		}
@@ -400,7 +369,7 @@ Exit:
 	{
 		if (bGotFileLock)
 		{
-			(void)pFile->pFileLockObj->Unlock( TRUE, pDb);
+			(void)pFile->pFileLockObj->unlock();
 			pDb->uiFlags &= (~(FDB_HAS_FILE_LOCK | 
 				FDB_FILE_LOCK_IMPLICIT | FDB_HAS_WRITE_LOCK));
 		}
@@ -422,14 +391,14 @@ RCODE dbUnlock(
 
 	flmAssert( pDb->uiFlags & FDB_HAS_WRITE_LOCK);
 
-	dbWriteUnlock( pDb->pFile, pDb->pDbStats);
+	pDb->pFile->pWriteLockObj->unlock();
 	pDb->uiFlags &= ~FDB_HAS_WRITE_LOCK;
 
 	// Give up the file lock, if it was acquired implicitly.
 	
 	if (pDb->uiFlags & FDB_FILE_LOCK_IMPLICIT)
 	{
-		if (RC_OK( rc = pDb->pFile->pFileLockObj->Unlock( TRUE, pDb)))
+		if (RC_OK( rc = pDb->pFile->pFileLockObj->unlock()))
 		{
 			pDb->uiFlags &=
 				(~(FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_IMPLICIT));

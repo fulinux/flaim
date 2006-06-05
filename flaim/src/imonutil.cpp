@@ -1886,9 +1886,9 @@ RCODE F_FlmThreadsPage::display(
 	FLMUINT				uiCurrentTime;
 	FLMUINT				uiNumThreads;
 	F_THREAD_INFO *	pThreadInfo = NULL;
-	POOL					pool;
+	F_Pool				pool;
 
-	GedPoolInit( &pool, 1024);
+	pool.poolInit( 1024);
 
 	printDocStart( "Threads", FALSE);
 
@@ -2018,7 +2018,6 @@ RCODE F_FlmThreadsPage::display(
 Exit:
 
 	fnEmit();
-	GedPoolFree( &pool);
 	return( FERR_OK);
 }
 
@@ -2030,9 +2029,10 @@ RCODE F_HttpFile::display(
 	const char ** 	ppszParams)
 {
 	FlmStaticFile *	pStaticFile;
-	F_FileHdl *			pSrcFile = NULL;
-	F_DirHdl *			pDirHdl = NULL;
+	IF_FileHdl *		pSrcFile = NULL;
+	IF_DirHdl *			pDirHdl = NULL;
 	FLMUINT				uiSize;
+	FLMUINT64			ui64FileSize;
 	FLMUINT				uiBytesRead;
 	FLMUINT				uiOffset;
 	FLMBYTE *			pucBuf = NULL;
@@ -2151,9 +2151,9 @@ RCODE F_HttpFile::display(
 
 	// See if a directory listing has been requested.
 
-	if( gv_FlmSysData.pFileSystem->IsDir( szPath))
+	if( gv_FlmSysData.pFileSystem->isDir( szPath))
 	{
-		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenDir( 
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openDir( 
 			szPath, "*", &pDirHdl)))
 		 {
 			goto ReportErrorExit;
@@ -2182,7 +2182,8 @@ RCODE F_HttpFile::display(
 		// Output the parent directory
 
 		bHaveParent = FALSE;
-		if( RC_BAD( rc = f_pathReduce( szPath, szTmp, NULL)))
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+			szPath, szTmp, NULL)))
 		{
 			if( rc == FERR_IO_AT_PATH_ROOT)
 			{
@@ -2205,7 +2206,7 @@ RCODE F_HttpFile::display(
 		{
 			if( !bHaveParent)
 			{
-				if (RC_BAD( rc = pDirHdl->Next()))
+				if (RC_BAD( rc = pDirHdl->next()))
 				{
 					if (rc == FERR_IO_NO_MORE_FILES)
 					{
@@ -2217,7 +2218,7 @@ RCODE F_HttpFile::display(
 						goto Exit;
 					}
 				}
-				pDirHdl->CurrentItemPath( szTmp);
+				pDirHdl->currentItemPath( szTmp);
 			}
 
 			printTableRowStart( (uiCount & 0x00000001) ? FALSE : TRUE);
@@ -2231,14 +2232,14 @@ RCODE F_HttpFile::display(
 			fnPrintf( m_pHRequest, "\">");
 			printEncodedString( 
 				bHaveParent ? ".. <parent>" 
-								: pDirHdl->CurrentItemName(), HTML_ENCODING);
+								: pDirHdl->currentItemName(), HTML_ENCODING);
 			fnPrintf( m_pHRequest, "</a>\n");
 			printTableDataEnd();
 
 			// File type
 
 			printTableDataStart();
-			if( bHaveParent || pDirHdl->CurrentItemIsDir())
+			if( bHaveParent || pDirHdl->currentItemIsDir())
 			{
 				fnPrintf( m_pHRequest, "Dir");
 			}
@@ -2251,9 +2252,9 @@ RCODE F_HttpFile::display(
 			// File size
 
 			printTableDataStart();
-			if( !bHaveParent && !pDirHdl->CurrentItemIsDir())
+			if( !bHaveParent && !pDirHdl->currentItemIsDir())
 			{
-				fnPrintf( m_pHRequest, "%u", pDirHdl->CurrentItemSize());
+				fnPrintf( m_pHRequest, "%u", pDirHdl->currentItemSize());
 			}
 			else
 			{
@@ -2268,7 +2269,7 @@ RCODE F_HttpFile::display(
 			{
 				FLMUINT		uiTimestamp;
 
-				if( RC_BAD( gv_FlmSysData.pFileSystem->GetTimeStamp( 
+				if( RC_BAD( gv_FlmSysData.pFileSystem->getFileTimeStamp( 
 					szTmp, &uiTimestamp)))
 				{
 					uiTimestamp = 0;
@@ -2285,8 +2286,8 @@ RCODE F_HttpFile::display(
 
 			printTableDataStart();
 			if( !bHaveParent && 
-					(f_strstr( pDirHdl->CurrentItemName(), ".db") != NULL ||
-					f_strstr( pDirHdl->CurrentItemName(), ".DB") != NULL))
+					(f_strstr( pDirHdl->currentItemName(), ".db") != NULL ||
+					f_strstr( pDirHdl->currentItemName(), ".DB") != NULL))
 			{
 				fnPrintf( m_pHRequest, "<a href=\"%s", m_pszURLString);
 				fnPrintf( m_pHRequest, "/database?operation=open?path=");
@@ -2324,8 +2325,8 @@ RCODE F_HttpFile::display(
 
 	// Try opening the file on the file system
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( szPath,
-		F_IO_RDONLY | F_IO_SH_DENYNONE, &pSrcFile)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szPath,
+		FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &pSrcFile)))
 	{
 		if( rc == FERR_IO_PATH_NOT_FOUND)
 		{
@@ -2339,10 +2340,12 @@ RCODE F_HttpFile::display(
 
 	// Get the file size
 
-	if( RC_BAD( rc = pSrcFile->Size( &uiSize)))
+	if( RC_BAD( rc = pSrcFile->size( &ui64FileSize)))
 	{
 		goto ReportErrorExit;
 	}
+	
+	uiSize = (FLMUINT)ui64FileSize;
 
 	// Allocate a buffer for streaming the data back to the client
 
@@ -2363,7 +2366,7 @@ RCODE F_HttpFile::display(
 	uiOffset = 0;
 	for( ;;)
 	{
-		if( RC_BAD( rc = pSrcFile->Read( uiOffset, uiBufSize, 
+		if( RC_BAD( rc = pSrcFile->read( uiOffset, uiBufSize, 
 			pucBuf, &uiBytesRead)))
 		{
 			if( rc == FERR_IO_END_OF_FILE)
@@ -3094,138 +3097,6 @@ ReportErrorExit:
 }
 
 /****************************************************************************
-Desc: Displays information about return codes
-****************************************************************************/
-RCODE F_RCodeLookupPage::display(
-	FLMUINT			uiNumParams,
-	const char ** 	ppszParams)
-{
-	char				szCode[ 128];
-	FLMUINT			uiLow;
-	FLMUINT			uiCount;
-	FLMUINT			uiHigh;
-	FLMUINT			uiLoop;
-
-	// Extract the lookup parameter
-	
-	szCode[ 0] = 0;
-	if( RC_BAD( ExtractParameter( uiNumParams, ppszParams, 
-			"rc", sizeof( szCode), szCode)))
-	{
-		if( f_strnicmp( ppszParams[ 0], "returncode/", 11) == 0 && 
-			f_strlen( ppszParams[ 0]) > 11)
-		{
-			f_strcpy( szCode, &ppszParams[ 0][ 11]);
-		}
-	}
-	else if( !szCode[ 0])
-	{
-		f_strcpy( szCode, "all");
-	}
-
-	// Document
-
-	printDocStart( (char *)"Return Code Lookup");
-
-	// Insert a form into the page to get the file path
-
-	fnPrintf( m_pHRequest, "<form type=\"submit\" "
-							  "method=\"get\" action=\"%s/returncode\">\n",
-							  m_pszURLString);
-	fnPrintf( m_pHRequest, "<BR>\n<CENTER>\nReturn Code<BR>\n"
-								  "<INPUT type=\"text\" size=\"60\" maxlength=\"120\" name=\"rc\"></INPUT><BR>\n");
-	printButton( "Submit", BT_Submit);
-	fnPrintf( m_pHRequest, "<BR>\n</CENTER>\n</form>\n");
-
-	// Done?
-
-	if( !szCode[ 0])
-	{
-		printDocEnd();
-		goto Exit;
-	}
-
-	// Translate any escaped characters in the path
-
-	fcsDecodeHttpString( szCode);
-
-	// Get the value of the RCODE
-
-	if( f_stricmp( szCode, "all") != 0)
-	{
-		if( (uiLow = f_atoud( szCode)) < (FLMUINT)FIRST_FLAIM_ERROR)
-		{
-			uiLow = (FLMUINT)FIRST_FLAIM_ERROR;
-		}
-
-		if( (uiHigh = uiLow + 100) > (FLMUINT)LAST_FLAIM_ERROR)
-		{
-			uiHigh = (FLMUINT)LAST_FLAIM_ERROR;
-		}
-	}
-	else
-	{
-		uiLow = (FLMUINT)FIRST_FLAIM_ERROR;
-		uiHigh = (FLMUINT)LAST_FLAIM_ERROR;
-	}
-
-	// Put a little space between the form and the table
-
-	fnPrintf( m_pHRequest, "<BR>\n");
-
-	// Table
-
-	printTableStart( (char *)"Return Code(s)", 3);
-
-	// Table column headers
-
-	printTableRowStart();
-	printColumnHeading( "Hex");
-	printColumnHeading( "Decimal");
-	printColumnHeading( "Name");
-	printTableRowEnd();
-
-	uiCount = 0;
-	for( uiLoop = uiLow; uiLoop <= uiHigh; uiLoop++)
-	{
-		const char *		pszName = flmErrorString( (RCODE)uiLoop);
-
-		if( pszName)
-		{
-			printTableRowStart( ((uiCount++) & 0x00000001) ? FALSE : TRUE);
-
-			// Hex
-
-			printTableDataStart();
-			fnPrintf( m_pHRequest, "0x%04X", (unsigned)uiLoop);
-			printTableDataEnd();
-
-			// Decimal
-
-			printTableDataStart();
-			fnPrintf( m_pHRequest, "%u", (unsigned)uiLoop);
-			printTableDataEnd();
-
-			// Name
-
-			printTableDataStart();
-			fnPrintf( m_pHRequest, "%s", pszName);
-			printTableDataEnd();
-
-			printTableRowEnd();
-		}
-	}
-
-	printTableEnd();
-	printDocEnd();
-
-Exit:
-
-	fnEmit();
-	return( FERR_OK);
-}
-
-/****************************************************************************
 Desc:
 ****************************************************************************/
 RCODE F_DatabasePage::display(
@@ -3853,12 +3724,12 @@ void F_DatabasePage::printSessionDatabaseList(
 	F_SessionDb *	pSessionDb;
 	FLMBOOL			bChecked;
 	FLMUINT			uiTransType;
-	FLOCK_TYPE		lockType;
-	FLMBOOL			bImplicit;
+	FLMBOOL			bImplicit = FALSE;
 	FLMBOOL			bAllowLock;
 	FLMBOOL			bAllowUnlock;
 	char *			pszDbKey;
 	char				szDbOption [80];
+	eLockType		lockType;
 
 	// Table
 
@@ -4190,11 +4061,11 @@ RCODE F_RecordMgrPage::display(
 	FLMBOOL				bUpdateSelected = FALSE;
 	FLMBOOL				bDeleteSelected = FALSE;
 	FLMBOOL				bReserveDrnSelected = FALSE;
-	POOL					pool;
+	F_Pool				pool;
 
 	// Initialize a pool for XML parsing
 
-	GedPoolInit( &pool, 1024);
+	pool.poolInit( 1024);
 
 	// Check the session
 
@@ -4307,12 +4178,12 @@ RCODE F_RecordMgrPage::display(
 		fcsDecodeHttpString( pszXmlInRec);
 	}
 
-	if( pszXmlInRec && *pszXmlInRec && hDb != HFDB_NULL)
-	{
-		FCS_BUFISTM	bufIStream( (FLMBYTE *)pszXmlInRec, f_strlen( pszXmlInRec));
-		(void)pFlmSession->getXmlImport()->importDocument( 
-			hDb, pNameTable, &bufIStream, TRUE, &pInRec);
-	}
+//	if( pszXmlInRec && *pszXmlInRec && hDb != HFDB_NULL)
+//	{
+//		FCS_BUFISTM	bufIStream( (FLMBYTE *)pszXmlInRec, f_strlen( pszXmlInRec));
+//		(void)pFlmSession->getXmlImport()->importDocument( 
+//			hDb, pNameTable, &bufIStream, TRUE, &pInRec);
+//	}
 
 	if( hDb == HFDB_NULL)
 	{
@@ -4565,20 +4436,20 @@ RCODE F_RecordMgrPage::display(
 
 	// Record
 
-	if( pRec || pInRec)
-	{
-		if( !pRec)
-		{
-			pRec = pInRec;
-			pInRec = NULL;
-		}
-
-		if( RC_BAD( rc = pFlmSession->getXmlExport()->exportRecord( 
-			pNameTable, pRec, 0, 3, &pool, &pszXmlOutRec, NULL)))
-		{
-			goto Exit;
-		}
-	}
+//	if( pRec || pInRec)
+//	{
+//		if( !pRec)
+//		{
+//			pRec = pInRec;
+//			pInRec = NULL;
+//		}
+//
+//		if( RC_BAD( rc = pFlmSession->getXmlExport()->exportRecord( 
+//			pNameTable, pRec, 0, 3, &pool, &pszXmlOutRec, NULL)))
+//		{
+//			goto Exit;
+//		}
+//	}
 
 	printTableRowStart( bHighlight);
 	bHighlight = !bHighlight;
@@ -4630,7 +4501,6 @@ Exit:
 		f_free( &pszXmlInRec);
 	}
 
-	GedPoolFree( &pool);
 	return( FERR_OK);
 
 ReportErrorExit:
@@ -4977,7 +4847,7 @@ void F_DatabaseConfigPage::outputValue(
 		case FDB_GET_DEFAULT_LANG:
 			if( RC_OK( rc = FlmDbGetConfig( hDb, (eDbGetConfigType)uiType, &uiValue1)))
 			{
-				FlmGetLanguage( uiValue1, (char *)szValue);
+				f_languageToStr( uiValue1, (char *)szValue);
 				fnPrintf( m_pHRequest, TD_s, szValue);
 			}
 			break;
@@ -5224,9 +5094,9 @@ void F_WebPage::printLanguagePulldown(
 
 	fnPrintf( m_pHRequest, "<select name=\"language\">\n");
 	
-	for( uiLoop = 0; uiLoop < LAST_LANG; uiLoop++)
+	for( uiLoop = 0; uiLoop < FLM_LAST_LANG; uiLoop++)
 	{
-		FlmGetLanguage( uiLoop, szLangCode);
+		f_languageToStr( uiLoop, szLangCode);
 		printSelectOption( uiSelectedLang, uiLoop, szLangCode, FALSE);
 	}
 
@@ -5241,35 +5111,25 @@ RCODE F_WebPage::displayLogFileHdr(
 	const char *	pszPath)
 {
 	RCODE				rc = FERR_OK;
-	F_FileHdl *		pFileHdl = NULL;
+	IF_FileHdl *	pFileHdl = NULL;
 	FLMBYTE *		pucLogHdr = NULL;
-	FLMBOOL			bFileOpened = FALSE;
 	FLMUINT			uiBytesRead = 0;
 	char				szTitle[ 128];
 
-	// Create a new File Handle first to work with.
-	if ((pFileHdl = f_new F_FileHdlImp) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	// Open the file
-	if (RC_BAD( rc = pFileHdl->Open( pszPath, F_IO_RDONLY)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
+		pszPath, FLM_IO_RDONLY, &pFileHdl)))
 	{
 		goto Exit;
 	}
-	bFileOpened = TRUE;
 
 	// Create a temporay buffer to hold the log header
-	if( RC_BAD( rc = f_alloc( 
-		LOG_HEADER_SIZE, &pucLogHdr)))
+	if( RC_BAD( rc = f_alloc( LOG_HEADER_SIZE, &pucLogHdr)))
 	{
 		goto Exit;
 	}
 
 	// Read in the file log header
-	if (RC_BAD( rc = pFileHdl->Read(
+	if (RC_BAD( rc = pFileHdl->read(
 		(unsigned)DB_LOG_HEADER_START, (unsigned)LOG_HEADER_SIZE,
 		(void *)pucLogHdr, &uiBytesRead)))
 	{
@@ -5293,10 +5153,6 @@ Exit:
 
 	if (pFileHdl)
 	{
-		if (bFileOpened)
-		{
-			pFileHdl->Close();
-		}
 		pFileHdl->Release();
 	}
 
@@ -5307,5 +5163,3 @@ Exit:
 
 	return( rc);
 }
-
-

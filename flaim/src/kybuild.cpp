@@ -472,7 +472,7 @@ FSTATIC RCODE flmProcessIndexedFld(
 			// Context key (tag number).
 
 			KeyBuf[0] = KY_CONTEXT_PREFIX;
-			flmUINT16ToBigEndian( (FLMUINT16) pRecord->getFieldID( 
+			f_UINT16ToBigEndian( (FLMUINT16) pRecord->getFieldID( 
 				pvField), &KeyBuf[1]);
 
 			if (RC_BAD( rc = KYAddToKrefTbl( pDb, pIxd, uiContainerNum, pIfd,
@@ -523,8 +523,8 @@ FSTATIC RCODE flmProcessIndexedFld(
 					}
 
 					if ((uiValueLen == 1 && 
-						!(uiLanguage >= FIRST_DBCS_LANG && 
-							uiLanguage <= LAST_DBCS_LANG)))
+						!(uiLanguage >= FLM_FIRST_DBCS_LANG && 
+							uiLanguage <= FLM_LAST_DBCS_LANG)))
 					{
 						break;
 					}
@@ -706,17 +706,16 @@ RCODE KYAddToKrefTbl(
 	// Allocate memory for the key's KREF and the key itself. We allocate
 	// one extra byte so we can NULL terminate the key below. The extra
 	// NULL character is to ensure that the compare in the qsort routine
-	// will work. GedPoolAlloc machine aligns.
+	// will work.
 
 	uiSizeNeeded = sizeof(KREF_ENTRY) + uiKrefKeyLen + 1;
 
-	if ((pKref = (KREF_ENTRY*) GedPoolAlloc( 
-		pKrefCntrl->pPool, uiSizeNeeded)) == NULL)
+	if( RC_BAD( rc = pKrefCntrl->pPool->poolAlloc( uiSizeNeeded, 
+		(void **)&pKref)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	pKrefCntrl->pKrefTbl[pKrefCntrl->uiCount++] = pKref;
 	pKrefCntrl->uiTotalBytes += uiSizeNeeded;
 
@@ -772,7 +771,7 @@ RCODE flmEncryptField(
 	FlmRecord *		pRecord,
 	void *			pvField,
 	FLMUINT			uiEncId,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
 	RCODE				rc = FERR_OK;
 	F_CCS *			pCcs;
@@ -786,7 +785,7 @@ RCODE flmEncryptField(
 	FLMUINT			uiLoop;
 #endif
 
-	pvMark = GedPoolMark( pPool);
+	pvMark = pPool->poolMark();
 
 #ifdef FLM_CHECK_RECORD
 	if (RC_BAD( rc = pRecord->checkRecord()))
@@ -808,12 +807,11 @@ RCODE flmEncryptField(
 
 	uiEncLength = pRecord->getEncryptedDataLength( pvField);
 	
-	if( (pucDataBuffer = (FLMBYTE *) GedPoolAlloc( pPool, uiEncLength)) == NULL)
+	if( RC_BAD( rc = pPool->poolAlloc( uiEncLength, (void **)&pucDataBuffer)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	pucEncBuffer = (FLMBYTE *) pRecord->getEncryptionDataPtr( pvField);
 	uiCheckLength = uiEncLength;
 
@@ -875,7 +873,7 @@ RCODE flmEncryptField(
 
 Exit: 
 
-	GedPoolReset( pPool, pvMark);
+	pPool->poolReset( pvMark);
 	return (rc);
 }
 
@@ -887,7 +885,7 @@ RCODE flmDecryptField(
 	FlmRecord *		pRecord,
 	void *			pvField,
 	FLMUINT			uiEncId,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
 	RCODE				rc = FERR_OK;
 	F_CCS *			pCcs;
@@ -897,7 +895,7 @@ RCODE flmDecryptField(
 	FLMUINT			uiCheckLength;
 	void *			pvMark = NULL;
 
-	pvMark = GedPoolMark( pPool);
+	pvMark = pPool->poolMark();
 
 #ifdef FLM_CHECK_RECORD
 	if (RC_BAD( rc = pRecord->checkRecord()))
@@ -919,12 +917,11 @@ RCODE flmDecryptField(
 
 	uiEncLength = pRecord->getEncryptedDataLength( pvField);
 	
-	if( (pucDataBuffer = (FLMBYTE *) GedPoolAlloc( pPool, uiEncLength)) == NULL)
+	if( RC_BAD( rc = pPool->poolAlloc( uiEncLength, (void **)&pucDataBuffer)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	pucEncBuffer = (FLMBYTE *) pRecord->getEncryptionDataPtr( pvField);
 	uiCheckLength = uiEncLength;
 
@@ -940,7 +937,7 @@ RCODE flmDecryptField(
 		goto Exit;
 	}
 
-	f_memcpy( pRecord->getDataPtr( pvField), pucDataBuffer,
+	f_memcpy( (void *)pRecord->getDataPtr( pvField), pucDataBuffer,
 				pRecord->getDataLength( pvField));
 
 	pRecord->setEncFlags( pvField,
@@ -955,7 +952,7 @@ RCODE flmDecryptField(
 
 Exit:
 
-	GedPoolReset( pPool, pvMark);
+	pPool->poolReset( pvMark);
 	return (rc);
 }
 
@@ -975,7 +972,7 @@ FLMBOOL KYSubstringParse(
 	FLMUINT				uiWordLen = 0;
 	FLMUINT				uiLimit = uiLimitParm ? uiLimitParm : IFD_DEFAULT_SUBSTRING_LIMIT;
 	FLMUINT				uiFlags = 0;
-	FLMUINT				uiLeadingSpace = FLM_NO_SPACE;
+	FLMUINT				uiLeadingSpace = FLM_COMP_NO_WHITESPACE;
 	FLMBOOL				bIgnoreSpaceDefault = (uiIfdFlags & IFD_NO_SPACE) ? TRUE : FALSE;
 	FLMBOOL				bIgnoreSpace = TRUE;
 	FLMBOOL				bIgnoreDash = (uiIfdFlags & IFD_NO_DASH) ? TRUE : FALSE;
@@ -987,22 +984,22 @@ FLMBOOL KYSubstringParse(
 
 	if (bIgnoreSpaceDefault)
 	{
-		uiFlags |= FLM_NO_SPACE;
+		uiFlags |= FLM_COMP_NO_WHITESPACE;
 	}
 
 	if (bIgnoreDash)
 	{
-		uiFlags |= FLM_NO_DASH;
+		uiFlags |= FLM_COMP_NO_DASHES;
 	}
 
 	if (bNoUnderscore)
 	{
-		uiFlags |= FLM_NO_UNDERSCORE;
+		uiFlags |= FLM_COMP_NO_UNDERSCORES;
 	}
 
 	if (uiIfdFlags & IFD_MIN_SPACES)
 	{
-		uiFlags |= FLM_MIN_SPACES;
+		uiFlags |= FLM_COMP_COMPRESS_WHITESPACE;
 	}
 
 	// The limit must return one more than requested in order for the text
@@ -1223,11 +1220,11 @@ RCODE KrefCntrlCheck(
 
 		if (pKrefCntrl->bReusePool)
 		{
-			GedPoolReset( pKrefCntrl->pPool, NULL);
+			pKrefCntrl->pPool->poolReset();
 		}
 		else
 		{
-			GedPoolInit( pKrefCntrl->pPool, KREF_POOL_BLOCK_SIZE);
+			pKrefCntrl->pPool->poolInit( KREF_POOL_BLOCK_SIZE);
 		}
 
 		if( RC_BAD( rc = f_alloc( uiKrefTblSize,
@@ -1247,7 +1244,7 @@ RCODE KrefCntrlCheck(
 		pKrefCntrl->uiKrefTblSize = KREF_TBL_SIZE;
 	}
 
-	pKrefCntrl->pReset = GedPoolMark( pKrefCntrl->pPool); 
+	pKrefCntrl->pReset = pKrefCntrl->pPool->poolMark(); 
 
 Exit:
 
@@ -1266,11 +1263,11 @@ void KrefCntrlFree(
 	{
 		if (pKrefCntrl->bReusePool)
 		{
-			GedPoolReset( pKrefCntrl->pPool, NULL);
+			pKrefCntrl->pPool->poolReset();
 		}
 		else
 		{
-			GedPoolFree( pKrefCntrl->pPool);
+			pKrefCntrl->pPool->poolFree();
 		}
 
 		if( pKrefCntrl->pKrefTbl)
@@ -1382,7 +1379,7 @@ void KYAbortCurrentRecord(
 	}
 
 	pDb->KrefCntrl.uiCount = pDb->KrefCntrl.uiLastRecEnd;
-	GedPoolReset( pDb->KrefCntrl.pPool, pDb->KrefCntrl.pReset);
+	pDb->KrefCntrl.pPool->poolReset( pDb->KrefCntrl.pReset);
 }
 
 /****************************************************************************
@@ -1471,7 +1468,7 @@ RCODE KYKeysCommit(
 
 			// Empty the table out so we can add more keys in this trans.
 
-			GedPoolReset( pKrefCntrl->pPool, NULL);
+			pKrefCntrl->pPool->poolReset();
 			pKrefCntrl->uiCount = 0;
 			pKrefCntrl->uiTotalBytes = 0;
 			pKrefCntrl->uiLastRecEnd = 0;

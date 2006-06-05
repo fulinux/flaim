@@ -272,8 +272,8 @@ RCODE F_FrameNav::display(
 	if (DetectParameter( uiNumParams, ppszParams,
 							   "StopSecureDbAccess"))
 	{
-		fnSetGblValue( FLM_SECURE_PASSWORD, "", (size_t)0);
-		fnSetGblValue( FLM_SECURE_EXPIRATION, "", (size_t )0);
+		fnSetGblValue( FLM_SECURE_PASSWORD, "", (FLMSIZET)0);
+		fnSetGblValue( FLM_SECURE_EXPIRATION, "", (FLMSIZET )0);
 		uiSize = 0;
 
 	}
@@ -283,8 +283,8 @@ RCODE F_FrameNav::display(
 		// We are going to ignore any error, as the password may not have been entered.
 		uiSize = sizeof( szGblPassword);
 		(void)fnGetGblValue( FLM_SECURE_PASSWORD,
-									(void *)&szGblPassword,
-									(size_t *)&uiSize);
+									(void *)szGblPassword,
+									(FLMSIZET *)&uiSize);
 	}
 
 	fnPrintf( m_pHRequest, "<div class=\"head4tm6\">Secure Control</div>\n"
@@ -391,8 +391,8 @@ RCODE F_FrameNav::display(
 		f_memset( szValue, 0, uiSize);
 		(void)fnGetSessionValue( pvSession,
 								 FLM_SECURE_PASSWORD,
-								 (void *)&szValue,
-								 (size_t *)&uiSize);
+								 (void *)szValue,
+								 (FLMSIZET *)&uiSize);
 
 		if (f_strlen( szValue) != 0)
 		{
@@ -405,8 +405,8 @@ RCODE F_FrameNav::display(
 			// has been enabled
 			uiSize = sizeof( szGblPassword);
 			(void)fnGetGblValue( FLM_SECURE_PASSWORD,
-									(void *)&szGblPassword,
-									(size_t *)&uiSize);
+									(void *)szGblPassword,
+									(FLMSIZET *)&uiSize);
 			if (f_strlen( szGblPassword) != 0)
 			{
 				fnPrintf( m_pHRequest, "<div class=\"task1\">");
@@ -615,11 +615,11 @@ RCODE F_SecureDbInfo::display(
 	// Now store the data...
 	if (gv_FlmSysData.HttpConfigParms.fnSetGblValue)
 	{
-		if (fnSetGblValue( FLM_SECURE_PASSWORD, pszPassword, (size_t)uiPwdLen))
+		if (fnSetGblValue( FLM_SECURE_PASSWORD, pszPassword, (FLMSIZET)uiPwdLen))
 		{
 			flmAssert( 0);
 		}
-		if (fnSetGblValue( FLM_SECURE_EXPIRATION, pszExpiration, (size_t)uiExpLen))
+		if (fnSetGblValue( FLM_SECURE_EXPIRATION, pszExpiration, (FLMSIZET)uiExpLen))
 		{
 			flmAssert( 0);
 		}

@@ -191,30 +191,30 @@ Transmission_Error:
 
 		if( FSGetFileOffset( uiLogicalEOF) == 0)
 		{
-			F_FileHdlImp *		pFileHdl;
+			IF_FileHdl *		pFileHdl = NULL;
 			FLMUINT				uiFileNumber = FSGetFileNumber( uiLogicalEOF) - 1;
-			FLMUINT				uiFileSize;
+			FLMUINT64			ui64FileSize;
 			FLMUINT				uiTemp;
 
-			if( RC_BAD( rc = pDb->pSFileHdl->GetFileHdl( 
+			if( RC_BAD( rc = pDb->pSFileHdl->getFileHdl( 
 				uiFileNumber, TRUE, &pFileHdl)))
 			{
 				goto Reduce_Size_Error;
 			}
 			
-			if( RC_BAD( rc = pFileHdl->Size( &uiFileSize)))
+			if( RC_BAD( rc = pFileHdl->size( &ui64FileSize)))
 			{
 				goto Reduce_Size_Error;
 			}
 
 			// Adjust to a block bounds
 			
-			uiTemp = (uiFileSize / uiBlkSize) * uiBlkSize;
-			if( uiTemp < uiFileSize)
+			uiTemp = (FLMUINT)((ui64FileSize / uiBlkSize) * uiBlkSize);
+			if( uiTemp < ui64FileSize)
 			{
-				uiFileSize = uiTemp + uiBlkSize;
+				ui64FileSize = uiTemp + uiBlkSize;
 			}
-			uiLogicalEOF = FSBlkAddress( uiFileNumber, uiFileSize);
+			uiLogicalEOF = FSBlkAddress( uiFileNumber, (FLMUINT)ui64FileSize);
 		}
 			
 		uiBlkAddr = uiLogicalEOF - uiBlkSize;
@@ -273,8 +273,8 @@ Transmission_Error:
 		if( FSGetFileOffset( uiLogicalEOF) == 0)
 		{
 			FLMUINT				uiFileNumber = FSGetFileNumber( uiLogicalEOF);
-			FLMUINT				uiFileOffset;
-			F_FileHdlImp *		pFileHdl;
+			FLMUINT64			ui64FileOffset;
+			IF_FileHdl *		pFileHdl = NULL;
 
 			if( uiFileNumber <= 1)
 			{
@@ -288,18 +288,18 @@ Transmission_Error:
 			
 			// Compute the end of the previous block file.
 			
-			if( RC_BAD( rc = pDb->pSFileHdl->GetFileHdl( 
+			if( RC_BAD( rc = pDb->pSFileHdl->getFileHdl( 
 				uiFileNumber, TRUE, &pFileHdl)))
 			{
 				goto Exit;
 			}
 
-			if( RC_BAD( rc = pFileHdl->Size( &uiFileOffset)))
+			if( RC_BAD( rc = pFileHdl->size( &ui64FileOffset)))
 			{
 				goto Exit;
 			}
 			
-			uiLogicalEOF = FSBlkAddress( uiFileNumber, uiFileOffset);
+			uiLogicalEOF = FSBlkAddress( uiFileNumber, (FLMUINT)ui64FileOffset);
 		}
 		
 		uiLogicalEOF -= uiBlkSize;
@@ -398,7 +398,7 @@ FSTATIC RCODE FLRReadBlkHdr(
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesRead;
 	FLMUINT			uiNumLooks;
-	F_FileHdlImp *	pTmpFileHdl = NULL;
+	IF_FileHdl *	pTmpFileHdl = NULL;
 	SCACHE *			pBlkSCache;
 	DB_STATS *		pDbStats = pDb->pDbStats;
 	LFILE_STATS *	pLFileStats;
@@ -431,10 +431,10 @@ FSTATIC RCODE FLRReadBlkHdr(
 			f_timeGetTimeStamp( &StartTime);
 		}
 
-		if( RC_OK( rc = pDb->pSFileHdl->GetFileHdl(
+		if( RC_OK( rc = pDb->pSFileHdl->getFileHdl(
 			FSGetFileNumber( uiBlkAddress), TRUE, &pTmpFileHdl)))
 		{
-			rc = pTmpFileHdl->Read( FSGetFileOffset( uiBlkAddress), 
+			rc = pTmpFileHdl->read( FSGetFileOffset( uiBlkAddress), 
 					BH_OVHD, pucBlockHeader, &uiBytesRead);
 		}
 
@@ -506,7 +506,7 @@ FSTATIC RCODE FLRReadBlkHdr(
 		{
 			if (rc != FERR_IO_END_OF_FILE && rc != FERR_MEM)
 			{
-				pDb->pSFileHdl->ReleaseFile( FSGetFileNumber( uiBlkAddress),
+				pDb->pSFileHdl->releaseFile( FSGetFileNumber( uiBlkAddress),
 														TRUE);
 			}
 			goto Exit;
@@ -796,7 +796,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		}
 		else
 		{
-			rc = FSBtScanNonLeafData( pStack, flmBigEndianToUINT32( ucSearchKey));
+			rc = FSBtScanNonLeafData( pStack, f_bigEndianToUINT32( ucSearchKey));
 		}
 		if( RC_BAD( rc))
 		{

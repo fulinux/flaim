@@ -501,7 +501,7 @@ FLMEXP RCODE FLMAPI FlmDbUpgrade(
 		if (RC_OK( rc = rflGetFileName( uiOldVersion, pFile->pszDbPath,
 									NULL, uiRflFileNum, szTmpName)))
 		{
-			gv_FlmSysData.pFileSystem->Delete( szTmpName);
+			gv_FlmSysData.pFileSystem->deleteFile( szTmpName);
 		}
 	}
 

@@ -183,30 +183,26 @@ RCODE flmCreateNewFile(
 	}
 	bNewFile = TRUE;
 
+	if (pCreateOpts != NULL)
+	{
+		pFile->FileHdr.uiBlockSize = flmAdjustBlkSize( pCreateOpts->uiBlockSize);
+		pFile->FileHdr.uiVersionNum = pCreateOpts->uiVersionNum;
+	}
+	else
+	{
+		pFile->FileHdr.uiBlockSize = DEFAULT_BLKSIZ;
+		pFile->FileHdr.uiVersionNum = FLM_CUR_FILE_FORMAT_VER_NUM;
+	}
+
 	// Link the FDB to the file.
 
 	rc = flmLinkFdbToFile( pDb, pFile);
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	bMutexLocked = FALSE;
+
 	if (RC_BAD( rc))
 	{
 		goto Exit;
-	}
-
-	// If the file has not already been created, do so now.
-
-	// Determine what to set file block size to.
-
-	if (pCreateOpts != NULL)
-	{
-		pDb->pSFileHdl->SetBlockSize(
-			flmAdjustBlkSize( pCreateOpts->uiBlockSize));
-		pDb->pSFileHdl->SetDbVersion( pCreateOpts->uiVersionNum);
-	}
-	else
-	{
-		pDb->pSFileHdl->SetBlockSize( DEFAULT_BLKSIZ);
-		pDb->pSFileHdl->SetDbVersion( FLM_CUR_FILE_FORMAT_VER_NUM);
 	}
 
 #ifdef FLM_USE_NICI
@@ -253,15 +249,33 @@ RCODE flmCreateNewFile(
 	}
 #endif
 
-	if (RC_OK( gv_FlmSysData.pFileSystem->Exists( pszFilePath)))
+	if (RC_OK( gv_FlmSysData.pFileSystem->doesFileExist( pszFilePath)))
 	{
 		rc = RC_SET( FERR_FILE_EXISTS);
 		goto Exit;
 	}
 
+	// Allocate the super file object
+
+	flmAssert( !pDb->pSFileHdl);
+	
+	if( (pDb->pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+	
+	flmAssert( pFile->FileHdr.uiVersionNum);
+	
+	if( RC_BAD( rc = pDb->pSFileHdl->setup( 
+		pFile->pszDbPath, pFile->pszDataDir, pFile->FileHdr.uiVersionNum)))
+	{
+		goto Exit;
+	}
+
 	// Create the .db file.
 
-	if( RC_BAD( rc = pDb->pSFileHdl->CreateFile( 0)))
+	if( RC_BAD( rc = pDb->pSFileHdl->createFile( 0)))
 	{
 		goto Exit;
 	}
@@ -316,7 +330,7 @@ Exit:
 	{
 		if( bFileCreated)
 		{
-			(void)gv_FlmSysData.pFileSystem->Delete( pszFilePath);
+			(void)gv_FlmSysData.pFileSystem->deleteFile( pszFilePath);
 		}
 	}
 	else if( ppDb)
@@ -392,34 +406,6 @@ FSTATIC RCODE flmInitNewFile(
 	if (RC_BAD( rc = pFile->pRfl->setup( pFile, pszRflDir)))
 	{
 		goto Exit;
-	}
-
-	// Setup the FFILE's ECache object
-
-	flmAssert( pFile->pECacheMgr == NULL);
-	if( gv_FlmSysData.bOkToUseESM)
-	{
-		if( (pFile->pECacheMgr = f_new FlmECache) == NULL)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( !pFile->pECacheMgr->setupECache(
-			pFile->FileHdr.uiBlockSize, pFile->uiMaxFileSize))
-		{
-			pFile->pECacheMgr->Release();
-			pFile->pECacheMgr = NULL;
-		}
-		else
-		{
-			// Normally the ECacheMgr is set in flmLinkFdbToFile but
-			// we have to handle this special case here.  When this
-			// FDB was linked there was no ECacheMgr.
-
-			flmAssert( pDb->pSFileHdl != NULL);
-			pDb->pSFileHdl->setECacheMgr( pFile->pECacheMgr);
-		}
 	}
 
 	// The following code starts an update transaction on the new DB so
@@ -502,7 +488,7 @@ FSTATIC RCODE flmInitFileHdrs(
 		flmSetFilePrefix( pInitBuf, 0, 0);
 	}
 
-	if (RC_BAD( rc = pDb->pSFileHdl->WriteHeader( 0L, uiBlkSize,
+	if (RC_BAD( rc = pDb->pSFileHdl->writeHeader( 0L, uiBlkSize,
 				pInitBuf, &uiWriteBytes)))
 	{
 		goto Exit;
@@ -636,7 +622,7 @@ FSTATIC RCODE flmInitFileHdrs(
 
 	// Create the first block file.
 
-	if (RC_BAD( rc = pDb->pSFileHdl->CreateFile( 1)))
+	if (RC_BAD( rc = pDb->pSFileHdl->createFile( 1)))
 	{
 		goto Exit;
 	}
@@ -712,7 +698,7 @@ FSTATIC RCODE flmInitFileHdrs(
 							uiBlkSize);
 	pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-	if (RC_BAD( rc = pDb->pSFileHdl->WriteBlock(
+	if (RC_BAD( rc = pDb->pSFileHdl->writeBlock(
 								pFile->FileHdr.uiFirstLFHBlkAddr,
 								uiBlkSize, pInitBuf, uiBufSize, NULL,
 								&uiWriteBytes)))
@@ -738,7 +724,7 @@ FSTATIC RCODE flmInitFileHdrs(
 		BlkCheckSum( pInitBuf, CHECKSUM_SET, uiPcodeAddr, uiBlkSize);
 		pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 		pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-		if (RC_BAD( rc = pDb->pSFileHdl->WriteBlock( uiPcodeAddr,
+		if (RC_BAD( rc = pDb->pSFileHdl->writeBlock( uiPcodeAddr,
 									uiBlkSize, pInitBuf, uiBufSize, NULL,
 									&uiWriteBytes)))
 		{
@@ -748,7 +734,7 @@ FSTATIC RCODE flmInitFileHdrs(
 
 	// Force things to disk.
 
-	if (RC_BAD( rc = pDb->pSFileHdl->Flush()))
+	if (RC_BAD( rc = pDb->pSFileHdl->flush()))
 	{
 		goto Exit;
 	}

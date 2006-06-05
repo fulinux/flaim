@@ -1169,7 +1169,7 @@ VISIT:	We may want to return BOF/EOF when positioned on an endpoint.
 ****************************************************************************/
 RCODE FSIndexCursor::currentKeyBuf(
 	FDB *				pDb,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBYTE **		ppKeyBuf,
 	FLMUINT *		puiKeyLen,
 	FLMUINT *		puiRecordId,
@@ -1219,10 +1219,9 @@ RCODE FSIndexCursor::currentKeyBuf(
 
 		if( (*puiKeyLen = m_curKeyPos.uiKeyLen) != 0)
 		{
-			if( (*ppKeyBuf = (FLMBYTE *) 
-				GedPoolAlloc( pPool, m_curKeyPos.uiKeyLen)) == NULL)
+			if( RC_BAD( rc = pPool->poolAlloc( m_curKeyPos.uiKeyLen,
+				(void **)ppKeyBuf)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
 			

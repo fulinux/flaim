@@ -25,7 +25,7 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE flmBackgroundIndexBuildThrd(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 FSTATIC void stopBackgroundIndexThread(
 	FDB *				pDb,
@@ -917,8 +917,9 @@ FSTATIC void stopBackgroundIndexThread(
 
 		// The thread may be waiting to start a transaction. 
 
-		gv_FlmSysData.pServerLockMgr->SignalLockWaiter( uiThreadId);
-
+		pDb->pFile->pFileLockObj->timeoutLockWaiter( uiThreadId);
+		pDb->pFile->pWriteLockObj->timeoutLockWaiter( uiThreadId);
+		
 		if( !bWait)
 		{
 			break;
@@ -1053,8 +1054,8 @@ RCODE flmStartIndexBuild(
 
 	// Generate the thread name
 
-	if (RC_BAD( rc = f_pathReduce( pDb->pFile->pszDbPath,
-							szThreadName, szBaseName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+		pDb->pFile->pszDbPath, szThreadName, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -1067,7 +1068,7 @@ RCODE flmStartIndexBuild(
 
 	if( RC_BAD( rc = f_threadCreate( NULL,
 						flmBackgroundIndexBuildThrd, szThreadName,
-						FLM_BACKGROUND_INDEXING_THREAD_GROUP, uiIndexNum,
+						gv_uiBackIxThrdGroup, uiIndexNum,
 						(void *)pBackgroundIx, NULL, 24000)))
 	{
 		goto Exit;
@@ -1089,7 +1090,7 @@ Desc:		Thread that will build an index in the background.
 			freed at the conclusion of the routine.
 ****************************************************************************/
 FSTATIC RCODE flmBackgroundIndexBuildThrd(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE					rc = FERR_OK;
 	IXD *					pIxd;
@@ -1155,6 +1156,8 @@ Loop_Again:
 		goto Exit;
 	}
 
+	flmAssert( pDb->pSFileHdl);
+
 	bDbInitialized = TRUE;
 	if (RC_BAD( rc = fdbInit( pDb, FLM_NO_TRANS, 0, 0, &bStartedTrans)))
 	{
@@ -1181,9 +1184,9 @@ Loop_Again:
 		// Obtain the file lock
 
 		flmAssert( !(pDb->uiFlags & FDB_HAS_FILE_LOCK));
-		if( RC_BAD( rc = pDb->pFile->pFileLockObj->Lock( TRUE, pDb, FALSE, 
+		if( RC_BAD( rc = pDb->pFile->pFileLockObj->lock( pDb->hWaitSem,  
 			TRUE, FLM_NO_TIMEOUT, FLM_BACKGROUND_LOCK_PRIORITY,
-			pDb->pDbStats)))
+			pDb->pDbStats ? &pDb->pDbStats->LockStats : NULL)))
 		{
 			if( rc == FERR_IO_FILE_LOCK_ERR)
 			{
@@ -1214,7 +1217,7 @@ Loop_Again:
 			pDb->pFile->pFileLockObj->haveHigherPriorityWaiter( 
 				FLM_BACKGROUND_LOCK_PRIORITY))
 		{
-			if (RC_BAD( rc = pDb->pFile->pFileLockObj->Unlock( TRUE, pDb)))
+			if (RC_BAD( rc = pDb->pFile->pFileLockObj->unlock()))
 			{
 				iErrorLine = (FLMINT)__LINE__;
 				goto Exit;
@@ -1421,7 +1424,7 @@ Exit:
 
 	if( pDb && pDb->uiFlags & FDB_HAS_FILE_LOCK)
 	{
-		(void)pDb->pFile->pFileLockObj->Unlock( TRUE, pDb);
+		(void)pDb->pFile->pFileLockObj->unlock();
 		pDb->uiFlags &= ~(FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_IMPLICIT);
 	}
 
@@ -1513,7 +1516,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	FLMUINT *		puiThreadId)
 {
 	RCODE					rc = FERR_OK;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	FLMUINT				uiThreadId;
 	F_BKGND_IX *		pBackgroundIx = NULL;
 
@@ -1526,7 +1529,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	for( ;;)
 	{
 		if( RC_BAD( rc = gv_FlmSysData.pThreadMgr->getNextGroupThread( 
-			&pThread, FLM_BACKGROUND_INDEXING_THREAD_GROUP, &uiThreadId)))
+			&pThread, gv_uiBackIxThrdGroup, &uiThreadId)))
 		{
 			if( rc == FERR_NOT_FOUND)
 			{
@@ -1579,7 +1582,7 @@ FSTATIC RCODE flmIndexStatusCS(
 	RCODE				rc = FERR_OK;
 	CS_CONTEXT *	pCSContext = pDb->pCSContext;
 	FCL_WIRE			Wire( pCSContext, pDb);
-	void *			pvMark = GedPoolMark( &pCSContext->pool);
+	void *			pvMark = pCSContext->pool.poolMark();
 
 	// Set the temporary pool
 
@@ -1622,7 +1625,7 @@ FSTATIC RCODE flmIndexStatusCS(
 
 Exit:
 
-	GedPoolReset( &pCSContext->pool, pvMark);
+	pCSContext->pool.poolReset( pvMark);
 	return( rc);
 
 Transmission_Error:

@@ -118,7 +118,7 @@ FSTATIC RCODE	chkResolveIXMissingKey(
 
 FSTATIC RCODE chkRSInit(
 	const char *			pszIoPath,
-	void **					pRSetRV);
+	IF_ResultSet **		ppRSet);
 
 FSTATIC RCODE chkRSFinalize(
 	IX_CHK_INFO *			pIxChkInfo,
@@ -144,7 +144,7 @@ FSTATIC RCODE chkBlkRead(
 
 FSTATIC RCODE chkVerifyBTrees(
 	DB_INFO *				pDbInfo,
-	POOL *					pPool,
+	F_Pool *					pPool,
 	FLMBOOL *				pbStartOverRV);
 
 FSTATIC RCODE chkReportError(
@@ -180,9 +180,6 @@ FSTATIC RCODE chkEndUpdate(
 	STATE_INFO *			pStateInfo,
 	IX_CHK_INFO *			pIxChkInfo);
 
-FSTATIC FLMINT chkRSCallbackFunc(
-	RSET_CB_INFO *			pCBInfo);
-
 FSTATIC RCODE chkCompareIxRSEntries(
 	void *					vpData1,
 	FLMUINT					uiLength1,
@@ -204,7 +201,7 @@ FSTATIC RCODE chkVerifyElmFields(
 	STATE_INFO *			pStateInfo,
 	DB_INFO *				pDbInfo,
 	IX_CHK_INFO *			pIxChkInfo,
-	POOL *					pTmpPool,
+	F_Pool *					pTmpPool,
 	FLMUINT *				puiErrElmRecOffsetRV,
 	eCorruptionType *		peElmErrCorruptCode);
 
@@ -214,14 +211,14 @@ FSTATIC RCODE chkVerifySubTree(
 	STATE_INFO *			ParentState,
 	STATE_INFO *			pStateInfo,
 	FLMUINT					uiBlkAddress,
-	POOL *					pTmpPool,
+	F_Pool *					pTmpPool,
 	FLMBYTE *				pucResetKey,
 	FLMUINT					uiResetKeyLen,
 	FLMUINT					uiResetDrn);
 
 FSTATIC RCODE chkGetLfInfo(
 	DB_INFO *				pDbInfo,
-	POOL *					pPool,
+	F_Pool *					pPool,
 	LF_STATS *				pLfStats,
 	LFILE *					pLFile,
 	LF_STATS *				pCurrLfStats,
@@ -229,7 +226,7 @@ FSTATIC RCODE chkGetLfInfo(
 
 FSTATIC RCODE chkSetupLfTable(
 	DB_INFO *				pDbInfo,
-	POOL *					pPool);
+	F_Pool *					pPool);
 
 FSTATIC RCODE chkSetupIxInfo(
 	DB_INFO *				pDbInfo,
@@ -240,6 +237,42 @@ FSTATIC RCODE chkOutputIndexKeys(
 	IX_CHK_INFO *			pIxChkInfo,
 	IXD *						pIxd,
 	REC_KEY *				pKeyList);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_ChkResultSetCompare : public IF_ResultSetCompare
+{
+public:
+
+	RCODE FLMAPI compare(
+		const void *			pvData1,
+		FLMUINT					uiLength1,
+		const void *			pvData2,
+		FLMUINT					uiLength2,
+		FLMINT *					piCompare)
+	{
+		FLMBYTE *		pucData1 = (FLMBYTE *) pvData1;
+		FLMBYTE *		pucData2 = (FLMBYTE *) pvData2;
+		FLMUINT			uiIxNum1;
+		FLMUINT			uiIxNum2;
+		FLMUINT			uiDrn1;
+		FLMUINT			uiDrn2;
+	
+		uiIxNum1 = (FLMUINT) FB2UW( &(pucData1[RS_IX_OFFSET]));
+		uiIxNum2 = (FLMUINT) FB2UW( &(pucData2[RS_IX_OFFSET]));
+		uiDrn1 = (FLMUINT) FB2UD( &(pucData1[RS_REF_OFFSET]));
+		uiDrn2 = (FLMUINT) FB2UD( &(pucData2[RS_REF_OFFSET]));
+	
+		*piCompare = chkCompareKeySet( 
+						uiIxNum1, &(pucData1[RS_KEY_OFFSET]),
+						uiLength1 - RS_KEY_OVERHEAD, uiDrn1, uiIxNum2,
+						&(pucData2[RS_KEY_OFFSET]),
+						uiLength2 - RS_KEY_OVERHEAD, uiDrn2);
+	
+		return( FERR_OK);
+	}
+};
 
 /****************************************************************************
 Desc:
@@ -260,58 +293,46 @@ FINLINE RCODE chkCallProgFunc(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FINLINE RCODE chkRSGetNext(
-	void *			pRSet,
-	FLMBYTE *		pBuffer,
-	FLMUINT			uiBufferLength,
-	FLMUINT *		puiReturnLength)
+class F_ChkSortStatus : public IF_ResultSetSortStatus
 {
-	FLMUINT	uiReturnLen;
-	RCODE		rc;
+public:
 
-	rc = ((FResultSet *) pRSet)->GetNext( (void *) pBuffer, uiBufferLength,
-													 &uiReturnLen);
-	*puiReturnLength = (rc == FERR_OK) ? uiReturnLen : 0;
+	F_ChkSortStatus( IX_CHK_INFO * pIxChkInfo)
+	{
+		m_pIxChkInfo = pIxChkInfo;
+	}
+	
+	RCODE FLMAPI reportSortStatus(
+		FLMUINT64				ui64EstTotalUnits,
+		FLMUINT64				ui64UnitsDone)
+	{
+		FLMINT					iRetVal = 0;
+		DB_CHECK_PROGRESS *	pProgress = m_pIxChkInfo->pDbInfo->pProgress;
+	
+		// Set the status values.
+	
+		pProgress->ui64NumRSUnits = ui64EstTotalUnits;
+		pProgress->ui64NumRSUnitsDone = ui64UnitsDone;
+	
+		// Call the progress callback.
+	
+		if (RC_BAD( chkCallProgFunc( m_pIxChkInfo->pDbInfo)))
+		{
+			iRetVal = -1;
+			goto Exit;
+		}
+	
+	Exit:
+	
+		pProgress->bStartFlag = FALSE;
+		return( iRetVal);
+	}
+		
+private:
 
-	return (rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FINLINE RCODE chkKeyToTree(
-	IXD *				pIxd,
-	FLMBYTE *		pucKey,
-	FLMUINT			uiKeyLen,
-	FlmRecord **	ppKeyRV)
-{
-	return (flmIxKeyOutput( pIxd, pucKey, uiKeyLen, ppKeyRV, FALSE));
-}
-
-/****************************************************************************
-Desc:	Frees memory allocated to a result set and deletes any temporary
-		files that may have been created.
-****************************************************************************/
-FINLINE void chkRSFree(void ** ppRSetRV)
-{
-	FResultSet *		pRSet;
-
-	pRSet = *((FResultSet **) ppRSetRV);
-	pRSet->Release();
-	*ppRSetRV = (void *) 0;
-}
-
-/****************************************************************************
-Desc: Adds a variable-length entry to a result set.
-****************************************************************************/
-FINLINE RCODE chkRSAddEntry(
-	void *			pRSet,
-	FLMBYTE * 		pEntry,
-	FLMUINT 			uiEntryLength)
-{
-	return (((FResultSet *) pRSet)->AddEntry( pEntry, uiEntryLength));
-}
-
+	IX_CHK_INFO *			m_pIxChkInfo;
+};
+	
 /****************************************************************************
 Desc: This routine counts the number of fields in an object table.
 ****************************************************************************/
@@ -341,8 +362,10 @@ Desc: Frees memory allocated to an IX_CHK_INFO structure
 FINLINE RCODE chkFreeIxInfo(
 	IX_CHK_INFO *	pIxInfoRV)
 {
-	GedPoolFree( &(pIxInfoRV->pool));
-	chkRSFree( &(pIxInfoRV->pRSet));
+	pIxInfoRV->pool.poolFree();
+	pIxInfoRV->pRSet->Release();
+	pIxInfoRV->pRSet = NULL;
+	
 	f_free( &(pIxInfoRV->puiIxArray));
 	f_memset( pIxInfoRV, 0, sizeof(IX_CHK_INFO));
 
@@ -364,7 +387,7 @@ FLMEXP RCODE FLMAPI FlmDbCheck(
 	const char *			pszDataDir,
 	const char *			pRflDir,
 	FLMUINT					uiCheckFlags,
-	POOL *					pPool,
+	F_Pool *					pPool,
 	DB_CHECK_PROGRESS *	pCheckProgress,
 	STATUS_HOOK				fnStatusFunc,
 	void *					AppArg)
@@ -379,11 +402,11 @@ FLMEXP RCODE FLMAPI FlmDbCheck(
 	FDB *					pDb = (FDB *) hDb;
 	FLMBOOL				bIgnore;
 	FLMUINT				uiLoop;
-	FLMUINT				uiTmpSize;
+	FLMUINT64			ui64TmpSize;
 	FLMBOOL				bStartOver;
 	FLMBOOL				bOkToCloseTrans = FALSE;
 	DB_INFO *			pDbInfo;
-	POOL					localPool;
+	F_Pool				localPool;
 	void *				pvDbInfoMark;
 
 	if (hDb != HFDB_NULL && IsInCSMode( hDb))
@@ -392,16 +415,19 @@ FLMEXP RCODE FLMAPI FlmDbCheck(
 		goto ExitCS;
 	}
 
-	GedPoolInit( &localPool, 512);
+	localPool.poolInit( 512);
 
 	if (!pPool)
 	{
 		pPool = &localPool;
 	}
 
-	pDbInfo = (DB_INFO *) GedPoolCalloc( pPool, sizeof(DB_INFO));
+	if( RC_BAD( rc = pPool->poolCalloc( sizeof( DB_INFO), (void **)&pDbInfo)))
+	{
+		goto Exit;
+	}
 
-	pvDbInfoMark = GedPoolMark( pPool);
+	pvDbInfoMark = pPool->poolMark();
 
 	if (hDb == HFDB_NULL)
 	{
@@ -490,7 +516,7 @@ Begin_Check:
 	rc = FERR_OK;
 	bStartOver = FALSE;
 
-	GedPoolReset( pPool, pvDbInfoMark);
+	pPool->poolReset( pvDbInfoMark);
 	pDbInfo->pProgress->bPhysicalCorrupt = FALSE;
 	pDbInfo->pProgress->bLogicalIndexCorrupt = FALSE;
 	pDbInfo->pProgress->ui64DatabaseSize = 0;
@@ -521,12 +547,12 @@ Begin_Check:
 		  uiLoop <= MAX_DATA_BLOCK_FILE_NUMBER( pDb->pFile->FileHdr.uiVersionNum);
 		  uiLoop++)
 	{
-		if (RC_BAD( pSFileHdl->GetFileSize( uiLoop, &uiTmpSize)))
+		if (RC_BAD( pSFileHdl->getFileSize( uiLoop, &ui64TmpSize)))
 		{
 			break;
 		}
 
-		Progress.ui64DatabaseSize += (FLMUINT64) uiTmpSize;
+		Progress.ui64DatabaseSize += ui64TmpSize;
 	}
 
 	// See if we have a valid end of file
@@ -631,8 +657,6 @@ Exit:
 	{
 		(void) FlmDbClose( &hDb);
 	}
-
-	GedPoolFree( &localPool);
 
 ExitCS:
 
@@ -1294,8 +1318,8 @@ RCODE chkGetNextRSKey(
 
 	// Get the next key
 
-	if (RC_BAD( rc = chkRSGetNext( pIxChkInfo->pRSet, pCurrRSKey->pucRSKeyBuf,
-				  MAX_KEY_SIZ + RS_KEY_OVERHEAD, &(pCurrRSKey->uiRSKeyLen))))
+	if (RC_BAD( rc = pIxChkInfo->pRSet->getNext( pCurrRSKey->pucRSKeyBuf,
+				  MAX_KEY_SIZ + RS_KEY_OVERHEAD, &pCurrRSKey->uiRSKeyLen)))
 	{
 		goto Exit;
 	}
@@ -1603,7 +1627,7 @@ RCODE chkResolveNonUniqueKey(
 
 			// Mark the temporary pool.
 
-			pvMark = GedPoolMark( &(pDb->TempPool));
+			pvMark = pDb->TempPool.poolMark();
 
 			// Call the internal delete function, passing boolean flags
 			// indicating that missing keys should not prevent the record
@@ -1626,8 +1650,8 @@ RCODE chkResolveNonUniqueKey(
 
 			// Reset the temporary pool. The flmDeleteRecord call
 			// allocates space for the record that is being deleted.
-
-			GedPoolReset( &(pDb->TempPool), pvMark);
+			
+			pDb->TempPool.poolReset( pvMark);
 
 			if (RC_BAD( rc))
 			{
@@ -1803,13 +1827,13 @@ FSTATIC RCODE chkGetKeySource(
 
 	// Initialize variables
 
-	pIxPoolMark = GedPoolMark( &(pIxChkInfo->pool));
+	pIxPoolMark = pIxChkInfo->pool.poolMark();
 
 	// Need to mark the DB's temporary pool. The index code allocates
 	// memory for new CDL entries from the DB pool. If the pool is not
 	// reset, it grows during the check and becomes VERY large.
 
-	pDbPoolMark = GedPoolMark( &(pDb->TempPool));
+	pDbPoolMark = pDb->TempPool.poolMark();
 
 	// Set up the KRef so that flmGetRecKeys will work
 
@@ -1955,12 +1979,11 @@ Exit:
 
 	// Reset the DB's temporary pool
 
-	GedPoolReset( &(pDb->TempPool), pDbPoolMark);
+	pDb->TempPool.poolReset( pDbPoolMark);
 
 	// Reset the index check pool
 
-	GedPoolReset( &(pIxChkInfo->pool), pIxPoolMark);
-
+	pIxChkInfo->pool.poolReset( pIxPoolMark);
 	return (rc);
 }
 
@@ -2047,19 +2070,19 @@ FLMINT chkCompareKeySet(
 	FLMUINT		uiLength2,
 	FLMUINT		uiDrn2)
 {
-	FLMINT	iCmpVal = RS_EQUALS;
-	FLMUINT	uiMinLen;
+	FLMINT		iCmpVal = 0;
+	FLMUINT		uiMinLen;
 
 	// Compare index numbers
 
 	if (uiIxNum1 > uiIxNum2)
 	{
-		iCmpVal = RS_GREATER_THAN;
+		iCmpVal = 1;
 		goto Exit;
 	}
 	else if (uiIxNum1 < uiIxNum2)
 	{
-		iCmpVal = RS_LESS_THAN;
+		iCmpVal = -1;
 		goto Exit;
 	}
 
@@ -2080,32 +2103,30 @@ FLMINT chkCompareKeySet(
 
 			if (uiDrn1 > uiDrn2)
 			{
-				iCmpVal = RS_LESS_THAN;
+				iCmpVal = -1;
 			}
 			else if (uiDrn1 < uiDrn2)
 			{
-				iCmpVal = RS_GREATER_THAN;
+				iCmpVal = 1;
 			}
 			else
 			{
-				iCmpVal = RS_EQUALS;
+				iCmpVal = 0;
 				goto Exit;
 			}
 		}
 		else if (uiLength1 > uiLength2)
 		{
-			iCmpVal = RS_GREATER_THAN;
+			iCmpVal = 1;
 		}
 		else
 		{
-			iCmpVal = RS_LESS_THAN;
+			iCmpVal = -1;
 		}
 	}
 	else
 	{
-		iCmpVal = (FLMINT) ((iCmpVal > 0) 
-							? (FLMINT) RS_GREATER_THAN 
-							: (FLMINT) RS_LESS_THAN);
+		iCmpVal = (FLMINT) ((iCmpVal > 0) ? (FLMINT) 1 : (FLMINT) -1);
 	}
 
 Exit:
@@ -2230,7 +2251,7 @@ FSTATIC RCODE chkReportIxError(
 {
 	RCODE					rc = FERR_OK;
 	FDB *					pDb = pStateInfo->pDb;
-	POOL *				pTmpPool;
+	F_Pool *				pTmpPool;
 	IXD *					pIxd;
 	LFILE *				pLFile;
 	void *				pIxPoolMark;
@@ -2243,14 +2264,14 @@ FSTATIC RCODE chkReportIxError(
 
 	// Mark the index check pool
 
-	pIxPoolMark = GedPoolMark( &(pIxChkInfo->pool));
+	pIxPoolMark = pIxChkInfo->pool.poolMark();
 	pTmpPool = &(pIxChkInfo->pool);
 
 	// Need to mark the DB's temporary pool. The index code allocates
 	// memory for new CDL entries from the DB pool. If the pool is not
 	// reset, it grows during the check and becomes VERY large.
 
-	pDbPoolMark = GedPoolMark( &(pDb->TempPool));
+	pDbPoolMark = pDb->TempPool.poolMark();
 
 	// Set up the KRef so that flmGetRecKeys will work
 
@@ -2276,9 +2297,9 @@ FSTATIC RCODE chkReportIxError(
 	}
 
 	// Generate the key tree using the key that caused the error
-
-	if (RC_BAD( rc = chkKeyToTree( pIxd, pucErrKey, uiErrKeyLen,
-				  &(CorruptInfo.pErrIxKey))))
+	
+	if (RC_BAD( rc = flmIxKeyOutput( pIxd, pucErrKey, uiErrKeyLen,
+				  &(CorruptInfo.pErrIxKey), FALSE)))
 	{
 		goto Exit;
 	}
@@ -2391,12 +2412,12 @@ Exit:
 	}
 
 	// Reset the DB's temporary pool
-
-	GedPoolReset( &(pDb->TempPool), pDbPoolMark);
+	
+	pDb->TempPool.poolReset( pDbPoolMark);
 
 	// Reset the index check pool
 
-	GedPoolReset( &(pIxChkInfo->pool), pIxPoolMark);
+	pIxChkInfo->pool.poolReset( pIxPoolMark);
 	return (rc);
 }
 
@@ -2433,7 +2454,7 @@ FSTATIC RCODE chkVerifyKeyNotUnique(
 
 	// Generate the key tree from the collation key.
 
-	if (RC_BAD( rc = chkKeyToTree( pIxd, pucKey, uiKeyLen, &pKeyTree)))
+	if (RC_BAD( rc = flmIxKeyOutput( pIxd, pucKey, uiKeyLen, &pKeyTree, FALSE)))
 	{
 		goto Exit;
 	}
@@ -2441,8 +2462,8 @@ FSTATIC RCODE chkVerifyKeyNotUnique(
 	// Count up to the first two references for the key.
 
 	if (RC_BAD( rc = FlmKeyRetrieve( (HFDB) pDb, uiIndex,
-				  pKeyTree->getContainerID(), pKeyTree, 0, FO_EXACT, NULL, &uiRefDrn
-				  )))
+				  pKeyTree->getContainerID(), pKeyTree, 0, FO_EXACT, 
+				  NULL, &uiRefDrn)))
 	{
 
 		// If the key is NOT found, the problem no longer exists.
@@ -2601,28 +2622,45 @@ Exit:
 Desc:	Initializes a result set for use by the logical check code
 ****************************************************************************/
 RCODE chkRSInit(
-	const char *	pIoPath,
-	void **			ppvRSetRV)
+	const char *		pIoPath,
+	IF_ResultSet **	ppRSet)
 {
-	RCODE				rc = FERR_OK;
-	FResultSet *	pRSet;
+	RCODE								rc = FERR_OK;
+	IF_ResultSet *					pRSet = NULL;
+	F_ChkResultSetCompare *		pCompare = NULL;
 
-	if ((pRSet = f_new FResultSet) == NULL)
+	if( RC_BAD( rc = FlmAllocResultSet( &pRSet)))
+	{
+		goto Exit;
+	}
+	
+	if( (pCompare = f_new F_ChkResultSetCompare) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pRSet->Setup( pIoPath, chkCompareIxRSEntries, 0, 0, TRUE,
-				  FALSE)))
+	if( RC_BAD( rc = pRSet->setupResultSet( pIoPath, 
+		pCompare, 0, FALSE, FALSE, NULL)))
 	{
 		goto Exit;
 	}
 
-	*ppvRSetRV = (void *) pRSet;
+	*ppRSet = pRSet;
+	pRSet = NULL;
 
 Exit:
 
+	if( pRSet)
+	{
+		pRSet->Release();
+	}
+	
+	if( pCompare)
+	{
+		pCompare->Release();
+	}
+	
 	return (rc);
 }
 
@@ -2634,9 +2672,9 @@ RCODE chkRSFinalize(
 	FLMUINT64 *		pui64TotalEntries)
 {
 	RCODE						rc = FERR_OK;
-	FResultSet *			pRSet = (FResultSet *) (pIxChkInfo->pRSet);
 	DB_CHECK_PROGRESS *	pProgress = pIxChkInfo->pDbInfo->pProgress;
 	DB_CHECK_PROGRESS		saveInfo;
+	F_ChkSortStatus		chkSortStatus( pIxChkInfo);
 
 	// Save the current check phase information.
 
@@ -2649,86 +2687,18 @@ RCODE chkRSFinalize(
 	pProgress->ui64NumRSUnits = 0;
 	pProgress->ui64NumRSUnitsDone = 0;
 
-	pRSet->SetCallback( chkRSCallbackFunc, (void *) pIxChkInfo);
-
-	if (RC_BAD( rc = pRSet->Finalize( pui64TotalEntries)))
+	if (RC_BAD( rc = pIxChkInfo->pRSet->finalizeResultSet( 
+		&chkSortStatus, pui64TotalEntries)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
-	(void) pRSet->SetCallback( NULL, 0);
-
-	// Reset the pProgress information.
-
-	f_memcpy( pProgress, &saveInfo, sizeof(DB_CHECK_PROGRESS));
+	f_memcpy( pProgress, &saveInfo, sizeof( DB_CHECK_PROGRESS));
 	pProgress->bStartFlag = TRUE;
 
 	return (rc);
-}
-
-/****************************************************************************
-Desc:	Compares result set entries during the finalization stage to allow
-		the result set to be sorted and to remove duplicates.
-****************************************************************************/
-RCODE chkCompareIxRSEntries(
-	void *		vpData1,
-	FLMUINT		uiLength1,
-	void *		vpData2,
-	FLMUINT		uiLength2,
-	void *		UserValue,
-	FLMINT *		piCompare)
-{
-	FLMBYTE *		pucData1 = (FLMBYTE *) vpData1;
-	FLMBYTE *		pucData2 = (FLMBYTE *) vpData2;
-	FLMUINT			uiIxNum1;
-	FLMUINT			uiIxNum2;
-	FLMUINT			uiDrn1;
-	FLMUINT			uiDrn2;
-
-	F_UNREFERENCED_PARM( UserValue);
-
-	uiIxNum1 = (FLMUINT) FB2UW( &(pucData1[RS_IX_OFFSET]));
-	uiIxNum2 = (FLMUINT) FB2UW( &(pucData2[RS_IX_OFFSET]));
-	uiDrn1 = (FLMUINT) FB2UD( &(pucData1[RS_REF_OFFSET]));
-	uiDrn2 = (FLMUINT) FB2UD( &(pucData2[RS_REF_OFFSET]));
-
-	*piCompare = chkCompareKeySet( uiIxNum1, &(pucData1[RS_KEY_OFFSET]),
-											uiLength1 - RS_KEY_OVERHEAD, uiDrn1, uiIxNum2,
-											&(pucData2[RS_KEY_OFFSET]),
-											uiLength2 - RS_KEY_OVERHEAD, uiDrn2);
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc: Callback for result set sort progress.
-****************************************************************************/
-FLMINT chkRSCallbackFunc(
-	RSET_CB_INFO *			pCBInfo)
-{
-	IX_CHK_INFO *			pIxChkInfo = (IX_CHK_INFO *) pCBInfo->UserValue;
-	DB_CHECK_PROGRESS *	pProgress = pIxChkInfo->pDbInfo->pProgress;
-	FLMINT					iRetVal = 0;
-
-	// Set the status values.
-
-	pProgress->ui64NumRSUnits = pCBInfo->ui64EstTotalUnits;
-	pProgress->ui64NumRSUnitsDone = pCBInfo->ui64UnitsDone;
-
-	// Call the progress callback.
-
-	if (RC_BAD( chkCallProgFunc( pIxChkInfo->pDbInfo)))
-	{
-		iRetVal = -1;
-		goto Exit;
-	}
-
-Exit:
-
-	pProgress->bStartFlag = FALSE;
-	return (iRetVal);
 }
 
 /****************************************************************************
@@ -2894,7 +2864,7 @@ FSTATIC RCODE chkReadBlkFromDisk(
 	FLMUINT	uiBytesRead;
 	FLMUINT	uiBlkLen = pFileHdr->uiBlockSize;
 
-	if (RC_BAD( rc = pSFileHdl->ReadBlock( uiFilePos, uiBlkLen, pBlk,
+	if (RC_BAD( rc = pSFileHdl->readBlock( uiFilePos, uiBlkLen, pBlk,
 				  &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
@@ -2942,7 +2912,7 @@ FSTATIC RCODE chkVerifyElmFields(
 	STATE_INFO *		pStateInfo,
 	DB_INFO *			pDbInfo,
 	IX_CHK_INFO *		pIxChkInfo,
-	POOL *				pTmpPool,
+	F_Pool *				pTmpPool,
 	FLMUINT *			puiErrElmRecOffsetRV,
 	eCorruptionType *	peElmCorruptCode)
 {
@@ -3152,15 +3122,13 @@ FSTATIC RCODE chkVerifyElmFields(
 						if (!pStateInfo->pDb->pFile->bInLimitedMode)
 						{
 							if (RC_BAD( rc = flmDecryptField( pStateInfo->pDb->pDict,
-										  pRecord, pvField, pStateInfo->uiEncId, pTmpPool
-										  )))
+									pRecord, pvField, pStateInfo->uiEncId, pTmpPool)))
 							{
 								goto Exit;
 							}
 
 							*peElmCorruptCode = flmVerifyField( pData,
-																		  pStateInfo->uiFieldLen,
-																		  pStateInfo->uiFieldType);
+									pStateInfo->uiFieldLen, pStateInfo->uiFieldType);
 						}
 						else
 						{
@@ -3203,7 +3171,7 @@ FSTATIC RCODE chkVerifyElmFields(
 					// If the pool is not reset, it grows during the check and
 					// becomes VERY large.
 
-					pDbPoolMark = GedPoolMark( &(pDbInfo->pDb->TempPool));
+					pDbPoolMark = pDbInfo->pDb->TempPool.poolMark();
 					bResetDbPool = TRUE;
 
 					// Set up the KRef table so that flmGetRecKeys will work
@@ -3237,7 +3205,7 @@ FSTATIC RCODE chkVerifyElmFields(
 							// Mark the field pool so that it can be reset after
 							// the record keys have been generated and output.
 
-							pKeyMark = GedPoolMark( pTmpPool);
+							pKeyMark = pTmpPool->poolMark();
 
 							// Build the record keys for the current index. Do
 							// not remove duplicate keys. The result set will
@@ -3274,7 +3242,7 @@ FSTATIC RCODE chkVerifyElmFields(
 
 							// Reset the field pool
 
-							GedPoolReset( pTmpPool, pKeyMark);
+							pTmpPool->poolReset( pKeyMark);
 						}
 					}
 
@@ -3286,7 +3254,7 @@ FSTATIC RCODE chkVerifyElmFields(
 
 					// Reset the DB's temporary pool
 
-					(void) GedPoolReset( &(pDbInfo->pDb->TempPool), pDbPoolMark);
+					pDbInfo->pDb->TempPool.poolReset( pDbPoolMark);
 					bResetDbPool = FALSE;
 				}
 			}
@@ -3297,7 +3265,7 @@ FSTATIC RCODE chkVerifyElmFields(
 			}
 
 			pValue = pTempValue = NULL;
-			GedPoolReset( pTmpPool, NULL);
+			pTmpPool->poolReset( NULL);
 		}
 
 		if (*peElmCorruptCode != FLM_NO_CORRUPTION)
@@ -3334,13 +3302,13 @@ Exit:
 
 	if (bResetDbPool)
 	{
-		(void) GedPoolReset( &(pDbInfo->pDb->TempPool), pDbPoolMark);
+		pDbInfo->pDb->TempPool.poolReset( pDbPoolMark);
 	}
 
 	if (*peElmCorruptCode != FLM_NO_CORRUPTION || RC_BAD( rc))
 	{
 		pValue = pTempValue = NULL;
-		GedPoolReset( pTmpPool, NULL);
+		pTmpPool->poolReset( NULL);
 		if (pRecord)
 		{
 			pRecord->clear();
@@ -3371,7 +3339,7 @@ FSTATIC RCODE chkVerifySubTree(
 	STATE_INFO *		pParentState,
 	STATE_INFO *		pStateInfo,
 	FLMUINT				uiBlkAddress,
-	POOL *				pTmpPool,
+	F_Pool *				pTmpPool,
 	FLMBYTE *			pucResetKey,
 	FLMUINT				uiResetKeyLen,
 	FLMUINT				uiResetDrn)
@@ -3837,7 +3805,7 @@ Desc:	This routine reads the LFH areas from disk to make sure they are up
 ****************************************************************************/
 FSTATIC RCODE chkGetLfInfo(
 	DB_INFO *	pDbInfo,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	LF_STATS *	pLfStats,
 	LFILE *		pLFile,
 	LF_STATS *	pCurrLfStats,
@@ -3920,8 +3888,9 @@ FSTATIC RCODE chkGetLfInfo(
 	{
 		if (pLfStats->uiNumLevels > uiSaveLevel)
 		{
-			if ((pLfStats->pLevelInfo = (LEVEL_INFO *) GedPoolCalloc( pPool,
-					(FLMUINT) (sizeof(LEVEL_INFO) * pLfStats->uiNumLevels))) == NULL)
+			if( RC_BAD( rc = pPool->poolCalloc( 
+				(FLMUINT) (sizeof(LEVEL_INFO) * pLfStats->uiNumLevels),
+				(void **)&pLfStats->pLevelInfo)))
 			{
 				rc = RC_SET( FERR_MEM);
 				goto Exit;
@@ -3954,7 +3923,7 @@ Desc:	This routine allocates and initializes the LF table (array of
 ****************************************************************************/
 FSTATIC RCODE chkSetupLfTable(
 	DB_INFO *	pDbInfo,
-	POOL *		pPool)
+	F_Pool *		pPool)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiCnt;
@@ -4024,16 +3993,17 @@ FSTATIC RCODE chkSetupLfTable(
 	}
 	else
 	{
-		if ((pDbInfo->pLogicalFiles = (LF_HDR *) GedPoolCalloc( pPool, (FLMUINT)
-			(sizeof(LF_HDR) * pDbInfo->pProgress->uiNumLogicalFiles))) == NULL)
+		if( RC_BAD( rc = pPool->poolCalloc(
+			(FLMUINT)(sizeof(LF_HDR) * pDbInfo->pProgress->uiNumLogicalFiles),
+			(void **)&pDbInfo->pLogicalFiles)))
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
-
-		if ((pDbInfo->pProgress->pLfStats = (LF_STATS *) GedPoolCalloc( pPool,
-				(FLMUINT)(sizeof(LF_STATS) * 
-					pDbInfo->pProgress->uiNumLogicalFiles))) == NULL)
+		
+		if( RC_BAD( rc = pPool->poolCalloc( 
+			(FLMUINT)(sizeof(LF_STATS) * pDbInfo->pProgress->uiNumLogicalFiles),
+			(void **)&pDbInfo->pProgress->pLfStats)))
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
@@ -4101,13 +4071,13 @@ FSTATIC RCODE chkSetupLfTable(
 
 			// Copy the LFILE information - so we can return the information
 			// even after the database has been closed.
-
-			if ((pLogicalFile->pLFile = pLFile = (LFILE *) GedPoolAlloc( pPool,
-						(FLMUINT) sizeof(LFILE))) == NULL)
+			
+			if( RC_BAD( rc = pPool->poolAlloc( sizeof( LFILE), (void **)&pLFile)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
+			pLogicalFile->pLFile = pLFile;
 
 			// Copy the LFILE structure so we can get enough information to
 			// read them from disk, then read them from disk so we have a
@@ -4159,11 +4129,11 @@ FSTATIC RCODE chkSetupLfTable(
 
 				// Copy the IXD and IFD information - so we can return the
 				// information even after the database has been closed.
-
-				if ((pLogicalFile->pIxd = (IXD *) GedPoolAlloc( pPool, (FLMUINT)
-					(sizeof(IXD) + sizeof(IFD) * pTmpIxd->uiNumFlds))) == NULL)
+				
+				if( RC_BAD( rc = pPool->poolAlloc( 
+					(FLMUINT)(sizeof(IXD) + sizeof(IFD) * pTmpIxd->uiNumFlds),
+					(void **)&pLogicalFile->pIxd)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 
@@ -4197,7 +4167,7 @@ Desc:	This routine checks all of the B-TREES in the database -- all
 ****************************************************************************/
 RCODE chkVerifyBTrees(
 	DB_INFO *		pDbInfo,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBOOL *		pbStartOverRV)
 {
 	RCODE						rc = FERR_OK;
@@ -4218,7 +4188,7 @@ RCODE chkVerifyBTrees(
 	FLMUINT					uiSaveDictSeq;
 	FLMUINT					uiTmpLf;
 	LF_STATS *				pTmpLfStats;
-	POOL						tmpPool;
+	F_Pool					tmpPool;
 	FLMBOOL					bRSFinalized = FALSE;
 	DB_CHECK_PROGRESS *	pProgress = pDbInfo->pProgress;
 	IX_CHK_INFO				IxChkInfo;
@@ -4236,7 +4206,7 @@ RCODE chkVerifyBTrees(
 		goto Exit;
 	}
 
-	pvPoolMark = GedPoolMark( pPool);
+	pvPoolMark = pPool->poolMark();
 	uiSaveDictSeq = pDb->pDict->uiDictSeq;
 
 	if (RC_BAD( rc = chkSetupLfTable( pDbInfo, pPool)))
@@ -4401,14 +4371,14 @@ RCODE chkVerifyBTrees(
 		// Call chkVerifySubTree to check the B-TREE starting at the root
 		// block.
 
-		GedPoolInit( &tmpPool, 512);
+		tmpPool.poolInit( 512);
 		pDbInfo->bReposition = FALSE;
 		
 		rc = chkVerifySubTree( pDbInfo, pIxChkInfo, NULL,
 									 &State[pLfStats->uiNumLevels - 1],
 									 pLFile->uiRootBlk, &tmpPool, pucResetKey,
 									 uiResetKeyLen, uiResetDrn);
-		GedPoolFree( &tmpPool);
+		tmpPool.poolFree();
 
 		if (rc == FERR_OLD_VIEW)
 		{
@@ -4691,12 +4661,12 @@ FSTATIC RCODE chkSetupIxInfo(
 	FLMUINT			uiIxNum = 0;
 	IXD *				pIxd;
 	LFILE *			pLFile;
-	char				szTmpIoPath[F_PATH_MAX_SIZE];
-	char				szBaseName[F_FILENAME_SIZE];
+	char				szTmpIoPath[ F_PATH_MAX_SIZE];
+	char				szBaseName[ F_FILENAME_SIZE];
 	FDB *				pDb = pDbInfo->pDb;
 
 	f_memset( pIxInfoRV, 0, sizeof(IX_CHK_INFO));
-	GedPoolInit( &(pIxInfoRV->pool), 512);
+	pIxInfoRV->pool.poolInit( 512);
 	pIxInfoRV->pDbInfo = pDbInfo;
 
 	// Set up the result set path
@@ -4705,8 +4675,8 @@ FSTATIC RCODE chkSetupIxInfo(
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 		{
-			if (RC_BAD( rc = f_pathReduce( pDb->pFile->pszDbPath, szTmpIoPath,
-						  szBaseName)))
+			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+				pDb->pFile->pszDbPath, szTmpIoPath, szBaseName)))
 			{
 				goto Exit;
 			}
@@ -4720,7 +4690,7 @@ FSTATIC RCODE chkSetupIxInfo(
 	// Initialize the result set. The result set will be used to build an
 	// ordered list of keys for comparision to the database's indexes.
 
-	if (RC_BAD( rc = chkRSInit( szTmpIoPath, &(pIxInfoRV->pRSet))))
+	if (RC_BAD( rc = chkRSInit( szTmpIoPath, &pIxInfoRV->pRSet)))
 	{
 		goto Exit;
 	}
@@ -4772,7 +4742,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		GedPoolFree( &(pIxInfoRV->pool));
+		pIxInfoRV->pool.poolFree();
 		if (pIxInfoRV->puiIxArray)
 		{
 			f_free( &(pIxInfoRV->puiIxArray));
@@ -4816,7 +4786,7 @@ FSTATIC RCODE chkOutputIndexKeys(
 
 		// Add the composite key (index, ref, key) to the result set
 
-		if (RC_BAD( rc = chkRSAddEntry( pIxChkInfo->pRSet, ucBuf,
+		if (RC_BAD( rc = pIxChkInfo->pRSet->addEntry( ucBuf,
 					  uiKeyLen + RS_KEY_OVERHEAD)))
 		{
 			goto Exit;

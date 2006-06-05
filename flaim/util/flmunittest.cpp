@@ -585,19 +585,21 @@ void FlagSet::init(
 Desc:
 ****************************************************************************/
 RCODE createUnitTest(
-	const char *	configPath, 
-	const char *	buildNum, 
-	const char *	environment,  
-	const char *	user, 
-	unitTestData *	uTD)
+	const char *		configPath, 
+	const char *		buildNum, 
+	const char *		environment,  
+	const char *		user, 
+	unitTestData *		uTD)
 {
-	RCODE				rc = FERR_OK;
-	F_FileHdl *		pConfigFileHdl = NULL;
-	F_FileHdl *		pCSVFileHdl = NULL;
-	FLMBYTE			buffer[ MAX_BUFFER_SIZE] = "";
-	FLMUINT			size = MAX_BUFFER_SIZE;
-	char *			strPos1 = NULL;
-	char *			strPos2 = NULL;
+	RCODE					rc = FERR_OK;
+	IF_FileHdl *		pConfigFileHdl = NULL;
+	IF_FileHdl *		pCSVFileHdl = NULL;
+	FLMBYTE				buffer[ MAX_BUFFER_SIZE] = "";
+	FLMUINT				uiSize = MAX_BUFFER_SIZE;
+	FLMUINT64			ui64Tmp;
+	char *				strPos1 = NULL;
+	char *				strPos2 = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
 
 	if( !configPath || !buildNum || !environment || !uTD || !user)
 	{
@@ -634,43 +636,45 @@ RCODE createUnitTest(
 		f_strcpy( uTD->buildNumber, buildNum);
 	}
 	
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+	
 	if( configPath[ 0])
 	{
-		if( RC_BAD( rc = FlmAllocFileHandle( &pConfigFileHdl)))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = pConfigFileHdl->Open(
-			configPath, F_IO_RDONLY | F_IO_SH_DENYNONE)))
+		if( RC_BAD( rc = pFileSystem->openFile(
+			configPath, FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &pConfigFileHdl)))
 		{
 			goto Exit;
 		}
 	
-		if( RC_BAD( rc = pConfigFileHdl->Size( &size)))
+		if( RC_BAD( rc = pConfigFileHdl->size( &ui64Tmp)))
 		{
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = pConfigFileHdl->Read( 0, size, buffer, &size)))
+		uiSize = (FLMUINT)ui64Tmp;
+		
+		if( RC_BAD( rc = pConfigFileHdl->read( 0, uiSize, buffer, &uiSize)))
 		{
 			goto Exit;
 		}
 	
 		#ifdef FLM_WIN
 		{
-			char		szTemp[ MAX_BUFFER_SIZE];
-			char *	pszTemp = szTemp;
-			size_t	newsize = size;
+			char			szTemp[ MAX_BUFFER_SIZE];
+			char *		pszTemp = szTemp;
+			FLMUINT		uiNewSize = uiSize;
 		
-			for( unsigned int i = 0; i < size; i++)
+			for( unsigned int i = 0; i < uiSize; i++)
 			{
-				if( ((i + 1) < size) 
+				if( ((i + 1) < uiSize) 
 					&& (buffer[i] == 0x0D && buffer[ i + 1] == 0x0A))
 				{
 					*pszTemp++ = 0x0A;
 					i++;
-					newsize--;
+					uiNewSize--;
 				}
 				else
 				{
@@ -678,8 +682,8 @@ RCODE createUnitTest(
 				}
 			}
 				
-			f_memcpy( buffer, szTemp, (FLMSIZET)newsize);
-			size = newsize;
+			f_memcpy( buffer, szTemp, uiNewSize);
+			uiSize = uiNewSize;
 		}
 		#endif
 		
@@ -756,13 +760,8 @@ RCODE createUnitTest(
 		f_strncpy( uTD->csvFilename, strPos1, strPos2-strPos1);
 		uTD->csvFilename[ strPos2 - strPos1] = '\0';
 
-		if( RC_BAD( rc = FlmAllocFileHandle( &pCSVFileHdl)))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = pCSVFileHdl->Open( uTD->csvFilename,
-			F_IO_RDWR | F_IO_SH_DENYNONE)))
+		if( RC_BAD( rc = pFileSystem->openFile( uTD->csvFilename,
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pCSVFileHdl)))
 		{
 			if ( rc == FERR_IO_PATH_NOT_FOUND)
 			{
@@ -790,6 +789,11 @@ Exit:
 	if( pCSVFileHdl)
 	{
 		pCSVFileHdl->Release();
+	}
+	
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 	
 	return( rc);
@@ -912,7 +916,7 @@ void TestBase::beginTest(
 	m_pszTestName = pszTestName;
 	display( m_pszTestName);
 	display( " ... ");
-	m_uiStartTime = f_getCurrTimeAsTimerUnits();
+	m_uiStartTime = FLM_GET_TIMER();
 }
 
 /****************************************************************************
@@ -998,7 +1002,7 @@ RCODE TestBase::openTestState(
 	RCODE					rc = FERR_OK;
 	CREATE_OPTS			createOpts;
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Exists( pszDibName)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->doesFileExist( pszDibName)))
 	{
 		// Create the database
 
@@ -1106,9 +1110,9 @@ Desc:
 void TestBase::endTest(
 	FLMBOOL	bPassed)
 {
-	FLMUINT	uiEndTime = f_getCurrTimeAsTimerUnits();
-	FLMUINT	uiElapsedMilli = f_timerUnitsToMilliSeconds(
-										f_elapsedTimeTimerUnits( m_uiStartTime, uiEndTime));
+	FLMUINT	uiEndTime = FLM_GET_TIMER();
+	FLMUINT	uiElapsedMilli = FLM_TIMER_UNITS_TO_MILLI( 
+										FLM_ELAPSED_TIME( uiEndTime, m_uiStartTime));
 
 	displayTestResults( bPassed, uiElapsedMilli);
 	if (m_bLog)
@@ -1266,10 +1270,10 @@ RCODE ArgList::expandFileArgs(
 {
 	RCODE				rc = FERR_OK;
 	char				token[64];
-	F_FileHdl *		pFileHdl = NULL;
+	IF_FileHdl *	pFileHdl = NULL;
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open(
-		pszFilename, F_IO_RDWR, &pFileHdl)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile(
+		pszFilename, FLM_IO_RDWR, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1354,19 +1358,19 @@ Desc:
 ****************************************************************************/
 RCODE ArgList::getTokenFromFile(
 	char * 			pszToken,
-	F_FileHdl * 	pFileHdl)
+	IF_FileHdl * 	pFileHdl)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiSize = 1;
-	FLMUINT		uiOffset = 0;
-	FLMUINT		uiTrueOffset = 0;
+	FLMUINT64	ui64Offset = 0;
+	FLMUINT64	ui64TrueOffset = 0;
 	char			c;
 
 	for(;;)
 	{
 Skip_WS_And_Comments:
 
-		if ( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+		if ( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 		{
 			goto Exit;
 		}
@@ -1375,7 +1379,7 @@ Skip_WS_And_Comments:
 		
 		while( isWhitespace(c))
 		{
-			if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+			if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 			{
 				goto Exit;
 			}
@@ -1387,7 +1391,7 @@ Skip_WS_And_Comments:
 
 			for (;;)
 			{
-				if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+				if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 				{
 					goto Exit;
 				}
@@ -1405,7 +1409,7 @@ Skip_WS_And_Comments:
 				if( c == 0x0D)
 				{
 
-					if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+					if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 					{
 						goto Exit;
 					}
@@ -1420,18 +1424,18 @@ Skip_WS_And_Comments:
 					{
 						// Rewind
 						
-						uiOffset = 0;
-						uiTrueOffset = 0;
+						ui64Offset = 0;
+						ui64TrueOffset = 0;
 
-						if( RC_BAD( rc = pFileHdl->Tell( &uiOffset)))
+						if( RC_BAD( rc = pFileHdl->tell( &ui64Offset)))
 						{
 							goto Exit;
 						}
 						
-						uiOffset--;
+						ui64Offset--;
 
-						if( RC_BAD( rc = pFileHdl->Seek( uiOffset, 
-							F_IO_SEEK_SET, &uiTrueOffset)))
+						if( RC_BAD( rc = pFileHdl->seek( ui64Offset, 
+							FLM_IO_SEEK_SET, &ui64TrueOffset)))
 						{
 							goto Exit;
 						}
@@ -1451,7 +1455,7 @@ Skip_WS_And_Comments:
 			}
 
 			*pszToken++ = c;
-			if( RC_BAD( rc = pFileHdl->Read( 0, 1, &c, &uiSize)))
+			if( RC_BAD( rc = pFileHdl->read( 0, 1, &c, &uiSize)))
 			{
 				goto Exit;
 			}
@@ -1459,14 +1463,15 @@ Skip_WS_And_Comments:
 
 		// Put the char back
 		
-		if( RC_BAD( rc = pFileHdl->Tell( &uiOffset)))
+		if( RC_BAD( rc = pFileHdl->tell( &ui64Offset)))
 		{
 			goto Exit;
 		}
-		uiOffset--;
+		
+		ui64Offset--;
 
-		if( RC_BAD( rc = pFileHdl->Seek( uiOffset, 
-			F_IO_SEEK_SET, &uiTrueOffset)))
+		if( RC_BAD( rc = pFileHdl->seek( ui64Offset, 
+			FLM_IO_SEEK_SET, &ui64TrueOffset)))
 		{
 			goto Exit;
 		}

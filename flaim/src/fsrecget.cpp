@@ -96,7 +96,7 @@ RCODE FSReadRecord(
 
 	// Search the B-TREE for the record
 
-	flmUINT32ToBigEndian( (FLMUINT32)uiDrn, pDrnBuf);
+	f_UINT32ToBigEndian( (FLMUINT32)uiDrn, pDrnBuf);
 	if (RC_OK( rc = FSBtSearch( pDb, pLFile, &pStack, pDrnBuf, 4, 0)))
 	{
 		rc = RC_SET( FERR_NOT_FOUND);
@@ -117,7 +117,7 @@ Desc: Low-level routine to retrieve and build an internal tree record.
 ****************************************************************************/
 RCODE FSReadElement(
 	FDB *					pDb,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	LFILE *				pLFile,
 	FLMUINT				uiDrn,
 	BTSK *				pStack,
@@ -129,7 +129,7 @@ RCODE FSReadElement(
 	RCODE					rc = FERR_OK;
 	FlmRecord *			pRecord = NULL;
 	FLMBYTE *			pCurElm;
-	void *				pvPoolMark = GedPoolMark( pPool);
+	void *				pvPoolMark = pPool->poolMark();
 	FLMUINT				uiElmRecLen;
 	FLMUINT				uiFieldLen;
 	FLMUINT				uiLowestTransId;
@@ -258,11 +258,10 @@ RCODE FSReadElement(
 				uiFieldPos = 0;
 
 				// Allocate the first field group from the pool.
-
-				if ((pTempFldGroup = (FLDGROUP *) GedPoolAlloc( 
-					pPool, sizeof( FLDGROUP))) == NULL)
+				
+				if( RC_BAD( rc = pPool->poolAlloc( 
+					sizeof( FLDGROUP), (void **)&pTempFldGroup)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 
@@ -373,15 +372,14 @@ RCODE FSReadElement(
 
 						if (RC_BAD( FSBlkNextElm( pStack)))
 						{
-							LOCKED_BLOCK*	pLastLockedBlock = pLockedBlock;
+							LOCKED_BLOCK *	pLastLockedBlock = pLockedBlock;
 
-							if ((pLockedBlock = (LOCKED_BLOCK*) GedPoolAlloc( 
-									pPool, sizeof( LOCKED_BLOCK))) == NULL)
+							if( RC_BAD( rc = pPool->poolAlloc( sizeof( LOCKED_BLOCK),
+								(void **)&pLockedBlock)))
 							{
-								rc = RC_SET( FERR_MEM);
 								goto Exit;
 							}
-
+							
 							ScaHoldCache( pStack->pSCache);
 							pLockedBlock->pSCache = pStack->pSCache;
 							pLockedBlock->pNext = pLastLockedBlock;
@@ -441,10 +439,9 @@ RCODE FSReadElement(
 						fState.uiPosInElm += uiBytesToMove;
 						uiDataPos += uiBytesToMove;
 
-						if ((pNextDataPiece = (DATAPIECE *) GedPoolAlloc( 
-							pPool, sizeof( DATAPIECE))) == NULL)
+						if( RC_BAD( rc = pPool->poolAlloc( sizeof( DATAPIECE),
+							(void **)&pNextDataPiece)))
 						{
-							rc = RC_SET( FERR_MEM);
 							goto Exit;
 						}
 
@@ -466,12 +463,11 @@ RCODE FSReadElement(
 
 		if (RC_BAD( FSBlkNextElm( pStack)))
 		{
-			LOCKED_BLOCK*	pLastLockedBlock = pLockedBlock;
-
-			if ((pLockedBlock = (LOCKED_BLOCK *) GedPoolAlloc( 
-				pPool, sizeof( LOCKED_BLOCK))) == NULL)
+			LOCKED_BLOCK *		pLastLockedBlock = pLockedBlock;
+			
+			if( RC_BAD( rc = pPool->poolAlloc( sizeof( LOCKED_BLOCK),
+				(void **)&pLockedBlock)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
 
@@ -625,7 +621,7 @@ Exit:
 		pLockedBlock = pLockedBlock->pNext;
 	}
 
-	GedPoolReset( pPool, pvPoolMark);
+	pPool->poolReset( pvPoolMark);
 
 	if (pRecord)
 	{

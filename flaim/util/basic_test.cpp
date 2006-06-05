@@ -406,7 +406,7 @@ RCODE getTest(
 {
 	RCODE		rc = FERR_OK;
 
-	if( (*ppTest = new IFlmTestImpl) == NULL)
+	if( (*ppTest = f_new IFlmTestImpl) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -485,7 +485,7 @@ RCODE IFlmTestImpl::addRecordTest(
 
 	// Create a record object
 
-	if( (pRec = new FlmRecord) == NULL)
+	if( (pRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -701,7 +701,6 @@ RCODE IFlmTestImpl::largeFieldTest( void)
 	FLMUINT				uiDrn;
 	FLMUINT				uiValueSize;
 	FLMUINT				uiLoop;
-	f_randomGenerator	randGen;
 	FLM_MEM_INFO		memInfo;
 	FLMBOOL				bTransActive = FALSE;
 	FLMBOOL				bPassed = FALSE;
@@ -716,16 +715,14 @@ RCODE IFlmTestImpl::largeFieldTest( void)
 		goto Exit;
 	}
 	
-	f_randomize( &randGen);
-	
 	for( uiLoop = 0; uiLoop < uiValueSize; uiLoop++)
 	{
-		pucValue[ uiLoop] = (FLMBYTE)f_randomLong( &randGen);
+		pucValue[ uiLoop] = (FLMBYTE)f_getRandomUINT32();
 	}
 
 	// Create a record object
 
-	if( (pRec = new FlmRecord) == NULL)
+	if( (pRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -1262,7 +1259,7 @@ RCODE IFlmTestImpl::addIndexTest(
 
 	// Create a record object
 
-	if( (pRec = new FlmRecord) == NULL)
+	if( (pRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -1420,7 +1417,7 @@ RCODE IFlmTestImpl::addSubstringIndexTest(
 
 	// Create a record object
 
-	if( (pRec = new FlmRecord) == NULL)
+	if( (pRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -1606,7 +1603,7 @@ RCODE IFlmTestImpl::addPresenceIndexTest(
 
 	// Create a record object
 
-	if( (pRec = new FlmRecord) == NULL)
+	if( (pRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -2213,7 +2210,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 	
 	// Create a dictionary record object
 
-	if( (pDataRec = new FlmRecord) == NULL)
+	if( (pDataRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -2247,7 +2244,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 
 		// Create a dictionary record object
 	
-		if( (pRec = new FlmRecord) == NULL)
+		if( (pRec = f_new FlmRecord) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
@@ -3256,9 +3253,9 @@ RCODE IFlmTestImpl::checkDbTest(
 	RCODE		rc = FERR_OK;
 	FLMBOOL	bPassed = FALSE;
 	char		szTest [200];
-	POOL		pool;
+	F_Pool	pool;
 	
-	GedPoolInit( &pool, 512);
+	pool.poolInit( 512);
 	
 	f_sprintf( szTest, "Check Database Test (%s)", pszDbName);
 	beginTest( szTest);
@@ -3273,8 +3270,6 @@ RCODE IFlmTestImpl::checkDbTest(
 	bPassed = TRUE;
 	
 Exit:
-
-	GedPoolFree( &pool);
 
 	endTest( bPassed);
 	return( rc);

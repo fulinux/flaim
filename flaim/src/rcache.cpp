@@ -24,20 +24,75 @@
 
 #include "flaimsys.h"
 
-#if defined( FLM_NLM) && !defined( __MWERKS__)
-	// Disable "Warning! W549: col(XX) 'sizeof' operand contains
-	// compiler generated information"
-	
-	#pragma warning 549 9
-#endif
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_RCacheRelocator : public IF_Relocator
+{
+public:
 
-FSTATIC FLMBOOL rcaCanRelocate(
-	void *		pvAlloc);
-
-FSTATIC void rcaRelocate(
-	void *		pvOldAlloc,
-	void *		pvNewAlloc);
+	F_RCacheRelocator()
+	{
+	}
 	
+	virtual ~F_RCacheRelocator()
+	{
+	}
+
+	void FLMAPI relocate(
+		void *	pvOldAlloc,
+		void *	pvNewAlloc);
+
+	FLMBOOL FLMAPI canRelocate(
+		void *	pvOldAlloc);
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_RecRelocator : public IF_Relocator
+{
+public:
+
+	F_RecRelocator()
+	{
+	}
+	
+	virtual ~F_RecRelocator()
+	{
+	}
+
+	void FLMAPI relocate(
+		void *	pvOldAlloc,
+		void *	pvNewAlloc);
+
+	FLMBOOL FLMAPI canRelocate(
+		void *	pvOldAlloc);
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_RecBufferRelocator : public IF_Relocator
+{
+public:
+
+	F_RecBufferRelocator()
+	{
+	}
+	
+	virtual ~F_RecBufferRelocator()
+	{
+	}
+
+	void FLMAPI relocate(
+		void *	pvOldAlloc,
+		void *	pvNewAlloc);
+
+	FLMBOOL FLMAPI canRelocate(
+		void *	pvOldAlloc);
+};
+
 /****************************************************************************
 Desc:	Extended record object for accessing private members of FlmRecord
 ****************************************************************************/
@@ -61,13 +116,6 @@ struct FlmRecordExt
 		pRec->setReadOnly();
 	}
 
-	static FINLINE FLMINT AddRef(
-		FlmRecord *			pRec,
-		FLMBOOL				bMutexLocked)
-	{
-		return( pRec->AddRef( bMutexLocked));
-	}
-	
 	static FINLINE FLMINT Release(
 		FlmRecord *			pRec,
 		FLMBOOL				bMutexLocked)
@@ -92,20 +140,6 @@ struct FlmRecordExt
 	{
 		return( pRec->m_uiFlags);
 	}
-
-	static FLMBOOL canRelocateRec(
-		void *		pvAlloc);
-
-	static void relocateRec(
-		void *		pvOldAlloc,
-		void *		pvNewAlloc);
-
-	static FLMBOOL canRelocateRecBuffer(
-		void *		pvAlloc);
-
-	static void relocateRecBuffer(
-		void *		pvOldAlloc,
-		void *		pvNewAlloc);
 };
 
 // Functions for calculating minimum and maximum record counts for a
@@ -716,9 +750,13 @@ FSTATIC void flmRcaFreeCache(
 Desc:	This routine initializes record cache manager.
 ****************************************************************************/
 RCODE flmRcaInit(
-	FLMUINT	uiMaxRecordCacheBytes)
+	FLMUINT		uiMaxRecordCacheBytes)
 {
-	RCODE		rc = FERR_OK;
+	RCODE							rc = FERR_OK;
+	F_RCacheRelocator *		pRCacheRelocator = NULL;
+	F_RecRelocator *			pRecRelocator = NULL;
+	F_RecBufferRelocator *	pRecBufferRelocator = NULL;
+	
 
 	f_memset( &gv_FlmSysData.RCacheMgr, 0, sizeof( RCACHE_MGR));
 	gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes = uiMaxRecordCacheBytes;
@@ -749,67 +787,91 @@ RCODE flmRcaInit(
 	
 	// Set up the RCACHE struct allocator
 	
-	if( (gv_FlmSysData.RCacheMgr.pRCacheAlloc = f_new F_FixedAlloc) == NULL)
+	if( RC_BAD( rc = FlmAllocFixedAllocator( 
+		&gv_FlmSysData.RCacheMgr.pRCacheAlloc)))
+	{
+		goto Exit;
+	}
+	
+	if( (pRCacheRelocator = f_new F_RCacheRelocator) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRCacheAlloc->setup(
-		gv_FlmSysData.pSlabManager, TRUE, sizeof( RCACHE), 
+		gv_FlmSysData.pSlabManager, pRCacheRelocator, sizeof( RCACHE), 
+		&gv_FlmSysData.RCacheMgr.Usage.SlabUsage, 
 		&gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated)))
 	{
 		goto Exit;
 	}
-
-	gv_FlmSysData.RCacheMgr.pRCacheAlloc->setRelocationFuncs(
-		rcaCanRelocate, rcaRelocate);
-		
+	
 	// Set up the record object allocator
-
-	if( (gv_FlmSysData.RCacheMgr.pRecAlloc = f_new F_FixedAlloc) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocFixedAllocator(
+		&gv_FlmSysData.RCacheMgr.pRecAlloc)))
+	{
+		goto Exit;
+	}
+	
+	if( (pRecRelocator = f_new F_RecRelocator) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecAlloc->setup(
-		gv_FlmSysData.pSlabManager,
-		gv_FlmSysData.RCacheMgr.pRCacheAlloc->getMutex(),
-		sizeof( FlmRecord),
+		gv_FlmSysData.pSlabManager, pRecRelocator, sizeof( FlmRecord),
+		&gv_FlmSysData.RCacheMgr.Usage.SlabUsage,
 		&gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated)))
 	{
 		goto Exit;
 	}
 
-	gv_FlmSysData.RCacheMgr.pRecAlloc->setRelocationFuncs(
-		FlmRecordExt::canRelocateRec, FlmRecordExt::relocateRec);
-
 	// Set up the record buffer allocator
+	
+	if( RC_BAD( rc = FlmAllocBufferAllocator(
+		&gv_FlmSysData.RCacheMgr.pRecBufAlloc)))
+	{
+		goto Exit;
+	}
 
-	if( (gv_FlmSysData.RCacheMgr.pRecBufAlloc = f_new F_BufferAlloc) == NULL)
+	if( (pRecBufferRelocator = f_new F_RecBufferRelocator) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->setup( 
-		gv_FlmSysData.pSlabManager, 
-		gv_FlmSysData.RCacheMgr.pRCacheAlloc->getMutex(),
+		gv_FlmSysData.pSlabManager, pRecBufferRelocator,
+		&gv_FlmSysData.RCacheMgr.Usage.SlabUsage,
 		&gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated))) 
 	{
 		goto Exit;
 	}
-
-	gv_FlmSysData.RCacheMgr.pRecBufAlloc->setRelocationFuncs(
-		FlmRecordExt::canRelocateRecBuffer, 
-		FlmRecordExt::relocateRecBuffer);
 
 #ifdef FLM_DEBUG
 	gv_FlmSysData.RCacheMgr.bDebug = TRUE;
 #endif
 
 Exit:
+
+	if( pRCacheRelocator)
+	{
+		pRCacheRelocator->Release();
+	}
+
+	if( pRecRelocator)
+	{
+		pRecRelocator->Release();
+	}
+	
+	if( pRecBufferRelocator)
+	{
+		pRecBufferRelocator->Release();
+	}
+	
 	if (RC_BAD( rc))
 	{
 		flmRcaExit();
@@ -942,10 +1004,10 @@ FSTATIC RCODE flmRcaRehash( void)
 
 	// Subtract off old size and add in new size.
 
-	gv_FlmSysData.RCacheMgr.pRCacheAlloc->decrementTotalBytesAllocated(
-			(sizeof( RCACHE *) * uiOldHashTblSize));
-	gv_FlmSysData.RCacheMgr.pRCacheAlloc->incrementTotalBytesAllocated(
-			(sizeof( RCACHE *) * uiNewHashTblSize));
+//	gv_FlmSysData.RCacheMgr.pRCacheAlloc->decBytesAllocated(
+//			(sizeof( RCACHE *) * uiOldHashTblSize));
+//	gv_FlmSysData.RCacheMgr.pRCacheAlloc->incrementTotalBytesAllocated(
+//			(sizeof( RCACHE *) * uiNewHashTblSize));
 
 	gv_FlmSysData.RCacheMgr.uiNumBuckets = uiNewHashTblSize;
 	gv_FlmSysData.RCacheMgr.uiHashMask = uiNewHashTblSize - 1;
@@ -989,7 +1051,7 @@ FSTATIC RCODE flmRcaSetMemLimit(
 	// defragment cache first
 
 	gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes = uiMaxCacheBytes;
-	if (gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated() >
+	if (gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated >
 				uiMaxCacheBytes)
 	{
 		flmRcaCleanupCache( ~((FLMUINT)0), TRUE);
@@ -1089,8 +1151,8 @@ void flmRcaExit( void)
 	if (gv_FlmSysData.RCacheMgr.ppHashBuckets)
 	{
 		f_free( &gv_FlmSysData.RCacheMgr.ppHashBuckets);
-		gv_FlmSysData.RCacheMgr.pRCacheAlloc->decrementTotalBytesAllocated(
-			(sizeof( RCACHE *) * gv_FlmSysData.RCacheMgr.uiNumBuckets));
+//		gv_FlmSysData.RCacheMgr.pRCacheAlloc->decrementTotalBytesAllocated(
+//			(sizeof( RCACHE *) * gv_FlmSysData.RCacheMgr.uiNumBuckets));
 	}
 
 	// Free the mutex that controls access to record cache.
@@ -1368,11 +1430,7 @@ void flmRcaCleanupCache(
 					// Shortest possible pause - to allow other threads
 					// to do work.
 
-	#ifdef FLM_NLM
 					f_yieldCPU();
-	#else
-					f_sleep( 0);
-	#endif
 
 					// Relock the mutexes
 
@@ -1465,7 +1523,7 @@ void flmRcaReduceCache(
 
 	// Free things until we get down below our memory limit.
 
-	while( gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated() >
+	while( gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated >
 		gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes)
 	{
 		if( !pRCache)
@@ -1476,7 +1534,7 @@ void flmRcaReduceCache(
 		// If the total of block and record cache is below the global
 		// cache maximum, there is no need to reduce record cache.
 
-		if( (gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated() + 
+		if( (gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated + 
 			gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated) <=
 			gv_FlmSysData.uiMaxCache)
 		{
@@ -1707,8 +1765,8 @@ FSTATIC void flmRcaSetRecord(
 	pRCache->pRecord = pNewRecord;
 	flmAssert( !pNewRecord->isCached());
 	FlmRecordExt::setCached( pNewRecord);
-	FlmRecordExt::AddRef( pNewRecord, TRUE);
 	FlmRecordExt::setReadOnly( pNewRecord);
+	pNewRecord->AddRef();
 	
 	if( FlmRecordExt::getFlags( pNewRecord) & RCA_HEAP_BUFFER)
 	{
@@ -2232,13 +2290,13 @@ Found_Record:
 			}
 
 			pRecord = *ppRecord = pRCache->pRecord;
-			FlmRecordExt::AddRef( pRecord, bRCacheMutexLocked);
+			pRecord->AddRef();
 		}
 	}
 
 	// Clean up cache, if necessary.
 
-	if (gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated() >
+	if (gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated >
 			 gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes)
 	{
 		flmRcaReduceCache( bRCacheMutexLocked);
@@ -2823,7 +2881,7 @@ FSTATIC RCODE flmRcaCheck(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-FLMBOOL FlmRecordExt::canRelocateRec(
+FLMBOOL F_RecRelocator::canRelocate(
 	void *		pvAlloc)
 {
 	FlmRecord *		pRec = (FlmRecord *)pvAlloc;
@@ -2839,7 +2897,7 @@ FLMBOOL FlmRecordExt::canRelocateRec(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void FlmRecordExt::relocateRec(
+void F_RecRelocator::relocate(
 	void *		pvOldAlloc,
 	void *		pvNewAlloc)
 {
@@ -2898,7 +2956,7 @@ Done:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-FLMBOOL FlmRecordExt::canRelocateRecBuffer(
+FLMBOOL F_RecBufferRelocator::canRelocate(
 	void *		pvAlloc)
 {
 	FlmRecord *		pRec = *((FlmRecord **)pvAlloc);
@@ -2916,7 +2974,7 @@ FLMBOOL FlmRecordExt::canRelocateRecBuffer(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-void FlmRecordExt::relocateRecBuffer(
+void F_RecBufferRelocator::relocate(
 	void *		pvOldAlloc,
 	void *		pvNewAlloc)
 {
@@ -2946,7 +3004,7 @@ void FlmRecordExt::relocateRecBuffer(
 Desc:		
 Notes:	This routine assumes the rcache mutex is locked
 ****************************************************************************/
-FSTATIC FLMBOOL rcaCanRelocate(
+FLMBOOL F_RCacheRelocator::canRelocate(
 	void *		pvAlloc)
 {
 	RCACHE *		pRCache = (RCACHE *)pvAlloc;
@@ -2965,7 +3023,7 @@ Desc:		Fixes up all pointers needed to allow an RCACHE struct to be
 			moved to a different location in memory
 Notes:	This routine assumes the rcache mutex is locked
 ****************************************************************************/
-FSTATIC void rcaRelocate(
+void F_RCacheRelocator::relocate(
 	void *		pvOldAlloc,
 	void *		pvNewAlloc)
 {

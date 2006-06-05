@@ -1645,8 +1645,8 @@ RCODE flmBuildFromAndUntilKeys(
 	uiUntilKeyPos = 0;
 	*pbExclusiveUntilKey = TRUE;
 
-	bDBCSLanguage = (uiLanguage >= FIRST_DBCS_LANG) && 
-						 (uiLanguage <= LAST_DBCS_LANG) 
+	bDBCSLanguage = (uiLanguage >= FLM_FIRST_DBCS_LANG) && 
+						 (uiLanguage <= FLM_LAST_DBCS_LANG) 
 						 		? TRUE 
 								: FALSE;
 		
@@ -1782,7 +1782,7 @@ RCODE flmBuildFromAndUntilKeys(
 				FLMBYTE *	pValue = (FLMBYTE *) pCurPred->pVal->val.pucBuf;
 				FLMUINT		uiValueLen = pCurPred->pVal->uiBufLen;
 				
-				bCaseInsensitive = (FLMBOOL)((pCurPred->pVal->uiFlags & FLM_NOCASE) 
+				bCaseInsensitive = (FLMBOOL)((pCurPred->pVal->uiFlags & FLM_COMP_CASE_INSENSITIVE) 
 														? TRUE 
 														: FALSE);
 														
@@ -1809,7 +1809,7 @@ RCODE flmBuildFromAndUntilKeys(
 							bDoKeyMatch = bDoMatchBegin = TRUE;
 						}
 
-						if (pCurPred->pVal->uiFlags & FLM_WILD)
+						if (pCurPred->pVal->uiFlags & FLM_COMP_WILD)
 						{
 							if (!bDoFirstSubstring)
 							{
@@ -1893,7 +1893,7 @@ RCODE flmBuildFromAndUntilKeys(
 							// Take the flags from the pVal and NOT from the
 							// predicate.
 
-							if (pCurPred->pVal->uiFlags & FLM_WILD)
+							if (pCurPred->pVal->uiFlags & FLM_COMP_WILD)
 							{
 
 								// Select the best substring. The case of
@@ -2361,13 +2361,13 @@ FSTATIC RCODE flmAddKeyPiece(
 	if (pIfd->uiFlags & IFD_CONTEXT)
 	{
 		pFromKey[uiFromKeyPos] = KY_CONTEXT_PREFIX;
-		flmUINT16ToBigEndian( (FLMUINT16) pIfd->uiFldNum, &pFromKey[uiFromKeyPos + 1]);
+		f_UINT16ToBigEndian( (FLMUINT16) pIfd->uiFldNum, &pFromKey[uiFromKeyPos + 1]);
 		uiFromKeyPos += KY_CONTEXT_LEN;
 
 		if (uiUntilKeyPos + KY_CONTEXT_LEN < uiMaxKeySize)
 		{
 			pUntilKey[uiUntilKeyPos] = KY_CONTEXT_PREFIX;
-			flmUINT16ToBigEndian( (FLMUINT16) pIfd->uiFldNum, &pUntilKey[uiUntilKeyPos + 1]);
+			f_UINT16ToBigEndian( (FLMUINT16) pIfd->uiFldNum, &pUntilKey[uiUntilKeyPos + 1]);
 			uiUntilKeyPos += KY_CONTEXT_LEN;
 		}
 
@@ -2539,7 +2539,7 @@ FSTATIC RCODE flmAddTextPiece(
 	FLMUINT		uiCaseLen;
 	FLMBOOL		bIsDBCS;
 
-	bIsDBCS = (uiLanguage >= FIRST_DBCS_LANG && uiLanguage <= LAST_DBCS_LANG) 
+	bIsDBCS = (uiLanguage >= FLM_FIRST_DBCS_LANG && uiLanguage <= FLM_LAST_DBCS_LANG) 
 											? TRUE 
 											: FALSE;
 	*pbOriginalCharsLost = FALSE;
@@ -2635,7 +2635,7 @@ FSTATIC RCODE flmAddTextPiece(
 			// use it here instead of SC_MIXED.
 
 			pDestKey[uiDestKeyLen - 1] = 
-				(FLMBYTE) ((uiLanguage != (FLMUINT) GR_LANG) 
+				(FLMBYTE) ((uiLanguage != (FLMUINT) FLM_GR_LANG) 
 						? COLL_MARKER | SC_MIXED 
 						: COLL_MARKER | SC_LOWER);
 

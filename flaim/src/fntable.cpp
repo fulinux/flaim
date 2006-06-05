@@ -119,7 +119,7 @@ Desc:	Constructor
 ****************************************************************************/
 F_NameTable::F_NameTable()
 {
-	GedPoolInit( &m_pool, 1024);
+	m_pool.poolInit( 1024);
 	m_ppSortedByTagName = NULL;
 	m_ppSortedByTagNum = NULL;
 	m_ppSortedByTagTypeAndName = NULL;
@@ -134,7 +134,7 @@ Desc:	Destructor
 F_NameTable::~F_NameTable()
 {
 	clearTable();
-	GedPoolFree( &m_pool);
+	m_pool.poolFree();
 }
 
 /****************************************************************************
@@ -142,8 +142,8 @@ Desc:	Free everything in the table
 ****************************************************************************/
 void F_NameTable::clearTable( void)
 {
-	GedPoolFree( &m_pool);
-	GedPoolInit( &m_pool, 1024);
+	m_pool.poolFree();
+	m_pool.poolInit( 1024);
 
 	// NOTE: Only one allocation is used for m_ppSortedByTagName,
 	// m_ppSortedByTagNum, and m_ppSortedByTagTypeAndName - there is no
@@ -802,11 +802,11 @@ RCODE F_NameTable::allocTag(
 
 	// Create a new tag info structure.
 
-	pvMark = GedPoolMark( &m_pool);
-	if ((pTagInfo = (FLM_TAG_INFO *)GedPoolCalloc( &m_pool,
-								sizeof( FLM_TAG_INFO))) == NULL)
+	pvMark = m_pool.poolMark();
+	
+	if( RC_BAD( rc = m_pool.poolCalloc( sizeof( FLM_TAG_INFO), 
+		(void **)&pTagInfo)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -815,21 +815,22 @@ RCODE F_NameTable::allocTag(
 	if (puzTagName)
 	{
 		uiNameSize = (f_unilen( puzTagName) + 1) * sizeof( FLMUNICODE);
-		if ((pTagInfo->puzTagName = (FLMUNICODE *)GedPoolAlloc( &m_pool,
-												uiNameSize)) == NULL)
+		
+		if( RC_BAD( rc = m_pool.poolAlloc( uiNameSize,
+			(void **)&pTagInfo->puzTagName)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
-		f_memcpy( pTagInfo->puzTagName, puzTagName, uiNameSize);
+		
+		f_memcpy( (void *)pTagInfo->puzTagName, puzTagName, uiNameSize);
 	}
 	else
 	{
 		uiNameSize = (f_strlen( pszTagName) + 1) * sizeof( FLMUNICODE);
-		if ((pTagInfo->puzTagName = (FLMUNICODE *)GedPoolAlloc( &m_pool,
-												uiNameSize)) == NULL)
+		
+		if( RC_BAD( rc = m_pool.poolAlloc( uiNameSize, 
+			(void **)&pTagInfo->puzTagName)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 		
@@ -850,11 +851,11 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		GedPoolReset( &m_pool, pvMark);
+		m_pool.poolReset( pvMark);
 		pTagInfo = NULL;
 	}
+	
 	*ppTagInfo = pTagInfo;
-
 	return( rc);
 }
 
@@ -862,8 +863,7 @@ Exit:
 Desc:	Allocate the sort tables.
 ****************************************************************************/
 RCODE F_NameTable::reallocSortTables(
-	FLMUINT	uiNewTblSize
-	)
+	FLMUINT				uiNewTblSize)
 {
 	RCODE					rc = FERR_OK;
 	FLM_TAG_INFO **	ppNewTbl;
@@ -1051,7 +1051,7 @@ ExitCS:
 
 		// Position to the first record in the B-Tree.
 
-		flmUINT32ToBigEndian( 0, ucDrnBuf);
+		f_UINT32ToBigEndian( 0, ucDrnBuf);
 		if (RC_BAD( rc = FSBtSearch( pDb, pLFile, &pStack,
 								ucDrnBuf, 4, ZERO_DOMAIN)))
 		{
@@ -1062,7 +1062,7 @@ ExitCS:
 
 		while (pStack->uiCmpStatus != BT_END_OF_DATA)
 		{
-			if ((uiDrn = flmBigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
+			if ((uiDrn = f_bigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
 			{
 				break;
 			}

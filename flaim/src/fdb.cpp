@@ -34,7 +34,7 @@ Desc:	This function will use the FDB for use by the current thread.
 		If another thread already has the FDB used, it will go into the
 		debugger.
 ****************************************************************************/
-#if defined( FLM_DEBUG) && (defined( FLM_WIN) || defined( FLM_NLM))
+#if defined( FLM_DEBUG)
 void fdbUseCheck(
 	FDB *		pDb)
 {
@@ -61,7 +61,7 @@ void fdbUseCheck(
 /****************************************************************************
 Desc:	This function will unuse the FDB for use by the current thread.
 ****************************************************************************/
-#if defined( FLM_DEBUG) && (defined( FLM_WIN) || defined( FLM_NLM))
+#if defined( FLM_DEBUG)
 void fdbUnuse(
 	FDB *		pDb)
 {
@@ -450,7 +450,7 @@ void flmExit(
 
 			// Keep the main pool block around inbetween FLAIM calls.
 
-			GedPoolReset( &pDb->TempPool, NULL);
+			pDb->TempPool.poolReset();
 		}
 		fdbExit( pDb);
 	}
@@ -482,18 +482,17 @@ Desc:		Logs messages
 ****************************************************************************/
 void flmLogMessage(
 	FlmLogMessageSeverity 	eMsgSeverity,
-	FlmColorType  				eForground,
-	FlmColorType  				eBackground,
+	eColorType  				foreground,
+	eColorType  				background,
 	const char *				pszFormat,
 	...)
 {
 	FLMINT				iLen;
 	f_va_list			args;
-	F_LogMessage *		pLogMsg = NULL;
+	F_LogMessage *	pLogMsg = NULL;
 	char *				pszMsgBuf = NULL;
 	
-	if (( pLogMsg = flmBeginLogMessage( FLM_GENERAL_MESSAGE, 
-							eMsgSeverity)) != NULL)
+	if( (pLogMsg = flmBeginLogMessage( FLM_GENERAL_MESSAGE, eMsgSeverity)) != NULL)
 	{
 		if( RC_OK( f_alloc( 1024, &pszMsgBuf)))
 		{
@@ -501,9 +500,10 @@ void flmLogMessage(
 			iLen = f_vsprintf( pszMsgBuf, pszFormat, &args);
 			f_va_end( args);
 	
-			pLogMsg->changeColor( eForground, eBackground);
+			pLogMsg->changeColor( foreground, background);
 			pLogMsg->appendString( pszMsgBuf);
 		}
+		
 		flmEndLogMessage( &pLogMsg);
 
 		if( pszMsgBuf)

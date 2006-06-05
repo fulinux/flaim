@@ -892,7 +892,7 @@ struct UCUR;
 	
 	RCODE FSReadElement(
 		FDB *					pDb,
-		POOL *				pPool,
+		F_Pool *				pPool,
 		LFILE *				pLFile,
 		FLMUINT				drn,
 		BTSK *				pStack,
@@ -1493,38 +1493,6 @@ struct UCUR;
 		return( SENNextVal( &pCurElm));
 	}
 		
-	/****************************************************************************
-	Desc: This routine locks the write lock on a database.
-	****************************************************************************/
-	inline RCODE dbWriteLock(
-		FFILE *		pFile,
-		DB_STATS *	pDbStats = NULL,
-		FLMUINT		uiTimeout = FLM_NO_TIMEOUT)
-	{
-		RCODE rc = FERR_OK;
-	
-		if (RC_BAD( rc = pFile->pWriteLockObj->Lock( FALSE, NULL, 
-			(FLMBOOL)(uiTimeout ? TRUE : FALSE),
-			TRUE, uiTimeout, 0, pDbStats)))
-		{
-			goto Exit;
-		}
-	
-	Exit:
-	
-		return( rc);
-	}
-	
-	/****************************************************************************
-	Desc: This routine unlocks the write lock on a database.
-	****************************************************************************/
-	inline void dbWriteUnlock(
-		FFILE *		pFile,
-		DB_STATS *	pDbStats = NULL)
-	{
-		(void)pFile->pWriteLockObj->Unlock( FALSE, NULL, FALSE, pDbStats);
-	}
-	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/

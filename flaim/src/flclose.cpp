@@ -28,10 +28,10 @@
 Desc :	Closes a FLAIM database.
 ****************************************************************************/
 RCODE flmDbClose(
-		HFDB *	phDbRV,
-		FLMBOOL	bMutexLocked)
+	HFDB *		phDbRV,
+	FLMBOOL		bMutexLocked)
 {
-	FDB *	pDb;
+	FDB *			pDb;
 
 	if ((!phDbRV) ||
 		 ((pDb = (FDB *)*phDbRV) == NULL))
@@ -114,10 +114,10 @@ Finish_Close:
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	}
 
-	// Free the temporary pool
+	// Free the temporary pools
 
-	GedPoolFree( &pDb->TempPool);
-	GedPoolFree( &pDb->tmpKrefPool);
+	pDb->TempPool.poolFree();
+	pDb->tmpKrefPool.poolFree();
 
 	// Free up statistics.
 
@@ -128,12 +128,19 @@ Finish_Close:
 
 	// Get rid of mutex
 
-#if defined( FLM_DEBUG) && (defined( FLM_WIN) || defined( FLM_NLM))
+#if defined( FLM_DEBUG)
 	if (pDb->hMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &pDb->hMutex);
 	}
 #endif
+
+	// Free the semaphore
+	
+	if( pDb->hWaitSem != F_SEM_NULL)
+	{
+		f_semDestroy( &pDb->hWaitSem);
+	}
 
 	// Free the FDB.
 

@@ -26,25 +26,6 @@
 
 #include "flaimsys.h"
 
-#ifdef FLM_AIX
-	#include <sys/vminfo.h>
-#endif
-#ifdef FLM_HPUX
-	#include <sys/pstat.h>
-	#include <sys/param.h>
-	#include <sys/unistd.h>
-#endif
-
-#if defined( FLM_WIN) || defined( FLM_NLM)
-	#define FLM_CAN_GET_PHYS_MEM
-#elif defined( FLM_UNIX)
-	#if defined( _SC_AVPHYS_PAGES) || defined( FLM_HPUX)
-		#define FLM_CAN_GET_PHYS_MEM
-	#endif
-#endif
-
-#define FLM_MIN_FREE_BYTES		(2 * 1024 * 1024)
-
 #ifdef FLM_32BIT
 	#if defined( FLM_LINUX)
 	
@@ -61,34 +42,21 @@
 	#define FLM_MAX_CACHE_SIZE			(~((FLMUINT)0))
 #endif
 
-
 FLMATOMIC			gv_flmSysSpinLock = 0;
 FLMUINT				gv_uiFlmSysStartupCount = 0;
-FLMBOOL				gv_bNetWareStartupCalled = FALSE;
-
-#ifdef FLM_NLM
-	extern "C"
-	{
-		void flmHttpConfig(
-			FLMBOOL			bEnable,
-			const char *	pszParams);
-	}
-#endif
 
 FSTATIC void flmInitHashTbl(
 	FBUCKET *         	pHashTable,
-	FLMUINT					uiHashEntries,
-	f_randomGenerator * 	RandGen);
+	FLMUINT					uiHashEntries);
 
-#ifdef FLM_CAN_GET_PHYS_MEM
-FSTATIC FLMUINT flmGetCacheBytes(
+FSTATIC RCODE flmGetCacheBytes(
 	FLMUINT		uiPercent,
 	FLMUINT		uiMin,
 	FLMUINT		uiMax,
 	FLMUINT		uiMinToLeave,
 	FLMBOOL		bCalcOnAvailMem,
-	FLMUINT		uiBytesCurrentlyInUse);
-#endif
+	FLMUINT		uiBytesCurrentlyInUse,
+	FLMUINT *	puiCacheBytes);
 
 FSTATIC void flmLockSysData( void);
 
@@ -117,7 +85,7 @@ FSTATIC void flmUnlinkFileFromBucket(
 	FFILE *			pFile);
 
 RCODE flmSystemMonitor(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 FSTATIC RCODE flmRegisterHttpCallback(
 	FLM_MODULE_HANDLE	hModule,
@@ -155,7 +123,7 @@ FINLINE RCODE flmSetTmpDir(
 {
 	RCODE          rc;
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Exists( pszTmpDir)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->doesFileExist( pszTmpDir)))
 	{
 		goto Exit;
 	}
@@ -193,8 +161,7 @@ Desc: This routine initializes a hash table.
 ****************************************************************************/
 FSTATIC void flmInitHashTbl(
 	FBUCKET *				pHashTable,
-	FLMUINT					uiHashEntries,
-	f_randomGenerator *	RandGen)
+	FLMUINT					uiHashEntries)
 {
 	FLMUINT		uiCnt;
 	FLMUINT		uiRandVal;
@@ -210,8 +177,8 @@ FSTATIC void flmInitHashTbl(
 	{
 		for (uiCnt = 0; uiCnt < uiHashEntries - 1; uiCnt++)
 		{
-			uiRandVal = (FLMBYTE) f_randomChoice( RandGen, (FLMINT32)uiCnt,
-										(FLMINT32)(uiHashEntries - 1));
+			uiRandVal = f_getRandomUINT32( uiCnt, uiHashEntries - 1);
+			
 			if (uiRandVal != uiCnt)
 			{
 				uiTempVal = (FLMBYTE)pHashTable [uiCnt].uiHashValue;
@@ -230,7 +197,6 @@ RCODE flmAllocHashTbl(
 	FBUCKET **	ppHashTblRV)
 {
 	RCODE					rc = FERR_OK;
-	f_randomGenerator	RandGen;
 	FBUCKET *			pHashTbl = NULL;
 
 	// Allocate memory for the hash table
@@ -243,8 +209,7 @@ RCODE flmAllocHashTbl(
 
 	// Initialize the hash table
 
-	f_randomSetSeed( &RandGen, 1);
-	flmInitHashTbl( pHashTbl, uiHashTblSize, &RandGen);
+	flmInitHashTbl( pHashTbl, uiHashTblSize);
 	
 Exit:
 
@@ -261,225 +226,39 @@ Desc: This routine determines the number of cache bytes to use for caching
 		on the available memory.
 		Lower limit is 1 megabyte.
 ****************************************************************************/
-#ifdef FLM_CAN_GET_PHYS_MEM
-FSTATIC FLMUINT flmGetCacheBytes(
+FSTATIC RCODE flmGetCacheBytes(
 	FLMUINT		uiPercent,
 	FLMUINT		uiMin,
 	FLMUINT		uiMax,
 	FLMUINT		uiMinToLeave,
 	FLMBOOL		bCalcOnAvailMem,
-	FLMUINT		uiBytesCurrentlyInUse
-	)
+	FLMUINT		uiBytesCurrentlyInUse,
+	FLMUINT *	puiCacheBytes)
 {
-	FLMUINT			uiMem;
-#if defined( FLM_WIN)
-	MEMORYSTATUS	MemStatus;
-#elif defined( FLM_UNIX)
-	FLMUINT			uiProcMemLimit = FLM_MAX_UINT;
-	FLMUINT			uiProcVMemLimit = FLM_MAX_UINT;
-#endif
-
-#if defined( FLM_WIN)
-	GlobalMemoryStatus( &MemStatus);
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiMem = 0;
+	FLMUINT64		ui64TotalPhysMem;
+	FLMUINT64		ui64AvailPhysMem;
+	
+	if( RC_BAD( rc = f_getMemoryInfo( &ui64TotalPhysMem, &ui64AvailPhysMem)))
+	{
+		goto Exit;
+	}
+	
+	if( ui64TotalPhysMem > FLM_MAX_UINT)
+	{
+		ui64TotalPhysMem = FLM_MAX_UINT;
+	}
+	
+	if( ui64AvailPhysMem > ui64TotalPhysMem)
+	{
+		ui64AvailPhysMem = ui64TotalPhysMem;
+	}
+	
 	uiMem = (FLMUINT)((bCalcOnAvailMem)
-							? (FLMUINT)MemStatus.dwAvailPhys
-							: (FLMUINT)MemStatus.dwTotalPhys);
-#elif defined( FLM_UNIX)
-	{
-#ifdef FLM_AIX
-		struct vminfo		tmpvminfo;
-	#ifdef _SC_PAGESIZE
-		long		iPageSize = sysconf(_SC_PAGESIZE);
-	#else
-		long		iPageSize = 4096;
-	#endif
-
-		if( iPageSize == -1)
-		{
-			// If sysconf returned an error, resort to using the default
-			// page size for the Power architecture.
-
-			iPageSize = 4096;
-		}
-
-		uiMem = FLM_MAX_UINT;
-		if( vmgetinfo( &tmpvminfo, VMINFO, sizeof( tmpvminfo)) != -1)
-		{
-			if( bCalcOnAvailMem)
-			{
-				if( tmpvminfo.numfrb < FLM_MAX_UINT)
-				{
-					uiMem = (FLMUINT)tmpvminfo.numfrb;
-				}
-			}
-			else
-			{
-				if( tmpvminfo.memsizepgs < FLM_MAX_UINT)
-				{
-					uiMem = (FLMUINT)tmpvminfo.memsizepgs;
-				}
-			}
-		}
-#elif defined( FLM_HPUX)
-		long					iPageSize;
-		struct pst_static	pst;
-
-		if (pstat_getstatic( &pst, sizeof( pst), (size_t)1, 0) == -1)
-		{
-			iPageSize = 4096;
-		}
-		else
-		{
-			iPageSize = pst.page_size;
-		}
-		if (bCalcOnAvailMem)
-		{
-			struct pst_dynamic	dyn;
-
-			if (pstat_getdynamic( &dyn, sizeof( dyn), 1, 0) != -1)
-			{
-				uiMem = (FLMUINT)dyn.psd_free;
-			}
-			else
-			{
-				uiMem = 0;
-			}
-		}
-		else
-		{
-			uiMem = (FLMUINT)pst.physical_memory;
-		}
-#else
-
-		long				iPageSize = sysconf(_SC_PAGESIZE);
-
-		// Get the amount of memory available to the system
-
-		uiMem = (FLMUINT)((bCalcOnAvailMem)
-								? (FLMUINT)sysconf(_SC_AVPHYS_PAGES)
-								: (FLMUINT)sysconf(_SC_PHYS_PAGES));
-#endif
-
-		if (FLM_MAX_UINT / (FLMUINT)iPageSize >= uiMem)
-		{
-			uiMem *= (FLMUINT)iPageSize;
-		}
-		else
-		{
-			uiMem = FLM_MAX_UINT;
-		}
-
-	#if defined( RLIMIT_VMEM)
-		// Bump the process soft virtual limit up to the hard limit
-		{
-			struct rlimit	rlim;
-
-			if( getrlimit( RLIMIT_VMEM, &rlim) == 0)
-			{
-				if( rlim.rlim_cur < rlim.rlim_max)
-				{
-					rlim.rlim_cur = rlim.rlim_max;
-					(void)setrlimit( RLIMIT_VMEM, &rlim);
-					if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
-					{
-						rlim.rlim_cur = RLIM_INFINITY;
-						rlim.rlim_max = RLIM_INFINITY;
-					}
-				}
-
-				if( rlim.rlim_cur != RLIM_INFINITY)
-				{
-					uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
-				}
-			}
-		}
-	#endif
-
-	#if defined( RLIMIT_DATA)
-
-		// Bump the process soft heap limit up to the hard limit
-		{
-			struct rlimit	rlim;
-
-			if( getrlimit( RLIMIT_DATA, &rlim) == 0)
-			{
-				if( rlim.rlim_cur < rlim.rlim_max)
-				{
-					rlim.rlim_cur = rlim.rlim_max;
-					(void)setrlimit( RLIMIT_DATA, &rlim);
-					if( getrlimit( RLIMIT_DATA, &rlim) != 0)
-					{
-						rlim.rlim_cur = RLIM_INFINITY;
-						rlim.rlim_max = RLIM_INFINITY;
-					}
-				}
-
-				if( rlim.rlim_cur != RLIM_INFINITY)
-				{
-					uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
-				}
-			}
-		}
-
-	#endif
-	}
-#elif defined( FLM_NLM)
-	{
-		FLMUINT	uiCacheBufferSize = GetCacheBufferSize();
-
-		uiMem = (FLMUINT)((bCalcOnAvailMem)
-								? (FLMUINT)GetCurrentNumberOfCacheBuffers()
-								: (FLMUINT)GetOriginalNumberOfCacheBuffers());
-
-		// Operating System will never give up last three hundred buffers.
-
-		if (uiMem > 300)
-		{
-			uiMem -= 300;
-		}
-		else
-		{
-			uiMem = 0;
-		}
-		if (uiMem > FLM_MAX_UINT / uiCacheBufferSize)
-		{
-			uiMem = FLM_MAX_UINT;
-		}
-		else
-		{
-			uiMem *= uiCacheBufferSize;
-		}
-
-		// Get available memory in local process pool
-
-		if (bCalcOnAvailMem)
-		{
-			FLMUINT	uiFreeBytes;
-			FLMUINT	uiFreeNodes;
-			FLMUINT	uiAllocatedBytes;
-			FLMUINT	uiAllocatedNodes;
-			FLMUINT	uiTotalMemory;
-
-			if (GetNLMAllocMemoryCounts( f_getNLMHandle(),
-									&uiFreeBytes, &uiFreeNodes,
-									&uiAllocatedBytes, &uiAllocatedNodes,
-									&uiTotalMemory) == 0)
-			{
-				if (uiMem > FLM_MAX_UINT - uiFreeBytes)
-				{
-					uiMem = FLM_MAX_UINT;
-				}
-				else
-				{
-					uiMem += uiFreeBytes;
-				}
-			}
-		}
-	}
-#else
-	#error Getting physical memory is not supported by this platform.
-#endif
-
+							? (FLMUINT)ui64TotalPhysMem
+							: (FLMUINT)ui64AvailPhysMem);
+	
 	// If we are basing the calculation on available physical memory,
 	// take in to account what has already been allocated.
 
@@ -494,38 +273,6 @@ FSTATIC FLMUINT flmGetCacheBytes(
 			uiMem += uiBytesCurrentlyInUse;
 		}
 	}
-
-	// Determine if there are limits on the amount of memory the
-	// process can access and reset uiMem accordingly.  There may
-	// be more available memory than the process is able to access.
-
-#ifdef FLM_WIN
-
-	// There could be more physical memory in the system than we could
-	// actually allocate in our virtual address space.  Thus, we need to
-	// make sure that we never exceed our total virtual address space.
-
-	if (uiMem > (FLMUINT)MemStatus.dwTotalVirtual)
-	{
-		uiMem = (FLMUINT)MemStatus.dwTotalVirtual;
-	}
-
-#elif defined( FLM_UNIX)
-
-	// The process might be limited in the amount of memory it
-	// can access.
-
-	if ( uiMem > uiProcMemLimit)
-	{
-		uiMem = uiProcMemLimit;
-	}
-
-	if( uiMem > uiProcVMemLimit)
-	{
-		uiMem = uiProcVMemLimit;
-	}
-
-#endif
 
 	// If uiMax is zero, use uiMinToLeave to calculate the maximum.
 
@@ -564,9 +311,12 @@ FSTATIC FLMUINT flmGetCacheBytes(
 	{
 		uiMem = uiMin;
 	}
-	return( uiMem);
+	
+Exit:
+
+	*puiCacheBytes = uiMem;
+	return( rc);
 }
-#endif
 
 /***************************************************************************
 Desc:	Lock the system data structure for access - called only by startup
@@ -575,19 +325,10 @@ Desc:	Lock the system data structure for access - called only by startup
 ***************************************************************************/
 FSTATIC void flmLockSysData( void)
 {
-#ifdef FLM_HAVE_ATOMICS
-	while( _flmAtomicExchange( &gv_flmSysSpinLock, 1) == 1)
+	while( f_atomicExchange( &gv_flmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
-#else
-	while (gv_flmSysSpinLock)
-	{
-		f_sleep( 10);
-	}
-	
-	gv_flmSysSpinLock = 1;
-#endif
 }
 
 /***************************************************************************
@@ -596,11 +337,7 @@ Desc:	Unlock the system data structure for access - called only by startup
 ***************************************************************************/
 FSTATIC void flmUnlockSysData( void)
 {
-#ifdef FLM_HAVE_ATOMICS
-	_flmAtomicExchange( &gv_flmSysSpinLock, 0);
-#else
-	gv_flmSysSpinLock = 0;
-#endif
+	f_atomicExchange( &gv_flmSysSpinLock, 0);
 }
 
 /****************************************************************************
@@ -618,91 +355,31 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	int				iHandle;
 #endif
 
-	// Before starting anything, make sure the atomic primitives return the
-	// correct values on this platform
-
-#if defined( FLM_DEBUG) 
-
-	#if !defined( FLM_HAVE_ATOMICS) && (defined( FLM_WIN) || defined( FLM_NLM))
-		#error Something is wrong with the build environment!
-	#endif
-	
-	{
-		FLMATOMIC			atomicVal = 10772;
-		FLMINT32				i32Tmp;
-		
-		flmAssert( flmAtomicInc( &atomicVal, (F_MUTEX)1, TRUE) == 10773);
-		flmAssert( flmAtomicDec( &atomicVal, (F_MUTEX)1, TRUE) == 10772);
-		
-		i32Tmp = flmAtomicExchange( &atomicVal, 10777, (F_MUTEX)1, TRUE);
-		
-		flmAssert( i32Tmp == 10772);
-		flmAssert( atomicVal == 10777);
-	}
-	
-#endif
-
 	flmLockSysData();
 
 	// See if FLAIM has already been started.  If so,
 	// we are done.
 
-	if (++gv_uiFlmSysStartupCount > 1)
+	if( ++gv_uiFlmSysStartupCount > 1)
 	{
 		goto Exit;
 	}
-
-#ifdef FLM_NLM
-	gv_bNetWareStartupCalled = TRUE;
-	if( RC_BAD( rc = f_netwareStartup()))
+	
+	if( RC_BAD( rc = ftkStartup()))
 	{
 		goto Exit;
 	}
-#endif
-
-	// Sanity check -- make sure we are using the correct
-	// byte-swap macros for this platform
-
-	flmAssert( FB2UD( "\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
-	flmAssert( FB2UW( "\x0A\x0B") == 0x0B0A);
 
 	// The memset needs to be first.
 
 	f_memset( &gv_FlmSysData, 0, sizeof( FLMSYSDATA));
 
-#if defined( FLM_LINUX)
-	flmGetLinuxKernelVersion( &gv_FlmSysData.uiLinuxMajorVer,
-									  &gv_FlmSysData.uiLinuxMinorVer, 
-									  &gv_FlmSysData.uiLinuxRevision);
-	gv_FlmSysData.uiMaxFileSize = flmGetLinuxMaxFileSize( sizeof( FLMUINT));
-#elif defined( FLM_AIX)
-	// Call set setrlimit to increase the max allowed file size.
-	// We don't have a good way to deal with any errors returned by
-	// setrlimit(), so we just hope that there aren't any...
-	struct rlimit rlim;
-	rlim.rlim_cur = RLIM_INFINITY;
-	rlim.rlim_max = RLIM_INFINITY;
-	setrlimit( RLIMIT_FSIZE, &rlim);
-	gv_FlmSysData.uiMaxFileSize = F_MAXIMUM_FILE_SIZE;
-#else
-	gv_FlmSysData.uiMaxFileSize = F_MAXIMUM_FILE_SIZE;
-#endif
+	gv_FlmSysData.uiMaxFileSize = f_getMaxFileSize();
 
 	flmAssert( gv_FlmSysData.uiMaxFileSize);
 
 	// Initialize memory tracking variables - should be done before
 	// call to f_memoryInit().
-
-#ifdef FLM_DEBUG
-
-	// Variables for memory allocation tracking.
-
-	gv_FlmSysData.bTrackLeaks = TRUE;
-	gv_FlmSysData.hMemTrackingMutex = F_MUTEX_NULL;
-#ifdef DEBUG_SIM_OUT_OF_MEM
-	f_randomSetSeed( &gv_FlmSysData.memSimRandomGen, 1);
-#endif
-#endif
 
 	gv_FlmSysData.hShareMutex = F_MUTEX_NULL;
 	gv_FlmSysData.hFileHdlMutex = F_MUTEX_NULL;
@@ -715,51 +392,46 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	gv_FlmSysData.LockEvents.hMutex = F_MUTEX_NULL;
 	gv_FlmSysData.SizeEvents.hMutex = F_MUTEX_NULL;
 
-	// Memory initialization should be first.
-
-	f_memoryInit();
-
-#if defined( FLM_NLM) || (defined( FLM_WIN) && !defined( FLM_64BIT))
-	InitFastBlockCheckSum();
-#endif
-
-#if defined( FLM_NLM)
-	if (RC_BAD( rc = nssInitialize()))
-	{
-		goto Exit;
-	}
-#endif
-
 #ifdef FLM_DBG_LOG
 	flmDbgLogInit();
 #endif
 
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_UNUSED_TIME,
-		gv_FlmSysData.uiMaxUnusedTime);
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_CP_INTERVAL,
-		gv_FlmSysData.uiMaxCPInterval);
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_TRANS_SECS,
-		gv_FlmSysData.uiMaxTransTime);
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_TRANS_INACTIVE_SECS,
-		gv_FlmSysData.uiMaxTransInactiveTime);
+	gv_FlmSysData.uiMaxUnusedTime = 
+		FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_UNUSED_TIME);
+		
+	gv_FlmSysData.uiMaxCPInterval = 
+		FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_CP_INTERVAL);
+		
+	gv_FlmSysData.uiMaxTransTime = 
+		FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_TRANS_SECS);
+		
+	gv_FlmSysData.uiMaxTransInactiveTime = 
+		FLM_SECS_TO_TIMER_UNITS( DEFAULT_MAX_TRANS_INACTIVE_SECS);
 
-#ifdef FLM_CAN_GET_PHYS_MEM
-	gv_FlmSysData.bDynamicCacheAdjust = TRUE;
-	gv_FlmSysData.uiCacheAdjustPercent = DEFAULT_CACHE_ADJUST_PERCENT;
-	gv_FlmSysData.uiCacheAdjustMin = DEFAULT_CACHE_ADJUST_MIN;
-	gv_FlmSysData.uiCacheAdjustMax = DEFAULT_CACHE_ADJUST_MAX;
-	gv_FlmSysData.uiCacheAdjustMinToLeave = DEFAULT_CACHE_ADJUST_MIN_TO_LEAVE;
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_CACHE_ADJUST_INTERVAL,
-		gv_FlmSysData.uiCacheAdjustInterval);
-	uiCacheBytes = flmGetCacheBytes( gv_FlmSysData.uiCacheAdjustPercent,
-												gv_FlmSysData.uiCacheAdjustMin,
-												gv_FlmSysData.uiCacheAdjustMax,
-												gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE, 0);
-#else
-	gv_FlmSysData.bDynamicCacheAdjust = FALSE;
-	gv_FlmSysData.uiCacheAdjustInterval = 0;
-	uiCacheBytes = DEFAULT_CACHE_ADJUST_MIN;
-#endif
+	if( f_canGetMemoryInfo())
+	{
+		gv_FlmSysData.bDynamicCacheAdjust = TRUE;
+		gv_FlmSysData.uiCacheAdjustPercent = DEFAULT_CACHE_ADJUST_PERCENT;
+		gv_FlmSysData.uiCacheAdjustMin = DEFAULT_CACHE_ADJUST_MIN;
+		gv_FlmSysData.uiCacheAdjustMax = DEFAULT_CACHE_ADJUST_MAX;
+		gv_FlmSysData.uiCacheAdjustMinToLeave = DEFAULT_CACHE_ADJUST_MIN_TO_LEAVE;
+		
+		gv_FlmSysData.uiCacheAdjustInterval = 
+			FLM_SECS_TO_TIMER_UNITS( DEFAULT_CACHE_ADJUST_INTERVAL);
+			
+		if( RC_BAD( rc = flmGetCacheBytes( gv_FlmSysData.uiCacheAdjustPercent,
+			gv_FlmSysData.uiCacheAdjustMin, gv_FlmSysData.uiCacheAdjustMax,
+			gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE, 0, &uiCacheBytes)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		gv_FlmSysData.bDynamicCacheAdjust = FALSE;
+		gv_FlmSysData.uiCacheAdjustInterval = 0;
+		uiCacheBytes = DEFAULT_CACHE_ADJUST_MIN;
+	}
 
 	if( uiCacheBytes > FLM_MAX_CACHE_SIZE)
 	{
@@ -768,39 +440,31 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 
 	gv_FlmSysData.uiBlockCachePercentage = DEFAULT_BLOCK_CACHE_PERCENTAGE;
 
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_CACHE_CLEANUP_INTERVAL,
-		gv_FlmSysData.uiCacheCleanupInterval);
-	FLM_SECS_TO_TIMER_UNITS( DEFAULT_UNUSED_CLEANUP_INTERVAL,
-			gv_FlmSysData.uiUnusedCleanupInterval);
-
-	// Initialize the thread manager
-
-	if( (gv_FlmSysData.pThreadMgr = f_new F_ThreadMgr) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = gv_FlmSysData.pThreadMgr->setupThreadMgr()))
-	{
-		goto Exit;
-	}
-
-	// Initialize the serial number generator
-
-	if( RC_BAD( rc = f_initSerialNumberGenerator()))
+	gv_FlmSysData.uiCacheCleanupInterval = 
+		FLM_SECS_TO_TIMER_UNITS( DEFAULT_CACHE_CLEANUP_INTERVAL);
+	gv_FlmSysData.uiUnusedCleanupInterval = 
+		FLM_SECS_TO_TIMER_UNITS( DEFAULT_UNUSED_CLEANUP_INTERVAL);
+			
+	// Get a pointer to the thread manager
+	
+	if( RC_BAD( rc = FlmGetThreadMgr( &gv_FlmSysData.pThreadMgr)))
 	{
 		goto Exit;
 	}
 	
+	// Allocate thread group IDs
+	
+	gv_uiBackIxThrdGroup = gv_FlmSysData.pThreadMgr->allocGroupId();
+	gv_uiCPThrdGrp = gv_FlmSysData.pThreadMgr->allocGroupId();
+	gv_uiDbThrdGrp = gv_FlmSysData.pThreadMgr->allocGroupId();
+
 	// Initialize the slab manager
 	
-	if( (gv_FlmSysData.pSlabManager = f_new F_SlabManager) == NULL)
+	if( RC_BAD( rc = FlmAllocSlabManager( &gv_FlmSysData.pSlabManager)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	if( !gv_FlmSysData.bDynamicCacheAdjust)
 	{
 		if( RC_BAD( rc = gv_FlmSysData.pSlabManager->setup( uiCacheBytes)))
@@ -880,58 +544,14 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 
 	gv_FlmSysData.uiNextFFileId = 1;
 
-	// Allocate and Initialize FLAIM Shared File Handle Manager
-
-	if ((gv_FlmSysData.pFileHdlMgr =
-				new F_FileHdlMgr( &gv_FlmSysData.hFileHdlMutex)) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = gv_FlmSysData.pFileHdlMgr->Setup( DEFAULT_OPEN_THRESHOLD,
-										DEFAULT_MAX_UNUSED_TIME)))
+	// Get the file system object
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &gv_FlmSysData.pFileSystem)))
 	{
 		goto Exit;
 	}
-
-	// Allocate and Initialize FLAIM Shared File System object
-
-	if ((gv_FlmSysData.pFileSystem = f_new F_FileSystemImp) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-#if defined( FLM_WIN)
-	OSVERSIONINFO		versionInfo;
-
-	versionInfo.dwOSVersionInfoSize = sizeof( OSVERSIONINFO);
-	if( !GetVersionEx( &versionInfo))
-	{
-		return( MapWinErrorToFlaim( GetLastError(), FERR_FAILURE));
-	}
-
-	// Async writes are not supported on Win32s (3.1) or
-	// Win95, 98, ME, etc.
-
-	gv_FlmSysData.bOkToDoAsyncWrites =
-		(versionInfo.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS &&
-		 versionInfo.dwPlatformId != VER_PLATFORM_WIN32s)
-		 ? TRUE
-		 : FALSE;
-#else
-	gv_FlmSysData.bOkToDoAsyncWrites = TRUE;
-#endif
-
-	// Allocate and Initialize FLAIM Server Lock Manager
-
-	if ((gv_FlmSysData.pServerLockMgr =
-				new ServerLockManager( &gv_FlmSysData.hServerLockMgrMutex)) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	
+	gv_FlmSysData.bOkToDoAsyncWrites = gv_FlmSysData.pFileSystem->canDoAsync();
 
 	// Set up the session manager
 
@@ -942,13 +562,6 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	}
 
 	if( RC_BAD( rc = gv_FlmSysData.pSessionMgr->setupSessionMgr()))
-	{
-		goto Exit;
-	}
-
-	// Set up hash table for lock manager.
-
-	if (RC_BAD( rc = gv_FlmSysData.pServerLockMgr->SetupHashTbl()))
 	{
 		goto Exit;
 	}
@@ -1002,6 +615,7 @@ Exit:
 	{
 		flmCleanup();
 	}
+	
 	flmUnlockSysData();
 	return( rc);
 }
@@ -1098,81 +712,89 @@ FLMEXP RCODE FLMAPI FlmSetDynamicMemoryLimit(
 	FLMUINT			uiCacheAdjustPercent,
 	FLMUINT			uiCacheAdjustMin,
 	FLMUINT			uiCacheAdjustMax,
-	FLMUINT			uiCacheAdjustMinToLeave
-	)
+	FLMUINT			uiCacheAdjustMinToLeave)
 {
-#ifndef FLM_CAN_GET_PHYS_MEM
-	F_UNREFERENCED_PARM( uiCacheAdjustPercent);
-	F_UNREFERENCED_PARM( uiCacheAdjustMin);
-	F_UNREFERENCED_PARM( uiCacheAdjustMax);
-	F_UNREFERENCED_PARM( uiCacheAdjustMinToLeave);
-	return( RC_SET( FERR_NOT_IMPLEMENTED));
-#else
-	RCODE		rc = FERR_OK;
-	FLMUINT	uiCacheBytes;
-
-	f_mutexLock( gv_FlmSysData.hShareMutex);
-	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-	gv_FlmSysData.bDynamicCacheAdjust = TRUE;
-	flmAssert( uiCacheAdjustPercent > 0 &&
-				  uiCacheAdjustPercent <= 100);
-	gv_FlmSysData.uiCacheAdjustPercent = uiCacheAdjustPercent;
-	gv_FlmSysData.uiCacheAdjustMin = uiCacheAdjustMin;
-	gv_FlmSysData.uiCacheAdjustMax = uiCacheAdjustMax;
-	gv_FlmSysData.uiCacheAdjustMinToLeave = uiCacheAdjustMinToLeave;
-	uiCacheBytes = flmGetCacheBytes( gv_FlmSysData.uiCacheAdjustPercent,
-									gv_FlmSysData.uiCacheAdjustMin,
-									gv_FlmSysData.uiCacheAdjustMax,
-									gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE,
-									gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
-									gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated());
-	rc = flmSetCacheLimits( uiCacheBytes, FALSE, FALSE);
-	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-	f_mutexUnlock( gv_FlmSysData.hShareMutex);
-	return( rc);
-#endif
+	if( !f_canGetMemoryInfo())
+	{
+		return( RC_SET( FERR_NOT_IMPLEMENTED));
+	}
+	else
+	{
+		RCODE		rc = FERR_OK;
+		FLMUINT	uiCacheBytes;
+	
+		f_mutexLock( gv_FlmSysData.hShareMutex);
+		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+		gv_FlmSysData.bDynamicCacheAdjust = TRUE;
+		flmAssert( uiCacheAdjustPercent > 0 &&
+					  uiCacheAdjustPercent <= 100);
+		gv_FlmSysData.uiCacheAdjustPercent = uiCacheAdjustPercent;
+		gv_FlmSysData.uiCacheAdjustMin = uiCacheAdjustMin;
+		gv_FlmSysData.uiCacheAdjustMax = uiCacheAdjustMax;
+		gv_FlmSysData.uiCacheAdjustMinToLeave = uiCacheAdjustMinToLeave;
+		
+		if( RC_OK( rc = flmGetCacheBytes( gv_FlmSysData.uiCacheAdjustPercent,
+			gv_FlmSysData.uiCacheAdjustMin, gv_FlmSysData.uiCacheAdjustMax,
+			gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE,
+			gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
+				gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated,
+			&uiCacheBytes)))
+		{
+			rc = flmSetCacheLimits( uiCacheBytes, FALSE, FALSE);
+		}
+		
+		f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
+		f_mutexUnlock( gv_FlmSysData.hShareMutex);
+		return( rc);
+	}
 }
 
 /****************************************************************************
 Desc : Sets a hard memory limit for cache.
 ****************************************************************************/
 FLMEXP RCODE FLMAPI FlmSetHardMemoryLimit(
-	FLMUINT	uiPercent,
-	FLMBOOL	bPercentOfAvail,
-	FLMUINT	uiMin,
-	FLMUINT	uiMax,
-	FLMUINT	uiMinToLeave,
-	FLMBOOL	bPreallocate
-	)
+	FLMUINT		uiPercent,
+	FLMBOOL		bPercentOfAvail,
+	FLMUINT		uiMin,
+	FLMUINT		uiMax,
+	FLMUINT		uiMinToLeave,
+	FLMBOOL		bPreallocate)
 {
-	RCODE		rc = FERR_OK;
+	RCODE			rc = FERR_OK;
 
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+	
 	gv_FlmSysData.bDynamicCacheAdjust = FALSE;
+	
 	if (uiPercent)
 	{
-#ifndef FLM_CAN_GET_PHYS_MEM
-		F_UNREFERENCED_PARM( bPercentOfAvail);
-		F_UNREFERENCED_PARM( uiMin);
-		F_UNREFERENCED_PARM( uiMinToLeave);
-		rc = RC_SET( FERR_NOT_IMPLEMENTED);
-#else
-		FLMUINT	uiCacheBytes;
-
-		uiCacheBytes = flmGetCacheBytes( uiPercent, uiMin, uiMax, uiMinToLeave,
-										bPercentOfAvail,
-										gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
-										gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated());
-		rc = flmSetCacheLimits( uiCacheBytes, FALSE, bPreallocate);
-#endif
+		if( !f_canGetMemoryInfo())
+		{
+			rc = RC_SET( FERR_NOT_IMPLEMENTED);
+		}
+		else
+		{
+			FLMUINT	uiCacheBytes;
+	
+			if( RC_OK( rc = flmGetCacheBytes( 
+				uiPercent, uiMin, uiMax, uiMinToLeave,
+				bPercentOfAvail, gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
+					gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated, 
+					&uiCacheBytes)))
+			{
+				rc = flmSetCacheLimits( uiCacheBytes, FALSE, bPreallocate);
+			}
+		}
 	}
 	else
 	{
 		rc = flmSetCacheLimits( uiMax, TRUE, bPreallocate);
 	}
+	
 	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
+	
 	return( rc);
 }
 
@@ -1218,11 +840,6 @@ FLMEXP void FLMAPI FlmGetMemoryInfo(
 			{
 				while( pFile)
 				{
-					if( pFile->pECacheMgr)
-					{
-						pFile->pECacheMgr->getStats( &pMemInfo->ECache, TRUE);
-					}
-
 					if( pFile->uiDirtyCacheCount)
 					{
 						pMemInfo->uiDirtyBytes += 
@@ -1370,10 +987,6 @@ Retry:
 
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	bMutexLocked = FALSE;
-
-	// Clean up any unused file handles
-
-	(void)gv_FlmSysData.pFileHdlMgr->CheckAgedItems( (FLMUINT)0);
 
 Exit:
 
@@ -1524,13 +1137,12 @@ FLMEXP RCODE FLMAPI FlmConfig(
 
 	switch( eConfigType)
 	{
-
-	case FLM_OPEN_THRESHOLD:
-		uiValue = (FLMUINT) Value1;
-		rc = gv_FlmSysData.pFileHdlMgr->SetOpenThreshold( uiValue);
-		break;
-
-	case FLM_CACHE_LIMIT:
+		case FLM_OPEN_THRESHOLD:
+		{
+			break;
+		}
+	
+		case FLM_CACHE_LIMIT:
 		{
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
@@ -1540,8 +1152,8 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			break;
 		}
-
-	case FLM_BLOCK_CACHE_PERCENTAGE:
+	
+		case FLM_BLOCK_CACHE_PERCENTAGE:
 		{
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
@@ -1561,151 +1173,168 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			break;
 		}
-
-	case FLM_SCACHE_DEBUG:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-		if (RC_OK( rc = ScaConfig( FLM_SCACHE_DEBUG, Value1, Value2)))
+	
+		case FLM_SCACHE_DEBUG:
 		{
-			rc = flmRcaConfig( FLM_SCACHE_DEBUG, Value1, Value2);
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+			if (RC_OK( rc = ScaConfig( FLM_SCACHE_DEBUG, Value1, Value2)))
+			{
+				rc = flmRcaConfig( FLM_SCACHE_DEBUG, Value1, Value2);
+			}
+			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
 		}
-		f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case 	FLM_CLOSE_UNUSED_FILES:
-
-		// Timeout inactive sessions
-
-		if( gv_FlmSysData.pSessionMgr)
+	
+		case FLM_CLOSE_UNUSED_FILES:
 		{
-			gv_FlmSysData.pSessionMgr->timeoutInactiveSessions( 
-				(FLMUINT)Value1, TRUE);
+	
+			// Timeout inactive sessions
+	
+			if( gv_FlmSysData.pSessionMgr)
+			{
+				gv_FlmSysData.pSessionMgr->timeoutInactiveSessions( 
+					(FLMUINT)Value1, TRUE);
+			}
+	
+			// Convert seconds to timer units
+	
+			uiValue = FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1);
+	
+			// Free any other unused structures that have not been used for the
+			// specified amount of time.
+	
+			uiCurrTime = (FLMUINT)FLM_GET_TIMER();
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+	
+			// Temporarily set the maximum unused seconds in the FLMSYSDATA structure
+			// to the value that was passed in to Value1.  Restore it after
+			// calling flmCheckNUStructs.
+	
+			uiSave = gv_FlmSysData.uiMaxUnusedTime;
+			gv_FlmSysData.uiMaxUnusedTime = uiValue;
+	
+			// May unlock and re-lock the global mutex.
+			flmCheckNUStructs( uiCurrTime);
+			gv_FlmSysData.uiMaxUnusedTime = uiSave;
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
 		}
-
-		// Convert seconds to timer units
-
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1, uiValue);
-		rc = gv_FlmSysData.pFileHdlMgr->CheckAgedItems( uiValue);
-
-		// Free any other unused structures that have not been used for the
-		// specified amount of time.
-
-		uiCurrTime = (FLMUINT)FLM_GET_TIMER();
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-
-		// Temporarily set the maximum unused seconds in the FLMSYSDATA structure
-		// to the value that was passed in to Value1.  Restore it after
-		// calling flmCheckNUStructs.
-
-		uiSave = gv_FlmSysData.uiMaxUnusedTime;
-		gv_FlmSysData.uiMaxUnusedTime = uiValue;
-
-		// May unlock and re-lock the global mutex.
-		flmCheckNUStructs( uiCurrTime);
-		gv_FlmSysData.uiMaxUnusedTime = uiSave;
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-		
-	case	FLM_CLOSE_ALL_FILES:
-		rc = flmCloseAllFiles();
-		break;
-
-	case FLM_START_STATS:
-		(void)flmStatStart( &gv_FlmSysData.Stats);
-
-		// Start query statistics, if they have not
-		// already been started.
-
-		f_mutexLock( gv_FlmSysData.hQueryMutex);
-		if (!gv_FlmSysData.uiMaxQueries)
+			
+		case FLM_CLOSE_ALL_FILES:
 		{
-			gv_FlmSysData.uiMaxQueries = 20;
-			gv_FlmSysData.bNeedToUnsetMaxQueries = TRUE;
+			break;
 		}
-		f_mutexUnlock( gv_FlmSysData.hQueryMutex);
-		break;
-
-	case FLM_STOP_STATS:
-		(void)flmStatStop( &gv_FlmSysData.Stats);
-
-		// Stop query statistics, if they were
-		// started by a call to FLM_START_STATS.
-
-		f_mutexLock( gv_FlmSysData.hQueryMutex);
-		if (gv_FlmSysData.bNeedToUnsetMaxQueries)
+	
+		case FLM_START_STATS:
 		{
+			(void)flmStatStart( &gv_FlmSysData.Stats);
+	
+			// Start query statistics, if they have not
+			// already been started.
+	
+			f_mutexLock( gv_FlmSysData.hQueryMutex);
+			if (!gv_FlmSysData.uiMaxQueries)
+			{
+				gv_FlmSysData.uiMaxQueries = 20;
+				gv_FlmSysData.bNeedToUnsetMaxQueries = TRUE;
+			}
+			f_mutexUnlock( gv_FlmSysData.hQueryMutex);
+			break;
+		}
+	
+		case FLM_STOP_STATS:
+		{
+			(void)flmStatStop( &gv_FlmSysData.Stats);
+	
+			// Stop query statistics, if they were
+			// started by a call to FLM_START_STATS.
+	
+			f_mutexLock( gv_FlmSysData.hQueryMutex);
+			if (gv_FlmSysData.bNeedToUnsetMaxQueries)
+			{
+				gv_FlmSysData.uiMaxQueries = 0;
+				flmFreeSavedQueries( TRUE);
+				// NOTE: flmFreeSavedQueries unlocks the mutex.
+			}
+			else
+			{
+				f_mutexUnlock( gv_FlmSysData.hQueryMutex);
+			}
+			
+			break;
+		}
+	
+		case FLM_RESET_STATS:
+		{
+	
+			// Lock the record cache manager's mutex
+	
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+	
+			// Reset the record cache statistics
+			
+			gv_FlmSysData.RCacheMgr.uiIoWaits = 0;
+			gv_FlmSysData.RCacheMgr.Usage.uiCacheHits = 0;
+			gv_FlmSysData.RCacheMgr.Usage.uiCacheHitLooks = 0;
+			gv_FlmSysData.RCacheMgr.Usage.uiCacheFaults = 0;
+			gv_FlmSysData.RCacheMgr.Usage.uiCacheFaultLooks = 0;
+	
+			// Reset the block cache statistics.
+	
+			gv_FlmSysData.SCacheMgr.uiIoWaits = 0;
+			gv_FlmSysData.SCacheMgr.Usage.uiCacheHits = 0;
+			gv_FlmSysData.SCacheMgr.Usage.uiCacheHitLooks = 0;
+			gv_FlmSysData.SCacheMgr.Usage.uiCacheFaults = 0;
+			gv_FlmSysData.SCacheMgr.Usage.uiCacheFaultLooks = 0;
+	
+			// Unlock the cache manager's mutex
+	
+			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+	
+			(void)flmStatReset( &gv_FlmSysData.Stats, FALSE, TRUE);
+	
+			f_mutexLock( gv_FlmSysData.hQueryMutex);
+			uiSaveMax = gv_FlmSysData.uiMaxQueries;
 			gv_FlmSysData.uiMaxQueries = 0;
 			flmFreeSavedQueries( TRUE);
 			// NOTE: flmFreeSavedQueries unlocks the mutex.
+	
+			// Restore the old maximum
+	
+			if (uiSaveMax)
+			{
+	
+				// flmFreeSavedQueries unlocks the mutex, so we
+				// must relock it to restore the old maximum.
+	
+				f_mutexLock( gv_FlmSysData.hQueryMutex);
+				gv_FlmSysData.uiMaxQueries = uiSaveMax;
+				f_mutexUnlock( gv_FlmSysData.hQueryMutex);
+			}
+			
+			break;
 		}
-		else
+	
+		case FLM_TMPDIR:
 		{
-			f_mutexUnlock( gv_FlmSysData.hQueryMutex);
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			rc = flmSetTmpDir( (const char *)Value1);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
 		}
-		break;
-
-	case FLM_RESET_STATS:
-
-		// Lock the record cache manager's mutex
-
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-
-		// Reset the record cache statistics
-		
-		gv_FlmSysData.RCacheMgr.uiIoWaits = 0;
-		gv_FlmSysData.RCacheMgr.Usage.uiCacheHits = 0;
-		gv_FlmSysData.RCacheMgr.Usage.uiCacheHitLooks = 0;
-		gv_FlmSysData.RCacheMgr.Usage.uiCacheFaults = 0;
-		gv_FlmSysData.RCacheMgr.Usage.uiCacheFaultLooks = 0;
-
-		// Reset the block cache statistics.
-
-		gv_FlmSysData.SCacheMgr.uiIoWaits = 0;
-		gv_FlmSysData.SCacheMgr.Usage.uiCacheHits = 0;
-		gv_FlmSysData.SCacheMgr.Usage.uiCacheHitLooks = 0;
-		gv_FlmSysData.SCacheMgr.Usage.uiCacheFaults = 0;
-		gv_FlmSysData.SCacheMgr.Usage.uiCacheFaultLooks = 0;
-
-		// Unlock the cache manager's mutex
-
-		f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-
-		(void)flmStatReset( &gv_FlmSysData.Stats, FALSE, TRUE);
-
-		f_mutexLock( gv_FlmSysData.hQueryMutex);
-		uiSaveMax = gv_FlmSysData.uiMaxQueries;
-		gv_FlmSysData.uiMaxQueries = 0;
-		flmFreeSavedQueries( TRUE);
-		// NOTE: flmFreeSavedQueries unlocks the mutex.
-
-		// Restore the old maximum
-
-		if (uiSaveMax)
+			
+		case FLM_MAX_CP_INTERVAL:
 		{
-
-			// flmFreeSavedQueries unlocks the mutex, so we
-			// must relock it to restore the old maximum.
-
-			f_mutexLock( gv_FlmSysData.hQueryMutex);
-			gv_FlmSysData.uiMaxQueries = uiSaveMax;
-			f_mutexUnlock( gv_FlmSysData.hQueryMutex);
+			gv_FlmSysData.uiMaxCPInterval = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1);
+			break;
 		}
-		break;
-
-	case FLM_TMPDIR:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		rc = flmSetTmpDir( (const char *)Value1);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-		
-	case FLM_MAX_CP_INTERVAL:
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1, gv_FlmSysData.uiMaxCPInterval);
-		break;
-
-	case FLM_BLOB_EXT:
+	
+		case FLM_BLOB_EXT:
 		{
 			const char *	pszTmp = (const char *)Value1;
 
@@ -1727,263 +1356,261 @@ FLMEXP RCODE FLMAPI FlmConfig(
 				}
 				gv_FlmSysData.ucBlobExt [iCnt] = 0;
 			}
+			
+			break;
 		}
-		break;
-
-	case FLM_MAX_TRANS_SECS:
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1,
-			gv_FlmSysData.uiMaxTransTime);
-		break;
-
-	case FLM_MAX_TRANS_INACTIVE_SECS:
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1,
-			gv_FlmSysData.uiMaxTransInactiveTime);
-		break;
-
-	case FLM_CACHE_ADJUST_INTERVAL:
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1,
-			gv_FlmSysData.uiCacheAdjustInterval);
-		break;
-
-	case FLM_CACHE_CLEANUP_INTERVAL:
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1,
-			gv_FlmSysData.uiCacheCleanupInterval);
-		break;
-
-	case FLM_UNUSED_CLEANUP_INTERVAL:
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1,
-			gv_FlmSysData.uiUnusedCleanupInterval);
-		break;
-
-	case FLM_MAX_UNUSED_TIME:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1,
-			gv_FlmSysData.uiMaxUnusedTime);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_OUT_OF_MEM_SIMULATION:
-#ifdef DEBUG_SIM_OUT_OF_MEM
-		gv_FlmSysData.uiOutOfMemSimEnabledFlag =
-			(FLMUINT)((Value1) ? OUT_OF_MEM_SIM_ENABLED_FLAG : 0);
-#else
-		rc = RC_SET( FERR_NOT_IMPLEMENTED);
-#endif
-		break;
-
-	case FLM_CACHE_CHECK:
-		gv_FlmSysData.bCheckCache = (FLMBOOL)((Value1 != 0)
-														  ? (FLMBOOL)TRUE
-														  : (FLMBOOL)FALSE);
-		break;
-
-	case FLM_CLOSE_FILE:
-		rc = flmCloseDbFile( (const char *)Value1, (const char *)Value2);
-		break;
-
-	case FLM_LOGGER:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		if( !gv_FlmSysData.pLogger && Value1)
-		{
-			gv_FlmSysData.pLogger = (F_Logger *)Value1;
-			gv_FlmSysData.pLogger->lockLogger();
-			gv_FlmSysData.pLogger->AddRef();
-			gv_FlmSysData.pLogger->unlockLogger();
-		}
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_USE_ESM:
-		gv_FlmSysData.bOkToUseESM = (FLMBOOL)((Value1 != 0)
-														 ? (FLMBOOL)TRUE
-														 : (FLMBOOL)FALSE);
-		break;
-
-	case FLM_ASSIGN_HTTP_SYMS:
-		if( gv_FlmSysData.HttpConfigParms.fnReg ||
-			 gv_FlmSysData.HttpConfigParms.fnDereg ||
-			 gv_FlmSysData.HttpConfigParms.fnReqPath ||
-			 gv_FlmSysData.HttpConfigParms.fnReqQuery ||
-			 gv_FlmSysData.HttpConfigParms.fnReqHdrValue ||
-			 gv_FlmSysData.HttpConfigParms.fnSetHdrValue ||
-			 gv_FlmSysData.HttpConfigParms.fnPrintf ||
-			 gv_FlmSysData.HttpConfigParms.fnEmit ||
-			 gv_FlmSysData.HttpConfigParms.fnSetNoCache ||
-			 gv_FlmSysData.HttpConfigParms.fnSendHeader ||
-			 gv_FlmSysData.HttpConfigParms.fnSetIOMode ||
-			 gv_FlmSysData.HttpConfigParms.fnSendBuffer ||
-			 gv_FlmSysData.HttpConfigParms.fnAcquireSession ||
-			 gv_FlmSysData.HttpConfigParms.fnReleaseSession ||
-			 gv_FlmSysData.HttpConfigParms.fnAcquireUser ||
-			 gv_FlmSysData.HttpConfigParms.fnReleaseUser ||
-			 gv_FlmSysData.HttpConfigParms.fnSetSessionValue ||
-			 gv_FlmSysData.HttpConfigParms.fnGetSessionValue ||
-			 gv_FlmSysData.HttpConfigParms.fnGetGblValue ||
-			 gv_FlmSysData.HttpConfigParms.fnSetGblValue ||
-			 gv_FlmSysData.HttpConfigParms.fnRecvBuffer)
-		{
-			rc = RC_SET( FERR_HTTP_SYMS_EXIST);
-			goto Exit;
-		}
-		else
-		{
-			gv_FlmSysData.HttpConfigParms.fnReg = ((HTTPCONFIGPARAMS *)Value1)->fnReg;
-			gv_FlmSysData.HttpConfigParms.fnDereg = ((HTTPCONFIGPARAMS *)Value1)->fnDereg;
-			gv_FlmSysData.HttpConfigParms.fnReqPath = ((HTTPCONFIGPARAMS *)Value1)->fnReqPath;
-			gv_FlmSysData.HttpConfigParms.fnReqQuery = ((HTTPCONFIGPARAMS *)Value1)->fnReqQuery;
-			gv_FlmSysData.HttpConfigParms.fnReqHdrValue = ((HTTPCONFIGPARAMS *)Value1)->fnReqHdrValue;
-			gv_FlmSysData.HttpConfigParms.fnSetHdrValue = ((HTTPCONFIGPARAMS *)Value1)->fnSetHdrValue;
-			gv_FlmSysData.HttpConfigParms.fnPrintf = ((HTTPCONFIGPARAMS *)Value1)->fnPrintf;
-			gv_FlmSysData.HttpConfigParms.fnEmit = ((HTTPCONFIGPARAMS *)Value1)->fnEmit;
-			gv_FlmSysData.HttpConfigParms.fnSetNoCache = ((HTTPCONFIGPARAMS *)Value1)->fnSetNoCache;
-			gv_FlmSysData.HttpConfigParms.fnSendHeader = ((HTTPCONFIGPARAMS *)Value1)->fnSendHeader;
-			gv_FlmSysData.HttpConfigParms.fnSetIOMode = ((HTTPCONFIGPARAMS *)Value1)->fnSetIOMode;
-			gv_FlmSysData.HttpConfigParms.fnSendBuffer = ((HTTPCONFIGPARAMS *)Value1)->fnSendBuffer;
-			gv_FlmSysData.HttpConfigParms.fnAcquireSession = ((HTTPCONFIGPARAMS *)Value1)->fnAcquireSession;
-			gv_FlmSysData.HttpConfigParms.fnReleaseSession = ((HTTPCONFIGPARAMS *)Value1)->fnReleaseSession;
-			gv_FlmSysData.HttpConfigParms.fnAcquireUser = ((HTTPCONFIGPARAMS *)Value1)->fnAcquireUser;	
-			gv_FlmSysData.HttpConfigParms.fnReleaseUser = ((HTTPCONFIGPARAMS *)Value1)->fnReleaseUser;	
-			gv_FlmSysData.HttpConfigParms.fnSetSessionValue = ((HTTPCONFIGPARAMS *)Value1)->fnSetSessionValue;
-			gv_FlmSysData.HttpConfigParms.fnGetSessionValue = ((HTTPCONFIGPARAMS *)Value1)->fnGetSessionValue;
-			gv_FlmSysData.HttpConfigParms.fnGetGblValue = ((HTTPCONFIGPARAMS *)Value1)->fnGetGblValue;
-			gv_FlmSysData.HttpConfigParms.fnSetGblValue = ((HTTPCONFIGPARAMS *)Value1)->fnSetGblValue;
-			gv_FlmSysData.HttpConfigParms.fnRecvBuffer = ((HTTPCONFIGPARAMS *)Value1)->fnRecvBuffer;
-		}
-		break;
-
-	case FLM_REGISTER_HTTP_URL:
-		// Value1: FLM_MODULE_HANDLE
-		// Value2: Url string
-		if ((Value1 == NULL) || (Value2 == NULL))
-		{
-			rc = RC_SET( FERR_INVALID_PARM);
-			goto Exit;
-		}
-
-		rc = flmRegisterHttpCallback((FLM_MODULE_HANDLE)Value1, (char *)Value2);
-		break;
-
-	case FLM_DEREGISTER_HTTP_URL:
-		rc = flmDeregisterHttpCallback();		
-		break;
 	
-	case FLM_UNASSIGN_HTTP_SYMS:
-		gv_FlmSysData.HttpConfigParms.fnReg = NULL;
-		gv_FlmSysData.HttpConfigParms.fnDereg = NULL;
-		gv_FlmSysData.HttpConfigParms.fnReqPath = NULL;
-		gv_FlmSysData.HttpConfigParms.fnReqQuery = NULL;
-		gv_FlmSysData.HttpConfigParms.fnReqHdrValue = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSetHdrValue = NULL;
-		gv_FlmSysData.HttpConfigParms.fnPrintf = NULL;
-		gv_FlmSysData.HttpConfigParms.fnEmit = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSetNoCache = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSendHeader = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSetIOMode = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSendBuffer = NULL;
-		gv_FlmSysData.HttpConfigParms.fnAcquireSession = NULL;
-		gv_FlmSysData.HttpConfigParms.fnReleaseSession = NULL;
-		gv_FlmSysData.HttpConfigParms.fnAcquireUser = NULL;
-		gv_FlmSysData.HttpConfigParms.fnReleaseUser = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSetSessionValue = NULL;
-		gv_FlmSysData.HttpConfigParms.fnGetSessionValue = NULL;
-		gv_FlmSysData.HttpConfigParms.fnGetGblValue = NULL;
-		gv_FlmSysData.HttpConfigParms.fnSetGblValue = NULL;
-		gv_FlmSysData.HttpConfigParms.fnRecvBuffer = NULL;
-		break;
-
-	case FLM_KILL_DB_HANDLES:
-	{
-		FFILE *		pTmpFile;
-
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		if( Value1)
+		case FLM_MAX_TRANS_SECS:
 		{
-			// Look up the file using flmFindFile to see if we have the
-			// file open.  May unlock and re-lock the global mutex.
-
-			if( RC_OK( flmFindFile( (const char *)Value1, 
-				(const char *)Value2, &pTmpFile)) && pTmpFile)
-			{
-				flmSetMustCloseFlags( pTmpFile, FERR_OK, TRUE);
-			}
+			gv_FlmSysData.uiMaxTransTime = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1);
+			break;
 		}
-		else
+	
+		case FLM_MAX_TRANS_INACTIVE_SECS:
 		{
-			if( gv_FlmSysData.pFileHashTbl)
+			gv_FlmSysData.uiMaxTransInactiveTime = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT) Value1);
+			break;
+		}
+	
+		case FLM_CACHE_ADJUST_INTERVAL:
+		{
+			gv_FlmSysData.uiCacheAdjustInterval = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1);
+			break;
+		}
+	
+		case FLM_CACHE_CLEANUP_INTERVAL:
+		{
+			gv_FlmSysData.uiCacheCleanupInterval = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1);
+			break;
+		}
+	
+		case FLM_UNUSED_CLEANUP_INTERVAL:
+		{
+			gv_FlmSysData.uiUnusedCleanupInterval = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1);
+			break;
+		}
+	
+		case FLM_MAX_UNUSED_TIME:
+		{
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			gv_FlmSysData.uiMaxUnusedTime = 
+				FLM_SECS_TO_TIMER_UNITS( (FLMUINT)Value1);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+		}
+	
+		case FLM_CACHE_CHECK:
+			gv_FlmSysData.bCheckCache = (FLMBOOL)((Value1 != 0)
+															  ? (FLMBOOL)TRUE
+															  : (FLMBOOL)FALSE);
+			break;
+	
+		case FLM_CLOSE_FILE:
+			rc = flmCloseDbFile( (const char *)Value1, (const char *)Value2);
+			break;
+	
+		case FLM_LOGGER:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			if( !gv_FlmSysData.pLogger && Value1)
 			{
-				FLMUINT		uiLoop;
-
-				for( uiLoop = 0; uiLoop < FILE_HASH_ENTRIES; uiLoop++)
+				gv_FlmSysData.pLogger = (F_Logger *)Value1;
+				gv_FlmSysData.pLogger->lockLogger();
+				gv_FlmSysData.pLogger->AddRef();
+				gv_FlmSysData.pLogger->unlockLogger();
+			}
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		case FLM_ASSIGN_HTTP_SYMS:
+			if( gv_FlmSysData.HttpConfigParms.fnReg ||
+				 gv_FlmSysData.HttpConfigParms.fnDereg ||
+				 gv_FlmSysData.HttpConfigParms.fnReqPath ||
+				 gv_FlmSysData.HttpConfigParms.fnReqQuery ||
+				 gv_FlmSysData.HttpConfigParms.fnReqHdrValue ||
+				 gv_FlmSysData.HttpConfigParms.fnSetHdrValue ||
+				 gv_FlmSysData.HttpConfigParms.fnPrintf ||
+				 gv_FlmSysData.HttpConfigParms.fnEmit ||
+				 gv_FlmSysData.HttpConfigParms.fnSetNoCache ||
+				 gv_FlmSysData.HttpConfigParms.fnSendHeader ||
+				 gv_FlmSysData.HttpConfigParms.fnSetIOMode ||
+				 gv_FlmSysData.HttpConfigParms.fnSendBuffer ||
+				 gv_FlmSysData.HttpConfigParms.fnAcquireSession ||
+				 gv_FlmSysData.HttpConfigParms.fnReleaseSession ||
+				 gv_FlmSysData.HttpConfigParms.fnAcquireUser ||
+				 gv_FlmSysData.HttpConfigParms.fnReleaseUser ||
+				 gv_FlmSysData.HttpConfigParms.fnSetSessionValue ||
+				 gv_FlmSysData.HttpConfigParms.fnGetSessionValue ||
+				 gv_FlmSysData.HttpConfigParms.fnGetGblValue ||
+				 gv_FlmSysData.HttpConfigParms.fnSetGblValue ||
+				 gv_FlmSysData.HttpConfigParms.fnRecvBuffer)
+			{
+				rc = RC_SET( FERR_HTTP_SYMS_EXIST);
+				goto Exit;
+			}
+			else
+			{
+				gv_FlmSysData.HttpConfigParms.fnReg = ((HTTPCONFIGPARAMS *)Value1)->fnReg;
+				gv_FlmSysData.HttpConfigParms.fnDereg = ((HTTPCONFIGPARAMS *)Value1)->fnDereg;
+				gv_FlmSysData.HttpConfigParms.fnReqPath = ((HTTPCONFIGPARAMS *)Value1)->fnReqPath;
+				gv_FlmSysData.HttpConfigParms.fnReqQuery = ((HTTPCONFIGPARAMS *)Value1)->fnReqQuery;
+				gv_FlmSysData.HttpConfigParms.fnReqHdrValue = ((HTTPCONFIGPARAMS *)Value1)->fnReqHdrValue;
+				gv_FlmSysData.HttpConfigParms.fnSetHdrValue = ((HTTPCONFIGPARAMS *)Value1)->fnSetHdrValue;
+				gv_FlmSysData.HttpConfigParms.fnPrintf = ((HTTPCONFIGPARAMS *)Value1)->fnPrintf;
+				gv_FlmSysData.HttpConfigParms.fnEmit = ((HTTPCONFIGPARAMS *)Value1)->fnEmit;
+				gv_FlmSysData.HttpConfigParms.fnSetNoCache = ((HTTPCONFIGPARAMS *)Value1)->fnSetNoCache;
+				gv_FlmSysData.HttpConfigParms.fnSendHeader = ((HTTPCONFIGPARAMS *)Value1)->fnSendHeader;
+				gv_FlmSysData.HttpConfigParms.fnSetIOMode = ((HTTPCONFIGPARAMS *)Value1)->fnSetIOMode;
+				gv_FlmSysData.HttpConfigParms.fnSendBuffer = ((HTTPCONFIGPARAMS *)Value1)->fnSendBuffer;
+				gv_FlmSysData.HttpConfigParms.fnAcquireSession = ((HTTPCONFIGPARAMS *)Value1)->fnAcquireSession;
+				gv_FlmSysData.HttpConfigParms.fnReleaseSession = ((HTTPCONFIGPARAMS *)Value1)->fnReleaseSession;
+				gv_FlmSysData.HttpConfigParms.fnAcquireUser = ((HTTPCONFIGPARAMS *)Value1)->fnAcquireUser;	
+				gv_FlmSysData.HttpConfigParms.fnReleaseUser = ((HTTPCONFIGPARAMS *)Value1)->fnReleaseUser;	
+				gv_FlmSysData.HttpConfigParms.fnSetSessionValue = ((HTTPCONFIGPARAMS *)Value1)->fnSetSessionValue;
+				gv_FlmSysData.HttpConfigParms.fnGetSessionValue = ((HTTPCONFIGPARAMS *)Value1)->fnGetSessionValue;
+				gv_FlmSysData.HttpConfigParms.fnGetGblValue = ((HTTPCONFIGPARAMS *)Value1)->fnGetGblValue;
+				gv_FlmSysData.HttpConfigParms.fnSetGblValue = ((HTTPCONFIGPARAMS *)Value1)->fnSetGblValue;
+				gv_FlmSysData.HttpConfigParms.fnRecvBuffer = ((HTTPCONFIGPARAMS *)Value1)->fnRecvBuffer;
+			}
+			break;
+	
+		case FLM_REGISTER_HTTP_URL:
+			// Value1: FLM_MODULE_HANDLE
+			// Value2: Url string
+			if ((Value1 == NULL) || (Value2 == NULL))
+			{
+				rc = RC_SET( FERR_INVALID_PARM);
+				goto Exit;
+			}
+	
+			rc = flmRegisterHttpCallback((FLM_MODULE_HANDLE)Value1, (char *)Value2);
+			break;
+	
+		case FLM_DEREGISTER_HTTP_URL:
+			rc = flmDeregisterHttpCallback();		
+			break;
+		
+		case FLM_UNASSIGN_HTTP_SYMS:
+			gv_FlmSysData.HttpConfigParms.fnReg = NULL;
+			gv_FlmSysData.HttpConfigParms.fnDereg = NULL;
+			gv_FlmSysData.HttpConfigParms.fnReqPath = NULL;
+			gv_FlmSysData.HttpConfigParms.fnReqQuery = NULL;
+			gv_FlmSysData.HttpConfigParms.fnReqHdrValue = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSetHdrValue = NULL;
+			gv_FlmSysData.HttpConfigParms.fnPrintf = NULL;
+			gv_FlmSysData.HttpConfigParms.fnEmit = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSetNoCache = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSendHeader = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSetIOMode = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSendBuffer = NULL;
+			gv_FlmSysData.HttpConfigParms.fnAcquireSession = NULL;
+			gv_FlmSysData.HttpConfigParms.fnReleaseSession = NULL;
+			gv_FlmSysData.HttpConfigParms.fnAcquireUser = NULL;
+			gv_FlmSysData.HttpConfigParms.fnReleaseUser = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSetSessionValue = NULL;
+			gv_FlmSysData.HttpConfigParms.fnGetSessionValue = NULL;
+			gv_FlmSysData.HttpConfigParms.fnGetGblValue = NULL;
+			gv_FlmSysData.HttpConfigParms.fnSetGblValue = NULL;
+			gv_FlmSysData.HttpConfigParms.fnRecvBuffer = NULL;
+			break;
+	
+		case FLM_KILL_DB_HANDLES:
+		{
+			FFILE *		pTmpFile;
+	
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			if( Value1)
+			{
+				// Look up the file using flmFindFile to see if we have the
+				// file open.  May unlock and re-lock the global mutex.
+	
+				if( RC_OK( flmFindFile( (const char *)Value1, 
+					(const char *)Value2, &pTmpFile)) && pTmpFile)
 				{
-					pTmpFile = 
-						(FFILE *)gv_FlmSysData.pFileHashTbl[ uiLoop].pFirstInBucket;
-
-					while( pTmpFile)
+					flmSetMustCloseFlags( pTmpFile, FERR_OK, TRUE);
+				}
+			}
+			else
+			{
+				if( gv_FlmSysData.pFileHashTbl)
+				{
+					FLMUINT		uiLoop;
+	
+					for( uiLoop = 0; uiLoop < FILE_HASH_ENTRIES; uiLoop++)
 					{
-						flmSetMustCloseFlags( pTmpFile, FERR_OK, TRUE);
-						pTmpFile = pTmpFile->pNext;
+						pTmpFile = 
+							(FFILE *)gv_FlmSysData.pFileHashTbl[ uiLoop].pFirstInBucket;
+	
+						while( pTmpFile)
+						{
+							flmSetMustCloseFlags( pTmpFile, FERR_OK, TRUE);
+							pTmpFile = pTmpFile->pNext;
+						}
 					}
 				}
 			}
-		}
-
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-
-		// Kill all sessions
-
-		if( gv_FlmSysData.pSessionMgr)
-		{
-			gv_FlmSysData.pSessionMgr->shutdownSessions();
-		}
-
-		break;
-	}
 	
-	case FLM_QUERY_MAX:
-		f_mutexLock( gv_FlmSysData.hQueryMutex);
-		gv_FlmSysData.uiMaxQueries = (FLMUINT)Value1;
-		gv_FlmSysData.bNeedToUnsetMaxQueries = FALSE;
-		flmFreeSavedQueries( TRUE);
-
-		// flmFreeSavedQueries unlocks the mutex.
-
-		break;
-
-	case FLM_MAX_DIRTY_CACHE:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		if (!Value1)
-		{
-			gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty = TRUE;
-			gv_FlmSysData.SCacheMgr.uiMaxDirtyCache = 0;
-			gv_FlmSysData.SCacheMgr.uiLowDirtyCache = 0;
-		}
-		else
-		{
-			gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty = FALSE;
-			gv_FlmSysData.SCacheMgr.uiMaxDirtyCache = (FLMUINT)Value1;
-
-			// Low threshhold must be no higher than maximum!
-
-			if ((gv_FlmSysData.SCacheMgr.uiLowDirtyCache =
-					(FLMUINT)Value2) > gv_FlmSysData.SCacheMgr.uiMaxDirtyCache)
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+	
+			// Kill all sessions
+	
+			if( gv_FlmSysData.pSessionMgr)
 			{
-				gv_FlmSysData.SCacheMgr.uiLowDirtyCache =
-					gv_FlmSysData.SCacheMgr.uiMaxDirtyCache;
+				gv_FlmSysData.pSessionMgr->shutdownSessions();
 			}
+	
+			break;
 		}
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_QUERY_STRATIFY_LIMITS:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		gv_FlmSysData.uiMaxStratifyIterations = (FLMUINT)Value1;
-		gv_FlmSysData.uiMaxStratifyTime = (FLMUINT)Value2;
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	default:
-		rc = RC_SET( FERR_NOT_IMPLEMENTED);
-		break;
+		
+		case FLM_QUERY_MAX:
+			f_mutexLock( gv_FlmSysData.hQueryMutex);
+			gv_FlmSysData.uiMaxQueries = (FLMUINT)Value1;
+			gv_FlmSysData.bNeedToUnsetMaxQueries = FALSE;
+			flmFreeSavedQueries( TRUE);
+	
+			// flmFreeSavedQueries unlocks the mutex.
+	
+			break;
+	
+		case FLM_MAX_DIRTY_CACHE:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			if (!Value1)
+			{
+				gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty = TRUE;
+				gv_FlmSysData.SCacheMgr.uiMaxDirtyCache = 0;
+				gv_FlmSysData.SCacheMgr.uiLowDirtyCache = 0;
+			}
+			else
+			{
+				gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty = FALSE;
+				gv_FlmSysData.SCacheMgr.uiMaxDirtyCache = (FLMUINT)Value1;
+	
+				// Low threshhold must be no higher than maximum!
+	
+				if ((gv_FlmSysData.SCacheMgr.uiLowDirtyCache =
+						(FLMUINT)Value2) > gv_FlmSysData.SCacheMgr.uiMaxDirtyCache)
+				{
+					gv_FlmSysData.SCacheMgr.uiLowDirtyCache =
+						gv_FlmSysData.SCacheMgr.uiMaxDirtyCache;
+				}
+			}
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		case FLM_QUERY_STRATIFY_LIMITS:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			gv_FlmSysData.uiMaxStratifyIterations = (FLMUINT)Value1;
+			gv_FlmSysData.uiMaxStratifyTime = (FLMUINT)Value2;
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		default:
+			rc = RC_SET( FERR_NOT_IMPLEMENTED);
+			break;
 	}
 
 Exit:
@@ -1999,153 +1626,137 @@ FLMEXP RCODE FLMAPI FlmGetConfig(
 	)
 {
 	RCODE		rc = FERR_OK;
-	FLMUINT	uiTmp;
 
 	switch( eConfigType)
 	{
-	case FLM_CACHE_LIMIT:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-		*((FLMUINT *)Value1) = gv_FlmSysData.SCacheMgr.Usage.uiMaxBytes +
-										 gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes;
-		f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_BLOCK_CACHE_PERCENTAGE:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		*((FLMUINT *)Value1) = gv_FlmSysData.uiBlockCachePercentage;
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_SCACHE_DEBUG:
-#ifdef FLM_DEBUG
-		*((FLMBOOL *)Value1) = gv_FlmSysData.SCacheMgr.bDebug;
-#else
-		*((FLMBOOL *)Value1) = FALSE;
-#endif
-		break;
-
-	case FLM_OPEN_FILES:
-		*((FLMUINT *)Value1) = gv_FlmSysData.pFileHdlMgr->GetOpenedFiles();
-		break;
-
-	case FLM_OPEN_THRESHOLD:
-		*((FLMUINT *)Value1) = gv_FlmSysData.pFileHdlMgr->GetOpenThreshold();
-		break;
-
-	case FLM_TMPDIR:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-
-		if( !gv_FlmSysData.bTempDirSet )
-		{
-			rc = RC_SET( FERR_IO_PATH_NOT_FOUND );
-		
-			// Set the output to nulls on failure.
-
-			*((char *)Value1) = 0;
-		}
-		else
-		{
-			f_strcpy( (char *)Value1, gv_FlmSysData.szTempDir);
-		}
+		case FLM_CACHE_LIMIT:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+			*((FLMUINT *)Value1) = gv_FlmSysData.SCacheMgr.Usage.uiMaxBytes +
+											 gv_FlmSysData.RCacheMgr.Usage.uiMaxBytes;
+			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
 	
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_MAX_CP_INTERVAL:
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxCPInterval, uiTmp);
-		*((FLMUINT *)Value1) = uiTmp;
-		break;
-
-	case FLM_BLOB_EXT:
-		f_strcpy( (char *)Value1, (const char *)gv_FlmSysData.ucBlobExt);
-		break;
-
-	case FLM_MAX_TRANS_SECS:
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxTransTime, uiTmp);
-		*((FLMUINT *)Value1) = uiTmp;
-		break;
-
-	case FLM_MAX_TRANS_INACTIVE_SECS:
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxTransInactiveTime, uiTmp);
-		*((FLMUINT *)Value1) = (FLMUINT)uiTmp;
-		break;
-
-	case FLM_CACHE_ADJUST_INTERVAL:
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiCacheAdjustInterval, uiTmp);
-		*((FLMUINT *)Value1) = uiTmp;
-		break;
-
-	case FLM_CACHE_CLEANUP_INTERVAL:
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiCacheCleanupInterval, uiTmp);
-		*((FLMUINT *)Value1) = uiTmp;
-		break;
-
-	case FLM_UNUSED_CLEANUP_INTERVAL:
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiUnusedCleanupInterval, uiTmp);
-		*((FLMUINT *)Value1) = uiTmp;
-		break;
-
-	case FLM_MAX_UNUSED_TIME:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxUnusedTime, uiTmp);
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		*((FLMUINT *)Value1) = uiTmp;
-		break;
-
-	case FLM_OUT_OF_MEM_SIMULATION:
-#ifdef DEBUG_SIM_OUT_OF_MEM
-		*((FLMBOOL *)Value1) =
-			(gv_FlmSysData.uiOutOfMemSimEnabledFlag ==
-				OUT_OF_MEM_SIM_ENABLED_FLAG)
-			? TRUE
-			: FALSE;
-#else
-		*((FLMBOOL *)Value1) = FALSE;
-#endif
-		break;
-
-	case FLM_CACHE_CHECK:
-		*((FLMBOOL *)Value1) = gv_FlmSysData.bCheckCache;
-		break;
-
-	case FLM_USE_ESM:
-		*((FLMBOOL *)Value1) = gv_FlmSysData.bOkToUseESM;
-		break;
-
-	case FLM_QUERY_MAX:
-		f_mutexLock( gv_FlmSysData.hQueryMutex);
-		*((FLMUINT *)Value1) = gv_FlmSysData.uiMaxQueries;
-		f_mutexUnlock( gv_FlmSysData.hQueryMutex);
-		break;
-
-	case FLM_MAX_DIRTY_CACHE:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		*((FLMUINT *)Value1) = gv_FlmSysData.SCacheMgr.uiMaxDirtyCache;
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	case FLM_DYNA_CACHE_SUPPORTED:
-#ifdef FLM_CAN_GET_PHYS_MEM
-		*((FLMBOOL *)Value1) = TRUE;
-#else
-		*((FLMBOOL *)Value1) = FALSE;
-#endif
-		break;
-
-	case FLM_QUERY_STRATIFY_LIMITS:
-		f_mutexLock( gv_FlmSysData.hShareMutex);
-		if (Value1)
-		{
-			*((FLMUINT *)Value1) = gv_FlmSysData.uiMaxStratifyIterations;
-		}
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-		break;
-
-	default:
-		rc = RC_SET( FERR_NOT_IMPLEMENTED);
-		break;
+		case FLM_BLOCK_CACHE_PERCENTAGE:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			*((FLMUINT *)Value1) = gv_FlmSysData.uiBlockCachePercentage;
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		case FLM_SCACHE_DEBUG:
+	#ifdef FLM_DEBUG
+			*((FLMBOOL *)Value1) = gv_FlmSysData.SCacheMgr.bDebug;
+	#else
+			*((FLMBOOL *)Value1) = FALSE;
+	#endif
+			break;
+	
+		case FLM_OPEN_FILES:
+			break;
+	
+		case FLM_OPEN_THRESHOLD:
+			break;
+	
+		case FLM_TMPDIR:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+	
+			if( !gv_FlmSysData.bTempDirSet )
+			{
+				rc = RC_SET( FERR_IO_PATH_NOT_FOUND );
+			
+				// Set the output to nulls on failure.
+	
+				*((char *)Value1) = 0;
+			}
+			else
+			{
+				f_strcpy( (char *)Value1, gv_FlmSysData.szTempDir);
+			}
+		
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		case FLM_MAX_CP_INTERVAL:
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxCPInterval);
+			break;
+	
+		case FLM_BLOB_EXT:
+			f_strcpy( (char *)Value1, (const char *)gv_FlmSysData.ucBlobExt);
+			break;
+	
+		case FLM_MAX_TRANS_SECS:
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxTransTime);
+			break;
+	
+		case FLM_MAX_TRANS_INACTIVE_SECS:
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxTransInactiveTime);
+			break;
+	
+		case FLM_CACHE_ADJUST_INTERVAL:
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiCacheAdjustInterval);
+			break;
+	
+		case FLM_CACHE_CLEANUP_INTERVAL:
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiCacheCleanupInterval);
+			break;
+	
+		case FLM_UNUSED_CLEANUP_INTERVAL:
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiUnusedCleanupInterval);
+			break;
+	
+		case FLM_MAX_UNUSED_TIME:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			*((FLMUINT *)Value1) = 
+				FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxUnusedTime);
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		case FLM_CACHE_CHECK:
+			*((FLMBOOL *)Value1) = gv_FlmSysData.bCheckCache;
+			break;
+	
+		case FLM_QUERY_MAX:
+			f_mutexLock( gv_FlmSysData.hQueryMutex);
+			*((FLMUINT *)Value1) = gv_FlmSysData.uiMaxQueries;
+			f_mutexUnlock( gv_FlmSysData.hQueryMutex);
+			break;
+	
+		case FLM_MAX_DIRTY_CACHE:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			*((FLMUINT *)Value1) = gv_FlmSysData.SCacheMgr.uiMaxDirtyCache;
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		case FLM_DYNA_CACHE_SUPPORTED:
+			if( f_canGetMemoryInfo())
+			{
+				*((FLMBOOL *)Value1) = TRUE;
+			}
+			else
+			{
+				*((FLMBOOL *)Value1) = FALSE;
+			}
+			break;
+	
+		case FLM_QUERY_STRATIFY_LIMITS:
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			if (Value1)
+			{
+				*((FLMUINT *)Value1) = gv_FlmSysData.uiMaxStratifyIterations;
+			}
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			break;
+	
+		default:
+			rc = RC_SET( FERR_NOT_IMPLEMENTED);
+			break;
 	}
 
 //Exit:
@@ -2156,7 +1767,7 @@ FLMEXP RCODE FLMAPI FlmGetConfig(
 Desc:
 ****************************************************************************/
 FLMEXP RCODE FLMAPI FlmGetThreadInfo(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	F_THREAD_INFO **	ppThreadInfo,
 	FLMUINT *			puiNumThreads,
 	const char *		pszUrl)
@@ -2279,7 +1890,7 @@ FSTATIC void flmShutdownDbThreads(
 	RCODE					rc = FERR_OK;
 	F_BKGND_IX	*		pBackgroundIx;
 	FDB *					pDb;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	FLMUINT				uiThreadId;
 	FLMUINT				uiThreadCount;
 	FLMBOOL				bMutexLocked = TRUE;
@@ -2322,7 +1933,7 @@ FSTATIC void flmShutdownDbThreads(
 		for( ;;)
 		{
 			if( RC_BAD( rc = gv_FlmSysData.pThreadMgr->getNextGroupThread( 
-				&pThread, FLM_BACKGROUND_INDEXING_THREAD_GROUP, &uiThreadId)))
+				&pThread, gv_uiBackIxThrdGroup, &uiThreadId)))
 			{
 				if( rc == FERR_NOT_FOUND)
 				{
@@ -2350,13 +1961,13 @@ FSTATIC void flmShutdownDbThreads(
 			}
 		}
 
-		// Shut down all threads in the FLM_DB_THREAD_GROUP.
+		// Shut down all threads in the database thread group
 
 		uiThreadId = 0;
 		for( ;;)
 		{
 			if( RC_BAD( rc = gv_FlmSysData.pThreadMgr->getNextGroupThread( 
-				&pThread, FLM_DB_THREAD_GROUP, &uiThreadId)))
+				&pThread, gv_uiDbThrdGrp, &uiThreadId)))
 			{
 				if( rc == FERR_NOT_FOUND)
 				{
@@ -2527,18 +2138,6 @@ void flmFreeFile(
 
 	flmRcaFreeFileRecs( pFile);
 
-	// Free the file ID list.  This will also remove all file handles
-	// associated with this file.
-
-	if( pFile->pFileIdList)
-	{
-		FLMINT		iRefCnt;
-
-		iRefCnt = pFile->pFileIdList->Release();
-		flmAssert( !iRefCnt);
-		pFile->pFileIdList = NULL;
-	}
-
 	// Release the lock objects.
 
 	if( pFile->pWriteLockObj)
@@ -2557,7 +2156,6 @@ void flmFreeFile(
 
 	if( pFile->pLockFileHdl)
 	{
-		(void)pFile->pLockFileHdl->Close();
 		pFile->pLockFileHdl->Release();
 		pFile->pLockFileHdl = NULL;
 	}
@@ -2574,29 +2172,15 @@ void flmFreeFile(
 
 	if( pFile->pucLogHdrWriteBuf)
 	{
-#ifdef FLM_WIN
-		(void)VirtualFree( pFile->pucLogHdrWriteBuf, 0, MEM_RELEASE);
-		pFile->pucLogHdrWriteBuf = NULL;
-#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
-		free( pFile->pucLogHdrWriteBuf);
-		pFile->pucLogHdrWriteBuf = NULL;
-#else
-		f_free( &pFile->pucLogHdrWriteBuf);
-#endif
+		f_freeAlignedBuffer( (void **)&pFile->pucLogHdrWriteBuf);
 	}
 
-	GedPoolFree( &pFile->krefPool);
+	pFile->krefPool.poolFree();
 	
 	if( pFile->ppBlocksDone)
 	{
 		f_free( &pFile->ppBlocksDone);
 		pFile->uiBlocksDoneArraySize = 0;
-	}
-
-	if( pFile->pECacheMgr)
-	{
-		pFile->pECacheMgr->Release();
-		pFile->pECacheMgr = NULL;
 	}
 
 	// Free the maintenance thread's semaphore
@@ -2707,6 +2291,7 @@ FSTATIC void flmCleanup( void)
 	// SMDIBHandle::exit).  This code is here for the cases where we're
 	// part of Flint or some other utility that doesn't necessarily use
 	// SMI...
+	
 	if (gv_FlmSysData.HttpConfigParms.fnDereg)
 	{
 		FlmConfig( FLM_DEREGISTER_HTTP_URL, NULL, NULL);
@@ -2747,7 +2332,7 @@ FSTATIC void flmCleanup( void)
 	gv_FlmSysData.pMrnuFile = NULL;
 	gv_FlmSysData.pLrnuFile = NULL;
 
-	/* Free all of the files and associated structures. */
+	// Free all of the files and associated structures
 
 	if (gv_FlmSysData.pFileHashTbl)
 	{
@@ -2775,10 +2360,7 @@ FSTATIC void flmCleanup( void)
 			pFileHashTbl->pFirstInBucket = NULL;
 		}
 
-		// Unlock the global mutex
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-
-		// Free the hash table 
 		f_free( &gv_FlmSysData.pFileHashTbl);
 	}
 
@@ -2788,51 +2370,6 @@ FSTATIC void flmCleanup( void)
 	{
 		FlmFreeStats( &gv_FlmSysData.Stats);
 		gv_FlmSysData.bStatsInitialized = FALSE;
-	}
-
-	// Free (release) FLAIM's File Shared File Handles.
-
-	if (gv_FlmSysData.pFileHdlMgr)
-	{
-		FLMINT	iRefCnt = gv_FlmSysData.pFileHdlMgr->Release();
-
-		// No one else should have a reference to the file handle manager
-		// after this point.
-
-#ifdef FLM_DEBUG
-		flmAssert( !iRefCnt);
-#else
-		// Quiet the compiler about the unused variable 
-		(void)iRefCnt;
-#endif
-		gv_FlmSysData.pFileHdlMgr = NULL;
-	}
-
-	// Free (release) FLAIM's Server Lock Manager.
-
-	if (gv_FlmSysData.pServerLockMgr)
-	{
-		FLMINT	iRefCnt;
-
-		// Release all locks.
-
-		gv_FlmSysData.pServerLockMgr->CheckLockTimeouts( TRUE);
-
-		// Release the lock manager.
-
-		iRefCnt = gv_FlmSysData.pServerLockMgr->Release();
-
-		// No one else should have a reference to the server lock manager
-		// at this point, so lets trip a flmAssert if the object was really
-		// not deleted.
-
-#ifdef FLM_DEBUG
-		flmAssert( !iRefCnt);
-#else
-		// Quiet the compiler about the unused variable 
-		(void)iRefCnt;
-#endif
-		gv_FlmSysData.pServerLockMgr = NULL;
 	}
 
 	// Free the resources of the shared cache manager.
@@ -2912,29 +2449,12 @@ FSTATIC void flmCleanup( void)
 
 	if (gv_FlmSysData.pFileSystem)
 	{
-		FLMINT	iRefCnt = gv_FlmSysData.pFileSystem->Release();
-
-		// No one else should have a reference to the file system
-		// after this point.
-
-#ifdef FLM_DEBUG
-		flmAssert( !iRefCnt);
-#else
-		// Quiet the compiler about the unused variable 
-		(void)iRefCnt;
-#endif
+		gv_FlmSysData.pFileSystem->Release();
 		gv_FlmSysData.pFileSystem = NULL;
 	}
+
 #ifdef FLM_DBG_LOG
 	flmDbgLogExit();
-#endif
-
-	// Free the serial number generator
-
-	f_freeSerialNumberGenerator();
-
-#if defined( FLM_NLM)
-	nssUninitialize();
 #endif
 
 	// Release the logger (if any)
@@ -2971,84 +2491,23 @@ FSTATIC void flmCleanup( void)
 	CCS_Shutdown();
 #endif
 
-	// Memory cleanup needs to be last.
+	// Shut down the toolkit
 
-	f_memoryCleanup();
-
-#ifdef FLM_NLM
-	if( gv_bNetWareStartupCalled)
-	{
-		f_netwareShutdown();
-		gv_bNetWareStartupCalled = FALSE;
-	}
-#endif
+	ftkShutdown();
 }
 
 /****************************************************************************
-Desc : Shuts down FLAIM.
-Notes: Allows itself to be called multiple times and even before FlmStartup
-		 is called, or even if FlmStartup fails.  Warning: May not handle
-		 race conditions very well on platforms that do not support atomic
-		 exchange.
+Desc:		Shuts down FLAIM.
+Notes:	Allows itself to be called multiple times and even before FlmStartup
+		 	is called, or even if FlmStartup fails.  Warning: May not handle
+			race conditions very well on platforms that do not support atomic
+			exchange.
 ****************************************************************************/
 FLMEXP void FLMAPI FlmShutdown( void)
 {
 	flmLockSysData();
 	flmCleanup();
 	flmUnlockSysData();
-}
-
-/****************************************************************************
-Desc: This routine determines the hash bucket for a string.
-****************************************************************************/
-FLMUINT flmStrHashBucket(
-	const char *	pszStr,
-	FBUCKET *		pHashTbl,
-	FLMUINT			uiNumBuckets)
-{
-	FLMUINT	uiHashIndex;
-
-	if ((uiHashIndex = (FLMUINT)*pszStr) >= uiNumBuckets)
-	{
-		uiHashIndex -= uiNumBuckets;
-	}
-	
-	while( *pszStr)
-	{
-		if ((uiHashIndex =
-			(FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ (FLMUINT)(*pszStr))) >=
-				uiNumBuckets)
-			uiHashIndex -= uiNumBuckets;
-		pszStr++;
-	}
-	return( uiHashIndex);
-}
-
-/****************************************************************************
-Desc: This routine determines the hash bucket for a binary array of
-		characters.
-****************************************************************************/
-FLMUINT flmBinHashBucket(
-	void *		pBuf,
-	FLMUINT		uiBufLen,
-	FBUCKET *	pHashTbl,
-	FLMUINT		uiNumBuckets)
-{
-	FLMUINT		uiHashIndex;
-	FLMBYTE *	ptr = (FLMBYTE *)pBuf;
-
-	if ((uiHashIndex = (FLMUINT)*ptr) >= uiNumBuckets)
-		uiHashIndex -= uiNumBuckets;
-	while (uiBufLen)
-	{
-		if ((uiHashIndex =
-				(FLMUINT)((pHashTbl [uiHashIndex].uiHashValue) ^ (FLMUINT)(*ptr))) >=
-					uiNumBuckets)
-			uiHashIndex -= uiNumBuckets;
-		ptr++;
-		uiBufLen--;
-	}
-	return( uiHashIndex);
 }
 
 /****************************************************************************
@@ -3060,30 +2519,26 @@ Notes:
 ****************************************************************************/
 RCODE flmWaitNotifyReq(
 	F_MUTEX			hMutex,
-	FNOTIFY **		ppNotifyListRV,	/* Pointer to the head of a notify
-													list where the new notify
-													request should be linked into. */
-	void *			UserData				/* Other user data that the notifier
-													can use to pass other information
-													to the waiter. */
-	)
+	FNOTIFY **		ppNotifyListRV,
+	void *			UserData)
 {
 	FNOTIFY *      pNotify = NULL;
 	RCODE          TempRc;
 	RCODE          rc = FERR_OK;
 	F_SEM				hSem;
 
-	/* First create a notify request and link it into the list. */
+	// First create a notify request and link it into the list
 
 	if (RC_OK( rc = f_calloc( (FLMUINT)(sizeof( FNOTIFY)), &pNotify)))
 	{
 
-		/* Allocate a semaphore for the notify request. */
+		// Allocate a semaphore for the notify request
 
 		pNotify->uiThreadId = f_threadId();
 		pNotify->hSem = F_SEM_NULL;
 		rc = f_semCreate( &pNotify->hSem);
 	}
+	
 	if (RC_BAD( rc))
 	{
 		if (pNotify)
@@ -3102,7 +2557,7 @@ RCODE flmWaitNotifyReq(
 	*ppNotifyListRV = pNotify;
 	hSem = pNotify->hSem;
 
-	/* Unlock the mutex and wait on the semaphore. */
+	// Unlock the mutex and wait on the semaphore
 
 	f_mutexUnlock( hMutex);
 	if (RC_BAD( TempRc = f_semWait( hSem, F_SEM_WAITFOREVER)))
@@ -3110,7 +2565,7 @@ RCODE flmWaitNotifyReq(
 		rc = TempRc;
 	}
 
-	/* Free the semaphore and the notify structure. */
+	// Free the semaphore and the notify structure
 
 	f_semDestroy( &hSem);
 	f_free( &pNotify);
@@ -3130,25 +2585,25 @@ Desc: This routine links an FFILE structure to its name hash bucket.
 		locked.
 ****************************************************************************/
 RCODE flmLinkFileToBucket(
-	FFILE *     pFile       /* File to be linked to its name hash bucket. */
-	)
+	FFILE *     pFile)
 {
 	RCODE			rc = FERR_OK;
 	FFILE *		pTmpFile;
 	FBUCKET *	pBucket;
 	FLMUINT		uiBucket;
-	char			szDbPathStr [F_PATH_MAX_SIZE];
+	char			szDbPathStr[ F_PATH_MAX_SIZE];
 
 	pBucket = gv_FlmSysData.pFileHashTbl;
 
 	// Normalize the path to a string before hashing on it.
 
-	if (RC_BAD( rc = f_pathToStorageString( pFile->pszDbPath, szDbPathStr)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathToStorageString( 
+		pFile->pszDbPath, szDbPathStr)))
 	{
 		goto Exit;
 	}
 
-	uiBucket = flmStrHashBucket( szDbPathStr, pBucket, FILE_HASH_ENTRIES);
+	uiBucket = f_strHashBucket( szDbPathStr, pBucket, FILE_HASH_ENTRIES);
 	pBucket = &pBucket [uiBucket];
 	if (pBucket->pFirstInBucket)
 	{
@@ -3327,14 +2782,6 @@ void flmCheckNUStructs(
 			break;
 		}
 	}
-
-	// Look for unused file handles
-
-	if( gv_FlmSysData.pFileHdlMgr)
-	{
-		gv_FlmSysData.pFileHdlMgr->CheckAgedItems(
-			gv_FlmSysData.pFileHdlMgr->GetMaxAvailTime());
-	}
 }
 
 /****************************************************************************
@@ -3379,73 +2826,35 @@ Desc: This routine links an FDB structure to an FFILE structure.
 		locked.
 ****************************************************************************/
 RCODE flmLinkFdbToFile(
-	FDB *       pDb,     /* FDB that is to be linked to an FFILE
-									structure. */
-	FFILE *		pFile		/* Pointer to FFILE structure the FDB is to be
-									linked to. */
-	)
+	FDB *       pDb,
+	FFILE *		pFile)
 {
 	RCODE			rc = FERR_OK;
 
-	/*
-	If the use count on the file used to be zero, unlink it from the
-	unused list.
-	*/
+	// If the use count on the file used to be zero, unlink it from the
+	// unused list.
 
 	flmAssert( !pDb->pFile);
+	
 	pDb->pPrevForFile = NULL;
 	if ((pDb->pNextForFile = pFile->pFirstDb) != NULL)
 	{
 		pFile->pFirstDb->pPrevForFile = pDb;
 	}
+	
 	pFile->pFirstDb = pDb;
 	pDb->pFile = pFile;
+	
 	if (++pFile->uiUseCount == 1)
 	{
 		flmUnlinkFileFromNUList( pFile);
 	}
+	
 	if (pDb->uiFlags & FDB_INTERNAL_OPEN)
 	{
 		pFile->uiInternalUseCount++;
 	}
 	
-	/*
-	Allocate the super file object
-	*/
-
-	if (!pDb->pSFileHdl)
-	{
-		if( (pDb->pSFileHdl = f_new F_SuperFileHdl) == NULL)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-		
-		/*
-		Set up the super file
-		*/
-
-		if( RC_BAD( rc = pDb->pSFileHdl->Setup( pFile->pFileIdList, 
-										pFile->pszDbPath,
-										pFile->pszDataDir)))
-		{
-			goto Exit;
-		}
-
-		if( pFile->pECacheMgr)
-		{
-			pDb->pSFileHdl->setECacheMgr( pFile->pECacheMgr);
-		}
-
-		if( pFile->FileHdr.uiVersionNum)
-		{
-			pDb->pSFileHdl->SetBlockSize( pFile->FileHdr.uiBlockSize);
-			pDb->pSFileHdl->SetDbVersion( pFile->FileHdr.uiVersionNum);
-		}
-	}
-
-Exit:
-
 	return( rc);
 }
 
@@ -3509,23 +2918,21 @@ Desc: This routine functions as a thread.  It monitors open files and
 		close time.
 ****************************************************************************/
 RCODE flmSystemMonitor(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
-	FLMUINT		uiLastUnusedCleanupTime = 0;
-	FLMUINT		uiLastRCacheCleanupTime = 0;
-	FLMUINT		uiLastSCacheCleanupTime = 0;
-	FLMUINT		uiCurrTime;
-	FLMUINT		uiMaxLockTime;
-#ifdef FLM_CAN_GET_PHYS_MEM
-	FLMUINT		uiLastCacheAdjustTime = 0;
-#endif
+	FLMUINT			uiLastUnusedCleanupTime = 0;
+	FLMUINT			uiLastRCacheCleanupTime = 0;
+	FLMUINT			uiLastSCacheCleanupTime = 0;
+	FLMUINT			uiCurrTime;
+	FLMUINT			uiMaxLockTime;
+	FLMUINT			uiLastCacheAdjustTime = 0;
 
-	FLM_MILLI_TO_TIMER_UNITS( 100, uiMaxLockTime);
+	uiMaxLockTime = FLM_MILLI_TO_TIMER_UNITS( 100);
 
 	for (;;)
 	{
 
-		/* See if we should shut down. */
+		// See if we should shut down
 
 		if( pThread->getShutdownFlag())
 		{
@@ -3554,43 +2961,43 @@ RCODE flmSystemMonitor(
 			uiCurrTime = uiLastUnusedCleanupTime = FLM_GET_TIMER();
 		}
 
-		// Call the lock manager to check timeouts.  It is critial
-		// that this routine be called on a regular interval to
-		// timeout lock waiters that have expired.
-
-		gv_FlmSysData.pServerLockMgr->CheckLockTimeouts( FALSE);
-
 		// Check the adjusting cache limit
 
-#ifdef FLM_CAN_GET_PHYS_MEM
-		if ((gv_FlmSysData.bDynamicCacheAdjust) &&
-			 (FLM_ELAPSED_TIME( uiCurrTime, uiLastCacheAdjustTime) >=
-					gv_FlmSysData.uiCacheAdjustInterval))
+		if( f_canGetMemoryInfo())
 		{
-			FLMUINT	uiCacheBytes;
-
-			f_mutexLock( gv_FlmSysData.hShareMutex);
-			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-
-			// Make sure the dynamic adjust flag is still set.
-
 			if ((gv_FlmSysData.bDynamicCacheAdjust) &&
 				 (FLM_ELAPSED_TIME( uiCurrTime, uiLastCacheAdjustTime) >=
-					gv_FlmSysData.uiCacheAdjustInterval))
+						gv_FlmSysData.uiCacheAdjustInterval))
 			{
-				uiCacheBytes = flmGetCacheBytes( gv_FlmSysData.uiCacheAdjustPercent,
-										gv_FlmSysData.uiCacheAdjustMin,
-										gv_FlmSysData.uiCacheAdjustMax,
-										gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE,
-										gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
-										gv_FlmSysData.RCacheMgr.pRCacheAlloc->getTotalBytesAllocated());
-				(void)flmSetCacheLimits( uiCacheBytes, FALSE, FALSE);
+				FLMUINT	uiCacheBytes;
+	
+				f_mutexLock( gv_FlmSysData.hShareMutex);
+				f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+	
+				// Make sure the dynamic adjust flag is still set.
+	
+				if ((gv_FlmSysData.bDynamicCacheAdjust) &&
+					 (FLM_ELAPSED_TIME( uiCurrTime, uiLastCacheAdjustTime) >=
+						gv_FlmSysData.uiCacheAdjustInterval))
+				{
+					if( RC_OK( flmGetCacheBytes( 
+						gv_FlmSysData.uiCacheAdjustPercent,
+						gv_FlmSysData.uiCacheAdjustMin,
+						gv_FlmSysData.uiCacheAdjustMax,
+						gv_FlmSysData.uiCacheAdjustMinToLeave, TRUE,
+						gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated +
+						gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated, 
+						&uiCacheBytes)))
+					{
+						flmSetCacheLimits( uiCacheBytes, FALSE, FALSE);
+					}
+				}
+				
+				f_mutexUnlock( gv_FlmSysData.hShareMutex);
+				f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
+				uiCurrTime = uiLastCacheAdjustTime = FLM_GET_TIMER();
 			}
-			f_mutexUnlock( gv_FlmSysData.hShareMutex);
-			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-			uiCurrTime = uiLastCacheAdjustTime = FLM_GET_TIMER();
 		}
-#endif
 
 		// See if block cache should be cleaned up
 
@@ -3881,8 +3288,6 @@ F_Session::F_Session()
 	m_uiDictSeqNum = 0;
 	m_uiLastUsed = FLM_GET_TIMER();
 	m_uiNextToken = FLM_GET_TIMER();
-	m_pXmlImport = NULL;
-	m_pXmlExport = NULL;
 	m_pDbTable = NULL;
 	f_memset( m_ucKey, 0, sizeof( m_ucKey));
 }
@@ -3920,18 +3325,6 @@ F_Session::~F_Session()
 	if( m_pNameTable)
 	{
 		m_pNameTable->Release();
-	}
-
-	// Free XML import / export
-
-	if( m_pXmlImport)
-	{
-		m_pXmlImport->Release();
-	}
-
-	if( m_pXmlExport)
-	{
-		m_pXmlExport->Release();
 	}
 }
 
@@ -3987,38 +3380,13 @@ RCODE F_Session::setupSession(
 		goto Exit;
 	}
 
-	if( (m_pXmlImport = f_new F_XMLImport) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = m_pXmlImport->setup()))
-	{
-		goto Exit;
-	}
-
-	if( (m_pXmlExport = f_new F_XMLExport) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = m_pXmlExport->setup()))
-	{
-		goto Exit;
-	}
-
-	// Allocate the object table
-
 	if( (m_pDbTable = f_new F_HashTable) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pDbTable->setupHashTable( FALSE, 16, 
-		pSessionMgr->getCRCTable())))
+	if( RC_BAD( rc = m_pDbTable->setupHashTable( FALSE, 16))) 
 	{
 		goto Exit;
 	}
@@ -4336,13 +3704,13 @@ Exit:
 /****************************************************************************
 Desc:	Releases a thread's lock on a session.
 ****************************************************************************/
-void F_Session::unlockSession()
+void F_Session::unlockSession( void)
 {
 	F_SEM				hSem;
 
 	flmAssert( getRefCount());
-
 	f_mutexLock( m_hMutex);
+	
 	if( m_uiThreadId != f_threadId())
 	{
 		flmAssert( 0);
@@ -4392,7 +3760,7 @@ FLMINT F_Session::AddRef( void)
 
 	f_mutexLock( m_hMutex);
 	flmAssert( getRefCount());
-	iRefCnt = flmAtomicInc( &m_refCnt, m_hMutex, TRUE);
+	iRefCnt = ++m_refCnt;
 	f_mutexUnlock( m_hMutex);
 
 	return( iRefCnt);
@@ -4408,14 +3776,14 @@ FLMINT F_Session::Release( void)
 	flmAssert( getRefCount());
 
 	f_mutexLock( m_hMutex);
-	if( (iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, TRUE)) == 0)
+	if( (iRefCnt = --m_refCnt) == 0)
 	{
 		f_mutexUnlock( m_hMutex);
 		delete this;
 		return( iRefCnt);
 	}
+	
 	f_mutexUnlock( m_hMutex);
-
 	return( iRefCnt);
 }
 
@@ -4433,11 +3801,6 @@ F_SessionMgr::~F_SessionMgr()
 	if( m_hMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &m_hMutex);
-	}
-
-	if( m_pCRCTable)
-	{
-		f_freeCRCTable( &m_pCRCTable);
 	}
 }
 
@@ -4560,13 +3923,6 @@ RCODE F_SessionMgr::setupSessionMgr( void)
 		goto Exit;
 	}
 
-	// Initialize the CRC table
-
-	if( RC_BAD( rc = f_initCRCTable( &m_pCRCTable)))
-	{
-		goto Exit;
-	}
-
 	// Create the session object table
 
 	if( (m_pSessionTable = f_new F_HashTable) == NULL)
@@ -4575,8 +3931,7 @@ RCODE F_SessionMgr::setupSessionMgr( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pSessionTable->setupHashTable( FALSE, 
-		128, m_pCRCTable)))
+	if( RC_BAD( rc = m_pSessionTable->setupHashTable( FALSE, 128)))
 	{
 		goto Exit;
 	}
@@ -4756,7 +4111,7 @@ void F_SessionMgr::timeoutInactiveSessions(
 		{
 			uiCurrTime = FLM_GET_TIMER();
 			uiElapTime = FLM_ELAPSED_TIME( uiCurrTime, pSession->m_uiLastUsed);
-			FLM_TIMER_UNITS_TO_SECS( uiElapTime, uiElapSecs);
+			uiElapSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 			if( !uiInactiveSecs || uiElapSecs >= uiInactiveSecs)
 			{
@@ -4785,8 +4140,6 @@ F_HashTable::F_HashTable()
 	m_pGlobalList = NULL;
 	m_ppHashTable = NULL;
 	m_uiBuckets = 0;
-	m_pCRCTable = NULL;
-	m_bOwnCRCTable = FALSE;
 }
 
 /****************************************************************************
@@ -4815,11 +4168,6 @@ F_HashTable::~F_HashTable()
 	{
 		f_mutexDestroy( &m_hMutex);
 	}
-
-	if( m_pCRCTable && m_bOwnCRCTable)
-	{
-		f_freeCRCTable( &m_pCRCTable);
-	}
 }
 
 /****************************************************************************
@@ -4827,8 +4175,7 @@ Desc:	Configures the hash table prior to first use
 ****************************************************************************/
 RCODE F_HashTable::setupHashTable(
 	FLMBOOL			bMultithreaded,
-	FLMUINT			uiNumBuckets,
-	FLMUINT32 *		pCRCTable)
+	FLMUINT			uiNumBuckets)
 {
 	RCODE			rc = FERR_OK;
 
@@ -4853,21 +4200,6 @@ RCODE F_HashTable::setupHashTable(
 		{
 			goto Exit;
 		}
-	}
-
-	if( !pCRCTable)
-	{
-		// Initialize the CRC table
-
-		if( RC_BAD( rc = f_initCRCTable( &m_pCRCTable)))
-		{
-			goto Exit;
-		}
-		m_bOwnCRCTable = TRUE;
-	}
-	else
-	{
-		m_pCRCTable = pCRCTable;
 	}
 
 Exit:
@@ -5139,7 +4471,7 @@ FLMUINT F_HashTable::getHashBucket(
 {
 	FLMUINT32	ui32CRC = 0;
 
-	f_updateCRC( m_pCRCTable, (FLMBYTE *)pvKey, uiLen, &ui32CRC);
+	f_updateCRC( (FLMBYTE *)pvKey, uiLen, &ui32CRC);
 	if( pui32KeyCRC)
 	{
 		*pui32KeyCRC = ui32CRC;
@@ -5296,69 +4628,6 @@ void * F_SessionDb::getKey(
 		*puiKeyLen = (FLMUINT)sizeof( m_ucKey);
 	}
 	return( (void *)(&m_ucKey[ 0]));
-}
-
-/****************************************************************************
-Desc:	
-****************************************************************************/
-FLMEXP RCODE FLMAPI FlmAllocFileSystem(
-	F_FileSystem **		ppFileSystem)
-{
-	RCODE		rc = FERR_OK;
-
-	flmAssert( ppFileSystem && *ppFileSystem == NULL);
-
-	if( (*ppFileSystem = f_new F_FileSystemImp) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-	
-/****************************************************************************
-Desc:	
-****************************************************************************/
-FLMEXP RCODE FLMAPI FlmAllocDirHdl(
-	F_DirHdl **	ppDirHdl)
-{
-	RCODE		rc = FERR_OK;
-
-	flmAssert( ppDirHdl && *ppDirHdl == NULL);
-
-	if( (*ppDirHdl = f_new F_DirHdlImp) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-	
-/****************************************************************************
-Desc:	
-****************************************************************************/
-FLMEXP RCODE FLMAPI FlmAllocFileHandle(
-	F_FileHdl **		ppFileHandle)
-{
-	RCODE		rc = FERR_OK;
-
-	flmAssert( ppFileHandle && *ppFileHandle == NULL);
-
-	if( (*ppFileHandle = f_new F_FileHdlImp) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
 }
 
 /****************************************************************************

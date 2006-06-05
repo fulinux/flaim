@@ -296,8 +296,6 @@ void F_SysConfigPage::outputParams( void)
 
 	outputUINT( FLM_QUERY_MAX, "Max Queries To Save");
 
-	outputBOOL( FLM_USE_ESM, "Use Extended Memory");
-
 	outputBOOL( FLM_CACHE_CHECK, "Cache Checking");
 
 	outputBOOL( FLM_SCACHE_DEBUG, "Cache debugging");
@@ -613,7 +611,6 @@ RCODE F_SysConfigPage::doConfig(
 			break;
 		case FLM_SCACHE_DEBUG:
 		case FLM_CACHE_CHECK:
-		case FLM_USE_ESM:
 			rc = configBOOL( eConfigType, uiNumParams, ppszParams);
 			break;
 		case FLM_BLOB_EXT:

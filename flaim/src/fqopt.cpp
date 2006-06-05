@@ -116,7 +116,7 @@ FINLINE void flmClipSubQuery(
 }
 
 FSTATIC RCODE flmAllocIndexInfo(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QINDEX **		ppIndex,
 	QINDEX **		ppIndexList,
 	IXD *				pIxd);
@@ -129,7 +129,7 @@ FSTATIC RCODE flmSQGetDrnRanges(
 FSTATIC RCODE flmSQGenPredicateList(
 	FDB *				pDb,
 	SUBQUERY *		pSubQuery,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QPREDICATE * *	ppPredicateList,
 	FLMUINT *		puiTotalPredicates,
 	FLMBOOL *		pbHaveUserPredicates);
@@ -154,7 +154,7 @@ FSTATIC RCODE flmSQGetSuitableIndexes(
 	CURSOR *				pCursor,
 	SUBQUERY *			pSubQuery,
 	FLMUINT				uiContainer,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	QPREDICATE *		pPredicateList,
 	FLMUINT				uiTotalPredicates,
 	FLMBOOL				bHaveUserPredicates,
@@ -190,7 +190,7 @@ FSTATIC RCODE flmSQChooseBestIndex(
 	FLMUINT			uiForceIndex,
 	FLMUINT			bForceFirstToLastKey,
 	SUBQUERY *		pSubQuery,
-	POOL *			pTempPool,
+	F_Pool *			pTempPool,
 	QPREDICATE *	pPredicateList,
 	FLMUINT			uiTotalPredicates,
 	FLMBOOL			bHaveUserPredicates);
@@ -317,7 +317,7 @@ Desc:	Generate the predicate list for a sub-query.
 FSTATIC RCODE flmSQGenPredicateList(
 	FDB *				pDb,
 	SUBQUERY *		pSubQuery,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QPREDICATE * *	ppPredicateList,
 	FLMUINT *		puiTotalPredicates,
 	FLMBOOL *		pbHaveUserPredicates)
@@ -358,12 +358,12 @@ FSTATIC RCODE flmSQGenPredicateList(
 			// Better be a parent node that is the operator for
 			// this field.
 
-			if ((pPredicate = (QPREDICATE *)GedPoolCalloc( pPool,
-										sizeof( QPREDICATE))) == NULL)
+			if( RC_BAD( rc = pPool->poolCalloc( sizeof( QPREDICATE), 
+				(void **)&pPredicate)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
 			(*puiTotalPredicates)++;
 			pPredicate->puiFldPath = pQNode->pQAtom->val.QueryFld.puiFldPath;
 			if (pQNode->pQAtom->uiFlags & FLM_SINGLE_VALUED)
@@ -566,7 +566,7 @@ Exit:
 Desc:	Allocate a QINDEX structure for an index.
 ****************************************************************************/
 FSTATIC RCODE flmAllocIndexInfo(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	QINDEX **		ppIndex,
 	QINDEX **		ppIndexList,
 	IXD *				pIxd)
@@ -574,11 +574,11 @@ FSTATIC RCODE flmAllocIndexInfo(
 	RCODE			rc = FERR_OK;
 	QINDEX *		pIndex;
 
-	if ((pIndex = (QINDEX *)GedPoolCalloc( pPool, sizeof( QINDEX))) == NULL)
+	if( RC_BAD( rc = pPool->poolCalloc( sizeof( QINDEX), (void **)&pIndex)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
 	*ppIndex = pIndex;
 
 	// The following items are initialized because of the calloc:
@@ -592,13 +592,11 @@ FSTATIC RCODE flmAllocIndexInfo(
 
 	// Allocate space for a list of predicate pointers
 	// for each IFD.
-
-	if ((pIndex->ppFieldPredicateList =
-						(QFIELD_PREDICATE **)GedPoolCalloc( pPool,
-						sizeof( QFIELD_PREDICATE *) *
-							pIndex->uiNumFields)) == NULL)
+	
+	if( RC_BAD( rc = pPool->poolCalloc( 
+		sizeof( QFIELD_PREDICATE *) * pIndex->uiNumFields,
+		(void **)&pIndex->ppFieldPredicateList)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -609,8 +607,11 @@ FSTATIC RCODE flmAllocIndexInfo(
 	{
 		(*ppIndexList)->pPrev = pIndex;
 	}
+	
 	*ppIndexList = pIndex;
+	
 Exit:
+
 	return( rc);
 }
 
@@ -832,7 +833,7 @@ FSTATIC RCODE flmSQGetSuitableIndexes(
 	CURSOR *				pCursor,
 	SUBQUERY *			pSubQuery,
 	FLMUINT				uiContainer,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	QPREDICATE *		pPredicateList,
 	FLMUINT				uiTotalPredicates,
 	FLMBOOL				bHaveUserPredicates,
@@ -1030,12 +1031,12 @@ FSTATIC RCODE flmSQGetSuitableIndexes(
 
 				// Add this predicate to the list of predicates for this IFD.
 
-				if ((pFieldPredicate = (QFIELD_PREDICATE *)GedPoolAlloc( pPool,
-													sizeof( QFIELD_PREDICATE))) == NULL)
+				if( RC_BAD( rc = pPool->poolAlloc( sizeof( QFIELD_PREDICATE),
+					(void **)&pFieldPredicate)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
+				
 				pFieldPredicate->pIfd = pIfd;
 				pFieldPredicate->pPredicate = pPredicate;
 				pFieldPredicate->uiRank = flmCurCalcPredicateRank( pPredicate,
@@ -1198,11 +1199,10 @@ Process_IFD:
 						}
 
 						// Add this predicate to the list of predicates for this IFD.
-
-						if ((pFieldPredicate = (QFIELD_PREDICATE *)GedPoolAlloc( 
-							pPool, sizeof( QFIELD_PREDICATE))) == NULL)
+						
+						if( RC_BAD( rc = pPool->poolAlloc( sizeof( QFIELD_PREDICATE),
+							(void **)&pFieldPredicate)))
 						{
-							rc = RC_SET( FERR_MEM);
 							goto Exit;
 						}
 						
@@ -1416,7 +1416,7 @@ FSTATIC RCODE flmSQEvaluateCurrIndexKey(
 	if ((pTmpFSIndexCursor = *ppTmpFSIndexCursor) == NULL)
 	{
 		if ((pTmpFSIndexCursor = *ppTmpFSIndexCursor =
-					new FSIndexCursor) == NULL)
+					f_new FSIndexCursor) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
@@ -1592,7 +1592,7 @@ FSTATIC RCODE flmSQChooseBestIndex(
 	FLMUINT			uiForceIndex,
 	FLMUINT			bForceFirstToLastKey,
 	SUBQUERY *		pSubQuery,
-	POOL *			pTempPool,
+	F_Pool *			pTempPool,
 	QPREDICATE *	pPredicateList,
 	FLMUINT			uiTotalPredicates,
 	FLMBOOL			bHaveUserPredicates)
@@ -1657,23 +1657,21 @@ FSTATIC RCODE flmSQChooseBestIndex(
 		// Allocate space for a second list of predicate pointers
 		// for each IFD.  This one is used to keep track of which
 		// predicate we are on when we are generating keys.
-
-		if ((ppFieldCurrPredicate =
-							(QFIELD_PREDICATE **)GedPoolCalloc( pTempPool,
-							sizeof( QFIELD_PREDICATE *) * uiMaxIfds)) == NULL)
+		
+		if( RC_BAD( rc = pTempPool->poolCalloc(
+			sizeof( QFIELD_PREDICATE *) * uiMaxIfds,
+			(void **)&ppFieldCurrPredicate)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
 		// Allocate space for the array that will be passed into the
 		// key generation routine.
-
-		if ((ppPredicateList =
-							(QPREDICATE **)GedPoolCalloc( pTempPool,
-								sizeof( QPREDICATE *) * uiMaxIfds)) == NULL)
+		
+		if( RC_BAD( rc = pTempPool->poolCalloc( 
+			sizeof( QPREDICATE *) * uiMaxIfds,
+			(void **)&ppPredicateList)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 	}
@@ -2345,7 +2343,7 @@ RCODE flmCurOptimize(
 	DB_STATS *		pDbStats;
 	QPREDICATE *	pPredicateList = NULL;
 	FLMUINT			uiTotalPredicates = 0;
-	POOL *			pTempPool;
+	F_Pool *			pTempPool;
 	void *			pvMark;
 	qOptTypes		eOptType;
 	FLMBOOL			bFromSubQuerySubsumed = FALSE;
@@ -2378,7 +2376,7 @@ RCODE flmCurOptimize(
 
 	pSubQuery = pCursor->pSubQueryList;
 	pTempPool = &pDb->TempPool;
-	pvMark = GedPoolMark( pTempPool);
+	pvMark = pTempPool->poolMark();
 	bChoosingIndex = (FLMBOOL)((pCursor->uiIndexNum == FLM_SELECT_INDEX)
 										? (FLMBOOL)TRUE
 										: (FLMBOOL)FALSE);
@@ -2387,7 +2385,7 @@ RCODE flmCurOptimize(
 
 	for(;;)
 	{
-		GedPoolReset( pTempPool, pvMark);
+		pTempPool->poolReset( pvMark);
 
 		// First create the predicate list for the sub-query - so
 		// that it only has to be done once.  This call also verifies

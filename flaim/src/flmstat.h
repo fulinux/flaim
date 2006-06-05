@@ -106,8 +106,8 @@ FINLINE void flmUpdateDiskIOStats(
 Desc:
 ****************************************************************************/
 FINLINE void flmUpdateCountTimeStats(
-	COUNT_TIME_STAT *	pDest,
-	COUNT_TIME_STAT *	pSrc)
+	F_COUNT_TIME_STAT *	pDest,
+	F_COUNT_TIME_STAT *	pSrc)
 {
 	pDest->ui64Count += pSrc->ui64Count;
 	pDest->ui64ElapMilli += pSrc->ui64ElapMilli;

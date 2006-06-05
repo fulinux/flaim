@@ -1205,12 +1205,12 @@ eCorruptionType flmVerifyKey(
 	FLMUINT				uiCaseBits;
 	FLMUINT				uiFieldType;
 
-	bIxAsia = (uiIxLang >= FIRST_DBCS_LANG && uiIxLang <= LAST_DBCS_LANG) 
+	bIxAsia = (uiIxLang >= FLM_FIRST_DBCS_LANG && uiIxLang <= FLM_LAST_DBCS_LANG) 
 							? TRUE 
 							: FALSE;
 							
-	bIxArab = (uiIxLang == AR_LANG || uiIxLang == FA_LANG ||
-				  uiIxLang == HE_LANG || uiIxLang == UR_LANG) 
+	bIxArab = (uiIxLang == FLM_AR_LANG || uiIxLang == FLM_FA_LANG ||
+				  uiIxLang == FLM_HE_LANG || uiIxLang == FLM_UR_LANG) 
 				  			? TRUE 
 							: FALSE;
 		
@@ -1317,7 +1317,7 @@ eCorruptionType flmVerifyKey(
 
 			if (pIfd->uiFlags & IFD_COMPOUND)
 			{
-				if (flmBigEndianToUINT16( &pKey[uiJ + 1]) != pIfd->uiFldNum)
+				if (f_bigEndianToUINT16( &pKey[uiJ + 1]) != pIfd->uiFldNum)
 				{
 					return (FLM_BAD_CONTEXT_KEY);
 				}
@@ -1335,7 +1335,7 @@ eCorruptionType flmVerifyKey(
 					  uiH < uiTrueNumIxFields;
 					  uiH++, pTmpIfd++)
 				{
-					if (flmBigEndianToUINT16( &pKey[uiJ + 1]) == pTmpIfd->uiFldNum)
+					if (f_bigEndianToUINT16( &pKey[uiJ + 1]) == pTmpIfd->uiFldNum)
 					{
 						break;
 					}
@@ -1911,7 +1911,7 @@ eCorruptionType flmVerifyElement(
 			f_memcpy( &ucRecBuff[uiElmPKCLen], pElmKey, uiElmKeyLen);
 		}
 
-		pStateInfo->uiElmDrn = flmBigEndianToUINT32( ucRecBuff);
+		pStateInfo->uiElmDrn = f_bigEndianToUINT32( ucRecBuff);
 		if (pStateInfo->uiElmDrn == DRN_LAST_MARKER && uiBlkType == BHT_LEAF)
 		{
 			FLMUINT	uiTempDrn;

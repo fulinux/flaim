@@ -222,7 +222,7 @@ void F_WebPage::FormatTime(
 
 	// Convert the timer units to milliseconds
 
-	FLM_TIMER_UNITS_TO_MILLI( uiTimerUnits, uiMilli);
+	uiMilli = FLM_TIMER_UNITS_TO_MILLI( uiTimerUnits);
 
 	// Determine the number of days
 
@@ -574,7 +574,7 @@ RCODE F_WebPage::getFormValueByName(
 
 		bFreeFormData = TRUE;
 
-		if (fnRecvBuffer( m_pszFormData, (size_t*) &uiContentLength) != 0)
+		if (fnRecvBuffer( m_pszFormData, (FLMSIZET *) &uiContentLength) != 0)
 		{
 			rc = RC_SET( FERR_FAILURE);
 			goto Exit;
@@ -1241,7 +1241,7 @@ RCODE F_WebPage::acquireSession(void)
 
 	uiSize = sizeof(szSessionKey);
 	if (fnGetSessionValue( pvHttpSession, FLM_SESSION_ID_NAME,
-								 (void*) szSessionKey, (size_t*) &uiSize) != 0)
+								 (void*) szSessionKey, (FLMSIZET *) &uiSize) != 0)
 	{
 CreateSession:
 

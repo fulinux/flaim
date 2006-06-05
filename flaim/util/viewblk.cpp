@@ -25,34 +25,29 @@
 #include "view.h"
 
 FSTATIC void InitStatusBits(
-	FLMBYTE * StatusBytes
-	);
+	FLMBYTE * StatusBytes);
 
 FSTATIC void OrStatusBits(
 	FLMBYTE * DestStatusBytes,
-	FLMBYTE * SrcStatusBytes
-	);
+	FLMBYTE * SrcStatusBytes);
 
 FSTATIC void SetStatusBit(
 	FLMBYTE *			StatusBytes,
-	eCorruptionType	eCorruptionCode
-	);
+	eCorruptionType	eCorruptionCode);
 
 FSTATIC FLMBOOL TestStatusBit(
 	FLMBYTE *			StatusBytes,
-	eCorruptionType	eCorruptionCode
-	);
+	eCorruptionType	eCorruptionCode);
 
 FSTATIC FLMINT OutputElmRecord(
 	FLMUINT       Col,
 	FLMUINT  *    RowRV,
-	FLMUINT       bc,
-	FLMUINT       fc,
+	eColorType	  bc,
+	eColorType	  fc,
 	FLMUINT       LabelWidth,
 	STATE_INFO *  StateInfo,
 	FLMBYTE *     StatusBytes,
-	FLMUINT       StatusOnlyFlag
-	);
+	FLMUINT       StatusOnlyFlag);
 
 FSTATIC FLMINT OutBlkHdrExpNum(
 	FLMUINT		Col,
@@ -72,29 +67,26 @@ FSTATIC FLMINT OutBlkHdrExpNum(
 	FLMUINT     ModType,
 	FLMUINT     ExpNum,
 	FLMUINT     IgnoreExpNum,
-	FLMUINT     Option
-	);
+	FLMUINT     Option);
 
 FSTATIC void FormatBlkType(
 	FLMBYTE *    TempBuf,
-	FLMUINT      BlkType
-	);
+	FLMUINT      BlkType);
 
 FSTATIC FLMINT OutputStatus(
 	FLMUINT     Col,
 	FLMUINT  *	RowRV,
-	FLMUINT     bc,
-	FLMUINT     fc,
+	eColorType  bc,
+	eColorType  fc,
 	FLMUINT     LabelWidth,
 	FLMINT      iLabelIndex,
-	FLMBYTE *   StatusFlags
-	);
+	FLMBYTE *   StatusFlags);
 
 FSTATIC FLMINT OutputHexValue(
 	FLMUINT     Col,
 	FLMUINT  *  RowRV,
-	FLMUINT     bc,
-	FLMUINT     fc,
+	eColorType  bc,
+	eColorType  fc,
 	FLMINT		LabelIndex,
 	FLMUINT		FileNumber,
 	FLMUINT     FileOffset,
@@ -110,8 +102,7 @@ FSTATIC FLMINT OutputLeafElements(
 	BLK_EXP_p   BlkExp,
 	FLMBYTE *   BlkStatusRV,
 	FLMUINT		StatusOnlyFlag,
-	FLMBOOL		bEncrypted
-	);
+	FLMBOOL		bEncrypted);
 
 FSTATIC FLMINT OutputNonLeafElements(
 	FLMUINT     Col,
@@ -120,8 +111,7 @@ FSTATIC FLMINT OutputNonLeafElements(
 	BLK_EXP_p   BlkExp,
 	FLMBYTE *   BlkStatusRV,
 	FLMUINT     StatusOnlyFlag,
-	FLMBOOL		bEncrypted
-	);
+	FLMBOOL		bEncrypted);
 
 FSTATIC void SetSearchTopBottom(
 	void
@@ -215,12 +205,11 @@ Desc: This routine outputs all of the status bits which were set for
 FSTATIC FLMINT OutputStatus(
 	FLMUINT     Col,
 	FLMUINT  *	RowRV,
-	FLMUINT		bc,
-	FLMUINT     fc,
+	eColorType	bc,
+	eColorType	fc,
 	FLMUINT     LabelWidth,
 	FLMINT      iLabelIndex,
-	FLMBYTE *   StatusFlags
-	)
+	FLMBYTE *   StatusFlags)
 {
 	FLMUINT	Row = *RowRV;
 	FLMUINT	HadError = FALSE;
@@ -239,8 +228,8 @@ FSTATIC FLMINT OutputStatus(
 							VAL_IS_ERR_INDEX, (FLMUINT)uiLoop, 0,
 							0, VIEW_INVALID_FILE_OFFSET, 0, MOD_DISABLED,
 							Col, Row++, 0,
-							WPS_RED, WPS_LIGHTGRAY,
-							WPS_RED, WPS_LIGHTGRAY))
+							FLM_RED, FLM_LIGHTGRAY,
+							FLM_RED, FLM_LIGHTGRAY))
 					return( 0);
 
 				/* Set iLabelIndex to -1 so that it will not be displayed after */
@@ -271,13 +260,12 @@ Desc: ?
 FSTATIC FLMINT OutputElmRecord(
 	FLMUINT			Col,
 	FLMUINT  *		RowRV,
-	FLMUINT        bc,
-	FLMUINT        fc,
+	eColorType		bc,
+	eColorType		fc,
 	FLMUINT        LabelWidth,
 	STATE_INFO *   StateInfo,
 	FLMBYTE *      StatusBytes,
-	FLMUINT        StatusOnlyFlag
-	)
+	FLMUINT        StatusOnlyFlag)
 {
 	eCorruptionType	eCorruptionCode;
 	FLMUINT				SaveElmRecOffset;
@@ -368,8 +356,8 @@ FSTATIC FLMINT OutputElmRecord(
 						(FLMBYTE)(MOD_BINARY | (FLMBYTE)(!FldOverhead
 																 ? (FLMBYTE)MOD_DISABLED
 																 : (FLMBYTE)0)),
-						Col, Row++, 0, WPS_BLUE, WPS_LIGHTGRAY,
-						WPS_BLUE, WPS_LIGHTGRAY))
+						Col, Row++, 0, FLM_BLUE, FLM_LIGHTGRAY,
+						FLM_BLUE, FLM_LIGHTGRAY))
 				return( 0);
 
 			/* Output the offset of the field within the element record */
@@ -590,7 +578,7 @@ FLMINT ViewBlkRead(
 		ReadLen--;
 	}
 	
-	if (RC_BAD( rc = gv_pSFileHdl->ReadBlock( BlkAddress, ReadLen,
+	if (RC_BAD( rc = gv_pSFileHdl->readBlock( BlkAddress, ReadLen,
 												BlkPtr, puiBytesReadRV)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
@@ -856,12 +844,12 @@ Desc: This routine outputs one of the number fields in the block
 FSTATIC FLMINT OutBlkHdrExpNum(
 	FLMUINT		Col,
 	FLMUINT  *	RowRV,
-	FLMUINT     bc,
-	FLMUINT     fc,
-	FLMUINT     mbc,
-	FLMUINT     mfc,
-	FLMUINT     sbc,
-	FLMUINT     sfc,
+	eColorType	bc,
+	eColorType	fc,
+	eColorType	mbc,
+	eColorType	mfc,
+	eColorType	sbc,
+	eColorType	sfc,
 	FLMUINT     LabelWidth,
 	FLMINT      iLabelIndex,
 	FLMUINT		FileNumber,
@@ -910,8 +898,8 @@ FSTATIC FLMINT OutBlkHdrExpNum(
 					ValueType, ExpNum, 0,
 					0, VIEW_INVALID_FILE_OFFSET, 0, MOD_DISABLED,
 					Col + LabelWidth + 1, Row++, 0,
-					WPS_RED, WPS_LIGHTGRAY,
-					WPS_RED, WPS_LIGHTGRAY))
+					FLM_RED, FLM_LIGHTGRAY,
+					FLM_RED, FLM_LIGHTGRAY))
 			return( 0);
 	}
 	*RowRV = Row;
@@ -981,12 +969,12 @@ FLMINT ViewOutBlkHdr(
 	FLMUINT		BytesUsed;
 	FLMUINT		PercentFull;
 	FLMUINT     Option;
-	FLMUINT		bc = WPS_BLACK;
-	FLMUINT		fc = WPS_LIGHTGRAY;
-	FLMUINT		mbc = WPS_BLACK;
-	FLMUINT		mfc = WPS_WHITE;
-	FLMUINT		sbc = WPS_BLUE;
-	FLMUINT		sfc = WPS_WHITE;
+	eColorType	bc = FLM_BLACK;
+	eColorType	fc = FLM_LIGHTGRAY;
+	eColorType	mbc = FLM_BLACK;
+	eColorType	mfc = FLM_WHITE;
+	eColorType	sbc = FLM_BLUE;
+	eColorType	sfc = FLM_WHITE;
 	FLMBYTE		lfLFH [LFH_SIZE];
 	FLMBYTE		lfName [80];
 	FLMUINT		lfNum;
@@ -996,8 +984,8 @@ FLMINT ViewOutBlkHdr(
 
 	/* Output the block Header address */
 
-	if (!OutBlkHdrExpNum( Col, &Row, WPS_RED, WPS_LIGHTGRAY,
-			WPS_RED, WPS_WHITE, sbc, sfc,
+	if (!OutBlkHdrExpNum( Col, &Row, FLM_RED, FLM_LIGHTGRAY,
+			FLM_RED, FLM_WHITE, sbc, sfc,
 			LabelWidth, LBL_BLOCK_ADDRESS_BLOCK_HEADER,
 			FSGetFileNumber( BlkExp->BlkAddr), 
 			FSGetFileOffset( BlkExp->BlkAddr), &BlkPtr [BH_ADDR],
@@ -1067,10 +1055,10 @@ FLMINT ViewOutBlkHdr(
 				FSGetFileOffset( BlkExp->BlkAddr) + BH_LOG_FILE_NUM, 0,
 				MOD_FLMUINT | MOD_DECIMAL,
 				Col, Row++, Option,
-				(FLMBYTE)(!Option ? (FLMBYTE)bc : (FLMBYTE)mbc),
-				(FLMBYTE)(!Option ? (FLMBYTE)fc : (FLMBYTE)mfc),
-				(FLMBYTE)(!Option ? (FLMBYTE)bc : (FLMBYTE)sbc),
-				(FLMBYTE)(!Option ? (FLMBYTE)fc : (FLMBYTE)sfc)))
+				!Option ? bc : mbc,
+				!Option ? fc : mfc,
+				!Option ? bc : sbc,
+				!Option ? fc : sfc))
 		return( 0);
 
 	/* Output the logical file type */
@@ -1186,10 +1174,10 @@ FLMINT ViewOutBlkHdr(
 				FSGetFileOffset( BlkExp->BlkAddr) + BH_PREV_BLK_ADDR, 0,
 				MOD_FLMUINT | MOD_HEX,
 				Col, Row++, Option,
-				(FLMBYTE)(!Option ? bc : mbc),
-				(FLMBYTE)(!Option ? fc : mfc),
-				(FLMBYTE)(!Option ? bc : sbc),
-				(FLMBYTE)(!Option ? fc : sfc)))
+				!Option ? bc : mbc,
+				!Option ? fc : mfc,
+				!Option ? bc : sbc,
+				!Option ? fc : sfc))
 		return( 0);
 
 	/* Output the old block image transaction ID */
@@ -1338,16 +1326,15 @@ Desc: This routine outputs a stream of FLMBYTEs in hex format.  This
 FSTATIC FLMINT OutputHexValue(
 	FLMUINT     Col,
 	FLMUINT  *	RowRV,
-	FLMUINT     bc,
-	FLMUINT     fc,
+	eColorType	bc,
+	eColorType	fc,
 	FLMINT      iLabelIndex,
 	FLMUINT		FileNumber,
 	FLMUINT     FileOffset,
 	FLMBYTE *   ValPtr,
 	FLMUINT     ValLen,
 	FLMUINT     CopyVal,
-	FLMUINT		uiModFlag
-	)
+	FLMUINT		uiModFlag)
 {
 	FLMUINT     Row = *RowRV;
 	FLMUINT     BytesPerLine = MAX_HORIZ_SIZE( Col + 3);
@@ -1404,8 +1391,8 @@ FSTATIC FLMINT OutputLeafElements(
 {
 	FLMINT				iRc = 0;
 	FLMUINT				LabelWidth = 30;
-	FLMUINT				bc = WPS_BLACK;
-	FLMUINT				fc = WPS_LIGHTGRAY;
+	eColorType			bc = FLM_BLACK;
+	eColorType			fc = FLM_LIGHTGRAY;
 	FLMUINT				Row = *RowRV;
 	FLMUINT				ElementCount = 0;
 	eCorruptionType	eCorruptionCode;
@@ -1533,8 +1520,8 @@ FSTATIC FLMINT OutputLeafElements(
 					FSGetFileOffset( StateInfo.uiBlkAddress) + StateInfo.uiElmOffset,
 					0, MOD_DISABLED,
 					Col, Row++, 0,
-					WPS_GREEN, WPS_WHITE,
-					WPS_GREEN, WPS_WHITE))
+					FLM_GREEN, FLM_WHITE,
+					FLM_GREEN, FLM_WHITE))
 				goto Exit;
 
 			/* Remember this item if we are searching */
@@ -1842,12 +1829,12 @@ FSTATIC FLMINT OutputNonLeafElements(
 {
 	FLMINT				iRc = 0;
 	FLMUINT				LabelWidth = 30;
-	FLMUINT				bc = WPS_BLACK;
-	FLMUINT				fc = WPS_LIGHTGRAY;
-	FLMUINT				mbc = WPS_BLACK;
-	FLMUINT				mfc = WPS_WHITE;
-	FLMUINT				sbc = WPS_BLUE;
-	FLMUINT				sfc = WPS_WHITE;
+	eColorType			bc = FLM_BLACK;
+	eColorType			fc = FLM_LIGHTGRAY;
+	eColorType			mbc = FLM_BLACK;
+	eColorType			mfc = FLM_WHITE;
+	eColorType			sbc = FLM_BLUE;
+	eColorType			sfc = FLM_WHITE;
 	FLMUINT				Row = *RowRV;
 	FLMUINT				ElementCount = 0;
 	FLMBYTE *			TempAddrPtr;
@@ -1994,8 +1981,8 @@ FSTATIC FLMINT OutputNonLeafElements(
 							StateInfo.uiElmOffset,
 						0, MOD_DISABLED,
 						Col, Row++, 0,
-						WPS_GREEN, WPS_WHITE,
-						WPS_GREEN, WPS_WHITE))
+						FLM_GREEN, FLM_WHITE,
+						FLM_GREEN, FLM_WHITE))
 				goto Exit;
 
 			/* Output the element offset within the block */
@@ -2066,7 +2053,7 @@ FSTATIC FLMINT OutputNonLeafElements(
 
 			if (uiBlkType == BHT_NON_LEAF_DATA)
 			{
-				uiFixedDrn = flmBigEndianToUINT32( StateInfo.pElm);
+				uiFixedDrn = f_bigEndianToUINT32( StateInfo.pElm);
 				TempAddrPtr = &StateInfo.pElm [BNE_DATA_CHILD_BLOCK];
 			}
 			else
@@ -2087,10 +2074,10 @@ FSTATIC FLMINT OutputNonLeafElements(
 							(FLMUINT) (TempAddrPtr - StateInfo.pElm),
 						0, MOD_CHILD_BLK,
 						Col, Row++, Option,
-						(FLMBYTE)(!Option ? bc : mbc),
-						(FLMBYTE)(!Option ? fc : mfc),
-						(FLMBYTE)(!Option ? bc : sbc),
-						(FLMBYTE)(!Option ? fc : sfc)))
+						!Option ? bc : mbc,
+						!Option ? fc : mfc,
+						!Option ? bc : sbc,
+						!Option ? fc : sfc))
 				goto Exit;
 
 			if (uiBlkType == BHT_NON_LEAF_COUNTS)
@@ -2342,8 +2329,8 @@ void ViewHexBlock(
 				(FLMUINT)BlkPtr, NumBytes,
 				FileNumber, FileOffset, NumBytes, uiModFlag,
 				Col, Row++, 0,
-				WPS_BLACK, WPS_LIGHTGRAY,
-				WPS_BLACK, WPS_LIGHTGRAY))
+				FLM_BLACK, FLM_LIGHTGRAY,
+				FLM_BLACK, FLM_LIGHTGRAY))
 			return;
 		FileOffset += (FLMUINT)NumBytes;
 		BytesProcessed += NumBytes;
@@ -2692,15 +2679,15 @@ FLMINT GetBlockAddrType(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	/* First get the block address */
 
 	while ((!GotAddress) && (GetOK))
 	{
 		BadDigit = FALSE;
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		ViewAskInput( "Enter Block Address (in hex): ", 
 			TempBuf, sizeof( TempBuf));
 		if ((f_stricmp( TempBuf, "\\") == 0) ||
@@ -2742,17 +2729,17 @@ FLMINT GetBlockAddrType(
 
 	if (GetOK)
 	{
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, uiNumRows - 1);
-		WpsStrOutXY( "View: 1=Leaf, 2=NLeafCnts, 3=NLeafVar, 4=NLeafFix, 5=Avail, 6=LFH: ",
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 1);
+		f_conStrOutXY( "View: 1=Leaf, 2=NLeafCnts, 3=NLeafVar, 4=NLeafFix, 5=Avail, 6=LFH: ",
 			0, uiNumRows - 1);
 	}
 	while ((GetOK) && (!GotType))
 	{
-		c = WpkIncar();
+		c = f_conGetKey();
 		switch( c)
 		{
-			case WPK_ESCAPE:
+			case FKB_ESCAPE:
 			case '0':
 				GetOK = 0;
 				break;
@@ -2784,7 +2771,7 @@ FLMINT GetBlockAddrType(
 				break;
 		}
 	}
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conClearScreen( 0, uiNumRows - 2);
 	ViewEscPrompt();
 	return( GetOK);
 }

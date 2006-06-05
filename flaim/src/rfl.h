@@ -181,8 +181,8 @@ Desc:
 ****************************************************************************/
 typedef struct RFL_BUFFER
 {
-	F_IOBufferMgr *	pBufferMgr;				// Write buffer manager
-	F_IOBuffer *		pIOBuffer;
+	IF_IOBufferMgr *	pBufferMgr;				// Write buffer manager
+	IF_IOBuffer *		pIOBuffer;
 	FLMUINT				uiCurrFileNum;			// Current file number.
 	FLMUINT				uiRflBufBytes;			// Number of bytes currently in the
 														//	pIOBuffer.  Always points to
@@ -209,7 +209,7 @@ typedef struct RFL_BUFFER
 Desc:	This class handles all of the roll-forward logging for FLAIM.  There
 		is one of these objects allocated per FFILE.
 **************************************************************************/
-class F_Rfl : public F_Base
+class F_Rfl : public F_Object
 {
 public:
 
@@ -433,7 +433,7 @@ public:
 
 	FINLINE FLMBYTE * getPacketPtr( void)
 	{
-		return( &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[
+		return( &(m_pCurrentBuf->pIOBuffer->getBuffer()[
 						m_pCurrentBuf->uiRflBufBytes]));
 	}
 
@@ -457,7 +457,6 @@ public:
 		
 		if (m_pFileHdl)
 		{
-			m_pFileHdl->Close();
 			m_pFileHdl->Release();
 			m_pFileHdl = NULL;
 			m_pCurrentBuf->uiCurrFileNum = 0;
@@ -563,7 +562,7 @@ private:
 
 	FINLINE FLMBYTE * getPacketBodyPtr( void)
 	{
-		return( &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[
+		return( &(m_pCurrentBuf->pIOBuffer->getBuffer()[
 			m_pCurrentBuf->uiRflBufBytes + RFL_PACKET_OVERHEAD]));
 	}
 
@@ -706,7 +705,7 @@ private:
 													// no longer needed?
 	FLMUINT			m_uiRflMinFileSize;	// Minimum RFL file size.
 	FLMUINT			m_uiRflMaxFileSize;	// Maximum RFL file size.
-	F_FileHdlImp *	m_pFileHdl;		  		// File handle for writing to roll
+	IF_FileHdl *	m_pFileHdl;		  		// File handle for writing to roll
 													//	forward log file - only need one for
 													//	the writer because we can only have
 													//	one update transaction at a time.

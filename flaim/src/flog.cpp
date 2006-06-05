@@ -24,8 +24,6 @@
 
 #include "flaimsys.h"
 
-// Static functions
-
 FSTATIC void flmLogProcessFieldInfo(
 	const char **		ppszFormat,
 	FLMUINT *			puiWidth,
@@ -793,17 +791,17 @@ FSTATIC RCODE flmLogColorFormatter(
 	}
 	else
 	{
-		FlmColorType	eForeground = (FlmColorType)(uiWidth + 1);
-		FlmColorType	eBackground = (FlmColorType)(uiPrecision + 1);
+		eColorType	foreground = (eColorType)(uiWidth + 1);
+		eColorType	background = (eColorType)(uiPrecision + 1);
 
 		// Set a new foreground and/or background color
 
-		if( eForeground >= FLM_NUM_COLORS || eBackground >= FLM_NUM_COLORS)
+		if( foreground >= FLM_NUM_COLORS || background >= FLM_NUM_COLORS)
 		{
 			goto Exit;
 		}
 
-		pLogMessage->setColor( eForeground, eBackground);
+		pLogMessage->setColor( foreground, background);
 	}
 
 Exit:
@@ -1081,8 +1079,8 @@ void F_LogMessage::pushForegroundColor( void)
 {
 	if( m_uiForeColors < F_MAX_COLOR_STACK_SIZE)
 	{
-		m_eForeColors[ F_MAX_COLOR_STACK_SIZE - 
-			(++m_uiForeColors)] = m_eCurrentForeColor;
+		m_foreColors[ F_MAX_COLOR_STACK_SIZE - 
+			(++m_uiForeColors)] = m_currentForeColor;
 	}
 	else
 	{
@@ -1097,8 +1095,8 @@ void F_LogMessage::pushBackgroundColor( void)
 {
 	if( m_uiBackColors < F_MAX_COLOR_STACK_SIZE)
 	{
-		m_eBackColors[ F_MAX_COLOR_STACK_SIZE - 
-			(++m_uiBackColors)] = m_eCurrentBackColor;
+		m_backColors[ F_MAX_COLOR_STACK_SIZE - 
+			(++m_uiBackColors)] = m_currentBackColor;
 	}
 	else
 	{
@@ -1111,7 +1109,7 @@ Desc:	Pops the foreground color off of the top of the color stack
 ****************************************************************************/
 void F_LogMessage::popForegroundColor( void)
 {
-	FlmColorType	eForeColor = m_eCurrentForeColor;
+	eColorType	foreColor = m_currentForeColor;
 
 	// Pop a color from the color stack
 
@@ -1119,13 +1117,13 @@ void F_LogMessage::popForegroundColor( void)
 	{
 		if( m_uiForeColors <= F_MAX_COLOR_STACK_SIZE)
 		{
-			eForeColor = m_eForeColors[ 
+			foreColor = m_foreColors[ 
 					F_MAX_COLOR_STACK_SIZE - m_uiForeColors];
 		}
 		m_uiForeColors--;
 	}
 
-	setColor( eForeColor, m_eCurrentBackColor);
+	setColor( foreColor, m_currentBackColor);
 }
 
 /****************************************************************************
@@ -1133,7 +1131,7 @@ Desc:	Pops the background color off of the top of the color stack
 ****************************************************************************/
 void F_LogMessage::popBackgroundColor( void)
 {
-	FlmColorType	eBackColor = m_eCurrentBackColor;
+	eColorType	backColor = m_currentBackColor;
 
 	// Pop a color from the color stack
 
@@ -1141,28 +1139,28 @@ void F_LogMessage::popBackgroundColor( void)
 	{
 		if( m_uiBackColors <= F_MAX_COLOR_STACK_SIZE)
 		{
-			eBackColor = m_eBackColors[ 
+			backColor = m_backColors[ 
 					F_MAX_COLOR_STACK_SIZE - m_uiBackColors];
 		}
 		m_uiBackColors--;
 	}
 
-	setColor( m_eCurrentForeColor, eBackColor);
+	setColor( m_currentForeColor, backColor);
 }
 
 /****************************************************************************
 Desc: Sets the foreground and background colors of a message
 ****************************************************************************/
 void F_LogMessage::setColor(
-	FlmColorType	eForeColor,
-	FlmColorType	eBackColor)
+	eColorType	foreColor,
+	eColorType	backColor)
 {
-	if( eForeColor != m_eCurrentForeColor ||
-		eBackColor != m_eCurrentBackColor)
+	if( foreColor != m_currentForeColor ||
+		 backColor != m_currentBackColor)
 	{
-		m_eCurrentForeColor = eForeColor;
-		m_eCurrentBackColor = eBackColor;
-		changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
+		m_currentForeColor = foreColor;
+		m_currentBackColor = backColor;
+		changeColor( m_currentForeColor, m_currentBackColor);
 	}
 }
 

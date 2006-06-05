@@ -27,32 +27,13 @@
 #include "view.h"
 #include "sharutil.h"
 
-#ifdef FLM_NLM
-	extern "C"
-	{
-		FLMBOOL	gv_bSynchronized = FALSE;
-
-		void SynchronizeStart();
-
-		int nlm_main(
-			int			ArgC,
-			char **		ArgV);
-
-		int atexit( void (*)( void ) );
-	}
-
-	FSTATIC void viewCleanup( void);
-#endif
-
 #define UTIL_ID	"VIEW"
 
-/* Main Menu options */
+// Main Menu options
 
 #define MAIN_MENU_FILE_HEADER    1
 #define MAIN_MENU_LOG_HEADER     2
 #define MAIN_MENU_LOGICAL_FILES  3
-
-/* Local function prototypes */
 
 FSTATIC void ViewShowHelp(
 	FLMBOOL bShowFullUsage);
@@ -62,8 +43,7 @@ FSTATIC FLMUINT16 ViewGetChar(
 	const char *	pszMessage2,
 	FLMUINT16		ui16DefaultChar);
 
-FSTATIC RCODE ViewReadAndVerifyHdrInfo(
-	void);
+FSTATIC RCODE ViewReadAndVerifyHdrInfo( void);
 
 FSTATIC FLMBOOL ViewGetFileName(
 	FLMUINT		uiCol,
@@ -87,19 +67,9 @@ static char			gv_szPassword[ 256];
 /********************************************************************
 Desc: ?
 *********************************************************************/
-#if defined( FLM_UNIX)
 int main(
 	int			argc,
-	char **	   ArgV)
-#elif defined( FLM_NLM)
-int nlm_main(
-	int			argc,
 	char **		ArgV)
-#else
-int __cdecl main(
-	int			argc,
-	char **		ArgV)
-#endif   
 {
 #define MAX_ARGS     30
 	FLMINT    		i;
@@ -135,47 +105,28 @@ int __cdecl main(
 	gv_pSFileHdl = NULL;
 	gv_szPassword[ 0] = 0;
 
-#ifdef FLM_NLM
-
-	/* Setup the routines to be called when the NLM exits itself */
+	f_conInit( 0xFFFF, 0xFFFF,  "FLAIM Database Viewer");
+	f_conGetScreenSize( NULL, &gv_uiBottomLine);
 	
-	atexit( viewCleanup);
-
-#endif
-
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
-	WpsInit( 0xFFFF, 0xFFFF,  "FLAIM Database Viewer");
-	WpsOptimize();
-
-	WpsScrSize( NULL, &gv_uiBottomLine);
 	gv_uiTopLine = 2;
 	gv_uiBottomLine -= 3;
 
-	if( RC_BAD( FlmAllocFileSystem( &gv_pFileSystem)))
+	if( RC_BAD( FlmGetFileSystem( &gv_pFileSystem)))
 	{
-		WpsStrOut( "\nCould not allocate a file system object.\n");
+		f_conStrOut( "\nCould not allocate a file system object.\n");
 		goto Exit;
 	}
 
-	/*
-	Ask the user to enter parameters if none were entered on the command
-	line.
-	*/
+	// Ask the user to enter parameters if none were entered on the command
+	// line.
 
 	if (ArgC < 2)
 	{
 		for (;;)
 		{
-			WpsStrOut( "\nView Params (enter ? for help): ");
+			f_conStrOut( "\nView Params (enter ? for help): ");
 			CommandBuffer [0] = 0;
-			WpsLineEd( CommandBuffer, 
-				sizeof( CommandBuffer) - 1, &gv_bShutdown);
+			f_conLineEdit( CommandBuffer, sizeof( CommandBuffer) - 1);
 			if (f_stricmp( CommandBuffer, "?") == 0)
 				ViewShowHelp( FALSE);
 			else
@@ -267,21 +218,21 @@ int __cdecl main(
 		i++;
 	}
 
-	GedPoolInit( &gv_ViewPool, 2048);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, 0);
+	gv_ViewPool.poolInit( 2048);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, 0);
 
-	/* Open the file */
+	// Open the file
 
 	if (ViewOpenFile())
 	{
 
-		/* Execute the main menu */
+		// Execute the main menu
 
 		ViewDoMainMenu();
 		ViewFreeMenuMemory();
 
-		/* Close the file */
+		// Close the file
 
 		if (gv_bViewDbInitialized)
 		{
@@ -291,6 +242,7 @@ int __cdecl main(
 	}
 
 Exit:
+
 	if (gv_pSFileHdl)
 	{
 		gv_pSFileHdl->Release();
@@ -299,14 +251,14 @@ Exit:
 
 	if ((bPauseBeforeExiting) && (!gv_bShutdown))
 	{
-		WpsStrOut( "\nPress any character to exit VIEW: ");
+		f_conStrOut( "\nPress any character to exit VIEW: ");
 		for (;;)
 		{
 			if (gv_bShutdown)
 				break;
-			if (WpkTestKB())
+			if (f_conHaveKey())
 			{
-				(void)WpkIncar();
+				f_conGetKey();
 				break;
 			}
 			viewGiveUpCPU();
@@ -319,16 +271,9 @@ Exit:
 		gv_pFileSystem = NULL;
 	}
 
-	WpsExit();
+	f_conExit();
 	FlmShutdown();
 
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 	gv_bRunning = FALSE;
 	return 0;
 }
@@ -340,59 +285,52 @@ FSTATIC void ViewShowHelp(
 	FLMBOOL bShowFullUsage
 	)
 {
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
-	WpsStrOut( "\n");
+	f_conStrOut( "\n");
 	if (bShowFullUsage)
-		WpsStrOut( "Usage: view <FileName> [Options]\n");
+		f_conStrOut( "Usage: view <FileName> [Options]\n");
 	else
-		WpsStrOut( "Parameters: <FileName> [Options]\n\n");
-	WpsStrOut( 
+		f_conStrOut( "Parameters: <FileName> [Options]\n\n");
+	f_conStrOut( 
 "   FileName = Name of database to view.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "              @<FileName>, where FileName is the name of the file containing\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "   Options  =\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -dr<Dir>     = RFL directory.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -dd<Dir>     = Data directory.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -x           = Open file in exclusive mode.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -f           = Fix file header.  If the options below are not set,\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       defaults will be used.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -b<Size>     = Set block size to Size (only used if -f is specified).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -l<Size>     = Set maximum RFL file size to Size (only used if -f\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       option is used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -p           = Pause before exiting.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -pM<MajorVer>= Set application major version number (only used if -f\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       option is used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -pm<MinorVer>= Set application minor version number (only used if -f\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       option is used).\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -pw<Password>= Use Password when opening the database\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "        -?           = A '?' anywhere in the command line will cause this\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                       screen to be displayed, with or without the leading '-'.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "Options may be specified anywhere in the command line.\n");
 }
 
@@ -408,89 +346,82 @@ FSTATIC FLMUINT16 ViewGetChar(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
 	if (pszMessage1)
-		WpsStrOutXY( pszMessage1, 0, uiNumRows - 2);
-	WpsStrOutXY( pszMessage2, 0, 23);
+		f_conStrOutXY( pszMessage1, 0, uiNumRows - 2);
+	f_conStrOutXY( pszMessage2, 0, 23);
 	for (;;)
 	{
 		if (gv_bShutdown)
 		{
-			ui16Char = WPK_ESCAPE;
+			ui16Char = FKB_ESCAPE;
 			break;
 		}
-		else if (WpkTestKB())
+		else if (f_conHaveKey())
 		{
-			ui16Char = (FLMUINT16)WpkIncar();
+			ui16Char = (FLMUINT16)f_conGetKey();
 			break;
 		}
 		viewGiveUpCPU();
 	}
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
-	if (ui16Char == WPK_ENTER)
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
+	if (ui16Char == FKB_ENTER)
 		ui16Char = ui16DefaultChar;
 	if ((ui16Char >= 'a') && (ui16Char <= 'z'))
 		ui16Char = ui16Char - 'a' + 'A';
 	return( ui16Char);
 }
 
-/*WP_FUNC: ViewReadAndVerifyHdrInfo */
 /***************************************************************************
 Desc:	This routine reads and verifies the information contained in the
 		file header and log header of a FLAIM database.
 *****************************************************************************/
-FSTATIC RCODE ViewReadAndVerifyHdrInfo(
-	void
-	)
+FSTATIC RCODE ViewReadAndVerifyHdrInfo( void)
 {
 	RCODE				rc = FERR_OK;
 	RCODE				rc0;
 	RCODE				rc1;
 	FLMUINT			uiBytesRead;
 	FLMBYTE *		pReadBuf = NULL;
-	F_FileHdlImp *	pCFileHdl;
+	IF_FileHdl *	pCFileHdl = NULL;
 	FLMUINT			uiTmpLen;
 
-	if (RC_BAD( rc = f_calloc( 2048, &pReadBuf)))
-		goto Exit;
-
-	if( RC_BAD( rc = gv_pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	if( RC_BAD( rc = f_calloc( 2048, &pReadBuf)))
 	{
 		goto Exit;
 	}
 
-	/*
-	Read the fixed information area  -- except for the 1st byte --
-	because it might be locked by an active transaction.  We don't
-	care what is in this byte anyway.
-	*/
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( gv_szViewFileName, 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pCFileHdl)))
+	{
+		goto Exit;
+	}
+	
+	// Read the fixed information area  -- except for the 1st byte --
+	// because it might be locked by an active transaction.  We don't
+	// care what is in this byte anyway.
 
-	rc0 = pCFileHdl->Read( 1L, (FLMUINT)2047,
-						  &pReadBuf [1], &uiBytesRead);
+	rc0 = pCFileHdl->read( 1L, 2047, &pReadBuf [1], &uiBytesRead);
 
-	/*
-	Increment bytes read - to account for byte zero, which
-	was not really read in.
-	*/
+	// Increment bytes read - to account for byte zero, which
+	// was not really read in.
 
 	uiBytesRead++;
 	*pReadBuf = 0xFF;
 
-	/*
-	Before doing any checking, get whatever we can from the
-	first 2048 bytes.  For the flmGetHdrInfo routine, we want
-	to get whatever we can from the headers, even if it is
-	invalid.
-	*/
+	// Before doing any checking, get whatever we can from the
+	// first 2048 bytes.  For the flmGetHdrInfo routine, we want
+	// to get whatever we can from the headers, even if it is
+	// invalid.
 
 	rc1 = flmGetFileHdrInfo( pReadBuf, &pReadBuf [FLAIM_HEADER_START],
 									&gv_ViewHdrInfo.FileHdr);
 
-	/* Get the log file header information */
+	// Get the log file header information
 
 	f_memcpy( gv_ucViewLogHdr, &pReadBuf [DB_LOG_HEADER_START],
 						LOG_HEADER_SIZE);
@@ -504,8 +435,10 @@ FSTATIC RCODE ViewReadAndVerifyHdrInfo(
 	{
 		uiTmpLen = sizeof( gv_szFlaimName) - 1;
 	}
+	
 	f_memcpy( gv_szFlaimName, &pReadBuf [FLAIM_HEADER_START + FLAIM_NAME_POS],
 						uiTmpLen);
+						
 	gv_szFlaimName [uiTmpLen] = 0;
 
 	uiTmpLen = FLM_FILE_FORMAT_VER_LEN;
@@ -513,14 +446,13 @@ FSTATIC RCODE ViewReadAndVerifyHdrInfo(
 	{
 		uiTmpLen = sizeof( gv_szFlaimVersion) - 1;
 	}
+	
 	f_memcpy( gv_szFlaimVersion,
 		&pReadBuf [FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS], uiTmpLen);
 	gv_szFlaimVersion [uiTmpLen] = 0;
 
-	/*
-	If there is not enough data to satisfy the read, this
-	is probably not a FLAIM file.
-	*/
+	// If there is not enough data to satisfy the read, this
+	// is probably not a FLAIM file.
 
 	if (RC_BAD( rc0))
 	{
@@ -536,10 +468,8 @@ FSTATIC RCODE ViewReadAndVerifyHdrInfo(
 		}
 	}
 
-	/*
-	See if we got any other errors where we might want to retry
-	the read.
-	*/
+	// See if we got any other errors where we might want to retry
+	// the read.
 
 	if (RC_BAD( rc1))
 	{
@@ -548,8 +478,17 @@ FSTATIC RCODE ViewReadAndVerifyHdrInfo(
 	}
 
 Exit:
+
 	if (pReadBuf)
+	{
 		f_free( &pReadBuf);
+	}
+	
+	if( pCFileHdl)
+	{
+		pCFileHdl->Release();
+	}
+	
 	return( rc);
 }
 
@@ -563,7 +502,7 @@ void ViewReadHdr( void)
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	gv_bViewHdrRead = TRUE;
 	if (RC_OK( rc = ViewReadAndVerifyHdrInfo()))
@@ -571,11 +510,7 @@ void ViewReadHdr( void)
 		return;
 	}
 
-	/* Had some sort of error */
-
 	ViewShowRCError( "reading header information", rc);
-
-	/* Make sure we have a valid block size */
 
 	if (!VALID_BLOCK_SIZE( gv_ViewHdrInfo.FileHdr.uiBlockSize))
 		gv_ViewHdrInfo.FileHdr.uiBlockSize = DEFAULT_BLKSIZ;
@@ -591,11 +526,11 @@ void ViewAskInput(
 {
 	char		TempBuf [80];
 
-	WpsStrOut( Prompt);
+	f_conStrOut( Prompt);
 	if (BufLen > sizeof( TempBuf))
 		BufLen = sizeof( TempBuf);
 	TempBuf [0] = 0;
-	WpsLineEd( TempBuf, BufLen, &gv_bShutdown);
+	f_conLineEdit( TempBuf, BufLen);
 	f_strcpy( Buffer, TempBuf);
 }
 
@@ -609,18 +544,18 @@ FSTATIC FLMBOOL ViewGetFileName(
 {
 	const char *		Prompt = "Enter database file name: ";
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( uiCol, uiRow);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( uiCol, uiRow);
 	
 	if (bDispOnly)
 	{
-		WpsStrOutXY( Prompt, uiCol, uiRow);
-		WpsStrOutXY( gv_szViewFileName,
+		f_conStrOutXY( Prompt, uiCol, uiRow);
+		f_conStrOutXY( gv_szViewFileName,
 							(FLMBYTE)(uiCol + f_strlen( Prompt)), uiRow);
 	}
 	else
 	{
-		WpsScrPos( uiCol, uiRow);
+		f_conSetCursorPos( uiCol, uiRow);
 		ViewAskInput( Prompt, gv_szViewFileName, 40);
 		if ((!gv_szViewFileName [0]) ||
 			 (f_strcmp( gv_szViewFileName, "\\") == 0))
@@ -629,7 +564,6 @@ FSTATIC FLMBOOL ViewGetFileName(
 	return( TRUE);
 }
 
-/*WP_FUNC: ViewOpenFileDirect */
 /****************************************************************************
 Desc: This routine opens a database file in DIRECT mode - because we couldn't
 		get it open by calling the normal FLAIM functions.
@@ -639,9 +573,9 @@ FSTATIC FLMBOOL ViewOpenFileDirect(
 	)
 {
 	RCODE					rc;
-	F_FileHdlImp *		pCFileHdl;
+	IF_FileHdl *		pCFileHdl;
 
-	if( RC_BAD( rc = gv_pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	if( RC_BAD( rc = gv_pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
 	{
 		ViewShowRCError( "opening file in direct mode", rc);
 		return( FALSE);
@@ -664,9 +598,9 @@ FSTATIC FLMBOOL ViewOpenFile(
 
 Get_File_Name:
 
-	/* Prompt for file name if necessary */
+	// Prompt for file name if necessary
 
-	WpsScrClr( 0, 1);
+	f_conClearScreen( 0, 1);
 	if( !gv_szViewFileName [0])
 	{
 		if( !ViewGetFileName( 5, 5, FALSE))
@@ -681,30 +615,14 @@ Get_File_Name:
 			goto Exit;
 		}
 	}
+	
 	if (gv_pSFileHdl)
 	{
 		gv_pSFileHdl->Release();
 		gv_pSFileHdl = NULL;
 	}
 
-	if ((gv_pSFileHdl = new F_SuperFileHdl) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		ViewShowRCError( "creating super file handle", rc);
-		goto Exit;
-	}
-	if (RC_BAD( rc = gv_pSFileHdl->Setup( NULL, gv_szViewFileName, gv_szDataDir)))
-	{
-		ViewShowRCError( "setting up super file handle", rc);
-		goto Exit;
-	}
-
-	rc = ViewReadAndVerifyHdrInfo();
-
-	gv_pSFileHdl->ReleaseFiles(TRUE);
-	gv_pSFileHdl->SetDbVersion( gv_ViewHdrInfo.FileHdr.uiVersionNum);
-	gv_pSFileHdl->SetBlockSize( gv_ViewHdrInfo.FileHdr.uiBlockSize);
-	if (RC_BAD( rc))
+	if( RC_BAD( rc = ViewReadAndVerifyHdrInfo()))
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND)
 		{
@@ -716,6 +634,23 @@ Get_File_Name:
 		}
 	}
 
+
+	if ((gv_pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		ViewShowRCError( "creating super file handle", rc);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = gv_pSFileHdl->setup( gv_szViewFileName, gv_szDataDir, 
+		gv_ViewHdrInfo.FileHdr.uiVersionNum)))
+	{
+		ViewShowRCError( "setting up super file handle", rc);
+		goto Exit;
+	}
+
+	gv_pSFileHdl->releaseFiles( TRUE);
+	
 	if (RC_BAD( rc = FlmDbOpen( gv_szViewFileName, gv_szDataDir,
 										 gv_szRflDir, FO_DONT_REDO_LOG,
 										 gv_szPassword, &gv_hViewDb)))
@@ -764,7 +699,9 @@ Other_Error:
 	/* Fix the header if requested to */
 
 	bOk = TRUE;
+	
 Exit:
+
 	if (!bOk)
 	{
 		if (gv_pSFileHdl)
@@ -772,18 +709,17 @@ Exit:
 			gv_pSFileHdl->Release();
 			gv_pSFileHdl = NULL;
 		}
+		
 		gv_bViewFileOpened = FALSE;
 	}
 	return( bOk);
 }
-
+
 /***************************************************************************
 Desc:    This routine gets the dictionary information for a database and
 			locks it into memory.
 *****************************************************************************/
-void ViewGetDictInfo(
-	void
-	)
+void ViewGetDictInfo( void)
 {
 	FDB *		pDb = (FDB *)gv_hViewDb;
 	FLMUINT	uiSaveFlags;
@@ -840,15 +776,15 @@ FSTATIC FLMINT ViewSetupMainMenu( void)
 												VAL_IS_EMPTY, 0, 0,
 												0, 0xFFFFFFFF, 0, MOD_DISABLED,
 												uiCol, uiRow++, MAIN_MENU_FILE_HEADER,
-												WPS_BLACK, WPS_WHITE,
-												WPS_BLUE, WPS_WHITE))
+												FLM_BLACK, FLM_WHITE,
+												FLM_BLUE, FLM_WHITE))
 		return( 0);
 	if (!ViewAddMenuItem( LBL_LOG_HEADER, 0,
 												VAL_IS_EMPTY, 0, 0,
 												0, 0xFFFFFFFF, 0, MOD_DISABLED,
 												uiCol, uiRow++, MAIN_MENU_LOG_HEADER,
-												WPS_BLACK, WPS_WHITE,
-												WPS_BLUE, WPS_WHITE))
+												FLM_BLACK, FLM_WHITE,
+												FLM_BLUE, FLM_WHITE))
 		return( 0);
 
 	if (gv_ViewHdrInfo.FileHdr.uiFirstLFHBlkAddr == 0xFFFFFFFF)
@@ -857,8 +793,8 @@ FSTATIC FLMINT ViewSetupMainMenu( void)
 									VAL_IS_LABEL_INDEX, (FLMUINT)LBL_NONE, 0,
 									0, 0xFFFFFFFF, 0, MOD_DISABLED,
 									uiCol, uiRow++, 0,
-									WPS_BLACK, WPS_LIGHTGRAY,
-									WPS_BLUE, WPS_LIGHTGRAY))
+									FLM_BLACK, FLM_LIGHTGRAY,
+									FLM_BLUE, FLM_LIGHTGRAY))
 			return( 0);
 	}
 	else
@@ -867,8 +803,8 @@ FSTATIC FLMINT ViewSetupMainMenu( void)
 									VAL_IS_EMPTY, 0, 0,
 									0, 0xFFFFFFFF, 0, MOD_DISABLED,
 									uiCol, uiRow++, MAIN_MENU_LOGICAL_FILES,
-									WPS_BLACK, WPS_WHITE,
-									WPS_BLUE, WPS_WHITE))
+									FLM_BLACK, FLM_WHITE,
+									FLM_BLUE, FLM_WHITE))
 			return( 0);
 	}
 	return( 1);
@@ -902,16 +838,24 @@ FSTATIC void ViewDoMainMenu(
 		if (gv_bViewPoppingStack)
 		{
 			if (!gv_bViewHdrRead)
+			{
 				ViewReadHdr();
+			}
+			
 			ViewSearch();
 		}
+		
 		if (Repaint)
 		{
 			if (!ViewSetupMainMenu())
+			{
 				return;
+			}
 		}
+		
 		Repaint = 1;
 		Option = ViewGetMenuOption();
+		
 		switch( Option)
 		{
 			case ESCAPE_OPTION:
@@ -924,19 +868,28 @@ FSTATIC void ViewDoMainMenu(
 				break;
 			case MAIN_MENU_LOGICAL_FILES:
 				if (!gv_bViewHdrRead)
+				{
 					ViewReadHdr();
+				}
+				
 				ViewLogicalFiles();
 				break;
 			case SEARCH_OPTION:
 				if (!gv_bViewHdrRead)
+				{
 					ViewReadHdr();
+				}
+				
 				gv_uiViewSearchLfNum = FLM_DATA_CONTAINER;
 				if (ViewGetKey())
 					ViewSearch();
 				break;
 			case GOTO_BLOCK_OPTION:
 				if (!gv_bViewHdrRead)
+				{
 					ViewReadHdr();
+				}
+				
 				if (GetBlockAddrType( &BlkAddress, &Type))
 				{
 					BlkExp.Type = Type;
@@ -956,18 +909,3 @@ FSTATIC void ViewDoMainMenu(
 		}
 	}
 }
-
-/*WP_FUNC: viewCleanup */
-#ifdef FLM_NLM
-/****************************************************************************
-Desc: This routine shuts down all threads in the VIEW NLM.
-****************************************************************************/
-FSTATIC void viewCleanup(
-	void
-	)
-{
-	gv_bShutdown = TRUE;
-	while (gv_bRunning)
-		viewGiveUpCPU();
-}
-#endif

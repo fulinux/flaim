@@ -119,7 +119,7 @@ FLMEXP RCODE FLMAPI FlmDbTransBegin(
 
 		if( pucHeader)
 		{
-			if( RC_BAD( rc = pDb->pSFileHdl->ReadHeader( 
+			if( RC_BAD( rc = pDb->pSFileHdl->readHeader( 
 				0, 2048, pucHeader, &uiBytesRead)))
 			{
 				goto Exit;

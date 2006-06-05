@@ -26,11 +26,6 @@
 #define VIEW_H
 
 #include "flaimsys.h"
-#include "ffilesys.h"
-#include "ffilehdl.h"
-#include "fsuperfl.h"
-
-#include "wpscreen.h"
 
 #ifdef MAIN_MODULE
 	#define EXTERN
@@ -38,11 +33,11 @@
 	#define EXTERN extern
 #endif
 
-/* Define the area of the screen where menu items may be displayed */
+// Define the area of the screen where menu items may be displayed
 
 #define LINES_PER_PAGE	((gv_uiBottomLine) - (gv_uiTopLine) + 1)
 
-/* Common options */
+// Common options
 
 #define ESCAPE_OPTION				0
 #define PREV_BLOCK_OPTION			1000
@@ -538,10 +533,10 @@ typedef struct View_Menu_Item
 	FLMUINT						Col;
 	FLMUINT						Row;
 	FLMUINT						Option;
-	FLMUINT						UnselectBackColor;
-	FLMUINT						UnselectForeColor;
-	FLMUINT						SelectBackColor;
-	FLMUINT						SelectForeColor;
+	eColorType					UnselectBackColor;
+	eColorType					UnselectForeColor;
+	eColorType					SelectBackColor;
+	eColorType					SelectForeColor;
 	FLMINT						iLabelIndex;	// Signed number
 	FLMUINT						LabelWidth;
 	FLMUINT						HorizCurPos;
@@ -656,7 +651,7 @@ EXTERN VIEW_MENU_ITEM_p			gv_pViewSearchItem;
 EXTERN FLMUINT						gv_uiViewSearchLfNum;
 EXTERN FLMBYTE						gv_ucViewSearchKey[ MAX_KEY_SIZ];
 EXTERN FLMUINT						gv_uiViewSearchKeyLen;
-EXTERN POOL							gv_ViewPool;
+EXTERN F_Pool						gv_ViewPool;
 EXTERN FLMUINT						gv_uiViewTopRow;
 EXTERN FLMUINT						gv_uiViewBottomRow;
 EXTERN F_TMSTAMP					gv_ViewLastTime;
@@ -725,7 +720,7 @@ EXTERN VIEW_MENU_ITEM_p			gv_pViewMenuLastItem
 	= NULL
 #endif
 	;
-EXTERN F_FileSystem *			gv_pFileSystem
+EXTERN IF_FileSystem *			gv_pFileSystem
 #ifdef MAIN_MODULE
 	= NULL
 #endif
@@ -764,10 +759,10 @@ FLMINT ViewAddMenuItem(
 	FLMUINT			Col,
 	FLMUINT			Row,
 	FLMUINT			Option,
-	FLMUINT			UnselectBackColor,
-	FLMUINT			UnselectForeColor,
-	FLMUINT			SelectBackColor,
-	FLMUINT			SelectForeColor);
+	eColorType		UnselectBackColor,
+	eColorType		UnselectForeColor,
+	eColorType		SelectBackColor,
+	eColorType		SelectForeColor);
 
 FLMINT ViewGetMenuOption( void);
 
@@ -927,4 +922,3 @@ FLMINT ViewGetKey( void);
 void ViewSearch( void);
 
 #endif
-

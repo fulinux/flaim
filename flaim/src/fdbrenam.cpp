@@ -24,12 +24,10 @@
 
 #include "flaimsys.h"
 
-typedef struct DBRenameInfoTag *	DBRenameInfo_p;
-
-typedef struct DBRenameInfoTag
+typedef struct DBRenameInfo
 {
-	DB_RENAME_INFO	Info;
-	DBRenameInfo_p	pNext;
+	DB_RENAME_INFO		Info;
+	DBRenameInfo *		pNext;
 } DBRenameInfo;
 
 FSTATIC RCODE flmRenameFile(
@@ -65,7 +63,7 @@ FSTATIC RCODE flmRenameFile(
 
 	if (f_stricmp( pszSrcFileName, pszDstFileName) == 0)
 	{
-		if (gv_FlmSysData.pFileSystem->Exists( pszSrcFileName) == FERR_OK)
+		if (RC_OK( gv_FlmSysData.pFileSystem->doesFileExist( pszSrcFileName)))
 		{
 			*pbFileFound = TRUE;
 		}
@@ -83,9 +81,9 @@ FSTATIC RCODE flmRenameFile(
 
 	if (bOverwriteDestOk)
 	{
-		if (gv_FlmSysData.pFileSystem->IsDir( pszDstFileName))
+		if (gv_FlmSysData.pFileSystem->isDir( pszDstFileName))
 		{
-			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->RemoveDir(
+			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->removeDir(
 											pszDstFileName, TRUE)))
 			{
 				goto Exit;
@@ -93,7 +91,7 @@ FSTATIC RCODE flmRenameFile(
 		}
 		else
 		{
-			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete(
+			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile(
 											pszDstFileName)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
@@ -111,8 +109,8 @@ FSTATIC RCODE flmRenameFile(
 	// If names are the same, no need to actually do the
 	// rename.
 
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Rename( pszSrcFileName,
-																	pszDstFileName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->renameFile( 
+		pszSrcFileName, pszDstFileName)))
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 		{
@@ -179,7 +177,7 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	void *				UserData)
 {
 	RCODE					rc = FERR_OK;
-	F_FileHdlImp *		pFileHdl = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
 	FLMUINT				uiFileNumber;
 	FILE_HDR				FileHdr;
 	LOG_HDR				LogHdr;
@@ -222,12 +220,14 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	// There must be either no directory specified for the new name, or
 	// it must be identical to the old directory.
 
-	if (RC_BAD( rc = f_pathReduce( pszDbName, pszOldName, szOldBase)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+		pszDbName, pszOldName, szOldBase)))
 	{
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = f_pathReduce( pszNewDbName, pszNewName, szNewBase)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+		pszNewDbName, pszNewName, szNewBase)))
 	{
 		goto Exit;
 	}
@@ -242,7 +242,8 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	
 	f_strcpy( pszNewName, pszOldName);
 	
-	if (RC_BAD( rc = f_pathAppend( pszNewName, szNewBase)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+		pszNewName, szNewBase)))
 	{
 		goto Exit;
 	}
@@ -255,12 +256,14 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 		f_strcpy( pszOldDataName, pszDataDir);
 		f_strcpy( pszNewDataName, pszDataDir);
 		
-		if (RC_BAD( rc = f_pathAppend( pszOldDataName, szOldBase)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+			pszOldDataName, szOldBase)))
 		{
 			goto Exit;
 		}
 		
-		if (RC_BAD( rc = f_pathAppend( pszNewDataName, szNewBase)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+			pszNewDataName, szNewBase)))
 		{
 			goto Exit;
 		}
@@ -288,9 +291,9 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 
 	// Open the file so we can get the log header.
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( pszDbName, 
-		F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT, 
-		(F_FileHdl **)&pFileHdl)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszDbName, 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 
+		&pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -511,8 +514,8 @@ Exit:
 
 		if (RC_BAD( rc))
 		{
-			gv_FlmSysData.pFileSystem->Rename( pRenameFile->Info.szDstFileName,
-														  pRenameFile->Info.szSrcFileName);
+			gv_FlmSysData.pFileSystem->renameFile( 
+				pRenameFile->Info.szDstFileName, pRenameFile->Info.szSrcFileName);
 		}
 		
 		f_free( &pRenameFile);

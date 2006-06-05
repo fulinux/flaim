@@ -43,12 +43,12 @@ FSTATIC FLMINT ViewSetupFileHeaderMenu(
 #define LABEL_WIDTH  30
 	FLMUINT      Row;
 	FLMUINT      Col;
-	FLMUINT      bc = WPS_BLACK;
-	FLMUINT      fc = WPS_LIGHTGRAY;
-	FLMUINT      mbc = WPS_BLACK;
-	FLMUINT      mfc = WPS_WHITE;
-	FLMUINT      sbc = WPS_BLUE;
-	FLMUINT      sfc = WPS_WHITE;
+	eColorType   bc = FLM_BLACK;
+	eColorType   fc = FLM_LIGHTGRAY;
+	eColorType   mbc = FLM_BLACK;
+	eColorType   mfc = FLM_WHITE;
+	eColorType   sbc = FLM_BLUE;
+	eColorType   sfc = FLM_WHITE;
 	FLMUINT      Option;
 	FLMINT       iStatus;
 	FLMBYTE      TempBuf[ 100];
@@ -98,7 +98,7 @@ FSTATIC FLMINT ViewSetupFileHeaderMenu(
 
 	/* Display the default language */
 
-	FlmGetLanguage( gv_ViewHdrInfo.FileHdr.uiDefaultLanguage, (char *)TempBuf);
+	f_languageToStr( gv_ViewHdrInfo.FileHdr.uiDefaultLanguage, (char *)TempBuf);
 	if (!ViewAddMenuItem( LBL_DEFAULT_LANGUAGE, LABEL_WIDTH,
 			VAL_IS_TEXT_PTR,
 			(FLMUINT)((FLMBYTE *)(&TempBuf[ 0])), 0,
@@ -126,10 +126,10 @@ FSTATIC FLMINT ViewSetupFileHeaderMenu(
 			(FLMUINT)(gv_ViewHdrInfo.FileHdr.uiFirstLFHBlkAddr), 0,
 			0, FLAIM_HEADER_START + DB_1ST_LFH_ADDR, 0, MOD_FLMUINT | MOD_HEX,
 			Col, Row++, Option,
-			(FLMBYTE)(!Option ? bc : mbc),
-			(FLMBYTE)(!Option ? fc : mfc),
-			(FLMBYTE)(!Option ? bc : sbc),
-			(FLMBYTE)(!Option ? fc : sfc)))
+			!Option ? bc : mbc,
+			!Option ? fc : mfc,
+			!Option ? bc : sbc,
+			!Option ? fc : sfc))
 		goto Zero_Exit;
 
 	/* Display the first PCODE block address */
@@ -142,10 +142,10 @@ FSTATIC FLMINT ViewSetupFileHeaderMenu(
 				0, FLAIM_HEADER_START + DB_1ST_PCODE_ADDR,
 				0, MOD_FLMUINT | MOD_HEX,
 				Col, Row++, 0,
-				(FLMBYTE)(!Option ? bc : mbc),
-				(FLMBYTE)(!Option ? fc : mfc),
-				(FLMBYTE)(!Option ? bc : sbc),
-				(FLMBYTE)(!Option ? fc : sfc)))
+				!Option ? bc : mbc,
+				!Option ? fc : mfc,
+				!Option ? bc : sbc,
+				!Option ? fc : sfc))
 			goto Zero_Exit;
 	}
 

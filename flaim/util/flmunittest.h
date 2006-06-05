@@ -100,7 +100,7 @@ RCODE recordUnitTestResults(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class IFlmTest : public F_Base
+class IFlmTest : public F_Object
 {
 public:
 
@@ -121,7 +121,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class IFlmTestDisplayer : public F_Base
+class IFlmTestDisplayer : public F_Object
 {
 public:
 
@@ -136,7 +136,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class ITestReporter : public F_Base
+class ITestReporter : public F_Object
 {
 	unitTestData 	m_uTD;
 	FLMBOOL 			m_bInitialized;
@@ -166,7 +166,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class IFlmTestLogger : public F_Base
+class IFlmTestLogger : public F_Object
 {
 private:
 
@@ -470,8 +470,8 @@ private:
 	RCODE resize( void);
 	
 	RCODE getTokenFromFile( 
-		char *		pszToken,
-		F_FileHdl * pFileHdl);
+		char *			pszToken,
+		IF_FileHdl * 	pFileHdl);
 
 	FLMBOOL isWhitespace( 
 		char 			c)
@@ -490,7 +490,7 @@ private:
 /****************************************************************************
 Desc:	Simple class for generating sequential filenames
 ****************************************************************************/
-class FilenameIterator : public F_Base
+class FilenameIterator : public F_Object
 {
 public:
 	FilenameIterator(

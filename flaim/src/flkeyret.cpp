@@ -81,7 +81,7 @@ FLMEXP RCODE FLMAPI FlmKeyRetrieve(
 		goto Exit;
 	}
 
-	pvMark = GedPoolMark( &(pDb->TempPool));
+	pvMark = pDb->TempPool.poolMark();
 
 	if( IsInCSMode( hDb))
 	{
@@ -94,21 +94,23 @@ FLMEXP RCODE FLMAPI FlmKeyRetrieve(
 
 	if( pKeyTree || (uiFlag & FO_LAST))
 	{
-		pSearchKeyBuf = (FLMBYTE *) GedPoolAlloc( &(pDb->TempPool), 
-			MAX_KEY_SIZ + 4);
+		if( RC_BAD( rc = pDb->TempPool.poolAlloc( MAX_KEY_SIZ + 4, 
+			(void **)&pSearchKeyBuf)))
+		{
+			goto Exit;
+		}
 	}
 	else
 	{
 		pSearchKeyBuf = pSmallBuf;
 	}
-	pKeyBuf = (FLMBYTE *) GedPoolAlloc( &pDb->TempPool, MAX_KEY_SIZ + 4);
-	if( !pSearchKeyBuf || !pKeyBuf)
+	
+	if( RC_BAD( rc = pDb->TempPool.poolAlloc( MAX_KEY_SIZ + 4, 
+		(void **)&pKeyBuf)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-	/* Initialize the OPC */
-
+	
 	if( RC_BAD( rc = fdbInit( pDb, FLM_READ_TRANS,
 										FDB_TRANS_GOING_OK, 0, &bImplicitTrans)))
 	{
@@ -120,6 +122,7 @@ FLMEXP RCODE FLMAPI FlmKeyRetrieve(
 	{
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = KYFlushKeys( pDb)))
 	{
 		goto Exit;
@@ -424,7 +427,7 @@ Exit:
 
 Exit_CS:
 
-	GedPoolReset( &(pDb->TempPool), pvMark);
+	pDb->TempPool.poolReset( pvMark);
 	flmExit( FLM_KEY_RETRIEVE, pDb, rc);
 
 	return( rc);
@@ -448,7 +451,7 @@ FSTATIC RCODE	flmKeyRetrieveCS(
 	RCODE				rc;
 	CS_CONTEXT *	pCSContext = pDb->pCSContext;
 	FCL_WIRE			Wire( pCSContext, pDb);
-	void *			pvMark = GedPoolMark( &pCSContext->pool);
+	void *			pvMark = pCSContext->pool.poolMark();
 
 	/*
 	Set the record object so that it can be re-used,
@@ -568,7 +571,7 @@ FSTATIC RCODE	flmKeyRetrieveCS(
 
 Exit:
 	
-	GedPoolReset( &pCSContext->pool, pvMark);
+	pCSContext->pool.poolReset( pvMark);
 	return( rc);
 
 Transmission_Error:

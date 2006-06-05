@@ -74,7 +74,7 @@ FSTATIC RCODE impRead(
 	FLMUINT *			puiBytesReadRV);
 
 FSTATIC RCODE tagValLenType(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	GED_STREAM *		x,
 	NODE **			 	ppNode,
 	F_NameTable *		pNameTable);
@@ -147,7 +147,7 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE GedPutBINARY(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			pNode,
 	const void *	pvData,
 	FLMUINT			uiDataLen,
@@ -203,8 +203,8 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE GedToTree(
-	POOL *				pPool,
-	F_FileHdl *			pFileHdl,
+	F_Pool *				pPool,
+	IF_FileHdl *		pFileHdl,
 	char **				pBuf,
 	FLMUINT				uiBufSize,
 	NODE **				ppRoot,
@@ -218,7 +218,7 @@ RCODE GedToTree(
 	FLMBYTE			nextChar;
 	NODE *			nd = NULL;
 	NODE *			ndPrior = NULL;
-	FLMUINT			startPos;
+	FLMUINT64		ui64StartPos;
 
 	gedStream.pFileHdl = pFileHdl;
 	gedStream.pThis = gedStream.pBuf = *pBuf;
@@ -229,10 +229,11 @@ RCODE GedToTree(
 
 		// Find 1st starting file position
 
-		if (RC_OK( pFileHdl->Seek( 0L, F_IO_SEEK_CUR, &gedStream.uiFilePos)))
+		if (RC_OK( pFileHdl->seek( 0, FLM_IO_SEEK_CUR, 
+				&gedStream.ui64FilePos)))
 		{
 			gedStream.pLast = gedStream.pBuf;
-			gedReadChar( &gedStream, gedStream.uiFilePos);
+			gedReadChar( &gedStream, gedStream.ui64FilePos);
 		}
 		else
 		{
@@ -242,7 +243,7 @@ RCODE GedToTree(
 	else
 	{
 		gedStream.errorIO = 0;
-		gedStream.uiFilePos = 0;
+		gedStream.ui64FilePos = 0;
 		gedStream.pLast = gedStream.pBuf + (uiBufSize - 1);
 		gedStream.thisC = f_toascii( *gedStream.pBuf);
 	}
@@ -250,7 +251,7 @@ RCODE GedToTree(
 	for (;;)
 	{
 		gedSkipBlankLines( &gedStream);
-		startPos = gedStream.uiFilePos;
+		ui64StartPos = gedStream.ui64FilePos;
 
 		if (f_isdigit( gedStream.thisC))
 		{
@@ -320,13 +321,13 @@ RCODE GedToTree(
 successful:
 
 				ndPrior->next = NULL;
-				if (pFileHdl == NULL)
+				if( !pFileHdl)
 				{
 					*pBuf = gedStream.pThis + 
-							  (FLMINT32) (startPos - gedStream.uiFilePos);
+							  (FLMINT32) (ui64StartPos - gedStream.ui64FilePos);
 				}
 
-				gedStream.uiFilePos = startPos;
+				gedStream.ui64FilePos = ui64StartPos;
 				rc = FERR_OK;
 			}
 			else
@@ -354,7 +355,8 @@ successful:
 
 	if (pFileHdl)
 	{
-		pFileHdl->Seek( gedStream.uiFilePos, F_IO_SEEK_SET, &gedStream.uiFilePos);
+		pFileHdl->seek( gedStream.ui64FilePos, FLM_IO_SEEK_SET,
+			&gedStream.ui64FilePos);
 	}
 
 	return (rc);
@@ -364,21 +366,21 @@ successful:
 Desc:
 *****************************************************************************/
 FSTATIC RCODE tagValLenType(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	GED_STREAM *		pGedStream,
 	NODE **			 	newNode,
 	F_NameTable *		pNameTable)
 {
-	FLMUINT		startPos;
-	RCODE			rc = FERR_OK;
-	NODE *		nd;
-	FLMUINT		drn = 0;
-	FLMUINT		uiTagNum;
-	char			tagBuf[ GED_MAXTAGLEN + 1];
+	FLMUINT64		ui64StartPos;
+	RCODE				rc = FERR_OK;
+	NODE *			nd;
+	FLMUINT			drn = 0;
+	FLMUINT			uiTagNum;
+	char				tagBuf[ GED_MAXTAGLEN + 1];
 
 	gedSkipWhiteSpaces( pGedStream);
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 	if (pGedStream->thisC == ASCII_AT)
 	{
 		int	badDRN;
@@ -422,7 +424,7 @@ FSTATIC RCODE tagValLenType(
 
 	// Determine the Tag Number and Build the NODE
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 
 	if (!gedCopyTag( pGedStream, tagBuf))
 	{
@@ -455,7 +457,7 @@ FSTATIC RCODE tagValLenType(
 
 	gedSkipWhiteSpaces( pGedStream);
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 	if (pGedStream->thisC == ASCII_AT)
 	{
 		for (drn = 0; gedNextChar( pGedStream) != ASCII_AT;)
@@ -485,8 +487,8 @@ FSTATIC RCODE tagValLenType(
 	}
 	else
 	{
-		FLMINT	valLength;
-		FLMUINT	tempPos = pGedStream->uiFilePos;
+		FLMINT		valLength;
+		FLMUINT64	ui64TempPos = pGedStream->ui64FilePos;
 
 		if ((valLength = gedCopyValue( pGedStream, NULL)) > 0)
 		{
@@ -495,7 +497,7 @@ FSTATIC RCODE tagValLenType(
 
 			if (vp)
 			{
-				gedReadChar( pGedStream, tempPos);
+				gedReadChar( pGedStream, ui64TempPos);
 				gedCopyValue( pGedStream, vp);
 			}
 			else
@@ -506,11 +508,11 @@ FSTATIC RCODE tagValLenType(
 		}
 	}
 
-	startPos = pGedStream->uiFilePos;
+	ui64StartPos = pGedStream->ui64FilePos;
 
 Exit:
 
-	gedReadChar( pGedStream, startPos);
+	gedReadChar( pGedStream, ui64StartPos);
 	return (rc);
 }
 
@@ -518,10 +520,10 @@ Exit:
 Desc:
 *****************************************************************************/
 NODE * GedNodeCopy(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pNode,
-	NODE *		childList,
-	NODE *		sibList)
+	NODE *		pChildList,
+	NODE *		pSibList)
 {
 	NODE *		newNd;
 	FLMUINT		bias;
@@ -557,7 +559,7 @@ NODE * GedNodeCopy(
 	}
 
 	newNd->prior = NULL;
-	newNd->next = childList;
+	newNd->next = pChildList;
 	GedNodeLevelSet( newNd, 0);
 
 	if ((vp = (FLMBYTE *) GedAllocSpace( pPool, newNd, GedValType( pNode),
@@ -577,28 +579,28 @@ NODE * GedNodeCopy(
 		return (NULL);
 	}
 
-	if (childList)
+	if (pChildList)
 	{
-		childList->prior = newNd;
-		for (bias = GedNodeLevel( childList) - 1;
-		 	  childList->next; 
-			  GedNodeLevelSub( childList, bias), childList = childList->next);
+		pChildList->prior = newNd;
+		for (bias = GedNodeLevel( pChildList) - 1;
+		 	  pChildList->next; 
+			  GedNodeLevelSub( pChildList, bias), pChildList = pChildList->next);
 			  
-		GedNodeLevelSub( childList, bias);
-		childList->next = sibList;
+		GedNodeLevelSub( pChildList, bias);
+		pChildList->next = pSibList;
 	}
 	else
 	{
-		childList = newNd;
+		pChildList = newNd;
 	}
 
-	if (sibList)
+	if (pSibList)
 	{
-		sibList->prior = childList;
-		childList->next = sibList;
-		for (bias = GedNodeLevel( sibList); sibList->next; 
-			  GedNodeLevelSub( sibList, bias), sibList = sibList->next);
-		GedNodeLevelSub( sibList, bias);
+		pSibList->prior = pChildList;
+		pChildList->next = pSibList;
+		for (bias = GedNodeLevel( pSibList); pSibList->next; 
+			  GedNodeLevelSub( pSibList, bias), pSibList = pSibList->next);
+		GedNodeLevelSub( pSibList, bias);
 	}
 
 	return (newNd);
@@ -608,7 +610,7 @@ NODE * GedNodeCopy(
 Desc:
 *****************************************************************************/
 NODE * GedCopy(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMUINT		cnt,
 	NODE *		tree)
 {
@@ -928,36 +930,37 @@ NODE * GedSibGraft(
 Desc:
 *****************************************************************************/
 NODE * GedNodeCreate(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMUINT		tagNum,
 	FLMUINT		id,
 	RCODE *		rc)
 {
 	NODE *		nd;
-
-	if ((nd = (NODE *) GedPoolAlloc( pPool, (sizeof(NODE) + 
-		(id ? sizeof(id) : 0)))) == NULL)
+	
+	*rc = FERR_OK;
+	
+	if( RC_BAD( *rc = pPool->poolAlloc( (sizeof(NODE) + (id ? sizeof(id) : 0)),
+		(void **)&nd)))
 	{
-		*rc = RC_SET( FERR_MEM);
-	}
-	else
-	{
-		f_memset( nd, '\0', sizeof(NODE));
-
-		GedValTypeSet( nd, FLM_CONTEXT_TYPE);
-		GedTagNumSet( nd, tagNum);
-
-		if (id)
-		{
-			FLMBYTE *		ptr;
-			GedValTypeSetFlag( nd, HAS_REC_ID);
-			ptr = ((FLMBYTE *) nd) + sizeof(NODE);
-			*((FLMUINT *) (ptr + NODE_DRN_POS)) = id;
-		}
-
-		*rc = FERR_OK;
+		goto Exit;
 	}
 
+	f_memset( nd, '\0', sizeof(NODE));
+
+	GedValTypeSet( nd, FLM_CONTEXT_TYPE);
+	GedTagNumSet( nd, tagNum);
+
+	if (id)
+	{
+		FLMBYTE *		ptr;
+		
+		GedValTypeSetFlag( nd, HAS_REC_ID);
+		ptr = ((FLMBYTE *) nd) + sizeof(NODE);
+		*((FLMUINT *) (ptr + NODE_DRN_POS)) = id;
+	}
+
+Exit:
+	
 	return (nd);
 }
 
@@ -965,7 +968,7 @@ NODE * GedNodeCreate(
 Desc:
 *****************************************************************************/
 void * GedAllocSpace(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			pNode,
 	FLMUINT			valType,
 	FLMUINT			size,
@@ -997,13 +1000,14 @@ void * GedAllocSpace(
 	}
 	else
 	{
-		if ((pNode->value = rPtr = (FLMBYTE *) GedPoolAlloc( 
-			pPool, uiAllocSize)) == NULL)
+		if( RC_BAD( pPool->poolAlloc( uiAllocSize, (void **)&rPtr)))
 		{
 			pNode->ui32Length = 0;
 			pNode->value = NULL;
 			return (NULL);
 		}
+
+		pNode->value = rPtr;
 	}
 
 	if (valType == FLM_TEXT_TYPE)
@@ -1041,8 +1045,8 @@ void * GedAllocSpace(
 	{
 		if (uiEncSize > GedEncLen( pNode))
 		{
-			if ((pNode->pucEncValue = (FLMBYTE *) GedPoolAlloc( 
-				pPool, uiEncSize)) == NULL)
+			if( RC_BAD( pPool->poolAlloc( uiEncSize, 
+				(void **)&pNode->pucEncValue)))
 			{
 				pNode->ui32EncLength = 0;
 				pNode->pucEncValue = NULL;
@@ -1090,7 +1094,7 @@ void * GedEncPtr(
 Desc:
 *****************************************************************************/
 RCODE GedPutRecId(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **	 	ppNd,
 	FLMUINT		uiId)
 {
@@ -1098,8 +1102,8 @@ RCODE GedPutRecId(
 	NODE *			pOldNd = *ppNd;
 	FLMBYTE *		ptr;
 
-	if ((pNewNd = (NODE *) GedPoolAlloc( pPool, 
-		sizeof(NODE) + sizeof(uiId))) == NULL)
+	if( RC_BAD( pPool->poolAlloc( sizeof(NODE) + sizeof(uiId), 
+		(void **)&pNewNd))) 
 	{
 		*ppNd = NULL;
 		return (RC_SET( FERR_MEM));
@@ -1250,7 +1254,7 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE GedPutRecPtr(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		nd,
 	FLMUINT		drn,
 	FLMUINT		uiEncId,
@@ -1422,7 +1426,7 @@ NODE * GedSibPrev(
 Desc:
 *****************************************************************************/
 RCODE GedPutNATIVE(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			pNode,
 	const char *	nativeString,
 	FLMUINT			uiEncId,
@@ -1535,7 +1539,7 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE GedPutUINT(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pNode,
 	FLMUINT		uiNum,
 	FLMUINT		uiEncId,
@@ -1605,7 +1609,7 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE GedPutINT(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pNode,
 	FLMINT		iNum,
 	FLMUINT		uiEncId,
@@ -2404,7 +2408,7 @@ RCODE GedTextToNum(
 Desc:
 *****************************************************************************/
 RCODE GedPutUNICODE(
-	POOL *					pPool,
+	F_Pool *					pPool,
 	NODE *					pNode,
 	const FLMUNICODE *	puzString,
 	FLMUINT					uiEncId,
@@ -2512,7 +2516,7 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE gedCreateSourceNode(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMUINT		uiFieldNum,
 	HFDB			hDb,
 	FLMUINT		uiContainer,
@@ -2522,29 +2526,28 @@ RCODE gedCreateSourceNode(
 	NODE *	nd;
 	RCODE		rc = FERR_OK;
 
-	*ppNode = nd = (NODE *) GedPoolCalloc( pPool, (sizeof(NODE) + 
-							sizeof(FLMUINT) + sizeof(FLMUINT) + sizeof(HFDB)));
+	if( RC_BAD( rc = pPool->poolCalloc( 
+		sizeof(NODE) + sizeof(FLMUINT) + sizeof(FLMUINT) + sizeof(HFDB), 
+		(void **)&nd)))
+	{
+		goto Exit;
+	}
+		
+	GedValTypeSet( nd, FLM_CONTEXT_TYPE);
+	GedTagNumSet( nd, uiFieldNum);
+	gedSetRecSource( nd, hDb, uiContainer, uiRecId);
+	*ppNode = nd;
 							
-	if (nd != NULL)
-	{
-		GedValTypeSet( nd, FLM_CONTEXT_TYPE);
-		GedTagNumSet( nd, uiFieldNum);
-		gedSetRecSource( nd, hDb, uiContainer, uiRecId);
-	}
-	else
-	{
-		rc = RC_SET( FERR_MEM);
-	}
+Exit:
 
 	return (rc);
 }
-
 
 /*****************************************************************************
 Desc:
 *****************************************************************************/
 RCODE expImpInit(
-	F_FileHdl *			pFileHdl,
+	IF_FileHdl *		pFileHdl,
 	FLMUINT				uiFlag,
 	EXP_IMP_INFO *		pExpImpInfoRV)
 {
@@ -2589,8 +2592,8 @@ RCODE expImpInit(
 	}
 	else if (uiFlag == EXPIMP_IMPORT_DICTIONARY)
 	{
-		rc = pFileHdl->Seek( (FLMUINT) BINARY_GED_HEADER_LEN, F_IO_SEEK_SET,
-								  &pExpImpInfoRV->uiFilePos);
+		rc = pFileHdl->seek( (FLMUINT) BINARY_GED_HEADER_LEN, FLM_IO_SEEK_SET,
+								  &pExpImpInfoRV->ui64FilePos);
 	}
 	else
 	{
@@ -2632,7 +2635,7 @@ RCODE expFlush(
 
 	if ((pExpImpInfo->uiBufUsed) && (pExpImpInfo->bBufDirty))
 	{
-		if (RC_BAD( rc = pExpImpInfo->pFileHdl->Write( pExpImpInfo->uiFilePos,
+		if (RC_BAD( rc = pExpImpInfo->pFileHdl->write( pExpImpInfo->ui64FilePos,
 					  pExpImpInfo->uiBufUsed, pExpImpInfo->pBuf, &uiBytesWritten)))
 		{
 			goto Exit;
@@ -2644,7 +2647,7 @@ RCODE expFlush(
 			goto Exit;
 		}
 
-		pExpImpInfo->uiFilePos += uiBytesWritten;
+		pExpImpInfo->ui64FilePos += uiBytesWritten;
 		pExpImpInfo->uiCurrBuffOffset = pExpImpInfo->uiBufUsed = 0;
 		pExpImpInfo->bBufDirty = FALSE;
 	}
@@ -2663,10 +2666,11 @@ RCODE expImpSeek(
 {
 	RCODE 			rc = FERR_OK;
 
-	if ((uiSeekPos >= pExpImpInfo->uiFilePos) &&
-		 (uiSeekPos < pExpImpInfo->uiFilePos + (FLMUINT) pExpImpInfo->uiBufUsed))
+	if ((uiSeekPos >= pExpImpInfo->ui64FilePos) &&
+		 (uiSeekPos < pExpImpInfo->ui64FilePos + (FLMUINT) pExpImpInfo->uiBufUsed))
 	{
-		pExpImpInfo->uiCurrBuffOffset = (FLMUINT) (uiSeekPos - pExpImpInfo->uiFilePos);
+		pExpImpInfo->uiCurrBuffOffset = 
+			(FLMUINT) (uiSeekPos - pExpImpInfo->ui64FilePos);
 	}
 	else
 	{
@@ -2678,7 +2682,7 @@ RCODE expImpSeek(
 			}
 		}
 
-		pExpImpInfo->uiFilePos = uiSeekPos;
+		pExpImpInfo->ui64FilePos = uiSeekPos;
 		pExpImpInfo->uiBufUsed = pExpImpInfo->uiCurrBuffOffset = 0;
 	}
 
@@ -2904,11 +2908,11 @@ FSTATIC RCODE impRead(
 			}
 			else
 			{
-				pExpImpInfo->uiFilePos += (FLMUINT) pExpImpInfo->uiBufUsed;
+				pExpImpInfo->ui64FilePos += (FLMUINT) pExpImpInfo->uiBufUsed;
 				pExpImpInfo->uiBufUsed = pExpImpInfo->uiCurrBuffOffset = 0;
 			}
 
-			if (RC_BAD( rc = pExpImpInfo->pFileHdl->Read( pExpImpInfo->uiFilePos,
+			if (RC_BAD( rc = pExpImpInfo->pFileHdl->read( pExpImpInfo->ui64FilePos,
 						  pExpImpInfo->uiBufSize, pExpImpInfo->pBuf,
 						  &pExpImpInfo->uiBufUsed)))
 			{
@@ -3109,12 +3113,11 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE impFileIsExpImp(
-	F_FileHdl *		pFileHdl,
+	IF_FileHdl *	pFileHdl,
 	FLMBOOL *		pbFileIsBinaryRV)
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiCurrPos;
-	FLMUINT			uiIgnore;
+	FLMUINT64		ui64CurrPos;
 	FLMBYTE			byHeader[ BINARY_GED_HEADER_LEN];
 	FLMUINT			uiBytesRead;
 
@@ -3122,14 +3125,14 @@ RCODE impFileIsExpImp(
 
 	// Save current position so we can return to it.
 
-	if (RC_BAD( rc = pFileHdl->Seek( (FLMUINT) 0, F_IO_SEEK_CUR, &uiCurrPos)))
+	if (RC_BAD( rc = pFileHdl->seek( 0, FLM_IO_SEEK_CUR, &ui64CurrPos)))
 	{
 		goto Exit;
 	}
 
 	// Read the file's header information.
 
-	if (RC_BAD( rc = pFileHdl->Read( (FLMUINT) 0, BINARY_GED_HEADER_LEN,
+	if (RC_BAD( rc = pFileHdl->read( (FLMUINT) 0, BINARY_GED_HEADER_LEN,
 				  byHeader, &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
@@ -3152,7 +3155,7 @@ RCODE impFileIsExpImp(
 
 	// Reset the file position to where it was before.
 
-	rc = pFileHdl->Seek( uiCurrPos, F_IO_SEEK_SET, &uiIgnore);
+	rc = pFileHdl->seek( ui64CurrPos, FLM_IO_SEEK_SET);
 
 Exit:
 
@@ -3164,7 +3167,7 @@ Exit:
 Desc:		This routine adds a field to a GEDCOM tree
 ****************************************************************************/
 RCODE gedAddField(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			pRecord,
 	FLMUINT			uiTagNum,
 	const void *	pvData,

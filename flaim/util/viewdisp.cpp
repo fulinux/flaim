@@ -35,20 +35,22 @@ void ViewShowError(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
-	WpsStrOutXY( Message, 0, uiNumRows - 2);
-	WpsStrOutXY( "Press ENTER to continue: ", 0, 23);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
+	f_conStrOutXY( Message, 0, uiNumRows - 2);
+	f_conStrOutXY( "Press ENTER to continue: ", 0, 23);
 	for( ;;)
 	{
-		uiChar = (FLMUINT)WpkIncar();
-		if( (uiChar == WPK_ENTER) || (uiChar == WPK_ESCAPE))
+		uiChar = f_conGetKey();
+		if( (uiChar == FKB_ENTER) || (uiChar == FKB_ESCAPE))
+		{
 			break;
+		}
 	}
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	ViewEscPrompt();
 }
 

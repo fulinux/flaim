@@ -68,8 +68,8 @@ FSTATIC RCODE ixDisplayHook(
 	F_DynamicList*		pDynamicList
 	)
 {
-	FLMUINT				uiBack = WPS_CYAN;
-	FLMUINT				uiFore = WPS_WHITE;
+	eColorType			uiBack = FLM_CYAN;
+	eColorType			uiFore = FLM_WHITE;
 	IX_DISPLAY_INFO *	pDispInfo = (IX_DISPLAY_INFO *)pvData;
 	char					szTmpBuf [100];
 	const char * 		pszState;
@@ -186,9 +186,9 @@ Note:	The caller must open the database and pass a handle to the thread.
 		The handle will be closed when the thread exits.
 *****************************************************************************/
 RCODE flstIndexManagerThread(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
-	F_DynamicList *		pList = new F_DynamicList;
+	F_DynamicList *		pList = f_new F_DynamicList;
 	FTX_WINDOW *			pTitleWin;
 	FTX_WINDOW *			pListWin;
 	FTX_WINDOW *			pHeaderWin;
@@ -226,8 +226,7 @@ RCODE flstIndexManagerThread(
 		goto Exit;
 	}
 
-	if( FTXScreenInit( _getGlobalFtxInfo(), 
-		"Index Manager", &IxDispInfo.pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( "Index Manager", &IxDispInfo.pScreen)))
 	{
 		goto Exit;
 	}
@@ -235,36 +234,35 @@ RCODE flstIndexManagerThread(
 	FTXScreenGetSize( IxDispInfo.pScreen, &uiScreenCols, &uiScreenRows);
 	FTXScreenDisplay( IxDispInfo.pScreen);
 
-	if( FTXWinInit( IxDispInfo.pScreen, 0, 
-		FIMT_TITLE_HEIGHT, &pTitleWin) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( IxDispInfo.pScreen, 0, 
+		FIMT_TITLE_HEIGHT, &pTitleWin)))
 	{
 		goto Exit;
 	}
 
-	FTXWinSetBackFore( pTitleWin, WPS_RED, WPS_WHITE);
+	FTXWinSetBackFore( pTitleWin, FLM_RED, FLM_WHITE);
 	FTXWinClear( pTitleWin);
 	FTXWinPrintStr( pTitleWin, "FLAIM Index Manager");
-	FTXWinSetCursorType( pTitleWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
 	FTXWinOpen( pTitleWin);
 
-	if( (FTXWinInit( IxDispInfo.pScreen, 
-		uiScreenCols, FIMT_HEADER_HEIGHT,
-		&pHeaderWin)) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( IxDispInfo.pScreen, 
+		uiScreenCols, FIMT_HEADER_HEIGHT, &pHeaderWin)))
 	{
 		goto Exit;
 	}
 
 	FTXWinMove( pHeaderWin, 0, FIMT_TITLE_HEIGHT);
-	FTXWinSetBackFore( pHeaderWin, WPS_BLUE, WPS_WHITE);
+	FTXWinSetBackFore( pHeaderWin, FLM_BLUE, FLM_WHITE);
 	FTXWinClear( pHeaderWin);
-	FTXWinSetCursorType( pHeaderWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pHeaderWin, FLM_CURSOR_INVISIBLE);
 	FTXWinSetScroll( pHeaderWin, FALSE);
 	FTXWinSetLineWrap( pHeaderWin, FALSE);
 	FTXWinOpen( pHeaderWin);
 
-	if( (FTXWinInit( IxDispInfo.pScreen, uiScreenCols,
+	if( RC_BAD( FTXWinInit( IxDispInfo.pScreen, uiScreenCols,
 		uiScreenRows - FIMT_TITLE_HEIGHT - FIMT_HEADER_HEIGHT - FIMT_LOG_HEIGHT,
-		&pListWin)) != FTXRC_SUCCESS)
+		&pListWin)))
 	{
 		goto Exit;
 	}
@@ -272,17 +270,17 @@ RCODE flstIndexManagerThread(
 	FTXWinOpen( pListWin);
 	pList->setup( pListWin);
 
-	if( (FTXWinInit( IxDispInfo.pScreen, uiScreenCols, FIMT_LOG_HEIGHT,
-		&IxDispInfo.pLogWin)) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( IxDispInfo.pScreen, uiScreenCols, FIMT_LOG_HEIGHT,
+		&IxDispInfo.pLogWin)))
 	{
 		goto Exit;
 	}
 
 	FTXWinDrawBorder( IxDispInfo.pLogWin);
 	FTXWinMove( IxDispInfo.pLogWin, 0, uiScreenRows - FIMT_LOG_HEIGHT);
-	FTXWinSetBackFore( IxDispInfo.pLogWin, WPS_BLUE, WPS_WHITE);
+	FTXWinSetBackFore( IxDispInfo.pLogWin, FLM_BLUE, FLM_WHITE);
 	FTXWinClear( IxDispInfo.pLogWin);
-	FTXWinSetCursorType( IxDispInfo.pLogWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( IxDispInfo.pLogWin, FLM_CURSOR_INVISIBLE);
 	FTXWinSetScroll( IxDispInfo.pLogWin, TRUE);
 	FTXWinSetLineWrap( IxDispInfo.pLogWin, FALSE);
 	FTXWinOpen( IxDispInfo.pLogWin);
@@ -292,8 +290,8 @@ RCODE flstIndexManagerThread(
 
 	FTXWinSetFocus( pListWin);
 	uiIterations = 0;
-	FLM_SECS_TO_TIMER_UNITS( 1, uiUpdateInterval);
-	FLM_SECS_TO_TIMER_UNITS( 1, uiOneSec);
+	uiUpdateInterval = FLM_SECS_TO_TIMER_UNITS( 1);
+	uiOneSec = FLM_SECS_TO_TIMER_UNITS( 1);
 	uiLastUpdateTime = 0;
 	while( !gv_bShutdown)
 	{
@@ -472,7 +470,7 @@ Update_Screen:
 			bScreenLocked = TRUE;
 		}
 
-		if( FTXWinTestKB( pListWin) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pListWin)))
 		{
 			FLMUINT		uiChar;
 
@@ -510,11 +508,11 @@ Update_Screen:
 					break;
 				}
 
-				case WPK_ALT_S:
+				case FKB_ALT_S:
 				case 'S':
 				{
 					f_mutexLock( IxDispInfo.hScreenMutex);
-					FTXMessageWindow( IxDispInfo.pScreen, WPS_RED, WPS_WHITE,
+					FTXMessageWindow( IxDispInfo.pScreen, FLM_RED, FLM_WHITE,
 								"Suspending all indexes ....",
 								NULL, &pMsgWin);
 
@@ -544,10 +542,10 @@ Update_Screen:
 				}
 
 				case 'R':
-				case WPK_ALT_R:
+				case FKB_ALT_R:
 				{
 					f_mutexLock( IxDispInfo.hScreenMutex);
-					FTXMessageWindow( IxDispInfo.pScreen, WPS_RED, WPS_WHITE,
+					FTXMessageWindow( IxDispInfo.pScreen, FLM_RED, FLM_WHITE,
 						"Resuming all indexes                                ",
 						NULL,
 						&pMsgWin);
@@ -594,27 +592,27 @@ Update_Screen:
 					f_mutexLock( IxDispInfo.hScreenMutex);
 					bScreenLocked = TRUE;
 
-					if( (pHelpList = new F_DynamicList) == NULL)
+					if( (pHelpList = f_new F_DynamicList) == NULL)
 					{
 						goto Help_Exit;
 					}
 
-					if( (FTXWinInit( IxDispInfo.pScreen, uiScreenCols,
-						1, &pHelpTitle)) != FTXRC_SUCCESS)
+					if( RC_BAD( FTXWinInit( IxDispInfo.pScreen, uiScreenCols,
+						1, &pHelpTitle)))
 					{
 						goto Help_Exit;
 					}
 
-					FTXWinSetBackFore( pHelpTitle, WPS_RED, WPS_WHITE);
+					FTXWinSetBackFore( pHelpTitle, FLM_RED, FLM_WHITE);
 					FTXWinClear( pHelpTitle);
-					FTXWinSetCursorType( pHelpTitle, WPS_CURSOR_INVISIBLE);
+					FTXWinSetCursorType( pHelpTitle, FLM_CURSOR_INVISIBLE);
 					FTXWinSetScroll( pHelpTitle, FALSE);
 					FTXWinSetLineWrap( pHelpTitle, FALSE);
 					FTXWinPrintf( pHelpTitle, "FLAIM Index Manager - Help");
 					FTXWinOpen( pHelpTitle);
 
-					if ( (FTXWinInit( IxDispInfo.pScreen, uiScreenCols,
-						uiScreenRows - 1, &pHelpWin)) != FTXRC_SUCCESS)
+					if( RC_BAD( FTXWinInit( IxDispInfo.pScreen, uiScreenCols,
+						uiScreenRows - 1, &pHelpWin)))
 					{
 						goto Help_Exit;
 					}
@@ -648,11 +646,11 @@ Update_Screen:
 						f_mutexLock( IxDispInfo.hScreenMutex);
 						bScreenLocked = TRUE;
 
-						if( FTXWinTestKB( pHelpWin) == FTXRC_SUCCESS)
+						if( RC_OK( FTXWinTestKB( pHelpWin)))
 						{
 							FLMUINT		uiTmpChar;
 							FTXWinInputChar( pHelpWin, &uiTmpChar);
-							if( uiTmpChar == WPK_ESCAPE)
+							if( uiTmpChar == FKB_ESCAPE)
 							{
 								break;
 							}
@@ -686,7 +684,7 @@ Help_Exit:
 					break;
 				}
 
-				case WPK_ESCAPE:
+				case FKB_ESCAPE:
 				{
 					goto Exit;
 				}
@@ -754,9 +752,9 @@ Desc:	Thread that displays the current status of a database's cache
 Note:	The caller must pass a valid share handle to the thread on startup.
 *****************************************************************************/
 RCODE flstMemoryManagerThread(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
-	F_DynamicList *	pList = new F_DynamicList;
+	F_DynamicList *	pList = f_new F_DynamicList;
 	FTX_SCREEN *		pScreen;
 	FTX_WINDOW *		pTitleWin;
 	FTX_WINDOW *		pListWin;
@@ -770,13 +768,12 @@ RCODE flstMemoryManagerThread(
 	CS_CONTEXT *		pCSContext = NULL;
 	FCL_WIRE				Wire;
 	NODE *				pTree;
-	POOL					pool;
+	F_Pool				pool;
 
 #define FMMT_TITLE_HEIGHT 1
 #define FMMT_HEADER_HEIGHT 3
 
-	if( FTXScreenInit( _getGlobalFtxInfo(), 
-		"Memory Manager", &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( "Memory Manager", &pScreen)))
 	{
 		goto Exit;
 	}
@@ -784,34 +781,34 @@ RCODE flstMemoryManagerThread(
 	FTXScreenGetSize( pScreen, &uiScreenCols, &uiScreenRows);
 	FTXScreenDisplay( pScreen);
 
-	if( FTXWinInit( pScreen, 0, FMMT_TITLE_HEIGHT, &pTitleWin) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, 0, FMMT_TITLE_HEIGHT, &pTitleWin)))
 	{
 		goto Exit;
 	}
 
-	FTXWinPaintBackground( pTitleWin, WPS_RED);
+	FTXWinPaintBackground( pTitleWin, FLM_RED);
 	FTXWinPrintStr( pTitleWin, "FLAIM Memory Manager");
-	FTXWinSetCursorType( pTitleWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
 	FTXWinOpen( pTitleWin);
 
-	if( (FTXWinInit( pScreen, uiScreenCols, FMMT_HEADER_HEIGHT,
-		&pHeaderWin)) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, uiScreenCols, FMMT_HEADER_HEIGHT,
+		&pHeaderWin)))
 	{
 		goto Exit;
 	}
 
-	FTXWinSetBackFore( pHeaderWin, WPS_BLUE, WPS_WHITE);
+	FTXWinSetBackFore( pHeaderWin, FLM_BLUE, FLM_WHITE);
 	FTXWinClear( pHeaderWin);
 	FTXWinPrintf( pHeaderWin, "\n                                         Record          Block     Both");
-	FTXWinSetCursorType( pHeaderWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pHeaderWin, FLM_CURSOR_INVISIBLE);
 	FTXWinSetScroll( pHeaderWin, FALSE);
 	FTXWinSetLineWrap( pHeaderWin, FALSE);
 	FTXWinMove( pHeaderWin, 0, FMMT_TITLE_HEIGHT);
 	FTXWinOpen( pHeaderWin);
 
-	if ( (FTXWinInit( pScreen, uiScreenCols,
+	if( RC_BAD( FTXWinInit( pScreen, uiScreenCols,
 		uiScreenRows - FMMT_TITLE_HEIGHT - FMMT_HEADER_HEIGHT,
-		&pListWin)) != FTXRC_SUCCESS)
+		&pListWin)))
 	{
 		goto Exit;
 	}
@@ -819,7 +816,7 @@ RCODE flstMemoryManagerThread(
 	FTXWinOpen( pListWin);
 	pList->setup( pListWin);
 
-	GedPoolInit( &pool, 1024);
+	pool.poolInit( 1024);
 	uiLoop = 0;
 	while( !gv_bShutdown)
 	{
@@ -858,7 +855,7 @@ RCODE flstMemoryManagerThread(
 					goto Exit;
 				}
 
-				GedPoolReset( &pool, NULL);
+				pool.poolReset( NULL);
 				if( RC_BAD( Wire.getHTD( &pool, &pTree)))
 				{
 					goto Exit;
@@ -1000,7 +997,7 @@ RCODE flstMemoryManagerThread(
 			pList->refresh();
 		}
 	
-		if( FTXWinTestKB( pListWin) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pListWin)))
 		{
 			FLMUINT		uiChar;
 
@@ -1011,25 +1008,25 @@ RCODE flstMemoryManagerThread(
 				case 'r':
 					FlmConfig( FLM_RESET_STATS, (void *)0, (void *)0);
 					break;
-				case WPK_UP:
+				case FKB_UP:
 					pList->cursorUp();
 					break;
-				case WPK_DOWN:
+				case FKB_DOWN:
 					pList->cursorDown();
 					break;
-				case WPK_PGUP:
+				case FKB_PGUP:
 					pList->pageUp();
 					break;
-				case WPK_PGDN:
+				case FKB_PGDN:
 					pList->pageDown();
 					break;
-				case WPK_HOME:
+				case FKB_HOME:
 					pList->home();
 					break;
-				case WPK_END:
+				case FKB_END:
 					pList->end();
 					break;
-				case WPK_ESCAPE:
+				case FKB_ESCAPE:
 					goto Exit;
 			}
 			pList->refresh();
@@ -1056,7 +1053,7 @@ Exit:
 		flmCloseCSConnection( &pCSContext);
 	}
 
-	GedPoolFree( &pool);
+	pool.poolFree();
 
 	if( pScreen)
 	{
@@ -1075,9 +1072,9 @@ Transmission_Error:
 Desc:	Thread that displays the current status of a database's tracker thread
 *****************************************************************************/
 RCODE flstTrackerMonitorThread(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
-	F_DynamicList *	pList = new F_DynamicList;
+	F_DynamicList *	pList = f_new F_DynamicList;
 	FTX_SCREEN *		pScreen;
 	FTX_WINDOW *		pTitleWin;
 	FTX_WINDOW *		pListWin;
@@ -1091,8 +1088,7 @@ RCODE flstTrackerMonitorThread(
 #define FTMT_TITLE_HEIGHT 1
 #define FTMT_HEADER_HEIGHT 3
 
-	if( FTXScreenInit( _getGlobalFtxInfo(), 
-		"Tracker Monitor", &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXScreenInit( "Tracker Monitor", &pScreen)))
 	{
 		goto Exit;
 	}
@@ -1100,34 +1096,34 @@ RCODE flstTrackerMonitorThread(
 	FTXScreenGetSize( pScreen, &uiScreenCols, &uiScreenRows);
 	FTXScreenDisplay( pScreen);
 
-	if( FTXWinInit( pScreen, 0, FTMT_TITLE_HEIGHT, &pTitleWin) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, 0, FTMT_TITLE_HEIGHT, &pTitleWin)))
 	{
 		goto Exit;
 	}
 
-	FTXWinPaintBackground( pTitleWin, WPS_RED);
+	FTXWinPaintBackground( pTitleWin, FLM_RED);
 	FTXWinPrintStr( pTitleWin, "FLAIM Tracker Monitor");
-	FTXWinSetCursorType( pTitleWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
 	FTXWinOpen( pTitleWin);
 
-	if( (FTXWinInit( pScreen, uiScreenCols, FTMT_HEADER_HEIGHT,
-		&pHeaderWin)) != FTXRC_SUCCESS)
+	if( RC_BAD( FTXWinInit( pScreen, uiScreenCols, FTMT_HEADER_HEIGHT,
+		&pHeaderWin)))
 	{
 		goto Exit;
 	}
 
-	FTXWinSetBackFore( pHeaderWin, WPS_BLUE, WPS_WHITE);
+	FTXWinSetBackFore( pHeaderWin, FLM_BLUE, FLM_WHITE);
 	FTXWinClear( pHeaderWin);
 	FTXWinPrintf( pHeaderWin, "\nDescription");
-	FTXWinSetCursorType( pHeaderWin, WPS_CURSOR_INVISIBLE);
+	FTXWinSetCursorType( pHeaderWin, FLM_CURSOR_INVISIBLE);
 	FTXWinSetScroll( pHeaderWin, FALSE);
 	FTXWinSetLineWrap( pHeaderWin, FALSE);
 	FTXWinMove( pHeaderWin, 0, FTMT_TITLE_HEIGHT);
 	FTXWinOpen( pHeaderWin);
 
-	if ( (FTXWinInit( pScreen, uiScreenCols,
+	if( RC_BAD( FTXWinInit( pScreen, uiScreenCols,
 		uiScreenRows - FTMT_TITLE_HEIGHT - FTMT_HEADER_HEIGHT,
-		&pListWin)) != FTXRC_SUCCESS)
+		&pListWin)))
 	{
 		goto Exit;
 	}
@@ -1200,32 +1196,32 @@ RCODE flstTrackerMonitorThread(
 			(FLMUINT64)maintStatus.ui64BlocksFreed);
 		pList->update( uiKey++, NULL, szTmpBuf, sizeof( szTmpBuf));
 
-		if( FTXWinTestKB( pListWin) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pListWin)))
 		{
 			FLMUINT		uiChar;
 
 			FTXWinInputChar( pListWin, &uiChar);
 			switch( uiChar)
 			{
-				case WPK_UP:
+				case FKB_UP:
 					pList->cursorUp();
 					break;
-				case WPK_DOWN:
+				case FKB_DOWN:
 					pList->cursorDown();
 					break;
-				case WPK_PGUP:
+				case FKB_PGUP:
 					pList->pageUp();
 					break;
-				case WPK_PGDN:
+				case FKB_PGDN:
 					pList->pageDown();
 					break;
-				case WPK_HOME:
+				case FKB_HOME:
 					pList->home();
 					break;
-				case WPK_END:
+				case FKB_END:
 					pList->end();
 					break;
-				case WPK_ESCAPE:
+				case FKB_ESCAPE:
 					goto Exit;
 			}
 

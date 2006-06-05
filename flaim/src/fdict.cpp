@@ -84,8 +84,7 @@ FSTATIC RCODE DDParseStateOptions(
 FSTATIC RCODE	DDEncDefParse(
 	TDICT *			pTDict,
 	DDENTRY *		pDDEntry,
-	FlmRecord *		pRecord,
-	FLMUINT			uiDictRecNum);
+	FlmRecord *		pRecord);
 
 FSTATIC RCODE DDGetEncKey(
 	TDICT *			pTDict,
@@ -244,7 +243,7 @@ RCODE fdictProcessAllDictRecs(
 	
 	FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 	stack->pKeyBuf = btKeyBuf;
-	flmUINT32ToBigEndian( 0, key);
+	f_UINT32ToBigEndian( 0, key);
 	
 	if( RC_BAD(rc = FSBtSearch( pDb, pLFile, &stack, key, DRN_KEY_SIZ, 0 )))
 	{
@@ -258,7 +257,7 @@ RCODE fdictProcessAllDictRecs(
 
 	do
 	{
-		uiDrn = flmBigEndianToUINT32( btKeyBuf);
+		uiDrn = f_bigEndianToUINT32( btKeyBuf);
 		
 		if( uiDrn == DRN_LAST_MARKER)
 		{
@@ -323,12 +322,12 @@ RCODE fdictAddDictIndex(
 		goto Exit;
 	}
 	pDDEntry->uiType = ITT_INDEX_TYPE;
-
-	if( (pTIxd = (TIXD *) GedPoolAlloc( &pTDict->pool, sizeof( TIXD))) == NULL)
+	
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIXD), (void **)&pTIxd)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+
 	pTDict->uiNewIxds++;
 	pDDEntry->vpDef = (void *) pTIxd;
 	pTIxd->uiFlags = IXD_UNIQUE;
@@ -337,11 +336,11 @@ RCODE fdictAddDictIndex(
 	pTIxd->uiLanguage = pTDict->uiDefaultLanguage;
 	pTIxd->uiEncId = 0;
 
-	if( (pTIfd = (TIFD *) GedPoolAlloc( &pTDict->pool,	sizeof( TIFD))) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIFD), (void **)&pTIfd)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
 	pTIxd->pNextTIfd = pTIfd;
 	pTDict->uiNewIfds++;
 	pTIfd->pTIfp = NULL;
@@ -351,11 +350,11 @@ RCODE fdictAddDictIndex(
 	pTIfd->uiLimit = IFD_DEFAULT_LIMIT;
 	pTIfd->uiCompoundPos = 0;
 
-	if( (pTIfp = (TIFP *) GedPoolAlloc( &pTDict->pool, sizeof( TIFP ))) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIFP), (void **)&pTIfp)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
 	pTDict->uiNewFldPaths += 2;
 	pTIfd->pTIfp = pTIfp;
 
@@ -364,6 +363,7 @@ RCODE fdictAddDictIndex(
 	pTIfp->uiFldNum = FLM_NAME_TAG;
 
 Exit:
+
 	return( rc);
 }
 
@@ -448,7 +448,7 @@ RCODE fdictProcessRec(
 				goto Exit;
 			}
 			pDDEntry->uiType = ITT_ENCDEF_TYPE;
-			if (RC_BAD( rc = DDEncDefParse( pTDict, pDDEntry, pRecord, uiDictRecNum)))
+			if (RC_BAD( rc = DDEncDefParse( pTDict, pDDEntry, pRecord)))
 			{
 				goto Exit;
 			}
@@ -484,13 +484,12 @@ FSTATIC RCODE DDAllocEntry(
 	RCODE				rc = FERR_OK;
 	DDENTRY *		pNewEntry;
 
-	pNewEntry = (DDENTRY *)GedPoolAlloc( &pTDict->pool, sizeof(DDENTRY));
-	if( !pNewEntry)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( DDENTRY), 
+		(void **)&pNewEntry)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	pNewEntry->pNextEntry = NULL;
 	pNewEntry->vpDef = NULL;
 	pNewEntry->uiEntryNum = uiDictRecNum;
@@ -527,20 +526,21 @@ Exit:
 Desc:		Parse field definition
 ****************************************************************************/
 FSTATIC RCODE DDFieldParse(
-	TDICT *		pTDict,
-	DDENTRY *	pDDEntry,
-	FlmRecord *	pRecord,
-	FLMUINT		uiDictRecNum)
+	TDICT *			pTDict,
+	DDENTRY *		pDDEntry,
+	FlmRecord *		pRecord,
+	FLMUINT			uiDictRecNum)
 {
-	RCODE    	rc = FERR_OK;
-	TFIELD  *	pTField;
-	void *		pvField;
+	RCODE    		rc = FERR_OK;
+	TFIELD  *		pTField;
+	void *			pvField = NULL;
 
-	if( (pTField = (TFIELD *)GedPoolAlloc( &pTDict->pool, sizeof(TFIELD))) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TFIELD), 
+		(void **)&pTField)))
 	{
-		return( RC_SET( FERR_MEM));
+		goto Exit;
 	}
-
+	
 	pTField->uiFldNum = uiDictRecNum;
 	pTField->uiFldInfo = FLM_CONTEXT_TYPE;
 	pDDEntry->vpDef = (void *) pTField;
@@ -767,14 +767,12 @@ FSTATIC RCODE DDGetEncKey(
 	}
 	uiLength++;
 
-	// Allocate the buffer from the pool so it will be easily freed later.
-	
-	if( (pucBuffer = (char *)GedPoolAlloc( &pTDict->pool, uiLength)) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( uiLength, 
+		(void **)&pucBuffer)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	if (RC_BAD( rc = pRecord->getNative( pvField, pucBuffer, &uiLength)))
 	{
 		goto Exit;
@@ -847,11 +845,12 @@ FSTATIC RCODE DDIxParse(
 	FLMBOOL			bHasRequiredTag = TRUE;
 	FLMBOOL			bOld11Mode = FALSE;
 
-	if( (pTIxd = (TIXD *) GedPoolAlloc( &pTDict->pool, sizeof( TIXD))) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIXD), 
+		(void **)&pTIxd)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
 	pTIxd->pNextTIfd = NULL;
 	pTIxd->uiFlags = 0;
 	pTIxd->uiContainerNum = FLM_DATA_CONTAINER;
@@ -868,9 +867,9 @@ FSTATIC RCODE DDIxParse(
 	pLastTIfd = NULL;
 	for( ; pvField; pvField = pRecord->nextSibling( pvField))
 	{
-		switch ( pRecord->getFieldID( pvField))
+		switch( pRecord->getFieldID( pvField))
 		{
-			case	FLM_CONTAINER_TAG:
+			case FLM_CONTAINER_TAG:
 			{
 				char 		szTmpBuf [50];
 				FLMUINT	uiLen = sizeof( szTmpBuf);
@@ -900,26 +899,31 @@ FSTATIC RCODE DDIxParse(
 					{
 						goto Exit;
 					}
+					
 					if( pTIxd->uiContainerNum == 0)
 					{
 						pTIxd->uiContainerNum = FLM_DATA_CONTAINER;
 					}
 				}
+				
 				break;
 			}
 
-			case	FLM_COUNT_TAG:
+			case FLM_COUNT_TAG:
+			{
 				pTIxd->uiFlags |= IXD_COUNT;
 				break;
+			}
 
-			case	FLM_LANGUAGE_TAG:
+			case FLM_LANGUAGE_TAG:
+			{
 				uiNLen = sizeof( szNativeBuf);
 				(void) pRecord->getNative( pvField, szNativeBuf, &uiNLen);
-				pTIxd->uiLanguage = FlmLanguage( szNativeBuf);
+				pTIxd->uiLanguage = f_languageToNum( szNativeBuf);
 				break;
+			}
 
-
-			case	FLM_ENCDEF_TAG:
+			case FLM_ENCDEF_TAG:
 			{
 				uiNLen = sizeof( szNativeBuf);
 				(void) pRecord->getNative( pvField, szNativeBuf, &uiNLen);
@@ -928,12 +932,14 @@ FSTATIC RCODE DDIxParse(
 				break;
 			}
 
-			case	FLM_TYPE_TAG:
-				// Is only compound for NDS definitions.  This parsers default.
+			case FLM_TYPE_TAG:
+			{
 				bOld11Mode = TRUE;
 				break;
+			}
 
-			case	FLM_POSITIONING_TAG:
+			case FLM_POSITIONING_TAG:
+			{
 				if (pTDict->pDb->pFile->FileHdr.uiVersionNum >= 
 					 FLM_FILE_FORMAT_VER_4_3)
 				{
@@ -941,15 +947,15 @@ FSTATIC RCODE DDIxParse(
 				}
 				else
 				{
-	
-					// Positioning indexes not allowed prior to 4.3
-	
 					rc = RC_SET( FERR_SYNTAX);
 					goto Exit;
 				}
+				
 				break;
+			}
 
-			case	FLM_FIELD_TAG:
+			case FLM_FIELD_TAG:
+			{
 				uiCompoundPos = 0;
 				uiBaseNum = 0;
 				uiIfdFlags = IFD_FIELD;
@@ -957,8 +963,10 @@ FSTATIC RCODE DDIxParse(
 				pvTempField = pvField;
 				bOld11Mode = TRUE;
 				goto Parse_Fields;
+			}
 
-			case	FLM_KEY_TAG:
+			case FLM_KEY_TAG:
+			{
 				uiCompoundPos = 0;
 				uiBaseNum = 0;
 				uiIfdFlags = IFD_FIELD | IFD_OPTIONAL;
@@ -983,257 +991,294 @@ Parse_Fields:
 				{
 					switch( pRecord->getFieldID( pvTempField))
 					{
-					case	FLM_BASE_TAG:
-						if( RC_BAD( rc = DDGetReference( pRecord, 
-								pvTempField, NULL, &uiBaseNum)))
+						case FLM_BASE_TAG:
 						{
-							goto Exit;
-						}
-						break;
-	
-					case	FLM_COMBINATIONS_TAG:
-						rc = RC_SET( FERR_SYNTAX);
-						goto Exit;
-	
-					case	FLM_POST_TAG:
-						pTIxd->uiFlags |= IXD_HAS_POST;
-						uiIfdFlags |= IFD_POST;
-						break;
-	
-					case	FLM_REQUIRED_TAG:			// Default - doesn't mean anything
-						break;
-	
-					case	FLM_OPTIONAL_TAG:
-						rc = RC_SET( FERR_SYNTAX);
-						goto Exit;
-	
-					case  FLM_UNIQUE_TAG :
-						pTIxd->uiFlags |= IXD_UNIQUE;
-						uiIfdFlags |= IFD_UNIQUE_PIECE;	// Set the Unique Index Flag
-						break;
-	
-					case	FLM_FIELD_TAG:
-						pTIxd->uiNumFlds++;
-	
-						if( bOld11Mode)
-						{
-							pvField = pvTempField;
-						}
-	
-						// Need to set IFD_COMPOUND if there is more than one field.
-	
-						if( pTIxd->uiNumFlds == 1 &&
-							(pRecord->find( pvTempField, FLM_FIELD_TAG, 2) != NULL))
-						{
-							uiIfdFlags |= IFD_COMPOUND;
-						}
-	
-						pTIfd = pLastTIfd;
-						if( RC_BAD(rc = DDBuildFldPath( pTDict, &pLastTIfd, 
-							pRecord, pvTempField, uiBaseNum)))
-						{
-							goto Exit;
-						}
-	
-						pLastTIfd->uiCompoundPos = uiCompoundPos++;
-	
-						if( !pTIfd)						// First time?
-						{
-							pTIxd->pNextTIfd = pLastTIfd;	// Link first IFD
-						}
-						else
-						{
-							pTIfd->pNextTIfd = pLastTIfd;
-						}
-						uiTempIfdFlags = uiIfdFlags;
-						if( bOld11Mode)
-						{
-							// Default is required for each field.
-							uiTempIfdFlags &= ~IFD_OPTIONAL;
-							uiTempIfdFlags |= (IFD_REQUIRED_PIECE | IFD_REQUIRED_IN_SET);
-						}
-					
-						for( pvIfdField = pRecord->firstChild( pvTempField); 
-							  pvIfdField; pvIfdField = pRecord->nextSibling( pvIfdField))
-						{
-							switch ( pRecord->getFieldID( pvIfdField))
+							if( RC_BAD( rc = DDGetReference( pRecord, 
+									pvTempField, NULL, &uiBaseNum)))
 							{
-							//
-							// General IFD options only for this field GROUP
-							//
-							case FLM_CASE_TAG:
-								uiNLen = sizeof( szNativeBuf);
-								(void) pRecord->getNative( pvIfdField, szNativeBuf, &uiNLen);
-	
-								if( f_strnicmp( szNativeBuf, "UPPE", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_UPPER;
-								}
-								break;
-	
-							case FLM_FIELD_TAG:
-								break;
-	
-							case FLM_OPTIONAL_TAG:
-								if( bOld11Mode)
-								{
-									// Old 11 format - default for each field is required.
-									uiTempIfdFlags |= IFD_OPTIONAL;
-									uiTempIfdFlags &= ~(IFD_REQUIRED_PIECE | IFD_REQUIRED_IN_SET);
-								}
-								// New format default is optional
-								break;
-	
-							case FLM_PAIRED_TAG:
-								uiTempIfdFlags |= IFD_FIELDID_PAIR;
-								break;
-	
-							case FLM_POST_TAG:
-								// FUTURE: Post piece where other pieces are not
-								uiTempIfdFlags |= IFD_POST;
-								break;
-	
-							case FLM_REQUIRED_TAG:
-								bHasRequiredTag = TRUE;
-								uiTempIfdFlags &= ~IFD_OPTIONAL;
-								uiTempIfdFlags |= (IFD_REQUIRED_PIECE | IFD_REQUIRED_IN_SET);
-								break;
-	
-							case FLM_LIMIT_TAG:
-								if( RC_BAD( pRecord->getUINT( pvIfdField, &uiTemp)) || 
-									uiTemp > IFD_DEFAULT_LIMIT)
-								{
-									pLastTIfd->uiLimit = IFD_DEFAULT_LIMIT;
-								}
-								else
-								{
-									pLastTIfd->uiLimit = uiTemp;
-								}
-								break;
-	
-							case FLM_UNIQUE_TAG:
-								// FUTURE: option to select specific unique fields.
-								uiTempIfdFlags |= IFD_UNIQUE_PIECE;
-								pTIxd->uiFlags |= IXD_UNIQUE;
-								break;
-	
-							case FLM_USE_TAG:
-								// All these are exclusive values. Take the last value.
-								uiNLen = sizeof( szNativeBuf);
-								(void) pRecord->getNative( pvIfdField, szNativeBuf, &uiNLen);
-	
-								if( f_strnicmp( szNativeBuf, "EACH", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_EACHWORD;
-									uiTempIfdFlags &= ~(IFD_VALUE|IFD_SUBSTRING);
-								}
-								else if( f_strnicmp( szNativeBuf, "SUBS", 4) == 0)
-								{
-									pTIxd->uiFlags |= IXD_HAS_SUBSTRING;
-									uiTempIfdFlags |= IFD_SUBSTRING;
-									uiTempIfdFlags &= ~(IFD_VALUE|IFD_EACHWORD);
-									if( pLastTIfd->uiLimit == IFD_DEFAULT_LIMIT)
-									{
-										pLastTIfd->uiLimit = IFD_DEFAULT_SUBSTRING_LIMIT;
-									}
-								}
-								else if( f_strnicmp( szNativeBuf, "VALU", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_VALUE;
-									uiTempIfdFlags &= ~(IFD_EACHWORD|IFD_SUBSTRING);
-								}
-								else if( f_strnicmp( szNativeBuf, "FIEL", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_CONTEXT;
-									uiTempIfdFlags &= ~(IFD_VALUE|IFD_EACHWORD|IFD_SUBSTRING);
-								}
-								break;
-									
-							case FLM_FILTER_TAG:
-								uiNLen = sizeof( szNativeBuf);
-								(void) pRecord->getNative( pvIfdField, szNativeBuf, &uiNLen);
-	
-								if( f_strnicmp( szNativeBuf, "MINS", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_MIN_SPACES;
-								}
-								else if( f_strnicmp( szNativeBuf, "NOUN", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_NO_UNDERSCORE;
-								}
-								else if( f_strnicmp( szNativeBuf, "NOSP", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_NO_SPACE;
-								}
-								else if( f_strnicmp( szNativeBuf, "NODA", 4) == 0)
-								{
-									uiTempIfdFlags |= IFD_NO_DASH;
-								}
-								else
-								{
-									rc = RC_SET( FERR_SYNTAX);
-									goto Exit;
-								}
-								break;
-	
-							default:
-								if( pRecord->getFieldID( pvIfdField) < FLM_UNREGISTERED_TAGS &&
-									pRecord->getFieldID( pvIfdField) != FLM_COMMENT_TAG)
-								{
-									rc = RC_SET( FERR_SYNTAX);
-									goto Exit;
-								}
-								break;
-							} // end switch
-						} // end for loop parsing all level 3 tags
-	
-						// Parse again the level 3 field definitions.  Now we
-						// have the IFD uiFlags value to assign each piece that
-						// will have the same compound position.
-	
-						pLastTIfd->uiFlags |= uiTempIfdFlags;
-	
-						for( pvIfdField = pRecord->firstChild( pvTempField); 
-							  pvIfdField; pvIfdField = pRecord->nextSibling( pvIfdField))
-						{
-							if( pRecord->getFieldID( pvIfdField) == FLM_FIELD_TAG )
-							{
-								rc = RC_SET( FERR_SYNTAX);
 								goto Exit;
 							}
-						}
-						break;	// Done parsing "2 field xx yy zz"
-	
-					default:
-						if( bOld11Mode)
-						{
 							break;
 						}
-	
-						if( pRecord->getFieldID( pvTempField) < FLM_UNREGISTERED_TAGS &&
-							pRecord->getFieldID( pvTempField) != FLM_COMMENT_TAG)
-	
+		
+						case FLM_COMBINATIONS_TAG:
 						{
 							rc = RC_SET( FERR_SYNTAX);
 							goto Exit;
 						}
-						break;
-					} // end switch
-	
-				} // end for loop
+		
+						case FLM_POST_TAG:
+						{
+							pTIxd->uiFlags |= IXD_HAS_POST;
+							uiIfdFlags |= IFD_POST;
+							break;
+						}
+		
+						case FLM_REQUIRED_TAG:
+						{
+							break;
+						}
+		
+						case FLM_OPTIONAL_TAG:
+						{
+							rc = RC_SET( FERR_SYNTAX);
+							goto Exit;
+						}
+		
+						case FLM_UNIQUE_TAG:
+						{
+							pTIxd->uiFlags |= IXD_UNIQUE;
+							uiIfdFlags |= IFD_UNIQUE_PIECE;
+							break;
+						}
+		
+						case FLM_FIELD_TAG:
+						{
+							pTIxd->uiNumFlds++;
+		
+							if( bOld11Mode)
+							{
+								pvField = pvTempField;
+							}
+		
+							// Need to set IFD_COMPOUND if there is more than one field.
+		
+							if( pTIxd->uiNumFlds == 1 &&
+								(pRecord->find( pvTempField, FLM_FIELD_TAG, 2) != NULL))
+							{
+								uiIfdFlags |= IFD_COMPOUND;
+							}
+		
+							pTIfd = pLastTIfd;
+							if( RC_BAD(rc = DDBuildFldPath( pTDict, &pLastTIfd, 
+								pRecord, pvTempField, uiBaseNum)))
+							{
+								goto Exit;
+							}
+		
+							pLastTIfd->uiCompoundPos = uiCompoundPos++;
+		
+							if( !pTIfd)
+							{
+								pTIxd->pNextTIfd = pLastTIfd;
+							}
+							else
+							{
+								pTIfd->pNextTIfd = pLastTIfd;
+							}
+							
+							uiTempIfdFlags = uiIfdFlags;
+							
+							if( bOld11Mode)
+							{
+								uiTempIfdFlags &= ~IFD_OPTIONAL;
+								uiTempIfdFlags |= (IFD_REQUIRED_PIECE | IFD_REQUIRED_IN_SET);
+							}
+						
+							for( pvIfdField = pRecord->firstChild( pvTempField); 
+								  pvIfdField; pvIfdField = pRecord->nextSibling( pvIfdField))
+							{
+								switch ( pRecord->getFieldID( pvIfdField))
+								{
+									case FLM_CASE_TAG:
+									{
+										uiNLen = sizeof( szNativeBuf);
+										(void) pRecord->getNative( pvIfdField, szNativeBuf, &uiNLen);
+			
+										if( f_strnicmp( szNativeBuf, "UPPE", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_UPPER;
+										}
+										break;
+									}
+			
+									case FLM_FIELD_TAG:
+									{
+										break;
+									}
+			
+									case FLM_OPTIONAL_TAG:
+									{
+										if( bOld11Mode)
+										{
+											// Old 11 format - default for each field is required.
+											uiTempIfdFlags |= IFD_OPTIONAL;
+											uiTempIfdFlags &= ~(IFD_REQUIRED_PIECE | IFD_REQUIRED_IN_SET);
+										}
+										// New format default is optional
+										break;
+									}
+			
+									case FLM_PAIRED_TAG:
+									{
+										uiTempIfdFlags |= IFD_FIELDID_PAIR;
+										break;
+									}
+			
+									case FLM_POST_TAG:
+									{
+										uiTempIfdFlags |= IFD_POST;
+										break;
+									}
+			
+									case FLM_REQUIRED_TAG:
+									{
+										bHasRequiredTag = TRUE;
+										uiTempIfdFlags &= ~IFD_OPTIONAL;
+										uiTempIfdFlags |= (IFD_REQUIRED_PIECE | IFD_REQUIRED_IN_SET);
+										break;
+									}
+			
+									case FLM_LIMIT_TAG:
+									{
+										if( RC_BAD( pRecord->getUINT( pvIfdField, &uiTemp)) || 
+											uiTemp > IFD_DEFAULT_LIMIT)
+										{
+											pLastTIfd->uiLimit = IFD_DEFAULT_LIMIT;
+										}
+										else
+										{
+											pLastTIfd->uiLimit = uiTemp;
+										}
+										break;
+									}
+			
+									case FLM_UNIQUE_TAG:
+									{
+										uiTempIfdFlags |= IFD_UNIQUE_PIECE;
+										pTIxd->uiFlags |= IXD_UNIQUE;
+										break;
+									}
+			
+									case FLM_USE_TAG:
+									{
+										uiNLen = sizeof( szNativeBuf);
+										(void) pRecord->getNative( pvIfdField, szNativeBuf, &uiNLen);
+			
+										if( f_strnicmp( szNativeBuf, "EACH", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_EACHWORD;
+											uiTempIfdFlags &= ~(IFD_VALUE|IFD_SUBSTRING);
+										}
+										else if( f_strnicmp( szNativeBuf, "SUBS", 4) == 0)
+										{
+											pTIxd->uiFlags |= IXD_HAS_SUBSTRING;
+											uiTempIfdFlags |= IFD_SUBSTRING;
+											uiTempIfdFlags &= ~(IFD_VALUE|IFD_EACHWORD);
+											if( pLastTIfd->uiLimit == IFD_DEFAULT_LIMIT)
+											{
+												pLastTIfd->uiLimit = IFD_DEFAULT_SUBSTRING_LIMIT;
+											}
+										}
+										else if( f_strnicmp( szNativeBuf, "VALU", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_VALUE;
+											uiTempIfdFlags &= ~(IFD_EACHWORD|IFD_SUBSTRING);
+										}
+										else if( f_strnicmp( szNativeBuf, "FIEL", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_CONTEXT;
+											uiTempIfdFlags &= ~(IFD_VALUE|IFD_EACHWORD|IFD_SUBSTRING);
+										}
+										break;
+									}
+											
+									case FLM_FILTER_TAG:
+									{
+										uiNLen = sizeof( szNativeBuf);
+										(void) pRecord->getNative( pvIfdField, szNativeBuf, &uiNLen);
+			
+										if( f_strnicmp( szNativeBuf, "MINS", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_MIN_SPACES;
+										}
+										else if( f_strnicmp( szNativeBuf, "NOUN", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_NO_UNDERSCORE;
+										}
+										else if( f_strnicmp( szNativeBuf, "NOSP", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_NO_SPACE;
+										}
+										else if( f_strnicmp( szNativeBuf, "NODA", 4) == 0)
+										{
+											uiTempIfdFlags |= IFD_NO_DASH;
+										}
+										else
+										{
+											rc = RC_SET( FERR_SYNTAX);
+											goto Exit;
+										}
+										break;
+									}
+			
+									default:
+									{
+										if( pRecord->getFieldID( pvIfdField) < FLM_UNREGISTERED_TAGS &&
+											pRecord->getFieldID( pvIfdField) != FLM_COMMENT_TAG)
+										{
+											rc = RC_SET( FERR_SYNTAX);
+											goto Exit;
+										}
+										break;
+									}
+								}
+							}
+		
+							// Parse again the level 3 field definitions.  Now we
+							// have the IFD uiFlags value to assign each piece that
+							// will have the same compound position.
+		
+							pLastTIfd->uiFlags |= uiTempIfdFlags;
+		
+							for( pvIfdField = pRecord->firstChild( pvTempField); 
+								  pvIfdField; pvIfdField = pRecord->nextSibling( pvIfdField))
+							{
+								if( pRecord->getFieldID( pvIfdField) == FLM_FIELD_TAG )
+								{
+									rc = RC_SET( FERR_SYNTAX);
+									goto Exit;
+								}
+							}
+							break;
+						}
+		
+						default:
+						{
+							if( bOld11Mode)
+							{
+								break;
+							}
+		
+							if( pRecord->getFieldID( pvTempField) < FLM_UNREGISTERED_TAGS &&
+								pRecord->getFieldID( pvTempField) != FLM_COMMENT_TAG)
+		
+							{
+								rc = RC_SET( FERR_SYNTAX);
+								goto Exit;
+							}
+							
+							break;
+						}
+					}
+				}
 
-				// Special case for optional 
+				// Special case for optional
+				
 				if( !bHasRequiredTag)
 				{
 					// Set all of the IFD flags to IFD_REQUIRED_IN_SET
+					
 					for( pTIfd = pTIxd->pNextTIfd; pTIfd; pTIfd = pTIfd->pNextTIfd)
 					{
 						pTIfd->uiFlags |= IFD_REQUIRED_IN_SET;
 					}
 				}
 				break;
+			}
 
 			default:
+			{
 				if( pRecord->getFieldID( pvField) < FLM_UNREGISTERED_TAGS &&
 					pRecord->getFieldID( pvField) != FLM_COMMENT_TAG)
 				{
@@ -1241,6 +1286,7 @@ Parse_Fields:
 					goto Exit;
 				}
 				break;
+			}
 		}
 	}
 	pDDEntry->vpDef = (void *) pTIxd;
@@ -1250,11 +1296,17 @@ Exit:
 	if( RC_BAD(rc))
 	{
 		if( pvIfdField)
+		{
 			pTDict->uiBadField = pRecord->getFieldID( pvIfdField);
+		}
 		else if( pvTempField)
+		{
 			pTDict->uiBadField = pRecord->getFieldID( pvTempField);
+		}
 		else if( pvField)
+		{
 			pTDict->uiBadField = pRecord->getFieldID( pvField);
+		}
 	}
 	else
 	{
@@ -1262,7 +1314,8 @@ Exit:
 		pTDict->uiNewIfds += pTIxd->uiNumFlds;
 		pTDict->uiNewLFiles++;
 	}
-	return( rc );
+	
+	return( rc);
 }
 
 /****************************************************************************
@@ -1281,18 +1334,18 @@ FSTATIC RCODE DDBuildFldPath(
 	TIFP *			pLastFldPath;
 	TIFP *			pTIfp;
 	FLMUINT			uiNumInFldPath;
-	char				szNameBuf[ 32 ];
+	char				szNameBuf[ 32];
 	char *			pszCurrent;
 	char				szNativeBuf[ FDD_MAX_VALUE_SIZE];
 	FLMUINT			uiBufLen;
 	FLMUINT			uiPos;
 
 	pTDict->uiTotalIfds++;
-	if( (pTIfd = (TIFD *) GedPoolAlloc( &pTDict->pool,	sizeof( TIFD))) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIFD), (void **)&pTIfd)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
 	pTIfd->pTIfp = NULL;
 	pTIfd->pNextTIfd = NULL;
 	pTIfd->uiFlags = 0;
@@ -1311,13 +1364,11 @@ FSTATIC RCODE DDBuildFldPath(
 	pszCurrent = szNativeBuf;
 	uiNumInFldPath = uiPos = 0;
 
-	if( uiBaseNum )
+	if( uiBaseNum)
 	{
 		uiNumInFldPath++;
-		if( (pTIfp = (TIFP *) GedPoolAlloc( &pTDict->pool,
-			sizeof( TIFP ))) == NULL)
+		if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIFP), (void **)&pTIfp)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 		
@@ -1337,10 +1388,8 @@ FSTATIC RCODE DDBuildFldPath(
 			break;
 		}
 
-		if( (pTIfp = (TIFP *) GedPoolAlloc( &pTDict->pool,
-			sizeof( TIFP ))) == NULL)
+		if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TIFP), (void **)&pTIfp)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 		
@@ -1463,8 +1512,7 @@ Desc:	Parse a data dictionary domain definition for correct syntax &
 FSTATIC RCODE DDEncDefParse(
 	TDICT *		pTDict,
 	DDENTRY *	pDDEntry,
-	FlmRecord *	pRecord,
-	FLMUINT		uiDictRecNum)
+	FlmRecord *	pRecord)
 {
 	RCODE    	rc = FERR_OK;
 	void *		pvField = NULL;
@@ -1478,14 +1526,12 @@ FSTATIC RCODE DDEncDefParse(
 		goto Exit;
 	}
 
-	if( (pTEncDef = (TENCDEF *)GedPoolAlloc( &pTDict->pool,
-		sizeof(TENCDEF))) == NULL)
+	if( RC_BAD( rc = pTDict->pool.poolAlloc( sizeof( TENCDEF), 
+		(void **)&pTEncDef)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	pTEncDef->uiRecNum = uiDictRecNum;
 	pTEncDef->uiAlgType = 0;
 	pTEncDef->uiState = 0;
 	pTEncDef->pucKeyInfo = NULL;
@@ -1695,7 +1741,7 @@ RCODE fdictReadLFiles(
 	RCODE			rc = FERR_OK;
 	LFILE *		pLFiles = NULL;
 	LFILE *		pLFile;
-	SCACHE *		pSCache;
+	SCACHE *		pSCache = NULL;
 	FLMBOOL		bReleaseCache = FALSE;
 	FLMBYTE *	pucBlk;
 	FLMUINT		uiBlkAddress;
@@ -1849,7 +1895,7 @@ RCODE fdictCreate(
 	const char *		pDictBuf)
 {
 	RCODE    			rc = FERR_OK;
-	F_FileHdl *			pDictFileHdl = NULL;
+	IF_FileHdl *		pDictFileHdl = NULL;
 	FlmRecord *			pDictRec = NULL;
 	void *				pvField;
 	const char *		pucGedBuf;
@@ -1858,7 +1904,6 @@ RCODE fdictCreate(
 	FLMUINT				uiDrn = 0;
 	FLMUINT				uiCurrDictNum;
 	FLMUINT				uiLFileCount;
-	FLMBOOL				bFileOpen = FALSE;
 	LFILE					DictContLFile;
 	LFILE					DictIxLFile;
 	LFILE					TempLFile;
@@ -1912,12 +1957,11 @@ RCODE fdictCreate(
 	else if( pszDictPath)
 	{
 		pucGedBuf = ucTempBuf;
-		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( 
-				pszDictPath, F_IO_RDONLY, &pDictFileHdl)))
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
+				pszDictPath, FLM_IO_RDONLY, &pDictFileHdl)))
 		{
 			goto Exit;
 		}
-		bFileOpen = TRUE;
 	}
 	else
 	{
@@ -2045,11 +2089,6 @@ Done_Getting_Dict:
 
 Exit:
 
-	if( bFileOpen)
-	{
-		pDictFileHdl->Close();
-	}
-
 	if( pDictFileHdl)
 	{
 		pDictFileHdl->Release();
@@ -2147,7 +2186,7 @@ Exit:
 
 	if( bTDictInitialized)
 	{
-		GedPoolFree( &tDict.pool);
+		tDict.pool.poolFree();
 	}
 
 	// If we allocated an FDICT and there was an error, free the FDICT.
@@ -3057,7 +3096,7 @@ Exit:
 
 	if( bTDictInitialized)
 	{
-		GedPoolFree( &tDict.pool);
+		tDict.pool.poolFree();
 	}
 
 	return( rc );
@@ -3072,8 +3111,8 @@ RCODE fdictInitTDict(
 {
 	RCODE	rc = FERR_OK;
 
-	f_memset( pTDict, 0, sizeof( TDICT));		// Set elements to zeros.
-	GedSmartPoolInit( &pTDict->pool, &g_TDictPoolStats);		
+	f_memset( pTDict, 0, sizeof( TDICT));
+	pTDict->pool.smartPoolInit( &g_TDictPoolStats);		
 
 	pTDict->pDb = pDb;
 	pTDict->uiVersionNum = pDb->pFile->FileHdr.uiVersionNum;
@@ -4268,7 +4307,7 @@ Exit:
 
 	if( bTDictInitialized)
 	{
-		GedPoolFree( &tDict.pool);
+		tDict.pool.poolFree();
 	}
 
 	// If we allocated an FDICT and there was an error, free the FDICT.

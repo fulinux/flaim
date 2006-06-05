@@ -61,8 +61,8 @@ Desc:
 *****************************************************************************/
 F_RecEditor::F_RecEditor( void)
 {
-	GedPoolInit( &m_scratchPool, 512);
-	GedPoolInit( &m_treePool, 4096);
+	m_scratchPool.poolInit( 512);
+	m_treePool.poolInit( 4096);
 	m_pEditWindow = NULL;
 	m_pEditStatusWin = NULL;
 	m_uiEditCanvasRows = 0;
@@ -100,8 +100,8 @@ F_RecEditor::~F_RecEditor( void)
 		m_pFileSystem->Release();
 	}
 
-	GedPoolFree( &m_scratchPool);
-	GedPoolFree( &m_treePool);
+	m_scratchPool.poolFree();
+	m_treePool.poolFree();
 }
 
 
@@ -123,7 +123,7 @@ RCODE F_RecEditor::Setup(
 		}
 	}
 
-	if( RC_BAD( rc = FlmAllocFileSystem( &m_pFileSystem)))
+	if( RC_BAD( rc = FlmGetFileSystem( &m_pFileSystem)))
 	{
 		goto Exit;
 	}
@@ -183,8 +183,8 @@ void F_RecEditor::reset( void)
 		m_pNameList = NULL;
 	}
 
-	GedPoolReset( &m_scratchPool, NULL);
-	GedPoolReset( &m_treePool, NULL);
+	m_scratchPool.poolReset();
+	m_treePool.poolReset();
 }
 
 
@@ -200,7 +200,7 @@ RCODE F_RecEditor::setTree(
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	GedPoolReset( &m_treePool, NULL);
+	m_treePool.poolReset();
 	if( pTree != NULL)
 	{
 		if( RC_BAD( rc = copyBuffer( &m_treePool, pTree, &m_pTree)))
@@ -430,8 +430,8 @@ RCODE F_RecEditor::setTitle(
 	const char * 	pucTitle)
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiBack;
-	FLMUINT			uiFore;
+	eColorType		back;
+	eColorType		fore;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
@@ -442,19 +442,12 @@ RCODE F_RecEditor::setTitle(
 
 	if (m_pEditWindow)
 	{
-		uiBack = (FLMUINT)((m_bMonochrome)
-								 ? (FLMUINT)WPS_BLACK
-								 : (FLMUINT)WPS_BLUE);
-		uiFore = (FLMUINT)WPS_WHITE;
-		if( FTXWinSetTitle( m_pEditWindow, m_pucTitle,
-								uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		back = m_bMonochrome ? FLM_BLACK : FLM_BLUE;
+		fore = FLM_WHITE;
+		
+		FTXWinSetTitle( m_pEditWindow, m_pucTitle, back, fore);
 	}
 
-Exit:
 	return( rc);
 }
 
@@ -510,21 +503,21 @@ RCODE F_RecEditor::interactiveEdit(
 	FLMUINT			uiHelpKey = 0;
 	FLMBOOL			bDoneEditing = FALSE;
 	FLMBOOL			bStartedTrans = FALSE;
-	POOL				copyPool;
+	F_Pool			copyPool;
 	RCODE				rc = FERR_OK;
 	RCODE				tmpRc;
-	FLMUINT			uiFore;
-	FLMUINT			uiBack;
-	F_Thread *		pIxManagerThrd = NULL;
-	F_Thread *		pMemManagerThrd = NULL;
-	F_Thread *		pTrackerMonitorThrd = NULL;
+	eColorType		fore;
+	eColorType		back;
+	IF_Thread *		pIxManagerThrd = NULL;
+	IF_Thread *		pMemManagerThrd = NULL;
+	IF_Thread *		pTrackerMonitorThrd = NULL;
 	char				szDbPath [F_PATH_MAX_SIZE];
 	HFDB				hTmpDb = HFDB_NULL;
 
 	flmAssert( m_bSetupCalled == TRUE);
 	flmAssert( m_pScreen != NULL);
 
-	GedPoolInit( &copyPool, 512);
+	copyPool.poolInit( 512);
 
 	m_uiCurRow = 0;
 	m_pScrFirstNd = NULL;
@@ -540,10 +533,9 @@ RCODE F_RecEditor::interactiveEdit(
 
 	if( !uiLRX && !uiLRY)
 	{
-		if( FTXScreenGetSize( m_pScreen,
-			&uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXScreenGetSize( m_pScreen,
+			&uiNumCols, &uiNumRows)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
@@ -569,139 +561,57 @@ RCODE F_RecEditor::interactiveEdit(
 	m_uiLRX = uiLRX;
 	m_uiLRY = uiLRY;
 
-	if( FTXWinInit( m_pScreen, uiNumCols,
-		uiNumRows, &m_pEditWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumCols,
+		uiNumRows, &m_pEditWindow)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if( FTXWinMove( m_pEditWindow, uiStartCol, uiULY) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinMove( m_pEditWindow, uiStartCol, uiULY);
+	FTXWinSetScroll( m_pEditWindow, FALSE);
+	FTXWinSetLineWrap( m_pEditWindow, FALSE);
+	FTXWinSetCursorType( m_pEditWindow, FLM_CURSOR_INVISIBLE);
 
-	if( FTXWinSetScroll( m_pEditWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetLineWrap( m_pEditWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetCursorType( m_pEditWindow,
-		WPS_CURSOR_INVISIBLE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	uiBack = (FLMUINT)((m_bMonochrome)
-							 ? (FLMUINT)WPS_BLACK
-							 : (FLMUINT)WPS_BLUE);
-	uiFore = (FLMUINT)WPS_WHITE;
-	if( FTXWinSetBackFore( m_pEditWindow, uiBack, uiFore) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinClear( m_pEditWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	back = m_bMonochrome ? FLM_BLACK : FLM_BLUE;
+	fore = FLM_WHITE;
+	FTXWinSetBackFore( m_pEditWindow, back, fore);
+	FTXWinClear( m_pEditWindow);
 
 	if( bBorder)
 	{
-		if( FTXWinDrawBorder( m_pEditWindow) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinDrawBorder( m_pEditWindow);
 	}
 
-	if( FTXWinSetTitle( m_pEditWindow, m_pucTitle,
-							uiBack, uiFore) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinSetTitle( m_pEditWindow, m_pucTitle, back, fore);
 
 	if( bStatus)
 	{
-		if( FTXWinInit( m_pScreen, uiNumCols, 1,
-			&m_pEditStatusWin) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinMove( m_pEditStatusWin, uiULX,
-			uiULY + uiNumRows) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinSetScroll( m_pEditStatusWin, FALSE) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumCols, 1,
+			&m_pEditStatusWin)))
 		{
 			goto Exit;
 		}
 
-		if( FTXWinSetCursorType( m_pEditStatusWin,
-			WPS_CURSOR_INVISIBLE) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinSetBackFore( m_pEditStatusWin,
-			m_bMonochrome ? WPS_BLACK : WPS_GREEN,
-			WPS_WHITE) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinClear( m_pEditStatusWin) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( FTXWinOpen( m_pEditStatusWin) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinMove( m_pEditStatusWin, uiULX, uiULY + uiNumRows);
+		FTXWinSetScroll( m_pEditStatusWin, FALSE);
+		FTXWinSetCursorType( m_pEditStatusWin, FLM_CURSOR_INVISIBLE);
+		FTXWinSetBackFore( m_pEditStatusWin,
+			m_bMonochrome ? FLM_BLACK : FLM_GREEN, FLM_WHITE);
+		FTXWinClear( m_pEditStatusWin);
+		FTXWinOpen( m_pEditStatusWin);
 	}
 	
-	if( FTXWinOpen( m_pEditWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinOpen( m_pEditWindow);
+	FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols, &uiNumRows);
 
-	if( FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
 	m_uiEditCanvasRows = uiNumRows;
 	uiMaxRow = uiNumRows - 1;
 
-//	m_pScrFirstNd = m_pCurNd;
 	if (!m_pScrFirstNd)
 	{
 		m_pScrFirstNd = getRootNode( m_pCurNd);
 	}
+	
 	bRefreshEditWindow = TRUE;
 	bRefreshStatusWindow = TRUE;
 	pucSearchBuf[ 0] = '\0';
@@ -722,7 +632,6 @@ RCODE F_RecEditor::interactiveEdit(
 			0, m_EventData);
 	}
 
-	FTXRefresh( m_pScreen->pFtxInfo);
 	while( !bDoneEditing && !isExiting())
 	{
 		if( bRefreshEditWindow)
@@ -736,12 +645,8 @@ RCODE F_RecEditor::interactiveEdit(
 				m_bMonochrome = m_pParent->isMonochrome();
 			}
 
-			if( FTXWinPaintBackground( m_pEditWindow,
-				m_bMonochrome ? WPS_BLACK : WPS_BLUE) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			FTXWinPaintBackground( m_pEditWindow, 
+				m_bMonochrome ? FLM_BLACK : FLM_BLUE);
 
 			if( m_pEventHook)
 			{
@@ -760,17 +665,9 @@ RCODE F_RecEditor::interactiveEdit(
 
 		if( m_pEditStatusWin && bRefreshStatusWindow)
 		{
-			/*
-			Update the status window
-			*/
-
-			if( FTXWinSetBackFore( m_pEditStatusWin,
-				m_bMonochrome ? WPS_LIGHTGRAY : WPS_GREEN,
-				m_bMonochrome ? WPS_BLACK : WPS_WHITE) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			FTXWinSetBackFore( m_pEditStatusWin,
+				m_bMonochrome ? FLM_LIGHTGRAY : FLM_GREEN,
+				m_bMonochrome ? FLM_BLACK : FLM_WHITE);
 
 			getControlFlags( m_pCurNd, &uiCurFlags);
 			if( !(uiCurFlags & F_RECEDIT_FLAG_LIST_ITEM))
@@ -851,12 +748,12 @@ RCODE F_RecEditor::interactiveEdit(
 					}
 				}
 			}
+			
 			FTXWinClearToEOL( m_pEditStatusWin);
-			FTXRefresh( m_pScreen->pFtxInfo);
 			bRefreshStatusWindow = FALSE;
 		}
 
-		if( uiHelpKey || FTXWinTestKB( m_pEditWindow) == FTXRC_SUCCESS)
+		if( uiHelpKey || RC_OK( FTXWinTestKB( m_pEditWindow)))
 		{
 			FLMUINT	uiChar;
 
@@ -878,13 +775,13 @@ RCODE F_RecEditor::interactiveEdit(
 				{
 					m_pKeyHook( this, m_pCurNd, uiChar, m_KeyData, &uiChar);
 				}
-				if (uiChar != WPK_TAB)
+				if (uiChar != FKB_TAB)
 				{
 					m_uiLastKey = uiChar;
 				}
 			}
 
-			if( uiChar == WPK_TAB)
+			if( uiChar == FKB_TAB)
 			{
 				// Grab the last keystroke that was passed to the editor.
 				// This is needed in environments where the ALT and
@@ -915,7 +812,7 @@ RCODE F_RecEditor::interactiveEdit(
 				Move field cursor to the next field
 				*/
 
-				case WPK_DOWN:
+				case FKB_DOWN:
 				{
 					if( (pTmpNd = getNextNode( m_pCurNd)) != NULL)
 					{
@@ -939,7 +836,7 @@ RCODE F_RecEditor::interactiveEdit(
 				Move field cursor to the prior field
 				*/
 
-				case WPK_UP:
+				case FKB_UP:
 				{
 					if( (pTmpNd = getPrevNode( m_pCurNd)) != NULL)
 					{
@@ -963,7 +860,7 @@ RCODE F_RecEditor::interactiveEdit(
 				Page up
 				*/
 
-				case WPK_PGUP:
+				case FKB_PGUP:
 				{
 					for( uiLoop = 0; uiLoop < uiNumRows; uiLoop++)
 					{
@@ -992,7 +889,7 @@ RCODE F_RecEditor::interactiveEdit(
 				*/
 				
 				case '>':
-				case WPK_CTRL_DOWN:
+				case FKB_CTRL_DOWN:
 				{
 					NODE *		pRootNd = getRootNode( m_pCurNd);
 
@@ -1014,7 +911,7 @@ RCODE F_RecEditor::interactiveEdit(
 				*/
 
 				case '<':
-				case WPK_CTRL_UP:
+				case FKB_CTRL_UP:
 				{
 					NODE *		pRootNd = getRootNode( m_pCurNd);
 
@@ -1042,7 +939,7 @@ RCODE F_RecEditor::interactiveEdit(
 				Page down
 				*/
 
-				case WPK_PGDN:
+				case FKB_PGDN:
 				{
 					for( uiLoop = 0; uiLoop < uiNumRows; uiLoop++)
 					{
@@ -1069,8 +966,8 @@ RCODE F_RecEditor::interactiveEdit(
 				Go to the top of the buffer
 				*/
 
-				case WPK_HOME:
-				case WPK_GOTO:
+				case FKB_HOME:
+				case FKB_GOTO:
 				{
 					m_pCurNd = m_pTree;
 					m_uiCurRow = 0;
@@ -1082,8 +979,8 @@ RCODE F_RecEditor::interactiveEdit(
 				Jump to the end of the buffer
 				*/
 
-				case WPK_END:
-				case WPK_CTRL_END:
+				case FKB_END:
+				case FKB_CTRL_END:
 				{
 					m_uiCurRow = uiMaxRow;
 					for( ;;)
@@ -1108,7 +1005,7 @@ RCODE F_RecEditor::interactiveEdit(
 				Delete the current record from the database
 				*/
 
-				case WPK_DELETE:
+				case FKB_DELETE:
 				{
 					NODE *		pRootNd;
 					char			pucResponse[ 2];
@@ -1128,7 +1025,7 @@ RCODE F_RecEditor::interactiveEdit(
 								"Delete Record from the Database? (Y/N)",
 								pucResponse, 2, &uiTermChar);
 					
-							if( uiTermChar == WPK_ESCAPE)
+							if( uiTermChar == FKB_ESCAPE)
 							{
 								goto Delete_Exit;
 							}
@@ -1151,7 +1048,7 @@ RCODE F_RecEditor::interactiveEdit(
 									}
 									displayMessage(
 										"Unable to delete record", tmpRc,
-										NULL, WPS_RED, WPS_WHITE);
+										NULL, FLM_RED, FLM_WHITE);
 									goto Delete_Exit;
 								}
 								pruneTree( m_pCurNd);
@@ -1167,7 +1064,7 @@ RCODE F_RecEditor::interactiveEdit(
 						displayMessage(
 							"Deletion not allowed",
 							RC_SET( FERR_ACCESS_DENIED),
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 Delete_Exit:
 					bRefreshEditWindow = TRUE;
@@ -1178,7 +1075,7 @@ Delete_Exit:
 				Delete records from the database
 				*/
 				
-				case WPK_ALT_D:
+				case FKB_ALT_D:
 				{
 					FLMUINT		uiContainer;
 					char			pucResponse[ 16];
@@ -1189,7 +1086,7 @@ Delete_Exit:
 						"Delete By (r = record #, q = query)",
 						pucAction, sizeof( pucAction), &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -1201,7 +1098,7 @@ Delete_Exit:
 							"[DELETE] Record Number",
 							pucResponse, sizeof( pucResponse), &uiTermChar);
 
-						if( uiTermChar == WPK_ESCAPE)
+						if( uiTermChar == FKB_ESCAPE)
 						{
 							break;
 						}
@@ -1212,7 +1109,7 @@ Delete_Exit:
 							{
 								displayMessage(
 									"Invalid record number", tmpRc,
-									NULL, WPS_RED, WPS_WHITE);
+									NULL, FLM_RED, FLM_WHITE);
 								break;
 							}
 						}
@@ -1225,10 +1122,10 @@ Delete_Exit:
 						{
 							displayMessage(
 								"Error getting container", tmpRc,
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 						}
 						
-						if( uiTermChar != WPK_ENTER)
+						if( uiTermChar != FKB_ENTER)
 						{
 							break;
 						}
@@ -1249,7 +1146,7 @@ Delete_Exit:
 								FTXWinClearLine( m_pEditStatusWin, 0, 0);
 							}
 							displayMessage( "Delete failed", tmpRc,
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 						}
 						else
 						{
@@ -1264,7 +1161,7 @@ Delete_Exit:
 						if( RC_BAD( tmpRc = adHocQuery( FALSE, TRUE)))
 						{
 							displayMessage( "Query Failure",
-								tmpRc, NULL, WPS_RED, WPS_WHITE);
+								tmpRc, NULL, FLM_RED, FLM_WHITE);
 						}
 					}
 
@@ -1276,7 +1173,7 @@ Delete_Exit:
 				Modify the current record in the database
 				*/
 
-				case WPK_ALT_M:
+				case FKB_ALT_M:
 				{
 					char			pucResponse[ 2];
 					FLMBOOL		bModifyInBackground = FALSE;
@@ -1288,7 +1185,7 @@ Delete_Exit:
 						"Update Record in the Database? (Y/N)",
 						pucResponse, 2, &uiTermChar);
 			
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -1308,7 +1205,7 @@ Delete_Exit:
 							requestInput(
 								"Modify index in background? (Y/N)",
 								pucResponse, 2, &uiTermChar);
-							if( uiTermChar == WPK_ESCAPE)
+							if( uiTermChar == FKB_ESCAPE)
 							{
 								break;
 							}
@@ -1323,7 +1220,7 @@ Delete_Exit:
 								requestInput(
 									"Start the indexing thread? (Y/N)",
 									pucResponse, 2, &uiTermChar);
-								if( uiTermChar == WPK_ESCAPE)
+								if( uiTermChar == FKB_ESCAPE)
 								{
 									break;
 								}
@@ -1350,7 +1247,7 @@ Delete_Exit:
 							FTXWinClearLine( m_pEditStatusWin, 0, 0);
 						}
 						displayMessage( "Modify failed", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 					else
 					{
@@ -1364,7 +1261,7 @@ Delete_Exit:
 				Add the current record to the database
 				*/
 				
-				case WPK_ALT_A:
+				case FKB_ALT_A:
 				{
 					FLMUINT		uiContainer;
 					char			pucResponse[ 16];
@@ -1377,7 +1274,7 @@ Delete_Exit:
 						"[ADD] Record Number",
 						pucResponse, sizeof( pucResponse), &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -1388,7 +1285,7 @@ Delete_Exit:
 						{
 							displayMessage(
 								"Invalid record number", tmpRc,
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 					}
@@ -1401,10 +1298,10 @@ Delete_Exit:
 					{
 						displayMessage(
 							"Error getting container", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 					
-					if( uiTermChar != WPK_ENTER)
+					if( uiTermChar != FKB_ENTER)
 					{
 						break;
 					}
@@ -1416,7 +1313,7 @@ Delete_Exit:
 						requestInput(
 							"Add index in background? (Y/N)",
 							pucResponse, 2, &uiTermChar);
-						if( uiTermChar == WPK_ESCAPE)
+						if( uiTermChar == FKB_ESCAPE)
 						{
 							break;
 						}
@@ -1431,7 +1328,7 @@ Delete_Exit:
 							requestInput(
 								"Start the indexing thread? (Y/N)",
 								pucResponse, 2, &uiTermChar);
-							if( uiTermChar == WPK_ESCAPE)
+							if( uiTermChar == FKB_ESCAPE)
 							{
 								break;
 							}
@@ -1464,7 +1361,7 @@ Delete_Exit:
 						}
 
 						displayMessage( "Add failed", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 					else
 					{
@@ -1479,7 +1376,7 @@ Delete_Exit:
 				Index operations
 				*/
 
-				case WPK_ALT_I:
+				case FKB_ALT_I:
 				{
 					if( m_hDefaultDb == HFDB_NULL)
 					{
@@ -1489,7 +1386,7 @@ Delete_Exit:
 					if( RC_BAD( tmpRc = indexList()))
 					{
 						displayMessage( "Index List Operation Failed", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 
 					bRefreshEditWindow = TRUE;
@@ -1500,7 +1397,7 @@ Delete_Exit:
 				Retrieve records
 				*/
 
-				case WPK_ALT_R:
+				case FKB_ALT_R:
 				{
 					FLMUINT		uiContainer;
 					char			pucResponse[ 32];
@@ -1513,7 +1410,7 @@ Delete_Exit:
 						"[READ] Starting Record Number",
 						pucResponse, sizeof( pucResponse), &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -1527,7 +1424,7 @@ Delete_Exit:
 						if( RC_BAD( tmpRc = getNumber( pucResponse, &uiFirstDrn, NULL)))
 						{
 							displayMessage( "Invalid record number", tmpRc,
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 					}
@@ -1536,7 +1433,7 @@ Delete_Exit:
 						"[READ] Ending Record Number",
 						pucResponse, sizeof( pucResponse), &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -1550,7 +1447,7 @@ Delete_Exit:
 						if( RC_BAD( tmpRc = getNumber( pucResponse, &uiLastDrn, NULL)))
 						{
 							displayMessage( "Invalid record number", tmpRc,
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 					}
@@ -1558,10 +1455,10 @@ Delete_Exit:
 					if( RC_BAD( tmpRc = selectContainer( &uiContainer, &uiTermChar)))
 					{
 						displayMessage( "Error getting container", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 					
-					if( uiTermChar != WPK_ENTER)
+					if( uiTermChar != FKB_ENTER)
 					{
 						break;
 					}
@@ -1599,7 +1496,7 @@ Delete_Exit:
 							FTXWinClearLine( m_pEditStatusWin, 0, 0);
 						}
 						displayMessage( "Unable to retrieve record", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 
 					bRefreshEditWindow = TRUE;
@@ -1610,7 +1507,7 @@ Delete_Exit:
 				Search
 				*/
 
-				case WPK_ALT_F3:
+				case FKB_ALT_F3:
 				{
 					*pucSearchBuf = '\0';
 					requestInput(
@@ -1618,13 +1515,13 @@ Delete_Exit:
 						&uiTermChar);
 
 					f_strupr( (char *)pucSearchBuf);
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
 					
 					/*
-					No break.  Fall through to WPK_F3 case.
+					No break.  Fall through to FKB_F3 case.
 					*/
 				}
 
@@ -1632,7 +1529,7 @@ Delete_Exit:
 				Search forward
 				*/
 
-				case WPK_F3:
+				case FKB_F3:
 				{
 					FLMBOOL		bFoundMatch = FALSE;
 					FLMBOOL		bTagSearch = FALSE;
@@ -1691,7 +1588,7 @@ Delete_Exit:
 					if( !bFoundMatch)
 					{
 						displayMessage( "No matches found",
-							RC_SET( FERR_EOF_HIT), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( FERR_EOF_HIT), NULL, FLM_RED, FLM_WHITE);
 					}
 					bRefreshEditWindow = TRUE;
 					break;
@@ -1701,7 +1598,7 @@ Delete_Exit:
 				Search backward
 				*/
 
-				case WPK_SF3:
+				case FKB_SF3:
 				{
 					FLMBOOL		bFoundMatch = FALSE;
 					FLMBOOL		bTagSearch = FALSE;
@@ -1761,7 +1658,7 @@ Delete_Exit:
 					if( !bFoundMatch)
 					{
 						displayMessage( "No matches found",
-							RC_SET( FERR_BOF_HIT), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( FERR_BOF_HIT), NULL, FLM_RED, FLM_WHITE);
 					}
 					bRefreshEditWindow = TRUE;
 					break;
@@ -1771,10 +1668,10 @@ Delete_Exit:
 				Follow a record pointer
 				*/
 
-				case WPK_RIGHT:
-				case WPK_LEFT:
-				case WPK_CTRL_RIGHT:
-				case WPK_CTRL_LEFT:
+				case FKB_RIGHT:
+				case FKB_LEFT:
+				case FKB_CTRL_RIGHT:
+				case FKB_CTRL_LEFT:
 				{
 					if( !m_pCurNd)
 					{
@@ -1784,7 +1681,7 @@ Delete_Exit:
 					if( RC_BAD( tmpRc = followLink( m_pCurNd, uiChar)))
 					{
 						displayMessage( "Unable to follow link", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 					bRefreshEditWindow = TRUE;
 					break;
@@ -1794,7 +1691,7 @@ Delete_Exit:
 				Insert a new field
 				*/
 
-				case WPK_INSERT:
+				case FKB_INSERT:
 				{
 					NODE *		pNewNd = NULL;
 					char			pucLocation[ 2];
@@ -1807,7 +1704,7 @@ Delete_Exit:
 						if( !canEditRecord( m_pCurNd))
 						{
 							displayMessage( "This record cannot be edited",
-								RC_SET( FERR_ACCESS_DENIED), NULL, WPS_RED, WPS_WHITE);
+								RC_SET( FERR_ACCESS_DENIED), NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 
@@ -1816,7 +1713,7 @@ Delete_Exit:
 							"Location (c = child, s = sibling, r = root)",
 							pucLocation, sizeof( pucLocation), &uiTermChar);
 
-						if( uiTermChar == WPK_ESCAPE)
+						if( uiTermChar == FKB_ESCAPE)
 						{
 							break;
 						}
@@ -1836,7 +1733,7 @@ Delete_Exit:
 						else
 						{
 							displayMessage( "Invalid Request",
-								RC_SET( FERR_FAILURE), NULL, WPS_RED, WPS_WHITE);
+								RC_SET( FERR_FAILURE), NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 					}
@@ -1854,7 +1751,7 @@ Delete_Exit:
 					if( RC_BAD( tmpRc = createNewField( bRoot, &pNewNd)))
 					{
 						displayMessage( "Unable to create new field", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 						break;
 
 					}
@@ -1901,7 +1798,7 @@ Delete_Exit:
 				Edit the current field
 				*/
 
-				case WPK_ENTER:
+				case FKB_ENTER:
 				{
 					if( !m_pCurNd)
 					{
@@ -1917,17 +1814,17 @@ Delete_Exit:
 					else if( !canEditRecord( m_pCurNd))
 					{
 						displayMessage( "This record cannot be edited",
-							RC_SET( FERR_ACCESS_DENIED), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( FERR_ACCESS_DENIED), NULL, FLM_RED, FLM_WHITE);
 					}
 					else if( !canEditNode( m_pCurNd))
 					{
 						displayMessage( "The field cannot be edited",
-							RC_SET( FERR_ACCESS_DENIED), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( FERR_ACCESS_DENIED), NULL, FLM_RED, FLM_WHITE);
 					}
 					else if( RC_BAD( tmpRc = editNode( m_uiCurRow, m_pCurNd)))
 					{
 						displayMessage( "The field could not be edited", tmpRc,
-							NULL, WPS_RED, WPS_WHITE);
+							NULL, FLM_RED, FLM_WHITE);
 					}
 
 					bRefreshEditWindow = TRUE;
@@ -1938,7 +1835,7 @@ Delete_Exit:
 				Transaction operations
 				*/
 
-				case WPK_ALT_T:
+				case FKB_ALT_T:
 				{
 					if( m_hDefaultDb == HFDB_NULL)
 					{
@@ -1952,7 +1849,7 @@ Delete_Exit:
 							"Begin Transaction (type: r = read, u = update)",
 							pucAction, sizeof( pucAction), &uiTermChar);
 
-						if( uiTermChar == WPK_ESCAPE)
+						if( uiTermChar == FKB_ESCAPE)
 						{
 							break;
 						}
@@ -1995,7 +1892,7 @@ Delete_Exit:
 						else
 						{
 							displayMessage( "Invalid Request",
-								RC_SET( FERR_FAILURE), NULL, WPS_RED, WPS_WHITE);
+								RC_SET( FERR_FAILURE), NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 
@@ -2007,7 +1904,7 @@ Delete_Exit:
 							}
 
 							displayMessage( "Unable to begin transaction",
-								RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+								RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 						}
 					}
 					else
@@ -2017,7 +1914,7 @@ Delete_Exit:
 							"End Transaction (a = abort, c = commit)",
 							pucAction, sizeof( pucAction), &uiTermChar);
 
-						if( uiTermChar == WPK_ESCAPE)
+						if( uiTermChar == FKB_ESCAPE)
 						{
 							break;
 						}
@@ -2058,7 +1955,7 @@ Delete_Exit:
 						else
 						{
 							displayMessage( "Invalid Request",
-								RC_SET( FERR_FAILURE), NULL, WPS_RED, WPS_WHITE);
+								RC_SET( FERR_FAILURE), NULL, FLM_RED, FLM_WHITE);
 							break;
 						}
 
@@ -2070,7 +1967,7 @@ Delete_Exit:
 							}
 
 							displayMessage( "Unable to end transaction",
-								RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+								RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 						}
 					}
 
@@ -2084,7 +1981,7 @@ Delete_Exit:
 				the database)
 				*/
 
-				case WPK_ALT_S:
+				case FKB_ALT_S:
 				{
 					FLMUINT	uiTmpCont;
 					FLMUINT	uiTmpDrn;
@@ -2104,7 +2001,7 @@ Delete_Exit:
 									"Syncronizing this record will discard modifications.  OK (Y/N)",
 									pucResponse, 2, &uiTermChar);
 						
-								if( uiTermChar == WPK_ESCAPE)
+								if( uiTermChar == FKB_ESCAPE)
 								{
 									goto Sync_Exit;
 								}
@@ -2123,7 +2020,7 @@ Delete_Exit:
 									(void)pruneTree( pTmpRoot);
 								}
 								displayMessage( "Unable to synchronize record",
-									RC_SET( tmpRc), NULL, WPS_RED, WPS_WHITE);
+									RC_SET( tmpRc), NULL, FLM_RED, FLM_WHITE);
 							}
 							bRefreshEditWindow = TRUE;
 						}
@@ -2137,7 +2034,7 @@ Sync_Exit:
 				NOTE: This will discard all changes
 				*/
 
-				case WPK_ALT_C:
+				case FKB_ALT_C:
 				{
 					char			pucResponse[ 2];
 
@@ -2146,7 +2043,7 @@ Sync_Exit:
 						"Clear buffer and discard modifications? (Y/N)",
 						pucResponse, 2, &uiTermChar);
 					
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -2170,7 +2067,7 @@ Sync_Exit:
 						"Statistics (b = begin, e = end, r = reset)",
 						pucAction, sizeof( pucAction), &uiTermChar);
 
-					if( uiTermChar == WPK_ESCAPE)
+					if( uiTermChar == FKB_ESCAPE)
 					{
 						break;
 					}
@@ -2193,7 +2090,7 @@ Sync_Exit:
 							F_RECEDIT_CONFIG_STATS_START)))
 						{
 							displayMessage( "Error Starting Statistics",
-								tmpRc, NULL, WPS_RED, WPS_WHITE);
+								tmpRc, NULL, FLM_RED, FLM_WHITE);
 						}
 					}
 					else if( *pucAction == 'e' || *pucAction == 'E')
@@ -2209,7 +2106,7 @@ Sync_Exit:
 							F_RECEDIT_CONFIG_STATS_STOP)))
 						{
 							displayMessage( "Error Stopping Statistics",
-								tmpRc, NULL, WPS_RED, WPS_WHITE);
+								tmpRc, NULL, FLM_RED, FLM_WHITE);
 						}
 					}
 					else if( *pucAction == 'r' || *pucAction == 'R')
@@ -2225,13 +2122,13 @@ Sync_Exit:
 							F_RECEDIT_CONFIG_STATS_RESET)))
 						{
 							displayMessage( "Error Resetting Statistics",
-								tmpRc, NULL, WPS_RED, WPS_WHITE);
+								tmpRc, NULL, FLM_RED, FLM_WHITE);
 						}
 					}
 					else
 					{
 						displayMessage( "Invalid Request",
-							RC_SET( FERR_FAILURE), NULL, WPS_RED, WPS_WHITE);
+							RC_SET( FERR_FAILURE), NULL, FLM_RED, FLM_WHITE);
 					}
 					bRefreshStatusWindow = TRUE;
 					break;
@@ -2264,18 +2161,18 @@ Sync_Exit:
 				"Find" records based on ad hoc criteria
 				*/
 
-				case WPK_ALT_F:
+				case FKB_ALT_F:
 				{
 					if( RC_BAD( tmpRc = adHocQuery()))
 					{
 						displayMessage( "Query Failure",
-							tmpRc, NULL, WPS_RED, WPS_WHITE);
+							tmpRc, NULL, FLM_RED, FLM_WHITE);
 					}
 					bRefreshEditWindow = TRUE;
 					break;
 				}
 
-				case WPK_ALT_F10:
+				case FKB_ALT_F10:
 				{
 					if( m_bMonochrome)
 					{
@@ -2290,7 +2187,7 @@ Sync_Exit:
 					break;
 				}
 
-				case WPK_F1:
+				case FKB_F1:
 				{
 					char	szSelectedPath [F_PATH_MAX_SIZE];
 					fileManager( NULL, 0, NULL, szSelectedPath, NULL);
@@ -2298,22 +2195,22 @@ Sync_Exit:
 					break;
 				}
 
-				case WPK_CTRL_C:
-				case WPK_CTRL_X:
+				case FKB_CTRL_C:
+				case FKB_CTRL_X:
 				{
 					if( m_pCurNd && !isSystemNode( m_pCurNd))
 					{
-						if( uiChar == WPK_CTRL_X && !canDeleteNode( m_pCurNd))
+						if( uiChar == FKB_CTRL_X && !canDeleteNode( m_pCurNd))
 						{
 							displayMessage(
 								"Deletion not allowed",
 								RC_SET( FERR_ACCESS_DENIED),
-								NULL, WPS_RED, WPS_WHITE);
+								NULL, FLM_RED, FLM_WHITE);
 						}
 						else
 						{
 							pCopyNd = NULL;
-							GedPoolReset( &copyPool, NULL);
+							copyPool.poolReset();
 
 							if( RC_BAD( copyCleanTree( &copyPool, m_pCurNd, &pCopyNd)))
 							{
@@ -2321,7 +2218,7 @@ Sync_Exit:
 								break;
 							}
 							
-							if( uiChar == WPK_CTRL_X)
+							if( uiChar == FKB_CTRL_X)
 							{
 								pruneTree( m_pCurNd);
 							}
@@ -2331,7 +2228,7 @@ Sync_Exit:
 					break;
 				}
 
-				case WPK_CTRL_V:
+				case FKB_CTRL_V:
 				{
 					if( pCopyNd)
 					{
@@ -2355,7 +2252,7 @@ Sync_Exit:
 					break;
 				}
 
-				case WPK_F8: // Index Manager
+				case FKB_F8: // Index Manager
 				{
 					if( m_hDefaultDb == HFDB_NULL)
 					{
@@ -2380,16 +2277,13 @@ Sync_Exit:
 					if (RC_OK( FlmDbOpen( szDbPath, NULL, NULL,
 						0, NULL, &hTmpDb)))
 					{
-						f_threadCreate( &pIxManagerThrd,
-							flstIndexManagerThread, 
-							"index_manager",
-							FLM_DEFAULT_THREAD_GROUP, 0,
-							(void *)hTmpDb);
+						f_threadCreate( &pIxManagerThrd, flstIndexManagerThread, 
+							"index_manager", 0, 0, (void *)hTmpDb);
 					}
 					break;
 				}
 
-				case WPK_F9: // Memory Manager
+				case FKB_F9: // Memory Manager
 				{
 					f_threadDestroy( &pMemManagerThrd);
 					f_threadCreate( &pMemManagerThrd,
@@ -2397,7 +2291,7 @@ Sync_Exit:
 					break;
 				}
 
-				case WPK_F10: // Tracker Monitor
+				case FKB_F10: // Tracker Monitor
 				{
 					if( m_hDefaultDb == HFDB_NULL)
 					{
@@ -2416,17 +2310,15 @@ Sync_Exit:
 						0, NULL, &hTmpDb)))
 					{
 						f_threadCreate( &pTrackerMonitorThrd,
-							flstTrackerMonitorThread, 
-							"tracker_monitor",
-							FLM_DEFAULT_THREAD_GROUP, 0,
-							(void *)hTmpDb);
+							flstTrackerMonitorThread, "tracker_monitor",
+							0, 0, (void *)hTmpDb);
 					}
 
 					break;
 				}
 
-				case WPK_ESCAPE:
-				case WPK_ALT_Q:
+				case FKB_ESCAPE:
+				case FKB_ALT_Q:
 				{
 					// VISIT: See if any of the records in the buffer have
 					// been modified and ask the user if the changes should
@@ -2461,8 +2353,6 @@ Exit:
 		// Abort any active transactions
 		FlmDbTransAbort( m_hDefaultDb);
 	}
-
-	GedPoolFree( &copyPool);
 
 	f_threadDestroy( &pIxManagerThrd);
 	f_threadDestroy( &pMemManagerThrd);
@@ -2506,12 +2396,7 @@ RCODE F_RecEditor::refreshEditWindow(
 		*puiCurRow = 0;
 	}
 
-	if( FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols, &uiNumRows);
 
 	// VISIT: May want to check the current source
 	// against the current record's source and
@@ -2570,7 +2455,7 @@ RCODE F_RecEditor::refreshEditWindow(
 	Turn display refresh off temporarily
 	*/
 
-	FTXSetRefreshState( m_pScreen->pFtxInfo, TRUE);
+	FTXSetRefreshState( TRUE);
 
 	/*
 	Refresh all rows of the edit window.  All rows beyond the end
@@ -2596,13 +2481,7 @@ RCODE F_RecEditor::refreshEditWindow(
 		}
 	}
 
-Exit:
-
-	/*
-	Re-enable display refresh
-	*/
-
-	FTXSetRefreshState( m_pScreen->pFtxInfo, FALSE);
+	FTXSetRefreshState( FALSE);
 	return( rc);
 }
   
@@ -2643,8 +2522,8 @@ RCODE f_RecEditorDefaultDispHook(
 			f_sprintf( (char *)pDispVals[ *puiNumVals].pucString,
 				"%u", (unsigned)GedNodeLevel( pNd));
 			pDispVals[ *puiNumVals].uiCol = (GedNodeLevel( pNd) * 2);
-			pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-			pDispVals[ *puiNumVals].uiBackground = pRecEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+			pDispVals[ *puiNumVals].foreground = FLM_WHITE;
+			pDispVals[ *puiNumVals].background = pRecEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 			uiCol += f_strlen( pDispVals[ *puiNumVals].pucString) + (GedNodeLevel( pNd) * 2) + 1;
 			(*puiNumVals)++;
 		}
@@ -2668,11 +2547,11 @@ RCODE f_RecEditorDefaultDispHook(
 
 			pDispVals[ *puiNumVals].uiCol = uiCol;
 #ifdef FLM_WIN
-			pDispVals[ *puiNumVals].uiForeground = pRecEditor->isMonochrome() ? WPS_WHITE : WPS_LIGHTGREEN;
+			pDispVals[ *puiNumVals].foreground = pRecEditor->isMonochrome() ? FLM_WHITE : FLM_LIGHTGREEN;
 #else
-			pDispVals[ *puiNumVals].uiForeground = pRecEditor->isMonochrome() ? WPS_LIGHTGRAY : WPS_GREEN;
+			pDispVals[ *puiNumVals].foreground = pRecEditor->isMonochrome() ? FLM_LIGHTGRAY : FLM_GREEN;
 #endif
-			pDispVals[ *puiNumVals].uiBackground = pRecEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+			pDispVals[ *puiNumVals].background = pRecEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 			uiCol += f_strlen( pDispVals[ *puiNumVals].pucString) + 1;
 			(*puiNumVals)++;
 		}
@@ -2687,8 +2566,8 @@ RCODE f_RecEditorDefaultDispHook(
 			f_sprintf( (char *)pDispVals[ *puiNumVals].pucString,
 				"@%u@ (0x%4.4X)", (unsigned)uiDrn, (unsigned)uiDrn);
 			pDispVals[ *puiNumVals].uiCol = uiCol;
-			pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-			pDispVals[ *puiNumVals].uiBackground = pRecEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+			pDispVals[ *puiNumVals].foreground = FLM_WHITE;
+			pDispVals[ *puiNumVals].background = pRecEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 			uiCol += f_strlen( pDispVals[ *puiNumVals].pucString) + 1;
 			(*puiNumVals)++;
 		}
@@ -2705,8 +2584,8 @@ RCODE f_RecEditorDefaultDispHook(
 		}
 
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = pRecEditor->isMonochrome() ? WPS_WHITE : WPS_YELLOW;
-		pDispVals[ *puiNumVals].uiBackground = pRecEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+		pDispVals[ *puiNumVals].foreground = pRecEditor->isMonochrome() ? FLM_WHITE : FLM_YELLOW;
+		pDispVals[ *puiNumVals].background = pRecEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 		uiCol += f_strlen( pDispVals[ *puiNumVals].pucString) + 1;
 		(*puiNumVals)++;
 		
@@ -2719,8 +2598,8 @@ RCODE f_RecEditorDefaultDispHook(
 			f_sprintf( (char *)pDispVals[ *puiNumVals].pucString,
 					"[%u]", (unsigned)pNd->ui32EncId);
 			pDispVals[ *puiNumVals].uiCol = uiCol;
-			pDispVals[ *puiNumVals].uiForeground = pRecEditor->isMonochrome() ? WPS_WHITE : WPS_WHITE;
-			pDispVals[ *puiNumVals].uiBackground = pRecEditor->isMonochrome() ? WPS_BLACK : WPS_RED;
+			pDispVals[ *puiNumVals].foreground = pRecEditor->isMonochrome() ? FLM_WHITE : FLM_WHITE;
+			pDispVals[ *puiNumVals].background = pRecEditor->isMonochrome() ? FLM_BLACK : FLM_RED;
 			uiCol += f_strlen( pDispVals[ *puiNumVals].pucString) + 1;
 			(*puiNumVals)++;
 		}
@@ -2747,8 +2626,8 @@ RCODE f_RecEditorDefaultDispHook(
 					f_sprintf( (char *)pDispVals[ *puiNumVals].pucString,
 						"# %s", pucValBuf);
 					pDispVals[ *puiNumVals].uiCol += (GedNodeLevel( pNd) * 2);
-					pDispVals[ *puiNumVals].uiForeground = pRecEditor->isMonochrome() ? WPS_WHITE : WPS_LIGHTGRAY;
-					pDispVals[ *puiNumVals].uiBackground = pRecEditor->isMonochrome() ? WPS_BLACK : WPS_BLUE;
+					pDispVals[ *puiNumVals].foreground = pRecEditor->isMonochrome() ? FLM_WHITE : FLM_LIGHTGRAY;
+					pDispVals[ *puiNumVals].background = pRecEditor->isMonochrome() ? FLM_BLACK : FLM_BLUE;
 					uiCol += f_strlen( pDispVals[ *puiNumVals].pucString) + 1;
 					(*puiNumVals)++;
 					break;
@@ -2779,22 +2658,14 @@ RCODE F_RecEditor::refreshRow(
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
+	FTXWinGetCanvasSize( m_pEditWindow, &uiNumCols, &uiNumRows);
 	FTXWinSetCursorPos( m_pEditWindow, 0, uiRow);
 	FTXWinClearLine( m_pEditWindow, 0, uiRow);
 
 	f_memset( dispVals, 0, sizeof( dispVals));
 	uiNumVals = 0;
 
-	/*
-	Call the display formatter
-	*/
+	// Call the display formatter
 
 	if( m_pDisplayHook)
 	{
@@ -2816,15 +2687,15 @@ RCODE F_RecEditor::refreshRow(
 	for( uiLoop = 0; uiLoop < uiNumVals; uiLoop++)
 	{
 		FTXWinSetCursorPos( m_pEditWindow, dispVals[ uiLoop].uiCol, uiRow);
-		FTXWinCPrintf( m_pEditWindow, dispVals[ uiLoop].uiBackground,
-			dispVals[ uiLoop].uiForeground, "%s", dispVals[ uiLoop].pucString);
+		FTXWinCPrintf( m_pEditWindow, dispVals[ uiLoop].background,
+			dispVals[ uiLoop].foreground, "%s", dispVals[ uiLoop].pucString);
 	}
 
 	if( bSelected)
 	{	
-		FLMUINT uiBackground = m_bMonochrome ? WPS_LIGHTGRAY : WPS_CYAN;
-		FLMUINT uiForeground = m_bMonochrome ? WPS_BLACK : WPS_WHITE;
-		FTXWinPaintRow( m_pEditWindow, &uiBackground, &uiForeground, uiRow);
+		eColorType background = m_bMonochrome ? FLM_LIGHTGRAY : FLM_CYAN;
+		eColorType foreground = m_bMonochrome ? FLM_BLACK : FLM_WHITE;
+		FTXWinPaintRow( m_pEditWindow, &background, &foreground, uiRow);
 	}
 
 Exit:
@@ -2856,12 +2727,7 @@ RCODE F_RecEditor::setCurrentAtBottom( void)
 
 	flmAssert( m_pEditWindow != NULL);
 
-	if( FTXWinGetCanvasSize( m_pEditWindow, NULL,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinGetCanvasSize( m_pEditWindow, NULL, &uiNumRows);
 	uiNumRows--;
 
 	pTmpNd = m_pCurNd;
@@ -2880,9 +2746,6 @@ RCODE F_RecEditor::setCurrentAtBottom( void)
 	}
 
 	m_uiCurRow = uiNumRows - uiRowsRemaining;
-
-Exit:
-
 	return( rc);
 }
 
@@ -2901,85 +2764,51 @@ RCODE F_RecEditor::editNode(
 	FLMBOOL			bModified = FALSE;
 	FTX_WINDOW *	pWindow = NULL;
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiBack;
-	FLMUINT			uiFore;
+	eColorType		back;
+	eColorType		fore;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( FTXScreenGetSize( m_pScreen,
-		&uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 	uiNumWinCols = uiNumCols - 2;
 
 	if( uiValType == FLM_BINARY_TYPE)
 	{
 		uiNumWinRows = uiNumRows / 2;
-		if( FTXWinInit( m_pScreen, uiNumWinCols,
-			uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+			uiNumWinRows, &pWindow)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
-		if( FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
-			(FLMUINT)((uiNumRows - uiNumWinRows) / 2)) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
+			(FLMUINT)((uiNumRows - uiNumWinRows) / 2));
 	}
 	else
 	{
 		uiNumWinRows = 3;
-		if( FTXWinInit( m_pScreen, uiNumWinCols,
-			uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+			uiNumWinRows, &pWindow)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
-		if( FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
-			uiNdRow) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2), uiNdRow);
 	}
 
-	if( FTXWinSetScroll( pWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
+	FTXWinSetScroll( pWindow, FALSE);
 
-	uiBack = (FLMUINT)((m_bMonochrome)
-							 ? (FLMUINT)WPS_BLACK
-							 : (FLMUINT)WPS_GREEN);
-	uiFore = (FLMUINT)WPS_WHITE;
-	if( FTXWinSetBackFore( pWindow, uiBack, uiFore) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinDrawBorder( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	back = m_bMonochrome ? FLM_BLACK : FLM_GREEN;
+	fore = FLM_WHITE;
+	
+	FTXWinSetBackFore( pWindow, back, fore);
+	FTXWinDrawBorder( pWindow);
 
 	switch( GedValType( pNd))
 	{
 		case FLM_TEXT_TYPE:
 		{
-			if( FTXWinSetTitle( pWindow,
-				" TEXT ", uiBack, uiFore) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			FTXWinSetTitle( pWindow, " TEXT ", back, fore);
 
 			if( RC_BAD( rc = editTextNode( pWindow, pNd, &bModified)))
 			{
@@ -2990,12 +2819,7 @@ RCODE F_RecEditor::editNode(
 
 		case FLM_NUMBER_TYPE:
 		{
-			if( FTXWinSetTitle( pWindow,
-				" NUMBER ", uiBack, uiFore) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			FTXWinSetTitle( pWindow, " NUMBER ", back, fore);
 
 			if( RC_BAD( rc = editNumberNode( pWindow, pNd, &bModified)))
 			{
@@ -3006,12 +2830,7 @@ RCODE F_RecEditor::editNode(
 
 		case FLM_CONTEXT_TYPE:
 		{
-			if( FTXWinSetTitle( pWindow,
-				" CONTEXT ", uiBack, uiFore) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			FTXWinSetTitle( pWindow, " CONTEXT ", back, fore);
 
 			if( RC_BAD( rc = editContextNode( pWindow, pNd, &bModified)))
 			{
@@ -3022,12 +2841,7 @@ RCODE F_RecEditor::editNode(
 
 		case FLM_BINARY_TYPE:
 		{
-			if( FTXWinSetTitle( pWindow,
-				" BINARY ", uiBack, uiFore) != FTXRC_SUCCESS)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
+			FTXWinSetTitle( pWindow, " BINARY ", back, fore);
 
 			if( RC_BAD( rc = editBinaryNode( pWindow, pNd, &bModified)))
 			{
@@ -3039,7 +2853,7 @@ RCODE F_RecEditor::editNode(
 		default:
 		{
 			displayMessage( "This field cannot be edited",
-				rc, NULL, WPS_RED, WPS_WHITE);
+				rc, NULL, FLM_RED, FLM_WHITE);
 			break;
 		}
 	}
@@ -3082,25 +2896,21 @@ RCODE F_RecEditor::editTextNode(
 	FLMUNICODE *	puzUniStr;
 #define F_RECEDIT_MAX_UNI_CHARS		5000
 	void *			pvMark = NULL;
-	POOL				tmpPool;
+	F_Pool			tmpPool;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	GedPoolInit( &tmpPool, 512);
-	if( (puzUniStr = (FLMUNICODE *)GedPoolAlloc(
-		&tmpPool, F_RECEDIT_MAX_UNI_CHARS * sizeof( FLMUNICODE))) == NULL)
+	tmpPool.poolInit( 512);
+	if( RC_BAD( rc = tmpPool.poolAlloc( 
+		F_RECEDIT_MAX_UNI_CHARS * sizeof( FLMUNICODE),
+		(void **)&puzUniStr)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-	pvMark = GedPoolMark( &tmpPool);
+	
+	pvMark = tmpPool.poolMark();
 
-	if( FTXWinGetCanvasSize( pWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinGetCanvasSize( pWindow, &uiNumCols, &uiNumRows);
 
 	// VISIT: Allow in-line editing (eliminate the need for a separate window)
 
@@ -3121,21 +2931,17 @@ RCODE F_RecEditor::editTextNode(
 			goto Exit;
 		}
 
-		if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinOpen( pWindow);
 
-		if( FTXLineEdit( pWindow, m_pucTmpBuf, F_RECEDIT_BUF_SIZE, uiNumCols,
-			&uiTextSize, &uiTermChar) == FTXRC_SUCCESS)
+		if( RC_OK( FTXLineEdit( pWindow, m_pucTmpBuf, F_RECEDIT_BUF_SIZE, 
+			uiNumCols, &uiTextSize, &uiTermChar)))
 		{
-			if( uiTermChar == WPK_ESCAPE)
+			if( uiTermChar == FKB_ESCAPE)
 			{
 				break;
 			}
 		
-			if( uiTermChar == WPK_ENTER)
+			if( uiTermChar == FKB_ENTER)
 			{
 				if( *m_pucTmpBuf == 0)
 				{
@@ -3168,7 +2974,6 @@ RCODE F_RecEditor::editTextNode(
 
 Exit:
 
-	GedPoolFree( &tmpPool);
 	return( rc);
 }
 
@@ -3190,12 +2995,7 @@ RCODE F_RecEditor::editNumberNode(
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( FTXWinGetCanvasSize( pWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinGetCanvasSize( pWindow, &uiNumCols, &uiNumRows);
 
 	uiTextSize = F_RECEDIT_BUF_SIZE;
 	if( RC_BAD( rc = GedGetNATIVE( pNd, m_pucTmpBuf, &uiTextSize)))
@@ -3203,25 +3003,21 @@ RCODE F_RecEditor::editNumberNode(
 		goto Exit;
 	}
 
-	if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinOpen( pWindow);
 
 	for( ;;)
 	{
 		FTXWinSetCursorPos( pWindow, 0, 0);
 		FTXWinClearLine( pWindow, 0, 0);
-		if( FTXLineEdit( pWindow, m_pucTmpBuf, F_RECEDIT_BUF_SIZE, uiNumCols,
-			&uiTextSize, &uiTermChar) == FTXRC_SUCCESS)
+		if( RC_OK( FTXLineEdit( pWindow, m_pucTmpBuf, F_RECEDIT_BUF_SIZE, 
+			uiNumCols, &uiTextSize, &uiTermChar)))
 		{
-			if( uiTermChar == WPK_ESCAPE)
+			if( uiTermChar == FKB_ESCAPE)
 			{
 				break;
 			}
 		
-			if( uiTermChar == WPK_ENTER)
+			if( uiTermChar == FKB_ENTER)
 			{
 				if( RC_BAD( rc = getNumber( m_pucTmpBuf, &uiVal, &iVal)))
 				{
@@ -3277,12 +3073,7 @@ RCODE F_RecEditor::editContextNode(
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( FTXWinGetCanvasSize( pWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinGetCanvasSize( pWindow, &uiNumCols, &uiNumRows);
 
 	uiTextSize = F_RECEDIT_BUF_SIZE;
 	if( RC_BAD( rc = GedGetRecPtr( pNd, &uiRecPtr)) ||
@@ -3295,25 +3086,21 @@ RCODE F_RecEditor::editContextNode(
 		f_sprintf( (char *)m_pucTmpBuf, "%u", (unsigned)uiRecPtr);
 	}
 	
-	if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinOpen( pWindow);
 
 	for( ;;)
 	{
 		FTXWinSetCursorPos( pWindow, 0, 0);
 		FTXWinClearLine( pWindow, 0, 0);
-		if( FTXLineEdit( pWindow, m_pucTmpBuf, F_RECEDIT_BUF_SIZE, uiNumCols,
-			&uiTextSize, &uiTermChar) == FTXRC_SUCCESS)
+		if( RC_OK( FTXLineEdit( pWindow, m_pucTmpBuf, F_RECEDIT_BUF_SIZE, 
+			uiNumCols, &uiTextSize, &uiTermChar)))
 		{
-			if( uiTermChar == WPK_ESCAPE)
+			if( uiTermChar == FKB_ESCAPE)
 			{
 				break;
 			}
 		
-			if( uiTermChar == WPK_ENTER)
+			if( uiTermChar == FKB_ENTER)
 			{
 				if( *m_pucTmpBuf)
 				{
@@ -3367,12 +3154,12 @@ RCODE F_RecEditor::editBinaryNode(
 	FLMBYTE *		pucMinPtr = NULL;
 	FLMBYTE *		pucScrPtr = NULL;
 	FLMBYTE *		pucRowPtr = NULL;
-	FLMUINT			uiWinBackColor;
-	FLMUINT			uiWinForeColor;
+	eColorType		winBackColor;
+	eColorType		winForeColor;
 	FLMUINT			uiItemsPerRow;
 	FLMUINT			uiValRow = 0;
 	FLMUINT			uiValCol = 0;
-	void *			pPoolMark = GedPoolMark( &m_scratchPool);
+	void *			pPoolMark = m_scratchPool.poolMark();
 	FLMBOOL			bRefreshWindow = TRUE;
 	FLMBOOL			bDoneEditing = FALSE;
 	RCODE				rc = FERR_OK;
@@ -3388,53 +3175,20 @@ RCODE F_RecEditor::editBinaryNode(
 	{
 		displayMessage(
 			"This field is empty",
-			FERR_OK, NULL, WPS_GREEN, WPS_WHITE);
+			FERR_OK, NULL, FLM_GREEN, FLM_WHITE);
 		goto Exit;
 	}
 
-	if( FTXWinGetCanvasSize( pWindow, &uiNumCols,
-		&uiNumRows) != FTXRC_SUCCESS)
+	FTXWinGetCanvasSize( pWindow, &uiNumCols, &uiNumRows);
+	FTXWinGetBackFore( pWindow, &winBackColor, &winForeColor);
+	FTXWinSetCursorType( pWindow, FLM_CURSOR_INVISIBLE);
+	FTXWinSetCursorPos( pWindow, 0, 0);
+	FTXWinClear( pWindow);
+	FTXWinOpen( pWindow);
+	
+	if( RC_BAD( rc = m_scratchPool.poolAlloc( GedValLen( pNd), 
+		(void **)&pucMinPtr)))
 	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinGetBackFore( pWindow, &uiWinBackColor,
-		&uiWinForeColor) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetCursorType( pWindow,
-		WPS_CURSOR_INVISIBLE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetCursorPos( pWindow, 0, 0) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( (pucMinPtr = (FLMBYTE *)GedPoolAlloc( &m_scratchPool, 
-		GedValLen( pNd))) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -3450,8 +3204,8 @@ RCODE F_RecEditor::editBinaryNode(
 			FLMUINT		uiTmpRow = 0;
 			FLMUINT		uiItemCount = 0;
 			FLMUINT		uiMaxRow = uiNumRows - 1;
-			FLMUINT		uiBackColor;
-			FLMUINT		uiForeColor;
+			eColorType	backColor;
+			eColorType	foreColor;
 #define	FEDIT_BINROW_OVHD		6
 			FLMUINT		uiOverhead = FEDIT_BINROW_OVHD;
 
@@ -3477,28 +3231,28 @@ RCODE F_RecEditor::editBinaryNode(
 				{
 					if( m_bMonochrome)
 					{
-						uiBackColor = WPS_LIGHTGRAY;
-						uiForeColor = WPS_BLACK;
+						backColor = FLM_LIGHTGRAY;
+						foreColor = FLM_BLACK;
 					}
 					else
 					{
-						uiBackColor = WPS_RED;
-						uiForeColor = WPS_WHITE;
+						backColor = FLM_RED;
+						foreColor = FLM_WHITE;
 					}
 					uiValRow = uiTmpRow;
 					uiValCol = (FLMUINT)(uiItemCount * 3) + uiOverhead;
 				}
 				else
 				{
-					uiBackColor = uiWinBackColor;
-					uiForeColor = uiWinForeColor;
+					backColor = winBackColor;
+					foreColor = winForeColor;
 				}
 
 				if( !uiItemCount && (pucTmpPtr < pucMaxPtr))
 				{
 					FTXWinSetCursorPos( pWindow, 0, uiTmpRow);
-					FTXWinCPrintf( pWindow, m_bMonochrome ? WPS_BLACK : WPS_GREEN,
-						m_bMonochrome ? WPS_WHITE : WPS_RED,
+					FTXWinCPrintf( pWindow, m_bMonochrome ? FLM_BLACK : FLM_GREEN,
+						m_bMonochrome ? FLM_WHITE : FLM_RED,
 						"%4.4X", (unsigned)(pucTmpPtr - pucMinPtr));
 				}
 
@@ -3507,12 +3261,12 @@ RCODE F_RecEditor::editBinaryNode(
 
 				if( pucTmpPtr < pucMaxPtr)
 				{
-					FTXWinCPrintf( pWindow, uiBackColor, uiForeColor,
+					FTXWinCPrintf( pWindow, backColor, foreColor,
 						"%2.2X", (unsigned)(*pucTmpPtr));
 				}
 				else
 				{
-					FTXWinCPrintf( pWindow, uiBackColor, uiForeColor,
+					FTXWinCPrintf( pWindow, backColor, foreColor,
 						"  ", (unsigned)(*pucTmpPtr));
 				}
 
@@ -3525,12 +3279,12 @@ RCODE F_RecEditor::editBinaryNode(
 				{
 					if( *pucTmpPtr >= 32 && *pucTmpPtr <= 126)
 					{
-						FTXWinCPrintf( pWindow, uiBackColor, uiForeColor,
+						FTXWinCPrintf( pWindow, backColor, foreColor,
 							"%c", (char)(*pucTmpPtr));
 					}
 					else
 					{
-						FTXWinCPrintf( pWindow, uiBackColor, uiForeColor, ".");
+						FTXWinCPrintf( pWindow, backColor, foreColor, ".");
 					}
 
 					if( (pucRowPtr + uiItemsPerRow) <= pucCurPtr)
@@ -3540,7 +3294,7 @@ RCODE F_RecEditor::editBinaryNode(
 				}
 				else
 				{
-					FTXWinCPrintf( pWindow, uiBackColor, uiForeColor, " ");
+					FTXWinCPrintf( pWindow, backColor, foreColor, " ");
 				}
 
 				uiItemCount++;
@@ -3548,7 +3302,7 @@ RCODE F_RecEditor::editBinaryNode(
 				{
 					FTXWinSetCursorPos( pWindow,
 						(FLMUINT)(uiItemsPerRow * 3) + uiOverhead, uiTmpRow);
-					FTXWinCPrintf( pWindow, uiWinBackColor, uiWinForeColor, "|");
+					FTXWinCPrintf( pWindow, winBackColor, winForeColor, "|");
 
 					uiOverhead = FEDIT_BINROW_OVHD;
 					uiTmpRow++;
@@ -3566,18 +3320,17 @@ RCODE F_RecEditor::editBinaryNode(
 			}
 
 			FTXWinSetCursorPos( pWindow, uiValCol, uiValRow);
-			FTXRefresh( m_pScreen->pFtxInfo);
 			bRefreshWindow = FALSE;
 		}
 
-		if( FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pWindow)))
 		{
 			FLMUINT		uiChar;
 
 			FTXWinInputChar( pWindow, &uiChar);
 			switch( uiChar)
 			{
-				case WPK_RIGHT:
+				case FKB_RIGHT:
 				{
 					if( (pucCurPtr + 1) < pucMaxPtr)
 					{
@@ -3587,7 +3340,7 @@ RCODE F_RecEditor::editBinaryNode(
 					break;
 				}
 
-				case WPK_LEFT:
+				case FKB_LEFT:
 				{
 					if( pucCurPtr > pucMinPtr)
 					{
@@ -3597,7 +3350,7 @@ RCODE F_RecEditor::editBinaryNode(
 					break;
 				}
 
-				case WPK_DOWN:
+				case FKB_DOWN:
 				{
 					if( (pucCurPtr + uiItemsPerRow) < pucMaxPtr)
 					{
@@ -3615,7 +3368,7 @@ RCODE F_RecEditor::editBinaryNode(
 					break;
 				}
 
-				case WPK_UP:
+				case FKB_UP:
 				{
 					if( (pucMinPtr + uiItemsPerRow) <= pucCurPtr)
 					{
@@ -3625,7 +3378,7 @@ RCODE F_RecEditor::editBinaryNode(
 					break;
 				}
 
-				case WPK_HOME:
+				case FKB_HOME:
 				{
 					pucCurPtr = pucMinPtr;
 					pucScrPtr = pucMinPtr;
@@ -3647,19 +3400,19 @@ RCODE F_RecEditor::editBinaryNode(
 					break;
 				}
 
-				case WPK_ENTER:
+				case FKB_ENTER:
 				{
 					FLMUINT		uiTextSize;
 					FLMBYTE		pucHexBuf[ 16];
 
 					f_sprintf( (char *)pucHexBuf, "%2.2X", (unsigned)(*pucCurPtr));
 					FTXWinSetCursorPos( pWindow, uiValCol, uiValRow);
-					FTXWinSetCursorType( pWindow, WPS_CURSOR_UNDERLINE);
+					FTXWinSetCursorType( pWindow, FLM_CURSOR_UNDERLINE);
 
-					if( FTXLineEdit( pWindow, (char *)pucHexBuf, 3, 3,
-						&uiTextSize, &uiTermChar) == FTXRC_SUCCESS)
+					if( RC_OK( FTXLineEdit( pWindow, (char *)pucHexBuf, 3, 3,
+						&uiTextSize, &uiTermChar)))
 					{
-						if( uiTermChar == WPK_ENTER)
+						if( uiTermChar == FKB_ENTER)
 						{
 							FLMBYTE		ucVal = 0;
 
@@ -3697,12 +3450,12 @@ RCODE F_RecEditor::editBinaryNode(
 						rc = RC_SET( FERR_FAILURE);
 						goto Exit;
 					}
-					FTXWinSetCursorType( pWindow, WPS_CURSOR_INVISIBLE);
+					FTXWinSetCursorType( pWindow, FLM_CURSOR_INVISIBLE);
 					bRefreshWindow = TRUE;
 					break;
 				}
 
-				case WPK_ESCAPE:
+				case FKB_ESCAPE:
 				{
 					char	pucResponse[ 2];
 
@@ -3713,7 +3466,7 @@ RCODE F_RecEditor::editBinaryNode(
 							"Update field value (Y/N)",
 							pucResponse, 2, &uiTermChar);
 				
-						if( uiTermChar == WPK_ESCAPE)
+						if( uiTermChar == FKB_ESCAPE)
 						{
 							break;
 						}
@@ -3737,7 +3490,7 @@ RCODE F_RecEditor::editBinaryNode(
 
 Exit:
 
-	GedPoolReset( &m_scratchPool, pPoolMark);
+	m_scratchPool.poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -3748,8 +3501,8 @@ RCODE F_RecEditor::displayMessage(
 	const char *		pucMessage,
 	RCODE					rcOfMessage,
 	FLMUINT *			puiTermChar,
-	FLMUINT				uiBackground,
-	FLMUINT				uiForeground)
+	eColorType			background,
+	eColorType			foreground)
 {
 	RCODE				rc = FERR_OK;
 
@@ -3760,8 +3513,8 @@ RCODE F_RecEditor::displayMessage(
 		*puiTermChar = 0;
 	}
 
-	FTXDisplayMessage( m_pScreen, m_bMonochrome ? WPS_LIGHTGRAY : uiBackground,
-		m_bMonochrome ? WPS_BLACK : uiForeground,
+	FTXDisplayMessage( m_pScreen, m_bMonochrome ? FLM_LIGHTGRAY : background,
+		m_bMonochrome ? FLM_BLACK : foreground,
 		pucMessage, FlmErrorString( rcOfMessage), puiTermChar);
 
 	return( rc);
@@ -3786,7 +3539,7 @@ RCODE F_RecEditor::openNewDb( void)
 			goto Exit;
 		}
 
-		if (uiChar == WPK_ESCAPE)
+		if (uiChar == FKB_ESCAPE)
 		{
 			break;
 		}
@@ -3794,7 +3547,7 @@ RCODE F_RecEditor::openNewDb( void)
 			0, NULL, &m_hDefaultDb)))
 		{
 			displayMessage( "Unable to open database", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			m_hDefaultDb = HFDB_NULL;
 			continue;
 		}
@@ -3827,99 +3580,54 @@ RCODE F_RecEditor::requestInput(
 	FLMUINT			uiNumWinRows = 3;
 	FLMUINT			uiNumWinCols;
 	FTX_WINDOW *	pWindow = NULL;
-	F_FileHdl *		pFileHdl = NULL;
+	IF_FileHdl *	pFileHdl = NULL;
 	RCODE				rc = FERR_OK;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
+	FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 	uiNumWinCols = uiNumCols - 8;
 
-	if( FTXWinInit( m_pScreen, uiNumWinCols,
-		uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetScroll( pWindow, FALSE) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+		uiNumWinRows, &pWindow)))
 	{
 		goto Exit;
 	}
 
-	if( FTXWinSetCursorType( pWindow, WPS_CURSOR_UNDERLINE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if( FTXWinSetBackFore( pWindow, m_bMonochrome ? WPS_BLACK : WPS_CYAN,
-		WPS_WHITE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinDrawBorder( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinMove( pWindow, (uiNumCols - uiNumWinCols) / 2,
-		(uiNumRows - uiNumWinRows) / 2) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinOpen( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinSetScroll( pWindow, FALSE);
+	FTXWinSetCursorType( pWindow, FLM_CURSOR_UNDERLINE);
+	FTXWinSetBackFore( pWindow, m_bMonochrome ? FLM_BLACK : FLM_CYAN, FLM_WHITE);
+	FTXWinClear( pWindow);
+	FTXWinDrawBorder( pWindow);
+	FTXWinMove( pWindow, (uiNumCols - uiNumWinCols) / 2,
+		(uiNumRows - uiNumWinRows) / 2);
+	FTXWinOpen( pWindow);
 
 	for( ;;)
 	{
-		if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
+		FTXWinClear( pWindow);
 		FTXWinPrintf( pWindow, "%s: ", pucMessage);
 
-		if( FTXLineEdit( pWindow, pucResponse, uiMaxRespLen, uiMaxRespLen,
-			NULL, puiTermChar) != FTXRC_SUCCESS)
+		if( RC_BAD( rc = FTXLineEdit( pWindow, pucResponse, 
+			uiMaxRespLen, uiMaxRespLen, NULL, puiTermChar)))
 		{
-			rc = RC_SET( FERR_FAILURE);
 			goto Exit;
 		}
 
-		if( *puiTermChar == WPK_F1)
+		if( *puiTermChar == FKB_F1)
 		{
 			FLMUINT		uiBytesRead;
 			char *		pucTmp;
 
-			if( RC_BAD( rc = m_pFileSystem->Open( pucResponse, F_IO_RDONLY,
+			if( RC_BAD( rc = m_pFileSystem->openFile( pucResponse, FLM_IO_RDONLY,
 				&pFileHdl)))
 			{
 				displayMessage( "Unable to open file", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 				continue;
 			}
 
-			if( RC_BAD( rc = pFileHdl->Read( 0, uiMaxRespLen,
+			if( RC_BAD( rc = pFileHdl->read( 0, uiMaxRespLen,
 				pucResponse, &uiBytesRead)))
 			{
 				if( rc == FERR_IO_END_OF_FILE)
@@ -4313,8 +4021,7 @@ RCODE F_RecEditor::addComment(
 	flmAssert( m_bSetupCalled == TRUE);
 
 	f_va_start( args, pucFormat);
-	FTXVSprintf( (int)sizeof( pucBuffer), (char *)pucBuffer,
-		pucFormat, (f_va_list *)&args);
+	f_vsprintf( pucBuffer, pucFormat, &args);
 	f_va_end( args);
 
 	if( RC_BAD( rc = createSystemNode( pCurNd,
@@ -4362,8 +4069,7 @@ RCODE F_RecEditor::addAnnotation(
 	flmAssert( m_bSetupCalled == TRUE);
 
 	f_va_start( args, pucFormat);
-	FTXVSprintf( (int)sizeof( pucBuffer), (char *)pucBuffer, 
-		pucFormat, (f_va_list *)&args);
+	f_vsprintf( (char *)pucBuffer, pucFormat, &args);
 	f_va_end( args);
 
 	if( RC_BAD( rc = createSystemNode( pCurNd,
@@ -5576,7 +5282,7 @@ RCODE F_RecEditor::modifyRecordInDb(
 	NODE *				pRootNd = NULL;
 	NODE *				pCleanRootNd;
 	FlmRecord *			pTmpRecord = NULL;
-	void *				pPoolMark = GedPoolMark( &m_scratchPool);
+	void *				pPoolMark = m_scratchPool.poolMark();
 	RCODE					rc = FERR_OK;
 
 	flmAssert( m_bSetupCalled == TRUE);
@@ -5607,7 +5313,7 @@ RCODE F_RecEditor::modifyRecordInDb(
 		goto Exit;
 	}
 
-	if( (pTmpRecord = new FlmRecord) == NULL)
+	if( (pTmpRecord = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -5647,8 +5353,9 @@ Exit:
 
 	if( pPoolMark)
 	{
-		GedPoolReset( &m_scratchPool, pPoolMark);
+		m_scratchPool.poolReset( pPoolMark);
 	}
+	
 	if (pTmpRecord)
 	{
 		pTmpRecord->Release();
@@ -5670,7 +5377,7 @@ RCODE F_RecEditor::addRecordToDb(
 	NODE *				pRootNd = NULL;
 	NODE *				pNewRootNd = NULL;
 	NODE *				pCleanRootNd;
-	void *				pPoolMark = GedPoolMark( &m_scratchPool);
+	void *				pPoolMark = m_scratchPool.poolMark();
 	FlmRecord *			pTmpRecord = NULL;
 	RCODE					rc = FERR_OK;
 	FLMUINT				uiFlags;
@@ -5691,7 +5398,7 @@ RCODE F_RecEditor::addRecordToDb(
 		goto Exit;
 	}
 
-	if( (pTmpRecord = new FlmRecord) == NULL)
+	if( (pTmpRecord = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -5800,7 +5507,7 @@ Exit:
 
 	if( pPoolMark)
 	{
-		GedPoolReset( &m_scratchPool, pPoolMark);
+		m_scratchPool.poolReset( pPoolMark);
 	}
 
 	if (pTmpRecord)
@@ -5824,7 +5531,7 @@ RCODE F_RecEditor::retrieveRecordsFromDb(
 	NODE *				pFirstRec = NULL;
 	NODE *				pSearchStart = NULL;
 	FlmRecord *			pTmpRec = NULL;
-	void *				pvMark = GedPoolMark( &m_scratchPool);
+	void *				pvMark = m_scratchPool.poolMark();
 	FTX_WINDOW *		pWindow = NULL;
 	FLMBOOL				bDone = FALSE;
 	FLMUINT				uiRecCount = 0;
@@ -5851,7 +5558,7 @@ RCODE F_RecEditor::retrieveRecordsFromDb(
 	{
 		if( RC_BAD( rc = createStatusWindow(
 			" Record Retrieval Status (Press ESC to Interrupt) ",
-			WPS_GREEN, WPS_WHITE, NULL, NULL, &pWindow)))
+			FLM_GREEN, FLM_WHITE, NULL, NULL, &pWindow)))
 		{
 			goto Exit;
 		}
@@ -5917,15 +5624,13 @@ RCODE F_RecEditor::retrieveRecordsFromDb(
 			FTXWinPrintf( pWindow, "Last Record ID   : %u", (unsigned)uiRecId);
 			FTXWinClearToEOL( pWindow);
 
-			/*
-			Test for the escape key
-			*/
+			// Test for the escape key
 
-			if( FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+			if( RC_OK( FTXWinTestKB( pWindow)))
 			{
 				FLMUINT	uiChar;
 				FTXWinInputChar( pWindow, &uiChar);
-				if( uiChar == WPK_ESCAPE)
+				if( uiChar == FKB_ESCAPE)
 				{
 					break;
 				}
@@ -5955,7 +5660,8 @@ RCODE F_RecEditor::retrieveRecordsFromDb(
 			uiRecCount++;
 			uiRecId = pTmpRec->getID();
 			
-			if( RC_BAD( rc = pTmpRec->exportRecord( m_hDefaultDb, &m_scratchPool, &pGedRec)))
+			if( RC_BAD( rc = pTmpRec->exportRecord( m_hDefaultDb, 
+				&m_scratchPool, &pGedRec)))
 			{
 				goto Exit;
 			}
@@ -6001,7 +5707,7 @@ RCODE F_RecEditor::retrieveRecordsFromDb(
 			}
 		}
 
-		GedPoolReset( &m_scratchPool, pvMark);
+		m_scratchPool.poolReset( pvMark);
 		f_yieldCPU();
 	}
 
@@ -6022,7 +5728,7 @@ Exit:
 		FlmCursorFree( &hCursor);
 	}
 
-	GedPoolReset( &m_scratchPool, pvMark);
+	m_scratchPool.poolReset( pvMark);
 
 	return( rc);
 }
@@ -6040,7 +5746,7 @@ RCODE F_RecEditor::adHocQuery(
 	FLMUINT				uiTermChar;
 	FlmRecord *			pRecord = NULL;
 	NODE *				pGedRec;
-	POOL *				pPool = &m_scratchPool;
+	F_Pool *				pPool = &m_scratchPool;
 	void *				pPoolMark = NULL;
 	FLMUINT				uiContainer;
 	FLMUINT				uiIndex;
@@ -6054,7 +5760,7 @@ RCODE F_RecEditor::adHocQuery(
 	RCODE					lastError = FERR_OK;
 	RCODE					rc = FERR_OK;
 
-	pPoolMark = GedPoolMark( pPool);
+	pPoolMark = pPool->poolMark();
 
 	if( !bPurge)
 	{
@@ -6067,7 +5773,7 @@ RCODE F_RecEditor::adHocQuery(
 			m_pucAdHocQuery, sizeof( m_pucAdHocQuery), &uiTermChar);
 	}
 
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -6092,7 +5798,7 @@ RCODE F_RecEditor::adHocQuery(
 		goto Exit;
 	}
 
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -6107,7 +5813,7 @@ RCODE F_RecEditor::adHocQuery(
 		goto Exit;
 	}
 
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
@@ -6117,7 +5823,8 @@ RCODE F_RecEditor::adHocQuery(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = FlmCursorSetMode( hCursor, FLM_WILD | FLM_NOCASE)))
+	if( RC_BAD( rc = FlmCursorSetMode( hCursor, 
+		FLM_COMP_WILD | FLM_COMP_CASE_INSENSITIVE)))
 	{
 		goto Exit;
 	}
@@ -6150,7 +5857,7 @@ RCODE F_RecEditor::adHocQuery(
 
 	if( RC_BAD( rc = createStatusWindow(
 		" Query Status (Press ESC to Interrupt) ",
-		WPS_GREEN, WPS_WHITE, NULL, NULL, &pWindow)))
+		FLM_GREEN, FLM_WHITE, NULL, NULL, &pWindow)))
 	{
 		goto Exit;
 	}
@@ -6167,11 +5874,11 @@ RCODE F_RecEditor::adHocQuery(
 		Test for the escape key
 		*/
 
-		if( FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pWindow)))
 		{
 			FLMUINT	uiChar;
 			FTXWinInputChar( pWindow, &uiChar);
-			if( uiChar == WPK_ESCAPE)
+			if( uiChar == FKB_ESCAPE)
 			{
 				break;
 			}
@@ -6290,7 +5997,8 @@ RCODE F_RecEditor::adHocQuery(
 			Insert the record into the buffer
 			*/
 
-			if( RC_BAD( rc = pRecord->exportRecord( m_hDefaultDb,	&m_scratchPool, &pGedRec)))
+			if( RC_BAD( rc = pRecord->exportRecord( m_hDefaultDb,	
+				&m_scratchPool, &pGedRec)))
 			{
 				goto Exit;
 			}
@@ -6301,7 +6009,7 @@ RCODE F_RecEditor::adHocQuery(
 			}
 		}
 
-		GedPoolReset( pPool, pPoolMark);
+		pPool->poolReset( pPoolMark);
 		uiRecCount++;
 		f_yieldCPU();
 #ifdef FLM_WIN
@@ -6340,8 +6048,7 @@ Exit:
 		FTXWinOpen( m_pEditWindow);
 	}
 
-	GedPoolReset( pPool, pPoolMark);
-
+	pPool->poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -6468,7 +6175,7 @@ Exit:
 Desc:	Creates a copy of a record w/o any system nodes
 *****************************************************************************/
 RCODE F_RecEditor::copyCleanRecord(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pRecNd,
 	NODE **		ppCopiedRec)
 {
@@ -6496,7 +6203,7 @@ Exit:
 Desc:	Creates a copy of a subtree w/o any system nodes
 *****************************************************************************/
 RCODE F_RecEditor::copyCleanTree(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pTreeNd,
 	NODE **		ppCopiedTree)
 {
@@ -6546,7 +6253,7 @@ Desc:	Creates a copy of the current editor buffer starting at a
 		specified node
 *****************************************************************************/
 RCODE F_RecEditor::copyBuffer(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pStartNd,
 	NODE **		ppNewTree)
 {
@@ -6817,10 +6524,10 @@ RCODE F_RecEditor::getDictionaryName(
 	{
 		FLMBOOL	bSave;
 
-		bSave = m_pScreen->pFtxInfo->bRefreshDisabled;
-		FTXSetRefreshState( m_pScreen->pFtxInfo, FALSE);
+		bSave = FTXRefreshDisabled();
+		FTXSetRefreshState( FALSE);
 		openNewDb();
-		FTXSetRefreshState( m_pScreen->pFtxInfo, bSave);
+		FTXSetRefreshState( bSave);
 	}
 
 	*pucName = 0;
@@ -6910,8 +6617,8 @@ RCODE F_RecEditor::refreshNameTable( void)
 	NODE *					pTmpNd = NULL;
 	NODE *					pPriorNd = NULL;
 	FLMUINT					uiFlags;
-	POOL *					pScratchPool = &m_scratchPool;
-	void *					pPoolMark = GedPoolMark( &m_scratchPool);
+	F_Pool *					pScratchPool = &m_scratchPool;
+	void *					pPoolMark = m_scratchPool.poolMark();
 	DBE_NAME_TABLE_INFO	nametableInfo;
 	FLMUNICODE				uzItemName[ 128];
 	FLMUINT					uiId;
@@ -6934,7 +6641,7 @@ RCODE F_RecEditor::refreshNameTable( void)
 
 	if( !m_pNameList)
 	{
-		if( (m_pNameList = new F_RecEditor) == NULL)
+		if( (m_pNameList = f_new F_RecEditor) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
@@ -6980,7 +6687,7 @@ RCODE F_RecEditor::refreshNameTable( void)
 	{
 		if( m_bOwnNameTable)
 		{
-			if( (m_pNameTable = new F_NameTable) == NULL)
+			if( (m_pNameTable = f_new F_NameTable) == NULL)
 			{
 				rc = RC_SET( FERR_MEM);
 				goto Exit;
@@ -7053,7 +6760,7 @@ RCODE F_RecEditor::refreshNameTable( void)
 
 Exit:
 
-	GedPoolReset( &m_scratchPool, pPoolMark);
+	m_scratchPool.poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -7072,8 +6779,8 @@ RCODE F_RecEditor::selectContainer(
 	FLMUINT				uiType;
 	FLMUINT				uiSubType;
 	FLMUINT				uiNextPos;
-	POOL *				pScratchPool = &m_scratchPool;
-	void *				pPoolMark = GedPoolMark( &m_scratchPool);
+	F_Pool *				pScratchPool = &m_scratchPool;
+	void *				pPoolMark = m_scratchPool.poolMark();
 	F_RecEditor *		pContainerList = NULL;
 	RCODE					rc = FERR_OK;
 
@@ -7101,7 +6808,7 @@ RCODE F_RecEditor::selectContainer(
 		}
 	}
 
-	if( (pContainerList = new F_RecEditor) == NULL)
+	if( (pContainerList = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -7256,7 +6963,7 @@ Exit:
 		pContainerList = NULL;
 	}
 
-	GedPoolReset( &m_scratchPool, pPoolMark);
+	m_scratchPool.poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -7275,8 +6982,8 @@ RCODE F_RecEditor::selectIndex(
 	NODE *				pGedRec;
 	FLMUINT				uiDispFlags;
 	FLMUINT				uiFoundContainer;
-	POOL *				pPool = &m_scratchPool;
-	void *				pPoolMark = GedPoolMark( &m_scratchPool);
+	F_Pool *				pPool = &m_scratchPool;
+	void *				pPoolMark = m_scratchPool.poolMark();
 	FlmRecord *			pDictRec = NULL;
 	F_RecEditor *		pIndexList = NULL;
 	HFCURSOR				hCursor = HFCURSOR_NULL;
@@ -7299,7 +7006,7 @@ RCODE F_RecEditor::selectIndex(
 		*puiTermChar = 0;
 	}
 
-	if( (pIndexList = new F_RecEditor) == NULL)
+	if( (pIndexList = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -7515,7 +7222,7 @@ RCODE F_RecEditor::selectIndex(
 		*puiTermChar = pIndexList->getLastKey();
 	}
 
-	if( pIndexList->getLastKey() == WPK_ESCAPE)
+	if( pIndexList->getLastKey() == FKB_ESCAPE)
 	{
 		rc = RC_SET( FERR_NOT_FOUND);
 		goto Exit;
@@ -7588,7 +7295,7 @@ Exit:
 		pIndexList = NULL;
 	}
 
-	GedPoolReset( pPool, pPoolMark);
+	pPool->poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -7608,7 +7315,7 @@ RCODE F_RecEditor::indexList( void)
 	FLMUINT				uiIndex;
 	FLMUINT				uiIxContainer;
 	FLMBOOL				bResetTree = TRUE;
-	POOL					tmpPool;
+	F_Pool				tmpPool;
 	FlmRecord *			pSrchKey = NULL;
 	FlmRecord *			pSaveSrchKey;
 	FLMUINT				uiSrchDrn;
@@ -7632,21 +7339,21 @@ RCODE F_RecEditor::indexList( void)
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	GedPoolInit( &tmpPool, 512);
+	tmpPool.poolInit( 512);
 
 	if( RC_BAD( rc = selectIndex( 0, 0, &uiIndex, &uiIxContainer, &uiTermChar)))
 	{
 		goto Exit;
 	}
 
-	if( uiTermChar != WPK_ENTER)
+	if( uiTermChar != FKB_ENTER)
 	{
 		goto Exit;
 	}
 
 	// Initialize the key editor
 
-	if( (pKeyEditor = new F_RecEditor) == NULL)
+	if( (pKeyEditor = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -7708,7 +7415,7 @@ RCODE F_RecEditor::indexList( void)
 		goto Exit;
 	}
 
-	GedPoolReset( &tmpPool, NULL);
+	tmpPool.poolReset();
 	pTmpRec->Release();
 	pTmpRec = NULL;
 
@@ -7752,7 +7459,7 @@ RCODE F_RecEditor::indexList( void)
 		goto Exit;
 	}
 
-	GedPoolReset( &tmpPool, NULL);
+	tmpPool.poolReset();
 	pTmpRec->Release();
 	pTmpRec = NULL;
 
@@ -7760,14 +7467,14 @@ RCODE F_RecEditor::indexList( void)
 
 ix_list_retry:
 
-	GedPoolReset( &tmpPool, NULL);
+	tmpPool.poolReset();
 
 	if( RC_BAD( rc = pKeyEditor->interactiveEdit( m_uiULX, m_uiULY, m_uiLRX, m_uiLRY)))
 	{
 		goto Exit;
 	}
 
-	if( pKeyEditor->getLastKey() == WPK_ESCAPE)
+	if( pKeyEditor->getLastKey() == FKB_ESCAPE)
 	{
 		goto Exit;
 	}
@@ -7782,7 +7489,7 @@ ix_list_retry:
 
 	if( RC_BAD( rc = createStatusWindow(
 		" Key Retrieval Status (Press ESC to Interrupt) ",
-		WPS_GREEN, WPS_WHITE, NULL, NULL, &pStatusWindow)))
+		FLM_GREEN, FLM_WHITE, NULL, NULL, &pStatusWindow)))
 	{
 		goto Exit;
 	}
@@ -7790,7 +7497,7 @@ ix_list_retry:
 
 	// Get the FROM Key
 
-	if( (pFromKeyRec = new FlmRecord) == NULL)
+	if( (pFromKeyRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -7820,7 +7527,7 @@ ix_list_retry:
 
 	// Get the UNTIL key
 
-	if( (pUntilKeyRec = new FlmRecord) == NULL)
+	if( (pUntilKeyRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -7899,11 +7606,11 @@ ix_list_retry:
 
 		// Test for the escape key
 
-		if( FTXWinTestKB( pStatusWindow) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( pStatusWindow)))
 		{
 			FLMUINT	uiChar;
 			FTXWinInputChar( pStatusWindow, &uiChar);
-			if( uiChar == WPK_ESCAPE)
+			if( uiChar == FKB_ESCAPE)
 			{
 				break;
 			}
@@ -7991,7 +7698,8 @@ ix_list_retry:
 		{
 			goto Exit;
 		}
-		GedPoolReset( &tmpPool, NULL);
+		
+		tmpPool.poolReset();
 
 		// Swap the search key and found key - preparation for
 		// the next search.
@@ -8025,7 +7733,7 @@ ix_list_retry:
 	{
 		displayMessage(
 			"No Keys Found Within Specified Range", rc,
-			NULL, WPS_RED, WPS_WHITE);
+			NULL, FLM_RED, FLM_WHITE);
 		pKeyEditor->setCurrentNode( pKeyEditor->getTree());
 		goto ix_list_retry;
 	}
@@ -8072,14 +7780,12 @@ Exit:
 		pKeyEditor->Release();
 	}
 
-	GedPoolFree( &tmpPool);
-
 	if( RC_BAD( rc))
 	{
 		if( rc == FERR_EOF_HIT)
 		{
 			displayMessage( "The index is empty", rc,
-				NULL, WPS_RED, WPS_WHITE);
+				NULL, FLM_RED, FLM_WHITE);
 			rc = FERR_OK;
 		}
 	}
@@ -8100,10 +7806,10 @@ RCODE F_RecEditor::fileManager(
 	FLMUINT				uiFlags;
 	NODE *				pRootNd = NULL;
 	NODE *				pTmpNd = NULL;
-	POOL *				pPool = &m_scratchPool;
-	void *				pPoolMark = GedPoolMark( &m_scratchPool);
+	F_Pool *				pPool = &m_scratchPool;
+	void *				pPoolMark = m_scratchPool.poolMark();
 	F_RecEditor *		pPathList = NULL;
-	F_DirHdl *			pDirectory = NULL;
+	IF_DirHdl *			pDirectory = NULL;
 	char					szDirPath [F_PATH_MAX_SIZE];
 	char					szInitPath [F_PATH_MAX_SIZE];
 	char					szTmpPath [F_PATH_MAX_SIZE];
@@ -8122,7 +7828,7 @@ RCODE F_RecEditor::fileManager(
 		*puiTermChar = 0;
 	}
 
-	if( (pPathList = new F_RecEditor) == NULL)
+	if( (pPathList = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -8162,7 +7868,7 @@ refresh_list:
 		pPathList->requestInput(
 			"Path", pucResponse, sizeof( pucResponse), &uiTermChar);
 
-		if( uiTermChar != WPK_ENTER)
+		if( uiTermChar != FKB_ENTER)
 		{
 			if( puiTermChar)
 			{
@@ -8179,7 +7885,7 @@ refresh_list:
 	Create a directory object
 	*/
 
-	if( m_pFileSystem->IsDir( pszInitialPath))
+	if( m_pFileSystem->isDir( pszInitialPath))
 	{
 		f_strcpy( szDirPath, pszInitialPath);
 
@@ -8188,16 +7894,17 @@ refresh_list:
 	}
 	else
 	{
-		if( RC_BAD( rc = f_pathReduce( pszInitialPath, szDirPath, pucFileName)))
+		if( RC_BAD( rc = m_pFileSystem->pathReduce( 
+			pszInitialPath, szDirPath, pucFileName)))
 		{
 			goto Exit;
 		}
 		pszInitialPath = &szDirPath [0];
-		if( RC_BAD( m_pFileSystem->Exists( szDirPath)))
+		if( RC_BAD( m_pFileSystem->doesFileExist( szDirPath)))
 		{
 			rc = RC_SET( FERR_IO_PATH_NOT_FOUND);
 			displayMessage( "The specified path is invalid", rc,
-				NULL, WPS_RED, WPS_WHITE);
+				NULL, FLM_RED, FLM_WHITE);
 			goto Exit;
 		}
 	}
@@ -8208,7 +7915,7 @@ refresh_list:
 		pDirectory = NULL;
 	}
 
-	if( RC_BAD( rc = m_pFileSystem->OpenDir(
+	if( RC_BAD( rc = m_pFileSystem->openDir(
 		pszInitialPath, (char *)pucFileName, &pDirectory )))
 	{
 		goto Exit;
@@ -8218,9 +7925,9 @@ refresh_list:
 	Find all files in the directory
 	*/
 
-	for( rc = pDirectory->Next(); ! RC_BAD( rc) ; rc = pDirectory->Next() )
+	for( rc = pDirectory->next(); ! RC_BAD( rc) ; rc = pDirectory->next())
 	{
-		const char *	pucItemName = pDirectory->CurrentItemName();
+		const char *	pucItemName = pDirectory->currentItemName();
 
 		if( (pTmpNd = GedNodeMake( pPool, 0xFFFF, &rc)) == NULL)
 		{
@@ -8235,7 +7942,7 @@ refresh_list:
 			goto Exit;
 		}
 
-		if( pDirectory->CurrentItemIsDir())
+		if( pDirectory->currentItemIsDir())
 		{
 			pPathList->insertRecord( pTmpNd, &pRootNd, NULL);
 			pPathList->addAnnotation( pRootNd, "DIR");
@@ -8258,7 +7965,7 @@ refresh_list:
 	Add the parent directory
 	*/
 
-	if( RC_BAD( rc = f_pathReduce( szDirPath, szTmpPath, NULL)))
+	if( RC_BAD( rc = m_pFileSystem->pathReduce( szDirPath, szTmpPath, NULL)))
 	{
 		goto Exit;
 	}
@@ -8342,7 +8049,8 @@ refresh_list:
 
 			if( !f_strcmp( pucTmpBuf, ".."))
 			{
-				if( RC_BAD( rc = f_pathReduce( szDirPath, pszSelectedPath, NULL)))
+				if( RC_BAD( rc = m_pFileSystem->pathReduce( 
+					szDirPath, pszSelectedPath, NULL)))
 				{
 					goto Exit;
 				}
@@ -8350,13 +8058,14 @@ refresh_list:
 			else
 			{
 				f_strcpy( pszSelectedPath, szDirPath);
-				if( RC_BAD( rc = f_pathAppend( pszSelectedPath, pucTmpBuf)))
+				if( RC_BAD( rc = m_pFileSystem->pathAppend( 
+					pszSelectedPath, pucTmpBuf)))
 				{
 					goto Exit;
 				}
 			}
 
-			if( m_pFileSystem->IsDir( pszSelectedPath))
+			if( m_pFileSystem->isDir( pszSelectedPath))
 			{
 				f_strcpy( pszInitialPath, pszSelectedPath);
 				pucTitle = NULL;
@@ -8387,7 +8096,7 @@ Exit:
 		pDirectory = NULL;
 	}
 
-	GedPoolReset( pPool, pPoolMark);
+	pPool->poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -8402,9 +8111,9 @@ RCODE F_RecEditor::fileViewer(
 	char *				pucTmpBuf = NULL;
 	char *				pucTmp = NULL;
 	char *				pucLine = NULL;
-	POOL					pool;
+	F_Pool				pool;
 	F_RecEditor *		pViewer = NULL;
-	F_FileHdl *			pFileHdl = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
 	NODE *				pTmpNd = NULL;
 	NODE *				pRootNd = NULL;
 	FLMUINT				uiFileOffset;
@@ -8417,19 +8126,19 @@ RCODE F_RecEditor::fileViewer(
 	flmAssert( m_bSetupCalled == TRUE);
 	flmAssert( m_pScreen != NULL);
 
-	GedPoolInit( &pool, 2048);
-	if( (pucTmpBuf = (char *)GedPoolAlloc( &pool, 2048)) == NULL)
+	pool.poolInit( 2048);
+	
+	if( RC_BAD( rc = pool.poolAlloc( 2048, (void **)&pucTmpBuf)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	if( puiTermChar)
 	{
 		*puiTermChar = 0;
 	}
 
-	if( (pViewer = new F_RecEditor) == NULL)
+	if( (pViewer = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -8444,11 +8153,11 @@ RCODE F_RecEditor::fileViewer(
 	pViewer->setReadOnly( TRUE);
 	pViewer->setShutdown( m_pbShutdown);
 
-	if( RC_BAD( rc = m_pFileSystem->Open( pszFilePath, F_IO_RDONLY,
+	if( RC_BAD( rc = m_pFileSystem->openFile( pszFilePath, FLM_IO_RDONLY,
 		&pFileHdl)))
 	{
 		displayMessage( "Unable to open file", rc,
-			NULL, WPS_RED, WPS_WHITE);
+			NULL, FLM_RED, FLM_WHITE);
 		goto Exit;
 	}
 
@@ -8459,7 +8168,7 @@ RCODE F_RecEditor::fileViewer(
 	{
 		if( bReadFromDisk)
 		{
-			if( RC_BAD( rc = pFileHdl->Read( uiFileOffset, 2048 - uiBufOffset,
+			if( RC_BAD( rc = pFileHdl->read( uiFileOffset, 2048 - uiBufOffset,
 				&pucTmpBuf[ uiBufOffset], &uiBytesRead)))
 			{
 				if( rc == FERR_IO_END_OF_FILE)
@@ -8484,7 +8193,7 @@ RCODE F_RecEditor::fileViewer(
 			{
 				rc = RC_SET( FERR_FAILURE);
 				displayMessage( "Unable to open file", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 				goto Exit;
 			}
 			else if( *pucTmp == '\t')
@@ -8611,7 +8320,6 @@ Exit:
 		pFileHdl = NULL;
 	}
 
-	GedPoolFree( &pool);
 	return( rc);
 }
 
@@ -8800,14 +8508,14 @@ RCODE F_RecEditor::showHelp(
 	NODE *				pRootNd = NULL;
 	NODE *				pTmpNd = NULL;
 	FLMUINT				uiFlags;
-	POOL *				pScratchPool = &m_scratchPool;
-	void *				pPoolMark = GedPoolMark( &m_scratchPool);
+	F_Pool *				pScratchPool = &m_scratchPool;
+	void *				pPoolMark = m_scratchPool.poolMark();
 	F_RecEditor *		pHelpList = NULL;
 	RCODE					rc = FERR_OK;
 
 	flmAssert( m_bSetupCalled == TRUE);
 
-	if( (pHelpList = new F_RecEditor) == NULL)
+	if( (pHelpList = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -8824,8 +8532,7 @@ RCODE F_RecEditor::showHelp(
 	pHelpList->setTitle( "HELP");
 	pHelpList->setKeyHook( f_RecEditorSelectionKeyHook, 0);
 
-	if( (pTmpNd = GedNodeMake( pScratchPool,
-		1, &rc)) == NULL)
+	if( (pTmpNd = GedNodeMake( pScratchPool, 1, &rc)) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -8846,63 +8553,63 @@ RCODE F_RecEditor::showHelp(
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_UP, (void *)"UP              Position cursor to the previous field",
+		FKB_UP, (void *)"UP              Position cursor to the previous field",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_DOWN, (void *)"DOWN            Position cursor to the next field",
+		FKB_DOWN, (void *)"DOWN            Position cursor to the next field",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_PGUP, (void *)"PG UP           Position cursor to the previous page",
+		FKB_PGUP, (void *)"PG UP           Position cursor to the previous page",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_PGDN, (void *)"PG DOWN         Position cursor to the next page",
+		FKB_PGDN, (void *)"PG DOWN         Position cursor to the next page",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_CTRL_DOWN, (void *)"CTRL-DOWN, >    Position cursor to the next record",
+		FKB_CTRL_DOWN, (void *)"CTRL-DOWN, >    Position cursor to the next record",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_CTRL_UP, (void *)"CTRL-UP, <      Position cursor to the previous record",
+		FKB_CTRL_UP, (void *)"CTRL-UP, <      Position cursor to the previous record",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_HOME, (void *)"HOME            Position cursor to the top of the buffer",
+		FKB_HOME, (void *)"HOME            Position cursor to the top of the buffer",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_END, (void *)"END             Position cursor to the bottom of the buffer",
+		FKB_END, (void *)"END             Position cursor to the bottom of the buffer",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_DELETE, (void *)"DEL             Delete the current field or record",
+		FKB_DELETE, (void *)"DEL             Delete the current field or record",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -8916,91 +8623,91 @@ RCODE F_RecEditor::showHelp(
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_A, (void *)"ALT-A           Add the current record to the database",
+		FKB_ALT_A, (void *)"ALT-A           Add the current record to the database",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_C, (void *)"ALT-C           Clear all records from the buffer",
+		FKB_ALT_C, (void *)"ALT-C           Clear all records from the buffer",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_D, (void *)"ALT-D           Delete records by ID or via a query",
+		FKB_ALT_D, (void *)"ALT-D           Delete records by ID or via a query",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_F, (void *)"ALT-F           Find records in the database via a query",
+		FKB_ALT_F, (void *)"ALT-F           Find records in the database via a query",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_I, (void *)"ALT-I           Show index keys and references",
+		FKB_ALT_I, (void *)"ALT-I           Show index keys and references",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_M, (void *)"ALT-M           Update the current record in the database",
+		FKB_ALT_M, (void *)"ALT-M           Update the current record in the database",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_R, (void *)"ALT-R           Retrieve a record from the database",
+		FKB_ALT_R, (void *)"ALT-R           Retrieve a record from the database",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_S, (void *)"ALT-S           Re-read the current record from the database (sync)",
+		FKB_ALT_S, (void *)"ALT-S           Re-read the current record from the database (sync)",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_T, (void *)"ALT-T           Transaction operations",
+		FKB_ALT_T, (void *)"ALT-T           Transaction operations",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_F3, (void *)"ALT-F3          Search the buffer for a string",
+		FKB_ALT_F3, (void *)"ALT-F3          Search the buffer for a string",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_F3, (void *)"F3              Find next",
+		FKB_F3, (void *)"F3              Find next",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ALT_F10, (void *)"ALT-F10         Toggle display colors on/off",
+		FKB_ALT_F10, (void *)"ALT-F10         Toggle display colors on/off",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_SF3, (void *)"SHIFT-F3        Find previous",
+		FKB_SF3, (void *)"SHIFT-F3        Find previous",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -9014,14 +8721,14 @@ RCODE F_RecEditor::showHelp(
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_INSERT, (void *)"INSERT          Insert a new field or record",
+		FKB_INSERT, (void *)"INSERT          Insert a new field or record",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ENTER, (void *)"ENTER           Edit the current field's value",
+		FKB_ENTER, (void *)"ENTER           Edit the current field's value",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -9035,21 +8742,21 @@ RCODE F_RecEditor::showHelp(
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_F8, (void *)"F8              Index manager",
+		FKB_F8, (void *)"F8              Index manager",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_F9, (void *)"F9              Memory manager",
+		FKB_F9, (void *)"F9              Memory manager",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pScratchPool, pRootNd,
-		WPK_ESCAPE, (void *)"ESC, ALT-Q      Exit",
+		FKB_ESCAPE, (void *)"ESC, ALT-Q      Exit",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -9125,7 +8832,7 @@ RCODE F_RecEditor::showHelp(
 	if( puiKeyRV)
 	{
 		*puiKeyRV = 0;
-		if( pHelpList->getLastKey() == WPK_ENTER)
+		if( pHelpList->getLastKey() == FKB_ENTER)
 		{
 			while( pTmpNd)
 			{
@@ -9152,7 +8859,7 @@ Exit:
 		pHelpList = NULL;
 	}
 
-	GedPoolReset( &m_scratchPool, pPoolMark);
+	m_scratchPool.poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -9161,8 +8868,8 @@ Desc:	Creates a window for displaying an operation's status
 *****************************************************************************/
 RCODE F_RecEditor::createStatusWindow(
 	const char *		pucTitle,
-	FLMUINT				uiBack,
-	FLMUINT				uiFore,
+	eColorType			back,
+	eColorType			fore,
 	FLMUINT *			puiCols,
 	FLMUINT *			puiRows,
 	FTX_WINDOW **		ppWindow)
@@ -9176,16 +8883,7 @@ RCODE F_RecEditor::createStatusWindow(
 
 	*ppWindow = NULL;
 
-	/*
-	Create a status window
-	*/
-
-	if( FTXScreenGetSize( m_pScreen,
-		&uiNumCols, &uiNumRows) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXScreenGetSize( m_pScreen, &uiNumCols, &uiNumRows);
 
 	if( puiCols)
 	{
@@ -9203,10 +8901,9 @@ RCODE F_RecEditor::createStatusWindow(
 		uiNumWinRows = uiNumRows / 2;
 	}
 
-	if( FTXWinInit( m_pScreen, uiNumWinCols,
-		uiNumWinRows, &pWindow) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( m_pScreen, uiNumWinCols,
+		uiNumWinRows, &pWindow)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -9220,69 +8917,29 @@ RCODE F_RecEditor::createStatusWindow(
 		*puiRows = uiNumWinRows;
 	}
 
-	if( FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
-		(FLMUINT)((uiNumRows - uiNumWinRows) / 2)) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetScroll( pWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if( FTXWinSetLineWrap( pWindow, FALSE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
-
-	if( FTXWinSetCursorType( pWindow,
-		WPS_CURSOR_INVISIBLE) != FTXRC_SUCCESS)
-	{
-		goto Exit;
-	}
+	FTXWinMove( pWindow, (FLMUINT)((uiNumCols - uiNumWinCols) / 2),
+		(FLMUINT)((uiNumRows - uiNumWinRows) / 2));
+	FTXWinSetScroll( pWindow, FALSE);
+	FTXWinSetLineWrap( pWindow, FALSE);
+	FTXWinSetCursorType( pWindow, FLM_CURSOR_INVISIBLE);
 
 	if( m_bMonochrome)
 	{
-		uiBack = WPS_LIGHTGRAY;
-		uiFore = WPS_BLACK;
-		if( FTXWinSetBackFore( pWindow,
-			uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		back = FLM_LIGHTGRAY;
+		fore = FLM_BLACK;
+		FTXWinSetBackFore( pWindow, back, fore);
 	}
 	else
 	{
-		if( FTXWinSetBackFore( pWindow,
-			uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinSetBackFore( pWindow, back, fore);
 	}
 
-	if( FTXWinClear( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinDrawBorder( pWindow) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
+	FTXWinClear( pWindow);
+	FTXWinDrawBorder( pWindow);
 
 	if( pucTitle)
 	{
-		if( FTXWinSetTitle( pWindow, pucTitle, uiBack, uiFore) != FTXRC_SUCCESS)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
+		FTXWinSetTitle( pWindow, pucTitle, back, fore);
 	}
 
 	*ppWindow = pWindow;
@@ -9412,7 +9069,7 @@ RCODE f_RecEditorDefaultLinkHook(
 	void *				UserData,
 	FLMUINT				uiLinkKey)
 {
-	POOL				pool;
+	F_Pool			pool;
 	FLMUINT			uiDrn;
 	FlmRecord *		pRecord = NULL;
 	NODE *			pNewNd = NULL;
@@ -9422,7 +9079,7 @@ RCODE f_RecEditorDefaultLinkHook(
 	F_UNREFERENCED_PARM( UserData);
 	F_UNREFERENCED_PARM( uiLinkKey);
 
-	GedPoolInit( &pool, 2048);
+	pool.poolInit( 2048);
 
 	if( GedValType( pLinkNd) == FLM_CONTEXT_TYPE)
 	{
@@ -9472,7 +9129,6 @@ Exit:
 		pRecord = NULL;
 	}
 
-	GedPoolFree( &pool);
 	return( rc);
 }
 
@@ -9494,16 +9150,16 @@ RCODE f_RecEditorViewOnlyKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_HOME:
-		case WPK_END:
-		case WPK_UP:
-		case WPK_DOWN:
-		case WPK_PGUP:
-		case WPK_PGDN:
-		case WPK_ALT_F3:
-		case WPK_SF3:
-		case WPK_F3:
-		case WPK_ESCAPE:
+		case FKB_HOME:
+		case FKB_END:
+		case FKB_UP:
+		case FKB_DOWN:
+		case FKB_PGUP:
+		case FKB_PGDN:
+		case FKB_ALT_F3:
+		case FKB_SF3:
+		case FKB_F3:
+		case FKB_ESCAPE:
 		case '>':
 		case '<':
 		{
@@ -9539,20 +9195,20 @@ RCODE f_KeyEditorKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_HOME:
-		case WPK_END:
-		case WPK_UP:
-		case WPK_DOWN:
-		case WPK_PGUP:
-		case WPK_PGDN:
-		case WPK_ENTER:
-		case WPK_DELETE:
-		case WPK_INSERT:
-		case WPK_ALT_F3:
-		case WPK_SF3:
-		case WPK_F3:
-		case WPK_ESCAPE:		/* Quit key editor */
-		case WPK_ALT_Q:		/* Done editing keys */
+		case FKB_HOME:
+		case FKB_END:
+		case FKB_UP:
+		case FKB_DOWN:
+		case FKB_PGUP:
+		case FKB_PGDN:
+		case FKB_ENTER:
+		case FKB_DELETE:
+		case FKB_INSERT:
+		case FKB_ALT_F3:
+		case FKB_SF3:
+		case FKB_F3:
+		case FKB_ESCAPE:		/* Quit key editor */
+		case FKB_ALT_Q:		/* Done editing keys */
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
@@ -9586,17 +9242,17 @@ RCODE f_RecEditorSelectionKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_HOME:
-		case WPK_END:
-		case WPK_UP:
-		case WPK_DOWN:
-		case WPK_PGUP:
-		case WPK_PGDN:
-		case WPK_F3:
-		case WPK_SF3:
-		case WPK_ALT_F3:
-		case WPK_ESCAPE:
-		case WPK_ENTER:
+		case FKB_HOME:
+		case FKB_END:
+		case FKB_UP:
+		case FKB_DOWN:
+		case FKB_PGUP:
+		case FKB_PGDN:
+		case FKB_F3:
+		case FKB_SF3:
+		case FKB_ALT_F3:
+		case FKB_ESCAPE:
+		case FKB_ENTER:
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
@@ -9628,17 +9284,17 @@ RCODE f_RecEditorFileKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_HOME:
-		case WPK_END:
-		case WPK_UP:
-		case WPK_DOWN:
-		case WPK_PGUP:
-		case WPK_PGDN:
-		case WPK_F3:
-		case WPK_SF3:
-		case WPK_ALT_F3:
-		case WPK_ESCAPE:
-		case WPK_ENTER:
+		case FKB_HOME:
+		case FKB_END:
+		case FKB_UP:
+		case FKB_DOWN:
+		case FKB_PGUP:
+		case FKB_PGDN:
+		case FKB_F3:
+		case FKB_SF3:
+		case FKB_ALT_F3:
+		case FKB_ESCAPE:
+		case FKB_ENTER:
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
@@ -9657,7 +9313,6 @@ RCODE f_RecEditorFileKeyHook(
 			}
 			f_strcpy( szFilePath, (const char *)UserData);
 			f_pathAppend( szFilePath, pucTmpBuf);
-
 			pRecEditor->fileViewer( NULL, szFilePath, NULL);
 			break;
 		}
@@ -9825,7 +9480,7 @@ Transmission_Error:
 /****************************************************************************
 Desc:	
 *****************************************************************************/
-class LocalLockInfo : public FlmLockInfo
+class LocalLockInfo : public IF_LockInfoClient
 {
 public:
 
@@ -9834,7 +9489,7 @@ public:
 		m_pWindow = pWindow;
 	}
 
-	FLMBOOL setLockCount(
+	FLMBOOL FLMAPI setLockCount(
 		FLMUINT		uiTotalLocks)
 	{
 		FTXWinClear( m_pWindow);
@@ -9857,7 +9512,7 @@ public:
 		return( TRUE);
 	}
 
-	FLMBOOL addLockInfo(
+	FLMBOOL FLMAPI addLockInfo(
 		FLMUINT		uiLockNum,
 		FLMUINT		uiThreadID,
 		FLMUINT		uiTime)
@@ -9868,12 +9523,12 @@ public:
 				(unsigned)uiLockNum, (unsigned)uiThreadID, (unsigned)uiTime);
 		}
 
-		if( FTXWinTestKB( m_pWindow) == FTXRC_SUCCESS)
+		if( RC_OK( FTXWinTestKB( m_pWindow)))
 		{
 			FLMUINT		uiChar;
 
 			FTXWinInputChar( m_pWindow, &uiChar);
-			if( uiChar == WPK_ESCAPE)
+			if( uiChar == FKB_ESCAPE)
 			{
 				return( FALSE);
 			}

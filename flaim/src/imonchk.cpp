@@ -51,7 +51,7 @@ FSTATIC void freeCheckStatus(
 	FLMBOOL			bFreeStruct);
 
 FSTATIC void imonLogField(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	F_NameTable *	pNameTable,
 	FlmRecord *		pRecord,
 	void *			pvField,
@@ -59,12 +59,12 @@ FSTATIC void imonLogField(
 	FLMUINT			uiLevelOffset);
 
 FSTATIC void imonLogKeyError(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	F_NameTable *	pNameTable,
 	CORRUPT_INFO *	pCorrupt);
 
 FSTATIC void imonLogCorruptError(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	F_NameTable *	pNameTable,
 	CORRUPT_INFO *	pCorrupt);
 
@@ -75,10 +75,10 @@ FSTATIC RCODE CheckStatusCB(
 	void *		pvAppData);
 
 FSTATIC RCODE imonDoCheck(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 FSTATIC void imonLogStr(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	FLMUINT			uiIndent,
 	const char *	pszStr);
 
@@ -561,10 +561,11 @@ void F_CheckDbPage::outputCheckForm(
 	F_NameTable *		pNameTable,
 	FLMUINT				uiCheckThreadId)
 {
-	FLMBOOL		bHighlight = FALSE;
-	char			szTmp [128];
-	char *		pszTmp;
-	char *		pszName;
+	FLMBOOL			bHighlight = FALSE;
+	char				szTmp [128];
+	char *			pszTmp;
+	char *			pszName;
+	IF_FileHdl *	pFileHdl = NULL;
 
 	fnPrintf( m_pHRequest, "<form name=\""
 		CHECK_FORM_NAME "\" type=\"submit\" "
@@ -832,14 +833,13 @@ void F_CheckDbPage::outputCheckForm(
 	if (!pCheckStatus->bCheckRunning && pCheckStatus->bHaveCheckStatus &&
 		 pCheckStatus->uiCorruptCount && pCheckStatus->pszLogFileName)
 	{
-		F_FileHdl *	pFileHdl;
-
 		fnPrintf( m_pHRequest, "<br><br><pre>------LOG FILE CONTENTS------\n");
 
 		// Open the log file
 
-		if (RC_OK( gv_FlmSysData.pFileSystem->Open( pCheckStatus->pszLogFileName,
-											F_IO_RDWR | F_IO_SH_DENYNONE, &pFileHdl)))
+		if (RC_OK( gv_FlmSysData.pFileSystem->openFile( 
+			pCheckStatus->pszLogFileName, FLM_IO_RDWR | FLM_IO_SH_DENYNONE,
+			&pFileHdl)))
 		{
 			RCODE		rc;
 			FLMUINT	uiBytesRead;
@@ -848,9 +848,8 @@ void F_CheckDbPage::outputCheckForm(
 
 			for (;;)
 			{
-				if (RC_BAD( rc = pFileHdl->Read( F_IO_CURRENT_POS,
-						sizeof( szTmp) - 1,
-						&szTmp [0], &uiBytesRead)))
+				if (RC_BAD( rc = pFileHdl->read( FLM_IO_CURRENT_POS,
+						sizeof( szTmp) - 1, szTmp, &uiBytesRead)))
 				{
 					if (rc != FERR_IO_END_OF_FILE || !uiBytesRead)
 					{
@@ -867,14 +866,19 @@ void F_CheckDbPage::outputCheckForm(
 					break;
 				}
 			}
-			pFileHdl->Close();
+			
 			pFileHdl->Release();
+			pFileHdl = NULL;
 		}
+		
 		fnPrintf( m_pHRequest, "\n------END OF LOG FILE------\n");
 		fnPrintf( m_pHRequest, "</pre>\n");
 	}
-
-	//VISIT: Output detailed information, if we collected it.
+	
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
 }
 
 /****************************************************************************
@@ -942,17 +946,19 @@ FSTATIC void freeCheckStatus(
 		{
 			FlmDbClose( &pCheckStatus->hDb);
 		}
+		
 		if (pCheckStatus->pLogFile)
 		{
-			pCheckStatus->pLogFile->Close();
 			pCheckStatus->pLogFile->Release();
 			pCheckStatus->pLogFile = NULL;
 		}
+		
 		if (pCheckStatus->pNameTable)
 		{
 			pCheckStatus->pNameTable->Release();
 			pCheckStatus->pNameTable = NULL;
 		}
+		
 		f_free( &pCheckStatus);
 	}
 }
@@ -975,7 +981,7 @@ RCODE F_CheckDbPage::runCheck(
 {
 	RCODE					rc = FERR_OK;
 	CHECK_STATUS *		pCheckStatus = NULL;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	HFDB					hDb = HFDB_NULL;
 	FDB *					pDb;
 
@@ -1066,10 +1072,10 @@ RCODE F_CheckDbPage::runCheck(
 
 	if (pCheckStatus->pszLogFileName)
 	{
-		gv_FlmSysData.pFileSystem->Delete( pCheckStatus->pszLogFileName);
-		if (RC_BAD( gv_FlmSysData.pFileSystem->Create(
-						pCheckStatus->pszLogFileName,
-			F_IO_RDWR | F_IO_SH_DENYNONE,
+		gv_FlmSysData.pFileSystem->deleteFile( pCheckStatus->pszLogFileName);
+		
+		if (RC_BAD( gv_FlmSysData.pFileSystem->createFile(
+			pCheckStatus->pszLogFileName, FLM_IO_RDWR | FLM_IO_SH_DENYNONE,
 			&pCheckStatus->pLogFile)))
 		{
 			f_free( &pCheckStatus->pszLogFileName);
@@ -1097,12 +1103,12 @@ RCODE F_CheckDbPage::runCheck(
 	// If browser does not check status at least every 15 seconds, we will
 	// assume it has gone away and the thread will terminate itself.
 
-	FLM_SECS_TO_TIMER_UNITS( 15, pCheckStatus->uiCheckTimeout);
+	pCheckStatus->uiCheckTimeout = FLM_SECS_TO_TIMER_UNITS( 15);
 
 	// Start a thread to do the check.
 
 	if (RC_BAD( rc = f_threadCreate( &pThread, imonDoCheck,
-							"WEB DB CHECK", FLM_DB_THREAD_GROUP, 1,
+							"WEB DB CHECK", gv_uiDbThrdGrp, 1,
 							(void *)pCheckStatus, (void *)hDb)))
 	{
 		goto Exit;
@@ -1146,7 +1152,7 @@ void F_CheckDbPage::getCheckStatus(
 	)
 {
 	FLMUINT			uiThreadId;
-	F_Thread *		pThread = NULL;
+	IF_Thread *		pThread = NULL;
 	CHECK_STATUS *	pThreadCheckStatus;
 	FLMBOOL			bMutexLocked = FALSE;
 
@@ -1162,7 +1168,7 @@ void F_CheckDbPage::getCheckStatus(
 	for (;;)
 	{
 		if (RC_BAD( gv_FlmSysData.pThreadMgr->getNextGroupThread( &pThread,
-						FLM_DB_THREAD_GROUP, &uiThreadId)))
+						gv_uiDbThrdGrp, &uiThreadId)))
 		{
 			pCheckStatus->bCheckRunning = FALSE;
 			goto Exit;
@@ -1283,7 +1289,7 @@ Exit:
 Desc:	Log a string to the log file.
 *********************************************************************/
 FSTATIC void imonLogStr(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	FLMUINT			uiIndent,
 	const char *	pszStr)
 {
@@ -1302,8 +1308,8 @@ FSTATIC void imonLogStr(
 		{
 			if (uiLoop == sizeof( szBuffer))
 			{
-				pLogFile->Write( F_IO_CURRENT_POS,
-								 uiLoop, szBuffer, &uiBytesWritten);
+				pLogFile->write( FLM_IO_CURRENT_POS, uiLoop, 
+					szBuffer, &uiBytesWritten);
 				uiLoop = 0;
 			}
 			szBuffer [uiLoop++] = *pszStr;
@@ -1312,21 +1318,21 @@ FSTATIC void imonLogStr(
 	}
 	if (uiLoop >= sizeof( szBuffer) - 2)
 	{
-		pLogFile->Write( F_IO_CURRENT_POS,
-						 uiLoop, szBuffer, &uiBytesWritten);
+		pLogFile->write( FLM_IO_CURRENT_POS,
+			uiLoop, szBuffer, &uiBytesWritten);
 		uiLoop = 0;
 	}
 	szBuffer [uiLoop++] = '\r';
 	szBuffer [uiLoop++] = '\n';
-	pLogFile->Write( F_IO_CURRENT_POS,
-						 uiLoop, szBuffer, &uiBytesWritten);
+	pLogFile->write( FLM_IO_CURRENT_POS,
+		uiLoop, szBuffer, &uiBytesWritten);
 }
 
 /***************************************************************************
 Desc:	Log a field's data.
 *****************************************************************************/
 FSTATIC void imonLogField(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	F_NameTable *	pNameTable,
 	FlmRecord *		pRecord,
 	void *			pvField,
@@ -1414,10 +1420,9 @@ Exit:
 Desc:	Log an index key corruption error.
 *********************************************************************/
 FSTATIC void imonLogKeyError(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	F_NameTable *	pNameTable,
-	CORRUPT_INFO *	pCorrupt
-	)
+	CORRUPT_INFO *	pCorrupt)
 {
 	FLMUINT		uiLogItem;
 	FlmRecord *	pRecord = NULL;
@@ -1523,10 +1528,9 @@ FSTATIC void imonLogKeyError(
 Desc:	Log corruptions to log file.
 *********************************************************************/
 FSTATIC void imonLogCorruptError(
-	F_FileHdl *		pLogFile,
+	IF_FileHdl *	pLogFile,
 	F_NameTable *	pNameTable,
-	CORRUPT_INFO *	pCorrupt
-	)
+	CORRUPT_INFO *	pCorrupt)
 {
 	char	szWhat [20];
 	char	szTmpBuf [100];
@@ -1681,7 +1685,7 @@ FSTATIC void imonLogCorruptError(
 	imonLogStr( pLogFile, 2, szTmpBuf);
 	imonLogStr( pLogFile, 0, NULL);
 	
-	pLogFile->Flush();
+	pLogFile->flush();
 }
 
 /***************************************************************************
@@ -1789,19 +1793,19 @@ Exit:
 Desc:	Thread to perform a database check for a web page.
 ****************************************************************************/
 FSTATIC RCODE imonDoCheck(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE						rc;
 	CHECK_STATUS *			pCheckStatus = (CHECK_STATUS *)pThread->getParm1();
 	FLMUINT					uiFlags;
-	POOL						pool;
+	F_Pool					pool;
 	DB_CHECK_PROGRESS		CheckProgress;
 	FLMUINT					uiCurrTime;
 
 	pThread->setThreadStatus( FLM_THREAD_STATUS_INITIALIZING);
 	pCheckStatus->pThread = pThread;
 
-	FLM_SECS_TO_TIMER_UNITS( 5, pCheckStatus->uiUpdateStatusInterval);
+	pCheckStatus->uiUpdateStatusInterval = FLM_SECS_TO_TIMER_UNITS( 5);
 
 	uiFlags = FLM_CHK_FIELDS;
 	if (pCheckStatus->bCheckingIndexes)
@@ -1810,17 +1814,18 @@ FSTATIC RCODE imonDoCheck(
 	}
 	pThread->setThreadStatus( FLM_THREAD_STATUS_RUNNING);
 
-	GedPoolInit( &pool, 512);
+	pool.poolInit( 512);
+	
 	rc = FlmDbCheck( pCheckStatus->hDb, NULL, NULL, NULL, uiFlags,
 					&pool, &CheckProgress, CheckStatusCB, pCheckStatus);
-	GedPoolFree( &pool);
+	
+	pool.poolFree();
 
 	// Close the database and log file before doing anything else.
 
 	FlmDbClose( &pCheckStatus->hDb);
 	if (pCheckStatus->pLogFile)
 	{
-		pCheckStatus->pLogFile->Close();
 		pCheckStatus->pLogFile->Release();
 		pCheckStatus->pLogFile = NULL;
 	}

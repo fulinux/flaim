@@ -80,7 +80,7 @@ RCODE FSBtSearch(
 			rc = FSBtScanNonLeafData( pStack, 
 						keyLen == 1 
 							? (FLMUINT) *key 
-							: (FLMUINT) flmBigEndianToUINT32( key));
+							: (FLMUINT) f_bigEndianToUINT32( key));
 		}
 
 		if (RC_BAD( rc))
@@ -144,7 +144,8 @@ RCODE FSBtSearchEnd(
 		goto Exit;
 	}
 
-	flmUINT32ToBigEndian( (FLMUINT32)uiDrn, key);
+	f_UINT32ToBigEndian( (FLMUINT32)uiDrn, key);
+	
 	for (;;)
 	{
 		pStack->uiFlags = FULL_STACK;
@@ -546,7 +547,7 @@ RCODE FSBtScanNonLeafData(
 	{
 		uiMid = (uiLow + uiHigh) >> 1;
 
-		uiCurDrn = flmBigEndianToUINT32( &pBlk[ BH_OVHD + (uiMid << 3)]);
+		uiCurDrn = f_bigEndianToUINT32( &pBlk[ BH_OVHD + (uiMid << 3)]);
 		if (uiCurDrn == 0)
 		{
 
@@ -563,7 +564,7 @@ RCODE FSBtScanNonLeafData(
 
 			while (uiMid)
 			{
-				uiCurDrn = flmBigEndianToUINT32( 
+				uiCurDrn = f_bigEndianToUINT32( 
 					&pBlk[ BH_OVHD + ((uiMid - 1) << 3)]);
 					
 				if (uiDrn != uiCurDrn)
@@ -621,7 +622,7 @@ RCODE FSBtScanNonLeafData(
 	// Set curElm and the key buffer.
 
 	pStack->uiCurElm = BH_OVHD + (uiMid << 3);
-	flmUINT32ToBigEndian( (FLMUINT32)uiCurDrn, pStack->pKeyBuf);
+	f_UINT32ToBigEndian( (FLMUINT32)uiCurDrn, pStack->pKeyBuf);
 	return (rc);
 }
 

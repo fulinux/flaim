@@ -170,7 +170,7 @@ Search_Record:
 			goto Exit;
 		}
 
-		flmUINT32ToBigEndian( (FLMUINT32)uiDrn, pSearchBuf);
+		f_UINT32ToBigEndian( (FLMUINT32)uiDrn, pSearchBuf);
 		FSInitStackCache( &stack [0], BH_MAX_LEVELS);
 		pStack = &stack[0];
 		bStackInitialized = TRUE;
@@ -207,7 +207,7 @@ Search_Record:
 				}
 
 				if (uiKeyRelPos == BT_END_OF_DATA ||
-					 flmBigEndianToUINT32( pKeyBuf) > uiDrn)
+					 f_bigEndianToUINT32( pKeyBuf) > uiDrn)
 				{
 
 					// Position to the last element in the block.
@@ -244,7 +244,7 @@ Search_Record:
 			}
 		}
 		
-		uiFoundDrn = flmBigEndianToUINT32( pKeyBuf);
+		uiFoundDrn = f_bigEndianToUINT32( pKeyBuf);
 		
 		if( uiFoundDrn == DRN_LAST_MARKER)
 		{
@@ -338,7 +338,7 @@ FSTATIC RCODE flmRecordRetrieveCS(
 {
 	RCODE				rc;
 	CS_CONTEXT *	pCSContext = pDb->pCSContext;
-	void *			pvMark = GedPoolMark( &pCSContext->pool);
+	void *			pvMark = pCSContext->pool.poolMark();
 	FCL_WIRE			Wire( pCSContext, pDb);
 
 	// Set the record object so that it can be re-used,
@@ -431,7 +431,7 @@ FSTATIC RCODE flmRecordRetrieveCS(
 
 Exit:
 
-	GedPoolReset( &pCSContext->pool, pvMark);
+	pCSContext->pool.poolReset( pvMark);
 	return( rc);
 
 Transmission_Error:

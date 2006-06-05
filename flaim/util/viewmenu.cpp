@@ -105,9 +105,9 @@ void ViewFreeMenuMemory(
 {
 	if (gv_pViewMenuFirstItem != NULL)
 	{
-		GedPoolFree( &gv_ViewPool);
-		gv_pViewMenuFirstItem =
-		gv_pViewMenuLastItem =
+		gv_ViewPool.poolFree();
+		gv_pViewMenuFirstItem = NULL;
+		gv_pViewMenuLastItem = NULL;
 		gv_pViewMenuCurrItem = NULL;
 	}
 }
@@ -123,14 +123,14 @@ FLMINT ViewMenuInit(
 
 	/* Clear the screen and display the menu title */
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, 0);
 
 	/* Display the title in the middle of the top line of the screen */
 
 	Col = (80 - f_strlen( Title)) / 2;
 
-	WpsStrOutXY( Title, Col, 0);
+	f_conStrOutXY( Title, Col, 0);
 	ViewUpdateDate( TRUE, &gv_ViewLastTime);
 
 	/* Deallocate any old memory, if any */
@@ -203,8 +203,8 @@ FSTATIC void ViewDispMenuItem(
 	{
 		f_sprintf( (char *)TempBuf, "%03u:%08X", 
 				(unsigned)ViewMenuPtr->ModFileNumber, (unsigned)ViewMenuPtr->ModFileOffset);
-		WpsScrBackFor( WPS_WHITE, WPS_GREEN);
-		WpsStrOutXY( TempBuf, 0, Row);
+		f_conSetBackFore( FLM_WHITE, FLM_GREEN);
+		f_conStrOutXY( TempBuf, 0, Row);
 	}
 
 	/* If the item is the current item, display it using the */
@@ -215,14 +215,14 @@ FSTATIC void ViewDispMenuItem(
 		if (gv_pViewMenuCurrItem == NULL)
 			gv_pViewMenuCurrItem = ViewMenuPtr;
 		if (ViewMenuPtr->Option)
-			WpsScrBackFor( ViewMenuPtr->SelectBackColor,
+			f_conSetBackFore( ViewMenuPtr->SelectBackColor,
 											 ViewMenuPtr->SelectForeColor);
 		else
-			WpsScrBackFor( ViewMenuPtr->UnselectForeColor,
+			f_conSetBackFore( ViewMenuPtr->UnselectForeColor,
 											 ViewMenuPtr->UnselectBackColor);
 	}
 	else
-		WpsScrBackFor( ViewMenuPtr->UnselectBackColor,
+		f_conSetBackFore( ViewMenuPtr->UnselectBackColor,
 										 ViewMenuPtr->UnselectForeColor);
 
 	if (ViewMenuPtr->iLabelIndex < 0)
@@ -250,19 +250,19 @@ FSTATIC void ViewDispMenuItem(
 	if (ViewMenuPtr->Option)
 	{
 		if (ViewMenuPtr->ItemNum == gv_uiViewMenuCurrItemNum)
-			WpsStrOutXY( "*>", (Col - 2), Row);
+			f_conStrOutXY( "*>", (Col - 2), Row);
 		else
-			WpsStrOutXY( "* ", (Col - 2), Row);
+			f_conStrOutXY( "* ", (Col - 2), Row);
 	}
 	else
 	{
 		if (ViewMenuPtr->ItemNum == gv_uiViewMenuCurrItemNum)
-			WpsStrOutXY( " >", (Col - 2), Row);
+			f_conStrOutXY( " >", (Col - 2), Row);
 		else
-			WpsStrOutXY( "  ", (Col - 2), Row);
+			f_conStrOutXY( "  ", (Col - 2), Row);
 	}
 	if (TempBuf[ 0])
-		WpsStrOutXY( TempBuf, Col, Row);
+		f_conStrOutXY( TempBuf, Col, Row);
 
 	/* Now output the value */
 
@@ -270,16 +270,16 @@ FSTATIC void ViewDispMenuItem(
 	switch( ViewMenuPtr->ValueType & 0x0F)
 	{
 		case VAL_IS_LABEL_INDEX:
-			WpsStrOutXY( (Labels[ ViewMenuPtr->Value]), Col, Row);
+			f_conStrOutXY( (Labels[ ViewMenuPtr->Value]), Col, Row);
 			break;
 		case VAL_IS_ERR_INDEX:
 			{
 			eCorruptionType	eCorruption = (eCorruptionType)ViewMenuPtr->Value;
-			WpsStrOutXY( FlmVerifyErrToStr( eCorruption), Col, Row);
+			f_conStrOutXY( FlmVerifyErrToStr( eCorruption), Col, Row);
 			break;
 			}
 		case VAL_IS_TEXT_PTR:
-			WpsStrOutXY( (const char *)ViewMenuPtr->Value, Col, Row);
+			f_conStrOutXY( (const char *)ViewMenuPtr->Value, Col, Row);
 			break;
 		case VAL_IS_BINARY_HEX:
 		case VAL_IS_BINARY_PTR:
@@ -323,7 +323,7 @@ FSTATIC void ViewDispMenuItem(
 
 			/* Output the line */
 
-			WpsStrOutXY( TempBuf, Col, Row);
+			f_conStrOutXY( TempBuf, Col, Row);
 			if (ViewMenuPtr->ItemNum == gv_uiViewMenuCurrItemNum)
 				UpdateHorizCursor( TRUE);
 			break;
@@ -357,7 +357,7 @@ FSTATIC void ViewDispMenuItem(
 										 (unsigned)ViewMenuPtr->Value, (unsigned)ViewMenuPtr->Value);
 					break;
 			}
-			WpsStrOutXY( TempBuf, Col, Row);
+			f_conStrOutXY( TempBuf, Col, Row);
 			break;
 		case VAL_IS_EMPTY:
 		default:
@@ -382,11 +382,10 @@ FLMINT ViewAddMenuItem(
 	FLMUINT		Col,
 	FLMUINT		Row,
 	FLMUINT		Option,
-	FLMUINT		UnselectBackColor,
-	FLMUINT		UnselectForeColor,
-	FLMUINT		SelectBackColor,
-	FLMUINT		SelectForeColor
-	)
+	eColorType	UnselectBackColor,
+	eColorType	UnselectForeColor,
+	eColorType	SelectBackColor,
+	eColorType	SelectForeColor)
 {
 	VIEW_MENU_ITEM_p	ViewMenuPtr;
 	FLMUINT				Size = sizeof( VIEW_MENU_ITEM);
@@ -395,11 +394,15 @@ FLMINT ViewAddMenuItem(
 
 
 	if ((ValueType & 0x0F) == VAL_IS_TEXT_PTR)
+	{
 		Size += (f_strlen( (const char *)Value) + 1);
+	}
 	else if ((ValueType & 0x0F) == VAL_IS_BINARY)
+	{
 		Size += ValueLen;
-	if ((ViewMenuPtr = 
-			(VIEW_MENU_ITEM_p)GedPoolAlloc( &gv_ViewPool, Size)) == NULL)
+	}
+	
+	if( RC_BAD( gv_ViewPool.poolAlloc( Size, (void **)&ViewMenuPtr)))
 	{
 		ViewShowError( "Could not allocate memory for menu value");
 		return( 0);
@@ -467,14 +470,14 @@ void ViewEscPrompt(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 1);
-	WpsScrBackFor( WPS_RED, WPS_WHITE);
-	WpsStrOutXY( "ESC=Exit, ?=Help", 0, uiNumRows - 1);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsStrOutXY( "File: ", 20, uiNumRows - 1);
-	WpsStrOutXY( gv_szViewFileName, 26, uiNumRows - 1);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 1);
+	f_conSetBackFore( FLM_RED, FLM_WHITE);
+	f_conStrOutXY( "ESC=Exit, ?=Help", 0, uiNumRows - 1);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conStrOutXY( "File: ", 20, uiNumRows - 1);
+	f_conStrOutXY( gv_szViewFileName, 26, uiNumRows - 1);
 	gv_uiViewLastFileOffset = VIEW_INVALID_FILE_OFFSET;
 }
 
@@ -501,8 +504,8 @@ FSTATIC void ViewRefreshMenu(
 
 		/* Refresh the entire screen */
 
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, 1);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, 1);
 
 		ViewMenuPtr = gv_pViewMenuFirstItem;
 		while( ViewMenuPtr)
@@ -535,15 +538,15 @@ FSTATIC void UpdateHorizCursor(
 	ByteToHex( *(ValPtr + i), (FLMBYTE *)TempBuf, TRUE);
 	TempBuf[ 2] = 0;
 	if (OnFlag)
-		WpsScrBackFor( WPS_RED, WPS_WHITE);
+		f_conSetBackFore( FLM_RED, FLM_WHITE);
 	else
-		WpsScrBackFor( gv_pViewMenuCurrItem->UnselectForeColor,
+		f_conSetBackFore( gv_pViewMenuCurrItem->UnselectForeColor,
 									 gv_pViewMenuCurrItem->UnselectBackColor);
 
 	/* Calculate row and column where the item is to be displayed */
 
 	Row = gv_uiTopLine + (gv_pViewMenuCurrItem->Row - gv_uiViewTopRow);
-	WpsStrOutXY( TempBuf, (Col + i * 3), Row);
+	f_conStrOutXY( TempBuf, (Col + i * 3), Row);
 	if (((TempBuf[ 0] = ValPtr[ i]) < ' ') ||
 			((FLMBYTE)TempBuf[ 0] > 127))
 		TempBuf[ 0] = ' ';
@@ -552,14 +555,14 @@ FSTATIC void UpdateHorizCursor(
 		TempBuf [0] = 128;
 #endif
 	TempBuf[ 1] = 0;
-	WpsStrOutXY( TempBuf,
+	f_conStrOutXY( TempBuf,
 			(Col + MAX_HORIZ_SIZE( Col) * 3 + 5 + i), Row);
-	WpsScrBackFor( gv_pViewMenuCurrItem->UnselectForeColor,
+	f_conSetBackFore( gv_pViewMenuCurrItem->UnselectForeColor,
 								 gv_pViewMenuCurrItem->UnselectBackColor);
 	if (OnFlag)
-		WpsStrOutXY( ">", (Col + i * 3 - 1), Row);
+		f_conStrOutXY( ">", (Col + i * 3 - 1), Row);
 	else
-		WpsStrOutXY( " ", (Col + i * 3 - 1), Row);
+		f_conStrOutXY( " ", (Col + i * 3 - 1), Row);
 }
 
 /********************************************************************
@@ -793,29 +796,29 @@ FSTATIC void ViewHelpScreen(
 
 	/* Clear the screen and display the menu title */
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, 1);
-	WpsScrPos( 0, 3);
-	WpsStrOut( "     RECOGNIZED KEYBOARD CHARACTERS\n");
-	WpsStrOut( "\n");
-	WpsStrOut( "     ESCAPE               - Exit Screen\n");
-	WpsStrOut( "     U,u,8                - Up Arrow\n");
-	WpsStrOut( "     D,d,2                - Down Arrow\n");
-	WpsStrOut( "     +,3                  - Page Down\n");
-	WpsStrOut( "     R,r,6                - Right Arrow\n");
-	WpsStrOut( "     L,l,5                - Left Arrow\n");
-	WpsStrOut( "     -,9                  - Page Up\n");
-	WpsStrOut( "     H,h,7                - Home\n");
-	WpsStrOut( "     Z,z,1                - End\n");
-	WpsStrOut( "     E,e                  - Edit Data\n");
-	WpsStrOut( "     A,a                  - Edit Data in RAW Mode (no checksum)\n");
-	WpsStrOut( "     G,g                  - Goto Block\n");
-	WpsStrOut( "     X,x                  - Display Hex\n");
-	WpsStrOut( "     Y,y                  - Display Decrypted\n");
-	WpsStrOut( "     S,s                  - Search\n");
-	WpsStrOut( "     ?                    - Show this help screen\n");
-	WpsStrOut( "\n");
-	WpsStrOut( "	  PRESS ANY CHARACTER TO EXIT HELP SCREEN\n");
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, 1);
+	f_conSetCursorPos( 0, 3);
+	f_conStrOut( "     RECOGNIZED KEYBOARD CHARACTERS\n");
+	f_conStrOut( "\n");
+	f_conStrOut( "     ESCAPE               - Exit Screen\n");
+	f_conStrOut( "     U,u,8                - Up Arrow\n");
+	f_conStrOut( "     D,d,2                - Down Arrow\n");
+	f_conStrOut( "     +,3                  - Page Down\n");
+	f_conStrOut( "     R,r,6                - Right Arrow\n");
+	f_conStrOut( "     L,l,5                - Left Arrow\n");
+	f_conStrOut( "     -,9                  - Page Up\n");
+	f_conStrOut( "     H,h,7                - Home\n");
+	f_conStrOut( "     Z,z,1                - End\n");
+	f_conStrOut( "     E,e                  - Edit Data\n");
+	f_conStrOut( "     A,a                  - Edit Data in RAW Mode (no checksum)\n");
+	f_conStrOut( "     G,g                  - Goto Block\n");
+	f_conStrOut( "     X,x                  - Display Hex\n");
+	f_conStrOut( "     Y,y                  - Display Decrypted\n");
+	f_conStrOut( "     S,s                  - Search\n");
+	f_conStrOut( "     ?                    - Show this help screen\n");
+	f_conStrOut( "\n");
+	f_conStrOut( "	  PRESS ANY CHARACTER TO EXIT HELP SCREEN\n");
 
 	for (;;)
 	{
@@ -826,7 +829,7 @@ FSTATIC void ViewHelpScreen(
 
 		/* See what character was pressed */
 
-		wChar = (!WpkTestKB()) ? 0 : (WpkIncar());
+		wChar = (!f_conHaveKey()) ? 0 : (f_conGetKey());
 		if (gv_bShutdown)
 			return;
 		if (wChar)
@@ -887,42 +890,42 @@ FLMINT ViewGetMenuOption(
 		/* See what character was pressed */
 
 		viewGiveUpCPU();
-		c = (!WpkTestKB()) ? 0 : (WpkIncar());
+		c = (!f_conHaveKey()) ? 0 : (f_conGetKey());
 		if (gv_bShutdown)
 			return( ESCAPE_OPTION);
 		switch( c)
 		{
-			case WPK_ESCAPE:
+			case FKB_ESCAPE:
 				return( ESCAPE_OPTION);
-			case WPK_UP:
+			case FKB_UP:
 			case 'U':
 			case 'u':
 			case '8':
 				DoUpArrow();
 				break;
-			case WPK_DOWN:
+			case FKB_DOWN:
 			case 'D':
 			case 'd':
 			case '2':
 				DoDownArrow();
 				break;
-			case WPK_PGDN:
+			case FKB_PGDN:
 			case '+':
 			case '3':
 				DoPageDown();
 				break;
-			case WPK_PGUP:
+			case FKB_PGUP:
 			case '-':
 			case '9':
 				DoPageUp();
 				break;
-			case WPK_HOME:
+			case FKB_HOME:
 			case 'H':
 			case 'h':
 			case '7':
 				DoHome();
 				break;
-			case WPK_END:
+			case FKB_END:
 			case 'Z':
 			case 'z':
 			case '1':
@@ -930,7 +933,7 @@ FLMINT ViewGetMenuOption(
 				break;
 			case '\n':
 			case '\r':
-			case WPK_ENTER:
+			case FKB_ENTER:
 				if (gv_pViewMenuCurrItem->Option)
 					return( gv_pViewMenuCurrItem->Option);
 				break;
@@ -938,13 +941,13 @@ FLMINT ViewGetMenuOption(
 			case 'g':
 			case 7:	/* Control-G */
 				return( GOTO_BLOCK_OPTION);
-			case WPK_RIGHT:
+			case FKB_RIGHT:
 			case 'R':
 			case 'r':
 			case '6':
 				DoRightArrow();
 				break;
-			case WPK_LEFT:
+			case FKB_LEFT:
 			case 'L':
 			case 'l':
 			case '4':
@@ -990,7 +993,7 @@ void ViewUpdateDate(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 	f_timeGetTimeStamp( &CurrTime);
 
 	/* Update the date, if it has changed or the UpdateFlag is set */
@@ -1004,8 +1007,8 @@ void ViewUpdateDate(
 						 Months[ CurrTime.month],
 						 (unsigned)CurrTime.day,
 						 (unsigned)CurrTime.year);
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsStrOutXY( TempBuf, 0, 0);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conStrOutXY( TempBuf, 0, 0);
 	}
 
 	/* Update the time, if it has changed or the UpdateFlag is set */
@@ -1029,8 +1032,8 @@ void ViewUpdateDate(
 						(unsigned)Hour,
 						(unsigned)CurrTime.minute,
 						(unsigned)CurrTime.second, AmPm);
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsStrOutXY( TempBuf, 66, 0);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conStrOutXY( TempBuf, 66, 0);
 	}
 
 	if ((UpdateFlag) ||
@@ -1058,8 +1061,8 @@ void ViewUpdateDate(
 		else
 			f_sprintf( (char *)TempBuf, "File: %03u  File Pos: 0x%08X", 
 								(unsigned)gv_uiViewLastFileNumber, (unsigned)gv_uiViewLastFileOffset);
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsStrOutXY( TempBuf, 47, uiNumRows - 1);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conStrOutXY( TempBuf, 47, uiNumRows - 1);
 	}
 
 	/* Save the date and time */

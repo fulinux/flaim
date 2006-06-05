@@ -46,10 +46,10 @@ FSTATIC RCODE flmCurCSPerformRead(
 	FLMUINT *		puiDrnRV,
 	FLMUINT *		puiCountRV)
 {
+	RCODE				rc = FERR_OK;
 	CS_CONTEXT *	pCSContext = pCursor->pCSContext;
 	FCL_WIRE			Wire( pCSContext);
-	void *			pvMark = GedPoolMark( &pCSContext->pool);
-	RCODE				rc = FERR_OK;
+	void *			pvMark = pCSContext->pool.poolMark();
 	FLMUINT			uiCSOp = 0;
 
 	// If there is no VALID id for the cursor, get one.
@@ -178,7 +178,7 @@ FSTATIC RCODE flmCurCSPerformRead(
 
 Exit:
 	
-	GedPoolReset( &pCSContext->pool, pvMark);
+	pCSContext->pool.poolReset( pvMark);
 	return( rc);
 
 Transmission_Error:

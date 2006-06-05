@@ -57,7 +57,7 @@ typedef struct DBContextTag
 /*===========================================================================
 Desc:		This class is used by the shell to perform commands it has parsed.
 ===========================================================================*/
-class FlmCommand : public F_Base
+class FlmCommand : public F_Object
 {
 public:
 	FlmCommand( void){}
@@ -84,7 +84,7 @@ public:
 Desc:		This class manages a database context - FLAIM session and #N
 			open databases.
 ===========================================================================*/
-class FlmDbContext : public F_Base
+class FlmDbContext : public F_Object
 {
 #define MAX_DBCONTEXT_OPEN_DB		9
 public:
@@ -152,7 +152,7 @@ private:
 /*===========================================================================
 Desc:		This class parses a command line
 ===========================================================================*/
-class FlmParse : public F_Base
+class FlmParse : public F_Object
 {
 public:
 
@@ -177,7 +177,7 @@ private:
 /*===========================================================================
 Desc:		This class manages a command-line shell
 ===========================================================================*/
-class FlmShell : public F_Base
+class FlmShell : public F_Object
 {
 public:
 
@@ -256,7 +256,7 @@ private:
 	FTX_WINDOW *			m_pWindow;
 	FTX_WINDOW *			m_pTitleWin;
 	HFDB						m_DbList[ MAX_SHELL_OPEN_DB];
-	POOL						m_ArgPool;
+	F_Pool					m_ArgPool;
 	FLMINT					m_iCurrArgC;
 	char **					m_ppCurrArgV;
 	char *					m_pszOutputFile;
@@ -470,30 +470,6 @@ private:
 };
 
 /*===========================================================================
-Desc:		This class implements the sysinfo command
-===========================================================================*/
-class FlmSysInfoCommand : public FlmCommand
-{
-public:
-	FlmSysInfoCommand( void) {}
-	~FlmSysInfoCommand( void) {}
-
-	FLMINT execute(
-		FLMINT		iArgC,
-		char **		ppszArgV,
-		FlmShell *	pShell);
-
-	void displayHelp(
-		FlmShell *	pShell,
-		char *		pszCommand);
-
-	FLMBOOL canPerformCommand(
-		char *	pszCommand);
-
-private:
-};
-
-/*===========================================================================
 Desc:		This class implements the file system command.
 ===========================================================================*/
 
@@ -589,10 +565,11 @@ public:
 
 	void reset();
 
-	RCODE setupForSearch( 
-		char *	pszBaseDir,
-		char *	pszExtendedDir,
-		char *	pszPattern);
+	RCODE setupForSearch(
+		IF_FileSystem *	pFileSystem,
+		char *				pszBaseDir,
+		char *				pszExtendedDir,
+		char *				pszPattern);
 
 	FINLINE FLMBOOL isInitialized()
 	{
@@ -650,7 +627,7 @@ private:
 	char *		m_pszBaseDir;
 	char *		m_pszExtendedDir;
 	char *		m_pszResolvedDir;
-	F_DirHdl *	m_pDirHdl;
+	IF_DirHdl *	m_pDirHdl;
 	char **		m_ppszMatchList;
 	FLMUINT		m_uiCurrentMatch;
 	FLMUINT		m_uiTotalMatches;

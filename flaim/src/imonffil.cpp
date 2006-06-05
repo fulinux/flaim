@@ -999,28 +999,6 @@ void F_FFilePage::write_data(
 				(bHighlight = ~bHighlight));
 
 
-
-
-		// pFileIdList - Unique File List
-		f_sprintf( (char *)szTemp,
-				  "%s/F_FileIdList?From=FFile?"
-				  "Link=pFileIdList?"
-				  "Address=%s?Bucket=%lu",
-				  m_pszURLString,
-				  szFFileAddress,
-				  (unsigned long)pFile->uiBucket);
-
-		printHTMLLink(
-				"pFileIdList", 
-				"F_FileIdList *",
-				(void *)pFile,
-				(void *)&pFile->pFileIdList,
-				(void *)pFile->pFileIdList,
-				(char *)szTemp,
-				(bHighlight = ~bHighlight));
-
-
-
 		// pBufferMgr
 		f_sprintf( (char *)szTemp,
 				  "%s/F_IOBufferMgr?From=FFile?"
@@ -1441,29 +1419,6 @@ void F_FFilePage::write_data(
 				(char *)(pFile->bBackupActive ? "Yes" : "No"),
 				(bHighlight = ~bHighlight));
 		
-
-		
-
-		// pECacheMgr
-		if (pFile->pECacheMgr)
-		{
-			f_sprintf( (char *)szTemp,
-						"%s/FlmECache?From=FFile?Link=pECacheMgr?Address=%s?Bucket=%lu",
-						m_pszURLString,
-						szFFileAddress,
-						(unsigned long)pFile->uiBucket);
-		}
-
-		printHTMLLink(
-				"pECacheMgr", 
-				"FlmECache *",
-				(void *)pFile,
-				(void *)&pFile->pECacheMgr,
-				(void *)pFile->pECacheMgr,
-				(char *)szTemp,
-				(bHighlight = ~bHighlight));
-
-
 		printTableEnd();
 
 	}

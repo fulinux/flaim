@@ -27,7 +27,7 @@
 typedef struct
 {
 	char						szPath[ F_PATH_MAX_SIZE];
-	F_64BitFileHandle *	pFileHdl64;
+	IF_MultiFileHdl *		pMultiFileHdl;
 	FLMUINT64				ui64Offset;
 	void *					pvAppData;
 	RCODE						rc;
@@ -71,8 +71,10 @@ FSTATIC RCODE flmDefaultBackerWriteHook(
 
 FSTATIC RCODE flmRestoreFile(
 	F_Restore *				pRestoreObj,
+	const char *			pszDbPath,
+	const char *			pszDataDir,
 	const char *			pszPassword,
-	F_SuperFileHdl *		pSFile,
+	F_SuperFileHdl **		ppSFile,
 	FLMBOOL					bIncremental,
 	FLMUINT *				puiDbVersion,
 	FLMUINT *				puiNextIncSeqNum,
@@ -86,7 +88,7 @@ FSTATIC RCODE flmRestoreFile(
 /*******************************************************************************
 Desc:
 *******************************************************************************/
-class	F_BackerStream : public F_Base
+class	F_BackerStream : public F_Object
 {
 public:
 
@@ -139,10 +141,10 @@ private:
 	RCODE _setup( void);
 
 	static RCODE readThread(
-		F_Thread *			pThread);
+		IF_Thread *			pThread);
 
 	static RCODE writeThread(
-		F_Thread *			pThread);
+		IF_Thread *			pThread);
 
 	FLMBOOL					m_bSetup;
 	FLMBOOL					m_bFirstRead;
@@ -151,7 +153,7 @@ private:
 	F_Restore *				m_pRestoreObj;
 	F_SEM						m_hDataSem;
 	F_SEM						m_hIdleSem;
-	F_Thread *				m_pThread;
+	IF_Thread *				m_pThread;
 	RCODE						m_rc;
 	FLMBYTE *				m_pucInBuf;
 	FLMUINT *				m_puiInOffset;
@@ -962,10 +964,9 @@ Exit:
 			(void *)&backupInfo, NULL, pvAppData);
 	}
 
-	if( hookState.pFileHdl64)
+	if( hookState.pMultiFileHdl)
 	{
-		hookState.pFileHdl64->Close();
-		hookState.pFileHdl64->Release();
+		hookState.pMultiFileHdl->Release();
 	}
 
 	if( pucBlkBuf)
@@ -1179,8 +1180,8 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 {
 	RCODE						rc = FERR_OK;
 	HFDB						hDb = HFDB_NULL;
-	F_FileHdl *				pFileHdl = NULL;
-	F_FileHdlImp *			pLockFileHdl = NULL;
+	IF_FileHdl *			pFileHdl = NULL;
+	IF_FileHdl *			pLockFileHdl = NULL;
 	F_SuperFileHdl *		pSFile = NULL;
 	char						szBasePath[ F_PATH_MAX_SIZE];
 	char						szTmpPath[ F_PATH_MAX_SIZE];
@@ -1282,24 +1283,10 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 		goto Exit;
 	}
 
-	// Create the control file and set up the super file object
+	// Create the control file
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Create( 
-		pszDbPath, F_IO_RDWR, &pFileHdl)))
-	{
-		goto Exit;
-	}
-
-	// Allocate a super file object
-
-	if( (pSFile = f_new F_SuperFileHdl) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pSFile->Setup( pFile->pFileIdList, pszDbPath,
-									pszDataDir)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->createFile( 
+		pszDbPath, FLM_IO_RDWR, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1327,9 +1314,9 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 
 	// Restore the data in the backup set
 
-	if( RC_BAD( rc = flmRestoreFile( pRestoreObj, pszTempPassword,
-		pSFile, FALSE, &uiDbVersion, &uiNextIncNum, &bRflPreserved,
-		&eRestoreAction, NULL, &pucDbKey, NULL, &uiKeyLen)))
+	if( RC_BAD( rc = flmRestoreFile( pRestoreObj, pszDbPath, pszDataDir,
+		pszTempPassword, &pSFile, FALSE, &uiDbVersion, &uiNextIncNum,
+		&bRflPreserved, &eRestoreAction, NULL, &pucDbKey, NULL, &uiKeyLen)))
 	{
 		goto Exit;
 	}
@@ -1373,9 +1360,10 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 			}
 			else
 			{
-				if( RC_BAD( rc = flmRestoreFile( pRestoreObj, pszTempPassword,
-					pSFile, TRUE, &uiDbVersion, &uiNextIncNum, &bRflPreserved,
-					&eRestoreAction, &bOKToRetry, NULL, pucDbKey, &uiKeyLen)))
+				if( RC_BAD( rc = flmRestoreFile( pRestoreObj, pszDbPath, pszDataDir, 
+					pszTempPassword, &pSFile, TRUE, &uiDbVersion, &uiNextIncNum,
+					&bRflPreserved, &eRestoreAction, &bOKToRetry, NULL,
+					pucDbKey, &uiKeyLen)))
 				{
 					RCODE		tmpRc;
 
@@ -1438,7 +1426,7 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 	
 	// Force everything out to disk
 
-	if( RC_BAD( rc = pSFile->Flush()))
+	if( RC_BAD( rc = pSFile->flush()))
 	{
 		goto Exit;
 	}
@@ -1468,10 +1456,10 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 	// should be identical without having differences in the
 	// tracker container due to background indexing.
 
-	rc = flmOpenFile( pFile,
-		pszDbPath, pszDataDir,
+	rc = flmOpenFile( pFile, pszDbPath, pszDataDir,
 		pszRflDir, FO_DONT_RESUME_BACKGROUND_THREADS,
 		TRUE, pRestoreObj, pLockFileHdl, NULL, (FDB **)&hDb);
+		
 	pLockFileHdl = NULL;
 	pFile = NULL;
 
@@ -1566,8 +1554,10 @@ Desc : Restores a full or incremental backup
 ****************************************************************************/
 FSTATIC RCODE flmRestoreFile(
 	F_Restore *				pRestoreObj,
+	const char *			pszDbPath,
+	const char *			pszDataDir,
 	const char *			pszPassword,
-	F_SuperFileHdl *		pSFile,
+	F_SuperFileHdl **		ppSFile,
 	FLMBOOL					bIncremental,
 	FLMUINT *				puiDbVersion,
 	FLMUINT *				puiNextIncSeqNum,
@@ -1578,6 +1568,7 @@ FSTATIC RCODE flmRestoreFile(
 	FLMBYTE *				pucKeyToUse,
 	FLMUINT *				puiKeyLen)
 {
+	RCODE					rc = FERR_OK;
 	FLMUINT				uiBytesWritten;
 	FLMUINT				uiLogicalEOF;
 	FLMUINT				uiBlkAddr;
@@ -1594,15 +1585,14 @@ FSTATIC RCODE flmRestoreFile(
 	FLMBYTE				ucNextIncSerialNum[ F_SERIAL_NUM_SIZE];
 	FLMUINT				uiIncSeqNum;
 	FLMBYTE *			pucBlkBuf = NULL;
-	char					szPath[ F_PATH_MAX_SIZE];
 	FLMBYTE				ucLowChecksumByte;
 	FLMUINT				uiBlkBufSize;
 	FLMUINT				uiPriorBlkAddr = 0;
 	BYTE_PROGRESS		byteProgress;
 	FBackupType			eBackupType;
 	F_BackerStream *	pBackerStream = NULL;
-	RCODE					rc = FERR_OK;
 	F_CCS *				pTmpCCS = NULL;
+	F_SuperFileHdl *	pSFile = NULL;
 
 #ifndef FLM_USE_NICI
 	F_UNREFERENCED_PARM( pszPassword);
@@ -1614,18 +1604,6 @@ FSTATIC RCODE flmRestoreFile(
 	{
 		*pbOKToRetry = TRUE;
 	}
-
-#ifdef FLM_WIN
-
-	// Don't want to do extra file extensions or flush when file
-	// is extended.  Setting the extend size to ~0 has the effect
-	// of not updating the directory entry (a time-consuming operation)
-	// on Windows platforms.  On all other platforms, we will just
-	// go with the default behavior.
-
-	pSFile->setExtendSize( (FLMUINT)(~0));
-
-#endif
 
 	// Initialize the progress struct
 
@@ -1643,18 +1621,11 @@ FSTATIC RCODE flmRestoreFile(
 	{
 		goto Exit;
 	}
-
-	// Get the path of the .DB file (file 0).
-
-	if( RC_BAD( rc = pSFile->GetFilePath( 0, szPath)))
-	{
-		goto Exit;
-	}
-
+	
 	// Get the sector size
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->GetSectorSize( 
-		szPath, &uiSectorSize)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->getSectorSize( 
+		pszDbPath, &uiSectorSize)))
 	{
 		goto Exit;
 	}
@@ -1667,20 +1638,11 @@ FSTATIC RCODE flmRestoreFile(
 	{
 		uiBlkBufSize = (((uiBlkBufSize / uiSectorSize) + 1) * uiSectorSize);
 	}
-
-#ifdef FLM_WIN
-	if ((pucBlkBuf = (FLMBYTE *)VirtualAlloc( NULL,
-		(DWORD)uiBlkBufSize, MEM_COMMIT, PAGE_READWRITE)) == NULL)
-	{
-		rc = MapWinErrorToFlaim( GetLastError(), FERR_MEM);
-		goto Exit;
-	}
-#else
-	if (RC_BAD( rc = f_alloc( uiBlkBufSize, &pucBlkBuf)))
+	
+	if( RC_BAD( rc = f_allocAlignedBuffer( uiBlkBufSize, (void **)&pucBlkBuf)))
 	{
 		goto Exit;
 	}
-#endif
 
 	// Read and verify the backup header
 
@@ -1801,18 +1763,6 @@ FSTATIC RCODE flmRestoreFile(
 	}
 	uiMaxFileSize = flmGetMaxFileSize( uiDbVersion, pLogHdr);
 
-	// Set the database version number and block size into the
-	// super file handle.  We only do this if the file being restored
-	// is the full backup.  It will always be first in the restore sequence,
-	// and thus we only need to set these values into the super file handle
-	// at that time.
-
-	if( !bIncremental)
-	{
-		pSFile->SetDbVersion( uiDbVersion);
-		pSFile->SetBlockSize( uiBlockSize);
-	}
-
 	// Make sure the maximum block file size matches what was read from the
 	// backup header.
 	
@@ -1822,6 +1772,38 @@ FSTATIC RCODE flmRestoreFile(
 		goto Exit;
 	}
 
+	// Allocate a super file object
+	
+	if( (pSFile = *ppSFile) != NULL)
+	{
+		pSFile->AddRef();
+	}
+	else
+	{
+		flmAssert( !bIncremental);
+		
+		if( (pSFile = f_new F_SuperFileHdl) == NULL)
+		{
+			rc = RC_SET( FERR_MEM);
+			goto Exit;
+		}
+	
+		if( RC_BAD( rc = pSFile->setup( pszDbPath, pszDataDir, uiDbVersion)))
+		{
+			goto Exit;
+		}
+	
+		// Don't want to do extra file extensions or flush when file
+		// is extended.  Setting the extend size to ~0 has the effect
+		// of not updating the directory entry (a time-consuming operation)
+		// on Windows platforms.  On all other platforms, we will just
+		// go with the default behavior.
+	
+		pSFile->setExtendSize( (FLMUINT)(~0));
+		*ppSFile = pSFile;
+		(*ppSFile)->AddRef();
+	}
+	
 	// Unshroud the database key (stored in the log header) using the
 	// password the user gave us.  (Note: this only re-writes the data
 	// in the log header.  It's up to the database open call to actually
@@ -1937,7 +1919,7 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup sequence number to the value in the
 		// database's log header.
 
-		if( RC_BAD( rc = 	pSFile->ReadHeader( 
+		if( RC_BAD( rc = 	pSFile->readHeader( 
 			DB_LOG_HEADER_START + LOG_INC_BACKUP_SEQ_NUM, 
 			4, ucTmpSeqNum, &uiTmp)))
 		{
@@ -1953,7 +1935,7 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup serial number to the value in the
 		// database's log header.
 
-		if( RC_BAD( rc = 	pSFile->ReadHeader( 
+		if( RC_BAD( rc = 	pSFile->readHeader( 
 			DB_LOG_HEADER_START + LOG_INC_BACKUP_SERIAL_NUM, 
 			F_SERIAL_NUM_SIZE, ucTmpSerialNum, &uiTmp)))
 		{
@@ -2008,7 +1990,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	// Write the database header
 
-	if( RC_BAD( rc = pSFile->WriteHeader( 0, 
+	if( RC_BAD( rc = pSFile->writeHeader( 0, 
 		uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 	{
 		goto Exit;
@@ -2094,9 +2076,7 @@ FSTATIC RCODE flmRestoreFile(
 		pucBlkBuf[ BH_CHECKSUM_LOW] = ucLowChecksumByte;
 
 		// Write the block to the database
-
-#ifdef FLM_UNIX
-
+		//
 		// Unix systems can have sector sizes that are larger than our
 		// typical 4K database blocks.  The Unix implementation of SectorWrite
 		// (called by WriteBlock) will write the passed-in block and clobber any
@@ -2105,14 +2085,9 @@ FSTATIC RCODE flmRestoreFile(
 		// block buffer is less than a full sector, the Unix SectorWrite will only
 		// write out the amount requested, not a full sector.
 
-		if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,  
+		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,  
 			uiBlockSize, pucBlkBuf, uiBlockSize,
 			NULL, &uiBytesWritten)))
-#else
-		if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,  
-			uiBlockSize, pucBlkBuf, uiBlkBufSize,
-			NULL, &uiBytesWritten)))
-#endif
 		{
 			if( rc == FERR_IO_PATH_NOT_FOUND ||
 				 rc == FERR_IO_INVALID_PATH)
@@ -2125,21 +2100,15 @@ FSTATIC RCODE flmRestoreFile(
 					goto Exit;
 				}
 
-				if( RC_BAD( rc = pSFile->CreateFile( 
+				if( RC_BAD( rc = pSFile->createFile( 
 					FSGetFileNumber( uiBlkAddr))))
 				{
 					goto Exit;
 				}
 
-#ifdef FLM_UNIX
-				if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,  
+				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,  
 					uiBlockSize, pucBlkBuf, uiBlockSize,
 					NULL, &uiBytesWritten)))
-#else
-				if( RC_BAD( rc = pSFile->WriteBlock( uiBlkAddr,  
-					uiBlockSize, pucBlkBuf, uiBlkBufSize,
-					NULL, &uiBytesWritten)))
-#endif
 				{
 					goto Exit;
 				}
@@ -2191,11 +2160,7 @@ Exit:
 
 	if( pucBlkBuf)
 	{
-#ifdef FLM_WIN
-		(void)VirtualFree( pucBlkBuf, 0, MEM_RELEASE);
-#else
-		f_free( &pucBlkBuf);
-#endif
+		f_freeAlignedBuffer( (void **)&pucBlkBuf);
 	}
 
 	if( pBackerStream)
@@ -2203,9 +2168,14 @@ Exit:
 		pBackerStream->Release();
 	}
 
-	if (pTmpCCS)
+	if( pTmpCCS)
 	{
 		pTmpCCS->Release();
+	}
+	
+	if( pSFile)
+	{
+		pSFile->Release();
 	}
 
 	return( rc);
@@ -2228,34 +2198,33 @@ FSTATIC RCODE flmDefaultBackerWriteHook(
 		goto Exit;
 	}
 
-	if( !pState->pFileHdl64)
+	if( !pState->pMultiFileHdl)
 	{
 		// Remove any existing backup files
 
-		if( (pState->pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+		if( RC_BAD( rc = FlmAllocMultiFileHdl( &pState->pMultiFileHdl)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
-
-		if( RC_BAD( rc = pState->pFileHdl64->Delete( pState->szPath)) &&
-			rc != FERR_IO_PATH_NOT_FOUND &&
+		
+		if( RC_BAD( rc = pState->pMultiFileHdl->deleteMultiFile( 
+			pState->szPath)) && rc != FERR_IO_PATH_NOT_FOUND &&
 			rc != FERR_IO_INVALID_PATH)
 		{
-			pState->pFileHdl64->Release();
-			pState->pFileHdl64 = NULL;
+			pState->pMultiFileHdl->Release();
+			pState->pMultiFileHdl = NULL;
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = pState->pFileHdl64->Create( pState->szPath)))
+		if( RC_BAD( rc = pState->pMultiFileHdl->create( pState->szPath)))
 		{
-			pState->pFileHdl64->Release();
-			pState->pFileHdl64 = NULL;
+			pState->pMultiFileHdl->Release();
+			pState->pMultiFileHdl = NULL;
 			goto Exit;
 		}
 	}
 
-	rc = pState->pFileHdl64->Write( pState->ui64Offset, 
+	rc = pState->pMultiFileHdl->write( pState->ui64Offset, 
 		uiBytesToWrite, pvBuffer, &uiBytesWritten);
 	pState->ui64Offset += uiBytesWritten;
 
@@ -2264,10 +2233,10 @@ Exit:
 	if( RC_BAD( rc))
 	{
 		pState->rc = rc;
-		if( pState->pFileHdl64)
+		if( pState->pMultiFileHdl)
 		{
-			pState->pFileHdl64->Release();
-			pState->pFileHdl64 = NULL;
+			pState->pMultiFileHdl->Release();
+			pState->pMultiFileHdl = NULL;
 		}
 	}
 
@@ -2373,7 +2342,7 @@ RCODE F_BackerStream::startThreads( void)
 	{
 		if( RC_BAD( rc = f_threadCreate( &m_pThread,
 			F_BackerStream::writeThread, "backup",
-			FLM_DEFAULT_THREAD_GROUP, 0, (void *)this)))
+			0, 0, (void *)this)))
 		{
 			goto Exit;
 		}
@@ -2382,7 +2351,7 @@ RCODE F_BackerStream::startThreads( void)
 	{
 		if( RC_BAD( rc = f_threadCreate( &m_pThread,
 			F_BackerStream::readThread, "restore",
-			FLM_DEFAULT_THREAD_GROUP, 0, (void *)this)))
+			0, 0, (void *)this)))
 		{
 			goto Exit;
 		}
@@ -2808,7 +2777,7 @@ Exit:
 Desc:		This thread reads data in the background
 ****************************************************************************/
 RCODE F_BackerStream::readThread(
-	F_Thread *			pThread)
+	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 	RCODE					rc = FERR_OK;
@@ -2852,10 +2821,10 @@ Exit:
 Desc:		This thread writes data in the background
 ****************************************************************************/
 RCODE F_BackerStream::writeThread(
-	F_Thread *			pThread)
+	IF_Thread *			pThread)
 {
-	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 	RCODE					rc = FERR_OK;
+	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 
 	for( ;;)
 	{
@@ -2908,7 +2877,7 @@ Desc:
 F_FSRestore::F_FSRestore() 
 {
 	m_pFileHdl = NULL;
-	m_pFileHdl64 = NULL;
+	m_pMultiFileHdl = NULL;
 	m_ui64Offset = 0;
 	m_bSetupCalled = FALSE;
 	m_szDbPath[ 0] = 0;
@@ -2962,18 +2931,17 @@ RCODE F_FSRestore::openBackupSet( void)
 	RCODE			rc = FERR_OK;
 
 	flmAssert( m_bSetupCalled);
-	flmAssert( !m_pFileHdl64);
+	flmAssert( !m_pMultiFileHdl);
 
-	if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+	if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
-	if( RC_BAD( rc = m_pFileHdl64->Open( m_szBackupSetPath)))
+	
+	if( RC_BAD( rc = m_pMultiFileHdl->open( m_szBackupSetPath)))
 	{
-		m_pFileHdl64->Release();
-		m_pFileHdl64 = NULL;
+		m_pMultiFileHdl->Release();
+		m_pMultiFileHdl = NULL;
 		goto Exit;
 	}
 
@@ -2998,7 +2966,7 @@ RCODE F_FSRestore::openRflFile(
 	FLMBYTE *		pBuf = NULL;
 	FILE_HDR			fileHdr;
 	LOG_HDR			logHdr;
-	F_FileHdl *		pFileHdl = NULL;
+	IF_FileHdl *	pFileHdl = NULL;
 
 	flmAssert( m_bSetupCalled);
 	flmAssert( uiFileNum);
@@ -3013,8 +2981,8 @@ RCODE F_FSRestore::openRflFile(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( 
-			m_szDbPath, F_IO_RDWR | F_IO_SH_DENYNONE, &pFileHdl)))
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
+			m_szDbPath, FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pFileHdl)))
 		{
 			goto Exit;
 		}
@@ -3025,16 +2993,13 @@ RCODE F_FSRestore::openRflFile(
 			goto Exit;
 		}
 
-		pFileHdl->Close();
 		pFileHdl->Release();
 		pFileHdl = NULL;
 
 		m_uiDbVersion = fileHdr.uiVersionNum;
 	}
 
-	/*
-	Generate the log file name.
-	*/
+	// Generate the log file name.
 
 	if( RC_BAD( rc = rflGetDirAndPrefix( 
 		m_uiDbVersion, m_szDbPath, m_szRflDir, szRflPath, szDbPrefix)))
@@ -3043,15 +3008,13 @@ RCODE F_FSRestore::openRflFile(
 	}
 
 	rflGetBaseFileName( m_uiDbVersion, szDbPrefix, uiFileNum, szBaseName);
-	f_pathAppend( szRflPath, szBaseName);
+	gv_FlmSysData.pFileSystem->pathAppend( szRflPath, szBaseName);
 
-	/* 
-	Open the file.
-	*/
+	// Open the file.
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenBlockFile( 
-		szRflPath, F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT,
-		512, &m_pFileHdl)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
+		szRflPath, FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+		&m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -3085,7 +3048,7 @@ RCODE F_FSRestore::openIncFile(
 	char			szIncFile[ F_FILENAME_SIZE];
 
 	flmAssert( m_bSetupCalled);
-	flmAssert( !m_pFileHdl64);
+	flmAssert( !m_pMultiFileHdl);
 
 	/*
 	Since this is a non-interactive restore, we will "guess"
@@ -3095,25 +3058,24 @@ RCODE F_FSRestore::openIncFile(
 	where X is a hex digit.
 	*/
 
-	if( RC_BAD( rc = f_pathReduce( m_szBackupSetPath, 
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( m_szBackupSetPath, 
 		szIncPath, NULL)))
 	{
 		goto Exit;
 	}
 
 	f_sprintf( szIncFile, "%08X.INC", (unsigned)uiFileNum);
-	f_pathAppend( szIncPath, szIncFile);
+	gv_FlmSysData.pFileSystem->pathAppend( szIncPath, szIncFile);
 
-	if( (m_pFileHdl64 = f_new F_64BitFileHandle) == NULL)
+	if( RC_BAD( rc = FlmAllocMultiFileHdl( &m_pMultiFileHdl)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pFileHdl64->Open( szIncPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->open( szIncPath)))
 	{
-		m_pFileHdl64->Release();
-		m_pFileHdl64 = NULL;
+		m_pMultiFileHdl->Release();
+		m_pMultiFileHdl = NULL;
 		goto Exit;
 	}
 
@@ -3137,11 +3099,11 @@ RCODE F_FSRestore::read(
 	RCODE			rc = FERR_OK;
 
 	flmAssert( m_bSetupCalled);
-	flmAssert( m_pFileHdl || m_pFileHdl64);
+	flmAssert( m_pFileHdl || m_pMultiFileHdl);
 
-	if( m_pFileHdl64)
+	if( m_pMultiFileHdl)
 	{
-		if( RC_BAD( rc = m_pFileHdl64->Read( m_ui64Offset, 
+		if( RC_BAD( rc = m_pMultiFileHdl->read( m_ui64Offset, 
 			uiLength, pvBuffer, &uiBytesRead)))
 		{
 			goto Exit;
@@ -3149,7 +3111,7 @@ RCODE F_FSRestore::read(
 	}
 	else
 	{
-		if( RC_BAD( rc = m_pFileHdl->Read( (FLMUINT)m_ui64Offset,
+		if( RC_BAD( rc = m_pFileHdl->read( (FLMUINT)m_ui64Offset,
 			uiLength, pvBuffer, &uiBytesRead)))
 		{
 			goto Exit;
@@ -3175,10 +3137,10 @@ RCODE F_FSRestore::close( void)
 {
 	flmAssert( m_bSetupCalled);
 
-	if( m_pFileHdl64)
+	if( m_pMultiFileHdl)
 	{
-		m_pFileHdl64->Release();
-		m_pFileHdl64 = NULL;
+		m_pMultiFileHdl->Release();
+		m_pMultiFileHdl = NULL;
 	}
 
 	if( m_pFileHdl)

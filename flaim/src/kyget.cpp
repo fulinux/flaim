@@ -40,7 +40,7 @@ FSTATIC RCODE flmKeyAdd(
 	IXD *					pIxd,
 	FlmRecord *			pRecord,
 	FLMUINT				uiContainerNum,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	FLMBOOL				bRemoveDups,
 	REC_KEY **	 		ppKeyList);
 
@@ -53,7 +53,7 @@ FSTATIC RCODE flmGetFieldKeys(
 	FLMUINT				uiLeafFieldLevel,
 	void *				pvField,
 	FLMBOOL				bRemoveDups,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	REC_KEY **	 		ppKeyList,
 	FLMBOOL *			bHasCmpKeys);
 
@@ -62,7 +62,7 @@ FSTATIC RCODE flmBuildCompoundKey(
 	IXD *					pIxd,
 	CMP_KEY_ELM *		pCmpKeyElm,
 	FLMBOOL				bRemoveDups,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	FLMUINT				uiContainerNum,
 	REC_KEY **		 	ppKeyList);
 
@@ -74,7 +74,7 @@ FSTATIC RCODE flmGetCmpKeyElement(
 	FLMUINT				uiCompoundPos,
 	CMP_KEY_ELM *		pParent,
 	FLMBOOL				bRemoveDups,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	REC_KEY **		 	ppKeyList,
 	FlmRecord *			pRecord,
 	FLMUINT				uiContainerNum,
@@ -84,7 +84,7 @@ FSTATIC RCODE flmGetCompoundKeys(
 	FDB *					pDb,
 	IXD *					pIxd,
 	FLMBOOL				bRemoveDups,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	FlmRecord *			pRecord,
 	FLMUINT				uiContainerNum,
 	REC_KEY **	 		ppKeyList);
@@ -97,7 +97,7 @@ FSTATIC RCODE flmKeyAdd(
 	IXD *				pIxd,
 	FlmRecord *		pRecord,
 	FLMUINT			uiContainerNum,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBOOL			bRemoveDups,
 	REC_KEY **		ppKeyList)
 {
@@ -144,11 +144,9 @@ FSTATIC RCODE flmKeyAdd(
 			pTempRecKey = pTempRecKey->pNextKey;
 		}
 	}
-
-	if ((pTempRecKey = (REC_KEY *) GedPoolAlloc( pPool, 
-				sizeof( REC_KEY))) == NULL)
+	
+	if( RC_BAD( rc = pPool->poolAlloc( sizeof( REC_KEY), (void **)&pTempRecKey)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -156,6 +154,7 @@ FSTATIC RCODE flmKeyAdd(
 	pRecord->AddRef();
 	pTempRecKey->pNextKey = *ppKeyList;
 	*ppKeyList = pTempRecKey;
+	
 Exit:
 
 	return (rc);
@@ -174,7 +173,7 @@ FSTATIC RCODE flmGetFieldKeys(
 	FLMUINT			uiLeafFieldLevel,
 	void *			pvField,
 	FLMBOOL			bRemoveDups,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	REC_KEY **	 	ppKeyList,
 	FLMBOOL *		pbHasCmpKeys)
 {
@@ -339,8 +338,8 @@ FSTATIC RCODE flmGetFieldKeys(
 				pFieldRecord = NULL;
 
 				if ((pIfd->uiFlags & IFD_SUBSTRING) &&
-					 uiTextLen == 1 && !(uiLanguage >= FIRST_DBCS_LANG && 
-							uiLanguage <= LAST_DBCS_LANG))
+					 uiTextLen == 1 && !(uiLanguage >= FLM_FIRST_DBCS_LANG && 
+							uiLanguage <= FLM_LAST_DBCS_LANG))
 				{
 					break;
 				}
@@ -390,7 +389,7 @@ FSTATIC RCODE flmBuildCompoundKey(
 	IXD *				pIxd,
 	CMP_KEY_ELM *	pCmpKeyElm,
 	FLMBOOL			bRemoveDups,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMUINT			uiContainerNum,
 	REC_KEY **		ppKeyList)
 {
@@ -482,7 +481,7 @@ FSTATIC RCODE flmGetCmpKeyElement(
 	FLMUINT			uiCompoundPos,
 	CMP_KEY_ELM *	pParent,
 	FLMBOOL			bRemoveDups,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	REC_KEY **		ppKeyList,
 	FlmRecord *		pRecord,
 	FLMUINT			uiContainerNum,
@@ -640,8 +639,8 @@ FSTATIC RCODE flmGetCmpKeyElement(
 				}
 
 				if ((pIfd->uiFlags & IFD_SUBSTRING) &&
-					 uiTextLen == 1 && !(uiLanguage >= FIRST_DBCS_LANG && 
-							uiLanguage <= LAST_DBCS_LANG))
+					 uiTextLen == 1 && !(uiLanguage >= FLM_FIRST_DBCS_LANG && 
+							uiLanguage <= FLM_LAST_DBCS_LANG))
 				{
 					break;
 				}
@@ -726,7 +725,7 @@ FSTATIC RCODE flmGetCompoundKeys(
 	FDB *				pDb,
 	IXD *				pIxd,
 	FLMBOOL			bRemoveDups,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FlmRecord *		pRecord,
 	FLMUINT			uiContainerNum,
 	REC_KEY **	 	ppKeyList)
@@ -815,7 +814,7 @@ RCODE flmGetRecKeys(
 	FlmRecord *		pRecord,
 	FLMUINT			uiContainerNum,
 	FLMBOOL			bRemoveDups,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	REC_KEY **	 	ppKeyList)
 {
 	RCODE				rc = FERR_OK;

@@ -25,10 +25,7 @@
 #ifndef SHARUTIL_H
 #define SHARUTIL_H
 
-#include "ftx.h"
-
-#define UTIL_VER			((FLMUINT)300)
-#define SRC_VER_STR		"Ver47"
+#include "flaim.h"
 
 void flmUtilParseParams(
 	char *			pszCommandBuffer,
@@ -82,7 +79,7 @@ Desc:	treat this vector class like an array, except that you will never
 		leave holes in the elements, the intermediate elements will
 		be filled with 0's.
 ****************************************************************************/
-class FlmVector : public F_Base
+class FlmVector : public F_Object
 {
 public:
 	FlmVector()
@@ -197,19 +194,10 @@ void utilPressAnyKey(
 RCODE utilInitWindow(
 	const char *		pszTitle,
 	FLMUINT *			puiScreenRows,
-	FTX_INFO **			ppFtxInfo,
 	FTX_WINDOW **		ppMainWindow,
 	FLMBOOL *			pbShutdown);
 	
-void utilShutdownWindow(
-	FTX_INFO *			pFtxInfo);
-
-RCODE fileToString(
-	const char * 		pszFile,
-	char **				ppszReturnString);
-
-char * getStringClone(
-	const char * 		pszSrcStr);
+void utilShutdownWindow( void);
 
 FLMUINT utilGetTimeString(
 	char *				pszOutString,

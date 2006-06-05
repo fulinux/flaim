@@ -544,7 +544,7 @@ Exit:
 Desc:	Makes an FQNODE of a given type, and puts a value in it if necessary.
 ****************************************************************************/
 RCODE flmCurMakeQNode(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	QTYPES		eType,
 	void *		pVal,
 	FLMUINT		uiValLen,
@@ -562,12 +562,12 @@ RCODE flmCurMakeQNode(
 	FQNODE *		pQNode;
 	FQATOM *		pQAtom;
 
-	if ((*ppQNode = pQNode = (FQNODE *)GedPoolCalloc( pPool,
-											sizeof( FQNODE))) == NULL)
+	if( RC_BAD( rc = pPool->poolCalloc( sizeof( FQNODE), (void **)&pQNode)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
+	*ppQNode = pQNode;
 
 	// Always set eOpType to the eType
 
@@ -577,39 +577,52 @@ RCODE flmCurMakeQNode(
 		pQNode->uiStatus = uiFlags;
 		goto Exit;
 	}
-	if ((pQNode->pQAtom = pQAtom = (FQATOM *)GedPoolCalloc( pPool,
-												sizeof( FQATOM))) == NULL)
+	
+	if( RC_BAD( rc = pPool->poolCalloc( sizeof( FQATOM), (void **)&pQAtom)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	
+	pQNode->pQAtom = pQAtom;
 	pQAtom->uiFlags = uiFlags;
 
 	switch (eType)
 	{
 		case FLM_TEXT_VAL:
-			if ((pTmpBuf = (FLMBYTE *)GedPoolCalloc( pPool,
-									(FLMUINT)(uiTmpLen + 1))) == NULL)
+		{
+			if( RC_BAD( rc = pPool->poolAlloc( uiTmpLen + 1, (void **)&pTmpBuf)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
 			f_memcpy( pTmpBuf, pVal, uiTmpLen);
-			pTmpBuf[ uiTmpLen ] = '\0';	// MUST BE NULL TERIMINATED!
+			pTmpBuf[ uiTmpLen ] = '\0';
 			pQAtom->val.pucBuf = pTmpBuf;
-			pQAtom->uiBufLen = uiTmpLen;	// Must be actual length.
+			pQAtom->uiBufLen = uiTmpLen;
 			break;
+		}
+		
 		case FLM_BOOL_VAL:
+		{
 			pQAtom->val.uiBool = *(FLMUINT *)pVal;
 			break;
+		}
+		
 		case FLM_INT32_VAL:
+		{
 			pQAtom->val.iVal = *(FLMINT *)pVal;
 			break;
+		}
+		
 		case FLM_REC_PTR_VAL:
 		case FLM_UINT32_VAL:
+		{
 			pQAtom->val.uiVal = *(FLMUINT *)pVal;
 			break;
+		}
+		
 		case FLM_FLD_PATH:
+		{
 			for (uiPathCnt = 0;
 					((FLMUINT *)pVal)[ uiPathCnt];
 					uiPathCnt++)
@@ -620,14 +633,14 @@ RCODE flmCurMakeQNode(
 					goto Exit;
 				}
 			}
-
-			if ((puiTmpPath = (FLMUINT *)GedPoolCalloc( pPool,
-				(FLMUINT)((FLMUINT)(uiPathCnt + 1) * 2 * 
-					(FLMUINT)sizeof( FLMUINT)))) == NULL)
+			
+			if( RC_BAD( rc = pPool->poolCalloc(
+				((FLMUINT)(uiPathCnt + 1) * 2 * sizeof( FLMUINT)),
+				(void **)&puiTmpPath)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+				
 			puiPToCPath = &puiTmpPath [uiPathCnt + 1];
 
 			puiFldPath = (FLMUINT *)pVal;
@@ -639,25 +652,37 @@ RCODE flmCurMakeQNode(
 			pQAtom->val.QueryFld.puiFldPath = puiTmpPath;
 			pQAtom->val.QueryFld.puiPToCPath = puiPToCPath;
 			break;
+		}
+		
 		case FLM_BINARY_VAL:
-			if ((pTmpBuf = (FLMBYTE *)GedPoolCalloc( pPool, uiTmpLen)) == NULL)
+		{
+			if( RC_BAD( rc = pPool->poolAlloc( uiTmpLen, (void **)&pTmpBuf)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
 			f_memcpy( pTmpBuf, pVal, uiTmpLen);
 			pQAtom->val.pucBuf = pTmpBuf;
 			pQAtom->uiBufLen = uiTmpLen;
 			break;
+		}
+		
 		case FLM_USER_PREDICATE:
+		{
 			break;
+		}
+		
 		default:
+		{
 			rc = RC_SET( FERR_CURSOR_SYNTAX);
 			goto Exit;
+		}
 	}
+	
 	pQAtom->eType = eType;
 
 Exit:
+
 	return( rc);
 }
 
@@ -667,7 +692,7 @@ Desc:	Grafts FQNODE onto a passed-in query tree as the right branch of a new
 Ret:
 ****************************************************************************/
 RCODE flmCurGraftNode(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FQNODE * 	pQNode,
 	QTYPES		eGraftOp,
 	FQNODE *  * ppQTree)
@@ -710,8 +735,8 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 	FLMUINT		uiVal;
 	void *		pTmpVal = pVal;
 	CURSOR *		pCursor = (CURSOR *)hCursor;
+	F_Pool		pool;
 	FLMBOOL		bPoolInitialized = FALSE;
-	POOL			pool;
 
 	if (!pCursor)
 	{
@@ -719,6 +744,7 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 		rc = RC_SET( FERR_INVALID_PARM);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = pCursor->rc))
 	{
 		goto Exit;
@@ -752,7 +778,7 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 
 			f_memset( &node, 0, sizeof(NODE));
 
-			GedPoolInit( &pool, 512);
+			pool.poolInit( 512);
 			bPoolInitialized = TRUE;
 
 			rc = (eValType == FLM_UNICODE_VAL) 
@@ -842,6 +868,7 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 	}
 
 Exit:
+
 	if (pCursor)
 	{
 		pCursor->rc = rc;
@@ -849,8 +876,9 @@ Exit:
 
 	if (bPoolInitialized)
 	{
-		GedPoolFree( &pool);
+		pool.poolFree();
 	}
+	
 	return( rc);
 }
 
@@ -1038,14 +1066,15 @@ FLMEXP RCODE FLMAPI FlmCursorAddFieldCB(
 
 		pQAtom->val.QueryFld.fnGetField = fnGetField;
 		pQAtom->val.QueryFld.bValidateOnly = bValidateOnly;
+		
 		if (pvUserData && uiUserDataLen)
 		{
-			if ((pQAtom->val.QueryFld.pvUserData =
-				GedPoolAlloc( &pCursor->QueryPool, uiUserDataLen)) == NULL)
+			if( RC_BAD( rc = pCursor->QueryPool.poolAlloc( uiUserDataLen,
+				(void **)&pQAtom->val.QueryFld.pvUserData)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
+			
 			f_memcpy( pQAtom->val.QueryFld.pvUserData, pvUserData,
 							uiUserDataLen);
 			pQAtom->val.QueryFld.uiUserDataLen = uiUserDataLen;

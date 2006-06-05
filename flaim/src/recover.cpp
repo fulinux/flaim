@@ -89,7 +89,7 @@ FSTATIC RCODE flmReadLog(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if( RC_BAD( rc = pDb->pSFileHdl->ReadBlock( uiFilePos,
+	if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
 			uiBlkSize, pBlk, &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
@@ -272,7 +272,7 @@ FSTATIC RCODE flmProcessBeforeImage(
 
 	pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-	rc = pDb->pSFileHdl->WriteBlock( uiBlkAddress, uiBlkLength, pBlk,
+	rc = pDb->pSFileHdl->writeBlock( uiBlkAddress, uiBlkLength, pBlk,
 						 pFile->FileHdr.uiBlockSize, NULL, &uiBytesWritten);
 						 
 #ifdef FLM_DBG_LOG
@@ -317,7 +317,7 @@ RCODE flmWriteLogHdr(
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesWritten;
 	FLMUINT			uiNewCheckSum;
-	F_FileHdlImp *	pCFileHdl = NULL;
+	IF_FileHdl *	pCFileHdl = NULL;
 	FLMBYTE *		pucTmpLogHdr;
 	F_TMSTAMP		StartTime;
 
@@ -328,7 +328,7 @@ RCODE flmWriteLogHdr(
 	// generally have been modified to point to the new things that were
 	// added.
 
-	if (RC_BAD( rc = pSFileHdl->Flush()))
+	if (RC_BAD( rc = pSFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -426,33 +426,28 @@ RCODE flmWriteLogHdr(
 		f_timeGetTimeStamp( &StartTime);
 	}
 	
-	if( RC_BAD( rc = pSFileHdl->GetFileHdl( 0, TRUE, &pCFileHdl)))
+	if( RC_BAD( rc = pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
 	{
 		goto Exit;
 	}
 
-#ifdef FLM_WIN
-	if (((F_FileHdlImp *)pCFileHdl)->GetSectorSize() > 512)
+	if( pCFileHdl->getSectorSize() > 512)
 	{
 		// We don't want to use the SectorWrite call when sector
 		// size is > 512 because it will overwrite the file
 		// header, which has not been set up in this buffer.
 
-		rc = pCFileHdl->Write( 0, uiBytesWritten, pFile->pucLogHdrWriteBuf,
+		rc = pCFileHdl->write( 0, uiBytesWritten, pFile->pucLogHdrWriteBuf,
 									&uiBytesWritten);
 	}
 	else
 	{
-		rc = pCFileHdl->SectorWrite( 0,
+		rc = pCFileHdl->sectorWrite( 0,
 									 uiBytesWritten, pFile->pucLogHdrWriteBuf, 
-									 ((F_FileHdlImp *)pCFileHdl)->GetSectorSize(),
+									 pCFileHdl->getSectorSize(),
 									 NULL, &uiBytesWritten, FALSE);
 	}
-#else
-	rc = pCFileHdl->SectorWrite( 0,
-								 uiBytesWritten, pFile->pucLogHdrWriteBuf, 512,
-								 NULL, &uiBytesWritten, FALSE);
-#endif
+	
 	if (RC_BAD( rc))
 	{
 		if (pDbStats)
@@ -468,7 +463,7 @@ RCODE flmWriteLogHdr(
 		flmAddElapTime( &StartTime, &pDbStats->LogHdrWrites.ui64ElapMilli);
 	}
 
-	if (RC_BAD( rc = pCFileHdl->Flush()))
+	if (RC_BAD( rc = pCFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -514,32 +509,16 @@ RCODE flmPhysRollback(
 	if (uiLogEOF == pFile->FileHdr.uiBlockSize ||
 		 !uiFirstLogBlkAddr)
 	{
-		goto Exit;		// Will return FERR_OK
+		goto Exit;
 	}
 
 	// Allocate a buffer to be used for reading.
-
-#ifdef FLM_WIN
-	if ((pucBlk = (FLMBYTE *)VirtualAlloc( NULL,
-		(DWORD)pFile->FileHdr.uiBlockSize, 
-		MEM_COMMIT, PAGE_READWRITE)) == NULL)
-	{
-		rc = MapWinErrorToFlaim( GetLastError(), FERR_MEM);
-		goto Exit;
-	}
-#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
-	if( (pucBlk = (FLMBYTE *)memalign( 
-		sysconf(_SC_PAGESIZE), pFile->FileHdr.uiBlockSize)) == NULL) 
-	{
-		rc = MapErrnoToFlaimErr(errno, FERR_MEM);
-		goto Exit;
-	}
-#else
-	if (RC_BAD( rc = f_alloc( pFile->FileHdr.uiBlockSize, &pucBlk)))
+	
+	if( RC_BAD( rc = f_allocAlignedBuffer( pFile->FileHdr.uiBlockSize, 
+		(void **)&pucBlk)))
 	{
 		goto Exit;
 	}
-#endif
 
 	// Start from beginning of log and read to EOF restoring before-image
 	// blocks along the way.
@@ -558,7 +537,7 @@ RCODE flmPhysRollback(
 
 	// Force the writes to the file.
 
-	if (RC_BAD( rc = pDb->pSFileHdl->Flush()))
+	if (RC_BAD( rc = pDb->pSFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -571,13 +550,8 @@ Exit:
 
 	if (pucBlk)
 	{
-#ifdef FLM_WIN
-		(void)VirtualFree( pucBlk, 0, MEM_RELEASE);
-#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
-		free( pucBlk);
-#else
-		f_free( &pucBlk);
-#endif
+		f_freeAlignedBuffer( (void **)&pucBlk);
 	}
+	
 	return( rc);
 }

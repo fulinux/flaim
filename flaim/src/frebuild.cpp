@@ -42,10 +42,10 @@ typedef struct RECOV_DICT_REC
 	RECOV_DICT_REC *	pNext;
 } RECOV_DICT_REC;
 
-typedef struct
+typedef struct RECOV_DICT_INFO
 {
 	RECOV_DICT_REC *	pRecovRecs;
-	POOL					pool;
+	F_Pool				pool;
 } RECOV_DICT_INFO;
 
 FSTATIC RCODE bldAdjustNextDrn(
@@ -110,7 +110,9 @@ FSTATIC RCODE bldDoDict(
 	FLMBOOL *			pbStartedTransRV);
 
 FSTATIC RCODE bldDetermineBlkSize(
-	F_SuperFileHdl *	pSFileHdl,
+	const char *		pszSourceDbPath,
+	const char *		pszSourceDataDir,
+	FLMUINT				uiDbVersion,
 	FLMUINT				uiMaxFileSize,
 	FLMUINT *			puiBlkSizeRV,
 	STATUS_HOOK			fnStatusFunc,
@@ -433,7 +435,7 @@ FSTATIC RCODE bldAdjustNextDrn(
 
 		// Find the element whose DRN is DRN_LAST_MARKER
 
-		flmUINT32ToBigEndian( (FLMUINT32)DRN_LAST_MARKER, DrnMarker);
+		f_UINT32ToBigEndian( (FLMUINT32)DRN_LAST_MARKER, DrnMarker);
 		if( RC_BAD( rc = FSBtSearch( pDb, pLFile, &pStack, DrnMarker,
 											 DIN_KEY_SIZ, 0)))
 		{
@@ -502,7 +504,7 @@ FSTATIC RCODE bldRecovData(
 	RECOV_DICT_INFO *	pRecovDictInfo = NULL;
 	FLMUINT				uiFileNumber = 0;
 	FLMUINT				uiOffset = 0;
-	F_FileHdlImp *		pFileHdl = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
 	FLMUINT				uiMaxFileSize = pRebuildState->uiMaxFileSize;
 	FLMUINT				uiDbVersion =
 							pRebuildState->pHdrInfo->FileHdr.uiVersionNum;
@@ -528,7 +530,7 @@ FSTATIC RCODE bldRecovData(
 				break;
 			}
 
-			if (RC_BAD( rc = pSFileHdl->GetFileHdl( 
+			if (RC_BAD( rc = pSFileHdl->getFileHdl( 
 				uiFileNumber, FALSE, &pFileHdl)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND ||
@@ -543,7 +545,7 @@ FSTATIC RCODE bldRecovData(
 
 		// Read the block into memory.
 
-		if (RC_BAD( rc = pFileHdl->SectorRead( uiOffset, uiBlockSize,
+		if (RC_BAD( rc = pFileHdl->sectorRead( uiOffset, uiBlockSize,
 												pucBlk, &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
@@ -1057,7 +1059,7 @@ FSTATIC RCODE bldExtractRecs(
 				// Make sure the tempory memory is freed.
 				// Eats up the memory during a rebuild.
 				
-				GedPoolReset( &pDb->TempPool, NULL);
+				pDb->TempPool.poolReset();
 				if (!bRecovDictRecs)
 				{
 					pRebuildState->CallbackData.uiRecsRecov++;
@@ -1105,7 +1107,7 @@ FSTATIC RCODE bldGetNextElm(
 
 		*pbGotNewBlockRV = TRUE;
 		uiBlkAddress = (FLMUINT)FB2UD( &pBlk [BH_NEXT_BLK]);
-		rc = pRebuildState->pSFileHdl->ReadBlock( uiBlkAddress, 
+		rc = pRebuildState->pSFileHdl->readBlock( uiBlkAddress, 
 										 pHdrInfo->FileHdr.uiBlockSize,
 										 pBlk, &uiBytesRead);
 		if( uiBytesRead < pHdrInfo->FileHdr.uiBlockSize)
@@ -1596,7 +1598,7 @@ FSTATIC RCODE bldSaveRecovDictRec(
 			goto Exit;
 		}
 
-		GedPoolInit( &pRecovDictInfo->pool, 512);
+		pRecovDictInfo->pool.poolInit( 512);
 		*ppRecovDictInfoRV = pRecovDictInfo;
 	}
 
@@ -1748,11 +1750,10 @@ Remove_Rec:
 	if( !pNewDictRec)
 	{
 		// All elements of pNewDictRec are initialized below.
-
-		if( (pNewDictRec = (RECOV_DICT_REC *)GedPoolAlloc(
-					&pRecovDictInfo->pool, sizeof( RECOV_DICT_REC))) == NULL)
+		
+		if( RC_BAD( rc = pRecovDictInfo->pool.poolAlloc(
+			sizeof( RECOV_DICT_REC), (void **)&pNewDictRec)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
@@ -1867,7 +1868,7 @@ FSTATIC void bldFreeRecovDictInfo(
 			pDictRec = pDictRec->pNext;
 		}
 
-		GedPoolFree( &pRecovDictInfo->pool);
+		pRecovDictInfo->pool.poolFree();
 		f_free( &pRecovDictInfo);
 	}
 }
@@ -2147,17 +2148,26 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 	HDR_INFO *				pHdrInfo;
 	CREATE_OPTS *			pDefaultCreateOpts = NULL;
 	FLMUINT					uiTransID;
-	ServerLockObject *	pWriteLockObj = NULL;
-	ServerLockObject *	pFileLockObj = NULL;
+	IF_LockObject *		pWriteLockObj = NULL;
+	IF_LockObject *		pFileLockObj = NULL;
 	FLMBOOL					bMutexLocked = FALSE;
-	F_FileHdlImp *			pLockFileHdl = NULL;
-	FLOCK_INFO				LockInfo;
+	IF_FileHdl *			pCFileHdl = NULL;
+	IF_FileHdl *			pLockFileHdl = NULL;
+	eLockType				currLockType;
+	FLMUINT					uiLockThreadId;
 	FLMUINT					uiFileNumber;
 	FLMUINT					uiDbVersion = 0;
 	FLMBOOL					bUsedFFile = FALSE;
 	FLMBOOL					bBadHeader = FALSE;
-	FlmECache *				pECacheMgr = NULL;
+	F_SEM						hWaitSem = F_SEM_NULL;
 
+	// Allocate a semaphore
+
+	if( RC_BAD( rc = f_semCreate( &hWaitSem)))
+	{
+		goto Exit;
+	}
+	
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	bMutexLocked = TRUE;
 
@@ -2216,16 +2226,19 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		// make sure there is no write lock.  If there is,
 		// we cannot do the rebuild right now.
 
-		pFile->pFileLockObj->GetLockInfo( (FLMINT)0, &LockInfo);
-		if (LockInfo.eCurrLockType == FLM_LOCK_EXCLUSIVE &&
-			 LockInfo.uiThreadId == f_threadId())
+		pFile->pFileLockObj->getLockInfo( 0, &currLockType, 
+			&uiLockThreadId, NULL);
+
+		if (currLockType == FLM_LOCK_EXCLUSIVE && uiLockThreadId == f_threadId())
 		{
 
 			// See if there is already a transaction going.
 
-			pFile->pWriteLockObj->GetLockInfo( (FLMINT)0, &LockInfo);
-			if ((LockInfo.eCurrLockType == FLM_LOCK_EXCLUSIVE) &&
-				 (LockInfo.uiThreadId == f_threadId()))
+			pFile->pWriteLockObj->getLockInfo( 0, &currLockType, 
+				&uiLockThreadId, NULL);
+				
+			if (currLockType == FLM_LOCK_EXCLUSIVE && 
+				 uiLockThreadId == f_threadId())
 			{
 				rc = RC_SET( FERR_TRANS_ACTIVE);
 				goto Exit;
@@ -2235,8 +2248,8 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		{
 			pFileLockObj = pFile->pFileLockObj;
 			pFileLockObj->AddRef();
-			if (RC_BAD( rc = pFileLockObj->Lock( TRUE, NULL, FALSE, TRUE,
-									FLM_NO_TIMEOUT, 0)))
+			if (RC_BAD( rc = pFileLockObj->lock( hWaitSem,
+				TRUE, FLM_NO_TIMEOUT, 0)))
 			{
 				goto Exit;
 			}
@@ -2252,11 +2265,12 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		// Only contention here is with the checkpoint thread.
 		// Wait forever for the checkpoint thread to give
 		// up the lock.
-
-		if (RC_BAD( rc = dbWriteLock( pFile)))
+		
+		if( RC_BAD( rc = pWriteLockObj->lock( hWaitSem, TRUE, FLM_NO_TIMEOUT, 0)))
 		{
 			goto Exit;
 		}
+
 		bWriteLocked = TRUE;
 	}
 
@@ -2299,57 +2313,46 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 	pRebuildState->AppArg = pvStatusData;
 	pRebuildState->fnStatusFunc = fnStatusFunc;
 	pHdrInfo = pRebuildState->pHdrInfo;
-
-	/* Open the corrupted database. */
-
-	if ((pSFileHdl = f_new F_SuperFileHdl) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pSFileHdl->Setup( NULL, pszSourceDbPath,
-							pszSourceDataDir)))
+	
+	// Open the database file for reading header information
+	
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszSourceDbPath, 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pCFileHdl)))
 	{
 		goto Exit;
 	}
+	
+	rc = flmGetHdrInfo( pCFileHdl, &pHdrInfo->FileHdr,
+					&pHdrInfo->LogHdr, pRebuildState->pLogHdr);
+					
+	pCFileHdl->Release();
+	pCFileHdl = NULL;
 
-	pRebuildState->pSFileHdl = pSFileHdl;
-
-	/*
-	Check the header information to see if we were in the middle
-	of a previous copy.
-	*/
-
-	if (RC_OK( rc = flmGetHdrInfo( pSFileHdl,
-									  &pHdrInfo->FileHdr,
-									  &pHdrInfo->LogHdr,
-									  pRebuildState->pLogHdr)))
+	if( RC_OK( rc))
 	{
-
 		if (!pCreateOpts)
 		{
-			flmGetCreateOpts( &pHdrInfo->FileHdr,
-										 pRebuildState->pLogHdr, pDefaultCreateOpts);
+			flmGetCreateOpts( &pHdrInfo->FileHdr, pRebuildState->pLogHdr,
+				pDefaultCreateOpts);
 			pCreateOpts = pDefaultCreateOpts;
 		}
+		
 		rc = FERR_OK;
 		uiDbVersion = pHdrInfo->FileHdr.uiVersionNum;
 		pRebuildState->uiMaxFileSize = flmGetMaxFileSize( uiDbVersion,
 													pRebuildState->pLogHdr);
 	}
-	else if ((rc == FERR_BLOCK_CHECKSUM) ||
-				(rc == FERR_INCOMPLETE_LOG) ||
-				(rc == FERR_DATA_ERROR) ||
-				((rc == FERR_UNSUPPORTED_VERSION) &&
-				  (pHdrInfo->FileHdr.uiVersionNum == 0)))
+	else if( rc == FERR_BLOCK_CHECKSUM || rc == FERR_INCOMPLETE_LOG ||
+				rc == FERR_DATA_ERROR || 
+				(rc == FERR_UNSUPPORTED_VERSION && pHdrInfo->FileHdr.uiVersionNum == 0))
 	{
-		if ((rc == FERR_BLOCK_CHECKSUM) ||
-			 (rc == FERR_DATA_ERROR))
+		if( rc == FERR_BLOCK_CHECKSUM || rc == FERR_DATA_ERROR)
 		{
 			bBadHeader = TRUE;
 		}
+		
 		rc = FERR_OK;
+		
 		if (!pCreateOpts)
 		{
 			flmGetCreateOpts( &pHdrInfo->FileHdr,
@@ -2360,12 +2363,12 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		pRebuildState->uiMaxFileSize = flmGetMaxFileSize( uiDbVersion,
 													pRebuildState->pLogHdr);
 	}
-	else if (rc == FERR_UNSUPPORTED_VERSION || rc == FERR_NEWER_FLAIM)
+	else if( rc == FERR_UNSUPPORTED_VERSION || rc == FERR_NEWER_FLAIM)
 	{
 		goto Exit;
 	}
-	else if ((rc == FERR_NOT_FLAIM) ||
-				(!VALID_BLOCK_SIZE( pHdrInfo->FileHdr.uiBlockSize)))
+	else if( rc == FERR_NOT_FLAIM ||
+				!VALID_BLOCK_SIZE( pHdrInfo->FileHdr.uiBlockSize))
 	{
 		FLMUINT	uiSaveBlockSize;
 		FLMUINT	uiCalcBlockSize = 0;
@@ -2374,7 +2377,7 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		uiDbVersion = (FLMUINT)((rc != FERR_NOT_FLAIM)
 										? pHdrInfo->FileHdr.uiVersionNum
 										: FLM_CUR_FILE_FORMAT_VER_NUM);
-		pSFileHdl->SetDbVersion( uiDbVersion);
+
 		pRebuildState->uiMaxFileSize = flmGetMaxFileSize( uiDbVersion,
 													pRebuildState->pLogHdr);
 		if (!pCreateOpts)
@@ -2396,13 +2399,13 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 			pCreateOpts = pDefaultCreateOpts;
 		}
 
-		/* Try to determine the correct block size. */
+		// Try to determine the correct block size
 
-		if (RC_BAD( rc = bldDetermineBlkSize( pSFileHdl,
-											pRebuildState->uiMaxFileSize,
-											&uiCalcBlockSize,
-											fnStatusFunc, &pRebuildState->CallbackData,
-											pRebuildState->AppArg)))
+		if (RC_BAD( rc = bldDetermineBlkSize(
+			pszSourceDbPath, pszSourceDataDir, uiDbVersion,
+			pRebuildState->uiMaxFileSize, &uiCalcBlockSize,
+			fnStatusFunc, &pRebuildState->CallbackData,
+			pRebuildState->AppArg)))
 		{
 			goto Exit;
 		}
@@ -2414,40 +2417,25 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 
 		flmInitFileHdrInfo( pCreateOpts, &pHdrInfo->FileHdr, ucFileHdrBuf);
 
-		/*
-		Only use the passed-in block size (uiSaveBlockSize) if it
-		was non-zero.
-		*/
+		// Only use the passed-in block size (uiSaveBlockSize) if it
+		// was non-zero.
 
 		if (uiSaveBlockSize)
+		{
 			pCreateOpts->uiBlockSize = uiSaveBlockSize;
+		}
 	}
 	else
 	{
 		goto Exit;
 	}
 
-	// Calculate the file size.
-
-	pSFileHdl->SetDbVersion( uiDbVersion);
-	pRebuildState->CallbackData.ui64DatabaseSize = 0;
-	for (uiFileNumber = 1;;uiFileNumber++)
-	{
-		FLMUINT	uiTmpSize;
-
-		if (RC_BAD( pSFileHdl->GetFileSize( uiFileNumber, &uiTmpSize)))
-		{
-			break;
-		}
-		pRebuildState->CallbackData.ui64DatabaseSize += (FLMUINT64)uiTmpSize;
-	}
-
 	// Delete the destination database in case it already exists.
 
-	if (RC_BAD( rc = FlmDbRemove( pszDestDbPath, pszDestDataDir,
+	if( RC_BAD( rc = FlmDbRemove( pszDestDbPath, pszDestDataDir,
 								pszDestRflDir, TRUE)))
 	{
-		if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
+		if( rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 		{
 			rc = FERR_OK;
 		}
@@ -2457,66 +2445,62 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		}
 	}
 
-	/*
-	If no block size has been specified or determined yet, use what we
-	read from the file header.
-	*/
+	// If no block size has been specified or determined yet, use what we
+	// read from the file header.
 
 	if (!pCreateOpts->uiBlockSize)
+	{
 		pCreateOpts->uiBlockSize = pHdrInfo->FileHdr.uiBlockSize;
-
-	pSFileHdl->SetDbVersion( pHdrInfo->FileHdr.uiVersionNum);
-	pSFileHdl->SetBlockSize( pHdrInfo->FileHdr.uiBlockSize);
-
-	/*
-	Set the ECache manger into the super file handle
-	*/
-
-	if( pFile && pFile->pECacheMgr)
-	{
-		pSFileHdl->setECacheMgr( pFile->pECacheMgr);
-	}
-	else if( gv_FlmSysData.bOkToUseESM)
-	{
-		if( (pECacheMgr = f_new FlmECache) == NULL)
-		{
-			rc = RC_SET( FERR_MEM);
-			goto Exit;
-		}
-
-		if( !pECacheMgr->setupECache( pHdrInfo->FileHdr.uiBlockSize,
-			pRebuildState->uiMaxFileSize))
-		{
-			pECacheMgr->Release();
-			pECacheMgr = NULL;
-		}
-		else
-		{
-			pSFileHdl->setECacheMgr( pECacheMgr);
-		}
 	}
 
-	/*
-	When creating the new file, set the transaction ID to one greater than it
-	is in the corrupt file.  However, don't let it get greater than about
-	2 billion - want to leave room for 2 billion transactions in case they
-	were corrupted somehow in our old file.
-	*/
+	// Open the corrupted database
 
-	uiTransID =
-		((FLMUINT)FB2UD( &pRebuildState->pLogHdr [LOG_CURR_TRANS_ID]) + 1) & 0x7FFFFFFF;
+	if ((pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pSFileHdl->setup( pszSourceDbPath, pszSourceDataDir, 
+		pHdrInfo->FileHdr.uiVersionNum)))
+	{
+		goto Exit;
+	}
+
+	pRebuildState->pSFileHdl = pSFileHdl;
+
+	// Calculate the file size.
+
+	pRebuildState->CallbackData.ui64DatabaseSize = 0;
+	for (uiFileNumber = 1;;uiFileNumber++)
+	{
+		FLMUINT64	ui64TmpSize;
+
+		if (RC_BAD( pSFileHdl->getFileSize( uiFileNumber, &ui64TmpSize)))
+		{
+			break;
+		}
+		
+		pRebuildState->CallbackData.ui64DatabaseSize += ui64TmpSize;
+	}
+
+	// When creating the new file, set the transaction ID to one greater than it
+	// is in the corrupt file.  However, don't let it get greater than about
+	// 2 billion - want to leave room for 2 billion transactions in case they
+	// were corrupted somehow in our old file.
+
+	uiTransID = ((FLMUINT)FB2UD( &pRebuildState->pLogHdr[
+								LOG_CURR_TRANS_ID]) + 1) & 0x7FFFFFFF;
 
 	if (RC_BAD( rc = flmCreateNewFile( pszDestDbPath, pszDestDataDir,
-					pszDestRflDir,
-					pszDictPath, NULL,
-					pCreateOpts, uiTransID, (FDB * *)&pRebuildState->hDb,
-					pRebuildState)))
+			pszDestRflDir, pszDictPath, NULL, pCreateOpts, 
+			uiTransID, (FDB * *)&pRebuildState->hDb, pRebuildState)))
 	{
 		goto Exit;
 	}
 	pDb = (FDB *)pRebuildState->hDb;
 
-	/* Rebuild the database */
+	// Rebuild the database
 
 	if (RC_BAD( rc = flmDbRebuildFile( pRebuildState, bBadHeader)))
 	{
@@ -2525,7 +2509,7 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 
 Exit:
 
-	/* Close the temporary database, if it is still open. */
+	// Close the temporary database, if it is still open
 
 	if (pDb)
 	{
@@ -2578,25 +2562,15 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	/* Unlock the file, if it is locked. */
-
 	if (bWriteLocked)
 	{
-		dbWriteUnlock( pFile);
+		pWriteLockObj->unlock();
 		bWriteLocked = FALSE;
 	}
 
 	if (bFileLocked)
 	{
-		RCODE	rc3;
-
-		if (RC_BAD( rc3 = pFileLockObj->Unlock( TRUE, NULL)))
-		{
-			if (RC_OK( rc))
-			{
-				rc = rc3;
-			}
-		}
+		pFileLockObj->unlock();
 		bFileLocked = FALSE;
 	}
 
@@ -2604,11 +2578,10 @@ Exit:
 	{
 		pSFileHdl->Release();
 	}
-
-	if( pECacheMgr)
+	
+	if( pCFileHdl)
 	{
-		pECacheMgr->Release();
-		pECacheMgr = NULL;
+		pCFileHdl->Release();
 	}
 
 	if (pWriteLockObj)
@@ -2616,6 +2589,7 @@ Exit:
 		pWriteLockObj->Release();
 		pWriteLockObj = NULL;
 	}
+	
 	if (pFileLockObj)
 	{
 		pFileLockObj->Release();
@@ -2624,7 +2598,6 @@ Exit:
 
 	if (pLockFileHdl)
 	{
-		(void)pLockFileHdl->Close();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -2693,6 +2666,11 @@ Exit:
 			*puiRecsRecovRV = 0;
 		}
 	}
+	
+	if( hWaitSem != F_SEM_NULL)
+	{
+		f_semDestroy( &hWaitSem);
+	}
 
 	return( rc);
 }
@@ -2703,25 +2681,42 @@ Desc:	This routine reads through a database and makes a best guess as to
 		the true block size of the database.
 *****************************************************************************/
 FSTATIC RCODE bldDetermineBlkSize(
-	F_SuperFileHdl *	pSFileHdl,		// Super file handle for database.
+	const char *		pszSourceDbPath,
+	const char *		pszSourceDataDir,
+	FLMUINT				uiDbVersion,
 	FLMUINT				uiMaxFileSize,
-	FLMUINT *			puiBlkSizeRV,	// Calculated block size is returned here.
-	STATUS_HOOK			fnStatusFunc,	// Callback function.
-	REBUILD_INFO *		pCallbackData,	// Callback structure.
-	void *				AppArg)			// User data for callback.
+	FLMUINT *			puiBlkSizeRV,
+	STATUS_HOOK			fnStatusFunc,
+	REBUILD_INFO *		pCallbackData,
+	void *				AppArg)
 {
-	RCODE				rc = FERR_OK;
-	FLMBYTE			ucBlkHeader [BH_OVHD];
-	FLMUINT			uiBytesRead;
-	FLMUINT			uiBlkAddress;
-	FLMUINT			uiFileNumber = 0;
-	FLMUINT			uiOffset = 0;
-	FLMUINT			uiCount4K = 0;
-	FLMUINT			uiCount8K = 0;
-	FLMUINT64		ui64BytesDone = 0;
-	F_FileHdlImp *	pFileHdl = NULL;
+	RCODE					rc = FERR_OK;
+	FLMBYTE				ucBlkHeader [BH_OVHD];
+	FLMUINT				uiBytesRead;
+	FLMUINT				uiBlkAddress;
+	FLMUINT				uiFileNumber = 0;
+	FLMUINT				uiOffset = 0;
+	FLMUINT				uiCount4K = 0;
+	FLMUINT				uiCount8K = 0;
+	FLMUINT64			ui64BytesDone = 0;
+	IF_FileHdl *		pFileHdl = NULL;
+	F_SuperFileHdl *	pSFileHdl = NULL;
 
-	/* Start from byte offset 0 in the first file. */
+	// Open the corrupted database
+
+	if( (pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pSFileHdl->setup( pszSourceDbPath, pszSourceDataDir, 
+		uiDbVersion)))
+	{
+		goto Exit;
+	}
+
+	// Start from byte offset 0 in the first file
 
 	pCallbackData->iDoingFlag = REBUILD_GET_BLK_SIZ;
 	pCallbackData->bStartFlag = TRUE;
@@ -2731,7 +2726,7 @@ FSTATIC RCODE bldDetermineBlkSize(
 		{
 			uiOffset = 0;
 			uiFileNumber++;
-			if (RC_BAD( rc = pSFileHdl->GetFileHdl( 
+			if (RC_BAD( rc = pSFileHdl->getFileHdl( 
 				uiFileNumber, FALSE, &pFileHdl)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND)
@@ -2743,7 +2738,7 @@ FSTATIC RCODE bldDetermineBlkSize(
 			}
 		}
 
-		if ((RC_OK(rc = pFileHdl->Read( uiOffset, BH_OVHD, ucBlkHeader,
+		if ((RC_OK(rc = pFileHdl->read( uiOffset, BH_OVHD, ucBlkHeader,
 									  &uiBytesRead))) ||
 			 (rc == FERR_IO_END_OF_FILE))
 		{
@@ -2760,10 +2755,16 @@ FSTATIC RCODE bldDetermineBlkSize(
 				 (FSGetFileOffset( uiBlkAddress) == uiOffset))
 			{
 				if (uiOffset % 4096 == 0)
+				{
 					uiCount4K++;
+				}
+				
 				if (uiOffset % 8192 == 0)
+				{
 					uiCount8K++;
+				}
 			}
+			
 			if (rc != FERR_OK || uiBytesRead < BH_OVHD)
 			{
 
@@ -2779,7 +2780,7 @@ FSTATIC RCODE bldDetermineBlkSize(
 				uiOffset += MIN_BLOCK_SIZE;
 			}
 
-			/* Call the callback function to report copy progress. */
+			// Call the callback function to report copy progress
 
 			if (fnStatusFunc != NULL)
 			{
@@ -2791,6 +2792,7 @@ FSTATIC RCODE bldDetermineBlkSize(
 				{
 					goto Exit;
 				}
+				
 				pCallbackData->bStartFlag = FALSE;
 			}
 
@@ -2801,8 +2803,11 @@ FSTATIC RCODE bldDetermineBlkSize(
 			goto Exit;
 		}
 	}
+	
 	if (rc == FERR_IO_END_OF_FILE)
+	{
 		rc = FERR_OK;
+	}
 
 	// If our count of 4K blocks is greater than 66% of the number
 	// of 4K blocks that would fit in the database, we will use
@@ -2818,6 +2823,13 @@ FSTATIC RCODE bldDetermineBlkSize(
 	{
 		*puiBlkSizeRV = 8192;
 	}
+	
 Exit:
+
+	if( pSFileHdl)
+	{
+		pSFileHdl->Release();
+	}
+
 	return( rc);
 }

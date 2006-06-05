@@ -36,7 +36,7 @@ POOL_STATS	g_QueryPoolStats = {0,0};
 FSTATIC RCODE flmCurCopyQTInfo(
 	QTINFO *		pSrc,
 	QTINFO *		pDest,
-	POOL *		pPool);
+	F_Pool *		pPool);
 
 FSTATIC void flmCurClearSelect(
 	CURSOR *		pCursor);
@@ -164,8 +164,8 @@ FLMEXP RCODE FLMAPI FlmCursorInit(
 
 	// Initialize cursor members
 
-	GedSmartPoolInit( &pCursor->QueryPool, &g_QueryPoolStats);
-	GedSmartPoolInit( &pCursor->SQPool, &g_SQPoolStats);
+	pCursor->QueryPool.smartPoolInit( &g_QueryPoolStats);
+	pCursor->SQPool.smartPoolInit( &g_SQPoolStats);
 
 	pCursor->pDb = pDb;
 	pCursor->uiContainer = uiContainer;
@@ -177,16 +177,15 @@ FLMEXP RCODE FLMAPI FlmCursorInit(
 	pCursor->uiCursorId = FCS_INVALID_ID;
 
 	pCursor->QTInfo.uiExpecting = FLM_Q_OPERAND;
-	pCursor->QTInfo.uiFlags = FLM_NOCASE | FLM_WILD;
+	pCursor->QTInfo.uiFlags = FLM_COMP_CASE_INSENSITIVE | FLM_COMP_WILD;
 
 Exit:
 	if (RC_BAD( rc))
 	{
 		if (pCursor)
 		{
-			GedPoolFree( &pCursor->QueryPool);
-
-			GedPoolFree( &pCursor->SQPool);
+			pCursor->QueryPool.poolFree();
+			pCursor->SQPool.poolFree();
 			f_free( &pCursor);
 		}
 	}
@@ -201,7 +200,7 @@ Desc:	Copies a passed-in query tree into a new tree, using the passed-in
 FSTATIC RCODE flmCurCopyQTInfo(
 	QTINFO *		pSrc,
 	QTINFO *		pDest,
-	POOL *		pPool)
+	F_Pool *		pPool)
 {
 	RCODE			rc = FERR_OK;
 	FQNODE *		pDestParentNode;
@@ -397,8 +396,8 @@ FLMEXP RCODE FLMAPI FlmCursorClone(
 
 	// Initialize cursor members
 
-	GedSmartPoolInit( &pDestCursor->QueryPool, &g_QueryPoolStats);
-	GedSmartPoolInit( &pDestCursor->SQPool, &g_SQPoolStats);
+	pDestCursor->QueryPool.smartPoolInit( &g_QueryPoolStats);
+	pDestCursor->SQPool.smartPoolInit( &g_SQPoolStats);
 
 	// Set up a tree info structure for query declaration.
 
@@ -500,7 +499,7 @@ void flmSQFree(
 			}
 		}
 
-		GedPoolFree( &pSubQuery->OptPool);
+		pSubQuery->OptPool.poolFree();
 
 		// Free up the file system cursors, if any.
 
@@ -544,11 +543,11 @@ void flmCurFree(
 	// Free the memory associated with any subqueries.
 
 	flmCurFreeSQList( pCursor, TRUE);
-	GedPoolFree( &pCursor->SQPool);
+	pCursor->SQPool.poolFree();
 
 	// Free the memory associated with the pool structures
 
-	GedPoolFree( &pCursor->QueryPool);
+	pCursor->QueryPool.poolFree();
 	if (pCursor->pDRNSet)
 	{
 		pCursor->pDRNSet->Release();
@@ -711,9 +710,9 @@ FSTATIC void flmCurClearSelect(
 	pCursor->QTInfo.pCurAtomNode = NULL;
 	pCursor->QTInfo.uiNestLvl = 0;
 	pCursor->QTInfo.uiExpecting = FLM_Q_OPERAND;
-	pCursor->QTInfo.uiFlags = FLM_NOCASE | FLM_WILD;
+	pCursor->QTInfo.uiFlags = FLM_COMP_CASE_INSENSITIVE | FLM_COMP_WILD;
 
-	GedPoolReset( &pCursor->QueryPool, NULL);
+	pCursor->QueryPool.poolReset();
 
 	pCursor->uiLastRecID = 0;
 	pCursor->ReadRc = FERR_OK;
@@ -881,7 +880,8 @@ FSTATIC RCODE flmCurSetPos(
 	// Initialize an FDB structure for various and sundry operations.
 
 	pDb = pDestCursor->pDb;
-	pvMark = GedPoolMark( &pDb->TempPool);
+	pvMark = pDb->TempPool.poolMark();
+	
 	if( RC_BAD( rc = flmCurDbInit( pDestCursor)))
 	{
 		goto Exit;
@@ -1091,15 +1091,18 @@ FSTATIC RCODE flmCurSetPos(
 	pDestCursor->pCurrSubQuery = pDestSubQuery;
 
 Exit:
+
 	if (pRecord)
 	{
 		pRecord->Release();
 	}
+	
 	if (pDb)
 	{
-		GedPoolReset( &pDb->TempPool, pvMark);
-		(void)fdbExit( pDb);
+		pDb->TempPool.poolReset( pvMark);
+		fdbExit( pDb);
 	}
+	
 	return( rc);
 }
 
@@ -1382,7 +1385,7 @@ FSTATIC RCODE flmCurSetAbsolutePos(
 
 			if (pCursor->uiTimeLimit)
 			{
-				FLM_TIMER_UNITS_TO_SECS( pCursor->uiTimeLimit, uiSeconds);
+				uiSeconds = FLM_TIMER_UNITS_TO_SECS( pCursor->uiTimeLimit);
 				if (!uiSeconds)
 				{
 					uiSeconds = 1;
@@ -1665,8 +1668,7 @@ FLMEXP RCODE FLMAPI FlmCursorConfig(
 			uiTimeLimit = pCursor->uiTimeLimit = (FLMUINT)Value1;
 			if (uiTimeLimit)
 			{
-				FLM_SECS_TO_TIMER_UNITS( uiTimeLimit,
-							pCursor->uiTimeLimit);
+				pCursor->uiTimeLimit = FLM_SECS_TO_TIMER_UNITS( uiTimeLimit);
 			}
 			break;
 		}
@@ -2630,7 +2632,7 @@ void flmCurFreeSQList(
 
 	if (bFreeEverything)
 	{
-		GedPoolReset( &pCursor->SQPool, NULL);
+		pCursor->SQPool.poolReset();
 		pCursor->pSubQueryList = NULL;
 	}
 }

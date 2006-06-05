@@ -59,16 +59,15 @@ RCODE FlmBlobImp::referenceFile(
 	FLMUINT		uiFlags;
 	FDB *			pDb = (FDB *)hDb;
 
-	flmAssert(  m_pHeaderBuf == NULL);
-
-	// See if the database is being forced to close
+	flmAssert( !m_pHeaderBuf);
 
 	if( RC_BAD( rc = flmCheckDatabaseState( pDb)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = f_pathToStorageString( pszFileName, szUnportablePath)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathToStorageString( 
+		pszFileName, szUnportablePath)))
 	{
 		goto Exit;
 	}
@@ -82,17 +81,17 @@ RCODE FlmBlobImp::referenceFile(
 	{
 		m_uiStorageType = BLOB_REFERENCE_TYPE | BLOB_OWNED_TYPE;
 	}
-	else if( uiFlags & BLOB_UNOWNED_REFERENCE_FLAG )
+	else if( uiFlags & BLOB_UNOWNED_REFERENCE_FLAG)
 	{
 		m_uiStorageType = BLOB_REFERENCE_TYPE;
 	}
 	else
 	{
-		// Type not support with VER41 code.
 		flmAssert(0);
 		rc = RC_SET( FERR_SYNTAX);
 		goto Exit;
 	}
+	
 	m_uiFlags = uiFlags;
 	m_uiAction = BLOB_CREATE_ACTION;
 
@@ -102,6 +101,7 @@ RCODE FlmBlobImp::referenceFile(
 	}
 
 Exit:
+
 	return( rc);
 }
 
@@ -254,7 +254,7 @@ RCODE FlmBlobImp::closeFile()
 {
 	if( m_pFileHdl)
 	{
-		m_pFileHdl->Close();
+		m_pFileHdl->close();
 		m_bFileAccessed = FALSE;
 
 		m_pFileHdl->Release();
@@ -276,10 +276,10 @@ RCODE FlmBlobImp::openFile()
 	{
 		buildFileName( szFileName);
 
-		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( szFileName, 
-					 F_IO_SH_DENYNONE |
-							(m_bReadWriteAccess ? F_IO_RDWR : F_IO_RDONLY), 
-							(F_FileHdl **)&m_pFileHdl)))
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szFileName, 
+					 FLM_IO_SH_DENYNONE |
+							(m_bReadWriteAccess ? FLM_IO_RDWR : FLM_IO_RDONLY), 
+							&m_pFileHdl)))
 		{
 			goto Exit;
 		}
@@ -300,6 +300,7 @@ RCODE FlmBlobImp::buildFileName(
 	FLMUINT		uiNameLength;
 
 	// Be carefull not to do a string copy - this is not null terminated.
+	
 	uiNameLength = m_uiHeaderLen - BLOB_R_PATH_POS;
 	f_memcpy( pszFileName, &m_pHeaderBuf[ BLOB_R_PATH_POS], uiNameLength);
 	pszFileName[ uiNameLength ] = '\0';
@@ -312,7 +313,8 @@ RCODE FlmBlobImp::buildFileName(
 		char		szBlobBaseName [F_FILENAME_SIZE];
 		char *	pszFileExt;
 
-		if( RC_BAD( rc = f_pathReduce( pszFileName, szBlobPath, szBlobBaseName)))
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+			pszFileName, szBlobPath, szBlobBaseName)))
 		{
 			goto Exit;
 		}
@@ -335,7 +337,7 @@ RCODE FlmBlobImp::buildFileName(
 		pszFileExt++;
 		f_strcpy( pszFileExt, (const char *)gv_FlmSysData.ucBlobExt);
 		f_strcpy( pszFileName, szBlobPath);
-		f_pathAppend( pszFileName, szBlobBaseName);
+		gv_FlmSysData.pFileSystem->pathAppend( pszFileName, szBlobBaseName);
 	}
 	
 Exit:
@@ -609,9 +611,7 @@ void FBListAfterCommit(
 
 			if( RC_OK( pBlob->buildFileName( szFileName)))
 			{
-				F_FileSystem * pFileSystem = gv_FlmSysData.pFileSystem;
-
-				(void)pFileSystem->Delete( szFileName);
+				gv_FlmSysData.pFileSystem->deleteFile( szFileName);
 			}
 		}
 

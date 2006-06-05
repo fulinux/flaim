@@ -26,19 +26,19 @@
 
 FSTATIC RCODE fsvIteratorParse(
 	FSV_WIRE *		pWire, 
-	POOL * 			pPool);
+	F_Pool *			pPool);
 
 FSTATIC RCODE fsvIteratorWhereParse(
 	FSV_WIRE * 		pWire, 
-	POOL * 			pPool);
+	F_Pool * 		pPool);
 
 FSTATIC RCODE fsvIteratorFromParse(
 	FSV_WIRE *		pWire, 
-	POOL * 			pPool);
+	F_Pool * 		pPool);
 
 FSTATIC RCODE fsvIteratorSelectParse(
 	FSV_WIRE *		pWire,
-	POOL * 			pPool);
+	F_Pool * 		pPool);
 
 FSTATIC RCODE fsvDbGetBlocks(
 	HFDB				hDb,
@@ -48,30 +48,13 @@ FSTATIC RCODE fsvDbGetBlocks(
 	FLMUINT *		puiBlocksExamined,
 	FLMUINT *		puiNextBlkAddr,
 	FLMUINT			uiFlags,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBYTE **	 	ppBlocks,
 	FLMUINT *		puiBytes);
 
 FSTATIC RCODE fsvGetHandles(
 	FSV_WIRE *		pWire);
 
-RCODE fsvTcpListener(
-	F_Thread *		pThread);
-
-RCODE fsvTcpClientHandler(
-	F_Thread *		pThread);
-
-RCODE fsvTcpVulture(
-	F_Thread *		pThread);
-
-RCODE fsvTcpAcceptConnection(
-	F_MUTEX *			phHandlerSem,
-	FCS_TCP * 			pClient);
-
-FLMBOOL					gv_bTcpAllowConnections = TRUE;
-FLMBOOL					gv_bTcpRunning = FALSE;
-F_Thread *				gv_TcpHandlers[ FSV_MAX_TCP_HANDLERS];
-F_Thread *				gv_pTcpListenerThrd = NULL;
 FSV_SCTX *				gv_pGlobalContext = NULL;
 
 /****************************************************************************
@@ -198,7 +181,7 @@ Desc: This is the function that processes FLAIM requests.
 RCODE fsvProcessRequest(
 	FCS_DIS *	pDataIStream,
 	FCS_DOS *	pDataOStream,
-	POOL *		pScratchPool,
+	F_Pool *		pScratchPool,
 	FLMUINT *	puiSessionIdRV)
 {
 	void *		pvMark = NULL;
@@ -209,7 +192,7 @@ RCODE fsvProcessRequest(
 
 	if (pScratchPool)
 	{
-		pvMark = GedPoolMark( pScratchPool);
+		pvMark = pScratchPool->poolMark();
 		Wire.setPool( pScratchPool);
 	}
 
@@ -390,7 +373,7 @@ Exit:
 
 	if (pScratchPool)
 	{
-		GedPoolReset( pScratchPool, pvMark);
+		pScratchPool->poolReset( pvMark);
 	}
 
 	return (rc);
@@ -511,7 +494,8 @@ RCODE fsvOpClassFile(
 				goto OP_EXIT;
 			}
 
-			if (RC_BAD( opRc = gv_FlmSysData.pFileSystem->Exists( szSourcePath)))
+			if (RC_BAD( opRc = gv_FlmSysData.pFileSystem->doesFileExist( 
+				szSourcePath)))
 			{
 				goto OP_EXIT;
 			}
@@ -526,7 +510,8 @@ RCODE fsvOpClassFile(
 				goto OP_EXIT;
 			}
 
-			if (RC_BAD( opRc = gv_FlmSysData.pFileSystem->Delete( szSourcePath)))
+			if (RC_BAD( opRc = gv_FlmSysData.pFileSystem->deleteFile( 
+				szSourcePath)))
 			{
 				goto OP_EXIT;
 			}
@@ -1296,7 +1281,7 @@ RCODE fsvOpClassDatabase(
 
 				case FDB_GET_LOCK_HOLDER:
 				{
-					LOCK_USER	lockUser;
+					F_LOCK_USER		lockUser;
 
 					if (RC_BAD( opRc = FlmDbGetConfig( hDb, FDB_GET_LOCK_HOLDER,
 								  (void *) &lockUser)))
@@ -1314,14 +1299,14 @@ RCODE fsvOpClassDatabase(
 
 				case FDB_GET_LOCK_WAITERS:
 				{
-					LOCK_USER *		pLockUser = NULL;
+					F_LOCK_USER *		pLockUser = NULL;
 
 					if (RC_BAD( opRc = FlmDbGetConfig( hDb, FDB_GET_LOCK_WAITERS,
 								  (void *) &pLockUser)))
 					{
 						if (pLockUser)
 						{
-							FlmFreeMem( &pLockUser);
+							f_free( &pLockUser);
 						}
 
 						goto OP_EXIT;
@@ -1332,7 +1317,7 @@ RCODE fsvOpClassDatabase(
 					{
 						if (pLockUser)
 						{
-							FlmFreeMem( &pLockUser);
+							f_free( &pLockUser);
 						}
 
 						goto OP_EXIT;
@@ -1340,7 +1325,7 @@ RCODE fsvOpClassDatabase(
 
 					if (pLockUser)
 					{
-						FlmFreeMem( &pLockUser);
+						f_free( &pLockUser);
 					}
 					break;
 				}
@@ -1361,13 +1346,12 @@ RCODE fsvOpClassDatabase(
 				{
 					uiBinSize = F_SERIAL_NUM_SIZE;
 
-					if( (pBinary = (FLMBYTE *) GedPoolAlloc( 
-						pWire->getPool(), uiBinSize)) == NULL)
+					if( RC_BAD( opRc = pWire->getPool()->poolAlloc( 
+						uiBinSize, (void **)&pBinary)))
 					{
-						opRc = RC_SET( FERR_MEM);
 						goto OP_EXIT;
 					}
-
+					
 					if (RC_BAD( opRc = FlmDbGetConfig( hDb, 
 						FDB_GET_SERIAL_NUMBER, (void *) pBinary)))
 					{
@@ -1434,8 +1418,8 @@ RCODE fsvOpClassDatabase(
 				case FDB_RFL_DIR:
 				{
 					char *		pszPath;
-					POOL *		pPool = pWire->getPool();
-					void *		pvMark = GedPoolMark( pPool);
+					F_Pool *		pPool = pWire->getPool();
+					void *		pvMark = pPool->poolMark();
 
 					if (RC_BAD( rc = fcsConvertUnicodeToNative( pPool,
 								  pWire->getFilePath(), &pszPath)))
@@ -1451,7 +1435,7 @@ RCODE fsvOpClassDatabase(
 						goto OP_EXIT;
 					}
 
-					GedPoolReset( pPool, pvMark);
+					pPool->poolReset( pvMark);
 					break;
 				}
 
@@ -1467,9 +1451,9 @@ RCODE fsvOpClassDatabase(
 		case FCS_OP_DATABASE_LOCK:
 		{
 			if (RC_BAD( opRc = FlmDbLock( hDb,
-						  (FLOCK_TYPE) (FLMUINT) pWire->getNumber1(),
-						  (FLMINT) pWire->getSignedValue(), (FLMUINT) pWire->getFlags()
-						  )))
+						  (eLockType) (FLMUINT) pWire->getNumber1(),
+						  (FLMINT) pWire->getSignedValue(), 
+						  (FLMUINT) pWire->getFlags())))
 			{
 				goto OP_EXIT;
 			}
@@ -2092,10 +2076,10 @@ RCODE fsvOpClassTransaction(
 			if (pWire->getFlags() & FCS_TRANS_FLAG_GET_HEADER)
 			{
 				uiBlockSize = 2048;
-				if ((pBlock = (FLMBYTE *) GedPoolAlloc( 
-						pWire->getPool(), uiBlockSize)) == NULL)
+				
+				if( RC_BAD( rc = pWire->getPool()->poolAlloc( uiBlockSize,
+					(void **)&pBlock)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto OP_EXIT;
 				}
 			}
@@ -2227,13 +2211,13 @@ RCODE fsvOpClassMaintenance(
 {
 	FSV_SESN *	pSession;
 	HFDB			hDb;
-	POOL			pool;
+	F_Pool		pool;
 	RCODE			opRc = FERR_OK;
 	RCODE			rc = FERR_OK;
 
 	// Initialize a temporary pool.
 
-	GedPoolInit( &pool, 1024);
+	pool.poolInit( 1024);
 
 	// Service the request.
 
@@ -2312,7 +2296,7 @@ RCODE fsvOpClassIndex(
 	HFDB				hDb = HFDB_NULL;
 	FLMUINT			uiIndex;
 	FINDEX_STATUS	indexStatus;
-	POOL *			pTmpPool = pWire->getPool();
+	F_Pool *			pTmpPool = pWire->getPool();
 	RCODE				opRc = FERR_OK;
 	RCODE				rc = FERR_OK;
 
@@ -2508,9 +2492,9 @@ Desc:	Configures an iterator based on from, where, select, and config
 ****************************************************************************/
 FSTATIC RCODE fsvIteratorParse(
 	FSV_WIRE *		pWire,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
-	RCODE rc = FERR_OK;
+	RCODE 			rc = FERR_OK;
 
 	// Parse the "from" clause. This contains record source information.
 
@@ -2559,7 +2543,7 @@ Desc: Adds selection criteria to an iterator.
 ****************************************************************************/
 FSTATIC RCODE fsvIteratorWhereParse(
 	FSV_WIRE *		pWire,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
 	HFCURSOR 	hIterator = pWire->getIteratorHandle();
 	NODE *		pWhere = pWire->getIteratorWhere();
@@ -2786,7 +2770,7 @@ FSTATIC RCODE fsvIteratorWhereParse(
 
 				// Mark the pool.
 
-				pPoolMark = GedPoolMark( pPool);
+				pPoolMark = pPool->poolMark();
 
 				// Determine the length of the string.
 
@@ -2798,9 +2782,8 @@ FSTATIC RCODE fsvIteratorWhereParse(
 				// Allocate a temporary buffer.
 
 				uiLen += 2;
-				if ((puzBuf = (FLMUNICODE *) GedPoolAlloc( pPool, uiLen)) == NULL)
+				if( RC_BAD( rc = pPool->poolAlloc( uiLen, (void **)&puzBuf)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 
@@ -2817,7 +2800,7 @@ FSTATIC RCODE fsvIteratorWhereParse(
 					goto Exit;
 				}
 
-				GedPoolReset( pPool, pPoolMark);
+				pPool->poolReset( pPoolMark);
 				break;
 			}
 
@@ -2832,7 +2815,7 @@ FSTATIC RCODE fsvIteratorWhereParse(
 
 				// Mark the pool.
 
-				pPoolMark = GedPoolMark( pPool);
+				pPoolMark = pPool->poolMark();
 
 				// Determine the length of the string.
 
@@ -2852,9 +2835,8 @@ FSTATIC RCODE fsvIteratorWhereParse(
 				// Allocate a temporary buffer.
 
 				uiLen += 2;
-				if ((pucBuf = (FLMBYTE *) GedPoolAlloc( pPool, uiLen)) == NULL)
+				if( RC_BAD( rc = pPool->poolAlloc( uiLen, (void **)&pucBuf)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 
@@ -2875,7 +2857,7 @@ FSTATIC RCODE fsvIteratorWhereParse(
 					}
 				}
 
-				GedPoolReset( pPool, pPoolMark);
+				pPool->poolReset( pPoolMark);
 				break;
 			}
 
@@ -2948,7 +2930,7 @@ Desc: Adds source information to an iterator.
 ****************************************************************************/
 FSTATIC RCODE fsvIteratorFromParse(
 	FSV_WIRE *		pWire,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
 	HFDB				hDb = HFDB_NULL;
 	HFCURSOR 		hIterator = pWire->getIteratorHandle();
@@ -3159,7 +3141,7 @@ Desc: Adds a view to an iterator
 ****************************************************************************/
 FSTATIC RCODE fsvIteratorSelectParse(
 	FSV_WIRE *	pWire,
-	POOL *		pPool)
+	F_Pool *		pPool)
 {
 	NODE *		pSelect = pWire->getIteratorSelect();
 	NODE *		pCurNode;
@@ -3221,7 +3203,7 @@ FSTATIC RCODE fsvDbGetBlocks(
 	FLMUINT *	puiBlocksExamined,
 	FLMUINT *	puiNextBlkAddr,
 	FLMUINT		uiFlags,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMBYTE **	ppBlocks,
 	FLMUINT *	puiBytes)
 {
@@ -3307,9 +3289,8 @@ FSTATIC RCODE fsvDbGetBlocks(
 		if (*puiCount)
 		{
 			*puiBytes = Wire.getBlockSize();
-			if ((*ppBlocks = (FLMBYTE *) GedPoolAlloc( pPool, *puiBytes)) == NULL)
+			if( RC_BAD( rc = pPool->poolAlloc( *puiBytes, (void **)ppBlocks)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
 
@@ -3337,11 +3318,10 @@ Transmission_Error:
 	{
 		goto Exit;
 	}
-
-	if ((*ppBlocks = (FLMBYTE *) GedPoolAlloc( 
-			pPool, uiBlockSize * uiCount)) == NULL)
+	
+	if( RC_BAD( rc = pPool->poolAlloc( uiBlockSize * uiCount,
+		(void **)ppBlocks)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -3566,11 +3546,11 @@ RCODE fsvPostStreamedRequest(
 	FLMBOOL			bLastPacket,
 	FCS_BIOS *		pSessionResponse)
 {
-	FLMBOOL	bReleaseSession = FALSE;
 	RCODE		rc = FERR_OK;
-	POOL		localPool;
+	FLMBOOL	bReleaseSession = FALSE;
+	F_Pool	localPool;
 
-	GedPoolInit( &localPool, 1024);
+	localPool.poolInit( 1024);
 
 	if (!pSession && !bLastPacket)
 	{
@@ -3651,7 +3631,7 @@ RCODE fsvPostStreamedRequest(
 				goto Exit;
 			}
 
-			GedPoolReset( pSession->getWireScratchPool(), NULL);
+			pSession->getWireScratchPool()->poolReset();
 			if (RC_BAD( rc = fsvProcessRequest( &dataIStream, &dataOStream,
 						  pSession->getWireScratchPool(), NULL)))
 			{
@@ -3661,8 +3641,6 @@ RCODE fsvPostStreamedRequest(
 	}
 
 Exit:
-
-	GedPoolFree( &localPool);
 
 	if (bReleaseSession)
 	{
@@ -4143,11 +4121,11 @@ RCODE FSV_SCTX::BuildFilePath(
 	FUrl				Url;
 	char *			pucAsciiUrl;
 	const char *	pszFile;
-	POOL				tmpPool;
+	F_Pool			tmpPool;
 
 	// Initialize a temporary pool.
 
-	GedPoolInit( &tmpPool, 256);
+	tmpPool.poolInit( 256);
 
 	// Attempt to convert the UNICODE URL to a native string
 
@@ -4176,7 +4154,8 @@ RCODE FSV_SCTX::BuildFilePath(
 		// Build the database path.
 
 		f_strcpy( pszFilePathRV, szBasePath);
-		if (RC_BAD( rc = f_pathAppend( pszFilePathRV, pszFile)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+			pszFilePathRV, pszFile)))
 		{
 			goto Exit;
 		}
@@ -4191,7 +4170,6 @@ RCODE FSV_SCTX::BuildFilePath(
 
 Exit:
 
-	GedPoolFree( &tmpPool);
 	return (rc);
 }
 
@@ -4251,7 +4229,7 @@ FSV_SESN::FSV_SESN(void)
 	m_pBOStream = NULL;
 	m_bSetupCalled = FALSE;
 	m_uiClientProtocolVersion = 0;
-	GedPoolInit( &m_wireScratchPool, 2048);
+	m_wireScratchPool.poolInit( 2048);
 }
 
 /****************************************************************************
@@ -4293,8 +4271,6 @@ FSV_SESN::~FSV_SESN(void)
 			m_pBOStream->Release();
 		}
 	}
-
-	GedPoolFree( &m_wireScratchPool);
 }
 
 /****************************************************************************
@@ -4450,17 +4426,17 @@ RCODE FSV_SESN::CreateDatabase(
 	FLMUNICODE *		puzDictBuf,
 	CREATE_OPTS *		pCreateOpts)
 {
-	RCODE		rc = FERR_OK;
-	POOL		tmpPool;
-	char *	pucDictBuf = NULL;
-	char *	pszDbPath = NULL;
-	char *	pszDataDir;
-	char *	pszRflDir;
-	char *	pszDictPath;
+	RCODE					rc = FERR_OK;
+	F_Pool				tmpPool;
+	char *				pucDictBuf = NULL;
+	char *				pszDbPath = NULL;
+	char *				pszDataDir;
+	char *				pszRflDir;
+	char *				pszDictPath;
 
 	// Initialize a temporary pool.
 
-	GedPoolInit( &tmpPool, 1024);
+	tmpPool.poolInit( 1024);
 
 	// Make sure that setup has been called.
 
@@ -4570,7 +4546,6 @@ Exit:
 		}
 	}
 
-	GedPoolFree( &tmpPool);
 	return (rc);
 }
 
@@ -4902,423 +4877,6 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE fsvStartTcpListener(
-	FLMUINT	uiPort)
-{
-	RCODE rc = FERR_OK;
-
-	if (RC_BAD( rc = f_threadCreate( &gv_pTcpListenerThrd, fsvTcpListener,
-				  "DB TCP Listener", FLM_DEFAULT_THREAD_GROUP, 0, 
-				  (void *) uiPort)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return (rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-void fsvShutdownTcpListener(void)
-{
-	f_threadDestroy( &gv_pTcpListenerThrd);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE fsvTcpListener(
-	F_Thread *			pThread)
-{
-	RCODE					rc = FERR_OK;
-	FCS_TCP_SERVER *	pServer;
-	FCS_TCP *			pClient = NULL;
-	F_Thread *			pVultureThread = NULL;
-	F_MUTEX				hHandlerSem = F_MUTEX_NULL;
-	FLMUINT				uiLoop;
-	FLMUINT				uiPort = (FLMUINT) pThread->getParm1();
-
-	// Initialize TCP
-
-	if ((pServer = f_new FCS_TCP_SERVER) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = pServer->bind( uiPort)))
-	{
-		gv_bTcpAllowConnections = FALSE;
-		goto Exit;
-	}
-
-	for (uiLoop = 0; uiLoop < FSV_MAX_TCP_HANDLERS; uiLoop++)
-	{
-		gv_TcpHandlers[uiLoop] = NULL;
-	}
-
-	if (RC_BAD( rc = f_mutexCreate( &hHandlerSem)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = f_threadCreate( &pVultureThread, fsvTcpVulture,
-				  "DB TCP Vulture", FLM_DEFAULT_THREAD_GROUP, 0,
-				  (void *) (&hHandlerSem))))
-	{
-		goto Exit;
-	}
-
-	gv_bTcpRunning = TRUE;
-
-	for (;;)
-	{
-		if (pThread->getShutdownFlag())
-		{
-			goto Exit;
-		}
-
-		if (pClient == NULL)
-		{
-			if ((pClient = f_new FCS_TCP) == NULL)
-			{
-				f_sleep( 100);
-				continue;
-			}
-		}
-
-		// See if a client is waiting to connect.
-
-		if (RC_OK( rc = pServer->connectClient( pClient, 2, 1200)))
-		{
-			if (RC_BAD( fsvTcpAcceptConnection( &hHandlerSem, pClient)))
-			{
-				pClient->Release();
-			}
-
-			pClient = NULL;
-		}
-		else
-		{
-			if (rc != FERR_SVR_READ_TIMEOUT)
-			{
-				// Drop the current client.
-
-				pClient->Release();
-				pClient = NULL;
-
-				// Re-initialize the listener.
-
-				pServer->Release();
-				pServer = f_new FCS_TCP_SERVER;
-				flmAssert( pServer != NULL);
-
-				if (RC_BAD( rc = pServer->bind( uiPort)))
-				{
-					gv_bTcpAllowConnections = FALSE;
-				}
-			}
-		}
-	}
-
-Exit:
-
-	// Shut down all threads and free any allocated resources
-
-	f_threadDestroy( &pVultureThread);
-
-	if (pClient)
-	{
-		pClient->Release();
-	}
-
-	if (pServer)
-	{
-		pServer->Release();
-	}
-
-	gv_bTcpRunning = FALSE;
-	return (rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE fsvTcpVulture(
-	F_Thread *	pThread)
-{
-	F_MUTEX *	phHandlerMutex = (F_MUTEX *) pThread->getParm1();
-	FLMUINT		uiLoop;
-	FLMUINT		uiActiveThreads;
-	FLMUINT		uiRetry;
-	FLMBOOL		bShutdown = FALSE;
-
-	while (!bShutdown)
-	{
-		if (pThread->getShutdownFlag())
-		{
-			bShutdown = TRUE;
-			break;
-		}
-
-		f_mutexLock( *phHandlerMutex);
-
-		uiActiveThreads = 0;
-		uiLoop = 0;
-		while (uiLoop < FSV_MAX_TCP_HANDLERS)
-		{
-			if (gv_TcpHandlers[uiLoop] != NULL)
-			{
-				if (!gv_TcpHandlers[uiLoop]->isThreadRunning())
-				{
-					f_threadDestroy( &(gv_TcpHandlers[uiLoop]));
-				}
-				else
-				{
-					uiActiveThreads++;
-				}
-			}
-
-			uiLoop++;
-		}
-
-		f_mutexUnlock( *phHandlerMutex);
-
-		for (uiLoop = 0; uiLoop < 100; uiLoop++)
-		{
-			if (pThread->getShutdownFlag())
-			{
-				bShutdown = TRUE;
-				break;
-			}
-
-			f_sleep( 100);
-		}
-	}
-
-	uiRetry = 0;
-	while (uiRetry < 60)
-	{
-		uiActiveThreads = 0;
-		uiLoop = 0;
-		while (uiLoop < FSV_MAX_TCP_HANDLERS)
-		{
-			if (gv_TcpHandlers[uiLoop] != NULL)
-			{
-				if (!gv_TcpHandlers[uiLoop]->isThreadRunning())
-				{
-					f_threadDestroy( &(gv_TcpHandlers[uiLoop]));
-				}
-				else
-				{
-					gv_TcpHandlers[uiLoop]->setShutdownFlag();
-					uiActiveThreads++;
-				}
-			}
-
-			uiLoop++;
-		}
-
-		if (uiActiveThreads == 0)
-		{
-			break;
-		}
-
-		f_sleep( 1000);
-		uiRetry++;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE fsvTcpAcceptConnection(
-	F_MUTEX *		phHandlerMutex,
-	FCS_TCP *		pClient)
-{
-	RCODE			rc = FERR_OK;
-	FLMBOOL		bMutexLocked = FALSE;
-	FLMUINT		uiLoop;
-	F_Thread *	pClientThrd;
-
-	f_mutexLock( *phHandlerMutex);
-	bMutexLocked = TRUE;
-
-	uiLoop = 0;
-	while (uiLoop < FSV_MAX_TCP_HANDLERS)
-	{
-		if (gv_TcpHandlers[uiLoop] == NULL)
-		{
-			break;
-		}
-
-		uiLoop++;
-	}
-
-	if (uiLoop < FSV_MAX_TCP_HANDLERS)
-	{
-		if (RC_BAD( rc = f_threadCreate( &pClientThrd, fsvTcpClientHandler,
-					  "DB TCP Handler", FLM_DEFAULT_THREAD_GROUP, 0, pClient)))
-		{
-			goto Exit;
-		}
-
-		gv_TcpHandlers[uiLoop] = pClientThrd;
-	}
-	else
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-Exit:
-
-	if (bMutexLocked)
-	{
-		f_mutexUnlock( *phHandlerMutex);
-	}
-
-	return (rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE fsvTcpClientHandler(
-	F_Thread *	pThread)
-{
-	RCODE				rc = FERR_OK;
-	FCS_TCP *		pClient = (FCS_TCP *) pThread->getParm1();
-	FCS_IPIS *		pIpIStream;
-	FCS_IPOS *		pIpOStream = NULL;
-	FCS_DIS *		pDataIStream = NULL;
-	FCS_DOS *		pDataOStream = NULL;
-	FLMUINT			uiSessionId = FCS_INVALID_ID;
-	POOL				pool;
-
-	// Initialize the scratch pool
-
-	GedPoolInit( &pool, 2048);
-
-	// Allocate required objects.
-
-	if ((pIpIStream = f_new FCS_IPIS( pClient)) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if ((pIpOStream = f_new FCS_IPOS( pClient)) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if ((pDataIStream = f_new FCS_DIS) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if ((pDataOStream = f_new FCS_DOS) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	for (;;)
-	{
-		if (pThread->getShutdownFlag())
-		{
-			goto Exit;
-		}
-
-		if (RC_BAD( rc = pClient->socketPeekRead( 5)))
-		{
-			if (rc != FERR_SVR_READ_TIMEOUT)
-			{
-				goto Exit;
-			}
-		}
-		else
-		{
-
-			// Configure the data input stream.
-
-			if (RC_BAD( rc = pDataIStream->setup( pIpIStream)))
-			{
-				goto Exit;
-			}
-
-			// Configure the data output stream.
-
-			if (RC_BAD( rc = pDataOStream->setup( pIpOStream)))
-			{
-				goto Exit;
-			}
-
-			// Process the request.
-
-			if (RC_BAD( rc = fsvProcessRequest( pDataIStream, pDataOStream, &pool,
-						  &uiSessionId)))
-			{
-				goto Exit;
-			}
-		}
-	}
-
-Exit:
-
-	if (pDataIStream)
-	{
-		pDataIStream->Release();
-	}
-
-	if (pDataOStream)
-	{
-		pDataOStream->Release();
-	}
-
-	if (pIpIStream)
-	{
-		pIpIStream->Release();
-	}
-
-	if (pIpOStream)
-	{
-		pIpOStream->Release();
-	}
-
-	if (pClient)
-	{
-		pClient->Release();
-	}
-
-	if (RC_BAD( rc) && uiSessionId != FCS_INVALID_ID)
-	{
-		FSV_SCTX *	pServerContext = NULL;
-
-		// Close the session and release any resources held by the client
-		// (open transactions, etc.)
-
-		if (RC_OK( fsvGetGlobalContext( &pServerContext)))
-		{
-			pServerContext->CloseSession( uiSessionId);
-		}
-	}
-
-	GedPoolFree( &pool);
-	return (rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 void FSV_WIRE::reset(void)
 {
 	resetCommon();
@@ -5416,7 +4974,8 @@ RCODE FSV_WIRE::read(void)
 
 				case WIRE_VALUE_DICT_FILE_PATH:
 				{
-					if (RC_BAD( rc = m_pDIStream->readUTF( m_pPool, &m_puzDictPath)))
+					if (RC_BAD( rc = m_pDIStream->readUTF( m_pPool, 
+						&m_puzDictPath)))
 					{
 						goto Exit;
 					}

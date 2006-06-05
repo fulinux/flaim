@@ -25,7 +25,7 @@
 #ifndef FLM_DLST_HPP
 #define FLM_DLST_HPP
 
-#include "ftx.h"
+#include "flaimsys.h"
 
 #ifdef __cplusplus
 	class F_DynaList;
@@ -80,13 +80,9 @@ Class definitions
 
 #ifdef __cplusplus
 
-class	F_DynamicList : public F_Base
+class	F_DynamicList : public F_Object
 {
 private:
-
-	/*
-	  Data
-	*/
 
 	DLIST_NODE *		m_pFirst;
 	DLIST_NODE *		m_pLast;

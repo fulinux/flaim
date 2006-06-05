@@ -191,7 +191,7 @@ Desc:		Contains the dictionary entries through parsing all of the dictionary
 typedef struct TDICT
 {
 	FDB *			pDb;
-	POOL       	pool;					// Pool for the DDENTRY allocations.
+	F_Pool     	pool;					// Pool for the DDENTRY allocations.
 	LFILE *		pLFile;				// Dictionary container LFile
 	FDICT *		pDict;				// Pointer to new dictionary.
 	FLMBOOL		bWriteToDisk;		// Flag indicating if PCODE should be

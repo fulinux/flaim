@@ -3523,72 +3523,6 @@ FINLINE FLMUINT flmCharTypeAnsi7(
 }
 
 /****************************************************************************
-Desc:	Compare two unicode strings.  This comparison uses the collation
-		rules that are defined for the specified language.
-****************************************************************************/
-FLMEXP FLMINT FLMAPI FlmStrCmp(
-	FLMUINT					uiCompFlags,
-	FLMUINT					byLang,
-	const FLMUNICODE *	uzStr1,
-	const FLMUNICODE *	uzStr2)
-{
-	RCODE			rc;
-	FLMINT		iCmp;
-	POOL			Pool;
-	NODE *		pNd1;
-	NODE *		pNd2;
-
-	GedPoolInit( &Pool, 256);
-
-	if ((pNd1 = GedNodeMake( &Pool, 1, &rc)) == NULL ||
-		 (pNd2 = GedNodeMake( &Pool, 1, &rc)) == NULL)
-	{
-		flmAssert( 0);
-		iCmp = 1;
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = GedPutUNICODE( &Pool, pNd1, uzStr1)))
-	{
-		flmAssert( RC_OK( rc));
-		iCmp = 1;
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = GedPutUNICODE( &Pool, pNd2, uzStr2)))
-	{
-		flmAssert( RC_OK( rc));
-		iCmp = -1;
-		goto Exit;
-	}
-
-	// Handle null string cases.
-
-	if (GedValLen( pNd1) == 0)
-	{
-		iCmp = 1;
-		goto Exit;
-	}
-	else if (GedValLen( pNd2) == 0)
-	{
-		iCmp = -1;
-		goto Exit;
-	}
-
-	// VISIT: need to add support for the IGNORE_DASH and IGNORE_SPACE
-	// options.
-
-	iCmp = flmTextCompare( (FLMBYTE*) GedValPtr( pNd1), GedValLen( pNd1),
-								 (FLMBYTE*) GedValPtr( pNd2), GedValLen( pNd2),
-								 uiCompFlags, byLang);
-
-Exit:
-
-	GedPoolFree( &Pool);
-	return (iCmp);
-}
-
-/****************************************************************************
 Desc: Return the next WP or unicode character value and parsing type.
 ****************************************************************************/
 FLMUINT flmTextGetCharType(
@@ -3603,7 +3537,7 @@ FLMUINT flmTextGetCharType(
 	FLMUNICODE		uniValue;
 	FLMUINT			uiCharSet;
 
-	uiReturnLen = flmTextGetValue( pText, uiLen, NULL, FLM_MIN_SPACES,
+	uiReturnLen = flmTextGetValue( pText, uiLen, NULL, FLM_COMP_COMPRESS_WHITESPACE,
 											pui16WPValue, puzUniValue);
 	wpValue = *pui16WPValue;
 	uniValue = *puzUniValue;
@@ -3686,33 +3620,33 @@ Check_White_Space:
 				// apply.
 
 				if (ui16CurValue == (FLMUINT16) ASCII_UNDERSCORE &&
-					 (uiFlags & FLM_NO_UNDERSCORE))
+					 (uiFlags & FLM_COMP_NO_UNDERSCORES))
 				{
 					ui16CurValue = (FLMUINT16) ASCII_SPACE;
 				}
 
 				if (ui16CurValue == (FLMUINT16) ASCII_SPACE)
 				{
-					if (uiFlags & FLM_NO_SPACE)
+					if (uiFlags & FLM_COMP_NO_WHITESPACE)
 					{
 						ui16CurValue = 0;
 					}
-					else if (uiFlags & FLM_MIN_SPACES)
+					else if (uiFlags & FLM_COMP_COMPRESS_WHITESPACE)
 					{
 
 						// Eat up the remaining spaces and underscores (if
-						// NO_UNDERSCORES).
+						// FLM_COMP_NO_UNDERSCORES).
 
 						while ((pText[uiObjectLength] == ASCII_SPACE || 
 								 (pText[uiObjectLength] == ASCII_UNDERSCORE && 
-									(uiFlags & FLM_NO_UNDERSCORE))) && 
+									(uiFlags & FLM_COMP_NO_UNDERSCORES))) && 
 								uiObjectLength < uiLen)
 						{
 							uiObjectLength++;
 						}
 					}
 				}
-				else if (ui16CurValue == ASCII_DASH && (uiFlags & FLM_NO_DASH))
+				else if (ui16CurValue == ASCII_DASH && (uiFlags & FLM_COMP_NO_DASHES))
 				{
 					ui16CurValue = 0;
 				}

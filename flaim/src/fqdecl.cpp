@@ -43,8 +43,8 @@ FSTATIC RCODE flmSendCursorFrom(
 	NODE *			pRootNode;
 	NODE *			pChildNode = NULL;
 	NODE *			pTmp;
-	POOL *			pPool = pWire->getPool();
-	void *			pvMark = GedPoolMark( pPool);
+	F_Pool *			pPool = pWire->getPool();
+	void *			pvMark = pPool->poolMark();
 	FLMUINT			uiTmp;
 	CS_CONTEXT *	pCSContext = pWire->getContext();
 
@@ -143,7 +143,7 @@ FSTATIC RCODE flmSendCursorFrom(
 
 Exit:
 
-	GedPoolReset( pPool, pvMark);
+	pPool->poolReset( pvMark);
 	return( rc);
 }
 
@@ -162,8 +162,8 @@ FSTATIC RCODE flmSendCursorWhere(
 	FLMUINT			uiOperator;
 	FLMUINT			uiLastFlags = 0;
 	QTYPES			eOp;
-	POOL *			pPool = pWire->getPool();
-	void *			pvMark = GedPoolMark( pPool);
+	F_Pool *			pPool = pWire->getPool();
+	void *			pvMark = pPool->poolMark();
 	CS_CONTEXT *	pCSContext = pWire->getContext();
 
 	if ((pRootNode = GedNodeMake( pPool, FCS_ITERATOR_WHERE, &rc)) == NULL)
@@ -491,7 +491,7 @@ Test_Sib:
 
 Exit:
 
-	GedPoolReset( pPool, pvMark);
+	pPool->poolReset( pvMark);
 	return( rc);
 }
 

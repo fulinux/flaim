@@ -803,37 +803,55 @@ FSTATIC RCODE flmUpdateDbStats(
 
 	flmUpdateRTransStats( &pDestDb->ReadTransStats,
 								 &pSrcDb->ReadTransStats);
+								 
 	flmUpdateUTransStats( &pDestDb->UpdateTransStats,
 								 &pSrcDb->UpdateTransStats);
+								 
 	pDestDb->bHaveStats = TRUE;
 	pDestDb->ui64NumCursors += pSrcDb->ui64NumCursors;
 	pDestDb->ui64NumCursorReads += pSrcDb->ui64NumCursorReads;
+	
 	flmUpdateCountTimeStats( &pDestDb->RecordAdds,
-		&pSrcDb->RecordAdds);
+									 &pSrcDb->RecordAdds);
+									 
 	flmUpdateCountTimeStats( &pDestDb->RecordDeletes,
-		&pSrcDb->RecordDeletes);
+									 &pSrcDb->RecordDeletes);
+									 
 	flmUpdateCountTimeStats( &pDestDb->RecordModifies,
-		&pSrcDb->RecordModifies);
+									 &pSrcDb->RecordModifies);
+									 
 	pDestDb->ui64NumRecordReads += pSrcDb->ui64NumRecordReads;
+	
 	flmUpdateBlockIOStats( &pDestDb->LFHBlockStats,
-								&pSrcDb->LFHBlockStats);
+								  &pSrcDb->LFHBlockStats);
+								  
 	flmUpdateBlockIOStats( &pDestDb->AvailBlockStats,
-								&pSrcDb->AvailBlockStats);
+								  &pSrcDb->AvailBlockStats);
+								  
 	flmUpdateDiskIOStats( &pDestDb->LogHdrWrites,
-									 &pSrcDb->LogHdrWrites);
+								 &pSrcDb->LogHdrWrites);
+								 
 	flmUpdateDiskIOStats( &pDestDb->LogBlockWrites,
-									 &pSrcDb->LogBlockWrites);
+								 &pSrcDb->LogBlockWrites);
+								 
 	flmUpdateDiskIOStats( &pDestDb->LogBlockRestores,
-									 &pSrcDb->LogBlockRestores);
+								 &pSrcDb->LogBlockRestores);
+								 
 	flmUpdateDiskIOStats( &pDestDb->LogBlockReads,
-									 &pSrcDb->LogBlockReads);
+								 &pSrcDb->LogBlockReads);
+								 
 	pDestDb->uiLogBlockChkErrs += pSrcDb->uiLogBlockChkErrs;
 	pDestDb->uiReadErrors += pSrcDb->uiReadErrors;
 	pDestDb->uiWriteErrors += pSrcDb->uiWriteErrors;
-	flmUpdateCountTimeStats( &pDestDb->NoLocks, &pSrcDb->NoLocks);
-	flmUpdateCountTimeStats( &pDestDb->WaitingForLock,
-		&pSrcDb->WaitingForLock);
-	flmUpdateCountTimeStats( &pDestDb->HeldLock, &pSrcDb->HeldLock);
+	
+	flmUpdateCountTimeStats( &pDestDb->LockStats.NoLocks, 
+									 &pSrcDb->LockStats.NoLocks);
+									 
+	flmUpdateCountTimeStats( &pDestDb->LockStats.WaitingForLock,
+									 &pSrcDb->LockStats.WaitingForLock);
+									 
+	flmUpdateCountTimeStats( &pDestDb->LockStats.HeldLock,
+									 &pSrcDb->LockStats.HeldLock);
 
 	// Go through the LFILE statistics.
 

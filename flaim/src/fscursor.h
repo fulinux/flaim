@@ -70,7 +70,7 @@ typedef struct KEYSET
 /****************************************************************************
 Desc:	File system implementation of a cursor for an index.
 ****************************************************************************/
-class FSIndexCursor : public F_Base
+class FSIndexCursor : public F_Object
 {
 public:
 
@@ -137,7 +137,7 @@ public:
 	
 	RCODE currentKeyBuf(
 		FDB *					pDb,
-		POOL *				pPool,
+		F_Pool *				pPool,
 		FLMBYTE **			ppKeyBuf,
 		FLMUINT *			puiKeyLen,
 		FLMUINT *			puiRecordId,
@@ -337,7 +337,7 @@ typedef struct RECSET
 /****************************************************************************
 Desc:	File system implementation of a cursor for a data container.
 ****************************************************************************/
-class FSDataCursor: public F_Base
+class FSDataCursor: public F_Object
 {
 public:
 

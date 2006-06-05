@@ -217,7 +217,7 @@ RCODE flmMakeErr(
 Desc : Returns a pointer to the string representation of a corruption
 		 error code.
 ****************************************************************************/
-const char * FlmVerifyErrToStr(
+const char * FLMAPI FlmVerifyErrToStr(
 	eCorruptionType	eCorruption)
 {
 	return( FlmCorruptStrings [eCorruption]);
@@ -394,7 +394,7 @@ const char * flmErrorString(
 		CASE_RET( FERR_IO_END_OF_FILE);
 		CASE_RET( FERR_IO_OPEN_ERR);
 		CASE_RET( FERR_IO_SEEK_ERR);
-		CASE_RET( FERR_IO_MODIFY_ERR);
+		CASE_RET( FERR_IO_DIRECTORY_ERR);
 		CASE_RET( FERR_IO_PATH_NOT_FOUND);
 		CASE_RET( FERR_IO_TOO_MANY_OPEN_FILES);
 		CASE_RET( FERR_IO_PATH_TOO_LONG);
@@ -471,20 +471,6 @@ const char * flmErrorString(
 		CASE_RET( FERR_INJECT_KEY_FAILED);
 		CASE_RET( FERR_PBE_DECRYPT_FAILED);
 		CASE_RET( FERR_PASSWD_INVALID);
-		CASE_RET( FERR_SVR_NOIP_ADDR);
-		CASE_RET( FERR_SVR_SOCK_FAIL);
-		CASE_RET( FERR_SVR_CONNECT_FAIL);
-		CASE_RET( FERR_SVR_BIND_FAIL);
-		CASE_RET( FERR_SVR_LISTEN_FAIL);
-		CASE_RET( FERR_SVR_ACCEPT_FAIL);
-		CASE_RET( FERR_SVR_SELECT_ERR);
-		CASE_RET( FERR_SVR_SOCKOPT_FAIL);
-		CASE_RET( FERR_SVR_DISCONNECT);
-		CASE_RET( FERR_SVR_READ_FAIL);
-		CASE_RET( FERR_SVR_WRT_FAIL);
-		CASE_RET( FERR_SVR_READ_TIMEOUT);
-		CASE_RET( FERR_SVR_WRT_TIMEOUT);
-		CASE_RET( FERR_SVR_ALREADY_CLOSED);
 		default:
 			return( NULL);
 	}

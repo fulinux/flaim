@@ -224,7 +224,7 @@ Desc:	This routine reads and verifies the information contained in the
 *****************************************************************************/
 RCODE flmReadAndVerifyHdrInfo(
 	DB_STATS *		pDbStats,
-	F_FileHdl *		pFileHdl,
+	IF_FileHdl *	pFileHdl,
 	FLMBYTE *		pReadBuf,
 	FILE_HDR *		pFileHdrRV,
 	LOG_HDR *		pLogHdrRV,
@@ -242,7 +242,7 @@ RCODE flmReadAndVerifyHdrInfo(
 
 	f_memset( pReadBuf, 0, 2048);
 
-	rc0 = pFileHdl->Read( 1L, 2047, &pReadBuf [1], &uiBytesRead);
+	rc0 = pFileHdl->read( 1L, 2047, &pReadBuf [1], &uiBytesRead);
 	
 	// Increment bytes read - to account for byte zero, which
 	// was not really read in.
@@ -349,12 +349,12 @@ RCODE flmWriteVersionNum(
 	szVersionStr[ 3] = (FLMBYTE)(uiVersionNum % 10) + '0';
 	szVersionStr[ 4] = 0;
 
-	if (RC_OK( rc = pSFileHdl->WriteHeader(
+	if (RC_OK( rc = pSFileHdl->writeHeader(
 					FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS, 
 					FLM_FILE_FORMAT_VER_LEN,
 					szVersionStr, &uiWriteBytes)))
 	{
-		if (RC_BAD( rc = pSFileHdl->Flush()))
+		if (RC_BAD( rc = pSFileHdl->flush()))
 		{
 			goto Exit;
 		}
@@ -371,28 +371,24 @@ Desc:	This routine reads the header information in a FLAIM database,
 		header information.
 *****************************************************************************/
 RCODE flmGetHdrInfo(
-	F_SuperFileHdl *	pSFileHdl,		/* Pointer to file handle. */
-	FILE_HDR *			pFileHdrRV,		/* Returns file header information. */
-	LOG_HDR *			pLogHdrRV,		/* Returns log header information. */
-	FLMBYTE *			pLogHdr
-	)
+	IF_FileHdl *		pFileHdl,
+	FILE_HDR *			pFileHdrRV,
+	LOG_HDR *			pLogHdrRV,
+	FLMBYTE *			pLogHdr)
 {
-	RCODE				rc = FERR_OK;
-	FLMBYTE *		pBuf = NULL;
-	F_FileHdlImp *	pCFileHdl;
+	RCODE					rc = FERR_OK;
+	FLMBYTE *			pBuf = NULL;
 
 	if (RC_BAD( rc = f_alloc( 2048, &pBuf)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSFileHdl->GetFileHdl( 0, FALSE, &pCFileHdl)))
+	if( RC_BAD( rc = flmReadAndVerifyHdrInfo( NULL, pFileHdl, pBuf, pFileHdrRV,
+			pLogHdrRV, pLogHdr)))
 	{
 		goto Exit;
 	}
-
-	rc = flmReadAndVerifyHdrInfo( NULL, pCFileHdl,
-											pBuf, pFileHdrRV, pLogHdrRV, pLogHdr);
 
 Exit:
 

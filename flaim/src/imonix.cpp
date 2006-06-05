@@ -50,7 +50,7 @@ FSTATIC void copyIndexListStatus(
 	FLMBOOL				bTransferKeyList);
 
 FSTATIC RCODE imonDoIndexList(
-	F_Thread *		pThread);
+	IF_Thread *			pThread);
 
 /****************************************************************************
 Desc:	Prints the web page for listing index keys.
@@ -1083,7 +1083,7 @@ RCODE F_IndexListPage::runIndexList(
 {
 	RCODE					rc = FERR_OK;
 	IXLIST_STATUS *	pIndexListStatus = NULL;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	FDB *					pDb = NULL;
 
 	// Open the database for the thread - so it doesn't have
@@ -1130,13 +1130,13 @@ RCODE F_IndexListPage::runIndexList(
 	// If browser does not check query status at least every 15 seconds, we will
 	// assume it has gone away and the thread will terminate itself.
 
-	FLM_SECS_TO_TIMER_UNITS( 15, pIndexListStatus->uiIndexListTimeout);
+	pIndexListStatus->uiIndexListTimeout = FLM_SECS_TO_TIMER_UNITS( 15);
 
 	// Start a thread to do the query.
 
 	if( RC_BAD( rc = f_threadCreate( &pThread, imonDoIndexList,
 							"WEB INDEX LIST",
-							FLM_DB_THREAD_GROUP, 1,
+							gv_uiDbThrdGrp, 1,
 							(void *)pIndexListStatus, (void *)hDb)))
 	{
 		goto Exit;
@@ -1270,7 +1270,7 @@ void F_IndexListPage::getIndexListStatus(
 	IXLIST_STATUS *	pIndexListStatus)
 {
 	FLMUINT				uiThreadId;
-	F_Thread *			pThread = NULL;
+	IF_Thread *			pThread = NULL;
 	IXLIST_STATUS *	pThreadIndexListStatus;
 	FLMBOOL				bMutexLocked = FALSE;
 
@@ -1284,7 +1284,7 @@ void F_IndexListPage::getIndexListStatus(
 	for (;;)
 	{
 		if (RC_BAD( gv_FlmSysData.pThreadMgr->getNextGroupThread( &pThread,
-						FLM_DB_THREAD_GROUP, &uiThreadId)))
+						gv_uiDbThrdGrp, &uiThreadId)))
 		{
 			pIndexListStatus->bIndexListRunning = FALSE;
 			goto Exit;
@@ -1402,7 +1402,7 @@ Exit:
 Desc:	Thread to perform a query for a web page.
 ****************************************************************************/
 FSTATIC RCODE imonDoIndexList(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE					rc;
 	IXLIST_STATUS *	pIndexListStatus = (IXLIST_STATUS *)pThread->getParm1();
@@ -1424,8 +1424,7 @@ FSTATIC RCODE imonDoIndexList(
 	char *				pszEndStatus = &pIndexListStatus->szEndStatus [0];
 
 	pThread->setThreadStatus( FLM_THREAD_STATUS_RUNNING);
-
-	FLM_SECS_TO_TIMER_UNITS( 20, ui20SecsTime);
+	ui20SecsTime = FLM_SECS_TO_TIMER_UNITS( 20);
 
 	// Start a transaction.
 

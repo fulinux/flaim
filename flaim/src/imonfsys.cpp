@@ -217,33 +217,6 @@ void F_FlmSysDataPage::write_data(
 	
 	
 	
-	// hServerLockMgrMutex - Server lock manager mutex
-	printAddress( (void *)&gv_FlmSysData.hServerLockMgrMutex, szAddress);
-	printHTMLString(
-		"hServerLockMgrMutex",
-		"F_MUTEX",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.hServerLockMgrMutex,
-		(char *)szAddress,
-		(bHighlight = !bHighlight));
-
-
-
-	// pFileHdlMgr - File handle manager
-	f_sprintf( (char *)pszTemp, "%s/FileHdlMgr",
-		m_pszURLString);
-
-	printHTMLLink(
-		"pFileHdlMgr",
-		"FFILE *",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.pFileHdlMgr,
-		(void *)gv_FlmSysData.pFileHdlMgr,
-		(char *)pszTemp,
-		(bHighlight = !bHighlight));
-
-
-
 	// pFileSystem - File system
 	printAddress( (void *)gv_FlmSysData.pFileSystem, szAddress);
 	printHTMLString(
@@ -280,17 +253,6 @@ void F_FlmSysDataPage::write_data(
 	
 	
 	
-	// bOkToUseESM
-	printHTMLString(
-		"bOkToUseESM",
-		"FLMBOOL",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.bOkToUseESM,
-		(char *)(gv_FlmSysData.bOkToUseESM ? "Yes" : "No"),
-		(bHighlight = !bHighlight));
-
-
-
 	// bCheckCache - Check cache
 	printHTMLString(
 		"bCheckCache",
@@ -300,22 +262,7 @@ void F_FlmSysDataPage::write_data(
 		(char *)(gv_FlmSysData.bCheckCache ? "Yes" : "No"),
 		(bHighlight = !bHighlight));
 
-	// pServerLockMgr - Server lock Manager
-	f_sprintf( (char *)pszTemp,
-				"%s/ServerLockManager",
-				m_pszURLString);
 
-	printHTMLLink(
-		"pServerLockMgr",
-		"ServerLockManager_p",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.pServerLockMgr,
-		(void *)gv_FlmSysData.pServerLockMgr,
-		(char *)pszTemp,
-		(bHighlight = !bHighlight));	
-	
-	
-	
 	
 	// uiMaxCPInterval - Maximum checkpoint interval
 	printHTMLUint(
@@ -674,216 +621,6 @@ void F_FlmSysDataPage::write_data(
 		(char *)pszTemp,
 		(bHighlight = !bHighlight));
 
-
-#ifdef FLM_DEBUG
-	// Variables for memory allocation tracking.
-
-	// bTrackLeaks
-	printHTMLString(
-		"bTrackLeaks",
-		"FLMBOOL",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.bTrackLeaks,
-		(char *)(gv_FlmSysData.bTrackLeaks ? "Yes" : "No"),
-		(bHighlight = !bHighlight));
-
-
-
-
-	// bLogLeaks
-	printHTMLString(
-		"bLogLeaks",
-		"FLMBOOL",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.bLogLeaks,
-		(char *)(gv_FlmSysData.bLogLeaks ? "Yes" : "No"),
-		(bHighlight = !bHighlight));
-
-
-
-
-	// bStackWalk
-	printHTMLString(
-		"bStackWalk",
-		"FLMBOOL",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.bStackWalk,
-		(char *)(gv_FlmSysData.bStackWalk ? "Yes" : "No"),
-		(bHighlight = !bHighlight));
-
-
-
-
-	// bMemTrackingInitialized
-	printHTMLString(
-		"bMemTrackingInitialized",
-		"FLMBOOL",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.bMemTrackingInitialized,
-		(char *)(gv_FlmSysData.bMemTrackingInitialized ? "Yes" : "No"),
-		(bHighlight = !bHighlight));
-
-
-
-
-	// uiInitThreadId
-	printHTMLUint(
-		"uiInitThreadId",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiInitThreadId,
-		gv_FlmSysData.uiInitThreadId,
-		(bHighlight = !bHighlight));
-
-
-
-
-	// hMemTrackingmutex
-	printAddress( (void *)&gv_FlmSysData.hMemTrackingMutex, szAddress);
-	printHTMLString(
-		"hMemTrackingMutex",
-		"F_MUTEX",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.hMemTrackingMutex,
-		(char *)szAddress,
-		(bHighlight = !bHighlight));
-
-
-
-
-	// ppvMemTrackingPtrs
-	printAddress( (void *)gv_FlmSysData.ppvMemTrackingPtrs, szAddress);
-	printHTMLString(
-		"ppvMemTrackingPtrs",
-		"void **",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.ppvMemTrackingPtrs,
-		(char *)szAddress,
-		(bHighlight = !bHighlight));
-
-
-
-
-
-	// uiMemTrackingPtrArraySize
-	printHTMLUint(
-		"uiMemTrackingPtrArraySize",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiMemTrackingPtrArraySize,
-		gv_FlmSysData.uiMemTrackingPtrArraySize,
-		(bHighlight = !bHighlight));
-
-
-
-
-	// uiMemNumPtrs
-	printHTMLUint(
-		"uiMemNumPtrs",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiMemNumPtrs,
-		gv_FlmSysData.uiMemNumPtrs,
-		(bHighlight = !bHighlight));
-
-
-
-
-	// uiMemNextPtrSlotToUse
-	printHTMLUint(
-		"uiMemNextPtrSlotToUse",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiMemNextPtrSlotToUse,
-		gv_FlmSysData.uiMemNextPtrSlotToUse,
-		(bHighlight = !bHighlight));
-
-
-
-
-	// uiAllocCnt
-	printHTMLUint(
-		"uiAllocCnt",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiAllocCnt,
-		gv_FlmSysData.uiAllocCnt,
-		(bHighlight = !bHighlight));
-
-
-#if defined( FLM_WIN)
-
-
-	// hMemProcess
-	printHTMLUint(
-		"hMemProcess",
-		"HANDLE",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.hMemProcess,
-		(FLMUINT)gv_FlmSysData.hMemProcess,
-		(bHighlight = !bHighlight));
-
-
-#endif
-
-#ifdef DEBUG_SIM_OUT_OF_MEM
-
-	// uiOutOfMemSimEnabledFlag
-	printHTMLUint(
-		"uiOutOfMemSimEnabledFlag",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiOutOfMemSimEnabledFlag,
-		gv_FlmSysData.uiOutOfMemSimEnabledFlag,
-		(bHighlight = !bHighlight));
-
-
-
-	// memSimRandomGen
-	printAddress( (void *)&gv_FlmSysData.memSimRandomGen, szAddress);
-	printHTMLString(
-		"memSimRandomGen",
-		"f_randomGenerator",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.memSimRandomGen,
-		(char *)szAddress,
-		(bHighlight = !bHighlight));
-
-
-
-	// uiSimOutOfMemFailTotal
-	printHTMLUint(
-		"uiSimOutOfMemFailTotal",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiSimOutOfMemFailTotal,
-		gv_FlmSysData.uiSimOutOfMemFailTotal,
-		(bHighlight = !bHighlight));
-
-
-
-	// uiSimOutOfMemFailSequence
-	printHTMLUint(
-		"uiSimOutOfMemFailSequence",
-		"FLMUINT",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.uiSimOutOfMemFailSequence,
-		gv_FlmSysData.uiSimOutOfMemFailSequence,
-		(bHighlight = !bHighlight));
-
-#endif //#ifdef DEBUG_SIM_OUT_OF_MEM
-#endif
-
-	// pThreadMgr
-	printAddress( (void *)gv_FlmSysData.pThreadMgr, szAddress);
-	printHTMLString(
-		"pThreadMgr",
-		"F_ThreadMgr *",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.pThreadMgr,
-		(char *)szAddress,
-		(bHighlight = !bHighlight));
-
 	printTableEnd();
 
 Exit:
@@ -901,6 +638,9 @@ Exit:
 	return;
 }
 
+/****************************************************************************
+Desc:
+*****************************************************************************/
 RCODE F_HttpConfigParmsPage::display(
 	FLMUINT			uiNumParams,
 	const char ** 	ppszParams)

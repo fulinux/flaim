@@ -25,153 +25,95 @@
 #ifndef FSUPERFL_H
 #define FSUPERFL_H
 
-#include "fpackon.h"
-// IMPORTANT NOTE: No other include files should follow this one except
-// for fpackoff.h
-
 #define MAX_CHECKED_OUT_FILE_HDLS	8
 
-class F_SuperFileHdl;
-class F_FileIdList;
+void bldSuperFileExtension(
+	FLMUINT		uiDbVersion,
+	FLMUINT			uiFileNum,
+	char *			pszFileExtension);
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-typedef struct CHECKED_OUT_FILE_HDL
+typedef struct
 {
-	F_FileHdlImp *	pFileHdl;
+	IF_FileHdl *	pFileHdl;
 	FLMUINT			uiFileNumber;
 	FLMBOOL			bDirty;
 } CHECKED_OUT_FILE_HDL;
-
-void bldSuperFileExtension( 
-	FLMUINT		uiDbVersion,
-	FLMUINT		uiFileNum,
-	char *		pszFileExtension);
-
-/****************************************************************************
-Desc:		This class keeps a list of file IDs for file numbers in a database.
-			It does not know the use of the file IDs, and it is not limited in
-			the number of file IDs it can keep track of, but it will generally
-			be as follows:
-
-			FileNumber
-				0				This is the database file (xxx.db)
-				1-4095		These are the data files (xxx_data.nnn)
-				4096-8192	These are the rollback files (xxx_rb.nnn).  In this
-								case, the caller will map the file number in and
-								out of this range.
-****************************************************************************/
-class F_FileIdList : public F_Base
-{
-public:
-	F_FileIdList();
-
-	virtual ~F_FileIdList();
-
-	RCODE setup( void);
-
-	RCODE getFileId(
-		FLMUINT				uiFileNumber,
-		FLMUINT *			puiFileId);
-
-private:
-
-	F_MUTEX				m_hMutex;
-	FLMUINT				m_uiFileIdTblSize;
-	FLMUINT *			m_puiFileIdTbl;
-};
 
 /****************************************************************************
 Desc:		The F_SuperFileHdl object manages the control and block files
 			associated with a FLAIM Super File.  This class also provides
 			backward compatibility with prior file formats.
+Note:
 ****************************************************************************/
-class F_SuperFileHdl : public F_Base
+class F_SuperFileHdl : public F_Object
 {
 public:
 	F_SuperFileHdl();
 
-	virtual ~F_SuperFileHdl(); 
+	~F_SuperFileHdl();
 
-	RCODE Setup(							// Configures the object.  Should
-												// be called exactly once.
-		F_FileIdList *		pFileIdList,
+	RCODE setup(
 		const char *		pszDbFileName,
-		const char *		pszDataDir);
+		const char *		pszDataDir,
+		FLMUINT				uiDbVersion);
 
-	FINLINE void setECacheMgr(			// Sets the ECacheMgr to be used by
-												// the super file.
-		FlmECache *			pECacheMgr)
-	{
-		m_pECacheMgr = pECacheMgr;
-	}
-	
-	RCODE CreateFile(						// Create a block file (>= 3.0 only)
-		FLMUINT			uiFileNumber);		// File number to create
+	RCODE createFile(
+		FLMUINT				uiFileNumber);
 
-	RCODE ReadBlock(						// Reads a block from a block file or
-												// the log
-		FLMUINT			uiBlkAddress,		// Block address
-		FLMUINT			uiBytesToRead,		// Number of bytes to read from block
-		void *			pvBuffer,			// Buffer to place read bytes into
-		FLMUINT *		puiBytesRead);		// [out] number of bytes read
+	RCODE readBlock(
+		FLMUINT				uiBlkAddress,
+		FLMUINT				uiBytesToRead,
+		void *				pvBuffer,
+		FLMUINT *			puiBytesRead);
 
-	RCODE WriteBlock(						// Writes a block to a block file or
-												// the log
-		FLMUINT			uiBlkAddress,		// Block address
-		FLMUINT			uiBytesToWrite,	// Number of bytes to write
-		void *			pvBuffer,			// Buffer to write bytes from
-		FLMUINT			uiBufferSize,		// Actual size of buffer
-		F_IOBuffer *	pIOBuffer,			// If non-NULL, contains info for
-													// doing an async write.
-		FLMUINT *		puiBytesWritten);	// [out] number of bytes written
+	RCODE writeBlock(
+		FLMUINT				uiBlkAddress,
+		FLMUINT				uiBytesToWrite,
+		const void *		pvBuffer,
+		FLMUINT				uiBufferSize,
+		IF_IOBuffer *		pIOBuffer,
+		FLMUINT *			puiBytesWritten);
 
-	RCODE ReadHeader(						// Reads data from the DB header
-		FLMUINT			uiOffset,
-		FLMUINT			uiBytesToRead,
-		void *			pvBuffer,
-		FLMUINT *		puiBytesRead);
+	RCODE readHeader(
+		FLMUINT				uiOffset,
+		FLMUINT				uiBytesToRead,
+		void *				pvBuffer,
+		FLMUINT *			puiBytesRead);
 
-	RCODE WriteHeader(					// Writes data to the DB header
-		FLMUINT			uiOffset,
-		FLMUINT			uiBytesToWrite,
-		void *			pvBuffer,
-		FLMUINT *		puiBytesWritten);
+	RCODE writeHeader(
+		FLMUINT				uiOffset,
+		FLMUINT				uiBytesToWrite,
+		const void *		pvBuffer,
+		FLMUINT *			puiBytesWritten);
 
-	RCODE GetFilePath(					// Generates a block file's path
-		FLMUINT			uiFileNumber,		// File number
-		char *			pIoPath);			// Returned path
+	RCODE getFilePath(
+		FLMUINT				uiFileNumber,
+		char *				pszPath);
 
-	RCODE	GetFileHdl(						// Returns a file's handle given
-												// the file's number
+	RCODE	getFileHdl(
 		FLMUINT				uiFileNumber,
 		FLMBOOL				bGetForUpdate,
-		F_FileHdlImp **	ppFileHdlRV);
+		IF_FileHdl **		ppFileHdlRV);
 
-	RCODE GetFileSize(					// Returns the physical size of
-												// a file
-		FLMUINT			uiFileNumber,		// File number
-		FLMUINT *		puiFileSize);		// File size return value
+	RCODE getFileSize(
+		FLMUINT				uiFileNumber,
+		FLMUINT64 *			pui64FileSize);
 
-	RCODE ReleaseFile(					// Release a single file
-		FLMUINT	uiFileNum,
-		FLMBOOL	bCloseFile);
+	RCODE releaseFile(
+		FLMUINT				uiFileNum,
+		FLMBOOL				bCloseFile);
 
-	RCODE ReleaseFiles(					// Releases all file handles and
-												// returns them to the file handle
-												// manager.  This is called at
-												// the end of a transaction.
-		FLMBOOL		bCloseFiles);			// Should files be closed?
+	RCODE releaseFiles(
+		FLMBOOL				bCloseFiles);
 
-	RCODE TruncateFile(					// Truncate the file(s) to given address.
-		FLMUINT	uiEOFBlkAddress);			// End of file block address. 
+	RCODE truncateFile(
+		FLMUINT				uiEOFBlkAddress);
 
-	void TruncateFiles(					// Truncate the files specified by the
-		FLMUINT		uiStartFileNum,	// start and end file numbers.
-		FLMUINT		uiEndFileNum);
+	void truncateFiles(
+		FLMUINT				uiStartFileNum,
+		FLMUINT				uiEndFileNum);
 
-	RCODE ReleaseFile(					// Release a single file
+	RCODE releaseFile(
 		CHECKED_OUT_FILE_HDL *	pChkFileHdl,
 		FLMBOOL						bCloseFile);
 
@@ -182,19 +124,7 @@ public:
 
 	void disableFlushMinimize( void);
 
-	RCODE Flush( void);
-
-	FINLINE void SetBlockSize(
-		FLMUINT		uiBlockSize)
-	{
-		m_uiBlockSize = uiBlockSize;
-	}
-
-	FINLINE void SetDbVersion(
-		FLMUINT		uiDbVersion)
-	{
-		m_uiDbVersion = uiDbVersion;
-	}
+	RCODE flush( void);
 
 	FINLINE void setExtendSize(
 		FLMUINT		uiExtendSize)
@@ -208,19 +138,19 @@ public:
 		m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 	}
 
-	FINLINE FLMBOOL CanDoAsync( void)
+	FINLINE FLMBOOL canDoAsync( void)
 	{
-		if( m_pCheckedOutFileHdls[ 0].pFileHdl)
+		if (m_pCheckedOutFileHdls[ 0].pFileHdl)
 		{
-			return( m_pCheckedOutFileHdls[ 0].pFileHdl->CanDoAsync());
+			return( m_pCheckedOutFileHdls[ 0].pFileHdl->canDoAsync());
 		}
 		else
 		{
-			F_FileHdlImp *		pFileHdl;
+			IF_FileHdl *		pFileHdl;
 
-			if( RC_OK( GetFileHdl( 0, FALSE, &pFileHdl)))
+			if( RC_OK( getFileHdl( 0, FALSE, &pFileHdl)))
 			{
-				return( pFileHdl->CanDoAsync());
+				return( pFileHdl->canDoAsync());
 			}
 		}
 
@@ -233,7 +163,7 @@ private:
 		FLMUINT		uiFileNum,
 		FLMUINT *	puiSlot)
 	{
-		*puiSlot = (uiFileNum 
+		*puiSlot = (uiFileNum
 			? (uiFileNum % (m_uiCkoArraySize - 1)) + 1
 			: 0);
 
@@ -259,12 +189,10 @@ private:
 	char *						m_pszDataFileNameBase;
 	FLMUINT						m_uiExtOffset;
 	FLMUINT						m_uiDataExtOffset;
-	F_FileIdList *				m_pFileIdList;
 	CHECKED_OUT_FILE_HDL		m_CheckedOutFileHdls[
 										MAX_CHECKED_OUT_FILE_HDLS + 1];
 	CHECKED_OUT_FILE_HDL *	m_pCheckedOutFileHdls;
 	FLMUINT						m_uiCkoArraySize;
-	FLMUINT						m_uiBlockSize;
 	FLMUINT						m_uiExtendSize;
 	FLMUINT						m_uiMaxAutoExtendSize;
 	FLMUINT						m_uiDbVersion;
@@ -272,11 +200,8 @@ private:
 	FLMUINT						m_uiHighestDirtySlot;
 	FLMUINT						m_uiHighestUsedSlot;
 	FLMUINT						m_uiHighestFileNumber;
-	FlmECache *					m_pECacheMgr;
 	FLMBOOL						m_bMinimizeFlushes;
 	FLMBOOL						m_bSetupCalled;
 };
-
-#include "fpackoff.h"
 
 #endif

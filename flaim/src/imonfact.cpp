@@ -313,7 +313,7 @@ FLMBOOL F_WebPageFactory::isSecurePasswordEntered(
 	flmAssert( pvSession);
 
 	if (fnGetSessionValue( pvSession, FLM_SECURE_PASSWORD, (void *)szData,
-								  (size_t *)&uiSize) == 0)
+								  (FLMSIZET *)&uiSize) == 0)
 	{
 		szData[ uiSize] = '\0';
 		bResult = isValidSecurePassword( szData);
@@ -340,7 +340,7 @@ FLMBOOL F_WebPageFactory::isValidSecurePassword(
 
 	if (fnGetGblValue( FLM_SECURE_PASSWORD,
 							 szPassword,
-							 (size_t *)&uiSize) == 0)
+							 (FLMSIZET *)&uiSize) == 0)
 	{
 		szPassword[ uiSize] = '\0';
 		if (f_strcmp(pszData, szPassword) == 0)
@@ -374,7 +374,7 @@ FLMBOOL F_WebPageFactory::isSecureAccessEnabled()
 	// has not been set.
 	if (fnGetGblValue( FLM_SECURE_EXPIRATION,
 							 szExpiration,
-							 (size_t *)&uiExpSize) == 0)
+							 (FLMSIZET *)&uiExpSize) == 0)
 	{
 		uiExpTime = f_atoud( szExpiration);
 
@@ -395,228 +395,208 @@ FLMBOOL F_WebPageFactory::isSecureAccessEnabled()
 ****************************************************************************/
 static F_WebPage * createErrorPage()
 { 
-	return new F_ErrorPage;
+	return f_new F_ErrorPage;
 }
 
 static F_WebPage * createGblAccessPage()
 { 
-	return new F_GblAccessPage;
+	return f_new F_GblAccessPage;
 }
 
 static F_WebPage * createSessionAccessPage()
 { 
-	return new F_SessionAccessPage;
+	return f_new F_SessionAccessPage;
 }
 
 static F_WebPage * createSCacheBlockPage()
 {
-	return new F_SCacheBlockPage;
+	return f_new F_SCacheBlockPage;
 }
 
 static F_WebPage * createSCacheHashTablePage()
 {
-	return new F_SCacheHashTablePage;
+	return f_new F_SCacheHashTablePage;
 }
 
 static F_WebPage * createSCacheUseListPage()
 {
-	return new F_SCacheUseListPage;
+	return f_new F_SCacheUseListPage;
 }
 
 static F_WebPage * createSCacheNotifyListPage()
 {
-	return new F_SCacheNotifyListPage;
+	return f_new F_SCacheNotifyListPage;
 }
 
 static F_WebPage * createSCacheDataPage()
 {
-	return new F_SCacheDataPage;
+	return f_new F_SCacheDataPage;
 }
 
 static F_WebPage * createSCacheMgrPage()
 { 
-	return new F_SCacheMgrPage;
+	return f_new F_SCacheMgrPage;
 }
 
 static F_WebPage * createQueriesPage()
 { 
-	return new F_QueriesPage;
+	return f_new F_QueriesPage;
 }
 
 static F_WebPage * createQueryPage()
 { 
-	return new F_QueryPage;
+	return f_new F_QueryPage;
 }
 
 static F_WebPage * createQueryStatsPage()
 { 
-	return new F_QueryStatsPage;
+	return f_new F_QueryStatsPage;
 }
 
 static F_WebPage * createSysConfigPage()
 { 
-	return new F_SysConfigPage;
+	return f_new F_SysConfigPage;
 }
 
 static F_WebPage * createStatsPage()
 { 
-	return new F_StatsPage;
+	return f_new F_StatsPage;
 }
 
 static F_WebPage * createFlmSysDataPage()
 {
-	return new F_FlmSysDataPage;
+	return f_new F_FlmSysDataPage;
 }
 
 static F_WebPage * createHttpConfigParmsPage()
 {
-	return new F_HttpConfigParmsPage;
+	return f_new F_HttpConfigParmsPage;
 }
 
 static F_WebPage * createFlmThreadsPage()
 {
-	return new F_FlmThreadsPage;
+	return f_new F_FlmThreadsPage;
 }
 
 static F_WebPage * createFlmIndexPage()
 {
-	return new F_FlmIndexPage;
+	return f_new F_FlmIndexPage;
 }
 
 static F_WebPage * createIndexListPage()
 {
-	return new F_IndexListPage;
+	return f_new F_IndexListPage;
 }
 
 static F_WebPage * createSelectPage()
 { 
-	return new F_SelectPage;
+	return f_new F_SelectPage;
 }
 
 static F_WebPage * createCheckDbPage()
 { 
-	return new F_CheckDbPage;
+	return f_new F_CheckDbPage;
 }
 
 static F_WebPage * serveFile()
 {
-	return new F_HttpFile;
+	return f_new F_HttpFile;
 }
 
 static F_WebPage * createDbBackupPage()
 { 
-	return new F_HttpDbBackup;
+	return f_new F_HttpDbBackup;
 }
 
 static F_WebPage * createFileHashTblPage()
 {
-	return new F_FileHashTblPage;
+	return f_new F_FileHashTblPage;
 }
 
 static F_WebPage * createFFilePage()
 { 
-	return new F_FFilePage;
-}
-
-static F_WebPage * createFileHdlMgrPage()
-{ 
-	return new F_FileHdlMgrPage;
-}
-
-static F_WebPage * createFileHdlPage()
-{
-	return new F_FileHdlPage;
+	return f_new F_FFilePage;
 }
 
 static F_WebPage * createFDBPage()
 {
-	return new F_FDBPage;
+	return f_new F_FDBPage;
 }
 
 static F_WebPage * createRCacheMgrPage()
 {
-	return new F_RCacheMgrPage;
+	return f_new F_RCacheMgrPage;
 }
 
 static F_WebPage * createRCachePage()
 { 
-	return new F_RCachePage;
+	return f_new F_RCachePage;
 }
 
 static F_WebPage * createRecordMgrPage()
 {
-	return new F_RecordMgrPage;
+	return f_new F_RecordMgrPage;
 }
 
 static F_WebPage * createRCHashBucketPage()
 {
-	return new F_RCHashBucketPage;
+	return f_new F_RCHashBucketPage;
 }
 
 // Frame pages
 static F_WebPage * createHeaderFrame()
 {
-	return new F_FrameHeader;
+	return f_new F_FrameHeader;
 }
 
 static F_WebPage * createMainFrame()
 {
-	return new F_FrameMain;
+	return f_new F_FrameMain;
 }
 
 static F_WebPage * createNavFrame()
 {
-	return new F_FrameNav;
+	return f_new F_FrameNav;
 }
 
 static F_WebPage * createWelcomeFrame()
 {
-	return new F_FrameWelcome;
+	return f_new F_FrameWelcome;
 }
 
 static F_WebPage * createSecureDbAccessPage()
 {
-	return new F_SecureDbAccess;
+	return f_new F_SecureDbAccess;
 }
 
 static F_WebPage * createSecureDbInfoPage()
 {
-	return new F_SecureDbInfo;
-}
-
-static F_WebPage * createServerLockMgrPage()
-{
-	return new F_ServerLockMgrPage;
+	return f_new F_SecureDbInfo;
 }
 
 static F_WebPage * createDatabaseConfigPage()
 {
-	return new F_DatabaseConfigPage;
-}
-
-static F_WebPage * createRCodeLookupPage()
-{
-	return new F_RCodeLookupPage;
+	return f_new F_DatabaseConfigPage;
 }
 
 static F_WebPage * createDatabasePage()
 {
-	return new F_DatabasePage;
+	return f_new F_DatabasePage;
 }
 
 static F_WebPage * createRecordPage()
 {
-	return new F_RecordPage;
+	return f_new F_RecordPage;
 }
 
 static F_WebPage * createProcessRecordPage()
 {
-	return new F_ProcessRecordPage;
+	return f_new F_ProcessRecordPage;
 }
 
 static F_WebPage * createLogHeaderPage()
 {
-	return new F_LogHeaderPage;
+	return f_new F_LogHeaderPage;
 }
 
 // Initialize the static variables in the class...
@@ -629,8 +609,6 @@ RegistryEntry F_WebPageFactory::m_Registry[] = {
 	{"FDB", createFDBPage, FALSE},
 	{"FFile", createFFilePage, FALSE},
 	{"FileHashTbl", createFileHashTblPage, FALSE},
-	{"FileHdl", createFileHdlPage, FALSE},
-	{"FileHdlMgr", createFileHdlMgrPage, FALSE},
 	{"FlmSysData", createFlmSysDataPage, FALSE},
 	{"Header.htm", createHeaderFrame, FALSE},
 	{"HttpConfigParms", createHttpConfigParmsPage, FALSE},
@@ -652,7 +630,6 @@ RegistryEntry F_WebPageFactory::m_Registry[] = {
 	{"SCacheUseList", createSCacheUseListPage, FALSE},
 	{"SecureDbAccess", createSecureDbAccessPage, FALSE},
 	{"SecureDbInfo", createSecureDbInfoPage, FALSE},
-	{"ServerLockManager", createServerLockMgrPage, FALSE},
 	{"Stats", createStatsPage, FALSE},
 	{"SysConfig", createSysConfigPage, TRUE},
 	{"Welcome.htm", createWelcomeFrame, FALSE},
@@ -663,7 +640,6 @@ RegistryEntry F_WebPageFactory::m_Registry[] = {
 	{"file", serveFile, TRUE},
 	{"index", createFlmIndexPage, TRUE},
 	{"indexlist", createIndexListPage, TRUE},
-	{"returncode", createRCodeLookupPage, FALSE},
 	{"recordmgr", createRecordMgrPage, TRUE},
 	{"select", createSelectPage, TRUE},
 	{"staticfile", serveFile, FALSE},

@@ -424,7 +424,7 @@ Transmission_Error:
 
 			if (pszNewRflDir && *pszNewRflDir)
 			{
-				if( !gv_FlmSysData.pFileSystem->IsDir( pszNewRflDir))
+				if( !gv_FlmSysData.pFileSystem->isDir( pszNewRflDir))
 				{
 					rc = RC_SET( FERR_IO_INVALID_PATH);
 					goto Exit;
@@ -745,22 +745,22 @@ Desc:	Returns database, rollback, and rollforward sizes.  We are guaranteed
 		to be inside an update transaction at this point.
 ****************************************************************************/
 FSTATIC RCODE flmDbGetSizes(
-	FDB *			pDb,
-	FLMUINT64 *	pui64DbFileSize,
-	FLMUINT64 *	pui64RollbackFileSize,
-	FLMUINT64 *	pui64RflFileSize)
+	FDB *					pDb,
+	FLMUINT64 *			pui64DbFileSize,
+	FLMUINT64 *			pui64RollbackFileSize,
+	FLMUINT64 *			pui64RflFileSize)
 {
-	RCODE				rc = FERR_OK;
-	FFILE *			pFile = pDb->pFile;
-	FLMUINT			uiDbVersion = pFile->FileHdr.uiVersionNum;
-	FLMUINT			uiEndAddress;
-	FLMUINT			uiLastFileNumber;
-	FLMUINT			uiLastFileSize;
-	char				szTmpName[ F_PATH_MAX_SIZE];
-	char				szRflDir[ F_PATH_MAX_SIZE];
-	char				szPrefix[ F_FILENAME_SIZE];
-	F_FileHdlImp *	pFileHdl = NULL;
-	F_DirHdl *		pDirHdl = NULL;
+	RCODE					rc = FERR_OK;
+	FFILE *				pFile = pDb->pFile;
+	FLMUINT				uiDbVersion = pFile->FileHdr.uiVersionNum;
+	FLMUINT				uiEndAddress;
+	FLMUINT				uiLastFileNumber;
+	FLMUINT64			ui64LastFileSize;
+	char					szTmpName[ F_PATH_MAX_SIZE];
+	char					szRflDir[ F_PATH_MAX_SIZE];
+	char					szPrefix[ F_FILENAME_SIZE];
+	IF_FileHdl *		pFileHdl = NULL;
+	IF_DirHdl *			pDirHdl = NULL;
 
 	// Better be inside an update transaction at this point.
 
@@ -780,8 +780,8 @@ FSTATIC RCODE flmDbGetSizes(
 
 		// Get the actual size of the last file.
 
-		if (RC_BAD( rc = pDb->pSFileHdl->GetFileSize( uiLastFileNumber,
-										&uiLastFileSize)))
+		if (RC_BAD( rc = pDb->pSFileHdl->getFileSize( uiLastFileNumber,
+										&ui64LastFileSize)))
 		{
 			if (rc == FERR_IO_PATH_NOT_FOUND ||
 				 rc == FERR_IO_INVALID_PATH)
@@ -789,7 +789,7 @@ FSTATIC RCODE flmDbGetSizes(
 				if (uiLastFileNumber > 1)
 				{
 					rc = FERR_OK;
-					uiLastFileSize = 0;
+					ui64LastFileSize = 0;
 				}
 				else
 				{
@@ -812,9 +812,9 @@ FSTATIC RCODE flmDbGetSizes(
 		// extended beyond what the logical EOF shows.  We want
 		// the larger of these two possibilities.
 
-		if (FSGetFileOffset( uiEndAddress) > uiLastFileSize)
+		if (FSGetFileOffset( uiEndAddress) > ui64LastFileSize)
 		{
-			uiLastFileSize = FSGetFileOffset( uiEndAddress);
+			ui64LastFileSize = FSGetFileOffset( uiEndAddress);
 		}
 
 		if (uiLastFileNumber == 1)
@@ -822,7 +822,7 @@ FSTATIC RCODE flmDbGetSizes(
 
 			// Only one file - use last file's size.
 
-			*pui64DbFileSize = (FLMUINT64)uiLastFileSize;
+			*pui64DbFileSize = ui64LastFileSize;
 		}
 		else
 		{
@@ -832,7 +832,7 @@ FSTATIC RCODE flmDbGetSizes(
 
 			(*pui64DbFileSize) = (FLMUINT64)(uiLastFileNumber - 1) *
 											 (FLMUINT64)pFile->uiMaxFileSize +
-											 (FLMUINT64)uiLastFileSize;
+											 ui64LastFileSize;
 		}
 	}
 
@@ -854,8 +854,8 @@ FSTATIC RCODE flmDbGetSizes(
 
 		// Get the size of the last file number.
 
-		if (RC_BAD( rc = pDb->pSFileHdl->GetFileSize( uiLastFileNumber,
-										&uiLastFileSize)))
+		if (RC_BAD( rc = pDb->pSFileHdl->getFileSize( uiLastFileNumber,
+										&ui64LastFileSize)))
 		{
 			if (rc == FERR_IO_PATH_NOT_FOUND ||
 				 rc == FERR_IO_INVALID_PATH)
@@ -863,7 +863,7 @@ FSTATIC RCODE flmDbGetSizes(
 				if (uiLastFileNumber)
 				{
 					rc = FERR_OK;
-					uiLastFileSize = 0;
+					ui64LastFileSize = 0;
 				}
 				else
 				{
@@ -883,9 +883,9 @@ FSTATIC RCODE flmDbGetSizes(
 		// If the EOF offset for the last file is greater than the
 		// actual file size, use it instead of the actual file size.
 
-		if (FSGetFileOffset( uiEndAddress) > uiLastFileSize)
+		if (FSGetFileOffset( uiEndAddress) > ui64LastFileSize)
 		{
-			uiLastFileSize = FSGetFileOffset( uiEndAddress);
+			ui64LastFileSize = FSGetFileOffset( uiEndAddress);
 		}
 
 		// Special case handling here because rollback file numbers start with
@@ -895,7 +895,7 @@ FSTATIC RCODE flmDbGetSizes(
 
 		if (!uiLastFileNumber)
 		{
-			*pui64RollbackFileSize = (FLMUINT64)uiLastFileSize;
+			*pui64RollbackFileSize = ui64LastFileSize;
 		}
 		else
 		{
@@ -908,7 +908,7 @@ FSTATIC RCODE flmDbGetSizes(
 			(*pui64RollbackFileSize) = (FLMUINT64)(uiLastFileNumber -
 																	uiFirstLogFileNum + 1) *
 												 (FLMUINT64)pFile->uiMaxFileSize +
-												 (FLMUINT64)uiLastFileSize;
+												 ui64LastFileSize;
 		}
 	}
 
@@ -933,14 +933,14 @@ FSTATIC RCODE flmDbGetSizes(
 
 			// Open the file and get its size.
 
-			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenBlockFile( szTmpName,
-			  						F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT,
-									512, &pFileHdl)))
+			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szTmpName,
+			  						FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+									&pFileHdl)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 				{
 					rc = FERR_OK;
-					uiLastFileSize = 0;
+					ui64LastFileSize = 0;
 				}
 				else
 				{
@@ -949,17 +949,19 @@ FSTATIC RCODE flmDbGetSizes(
 			}
 			else
 			{
-				if (RC_BAD( rc = pFileHdl->Size( &uiLastFileSize)))
+				if (RC_BAD( rc = pFileHdl->size( &ui64LastFileSize)))
 				{
 					goto Exit;
 				}
 			}
+			
 			if (pFileHdl)
 			{
 				pFileHdl->Release();
 				pFileHdl = NULL;
 			}
-			*pui64RflFileSize = (FLMUINT64)uiLastFileSize;
+			
+			*pui64RflFileSize = ui64LastFileSize;
 		}
 		else
 		{
@@ -984,19 +986,19 @@ FSTATIC RCODE flmDbGetSizes(
 
 			// See if the directory exists.  If not, we are done.
 
-			if (gv_FlmSysData.pFileSystem->IsDir( szRflDir))
+			if (gv_FlmSysData.pFileSystem->isDir( szRflDir))
 			{
 
 				// Open the directory and scan for RFL files.
 
-				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenDir(
+				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openDir(
 					szRflDir, "*", &pDirHdl)))
 				{
 					goto Exit;
 				}
 				for (;;)
 				{
-					if (RC_BAD( rc = pDirHdl->Next()))
+					if (RC_BAD( rc = pDirHdl->next()))
 					{
 						if (rc == FERR_IO_NO_MORE_FILES)
 						{
@@ -1008,28 +1010,28 @@ FSTATIC RCODE flmDbGetSizes(
 							goto Exit;
 						}
 					}
-					pDirHdl->CurrentItemPath( szTmpName);
+					pDirHdl->currentItemPath( szTmpName);
 
 					// If the item looks like an RFL file name, get
 					// its size.
 
-					if (!pDirHdl->CurrentItemIsDir() &&
+					if (!pDirHdl->currentItemIsDir() &&
 						  rflGetFileNum( uiDbVersion, szPrefix, szTmpName,
 												&uiLastFileNumber))
 					{
 
 						// Open the file and get its size.
 
-						if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenBlockFile(
+						if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile(
 												szTmpName,
-			  									F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT,
-												512, &pFileHdl)))
+			  									FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+												&pFileHdl)))
 						{
 							if (rc == FERR_IO_PATH_NOT_FOUND ||
 								 rc == FERR_IO_INVALID_PATH)
 							{
 								rc = FERR_OK;
-								uiLastFileSize = 0;
+								ui64LastFileSize = 0;
 							}
 							else
 							{
@@ -1038,17 +1040,19 @@ FSTATIC RCODE flmDbGetSizes(
 						}
 						else
 						{
-							if (RC_BAD( rc = pFileHdl->Size( &uiLastFileSize)))
+							if (RC_BAD( rc = pFileHdl->size( &ui64LastFileSize)))
 							{
 								goto Exit;
 							}
 						}
+						
 						if (pFileHdl)
 						{
 							pFileHdl->Release();
 							pFileHdl = NULL;
 						}
-						(*pui64RflFileSize) += (FLMUINT64)uiLastFileSize;
+						
+						(*pui64RflFileSize) += ui64LastFileSize;
 					}
 				}
 			}
@@ -1155,16 +1159,17 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			case FDB_GET_RFL_DIR:
 			{
 				char *		pszPath;
-				POOL *		pPool = Wire.getPool();
-				void *		pvMark = GedPoolMark( pPool);
+				F_Pool *		pPool = Wire.getPool();
+				void *		pvMark = pPool->poolMark();
 
 				if( RC_BAD( rc = fcsConvertUnicodeToNative( pPool,
 					(FLMUNICODE *)Wire.getFilePath(), &pszPath)))
 				{
 					goto Exit;
 				}
+				
 				f_strcpy( (char *)pvValue1, pszPath);
-				GedPoolReset( pPool, pvMark);
+				pPool->poolReset( pvMark);
 				break;
 			}
 			
@@ -1215,7 +1220,8 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			
 			case FDB_GET_LOCK_HOLDER:
 			{
-				rc = fcsExtractLockUser( Wire.getHTD(), FALSE, ((LOCK_USER *)pvValue1));
+				rc = fcsExtractLockUser( Wire.getHTD(), FALSE, 
+					((F_LOCK_USER *)pvValue1));
 				break;
 			}
 			
@@ -1350,14 +1356,17 @@ Transmission_Error:
 		
 		case FDB_GET_LOCK_HOLDER:
 		{
+			F_LOCK_USER *		pLockUser = (F_LOCK_USER *)pvValue1;
+			
 			if (pFile->pFileLockObj)
 			{
-				rc = pFile->pFileLockObj->GetLockInfo( FALSE, (void *)pvValue1);
+				rc = pFile->pFileLockObj->getLockInfo( 0, NULL, 
+					&pLockUser->uiThreadId, &pLockUser->uiThreadId); 
 			}
 			else
 			{
-				((LOCK_USER *)pvValue1)->uiThreadId = 0;
-				((LOCK_USER *)pvValue1)->uiTime = 0;
+				((F_LOCK_USER *)pvValue1)->uiThreadId = 0;
+				((F_LOCK_USER *)pvValue1)->uiTime = 0;
 			}
 			break;
 		}
@@ -1366,22 +1375,22 @@ Transmission_Error:
 		{
 			if (pFile->pFileLockObj)
 			{
-				rc = pFile->pFileLockObj->GetLockInfo( TRUE, (void *)pvValue1);
+				rc = pFile->pFileLockObj->getLockQueue( (F_LOCK_USER **)pvValue1);
 			}
 			else
 			{
-				*((LOCK_USER **)pvValue1) = NULL;
+				*((F_LOCK_USER **)pvValue1) = NULL;
 			}
 			break;
 		}
 	
 		case FDB_GET_LOCK_WAITERS_EX:
 		{
-			FlmLockInfo * pLockInfo = (FlmLockInfo *)pvValue1;
+			IF_LockInfoClient * pLockInfo = (IF_LockInfoClient *)pvValue1;
 	
 			if (pFile->pFileLockObj)
 			{
-				rc = pFile->pFileLockObj->GetLockInfo( pLockInfo);
+				rc = pFile->pFileLockObj->getLockInfo( pLockInfo);
 			}
 			else
 			{
@@ -1656,7 +1665,8 @@ void flmGetCPInfo(
 
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 							pFile->pCPInfo->uiStartTime);
-				FLM_TIMER_UNITS_TO_MILLI( uiElapTime, pCheckpointInfo->uiRunningTime);
+				pCheckpointInfo->uiRunningTime = 
+					FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 			}
 			else
 			{
@@ -1669,8 +1679,8 @@ void flmGetCPInfo(
 				uiCurrTime = FLM_GET_TIMER();
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 							pFile->pCPInfo->uiForceCheckpointStartTime);
-				FLM_TIMER_UNITS_TO_MILLI( uiElapTime,
-					pCheckpointInfo->uiForceCheckpointRunningTime);
+				pCheckpointInfo->uiForceCheckpointRunningTime =
+					FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 			}
 			else
 			{
@@ -1698,8 +1708,8 @@ void flmGetCPInfo(
 
 			uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 						pFile->pCPInfo->uiStartWaitTruncateTime);
-			FLM_TIMER_UNITS_TO_MILLI( uiElapTime, 
-				pCheckpointInfo->uiWaitTruncateTime);
+			pCheckpointInfo->uiWaitTruncateTime = 
+				FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 		}
 		else
 		{

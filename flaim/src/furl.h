@@ -40,7 +40,7 @@ typedef FUrl *			FUrl_p;
 /****************************************************************************
 Desc:		The FUrl class is for dealing with URLs.
 ****************************************************************************/
-class FUrl: public F_Base
+class FUrl: public F_Object
 {
 private:
 

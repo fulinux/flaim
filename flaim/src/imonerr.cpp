@@ -55,50 +55,10 @@ RCODE F_ErrorPage::display(
 	}
 
 	fnPrintf( m_pHRequest, "<BR><BR>\n");
-
-	printRandomHaiku ();
-
 	fnPrintf( m_pHRequest, "</BODY></HTML>\n");
-
 	fnEmit();
 
 	return( rc);
-}
-
-
-/****************************************************************************
- Desc:	Picks a haiku from a list and prints it on the error page
-****************************************************************************/
-
-static f_randomGenerator gen;
-static bool bSeeded = FALSE;
-
-void F_ErrorPage::printRandomHaiku ()
-{
-
-#define NUM_HAIKUS 3
-	//The list of haikus...
-	char szHaikuList[NUM_HAIKUS][256] = {
-		"     You step in the stream,\n     But the water has moved on.\n     This page is not here.\n          -Unknown author\n",
-		"     To have no errors\n     Would be life without meaning.\n     No struggle, no joy.\n          -Unknown author\n",
-		"     The code was willing,\n     It considered your request,\n     But the chips were weak.\n          -Unknown author\n"
-	};
-
-	int uiNum;
-
-	if (!bSeeded)
-	{
-		f_randomSetSeed (&gen, 1);
-		bSeeded = TRUE;
-	}
-
-	uiNum = f_randomChoice (&gen, 0, (NUM_HAIKUS - 1));
-
-	fnPrintf( m_pHRequest, "<PRE>\n");
-	fnPrintf( m_pHRequest, szHaikuList[uiNum]);
-	fnPrintf( m_pHRequest, "</PRE>\n");
-
-	return;
 }
 
 /****************************************************************************

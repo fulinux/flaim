@@ -23,32 +23,12 @@
 //-------------------------------------------------------------------------
 
 #include "flaimsys.h"
-#include "wpscreen.h"
 #include "sharutil.h"
 
-#ifdef FLM_NLM
-	extern "C"
-	{
-		FLMBOOL	gv_bSynchronized = FALSE;
+#define UTIL_ID					"REBUILD"
 
-		void SynchronizeStart();
-
-		int nlm_main(
-			int		ArgC,
-			char **	ArgV);
-
-		int atexit( void (*)( void ) );
-	}
-
-	FSTATIC void bldCleanup( void);
-#endif
-
-#define UTIL_ID	"REBUILD"
-
-/* Columns/Rows where things go on the screen. */
-
-#define LABEL_COLUMN    5
-#define VALUE_COLUMN    35
+#define LABEL_COLUMN    		5
+#define VALUE_COLUMN    		35
 
 #define PARAM_ROW					1
 #define SOURCE_ROW				(PARAM_ROW + 1)
@@ -66,9 +46,7 @@
 #define RECOV_ROW					(TOTAL_REC_ROW + 1)
 #define DICT_RECOV_ROW			(RECOV_ROW + 1)
 
-#define MAX_LOG_BUFF       2048
-
-// Local function prototypes
+#define MAX_LOG_BUFF       	2048
 
 FSTATIC FLMBOOL bldDoRebuild( void);
 
@@ -129,14 +107,7 @@ FSTATIC void bldShowError(
 
 FSTATIC RCODE bldGetCreateOpts(
 	const char *		pszFileName,
-	const char *		pszDataDir,
 	CREATE_OPTS *		pCreateOpts);
-
-#ifdef FLM_NLM
-	#define bldGiveUpCPU()     f_yieldCPU()
-#else
-	#define bldGiveUpCPU()     f_sleep( 0)
-#endif
 
 FLMBOOL						gv_bShutdown = FALSE;
 static char *				gv_pucLogBuffer = NULL;
@@ -156,49 +127,27 @@ static char					gv_szDestRflDir [F_PATH_MAX_SIZE];
 static char					gv_szDictFileName[ F_PATH_MAX_SIZE];
 static char					gv_szLogFileName[ F_PATH_MAX_SIZE];
 static FLMUINT				gv_uiCacheSize = 30000;
-static F_FileHdl *		gv_pLogFile;
+static IF_FileHdl *		gv_pLogFile = NULL;
 static FLMBOOL				gv_bLoggingEnabled;
 static char *				gv_pszDictPath;
 static CREATE_OPTS		gv_DefaultCreateOpts;
 static FLMBOOL				gv_bFixHdrInfo;
 static FLMBOOL				gv_bRunning;
 static FLMBOOL				gv_bPauseBeforeExiting = FALSE;
-static F_FileSystem *	gv_pFileSystem = NULL;
-
-#ifdef FLM_NLM
-	typedef LONG (* RBLD_VOID_FUNC_p )(void);
-#endif
+static IF_FileSystem *	gv_pFileSystem = NULL;
 
 /********************************************************************
 Desc: ?
 *********************************************************************/
-#if defined( FLM_UNIX)
 int main(
 	int			iArgC,
 	char **		ppszArgV)
-#elif defined( FLM_NLM)
-int nlm_main(
-	int			iArgC,
-	char **		ppszArgV)
-#else
-int __cdecl main(
-	int			iArgC,
-	char **		ppszArgV)
-#endif   
 {
 	int		iRetCode = 0;
-	POOL		LogPool;
+	F_Pool	LogPool;
 
 	gv_bBatchMode = FALSE;
 	gv_bRunning = TRUE;
-
-#ifdef FLM_NLM
-
-	// Setup the routines to be called when the NLM exits itself
-	
-	atexit( bldCleanup);
-
-#endif
 
 	if( RC_BAD( FlmStartup()))
 	{
@@ -206,17 +155,20 @@ int __cdecl main(
 		goto Exit;
 	}
 
-	WpsInit( 0xFFFF, 0xFFFF, "FLAIM Database Rebuild");
-	WpsOptimize();
+	f_conInit( 0xFFFF, 0xFFFF, "FLAIM Database Rebuild");
 
-	if( RC_BAD( FlmAllocFileSystem( &gv_pFileSystem)))
+	if( RC_BAD( FlmGetFileSystem( &gv_pFileSystem)))
 	{
-		WpsStrOut( "\nCould not allocate a file system object.\n");
+		f_conStrOut( "\nCould not allocate a file system object.\n");
 		goto Exit;
 	}
 
-	GedPoolInit( &LogPool, 1024);
-	gv_pucLogBuffer = (char *)GedPoolAlloc( &LogPool, MAX_LOG_BUFF);
+	LogPool.poolInit( 1024);
+	
+	if( RC_BAD( LogPool.poolAlloc( MAX_LOG_BUFF, (void **)&gv_pucLogBuffer)))
+	{
+		goto Exit;
+	}
 	
 	if( bldGetParams( iArgC, (const char **)ppszArgV))
 	{
@@ -226,25 +178,25 @@ int __cdecl main(
 		}
 	}
 	
-	GedPoolFree( &LogPool);
-
 Exit:
 
 	if (gv_bPauseBeforeExiting && !gv_bShutdown)
 	{
-		WpsStrOut( "\nPress any character to exit REBUILD: ");
+		f_conStrOut( "\nPress any character to exit REBUILD: ");
 		for (;;)
 		{
 			if (gv_bShutdown)
 			{
 				break;
 			}
-			if (WpkTestKB())
+			
+			if (f_conHaveKey())
 			{
-				(void)WpkIncar();
+				f_conGetKey();
 				break;
 			}
-			bldGiveUpCPU();
+			
+			f_yieldCPU();
 		}
 	}
 
@@ -254,16 +206,9 @@ Exit:
 		gv_pFileSystem = NULL;
 	}
 	
-	WpsExit();
+	f_conExit();
 	FlmShutdown();
 
-#ifdef FLM_NLM
-	if (!gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 	gv_bRunning = FALSE;
 	return( iRetCode);
 }
@@ -285,17 +230,17 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	gv_uiTotalRecs = 0;
 	gv_uiRecsRecovered = 0;
 
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-	WpsScrClr( 0, 0);
+	f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+	f_conClearScreen( 0, 0);
 
 	gv_bLoggingEnabled = FALSE;
 	gv_uiLogBufferCount = 0;
 
 	if( gv_szLogFileName[ 0])
 	{
-		gv_pFileSystem->Delete( gv_szLogFileName);
-		if (RC_OK( rc = gv_pFileSystem->Create( 
-			gv_szLogFileName, F_IO_RDWR, &gv_pLogFile)))
+		gv_pFileSystem->deleteFile( gv_szLogFileName);
+		if (RC_OK( rc = gv_pFileSystem->createFile( 
+			gv_szLogFileName, FLM_IO_RDWR, &gv_pLogFile)))
 		{
 			gv_bLoggingEnabled = TRUE;
 		}
@@ -321,7 +266,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 		goto Exit;
 	}
 
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
 	if( gv_bLoggingEnabled)
 	{
 		bldLogString( NULL);
@@ -331,8 +276,8 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 "==========================================================================");
 		bldLogString( "REBUILD PARAMETERS:");
 	}
-	WpsScrClr( 0, PARAM_ROW);
-	WpsStrOutXY( "REBUILD PARAMETERS:", LABEL_COLUMN, PARAM_ROW);
+	f_conClearScreen( 0, PARAM_ROW);
+	f_conStrOutXY( "REBUILD PARAMETERS:", LABEL_COLUMN, PARAM_ROW);
 	bldOutLabel( LABEL_COLUMN + 2, SOURCE_ROW, "Source DB",
 					 gv_szSrcFileName, 0, TRUE);
 	bldOutLabel( LABEL_COLUMN + 2, SOURCE_DATA_DIR_ROW,
@@ -388,7 +333,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	Rebuild the exact prefix and other create options.
 	*/
 
-	rc = bldGetCreateOpts( gv_szSrcFileName, gv_szSrcDataDir, &createOpts);
+	rc = bldGetCreateOpts( gv_szSrcFileName, &createOpts);
 	if ((!gv_bShutdown) && (RC_OK( rc)))
 	{
 		char *	pszDestRflDir;
@@ -414,7 +359,6 @@ Exit:
 	if( gv_bLoggingEnabled)
 	{
 		bldLogFlush();
-		gv_pLogFile->Close();
 		gv_pLogFile->Release();
 		gv_pLogFile = NULL;
 	}
@@ -485,50 +429,46 @@ FSTATIC void bldShowHelp(
 	void
 	)
 {
-	WpsStrOut( "\n");
-	WpsStrOut( 
+	f_conStrOut( "\n");
+	f_conStrOut( 
 "Parameters: <SourceName> <DestName> [Options]\n\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "SourceName = Name of database which is to be recovered.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "DestName   = Name of destination database to recover data to.  Recovered\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "             records are put in this database.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "Options    = (may be specified anywhere on command line): \n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -c<n>         = Cache (kilobytes) to use.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -sd<DirName>  = Data directory for source DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -dc<DictName> = Dictionary file to use to create destination DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -dd<DirName>  = Data directory for destination DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -dr<DirName>  = RFL directory for destination DB.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -l<FileName>  = Log detailed information to <FileName>.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -b            = Run in Batch Mode.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -h<HdrInfo>   = Fix file header information. HdrInfo is in the format\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                  BlkSiz:Prod:FType:MajVer:MinVer:InitLog:LogExt:Lang:FlmVer\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -q<FileName>  = Output binary log information to <FileName>.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -v<FileName>  = Verify binary log information in <FileName>.  NOTE: The\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                  -v and -q options cannot both be specified.\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "  -p            = Pause before exiting.\n");
-#ifdef FLM_NLM
-	WpsStrOut( 
-"  -w            = Wait to end to synchronize\n");
-#endif
-	WpsStrOut( 
+	f_conStrOut( 
 "  -?           = A '?' anywhere in the command line will cause this help\n");
-	WpsStrOut( 
+	f_conStrOut( 
 "                 screen to be displayed, with or without the leading '-'.\n");
 }
 
@@ -545,9 +485,6 @@ FSTATIC FLMBOOL bldGetParams(
 	const char *	pszPtr;
 	const char *	ppszArgs[ MAX_ARGS];
 	char				szCommandBuffer [300];
-#ifdef FLM_NLM
-	FLMBOOL		bWaitToSync = FALSE;
-#endif
 
 	gv_szSrcFileName [0] = 0;
 	gv_szSrcDataDir [0] = 0;
@@ -576,10 +513,9 @@ FSTATIC FLMBOOL bldGetParams(
 	{
 		for (;;)
 		{
-			WpsStrOut( "\nRebuild Params (enter ? for help): ");
+			f_conStrOut( "\nRebuild Params (enter ? for help): ");
 			szCommandBuffer[ 0] = 0;
-			WpsLineEd( szCommandBuffer, sizeof( szCommandBuffer) - 1,
-							&gv_bShutdown);
+			f_conLineEdit( szCommandBuffer, sizeof( szCommandBuffer) - 1);
 			if( gv_bShutdown)
 			{
 				return( FALSE);
@@ -731,12 +667,6 @@ FSTATIC FLMBOOL bldGetParams(
 			{
 				gv_bBatchMode = TRUE;
 			}
-#ifdef FLM_NLM
-			else if (f_stricmp( pszPtr, "W") == 0)
-			{
-				bWaitToSync = TRUE;
-			}
-#endif
 			else if (f_stricmp( pszPtr, "?") == 0)
 			{
 				goto Show_Help;
@@ -751,13 +681,6 @@ FSTATIC FLMBOOL bldGetParams(
 		else if (f_stricmp( pszPtr, "?") == 0)
 		{
 Show_Help:
-#ifdef FLM_NLM
-			if (!gv_bSynchronized)
-			{
-				SynchronizeStart();
-				gv_bSynchronized = TRUE;
-			}
-#endif
 			bldShowHelp();
 			gv_bPauseBeforeExiting = TRUE;
 			return( FALSE);
@@ -772,14 +695,6 @@ Show_Help:
 		}
 		uiLoop++;
 	}
-
-#ifdef FLM_NLM
-	if (!bWaitToSync && !gv_bSynchronized)
-	{
-		SynchronizeStart();
-		gv_bSynchronized = TRUE;
-	}
-#endif
 
 	if (!gv_szSrcFileName [0] || !gv_szDestFileName [0])
 	{
@@ -833,7 +748,7 @@ FSTATIC FLMBOOL bldParseHdrInfo(
 			pszTmpBuf[ uiTmpLen] = 0;
 			if( uiTmpLen)
 			{
-				uiNum = FlmLanguage( pszTmpBuf);
+				uiNum = f_languageToNum( pszTmpBuf);
 				if( (!uiNum) && (f_stricmp( pszTmpBuf, "US") != 0))
 				{
 					bldShowError( "Illegal language in header information");
@@ -936,9 +851,9 @@ FSTATIC void bldOutLabel(
 
 	f_memset( szMsg, '.', uiLen);
 	szMsg[ uiLen] = 0;
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-	WpsStrOutXY( szMsg, uiCol, uiRow);
-	WpsStrOutXY( pucLabel, uiCol, uiRow);
+	f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+	f_conStrOutXY( szMsg, uiCol, uiRow);
+	f_conStrOutXY( pucLabel, uiCol, uiRow);
 
 	if( pucValue != NULL)
 	{
@@ -973,8 +888,8 @@ FSTATIC void bldOutValue(
 	FLMUINT			uiRow,
 	const char *	pucValue)
 {
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-	WpsStrOutXY( pucValue, VALUE_COLUMN, uiRow);
+	f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+	f_conStrOutXY( pucValue, VALUE_COLUMN, uiRow);
 }
 
 /********************************************************************
@@ -1000,32 +915,33 @@ FSTATIC RCODE bldGetUserInput(
 {
 	FLMUINT		uiChar;
 
-	WpsStrOutXY( "Q,ESC=Quit, Other=Continue: ", 0, 23);
+	f_conStrOutXY( "Q,ESC=Quit, Other=Continue: ", 0, 23);
 	for (;;)
 	{
 		if( gv_bShutdown)
 		{
-			uiChar = WPK_ESCAPE;
+			uiChar = FKB_ESCAPE;
 			break;
 		}
-		else if( WpkTestKB())
+		else if( f_conHaveKey())
 		{
-			uiChar = WpkIncar();
+			uiChar = f_conGetKey();
 			if( uiChar)
 			{
 				break;
 			}
 		}
-		bldGiveUpCPU();
+		
+		f_yieldCPU();
 	}
 
-	WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-	WpsScrClr( 0, 22);
+	f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+	f_conClearScreen( 0, 22);
 	switch( uiChar)
 	{
 		case 'q':
 		case 'Q':
-		case WPK_ESCAPE:
+		case FKB_ESCAPE:
 			return( RC_SET( FERR_FAILURE));
 		default:
 			break;
@@ -1168,7 +1084,7 @@ FSTATIC RCODE bldProgFunc(
 		if (pCopyInfo->bNewSrcFile)
 		{
 			f_sprintf( (char *)ucDoing, "Saving File %-15s",
-				(char *)&pCopyInfo->szSrcFileName);
+				(char *)pCopyInfo->szSrcFileName);
 			ucDoing [25] = 0;
 			bldOutValue( DOING_ROW, ucDoing);
 		}
@@ -1258,19 +1174,20 @@ FSTATIC RCODE bldProgFunc(
 		}
 	}
 
-	/* See if they pressed an ESC character */
-
-	if ((WpkTestKB()) && (WpkIncar() == WPK_ESCAPE))
+	if ((f_conHaveKey()) && (f_conGetKey() == FKB_ESCAPE))
 	{
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-		WpsScrClr( 0, 22);
-		WpsScrBackFor (WPS_RED, WPS_WHITE);
-		WpsStrOutXY( "ESCAPE key pressed", 0, 22);
+		f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
+		f_conSetBackFore (FLM_RED, FLM_WHITE);
+		f_conStrOutXY( "ESCAPE key pressed", 0, 22);
 		rc = bldGetUserInput();
 		goto Exit;
 	}
-	bldGiveUpCPU();
+	
+	f_yieldCPU();
+	
 Exit:
+
 	return( rc);
 }
 
@@ -1283,25 +1200,32 @@ FSTATIC void bldShowError(
 
 	if( !gv_bBatchMode)
 	{
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-		WpsScrClr( 0, 22);
-		WpsScrBackFor (WPS_RED, WPS_WHITE);
-		WpsStrOutXY( Message, 0, 22);
-		WpsStrOutXY( "Press any character to continue, ESCAPE to quit: ", 0, 23);
+		f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
+		f_conSetBackFore( FLM_RED, FLM_WHITE);
+		f_conStrOutXY( Message, 0, 22);
+		f_conStrOutXY( "Press any character to continue, ESCAPE to quit: ", 0, 23);
+		
 		for (;;)
 		{
 			if (gv_bShutdown)
-				break;
-			else if (WpkTestKB())
 			{
-				if (WpkIncar() == WPK_ESCAPE)
-					gv_bShutdown = TRUE;
 				break;
 			}
-			bldGiveUpCPU();
+			else if (f_conHaveKey())
+			{
+				if (f_conGetKey() == FKB_ESCAPE)
+				{
+					gv_bShutdown = TRUE;
+				}
+				break;
+			}
+			
+			f_yieldCPU();
 		}
-		WpsScrBackFor (WPS_BLACK, WPS_LIGHTGRAY);
-		WpsScrClr( 0, 22);
+		
+		f_conSetBackFore( FLM_BLACK, FLM_LIGHTGRAY);
+		f_conClearScreen( 0, 22);
 	}
 }
 
@@ -1316,7 +1240,7 @@ FSTATIC void bldLogFlush(
 
 	if( gv_uiLogBufferCount)
 	{
-		gv_pLogFile->Write( F_IO_CURRENT_POS,
+		gv_pLogFile->write( FLM_IO_CURRENT_POS,
 			gv_uiLogBufferCount, gv_pucLogBuffer, &uiBytesWritten);
 		gv_uiLogBufferCount = 0;
 	}
@@ -1360,15 +1284,14 @@ Desc: ?
 *********************************************************************/
 FSTATIC RCODE bldGetCreateOpts(
 	const char *		pszFileName,
-	const char *		pszDataDir,
 	CREATE_OPTS *		pCreateOpts)
 {
 	RCODE					rc = FERR_OK;
-	F_SuperFileHdl *	pSFile = NULL;
 	char					szBuf[ 80];
 	FLMBYTE				ucLogHdr [LOG_HEADER_SIZE];
 	HDR_INFO				HdrInfo;
 	FLMUINT				uiVersion;
+	IF_FileHdl *		pCFileHdl = NULL;
 
 	f_memset( pCreateOpts, 0, sizeof( CREATE_OPTS));
 	if( gv_bFixHdrInfo)
@@ -1377,18 +1300,13 @@ FSTATIC RCODE bldGetCreateOpts(
 		goto Exit;
 	}
 
-	if( (pSFile = new F_SuperFileHdl) == NULL)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pSFile->Setup( NULL, pszFileName, pszDataDir)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszFileName, 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pCFileHdl)))
 	{
 		goto Exit;
 	}
-
-	if( (rc = flmGetHdrInfo( pSFile, &HdrInfo.FileHdr,
+	
+	if( (rc = flmGetHdrInfo( pCFileHdl, &HdrInfo.FileHdr,
 									 &HdrInfo.LogHdr, ucLogHdr)) == FERR_NOT_FLAIM)
 	{
 		uiVersion = gv_DefaultCreateOpts.uiVersionNum;
@@ -1428,27 +1346,13 @@ FSTATIC RCODE bldGetCreateOpts(
 	{
 		rc = FERR_OK;
 	}
+	
 Exit:
 
-	if( pSFile)
+	if( pCFileHdl)
 	{
-		pSFile->Release();
+		pCFileHdl->Release();
 	}
+	
 	return( rc);
 }
-
-#ifdef FLM_NLM
-/****************************************************************************
-Desc: This routine shuts down all threads in the NLM.
-****************************************************************************/
-FSTATIC void bldCleanup(
-	void
-	)
-{
-	gv_bShutdown = TRUE;
-	while( gv_bRunning)
-	{
-		bldGiveUpCPU();
-	}
-}
-#endif

@@ -52,11 +52,11 @@ FSTATIC RCODE flmCurDoDeMorgan(
 FSTATIC RCODE flmCurCopyQTree(
 	FQNODE *		pSrcTree,
 	FQNODE *  * ppDestTree,
-	POOL *		pPool);
+	F_Pool *		pPool);
 
 FSTATIC RCODE flmCurStratify(
 	CURSOR *		pCursor,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMBOOL *	pbStratified,
 	FQNODE * *	ppTree);
 
@@ -104,14 +104,13 @@ FSTATIC RCODE flmCurAddSubQuery(
 	RCODE			rc = FERR_OK;
 	SUBQUERY *	pSubQuery;
 
-	if ((pSubQuery = (SUBQUERY *)GedPoolCalloc( &pCursor->SQPool,
-											sizeof( SUBQUERY))) == NULL)
+	if( RC_BAD( rc = pCursor->SQPool.poolCalloc( sizeof( SUBQUERY),
+		(void **)&pSubQuery)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
-	GedSmartPoolInit( &pSubQuery->OptPool, &g_SubQueryOptPoolStats);
+	
+	pSubQuery->OptPool.smartPoolInit( &g_SubQueryOptPoolStats);
 
 	pSubQuery->pTree = pQNode;
 
@@ -601,7 +600,7 @@ RCODE flmCurCopyQNode(
 	FQNODE *			pSrcNode,
 	QTINFO *			pDestQTInfo,
 	FQNODE * * 		ppDestNode,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT *		pTmpPath;
@@ -671,10 +670,9 @@ RCODE flmCurCopyQNode(
 				// needs to be reversed because it is reversed back in the call
 				// to flmCurMakeQNode below.
 				
-				if ((pTmpPath = (FLMUINT *)GedPoolCalloc( pPool,
-						((uiPathCnt + 1) *	sizeof( FLMUINT)))) == NULL)
+				if( RC_BAD( rc = pPool->poolCalloc(
+					(uiPathCnt + 1) *	sizeof( FLMUINT), (void **)&pTmpPath)))
 				{
-					rc = RC_SET( FERR_MEM);
 					break;
 				}
 				
@@ -769,11 +767,10 @@ RCODE flmCurCopyQNode(
 		if ((pSrcNode->pQAtom->val.QueryFld.pvUserData) &&
 			 (pSrcNode->pQAtom->val.QueryFld.uiUserDataLen))
 		{
-			if ((pDestNd->pQAtom->val.QueryFld.pvUserData =
-				GedPoolAlloc( pPool,
-					pSrcNode->pQAtom->val.QueryFld.uiUserDataLen)) == NULL)
+			if( RC_BAD( rc = pPool->poolAlloc(
+				pSrcNode->pQAtom->val.QueryFld.uiUserDataLen,
+				&pDestNd->pQAtom->val.QueryFld.pvUserData)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
 			
@@ -802,7 +799,7 @@ Desc:	Copies a passed-in query tree into a new tree, using the passed-in
 FSTATIC RCODE flmCurCopyQTree(
 	FQNODE *			pSrcTree,
 	FQNODE *  * 	ppDestTree,
-	POOL *			pPool)
+	F_Pool *			pPool)
 {
 	RCODE				rc = FERR_OK;
 	FQNODE *			pQNode;
@@ -882,7 +879,7 @@ Ret:
 ****************************************************************************/
 FSTATIC RCODE flmCurStratify(
 	CURSOR *		pCursor,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMBOOL *	pbStratified,
 	FQNODE * *	ppTree)
 {
@@ -902,7 +899,7 @@ FSTATIC RCODE flmCurStratify(
 	FQNODE *		pAndParent;
 	FQNODE *		pCurrNode;
 	FLMBOOL		bStratified = TRUE;
-	void *		pvMark = GedPoolMark( pPool);
+	void *		pvMark = pPool->poolMark();
 	FLMUINT		uiCount = 0;
 	FLMUINT		uiStartTime = FLM_GET_TIMER();
 	FLMUINT		uiCheckTime = 0;
@@ -913,7 +910,7 @@ FSTATIC RCODE flmCurStratify(
 
 	if (gv_FlmSysData.uiMaxStratifyIterations && gv_FlmSysData.uiMaxStratifyTime)
 	{
-		FLM_SECS_TO_TIMER_UNITS( gv_FlmSysData.uiMaxStratifyTime, uiTimeOut);
+		uiTimeOut = FLM_SECS_TO_TIMER_UNITS( gv_FlmSysData.uiMaxStratifyTime);
 	}
 	else
 	{
@@ -944,7 +941,7 @@ FSTATIC RCODE flmCurStratify(
 					uiCheckTime = FLM_GET_TIMER();
 					if( uiTimeOut && FLM_ELAPSED_TIME( uiCheckTime, uiStartTime) > uiTimeOut)
 					{
-						GedPoolReset( pPool, pvMark);
+						pPool->poolReset( pvMark);
 						rc = flmCurCopyQTree( pCursor->QTInfo.pSaveQuery,
 									&pTree, pPool);
 

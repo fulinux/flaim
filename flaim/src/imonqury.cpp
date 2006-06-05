@@ -24,7 +24,7 @@
 
 #include "flaimsys.h"
 
-#define Q_FIELD_COLOR		FLM_PURPLE
+#define Q_FIELD_COLOR		FLM_MAGENTA
 #define Q_LABEL_COLOR		FLM_BLACK
 #define Q_VALUE_COLOR		FLM_GREEN
 #define Q_PARAM_COLOR		FLM_BLUE
@@ -64,12 +64,12 @@ private:
 		const char *	pszStr);
 
 	void changeColor(
-		FlmColorType	eColor,
+		eColorType		eColor,
 		FLMBOOL			bForceColor = FALSE);
 
 	void appendString(
 		const char *	pszStr,
-		FlmColorType	eColor = FLM_CURRENT_COLOR,
+		eColorType		eColor = FLM_CURRENT_COLOR,
 		FLMBOOL			bForceColor = FALSE);
 
 	void newline( void);
@@ -99,12 +99,12 @@ private:
 	void outputBinary(
 		FLMBYTE *		pucBuf,
 		FLMUINT			uiBufLen,
-		FlmColorType	eValueColor = Q_VALUE_COLOR);
+		eColorType		eValueColor = Q_VALUE_COLOR);
 
 	void outputText(
 		FLMBYTE *		pucBuf,
 		FLMUINT			uiBufLen,
-		FlmColorType	eColor = Q_VALUE_COLOR);
+		eColorType		eColor = Q_VALUE_COLOR);
 
 	void outputPredicate(
 		FLMUINT			uiIndent,
@@ -123,37 +123,37 @@ private:
 
 	void outputLabel(
 		const char *	pszLabel,
-		FlmColorType	eLabelColor = Q_LABEL_COLOR);
+		eColorType		eLabelColor = Q_LABEL_COLOR);
 
 	void outputStringRow(
 		const char *	pszLabel,
 		const char *	pszValue,
-		FlmColorType	eLabelColor = Q_LABEL_COLOR,
-		FlmColorType	eValueColor = Q_VALUE_COLOR);
+		eColorType		eLabelColor = Q_LABEL_COLOR,
+		eColorType		eValueColor = Q_VALUE_COLOR);
 
 	void outputYesNoRow(
 		const char *	pszLabel,
 		FLMBOOL			bYesNo,
-		FlmColorType	eLabelColor = Q_LABEL_COLOR,
-		FlmColorType	eYesColor = Q_YES_COLOR,
-		FlmColorType	eNoColor = Q_NO_COLOR);
+		eColorType		eLabelColor = Q_LABEL_COLOR,
+		eColorType		eYesColor = Q_YES_COLOR,
+		eColorType		eNoColor = Q_NO_COLOR);
 
 	void outputUINTRow(
 		const char *	pszLabel,
 		FLMUINT			uiValue,
-		FlmColorType	eLabelColor = Q_LABEL_COLOR,
-		FlmColorType	eValueColor = Q_VALUE_COLOR);
+		eColorType		eLabelColor = Q_LABEL_COLOR,
+		eColorType		eValueColor = Q_VALUE_COLOR);
 
 	void outputBinaryRow(
 		const char *	pszLabel,
 		FLMBYTE *		pucValue,
 		FLMUINT			uiValueLen,
-		FlmColorType	eLabelColor,
-		FlmColorType	eValueColor);
+		eColorType		eLabelColor,
+		eColorType		eValueColor);
 
 	HRequest *		m_pHRequest;
 	F_WebPage *		m_pWebPage;
-	FlmColorType	m_eCurrColor;
+	eColorType		m_eCurrColor;
 	FLMBOOL			m_bSingleLineOnly;
 	FLMUINT			m_uiMaxChars;
 	FLMUINT			m_uiVisibleChars;
@@ -337,7 +337,7 @@ void F_QueryFormatter::outputStr(
 Desc: Output a new color code, but only if the color has changed.
 ****************************************************************************/
 void F_QueryFormatter::changeColor(
-	FlmColorType	eColor,
+	eColorType		eColor,
 	FLMBOOL			bForceColor)
 {
 	const char *	pszColor;
@@ -384,7 +384,7 @@ void F_QueryFormatter::changeColor(
 			case FLM_RED:
 				pszColor = "<font color=\"Red\">";
 				break;
-			case FLM_PURPLE:
+			case FLM_MAGENTA:
 				pszColor = "<font color=\"Purple\">";
 				break;
 			case FLM_BROWN:
@@ -414,7 +414,7 @@ void F_QueryFormatter::changeColor(
 				//VISIT: Redo this one
 				pszColor = "<font color=\"Red\">";
 				break;
-			case FLM_LIGHTPURPLE:
+			case FLM_LIGHTMAGENTA:
 				//VISIT: Redo this one
 				pszColor = "<font color=\"Fuchsia\">";
 				break;
@@ -444,7 +444,7 @@ Desc: Append a string to the output buffer.
 ****************************************************************************/
 void F_QueryFormatter::appendString(
 	const char *	pszStr,
-	FlmColorType	eColor,
+	eColorType		eColor,
 	FLMBOOL			bForceColor)
 {
 	char		szTmpBuf [80];
@@ -678,7 +678,7 @@ Desc:	This routine outputs a buffer of binary bytes as ASCII hex.
 void F_QueryFormatter::outputBinary(
 	FLMBYTE *		pucBuf,
 	FLMUINT			uiBufLen,
-	FlmColorType	eValueColor)
+	eColorType		eValueColor)
 {
 	FLMUINT			uiLoop;
 	FLMUINT			uiOffset;
@@ -795,8 +795,7 @@ Desc:	This routine outputs text data.
 void F_QueryFormatter::outputText(
 	FLMBYTE *		pucBuf,
 	FLMUINT			uiBufLen,
-	FlmColorType	eColor
-	)
+	eColorType		eColor)
 {
 	FLMUINT			uiLoop;
 	FLMUINT			uiOffset;
@@ -924,7 +923,7 @@ void F_QueryFormatter::outputPredicate(
 
 	for (;;)
 	{
-		FlmColorType	eSaveCurrColor;
+		eColorType	eSaveCurrColor;
 
 		eCurrentOp = GET_QNODE_TYPE( pQNode);
 		if (IS_OP( eCurrentOp))
@@ -1555,7 +1554,7 @@ Desc:	This routine outputs a label in its own column.
 ****************************************************************************/
 void F_QueryFormatter::outputLabel(
 	const char *	pszLabel,
-	FlmColorType	eLabelColor)
+	eColorType		eLabelColor)
 {
 	// Label goes in a column by itself
 
@@ -1577,8 +1576,8 @@ Desc:	This routine outputs a row that has a label in column one and a
 void F_QueryFormatter::outputStringRow(
 	const char *	pszLabel,
 	const char *	pszValue,
-	FlmColorType	eLabelColor,
-	FlmColorType	eValueColor)
+	eColorType		eLabelColor,
+	eColorType		eValueColor)
 {
 	// Start a new row in the table
 
@@ -1615,9 +1614,9 @@ Desc:	This routine outputs a row that has a label in column one and a
 void F_QueryFormatter::outputYesNoRow(
 	const char *	pszLabel,
 	FLMBOOL			bYesNo,
-	FlmColorType	eLabelColor,
-	FlmColorType	eYesColor,
-	FlmColorType	eNoColor)
+	eColorType		eLabelColor,
+	eColorType		eYesColor,
+	eColorType		eNoColor)
 {
 	// Start a new row in the table
 
@@ -1654,8 +1653,8 @@ Desc:	This routine outputs a row that has a label in column one and a
 void F_QueryFormatter::outputUINTRow(
 	const char *	pszLabel,
 	FLMUINT			uiValue,
-	FlmColorType	eLabelColor,
-	FlmColorType	eValueColor)
+	eColorType		eLabelColor,
+	eColorType		eValueColor)
 {
 	char	szTmp [20];
 
@@ -1689,8 +1688,8 @@ void F_QueryFormatter::outputBinaryRow(
 	const char *			pszLabel,
 	FLMBYTE *		pucValue,
 	FLMUINT			uiValueLen,
-	FlmColorType	eLabelColor,
-	FlmColorType	eValueColor)
+	eColorType		eLabelColor,
+	eColorType		eValueColor)
 {
 	// Start a new row in the table
 

@@ -28,159 +28,57 @@
 
 #include "flaim.h"
 
-#if defined( FLM_DEBUG) && !defined( FLM_HPUX)
-	#define f_new			new( __FILE__, __LINE__)
-#else
-	#define f_new			new
+#if defined( FLM_WIN)
+	// Conversion from XXX to YYY, possible loss of data
+	#pragma warning( disable : 4244) 
+
+	// Local variable XXX may be used without having been initialized
+	#pragma warning( disable : 4701)
+
+	// Function XXX not inlined
+	#pragma warning( disable : 4710) 
+#endif
+	
+#if defined( FLM_WATCOM_NLM)
+
+	// Disable "Warning! W549: col(XX) 'sizeof' operand contains
+	// compiler generated information"
+	
+	#pragma warning 549 9
 #endif
 
-FLMUINT flmStrHashBucket(
-	const char *		pszStr,
-	struct FBUCKET *	pHashTbl,
-	FLMUINT				uiNumBuckets);
-
-class FResultSet;
-class F_Thread;
 class HRequest;
 class F_Session;
 class F_SessionMgr;
-class F_XMLImport;
-class F_XMLExport;
 class F_HashTable;
-class F_FileHdlMgr;
-class F_FileSystemImp;
-class ServerLockManager;
-class F_ThreadMgr;
 class FCS_ISTM;
 class FCS_OSTM;
 class FCS_DIS;
 class FCS_DOS;
 class F_Rfl;
-class F_FileIdList;
-class F_IOBufferMgr;
-class F_IOBuffer;
-class ServerLockObject;
 class F_SuperFileHdl;
-class FlmECache;
-class F_FileHdlImp;
 class FlmBlobImp;
-class F_SlabManager;
-class F_FixedAlloc;
-class F_BufferAlloc;
 class F_CCS;
 
-#include "ftk.h"
-#include "ftkmem.h"
-#include "ftknsem.h"
-#include "ftksem.h"
-#include "ftkthrd.h"
 #include "fstructs.h"
 #include "fdict.h"
-#include "flist.h"
-#include "fmutxref.h"
-#include "ffilehdl.h"
 #include "flmstat.h"
-#include "fbuff.h"
 #include "rfl.h"
-#include "fsrvlock.h"
 #include "filesys.h"
 #include "fquery.h"
 #include "fscursor.h"
 #include "flog.h"
-#include "frset.h"
 #include "flmimon.h"
-#include "fdir.h"
-#include "ffilesys.h"
 #include "flmstat.h"
 #include "fcs.h"
 #include "fsv.h"
-#include "fxml.h"
 #include "furl.h"
-#include "ecache.h"
 #include "fsuperfl.h"
-#include "f64bitfh.h"
-#include "fdynsset.h"
-#include "fobjtrck.h"
-#include "ftrace.h"
-#include "flfixed.h"
 #include "f_nici.h"
 
 #include "fpackon.h"
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
-
-#if defined( FLM_NLM) && !defined( __MWERKS__)
-	// Turn off  "Warning! W007: col(80) "&array" may not produce intended result
-	#pragma warning 007 9
-	#pragma warning 731 9
-#endif
-
-#if defined( FLM_NLM)
-
-	#define os_malloc(size) \
-		Alloc( (size), gv_lAllocRTag)
-
-	void * nlm_realloc(
-		void	*	pMemory,
-		size_t	newSize);
-
-	#define os_realloc		nlm_realloc
-
-	#define os_free			Free
-
-#else
-
-	#define os_malloc			malloc
-	#define os_realloc		realloc
-	#define os_free			free
-
-#endif
-
-// Language definitions
-
-#define US_LANG							0		// English, United States
-#define AF_LANG							1		// Afrikaans
-#define AR_LANG							2		// Arabic
-#define CA_LANG							3		// Catalan
-#define HR_LANG							4		// Croatian
-#define CZ_LANG							5		// Czech
-#define DK_LANG							6		// Danish
-#define _NL_LANG							7		// Dutch
-#define OZ_LANG							8		// English, Australia
-#define CE_LANG							9		// English, Canada
-#define UK_LANG							10		// English, United Kingdom
-#define FA_LANG 							11		// Farsi
-#define SU_LANG							12		// Finnish
-#define CF_LANG							13		// French, Canada
-#define FR_LANG							14		// French, France
-#define GA_LANG							15		// Galician
-#define DE_LANG							16		// German, Germany
-#define SD_LANG							17		// German, Switzerland
-#define GR_LANG							18		// Greek
-#define HE_LANG							19		// Hebrew
-#define HU_LANG							20		// Hungarian
-#define IS_LANG							21		// Icelandic
-#define IT_LANG							22		// Italian
-#define NO_LANG							23		// Norwegian
-#define PL_LANG							24		// Polish
-#define BR_LANG							25		// Portuguese, Brazil
-#define PO_LANG							26		// Portuguese, Portugal
-#define RU_LANG							27		// Russian
-#define SL_LANG							28		// Slovak
-#define ES_LANG							29		// Spanish
-#define SV_LANG							30		// Swedish
-#define YK_LANG							31		// Ukrainian
-#define UR_LANG							32		// Urdu
-#define TK_LANG							33		// Turkey
-#define JP_LANG							34		// Japanese
-#define KO_LANG							35		// Korean
-#define CT_LANG							36		// Chinese-Traditional
-#define CS_LANG							37		// Chinese-Simplified
-#define LA_LANG							38		// another asian language 
-
-#define LAST_LANG 						(LA_LANG + 1)
-#define FIRST_DBCS_LANG					(JP_LANG)
-#define LAST_DBCS_LANG					(LA_LANG)
 
 // Character code high byte values for character sets
 
@@ -375,18 +273,6 @@ FLMUINT flmUnicodeToWP(
 This first section contains general FLAIM defines and macros
 ****************************************************************************/
 
-RCODE f_netwareStartup( void);
-
-void f_netwareShutdown( void);
-
-void f_memoryInit( void);
-
-void f_memoryCleanup( void);
-
-RCODE nssInitialize( void);
-
-void nssUninitialize( void);
-
 #define MIN_BLOCK_SIZE		4096
 #define MAX_BLOCK_SIZE		8192
 
@@ -436,10 +322,6 @@ This section contains prototypes, defines, ... that are used within FLAIM's
 GEDCOM code.
 ****************************************************************************/
 
-void GedSmartPoolInit(
-	POOL *			pPool,
-	POOL_STATS *	pPoolStats); 
-
 // Defines for 'nth' parmeter, GedSibGraft(), GedChildGraft()
 #define GED_LAST			32767          // last sib/child
 #define GED_FIRST       (-GED_LAST)    // first sib/child
@@ -451,15 +333,15 @@ void GedSmartPoolInit(
 #define GED_MAXTAGLEN   127            // maximum significant tag length
 
 RCODE GedToTree(
-	POOL *			pPool,
-	F_FileHdl *		pFileHdl,
+	F_Pool *			pPool,
+	IF_FileHdl *	pFileHdl,
 	char **			pBuf,
 	FLMUINT			uiBufSize,
 	NODE **			root,
 	F_NameTable *	pNameTable);
 
 void * GedAllocSpace(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			nd,
 	FLMUINT			uiValType,
 	FLMUINT			uiLen,
@@ -473,7 +355,7 @@ RCODE GedBinToText(
 	FLMUINT 	*		lenRV);
 
 NODE * GedNodeCopy(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			node,
 	NODE *			childList,
 	NODE *			sibList );
@@ -501,7 +383,7 @@ void gedSetRecSource(
 	FLMUINT				uiDrn);
 
 RCODE gedCreateSourceNode(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	FLMUINT  			uiFieldNum,
 	HFDB 					hDb,
 	FLMUINT				uiContainer,
@@ -521,7 +403,7 @@ NODE * GedClip(
 	NODE *      		self);
 
 NODE * GedCopy(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	FLMUINT     		uiTreeCount,
 	NODE *      		oldTree);
 
@@ -586,7 +468,7 @@ NODE * GedParent(
 	NODE *      		self);
 
 RCODE GedPutBINARY(
-	POOL *      		pPool,
+	F_Pool *      		pPool,
 	NODE *      		node,
 	const void *      pvData,
 	FLMUINT     		uiLength,
@@ -594,33 +476,33 @@ RCODE GedPutBINARY(
 	FLMUINT				uiEncSize = 0);
 
 RCODE GedPutRecId(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	NODE **				ppNd,
 	FLMUINT     		uiRecId);
 
 RCODE GedPutRecPtr(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	NODE *      		node,
 	FLMUINT     		uiDRN,
 	FLMUINT				uiEncId = 0,
 	FLMUINT				uiEncSize = 0);
 
 RCODE GedPutNATIVE(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	NODE *      		node,
 	const char *   	pszNativeStr,
 	FLMUINT				uiEncId = 0,
 	FLMUINT				uiEncSize = 0);
 
 RCODE GedPutINT(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	NODE *      		nd,
 	FLMINT	   		iNumber,
 	FLMUINT				uiEncId = 0,
 	FLMUINT				uiEncSize = 0);
 
 RCODE GedPutUINT(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	NODE *      		nd,
 	FLMUINT				uiNumber,
 	FLMUINT				uiEncId = 0,
@@ -632,7 +514,7 @@ RCODE GedGetUNICODE(
 	FLMUINT *			puiBufferLen);
 
 RCODE GedPutUNICODE(
-	POOL *       			pPool,
+	F_Pool *       		pPool,
 	NODE *      			node,
 	const FLMUNICODE *	pUnicode,
 	FLMUINT					uiEncId = 0,
@@ -667,7 +549,7 @@ RCODE GedWalk(
 	void *      		xyz);
 
 NODE * GedNodeCreate(
-	POOL *       		pPool,
+	F_Pool *       	pPool,
 	FLMUINT     		uiTagNum,
 	FLMUINT     		uiId,
 	RCODE *				rcRV);
@@ -743,7 +625,7 @@ FLMINT gedNextChar(
 
 FLMINT gedReadChar( 
 	 GED_STREAM *		pStream, 
-	 FLMUINT				uiFilePos);
+	 FLMUINT64			ui64FilePos);
 
 FLMUINT gedCopyTag( 
 	 GED_STREAM *		pStream, 
@@ -783,14 +665,14 @@ RCODE flmEncryptField(
 	FlmRecord *			pRecord,
 	void *				pvField,
 	FLMUINT				uiEncId,
-	POOL *				pPool);
+	F_Pool *				pPool);
 
 RCODE flmDecryptField(
 	FDICT *				pDict,
 	FlmRecord *			pRecord,
 	void *				pvField,
 	FLMUINT				uiEncId,
-	POOL *				pPool);
+	F_Pool *				pPool);
 
 FLMBOOL flmCheckIfdPath(
 	IFD *					pIfd,
@@ -1022,7 +904,7 @@ RCODE	fdbInit(
 void fdbExit(
 	FDB *					pDb);
 
-#if defined( FLM_DEBUG) && (defined( FLM_WIN) || defined( FLM_NLM))
+#if defined( FLM_DEBUG)
 	void fdbUseCheck(
 		FDB *				pDb);
 
@@ -1062,8 +944,8 @@ void flmLogError(
 
 void flmLogMessage(
 	FlmLogMessageSeverity 	eMsgSeverity,
-	FlmColorType  				eForground,
-	FlmColorType  				eBackground,
+	eColorType  				eForground,
+	eColorType  				eBackground,
 	const char *				pszFormat,
 	...);
 
@@ -1181,22 +1063,6 @@ RCODE BlkCheckSum(
 	FLMUINT				uiBlkAddress,
 	FLMUINT				uiBlkSize);
 
-#if defined( FLM_NLM) || defined( FLM_WIN)
-	void FastBlockCheckSum(
-		void *			pBlk,
-		FLMUINT *		puiChecksum,	
-		FLMUINT *		puiXORData,
-		FLMUINT			uiNumberOfBytes);
-	
-	void InitFastBlockCheckSum( void);
-#endif
-
-#ifdef FLM_WIN
-	RCODE MapWinErrorToFlaim(
-		DWORD				udErrCode,
-		RCODE				defaultRc);
-#endif
-
 #define	CHECKSUM_SET				0
 #define	CHECKSUM_CHECK				1
 
@@ -1224,12 +1090,6 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	FLMUINT				uiValue,
 	FLMBOOL				bMutexLocked,
 	FLMUINT *			puiThreadId = NULL);
-
-FLMUINT flmBinHashBucket(
-	void *				pBuf,
-	FLMUINT				uiBufLen,
-	FBUCKET *			pHashTbl,
-	FLMUINT				uiNumBuckets);
 
 RCODE flmWaitNotifyReq(
 	F_MUTEX				hMutex,
@@ -1367,7 +1227,7 @@ RCODE flmDecrField(
 	FLMUINT				uiTagNum);
 
 RCODE gedAddField(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE *				pRecord,
 	FLMUINT				uiTagNum,
 	const void *		pvData,
@@ -1387,7 +1247,7 @@ RCODE flmOpenFile(
 	FLMUINT				uiOpenFlags,
 	FLMBOOL				bInternalOpen,
 	F_Restore *			pRestoreObj,
-	F_FileHdlImp *		pLockFileHdl,
+	IF_FileHdl *		pLockFileHdl,
 	const char *		pszPassword,
 	FDB **				ppDb);
 
@@ -1425,7 +1285,7 @@ RCODE flmVerifyFileUse(
 
 RCODE flmCreateLckFile(
 	const char *		pszFilePath,
-	F_FileHdlImp **	ppLockFileHdlRV);
+	IF_FileHdl **		ppLockFileHdlRV);
 
 RCODE flmGetExclAccess(
 	const char *		pszFilePath,
@@ -1463,7 +1323,7 @@ RCODE flmMaintFreeBlockChain(
 	FLMUINT64 *			pui64BlocksFreed);
 
 RCODE flmGetHdrInfo(
-	F_SuperFileHdl * 	pSFileHdl,
+	IF_FileHdl * 		pFileHdl,
 	FILE_HDR *			pFileHdrRV,
 	LOG_HDR *			pLogHdrRV,
 	FLMBYTE *			pLogHdr);
@@ -1497,7 +1357,7 @@ RCODE flmGetFileHdrInfo(
 
 RCODE flmReadAndVerifyHdrInfo(
 	DB_STATS *			pDbStats,
-	F_FileHdl *			pFileHdl,
+	IF_FileHdl *		pFileHdl,
 	FLMBYTE *			pReadBuf,
 	FILE_HDR *			pFileHdrRV,
 	LOG_HDR *			pLogHdrRV,
@@ -1573,7 +1433,7 @@ RCODE flmIndexSetOfRecords(
 	void *				IxCallbackData,
 	FINDEX_STATUS *	pIndexStatus,
 	FLMBOOL *			pbHitEnd,
-	F_Thread *			pThread = NULL,
+	IF_Thread *			pThread = NULL,
 	FlmRecord *			pReusableRec = NULL);
 
 RCODE flmRemoveContainerKeys(
@@ -1620,7 +1480,7 @@ RCODE tokenGetUnicode(
 	FLMUINT *			puiValBufSize);
 
 RCODE expImpInit(
-	F_FileHdl *			pFileHdl,
+	IF_FileHdl *		pFileHdl,
 	FLMUINT				uiFlag,
 	EXP_IMP_INFO *		pExpImpInfoRV);
 
@@ -1648,7 +1508,7 @@ RCODE impReadRec(
 	FlmRecord **		ppRecordRV);
 
 RCODE impFileIsExpImp(
-	F_FileHdl *			pFileHdl,
+	IF_FileHdl *		pFileHdl,
 	FLMBOOL *			pbFileIsExpImpRV);
 
 #ifdef FLM_DBG_LOG
@@ -1726,8 +1586,8 @@ FINLINE FLMUINT getIxContainerPartLen(
 	{
 		IFD *	pLastIfd = &pIxd->pFirstIfd [pIxd->uiNumFlds];
 
-		return( (pIxd->uiLanguage < FIRST_DBCS_LANG ||
-					pIxd->uiLanguage > LAST_DBCS_LANG ||
+		return( (pIxd->uiLanguage < FLM_FIRST_DBCS_LANG ||
+					pIxd->uiLanguage > FLM_LAST_DBCS_LANG ||
 					IFD_GET_FIELD_TYPE( pLastIfd) != FLM_TEXT_TYPE ||
 					(pLastIfd->uiFlags & IFD_CONTEXT))
 					? 3
@@ -1930,7 +1790,7 @@ FINLINE RCODE KYFlushKeys(
 	{
 		if (RC_OK( rc = KYKeysCommit( pDb, FALSE)))
 		{
-			pDb->KrefCntrl.pReset = GedPoolMark( pDb->KrefCntrl.pPool);
+			pDb->KrefCntrl.pReset = pDb->KrefCntrl.pPool->poolMark();
 		}
 	}
 	return( rc);
@@ -2208,10 +2068,10 @@ Desc:
 ****************************************************************************/
 typedef struct IX_CHK_INFO
 {
-	POOL					pool;
+	F_Pool				pool;
 	FLMUINT				uiIxCount;
 	FLMUINT *			puiIxArray;
-	void *				pRSet;
+	IF_ResultSet *		pRSet;
 	FLMBOOL				bGetNextRSKey;
 	RS_IX_KEY			IxKey1;
 	RS_IX_KEY			IxKey2;
@@ -2414,7 +2274,7 @@ RCODE flmGetRecKeys(
 	FlmRecord *			pRecord,
 	FLMUINT				uiContainerNum,
 	FLMBOOL				bRemoveDups,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	REC_KEY **			ppKeysRV);
 
 #ifdef FLM_UNIX
@@ -2534,7 +2394,7 @@ private:
 	FLMBYTE *				m_pHeaderBuf;
 	FLMUINT					m_uiHeaderLen;
 	HFDB						m_hDb;
-	F_FileHdlImp *			m_pFileHdl;
+	IF_FileHdl *			m_pFileHdl;
 	FLMUINT					m_uiStorageType;
 #define BLOB_REFERENCE_TYPE		0x04
 #define BLOB_OWNED_TYPE				0x10
@@ -2712,8 +2572,8 @@ public:
 
 private:
 
-	F_FileHdlImp *			m_pFileHdl;
-	F_64BitFileHandle *	m_pFileHdl64;
+	IF_FileHdl *			m_pFileHdl;
+	IF_MultiFileHdl *		m_pMultiFileHdl;
 	FLMUINT64				m_ui64Offset;
 	FLMUINT					m_uiDbVersion;
 	char						m_szDbPath[ F_PATH_MAX_SIZE];

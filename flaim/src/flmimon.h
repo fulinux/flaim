@@ -112,7 +112,7 @@ enum	ButtonTypes
 Desc: The F_WebPage class, from which all of the various web page classes 
 		will be defined.
 *****************************************************************************/
-class F_WebPage : public F_Base
+class F_WebPage : public F_Object
 {
 public:
 	
@@ -192,7 +192,7 @@ public:
 
 	FINLINE int fnSendBuffer(
 		const void *	pvBuf,
-		size_t			bufsz)
+		FLMSIZET			bufsz)
 	{
 		return( gv_FlmSysData.HttpConfigParms.fnSendBuffer( m_pHRequest,
 						pvBuf, bufsz));
@@ -225,7 +225,7 @@ public:
 		void *				pvHSession,
 		const char *		pcTag,
 		const void *		pvData,
-		size_t				uiSize)
+		FLMSIZET				uiSize)
 	{
 		return( gv_FlmSysData.HttpConfigParms.fnSetSessionValue( pvHSession,
 					pcTag, pvData, uiSize));
@@ -235,7 +235,7 @@ public:
 		void *				pvHSession,
 		const char *		pcTag,
 		void *				pvData,
-		size_t *				puiSize)
+		FLMSIZET *				puiSize)
 	{
 		return( gv_FlmSysData.HttpConfigParms.fnGetSessionValue( pvHSession,
 					pcTag, pvData, puiSize));
@@ -244,7 +244,7 @@ public:
 	FINLINE int fnGetGblValue(
 		const char *		pcTag,
 		void *				pvData,
-		size_t *				puiSize)
+		FLMSIZET *				puiSize)
 	{
 		return( gv_FlmSysData.HttpConfigParms.fnGetGblValue( pcTag,
 			pvData, puiSize));
@@ -253,7 +253,7 @@ public:
 	FINLINE int fnSetGblValue(
 		const char *		pcTag,
 		const void *		pvData,
-		size_t				uiSize)
+		FLMSIZET				uiSize)
 	{
 		return( gv_FlmSysData.HttpConfigParms.fnSetGblValue( pcTag,
 			pvData, uiSize));
@@ -261,7 +261,7 @@ public:
 
 	FINLINE int fnRecvBuffer(
 		void *		pvBuf,
-		size_t *		puiBufSize)
+		FLMSIZET *		puiBufSize)
 	{
 		return( gv_FlmSysData.HttpConfigParms.fnRecvBuffer( m_pHRequest,
 			pvBuf, puiBufSize));
@@ -671,7 +671,7 @@ Desc: The NameTableMgr class
 *****************************************************************************/
 #define TABLE_ARRAY_SIZE 10
 
-class F_NameTableMgr : public F_Base
+class F_NameTableMgr : public F_Object
 {
 public:
 
@@ -698,7 +698,7 @@ private:
 		F_NameTable *	pNameTable;
 	} m_tablearray[ TABLE_ARRAY_SIZE];
 
-	f_randomGenerator m_rgen;
+	IF_RandomGenerator *		m_pRandomGen;
 };
 
 /****************************************************************************
@@ -717,7 +717,7 @@ typedef struct
 #define FLM_SECURE_PASSWORD "SecureCoreDbPassword"
 #define FLM_SECURE_EXPIRATION "SecureCoreDbExpiration"
 
-class F_WebPageFactory : public F_Base
+class F_WebPageFactory : public F_Object
 {
 public:
 	F_WebPageFactory() { sortRegistry(); }
@@ -731,7 +731,7 @@ public:
 	void Release( 
 		F_WebPage **		ppPage);
 
-	FINLINE FLMINT Release( void)
+	FINLINE FLMINT FLMAPI Release( void)
 	{
 		flmAssert( 0);
 		return( 0);
@@ -834,23 +834,6 @@ private:
 };
 
 /****************************************************************************
-Desc:	The class that displays the FFILE structures.
-*****************************************************************************/
-class F_FileHdlPage : public F_WebPage
-{
-public:
-
-	RCODE display(
-		FLMUINT			uiNumParams,
-		const char **	ppszParams);
-
-private:
-
-	void write_data(
-		F_FileHdlImp *			pFileHdl);
-};
-
-/****************************************************************************
 Desc:	The class that displays the gv_FlmSysData.pFileHashTbl hash table.
 *****************************************************************************/
 class F_FileHashTblPage : public F_WebPage
@@ -860,24 +843,6 @@ public:
 	RCODE display(
 		FLMUINT			uiNumParams,
 		const char **	ppszParams);
-};
-
-/****************************************************************************
-Desc:	The class that displays the gv_FlmSysData.pFileHdlMgr.
-*****************************************************************************/
-class F_FileHdlMgrPage : public F_WebPage
-{
-public:
-
-	RCODE display(
-		FLMUINT			uiNumParams,
-		const char **	ppszParams);
-
-private:
-
-	void formatTime(
-		FLMUINT		uiTimerUnits,
-		char *		pszFormattedTime);
 };
 
 /*********************************************************
@@ -1024,18 +989,6 @@ private:
 Desc: The class that displays information about FLAIM indexes
 *****************************************************************************/
 class F_FlmIndexPage : public F_WebPage
-{
-public:
-
-	RCODE display(
-		FLMUINT			uiNumParams,
-		const char **	ppszParams);
-};
-
-/****************************************************************************
-Desc: The class that displays information about FLAIM return codes
-*****************************************************************************/
-class F_RCodeLookupPage : public F_WebPage
 {
 public:
 
@@ -1479,8 +1432,8 @@ typedef struct focusTag
 typedef struct LockUserHeader
 {
 	FLMBYTE							szFileName[50];
-	LOCK_USER *						pDbLockUser;
-	LOCK_USER *						pTxLockUser;
+	F_LOCK_USER *					pDbLockUser;
+	F_LOCK_USER *					pTxLockUser;
 	struct LockUserHeader *		pNext;
 } LOCK_USER_HEADER, * LOCK_USER_HEADER_p;
 
@@ -1498,18 +1451,18 @@ typedef struct StatGatherTag
 	FLMUINT					uiStopTime;
 	FLMUINT					uiNumDbStats;
 	FLMUINT					uiNumLFileStats;
-	COUNT_TIME_STAT		CommittedUpdTrans;
-	COUNT_TIME_STAT		GroupCompletes;
+	F_COUNT_TIME_STAT		CommittedUpdTrans;
+	F_COUNT_TIME_STAT		GroupCompletes;
 	FLMUINT64				ui64GroupFinished;
-	COUNT_TIME_STAT		AbortedUpdTrans;
-	COUNT_TIME_STAT		CommittedReadTrans;
-	COUNT_TIME_STAT		AbortedReadTrans;
-	COUNT_TIME_STAT		Reads;
-	COUNT_TIME_STAT		Adds;
-	COUNT_TIME_STAT		Modifies;
-	COUNT_TIME_STAT		Deletes;
-	COUNT_TIME_STAT		Queries;
-	COUNT_TIME_STAT		QueryReads;
+	F_COUNT_TIME_STAT		AbortedUpdTrans;
+	F_COUNT_TIME_STAT		CommittedReadTrans;
+	F_COUNT_TIME_STAT		AbortedReadTrans;
+	F_COUNT_TIME_STAT		Reads;
+	F_COUNT_TIME_STAT		Adds;
+	F_COUNT_TIME_STAT		Modifies;
+	F_COUNT_TIME_STAT		Deletes;
+	F_COUNT_TIME_STAT		Queries;
+	F_COUNT_TIME_STAT		QueryReads;
 	FLMUINT64				ui64BlockCombines;
 	FLMUINT64				ui64BlockSplits;
 	DISKIO_STAT				IOReads;
@@ -1531,9 +1484,7 @@ typedef struct StatGatherTag
 	DISKIO_STAT				IOLogHdrWrites;
 	DISKIO_STAT				IORolledbackBlockWrites;
 	FLMUINT					uiWriteErrors;
-	COUNT_TIME_STAT		NoLocks;
-	COUNT_TIME_STAT		WaitingForLock;
-	COUNT_TIME_STAT		HeldLock;
+	F_LOCK_STATS			LockStats;
 	FLM_CACHE_USAGE		BlockCache;
 	FLM_CACHE_USAGE		RecordCache;
 	FLMUINT					uiDirtyBlocks;
@@ -1603,11 +1554,11 @@ private:
 		DISKIO_STAT *	pOldIOStat);
 
 	void printCountTimeRow(
-		FLMBOOL				bHighlight,
-		const char *		pszCategory,
-		COUNT_TIME_STAT *	pStat,
-		COUNT_TIME_STAT *	pOldStat,
-		FLMBOOL				bPrintCountOnly = FALSE);
+		FLMBOOL					bHighlight,
+		const char *			pszCategory,
+		F_COUNT_TIME_STAT *	pStat,
+		F_COUNT_TIME_STAT *	pOldStat,
+		FLMBOOL					bPrintCountOnly = FALSE);
 
 	void printCacheStatRow(
 		FLMBOOL				bHighlight,
@@ -1753,7 +1704,7 @@ typedef struct CheckStatusTag
 	char *					pszDataDir;
 	char *					pszRflDir;
 	char *					pszLogFileName;
-	F_FileHdl *				pLogFile;
+	IF_FileHdl *			pLogFile;
 	F_NameTable *			pNameTable;
 	FLMBOOL					bCheckingIndexes;
 	FLMBOOL					bRepairingIndexes;
@@ -1767,7 +1718,7 @@ typedef struct CheckStatusTag
 	DB_CHECK_PROGRESS		Progress;
 	FLMUINT					uiLastTimeSetStatus;
 	FLMUINT					uiUpdateStatusInterval;
-	F_Thread *				pThread;
+	IF_Thread *				pThread;
 } CHECK_STATUS;
 
 /****************************************************************************
@@ -1860,7 +1811,7 @@ typedef struct IndexListStatusTag
 	FLMUINT					uiLastTimeSetStatus;
 	FLMUINT					uiUpdateStatusInterval;
 	char						szEndStatus [80];
-	F_Thread *				pThread;
+	IF_Thread *				pThread;
 } IXLIST_STATUS;
 
 /****************************************************************************
@@ -1938,7 +1889,7 @@ void printAddress(
 Desc:	Utility class to help prepare a character buffer for printing when the
 		output buffer size is not known in advance.
 *****************************************************************************/
-class F_DynamicBuffer : public F_Base
+class F_DynamicBuffer : public F_Object
 {
 public:
 
@@ -1998,18 +1949,6 @@ private:
 	F_MUTEX		m_hMutex;
 };
 
-
-/*********************************************************
-Desc:	Displays the Server Lock Manager object...
-**********************************************************/
-class F_ServerLockMgrPage : public F_WebPage
-{
-public:
-
-	RCODE display(
-		FLMUINT			uiNumParams,
-		const char **	pszParams);
-};
 
 /*********************************************************
 Desc:	Processes Record add, modify, delete, retrieve requests

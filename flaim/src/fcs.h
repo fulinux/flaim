@@ -485,7 +485,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	FCS_OSTM : public virtual F_Base
+class	FCS_OSTM : public virtual F_Object
 {
 public:
 
@@ -503,7 +503,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	FCS_ISTM : public virtual F_Base
+class	FCS_ISTM : public virtual F_Object
 {
 public:
 
@@ -559,21 +559,21 @@ public:
 		FLMUINT64 *		pValue);
 
 	RCODE readBinary( 
-		POOL *			pPool,
+		F_Pool *			pPool,
 		FLMBYTE **		ppValue,
 		FLMUINT *		puiDataSize);
 
 	RCODE readLargeBinary( 
-		POOL *			pPool,
+		F_Pool *			pPool,
 		FLMBYTE **		ppValue,
 		FLMUINT *		puiDataSize);
 
 	RCODE readUTF( 
-		POOL *			pPool,
+		F_Pool *			pPool,
 		FLMUNICODE **	ppValue);
 
 	RCODE readHTD(
-		POOL *			pPool,
+		F_Pool *			pPool,
 		FLMUINT			uiContainer,
 		FLMUINT			uiDrn,
 		NODE **			ppNode,
@@ -616,7 +616,7 @@ class	FCS_DOS : public FCS_OSTM
 	FLMBYTE			m_pucBuffer[ FCS_DOS_BUFFER_SIZE];
 	FLMUINT			m_uiBOffset;
 	FLMBOOL			m_bSetupCalled;
-	POOL				m_tmpPool;
+	F_Pool			m_tmpPool;
 
 public:
 
@@ -643,7 +643,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 2];
 
-		flmINT16ToBigEndian( i16Value, tmpBuf);
+		f_INT16ToBigEndian( i16Value, tmpBuf);
 		return( write( tmpBuf, 2));
 	}
 
@@ -652,7 +652,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 2];
 
-		flmUINT16ToBigEndian( ui16Value, tmpBuf);
+		f_UINT16ToBigEndian( ui16Value, tmpBuf);
 		return( write( tmpBuf, 2));
 	}
 
@@ -661,7 +661,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 4];
 
-		flmINT32ToBigEndian( i32Value, tmpBuf);
+		f_INT32ToBigEndian( i32Value, tmpBuf);
 		return( write( tmpBuf, 4));
 	}
 	
@@ -670,7 +670,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 4];
 
-		flmUINT32ToBigEndian( ui32Value, tmpBuf);
+		f_UINT32ToBigEndian( ui32Value, tmpBuf);
 		return( write( tmpBuf, 4));
 	}
 
@@ -679,7 +679,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 8];
 
-		flmINT64ToBigEndian( i64Value, tmpBuf);
+		f_INT64ToBigEndian( i64Value, tmpBuf);
 		return( write( tmpBuf, 8));
 	}
 
@@ -688,7 +688,7 @@ public:
 	{
 		FLMBYTE	tmpBuf[ 8];
 
-		flmUINT64ToBigEndian( ui64Value, tmpBuf);
+		f_UINT64ToBigEndian( ui64Value, tmpBuf);
 		return( write( tmpBuf, 8));
 	}
 	
@@ -723,7 +723,7 @@ public:
 /****************************************************************************
 Desc: 
 ****************************************************************************/
-class	FCS_WIRE : public F_Base
+class	FCS_WIRE : public F_Object
 {
 protected:
 
@@ -763,8 +763,8 @@ protected:
 	FLMUINT				m_uiFlaimVersion;
 
 	HFDB					m_hDb;
-	POOL					m_pool;
-	POOL *				m_pPool;
+	F_Pool				m_pool;
+	F_Pool *				m_pPool;
 	FLMBOOL				m_bSendGedcom;
 	FCS_DIS *			m_pDIStream;
 	FCS_DOS *			m_pDOStream;
@@ -967,7 +967,7 @@ public:
 	}
 	
 	RCODE getHTD(
-		POOL *			pPool,
+		F_Pool *			pPool,
 		NODE ** 			ppTreeRV);
 	
 	void copyCreateOpts( 
@@ -1119,12 +1119,12 @@ public:
 	}
 
 	FINLINE void setPool( 
-		POOL *		pPool)
+		F_Pool *		pPool)
 	{
 		m_pPool = pPool;
 	}
 	
-	FINLINE POOL * getPool( void)
+	FINLINE F_Pool * getPool( void)
 	{
 		return( m_pPool);
 	}
@@ -1235,7 +1235,7 @@ class FCS_FIS : public FCS_ISTM
 {
 private:
 
-	F_FileHdl *				m_pFileHdl;
+	IF_FileHdl *			m_pFileHdl;
 	FLMBYTE *				m_pucBuffer;
 	FLMBYTE *				m_pucBufPos;
 	FLMUINT					m_uiFileOffset;
@@ -1325,7 +1325,7 @@ private:
 	FCSBIOSBLOCK *				m_pCurrReadBlock;
 	FCS_BIOS_EVENT_HOOK 		m_pEventHook;
 	void *						m_pvUserData;
-	POOL							m_pool;
+	F_Pool						m_pool;
 };
 
 /****************************************************************************
@@ -1417,287 +1417,19 @@ private:
 class FCS_TCP_SERVER;
 class FCS_TCP_CLIENT;
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-class	FCS_TCP : public F_Base
-{
-protected:
-#ifndef FLM_UNIX
-		WSADATA			m_wsaData;
-#endif
-		FLMBOOL			m_bInitialized;
-		SOCKET			m_iSocket;
-		FLMUINT			m_uiIOTimeout;
-		FLMBOOL			m_bConnected;
-		char				m_pszIp[ 256];
-		char				m_pszName[ 256];
-		char				m_pszPeerIp[ 256];
-		char				m_pszPeerName[ 256];
-		unsigned long	m_ulRemoteAddr;
-
-		RCODE _SocketPeek(
-			FLMINT			iTimoutVal,
-			FLMBOOL			bPeekRead);
-
-private:
-
-		RCODE _GetLocalInfo( void);
-		RCODE _GetRemoteInfo( void);
-
-		RCODE _write(
-			FLMBYTE *		pucBuffer,
-			FLMUINT			uiDataCnt,
-			FLMUINT *		puiWrtCnt);
-
-public:
-
-		FCS_TCP( void);
-		
-		virtual ~FCS_TCP( void);
-
-
-		// Verify that the connection is ready to accept data
-
-		RCODE socketPeekWrt( FLMINT iTimeOut)
-		{
-			return( _SocketPeek( iTimeOut, FALSE));
-		};
-
-
-		// Verify that the connection has data waiting to be read
-
-		RCODE socketPeekRead( FLMINT iTimeOut)
-		{
-			return( _SocketPeek( iTimeOut, TRUE));
-		};
-
-		// Return object's IP name (in ASCII form)
-
-		const char * ipNameTxt( void )
-		{
-			_GetLocalInfo();
-			return( (const char *)m_pszName);
-		};
-
-		// Return object's assigned address number (in ASCII form)
-
-		const char * ipAddrTxt( void )
-		{
-			_GetLocalInfo();
-			return( (const char *)m_pszIp);
-		};
-
-		// Return object's peer IP name (in ASCII form)
-
-		const char * peerIpNameTxt( void )
-		{
-			_GetRemoteInfo();
-			return( (const char *)m_pszPeerName);
-		};
-
-		// Return object's peer address number (in ASCII form)
-
-		const char * peerIpAddrTxt( void )
-		{
-			_GetRemoteInfo();
-			return( (const char *)m_pszPeerIp);
-		};
-
-		// Read data from TCP/IP connection (won't necessarily
-		//	return requested number of bytes)
-
-		RCODE read(
-			FLMBYTE *		pucBuffer,
-			FLMUINT			uiDataCnt,
-			FLMUINT *		puiReadCnt);
-
-		// Read data from TCP/IP connection with a timeout of zero
-		// (won't necessarily return requested number of bytes)
-
-		RCODE readNoWait(
-			FLMBYTE *		pucBuffer,
-			FLMUINT			uiDataCnt,
-			FLMUINT *		puiReadCnt);
-
-		// Read data from TCP/IP connection (returns requested
-		//	number of bytes, unless error occurs)
-
-		RCODE readAll(
-			FLMBYTE *		pucBuffer,
-			FLMUINT			uiDataCnt,
-			FLMUINT *		puiReadCnt);
-
-		// Write data to TCP/IP connection
-
-		RCODE write(
-			FLMBYTE *		pucDataBuffer,
-			FLMUINT			uiDataCnt,
-			FLMUINT *		puiWrtCntRV);
-
-		RCODE	setTcpDelay(
-			FLMBOOL			bOn);
-
-		// Close any open sockets
-
-		void close(
-			FLMBOOL			bForce = FALSE);
-
-		// Friend classes
-
-		friend class FCS_TCP_SERVER;
-		friend class FCS_TCP_CLIENT;
-};
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class	FCS_TCP_SERVER : public FCS_TCP
-{
-	private:
-		FLMBOOL			m_bBound;
-
-	public:
-
-		FCS_TCP_SERVER( void);
-		virtual ~FCS_TCP_SERVER( void );
-
-		//	Bind service to port, in preparation for allowing
-		//	client connections
-
-		RCODE	bind(
-			FLMUINT		uiBindPort,
-			FLMBYTE *	pucBindAddr = NULL);
-
-		//	Accept incoming client connection (time-out if
-		//	connection not received before specified time, or
-		//	block for incoming connection (if ConnectTimeOut =
-		//	svBLOCKING_IO)
-
-		RCODE connectClient(
-			FCS_TCP *	pClientConnection,
-			FLMINT		iConnectTimeout = 3,
-			FLMINT		iDataTimeout = 15);
-};
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class	FCS_TCP_CLIENT : public FCS_TCP
-{
-	public:
-
-		// Constructor	- Will attempt to connect to server if
-		//	valid IP-address is supplied along with either a
-		//	valid port number or service name (which equates to a
-		//	port number)
-
-		FCS_TCP_CLIENT( void);
-
-		virtual ~FCS_TCP_CLIENT( void );
-		
-
-		// Attempt to connect to server (if a valid IP-address is
-		//	supplied along with either a valid port number or
-		//  service name (which a name service lookup can equate
-		//	to a valid port number)
-
-		RCODE openConnection(
-			const char *	pucHostName,
-			FLMUINT			uiPort,
-			FLMUINT			uiConnectTimeout	= 3,
-			FLMUINT			uiDataTimeout		= 15);
-};
-
-#define FCS_IPOS_BUFFER_SIZE			1024
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class	FCS_IPOS : public FCS_OSTM
-{
-public:
-
-	FCS_IPOS( FCS_TCP * pTcpObj);
-
-	RCODE close( void);
-	
-	FINLINE RCODE flush( void)
-	{
-		return( _flush());
-	}
-
-	RCODE endMessage( void);
-	
-	RCODE write(
-		FLMBYTE * 	pucData,
-		FLMUINT 		uiLength);
-
-private:
-
-	FCS_TCP *			m_pTcpObj;
-	FLMBOOL				m_bOpen;
-	FLMBOOL				m_bMessageActive;
-	FLMBYTE				m_pucBuffer[ FCS_IPOS_BUFFER_SIZE];
-	FLMBYTE *			m_pucBufPos;
-
-	RCODE _flush( 
-		FLMBOOL			bEndMessage = FALSE);
-};
-
-#define FCS_IPIS_BUFFER_SIZE			1024
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-class	FCS_IPIS : public FCS_ISTM
-{
-public:
-
-	FCS_IPIS( FCS_TCP * tcpObj);
-	
-	virtual ~FCS_IPIS( void);
-
-	FLMBOOL isOpen( void);
-
-	RCODE close( void);
-
-	RCODE flush( void);
-
-	RCODE endMessage( void);
-
-	RCODE read( 
-		FLMBYTE *		pucData,
-		FLMUINT 			uiLength,
-		FLMUINT *		puiBytesRead);
-
-private:
-
-	FCS_TCP *			m_pTcpObj;
-	FLMBYTE				m_pucBuffer[ FCS_IPIS_BUFFER_SIZE];
-	FLMBYTE *			m_pucBufPos;
-	FLMUINT				m_uiPacketSize;
-	FLMBOOL				m_bStreamInvalid;
-	FLMBOOL				m_bOpen;
-	FLMBOOL				m_bMessageActive;
-	FLMBOOL				m_bGotLastPacket;
-
-	RCODE getNextPacket( void);
-};
-
 RCODE fcsConvertUnicodeToNative(
-	POOL *					pPool,
+	F_Pool *					pPool,
 	const FLMUNICODE *	puzUnicode,
 	char **					ppucNative);
 
 RCODE	fcsConvertNativeToUnicode(
-	POOL *					pPool,
+	F_Pool *					pPool,
 	const char *			pucNative,
 	FLMUNICODE **			ppuzUnicode);
 
 RCODE	fcsBuildCheckpointInfo(
 	CHECKPOINT_INFO *		pChkptInfo,
-	POOL *					pPool,
+	F_Pool *					pPool,
 	NODE **					ppTree);
 
 RCODE	fcsExtractCheckpointInfo(
@@ -1705,9 +1437,9 @@ RCODE	fcsExtractCheckpointInfo(
 	CHECKPOINT_INFO *		pChkptInfo);
 
 RCODE	fcsBuildLockUser(
-	LOCK_USER *			pLockUser,
+	F_LOCK_USER *		pLockUser,
 	FLMBOOL				bList,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree);
 
 RCODE	fcsExtractLockUser(
@@ -1728,7 +1460,7 @@ RCODE fcsTranslateQCSToQFlmOp(
 
 RCODE fcsBuildIndexStatus(
 	FINDEX_STATUS *	pIndexStatus,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree);
 
 RCODE fcsExtractIndexStatus(
@@ -1737,7 +1469,7 @@ RCODE fcsExtractIndexStatus(
 
 RCODE fcsBuildMemInfo(
 	FLM_MEM_INFO *		pMemInfo,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree);
 
 RCODE fcsExtractMemInfo(
@@ -1745,12 +1477,12 @@ RCODE fcsExtractMemInfo(
 	FLM_MEM_INFO *		pMemInfo);
 
 RCODE fcsBuildThreadInfo(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree);
 
 RCODE fcsExtractThreadInfo(
 	NODE *				pTree,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	F_THREAD_INFO **	ppThreadInfo,
 	FLMUINT *			puiNumThreads);
 

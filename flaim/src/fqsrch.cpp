@@ -86,6 +86,36 @@ FSTATIC RCODE flmCurEvalSingleRec(
 Desc: This routine will do all the setup needed to establish a sub-query as
 		the current subquery for the query.
 ****************************************************************************/
+class F_DRNCompare : public IF_ResultSetCompare
+{
+	RCODE FLMAPI compare(
+		const void *			pvData1,
+		FLMUINT					uiLength1,
+		const void *			pvData2,
+		FLMUINT					uiLength2,
+		FLMINT *					piCompare)
+	{
+		F_UNREFERENCED_PARM( uiLength1);
+		F_UNREFERENCED_PARM( uiLength2);
+		
+		if( *((FLMUINT *)pvData1) < *((FLMUINT *)pvData2))
+		{
+			*piCompare = -1; 
+		}
+		else if( *((FLMUINT *)pvData1) > *((FLMUINT *)pvData2))
+		{
+			*piCompare = 1; 
+		}
+		
+		*piCompare = 0; 
+		return( NE_FLM_OK);
+	}
+};
+
+/****************************************************************************
+Desc: This routine will do all the setup needed to establish a sub-query as
+		the current subquery for the query.
+****************************************************************************/
 FSTATIC RCODE flmCurSetSubQuery(
 	CURSOR *		pCursor,
 	SUBQUERY *	pSubQuery
@@ -125,16 +155,16 @@ Desc: Validate a record that has passed the search criteria.  This routine
 		against the result set, if there is one.
 ****************************************************************************/
 FSTATIC RCODE flmCurRecValidate(
-	eFlmFuncs	eFlmFuncId,
-	CURSOR *		pCursor,
-	SUBQUERY *	pSubQuery,
-	FLMUINT *	puiSkipCount,
-	FLMUINT *	puiCount,
-	FLMBOOL *	pbReturnRecOK
-	)
+	eFlmFuncs		eFlmFuncId,
+	CURSOR *			pCursor,
+	SUBQUERY *		pSubQuery,
+	FLMUINT *		puiSkipCount,
+	FLMUINT *		puiCount,
+	FLMBOOL *		pbReturnRecOK)
 {
-	RCODE		rc = FERR_OK;
-	FLMBOOL	bSavedInvisTrans;
+	RCODE					rc = FERR_OK;
+	FLMBOOL				bSavedInvisTrans;
+	F_DRNCompare *		pDrnCompare = NULL;
 
 	// At this point, we have a record that has passed all the selection
 	// criteria in the query.  If we have a record validator callback,
@@ -163,22 +193,14 @@ FSTATIC RCODE flmCurRecValidate(
 
 	if (pCursor->bEliminateDups)
 	{
-		/*
-		Setup the result set
-		*/
+		// Setup the result set
 
 		if( !pCursor->pDRNSet)
 		{
 			char		szTmpDir[ F_PATH_MAX_SIZE];
 
 			szTmpDir[ 0] = 0;
-
-			if ((pCursor->pDRNSet = f_new FDynSearchSet) == NULL)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
-
+			
 			if( gv_FlmSysData.bTempDirSet && gv_FlmSysData.szTempDir[ 0])
 			{
 				if( RC_BAD( rc = flmGetTmpDir( szTmpDir)))
@@ -189,19 +211,29 @@ FSTATIC RCODE flmCurRecValidate(
 
 			if( !szTmpDir[ 0])
 			{
-				if( RC_BAD( rc = f_pathReduce( 
+				if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
 					pCursor->pDb->pFile->pszDbPath, szTmpDir, NULL)))
 				{
 					goto Exit;
 				}
 			}
-
-			if (RC_BAD( rc = pCursor->pDRNSet->setup( szTmpDir, sizeof( FLMUINT))))
+			
+			if( RC_BAD( rc = FlmAllocResultSet( &pCursor->pDRNSet)))
 			{
 				goto Exit;
 			}
-
-			pCursor->pDRNSet->setCompareFunc( DRNCompareFunc, (void *) 4);
+			
+			if( (pDrnCompare = f_new F_DRNCompare) == NULL)
+			{
+				rc = RC_SET( FERR_MEM);
+				goto Exit;
+			}
+			
+			if( RC_BAD( rc = pCursor->pDRNSet->setupResultSet( szTmpDir, 
+				pDrnCompare, sizeof( FLMUINT))))
+			{
+				goto Exit;
+			}
 		}
 
 		if (RC_BAD( rc = pCursor->pDRNSet->addEntry( &pSubQuery->uiDrn)))
@@ -249,7 +281,14 @@ FSTATIC RCODE flmCurRecValidate(
 	// pass it back out to the caller.
 
 	*pbReturnRecOK = TRUE;
+	
 Exit:
+
+	if( pDrnCompare)
+	{
+		pDrnCompare->Release();
+	}
+
 	return( rc);
 }
 
@@ -317,7 +356,7 @@ FSTATIC RCODE flmCurSearchIndex(
 
 	if (pCursor->fnStatus)
 	{
-		FLM_SECS_TO_TIMER_UNITS( STATUS_CB_INTERVAL, uiCBTimer);
+		uiCBTimer = FLM_SECS_TO_TIMER_UNITS( STATUS_CB_INTERVAL);
 	}
 
 	// Set up initial search parameters.  
@@ -706,7 +745,7 @@ FSTATIC RCODE flmCurSearchPredicate(
 
 	if (pCursor->fnStatus)
 	{
-		FLM_SECS_TO_TIMER_UNITS( STATUS_CB_INTERVAL, uiCBTimer);
+		uiCBTimer = FLM_SECS_TO_TIMER_UNITS( STATUS_CB_INTERVAL);
 	}
 
 	// Set up initial search parameters.  
@@ -871,7 +910,7 @@ FSTATIC RCODE flmCurSearchContainer(
 
 	if (pCursor->fnStatus)
 	{
-		FLM_SECS_TO_TIMER_UNITS( STATUS_CB_INTERVAL, uiCBTimer);
+		uiCBTimer = FLM_SECS_TO_TIMER_UNITS( STATUS_CB_INTERVAL);
 	}
 
 	// Set up initial search parameters.  

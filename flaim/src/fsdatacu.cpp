@@ -668,7 +668,7 @@ FINLINE void setItemsFromBlock(
 	RECPOS *	pRecPos
 	)
 {
-	pRecPos->uiRecordId = flmBigEndianToUINT32( pRecPos->pKey);
+	pRecPos->uiRecordId = f_bigEndianToUINT32( pRecPos->pKey);
 	pRecPos->uiBlockAddr = pRecPos->pStack->uiBlkAddr;
 	pRecPos->uiBlockTransId = (pRecPos->uiBlockAddr != BT_END) 
 									  ? FB2UD( &pRecPos->pStack->pBlk[ BH_TRANS_ID])
@@ -702,7 +702,7 @@ RCODE FSDataCursor::setRecPosition(
 	pOutRecPos->pStack = pOutRecPos->Stack;
 	pOutRecPos->Stack[0].pKeyBuf = pOutRecPos->pKey;
 	uiRecordId = pInRecPos->uiRecordId;
-	flmUINT32ToBigEndian( (FLMUINT32)uiRecordId, buf);
+	f_UINT32ToBigEndian( (FLMUINT32)uiRecordId, buf);
 
 	// All of the variables should be setup for the search.
 	if( RC_BAD( rc = FSBtSearch( pDb, m_pLFile, &pOutRecPos->pStack,
@@ -720,7 +720,7 @@ RCODE FSDataCursor::setRecPosition(
 	if( bGoingForward)
 	{
 		if( pOutRecPos->pStack->uiCmpStatus == BT_END_OF_DATA ||
-			flmBigEndianToUINT32( pOutRecPos->pKey) == DRN_LAST_MARKER)
+			f_bigEndianToUINT32( pOutRecPos->pKey) == DRN_LAST_MARKER)
 		{
 			rc = RC_SET( FERR_EOF_HIT);
 			goto Exit;
@@ -729,7 +729,7 @@ RCODE FSDataCursor::setRecPosition(
 	else
 	{
 		if( (pOutRecPos->pStack->uiCmpStatus == BT_END_OF_DATA) ||
-			 (flmBigEndianToUINT32( pOutRecPos->pKey) > uiRecordId))
+			 (f_bigEndianToUINT32( pOutRecPos->pKey) > uiRecordId))
 		{
 			// Went a little too far - go back to the previous record.
 			// Need to position back one element.
@@ -974,7 +974,7 @@ RCODE FSDataCursor::nextRec(
 					goto Exit;
 				}
 				bRecordGone = TRUE;
-				if( flmBigEndianToUINT32( m_curRecPos.pKey) <=
+				if( f_bigEndianToUINT32( m_curRecPos.pKey) <=
 						m_pCurSet->untilKey.uiRecordId)
 				{
 					setItemsFromBlock( &m_curRecPos);
@@ -1120,7 +1120,7 @@ RCODE FSDataCursor::prevRec(
 					pCurElm = CURRENT_ELM( pStack);
 				}
 				bRecordGone = TRUE;
-				if( flmBigEndianToUINT32( m_curRecPos.pKey) >= 
+				if( f_bigEndianToUINT32( m_curRecPos.pKey) >= 
 						m_pCurSet->fromKey.uiRecordId)
 				{
 					setItemsFromBlock( &m_curRecPos);

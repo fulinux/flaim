@@ -39,7 +39,7 @@ FSTATIC RCODE queryStatusCB(
 	void *	pvUserData);
 
 FSTATIC RCODE imonDoQuery(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 /****************************************************************************
 Desc:	Prints the web page for running queries.
@@ -163,7 +163,7 @@ RCODE F_SelectPage::display(
 			fnSetSessionValue( pvHttpSession,
 				QUERY_CRITERIA_LEN, &uiCriteriaLen, sizeof( uiCriteriaLen));
 			fnSetSessionValue( pvHttpSession,
-				QUERY_CRITERIA, pszQueryCriteria, (size_t)uiCriteriaLen);
+				QUERY_CRITERIA, pszQueryCriteria, (FLMSIZET)uiCriteriaLen);
 			fnReleaseSession( pvHttpSession);
 		}
 	}
@@ -178,7 +178,7 @@ RCODE F_SelectPage::display(
 			uiSize = sizeof( uiCriteriaLen);
 			if (fnGetSessionValue( pvHttpSession,
 							QUERY_CRITERIA_LEN, (void *)&uiCriteriaLen,
-							(size_t *)&uiSize) == 0)
+							(FLMSIZET *)&uiSize) == 0)
 			{
 				if (uiCriteriaLen <= sizeof( szQueryCriteria))
 				{
@@ -195,7 +195,7 @@ RCODE F_SelectPage::display(
 				{
 					if (fnGetSessionValue( pvHttpSession, QUERY_CRITERIA,
 									pszQueryCriteria,
-									(size_t *)&uiCriteriaLen) != 0)
+									(FLMSIZET *)&uiCriteriaLen) != 0)
 					{
 						if (pszQueryCriteria != &szQueryCriteria [0])
 						{
@@ -781,7 +781,7 @@ RCODE F_SelectPage::runQuery(
 {
 	RCODE					rc = FERR_OK;
 	QUERY_STATUS *		pQueryStatus = NULL;
-	F_Thread *			pThread;
+	IF_Thread *			pThread;
 	FDB *					pDb = NULL;
 
 	// Open the database for the thread - so it doesn't have
@@ -815,13 +815,13 @@ RCODE F_SelectPage::runQuery(
 	// If browser does not check query status at least every 15 seconds, we will
 	// assume it has gone away and the thread will terminate itself.
 
-	FLM_SECS_TO_TIMER_UNITS( 15, pQueryStatus->uiQueryTimeout);
+	pQueryStatus->uiQueryTimeout = FLM_SECS_TO_TIMER_UNITS( 15);
 
 	// Start a thread to do the query.
 
 	if( RC_BAD( rc = f_threadCreate( &pThread, imonDoQuery,
 							"WEB QUERY",
-							FLM_DB_THREAD_GROUP, 1,
+							gv_uiDbThrdGrp, 1,
 							(void *)pQueryStatus, (void *)hDb)))
 	{
 		goto Exit;
@@ -871,7 +871,7 @@ void F_SelectPage::getQueryStatus(
 	)
 {
 	FLMUINT			uiThreadId;
-	F_Thread *		pThread = NULL;
+	IF_Thread *		pThread = NULL;
 	QUERY_STATUS *	pThreadQueryStatus;
 	FLMBOOL			bMutexLocked = FALSE;
 
@@ -887,7 +887,7 @@ void F_SelectPage::getQueryStatus(
 	for (;;)
 	{
 		if (RC_BAD( gv_FlmSysData.pThreadMgr->getNextGroupThread( &pThread,
-						FLM_DB_THREAD_GROUP, &uiThreadId)))
+						gv_uiDbThrdGrp, &uiThreadId)))
 		{
 			pQueryStatus->bQueryRunning = FALSE;
 			goto Exit;
@@ -1048,7 +1048,7 @@ Exit:
 Desc:	Thread to perform a query for a web page.
 ****************************************************************************/
 FSTATIC RCODE imonDoQuery(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE				rc;
 	QUERY_STATUS *	pQueryStatus = (QUERY_STATUS *)pThread->getParm1();
@@ -1062,8 +1062,7 @@ FSTATIC RCODE imonDoQuery(
 	FLMBOOL			bTransStarted = FALSE;
 
 	pThread->setThreadStatus( FLM_THREAD_STATUS_INITIALIZING);
-
-	FLM_SECS_TO_TIMER_UNITS( 5, ui5SecsTime);
+	ui5SecsTime = FLM_SECS_TO_TIMER_UNITS( 5);
 
 	// Start a transaction.
 

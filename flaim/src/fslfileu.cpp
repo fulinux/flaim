@@ -66,7 +66,7 @@ FSTATIC RCODE flmModifyTrackerRec(
 	FlmRecord *		pRecord);
 
 FSTATIC RCODE flmMaintThread(
-	F_Thread *		pThread);
+	IF_Thread *		pThread);
 
 FSTATIC RCODE fdictRemoveIndexes(
 	FDB *				pDb,
@@ -764,43 +764,42 @@ RCODE flmIndexSetOfRecords(
 	void *				IxCallbackData,
 	FINDEX_STATUS *	pIndexStatus,
 	FLMBOOL *			pbHitEnd,
-	F_Thread *			pThread,
+	IF_Thread *			pThread,
 	FlmRecord *			pReusableRec)
 {
-	RCODE				rc = FERR_OK;
-	FLMUINT			uiDrn;
-	FLMUINT			uiLastDrn = 0;
-	IXD *				pIxd = NULL;
-	LFILE *			pDataLFile;
-	FlmRecord *		pRecord = NULL;
-	FlmRecord *		pModRecord = NULL;
-	ServerLockObject *
-						pFileLockObj = pDb->pFile->pFileLockObj;
-	FLMBOOL			bHitEnd = FALSE;
-	FLMBOOL			bDataRecordRead;
-	FLMUINT			uiCurrTime;
-	FLMUINT			uiLastStatusTime = 0;
-	FLMUINT			uiStartTime;
-	FLMUINT			uiMinTU;
-	FLMUINT			uiStatusIntervalTU;
-	FLMUINT			uiRecsProcessed = 0;
-	FLMBOOL			bUpdateTracker = FALSE;
-	FLMBOOL			bHadUniqueKeys;
-	FLMBOOL			bRelinquish = FALSE;
-	BTSK  			stackBuf [BH_MAX_LEVELS];
-	BTSK *			pStack = &stackBuf [0];
-	FLMBYTE			ucKeyBuf [DIN_KEY_SIZ];
-	FLMBYTE			ucSearchKey [DIN_KEY_SIZ];
-	FLMBOOL			bDoAllContainers = FALSE;
-	ITT *				pItt;
-	POOL				ReadPool;
-	void *			pvTmpPoolMark = GedPoolMark( &pDb->TempPool);
+	RCODE					rc = FERR_OK;
+	FLMUINT				uiDrn;
+	FLMUINT				uiLastDrn = 0;
+	IXD *					pIxd = NULL;
+	LFILE *				pDataLFile;
+	FlmRecord *			pRecord = NULL;
+	FlmRecord *			pModRecord = NULL;
+	IF_LockObject *	pFileLockObj = pDb->pFile->pFileLockObj;
+	FLMBOOL				bHitEnd = FALSE;
+	FLMBOOL				bDataRecordRead;
+	FLMUINT				uiCurrTime;
+	FLMUINT				uiLastStatusTime = 0;
+	FLMUINT				uiStartTime;
+	FLMUINT				uiMinTU;
+	FLMUINT				uiStatusIntervalTU;
+	FLMUINT				uiRecsProcessed = 0;
+	FLMBOOL				bUpdateTracker = FALSE;
+	FLMBOOL				bHadUniqueKeys;
+	FLMBOOL				bRelinquish = FALSE;
+	BTSK  				stackBuf [BH_MAX_LEVELS];
+	BTSK *				pStack = &stackBuf [0];
+	FLMBYTE				ucKeyBuf [DIN_KEY_SIZ];
+	FLMBYTE				ucSearchKey [DIN_KEY_SIZ];
+	FLMBOOL				bDoAllContainers = FALSE;
+	ITT *					pItt;
+	F_Pool				ReadPool;
+	void *				pvTmpPoolMark = pDb->TempPool.poolMark();
 
-	GedPoolInit( &ReadPool, 8192);
+	ReadPool.poolInit( 8192);
 	FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 
-	FLM_MILLI_TO_TIMER_UNITS( 500, uiMinTU);
-	FLM_SECS_TO_TIMER_UNITS( 10, uiStatusIntervalTU);
+	uiMinTU = FLM_MILLI_TO_TIMER_UNITS( 500);
+	uiStatusIntervalTU = FLM_SECS_TO_TIMER_UNITS( 10);
 	uiStartTime = FLM_GET_TIMER();
 
 	if( !pReusableRec)
@@ -900,7 +899,7 @@ RCODE flmIndexSetOfRecords(
 
 		uiLastDrn = 0;
 		pStack->pKeyBuf = ucKeyBuf;
-		flmUINT32ToBigEndian( (FLMUINT32)uiStartDrn, ucSearchKey);
+		f_UINT32ToBigEndian( (FLMUINT32)uiStartDrn, ucSearchKey);
 
 		if (RC_BAD( rc = FSBtSearch( pDb, pDataLFile, &pStack,
 									ucSearchKey, 4, 0)))
@@ -919,7 +918,7 @@ RCODE flmIndexSetOfRecords(
 
 		for (;;)
 		{
-			if ((uiDrn = flmBigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
+			if ((uiDrn = f_bigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
 			{
 				bHitEnd = TRUE;
 				break;
@@ -1016,7 +1015,7 @@ RCODE flmIndexSetOfRecords(
 			// entries.  Now that we are finished indexing the current record,
 			// we need to reset the pool to free the CDL allocations.
 
-			GedPoolReset( &pDb->TempPool, pvTmpPoolMark);
+			pDb->TempPool.poolReset( pvTmpPoolMark);
 
 			// See if there is an indexing callback
 
@@ -1054,7 +1053,7 @@ RCODE flmIndexSetOfRecords(
 					FSInitStackCache( &stackBuf [0], BH_MAX_LEVELS);
 					pStack = stackBuf;
 					pStack->pKeyBuf = ucKeyBuf;
-					flmUINT32ToBigEndian( (FLMUINT32)uiDrn, ucSearchKey);
+					f_UINT32ToBigEndian( (FLMUINT32)uiDrn, ucSearchKey);
 					if (RC_BAD( rc = FSBtSearch( pDb, pDataLFile, &pStack,
 												ucSearchKey, 4, 0)))
 					{
@@ -1098,7 +1097,7 @@ RCODE flmIndexSetOfRecords(
 					break;
 				}
 
-				if( pFileLockObj->ThreadWaitingLock())
+				if( pFileLockObj->getWaiterCount())
 				{
 					// See if our minimum run time has elapsed
 
@@ -1134,7 +1133,7 @@ RCODE flmIndexSetOfRecords(
 
 					if( FLM_ELAPSED_TIME( uiCurrTime, uiStartTime) > 
 						gv_FlmSysData.uiMaxCPInterval && 
-						pDb->pFile->pWriteLockObj->ThreadWaitingLock())
+						pDb->pFile->pWriteLockObj->getWaiterCount())
 					{
 						bRelinquish = TRUE;
 						break;
@@ -1330,8 +1329,7 @@ Exit:
 
 	FSReleaseStackCache( stackBuf, BH_MAX_LEVELS, FALSE);
 	KrefCntrlFree( pDb);
-	GedPoolReset( &pDb->TempPool, pvTmpPoolMark);
-	GedPoolFree( &ReadPool);
+	pDb->TempPool.poolReset( pvTmpPoolMark);
 
 	if( pReusableRec)
 	{
@@ -2658,7 +2656,8 @@ RCODE flmStartMaintThread(
 
 	// Generate the thread name
 
-	if( RC_BAD( rc = f_pathReduce( pFile->pszDbPath, szThreadName, szBaseName)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+		pFile->pszDbPath, szThreadName, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -2674,7 +2673,7 @@ RCODE flmStartMaintThread(
 
 	if( RC_BAD( rc = f_threadCreate( &pFile->pMaintThrd,
 		flmMaintThread, szThreadName, 
-		FLM_DEFAULT_THREAD_GROUP, 0, pFile, NULL, 32000)))
+		0, 0, pFile, NULL, 32000)))
 	{
 		goto Exit;
 	}
@@ -2708,7 +2707,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 	FlmRecord **	ppRecord)
 {
 	RCODE				rc = FERR_OK;
-	POOL				readPool;
+	F_Pool			readPool;
 	LFILE *			pTrackerLFile;
 	BTSK  			stackBuf[ BH_MAX_LEVELS];
 	BTSK *			pStack = &stackBuf[ 0];
@@ -2718,7 +2717,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 	FLMUINT			uiFoundDrn;
 
 	FSInitStackCache( &stackBuf[ 0], BH_MAX_LEVELS);
-	GedPoolInit( &readPool, 8192);
+	readPool.poolInit( 8192);
 
 	// Retrieve a tracker record for processing
 
@@ -2729,7 +2728,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 	}
 
 	pStack->pKeyBuf = ucKeyBuf;
-	flmUINT32ToBigEndian( (FLMUINT32)uiDrn, ucSearchKey);
+	f_UINT32ToBigEndian( (FLMUINT32)uiDrn, ucSearchKey);
 
 	if( RC_BAD( rc = FSBtSearch( 
 		pDb, pTrackerLFile, &pStack, ucSearchKey, 4, 0)))
@@ -2747,7 +2746,7 @@ FSTATIC RCODE flmRetrieveTrackerRec(
 
 	// Stack points to leaf element
 
-	if( (uiFoundDrn = flmBigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
+	if( (uiFoundDrn = f_bigEndianToUINT32( ucKeyBuf)) == DRN_LAST_MARKER)
 	{
 		rc = RC_SET( FERR_EOF_HIT);
 		goto Exit;
@@ -2799,7 +2798,6 @@ Exit:
 	}
 
 	FSReleaseStackCache( stackBuf, BH_MAX_LEVELS, FALSE);
-	GedPoolFree( &readPool);
 	return( rc);
 }
 
@@ -2878,7 +2876,7 @@ Exit:
 Desc: 
 *****************************************************************************/
 FSTATIC RCODE flmMaintThread(
-	F_Thread *		pThread)
+	IF_Thread *		pThread)
 {
 	RCODE					rc = FERR_OK;
 	FLMBOOL				bStartedTrans = FALSE;
@@ -2950,9 +2948,9 @@ FSTATIC RCODE flmMaintThread(
 			pStatus->eDoing = FLM_MAINT_WAITING_FOR_LOCK;
 
 			flmAssert( !(pDb->uiFlags & FDB_HAS_FILE_LOCK));
-			if( RC_BAD( rc = pDb->pFile->pFileLockObj->Lock( TRUE, pDb, FALSE, 
+			if( RC_BAD( rc = pDb->pFile->pFileLockObj->lock( pDb->hWaitSem, 
 				TRUE, FLM_NO_TIMEOUT, FLM_BACKGROUND_LOCK_PRIORITY,
-				pDb->pDbStats)))
+				pDb->pDbStats ? &pDb->pDbStats->LockStats : NULL)))
 			{
 				if( rc == FERR_IO_FILE_LOCK_ERR)
 				{
@@ -2978,7 +2976,7 @@ FSTATIC RCODE flmMaintThread(
 				pDb->pFile->pFileLockObj->haveHigherPriorityWaiter( 
 					FLM_BACKGROUND_LOCK_PRIORITY))
 			{
-				if( RC_BAD( rc = pDb->pFile->pFileLockObj->Unlock( TRUE, pDb)))
+				if( RC_BAD( rc = pDb->pFile->pFileLockObj->unlock()))
 				{
 					goto Exit;
 				}
@@ -3091,7 +3089,7 @@ Exit:
 
 	if( pDb && pDb->uiFlags & FDB_HAS_FILE_LOCK)
 	{
-		(void)pDb->pFile->pFileLockObj->Unlock( TRUE, pDb);
+		pDb->pFile->pFileLockObj->unlock();
 		pDb->uiFlags &= ~(FDB_HAS_FILE_LOCK | FDB_FILE_LOCK_IMPLICIT);
 	}
 

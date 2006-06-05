@@ -22,8 +22,8 @@
 // $Id: flm_edit.h 12334 2006-01-23 12:45:35 -0700 (Mon, 23 Jan 2006) dsanders $
 //-------------------------------------------------------------------------
 
-#ifndef FLM_EDIT_HPP
-#define FLM_EDIT_HPP
+#ifndef FLM_EDIT_H
+#define FLM_EDIT_H
 
 #include "flaim.h"
 
@@ -130,8 +130,8 @@ typedef struct
 {
 	char			pucString[ 128];
 	FLMUINT		uiCol;
-	FLMUINT		uiForeground;
-	FLMUINT		uiBackground;
+	eColorType	foreground;
+	eColorType	background;
 } DBE_DISP_COLUMN;
 
 /*
@@ -161,7 +161,7 @@ typedef RCODE (* F_RECEDIT_KEY_HOOK)(
 typedef RCODE (* F_RECEDIT_HELP_HOOK)(
 	F_RecEditor *		pRecEditor,
 	F_RecEditor *		pHelpEditor,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	void *				UserData,
 	NODE **				ppRootNd);
 
@@ -175,20 +175,18 @@ typedef RCODE (* F_RECEDIT_EVENT_HOOK)(
 Class definitions
 */
 
-#ifdef __cplusplus
-
-class F_RecEditor : public F_Base
+class F_RecEditor : public F_Object
 {
 	private:
 
-		F_FileSystem *				m_pFileSystem;
+		IF_FileSystem *			m_pFileSystem;
 		char *						m_pucTmpBuf;
 		F_NameTable *				m_pNameTable;
 		NODE * 						m_pTree;
 		NODE *						m_pCurNd;
 		NODE *						m_pScrFirstNd;
-		POOL							m_scratchPool;
-		POOL							m_treePool;
+		F_Pool						m_scratchPool;
+		F_Pool						m_treePool;
 		HFDB							m_hDefaultDb;
 		FLMUINT						m_uiDefaultCont;
 		FLMUINT						m_uiDefaultStore;
@@ -403,12 +401,12 @@ class F_RecEditor : public F_Base
 			FLMBOOL		bReadOnly);
 
 		RCODE copyCleanRecord(
-			POOL *		pPool,
+			F_Pool *		pPool,
 			NODE *		pRecNd,
 			NODE **		ppCopiedRec);
 
 		RCODE copyCleanTree(
-			POOL *		pPool,
+			F_Pool *		pPool,
 			NODE *		pTreeNd,
 			NODE **		ppCopiedTree);
 
@@ -520,7 +518,7 @@ class F_RecEditor : public F_Base
 		
 		FLMUINT getLastKey( void);
 		
-		F_FileSystem * getFileSystem( void);
+		IF_FileSystem * getFileSystem( void);
 
 		RCODE getNumber(
 			const char *	pucBuf,
@@ -603,7 +601,7 @@ class F_RecEditor : public F_Base
 			FLMUINT *		puiTermChar);
 
 		RCODE copyBuffer(
-			POOL *			pPool,
+			F_Pool *			pPool,
 			NODE *			pStartNd,
 			NODE **			ppNewTree);
 
@@ -611,16 +609,16 @@ class F_RecEditor : public F_Base
 			const char *	pucMessage,
 			RCODE				rcOfMessage,
 			FLMUINT *		puiTermChar,
-			FLMUINT			uiBackground,
-			FLMUINT			uiForeground);
+			eColorType		background,
+			eColorType		foreground);
 
 		RCODE globalConfig(
 			FLMUINT			uiOption);
 
 		RCODE createStatusWindow(
 			const char *	pucTitle,
-			FLMUINT			uiBack,
-			FLMUINT			uiFore,
+			eColorType		back,
+			eColorType		fore,
 			FLMUINT *		puiCols,
 			FLMUINT *		puiRows,
 			FTX_WINDOW **	ppWindow);
@@ -782,7 +780,7 @@ inline FLMUINT F_RecEditor::getULY( void)
 	return( m_uiULY);
 }
 
-inline F_FileSystem * F_RecEditor::getFileSystem( void)
+inline IF_FileSystem * F_RecEditor::getFileSystem( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pFileSystem);
@@ -867,5 +865,4 @@ RCODE f_RecEditorFileKeyHook(
 	void *				UserData,
 	FLMUINT *			puiKeyOut);
 
-#endif	// __cplusplus
-#endif	// FLM_EDIT_HPP
+#endif	// FLM_EDIT_H

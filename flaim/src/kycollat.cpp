@@ -2213,15 +2213,15 @@ Desc:
 ****************************************************************************/
 FLMUINT16 flmIndexj[] =
 {
-	CA_LANG,									// Catalan
-	CF_LANG,									// Canadian French
-	CZ_LANG,									// Czech
-	SL_LANG,									// Slovak
-	DE_LANG,									// German
-	SD_LANG,									// Swiss German
-	ES_LANG,									// Spanish (Spain)
-	FR_LANG,									// French
-	_NL_LANG,								// Netherlands
+	FLM_CA_LANG,							// Catalan
+	FLM_CF_LANG,							// Canadian French
+	FLM_CZ_LANG,							// Czech
+	FLM_SL_LANG,							// Slovak
+	FLM_DE_LANG,							// German
+	FLM_SD_LANG,							// Swiss German
+	FLM_ES_LANG,							// Spanish (Spain)
+	FLM_FR_LANG,							// French
+	FLM_NL_LANG,							// Netherlands
 	0xFFFF,									// DK_LANG,	Danish
 	0xFFFF,									// NO_LANG,	Norwegian
 	0x0063,									// c
@@ -2239,15 +2239,15 @@ FLMUINT16 flmIndexj[] =
 	0x018b,									// ij digraph
 	0x0000,									// was 'a' - will no longer map 'aa' to a-ring
 	0x0000,									// was 'a'
-	CZ_LANG,
-	DK_LANG,
-	NO_LANG,
-	SL_LANG,
-	TK_LANG,
-	SU_LANG,
-	IS_LANG,
-	SV_LANG,
-	YK_LANG,
+	FLM_CZ_LANG,
+	FLM_DK_LANG,
+	FLM_NO_LANG,
+	FLM_SL_LANG,
+	FLM_TK_LANG,
+	FLM_SU_LANG,
+	FLM_IS_LANG,
+	FLM_SV_LANG,
+	FLM_YK_LANG,
 	0x011e,									// A diaeresis
 	0x011f,									// a diaeresis
 	0x0122,									// A ring
@@ -2746,12 +2746,12 @@ FLMUINT16 flmGetCollation(
 
 	// State ONLY for non-US
 
-	if (uiLanguage != US_LANG)
+	if (uiLanguage != FLM_US_LANG)
 	{
-		if (uiLanguage == AR_LANG ||		// Arabic
-			 uiLanguage == FA_LANG ||		// Farsi - persian
-			 uiLanguage == HE_LANG ||		// Hebrew
-			 uiLanguage == UR_LANG) 		// Urdu
+		if (uiLanguage == FLM_AR_LANG ||		// Arabic
+			 uiLanguage == FLM_FA_LANG ||		// Farsi - persian
+			 uiLanguage == FLM_HE_LANG ||		// Hebrew
+			 uiLanguage == FLM_UR_LANG) 		// Urdu
 		{
 			pColTbl = flmHebArabicCol60Tbl;
 			bHebrewArabicFlag = TRUE;
@@ -2856,9 +2856,8 @@ RCODE KYCmpKeyAdd2Lst(
 	uiIxEntry = (FLMUINT) (pIxd - pDb->pDict->pIxdTbl);
 	uiCdlEntry = (FLMUINT) (pIfd - pDb->pDict->pIfdTbl);
 
-	if( (pCdl = (CDL *)GedPoolAlloc( &pDb->TempPool, sizeof( CDL))) == NULL)
+	if( RC_BAD( rc = pDb->TempPool.poolAlloc( sizeof( CDL), (void **)&pCdl)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 	
@@ -3072,8 +3071,8 @@ RCODE KYCmpKeyElmBld(
 	{
 		IFD *			pPrevIfd = pIfd - 1;
 		
-		if( (uiLanguage >= FIRST_DBCS_LANG) &&
-			 (uiLanguage <= LAST_DBCS_LANG) &&
+		if( (uiLanguage >= FLM_FIRST_DBCS_LANG) &&
+			 (uiLanguage <= FLM_LAST_DBCS_LANG) &&
 			 (IFD_GET_FIELD_TYPE( pPrevIfd) == FLM_TEXT_TYPE) &&
 			 (!(pPrevIfd->uiFlags & IFD_CONTEXT)))
 		{
@@ -3163,13 +3162,12 @@ RCODE KYCmpKeyElmBld(
 
 			if( !pTmpBuf)
 			{
-				pvMark = GedPoolMark( &pDb->TempPool);
+				pvMark = pDb->TempPool.poolMark();
 				
-				if( (pTmpBuf = (FLMBYTE *)GedPoolAlloc( &pDb->TempPool,
-					(FLMUINT)MAX_KEY_SIZ + 8)) == NULL)
+				if( RC_BAD( rc = pDb->TempPool.poolAlloc( MAX_KEY_SIZ + 8, 
+					(void **)&pTmpBuf)))
 				{
-					rc = RC_SET( FERR_MEM);
-					goto Cleanup1;
+					goto Exit;
 				}
 			}
 
@@ -3259,8 +3257,8 @@ RCODE KYCmpKeyElmBld(
 			
 				if( (pIfd->uiFlags & IFD_SUBSTRING) && 
 					(uiTextLen == 1 && 
-						!(uiLanguage >= FIRST_DBCS_LANG && 
-							uiLanguage <= LAST_DBCS_LANG)))
+						!(uiLanguage >= FLM_FIRST_DBCS_LANG && 
+							uiLanguage <= FLM_LAST_DBCS_LANG)))
 				{
 					break;
 				}
@@ -3280,7 +3278,7 @@ Cleanup1:
 				if( pIfd->uiFlags & IFD_CONTEXT)
 				{
 					pKeyBuf [uiKeyLen] = KY_CONTEXT_PREFIX;
-					flmUINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pvField),
+					f_UINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pvField),
 									&pKeyBuf [uiKeyLen + 1]);
 		   		uiKeyLen += KY_CONTEXT_LEN;
 				}
@@ -3392,7 +3390,7 @@ Exit:
 
 	if( pvMark)
 	{
-		GedPoolReset( &pDb->TempPool, pvMark);
+		pDb->TempPool.poolReset( pvMark);
 	}
 
 	return( rc);
@@ -3605,8 +3603,8 @@ FLMUINT KYCombPostParts(
 	}
 
 	wReturnLen = (FLMUINT)(uiLuLen + 2);
-	if( (uiLanguage >= FIRST_DBCS_LANG) && 
-		 (uiLanguage <= LAST_DBCS_LANG) &&
+	if( (uiLanguage >= FLM_FIRST_DBCS_LANG) && 
+		 (uiLanguage <= FLM_LAST_DBCS_LANG) &&
 		 ((uiIfdAttr & 0x0F) == FLM_TEXT_TYPE) &&
 		 (!(uiIfdAttr & IFD_CONTEXT )))
 	{
@@ -3672,8 +3670,8 @@ RCODE KYTreeToKey(
 	{
 		uiIsPost |= (FLMUINT) (uiIskPostFlag = (FLMUINT)IFD_IS_POST_TEXT( pIfd));
 
-  		bIsAsianCompound =((uiLanguage >= FIRST_DBCS_LANG) && 
-								 (uiLanguage <= LAST_DBCS_LANG) && 
+  		bIsAsianCompound =((uiLanguage >= FLM_FIRST_DBCS_LANG) && 
+								 (uiLanguage <= FLM_LAST_DBCS_LANG) && 
 								 (IFD_GET_FIELD_TYPE( pIfd) == FLM_TEXT_TYPE) &&
 								 (!(pIfd->uiFlags & IFD_CONTEXT)));
 		nth = 1;
@@ -3721,7 +3719,7 @@ FIND_NXT:
         		// Output the tag number.
 
 				*pToKey = KY_CONTEXT_PREFIX;
-				flmUINT16ToBigEndian( (FLMUINT16) pRecord->getFieldID( 
+				f_UINT16ToBigEndian( (FLMUINT16) pRecord->getFieldID( 
 					pvMatchField), &pToKey [1]);
 				uiToKeyLen = KY_CONTEXT_LEN;
 			}
@@ -3935,7 +3933,7 @@ RCODE KYCollateValue(
 
 		uiCharLimit = uiLimit ? uiLimit : IFD_DEFAULT_LIMIT;
 		
-		if( (uiLanguage >= FIRST_DBCS_LANG ) && (uiLanguage <= LAST_DBCS_LANG))
+		if( (uiLanguage >= FLM_FIRST_DBCS_LANG ) && (uiLanguage <= FLM_LAST_DBCS_LANG))
 		{
 			rc = AsiaFlmTextToColStr( pSrc, uiSrcLen, pDest, &uiDestLen,
 								(uiFlags & IFD_UPPER), puiCollationLen, puiLuLenRV, 
@@ -3958,8 +3956,8 @@ RCODE KYCollateValue(
 		{
 			// Zero length key. Any value under 0x1F would work.
 			
-			if( (uiLanguage >= FIRST_DBCS_LANG ) && 
-				 (uiLanguage <= LAST_DBCS_LANG))
+			if( (uiLanguage >= FLM_FIRST_DBCS_LANG ) && 
+				 (uiLanguage <= FLM_LAST_DBCS_LANG))
 			{
 				pDest [0] = 0;
 				pDest [1] = NULL_KEY_MARKER;
@@ -4117,7 +4115,7 @@ NumDone:
 			else
 			{
 				*pDest = 0x1F;
-				flmUINT32ToBigEndian( FB2UD( pSrc), pDest + 1);
+				f_UINT32ToBigEndian( FB2UD( pSrc), pDest + 1);
 				uiDestLen = 5;
 				rc = FERR_OK;
 			}
@@ -4755,12 +4753,12 @@ RCODE FTextToColStr(
 
 	// Code below sets ucSubColBuf[] and ucCaseBits[] values to zero.
 
-	if (uiLanguage != US_LANG)
+	if (uiLanguage != FLM_US_LANG)
 	{
-		if (uiLanguage == AR_LANG ||		// Arabic
-			 uiLanguage == FA_LANG ||		// Farsi - persian
-			 uiLanguage == HE_LANG ||		// Hebrew
-			 uiLanguage == UR_LANG)			// Urdu
+		if (uiLanguage == FLM_AR_LANG ||		// Arabic
+			 uiLanguage == FLM_FA_LANG ||		// Farsi - persian
+			 uiLanguage == FLM_HE_LANG ||		// Hebrew
+			 uiLanguage == FLM_UR_LANG)			// Urdu
 		{
 			bHebrewArabic = TRUE;
 		}
@@ -4902,7 +4900,7 @@ RCODE FTextToColStr(
 		// pucStr is not changed, but ui16WpChr contains the first character and
 		// ui16WpChr2 contains the second character of the digraph.
 
-		if (uiLanguage != US_LANG)
+		if (uiLanguage != FLM_US_LANG)
 		{
 			ui16WpChr2 = flmCheckDoubleCollation( &ui16WpChr, &bTwoIntoOne,
 											&pucStr, uiLanguage);
@@ -5088,10 +5086,10 @@ store_extended_char:
 						// character.
 
 						ui16SubColVal = ((ui16SubColVal & 0xFF) == umlaut	&&
-											  (uiLanguage == SU_LANG || 
-												uiLanguage == SV_LANG || 
-												uiLanguage == CZ_LANG || 
-												uiLanguage == SL_LANG))
+											  (uiLanguage == FLM_SU_LANG || 
+												uiLanguage == FLM_SV_LANG || 
+												uiLanguage == FLM_CZ_LANG || 
+												uiLanguage == FLM_SL_LANG))
 							?	(FLMUINT16)(flmDia60Tbl[ ring] + 1)
 							:	(FLMUINT16)(flmDia60Tbl[ ui16SubColVal & 0xFF]);
 				
@@ -5370,7 +5368,7 @@ store_sub_col:
 	// Done putting the string into 4 sections - build the COLLATED KEY
 	// Don't set uiUppercaseFlag earlier than here because SC_LOWER may be zero
 
-	uiUppercaseFlag = (uiLanguage == GR_LANG) ? SC_LOWER : SC_UPPER;
+	uiUppercaseFlag = (uiLanguage == FLM_GR_LANG) ? SC_LOWER : SC_UPPER;
 
 	// The default terminating characters is (COLL_MARKER|SC_UPPER)
 	// Did we write anything to the subcollation area?
@@ -5519,10 +5517,10 @@ FLMUINT16 flmTextGetSubCol(
 			// "111" alone for the future.
 			
 			ui16SubColVal = ((ui16SubColVal & 0xFF) == umlaut && 
-									((uiLangId == SU_LANG) || 
-									 (uiLangId == SV_LANG) || 
-									 (uiLangId == CZ_LANG) || 
-									 (uiLangId == SL_LANG)))
+									((uiLangId == FLM_SU_LANG) || 
+									 (uiLangId == FLM_SV_LANG) || 
+									 (uiLangId == FLM_CZ_LANG) || 
+									 (uiLangId == FLM_SL_LANG)))
 				?	(FLMUINT16)(flmDia60Tbl[ ring] + 1)
 				:	(FLMUINT16)(flmDia60Tbl[ ui16SubColVal & 0xFF]);
 	
@@ -6300,10 +6298,10 @@ FLMUINT16 flmAsiaGetCollation(
 
 Latin_Greek_Cyrillic:
 
-		// YES: Pass US_LANG because this is what we want - Prevents double
+		// YES: Pass FLM_US_LANG because this is what we want - Prevents double
 		// character sorting.
 
-		ui16ColValue = flmGetCollation( ui16WpChar, US_LANG);
+		ui16ColValue = flmGetCollation( ui16WpChar, FLM_US_LANG);
 
 		if (uiUppercaseFlag || flmIsUpper( ui16WpChar))
 		{
@@ -6523,12 +6521,12 @@ FLMUINT FWWSGetColStr(
 	// WARNING: The code is duplicated for performance reasons. The US code
 	// below is much more optimized so any changes must be done twice.
 
-	if (fWPLang != US_LANG)					// Code for NON-US languages
+	if (fWPLang != FLM_US_LANG)				// Code for NON-US languages
 	{
-		if ((fWPLang == AR_LANG) ||		// Arabic
-			 (fWPLang == FA_LANG) ||		// Farsi - persian
-			 (fWPLang == HE_LANG) ||		// Hebrew
-			 (fWPLang == UR_LANG))			// Urdu
+		if ((fWPLang == FLM_AR_LANG) ||		// Arabic
+			 (fWPLang == FLM_FA_LANG) ||		// Farsi - persian
+			 (fWPLang == FLM_HE_LANG) ||		// Hebrew
+			 (fWPLang == FLM_UR_LANG))			// Urdu
 		{	
 			hebrewArabicFlag++;
 		}
@@ -6849,9 +6847,9 @@ FLMUINT FWWSToMixed(
 	FLMBYTE	maskByte;
 	FLMBYTE	xorByte;
 
-	xorByte = (fWPLang == US_LANG)
+	xorByte = (fWPLang == FLM_US_LANG)
 						? (FLMBYTE) 0 
-						: (fWPLang == GR_LANG)
+						: (fWPLang == FLM_GR_LANG)
 								? (FLMBYTE) 0xFF 
 								: (FLMBYTE) 0;
 
@@ -7019,8 +7017,8 @@ RCODE flmIxKeyOutput(
 
 		bDataRightTruncated = bFirstSubstring = FALSE;
 
-  		bIsAsianCompound = (FLMBOOL)(((uiLanguage >= FIRST_DBCS_LANG) && 
-												(uiLanguage <= LAST_DBCS_LANG) &&
+  		bIsAsianCompound = (FLMBOOL)(((uiLanguage >= FLM_FIRST_DBCS_LANG) && 
+												(uiLanguage <= FLM_LAST_DBCS_LANG) &&
 												(IFD_GET_FIELD_TYPE( pIfd) == FLM_TEXT_TYPE) &&
 												(!(pIfd->uiFlags & IFD_CONTEXT)))
 													? (FLMBOOL)TRUE
@@ -7064,7 +7062,7 @@ RCODE flmIxKeyOutput(
 			if( pIfd->uiFlags & IFD_CONTEXT)
 			{
 				if( RC_BAD( rc = flmBuildKeyPaths( pIfd,
-											flmBigEndianToUINT16( &pucFromKey [1]),
+											f_bigEndianToUINT16( &pucFromKey [1]),
 											uiDataType, bFullFldPaths, pKey, &pvField)))
 				{
 					goto Exit;
@@ -7241,7 +7239,7 @@ RCODE flmIxKeyOutput(
 					default:
 						uiFromKeyLen = 5;
 
-						uiLongValue = flmBigEndianToUINT32( pucFromKey + 1);
+						uiLongValue = f_bigEndianToUINT32( pucFromKey + 1);
 						UD2FBA( (FLMUINT32)uiLongValue, pucToKey);
 						uiToKeyLen = 4;
 						break;
@@ -7582,7 +7580,7 @@ FLMINT flmTextCompareSingleChar(
 
 		// JP compare code.
 
-		if (uiLangId >= FIRST_DBCS_LANG && uiLangId <= LAST_DBCS_LANG)
+		if (uiLangId >= FLM_FIRST_DBCS_LANG && uiLangId <= FLM_LAST_DBCS_LANG)
 		{
 			FLMUINT		uiNextLeftLen;
 			FLMUINT		uiNextRightLen;
@@ -7674,7 +7672,7 @@ FLMINT flmTextCompareSingleChar(
 
 		flmAssert( !uiLeftWpChar2 && !uiRightWpChar2);
 
-		if (uiLangId != US_LANG)
+		if (uiLangId != FLM_US_LANG)
 		{
 			const FLMBYTE *	pucTmp;
 
@@ -8004,7 +8002,7 @@ FLMUINT FColStrToText(
 		wsPtr = wordStr;
 	}
 
-	if ((fWPLang >= FIRST_DBCS_LANG) && (fWPLang <= LAST_DBCS_LANG))
+	if ((fWPLang >= FLM_FIRST_DBCS_LANG) && (fWPLang <= FLM_LAST_DBCS_LANG))
 	{
 		wsLen = AsiaConvertColStr( fColStr, fcStrLenRV, wsPtr, pbDataTruncated,
 										  pbFirstSubstring);
@@ -8134,8 +8132,8 @@ FLMINT flmTextCompare(
 	FLMUINT		uiRightWpChar2 = 0;
 	
 	uiTrailingSpace = uiLeadingSpace = 
-		(uiFlags & FLM_MIN_SPACES) ? FLM_NO_SPACE : 0;
-	pCaseCompare = (uiFlags & FLM_NOCASE) ? NULL : &iCaseCompare;
+		(uiFlags & FLM_COMP_COMPRESS_WHITESPACE) ? FLM_COMP_NO_WHITESPACE : 0;
+	pCaseCompare = (uiFlags & FLM_COMP_CASE_INSENSITIVE) ? NULL : &iCaseCompare;
 	pSubColCompare = &iSubColCompare;
 
 	// Handle NULL buffers first.
@@ -8298,7 +8296,7 @@ FLMUINT flmTextMatch(
 	}
 	else
 	{
-		iCompareType = (uiFlags & FLM_NOCASE) 
+		iCompareType = (uiFlags & FLM_COMP_CASE_INSENSITIVE) 
 								? COMPARE_COL_AND_SUBCOL : COMPARE_VALUE;
 	}
 
@@ -8315,8 +8313,8 @@ FLMUINT flmTextMatch(
 
 	bHitWildCard = bHasWildCardPos = FALSE;
 	uiLeadingSpace = uiTrailingSpace = 
-		(uiFlags & FLM_MIN_SPACES) ? FLM_NO_SPACE : 0;
-	pbHitWildCard = (uiFlags & FLM_WILD) ? &bHitWildCard : NULL;
+		(uiFlags & FLM_COMP_COMPRESS_WHITESPACE) ? FLM_COMP_NO_WHITESPACE : 0;
+	pbHitWildCard = (uiFlags & FLM_COMP_WILD) ? &bHitWildCard : NULL;
 
 	if (bLeadingWildCard)
 	{

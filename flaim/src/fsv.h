@@ -59,10 +59,6 @@ typedef struct FSV_RECORD_ID
 	FLMUINT		uiDrn;
 } FSV_RECORD_ID;
 
-#ifdef FLM_NLM
-	typedef LONG (* FSV_NLM_UTILIZATION_FUNC)(void);
-#endif
-
 typedef void (* FSV_LOG_FUNC)(
 	const char *	pszMsg,
 	RCODE				rc,
@@ -81,7 +77,7 @@ typedef FSV_SCTX *	FSV_SCTX_p;
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	FSV_SCTX : public F_Base
+class	FSV_SCTX : public F_Object
 {
 public:
 
@@ -151,7 +147,7 @@ typedef FSV_SESN *	FSV_SESN_p;
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	FSV_SESN : public F_Base
+class	FSV_SESN : public F_Object
 {
 public:
 
@@ -231,7 +227,7 @@ public:
 		return( m_uiFlags);
 	}
 
-	FINLINE POOL * getWireScratchPool( void)
+	FINLINE F_Pool * getWireScratchPool( void)
 	{
 		return &m_wireScratchPool;
 	}
@@ -255,7 +251,7 @@ private:
 	FCS_BIOS *			m_pBOStream;
 #define MAX_SESN_ITERATORS			10
 	HFCURSOR				m_IteratorList[ MAX_SESN_ITERATORS];
-	POOL					m_wireScratchPool;
+	F_Pool				m_wireScratchPool;
 };
 
 /****************************************************************************
@@ -424,7 +420,7 @@ typedef FSV_BLOB *	FSV_BLOB_p;
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	FSV_BLOB : public F_Base
+class	FSV_BLOB : public F_Object
 {
 private:
 
@@ -466,7 +462,7 @@ RCODE fsvSetTempDir(
 RCODE fsvProcessRequest(
 	FCS_DIS *         pDataIStream,
 	FCS_DOS *         pDataOStream,
-	POOL *				pScratchPool,
+	F_Pool *				pScratchPool,
 	FLMUINT *			puiSessionIdRV);
 
 RCODE fsvOpClassDiag(

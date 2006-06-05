@@ -199,12 +199,14 @@ void F_StatsPage::gatherDbStats(
 	}
 	// Gather lock statistics
 
-	flmUpdateCountTimeStats( &pStatGather->NoLocks,
-		&pDbStats->NoLocks);
-	flmUpdateCountTimeStats( &pStatGather->WaitingForLock,
-		&pDbStats->WaitingForLock);
-	flmUpdateCountTimeStats( &pStatGather->HeldLock,
-		&pDbStats->HeldLock);
+	flmUpdateCountTimeStats( &pStatGather->LockStats.NoLocks,
+		&pDbStats->LockStats.NoLocks);
+		
+	flmUpdateCountTimeStats( &pStatGather->LockStats.WaitingForLock,
+		&pDbStats->LockStats.WaitingForLock);
+		
+	flmUpdateCountTimeStats( &pStatGather->LockStats.HeldLock,
+		&pDbStats->LockStats.HeldLock);
 
 	for (uiLoop = 0; uiLoop < pDbStats->uiNumLFileStats; uiLoop++)
 	{
@@ -378,7 +380,7 @@ RCODE F_StatsPage::display(
 			if (fnGetSessionValue( pvSession,
 								  STAT_DISPLAY_ORDER,
 								  (void *)szStatOrder,
-								  (size_t *)&uiSize) != 0)
+								  (FLMSIZET *)&uiSize) != 0)
 			{
 				// If we could not get display order, then set the default.
 				f_strcpy( szStatOrder, DEFAULT_STAT_ORDER);
@@ -389,7 +391,7 @@ RCODE F_StatsPage::display(
 			if (fnGetSessionValue( pvSession,
 								  STAT_FOCUS,
 								  (void *)szFocus,
-								  (size_t *)&uiSize) == 0)
+								  (FLMSIZET *)&uiSize) == 0)
 			{
 				szFocus[ uiSize] = '\0';
 				if (RC_BAD( setFocus( szFocus)))
@@ -491,7 +493,7 @@ RCODE F_StatsPage::display(
 		(void)fnSetSessionValue( pvSession,
 									  STAT_DISPLAY_ORDER,
 									  szStatNewOrder,
-									  (size_t)(f_strlen( szStatNewOrder) + 1));
+									  (FLMSIZET)(f_strlen( szStatNewOrder) + 1));
 	}
 
 	if (RC_BAD( rc = f_calloc( sizeof( STAT_GATHER), &pStatGather)))
@@ -517,7 +519,7 @@ RCODE F_StatsPage::display(
 		if (fnGetSessionValue( pvSession,
 							  SAVED_STATS,
 							  (void *)pOldStatGather,
-							  (size_t *)&uiSize) != 0)
+							  (FLMSIZET *)&uiSize) != 0)
 		{
 			// If we could not get any former stats, then just copy the current one.
 			f_memcpy( pOldStatGather, pStatGather, sizeof( STAT_GATHER));
@@ -806,11 +808,11 @@ void F_StatsPage::printIORow(
 Desc:	Outputs count/time statistics for a particular category.
 ****************************************************************************/
 void F_StatsPage::printCountTimeRow(
-	FLMBOOL				bHighlight,
-	const char *		pszCategory,
-	COUNT_TIME_STAT *	pStat,
-	COUNT_TIME_STAT *	pOldStat,
-	FLMBOOL				bPrintCountOnly)
+	FLMBOOL					bHighlight,
+	const char *			pszCategory,
+	F_COUNT_TIME_STAT *	pStat,
+	F_COUNT_TIME_STAT *	pOldStat,
+	FLMBOOL					bPrintCountOnly)
 {
 	char					szTemp[ 30];
 
@@ -976,11 +978,10 @@ Desc:	Gets the LOCK_USER information for the specified pFile.
 ****************************************************************************/
 void F_StatsPage::gatherLockStats(
 	STAT_GATHER *			pStatGather,
-	FFILE *					pFile
-	)
+	FFILE *					pFile)
 {
-	LOCK_USER_HEADER_p		pTmp;
-	RCODE							rc;
+	LOCK_USER_HEADER_p	pTmp;
+	RCODE						rc;
 
 	flmAssert( pStatGather);
 	flmAssert( pFile);
@@ -1009,7 +1010,8 @@ void F_StatsPage::gatherLockStats(
 	// two locks - Write locks (tx) and Wait locks (db).
 	if (pFile->pFileLockObj)
 	{
-		if (RC_BAD( rc = pFile->pFileLockObj->GetLockInfo( TRUE, (void *)&pTmp->pDbLockUser)))
+		if (RC_BAD( rc = pFile->pFileLockObj->getLockQueue( 
+			&pTmp->pDbLockUser)))
 		{
 			pTmp->pDbLockUser = NULL;
 		}
@@ -1021,7 +1023,8 @@ void F_StatsPage::gatherLockStats(
 
 	if (pFile->pWriteLockObj)
 	{
-		if (RC_BAD( rc = pFile->pWriteLockObj->GetLockInfo( TRUE, (void *)&pTmp->pTxLockUser)))
+		if (RC_BAD( rc = pFile->pWriteLockObj->getLockQueue( 
+			&pTmp->pTxLockUser)))
 		{
 			pTmp->pTxLockUser = NULL;
 		}
@@ -1037,14 +1040,12 @@ Exit:
 	return;
 }
 
-
 /****************************************************************************
 Desc:	Gets the CHECKPOINT_INFO information for the specified pFile.
 ****************************************************************************/
 void F_StatsPage::gatherCPStats(
 	STAT_GATHER *			pStatGather,
-	FFILE *					pFile
-	)
+	FFILE *					pFile)
 {
 	CP_INFO_HEADER_p		pTmp;
 	RCODE						rc = FERR_OK;
@@ -1285,8 +1286,8 @@ void F_StatsPage::printOperationStats(
 	STAT_GATHER *		pStatGather,
 	STAT_GATHER *		pOldStatGather)
 {
-	COUNT_TIME_STAT	Stat;
-	COUNT_TIME_STAT	OldStat;
+	F_COUNT_TIME_STAT	Stat;
+	F_COUNT_TIME_STAT	OldStat;
 	FLMBOOL				bHighlight;
 
 	if (pStatGather->uiStartTime)
@@ -1391,6 +1392,8 @@ void F_StatsPage::printLockStats(
 	STAT_GATHER *		pStatGather,
 	STAT_GATHER *		pOldStatGather)
 {
+	FLMUINT				uiLen;
+	
 	if (pStatGather->uiStartTime)
 	{
 		LOCK_USER_HEADER_p		pLckHdr;
@@ -1410,14 +1413,16 @@ void F_StatsPage::printLockStats(
 		printTableRowEnd();
 
 		printCountTimeRow( TRUE, "Time No Locks Held",
-			&pStatGather->NoLocks,
-			&pOldStatGather->NoLocks);
+			&pStatGather->LockStats.NoLocks,
+			&pOldStatGather->LockStats.NoLocks);
+			
 		printCountTimeRow( FALSE, "Time Waiting for Locks",
-			&pStatGather->WaitingForLock,
-			&pOldStatGather->WaitingForLock);
+			&pStatGather->LockStats.WaitingForLock,
+			&pOldStatGather->LockStats.WaitingForLock);
+			
 		printCountTimeRow( TRUE, "Time Locks Held",
-			&pStatGather->HeldLock,
-			&pOldStatGather->HeldLock);
+			&pStatGather->LockStats.HeldLock,
+			&pOldStatGather->LockStats.HeldLock);
 
 		printTableEnd();
 
@@ -1429,7 +1434,7 @@ void F_StatsPage::printLockStats(
 			char				szTitle[ 128];
 			FLMBOOL			bHighlight = FALSE;
 			FLMBOOL			bLocked = TRUE;
-			LOCK_USER *		pLckUsr;
+			F_LOCK_USER *	pLckUsr;
 			FLMUINT			uiTxWaiters;
 			FLMUINT			uiDbWaiters;
 
@@ -1488,17 +1493,9 @@ void F_StatsPage::printLockStats(
 				printTableDataEnd();
 
 				printTableDataStart( TRUE, JUSTIFY_RIGHT);
-#ifdef FLM_NLM
-				if( kGetThreadName( pLckUsr->uiThreadId, (char *)szThreadName,
-						sizeof( szThreadName)) !=0)
-				{
-					f_sprintf( (char *)szThreadName, "N/A");
-				}
-#else
-				// Get the thread name from the thread manager
-//				gv_FlmSysData.pThreadMgr->getThreadName( pLckUsr->uiThreadId, szThreadName);
-				f_sprintf( (char *)szThreadName, "N/A");  // VISIT: Remove this when you get the function above working
-#endif
+				uiLen = sizeof( szThreadName);
+				gv_FlmSysData.pThreadMgr->getThreadName( 
+					pLckUsr->uiThreadId, szThreadName, &uiLen);
 				fnPrintf( m_pHRequest, "%s", szThreadName);
 				printTableDataEnd();
 				// Status
@@ -1531,17 +1528,9 @@ void F_StatsPage::printLockStats(
 				printTableDataEnd();
 
 				printTableDataStart( TRUE, JUSTIFY_RIGHT);
-#ifdef FLM_NLM
-				if( kGetThreadName( pLckUsr->uiThreadId, (char *)szThreadName,
-						sizeof( szThreadName)) !=0)
-				{
-					f_sprintf( (char *)szThreadName, "N/A");
-				}
-#else
-				// Get the thread name from the thread manager
-//				gv_FlmSysData.pThreadMgr->getThreadName( pLckUsr->uiThreadId, szThreadName);
-				f_sprintf( (char *)szThreadName, "N/A");  // VISIT: Remove this when you get the function above working
-#endif
+				uiLen = sizeof( szThreadName);
+				gv_FlmSysData.pThreadMgr->getThreadName( pLckUsr->uiThreadId, 
+					szThreadName, &uiLen);
 				fnPrintf( m_pHRequest, "%s", szThreadName);
 				printTableDataEnd();
 				// Status
@@ -2048,7 +2037,7 @@ void F_StatsPage::displayFocus(
 		if (fnSetSessionValue( pvSession,
 							  STAT_FOCUS,
 							  (void *)szTemp,
-							  (size_t)f_strlen(szTemp)) != 0)
+							  (FLMSIZET)f_strlen(szTemp)) != 0)
 		{
 			flmAssert( 0);
 			goto Exit;

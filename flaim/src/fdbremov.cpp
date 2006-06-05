@@ -34,7 +34,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	FLMBOOL				bRemoveRflFiles)
 {
 	RCODE					rc = FERR_OK;
-	F_FileHdlImp *		pFileHdl = NULL;
+	IF_FileHdl *		pFileHdl = NULL;
 	FLMBYTE *			pucBuffer = NULL;
 	FLMUINT				uiFileNumber;
 	FILE_HDR				FileHdr;
@@ -46,7 +46,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	char					szPrefix[ F_FILENAME_SIZE];
 	char *				pszExt;
 	char *				pszDataExt;
-	F_DirHdl *			pDirHdl = NULL;
+	IF_DirHdl *			pDirHdl = NULL;
 
 	// Cannot handle empty database name.
 
@@ -79,9 +79,9 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 	// Open the file so we can get the log header.
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( 
-		pszDbName, F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT, 
-		(F_FileHdl **)&pFileHdl)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
+		pszDbName, FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 
+		&pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -113,12 +113,16 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 	if (pszDataDir && *pszDataDir)
 	{
-		if (RC_BAD( rc = f_pathReduce( pszDbName, pszDataName, pszBaseName)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+			pszDbName, pszDataName, pszBaseName)))
 		{
 			goto Exit;
 		}
+		
 		f_strcpy( pszDataName, pszDataDir);
-		if (RC_BAD( rc = f_pathAppend( pszDataName, pszBaseName)))
+		
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+			pszDataName, pszBaseName)))
 		{
 			goto Exit;
 		}
@@ -131,7 +135,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 	// Start deleting files, beginning with the main DB file.
 
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszDbName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszDbName)))
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 		{
@@ -166,7 +170,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	// Delete the .lck file, if any
 
 	f_strcpy( pszExt, ".lck");
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszTmpName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszTmpName)))
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 		{
@@ -185,7 +189,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	{
 		bldSuperFileExtension( uiVersionNum, uiFileNumber, pszDataExt);
 
-		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszDataName)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszDataName)))
 		{
 			if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 			{
@@ -212,7 +216,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	{
 		bldSuperFileExtension( uiVersionNum, uiFileNumber, pszExt);
 
-		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszTmpName)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszTmpName)))
 		{
 			if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 			{
@@ -249,7 +253,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 				goto Exit;
 			}
 			
-			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Delete( pszTmpName)))
+			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszTmpName)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 				{
@@ -276,7 +280,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 			// See if the directory exists.  If not, we are done.
 
-			if (!gv_FlmSysData.pFileSystem->IsDir( pszRflDirName))
+			if (!gv_FlmSysData.pFileSystem->isDir( pszRflDirName))
 			{
 				goto Exit;	// Should return FERR_OK
 			}
@@ -287,7 +291,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 			// Look specifically for files that match our expected
 			// name format for RFL files.
 
-			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenDir( pszRflDirName,
+			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openDir( pszRflDirName,
 											"*", &pDirHdl)))
 			{
 				goto Exit;
@@ -300,7 +304,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 			bCanDeleteDir = TRUE;
 			for (;;)
 			{
-				if (RC_BAD( rc = pDirHdl->Next()))
+				if (RC_BAD( rc = pDirHdl->next()))
 				{
 					if (rc == FERR_IO_NO_MORE_FILES)
 					{
@@ -312,8 +316,10 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 						goto Exit;
 					}
 				}
-				pDirHdl->CurrentItemPath( pszTmpName);
-				if (pDirHdl->CurrentItemIsDir())
+				
+				pDirHdl->currentItemPath( pszTmpName);
+				
+				if (pDirHdl->currentItemIsDir())
 				{
 					bCanDeleteDir = FALSE;
 				}
@@ -325,7 +331,7 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 				else
 				{
 					if( RC_BAD( rc =
-								gv_FlmSysData.pFileSystem->Delete( pszTmpName)))
+								gv_FlmSysData.pFileSystem->deleteFile( pszTmpName)))
 					{
 						if (rc == FERR_IO_PATH_NOT_FOUND ||
 							 rc == FERR_IO_INVALID_PATH)
@@ -355,7 +361,8 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 					pDirHdl = NULL;
 				}
 
-				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->RemoveDir( pszRflDirName)))
+				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->removeDir( 
+					pszRflDirName)))
 				{
 					if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 					{

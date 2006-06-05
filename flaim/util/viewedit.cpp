@@ -44,7 +44,7 @@ FLMINT ViewGetNum(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	if( EnterHexFlag)
 		MaxDigits = (NumBytes == 4) ? 8 : ((NumBytes == 2) ? 4 : 2);
@@ -54,11 +54,11 @@ FLMINT ViewGetNum(
 	for( ;;)
 	{
 		GetOK = TRUE;
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		ViewAskInput( Prompt, TempBuf, sizeof( TempBuf));
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		if( f_stricmp( TempBuf, "\\") == 0)
 		{
 			*ValEntered = FALSE;
@@ -172,12 +172,12 @@ FLMINT ViewEditText(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	ViewAskInput( Prompt, TempBuf, sizeof( TempBuf) - 1);
-	WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-	WpsScrClr( 0, uiNumRows - 2);
+	f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+	f_conClearScreen( 0, uiNumRows - 2);
 	if( f_stricmp( TempBuf, "\\") == 0)
 	{
 		*ValEntered = FALSE;
@@ -223,7 +223,7 @@ FLMINT ViewEditLanguage(
 				TempBuf[ 0] = TempBuf[ 0] - 'a' + 'A';
 			if( (TempBuf[ 1] >= 'a') && (TempBuf[ 1] <= 'z'))
 				TempBuf[ 1] = TempBuf[ 0] - 'a' + 'A';
-			TempNum = FlmLanguage( (char *)TempBuf);
+			TempNum = f_languageToNum( (char *)TempBuf);
 		}
 		if( (TempNum == 0) &&
 				((TempBuf[ 0] != 'U') || (TempBuf[ 1] != 'S')))
@@ -254,7 +254,7 @@ FLMINT ViewEditBinary(
 	FLMUINT		uiNumCols;
 	FLMUINT		uiNumRows;
 
-	WpsScrSize( &uiNumCols, &uiNumRows);
+	f_conGetScreenSize( &uiNumCols, &uiNumRows);
 
 	if( Prompt == NULL)
 	{
@@ -263,11 +263,11 @@ FLMINT ViewEditBinary(
 	}
 	for( ;;)
 	{
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		ViewAskInput( Prompt, TempBuf, sizeof( TempBuf));
-		WpsScrBackFor( WPS_BLACK, WPS_WHITE);
-		WpsScrClr( 0, uiNumRows - 2);
+		f_conSetBackFore( FLM_BLACK, FLM_WHITE);
+		f_conClearScreen( 0, uiNumRows - 2);
 		if( f_stricmp( TempBuf, "\\") == 0)
 		{
 			*ValEntered = FALSE;
@@ -388,7 +388,7 @@ FLMINT ViewEdit(
 	FLMUINT			FileNumber;
 	FLMUINT			ValEntered;
 	FLMUINT			wBytesRead;
-	F_FileHdlImp * pFileHdl;
+	IF_FileHdl * 	pFileHdl = NULL;
 	FLMBOOL			bEncrypted;
 	FLMBOOL			bIsEncBlock;
 	FLMBOOL			bModEnc = FALSE;
@@ -614,24 +614,24 @@ Mod_Binary:
 		BytesToWrite = wBytesRead;
 	}
 	
-	if (RC_BAD( rc = gv_pSFileHdl->GetFileHdl( FileNumber, TRUE, &pFileHdl)))
+	if (RC_BAD( rc = gv_pSFileHdl->getFileHdl( FileNumber, TRUE, &pFileHdl)))
 	{
 		ViewShowRCError( "getting file handle", rc);
 	}
 
-	/* Write the data out to the file */
+	// Write the data out to the file
 
-	else if( RC_BAD( rc = pFileHdl->Write( FileOffset, BytesToWrite,
+	else if( RC_BAD( rc = pFileHdl->write( FileOffset, BytesToWrite,
 		BufPtr, &BytesWritten)))
 	{
 		ViewShowRCError( "updating file", rc);
 	}
-	else if( RC_BAD( rc = pFileHdl->Flush()))
+	else if( RC_BAD( rc = pFileHdl->flush()))
 	{
 		ViewShowRCError( "flushing data to file", rc);
 	}
 
-	/* Free any memory used to read in the data block */
+	// Free any memory used to read in the data block
 
 	if( BufPtr != &TempBuf[ 0])
 	{

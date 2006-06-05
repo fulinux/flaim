@@ -28,293 +28,7 @@
 #ifndef FLAIM_H
 #define FLAIM_H
 
-	#ifndef FLM_PLATFORM_CONFIGURED
-		#define FLM_PLATFORM_CONFIGURED
-	
-		// Determine the build platform
-	
-		#undef FLM_WIN
-		#undef FLM_NLM
-		#undef FLM_UNIX
-		#undef FLM_AIX
-		#undef FLM_LINUX
-		#undef FLM_SOLARIS
-		#undef FLM_SPARC
-		#undef FLM_HPUX
-		#undef FLM_OSX
-		#undef FLM_BIG_ENDIAN
-		#undef FLM_PPC
-		#undef FLM_STRICT_ALIGNMENT
-		#undef FLM_S390
-		#undef FLM_IA64
-		#undef FLM_GNUC
-		
-		#if defined( __GNUC__)
-			#define FLM_GNUC
-		#endif		
-	
-		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
-			#define FLM_NLM
-			#define FLM_OSTYPE_STR "NetWare"
-			#if defined( __WATCOMC__)
-				#define FLM_WATCOM_NLM
-			#elif defined( __MWERKS__)
-				#define FLM_MWERKS_NLM
-			#endif
-		#elif defined( _WIN64)
-			#define FLM_WIN
-			#define FLM_OSTYPE_STR "Windows"
-			#ifndef FLM_64BIT
-				#define FLM_64BIT
-			#endif
-			#define FLM_STRICT_ALIGNMENT
-		#elif defined( _WIN32)
-			#define FLM_WIN
-			#define FLM_OSTYPE_STR "Windows"
-		#elif defined( _AIX)
-			#define FLM_AIX
-			#define FLM_OSTYPE_STR "AIX"
-			#define FLM_UNIX
-			#define FLM_BIG_ENDIAN
-			#define FLM_STRICT_ALIGNMENT
-		#elif defined( linux)
-			#define FLM_LINUX
-			#define FLM_OSTYPE_STR "Linux"
-			#define FLM_UNIX
-			#if defined( __PPC__) || defined( __ppc__)
-				#define FLM_PPC
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( __s390__)
-				#define FLM_S390
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( __s390x__)
-				#define FLM_S390
-				#ifndef FLM_64BIT
-					#define FLM_64BIT
-				#endif
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( __ia64__)
-				#define FLM_IA64
-				#ifndef FLM_64BIT
-					#define FLM_64BIT
-				#endif
-				#define FLM_STRICT_ALIGNMENT
-			#elif defined( sparc) || defined( __sparc) || defined( __sparc__)
-				#define FLM_SPARC
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT
-			#endif
-		#elif defined( sun)
-			#define FLM_SOLARIS
-			#define FLM_OSTYPE_STR "Solaris"
-			#define FLM_UNIX
-			#define FLM_STRICT_ALIGNMENT
-			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
-				#define FLM_SPARC
-				#define FLM_BIG_ENDIAN
-			#endif
-		#elif defined( __hpux) || defined( hpux)
-			#define FLM_HPUX
-			#define FLM_OSTYPE_STR "HPUX"
-			#define FLM_UNIX
-			#define FLM_BIG_ENDIAN
-			#define FLM_STRICT_ALIGNMENT
-		#elif defined( __APPLE__)
-			#define FLM_OSX
-			#define FLM_OSTYPE_STR "OSX"
-			#define FLM_UNIX
-			#if (defined( __ppc__) || defined( __ppc64__))
-				#define FLM_PPC
-				#define FLM_BIG_ENDIAN
-				#define FLM_STRICT_ALIGNMENT			
-			#endif
-		#else
-				#error Platform architecture is undefined.
-		#endif
-	
-		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
-			#if defined( FLM_UNIX)
-				#if defined( __x86_64__) || defined( _LP64) || \
-					 defined( __LP64__) || defined( __sparcv9)
-					#define FLM_64BIT
-				#endif
-			#endif
-		#endif
-		
-		#if !defined( FLM_64BIT)
-			#define FLM_32BIT
-		#elif defined( FLM_32BIT)
-			#error Cannot define both FLM_32BIT and FLM_64BIT
-		#endif
-
-		// Debug or release build?
-	
-		#ifndef FLM_DEBUG
-			#if defined( DEBUG) || (defined( PRECHECKIN) && PRECHECKIN != 0)
-				#define FLM_DEBUG
-			#endif
-		#endif
-
-		// Alignment
-	
-		#if defined( FLM_UNIX) || defined( FLM_64BIT)
-			#define FLM_ALLOC_ALIGN			0x0007
-			#define FLM_ALIGN_SIZE			8
-		#elif defined( FLM_WIN) || defined( FLM_NLM)
-			#define FLM_ALLOC_ALIGN			0x0003
-			#define FLM_ALIGN_SIZE			4
-		#else
-			#error Platform not supported
-		#endif
-
-		// Basic type definitions
-
-		#if defined( FLM_UNIX)
-			typedef unsigned long				FLMUINT;
-			typedef long							FLMINT;
-			typedef unsigned char				FLMBYTE;
-			typedef unsigned short				FLMUNICODE;
-
-			typedef unsigned long long			FLMUINT64;
-			typedef unsigned int					FLMUINT32;
-			typedef unsigned short				FLMUINT16;
-			typedef unsigned char				FLMUINT8;
-			typedef long long						FLMINT64;
-			typedef int								FLMINT32;
-			typedef short							FLMINT16;
-			typedef signed char					FLMINT8;
-
-			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
-				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
-				typedef unsigned long			FLMSIZET;
-			#else
-				typedef unsigned 					FLMSIZET;
-			#endif
-		#else
-		
-			#if defined( FLM_WIN)
-			
-				#if defined( FLM_64BIT)
-					typedef unsigned __int64		FLMUINT;
-					typedef __int64					FLMINT;
-					typedef unsigned __int64		FLMSIZET;
-					typedef unsigned int				FLMUINT32;
-				#elif _MSC_VER >= 1300
-					typedef unsigned long __w64	FLMUINT;
-					typedef long __w64				FLMINT;
-					typedef unsigned int				FLMUINT32;
-					typedef __w64 unsigned int		FLMSIZET;
-				#else
-					typedef unsigned long			FLMUINT;
-					typedef long						FLMINT;
-					typedef unsigned int				FLMUINT32;
-					typedef __w64 unsigned int		FLMSIZET;
-				#endif
-				
-			#elif defined( FLM_NLM)
-			
-				typedef unsigned long int		FLMUINT;
-				typedef long int					FLMINT;
-				typedef unsigned long int		FLMUINT32;
-				typedef unsigned					FLMSIZET;
-			#else
-				#error Platform not supported
-			#endif
-
-			typedef unsigned char				FLMBYTE;
-			typedef unsigned short int			FLMUNICODE;
-
-			typedef unsigned short int			FLMUINT16;
-			typedef unsigned char				FLMUINT8;
-			typedef signed int					FLMINT32;
-			typedef signed short int			FLMINT16;
-			typedef signed char					FLMINT8;
-
-			#if defined( __MWERKS__)
-				typedef unsigned long long		FLMUINT64;
-				typedef long long					FLMINT64;
-			#else
-				typedef unsigned __int64 		FLMUINT64;
-				typedef __int64 					FLMINT64;
-			#endif
-
-		#endif
-
-		#if defined( FLM_WIN) || defined( FLM_NLM)
-			#define FLMATOMIC		volatile long
-		#else
-			#define FLMATOMIC		volatile int
-		#endif
-	
-		/// \addtogroup retcodes
-		/// @{
-		typedef FLMINT								RCODE;		///< Return code
-		/// @}
-		
-		typedef FLMINT								FLMBOOL;
-		
-		#define F_FILENAME_SIZE					256
-		#define F_PATH_MAX_SIZE					256
-
-		#define FLM_MAX_UINT						((FLMUINT)(-1L))
-		#define FLM_MAX_INT						((FLMINT)(((FLMUINT)(-1L)) >> 1))
-		#define FLM_MIN_INT						((FLMINT)((((FLMUINT)(-1L)) >> 1) + 1))
-		#define FLM_MAX_UINT32					((FLMUINT32)(0xFFFFFFFFL))
-		#define FLM_MAX_INT32					((FLMINT32)(0x7FFFFFFFL))
-		#define FLM_MIN_INT32					((FLMINT32)(0x80000000L))
-		#define FLM_MAX_UINT16					((FLMUINT16)(0xFFFF))
-		#define FLM_MAX_INT16					((FLMINT16)(0x7FFF))
-		#define FLM_MIN_INT16					((FLMINT16)(0x8000))
-		#define FLM_MAX_UINT8					((FLMUINT8)0xFF)
-	
-		#if( _MSC_VER >= 1200) && (_MSC_VER < 1300)
-			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFL))
-			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFL))
-			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000L))
-		#else
-			#define FLM_MAX_UINT64				((FLMUINT64)(0xFFFFFFFFFFFFFFFFLL))
-			#define FLM_MAX_INT64				((FLMINT64)(0x7FFFFFFFFFFFFFFFLL))
-			#define FLM_MIN_INT64				((FLMINT64)(0x8000000000000000LL))
-		#endif
-	
-	#endif
-
-	#if defined( FLM_WIN)
-      #if defined( FLM_DLL)
-         #if defined( FLM_SRC)
-            #define FLMEXP 		__declspec(dllexport)
-         #else
-            #define FLMEXP 		__declspec(dllimport)
-         #endif
-      #else
-         #define FLMEXP
-      #endif
-      #define FLMAPI          __cdecl
-		#ifdef FLM_DEBUG
-			#define FINLINE		inline
-		#else
-			#define FINLINE		__forceinline
-		#endif
-	#elif defined( FLM_NLM)
-      #define FLMEXP
-      #define FLMAPI          __cdecl
-		#define FINLINE			inline
-	#elif defined( FLM_UNIX)
-      #define FLMEXP
-      #define FLMAPI
-		#if defined( FLM_GNUC)
-			#define FINLINE		__attribute__((always_inline)) inline
-		#else
-			#define FINLINE		inline
-		#endif
-	#else
-		#error Platform not supported
-	#endif
-
-	/// \defgroup retcodes Return Codes
+	#include "flaimtk.h"
 
 	/// \defgroup dbsystem FLAIM System Functions
 
@@ -405,310 +119,263 @@
 		/// \defgroup memoryalloc Memory Functions
 		/// \ingroup misc
 
-	#ifndef NULL
-		#define NULL	0
-	#endif
-
-	#ifndef TRUE
-		#define TRUE	1
-	#endif
-
-	#ifndef FALSE
-		#define FALSE	0
-	#endif
-
-	typedef void *									F_MUTEX;
-	typedef void *									F_SEM;
-	#define F_MUTEX_NULL							NULL
-	#define F_MAXIMUM_FILE_SIZE				0xFFFC0000
-
 	/****************************************************************************
 	Desc: General errors
 	****************************************************************************/
 	/// \addtogroup retcodes
 	/// @{
 		
-	#define FERR_OK								0			///< 0 - Operation succeeded
+	#define FERR_OK								NE_FLM_OK								///< 0 - Operation succeeded
 	
-	#define FIRST_FLAIM_ERROR					0xC001	///< 0xC001 - Placeholder
-	#define FERR_BOF_HIT							0xC001	///< 0xC001 - Beginning of file or set hit.
-	#define FERR_EOF_HIT							0xC002	///< 0xC002 - End of file or set hit.
-	#define FERR_END								0xC003	///< 0xC003 - End of GEDCOM file - this is an internal error.
-	#define FERR_EXISTS							0xC004	///< 0xC004 - Record already exists.
-	#define FERR_FAILURE							0xC005	///< 0xC005 - Internal failure.
-	#define FERR_NOT_FOUND						0xC006	///< 0xC006 - A record, key, or key reference was not found.
-	#define FERR_BAD_DICT_ID					0xC007	///< 0xC007 - Invalid dictionary record number -- outside unreserved range.
-	#define FERR_BAD_CONTAINER					0xC008	///< 0xC008 - Invalid container number.
-	#define FERR_NO_ROOT_BLOCK					0xC009	///< 0xC009 - LFILE does not have a root block - always handled internally - never returned to application.
-	#define FERR_BAD_DRN							0xC00A	///< 0xC00A - Cannot pass a zero DRN into modify or delete or 0xFFFFFFFF into add.
-	#define FERR_BAD_FIELD_NUM					0xC00B	///< 0xC00B - Bad field number in record being added.
-	#define FERR_BAD_FIELD_TYPE				0xC00C	///< 0xC00C - Bad field type in record being added.
-	#define FERR_BAD_HDL							0xC00D	///< 0xC00D - Request contained bad db handle.
-	#define FERR_BAD_IX							0xC00E	///< 0xC00E - Invalid index number.
-	#define FERR_BACKUP_ACTIVE					0xC00F	///< 0xC00F - Operation could not be completed - a backup is being performed.
-	#define FERR_SERIAL_NUM_MISMATCH			0xC010	///< 0xC010 - Comparison of serial numbers failed.
-	#define FERR_BAD_RFL_DB_SERIAL_NUM		0xC011	///< 0xC011 - Bad database serial number in RFL file header.
-	#define FERR_BTREE_ERROR					0xC012	///< 0xC012 - A corruption was found in an index or container b-tree.
-	#define FERR_BTREE_FULL						0xC013	///< 0xC013 - An index or container b-tree is full.
-	#define FERR_BAD_RFL_FILE_NUMBER			0xC014	///< 0xC014 - Bad RFL file number in RFL file header.
-	#define FERR_CANNOT_DEL_ITEM				0xC015	///< 0xC015 - Cannot delete field definitions.
-	#define FERR_CANNOT_MOD_FIELD_TYPE		0xC016	///< 0xC016 - Cannot modify a field's type.
-	#define FERR_NOT_USED_C017					0xC017	///< 0xC017 - Not used
-	#define FERR_CONV_BAD_DEST_TYPE			0xC018	///< 0xC018 - Bad destination type specified for conversion.
-	#define FERR_CONV_BAD_DIGIT				0xC019	///< 0xC019 - Non-numeric digit found in text to numeric conversion.
-	#define FERR_CONV_BAD_SRC_TYPE			0xC01A	///< 0xC01A - Bad source type specified for conversion.
-	#define FERR_RFL_FILE_NOT_FOUND			0xC01B	///< 0xC01B - Could not open an RFL file.
-	#define FERR_CONV_DEST_OVERFLOW			0xC01C	///< 0xC01C - Destination buffer not large enough to hold converted data.
-	#define FERR_CONV_ILLEGAL					0xC01D	///< 0xC01D - Illegal conversion -- not supported.
-	#define FERR_CONV_NULL_SRC					0xC01E	///< 0xC01E - Source cannot be a NULL pointer in conversion.
-	#define FERR_CONV_NULL_DEST				0xC01F	///< 0xC01F - Destination cannot be a NULL pointer in conversion.
-	#define FERR_CONV_NUM_OVERFLOW			0xC020	///< 0xC020 - Numeric overflow (GT upper bound) converting to numeric type.
-	#define FERR_CONV_NUM_UNDERFLOW			0xC021	///< 0xC021 - Numeric underflow (LT lower bound) converting to numeric type.
-	#define FERR_DATA_ERROR						0xC022	///< 0xC022 - Database corruption found.
-	#define FERR_NOT_USED_C023					0xC023	///< 0xC023 - Not used
-	#define FERR_DD_ERROR						0xC024	///< 0xC024 - Corruption found in logical file block chain.
-	#define FERR_INVALID_FILE_SEQUENCE		0xC025	///< 0xC025 - Incremental backup file number provided during a restore is invalid.
-	#define FERR_ILLEGAL_OP						0xC026	///< 0xC026 - Illegal operation for database.
-	#define FERR_DUPLICATE_DICT_REC			0xC027	///< 0xC027 - Duplicate dictionary record found.
-	#define FERR_CANNOT_CONVERT				0xC028	///< 0xC028 - Condition occurred which prevents database conversion.
-	#define FERR_UNSUPPORTED_VERSION			0xC029	///< 0xC029 - Database version is not supported.
-	#define FERR_FILE_ER							0xC02A	///< 0xC02A - File error in a GEDCOM routine.
-	#define FERR_BAD_FIELD_LEVEL				0xC02B	///< 0xC02B - Invalid field level.
-	#define FERR_GED_BAD_RECID					0xC02C	///< 0xC02C - Bad record ID syntax.
-	#define FERR_GED_BAD_VALUE					0xC02D	///< 0xC02D - Bad or ambiguous/extra value in GEDCOM.
-	#define FERR_GED_MAXLVLNUM					0xC02E	///< 0xC02E - Exceeded GED_MAXLVLNUM in gedcom routines.
-	#define FERR_GED_SKIP_LEVEL				0xC02F	///< 0xC02F - Bad GEDCOM tree structure -- level skipped.
-	#define FERR_ILLEGAL_TRANS					0xC030	///< 0xC030 - Attempt to start an illegal type of transaction.
-	#define FERR_ILLEGAL_TRANS_OP				0xC031	///< 0xC031 - Illegal operation for transaction type.
-	#define FERR_INCOMPLETE_LOG				0xC032	///< 0xC032 - Incomplete log record encountered during recovery.
-	#define FERR_INVALID_BLOCK_LENGTH		0xC033	///< 0xC033 - Invalid block length.
-	#define FERR_INVALID_TAG					0xC034	///< 0xC034 - Invalid tag name.
-	#define FERR_KEY_NOT_FOUND					0xC035	///< 0xC035 - A key or reference is not found -- modify/delete error.
-	#define FERR_VALUE_TOO_LARGE				0xC036	///< 0xC036 - Value too large.
-	#define FERR_MEM								0xC037	///< 0xC037 - Memory allocation error.
-	#define FERR_BAD_RFL_SERIAL_NUM			0xC038	///< 0xC038 - Bad serial number in RFL file header.
-	#define FERR_NOT_USED_C039					0xC039	///< 0xC039 - Not used
-	#define FERR_NEWER_FLAIM					0xC03A	///< 0xC03A - Database version newer than this code base will support, must use newer version of code.
-	#define FERR_CANNOT_MOD_FIELD_STATE		0xC03B	///< 0xC03B - Attempted to change a field state illegally.
-	#define FERR_NO_MORE_DRNS					0xC03C	///< 0xC03C - The highest DRN number has already been used in an add.
-	#define FERR_NO_TRANS_ACTIVE				0xC03D	///< 0xC03D - Attempted to updated database outside transaction.
-	#define FERR_NOT_UNIQUE						0xC03E	///< 0xC03E - Found duplicate key for unique index.
-	#define FERR_NOT_FLAIM						0xC03F	///< 0xC03F - File is not a FLAIM database.
-	#define FERR_NULL_RECORD					0xC040	///< 0xC040 - NULL record cannot be passed to add or modify.
-	#define FERR_NO_HTTP_STACK					0xC041	///< 0xC041 - No http stack was loaded.
-	#define FERR_OLD_VIEW						0xC042	///< 0xC042 - While reading was unable to get previous version of block or record.
-	#define FERR_PCODE_ERROR					0xC043	///< 0xC043 - Corruption found in dictionary.
-	#define FERR_PERMISSION						0xC044	///< 0xC044 - Invalid permission for file operation.
-	#define FERR_SYNTAX							0xC045	///< 0xC045 - Dictionary record has improper syntax, or syntax error in query criteria.
-	#define FERR_CALLBACK_FAILURE				0xC046	///< 0xC046 - Callback failure.
-	#define FERR_TRANS_ACTIVE					0xC047	///< 0xC047 - Attempted to close database while transaction was active.
-	#define FERR_RFL_TRANS_GAP					0xC048	///< 0xC048 - A gap was found in the transaction sequence in the RFL.
-	#define FERR_BAD_COLLATED_KEY				0xC049	///< 0xC049 - Something in collated key is bad.
-	#define FERR_UNSUPPORTED_FEATURE			0xC04A	///< 0xC04A - Attempting a feature that is not supported for the database version.
-	#define FERR_MUST_DELETE_INDEXES			0xC04B	///< 0xC04B - Attempting to delete a container that has indexes defined for it -- indexes must be deleted first.
-	#define FERR_RFL_INCOMPLETE				0xC04C	///< 0xC04C - RFL file is incomplete.
-	#define FERR_CANNOT_RESTORE_RFL_FILES	0xC04D	///< 0xC04D - Cannot restore RFL files - not using multiple RFL files.
-	#define FERR_INCONSISTENT_BACKUP			0xC04E	///< 0xC04E - A problem (corruption, etc) was detected in a backup set.
-	#define FERR_BLOCK_CHECKSUM				0xC04F	///< 0xC04F - Block checksum error.
-	#define FERR_ABORT_TRANS					0xC050	///< 0xC050 - Attempted operation after a critical error - should abort transaction.
-	#define FERR_NOT_RFL							0xC051	///< 0xC051 - Attempted to open file which was not an RFL file.
-	#define FERR_BAD_RFL_PACKET				0xC052	///< 0xC052 - RFL packet was bad.
-	#define FERR_DATA_PATH_MISMATCH			0xC053	///< 0xC053 - Bad data path specified to open database.
-	#define FERR_HTTP_REGISTER_FAILURE		0xC054	///< 0xC054 - Call to FlmConfig() with FLM_HTTP_REGISTER_URL option failed.
-	#define FERR_HTTP_DEREG_FAILURE			0xC055	///< 0xC055 - Call to FlmConfig() with FLM_HTTP_DEREGISTER_URL option failed.
-	#define FERR_IX_FAILURE						0xC056	///< 0xC056 - Indexing process failed, non-unique data was found when a unique index was being created.
-	#define FERR_HTTP_SYMS_EXIST				0xC057	///< 0xC057 - Tried to import new http related symbols before unimporting the old ones.
-	#define FERR_NOT_USED_C058					0xC058	///< 0xC058 - Not used
-	#define FERR_FILE_EXISTS					0xC059	///< 0xC059 - Attempt to create a database, but the database already exists.
-	#define FERR_SYM_RESOLVE_FAIL				0xC05A	///< 0xC05A - Could not resolve a symbol needed to run.
-	#define FERR_BAD_SERVER_CONNECTION		0xC05B	///< 0xC05B - Connection to FLAIM server is bad.
-	#define FERR_CLOSING_DATABASE				0xC05C	///< 0xC05C - Database is being closed due to a critical error.
-	#define FERR_INVALID_CRC					0xC05D	///< 0xC05D - CRC could not be verified.
-	#define FERR_KEY_OVERFLOW					0xC05E	///< 0xC05E - Key generated by the record causes the maximum key size to be exceeded.
-	#define FERR_NOT_IMPLEMENTED				0xC05F	///< 0xC05F - Functionality not implemented.
-	#define FERR_MUTEX_OPERATION_FAILED		0xC060	///< 0xC060 - Mutex operation failed.
-	#define FERR_MUTEX_UNABLE_TO_LOCK		0xC061	///< 0xC061 - Unable to get the mutex lock.
-	#define FERR_SEM_OPERATION_FAILED		0xC062	///< 0xC062 - Semaphore operation failed.
-	#define FERR_SEM_UNABLE_TO_LOCK			0xC063	///< 0xC063 - Unable to get the semaphore lock.
-	#define FERR_NOT_USED_C064					0xC064	///< 0xC064 - Not used
-	#define FERR_NOT_USED_C065					0xC065	///< 0xC065 - Not used
-	#define FERR_NOT_USED_C066					0xC066	///< 0xC066 - Not used
-	#define FERR_NOT_USED_C067					0xC067	///< 0xC067 - Not used
-	#define FERR_NOT_USED_C068					0xC068	///< 0xC068 - Not used
-	#define FERR_BAD_REFERENCE					0xC069	///< 0xC069 - Bad reference in the dictionary.
-	#define FERR_NOT_USED_C06A					0xC06A	///< 0xC06A - Not used
-	#define FERR_NOT_USED_C06B					0xC06B	///< 0xC06B - Not used
-	#define FERR_NOT_USED_C06C					0xC06C	///< 0xC06C - Not used
-	#define FERR_NOT_USED_C06D					0xC06D	///< 0xC06D - Not used
-	#define FERR_NOT_USED_C06E					0xC06E	///< 0xC06E - Not used
-	#define FERR_NOT_USED_C06F					0xC06F	///< 0xC06F - Not used
-	#define FERR_UNALLOWED_UPGRADE			0xC070	///< 0xC070 - FlmDbUpgrade cannot upgrade the database.
-	#define FERR_NOT_USED_C071					0xC071	///< 0xC071 - Not used
-	#define FERR_NOT_USED_C072					0xC072	///< 0xC072 - Not used
-	#define FERR_NOT_USED_C073					0xC073	///< 0xC073 - Not used
-	#define FERR_ID_RESERVED					0xC074	///< 0xC074 - Attempted to use a dictionary ID that has been reserved.
-	#define FERR_CANNOT_RESERVE_ID			0xC075	///< 0xC075 - Attempted to reserve a dictionary ID that has been used.
-	#define FERR_DUPLICATE_DICT_NAME			0xC076	///< 0xC076 - Dictionary record with duplicate name found.
-	#define FERR_CANNOT_RESERVE_NAME			0xC077	///< 0xC077 - Attempted to reserve a dictionary name that is in use.
-	#define FERR_BAD_DICT_DRN					0xC078	///< 0xC078 - Attempted to add, modify, or delete a dictionary DRN >= FLM_RESERVED_TAG_NUMS.
-	#define FERR_CANNOT_MOD_DICT_REC_TYPE	0xC079	///< 0xC079 - Cannot modify a dictionary item into another type of item, must delete then add.
-	#define FERR_PURGED_FLD_FOUND				0xC07A	///< 0xC07A - Record contained a field whose field definition has been marked as purged.
-	#define FERR_DUPLICATE_INDEX				0xC07B	///< 0xC07B - Duplicate index.
-	#define FERR_TOO_MANY_OPEN_DBS			0xC07C	///< 0xC07C - Too many open databases.
-	#define FERR_ACCESS_DENIED					0xC07D	///< 0xC07D - Cannot access database.
-	#define FERR_NOT_USED_C07E					0xC07E	///< 0xC07E - Not used
-	#define FERR_CACHE_ERROR					0xC07F	///< 0xC07F - Cache block is corrupt.
-	#define FERR_NOT_USED_C080					0xC080	///< 0xC080 - Not used
-	#define FERR_BLOB_MISSING_FILE			0xC081	///< 0xC081 - Missing BLOB file on add/modify.
-	#define FERR_NO_REC_FOR_KEY				0xC082	///< 0xC082 - Record pointed to by an index key is missing.
-	#define FERR_DB_FULL							0xC083	///< 0xC083 - Database is full, cannot create more blocks.
-	#define FERR_TIMEOUT							0xC084	///< 0xC084 - Operation timed out (usually a query operation).
-	#define FERR_CURSOR_SYNTAX					0xC085	///< 0xC085 - Query criteria had improper syntax.
-	#define FERR_THREAD_ERR						0xC086	///< 0xC086 - Thread error.
-	#define FERR_UNIMPORT_SYMBOL				0xC087	///< 0xC087 - Failed to unimport a public symbol.
-	#define FERR_EMPTY_QUERY					0xC088	///< 0xC088 - Warning: Query has no results.
-	#define FERR_INDEX_OFFLINE					0xC089	///< 0xC089 - Warning: Index is offline and being rebuilt.
-	#define FERR_TRUNCATED_KEY					0xC08A	///< 0xC08A - Warning: Can't evaluate truncated key against selection criteria.
-	#define FERR_INVALID_PARM					0xC08B	///< 0xC08B - Invalid parameter.
-	#define FERR_USER_ABORT						0xC08C	///< 0xC08C - User or application aborted the operation.
-	#define FERR_RFL_DEVICE_FULL				0xC08D	///< 0xC08D - No space on RFL device for logging.
-	#define FERR_MUST_WAIT_CHECKPOINT		0xC08E	///< 0xC08E - Must wait for a checkpoint before starting transaction - due to disk problems - usually in RFL volume.
-	#define FERR_NAMED_SEMAPHORE_ERR			0xC08F	///< 0xC08F - Error occurred while accessing a named semaphore.
-	#define FERR_LOAD_LIBRARY					0xC090	///< 0xC090 - Failed to load a shared library module.
-	#define FERR_UNLOAD_LIBRARY				0xC091	///< 0xC091 - Failed to unload a shared library module.
-	#define FERR_IMPORT_SYMBOL					0xC092	///< 0xC092 - Failed to import a symbol from a shared library module.
-	#define FERR_BLOCK_FULL						0xC093	///< 0xC093 - Destination block for insert is full.
-	#define FERR_BAD_BASE64_ENCODING			0xC094	///< 0xC094 - Could not perform base 64 encoding.
-	#define FERR_MISSING_FIELD_TYPE			0xC095	///< 0xC095 - Field type not specified in field definition record.
-	#define FERR_BAD_DATA_LENGTH				0xC096	///< 0xC096 - Invalid field data length.
+	#define FERR_BOF_HIT							NE_FLM_BOF_HIT							///< 0xC001 - Beginning of file or set hit.
+	#define FERR_EOF_HIT							NE_FLM_EOF_HIT							///< 0xC002 - End of file or set hit.
+	#define FERR_END								0xC003									///< 0xC003 - End of GEDCOM file - this is an internal error.
+	#define FERR_EXISTS							NE_FLM_EXISTS							///< 0xC004 - Record already exists.
+	#define FERR_FAILURE							NE_FLM_FAILURE							///< 0xC005 - Internal failure.
+	#define FERR_NOT_FOUND						NE_FLM_NOT_FOUND						///< 0xC006 - A record, key, or key reference was not found.
+	#define FERR_BAD_DICT_ID					0xC007									///< 0xC007 - Invalid dictionary record number -- outside unreserved range.
+	#define FERR_BAD_CONTAINER					0xC008									///< 0xC008 - Invalid container number.
+	#define FERR_NO_ROOT_BLOCK					0xC009									///< 0xC009 - LFILE does not have a root block - always handled internally - never returned to application.
+	#define FERR_BAD_DRN							0xC00A									///< 0xC00A - Cannot pass a zero DRN into modify or delete or 0xFFFFFFFF into add.
+	#define FERR_BAD_FIELD_NUM					0xC00B									///< 0xC00B - Bad field number in record being added.
+	#define FERR_BAD_FIELD_TYPE				0xC00C									///< 0xC00C - Bad field type in record being added.
+	#define FERR_BAD_HDL							0xC00D									///< 0xC00D - Request contained bad db handle.
+	#define FERR_BAD_IX							0xC00E									///< 0xC00E - Invalid index number.
+	#define FERR_BACKUP_ACTIVE					0xC00F									///< 0xC00F - Operation could not be completed - a backup is being performed.
+	#define FERR_SERIAL_NUM_MISMATCH			0xC010									///< 0xC010 - Comparison of serial numbers failed.
+	#define FERR_BAD_RFL_DB_SERIAL_NUM		0xC011									///< 0xC011 - Bad database serial number in RFL file header.
+	#define FERR_BTREE_ERROR					NE_FLM_BTREE_ERROR					///< 0xC012 - A corruption was found in an index or container b-tree.
+	#define FERR_BTREE_FULL						NE_FLM_BTREE_FULL						///< 0xC013 - An index or container b-tree is full.
+	#define FERR_BAD_RFL_FILE_NUMBER			0xC014									///< 0xC014 - Bad RFL file number in RFL file header.
+	#define FERR_CANNOT_DEL_ITEM				0xC015									///< 0xC015 - Cannot delete field definitions.
+	#define FERR_CANNOT_MOD_FIELD_TYPE		0xC016									///< 0xC016 - Cannot modify a field's type.
+	#define FERR_NOT_USED_C017					0xC017									///< 0xC017 - Not used
+	#define FERR_CONV_BAD_DEST_TYPE			0xC018									///< 0xC018 - Bad destination type specified for conversion.
+	#define FERR_CONV_BAD_DIGIT				0xC019									///< 0xC019 - Non-numeric digit found in text to numeric conversion.
+	#define FERR_CONV_BAD_SRC_TYPE			0xC01A									///< 0xC01A - Bad source type specified for conversion.
+	#define FERR_RFL_FILE_NOT_FOUND			0xC01B									///< 0xC01B - Could not open an RFL file.
+	#define FERR_CONV_DEST_OVERFLOW			NE_FLM_CONV_DEST_OVERFLOW			///< 0xC01C - Destination buffer not large enough to hold converted data.
+	#define FERR_CONV_ILLEGAL					NE_FLM_CONV_ILLEGAL					///< 0xC01D - Illegal conversion -- not supported.
+	#define FERR_CONV_NULL_SRC					0xC01E									///< 0xC01E - Source cannot be a NULL pointer in conversion.
+	#define FERR_CONV_NULL_DEST				0xC01F									///< 0xC01F - Destination cannot be a NULL pointer in conversion.
+	#define FERR_CONV_NUM_OVERFLOW			NE_FLM_CONV_NUM_OVERFLOW			///< 0xC020 - Numeric overflow (GT upper bound) converting to numeric type.
+	#define FERR_CONV_NUM_UNDERFLOW			0xC021									///< 0xC021 - Numeric underflow (LT lower bound) converting to numeric type.
+	#define FERR_DATA_ERROR						NE_FLM_DATA_ERROR						///< 0xC022 - Database corruption found.
+	#define FERR_NOT_USED_C023					0xC023									///< 0xC023 - Not used
+	#define FERR_DD_ERROR						0xC024									///< 0xC024 - Corruption found in logical file block chain.
+	#define FERR_INVALID_FILE_SEQUENCE		0xC025									///< 0xC025 - Incremental backup file number provided during a restore is invalid.
+	#define FERR_ILLEGAL_OP						NE_FLM_ILLEGAL_OP						///< 0xC026 - Illegal operation for database.
+	#define FERR_DUPLICATE_DICT_REC			0xC027									///< 0xC027 - Duplicate dictionary record found.
+	#define FERR_CANNOT_CONVERT				0xC028									///< 0xC028 - Condition occurred which prevents database conversion.
+	#define FERR_UNSUPPORTED_VERSION			0xC029									///< 0xC029 - Database version is not supported.
+	#define FERR_FILE_ER							0xC02A									///< 0xC02A - File error in a GEDCOM routine.
+	#define FERR_BAD_FIELD_LEVEL				0xC02B									///< 0xC02B - Invalid field level.
+	#define FERR_GED_BAD_RECID					0xC02C									///< 0xC02C - Bad record ID syntax.
+	#define FERR_GED_BAD_VALUE					0xC02D									///< 0xC02D - Bad or ambiguous/extra value in GEDCOM.
+	#define FERR_GED_MAXLVLNUM					0xC02E									///< 0xC02E - Exceeded GED_MAXLVLNUM in gedcom routines.
+	#define FERR_GED_SKIP_LEVEL				0xC02F									///< 0xC02F - Bad GEDCOM tree structure -- level skipped.
+	#define FERR_ILLEGAL_TRANS					0xC030									///< 0xC030 - Attempt to start an illegal type of transaction.
+	#define FERR_ILLEGAL_TRANS_OP				0xC031									///< 0xC031 - Illegal operation for transaction type.
+	#define FERR_INCOMPLETE_LOG				0xC032									///< 0xC032 - Incomplete log record encountered during recovery.
+	#define FERR_INVALID_BLOCK_LENGTH		0xC033									///< 0xC033 - Invalid block length.
+	#define FERR_INVALID_TAG					0xC034									///< 0xC034 - Invalid tag name.
+	#define FERR_KEY_NOT_FOUND					0xC035									///< 0xC035 - A key or reference is not found -- modify/delete error.
+	#define FERR_VALUE_TOO_LARGE				0xC036									///< 0xC036 - Value too large.
+	#define FERR_MEM								NE_FLM_MEM								///< 0xC037 - Memory allocation error.
+	#define FERR_BAD_RFL_SERIAL_NUM			0xC038									///< 0xC038 - Bad serial number in RFL file header.
+	#define FERR_NOT_USED_C039					0xC039									///< 0xC039 - Not used
+	#define FERR_NEWER_FLAIM					0xC03A									///< 0xC03A - Database version newer than this code base will support, must use newer version of code.
+	#define FERR_CANNOT_MOD_FIELD_STATE		0xC03B									///< 0xC03B - Attempted to change a field state illegally.
+	#define FERR_NO_MORE_DRNS					0xC03C									///< 0xC03C - The highest DRN number has already been used in an add.
+	#define FERR_NO_TRANS_ACTIVE				0xC03D									///< 0xC03D - Attempted to updated database outside transaction.
+	#define FERR_NOT_UNIQUE						NE_FLM_NOT_UNIQUE						///< 0xC03E - Found duplicate key for unique index.
+	#define FERR_NOT_FLAIM						0xC03F									///< 0xC03F - File is not a FLAIM database.
+	#define FERR_NULL_RECORD					0xC040									///< 0xC040 - NULL record cannot be passed to add or modify.
+	#define FERR_NO_HTTP_STACK					0xC041									///< 0xC041 - No http stack was loaded.
+	#define FERR_OLD_VIEW						0xC042									///< 0xC042 - While reading was unable to get previous version of block or record.
+	#define FERR_PCODE_ERROR					0xC043									///< 0xC043 - Corruption found in dictionary.
+	#define FERR_PERMISSION						0xC044									///< 0xC044 - Invalid permission for file operation.
+	#define FERR_SYNTAX							NE_FLM_SYNTAX							///< 0xC045 - Dictionary record has improper syntax, or syntax error in query criteria.
+	#define FERR_CALLBACK_FAILURE				0xC046									///< 0xC046 - Callback failure.
+	#define FERR_TRANS_ACTIVE					0xC047									///< 0xC047 - Attempted to close database while transaction was active.
+	#define FERR_RFL_TRANS_GAP					0xC048									///< 0xC048 - A gap was found in the transaction sequence in the RFL.
+	#define FERR_BAD_COLLATED_KEY				0xC049									///< 0xC049 - Something in collated key is bad.
+	#define FERR_UNSUPPORTED_FEATURE			0xC04A									///< 0xC04A - Attempting a feature that is not supported for the database version.
+	#define FERR_MUST_DELETE_INDEXES			0xC04B									///< 0xC04B - Attempting to delete a container that has indexes defined for it -- indexes must be deleted first.
+	#define FERR_RFL_INCOMPLETE				0xC04C									///< 0xC04C - RFL file is incomplete.
+	#define FERR_CANNOT_RESTORE_RFL_FILES	0xC04D									///< 0xC04D - Cannot restore RFL files - not using multiple RFL files.
+	#define FERR_INCONSISTENT_BACKUP			0xC04E									///< 0xC04E - A problem (corruption, etc) was detected in a backup set.
+	#define FERR_BLOCK_CHECKSUM				0xC04F									///< 0xC04F - Block checksum error.
+	#define FERR_ABORT_TRANS					0xC050									///< 0xC050 - Attempted operation after a critical error - should abort transaction.
+	#define FERR_NOT_RFL							0xC051									///< 0xC051 - Attempted to open file which was not an RFL file.
+	#define FERR_BAD_RFL_PACKET				0xC052									///< 0xC052 - RFL packet was bad.
+	#define FERR_DATA_PATH_MISMATCH			0xC053									///< 0xC053 - Bad data path specified to open database.
+	#define FERR_HTTP_REGISTER_FAILURE		0xC054									///< 0xC054 - Call to FlmConfig() with FLM_HTTP_REGISTER_URL option failed.
+	#define FERR_HTTP_DEREG_FAILURE			0xC055									///< 0xC055 - Call to FlmConfig() with FLM_HTTP_DEREGISTER_URL option failed.
+	#define FERR_IX_FAILURE						0xC056									///< 0xC056 - Indexing process failed, non-unique data was found when a unique index was being created.
+	#define FERR_HTTP_SYMS_EXIST				0xC057									///< 0xC057 - Tried to import new http related symbols before unimporting the old ones.
+	#define FERR_NOT_USED_C058					0xC058									///< 0xC058 - Not used
+	#define FERR_FILE_EXISTS					0xC059									///< 0xC059 - Attempt to create a database, but the database already exists.
+	#define FERR_SYM_RESOLVE_FAIL				0xC05A									///< 0xC05A - Could not resolve a symbol needed to run.
+	#define FERR_BAD_SERVER_CONNECTION		0xC05B									///< 0xC05B - Connection to FLAIM server is bad.
+	#define FERR_CLOSING_DATABASE				0xC05C									///< 0xC05C - Database is being closed due to a critical error.
+	#define FERR_INVALID_CRC					0xC05D									///< 0xC05D - CRC could not be verified.
+	#define FERR_KEY_OVERFLOW					0xC05E									///< 0xC05E - Key generated by the record causes the maximum key size to be exceeded.
+	#define FERR_NOT_IMPLEMENTED				NE_FLM_NOT_IMPLEMENTED				///< 0xC05F - Functionality not implemented.
+	#define FERR_MUTEX_OPERATION_FAILED		0xC060									///< 0xC060 - Mutex operation failed.
+	#define FERR_MUTEX_UNABLE_TO_LOCK		0xC061									///< 0xC061 - Unable to get the mutex lock.
+	#define FERR_SEM_OPERATION_FAILED		0xC062									///< 0xC062 - Semaphore operation failed.
+	#define FERR_SEM_UNABLE_TO_LOCK			0xC063									///< 0xC063 - Unable to get the semaphore lock.
+	#define FERR_NOT_USED_C064					0xC064									///< 0xC064 - Not used
+	#define FERR_NOT_USED_C065					0xC065									///< 0xC065 - Not used
+	#define FERR_NOT_USED_C066					0xC066									///< 0xC066 - Not used
+	#define FERR_NOT_USED_C067					0xC067									///< 0xC067 - Not used
+	#define FERR_NOT_USED_C068					0xC068									///< 0xC068 - Not used
+	#define FERR_BAD_REFERENCE					0xC069									///< 0xC069 - Bad reference in the dictionary.
+	#define FERR_NOT_USED_C06A					0xC06A									///< 0xC06A - Not used
+	#define FERR_NOT_USED_C06B					0xC06B									///< 0xC06B - Not used
+	#define FERR_NOT_USED_C06C					0xC06C									///< 0xC06C - Not used
+	#define FERR_NOT_USED_C06D					0xC06D									///< 0xC06D - Not used
+	#define FERR_NOT_USED_C06E					0xC06E									///< 0xC06E - Not used
+	#define FERR_NOT_USED_C06F					0xC06F									///< 0xC06F - Not used
+	#define FERR_UNALLOWED_UPGRADE			0xC070									///< 0xC070 - FlmDbUpgrade cannot upgrade the database.
+	#define FERR_NOT_USED_C071					0xC071									///< 0xC071 - Not used
+	#define FERR_NOT_USED_C072					0xC072									///< 0xC072 - Not used
+	#define FERR_NOT_USED_C073					0xC073									///< 0xC073 - Not used
+	#define FERR_ID_RESERVED					0xC074									///< 0xC074 - Attempted to use a dictionary ID that has been reserved.
+	#define FERR_CANNOT_RESERVE_ID			0xC075									///< 0xC075 - Attempted to reserve a dictionary ID that has been used.
+	#define FERR_DUPLICATE_DICT_NAME			0xC076									///< 0xC076 - Dictionary record with duplicate name found.
+	#define FERR_CANNOT_RESERVE_NAME			0xC077									///< 0xC077 - Attempted to reserve a dictionary name that is in use.
+	#define FERR_BAD_DICT_DRN					0xC078									///< 0xC078 - Attempted to add, modify, or delete a dictionary DRN >= FLM_RESERVED_TAG_NUMS.
+	#define FERR_CANNOT_MOD_DICT_REC_TYPE	0xC079									///< 0xC079 - Cannot modify a dictionary item into another type of item, must delete then add.
+	#define FERR_PURGED_FLD_FOUND				0xC07A									///< 0xC07A - Record contained a field whose field definition has been marked as purged.
+	#define FERR_DUPLICATE_INDEX				0xC07B									///< 0xC07B - Duplicate index.
+	#define FERR_TOO_MANY_OPEN_DBS			0xC07C									///< 0xC07C - Too many open databases.
+	#define FERR_ACCESS_DENIED					0xC07D									///< 0xC07D - Cannot access database.
+	#define FERR_NOT_USED_C07E					0xC07E									///< 0xC07E - Not used
+	#define FERR_CACHE_ERROR					0xC07F									///< 0xC07F - Cache block is corrupt.
+	#define FERR_NOT_USED_C080					0xC080									///< 0xC080 - Not used
+	#define FERR_BLOB_MISSING_FILE			0xC081									///< 0xC081 - Missing BLOB file on add/modify.
+	#define FERR_NO_REC_FOR_KEY				0xC082									///< 0xC082 - Record pointed to by an index key is missing.
+	#define FERR_DB_FULL							0xC083									///< 0xC083 - Database is full, cannot create more blocks.
+	#define FERR_TIMEOUT							0xC084									///< 0xC084 - Operation timed out (usually a query operation).
+	#define FERR_CURSOR_SYNTAX					0xC085									///< 0xC085 - Query criteria had improper syntax.
+	#define FERR_THREAD_ERR						0xC086									///< 0xC086 - Thread error.
+	#define FERR_UNIMPORT_SYMBOL				0xC087									///< 0xC087 - Failed to unimport a public symbol.
+	#define FERR_EMPTY_QUERY					0xC088									///< 0xC088 - Warning: Query has no results.
+	#define FERR_INDEX_OFFLINE					0xC089									///< 0xC089 - Warning: Index is offline and being rebuilt.
+	#define FERR_TRUNCATED_KEY					0xC08A									///< 0xC08A - Warning: Can't evaluate truncated key against selection criteria.
+	#define FERR_INVALID_PARM					NE_FLM_INVALID_PARM					///< 0xC08B - Invalid parameter.
+	#define FERR_USER_ABORT						0xC08C									///< 0xC08C - User or application aborted the operation.
+	#define FERR_RFL_DEVICE_FULL				0xC08D									///< 0xC08D - No space on RFL device for logging.
+	#define FERR_MUST_WAIT_CHECKPOINT		0xC08E									///< 0xC08E - Must wait for a checkpoint before starting transaction - due to disk problems - usually in RFL volume.
+	#define FERR_NAMED_SEMAPHORE_ERR			0xC08F									///< 0xC08F - Error occurred while accessing a named semaphore.
+	#define FERR_LOAD_LIBRARY					0xC090									///< 0xC090 - Failed to load a shared library module.
+	#define FERR_UNLOAD_LIBRARY				0xC091									///< 0xC091 - Failed to unload a shared library module.
+	#define FERR_IMPORT_SYMBOL					0xC092									///< 0xC092 - Failed to import a symbol from a shared library module.
+	#define FERR_BLOCK_FULL						0xC093									///< 0xC093 - Destination block for insert is full.
+	#define FERR_BAD_BASE64_ENCODING			0xC094									///< 0xC094 - Could not perform base 64 encoding.
+	#define FERR_MISSING_FIELD_TYPE			0xC095									///< 0xC095 - Field type not specified in field definition record.
+	#define FERR_BAD_DATA_LENGTH				0xC096									///< 0xC096 - Invalid field data length.
 
 		/****************************************************************************
 								IO Errors
 		****************************************************************************/
 
-	#define FERR_IO_ACCESS_DENIED				0xC201	///< 0xC201 - Access denied. Caller is not allowed access to a file.
-	#define FERR_IO_BAD_FILE_HANDLE			0xC202	///< 0xC202 - Bad file handle.
-	#define FERR_IO_COPY_ERR					0xC203	///< 0xC203 - Copy error.
-	#define FERR_IO_DISK_FULL					0xC204	///< 0xC204 - Disk full.
-	#define FERR_IO_END_OF_FILE				0xC205	///< 0xC205 - End of file.
-	#define FERR_IO_OPEN_ERR					0xC206	///< 0xC206 - Error opening file.
-	#define FERR_IO_SEEK_ERR					0xC207	///< 0xC207 - File seek error.
-	#define FERR_IO_MODIFY_ERR					0xC208	///< 0xC208 - File modify error.
-	#define FERR_IO_PATH_NOT_FOUND			0xC209	///< 0xC209 - Path not found.
-	#define FERR_IO_TOO_MANY_OPEN_FILES		0xC20A	///< 0xC20A - Too many files open.
-	#define FERR_IO_PATH_TOO_LONG				0xC20B	///< 0xC20B - Path too long.
-	#define FERR_IO_NO_MORE_FILES				0xC20C	///< 0xC20C - No more files in directory.
-	#define FERR_DELETING_FILE					0xC20D	///< 0xC20D - Had error deleting a file.
-	#define FERR_IO_FILE_LOCK_ERR				0xC20E	///< 0xC20E - File lock error.
-	#define FERR_IO_FILE_UNLOCK_ERR			0xC20F	///< 0xC20F - File unlock error.
-	#define FERR_IO_PATH_CREATE_FAILURE		0xC210	///< 0xC210 - Path create failed.
-	#define FERR_IO_RENAME_FAILURE			0xC211	///< 0xC211 - File rename failed.
-	#define FERR_IO_INVALID_PASSWORD			0xC212	///< 0xC212 - Invalid file password.
-	#define FERR_SETTING_UP_FOR_READ			0xC213	///< 0xC213 - Had error setting up to do a read.
-	#define FERR_SETTING_UP_FOR_WRITE		0xC214	///< 0xC214 - Had error setting up to do a write.
-	#define FERR_IO_AT_PATH_ROOT				0xC215	///< 0xC215 - Currently positioned at the path root level.
-	#define FERR_INITIALIZING_IO_SYSTEM		0xC216	///< 0xC216 - Had error initializing the file system.
-	#define FERR_FLUSHING_FILE					0xC217	///< 0xC217 - Had error flushing a file.
-	#define FERR_IO_INVALID_PATH				0xC218	///< 0xC218 - Invalid path.
-	#define FERR_IO_CONNECT_ERROR				0xC219	///< 0xC219 - Failed to connect to a remote network resource.
-	#define FERR_OPENING_FILE					0xC21A	///< 0xC21A - Had error opening a file.
-	#define FERR_DIRECT_OPENING_FILE			0xC21B	///< 0xC21B - Had error opening a file for direct I/O.
-	#define FERR_CREATING_FILE					0xC21C	///< 0xC21C - Had error creating a file.
-	#define FERR_DIRECT_CREATING_FILE		0xC21D	///< 0xC21D - Had error creating a file for direct I/O.
-	#define FERR_READING_FILE					0xC21E	///< 0xC21E - Had error reading a file.
-	#define FERR_DIRECT_READING_FILE			0xC21F	///< 0xC21F - Had error reading a file using direct I/O.
-	#define FERR_WRITING_FILE					0xC220	///< 0xC220 - Had error writing to a file.
-	#define FERR_DIRECT_WRITING_FILE			0xC221	///< 0xC221 - Had error writing to a file using direct I/O.
-	#define FERR_POSITIONING_IN_FILE			0xC222	///< 0xC222 - Had error positioning within a file.
-	#define FERR_GETTING_FILE_SIZE			0xC223	///< 0xC223 - Had error getting file size.
-	#define FERR_TRUNCATING_FILE				0xC224	///< 0xC224 - Had error truncating a file.
-	#define FERR_PARSING_FILE_NAME			0xC225	///< 0xC225 - Had error parsing a file name.
-	#define FERR_CLOSING_FILE					0xC226	///< 0xC226 - Had error closing a file.
-	#define FERR_GETTING_FILE_INFO			0xC227	///< 0xC227 - Had error getting file information.
-	#define FERR_EXPANDING_FILE				0xC228	///< 0xC228 - Had error expanding a file (using direct I/O).
-	#define FERR_GETTING_FREE_BLOCKS			0xC229	///< 0xC229 - Had error getting free blocks from file system.
-	#define FERR_CHECKING_FILE_EXISTENCE	0xC22A	///< 0xC22A - Had error checking if a file exists.
-	#define FERR_RENAMING_FILE					0xC22B	///< 0xC22B - Had error renaming a file.
-	#define FERR_SETTING_FILE_INFO			0xC22C	///< 0xC22C - Had error setting file information.
+	#define FERR_IO_ACCESS_DENIED				NE_FLM_IO_ACCESS_DENIED				///< 0xC201 - Access denied. Caller is not allowed access to a file.
+	#define FERR_IO_BAD_FILE_HANDLE			NE_FLM_IO_BAD_FILE_HANDLE			///< 0xC202 - Bad file handle.
+	#define FERR_IO_COPY_ERR					NE_FLM_IO_COPY_ERR					///< 0xC203 - Copy error.
+	#define FERR_IO_DISK_FULL					NE_FLM_IO_DISK_FULL					///< 0xC204 - Disk full.
+	#define FERR_IO_END_OF_FILE				NE_FLM_IO_END_OF_FILE				///< 0xC205 - End of file.
+	#define FERR_IO_OPEN_ERR					NE_FLM_IO_OPEN_ERR					///< 0xC206 - Error opening file.
+	#define FERR_IO_SEEK_ERR					NE_FLM_IO_SEEK_ERR					///< 0xC207 - File seek error.
+	#define FERR_IO_DIRECTORY_ERR				NE_FLM_IO_DIRECTORY_ERR				///< 0xC208 - Error occurred while accessing or deleting a directory.
+	#define FERR_IO_PATH_NOT_FOUND			NE_FLM_IO_PATH_NOT_FOUND			///< 0xC209 - Path not found.
+	#define FERR_IO_TOO_MANY_OPEN_FILES		NE_FLM_IO_TOO_MANY_OPEN_FILES		///< 0xC20A - Too many files open.
+	#define FERR_IO_PATH_TOO_LONG				NE_FLM_IO_PATH_TOO_LONG				///< 0xC20B - Path too long.
+	#define FERR_IO_NO_MORE_FILES				NE_FLM_IO_NO_MORE_FILES				///< 0xC20C - No more files in directory.
+	#define FERR_DELETING_FILE					NE_FLM_IO_DELETING_FILE				///< 0xC20D - Had error deleting a file.
+	#define FERR_IO_FILE_LOCK_ERR				NE_FLM_IO_FILE_LOCK_ERR				///< 0xC20E - File lock error.
+	#define FERR_IO_FILE_UNLOCK_ERR			NE_FLM_IO_FILE_UNLOCK_ERR			///< 0xC20F - File unlock error.
+	#define FERR_IO_PATH_CREATE_FAILURE		NE_FLM_IO_PATH_CREATE_FAILURE		///< 0xC210 - Path create failed.
+	#define FERR_IO_RENAME_FAILURE			NE_FLM_IO_RENAME_FAILURE			///< 0xC211 - File rename failed.
+	#define FERR_IO_INVALID_PASSWORD			NE_FLM_IO_INVALID_PASSWORD			///< 0xC212 - Invalid file password.
+	#define FERR_SETTING_UP_FOR_READ			NE_FLM_SETTING_UP_FOR_READ			///< 0xC213 - Had error setting up to do a read.
+	#define FERR_SETTING_UP_FOR_WRITE		NE_FLM_SETTING_UP_FOR_WRITE		///< 0xC214 - Had error setting up to do a write.
+	#define FERR_IO_AT_PATH_ROOT				NE_FLM_IO_CANNOT_REDUCE_PATH		///< 0xC215 - Currently positioned at the path root level.
+	#define FERR_INITIALIZING_IO_SYSTEM		NE_FLM_INITIALIZING_IO_SYSTEM		///< 0xC216 - Had error initializing the file system.
+	#define FERR_FLUSHING_FILE					NE_FLM_FLUSHING_FILE					///< 0xC217 - Had error flushing a file.
+	#define FERR_IO_INVALID_PATH				NE_FLM_IO_INVALID_FILENAME			///< 0xC218 - Invalid path.
+	#define FERR_IO_CONNECT_ERROR				NE_FLM_IO_CONNECT_ERROR				///< 0xC219 - Failed to connect to a remote network resource.
+	#define FERR_OPENING_FILE					NE_FLM_OPENING_FILE					///< 0xC21A - Had error opening a file.
+	#define FERR_DIRECT_OPENING_FILE			NE_FLM_DIRECT_OPENING_FILE			///< 0xC21B - Had error opening a file for direct I/O.
+	#define FERR_CREATING_FILE					NE_FLM_CREATING_FILE					///< 0xC21C - Had error creating a file.
+	#define FERR_DIRECT_CREATING_FILE		NE_FLM_DIRECT_CREATING_FILE		///< 0xC21D - Had error creating a file for direct I/O.
+	#define FERR_READING_FILE					NE_FLM_READING_FILE					///< 0xC21E - Had error reading a file.
+	#define FERR_DIRECT_READING_FILE			NE_FLM_DIRECT_READING_FILE			///< 0xC21F - Had error reading a file using direct I/O.
+	#define FERR_WRITING_FILE					NE_FLM_WRITING_FILE					///< 0xC220 - Had error writing to a file.
+	#define FERR_DIRECT_WRITING_FILE			NE_FLM_DIRECT_WRITING_FILE			///< 0xC221 - Had error writing to a file using direct I/O.
+	#define FERR_POSITIONING_IN_FILE			NE_FLM_POSITIONING_IN_FILE			///< 0xC222 - Had error positioning within a file.
+	#define FERR_GETTING_FILE_SIZE			NE_FLM_GETTING_FILE_SIZE			///< 0xC223 - Had error getting file size.
+	#define FERR_TRUNCATING_FILE				NE_FLM_TRUNCATING_FILE				///< 0xC224 - Had error truncating a file.
+	#define FERR_PARSING_FILE_NAME			NE_FLM_PARSING_FILE_NAME			///< 0xC225 - Had error parsing a file name.
+	#define FERR_CLOSING_FILE					NE_FLM_CLOSING_FILE					///< 0xC226 - Had error closing a file.
+	#define FERR_GETTING_FILE_INFO			NE_FLM_GETTING_FILE_INFO			///< 0xC227 - Had error getting file information.
+	#define FERR_EXPANDING_FILE				NE_FLM_EXPANDING_FILE				///< 0xC228 - Had error expanding a file (using direct I/O).
+	#define FERR_GETTING_FREE_BLOCKS			NE_FLM_GETTING_FREE_BLOCKS			///< 0xC229 - Had error getting free blocks from file system.
+	#define FERR_CHECKING_FILE_EXISTENCE	NE_FLM_CHECKING_FILE_EXISTENCE	///< 0xC22A - Had error checking if a file exists.
+	#define FERR_RENAMING_FILE					NE_FLM_RENAMING_FILE					///< 0xC22B - Had error renaming a file.
+	#define FERR_SETTING_FILE_INFO			NE_FLM_SETTING_FILE_INFO			///< 0xC22C - Had error setting file information.
 
 		/****************************************************************************
 								Encryption / Decryption Errors
 		****************************************************************************/
-	#define FERR_NICI_CONTEXT					0xC301	///< 0xC301 - Failed to obtain a NICI context.
-	#define FERR_NICI_FIND_INIT				0xC302	///< 0xC302 - CCS_FindInit failed.
-	#define FERR_NICI_FIND_OBJECT				0xC303	///< 0xC303 - CCS_FindObject failed.
-	#define FERR_NICI_WRAPKEY_NOT_FOUND		0xC304	///< 0xC304 - Could not locate a wrapping key.
-	#define FERR_NICI_ATTRIBUTE_VALUE		0xC305	///< 0xC305 - CCS_AttributeValue failed.
-	#define FERR_NICI_BAD_ATTRIBUTE			0xC306	///< 0xC306 - Invalid attribute.
-	#define FERR_NICI_BAD_RANDOM				0xC307	///< 0xC307 - CCS_GetRandom failed.
-	#define FERR_NOT_USED_C308					0xC308	///< 0xC308 - Not used
-	#define FERR_NICI_WRAPKEY_FAILED			0xC309	///< 0xC309 - CCS_WrapKey failed.
-	#define FERR_NICI_GENKEY_FAILED			0xC30A	///< 0xC30A - CCS_GenerateKey failed.
-	#define FERR_REQUIRE_PASSWD				0xC30B	///< 0xC30B - Password required to unwrap key.
-	#define FERR_NICI_SHROUDKEY_FAILED		0xC30C	///< 0xC30C - CCS_pbeShroudPrivateKey failed.
-	#define FERR_NICI_UNSHROUDKEY_FAILED	0xC30D	///< 0xC30D - CCS_pbdUnshroudPrivateKey failed.
-	#define FERR_NICI_UNWRAPKEY_FAILED		0xC30E	///< 0xC30E - CCS_UnrapKey failed.
-	#define FERR_NICI_ENC_INIT_FAILED		0xC30F	///< 0xC30F - CCS_DataEncryptInit failed.
-	#define FERR_NICI_ENCRYPT_FAILED			0xC310	///< 0xC310 - CCS_DataEncrypt failed.
-	#define FERR_NICI_DECRYPT_INIT_FAILED	0xC311	///< 0xC311 - CCS_DataDecryptInit failed.
-	#define FERR_NICI_DECRYPT_FAILED			0xC312	///< 0xC312 - CCS_DataDecrypt failed.
-	#define FERR_NICI_INIT_FAILED				0xC313	///< 0xC313 - CCS_Init failed.
-	#define FERR_NICI_KEY_NOT_FOUND			0xC314	///< 0xC314 - Could not locate encryption/decryption key.
-	#define FERR_NICI_INVALID_ALGORITHM		0xC315	///< 0xC315 - Unsupported NICI ecncryption algorithm.
-	#define FERR_FLD_NOT_ENCRYPTED			0xC316	///< 0xC316 - Field is not encrypted.
-	#define FERR_CANNOT_SET_KEY				0xC317	///< 0xC317 - Attempted to set an encryption key for new encryption definition record.
-	#define FERR_MISSING_ENC_TYPE				0xC318	///< 0xC318 - Encryption type not specified in encryption definition record.
-	#define FERR_CANNOT_MOD_ENC_TYPE			0xC319	///< 0xC319 - Attempting to change the encryption type in encryption definition record.
-	#define FERR_MISSING_ENC_KEY				0xC31A	///< 0xC31A - Encryption key must be present in modified encryption definition record.
-	#define FERR_CANNOT_CHANGE_KEY			0xC31B	///< 0xC31B - Attempt to modify the encryption key in an encryption definition record.
-	#define FERR_BAD_ENC_KEY					0xC31C	///< 0xC31C - Bad encryption key.
-	#define FERR_CANNOT_MOD_ENC_STATE		0xC31D	///< 0xC31D - Illegal state change for an encryption definition record.
-	#define FERR_DATA_SIZE_MISMATCH			0xC31E	///< 0xC31E - Calculated encrypted data length does not match the length returned from encryption/decryption routines.
-	#define FERR_ENCRYPTION_UNAVAILABLE		0xC31F	///< 0xC31F - Encryption capabilities are not available for encrypting/decrypting data in database.
-	#define FERR_PURGED_ENCDEF_FOUND			0xC320	///< 0xC320 - Cannot use encryption ID for encryption of data - encryption definition record is marked as purged.
-	#define FERR_FLD_NOT_DECRYPTED			0xC321	///< 0xC321 - Attempting to access data from a field that is encrypted, field could not be decrypted for some reason - probably because encryption/decryption capabilities are not available.
-	#define FERR_BAD_ENCDEF_ID					0xC322	///< 0xC322 - Encryption ID is invalid - not defined in dictionary.
-	#define FERR_PBE_ENCRYPT_FAILED			0xC323	///< 0xC323 - Call to NICI function CCS_pbeEncrypt failed.
-	#define FERR_DIGEST_FAILED					0xC324	///< 0xC324 - Call to NICI function CCS_Digest failed.
-	#define FERR_DIGEST_INIT_FAILED			0xC325	///< 0xC325 - Call to NICI function CCS_DigestInit failed.
-	#define FERR_EXTRACT_KEY_FAILED			0xC326	///< 0xC326 - Call to NICI function CCS_ExtractKey failed.
-	#define FERR_INJECT_KEY_FAILED			0xC327	///< 0xC327 - Call to NICI function CCS_InjectKey failed.
-	#define FERR_PBE_DECRYPT_FAILED			0xC328	///< 0xC328 - Call to NICI function CCS_pbeDecrypt failed.
-	#define FERR_PASSWD_INVALID				0xC329	///< 0xC329 - Invalid password passed, database could not be opened.
-	
+	#define FERR_NICI_CONTEXT					0xC301									///< 0xC301 - Failed to obtain a NICI context.
+	#define FERR_NICI_FIND_INIT				0xC302									///< 0xC302 - CCS_FindInit failed.
+	#define FERR_NICI_FIND_OBJECT				0xC303									///< 0xC303 - CCS_FindObject failed.
+	#define FERR_NICI_WRAPKEY_NOT_FOUND		0xC304									///< 0xC304 - Could not locate a wrapping key.
+	#define FERR_NICI_ATTRIBUTE_VALUE		0xC305									///< 0xC305 - CCS_AttributeValue failed.
+	#define FERR_NICI_BAD_ATTRIBUTE			0xC306									///< 0xC306 - Invalid attribute.
+	#define FERR_NICI_BAD_RANDOM				0xC307									///< 0xC307 - CCS_GetRandom failed.
+	#define FERR_NOT_USED_C308					0xC308									///< 0xC308 - Not used
+	#define FERR_NICI_WRAPKEY_FAILED			0xC309									///< 0xC309 - CCS_WrapKey failed.
+	#define FERR_NICI_GENKEY_FAILED			0xC30A									///< 0xC30A - CCS_GenerateKey failed.
+	#define FERR_REQUIRE_PASSWD				0xC30B									///< 0xC30B - Password required to unwrap key.
+	#define FERR_NICI_SHROUDKEY_FAILED		0xC30C									///< 0xC30C - CCS_pbeShroudPrivateKey failed.
+	#define FERR_NICI_UNSHROUDKEY_FAILED	0xC30D									///< 0xC30D - CCS_pbdUnshroudPrivateKey failed.
+	#define FERR_NICI_UNWRAPKEY_FAILED		0xC30E									///< 0xC30E - CCS_UnrapKey failed.
+	#define FERR_NICI_ENC_INIT_FAILED		0xC30F									///< 0xC30F - CCS_DataEncryptInit failed.
+	#define FERR_NICI_ENCRYPT_FAILED			0xC310									///< 0xC310 - CCS_DataEncrypt failed.
+	#define FERR_NICI_DECRYPT_INIT_FAILED	0xC311									///< 0xC311 - CCS_DataDecryptInit failed.
+	#define FERR_NICI_DECRYPT_FAILED			0xC312									///< 0xC312 - CCS_DataDecrypt failed.
+	#define FERR_NICI_INIT_FAILED				0xC313									///< 0xC313 - CCS_Init failed.
+	#define FERR_NICI_KEY_NOT_FOUND			0xC314									///< 0xC314 - Could not locate encryption/decryption key.
+	#define FERR_NICI_INVALID_ALGORITHM		0xC315									///< 0xC315 - Unsupported NICI ecncryption algorithm.
+	#define FERR_FLD_NOT_ENCRYPTED			0xC316									///< 0xC316 - Field is not encrypted.
+	#define FERR_CANNOT_SET_KEY				0xC317									///< 0xC317 - Attempted to set an encryption key for new encryption definition record.
+	#define FERR_MISSING_ENC_TYPE				0xC318									///< 0xC318 - Encryption type not specified in encryption definition record.
+	#define FERR_CANNOT_MOD_ENC_TYPE			0xC319									///< 0xC319 - Attempting to change the encryption type in encryption definition record.
+	#define FERR_MISSING_ENC_KEY				0xC31A									///< 0xC31A - Encryption key must be present in modified encryption definition record.
+	#define FERR_CANNOT_CHANGE_KEY			0xC31B									///< 0xC31B - Attempt to modify the encryption key in an encryption definition record.
+	#define FERR_BAD_ENC_KEY					0xC31C									///< 0xC31C - Bad encryption key.
+	#define FERR_CANNOT_MOD_ENC_STATE		0xC31D									///< 0xC31D - Illegal state change for an encryption definition record.
+	#define FERR_DATA_SIZE_MISMATCH			0xC31E									///< 0xC31E - Calculated encrypted data length does not match the length returned from encryption/decryption routines.
+	#define FERR_ENCRYPTION_UNAVAILABLE		0xC31F									///< 0xC31F - Encryption capabilities are not available for encrypting/decrypting data in database.
+	#define FERR_PURGED_ENCDEF_FOUND			0xC320									///< 0xC320 - Cannot use encryption ID for encryption of data - encryption definition record is marked as purged.
+	#define FERR_FLD_NOT_DECRYPTED			0xC321									///< 0xC321 - Attempting to access data from a field that is encrypted, field could not be decrypted for some reason - probably because encryption/decryption capabilities are not available.
+	#define FERR_BAD_ENCDEF_ID					0xC322									///< 0xC322 - Encryption ID is invalid - not defined in dictionary.
+	#define FERR_PBE_ENCRYPT_FAILED			0xC323									///< 0xC323 - Call to NICI function CCS_pbeEncrypt failed.
+	#define FERR_DIGEST_FAILED					0xC324									///< 0xC324 - Call to NICI function CCS_Digest failed.
+	#define FERR_DIGEST_INIT_FAILED			0xC325									///< 0xC325 - Call to NICI function CCS_DigestInit failed.
+	#define FERR_EXTRACT_KEY_FAILED			0xC326									///< 0xC326 - Call to NICI function CCS_ExtractKey failed.
+	#define FERR_INJECT_KEY_FAILED			0xC327									///< 0xC327 - Call to NICI function CCS_InjectKey failed.
+	#define FERR_PBE_DECRYPT_FAILED			0xC328									///< 0xC328 - Call to NICI function CCS_pbeDecrypt failed.
+	#define FERR_PASSWD_INVALID				0xC329									///< 0xC329 - Invalid password passed, database could not be opened.
 
-		/*************************************************************************
-								Server TCP/IP Errors
-		*************************************************************************/
-
-	#define FERR_SVR_NOIP_ADDR					0xC900	///< 0xC900 - IP address not found.
-	#define FERR_SVR_SOCK_FAIL					0xC901	///< 0xC901 - IP socket failure.
-	#define FERR_SVR_CONNECT_FAIL				0xC902	///< 0xC902 - TCP/IP connection failure.
-	#define FERR_SVR_BIND_FAIL					0xC903	///< 0xC903 - The TCP/IP services on your system may not be configured or installed.
-	#define FERR_SVR_LISTEN_FAIL				0xC904	///< 0xC904 - TCP/IP listen failed.
-	#define FERR_SVR_ACCEPT_FAIL				0xC905	///< 0xC905 - TCP/IP accept failed.
-	#define FERR_SVR_SELECT_ERR				0xC906	///< 0xC906 - TCP/IP select failed.
-	#define FERR_SVR_SOCKOPT_FAIL				0xC907	///< 0xC907 - TCP/IP socket operation failed.
-	#define FERR_SVR_DISCONNECT				0xC908	///< 0xC908 - TCP/IP disconnected.
-	#define FERR_SVR_READ_FAIL					0xC909	///< 0xC909 - TCP/IP read failed.
-	#define FERR_SVR_WRT_FAIL					0xC90A	///< 0xC90A - TCP/IP write failed.
-	#define FERR_SVR_READ_TIMEOUT				0xC90B	///< 0xC90B - TCP/IP read timeout.
-	#define FERR_SVR_WRT_TIMEOUT				0xC90C	///< 0xC90C - TCP/IP write timeout.
-	#define FERR_SVR_ALREADY_CLOSED			0xC90D	///< 0xC90D - Connection already closed.
-
-	#define LAST_FLAIM_ERROR					0xC90D	///< 0xC90D - Place holder		
-	#define FERR_BT_END_OF_DATA				0xFFFF	///< 0xFFFF	- Used internally
+	#define FERR_BT_END_OF_DATA				0xFFFF									///< 0xFFFF	- Used internally
 
 	/// @}
 	
-	#ifndef RC_OK
-		#define RC_OK( rc)						((rc) == FERR_OK)
-	#endif
-
-	#ifndef RC_BAD
-		#define RC_BAD( rc)						((rc) != FERR_OK)
-	#endif
-
 	/***************************************************************************
 										Forward Declarations
 	***************************************************************************/
@@ -716,9 +383,6 @@
 	class FlmRecord;
 	class FlmRecordSet;
 	class F_LogMessage;
-	class F_FileHdl;
-	class F_ListItem;
-	class F_ListMgr;
 	class F_Restore;
 
 	/***************************************************************************
@@ -726,86 +390,14 @@
 	***************************************************************************/
 
 	typedef void *					HFDB;			///< Database handle.
-		#define HFDB_NULL				NULL
 	typedef void *					HFCURSOR;	///< Query object handle.
-		#define HFCURSOR_NULL		NULL
 	typedef void *					HFBLOB;		///< BLOB handle.
-		#define HFBLOB_NULL			NULL
 	typedef void *					HFBACKUP;	///< Backup object handle.
-		#define HFBACKUP_NULL		NULL
-
-	/// Header for blocks in a memory pool.  This structure is at the head of each block that belongs to a pool of
-	/// memory.
-	typedef struct MBLK
-	{
-		MBLK *			pPrevBlk;				///< Points to the previous memory block in the memory pool.
-		FLMUINT			uiBlkSize;				///< Total size of the memory block.
-		FLMUINT			uiFreeOfs;				///< Offset in block where next allocation should be made.
-		FLMUINT			uiFreeSize;				///< Amount of free memory left in block - from uiFreeOfs.
-	} MBLK;
-
-
-	/// Pool statistics.  This structure is used to track statistics on
-	/// smart pools.
-	typedef struct
-	{
-		FLMUINT			uiAllocBytes;			///< Total number of bytes requested from
-														///< GedPoolAlloc and GedPoolCalloc calls
-		FLMUINT			uiCount;					///< Number of frees and resets performed on 
-														///< the pool
-	} POOL_STATS;
-
-	/// Pool memory manager.  This structure is used to keep track of a pool
-	/// of memory blocks that are used for pool memory allocation.
-	typedef struct
-	{
-		MBLK *			lblk;						///< Pointer to last memory block in the pool.
-		FLMUINT			uiBlkSize;				///< Default size to use when allocating new memory blocks.
-		FLMUINT			uiBytesAllocated;		///< Total bytes allocated in the memory pool.
-		POOL_STATS *	pPoolStats;				///< Pool statistics - may be NULL.
-	} POOL;
-
-	/// Initialize memory pool.
-	/// \ingroup pool
-	FLMEXP void FLMAPI GedPoolInit(
-		POOL *		pPool,						///< Pool memory manager object that is to be initialized.
-		FLMUINT 		uiBlkSize					///< Default block size for the memory pool.
-		);
-
-	/// Free all memory blocks in a memory pool.
-	/// \ingroup pool
-	FLMEXP RCODE FLMAPI GedPoolFree(
-		POOL *			pPool						///< Pool memory manager object whose memory is to be freed.
-		);
-
-	/// Allocate memory from a memory pool.\  Returns pointer to allocated memory.
-	/// \ingroup pool
-	FLMEXP void * FLMAPI GedPoolAlloc(
-		POOL *			pPool,					///< Pool memory manager object where memory is to be allocated from.
-		FLMUINT			uiSize					///< Requested allocation size (in bytes).
-		);
-
-	/// Allocate memory from a memory pool and initialize memory to zeroes.\  Returns pointer to allocated memory.
-	/// \ingroup pool
-	FLMEXP void * FLMAPI GedPoolCalloc(
-		POOL * 			pPool,					///< Pool memory manager object where memory is to be allocated from.
-		FLMUINT			uiSize					///< Requested allocation size (in bytes).
-		);
-
-	/// Obtain a mark in a memory pool.\   Returned mark remembers a location in the
-	/// pool which can later be passed to GedPoolReset() to free all memory that was
-	/// allocated after the mark.
-	/// \ingroup pool
-	FLMEXP void * FLMAPI GedPoolMark(
-		POOL *			pPool						///< Pool memory manager object.
-		);
-
-	/// Reset a memory pool back to a mark.\   Free all memory blocks allocated after the mark.
-	/// \ingroup pool
-	FLMEXP RCODE FLMAPI GedPoolReset(
-		POOL *			pPool,					///< Pool memory manager object.
-		void *			pvMark					///< Mark that was obtained from GedPoolMark().
-		);
+	
+	#define HFDB_NULL				NULL
+	#define HFCURSOR_NULL		NULL
+	#define HFBLOB_NULL			NULL
+	#define HFBACKUP_NULL		NULL
 
 	/// Database create options.\ This structure is passed to FlmDbCreate()
 	/// to specify create options for a new database.
@@ -832,7 +424,7 @@
 		FLMUINT		uiMinRflFileSize;				///< Minimum bytes per RFL file.
 	#define DEFAULT_MIN_RFL_FILE_SIZE	((FLMUINT)100 * (FLMUINT)1024 * (FLMUINT)1024)
 		FLMUINT		uiMaxRflFileSize;				///< Maximum bytes per RFL file.
-	#define DEFAULT_MAX_RFL_FILE_SIZE	F_MAXIMUM_FILE_SIZE
+	#define DEFAULT_MAX_RFL_FILE_SIZE	FLM_MAXIMUM_FILE_SIZE
 		FLMBOOL		bKeepRflFiles;					///< Keep RFL files?
 	#define DEFAULT_KEEP_RFL_FILES_FLAG	FALSE
 		FLMBOOL		bLogAbortedTransToRfl;		///< Log aborted transactions to RFL?
@@ -842,122 +434,6 @@
 		FLMUINT		uiAppMajorVer;					///< The application's major version number.
 		FLMUINT		uiAppMinorVer;					///< The application's minor version number
 	} CREATE_OPTS;
-
-	/// This is a pure virtual base class that other FLAIM classes inherit from.\   It
-	/// provides methods for reference counting (AddRef, Release), as well as
-	/// methods for overloading new and delete operators.
-	class FLMEXP F_Base
-	{
-	public:
-
-		F_Base()
-		{ 
-			m_refCnt = 1;	
-		}
-
-		virtual ~F_Base()
-		{
-		}
-
-		/// Increment the reference count for this object.
-		/// The reference count is the number of pointers that are referencing this object.
-		/// Return value is the incremented reference count.
-		FINLINE FLMINT AddRef( void)
-		{
-			return( (FLMINT)(++m_refCnt));
-		}
-
-		/// Decrement the reference count for this object.
-		/// The reference count is the number of pointers that are referencing this object.
-		/// Return value is the decremented reference count.  If the reference count goes to
-		/// zero, the object will be deleted.
-		FLMINT Release( void);
-
-		/// Return the current reference count on the object.
-		FINLINE FLMINT getRefCount( void)
-		{
-			return( (FLMINT)(m_refCnt));
-		}
-
-		/// Overloaded new operator for objects of this class.
-		void * operator new(
-			FLMSIZET			uiSize)	///< Number of bytes to allocate - should be sizeof( ThisClass).
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
-
-		/// Overloaded new operator for objects of this class (with source file and line number).
-		/// This new operator passes in the current file and line number.  This information is
-		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void * operator new(
-			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be sizeof( ThisClass).
-			const char *	pszFile,	///< Name of source file where this allocation is made.
-			int				iLine)	///< Line number in source file where this allocation request is made.
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
-
-		/// Overloaded new operator (array) for objects of this class.
-		/// This method is called when an array of objects of this class is allocated.
-		void * operator new[](
-			FLMSIZET			uiSize)	///< Number of bytes to allocate - should be a multiple of sizeof( ThisClass).
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
-
-		/// Overloaded new operator (array) for objects of this class (with source file and line number).
-		/// This new operator is called when an array of objects of this class are allocated.
-		/// This new operator passes in the current file and line number.  This information is
-		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void * operator new[](
-			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be a multiple of sizeof( ThisClass).
-			const char *	pszFile,	///< Name of source file where this allocation is made.
-			int				iLine)	///< Line number in source file where this allocation request is made.
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
-
-		/// Overloaded delete operator for objects of this class.
-		void operator delete(
-			void *			ptr);		///< Pointer to object being freed.
-
-		/// Overloaded delete operator (array) for objects of this class.
-		/// This method is called when an array of objects of this class is freed.
-		void operator delete[](
-			void *			ptr);		///< Pointer to array of objects being freed.
-
-	#if defined( FLM_DEBUG) && !defined( __WATCOMC__)
-		/// Overloaded delete operator for objects of this class (with source file and line number).
-		/// This delete operator passes in the current file and line number.  This information is
-		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void operator delete(
-			void *			ptr,		///< Pointer to object being freed.
-			const char *	pszFile,	///< Name of source file where this delete occurs.
-			int				iLine);	///< Line number in source file where this delete occurs.
-	#endif
-
-	#if defined( FLM_DEBUG) && !defined( __WATCOMC__)
-		/// Overloaded delete operator (array) for objects of this class (with source file and line number).
-		/// This delete operator is called when an array of objects of this class is freed.
-		/// This delete operator passes in the current file and line number.  This information is
-		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void operator delete[](
-			void *			ptr,		///< Pointer to array of objects being freed.
-			const char *	pszFile,	///< Name of source file where this delete occurs.
-			int				iLine);	///< Line number in source file where this delete occurs.
-	#endif
-
-	protected:
-
-		FLMATOMIC			m_refCnt;
-
-	friend class F_FileHdlPage;
-	friend class F_FileHdlMgrPage;
-	};
 
 	/****************************************************************************
 								Name Table Function Structures
@@ -977,7 +453,7 @@
 	/// index name, or container name.\   It also allows an application to
 	/// to get a field name, index name, or field name using the dictionary
 	/// number.
-	class FLMEXP F_NameTable : public F_Base
+	class FLMEXP F_NameTable : public F_Object
 	{
 	public:
 
@@ -1142,7 +618,7 @@
 			FLMUINT			uiTagTypeAndNameTblInsertPos,
 			FLMUINT			uiTagNumTblInsertPos);
 
-		POOL						m_pool;
+		F_Pool					m_pool;
 		FLM_TAG_INFO **		m_ppSortedByTagName;
 		FLM_TAG_INFO **		m_ppSortedByTagNum;
 		FLM_TAG_INFO **		m_ppSortedByTagTypeAndName;
@@ -1194,26 +670,17 @@
 	/// Structure that holds cache usage statistics.  The statistics will be for either block cache or record cache.
 	typedef struct
 	{
-		FLMUINT		uiMaxBytes;					///< Maximum bytes allowed in cache.
-		FLMUINT		uiTotalBytesAllocated;	///< Total bytes currently allocated in cache.
-		FLMUINT		uiCount;						///< Number of items cached (blocks or records).
-		FLMUINT		uiOldVerCount;				///< Number of items cached that are prior versions.
-		FLMUINT		uiOldVerBytes;				///< Total bytes in prior versions.
-		FLMUINT		uiCacheHits;				///< Total number of times an item was found in cache.
-		FLMUINT		uiCacheHitLooks;			///< Total number of items traversed to find items in cache.
-		FLMUINT		uiCacheFaults;				///< Total number of times an item was not found in cache.
-		FLMUINT		uiCacheFaultLooks;		///< Total number of items traversed to determine that an item was not in cache.
+		FLMUINT				uiMaxBytes;					///< Maximum bytes allowed in cache.
+		FLMUINT				uiTotalBytesAllocated;	///< Total bytes currently allocated in cache.
+		FLMUINT				uiCount;						///< Number of items cached (blocks or records).
+		FLMUINT				uiOldVerCount;				///< Number of items cached that are prior versions.
+		FLMUINT				uiOldVerBytes;				///< Total bytes in prior versions.
+		FLMUINT				uiCacheHits;				///< Total number of times an item was found in cache.
+		FLMUINT				uiCacheHitLooks;			///< Total number of items traversed to find items in cache.
+		FLMUINT				uiCacheFaults;				///< Total number of times an item was not found in cache.
+		FLMUINT				uiCacheFaultLooks;		///< Total number of items traversed to determine that an item was not in cache.
+		FLM_SLAB_USAGE		SlabUsage;					///< Slab usage statistics
 	} FLM_CACHE_USAGE;
-
-	/// Structure that holds extended cache usage statistics.
-	typedef struct
-	{
-		FLMUINT64	ui64TotalExtendedMemory;			///< Total bytes of extended memory.
-		FLMUINT64	ui64RemainingExtendedMemory;		///< Total bytes of extended memory that are available for use.
-		FLMUINT64	ui64TotalBytesAllocated;			///< Total bytes of extended memory currently allocated.
-		FLMUINT64	ui64CacheHits;							///< Total number of times an item was found in extended memory.
-		FLMUINT64	ui64CacheFaults;						///< Total number of times an item was not found in extended memory.
-	} FLM_ECACHE_USAGE;
 
 	/// Structure returned from FlmGetMemoryInfo().
 	typedef struct
@@ -1239,19 +706,7 @@
 		FLMUINT				uiReplaceableBytes;			///< Total number of bytes in the replaceable blocks.
 		FLM_CACHE_USAGE	RecordCache;					///< Record cache usage statistics.
 		FLM_CACHE_USAGE	BlockCache;						///< Block cache usage statistics.
-		FLM_ECACHE_USAGE	ECache;							///< Extended cache usage statistics.
 	} FLM_MEM_INFO;
-
-	/// Structure returned from FlmGetThreadInfo() - contains information about a thread.
-	typedef struct
-	{
-		FLMUINT		uiThreadId;				///< Operating system thread ID.
-		FLMUINT		uiThreadGroup;			///< Thread group this thread belongs to.
-		FLMUINT		uiAppId;					///< Application ID that was assigned to the thread when it was started.
-		FLMUINT		uiStartTime;			///< Time the thread was started.
-		char *		pszThreadName;			///< Name of the thread.
-		char *		pszThreadStatus;		///< String indicating the last action the thread reported it was performing.
-	} F_THREAD_INFO;
 
 	/// Structure returned to an event handler function whenever transaction events occur.\  Specifically, this structure is
 	/// returned for transaction begin, commit, and abort events.
@@ -1310,16 +765,6 @@
 		FLMUINT		uiWaitTruncateTime;					///< Time (milliseconds) the checkpoint thread has been waiting to truncate the rollback log.
 																	///< If zero, the checkpoint thread is not currently waiting to truncate the rollback log.
 	} CHECKPOINT_INFO;
-
-	/// Structure that gives information on threads that are either waiting to obtain a database lock or have obtained a
-	/// database lock.\  Returned from FlmDbGetConfig() when eDbGetConfigType::FDB_GET_LOCK_HOLDER or
-	/// eDbGetConfigType::FDB_GET_LOCK_WAITERS is passed in as the option.
-	typedef struct
-	{
-		FLMUINT		uiThreadId;			///< Thread id of thread that is waiting to obtain a lock or holds a lock.
-		FLMUINT		uiTime;				///< For lock holder, this is the time the lock was obtained.
-												///< For the lock waiter, this is the time he started waiting for the lock.
-	} LOCK_USER;
 
 	/// Structure that reports information on the progress of FlmDbSweep().  The FlmDbSweep() status callback
 	/// function is called and passed a pointer to this structure.
@@ -1469,26 +914,6 @@
 		char			szDstFileName[ F_PATH_MAX_SIZE];	///< Name the file is to be renamed to.
 	} DB_RENAME_INFO;
 
-	/// Types of locks that may be requested using FlmDbLock().
-	typedef enum
-	{
-		FLM_LOCK_NONE,				///< No lock.\  NOTE: This is not a valid option for FlmDbLock(), but it may be returned by
-										///< FlmDbGetLockType().
-		FLM_LOCK_EXCLUSIVE,		///< Exclusive lock.
-		FLM_LOCK_SHARED			///< Shared lock.
-	} FLOCK_TYPE;
-
-	/// Structure returned from FlmDbGetLockInfo().
-	typedef struct
-	{
-		FLOCK_TYPE	eCurrLockType;			///< Current lock type.
-		FLMUINT		uiThreadId;				///< Thread ID of thread that has the lock, if lock is an exclusive lock.
-		FLMUINT		uiNumExclQueued;		///< Number of threads waiting to obtain an exclusive lock.
-		FLMUINT		uiNumSharedQueued;	///< Number of threads waiting to obtain a shared lock.
-		FLMUINT		uiPriorityCount;		///< Number of threads waiting to obtain a lock (shared or exclusive) whose
-													///< priority is >= the priority value that was passed into FlmDbGetLockInfo().
-	} FLOCK_INFO;
-
 	/// Structure for nodes used in GEDCOM functions.\  Nodes are the basic components of GEDCOM trees.
 	typedef struct NODE
 	{
@@ -1528,18 +953,6 @@
 		FLMBYTE *	pucEncValue;					///< The encrypted value.
 	} NODE;
 
-	/// Convert a language string to the appropriate language code.
-	/// \ingroup language
-	FLMEXP FLMUINT FLMAPI FlmLanguage(
-		char *	pszLanguageCode	///< Language string that is to be converted to a code.
-		);
-
-	/// Get the language string from a language code
-	/// \ingroup language
-	FLMEXP void FLMAPI FlmGetLanguage(
-		FLMUINT	uiLangNum,
-		char *	pszLanguageCode);
-
 	/// Compare two strings using database comparison rules.  Zero is returned if two strings are equal.
 	/// Negative number is returned if puzStr1 < puzStr2.  Positive number is returned if puzStr1 > puzStr2.
 	/// \ingroup stringcompare
@@ -1559,7 +972,7 @@
 		);
 
 	/// This class allows an application to keep a set of ::FlmRecord objects.
-	class FLMEXP FlmRecordSet : public F_Base
+	class FLMEXP FlmRecordSet : public F_Object
 	{
 	public:
 
@@ -1638,7 +1051,7 @@
 
 	/// This is an abstract base class which defines the interface that an application
 	/// must implement to embed its own predicate in a query.
-	class FLMEXP FlmUserPredicate : public F_Base
+	class FLMEXP FlmUserPredicate : public F_Object
 	{
 	public:
 
@@ -2057,18 +1470,6 @@
 															///< space into a single space character
 		);
 
-	// Predefined values for text comparison modes
-
-	#define FLM_WILD				0x02
-	#define FLM_NOCASE			0x04
-
-	// Predefined values for text conversions
-
-	#define FLM_NO_SPACE			0x1000
-	#define FLM_NO_DASH			0x2000
-	#define FLM_NO_UNDERSCORE	0x4000
-	#define FLM_MIN_SPACES		0x8000
-
 	// Predefined value for no time limit
 
 	#define		FLM_NO_LIMIT		0xFFFF
@@ -2314,12 +1715,6 @@
 		/// Output: pvValue is (FLMUINT *), percent.
 		FLM_BLOCK_CACHE_PERCENTAGE,
 
-		/// FlmConfig().\  Enable/disable out-of-memory simulation.\ \n
-		/// Input: pvValue1 is (FLMUINT), 0=disable,other=enable.\ \n
-		/// FlmGetConfig().\   Get out-of-memory simulation state.\ \n
-		/// Output: pvValue is (FLMBOOL *), FALSE=disabled,TRUE=enabled.
-		FLM_OUT_OF_MEM_SIMULATION,
-
 		/// FlmConfig().\  Enable/disable cache checking.\ \n
 		/// Input: pvValue1 is (FLMUINT), 0=disable,other=enable.\ \n
 		/// FlmGetConfig().\   Get cache checking state.\ \n
@@ -2334,12 +1729,6 @@
 		/// Input: pvValue1 is (F_Logger *), pointer to logger object.\ \n
 		/// NULL means disable logging.
 		FLM_LOGGER,
-
-		/// FlmConfig().\  Enable/disable use of extended memory.\ \n
-		/// Input: pvValue1 is (FLMUINT), 0=disable,other=enable.\ \n
-		/// FlmGetConfig().\   Get extended memory usage state.\ \n
-		/// Output: pvValue is (FLMBOOL *), FALSE=disabled,TRUE=enabled.
-		FLM_USE_ESM,
 
 		/// FlmConfig().\   Set function pointers for HTTP server.\ \n
 		/// Input: pvValue1 is (HTTPCONFIGPARAMS *), pointer to structure
@@ -2475,7 +1864,7 @@
 	/// Get information on background threads in the FLAIM database system.
 	/// \ingroup systemconfiguration
 	FLMEXP RCODE FLMAPI FlmGetThreadInfo(
-		POOL *				pPool,					///< Memory pool for allocating memory.\  This pool is used to allocate the structures
+		F_Pool *				pPool,					///< Memory pool for allocating memory.\  This pool is used to allocate the structures
 															///< and other buffers that will contain the thread information.\  To free all of the
 															///< information, the application only needs to call GedPoolFree().
 		F_THREAD_INFO **	ppThreadInfo,			///< Pointer to array of thread information structures is returned here.\  The memory
@@ -2496,39 +1885,32 @@
 											Statistics
 	****************************************************************************/
 
-	/// Structure used in gathering statistics to hold an operation count and an elapsed time.
-	typedef struct
-	{
-		FLMUINT64	ui64Count;			///< Number of times operation was performed
-		FLMUINT64	ui64ElapMilli;		///< Total elapsed time (milliseconds) for the operations.
-	} COUNT_TIME_STAT;
-
 	/// Structure used in gathering statistics to hold a operation count, a byte count, and an elapsed time.  This
 	/// is typically used for I/O operations where it is useful to know the number of bytes that were read or
 	/// written by the operation.
 	typedef struct
 	{
-		FLMUINT64	ui64Count;			///< Number of times operation was performed.
-		FLMUINT64	ui64TotalBytes;	///< Total number of bytes involved in the operations.\  This usually represents
-												///< bytes read from or written to disk.
-		FLMUINT64	ui64ElapMilli;		///< Total elapsed time (milliseconds) for the operations.
+		FLMUINT64	ui64Count;							///< Number of times operation was performed.
+		FLMUINT64	ui64TotalBytes;					///< Total number of bytes involved in the operations.\  This usually represents
+																///< bytes read from or written to disk.
+		FLMUINT64	ui64ElapMilli;						///< Total elapsed time (milliseconds) for the operations.
 	} DISKIO_STAT;
 
 	/// Statistics for read transactions.
 	typedef struct
 	{
-		COUNT_TIME_STAT	CommittedTrans;	///< Statistics for read transactions committed.
-		COUNT_TIME_STAT	AbortedTrans;		///< Statistics for read transactions aborted.
-		COUNT_TIME_STAT	InvisibleTrans;	///< Statistics for invisible read transactions.
+		F_COUNT_TIME_STAT	CommittedTrans;			///< Statistics for read transactions committed.
+		F_COUNT_TIME_STAT	AbortedTrans;				///< Statistics for read transactions aborted.
+		F_COUNT_TIME_STAT	InvisibleTrans;			///< Statistics for invisible read transactions.
 	} RTRANS_STATS;
 
 	/// Statistics for update transactions.
 	typedef struct
 	{
-		COUNT_TIME_STAT	CommittedTrans;	///< Statistics for update transactions committed.
-		COUNT_TIME_STAT	GroupCompletes;	///< Statistics for number of times multiple transactions were committed together.
-		FLMUINT64			ui64GroupFinished;///< Total update transactions that were committed in a group.
-		COUNT_TIME_STAT	AbortedTrans;		///< Statistics for update transactions aborted.
+		F_COUNT_TIME_STAT	CommittedTrans;			///< Statistics for update transactions committed.
+		F_COUNT_TIME_STAT	GroupCompletes;			///< Statistics for number of times multiple transactions were committed together.
+		FLMUINT64			ui64GroupFinished;		///< Total update transactions that were committed in a group.
+		F_COUNT_TIME_STAT	AbortedTrans;				///< Statistics for update transactions aborted.
 	} UTRANS_STATS;
 
 	/// Statistics for block reads and writes.
@@ -2543,8 +1925,8 @@
 																///< was read in - either checksum errors or other problems
 																///< validating data in the block.\  This statistic is for
 																///< older versions of a block as opposed to the current version.
-		FLMUINT			uiOldViewErrors;				// Number of times we had an old view error when reading blocks.
-		DISKIO_STAT		BlockWrites;					// Statistics on Block writes.
+		FLMUINT			uiOldViewErrors;				///< Number of times we had an old view error when reading blocks.
+		DISKIO_STAT		BlockWrites;					///< Statistics on block writes.
 	} BLOCKIO_STATS;
 
 	/// Statistics gathered for a particular logical file (index or container).
@@ -2585,11 +1967,11 @@
 		FLMUINT64			ui64NumCursorReads;		///< Number of query operations that have been performed on this database.\  This
 																///< includes counts for FlmCursorFirst(), FlmCursorLast(), FlmCursorNext(),
 																///< FlmCursorPrev(), and FlmCursorCurrent().
-		COUNT_TIME_STAT	RecordAdds;					///< Number of record add operations (FlmRecordAdd()) that have been performed on
+		F_COUNT_TIME_STAT	RecordAdds;					///< Number of record add operations (FlmRecordAdd()) that have been performed on
 																///< this database.
-		COUNT_TIME_STAT	RecordDeletes;				///< Number of record delete operations (FlmRecordDelete()) that have been performed
+		F_COUNT_TIME_STAT	RecordDeletes;				///< Number of record delete operations (FlmRecordDelete()) that have been performed
 																///< on this database.
-		COUNT_TIME_STAT	RecordModifies;			///< Number of record modify operations (FlmRecordModify()) that have been performed
+		F_COUNT_TIME_STAT	RecordModifies;			///< Number of record modify operations (FlmRecordModify()) that have been performed
 																///< on this database.
 		FLMUINT64			ui64NumRecordReads;		///< Number of record read operations (FlmRecordRetrieve()) that have been performed
 																///< on this database.
@@ -2615,10 +1997,8 @@
 		FLMUINT				uiWriteErrors;				///< Number of times we got write errors.
 
 		// Lock statistics
-
-		COUNT_TIME_STAT	NoLocks;						///< Statistics on times when nobody was holding a lock on the database.
-		COUNT_TIME_STAT	WaitingForLock;			///< Statistics on times threads were waiting to obtain a database lock.
-		COUNT_TIME_STAT	HeldLock;					///< Statistics on times when a thread was holding a lock on the database.
+		
+		F_LOCK_STATS		LockStats;					///< Database lock statistics
 
 	} DB_STATS;
 
@@ -2884,8 +2264,6 @@
 														///< between events.
 	} eDbConfigType;
 
-#define F_SERIAL_NUM_SIZE				16
-
 	/// Options for FlmDbGetConfig().
 	typedef enum
 	{
@@ -2899,11 +2277,11 @@
 														///< update transaction ID if this database handle has the database locked.\  Otherwise it will return zero.
 		FDB_GET_CHECKPOINT_INFO,				///< Get the current state of the checkpoint thread.\  pvValue1 is a pointer to a ::CHECKPOINT_INFO
 														///< structure where the checkpoint information is to be returned.
-		FDB_GET_LOCK_HOLDER,						///< Get the current lock holder for the database.\  pvValue1 is a pointer to a ::LOCK_USER structure
+		FDB_GET_LOCK_HOLDER,						///< Get the current lock holder for the database.\  pvValue1 is a pointer to a ::F_LOCK_USER structure
 														///< where the lock information is to be returned.
 		FDB_GET_LOCK_WAITERS,					///< Get the entire list of threads that are either holding the lock on the database or are waiting
-														///< to obtain the lock on the database.\   pvValue1 is a ::LOCK_USER **.\  This option will allocate
-														///< an array of ::LOCK_USER structures and return a pointer to them.\   The zeroeth element of the
+														///< to obtain the lock on the database.\   pvValue1 is a ::F_LOCK_USER **.\  This option will allocate
+														///< an array of ::F_LOCK_USER structures and return a pointer to them.\   The zeroeth element of the
 														///< array contains the lock holder.\   All other elements contain lock waiters.\  The last element
 														///< in the array will be zeroed out.\  NOTE: The memory allocated by this function should be freed
 														///< by calling FlmFreeMem().
@@ -3092,36 +2470,6 @@
 																///< FlmSetStatusHook() function when the status callback function was set.
 		);
 
-	/// Abstract base class to get lock information for a database.  The application must implement
-	/// this class.  A pointer to an object of this class is passed into FlmDbGetConfig() when it is
-	/// called with the eDbGetConfigType::FDB_GET_LOCK_WAITERS_EX option.
-	class FLMEXP FlmLockInfo : public F_Base
-	{
-	public:
-
-		/// Return the lock count on the database.  This method is called by FLAIM to tell the
-		/// application how many lock holders plus lock waiters there are.  This gives the
-		/// application an opportunity to allocate memory to hold the information that will
-		/// be returned via the FlmLockInfo::addLockInfo() method.  The application should
-		/// return TRUE from this method in order to tell FLAIM to continue, FALSE if it wants
-		/// FLAIM to stop and return from the FlmDbGetConfig() function.
-		virtual FLMBOOL setLockCount(
-			FLMUINT		uiTotalLocks		///< Total number of lock holders plus lock waiters.
-			) = 0;
-
-		/// Return lock information for a lock holder or waiter.  This method is called by FLAIM
-		/// for each thread that is either holding the database lock or waiting to obtain the lock.
-		/// The application should return TRUE from this method in order to tell FLAIM to continue,
-		/// FALSE if it wants FLAIM to stop and return from the FlmDbGetConfig() function.
-		virtual FLMBOOL addLockInfo(
-			FLMUINT		uiLockNum,			///< Position in queue (0 = lock holder, 1..n = lock waiter).
-			FLMUINT		uiThreadID,			///< Thread ID of the lock holder/waiter.
-			FLMUINT		uiTime				///< For the lock holder, this is the amount of time the lock has been
-													///< held.\   For a lock waiter, this is the amount of time the thread
-													///< has been waiting to obtain the lock.\  Both times are milliseconds.
-			) = 0;
-	};
-
 	/// Retrieve status of an index.
 	/// \ingroup indexing
 	FLMEXP RCODE FLMAPI FlmIndexStatus(
@@ -3287,7 +2635,7 @@
 	/// \ingroup trans
 	FLMEXP RCODE FLMAPI FlmDbLock(
 		HFDB				hDb,						///< Database handle.
-		FLOCK_TYPE		eLockType,				///< Type of lock being requested.
+		eLockType		lockType,				///< Type of lock being requested.
 		FLMINT			iPriority,				///< Priority of lock being requested.
 		FLMUINT			uiTimeout				///< Specifies the maximum number of seconds to wait to obtain the lock.\  NOTE: A
 														///< value of FLM_NO_TIMEOUT specifies that it should wait forever - until the
@@ -3304,21 +2652,12 @@
 	/// \ingroup trans
 	FLMEXP RCODE FLMAPI FlmDbGetLockType(
 		HFDB				hDb,						///< Database handle.
-		FLOCK_TYPE *	peLockType,				///< Type of lock currently held returned here.
+		eLockType *		pLockType,				///< Type of lock currently held returned here.
 		FLMBOOL *		pbImplicit				///< Flag indicating if the lock is an implicit lock.\  An implicit lock is one that
 														///< FLAIM obtained automatically when it started an update transaction.\  An
 														///< implicit lock will be released automatically when the transaction commits or
 														///< aborts.\  An explicit lock is one which was obtained by calling FlmDbLock().\  An
 														///< explicit lock is released when the application calls FlmDbUnlock().
-		);
-
-	/// Get lock information for a database.
-	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbGetLockInfo(
-		HFDB				hDb,						///< Database handle.
-		FLMINT			iPriority,				///< A count of all locks with a priority >= this value will be returned in
-														///< pLockInfo (FLOCK_INFO::uiPriorityCount).
-		FLOCK_INFO *	pLockInfo				///< Lock information is returned here.
 		);
 
 	/// Perform a checkpoint on the database.
@@ -3614,7 +2953,7 @@
 	/// This is an abstract base class that allows an application to read "unknown" data from the
 	/// RFL or to write "unknown" data to the RFL.
 	/// The application must implement this class.
-	class FLMEXP F_UnknownStream : public F_Base
+	class FLMEXP F_UnknownStream : public F_Object
 	{
 	public:
 
@@ -3692,7 +3031,7 @@
 		RESTORE_WRAP_KEY,				///< Restoring a FlmDbWrapKey() operation.\  pvValue1 is a FLMUINT that contains the length of the database key.
 		RESTORE_ENABLE_ENCRYPTION,	///< Restoring a FlmEnableEncryption() operation.\  pvValue1 is a FLMUINT that contains the length of
 											///< the database key.
-		RESTORE_CONFIG_SIZE_EVENT	///< Restoring a FlmSetSizeEventThreshold() operation.\  pvValue1 is a FLMUINT .... // here
+		RESTORE_CONFIG_SIZE_EVENT	///< Restoring a FlmSetSizeEventThreshold() operation.\  pvValue1 is a FLMUINT ....
 	} eRestoreStatusType;
 
 	/// Actions that an application may want to tell FlmDbRestore() to take during a restore operation.
@@ -3715,7 +3054,7 @@
 	/// function of FlmDbBackup() (see its fnWrite parameter) allow an application to have complete
 	/// control over writing and reading of backup data.  Backup data could be streamed directly to
 	/// a tape device, or any other media the application chooses.
-	class FLMEXP F_Restore : public F_Base
+	class FLMEXP F_Restore : public F_Object
 	{
 	public:
 
@@ -3819,7 +3158,7 @@
 
 	/// This class provides an interface for handling binary large objects.  Currently, FLAIM only
 	/// supports referencing of external files.  BLOB data is not actually stored "in" the database.
-	class FLMEXP FlmBlob : public F_Base
+	class FLMEXP FlmBlob : public F_Object
 	{
 	public:
 
@@ -3879,34 +3218,12 @@
 		FLM_DEBUG_MESSAGE				///< Debug message.
 	} FlmLogMessageSeverity;
 
-	typedef enum
-	{
-		FLM_BLACK = 0,
-		FLM_BLUE,
-		FLM_GREEN,
-		FLM_CYAN,
-		FLM_RED,
-		FLM_PURPLE,
-		FLM_BROWN,
-		FLM_LIGHTGRAY,
-		FLM_DARKGRAY,
-		FLM_LIGHTBLUE,
-		FLM_LIGHTGREEN,
-		FLM_LIGHTCYAN,
-		FLM_LIGHTRED,
-		FLM_LIGHTPURPLE,
-		FLM_YELLOW,
-		FLM_WHITE,
-		FLM_NUM_COLORS,
-		FLM_CURRENT_COLOR
-	} FlmColorType;
-
 	/// This is an abstract base class that allows an application to catch messages logged by FLAIM.  The
 	/// application must create an implementation for this class and then pass that object into
 	/// the FlmConfig() function using the eFlmConfigTypes::FLM_LOGGER option.  Doing so allows the
 	/// application to catch messages logged by FLAIM.  The application can do whatever it wants with
 	/// the messages - write them to a log file, display them to a console, save them to a database, etc.
-	class FLMEXP F_Logger : public F_Base
+	class FLMEXP F_Logger : public F_Object
 	{
 	public:
 
@@ -3990,7 +3307,8 @@
 	/// class when the F_Logger::beginMessage() method is called by FLAIM.  Doing so allows the
 	/// application to catch messages logged by FLAIM.  The application can do whatever it wants with
 	/// the messages - write them to a log file, display them to a console, save them to a database, etc.
-	class FLMEXP F_LogMessage : public F_Base
+
+	class FLMEXP F_LogMessage : public F_Object
 	{
 	public:
 
@@ -3998,8 +3316,8 @@
 		{
 			m_uiBackColors = 0;
 			m_uiForeColors = 0;
-			m_eCurrentForeColor = FLM_LIGHTGRAY;
-			m_eCurrentBackColor = FLM_BLACK;
+			m_currentForeColor = FLM_LIGHTGRAY;
+			m_currentBackColor = FLM_BLACK;
 		}
 
 		virtual ~F_LogMessage()
@@ -4012,8 +3330,8 @@
 		/// set the colors for text that is appended after this call (see F_LogMessage::appendString()).
 		/// The colors may be changed at any time - thus allowing a message to have multiple different colors.
 		virtual void changeColor(
-			FlmColorType	eForeColor,			///< Foreground color.
-			FlmColorType	eBackColor			///< Background color.
+			eColorType		foreColor,			///< Foreground color.
+			eColorType		backColor			///< Background color.
 			) = 0;
 
 		/// Append a string to the message.  FLAIM calls this to add text to a message.  It may be called
@@ -4045,29 +3363,29 @@
 
 		void popBackgroundColor( void);
 
-		FlmColorType getForegroundColor()
+		eColorType getForegroundColor()
 		{
-			return( m_eCurrentForeColor);
+			return( m_currentForeColor);
 		}
 
-		FlmColorType getBackgroundColor()
+		eColorType getBackgroundColor()
 		{
-			return( m_eCurrentBackColor);
+			return( m_currentBackColor);
 		}
 
 		void setColor(
-			FlmColorType	eForeColor,
-			FlmColorType	eBackColor);
+			eColorType		foreColor,
+			eColorType		backColor);
 
 	private:
 
 	#define F_MAX_COLOR_STACK_SIZE		8
-		FlmColorType		m_eBackColors[ F_MAX_COLOR_STACK_SIZE];
-		FlmColorType		m_eForeColors[ F_MAX_COLOR_STACK_SIZE];
+		eColorType			m_backColors[ F_MAX_COLOR_STACK_SIZE];
+		eColorType			m_foreColors[ F_MAX_COLOR_STACK_SIZE];
 		FLMUINT				m_uiBackColors;
 		FLMUINT				m_uiForeColors;
-		FlmColorType		m_eCurrentBackColor;
-		FlmColorType		m_eCurrentForeColor;
+		eColorType			m_currentBackColor;
+		eColorType			m_currentForeColor;
 	};
 
 	#define F_MAX_NUM_BUF		12
@@ -4626,7 +3944,7 @@
 				access and manipulate all records.
 	****************************************************************************/
 	/// Class for creating and modifying database records.
-	class FLMEXP FlmRecord : public F_Base
+	class FLMEXP FlmRecord : public F_Object
 	{
 	public:
 
@@ -4645,11 +3963,8 @@
 
 		/// Overloaded new operator for ::FlmRecord objects.
 		void * operator new(
-			FLMSIZET			uiSize)	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
+			FLMSIZET			uiSize	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
+			);
 
 		/// Overloaded new operator for ::FlmRecord objects (with source file and line number).
 		/// This new operator passes in the current file and line number.  This information is
@@ -4657,20 +3972,14 @@
 		void * operator new(
 			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
 			const char *	pszFile,	///< Name of source file where this allocation is made.
-			int				iLine)	///< Line number in source file where this allocation request is made.
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
+			int				iLine		///< Line number in source file where this allocation request is made.
+			);
 
 		/// Overloaded new operator (array) for ::FlmRecord objects.
 		/// This method is called when an array of ::FlmRecord objects is allocated.
 		void * operator new[](
-			FLMSIZET			uiSize)	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
+			FLMSIZET			uiSize	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
+			);
 
 		/// Overloaded new operator (array) for ::FlmRecord objects (with source file and line number).
 		/// This new operator is called when an array of ::FlmRecord objects is allocated.
@@ -4679,11 +3988,8 @@
 		void * operator new[](
 			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
 			const char *	pszFile,	///< Name of source file where this allocation is made.
-			int				iLine)	///< Line number in source file where this allocation request is made.
-		#if !defined( FLM_NLM)
-			throw()
-		#endif
-			;
+			int				iLine		///< Line number in source file where this allocation request is made.
+			);
 
 		/// Overloaded delete operator for ::FlmRecord objects.
 		void operator delete(
@@ -4718,16 +4024,13 @@
 		/// Increment the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.
 		/// Return value is the incremented reference count.
-		FINLINE FLMINT AddRef( void)
-		{
-			return( AddRef( FALSE));
-		}
+		FLMINT FLMAPI AddRef( void);
 
 		/// Decrement the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.
 		/// Return value is the decremented reference count.  If the reference count goes to
 		/// zero, the ::FlmRecord object will be deleted.
-		FINLINE FLMINT Release( void)
+		FINLINE FLMINT FLMAPI Release( void)
 		{
 			return( Release( FALSE));
 		}
@@ -5315,7 +4618,7 @@
 		/// Import a record from a file.  The record in the file should be formatted according
 		/// to the specification for GEDCOM.
 		RCODE importRecord(
-			F_FileHdl *			pFileHdl,	///< Open file handle where the data for the record is to be read from.
+			IF_FileHdl *		pFileHdl,	///< Open file handle where the data for the record is to be read from.
 			F_NameTable *		pNameTable	///< Name table object that is to be used to translate field names to
 													///< field numbers.
 			);
@@ -5337,7 +4640,7 @@
 		/// Export a record to a Gedcom ::NODE tree.
 		RCODE exportRecord(
 			HFDB			hDb,			///< Database handle.\  The root node of the Gedcom tree will be associated with this handle.
-			POOL *		pPool,		///< Memory pool for allocating ::NODE structures and space for field data.
+			F_Pool *		pPool,		///< Memory pool for allocating ::NODE structures and space for field data.
 			NODE **		ppNode		///< Root of the Gedcom ::NODE tree will be returned here.
 			);
 
@@ -5486,9 +4789,6 @@
 #define FLD_ENC_FENCE					"ENCD"
 
 	private:
-
-		FLMINT AddRef( 
-			FLMBOOL			bMutexLocked);
 
 		FLMINT Release( 
 			FLMBOOL			bMutexLocked);
@@ -5720,6 +5020,8 @@
 		FLMBYTE *	m_pucFieldIdTable;
 
 		friend struct FlmRecordExt;
+		friend class F_RecRelocator;
+		friend class F_RecBufferRelocator;
 		friend class F_Rfl;
 	};
 
@@ -5987,31 +5289,31 @@
 	/// Structure containing statistics collected during FlmDbCheck() for a particular category of blocks in the database.
 	typedef struct
 	{
-		FLMUINT				uiBlockCount;				///< Total blocks found in the database that were in the in the block category.
-		FLMUINT64			ui64BytesUsed;				///< Total bytes used in the blocks.
-		FLMUINT64			ui64ElementCount;			///< Total elements in the blocks.\  NOTE: This only applies to b-tree blocks.
-		FLMUINT64 			ui64ContElementCount;	///< Total continuation elements in the blocks.\  NOTE: This only applies to b-tree blocks.
-		FLMUINT64 			ui64ContElmBytes;			///< Total bytes in continuation elements.\  NOTE: This only applies to b-tree blocks.
-		eCorruptionType	eCorruption;				///< First corruption error found in blocks in this block category.
-		FLMUINT				uiNumErrors;				///< Total corruption errors found in blocks in this block category.
+		FLMUINT				uiBlockCount;					///< Total blocks found in the database that were in the in the block category.
+		FLMUINT64			ui64BytesUsed;					///< Total bytes used in the blocks.
+		FLMUINT64			ui64ElementCount;				///< Total elements in the blocks.\  NOTE: This only applies to b-tree blocks.
+		FLMUINT64 			ui64ContElementCount;		///< Total continuation elements in the blocks.\  NOTE: This only applies to b-tree blocks.
+		FLMUINT64 			ui64ContElmBytes;				///< Total bytes in continuation elements.\  NOTE: This only applies to b-tree blocks.
+		eCorruptionType	eCorruption;					///< First corruption error found in blocks in this block category.
+		FLMUINT				uiNumErrors;					///< Total corruption errors found in blocks in this block category.
 	} BLOCK_INFO;
 
 	/// Locations of corruptions in the database.
 	typedef enum
 	{
 		LOCALE_NONE = 0,
-		LOCALE_LFH_LIST,			///< Corruption was found in the list of logical file blocks.
-		LOCALE_AVAIL_LIST = 3,	///< Corruption was found in the list of available blocks.
-		LOCALE_B_TREE,				///< Corruption was found in an index or container b-tree block.
-		LOCALE_IXD_TBL,			///< Corruption was found in index table.
-		LOCALE_INDEX				///< Corruption was logical index corruption.
+		LOCALE_LFH_LIST,										///< Corruption was found in the list of logical file blocks.
+		LOCALE_AVAIL_LIST = 3,								///< Corruption was found in the list of available blocks.
+		LOCALE_B_TREE,											///< Corruption was found in an index or container b-tree block.
+		LOCALE_IXD_TBL,										///< Corruption was found in index table.
+		LOCALE_INDEX											///< Corruption was logical index corruption.
 	} eCorruptionLocale;
 
 	/// Structure used to create a linked list of index keys from a record.
 	typedef struct REC_KEY
 	{
-		FlmRecord *	pKey;			///< Pointer to index key that was generated from a record.
-		REC_KEY *	pNextKey;	///< Pointer to next key in the record.
+		FlmRecord *				pKey;							///< Pointer to index key that was generated from a record.
+		REC_KEY *				pNextKey;					///< Pointer to next key in the record.
 	} REC_KEY;
 
 	/// Structure containing information about a specific corruption that is being reported by FlmDbCheck().
@@ -6046,13 +5348,13 @@
 
 		// Index corruption information
 
-		FlmRecord *	pErrIxKey;								///< If non-NULL, this will contain a pointer to the key from an index for an index
+		FlmRecord *				pErrIxKey;					///< If non-NULL, this will contain a pointer to the key from an index for an index
 																	///< logical corruption.\  NOTE: This will only be set when eErrLocale is
 																	///< eCorruptionLocale::LOCALE_INDEX.
-		FlmRecord *	pErrRecord;								///< If non-NULL, this will contain a pointer to the record involved in an index
+		FlmRecord *				pErrRecord;					///< If non-NULL, this will contain a pointer to the record involved in an index
 																	///< logical corruption.\  NOTE: This will only be set when eErrLocale is
 																	///< eCorruptionLocale::LOCALE_INDEX.
-		REC_KEY *	pErrRecordKeyList;					///< If non-NULL, this will contain a pointer to a linked list of keys from the record that
+		REC_KEY *				pErrRecordKeyList;		///< If non-NULL, this will contain a pointer to a linked list of keys from the record that
 																	///< was involved in an index logical corruption.\  NOTE: This will only be set when
 																	///< eErrLocale is eCorruptionLocale::LOCALE_INDEX.
 
@@ -6192,7 +5494,7 @@
 															///< in the index are in the referenced records and that all keys generated from records
 															///< are in the index
 															///< - FLM_CHK_FIELDS - Check fields in records
-		POOL *					pPool,				///< Memory pool for allocating memory to hold various statistics in the pDbStats parameter.
+		F_Pool *					pPool,				///< Memory pool for allocating memory to hold various statistics in the pDbStats parameter.
 		DB_CHECK_PROGRESS *	pDbStats,			///< Statistics collected about the database during the check.
 		STATUS_HOOK				fnStatusHook,		///< Callback status function.
 		void *					pvAppArg				///< Pointer to application data.\  This pointer is passed into fnStatusHook whenever it
@@ -6383,540 +5685,5 @@
 															///< local storage key.\  NOTE: Once the database key has been wrapped in a password,
 															///< that password must be supplied to FlmDbOpen() when opening the database.
 		);
-
-	FLMEXP void FLMAPI f_pathParse(
-		const char *		pszPath,
-		char *				pszServer,
-		char *				pszVolume,
-		char *				pszDirPath,
-		char *				pszFileName);
-
-	FLMEXP RCODE FLMAPI f_pathReduce(
-		const char *		pszSourcePath,
-		char *				pszDestPath,
-		char *				pszString);
-
-	FLMEXP RCODE FLMAPI f_pathAppend(
-		char *				pszPath,
-		const char *		pszPathComponent);
-
-	FLMEXP RCODE FLMAPI f_pathToStorageString(
-		const char *		pszPath,
-		char *				pszString);
-
-	FLMEXP void FLMAPI f_pathCreateUniqueName(
-		FLMUINT *			puiTime,
-		char *				pszFileName,
-		const char *		pszFileExt,
-		char *				pszHighChars,
-		FLMBOOL				bModext);
-
-	FLMEXP FLMBOOL FLMAPI f_doesFileMatch(
-		const char *		pszFileName,
-		const char *		pszTemplate);
-
-	/****************************************************************************
-	Desc: Directory handle
-	****************************************************************************/
-	class FLMEXP F_DirHdl : public F_Base
-	{
-	public:
-
-		virtual ~F_DirHdl()
-		{
-		}
-
-		virtual RCODE OpenDir(
-			const char *		pszDirPath,
-			const char *		pszPattern) = 0;
-
-		virtual RCODE Next( void) = 0;
-													
-		virtual const char * CurrentItemName( void) = 0;
-
-		virtual FLMUINT CurrentItemSize( void) = 0;
-
-		virtual FLMBOOL CurrentItemIsDir( void) = 0;
-
-		virtual void CurrentItemPath(
-			char *		pszPath) = 0;
-	};
-
-	FLMEXP RCODE FLMAPI FlmAllocDirHdl(
-		F_DirHdl **		ppDirHdl);
-
-	typedef struct
-	{
-		F_ListItem *		pPrevItem;			// Prev ListItem
-		F_ListItem *		pNextItem;			// Next ListItem
-		FLMUINT				uiListCount;		// Number of items within a list. This 
-														// element is not used when found within
-														// a ListItem (only used in ListMgr)
-	} F_ListNode;
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	class FLMEXP F_ListItem : public F_Base
-	{
-	protected:
-
-		F_ListMgr *		m_pListMgr;				// List that this item is linked into.
-		FLMUINT			m_uiLNodeCnt;			// Number of LNODEs
-		F_ListNode *	m_pLNodes;				// List of LNODES that this item is apart of.
-														// Call F_List::GetListCount to determine how 
-														// many LNODEs this item has.
-		FLMBOOL			m_bInList;
-
-		F_ListItem()
-		{
-			m_pListMgr = NULL;
-			m_pLNodes = NULL;
-			m_uiLNodeCnt = 0;
-			m_bInList = FALSE;
-		}
-
-		virtual ~F_ListItem();
-
-		RCODE Setup(								// Finish setup operation on this ListItem
-			F_ListMgr *		pList,				// List manager to use
-			F_ListNode *	pLNodes,				// Array of LNODEs to be used
-			FLMUINT			uiLNodeCnt);		// Number of F_ListNodes supplied.
-
-		RCODE RemoveFromList(					// Remove this list item from all lists.
-			FLMUINT		uiList = 0);			// Which list to remove item from
-														// To remove item from all lists pass in
-														// FLM_ALL_LISTS define.
-
-		// List Traversal Methods
-
-		FINLINE F_ListItem * GetNextListItem(
-			FLMUINT		uiList = 0)
-		{
-			return( m_pLNodes[ uiList].pNextItem);
-		}
-
-		FINLINE F_ListItem * GetPrevListItem(
-			FLMUINT		uiList = 0)
-		{
-			return( m_pLNodes[ uiList].pPrevItem);
-		}
-
-		// List Modification Methods
-
-		FINLINE F_ListItem * SetNextListItem(
-			FLMUINT				uiList,	
-			F_ListItem *		pNewNext)
-		{
-			F_ListNode *	pLNode;
-
-			pLNode = &m_pLNodes[ uiList];
-			pLNode->pNextItem = pNewNext;
-
-			return pNewNext;
-		}
-
-		FINLINE F_ListItem * SetPrevListItem(
-			FLMUINT				uiList,	
-			F_ListItem *		pNewPrev)
-		{
-			F_ListNode *	pLNode;
-
-			pLNode = &m_pLNodes[ uiList];
-			pLNode->pPrevItem = pNewPrev;
-
-			return pNewPrev;
-		}
-
-		friend class F_ListMgr;
-		friend class F_FileHdlPage;
-		friend class F_FileHdlMgr;
-		friend class F_ObjRefTracker;
-	};
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	class FLMEXP F_FileHdl : public F_ListItem
-	{
-	public:
-
-		virtual ~F_FileHdl()
-		{
-		}
-
-		virtual RCODE Close( void) = 0;				// Close a file - The destructor will call this
-																// This is used to obtain an error code.
-													
-		virtual RCODE Create(							// Create a new file.
-			const char *		pszIoPath,				// File to be created
-			FLMUINT				uiIoFlags) = 0;		// Access and Mode Flags
-
-		virtual RCODE CreateUnique(					// Create a new file (with a unique file name).
-			char *				pszIoPath,				// Directory where the file is to be created
-			const char *		pszFileExtension,		// Extension to be used on the new file.
-			FLMUINT				uiIoFlags) = 0;		// Access and Mode Flags
-
-		virtual RCODE Open(								// Initiates access to an existing file.
-			const char *		pszIoPath,				// File to be opened
-			FLMUINT				uiIoFlags) = 0;		// Access and Mode Flags
-
-		virtual RCODE Flush( void) = 0;				// Flushes a file's buffers to disk
-
-		virtual RCODE Read(								// Reads a buffer of data from a file
-			FLMUINT		uiOffset,						// Offset to being reading at.
-			FLMUINT		uiLength,						// Number of bytes to read
-			void *		pvBuffer,						// Buffer to place read bytes into
-			FLMUINT *	puiBytesRead) = 0;			// [out] number of bytes read
-
-		virtual RCODE Seek(								// Moves the current position in the file
-			FLMUINT		uiOffset,						// Offset to seek to
-			FLMINT		iWhence,							// Location to apply sdwOffset to.
-			FLMUINT *	puiNewOffset) = 0;			// [out] new file offset
-
-		virtual RCODE Size(								// Returns to size of the open file.
-			FLMUINT *	puiSize) = 0;					// [out] size of the file
-
-		virtual RCODE Tell(								// Returns to current position of the file
-																// pointer in the open file.
-			FLMUINT *	puiOffset) = 0;				// [out] current file position
-
-		virtual RCODE Truncate(							// Decreases the size of a file.
-			FLMUINT		uiSize) = 0;					// Size to truncate the file to.
-
-		virtual RCODE Write(								// Writes a buffer of data to a file.
-			FLMUINT			uiOffset,					// Offset to seek to.
-			FLMUINT			uiLength,					// Number of bytes to write.
-			const void *	pvBuffer,					// Buffer that contains bytes to be written
-			FLMUINT *		puiBytesWritten) = 0;	// Number of bytes written.
-	};
-
-	FLMEXP RCODE FLMAPI FlmAllocFileHandle(
-		F_FileHdl **		ppFileHandle);
-
-	// File flags
-
-	#define F_IO_CURRENT_POS		0xFFFFFFFF
-	#define F_IO_RDONLY				0x0001
-	#define F_IO_RDWR					0x0002
-	#define F_IO_TRUNC				0x0004
-	#define F_IO_EXCL					0x0008
-	#define F_IO_CREATE_DIR			0x0010
-	#define F_IO_SH_DENYRW			0x0020
-	#define F_IO_SH_DENYWR			0x0040
-	#define F_IO_SH_DENYNONE		0x0080
-	#define F_IO_DIRECT				0x0100
-	#define F_IO_DELETE_ON_CLOSE	0x0200
-
-	// File Positioning Definitions
-
-	#define F_IO_SEEK_SET		0	// Beginning of File
-	#define F_IO_SEEK_CUR		1	// Current File Pointer Position
-	#define F_IO_SEEK_END		2	// End of File
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	class FLMEXP F_FileSystem : public F_Base
-	{
-	public:
-
-		virtual ~F_FileSystem()
-		{
-		}
-
-		virtual RCODE Open(
-			const char *		pszFilePath,			// Name of file to be opened.
-			FLMUINT				uiIoFlags,				// Access and Mode flags.
-			F_FileHdl **		ppFileHdl) = 0;		// Returns open file handle object.
-
-		virtual RCODE Create(							// Create a new file handle
-			const char *		pszFilePath,			// Name of file to be created
-			FLMUINT				uiIoFlags,				// Access amd Mode flags
-			F_FileHdl **		ppFileHdl) = 0;		// Returns open file handle object.
-
-		virtual RCODE OpenDir(							// Open a directory
-			const char *		pszDirPath,				// Directory to be opened.
-			const char *		pszPattern,				// File name pattern.
-			F_DirHdl **			ppDirHdl) = 0;			// Returns open directory handle
-																// object.
-
-		virtual RCODE CreateDir(						// Create a directory
-			const char *		pszDirPath) = 0;		// Directory to be created.
-
-		virtual RCODE RemoveDir(						// Remove a directory
-			const char *		pszDirPath,				// Directory to be removed.
-			FLMBOOL				bClear = FALSE) = 0;	// OK to delete files if dir is not empty?
-
-		virtual RCODE Exists(							// See if a file or directory exists.
-			const char *		pszPath) = 0;			// Name of file or directory to check.
-
-		virtual FLMBOOL IsDir(							// See if a path is a directory.
-			const char *		pszPath) = 0;			// Name of path to check.
-
-		virtual RCODE GetTimeStamp(					// Get the date/time when the file
-																// was last updated.
-			const char *		pszPath,					// Path to file
-			FLMUINT *			puiTimeStamp) = 0;	// Buffer in which time stamp is 
-																// returned.
-
-		virtual RCODE Delete(							// Delete a file or directory
-			const char *		pszPath) = 0;			// Name of file or directory to delete.
-
-		virtual RCODE Rename(							// Rename a file.
-			const char *		pszFilePath,			// File to be renamed
-			const char *		pszNewFilePath) = 0;	// New file name
-
-		virtual RCODE Copy(								// Copy a file.
-			const char *		pszSrcFilePath,		// Name of source file to be copied.
-			const char *		pszDestFilePath,		// Name of destination file.
-			FLMBOOL				bOverwrite,				// Overwrite destination file?
-			FLMUINT *			puiBytesCopied) = 0;	// Number of bytes copied.
-			
-		virtual RCODE SetReadOnly(
-			const char *	pszFileName,
-			FLMBOOL			bReadOnly) = 0;
-			
-		virtual RCODE GetSectorSize(				// Get the sector size of the volume for
-			const char *		pFileName,			// this file.
-			FLMUINT *			puiSectorSize) = 0;
-
-	};
-
-	FLMEXP RCODE FLMAPI FlmAllocFileSystem(
-		F_FileSystem **		ppFileSystem);
-
-	FLMEXP FLMINT FLMAPI f_sprintf(
-		char *			pszDestStr,
-		const char *	pszFormat,
-		...);
-
-	#define f_min(a, b) \
-		((a) < (b) ? (a) : (b))
-
-	#define f_max(a, b) \
-		((a) < (b) ? (b) : (a))
-
-	#define f_swap( a, b, tmp) \
-		((tmp) = (a), (a) = (b), (b) = (tmp))
-
-	FLMEXP char * FLMAPI f_wtoa(
-		FLMINT16			i16Value,
-		char *			ptr);
-
-	FLMEXP char * FLMAPI f_dtoa(
-		FLMINT			iValue,
-		char *			ptr);
-
-	FLMEXP char * FLMAPI f_uwtoa(
-		FLMUINT16		ui16Value,
-		char *			ptr);
-
-	FLMEXP char * FLMAPI f_udtoa(
-		FLMUINT			uiValue,
-		char *			ptr);
-
-	FLMEXP FLMINT FLMAPI f_atoi(
-		const char *	ptr);
-
-	FLMEXP FLMINT FLMAPI f_atol(
-		const char *	ptr);
-
-	FLMEXP FLMINT FLMAPI f_atod(
-		const char *	ptr);
-
-	FLMEXP FLMUINT FLMAPI f_atoud(
-		const char *	ptr);
-
-	FLMEXP FLMINT FLMAPI f_unicmp(
-		const FLMUNICODE *	puzStr1,
-		const FLMUNICODE *	puzStr2);
-
-	FLMEXP FLMUINT FLMAPI f_unilen(
-		const FLMUNICODE *	puzStr);
-
-	FLMEXP FLMUNICODE * FLMAPI f_uniindex(
-		const FLMUNICODE *	puzStr,
-		const FLMUNICODE *	puzSearch);
-		
-	FLMEXP FLMINT FLMAPI f_unincmp(
-		const FLMUNICODE *	puzStr1,
-		const FLMUNICODE *	puzStr2,
-		FLMUINT					uiLen);
-
-	FLMEXP FLMINT FLMAPI f_uninativecmp(
-		const FLMUNICODE *	puzStr1,
-		const char *			pszStr2);
-
-	FLMEXP FLMINT FLMAPI f_uninativencmp(
-		const FLMUNICODE *	puzStr1,
-		const char *			pszStr2,
-		FLMUINT					uiCount);
-
-	FLMEXP FLMUNICODE * FLMAPI f_unicpy(
-		FLMUNICODE *			puzDestStr,
-		const FLMUNICODE *	puzSrcStr);
-
-	FLMEXP void FLMAPI f_nativetounistrcpy(
-		FLMUNICODE *			puzDestBuf,
-		const char *			pszSrcBuf);
-
-	FLMEXP FLMBOOL FLMAPI tokenIsNum(
-		const char *			pszToken,
-		FLMUINT *				puiNum);
-
-	FINLINE void f_align32(
-		FLMBYTE *				pucStart,
-		FLMBYTE **				pucCur)
-	{
-		FLMBYTE *	pucTmp = *pucCur;
-		FLMUINT		uiSize;
-
-		uiSize = sizeof( FLMUINT32) - (pucTmp - pucStart) % sizeof( FLMUINT32);
-
-		if( uiSize != sizeof( FLMUINT32))
-		{
-			*pucCur = pucTmp + uiSize;
-		}
-	}
-
-	/****************************************************************************
-									Random Generation Functions
-	****************************************************************************/
-
-	#define MAX_RANDOM		2147483646L
-
-	typedef struct
-	{
-		FLMINT32 i32Seed;
-	} f_randomGenerator;
-
-	// Call f_randomSetSeed to initialize your random-number generator.  Then
-	// call f_randomLong, f_randomChoice, or f_randomTruth to access the series
-	//	of random values.
-	//	  
-	// Initialize your generator with f_randomSetSeed( &r, SOME_CONSTANT) to
-	// get a reproducible sequence of pseudo-random numbers.  Using different
-	// constant seeds will give you independent sequences.  The constant can
-	// be any number between 1 and MAX_RANDOM, inclusive. 
-	//  
-	// Call f_randomLong to get a number randomly distributed between 1 and 
-	// MAX_RANDOM.  This is the basic call, but is usually not as convenient as 
-	// the subsequent functions, all of which call f_randomLong and process the 
-	// result into a more useable form.
-	//
-	//			1 <= f_randomLong(&r) <= MAX_RANDOM
-	//	  
-	// Call f_randomChoice to get a number uniformly distributed across a
-	// specified range of integer values.
-	//	            
-	//			lo <= f_randomChoice(&r, lo, hi) <= hi
-	//	        
-	// Call f_randomTruth(&r, n) to get a boolean value which is true n percent
-	// of the time (0 <= n <= 100).
-	//	            	
-	//			0 <= f_randomTrue(&r, n) <= 1
-
-	FLMEXP void FLMAPI f_randomize(
-		f_randomGenerator  *	pRand);
-
-	FLMEXP void FLMAPI f_randomSetSeed(
-		f_randomGenerator  *	pRand,
-		FLMINT32					i32seed);
-
-	FLMEXP FLMINT32 FLMAPI f_randomLong(
-		f_randomGenerator  *	pRand);
-
-	FLMEXP FLMINT32 FLMAPI f_randomChoice(
-		f_randomGenerator  *	pRand,
-		FLMINT32 				lo,
-		FLMINT32 				hi);
-
-	FLMEXP FLMINT FLMAPI f_randomTruth(
-		f_randomGenerator  *	pRand,
-		FLMINT					iPercentageTrue);
-
-	/****************************************************************************
-									Time, date, timestamp functions
-	****************************************************************************/
-	typedef struct
-	{
-		FLMUINT16   year;
-		FLMBYTE		month;
-		FLMBYTE		day;
-	} F_DATE, * F_DATE_p;
-
-	typedef struct
-	{
-		FLMBYTE		hour;
-		FLMBYTE		minute;
-		FLMBYTE		second;
-		FLMBYTE		hundredth;
-	} F_TIME, * F_TIME_p;
-
-	typedef struct
-	{
-		FLMUINT16	year;
-		FLMBYTE		month;
-		FLMBYTE		day;
-		FLMBYTE		hour;
-		FLMBYTE		minute;
-		FLMBYTE		second;
-		FLMBYTE		hundredth;
-	} F_TMSTAMP, * F_TMSTAMP_p;
-
-	FLMEXP void FLMAPI f_timeGetSeconds(
-		FLMUINT	*		puiSeconds);
-
-	FLMEXP void FLMAPI f_timeGetTimeStamp(
-		F_TMSTAMP *		pTimeStamp);
-
-	FLMEXP FLMINT FLMAPI f_timeGetLocalOffset( void);
-
-	FLMEXP void FLMAPI f_timeSecondsToDate(
-		FLMUINT			uiSeconds,
-		F_TMSTAMP *		pTimeStamp);
-
-	FLMEXP void FLMAPI f_timeDateToSeconds(
-		F_TMSTAMP *		pTimeStamp,
-		FLMUINT *		puiSeconds);
-
-	FLMEXP FLMINT FLMAPI f_timeCompareTimeStamps(
-		F_TMSTAMP *		pTimeStamp1,
-		F_TMSTAMP *		pTimeStamp2,
-		FLMUINT			uiCompareFlag);
-
-	#define COMPARE_DATE_AND_TIME	0
-	#define COMPARE_DATE_ONLY		1
-	#define COMPARE_TIME_ONLY		2
-
-	#if defined( FLM_UNIX)
-		FLMEXP FLMUINT FLMAPI f_timeGetMilliTime();
-	#endif
-
-	// Get the current time as platform-dependent timer units.
-	FLMEXP FLMUINT FLMAPI f_getCurrTimeAsTimerUnits( void);
-
-	// Convert seconds to platform-dependent timer units.
-	FLMEXP FLMUINT FLMAPI f_secondsToTimerUnits(
-		FLMUINT		uiSeconds);
-
-	// Convert platform-dependent timer units to seconds.
-	FLMEXP FLMUINT FLMAPI f_timerUnitsToSeconds(
-		FLMUINT		uiTimerUnits);
-
-	// Convert milliseconds to platform-dependent timer units.
-	FLMEXP FLMUINT FLMAPI f_milliSecondsToTimerUnits(
-		FLMUINT		uiMilliSeconds);
-
-	// Convert platform-dependent timer units to milli-seconds.
-	FLMEXP FLMUINT FLMAPI f_timerUnitsToMilliSeconds(
-		FLMUINT		uiTimerUnits);
-
-	// Return elapsed time (as platform-dependent timer units).  Input
-	// parameters must be passed in as platform-dependent timer units.
-	FLMEXP FLMUINT FLMAPI f_elapsedTimeTimerUnits(
-		FLMUINT	uiEarlierTimeTimerUnits,
-		FLMUINT	uiLaterTimeTimerUnits);
 
 #endif

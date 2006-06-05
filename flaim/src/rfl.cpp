@@ -136,7 +136,6 @@ F_Rfl::~F_Rfl()
 
 	if (m_pFileHdl)
 	{
-		m_pFileHdl->Close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 		m_pFile = NULL;
@@ -277,7 +276,8 @@ RCODE F_Rfl::getFullRflFileName(
 
 	// Append the two together.
 
-	if (RC_BAD( rc = f_pathAppend( pszRflFileName, szBaseName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+		pszRflFileName, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -328,10 +328,9 @@ RCODE F_Rfl::positionTo(
 		m_pCurrentBuf->uiRflBufBytes = MOD_512( uiFileOffset);
 		if (m_pCurrentBuf->uiRflBufBytes)
 		{
-			if (RC_BAD( rc = m_pFileHdl->SectorRead(
-							  m_pCurrentBuf->uiRflFileOffset,
-						  m_pCurrentBuf->uiRflBufBytes,
-						  m_pCurrentBuf->pIOBuffer->m_pucBuffer, &uiBytesRead)))
+			if (RC_BAD( rc = m_pFileHdl->sectorRead( 
+				m_pCurrentBuf->uiRflFileOffset,  m_pCurrentBuf->uiRflBufBytes,
+				m_pCurrentBuf->pIOBuffer->getBuffer(), &uiBytesRead)))
 			{
 				if (rc == FERR_IO_END_OF_FILE)
 				{
@@ -371,12 +370,13 @@ RCODE rflGetDirAndPrefix(
 	char *			pszDbPrefixOut)
 {
 	RCODE 		rc = FERR_OK;
-	char			szDbPath[F_PATH_MAX_SIZE];
-	char			szBaseName[F_FILENAME_SIZE];
+	char			szDbPath[ F_PATH_MAX_SIZE];
+	char			szBaseName[ F_FILENAME_SIZE];
 
 	// Parse the database name into directory and base name
 
-	if (RC_BAD( rc = f_pathReduce( pszDbFileName, szDbPath, szBaseName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+		pszDbFileName, szDbPath, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -407,7 +407,7 @@ RCODE rflGetDirAndPrefix(
 
 		f_strcpy( szBaseName, pszDbPrefixOut);
 		f_strcat( szBaseName, ".rfl");
-		f_pathAppend( pszRflDirOut, szBaseName);
+		gv_FlmSysData.pFileSystem->pathAppend( pszRflDirOut, szBaseName);
 	}
 	else
 	{
@@ -478,7 +478,8 @@ RCODE rflGetFileName(
 	}
 
 	rflGetBaseFileName( uiDbVersion, szDbPrefix, uiFileNum, szBaseName);
-	if (RC_BAD( rc = f_pathAppend( pszRflFileName, szBaseName)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend(
+		pszRflFileName, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -498,12 +499,13 @@ FLMBOOL rflGetFileNum(
 	FLMUINT *			puiFileNum)
 {
 	FLMBOOL			bGotNum = FALSE;
-	char				szDir[F_PATH_MAX_SIZE];
-	char				szBaseName[F_FILENAME_SIZE];
+	char				szDir[ F_PATH_MAX_SIZE];
+	char				szBaseName[ F_FILENAME_SIZE];
 	char *			pszTmp;
 	FLMUINT			uiCharCnt;
 
-	if (RC_BAD( f_pathReduce( pszRflFileName, szDir, szBaseName)))
+	if (RC_BAD( gv_FlmSysData.pFileSystem->pathReduce( 
+		pszRflFileName, szDir, szBaseName)))
 	{
 		goto Exit;
 	}
@@ -649,16 +651,14 @@ RCODE F_Rfl::setup(
 	{
 		goto Exit;
 	}
-
-	if ((m_Buf1.pBufferMgr = f_new F_IOBufferMgr) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_Buf1.pBufferMgr)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
-	if ((m_Buf2.pBufferMgr = f_new F_IOBufferMgr) == NULL)
+	
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_Buf2.pBufferMgr)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -745,11 +745,7 @@ RCODE F_Rfl::waitForWrites(
 
 	if (RC_BAD( TempRc = f_semWait( Waiter.hESem, F_SEM_WAITFOREVER)))
 	{
-#ifdef FLM_NLM
-		EnterDebugger();
-#else
 		flmAssert( 0);
-#endif
 		rc = TempRc;
 	}
 	else
@@ -760,11 +756,7 @@ RCODE F_Rfl::waitForWrites(
 
 		if (rc == FERR_FAILURE)
 		{
-#ifdef FLM_NLM
-			EnterDebugger();
-#else
 			flmAssert( 0);
-#endif
 		}
 	}
 
@@ -858,7 +850,7 @@ RCODE F_Rfl::writeHeader(
 
 	// Write out the header
 
-	if (RC_BAD( rc = m_pFileHdl->SectorWrite( 0L, 512, ucBuf, sizeof(ucBuf),
+	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512, ucBuf, sizeof( ucBuf),
 				  NULL, &uiBytesWritten)))
 	{
 
@@ -876,7 +868,7 @@ RCODE F_Rfl::writeHeader(
 
 	// Flush the file handle to ensure it is forced to disk.
 
-	if (RC_BAD( rc = m_pFileHdl->Flush()))
+	if (RC_BAD( rc = m_pFileHdl->flush()))
 	{
 
 		// Remap disk full error
@@ -982,8 +974,8 @@ RCODE F_Rfl::openFile(
 	FLMBYTE *	pucSerialNum)
 {
 	RCODE				rc = FERR_OK;
-	char				szRflFileName [F_PATH_MAX_SIZE];
-	FLMBYTE			ucBuf [512];
+	char				szRflFileName[ F_PATH_MAX_SIZE];
+	FLMBYTE			ucBuf[ 512];
 	FLMUINT			uiBytesRead;
 
 	flmAssert( m_pFile);
@@ -1025,8 +1017,8 @@ RCODE F_Rfl::openFile(
 
 	// Open the file.
 
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenBlockFile( szRflFileName,
-				  F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT, 512, &m_pFileHdl)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szRflFileName,
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1036,7 +1028,7 @@ RCODE F_Rfl::openFile(
 	
 	// Read the header.
 
-	if (RC_BAD( rc = m_pFileHdl->SectorRead( 0, 512, ucBuf, &uiBytesRead)))
+	if (RC_BAD( rc = m_pFileHdl->sectorRead( 0, 512, ucBuf, &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
 		{
@@ -1090,7 +1082,7 @@ RCODE F_Rfl::createFile(
 	FLMBOOL		bKeepSignature)
 {
 	RCODE			rc = FERR_OK;
-	char			szRflFileName [F_PATH_MAX_SIZE];
+	char			szRflFileName[ F_PATH_MAX_SIZE];
 
 	flmAssert( m_pFile);
 
@@ -1117,7 +1109,7 @@ RCODE F_Rfl::createFile(
 	// Delete the file if it already exists - don't care about return code
 	// here
 
-	(void) gv_FlmSysData.pFileSystem->Delete( szRflFileName);
+	(void) gv_FlmSysData.pFileSystem->deleteFile( szRflFileName);
 
 	// If DB is 4.3 or greater and we are in the same directory as our
 	// database files, see if we need to create the subdirectory.
@@ -1131,7 +1123,7 @@ RCODE F_Rfl::createFile(
 
 		// If it already exists, don't attempt to create it.
 
-		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->Exists( m_szRflDir)))
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->doesFileExist( m_szRflDir)))
 		{
 			if (rc != FERR_IO_PATH_NOT_FOUND && rc != FERR_IO_INVALID_PATH)
 			{
@@ -1139,7 +1131,7 @@ RCODE F_Rfl::createFile(
 			}
 			else
 			{
-				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->CreateDir( m_szRflDir)))
+				if (RC_BAD( rc = gv_FlmSysData.pFileSystem->createDir( m_szRflDir)))
 				{
 					goto Exit;
 				}
@@ -1151,9 +1143,9 @@ RCODE F_Rfl::createFile(
 
 	// Create the file
 
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->CreateBlockFile( szRflFileName,
-				  F_IO_RDWR | F_IO_EXCL | F_IO_SH_DENYNONE | F_IO_DIRECT, 512,
-				  &m_pFileHdl)))
+	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->createFile( szRflFileName,
+		FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+		&m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1198,7 +1190,7 @@ Exit:
 	if (RC_BAD( rc))
 	{
 		closeFile();
-		(void) gv_FlmSysData.pFileSystem->Delete( szRflFileName);
+		(void) gv_FlmSysData.pFileSystem->deleteFile( szRflFileName);
 	}
 
 	return (rc);
@@ -1293,8 +1285,8 @@ RCODE F_Rfl::flush(
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesWritten;
-	F_IOBuffer *	pNewBuffer;
-	F_IOBuffer *	pAsyncBuf = NULL;
+	IF_IOBuffer *	pNewBuffer = NULL;
+	IF_IOBuffer *	pAsyncBuf = NULL;
 	FLMBYTE *		pucOldBuffer;
 	FLMUINT			uiFileOffset;
 	FLMUINT			uiBufBytes;
@@ -1313,7 +1305,7 @@ RCODE F_Rfl::flush(
 			}
 		}
 
-		if (m_uiRflWriteBufs > 1 && m_pFileHdl->CanDoAsync())
+		if (m_uiRflWriteBufs > 1 && m_pFileHdl->canDoAsync())
 		{
 			pAsyncBuf = pBuffer->pIOBuffer;
 		}
@@ -1324,7 +1316,7 @@ RCODE F_Rfl::flush(
 			goto Exit;
 		}
 
-		pucOldBuffer = pBuffer->pIOBuffer->m_pucBuffer;
+		pucOldBuffer = pBuffer->pIOBuffer->getBuffer();
 		uiFileOffset = pBuffer->uiRflFileOffset;
 		uiBufBytes = pBuffer->uiRflBufBytes;
 		if (m_uiRflWriteBufs > 1)
@@ -1341,12 +1333,12 @@ RCODE F_Rfl::flush(
 
 			if (!bFinalWrite)
 			{
-				copyLastSector( pBuffer, pucOldBuffer, pNewBuffer->m_pucBuffer,
+				copyLastSector( pBuffer, pucOldBuffer, pNewBuffer->getBuffer(),
 									uiCurrPacketLen, bStartingNewFile);
 			}
 		}
 
-		if( RC_OK( rc = m_pFileHdl->SectorWrite( uiFileOffset, uiBufBytes, 
+		if( RC_OK( rc = m_pFileHdl->sectorWrite( uiFileOffset, uiBufBytes, 
 											  pucOldBuffer,
 											  m_uiBufferSize, pAsyncBuf, &uiBytesWritten,
 											  FALSE)))
@@ -1360,8 +1352,8 @@ RCODE F_Rfl::flush(
 					FLMUINT		uiTmpSize;
 
 					uiTmpSize = (uiFileOffset % m_pFile->uiFileExtendSize) + 
-										(FLMUINT)flmRoundUp( uiBufBytes, 
-												m_pFileHdl->GetSectorSize());
+										(FLMUINT)f_roundUp( uiBufBytes, 
+												m_pFileHdl->getSectorSize());
 
 					if( uiTmpSize > m_pFile->uiFileExtendSize)
 					{
@@ -1454,8 +1446,8 @@ void F_Rfl::switchBuffers(void)
 	m_pCurrentBuf->uiRflFileOffset = pOldBuffer->uiRflFileOffset;
 	if (pOldBuffer->uiRflBufBytes)
 	{
-		copyLastSector( m_pCurrentBuf, pOldBuffer->pIOBuffer->m_pucBuffer,
-							m_pCurrentBuf->pIOBuffer->m_pucBuffer, 0, FALSE);
+		copyLastSector( m_pCurrentBuf, pOldBuffer->pIOBuffer->getBuffer(),
+							m_pCurrentBuf->pIOBuffer->getBuffer(), 0, FALSE);
 	}
 }
 
@@ -1801,7 +1793,7 @@ RCODE F_Rfl::completeTransWrites(
 
 	if (m_pFileHdl)
 	{
-		if (RC_BAD( tmpRc = m_pFileHdl->Flush()))
+		if (RC_BAD( tmpRc = m_pFileHdl->flush()))
 		{
 
 			// Remap disk full error
@@ -2101,14 +2093,13 @@ RCODE F_Rfl::seeIfNeedNewFile(
 			uiCurrFileEOF = ROUND_DOWN_TO_NEAREST_512( uiCurrFileEOF) + 512;
 		}
 
-		if (RC_BAD( rc = m_pFileHdl->Truncate( uiCurrFileEOF)))
+		if (RC_BAD( rc = m_pFileHdl->truncate( uiCurrFileEOF)))
 		{
 			goto Exit;
 		}
 
 		// Close the file handle.
 
-		m_pFileHdl->Close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
@@ -2300,14 +2291,13 @@ RCODE F_Rfl::finishCurrFile(
 			uiTruncateSize = ROUND_DOWN_TO_NEAREST_512( uiTruncateSize) + 512;
 		}
 
-		if (RC_BAD( rc = m_pFileHdl->Truncate( uiTruncateSize)))
+		if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
 		{
 			goto Exit;
 		}
 
 		// Close the file handle.
 
-		m_pFileHdl->Close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
@@ -2459,7 +2449,7 @@ RCODE F_Rfl::finishPacket(
 
 	// Get a pointer to packet header.
 
-	pucPacket = &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[
+	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBuffer()[
 											m_pCurrentBuf->uiRflBufBytes]);
 
 	// Set the packet address in the packet header.
@@ -2534,7 +2524,7 @@ RCODE F_Rfl::truncate(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = m_pFileHdl->Truncate( uiTruncateSize)))
+	if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
 	{
 		m_bRflVolumeOk = FALSE;
 		goto Exit;
@@ -2878,7 +2868,7 @@ RCODE F_Rfl::logEndTransaction(
 	RCODE			rc2 = FERR_OK;
 	FLMUINT		uiLowFileNum;
 	FLMUINT		uiHighFileNum;
-	char			szRflFileName[F_PATH_MAX_SIZE];
+	char			szRflFileName[ F_PATH_MAX_SIZE];
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiPacketBodyLen;
 
@@ -2949,7 +2939,7 @@ Throw_Away_Transaction:
 			{
 				if (RC_OK( getFullRflFileName( uiLowFileNum, szRflFileName)))
 				{
-					(void) gv_FlmSysData.pFileSystem->Delete( szRflFileName);
+					(void) gv_FlmSysData.pFileSystem->deleteFile( szRflFileName);
 				}
 
 				uiLowFileNum++;
@@ -4961,8 +4951,8 @@ RCODE F_Rfl::readPacket(
 			// Move the bytes left in the buffer down to the beginning of
 			// the buffer.
 
-			f_memmove( m_pCurrentBuf->pIOBuffer->m_pucBuffer,
-						 &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[m_uiRflReadOffset]),
+			f_memmove( m_pCurrentBuf->pIOBuffer->getBuffer(),
+						 &(m_pCurrentBuf->pIOBuffer->getBuffer()[m_uiRflReadOffset]),
 							 m_pCurrentBuf->uiRflBufBytes - m_uiRflReadOffset);
 			m_pCurrentBuf->uiRflBufBytes -= m_uiRflReadOffset;
 			m_pCurrentBuf->uiRflFileOffset += m_uiRflReadOffset;
@@ -5001,7 +4991,7 @@ RCODE F_Rfl::readPacket(
 		// Read enough to get the entire packet.
 
 		if (RC_BAD( rc = m_pRestore->read( uiReadLen, &(
-						  m_pCurrentBuf->pIOBuffer->m_pucBuffer[
+						  m_pCurrentBuf->pIOBuffer->getBuffer()[
 						  m_pCurrentBuf->uiRflBufBytes]), &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
@@ -5072,8 +5062,8 @@ RCODE F_Rfl::readPacket(
 
 		// Read to get the entire packet.
 
-		if (RC_BAD( rc = m_pFileHdl->SectorRead( m_pCurrentBuf->uiRflFileOffset,
-					  uiReadLen, m_pCurrentBuf->pIOBuffer->m_pucBuffer, 
+		if (RC_BAD( rc = m_pFileHdl->sectorRead( m_pCurrentBuf->uiRflFileOffset,
+					  uiReadLen, m_pCurrentBuf->pIOBuffer->getBuffer(), 
 					  &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
@@ -5295,7 +5285,7 @@ Get_Next_File:
 	// Verify the packet address.
 
 	m_uiPacketAddress = m_pCurrentBuf->uiRflFileOffset + m_uiRflReadOffset;
-	pucPacket = &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[m_uiRflReadOffset]);
+	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBuffer()[m_uiRflReadOffset]);
 	if ((FLMUINT) FB2UD( &pucPacket[RFL_PACKET_ADDRESS_OFFSET]) != m_uiPacketAddress)
 	{
 		rc = RC_SET( FERR_BAD_RFL_PACKET);
@@ -5331,7 +5321,7 @@ Get_Next_File:
 		goto Exit;
 	}
 
-	pucPacket = &(m_pCurrentBuf->pIOBuffer->m_pucBuffer[m_uiRflReadOffset]);
+	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBuffer()[m_uiRflReadOffset]);
 
 	// At this point, we are guaranteed to have the entire packet in the
 	// buffer.
@@ -5449,9 +5439,9 @@ RCODE F_Rfl::getRecord(
 	FLMBOOL		bEncrypted = FALSE;
 	FLMUINT		uiEncId = 0;
 	FLMUINT		uiEncDataLen = 0;
-	POOL			pool;
+	F_Pool		pool;
 
-	GedPoolInit( &pool, 512);
+	pool.poolInit( 512);
 
 	// Go into a loop processing packets until we have retrieved all of
 	// the fields of the record. At that point, we had better be at the end
@@ -5753,8 +5743,6 @@ RCODE F_Rfl::getRecord(
 	}
 
 Exit:
-
-	GedPoolFree( &pool);
 
 	return (rc);
 }
@@ -6322,7 +6310,7 @@ RCODE F_Rfl::modifyRecord(
 			if (pIfd)
 			{
 				if (RC_BAD( rc = flmDecryptField( pDb->pDict, pRecord,
-							  pRecord->getFieldVoid( pField), uiEncId, &pDb->TempPool)))
+						pRecord->getFieldVoid( pField), uiEncId, &pDb->TempPool)))
 				{
 					goto Exit;
 				}
@@ -7241,7 +7229,7 @@ Retry_Open:
 			}
 
 			if (RC_BAD( rc = m_pRestore->read( uiReadLen,
-						  m_pCurrentBuf->pIOBuffer->m_pucBuffer, &uiBytesRead)))
+						  m_pCurrentBuf->pIOBuffer->getBuffer(), &uiBytesRead)))
 			{
 				goto Exit;
 			}
@@ -8147,13 +8135,13 @@ RCODE flmRflCalcDiskUsage(
 	FLMUINT64 *		pui64DiskUsage)
 {
 	RCODE				rc = FERR_OK;
-	F_DirHdl *		pDirHdl = NULL;
+	IF_DirHdl *		pDirHdl = NULL;
 	FLMUINT			uiFileNumber;
 	FLMUINT64		ui64DiskUsage;
 	
 	ui64DiskUsage = 0;
 	
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->OpenDir( pszRflDir,
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openDir( pszRflDir,
 		(char *) "*", &pDirHdl)))
 	{
 		if( rc == FERR_IO_PATH_NOT_FOUND)
@@ -8166,7 +8154,7 @@ RCODE flmRflCalcDiskUsage(
 	
 	for( ;;)
 	{
-		if( RC_BAD( rc = pDirHdl->Next()))
+		if( RC_BAD( rc = pDirHdl->next()))
 		{
 			if( rc != FERR_IO_NO_MORE_FILES && rc != FERR_IO_PATH_NOT_FOUND)
 			{
@@ -8180,9 +8168,9 @@ RCODE flmRflCalcDiskUsage(
 		// If the current file is an RFL file, increment the disk usage
 	
 		if( rflGetFileNum( uiDbVersionNum, pszRflPrefix, 
-			pDirHdl->CurrentItemName(), &uiFileNumber))
+			pDirHdl->currentItemName(), &uiFileNumber))
 		{
-			ui64DiskUsage += pDirHdl->CurrentItemSize();
+			ui64DiskUsage += pDirHdl->currentItemSize();
 		}
 	}
 	

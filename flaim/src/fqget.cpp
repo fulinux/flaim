@@ -36,7 +36,7 @@ Desc: Makes a SET_DEL from a record.
 RCODE flmCurMakeKeyFromRec(
 	FDB *				pDb,
 	IXD *				pIxd,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FlmRecord *		pRec,
 	FLMBYTE **		ppucKeyBuffer,
 	FLMUINT *		puiKeyLen)
@@ -78,10 +78,8 @@ RCODE flmCurMakeKeyFromRec(
 
 	if (!(*ppucKeyBuffer))
 	{
-		if ((*ppucKeyBuffer = (FLMBYTE *)GedPoolCalloc( 
-			pPool, MAX_KEY_SIZ)) == NULL)
+		if( RC_BAD( rc = pPool->poolCalloc( MAX_KEY_SIZ, (void **)ppucKeyBuffer)))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 	}
@@ -117,7 +115,7 @@ RCODE flmCurSetPosFromDRN(
 {
 	RCODE				rc = FERR_OK;
 	FlmRecord *		pRec = NULL;
-	POOL *			pTempPool;
+	F_Pool *			pTempPool;
 	FDB *				pDb = NULL;
 	IXD *				pIxd;
 	LFILE *			pLFile;
@@ -318,7 +316,7 @@ FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
 	RCODE					rc = FERR_OK;
 	CURSOR *				pCursor = (CURSOR *)hCursor;
 	FDB *					pDb = NULL;
-	POOL *				pTempPool;
+	F_Pool *				pTempPool;
 	FLMBYTE *			pucKey1;
 	FLMUINT				uiKey1Len;
 	FLMBYTE *			pucKey2;
@@ -638,7 +636,7 @@ FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
 	}
 	else
 	{
-		FLM_SECS_TO_TIMER_UNITS( uiTimeLimit, pCursor->uiTimeLimit);
+		pCursor->uiTimeLimit = FLM_SECS_TO_TIMER_UNITS( uiTimeLimit);
 	}
 
 	// Perform the count operation.

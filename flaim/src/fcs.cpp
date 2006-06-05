@@ -22,39 +22,19 @@
 // $Id: fcs_bios.cpp 12329 2006-01-20 17:49:30 -0700 (Fri, 20 Jan 2006) ahodgkinson $
 //-------------------------------------------------------------------------
 
-// These must be defined BEFORE any includes.  Unfortunately, this
-// also means that we can't use our FLM_HPUX define because it hasn't
-// been set yet...
-
-#if defined( __hpux) || defined( hpux) 
-	#define _XOPEN_SOURCE_EXTENDED 1
-	#define _INCLUDE_HPUX_SOURCE
-#endif
-
 #include "flaimsys.h"
-
-#if defined( FLM_NLM) && !defined ( __MWERKS__)
-	// Disable errors for "expression for 'while' is always false"
-	// Needed for FD_SET macro
-	#pragma warning 555 9 
-#endif
-
-#ifdef FLM_WIN
-	// conditional expression is constant (from FD_SET())
-	#pragma warning( disable : 4127)
-#endif
 
 FSTATIC FLMBOOL flmGetNextHexPacketSlot( 
 	FLMBYTE *				pucUsedMap,
 	FLMUINT					uiMapSize,
-	f_randomGenerator *	pRandGen,
+	IF_RandomGenerator *	pRandGen,
 	FLMUINT *				puiSlot);
 	
 FSTATIC RCODE flmGetNextHexPacketBytes( 
 	FLMBYTE *				pucUsedMap,
 	FLMUINT					uiMapSize,
 	FLMBYTE *				pucPacket,
-	f_randomGenerator *	pRandGen,
+	IF_RandomGenerator *	pRandGen,
 	FLMBYTE *				pucBuf,
 	FLMUINT					uiCount);
 
@@ -63,7 +43,7 @@ Desc:
 *****************************************************************************/
 FCS_BIOS::FCS_BIOS( void)
 {
-	GedPoolInit( &m_pool, (FCS_BIOS_BLOCK_SIZE + sizeof( FCSBIOSBLOCK)) * 2);
+	m_pool.poolInit( (FCS_BIOS_BLOCK_SIZE + sizeof( FCSBIOSBLOCK)) * 2);
 	m_bMessageActive = FALSE;
 	m_pRootBlock = NULL;
 	m_pCurrWriteBlock = NULL;
@@ -78,7 +58,7 @@ Desc:
 *****************************************************************************/
 FCS_BIOS::~FCS_BIOS()
 {
-	GedPoolFree( &m_pool);
+	m_pool.poolFree();
 }
 
 /****************************************************************************
@@ -96,7 +76,7 @@ RCODE FCS_BIOS::close( void)
 {
 	RCODE		rc = FERR_OK;
 
-	GedPoolReset( &m_pool, NULL);
+	m_pool.poolReset();
 	m_bMessageActive = FALSE;
 	m_pRootBlock = NULL;
 	m_pCurrWriteBlock = NULL;
@@ -120,7 +100,7 @@ RCODE FCS_BIOS::write(
 
 	if( !m_bAcceptingData)
 	{
-		GedPoolReset( &m_pool, NULL);
+		m_pool.poolReset();
 		m_pCurrWriteBlock = NULL;
 		m_pCurrReadBlock = NULL;
 		m_pRootBlock = NULL;
@@ -133,20 +113,16 @@ RCODE FCS_BIOS::write(
 			m_pCurrWriteBlock->uiCurrWriteOffset == FCS_BIOS_BLOCK_SIZE)
 		{
 			pPrevBlock = m_pCurrWriteBlock;
-			m_pCurrWriteBlock =
-				(FCSBIOSBLOCK *)GedPoolCalloc( &m_pool, sizeof( FCSBIOSBLOCK));
-			if( !m_pCurrWriteBlock)
+			
+			if( RC_BAD( rc = m_pool.poolCalloc( sizeof( FCSBIOSBLOCK), 
+				(void **)&m_pCurrWriteBlock)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
-
-			m_pCurrWriteBlock->pucBlock =
-				(FLMBYTE *)GedPoolAlloc( &m_pool, FCS_BIOS_BLOCK_SIZE);
-
-			if( !m_pCurrWriteBlock->pucBlock)
+			
+			if( RC_BAD( rc = m_pool.poolAlloc( FCS_BIOS_BLOCK_SIZE, 
+				(void **)&m_pCurrWriteBlock->pucBlock)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
 
@@ -241,7 +217,7 @@ RCODE FCS_BIOS::read(
 
 		if( !m_pCurrReadBlock)
 		{
-			GedPoolReset( &m_pool, NULL);
+			m_pool.poolReset();
 			rc = RC_SET( FERR_EOF_HIT);
 			goto Exit;
 		}
@@ -381,7 +357,7 @@ RCODE FCS_DIS::readShort(
 	
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 2, NULL)))
 	{
-		*pValue = flmBigEndianToINT16( (FLMBYTE *)pValue);
+		*pValue = f_bigEndianToINT16( (FLMBYTE *)pValue);
 	}
 
 	return( rc);
@@ -397,7 +373,7 @@ RCODE FCS_DIS::readUShort(
 	
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 2, NULL)))
 	{
-		*pValue = flmBigEndianToUINT16( (FLMBYTE *)pValue);
+		*pValue = f_bigEndianToUINT16( (FLMBYTE *)pValue);
 	}
 
 	return( rc);
@@ -413,7 +389,7 @@ RCODE FCS_DIS::readInt(
 	
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 4, NULL)))
 	{
-		*pValue = flmBigEndianToINT32( (FLMBYTE *)pValue);
+		*pValue = f_bigEndianToINT32( (FLMBYTE *)pValue);
 	}
 	
 	return( rc);
@@ -429,7 +405,7 @@ RCODE FCS_DIS::readUInt(
 	
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 4, NULL)))
 	{
-		*pValue = flmBigEndianToUINT32( (FLMBYTE *)pValue);
+		*pValue = f_bigEndianToUINT32( (FLMBYTE *)pValue);
 	}
 
 	return( rc);
@@ -445,7 +421,7 @@ RCODE FCS_DIS::readInt64(
 	
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 8, NULL)))
 	{
-		*pValue = flmBigEndianToINT64( (FLMBYTE *)pValue);
+		*pValue = f_bigEndianToINT64( (FLMBYTE *)pValue);
 	}
 	
 	return( rc);
@@ -461,7 +437,7 @@ RCODE FCS_DIS::readUInt64(
 	
 	if( RC_OK( rc = read( (FLMBYTE *)pValue, 8, NULL)))
 	{
-		*pValue = flmBigEndianToUINT64( (FLMBYTE *)pValue);
+		*pValue = f_bigEndianToUINT64( (FLMBYTE *)pValue);
 	}
 
 	return( rc);
@@ -646,26 +622,7 @@ RCODE FCS_DIS::read(
 
 		if( pucPos)
 		{
-#if defined( FLM_NLM) || defined( FLM_WIN)
-			if( uiCopySize == 1)
-			{
-				*pucPos = m_pucBuffer[ m_uiBOffset];
-			}
-			else if( uiLength == 2)
-			{
-				*(FLMUINT16 *)pucPos = *((FLMUINT16 *)&m_pucBuffer[ m_uiBOffset]);
-			}
-			else if( uiLength == 4)
-			{
-				*(FLMUINT32 *)pucPos = *((FLMUINT32 *)&m_pucBuffer[ m_uiBOffset]);
-			}
-			else
-			{
-				f_memcpy( pucPos, &(m_pucBuffer[ m_uiBOffset]), uiCopySize);
-			}
-#else
-				f_memcpy( pucPos, &(m_pucBuffer[ m_uiBOffset]), uiCopySize);
-#endif
+			f_memcpy( pucPos, &(m_pucBuffer[ m_uiBOffset]), uiCopySize);
 			pucPos += uiCopySize;
 		}
 		
@@ -695,7 +652,7 @@ Desc:	Reads a binary token from the stream.  The token is tagged with a
 		length.
 ****************************************************************************/
 RCODE FCS_DIS::readBinary(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMBYTE **	ppValue,
 	FLMUINT *	puiDataSize)
 {
@@ -714,12 +671,11 @@ RCODE FCS_DIS::readBinary(
 
 		if( ui16DataSize)
 		{
-			if( (*ppValue = (FLMBYTE *)GedPoolAlloc( pPool, ui16DataSize)) == NULL)
+			if( RC_BAD( rc = pPool->poolAlloc( ui16DataSize, (void **)ppValue)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
-
+			
 			if( RC_BAD( rc = read( *ppValue, ui16DataSize, NULL)))
 			{
 				goto Exit;
@@ -757,7 +713,7 @@ Desc:	Reads a large binary token from the stream.  The token is tagged with a
 		length.
 ****************************************************************************/
 RCODE FCS_DIS::readLargeBinary(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMBYTE **	ppValue,
 	FLMUINT *	puiDataSize)
 {
@@ -776,12 +732,11 @@ RCODE FCS_DIS::readLargeBinary(
 
 		if( ui32DataSize)
 		{
-			if( (*ppValue = (FLMBYTE *)GedPoolAlloc( pPool, ui32DataSize)) == NULL)
+			if( RC_BAD(rc = pPool->poolAlloc( ui32DataSize, (void **)ppValue)))
 			{
-				rc = RC_SET( FERR_MEM);
 				goto Exit;
 			}
-
+			
 			if( RC_BAD( rc = read( *ppValue, ui32DataSize, NULL)))
 			{
 				goto Exit;
@@ -817,7 +772,7 @@ Exit:
 Desc:	Reads a UTF-8 string from the stream.
 ****************************************************************************/
 RCODE	FCS_DIS::readUTF(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMUNICODE **	ppValue)
 {
 	FLMBYTE		ucByte1;
@@ -849,8 +804,12 @@ RCODE	FCS_DIS::readUTF(
 
 	if( pPool)
 	{
-		*ppValue = (FLMUNICODE *)GedPoolAlloc( pPool, 
-			(FLMUINT)((FLMUINT)sizeof( FLMUNICODE) * (FLMUINT)(ui16UTFLen + 1)));
+		if( RC_BAD( rc = pPool->poolAlloc(
+			(FLMUINT)((FLMUINT)sizeof( FLMUNICODE) * (FLMUINT)(ui16UTFLen + 1)),
+			(void **)ppValue)))
+		{
+			goto Exit;
+		}
 	}
 	else if( ppValue)
 	{
@@ -921,7 +880,7 @@ Exit:
 Desc: Reads an Hierarchical Tagged Data record from the stream.
 ****************************************************************************/
 RCODE FCS_DIS::readHTD(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMUINT			uiContainer,
 	FLMUINT			uiDrn,
 	NODE **			ppNode,
@@ -948,7 +907,7 @@ RCODE FCS_DIS::readHTD(
 
 	if( pPool)
 	{
-		pvMark = GedPoolMark( pPool);
+		pvMark = pPool->poolMark();
 	}
 
 	for( ;;)
@@ -1601,7 +1560,7 @@ RCODE FCS_DIS::readHTD(
 
 		if( pPool && !ppNode)
 		{
-			GedPoolReset( pPool, pvMark);
+			pPool->poolReset( pvMark);
 		}
 	}
 
@@ -1624,7 +1583,7 @@ Exit:
 
 	if( pPool && !ppNode)
 	{
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 
 	return( rc);		
@@ -1637,7 +1596,7 @@ FCS_DOS::FCS_DOS( void)
 {
 	m_pOStream = NULL;
 	m_uiBOffset = 0;
-	GedPoolInit( &m_tmpPool, 512);
+	m_tmpPool.poolInit( 512);
 	m_bSetupCalled = FALSE;
 }
 
@@ -1651,7 +1610,8 @@ FCS_DOS::~FCS_DOS( void)
 	{
 		(void)close();
 	}
-	GedPoolFree( &m_tmpPool);
+	
+	m_tmpPool.poolFree();
 }
 
 /****************************************************************************
@@ -1674,31 +1634,8 @@ Retry_Write:
 
 	if( FCS_DOS_BUFFER_SIZE - m_uiBOffset >= uiLength)
 	{
-#if defined( FLM_NLM) || defined( FLM_WIN)
-		if( uiLength == 1)
-		{
-			m_pucBuffer[ m_uiBOffset] = *pucData;
-			m_uiBOffset++;
-		}
-		else if( uiLength == 2)
-		{
-			*(FLMUINT16 *)&(m_pucBuffer[ m_uiBOffset]) = *((FLMUINT16 *)pucData);
-			m_uiBOffset += 2;
-		}
-		else if( uiLength == 4)
-		{
-			*(FLMUINT32 *)&(m_pucBuffer[ m_uiBOffset]) = *((FLMUINT32 *)pucData);
-			m_uiBOffset += 4;
-		}
-		else
-		{
-			f_memcpy( &(m_pucBuffer[ m_uiBOffset]), pucData, uiLength);
-			m_uiBOffset += uiLength;
-		}
-#else
 		f_memcpy( &(m_pucBuffer[ m_uiBOffset]), pucData, uiLength);
 		m_uiBOffset += uiLength;
-#endif
 	}
 	else
 	{
@@ -1878,7 +1815,7 @@ RCODE FCS_DOS::writeHTD(
 	FLMBOOL		bRightTruncated;
 	FLMBYTE *	pucCurData = NULL;
 	FLMBYTE		pucTmpBuf[ 32];
-	void *		pvMark = GedPoolMark( &m_tmpPool);
+	void *		pvMark = m_tmpPool.poolMark();
 	NODE *		pCurNode = NULL;
 	void *		pCurField = NULL;
 	RCODE			rc = FERR_OK;
@@ -1915,11 +1852,11 @@ RCODE FCS_DOS::writeHTD(
 
 		if( pCurNode)
 		{
-			flmUINT16ToBigEndian( (FLMUINT16)GedTagNum( pCurNode), pucTmpBuf);
+			f_UINT16ToBigEndian( (FLMUINT16)GedTagNum( pCurNode), pucTmpBuf);
 		}
 		else if( pCurField)
 		{
-			flmUINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pCurField), pucTmpBuf);
+			f_UINT16ToBigEndian( (FLMUINT16)pRecord->getFieldID( pCurField), pucTmpBuf);
 		}
 
 		if( RC_BAD( rc = write( pucTmpBuf, 2)))
@@ -2085,7 +2022,7 @@ RCODE FCS_DOS::writeHTD(
 				
 				flmAssert( uiCurDataLen <= 0x0000FFFF);
 
-				flmUINT16ToBigEndian( (FLMUINT16)uiCurDataLen, pucTmpBuf);
+				f_UINT16ToBigEndian( (FLMUINT16)uiCurDataLen, pucTmpBuf);
 				if( RC_BAD( rc = write( pucTmpBuf, 2)))
 				{
 					goto Exit;
@@ -2116,7 +2053,7 @@ RCODE FCS_DOS::writeHTD(
 
 						// Reset the temporary pool.
 
-						GedPoolReset( &m_tmpPool, pvMark);
+						m_tmpPool.poolReset( pvMark);
 						if( uiCurDataLen <= 32751)
 						{
 							// Allocate a buffer that is twice the size of the
@@ -2135,11 +2072,10 @@ RCODE FCS_DOS::writeHTD(
 
 							uiBufSize = 65535;
 						}
-		
-						if( (puzValue = (FLMUNICODE *)GedPoolAlloc( &m_tmpPool,
-							uiBufSize)) == NULL)
+						
+						if( RC_BAD( rc = m_tmpPool.poolAlloc( uiBufSize, 
+							(void **)&puzValue)))
 						{
-							rc = RC_SET( FERR_MEM);
 							goto Exit;
 						}
 
@@ -2170,17 +2106,16 @@ RCODE FCS_DOS::writeHTD(
 
 								// Reset the pool to clear the prior allocation.
 
-								GedPoolReset( &m_tmpPool, pvMark);
+								m_tmpPool.poolReset( pvMark);
 
 								// Allocate the new buffer.
 								
-								if( (puzValue = (FLMUNICODE *)GedPoolAlloc( 
-									&m_tmpPool, uiBufSize)) == NULL)
+								if( RC_BAD( rc = m_tmpPool.poolAlloc( uiBufSize,
+									(void **)&puzValue)))
 								{
-									rc = RC_SET( FERR_MEM);
 									goto Exit;
 								}
-
+								
 								// Extract the UNICODE string.
 								
 								if( (pCurNode && RC_BAD( rc = GedGetUNICODE( 
@@ -2333,7 +2268,7 @@ RCODE FCS_DOS::writeHTD(
 
 Exit:
 
-	GedPoolReset( &m_tmpPool, pvMark);
+	m_tmpPool.poolReset( pvMark);
 	return( rc);		
 }
 
@@ -2464,8 +2399,8 @@ RCODE FCS_FIS::setup(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->Open( pszFilePath,
-		F_IO_RDONLY | F_IO_SH_DENYNONE, &m_pFileHdl)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszFilePath,
+		FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -2489,7 +2424,6 @@ RCODE FCS_FIS::close( void)
 {
 	if( m_pFileHdl)
 	{
-		m_pFileHdl->Close();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}
@@ -2594,7 +2528,7 @@ RCODE FCS_FIS::getNextPacket( void)
 {
 	RCODE			rc = FERR_OK;
 
-	if( RC_BAD( rc = m_pFileHdl->Read( m_uiFileOffset, m_uiBlockSize,
+	if( RC_BAD( rc = m_pFileHdl->read( m_uiFileOffset, m_uiBlockSize,
 		m_pucBuffer, &m_uiBlockEnd)))
 	{
 		if( rc == FERR_IO_END_OF_FILE)
@@ -2619,1303 +2553,11 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	Constructor
-*****************************************************************************/
-FCS_IPIS::FCS_IPIS( FCS_TCP * pTcpObj)
-{
-	m_pTcpObj = pTcpObj;
-	m_pucBufPos = m_pucBuffer;
-	m_bStreamInvalid = FALSE;
-	m_bMessageActive = FALSE;
-	m_bGotLastPacket = FALSE;
-	m_uiPacketSize = 0;
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-FCS_IPIS::~FCS_IPIS( void)
-{
-	(void)close();
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-FLMBOOL FCS_IPIS::isOpen( void)
-{
-	return( TRUE);
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-RCODE FCS_IPIS::close( void)
-{
-	(void)endMessage();
-	m_bStreamInvalid = FALSE;
-	return( FERR_OK);
-}
-
-/****************************************************************************
-Desc:	Reads the requested amount of data from the stream.
-*****************************************************************************/
-RCODE FCS_IPIS::read(
-	FLMBYTE *		pucData,
-	FLMUINT			uiLength,
-	FLMUINT *		puiBytesRead)
-{
-	FLMUINT	uiBytesRead = 0;
-	FLMUINT	uiMaxSize;
-	RCODE		rc = FERR_OK;
-
-	if( puiBytesRead)
-	{
-		*puiBytesRead = 0;
-	}
-
-	if( !m_bStreamInvalid)
-	{
-		while( uiLength)
-		{
-			uiMaxSize = m_uiPacketSize - (FLMUINT)(m_pucBufPos - m_pucBuffer);
-
-			if( !uiMaxSize)
-			{
-				if( RC_BAD( rc = getNextPacket()))
-				{
-					goto Exit;
-				}
-			}
-			else if( uiLength <= uiMaxSize)
-			{
-				f_memcpy( pucData, m_pucBufPos, uiLength);
-				m_pucBufPos += uiLength;
-				uiBytesRead += uiLength;
-				uiLength = 0;
-			}
-			else
-			{
-				f_memcpy( pucData, m_pucBufPos, uiMaxSize);
-				m_pucBufPos += uiMaxSize;
-				pucData += uiMaxSize;
-				uiLength -= uiMaxSize;
-				uiBytesRead += uiMaxSize;
-			}
-		}
-	}
-	else
-	{
-		rc = RC_SET( FERR_READING_FILE);
-	}
-
-Exit:
-
-	if( puiBytesRead)
-	{
-		*puiBytesRead = uiBytesRead;
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Flushes any pending data.
-*****************************************************************************/
-RCODE FCS_IPIS::flush( void)
-{
-	RCODE		rc = FERR_OK;
-
-	if( !m_bMessageActive)
-	{
-		goto Exit;
-	}
-
-	for( ;;)
-	{
-		if( RC_BAD( rc = getNextPacket()))
-		{
-			if( rc == FERR_EOF_HIT)
-			{
-				rc = FERR_OK;
-			}
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	m_pucBufPos = m_pucBuffer;
-	return( rc);
-}
-
-
-/****************************************************************************
-Desc:	Flushes any pending data.
-*****************************************************************************/
-RCODE FCS_IPIS::endMessage( void)
-{
-	RCODE		rc = FERR_OK;
-
-	if( !m_bMessageActive)
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = flush()))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	m_bMessageActive = FALSE;
-	m_bGotLastPacket = FALSE;
-	return( rc);
-}
-
-
-/****************************************************************************
-Desc:	Reads the next packet off the wire.
-*****************************************************************************/
-RCODE FCS_IPIS::getNextPacket( void)
-{
-	FLMBYTE		pucDescriptor[ 2];
-	FLMUINT		uiDescriptor;
-	FLMUINT		uiActualCnt = 0;
-	RCODE			rc = FERR_OK;
-
-	if( !m_bStreamInvalid)
-	{
-		if( !m_bMessageActive)
-		{
-			m_bMessageActive = TRUE;
-		}
-
-		if( m_bGotLastPacket)
-		{
-			rc = RC_SET( FERR_EOF_HIT);
-			goto Exit;
-		}
-	
-		if( RC_BAD( rc = m_pTcpObj->readAll( pucDescriptor,
-			2, &uiActualCnt)))
-		{
-			goto Exit;
-		}
-		
-		uiDescriptor = flmBigEndianToUINT16( pucDescriptor);
-		m_uiPacketSize = uiDescriptor & 0x7FFF;
-
-		if( uiDescriptor & 0x8000)
-		{
-			m_bGotLastPacket = TRUE;
-		}
-
-		if( m_uiPacketSize > FCS_IPIS_BUFFER_SIZE)
-		{
-			m_uiPacketSize = 0;
-			rc = RC_SET( FERR_READING_FILE);
-			goto Exit;
-		}
-
-		if( m_uiPacketSize > 0)
-		{
-			if( RC_BAD( rc = m_pTcpObj->readAll( m_pucBuffer,
-				m_uiPacketSize, &uiActualCnt)))
-			{
-				goto Exit;
-			}
-		}
-		else
-		{
-			if( m_bGotLastPacket)
-			{
-				rc = RC_SET( FERR_EOF_HIT);
-			}
-			else
-			{
-				rc = RC_SET( FERR_READING_FILE);
-			}
-			goto Exit;
-		}
-	
-		m_pucBufPos = m_pucBuffer;
-	}
-	else
-	{
-		rc = RC_SET( FERR_READING_FILE);
-	}
-
-Exit:
-
-	if( RC_BAD( rc) && rc != FERR_EOF_HIT)
-	{
-		m_bStreamInvalid = TRUE;
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:
-*****************************************************************************/
-FCS_IPOS::FCS_IPOS( FCS_TCP * pTcpObj)
-{
-	m_pTcpObj = pTcpObj;
-	m_pucBufPos = &(m_pucBuffer[ 2]);
-	m_bOpen = TRUE;
-	m_bMessageActive = FALSE;
-}
-
-/****************************************************************************
-Desc:	Flushes any pending data and closes the stream.
-*****************************************************************************/
-RCODE FCS_IPOS::close( void)
-{
-	RCODE		rc = FERR_OK;
-
-	if( m_bOpen)
-	{
-		rc = endMessage();
-		m_bOpen = FALSE;
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Writes the requested amount of data to the stream.
-*****************************************************************************/
-RCODE FCS_IPOS::write(
-	FLMBYTE *		pucData,
-	FLMUINT			uiLength)
-{
-	FLMUINT	uiMaxSize;
-	RCODE		rc = FERR_OK;
-
-	if( !uiLength)
-	{
-		goto Exit;
-	}
-
-	if( m_bOpen)
-	{
-		while( uiLength)
-		{
-			uiMaxSize =
-				(FLMUINT)(FCS_IPOS_BUFFER_SIZE - (m_pucBufPos - m_pucBuffer));
-
-			if( !uiMaxSize)
-			{
-				if( RC_BAD( rc = flush()))
-				{
-					goto Exit;
-				}
-			}
-			else if( uiLength <= uiMaxSize)
-			{
-				f_memcpy( m_pucBufPos, pucData, uiLength);
-				m_pucBufPos += uiLength;
-				uiLength = 0;
-			}
-			else
-			{
-				f_memcpy( m_pucBufPos, pucData, uiMaxSize);
-				m_pucBufPos += uiMaxSize;
-				pucData += uiMaxSize;
-				uiLength -= uiMaxSize;
-				if( RC_BAD( rc = flush()))
-				{
-					goto Exit;
-				}
-			}
-		}
-		m_bMessageActive = TRUE;
-	}
-	else
-	{
-		rc = RC_SET( FERR_WRITING_FILE);
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Flushes any pending data and optionally ends the current message.
-*****************************************************************************/
-RCODE	FCS_IPOS::_flush(
-	FLMBOOL		bEndMessage)
-{
-	FLMUINT		uiActualCnt;
-	FLMUINT		uiLength;
-	FLMUINT		uiDescriptor;
-	RCODE			rc = FERR_OK;
-
-	if( (uiLength = (FLMUINT)(m_pucBufPos - m_pucBuffer)) != 0)
-	{
-		uiDescriptor = uiLength - 2;
-		if( bEndMessage)
-		{
-			uiDescriptor |= 0x8000;
-		}
-
-		if( uiDescriptor)
-		{
-			flmUINT16ToBigEndian( (FLMUINT16)uiDescriptor, m_pucBuffer);
-
-			if( RC_BAD( rc = m_pTcpObj->write( m_pucBuffer,
-				uiLength, &uiActualCnt)))
-			{
-				goto Exit;
-			}
-		}
-	}
-
-Exit:
-
-	m_pucBufPos = &(m_pucBuffer[ 2]);
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Terminates the current message
-*****************************************************************************/
-RCODE FCS_IPOS::endMessage( void)
-{
-	RCODE		rc = FERR_OK;
-
-
-	if( !m_bMessageActive)
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = _flush( TRUE)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	m_bMessageActive = FALSE;
-	return( rc);
-}
-
-/********************************************************************
-Desc: Constructor
-*********************************************************************/
-FCS_TCP::FCS_TCP( void)
-{
-	m_pszIp[ 0] = '\0';
-	m_pszName[ 0] = '\0';
-	m_pszPeerIp[ 0] = '\0';
-	m_pszPeerName[ 0] = '\0';
-	m_uiIOTimeout = 10;
-	m_iSocket = INVALID_SOCKET;
-	m_ulRemoteAddr = 0;
-	m_bInitialized = FALSE;
-	m_bConnected = FALSE;
-
-#ifndef FLM_UNIX
-	if( !WSAStartup( MAKEWORD(2, 0), &m_wsaData))
-	{
-		m_bInitialized = TRUE;
-	}
-#endif
-}
-
-/********************************************************************
-Desc: Destructor
-*********************************************************************/
-FCS_TCP::~FCS_TCP( void )
-{
-	if( m_bConnected)
-	{
-		close();
-	}
-
-#ifndef FLM_UNIX
-	if( m_bInitialized)
-	{
-		WSACleanup();
-	}
-#endif
-}
-
-/********************************************************************
-Desc: Gets information about the local host machine.
-*********************************************************************/
-RCODE FCS_TCP::_GetLocalInfo( void)
-{
-	struct hostent *		pHostEnt;
-	FLMUINT32				ui32IPAddr;
-	RCODE						rc = FERR_OK;
-
-	m_pszIp[ 0] = '\0';
-	m_pszName[ 0] = '\0';
-
-	if( m_pszName[ 0] == '\0')
-	{
-		if( gethostname( m_pszName, (unsigned)sizeof( m_pszName)))
-		{
-			rc = RC_SET( FERR_SVR_SOCK_FAIL);
-			goto Exit;
-		}
-	}
-
-	if( m_pszIp[ 0] == '\0' &&
-		(pHostEnt = gethostbyname( m_pszName)) != NULL)
-	{
-		ui32IPAddr = (FLMUINT32)(*((unsigned long *)pHostEnt->h_addr));
-		if( ui32IPAddr != (FLMUINT32)-1)
-		{
-			struct in_addr			InAddr;
-
-			InAddr.s_addr = ui32IPAddr;
-			f_strcpy( m_pszIp, inet_ntoa( InAddr));
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Gets information about the remote machine.
-*********************************************************************/
-RCODE FCS_TCP::_GetRemoteInfo( void)
-{
-	struct sockaddr_in 	SockAddrIn;
-	char *					InetAddr = NULL;
-	struct hostent	*		HostsName;
-	RCODE						rc = FERR_OK;
-
-	m_pszPeerIp[ 0] = '\0';
-	m_pszPeerName[ 0] = '\0';
-
-	SockAddrIn.sin_addr.s_addr = (unsigned)m_ulRemoteAddr;
-
-	// inet_ntoa() - converts a 32-bit value in in_addr format into an ASCII
-	// string representing the address in dotted notation.
-	// VISIT:
-	// NetWare: Macro in arpa/inet.h. "Apps with multiple threads should use
-	// NWinet_ntoa instead of inet_ntoa.  Then we can get rid of the semaphore!
-	
-	InetAddr = inet_ntoa( SockAddrIn.sin_addr );
-	f_strcpy( m_pszPeerIp, InetAddr );
-	
-	// Try to get the peer's host name by looking up his IP
-	// address.  If found, copy IP Host name "BEVIS@NOVELL.COM" to TCPInfo
-	// otherwise, use his IP address as IP name.
-	// VISIT:
-	// Netware: "If your app has multiple threads, use either NWgethostbyaddr
-	// or NetDBgethostbyaddr().  This does the blocking?  This may be done
-	// already in netdb.h - it is hard to tell.
-
-	HostsName = gethostbyaddr( (char *)&SockAddrIn.sin_addr.s_addr,
-		(unsigned)sizeof( unsigned long), AF_INET );
-
-	if( HostsName != NULL)
-	{
-		f_strcpy( m_pszPeerName, (char*) HostsName->h_name );
-	}
-	else
-	{
-		if (!InetAddr)
-		{
-			InetAddr = inet_ntoa( SockAddrIn.sin_addr);
-		}
-		f_strcpy( m_pszPeerName, InetAddr );
-	}
-	
-	return( rc);
-}
-
-/********************************************************************
-Desc: Tests for socket data readiness
-*********************************************************************/
-RCODE FCS_TCP::_SocketPeek(
-	FLMINT			iTimeoutVal,
-	FLMBOOL			bPeekRead)
-{
-	struct timeval		TimeOut;
-	int					iMaxDescs;
-	fd_set				GenDescriptors;
-	fd_set *				DescrRead;
-	fd_set *				DescrWrt;
-	RCODE					rc = FERR_OK;
-
-	if( m_iSocket != INVALID_SOCKET)
-	{
-		FD_ZERO( &GenDescriptors );
-		FD_SET( m_iSocket, &GenDescriptors );
-
-		iMaxDescs = (int)(m_iSocket + 1);
-		DescrRead = bPeekRead ? &GenDescriptors : NULL;
-		DescrWrt  = bPeekRead ? NULL : &GenDescriptors;
-
-		TimeOut.tv_sec = (long)iTimeoutVal;
-		TimeOut.tv_usec = (long)0;
-
-		if( select( iMaxDescs, DescrRead, DescrWrt, NULL, &TimeOut) < 0 )
-		{
-			rc = RC_SET( FERR_SVR_SELECT_ERR);
-			goto Exit;
-		}
-		else
-		{
-			if( !FD_ISSET( m_iSocket, &GenDescriptors))
-			{
-				rc = bPeekRead 
-					? RC_SET( FERR_SVR_READ_TIMEOUT)
-					: RC_SET( FERR_SVR_WRT_TIMEOUT);
-			}
-		}
-	}
-	else
-	{
-		rc = RC_SET( FERR_SVR_CONNECT_FAIL);
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Writes data to the connection.
-*********************************************************************/
-RCODE FCS_TCP::write(
-	FLMBYTE *		pucDataBuffer,
-	FLMUINT			uiDataCnt,
-	FLMUINT *		puiWrtCnt)
-{
-	FLMUINT	uiPartialCnt;
-	FLMUINT	uiToWrite;
-	FLMUINT	uiHaveWritten = 0;
-	RCODE		rc = FERR_OK;
-
-	if( m_iSocket == INVALID_SOCKET)
-	{
-		rc = RC_SET( FERR_SVR_CONNECT_FAIL);
-	}
-
-	uiToWrite = uiDataCnt;
-	*puiWrtCnt = 0;
-	while( uiToWrite > 0)
-	{
-		// The internal write call checks the arguments
-		
-		if( RC_BAD( rc = _write( pucDataBuffer, 
-			uiToWrite, &uiPartialCnt)))
-		{
-			goto Exit;
-		}
-
-		pucDataBuffer += uiPartialCnt;
-		uiHaveWritten += uiPartialCnt;
-		uiToWrite = (FLMUINT)(uiDataCnt - uiHaveWritten);
-		*puiWrtCnt = uiHaveWritten;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/********************************************************************
-Desc:
-*********************************************************************/
-RCODE FCS_TCP::_write(
-	FLMBYTE *		pucBuffer,
-	FLMUINT			uiDataCnt,
-	FLMUINT			*puiWrtCnt)
-{
-	FLMINT			iRetryCount = 0;
-	FLMINT			iWrtCnt = 0;
-	RCODE				rc = FERR_OK;
-
-	flmAssert( m_iSocket != INVALID_SOCKET && pucBuffer && uiDataCnt);
-
-Retry:
-
-	*puiWrtCnt = 0;
-	if( RC_OK( rc = _SocketPeek( m_uiIOTimeout, FALSE)))
-	{
-		iWrtCnt = send( m_iSocket, (char *)pucBuffer, (int)uiDataCnt, 0 );
-		switch ( iWrtCnt )
-		{
-			case -1:
-			{
-				*puiWrtCnt = 0;
-				rc = RC_SET( FERR_SVR_WRT_FAIL);
-				break;
-			}
-
-			case 0:
-			{
-				rc = RC_SET( FERR_SVR_DISCONNECT);
-				break;
-			}
-
-			default:
-			{
-				*puiWrtCnt = (FLMUINT)iWrtCnt;
-				break;
-			}
-		}
-	}
-
-	if( RC_BAD( rc) && rc != FERR_SVR_WRT_TIMEOUT)
-	{
-#ifndef FLM_UNIX
-		FLMINT iSockErr = WSAGetLastError();
-#else
-		FLMINT iSockErr = errno;
-#endif
-
-#if defined( FLM_WIN) || defined( FLM_NLM)
-		if( iSockErr == WSAECONNABORTED)
-#else
-		if( iSockErr == ECONNABORTED)
-#endif
-		{
-			rc = RC_SET( FERR_SVR_DISCONNECT);
-		}
-#if defined( FLM_WIN) || defined( FLM_NLM)
-		else if( iSockErr == WSAEWOULDBLOCK && iRetryCount < 5)
-#else
-		else if( iSockErr == EWOULDBLOCK && iRetryCount < 5)
-#endif
-		{
-			iRetryCount++;
-			f_sleep( (FLMUINT)(100 * iRetryCount));
-			goto Retry;
-		}
-	}
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Reads data from the connection
-*********************************************************************/
-RCODE FCS_TCP::read(
-	FLMBYTE *		pucBuffer,
-   FLMUINT			uiDataCnt,
-	FLMUINT *		puiReadCnt)
-{
-	FLMINT		iReadCnt = 0;
-	RCODE			rc = FERR_OK;
-
-	flmAssert( m_bConnected && pucBuffer && uiDataCnt);
-
-	if( RC_OK( rc = _SocketPeek( m_uiIOTimeout, TRUE)))
-	{
-		iReadCnt = (FLMINT)recv( m_iSocket, 
-			(char *)pucBuffer, (int)uiDataCnt, 0);
-		switch ( iReadCnt)
-		{
-			case -1:
-			{
-				iReadCnt = 0;
-#if defined( FLM_WIN) || defined( FLM_NLM)
-				if ( WSAGetLastError() == WSAECONNRESET)
-#else
-				if( errno == ECONNRESET)
-#endif
-				{
-					rc = RC_SET( FERR_SVR_DISCONNECT);
-				}
-				else
-				{
-					rc = RC_SET( FERR_SVR_READ_FAIL);
-				}
-				break;
-			}
-
-			case 0:
-			{
-				rc = RC_SET( FERR_SVR_DISCONNECT);
-				break;
-			}
-
-			default:
-			{
-				break;
-			}
-		}
-	}
-
-	if( puiReadCnt)
-	{
-		*puiReadCnt = (FLMUINT)iReadCnt;
-	}
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Reads data from the connection - Timeout valkue is zero, no error
-      is generated if timeout occurs.
-*********************************************************************/
-RCODE FCS_TCP::readNoWait(
-	FLMBYTE *		pucBuffer,
-   FLMUINT			uiDataCnt,
-	FLMUINT *		puiReadCnt)
-{
-	FLMINT		iReadCnt = 0;
-	RCODE			rc = FERR_OK;
-
-	flmAssert( m_bConnected && pucBuffer && uiDataCnt);
-
-	if( puiReadCnt)
-	{
-		*puiReadCnt = 0;
-	}
-
-	if( RC_OK( rc = _SocketPeek( (FLMUINT)0, TRUE)))
-	{
-		iReadCnt = recv( m_iSocket, (char *)pucBuffer, (int)uiDataCnt, 0);
-		switch ( iReadCnt)
-		{
-			case -1:
-			{
-				*puiReadCnt = 0;
-#if defined( FLM_WIN) || defined( FLM_NLM)
-				if ( WSAGetLastError() == WSAECONNRESET)
-#else
-				if( errno == ECONNRESET)
-#endif
-				{
-					rc = RC_SET( FERR_SVR_DISCONNECT);
-				}
-				else
-				{
-					rc = RC_SET( FERR_SVR_READ_FAIL);
-				}
-				goto Exit;
-			}
-
-			case 0:
-			{
-				rc = RC_SET( FERR_SVR_DISCONNECT);
-				goto Exit;
-			}
-
-			default:
-			{
-				break;
-			}
-		}
-	}
-	else if (rc == FERR_SVR_READ_TIMEOUT)
-	{
-		rc = FERR_OK;
-	}
-
-	if( puiReadCnt)
-	{
-		*puiReadCnt = (FLMUINT)iReadCnt;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Reads data and does not return until all requested data has
-		been read or a timeout error has been encountered.
-*********************************************************************/
-RCODE FCS_TCP::readAll(
-	FLMBYTE *		pucBuffer,
-	FLMUINT			uiDataCnt,
-   FLMUINT *		puiReadCnt)
-{
-	FLMUINT		uiToRead = 0;
-	FLMUINT		uiHaveRead = 0;
-	FLMUINT		uiPartialCnt;
-	RCODE			rc = FERR_OK;
-
-	flmAssert( m_bConnected && pucBuffer && uiDataCnt);
-
-	uiToRead = uiDataCnt;
-	while( uiToRead)
-	{
-		if( RC_BAD( rc = read( pucBuffer, uiToRead, &uiPartialCnt)))
-		{
-			goto Exit;
-		}
-
-		pucBuffer += uiPartialCnt;
-		uiHaveRead += uiPartialCnt;
-		uiToRead = (FLMUINT)(uiDataCnt - uiHaveRead);
-
-		if( puiReadCnt)
-		{
-			*puiReadCnt = uiHaveRead;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Enables or disables Nagle's algorithm
-*********************************************************************/
-RCODE FCS_TCP::setTcpDelay(
-	FLMBOOL		bOn)
-{
-	RCODE			rc = FERR_OK;
-	int			iOn;
-
-	if( m_iSocket != INVALID_SOCKET)
-	{
-		iOn = bOn ? 1 : 0;
-
-		if( (setsockopt( m_iSocket, IPPROTO_TCP, TCP_NODELAY, (char *)&iOn,
-			(unsigned)sizeof( iOn) )) < 0)
-		{
-			rc = RC_SET( FERR_SVR_SOCKOPT_FAIL);
-			goto Exit;
-		}
-	}
-	else
-	{
-		rc = RC_SET( FERR_SVR_ALREADY_CLOSED);
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/********************************************************************
-Desc: Closes any open connections
-*********************************************************************/
-void FCS_TCP::close(
-	FLMBOOL			bForce)
-{
-	if( m_iSocket == INVALID_SOCKET)
-	{
-		goto Exit;
-	}
-
-#ifdef FLM_NLM
-	F_UNREFERENCED_PARM( bForce);
-#else
-	if( !bForce)
-	{
-		char					ucTmpBuf[ 128];
-		struct timeval		tv;
-		fd_set				fds;
-		fd_set				fds_read;
-		fd_set				fds_err;
-
-		// Close our half of the connection
-
-		shutdown( m_iSocket, 1);
-
-		// Set up to wait for readable data on the socket
-
-		FD_ZERO( &fds);
-		FD_SET( m_iSocket, &fds);
-
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-
-		fds_read = fds;
-		fds_err = fds;
-
-		// Wait for data or an error
-
-		while( select( m_iSocket + 1, &fds_read, NULL, &fds_err, &tv) > 0)
-		{
-			if( recv( m_iSocket, ucTmpBuf, sizeof( ucTmpBuf), 0) <= 0)
-			{
-				break;
-			}
-			fds_read = fds;
-			fds_err = fds;
-		}
-
-		shutdown( m_iSocket, 2);
-	}
-#endif
-
-#ifndef FLM_UNIX
-	closesocket( m_iSocket);
-#else
-	::close( m_iSocket);
-#endif
-
-Exit:
-
-	m_iSocket = INVALID_SOCKET;
-	m_bConnected = FALSE;
-}
-
-/********************************************************************
-Desc: Creates a client object
-*********************************************************************/
-FCS_TCP_CLIENT::FCS_TCP_CLIENT( void) : FCS_TCP()
-{
-	m_bConnected = FALSE;
-}
-
-/********************************************************************
-Desc: Closes any connections and frees client resources
-*********************************************************************/
-FCS_TCP_CLIENT::~FCS_TCP_CLIENT( void )
-{
-	(void)close();
-}
-
-/********************************************************************
-Desc: Opens a new connection
-*********************************************************************/
-RCODE FCS_TCP_CLIENT::openConnection(
-	const char  *	pucHostName,
-	FLMUINT			uiPort,
-	FLMUINT			uiConnectTimeout,
-	FLMUINT			uiDataTimeout)
-{
-	FLMINT					iSockErr;
-	FLMINT    				iTries;
-	FLMINT					iMaxTries = 5;
-	struct sockaddr_in	address;
-	struct hostent *		pHostEntry;
-	unsigned long			ulIPAddr;
-	RCODE						rc = FERR_OK;
-
-	flmAssert( !m_bConnected);
-	m_iSocket = INVALID_SOCKET;
-
-	if( pucHostName && pucHostName[ 0] != '\0')
-	{
-		ulIPAddr = inet_addr( (char *)pucHostName);
-		if( ulIPAddr == (unsigned long)INADDR_NONE)
-		{
-			pHostEntry = gethostbyname( (char *)pucHostName);
-
-			if( !pHostEntry)
-			{
-				rc = RC_SET( FERR_SVR_NOIP_ADDR);
-				goto Exit;
-			}
-			else
-			{
-				ulIPAddr = *((unsigned long *)pHostEntry->h_addr);
-			}
-
-		}
-	}
-	else
-	{
-		ulIPAddr = inet_addr( (char *)"127.0.0.1");
-	}
-
-	// Fill in the Socket structure with family type
-
-	f_memset( (char*)&address, 0, sizeof( struct sockaddr_in));
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = (unsigned)ulIPAddr;
-	address.sin_port = htons( (unsigned short)uiPort);
-	
-	// Allocate a socket, then attempt to connect to it!
-
-	if( (m_iSocket = socket( AF_INET, 
-		SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
-	{
-		rc = RC_SET( FERR_SVR_SOCK_FAIL);
-		goto Exit;
-	}
-
-	// Now attempt to connect with the specified partner host, 
-	// time-out if connection doesn't complete within alloted time
-	
-#ifdef FLM_WIN
-
-	if( uiConnectTimeout)
-	{
-		if ( uiConnectTimeout < 5 )
-		{
-			iMaxTries = (iMaxTries * uiConnectTimeout) / 5;
-			uiConnectTimeout = 5;
-		}
-	}
-	else
-	{
-		iMaxTries = 1;
-	}
-#endif	
-
-	for( iTries = 0; iTries < iMaxTries; iTries++ )
-	{			
-		iSockErr = 0;
-		if( connect( m_iSocket, (struct sockaddr *)&address,
-			(unsigned)sizeof(struct sockaddr)) >= 0)
-		{
-			break;
-		}
-
-		#ifndef FLM_UNIX
-			iSockErr = WSAGetLastError();
-		#else
-			iSockErr = errno;
-		#endif
-
-	#ifdef FLM_WIN
-
-		// In WIN, we sometimes get WSAEINVAL when, if we keep
-		// trying, we will eventually connect.  Therefore,
-		// here we'll treat WSAEINVAL as EINPROGRESS.
-
-		if( iSockErr == WSAEINVAL)
-		{
-		#ifndef FLM_UNIX
-			closesocket( m_iSocket);
-		#else
-			::close( m_iSocket);
-		#endif
-			if( (m_iSocket = socket( AF_INET, 
-				SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
-			{
-				rc = RC_SET( FERR_SVR_SOCK_FAIL);
-				goto Exit;
-			}
-		#if defined( FLM_WIN) || defined( FLM_NLM)
-			iSockErr = WSAEINPROGRESS;
-		#else
-			iSockErr = EINPROGRESS;
-		#endif
-			continue;
-		}
-	#endif
-
-	#if defined( FLM_WIN) || defined( FLM_NLM)
-		if( iSockErr == WSAEISCONN )
-	#else
-		if( iSockErr == EISCONN )
-	#endif
-		{
-			break;
-		}
-	#if defined( FLM_WIN) || defined( FLM_NLM)
-		else if( iSockErr == WSAEWOULDBLOCK)
-	#else
-		else if( iSockErr == EWOULDBLOCK)
-	#endif
-		{
-			// Let's wait a split second to give the connection
-         // request a chance. 
-
-			f_sleep( 100 );
-			continue;
-		}
-	#if defined( FLM_WIN) || defined( FLM_NLM)
-		else if( iSockErr == WSAEINPROGRESS)
-	#else
-		else if( iSockErr == EINPROGRESS)
-	#endif
-		{
-			if( RC_OK( rc = _SocketPeek( uiConnectTimeout, FALSE)))
-			{
-				// Let's wait a split second to give the connection
-            // request a chance. 
-
-				f_sleep( 100 );
-				continue;
-			}
-		}
-		
-		rc = RC_SET( FERR_SVR_CONNECT_FAIL);
-	}
-
-	if( RC_BAD( rc))
-	{
-		if( m_iSocket != INVALID_SOCKET)
-		{
-		#ifndef FLM_UNIX
-			closesocket( m_iSocket);
-		#else
-			::close( m_iSocket);
-		#endif
-			m_iSocket = INVALID_SOCKET;
-		}
-		
-		goto Exit;
-	}
-
-	m_uiIOTimeout = uiDataTimeout;
-	
-	setTcpDelay( TRUE);
-	m_bConnected = TRUE;
-
-Exit:
-
-	return( rc);
-}
-	
-/********************************************************************
-Desc: Constructor
-*********************************************************************/
-FCS_TCP_SERVER::FCS_TCP_SERVER( void) : FCS_TCP()
-{
-	m_bBound = FALSE;
-}
-
-/********************************************************************
-Desc: Destructor
-*********************************************************************/
-FCS_TCP_SERVER::~FCS_TCP_SERVER( void)
-{
-	if( m_bBound)
-	{
-		close( TRUE);
-	}
-}
-
-/********************************************************************
-Desc: Bind to a port prior to listening for connections
-*********************************************************************/
-RCODE	FCS_TCP_SERVER::bind(
-	FLMUINT		uiBindPort,
-	FLMBYTE *	pucBindAddr)
-{
-	struct sockaddr_in 	address;
-	RCODE						rc = FERR_OK;
-
-	if( m_bBound)
-	{
-		rc = RC_SET( FERR_SVR_SOCK_FAIL);
-		goto Exit;
-	}
-
-	if( (m_iSocket = socket( AF_INET, 
-		SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
-	{
-		rc = RC_SET( FERR_SVR_SOCK_FAIL);
-		goto Exit;
-	}
-
-	f_memset( &address, 0, sizeof( address));
-	address.sin_family = AF_INET;
-	if( !pucBindAddr)
-	{
-		address.sin_addr.s_addr = htonl( INADDR_ANY);
-	}
-	else
-	{
-		address.sin_addr.s_addr = inet_addr( (char *)pucBindAddr);
-	}
-	address.sin_port = htons( (unsigned short)uiBindPort);
-
-	// Bind to the address+port
-
-	if( ::bind( m_iSocket, (struct sockaddr *)&address, 
-		(unsigned)sizeof( address)) != 0)
-	{
-		rc = RC_SET( FERR_SVR_BIND_FAIL);
-		goto Exit;
-	}
-
-	// Bind succeeded! 
-	// listen() prepares a socket to accept a connection and specifies a
-	// queue limit for incoming connections.  The accept() accepts the connection.
-	// Listen returns immediatly.
-	
-#ifdef FLM_NLM
-	if( listen( m_iSocket, 32 ) < 0)
-#endif
-	{
-		if( listen( m_iSocket, 5 ) < 0)
-		{
-			rc = RC_SET( FERR_SVR_LISTEN_FAIL);
-			goto Exit;
-		}
-	}
-
-	// Disable the packet send delay.
-
-	setTcpDelay( TRUE);
-	m_bBound = TRUE;
-
-Exit:
-
-	if( RC_BAD( rc) && m_iSocket != INVALID_SOCKET)
-	{
-#ifndef FLM_UNIX
-		closesocket( m_iSocket);
-#else
-		::close( m_iSocket);
-#endif
-		m_iSocket = INVALID_SOCKET;
-	}
-
-	return( rc);
-}
-	
-/********************************************************************
-Desc: Wait for and accept a client connection
-*********************************************************************/
-RCODE FCS_TCP_SERVER::connectClient(
-	FCS_TCP *	pClient,
-	FLMINT		uiConnectTimeout,
-	FLMINT		uiDataTimeout)
-{
-	SOCKET					iSocket;
-#if defined( FLM_UNIX)
-	socklen_t				iAddrLen;
-#else
-	int						iAddrLen;
-#endif
-	struct sockaddr_in 	address;
-	RCODE						rc = FERR_OK;
-
-	if( !m_bBound)
-	{
-		rc = RC_SET( FERR_SVR_BIND_FAIL);
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = _SocketPeek( uiConnectTimeout, TRUE)))
-	{
-		goto Exit;
-	}
-
-	iAddrLen = (int)sizeof( struct sockaddr);
-	if( (iSocket = accept( m_iSocket, 
-		(struct sockaddr *)&address, &iAddrLen)) == INVALID_SOCKET)
-	{
-		rc = RC_SET( FERR_SVR_ACCEPT_FAIL);
-		goto Exit;
-	}
-
-	pClient->m_ulRemoteAddr = address.sin_addr.s_addr;
-	pClient->m_iSocket = iSocket;
-	pClient->m_bConnected = TRUE;
-	pClient->m_uiIOTimeout = uiDataTimeout;
-	pClient->setTcpDelay( TRUE);
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:	Converts a UNICODE string consisting of 7-bit ASCII characters to
 		a native string.
 *****************************************************************************/
 RCODE fcsConvertUnicodeToNative(
-	POOL *					pPool,
+	F_Pool *					pPool,
 	const FLMUNICODE *	puzUnicode,
 	char **					ppucNative)
 {
@@ -3933,11 +2575,9 @@ RCODE fcsConvertUnicodeToNative(
 		}
 		uiCount++;
 	}
-
-	if( (pucDest = (char *)GedPoolAlloc( pPool,
-											(FLMUINT)(uiCount + 1))) == NULL)
+	
+	if( RC_BAD( rc = pPool->poolAlloc( uiCount + 1, (void **)&pucDest)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -3960,7 +2600,7 @@ Exit:
 Desc:	Converts a native string to a double-byte UNICODE string.
 *****************************************************************************/
 RCODE fcsConvertNativeToUnicode(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	const char *		pszNative,
 	FLMUNICODE **		ppuzUnicode)
 {
@@ -3970,14 +2610,11 @@ RCODE fcsConvertNativeToUnicode(
 	
 	uiCount = f_strlen( pszNative);
 	
-	if( (puzDest = (FLMUNICODE *)GedPoolAlloc( pPool,
-		(FLMUINT)((FLMUINT)sizeof( FLMUNICODE) * 
-			(FLMUINT)(uiCount + 1)))) == NULL)
+	if( RC_BAD( rc = pPool->poolAlloc( uiCount + 1, (void **)&puzDest)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	uiCount = 0;
 	while( pszNative[ uiCount])
 	{
@@ -4016,11 +2653,11 @@ Desc:	Converts a CHECKPOINT_INFO structure to an HTD tree
 *****************************************************************************/
 RCODE fcsBuildCheckpointInfo(
 	CHECKPOINT_INFO *		pChkptInfo,
-	POOL *					pPool,
+	F_Pool *					pPool,
 	NODE **					ppTree)
 {
 	NODE *		pRootNd = NULL;
-	void *		pMark = GedPoolMark( pPool);
+	void *		pMark = pPool->poolMark();
 	FLMUINT		uiTmp;
 	RCODE			rc = FERR_OK;
 
@@ -4159,24 +2796,24 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		GedPoolReset( pPool, pMark);
+		pPool->poolReset( pMark);
 	}
 
 	return( rc);
 }
 
 /****************************************************************************
-Desc:	Converts a LOCK_USER structure (or list of structures) to an HTD tree
+Desc:	Converts a F_LOCK_USER structure (or list of structures) to an HTD tree
 *****************************************************************************/
 RCODE fcsBuildLockUser(
-	LOCK_USER *		pLockUser,
+	F_LOCK_USER *	pLockUser,
 	FLMBOOL			bList,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppTree)
 {
 	NODE *		pRootNd = NULL;
 	NODE *		pContextNd = NULL;
-	void *		pMark = GedPoolMark( pPool);
+	void *		pMark = pPool->poolMark();
 	RCODE			rc = FERR_OK;
 
 	*ppTree = NULL;
@@ -4236,14 +2873,14 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		GedPoolReset( pPool, pMark);
+		pPool->poolReset( pMark);
 	}
 
 	return( rc);
 }
 
 /****************************************************************************
-Desc:	Converts an HTD tree to a LOCK_USER structure (or list of structures)
+Desc:	Converts an HTD tree to a F_LOCK_USER structure (or list of structures)
 *****************************************************************************/
 RCODE fcsExtractLockUser(
 	NODE *			pTree,
@@ -4253,7 +2890,7 @@ RCODE fcsExtractLockUser(
 	NODE *			pTmpNd;
 	FLMUINT			uiItemCount = 0;
 	FLMUINT			fieldPath[ 8];
-	LOCK_USER *		pLockUser = NULL;
+	F_LOCK_USER *	pLockUser = NULL;
 	FLMUINT			uiLoop;
 	RCODE				rc = FERR_OK;
 
@@ -4261,11 +2898,11 @@ RCODE fcsExtractLockUser(
 	{
 		if( bExtractAsList)
 		{
-			*((LOCK_USER **)pvLockUser) = NULL;
+			*((F_LOCK_USER **)pvLockUser) = NULL;
 		}
 		else
 		{
-			f_memset( (LOCK_USER *)pvLockUser, 0, sizeof( LOCK_USER));
+			f_memset( (F_LOCK_USER *)pvLockUser, 0, sizeof( F_LOCK_USER));
 		}
 		goto Exit;
 	}
@@ -4283,17 +2920,17 @@ RCODE fcsExtractLockUser(
 		}
 
 		if( RC_BAD( rc = f_alloc( 
-			sizeof( LOCK_USER) * (uiItemCount + 1), &pLockUser)))
+			sizeof( F_LOCK_USER) * (uiItemCount + 1), &pLockUser)))
 		{
 			goto Exit;
 		}
 
-		*((LOCK_USER **)pvLockUser) = pLockUser;
+		*((F_LOCK_USER **)pvLockUser) = pLockUser;
 	}
 	else
 	{
-		pLockUser = (LOCK_USER *)pvLockUser;
-		f_memset( pLockUser, 0, sizeof( LOCK_USER));
+		pLockUser = (F_LOCK_USER *)pvLockUser;
+		f_memset( pLockUser, 0, sizeof( F_LOCK_USER));
 		uiItemCount = 1;
 	}
 	
@@ -4324,7 +2961,7 @@ RCODE fcsExtractLockUser(
 
 	if( bExtractAsList)
 	{
-		f_memset( &(pLockUser[ uiItemCount]), 0, sizeof( LOCK_USER));
+		f_memset( &(pLockUser[ uiItemCount]), 0, sizeof( F_LOCK_USER));
 	}
 
 Exit:
@@ -4637,11 +3274,11 @@ Desc:	Converts an FINDEX_STATUS structure to an HTD tree
 *****************************************************************************/
 RCODE fcsBuildIndexStatus(
 	FINDEX_STATUS *	pIndexStatus,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree)
 {
 	NODE *		pContextNd = NULL;
-	void *		pMark = GedPoolMark( pPool);
+	void *		pMark = pPool->poolMark();
 	FLMUINT		uiTmp;
 	RCODE			rc = FERR_OK;
 
@@ -4763,7 +3400,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		GedPoolReset( pPool, pMark);
+		pPool->poolReset( pMark);
 	}
 
 	return( rc);
@@ -4844,13 +3481,13 @@ Desc:	Converts an FLM_MEM_INFO structure to an HTD tree
 *****************************************************************************/
 RCODE fcsBuildMemInfo(
 	FLM_MEM_INFO *		pMemInfo,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree)
 {
 	FLMUINT				uiTmp;
 	NODE *				pContextNd = NULL;
 	NODE *				pSubContext = NULL;
-	void *				pMark = GedPoolMark( pPool);
+	void *				pMark = pPool->poolMark();
 	FLM_CACHE_USAGE *	pUsage;
 	RCODE					rc = FERR_OK;
 
@@ -5054,7 +3691,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		GedPoolReset( pPool, pMark);
+		pPool->poolReset( pMark);
 	}
 
 	return( rc);
@@ -5200,12 +3837,12 @@ Exit:
 Desc:	Builds a GEDCOM tree containing information on all FLAIM threads
 *****************************************************************************/
 RCODE fcsBuildThreadInfo(
-	POOL *				pPool,
+	F_Pool *				pPool,
 	NODE **				ppTree)
 {
 	NODE *				pContextNd = NULL;
 	NODE *				pRootNd = NULL;
-	void *				pMark = GedPoolMark( pPool);
+	void *				pMark = pPool->poolMark();
 	F_THREAD_INFO *	pThreadInfo = NULL;
 	FLMUINT				uiNumThreads;
 	FLMUINT				uiLoop;
@@ -5312,7 +3949,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		GedPoolReset( pPool, pMark);
+		pPool->poolReset( pMark);
 	}
 
 	return( rc);
@@ -5323,13 +3960,13 @@ Desc:	Extracts a list of F_THREAD_INFO structure from an HTD tree.
 *****************************************************************************/
 RCODE fcsExtractThreadInfo(
 	NODE *				pTree,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	F_THREAD_INFO **	ppThreadInfo,
 	FLMUINT *			puiNumThreads)
 {
 	NODE *				pTmpNd;
 	NODE *				pContextNd;
-	void *				pMark = GedPoolMark( pPool);
+	void *				pMark = pPool->poolMark();
 	FLMUINT				uiTmp;
 	F_THREAD_INFO *	pThreadInfo;
 	F_THREAD_INFO *	pCurThread;
@@ -5355,11 +3992,10 @@ RCODE fcsExtractThreadInfo(
 	{
 		goto Exit;
 	}
-
-	if( (pThreadInfo = (F_THREAD_INFO *)GedPoolCalloc( pPool, 
-		uiNumThreads * sizeof( F_THREAD_INFO))) == NULL)
+	
+	if( RC_BAD( rc = pPool->poolAlloc( uiNumThreads * sizeof( F_THREAD_INFO),
+		(void **)&pThreadInfo)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -5410,10 +4046,10 @@ RCODE fcsExtractThreadInfo(
 			if( uiTmp)
 			{
 				uiTmp++;
-				if( (pCurThread->pszThreadName = (char *)GedPoolAlloc( 
-					pPool, uiTmp)) == NULL)
+				
+				if( RC_BAD( rc = pPool->poolAlloc( uiTmp,
+					(void **)&pCurThread->pszThreadName)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 			}
@@ -5436,10 +4072,10 @@ RCODE fcsExtractThreadInfo(
 			if( uiTmp)
 			{
 				uiTmp++;
-				if( (pCurThread->pszThreadStatus = (char *)GedPoolAlloc( 
-					pPool, uiTmp)) == NULL)
+				
+				if( RC_BAD( rc = pPool->poolAlloc( uiTmp,
+					(void **)pCurThread->pszThreadStatus)))
 				{
-					rc = RC_SET( FERR_MEM);
 					goto Exit;
 				}
 			}
@@ -5468,7 +4104,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		GedPoolReset( pPool, pMark);
+		pPool->poolReset( pMark);
 	}
 
 	return( rc);
@@ -5745,7 +4381,7 @@ RCODE flmGenerateHexPacket(
 	FLMUINT			uiDataSize,
 	FLMBYTE **		ppucPacket)
 {
-	FLMUINT32 *				pui32CRCTbl = NULL;
+	RCODE						rc = FERR_OK;
 	FLMBYTE *				pucBinPacket = NULL;
 	FLMBYTE *				pucHexPacket = NULL;
 	FLMBYTE *				pucUsedMap = NULL;
@@ -5755,8 +4391,7 @@ RCODE flmGenerateHexPacket(
 	FLMBYTE					ucTmp[ 32];
 	FLMUINT					uiBinPacketSize;
 	FLMBOOL					bTmp;
-	f_randomGenerator		randGen;
-	RCODE						rc = FERR_OK;
+	IF_RandomGenerator *	pRandGen = NULL;
 
 	// Determine the packet size.  Make the minimum packet size 128 bytes
 	// to account for the 64-byte "header" and for the overhead of the
@@ -5785,43 +4420,39 @@ RCODE flmGenerateHexPacket(
 
 	f_memset( pucUsedMap, 0xFF, 64);
 
-	// Initialize the CRC table.
-
-	if( RC_BAD( rc = f_initCRCTable( &pui32CRCTbl)))
+	// Initialize the random number generator and seed with the current
+	// time.
+	
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &pRandGen)))
 	{
 		goto Exit;
 	}
-
-	// Initialize the random number generator and seed with the current
-	// time.
-
-	f_randomize( &randGen);
 
 	// Fill the packet with random "noise"
 
 	for( uiLoop = 0; uiLoop < uiBinPacketSize; uiLoop += 4)
 	{
-		ui32Tmp = f_randomLong( &randGen);
+		ui32Tmp = pRandGen->getUINT32();
 		UD2FBA( ui32Tmp, &pucBinPacket[ uiLoop]);
 	}
 
 	for( uiLoop = 0; uiLoop < 512; uiLoop++)
 	{
-		ui32Tmp = f_randomLong( &randGen);
-		UD2FBA( ui32Tmp, &pucBinPacket[ f_randomChoice( 
-			&randGen, 1, (int)(uiBinPacketSize / 4)) - 1]);
+		ui32Tmp = pRandGen->getUINT32();
+		UD2FBA( ui32Tmp, &pucBinPacket[ 
+			pRandGen->getUINT32( 1, (int)(uiBinPacketSize / 4)) - 1]);
 	}
 
 	// Determine a new random seed based on bytes in the
 	// packet header
 
 	if( (ui32Tmp = (FLMUINT32)FB2UD( &pucBinPacket[ 
-		f_randomChoice( &randGen, 1, 61) - 1])) == 0)
+		pRandGen->getUINT32( 1, 61) - 1])) == 0)
 	{
 		ui32Tmp = 1;
 	}
 
-	f_randomSetSeed( &randGen, ui32Tmp);
+	pRandGen->setSeed( ui32Tmp);
 
 	// Use the CRC of the header and the also first four bytes
 	// of the header as an 8-byte validation signature.  This will
@@ -5832,7 +4463,7 @@ RCODE flmGenerateHexPacket(
 	// "standard" CRC used by PKZIP, etc.
 
 	ui32Tmp = 0xFFFFFFFF;
-	f_updateCRC( pui32CRCTbl, pucBinPacket, 64, &ui32Tmp);
+	f_updateCRC( pucBinPacket, 64, &ui32Tmp);
 	ui32Tmp = ~ui32Tmp;
 	UD2FBA( ui32Tmp, &ucTmp[ 0]);
 	f_memcpy( &ucTmp[ 4], pucBinPacket, 4);
@@ -5840,7 +4471,7 @@ RCODE flmGenerateHexPacket(
 	for( uiLoop = 0; uiLoop < 8; uiLoop++)
 	{
 		bTmp = flmGetNextHexPacketSlot( pucUsedMap, uiBinPacketSize,
-			&randGen, &uiSlot);
+			pRandGen, &uiSlot);
 
 		flmAssert( bTmp);
 		pucBinPacket[ uiSlot] = ucTmp[ uiLoop];
@@ -5852,7 +4483,7 @@ RCODE flmGenerateHexPacket(
 	for( uiLoop = 0; uiLoop < 4; uiLoop++)
 	{
 		bTmp = flmGetNextHexPacketSlot( pucUsedMap, uiBinPacketSize,
-			&randGen, &uiSlot);
+			pRandGen, &uiSlot);
 
 		flmAssert( bTmp);
 		pucBinPacket[ uiSlot] = ucTmp[ uiLoop];
@@ -5864,7 +4495,7 @@ RCODE flmGenerateHexPacket(
 	for( uiLoop = 0; uiLoop < uiDataSize; uiLoop++)
 	{
 		bTmp = flmGetNextHexPacketSlot( pucUsedMap, uiBinPacketSize,
-			&randGen, &uiSlot);
+			pRandGen, &uiSlot);
 
 		flmAssert( bTmp);
 		pucBinPacket[ uiSlot] = pucData[ uiLoop] ^ pucBinPacket[ uiLoop % 64];
@@ -5873,14 +4504,14 @@ RCODE flmGenerateHexPacket(
 	// Calculate and encode the data CRC
 
 	ui32Tmp = 0xFFFFFFFF;
-	f_updateCRC( pui32CRCTbl, pucData, uiDataSize, &ui32Tmp);
+	f_updateCRC( pucData, uiDataSize, &ui32Tmp);
 	ui32Tmp = ~ui32Tmp;
 	UD2FBA( ui32Tmp, &ucTmp[ 0]);
 
 	for( uiLoop = 0; uiLoop < 4; uiLoop++)
 	{
 		bTmp = flmGetNextHexPacketSlot( pucUsedMap, uiBinPacketSize,
-			&randGen, &uiSlot);
+			pRandGen, &uiSlot);
 
 		flmAssert( bTmp);
 		pucBinPacket[ uiSlot] = ucTmp[ uiLoop];
@@ -5914,11 +4545,6 @@ RCODE flmGenerateHexPacket(
 
 Exit:
 
-	if( pui32CRCTbl)
-	{
-		f_freeCRCTable( &pui32CRCTbl);
-	}
-
 	if( pucUsedMap)
 	{
 		f_free( &pucUsedMap);
@@ -5933,6 +4559,11 @@ Exit:
 	{
 		f_free( &pucHexPacket);
 	}
+	
+	if( pRandGen)
+	{
+		pRandGen->Release();
+	}
 
 	return( rc);
 }
@@ -5946,7 +4577,7 @@ RCODE flmExtractHexPacketData(
 	FLMBYTE **		ppucData,
 	FLMUINT *		puiDataSize)
 {
-	FLMUINT32 *				pui32CRCTbl = NULL;
+	RCODE						rc = FERR_OK;
 	FLMBYTE *				pucUsedMap = NULL;
 	FLMBYTE *				pucData = NULL;
 	FLMBYTE *				pucBinPacket = NULL;
@@ -5960,9 +4591,13 @@ RCODE flmExtractHexPacketData(
 	FLMBYTE					ucTmp[ 32];
 	FLMBYTE					ucVal = 0;
 	FLMBOOL					bValid;
-	f_randomGenerator		randGen;
-	RCODE						rc = FERR_OK;
+	IF_RandomGenerator *	pRandGen = NULL;
 
+	if( RC_BAD( rc = FlmAllocRandomGenerator( &pRandGen)))
+	{
+		goto Exit;
+	}
+	
 	// Determine the packet size, ignoring all characters except 0-9, A-F
 
 	uiPacketSize = 0;
@@ -6037,17 +4672,10 @@ RCODE flmExtractHexPacketData(
 
 	f_memset( pucUsedMap, 0xFF, 64);
 
-	// Initialize the CRC table
-
-	if( RC_BAD( rc = f_initCRCTable( &pui32CRCTbl)))
-	{
-		goto Exit;
-	}
-
 	// Determine the CRC of the 1st 64-bytes
 
 	ui32FirstCRC = 0xFFFFFFFF;
-	f_updateCRC( pui32CRCTbl, pucBinPacket, 64, &ui32FirstCRC);
+	f_updateCRC( pucBinPacket, 64, &ui32FirstCRC);
 	ui32FirstCRC = ~ui32FirstCRC;
 
 	// Search for the random seed within the first 64 bytes
@@ -6056,10 +4684,10 @@ RCODE flmExtractHexPacketData(
 	for( uiLoop = 0; uiLoop < 61; uiLoop++)
 	{
 		ui32Tmp = FB2UD( &pucBinPacket[ uiLoop]);
-		f_randomSetSeed( &randGen, ui32Tmp);
+		pRandGen->setSeed( ui32Tmp);
 
 		if( RC_BAD( rc = flmGetNextHexPacketBytes( pucUsedMap, uiPacketSize, 
-			pucBinPacket, &randGen, ucTmp, 8)))
+			pucBinPacket, pRandGen, ucTmp, 8)))
 		{
 			goto Exit;
 		}
@@ -6086,7 +4714,7 @@ RCODE flmExtractHexPacketData(
 	// Get the data size
 
 	if( RC_BAD( rc = flmGetNextHexPacketBytes( pucUsedMap, uiPacketSize, 
-		pucBinPacket, &randGen, ucTmp, 4)))
+		pucBinPacket, pRandGen, ucTmp, 4)))
 	{
 		goto Exit;
 	}
@@ -6108,8 +4736,7 @@ RCODE flmExtractHexPacketData(
 	// Get the data
 
 	if( RC_BAD( rc = flmGetNextHexPacketBytes( 
-		pucUsedMap, uiPacketSize, 
-		pucBinPacket, &randGen, pucData, uiDataSize)))
+		pucUsedMap, uiPacketSize, pucBinPacket, pRandGen, pucData, uiDataSize)))
 	{
 		goto Exit;
 	}
@@ -6124,8 +4751,7 @@ RCODE flmExtractHexPacketData(
 	// Get the data CRC
 
 	if( RC_BAD( rc = flmGetNextHexPacketBytes( 
-		pucUsedMap, uiPacketSize, 
-		pucBinPacket, &randGen, ucTmp, 4)))
+		pucUsedMap, uiPacketSize, pucBinPacket, pRandGen, ucTmp, 4)))
 	{
 		goto Exit;
 	}
@@ -6133,7 +4759,7 @@ RCODE flmExtractHexPacketData(
 	// Verify the data CRC
 
 	ui32Tmp = 0xFFFFFFFF;
-	f_updateCRC( pui32CRCTbl, pucData, uiDataSize, &ui32Tmp);
+	f_updateCRC( pucData, uiDataSize, &ui32Tmp);
 	ui32Tmp = ~ui32Tmp;
 
 	if( ui32Tmp != FB2UD( &ucTmp[ 0]))
@@ -6147,11 +4773,6 @@ RCODE flmExtractHexPacketData(
 	*puiDataSize = uiDataSize;
 
 Exit:
-
-	if( pui32CRCTbl)
-	{
-		f_freeCRCTable( &pui32CRCTbl);
-	}
 
 	if( pucUsedMap)
 	{
@@ -6167,6 +4788,11 @@ Exit:
 	{
 		f_free( &pucBinPacket);
 	}
+	
+	if( pRandGen)
+	{
+		pRandGen->Release();
+	}
 
 	return( rc);
 }
@@ -6177,7 +4803,7 @@ Desc: Used by flmGenerateHexPacket to find an unused byte in the packet
 FLMBOOL flmGetNextHexPacketSlot( 
 	FLMBYTE *				pucUsedMap,
 	FLMUINT					uiMapSize,
-	f_randomGenerator *	pRandGen,
+	IF_RandomGenerator *	pRandGen,
 	FLMUINT *				puiSlot)
 {
 	FLMUINT		uiLoop;
@@ -6186,7 +4812,7 @@ FLMBOOL flmGetNextHexPacketSlot(
 
 	for( uiLoop = 0; uiLoop < 100; uiLoop++)
 	{
-		uiSlot = ((FLMUINT)f_randomLong( pRandGen)) % uiMapSize;
+		uiSlot = ((FLMUINT)pRandGen->getUINT32()) % uiMapSize;
 		if( !pucUsedMap[ uiSlot])
 		{
 			bFound = TRUE;
@@ -6225,7 +4851,7 @@ RCODE flmGetNextHexPacketBytes(
 	FLMBYTE *				pucUsedMap,
 	FLMUINT					uiMapSize,
 	FLMBYTE *				pucPacket,
-	f_randomGenerator *	pRandGen,
+	IF_RandomGenerator *	pRandGen,
 	FLMBYTE *				pucBuf,
 	FLMUINT					uiCount)
 {
@@ -6235,8 +4861,7 @@ RCODE flmGetNextHexPacketBytes(
 
 	for( uiLoop = 0; uiLoop < uiCount; uiLoop++)
 	{
-		if( !flmGetNextHexPacketSlot( pucUsedMap, uiMapSize,
-			pRandGen, &uiSlot))
+		if( !flmGetNextHexPacketSlot( pucUsedMap, uiMapSize, pRandGen, &uiSlot))
 		{
 			rc = RC_SET( FERR_INVALID_CRC);
 			goto Exit;
@@ -6257,7 +4882,7 @@ Desc: Decodes a string containing %XX sequences and does it in place.
 void fcsDecodeHttpString(
 	char *		pszSrc)
 {
-	char *	pszDest;
+	char *		pszDest;
 
 	pszDest = pszSrc;
 	while( *pszSrc)
@@ -6265,10 +4890,11 @@ void fcsDecodeHttpString(
 		if( *pszSrc == '%')
 		{
 			pszSrc++;
-			if( f_isHexChar( pszSrc[ 0]) && f_isHexChar( pszSrc[ 1]))
+			if( f_isHexChar( (FLMBYTE)pszSrc[ 0]) && 
+				 f_isHexChar( (FLMBYTE)pszSrc[ 1]))
 			{
-				*pszDest = (f_getHexVal( pszSrc[ 0]) << 4) |
-					f_getHexVal( pszSrc[ 1]);
+				*pszDest = (f_getHexVal( (FLMBYTE)pszSrc[ 0]) << 4) |
+					f_getHexVal( (FLMBYTE)pszSrc[ 1]);
 
 				pszSrc += 2;
 				pszDest++;
@@ -6299,7 +4925,7 @@ Desc:
 *****************************************************************************/
 FCS_WIRE::FCS_WIRE( FCS_DIS * pDIStream, FCS_DOS * pDOStream)
 {
-	GedPoolInit( &m_pool, 2048);
+	m_pool.poolInit( 2048);
 	m_pPool = &m_pool;
 	m_pDIStream = pDIStream;
 	m_pDOStream = pDOStream;
@@ -6333,7 +4959,7 @@ FCS_WIRE::~FCS_WIRE( void)
 		m_pUntilKey = NULL;
 	}
 
-	GedPoolFree( &m_pool);
+	m_pool.poolFree();
 }
 
 /****************************************************************************
@@ -6382,7 +5008,7 @@ void FCS_WIRE::resetCommon( void)
 	m_uiBlockSize = 0;
 	m_bIncludesAsync = FALSE;
 	fcsInitCreateOpts( &m_CreateOpts);
-	GedPoolReset( m_pPool, NULL);
+	m_pPool->poolReset();
 	m_bFlag = FALSE;
 	m_ui64Number1 = 0;
 	m_ui64Number2 = 0;
@@ -6403,10 +5029,6 @@ RCODE FCS_WIRE::readOpcode( void)
 	FLMBYTE	ucClass;
 	FLMBYTE	ucOp;
 	RCODE		rc = FERR_OK;
-
-	/*
-	Read the opcode.
-	*/
 
 	if( RC_BAD( rc = m_pDIStream->read( &ucClass, 1, NULL)))
 	{
@@ -6764,8 +5386,7 @@ RCODE FCS_WIRE::readNumber(
 	FLMUINT64 *		pui64Number,
 	FLMINT64 *		pi64Number)
 {
-
-	RCODE			rc = FERR_OK;
+	RCODE				rc = FERR_OK;
 
 	flmAssert( !(puiNumber && piNumber));
 	
@@ -7150,8 +5771,8 @@ Exit:
 Desc:		Sends an opcode to the client
 *****************************************************************************/
 RCODE FCS_WIRE::sendOpcode(
-	FLMUINT					uiClass,
-	FLMUINT					uiOp)
+	FLMUINT		uiClass,
+	FLMUINT		uiOp)
 {
 	FLMBYTE		ucClass = (FLMBYTE)uiClass;
 	FLMBYTE		ucOp = (FLMBYTE)uiOp;
@@ -7203,7 +5824,7 @@ RCODE FCS_WIRE::sendNumber(
 	FLMUINT64		ui64Value,
 	FLMINT64			i64Value)
 {
-	RCODE			rc = FERR_OK;
+	RCODE				rc = FERR_OK;
 	
 	// Send the parameter tag and value.
 
@@ -7276,7 +5897,7 @@ RCODE FCS_WIRE::sendBinary(
 	FLMBYTE *		pData,
 	FLMUINT			uiLength)
 {
-	RCODE			rc = FERR_OK;
+	RCODE				rc = FERR_OK;
 	
 	// Send the parameter tag and value.
 
@@ -7340,11 +5961,11 @@ RCODE FCS_WIRE::sendRecord(
 	FLMUINT			uiTag,
 	FlmRecord *		pRecord)
 {
+	RCODE				rc = FERR_OK;
 #define RECORD_OUTPUT_BUFFER_SIZE	64
-	FLMBYTE		pucBuffer[ RECORD_OUTPUT_BUFFER_SIZE];
-	FLMBYTE *	pucBufPos;
-	FLMBYTE		ucDescriptor;
-	RCODE			rc = FERR_OK;
+	FLMBYTE			pucBuffer[ RECORD_OUTPUT_BUFFER_SIZE];
+	FLMBYTE *		pucBufPos;
+	FLMBYTE			ucDescriptor;
 
 	// Send the parameter tag and value.
 
@@ -7384,10 +6005,10 @@ RCODE FCS_WIRE::sendRecord(
 			//
 			//		4-byte container ID, 4-byte DRN
 
-			flmUINT32ToBigEndian( (FLMUINT32)pRecord->getContainerID(), pucBufPos);
+			f_UINT32ToBigEndian( (FLMUINT32)pRecord->getContainerID(), pucBufPos);
 			pucBufPos += 4;
 
-			flmUINT32ToBigEndian( (FLMUINT32)pRecord->getID(), pucBufPos);
+			f_UINT32ToBigEndian( (FLMUINT32)pRecord->getID(), pucBufPos);
 			pucBufPos += 4;
 
 			// Send the descriptor and record source.
@@ -7400,7 +6021,8 @@ RCODE FCS_WIRE::sendRecord(
 
 			// Send the record.
 
-			if( RC_BAD( rc = m_pDOStream->writeHTD( NULL, pRecord, FALSE, m_bSendGedcom)))
+			if( RC_BAD( rc = m_pDOStream->writeHTD( NULL, pRecord, 
+				FALSE, m_bSendGedcom)))
 			{
 				goto Exit;
 			}
@@ -7529,7 +6151,7 @@ RCODE FCS_WIRE::sendString(
 	FLMUINT			uiTag,
 	FLMUNICODE *	puzString)
 {
-	RCODE			rc = FERR_OK;
+	RCODE				rc = FERR_OK;
 	
 	// Send the parameter tag and value.
 
@@ -7581,7 +6203,7 @@ RCODE FCS_WIRE::sendHTD(
 	FLMUINT			uiTag,
 	NODE *			pHTD)
 {
-	RCODE			rc = FERR_OK;
+	RCODE				rc = FERR_OK;
 	
 	// Send the parameter tag and value.
 
@@ -7631,7 +6253,7 @@ RCODE FCS_WIRE::sendHTD(
 	FLMUINT			uiTag,
 	FlmRecord *		pRecord)
 {
-	RCODE			rc = FERR_OK;
+	RCODE				rc = FERR_OK;
 	
 	// Send the parameter tag and value.
 
@@ -7675,10 +6297,10 @@ Exit:
 Desc:		Copies the current HTD tree to the application's pool
 *****************************************************************************/
 RCODE FCS_WIRE::getHTD( 
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppTreeRV)
 {
-	RCODE		rc = FERR_OK;
+	RCODE			rc = FERR_OK;
 
 	if( !m_pHTD)
 	{
@@ -7705,7 +6327,7 @@ RCODE FCS_WIRE::sendCreateOpts(
 	CREATE_OPTS *	pCreateOpts)
 {
 	NODE *			pRootNd = NULL;
-	void *			pvMark = GedPoolMark( m_pPool);
+	void *			pvMark = m_pPool->poolMark();
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiTmp;
 	
@@ -7827,7 +6449,7 @@ RCODE FCS_WIRE::sendCreateOpts(
 
 Exit:
 
-	GedPoolReset( m_pPool, pvMark);
+	m_pPool->poolReset( pvMark);
 	return( rc);
 }
 
@@ -7838,7 +6460,7 @@ RCODE FCS_WIRE::sendNameTable(
 	FLMUINT			uiTag,
 	F_NameTable *	pNameTable)
 {
-	void *			pvMark = GedPoolMark( m_pPool);
+	void *			pvMark = m_pPool->poolMark();
 	NODE *			pRootNd;
 	NODE *			pNd;
 	NODE *			pItemIdNd;
@@ -7859,11 +6481,10 @@ RCODE FCS_WIRE::sendNameTable(
 	}
 
 	// Allocate a temporary name buffer
-
-	if( (puzItemName = (FLMUNICODE *)GedPoolAlloc( m_pPool, 
-		uiMaxNameChars * sizeof( FLMUNICODE))) == NULL)
+	
+	if( RC_BAD( rc = m_pPool->poolAlloc( uiMaxNameChars * sizeof( FLMUNICODE),
+		(void **)&puzItemName)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -7977,7 +6598,7 @@ RCODE FCS_WIRE::sendNameTable(
 
 Exit:
 
-	GedPoolReset( m_pPool, pvMark);
+	m_pPool->poolReset( pvMark);
 	return( rc);
 }
 
@@ -7991,7 +6612,7 @@ RCODE FCS_WIRE::receiveRecord(
 	FLMUINT					uiIdLen = 0;
 	FLMUINT32				ui32Container;
 	FLMUINT32				ui32Drn;
-	void *					pvMark = GedPoolMark( m_pPool);
+	void *					pvMark = m_pPool->poolMark();
 	FLMBOOL					bHasId = FALSE;
 	RCODE						rc = FERR_OK;
 
@@ -8048,7 +6669,7 @@ Exit:
 		*ppRecord = NULL;
 	}
 
-	GedPoolReset( m_pPool, pvMark);
+	m_pPool->poolReset( pvMark);
 	return( rc);
 }
 
@@ -8064,7 +6685,7 @@ RCODE FCS_WIRE::receiveCreateOpts( void)
 	FLMUINT		uiTmp;
 	RCODE			rc = FERR_OK;
 
-	pPoolMark = GedPoolMark( m_pPool);
+	pPoolMark = m_pPool->poolMark();
   
 	// Initialize the CREATE_OPTS structure to its default values.
 
@@ -8169,7 +6790,7 @@ RCODE FCS_WIRE::receiveCreateOpts( void)
 
 Exit:
 
-	GedPoolReset( m_pPool, pPoolMark);
+	m_pPool->poolReset( pPoolMark);
 	return( rc);
 }
 
@@ -8182,7 +6803,7 @@ RCODE FCS_WIRE::receiveNameTable(
 	NODE *			pRootNd;
 	NODE *			pItemIdNd;
 	NODE *			pNd = NULL;
-	void *			pvMark = GedPoolMark( m_pPool);
+	void *			pvMark = m_pPool->poolMark();
 	FLMUINT			uiMaxNameChars = 1024;
 	FLMUNICODE *	puzItemName;
 	FLMUINT			uiItemId;
@@ -8194,13 +6815,12 @@ RCODE FCS_WIRE::receiveNameTable(
 
 	// Allocate a temporary name buffer
 
-	if( (puzItemName = (FLMUNICODE *)GedPoolAlloc( m_pPool, 
-		uiMaxNameChars * sizeof( FLMUNICODE))) == NULL)
+	if( RC_BAD( rc = m_pPool->poolAlloc( uiMaxNameChars * sizeof( FLMUNICODE),
+		(void **)&puzItemName)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	// Initialize the name table.
 
 	if( (pNameTable = *ppNameTable) == NULL)
@@ -8309,7 +6929,7 @@ Exit:
 		pNameTable->Release();
 	}
 
-	GedPoolReset( m_pPool, pvMark);
+	m_pPool->poolReset( pvMark);
 	return( rc);
 }
 

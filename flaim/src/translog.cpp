@@ -25,7 +25,7 @@
 #include "flaimsys.h"
 
 FSTATIC void lgWriteComplete(
-	F_IOBuffer *	pIOBuffer);
+	IF_IOBuffer *	pIOBuffer);
 
 /****************************************************************************
 Desc:
@@ -65,7 +65,7 @@ Desc:	This is the callback routine that is called when a disk write is
 		completed.
 ****************************************************************************/
 FSTATIC void lgWriteComplete(
-	F_IOBuffer *	pIOBuffer)
+	IF_IOBuffer * 		pIOBuffer)
 {
 #ifdef FLM_DBG_LOG
 	FFILE *		pFile = (FFILE *)pIOBuffer->getCompletionCallbackData( 0);
@@ -73,7 +73,7 @@ FSTATIC void lgWriteComplete(
 	FLMUINT		uiLength = pIOBuffer->getBufferSize();
 	char *		pszEvent;
 #endif
-	DB_STATS *	pDbStats = pIOBuffer->getDbStats();
+	DB_STATS *	pDbStats = (DB_STATS *)pIOBuffer->getStats();
 
 #ifdef FLM_DBG_LOG
 	pszEvent = (char *)(RC_OK( pIOBuffer->getCompletionCode())
@@ -106,7 +106,7 @@ RCODE lgFlushLogBuffer(
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesWritten;
-	F_IOBuffer *	pAsyncBuffer;
+	IF_IOBuffer *	pAsyncBuffer;
 
 	if (!bDoAsync)
 	{
@@ -135,7 +135,7 @@ RCODE lgFlushLogBuffer(
 	// after the call to WriteBlock, unless we are doing
 	// non-asynchronous write.
 
-	rc = pSFileHdl->WriteBlock( pFile->uiCurrLogBlkAddr,
+	rc = pSFileHdl->writeBlock( pFile->uiCurrLogBlkAddr,
 				pFile->uiCurrLogWriteOffset,
 				pFile->pCurrLogBuffer->getBuffer(),
 				pFile->pCurrLogBuffer->getBufferSize(),
@@ -222,7 +222,7 @@ RCODE lgOutputBlock(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pSFileHdl->CreateFile( uiFileNumber )))
+		if (RC_BAD( rc = pSFileHdl->createFile( uiFileNumber )))
 		{
 			goto Exit;
 		}

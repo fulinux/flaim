@@ -128,7 +128,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 	FLMBOOL *			pbWroteAll);
 
 FSTATIC void scaWriteComplete(
-	F_IOBuffer *	pIOBuffer);
+	IF_IOBuffer *	pIOBuffer);
 
 FSTATIC RCODE ScaReduceCache(
 	FDB *				pDb);
@@ -200,7 +200,7 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	F_IOBuffer *		pIOBuffer,
+	IF_IOBuffer *		pIOBuffer,
 	FLMUINT				uiBlkAddress,
 	FLMBOOL				bDoAsync);
 
@@ -318,6 +318,29 @@ FSTATIC void ScaRelocate(
 	#define ScaReleaseForThread	ScaNonDbgReleaseForThread
 
 #endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_SCacheRelocator : public IF_Relocator
+{
+public:
+
+	F_SCacheRelocator()
+	{
+	}
+	
+	virtual ~F_SCacheRelocator()
+	{
+	}
+
+	void FLMAPI relocate(
+		void *	pvOldAlloc,
+		void *	pvNewAlloc);
+
+	FLMBOOL FLMAPI canRelocate(
+		void *	pvOldAlloc);
+};
 
 /***************************************************************************
 Desc:
@@ -1526,7 +1549,7 @@ FSTATIC void ScaUnlinkCache(
 	// to the log.
 
 #ifdef FLM_DEBUG
-	if ((RC_OK( GET_FS_ERROR())) && (RC_OK( NotifyRc)))
+	if( RC_OK( NotifyRc))
 	{
 		flmAssert (!(pSCache->ui16Flags &
 					(CA_DIRTY | CA_WRITE_TO_LOG | CA_LOG_FOR_CP | 
@@ -1563,7 +1586,7 @@ FSTATIC void ScaUnlinkCache(
 				// Older version better not be needing to be logged
 
 #ifdef FLM_DEBUG
-				if ((RC_OK( GET_FS_ERROR())) && (RC_OK( NotifyRc)))
+				if( RC_OK( NotifyRc))
 				{
 					flmAssert( !(pSCache->pNextInVersionList->ui16Flags &
 								(CA_WRITE_TO_LOG | CA_LOG_FOR_CP | CA_WAS_DIRTY)));
@@ -1588,7 +1611,7 @@ FSTATIC void ScaUnlinkCache(
 				// Older version better not be dirty or not yet logged.
 
 #ifdef FLM_DEBUG
-				if ((RC_OK( GET_FS_ERROR())) && (RC_OK( NotifyRc)))
+				if( RC_OK( NotifyRc))
 				{
 					flmAssert( !(pSCache->pNextInVersionList->ui16Flags &
 									(CA_WRITE_TO_LOG | CA_DIRTY | 
@@ -1941,43 +1964,42 @@ FSTATIC RCODE ScaFlushLogBlocks(
 	FLMBOOL *			pbForceCheckpoint,
 	FLMBOOL *			pbWroteAll)
 {
-	RCODE				rc = FERR_OK;
-	FLMUINT			uiLogEof;
-	FLMBYTE *		pucLogHdr;
-	CP_INFO *		pCPInfo = pFile->pCPInfo;
-	FLMUINT			uiBlockSize = pFile->FileHdr.uiBlockSize;
-	SCACHE *			pTmpSCache;
-	SCACHE *			pLastBlockToLog;
-	SCACHE *			pFirstBlockToLog;
-	SCACHE *			pDirtySCache;
-	SCACHE *			pSavedSCache = NULL;
-	FLMUINT			uiDirtyCacheLeft;
-	FLMUINT			uiPrevBlkAddress;
-	FLMBOOL			bMutexLocked = TRUE;
-	FLMBOOL			bLoggedFirstBlk = FALSE;
-	FLMBOOL			bLoggedFirstCPBlk = FALSE;
-	FLMUINT			uiCurrTime;
-	FLMUINT			uiSaveEOFAddr;
-	FLMUINT			uiSaveFirstCPBlkAddr = 0;
-	FLMBOOL			bDone = FALSE;
-	SCACHE *			pUsedSCache;
-	SCACHE *			pNextSCache = NULL;
-	FLMUINT			uiBlocksDoneArraySize = pFile->uiBlocksDoneArraySize;
-	SCACHE **		ppBlocksDone = pFile->ppBlocksDone;
-	SCACHE **		ppUsedBlocks = (SCACHE **)((ppBlocksDone)
+	RCODE					rc = FERR_OK;
+	FLMUINT				uiLogEof;
+	FLMBYTE *			pucLogHdr;
+	CP_INFO *			pCPInfo = pFile->pCPInfo;
+	FLMUINT				uiBlockSize = pFile->FileHdr.uiBlockSize;
+	SCACHE *				pTmpSCache;
+	SCACHE *				pLastBlockToLog;
+	SCACHE *				pFirstBlockToLog;
+	SCACHE *				pDirtySCache;
+	SCACHE *				pSavedSCache = NULL;
+	FLMUINT				uiDirtyCacheLeft;
+	FLMUINT				uiPrevBlkAddress;
+	FLMBOOL				bMutexLocked = TRUE;
+	FLMBOOL				bLoggedFirstBlk = FALSE;
+	FLMBOOL				bLoggedFirstCPBlk = FALSE;
+	FLMUINT				uiCurrTime;
+	FLMUINT				uiSaveEOFAddr;
+	FLMUINT				uiSaveFirstCPBlkAddr = 0;
+	FLMBOOL				bDone = FALSE;
+	SCACHE *				pUsedSCache;
+	SCACHE *				pNextSCache = NULL;
+	FLMUINT				uiBlocksDoneArraySize = pFile->uiBlocksDoneArraySize;
+	SCACHE **			ppBlocksDone = pFile->ppBlocksDone;
+	SCACHE **			ppUsedBlocks = (SCACHE **)((ppBlocksDone)
 											? &ppBlocksDone [uiBlocksDoneArraySize]
 											: (SCACHE **)NULL);
-	FLMUINT			uiTotalLoggedBlocks = 0;
-	FLMBOOL			bForceCheckpoint = *pbForceCheckpoint;
-	FLMBOOL			bDoAsync;
-	ServerLockObject *
-						pWriteLockObj = pFile->pWriteLockObj;
+	FLMUINT				uiTotalLoggedBlocks = 0;
+	FLMBOOL				bForceCheckpoint = *pbForceCheckpoint;
+	FLMBOOL				bDoAsync;
+	IF_LockObject *	pWriteLockObj = pFile->pWriteLockObj;
 #ifdef FLM_DBG_LOG
-	FLMUINT16		ui16OldFlags;
+	FLMUINT16			ui16OldFlags;
 #endif
 
 	pFile->uiCurrLogWriteOffset = 0;
-	bDoAsync = (gv_FlmSysData.bOkToDoAsyncWrites && pSFileHdl->CanDoAsync())
+	bDoAsync = (gv_FlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
 				  ? TRUE
 				  : FALSE;
 
@@ -2024,7 +2046,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 			}
 			else
 			{
-				if (pWriteLockObj->ThreadWaitingLock() &&
+				if (pWriteLockObj->getWaiterCount() &&
 					 uiDirtyCacheLeft <= uiMaxDirtyCache)
 				{
 					bDone = TRUE;
@@ -2435,15 +2457,6 @@ Write_Log_Blocks:
 #ifdef FLM_DBG_LOG
 				scaLogFlgChange( pTmpSCache, ui16OldFlags, 'D');
 #endif
-				if (pFile->pECacheMgr && bDoAsync)
-				{
-					FLMBYTE *	pucTmp = pTmpSCache->pPrevInVersionList->pucBlk;
-
-					pFile->pECacheMgr->putBlock(
-						(FLMUINT)FB2UD( &pucTmp [BH_PREV_BLK_ADDR]),
-						pTmpSCache->pucBlk, TRUE);
-				}
-
 				if (!pTmpSCache->uiUseCount &&
 				    !pTmpSCache->ui16Flags &&
 					 !ScaNeededByReadTrans( pTmpSCache->pFile, pTmpSCache))
@@ -2628,14 +2641,14 @@ Exit:
 Desc:	This routine is called whenever a write of a dirty block completes.
 ****************************************************************************/
 FSTATIC void scaWriteComplete(
-	F_IOBuffer *	pIOBuffer)
+	IF_IOBuffer *	pIOBuffer)
 {
 	RCODE			rc = pIOBuffer->getCompletionCode();
 	FLMUINT		uiNumBlocks = pIOBuffer->getBufferSize() /
 										pIOBuffer->getBlockSize();
 	SCACHE *		pSCache;
 	FFILE *		pFile;
-	DB_STATS *	pDbStats = pIOBuffer->getDbStats();
+	DB_STATS *	pDbStats = (DB_STATS *)pIOBuffer->getStats();
 	FLMUINT		uiMilliPerBlock = 0;
 	FLMUINT		uiExtraMilli = 0;
 
@@ -2736,14 +2749,6 @@ FSTATIC void scaWriteComplete(
 			if (RC_OK( rc))
 			{
 				scaUnsetDirtyFlag( pSCache, pFile);
-
-				// Put into extended cache if we did a successful write.
-
-				if( pFile->pECacheMgr)
-				{
-					pFile->pECacheMgr->putBlock( pSCache->uiBlkAddress,
-						pSCache->pucBlk, TRUE);
-				}
 			}
 
 #ifdef FLM_DBG_LOG
@@ -2816,11 +2821,7 @@ void ScaCleanupCache(
 				// Shortest possible pause - to allow other threads
 				// to do work.
 
-#ifdef FLM_NLM
 				f_yieldCPU();
-#else
-				f_sleep( 0);
-#endif
 
 				// Relock mutex.
 
@@ -3406,7 +3407,7 @@ FSTATIC RCODE ScaReadTheBlock(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if (RC_BAD( rc = pDb->pSFileHdl->ReadBlock( uiFilePos,
+	if (RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
 								 uiBlkSize, pucBlk, &uiBytesRead)))
 	{
 		if (pDbStats)
@@ -4137,6 +4138,8 @@ Get_Next_Block:
 			bMutexLocked = FALSE;
 			break;
 		}
+
+		flmAssert( bMutexLocked);
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 		bMutexLocked = FALSE;
 
@@ -5003,14 +5006,13 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	F_IOBuffer *		pIOBuffer,
+	IF_IOBuffer *		pIOBuffer,
 	FLMUINT				uiBlkAddress,
 	FLMBOOL				bDoAsync)
 {
 	RCODE					rc = FERR_OK;
-	FLMBOOL				bMutexLocked = FALSE;
 	FLMBYTE *			pucWriteBuffer;
-	F_IOBuffer *		pAsyncBuffer;
+	IF_IOBuffer *		pAsyncBuffer = NULL;
 	FLMUINT				uiBytesWritten;
 	FLMUINT				uiWriteLen;
 
@@ -5037,7 +5039,7 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 	// after the call to WriteBlock, unless we are doing
 	// non-asynchronous write.
 
-	rc = pSFileHdl->WriteBlock( uiBlkAddress, uiWriteLen,
+	rc = pSFileHdl->writeBlock( uiBlkAddress, uiWriteLen,
 					pucWriteBuffer, pIOBuffer->getBufferSize(),
 					pAsyncBuffer, &uiBytesWritten);
 	if (!pAsyncBuffer)
@@ -5057,11 +5059,6 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 	}
 
 Exit:
-
-	if (bMutexLocked)
-	{
-		f_mutexUnlock( gv_FlmSysData.hShareMutex);
-	}
 
 	// If we allocated a write buffer, but did not do a write with it
 	// still need to do the notify to clean up cache blocks.
@@ -5102,8 +5099,8 @@ FSTATIC RCODE scaWriteSortedBlocks(
 	FLMUINT			uiBlockCount;
 	FLMUINT			uiBlockSize = pFile->FileHdr.uiBlockSize;
 	CP_INFO *		pCPInfo = pFile->pCPInfo;
-	SCACHE *			ppContiguousBlocks[ F_MAX_BUFFER_BLOCKS];
-	FLMBOOL			bBlockDirty[ F_MAX_BUFFER_BLOCKS];
+	SCACHE *			ppContiguousBlocks[ FLM_MAX_IO_BUFFER_BLOCKS];
+	FLMBOOL			bBlockDirty[ FLM_MAX_IO_BUFFER_BLOCKS];
 	FLMUINT			uiOffset;
 	FLMUINT			uiTmpOffset;
 	FLMUINT			uiLoop;
@@ -5111,7 +5108,7 @@ FSTATIC RCODE scaWriteSortedBlocks(
 	FLMUINT			uiCopyLen;
 	FLMBOOL			bForceCheckpoint = *pbForceCheckpoint;
 	SCACHE *			pSCache;
-	F_IOBuffer *	pIOBuffer = NULL;
+	IF_IOBuffer *	pIOBuffer = NULL;
 	FLMBYTE *		pucBuffer;
 
 	uiOffset = 0;
@@ -5163,7 +5160,7 @@ Add_Contiguous_Block:
 				ppContiguousBlocks [uiContiguousBlocks] = pSCache;
 				bBlockDirty [uiContiguousBlocks++] = TRUE;
 				uiNumSortedBlocksProcessed++;
-				if (uiContiguousBlocks == F_MAX_BUFFER_BLOCKS)
+				if (uiContiguousBlocks == FLM_MAX_IO_BUFFER_BLOCKS)
 				{
 					break;
 				}
@@ -5209,7 +5206,7 @@ Add_Contiguous_Block:
 				// request, don't try to fill it.
 
 				if (uiContiguousBlocks + uiGap / uiBlockSize + 1 >
-						F_MAX_BUFFER_BLOCKS)
+						FLM_MAX_IO_BUFFER_BLOCKS)
 				{
 					break;
 				}
@@ -5278,6 +5275,12 @@ Add_Contiguous_Block:
 			break;
 		}
 
+		if (bMutexLocked)
+		{
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+			bMutexLocked = FALSE;
+		}
+
 		// Ask for a buffer of the size needed.
 
 		flmAssert( pIOBuffer == NULL);
@@ -5303,9 +5306,16 @@ Add_Contiguous_Block:
 
 		uiContiguousBlocks = 0;
 
+		// Re-lock the mutex
+
+		if (!bMutexLocked)
+		{
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			bMutexLocked = TRUE;
+		}
+
 		// Set write pending on all of the blocks before unlocking
-		// the mutex.
-		// Then unlock the mutex and come out and copy
+		// the mutex.  Then unlock the mutex and come out and copy
 		// the blocks.
 
 		for (uiLoop = 0; uiLoop < uiBlockCount; uiLoop++)
@@ -5400,7 +5410,7 @@ Add_Contiguous_Block:
 			}
 			else
 			{
-				if (pFile->pWriteLockObj->ThreadWaitingLock() &&
+				if (pFile->pWriteLockObj->getWaiterCount() &&
 					 *puiDirtyCacheLeft <= uiMaxDirtyCache)
 				{
 
@@ -5504,7 +5514,7 @@ FSTATIC RCODE ScaFlushDirtyBlocks(
 
 	// See if we can do async IO.
 
-	bDoAsync = (gv_FlmSysData.bOkToDoAsyncWrites && pSFileHdl->CanDoAsync())
+	bDoAsync = (gv_FlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
 				  ? TRUE
 				  : FALSE;
 
@@ -5811,7 +5821,7 @@ FSTATIC RCODE ScaReduceNewBlocks(
 
 	// See if we can do async IO.
 
-	bDoAsync = (gv_FlmSysData.bOkToDoAsyncWrites && pSFileHdl->CanDoAsync())
+	bDoAsync = (gv_FlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
 				  ? TRUE
 				  : FALSE;
 
@@ -6455,7 +6465,7 @@ RCODE ScaCreateBlock(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pDb->pSFileHdl->CreateFile( uiFileNumber)))
+		if (RC_BAD( rc = pDb->pSFileHdl->createFile( uiFileNumber)))
 		{
 			goto Exit;
 		}
@@ -7089,11 +7099,12 @@ Exit:
 Desc:	This routine initializes shared cache manager.
 ****************************************************************************/
 RCODE ScaInit(
-	FLMUINT	uiMaxSharedCache)
+	FLMUINT					uiMaxSharedCache)
 {
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiLoop;
-	FLMUINT		uiBlockSize;
+	RCODE						rc = FERR_OK;
+	FLMUINT					uiLoop;
+	FLMUINT					uiBlockSize;
+	F_SCacheRelocator *	pSCacheRelocator = NULL;
 
 	f_memset( &gv_FlmSysData.SCacheMgr, 0, sizeof( SCACHE_MGR));
 	gv_FlmSysData.SCacheMgr.Usage.uiMaxBytes = uiMaxSharedCache;
@@ -7104,32 +7115,43 @@ RCODE ScaInit(
 	{
 		goto Exit;
 	}
+	
+	// Allocate a re-locator object
 
+	if( (pSCacheRelocator = f_new F_SCacheRelocator) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+		
 	// Initialize the cache block allocators
 
 	for( uiLoop = 0, uiBlockSize = 4096; 
 		  uiLoop < 2; 
 		  uiLoop++, uiBlockSize *= 2)
 	{
-		if( (gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop] =
-			new F_FixedAlloc) == NULL)
+		if( RC_BAD( rc = FlmAllocFixedAllocator(
+			&gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop])))
 		{
-			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
-
+		
 		if( RC_BAD( rc = gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop]->setup( 
-			gv_FlmSysData.pSlabManager, (FLMBOOL)FALSE, sizeof( SCACHE) + uiBlockSize, 
+			gv_FlmSysData.pSlabManager, pSCacheRelocator, 
+			sizeof( SCACHE) + uiBlockSize,
+			&gv_FlmSysData.SCacheMgr.Usage.SlabUsage,
 			&gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated)))
 		{
 			goto Exit;
 		}
-
-		gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop]->setRelocationFuncs( 
-			ScaCanRelocate, ScaRelocate);
 	}
 
 Exit:
+
+	if( pSCacheRelocator)
+	{
+		pSCacheRelocator->Release();
+	}
 
 	return( rc);
 }
@@ -7734,8 +7756,8 @@ FSTATIC RCODE scaFinishCheckpoint(
 			pCPInfo->uiStartWaitTruncateTime = FLM_GET_TIMER();
 		}
 
-		FLM_SECS_TO_TIMER_UNITS( 300, ui5MinutesTime);
-		FLM_SECS_TO_TIMER_UNITS( 30, ui30SecTime);
+		ui5MinutesTime = FLM_SECS_TO_TIMER_UNITS( 300);
+		ui30SecTime = FLM_SECS_TO_TIMER_UNITS( 30);
 
 		pFirstDb = pFile->pFirstReadTrans;
 		while ((!pCPInfo || !pCPInfo->bShuttingDown) && pFirstDb &&
@@ -7804,7 +7826,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				// Log a message indicating that we have killed the transaction
 
 				uiElapTime = FLM_ELAPSED_TIME( uiTime, uiFirstDbInactiveTime);
-				FLM_TIMER_UNITS_TO_SECS( uiElapTime, uiFirstDbInactiveSecs);
+				uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 				flmLogMessage( 
 					FLM_DEBUG_MESSAGE,
@@ -7844,7 +7866,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				if( FLM_ELAPSED_TIME( uiTime, uiLastMsgTime) >= ui30SecTime)
 				{
 					uiElapTime = FLM_ELAPSED_TIME( uiTime, uiFirstDbInactiveTime);
-					FLM_TIMER_UNITS_TO_SECS( uiElapTime, uiFirstDbInactiveSecs);
+					uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 					flmLogMessage(
 						FLM_DEBUG_MESSAGE,
@@ -8039,19 +8061,19 @@ FSTATIC RCODE scaFinishCheckpoint(
 	}
 	else if (bTruncateLog)
 	{
-		F_FileHdlImp *		pCFileHdl;
+		IF_FileHdl *		pCFileHdl;
 
 		if (uiHighLogFileNumber)
 		{
-			(void)pSFileHdl->TruncateFiles(
+			(void)pSFileHdl->truncateFiles(
 					FIRST_LOG_BLOCK_FILE_NUMBER(
 						pFile->FileHdr.uiVersionNum),
 					uiHighLogFileNumber);
 		}
 
-		if( RC_OK( pSFileHdl->GetFileHdl( 0, TRUE, &pCFileHdl)))
+		if( RC_OK( pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
 		{
-			(void)pCFileHdl->Truncate( LOG_THRESHOLD_SIZE);
+			(void)pCFileHdl->truncate( LOG_THRESHOLD_SIZE);
 		}
 	}
 
@@ -8111,7 +8133,8 @@ FSTATIC RCODE scaFinishCheckpoint(
 				break;
 			}
 
-			if (RC_BAD( TempRc = gv_FlmSysData.pFileSystem->Delete( szLogFilePath)))
+			if (RC_BAD( TempRc = gv_FlmSysData.pFileSystem->deleteFile( 
+				szLogFilePath)))
 			{
 				if (TempRc != FERR_IO_PATH_NOT_FOUND &&
 					 TempRc != FERR_IO_INVALID_PATH)
@@ -8158,7 +8181,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 	if (bDoTruncate)
 	{
-		if (RC_BAD( rc = pSFileHdl->TruncateFile(
+		if (RC_BAD( rc = pSFileHdl->truncateFile(
 							(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LOGICAL_EOF]))))
 		{
 			goto Exit;
@@ -8193,7 +8216,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 		// Get elapsed time in milliseconds - only calculate a new maximum if
 		// we did at least a half second worth of writing.
 
-		FLM_TIMER_UNITS_TO_MILLI( uiCPElapsedTime, uiElapsedMilli);
+		uiElapsedMilli = FLM_TIMER_UNITS_TO_MILLI( uiCPElapsedTime);
 
 		if (uiElapsedMilli >= 500)
 		{
@@ -8202,7 +8225,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 			// to that.  If calculated maximum is zero, we will not change
 			// the current maximum.
 
-			FLM_SECS_TO_TIMER_UNITS( 15, ui15Seconds);
+			ui15Seconds = FLM_SECS_TO_TIMER_UNITS( 15);
 
 			uiMaximum = (FLMUINT)(((FLMUINT64)uiTotalToWrite *
 							 (FLMUINT64)ui15Seconds) / (FLMUINT64)uiCPElapsedTime);
@@ -8398,7 +8421,7 @@ Exit:
 Desc:		
 Notes:	This routine assumes the global mutex is locked
 ****************************************************************************/
-FSTATIC FLMBOOL ScaCanRelocate(
+FLMBOOL F_SCacheRelocator::canRelocate(
 	void *		pvAlloc)
 {
 	SCACHE *		pSCache = (SCACHE *)pvAlloc;
@@ -8418,7 +8441,7 @@ Desc:		Fixes up all pointers needed to allow an SCACHE struct to be
 			moved to a different location in memory
 Notes:	This routine assumes the global mutex is locked
 ****************************************************************************/
-FSTATIC void ScaRelocate(
+void F_SCacheRelocator::relocate(
 	void *		pvOldAlloc,
 	void *		pvNewAlloc)
 {

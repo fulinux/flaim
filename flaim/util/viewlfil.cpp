@@ -83,12 +83,12 @@ FSTATIC FLMINT ViewOutputLFH2_0(
 	FLMUINT     Row = *RowRV;
 	FLMUINT		BlkAddress;
 	FLMBYTE		TempBuf [80];
-	FLMUINT		bc = WPS_BLACK;
-	FLMUINT		fc = WPS_LIGHTGRAY;
-	FLMUINT		mbc = WPS_BLACK;
-	FLMUINT		mfc = WPS_WHITE;
-	FLMUINT		sbc = WPS_BLUE;
-	FLMUINT		sfc = WPS_WHITE;
+	eColorType	bc = FLM_BLACK;
+	eColorType	fc = FLM_LIGHTGRAY;
+	eColorType	mbc = FLM_BLACK;
+	eColorType	mfc = FLM_WHITE;
+	eColorType	sbc = FLM_BLUE;
+	eColorType	sfc = FLM_WHITE;
 	FLMUINT     Option;
 	FLMUINT		lfNum;
 
@@ -131,8 +131,8 @@ FSTATIC FLMINT ViewOutputLFH2_0(
 				(FLMUINT)((FLMBYTE *)(&TempBuf [0])), 0,
 				0, VIEW_INVALID_FILE_OFFSET, (FLMUINT)f_strlen( (const char *)TempBuf),
 				MOD_DISABLED,
-				Col, Row++, 0, WPS_GREEN, WPS_WHITE,
-				WPS_GREEN, WPS_WHITE))
+				Col, Row++, 0, FLM_GREEN, FLM_WHITE,
+				FLM_GREEN, FLM_WHITE))
 		return( 0);
 
 	/* Adjust column and label width so the rest is indented */
@@ -173,10 +173,10 @@ FSTATIC FLMINT ViewOutputLFH2_0(
 				0, FileOffset + LFH_ROOT_BLK_OFFSET, 0,
 				MOD_FLMUINT | MOD_HEX,
 				Col, Row++, Option,
-				(FLMBYTE)(!Option ? bc : mbc),
-				(FLMBYTE)(!Option ? fc : mfc),
-				(FLMBYTE)(!Option ? bc : sbc),
-				(FLMBYTE)(!Option ? fc : sfc)))
+				!Option ? bc : mbc,
+				!Option ? fc : mfc,
+				!Option ? bc : sbc,
+				!Option ? fc : sfc))
 		return( 0);
 
 	/* Output the next DRN */

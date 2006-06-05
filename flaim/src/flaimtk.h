@@ -1,8 +1,10 @@
-//-------------------------------------------------------------------------
-// Desc:	Cross platform toolkit for mutexes and semaphores - definitions.
+//------------------------------------------------------------------------------
+// Desc:	Placeholder for FLAIM's cross-platform toolkit public definitions
+//			and interfaces
+//
 // Tabs:	3
 //
-//		Copyright (c) 2000-2006 Novell, Inc. All Rights Reserved.
+//		Copyright (c) 2006 Novell, Inc. All Rights Reserved.
 //
 //		This program is free software; you can redistribute it and/or
 //		modify it under the terms of version 2 of the GNU General Public
@@ -19,10 +21,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: ftksem.h 12329 2006-01-20 17:49:30 -0700 (Fri, 20 Jan 2006) ahodgkinson $
-//-------------------------------------------------------------------------
+// $Id$
+//------------------------------------------------------------------------------
 
-#ifndef FTKSEM_H
-#define FTKSEM_H
-
-#endif
+#include "ftk.h"

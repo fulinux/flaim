@@ -120,7 +120,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_CCS : public IF_CCS, public F_Base
+class F_CCS : public IF_CCS, public F_Object
 {
 public:
 
@@ -187,14 +187,14 @@ public:
 		return m_uiAlgType;
 	}
 
-	FINLINE FLMINT AddRef( void)
+	FINLINE FLMINT FLMAPI AddRef( void)
 	{
-		return( flmAtomicInc( &m_refCnt, m_hMutex, FALSE));
+		return( f_atomicInc( &m_refCnt));
 	}
 
-	FINLINE FLMINT Release( void)
+	FINLINE FLMINT FLMAPI Release( void)
 	{
-		FLMINT		iRefCnt = flmAtomicDec( &m_refCnt, m_hMutex, FALSE);
+		FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
 	
 		if( !iRefCnt)
 		{
@@ -280,95 +280,6 @@ private:
 	FLMBYTE 					m_pucIV[ IV_SZ];	// Used when the algorithm type is DES, 3DES or AES
 };
 
-/****************************************************************************
-Desc:	Decodes an ASCII base64 stream to binary
-****************************************************************************/
-class F_Base64Decoder : public F_Base
-{
-public:
-
-	F_Base64Decoder( void )
-	{
-		m_uiBufOffset = 0;
-		m_uiAvailBytes = 0;
-	}
-
-	~F_Base64Decoder()
-	{
-	}
-
-	RCODE read(
-		FLMBYTE *				psSource,
-		FLMUINT					uiSourceLen,
-		void *					pvBuffer,
-		FLMUINT32				ui32BytesToRead,
-		FLMUINT32 *				pui32BytesRead);
-
-	FINLINE void close( void)
-	{
-		m_uiAvailBytes = 0;
-		m_uiBufOffset = 0;
-	}
-
-private:
-
-	FLMUINT				m_uiBufOffset;
-	FLMUINT				m_uiAvailBytes;
-	FLMBYTE				m_ucBuffer[ 8];
-	static FLMBYTE		m_ucDecodeTable[ 256];
-};
-
-/****************************************************************************
-Desc:	Encodes a binary input stream into ASCII base64.
-****************************************************************************/
-class F_Base64Encoder : public F_Base
-{
-public:
-
-	F_Base64Encoder(
-		FLMBOOL				bLineBreaks = FALSE)
-	{
-		m_uiBase64Count = 0;
-		m_uiBufOffset = 0;
-		m_uiAvailBytes = 0;
-		m_bLineBreaks = bLineBreaks;
-		m_bInputExhausted = FALSE;
-		m_bPriorLineEnd = FALSE;
-	}
-
-	~F_Base64Encoder()
-	{
-	}
-
-	RCODE read(
-		FLMBYTE *				psSource,
-		FLMUINT					uiSourceLen,
-		void *					pvBuffer,
-		FLMUINT32				ui32BytesToRead,
-		FLMUINT32 *				pui32BytesRead);
-
-	FINLINE void close( void)
-	{
-
-		m_uiBufOffset = 0;
-		m_uiAvailBytes = 0;
-		m_uiBase64Count = 0;
-		m_bPriorLineEnd = FALSE;
-		m_bInputExhausted = TRUE;
-	}
-
-private:
-
-	FLMBOOL			m_bLineBreaks;
-	FLMBOOL			m_bPriorLineEnd;
-	FLMBOOL			m_bInputExhausted;
-	FLMUINT			m_uiBase64Count;
-	FLMUINT			m_uiBufOffset;
-	FLMUINT			m_uiAvailBytes;
-	FLMBYTE			m_ucBuffer[ 8];
-	static char 	m_ucEncodeTable[ 64];
-};
-	
 RCODE flmDecryptBuffer(
 	FLMBYTE *				pucBuffer,
 	FLMUINT *				puiBufLen);
