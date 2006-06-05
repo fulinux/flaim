@@ -1992,7 +1992,7 @@
 		virtual RCODE FLMAPI getThreadName(
 			FLMUINT					uiThreadId,
 			char *					pszThreadName,
-			FLMUINT *				puiLength);
+			FLMUINT *				puiLength) = 0;
 	
 		virtual FLMUINT FLMAPI getThreadGroupCount(
 			FLMUINT					uiThreadGroup) = 0;

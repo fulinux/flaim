@@ -102,8 +102,8 @@ RCODE FLMAPI ftkStartup( void)
 	// Sanity check -- make sure we are using the correct
 	// byte-swap macros for this platform
 
-	flmAssert( FB2UD( "\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
-	flmAssert( FB2UW( "\x0A\x0B") == 0x0B0A);
+	flmAssert( FB2UD( (FLMBYTE *)"\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
+	flmAssert( FB2UW( (FLMBYTE *)"\x0A\x0B") == 0x0B0A);
 
 #if defined( FLM_RING_ZERO_NLM)
 	if( RC_BAD( rc = f_netwareStartup()))
