@@ -1126,7 +1126,7 @@ FLMBYTE FLMAPI f_getBase24DigitChar(
 
 	if( ucValue <= 9)
 	{
-		ucValue += (FLMUINT) NATIVE_ZERO;
+		ucValue += NATIVE_ZERO;
 	}
 	else
 	{
