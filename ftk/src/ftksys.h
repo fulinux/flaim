@@ -830,7 +830,6 @@
 			FLMUINT64			ui64WriteOffset,
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
-			FLMUINT				uiBufferSize,
 			IF_IOBuffer *		pBufferObj,
 			FLMUINT *			puiBytesWrittenRV,
 			FLMBOOL				bBuffHasFullSectors,

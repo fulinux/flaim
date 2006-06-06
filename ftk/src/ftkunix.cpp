@@ -929,7 +929,7 @@ RCODE FLMAPI F_FileHdl::write(
 	if( m_bDoDirectIO)
 	{
 		rc = directWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer, 
-			uiBytesToWrite, NULL, puiBytesWrittenRV, FALSE, TRUE);
+			NULL, puiBytesWrittenRV, FALSE, TRUE);
 		goto Exit;
 	}
 	
@@ -1204,8 +1204,6 @@ RCODE F_FileHdl::directWrite(
 		{
 			break;
 		}
-
-		f_assert( !pBufferObj);
 
 		pucSrcBuffer += uiBytesBeingOutput;
 		ui64WriteOffset += uiBytesBeingOutput;
