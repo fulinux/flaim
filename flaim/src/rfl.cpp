@@ -1391,7 +1391,7 @@ RCODE F_Rfl::flush(
 		{
 
 			// No need to call copyLastSector, because it was called above
-			// before calling SectorWrite. The part of the old buffer that
+			// before calling sectorWrite. The part of the old buffer that
 			// needs to be transferred to the new buffer has already been
 			// transferred.
 
