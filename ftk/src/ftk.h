@@ -2960,21 +2960,25 @@
 		}
 		
 		FINLINE void UW2FBA(
-			FLMUINT16		ui16Num,
+			FLMUINT			uiNum,
 			FLMBYTE *		pucBuf)
 		{
-			pucBuf[ 1] = (FLMBYTE) (ui16Num >>  8);
-			pucBuf[ 0] = (FLMBYTE) (ui16Num);
+			f_assert( uiNum <= FLM_MAX_UINT16);
+			
+			pucBuf[ 1] = (FLMBYTE) (uiNum >>  8);
+			pucBuf[ 0] = (FLMBYTE) (uiNum);
 		}
 		
 		FINLINE void UD2FBA(
-			FLMUINT32		ui32Num,
+			FLMUINT			uiNum,
 			FLMBYTE *		pucBuf)
 		{
-			pucBuf[ 3] = (FLMBYTE) (ui32Num >> 24);
-			pucBuf[ 2] = (FLMBYTE) (ui32Num >> 16);
-			pucBuf[ 1] = (FLMBYTE) (ui32Num >>  8);
-			pucBuf[ 0] = (FLMBYTE) (ui32Num);
+			f_assert( uiNum <= FLM_MAX_UINT32);
+			
+			pucBuf[ 3] = (FLMBYTE) (uiNum >> 24);
+			pucBuf[ 2] = (FLMBYTE) (uiNum >> 16);
+			pucBuf[ 1] = (FLMBYTE) (uiNum >>  8);
+			pucBuf[ 0] = (FLMBYTE) (uiNum);
 		}
 		
 		FINLINE void U642FBA(
