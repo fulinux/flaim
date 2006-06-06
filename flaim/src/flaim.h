@@ -3964,7 +3964,11 @@
 		/// Overloaded new operator for ::FlmRecord objects.
 		void * operator new(
 			FLMSIZET			uiSize	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
-			);
+			)
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 
 		/// Overloaded new operator for ::FlmRecord objects (with source file and line number).
 		/// This new operator passes in the current file and line number.  This information is
@@ -3973,13 +3977,21 @@
 			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
 			const char *	pszFile,	///< Name of source file where this allocation is made.
 			int				iLine		///< Line number in source file where this allocation request is made.
-			);
+			)
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 
 		/// Overloaded new operator (array) for ::FlmRecord objects.
 		/// This method is called when an array of ::FlmRecord objects is allocated.
 		void * operator new[](
 			FLMSIZET			uiSize	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
-			);
+			)
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 
 		/// Overloaded new operator (array) for ::FlmRecord objects (with source file and line number).
 		/// This new operator is called when an array of ::FlmRecord objects is allocated.
@@ -3989,7 +4001,11 @@
 			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
 			const char *	pszFile,	///< Name of source file where this allocation is made.
 			int				iLine		///< Line number in source file where this allocation request is made.
-			);
+			)
+#ifndef FLM_WATCOM_NLM
+			throw()
+#endif
+			;
 
 		/// Overloaded delete operator for ::FlmRecord objects.
 		void operator delete(

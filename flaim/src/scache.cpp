@@ -293,13 +293,6 @@ FSTATIC void ScaLinkToNewList(
 FSTATIC void ScaUnlinkFromNewList(
 	SCACHE *			pSCache);
 
-FSTATIC FLMBOOL ScaCanRelocate(
-	void *		pvAlloc);
-
-FSTATIC void ScaRelocate(
-	void *		pvOldAlloc,
-	void *		pvNewAlloc);
-
 #ifdef FLM_DEBUG
 
 	FSTATIC void ScaDbgUseForThread(

@@ -4648,6 +4648,9 @@ Desc:
 ****************************************************************************/
 void * FlmRecord::operator new(
 	FLMSIZET			uiSize)
+#ifndef FLM_WATCOM_NLM
+	throw()
+#endif
 {
 	F_UNREFERENCED_PARM( uiSize);
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
@@ -4658,6 +4661,9 @@ void * FlmRecord::operator new(
 Desc:
 ****************************************************************************/
 void * FlmRecord::operator new[]( FLMSIZET)
+#ifndef FLM_WATCOM_NLM
+	throw()
+#endif
 {
 	flmAssert( 0);
 	return( NULL);
@@ -4671,6 +4677,9 @@ void * FlmRecord::operator new(
 	FLMSIZET			uiSize,
 	const char *,
 	int)
+#ifndef FLM_WATCOM_NLM
+	throw()
+#endif
 {
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
 	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( NULL, objectAllocInit));
@@ -4685,6 +4694,9 @@ void * FlmRecord::operator new[](
 	FLMSIZET,		// uiSize,
 	const char *,	// pszFile,
 	int)				// iLine)
+#ifndef FLM_WATCOM_NLM
+	throw()
+#endif
 {
 	flmAssert( 0);
 	return( NULL);
@@ -4702,7 +4714,7 @@ void FlmRecord::operator delete(
 		return;
 	}
 	
-	flmAssert( ((FlmRecord *)ptr)->getRefCount() == 0);
+	flmAssert( ((FlmRecord *)ptr)->m_refCnt == 0);
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
 
@@ -4731,7 +4743,6 @@ void FlmRecord::operator delete(
 		return;
 	}
 
-	flmAssert( ((FlmRecord *)ptr)->getRefCount() == 0);
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
 #endif
