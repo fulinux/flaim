@@ -1278,7 +1278,7 @@ RCODE GedPutRecPtr(
 		goto Exit;
 	}
 
-	UD2FBA( (FLMUINT32) drn, ptr);
+	UD2FBA( (FLMUINT32) drn, (FLMBYTE *)ptr);
 
 	if (nd->ui32EncId)
 	{

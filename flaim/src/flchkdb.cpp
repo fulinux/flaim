@@ -180,14 +180,6 @@ FSTATIC RCODE chkEndUpdate(
 	STATE_INFO *			pStateInfo,
 	IX_CHK_INFO *			pIxChkInfo);
 
-FSTATIC RCODE chkCompareIxRSEntries(
-	void *					vpData1,
-	FLMUINT					uiLength1,
-	void *					vpData2,
-	FLMUINT					uiLength2,
-	void *					UserValue,
-	FLMINT *					piCompare);
-
 FSTATIC RCODE chkReadBlkFromDisk(
 	FILE_HDR *				pFileHdr,
 	F_SuperFileHdl *		pSFileHdl,
