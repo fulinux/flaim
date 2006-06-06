@@ -748,7 +748,7 @@ FSTATIC RCODE bldCheckBlock(
 	// We don't do a block checksum calculation during rebuild, so at this
 	// point, it still holds the low checksum byte.
 
-	SET_BH_ADDR( pStateInfo->pBlk, uiBlkAddress);
+	SET_BH_ADDR( pStateInfo->pBlk, (FLMUINT32)uiBlkAddress);
 	if ((*peCorruptionCode = flmVerifyBlockHeader( pStateInfo, NULL,
 										pHdrInfo->FileHdr.uiBlockSize,
 										0, uiPrevBlkAddress, FALSE, TRUE)) != FLM_NO_CORRUPTION)

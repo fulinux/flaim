@@ -686,7 +686,7 @@ FSTATIC RCODE flmInitFileHdrs(
 	// Initialize and output the first LFH block
 
 	f_memset( pInitBuf, 0, uiBlkSize); 
-	SET_BH_ADDR( pInitBuf, pFile->FileHdr.uiFirstLFHBlkAddr);
+	SET_BH_ADDR( pInitBuf, (FLMUINT32)pFile->FileHdr.uiFirstLFHBlkAddr);
 	pInitBuf [BH_TYPE] = BHT_LFH_BLK;
 	UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_PREV_BLK]);
 	UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_NEXT_BLK]);
@@ -714,7 +714,7 @@ FSTATIC RCODE flmInitFileHdrs(
 
 		f_memset( pInitBuf, 0, uiBlkSize);
 		uiPcodeAddr = pFile->FileHdr.uiFirstLFHBlkAddr + uiBlkSize;
-		SET_BH_ADDR( pInitBuf, uiPcodeAddr);
+		SET_BH_ADDR( pInitBuf, (FLMUINT32)uiPcodeAddr);
 		pInitBuf [BH_TYPE] = BHT_PCODE_BLK;
 		UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_PREV_BLK]);
 		UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_NEXT_BLK]);

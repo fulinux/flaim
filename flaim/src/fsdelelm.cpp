@@ -486,7 +486,7 @@ RCODE FSNewLastBlkElm(
 				goto Exit;
 			}
 
-			UD2FBA( uiRefCount, &pElmBuffer[BNE_CHILD_COUNT]);
+			UD2FBA( (FLMUINT32)uiRefCount, &pElmBuffer[BNE_CHILD_COUNT]);
 		}
 	}
 
@@ -785,12 +785,12 @@ void FSSetChildBlkAddr(
 	if (uiBlkOvhd == BNE_KEY_START || uiBlkOvhd == BNE_KEY_COUNTS_START)
 	{
 		pChildAddr = pElement + BNE_CHILD_BLOCK;
-		UD2FBA( uiBlkAddr, pChildAddr);
+		UD2FBA( (FLMUINT32)uiBlkAddr, pChildAddr);
 	}
 	else if (uiBlkOvhd == BNE_DATA_OVHD)
 	{
 		pChildAddr = pElement + BNE_DATA_CHILD_BLOCK;
-		UD2FBA( uiBlkAddr, pChildAddr);
+		UD2FBA( (FLMUINT32)uiBlkAddr, pChildAddr);
 	}
 
 	return;

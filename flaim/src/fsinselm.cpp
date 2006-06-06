@@ -321,7 +321,7 @@ FSTATIC RCODE FSBlkInsElm(
 		uiBlkEnd += uiNewElmLen;
 		pStack->uiBlkEnd = uiBlkEnd;
 
-		UW2FBA( uiBlkEnd, BLK_ELM_ADDR( pStack, BH_ELM_END));
+		UW2FBA( (FLMUINT16)uiBlkEnd, BLK_ELM_ADDR( pStack, BH_ELM_END));
 		rc = FERR_OK;
 	}
 

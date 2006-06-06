@@ -130,7 +130,7 @@ RCODE FlmBlobImp::buildBlobHeader(
 
 	ptr[ BLOB_H_VERSION_LEN_POS] = BLOB_CODE_VERSION; // 28
 	ptr[ BLOB_H_STORAGE_TYPE_POS] = (FLMBYTE) m_uiStorageType;
-	UW2FBA( m_uiFlags, &ptr[ BLOB_H_FLAGS_POS ]);
+	UW2FBA( (FLMUINT16)m_uiFlags, &ptr[ BLOB_H_FLAGS_POS ]);
 	UW2FBA( BLOB_UNKNOWN_TYPE, &ptr[ BLOB_H_TYPE_POS ]);
 	UW2FBA( 0, &ptr[ BLOB_H_FUTURE2 ]);
 	UD2FBA( 0, &ptr[ BLOB_H_RAW_SIZE_POS ]);

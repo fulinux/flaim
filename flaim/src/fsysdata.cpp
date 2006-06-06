@@ -177,7 +177,7 @@ FSTATIC void flmInitHashTbl(
 	{
 		for (uiCnt = 0; uiCnt < uiHashEntries - 1; uiCnt++)
 		{
-			uiRandVal = f_getRandomUINT32( uiCnt, uiHashEntries - 1);
+			uiRandVal = f_getRandomUINT32( (FLMUINT32)uiCnt, (FLMUINT32)(uiHashEntries - 1));
 			
 			if (uiRandVal != uiCnt)
 			{

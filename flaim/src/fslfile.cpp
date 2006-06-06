@@ -122,8 +122,8 @@ RCODE	flmLFileInit(
 		*pElm = BBE_FIRST_FLAG | BBE_LAST_FLAG;
 		pElm[ BBE_KL ] = 4;
 		pElm[ BBE_RL ] = 4;
-		UD2FBA( DRN_LAST_MARKER, &pElm[ BBE_KEY ]);
-		UD2FBA( pLFile->uiNextDrn, &pElm[ BBE_KEY + 4 ]);
+		UD2FBA( (FLMUINT32)DRN_LAST_MARKER, &pElm[ BBE_KEY ]);
+		UD2FBA( (FLMUINT32)pLFile->uiNextDrn, &pElm[ BBE_KEY + 4 ]);
 		uiBlkPos += DRN_LAST_MARKER_LEN;
 	}
 
@@ -133,7 +133,7 @@ RCODE	flmLFileInit(
 	pucBlk[ uiBlkPos + BBE_KL] = 
 	pucBlk[ uiBlkPos + BBE_RL] = 0;
 	uiBlkPos += BBE_LEM_LEN;
-	UW2FBA( uiBlkPos, &pucBlk[ BH_ELM_END]);
+	UW2FBA( (FLMUINT16)uiBlkPos, &pucBlk[ BH_ELM_END]);
 
 	// Release the cache block, because we are done with it
 
@@ -293,8 +293,8 @@ FSTATIC RCODE flmLFileToBuffer(
 
 	UW2FBA( (FLMUINT16) pLFile->uiLfNum, &pucBuf[ LFH_LF_NUMBER_OFFSET]);
 	pucBuf[ LFH_TYPE_OFFSET] = (FLMBYTE) pLFile->uiLfType;
-	UD2FBA( pLFile->uiRootBlk, &pucBuf[ LFH_ROOT_BLK_OFFSET]);
-	UD2FBA( pLFile->uiNextDrn, &pucBuf[ LFH_NEXT_DRN_OFFSET]);
+	UD2FBA( (FLMUINT32)pLFile->uiRootBlk, &pucBuf[ LFH_ROOT_BLK_OFFSET]);
+	UD2FBA( (FLMUINT32)pLFile->uiNextDrn, &pucBuf[ LFH_NEXT_DRN_OFFSET]);
 
 	// Set these for backwards compatibility.
 

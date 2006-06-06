@@ -439,7 +439,7 @@ struct UCUR;
 
 	// B-tree chain end indicator
 
-	#define BT_END					((FLMUINT)0xFFFFFFFFL)
+	#define BT_END					((FLMUINT32)0xFFFFFFFF)
 
 	// At the end of an element list
 

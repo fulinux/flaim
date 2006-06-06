@@ -265,7 +265,7 @@ FSCB_Unpin:
 
 		uiLeftBlkEnd += uiBytesAdded;
 		tempStack.uiBlkEnd = uiLeftBlkEnd;
-		UW2FBA( uiLeftBlkEnd, &pLeftBlk[BH_BLK_END]);
+		UW2FBA( (FLMUINT16)uiLeftBlkEnd, &pLeftBlk[BH_BLK_END]);
 
 		uiCompressBytes = FSBlkCompressPKC( &tempStack, pPkcBuf);
 		
@@ -287,7 +287,7 @@ FSCB_Unpin:
 		}
 	}
 
-	UD2FBA( uiRightBlkAddr, &pLeftBlk[BH_NEXT_BLK]);
+	UD2FBA( (FLMUINT32)uiRightBlkAddr, &pLeftBlk[BH_NEXT_BLK]);
 	ScaReleaseCache( pLeftCache, FALSE);
 	bReleaseLeft = FALSE;
 
@@ -338,7 +338,7 @@ FSCB_Unpin:
 		}
 	}
 
-	UD2FBA( uiLeftBlkAddr, &pRightBlk[BH_PREV_BLK]);
+	UD2FBA( (FLMUINT32)uiLeftBlkAddr, &pRightBlk[BH_PREV_BLK]);
 	ScaReleaseCache( pRightCache, FALSE);
 	bReleaseRight = FALSE;
 
@@ -450,7 +450,7 @@ RCODE FSBlkMoveElms(
 
 		f_memmove( &pBlk[uiCurElm], pInsertElm, uiInsElmLen);
 		pStack->uiBlkEnd += uiInsElmLen;
-		UW2FBA( pStack->uiBlkEnd, &pBlk[BH_BLK_END]);
+		UW2FBA( (FLMUINT16)pStack->uiBlkEnd, &pBlk[BH_BLK_END]);
 		goto Exit;
 	}
 
@@ -481,7 +481,7 @@ RCODE FSBlkMoveElms(
 	}
 
 	uiNewBlkEnd = (FLMUINT) (pStack->uiBlkEnd + iDistanceToShiftDown);
-	UW2FBA( uiNewBlkEnd, &pBlk[BH_BLK_END]);
+	UW2FBA( (FLMUINT16)uiNewBlkEnd, &pBlk[BH_BLK_END]);
 	pStack->uiBlkEnd = uiNewBlkEnd;
 
 	// Move the first pInsertElm[] overhead values and key to where to be
@@ -690,7 +690,7 @@ FSTATIC FLMINT FSBlkCompressPKC(
 			return (0xFFFF);
 		}
 
-		UW2FBA( uiBlkEnd, &pBlk[BH_BLK_END]);
+		UW2FBA( (FLMUINT16)uiBlkEnd, &pBlk[BH_BLK_END]);
 		pStack->uiBlkEnd = uiBlkEnd;
 	}
 

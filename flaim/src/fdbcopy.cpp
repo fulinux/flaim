@@ -932,7 +932,7 @@ FSTATIC RCODE flmCopyFile(
 		appear on ANY block.
 		*/
 
-		UD2FBA( 0L, &ucLogHdr [LOG_CURR_TRANS_ID]);
+		UD2FBA( 0, &ucLogHdr [LOG_CURR_TRANS_ID]);
 
 		/*
 		Recalculate the log header checksum so that readers will not get a

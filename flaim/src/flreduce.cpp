@@ -675,7 +675,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 									&pFreeSCache->pucBlk [BH_PREV_BLK_ADDR]);
 
 	f_memcpy( pFreeSCache->pucBlk, pucBlk, pFile->FileHdr.uiBlockSize);
-	SET_BH_ADDR( pucFreeBlk, uiFreeBlkAddr );
+	SET_BH_ADDR( pucFreeBlk, (FLMUINT32)uiFreeBlkAddr );
 
 	// Restore the saved previous transaction ID and block address.
 
@@ -745,7 +745,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 			goto Exit;
 		}
 		pucBlk = pSCache->pucBlk;
-		UD2FBA( uiFreeBlkAddr, &pucBlk [BH_NEXT_BLK ]);
+		UD2FBA( (FLMUINT32)uiFreeBlkAddr, &pucBlk [BH_NEXT_BLK ]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 	}
@@ -764,7 +764,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		}
 
 		pucBlk = pSCache->pucBlk;
-		UD2FBA( uiFreeBlkAddr, &pucBlk [BH_PREV_BLK ]);
+		UD2FBA( (FLMUINT32)uiFreeBlkAddr, &pucBlk [BH_PREV_BLK ]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 	}
@@ -926,7 +926,7 @@ FSTATIC RCODE FLRMovePcodeLFHBlk(
 									&pFreeSCache->pucBlk [BH_PREV_BLK_ADDR]);
 
 	f_memcpy( pFreeSCache->pucBlk, pucBlk, pFile->FileHdr.uiBlockSize);
-	SET_BH_ADDR( pucFreeBlk, uiFreeBlkAddr );
+	SET_BH_ADDR( pucFreeBlk, (FLMUINT32)uiFreeBlkAddr);
 
 	// Restore the saved previous transaction ID and block address.
 
@@ -1008,7 +1008,7 @@ FSTATIC RCODE FLRMovePcodeLFHBlk(
 		}
 
 		pucBlk = pSCache->pucBlk;
-		UD2FBA( uiFreeBlkAddr, &pucBlk [BH_NEXT_BLK ]);
+		UD2FBA( (FLMUINT32)uiFreeBlkAddr, &pucBlk [BH_NEXT_BLK ]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 	}
@@ -1027,7 +1027,7 @@ FSTATIC RCODE FLRMovePcodeLFHBlk(
 		}
 
 		pucBlk = pSCache->pucBlk;
-		UD2FBA( uiFreeBlkAddr, &pucBlk [BH_PREV_BLK ]);
+		UD2FBA( (FLMUINT32)uiFreeBlkAddr, &pucBlk [BH_PREV_BLK ]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 	}
@@ -1143,7 +1143,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 			pucLogHdr [LOG_PF_FIRST_BC_CNT]--;
 		}
 
-		UD2FBA( uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
+		UD2FBA( (FLMUINT32)uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 		goto Exit;
@@ -1175,7 +1175,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 
 		pucBlk = pSCache->pucBlk;
 		ALPutPBC( pucBlk, uiPbcAddr);
-		UD2FBA( uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
+		UD2FBA( (FLMUINT32)uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 
@@ -1194,7 +1194,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 			}
 
 			pucBlk = pSCache->pucBlk;
-			ALPutNBC( pucBlk, uiNbcAddr);
+			ALPutNBC( pucBlk, (FLMUINT32)uiNbcAddr);
 			ScaReleaseCache( pSCache, FALSE);
 			bReleaseCache = FALSE;
 		}
@@ -1226,7 +1226,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 		}
 
 		pucBlk = pSCache->pucBlk;
-		UD2FBA( uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
+		UD2FBA( (FLMUINT32)uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 
@@ -1245,7 +1245,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 			}
 
 			pucBlk = pSCache->pucBlk;
-			ALPutNBC( pucBlk, uiNbcAddr);
+			ALPutNBC( pucBlk, (FLMUINT32)uiNbcAddr);
 			ScaReleaseCache( pSCache, FALSE);
 			bReleaseCache = FALSE;
 		}
@@ -1296,9 +1296,9 @@ FSTATIC RCODE FLRFreeAvailBlk(
 		}
 
 		pucBlk = pSCache->pucBlk;
-		ALPutNBC( pucBlk, uiNbcAddr);
-		ALPutPBC( pucBlk, uiPbcAddr);
-		UD2FBA( uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
+		ALPutNBC( pucBlk, (FLMUINT32)uiNbcAddr);
+		ALPutPBC( pucBlk, (FLMUINT32)uiPbcAddr);
+		UD2FBA( (FLMUINT32)uiNextBlkAddr, &pucBlk [BH_NEXT_BLK]);
 		ScaReleaseCache( pSCache, FALSE);
 		bReleaseCache = FALSE;
 
@@ -1317,7 +1317,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 			}
 
 			pucBlk = pSCache->pucBlk;
-			ALPutNBC( pucBlk, uiPrevBlkAddr);
+			ALPutNBC( pucBlk, (FLMUINT32)uiPrevBlkAddr);
 			ScaReleaseCache( pSCache, FALSE);
 			bReleaseCache = FALSE;
 		}

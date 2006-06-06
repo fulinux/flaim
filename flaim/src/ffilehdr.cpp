@@ -199,7 +199,7 @@ void flmInitFileHdrInfo(
 	UW2FBA( (FLMUINT16)pFileHdr->uiBlockSize,
 		&pFileHdrBuf [DB_BLOCK_SIZE]);
 	pFileHdr->uiFirstLFHBlkAddr = FSBlkAddress(1, 0);
-	UD2FBA( pFileHdr->uiFirstLFHBlkAddr, &pFileHdrBuf [DB_1ST_LFH_ADDR]);
+	UD2FBA( (FLMUINT32)pFileHdr->uiFirstLFHBlkAddr, &pFileHdrBuf [DB_1ST_LFH_ADDR]);
 
 	if (pFileHdr->uiVersionNum < FLM_FILE_FORMAT_VER_4_3)
 	{
@@ -209,9 +209,9 @@ void flmInitFileHdrInfo(
 		FLMUINT	uiFirstPcodeAddr = pFileHdr->uiFirstLFHBlkAddr +
 											 pFileHdr->uiBlockSize;
 
-		UD2FBA( pFileHdr->uiBlockSize, &pFileHdrBuf [DB_INIT_LOG_SEG_ADDR]);
+		UD2FBA( (FLMUINT32)pFileHdr->uiBlockSize, &pFileHdrBuf [DB_INIT_LOG_SEG_ADDR]);
 		UD2FBA( DB_LOG_HEADER_START, &pFileHdrBuf [DB_LOG_HEADER_ADDR]);
-		UD2FBA( uiFirstPcodeAddr, &pFileHdrBuf [DB_1ST_PCODE_ADDR]);
+		UD2FBA( (FLMUINT32)uiFirstPcodeAddr, &pFileHdrBuf [DB_1ST_PCODE_ADDR]);
 	}
 	
 	f_memcpy( pFileHdr->ucFileHdr, pFileHdrBuf, FLM_FILE_HEADER_SIZE);

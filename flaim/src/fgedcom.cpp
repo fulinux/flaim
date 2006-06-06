@@ -2822,7 +2822,7 @@ RCODE expWriteRec(
 			if (bRootNode)
 			{
 				UW2FBA( (FLMUINT16) pRec->getContainerID(), &TBuf[14]);
-				UD2FBA( pRec->getID(), &TBuf[16]);
+				UD2FBA( (FLMUINT32)pRec->getID(), &TBuf[16]);
 				uiTmpLen = 20;
 
 				bRootNode = FALSE;

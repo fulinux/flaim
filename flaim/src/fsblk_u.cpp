@@ -70,7 +70,7 @@ RCODE FSBlockUseNextAvail(
 	pucBlkBuf = pSCache->pucBlk;
 
 	pDb->LogHdr.uiFirstAvailBlkAddr = (FLMUINT) FB2UD( &pucBlkBuf[BH_NEXT_BLK]);
-	UD2FBA( pDb->LogHdr.uiFirstAvailBlkAddr, &pucLogHdr[LOG_PF_AVAIL_BLKS]);
+	UD2FBA( (FLMUINT32)pDb->LogHdr.uiFirstAvailBlkAddr, &pucLogHdr[LOG_PF_AVAIL_BLKS]);
 	UD2FBA( 0, &pucBlkBuf[BH_NEXT_BLK]);
 
 	// One less block in the avail list.
@@ -91,7 +91,7 @@ RCODE FSBlockUseNextAvail(
 
 		if (uiPbcAddr == BT_END)
 		{
-			UD2FBA( BT_END, &pucLogHdr[LOG_PF_FIRST_BACKCHAIN]);
+			UD2FBA( (FLMUINT32)BT_END, &pucLogHdr[LOG_PF_FIRST_BACKCHAIN]);
 			pucLogHdr[LOG_PF_FIRST_BC_CNT] = 0;
 		}
 		else
@@ -122,7 +122,7 @@ RCODE FSBlockUseNextAvail(
 
 			if (RC_OK( rc = ScaLogPhysBlk( pDb, &pPbcSCache)))
 			{
-				ALPutNBC( pPbcSCache->pucBlk, BT_END);
+				ALPutNBC( pPbcSCache->pucBlk, (FLMUINT32)BT_END);
 			}
 
 			ScaReleaseCache( pPbcSCache, FALSE);
@@ -190,7 +190,7 @@ RCODE FSBlockFree(
 	UD2FBA( (FLMUINT32) uiFirstAvailAddress, &pucBlkBuf[BH_NEXT_BLK]);
 	pucBlkBuf[BH_TYPE] = BHT_FREE;
 	pucBlkBuf[BH_LEVEL] = 0;
-	UW2FBA( BH_OVHD, &pucBlkBuf[BH_ELM_END]);
+	UW2FBA( (FLMUINT16)BH_OVHD, &pucBlkBuf[BH_ELM_END]);
 
 	// Wipe the contents of encrypted blocks...
 
@@ -216,7 +216,7 @@ RCODE FSBlockFree(
 		// Start over - increments to 1 below.
 
 		pucLogHdr[LOG_PF_FIRST_BC_CNT] = 0;
-		ALPutNBC( pucBlkBuf, BT_END);
+		ALPutNBC( pucBlkBuf, (FLMUINT32)BT_END);
 
 		// Increment and check if no avail blocks
 
@@ -241,7 +241,7 @@ RCODE FSBlockFree(
 
 			if (RC_OK( rc = ScaLogPhysBlk( pDb, &pPbcSCache)))
 			{
-				ALPutNBC( pPbcSCache->pucBlk, uiBlkAddress);
+				ALPutNBC( pPbcSCache->pucBlk, (FLMUINT32)uiBlkAddress);
 			}
 
 			ScaReleaseCache( pPbcSCache, FALSE);
@@ -303,7 +303,7 @@ RCODE FSBlockFixLinks(
 
 		if (RC_OK( rc = ScaLogPhysBlk( pDb, &pSCache)))
 		{
-			UD2FBA( uiNextBlkAddr, &pSCache->pucBlk[BH_NEXT_BLK]);
+			UD2FBA( (FLMUINT32)uiNextBlkAddr, &pSCache->pucBlk[BH_NEXT_BLK]);
 		}
 
 		ScaReleaseCache( pSCache, FALSE);
@@ -327,7 +327,7 @@ RCODE FSBlockFixLinks(
 
 		if (RC_OK( rc = ScaLogPhysBlk( pDb, &pSCache)))
 		{
-			UD2FBA( uiPrevBlkAddr, &pSCache->pucBlk[BH_PREV_BLK]);
+			UD2FBA( (FLMUINT32)uiPrevBlkAddr, &pSCache->pucBlk[BH_PREV_BLK]);
 		}
 
 		ScaReleaseCache( pSCache, FALSE);

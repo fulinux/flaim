@@ -597,16 +597,16 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 
 	UD2FBA( FLM_BACKER_VERSION,
 		&pucBlkBuf[ FLM_BACKER_VERSION_OFFSET]);
-	UD2FBA( uiBlockSize,
+	UD2FBA( (FLMUINT32)uiBlockSize,
 		&pucBlkBuf[ FLM_BACKER_DB_BLOCK_SIZE_OFFSET]);
 	uiMaxFileSize = flmGetMaxFileSize( pFBak->uiDbVersion,
 								&pFBak->ucDbHeader [DB_LOG_HEADER_START]);
-	UD2FBA( uiMaxFileSize,
+	UD2FBA( (FLMUINT32)uiMaxFileSize,
 		&pucBlkBuf[ FLM_BACKER_BFMAX_OFFSET]);
-	UD2FBA( FLM_BACKER_MTU_SIZE,
+	UD2FBA( (FLMUINT32)FLM_BACKER_MTU_SIZE,
 		&pucBlkBuf[ FLM_BACKER_MTU_OFFSET]);
 	f_timeGetSeconds( &uiTime);
-	UD2FBA( uiTime,
+	UD2FBA( (FLMUINT32)uiTime,
 		&pucBlkBuf[ FLM_BACKER_TIME_OFFSET]);
 
 	uiCount = f_strlen( (const char *)pFBak->ucDbPath);
@@ -740,9 +740,9 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 	f_memcpy( &pLogHdr[ LOG_LAST_CP_TRANS_ID],
 		&pLogHdr[ LOG_CURR_TRANS_ID], 4);
 
-	UD2FBA( uiCPTransOffset, &pLogHdr[ LOG_RFL_LAST_CP_OFFSET]);
-	UD2FBA( ((FLMUINT32) uiBlockSize), &pLogHdr[ LOG_ROLLBACK_EOF]);
-	UD2FBA( (FLMUINT32)0, &pLogHdr[ LOG_PL_FIRST_CP_BLOCK_ADDR]);
+	UD2FBA( (FLMUINT32)uiCPTransOffset, &pLogHdr[ LOG_RFL_LAST_CP_OFFSET]);
+	UD2FBA( (FLMUINT32) uiBlockSize, &pLogHdr[ LOG_ROLLBACK_EOF]);
+	UD2FBA( 0, &pLogHdr[ LOG_PL_FIRST_CP_BLOCK_ADDR]);
 
 	// Compute the log header checksum
 
@@ -1037,7 +1037,7 @@ FLMEXP RCODE FLMAPI FlmDbBackupEnd(
 
 		if( !pFBak->bCSMode)
 		{
-			UD2FBA( pFBak->uiTransId,
+			UD2FBA( (FLMUINT32)pFBak->uiTransId,
 				&pDb->pFile->ucUncommittedLogHdr [LOG_LAST_BACKUP_TRANS_ID]);
 		}
 		else
@@ -1878,7 +1878,7 @@ FSTATIC RCODE flmRestoreFile(
 	}
 	else if( pucKeyToUse)
 	{
-		UW2FBA( *puiKeyLen, &pLogHdr[ LOG_DATABASE_KEY_LEN]);
+		UW2FBA( (FLMUINT16)*puiKeyLen, &pLogHdr[ LOG_DATABASE_KEY_LEN]);
 		f_memcpy( &pLogHdr[ LOG_DATABASE_KEY], pucKeyToUse, *puiKeyLen);
 	}
 

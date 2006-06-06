@@ -4479,7 +4479,7 @@ RCODE flmGenerateHexPacket(
 
 	// Encode the data size
 
-	UD2FBA( uiDataSize, &ucTmp[ 0]);
+	UD2FBA( (FLMUINT32)uiDataSize, &ucTmp[ 0]);
 	for( uiLoop = 0; uiLoop < 4; uiLoop++)
 	{
 		bTmp = flmGetNextHexPacketSlot( pucUsedMap, uiBinPacketSize,
@@ -6102,14 +6102,14 @@ RCODE FCS_WIRE::sendDrnList(
 
 			// Set the item count.
 
-			UD2FBA( uiItemCount, pucItemPos);
+			UD2FBA( (FLMUINT32)uiItemCount, pucItemPos);
 			pucItemPos += 4;
 
 			// Put the items into the buffer.
 
 			for( uiLoop = 0; uiLoop < uiItemCount; uiLoop++)
 			{
-				UD2FBA( puiList[ uiLoop], pucItemPos);
+				UD2FBA( (FLMUINT32)puiList[ uiLoop], pucItemPos);
 				pucItemPos += 4;
 			}
 

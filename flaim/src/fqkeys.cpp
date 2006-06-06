@@ -2028,7 +2028,7 @@ RCODE flmBuildFromAndUntilKeys(
 						}
 						else
 						{
-							UD2FBA( iValue, pNumberBuf);
+							UD2FBA( (FLMUINT32)iValue, pNumberBuf);
 							uiTempLen = 4;
 						}
 						break;
@@ -2049,7 +2049,7 @@ RCODE flmBuildFromAndUntilKeys(
 						}
 						else
 						{
-							UD2FBA( uiValue, pNumberBuf);
+							UD2FBA( (FLMUINT32)uiValue, pNumberBuf);
 							uiTempLen = 4;
 						}
 						break;

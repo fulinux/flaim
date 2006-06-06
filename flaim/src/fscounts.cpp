@@ -647,7 +647,7 @@ RCODE FSUpdateBlkCounts(
 		// The block should be able to be used.
 
 		uiCount = uiCount - iDelta;
-		UD2FBA( uiCount, &pCurElm[ BNE_CHILD_COUNT]);
+		UD2FBA( (FLMUINT32)uiCount, &pCurElm[ BNE_CHILD_COUNT]);
 	}
 
 Exit:
@@ -702,7 +702,7 @@ RCODE FSChangeCount(
 			}
 		}
 		
-		UD2FBA( uiCount, &pCurElm[ BNE_CHILD_COUNT]);
+		UD2FBA( (FLMUINT32)uiCount, &pCurElm[ BNE_CHILD_COUNT]);
 	}
 	
 Exit:
@@ -745,7 +745,7 @@ RCODE FSChangeBlkCounts(
 		
 		// The block should be able to be used.
 
-		UD2FBA( uiCount, &pCurElm[ BNE_CHILD_COUNT]);
+		UD2FBA( (FLMUINT32)uiCount, &pCurElm[ BNE_CHILD_COUNT]);
 	}
 
 Exit:
