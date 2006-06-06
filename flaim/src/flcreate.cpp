@@ -372,12 +372,12 @@ FSTATIC RCODE flmInitNewFile(
 
 	// Initialize the database file header.
 
-	// Allocate a buffer to use - must be AT LEAST 2K.
-
 	uiBufSize = (FLMUINT)((uiBlkSize < 2048)
 								 ? (FLMUINT)2048
 								 : (FLMUINT)uiBlkSize);
-	if (RC_BAD( rc = f_calloc( uiBufSize, &pBuf)))
+
+	if( RC_BAD( rc = f_allocAlignedBuffer( uiBufSize, 
+		(void **)&pBuf)))
 	{
 		goto Exit;
 	}
@@ -387,10 +387,6 @@ FSTATIC RCODE flmInitNewFile(
 	{
 		goto Exit;
 	}
-
-	// Free the buffer before returning.
-
-	f_free( &pBuf);
 
 	// Allocate the pRfl object.  Could not do this until this point
 	// because we need to have the version number, block size, etc.
@@ -438,7 +434,7 @@ Exit:
 
 	if (pBuf)
 	{
-		f_free( &pBuf);
+		f_freeAlignedBuffer( (void **)&pBuf);
 	}
 
 	if (bTransStarted)

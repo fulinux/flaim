@@ -67,7 +67,6 @@ class F_CCS;
 #include "filesys.h"
 #include "fquery.h"
 #include "fscursor.h"
-#include "flog.h"
 #include "flmimon.h"
 #include "flmstat.h"
 #include "fcs.h"
@@ -943,7 +942,7 @@ void flmLogError(
 	FLMINT				iLineNumber = 0);
 
 void flmLogMessage(
-	FlmLogMessageSeverity 	eMsgSeverity,
+	eLogMessageSeverity 		eMsgSeverity,
 	eColorType  				eForground,
 	eColorType  				eBackground,
 	const char *				pszFormat,

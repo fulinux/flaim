@@ -886,7 +886,7 @@ typedef struct FLMSYSDATA
 	HTTPCONFIGPARAMS	HttpConfigParms;
 	
 	FLMUINT				uiMaxFileSize;
-	F_Logger *			pLogger;
+	IF_LoggerClient *	pLogger;
 	IF_SlabManager *	pSlabManager;
 
 	IF_ThreadMgr *		pThreadMgr;

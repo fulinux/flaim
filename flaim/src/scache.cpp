@@ -7822,7 +7822,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 				flmLogMessage( 
-					FLM_DEBUG_MESSAGE,
+					F_DEBUG_MESSAGE,
 					FLM_YELLOW,
 					FLM_BLACK,
 					"Killed transaction 0x%08X."
@@ -7862,7 +7862,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 					uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
 					flmLogMessage(
-						FLM_DEBUG_MESSAGE,
+						F_DEBUG_MESSAGE,
 						FLM_YELLOW,
 						FLM_BLACK,
 						"Waiting for transaction 0x%08X to complete."

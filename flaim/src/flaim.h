@@ -382,7 +382,6 @@
 
 	class FlmRecord;
 	class FlmRecordSet;
-	class F_LogMessage;
 	class F_Restore;
 
 	/***************************************************************************
@@ -1726,7 +1725,7 @@
 		FLM_CLOSE_FILE,
 
 		/// FlmConfig().\  Set the logger object.\ \n
-		/// Input: pvValue1 is (F_Logger *), pointer to logger object.\ \n
+		/// Input: pvValue1 is (IF_LoggerClient *), pointer to logger object.\ \n
 		/// NULL means disable logging.
 		FLM_LOGGER,
 
@@ -3206,187 +3205,6 @@
 											///< other message categories.
 		FLM_NUM_MESSAGE_TYPES
 	} FlmLogMessageType;
-
-	/// Message severity.
-	typedef enum
-	{
-		FLM_FATAL_MESSAGE = 0,		///< Indicates that a fatal error occurred - the kind that would normally
-											///< require a shutdown or other corrective action by an administrator.
-		FLM_WARN_MESSAGE,				///< Warning message.
-		FLM_ERR_MESSAGE,				///< Non-fatal error message.
-		FLM_INFO_MESSAGE,				///< Information-only message.
-		FLM_DEBUG_MESSAGE				///< Debug message.
-	} FlmLogMessageSeverity;
-
-	/// This is an abstract base class that allows an application to catch messages logged by FLAIM.  The
-	/// application must create an implementation for this class and then pass that object into
-	/// the FlmConfig() function using the eFlmConfigTypes::FLM_LOGGER option.  Doing so allows the
-	/// application to catch messages logged by FLAIM.  The application can do whatever it wants with
-	/// the messages - write them to a log file, display them to a console, save them to a database, etc.
-	class FLMEXP F_Logger : public F_Object
-	{
-	public:
-
-		F_Logger();
-
-		virtual ~F_Logger();
-
-		// Pure virtual functions that must be implemented
-
-		/// FLAIM calls this method to start a new message.  The application should return to FLAIM
-		/// an ::F_LogMessage object that FLAIM can then use to format a message.
-		virtual F_LogMessage * beginMessage(
-			FlmLogMessageType			eMsgType,		///< Type of message FLAIM wants to log.\  If the application
-																///< has disabled messages of this type, it should return
-																///< a NULL from the function.\  An application can determine
-																///< if a particular message type has been disabled by calling
-																///< the F_Logger::messageTypeEnabled() method.
-			FlmLogMessageSeverity	eMsgSeverity	///< Message severity of the message FLAIM wants to
-																///< log.
-			) = 0;
-
-		// Functions implemented in the base class
-
-		/// This method is provided by FLAIM to allow an application to enable logging of a particular
-		/// message type.  This method should be called once for each type of message the application
-		/// wants to enable.
-		void enableMessageType(
-			FlmLogMessageType	eMsgType	///< Type of message to be enabled.
-			);
-
-		/// This method is provided by FLAIM to allow an applicatoin to enable logging of all
-		/// message types.
-		void enableAllMessageTypes( void);
-
-		/// This method is provided by FLAIM to allow an application to disable logging of a particular
-		/// message type.  This method should be called once for each type of message the application
-		/// wants to disable.
-		void disableMessageType(
-			FlmLogMessageType	eMsgType);
-
-		/// This method is provided by FLAIM to allow an applicatoin to disable logging of all
-		/// message types.
-		void disableAllMessageTypes( void);
-
-		/// This method is provided by FLAIM to allow an application to determine if logging has
-		/// been enabled for a particular message type.  An application would typically call this
-		/// method from within its implementation of the F_Logger::beginMessage() method
-		/// to determine if it should return an ::F_LogMessage object to FLAIM.
-		FLMBOOL messageTypeEnabled(
-			FlmLogMessageType	eMsgType		///< Type of message the application wants to determine if
-													///< message logging is enabled for.
-			);
-
-		/// Lock the ::F_Logger object.  This method and the F_Logger::unlockLogger() method are used internally
-		/// by FLAIM to control multi-thread access to the logger object.  This method was
-		/// made public in case the application also wants to control multi-thread access.
-		void lockLogger( void);
-
-		/// Unlock the ::F_Logger object.  This method and the F_Logger::lockLogger() method are used internally
-		/// by FLAIM to control multi-thread access to the logger object.  This method was
-		/// made public in case the application also wants to control multi-thread access.
-		void unlockLogger( void);
-
-		/// Setup the ::F_Logger object.  The application must call this method before doing anything else with
-		/// the object.
-		RCODE setupLogger( void);
-
-		/// Determine if the ::F_Logger object has been properly setup - that is, has the F_Logger::setupLogger()
-		/// method been called.
-		FLMBOOL loggerIsSetup( void);
-
-	private:
-
-		F_MUTEX		m_hMutex;
-		FLMBOOL		m_bSetupCalled;
-		FLMBOOL *	m_pbEnabledList;
-	};
-
-	/// This is an abstract base class that allows an application to catch messages logged by FLAIM.  The
-	/// application must create an implementation for this class and then return an object of that
-	/// class when the F_Logger::beginMessage() method is called by FLAIM.  Doing so allows the
-	/// application to catch messages logged by FLAIM.  The application can do whatever it wants with
-	/// the messages - write them to a log file, display them to a console, save them to a database, etc.
-
-	class FLMEXP F_LogMessage : public F_Object
-	{
-	public:
-
-		F_LogMessage()
-		{
-			m_uiBackColors = 0;
-			m_uiForeColors = 0;
-			m_currentForeColor = FLM_LIGHTGRAY;
-			m_currentBackColor = FLM_BLACK;
-		}
-
-		virtual ~F_LogMessage()
-		{
-		}
-
-		// Pure virtual functions
-
-		/// Set the current foreground and background colors for the message.  FLAIM calls this to
-		/// set the colors for text that is appended after this call (see F_LogMessage::appendString()).
-		/// The colors may be changed at any time - thus allowing a message to have multiple different colors.
-		virtual void changeColor(
-			eColorType		foreColor,			///< Foreground color.
-			eColorType		backColor			///< Background color.
-			) = 0;
-
-		/// Append a string to the message.  FLAIM calls this to add text to a message.  It may be called
-		/// multiple times by FLAIM to format a complete message.  The message is not complete until
-		/// FLAIM calls the F_LogMessage::endMessage() method.
-		virtual void appendString(
-			const char *	pszStr		///< Text to append to the message.
-			) = 0;
-
-		/// Append a newline to the message.  FLAIM calls this when it wants to create a multi-line
-		/// message.  Rather than embedding a newline character, FLAIM calls this method.  This
-		/// allows an application to recognize the fact that there are multiple lines in the message
-		/// and to log, display, store, etc. (whatever) them accordingly.
-		virtual void newline( void) = 0;
-
-		/// End the current message.  FLAIM calls this to end the current message.  The application
-		/// should finish logging, displaying, storing, etc. (whatever) the message.  The object
-		/// should be reset in case FLAIM wants to start logging a new message.
-		virtual void endMessage( void) = 0;
-
-		// Public methods.  The following methods are only be called by FLAIM internally.  They are
-		// all implemented by FLAIM.
-
-		void pushForegroundColor( void);
-
-		void popForegroundColor( void);
-
-		void pushBackgroundColor( void);
-
-		void popBackgroundColor( void);
-
-		eColorType getForegroundColor()
-		{
-			return( m_currentForeColor);
-		}
-
-		eColorType getBackgroundColor()
-		{
-			return( m_currentBackColor);
-		}
-
-		void setColor(
-			eColorType		foreColor,
-			eColorType		backColor);
-
-	private:
-
-	#define F_MAX_COLOR_STACK_SIZE		8
-		eColorType			m_backColors[ F_MAX_COLOR_STACK_SIZE];
-		eColorType			m_foreColors[ F_MAX_COLOR_STACK_SIZE];
-		FLMUINT				m_uiBackColors;
-		FLMUINT				m_uiForeColors;
-		eColorType			m_currentBackColor;
-		eColorType			m_currentForeColor;
-	};
 
 	#define F_MAX_NUM_BUF		12
 

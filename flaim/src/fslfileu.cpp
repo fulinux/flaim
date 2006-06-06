@@ -738,7 +738,7 @@ void flmLogIndexingProgress(
 	FLMUINT		uiLastDrn)
 {
 	flmLogMessage( 
-		FLM_DEBUG_MESSAGE,
+		F_DEBUG_MESSAGE,
 		FLM_YELLOW,
 		FLM_BLACK,
 		uiLastDrn

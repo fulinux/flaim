@@ -466,7 +466,7 @@ void flmLogError(
 	FLMINT			iLineNumber)
 {
 	flmLogMessage( 
-		FLM_DEBUG_MESSAGE,
+		F_DEBUG_MESSAGE,
 		FLM_YELLOW,
 		FLM_BLACK,
 		pszFileName 
@@ -481,18 +481,24 @@ void flmLogError(
 Desc:		Logs messages
 ****************************************************************************/
 void flmLogMessage(
-	FlmLogMessageSeverity 	eMsgSeverity,
+	eLogMessageSeverity 		eMsgSeverity,
 	eColorType  				foreground,
 	eColorType  				background,
 	const char *				pszFormat,
 	...)
 {
-	FLMINT				iLen;
-	f_va_list			args;
-	F_LogMessage *	pLogMsg = NULL;
-	char *				pszMsgBuf = NULL;
+	FLMINT						iLen;
+	f_va_list					args;
+	IF_LogMessageClient *	pLogMsg = NULL;
+	char *						pszMsgBuf = NULL;
 	
-	if( (pLogMsg = flmBeginLogMessage( FLM_GENERAL_MESSAGE, eMsgSeverity)) != NULL)
+	if( !gv_FlmSysData.pLogger)
+	{
+		return;
+	}
+	
+	if( (pLogMsg = gv_FlmSysData.pLogger->beginMessage( 
+		FLM_GENERAL_MESSAGE, eMsgSeverity)) != NULL)
 	{
 		if( RC_OK( f_alloc( 1024, &pszMsgBuf)))
 		{
@@ -504,7 +510,7 @@ void flmLogMessage(
 			pLogMsg->appendString( pszMsgBuf);
 		}
 		
-		flmEndLogMessage( &pLogMsg);
+		f_endLogMessage( &pLogMsg);
 
 		if( pszMsgBuf)
 		{
@@ -524,7 +530,7 @@ FSTATIC void flmLogMustCloseReason(
 	// Log a message indicating why the "must close" flag was set
 
 	flmLogMessage( 
-			FLM_DEBUG_MESSAGE,
+			F_DEBUG_MESSAGE,
 			FLM_YELLOW,
 			FLM_BLACK,
 			"Database (%s) must be closed because of a 0x%04X error, File=%s, Line=%d.",

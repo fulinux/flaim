@@ -642,18 +642,21 @@ Desc:	Frees memory allocated to an initialized cursor.  The cursor handle
 FLMEXP RCODE FLMAPI FlmCursorFree(
 	HFCURSOR  *   	phCursor)
 {
-	CURSOR *			pCursor = (CURSOR *)*phCursor;
-	F_LogMessage *	pLogMsg = NULL;
+	CURSOR *						pCursor = (CURSOR *)*phCursor;
+	IF_LogMessageClient *	pLogMsg = NULL;
 
 	flmAssert( pCursor != NULL);
+	
+	if( !gv_FlmSysData.pLogger)
+	{
+		return( FERR_OK);
+	}
 
-	// Log the query before getting rid of it
-
-	if ((pLogMsg = flmBeginLogMessage( FLM_QUERY_MESSAGE,
-							FLM_DEBUG_MESSAGE)) != NULL)
+	if ((pLogMsg = gv_FlmSysData.pLogger->beginMessage( FLM_QUERY_MESSAGE,
+							F_DEBUG_MESSAGE)) != NULL)
 	{
 		flmLogQuery( pLogMsg, 0, pCursor);
-		flmEndLogMessage( &pLogMsg);
+		f_endLogMessage( &pLogMsg);
 	}
 
 	if (!pCursor->pCSContext && gv_FlmSysData.uiMaxQueries)
@@ -668,7 +671,7 @@ FLMEXP RCODE FLMAPI FlmCursorFree(
 		*phCursor = HFCURSOR_NULL;
 	}
 
-	return FERR_OK;
+	return( FERR_OK);
 }
 
 /****************************************************************************

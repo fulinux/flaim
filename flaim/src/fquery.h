@@ -577,9 +577,9 @@ RCODE flmCurGraftNode(
 	FQNODE *  *		ppQTree);
 
 void flmLogQuery(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent,
-	CURSOR *			pCursor);
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent,
+	CURSOR *						pCursor);
 
 FINLINE void flmCurFinishTransactions(
 	CURSOR *		pCursor,

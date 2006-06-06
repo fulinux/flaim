@@ -25,41 +25,41 @@
 #include "flaimsys.h"
 
 FSTATIC void flmLogIndent(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent);
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent);
 
 FSTATIC void flmLogOperator(
-	F_LogMessage *	pLogMsg,
-	QTYPES			eOperator,
-	FLMBOOL			bEndLine);
+	IF_LogMessageClient *	pLogMsg,
+	QTYPES						eOperator,
+	FLMBOOL						bEndLine);
 
 FSTATIC void flmLogBinary(
-	F_LogMessage *	pLogMsg,
-	FLMBYTE *		pucBuf,
-	FLMUINT			uiBufLen);
+	IF_LogMessageClient *	pLogMsg,
+	FLMBYTE *					pucBuf,
+	FLMUINT						uiBufLen);
 
 FSTATIC void flmLogText(
-	F_LogMessage *	pLogMsg,
-	const char *	pucBuf,
-	FLMUINT			uiBufLen);
+	IF_LogMessageClient *	pLogMsg,
+	const char *				pucBuf,
+	FLMUINT						uiBufLen);
 
 FSTATIC void flmLogPredicate(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent,
-	FQNODE *			pQNode);
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent,
+	FQNODE *						pQNode);
 
 FSTATIC void flmLogSubQuery(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent,
-	QTYPES			eParentOp,
-	SUBQUERY *		pSubQuery);
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent,
+	QTYPES						eParentOp,
+	SUBQUERY *					pSubQuery);
 
 /****************************************************************************
 Desc:	This routine indents in the log.
 ****************************************************************************/
 FSTATIC void flmLogIndent(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent)
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent)
 {
 	char		szIndent [100];
 
@@ -67,7 +67,7 @@ FSTATIC void flmLogIndent(
 	{
 		f_memset( szIndent, ' ', uiIndent);
 		szIndent [uiIndent] = 0;
-		pLogMsg->setColor( FLM_LIGHTGRAY, FLM_BLACK);
+		pLogMsg->changeColor( FLM_LIGHTGRAY, FLM_BLACK);
 		pLogMsg->appendString( szIndent);
 	}
 }
@@ -76,10 +76,9 @@ FSTATIC void flmLogIndent(
 Desc:	This routine logs an operator
 ****************************************************************************/
 FSTATIC void flmLogOperator(
-	F_LogMessage *	pLogMsg,
-	QTYPES			eOperator,
-	FLMBOOL			bEndLine
-	)
+	IF_LogMessageClient *	pLogMsg,
+	QTYPES						eOperator,
+	FLMBOOL						bEndLine)
 {
 	const char *	pszOperator;
 
@@ -163,11 +162,11 @@ FSTATIC void flmLogOperator(
 	pLogMsg->pushBackgroundColor();
 	if (eOperator == FLM_LPAREN_OP || eOperator == FLM_RPAREN_OP)
 	{
-		pLogMsg->setColor( FLM_CYAN, FLM_BLACK);
+		pLogMsg->changeColor( FLM_CYAN, FLM_BLACK);
 	}
 	else
 	{
-		pLogMsg->setColor( FLM_BLUE, FLM_LIGHTGRAY);
+		pLogMsg->changeColor( FLM_BLUE, FLM_LIGHTGRAY);
 	}
 	
 	pLogMsg->appendString( pszOperator);
@@ -202,9 +201,9 @@ FINLINE void flmFormatByteToHex(
 Desc:	This routine logs a buffer of binary bytes as ASCII hex.
 ****************************************************************************/
 FSTATIC void flmLogBinary(
-	F_LogMessage *	pLogMsg,
-	FLMBYTE *		pucBuf,
-	FLMUINT			uiBufLen)
+	IF_LogMessageClient *	pLogMsg,
+	FLMBYTE *					pucBuf,
+	FLMUINT						uiBufLen)
 {
 	FLMUINT		uiLoop;
 	FLMUINT		uiOffset;
@@ -303,9 +302,9 @@ FSTATIC void flmLogBinary(
 Desc:	This routine logs text data.
 ****************************************************************************/
 FSTATIC void flmLogText(
-	F_LogMessage *		pLogMsg,
-	const char *		pucBuf,
-	FLMUINT				uiBufLen)
+	IF_LogMessageClient *	pLogMsg,
+	const char *				pucBuf,
+	FLMUINT						uiBufLen)
 {
 	FLMUINT			uiLoop;
 	FLMUINT			uiOffset;
@@ -412,10 +411,9 @@ FSTATIC void flmLogText(
 Desc:	This routine logs the query criteria for a cursor.
 ****************************************************************************/
 FSTATIC void flmLogPredicate(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent,
-	FQNODE *			pQNode
-	)
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent,
+	FQNODE *						pQNode)
 {
 	FLMUINT	uiNestLevel = 0;
 	QTYPES	eCurrentOp;
@@ -441,20 +439,20 @@ FSTATIC void flmLogPredicate(
 
 		if (IS_VAL( eCurrentOp))
 		{
-			pLogMsg->setColor( FLM_WHITE, FLM_BLACK);
+			pLogMsg->changeColor( FLM_WHITE, FLM_BLACK);
 			switch (eCurrentOp)
 			{
 				case FLM_BOOL_VAL:
-					flmLogPrintf( pLogMsg, "%u",
+					f_logPrintf( pLogMsg, "%u",
 						(unsigned)pQNode->pQAtom->val.uiBool);
 					break;
 				case FLM_REC_PTR_VAL:
 				case FLM_UINT32_VAL:
-					flmLogPrintf( pLogMsg, "%u",
+					f_logPrintf( pLogMsg, "%u",
 						(unsigned)pQNode->pQAtom->val.uiVal);
 					break;
 				case FLM_INT32_VAL:
-					flmLogPrintf( pLogMsg, "%d",
+					f_logPrintf( pLogMsg, "%d",
 						(int)pQNode->pQAtom->val.iVal);
 					break;
 				case FLM_BINARY_VAL:
@@ -480,7 +478,7 @@ FSTATIC void flmLogPredicate(
 			FLMUINT		uiCnt;
 
 			flmAssert( IS_FIELD( eCurrentOp));
-			pLogMsg->setColor( FLM_YELLOW, FLM_BLACK);
+			pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 			pLogMsg->appendString( "FLD:");
 
 			// Fields are from child to parent order - must count fields
@@ -496,11 +494,11 @@ FSTATIC void flmLogPredicate(
 				uiCnt--;
 				if (uiCnt)
 				{
-					flmLogPrintf( pLogMsg, "%u.", (unsigned)puiFldPath [uiCnt]);
+					f_logPrintf( pLogMsg, "%u.", (unsigned)puiFldPath [uiCnt]);
 				}
 				else
 				{
-					flmLogPrintf( pLogMsg, "%u", (unsigned)puiFldPath [uiCnt]);
+					f_logPrintf( pLogMsg, "%u", (unsigned)puiFldPath [uiCnt]);
 				}
 			}
 		}
@@ -540,11 +538,10 @@ Exit:
 Desc:	This routine logs the query criteria for a cursor.
 ****************************************************************************/
 FSTATIC void flmLogSubQuery(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent,
-	QTYPES			eParentOp,
-	SUBQUERY *		pSubQuery
-	)
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent,
+	QTYPES						eParentOp,
+	SUBQUERY *					pSubQuery)
 {
 	FQNODE *		pQNode;
 	QTYPES		eCurrentOp;
@@ -560,7 +557,7 @@ FSTATIC void flmLogSubQuery(
 	{
 		flmLogIndent( pLogMsg, uiIndent);
 		flmLogOperator( pLogMsg, FLM_LPAREN_OP, FALSE);
-		pLogMsg->setColor( FLM_WHITE, FLM_BLACK);
+		pLogMsg->changeColor( FLM_WHITE, FLM_BLACK);
 		pLogMsg->appendString( "<empty>");
 		flmLogOperator( pLogMsg, FLM_RPAREN_OP, TRUE);
 		goto Output_Opt_Info;
@@ -603,13 +600,13 @@ FSTATIC void flmLogSubQuery(
 			flmLogOperator( pLogMsg, FLM_LPAREN_OP, FALSE);
 			if (hCursor == HFCURSOR_NULL)
 			{
-				pLogMsg->setColor( FLM_WHITE, FLM_BLACK);
+				pLogMsg->changeColor( FLM_WHITE, FLM_BLACK);
 				pLogMsg->appendString( " [EmbeddedPredicate] ");
 				flmLogOperator( pLogMsg, FLM_RPAREN_OP, TRUE);
 			}
 			else
 			{
-				pLogMsg->setColor( FLM_LIGHTGRAY, FLM_BLACK);
+				pLogMsg->changeColor( FLM_LIGHTGRAY, FLM_BLACK);
 				pLogMsg->appendString( " [BeginEmbedded");
 				if (pSubQuery->OptInfo.eOptType == QOPT_USING_PREDICATE &&
 					 pSubQuery->pPredicate == pQNode->pQAtom->val.pPredicate)
@@ -627,7 +624,7 @@ FSTATIC void flmLogSubQuery(
 				uiIndent -= 2;
 				flmLogIndent( pLogMsg, uiIndent);
 				flmLogOperator( pLogMsg, FLM_RPAREN_OP, FALSE);
-				pLogMsg->setColor( FLM_LIGHTGRAY, FLM_BLACK);
+				pLogMsg->changeColor( FLM_LIGHTGRAY, FLM_BLACK);
 				pLogMsg->appendString( " [EndEmbedded]");
 				pLogMsg->newline();
 			}
@@ -684,26 +681,26 @@ Output_Opt_Info:
 	switch (pSubQuery->OptInfo.eOptType)
 	{
 		case QOPT_USING_INDEX:
-			flmLogPrintf( pLogMsg, F_WHITE "UsingIX=" F_YELLOW "%u",
+			f_logPrintf( pLogMsg, F_WHITE "UsingIX=" F_YELLOW "%u",
 				pSubQuery->OptInfo.uiIxNum);
-			flmLogPrintf( pLogMsg, F_LIGHTGRAY ", KeyMatch=");
+			f_logPrintf( pLogMsg, F_LIGHTGRAY ", KeyMatch=");
 			if (pSubQuery->OptInfo.bDoKeyMatch)
 			{
-				flmLogPrintf( pLogMsg, F_GREEN "YES");
+				f_logPrintf( pLogMsg, F_GREEN "YES");
 			}
 			else
 			{
-				flmLogPrintf( pLogMsg, F_RED "NO");
+				f_logPrintf( pLogMsg, F_RED "NO");
 			}
 
-			flmLogPrintf( pLogMsg, F_LIGHTGRAY ", RecMatch=");
+			f_logPrintf( pLogMsg, F_LIGHTGRAY ", RecMatch=");
 			if (pSubQuery->OptInfo.bDoRecMatch)
 			{
-				flmLogPrintf( pLogMsg, F_GREEN "YES");
+				f_logPrintf( pLogMsg, F_GREEN "YES");
 			}
 			else
 			{
-				flmLogPrintf( pLogMsg, F_RED "NO");
+				f_logPrintf( pLogMsg, F_RED "NO");
 			}
 
 			pucFromKey = NULL;
@@ -716,24 +713,24 @@ Output_Opt_Info:
 
 				// Show the from key
 
-				flmLogPrintf( pLogMsg,
+				f_logPrintf( pLogMsg,
 					F_LIGHTGRAY ", FromKeyLen=" F_YELLOW "%u"
 					F_LIGHTGRAY ", FromKey=(",
 					uiFromKeyLen);
 				if (uiFromKeyLen)
 				{
-					pLogMsg->setColor( FLM_YELLOW, FLM_BLACK);
+					pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 					flmLogBinary( pLogMsg, pucFromKey, uiFromKeyLen);
 				}
 				else
 				{
-					flmLogPrintf( pLogMsg, F_YELLOW "<empty>");
+					f_logPrintf( pLogMsg, F_YELLOW "<empty>");
 				}
-				flmLogPrintf( pLogMsg, F_LIGHTGRAY ")");
+				f_logPrintf( pLogMsg, F_LIGHTGRAY ")");
 
 				// Show the until key.
 
-				flmLogPrintf( pLogMsg,
+				f_logPrintf( pLogMsg,
 					F_LIGHTGRAY ", UntilKeyLen=" F_YELLOW "%u"
 					F_LIGHTGRAY ", UntilExcl=" F_YELLOW "%s"
 					F_LIGHTGRAY ", UntilKey=(",
@@ -743,68 +740,68 @@ Output_Opt_Info:
 								 : "No"));
 				if (uiUntilKeyLen)
 				{
-					pLogMsg->setColor( FLM_YELLOW, FLM_BLACK);
+					pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
 					flmLogBinary( pLogMsg, pucUntilKey, uiUntilKeyLen);
 				}
 				else
 				{
-					flmLogPrintf( pLogMsg, F_YELLOW "<empty>");
+					f_logPrintf( pLogMsg, F_YELLOW "<empty>");
 				}
-				flmLogPrintf( pLogMsg, F_LIGHTGRAY ")");
+				f_logPrintf( pLogMsg, F_LIGHTGRAY ")");
 				f_free( &pucFromKey);
 				f_free( &pucUntilKey);
 			}
 			break;
 
 		case QOPT_USING_PREDICATE:
-			flmLogPrintf( pLogMsg, F_WHITE "Using Embedded Predicate");
+			f_logPrintf( pLogMsg, F_WHITE "Using Embedded Predicate");
 			break;
 
 		case QOPT_SINGLE_RECORD_READ:
-			flmLogPrintf( pLogMsg, F_WHITE "Single Record Read, DRN: "
+			f_logPrintf( pLogMsg, F_WHITE "Single Record Read, DRN: "
 				F_YELLOW "%u", pSubQuery->OptInfo.uiDrn);
 			break;
 
 		case QOPT_PARTIAL_CONTAINER_SCAN:
-			flmLogPrintf( pLogMsg, F_WHITE "Partial Container Scan");
+			f_logPrintf( pLogMsg, F_WHITE "Partial Container Scan");
 //VISIT: Output from and until DRNs - need a method from
 //pSubQuery->pFSDataCursor to return them.
 			break;
 
 		case QOPT_FULL_CONTAINER_SCAN:
-			flmLogPrintf( pLogMsg, F_WHITE "Full Container Scan");
+			f_logPrintf( pLogMsg, F_WHITE "Full Container Scan");
 			break;
 
 		default:
-			flmLogPrintf( pLogMsg, F_WHITE "Unknown optimization");
+			f_logPrintf( pLogMsg, F_WHITE "Unknown optimization");
 			break;
 	}
-	flmLogPrintf( pLogMsg, F_LIGHTGRAY "}\n");
+	f_logPrintf( pLogMsg, F_LIGHTGRAY "}\n");
 
 	flmLogIndent( pLogMsg, uiIndent);
 	pLogMsg->appendString( "{Stats: ");
-	flmLogPrintf( pLogMsg, F_LIGHTGRAY "Container=" F_WHITE "%u",
+	f_logPrintf( pLogMsg, F_LIGHTGRAY "Container=" F_WHITE "%u",
 		(unsigned)pSubQuery->SQStatus.uiContainerNum);
 
-	flmLogPrintf( pLogMsg, F_LIGHTGRAY ", Matched=" F_WHITE "%u",
+	f_logPrintf( pLogMsg, F_LIGHTGRAY ", Matched=" F_WHITE "%u",
 		(unsigned)pSubQuery->SQStatus.uiMatchedCnt);
 
 	if (pSubQuery->SQStatus.uiNumRejectedByCallback)
 	{
-		flmLogPrintf( pLogMsg, F_LIGHTGRAY ", CallbackRejected=" F_WHITE "%u",
+		f_logPrintf( pLogMsg, F_LIGHTGRAY ", CallbackRejected=" F_WHITE "%u",
 			(unsigned)pSubQuery->SQStatus.uiNumRejectedByCallback);
 	}
 
 	if (pSubQuery->SQStatus.uiDupsEliminated)
 	{
-		flmLogPrintf( pLogMsg, F_LIGHTGRAY ", DupsElim=" F_WHITE "%u",
+		f_logPrintf( pLogMsg, F_LIGHTGRAY ", DupsElim=" F_WHITE "%u",
 			(unsigned)pSubQuery->SQStatus.uiDupsEliminated);
 	}
 
 	if (pSubQuery->SQStatus.uiKeysTraversed ||
 		 pSubQuery->SQStatus.uiKeysRejected)
 	{
-		flmLogPrintf( pLogMsg, F_LIGHTGRAY ", KeysFailed=" F_WHITE "%u of %u",
+		f_logPrintf( pLogMsg, F_LIGHTGRAY ", KeysFailed=" F_WHITE "%u of %u",
 			(unsigned)pSubQuery->SQStatus.uiKeysRejected,
 			(unsigned)pSubQuery->SQStatus.uiKeysTraversed);
 	}
@@ -812,7 +809,7 @@ Output_Opt_Info:
 	if (pSubQuery->SQStatus.uiRefsTraversed ||
 		 pSubQuery->SQStatus.uiRefsRejected)
 	{
-		flmLogPrintf( pLogMsg, F_LIGHTGRAY ", RefsFailed=" F_WHITE "%u of %u",
+		f_logPrintf( pLogMsg, F_LIGHTGRAY ", RefsFailed=" F_WHITE "%u of %u",
 			(unsigned)pSubQuery->SQStatus.uiRefsRejected,
 			(unsigned)pSubQuery->SQStatus.uiRefsTraversed);
 	}
@@ -821,7 +818,7 @@ Output_Opt_Info:
 		 pSubQuery->SQStatus.uiRecsRejected ||
 		 pSubQuery->SQStatus.uiRecsNotFound)
 	{
-		flmLogPrintf( pLogMsg, F_LIGHTGRAY ", RecsFetched=" F_WHITE "%u"
+		f_logPrintf( pLogMsg, F_LIGHTGRAY ", RecsFetched=" F_WHITE "%u"
 									  F_LIGHTGRAY ", RecsRejected=" F_WHITE "%u"
 									  F_LIGHTGRAY ", RecsNotFound=" F_WHITE "%u",
 			(unsigned)pSubQuery->SQStatus.uiRecsFetchedForEval,
@@ -829,7 +826,7 @@ Output_Opt_Info:
 			(unsigned)pSubQuery->SQStatus.uiRecsNotFound);
 	}
 
-	flmLogPrintf( pLogMsg, F_LIGHTGRAY "}\n");
+	f_logPrintf( pLogMsg, F_LIGHTGRAY "}\n");
 
 	if (bIndentOptInfo)
 	{
@@ -842,9 +839,9 @@ Output_Opt_Info:
 Desc:	This routine logs the query criteria for a cursor.
 ****************************************************************************/
 void flmLogQuery(
-	F_LogMessage *	pLogMsg,
-	FLMUINT			uiIndent,
-	CURSOR *			pCursor)
+	IF_LogMessageClient *	pLogMsg,
+	FLMUINT						uiIndent,
+	CURSOR *						pCursor)
 {
 	SUBQUERY *	pSubQuery;
 	QTYPES		eParentOp = (pCursor->pSubQueryList &&
@@ -854,7 +851,7 @@ void flmLogQuery(
 
 	if (!uiIndent)
 	{
-		pLogMsg->setColor( FLM_LIGHTGRAY, FLM_BLACK);
+		pLogMsg->changeColor( FLM_LIGHTGRAY, FLM_BLACK);
 		pLogMsg->appendString( "QUERY CRITERIA:");
 		if (!pCursor->pSubQueryList)
 		{

@@ -2238,7 +2238,7 @@ RCODE flmDbMonitor(
 				{
 					// Log a message
 					
-					flmLogMessage( FLM_WARN_MESSAGE, FLM_YELLOW, FLM_BLACK,
+					flmLogMessage( F_WARN_MESSAGE, FLM_YELLOW, FLM_BLACK,
 						"WARNING: The RFL has exceeded the specified size limit of %i64u", 
 						ui64RflDiskThreshold);
 					

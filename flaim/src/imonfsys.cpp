@@ -608,19 +608,6 @@ void F_FlmSysDataPage::write_data(
 		gv_FlmSysData.uiMaxFileSize,
 		(bHighlight = !bHighlight));
 
-	// pLogger - Logger
-	f_sprintf( (char *)pszTemp, "%s/Logger",
-		m_pszURLString);
-
-	printHTMLLink(
-		"pLogger",
-		"F_Logger	*",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.pLogger,
-		(void *)gv_FlmSysData.pLogger,
-		(char *)pszTemp,
-		(bHighlight = !bHighlight));
-
 	printTableEnd();
 
 Exit:

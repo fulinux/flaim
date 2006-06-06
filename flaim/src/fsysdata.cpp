@@ -666,7 +666,7 @@ DONT_PREALLOCATE:
 			// Log a message indicating that we couldn't pre-allocate
 			// the cache
 
-			flmLogMessage( FLM_DEBUG_MESSAGE, FLM_YELLOW, FLM_BLACK,
+			flmLogMessage( F_DEBUG_MESSAGE, FLM_YELLOW, FLM_BLACK,
 				"WARNING: Couldn't pre-allocate cache.");
 
 			goto DONT_PREALLOCATE;				
@@ -1418,10 +1418,8 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			if( !gv_FlmSysData.pLogger && Value1)
 			{
-				gv_FlmSysData.pLogger = (F_Logger *)Value1;
-				gv_FlmSysData.pLogger->lockLogger();
+				gv_FlmSysData.pLogger = (IF_LoggerClient *)Value1;
 				gv_FlmSysData.pLogger->AddRef();
-				gv_FlmSysData.pLogger->unlockLogger();
 			}
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			break;
@@ -2461,11 +2459,7 @@ FSTATIC void flmCleanup( void)
 
 	if( gv_FlmSysData.pLogger)
 	{
-		gv_FlmSysData.pLogger->lockLogger();
-		if( gv_FlmSysData.pLogger->Release() >= 1)
-		{
-			gv_FlmSysData.pLogger->unlockLogger();
-		}
+		gv_FlmSysData.pLogger->Release();
 		gv_FlmSysData.pLogger = NULL;
 	}
 
