@@ -90,7 +90,7 @@ F_FileHdl::F_FileHdl()
 	m_uiExtendSize = 0;
 	m_ui64CurrentPos = 0;
 	m_bDoDirectIO = FALSE;
-	m_bCanDoAsync = FALSE;
+	m_bOpenedInAsyncMode = FALSE;
 	m_pucAlignedBuff = NULL;
 	m_uiAlignedBuffSize = 0;
 }
@@ -202,7 +202,7 @@ RCODE F_FileHdl::openOrCreate(
 				openFlags |= O_DIRECT;
 				if( pFileSystem->canDoAsync())
 				{
-					m_bCanDoAsync = TRUE;
+					m_bOpenedInAsyncMode = TRUE;
 				}
 			}
 			else
@@ -213,7 +213,7 @@ RCODE F_FileHdl::openOrCreate(
 #elif defined( FLM_SOLARIS)
 		if( pFileSystem->canDoAsync())
 		{
-			m_bCanDoAsync = TRUE;
+			m_bOpenedInAsyncMode = TRUE;
 		}
 #endif
 	}
@@ -251,7 +251,7 @@ Retry_Create:
 		{
 			openFlags &= ~O_DIRECT;
 			bDoDirectIO = FALSE;
-			m_bCanDoAsync = FALSE;
+			m_bOpenedInAsyncMode = FALSE;
 			goto Retry_Create;
 		}
 #endif
@@ -275,7 +275,7 @@ Exit:
 	{
 		m_fd = -1;
 		m_bDoDirectIO = FALSE;
-		m_bCanDoAsync = FALSE;
+		m_bOpenedInAsyncMode = FALSE;
 	}
 	
    return( rc);
@@ -1025,20 +1025,19 @@ RCODE F_FileHdl::directWrite(
 	FLMBYTE *		pucWriteBuffer;
 	FLMBYTE *		pucSrcBuffer;
 #ifdef FLM_DEBUG
-	FLMBOOL			bDoAsync = (pBufferObj != NULL) 
-										? TRUE 
-										: FALSE;
+	FLMBOOL			bWaitForWrite = (pBufferObj != NULL) 
+										? FALSE 
+										: TRUE;
 #endif
-	FLMBOOL			bDidAsync = FALSE;
 	FLMUINT			uiLastWriteOffset;
 	FLMUINT			uiLastWriteSize;
 	
 	f_assert( m_bFileOpened);
 
 #ifdef FLM_DEBUG
-	if( bDoAsync)
+	if( !bWaitForWrite)
 	{
-		f_assert( m_bCanDoAsync);
+		f_assert( m_bOpenedInAsyncMode);
 	}
 #endif
 
@@ -1067,7 +1066,7 @@ RCODE F_FileHdl::directWrite(
 		{
 			// Cannot do an async write if we have to use a temporary buffer
 			
-			bDoAsync = FALSE;
+			bWaitForWrite = TRUE;
 
 			if( !m_pucAlignedBuff)
 			{
@@ -1151,7 +1150,7 @@ RCODE F_FileHdl::directWrite(
 		uiLastWriteOffset = (FLMUINT)getSectorStartOffset( ui64WriteOffset);
 		uiLastWriteSize = uiMaxBytesToWrite;
 		
-		if( !bDoAsync)
+		if( bWaitForWrite)
 		{
 			FLMINT		iBytesWritten;
 			
@@ -1188,7 +1187,6 @@ RCODE F_FileHdl::directWrite(
 			}
 			
 			pBufferObj->makePending();
-			bDidAsync = TRUE;
 		}
 #endif
 
@@ -1211,7 +1209,7 @@ RCODE F_FileHdl::directWrite(
 
 Exit:
 
-	if( !bDidAsync && pBufferObj)
+	if( bWaitForWrite && pBufferObj)
 	{
 		pBufferObj->notifyComplete( rc);
 	}
@@ -1224,7 +1222,7 @@ Desc:	Returns flag indicating whether or not we can do async writes.
 ******************************************************************************/
 FLMBOOL FLMAPI F_FileHdl::canDoAsync()
 {
-	return( m_bCanDoAsync);
+	return( m_bOpenedInAsyncMode);
 }
 
 /******************************************************************************

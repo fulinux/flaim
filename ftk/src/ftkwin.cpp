@@ -46,7 +46,7 @@ F_FileHdl::F_FileHdl()
 	m_pucAlignedBuff = NULL;
 	m_uiAlignedBuffSize = 0;
 	m_ui64CurrentPos = 0;
-	m_bCanDoAsync = FALSE;
+	m_bOpenedInAsyncMode = FALSE;
 	m_Overlapped.hEvent = NULL;
 }
 
@@ -122,7 +122,7 @@ RCODE F_FileHdl::openOrCreate(
 
 	if (m_bDoDirectIO && pFileSystem->canDoAsync())
 	{
-		m_bCanDoAsync = TRUE;
+		m_bOpenedInAsyncMode = TRUE;
 	}
 
 	// Set up the file characteristics requested by caller.
@@ -155,7 +155,7 @@ RCODE F_FileHdl::openOrCreate(
 		udAttrFlags |= FILE_FLAG_NO_BUFFERING;
 	}
 	
-	if (m_bCanDoAsync)
+	if (m_bOpenedInAsyncMode)
 	{
 		udAttrFlags |= FILE_FLAG_OVERLAPPED;
 	}
@@ -541,7 +541,7 @@ RCODE F_FileHdl::doOneRead(
 
 	// Position the file to the specified offset.
 
-	if (!m_bCanDoAsync)
+	if (!m_bOpenedInAsyncMode)
 	{
 		liTmp.QuadPart = ui64ReadOffset;
 		if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
@@ -583,7 +583,7 @@ RCODE F_FileHdl::doOneRead(
 	{
 		DWORD		udErr = GetLastError();
 		
-		if( udErr == ERROR_IO_PENDING && m_bCanDoAsync)
+		if( udErr == ERROR_IO_PENDING && m_bOpenedInAsyncMode)
 		{
 			if( !GetOverlappedResult( m_FileHandle, 
 				pOverlapped, puiBytesRead, TRUE))
@@ -989,7 +989,7 @@ RCODE F_FileHdl::extendFile(
 			uiBytesToWrite = uiTotalBytesToExtend;
 		}
 		
-		if (!m_bCanDoAsync)
+		if (!m_bOpenedInAsyncMode)
 		{
 			liTmp.QuadPart = ui64EndOfLastWrite;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
@@ -1031,6 +1031,7 @@ RCODE F_FileHdl::extendFile(
 		if( !WriteFile( m_FileHandle, m_pucAlignedBuff,
 			uiBytesToWrite, &uiBytesWritten, pOverlapped))
 		{
+			flmAssert( 0);
 			rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 			
 			// Don't care if it is a disk full error, because
@@ -1098,10 +1099,9 @@ RCODE F_FileHdl::directWrite(
 	OVERLAPPED *	pOverlapped;
 	DWORD				udErr;
 	FLMBOOL			bExtendFile = FALSE;
-	FLMBOOL			bDoAsync = (pBufferObj != NULL)
-										? TRUE
-										: FALSE;
-	FLMBOOL			bDidAsync = FALSE;
+	FLMBOOL			bWaitForWrite = (pBufferObj != NULL)
+										? FALSE
+										: TRUE;
 	FLMUINT64		ui64LastWriteOffset;
 	FLMUINT			uiLastWriteSize;
 	LARGE_INTEGER	liTmp;
@@ -1109,9 +1109,9 @@ RCODE F_FileHdl::directWrite(
 	f_assert( m_bFileOpened);
 
 #ifdef FLM_DEBUG
-	if (bDoAsync)
+	if (!bWaitForWrite)
 	{
-		f_assert( m_bCanDoAsync);
+		f_assert( m_bOpenedInAsyncMode);
 	}
 #endif
 
@@ -1155,7 +1155,7 @@ RCODE F_FileHdl::directWrite(
 
 		// Can't do asynchronous if we are going to extend the file.
 
-		bDoAsync = FALSE;
+		bWaitForWrite = TRUE;
 	}
 
 	// This loop is for direct IO - must make sure we use
@@ -1176,7 +1176,7 @@ RCODE F_FileHdl::directWrite(
 
 			// Cannot do an async write if we have to use a temporary buffer
 			
-			bDoAsync = FALSE;
+			bWaitForWrite = TRUE;
 
 			if (!m_pucAlignedBuff)
 			{
@@ -1283,7 +1283,7 @@ RCODE F_FileHdl::directWrite(
 		// Position the file to the nearest sector below the write offset.
 
 		ui64LastWriteOffset = truncateToPrevSector( ui64WriteOffset);
-		if( !bDoAsync)
+		if( !m_bOpenedInAsyncMode)
 		{
 			liTmp.QuadPart = ui64LastWriteOffset;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
@@ -1337,21 +1337,31 @@ RCODE F_FileHdl::directWrite(
 						  pOverlapped))
 		{
 			udErr = GetLastError();
-			if( udErr == ERROR_IO_PENDING && bDoAsync)
+			if( udErr == ERROR_IO_PENDING && m_bOpenedInAsyncMode)
 			{
-
 				// If an async structure was passed in, we better have
 				// been able to finish in a single write operation.
 				// Otherwise, we are in deep trouble because we are not
 				// set up to do multiple async write operations within
 				// a single call.
 
-				pBufferObj->makePending();
-				bDidAsync = TRUE;
-				break;
+				if( !bWaitForWrite)
+				{
+					pBufferObj->makePending();
+					break;
+				}
+
+				if (!GetOverlappedResult( m_FileHandle, pOverlapped,
+							&uiBytesWritten, TRUE))
+				{
+					rc = f_mapPlatformError( GetLastError(),
+								NE_FLM_WRITING_FILE);
+					goto Exit;
+				}
 			}
 			else
 			{
+				flmAssert( 0);
 				rc = f_mapPlatformError( udErr, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
@@ -1399,7 +1409,7 @@ RCODE F_FileHdl::directWrite(
 
 Exit:
 
-	if( !bDidAsync && pBufferObj)
+	if( bWaitForWrite && pBufferObj)
 	{
 		pBufferObj->notifyComplete( rc);
 	}
@@ -1445,7 +1455,7 @@ RCODE FLMAPI F_FileHdl::write(
 
 	// Position the file.
 
-	if (!m_bCanDoAsync)
+	if (!m_bOpenedInAsyncMode)
 	{
 		liTmp.QuadPart = ui64WriteOffset;
 		if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
@@ -1487,17 +1497,19 @@ RCODE FLMAPI F_FileHdl::write(
 					   pOverlapped))
 	{
 		udErr = GetLastError();
-		if (udErr == ERROR_IO_PENDING && m_bCanDoAsync)
+		if (udErr == ERROR_IO_PENDING && m_bOpenedInAsyncMode)
 		{
 			if (!GetOverlappedResult( m_FileHandle, pOverlapped,
 						&uiBytesWritten, TRUE))
 			{
+				flmAssert( 0);
 				rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 		}
 		else
 		{
+			flmAssert( 0);
 			rc = f_mapPlatformError( udErr, NE_FLM_WRITING_FILE);
 			goto Exit;
 		}

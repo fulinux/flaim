@@ -564,7 +564,7 @@
 	
 		FINLINE FLMBOOL FLMAPI canDoAsync( void)
 		{
-			return( m_bCanDoAsync);
+			return( m_bOpenedInAsyncMode);
 		}
 	
 		FINLINE void FLMAPI setExtendSize(
@@ -675,7 +675,7 @@
 		FLMBYTE *			m_pucAlignedBuff;
 		FLMUINT				m_uiAlignedBuffSize;
 		FLMUINT64			m_ui64CurrentPos;
-		FLMBOOL				m_bCanDoAsync;
+		FLMBOOL				m_bOpenedInAsyncMode;
 		OVERLAPPED			m_Overlapped;
 		
 		friend class F_FileSystem;
@@ -848,7 +848,7 @@
 		FLMUINT64				m_ui64GetSectorBoundMask;
 		FLMUINT64				m_ui64CurrentPos;
 		FLMUINT					m_uiExtendSize;
-		FLMBOOL					m_bCanDoAsync;
+		FLMBOOL					m_bOpenedInAsyncMode;
 		FLMBOOL					m_bDoDirectIO;
 		FLMBYTE *				m_pucAlignedBuff;
 		FLMUINT					m_uiAlignedBuffSize;

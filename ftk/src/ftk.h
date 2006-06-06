@@ -1327,28 +1327,77 @@
 	};
 	
 	/****************************************************************************
+	/// Message severity.
+	****************************************************************************/
+	typedef enum
+	{
+		F_FATAL_MESSAGE = 0,			///< Indicates that a fatal error occurred - the kind that would normally
+											///< require a shutdown or other corrective action by an administrator.
+		F_WARN_MESSAGE,				///< Warning message.
+		F_ERR_MESSAGE,					///< Non-fatal error message.
+		F_INFO_MESSAGE,				///< Information-only message.
+		F_DEBUG_MESSAGE				///< Debug message.
+	} eLogMessageSeverity;
+	
+	/****************************************************************************
+	Desc: Logging
+	****************************************************************************/
+
+	IF_LogMessageClient * FLMAPI f_beginLogMessage(
+		FLMUINT						uiMsgType,
+		eLogMessageSeverity		eMsgSeverity);
+
+	void FLMAPI f_logPrintf(
+		IF_LogMessageClient *	pLogMessage,
+		const char *				pszFormatStr, ...);
+	
+	void FLMAPI f_logVPrintf(
+		IF_LogMessageClient *	pLogMessage,
+		const char *				szFormatStr,
+		f_va_list *					args);
+	
+	void FLMAPI f_endLogMessage(
+		IF_LogMessageClient **	ppLogMessage);
+
+	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface FLMEXP IF_LoggerClient : public F_Object
 	{
 		virtual IF_LogMessageClient * FLMAPI beginMessage(
-			FLMUINT					uiMsgType) = 0;
+			FLMUINT					uiMsgType,
+			eLogMessageSeverity	eMsgSeverity = F_DEBUG_MESSAGE) = 0;
 	};
 	
 	/****************************************************************************
-	Desc:
+	/// This is an abstract base class that allows an application to catch 
+	/// messages.  The application must create an implementation for this class
+	/// and then return an object of that class when the 
+	/// IF_LoggerClient::beginMessage() method is called.
 	****************************************************************************/
 	flminterface FLMEXP IF_LogMessageClient : public F_Object
 	{
+		/// Set the current foreground and background colors for the message.  
 		virtual void FLMAPI changeColor(
 			eColorType				eForeColor,
 			eColorType				eBackColor) = 0;
 
+		/// Append a string to the message.  This method may be called
+		/// multiple times by to format a complete message.  The message is not
+		/// complete until the ::endMessage() method is called.
 		virtual void FLMAPI appendString(
 			const char *			pszStr) = 0;
 
+		/// Append a newline to the message.  This method is called when a 
+		/// multi-line message is being created.  Rather than embedding a
+		/// newline character, this method is used.  This allows an application
+		/// to recognize the fact that there are multiple lines in the message
+		/// and to log, display, store, etc. (whatever) them accordingly.
 		virtual void FLMAPI newline( void) = 0;
 
+		/// End the current message.  The application should finish logging,
+		/// displaying, storing, etc. (whatever) the message.  The object
+		/// should be reset in case a new message is subsequently started.
 		virtual void FLMAPI endMessage( void) = 0;
 
 		virtual void FLMAPI pushForegroundColor( void) = 0;
@@ -3341,25 +3390,6 @@
 	#define shiftN(data,size,distance) \
 			f_memmove((FLMBYTE *)(data) + (FLMINT)(distance), \
 			(FLMBYTE *)(data), (unsigned)(size))
-
-	/****************************************************************************
-	Desc: Logging
-	****************************************************************************/
-
-	IF_LogMessageClient * FLMAPI f_beginLogMessage(
-		FLMUINT						uiMsgType);
-
-	void FLMAPI f_logPrintf(
-		IF_LogMessageClient *	pLogMessage,
-		const char *				pszFormatStr, ...);
-	
-	void FLMAPI f_logVPrintf(
-		IF_LogMessageClient *	pLogMessage,
-		const char *				szFormatStr,
-		f_va_list *					args);
-	
-	void FLMAPI f_endLogMessage(
-		IF_LogMessageClient **	ppLogMessage);
 
 	/****************************************************************************
 	Desc: XML

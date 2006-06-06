@@ -629,7 +629,8 @@ Desc:	Returns an IF_LogMessageClient object if logging is enabled for the
 		specified message type
 ****************************************************************************/
 IF_LogMessageClient * FLMAPI f_beginLogMessage(
-	FLMUINT		uiMsgType)
+	FLMUINT						uiMsgType,
+	eLogMessageSeverity		eMsgSeverity)
 {
 	IF_LogMessageClient *		pNewMsg = NULL;
 
@@ -640,7 +641,7 @@ IF_LogMessageClient * FLMAPI f_beginLogMessage(
 		goto Exit;
 	}
 		
-	if( (pNewMsg = gv_pLogger->beginMessage( uiMsgType)) != NULL)
+	if( (pNewMsg = gv_pLogger->beginMessage( uiMsgType, eMsgSeverity)) != NULL)
 	{
 		gv_uiPendingLogMessages++;
 	}
@@ -663,7 +664,7 @@ void FLMAPI f_logError(
 	FLMBYTE *					pszMsgBuf = NULL;
 	IF_LogMessageClient *	pLogMsg = NULL;
 
-	if( (pLogMsg = f_beginLogMessage( 0)) != NULL)
+	if( (pLogMsg = f_beginLogMessage( 0, F_ERR_MESSAGE)) != NULL)
 	{
 		if( RC_OK( f_alloc( 512, &pszMsgBuf)))
 		{
