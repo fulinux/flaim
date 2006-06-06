@@ -991,7 +991,7 @@
 			return( iRefCnt);
 		}
 
-		FINLINE FLMUINT getRefCount( void)
+		virtual FINLINE FLMINT FLMAPI getRefCount( void)
 		{
 			return( m_refCnt);
 		}
