@@ -1171,7 +1171,7 @@ RCODE F_FileHdl::directWrite(
 #ifndef FLM_NLM
 		else
 		{
-			struct aiocb *		pAio = pBufferObj->getAIOStruct();
+			struct aiocb *		pAio = ((F_IOBuffer *)pBufferObj)->getAIOStruct();
 			
 			f_memset( pAio, 0, sizeof( struct aiocb));
 			pAio->aio_lio_opcode = LIO_WRITE;

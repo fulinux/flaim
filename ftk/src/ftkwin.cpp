@@ -1303,8 +1303,8 @@ RCODE F_FileHdl::directWrite(
 			}
 			else
 			{
-				pOverlapped = pBufferObj->getOverlapped();
-				pBufferObj->setFileHandle( m_FileHandle);
+				pOverlapped = ((F_IOBuffer *)pBufferObj)->getOverlapped();
+				((F_IOBuffer *)pBufferObj)->setFileHandle( m_FileHandle);
 			}
 
 			if (!pOverlapped->hEvent)
