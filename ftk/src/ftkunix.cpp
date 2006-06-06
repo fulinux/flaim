@@ -1013,8 +1013,7 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT64		ui64WriteOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
-	FLMUINT,
-	F_IOBuffer *	pBufferObj,
+	IF_IOBuffer *	pBufferObj,
 	FLMUINT *		puiBytesWrittenRV,
 	FLMBOOL			bBuffHasFullSectors,
 	FLMBOOL			bZeroFill)
@@ -1066,11 +1065,10 @@ RCODE F_FileHdl::directWrite(
 			 (((FLMUINT64)(FLMUINT)pucSrcBuffer) & m_ui64NotOnSectorBoundMask) ||
 			 ((uiBytesToWrite & m_ui64NotOnSectorBoundMask) && !bBuffHasFullSectors))
 		{
-			// Cannot be using a temporary write buffer if we are doing
-			// asynchronous writes!
-
-			f_assert( !bDoAsync || !m_bCanDoAsync);
+			// Cannot do an async write if we have to use a temporary buffer
 			
+			bDoAsync = FALSE;
+
 			if( !m_pucAlignedBuff)
 			{
 				if( RC_BAD( rc = allocAlignedBuffer()))
@@ -1153,7 +1151,7 @@ RCODE F_FileHdl::directWrite(
 		uiLastWriteOffset = (FLMUINT)getSectorStartOffset( ui64WriteOffset);
 		uiLastWriteSize = uiMaxBytesToWrite;
 		
-		if( !m_bCanDoAsync || !pBufferObj)
+		if( !bDoAsync)
 		{
 			FLMINT		iBytesWritten;
 			

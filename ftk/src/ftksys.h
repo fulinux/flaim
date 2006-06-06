@@ -543,7 +543,7 @@
 			FLMUINT			uiBytesToWrite,
 			const void *	pvBuffer,
 			FLMUINT			uiBufferSize,
-			void *			pvBufferObj,
+			IF_IOBuffer *	pBufferObj,
 			FLMUINT *		puiBytesWrittenRV,
 			FLMBOOL			bZeroFill = TRUE)
 		{
@@ -552,12 +552,11 @@
 			if (m_bDoDirectIO)
 			{
 				return( directWrite( ui64WriteOffset, uiBytesToWrite,
-						pvBuffer, (F_IOBuffer *)pvBufferObj, TRUE,
-						bZeroFill, puiBytesWrittenRV));
+						pvBuffer, pBufferObj, TRUE, bZeroFill, puiBytesWrittenRV));
 			}
 			else
 			{
-				f_assert( pvBufferObj == NULL);
+				f_assert( !pBufferObj);
 				return( write( ui64WriteOffset, uiBytesToWrite, pvBuffer,
 									puiBytesWrittenRV));
 			}
@@ -636,7 +635,7 @@
 			FLMUINT64		uiOffset,
 			FLMUINT			uiLength,
 			const void *	pvBuffer,
-			F_IOBuffer *	pBufferObj,
+			IF_IOBuffer *	pBufferObj,
 			FLMBOOL			bBuffHasFullSectors,
 			FLMBOOL			bZeroFill,
 			FLMUINT *		puiBytesWritten);
@@ -735,19 +734,20 @@
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
 			FLMUINT				uiBufferSize,
-			void *				pvBufferObj,
+			IF_IOBuffer *		pBufferObj,
 			FLMUINT *			puiBytesWrittenRV,
 			FLMBOOL				bZeroFill = TRUE)
 		{
+			F_UNREFERENCED_PARM( uiBufferSize);
+			
 			if( m_bDoDirectIO)
 			{
 				return( directWrite( ui64WriteOffset, uiBytesToWrite, 
-					pvBuffer, uiBufferSize, (F_IOBuffer *)pvBufferObj, 
-					puiBytesWrittenRV, TRUE, bZeroFill));
+					pvBuffer, pBufferObj, puiBytesWrittenRV, TRUE, bZeroFill));
 			}
 			else
 			{
-				return( write( ui64WriteOffset, uiBytesToWrite, 
+				return( write( ui64WriteOffset, uiBytesToWrite,
 					pvBuffer, puiBytesWrittenRV));
 			}
 		}
@@ -831,7 +831,7 @@
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
 			FLMUINT				uiBufferSize,
-			F_IOBuffer *		pBufferObj,
+			IF_IOBuffer *		pBufferObj,
 			FLMUINT *			puiBytesWrittenRV,
 			FLMBOOL				bBuffHasFullSectors,
 			FLMBOOL				bZeroFill);
@@ -910,7 +910,7 @@
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
 			FLMUINT				uiBufferSize,
-			void *				pvBufferObj,
+			IF_IOBuffer *		pBufferObj,
 			FLMUINT *			puiBytesWrittenRV,
 			FLMBOOL				bZeroFill = TRUE);
 	

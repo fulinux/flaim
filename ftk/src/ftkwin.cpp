@@ -1082,7 +1082,7 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT64			ui64WriteOffset,
 	FLMUINT				uiBytesToWrite,
    const void *		pvBuffer,
-	F_IOBuffer *		pBufferObj,
+	IF_IOBuffer *		pBufferObj,
 	FLMBOOL				bBuffHasFullSectors,
 	FLMBOOL				bZeroFill,
    FLMUINT *			puiBytesWrittenRV)
@@ -1174,10 +1174,10 @@ RCODE F_FileHdl::directWrite(
 			  (!bBuffHasFullSectors)))
 		{
 
-			// Cannot be using a temporary write buffer if we are doing
-			// asynchronous writes!
+			// Cannot do an async write if we have to use a temporary buffer
+			
+			bDoAsync = FALSE;
 
-			f_assert( !bDoAsync || !m_bCanDoAsync);
 			if (!m_pucAlignedBuff)
 			{
 				if (RC_BAD( rc = allocAlignedBuffer()))
@@ -1283,7 +1283,7 @@ RCODE F_FileHdl::directWrite(
 		// Position the file to the nearest sector below the write offset.
 
 		ui64LastWriteOffset = truncateToPrevSector( ui64WriteOffset);
-		if (!m_bCanDoAsync)
+		if( !bDoAsync)
 		{
 			liTmp.QuadPart = ui64LastWriteOffset;
 			if( !SetFilePointerEx( m_FileHandle, liTmp, NULL, FILE_BEGIN))
@@ -1337,7 +1337,7 @@ RCODE F_FileHdl::directWrite(
 						  pOverlapped))
 		{
 			udErr = GetLastError();
-			if (udErr == ERROR_IO_PENDING && m_bCanDoAsync)
+			if( udErr == ERROR_IO_PENDING && bDoAsync)
 			{
 
 				// If an async structure was passed in, we better have
@@ -1346,20 +1346,9 @@ RCODE F_FileHdl::directWrite(
 				// set up to do multiple async write operations within
 				// a single call.
 
-				if( bDoAsync)
-				{
-					pBufferObj->makePending();
-					bDidAsync = TRUE;
-					break;
-				}
-
-				if (!GetOverlappedResult( m_FileHandle, pOverlapped,
-							&uiBytesWritten, TRUE))
-				{
-					rc = f_mapPlatformError( GetLastError(),
-								NE_FLM_WRITING_FILE);
-					goto Exit;
-				}
+				pBufferObj->makePending();
+				bDidAsync = TRUE;
+				break;
 			}
 			else
 			{

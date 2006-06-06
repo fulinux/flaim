@@ -1538,7 +1538,7 @@
 			FLMUINT					uiBytesToWrite,
 			const void *			pvBuffer,
 			FLMUINT					uiBufferSize,
-			void *					pvBufferObj,
+			IF_IOBuffer *			pBufferObj,
 			FLMUINT *				puiBytesWritten = NULL,
 			FLMBOOL					bZeroFill = TRUE) = 0;
 
