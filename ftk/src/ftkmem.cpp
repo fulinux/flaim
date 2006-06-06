@@ -197,7 +197,7 @@ public:
 		FLMUINT *			puiActualSize = NULL,
 		FLMBOOL				bMutexLocked = FALSE);
 
-	FINLINE void FLMAPI incrementTotalBytesAllocated(
+	void FLMAPI incrementTotalBytesAllocated(
 		FLMUINT					uiCount,
 		FLMBOOL					bMutexLocked)
 	{
@@ -214,7 +214,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI decrementTotalBytesAllocated(
+	void FLMAPI decrementTotalBytesAllocated(
 		FLMUINT					uiCount,
 		FLMBOOL					bMutexLocked)
 	{
@@ -232,32 +232,32 @@ public:
 		}
 	}
 
-	FINLINE FLMUINT FLMAPI getSlabSize( void)
+	FLMUINT FLMAPI getSlabSize( void)
 	{
 		return( m_uiSlabSize);
 	}
 
-	FINLINE FLMUINT FLMAPI getTotalSlabs( void)
+	FLMUINT FLMAPI getTotalSlabs( void)
 	{
 		return( m_uiTotalSlabs);
 	}
 	
-	FINLINE void FLMAPI lockMutex( void)
+	void FLMAPI lockMutex( void)
 	{
 		f_mutexLock( m_hMutex);
 	}
 	
-	FINLINE void FLMAPI unlockMutex( void)
+	void FLMAPI unlockMutex( void)
 	{
 		f_mutexUnlock( m_hMutex);
 	}
 	
-	FINLINE FLMUINT FLMAPI totalBytesAllocated( void)
+	FLMUINT FLMAPI totalBytesAllocated( void)
 	{
 		return( m_uiTotalBytesAllocated);
 	}
 
-	FINLINE FLMUINT FLMAPI availSlabs( void)
+	FLMUINT FLMAPI availSlabs( void)
 	{
 		return( m_uiAvailSlabs);
 	}
@@ -324,7 +324,7 @@ public:
 		FLM_SLAB_USAGE *		pUsageStats,
 		FLMUINT *				puiTotalBytesAllocated);
 
-	FINLINE void * FLMAPI allocCell(
+	void * FLMAPI allocCell(
 		IF_Relocator *		pRelocator,
 		void *				pvInitialData = NULL,
 		FLMUINT				uiDataSize = 0,
@@ -363,7 +363,39 @@ public:
 		return( pvCell);
 	}
 
-	FINLINE void FLMAPI freeCell( 
+	void * FLMAPI allocCell(
+		IF_Relocator *				pRelocator,
+		F_ALLOC_INIT_FUNC			fnAllocInit,
+		FLMBOOL						bMutexLocked)
+	{
+		void *	pvCell;
+
+		if( !bMutexLocked)
+		{
+			m_pSlabManager->lockMutex();
+		}
+		
+		if( (pvCell = getCell( pRelocator)) == NULL)
+		{
+			goto Exit;
+		}
+		
+		if( pvCell && fnAllocInit)
+		{
+			fnAllocInit( pvCell);
+		}
+	
+	Exit:
+		
+		if( !bMutexLocked)
+		{
+			m_pSlabManager->unlockMutex();
+		}
+		
+		return( pvCell);
+	}
+	
+	void FLMAPI freeCell( 
 		void *		ptr,
 		FLMBOOL		bMutexLocked)
 	{
@@ -374,7 +406,7 @@ public:
 
 	void FLMAPI freeAll( void);
 
-	FINLINE FLMUINT FLMAPI getCellSize( void)
+	FLMUINT FLMAPI getCellSize( void)
 	{
 		return( m_uiCellSize);
 	}
@@ -423,7 +455,7 @@ private:
 
 	SLAB * getAnotherSlab( void);
 
-	static FINLINE FLMUINT getAllocAlignedSize(
+	static FLMUINT getAllocAlignedSize(
 		FLMUINT		uiAskedForSize)
 	{
 		return( (uiAskedForSize + FLM_ALLOC_ALIGN) & (~FLM_ALLOC_ALIGN));
@@ -442,7 +474,7 @@ private:
 	void testForLeaks( void);
 #endif
 
-	FINLINE static FLMINT FLMAPI slabAddrCompareFunc(
+	static FLMINT FLMAPI slabAddrCompareFunc(
 		void *		pvBuffer,
 		FLMUINT		uiPos1,
 		FLMUINT		uiPos2)
@@ -460,7 +492,7 @@ private:
 		return( 1);
 	}
 
-	FINLINE static void FLMAPI slabAddrSwapFunc(
+	static void FLMAPI slabAddrSwapFunc(
 		void *		pvBuffer,
 		FLMUINT		uiPos1,
 		FLMUINT		uiPos2)
@@ -596,7 +628,7 @@ public:
 		FLMBYTE **				ppucBuffer,
 		FLMBOOL					bMutexLocked);
 
-	FINLINE void FLMAPI freeBuf(
+	void FLMAPI freeBuf(
 		FLMBYTE **				ppucBuffer)
 	{
 		if( ppucBuffer && *ppucBuffer)
@@ -608,18 +640,18 @@ public:
 
 	void FLMAPI defragmentMemory( void);
 
-	FINLINE FLMUINT FLMAPI getTrueSize(
+	FLMUINT FLMAPI getTrueSize(
 		FLMBYTE *				pucBuffer)
 	{
 		return( getAllocator( pucBuffer)->getCellSize());
 	}
 
-	FINLINE void FLMAPI lockMutex( void)
+	void FLMAPI lockMutex( void)
 	{
 		m_pSlabManager->lockMutex();
 	}
 
-	FINLINE void FLMAPI unlockMutex( void)
+	void FLMAPI unlockMutex( void)
 	{
 		m_pSlabManager->unlockMutex();
 	}
@@ -681,7 +713,7 @@ public:
 		ADDR_FMT_HOOK 		pFunc,
 		void *				pvUserData);
 
-	FINLINE void setModuleHandle( 
+	void setModuleHandle( 
 		void *				pModHandle) 
 	{ 
 		m_pModHandle = pModHandle;
@@ -4677,7 +4709,7 @@ RCODE FLMAPI f_getMemoryInfo(
 Desc:
 ***************************************************************************/
 #ifdef FLM_LINUX
-FINLINE FLMUINT64 f_getLinuxMemInfoValue(
+FLMUINT64 f_getLinuxMemInfoValue(
 	char *			pszMemInfoBuffer,
 	const char *	pszTag)
 {

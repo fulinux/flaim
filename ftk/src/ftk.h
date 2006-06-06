@@ -3501,6 +3501,12 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	typedef void (* F_ALLOC_INIT_FUNC)(
+		void *				pvAlloc);
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	flminterface FLMEXP IF_SlabManager : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
@@ -3560,6 +3566,11 @@
 			IF_Relocator *			pRelocator = NULL,
 			void *					pvInitialData = NULL,
 			FLMUINT					uiDataSize = 0,
+			FLMBOOL					bMutexLocked = FALSE) = 0;
+	
+		virtual void * FLMAPI allocCell(
+			IF_Relocator *			pRelocator,
+			F_ALLOC_INIT_FUNC		fnAllocInit,
 			FLMBOOL					bMutexLocked = FALSE) = 0;
 	
 		virtual void FLMAPI freeCell( 
