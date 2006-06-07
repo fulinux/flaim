@@ -1024,22 +1024,18 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT			uiBytesBeingOutput;
 	FLMBYTE *		pucWriteBuffer;
 	FLMBYTE *		pucSrcBuffer;
-#ifdef FLM_DEBUG
 	FLMBOOL			bWaitForWrite = (pBufferObj != NULL) 
 										? FALSE 
 										: TRUE;
-#endif
 	FLMUINT			uiLastWriteOffset;
 	FLMUINT			uiLastWriteSize;
 	
 	f_assert( m_bFileOpened);
 
-#ifdef FLM_DEBUG
 	if( !bWaitForWrite)
 	{
 		f_assert( m_bOpenedInAsyncMode);
 	}
-#endif
 
 	if( puiBytesWrittenRV)
 	{
