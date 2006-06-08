@@ -37,7 +37,7 @@ RCODE BlkCheckSum(
 	FLMUINT		uiBlkSize)
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiCurrChecksum;
+	FLMUINT			uiCurrChecksum = 0;
 	FLMUINT			uiNewChecksum;
 	FLMUINT			uiEncryptSize;
 	FLMUINT			uiAdds = 0;
