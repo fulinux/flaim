@@ -4672,7 +4672,6 @@ void * FlmRecord::operator new[]( FLMSIZET)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_DEBUG
 void * FlmRecord::operator new(
 	FLMSIZET			uiSize,
 	const char *,
@@ -4681,15 +4680,14 @@ void * FlmRecord::operator new(
 	throw()
 #endif
 {
+	F_UNREFERENCED_PARM( uiSize);
 	flmAssert( gv_FlmSysData.RCacheMgr.pRecAlloc->getCellSize() >= uiSize);
 	return( gv_FlmSysData.RCacheMgr.pRecAlloc->allocCell( NULL, objectAllocInit));
 }
-#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_DEBUG
 void * FlmRecord::operator new[](
 	FLMSIZET,		// uiSize,
 	const char *,	// pszFile,
@@ -4701,7 +4699,6 @@ void * FlmRecord::operator new[](
 	flmAssert( 0);
 	return( NULL);
 }
-#endif
 
 /****************************************************************************
 Desc:
