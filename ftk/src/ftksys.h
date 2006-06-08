@@ -412,6 +412,8 @@
 		}
 	
 		void FLMAPI makePending( void);
+		
+		FLMBOOL FLMAPI isPending( void);
 	
 		void FLMAPI startTimer(
 			void *					pvStats);

@@ -1736,6 +1736,8 @@
 	
 		virtual void FLMAPI makePending( void) = 0;
 		
+		virtual FLMBOOL FLMAPI isPending( void) = 0;
+		
 		virtual void FLMAPI startTimer(
 			void *					pvStats) = 0;
 			

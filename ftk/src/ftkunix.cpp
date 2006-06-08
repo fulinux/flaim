@@ -1024,9 +1024,9 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT			uiBytesBeingOutput;
 	FLMBYTE *		pucWriteBuffer;
 	FLMBYTE *		pucSrcBuffer;
-	FLMBOOL			bWaitForWrite = (pBufferObj != NULL) 
-										? FALSE 
-										: TRUE;
+	FLMBOOL			bWaitForWrite = (pBufferObj == NULL) 
+										? TRUE 
+										: FALSE;
 	FLMUINT			uiLastWriteOffset;
 	FLMUINT			uiLastWriteSize;
 	
@@ -1205,7 +1205,7 @@ RCODE F_FileHdl::directWrite(
 
 Exit:
 
-	if( bWaitForWrite && pBufferObj)
+	if( pBufferObj && !pBufferObj->isPending())
 	{
 		pBufferObj->notifyComplete( rc);
 	}

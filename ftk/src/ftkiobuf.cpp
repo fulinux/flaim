@@ -410,6 +410,19 @@ void FLMAPI F_IOBuffer::makePending( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FLMBOOL FLMAPI F_IOBuffer::isPending( void)
+{
+	if( m_eList == MGR_LIST_PENDING)
+	{
+		return( TRUE);
+	}
+	
+	return( FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 RCODE FLMAPI F_IOBuffer::setupBuffer(
 	FLMUINT	uiBufferSize,
 	FLMUINT	uiBlockSize)

@@ -1099,22 +1099,20 @@ RCODE F_FileHdl::directWrite(
 	OVERLAPPED *	pOverlapped;
 	DWORD				udErr;
 	FLMBOOL			bExtendFile = FALSE;
-	FLMBOOL			bWaitForWrite = (pBufferObj != NULL)
-										? FALSE
-										: TRUE;
+	FLMBOOL			bWaitForWrite = (pBufferObj == NULL)
+										? TRUE
+										: FALSE;
 	FLMUINT64		ui64LastWriteOffset;
 	FLMUINT			uiLastWriteSize;
 	LARGE_INTEGER	liTmp;
 
 	f_assert( m_bFileOpened);
 
-#ifdef FLM_DEBUG
-	if (!bWaitForWrite)
+	if( !bWaitForWrite)
 	{
 		f_assert( m_bOpenedInAsyncMode);
 	}
-#endif
-
+	
 	if( puiBytesWrittenRV)
 	{
 		*puiBytesWrittenRV = 0;
@@ -1409,12 +1407,12 @@ RCODE F_FileHdl::directWrite(
 
 Exit:
 
-	if( bWaitForWrite && pBufferObj)
+	if( pBufferObj && !pBufferObj->isPending())
 	{
 		pBufferObj->notifyComplete( rc);
 	}
 
-	return( rc );
+	return( rc);
 }
 
 /****************************************************************************
