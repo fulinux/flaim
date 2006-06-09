@@ -290,7 +290,7 @@ RCODE F_FileHdl::create(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	f_assert( m_bFileOpened == FALSE);
+	f_assert( !m_bFileOpened);
 
 	if( m_bDeleteOnRelease)
 	{
@@ -540,6 +540,8 @@ Desc:	Make sure all file data is safely on disk
 ******************************************************************************/
 RCODE FLMAPI F_FileHdl::flush( void)
 {
+	f_assert( m_bFileOpened);
+	
 #ifdef FLM_SOLARIS
 	// Direct I/O on Solaris is ADVISORY, meaning that the
 	// operating system may or may not actually honor the
@@ -816,8 +818,10 @@ RCODE FLMAPI F_FileHdl::seek(
 	FLMINT			iWhence,
 	FLMUINT64 *		pui64NewOffset)
 {
-	RCODE			rc = NE_FLM_OK;
+	RCODE				rc = NE_FLM_OK;
 
+	f_assert( m_bFileOpened);
+	
 	switch( iWhence)
 	{
 		case FLM_IO_SEEK_CUR:
@@ -868,6 +872,8 @@ RCODE FLMAPI F_FileHdl::size(
 	RCODE				rc = NE_FLM_OK;
    struct stat 	statBuf;
 
+	f_assert( m_bFileOpened);
+	
    if( fstat( m_fd, &statBuf) == -1)
    {
       rc = f_mapPlatformError( errno, NE_FLM_GETTING_FILE_SIZE);
@@ -887,6 +893,7 @@ Desc:
 RCODE FLMAPI F_FileHdl::tell(
 	FLMUINT64 *		pui64Offset)
 {
+	f_assert( m_bFileOpened);
 	*pui64Offset = m_ui64CurrentPos;
 	return( NE_FLM_OK);
 }
@@ -1218,6 +1225,7 @@ Desc:	Returns flag indicating whether or not we can do async writes.
 ******************************************************************************/
 FLMBOOL FLMAPI F_FileHdl::canDoAsync()
 {
+	f_assert( m_bFileOpened);
 	return( m_bOpenedInAsyncMode);
 }
 
@@ -1231,6 +1239,8 @@ RCODE FLMAPI F_FileHdl::lock( void)
 	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
 
+	f_assert( m_bFileOpened);
+	
 	// Lock the first byte in file
 
 	f_memset( &LockStruct, 0, sizeof( LockStruct));
@@ -1258,6 +1268,8 @@ RCODE FLMAPI F_FileHdl::unlock( void)
 	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
 
+	f_assert( m_bFileOpened);
+	
 	// Unlock the first byte in file
 
 	f_memset( &LockStruct, 0, sizeof( LockStruct));
