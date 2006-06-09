@@ -82,7 +82,7 @@ void FLMAPI f_mutexDestroy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *			phMutex)
 {
@@ -139,7 +139,36 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if defined( FLM_SOLARIS)
+RCODE FLMAPI f_mutexCreate(
+	F_MUTEX *			phMutex)
+{
+	RCODE								rc = NE_FLM_OK;
+
+	f_assert( phMutex != NULL);
+
+	// NOTE: Cannot call f_alloc because the memory initialization needs
+	// to be able to set up mutexes.
+
+	if ((*phMutex = (F_MUTEX)malloc( sizeof( lwp_mutex_t))) == F_MUTEX_NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	*phMutex = 0;
+
+
+Exit:
+
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 void FLMAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
@@ -162,7 +191,24 @@ void FLMAPI f_mutexDestroy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if defined( FLM_SOLARIS)
+void FLMAPI f_mutexDestroy(
+	F_MUTEX *	phMutex)
+{
+	f_assert( phMutex != NULL);
+
+	if (*phMutex != F_MUTEX_NULL)
+	{
+		free( *phMutex);
+		*phMutex = F_MUTEX_NULL;
+	}
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 void FLMAPI f_mutexLock(
 	F_MUTEX		hMutex)
 {
@@ -173,7 +219,24 @@ void FLMAPI f_mutexLock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if defined( FLM_SOLARIS)
+void FLMAPI f_mutexLock(
+	F_MUTEX		hMutex)
+{
+	for( ;;)
+	{
+		if( _lwp_mutex_lock( (lwp_mutex_t *)hMutex) == 0)
+		{
+			break;
+		}
+	}
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 void FLMAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
@@ -181,6 +244,17 @@ void FLMAPI f_mutexUnlock(
 }
 #endif
 	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_SOLARIS)
+void FLMAPI f_mutexUnlock(
+	F_MUTEX		hMutex)
+{
+	_lwp_mutex_unlock( (lwp_mutex_t *)hMutex);
+}
+#endif
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
