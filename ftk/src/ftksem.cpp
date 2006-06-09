@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 typedef struct
 {
 	pthread_mutex_t		lock;
@@ -143,7 +143,8 @@ Desc:
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *			phMutex)
 {
-	RCODE								rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
+	lwp_mutex_t			defaultMutex = DEFAULTMUTEX;
 
 	f_assert( phMutex != NULL);
 
@@ -156,8 +157,7 @@ RCODE FLMAPI f_mutexCreate(
 		goto Exit;
 	}
 	
-	*phMutex = 0;
-
+	f_memcpy( *phMutex, &defaultMutex, sizeof( lwp_mutex_t));
 
 Exit:
 
@@ -321,7 +321,7 @@ void FLMAPI f_mutexUnlock(
 /****************************************************************************
 Desc:	Initializes a semaphore handle on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 FINLINE int sema_init(
 	sema_t *			pSem)
 {
@@ -349,7 +349,7 @@ Exit:
 /****************************************************************************
 Desc:	Frees a semaphore handle on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 FINLINE void sema_destroy(
 	sema_t *			pSem)
 {
@@ -361,8 +361,8 @@ FINLINE void sema_destroy(
 /****************************************************************************
 Desc:	Waits for a semaphore to be signaled on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-FINLINE int sema_wait(
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
+FINLINE int _sema_wait(
 	sema_t *			pSem)
 {
 	int	iErr = 0;
@@ -395,31 +395,65 @@ Exit:
 #endif
 
 /****************************************************************************
+Desc:	Waits for a semaphore to be signaled on Solaris
+****************************************************************************/
+#if defined( FLM_SOLARIS)
+FINLINE int _sema_wait(
+	sema_t *			pSem)
+{
+	int	iErr = 0;
+
+	for( ;;)
+	{
+		if( (iErr = sema_wait( pSem)) != 0)
+		{
+			if( iErr == EINTR)
+			{
+				iErr = 0;
+				continue;
+			}
+			else
+			{
+				f_assert( 0);
+				goto Exit;
+			}
+		}
+
+		break;
+	}
+
+Exit:
+
+	return( iErr);
+}
+#endif
+
+/****************************************************************************
 Desc:	Waits a specified number of milliseconds for a semaphore
 		to be signaled on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-FINLINE int sema_timedwait(
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
+FINLINE int _sema_timedwait(
 	sema_t *			pSem,
 	unsigned int	msecs)
 {
+	int					iErr = 0;
    struct timeval		now;
 	struct timespec	abstime;
-	int					iErr = 0;
 
    // If timeout is F_SEM_WAITFOREVER, do sem_wait.
 
    if( msecs == F_SEM_WAITFOREVER)
    {
-      iErr = sema_wait( pSem);
+      iErr = _sema_wait( pSem);
       return( iErr);
    }
-
-	pthread_mutex_lock( &pSem->lock);
 
    gettimeofday( &now, NULL);
 	abstime.tv_sec = now.tv_sec + ((msecs) ? (msecs / 1000) : 0);
 	abstime.tv_nsec = ( now.tv_usec + ((msecs % 1000) *	1000)) * 1000;
+
+	pthread_mutex_lock( &pSem->lock);
 
 Restart:
 
@@ -448,9 +482,52 @@ Exit:
 #endif
 
 /****************************************************************************
+Desc:	Waits a specified number of milliseconds for a semaphore
+		to be signaled on UNIX
+****************************************************************************/
+#if defined( FLM_SOLARIS)
+FINLINE int _sema_timedwait(
+	sema_t *			pSem,
+	unsigned int	msecs)
+{
+	int					iErr = 0;
+   struct timeval		now;
+	struct timespec	abstime;
+
+   // If timeout is F_SEM_WAITFOREVER, do sem_wait.
+
+   if( msecs == F_SEM_WAITFOREVER)
+   {
+      iErr = _sema_wait( pSem);
+      return( iErr);
+   }
+
+   gettimeofday( &now, NULL);
+	abstime.tv_sec = now.tv_sec + ((msecs) ? (msecs / 1000) : 0);
+	abstime.tv_nsec = ( now.tv_usec + ((msecs % 1000) *	1000)) * 1000;
+
+Restart:
+
+	if( (iErr = sema_timedwait( pSem, &abstime)) != 0)
+	{
+		if( iErr == EINTR)
+		{
+			iErr = 0;
+			goto Restart;
+		}
+		goto Exit;
+	}
+
+Exit:
+
+	return( iErr);
+}
+#endif
+
+/****************************************************************************
 Desc:	Signals a semaphore on UNIX
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 int sema_signal(
 	sema_t *			pSem)
 {
@@ -480,7 +557,11 @@ RCODE f_semCreate(
 		goto Exit;
 	}
 
+#if defined( FLM_SOLARIS)
+	if( sema_init( (sema_t *)*phSem, 0, USYNC_THREAD, NULL) < 0) 
+#else
 	if( sema_init( (sema_t *)*phSem) < 0)
+#endif
 	{
 		f_free( phSem);
 		*phSem = F_SEM_NULL;
@@ -524,22 +605,22 @@ RCODE f_semWait(
 
 	f_assert( hSem != F_SEM_NULL);
 
-	//catch the F_SEM_WAITFOREVER flag so we can directly call sema_wait
-	//instead of passing F_SEM_WAITFOREVER through to sema_timedwait.
+	//catch the F_SEM_WAITFOREVER flag so we can directly call _sema_wait
+	//instead of passing F_SEM_WAITFOREVER through to _sema_timedwait.
 	//Note that on AIX the datatype of the uiTimeout (in the timespec
 	//struct) is surprisingly a signed int, which makes this catch
 	//essential.
 
 	if( uiTimeout == F_SEM_WAITFOREVER)
 	{
-		if( sema_wait( (sema_t *)hSem))
+		if( _sema_wait( (sema_t *)hSem))
 		{
 			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
 		}
 	}
 	else
 	{
-		if( sema_timedwait( (sema_t *)hSem, (unsigned int)uiTimeout))
+		if( _sema_timedwait( (sema_t *)hSem, (unsigned int)uiTimeout))
 		{
 			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
 		}
@@ -556,7 +637,11 @@ Desc:   Get the lock on a semaphore - p operation
 void FLMAPI f_semSignal(
 	F_SEM			hSem)
 {
-	(void)sema_signal( (sema_t *)hSem);
+#if defined( FLM_SOLARIS)
+	sema_post( (sema_t *)hSem);
+#else
+	sema_signal( (sema_t *)hSem);
+#endif
 }
 #endif
 

@@ -164,6 +164,7 @@
 
 		#ifdef FLM_SOLARIS
 			#include <signal.h>
+			#include <synch.h>
 		#endif
 
 		typedef int						SOCKET;
