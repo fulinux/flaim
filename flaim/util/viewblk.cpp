@@ -50,24 +50,24 @@ FSTATIC FLMINT OutputElmRecord(
 	FLMUINT       StatusOnlyFlag);
 
 FSTATIC FLMINT OutBlkHdrExpNum(
-	FLMUINT		Col,
-	FLMUINT  *  RowRV,
-	FLMUINT     bc,
-	FLMUINT     fc,
-	FLMUINT     mbc,
-	FLMUINT     mfc,
-	FLMUINT     sbc,
-	FLMUINT     sfc,
-	FLMUINT     LabelWidth,
-	FLMINT      iLabelIndex,
-	FLMUINT		FileNumber,
-	FLMUINT     FileOffset,
-	FLMBYTE *   ValuePtr,
-	FLMUINT     ValueType,
-	FLMUINT     ModType,
-	FLMUINT     ExpNum,
-	FLMUINT     IgnoreExpNum,
-	FLMUINT     Option);
+	FLMUINT			Col,
+	FLMUINT  *		RowRV,
+	eColorType		bc,
+	eColorType		fc,
+	eColorType		mbc,
+	eColorType		mfc,
+	eColorType		sbc,
+	eColorType		sfc,
+	FLMUINT     	LabelWidth,
+	FLMINT      	iLabelIndex,
+	FLMUINT			FileNumber,
+	FLMUINT     	FileOffset,
+	FLMBYTE *   	ValuePtr,
+	FLMUINT     	ValueType,
+	FLMUINT     	ModType,
+	FLMUINT     	ExpNum,
+	FLMUINT     	IgnoreExpNum,
+	FLMUINT     	Option);
 
 FSTATIC void FormatBlkType(
 	FLMBYTE *    TempBuf,
@@ -859,8 +859,7 @@ FSTATIC FLMINT OutBlkHdrExpNum(
 	FLMUINT     ModType,
 	FLMUINT     ExpNum,
 	FLMUINT     IgnoreExpNum,
-	FLMUINT     Option
-	)
+	FLMUINT     Option)
 {
 	FLMUINT     Row = *RowRV;
 	FLMUINT		Num = 0;
