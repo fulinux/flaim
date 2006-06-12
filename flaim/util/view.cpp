@@ -622,19 +622,6 @@ Get_File_Name:
 		gv_pSFileHdl = NULL;
 	}
 
-	if( RC_BAD( rc = ViewReadAndVerifyHdrInfo()))
-	{
-		if (rc == FERR_IO_PATH_NOT_FOUND)
-		{
-			goto Path_Not_Found;
-		}
-		else
-		{
-			goto Other_Error;
-		}
-	}
-
-
 	if ((gv_pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
@@ -649,8 +636,20 @@ Get_File_Name:
 		goto Exit;
 	}
 
+	if( RC_BAD( rc = ViewReadAndVerifyHdrInfo()))
+	{
+		if (rc == FERR_IO_PATH_NOT_FOUND)
+		{
+			goto Path_Not_Found;
+		}
+		else
+		{
+			goto Other_Error;
+		}
+	}
+
 	gv_pSFileHdl->releaseFiles( TRUE);
-	
+
 	if (RC_BAD( rc = FlmDbOpen( gv_szViewFileName, gv_szDataDir,
 										 gv_szRflDir, FO_DONT_REDO_LOG,
 										 gv_szPassword, &gv_hViewDb)))

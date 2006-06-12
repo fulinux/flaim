@@ -197,7 +197,7 @@ RCODE F_SuperFileHdl::readBlock(
 	IF_FileHdl *	pFileHdl = NULL;
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bSetupCalled && m_uiDbVersion);
+	flmAssert( m_bSetupCalled);
 
 	if( RC_BAD( rc = getFileHdl(
 		FSGetFileNumber( uiBlkAddress), FALSE, &pFileHdl)))
@@ -234,7 +234,7 @@ RCODE F_SuperFileHdl::writeBlock(
 	IF_FileHdl *	pFileHdl = NULL;
 	RCODE				rc = NE_FLM_OK;
 
-	flmAssert( m_bSetupCalled && m_uiDbVersion);
+	flmAssert( m_bSetupCalled);
 
 Get_Handle:
 	if( RC_BAD( rc = getFileHdl(

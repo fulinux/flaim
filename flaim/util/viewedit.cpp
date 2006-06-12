@@ -381,8 +381,8 @@ FLMINT ViewEdit(
 	FLMUINT			BytesToWrite;
 	FLMUINT			BytesWritten;
 	FLMUINT			Num;
-	char				TempBuf[ 100];
-	char *			BufPtr = NULL;
+	FLMBYTE			TempBuf[ 100];
+	FLMBYTE *		BufPtr = NULL;
 	RCODE				rc;
 	FLMUINT			FileOffset;
 	FLMUINT			FileNumber;
@@ -409,7 +409,7 @@ FLMINT ViewEdit(
 						((gv_pViewMenuCurrItem->ModType & 0xF0) == MOD_HEX), 4,
 						0xFFFFFFFF))
 				return( FALSE);
-			UD2FBA( Num, TempBuf);
+			UD2FBA( Num, (FLMBYTE *)TempBuf);
 			break;
 		case MOD_FLMUINT16:
 			BytesToWrite = 2;
@@ -417,7 +417,7 @@ FLMINT ViewEdit(
 						((gv_pViewMenuCurrItem->ModType & 0xF0) == MOD_HEX), 2,
 						0xFFFF))
 				return( FALSE);
-			UW2FBA( Num, TempBuf);
+			UW2FBA( (FLMUINT16)Num, TempBuf);
 			break;
 		case MOD_FLMBYTE:
 			BytesToWrite = 1;
@@ -436,13 +436,13 @@ Mod_Binary:
 				FileOffset += gv_pViewMenuCurrItem->HorizCurPos;
 				BytesToWrite -= gv_pViewMenuCurrItem->HorizCurPos;
 			}
-			if( (!ViewEditBinary( NULL, TempBuf, &BytesToWrite, &ValEntered)) ||
+			if( (!ViewEditBinary( NULL, (char *)TempBuf, &BytesToWrite, &ValEntered)) ||
 					(!ValEntered))
 				return( FALSE);
 			break;
 		case MOD_TEXT:
 			if( (!ViewEditText( "Enter Value: ", 
-				TempBuf, gv_pViewMenuCurrItem->ModBufLen, &ValEntered)) ||
+				(char *)TempBuf, gv_pViewMenuCurrItem->ModBufLen, &ValEntered)) ||
 					(!ValEntered))
 				return( FALSE);
 			BytesToWrite = gv_pViewMenuCurrItem->ModBufLen;
