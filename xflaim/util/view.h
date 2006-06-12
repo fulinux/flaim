@@ -539,6 +539,12 @@ EXTERN VIEW_MENU_ITEM_p			gv_pViewMenuLastItem
 #endif
 	;
 
+EXTERN IF_DbSystem *				gv_pDbSystem
+#ifdef MAIN_MODULE
+	= NULL
+#endif
+	;
+
 // Function prototypes
 
 #ifdef FLM_NLM

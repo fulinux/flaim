@@ -1183,6 +1183,8 @@ RCODE F_DbCheck::verifyBTrees(
 	F_BLK_HDR *						pBlkHdr = NULL;
 	F_CachedBlock *				pSCache = NULL;
 	
+	f_memset( State, 0, sizeof( State));
+
 	// The StateInfo structs may have pointer to this object,
 	// but we only need one instance, so do the new here, rather
 	// than inside the loop where we initialize the StateInfo structs.

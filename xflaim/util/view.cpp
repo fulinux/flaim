@@ -60,7 +60,6 @@ FSTATIC FLMBOOL ViewOpenFileDirect( void);
 static FLMBOOL		bPauseBeforeExiting = FALSE;
 FLMUINT				gv_uiTopLine = 0;
 FLMUINT				gv_uiBottomLine = 0;
-IF_DbSystem *		gv_pDbSystem = NULL;
 
 /********************************************************************
 Desc: ?

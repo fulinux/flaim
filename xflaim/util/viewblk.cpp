@@ -316,15 +316,25 @@ FLMBOOL ViewBlkRead(
 			{
 				convert16( &ui16BlkBytesAvail);
 			}
-			uiBlkEnd = (blkIsNewBTree( pBlkHdr)
-							? gv_ViewDbHdr.ui16BlockSize
-							: gv_ViewDbHdr.ui16BlockSize - (FLMUINT)ui16BlkBytesAvail);
-			*pui32CalcCRC = calcBlkCRC( pBlkHdr, uiBlkEnd);
+
+			if( ui16BlkBytesAvail > gv_ViewDbHdr.ui16BlockSize)
+			{
+				*pui32CalcCRC = 0;
+			}
+			else
+			{
+				uiBlkEnd = (blkIsNewBTree( pBlkHdr)
+								? gv_ViewDbHdr.ui16BlockSize
+								: gv_ViewDbHdr.ui16BlockSize - (FLMUINT)ui16BlkBytesAvail);
+				*pui32CalcCRC = calcBlkCRC( pBlkHdr, uiBlkEnd);
+			}
 		}
+
 		if (blkIsNonNativeFormat( pBlkHdr))
 		{
 			convertBlk( (FLMUINT)gv_ViewDbHdr.ui16BlockSize, pBlkHdr);
 		}
+
 		if (pui32BlkCRC)
 		{
 			*pui32BlkCRC = pBlkHdr->ui32BlkCRC;

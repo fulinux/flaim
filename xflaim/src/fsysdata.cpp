@@ -2062,14 +2062,6 @@ void F_DbSystem::cleanup( void)
 		gv_XFlmSysData.pCacheCleanupThrd = NULL;
 	}
 
-	// Release the thread manager
-
-	if( gv_XFlmSysData.pThreadMgr)
-	{
-		gv_XFlmSysData.pThreadMgr->Release();
-		gv_XFlmSysData.pThreadMgr = NULL;
-	}
-
 	// Free all of the files and associated structures
 
 	if (gv_XFlmSysData.pDatabaseHashTbl)
@@ -2163,6 +2155,14 @@ void F_DbSystem::cleanup( void)
 			}
 			f_mutexDestroy( &gv_XFlmSysData.EventHdrs [iEventCategory].hMutex);
 		}
+	}
+
+	// Release the thread manager
+
+	if( gv_XFlmSysData.pThreadMgr)
+	{
+		gv_XFlmSysData.pThreadMgr->Release();
+		gv_XFlmSysData.pThreadMgr = NULL;
 	}
 
 	// Release the file system object

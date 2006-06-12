@@ -2604,9 +2604,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Thread that will build an index in the background.
-			Caller will create a pDb to use.  This pDb must be
-			freed at the conclusion of the routine.
+Desc:
 ****************************************************************************/
 RCODE F_Database::maintenanceThread(
 	IF_Thread *		pThread)
@@ -2656,16 +2654,9 @@ Retry:
 			}
 			bStartedTrans = TRUE;
 				
-			if( RC_BAD( rc = pDb->getDocument( 
+			if( RC_BAD( pDb->getDocument( 
 				XFLM_MAINT_COLLECTION, XFLM_INCL, ui64DocId, (IF_DOMNode **)&pDoc)))
 			{
-				if( rc != NE_XFLM_DOM_NODE_NOT_FOUND)
-				{
-					RC_UNEXPECTED_ASSERT( rc);
-					goto Exit;
-				}
-				
-				rc = NE_XFLM_OK;
 				break;
 			}
 			

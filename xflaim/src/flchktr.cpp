@@ -271,7 +271,6 @@ RCODE F_DbCheck::chkReportError(
 		m_uiFlags &= ~XFLM_DO_LOGICAL_CHECK;
 	}
 
-	flmAssert( 0);
 	return( m_LastStatusRc);
 }
 

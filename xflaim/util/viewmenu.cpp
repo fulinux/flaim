@@ -180,7 +180,6 @@ FSTATIC void ViewDispMenuItem(
 	FLMUINT		uiCol = pMenuItem->uiCol;
 	FLMUINT		uiLoop;
 	char			szTempBuf [80];
-	F_DbSystem	dbSystem;
 
 	if (!gv_bViewEnabled)
 	{
@@ -288,7 +287,7 @@ FSTATIC void ViewDispMenuItem(
 		case VAL_IS_ERR_INDEX:
 			{
 			FLMUINT  ValIndex = (FLMUINT)pMenuItem->ui64Value;
-			f_conStrOutXY( dbSystem.checkErrorToStr( ValIndex),
+			f_conStrOutXY( gv_pDbSystem->checkErrorToStr( ValIndex),
 							uiCol, uiRow);
 			break;
 			}
