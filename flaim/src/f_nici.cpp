@@ -1274,7 +1274,7 @@ RCODE F_CCS::getKeyToStore(
 	FLMUINT32				ui32WrappedKeyLen = 0;
 	char *					pszFormattedEncKeyPasswd = NULL;
 	NICI_OBJECT_HANDLE	wrappingKeyHandle = 0;
-	FLMUINT32				ui32B64Length;
+	FLMUINT					uiB64Length;
 
 	*ppucKeyInfo = NULL;
 	*pui32BufLen = 0;
@@ -1384,13 +1384,13 @@ RCODE F_CCS::getKeyToStore(
 	{
 		// The resulting length will not be more than doubled.
 		
-		ui32B64Length = ui32PaddedLength * 2;
-		if( RC_BAD( rc = f_calloc( ui32B64Length, &pvB64Buffer)))
+		uiB64Length = (FLMUINT)(ui32PaddedLength * 2);
+		if( RC_BAD( rc = f_calloc( uiB64Length, &pvB64Buffer)))
 		{
 			goto ExitCtx;
 		}
 		
-		if( RC_BAD( rc = FlmOpenBufferIStream( pucTmp, 
+		if( RC_BAD( rc = FlmOpenBufferIStream( (const char *)pucTmp, 
 			ui32PaddedLength, &pBufferIStream)))
 		{
 			goto Exit;
@@ -1403,17 +1403,17 @@ RCODE F_CCS::getKeyToStore(
 		}
 
 		if (RC_BAD( rc = pB64Encoder->read( pvB64Buffer, 
-			ui32PaddedLength, &ui32B64Length)))
+			ui32PaddedLength, &uiB64Length)))
 		{
 			goto ExitCtx;
 		}
 
-		flmAssert( ui32B64Length < (ui32PaddedLength * 2));
+		flmAssert( uiB64Length < (FLMUINT)(ui32PaddedLength * 2));
 
-		((FLMBYTE *)pvB64Buffer)[ ui32B64Length] = '\0';
+		((FLMBYTE *)pvB64Buffer)[ uiB64Length] = '\0';
 		*ppucKeyInfo = (FLMBYTE *)pvB64Buffer;
 		pvB64Buffer = NULL;
-		*pui32BufLen = ui32B64Length;
+		*pui32BufLen = (FLMUINT32)uiB64Length;
 	}
 	else
 	{
@@ -1492,8 +1492,7 @@ RCODE F_CCS::setKeyFromStore(
 	FLMBYTE *				pucTmp;
 	FLMBYTE *				pucBuffer = NULL;
 	FLMBOOL					bShrouded = FALSE;
-	FLMUINT32				ui32Length;
-	F_Base64Decoder *		pB64Decoder = NULL;
+	FLMUINT					uiLength;
 	FLMBYTE *				pucKeyBuf = NULL;
 	char *					pszFormattedEncKeyPasswd = NULL;
 	NICI_OBJECT_HANDLE	wrappingKeyHandle = 0;
@@ -1507,6 +1506,8 @@ RCODE F_CCS::setKeyFromStore(
 
 	if (bBase64Encoded)
 	{
+		F_Base64DecoderIStream	B64Decoder;
+		F_BufferIStream			bufferStream;
 
 		// Need a temporary buffer to translate the Base64 encoded buffer into
 
@@ -1515,18 +1516,21 @@ RCODE F_CCS::setKeyFromStore(
 			goto Exit;
 		}
 
-		// Buffer is Base64 encoded.  We must first decode it.
-		
-		if( (pB64Decoder = f_new F_Base64Decoder) == NULL)
+		if (RC_BAD( rc = bufferStream.open( (const char *)pTmpKey, ui32BufLen)))
 		{
-			rc = RC_SET( FERR_MEM);
+			goto Exit;
+		}
+		if (RC_BAD( rc = B64Decoder.open( &bufferStream)))
+		{
 			goto Exit;
 		}
 
+		// Buffer is Base64 encoded.  We must first decode it.
+		
 		// Decode the buffer
 		
-		if( RC_BAD( rc = pB64Decoder->read(	pTmpKey, ui32BufLen,
-			(void *)pucKeyBuf, ui32BufLen, &ui32Length)))
+		if( RC_BAD( rc = B64Decoder.read(
+			(void *)pucKeyBuf, ui32BufLen, &uiLength)))
 		{
 			goto Exit;
 		}
@@ -1546,7 +1550,7 @@ RCODE F_CCS::setKeyFromStore(
 
 	// Actual length - note that the passed buffer is padded to 16 byte boundary.
 	
-	ui32Length = FB2UD( pucTmp);
+	uiLength = FB2UD( pucTmp);
 	pucTmp += sizeof( FLMUINT32);
 
 	// Get the IV
@@ -1556,12 +1560,12 @@ RCODE F_CCS::setKeyFromStore(
 
 	// Need another temporary buffer to hold the encrypted / shrouded key.
 	
-	if (RC_BAD( rc = f_alloc( ui32Length, &pucBuffer)))
+	if (RC_BAD( rc = f_alloc( uiLength, &pucBuffer)))
 	{
 		goto Exit;
 	}
 
-	f_memcpy( pucBuffer, pucTmp, ui32Length);
+	f_memcpy( pucBuffer, pucTmp, uiLength);
 
 	if (bShrouded)
 	{
@@ -1588,7 +1592,7 @@ RCODE F_CCS::setKeyFromStore(
 		// Unshroud the key using the password.
 		// Key handle is always kept in m_keyHandle.
 		
-		if( RC_BAD( rc = injectKey( pucBuffer, ui32Length,
+		if( RC_BAD( rc = injectKey( pucBuffer, (FLMUINT32)uiLength,
 			(FLMUNICODE *)pszFormattedEncKeyPasswd)))
 		{
 			goto Exit;
@@ -1603,7 +1607,7 @@ RCODE F_CCS::setKeyFromStore(
 
 		// Unwrap the key.  The Key handle is always store in m_keyHandle.
 		
-		if (RC_BAD( rc = unwrapKey( pucBuffer, ui32Length, wrappingKeyHandle)))
+		if (RC_BAD( rc = unwrapKey( pucBuffer, (FLMUINT32)uiLength, wrappingKeyHandle)))
 		{
 			goto Exit;
 		}
@@ -1616,10 +1620,6 @@ RCODE F_CCS::setKeyFromStore(
 Exit:
 
 #ifdef FLM_USE_NICI
-	if (pB64Decoder)
-	{
-		delete pB64Decoder;
-	}
 
 	if (pucBuffer)
 	{
