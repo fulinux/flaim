@@ -159,6 +159,8 @@
 
 		#ifdef FLM_OSX
 			#include <sys/resource.h>
+			#include <sys/param.h>
+			#include <sys/mount.h>
 			#include <libkern/OSAtomic.h>
 		#endif
 
