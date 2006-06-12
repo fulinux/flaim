@@ -1141,7 +1141,7 @@ RCODE F_FileHdl::directWrite(
 	FLMBYTE *			pucSrcBuffer;
 	FLMUINT				uiTotalBytesToWrite;
 	FLMUINT				uiBufBytesToWrite;
-	FLMUINT				uiBytesWritten;
+	FLMUINT				uiBytesWritten = 0;
 	FLMBOOL				bWaitForWrite = (pBufferObj == NULL)
 										? TRUE
 										: FALSE;
@@ -1391,6 +1391,7 @@ RCODE F_FileHdl::directWrite(
 			else
 			{
 				pBufferObj->makePending();
+				uiBytesWritten = uiTotalBytesToWrite;
 			}
 		}
 #endif
