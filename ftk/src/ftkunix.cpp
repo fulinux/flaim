@@ -1133,6 +1133,7 @@ RCODE F_FileHdl::directWrite(
 	FLMBYTE *			pucSrcBuffer;
 	FLMUINT				uiMaxBytesToWrite;
 	FLMUINT				uiBytesBeingOutput;
+	FLMUINT				uiBytesWritten;
 	FLMBOOL				bWaitForWrite = (pBufferObj == NULL)
 										? TRUE
 										: FALSE;
@@ -1284,12 +1285,8 @@ RCODE F_FileHdl::directWrite(
 				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
-
-			if( (FLMUINT)iBytesWritten < uiMaxBytesToWrite)
-			{
-				rc = RC_SET( NE_FLM_IO_DISK_FULL);
-				goto Exit;
-			}
+			
+			uiBytesWritten = (FLMUINT)iBytesWritten;
 		}
 		else
 #ifdef FLM_LIBC_NLM
@@ -1360,6 +1357,7 @@ RCODE F_FileHdl::directWrite(
 							goto Exit;
 						}
 						
+						uiBytesWritten = (FLMUINT)iAsyncResult;
 						break;
 					}
 					
@@ -1380,9 +1378,12 @@ RCODE F_FileHdl::directWrite(
 		}
 #endif
 
-		pucSrcBuffer += uiBytesBeingOutput;
-		ui64WriteOffset += uiBytesBeingOutput;
-		
+		if (uiBytesWritten < uiMaxBytesToWrite)
+		{
+			rc = RC_SET( NE_FLM_IO_DISK_FULL);
+			goto Exit;
+		}
+
 		uiBytesToWrite -= uiBytesBeingOutput;
 		
 		if( puiBytesWrittenRV)
