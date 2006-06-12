@@ -1313,7 +1313,7 @@ RCODE F_FileHdl::directWrite(
 			pAio->aio_lio_opcode = LIO_WRITE;
 			pAio->aio_sigevent.sigev_notify = SIGEV_NONE;
 			pAio->aio_fildes = m_fd;
-			pAio->aio_offset = uiLastWriteOffset;
+			pAio->aio_offset = ui64LastWriteOffset;
 			pAio->aio_nbytes = uiMaxBytesToWrite;
 			pAio->aio_buf = pucWriteBuffer;
 			
