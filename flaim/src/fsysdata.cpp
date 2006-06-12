@@ -596,7 +596,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	}
 	
 #ifdef FLM_USE_NICI
-	iHandle  = f_getpid();
+	iHandle  = (int)f_getpid();
 
 	// Initialize NICI
 	if (CCS_Init(&iHandle))
