@@ -775,19 +775,25 @@
 			FLMUINT				uiAccess,
 			FLMBOOL				bCreateFlag);
 	
-		FINLINE FLMUINT64 roundUpToSectorMultiple(
-			FLMUINT64			ui64Bytes)
+		FINLINE FLMUINT64 roundToNextSector(
+			FLMUINT64		ui64Bytes)
 		{
-			return( (ui64Bytes + m_ui64NotOnSectorBoundMask) &
-						m_ui64GetSectorBoundMask);
+			return( (ui64Bytes + m_ui64NotOnSectorBoundMask) & 
+							m_ui64GetSectorBoundMask);
 		}
-	
-		FINLINE FLMUINT64 getSectorStartOffset(
-			FLMUINT64			ui64Offset)
+		
+		FINLINE FLMUINT64 truncateToPrevSector(
+			FLMUINT64		ui64Offset)
 		{
 			return( ui64Offset & m_ui64GetSectorBoundMask);
 		}
 	
+		RCODE doOneRead(
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesRead);
+			
 		RCODE directRead(
 			FLMUINT64			ui64ReadOffset,
 			FLMUINT				uiBytesToRead,	
