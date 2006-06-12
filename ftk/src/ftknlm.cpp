@@ -3188,8 +3188,7 @@ RCODE FLMAPI F_FileHdl::sectorWrite(
 	const void *		pvBuffer,
 	FLMUINT				uiBufferSize,
 	void *				pvBufferObj,
-	FLMUINT *			puiBytesWrittenRV,
-	FLMBOOL				bZeroFill)
+	FLMUINT *			puiBytesWrittenRV)
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_IOBuffer *		pBufferObj = (IF_IOBuffer *)pvBufferObj;
@@ -3199,7 +3198,7 @@ RCODE FLMAPI F_FileHdl::sectorWrite(
 	if ( m_bDoDirectIO)
 	{
 		if( RC_BAD( rc = _directIOSectorWrite( (FLMUINT)ui64WriteOffset, 
-			uiBytesToWrite, pvBuffer, pBufferObj, puiBytesWrittenRV, bZeroFill)))
+			uiBytesToWrite, pvBuffer, pBufferObj, puiBytesWrittenRV)))
 		{
 			goto Exit;
 		}
@@ -3235,8 +3234,7 @@ RCODE F_FileHdl::_directIOSectorWrite(
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
 	IF_IOBuffer *	pBufferObj,
-	FLMUINT *		puiBytesWrittenRV,
-	FLMBOOL			bZeroFill)
+	FLMUINT *		puiBytesWrittenRV)
 {
 	RCODE		rc = NE_FLM_OK;
 	LONG		lStartSector;
@@ -3271,14 +3269,11 @@ RCODE F_FileHdl::_directIOSectorWrite(
 
 		lSectorCount++;
 
-		if (bZeroFill)
-		{
-			// Zero out the part of the buffer that was not included in
-			// uiBytesToWrite - because it will still be written to disk.
+		// Zero out the part of the buffer that was not included in
+		// uiBytesToWrite - because it will still be written to disk.
 
-			f_memset( &pucBuffer [uiBytesToWrite], 0,
-						(FLMUINT)(FLM_NLM_SECTOR_SIZE - (uiBytesToWrite % FLM_NLM_SECTOR_SIZE)));
-		}
+		f_memset( &pucBuffer [uiBytesToWrite], 0,
+					(FLMUINT)(FLM_NLM_SECTOR_SIZE - (uiBytesToWrite % FLM_NLM_SECTOR_SIZE)));
 	}
 
 	if( RC_BAD( rc = writeSectors( (void *)pvBuffer, lStartSector, lSectorCount,

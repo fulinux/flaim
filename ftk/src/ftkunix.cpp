@@ -82,7 +82,6 @@ F_FileHdl::F_FileHdl()
 	m_pszFileName = NULL;
 	
 	m_fd = -1;
-	m_bDoDirectIO = FALSE;
 	m_uiExtendSize = 0;
 	m_uiBytesPerSector = 0;
 	m_ui64NotOnSectorBoundMask = 0;
@@ -129,6 +128,7 @@ RCODE F_FileHdl::openOrCreate(
 	char					szSaveFileName[ F_PATH_MAX_SIZE];
 	int         		openFlags = O_RDONLY;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	struct stat			filestats;
 
 #if defined( FLM_LINUX) || defined( FLM_SOLARIS)
 	bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
@@ -176,15 +176,6 @@ RCODE F_FileHdl::openOrCreate(
 
 	if( bDoDirectIO)
 	{
-		if( RC_BAD( rc = pFileSystem->getSectorSize(
-			pszFileName, &m_uiBytesPerSector)))
-		{
-			goto Exit;
-		}
-		
-		m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
-		m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
-
 		// Can't do direct IO if the block size isn't a multiple of
 		// the sector size.
 
@@ -267,6 +258,15 @@ Retry_Create:
 	}
 #endif
 	
+	if( fstat( m_fd, &filestats) != 0)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_OPENING_FILE);
+		goto Exit;
+	}
+	
+	m_uiBytesPerSector = filestats.st_blksize;
+	m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
+	m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
 	m_bDoDirectIO = bDoDirectIO;
 
 Exit:
@@ -592,7 +592,6 @@ RCODE F_FileHdl::directRead(
 	FLMUINT64		ui64ReadOffset,
 	FLMUINT			uiBytesToRead,	
    void *			pvBuffer,
-	FLMBOOL			bBuffHasFullSectors,
 	FLMUINT *		puiBytesRead)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -626,9 +625,8 @@ RCODE F_FileHdl::directRead(
 		// one (if not already allocated), and use it.
 
 		if( (ui64ReadOffset & m_ui64NotOnSectorBoundMask) ||
-			 (((FLMUINT64)(FLMUINT)pucDestBuffer) & m_ui64NotOnSectorBoundMask) ||
-			 ((uiBytesToRead & m_ui64NotOnSectorBoundMask) &&
-			  !bBuffHasFullSectors))
+			 (uiBytesToRead & m_ui64NotOnSectorBoundMask) ||
+			 (((FLMUINT64)(FLMUINT)pucDestBuffer) & m_ui64NotOnSectorBoundMask))
 		{
 			if( !m_pucAlignedBuff)
 			{
@@ -755,7 +753,7 @@ RCODE FLMAPI F_FileHdl::read(
 	if( m_bDoDirectIO)
 	{
 		rc = directRead( ui64ReadOffset, uiBytesToRead, 
-			pvBuffer, FALSE, puiBytesRead);
+			pvBuffer, puiBytesRead);
 		goto Exit;
 	}
 
@@ -802,7 +800,7 @@ RCODE FLMAPI F_FileHdl::sectorRead(
 	if( m_bDoDirectIO)
 	{
 		return( directRead( ui64ReadOffset, uiBytesToRead, 
-			pvBuffer, TRUE, puiBytesRead));
+			pvBuffer, puiBytesRead));
 	}
 	else
 	{
@@ -933,10 +931,10 @@ RCODE FLMAPI F_FileHdl::write(
 	
 	f_assert( m_bFileOpened);
 
-	if( m_bDoDirectIO)
+	if( m_bDoDirectIO || m_bOpenedInAsyncMode)
 	{
 		rc = directWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer, 
-			NULL, puiBytesWrittenRV, FALSE, TRUE);
+			NULL, puiBytesWrittenRV);
 		goto Exit;
 	}
 	
@@ -988,6 +986,7 @@ RCODE F_FileHdl::allocAlignedBuffer( void)
 	// boundary if it is not already on one.
 
 	m_uiAlignedBuffSize = (FLMUINT)roundUpToSectorMultiple( 64 * 1024);
+	f_assert( m_uiAlignedBuffSize >= m_uiBytesPerSector);
 	
 #if defined( FLM_SOLARIS)
 	if( (m_pucAlignedBuff = (FLMBYTE *)memalign( 
@@ -1021,9 +1020,7 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
 	IF_IOBuffer *	pBufferObj,
-	FLMUINT *		puiBytesWrittenRV,
-	FLMBOOL			bBuffHasFullSectors,
-	FLMBOOL			bZeroFill)
+	FLMUINT *		puiBytesWrittenRV)
 {
 	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiBytesRead;
@@ -1060,12 +1057,9 @@ RCODE F_FileHdl::directWrite(
 	pucSrcBuffer = (FLMBYTE *)pvBuffer;
 	for (;;)
 	{
-		// See if we are using an aligned buffer.  If not, allocate
-		// one (if not already allocated), and use it.
-
 		if( (ui64WriteOffset & m_ui64NotOnSectorBoundMask) ||
-			 (((FLMUINT64)(FLMUINT)pucSrcBuffer) & m_ui64NotOnSectorBoundMask) ||
-			 ((uiBytesToWrite & m_ui64NotOnSectorBoundMask) && !bBuffHasFullSectors))
+			 (uiBytesToWrite & m_ui64NotOnSectorBoundMask) ||
+			 ((FLMUINT64)(FLMUINT)pucSrcBuffer) & m_ui64NotOnSectorBoundMask)
 		{
 			// Cannot do an async write if we have to use a temporary buffer
 			
@@ -1108,7 +1102,7 @@ RCODE F_FileHdl::directWrite(
 			// sector into the buffer.
 
 			if( (ui64WriteOffset & m_ui64NotOnSectorBoundMask) ||
-				(uiBytesBeingOutput < m_uiBytesPerSector && !bBuffHasFullSectors))
+				(uiBytesBeingOutput < m_uiBytesPerSector))
 			{
 				// Read the first sector that is to be written out.
 				// Read one sector's worth of data - so that we will
@@ -1137,15 +1131,9 @@ RCODE F_FileHdl::directWrite(
 		}
 		else
 		{
-			uiMaxBytesToWrite = (FLMUINT)roundUpToSectorMultiple( uiBytesToWrite);
-			uiBytesBeingOutput = uiBytesToWrite;
 			pucWriteBuffer = pucSrcBuffer;
-			
-			if( bZeroFill && uiMaxBytesToWrite > uiBytesToWrite)
-			{
-				f_memset( &pucWriteBuffer[ uiBytesToWrite], 0,
-							uiMaxBytesToWrite - uiBytesToWrite);
-			}
+			uiMaxBytesToWrite = uiBytesToWrite;
+			uiBytesBeingOutput = uiBytesToWrite;
 		}
 
 		// Position the file to the nearest sector below the write offset.
@@ -1153,7 +1141,7 @@ RCODE F_FileHdl::directWrite(
 		uiLastWriteOffset = (FLMUINT)getSectorStartOffset( ui64WriteOffset);
 		uiLastWriteSize = uiMaxBytesToWrite;
 		
-		if( bWaitForWrite)
+		if( !m_bOpenedInAsyncMode)
 		{
 			FLMINT		iBytesWritten;
 			
@@ -1173,7 +1161,18 @@ RCODE F_FileHdl::directWrite(
 #ifndef FLM_NLM
 		else
 		{
-			struct aiocb *		pAio = ((F_IOBuffer *)pBufferObj)->getAIOStruct();
+			struct aiocb *		pAio;
+			struct aiocb		tmpAio;
+			
+			if( pBufferObj)
+			{
+				pAio = ((F_IOBuffer *)pBufferObj)->getAIOStruct();
+			}
+			else
+			{
+				pAio = &tmpAio;
+				f_assert( bWaitForWrite);
+			}
 			
 			f_memset( pAio, 0, sizeof( struct aiocb));
 			pAio->aio_lio_opcode = LIO_WRITE;
@@ -1183,13 +1182,63 @@ RCODE F_FileHdl::directWrite(
 			pAio->aio_nbytes = uiMaxBytesToWrite;
 			pAio->aio_buf = pucWriteBuffer;
 			
-			if( aio_write( pAio) == -1)
+			if( aio_write( pAio) != 0)
 			{
+				f_assert( 0);
 				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
-			
-			pBufferObj->makePending();
+
+			if( bWaitForWrite)
+			{
+				struct aiocb *		ppAioList[ 1];
+				
+				ppAioList[ 0] = pAio;
+				
+				for( ;;)
+				{
+					FLMINT 	iAsyncResult;
+					
+					if( aio_suspend( ppAioList, 1, NULL) != 0)
+					{
+						if( errno == EINTR)
+						{
+							continue;
+						}
+						
+						f_assert( 0);
+						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+						goto Exit;
+					}
+					
+					iAsyncResult = aio_error( pAio);
+					
+					if( !iAsyncResult)
+					{
+						if( (iAsyncResult = aio_return( pAio)) < 0)
+						{
+							f_assert( 0);
+							rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+							goto Exit;
+						}
+						
+						break;
+					}
+					
+					if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
+					{
+						continue;
+					}
+					
+					f_assert( 0);
+					rc = f_mapPlatformError( iAsyncResult, NE_FLM_WRITING_FILE);
+					goto Exit;
+				}
+			}
+			else
+			{
+				pBufferObj->makePending();
+			}
 		}
 #endif
 
@@ -1406,7 +1455,7 @@ FLMUINT f_getLinuxMaxFileSize( void)
 	
 	f_assert( gv_uiLinuxMajorVer);
 	
-	// Is version 2.4 or greater?
+	// Version 2.4 or greater?
 
 	if( gv_uiLinuxMajorVer > 2 || 
 		(gv_uiLinuxMajorVer == 2 && gv_uiLinuxMinorVer >= 4))

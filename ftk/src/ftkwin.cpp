@@ -612,7 +612,6 @@ RCODE F_FileHdl::directRead(
 	FLMUINT64		ui64ReadOffset,
 	FLMUINT			uiBytesToRead,
    void *			pvBuffer,
-	FLMBOOL			bBuffHasFullSectors,
    FLMUINT *		puiBytesReadRV)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -646,8 +645,7 @@ RCODE F_FileHdl::directRead(
 
 		if ((ui64ReadOffset & m_ui64NotOnSectorBoundMask) ||
 			 (((FLMUINT64)pucDestBuffer) & m_ui64NotOnSectorBoundMask) ||
-			 (((FLMUINT64)uiBytesToRead & m_ui64NotOnSectorBoundMask) &&
-			  (!bBuffHasFullSectors)))
+			 (((FLMUINT64)uiBytesToRead & m_ui64NotOnSectorBoundMask)))
 		{
 			if (!m_pucAlignedBuff)
 			{
@@ -770,7 +768,7 @@ RCODE FLMAPI F_FileHdl::read(
 	if (m_bDoDirectIO)
 	{
 		rc = directRead( ui64ReadOffset, uiBytesToRead,
-									pvBuffer, FALSE, puiBytesReadRV);
+									pvBuffer, puiBytesReadRV);
 		goto Exit;
 	}
 
@@ -1084,27 +1082,25 @@ RCODE F_FileHdl::directWrite(
 	FLMUINT				uiBytesToWrite,
    const void *		pvBuffer,
 	IF_IOBuffer *		pBufferObj,
-	FLMBOOL				bBuffHasFullSectors,
-	FLMBOOL				bZeroFill,
    FLMUINT *			puiBytesWrittenRV)
 {
-	RCODE				rc = NE_FLM_OK;
-	FLMUINT			uiBytesRead;
-	FLMUINT			uiBytesWritten;
-	FLMBYTE *		pucWriteBuffer;
-	FLMBYTE *		pucSrcBuffer;
-	FLMUINT			uiMaxBytesToWrite;
-	FLMUINT64		ui64CurrFileSize;
-	FLMUINT			uiBytesBeingOutput;
-	OVERLAPPED *	pOverlapped;
-	DWORD				udErr;
-	FLMBOOL			bExtendFile = FALSE;
-	FLMBOOL			bWaitForWrite = (pBufferObj == NULL)
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiBytesRead;
+	FLMUINT				uiBytesWritten;
+	FLMBYTE *			pucWriteBuffer;
+	FLMBYTE *			pucSrcBuffer;
+	FLMUINT				uiMaxBytesToWrite;
+	FLMUINT64			ui64CurrFileSize;
+	FLMUINT				uiBytesBeingOutput;
+	OVERLAPPED *		pOverlapped;
+	DWORD					udErr;
+	FLMBOOL				bExtendFile = FALSE;
+	FLMBOOL				bWaitForWrite = (pBufferObj == NULL)
 										? TRUE
 										: FALSE;
-	FLMUINT64		ui64LastWriteOffset;
-	FLMUINT			uiLastWriteSize;
-	LARGE_INTEGER	liTmp;
+	FLMUINT64			ui64LastWriteOffset;
+	FLMUINT				uiLastWriteSize;
+	LARGE_INTEGER		liTmp;
 
 	f_assert( m_bFileOpened);
 
@@ -1168,8 +1164,7 @@ RCODE F_FileHdl::directWrite(
 
 		if ((ui64WriteOffset & m_ui64NotOnSectorBoundMask) ||
 			 (((FLMUINT)pucSrcBuffer) & m_ui64NotOnSectorBoundMask) ||
-			 ((uiBytesToWrite & m_ui64NotOnSectorBoundMask) &&
-			  (!bBuffHasFullSectors)))
+			 (uiBytesToWrite & m_ui64NotOnSectorBoundMask))
 		{
 
 			// Cannot do an async write if we have to use a temporary buffer
@@ -1231,8 +1226,7 @@ RCODE F_FileHdl::directWrite(
 			// we must read in this sector as well.
 
 			if ((uiMaxBytesToWrite > m_uiBytesPerSector) &&
-				 (uiMaxBytesToWrite > uiBytesToWrite) &&
-				 (!bBuffHasFullSectors))
+				 (uiMaxBytesToWrite > uiBytesToWrite))
 			{
 
 				// Read the last sector that is to be written out.
@@ -1268,14 +1262,9 @@ RCODE F_FileHdl::directWrite(
 		}
 		else
 		{
-			uiMaxBytesToWrite = roundToNextSector( uiBytesToWrite);
-			uiBytesBeingOutput = uiBytesToWrite;
 			pucWriteBuffer = pucSrcBuffer;
-			if( bZeroFill && uiMaxBytesToWrite > uiBytesToWrite)
-			{
-				f_memset( &pucWriteBuffer [uiBytesToWrite], 0,
-							uiMaxBytesToWrite - uiBytesToWrite);
-			}
+			uiMaxBytesToWrite = uiBytesToWrite;
+			uiBytesBeingOutput = uiBytesToWrite;
 		}
 
 		// Position the file to the nearest sector below the write offset.
@@ -1433,7 +1422,7 @@ RCODE FLMAPI F_FileHdl::write(
 	if (m_bDoDirectIO)
 	{
 		rc = directWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer,
-								NULL, FALSE, FALSE, puiBytesWrittenRV);
+								NULL, puiBytesWrittenRV);
 		goto Exit;
 	}
 

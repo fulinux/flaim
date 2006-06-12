@@ -1586,10 +1586,8 @@
 			FLMUINT64				ui64WriteOffset,
 			FLMUINT					uiBytesToWrite,
 			const void *			pvBuffer,
-			FLMUINT					uiBufferSize,
 			IF_IOBuffer *			pBufferObj,
-			FLMUINT *				puiBytesWritten = NULL,
-			FLMBOOL					bZeroFill = TRUE) = 0;
+			FLMUINT *				puiBytesWritten = NULL) = 0;
 
 		virtual RCODE FLMAPI close( void) = 0;
 

@@ -532,7 +532,7 @@
 			if (m_bDoDirectIO)
 			{
 				return( directRead( ui64ReadOffset, uiBytesToRead,
-						pvBuffer, TRUE, puiBytesReadRV));
+						pvBuffer, puiBytesReadRV));
 			}
 			else
 			{
@@ -545,17 +545,13 @@
 			FLMUINT64		ui64WriteOffset,
 			FLMUINT			uiBytesToWrite,
 			const void *	pvBuffer,
-			FLMUINT			uiBufferSize,
 			IF_IOBuffer *	pBufferObj,
-			FLMUINT *		puiBytesWrittenRV,
-			FLMBOOL			bZeroFill = TRUE)
+			FLMUINT *		puiBytesWrittenRV)
 		{
-			F_UNREFERENCED_PARM( uiBufferSize);
-			
 			if (m_bDoDirectIO)
 			{
 				return( directWrite( ui64WriteOffset, uiBytesToWrite,
-						pvBuffer, pBufferObj, TRUE, bZeroFill, puiBytesWrittenRV));
+						pvBuffer, pBufferObj, puiBytesWrittenRV));
 			}
 			else
 			{
@@ -631,7 +627,6 @@
 			FLMUINT64		uiOffset,
 			FLMUINT			uiLength,
 			void *			pvBuffer,
-			FLMBOOL			bBuffHasFullSectors,
 			FLMUINT *		puiBytesRead);
 	
 		RCODE directWrite(
@@ -639,8 +634,6 @@
 			FLMUINT			uiLength,
 			const void *	pvBuffer,
 			IF_IOBuffer *	pBufferObj,
-			FLMBOOL			bBuffHasFullSectors,
-			FLMBOOL			bZeroFill,
 			FLMUINT *		puiBytesWritten);
 	
 		FINLINE FLMUINT64 roundToNextSector(
@@ -736,17 +729,13 @@
 			FLMUINT64			ui64WriteOffset,
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
-			FLMUINT				uiBufferSize,
 			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV,
-			FLMBOOL				bZeroFill = TRUE)
+			FLMUINT *			puiBytesWrittenRV)
 		{
-			F_UNREFERENCED_PARM( uiBufferSize);
-			
 			if( m_bDoDirectIO)
 			{
 				return( directWrite( ui64WriteOffset, uiBytesToWrite, 
-					pvBuffer, pBufferObj, puiBytesWrittenRV, TRUE, bZeroFill));
+					pvBuffer, pBufferObj, puiBytesWrittenRV));
 			}
 			else
 			{
@@ -826,7 +815,6 @@
 			FLMUINT64			ui64ReadOffset,
 			FLMUINT				uiBytesToRead,	
 			void *				pvBuffer,
-			FLMBOOL				bBuffHasFullSectors,
 			FLMUINT *			puiBytesRead);
 	
 		RCODE directWrite(
@@ -834,9 +822,7 @@
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
 			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV,
-			FLMBOOL				bBuffHasFullSectors,
-			FLMBOOL				bZeroFill);
+			FLMUINT *			puiBytesWrittenRV);
 		
 		RCODE allocAlignedBuffer( void);
 		
@@ -911,10 +897,8 @@
 			FLMUINT64			ui64WriteOffset,
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
-			FLMUINT				uiBufferSize,
 			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV,
-			FLMBOOL				bZeroFill = TRUE);
+			FLMUINT *			puiBytesWrittenRV);
 	
 		RCODE FLMAPI close( void);
 													
@@ -1020,8 +1004,7 @@
 			FLMUINT				uiBytesToWrite,
 			const void *		pvBuffer,
 			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV,
-			FLMBOOL				bZeroFill);
+			FLMUINT *			puiBytesWrittenRV);
 	
 		char *					m_pszIoPath;
 		FLMBOOL					m_bDeleteOnClose;

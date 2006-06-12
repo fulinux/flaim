@@ -41,6 +41,8 @@ RCODE FLMAPI f_makeErr(
 	{
 		return( NE_FLM_OK);
 	}
+	
+	f_assert( rc != NE_FLM_MEM);
 
 #if defined( FLM_DEBUG)
 	if( bAssert)
@@ -83,7 +85,7 @@ RCODE FLMAPI f_mapPlatformError(
 
 		case EINVAL:
 		{
-			return( RC_SET( NE_FLM_IO_PATH_TOO_LONG));
+			return( RC_SET_AND_ASSERT( NE_FLM_IO_PATH_TOO_LONG));
 		}
 
 		case EIO:

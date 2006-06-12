@@ -1980,7 +1980,7 @@ RCODE FLMAPI F_FileSystem::pathAppend(
 
 			if (uiStrLen + 2 + f_strlen( pszPathComponent) > F_PATH_MAX_SIZE)
 			{
-				return RC_SET( NE_FLM_IO_PATH_TOO_LONG);
+				return RC_SET_AND_ASSERT( NE_FLM_IO_PATH_TOO_LONG);
 			}
 
 			pszEnd++;
@@ -1997,7 +1997,7 @@ RCODE FLMAPI F_FileSystem::pathAppend(
 
 			if (uiStrLen + 1 + f_strlen( pszPathComponent) > F_PATH_MAX_SIZE)
 			{
-				return RC_SET( NE_FLM_IO_PATH_TOO_LONG);
+				return RC_SET_AND_ASSERT( NE_FLM_IO_PATH_TOO_LONG);
 			}
 		}
 
@@ -2089,7 +2089,7 @@ RCODE FLMAPI F_FileSystem::pathToStorageString(
 
 	if (f_strlen( pszRealPath) >= F_PATH_MAX_SIZE)
 	{
-		rc = RC_SET( NE_FLM_IO_PATH_TOO_LONG);
+		rc = RC_SET_AND_ASSERT( NE_FLM_IO_PATH_TOO_LONG);
 		goto Exit;
 	}
 

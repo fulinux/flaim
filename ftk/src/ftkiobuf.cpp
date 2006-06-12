@@ -573,13 +573,40 @@ RCODE F_IOBuffer::waitToComplete( void)
 #if defined( FLM_LINUX) || defined( FLM_SOLARIS)
 	if( m_aio.aio_fildes != -1)
 	{
-		const struct aiocb *		pAio = &m_aio;
+		FLMINT						iAsyncResult;
+		const struct aiocb *		ppAio[ 1];
 		
-		if( aio_suspend( &pAio, 1, NULL) == -1)
-		{
-			rc = f_mapPlatformError( errno, NE_FLM_MEM);
-		}
+		ppAio[ 0] = &m_aio;
 
+		for( ;;)
+		{
+			aio_suspend( ppAio, 1, NULL);
+			iAsyncResult = aio_error( &m_aio);
+	
+			if( !iAsyncResult)
+			{
+				if( (iAsyncResult = aio_return( &m_aio)) < 0)
+				{
+					f_assert( 0);
+					rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+					goto WriteComplete;
+				}
+					
+				break;
+			}
+				
+			if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
+			{
+				continue;
+			}
+					
+			f_assert( 0);
+			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			goto WriteComplete;
+		}
+		
+WriteComplete:
+		
 		notifyComplete( rc);
 	}
 #endif
