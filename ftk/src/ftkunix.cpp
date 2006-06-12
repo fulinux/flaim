@@ -1072,7 +1072,7 @@ RCODE FLMAPI F_FileHdl::write(
 	
 	if( (FLMUINT)iBytesWritten < uiBytesToWrite)
 	{
-		rc = RC_SET( NE_FLM_IO_DISK_FULL);
+		rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
 		goto Exit;
 	}
 
@@ -1398,7 +1398,7 @@ RCODE F_FileHdl::directWrite(
 
 		if (uiBytesWritten < uiTotalBytesToWrite)
 		{
-			rc = RC_SET( NE_FLM_IO_DISK_FULL);
+			rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
 			goto Exit;
 		}
 
