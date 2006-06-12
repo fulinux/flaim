@@ -35,7 +35,7 @@
 #endif
 
 #include <sys/types.h>
-#if !defined( FLM_OSX) && !defined( FLM_NLM)
+#if !defined( FLM_OSX) && !defined( FLM_LIBC_NLM)
 	#include <aio.h>
 #endif
 
@@ -57,7 +57,7 @@
 
 	struct statfs;
 	#include <sys/mount.h>
-#elif defined( FLM_NLM)
+#elif defined( FLM_LIBC_NLM)
 	#define pread 			pread64
 	#define pwrite 		pwrite64
 	#define ftruncate		ftruncate64
@@ -264,7 +264,7 @@ Retry_Create:
 		goto Exit;
 	}
 	
-	m_uiBytesPerSector = filestats.st_blksize;
+	m_uiBytesPerSector = (FLMUINT)filestats.st_blksize;
 	m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
 	m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
 	m_bDoDirectIO = bDoDirectIO;
@@ -991,7 +991,7 @@ RCODE F_FileHdl::allocAlignedBuffer( void)
 #if defined( FLM_SOLARIS)
 	if( (m_pucAlignedBuff = (FLMBYTE *)memalign( 
 		sysconf( _SC_PAGESIZE), m_uiAlignedBuffSize)) == NULL)
-#elif defined( FLM_OSX) || defined( FLM_NLM)
+#elif defined( FLM_OSX) || defined( FLM_LIBC_NLM)
 	if( (m_pucAlignedBuff = (FLMBYTE *)malloc( m_uiAlignedBuffSize)) == NULL)
 #else
 	if( posix_memalign( (void **)&m_pucAlignedBuff, 
@@ -1158,8 +1158,13 @@ RCODE F_FileHdl::directWrite(
 				goto Exit;
 			}
 		}
-#ifndef FLM_NLM
 		else
+#ifdef FLM_LIBC_NLM
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_WRITING_FILE);
+			goto Exit;
+		}
+#else
 		{
 			struct aiocb *		pAio;
 			struct aiocb		tmpAio;

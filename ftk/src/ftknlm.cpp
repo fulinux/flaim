@@ -3186,16 +3186,12 @@ RCODE FLMAPI F_FileHdl::sectorWrite(
 	FLMUINT64			ui64WriteOffset,
 	FLMUINT				uiBytesToWrite,
 	const void *		pvBuffer,
-	FLMUINT				uiBufferSize,
-	void *				pvBufferObj,
+	IF_IOBuffer *		pBufferObj,
 	FLMUINT *			puiBytesWrittenRV)
 {
 	RCODE					rc = NE_FLM_OK;
-	IF_IOBuffer *		pBufferObj = (IF_IOBuffer *)pvBufferObj;
 
-	F_UNREFERENCED_PARM( uiBufferSize);
-
-	if ( m_bDoDirectIO)
+	if( m_bDoDirectIO)
 	{
 		if( RC_BAD( rc = _directIOSectorWrite( (FLMUINT)ui64WriteOffset, 
 			uiBytesToWrite, pvBuffer, pBufferObj, puiBytesWrittenRV)))
@@ -3205,7 +3201,7 @@ RCODE FLMAPI F_FileHdl::sectorWrite(
 	}
 	else
 	{
-		flmAssert( pBufferObj == NULL);
+		flmAssert( !pBufferObj);
 		
 		if( RC_BAD( rc = _write( (FLMUINT)ui64WriteOffset, 
 			uiBytesToWrite, pvBuffer, puiBytesWrittenRV)))

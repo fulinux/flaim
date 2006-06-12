@@ -443,6 +443,11 @@
 		}
 	#endif
 	
+#ifdef FLM_NLM
+		void signalComplete(
+			RCODE		rc);
+#endif
+
 	private:
 	
 		// Only called by the buffer manager
@@ -477,6 +482,9 @@
 		F_TMSTAMP				m_StartTime;
 		FLMUINT64				m_ui64ElapMilli;
 		void *					m_pStats;
+#ifdef FLM_NLM
+		F_SEM						m_hSem;
+#endif
 	
 		friend class F_IOBufferMgr;
 	};
@@ -542,11 +550,11 @@
 		}
 	
 		FINLINE RCODE FLMAPI sectorWrite(
-			FLMUINT64		ui64WriteOffset,
-			FLMUINT			uiBytesToWrite,
-			const void *	pvBuffer,
-			IF_IOBuffer *	pBufferObj,
-			FLMUINT *		puiBytesWrittenRV)
+			FLMUINT64			ui64WriteOffset,
+			FLMUINT				uiBytesToWrite,
+			const void *		pvBuffer,
+			IF_IOBuffer *		pBufferObj,
+			FLMUINT *			puiBytesWrittenRV)
 		{
 			if (m_bDoDirectIO)
 			{

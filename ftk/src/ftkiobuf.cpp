@@ -318,6 +318,10 @@ RCODE FLMAPI F_IOBufferMgr::getBuffer(
 	// into the buffer manager's used list.
 
 	linkToList( &m_pFirstUsed, pIOBuffer);
+	
+#ifdef FLM_RING_ZERO_NLM
+	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)(pIOBuffer->m_hSem)) == 0);
+#endif
 
 Exit:
 
@@ -354,6 +358,9 @@ F_IOBuffer::F_IOBuffer()
 #elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
 	m_aio.aio_fildes = -1;
 #endif
+#ifdef FLM_RING_ZERO_NLM
+	m_hSem = F_SEM_NULL;
+#endif
 	m_pStats = NULL;
 }
 
@@ -374,6 +381,13 @@ F_IOBuffer::~F_IOBuffer()
 	if( m_Overlapped.hEvent)
 	{
 		CloseHandle( m_Overlapped.hEvent);
+	}
+#endif
+
+#ifdef FLM_RING_ZERO_NLM
+	if (m_hSem != F_SEM_NULL)
+	{
+		f_semDestroy( &m_hSem);
 	}
 #endif
 
@@ -434,6 +448,13 @@ RCODE FLMAPI F_IOBuffer::setupBuffer(
 											FALSE, NULL)) == NULL)
 	{
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_SETTING_UP_FOR_WRITE);
+		goto Exit;
+	}
+#endif
+
+#ifdef FLM_RING_ZERO_NLM
+	if (RC_BAD( rc = f_semCreate( &m_hSem)))
+	{
 		goto Exit;
 	}
 #endif
@@ -516,7 +537,10 @@ Desc:
 ****************************************************************************/
 FLMBOOL F_IOBuffer::isIOComplete( void)
 {
-	FLMBOOL	bComplete = FALSE;
+	FLMBOOL		bComplete = FALSE;
+#ifdef FLM_RING_ZERO_NLM
+	FLMUINT		uiSemCount;
+#endif
 
 	if( m_eList != MGR_LIST_PENDING)
 	{
@@ -535,6 +559,14 @@ FLMBOOL F_IOBuffer::isIOComplete( void)
 #if defined( FLM_LINUX) || defined( FLM_SOLARIS)
 	if( m_aio.aio_fildes == -1 || aio_error( &m_aio) != EINPROGRESS)
 	{
+		bComplete = TRUE;
+	}
+#endif
+
+#ifdef FLM_RING_ZERO_NLM
+	if( (uiSemCount = (FLMUINT)kSemaphoreExamineCount( (SEMAPHORE)m_hSem)) != 0)
+	{
+		flmAssert( uiSemCount == 1);
 		bComplete = TRUE;
 	}
 #endif
@@ -611,6 +643,16 @@ WriteComplete:
 	}
 #endif
 
+#ifdef FLM_RING_ZERO_NLM
+	if( kSemaphoreWait( (SEMAPHORE)m_hSem) != 0)
+	{
+		flmAssert( 0);
+	}
+	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
+	rc = m_completionRc;
+	notifyComplete( m_completionRc);
+#endif
+
 	return( rc);
 }
 
@@ -642,3 +684,16 @@ void * FLMAPI F_IOBuffer::getStats( void)
 {
 	return( m_pStats);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+void F_IOBuffer::signalComplete(
+	RCODE	rc)
+{
+	m_completionRc = rc;
+	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
+	kSemaphoreSignal( (SEMAPHORE)m_hSem);
+}
+#endif
