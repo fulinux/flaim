@@ -70,7 +70,6 @@ public:
 		FLMUINT				uiBlkAddress,
 		FLMUINT				uiBytesToWrite,
 		const void *		pvBuffer,
-		FLMUINT				uiBufferSize,
 		IF_IOBuffer *		pIOBuffer,
 		FLMUINT *			puiBytesWritten);
 

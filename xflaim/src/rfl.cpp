@@ -839,8 +839,7 @@ RCODE F_Rfl::writeHeader(
 	// Write out the header
 
 	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512,
-										ucBuf, sizeof( ucBuf),
-										NULL, &uiBytesWritten)))
+										ucBuf, NULL, &uiBytesWritten)))
 	{
 		// Remap disk full error
 
@@ -1302,9 +1301,7 @@ RCODE F_Rfl::flush(
 		}
 
 		rc = m_pFileHdl->sectorWrite( uiFileOffset, uiBufBytes,
-						pucOldBuffer,
-						m_uiBufferSize, pAsyncBuf,
-						&uiBytesWritten, FALSE);
+						pucOldBuffer, pAsyncBuf, &uiBytesWritten);
 		if( m_uiRflWriteBufs == 1)
 		{
 

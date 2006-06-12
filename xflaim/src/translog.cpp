@@ -136,13 +136,12 @@ RCODE F_Database::lgFlushLogBuffer(
 	m_pCurrLogBuffer->startTimer( pDbStats);
 
 	// NOTE: No guarantee that m_pCurrLogBuffer will still be around
-	// after the call to WriteBlock, unless we are doing
+	// after the call to writeBlock, unless we are doing
 	// non-asynchronous write.
 
 	rc = pSFileHdl->writeBlock( m_uiCurrLogBlkAddr,
 				m_uiCurrLogWriteOffset,
 				m_pCurrLogBuffer->getBuffer(),
-				m_pCurrLogBuffer->getBufferSize(),
 				pAsyncBuffer, &uiBytesWritten);
 	if (!pAsyncBuffer)
 	{

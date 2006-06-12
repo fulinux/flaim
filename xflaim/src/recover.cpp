@@ -249,7 +249,7 @@ RCODE F_Db::processBeforeImage(
 	m_pSFileHdl->setMaxAutoExtendSize( m_pDatabase->m_uiMaxFileSize);
 	m_pSFileHdl->setExtendSize( m_pDatabase->m_uiFileExtendSize);
 	rc = m_pSFileHdl->writeBlock( uiBlkAddress, uiBlkLength, pBlkHdr,
-						 m_pDatabase->m_uiBlockSize, NULL, &uiBytesWritten);
+						 NULL, &uiBytesWritten);
 #ifdef FLM_DBG_LOG
 	flmDbgLogWrite( m_pDatabase, uiBlkAddress, 0, ui64TransID,
 								"ROLLBACK");
@@ -360,9 +360,7 @@ RCODE F_Database::writeDbHdr(
 	}
 
 	if( RC_BAD( rc = pCFileHdl->sectorWrite( 0,
-								 uiBytesWritten, pTmpDbHdr, 
-								 pCFileHdl->getSectorSize(),
-								 NULL, &uiBytesWritten, FALSE)))
+		uiBytesWritten, pTmpDbHdr, NULL, &uiBytesWritten)))
 	{
 		if (pDbStats)
 		{
