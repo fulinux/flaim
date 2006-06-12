@@ -25,6 +25,10 @@
 
 #include "ftksys.h"
 
+#ifdef FLM_UNIX
+	pid_t getpid( void);
+#endif
+
 #ifdef FLM_LIBC_NLM
 	void * threadStub(
 		void *	pvThread);
@@ -1511,6 +1515,22 @@ void FLMAPI f_threadDestroy(
 		(*ppThread)->Release();
 		*ppThread = NULL;
 	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT f_getpid( void)
+{
+#if defined( FLM_WIN)
+	return _getpid();
+#elif defined( FLM_UNIX)
+	return getpid();
+#elif defined( FLM_NLM)
+	return( (FLMUINT)f_getNLMHandle());
+#else
+	#error "Unsupported Platform"
+#endif
 }
 
 /****************************************************************************

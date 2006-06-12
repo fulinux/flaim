@@ -242,37 +242,6 @@
 	#endif
 
 	/****************************************************************************
-										Process ID Functions
-	****************************************************************************/
-
-	#if defined( FLM_WIN)
-
-		FINLINE FLMUINT f_getpid( void)
-		{ 
-			return _getpid();
-		}
-
-	#elif defined( FLM_UNIX)
-
-		pid_t getpid( void);
-
-		FINLINE FLMUINT f_getpid( void)
-		{ 
-			return getpid();
-		}
-
-	#elif defined( FLM_NLM)
-	
-		FINLINE FLMUINT f_getpid() 
-		{ 
-			return( (FLMUINT)f_getNLMHandle());
-		}
-		
-	#else
-		#error "Unsupported Platform"
-	#endif
-
-	/****************************************************************************
 											 f_sprintf
 	****************************************************************************/
 
