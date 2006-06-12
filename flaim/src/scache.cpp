@@ -5033,8 +5033,7 @@ FSTATIC RCODE ScaWriteContiguousBlocks(
 	// non-asynchronous write.
 
 	rc = pSFileHdl->writeBlock( uiBlkAddress, uiWriteLen,
-					pucWriteBuffer, pIOBuffer->getBufferSize(),
-					pAsyncBuffer, &uiBytesWritten);
+					pucWriteBuffer, pAsyncBuffer, &uiBytesWritten);
 	if (!pAsyncBuffer)
 	{
 		pIOBuffer->notifyComplete( rc);

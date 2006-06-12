@@ -289,7 +289,7 @@ FSTATIC void _flmDbgLogFlush( void)
 			uiBytesToWrite = uiTotalToWrite;
 		}
 
-		if( RC_BAD( rc = g_pLogFile->SectorWrite(
+		if( RC_BAD( rc = g_pLogFile->sectorWrite(
 			g_uiLogFileOffset, uiBytesToWrite,
 			pszBufPtr, uiBufferSize, NULL, &uiBytesWritten, FALSE)))
 		{

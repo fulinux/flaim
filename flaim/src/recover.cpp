@@ -273,7 +273,7 @@ FSTATIC RCODE flmProcessBeforeImage(
 	pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
 	rc = pDb->pSFileHdl->writeBlock( uiBlkAddress, uiBlkLength, pBlk,
-						 pFile->FileHdr.uiBlockSize, NULL, &uiBytesWritten);
+						 NULL, &uiBytesWritten);
 						 
 #ifdef FLM_DBG_LOG
 	flmDbgLogWrite( pFile->uiFFileId, uiBlkAddress, 0,
@@ -431,24 +431,8 @@ RCODE flmWriteLogHdr(
 		goto Exit;
 	}
 
-	if( pCFileHdl->getSectorSize() > 512)
-	{
-		// We don't want to use the SectorWrite call when sector
-		// size is > 512 because it will overwrite the file
-		// header, which has not been set up in this buffer.
-
-		rc = pCFileHdl->write( 0, uiBytesWritten, pFile->pucLogHdrWriteBuf,
-									&uiBytesWritten);
-	}
-	else
-	{
-		rc = pCFileHdl->sectorWrite( 0,
-									 uiBytesWritten, pFile->pucLogHdrWriteBuf, 
-									 pCFileHdl->getSectorSize(),
-									 NULL, &uiBytesWritten, FALSE);
-	}
-	
-	if (RC_BAD( rc))
+	if( RC_BAD( rc = pCFileHdl->sectorWrite( 0, uiBytesWritten, 
+		pFile->pucLogHdrWriteBuf, NULL, &uiBytesWritten)))
 	{
 		if (pDbStats)
 		{

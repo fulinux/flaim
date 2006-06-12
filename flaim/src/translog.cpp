@@ -138,7 +138,6 @@ RCODE lgFlushLogBuffer(
 	rc = pSFileHdl->writeBlock( pFile->uiCurrLogBlkAddr,
 				pFile->uiCurrLogWriteOffset,
 				pFile->pCurrLogBuffer->getBuffer(),
-				pFile->pCurrLogBuffer->getBufferSize(),
 				pAsyncBuffer, &uiBytesWritten);
 				
 	if (!pAsyncBuffer)

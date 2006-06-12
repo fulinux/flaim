@@ -2079,15 +2079,14 @@ FSTATIC RCODE flmRestoreFile(
 		//
 		// Unix systems can have sector sizes that are larger than our
 		// typical 4K database blocks.  The Unix implementation of SectorWrite
-		// (called by WriteBlock) will write the passed-in block and clobber any
+		// (called by writeBlock) will write the passed-in block and clobber any
 		// additional data beyond the end of the block to the end of the sector if
 		// it has enough room in the block buffer to write a full sector.  If the
 		// block buffer is less than a full sector, the Unix SectorWrite will only
 		// write out the amount requested, not a full sector.
 
 		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,  
-			uiBlockSize, pucBlkBuf, uiBlockSize,
-			NULL, &uiBytesWritten)))
+			uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
 		{
 			if( rc == FERR_IO_PATH_NOT_FOUND ||
 				 rc == FERR_IO_INVALID_PATH)
@@ -2107,8 +2106,7 @@ FSTATIC RCODE flmRestoreFile(
 				}
 
 				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,  
-					uiBlockSize, pucBlkBuf, uiBlockSize,
-					NULL, &uiBytesWritten)))
+					uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
 				{
 					goto Exit;
 				}

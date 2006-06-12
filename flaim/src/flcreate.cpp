@@ -37,8 +37,7 @@ FSTATIC RCODE flmInitFileHdrs(
 	CREATE_OPTS *		pCreateOpts,
 	FLMUINT				uiBlkSize,
 	FLMUINT				uiTransID,
-	FLMBYTE *			pInitBuf,
-	FLMUINT				uiBufSize);
+	FLMBYTE *			pInitBuf);
 
 /****************************************************************************
 Desc : Creates a new FLAIM database.
@@ -383,7 +382,7 @@ FSTATIC RCODE flmInitNewFile(
 	}
 
 	if (RC_BAD( rc = flmInitFileHdrs( pDb, pCreateOpts, uiBlkSize, 
-		uiTransID, pBuf, uiBufSize)))
+		uiTransID, pBuf)))
 	{
 		goto Exit;
 	}
@@ -457,8 +456,7 @@ FSTATIC RCODE flmInitFileHdrs(
 	CREATE_OPTS *	pCreateOpts,
 	FLMUINT			uiBlkSize,
 	FLMUINT			uiTransID,
-	FLMBYTE *		pInitBuf,
-	FLMUINT			uiBufSize)
+	FLMBYTE *		pInitBuf)
 {
 	RCODE				rc = FERR_OK;
 	FFILE *			pFile = pDb->pFile;
@@ -696,8 +694,7 @@ FSTATIC RCODE flmInitFileHdrs(
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
 	if (RC_BAD( rc = pDb->pSFileHdl->writeBlock(
 								pFile->FileHdr.uiFirstLFHBlkAddr,
-								uiBlkSize, pInitBuf, uiBufSize, NULL,
-								&uiWriteBytes)))
+								uiBlkSize, pInitBuf, NULL, &uiWriteBytes)))
 	{
 		goto Exit;
 	}
@@ -721,8 +718,7 @@ FSTATIC RCODE flmInitFileHdrs(
 		pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 		pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
 		if (RC_BAD( rc = pDb->pSFileHdl->writeBlock( uiPcodeAddr,
-									uiBlkSize, pInitBuf, uiBufSize, NULL,
-									&uiWriteBytes)))
+									uiBlkSize, pInitBuf, NULL, &uiWriteBytes)))
 		{
 			goto Exit;
 		}

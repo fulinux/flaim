@@ -606,7 +606,7 @@ private:
 		FLMBYTE *	pucNextSerialNum,
 		FLMBOOL		bKeepSignature);
 
-	void copyLastSector(
+	void copyLastBlock(
 		RFL_BUFFER *	pBuffer,
 		FLMBYTE *		pucOldBuffer,
 		FLMBYTE *		pucNewBuffer,

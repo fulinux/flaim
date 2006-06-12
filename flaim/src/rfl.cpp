@@ -329,7 +329,7 @@ RCODE F_Rfl::positionTo(
 		if (m_pCurrentBuf->uiRflBufBytes)
 		{
 			if (RC_BAD( rc = m_pFileHdl->sectorRead( 
-				m_pCurrentBuf->uiRflFileOffset,  m_pCurrentBuf->uiRflBufBytes,
+				m_pCurrentBuf->uiRflFileOffset, m_pCurrentBuf->uiRflBufBytes,
 				m_pCurrentBuf->pIOBuffer->getBuffer(), &uiBytesRead)))
 			{
 				if (rc == FERR_IO_END_OF_FILE)
@@ -850,7 +850,7 @@ RCODE F_Rfl::writeHeader(
 
 	// Write out the header
 
-	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512, ucBuf, sizeof( ucBuf),
+	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512, ucBuf,
 				  NULL, &uiBytesWritten)))
 	{
 
@@ -1197,10 +1197,10 @@ Exit:
 }
 
 /********************************************************************
-Desc:		Copy last partial sector of last buffer written (or to be
+Desc:		Copy last partial block of last buffer written (or to be
 			written) into a new buffer.
 *********************************************************************/
-void F_Rfl::copyLastSector(
+void F_Rfl::copyLastBlock(
 	RFL_BUFFER *	pBuffer,
 	FLMBYTE *		pucOldBuffer,
 	FLMBYTE *		pucNewBuffer,
@@ -1333,15 +1333,13 @@ RCODE F_Rfl::flush(
 
 			if (!bFinalWrite)
 			{
-				copyLastSector( pBuffer, pucOldBuffer, pNewBuffer->getBuffer(),
+				copyLastBlock( pBuffer, pucOldBuffer, pNewBuffer->getBuffer(),
 									uiCurrPacketLen, bStartingNewFile);
 			}
 		}
 
 		if( RC_OK( rc = m_pFileHdl->sectorWrite( uiFileOffset, uiBufBytes, 
-											  pucOldBuffer,
-											  m_uiBufferSize, pAsyncBuf, &uiBytesWritten,
-											  FALSE)))
+											  pucOldBuffer, pAsyncBuf, &uiBytesWritten)))
 		{
 			if( m_bKeepRflFiles)
 			{
@@ -1378,7 +1376,7 @@ RCODE F_Rfl::flush(
 			flmAssert( !pAsyncBuf);
 			if (RC_OK( rc) && !bFinalWrite)
 			{
-				copyLastSector( pBuffer, pucOldBuffer, pucOldBuffer,
+				copyLastBlock( pBuffer, pucOldBuffer, pucOldBuffer,
 									uiCurrPacketLen, bStartingNewFile);
 			}
 
@@ -1390,7 +1388,7 @@ RCODE F_Rfl::flush(
 		else
 		{
 
-			// No need to call copyLastSector, because it was called above
+			// No need to call copyLastBlock, because it was called above
 			// before calling sectorWrite. The part of the old buffer that
 			// needs to be transferred to the new buffer has already been
 			// transferred.
@@ -1446,7 +1444,7 @@ void F_Rfl::switchBuffers(void)
 	m_pCurrentBuf->uiRflFileOffset = pOldBuffer->uiRflFileOffset;
 	if (pOldBuffer->uiRflBufBytes)
 	{
-		copyLastSector( m_pCurrentBuf, pOldBuffer->pIOBuffer->getBuffer(),
+		copyLastBlock( m_pCurrentBuf, pOldBuffer->pIOBuffer->getBuffer(),
 							m_pCurrentBuf->pIOBuffer->getBuffer(), 0, FALSE);
 	}
 }
@@ -2657,7 +2655,7 @@ RCODE F_Rfl::setupTransaction(void)
 		// end at an offset that is less than the maximum, but greater than
 		// the nearest 512 byte boundary - technically within the
 		// user-specified size limit. However, because we always write a
-		// full 512 bytes of data to fill out the last sector when we are in
+		// full 512 bytes of data to fill out the last block when we are in
 		// direct IO mode, we would end up with a file that was slightly
 		// larger than the user-specified limit. The EOF in the header of
 		// the file would be below the limit, but the actual file size would

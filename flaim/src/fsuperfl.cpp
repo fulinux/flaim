@@ -228,7 +228,6 @@ RCODE F_SuperFileHdl::writeBlock(
 	FLMUINT			uiBlkAddress,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
-	FLMUINT			uiBufferSize,
 	IF_IOBuffer *	pIOBuffer,
 	FLMUINT *		puiBytesWritten)
 {
@@ -257,9 +256,10 @@ Get_Handle:
 
 	pFileHdl->setExtendSize( m_uiExtendSize);
 	pFileHdl->setMaxAutoExtendSize( m_uiMaxAutoExtendSize);
+	
 	if( RC_BAD( rc = pFileHdl->sectorWrite(
 		FSGetFileOffset( uiBlkAddress), uiBytesToWrite,
-		pvBuffer, uiBufferSize, pIOBuffer, puiBytesWritten)))
+		pvBuffer, pIOBuffer, puiBytesWritten)))
 	{
 		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_FLM_MEM)
 		{
