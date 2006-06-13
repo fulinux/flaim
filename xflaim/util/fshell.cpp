@@ -3793,7 +3793,6 @@ FLMINT fshellFileSystemTest(
 			goto Exit;
 		}
 		
-		pFileHdl->setBlockSize( uiBlockSize);
 	}
 	else
 	{
@@ -3807,8 +3806,6 @@ FLMINT fshellFileSystemTest(
 			goto Exit;
 		}
 		
-		pFileHdl->setBlockSize( uiBlockSize);
-
 		uiOffset = 0;
 		while( uiOffset < uiFileSize)
 		{
