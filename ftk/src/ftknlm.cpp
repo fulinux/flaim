@@ -3146,7 +3146,7 @@ FSTATIC void DirectIONoWaitCallBack(
 
 	F_UNREFERENCED_PARM( unknownAlwaysZero);
 
-	pIOBuffer->notifyComplete(
+	pIOBuffer->signalComplete(
 		(RCODE)(completionCode == DFSNormalCompletion
 				  ? NE_FLM_OK
 				  : DfsMapError( completionCode, NE_FLM_DIRECT_WRITING_FILE)));
@@ -3166,7 +3166,7 @@ FSTATIC void nssDioCallback(
 
 	F_UNREFERENCED_PARM( reserved);
 
-	pIOBuffer->notifyComplete( 
+	pIOBuffer->signalComplete( 
 		(RCODE)(completionCode == zOK
 				  ? NE_FLM_OK
 				  : MapNSSError( completionCode, NE_FLM_DIRECT_WRITING_FILE)));

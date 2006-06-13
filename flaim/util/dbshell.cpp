@@ -3387,9 +3387,14 @@ FLMINT FlmFileSysCommand::execute(
 
 Exit:
 
-	if (pDir)
+	if( pDir)
 	{
 		pDir->Release();
+	}
+
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 
 	if( RC_BAD( rc))

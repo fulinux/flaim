@@ -1718,6 +1718,9 @@
 		virtual void FLMAPI notifyComplete(
 			RCODE						rc) = 0;
 			
+		virtual void FLMAPI signalComplete(
+			RCODE						rc) = 0;
+	
 		virtual void FLMAPI setCompletionCallback(
 			WRITE_COMPLETION_CB 	fnCompletion) = 0;
 	

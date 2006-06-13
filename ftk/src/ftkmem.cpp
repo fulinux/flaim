@@ -130,12 +130,12 @@ static FLMBOOL		gv_bMemTrackingInitialized = FALSE;
 static FLMUINT		gv_uiInitThreadId = 0;
 static F_MUTEX		gv_hMemTrackingMutex = F_MUTEX_NULL;
 static FLMUINT		gv_uiMemTrackingPtrArraySize = 0;
-static FLMBOOL		gv_bTrackLeaks = FALSE;
 static FLMUINT		gv_uiNumMemPtrs = 0;
 static void **		gv_ppvMemTrackingPtrs = NULL;
 static FLMUINT		gv_uiNextMemPtrSlotToUse = 0;
 static FLMUINT		gv_uiAllocCnt = 0;
-static FLMBOOL		gv_bStackWalk = FALSE;
+static FLMBOOL		gv_bTrackLeaks = TRUE;
+static FLMBOOL		gv_bStackWalk = TRUE;
 static FLMBOOL		gv_bLogLeaks = FALSE;
 #endif
 

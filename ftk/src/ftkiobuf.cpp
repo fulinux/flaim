@@ -320,7 +320,7 @@ RCODE FLMAPI F_IOBufferMgr::getBuffer(
 	linkToList( &m_pFirstUsed, pIOBuffer);
 	
 #ifdef FLM_RING_ZERO_NLM
-	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)(pIOBuffer->m_hSem)) == 0);
+	f_assert( kSemaphoreExamineCount( pIOBuffer->m_hSem) == 0);
 #endif
 
 Exit:
@@ -359,7 +359,7 @@ F_IOBuffer::F_IOBuffer()
 	m_aio.aio_fildes = -1;
 #endif
 #ifdef FLM_RING_ZERO_NLM
-	m_hSem = F_SEM_NULL;
+	m_hSem = NULL;
 #endif
 	m_pStats = NULL;
 }
@@ -385,9 +385,10 @@ F_IOBuffer::~F_IOBuffer()
 #endif
 
 #ifdef FLM_RING_ZERO_NLM
-	if (m_hSem != F_SEM_NULL)
+	if( m_hSem)
 	{
-		f_semDestroy( &m_hSem);
+		(void)kSemaphoreFree( m_hSem);
+		m_hSem = NULL;
 	}
 #endif
 
@@ -438,8 +439,8 @@ FLMBOOL FLMAPI F_IOBuffer::isPending( void)
 Desc:
 ****************************************************************************/
 RCODE FLMAPI F_IOBuffer::setupBuffer(
-	FLMUINT	uiBufferSize,
-	FLMUINT	uiBlockSize)
+	FLMUINT		uiBufferSize,
+	FLMUINT		uiBlockSize)
 {
 	RCODE			rc = NE_FLM_OK;
 
@@ -453,8 +454,9 @@ RCODE FLMAPI F_IOBuffer::setupBuffer(
 #endif
 
 #ifdef FLM_RING_ZERO_NLM
-	if (RC_BAD( rc = f_semCreate( &m_hSem)))
+	if( (m_hSem = kSemaphoreAlloc( (BYTE *)"FTK_SEM", 0)) == NULL)
 	{
+		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 #endif
@@ -494,6 +496,7 @@ RCODE FLMAPI F_IOBuffer::setupBuffer(
 	m_uiBlockSize = uiBlockSize;
 
 Exit:
+
 	return( rc);
 }
 
@@ -564,9 +567,9 @@ FLMBOOL F_IOBuffer::isIOComplete( void)
 #endif
 
 #ifdef FLM_RING_ZERO_NLM
-	if( (uiSemCount = (FLMUINT)kSemaphoreExamineCount( (SEMAPHORE)m_hSem)) != 0)
+	if( (uiSemCount = (FLMUINT)kSemaphoreExamineCount( m_hSem)) != 0)
 	{
-		flmAssert( uiSemCount == 1);
+		f_assert( uiSemCount == 1);
 		bComplete = TRUE;
 	}
 #endif
@@ -644,11 +647,12 @@ WriteComplete:
 #endif
 
 #ifdef FLM_RING_ZERO_NLM
-	if( kSemaphoreWait( (SEMAPHORE)m_hSem) != 0)
+	if( kSemaphoreWait( m_hSem) != 0)
 	{
-		flmAssert( 0);
+		f_assert( 0);
 	}
-	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
+	
+	f_assert( kSemaphoreExamineCount( m_hSem) == 0);
 	rc = m_completionRc;
 	notifyComplete( m_completionRc);
 #endif
@@ -688,12 +692,14 @@ void * FLMAPI F_IOBuffer::getStats( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#ifdef FLM_RING_ZERO_NLM
-void F_IOBuffer::signalComplete(
-	RCODE	rc)
+void FLMAPI F_IOBuffer::signalComplete(
+	RCODE				rc)
 {
+#ifdef FLM_RING_ZERO_NLM
 	m_completionRc = rc;
-	flmAssert( kSemaphoreExamineCount( (SEMAPHORE)m_hSem) == 0);
-	kSemaphoreSignal( (SEMAPHORE)m_hSem);
-}
+	f_assert( kSemaphoreExamineCount( m_hSem) == 0);
+	kSemaphoreSignal( m_hSem);
+#else
+	F_UNREFERENCED_PARM( rc);
 #endif
+}

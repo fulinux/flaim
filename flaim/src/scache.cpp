@@ -6137,9 +6137,13 @@ RCODE ScaGetBlock(
 	FFILE *				pFile = pDb->pFile;
 	FLMBOOL				bGotFromDisk = FALSE;
 
-	flmAssert( uiBlkAddress != 0);
-
 	*ppSCacheRV = NULL;
+
+	if( !uiBlkAddress)
+	{
+		rc = RC_SET_AND_ASSERT( FERR_ILLEGAL_OP);
+		goto Exit;
+	}
 
 	// We should NEVER be attempting to read a block address that is
 	// beyond the current logical end of file.

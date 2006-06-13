@@ -351,6 +351,9 @@
 	
 		void FLMAPI notifyComplete(
 			RCODE			rc);
+			
+		void FLMAPI signalComplete(
+			RCODE			rc);
 	
 		FINLINE void FLMAPI setCompletionCallback(
 			WRITE_COMPLETION_CB 	fnCompletion)
@@ -414,11 +417,6 @@
 		}
 	#endif
 	
-#ifdef FLM_NLM
-		void signalComplete(
-			RCODE		rc);
-#endif
-
 	private:
 	
 		// Only called by the buffer manager
@@ -453,8 +451,8 @@
 		F_TMSTAMP				m_StartTime;
 		FLMUINT64				m_ui64ElapMilli;
 		void *					m_pStats;
-#ifdef FLM_NLM
-		F_SEM						m_hSem;
+#ifdef FLM_RING_ZERO_NLM
+		SEMAPHORE				m_hSem;
 #endif
 	
 		friend class F_IOBufferMgr;

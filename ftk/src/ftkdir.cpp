@@ -229,7 +229,7 @@ RCODE FLMAPI F_DirHdl::next( void)
 
 	for( ;;)
 	{
-		if ( m_bFirstTime )
+		if( m_bFirstTime)
 		{
 			m_bFirstTime = FALSE;
 

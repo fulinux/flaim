@@ -272,7 +272,7 @@ Desc:
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *	phMutex)
 {
-	if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"NOVDB")) == F_MUTEX_NULL)
+	if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"FTK_MUTEX")) == F_MUTEX_NULL)
 	{
 		return( RC_SET( NE_FLM_MEM));
 	}
@@ -652,7 +652,7 @@ Desc:
 RCODE FLMAPI f_semCreate(
 	F_SEM *		phSem)
 {
-	if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"NOVDB", 0)) == F_SEM_NULL)
+	if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"FTK_SEM", 0)) == F_SEM_NULL)
 	{
 		return( RC_SET( NE_FLM_MEM));
 	}

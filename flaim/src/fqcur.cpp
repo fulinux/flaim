@@ -645,18 +645,16 @@ FLMEXP RCODE FLMAPI FlmCursorFree(
 	CURSOR *						pCursor = (CURSOR *)*phCursor;
 	IF_LogMessageClient *	pLogMsg = NULL;
 
-	flmAssert( pCursor != NULL);
+	flmAssert( pCursor);
 	
-	if( !gv_FlmSysData.pLogger)
+	if( gv_FlmSysData.pLogger)
 	{
-		return( FERR_OK);
-	}
-
-	if ((pLogMsg = gv_FlmSysData.pLogger->beginMessage( FLM_QUERY_MESSAGE,
-							F_DEBUG_MESSAGE)) != NULL)
-	{
-		flmLogQuery( pLogMsg, 0, pCursor);
-		f_endLogMessage( &pLogMsg);
+		if ((pLogMsg = gv_FlmSysData.pLogger->beginMessage( FLM_QUERY_MESSAGE,
+								F_DEBUG_MESSAGE)) != NULL)
+		{
+			flmLogQuery( pLogMsg, 0, pCursor);
+			f_endLogMessage( &pLogMsg);
+		}
 	}
 
 	if (!pCursor->pCSContext && gv_FlmSysData.uiMaxQueries)
