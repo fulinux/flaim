@@ -361,7 +361,7 @@ typedef struct CURSOR
 	FLMUINT					uiLastPrcntOffs;
 	FLMBOOL					bUsePrcntPos;
 
-	IF_ResultSet *			pDRNSet;
+	F_DynSearchSet *		pDRNSet;
 	FLMBOOL					bEliminateDups;
 	QTINFO					QTInfo;
 	RCODE						rc;

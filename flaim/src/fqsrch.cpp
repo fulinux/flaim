@@ -32,6 +32,11 @@ FSTATIC RCODE flmCurSetSubQuery(
 	CURSOR *		pCursor,
 	SUBQUERY *	pSubQuery);
 
+FSTATIC int DRNCompareFunc(
+	void *	pvData1,
+	void *	pvData2,
+	void *	pvUserValue);
+
 FSTATIC RCODE flmCurRecValidate(
 	eFlmFuncs	eFlmFuncId,
 	CURSOR *		pCursor,
@@ -86,36 +91,6 @@ FSTATIC RCODE flmCurEvalSingleRec(
 Desc: This routine will do all the setup needed to establish a sub-query as
 		the current subquery for the query.
 ****************************************************************************/
-class F_DRNCompare : public IF_ResultSetCompare
-{
-	RCODE FLMAPI compare(
-		const void *			pvData1,
-		FLMUINT					uiLength1,
-		const void *			pvData2,
-		FLMUINT					uiLength2,
-		FLMINT *					piCompare)
-	{
-		F_UNREFERENCED_PARM( uiLength1);
-		F_UNREFERENCED_PARM( uiLength2);
-		
-		if( *((FLMUINT *)pvData1) < *((FLMUINT *)pvData2))
-		{
-			*piCompare = -1; 
-		}
-		else if( *((FLMUINT *)pvData1) > *((FLMUINT *)pvData2))
-		{
-			*piCompare = 1; 
-		}
-		
-		*piCompare = 0; 
-		return( NE_FLM_OK);
-	}
-};
-
-/****************************************************************************
-Desc: This routine will do all the setup needed to establish a sub-query as
-		the current subquery for the query.
-****************************************************************************/
 FSTATIC RCODE flmCurSetSubQuery(
 	CURSOR *		pCursor,
 	SUBQUERY *	pSubQuery
@@ -150,6 +125,26 @@ Exit:
 }
 
 /****************************************************************************
+Desc: DRN comparison callback function for dynamic result set.
+****************************************************************************/
+FSTATIC int DRNCompareFunc(
+	void *	pvData1,
+	void *	pvData2,
+	void *	// pvUserValue
+	)
+{
+	if( *((FLMUINT *)pvData1) < *((FLMUINT *)pvData2))
+	{
+		return -1;
+	}
+	else if( *((FLMUINT *)pvData1) > *((FLMUINT *)pvData2))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+/****************************************************************************
 Desc: Validate a record that has passed the search criteria.  This routine
 		checks the record against the validation function and also checks it
 		against the result set, if there is one.
@@ -162,9 +157,8 @@ FSTATIC RCODE flmCurRecValidate(
 	FLMUINT *		puiCount,
 	FLMBOOL *		pbReturnRecOK)
 {
-	RCODE					rc = FERR_OK;
-	FLMBOOL				bSavedInvisTrans;
-	F_DRNCompare *		pDrnCompare = NULL;
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bSavedInvisTrans;
 
 	// At this point, we have a record that has passed all the selection
 	// criteria in the query.  If we have a record validator callback,
@@ -201,6 +195,12 @@ FSTATIC RCODE flmCurRecValidate(
 
 			szTmpDir[ 0] = 0;
 			
+			if ((pCursor->pDRNSet = f_new F_DynSearchSet) == NULL)
+			{
+				rc = RC_SET( FERR_MEM);
+				goto Exit;
+			}
+
 			if( gv_FlmSysData.bTempDirSet && gv_FlmSysData.szTempDir[ 0])
 			{
 				if( RC_BAD( rc = flmGetTmpDir( szTmpDir)))
@@ -218,27 +218,17 @@ FSTATIC RCODE flmCurRecValidate(
 				}
 			}
 			
-			if( RC_BAD( rc = FlmAllocResultSet( &pCursor->pDRNSet)))
+			if (RC_BAD( rc = pCursor->pDRNSet->setup( szTmpDir, sizeof( FLMUINT))))
 			{
 				goto Exit;
 			}
-			
-			if( (pDrnCompare = f_new F_DRNCompare) == NULL)
-			{
-				rc = RC_SET( FERR_MEM);
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = pCursor->pDRNSet->setupResultSet( szTmpDir, 
-				pDrnCompare, sizeof( FLMUINT))))
-			{
-				goto Exit;
-			}
+
+			pCursor->pDRNSet->setCompareFunc( DRNCompareFunc, NULL);
 		}
 
 		if (RC_BAD( rc = pCursor->pDRNSet->addEntry( &pSubQuery->uiDrn)))
 		{
-			if (rc == FERR_EXISTS)
+			if (rc == NE_FLM_EXISTS)
 			{
 				*pbReturnRecOK = FALSE;
 				rc = FERR_OK;
@@ -283,11 +273,6 @@ FSTATIC RCODE flmCurRecValidate(
 	*pbReturnRecOK = TRUE;
 	
 Exit:
-
-	if( pDrnCompare)
-	{
-		pDrnCompare->Release();
-	}
 
 	return( rc);
 }
