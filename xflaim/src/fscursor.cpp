@@ -137,7 +137,7 @@ RCODE FSIndexCursor::allocDupCheckSet( void)
 		m_pNodeIdSet->Release();
 		m_pNodeIdSet = NULL;
 	}
-	if ((m_pNodeIdSet = f_new FDynSearchSet) == NULL)
+	if ((m_pNodeIdSet = f_new F_DynSearchSet) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
@@ -214,7 +214,7 @@ RCODE FSIndexCursor::checkIfDup(
 
 	if (RC_BAD( rc = m_pNodeIdSet->addEntry( &ui64NodeId)))
 	{
-		if (rc == NE_XFLM_EXISTS)
+		if (rc == NE_FLM_EXISTS)
 		{
 			*pbDup = TRUE;
 			rc = NE_XFLM_OK;
@@ -877,7 +877,7 @@ RCODE FSIndexCursor::firstKey(
 
 		if (RC_BAD( rc = m_pNodeIdSet->addEntry( &ui64NodeId)))
 		{
-			flmAssert( rc != NE_XFLM_EXISTS);
+			flmAssert( rc != NE_FLM_EXISTS);
 			goto Exit;
 		}
 	}
@@ -1116,7 +1116,7 @@ RCODE FSIndexCursor::lastKey(
 
 		if (RC_BAD( rc = m_pNodeIdSet->addEntry( &ui64NodeId)))
 		{
-			flmAssert( rc != NE_XFLM_EXISTS);
+			flmAssert( rc != NE_FLM_EXISTS);
 			goto Exit;
 		}
 	}

@@ -26,7 +26,6 @@
 #include "flaimsys.h"
 #include "fquery.h"
 #include "fscursor.h"
-#include "fdynsset.h"
 
 #define MIN_OPT_COST	8
 
@@ -10532,7 +10531,7 @@ RCODE F_Query::getAppNode(
 		{
 			if (RC_BAD( rc = m_pDocIdSet->findMatch( &ui64DocId, NULL)))
 			{
-				if (rc != NE_XFLM_NOT_FOUND)
+				if (rc != NE_FLM_NOT_FOUND)
 				{
 					goto Exit;
 				}
@@ -11058,7 +11057,7 @@ RCODE F_Query::getKey(
 
 			if (RC_BAD( rc = m_pDocIdSet->findMatch( &ui64DocId, NULL)))
 			{
-				if (rc != NE_XFLM_NOT_FOUND)
+				if (rc != NE_FLM_NOT_FOUND)
 				{
 					goto Exit;
 				}
@@ -11415,7 +11414,7 @@ RCODE F_Query::getANode(
 
 			if (RC_BAD( rc = m_pDocIdSet->findMatch( &ui64DocId, NULL)))
 			{
-				if (rc != NE_XFLM_NOT_FOUND)
+				if (rc != NE_FLM_NOT_FOUND)
 				{
 					goto Exit;
 				}
@@ -12317,7 +12316,7 @@ RCODE F_Query::getDocFromIndexScan(
 		ui64DocId = key.getDocumentID();
 		if (RC_BAD( rc = m_pDocIdSet->findMatch( &ui64DocId, NULL)))
 		{
-			if (rc != NE_XFLM_NOT_FOUND)
+			if (rc != NE_FLM_NOT_FOUND)
 			{
 				goto Exit;
 			}
@@ -13658,7 +13657,7 @@ RCODE F_Query::allocDupCheckSet( void)
 		m_pDocIdSet = NULL;
 	}
 
-	if ((m_pDocIdSet = f_new FDynSearchSet) == NULL)
+	if ((m_pDocIdSet = f_new F_DynSearchSet) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
@@ -13737,7 +13736,7 @@ RCODE F_Query::checkIfDup(
 
 	if (RC_BAD( rc = m_pDocIdSet->addEntry( &ui64DocId)))
 	{
-		if (rc == NE_XFLM_EXISTS)
+		if (rc == NE_FLM_EXISTS)
 		{
 			*pbPassed = FALSE;
 			rc = NE_XFLM_OK;

@@ -72,9 +72,6 @@ class F_DbInfo;
 class F_KeyCollector;
 class FSIndexCursor;
 class FSCollectionCursor;
-class FlmRecord;
-class FlmDefaultRec;
-class FDynSearchSet;
 class F_CachedBlock;
 class F_CachedNode;
 class F_GlobalCacheMgr;
@@ -4692,7 +4689,7 @@ private:
 	FLMUINT						m_uiObjectListSize;
 	FLMUINT						m_uiObjectCount;
 	FLMBOOL						m_bRemoveDups;
-	FDynSearchSet *			m_pDocIdSet;
+	F_DynSearchSet *			m_pDocIdSet;
 	FLMUINT						m_uiIndex;
 	FLMBOOL						m_bIndexSet;
 	FLMUINT						m_uiTimeLimit;

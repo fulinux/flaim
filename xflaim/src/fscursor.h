@@ -26,8 +26,6 @@
 #ifndef FSCURSOR_H
 #define FSCURSOR_H
 
-#include "fdynsset.h"
-
 typedef struct KeyPosition
 {
 	FLMBYTE	ucKey [XFLM_MAX_KEY_SIZE];
@@ -185,7 +183,7 @@ private:
 	FLMUINT				m_uiCurKeyDataLen;
 	F_Btree *			m_pbTree;
 	FLMBOOL				m_bTreeOpen;
-	FDynSearchSet *	m_pNodeIdSet;
+	F_DynSearchSet *	m_pNodeIdSet;
 	FLMBOOL				m_bElimDups;
 	FLMBOOL				m_bMovingForward;
 	IXKeyCompare		m_ixCompare;
