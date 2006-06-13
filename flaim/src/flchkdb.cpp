@@ -2632,8 +2632,7 @@ RCODE chkRSInit(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pRSet->setupResultSet( pIoPath, 
-		pCompare, 0, FALSE, FALSE, NULL)))
+	if( RC_BAD( rc = pRSet->setupResultSet( pIoPath, pCompare, 0)))
 	{
 		goto Exit;
 	}
