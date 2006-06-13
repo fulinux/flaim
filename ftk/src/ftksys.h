@@ -1347,6 +1347,167 @@
 	};
 
 	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_FileSystem : public IF_FileSystem
+	{
+	public:
+
+		F_FileSystem()
+		{
+			m_bCanDoAsync = FALSE;
+		}
+
+		virtual ~F_FileSystem()
+		{
+		}
+		
+		RCODE setup( void);
+
+		FLMINT FLMAPI AddRef( void)
+		{
+			return( f_atomicInc( &m_refCnt));
+		}
+
+		FLMINT FLMAPI Release( void)
+		{
+			FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
+			
+			if( !iRefCnt)
+			{
+				delete this;
+			}
+			
+			return( iRefCnt);
+		}
+		
+		RCODE FLMAPI createFile(
+			const char *			pszFileName,
+			FLMUINT					uiIoFlags,
+			IF_FileHdl **			ppFile);
+
+		RCODE FLMAPI createUniqueFile(
+			char *					pszPath,
+			const char *			pszFileExtension,
+			FLMUINT					uiIoFlags,
+			IF_FileHdl **			ppFile);
+
+		RCODE FLMAPI createLockFile(
+			const char *			pszPath,
+			IF_FileHdl **			ppLockFileHdl);
+			
+		RCODE FLMAPI openFile(
+			const char *			pszFileName,
+			FLMUINT					uiIoFlags,
+			IF_FileHdl **			ppFile);
+
+		RCODE FLMAPI openDir(
+			const char *			pszDirName,
+			const char *			pszPattern,
+			IF_DirHdl **			ppDir);
+
+		RCODE FLMAPI createDir(
+			const char *			pszDirName);
+
+		RCODE FLMAPI removeDir(
+			const char *			pszDirName,
+			FLMBOOL					bClear = FALSE);
+
+		RCODE FLMAPI doesFileExist(
+			const char *			pszFileName);
+
+		FLMBOOL FLMAPI isDir(
+			const char *			pszFileName);
+
+		RCODE FLMAPI getFileTimeStamp(
+			const char *			pszFileName,
+			FLMUINT *				puiTimeStamp);
+
+		RCODE FLMAPI deleteFile(
+			const char *			pszFileName);
+
+		RCODE FLMAPI deleteMultiFileStream(
+			const char *			pszDirectory,
+			const char *			pszBaseName);
+			
+		RCODE FLMAPI copyFile(
+			const char *			pszSrcFileName,
+			const char *			pszDestFileName,
+			FLMBOOL					bOverwrite,
+			FLMUINT64 *				pui64BytesCopied);
+
+		RCODE FLMAPI copyPartialFile(
+			IF_FileHdl *			pSrcFileHdl,
+			FLMUINT64				ui64SrcOffset,
+			FLMUINT64				ui64SrcSize,
+			IF_FileHdl *			pDestFileHdl,
+			FLMUINT64				ui64DestOffset,
+			FLMUINT64 *				pui64BytesCopiedRV);
+		
+		RCODE FLMAPI renameFile(
+			const char *			pszFileName,
+			const char *			pszNewFileName);
+
+		void FLMAPI pathParse(
+			const char *			pszPath,
+			char *					pszServer,
+			char *					pszVolume,
+			char *					pszDirPath,
+			char *					pszFileName);
+
+		RCODE FLMAPI pathReduce(
+			const char *			pszSourcePath,
+			char *					pszDestPath,
+			char *					pszString);
+
+		RCODE FLMAPI pathAppend(
+			char *					pszPath,
+			const char *			pszPathComponent);
+
+		RCODE FLMAPI pathToStorageString(
+			const char *			pszPath,
+			char *					pszString);
+
+		void FLMAPI pathCreateUniqueName(
+			FLMUINT *				puiTime,
+			char *					pszFileName,
+			const char *			pszFileExt,
+			FLMBYTE *				pHighChars,
+			FLMBOOL					bModext);
+
+		FLMBOOL FLMAPI doesFileMatch(
+			const char *			pszFileName,
+			const char *			pszTemplate);
+
+		RCODE FLMAPI getSectorSize(
+			const char *			pszFileName,
+			FLMUINT *				puiSectorSize);
+
+		RCODE FLMAPI setReadOnly(
+			const char *			pszFileName,
+			FLMBOOL					bReadOnly);
+
+		FLMBOOL FLMAPI canDoAsync( void);
+			
+	private:
+
+		RCODE removeEmptyDir(
+			const char *			pszDirName);
+
+	#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+		RCODE renameSafe(
+			const char *			pszSrcFile,
+			const char *			pszDestFile);
+
+		RCODE targetIsDir(
+			const char	*			pszPath,
+			FLMBOOL *				pbIsDir);
+	#endif
+
+		FLMBOOL				m_bCanDoAsync;
+	};
+	
+	/****************************************************************************
 	Desc: Logging
 	****************************************************************************/
 
