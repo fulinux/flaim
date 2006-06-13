@@ -952,24 +952,6 @@
 		FLMBYTE *	pucEncValue;					///< The encrypted value.
 	} NODE;
 
-	/// Compare two strings using database comparison rules.  Zero is returned if two strings are equal.
-	/// Negative number is returned if puzStr1 < puzStr2.  Positive number is returned if puzStr1 > puzStr2.
-	/// \ingroup stringcompare
-	FLMEXP FLMINT FLMAPI FlmStrCmp(
-		FLMUINT					uiCompFlags,	/// Comparison flags.\  Multiple flags may be ORed together.\  Valid
-														///< flags are as follows:
-														///< - FLM_WILD - Treat '*' as a wildcard
-														///< - FLM_NOCASE - Case-insensitive comparison
-														///< - FLM_NO_SPACE - Ignore all white space
-														///< - FLM_NO_DASH - Ignore all dash characters (-)
-														///< - FLM_NO_UNDERSCORE - Treat underscores as white space
-														///< - FLM_MIN_SPACES - Ignore leading and trailing white space, and compress consecutive white
-														///< space into a single space character
-		FLMUINT					uiLanguage,		///< Language to use for collation rules.
-		const FLMUNICODE *	puzStr1,			///< Unicode string 1 - string must be terminated with a zero Unicode character.
-		const FLMUNICODE *	puzStr2			///< Unicode string 2 - string must be terminated with a zero Unicode character.
-		);
-
 	/// This class allows an application to keep a set of ::FlmRecord objects.
 	class FLMEXP FlmRecordSet : public F_Object
 	{
@@ -2284,8 +2266,8 @@
 														///< array contains the lock holder.\   All other elements contain lock waiters.\  The last element
 														///< in the array will be zeroed out.\  NOTE: The memory allocated by this function should be freed
 														///< by calling FlmFreeMem().
-		FDB_GET_LOCK_WAITERS_EX,				///< Get the lock holders and waiters using a ::FlmLockInfo object.\  pvValue1 is a pointer to the
-														///< ::FlmLockInfo object that is to be used.
+		FDB_GET_LOCK_WAITERS_EX,				///< Get the lock holders and waiters using a ::IF_LockInfoClient object.\  pvValue1 is a pointer to the
+														///< ::IF_LockInfoClient object that is to be used.
 		FDB_GET_RFL_DIR,							///< Get the directory where RFL files are stored.\  pvValue1 is a char * that points to a buffer
 														///< where the file name is to be returned.\  Buffer should be large enough to hold the largest
 														///< possible directory name.
