@@ -6905,7 +6905,7 @@ RCODE F_DOMNode::deleteNode(
 		{
 			if( rc == NE_XFLM_DOM_NODE_NOT_FOUND)
 			{
-				rc = RC_SET( NE_XFLM_DATA_ERROR);
+				rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 			}
 			goto Exit;
 		}
@@ -6965,7 +6965,7 @@ RCODE F_DOMNode::deleteNode(
 		{
 			if( rc == NE_XFLM_DOM_NODE_NOT_FOUND)
 			{
-				rc = RC_SET( NE_XFLM_DATA_ERROR);
+				rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 			}
 			goto Exit;
 		}

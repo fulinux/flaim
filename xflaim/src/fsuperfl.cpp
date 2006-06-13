@@ -943,8 +943,8 @@ void bldSuperFileExtension(
 	}
 
 	*pszFileExtension++ = '.';
-	*pszFileExtension++ = (char)(f_getBase24DigitChar( (uiFileNum & 511) / 24));
-	*pszFileExtension++ = (char)(f_getBase24DigitChar( (uiFileNum & 511) % 24));
+	*pszFileExtension++ = (char)(f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) / 24)));
+	*pszFileExtension++ = (char)(f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) % 24)));
 	*pszFileExtension++ = ucLetter;
 	*pszFileExtension   = 0;
 }

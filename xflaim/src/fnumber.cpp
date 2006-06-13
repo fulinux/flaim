@@ -750,7 +750,7 @@ RCODE flmCollationNum2StorageNum(
 
 	if( (pucCollBuf[ 0] & 0xC0) != 0xC0)
 	{
-		rc = RC_SET( NE_XFLM_DATA_ERROR);
+		rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 		goto Exit;
 	}
 
@@ -880,7 +880,7 @@ RCODE flmCollation2Number(
 
 	if( (pucBuf[ 0] & 0xC0) != 0xC0)
 	{
-		rc = RC_SET( NE_XFLM_DATA_ERROR);
+		rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 		goto Exit;
 	}
 

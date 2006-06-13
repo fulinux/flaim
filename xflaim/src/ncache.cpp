@@ -1886,7 +1886,7 @@ RCODE F_NodeCacheMgr::readNodeFromDisk(
 	{
 		if( rc == NE_XFLM_EOF_HIT)
 		{
-			rc = RC_SET( NE_XFLM_DATA_ERROR);
+			rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 		}
 
 		goto Exit;

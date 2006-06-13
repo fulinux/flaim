@@ -263,7 +263,7 @@ RCODE F_Database::lFileCreate(
 
 	if (uiNextBlkAddress == 0)
 	{
-		rc = RC_SET( NE_XFLM_DATA_ERROR);
+		rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 		goto Exit;
 	}
 

@@ -84,7 +84,7 @@ RCODE F_Database::blockUseNextAvail(
 
 		if (pNextSCache->m_pBlkHdr->ui8BlkType != BT_FREE)
 		{
-			rc = RC_SET( NE_XFLM_DATA_ERROR);
+			rc = RC_SET_AND_ASSERT( NE_XFLM_DATA_ERROR);
 			goto Exit;
 		}
 
