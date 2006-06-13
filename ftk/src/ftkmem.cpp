@@ -3357,7 +3357,6 @@ void F_FixedAlloc::freeSlab(
 		f_assert( (*m_puiTotalBytesAllocated) >= m_pSlabManager->getSlabSize());
 		(*m_puiTotalBytesAllocated) -= m_pSlabManager->getSlabSize();
 	}
-	
 }
 
 /****************************************************************************

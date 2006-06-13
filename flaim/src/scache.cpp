@@ -7437,6 +7437,16 @@ void ScaExit( void)
 {
 	FLMUINT		uiLoop;
 
+	flmAssert( !gv_FlmSysData.SCacheMgr.pMRUCache);
+	flmAssert( !gv_FlmSysData.SCacheMgr.pLRUCache);
+
+	// All databases should be closed at this point.  This means
+	// that all cache memory has been put into the free list.
+	// By freeing this list, all of the cache blocks will be
+	// released.
+
+	scaReduceFreeCache( TRUE);
+
 	// Free all of the cache blocks and allocators
 
 	for( uiLoop = 0; uiLoop < 2; uiLoop++)
