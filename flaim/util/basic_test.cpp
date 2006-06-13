@@ -3248,12 +3248,13 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE IFlmTestImpl::checkDbTest(
-	const char *	pszDbName)
+	const char *			pszDbName)
 {
-	RCODE		rc = FERR_OK;
-	FLMBOOL	bPassed = FALSE;
-	char		szTest [200];
-	F_Pool	pool;
+	RCODE						rc = FERR_OK;
+	FLMBOOL					bPassed = FALSE;
+	char						szTest [200];
+	F_Pool					pool;
+	DB_CHECK_PROGRESS		checkStats;
 	
 	pool.poolInit( 512);
 	
@@ -3261,12 +3262,20 @@ RCODE IFlmTestImpl::checkDbTest(
 	beginTest( szTest);
 
 	if( RC_BAD( rc = FlmDbCheck( HFDB_NULL, pszDbName, NULL, NULL,
-							FLM_CHK_INDEX_REFERENCING | FLM_CHK_FIELDS, &pool, NULL,
-							NULL, NULL)))
+			FLM_CHK_INDEX_REFERENCING | FLM_CHK_FIELDS, &pool, &checkStats,
+			NULL, NULL)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbCheck", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
+	if( checkStats.bLogicalIndexCorrupt || checkStats.bPhysicalCorrupt)
+	{
+		rc = RC_SET( FERR_DATA_ERROR);
+		MAKE_ERROR_STRING( "calling FlmDbCheck", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
 	bPassed = TRUE;
 	
 Exit:
