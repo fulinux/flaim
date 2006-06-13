@@ -1047,13 +1047,13 @@ ifdef netware_target
 	
 	wc_dir := $(call normpath,$(wc_dir))
 	
-	ifdef netware_ring_0_target
+	ifndef netware_ring_0_target
 		ifndef ndk_dir
 			$(error Netware SDK could not be found.  Please define ndk_dir)
 		endif
+		
+		ndk_dir := $(call normpath,$(ndk_dir))
 	endif
-	
-	ndk_dir := $(call normpath,$(ndk_dir))
 
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
 	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
@@ -1090,7 +1090,6 @@ ifdef netware_target
    define make_ring_0_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
-		$(ec)$(gprintf) "option synchronize\n" >> $(4)
 		$(ec)$(gprintf) "option nod\n" >> $(4)
 		$(ec)$(gprintf) "option map\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
@@ -1126,7 +1125,6 @@ ifdef netware_target
    define make_libc_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
-		$(ec)$(gprintf) "option synchronize\n" >> $(4)
 		$(ec)$(gprintf) "option nod\n" >> $(4)
 		$(ec)$(gprintf) "option map\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
