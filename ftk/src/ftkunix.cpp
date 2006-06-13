@@ -128,7 +128,6 @@ RCODE F_FileHdl::openOrCreate(
 	char					szSaveFileName[ F_PATH_MAX_SIZE];
 	int         		openFlags = O_RDONLY;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
-	struct stat			filestats;
 
 #if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
 	bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
@@ -257,14 +256,23 @@ Retry_Create:
 		directio( m_fd, DIRECTIO_ON);
 	}
 #endif
-	
-	if( fstat( m_fd, &filestats) != 0)
+
+#if defined( FLM_SOLARIS) || defined( FLM_LINUX)
+	m_uiBytesPerSector = DEV_BSIZE;
+#else
 	{
-		rc = f_mapPlatformError( errno, NE_FLM_OPENING_FILE);
-		goto Exit;
-	}
+		struct stat		filestats;
 	
-	m_uiBytesPerSector = (FLMUINT)filestats.st_blksize;
+		if( fstat( m_fd, &filestats) != 0)
+		{
+			rc = f_mapPlatformError( errno, NE_FLM_OPENING_FILE);
+			goto Exit;
+		}
+	
+		m_uiBytesPerSector = (FLMUINT)filestats.st_blksize;
+	}
+#endif
+
 	m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
 	m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
 	m_bDoDirectIO = bDoDirectIO;
