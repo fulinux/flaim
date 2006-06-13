@@ -433,9 +433,7 @@ RCODE FLMAPI F_Thread::startThread(
 	pthread_t				uiThreadId;
 #endif
 #ifdef FLM_RING_ZERO_NLM
-#ifdef FLM_NLM
 	void *					hThread = NULL;
-#endif
 #endif
 #ifdef FLM_WIN
 	unsigned					uiThreadId;
@@ -547,7 +545,6 @@ RCODE FLMAPI F_Thread::startThread(
 		m_uiThreadId = (FLMUINT)uiThreadId;
 		pthread_attr_destroy( &thread_attr);
 #elif defined( FLM_RING_ZERO_NLM)
-#elif defined( FLM_NLM)
 	if( (hThread = kCreateThread( 
 		(BYTE *)((m_pszThreadName)
 			? (BYTE *)m_pszThreadName 

@@ -165,7 +165,7 @@ FLMBOOL FLMAPI F_DirHdl::currentItemIsDir( void)
 						 ? TRUE
 						 : FALSE));
 						 
-#elif defined( FLM_NLM)
+#elif defined( FLM_RING_ZERO_NLM)
 
 	if( !m_FindData.m_pCurrentItem)
 	{
@@ -175,6 +175,10 @@ FLMBOOL FLMAPI F_DirHdl::currentItemIsDir( void)
 	return( (m_FindData.m_pCurrentItem->DFileAttributes & SUBDIRECTORY_BIT)
 							? TRUE 
 							: FALSE);
+							
+#else
+
+	#error Platform not supported
 		
 #endif
 }
