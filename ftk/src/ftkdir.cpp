@@ -933,7 +933,7 @@ FSTATIC int Find1(
 	char  	*PathSeparator;
 	FLMINT	uiFindLen;
 	FLMINT	uiLen;
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 	char  	szPosixNam[ F_PATH_MAX_SIZE];
 	FLMINT	uiCount;				
 #endif
@@ -951,7 +951,7 @@ FSTATIC int Find1(
 
 	f_strcpy( DirInfo->full_path, FindTemplate);
 	
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 	if( (( PathSeparator = strrchr( DirInfo->full_path, '/')) == NULL) &&
 		( PathSeparator = strrchr( DirInfo->full_path, '\\')) == NULL)
 #else
@@ -992,7 +992,7 @@ FSTATIC int Find1(
 	errno = 0;
 	DirInfo->globbuf.gl_pathv = 0;
 
-#ifdef FLM_NLM
+#ifdef FLM_LIBC_NLM
 	// glob does not seem to be able to handle a non-posix path
 	// on NetWare.
 	for( uiCount = 0; uiCount <= uiFindLen; uiCount++)

@@ -3386,16 +3386,6 @@ void F_FixedAlloc::freeAll( void)
 	m_bAvailListSorted = TRUE;
 	m_uiTotalFreeCells = 0;
 	
-	if( m_pUsageStats)
-	{
-		f_memset( m_pUsageStats, 0, sizeof( FLM_SLAB_USAGE));
-	}
-	
-	if( m_puiTotalBytesAllocated)
-	{
-		m_puiTotalBytesAllocated = 0;
-	}
-	
 	m_pSlabManager->unlockMutex();	
 }
 

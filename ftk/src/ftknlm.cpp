@@ -1061,8 +1061,10 @@ Desc:		Default Constructor for F_FileHdl class
 #if defined( FLM_RING_ZERO_NLM)
 F_FileHdl::F_FileHdl()
 {
-	// Should call the base class constructor automatically.
-
+	m_bFileOpened = FALSE;
+	m_bDeleteOnClose = FALSE;
+	m_bOpenedExclusive = FALSE;
+	m_bOpenedReadOnly = FALSE;
 	m_lFileHandle = -1;
 	m_lOpenAttr = 0;
 	m_uiCurrentPos = 0;
@@ -1073,12 +1075,10 @@ F_FileHdl::F_FileHdl()
 	m_uiExtendSize = 0;
 	m_uiMaxFileSize = f_getMaxFileSize();
 	m_uiMaxAutoExtendSize = m_uiMaxFileSize;
-
-	// Direct IO members
-	m_bDoDirectIO = FALSE;	// TRUE = do direct IO-style read/writes
+	m_bDoDirectIO = FALSE;
 	m_lSectorsPerBlock = 0;
 	m_lMaxBlocks = 0;
-
+	m_NssKey = 0;
 	m_bNSS = FALSE;
 	m_bNSSFileOpen = FALSE;
 }
@@ -4203,7 +4203,7 @@ extern "C" LONG f_nlmEntryPoint(
 
 	if (moduleHandle->LDFlags & 4)
 	{
-		gv_lFlmSyncSem = kSemaphoreAlloc( (BYTE *)"NOVDB", 0);
+		gv_lFlmSyncSem = kSemaphoreAlloc( (BYTE *)"FLAIM_SYNC", 0);
 	}
 
 	// Initialize NSS

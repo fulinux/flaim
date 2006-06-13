@@ -997,7 +997,6 @@
 		FLMBOOL					m_bFileOpened;
 		FLMBOOL					m_bOpenedExclusive;
 		FLMBOOL					m_bOpenedReadOnly;
-		
 		LONG						m_lFileHandle;
 		LONG						m_lOpenAttr;
 		LONG						m_lVolumeID;
