@@ -67,7 +67,11 @@ static char			gv_szPassword[ 256];
 /********************************************************************
 Desc: ?
 *********************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+extern "C" int nlm_main(
+#else
 int main(
+#endif
 	int			argc,
 	char **		ArgV)
 {

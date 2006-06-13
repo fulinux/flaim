@@ -4250,7 +4250,11 @@ FSTATIC void extractBaseDirAndWildcard(
 /***************************************************************************
 Desc:	Program entry point (main)
 ****************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+extern "C" int nlm_main(
+#else
 int main(
+#endif
 	int,		// iArgC,
 	char **	// ppszArgV
 	)

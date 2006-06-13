@@ -139,7 +139,11 @@ static IF_FileSystem *	gv_pFileSystem = NULL;
 /********************************************************************
 Desc: ?
 *********************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+extern "C" int nlm_main(
+#else
 int main(
+#endif
 	int			iArgC,
 	char **		ppszArgV)
 {
