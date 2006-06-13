@@ -1784,6 +1784,8 @@
 			FLMUINT64				ui64UnitsDone) = 0;
 	};
 
+	#define RS_POSITION_NOT_SET			FLM_MAX_UINT64
+
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -5985,6 +5987,154 @@
 		FLMUINT16			m_ui16LastCode;
 		FLMBOOL				m_bStopCompression;
 		FLMBOOL				m_bEndOfStream;
+	};
+
+	/***************************************************************************
+	Desc: Dynamic Result Sets
+	***************************************************************************/
+
+	typedef int (* F_DYNSET_COMPARE_FUNC)(
+		void *	pvData1,
+		void *	pvData2,
+		void *	pvUserData);
+
+	typedef enum
+	{
+		ACCESS_HASH,
+		ACCESS_BTREE_LEAF,
+		ACCESS_BTREE_ROOT,
+		ACCESS_BTREE_NON_LEAF
+	} eDynRSetBlkTypes;
+
+	class	F_FixedBlk : public F_Object
+	{
+	public:
+
+		F_FixedBlk();
+		~F_FixedBlk()
+		{
+		}
+
+		/* virtual methods that must be implemented */
+
+		eDynRSetBlkTypes blkType()
+		{
+			return m_eBlkType;
+		}
+
+		virtual RCODE getCurrent(
+			void *	pvEntryBuffer) = 0;
+
+		virtual RCODE getFirst(
+			void *	pvEntryBuffer) = 0;
+
+		virtual RCODE getLast(
+			void *	pvEntryBuffer) = 0;
+
+		virtual RCODE getNext(
+			void *	pvEntryBuffer) = 0;
+
+		virtual FLMUINT getTotalEntries() = 0;
+
+		virtual RCODE insert(
+			void *	pvEntry) = 0;
+
+		FINLINE FLMBOOL isDirty( void)
+		{
+			return( m_bDirty);
+		}
+
+		virtual RCODE search(
+			void *	pvEntry,
+			void *	pvFoundEntry = NULL) = 0;
+
+		void setCompareFunc(
+			F_DYNSET_COMPARE_FUNC	fnCompare,
+			void *						pvUserData)
+		{
+			m_fnCompare = fnCompare;
+			m_pvUserData = pvUserData;
+		}
+
+	protected:
+
+		// Variables
+
+		F_DYNSET_COMPARE_FUNC	m_fnCompare;
+		void *						m_pvUserData;
+		eDynRSetBlkTypes					m_eBlkType;
+		FLMUINT						m_uiEntrySize;
+		FLMUINT						m_uiNumSlots;
+		FLMUINT						m_uiPosition;
+		FLMBOOL						m_bDirty;
+		FLMBYTE *					m_pucBlkBuf;
+	};
+
+	class FLMEXP F_DynSearchSet : public F_Object
+	{
+
+	public:
+
+		F_DynSearchSet()
+		{
+			m_fnCompare = NULL;
+			m_pvUserData = NULL;
+			m_uiEntrySize = 0;
+			m_pAccess = NULL;
+		}
+
+		~F_DynSearchSet()
+		{
+			if (m_pAccess)
+			{
+				m_pAccess->Release();
+			}
+		}
+
+		RCODE FLMAPI setup(
+			char *			pszTmpDir,
+			FLMUINT			uiEntrySize);
+
+		FINLINE void FLMAPI setCompareFunc(
+			F_DYNSET_COMPARE_FUNC	fnCompare,
+			void *					pvUserData
+			)
+		{
+			m_fnCompare = fnCompare;
+			m_pvUserData = pvUserData;
+			m_pAccess->setCompareFunc( fnCompare, pvUserData);
+		}
+
+		RCODE FLMAPI addEntry(
+			void *	pvEntry);
+
+		FINLINE RCODE FLMAPI findMatch(
+			void *	pvMatchEntry,
+			void *	pvFoundEntry
+			)
+		{
+			return m_pAccess->search( pvMatchEntry, pvFoundEntry);
+		}
+
+		FINLINE FLMUINT FLMAPI getEntrySize( void)
+		{
+			return m_uiEntrySize;
+		}
+
+		FINLINE FLMUINT FLMAPI getTotalEntries( void)
+		{
+			return m_pAccess->getTotalEntries();
+		}
+
+	private:
+
+		// Variables
+
+		F_DYNSET_COMPARE_FUNC	m_fnCompare;
+		void *					m_pvUserData;
+		FLMUINT					m_uiEntrySize;
+		F_FixedBlk *			m_pAccess;
+		char						m_szFileName [F_PATH_MAX_SIZE];
 	};
 
 	/***************************************************************************

@@ -103,7 +103,6 @@
 #define FRSET_FILENAME_EXTENSION		"frs"
 #define RSBLK_UNSET_FILE_POS			(~((FLMUINT64)0))
 #define RS_BLOCK_SIZE					(1024 * 512)
-#define RS_POSITION_NOT_SET			FLM_MAX_UINT64
 #define RS_MAX_FIXED_ENTRY_SIZE		64
 	
 /*****************************************************************************
