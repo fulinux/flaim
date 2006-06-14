@@ -51,12 +51,12 @@ FSTATIC const char * gv_pszSampleDictionary =
 #define LAST_NAME_FIRST_NAME_IX	100
 
 #ifdef FLM_NLM
-	#define DB_NAME_STR					"SYS:\\SAMPLE.DB"
-	#define DB_COPY_NAME_STR			"SYS:\\SAMPLECOPY.DB"
-	#define DB_RENAME_NAME_STR			"SYS:\\SAMPLERENAME.DB"
-	#define DB_RESTORE_NAME_STR		"SYS:\\SAMPLERESTORE.DB"
-	#define DB_REBUILD_NAME_STR		"SYS:\\SAMPLEREBUILD.DB"
-	#define BACKUP_PATH					"SYS:\\SAMPLEBACKUP"
+	#define DB_NAME_STR					"SYS:\\TEST\\SAMPLE.DB"
+	#define DB_COPY_NAME_STR			"SYS:\\TEST\\SAMPLECOPY.DB"
+	#define DB_RENAME_NAME_STR			"SYS:\\TEST\\SAMPLERENAME.DB"
+	#define DB_RESTORE_NAME_STR		"SYS:\\TEST\\SAMPLERESTORE.DB"
+	#define DB_REBUILD_NAME_STR		"SYS:\\TEST\\SAMPLEREBUILD.DB"
+	#define BACKUP_PATH					"SYS:\\TEST\\SAMPLEBACKUP"
 #else
 	#define DB_NAME_STR					"sample.db"
 	#define DB_COPY_NAME_STR			"samplecopy.db"
@@ -2166,6 +2166,8 @@ RCODE IFlmTestImpl::resumeIndexTest(
 		{
 			break;
 		}
+		
+		f_yieldCPU();
 	}
 	
 	bPassed = TRUE;
@@ -2339,8 +2341,12 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 						goto Exit;
 					}
 				}
+				
+				f_yieldCPU();
 			}
 		}
+		
+		f_yieldCPU();
 	}
 	
 	// Add the data record to the data container.
@@ -2454,7 +2460,11 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 					goto Exit;
 				}
 			}
+			
+			f_yieldCPU();
 		}
+		
+		f_yieldCPU();
 	}
 	
 	// For each of the 300 field ids, get the field from the record.
@@ -2529,6 +2539,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 				(unsigned)uiFieldId);
 			goto Exit;
 		}
+		
+		f_yieldCPU();
 	}
 	
 	bPassed = TRUE;

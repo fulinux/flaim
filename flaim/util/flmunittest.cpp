@@ -27,16 +27,9 @@
 
 extern RCODE getTest( 
 	IFlmTest **		ppTest);
-
-#ifdef FLM_NLM
-	extern "C"
-	{
-		void flmUnittestFatalRuntimeError( void);
 	
-		int flmUnittestLoad( void);
-		
-		int flmUnittestUnload( void);
-	}
+#ifndef FLM_NLM
+	#define f_conPrintf				f_printf
 #endif
 
 FLMBOOL gv_bShutdown = FALSE;
@@ -175,12 +168,7 @@ Desc:
 void IFlmTestDisplayer::appendString( 
 	const char * 	pszString)
 {
-#ifdef FLM_NLM
-	F_UNREFERENCED_PARM( pszString);
-#else
-	printf( pszString);
-	fflush( stdout);
-#endif
+	f_conPrintf( pszString);
 }
 
 /****************************************************************************
@@ -188,21 +176,19 @@ Desc:
 ****************************************************************************/
 void printHelp()
 {
-#ifndef FLM_NLM
-	printf( "\nCommand-line usage:");
-	printf( "\n\n[-l<log file>] [-d]");
-	printf( "[-c<config>] [-b<build>] [-u<user>]");
-	printf( "\n-l - Specifies a log file to print to");
-	printf( "\n-d - Display output");
-	printf( "\n-t - Specifies configuration file for reporting");
-	printf( "\n-b - Specifies the build number");
-	printf( "\n-u - Specifies the user running the unit test");
-	printf( "\n-i - Interactive mode (pause before exit)");
-	printf( "\n-h - Shows this screen");
-#endif
+	f_conPrintf( "\nCommand-line usage:");
+	f_conPrintf( "\n\n[-l<log file>] [-d]");
+	f_conPrintf( "[-c<config>] [-b<build>] [-u<user>]");
+	f_conPrintf( "\n-l - Specifies a log file to print to");
+	f_conPrintf( "\n-d - Display output");
+	f_conPrintf( "\n-t - Specifies configuration file for reporting");
+	f_conPrintf( "\n-b - Specifies the build number");
+	f_conPrintf( "\n-u - Specifies the user running the unit test");
+	f_conPrintf( "\n-i - Interactive mode (pause before exit)");
+	f_conPrintf( "\n-h - Shows this screen");
 }
 
-#if defined( FLM_NLM)
+#if defined( FLM_RING_ZERO_NLM)
 	#define main		nlm_main
 	
 	extern "C"
@@ -225,7 +211,15 @@ int main(
 	unsigned int	i = 1;
 	ArgList			args;
 	TEST_INFO		testInfo;
-	FLMBOOL			bPauseBeforeExit = FALSE;
+	
+	if( RC_BAD( rc = FlmStartup()))
+	{
+		goto Exit;
+	}
+	
+#ifdef FLM_NLM
+	f_conInit( 0, 0, "FLAIM Unit Test");
+#endif	
 
 	if( argc > 1)
 	{
@@ -267,31 +261,21 @@ int main(
 		{
 			f_strcpy( testInfo.pszUser, &args[i][2]);
 		}
-		else if( (args[i][1] == 'i') || (args[i][1] == 'I'))
-		{
-			bPauseBeforeExit = TRUE;
-		}		
 		else
 		{
-#ifndef FLM_NLM
-			printf( "\nInvalid parameter");
+			f_conPrintf( "\nInvalid parameter");
 			printHelp();
-#endif
 			goto Exit;
 		}
 		
 		i++;
 	}
 
-#ifndef FLM_NLM
-	printf("Running %s\n", argv[0]);
-#endif
+	f_conPrintf( "Running %s\n", argv[0]);
 
 	if( RC_BAD( rc = getTest( &pTest)))
 	{
-#ifndef FLM_NLM
-		printf( "ERROR: Unable to create test instance\n");
-#endif
+		f_conPrintf( "ERROR: Unable to create test instance\n");
 		goto Exit;
 	}
 
@@ -299,9 +283,7 @@ int main(
 		testInfo.pszConfig, testInfo.pszEnvironment,
 		testInfo.pszBuild, testInfo.pszUser) != 0)
 	{
-#ifndef FLM_NLM
-		printf( "\nTest initialization failed");
-#endif
+		f_conPrintf( "\nTest initialization failed");
 		goto Exit;
 	}
 
@@ -316,14 +298,11 @@ Exit:
 	{
 		pTest->Release();
 	}
-
-	if( bPauseBeforeExit)
-	{
-#ifndef FLM_NLM
-		printf( "Press any key to exit.\n");
-		getchar();
+	
+#ifdef FLM_NLM
+	f_conExit();
 #endif
-	}
+	FlmShutdown();
 
 	return( (int)rc);
 }
@@ -850,11 +829,6 @@ RCODE TestBase::init(
 {
 	RCODE		rc = FERR_MEM;
 
-	if( RC_BAD( rc = FlmStartup()))
-	{
-		goto Exit;
-	}
-	
 	// VISIT: here -- disable asserts on FLAIM errors via a config call!!!
 
 	m_bLog = bLog;
@@ -1565,33 +1539,3 @@ void FilenameIterator::produceFilename(
 	f_sprintf( pszTemp, "%03x", (unsigned)m_uiExtension);
 	f_strcat( pszBuffer, pszTemp);
 }
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-void flmUnittestFatalRuntimeError( void)
-{
-}
-#endif
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-int flmUnittestLoad( void)
-{
-	return (int)FlmStartup();
-}
-#endif
-
-/***************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_NLM
-int flmUnittestUnload( void)
-{
-	FlmShutdown();
-	return 0;
-}
-#endif
