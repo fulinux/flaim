@@ -148,7 +148,7 @@ RCODE IIndexTest1Impl::execute( void)
 	FLMUINT64			ui64LennonId = 0;
 	FLMUINT64			ui64NodeId;
 	FLMBYTE				szBuf[ 128];
-	KeyIterator *		pKeyIter = new KeyIterator;
+	KeyIterator *		pKeyIter = f_new KeyIterator;
 	FlagSet				beatlesFNFlags;
 	FlagSet				beatlesLNFlags;
 	FlagSet				FNPlusLNFlags;
@@ -574,8 +574,8 @@ RCODE IIndexTest1Impl::execute( void)
 	// cross product of pszFirstNames1 and pszLastNames1. 
 
 	pKeyIter->reset();
-
-	pucTemp = new FLMBYTE[ sizeof( szBuf) * 2 + 1];
+	f_alloc( sizeof( szBuf) * 2 + 1, &pucTemp);
+	
 	while( RC_OK( rc = pKeyIter->next()))
 	{
 		if ( RC_BAD( rc = pKeyIter->getCurrentKeyVal( 0, szBuf, 
@@ -604,8 +604,7 @@ RCODE IIndexTest1Impl::execute( void)
 		}
 	}
 	
-	delete[] pucTemp;
-	pucTemp = NULL;
+	f_free( &pucTemp);
 
 	if( rc != NE_XFLM_EOF_HIT)
 	{
@@ -659,7 +658,8 @@ RCODE IIndexTest1Impl::execute( void)
 	// in the flag set, we'll get an error.
 
 	pKeyIter->reset();
-	pucTemp = new FLMBYTE[ sizeof( szBuf) * 2 + 1];
+	f_alloc( sizeof( szBuf) * 2 + 1, &pucTemp);
+	
 	while( RC_OK( rc = pKeyIter->next()))
 	{
 		if ( RC_BAD( rc = pKeyIter->getCurrentKeyVal( 
@@ -690,8 +690,7 @@ RCODE IIndexTest1Impl::execute( void)
 		}
 	}
 	
-	delete [] pucTemp;
-	pucTemp = NULL;
+	f_free( &pucTemp);
 
 	if( rc != NE_XFLM_EOF_HIT)
 	{
@@ -737,7 +736,7 @@ RCODE IIndexTest1Impl::execute( void)
 	// in the flag set, we'll get an error.
 
 	pKeyIter->reset();
-	pucTemp = new FLMBYTE[ sizeof( szBuf) * 2 + 1];
+	f_alloc( sizeof( szBuf) * 2 + 1, &pucTemp);
 	while( RC_OK( rc = pKeyIter->next()))
 	{
 		if( RC_BAD( rc = pKeyIter->getCurrentKeyVal( 0, szBuf, sizeof( szBuf),
@@ -765,8 +764,7 @@ RCODE IIndexTest1Impl::execute( void)
 		}
 	}
 	
-	delete [] pucTemp;
-	pucTemp = NULL;
+	f_free( &pucTemp);
 
 	if( rc != NE_XFLM_EOF_HIT)
 	{
@@ -839,7 +837,7 @@ RCODE IIndexTest1Impl::execute( void)
 	pKeyIter->setIndexNum( 77);
 	contextFlags.init( (FLMBYTE **)ppszLegalKeys, 
 		sizeof( ppszLegalKeys)/sizeof( ppszLegalKeys[0]));
-	pucTemp = new FLMBYTE[ sizeof( szBuf) * 3 + 1];
+	f_alloc( sizeof( szBuf) * 3 + 1, &pucTemp);
 	
 	while( RC_OK( rc = pKeyIter->next()))
 	{
@@ -877,8 +875,7 @@ RCODE IIndexTest1Impl::execute( void)
 		}
 	}
 	
-	delete [] pucTemp;
-	pucTemp = NULL;
+	f_free( &pucTemp);
 
 	if( rc != NE_XFLM_EOF_HIT)
 	{
@@ -911,7 +908,7 @@ Exit:
 
 	if( pucTemp)
 	{
-		delete [] pucTemp;
+		f_free( &pucTemp);
 	}
 
 	if( pNode)
@@ -944,7 +941,7 @@ Exit:
 
 	if( pKeyIter)
 	{
-		delete pKeyIter;
+		pKeyIter->Release();
 	}
 
 	shutdownTestState( DB_NAME_STR, !bDibCreated);

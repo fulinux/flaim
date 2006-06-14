@@ -230,7 +230,7 @@ static FLMBOOL				gv_bSkipDomLinkVerify = FALSE;
 static char					gv_szPassword[256];
 static IF_DbSystem *		gv_pDbSystem = NULL;
 
-#ifdef FLM_WATCOM_NLM
+#ifdef FLM_RING_ZERO_NLM
 	#define main		nlm_main
 #endif
 

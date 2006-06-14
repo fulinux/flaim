@@ -44,6 +44,10 @@
 FLMBOOL gv_bShutdown = FALSE;
 extern RCODE getTest( IFlmTest ** ppTest);
 
+#ifdef FLM_RING_ZERO_NLM
+	#define main		nlm_main
+#endif
+
 struct TEST_INFO
 {
 	bool 				bLog;
@@ -202,7 +206,9 @@ void printHelp()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-int main( int argc, char ** argv)
+extern "C" int main( 
+	int 				argc,
+	char ** 			argv)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IFlmTest *		pTest = NULL;
@@ -415,13 +421,15 @@ FLMBOOL FlagSet::removeElem( FLMBYTE * pElem)
 			bElemExisted = TRUE;
 			if ( uiLoop < m_uiNumElems - 1)
 			{
-				delete[] m_ppucElemArray[ uiLoop];
+				f_free( &m_ppucElemArray[ uiLoop]);
+				
 				f_memmove( &m_ppucElemArray[ uiLoop], 
 					&m_ppucElemArray[ uiLoop + 1], 
-					( m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
+					(m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
+					
 				f_memmove( &m_pbFlagArray[ uiLoop], 
 					&m_pbFlagArray[ uiLoop + 1], 
-					( m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
+					(m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
 			}
 			// Otherwise, we're at the end and decrementing to counter will suffice
 
@@ -492,17 +500,21 @@ FlagSet FlagSet::crossProduct( FlagSet& fs2)
 	FlagSet		fsCross;
 	FLMUINT		uiLoop1;
 	FLMUINT		uiCrossProductElems = this->getNumElements() * fs2.getNumElements();
-	FLMBYTE **	ppszCross = new FLMBYTE*[ uiCrossProductElems];
+	FLMBYTE **	ppszCross;
+	
+	
+	f_alloc( sizeof( FLMBYTE *) * uiCrossProductElems, &ppszCross);
 
 	for ( uiLoop1 = 0; uiLoop1 < this->getNumElements(); uiLoop1++)
 	{
 		for ( FLMUINT uiLoop2 = 0; uiLoop2 < fs2.getNumElements(); uiLoop2++)
 		{
-			FLMUINT uiIndex = uiLoop1 * fs2.getNumElements() + uiLoop2; 
-			ppszCross[ uiIndex] = new FLMBYTE[ 
+			FLMUINT uiIndex = uiLoop1 * fs2.getNumElements() + uiLoop2;
+			f_alloc(
 				f_strlen( (char *)this->m_ppucElemArray[ uiLoop1]) + 
-					f_strlen( (char *)fs2.m_ppucElemArray[ uiLoop2]) + 1];
-
+					f_strlen( (char *)fs2.m_ppucElemArray[ uiLoop2]) + 1,
+					&ppszCross[ uiIndex]);
+			
 			f_strcpy( (char *)ppszCross[ uiIndex], (char *)this->m_ppucElemArray[ uiLoop1]);
 			f_strcat( (char *)ppszCross[ uiIndex], (char *)fs2.m_ppucElemArray[ uiLoop2]);
 		}
@@ -511,11 +523,11 @@ FlagSet FlagSet::crossProduct( FlagSet& fs2)
 
 	for( uiLoop1 = 0; uiLoop1 < uiCrossProductElems; uiLoop1++)
 	{
-		delete[] ppszCross[ uiLoop1];
+		f_free( &ppszCross[ uiLoop1]);
 	}
-	delete[] ppszCross;
-
-	return fsCross;
+	
+	f_free( &ppszCross);
+	return( fsCross);
 }
 
 /****************************************************************************
@@ -539,12 +551,14 @@ Desc:
 ****************************************************************************/
 FlagSet::FlagSet( const FlagSet& fs)
 {
-	m_ppucElemArray = new FLMBYTE*[ fs.m_uiNumElems];
-	m_pbFlagArray = new FLMBOOL[ fs.m_uiNumElems];
+	f_alloc( sizeof( FLMBYTE *) * fs.m_uiNumElems, &m_ppucElemArray);
+	f_alloc( sizeof( FLMBOOL) * fs.m_uiNumElems, &m_pbFlagArray);
+	
 	f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * fs.m_uiNumElems);
 	for ( FLMUINT uiLoop = 0; uiLoop < fs.m_uiNumElems; uiLoop++)
 	{
-		m_ppucElemArray[uiLoop] = new FLMBYTE[ f_strlen( (char *)fs.m_ppucElemArray[uiLoop]) + 1];
+		f_alloc( f_strlen( (char *)fs.m_ppucElemArray[uiLoop]) + 1,
+			&m_ppucElemArray[ uiLoop]);
 		f_strcpy( (char *)m_ppucElemArray[uiLoop], (char *)fs.m_ppucElemArray[uiLoop]);
 	}
 	m_uiNumElems = fs.m_uiNumElems;
@@ -557,10 +571,11 @@ void FlagSet::reset()
 {
 	for( FLMUINT uiLoop = 0; uiLoop < m_uiNumElems; uiLoop++)
 	{
-		delete [] m_ppucElemArray[ uiLoop];
+		f_free( &m_ppucElemArray[ uiLoop]);
 	}
-	delete[] m_ppucElemArray;
-	delete[] m_pbFlagArray;
+	
+	f_free( &m_ppucElemArray);
+	f_free( &m_pbFlagArray);
 
 	m_uiNumElems = 0;
 	m_ppucElemArray = NULL;
@@ -573,14 +588,18 @@ Desc:
 void FlagSet::init( FLMBYTE ** ppucElemArray, FLMUINT uiNumElems)
 {
 	reset();
-	m_ppucElemArray = new FLMBYTE*[ uiNumElems];
-	m_pbFlagArray = new FLMBOOL[ uiNumElems];
+	
+	f_alloc( sizeof( FLMBYTE *) * uiNumElems, &m_ppucElemArray);
+	f_alloc( sizeof( FLMBOOL) * uiNumElems, &m_pbFlagArray);
+	
 	f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * uiNumElems);
 	for ( FLMUINT uiLoop = 0; uiLoop < uiNumElems; uiLoop++)
 	{
-		m_ppucElemArray[uiLoop] = new FLMBYTE[ f_strlen( (char *)ppucElemArray[uiLoop]) + 1];
+		f_alloc( f_strlen( (char *)ppucElemArray[uiLoop]) + 1, 
+			&m_ppucElemArray[ uiLoop]);
 		f_strcpy( (char *)m_ppucElemArray[uiLoop], (char *)ppucElemArray[uiLoop]);
 	}
+	
 	m_uiNumElems = uiNumElems;
 }
 
@@ -667,9 +686,13 @@ RCODE createUnitTest(
 
 	#ifdef FLM_WIN
 		{
-			char *	temp = new char[ size];
+			char *	temp;
+			f_alloc( size, &temp);
+			
 			char *	tempbegin = temp;
 			size_t	newsize = size;
+			
+			
 
 			for( unsigned int i = 0; i < size; i++)
 			{
@@ -1016,12 +1039,12 @@ void TestBase::displayTime(
 	
 	if( pszIntro)
 	{
-		pszTempBuf = new char[ f_strlen( pszIntro) + sizeof( szTimeBuf)];
+		f_alloc( f_strlen( pszIntro) + sizeof( szTimeBuf), &pszTempBuf);
 		f_strcpy( pszTempBuf, pszIntro);
 	}
 	else
 	{
-		pszTempBuf = new char[ f_strlen( pszDefault) + sizeof( szTimeBuf)];
+		f_alloc( f_strlen( pszDefault) + sizeof( szTimeBuf), &pszTempBuf);
 		f_strcpy( pszTempBuf, pszDefault);
 	}
 	

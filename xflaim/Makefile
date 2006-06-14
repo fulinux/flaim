@@ -52,6 +52,7 @@ win_target =
 unix_target =
 netware_target =
 submake_targets =
+netware_ring_0_target =
 
 # -- Enable command echoing --
 
@@ -221,6 +222,11 @@ ifneq (,$(findstring nlm,$(MAKECMDGOALS)))
 	netware_target = yes
 	target_os_family = netware
 	host_os_family = win
+	
+	ifneq (,$(findstring ring0,$(MAKECMDGOALS)))
+		submake_targets += ring0
+		netware_ring_0_target = yes
+	endif
 endif
 
 ifndef target_os_family
@@ -1112,11 +1118,13 @@ ifdef netware_target
 
 	wc_dir := $(call normpath,$(wc_dir))
 	
-	ifndef ndk_dir
-      $(error Netware SDK could not be found.  Please define ndk_dir.)
+	ifndef netware_ring_0_target
+		ifndef ndk_dir
+			$(error Netware SDK could not be found.  Please define ndk_dir)
+		endif
+		
+		ndk_dir := $(call normpath,$(ndk_dir))
 	endif
-	
-	ndk_dir := $(call normpath,$(ndk_dir))
 
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
 	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
@@ -1127,6 +1135,10 @@ ifdef netware_target
 		ccdefs += FLM_DEBUG
 	endif
 
+	ifdef netware_ring_0_target
+		ccdefs += FLM_RING_ZERO_NLM
+	endif
+	
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
 
 	ifeq ($(build),release)
@@ -1146,10 +1158,45 @@ ifdef netware_target
 	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
 	export wcc386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
 
-   define make_lis_file_cmd
+   define make_ring_0_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
-		$(ec)$(gprintf) "option synchronize\n" >> $(4)
+		$(ec)$(gprintf) "option nod\n" >> $(4)
+		$(ec)$(gprintf) "option map\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+		$(ec)$(gprintf) "option screenname 'NONE'\n" >> $(4)
+		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "option start = f_nlmEntryPoint\n" >> $(4)
+		$(ec)$(gprintf) "option exit = f_nlmExitPoint\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+		$(ec)$(gprintf) "option xdcdata=nlm.xdc\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
+		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
+		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
+		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
+		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
+		$(ec)$(gprintf) "library $(call ppath,$(xflaim_static_lib))\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(ctorarst)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(dtorarst)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(undefed)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(undefmbd)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(pure_err)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stablcl)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabact)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabactv)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabmod)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(prwdata)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(moddtorr)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/plib3s.lib)(stabadt)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8d)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8m)\n" >> $(4)
+		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8s)\n" >> $(4)
+		$(ec)$(gprintf) "alias __wcpp_4_fatal_runtime_error_=f_fatalRuntimeError\n" >> $(4)
+   endef
+
+   define make_libc_lis_file_cmd
+		$(ec)$(gprintf) "option verbose\n" > $(4)
+		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
 		$(ec)$(gprintf) "option nod\n" >> $(4)
 		$(ec)$(gprintf) "option map\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
@@ -1157,26 +1204,180 @@ ifdef netware_target
 		$(ec)$(gprintf) "option threadname '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "option start = _LibCPrelude\n" >> $(4)
 		$(ec)$(gprintf) "option exit = _LibCPostlude\n" >> $(4)
+		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
+		$(ec)$(gprintf) "option xdcdata=nlm.xdc\n" >> $(4)
 		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
-		
 		$(ec)$(gprintf) "file $(subst $(sp),\nfile ,$(call ppath,$(3)))\n" >> $(4)
 		$(ec)$(gprintf) "file $(call ppath,$(ndk_dir)/libc/imports/libcpre.obj)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(xflaim_static_lib))\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/plib3s.lib)\n" >> $(4)
 		$(ec)$(gprintf) "library $(call ppath,$(wc_dir)/lib386/netware/libc3s.lib)\n" >> $(4)
-		$(ec)$(gprintf) "import CurrentProcess\n" >> $(4)
-		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(4)
-		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(4)
-		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(4)
    endef
-
+	
+   define make_ring_0_imp_file_cmd
+		$(ec)$(gprintf) "import __WSAFDIsSet\n" > $(1)
+		$(ec)$(gprintf) "import ActivateScreen\n" >> $(1)
+		$(ec)$(gprintf) "import Alloc\n" >> $(1)
+		$(ec)$(gprintf) "import AllocateResourceTag\n" >> $(1)
+		$(ec)$(gprintf) "import atomic_dec\n" >> $(1)
+		$(ec)$(gprintf) "import atomic_inc\n" >> $(1)
+		$(ec)$(gprintf) "import atomic_xchg\n" >> $(1)
+		$(ec)$(gprintf) "import BitTest\n" >> $(1)
+		$(ec)$(gprintf) "import CEvaluateExpression\n" >> $(1)
+		$(ec)$(gprintf) "import CFindLoadModuleHandle\n" >> $(1)
+		$(ec)$(gprintf) "import CheckKeyStatus\n" >> $(1)
+		$(ec)$(gprintf) "import ClearScreen\n" >> $(1)
+		$(ec)$(gprintf) "import CloseFile\n" >> $(1)
+		$(ec)$(gprintf) "import CloseScreen\n" >> $(1)
+		$(ec)$(gprintf) "import CMovB\n" >> $(1)
+		$(ec)$(gprintf) "import CMoveFast\n" >> $(1)
+		$(ec)$(gprintf) "import ConvertPathString\n" >> $(1)
+		$(ec)$(gprintf) "import ConvertSecondsToTicks\n" >> $(1)
+		$(ec)$(gprintf) "import ConvertTicksToSeconds\n" >> $(1)
+		$(ec)$(gprintf) "import CpuCurrentProcessor\n" >> $(1)
+		$(ec)$(gprintf) "import CreateDirectory\n" >> $(1)
+		$(ec)$(gprintf) "import CreateFile\n" >> $(1)
+		$(ec)$(gprintf) "import CSetD\n" >> $(1)
+		$(ec)$(gprintf) "import DebuggerSymbolList\n" >> $(1)
+		$(ec)$(gprintf) "import DeleteDirectory\n" >> $(1)
+		$(ec)$(gprintf) "import DirectorySearch\n" >> $(1)
+		$(ec)$(gprintf) "import DirectReadFile\n" >> $(1)
+		$(ec)$(gprintf) "import DirectReadFile\n" >> $(1)
+		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(1)
+		$(ec)$(gprintf) "import DirectWriteFile\n" >> $(1)
+		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(1)
+		$(ec)$(gprintf) "import DirectWriteFileNoWait\n" >> $(1)
+		$(ec)$(gprintf) "import DisableInputCursor\n" >> $(1)
+		$(ec)$(gprintf) "import DisplayScreenTextWithAttribute\n" >> $(1)
+		$(ec)$(gprintf) "import DOSFirstByteBitMap\n" >> $(1)
+		$(ec)$(gprintf) "import EnableInputCursor\n" >> $(1)
+		$(ec)$(gprintf) "import EnterDebugger\n" >> $(1)
+		$(ec)$(gprintf) "import EraseFile\n" >> $(1)
+		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(1)
+		$(ec)$(gprintf) "import ExpandFileInContiguousBlocks\n" >> $(1)
+		$(ec)$(gprintf) "import ExportPublicSymbol\n" >> $(1)
+		$(ec)$(gprintf) "import FindAndLoadNLM\n" >> $(1)
+		$(ec)$(gprintf) "import Free\n" >> $(1)
+		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(1)
+		$(ec)$(gprintf) "import FreeLimboVolumeSpace\n" >> $(1)
+		$(ec)$(gprintf) "import GetCacheBufferSize\n" >> $(1)
+		$(ec)$(gprintf) "import GetClosestSymbol\n" >> $(1)
+		$(ec)$(gprintf) "import GetCurrentClock\n" >> $(1)
+		$(ec)$(gprintf) "import GetCurrentNumberOfCacheBuffers\n" >> $(1)
+		$(ec)$(gprintf) "import GetCurrentTime\n" >> $(1)
+		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(1)
+		$(ec)$(gprintf) "import GetEntryFromPathStringBase\n" >> $(1)
+		$(ec)$(gprintf) "import GetFileSize\n" >> $(1)
+		$(ec)$(gprintf) "import GetKey\n" >> $(1)
+		$(ec)$(gprintf) "import GetNLMAllocMemoryCounts\n" >> $(1)
+		$(ec)$(gprintf) "import GetOriginalNumberOfCacheBuffers\n" >> $(1)
+		$(ec)$(gprintf) "import GetProductMajorVersionNumber\n" >> $(1)
+		$(ec)$(gprintf) "import GetRunningProcess\n" >> $(1)
+		$(ec)$(gprintf) "import GetScreenSize\n" >> $(1)
+		$(ec)$(gprintf) "import GetSyncClockFields\n" >> $(1)
+		$(ec)$(gprintf) "import GetSystemConsoleScreen\n" >> $(1)
+		$(ec)$(gprintf) "import ImportPublicSymbol\n" >> $(1)
+		$(ec)$(gprintf) "import kCreateThread\n" >> $(1)
+		$(ec)$(gprintf) "import kCurrentThread\n" >> $(1)
+		$(ec)$(gprintf) "import kDelayThread\n" >> $(1)
+		$(ec)$(gprintf) "import kDestroyThread\n" >> $(1)
+		$(ec)$(gprintf) "import kExitThread\n" >> $(1)
+		$(ec)$(gprintf) "import kGetThreadName\n" >> $(1)
+		$(ec)$(gprintf) "import kGetThreadName\n" >> $(1)
+		$(ec)$(gprintf) "import KillMe\n" >> $(1)
+		$(ec)$(gprintf) "import kMutexAlloc\n" >> $(1)
+		$(ec)$(gprintf) "import kMutexFree\n" >> $(1)
+		$(ec)$(gprintf) "import kMutexLock\n" >> $(1)
+		$(ec)$(gprintf) "import kMutexUnlock\n" >> $(1)
+		$(ec)$(gprintf) "import kReturnCurrentProcessorID\n" >> $(1)
+		$(ec)$(gprintf) "import kScheduleThread\n" >> $(1)
+		$(ec)$(gprintf) "import kSemaphoreAlloc\n" >> $(1)
+		$(ec)$(gprintf) "import kSemaphoreExamineCount\n" >> $(1)
+		$(ec)$(gprintf) "import kSemaphoreFree\n" >> $(1)
+		$(ec)$(gprintf) "import kSemaphoreSignal\n" >> $(1)
+		$(ec)$(gprintf) "import kSemaphoreTimedWait\n" >> $(1)
+		$(ec)$(gprintf) "import kSemaphoreWait\n" >> $(1)
+		$(ec)$(gprintf) "import kSetThreadLoadHandle\n" >> $(1)
+		$(ec)$(gprintf) "import kSetThreadName\n" >> $(1)
+		$(ec)$(gprintf) "import kYieldIfTimeSliceUp\n" >> $(1)
+		$(ec)$(gprintf) "import kYieldThread\n" >> $(1)
+		$(ec)$(gprintf) "import LoadModule\n" >> $(1)
+		$(ec)$(gprintf) "import LoadRules\n" >> $(1)
+		$(ec)$(gprintf) "import MapFileHandleToFCB\n" >> $(1)
+		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(1)
+		$(ec)$(gprintf) "import MapPathToDirectoryNumber\n" >> $(1)
+		$(ec)$(gprintf) "import MapVolumeNameToNumber\n" >> $(1)
+		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(1)
+		$(ec)$(gprintf) "import ModifyDirectoryEntry\n" >> $(1)
+		$(ec)$(gprintf) "import MountVolume\n" >> $(1)
+		$(ec)$(gprintf) "import NDSCreateStreamFile\n" >> $(1)
+		$(ec)$(gprintf) "import NDSDeleteStreamFile\n" >> $(1)
+		$(ec)$(gprintf) "import NDSOpenStreamFile\n" >> $(1)
+		$(ec)$(gprintf) "import NWLocalToUnicode\n" >> $(1)
+		$(ec)$(gprintf) "import NWUnicodeToLocal\n" >> $(1)
+		$(ec)$(gprintf) "import OpenFile\n" >> $(1)
+		$(ec)$(gprintf) "import OpenScreen\n" >> $(1)
+		$(ec)$(gprintf) "import OutputToScreen\n" >> $(1)
+		$(ec)$(gprintf) "import PositionInputCursor\n" >> $(1)
+		$(ec)$(gprintf) "import PositionOutputCursor\n" >> $(1)
+		$(ec)$(gprintf) "import ReadFile\n" >> $(1)
+		$(ec)$(gprintf) "import RenameEntry\n" >> $(1)
+		$(ec)$(gprintf) "import RestartServer\n" >> $(1)
+		$(ec)$(gprintf) "import ReturnResourceTag\n" >> $(1)
+		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(1)
+		$(ec)$(gprintf) "import ReturnVolumeMappingInformation\n" >> $(1)
+		$(ec)$(gprintf) "import RevokeFileHandleRights\n" >> $(1)
+		$(ec)$(gprintf) "import SetCursorStyle\n" >> $(1)
+		$(ec)$(gprintf) "import SetFileSize\n" >> $(1)
+		$(ec)$(gprintf) "import SetFileSize\n" >> $(1)
+		$(ec)$(gprintf) "import SGUIDCreate\n" >> $(1)
+		$(ec)$(gprintf) "import SizeOfAllocBlock\n" >> $(1)
+		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(1)
+		$(ec)$(gprintf) "import SwitchToDirectFileMode\n" >> $(1)
+		$(ec)$(gprintf) "import UngetKey\n" >> $(1)
+		$(ec)$(gprintf) "import UnImportPublicSymbol\n" >> $(1)
+		$(ec)$(gprintf) "import UnloadRules\n" >> $(1)
+		$(ec)$(gprintf) "import VMGetDirectoryEntry\n" >> $(1)
+		$(ec)$(gprintf) "import WriteFile\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_bind\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_closesocket\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_gethostbyaddr\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_gethostbyname\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_gethostname\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_htonl\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_htons\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_inet_addr\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_inet_ntoa\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_listen\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_recv\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_select\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_send\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_setsockopt\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_shutdown\n" >> $(1)
+		$(ec)$(gprintf) "import WS2_32_socket\n" >> $(1)
+		$(ec)$(gprintf) "import WSAAccept\n" >> $(1)
+		$(ec)$(gprintf) "import WSACleanup\n" >> $(1)
+		$(ec)$(gprintf) "import WSAConnect\n" >> $(1)
+		$(ec)$(gprintf) "import WSAGetLastError\n" >> $(1)
+		$(ec)$(gprintf) "import WSAStartup\n" >> $(1)
+   endef
+	
+   define make_libc_imp_file_cmd
+		$(ec)$(gprintf) "import CurrentProcess\n" > $(1)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/libc.imp)\n" >> $(1)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/netware.imp)\n" >> $(1)
+		$(ec)$(gprintf) "import @$(call ppath,$(ndk_dir)/libc/imports/ws2nlm.imp)\n" >> $(1)
+   endef
+	
    define flm_exe_link_cmd
-		$(call make_lis_file_cmd,$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
-		$(ec)$(call hostpath,$(exe_linker)) @$(call hostpath,$(1)/$(2).lis)
+		$(call $(if $(netware_ring_0_target),make_ring_0_imp_file_cmd,make_libc_imp_file_cmd),$(call hostpath,$(1)/$(2).imp))
+		$(call $(if $(netware_ring_0_target),make_ring_0_lis_file_cmd,make_libc_lis_file_cmd),$(1),$(2),$(3),$(call hostpath,$(1)/$(2).lis))
+		$(ec)$(call hostpath,$(exe_linker)) @$(call hostpath,$(1)/$(2).lis) @$(call hostpath,$(1)/$(2).imp)
 		$(ec)$(call rmcmd,$(target_path)/$(1).lis)
+		$(ec)$(call rmcmd,$(target_path)/$(1).imp)
    endef
 
 endif
@@ -2045,6 +2246,10 @@ osx:
 
 .PHONY : nlm
 nlm:
+	$(ec)$(gprintf) ""
+
+.PHONY : ring0
+ring0:
 	$(ec)$(gprintf) ""
 
 .PHONY : verbose

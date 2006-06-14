@@ -61,10 +61,14 @@ static FLMBOOL		bPauseBeforeExiting = FALSE;
 FLMUINT				gv_uiTopLine = 0;
 FLMUINT				gv_uiBottomLine = 0;
 
+#ifdef FLM_RING_ZERO_NLM
+	#define main		nlm_main
+#endif
+
 /********************************************************************
 Desc: ?
 *********************************************************************/
-int main(
+extern "C" int main(
 	int			iArgC,
 	char **		ppszArgV)
 {

@@ -1869,12 +1869,12 @@ FLMINT FlmDbOpenCommand::execute(
 	IF_Db *			pDb = NULL;
 	FLMUINT			uiDbId;
 	RCODE				rc = NE_XFLM_OK;
-	F_DbSystem		dbSystem;
 	char *			pszRflDir = NULL;
 	char *			pszPassword = NULL;
 	char *			pszAllowLimited;
 	FLMBOOL			bAllowLimited = FALSE;
-
+	IF_DbSystem *				pDbSystem = NULL;
+	
 	if( iArgC < 2)
 	{
 		pShell->con_printf( "Wrong number of parameters.\n");
@@ -1902,7 +1902,12 @@ FLMINT FlmDbOpenCommand::execute(
 		}
 	}
 
-	if( RC_BAD( rc = dbSystem.dbOpen( ppszArgV[ 1],
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pDbSystem->dbOpen( ppszArgV[ 1],
 		NULL, pszRflDir, pszPassword, bAllowLimited, &pDb)))
 	{
 		if( rc != NE_FLM_IO_PATH_NOT_FOUND)
@@ -1910,7 +1915,7 @@ FLMINT FlmDbOpenCommand::execute(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = dbSystem.dbCreate( 
+		if( RC_BAD( rc = pDbSystem->dbCreate( 
 			ppszArgV[ 1], NULL, pszRflDir, NULL, NULL, NULL, &pDb)))
 		{
 			goto Exit;
@@ -1930,6 +1935,11 @@ Exit:
 	if( pDb)
 	{
 		pDb->Release();
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	if( RC_BAD( rc))
@@ -1979,11 +1989,11 @@ FLMINT FlmDbCloseCommand::execute(
 	char **		ppszArgV,
 	FlmShell *	pShell)
 {
+	RCODE				rc = NE_XFLM_OK;
 	FLMINT			iExitCode = 0;
 	FLMUINT			uiDbId;
-	IF_Db *			pDb;
-	RCODE				rc = NE_XFLM_OK;
-	F_DbSystem		dbSystem;
+	IF_Db *			pDb = NULL;
+	IF_DbSystem *	pDbSystem = NULL;
 
 	if( iArgC != 2)
 	{
@@ -1992,9 +2002,14 @@ FLMINT FlmDbCloseCommand::execute(
 		goto Exit;
 	}
 
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
+
 	if( !f_stricmp( ppszArgV[ 1], "kill"))
 	{
-		dbSystem.deactivateOpenDb( NULL, NULL);
+		pDbSystem->deactivateOpenDb( NULL, NULL);
 		pShell->con_printf( "All handles killed, but not necessarily closed.\n");
 	}
 	else if( !f_stricmp( ppszArgV[ 1], "all"))
@@ -2017,7 +2032,7 @@ FLMINT FlmDbCloseCommand::execute(
 			}
 		}
 
-		dbSystem.closeUnusedFiles( 0);
+		pDbSystem->closeUnusedFiles( 0);
 	}
 	else
 	{
@@ -2043,6 +2058,11 @@ FLMINT FlmDbCloseCommand::execute(
 	}
 
 Exit:
+
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
 	if( RC_BAD( rc))
 	{
@@ -2361,9 +2381,9 @@ FLMINT FlmDbManageCommand::execute(
 	char **		ppszArgV,
 	FlmShell *	pShell)
 {
-	FLMINT			iExitCode = 0;
 	RCODE				rc = NE_XFLM_OK;
-	F_DbSystem		dbSystem;
+	FLMINT			iExitCode = 0;
+	IF_DbSystem *	pDbSystem = NULL;
 
 	if( iArgC < 2)
 	{
@@ -2372,9 +2392,14 @@ FLMINT FlmDbManageCommand::execute(
 		goto Exit;
 	}
 
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
+
 	if (f_stricmp( ppszArgV [0], "dbremove") == 0)
 	{
-		if (RC_BAD( rc = dbSystem.dbRemove( ppszArgV[ 1], NULL, NULL, TRUE)))
+		if (RC_BAD( rc = pDbSystem->dbRemove( ppszArgV[ 1], NULL, NULL, TRUE)))
 		{
 			goto Exit;
 		}
@@ -2391,7 +2416,7 @@ FLMINT FlmDbManageCommand::execute(
 		{
 			FSHELL_CopyStatus	copyStatus( pShell);
 
-			if (RC_BAD( rc = dbSystem.dbCopy( ppszArgV [1], NULL, NULL,
+			if (RC_BAD( rc = pDbSystem->dbCopy( ppszArgV [1], NULL, NULL,
 										ppszArgV [2], NULL, NULL, &copyStatus)))
 			{
 				goto Exit;
@@ -2402,7 +2427,7 @@ FLMINT FlmDbManageCommand::execute(
 		{
 			FSHELL_RenameStatus	renameStatus( pShell);
 
-			if (RC_BAD( rc = dbSystem.dbRename( ppszArgV [1], NULL, NULL,
+			if (RC_BAD( rc = pDbSystem->dbRename( ppszArgV [1], NULL, NULL,
 										ppszArgV [2], TRUE, &renameStatus)))
 			{
 				goto Exit;
@@ -2412,6 +2437,11 @@ FLMINT FlmDbManageCommand::execute(
 	}
 
 Exit:
+
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
 	if( RC_BAD( rc))
 	{
@@ -2708,8 +2738,8 @@ FLMINT FlmRestoreCommand::execute(
 	F_LocalRestore *			pRestore = NULL;
 	F_LocalRestoreStatus 	restoreStatus( pShell);
 	RCODE							rc = NE_XFLM_OK;
-	F_DbSystem					dbSystem;
 	FLMBOOL						bUsePasswd = FALSE;
+	IF_DbSystem *				pDbSystem = NULL;
 
 	if( iArgC < 3)
 	{
@@ -2717,13 +2747,20 @@ FLMINT FlmRestoreCommand::execute(
 		iExitCode = -1;
 		goto Exit;
 	}
+	
 	if( iArgC > 3)
 	{
 		bUsePasswd = TRUE;
 	}
+	
 	if( iArgC > 4)
 	{
 		pszRflDir = ppszArgV[ 4];
+	}
+
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
 	}
 
 	if( (pRestore = f_new F_LocalRestore) == NULL)
@@ -2738,7 +2775,7 @@ FLMINT FlmRestoreCommand::execute(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = dbSystem.dbRestore( ppszArgV[ 1], NULL, NULL, NULL,
+	if( RC_BAD( rc = pDbSystem->dbRestore( ppszArgV[ 1], NULL, NULL, NULL,
 						 bUsePasswd?ppszArgV[3]:NULL, pRestore, &restoreStatus)))
 	{
 		goto Exit;
@@ -2760,6 +2797,11 @@ Exit:
 	if( pRestore)
 	{
 		pRestore->Release();
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	return( iExitCode);
@@ -3514,7 +3556,12 @@ FLMINT FlmSysInfoCommand::execute(
 	FTX_WINDOW *		pWin = pShell->getWindow();
 	FLMUINT				uiLoop;
 	IF_ThreadInfo *	pThreadInfo = NULL;
-	F_DbSystem			dbSystem;
+	IF_DbSystem *		pDbSystem = NULL;
+
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 
 	if( iArgC < 2)
 	{
@@ -3658,7 +3705,7 @@ FLMINT FlmSysInfoCommand::execute(
 					pThreadInfo->Release();
 					pThreadInfo = NULL;
 				}
-				if( RC_BAD( rc = dbSystem.getThreadInfo( &pThreadInfo)))
+				if( RC_BAD( rc = pDbSystem->getThreadInfo( &pThreadInfo)))
 				{
 					goto Exit;
 				}
@@ -3715,6 +3762,11 @@ Exit:
 	if (pThreadInfo)
 	{
 		pThreadInfo->Release();
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	return( iExitCode);
@@ -5499,17 +5551,22 @@ FLMINT FlmDomEditCommand::execute(
 	char				szTitle[ 80];
 	FLMUINT			Cols;
 	FLMUINT			Rows;
-	F_DbSystem		dbSystem;
 	IF_Db *			pNewDb = NULL;
 	char *			pszRflDir = NULL;
 	char *			pszPassword = NULL;
 	char *			pszAllowLimited;
 	FLMBOOL			bAllowLimited = FALSE;
+	IF_DbSystem *	pDbSystem = NULL;
 
 	if( iArgC < 1)
 	{
 		pShell->con_printf( "Wrong number of parameters.\n");
 		iExitCode = -1;
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
 		goto Exit;
 	}
 
@@ -5548,7 +5605,7 @@ FLMINT FlmDomEditCommand::execute(
 				}
 			}
 
-			if( RC_BAD( rc = dbSystem.dbOpen( ppszArgV[ 1],
+			if( RC_BAD( rc = pDbSystem->dbOpen( ppszArgV[ 1],
 				NULL, pszRflDir, pszPassword, bAllowLimited, &pNewDb)))
 			{
 				pShell->con_printf( "Error opening database: %e.\n", rc);
@@ -5649,9 +5706,13 @@ Exit:
 		pDomEditor->Release();
 		pDomEditor = NULL;
 	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
 	FTXScreenFree( &pScreen);
-
 	return( iExitCode);
 }
 
@@ -5706,8 +5767,8 @@ FLMINT FlmExportCommand::execute(
 	FLMUINT					uiDocNum = 0;
 	FLMUINT					uiCollection = XFLM_DATA_COLLECTION;
 	FLMBOOL					bAllDocs = TRUE;
-	F_DbSystem				dbSystem;
 	eExportFormatType		eFormat = XFLM_EXPORT_INDENT;
+	IF_DbSystem *			pDbSystem = NULL;
 
 	if( iArgC < 2)
 	{
@@ -5716,7 +5777,12 @@ FLMINT FlmExportCommand::execute(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = dbSystem.openFileOStream( ppszArgV[ 1], 
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pDbSystem->openFileOStream( ppszArgV[ 1], 
 		TRUE, &pFileOStream)))
 	{
 		pShell->con_printf( "Unable to create file: %s.\n", ppszArgV[1]);
@@ -5855,6 +5921,11 @@ Exit:
 	if( pFileOStream)
 	{
 		pFileOStream->Release();
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	return( iExitCode);
@@ -6108,7 +6179,6 @@ FLMBOOL domDisplayNodeInfo(
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMBOOL			bOk = FALSE;
-	F_DbSystem		dbSystem;
 	IF_NodeInfo *	pNodeInfo = NULL;
 	XFLM_NODE_INFO	nodeInfo;
 	IF_DOMNode *	pNode = NULL;
@@ -6119,6 +6189,12 @@ FLMBOOL domDisplayNodeInfo(
 	FLMUINT			uiChar;
 	IF_FileHdl *	pFileHdl = NULL;
 	FLMUINT			uiLineCount;
+	IF_DbSystem *	pDbSystem = NULL;
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 
 	// If there is a file name, attempt to create it
 
@@ -6141,7 +6217,7 @@ FLMBOOL domDisplayNodeInfo(
 		}
 	}
 
-	if (RC_BAD( rc = dbSystem.createIFNodeInfo( &pNodeInfo)))
+	if (RC_BAD( rc = pDbSystem->createIFNodeInfo( &pNodeInfo)))
 	{
 		domDisplayError( pWindow, "Error calling createIFNodeInfo", rc);
 		goto Exit;
@@ -6394,6 +6470,12 @@ Exit:
 	{
 		pFileHdl->Release();
 	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
+	
 	return( bOk);
 }
 
@@ -8025,7 +8107,6 @@ FLMBOOL domDisplayBTreeInfo(
 {
 	RCODE							rc = NE_XFLM_OK;
 	FLMBOOL						bOk = FALSE;
-	F_DbSystem					dbSystem;
 	IF_BTreeInfo *				pBTreeInfo = NULL;
 	SH_BTreeInfoStatus		infoStatus( pWindow);
 	FLMUINT						uiIndexCount;
@@ -8043,6 +8124,12 @@ FLMBOOL domDisplayBTreeInfo(
 	FLMUINT						uiLineCount;
 	char							szBuf [100];
 	XFLM_BTREE_LEVEL_INFO	levelInfo;
+	IF_DbSystem *				pDbSystem = NULL;
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 	
 	// If there is a file name, attempt to create it
 
@@ -8065,7 +8152,7 @@ FLMBOOL domDisplayBTreeInfo(
 		}
 	}
 
-	if (RC_BAD( rc = dbSystem.createIFBTreeInfo( &pBTreeInfo)))
+	if (RC_BAD( rc = pDbSystem->createIFBTreeInfo( &pBTreeInfo)))
 	{
 		domDisplayError( pWindow, "Error calling createIFNodeInfo", rc);
 		goto Exit;
@@ -8391,6 +8478,12 @@ Exit:
 	{
 		pFileHdl->Release();
 	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
+	
 	return( bOk);
 }
 

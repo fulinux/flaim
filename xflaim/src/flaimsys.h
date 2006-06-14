@@ -4712,7 +4712,13 @@ public:
 
 	virtual ~F_DbSystem();
 
-	virtual FLMINT FLMAPI AddRef( void);
+	virtual FLMINT FLMAPI AddRef(
+		FLMBOOL		bSysDataLocked);
+	
+	virtual FLMINT FLMAPI AddRef( void)
+	{
+		return( AddRef( FALSE));
+	}
 
 	virtual FLMINT FLMAPI Release( void);
 	

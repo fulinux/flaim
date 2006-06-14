@@ -1763,14 +1763,6 @@ RCODE F_DbSystem::init( void)
 
 	flmAssert( !gv_bFlmStarted);
 
-	// Start the toolkit
-
-	if( RC_BAD( rc = ftkStartup()))
-	{
-		goto Exit;
-	}
-	gv_bToolkitStarted = TRUE;
-
 	// The memset needs to be first.
 
 	f_memset( &gv_XFlmSysData, 0, sizeof( FLMSYSDATA));
@@ -1875,15 +1867,18 @@ RCODE F_DbSystem::init( void)
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = gv_XFlmSysData.pBlockCacheMgr->initCache()))
 	{
 		goto Exit;
 	}
+	
 	if ((gv_XFlmSysData.pNodeCacheMgr = f_new F_NodeCacheMgr) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = gv_XFlmSysData.pNodeCacheMgr->initCache()))
 	{
 		goto Exit;
@@ -2240,10 +2235,12 @@ void F_DbSystem::cleanup( void)
 	{
 		f_mutexDestroy( &gv_XFlmSysData.hNodeCacheMutex);
 	}
+	
 	if (gv_XFlmSysData.hBlockCacheMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &gv_XFlmSysData.hBlockCacheMutex);
 	}
+	
 	if (gv_XFlmSysData.hShareMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &gv_XFlmSysData.hShareMutex);
@@ -3115,13 +3112,24 @@ FLMBOOL FLMAPI F_DbSystem::errorIsFileCorrupt(
 /****************************************************************************
 Desc:		Increment the database system use count
 ****************************************************************************/
-FLMINT FLMAPI F_DbSystem::AddRef(void)
+FLMINT FLMAPI F_DbSystem::AddRef(
+	FLMBOOL		bSysDataLocked)
 {
 	FLMINT		iRefCnt;
+
+	if( !bSysDataLocked)
+	{
+		lockSysData();
+	}
 	
-	iRefCnt = f_atomicInc( &m_refCnt);
+	iRefCnt = ++m_refCnt;
+	
+	if( !bSysDataLocked)
+	{
+		unlockSysData();
+	}
+	
 	LockModule();
-	
 	return( iRefCnt);
 }
 
@@ -3132,13 +3140,32 @@ FLMINT FLMAPI F_DbSystem::Release(void)
 {
 	FLMINT	iRefCnt;
 	
-	iRefCnt = f_atomicDec( &m_refCnt);
+	lockSysData();	
+	iRefCnt = --m_refCnt;
 
-	if (iRefCnt == 0)
+	if( iRefCnt == 0)
 	{
+		flmAssert( !gv_pXFlmDbSystem);
+		unlockSysData();
 		delete this;	
 	}
+	else if( iRefCnt == 1)
+	{
+		flmAssert( this == gv_pXFlmDbSystem);
 
+		iRefCnt = 0;
+		m_refCnt = 0;
+		gv_pXFlmDbSystem = NULL;
+		unlockSysData();
+		
+		delete this;
+		UnlockModule();
+	}
+	else
+	{
+		unlockSysData();
+	}
+	
 	UnlockModule();
 	return( iRefCnt);
 }
@@ -3157,6 +3184,14 @@ FLMEXP RCODE FLMAPI FlmAllocDbSystem(
 	
 	if( !gv_pXFlmDbSystem)
 	{
+		flmAssert( !gv_bToolkitStarted);
+		
+		if( RC_BAD( rc = ftkStartup()))
+		{
+			goto Exit;
+		}
+		gv_bToolkitStarted = TRUE;
+
 		if( (pDbSystem = f_new F_DbSystem) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
@@ -3172,8 +3207,8 @@ FLMEXP RCODE FLMAPI FlmAllocDbSystem(
 		pDbSystem = NULL;
 	}
 	
+	gv_pXFlmDbSystem->AddRef( TRUE);
 	*ppDbSystem = gv_pXFlmDbSystem;
-	(*ppDbSystem)->AddRef();
 	
 Exit:
 

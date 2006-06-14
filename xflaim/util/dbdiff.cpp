@@ -229,7 +229,6 @@ RCODE F_DbDiff::diff(
 	FlmStringAcc		acc;
 	FlmVector			IndexVec1;
 	FlmVector			IndexVec2;
-	F_DbSystem			dbSystem;
 
 	//try to unlock any files currently open
 	if ( RC_BAD( rc = dbSystem.closeUnusedFiles(0)))

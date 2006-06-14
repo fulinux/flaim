@@ -227,7 +227,7 @@ RCODE flstIndexManagerThread(
 	FLMBOOL					bScreenLocked = FALSE;
 	IX_Event					event;
 	FLMBOOL					bRegisteredForEvent = FALSE;
-	F_DbSystem				dbSystem;
+	IF_DbSystem *			pDbSystem = NULL;
 
 	event.setDispInfo( &IxDispInfo);
 
@@ -304,8 +304,13 @@ RCODE flstIndexManagerThread(
 	FTXWinSetScroll( IxDispInfo.pLogWin, TRUE);
 	FTXWinSetLineWrap( IxDispInfo.pLogWin, FALSE);
 	FTXWinOpen( IxDispInfo.pLogWin);
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 
-	if (RC_BAD( rc = dbSystem.registerForEvent(
+	if (RC_BAD( rc = pDbSystem->registerForEvent(
 		XFLM_EVENT_UPDATES, &event)))
 	{
 		goto Exit;
@@ -799,7 +804,7 @@ Exit:
 
 	if (bRegisteredForEvent)
 	{
-		dbSystem.deregisterForEvent( XFLM_EVENT_UPDATES, &event);
+		pDbSystem->deregisterForEvent( XFLM_EVENT_UPDATES, &event);
 	}
 
 	if( IxDispInfo.pScreen)
@@ -811,15 +816,15 @@ Exit:
 	{
 		f_mutexDestroy( &IxDispInfo.hScreenMutex);
 	}
-#if 0
-	if( pRec)
-	{
-		pRec->release( &pRec);
-	}
-#endif
+	
 	if( pDb != NULL)
 	{
 		pDb->Release();
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	return( rc);
@@ -834,6 +839,7 @@ Note:	The caller must pass a valid share handle to the thread on startup.
 RCODE flstMemoryManagerThread(
 	IF_Thread *		pThread)
 {
+	RCODE					rc = NE_XFLM_OK;
 	F_DynamicList *	pList = f_new F_DynamicList;
 	FTX_SCREEN *		pScreen;
 	FTX_WINDOW *		pTitleWin;
@@ -845,7 +851,7 @@ RCODE flstMemoryManagerThread(
 	FLMUINT				uiScreenCols;
 	FLMUINT				uiScreenRows;
 	XFLM_CACHE_INFO	CacheInfo;
-	F_DbSystem			dbSystem;
+	IF_DbSystem *		pDbSystem = NULL;
 
 #define FMMT_TITLE_HEIGHT 1
 #define FMMT_HEADER_HEIGHT 3
@@ -893,6 +899,11 @@ RCODE flstMemoryManagerThread(
 	FTXWinMove( pListWin, 0, FMMT_TITLE_HEIGHT + FMMT_HEADER_HEIGHT);
 	FTXWinOpen( pListWin);
 	pList->setup( pListWin);
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 
 	uiLoop = 0;
 	while( !gv_bShutdown)
@@ -903,7 +914,7 @@ RCODE flstMemoryManagerThread(
 			XFLM_CACHE_USAGE *	pBlkCacheUse = &CacheInfo.BlockCache;
 			XFLM_CACHE_USAGE *	pNodeCacheUse = &CacheInfo.NodeCache;
 
-			dbSystem.getCacheInfo( &CacheInfo);
+			pDbSystem->getCacheInfo( &CacheInfo);
 			f_sprintf( szTmpBuf,
 				"  Maximum Cache Bytes............... %10u",
 				(unsigned)CacheInfo.uiMaxBytes);
@@ -1068,7 +1079,7 @@ RCODE flstMemoryManagerThread(
 			{
 				case 'R':
 				case 'r':
-					dbSystem.resetStats();
+					pDbSystem->resetStats();
 					break;
 				case FKB_UP:
 					pList->cursorUp();
@@ -1114,6 +1125,11 @@ Exit:
 	{
 		FTXScreenFree( &pScreen);
 	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
-	return( NE_XFLM_OK);
+	return( rc);
 }

@@ -58,10 +58,14 @@ RCODE processAttributes(
 	IF_DOMNode *		pNode,
 	FLMBYTE **			ppszLine);
 
+#ifdef FLM_RING_ZERO_NLM
+	#define main		nlm_main
+#endif
+
 /***************************************************************************
 Desc:	Program entry point (main)
 ****************************************************************************/
-int main(
+extern "C" int main(
 	int,			// iArgC,
 	char **		// ppucArgV
 	)
@@ -138,7 +142,7 @@ int main(
 
 RetryCreate:
 
-	memset( &createOpts, 0, sizeof( XFLM_CREATE_OPTS));
+	f_memset( &createOpts, 0, sizeof( XFLM_CREATE_OPTS));
 	
 	if( RC_BAD( rc = pDbSystem->dbCreate( DB_NAME_STR, NULL, NULL, NULL,
 			NULL, &createOpts, &pDb)))
@@ -506,8 +510,8 @@ RetryCreate:
 	}
 	bTranStarted = TRUE;
 
-	if ( RC_BAD( rc = pDbSystem->openBufferIStream( pszIndex, strlen( pszIndex),
-		&pPosIStream)))
+	if ( RC_BAD( rc = pDbSystem->openBufferIStream( pszIndex, 
+		f_strlen( pszIndex), &pPosIStream)))
 	{
 		goto Exit;
 	}
@@ -551,7 +555,7 @@ RetryCreate:
 	// We will first need an input file stream.
 
 	uiLoop = 0;
-	while( strlen( ppszPath[ uiLoop]))
+	while( f_strlen( ppszPath[ uiLoop]))
 	{
 		if( RC_BAD( rc = pDbSystem->openFileIStream( 
 			ppszPath[ uiLoop], &pIStream)))
@@ -630,7 +634,7 @@ RetryCreate:
 			goto Exit;
 		}
 
-		sprintf( (char *)&ucMsgBuf[0], "DocId: %"UI64FormatStr"\n%s\n",
+		f_sprintf( (char *)&ucMsgBuf[0], "DocId: %"UI64FormatStr"\n%s\n",
 			ui64DocId, ucTitle);
 		printMessage( (char *)&ucMsgBuf[0]);
 
@@ -644,7 +648,7 @@ RetryCreate:
 
 		if (uiCurrentKeyLen == uiUntilKeyLen)
 		{
-			if (memcmp( ucCurrentKeyBuf, ucUntilKeyBuf, uiCurrentKeyLen) == 0)
+			if( f_memcmp( ucCurrentKeyBuf, ucUntilKeyBuf, uiCurrentKeyLen) == 0)
 			{
 				// We are done!
 
@@ -833,7 +837,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		sprintf( (char *)ucMsgBuf, "Error 0x%04X\n",
+		f_sprintf( (char *)ucMsgBuf, "Error 0x%04X\n",
 											(unsigned)rc);
 		printMessage( (char *)ucMsgBuf);
 	}
@@ -857,10 +861,10 @@ void printMessage(
 
 	for (uiLoop = 0; uiLoop < uiLevel; uiLoop++)
 	{
-		printf( " ");
+		f_printf( " ");
 	}
 	
-	printf( "%s\n", pszMessage);
+	f_printf( "%s\n", pszMessage);
 }
 
 /*=============================================================================
@@ -912,13 +916,13 @@ RCODE printDocument(
 		{
 			if (!bUnwinding)
 			{
-				sprintf( (char *)pszLine, "<doc");
+				f_sprintf( (char *)pszLine, "<doc");
 			}
 			else
 			{
-				sprintf( (char *)pszLine, "</doc>");
+				f_sprintf( (char *)pszLine, "</doc>");
 			}
-			pszLine += strlen( (char *)pszLine);
+			pszLine += f_strlen( (char *)pszLine);
 		}
 		else if( eNodeType == ELEMENT_NODE)
 		{
@@ -930,13 +934,13 @@ RCODE printDocument(
 
 			if (!bUnwinding)
 			{
-				sprintf( (char *)pszLine, "<%s", szName);
+				f_sprintf( (char *)pszLine, "<%s", szName);
 			}
 			else
 			{
-				sprintf( (char *)pszLine, "</%s>", szName);
+				f_sprintf( (char *)pszLine, "</%s>", szName);
 			}
-			pszLine += strlen( (char *)pszLine);
+			pszLine += f_strlen( (char *)pszLine);
 		}
 
 		if (!bUnwinding)
@@ -963,7 +967,7 @@ RCODE printDocument(
 
 				if( eNodeType == COMMENT_NODE)
 				{
-					sprintf( (char *)pszLine, "<!--");
+					f_sprintf( (char *)pszLine, "<!--");
 					pszLine += 4;
 				}
 
@@ -978,7 +982,7 @@ RCODE printDocument(
 						{
 							goto Exit;
 						}
-						sprintf( (char *)pszLine, "%s", szTemp);
+						f_sprintf( (char *)pszLine, "%s", szTemp);
 						pszLine += uiTemp;
 						break;
 					}
@@ -994,7 +998,7 @@ RCODE printDocument(
 
 				if( eNodeType == COMMENT_NODE)
 				{
-					sprintf( (char *)pszLine, "-->");
+					f_sprintf( (char *)pszLine, "-->");
 					pszLine += 3;
 				}
 			}
@@ -1002,12 +1006,12 @@ RCODE printDocument(
 			{
 				if ( !bHasChildren)
 				{
-					sprintf( (char *)pszLine, "/>");
+					f_sprintf( (char *)pszLine, "/>");
 					pszLine += 2;
 				}
 				else
 				{
-					sprintf( (char *)pszLine, ">");
+					f_sprintf( (char *)pszLine, ">");
 					pszLine++;
 				}
 			}
@@ -1120,7 +1124,7 @@ RCODE processAttributes(
 			goto Exit;
 		}
 
-		sprintf( (char *)pszLine, " %s", szName);
+		f_sprintf( (char *)pszLine, " %s", szName);
 		pszLine += (uiNameLen + 1);
 
 		if (RC_BAD( rc = pAttrNode->getDataType( pDb, &uiDataType)))
@@ -1137,7 +1141,7 @@ RCODE processAttributes(
 				{
 					goto Exit;
 				}
-				sprintf( (char *)pszLine, "=\"%s\"", szTemp);
+				f_sprintf( (char *)pszLine, "=\"%s\"", szTemp);
 				pszLine += (uiTemp + 3);
 				break;
 			}
@@ -1149,9 +1153,9 @@ RCODE processAttributes(
 					goto Exit;
 				}
 				
-				sprintf( (char *)szTemp, "%u", (unsigned)uiTemp);
-				sprintf( (char *)pszLine, "=\"%s\"", szTemp);
-				pszLine += (strlen( (char *)szTemp) + 3);
+				f_sprintf( (char *)szTemp, "%u", (unsigned)uiTemp);
+				f_sprintf( (char *)pszLine, "=\"%s\"", szTemp);
+				pszLine += (f_strlen( (char *)szTemp) + 3);
 				break;
 			}
 			// Could also get binary data, but we won't handle it here.

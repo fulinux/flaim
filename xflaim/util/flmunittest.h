@@ -223,7 +223,7 @@ public:
 /******************************************************************************
 Desc: Makes iterating through the keys of an index more convenient
 ******************************************************************************/
-class KeyIterator
+class KeyIterator : public F_Object
 {
 public:
 

@@ -1169,8 +1169,8 @@ RCODE F_DomEditor::interactiveEdit(
 	IF_Thread *			pMemManagerThrd = NULL;
 	char *				pszQuery = NULL;
 	FLMUINT				uiSzQueryBufSize;
-	F_DbSystem			dbSystem;
 	IF_ThreadMgr *		pThreadMgr = NULL;
+	IF_DbSystem *		pDbSystem = NULL;
 
 	flmAssert( m_bSetupCalled == TRUE);
 	flmAssert( m_pScreen != NULL);
@@ -1188,6 +1188,11 @@ RCODE F_DomEditor::interactiveEdit(
 	*pszQuery = 0;
 	
 	if( RC_BAD( rc = FlmGetThreadMgr( &pThreadMgr)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
 	{
 		goto Exit;
 	}
@@ -2337,7 +2342,7 @@ RCODE F_DomEditor::interactiveEdit(
 
 					(void)m_pDb->getDbControlFileName( szDbPath, sizeof( szDbPath));
 
-					if (RC_OK( tmpRc = dbSystem.dbOpen( szDbPath,
+					if (RC_OK( tmpRc = pDbSystem->dbOpen( szDbPath,
 																		NULL,
 																		NULL, NULL, TRUE,
 																		(IF_Db **)&pTmpDb)))
@@ -2430,6 +2435,11 @@ Exit:
 	if( pThreadMgr)
 	{
 		pThreadMgr->Release();
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	if( m_pEditWindow)
@@ -2873,13 +2883,19 @@ Desc:
 *****************************************************************************/
 RCODE F_DomEditor::openNewDb( void)
 {
-	RCODE			rc = NE_XFLM_OK;
-	char			szResponse [100];
-	FLMUINT		uiChar;
-	F_DbSystem	dbSystem;
+	RCODE				rc = NE_XFLM_OK;
+	char				szResponse [100];
+	FLMUINT			uiChar;
+	IF_DbSystem *	pDbSystem = NULL;
+
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 
 	szResponse [0] = 0;
 	flmAssert( m_pDb == NULL);
+	
 	for (;;)
 	{
 		if (RC_BAD( rc = requestInput( "Enter name of DB to open",
@@ -2892,7 +2908,8 @@ RCODE F_DomEditor::openNewDb( void)
 		{
 			break;
 		}
-		if (RC_BAD( rc = dbSystem.dbOpen( szResponse, NULL, NULL, NULL, TRUE,
+		
+		if (RC_BAD( rc = pDbSystem->dbOpen( szResponse, NULL, NULL, NULL, TRUE,
 			(IF_Db **)&m_pDb)))
 		{
 			displayMessage( "Unable to open database", rc,
@@ -2905,6 +2922,11 @@ RCODE F_DomEditor::openNewDb( void)
 	}
 
 Exit:
+
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
+	}
 
 	return( rc);
 }
@@ -5232,7 +5254,12 @@ RCODE F_DomEditor::exportNode(
 	char						szFileName [80];
 	eExportFormatType		eFormat = XFLM_EXPORT_INDENT;
 	IF_OStream *			pFileOStream = NULL;	
-	F_DbSystem				dbSystem;
+	IF_DbSystem *			pDbSystem = NULL;
+
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
 
 	if (RC_BAD( rc = createStatusWindow(
 		"Export Node Subtree",
@@ -5259,9 +5286,11 @@ RCODE F_DomEditor::exportNode(
 		{
 			goto Exit;
 		}
-		if (RC_BAD( rc = dbSystem.openFileOStream( szFileName, TRUE, &pFileOStream)))
+		if (RC_BAD( rc = pDbSystem->openFileOStream( szFileName, 
+			TRUE, &pFileOStream)))
 		{
-			displayMessage( "Error creating export file", rc, NULL, FLM_RED, FLM_WHITE);
+			displayMessage( "Error creating export file", 
+				rc, NULL, FLM_RED, FLM_WHITE);
 		}
 		else
 		{
@@ -5355,6 +5384,11 @@ Exit:
 	if (pWindow)
 	{
 		FTXWinFree( &pWindow);
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 
 	return rc;
@@ -12661,7 +12695,7 @@ void F_DomEditor::doQuery(
 	F_DomEditor	*		pQueryEditor = NULL;
 	QUERY_DATA			QueryData;
 	FLMUINT				uiQueryStrLen;
-	F_DbSystem			dbSystem;
+	IF_DbSystem *		pDbSystem = NULL;
 
 	f_memset( &QueryData, 0, sizeof( QueryData));
 
@@ -12673,12 +12707,17 @@ void F_DomEditor::doQuery(
 		goto Exit;
 	}
 
+	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
+	{
+		goto Exit;
+	}
+
 	// Create a window for displaying query progress.
 
 	queryStatus.createQueryStatusWindow( m_pScreen,
 					FLM_GREEN, FLM_WHITE, pszQuery);
 
-	if (RC_BAD( rc = dbSystem.createIFQuery( &pQuery)))
+	if (RC_BAD( rc = pDbSystem->createIFQuery( &pQuery)))
 	{
 		goto Exit;
 	}
@@ -12823,8 +12862,10 @@ void F_DomEditor::doQuery(
 				break;
 			}
 		}
-		dbSystem.freeMem( (void **)&pOptInfo);
+		
+		pDbSystem->freeMem( (void **)&pOptInfo);
 	}
+	
 	if (!QueryData.uiNodeCount)
 	{
 		goto Exit;
@@ -12901,13 +12942,20 @@ Exit:
 	{
 		f_free( &QueryData.pui64Nodes);
 	}
+	
 	if (QueryData.puiAttrNameIds)
 	{
 		f_free( &QueryData.puiAttrNameIds);
 	}
+	
 	if (QueryData.pszQuery)
 	{
 		f_free( &QueryData.pszQuery);
+	}
+	
+	if( pDbSystem)
+	{
+		pDbSystem->Release();
 	}
 }
 

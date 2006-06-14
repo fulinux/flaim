@@ -118,7 +118,7 @@ RCODE IIndexTest2Impl::runSuite1( void)
 	FLMUINT					i = 0;
 	FlagSet					firstNamePlusLastNameFlags;
 	IF_Query *				pQuery = NULL;
-	KeyIterator *			pKeyIter = new KeyIterator();
+	KeyIterator *			pKeyIter = f_new KeyIterator();
 
 	const char *			pszIndexDef1 = 
 		"<xflaim:Index "
@@ -148,20 +148,22 @@ RCODE IIndexTest2Impl::runSuite1( void)
 
 	char ** pszFirstPlusLastNames = NULL;
 	
-	if( (pszFirstPlusLastNames = new char *[ 
-		sizeof( pszFirstNames) / sizeof( pszFirstNames[ 0])]) == NULL)
+	if( RC_BAD( rc = f_alloc( sizeof( char *) *
+		sizeof( pszFirstNames) / sizeof( pszFirstNames[ 0]), &pszFirstPlusLastNames)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
-
+	
 	// Concatenate all pairs to
 	
 	for( i = 0; i < sizeof(pszFirstNames)/sizeof(pszFirstNames[0]); i++)
 	{
-		pszFirstPlusLastNames[i] = new char[ f_strlen( pszFirstNames[i]) +
-			f_strlen( pszLastNames[i]) + 1];
-
+		if( RC_BAD( rc = f_alloc( f_strlen( pszFirstNames[i]) +
+			f_strlen( pszLastNames[i]) + 1, &pszFirstPlusLastNames[ i])))
+		{
+			goto Exit;
+		}
+		
 		f_strcpy( pszFirstPlusLastNames[i], pszFirstNames[i]);
 		f_strcat( pszFirstPlusLastNames[i], pszLastNames[i]);
 	}
@@ -433,9 +435,10 @@ Exit:
 
 	for( i = 0; i < sizeof(pszFirstNames)/sizeof(pszFirstNames[0]); i++)
 	{
-		delete [] pszFirstPlusLastNames[i];
+		f_free( &pszFirstPlusLastNames[ i]);
 	}
-	delete [] pszFirstPlusLastNames;
+	
+	f_free( &pszFirstPlusLastNames);
 
 	if( bTransStarted)
 	{
@@ -474,7 +477,7 @@ Exit:
 
 	if( pKeyIter)
 	{
-		delete pKeyIter;
+		pKeyIter->Release();
 	}
 
 	shutdownTestState( DB_NAME_STR, bDibCreated);

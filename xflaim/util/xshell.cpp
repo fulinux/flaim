@@ -30,17 +30,21 @@ static FlmSharedContext *				gv_pSharedContext = NULL;
 FLMBOOL										gv_bShutdown = FALSE;
 FLMBOOL										gv_bRunning = TRUE;
 
+#ifdef FLM_RING_ZERO_NLM
+	#define main		nlm_main
+#endif
+
 /***************************************************************************
 Desc:	Program entry point (main)
 ****************************************************************************/
-int main(
+extern "C" int main(
 	int, //			iArgC,
 	char **)		// ppucArgV
 {
 	RCODE						rc = NE_XFLM_OK;
 	FlmShell *				pShell = NULL;
 	IF_DbSystem *			pDbSystem = NULL;
-
+	
 	if( RC_BAD( rc = FlmAllocDbSystem( &pDbSystem)))
 	{
 		goto Exit;

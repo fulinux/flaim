@@ -185,7 +185,6 @@ void UIMain( void * pData)
 	FLMUINT			Rows;
 	RCODE				rc;
 	int				iResCode = 0;
-	F_DbSystem		dbSystem;
 
 	F_UNREFERENCED_PARM( pData);
 

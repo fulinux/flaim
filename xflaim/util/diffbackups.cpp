@@ -89,7 +89,6 @@ int __cdecl main(
 {
 	RCODE			rc = NE_XFLM_OK;
 	int			iResCode = 0;
-	F_DbSystem	dbSystem;
 
 
 	gv_bShutdown = FALSE;
