@@ -1216,11 +1216,11 @@
 	
 		typedef struct
 		{
-			LONG									m_lVolumeNumber;
-			LONG									m_lDirectoryNumber;
-			LONG									m_lCurrentEntryNumber;
-			struct DirectoryStructure *	m_pCurrentItem;
-			char									m_ucTempBuffer[ F_FILENAME_SIZE];
+			LONG									lVolumeNumber;
+			LONG									lDirectoryNumber;
+			LONG									lCurrentEntryNumber;
+			struct DirectoryStructure *	pCurrentItem;
+			char									ucTempBuffer[ F_FILENAME_SIZE];
 		} F_IO_FIND_DATA;
 		
 	#else
@@ -1265,14 +1265,14 @@
 	
 		char					m_szDirectoryPath[ F_PATH_MAX_SIZE];
 		char					m_szPattern[ F_PATH_MAX_SIZE];
-		FLMUINT32			m_ui32RefCount;
 		RCODE					m_rc;
 		FLMBOOL				m_bFirstTime;
 		FLMBOOL				m_bFindOpen;
-		FLMBOOL				m_EOF;
-		char					m_szFileName[ F_PATH_MAX_SIZE];
 		FLMUINT				m_uiAttrib;
 		F_IO_FIND_DATA		m_FindData;
+	#ifndef FLM_RING_ZERO_NLM
+		char					m_szFileName[ F_PATH_MAX_SIZE];
+	#endif
 		
 		friend class F_FileSystem;
 	};

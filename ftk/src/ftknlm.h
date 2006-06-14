@@ -850,6 +850,8 @@
 			void *			StackAddressHigh,
 			LONG				StackSize,
 			void *			Argument);
+			
+		extern "C" void kYieldIfTimeSliceUp( void);
 		
 		extern "C" int kSetThreadName(
 			void *			ThreadHandle,
@@ -1254,16 +1256,6 @@
 			FLMUINT *		allocatedBytes,
 			FLMUINT *		allocatedNodes,
 			FLMUINT *		totalMemory);
-	
-		extern "C" void StopBell( void);
-		
-		extern "C" unsigned long kQueCount(
-			unsigned long	uiQueHandle);
-		
-		extern "C" unsigned long CEvaluateExpression(
-			unsigned char **	commandLine,
-			unsigned long *	stackFrame,
-			unsigned long *	number);
 	
 		extern "C" LONG atomic_xchg( 
 			volatile LONG * 	address,

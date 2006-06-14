@@ -568,12 +568,12 @@ RCODE FLMAPI FTXInit(
 	ftxDisplayReset();
 	ftxDisplayGetSize( &(gv_pFtxInfo->uiCols), &(gv_pFtxInfo->uiRows));
 
-	if( gv_pFtxInfo->uiCols > uiCols)
+	if( uiCols && gv_pFtxInfo->uiCols > uiCols)
 	{
 		gv_pFtxInfo->uiCols = uiCols;
 	}
 
-	if( gv_pFtxInfo->uiRows > uiRows)
+	if( uiRows && gv_pFtxInfo->uiRows > uiRows)
 	{
 		gv_pFtxInfo->uiRows = uiRows;
 	}

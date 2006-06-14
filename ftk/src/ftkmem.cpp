@@ -126,17 +126,17 @@ Desc:
 #endif
 
 #ifdef FLM_DEBUG
-static FLMBOOL		gv_bMemTrackingInitialized = FALSE;
-static FLMUINT		gv_uiInitThreadId = 0;
-static F_MUTEX		gv_hMemTrackingMutex = F_MUTEX_NULL;
-static FLMUINT		gv_uiMemTrackingPtrArraySize = 0;
-static FLMUINT		gv_uiNumMemPtrs = 0;
-static void **		gv_ppvMemTrackingPtrs = NULL;
-static FLMUINT		gv_uiNextMemPtrSlotToUse = 0;
-static FLMUINT		gv_uiAllocCnt = 0;
-static FLMBOOL		gv_bTrackLeaks = TRUE;
-static FLMBOOL		gv_bStackWalk = TRUE;
-static FLMBOOL		gv_bLogLeaks = FALSE;
+	static FLMBOOL		gv_bMemTrackingInitialized = FALSE;
+	static FLMUINT		gv_uiInitThreadId = 0;
+	static F_MUTEX		gv_hMemTrackingMutex = F_MUTEX_NULL;
+	static FLMUINT		gv_uiMemTrackingPtrArraySize = 0;
+	static FLMUINT		gv_uiNumMemPtrs = 0;
+	static void **		gv_ppvMemTrackingPtrs = NULL;
+	static FLMUINT		gv_uiNextMemPtrSlotToUse = 0;
+	static FLMUINT		gv_uiAllocCnt = 0;
+	static FLMBOOL		gv_bTrackLeaks = FALSE;
+	static FLMBOOL		gv_bStackWalk = FALSE;
+	static FLMBOOL		gv_bLogLeaks = FALSE;
 #endif
 
 #ifdef FLM_WIN
@@ -1094,6 +1094,9 @@ FSTATIC FLMBOOL initMemTracking( void)
 			SymSetOptions( SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
 			gv_hMemProcess = GetCurrentProcess();
 			SymInitialize( gv_hMemProcess, NULL, TRUE);
+			
+			gv_bTrackLeaks = TRUE;
+			gv_bStackWalk = TRUE;
 #endif
 			gv_bMemTrackingInitialized = TRUE;
 		}
@@ -1246,13 +1249,13 @@ FSTATIC void freeMemTrackingInfo(
 	FLMUINT		uiId,
 	FLMUINT *	puiStack)
 {
-	if (uiId)
+	if( uiId)
 	{
 		// NOTE: If uiId is non-zero, it means we had to have
 		// successfully initialized, so we are guaranteed to
 		// have a mutex.
 
-		if ( !bMutexAlreadyLocked)
+		if( !bMutexAlreadyLocked)
 		{
 			f_mutexLock( gv_hMemTrackingMutex);
 		}
@@ -1261,9 +1264,12 @@ FSTATIC void freeMemTrackingInfo(
 		// is never zero - a value of zero means that the allocation
 		// does not have a slot for tracking it in the array.
 
-		gv_ppvMemTrackingPtrs [uiId - 1] = NULL;
-		f_assert( gv_uiNumMemPtrs);
-		gv_uiNumMemPtrs--;
+		if( gv_ppvMemTrackingPtrs)
+		{
+			gv_ppvMemTrackingPtrs[ uiId - 1] = NULL;
+			f_assert( gv_uiNumMemPtrs);
+			gv_uiNumMemPtrs--;
+		}
 
 		if ( !bMutexAlreadyLocked)
 		{
@@ -1273,7 +1279,7 @@ FSTATIC void freeMemTrackingInfo(
 
 	// Free the stack information, if any.
 
-	if (puiStack)
+	if( puiStack)
 	{
 		os_free( puiStack);
 	}

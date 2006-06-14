@@ -774,17 +774,17 @@ FLMINT FLMAPI f_printf(
 	const char *	pszFormat,
 	...)
 {
-#ifndef FLM_RING_ZERO_NLM
-	FLMINT		iLen;
-	va_list		args;
+	FLMINT			iLen;
+	f_va_list		args;
+	char				szTmpBuf[ 512];
 
-	va_start(args, pszFormat);
-	iLen = vprintf( pszFormat, args);
-	va_end(args);
+	f_va_start( args, pszFormat);
+	iLen = f_vsprintf( szTmpBuf, pszFormat, &args);
+	f_va_end(args);
+	
+#ifndef FLM_RING_ZERO_NLM
+	printf( szTmpBuf);
+#endif
 
 	return( iLen);
-#else
-	F_UNREFERENCED_PARM( pszFormat);
-	return( 0);
-#endif
 }

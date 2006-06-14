@@ -258,7 +258,7 @@ void FLMAPI f_mutexUnlock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+#if defined( FLM_UNIX) || defined( FLM_NLM)
 void FLMAPI f_assertMutexLocked(
 	F_MUTEX)
 {

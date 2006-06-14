@@ -132,12 +132,39 @@ Desc:
 const char * FLMAPI F_DirHdl::currentItemName( void)
 {
 	const char *	pszName = NULL;
+	
+#ifndef FLM_RING_ZERO_NLM
 
 	if( RC_OK( m_rc))
 	{
 		pszName = m_szFileName;
 	}
 	
+#else
+
+	FLMUINT			uiLength;
+
+	if( RC_OK( m_rc))
+	{
+		if( !m_FindData.pCurrentItem)
+		{
+			return( NULL);
+		}
+		
+		uiLength = sizeof( m_FindData.ucTempBuffer) - 1;
+		if( m_FindData.pCurrentItem->DFileNameLength < uiLength)
+		{
+			uiLength = m_FindData.pCurrentItem->DFileNameLength;
+		}
+		
+		f_strncpy( m_FindData.ucTempBuffer, 
+			(const char *)m_FindData.pCurrentItem->DFileName, uiLength);
+		m_FindData.ucTempBuffer[ uiLength] = 0;
+		pszName = m_FindData.ucTempBuffer;
+	}
+	
+#endif
+
 	return( pszName);
 }
 
@@ -150,7 +177,11 @@ FINLINE void FLMAPI F_DirHdl::currentItemPath(
 	if( RC_OK( m_rc))
 	{
 		f_strcpy( pszPath, m_szDirectoryPath);
-		f_getFileSysPtr()->pathAppend( pszPath, m_szFileName);
+#ifdef FLM_RING_ZERO_NLM
+		f_pathAppend( pszPath, currentItemName());
+#else
+		f_pathAppend( pszPath, m_szFileName);
+#endif
 	}
 }
 
@@ -167,12 +198,12 @@ FLMBOOL FLMAPI F_DirHdl::currentItemIsDir( void)
 						 
 #elif defined( FLM_RING_ZERO_NLM)
 
-	if( !m_FindData.m_pCurrentItem)
+	if( !m_FindData.pCurrentItem)
 	{
 		return( FALSE);
 	}
 
-	return( (m_FindData.m_pCurrentItem->DFileAttributes & SUBDIRECTORY_BIT)
+	return( (m_FindData.pCurrentItem->DFileAttributes & SUBDIRECTORY_BIT)
 							? TRUE 
 							: FALSE);
 							
@@ -198,9 +229,9 @@ FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
 #elif defined( FLM_UNIX) || defined ( FLM_LIBC_NLM)
 		ui64Size = m_FindData.FileStat.st_size;
 #elif defined( FLM_RING_ZERO_NLM)
-		if( m_FindData.m_pCurrentItem != NULL )
+		if( m_FindData.pCurrentItem != NULL )
 		{
-			ui64Size = m_FindData.m_pCurrentItem->DFileSize;
+			ui64Size = m_FindData.pCurrentItem->DFileSize;
 		}
 #endif
 	}
@@ -287,11 +318,11 @@ RCODE FLMAPI F_DirHdl::next( void)
 
 	for( ;;)
 	{
-		if( (lError = DirectorySearch( 0, m_FindData.m_lVolumeNumber, 
-			m_FindData.m_lDirectoryNumber, LONGNameSpace, 
-			m_FindData.m_lCurrentEntryNumber, (BYTE *)"\x02\xFF*",
-			-1, &m_FindData.m_pCurrentItem, 
-			&m_FindData.m_lCurrentEntryNumber)) != 0)
+		if( (lError = DirectorySearch( 0, m_FindData.lVolumeNumber, 
+			m_FindData.lDirectoryNumber, LONGNameSpace, 
+			m_FindData.lCurrentEntryNumber, (BYTE *)"\x02\xFF*",
+			-1, &m_FindData.pCurrentItem, 
+			&m_FindData.lCurrentEntryNumber)) != 0)
 		{
 			if( (lError == ERR_NO_FILES_FOUND) || (lError == ERR_INVALID_PATH))
 			{
@@ -306,7 +337,7 @@ RCODE FLMAPI F_DirHdl::next( void)
 		}
 
 		if( pFileSystem->doesFileMatch( 
-			(const char *)m_FindData.m_pCurrentItem->DFileName, m_szPattern))
+			(const char *)m_FindData.pCurrentItem->DFileName, m_szPattern))
 		{
 			break;
 		}
@@ -321,6 +352,7 @@ Exit:
 /****************************************************************************
 Desc:	Open a directory
 ****************************************************************************/
+#ifndef FLM_RING_ZERO_NLM
 RCODE FLMAPI F_DirHdl::openDir(
 	const char *	pszDirName,
 	const char *	pszPattern)
@@ -333,11 +365,6 @@ RCODE FLMAPI F_DirHdl::openDir(
 	m_uiAttrib = 0;
 
 	f_memset( &m_FindData, 0, sizeof( m_FindData));
-	
-#ifdef FLM_RING_ZERO_NLM
-	m_FindData.m_lCurrentEntryNumber = 0xFFFFFFFFL;
-#endif
-
 	f_strcpy( m_szDirectoryPath, pszDirName);
 
 	if( pszPattern)
@@ -350,11 +377,101 @@ RCODE FLMAPI F_DirHdl::openDir(
 
 		f_strcpy( m_szPattern, pszPattern);
 	}
+	else
+	{
+		m_szPattern[ 0] = 0;
+	}
 
 Exit:
 
 	return( rc);
 }
+#endif
+
+/****************************************************************************
+Desc:		Open a directory
+Notes:
+			1. DOS file names, not long file names !  If we want to support long
+				file names, then increase the size of the filename buffer and change 
+				the name space.
+			2. '*.*' doesn't work as a pattern.  '*' seems to do the trick.
+			3. These Netware APIs are case sensitive.  If you want to specify a 
+				a pattern like "*.db"  make sure that the files you are looking for
+				were created with lowercase "db" extensions.
+				
+				The path needs to match the case also.  For example, 
+				sys:\_netware won't work.  SYS:\_NETWARE will.
+			4. Server names are not supported by ConvertPathString
+				'Connecting to remote servers' is not supported by this code.
+****************************************************************************/
+#ifdef FLM_RING_ZERO_NLM
+RCODE FLMAPI F_DirHdl::openDir(
+	const char *	pszDirName,
+	const char *	pszPattern)
+{
+	RCODE			rc = NE_FLM_OK;
+	LONG			lError = 0;
+	LONG			unused;	
+	FLMBYTE		pseudoLNamePath[ F_PATH_MAX_SIZE + 1];
+	FLMBYTE		LNamePath[ F_PATH_MAX_SIZE];
+	LONG			lLNamePathCount;
+
+	m_rc = NE_FLM_OK;
+	m_bFirstTime = TRUE;
+	m_bFindOpen = FALSE;
+	m_uiAttrib = 0;
+	f_strcpy( m_szDirectoryPath, pszDirName);
+	
+	f_memset( &m_FindData, 0, sizeof( m_FindData));
+	m_FindData.lVolumeNumber = F_NW_DEFAULT_VOLUME_NUMBER;
+	m_FindData.lCurrentEntryNumber = 0xFFFFFFFF;
+	m_FindData.lDirectoryNumber = 0xFFFFFFFF;
+	
+	LNamePath[0] = 0;
+	lLNamePathCount = 0;
+
+	f_strcpy( (char *)&pseudoLNamePath[1], pszDirName);
+	pseudoLNamePath[ 0] = (FLMBYTE)f_strlen( (const char *)&pseudoLNamePath[ 1]);
+	
+	if( (lError = ConvertPathString( 0, 0, pseudoLNamePath, 
+		&m_FindData.lVolumeNumber,
+		&unused, (BYTE *)LNamePath, &lLNamePathCount)) != 0)
+	{
+		goto Exit;
+	}
+											
+	if( (lError = MapPathToDirectoryNumber( 0, m_FindData.lVolumeNumber, 0, 
+		(BYTE *)LNamePath, lLNamePathCount, LONGNameSpace, 
+		&m_FindData.lDirectoryNumber, &unused)) != 0)
+	{
+		goto Exit;
+	}
+		
+	if( pszPattern)
+	{
+		if( f_strlen( pszPattern) >= (FLMINT)sizeof( m_szPattern))
+		{
+			rc = RC_SET( NE_FLM_MEM);
+			goto Exit;
+		}
+
+		f_strcpy( m_szPattern, pszPattern);
+	}
+	else
+	{
+		m_szPattern[ 0] = 0;
+	}
+	
+Exit:
+	
+	if( lError != 0)
+	{
+		m_rc = f_mapPlatformError( lError, NE_FLM_OPENING_FILE);
+	}
+
+	return( m_rc);
+}
+#endif
 
 /****************************************************************************
 Desc:	Create a directory (and parent directories if necessary).

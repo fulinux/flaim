@@ -548,7 +548,7 @@ RCODE FLMAPI F_Thread::startThread(
 	if( (hThread = kCreateThread( 
 		(BYTE *)((m_pszThreadName)
 			? (BYTE *)m_pszThreadName 
-			: (BYTE *)"NDSDB"),
+			: (BYTE *)"FTK"),
 		threadStub, NULL, (LONG)m_uiStackSize,
 		(void *)this)) == NULL)
 	{

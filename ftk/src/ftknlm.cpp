@@ -595,13 +595,6 @@
 	FSTATIC zDIO_WRITE_FUNC				gv_zDIOWriteFunc = NULL;
 	FSTATIC zRENAME_FUNC					gv_zRenameFunc = NULL;
 	
-	static unsigned long					yieldTimeSlice = 0;
-	static unsigned long					stackFrame[0x100] = {0};
-	static unsigned long *				ThreadFeederQue = 0;
-	static struct OldPerCpuStruct *	pPerCpuDataArea = 0;
-	
-	extern "C" unsigned long 			CpuCurrentProcessor;
-	extern "C" unsigned long			WorkToDoListHead;
 	static void *							gv_MyModuleHandle = NULL;
 	static FLMATOMIC						gv_NetWareStartupCount = 0;
 	rtag_t									gv_lAllocRTag = 0;
@@ -613,16 +606,6 @@
 	static FLMBOOL							gv_bMainRunning = FALSE;
 	static F_EXIT_FUNC					gv_fnExit = NULL;
 
-	struct OldPerCpuStruct
-	{
-		unsigned long reserved0[24];
-		unsigned long reserved1[3];
-		unsigned long PSD_ThreadStartClocks;
-		unsigned long reserved2[4];
-		unsigned long reserved3[40];
-		unsigned long PSD_LocalWTDHead;
-	};
-	
 	#if !defined( __MWERKS__)
 		extern unsigned long ReadInternalClock(void);
 	#else
@@ -3830,159 +3813,12 @@ FSTATIC void ConvertToQualifiedNWPath(
 #endif
 
 /****************************************************************************
-Desc:	This API is called once the first time NWYieldIfTime() is called if
-		kYieldIfTimeSliceUp isn't supported by the host OS.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-FSTATIC int LocalYieldInit(void)
-{
-	unsigned char *	buffer;
-	unsigned char *	pointer;
-	unsigned long		ccode;
-	unsigned long		address;
-	unsigned long		(*ConvertMicroSecondsToClocks)(unsigned long data);
-
-	// Fixup ThreadFeededQue
-
-	buffer = (unsigned char *)"SERVER.NLM|ThreadFeederQue";
-
-	// Get the address from the debugger
-
-	ccode = CEvaluateExpression( &buffer, &stackFrame[0], &address);
-	if (ccode != 0)
-	{
-		return( -1);
-	}
-
-	ThreadFeederQue = (unsigned long *)address;
-
-	// Setup yieldTimeSlice
-	// First get a pointer to ConvertMicroSecondsToClocks and then verify it
-
-	pointer = (unsigned char *)(&StopBell);
-	pointer = pointer + 0x1ea;
-	if (pointer[0] != 0x8b ||
-			pointer[1] != 0x44 ||
-			pointer[2] != 0x24 ||
-			pointer[3] != 0x04 ||
-			pointer[4] != 0x33 ||
-			pointer[5] != 0xd2 ||
-			pointer[6] != 0xf7)
-	{
-		return( -1);
-	}
-
-	*(unsigned long *)(&ConvertMicroSecondsToClocks) = (unsigned long)pointer;
-
-	// Now calculate our desired time slice in clocks
-
-	yieldTimeSlice = (*ConvertMicroSecondsToClocks)(200);
-
-	// Get a pointer to the per-CPU data area
-
-	buffer = (unsigned char *)"LOADER.NLM|PerCpuDataArea";
-	ccode = CEvaluateExpression( &buffer, &stackFrame[0], &address);
-	if (ccode != 0)
-	{
-		return( -1);
-	}
-
-	pPerCpuDataArea = (struct OldPerCpuStruct *)address;
-	return( 0);
-}
-#endif
-
-/****************************************************************************
-Desc:	This routine does everything that kYieldIfTimeSliceUp() does, and it is
-		compatible with 5.0 SP4 and 5.1 release.  It shouldn't be used on host
-		OSs that support kYieldIfTimeSliceUp().
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-FSTATIC void OldOSCompatibleYield(void)
-{
-	unsigned long	timeStamp;
-	unsigned long	threadStartTime;
-
-	if ((CpuCurrentProcessor == 0) && (WorkToDoListHead != 0))
-	{
-
-		// If we are P0 and there is legacy WTD waiting, then yield
-
-		kYieldThread();
-		return;
-	}
-
-	if ((pPerCpuDataArea->PSD_LocalWTDHead != 0) ||
-		 (kQueCount( ThreadFeederQue[CpuCurrentProcessor]) != 0))
-	{
-
-		// If there is MPK WTD or a feederQ thread waiting, then yield
-
-		kYieldThread();
-		return;
-	}
-
-	timeStamp = ReadInternalClock();
-	threadStartTime = pPerCpuDataArea->PSD_ThreadStartClocks;
-
-	// Note 32 bit arithmetic is sufficient and less overhead
-
-	if ((timeStamp - threadStartTime) > yieldTimeSlice)
-	{
-		kYieldThread();
-	}
-}
-#endif
-
-/****************************************************************************
-Desc: This is the routine to call for time sensitive yielding.  The first
-		time it is called, it will change itself to a JMP to the appropriate
-		yield procedure.  If it is on 5.1 SP1 or greater, it will jump to
-		kYieldIfTimeSliceUp().  If it is on 5.0 SP4 or 5.1 release, it will
-		jump to OldOSCompatibleYield().  Otherwise it will jump to
-		kYieldThread().
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-void NWYieldIfTime( void)
-{
-	unsigned char *	fixup;
-	unsigned long		address;
-
-	*(unsigned long *)(&address) = ImportPublicSymbol(
-			(unsigned long)f_getNLMHandle(),
-			(unsigned char *)"\x13" "kYieldIfTimeSliceUp");
-
-	fixup = (unsigned char *)(&NWYieldIfTime);
-
-	if (address == 0)
-	{
-		// We couldn't import the procedure, so see if our local routine 
-		// is compatible.
-
-		if (LocalYieldInit() == 0)
-		{
-			address = (unsigned long)(&OldOSCompatibleYield);
-		}
-		else
-		{
-			address = (unsigned long)(&kYieldThread);
-		}
-	}
-
-	fixup[0] = 0xE9;
-	++fixup;
-	address = address - (4 + (unsigned long)fixup);
-	*(unsigned long *)fixup = address;
-}
-#endif
-
-/****************************************************************************
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
 void FLMAPI f_yieldCPU( void)
 {
-	NWYieldIfTime();
+	kYieldIfTimeSliceUp();
 }
 #endif
 
@@ -4109,7 +3945,7 @@ Desc: Startup routine for the NLM - that gets the main going in
 		its own thread.
 *********************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-extern "C" static void * f_nlmMainStub(
+extern "C" void * f_nlmMainStub(
 	void *		hThread,
 	void *		pData)
 {
@@ -4130,7 +3966,7 @@ extern "C" static void * f_nlmMainStub(
 
 	gv_bMainRunning = FALSE;
 
-	if (!gv_bUnloadCalled)
+	if( !gv_bUnloadCalled)
 	{
 		KillMe( moduleHandle);
 	}
@@ -4172,9 +4008,12 @@ extern "C" LONG f_nlmEntryPoint(
 	ARG_DATA *	pArgData = NULL;
 	LONG			sdRet = 0;
 	char *		pszThreadName;
-	int			iTmpLen;
+	char *		pszModuleName;
+	int			iModuleNameLen;
+	int			iThreadNameLen;
+	int			iLoadDirPathSize;
 	void *		hThread = NULL;
-
+	
 	(void)initScreen;
 	(void)uninitializedDataLength;
 	(void)fileHandle;
@@ -4213,7 +4052,10 @@ extern "C" LONG f_nlmEntryPoint(
 		sdRet = 1;
 		goto Exit;
 	}
-
+	
+	pszModuleName = (char *)(&moduleHandle->LDFileName[ 1]);
+	iModuleNameLen = (int)(moduleHandle->LDFileName[ 0]);
+	
 	// First pass: Count the arguments in the command line
 	// and determine how big of a buffer we will need.
 	// Second pass: Put argments into allocated buffer.
@@ -4222,13 +4064,16 @@ Parse_Args:
 
 	iTotalArgChars = 0;
 	iArgC = 0;
-
-	iArgSize = f_strlen( (const char *)loadDirectoryPath);
-	if (!bFirstPass)
+	
+	iLoadDirPathSize = f_strlen( (const char *)loadDirectoryPath); 
+	iArgSize =  iLoadDirPathSize + iModuleNameLen;
+	
+	if( !bFirstPass)
 	{
-		ppszArgV [iArgC] = pszDestArg;
-		f_memcpy( pszDestArg, loadDirectoryPath, iArgSize);
-		pszDestArg [iArgSize] = 0;
+		ppszArgV[ iArgC] = pszDestArg;
+		f_memcpy( pszDestArg, loadDirectoryPath, iLoadDirPathSize);
+		f_memcpy( &pszDestArg[ iLoadDirPathSize], pszModuleName, iModuleNameLen);
+		pszDestArg[ iArgSize] = 0;
 		pszDestArg += (iArgSize + 1);
 	}
 
@@ -4240,17 +4085,17 @@ Parse_Args:
 	{
 		// Skip leading blanks.
 
-		while ((*pszTmp) && (*pszTmp == ' '))
+		while( *pszTmp && *pszTmp == ' ')
 		{
 			pszTmp++;
 		}
 
-		if (!(*pszTmp))
+		if( *pszTmp == 0)
 		{
 			break;
 		}
 
-		if ((*pszTmp == '"') || (*pszTmp == '\''))
+		if( *pszTmp == '"' || *pszTmp == '\'')
 		{
 			cEnd = *pszTmp;
 			pszTmp++;
@@ -4259,32 +4104,35 @@ Parse_Args:
 		{
 			cEnd = ' ';
 		}
+		
 		pszArgStart = pszTmp;
 		iArgSize = 0;
 
 		// Count the characters in the parameter.
 
-		while ((*pszTmp) && (*pszTmp != cEnd))
+		while( *pszTmp && *pszTmp != cEnd)
 		{
 			iArgSize++;
 			pszTmp++;
 		}
 
-		if ((!iArgSize) && (cEnd == ' '))
+		if( !iArgSize && cEnd == ' ')
 		{
 			break;
 		}
 
 		// If 2nd pass, save the argument.
 
-		if (!bFirstPass)
+		if( !bFirstPass)
 		{
-			ppszArgV [iArgC] = pszDestArg;
-			if (iArgSize)
+			ppszArgV[ iArgC] = pszDestArg;
+			
+			if( iArgSize)
 			{
 				f_memcpy( pszDestArg, pszArgStart, iArgSize);
 			}
-			pszDestArg [iArgSize] = 0;
+			
+			pszDestArg[ iArgSize] = 0;
 			pszDestArg += (iArgSize + 1);
 		}
 
@@ -4293,13 +4141,13 @@ Parse_Args:
 
 		// Skip trailing quote or blank.
 
-		if (*pszTmp)
+		if( *pszTmp)
 		{
 			pszTmp++;
 		}
 	}
 
-	if (bFirstPass)
+	if( bFirstPass)
 	{
 		if ((ppszArgV = (char **)Alloc(  sizeof( char *) * iArgC, 
 			gv_lAllocRTag)) == NULL)
@@ -4308,7 +4156,7 @@ Parse_Args:
 			goto Exit;
 		}
 
-		if ((pszArgs = (char *)Alloc( iTotalArgChars + iArgC, 
+		if( (pszArgs = (char *)Alloc( iTotalArgChars + iArgC, 
 			gv_lAllocRTag)) == NULL)
 		{
 			sdRet = 1;
@@ -4320,19 +4168,18 @@ Parse_Args:
 		goto Parse_Args;
 	}
 
-	pszTmp = (char *)(&moduleHandle->LDName [1]);
-	iTmpLen = (int)(moduleHandle->LDName [0]);
-	
-	if ((pszThreadName = (char *)Alloc( iTmpLen + 1, gv_lAllocRTag)) == NULL)
+	iThreadNameLen = (int)(moduleHandle->LDName[ 0]);
+
+	if( (pszThreadName = (char *)Alloc( iThreadNameLen + 1, gv_lAllocRTag)) == NULL)
 	{
 		sdRet = 1;
 		goto Exit;
 	}
 	
-	f_memcpy( pszThreadName, pszTmp, iTmpLen);
-	pszThreadName [iTmpLen] = 0;
+	f_memcpy( pszThreadName, (char *)(&moduleHandle->LDName[ 1]), iThreadNameLen);
+	pszThreadName[ iThreadNameLen] = 0;
 
-	if ((pArgData = (ARG_DATA *)Alloc( sizeof( ARG_DATA), 
+	if( (pArgData = (ARG_DATA *)Alloc( sizeof( ARG_DATA), 
 		gv_lAllocRTag)) == NULL)
 	{
 		sdRet = 1;
@@ -4347,16 +4194,15 @@ Parse_Args:
 
 	gv_bMainRunning = TRUE;
 
-	if ((hThread = kCreateThread( (BYTE *)"FTK main",
-							f_nlmMainStub, NULL, 32768,
-							(void *)pArgData)) == NULL)
+	if( (hThread = kCreateThread( (BYTE *)"FTK main",
+			f_nlmMainStub, NULL, 32768, (void *)pArgData)) == NULL)
 	{
 		gv_bMainRunning = FALSE;
 		sdRet = 2;
 		goto Exit;
 	}
 
-	if (kSetThreadLoadHandle( hThread, (LONG)moduleHandle) != 0)
+	if( kSetThreadLoadHandle( hThread, (LONG)moduleHandle) != 0)
 	{
 		(void)kDestroyThread( hThread);
 		gv_bMainRunning = FALSE;
@@ -4364,7 +4210,7 @@ Parse_Args:
 		goto Exit;
 	}
 			
-	if (kScheduleThread( hThread) != 0)
+	if( kScheduleThread( hThread) != 0)
 	{
 		(void)kDestroyThread( hThread);
 		gv_bMainRunning = FALSE;
@@ -4374,44 +4220,44 @@ Parse_Args:
 	
 	// Synchronized start
 
-	if (moduleHandle->LDFlags & 4)
+	if( moduleHandle->LDFlags & 4)
 	{
 		(void)kSemaphoreWait( gv_lFlmSyncSem);
 	}
 
 Exit:
 
-	if (sdRet != 0)
+	if( sdRet != 0)
 	{
 		f_atomicDec( &gv_NetWareStartupCount);
 		
-		if (ppszArgV)
+		if( ppszArgV)
 		{
 			Free( ppszArgV);
 		}
 
-		if (pszArgs)
+		if( pszArgs)
 		{
 			Free( pszArgs);
 		}
 
-		if (pszThreadName)
+		if( pszThreadName)
 		{
 			Free( pszThreadName);
 		}
 
-		if (pArgData)
+		if( pArgData)
 		{
 			Free( pArgData);
 		}
 
-		if (gv_lFlmSyncSem)
+		if( gv_lFlmSyncSem)
 		{
 			kSemaphoreFree( gv_lFlmSyncSem);
 			gv_lFlmSyncSem = 0;
 		}
 		
-		if (!gv_bUnloadCalled)
+		if( !gv_bUnloadCalled)
 		{
 			KillMe( moduleHandle);
 		}
