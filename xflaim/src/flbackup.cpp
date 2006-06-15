@@ -974,21 +974,22 @@ RCODE F_DbSystem::dbRestore(
 		// [IN] Object for reporting the status of the restore
 		// operation
 {
-	IF_FileHdl *		pFileHdl = NULL;
-	IF_FileHdl *		pLockFileHdl = NULL;
-	F_SuperFileHdl *	pSFile = NULL;
-	FLMBYTE				szBasePath[ F_PATH_MAX_SIZE];
-	char					szTmpPath[ F_PATH_MAX_SIZE];
-	FLMUINT				uiDbVersion;
-	FLMUINT				uiNextIncNum;
-	eRestoreAction		eAction = XFLM_RESTORE_ACTION_CONTINUE; // default action...
-	FLMBOOL				bRflPreserved;
-	FLMBOOL				bMutexLocked = FALSE;
-	IF_Db *				pDb = NULL;
-	F_Database *		pDatabase = NULL;
-	F_FSRestore *		pFSRestoreObj = NULL;
-	FLMBOOL				bOKToRetry;
-	RCODE					rc = NE_XFLM_OK;
+	RCODE						rc = NE_XFLM_OK;
+	IF_FileHdl *			pFileHdl = NULL;
+	IF_FileHdl *			pLockFileHdl = NULL;
+	F_SuperFileHdl *		pSFile = NULL;
+	F_SuperFileClient		SFileClient;	
+	FLMBYTE					szBasePath[ F_PATH_MAX_SIZE];
+	char						szTmpPath[ F_PATH_MAX_SIZE];
+	FLMUINT					uiDbVersion;
+	FLMUINT					uiNextIncNum;
+	eRestoreAction			eAction = XFLM_RESTORE_ACTION_CONTINUE; // default action...
+	FLMBOOL					bRflPreserved;
+	FLMBOOL					bMutexLocked = FALSE;
+	IF_Db *					pDb = NULL;
+	F_Database *			pDatabase = NULL;
+	F_FSRestore *			pFSRestoreObj = NULL;
+	FLMBOOL					bOKToRetry;
 
 	// Set up the callback
 
@@ -1088,8 +1089,13 @@ RCODE F_DbSystem::dbRestore(
 		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = SFileClient.setup( pszDbPath, pszDataDir)))
+	{
+		goto Exit;
+	}
 
-	if( RC_BAD( rc = pSFile->setup( pszDbPath, pszDataDir)))
+	if( RC_BAD( rc = pSFile->setup( &SFileClient)))
 	{
 		goto Exit;
 	}

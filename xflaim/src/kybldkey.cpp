@@ -1950,7 +1950,7 @@ Exit:
 
 	if( pBufferIStream)
 	{
-		pBufferIStream->close();
+		pBufferIStream->Release();
 	}
 	
 	return( rc);

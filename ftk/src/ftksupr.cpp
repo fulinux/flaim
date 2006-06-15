@@ -1,6 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	This include file contains the methods for FLAIM's
-// 		super file class.
+// Desc:	This include file contains the methods for the super file class.
 //
 // Tabs:	3
 //
@@ -21,30 +20,28 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: fsuperfl.cpp 3114 2006-01-19 13:22:45 -0700 (Thu, 19 Jan 2006) dsanders $
+// $Id: $
 //------------------------------------------------------------------------------
 
-#include "flaimsys.h"
+#include "ftksys.h"
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 F_SuperFileHdl::F_SuperFileHdl( void)
 {
-	m_pszDbFileName = NULL;
-	m_pszDataFileNameBase = NULL;
+	m_pSuperFileClient = NULL;
 	f_memset( &m_CheckedOutFileHdls[ 0], 0, sizeof( m_CheckedOutFileHdls));
 	m_pCheckedOutFileHdls = &m_CheckedOutFileHdls [0];
 	m_uiCkoArraySize = MAX_CHECKED_OUT_FILE_HDLS + 1;
 	m_uiBlockSize = 0;
-	m_uiExtendSize = XFLM_DEFAULT_FILE_EXTEND_SIZE;
-	m_uiMaxAutoExtendSize = gv_XFlmSysData.uiMaxFileSize;
+	m_uiExtendSize = (8 * 1024 * 1024);
+	m_uiMaxAutoExtendSize = f_getMaxFileSize();
 	m_uiLowestDirtySlot = 1;
 	m_uiHighestDirtySlot = 0;
 	m_uiHighestUsedSlot = 0;
 	m_uiHighestFileNumber = 0;
 	m_bMinimizeFlushes = FALSE;
-	m_bSetupCalled = FALSE;
 }
 
 /****************************************************************************
@@ -52,14 +49,11 @@ Desc:
 ****************************************************************************/
 F_SuperFileHdl::~F_SuperFileHdl()
 {
-	if( m_bSetupCalled)
+	releaseFiles( TRUE);
+	
+	if( m_pSuperFileClient)
 	{
-		(void)releaseFiles( TRUE);
-	}
-
-	if (m_pszDbFileName)
-	{
-		f_free( &m_pszDbFileName);
+		m_pSuperFileClient->Release();
 	}
 }
 
@@ -67,69 +61,14 @@ F_SuperFileHdl::~F_SuperFileHdl()
 Desc:	Configures the super file object
 ****************************************************************************/
 RCODE F_SuperFileHdl::setup(
-	const char *		pszDbFileName,
-	const char *		pszDataDir)
+	IF_SuperFileClient *		pSuperFileClient)
 {
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiNameLen;
-	FLMUINT		uiDataNameLen;
-	char			szDir [F_PATH_MAX_SIZE];
-	char			szBaseName [F_FILENAME_SIZE];
-
-	flmAssert( !m_bSetupCalled);
-
-	if( !pszDbFileName && *pszDbFileName == 0)
-	{
-		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
-		goto Exit;
-	}
-
-	uiNameLen = f_strlen( pszDbFileName);
-	if (pszDataDir && *pszDataDir)
-	{
-		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 
-			pszDbFileName, szDir, szBaseName)))
-		{
-			goto Exit;
-		}
-		f_strcpy( szDir, pszDataDir);
-		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
-			szDir, szBaseName)))
-		{
-			goto Exit;
-		}
-		uiDataNameLen = f_strlen( szDir);
-
-		if (RC_BAD( rc = f_alloc( (uiNameLen + 1) + (uiDataNameLen + 1),
-									&m_pszDbFileName)))
-		{
-			goto Exit;
-		}
-
-		f_memcpy( m_pszDbFileName, pszDbFileName, uiNameLen + 1);
-		m_pszDataFileNameBase = m_pszDbFileName + uiNameLen + 1;
-		flmGetDbBasePath( m_pszDataFileNameBase, szDir, &m_uiDataExtOffset);
-		m_uiExtOffset = uiNameLen - (uiDataNameLen - m_uiDataExtOffset);
-	}
-	else
-	{
-		if (RC_BAD( rc = f_alloc( (uiNameLen + 1) * 2, &m_pszDbFileName)))
-		{
-			goto Exit;
-		}
-
-		f_memcpy( m_pszDbFileName, pszDbFileName, uiNameLen + 1);
-		m_pszDataFileNameBase = m_pszDbFileName + uiNameLen + 1;
-		flmGetDbBasePath( m_pszDataFileNameBase, 
-			m_pszDbFileName, &m_uiDataExtOffset);
-		m_uiExtOffset = m_uiDataExtOffset;
-	}
-
-	m_bSetupCalled = TRUE;
-
-Exit:
-
-	return( rc);
+	f_assert( !m_pSuperFileClient);
+	
+	m_pSuperFileClient = pSuperFileClient;
+	m_pSuperFileClient->AddRef();
+	
+	return( NE_FLM_OK);
 }
 
 /****************************************************************************
@@ -138,15 +77,13 @@ Desc: Creates a file
 RCODE F_SuperFileHdl::createFile(
 	FLMUINT			uiFileNumber)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	char				szFilePath[ F_PATH_MAX_SIZE];
 	IF_FileHdl *	pFileHdl = NULL;
-//	FLMUINT			uiFileId;
 
 	// Sanity checks
 
-	flmAssert( m_bSetupCalled && m_uiBlockSize);
-	flmAssert( uiFileNumber <= MAX_LOG_BLOCK_FILE_NUMBER);
+	flmAssert( m_uiBlockSize);
 
 	// See if we already have an open file handle (or if we can open the file).
 	// If so, truncate the file and use it.
@@ -164,12 +101,12 @@ RCODE F_SuperFileHdl::createFile(
 
 	// Build the file path
 
-	if( RC_BAD( rc = getFilePath( uiFileNumber, szFilePath)))
+	if( RC_BAD( rc = m_pSuperFileClient->getFilePath( uiFileNumber, szFilePath)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( szFilePath,
+	if( RC_BAD( rc = f_getFileSysPtr()->createFile( szFilePath,
 		FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_DIRECT | FLM_IO_SH_DENYNONE,
 		&pFileHdl)))
 	{
@@ -195,24 +132,24 @@ RCODE F_SuperFileHdl::readBlock(
 	void *			pvBuffer,
 	FLMUINT *		puiBytesRead)
 {
+	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
-	RCODE				rc = NE_XFLM_OK;
 
-	flmAssert( m_bSetupCalled && m_uiBlockSize);
+	flmAssert( m_uiBlockSize);
 
 	if( RC_BAD( rc = getFileHdl(
-		FSGetFileNumber( uiBlkAddress), FALSE, &pFileHdl)))
+		m_pSuperFileClient->getFileNumber( uiBlkAddress), FALSE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = pFileHdl->sectorRead(
-		FSGetFileOffset( uiBlkAddress), uiBytesToRead,
+		m_pSuperFileClient->getFileOffset( uiBlkAddress), uiBytesToRead,
 		pvBuffer, puiBytesRead)))
 	{
-		if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_FLM_MEM)
 		{
-			releaseFile( FSGetFileNumber( uiBlkAddress), TRUE);
+			releaseFile( m_pSuperFileClient->getFileNumber( uiBlkAddress), TRUE);
 		}
 		goto Exit;
 	}
@@ -232,18 +169,20 @@ RCODE F_SuperFileHdl::writeBlock(
 	IF_IOBuffer *	pIOBuffer,
 	FLMUINT *		puiBytesWritten)
 {
+	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
-	RCODE				rc = NE_XFLM_OK;
 
-	flmAssert( m_bSetupCalled && m_uiBlockSize);
+	flmAssert( m_uiBlockSize);
 
 Get_Handle:
+
 	if( RC_BAD( rc = getFileHdl(
-		FSGetFileNumber( uiBlkAddress), TRUE, &pFileHdl)))
+		m_pSuperFileClient->getFileNumber(uiBlkAddress), TRUE, &pFileHdl)))
 	{
 		if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
-			if (RC_BAD( rc = createFile( FSGetFileNumber( uiBlkAddress))))
+			if (RC_BAD( rc = createFile( m_pSuperFileClient->getFileNumber( 
+					uiBlkAddress))))
 			{
 				goto Exit;
 			}
@@ -258,12 +197,12 @@ Get_Handle:
 	pFileHdl->setExtendSize( m_uiExtendSize);
 	pFileHdl->setMaxAutoExtendSize( m_uiMaxAutoExtendSize);
 	if( RC_BAD( rc = pFileHdl->sectorWrite(
-		FSGetFileOffset( uiBlkAddress), uiBytesToWrite,
+		m_pSuperFileClient->getFileOffset( uiBlkAddress), uiBytesToWrite,
 		pvBuffer, pIOBuffer, puiBytesWritten)))
 	{
-		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_FLM_MEM)
 		{
-			releaseFile( FSGetFileNumber( uiBlkAddress), TRUE);
+			releaseFile( m_pSuperFileClient->getFileNumber( uiBlkAddress), TRUE);
 		}
 		goto Exit;
 	}
@@ -282,7 +221,7 @@ RCODE F_SuperFileHdl::readHeader(
 	void *			pvBuffer,
 	FLMUINT *		puiBytesRead)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl;
 
 #ifdef FLM_DEBUG
@@ -304,7 +243,7 @@ RCODE F_SuperFileHdl::readHeader(
 	if( RC_BAD( rc = pFileHdl->read( uiOffset,
 		uiBytesToRead, pvBuffer, puiBytesRead)))
 	{
-		if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_FLM_MEM)
 		{
 			releaseFile( (FLMUINT)0, TRUE);
 		}
@@ -325,7 +264,7 @@ RCODE F_SuperFileHdl::writeHeader(
 	const void *	pvBuffer,
 	FLMUINT *		puiBytesWritten)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl;
 
 #ifdef FLM_DEBUG
@@ -343,7 +282,7 @@ RCODE F_SuperFileHdl::writeHeader(
 	if( RC_BAD( rc = pFileHdl->write( uiOffset,
 		uiBytesToWrite, pvBuffer, puiBytesWritten)))
 	{
-		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_XFLM_MEM)
+		if (rc != NE_FLM_IO_DISK_FULL && rc != NE_FLM_MEM)
 		{
 			releaseFile( (FLMUINT)0, TRUE);
 		}
@@ -362,7 +301,7 @@ RCODE F_SuperFileHdl::releaseFile(
 	FLMUINT		uiFileNum,
 	FLMBOOL		bCloseFile)
 {
-	RCODE								rc = NE_XFLM_OK;
+	RCODE								rc = NE_FLM_OK;
 	CHECKED_OUT_FILE_HDL *		pCkoFileHdl;
 	FLMUINT							uiSlot;
 
@@ -386,10 +325,8 @@ Desc:	Releases all file handle objects and optionally closes the files
 RCODE F_SuperFileHdl::releaseFiles(
 	FLMBOOL		bCloseFiles)
 {
-	RCODE			rc = NE_XFLM_OK;
+	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiLoop;
-
-	flmAssert( m_bSetupCalled);
 
 	for( uiLoop = 0; uiLoop <= m_uiHighestUsedSlot; uiLoop++)
 	{
@@ -412,13 +349,11 @@ RCODE F_SuperFileHdl::releaseFile(
 	CHECKED_OUT_FILE_HDL *		pCkoFileHdl,
 	FLMBOOL							bCloseFile)
 {
-	RCODE				rc = NE_XFLM_OK;
+	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = pCkoFileHdl->pFileHdl;
 
 	if( pFileHdl)
 	{
-//		flmAssert( pFileHdl->getFileId());
-
 		if( pCkoFileHdl->bDirty)
 		{
 			(void)pFileHdl->flush();
@@ -443,8 +378,7 @@ Desc:	Copy one CKO array into another.
 ****************************************************************************/
 void F_SuperFileHdl::copyCkoFileHdls(
 	CHECKED_OUT_FILE_HDL *	pSrcCkoArray,
-	FLMUINT						uiSrcHighestUsedSlot
-	)
+	FLMUINT						uiSrcHighestUsedSlot)
 {
 	FLMUINT	uiNewSlot;
 	FLMUINT	uiSrcSlot;
@@ -462,6 +396,7 @@ void F_SuperFileHdl::copyCkoFileHdls(
 	m_uiHighestUsedSlot = 0;
 	m_uiLowestDirtySlot = 1;
 	m_uiHighestDirtySlot = 0;
+	
 	for (uiSrcSlot = 1, pSrcCkoArray++;
 		  uiSrcSlot <= uiSrcHighestUsedSlot;
 		  uiSrcSlot++, pSrcCkoArray++)
@@ -481,20 +416,22 @@ void F_SuperFileHdl::copyCkoFileHdls(
 				{
 					releaseFile( &m_pCheckedOutFileHdls [uiNewSlot], FALSE);
 				}
+				
 				f_memcpy( &m_pCheckedOutFileHdls [uiNewSlot], pSrcCkoArray,
 							 sizeof( CHECKED_OUT_FILE_HDL));
 				if (uiNewSlot > m_uiHighestUsedSlot)
 				{
 					m_uiHighestUsedSlot = uiNewSlot;
 				}
+				
 				if (m_uiHighestFileNumber < pSrcCkoArray->uiFileNumber)
 				{
 					m_uiHighestFileNumber = pSrcCkoArray->uiFileNumber;
 				}
+				
 				if (pSrcCkoArray->bDirty)
 				{
 					if (m_uiLowestDirtySlot > m_uiHighestDirtySlot)
-
 					{
 						m_uiLowestDirtySlot =
 						m_uiHighestDirtySlot = uiNewSlot;
@@ -526,7 +463,7 @@ void F_SuperFileHdl::disableFlushMinimize( void)
 	// Copy the allocated array back into the fixed array.
 	// This doesn't necessarily copy all of the file handles.
 
-	if (m_pCheckedOutFileHdls != &m_CheckedOutFileHdls [0])
+	if( m_pCheckedOutFileHdls != &m_CheckedOutFileHdls [0])
 	{
 		CHECKED_OUT_FILE_HDL *	pOldCkoArray = m_pCheckedOutFileHdls;
 		FLMUINT						uiOldHighestUsedSlot = m_uiHighestUsedSlot;
@@ -537,6 +474,7 @@ void F_SuperFileHdl::disableFlushMinimize( void)
 
 		f_free( &pOldCkoArray);
 	}
+	
 	m_bMinimizeFlushes = FALSE;
 }
 
@@ -545,12 +483,12 @@ Desc:	Flush dirty files to disk.
 ****************************************************************************/
 RCODE F_SuperFileHdl::flush( void)
 {
-	RCODE		rc = NE_XFLM_OK;
+	RCODE		rc = NE_FLM_OK;
 	FLMUINT	uiLoop;
 
 	// Flush all dirty files
 
-	for (uiLoop = m_uiLowestDirtySlot;
+	for( uiLoop = m_uiLowestDirtySlot;
 		  uiLoop <= m_uiHighestDirtySlot;
 		  uiLoop++)
 	{
@@ -558,17 +496,20 @@ RCODE F_SuperFileHdl::flush( void)
 		{
 			RCODE	tmpRc;
 
-			if (RC_BAD( tmpRc =
+			if( RC_BAD( tmpRc =
 						m_pCheckedOutFileHdls[ uiLoop].pFileHdl->flush()))
 			{
 				rc = tmpRc;
 				releaseFile( &m_pCheckedOutFileHdls [uiLoop], TRUE);
 			}
+			
 			m_pCheckedOutFileHdls[ uiLoop].bDirty = FALSE;
 		}
 	}
+	
 	m_uiLowestDirtySlot = 1;
 	m_uiHighestDirtySlot = 0;
+	
 	return( rc);
 }
 
@@ -580,9 +521,9 @@ Desc:	Truncates back to an end of file block address.
 RCODE	F_SuperFileHdl::truncateFile(
 	FLMUINT			uiEOFBlkAddress)
 {
-	RCODE 			rc = NE_XFLM_OK;
-	FLMUINT			uiFileNumber = (FLMUINT)FSGetFileNumber( uiEOFBlkAddress);
-	FLMUINT			uiBlockOffset = (FLMUINT)FSGetFileOffset( uiEOFBlkAddress);
+	RCODE 			rc = NE_FLM_OK;
+	FLMUINT			uiFileNumber = m_pSuperFileClient->getFileNumber( uiEOFBlkAddress);
+	FLMUINT			uiBlockOffset = m_pSuperFileClient->getFileOffset( uiEOFBlkAddress);
 	IF_FileHdl *	pFileHdl;
 
 	// Truncate the current block file.
@@ -654,11 +595,8 @@ RCODE F_SuperFileHdl::getFileSize(
 	FLMUINT			uiFileNumber,
 	FLMUINT64 *		pui64FileSize)
 {
+	RCODE 			rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
-	RCODE 			rc = NE_XFLM_OK;
-
-	flmAssert( m_bSetupCalled);
-	flmAssert( pui64FileSize);
 
 	*pui64FileSize = 0;
 
@@ -687,47 +625,16 @@ RCODE F_SuperFileHdl::getFilePath(
 	FLMUINT			uiFileNumber,
 	char *			pszIoPath)
 {
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiExtOffset;
-
-	// Sanity checks
-
-	flmAssert( m_bSetupCalled);
-
-	if (!uiFileNumber)
-	{
-		f_strcpy( pszIoPath, m_pszDbFileName);
-		goto Exit;
-	}
-
-	if( uiFileNumber <= MAX_DATA_BLOCK_FILE_NUMBER)
-	{
-		f_memcpy( pszIoPath, m_pszDataFileNameBase, m_uiDataExtOffset);
-		uiExtOffset = m_uiDataExtOffset;
-	}
-	else
-	{
-		f_memcpy( pszIoPath, m_pszDbFileName, m_uiExtOffset);
-		uiExtOffset = m_uiExtOffset;
-	}
-
-	// Modify the file's extension.
-
-	bldSuperFileExtension( uiFileNumber, &pszIoPath[ uiExtOffset]);
-
-Exit:
-
-	return( rc);
+	return( m_pSuperFileClient->getFilePath( uiFileNumber, pszIoPath));
 }
 
 /****************************************************************************
 Desc:	Reallocates the checked out file handle array.
 ****************************************************************************/
 RCODE F_SuperFileHdl::reallocCkoArray(
-	FLMUINT	uiFileNum
-	)
+	FLMUINT						uiFileNum)
 {
-	RCODE							rc = NE_XFLM_OK;
+	RCODE							rc = NE_FLM_OK;
 	FLMUINT						uiNewSize;
 	CHECKED_OUT_FILE_HDL *	pNewCkoArray;
 	CHECKED_OUT_FILE_HDL *	pOldCkoArray;
@@ -737,21 +644,10 @@ RCODE F_SuperFileHdl::reallocCkoArray(
 	{
 		uiFileNum = m_uiHighestFileNumber;
 	}
+	
 	uiNewSize = uiFileNum + 128;
 
-	// Reallocate so we can guarantee that all of the current file
-	// numbers will copy and there is room for this new one as well.
-
-	if (uiNewSize > MAX_LOG_BLOCK_FILE_NUMBER + 1)
-	{
-		flmAssert( uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER);
-		uiNewSize = MAX_LOG_BLOCK_FILE_NUMBER + 1;
-	}
-
-	// No need to call f_calloc, because copyCkoFileHdls will initialize
-	// it below.
-
-	if (RC_BAD( rc = f_alloc( sizeof( CHECKED_OUT_FILE_HDL) * uiNewSize,
+	if (RC_BAD( rc = f_calloc( sizeof( CHECKED_OUT_FILE_HDL) * uiNewSize,
 									&pNewCkoArray)))
 	{
 		goto Exit;
@@ -775,18 +671,17 @@ RCODE F_SuperFileHdl::reallocCkoArray(
 Exit:
 
 	return( rc);
-
 }
 
 /****************************************************************************
 Desc:	Returns a file handle given the file's number
 ****************************************************************************/
 RCODE F_SuperFileHdl::getFileHdl(
-	FLMUINT			uiFileNum,
-	FLMBOOL			bGetForUpdate,
-	IF_FileHdl **	ppFileHdl)
+	FLMUINT						uiFileNum,
+	FLMBOOL						bGetForUpdate,
+	IF_FileHdl **				ppFileHdl)
 {
-	RCODE							rc = NE_XFLM_OK;
+	RCODE							rc = NE_FLM_OK;
 	IF_FileHdl *				pFileHdl = NULL;
 	CHECKED_OUT_FILE_HDL *	pCkoFileHdl;
 	char							szFilePath[ F_PATH_MAX_SIZE];
@@ -796,7 +691,7 @@ RCODE F_SuperFileHdl::getFileHdl(
 	if( pCkoFileHdl->uiFileNumber != uiFileNum &&
 		 pCkoFileHdl->pFileHdl)
 	{
-		if (pCkoFileHdl->bDirty && m_bMinimizeFlushes)
+		if( pCkoFileHdl->bDirty && m_bMinimizeFlushes)
 		{
 			flmAssert( pCkoFileHdl->uiFileNumber);
 			if (RC_BAD( reallocCkoArray( uiFileNum)))
@@ -826,14 +721,15 @@ RCODE F_SuperFileHdl::getFileHdl(
 		{
 			// Build the file path
 
-			if( RC_BAD( rc = getFilePath( uiFileNum, szFilePath)))
+			if( RC_BAD( rc = m_pSuperFileClient->getFilePath(  
+				uiFileNum, szFilePath)))
 			{
 				goto Exit;
 			}
 
 			// Open the file
 
-			if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( szFilePath,
+			if( RC_BAD( rc = f_getFileSysPtr()->openFile( szFilePath,
 				FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
 				&pFileHdl)))
 			{
@@ -850,6 +746,7 @@ RCODE F_SuperFileHdl::getFileHdl(
 		{
 			m_uiHighestUsedSlot = uiSlot;
 		}
+		
 		if (m_uiHighestFileNumber < uiFileNum)
 		{
 			m_uiHighestFileNumber = uiFileNum;
@@ -884,67 +781,4 @@ Exit:
 	}
 
 	return( rc);
-}
-
-/****************************************************************************
-Desc:		Generates a file name given a super file number.
-			Adds ".xx" to pFileExtension.  Use lower case characters.
-Notes:	This is a base 24 alphanumeric value where
-			{ a, b, c, d, e, f, i, l, o, r, u, v } values are removed.
-****************************************************************************/
-void bldSuperFileExtension(
-	FLMUINT		uiFileNum,
-	char *		pszFileExtension)
-{
-	char	ucLetter;
-
-	if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER - 1536)
-	{
-		// No additional letter - File numbers 1 to 511
-		// This is just like pre-4.3 numbering.
-		ucLetter = 0;
-	}
-	else if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER - 1024)
-	{
-		// File numbers 512 to 1023
-		ucLetter = 'r';
-	}
-	else if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER - 512)
-	{
-		// File numbers 1024 to 1535
-		ucLetter = 's';
-	}
-	else if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER)
-	{
-		// File numbers 1536 to 2047
-		ucLetter = 't';
-	}
-	else if (uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER - 1536)
-	{
-		// File numbers 2048 to 2559
-		ucLetter = 'v';
-	}
-	else if (uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER - 1024)
-	{
-		// File numbers 2560 to 3071
-		ucLetter = 'w';
-	}
-	else if (uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER - 512)
-	{
-		// File numbers 3072 to 3583
-		ucLetter = 'x';
-	}
-	else
-	{
-		flmAssert( uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER);
-
-		// File numbers 3584 to 4095
-		ucLetter = 'z';
-	}
-
-	*pszFileExtension++ = '.';
-	*pszFileExtension++ = (char)(f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) / 24)));
-	*pszFileExtension++ = (char)(f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) % 24)));
-	*pszFileExtension++ = ucLetter;
-	*pszFileExtension   = 0;
 }

@@ -151,7 +151,7 @@ RCODE F_DbSystem::dbRemove(
 	uiFileNumber = 1;
 	for (;;)
 	{
-		bldSuperFileExtension( uiFileNumber, pszDataExt);
+		F_SuperFileClient::bldSuperFileExtension( uiFileNumber, pszDataExt);
 
 		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( pszDataName)))
 		{
@@ -177,7 +177,7 @@ RCODE F_DbSystem::dbRemove(
 	uiFileNumber = FIRST_LOG_BLOCK_FILE_NUMBER;
 	for (;;)
 	{
-		bldSuperFileExtension( uiFileNumber, pszExt);
+		F_SuperFileClient::bldSuperFileExtension( uiFileNumber, pszExt);
 
 		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->deleteFile( pszTmpName)))
 		{

@@ -1619,10 +1619,11 @@ Desc: This routine begins a thread that will do checkpoints for the
 *****************************************************************************/
 RCODE F_Database::startCPThread( void)
 {
-	RCODE			rc = NE_XFLM_OK;
-	CP_INFO *	pCPInfo = NULL;
-	char			szThreadName[ F_PATH_MAX_SIZE];
-	char			szBaseName[ 32];
+	RCODE						rc = NE_XFLM_OK;
+	CP_INFO *				pCPInfo = NULL;
+	char						szThreadName[ F_PATH_MAX_SIZE];
+	char						szBaseName[ 32];
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	// Allocate a CP_INFO structure that will be passed into the
 	// thread when it is created.
@@ -1642,15 +1643,26 @@ RCODE F_Database::startCPThread( void)
 
 	// Allocate a super file handle.
 
-	if ((pCPInfo->pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	if( (pCPInfo->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
+		goto Exit;
+	}
+	
+	if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( NE_XFLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pSFileClient->setup( m_pszDbPath, m_pszDataDir)))
+	{
 		goto Exit;
 	}
 
 	// Set up the super file
 
-	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( m_pszDbPath, m_pszDataDir)))
+	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient)))
 	{
 		goto Exit;
 	}
@@ -1690,6 +1702,11 @@ Exit:
 	if( pCPInfo)
 	{
 		flmFreeCPInfo( &pCPInfo);
+	}
+	
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
 	}
 	
 	return( rc);

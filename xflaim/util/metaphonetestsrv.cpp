@@ -283,6 +283,9 @@ RCODE IMetaphoneTestImpl::suite1( void)
 			MAKE_FLM_ERROR_STRING( "getNextMetaphone failed.", m_szDetails, rc);
 			goto Exit;
 		}
+		
+		pMetaphoneIStream->Release();
+		pMetaphoneIStream = NULL;
 
 		if ( RC_BAD( rc = m_pDbSystem->openBufferIStream( 
 			commonMisspellings[uiLoop].pszWord2,
@@ -300,6 +303,9 @@ RCODE IMetaphoneTestImpl::suite1( void)
 			MAKE_FLM_ERROR_STRING( "getNextMetaphone failed.", m_szDetails, rc);
 			goto Exit;
 		}
+		
+		pMetaphoneIStream->Release();
+		pMetaphoneIStream = NULL;
 
 		// No sense in testing the index if the metaphone algorithm itself yields 
 		// different codes for these two words.
@@ -357,22 +363,22 @@ RCODE IMetaphoneTestImpl::suite1( void)
 
 Exit:
 
-	if ( RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
 		endTest("FAIL");
 	}
 
-	if ( pMetaphoneIStream)
+	if( pMetaphoneIStream)
 	{
 		pMetaphoneIStream->Release();
 	}
 
-	if ( pSearchKey)
+	if( pSearchKey)
 	{
 		pSearchKey->Release();
 	}
 
-	if ( pFoundKey)
+	if( pFoundKey)
 	{
 		pFoundKey->Release();
 	}
@@ -387,14 +393,13 @@ Exit:
 		pChild->Release();
 	}
 
-	if ( bTransStarted)
+	if( bTransStarted)
 	{
 		m_pDb->transCommit();
 	}
 
 	shutdownTestState( DB_NAME_STR, bDibCreated);
-
-	return rc;
+	return( rc);
 }
 
 /****************************************************************************

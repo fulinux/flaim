@@ -4652,3 +4652,246 @@ void flmDeleteCCSRefs(
 		}
 	}
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_SuperFileClient::F_SuperFileClient()
+{
+	m_pszCFileName = NULL;
+	m_pszDataFileBaseName = NULL;
+	m_uiExtOffset = 0;
+	m_uiDataExtOffset = 0;
+	m_uiDbVersion = 0;
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_SuperFileClient::~F_SuperFileClient()
+{
+	if( m_pszCFileName)
+	{
+		f_free( &m_pszCFileName);
+	}
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_SuperFileClient::setup(
+	const char *	pszCFileName,
+	const char *	pszDataDir,
+	FLMUINT			uiDbVersion)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiNameLen;
+	FLMUINT			uiDataNameLen;
+	char				szDir[ F_PATH_MAX_SIZE];
+	char				szBaseName[ F_FILENAME_SIZE];
+
+	if( !pszCFileName && *pszCFileName == 0)
+	{
+		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
+		goto Exit;
+	}
+
+	uiNameLen = f_strlen( pszCFileName);
+	if (pszDataDir && *pszDataDir)
+	{
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( 
+			pszCFileName, szDir, szBaseName)))
+		{
+			goto Exit;
+		}
+		f_strcpy( szDir, pszDataDir);
+		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathAppend( 
+			szDir, szBaseName)))
+		{
+			goto Exit;
+		}
+		uiDataNameLen = f_strlen( szDir);
+
+		if (RC_BAD( rc = f_alloc( (uiNameLen + 1) + (uiDataNameLen + 1),
+									&m_pszCFileName)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( m_pszCFileName, pszCFileName, uiNameLen + 1);
+		m_pszDataFileBaseName = m_pszCFileName + uiNameLen + 1;
+		flmGetDbBasePath( m_pszDataFileBaseName, szDir, &m_uiDataExtOffset);
+		m_uiExtOffset = uiNameLen - (uiDataNameLen - m_uiDataExtOffset);
+	}
+	else
+	{
+		if (RC_BAD( rc = f_alloc( (uiNameLen + 1) * 2, &m_pszCFileName)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( m_pszCFileName, pszCFileName, uiNameLen + 1);
+		m_pszDataFileBaseName = m_pszCFileName + uiNameLen + 1;
+		flmGetDbBasePath( m_pszDataFileBaseName, 
+			m_pszCFileName, &m_uiDataExtOffset);
+		m_uiExtOffset = m_uiDataExtOffset;
+	}
+
+	m_uiDbVersion = uiDbVersion;
+
+Exit:
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_SuperFileClient::getFileNumber(
+	FLMUINT					uiBlockAddr)
+{
+	return( FSGetFileNumber( uiBlockAddr));
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
+	FLMUINT					uiBlockAddr)
+{
+	return( FSGetFileOffset( uiBlockAddr));
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_SuperFileClient::getFilePath(
+	FLMUINT			uiFileNumber,
+	char *			pszPath)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiExtOffset;
+
+	if (!uiFileNumber)
+	{
+		f_strcpy( pszPath, m_pszCFileName);
+		goto Exit;
+	}
+
+	if ((m_uiDbVersion >= FLM_FILE_FORMAT_VER_4_3 &&
+		  uiFileNumber <= MAX_DATA_FILE_NUM_VER43) ||
+		 uiFileNumber <= MAX_DATA_FILE_NUM_VER40)
+	{
+		f_memcpy( pszPath, m_pszDataFileBaseName, m_uiDataExtOffset);
+		uiExtOffset = m_uiDataExtOffset;
+	}
+	else
+	{
+		f_memcpy( pszPath, m_pszCFileName, m_uiExtOffset);
+		uiExtOffset = m_uiExtOffset;
+	}
+
+	// Modify the file's extension.
+
+	bldSuperFileExtension( m_uiDbVersion, 
+		uiFileNumber, &pszPath[ uiExtOffset]);
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Generates a file name given a super file number.
+			Adds ".xx" to pFileExtension.  Use lower case characters.
+Notes:	This is a base 24 alphanumeric value where 
+			{ a, b, c, d, e, f, i, l, o, r, u, v } values are removed.
+****************************************************************************/
+void F_SuperFileClient::bldSuperFileExtension(
+	FLMUINT		uiDbVersion,
+	FLMUINT		uiFileNum,
+	char *		pszFileExtension)
+{
+	FLMBYTE		ucLetter;
+	
+	flmAssert( uiDbVersion);
+
+	if (uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
+	{
+		if (uiFileNum <= MAX_DATA_FILE_NUM_VER43 - 1536)
+		{
+			// No additional letter - File numbers 1 to 511
+			// This is just like pre-4.3 numbering.
+			
+			ucLetter = 0;
+		}
+		else if (uiFileNum <= MAX_DATA_FILE_NUM_VER43 - 1024)
+		{
+			// File numbers 512 to 1023
+			
+			ucLetter = 'r';
+		}
+		else if (uiFileNum <= MAX_DATA_FILE_NUM_VER43 - 512)
+		{
+			// File numbers 1024 to 1535
+			
+			ucLetter = 's';
+		}
+		else if (uiFileNum <= MAX_DATA_FILE_NUM_VER43)
+		{
+			// File numbers 1536 to 2047
+			
+			ucLetter = 't';
+		}
+		else if (uiFileNum <= MAX_LOG_FILE_NUM_VER43 - 1536)
+		{
+			// File numbers 2048 to 2559
+			
+			ucLetter = 'v';
+		}
+		else if (uiFileNum <= MAX_LOG_FILE_NUM_VER43 - 1024)
+		{
+			// File numbers 2560 to 3071
+			
+			ucLetter = 'w';
+		}
+		else if (uiFileNum <= MAX_LOG_FILE_NUM_VER43 - 512)
+		{
+			// File numbers 3072 to 3583
+			
+			ucLetter = 'x';
+		}
+		else
+		{
+			flmAssert( uiFileNum <= MAX_LOG_FILE_NUM_VER43);
+
+			// File numbers 3584 to 4095
+			
+			ucLetter = 'z';
+		}
+	}
+	else
+	{
+		if (uiFileNum <= MAX_DATA_FILE_NUM_VER40)
+		{
+			// No additional letter - File numbers 1 to 511
+			// This is just like pre-4.3 numbering.
+			
+			ucLetter = 0;
+		}
+		else
+		{
+			flmAssert( uiFileNum <= MAX_LOG_FILE_NUM_VER40);
+
+			// File numbers 512 to 1023
+			
+			ucLetter = 'x';
+		}
+	}
+
+	*pszFileExtension++ = '.';
+	*pszFileExtension++ = f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) / 24));
+	*pszFileExtension++ = f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) % 24));
+	*pszFileExtension++ = ucLetter;
+	*pszFileExtension   = 0;
+}

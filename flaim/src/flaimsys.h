@@ -72,7 +72,6 @@ class F_CCS;
 #include "fcs.h"
 #include "fsv.h"
 #include "furl.h"
-#include "fsuperfl.h"
 #include "f_nici.h"
 
 #include "fpackon.h"
@@ -2580,6 +2579,47 @@ private:
 	char						m_szRflDir[ F_PATH_MAX_SIZE];
 	FLMBOOL					m_bSetupCalled;
 	FLMBOOL					m_bOpen;
+};
+
+/****************************************************************************
+Desc:
+*****************************************************************************/
+class FLMEXP F_SuperFileClient : public IF_SuperFileClient
+{
+public:
+
+	F_SuperFileClient();
+	
+	virtual ~F_SuperFileClient();
+	
+	RCODE setup(
+		const char *			pszCFileName,
+		const char *			pszDataDir,
+		FLMUINT					uiVersionNum);
+	
+	FLMUINT FLMAPI getFileNumber(
+		FLMUINT					uiBlockAddr);
+		
+	FLMUINT FLMAPI getFileOffset(
+		FLMUINT					uiBlockAddr);
+		
+	RCODE FLMAPI getFilePath(
+		FLMUINT					uiFileNumber,
+		char *					pszPath);
+		
+	static void bldSuperFileExtension(
+		FLMUINT					uiVersionNum,
+		FLMUINT					uiFileNum,
+		char *					pszFileExtension);
+		
+private:
+
+	char *						m_pszCFileName;
+	char *						m_pszDataFileBaseName;
+	FLMUINT						m_uiVersionNum;
+	FLMUINT						m_uiExtOffset;
+	FLMUINT						m_uiDataExtOffset;
+	FLMUINT						m_uiDbVersion;
 };
 
 #include "fpackoff.h"

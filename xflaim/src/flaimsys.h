@@ -100,7 +100,6 @@ class F_RebuildNodeIStream;
 #include "f_btree.h"
 #include "f_btpool.h"
 #include "rfl.h"
-#include "fsuperfl.h"
 #include "filesys.h"
 #include "flog.h"
 #include "f_nici.h"
@@ -8449,5 +8448,42 @@ FINLINE RCODE F_NodeCacheMgr::makeWriteCopy(
 	
 	return( NE_XFLM_OK);
 }
+	
+/****************************************************************************
+Desc:
+*****************************************************************************/
+class FLMEXP F_SuperFileClient : public IF_SuperFileClient
+{
+public:
+
+	F_SuperFileClient();
+	
+	virtual ~F_SuperFileClient();
+	
+	RCODE setup(
+		const char *			pszCFileName,
+		const char *			pszDataDir);
+	
+	FLMUINT FLMAPI getFileNumber(
+		FLMUINT					uiBlockAddr);
+		
+	FLMUINT FLMAPI getFileOffset(
+		FLMUINT					uiBlockAddr);
+		
+	RCODE FLMAPI getFilePath(
+		FLMUINT					uiFileNumber,
+		char *					pszPath);
+		
+	static void bldSuperFileExtension(
+		FLMUINT					uiFileNum,
+		char *					pszFileExtension);
+		
+private:
+
+	char *						m_pszCFileName;
+	char *						m_pszDataFileBaseName;
+	FLMUINT						m_uiExtOffset;
+	FLMUINT						m_uiDataExtOffset;
+};
 	
 #endif // FLAIMSYS_H

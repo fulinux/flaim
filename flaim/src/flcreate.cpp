@@ -99,22 +99,23 @@ Exit:
 Desc:	This routine creates a FLAIM file.
 ****************************************************************************/
 RCODE flmCreateNewFile(
-	const char *		pszFilePath,
-	const char *		pszDataDir,
-	const char *		pszRflDir,
-	const char *		pszDictFileName,
-	const char *		pszDictBuf,
-	CREATE_OPTS *		pCreateOpts,
-	FLMUINT				uiTransID,
-	FDB * *				ppDb,
-	REBUILD_STATE *	pRebuildState)
+	const char *			pszFilePath,
+	const char *			pszDataDir,
+	const char *			pszRflDir,
+	const char *			pszDictFileName,
+	const char *			pszDictBuf,
+	CREATE_OPTS *			pCreateOpts,
+	FLMUINT					uiTransID,
+	FDB * *					ppDb,
+	REBUILD_STATE *		pRebuildState)
 {
-	RCODE				rc = FERR_OK;
-	FDB *				pDb = NULL;
-	FFILE *			pFile;
-	FLMBOOL			bFileCreated = FALSE;
-	FLMBOOL			bNewFile = FALSE;
-	FLMBOOL			bMutexLocked = FALSE;
+	RCODE						rc = FERR_OK;
+	FDB *						pDb = NULL;
+	FFILE *					pFile;
+	FLMBOOL					bFileCreated = FALSE;
+	FLMBOOL					bNewFile = FALSE;
+	FLMBOOL					bMutexLocked = FALSE;
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	if( ppDb)
 	{
@@ -257,6 +258,7 @@ RCODE flmCreateNewFile(
 	// Allocate the super file object
 
 	flmAssert( !pDb->pSFileHdl);
+	flmAssert( pFile->FileHdr.uiVersionNum);
 	
 	if( (pDb->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
@@ -264,13 +266,24 @@ RCODE flmCreateNewFile(
 		goto Exit;
 	}
 	
-	flmAssert( pFile->FileHdr.uiVersionNum);
+	if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
 	
-	if( RC_BAD( rc = pDb->pSFileHdl->setup( 
+	if( RC_BAD( rc = pSFileClient->setup( 
 		pFile->pszDbPath, pFile->pszDataDir, pFile->FileHdr.uiVersionNum)))
 	{
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient)))
+	{
+		goto Exit;
+	}
+
+	pDb->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
 
 	// Create the .db file.
 
@@ -335,6 +348,11 @@ Exit:
 	else if( ppDb)
 	{
 		*ppDb = pDb;
+	}
+	
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
 	}
 
 	return( rc);

@@ -43,20 +43,20 @@ FSTATIC const char * gv_pszSampleDictionary =
 	"  2 field 3\n"
 	"   3 required\n";
 
-#define PERSON_TAG					1
-#define LAST_NAME_TAG				2
-#define FIRST_NAME_TAG				3
-#define AGE_TAG						4
-#define MISC_TAG						5
-#define LAST_NAME_FIRST_NAME_IX	100
+#define PERSON_TAG						1
+#define LAST_NAME_TAG					2
+#define FIRST_NAME_TAG					3
+#define AGE_TAG							4
+#define MISC_TAG							5
+#define LAST_NAME_FIRST_NAME_IX		100
 
 #ifdef FLM_NLM
-	#define DB_NAME_STR					"SYS:\\TEST\\SAMPLE.DB"
-	#define DB_COPY_NAME_STR			"SYS:\\TEST\\SAMPLECOPY.DB"
-	#define DB_RENAME_NAME_STR			"SYS:\\TEST\\SAMPLERENAME.DB"
-	#define DB_RESTORE_NAME_STR		"SYS:\\TEST\\SAMPLERESTORE.DB"
-	#define DB_REBUILD_NAME_STR		"SYS:\\TEST\\SAMPLEREBUILD.DB"
-	#define BACKUP_PATH					"SYS:\\TEST\\SAMPLEBACKUP"
+	#define DB_NAME_STR					"SYS:\\SAMPLE.DB"
+	#define DB_COPY_NAME_STR			"SYS:\\SAMPLECOPY.DB"
+	#define DB_RENAME_NAME_STR			"SYS:\\SAMPLERENAME.DB"
+	#define DB_RESTORE_NAME_STR		"SYS:\\SAMPLERESTORE.DB"
+	#define DB_REBUILD_NAME_STR		"SYS:\\SAMPLEREBUILD.DB"
+	#define BACKUP_PATH					"SYS:\\SAMPLEBACKUP"
 #else
 	#define DB_NAME_STR					"sample.db"
 	#define DB_COPY_NAME_STR			"samplecopy.db"

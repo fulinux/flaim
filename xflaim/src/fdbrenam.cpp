@@ -230,8 +230,8 @@ RCODE F_DbSystem::dbRename(
 	uiFileNumber = 1;
 	for (;;)
 	{
-		bldSuperFileExtension( uiFileNumber, pszDataExtOld);
-		bldSuperFileExtension( uiFileNumber, pszDataExtNew);
+		F_SuperFileClient::bldSuperFileExtension( uiFileNumber, pszDataExtOld);
+		F_SuperFileClient::bldSuperFileExtension( uiFileNumber, pszDataExtNew);
 
 		if (RC_BAD( rc = flmRenameFile( pszOldDataName, pszNewDataName,
 									bOverwriteDestOk, TRUE,
@@ -256,8 +256,8 @@ RCODE F_DbSystem::dbRename(
 	uiFileNumber = FIRST_LOG_BLOCK_FILE_NUMBER;
 	for (;;)
 	{
-		bldSuperFileExtension( uiFileNumber, pszExtOld);
-		bldSuperFileExtension( uiFileNumber, pszExtNew);
+		F_SuperFileClient::bldSuperFileExtension( uiFileNumber, pszExtOld);
+		F_SuperFileClient::bldSuperFileExtension( uiFileNumber, pszExtNew);
 
 		if (RC_BAD( rc = flmRenameFile( pszOldName, pszNewName,
 									bOverwriteDestOk, TRUE,

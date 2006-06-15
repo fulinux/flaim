@@ -1659,6 +1659,196 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	typedef struct
+	{
+		IF_FileHdl *				pFileHdl;
+		FLMUINT						uiFileNumber;
+		FLMBOOL						bDirty;
+	} CHECKED_OUT_FILE_HDL;
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface FLMEXP IF_SuperFileClient : public F_Object
+	{
+		virtual FLMUINT FLMAPI getFileNumber(
+			FLMUINT					uiBlockAddr) = 0;
+			
+		virtual FLMUINT FLMAPI getFileOffset(
+			FLMUINT					uiBlockAddr) = 0;
+			
+		virtual RCODE FLMAPI getFilePath(
+			FLMUINT					uiFileNumber,
+			char *					pszPath) = 0;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_SuperFileHdl : public F_Object
+	{
+	public:
+	
+		F_SuperFileHdl();
+	
+		virtual ~F_SuperFileHdl();
+	
+		RCODE setup(
+			IF_SuperFileClient *		pSuperFileClient);
+	
+		RCODE createFile(
+			FLMUINT					uiFileNumber);
+	
+		RCODE readBlock(
+			FLMUINT					uiBlkAddress,
+			FLMUINT					uiBytesToRead,
+			void *					pvBuffer,
+			FLMUINT *				puiBytesRead);
+	
+		RCODE writeBlock(
+			FLMUINT					uiBlkAddress,
+			FLMUINT					uiBytesToWrite,
+			const void *			pvBuffer,
+			IF_IOBuffer *			pIOBuffer,
+			FLMUINT *				puiBytesWritten);
+	
+		RCODE readHeader(
+			FLMUINT					uiOffset,
+			FLMUINT					uiBytesToRead,
+			void *					pvBuffer,
+			FLMUINT *				puiBytesRead);
+	
+		RCODE writeHeader(
+			FLMUINT					uiOffset,
+			FLMUINT					uiBytesToWrite,
+			const void *			pvBuffer,
+			FLMUINT *				puiBytesWritten);
+	
+		RCODE getFilePath(
+			FLMUINT					uiFileNumber,
+			char *					pszPath);
+	
+		RCODE	getFileHdl(
+			FLMUINT					uiFileNumber,
+			FLMBOOL					bGetForUpdate,
+			IF_FileHdl **			ppFileHdlRV);
+	
+		RCODE getFileSize(
+			FLMUINT					uiFileNumber,
+			FLMUINT64 *				pui64FileSize);
+	
+		RCODE releaseFile(
+			FLMUINT					uiFileNum,
+			FLMBOOL					bCloseFile);
+	
+		RCODE releaseFiles(
+			FLMBOOL					bCloseFiles);
+	
+		RCODE truncateFile(
+			FLMUINT					uiEOFBlkAddress);
+	
+		void truncateFiles(
+			FLMUINT					uiStartFileNum,
+			FLMUINT					uiEndFileNum);
+	
+		RCODE releaseFile(
+			CHECKED_OUT_FILE_HDL *	pChkFileHdl,
+			FLMBOOL						bCloseFile);
+	
+		FINLINE void enableFlushMinimize( void)
+		{
+			m_bMinimizeFlushes = TRUE;
+		}
+	
+		void disableFlushMinimize( void);
+	
+		RCODE flush( void);
+	
+		FINLINE void setBlockSize(
+			FLMUINT		uiBlockSize)
+		{
+			m_uiBlockSize = uiBlockSize;
+		}
+	
+		FINLINE void setExtendSize(
+			FLMUINT		uiExtendSize)
+		{
+			m_uiExtendSize = uiExtendSize;
+		}
+	
+		FINLINE void setMaxAutoExtendSize(
+			FLMUINT		uiMaxAutoExtendSize)
+		{
+			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
+		}
+	
+		FINLINE FLMBOOL canDoAsync( void)
+		{
+			if( m_pCheckedOutFileHdls[ 0].pFileHdl)
+			{
+				return( m_pCheckedOutFileHdls[ 0].pFileHdl->canDoAsync());
+			}
+			else
+			{
+				IF_FileHdl *		pFileHdl;
+	
+				if( RC_OK( getFileHdl( 0, FALSE, &pFileHdl)))
+				{
+					return( pFileHdl->canDoAsync());
+				}
+			}
+	
+			return( FALSE);
+		}
+	
+	private:
+	
+		FINLINE CHECKED_OUT_FILE_HDL * getCkoFileHdlPtr(
+			FLMUINT		uiFileNum,
+			FLMUINT *	puiSlot)
+		{
+			*puiSlot = (uiFileNum
+				? (uiFileNum % (m_uiCkoArraySize - 1)) + 1
+				: 0);
+	
+			return( &m_pCheckedOutFileHdls[ *puiSlot]);
+		}
+	
+		FINLINE void clearCkoFileHdl(
+			CHECKED_OUT_FILE_HDL *		pCkoFileHdl)
+		{
+			pCkoFileHdl->pFileHdl = NULL;
+			pCkoFileHdl->uiFileNumber = 0;
+			pCkoFileHdl->bDirty = FALSE;
+		}
+	
+		void copyCkoFileHdls(
+			CHECKED_OUT_FILE_HDL *	pSrcCkoArray,
+			FLMUINT						uiSrcHighestUsedSlot);
+	
+		RCODE reallocCkoArray(
+			FLMUINT					uiFileNum);
+	
+		#define MAX_CHECKED_OUT_FILE_HDLS	8
+		
+		IF_SuperFileClient *		m_pSuperFileClient;
+		CHECKED_OUT_FILE_HDL		m_CheckedOutFileHdls[ MAX_CHECKED_OUT_FILE_HDLS + 1];
+		CHECKED_OUT_FILE_HDL *	m_pCheckedOutFileHdls;
+		FLMUINT						m_uiCkoArraySize;
+		FLMUINT						m_uiBlockSize;
+		FLMUINT						m_uiExtendSize;
+		FLMUINT						m_uiMaxAutoExtendSize;
+		FLMUINT						m_uiLowestDirtySlot;
+		FLMUINT						m_uiHighestDirtySlot;
+		FLMUINT						m_uiHighestUsedSlot;
+		FLMUINT						m_uiHighestFileNumber;
+		FLMBOOL						m_bMinimizeFlushes;
+		FLMBOOL						m_bSetupCalled;
+	};
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	flminterface FLMEXP IF_IOBufferMgr : public F_Object
 	{
 		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;

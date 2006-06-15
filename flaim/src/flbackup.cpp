@@ -1568,31 +1568,32 @@ FSTATIC RCODE flmRestoreFile(
 	FLMBYTE *				pucKeyToUse,
 	FLMUINT *				puiKeyLen)
 {
-	RCODE					rc = FERR_OK;
-	FLMUINT				uiBytesWritten;
-	FLMUINT				uiLogicalEOF;
-	FLMUINT				uiBlkAddr;
-	FLMUINT				uiBlockCount = 0;
-	FLMUINT				uiActualBlkSize;
-	FLMUINT				uiBlockSize;
-	FLMUINT				uiDbVersion;
-	FLMUINT				uiMaxFileSize;
-	FLMUINT				uiBackupMaxFileSize;
-	FLMUINT				uiPriorBlkFile = 0;
-	FLMUINT				uiSectorSize;
-	FLMBYTE *			pLogHdr;
-	FLMBYTE				ucIncSerialNum[ F_SERIAL_NUM_SIZE];
-	FLMBYTE				ucNextIncSerialNum[ F_SERIAL_NUM_SIZE];
-	FLMUINT				uiIncSeqNum;
-	FLMBYTE *			pucBlkBuf = NULL;
-	FLMBYTE				ucLowChecksumByte;
-	FLMUINT				uiBlkBufSize;
-	FLMUINT				uiPriorBlkAddr = 0;
-	BYTE_PROGRESS		byteProgress;
-	FBackupType			eBackupType;
-	F_BackerStream *	pBackerStream = NULL;
-	F_CCS *				pTmpCCS = NULL;
-	F_SuperFileHdl *	pSFile = NULL;
+	RCODE						rc = FERR_OK;
+	FLMUINT					uiBytesWritten;
+	FLMUINT					uiLogicalEOF;
+	FLMUINT					uiBlkAddr;
+	FLMUINT					uiBlockCount = 0;
+	FLMUINT					uiActualBlkSize;
+	FLMUINT					uiBlockSize;
+	FLMUINT					uiDbVersion;
+	FLMUINT					uiMaxFileSize;
+	FLMUINT					uiBackupMaxFileSize;
+	FLMUINT					uiPriorBlkFile = 0;
+	FLMUINT					uiSectorSize;
+	FLMBYTE *				pLogHdr;
+	FLMBYTE					ucIncSerialNum[ F_SERIAL_NUM_SIZE];
+	FLMBYTE					ucNextIncSerialNum[ F_SERIAL_NUM_SIZE];
+	FLMUINT					uiIncSeqNum;
+	FLMBYTE *				pucBlkBuf = NULL;
+	FLMBYTE					ucLowChecksumByte;
+	FLMUINT					uiBlkBufSize;
+	FLMUINT					uiPriorBlkAddr = 0;
+	BYTE_PROGRESS			byteProgress;
+	FBackupType				eBackupType;
+	F_BackerStream *		pBackerStream = NULL;
+	F_CCS *					pTmpCCS = NULL;
+	F_SuperFileHdl *		pSFile = NULL;
+	F_SuperFileClient *	pSFileClient = NULL;
 
 #ifndef FLM_USE_NICI
 	F_UNREFERENCED_PARM( pszPassword);
@@ -1787,11 +1788,24 @@ FSTATIC RCODE flmRestoreFile(
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
-	
-		if( RC_BAD( rc = pSFile->setup( pszDbPath, pszDataDir, uiDbVersion)))
+		
+		if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+		{
+			rc = RC_SET( FERR_MEM);
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pSFileClient->setup( pszDbPath, pszDataDir, uiDbVersion)))
 		{
 			goto Exit;
 		}
+	
+		if( RC_BAD( rc = pSFile->setup( pSFileClient)))
+		{
+			goto Exit;
+		}
+
+		pSFile->setBlockSize( uiBlockSize);
 	
 		// Don't want to do extra file extensions or flush when file
 		// is extended.  Setting the extend size to ~0 has the effect
@@ -2174,6 +2188,11 @@ Exit:
 	if( pSFile)
 	{
 		pSFile->Release();
+	}
+	
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
 	}
 
 	return( rc);

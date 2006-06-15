@@ -63,7 +63,7 @@ typedef enum
 
 class FlmArgSet;
 
-class FlmArg : public F_Base
+class FlmArg : public F_Object
 {
 private:
 	FlmArg(
@@ -243,7 +243,7 @@ private:
 friend class FlmArgSet;
 };
 
-class FlmArgSet : public F_Base
+class FlmArgSet : public F_Object
 {
 public:
 	FlmArgSet(

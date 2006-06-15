@@ -209,11 +209,17 @@ int main(
 	RCODE				rc = FERR_OK;
 	IFlmTest *		pTest = NULL;
 	unsigned int	i = 1;
-	ArgList			args;
+	ArgList *		pArgs = NULL;
 	TEST_INFO		testInfo;
 	
 	if( RC_BAD( rc = FlmStartup()))
 	{
+		goto Exit;
+	}
+	
+	if( (pArgs = f_new ArgList) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 	
@@ -231,35 +237,35 @@ int main(
 		}
 	}
 
-	args.expandArgs( argv, argc);
+	pArgs->expandArgs( argv, argc);
 
-	while( i < args.getNumEntries())
+	while( i < pArgs->getNumEntries())
 	{
-		if ( args[i][0] != '-')
+		if( (*pArgs)[i][0] != '-')
 		{
 			goto Exit;
 		}
 				
-		if( (args[i][1] == 'l') || (args[i][1] == 'L'))
+		if( ((*pArgs)[i][1] == 'l') || ((*pArgs)[i][1] == 'L'))
 		{
 			testInfo.bLog = true;
-			f_strcpy( testInfo.pszLogfile, &args[i][2]);
+			f_strcpy( testInfo.pszLogfile, &((*pArgs)[i][2]));
 		}
-		else if( (args[i][1] == 'd') || (args[i][1] == 'D'))
+		else if( ((*pArgs)[i][1] == 'd') || ((*pArgs)[i][1] == 'D'))
 		{
 			testInfo.bDisplay = true;
 		}
-		else if( (args[i][1] == 'c') || (args[i][1] == 'C'))
+		else if( ((*pArgs)[i][1] == 'c') || ((*pArgs)[i][1] == 'C'))
 		{
-			f_strcpy( testInfo.pszConfig, &args[i][2]);
+			f_strcpy( testInfo.pszConfig, &((*pArgs)[i][2]));
 		}
-		else if( (args[i][1] == 'b') || (args[i][1] == 'B'))
+		else if( ((*pArgs)[i][1] == 'b') || ((*pArgs)[i][1] == 'B'))
 		{
-			f_strcpy( testInfo.pszBuild, &args[i][2]);
+			f_strcpy( testInfo.pszBuild, &((*pArgs)[i][2]));
 		}
-		else if( (args[i][1] == 'u') || (args[i][1] == 'U'))
+		else if( ((*pArgs)[i][1] == 'u') || ((*pArgs)[i][1] == 'U'))
 		{
-			f_strcpy( testInfo.pszUser, &args[i][2]);
+			f_strcpy( testInfo.pszUser, &((*pArgs)[i][2]));
 		}
 		else
 		{
@@ -297,6 +303,11 @@ Exit:
 	if( pTest)
 	{
 		pTest->Release();
+	}
+	
+	if( pArgs)
+	{
+		pArgs->Release();
 	}
 	
 #ifdef FLM_NLM
@@ -1131,7 +1142,6 @@ ArgList::ArgList()
 {
 	m_uiCapacity = INIT_SIZE;
 	m_uiNumEntries = 0;
-	
 	f_alloc( m_uiCapacity * sizeof( char *), &m_ppszArgs);
 }
 
@@ -1146,7 +1156,7 @@ ArgList::~ArgList()
 	{
 		for( uiLoop = 0; uiLoop < m_uiNumEntries; uiLoop++)
 		{
-			f_free( &( m_ppszArgs[uiLoop]));
+			f_free( &m_ppszArgs[ uiLoop]);
 		}
 		
 		f_free( &m_ppszArgs);
@@ -1172,8 +1182,8 @@ RCODE ArgList::resize( void)
 	
 	for( uiLoop = 0; uiLoop < m_uiNumEntries; uiLoop++)
 	{
-		if( RC_BAD( rc = f_alloc( f_strlen( m_ppszArgs[uiLoop]) + 1, 
-			&ppszTemp[uiLoop])))
+		if( RC_BAD( rc = f_alloc( f_strlen( m_ppszArgs[ uiLoop]) + 1, 
+			&ppszTemp[ uiLoop])))
 		{
 			f_free( &ppszTemp);
 			goto Exit;
@@ -1215,7 +1225,7 @@ RCODE ArgList::addArg(
 	}
 
 	if( RC_BAD( rc = f_alloc( f_strlen( pszArg) + 1,
-		&m_ppszArgs[m_uiNumEntries])))
+		&m_ppszArgs[ m_uiNumEntries])))
 	{
 		goto Exit;
 	}

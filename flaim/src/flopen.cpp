@@ -433,23 +433,24 @@ Desc: This routine will open a file, returning a pointer to the FDB and
 		FFILE structures.
 ****************************************************************************/
 RCODE flmOpenFile(
-	FFILE *				pFile,
-	const char *		pszDbPath,
-	const char *		pszDataDir,
-	const char *		pszRflDir,
-	FLMUINT				uiOpenFlags,
-	FLMBOOL				bInternalOpen,
-	F_Restore *			pRestoreObj,
-	IF_FileHdl *		pLockFileHdl,
-	const char *		pszPassword,
-	FDB **				ppDb)
+	FFILE *					pFile,
+	const char *			pszDbPath,
+	const char *			pszDataDir,
+	const char *			pszRflDir,
+	FLMUINT					uiOpenFlags,
+	FLMBOOL					bInternalOpen,
+	F_Restore *				pRestoreObj,
+	IF_FileHdl *			pLockFileHdl,
+	const char *			pszPassword,
+	FDB **					ppDb)
 {
-	RCODE					rc;
-	FLMBOOL				bNewFile = FALSE;
-	FLMBOOL				bMutexLocked = FALSE;
-	FLMBOOL				bAllocatedFdb = FALSE;
-	FDB *					pDb;
-	FLMBOOL				bFirstOpen = FALSE;
+	RCODE						rc = FERR_OK;
+	FLMBOOL					bNewFile = FALSE;
+	FLMBOOL					bMutexLocked = FALSE;
+	FLMBOOL					bAllocatedFdb = FALSE;
+	FDB *						pDb;
+	FLMBOOL					bFirstOpen = FALSE;
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	// Allocate and initialize an FDB structure
 
@@ -610,6 +611,8 @@ RCODE flmOpenFile(
 		// Allocate the super file object
 
 		flmAssert( !pDb->pSFileHdl);
+		flmAssert( pFile->FileHdr.uiVersionNum);
+		flmAssert( pFile->FileHdr.uiBlockSize);
 		
 		if( (pDb->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 		{
@@ -617,14 +620,24 @@ RCODE flmOpenFile(
 			goto Exit;
 		}
 		
-		flmAssert( pFile->FileHdr.uiVersionNum);
-		flmAssert( pFile->FileHdr.uiBlockSize);
+		if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+		{
+			rc = RC_SET( FERR_MEM);
+			goto Exit;
+		}
 		
-		if( RC_BAD( rc = pDb->pSFileHdl->setup( 
+		if( RC_BAD( rc = pSFileClient->setup(
 			pFile->pszDbPath, pFile->pszDataDir, pFile->FileHdr.uiVersionNum)))
 		{
 			goto Exit;
 		}
+		
+		if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient)))
+		{
+			goto Exit;
+		}
+
+		pDb->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
 	}
 
 	if (bNewFile && !(uiOpenFlags & FO_DONT_REDO_LOG))
@@ -671,6 +684,11 @@ Exit:
 	if( pLockFileHdl)
 	{
 		pLockFileHdl->Release();
+	}
+	
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
 	}
 
 	rc = flmCompleteOpenOrCreate( ppDb, rc, bNewFile, bAllocatedFdb);
@@ -910,16 +928,17 @@ Desc: This routine checks to see if it is OK for another FDB to use a file.
 		assumes that the global mutex is NOT locked.
 ****************************************************************************/
 FSTATIC RCODE flmPhysFileOpen(
-	FDB *					pDb,
-	const char *		pszFilePath,	// File name
-	const char *		pszRflDir,		// RFL directory
-	FLMUINT				uiOpenFlags,	// Flags for doing physical open
-	FLMBOOL				bNewFile,		// Is this a new file structure?
-	F_Restore *			pRestoreObj)	// Restore object
+	FDB *						pDb,
+	const char *			pszFilePath,	// File name
+	const char *			pszRflDir,		// RFL directory
+	FLMUINT					uiOpenFlags,	// Flags for doing physical open
+	FLMBOOL					bNewFile,		// Is this a new file structure?
+	F_Restore *				pRestoreObj)	// Restore object
 {
-	RCODE				rc = FERR_OK;
-	FFILE *			pFile = pDb->pFile;
-	FLMBOOL			bAllowLimitedMode = FALSE;
+	RCODE						rc = FERR_OK;
+	FFILE *					pFile = pDb->pFile;
+	FLMBOOL					bAllowLimitedMode = FALSE;
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	// If this is the first open of the database, read the header block
 
@@ -974,6 +993,8 @@ FSTATIC RCODE flmPhysFileOpen(
 	// Allocate the super file object
 
 	flmAssert( !pDb->pSFileHdl);
+	flmAssert( pFile->FileHdr.uiVersionNum);
+	flmAssert( pFile->FileHdr.uiBlockSize);
 	
 	if( (pDb->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
@@ -981,14 +1002,24 @@ FSTATIC RCODE flmPhysFileOpen(
 		goto Exit;
 	}
 	
-	flmAssert( pFile->FileHdr.uiVersionNum);
-	flmAssert( pFile->FileHdr.uiBlockSize);
+	if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
 	
-	if( RC_BAD( rc = pDb->pSFileHdl->setup( 
+	if( RC_BAD( rc = pSFileClient->setup(
 		pFile->pszDbPath, pFile->pszDataDir, pFile->FileHdr.uiVersionNum)))
 	{
 		goto Exit;
 	}
+	
+	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient)))
+	{
+		goto Exit;
+	}
+
+	pDb->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
 
 	// We must have exclusive access.  Create a lock file for that
 	// purpose, if there is not already a lock file.
@@ -1014,6 +1045,11 @@ FSTATIC RCODE flmPhysFileOpen(
 	}
 	
 Exit:
+
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
+	}
 
 	return( rc);
 }
@@ -1461,10 +1497,12 @@ FSTATIC void flmFreeCPInfo(
 		{
 			pCPInfo->pSFileHdl->Release();
 		}
+
 		if (pCPInfo->bStatsInitialized)
 		{
 			FlmFreeStats( &pCPInfo->Stats);
 		}
+
 		f_free( ppCPInfoRV);
 	}
 }
@@ -1475,41 +1513,53 @@ Desc: This routine begins a thread that will do checkpoints for the
 		own handle to the database.
 *****************************************************************************/
 RCODE flmStartCPThread(
-	FFILE *		pFile)
+	FFILE *					pFile)
 {
-	RCODE			rc = FERR_OK;
-	CP_INFO *	pCPInfo = NULL;
-	char			szThreadName[ F_PATH_MAX_SIZE];
-	char			szBaseName[ F_FILENAME_SIZE];
+	RCODE						rc = FERR_OK;
+	CP_INFO *				pCPInfo = NULL;
+	char						szThreadName[ F_PATH_MAX_SIZE];
+	char						szBaseName[ F_FILENAME_SIZE];
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	// Allocate a CP_INFO structure that will be passed into the
 	// thread when it is created.
 
-	if (RC_BAD( rc = f_calloc( (FLMUINT)(sizeof( CP_INFO)), &pCPInfo)))
+	if( RC_BAD( rc = f_calloc( (FLMUINT)(sizeof( CP_INFO)), &pCPInfo)))
 	{
 		goto Exit;
 	}
 	pCPInfo->pFile = pFile;
 
-	// Allocate a super file handle.
+	// Set up the super file
 
-	if ((pCPInfo->pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	flmAssert( pFile->FileHdr.uiVersionNum);
+	
+	if( (pCPInfo->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 	
-	// Set up the super file
-
-	flmAssert( pFile->FileHdr.uiVersionNum);
+	if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
 	
-	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( 
+	if( RC_BAD( rc = pSFileClient->setup(
 		pFile->pszDbPath, pFile->pszDataDir, pFile->FileHdr.uiVersionNum)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = flmStatInit( &pCPInfo->Stats, FALSE)))
+	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient))) 
+	{
+		goto Exit;
+	}
+
+	pCPInfo->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
+	
+	if( RC_BAD( rc = flmStatInit( &pCPInfo->Stats, FALSE)))
 	{
 		goto Exit;
 	}
@@ -1517,7 +1567,7 @@ RCODE flmStartCPThread(
 
 	// Generate the thread name
 
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( pFile->pszDbPath,
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( pFile->pszDbPath,
 							szThreadName, szBaseName)))
 	{
 		goto Exit;
@@ -1528,7 +1578,7 @@ RCODE flmStartCPThread(
 
 	// Start the checkpoint thread.
 
-	if (RC_BAD( rc = f_threadCreate( &pFile->pCPThrd,
+	if( RC_BAD( rc = f_threadCreate( &pFile->pCPThrd,
 		flmCPThread, szThreadName, 
 		gv_uiCPThrdGrp, 0, pCPInfo, NULL, 32000)))
 	{
@@ -1538,7 +1588,13 @@ RCODE flmStartCPThread(
 	pFile->pCPInfo = pCPInfo;
 
 Exit:
-	if (RC_BAD( rc))
+
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
+	}
+
+	if( RC_BAD( rc))
 	{
 		flmFreeCPInfo( &pCPInfo);
 	}

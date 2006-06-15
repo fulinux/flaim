@@ -379,9 +379,9 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	uiFileNumber = 1;
 	for (;;)
 	{
-		bldSuperFileExtension( FileHdr.uiVersionNum,
+		F_SuperFileClient::bldSuperFileExtension( FileHdr.uiVersionNum,
 			uiFileNumber, pszDataExtOld);
-		bldSuperFileExtension( FileHdr.uiVersionNum,
+		F_SuperFileClient::bldSuperFileExtension( FileHdr.uiVersionNum,
 			uiFileNumber, pszDataExtNew);
 
 		if (RC_BAD( rc = flmRenameFile( pszOldDataName, pszNewDataName,
@@ -409,9 +409,9 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 			FIRST_LOG_BLOCK_FILE_NUMBER (FileHdr.uiVersionNum);
 	for (;;)
 	{
-		bldSuperFileExtension( FileHdr.uiVersionNum,
+		F_SuperFileClient::bldSuperFileExtension( FileHdr.uiVersionNum,
 			uiFileNumber, pszExtOld);
-		bldSuperFileExtension( FileHdr.uiVersionNum,
+		F_SuperFileClient::bldSuperFileExtension( FileHdr.uiVersionNum,
 			uiFileNumber, pszExtNew);
 
 		if (RC_BAD( rc = flmRenameFile( pszOldName, pszNewName,

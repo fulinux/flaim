@@ -153,6 +153,8 @@ RCODE F_DbSystem::copyDb(
 	DB_COPY_INFO			DbCopyInfo;
 	F_SuperFileHdl			SrcSFileHdl;
 	F_SuperFileHdl			DestSFileHdl;
+	F_SuperFileClient		SrcSFileClient;
+	F_SuperFileClient		DestSFileClient;
 	FLMUINT					uiFileNumber;
 	FLMUINT					uiHighFileNumber;
 	FLMUINT					uiHighLogFileNumber;
@@ -208,8 +210,13 @@ RCODE F_DbSystem::copyDb(
 
 	// Set up the super file object for the source database.
 	// Must at least open the control file.
+	
+	if( RC_BAD( rc = SrcSFileClient.setup( pszSrcDbName, pszSrcDataDir)))
+	{
+		goto Exit;
+	}
 
-	if (RC_BAD( rc = SrcSFileHdl.setup( pszSrcDbName, pszSrcDataDir)))
+	if (RC_BAD( rc = SrcSFileHdl.setup( &SrcSFileClient)))
 	{
 		goto Exit;
 	}
@@ -315,8 +322,13 @@ retry:
 	}
 
 	// Set up the super file object for the destination database.
+	
+	if( RC_BAD( rc = DestSFileClient.setup( pszDestDbName, pszDestDataDir)))
+	{
+		goto Exit;
+	}
 
-	if (RC_BAD( rc = DestSFileHdl.setup( pszDestDbName, pszDestDataDir)))
+	if (RC_BAD( rc = DestSFileHdl.setup( &DestSFileClient)))
 	{
 		goto Exit;
 	}

@@ -818,6 +818,11 @@ Exit:
 	{
 		pCSVFileHdl->Release();
 	}
+
+	if( pFileSystem)
+	{
+		pFileSystem->Release();
+	}
 	
 	return( rc);
 }
@@ -1508,6 +1513,12 @@ RCODE TestBase::importBuffer(
 
 Exit:
 
+	if( m_pInputStream)
+	{
+		m_pInputStream->Release();
+		m_pInputStream = NULL;
+	}
+
 	return( rc);
 }
 
@@ -1533,6 +1544,12 @@ RCODE TestBase::importDocument(
 	}
 
 Exit:
+
+	if( m_pInputStream)
+	{
+		m_pInputStream->Release();
+		m_pInputStream = NULL;
+	}
 
 	return( rc);
 }
@@ -1560,6 +1577,12 @@ RCODE TestBase::importFile(
 	}
 
 Exit:
+
+	if( m_pInputStream)
+	{
+		m_pInputStream->Release();
+		m_pInputStream = NULL;
+	}
 
 	return( rc);
 }

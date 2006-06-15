@@ -347,6 +347,7 @@ RCODE F_DbRebuild::dbRebuild(
 	F_SEM						hWaitSem = F_SEM_NULL;
 	FLMUINT					uiRflToken = 0;
 	F_CCS *					pWrappingKey = NULL;
+	F_SuperFileClient		SFileClient;
 	
 	if( RC_BAD( rc = f_semCreate( &hWaitSem)))
 	{
@@ -480,7 +481,12 @@ Retry:
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = m_pSFileHdl->setup( pszSourceDbPath, pszSourceDataDir)))
+	if( RC_BAD( rc = SFileClient.setup( pszSourceDbPath, pszSourceDataDir)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = m_pSFileHdl->setup( &SFileClient)))
 	{
 		goto Exit;
 	}

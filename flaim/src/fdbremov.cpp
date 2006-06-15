@@ -187,7 +187,8 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	uiFileNumber = 1;
 	for (;;)
 	{
-		bldSuperFileExtension( uiVersionNum, uiFileNumber, pszDataExt);
+		F_SuperFileClient::bldSuperFileExtension( 
+			uiVersionNum, uiFileNumber, pszDataExt);
 
 		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszDataName)))
 		{
@@ -214,7 +215,8 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	uiFileNumber = FIRST_LOG_BLOCK_FILE_NUMBER( uiVersionNum);
 	for (;;)
 	{
-		bldSuperFileExtension( uiVersionNum, uiFileNumber, pszExt);
+		F_SuperFileClient::bldSuperFileExtension( 
+			uiVersionNum, uiFileNumber, pszExt);
 
 		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->deleteFile( pszTmpName)))
 		{
