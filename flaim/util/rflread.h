@@ -25,8 +25,8 @@
 #include "flaim.h"
 #include "flaimsys.h"
 
-#ifndef RFLREAD_HPP
-#define RFLREAD_HPP
+#ifndef RFLREAD_H
+#define RFLREAD_H
 
 extern "C"
 {
@@ -41,9 +41,9 @@ extern "C"
 #define	RFL_BUFFER_SIZE						(65536 * 4)
 #endif
 
-REXTERN	F_FileHdl *	gv_pRflFileHdl;
+REXTERN	IF_FileHdl *	gv_pRflFileHdl;
 REXTERN	FLMBYTE		gv_rflBuffer [RFL_BUFFER_SIZE];
-REXTERN	FLMUINT		gv_uiRflEof;
+REXTERN	FLMUINT64		gv_ui64RflEof;
 
 // Tag numbers for internal fields.
 
@@ -301,20 +301,20 @@ typedef struct Rfl_Packet
 RCODE RflPositionToNode(
 	FLMUINT		uiFileOffset,
 	FLMBOOL		bOperationsOnly,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppNodeRV);
 
 RCODE RflGetNextNode(
 	NODE *		pCurrOpNode,
 	FLMBOOL		bOperationsOnly,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppNextNodeRV,
 	FLMBOOL		bStopAtEOF = FALSE);
 
 RCODE RflGetPrevNode(
 	NODE *		pCurrOpNode,
 	FLMBOOL		bOperationsOnly,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppPrevNodeRV);
 
 void RflFormatPacket(
@@ -323,7 +323,7 @@ void RflFormatPacket(
 
 RCODE RflExpandPacket(
 	NODE *		pPacketNode,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppForest);
 
 }	// extern "C"

@@ -22,7 +22,7 @@
 // $Id: viewrfl.cpp 12329 2006-01-20 17:49:30 -0700 (Fri, 20 Jan 2006) ahodgkinson $
 //-------------------------------------------------------------------------
 
-#include "ftx.h"
+#include "flaimsys.h"
 #include "sharutil.h"
 #include "flm_edit.h"
 #include "flmarg.h"
@@ -79,7 +79,7 @@ FSTATIC RCODE rflOpenNewFile(
 	F_RecEditor *		pRecEditor,
 	const char *		pszFileName,
 	FLMBOOL				bPosAtBOF,
-	POOL *				pTmpPool,
+	F_Pool *				pTmpPool,
 	NODE **				ppNd);
 
 /*
@@ -102,7 +102,7 @@ RCODE viewRflMainKeyHook(
 RCODE viewRflMainHelpHook(
 	F_RecEditor *		pRecEditor,
 	F_RecEditor *		pHelpEditor,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	void *				UserData,
 	NODE **				ppRootNd);
 
@@ -173,8 +173,7 @@ RFL_PACKET						gv_SrchCriteria;
 FLMBOOL							gv_bSrchForward;
 FLMBOOL							gv_bDoRefresh = TRUE;
 FLMBOOL							gv_bShutdown = FALSE;
-FTX_INFO *						gv_pFtxInfo = NULL;
-const char *					gv_pucTitle = "FLAIM RFL Viewer v1.00";
+const char *					gv_pszTitle = "FLAIM RFL Viewer v1.00";
 char								gv_szRflPath [F_PATH_MAX_SIZE];
 static F_NameTable *			gv_pNameTable = NULL;
 #ifdef FLM_NLM
@@ -252,60 +251,42 @@ void UIMain(
 	RCODE					rc = FERR_OK;
 
 	gv_pRflFileHdl = NULL;
-	gv_uiRflEof = 0;
+	gv_ui64RflEof = 0;
 	f_memset( &gv_SrchCriteria, 0, sizeof( gv_SrchCriteria));
 	gv_bSrchForward = TRUE;
 	gv_SrchCriteria.uiPacketType = 0xFFFFFFFF;
 	gv_SrchCriteria.uiMultiFileSearch = 1;
 
-	if( FTXInit( gv_pucTitle, (FLMUINT)80, (FLMUINT)50,
-		WPS_BLUE, WPS_WHITE, NULL, NULL,
-		&gv_pFtxInfo) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXInit( gv_pszTitle, (FLMUINT)80, (FLMUINT)50,
+		FLM_BLUE, FLM_WHITE, NULL, NULL)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	FTXSetShutdownFlag( gv_pFtxInfo, &gv_bShutdown);
+	FTXSetShutdownFlag( &gv_bShutdown);
 
-	if( FTXScreenInit( gv_pFtxInfo, gv_pucTitle, &pScreen) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXScreenInit( gv_pszTitle, &pScreen)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if( FTXWinInit( pScreen, 0, 1, &pTitleWin) != FTXRC_SUCCESS)
+	if( RC_BAD( rc = FTXWinInit( pScreen, 0, 1, &pTitleWin)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if( FTXWinPaintBackground( pTitleWin, WPS_RED) != FTXRC_SUCCESS)
+	FTXWinPaintBackground( pTitleWin, FLM_RED);
+
+	FTXWinPrintStr( pTitleWin, gv_pszTitle);
+
+	FTXWinSetCursorType( pTitleWin, FLM_CURSOR_INVISIBLE);
+
+	if( RC_BAD( rc = FTXWinOpen( pTitleWin)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if( FTXWinPrintStr( pTitleWin, gv_pucTitle) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinSetCursorType( pTitleWin,
-		WPS_CURSOR_INVISIBLE) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( FTXWinOpen( pTitleWin) != FTXRC_SUCCESS)
-	{
-		rc = RC_SET( FERR_MEM);
-		goto Exit;
-	}
-
-	if( (pRecEditor = new F_RecEditor) == NULL)
+	if( (pRecEditor = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -339,17 +320,17 @@ void UIMain(
 				"Log File Name", gv_szRflPath,
 				sizeof( gv_szRflPath), &uiTermChar);
 
-		if( uiTermChar == WPK_ESCAPE)
+		if( uiTermChar == FKB_ESCAPE)
 		{
 			goto Exit;
 		}
 	}
 
-	if( RC_BAD( rc = pRecEditor->getFileSystem()->Open( gv_szRflPath,
-			  			F_IO_RDWR | F_IO_SH_DENYNONE, &gv_pRflFileHdl)))
+	if( RC_BAD( rc = pRecEditor->getFileSystem()->openFile( gv_szRflPath,
+			  			FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &gv_pRflFileHdl)))
 	{
 		pRecEditor->displayMessage( "Unable to open file", rc,
-			NULL, WPS_RED, WPS_WHITE);
+			NULL, FLM_RED, FLM_WHITE);
 		rc = FERR_OK;
 	}
 	else
@@ -382,7 +363,7 @@ Exit:
 		gv_pRflFileHdl->Release();
 	}
 
-	FTXFree( &gv_pFtxInfo);
+	FTXExit();
 }
 
 
@@ -415,7 +396,7 @@ FSTATIC RCODE addLabel(
 
 	return( pForm->addTextObject( uiObjectId, pszLabel,
 		uiLen, uiLen,
-		0, TRUE, WPS_BLUE, WPS_WHITE,
+		0, TRUE, FLM_BLUE, FLM_WHITE,
 		uiRow, SRCH_LABEL_COLUMN));
 }
 
@@ -440,18 +421,18 @@ FSTATIC FLMBOOL editSearchFormCB(
 	{
 		switch (uiKeyIn)
 		{
-			case WPK_F1:
-			case WPK_F2:
-			case WPK_F3:
-			case WPK_F4:
-			case WPK_F5:
-			case WPK_F6:
-			case WPK_F7:
-			case WPK_F8:
-			case WPK_F9:
-			case WPK_F10:
-			case WPK_F11:
-			case WPK_F12:
+			case FKB_F1:
+			case FKB_F2:
+			case FKB_F3:
+			case FKB_F4:
+			case FKB_F5:
+			case FKB_F6:
+			case FKB_F7:
+			case FKB_F8:
+			case FKB_F9:
+			case FKB_F10:
+			case FKB_F11:
+			case FKB_F12:
 				return( FALSE);
 			default:
 				return( TRUE);
@@ -496,15 +477,13 @@ FSTATIC RCODE getSearchCriteria(
 	FLMUINT			uiCurrObjectId;
 	const char *	pszWhat = NULL;
 
-	if (FTXScreenGetSize( pScreen,
-			&uiScreenCols, &uiScreenRows) != FTXRC_SUCCESS)
+	if (RC_BAD( rc = FTXScreenGetSize( pScreen, &uiScreenCols, &uiScreenRows)))
 	{
 		pszWhat = "getting screen size";
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
-	if ((pForm = new FlmForm) == NULL)
+	if ((pForm = f_new FlmForm) == NULL)
 	{
 		pszWhat = "allocating form";
 		rc = RC_SET( FERR_MEM);
@@ -513,12 +492,12 @@ FSTATIC RCODE getSearchCriteria(
 
 	if (RC_BAD( rc = pForm->init( pScreen, NULL,
 						"Search Criteria",
-						WPS_BLUE, WPS_WHITE,
+						FLM_BLUE, FLM_WHITE,
 						"ESC=Quit, F1=search forward, other=search backward",
-						WPS_BLUE, WPS_WHITE,
+						FLM_BLUE, FLM_WHITE,
 						0, 0,
 						uiScreenCols - 1, uiScreenRows - 1, TRUE, TRUE,
-						WPS_BLUE, WPS_LIGHTGRAY)))
+						FLM_BLUE, FLM_LIGHTGRAY)))
 	{
 		pszWhat = "initializing form";
 		goto Exit;
@@ -534,7 +513,7 @@ FSTATIC RCODE getSearchCriteria(
 	}
 	if (RC_BAD( rc = pForm->addPulldownObject( SRCH_PACKET_TYPE_TAG,
 									20, 10,
-									WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+									FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -701,7 +680,7 @@ FSTATIC RCODE getSearchCriteria(
 	if (RC_BAD( rc = pForm->addUnsignedObject( SRCH_TRANS_ID_TAG,
 					pSrchCriteria->uiTransID,
 					0, 0xFFFFFFFF, 10,
-					0, FALSE, WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+					0, FALSE, FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -729,7 +708,7 @@ FSTATIC RCODE getSearchCriteria(
 	if (RC_BAD( rc = pForm->addUnsignedObject( SRCH_CONTAINER_TAG,
 					pSrchCriteria->uiContainer,
 					0, 0xFFFF, 5,
-					0, FALSE, WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+					0, FALSE, FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -757,7 +736,7 @@ FSTATIC RCODE getSearchCriteria(
 	if (RC_BAD( rc = pForm->addUnsignedObject( SRCH_INDEX_TAG,
 					pSrchCriteria->uiIndex,
 					0, 0xFFFF, 5,
-					0, FALSE, WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+					0, FALSE, FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -785,7 +764,7 @@ FSTATIC RCODE getSearchCriteria(
 	if (RC_BAD( rc = pForm->addUnsignedObject( SRCH_DRN_TAG,
 					pSrchCriteria->uiDrn,
 					0, 0xFFFFFFFF, 10,
-					0, FALSE, WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+					0, FALSE, FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -813,7 +792,7 @@ FSTATIC RCODE getSearchCriteria(
 	if (RC_BAD( rc = pForm->addUnsignedObject( SRCH_END_DRN_TAG,
 					pSrchCriteria->uiEndDrn,
 					0, 0xFFFFFFFF, 10,
-					0, FALSE, WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+					0, FALSE, FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -840,7 +819,7 @@ FSTATIC RCODE getSearchCriteria(
 	}
 	if (RC_BAD( rc = pForm->addPulldownObject( SRCH_MULTI_FILE_TAG,
 									20, 10,
-									WPS_LIGHTGRAY, WPS_RED, uiRow, SRCH_ENTER_COLUMN)))
+									FLM_LIGHTGRAY, FLM_RED, uiRow, SRCH_ENTER_COLUMN)))
 	{
 		goto Exit;
 	}
@@ -870,12 +849,12 @@ FSTATIC RCODE getSearchCriteria(
 	pForm->setFormEventCB( editSearchFormCB, NULL, TRUE);
 	uiChar = pForm->interact( &bValuesChanged, &uiCurrObjectId);
 
-	if (uiChar == WPK_ESC)
+	if (uiChar == FKB_ESCAPE)
 	{
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-	*pbForward = (FLMBOOL)((uiChar == WPK_F1)
+	*pbForward = (FLMBOOL)((uiChar == FKB_F1)
 								  ? TRUE
 								  : FALSE);
 
@@ -886,13 +865,13 @@ FSTATIC RCODE getSearchCriteria(
 	}
 
 Exit:
-	if (RC_BAD( rc) && uiChar != WPK_ESC)
+	if (RC_BAD( rc) && uiChar != FKB_ESCAPE)
 	{
 		char	szErrMsg [100];
 
 		f_sprintf( (char *)szErrMsg, "Error %s", pszWhat);
 		pRecEditor->displayMessage( szErrMsg, rc,
-						NULL, WPS_RED, WPS_WHITE);
+						NULL, FLM_RED, FLM_WHITE);
 	}
 	if (pForm)
 	{
@@ -1043,16 +1022,16 @@ FSTATIC RCODE viewRflHeaderDispHook(
 		pszTmp [LABEL_WIDTH] = ' ';
 		pszTmp [LABEL_WIDTH + 1] = 0;
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = WPS_BLUE;
+		pDispVals[ *puiNumVals].foreground = FLM_WHITE;
+		pDispVals[ *puiNumVals].background = FLM_BLUE;
 		(*puiNumVals)++;
 		uiCol += (LABEL_WIDTH + 1);
 
 		// Output the value.
 
 		pDispVals[ *puiNumVals].uiCol = uiCol;
-		pDispVals[ *puiNumVals].uiForeground = WPS_YELLOW;
-		pDispVals[ *puiNumVals].uiBackground = WPS_BLUE;
+		pDispVals[ *puiNumVals].foreground = FLM_YELLOW;
+		pDispVals[ *puiNumVals].background = FLM_BLUE;
 
 		(void)pRecEditor->getDisplayValue( pNd,
 								F_RECEDIT_DEFAULT_TYPE,
@@ -1078,12 +1057,12 @@ FSTATIC RCODE viewRflShowHeader(
 	FLMUINT				uiBytesRead;
 	FLMBYTE				szTmp [100];
 	FLMUINT				uiTmp;
-	POOL					tmpPool;
+	F_Pool				tmpPool;
 	RCODE					rc = FERR_OK;
 
-	GedPoolInit( &tmpPool, 1024);
+	tmpPool.poolInit( 1024);
 
-	if( (pRecEditor = new F_RecEditor) == NULL)
+	if( (pRecEditor = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -1104,7 +1083,7 @@ FSTATIC RCODE viewRflShowHeader(
 
 	// Read the header from the file.
 
-	if (RC_BAD( rc = gv_pRflFileHdl->Read( 0, 512, ucHdrBuf, &uiBytesRead)))
+	if (RC_BAD( rc = gv_pRflFileHdl->read( 0, 512, ucHdrBuf, &uiBytesRead)))
 	{
 		goto Exit;
 	}
@@ -1238,7 +1217,7 @@ Exit:
 		pRecEditor->Release();
 	}
 
-	GedPoolFree( &tmpPool);
+	tmpPool.poolFree();
 	return( rc);
 }
 
@@ -1249,23 +1228,23 @@ FSTATIC RCODE viewRflGetEOF( void)
 {
 	RCODE			rc = FERR_OK;
 	NODE *		pTmpNd;
-	POOL			tmpPool;
+	F_Pool		tmpPool;
 	FLMBYTE		ucHdrBuf [512];
 	FLMUINT		uiBytesRead;
 	FLMUINT		uiEof;
 
-	GedPoolInit( &tmpPool, 4096);
+	tmpPool.poolInit( 4096);
 
 	// First try to get the EOF from the file's header.
 
-	if (RC_BAD( rc = gv_pRflFileHdl->Read( 0, 512, ucHdrBuf, &uiBytesRead)))
+	if (RC_BAD( rc = gv_pRflFileHdl->read( 0, 512, ucHdrBuf, &uiBytesRead)))
 	{
 		goto Exit;
 	}
 	uiEof = (FLMUINT)FB2UD( &ucHdrBuf [RFL_EOF_POS]);
 	if (uiEof)
 	{
-		gv_uiRflEof = uiEof;
+		gv_ui64RflEof = (FLMUINT64)uiEof;
 	}
 	else
 	{
@@ -1281,16 +1260,16 @@ FSTATIC RCODE viewRflGetEOF( void)
 
 		// If we still didn't get an EOF value, set it to the file size.
 
-		if (!gv_uiRflEof)
+		if (!gv_ui64RflEof)
 		{
-			if (RC_BAD( rc = gv_pRflFileHdl->Size( &gv_uiRflEof)))
+			if (RC_BAD( rc = gv_pRflFileHdl->size( &gv_ui64RflEof)))
 			{
 				goto Exit;
 			}
 		}
 	}
 Exit:
-	GedPoolFree( &tmpPool);
+	tmpPool.poolFree();
 	return( rc);
 }
 
@@ -1301,12 +1280,12 @@ FSTATIC RCODE rflOpenNewFile(
 	F_RecEditor *		pRecEditor,
 	const char *		pszFileName,
 	FLMBOOL				bPosAtBOF,
-	POOL *				pTmpPool,
+	F_Pool *				pTmpPool,
 	NODE **				ppNd)
 {
 	RCODE			rc = FERR_OK;
-	F_FileHdl *	pFileHdl = NULL;
-	F_FileHdl *	pSaveFileHdl = NULL;
+	IF_FileHdl *	pFileHdl = NULL;
+	IF_FileHdl *	pSaveFileHdl = NULL;
 	char			szPath [F_PATH_MAX_SIZE];
 	char			szBaseName [F_FILENAME_SIZE];
 	char			szPrefix [F_FILENAME_SIZE];
@@ -1351,8 +1330,8 @@ FSTATIC RCODE rflOpenNewFile(
 
 	// See if we can open the next file.
 
-	if( RC_BAD( rc = pRecEditor->getFileSystem()->Open( pszFileName,
-			  			F_IO_RDWR | F_IO_SH_DENYNONE, &pFileHdl)))
+	if( RC_BAD( rc = pRecEditor->getFileSystem()->openFile( pszFileName,
+			  			FLM_IO_RDWR | FLM_IO_SH_DENYNONE, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1418,8 +1397,8 @@ RCODE viewRflMainKeyHook(
 	NODE *			pRootNd = NULL;
 	NODE *			pTmpNd = NULL;
 	NODE *			pNewNd;
-	POOL				tmpPool;
-	POOL				tmp2Pool;
+	F_Pool			tmpPool;
+	F_Pool			tmp2Pool;
 	FTX_WINDOW *	pWindow = NULL;
 	NODE *			pLastNd;
 	NODE *			pFirstNd;
@@ -1432,8 +1411,8 @@ RCODE viewRflMainKeyHook(
 	FLMUINT			uiOffset;
 
 	F_UNREFERENCED_PARM( UserData);
-	GedPoolInit( &tmpPool, 4096);
-	GedPoolInit( &tmp2Pool, 4096);
+	tmpPool.poolInit( 4096);
+	tmp2Pool.poolInit( 4096);
 
 	if( puiKeyOut)
 	{
@@ -1443,17 +1422,17 @@ RCODE viewRflMainKeyHook(
 	pRootNd = pRecEditor->getRootNode( pCurNd);
 	switch( uiKeyIn)
 	{
-		case WPK_DOWN:
-		case WPK_UP:
-		case WPK_PGDN:
-		case WPK_PGUP:
+		case FKB_DOWN:
+		case FKB_UP:
+		case FKB_PGDN:
+		case FKB_PGUP:
 		case '?':
 		{
 			*puiKeyOut = uiKeyIn;
 			break;
 		}
 
-		case WPK_END:
+		case FKB_END:
 		{
 			FLMUINT		uiLoop;
 
@@ -1485,13 +1464,13 @@ RCODE viewRflMainKeyHook(
 				{
 					break;
 				}
-				GedPoolReset( &tmpPool, NULL);
+				tmpPool.poolReset( NULL);
 			}
 			pRecEditor->setCurrentAtBottom();
 			break;
 		}
 
-		case WPK_HOME:
+		case FKB_HOME:
 		{
 			pRecEditor->setTree( NULL);
 			if( RC_BAD( rc = RflGetNextNode( NULL, FALSE, &tmpPool, 
@@ -1511,7 +1490,7 @@ RCODE viewRflMainKeyHook(
 		View a specific entry
 		*/
 
-		case WPK_ENTER:
+		case FKB_ENTER:
 		{
 			viewRflInspectEntry( pRecEditor);
 			break;
@@ -1528,7 +1507,7 @@ RCODE viewRflMainKeyHook(
 			pRecEditor->requestInput(
 				"Log File Name",
 				szResponse, sizeof( szResponse), &uiTermChar);
-			if( uiTermChar == WPK_ESCAPE || !szResponse [0])
+			if( uiTermChar == FKB_ESCAPE || !szResponse [0])
 			{
 				break;
 			}
@@ -1537,7 +1516,7 @@ RCODE viewRflMainKeyHook(
 									&tmpPool, &pTmpNd)))
 			{
 				pRecEditor->displayMessage( "Unable to open file", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			}
 			break;
 
@@ -1547,7 +1526,7 @@ RCODE viewRflMainKeyHook(
 									&tmpPool, &pTmpNd)))
 			{
 				pRecEditor->displayMessage( "Unable to open file", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			}
 			break;
 
@@ -1557,7 +1536,7 @@ RCODE viewRflMainKeyHook(
 									&tmpPool, &pTmpNd)))
 			{
 				pRecEditor->displayMessage( "Unable to open file", rc,
-					NULL, WPS_RED, WPS_WHITE);
+					NULL, FLM_RED, FLM_WHITE);
 			}
 			break;
 
@@ -1574,7 +1553,7 @@ RCODE viewRflMainKeyHook(
 				"Offset",
 				szResponse, sizeof( szResponse), &uiTermChar);
 
-			if( uiTermChar == WPK_ESCAPE)
+			if( uiTermChar == FKB_ESCAPE)
 			{
 				break;
 			}
@@ -1588,7 +1567,7 @@ RCODE viewRflMainKeyHook(
 				if( RC_BAD( rc = pRecEditor->getNumber( szResponse, &uiOffset, NULL)))
 				{
 					pRecEditor->displayMessage( "Invalid offset", rc,
-						NULL, WPS_RED, WPS_WHITE);
+						NULL, FLM_RED, FLM_WHITE);
 					break;
 				}
 
@@ -1608,12 +1587,12 @@ RCODE viewRflMainKeyHook(
 		Find something in the RFL log.
 		*/
 
-		case WPK_F1:
-		case WPK_F3:
+		case FKB_F1:
+		case FKB_F3:
 			gv_bSrchForward = TRUE;
 			bSkipCurrent = TRUE;
 			goto Do_Search;
-		case WPK_F2:
+		case FKB_F2:
 			gv_bSrchForward = FALSE;
 			bSkipCurrent = TRUE;
 			goto Do_Search;
@@ -1631,7 +1610,7 @@ RCODE viewRflMainKeyHook(
 Do_Search:
 			if (RC_BAD( rc = pRecEditor->createStatusWindow(
 				" Searching ... (press ESC to interrupt) ",
-				WPS_GREEN, WPS_WHITE, NULL, NULL, &pWindow)))
+				FLM_GREEN, FLM_WHITE, NULL, NULL, &pWindow)))
 			{
 				goto Exit;
 			}
@@ -1671,11 +1650,11 @@ Do_Search:
 
 					// Test for the escape key
 
-					if (FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+					if (RC_OK( FTXWinTestKB( pWindow)))
 					{
 						FLMUINT	uiChar;
 						FTXWinInputChar( pWindow, &uiChar);
-						if( uiChar == WPK_ESCAPE)
+						if( uiChar == FKB_ESCAPE)
 						{
 							goto Exit;
 						}
@@ -1705,7 +1684,7 @@ Do_Search:
 			// If we do not have an EOF, determine one.  We don't
 			// want to continue our search past this point.
 
-			if (!gv_uiRflEof)
+			if (!gv_ui64RflEof)
 			{
 				if (RC_BAD( rc = viewRflGetEOF()))
 				{
@@ -1715,7 +1694,7 @@ Do_Search:
 
 			for (;;)
 			{
-				GedPoolReset( &tmpPool, NULL);
+				tmpPool.poolReset( NULL);
 				if (gv_bSrchForward)
 				{
 					if (RC_BAD( rc = RflGetNextNode( pLastNd, FALSE,
@@ -1786,17 +1765,17 @@ Do_Search:
 
 					// Test for the escape key
 
-					if (FTXWinTestKB( pWindow) == FTXRC_SUCCESS)
+					if (RC_OK( FTXWinTestKB( pWindow)))
 					{
 						FLMUINT	uiChar;
 						FTXWinInputChar( pWindow, &uiChar);
-						if( uiChar == WPK_ESCAPE)
+						if( uiChar == FKB_ESCAPE)
 						{
 							goto Exit;
 						}
 					}
 				}
-				GedPoolReset( &tmp2Pool, NULL);
+				tmp2Pool.poolReset( NULL);
 				if ((pLastNd = GedCopy( &tmp2Pool, 1, pCurNd)) == NULL)
 				{
 					rc = RC_SET( FERR_MEM);
@@ -1810,10 +1789,10 @@ Do_Search:
 			break;
 		}
 
-		case WPK_ALT_Q:
-		case WPK_ESCAPE:
+		case FKB_ALT_Q:
+		case FKB_ESCAPE:
 		{
-			*puiKeyOut = WPK_ESCAPE;
+			*puiKeyOut = FKB_ESCAPE;
 			break;
 		}
 	}
@@ -1823,8 +1802,8 @@ Exit:
 	{
 		FTXWinFree( &pWindow);
 	}
-	GedPoolFree( &tmpPool);
-	GedPoolFree( &tmp2Pool);
+	tmpPool.poolFree();
+	tmp2Pool.poolFree();
 	return( rc);
 }
 
@@ -1836,7 +1815,7 @@ Desc:
 RCODE viewRflMainHelpHook(
 	F_RecEditor *		pRecEditor,
 	F_RecEditor *		pHelpEditor,
-	POOL *				pPool,
+	F_Pool *				pPool,
 	void *				UserData,
 	NODE **				ppRootNd)
 {
@@ -1867,42 +1846,42 @@ RCODE viewRflMainHelpHook(
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_UP, (void *)"UP              Move cursor up",
+		FKB_UP, (void *)"UP              Move cursor up",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_DOWN, (void *)"DOWN            Move cursor down",
+		FKB_DOWN, (void *)"DOWN            Move cursor down",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_PGUP, (void *)"PG UP           Page up",
+		FKB_PGUP, (void *)"PG UP           Page up",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_PGDN, (void *)"PG DOWN         Page down",
+		FKB_PGDN, (void *)"PG DOWN         Page down",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_HOME, (void *)"HOME            Position to beginning of file",
+		FKB_HOME, (void *)"HOME            Position to beginning of file",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_END, (void *)"END             Position to end of file",
+		FKB_END, (void *)"END             Position to end of file",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -1937,14 +1916,14 @@ RCODE viewRflMainHelpHook(
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_F1, (void *)"F1 or F3        Search forward (using last criteria entered)",
+		FKB_F1, (void *)"F1 or F3        Search forward (using last criteria entered)",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_F2, (void *)"F2              Search backward (using last criteria entered)",
+		FKB_F2, (void *)"F2              Search backward (using last criteria entered)",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -1965,7 +1944,7 @@ RCODE viewRflMainHelpHook(
 	}
 
 	if( RC_BAD( rc = gedAddField( pPool, pNewTree,
-		WPK_ESCAPE, (void *)"ESC, ALT-Q      Exit",
+		FKB_ESCAPE, (void *)"ESC, ALT-Q      Exit",
 		0, FLM_TEXT_TYPE)))
 	{
 		goto Exit;
@@ -1989,13 +1968,13 @@ RCODE viewRflMainEventHook(
 	void *				EventData,
 	void *				UserData)
 {
-	POOL					tmpPool;
+	F_Pool				tmpPool;
 	NODE *				pTmpNd;
 	RCODE					rc = FERR_OK;
 
 	F_UNREFERENCED_PARM( UserData);
 
-	GedPoolInit( &tmpPool, 4096);
+	tmpPool.poolInit( 4096);
 
 	switch( eEventType)
 	{
@@ -2200,7 +2179,7 @@ RCODE viewRflMainEventHook(
 
 Exit:
 
-	GedPoolFree( &tmpPool);
+	tmpPool.poolFree();
 	return( rc);
 }
 
@@ -2214,12 +2193,12 @@ RCODE viewRflInspectEntry(
 {
 	F_RecEditor *		pRecEditor;
 	NODE *				pExpandNd;
-	POOL					tmpPool;
+	F_Pool				tmpPool;
 	RCODE					rc = FERR_OK;
 
-	GedPoolInit( &tmpPool, 1024);
+	tmpPool.poolInit( 1024);
 
-	if( (pRecEditor = new F_RecEditor) == NULL)
+	if( (pRecEditor = f_new F_RecEditor) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
@@ -2254,7 +2233,7 @@ Exit:
 		pRecEditor->Release();
 	}
 
-	GedPoolFree( &tmpPool);
+	tmpPool.poolFree();
 	return( rc);
 }
 
@@ -2301,8 +2280,8 @@ RCODE viewRflInspectDispHook(
 			f_sprintf( (char *)pDispVals[ *puiNumVals].pucString,
 				"%8.8X", (unsigned)uiOffset);
 			pDispVals[ *puiNumVals].uiCol = uiCol;
-			pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-			pDispVals[ *puiNumVals].uiBackground = WPS_BLUE;
+			pDispVals[ *puiNumVals].foreground = FLM_WHITE;
+			pDispVals[ *puiNumVals].background = FLM_BLUE;
 			(*puiNumVals)++;
 		}
 		uiCol += 10;
@@ -2314,8 +2293,8 @@ RCODE viewRflInspectDispHook(
 		f_sprintf( (char *)pDispVals[ *puiNumVals].pucString,
 			"%u", (unsigned)GedNodeLevel( pNd));
 		pDispVals[ *puiNumVals].uiCol = uiCol + (GedNodeLevel( pNd) * 2);
-		pDispVals[ *puiNumVals].uiForeground = WPS_WHITE;
-		pDispVals[ *puiNumVals].uiBackground = WPS_BLUE;
+		pDispVals[ *puiNumVals].foreground = FLM_WHITE;
+		pDispVals[ *puiNumVals].background = FLM_BLUE;
 		uiCol += (FLMUINT)(f_strlen( pDispVals[ *puiNumVals].pucString) +
 			(GedNodeLevel( pNd) * 2) + 1);
 		(*puiNumVals)++;
@@ -2376,17 +2355,17 @@ RCODE viewRflInspectDispHook(
 
 		if( bBadField)
 		{
-			pDispVals[ *puiNumVals].uiForeground = WPS_RED;
-			pDispVals[ *puiNumVals].uiBackground = WPS_WHITE;
+			pDispVals[ *puiNumVals].foreground = FLM_RED;
+			pDispVals[ *puiNumVals].background = FLM_WHITE;
 		}
 		else
 		{
 #ifdef FLM_WIN
-			pDispVals[ *puiNumVals].uiForeground = WPS_LIGHTGREEN;
+			pDispVals[ *puiNumVals].foreground = FLM_LIGHTGREEN;
 #else
-			pDispVals[ *puiNumVals].uiForeground = WPS_GREEN;
+			pDispVals[ *puiNumVals].foreground = FLM_GREEN;
 #endif
-			pDispVals[ *puiNumVals].uiBackground = WPS_BLUE;
+			pDispVals[ *puiNumVals].background = FLM_BLUE;
 		}
 
 		pDispVals[ *puiNumVals].uiCol = uiCol;
@@ -2419,8 +2398,8 @@ RCODE viewRflInspectDispHook(
 				}
 
 				pDispVals[ *puiNumVals].uiCol = uiCol;
-				pDispVals[ *puiNumVals].uiForeground = WPS_YELLOW;
-				pDispVals[ *puiNumVals].uiBackground = WPS_BLUE;
+				pDispVals[ *puiNumVals].foreground = FLM_YELLOW;
+				pDispVals[ *puiNumVals].background = FLM_BLUE;
 				uiCol += (FLMUINT)(f_strlen( pDispVals[ *puiNumVals].pucString) + 1);
 				(*puiNumVals)++;
 			}
@@ -2493,14 +2472,14 @@ RCODE viewRflInspectKeyHook(
 
 	switch( uiKeyIn)
 	{
-		case WPK_DOWN:
-		case WPK_UP:
-		case WPK_PGDN:
-		case WPK_PGUP:
-		case WPK_ESCAPE:
-		case WPK_ENTER:
-		case WPK_END:
-		case WPK_HOME:
+		case FKB_DOWN:
+		case FKB_UP:
+		case FKB_PGDN:
+		case FKB_PGUP:
+		case FKB_ESCAPE:
+		case FKB_ENTER:
+		case FKB_END:
+		case FKB_HOME:
 		case '?':
 		{
 			*puiKeyOut = uiKeyIn;
@@ -2564,7 +2543,7 @@ RCODE viewRflNameTableInit(
 		}
 	}
 
-	if( (pNameTable = new F_NameTable) == NULL)
+	if( (pNameTable = f_new F_NameTable) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;

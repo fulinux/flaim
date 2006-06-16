@@ -97,7 +97,7 @@ FSTATIC RCODE rflGetPrevOpPacket(
 	FLMBOOL *		pbFoundPrev);
 
 FSTATIC RCODE rflPutNum(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE *			pLinkToNode,
 	FLMBOOL			bPutAsSib,
 	eDispTag			eDispTag,
@@ -109,47 +109,47 @@ FSTATIC RCODE rflPutNum(
 
 FSTATIC RCODE rflExpandPacketHdr(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppParent);
 
 FSTATIC RCODE rflExpandTrnsPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandStartUnknownPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandIndexSetPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandBlkChainFreePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 									 
 FSTATIC RCODE rflExpandReducePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandUpgradePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandIndexStatePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandDataPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBOOL			bOutputPacket,
 	FLMUINT			uiPacketType,
 	NODE **			ppDataPacketNode,
@@ -157,7 +157,7 @@ FSTATIC RCODE rflExpandDataPacket(
 	FLMUINT *		puiLevel);
 
 FSTATIC RCODE rflExpandRecordPackets(
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMUINT			uiOffset,
 	FLMUINT			uiPacketType,
 	NODE **			ppLastPacketNode,
@@ -165,30 +165,30 @@ FSTATIC RCODE rflExpandRecordPackets(
 
 FSTATIC RCODE rflExpandChangeFieldsPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBOOL			bOutputPacket,
 	NODE **			ppChangeFieldsPacketNode,
 	FLMUINT *		puiDataLen);
 
 FSTATIC RCODE rflExpandRecOpPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest,
 	FLMUINT			uiPacketOffset);
 
 FSTATIC RCODE rflExpandUnkPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandEncryptionPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC RCODE rflExpandConfigSizePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest);
 
 FSTATIC void rflFormatCount(
@@ -775,7 +775,7 @@ FSTATIC FLMUINT rflFindNextPacket(
 
 	// Read up to a full packet body.
 
-	rc = gv_pRflFileHdl->Read( uiStartOffset,
+	rc = gv_pRflFileHdl->read( uiStartOffset,
 									uiBytesToRead, pucPacketHdr, &uiBytesRead);
 	if (RC_BAD( rc))
 	{
@@ -886,7 +886,7 @@ Get_Prev_Packet:
 	}
 	pucPacketHdr = pucBuffer;
 
-	rc = gv_pRflFileHdl->Read( uiReadOffset,
+	rc = gv_pRflFileHdl->read( uiReadOffset,
 									uiBytesToRead, pucPacketHdr, &uiBytesRead);
 	if (RC_BAD( rc))
 	{
@@ -993,7 +993,7 @@ FSTATIC RCODE rflRetrievePacket(
 
 	pucPacketHdr = &gv_rflBuffer [0];
 	uiBytesToRead = RFL_PACKET_OVERHEAD;
-	if (RC_BAD( rc = gv_pRflFileHdl->Read( uiFileOffset,
+	if (RC_BAD( rc = gv_pRflFileHdl->read( uiFileOffset,
 									uiBytesToRead, pucPacketHdr, &uiBytesRead)))
 	{
 		if (rc != FERR_IO_END_OF_FILE)
@@ -1226,7 +1226,7 @@ FSTATIC RCODE rflRetrievePacket(
 	else
 	{
 		pucPacketBody = &gv_rflBuffer [RFL_PACKET_OVERHEAD];
-		if (RC_BAD( rc = gv_pRflFileHdl->Read( uiFileOffset + RFL_PACKET_OVERHEAD,
+		if (RC_BAD( rc = gv_pRflFileHdl->read( uiFileOffset + RFL_PACKET_OVERHEAD,
 										uiExpectedBodyLen, pucPacketBody, &uiBytesRead)))
 		{
 			if (rc != FERR_IO_END_OF_FILE)
@@ -1721,14 +1721,14 @@ Desc: Retrieves the next operation in the RFL file and formats
 RCODE RflGetNextNode(
 	NODE *		pCurrOpNode,
 	FLMBOOL		bOperationsOnly,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppNextNodeRV,
 	FLMBOOL		bStopAtEOF
 	)
 {
 	RCODE				rc = FERR_OK;
 	NODE *			pPacketNode = NULL;
-	void *			pvMark = GedPoolMark( pPool);
+	void *			pvMark = pPool->poolMark();
 	RFL_PACKET *	pRflPacket;
 	FLMUINT			uiNextPacketAddr;
 	FLMUINT			uiPrevPacketAddr;
@@ -1751,7 +1751,7 @@ RCODE RflGetNextNode(
 		}
 		uiPrevPacketAddr = pRflPacket->uiFileOffset;
 	}
-	if (bStopAtEOF && uiNextPacketAddr > gv_uiRflEof)
+	if (bStopAtEOF && (FLMUINT64)uiNextPacketAddr > gv_ui64RflEof)
 	{
 		// pPacketNode should be NULL at this point.
 		goto Exit;	// Should return FERR_OK;
@@ -1804,7 +1804,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppNextNodeRV = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -1877,15 +1877,15 @@ Desc: Retrieves the previous operation in the RFL file and formats
 RCODE RflGetPrevNode(
 	NODE *		pCurrOpNode,
 	FLMBOOL		bOperationsOnly,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppNextNodeRV
 	)
 {
 	RCODE				rc = FERR_OK;
 	NODE *			pPacketNode = NULL;
-	void *			pvMark = GedPoolMark( pPool);
+	void *			pvMark = pPool->poolMark();
 	RFL_PACKET *	pRflPacket;
-	FLMUINT			uiPrevPacketAddress;
+	FLMUINT64		ui64PrevPacketAddress;
 	FLMBOOL			bValidStartOffset;
 	FLMBOOL			bPositioningToEOF = FALSE;
 
@@ -1893,11 +1893,11 @@ RCODE RflGetPrevNode(
 
 	if (!pCurrOpNode)
 	{
-		if (RC_BAD( rc = gv_pRflFileHdl->Size( &uiPrevPacketAddress)))
+		if (RC_BAD( rc = gv_pRflFileHdl->size( &ui64PrevPacketAddress)))
 		{
 			goto Exit;
 		}
-		uiPrevPacketAddress = rflFindPrevPacket( uiPrevPacketAddress,
+		ui64PrevPacketAddress = (FLMUINT64)rflFindPrevPacket( (FLMUINT)ui64PrevPacketAddress,
 												TRUE, FALSE);
 		bPositioningToEOF = TRUE;
 	}
@@ -1907,7 +1907,7 @@ RCODE RflGetPrevNode(
 
 		// If there is no previous packet pointer, read backwards to find it.
 
-		if ((uiPrevPacketAddress = pRflPacket->uiPrevPacketAddress) == 0)
+		if ((ui64PrevPacketAddress = (FLMUINT64)pRflPacket->uiPrevPacketAddress) == 0)
 		{
 			bValidStartOffset = (FLMBOOL)(((pRflPacket->uiPacketAddressBytes == 4) &&
 												  (pRflPacket->uiPacketAddress ==
@@ -1915,12 +1915,12 @@ RCODE RflGetPrevNode(
 												 ? (FLMBOOL)TRUE
 												 : (FLMBOOL)FALSE);
 
-			uiPrevPacketAddress = rflFindPrevPacket( pRflPacket->uiFileOffset,
+			ui64PrevPacketAddress = (FLMUINT64)rflFindPrevPacket( pRflPacket->uiFileOffset,
 												FALSE, bValidStartOffset);
 		}
 	}
 
-	if (!uiPrevPacketAddress)
+	if (!ui64PrevPacketAddress)
 	{
 		goto Exit;
 	}
@@ -1938,14 +1938,14 @@ RCODE RflGetPrevNode(
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-	if (RC_BAD( rc = rflRetrievePacket( 0, uiPrevPacketAddress,
+	if (RC_BAD( rc = rflRetrievePacket( 0, (FLMUINT)ui64PrevPacketAddress,
 										pRflPacket)))
 	{
 		goto Exit;
 	}
 	if (bPositioningToEOF)
 	{
-		gv_uiRflEof = pRflPacket->uiNextPacketAddress;
+		gv_ui64RflEof = (FLMUINT64)pRflPacket->uiNextPacketAddress;
 	}
 
 	// If the request is for an operation, get the previous operation packet.
@@ -1976,7 +1976,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppNextNodeRV = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -1993,19 +1993,19 @@ Desc: Retrieves the node closest to the specified address.  First it
 RCODE RflPositionToNode(
 	FLMUINT		uiFileOffset,
 	FLMBOOL		bOperationsOnly,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppNodeRV
 	)
 {
 	RCODE				rc = FERR_OK;
-	void *			pvMark = GedPoolMark( pPool);
+	void *			pvMark = pPool->poolMark();
 	NODE *			pPacketNode = NULL;
 	FLMUINT			uiPacketAddr;
-	FLMUINT			uiFileSize;
+	FLMUINT64		ui64FileSize;
 	FLMBOOL			bFound;
 	RFL_PACKET *	pRflPacket;
 
-	if (RC_BAD( rc = gv_pRflFileHdl->Size( &uiFileSize)))
+	if (RC_BAD( rc = gv_pRflFileHdl->size( &ui64FileSize)))
 	{
 		goto Exit;
 	}
@@ -2013,7 +2013,7 @@ RCODE RflPositionToNode(
 	// If the specified offset is beyond the current EOF,
 	// simply position to the last packet.
 
-	if (uiFileOffset >= uiFileSize)
+	if ((FLMUINT64)uiFileOffset >= ui64FileSize)
 	{
 		rc = RflGetPrevNode( NULL, bOperationsOnly, pPool, &pPacketNode);
 		goto Exit;
@@ -2115,7 +2115,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppNodeRV = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -2128,7 +2128,7 @@ Exit:
 Desc: Puts a number in as the last child of the parent node.
 *********************************************************************/
 FSTATIC RCODE rflPutNum(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE *		pLinkToNode,
 	FLMBOOL		bPutAsSib,
 	eDispTag		eDispTag,
@@ -2213,7 +2213,7 @@ Desc: Expands a packet header into multiple GEDCOM nodes for
 *********************************************************************/
 FSTATIC RCODE rflExpandPacketHdr(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppParent
 	)
 {
@@ -2402,12 +2402,12 @@ Desc: Expands a transaction packet into multiple GEDCOM nodes
 *********************************************************************/
 FSTATIC RCODE rflExpandTrnsPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -2528,7 +2528,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -2543,12 +2543,12 @@ Desc: Expands a start unknown packet into multiple GEDCOM nodes
 *********************************************************************/
 FSTATIC RCODE rflExpandStartUnknownPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -2580,7 +2580,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -2595,12 +2595,12 @@ Desc: Expands an index set packet into multiple GEDCOM nodes
 *********************************************************************/
 FSTATIC RCODE rflExpandIndexSetPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -2731,7 +2731,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -2746,11 +2746,11 @@ Desc: Expands a block chain free packet for display of all
 *********************************************************************/
 FSTATIC RCODE rflExpandBlkChainFreePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -2868,7 +2868,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -2883,12 +2883,12 @@ Desc: Expands a reduce packet into multiple GEDCOM nodes
 *********************************************************************/
 FSTATIC RCODE rflExpandReducePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -2932,7 +2932,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -2947,12 +2947,12 @@ Desc: Expands an upgrade packet into multiple GEDCOM nodes
 *********************************************************************/
 FSTATIC RCODE rflExpandUpgradePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -3007,7 +3007,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -3021,12 +3021,12 @@ Desc: Expands an index suspend or resume packet
 *********************************************************************/
 FSTATIC RCODE rflExpandIndexStatePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -3070,7 +3070,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -3084,7 +3084,7 @@ Desc: Expand a data record packet.
 *********************************************************************/
 FSTATIC RCODE rflExpandDataPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBOOL			bOutputPacket,
 	FLMUINT			uiPacketType,
 	NODE **			ppDataPacketNode,
@@ -3093,7 +3093,7 @@ FSTATIC RCODE rflExpandDataPacket(
 	)
 {
 	RCODE			rc = FERR_OK;
-	void *		pvMark = GedPoolMark( pPool);
+	void *		pvMark = pPool->poolMark();
 	NODE *		pDataPacketNode = NULL;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiBytesRead;
@@ -3141,7 +3141,7 @@ FSTATIC RCODE rflExpandDataPacket(
 	pucPacketBody = &gv_rflBuffer [0];
 	f_memset( pucPacketBody, 0, pRflPacket->uiPacketBodyLength);
 	uiOffset = pRflPacket->uiFileOffset + RFL_PACKET_OVERHEAD;
-	rc = gv_pRflFileHdl->Read( uiOffset,
+	rc = gv_pRflFileHdl->read( uiOffset,
 										 pRflPacket->uiPacketBodyLength,
 										 pucPacketBody,
 										 &uiBytesRead);
@@ -3565,7 +3565,7 @@ Exit:
 		{
 			rc = FERR_OK;
 		}
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -3586,14 +3586,14 @@ Desc: Expand a change fields packet.
 *********************************************************************/
 FSTATIC RCODE rflExpandChangeFieldsPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	FLMBOOL			bOutputPacket,
 	NODE **			ppChangeFieldsPacketNode,
 	FLMUINT *		puiDataLen
 	)
 {
 	RCODE			rc = FERR_OK;
-	void *		pvMark = GedPoolMark( pPool);
+	void *		pvMark = pPool->poolMark();
 	NODE *		pChangeFieldsPacketNode = NULL;
 	NODE *		pChangeNode;
 	NODE *		pLastNode;
@@ -3631,7 +3631,7 @@ FSTATIC RCODE rflExpandChangeFieldsPacket(
 	pucPacketBody = &gv_rflBuffer [0];
 	f_memset( pucPacketBody, 0, pRflPacket->uiPacketBodyLength);
 	uiOffset = pRflPacket->uiFileOffset + RFL_PACKET_OVERHEAD;
-	rc = gv_pRflFileHdl->Read( uiOffset,
+	rc = gv_pRflFileHdl->read( uiOffset,
 										 pRflPacket->uiPacketBodyLength,
 										 pucPacketBody,
 										 &uiBytesRead);
@@ -3983,7 +3983,7 @@ Exit:
 		{
 			rc = FERR_OK;
 		}
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -4005,7 +4005,7 @@ Desc: Expand the change field packets for a record
 		modify operation into the appropriate GEDCOM nodes.
 *********************************************************************/
 FSTATIC RCODE rflExpandRecordPackets(
-	POOL *		pPool,
+	F_Pool *		pPool,
 	FLMUINT		uiOffset,
 	FLMUINT		uiPacketType,
 	NODE **		ppLastPacketNode,
@@ -4117,13 +4117,13 @@ Desc: Expands a record operation packet into multiple GEDCOM nodes
 *********************************************************************/
 FSTATIC RCODE rflExpandRecOpPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest,
 	FLMUINT			uiPacketOffset
 	)
 {
 	RCODE		rc = FERR_OK;
-	void *	pvMark = GedPoolMark( pPool);
+	void *	pvMark = pPool->poolMark();
 	NODE *	pParent = NULL;
 	NODE *	pLastNode;
 	FLMUINT	uiOffset;
@@ -4281,7 +4281,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -4295,12 +4295,12 @@ Desc: Expand an unknown packet.
 *********************************************************************/
 FSTATIC RCODE rflExpandUnkPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE			rc = FERR_OK;
-	void *		pvMark = GedPoolMark( pPool);
+	void *		pvMark = pPool->poolMark();
 	NODE *		pForest = NULL;
 	FLMBYTE *	pucPacketBody;
 	FLMUINT		uiBytesRead;
@@ -4327,7 +4327,7 @@ FSTATIC RCODE rflExpandUnkPacket(
 	pucPacketBody = &gv_rflBuffer [0];
 	f_memset( pucPacketBody, 0, pRflPacket->uiPacketBodyLength);
 	uiOffset = pRflPacket->uiFileOffset + RFL_PACKET_OVERHEAD;
-	rc = gv_pRflFileHdl->Read( uiOffset,
+	rc = gv_pRflFileHdl->read( uiOffset,
 										 pRflPacket->uiPacketBodyLength,
 										 pucPacketBody,
 										 &uiBytesRead);
@@ -4368,7 +4368,7 @@ Exit:
 		{
 			rc = FERR_OK;
 		}
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 		*ppForest = NULL;
 	}
 	else
@@ -4384,12 +4384,12 @@ RFL_ENABLE_ENCRYPTION_PACKET)
 *********************************************************************/
 FSTATIC RCODE rflExpandEncryptionPacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE			rc = FERR_OK;
-	void *		pvMark = GedPoolMark( pPool);
+	void *		pvMark = pPool->poolMark();
 	NODE *		pParent = NULL;
 	NODE *		pLastNode;
 	NODE *		pDataNode;
@@ -4445,7 +4445,7 @@ FSTATIC RCODE rflExpandEncryptionPacket(
 	}
 
 	pucPacketBody = &gv_rflBuffer [0];
-	rc = gv_pRflFileHdl->Read( uiOffset,
+	rc = gv_pRflFileHdl->read( uiOffset,
 										 pRflPacket->uiCount,
 										 pucPacketBody,
 										 NULL);
@@ -4464,7 +4464,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -4478,12 +4478,12 @@ Desc: Expands a config rfl size packet (RFL_CONFIG_SIZE_EVENT_PACKET)
 *********************************************************************/
 FSTATIC RCODE rflExpandConfigSizePacket(
 	RFL_PACKET *	pRflPacket,
-	POOL *			pPool,
+	F_Pool *			pPool,
 	NODE **			ppForest
 	)
 {
 	RCODE			rc = FERR_OK;
-	void *		pvMark = GedPoolMark( pPool);
+	void *		pvMark = pPool->poolMark();
 	NODE *		pParent = NULL;
 	NODE *		pLastNode;
 	FLMUINT		uiOffset;
@@ -4549,7 +4549,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
@@ -4564,12 +4564,12 @@ Desc: Expands a packet into multiple GEDCOM nodes for display of
 *********************************************************************/
 RCODE RflExpandPacket(
 	NODE *		pPacketNode,
-	POOL *		pPool,
+	F_Pool *		pPool,
 	NODE **		ppForest
 	)
 {
 	RCODE				rc = FERR_OK;
-	void *			pvMark = GedPoolMark( pPool);
+	void *			pvMark = pPool->poolMark();
 	NODE *			pForest = NULL;
 	RFL_PACKET *	pRflPacket;
 	FLMBOOL			bFoundPrev;
@@ -4690,7 +4690,7 @@ Exit:
 			rc = FERR_OK;
 		}
 		*ppForest = NULL;
-		GedPoolReset( pPool, pvMark);
+		pPool->poolReset( pvMark);
 	}
 	else
 	{
