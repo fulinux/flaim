@@ -57,6 +57,9 @@
 	
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
+			#if !defined( FLM_RING_ZERO_NLM) && !defined( FLM_LIBC_NLM)
+				#define FLM_RING_ZERO_NLM
+			#endif
 			#define FLM_OSTYPE_STR "NetWare"
 			#if defined( __WATCOMC__)
 				#define FLM_WATCOM_NLM
@@ -5175,7 +5178,7 @@
 	
 	void FLMAPI FTXWinSetHelp(
 		FTX_WINDOW *	pWindow,
-		char *			pszHelp,
+		const char *	pszHelp,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor);
 	
