@@ -209,7 +209,7 @@ FLMINT ViewGetKey( void)
 			NumFields = 1;
 		}
 
-		if( (pKey = new FlmRecord) == NULL)
+		if( (pKey = f_new FlmRecord) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			ViewShowRCError( "creating key", rc);
