@@ -3977,6 +3977,17 @@ extern "C" void * f_nlmMainStub(
 #endif
 	
 /********************************************************************
+Desc: Signals the f_nlmEntryPoint thread to release the console.
+*********************************************************************/
+void SynchronizeStart( void)
+{
+	if (gv_lFlmSyncSem)
+	{
+		(void)kSemaphoreSignal( gv_lFlmSyncSem);
+	}
+}
+
+/********************************************************************
 Desc: Startup routine for the NLM.
 *********************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
