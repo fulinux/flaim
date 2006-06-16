@@ -648,20 +648,20 @@ class F_RecEditor : public F_Object
 		RCODE openNewDb();
 };
 
-inline void F_RecEditor::setShutdown(
+FINLINE void F_RecEditor::setShutdown(
 	FLMBOOL *		pbShutdown)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	m_pbShutdown = pbShutdown;
 }
 
-inline FLMBOOL * F_RecEditor::getShutdown( void)
+FINLINE FLMBOOL * F_RecEditor::getShutdown( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pbShutdown);
 }
 
-inline FLMBOOL F_RecEditor::isExiting( void)
+FINLINE FLMBOOL F_RecEditor::isExiting( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	if( m_pbShutdown && *m_pbShutdown)
@@ -672,13 +672,13 @@ inline FLMBOOL F_RecEditor::isExiting( void)
 	return( FALSE);
 }
 
-inline FLMBOOL F_RecEditor::isMonochrome( void)
+FINLINE FLMBOOL F_RecEditor::isMonochrome( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_bMonochrome);
 }
 
-inline RCODE F_RecEditor::setNameTable(
+FINLINE RCODE F_RecEditor::setNameTable(
 	F_NameTable *			pNameTable)
 {
 	flmAssert( m_bSetupCalled == TRUE);
@@ -694,99 +694,99 @@ inline RCODE F_RecEditor::setNameTable(
 	return( FERR_OK);
 }
 
-inline void F_RecEditor::setParent(
+FINLINE void F_RecEditor::setParent(
 	F_RecEditor *		pParent)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	m_pParent = pParent;
 }
 
-inline F_RecEditor * F_RecEditor::getParentEditor( void)
+FINLINE F_RecEditor * F_RecEditor::getParentEditor( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pParent);
 }
 
-inline void F_RecEditor::setReadOnly(
+FINLINE void F_RecEditor::setReadOnly(
 	FLMBOOL		bReadOnly)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	m_bReadOnly = bReadOnly;
 }
 
-inline NODE * F_RecEditor::getTree( void)
+FINLINE NODE * F_RecEditor::getTree( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pTree);
 }
 
-inline NODE * F_RecEditor::getCurrentNode( void)
+FINLINE NODE * F_RecEditor::getCurrentNode( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pCurNd);
 }
 
-inline NODE * F_RecEditor::getFirstNode( void)
+FINLINE NODE * F_RecEditor::getFirstNode( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pScrFirstNd);
 }
 
-inline FLMUINT F_RecEditor::getCursorRow( void)
+FINLINE FLMUINT F_RecEditor::getCursorRow( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_uiCurRow);
 }
 
-inline FLMUINT F_RecEditor::getNumRows( void)
+FINLINE FLMUINT F_RecEditor::getNumRows( void)
 {
 	flmAssert( m_bSetupCalled == TRUE && m_pEditWindow != NULL);
 	return( m_uiEditCanvasRows);
 }
 
-inline HFDB F_RecEditor::getDb( void)
+FINLINE HFDB F_RecEditor::getDb( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_hDefaultDb);
 }
 
-inline FLMUINT F_RecEditor::getContainer( void)
+FINLINE FLMUINT F_RecEditor::getContainer( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_uiDefaultCont);
 }
 
-inline FTX_SCREEN * F_RecEditor::getScreen( void)
+FINLINE FTX_SCREEN * F_RecEditor::getScreen( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pScreen);
 }
 
-inline FLMUINT F_RecEditor::getLastKey( void)
+FINLINE FLMUINT F_RecEditor::getLastKey( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_uiLastKey);
 }
 
-inline FLMUINT F_RecEditor::getULX( void)
+FINLINE FLMUINT F_RecEditor::getULX( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_uiULX);
 }
 
-inline FLMUINT F_RecEditor::getULY( void)
+FINLINE FLMUINT F_RecEditor::getULY( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_uiULY);
 }
 
-inline IF_FileSystem * F_RecEditor::getFileSystem( void)
+FINLINE IF_FileSystem * F_RecEditor::getFileSystem( void)
 {
 	flmAssert( m_bSetupCalled == TRUE);
 	return( m_pFileSystem);
 }
 
-inline void F_RecEditor::setDisplayHook(
+FINLINE void F_RecEditor::setDisplayHook(
 	F_RECEDIT_DISP_HOOK		pDispHook,
 	void *						DispData)
 {
@@ -795,7 +795,7 @@ inline void F_RecEditor::setDisplayHook(
 	m_DisplayData = DispData;
 }
 
-inline void F_RecEditor::setLinkHook(
+FINLINE void F_RecEditor::setLinkHook(
 	F_RECEDIT_LINK_HOOK		pLinkHook,
 	void *						LinkData)
 {
@@ -804,7 +804,7 @@ inline void F_RecEditor::setLinkHook(
 	m_LinkData = LinkData;
 }
 
-inline void F_RecEditor::setKeyHook(
+FINLINE void F_RecEditor::setKeyHook(
 	F_RECEDIT_KEY_HOOK		pKeyHook,
 	void *						KeyData)
 {
@@ -813,7 +813,7 @@ inline void F_RecEditor::setKeyHook(
 	m_KeyData = KeyData;
 }
 
-inline void F_RecEditor::setHelpHook(
+FINLINE void F_RecEditor::setHelpHook(
 	F_RECEDIT_HELP_HOOK		pHelpHook,
 	void *						HelpData)
 {
@@ -822,7 +822,7 @@ inline void F_RecEditor::setHelpHook(
 	m_HelpData = HelpData;
 }
 
-inline void F_RecEditor::setEventHook(
+FINLINE void F_RecEditor::setEventHook(
 	F_RECEDIT_EVENT_HOOK		pEventHook,
 	void *						EventData)
 {

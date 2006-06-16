@@ -86,7 +86,7 @@ public:
 		}
 	}
 
-	inline const char * getName( void)
+	FINLINE const char * getName( void)
 	{
 		return( "Basic Test");
 	}

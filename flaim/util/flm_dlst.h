@@ -22,8 +22,8 @@
 // $Id: flm_dlst.h 12334 2006-01-23 12:45:35 -0700 (Mon, 23 Jan 2006) dsanders $
 //-------------------------------------------------------------------------
 
-#ifndef FLM_DLST_HPP
-#define FLM_DLST_HPP
+#ifndef FLM_DLST_H
+#define FLM_DLST_H
 
 #include "flaimsys.h"
 
@@ -129,17 +129,17 @@ public:
 	RCODE remove(
 		FLMUINT	uiKey);
 
-	inline DLIST_NODE * getFirst( void)
+	FINLINE DLIST_NODE * getFirst( void)
 	{ 
 		return( m_pFirst);
 	}
 
-	inline DLIST_NODE * getCurrent( void)
+	FINLINE DLIST_NODE * getCurrent( void)
 	{ 
 		return( m_pCur);
 	}
 
-	inline FTX_WINDOW * getListWin( void)
+	FINLINE FTX_WINDOW * getListWin( void)
 	{ 
 		return( m_pListWin);
 	}
@@ -168,4 +168,4 @@ public:
 };
 
 #endif	// __cplusplus
-#endif	// FLM_EDIT_HPP
+#endif	// FLM_EDIT_H
