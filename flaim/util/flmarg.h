@@ -22,8 +22,8 @@
 // $Id: flmarg.h 12329 2006-01-20 17:49:30 -0700 (Fri, 20 Jan 2006) ahodgkinson $
 //-------------------------------------------------------------------------
 
-#ifndef FLMARG_HPP
-#define FLMARG_HPP
+#ifndef FLMARG_H
+#define FLMARG_H
 
 #include "sharutil.h"
 
