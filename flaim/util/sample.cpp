@@ -106,7 +106,7 @@ int main( void)
 
 	// Create a record object
 
-	if( (pDefRec = new FlmRecord) == NULL)
+	if( (pDefRec = f_new FlmRecord) == NULL)
 	{
 		rc = FERR_MEM;
 		goto Exit;
