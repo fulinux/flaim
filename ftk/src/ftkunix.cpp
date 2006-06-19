@@ -604,7 +604,7 @@ RCODE F_FileHdl::doOneRead(
 {
 	RCODE				rc = NE_FLM_OK;
 	FLMINT			iTmp;
-	FLMUINT			uiBytesRead;
+	FLMUINT			uiBytesRead = 0;
 
 	if( !m_bOpenedInAsyncMode)
 	{
