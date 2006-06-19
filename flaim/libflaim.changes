@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Mon Jun 19 09:00:27 MST 2006 - dsanders@novell.com
+
+- Restructured code to use new common toolkit
+- Support for Netware, including unit tests
+- Fixed various memory leaks and enabled memory tracking for debug builds.
+- Made some changes for how async I/O is supported on Solaris.
+- Fixed various compiler warnings on various platforms.
+- Added more documentation.
+
+-------------------------------------------------------------------
 Thu Jun 1 13:30:07 MST 2006 - dsanders@novell.com
 
 - Fixed compiler warnings for ia64 platform.

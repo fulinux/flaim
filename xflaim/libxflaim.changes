@@ -1,6 +1,11 @@
 -------------------------------------------------------------------
-Thu Jun 2 08:48:21 MST 2006 - dsanders@novell.com
+Mon Jun 19 09:03:38 MST 2006 - dsanders@novell.com
 
+- Moved the super-file handle into FTK.
+- Fixed various memory leaks in the unit tests.
+- Support for builing ring zero NLMs on Netware.
+- Moved dynamic result set code to common toolkit.
+- Added more asserts.
 - Fixed more compiler warnings for ia64 platform.
 
 -------------------------------------------------------------------
