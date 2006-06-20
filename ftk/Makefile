@@ -1066,6 +1066,8 @@ ifdef netware_target
 	
 	ifdef netware_ring_0_target
 		ccdefs += FLM_RING_ZERO_NLM
+	else
+		ccdefs += FLM_LIBC_NLM
 	endif
 
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
