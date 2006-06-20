@@ -1506,35 +1506,37 @@ RCODE F_CCS::setKeyFromStore(
 
 	if (bBase64Encoded)
 	{
-		F_Base64DecoderIStream	B64Decoder;
 		F_BufferIStream			bufferStream;
-
-		// Need a temporary buffer to translate the Base64 encoded buffer into
-
-		if (RC_BAD( rc = f_alloc( ui32BufLen, &pucKeyBuf)))
 		{
-			goto Exit;
+			F_Base64DecoderIStream	B64Decoder;
+	
+			// Need a temporary buffer to translate the Base64 encoded buffer into
+	
+			if (RC_BAD( rc = f_alloc( ui32BufLen, &pucKeyBuf)))
+			{
+				goto Exit;
+			}
+	
+			if (RC_BAD( rc = bufferStream.open( (const char *)pTmpKey, ui32BufLen)))
+			{
+				goto Exit;
+			}
+			if (RC_BAD( rc = B64Decoder.open( &bufferStream)))
+			{
+				goto Exit;
+			}
+	
+			// Buffer is Base64 encoded.  We must first decode it.
+			
+			// Decode the buffer
+			
+			if( RC_BAD( rc = B64Decoder.read(
+				(void *)pucKeyBuf, ui32BufLen, &uiLength)))
+			{
+				goto Exit;
+			}
+			pucTmp = pucKeyBuf;
 		}
-
-		if (RC_BAD( rc = bufferStream.open( (const char *)pTmpKey, ui32BufLen)))
-		{
-			goto Exit;
-		}
-		if (RC_BAD( rc = B64Decoder.open( &bufferStream)))
-		{
-			goto Exit;
-		}
-
-		// Buffer is Base64 encoded.  We must first decode it.
-		
-		// Decode the buffer
-		
-		if( RC_BAD( rc = B64Decoder.read(
-			(void *)pucKeyBuf, ui32BufLen, &uiLength)))
-		{
-			goto Exit;
-		}
-		pucTmp = pucKeyBuf;
 	}
 	else
 	{
