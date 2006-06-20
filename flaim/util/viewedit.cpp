@@ -409,7 +409,7 @@ FLMINT ViewEdit(
 						((gv_pViewMenuCurrItem->ModType & 0xF0) == MOD_HEX), 4,
 						0xFFFFFFFF))
 				return( FALSE);
-			UD2FBA( Num, TempBuf);
+			UD2FBA( Num, (FLMBYTE *)TempBuf);
 			break;
 		case MOD_FLMUINT16:
 			BytesToWrite = 2;
@@ -417,7 +417,7 @@ FLMINT ViewEdit(
 						((gv_pViewMenuCurrItem->ModType & 0xF0) == MOD_HEX), 2,
 						0xFFFF))
 				return( FALSE);
-			UW2FBA( Num, TempBuf);
+			UW2FBA( Num, (FLMBYTE *)TempBuf);
 			break;
 		case MOD_FLMBYTE:
 			BytesToWrite = 1;
@@ -457,7 +457,7 @@ Mod_Binary:
 			if( !ViewEditNum( &Num, TRUE, 4, 0xFFFFFFFF))
 				return( FALSE);
 			BytesToWrite = 4;
-			UD2FBA( Num, TempBuf);
+			UD2FBA( Num, (FLMBYTE *)TempBuf);
 			break;
 		case MOD_BITS:
 			if( !ViewEditBits( (FLMBYTE *)&TempBuf[ 0],
@@ -587,11 +587,11 @@ Mod_Binary:
 
 		if (bRecalcChecksum)
 		{
-			if (FB2UW( &BufPtr [BH_BLK_END]) >
+			if (FB2UW( (FLMBYTE *)&BufPtr [BH_BLK_END]) >
 					gv_ViewHdrInfo.FileHdr.uiBlockSize)
 			{
 				UW2FBA( gv_ViewHdrInfo.FileHdr.uiBlockSize,
-							&BufPtr [BH_BLK_END]);
+							(FLMBYTE *)&BufPtr [BH_BLK_END]);
 			}
 			BlkCheckSum( (FLMBYTE *)BufPtr,
 							FALSE, BlkAddress,
