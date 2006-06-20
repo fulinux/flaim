@@ -510,7 +510,9 @@ void flmLogMessage(
 			pLogMsg->appendString( pszMsgBuf);
 		}
 		
-		f_endLogMessage( &pLogMsg);
+		pLogMsg->endMessage();
+		pLogMsg->Release();
+		pLogMsg = NULL;
 
 		if( pszMsgBuf)
 		{

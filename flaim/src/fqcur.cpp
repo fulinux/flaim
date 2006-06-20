@@ -653,7 +653,8 @@ FLMEXP RCODE FLMAPI FlmCursorFree(
 								F_DEBUG_MESSAGE)) != NULL)
 		{
 			flmLogQuery( pLogMsg, 0, pCursor);
-			f_endLogMessage( &pLogMsg);
+			pLogMsg->endMessage();
+			pLogMsg->Release();
 		}
 	}
 
