@@ -2046,7 +2046,7 @@ spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel java2-devel-packages\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel j2sdk\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
