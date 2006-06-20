@@ -1852,6 +1852,7 @@ RCODE FLMAPI F_Base64DecoderIStream::read(
 					{
 						rc = RC_SET( NE_FLM_BAD_BASE64_ENCODING);
 					}
+					rc = NE_FLM_OK;
 
 					goto Exit;
 				}
