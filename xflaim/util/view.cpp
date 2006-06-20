@@ -533,8 +533,9 @@ Desc:	This routine opens the database file which is to be viewed.
 *****************************************************************************/
 FSTATIC FLMBOOL ViewOpenFile( void)
 {
-	RCODE			rc;
-	FLMBOOL		bOk = FALSE;
+	RCODE							rc;
+	FLMBOOL						bOk = FALSE;
+	F_SuperFileClient *		pSFileClient = NULL;
 
 Get_File_Name:
 
@@ -555,10 +556,23 @@ Get_File_Name:
 			goto Exit;
 		}
 	}
+
 	if (gv_pSFileHdl)
 	{
 		gv_pSFileHdl->Release();
 		gv_pSFileHdl = NULL;
+	}
+
+	if ((pSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( NE_XFLM_MEM);
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = pSFileClient->setup( gv_szViewFileName, gv_szDataDir)))
+	{
+		ViewShowRCError( "setting up super file handle", rc);
+		goto Exit;
 	}
 
 	if ((gv_pSFileHdl = f_new F_SuperFileHdl) == NULL)
@@ -567,7 +581,8 @@ Get_File_Name:
 		ViewShowRCError( "creating super file handle", rc);
 		goto Exit;
 	}
-	if (RC_BAD( rc = gv_pSFileHdl->setup( gv_szViewFileName, gv_szDataDir)))
+
+	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient)))
 	{
 		ViewShowRCError( "setting up super file handle", rc);
 		goto Exit;
@@ -653,6 +668,12 @@ Exit:
 		}
 		gv_bViewFileOpened = FALSE;
 	}
+
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
+	}
+
 	return( bOk);
 }
 
