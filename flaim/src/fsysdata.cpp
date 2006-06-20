@@ -1420,6 +1420,7 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			{
 				gv_FlmSysData.pLogger = (IF_LoggerClient *)Value1;
 				gv_FlmSysData.pLogger->AddRef();
+				f_setLoggerClient( gv_FlmSysData.pLogger);
 			}
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			break;
