@@ -1813,7 +1813,13 @@ FLMUINT32 FLMAPI f_getRandomUINT32(
 	FLMUINT32		ui32Low,
 	FLMUINT32		ui32High)
 {
-	return( gv_pRandomGenerator->getUINT32( ui32Low, ui32High));
+	FLMUINT32		ui32Value;
+
+	f_mutexLock( gv_hRandomGenMutex);	
+	ui32Value = gv_pRandomGenerator->getUINT32( ui32Low, ui32High);
+	f_mutexUnlock( gv_hRandomGenMutex);	
+	
+	return( ui32Value);
 }
 
 /****************************************************************************
