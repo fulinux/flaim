@@ -1430,3 +1430,51 @@ void F_Trace::outputCurrentText(
 		m_pszDestStr = &m_szDestStr [0];
 	}
 }
+
+/****************************************************************************
+Desc:	Initialize the toolkit logger
+****************************************************************************/
+RCODE f_loggerInit( void)
+{
+	RCODE	rc = NE_FLM_OK;
+
+	if (RC_BAD( rc = f_mutexCreate( &gv_hLoggerMutex)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Shutdown the toolkit logger
+****************************************************************************/
+void f_loggerShutdown( void)
+{
+	if (gv_pLogger)
+	{
+		gv_pLogger->Release();
+		gv_pLogger = NULL;
+	}
+	if (gv_hLoggerMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &gv_hLoggerMutex);
+	}
+}
+
+void f_setLoggerClient(
+	IF_LoggerClient *	pLogger)
+{
+	f_mutexLock( gv_hLoggerMutex);
+	if (gv_pLogger)
+	{
+		gv_pLogger->Release();
+	}
+	if ((gv_pLogger = pLogger) != NULL)
+	{
+		gv_pLogger->AddRef();
+	}
+	f_mutexUnlock( gv_hLoggerMutex);
+}

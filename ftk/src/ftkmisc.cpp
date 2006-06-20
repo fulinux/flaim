@@ -184,6 +184,13 @@ RCODE FLMAPI ftkStartup( void)
 	
 	setrlimit( RLIMIT_FSIZE, &rlim);
 #endif
+
+	// Setup logger
+
+	if (RC_BAD( rc = f_loggerInit()))
+	{
+		goto Exit;
+	}
 	
 
 Exit:
@@ -224,6 +231,8 @@ void FLMAPI ftkShutdown( void)
 	{
 		gv_pXml->Release();
 	}
+
+	f_loggerShutdown();
 	
 	f_freeRandomGenerator();
 	f_freeCharMappingTables();

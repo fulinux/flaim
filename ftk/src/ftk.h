@@ -1372,6 +1372,9 @@
 			eLogMessageSeverity	eMsgSeverity = F_DEBUG_MESSAGE) = 0;
 	};
 	
+	void f_setLoggerClient(
+		IF_LoggerClient *	pLogger);
+
 	/****************************************************************************
 	/// This is an abstract base class that allows an application to catch 
 	/// messages.  The application must create an implementation for this class
