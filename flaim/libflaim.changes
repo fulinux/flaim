@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Tue Jun 20 12:57:13 MST 2006 - dsanders@novell.com
+
+- Logger client was not being set up properly in common toolkit.
+- Fixed a Netware build issue
+- Fixed an OS X compiler warning
+- Fixed linux compiler warning
+- Needed to lock/unlock the random generator mutex when getting a random number.
+- f_printf needed to call fflush.
+- Base 64 decoder needed to return success instead of eof hit.
+
+-------------------------------------------------------------------
 Mon Jun 19 09:00:27 MST 2006 - dsanders@novell.com
 
 - Restructured code to use new common toolkit
