@@ -267,58 +267,6 @@
 	#define FLM_PRINTF_INT64_FLAG		0x0100
 	#define FLM_PRINTF_COMMA_FLAG		0x0200
 
-	typedef struct
-	{
-		FLMBYTE *	pszDestStr;
-	} F_SPRINTF_INFO;
-
-	void f_sprintfProcessFieldInfo(
-		FLMBYTE **			ppszFormat,
-		FLMUINT *			puiWidth,
-		FLMUINT *			puiPrecision,
-		FLMUINT *			puiFlags,
-		f_va_list *			args);
-
-	void f_sprintfStringFormatter(
-		FLMBYTE				ucFormatChar,
-		FLMUINT				uiWidth,
-		FLMUINT				uiPrecision,
-		FLMUINT				uiFlags,
-		F_SPRINTF_INFO *	pInfo,
-		f_va_list *			args);
-
-	void f_sprintfCharFormatter(
-		FLMBYTE				ucFormatChar,
-		FLMUINT				uiWidth,
-		FLMUINT				uiPrecision,
-		FLMUINT				uiFlags,
-		F_SPRINTF_INFO *	pInfo,
-		f_va_list *			args);
-
-	void f_sprintfErrorFormatter(
-		FLMBYTE				ucFormatChar,
-		FLMUINT				uiWidth,
-		FLMUINT				uiPrecision,
-		FLMUINT				uiFlags,
-		F_SPRINTF_INFO *	pInfo,
-		f_va_list *			args);
-
-	void f_sprintfNotHandledFormatter(
-		FLMBYTE				ucFormatChar,
-		FLMUINT				uiWidth,
-		FLMUINT				uiPrecision,
-		FLMUINT				uiFlags,
-		F_SPRINTF_INFO *	pInfo,
-		f_va_list *			args);
-
-	void f_sprintfNumberFormatter(
-		FLMBYTE				ucFormatChar,
-		FLMUINT				uiWidth,
-		FLMUINT				uiPrecision,
-		FLMUINT				uiFlags,
-		F_SPRINTF_INFO *	pInfo,
-		f_va_list *			args);
-		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
