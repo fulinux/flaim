@@ -738,33 +738,49 @@
 		FLM_CURRENT_COLOR
 	} eColorType;
 	
-	#define F_BLACK									"%0C"
-	#define F_BLUE										"%1C"
-	#define F_GREEN									"%2C"
-	#define F_CYAN										"%3C"
-	#define F_RED 										"%4C"
-	#define F_MAGENTA									"%5C"
-	#define F_BROWN									"%6C"
-	#define F_LIGHTGRAY								"%7C"
-	#define F_DARKGRAY								"%8C"
-	#define F_LIGHTBLUE								"%9C"
-	#define F_LIGHTGREEN 							"%10C"
-	#define F_LIGHTCYAN								"%11C"
-	#define F_LIGHTRED								"%12C"
-	#define F_LIGHTMAGENTA							"%13C"
-	#define F_YELLOW									"%14C"
-	#define F_WHITE									"%15C"
+	#define F_FOREBLACK			"%0F"
+	#define F_FOREBLUE			"%1F"
+	#define F_FOREGREEN			"%2F"
+	#define F_FORECYAN			"%3F"
+	#define F_FORERED 			"%4F"
+	#define F_FOREMAGENTA		"%5F"
+	#define F_FOREBROWN			"%6F"
+	#define F_FORELIGHTGRAY		"%7F"
+	#define F_FOREDARKGRAY		"%8F"
+	#define F_FORELIGHTBLUE		"%9F"
+	#define F_FORELIGHTGREEN 	"%10F"
+	#define F_FORELIGHTCYAN		"%11F"
+	#define F_FORELIGHTRED		"%12F"
+	#define F_FORELIGHTMAGENTA	"%13F"
+	#define F_FOREYELLOW			"%14F"
+	#define F_FOREWHITE			"%15F"
 	
-	#define F_PUSHFORECOLOR							"%+0C"
-	#define F_PUSHBACKCOLOR							"%+1C"
-	#define F_POPFORECOLOR							"%-0C"
-	#define F_POPBACKCOLOR							"%-1C"
+	#define F_BACKBLACK			"%0B"
+	#define F_BACKBLUE			"%1B"
+	#define F_BACKGREEN			"%2B"
+	#define F_BACKCYAN			"%3B"
+	#define F_BACKRED 			"%4B"
+	#define F_BACKMAGENTA		"%5B"
+	#define F_BACKBROWN			"%6B"
+	#define F_BACKLIGHTGRAY		"%7B"
+	#define F_BACKDARKGRAY		"%8B"
+	#define F_BACKLIGHTBLUE		"%9B"
+	#define F_BACKLIGHTGREEN 	"%10B"
+	#define F_BACKLIGHTCYAN		"%11B"
+	#define F_BACKLIGHTRED		"%12B"
+	#define F_BACKLIGHTMAGENTA	"%13B"
+	#define F_BACKYELLOW			"%14B"
+	#define F_BACKWHITE			"%15B"
 	
-	#define F_PUSHCOLOR								F_PUSHFORECOLOR F_PUSHBACKCOLOR
-	#define F_POPCOLOR								F_POPFORECOLOR F_POPBACKCOLOR
+	#define F_PUSH_FORECOLOR	"%+F"
+	#define F_POP_FORECOLOR		"%-F"
 	
-	#define F_BLUE_ON_WHITE							"%1.15C"
+	#define F_PUSH_BACKCOLOR	"%+B"
+	#define F_POP_BACKCOLOR		"%-B"
 
+	#define F_PUSHCOLOR			F_PUSH_FORECOLOR F_PUSH_BACKCOLOR
+	#define F_POPCOLOR			F_POP_FORECOLOR F_POP_BACKCOLOR
+	
 	/****************************************************************************
 	/// Structure for reporting slab usage information in cache.
 	****************************************************************************/
@@ -6366,5 +6382,190 @@
 	****************************************************************************/
 
 	FLMUINT f_getpid( void);
+
+	/*============================================================================
+	Desc:
+	============================================================================*/
+	class FLMEXP F_Printf : public F_Object
+	{
+	public:
+	
+	#define MAX_LOG_BUF_CHARS	255
+	
+		F_Printf()
+		{
+		}
+		
+		virtual ~F_Printf()
+		{
+		}
+	
+		FLMINT FLMAPI strvPrintf(
+			char *					pszDestStr,
+			const char *			pszFormat,
+			f_va_list *				args);
+
+		FLMINT FLMAPI strPrintf(
+			char *			pszDestStr,
+			const char *	pszFormat,
+			...);
+	
+		FLMINT FLMAPI logvPrintf(
+			IF_LogMessageClient *	pLogMsg,
+			const char *				pszFormat,
+			f_va_list *					args);
+			
+		FLMINT FLMAPI logPrintf(
+			IF_LogMessageClient *	pLogMsg,
+			const char *				pszFormat,
+			...);
+	
+	private:
+	
+		void processFieldInfo(
+			const char **		ppszFormat,
+			FLMUINT *			puiWidth,
+			FLMUINT *			puiPrecision,
+			FLMUINT *			puiFlags,
+			f_va_list *			args);
+	
+		void stringFormatter(
+			char					cFormatChar,
+			FLMUINT				uiWidth,
+			FLMUINT				uiPrecision,
+			FLMUINT				uiFlags,
+			f_va_list *			args);
+	
+		void colorFormatter(
+			char					cFormatChar,
+			eColorType			eColor,
+			FLMUINT				uiFlags);
+			
+		void charFormatter(
+			char					cFormatChar,
+			f_va_list *			args);
+	
+		void errorFormatter(
+			f_va_list *			args);
+	
+		void notHandledFormatter( void);
+	
+		void numberFormatter(
+			char					cFormatChar,
+			FLMUINT				uiWidth,
+			FLMUINT				uiPrecision,
+			FLMUINT				uiFlags,
+			f_va_list *			args);
+		
+		void parseArgs(
+			const char *			pszFormat,
+			f_va_list *				args);
+		
+		void processFormatString(
+			FLMUINT					uiLen,
+			...);
+			
+		FLMUINT printNumber(
+			FLMUINT64			ui64Val,
+			FLMUINT				uiBase,
+			FLMBOOL				bUpperCase,
+			FLMBOOL				bCommas,
+			char *				pszBuf);
+			
+		void outputLogBuffer( void);
+		
+		FINLINE void outputChar(
+			char		cChar)
+		{
+			if (!m_pLogMsg)
+			{
+				*m_pszDestStr++ = cChar;
+			}
+			else
+			{
+				m_szLogBuf [m_uiCharOffset++] = cChar;
+				m_uiNumLogChars++;
+				if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+				{
+					outputLogBuffer();
+				}
+			}
+		}
+		
+		FINLINE void memsetChar(
+			char		cChar,
+			FLMUINT	uiCount)
+		{
+			if (!m_pLogMsg)
+			{
+				f_memset( m_pszDestStr, cChar, uiCount);
+				m_pszDestStr += uiCount;
+			}
+			else
+			{
+				FLMUINT	uiTmpCount;
+				
+				while (uiCount)
+				{
+					uiTmpCount = uiCount;
+					if (m_uiCharOffset + uiTmpCount > MAX_LOG_BUF_CHARS)
+					{
+						uiTmpCount = MAX_LOG_BUF_CHARS - m_uiCharOffset;
+					}
+					f_memset( &m_szLogBuf [m_uiCharOffset], cChar, uiTmpCount);
+					m_uiCharOffset += uiTmpCount;
+					m_uiNumLogChars += uiTmpCount;
+					uiCount -= uiTmpCount;
+					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+					{
+						outputLogBuffer();
+					}
+				}
+			}
+		}
+
+		FINLINE void outputStr(
+			const char *	pszStr,
+			FLMUINT			uiLen)
+		{
+			if (!m_pLogMsg)
+			{
+				f_memcpy( m_pszDestStr, pszStr, uiLen);
+				m_pszDestStr += uiLen;
+			}
+			else
+			{
+				FLMUINT	uiTmpLen;
+				
+				while (uiLen)
+				{
+					uiTmpLen = uiLen;
+					if (m_uiCharOffset + uiTmpLen > MAX_LOG_BUF_CHARS)
+					{
+						uiTmpLen = MAX_LOG_BUF_CHARS - m_uiCharOffset;
+					}
+					f_memcpy( &m_szLogBuf [m_uiCharOffset], pszStr, uiTmpLen);
+					m_uiCharOffset += uiTmpLen;
+					m_uiNumLogChars += uiTmpLen;
+					uiLen -= uiTmpLen;
+					pszStr += uiTmpLen;
+					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+					{
+						outputLogBuffer();
+					}
+				}
+			}
+		}
+		
+		// Variables used to do the printf stuff
+	
+		char							m_szLogBuf [MAX_LOG_BUF_CHARS + 1];
+		FLMUINT						m_uiNumLogChars;
+		FLMUINT						m_uiCharOffset;
+		char *						m_pszDestStr;
+		IF_LogMessageClient *	m_pLogMsg;
+		eColorType					m_eCurrentForeColor;
+		eColorType					m_eCurrentBackColor;
+	};
 
 #endif // FTK_H
