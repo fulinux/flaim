@@ -2134,9 +2134,9 @@ srcrpm: srcdist spec
 # -- RPMS --
 
 .PHONY : rpms
-rpms: dist spec
+rpms: spec srcdist
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
-	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -ba $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet --nodeps -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 
