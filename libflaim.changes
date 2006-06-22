@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jun 22 16:47:31 MST 2006 - dsanders@novell.com
+
+- Modified common toolkit formatter to support colors when logging.
+- Modified to use common formatter in toolkit for logging.
+
+-------------------------------------------------------------------
 Tue Jun 20 12:57:13 MST 2006 - dsanders@novell.com
 
 - Logger client was not being set up properly in common toolkit.
