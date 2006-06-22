@@ -681,26 +681,26 @@ Output_Opt_Info:
 	switch (pSubQuery->OptInfo.eOptType)
 	{
 		case QOPT_USING_INDEX:
-			f_logPrintf( pLogMsg, F_WHITE "UsingIX=" F_YELLOW "%u",
+			f_logPrintf( pLogMsg, F_FOREWHITE "UsingIX=" F_FOREYELLOW "%u",
 				pSubQuery->OptInfo.uiIxNum);
-			f_logPrintf( pLogMsg, F_LIGHTGRAY ", KeyMatch=");
+			f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", KeyMatch=");
 			if (pSubQuery->OptInfo.bDoKeyMatch)
 			{
-				f_logPrintf( pLogMsg, F_GREEN "YES");
+				f_logPrintf( pLogMsg, F_FOREGREEN "YES");
 			}
 			else
 			{
-				f_logPrintf( pLogMsg, F_RED "NO");
+				f_logPrintf( pLogMsg, F_FORERED "NO");
 			}
 
-			f_logPrintf( pLogMsg, F_LIGHTGRAY ", RecMatch=");
+			f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", RecMatch=");
 			if (pSubQuery->OptInfo.bDoRecMatch)
 			{
-				f_logPrintf( pLogMsg, F_GREEN "YES");
+				f_logPrintf( pLogMsg, F_FOREGREEN "YES");
 			}
 			else
 			{
-				f_logPrintf( pLogMsg, F_RED "NO");
+				f_logPrintf( pLogMsg, F_FORERED "NO");
 			}
 
 			pucFromKey = NULL;
@@ -714,8 +714,8 @@ Output_Opt_Info:
 				// Show the from key
 
 				f_logPrintf( pLogMsg,
-					F_LIGHTGRAY ", FromKeyLen=" F_YELLOW "%u"
-					F_LIGHTGRAY ", FromKey=(",
+					F_FORELIGHTGRAY ", FromKeyLen=" F_FOREYELLOW "%u"
+					F_FORELIGHTGRAY ", FromKey=(",
 					uiFromKeyLen);
 				if (uiFromKeyLen)
 				{
@@ -724,16 +724,16 @@ Output_Opt_Info:
 				}
 				else
 				{
-					f_logPrintf( pLogMsg, F_YELLOW "<empty>");
+					f_logPrintf( pLogMsg, F_FOREYELLOW "<empty>");
 				}
-				f_logPrintf( pLogMsg, F_LIGHTGRAY ")");
+				f_logPrintf( pLogMsg, F_FORELIGHTGRAY ")");
 
 				// Show the until key.
 
 				f_logPrintf( pLogMsg,
-					F_LIGHTGRAY ", UntilKeyLen=" F_YELLOW "%u"
-					F_LIGHTGRAY ", UntilExcl=" F_YELLOW "%s"
-					F_LIGHTGRAY ", UntilKey=(",
+					F_FORELIGHTGRAY ", UntilKeyLen=" F_FOREYELLOW "%u"
+					F_FORELIGHTGRAY ", UntilExcl=" F_FOREYELLOW "%s"
+					F_FORELIGHTGRAY ", UntilKey=(",
 					uiUntilKeyLen,
 					(bUntilKeyExclusive
 								 ? "Yes"
@@ -745,63 +745,63 @@ Output_Opt_Info:
 				}
 				else
 				{
-					f_logPrintf( pLogMsg, F_YELLOW "<empty>");
+					f_logPrintf( pLogMsg, F_FOREYELLOW "<empty>");
 				}
-				f_logPrintf( pLogMsg, F_LIGHTGRAY ")");
+				f_logPrintf( pLogMsg, F_FORELIGHTGRAY ")");
 				f_free( &pucFromKey);
 				f_free( &pucUntilKey);
 			}
 			break;
 
 		case QOPT_USING_PREDICATE:
-			f_logPrintf( pLogMsg, F_WHITE "Using Embedded Predicate");
+			f_logPrintf( pLogMsg, F_FOREWHITE "Using Embedded Predicate");
 			break;
 
 		case QOPT_SINGLE_RECORD_READ:
-			f_logPrintf( pLogMsg, F_WHITE "Single Record Read, DRN: "
-				F_YELLOW "%u", pSubQuery->OptInfo.uiDrn);
+			f_logPrintf( pLogMsg, F_FOREWHITE "Single Record Read, DRN: "
+				F_FOREYELLOW "%u", pSubQuery->OptInfo.uiDrn);
 			break;
 
 		case QOPT_PARTIAL_CONTAINER_SCAN:
-			f_logPrintf( pLogMsg, F_WHITE "Partial Container Scan");
+			f_logPrintf( pLogMsg, F_FOREWHITE "Partial Container Scan");
 //VISIT: Output from and until DRNs - need a method from
 //pSubQuery->pFSDataCursor to return them.
 			break;
 
 		case QOPT_FULL_CONTAINER_SCAN:
-			f_logPrintf( pLogMsg, F_WHITE "Full Container Scan");
+			f_logPrintf( pLogMsg, F_FOREWHITE "Full Container Scan");
 			break;
 
 		default:
-			f_logPrintf( pLogMsg, F_WHITE "Unknown optimization");
+			f_logPrintf( pLogMsg, F_FOREWHITE "Unknown optimization");
 			break;
 	}
-	f_logPrintf( pLogMsg, F_LIGHTGRAY "}\n");
+	f_logPrintf( pLogMsg, F_FORELIGHTGRAY "}\n");
 
 	flmLogIndent( pLogMsg, uiIndent);
 	pLogMsg->appendString( "{Stats: ");
-	f_logPrintf( pLogMsg, F_LIGHTGRAY "Container=" F_WHITE "%u",
+	f_logPrintf( pLogMsg, F_FORELIGHTGRAY "Container=" F_FOREWHITE "%u",
 		(unsigned)pSubQuery->SQStatus.uiContainerNum);
 
-	f_logPrintf( pLogMsg, F_LIGHTGRAY ", Matched=" F_WHITE "%u",
+	f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", Matched=" F_FOREWHITE "%u",
 		(unsigned)pSubQuery->SQStatus.uiMatchedCnt);
 
 	if (pSubQuery->SQStatus.uiNumRejectedByCallback)
 	{
-		f_logPrintf( pLogMsg, F_LIGHTGRAY ", CallbackRejected=" F_WHITE "%u",
+		f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", CallbackRejected=" F_FOREWHITE "%u",
 			(unsigned)pSubQuery->SQStatus.uiNumRejectedByCallback);
 	}
 
 	if (pSubQuery->SQStatus.uiDupsEliminated)
 	{
-		f_logPrintf( pLogMsg, F_LIGHTGRAY ", DupsElim=" F_WHITE "%u",
+		f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", DupsElim=" F_FOREWHITE "%u",
 			(unsigned)pSubQuery->SQStatus.uiDupsEliminated);
 	}
 
 	if (pSubQuery->SQStatus.uiKeysTraversed ||
 		 pSubQuery->SQStatus.uiKeysRejected)
 	{
-		f_logPrintf( pLogMsg, F_LIGHTGRAY ", KeysFailed=" F_WHITE "%u of %u",
+		f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", KeysFailed=" F_FOREWHITE "%u of %u",
 			(unsigned)pSubQuery->SQStatus.uiKeysRejected,
 			(unsigned)pSubQuery->SQStatus.uiKeysTraversed);
 	}
@@ -809,7 +809,7 @@ Output_Opt_Info:
 	if (pSubQuery->SQStatus.uiRefsTraversed ||
 		 pSubQuery->SQStatus.uiRefsRejected)
 	{
-		f_logPrintf( pLogMsg, F_LIGHTGRAY ", RefsFailed=" F_WHITE "%u of %u",
+		f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", RefsFailed=" F_FOREWHITE "%u of %u",
 			(unsigned)pSubQuery->SQStatus.uiRefsRejected,
 			(unsigned)pSubQuery->SQStatus.uiRefsTraversed);
 	}
@@ -818,15 +818,15 @@ Output_Opt_Info:
 		 pSubQuery->SQStatus.uiRecsRejected ||
 		 pSubQuery->SQStatus.uiRecsNotFound)
 	{
-		f_logPrintf( pLogMsg, F_LIGHTGRAY ", RecsFetched=" F_WHITE "%u"
-									  F_LIGHTGRAY ", RecsRejected=" F_WHITE "%u"
-									  F_LIGHTGRAY ", RecsNotFound=" F_WHITE "%u",
+		f_logPrintf( pLogMsg, F_FORELIGHTGRAY ", RecsFetched=" F_FOREWHITE "%u"
+									  F_FORELIGHTGRAY ", RecsRejected=" F_FOREWHITE "%u"
+									  F_FORELIGHTGRAY ", RecsNotFound=" F_FOREWHITE "%u",
 			(unsigned)pSubQuery->SQStatus.uiRecsFetchedForEval,
 			(unsigned)pSubQuery->SQStatus.uiRecsRejected,
 			(unsigned)pSubQuery->SQStatus.uiRecsNotFound);
 	}
 
-	f_logPrintf( pLogMsg, F_LIGHTGRAY "}\n");
+	f_logPrintf( pLogMsg, F_FORELIGHTGRAY "}\n");
 
 	if (bIndentOptInfo)
 	{
