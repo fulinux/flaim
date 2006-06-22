@@ -61,33 +61,22 @@ void flmLogError(
 	const char *	pszFileName,
 	FLMINT			iLineNumber)
 {
-	FLMBYTE *					pszMsgBuf = NULL;
 	IF_LogMessageClient *	pLogMsg = NULL;
 
 	if( (pLogMsg = flmBeginLogMessage( XFLM_GENERAL_MESSAGE)) != NULL)
 	{
-		if( RC_OK( f_alloc( 512, &pszMsgBuf)))
+		pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
+		if( pszFileName)
 		{
-			if( pszFileName)
-			{
-				f_sprintf( (char *)pszMsgBuf,
-					"Error %s: %e, File=%s, Line=%d.",
-					pszDoing, rc, pszFileName, (int)iLineNumber);
-			}
-			else
-			{
-				f_sprintf( (char *)pszMsgBuf, "Error %s: %e.", pszDoing, rc);
-			}
-
-			pLogMsg->changeColor( FLM_YELLOW, FLM_BLACK);
-			pLogMsg->appendString( (char *)pszMsgBuf);
+			f_logPrintf( pLogMsg,
+				"Error %s: %e, File=%s, Line=%d.",
+				pszDoing, rc, pszFileName, (int)iLineNumber);
+		}
+		else
+		{
+			f_logPrintf( pLogMsg, "Error %s: %e.", pszDoing, rc);
 		}
 		flmEndLogMessage( &pLogMsg);
-	}
-
-	if( pszMsgBuf)
-	{
-		f_free( &pszMsgBuf);
 	}
 }
 
@@ -110,3 +99,4 @@ void flmEndLogMessage(
 		f_mutexUnlock( gv_XFlmSysData.hLoggerMutex);
 	}
 }
+
