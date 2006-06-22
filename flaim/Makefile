@@ -43,7 +43,7 @@ project_desc = An extensible, flexible, adaptable, embeddable database engine
 # -- Versions --
 
 major_version = 4
-minor_version = 8
+minor_version = 9
 
 version = $(major_version).$(minor_version).$(svn_revision)
 
