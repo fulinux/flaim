@@ -1602,7 +1602,6 @@ endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
 		$(src_package_dir)/$(src_package_base_name), \
 		$(package_proj_name_and_ver))
-	$(ec)$(call copycmd,$(package_proj_name).changes,$(spec_dir))
 	$(ec)$(call rmdircmd,$(package_stage_dir))
 	$(ec)$(gprintf) "Source package created.\n"
 
