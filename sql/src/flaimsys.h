@@ -481,7 +481,6 @@ FINLINE RCODE FlmStorage2UTF8(
 #include "f_btree.h"
 #include "f_btpool.h"
 #include "rfl.h"
-#include "fsuperfl.h"
 #include "filesys.h"
 #include "flog.h"
 #include "f_nici.h"
@@ -3228,11 +3227,6 @@ public:
 		return( FALSE);
 	}
 
-	static void getDbBasePath(
-		char *					pszBaseDbName,
-		const char *			pszDbName,
-		FLMUINT *				puiBaseDbNameLen);
-
 	RCODE waitToClose(
 		const char *	pszDbPath);
 	
@@ -3255,10 +3249,6 @@ private:
 				NULL, NULL, 0, TRUE, NULL, NULL, NULL, ppDb));
 	}
 
-	void lockSysData( void);
-	
-	void unlockSysData( void);
-	
 	void initFastBlockCheckSum( void);
 
 	RCODE allocDb(
@@ -3327,6 +3317,11 @@ typedef enum
 	SFLM_UTF8_TEXT
 } eSFlmTextType;
 
+void flmGetDbBasePath(
+	char *			pszBaseDbName,
+	const char *	pszDbName,
+	FLMUINT *		puiBaseDbNameLen);
+	
 /*------------------------------------------------------
 	FLAIM Processing Hooks (call-backs)
 -------------------------------------------------------*/
@@ -4350,6 +4345,43 @@ FINLINE RCODE F_RowCacheMgr::makeWriteCopy(
 	
 	return( NE_SFLM_OK);
 }
+
+/****************************************************************************
+Desc:
+*****************************************************************************/
+class FLMEXP F_SuperFileClient : public IF_SuperFileClient
+{
+public:
+
+	F_SuperFileClient();
+	
+	virtual ~F_SuperFileClient();
+	
+	RCODE setup(
+		const char *			pszCFileName,
+		const char *			pszDataDir);
+	
+	FLMUINT FLMAPI getFileNumber(
+		FLMUINT					uiBlockAddr);
+		
+	FLMUINT FLMAPI getFileOffset(
+		FLMUINT					uiBlockAddr);
+		
+	RCODE FLMAPI getFilePath(
+		FLMUINT					uiFileNumber,
+		char *					pszPath);
+		
+	static void bldSuperFileExtension(
+		FLMUINT					uiFileNum,
+		char *					pszFileExtension);
+		
+private:
+
+	char *						m_pszCFileName;
+	char *						m_pszDataFileBaseName;
+	FLMUINT						m_uiExtOffset;
+	FLMUINT						m_uiDataExtOffset;
+};
 
 // More includes
 

@@ -26,8 +26,6 @@
 #ifndef FSCURSOR_H
 #define FSCURSOR_H
 
-#include "fdynsset.h"
-
 typedef struct KeyPosition
 {
 	FLMBYTE	ucKey [SFLM_MAX_KEY_SIZE];

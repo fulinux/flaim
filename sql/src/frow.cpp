@@ -296,9 +296,9 @@ RCODE F_RowCacheMgr::initCache( void)
 
 	// Set up the F_Row object allocator
 
-	if (RC_BAD( rc = m_pRowAllocator->setup( &m_rowRelocator,
-		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, 
-		sizeof( F_Row), &m_Usage.slabUsage)))
+	if (RC_BAD( rc = m_pRowAllocator->setup(
+		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager,
+		&m_rowRelocator, sizeof( F_Row), &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}
@@ -311,8 +311,8 @@ RCODE F_RowCacheMgr::initCache( void)
 	// Set up the buffer allocator for F_Row objects
 
 	if (RC_BAD( rc = m_pBufAllocator->setup(
-		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager,
-		&m_Usage.slabUsage)))
+		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL,
+		&m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}

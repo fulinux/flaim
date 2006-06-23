@@ -20,7 +20,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id$
+// $Id: fdbcopy.cpp 3112 2006-01-19 13:12:40 -0700 (Thu, 19 Jan 2006) dsanders $
 //------------------------------------------------------------------------------
 
 #include "flaimsys.h"
@@ -151,8 +151,10 @@ RCODE F_DbSystem::copyDb(
 {
 	RCODE						rc = NE_SFLM_OK;
 	DB_COPY_INFO			DbCopyInfo;
-	F_SuperFileHdl			SrcSFileHdl;
-	F_SuperFileHdl			DestSFileHdl;
+	F_SuperFileHdl *		pSrcSFileHdl = NULL;
+	F_SuperFileHdl *		pDestSFileHdl = NULL;
+	F_SuperFileClient *	pSrcSFileClient = NULL;
+	F_SuperFileClient *	pDestSFileClient = NULL;
 	FLMUINT					uiFileNumber;
 	FLMUINT					uiHighFileNumber;
 	FLMUINT					uiHighLogFileNumber;
@@ -168,7 +170,7 @@ RCODE F_DbSystem::copyDb(
 	IF_LockObject *		pDatabaseLockObj = NULL;
 	COPIED_NAME *			pCopiedList = NULL;
 	FLMBOOL					bUsedDatabase = FALSE;
-	eLockType				eCurrLockType;
+	eLockType				currLockType;
 	FLMUINT					uiThreadId;
 	FLMUINT					uiNumExclQueued;
 	FLMUINT					uiNumSharedQueued;
@@ -209,7 +211,24 @@ RCODE F_DbSystem::copyDb(
 	// Set up the super file object for the source database.
 	// Must at least open the control file.
 
-	if (RC_BAD( rc = SrcSFileHdl.setup( pszSrcDbName, pszSrcDataDir)))
+	if( (pSrcSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pSrcSFileClient->setup( pszSrcDbName, pszSrcDataDir)))
+	{
+		goto Exit;
+	}
+
+	if( (pSrcSFileHdl = f_new F_SuperFileHdl) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient)))
 	{
 		goto Exit;
 	}
@@ -272,11 +291,11 @@ retry:
 		// object, if not already locked.
 
 		pDatabase->m_pDatabaseLockObj->getLockInfo( (FLMINT)0,
-										&eCurrLockType,
+										&currLockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued,
 										&uiPriorityCount);
-		if (eCurrLockType != FLM_LOCK_EXCLUSIVE ||
+		if (currLockType != FLM_LOCK_EXCLUSIVE ||
 			 uiThreadId != f_threadId())
 		{
 			pDatabaseLockObj = pDatabase->m_pDatabaseLockObj;
@@ -293,11 +312,11 @@ retry:
 		// Lock the write object, if not already locked
 
 		pDatabase->m_pWriteLockObj->getLockInfo( (FLMINT)0,
-										&eCurrLockType,
+										&currLockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued,
 										&uiPriorityCount);
-		if (eCurrLockType != FLM_LOCK_EXCLUSIVE ||
+		if (currLockType != FLM_LOCK_EXCLUSIVE ||
 			 uiThreadId != (FLMUINT)f_threadId())
 		{
 			pWriteLockObj = pDatabase->m_pWriteLockObj;
@@ -316,7 +335,24 @@ retry:
 
 	// Set up the super file object for the destination database.
 
-	if (RC_BAD( rc = DestSFileHdl.setup( pszDestDbName, pszDestDataDir)))
+	if( (pDestSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDestSFileClient->setup( pszDestDbName, pszDestDataDir)))
+	{
+		goto Exit;
+	}
+
+	if( (pDestSFileHdl = f_new F_SuperFileHdl) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient)))
 	{
 		goto Exit;
 	}
@@ -326,7 +362,7 @@ retry:
 	uiHighFileNumber = 0;
 	for (;;)
 	{
-		if ((RC_BAD( rc = SrcSFileHdl.getFileSize(
+		if ((RC_BAD( rc = pSrcSFileHdl->getFileSize(
 			uiHighFileNumber, &ui64FileSize))) || !ui64FileSize )
 		{
 			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
@@ -361,7 +397,7 @@ retry:
 	uiHighLogFileNumber = FIRST_LOG_BLOCK_FILE_NUMBER;
 	for (;;)
 	{
-		if ((RC_BAD( rc = SrcSFileHdl.getFileSize(
+		if ((RC_BAD( rc = pSrcSFileHdl->getFileSize(
 			uiHighLogFileNumber, &ui64FileSize))) || !ui64FileSize)
 		{
 			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
@@ -433,8 +469,8 @@ retry:
 
 	// Close all file handles in the source and destination
 
-	SrcSFileHdl.releaseFiles( TRUE);
-	DestSFileHdl.releaseFiles( TRUE);
+	pSrcSFileHdl->releaseFiles( TRUE);
+	pDestSFileHdl->releaseFiles( TRUE);
 
 	// Copy the database files.
 
@@ -443,12 +479,12 @@ retry:
 
 		// Get the source file path and destination file path.
 
-		if( RC_BAD( rc = SrcSFileHdl.getFilePath(
+		if( RC_BAD( rc = pSrcSFileHdl->getFilePath(
 			uiFileNumber, DbCopyInfo.szSrcFileName)))
 		{
 			goto Exit;
 		}
-		if( RC_BAD( rc = DestSFileHdl.getFilePath(
+		if( RC_BAD( rc = pDestSFileHdl->getFilePath(
 			uiFileNumber, DbCopyInfo.szDestFileName)))
 		{
 			goto Exit;
@@ -470,13 +506,13 @@ retry:
 
 		// Get the source file path and destination file path.
 
-		if (RC_BAD( rc = SrcSFileHdl.getFilePath( uiFileNumber,
+		if (RC_BAD( rc = pSrcSFileHdl->getFilePath( uiFileNumber,
 									DbCopyInfo.szSrcFileName)))
 		{
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = DestSFileHdl.getFilePath( uiFileNumber,
+		if (RC_BAD( rc = pDestSFileHdl->getFilePath( uiFileNumber,
 			DbCopyInfo.szDestFileName)))
 		{
 			goto Exit;
@@ -621,6 +657,7 @@ Exit:
 			if (RC_OK( rc))
 				rc = rc3;
 		}
+		
 		bDatabaseLocked = FALSE;
 	}
 
@@ -685,6 +722,26 @@ Exit:
 	if( hWaitSem != F_SEM_NULL)
 	{
 		f_semDestroy( &hWaitSem);
+	}
+
+	if( pSrcSFileClient)
+	{
+		pSrcSFileClient->Release();
+	}
+
+	if( pSrcSFileHdl)
+	{
+		pSrcSFileHdl->Release();
+	}
+
+	if( pDestSFileClient)
+	{
+		pDestSFileClient->Release();
+	}
+
+	if( pDestSFileHdl)
+	{
+		pDestSFileHdl->Release();
 	}
 
 	return( rc);

@@ -29,7 +29,6 @@
 
 #include "flaimsys.h"
 
-#define HIGH_FLMUINT				(~((FLMUINT)0))
 #define FLM_MIN_FREE_BYTES		(2 * 1024 * 1024)
 
 #ifdef FLM_32BIT
@@ -48,8 +47,8 @@
 	#define FLM_MAX_CACHE_SIZE			(~((FLMUINT)0))
 #endif
 
-FLMATOMIC			F_DbSystem::m_flmSysSpinLock = 0;
-FLMUINT				F_DbSystem::m_uiFlmSysStartupCount = 0;
+static FLMATOMIC		gv_flmSysSpinLock = 0;
+static FLMBOOL			gv_bToolkitStarted = FALSE;
 
 FSTATIC RCODE flmGetCacheBytes(
 	FLMUINT			uiPercent,
@@ -82,6 +81,10 @@ FSTATIC void flmGetUintParam(
 	FLMUINT *		puiUint,
 	IF_IniFile *	pIniFile);
 
+FSTATIC void lockSysData( void);
+
+FSTATIC void unlockSysData( void);
+	
 void flmGetBoolParam(
 	const char *	pszParamName,
 	FLMBOOL			uiDefaultValue,
@@ -91,8 +94,6 @@ void flmGetBoolParam(
 FSTATIC RCODE flmGetIniFileName(
 	FLMBYTE *		pszIniFileName,
 	FLMUINT			uiBufferSz);
-
-FLMBOOL		gv_bToolkitStarted = FALSE;
 
 /****************************************************************************
 Desc: This routine allocates and initializes a hash table.
@@ -185,9 +186,9 @@ FSTATIC RCODE flmGetCacheBytes(
 		goto Exit;
 	}
 	
-	if( ui64TotalPhysMem > HIGH_FLMUINT)
+	if( ui64TotalPhysMem > FLM_MAX_UINT)
 	{
-		ui64TotalPhysMem = HIGH_FLMUINT;
+		ui64TotalPhysMem = FLM_MAX_UINT;
 	}
 	
 	if( ui64AvailPhysMem > ui64TotalPhysMem)
@@ -204,9 +205,9 @@ FSTATIC RCODE flmGetCacheBytes(
 
 	if (bCalcOnAvailMem)
 	{
-		if (uiMem > HIGH_FLMUINT - uiBytesCurrentlyInUse)
+		if (uiMem > FLM_MAX_UINT - uiBytesCurrentlyInUse)
 		{
-			uiMem = HIGH_FLMUINT;
+			uiMem = FLM_MAX_UINT;
 		}
 		else
 		{
@@ -234,7 +235,7 @@ FSTATIC RCODE flmGetCacheBytes(
 
 	// Calculate memory as a percentage of memory.
 
-	uiMem = (FLMUINT)((uiMem > HIGH_FLMUINT / 100)
+	uiMem = (FLMUINT)((uiMem > FLM_MAX_UINT / 100)
 							? (FLMUINT)(uiMem / 100) * uiPercent
 							: (FLMUINT)(uiMem * uiPercent) / 100);
 
@@ -705,10 +706,10 @@ Desc: This routine links an FDB structure to an F_Database structure.
 		locked.
 ****************************************************************************/
 RCODE F_Db::linkToDatabase(
-	F_Database *	pDatabase
-	)
+	F_Database *			pDatabase)
 {
-	RCODE			rc = NE_SFLM_OK;
+	RCODE						rc = NE_SFLM_OK;
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	// If the use count on the file used to be zero, unlink it from the
 	// unused list.
@@ -730,18 +731,27 @@ RCODE F_Db::linkToDatabase(
 
 	// Allocate the super file object
 
-	if (!m_pSFileHdl)
+	if( !m_pSFileHdl)
 	{
-		if ((m_pSFileHdl = f_new F_SuperFileHdl) == NULL)
+		if( (m_pSFileHdl = f_new F_SuperFileHdl) == NULL)
 		{
 			rc = RC_SET( NE_SFLM_MEM);
 			goto Exit;
 		}
 
-		// Set up the super file
+		if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+		{
+			rc = RC_SET( NE_SFLM_MEM);
+			goto Exit;
+		}
 
-		if( RC_BAD( rc = m_pSFileHdl->setup(
+		if( RC_BAD( rc = pSFileClient->setup( 
 			pDatabase->m_pszDbPath, pDatabase->m_pszDataDir)))
+		{
+			goto Exit;
+		}
+
+		if( RC_BAD( rc = m_pSFileHdl->setup( pSFileClient)))
 		{
 			goto Exit;
 		}
@@ -753,6 +763,11 @@ RCODE F_Db::linkToDatabase(
 	}
 
 Exit:
+
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
+	}
 
 	return( rc);
 }
@@ -1047,11 +1062,9 @@ Desc:	Lock the system data structure for access - called only by startup
 		and shutdown.  NOTE: On platforms that do not support atomic exchange
 		this is less than perfect - won't handle tight race conditions.
 ***************************************************************************/
-void F_DbSystem::lockSysData( void)
+void lockSysData( void)
 {
-	// Obtain the spin lock
-
-	while( f_atomicExchange( &m_flmSysSpinLock, 1) == 1)
+	while( f_atomicExchange( &gv_flmSysSpinLock, 1) == 1)
 	{
 		f_sleep( 10);
 	}
@@ -1061,9 +1074,9 @@ void F_DbSystem::lockSysData( void)
 Desc:	Unlock the system data structure for access - called only by startup
 		and shutdown.
 ***************************************************************************/
-void F_DbSystem::unlockSysData( void)
+void unlockSysData( void)
 {
-	(void)f_atomicExchange( &m_flmSysSpinLock, 0);
+	(void)f_atomicExchange( &gv_flmSysSpinLock, 0);
 }
 
 /****************************************************************************
@@ -3191,5 +3204,209 @@ Exit:
 	}
 	
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_SuperFileClient::F_SuperFileClient()
+{
+	m_pszCFileName = NULL;
+	m_pszDataFileBaseName = NULL;
+	m_uiExtOffset = 0;
+	m_uiDataExtOffset = 0;
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_SuperFileClient::~F_SuperFileClient()
+{
+	if( m_pszCFileName)
+	{
+		f_free( &m_pszCFileName);
+	}
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_SuperFileClient::setup(
+	const char *	pszCFileName,
+	const char *	pszDataDir)
+{
+	RCODE				rc = NE_SFLM_OK;
+	FLMUINT			uiNameLen;
+	FLMUINT			uiDataNameLen;
+	char				szDir[ F_PATH_MAX_SIZE];
+	char				szBaseName[ F_FILENAME_SIZE];
+
+	if( !pszCFileName && *pszCFileName == 0)
+	{
+		rc = RC_SET( NE_FLM_IO_INVALID_FILENAME);
+		goto Exit;
+	}
+
+	uiNameLen = f_strlen( pszCFileName);
+	if (pszDataDir && *pszDataDir)
+	{
+		if (RC_BAD( rc = gv_SFlmSysData.pFileSystem->pathReduce( 
+			pszCFileName, szDir, szBaseName)))
+		{
+			goto Exit;
+		}
+		f_strcpy( szDir, pszDataDir);
+		if (RC_BAD( rc = gv_SFlmSysData.pFileSystem->pathAppend( 
+			szDir, szBaseName)))
+		{
+			goto Exit;
+		}
+		uiDataNameLen = f_strlen( szDir);
+
+		if (RC_BAD( rc = f_alloc( (uiNameLen + 1) + (uiDataNameLen + 1),
+									&m_pszCFileName)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( m_pszCFileName, pszCFileName, uiNameLen + 1);
+		m_pszDataFileBaseName = m_pszCFileName + uiNameLen + 1;
+		flmGetDbBasePath( m_pszDataFileBaseName, szDir, &m_uiDataExtOffset);
+		m_uiExtOffset = uiNameLen - (uiDataNameLen - m_uiDataExtOffset);
+	}
+	else
+	{
+		if (RC_BAD( rc = f_alloc( (uiNameLen + 1) * 2, &m_pszCFileName)))
+		{
+			goto Exit;
+		}
+
+		f_memcpy( m_pszCFileName, pszCFileName, uiNameLen + 1);
+		m_pszDataFileBaseName = m_pszCFileName + uiNameLen + 1;
+		flmGetDbBasePath( m_pszDataFileBaseName, 
+			m_pszCFileName, &m_uiDataExtOffset);
+		m_uiExtOffset = m_uiDataExtOffset;
+	}
+
+Exit:
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_SuperFileClient::getFileNumber(
+	FLMUINT					uiBlockAddr)
+{
+	return( FSGetFileNumber( uiBlockAddr));
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
+	FLMUINT					uiBlockAddr)
+{
+	return( FSGetFileOffset( uiBlockAddr));
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_SuperFileClient::getFilePath(
+	FLMUINT			uiFileNumber,
+	char *			pszPath)
+{
+	RCODE				rc = NE_SFLM_OK;
+	FLMUINT			uiExtOffset;
+
+	if( !uiFileNumber)
+	{
+		f_strcpy( pszPath, m_pszCFileName);
+		goto Exit;
+	}
+
+	if( uiFileNumber <= MAX_DATA_BLOCK_FILE_NUMBER)
+	{
+		f_memcpy( pszPath, m_pszDataFileBaseName, m_uiDataExtOffset);
+		uiExtOffset = m_uiDataExtOffset;
+	}
+	else
+	{
+		f_memcpy( pszPath, m_pszCFileName, m_uiExtOffset);
+		uiExtOffset = m_uiExtOffset;
+	}
+
+	// Modify the file's extension.
+
+	bldSuperFileExtension( uiFileNumber, &pszPath[ uiExtOffset]);
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Generates a file name given a super file number.
+			Adds ".xx" to pFileExtension.  Use lower case characters.
+Notes:	This is a base 24 alphanumeric value where
+			{ a, b, c, d, e, f, i, l, o, r, u, v } values are removed.
+****************************************************************************/
+void F_SuperFileClient::bldSuperFileExtension(
+	FLMUINT		uiFileNum,
+	char *		pszFileExtension)
+{
+	char	ucLetter;
+
+	if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER - 1536)
+	{
+		// No additional letter - File numbers 1 to 511
+		// This is just like pre-4.3 numbering.
+		ucLetter = 0;
+	}
+	else if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER - 1024)
+	{
+		// File numbers 512 to 1023
+		ucLetter = 'r';
+	}
+	else if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER - 512)
+	{
+		// File numbers 1024 to 1535
+		ucLetter = 's';
+	}
+	else if (uiFileNum <= MAX_DATA_BLOCK_FILE_NUMBER)
+	{
+		// File numbers 1536 to 2047
+		ucLetter = 't';
+	}
+	else if (uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER - 1536)
+	{
+		// File numbers 2048 to 2559
+		ucLetter = 'v';
+	}
+	else if (uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER - 1024)
+	{
+		// File numbers 2560 to 3071
+		ucLetter = 'w';
+	}
+	else if (uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER - 512)
+	{
+		// File numbers 3072 to 3583
+		ucLetter = 'x';
+	}
+	else
+	{
+		flmAssert( uiFileNum <= MAX_LOG_BLOCK_FILE_NUMBER);
+
+		// File numbers 3584 to 4095
+		ucLetter = 'z';
+	}
+
+	*pszFileExtension++ = '.';
+	*pszFileExtension++ = (char)(f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) / 24)));
+	*pszFileExtension++ = (char)(f_getBase24DigitChar( (FLMBYTE)((uiFileNum & 511) % 24)));
+	*pszFileExtension++ = ucLetter;
+	*pszFileExtension   = 0;
 }
 

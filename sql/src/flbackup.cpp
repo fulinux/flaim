@@ -973,9 +973,11 @@ RCODE F_DbSystem::dbRestore(
 		// [IN] Object for reporting the status of the restore
 		// operation
 {
+	RCODE					rc = NE_SFLM_OK;
 	IF_FileHdl *		pFileHdl = NULL;
 	IF_FileHdl *		pLockFileHdl = NULL;
 	F_SuperFileHdl *	pSFile = NULL;
+	F_SuperFileClient	SFileClient;	
 	FLMBYTE				szBasePath[ F_PATH_MAX_SIZE];
 	char					szTmpPath[ F_PATH_MAX_SIZE];
 	FLMUINT				uiDbVersion;
@@ -987,7 +989,6 @@ RCODE F_DbSystem::dbRestore(
 	F_Database *		pDatabase = NULL;
 	F_FSRestore *		pFSRestoreObj = NULL;
 	FLMBOOL				bOKToRetry;
-	RCODE					rc = NE_SFLM_OK;
 
 	// Set up the callback
 
@@ -1022,7 +1023,7 @@ RCODE F_DbSystem::dbRestore(
 
 	// Get the base path
 
-	getDbBasePath( (char *)szBasePath, pszDbPath, NULL);
+	flmGetDbBasePath( (char *)szBasePath, pszDbPath, NULL);
 
 	// Lock the global mutex
 
@@ -1088,7 +1089,12 @@ RCODE F_DbSystem::dbRestore(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSFile->setup( pszDbPath, pszDataDir)))
+	if( RC_BAD( rc = SFileClient.setup( pszDbPath, pszDataDir)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pSFile->setup( &SFileClient)))
 	{
 		goto Exit;
 	}
@@ -1383,19 +1389,6 @@ FSTATIC RCODE flmRestoreFile(
 	{
 		*pbOKToRetry = TRUE;
 	}
-
-#ifdef FLM_WIN
-
-	// Don't want to do extra file extensions or flush when file
-	// is extended.  Setting the extend size to ~0 has the effect
-	// of not updating the directory entry (a time-consuming operation)
-	// on Windows platforms.  On all other platforms, we will just
-	// go with the default behavior.
-
-	pSFile->setExtendSize( (FLMUINT)(~0));
-
-#endif
-
 
 	// Set up the backer stream object
 
@@ -1772,12 +1765,10 @@ FSTATIC RCODE flmRestoreFile(
 		// write out the amount requested, not a full sector.
 
 		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-			uiBlockSize, pucBlkBuf, uiBlockSize,
-			NULL, &uiBytesWritten)))
+			uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
 #else
 		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-			uiBlockSize, pucBlkBuf, uiBlkBufSize,
-			NULL, &uiBytesWritten)))
+			uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
 #endif
 		{
 			if( rc == NE_FLM_IO_PATH_NOT_FOUND ||
@@ -1798,12 +1789,10 @@ FSTATIC RCODE flmRestoreFile(
 
 #ifdef FLM_UNIX
 				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-					uiBlockSize, pucBlkBuf, uiBlockSize,
-					NULL, &uiBytesWritten)))
+					uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
 #else
 				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-					uiBlockSize, pucBlkBuf, uiBlkBufSize,
-					NULL, &uiBytesWritten)))
+					uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
 #endif
 				{
 					goto Exit;

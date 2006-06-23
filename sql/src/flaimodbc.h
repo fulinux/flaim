@@ -26,8 +26,6 @@
 #ifndef FLAIMODBC_H
 #define FLAIMODBC_H
 
-#include "fdynsset.h"
-
 // Forward declarations
 
 struct SQL_NODE;

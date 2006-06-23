@@ -405,7 +405,7 @@ RCODE rflGetDirAndPrefix(
 
 	// Get the base path
 
-	F_DbSystem::getDbBasePath( szPrefix, szBaseName, NULL);
+	flmGetDbBasePath( szPrefix, szBaseName, NULL);
 
 	// Determine the RFL directory.  If one was
 	// specified, it is whatever was specified.
@@ -792,8 +792,7 @@ RCODE F_Rfl::writeHeader(
 	// Write out the header
 
 	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512,
-										ucBuf, sizeof( ucBuf),
-										NULL, &uiBytesWritten)))
+										ucBuf, NULL, &uiBytesWritten)))
 	{
 		// Remap disk full error
 
@@ -951,9 +950,9 @@ RCODE F_Rfl::openFile(
 
 	// Open the file.
 
-	if (RC_BAD( rc = gv_SFlmSysData.pFileSystem->openBlockFile( szRflFileName,
+	if (RC_BAD( rc = gv_SFlmSysData.pFileSystem->openFile( szRflFileName,
 			  			   FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-							512, &m_pFileHdl)))
+							&m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1077,9 +1076,9 @@ RCODE F_Rfl::createFile(
 
 	// Create the file
 
-	if (RC_BAD( rc = gv_SFlmSysData.pFileSystem->createBlockFile( szRflFileName,
+	if (RC_BAD( rc = gv_SFlmSysData.pFileSystem->createFile( szRflFileName,
 			 FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-			512, &m_pFileHdl)))
+			 &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1255,9 +1254,8 @@ RCODE F_Rfl::flush(
 		}
 
 		rc = m_pFileHdl->sectorWrite( uiFileOffset, uiBufBytes,
-						pucOldBuffer,
-						m_uiBufferSize, pAsyncBuf,
-						&uiBytesWritten, FALSE);
+						pucOldBuffer, pAsyncBuf,
+						&uiBytesWritten);
 		if( m_uiRflWriteBufs == 1)
 		{
 

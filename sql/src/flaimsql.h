@@ -41,7 +41,7 @@
 	#include "config.h"
 #endif
 
-#include "ftk.h"
+#include "flaimsqltk.h"
 
 // Forward declarations
 

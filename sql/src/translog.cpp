@@ -142,7 +142,6 @@ RCODE F_Database::lgFlushLogBuffer(
 	rc = pSFileHdl->writeBlock( m_uiCurrLogBlkAddr,
 				m_uiCurrLogWriteOffset,
 				m_pCurrLogBuffer->getBuffer(),
-				m_pCurrLogBuffer->getBufferSize(),
 				pAsyncBuffer, &uiBytesWritten);
 	if (!pAsyncBuffer)
 	{

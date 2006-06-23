@@ -243,7 +243,7 @@ Desc:	Returns the length of the base part of a database name.  If the
 		name ends with a '.' or ".db", this will not be included in the
 		returned length.
 ****************************************************************************/
-void F_DbSystem::getDbBasePath(
+void flmGetDbBasePath(
 	char *			pszBaseDbName,
 	const char *	pszDbName,
 	FLMUINT *		puiBaseDbNameLen)
@@ -559,12 +559,14 @@ RCODE flmCreateLckFile(
 	pLockFileHdl = NULL;
 	
 Exit:
+
 	if (pLockFileHdl)
 	{
 		(void)pLockFileHdl->close();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
+	
 	return( rc);
 }
 
@@ -1611,10 +1613,11 @@ Desc: This routine begins a thread that will do checkpoints for the
 *****************************************************************************/
 RCODE F_Database::startCPThread( void)
 {
-	RCODE			rc = NE_SFLM_OK;
-	CP_INFO *	pCPInfo = NULL;
-	char			szThreadName[ F_PATH_MAX_SIZE];
-	char			szBaseName[ 32];
+	RCODE						rc = NE_SFLM_OK;
+	CP_INFO *				pCPInfo = NULL;
+	char						szThreadName[ F_PATH_MAX_SIZE];
+	char						szBaseName[ 32];
+	F_SuperFileClient *	pSFileClient = NULL;
 
 	// Allocate a CP_INFO structure that will be passed into the
 	// thread when it is created.
@@ -1634,15 +1637,26 @@ RCODE F_Database::startCPThread( void)
 
 	// Allocate a super file handle.
 
-	if ((pCPInfo->pSFileHdl = f_new F_SuperFileHdl) == NULL)
+	if( (pCPInfo->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
 		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+	
+	if( (pSFileClient = f_new F_SuperFileClient) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pSFileClient->setup( m_pszDbPath, m_pszDataDir)))
+	{
 		goto Exit;
 	}
 
 	// Set up the super file
 
-	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( m_pszDbPath, m_pszDataDir)))
+	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient)))
 	{
 		goto Exit;
 	}
@@ -1682,6 +1696,11 @@ Exit:
 	if( pCPInfo)
 	{
 		flmFreeCPInfo( &pCPInfo);
+	}
+	
+	if( pSFileClient)
+	{
+		pSFileClient->Release();
 	}
 	
 	return( rc);

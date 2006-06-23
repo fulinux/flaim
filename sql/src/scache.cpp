@@ -3802,8 +3802,7 @@ RCODE F_Database::writeContiguousBlocks(
 	// non-asynchronous write.
 
 	rc = pSFileHdl->writeBlock( uiBlkAddress, uiWriteLen,
-					pucWriteBuffer, pIOBuffer->getBufferSize(),
-					pAsyncBuffer, &uiBytesWritten);
+					pucWriteBuffer, pAsyncBuffer, &uiBytesWritten);
 	if (!pAsyncBuffer)
 	{
 		pIOBuffer->notifyComplete( rc);
@@ -6074,8 +6073,8 @@ RCODE F_BlockCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pBlockAllocator->setup(
-		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, uiBlockSizes,
-		&m_Usage.slabUsage)))
+		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL, uiBlockSizes,
+		&m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}

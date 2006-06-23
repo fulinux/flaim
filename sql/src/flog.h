@@ -27,48 +27,10 @@
 #ifndef FLOG_H
 #define FLOG_H
 
-// Special defines for use in the format string of flmLogPrintf
-
-#define F_BLACK			"%0C"
-#define F_BLUE				"%1C"
-#define F_GREEN			"%2C"
-#define F_CYAN				"%3C"
-#define F_RED 				"%4C"
-#define F_PURPLE			"%5C"
-#define F_BROWN			"%6C"
-#define F_LIGHTGRAY		"%7C"
-#define F_DARKGRAY		"%8C"
-#define F_LIGHTBLUE		"%9C"
-#define F_LIGHTGREEN 	"%10C"
-#define F_LIGHTCYAN		"%11C"
-#define F_LIGHTRED		"%12C"
-#define F_LIGHTPURPLE	"%13C"
-#define F_YELLOW			"%14C"
-#define F_WHITE			"%15C"
-
-#define F_PUSHFORECOLOR	"%+0C"
-#define F_PUSHBACKCOLOR	"%+1C"
-#define F_POPFORECOLOR	"%-0C"
-#define F_POPBACKCOLOR	"%-1C"
-
-#define F_PUSHCOLOR		F_PUSHFORECOLOR F_PUSHBACKCOLOR
-#define F_POPCOLOR		F_POPFORECOLOR F_POPBACKCOLOR
-
-#define F_BLUE_ON_WHITE	"%1.15C"
-
 // Logging functions for use within FLAIM
 
 IF_LogMessageClient * flmBeginLogMessage(
 	eLogMessageType	eMsgType);
-
-void flmLogPrintf(
-	IF_LogMessageClient *	pLogMessage,
-	const char *				pszFormatStr, ...);
-
-void flmLogVPrintf(
-	IF_LogMessageClient *	pLogMessage,
-	const char *				szFormatStr,
-	f_va_list *					args);
 
 void flmEndLogMessage(
 	IF_LogMessageClient **	ppLogMessage);
