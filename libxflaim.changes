@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jun 23 15:44:33 MST 2006 - dsanders@novell.com
+
+- Changed to depend on java2-devel-packages instead of java2
+
+-------------------------------------------------------------------
 Thu Jun 22 16:46:11 MST 2006 - dsanders@novell.com
 
 - Modified common toolkit formatter to support colors when logging.
