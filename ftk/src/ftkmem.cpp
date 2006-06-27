@@ -305,6 +305,41 @@ private:
 friend class F_FixedAlloc;
 };
 
+typedef struct SLAB
+{
+	void *		pvAllocator;
+	SLAB *		pNext;
+	SLAB *		pPrev;
+	SLAB *		pNextSlabWithAvailCells;
+	SLAB *		pPrevSlabWithAvailCells;
+	FLMBYTE *	pLocalAvailCellListHead;
+	FLMUINT16	ui16NextNeverUsedCell;
+	FLMUINT16	ui16AvailCellCount;
+	FLMUINT16	ui16AllocatedCells;
+} SLAB;
+
+typedef struct CELLHEADER
+{
+	SLAB *			pContainingSlab;
+#ifdef FLM_DEBUG
+	FLMUINT *		puiStack;
+#endif
+} CELLHEADER;
+
+typedef struct CELLHEADER2
+{
+	CELLHEADER		cellHeader;
+	IF_Relocator *	pRelocator;
+} CELLHEADER2;
+
+typedef struct CELLAVAILNEXT
+{
+	FLMBYTE *	pNextInList;
+#ifdef FLM_DEBUG
+	FLMBYTE		szDebugPattern[ 8];
+#endif
+} CELLAVAILNEXT;
+
 /****************************************************************************
 Desc:	Class to provide an efficient means of providing many allocations
 		of a fixed size.
@@ -414,41 +449,6 @@ public:
 	void FLMAPI defragmentMemory( void);
 	
 private:
-
-	typedef struct Slab
-	{
-		void *		pvAllocator;
-		Slab *		pNext;
-		Slab *		pPrev;
-		Slab *		pNextSlabWithAvailCells;
-		Slab *		pPrevSlabWithAvailCells;
-		FLMBYTE *	pLocalAvailCellListHead;
-		FLMUINT16	ui16NextNeverUsedCell;
-		FLMUINT16	ui16AvailCellCount;
-		FLMUINT16	ui16AllocatedCells;
-	} SLAB;
-
-	typedef struct CELLHEADER
-	{
-		SLAB *			pContainingSlab;
-#ifdef FLM_DEBUG
-		FLMUINT *		puiStack;
-#endif
-	} CELLHEADER;
-
-	typedef struct CELLHEADER2
-	{
-		CELLHEADER		cellHeader;
-		IF_Relocator *	pRelocator;
-	} CELLHEADER2;
-
-	typedef struct CellAvailNext
-	{
-		FLMBYTE *	pNextInList;
-#ifdef FLM_DEBUG
-		FLMBYTE		szDebugPattern[ 8];
-#endif
-	} CELLAVAILNEXT;
 
 	void * getCell(
 		IF_Relocator *		pRelocator);
