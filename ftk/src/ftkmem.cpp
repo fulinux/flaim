@@ -3240,7 +3240,7 @@ Exit:
 /****************************************************************************
 Desc:	Grabs another slab of memory from the operating system
 ****************************************************************************/
-F_FixedAlloc::SLAB * F_FixedAlloc::getAnotherSlab( void)
+SLAB * F_FixedAlloc::getAnotherSlab( void)
 {
 	SLAB *	pSlab = NULL;
 	
@@ -4411,15 +4411,14 @@ Desc:
 IF_FixedAlloc * F_MultiAlloc::getAllocator(
 	FLMBYTE *			pucBuffer)
 {
-	F_FixedAlloc::CELLHEADER *	pHeader;
-	F_FixedAlloc::SLAB *			pSlab;
-	IF_FixedAlloc *				pAllocator = NULL;
+	CELLHEADER *		pHeader;
+	SLAB *				pSlab;
+	IF_FixedAlloc *	pAllocator = NULL;
 
 	m_pSlabManager->lockMutex();
 	
-	pHeader = (F_FixedAlloc::CELLHEADER *)(pucBuffer - 
-			F_FixedAlloc::getAllocAlignedSize( 
-			sizeof( F_FixedAlloc::CELLHEADER2)));
+	pHeader = (CELLHEADER *)(pucBuffer - 
+			F_FixedAlloc::getAllocAlignedSize( sizeof( CELLHEADER2)));
 	pSlab = pHeader->pContainingSlab;
 	pAllocator = (IF_FixedAlloc *)pSlab->pvAllocator;
 
