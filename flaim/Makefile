@@ -1587,6 +1587,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
+	$(ec)$(call copycmd,$(dir $(topdir))ftk/src/ftk.h,$(package_stage_dir)/src/flaimtk.h)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
