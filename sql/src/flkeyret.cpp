@@ -96,6 +96,7 @@ RCODE	F_Db::keyRetrieve(
 	// Make sure it is a valid index definition
 
 	pIndex = m_pDict->getIndex( uiIndex);
+	pLFile = &pIndex->lfInfo;
 
 	if (RC_BAD( rc = flushKeys()))
 	{

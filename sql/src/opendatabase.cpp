@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	Contains the F_DbSystem::openDb method.
+// Desc:	Contains the F_DbSystem::openDatabase method.
 //
 // Tabs:	3
 //
@@ -37,7 +37,7 @@ FSTATIC RCODE flmCPThread(
 Desc:	Does most of the actual work of opening an existing database, but
 		 doesn't	provide COM interfaces...
 ****************************************************************************/
-RCODE F_DbSystem::openDb(
+RCODE F_DbSystem::openDatabase(
 	const char *	pszDbFileName,
 	const char *	pszDataDir,
 	const char *	pszRflDir,

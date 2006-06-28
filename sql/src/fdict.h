@@ -62,6 +62,7 @@ typedef struct F_COLUMN
 #define COL_READ_ONLY		0x0001
 #define COL_NULL_ALLOWED	0x0002
 	eDataType		eDataTyp;			// Column data type
+	FLMUINT			uiMaxLen;			// Maximum length (for strings or binary)
 	FLMUINT			uiEncDefNum;		// If column is encrypted, this is the
 												// encryption definition number.  Zero if
 												// column is not encrypted.
@@ -134,6 +135,7 @@ typedef struct F_INDEX
 															// not be suspended.
 		#define IXD_SUSPENDED			0x00008	// IXD_OFFLINE should also be set
 		#define IXD_SYSTEM				0x00010	// Index is an internal system index
+		#define IXD_KEYS_UNIQUE			0x00020	// Index keys must be unique
 	FLMUINT			uiLanguage;					// Language for the index.
 	LFILE				lfInfo;						// Logical file information.
 	FLMUINT64		ui64LastRowIndexed;		// Last row indexed, if indexing in
@@ -149,18 +151,6 @@ typedef struct ICD
 	FLMUINT		uiColumnNum;		// Column in table this component refers to
 	FLMUINT64	ui64DefRowId;		// Definition row ID.
 	FLMUINT		uiFlags;				// Flags for component
-#define ICD_VALUE							0x00000010	// Value agrees with parsing syntax
-#define ICD_EACHWORD						0x00000020	// Index each and every word in the field
-#define ICD_PRESENCE						0x00000040	// Index the tag and NOT the value
-#define ICD_METAPHONE					0x00000080	// Index words of text strings using 
-																// metaphone values
-#define ICD_SUBSTRING					0x00000100	// Index all substrings pieces
-#define ICD_DESCENDING					0x00000200	// Sort in descending order.
-#define ICD_MISSING_HIGH				0x00000400	// Sort missing components high instead of low.
-#define ICD_ESC_CHAR						0x00001000	// Placehold so that a query can parse the input
-																// string and find a literal '*' or '\\'.
-																// Not specified in dictionary def. or kept in ICD.
-																// Only a temporary flag.
 	FLMUINT		uiCompareRules;	// Comparison rules for this component.
 	FLMUINT		uiLimit;				// Limit for this component.
 #define ICD_DEFAULT_LIMIT					128
@@ -437,6 +427,7 @@ public:
 		const char *	pszColumnName,
 		FLMUINT			uiFlags,
 		eDataType		eDataTyp,
+		FLMUINT			uiMaxLen,
 		FLMUINT			uiEncDefNum);
 		
 	RCODE addIndex(

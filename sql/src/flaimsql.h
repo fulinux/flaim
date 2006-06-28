@@ -98,6 +98,25 @@ typedef enum
 	SQL_ERR_ILLEGAL_HEX_DIGIT,				///< 18 = Illegal hex digit in number value.
 	SQL_ERR_NUMBER_OVERFLOW,				///< 19 = Number exceeds limits for 64 bit numbers.
 	SQL_ERR_BINARY_VALUE_EMPTY,			///< 20 = Binary value is empty.
+	SQL_ERR_INVALID_CREATE_OPTION,		///< 21 = Create option is invalid.
+	SQL_ERR_UTF8_STRING_TOO_LARGE,		///< 22 = UTF8 string value is too large for buffer.
+	SQL_ERR_INVALID_DB_CREATE_PARAM,		///< 23 = Parameter for CREATE_OPTIONS in CREATE DATABASE statement is invalid.
+	SQL_ERR_INVALID_BLOCK_SIZE,			///< 24 = Invalid block size specified.
+	SQL_ERR_INVALID_LANGUAGE,				///< 25 = Invalid language specified.
+	SQL_ERR_EXPECTING_EQUAL,				///< 26 = Expecting equal (=).
+	SQL_ERR_INVALID_NEGATIVE_NUM,			///< 27 = Negative numbers not allowed.
+	SQL_ERR_EXPECTING_BOOLEAN,				///< 28 = Expecting a boolean TRUE or FALSE.
+	SQL_ERR_INVALID_OPEN_OPTION,			///< 29 = Open option is invalid.
+	SQL_ERR_INVALID_DATA_TYPE,				///< 30 = Invalid data type specified.
+	SQL_ERR_STRING_TOO_LONG,				///< 31 = String specified for column value is too long.
+	SQL_ERR_BINARY_TOO_LONG,				///< 32 = Binary data specified for column value is too long.
+	SQL_ERR_EXPECTING_INDEX,				///< 33 = Expecting "INDEX" keyword.
+	SQL_ERR_EXPECTING_ON,					///< 34 = Expecting "ON" keyword.
+	SQL_ERR_UNDEFINED_INDEX,				///< 35 = Index name that was specified is not defined.
+	SQL_ERR_INDEX_ALREADY_DEFINED,		///< 36 = Index name is already defined in the database.
+	SQL_ERR_INVALID_INDEX_OPTION,			///< 37 = Invalid index column option specified.
+	SQL_ERR_INVALID_COL_INDEX_OPTION,	///< 38 = Index option cannot be used for the specified column.
+	SQL_ERR_MULTIPLE_INDEX_OPTIONS,		///< 39 = Cannot specify more than one of value, eachword, presence, substring, or metaphone indexing options.
 
 	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
 	SQL_NUM_ERRORS
@@ -256,7 +275,7 @@ typedef struct SFLM_DB_HDR
 	#define SFLM_DB_HDR_ucDbKey											256
 } SFLM_DB_HDR;
 
-// Flags used by openDb method
+// Flags used by openDatabase method
 
 #define SFLM_DONT_REDO_LOG				0x0001
 #define SFLM_DONT_RESUME_THREADS		0x0002
@@ -401,13 +420,15 @@ typedef enum
 #define SFLM_COLNAM_COLUMNS_COLUMN_NUM					"column_num"
 #define SFLM_COLNUM_COLUMNS_DATA_TYPE					4
 #define SFLM_COLNAM_COLUMNS_DATA_TYPE					"data_type"
-#define SFLM_COLNUM_COLUMNS_ENCDEF_NUM					5
+#define SFLM_COLNUM_COLUMNS_MAX_LEN						5
+#define SFLM_COLNAM_COLUMNS_MAX_LEN						"max_len"
+#define SFLM_COLNUM_COLUMNS_ENCDEF_NUM					6
 #define SFLM_COLNAM_COLUMNS_ENCDEF_NUM					"encdef_num"
-#define SFLM_COLNUM_COLUMNS_READ_ONLY					6
+#define SFLM_COLNUM_COLUMNS_READ_ONLY					7
 #define SFLM_COLNAM_COLUMNS_READ_ONLY					"read_only"
-#define SFLM_COLNUM_COLUMNS_NULL_ALLOWED				7
+#define SFLM_COLNUM_COLUMNS_NULL_ALLOWED				8
 #define SFLM_COLNAM_COLUMNS_NULL_ALLOWED				"null_allowed"
-#define SFLM_COLUMNS_NUM_COLUMNS							7
+#define SFLM_COLUMNS_NUM_COLUMNS							8
 
 // Column names and numbers for the indexes table
 
@@ -429,7 +450,11 @@ typedef enum
 #define SFLM_COLNAM_INDEXES_LAST_ROW_INDEXED			"last_row_indexed"
 #define SFLM_COLNUM_INDEXES_INDEX_STATE				9
 #define SFLM_COLNAM_INDEXES_INDEX_STATE				"index_state"
-#define SFLM_INDEXES_NUM_COLUMNS							9
+#define SFLM_COLNUM_INDEXES_KEEP_ABS_POS_INFO		10
+#define SFLM_COLNAM_INDEXES_KEEP_ABS_POS_INFO		"keep_abs_pos_info"
+#define SFLM_COLNUM_INDEXES_KEYS_UNIQUE				11
+#define SFLM_COLNAM_INDEXES_KEYS_UNIQUE				"keys_unique"
+#define SFLM_INDEXES_NUM_COLUMNS							11
 
 // Column names and numbers for the index components table
 
@@ -459,29 +484,62 @@ typedef enum
 #define SFLM_COLNAM_BLOCK_CHAINS_BLOCK_ADDRESS		"block_address"
 #define SFLM_BLOCK_CHAINS_NUM_COLUMNS					1
 
-#define SFLM_STRING_OPTION_STR						"string"
-#define SFLM_INTEGER_OPTION_STR						"integer"
-#define SFLM_BINARY_OPTION_STR						"binary"
-#define SFLM_CHECKING_OPTION_STR						"checking"
-#define SFLM_PURGE_OPTION_STR							"purge"
-#define SFLM_ACTIVE_OPTION_STR						"active"
-#define SFLM_INDEX_SUSPENDED_STR						"suspended"
-#define SFLM_INDEX_OFFLINE_STR						"offline"
-#define SFLM_INDEX_ONLINE_STR							"online"
-#define SFLM_CASE_INSENSITIVE_OPTION_STR			"caseinsensitive"
-#define SFLM_MINSPACES_OPTION_STR					"minspaces"
-#define SFLM_WHITESPACE_AS_SPACE_STR				"whitespaceasspace"
-#define SFLM_IGNORE_LEADINGSPACES_OPTION_STR		"ignoreleadingspaces"
-#define SFLM_IGNORE_TRAILINGSPACES_OPTION_STR	"ignoretrailingspaces"
-#define SFLM_NOUNDERSCORE_OPTION_STR				"nounderscores"
-#define SFLM_NOSPACE_OPTION_STR						"nospaces"
-#define SFLM_NODASH_OPTION_STR						"nodashes"
-#define SFLM_VALUE_OPTION_STR							"value"
-#define SFLM_PRESENCE_OPTION_STR						"presence"
-#define SFLM_SUBSTRING_OPTION_STR					"substring"
-#define SFLM_EACHWORD_OPTION_STR						"eachword"
-#define SFLM_ABS_POS_OPTION_STR						"abspos"
-#define SFLM_METAPHONE_OPTION_STR					"metaphone"
+#define SFLM_STRING_OPTION_STR							"string"
+#define SFLM_STRING_OPTION_STR_LEN						6
+#define SFLM_INTEGER_OPTION_STR							"integer"
+#define SFLM_INTEGER_OPTION_STR_LEN						7
+#define SFLM_BINARY_OPTION_STR							"binary"
+#define SFLM_BINARY_OPTION_STR_LEN						6
+#define SFLM_CHECKING_OPTION_STR							"checking"
+#define SFLM_CHECKING_OPTION_STR_LEN					8
+#define SFLM_PURGE_OPTION_STR								"purge"
+#define SFLM_PURGE_OPTION_STR_LEN						5
+#define SFLM_ACTIVE_OPTION_STR							"active"
+#define SFLM_ACTIVE_OPTION_STR_LEN						6
+#define SFLM_INDEX_SUSPENDED_STR							"suspended"
+#define SFLM_INDEX_SUSPENDED_STR_LEN					9
+#define SFLM_INDEX_OFFLINE_STR							"offline"
+#define SFLM_INDEX_OFFLINE_STR_LEN						7
+#define SFLM_INDEX_ONLINE_STR								"online"
+#define SFLM_INDEX_ONLINE_STR_LEN						6
+#define SFLM_CASE_INSENSITIVE_OPTION_STR				"caseinsensitive"
+#define SFLM_CASE_INSENSITIVE_OPTION_STR_LEN			15
+#define SFLM_COMPRESS_WHITESPACE_OPTION_STR			"compresswhitespace"
+#define SFLM_COMPRESS_WHITESPACE_OPTION_STR_LEN		18
+#define SFLM_WHITESPACE_AS_SPACE_STR					"whitespaceasspace"
+#define SFLM_WHITESPACE_AS_SPACE_STR_LEN				17
+#define SFLM_IGNORE_LEADINGSPACES_OPTION_STR			"ignoreleadingspaces"
+#define SFLM_IGNORE_LEADINGSPACES_OPTION_STR_LEN	19
+#define SFLM_IGNORE_TRAILINGSPACES_OPTION_STR		"ignoretrailingspaces"
+#define SFLM_IGNORE_TRAILINGSPACES_OPTION_STR_LEN	20
+#define SFLM_NOUNDERSCORE_OPTION_STR					"nounderscores"
+#define SFLM_NOUNDERSCORE_OPTION_STR_LEN				13
+#define SFLM_NO_WHITESPACE_OPTION_STR					"nowhitespace"
+#define SFLM_NO_WHITESPACE_OPTION_STR_LEN				12
+#define SFLM_NODASH_OPTION_STR							"nodashes"
+#define SFLM_NODASH_OPTION_STR_LEN						8
+#define SFLM_VALUE_OPTION_STR								"value"
+#define SFLM_VALUE_OPTION_STR_LEN						5
+#define SFLM_PRESENCE_OPTION_STR							"presence"
+#define SFLM_PRESENCE_OPTION_STR_LEN					8
+#define SFLM_SUBSTRING_OPTION_STR						"substring"
+#define SFLM_SUBSTRING_OPTION_STR_LEN					9
+#define SFLM_EACHWORD_OPTION_STR							"eachword"
+#define SFLM_EACHWORD_OPTION_STR_LEN					8
+#define SFLM_ABS_POS_OPTION_STR							"abspos"
+#define SFLM_ABS_POS_OPTION_STR_LEN						6
+#define SFLM_METAPHONE_OPTION_STR						"metaphone"
+#define SFLM_METAPHONE_OPTION_STR_LEN					9
+#define SFLM_DESCENDING_OPTION_STR						"descending"
+#define SFLM_DESCENDING_OPTION_STR_LEN					10
+#define SFLM_ASCENDING_OPTION_STR						"ascending"
+#define SFLM_ASCENDING_OPTION_STR_LEN					9
+#define SFLM_SORT_MISSING_HIGH_OPTION_STR				"sortmissinghigh"
+#define SFLM_SORT_MISSING_HIGH_OPTION_STR_LEN		15
+#define SFLM_SORT_MISSING_LOW_OPTION_STR				"sortmissinglow"
+#define SFLM_SORT_MISSING_LOW_OPTION_STR_LEN			14
+#define SFLM_LIMIT_OPTION_STR								"limit"
+#define SFLM_LIMIT_OPTION_STR_LEN						5
 
 // Encryption Schemes
 
@@ -1195,6 +1253,8 @@ typedef struct
 #define NE_SFLM_ROW_DELETED							0xE05A	///< 0xE05A = Row being accessed has been deleted.
 #define NE_SFLM_ROW_NOT_FOUND							0xE05B	///< 0xE05B = Row being retrieved does not exist.
 #define NE_SFLM_INVALID_SQL							0xE05C	///< 0xE05C = SQL statement is invalid.
+#define NE_SFLM_STRING_TOO_LONG						0xE05D	///< 0xE05D = String specified for column exceeds maximum length for column.
+#define NE_SFLM_BINARY_TOO_LONG						0xE05E	///< 0xE05E = Binary value specified for column exceeds maximum length for column.
 
 // Dictionary definition errors.
 
@@ -1240,17 +1300,19 @@ typedef struct
 #define NE_SFLM_INVALID_COMPARE_RULE				0xE124	///< 0xE124 = Invalid comparison rule in index definition.\  Dictionary is corrupt.
 #define NE_SFLM_INVALID_INDEX_OPTION				0xE125	///< 0xE125 = Invalid index option specified on index definition.
 #define NE_SFLM_INVALID_INDEX_STATE					0xE126	///< 0xE126 = Invalid index state specified for an index.
-#define NE_SFLM_DUPLICATE_KEY_COMPONENT			0xE127	///< 0xE127 = Duplicate key component in internal index definition.\  Data dictionary is corrupt.
-#define NE_SFLM_INVALID_KEY_COMPONENT				0xE128	///< 0xE128 = Invalid key component in internal index definition.\  Data dictionary is corrupt.
-#define NE_SFLM_UNDEFINED_KEY_COMPONENT			0xE129	///< 0xE129 = Undefined key component in internal index definition.\  Data dictionary is corrupt.
-#define NE_SFLM_DUPLICATE_DATA_COMPONENT			0xE12A	///< 0xE12A = Duplicate data component in internal index definition.\  Data dictionary is corrupt.
-#define NE_SFLM_INVALID_DATA_COMPONENT				0xE12B	///< 0xE12B = Invalid data component in internal index definition.\  Data dictionary is corrupt.
-#define NE_SFLM_UNDEFINED_DATA_COMPONENT			0xE12C	///< 0xE12C = Undefined data component in internal index definition.\  Data dictionary is corrupt.
-#define NE_SFLM_NO_COMP_NUM_FOR_INDEX_COLUMN		0xE12D	///< 0xE12D = Neither key component or data component specified for index column.\  Data dictionary is corrupt.
-#define NE_SFLM_INVALID_INDEX_ON_VALUE				0xE12E	///< 0xE12E = Invalid value for the "index on" option in an index definition.
-#define NE_SFLM_INVALID_COMPARE_RULES_VALUE		0xE12F	///< 0xE12F = Invalid value for the "compare rules" option in an index definition.
-#define NE_SFLM_INVALID_SORT_DESCENDING_VALUE	0xE130	///< 0xE130 = Invalid value for the "sort descending" option in an index definition.
-#define NE_SFLM_INVALID_SORT_MISSING_HIGH_VALUE	0xE131	///< 0xE131 = Invalid value for the "sort missing high" option in an index definition.
+#define NE_SFLM_INVALID_KEEP_ABS_POS_INFO_VALUE	0xE127	///< 0xE127 = Invalid keep absolute position value specified for an index.
+#define NE_SFLM_INVALID_KEYS_UNIQUE_VALUE			0xE128	///< 0xE128 = Invalid keys unique value specified for an index.
+#define NE_SFLM_DUPLICATE_KEY_COMPONENT			0xE129	///< 0xE129 = Duplicate key component in internal index definition.\  Data dictionary is corrupt.
+#define NE_SFLM_INVALID_KEY_COMPONENT				0xE12A	///< 0xE12A = Invalid key component in internal index definition.\  Data dictionary is corrupt.
+#define NE_SFLM_UNDEFINED_KEY_COMPONENT			0xE12B	///< 0xE12B = Undefined key component in internal index definition.\  Data dictionary is corrupt.
+#define NE_SFLM_DUPLICATE_DATA_COMPONENT			0xE12C	///< 0xE12C = Duplicate data component in internal index definition.\  Data dictionary is corrupt.
+#define NE_SFLM_INVALID_DATA_COMPONENT				0xE12D	///< 0xE12D = Invalid data component in internal index definition.\  Data dictionary is corrupt.
+#define NE_SFLM_UNDEFINED_DATA_COMPONENT			0xE12E	///< 0xE12E = Undefined data component in internal index definition.\  Data dictionary is corrupt.
+#define NE_SFLM_NO_COMP_NUM_FOR_INDEX_COLUMN		0xE12F	///< 0xE12F = Neither key component or data component specified for index column.\  Data dictionary is corrupt.
+#define NE_SFLM_INVALID_INDEX_ON_VALUE				0xE130	///< 0xE130 = Invalid value for the "index on" option in an index definition.
+#define NE_SFLM_INVALID_COMPARE_RULES_VALUE		0xE131	///< 0xE131 = Invalid value for the "compare rules" option in an index definition.
+#define NE_SFLM_INVALID_SORT_DESCENDING_VALUE	0xE132	///< 0xE132 = Invalid value for the "sort descending" option in an index definition.
+#define NE_SFLM_INVALID_SORT_MISSING_HIGH_VALUE	0xE133	///< 0xE133 = Invalid value for the "sort missing high" option in an index definition.
 
 // Query Errors
 
@@ -1335,17 +1397,52 @@ flminterface IF_BackupStatus : public F_Object
 		FLMUINT64	ui64BytesDone) = 0;
 };
 
-/// Structure for sending data in for table columns.
+/// Structure for defining columns when creating a table.
+typedef struct F_COLUMN_DEF
+{
+	const char *	pszColumnName;		///< Name of column.
+	FLMUINT			uiColumnNameLen;	///< Length of the column name.
+	eDataType		eColumnDataType;	///< Column's data type.
+	FLMUINT			uiMaxLen;			///< Maximum length for column.\  Only used for binary and strings.
+	FLMUINT			uiFlags;				///< Column's definition flags.
+	FLMUINT			uiEncDefNum;		///< Column's encryption definition number, if any.
+	F_COLUMN_DEF *	pNext;				///< Next column in linked list.
+} F_COLUMN_DEF;
+
+/// Structure for defining columns that belong to an index.
+typedef struct F_INDEX_COL_DEF
+{
+	FLMUINT				uiColumnNum;		///< Column number that is to be in key.
+	FLMUINT				uiFlags;				///< Flags for this column
+#define ICD_VALUE							0x00000010	// Value agrees with parsing syntax
+#define ICD_EACHWORD						0x00000020	// Index each and every word in the field
+#define ICD_PRESENCE						0x00000040	// Index the tag and NOT the value
+#define ICD_METAPHONE					0x00000080	// Index words of text strings using 
+																// metaphone values
+#define ICD_SUBSTRING					0x00000100	// Index all substrings pieces
+#define ICD_DESCENDING					0x00000200	// Sort in descending order.
+#define ICD_MISSING_HIGH				0x00000400	// Sort missing components high instead of low.
+#define ICD_ESC_CHAR						0x00001000	// Placehold so that a query can parse the input
+																// string and find a literal '*' or '\\'.
+																// Not specified in dictionary def. or kept in ICD.
+																// Only a temporary flag.
+	FLMUINT				uiCompareRules;	///< Comparison rules for this column.
+	FLMUINT				uiLimit;				///< Limit for this column.
+	F_INDEX_COL_DEF *	pNext;				///< Next column in linked list.
+} F_INDEX_COL_DEF;
+
+/// Structure for setting value for a column in a table.
 typedef struct F_COLUMN_VALUE
 {
-	FLMUINT		uiColumnNum;		///< Column data is for.
-	eDataType	eColumnDataType;	///< Column's data type.
-	FLMBYTE*		pucColumnValue;	///< Column's value.\  For string data it is a SEN followed by a UTF8 string.\  The SEN
-											///< gives the number of characters (as opposed to bytes) in the string.\  For number
-											///< data there are two pieces.\  The first byte is a 1 or 0, indicating if the
-											///< number is negative (1=negative, 0=positive).\  Following that byte is a
-											///< SEN that contains the absolute value of the number.\  Binary data may be anything.
-	FLMUINT		uiValueLen;			///< Length of column's value.
+	FLMUINT				uiColumnNum;		///< Column number.
+	FLMBYTE*				pucColumnValue;	///< Column's value.\  For string data it is a SEN followed by a UTF8 string.\  The SEN
+													///< gives the number of characters (as opposed to bytes) in the string.\  For number
+													///< data there are two pieces.\  The first byte is a 1 or 0, indicating if the
+													///< number is negative (1=negative, 0=positive).\  Following that byte is a
+													///< SEN that contains the absolute value of the number.\  Binary data may be anything.\  NOTE:
+													///< The pucColumnValue and uiValueLen fields are NOT set for the CREATE TABLE statement.
+	FLMUINT				uiValueLen;			///< Length of column's value.\  Not set for the CREATE TABLE statement.
+	F_COLUMN_VALUE *	pNext;				///< Next column in linked list.
 } F_COLUMN_VALUE;
 
 /****************************************************************************
@@ -1435,6 +1532,32 @@ flminterface IF_RestoreStatus : public F_Object
 		FLMUINT					uiTableNum,
 		F_COLUMN_VALUE *		pColumnValues,
 		FLMUINT					uiNumColumnValues) = 0;
+		
+	virtual RCODE reportCreateTable(
+		eRestoreAction *		peAction,
+		FLMUINT					uiTableNum,
+		const char *			pszTableName,
+		FLMUINT					uiTableNameLen,
+		FLMUINT					uiEncDefNum,
+		F_COLUMN_DEF *			pColumnDefs,
+		FLMUINT					uiNumColumnDefs) = 0;
+		
+	virtual RCODE reportCreateIndex(
+		eRestoreAction *		peAction,
+		FLMUINT					uiTableNum,
+		FLMUINT					uiIndexNum,
+		const char *			pszIndexName,
+		FLMUINT					uiIndexNameLen,
+		FLMUINT					uiEncDefNum,
+		FLMUINT					uiFlags,
+		F_INDEX_COL_DEF *		pIxColDefs,
+		FLMUINT					uiNumIxColDefs) = 0;
+		
+	virtual RCODE reportIndexSet(
+		eRestoreAction *		peAction,
+		FLMUINT					uiIndexNum,
+		FLMUINT64				ui64StartRowId,
+		FLMUINT64				ui64EndRowId) = 0;
 };
 
 /****************************************************************************

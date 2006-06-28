@@ -136,42 +136,78 @@ private:
 		m_sqlStats.uiErrLineBytes = uiErrLineBytes;
 	}
 
+	RCODE getUTF8String(
+		FLMBOOL		bMustHaveEqual,
+		FLMBYTE *	pszStr,
+		FLMUINT		uiStrBufSize,
+		FLMUINT *	puiStrLen);
+		
+	RCODE getNumber(
+		FLMBOOL		bMustHaveEqual,
+		FLMUINT64 *	pui64Num,
+		FLMBOOL *	pbNeg,
+		FLMBOOL		bNegAllowed);
+		
+	RCODE getBool(
+		FLMBOOL		bMustHaveEqual,
+		FLMBOOL *	pbBool);
+		
+	RCODE getUINT(
+		FLMBOOL		bMustHaveEqual,
+		FLMUINT *	puiNum);
+		
 	RCODE getName(
 		char *		pszName,
 		FLMUINT		uiNameBufSize,
 		FLMUINT *	puiNameLen);
 		
 	RCODE getTableName(
-		FLMBOOL	bMustExist);
+		FLMBOOL		bMustExist,
+		char *		pszTableName,
+		FLMUINT		uiTableNameBufSize,
+		FLMUINT *	puiTableNameLen,
+		F_TABLE **	ppTable);
 
-	RCODE allocColumnValueArray(
-		FLMUINT	uiNumColumns);
+	RCODE getIndexName(
+		FLMBOOL		bMustExist,
+		char *		pszIndexName,
+		FLMUINT		uiIndexNameBufSize,
+		FLMUINT *	puiIndexNameLen,
+		F_INDEX **	ppIndex);
 		
 	RCODE getStringValue(
+		F_COLUMN *			pColumn,
 		F_COLUMN_VALUE *	pColumnValue);
 
 	RCODE getNumberValue(
 		F_COLUMN_VALUE *	pColumnValue);
 
 	RCODE getBinaryValue(
+		F_COLUMN *			pColumn,
 		F_COLUMN_VALUE *	pColumnValue);
 		
 	RCODE getValue(
+		F_COLUMN *			pColumn,
 		F_COLUMN_VALUE *	pColumnValue);
 		
 	RCODE insertRow( void);
 
+	RCODE processCreateDatabase( void);
+	
+	RCODE getDataType(
+		eDataType *	peDataType,
+		FLMUINT *	puiMax);
+		
+	RCODE processCreateTable( void);
+	
+	RCODE processCreateIndex(
+		FLMBOOL	bUnique);
+	
 	RCODE processInsertRow( void);
-
+	
 	// Data
 
 	F_Db *						m_pDb;
-	F_TABLE *					m_pTable;
-#define SQL_DEFAULT_COLUMNS	20
-	F_COLUMN_VALUE				m_columnValues [SQL_DEFAULT_COLUMNS];
-	F_COLUMN_VALUE *			m_pColumnValues;
-	FLMUINT						m_uiColumnValueArraySize;
-	FLMUINT						m_uiNumColumnValues;
 	IF_XML *						m_pXml;
 	FLMBYTE						m_ucUngetByte;
 	FLMBYTE *					m_pucCurrLineBuf;

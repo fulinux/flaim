@@ -936,7 +936,6 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 	SQL_VALUE *				pValue;
 	SQL_TABLE *				pTable;
 	FLMUINT					uiColumnNum;
-	eSQLQueryOperators	eOperator;
 	FLMUINT					uiOperand;
 	SQL_SUBQUERY *			pSubQuery;
 	SQL_SUBQUERY *			pNextSubQuery;
@@ -966,6 +965,7 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 						 (pSQLNode->pFirstChild->eNodeType == SQL_VALUE_NODE &&
 						  pSQLNode->pLastChild->eNodeType == SQL_COLUMN_NODE)))
 			{
+				eSQLQueryOperators	eOperator = pSQLNode->nd.op.eOperator;
 				
 				// Have a Column,Op,Value or Value,Op,Column.  Convert to a
 				// predicate node and merge with other predicate nodes that
@@ -976,7 +976,6 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 					pTable = pSQLNode->pFirstChild->nd.column.pTable;
 					uiColumnNum = pSQLNode->pFirstChild->nd.column.uiColumnNum;
 					pValue = &pSQLNode->pLastChild->nd.value;
-					eOperator = pSQLNode->nd.op.eOperator;
 				}
 				else
 				{
@@ -990,7 +989,7 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 					{
 						case SQL_EQ_OP:
 						case SQL_NE_OP:
-							// No change.
+							// No change
 							break;
 						case SQL_LT_OP:
 							eOperator = SQL_GE_OP;
@@ -1817,8 +1816,8 @@ RCODE SQLQuery::convertToDNF( void)
 	// create a single subquery that has a single operand.
 	
 	if (m_pQuery->eNodeType != SQL_OPERATOR_NODE ||
-		 m_pQuery->nd.op.eOperator != SQL_AND_OP ||
-		 m_pQuery->nd.op.eOperator != SQL_OR_OP)
+		 (m_pQuery->nd.op.eOperator != SQL_AND_OP &&
+		  m_pQuery->nd.op.eOperator != SQL_OR_OP))
 	{
 		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_SUBQUERY),
 													(void **)&m_pFirstSubQuery)))

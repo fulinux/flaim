@@ -634,7 +634,8 @@ FSTATIC FLMBOOL validBooleanValue(
 	const char *	pszValue,
 	FLMBOOL *		pbTrue)
 {
-	if (f_stricmp( pszValue, "yes") == 0 ||
+	if (f_stricmp( pszValue, "true") == 0 ||
+		 f_stricmp( pszValue, "yes") == 0 ||
 		 f_stricmp( pszValue, "1") == 0 ||
 		 f_stricmp( pszValue, "enabled") == 0 ||
 		 f_stricmp( pszValue, "on") == 0)
@@ -642,7 +643,8 @@ FSTATIC FLMBOOL validBooleanValue(
 		*pbTrue = TRUE;
 		return( TRUE);
 	}
-	else if (f_stricmp( pszValue, "no") == 0 ||
+	else if (f_stricmp( pszValue, "false") == 0 ||
+				f_stricmp( pszValue, "no") == 0 ||
 				f_stricmp( pszValue, "0") == 0 ||
 				f_stricmp( pszValue, "disabled") == 0 ||
 				f_stricmp( pszValue, "off") == 0)
@@ -940,6 +942,7 @@ RCODE F_Dict::addColumn(
 	const char *	pszColumnName,
 	FLMUINT			uiFlags,
 	eDataType		eDataTyp,
+	FLMUINT			uiMaxLen,
 	FLMUINT			uiEncDefNum)
 {
 	RCODE			rc = NE_SFLM_OK;
@@ -990,6 +993,7 @@ RCODE F_Dict::addColumn(
 	pColumn->ui64DefRowId = ui64DefRowId;
 	pColumn->uiFlags = uiFlags;
 	pColumn->eDataTyp = eDataTyp;
+	pColumn->uiMaxLen = uiMaxLen;
 	pColumn->uiEncDefNum = uiEncDefNum;
 	pColumn->pFirstIcd = NULL;
 	pColumn->pFirstDataIcd = NULL;
@@ -1103,7 +1107,11 @@ RCODE F_Dict::addIndex(
 	// Set other members of the index structure.
 	
 	pIndex->uiTableNum = uiTableNum;
-	pIndex->uiFlags = uiFlags;
+	
+	// NOTE: The substring flag should only be set when components are added
+	// We AND it off here in case it was set by the caller.
+	
+	pIndex->uiFlags = uiFlags & (~(IXD_HAS_SUBSTRING));
 	pIndex->uiLanguage = uiLanguage;
 	pIndex->ui64LastRowIndexed = ui64LastRowIndexed;
 	f_memset( &pIndex->lfInfo, 0, sizeof( LFILE));
@@ -1194,6 +1202,10 @@ RCODE F_Dict::addIndexComponent(
 		pIcd->uiColumnNum = uiColumnNum;
 		pIcd->ui64DefRowId = ui64DefRowId;
 		pIcd->uiFlags = uiFlags;
+		if (uiFlags & ICD_SUBSTRING)
+		{
+			pIndex->uiFlags |= IXD_HAS_SUBSTRING;
+		}
 		pIcd->uiCompareRules = uiCompareRules;
 		pIcd->uiLimit = uiLimit;
 		pIcd->pNextInChain = pColumn->pFirstIcd;
@@ -1257,35 +1269,35 @@ RCODE F_Dict::setupEncDefTable( void)
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_ENCDEFS, 0,
 								SFLM_COLNUM_ENCDEFS_ENCDEF_NAME,
 								SFLM_COLNAM_ENCDEFS_ENCDEF_NAME,
-								0, SFLM_STRING_TYPE, 0)))
+								0, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_ENCDEFS, 0,
 								SFLM_COLNUM_ENCDEFS_ENCDEF_NUM,
 								SFLM_COLNAM_ENCDEFS_ENCDEF_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_ENCDEFS, 0,
 								SFLM_COLNUM_ENCDEFS_ENC_ALGORITHM,
 								SFLM_COLNAM_ENCDEFS_ENC_ALGORITHM,
-								COL_READ_ONLY, SFLM_STRING_TYPE, 0)))
+								COL_READ_ONLY, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_ENCDEFS, 0,
 								SFLM_COLNUM_ENCDEFS_ENC_KEY_SIZE,
 								SFLM_COLNAM_ENCDEFS_ENC_KEY_SIZE,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_ENCDEFS, 0,
 								SFLM_COLNUM_ENCDEFS_ENC_KEY,
 								SFLM_COLNAM_ENCDEFS_ENC_KEY,
-								COL_READ_ONLY, SFLM_BINARY_TYPE, 0)))
+								COL_READ_ONLY, SFLM_BINARY_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
@@ -1333,28 +1345,28 @@ RCODE F_Dict::setupTableTable( void)
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_TABLES, 0,
 								SFLM_COLNUM_TABLES_TABLE_NAME,
 								SFLM_COLNAM_TABLES_TABLE_NAME,
-								0, SFLM_STRING_TYPE, 0)))
+								0, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_TABLES, 0,
 								SFLM_COLNUM_TABLES_TABLE_NUM,
 								SFLM_COLNAM_TABLES_TABLE_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_TABLES, 0,
 								SFLM_COLNUM_TABLES_ENCDEF_NUM,
 								SFLM_COLNAM_TABLES_ENCDEF_NUM,
-								0, SFLM_NUMBER_TYPE, 0)))
+								0, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_TABLES, 0,
 								SFLM_COLNUM_TABLES_NUM_COLUMNS,
 								SFLM_COLNAM_TABLES_NUM_COLUMNS,
-								0, SFLM_NUMBER_TYPE, 0)))
+								0, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
@@ -1419,49 +1431,57 @@ RCODE F_Dict::setupColumnTable( void)
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_TABLE_NUM,
 								SFLM_COLNAM_COLUMNS_TABLE_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_COLUMN_NAME,
 								SFLM_COLNAM_COLUMNS_COLUMN_NAME,
-								0, SFLM_STRING_TYPE, 0)))
+								0, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_COLUMN_NUM,
 								SFLM_COLNAM_COLUMNS_COLUMN_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_DATA_TYPE,
 								SFLM_COLNAM_COLUMNS_DATA_TYPE,
-								COL_READ_ONLY, SFLM_STRING_TYPE, 0)))
+								COL_READ_ONLY, SFLM_STRING_TYPE, 0, 0)))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
+								SFLM_COLNUM_COLUMNS_MAX_LEN,
+								SFLM_COLNAM_COLUMNS_MAX_LEN,
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_ENCDEF_NUM,
 								SFLM_COLNAM_COLUMNS_ENCDEF_NUM,
-								COL_READ_ONLY | COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY | COL_NULL_ALLOWED,
+								SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_READ_ONLY,
 								SFLM_COLNAM_COLUMNS_READ_ONLY,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_COLUMNS, 0,
 								SFLM_COLNUM_COLUMNS_NULL_ALLOWED,
 								SFLM_COLNAM_COLUMNS_NULL_ALLOWED,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
@@ -1526,63 +1546,78 @@ RCODE F_Dict::setupIndexTable( void)
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_INDEX_NAME,
 								SFLM_COLNAM_INDEXES_INDEX_NAME,
-								0, SFLM_STRING_TYPE, 0)))
+								0, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_INDEX_NUM,
 								SFLM_COLNAM_INDEXES_INDEX_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_TABLE_NUM,
 								SFLM_COLNAM_INDEXES_TABLE_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_ENCDEF_NUM,
 								SFLM_COLNAM_INDEXES_ENCDEF_NUM,
-								COL_READ_ONLY | COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY | COL_NULL_ALLOWED,
+								SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_LANGUAGE,
 								SFLM_COLNAM_INDEXES_LANGUAGE,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_NUM_KEY_COMPONENTS,
 								SFLM_COLNAM_INDEXES_NUM_KEY_COMPONENTS,
-								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_NUM_DATA_COMPONENTS,
 								SFLM_COLNAM_INDEXES_NUM_DATA_COMPONENTS,
-								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_LAST_ROW_INDEXED,
 								SFLM_COLNAM_INDEXES_LAST_ROW_INDEXED,
-								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
 								SFLM_COLNUM_INDEXES_INDEX_STATE,
 								SFLM_COLNAM_INDEXES_INDEX_STATE,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
+								SFLM_COLNUM_INDEXES_KEEP_ABS_POS_INFO,
+								SFLM_COLNAM_INDEXES_KEEP_ABS_POS_INFO,
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEXES, 0,
+								SFLM_COLNUM_INDEXES_KEYS_UNIQUE,
+								SFLM_COLNAM_INDEXES_KEYS_UNIQUE,
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
@@ -1664,63 +1699,63 @@ RCODE F_Dict::setupIndexComponentTable( void)
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_INDEX_NUM,
 								SFLM_COLNAM_INDEX_COMP_INDEX_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_COLUMN_NUM,
 								SFLM_COLNAM_INDEX_COMP_COLUMN_NUM,
-								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0)))
+								COL_READ_ONLY, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_KEY_COMPONENT,
 								SFLM_COLNAM_INDEX_COMP_KEY_COMPONENT,
-								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_DATA_COMPONENT,
 								SFLM_COLNAM_INDEX_COMP_DATA_COMPONENT,
-								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_INDEX_ON,
 								SFLM_COLNAM_INDEX_COMP_INDEX_ON,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_COMPARE_RULES,
 								SFLM_COLNAM_INDEX_COMP_COMPARE_RULES,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_SORT_DESCENDING,
 								SFLM_COLNAM_INDEX_COMP_SORT_DESCENDING,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_SORT_MISSING_HIGH,
 								SFLM_COLNAM_INDEX_COMP_SORT_MISSING_HIGH,
-								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_STRING_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_INDEX_COMPONENTS, 0,
 								SFLM_COLNUM_INDEX_COMP_LIMIT,
 								SFLM_COLNAM_INDEX_COMP_LIMIT,
-								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0)))
+								COL_NULL_ALLOWED, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
@@ -1768,7 +1803,7 @@ RCODE F_Dict::setupBlockChainTable( void)
 	if (RC_BAD( rc = addColumn( SFLM_TBLNUM_BLOCK_CHAINS, 0,
 								SFLM_COLNUM_BLOCK_CHAINS_BLOCK_ADDRESS,
 								SFLM_COLNAM_BLOCK_CHAINS_BLOCK_ADDRESS,
-								0, SFLM_NUMBER_TYPE, 0)))
+								0, SFLM_NUMBER_TYPE, 0, 0)))
 	{
 		goto Exit;
 	}
@@ -2386,6 +2421,7 @@ RCODE F_Db::dictReadColumns( void)
 	FLMUINT				uiTmpLen;
 	FLMBOOL				bTmp;
 	FLMBOOL				bIsNull;
+	FLMUINT				uiMaxLen;
 
 	if ((pTableCursor = f_new FSTableCursor) == NULL)
 	{
@@ -2487,6 +2523,18 @@ RCODE F_Db::dictReadColumns( void)
 		
 		uiFlags = 0;
 		
+		// Get the maximum length - optional
+		
+		if (RC_BAD( rc = pRow->getUINT( this, SFLM_COLNUM_COLUMNS_MAX_LEN,
+										&uiMaxLen, &bIsNull)))
+		{
+			goto Exit;
+		}
+		if (bIsNull)
+		{
+			uiMaxLen = 0;
+		}
+		
 		// Get the read-only flag - optional.
 		
 		if (RC_BAD( rc = pRow->getUTF8( this, SFLM_COLNUM_COLUMNS_READ_ONLY,
@@ -2533,7 +2581,7 @@ RCODE F_Db::dictReadColumns( void)
 
 		if (RC_BAD( rc = m_pDict->addColumn( uiTableNum, ui64DefRowId,
 												uiColumnNum, szColumnName, uiFlags,
-												eDataTyp, uiEncDefNum)))
+												eDataTyp, uiMaxLen, uiEncDefNum)))
 		{
 			goto Exit;
 		}
@@ -2598,6 +2646,7 @@ RCODE F_Db::dictReadIndexes( void)
 	FLMUINT				uiIndexNameLen;
 	FLMUINT				uiIndexNum;
 	char					szTmp [50];
+	FLMBOOL				bTmp;
 	FLMUINT				uiTmpLen;
 	FLMUINT				uiLanguage;
 	FLMUINT64			ui64LastRowIndexed;
@@ -2767,6 +2816,46 @@ RCODE F_Db::dictReadIndexes( void)
 			}
 		}
 			
+		// Get the keep absolute positioning flag - optional.
+		
+		if (RC_BAD( rc = pRow->getUTF8( this, SFLM_COLNUM_INDEXES_KEEP_ABS_POS_INFO,
+											szTmp, sizeof( szTmp), &bIsNull, &uiTmpLen, NULL)))
+		{
+			goto Exit;
+		}
+		if (!bIsNull && uiTmpLen)
+		{
+			if (!validBooleanValue( szTmp, &bTmp))
+			{
+				rc = RC_SET_AND_ASSERT( NE_SFLM_INVALID_KEEP_ABS_POS_INFO_VALUE);
+				goto Exit;
+			}
+			if (bTmp)
+			{
+				uiFlags |= IXD_ABS_POS;
+			}
+		}
+		
+		// Get the keys unique flag - optional.
+		
+		if (RC_BAD( rc = pRow->getUTF8( this, SFLM_COLNUM_INDEXES_KEYS_UNIQUE,
+											szTmp, sizeof( szTmp), &bIsNull, &uiTmpLen, NULL)))
+		{
+			goto Exit;
+		}
+		if (!bIsNull && uiTmpLen)
+		{
+			if (!validBooleanValue( szTmp, &bTmp))
+			{
+				rc = RC_SET_AND_ASSERT( NE_SFLM_INVALID_KEYS_UNIQUE_VALUE);
+				goto Exit;
+			}
+			if (bTmp)
+			{
+				uiFlags |= IXD_KEYS_UNIQUE;
+			}
+		}
+		
 		// Add the index to the the in-memory dictionary.
 		
 		if (RC_BAD( rc = m_pDict->addIndex( uiIndexNum, ui64DefRowId,
@@ -2879,7 +2968,7 @@ FSTATIC FLMBOOL validCompareRulesValue(
 		{
 			(*puiCompareRules) |= FLM_COMP_CASE_INSENSITIVE;
 		}
-		else if (f_stricmp( SFLM_MINSPACES_OPTION_STR, pszRuleStart) == 0)
+		else if (f_stricmp( SFLM_COMPRESS_WHITESPACE_OPTION_STR, pszRuleStart) == 0)
 		{
 			(*puiCompareRules) |= FLM_COMP_COMPRESS_WHITESPACE;
 		}
@@ -2899,7 +2988,7 @@ FSTATIC FLMBOOL validCompareRulesValue(
 		{
 			(*puiCompareRules) |= FLM_COMP_NO_UNDERSCORES;
 		}
-		else if (f_stricmp( SFLM_NOSPACE_OPTION_STR, pszRuleStart) == 0)
+		else if (f_stricmp( SFLM_NO_WHITESPACE_OPTION_STR, pszRuleStart) == 0)
 		{
 			(*puiCompareRules) |= FLM_COMP_NO_WHITESPACE;
 		}

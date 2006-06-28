@@ -1,4 +1,5 @@
-// Desc:	This module contains routines for doing database updates
+//------------------------------------------------------------------------------
+// Desc:	This module contains routines for parsing and executing SQL statements.
 //
 // Tabs:	3
 //
@@ -35,8 +36,6 @@ SQLStatement::SQLStatement()
 	m_pucCurrLineBuf = NULL;
 	m_uiCurrLineBufMaxBytes = 0;
 	m_pXml = NULL;
-	m_pColumnValues = &m_columnValues [0];
-	m_uiColumnValueArraySize = SQL_DEFAULT_COLUMNS;
 	resetStatement();
 }
 
@@ -52,10 +51,6 @@ SQLStatement::~SQLStatement()
 		f_free( &m_pucCurrLineBuf);
 	}
 
-	if (m_pColumnValues != &m_columnValues [0])
-	{
-		f_free( &m_pColumnValues);
-	}
 	m_tmpPool.poolFree();
 }
 
@@ -72,8 +67,6 @@ void SQLStatement::resetStatement( void)
 	m_pStream = NULL;
 	m_uiFlags = 0;
 	m_pDb = NULL;
-	m_pTable = NULL;
-	m_uiNumColumnValues = 0;
 	if (m_pXml)
 	{
 		m_pXml->Release();
@@ -357,6 +350,527 @@ Exit:
 }
 
 //------------------------------------------------------------------------------
+// Desc:	Parse a UTF8 string from the input stream.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::getUTF8String(
+	FLMBOOL		bMustHaveEqual,
+	FLMBYTE *	pszStr,
+	FLMUINT		uiStrBufSize,
+	FLMUINT *	puiStrLen)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMBYTE		ucChar;
+	FLMBYTE		ucQuoteChar = 0;
+	FLMBOOL		bEscaped = FALSE;
+	FLMUINT		uiNumChars = 0;
+	
+	// Skip leading whitespace
+	
+	if (RC_BAD( rc = skipWhitespace( FALSE)))
+	{
+		goto Exit;
+	}
+	if (bMustHaveEqual)
+	{
+		if (!lineHasToken( "="))
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset,
+					SQL_ERR_EXPECTING_EQUAL,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// Always leave room for a null terminating character
+	
+	uiStrBufSize--;
+	
+	// See if we have a quote character.
+	
+	ucChar = getChar();
+	if (ucChar == '"' || ucChar == '\'')
+	{
+		ucQuoteChar = ucChar;
+	}
+	
+	for (;;)
+	{
+		
+		// If we hit end of line, it is invalid without hitting quote,
+		// it is an error.
+		
+		if ((ucChar = getChar()) == 0)
+		{
+			if (ucQuoteChar)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_MISSING_QUOTE,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			else
+			{
+				break;
+			}
+		}
+		if (bEscaped)
+		{
+			// Can only escape backslash (the escape character), quotes, and
+			// a few other characters.
+			
+			if (ucChar == 'n')
+			{
+				ucChar = ASCII_NEWLINE;
+			}
+			else if (ucChar == 't')
+			{
+				ucChar = ASCII_TAB;
+			}
+			else if (ucChar == 'r')
+			{
+				ucChar = ASCII_CR;
+			}
+			else if (ucChar == '\'' || ucChar == '"' ||
+						ucChar == ASCII_SPACE || ucChar == ASCII_TAB ||
+						ucChar == ',' || ucChar == ')')
+			{
+			}
+			else
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_INVALID_ESCAPED_CHARACTER,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			
+			if (uiNumChars == uiStrBufSize)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_UTF8_STRING_TOO_LARGE,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			
+			*pszStr++ = ucChar;
+			uiNumChars++;
+		}
+		else if (ucChar == '\\')
+		{
+			bEscaped = TRUE;
+		}
+		else if (ucChar == ucQuoteChar)
+		{
+			break;
+		}
+		else if (ucChar == ASCII_SPACE && ucChar == ASCII_TAB ||
+					ucChar == ',' || ucChar == ')')
+		{
+			ungetChar();
+			break;
+		}
+		else
+		{
+			if (uiNumChars == uiStrBufSize)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_UTF8_STRING_TOO_LARGE,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			
+			// Save the character to our buffer.
+			
+			*pszStr++ = ucChar;
+			uiNumChars++;
+			
+			// Handle multi-byte UTF8 characters.  The getLine() method has
+			// already checked for valid UTF8, so that is all we should be
+			// seeing here - thus the asserts.
+			
+			if (ucChar > 0x7F)
+			{
+				
+				// It is at least two bytes.
+				
+				if (uiNumChars == uiStrBufSize)
+				{
+					setErrInfo( m_uiCurrLineNum,
+							m_uiCurrLineOffset,
+							SQL_ERR_UTF8_STRING_TOO_LARGE,
+							m_uiCurrLineFilePos,
+							m_uiCurrLineBytes);
+					rc = RC_SET( NE_SFLM_INVALID_SQL);
+					goto Exit;
+				}
+				ucChar = getChar();
+				flmAssert( (ucChar >> 6) == 0x02);
+				*pszStr++ = ucChar;
+				uiNumChars++;
+				
+				// See if it is three bytes.
+				
+				if ((ucChar >> 5) != 0x06)
+				{
+					if (uiNumChars == uiStrBufSize)
+					{
+						setErrInfo( m_uiCurrLineNum,
+								m_uiCurrLineOffset,
+								SQL_ERR_UTF8_STRING_TOO_LARGE,
+								m_uiCurrLineFilePos,
+								m_uiCurrLineBytes);
+						rc = RC_SET( NE_SFLM_INVALID_SQL);
+						goto Exit;
+					}
+					ucChar = getChar();
+					flmAssert( (ucChar >> 6) == 0x02);
+					*pszStr++ = ucChar;
+					uiNumChars++;
+				}
+			}
+		}
+	}
+	
+	// There will always be room for a null terminating byte if we
+	// get to this point.
+
+	*pszStr = 0;	
+	
+Exit:
+
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
+// Desc:	Parse a numeric value from the input stream.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::getNumber(
+	FLMBOOL		bMustHaveEqual,
+	FLMUINT64 *	pui64Num,
+	FLMBOOL *	pbNeg,
+	FLMBOOL		bNegAllowed)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMBYTE		ucChar;
+	FLMUINT64	ui64Value = 0;
+	FLMBOOL		bHex = FALSE;
+	FLMUINT		uiDigitCount = 0;
+	FLMUINT		uiDigitValue = 0;
+	FLMUINT		uiSavedLineNum;
+	FLMUINT		uiSavedOffset;
+	FLMUINT		uiSavedFilePos;
+	FLMUINT		uiSavedLineBytes;
+	
+	*pbNeg = FALSE;
+	
+	// Skip leading whitespace
+	
+	if (RC_BAD( rc = skipWhitespace( FALSE)))
+	{
+		goto Exit;
+	}
+	if (bMustHaveEqual)
+	{
+		if (!lineHasToken( "="))
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset,
+					SQL_ERR_EXPECTING_EQUAL,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	uiSavedLineNum = m_uiCurrLineNum;
+	uiSavedOffset = m_uiCurrLineOffset;
+	uiSavedFilePos = m_uiCurrLineFilePos;
+	uiSavedLineBytes = m_uiCurrLineBytes;
+	
+	// Go until we hit a character that is not a number.
+	
+	for (;;)
+	{
+		
+		// If we hit the end of the line, we are done.
+		
+		if ((ucChar = getChar()) == 0)
+		{
+			break;
+		}
+		
+		// Ignore white space
+		
+		{
+			continue;
+		}
+		if (ucChar >= '0' && ucChar <= '9')
+		{
+			uiDigitValue = (FLMUINT)(ucChar - '0');
+			uiDigitCount++;
+		}
+		else if (ucChar >= 'a' && ucChar <= 'f')
+		{
+			if (!bHex)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_ILLEGAL_HEX_DIGIT,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			uiDigitValue = (FLMUINT)(ucChar - 'a' + 10);
+			uiDigitCount++;
+		}
+		else if (ucChar >= 'A' && ucChar <= 'F')
+		{
+			if (!bHex)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_ILLEGAL_HEX_DIGIT,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			uiDigitValue = (FLMUINT)(ucChar - 'A' + 10);
+			uiDigitCount++;
+		}
+		else if (ucChar == ',' || ucChar == ')' ||
+					ucChar == ASCII_SPACE || ucChar == ASCII_TAB)
+		{
+			
+			// terminate when we hit a comma or right paren or white
+			// space.  Need to unget the character so the caller can handle it.
+			
+			ungetChar();
+			break;
+		}
+		else if (ucChar == 'X' || ucChar == 'x')
+		{
+			if (bHex || uiDigitCount != 1 || ui64Value)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_NON_NUMERIC_CHARACTER,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			else
+			{
+				bHex = TRUE;
+				uiDigitCount = 0;
+				continue;
+			}
+		}
+		else if (ucChar == '-')
+		{
+			if (bHex || uiDigitCount)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_NON_NUMERIC_CHARACTER,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			else if (!bNegAllowed)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_INVALID_NEGATIVE_NUM,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			else
+			{
+				*pbNeg = TRUE;
+				continue;
+			}
+		}
+		else
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset,
+					SQL_ERR_NON_NUMERIC_CHARACTER,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+		
+		if (bHex)
+		{
+			if (ui64Value > (FLM_MAX_UINT64 >> 4))
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_NUMBER_OVERFLOW,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			ui64Value <<= 4;
+			ui64Value += (FLMUINT64)uiDigitValue;
+		}
+		else
+		{
+			if (ui64Value > (FLM_MAX_UINT64 / 10))
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_NUMBER_OVERFLOW,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			ui64Value *= 10;
+			ui64Value += (FLMUINT64)uiDigitValue;
+		}
+		
+		// If it is a negative number, make sure we have not
+		// exceeded the maximum negative value.
+		
+		if (*pbNeg && ui64Value > ((FLMUINT64)1 << 63))
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset,
+					SQL_ERR_NUMBER_OVERFLOW,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+	}
+	
+	// If we didn't hit any digits, we have an invalid number.
+	
+	if (!uiDigitCount)
+	{
+		setErrInfo( uiSavedLineNum,
+				uiSavedOffset,
+				SQL_ERR_NUMBER_VALUE_EMPTY,
+				uiSavedFilePos,
+				uiSavedLineBytes);
+		rc = RC_SET( NE_SFLM_INVALID_SQL);
+		goto Exit;
+	}
+	
+	*pui64Num = ui64Value;
+	
+Exit:
+
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
+// Desc:	Parse a boolean value from the input stream.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::getBool(
+	FLMBOOL		bMustHaveEqual,
+	FLMBOOL *	pbBool)
+{
+	RCODE			rc = NE_SFLM_OK;
+	char			szBool [20];
+	FLMUINT		uiBoolLen;
+	
+	if (RC_BAD( rc = getUTF8String( bMustHaveEqual, (FLMBYTE *)szBool,
+								sizeof( szBool), &uiBoolLen)))
+	{
+		goto Exit;
+	}
+	if (f_stricmp( szBool, "true") == 0)
+	{
+		*pbBool = TRUE;
+	}
+	else if (f_stricmp( szBool, "false") == 0)
+	{
+		*pbBool = FALSE;
+	}
+	else
+	{
+		setErrInfo( m_uiCurrLineNum,
+				m_uiCurrLineOffset,
+				SQL_ERR_EXPECTING_BOOLEAN,
+				m_uiCurrLineFilePos,
+				m_uiCurrLineBytes);
+		rc = RC_SET( NE_SFLM_INVALID_SQL);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
+// Desc:	Parse a FLMUINT numeric value from the input stream.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::getUINT(
+	FLMBOOL		bMustHaveEqual,
+	FLMUINT *	puiNum)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMBOOL		bNeg;
+	FLMUINT64	ui64Value;
+	
+	if (RC_BAD( rc = getNumber( bMustHaveEqual, &ui64Value, &bNeg, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// Number must be less than FLM_MAX_UINT
+	
+	if (ui64Value > (FLMUINT64)FLM_MAX_UINT)
+	{
+		setErrInfo( m_uiCurrLineNum,
+				m_uiCurrLineOffset,
+				SQL_ERR_NUMBER_OVERFLOW,
+				m_uiCurrLineFilePos,
+				m_uiCurrLineBytes);
+		rc = RC_SET( NE_SFLM_INVALID_SQL);
+		goto Exit;
+	}
+	*puiNum = (FLMUINT)ui64Value;
+	
+Exit:
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
 // Desc:	Parse a table, column, or index name.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getName(
@@ -440,20 +954,22 @@ Exit:
 // Desc:	Parse the table name for the current statement.  Make sure it is valid.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getTableName(
-	FLMBOOL	bMustExist)
+	FLMBOOL		bMustExist,
+	char *		pszTableName,
+	FLMUINT		uiTableNameBufSize,
+	FLMUINT *	puiTableNameLen,
+	F_TABLE **	ppTable)
 {
 	RCODE		rc = NE_SFLM_OK;
-	char		szTableName [MAX_SQL_NAME_LEN + 1];
-	FLMUINT	uiTableNameLen;
 
-	if (RC_BAD( rc = getName( szTableName, sizeof( szTableName), &uiTableNameLen)))
+	if (RC_BAD( rc = getName( pszTableName, uiTableNameBufSize, puiTableNameLen)))
 	{
 		goto Exit;
 	}
 	
 	// See if the table name is defined
 	
-	if (RC_BAD( rc = m_pDb->m_pDict->getTable( szTableName, &m_pTable, TRUE)))
+	if (RC_BAD( rc = m_pDb->m_pDict->getTable( pszTableName, ppTable, TRUE)))
 	{
 		if (rc != NE_SFLM_BAD_TABLE)
 		{
@@ -494,45 +1010,59 @@ Exit:
 }
 
 //------------------------------------------------------------------------------
-// Desc:	Reallocate the column value array if needed.
+// Desc:	Parse the index name for the current statement.  Make sure it is valid.
 //------------------------------------------------------------------------------
-RCODE SQLStatement::allocColumnValueArray(
-	FLMUINT	uiNumColumnsNeeded)
+RCODE SQLStatement::getIndexName(
+	FLMBOOL		bMustExist,
+	char *		pszIndexName,
+	FLMUINT		uiIndexNameBufSize,
+	FLMUINT *	puiIndexNameLen,
+	F_INDEX **	ppIndex)
 {
-	RCODE	rc = NE_SFLM_OK;
-	
-	if (uiNumColumnsNeeded > m_uiColumnValueArraySize)
+	RCODE			rc = NE_SFLM_OK;
+
+	if (RC_BAD( rc = getName( pszIndexName, uiIndexNameBufSize, puiIndexNameLen)))
 	{
-		F_COLUMN_VALUE *	pNewArray;
-		
-		// Increase the array size by at least 20.
-		
-		uiNumColumnsNeeded += 20;
-		if (m_pColumnValues == &m_columnValues [0])
+		goto Exit;
+	}
+	
+	// See if the index name is defined
+	
+	if (RC_BAD( rc = m_pDb->m_pDict->getIndex( pszIndexName, ppIndex, TRUE)))
+	{
+		if (rc != NE_SFLM_BAD_IX)
 		{
-			if (RC_BAD( rc = f_alloc( sizeof( F_COLUMN_VALUE) * uiNumColumnsNeeded,
-										&pNewArray)))
-			{
-				goto Exit;
-			}
-			if (m_uiNumColumnValues)
-			{
-				f_memcpy( pNewArray, m_pColumnValues,
-					m_uiNumColumnValues * sizeof( F_COLUMN_VALUE));
-			}
-			m_pColumnValues = pNewArray;
+			goto Exit;
+		}
+		if (bMustExist)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset - 1,
+					SQL_ERR_UNDEFINED_INDEX,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
 		}
 		else
 		{
-			if (RC_BAD( rc = f_realloc( sizeof( F_COLUMN_VALUE) * uiNumColumnsNeeded,
-										&m_pColumnValues)))
-			{
-				goto Exit;
-			}
+			rc = NE_SFLM_OK;
 		}
-		m_uiColumnValueArraySize = uiNumColumnsNeeded;
 	}
-	
+	else
+	{
+		if (!bMustExist)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset - 1,
+					SQL_ERR_INDEX_ALREADY_DEFINED,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+	}
+
 Exit:
 
 	return( rc);
@@ -542,6 +1072,7 @@ Exit:
 // Desc:	Parse a string value from the input stream.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getStringValue(
+	F_COLUMN *			pColumn,
 	F_COLUMN_VALUE *	pColumnValue)
 {
 	RCODE			rc = NE_SFLM_OK;
@@ -684,6 +1215,19 @@ RCODE SQLStatement::getStringValue(
 		goto Exit;
 	}
 	
+	// See if the string is too long.
+	
+	if (pColumn->uiMaxLen && uiNumChars > pColumn->uiMaxLen)
+	{
+		setErrInfo( m_uiCurrLineNum,
+				m_uiCurrLineOffset,
+				SQL_ERR_STRING_TOO_LONG,
+				m_uiCurrLineFilePos,
+				m_uiCurrLineBytes);
+		rc = RC_SET( NE_SFLM_STRING_TOO_LONG);
+		goto Exit;
+	}
+	
 	// Allocate space for the UTF8 string.
 	
 	uiSenLen = f_getSENByteCount( uiNumChars);
@@ -712,186 +1256,12 @@ RCODE SQLStatement::getNumberValue(
 	F_COLUMN_VALUE *	pColumnValue)
 {
 	RCODE			rc = NE_SFLM_OK;
-	FLMBYTE		ucChar;
 	FLMUINT64	ui64Value = 0;
 	FLMBOOL		bNeg = FALSE;
-	FLMBOOL		bHex = FALSE;
-	FLMUINT		uiDigitCount = 0;
-	FLMUINT		uiDigitValue = 0;
-	FLMUINT		uiSavedLineNum = m_uiCurrLineNum;
-	FLMUINT		uiSavedOffset = m_uiCurrLineOffset;
-	FLMUINT		uiSavedFilePos = m_uiCurrLineFilePos;
-	FLMUINT		uiSavedLineBytes = m_uiCurrLineBytes;
 	FLMBYTE *	pucValue;
-	
-	// Leading white space has already been skipped.
-	
-	// Go until we hit a character that is not a number.
-	
-	for (;;)
+
+	if (RC_BAD( rc = getNumber( FALSE, &ui64Value, &bNeg, TRUE)))
 	{
-		
-		// If we hit the end of the line, we are done.
-		
-		if ((ucChar = getChar()) == 0)
-		{
-			break;
-		}
-		
-		// Ignore white space
-		
-		{
-			continue;
-		}
-		if (ucChar >= '0' && ucChar <= '9')
-		{
-			uiDigitValue = (FLMUINT)(ucChar - '0');
-			uiDigitCount++;
-		}
-		else if (ucChar >= 'a' && ucChar <= 'f')
-		{
-			if (!bHex)
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_ILLEGAL_HEX_DIGIT,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-			uiDigitValue = (FLMUINT)(ucChar - 'a' + 10);
-			uiDigitCount++;
-		}
-		else if (ucChar >= 'A' && ucChar <= 'F')
-		{
-			if (!bHex)
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_ILLEGAL_HEX_DIGIT,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-			uiDigitValue = (FLMUINT)(ucChar - 'A' + 10);
-			uiDigitCount++;
-		}
-		else if (ucChar == ',' || ucChar == ')' ||
-					ucChar == ASCII_SPACE || ucChar == ASCII_TAB)
-		{
-			
-			// terminate when we hit a comma or right paren or white
-			// space.  Need to unget the character so the caller can handle it.
-			
-			ungetChar();
-			break;
-		}
-		else if (ucChar == 'X' || ucChar == 'x')
-		{
-			if (bHex || uiDigitCount != 1 || ui64Value)
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_NON_NUMERIC_CHARACTER,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-			else
-			{
-				bHex = TRUE;
-				uiDigitCount = 0;
-				continue;
-			}
-		}
-		else if (ucChar == '-')
-		{
-			if (bHex || uiDigitCount)
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_NON_NUMERIC_CHARACTER,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-			else
-			{
-				bNeg = TRUE;
-				continue;
-			}
-		}
-		else
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_NON_NUMERIC_CHARACTER,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		
-		if (bHex)
-		{
-			if (ui64Value > (FLM_MAX_UINT64 >> 4))
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_NUMBER_OVERFLOW,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-			ui64Value <<= 4;
-			ui64Value += (FLMUINT64)uiDigitValue;
-		}
-		else
-		{
-			if (ui64Value > (FLM_MAX_UINT64 / 10))
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_NUMBER_OVERFLOW,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-			ui64Value *= 10;
-			ui64Value += (FLMUINT64)uiDigitValue;
-		}
-		
-		// If it is a negative number, make sure we have not
-		// exceeded the maximum negative value.
-		
-		if (bNeg && ui64Value > ((FLMUINT64)1 << 63))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_NUMBER_OVERFLOW,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-	}
-	
-	// If we didn't hit any digits, we have an invalid number.
-	
-	if (!uiDigitCount)
-	{
-		setErrInfo( uiSavedLineNum,
-				uiSavedOffset,
-				SQL_ERR_NUMBER_VALUE_EMPTY,
-				uiSavedFilePos,
-				uiSavedLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
 		goto Exit;
 	}
 	
@@ -920,6 +1290,7 @@ Exit:
 // Desc:	Parse a binary value from the input stream.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getBinaryValue(
+	F_COLUMN *			pColumn,
 	F_COLUMN_VALUE *	pColumnValue)
 {
 	RCODE			rc = NE_SFLM_OK;
@@ -1039,6 +1410,19 @@ RCODE SQLStatement::getBinaryValue(
 		}
 	}
 	
+	// See if the binary data is too long.
+	
+	if (pColumn->uiMaxLen && dynaBuf.getDataLength() > pColumn->uiMaxLen)
+	{
+		setErrInfo( m_uiCurrLineNum,
+				m_uiCurrLineOffset,
+				SQL_ERR_BINARY_TOO_LONG,
+				m_uiCurrLineFilePos,
+				m_uiCurrLineBytes);
+		rc = RC_SET( NE_SFLM_BINARY_TOO_LONG);
+		goto Exit;
+	}
+	
 	// An empty binary value is invalid.
 	
 	if ((pColumnValue->uiValueLen = dynaBuf.getDataLength()) == 0)
@@ -1075,14 +1459,15 @@ Exit:
 //			type.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getValue(
+	F_COLUMN *			pColumn,
 	F_COLUMN_VALUE *	pColumnValue)
 {
 	RCODE	rc = NE_SFLM_OK;
 	
-	switch (pColumnValue->eColumnDataType)
+	switch (pColumn->eDataTyp)
 	{
 		case SFLM_STRING_TYPE:
-			if (RC_BAD( rc = getStringValue( pColumnValue)))
+			if (RC_BAD( rc = getStringValue( pColumn, pColumnValue)))
 			{
 				goto Exit;
 			}
@@ -1094,7 +1479,7 @@ RCODE SQLStatement::getValue(
 			}
 			break;
 		case SFLM_BINARY_TYPE:
-			if (RC_BAD( rc = getBinaryValue( pColumnValue)))
+			if (RC_BAD( rc = getBinaryValue( pColumn, pColumnValue)))
 			{
 				goto Exit;
 			}
@@ -1105,392 +1490,6 @@ RCODE SQLStatement::getValue(
 	}
 	
 Exit:
-
-	return( rc);
-}
-
-//------------------------------------------------------------------------------
-// Desc:	Insert a row into the database.
-//------------------------------------------------------------------------------
-RCODE F_Db::insertRow(
-	FLMUINT				uiTableNum,
-	F_COLUMN_VALUE *	pColumnValues,
-	FLMUINT				uiNumColumnValues)
-{
-	RCODE					rc = NE_SFLM_OK;
-	F_Row *				pRow = NULL;
-	const FLMBYTE *	pucValue;
-	const FLMBYTE *	pucEnd;
-	FLMUINT64			ui64Num;
-	FLMUINT				uiNumChars;
-	FLMBOOL				bNeg;
-
-	// Create a row object.
-	
-	if (RC_BAD( rc = gv_SFlmSysData.pRowCacheMgr->createRow( this,
-								uiTableNum, &pRow)))
-	{
-		goto Exit;
-	}
-	
-	// Set the column values into the row.
-	
-	for (; uiNumColumnValues; uiNumColumnValues--, pColumnValues++)
-	{
-		if (!pColumnValues->uiValueLen)
-		{
-			continue;
-		}
-		switch (pColumnValues->eColumnDataType)
-		{
-			case SFLM_STRING_TYPE:
-				pucValue = (const FLMBYTE *)pColumnValues->pucColumnValue;
-				pucEnd = pucValue + pColumnValues->uiValueLen;
-				if (RC_BAD( rc = f_decodeSEN( &pucValue, pucEnd, &uiNumChars)))
-				{
-					goto Exit;
-				}
-				if (RC_BAD( rc = pRow->setUTF8( this,
-												pColumnValues->uiColumnNum,
-												(const char *)pucValue,
-												(FLMUINT)(pucEnd - pucValue),
-												uiNumChars)))
-				{
-					goto Exit;
-				}
-				break;
-			case SFLM_NUMBER_TYPE:
-				pucValue = (const FLMBYTE *)pColumnValues->pucColumnValue;
-				pucEnd = pucValue + pColumnValues->uiValueLen;
-				
-				bNeg = (FLMBOOL)(*pucValue ? (FLMBOOL)TRUE : (FLMBOOL)FALSE);
-				pucValue++;
-				
-				if (RC_BAD( rc = f_decodeSEN64( &pucValue, pucEnd, &ui64Num)))
-				{
-					goto Exit;
-				}
-				if (RC_BAD( rc = pRow->setNumber64( this,
-										pColumnValues->uiColumnNum, ui64Num, bNeg)))
-				{
-					goto Exit;
-				}
-				break;
-			case SFLM_BINARY_TYPE:
-				if (RC_BAD( rc = pRow->setBinary( this,
-												pColumnValues->uiColumnNum,
-												(const void *)(pColumnValues->pucColumnValue),
-												pColumnValues->uiValueLen)))
-				{
-					goto Exit;
-				}
-				break;
-			default:
-				flmAssert( 0);
-				break;
-		}
-	}
-	
-	if (RC_BAD( rc = m_pDatabase->m_pRfl->logInsertRow( this, uiTableNum, pColumnValues,
-										uiNumColumnValues)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	if (pRow)
-	{
-		pRow->ReleaseRow();
-	}
-
-	return( rc);
-}
-
-//------------------------------------------------------------------------------
-// Desc:	Process the insert statement.  The "INSERT" keyword has already been
-//			parsed.
-//------------------------------------------------------------------------------
-RCODE SQLStatement::processInsertRow( void)
-{
-	RCODE					rc = NE_SFLM_OK;
-	FLMBOOL				bStartedTrans = FALSE;
-	F_COLUMN_VALUE *	pColumnValue;
-	F_COLUMN *			pColumn;
-	FLMUINT				uiLoop;
-	char					szColumnName [MAX_SQL_NAME_LEN + 1];
-	FLMUINT				uiColumnNameLen;
-
-	// If we are in a read transaction, we cannot do this operation
-	
-	if (RC_BAD( rc = m_pDb->checkTransaction( SFLM_UPDATE_TRANS, &bStartedTrans)))
-	{
-		goto Exit;
-	}
-
-	// SYNTAX: INSERT INTO table_name (column1,column2,...) VALUES (value1,value2,...)
-	// OR:     INSERT INTO table_name VALUES (value1,value2,...)
-
-	// Whitespace must follow the "INSERT"
-
-	if (RC_BAD( rc = skipWhitespace( TRUE)))
-	{
-		goto Exit;
-	}
-
-	// INTO must follow the INSERT.
-
-	if (!lineHasToken( "into"))
-	{
-		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
-				SQL_ERR_EXPECTING_INTO,
-				m_uiCurrLineFilePos,
-				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
-		goto Exit;
-	}
-
-	// Whitespace must follow the "INTO"
-
-	if (RC_BAD( rc = skipWhitespace( TRUE)))
-	{
-		goto Exit;
-	}
-
-	// Get the table name.
-
-	if (RC_BAD( rc = getTableName( TRUE)))
-	{
-		goto Exit;
-	}
-	
-	if (m_pTable->bSystemTable)
-	{
-		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
-				SQL_ERR_CANNOT_UPDATE_SYSTEM_TABLE,
-				m_uiCurrLineFilePos,
-				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
-		goto Exit;
-	}
-	
-	// Whitespace does not have to follow the table name
-
-	if (RC_BAD( rc = skipWhitespace( FALSE)))
-	{
-		goto Exit;
-	}
-
-	// If left paren follows table name, then columns are being listed.
-
-	m_uiNumColumnValues = 0;
-	if (lineHasToken( "("))
-	{
-
-		// Get the list of columns for which there will be values.
-		
-		for (;;)
-		{
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
-			{
-				goto Exit;
-			}
-			
-			// Get the column name
-			
-			if (RC_BAD( rc = getName( szColumnName, sizeof( szColumnName),
-											&uiColumnNameLen)))
-			{
-				goto Exit;
-			}
-			
-			// See if the column is defined in the table.
-			
-			if (uiColumnNameLen)
-			{
-				if ((pColumn = m_pDb->m_pDict->findColumn( m_pTable, szColumnName)) == NULL)
-				{
-					setErrInfo( m_uiCurrLineNum,
-							m_uiCurrLineOffset,
-							SQL_ERR_UNDEFINED_COLUMN,
-							m_uiCurrLineFilePos,
-							m_uiCurrLineBytes);
-					rc = RC_SET( NE_SFLM_INVALID_SQL);
-					goto Exit;
-				}
-				
-				// Make room in the column value table for this column
-				
-				if (m_uiNumColumnValues == m_uiColumnValueArraySize)
-				{
-					if (RC_BAD( rc = allocColumnValueArray( m_uiNumColumnValues + 1)))
-					{
-						goto Exit;
-					}
-				}
-				pColumnValue = &m_pColumnValues [m_uiNumColumnValues];
-				pColumnValue->uiColumnNum = pColumn->uiColumnNum;
-				pColumnValue->eColumnDataType = pColumn->eDataTyp;
-				pColumnValue->uiValueLen = 0;
-				m_uiNumColumnValues++;
-			}
-
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
-			{
-				goto Exit;
-			}
-			
-			// See if we are at the end of the list of columns
-			
-			if (lineHasToken( ")"))
-			{
-				break;
-			}
-			else if (!lineHasToken( ","))
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_EXPECTING_COMMA,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-		}
-	}
-	else
-	{
-		
-		// Allocate the column value array
-
-		if (RC_BAD( rc = allocColumnValueArray( m_pTable->uiNumColumns)))
-		{
-			goto Exit;
-		}
-		for (uiLoop = 0, pColumn = m_pTable->pColumns, pColumnValue = m_pColumnValues;
-			  uiLoop < m_pTable->uiNumColumns;
-			  uiLoop++, pColumn++, pColumnValue++)
-		{
-			if (pColumn->uiColumnNum)
-			{
-				pColumnValue->uiColumnNum = pColumn->uiColumnNum;
-				pColumnValue->eColumnDataType = pColumn->eDataTyp;
-				pColumnValue->uiValueLen = 0;
-				m_uiNumColumnValues++;
-			}
-		}
-	}
-
-	// Allow for no values to be specified if no columns were.
-	
-	if (m_uiNumColumnValues)
-	{
-		if (!lineHasToken( "values"))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_INTO,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
-		{
-			goto Exit;
-		}
-			
-		// Should be a left paren
-		
-		if (!lineHasToken( "("))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_LPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		
-		for (uiLoop = 0, pColumnValue = m_pColumnValues;
-			  uiLoop < m_uiNumColumnValues;
-			  uiLoop++, pColumnValue++)
-		{
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
-			{
-				goto Exit;
-			}
-			
-			// Get the column value
-			
-			if (RC_BAD( rc = getValue( pColumnValue)))
-			{
-				goto Exit;
-			}
-			
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
-			{
-				goto Exit;
-			}
-			if (uiLoop == m_uiNumColumnValues - 1)
-			{
-				if (!lineHasToken( ")"))
-				{
-					setErrInfo( m_uiCurrLineNum,
-							m_uiCurrLineOffset,
-							SQL_ERR_EXPECTING_RPAREN,
-							m_uiCurrLineFilePos,
-							m_uiCurrLineBytes);
-					rc = RC_SET( NE_SFLM_INVALID_SQL);
-					goto Exit;
-				}
-				else
-				{
-					break;
-				}
-			}
-			else if (!lineHasToken( ","))
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_EXPECTING_COMMA,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
-		}
-	}
-	
-	// Insert the row.
-	
-	if (RC_BAD( rc = m_pDb->insertRow( m_pTable->uiTableNum,
-										m_pColumnValues, m_uiNumColumnValues)))
-	{
-		goto Exit;
-	}
-	
-	// Commit the transaction if we started it
-	
-	if (bStartedTrans)
-	{
-		bStartedTrans = FALSE;
-		if (RC_BAD( rc = m_pDb->transCommit()))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	if (bStartedTrans)
-	{
-		m_pDb->transAbort();
-	}
 
 	return( rc);
 }
@@ -1532,8 +1531,92 @@ RCODE SQLStatement::executeSQL(
 
 		if (lineHasToken( "insert"))
 		{
-			if( RC_BAD( rc = processInsertRow()))
+			if (RC_BAD( rc = processInsertRow()))
 			{
+				goto Exit;
+			}
+		}
+		else if (lineHasToken( "open"))
+		{
+			if (RC_BAD( rc = skipWhitespace( TRUE)))
+			{
+				goto Exit;
+			}
+			if (lineHasToken( "database"))
+			{
+// visit: Need to fix this up.
+//				if (RC_BAD( rc = processOpenDatabase()))
+//				{
+//					goto Exit;
+//				}
+			}
+			else
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_INVALID_OPEN_OPTION,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+		}
+		else if (lineHasToken( "create"))
+		{
+			if (RC_BAD( rc = skipWhitespace( TRUE)))
+			{
+				goto Exit;
+			}
+			if (lineHasToken( "database"))
+			{
+				if (RC_BAD( rc = processCreateDatabase()))
+				{
+					goto Exit;
+				}
+			}
+			else if (lineHasToken( "table"))
+			{
+				if (RC_BAD( rc = processCreateTable()))
+				{
+					goto Exit;
+				}
+			}
+			else if (lineHasToken( "index"))
+			{
+				if (RC_BAD( rc = processCreateIndex( FALSE)))
+				{
+					goto Exit;
+				}
+			}
+			else if (lineHasToken( "unique"))
+			{
+				if (RC_BAD( rc = skipWhitespace( TRUE)))
+				{
+					goto Exit;
+				}
+				if (!lineHasToken( "index"))
+				{
+					setErrInfo( m_uiCurrLineNum,
+							m_uiCurrLineOffset,
+							SQL_ERR_EXPECTING_INDEX,
+							m_uiCurrLineFilePos,
+							m_uiCurrLineBytes);
+					rc = RC_SET( NE_SFLM_INVALID_SQL);
+					goto Exit;
+				}
+				if (RC_BAD( rc = processCreateIndex( TRUE)))
+				{
+					goto Exit;
+				}
+			}
+			else
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_INVALID_CREATE_OPTION,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
 		}

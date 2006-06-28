@@ -44,8 +44,13 @@ class IXKeyCompare;
 #define RFL_DATA_PACKET							11
 #define RFL_ROLL_OVER_DB_KEY_PACKET			12
 #define RFL_ENC_DEF_KEY_PACKET				13
-#define RFL_INSERT_ROW_PACKET					14
-#define RFL_COLUMN_DATA_PACKET				15
+#define RFL_CREATE_TABLE_PACKET				14
+#define RFL_COLUMN_DEF_PACKET					15
+#define RFL_CREATE_INDEX_PACKET				16
+#define RFL_INDEX_COLUMN_DEF_PACKET			17
+#define RFL_INDEX_SET_PACKET					18
+#define RFL_INSERT_ROW_PACKET					19
+#define RFL_COLUMN_DATA_PACKET				20
 
 #define RFL_PACKET_TYPE_MASK					0x7F
 
@@ -201,17 +206,65 @@ public:
 	RCODE logRollOverDbKey(
 		F_Db *					pDb);
 	
+	RCODE logColumnDefs(
+		F_Db *				pDb,
+		F_COLUMN_DEF *		pColumnDefs);
+		
+	RCODE logCreateTable(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum,
+		const char *		pszTableName,
+		FLMUINT				uiTableNameLen,
+		FLMUINT				uiEncDefNum,
+		F_COLUMN_DEF *		pColumnDefs);
+		
+	RCODE recovCreateTable(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+		
+	RCODE logIndexColumnDefs(
+		F_Db *				pDb,
+		F_INDEX_COL_DEF *	pIxColDefs);
+		
+	RCODE logCreateIndex(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum,
+		FLMUINT				uiIndexNum,
+		const char *		pszIndexName,
+		FLMUINT				uiIndexNameLen,
+		FLMUINT				uiEncDefNum,
+		F_INDEX_COL_DEF *	pIxColDefs,
+		FLMUINT				uiFlags);
+		
+	RCODE recovCreateIndex(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+
+	RCODE logIndexSet(
+		F_Db *				pDb,
+		FLMUINT				uiIndexNum,
+		FLMUINT64			ui64StartRowId,
+		FLMUINT64			ui64EndRowId);
+		
+	RCODE recovIndexSet(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+		
 	RCODE logColumnValues(
 		F_Db *				pDb,
 		FLMUINT				uiTableNum,
-		F_COLUMN_VALUE *	pColumnValues,
-		FLMUINT				uiNumColumnValues);
+		F_COLUMN_VALUE *	pColumnValues);
 		
 	RCODE logInsertRow(
 		F_Db *				pDb,
 		FLMUINT				uiTableNum,
-		F_COLUMN_VALUE *	pColumnValues,
-		FLMUINT				uiNumColumnValues);
+		F_COLUMN_VALUE *	pColumnValues);
 		
 	RCODE recovInsertRow(
 		F_Db *				pDb,

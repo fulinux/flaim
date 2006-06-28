@@ -88,7 +88,7 @@ RCODE F_DbSystem::dbCopy(
 
 	// Open the source database so we can force a checkpoint.
 
-	if (RC_BAD( rc = openDb( pszSrcDbName, pszSrcDataDir, pszSrcRflDir,
+	if (RC_BAD( rc = openDatabase( pszSrcDbName, pszSrcDataDir, pszSrcRflDir,
 									 NULL, 0, &pDb)))
 	{
 		goto Exit;

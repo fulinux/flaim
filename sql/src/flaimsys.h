@@ -1487,7 +1487,7 @@ typedef struct KEY_GEN_INFO
 } KEY_GEN_INFO;
 
 /*****************************************************************************
-Desc: Thread's database object - returned by dbOpen, dbCreate in F_DbSystem class
+Desc: Thread's database object - returned by openDatabase, createDatabase in F_DbSystem class
 *****************************************************************************/
 class F_Db : public F_Object
 {
@@ -1907,8 +1907,25 @@ public:
 		
 	RCODE insertRow(
 		FLMUINT				uiTableNum,
-		F_COLUMN_VALUE *	pColumnValues,
-		FLMUINT				uiNumColumnValues);
+		F_COLUMN_VALUE *	pColumnValues);
+		
+	RCODE createTable(
+		FLMUINT				uiTableNum,
+		const char *		pszTableName,
+		FLMUINT				uiTableNameLen,
+		FLMUINT				uiEncDefNum,
+		F_COLUMN_DEF *		pColumnDefs,
+		FLMUINT				uiNumColumnDefs);
+		
+	RCODE createIndex(
+		FLMUINT				uiTableNum,
+		FLMUINT				uiIndexNum,
+		const char *		pszIndexName,
+		FLMUINT				uiIndexNameLen,
+		FLMUINT				uiEncDefNum,
+		FLMUINT				uiFlags,
+		F_INDEX_COL_DEF *	pIxColDefs,
+		FLMUINT				uiNumIxColDefs);
 		
 private:
 
@@ -2195,10 +2212,6 @@ private:
 		FLMBOOL *				pbHitEnd,
 		IF_Thread *				pThread);
 		
-	RCODE buildIndex(
-		FLMUINT				uiIndexNum,
-		FLMUINT				uiState);
-
 	RCODE readBlkHdr(
 		FLMUINT				uiBlkAddress,
 		F_BLK_HDR *			pBlkHdr,
@@ -2897,10 +2910,11 @@ public:
 
 	void exit();
 
+	
 	void getFileSystem(
 		IF_FileSystem **		ppFileSystem);
 		
-	RCODE dbCreate(
+	RCODE createDatabase(
 		const char *			pszDbFileName,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
@@ -2908,31 +2922,25 @@ public:
 		FLMBOOL					bTempDb,
 		F_Db **					ppDb);
 
-	FINLINE RCODE dbCreate(
+	FINLINE RCODE createDatabase(
 		const char *			pszDbFileName,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
 		SFLM_CREATE_OPTS *	pCreateOpts,
 		F_Db **					ppDb)
 	{
-		return( dbCreate( pszDbFileName, pszDataDir, pszRflDir,
+		return( createDatabase( pszDbFileName, pszDataDir, pszRflDir,
 								pCreateOpts, FALSE, ppDb));
 	}
 
-	FINLINE RCODE dbOpen(
-		const char *			pszDbFileName,
-		const char *			pszDataDir,
-		const char *			pszRflDir,
-		const char *			pszPassword,
-		FLMBOOL					bAllowLimited,
-		F_Db **					ppDb)
-	{
-		FLMUINT		uiOpenFlags = bAllowLimited ? SFLM_ALLOW_LIMITED_MODE : 0;
-		
-		return( openDb( pszDbFileName, pszDataDir, pszRflDir,
-							 pszPassword, uiOpenFlags, ppDb));
-	}
-
+	RCODE openDatabase(
+		const char *	pszDbFileName,
+		const char *	pszDataDir,
+		const char *	pszRflDir,
+		const char *	pszPassword,
+		FLMUINT			uiOpenFlags,
+		F_Db **			ppDb);
+	
 	RCODE dbRebuild(						
 		const char *				pszSourceDbPath,
 		const char *				pszSourceDataDir,
@@ -3208,14 +3216,6 @@ public:
 		return( rc);
 	}
 
-	RCODE openDb(
-		const char *	pszDbFileName,
-		const char *	pszDataDir,
-		const char *	pszRflDir,
-		const char *	pszPassword,
-		FLMUINT			uiOpenFlags,
-		F_Db **			ppDb);
-	
 	static FINLINE FLMBOOL validBlockSize(
 		FLMUINT			uiBlockSize)
 	{
@@ -3755,9 +3755,6 @@ private:
 		FLMBYTE **			ppucResetKey,
 		FLMUINT				uiResetKeyLen,
 		FLMUINT64			ui64ResetNodeId);
-
-	RCODE buildIndexKeyList(
-		FLMUINT64 *			pui64TotalKeys);
 
 	RCODE verifyBTrees(
 		FLMBOOL *			pbStartOverRV);

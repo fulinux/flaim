@@ -75,90 +75,6 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	Build an index.
-****************************************************************************/
-RCODE F_Db::buildIndex(
-	FLMUINT		uiIndexNum,
-	FLMUINT		uiState)
-{
-	RCODE   		rc = NE_SFLM_OK;
-	LFILE *		pIxLFile;
-	F_INDEX *	pIndex;
-
-	// Flush any KY keys and free the tables because they may grow!
-
-	if (RC_BAD( rc = keysCommit( TRUE)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = krefCntrlCheck()))
-	{
-	  	goto Exit;
-	}
-
-	pIndex = m_pDict->getIndex( uiIndexNum);
-	flmAssert( pIndex);
-	pIxLFile = &pIndex->lfInfo;
-
-	// NON-BLOCKING INDEX BUILD - NOTE: The IXD_SUSPENDED flag may
-	// also be set, which indicates that we should NOT start the
-	// background maintenance thread right now.
-
-	if (uiState & IXD_OFFLINE)
-	{
-		if (RC_BAD( rc = setIxStateInfo( uiIndexNum, 0, uiState)))
-		{
-			goto Exit;
-		}
-
-		// setIxStateInfo may have changed to a new dictionary, so pIndex is no
-		// good after this point
-
-		pIndex = NULL;
-
-		// Don't schedule a maintenance thread if index is to start
-		// out life in a suspended state, or if we are replaying
-		// the roll-forward log.
-
-		if (!(uiState & IXD_SUSPENDED) && !(m_uiFlags & FDB_REPLAYING_RFL))
-		{
-			if (RC_BAD( rc = addToStartList( uiIndexNum)))
-			{
-				goto Exit;
-			}
-		}
-
-		// Done
-
-		goto Exit;
-	}
-
-	// There may be "new" rows in the row cache.
-	// Need to flush them to the database so that
-	// the B-Tree lookups done by the indexing code will
-	// work correctly
-
-	if( RC_BAD( rc = flushDirtyRows()))
-	{
-		goto Exit;
-	}
-
-	// NORMAL INDEX BUILD - BLOCKING.  uiIndexToBeUpdated better be
-	// zero at this point since we are not working in the background.
-
-	if (RC_BAD( rc = indexSetOfRows( uiIndexNum, 1,
-			FLM_MAX_UINT64, m_pIxStatus, m_pIxClient, NULL, NULL, NULL)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:		Logs information about an index being built
 ****************************************************************************/
 void flmLogIndexingProgress(
@@ -454,6 +370,17 @@ Commit_Keys:
 		// good after this point
 
 		pIndex = NULL;
+	}
+	
+	// Log the rows that were indexed, if any
+	
+	if (ui64LastRowId)
+	{
+		if (RC_BAD( rc = m_pDatabase->m_pRfl->logIndexSet( this, uiIndexNum,
+									ui64StartRowId, ui64LastRowId)))
+		{
+			goto Exit;
+		}
 	}
 
 Exit:

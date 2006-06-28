@@ -3894,33 +3894,892 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
+RCODE F_Rfl::logColumnDefs(
+	F_Db *				pDb,
+	F_COLUMN_DEF *		pColumnDefs)
+{
+	RCODE				rc = NE_SFLM_OK;
+	F_COLUMN_DEF *	pColumnDef;
+	FLMUINT			uiPacketLen = RFL_PACKET_OVERHEAD;
+	FLMBYTE *		pucOut;
+
+	flmAssert( isLoggingEnabled());
+
+	if( !haveBuffSpace( RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// Go through each column's definition
+	
+	for (pColumnDef = pColumnDefs; pColumnDef; pColumnDef = pColumnDef->pNext)
+	{
+		
+		if( RC_BAD( rc = makeRoom( pDb,
+			pColumnDef->uiColumnNameLen + FLM_MAX_SEN_LEN * 4 + 1,
+			&uiPacketLen, RFL_COLUMN_DEF_PACKET, NULL, NULL)))
+		{
+			goto Exit;
+		}
+		
+		pucOut = getPacketPtr() + uiPacketLen;
+		
+		// Output the column name length and column name.
+
+		f_encodeSEN( pColumnDef->uiColumnNameLen, &pucOut);
+		f_memcpy( pucOut, pColumnDef->pszColumnName, pColumnDef->uiColumnNameLen);
+		pucOut += pColumnDef->uiColumnNameLen;
+		
+		// Output the data type.
+		
+		*pucOut++ = (FLMBYTE)pColumnDef->eColumnDataType;
+		
+		// Output the maximum length
+		
+		f_encodeSEN( pColumnDef->uiMaxLen, &pucOut);
+		
+		// Output the flags
+		
+		f_encodeSEN( pColumnDef->uiFlags, &pucOut);
+		
+		// Output the encryption definition number
+	
+		f_encodeSEN( pColumnDef->uiEncDefNum, &pucOut);
+	}
+	
+	// Add a column number of zero to terminate the columns.
+
+	if (RC_BAD( rc = makeRoom( pDb, 1, &uiPacketLen,
+												RFL_COLUMN_DEF_PACKET, NULL, NULL)))
+	{
+		goto Exit;
+	}
+
+	pucOut = getPacketPtr() + uiPacketLen;
+	*pucOut++ = 0;
+	uiPacketLen++;
+	
+	// Finish the packet.
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_COLUMN_DEF_PACKET, 
+		uiPacketLen - RFL_PACKET_OVERHEAD, FALSE)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logCreateTable(
+	F_Db *				pDb,
+	FLMUINT				uiTableNum,
+	const char *		pszTableName,
+	FLMUINT				uiTableNameLen,
+	FLMUINT				uiEncDefNum,
+	F_COLUMN_DEF *		pColumnDefs)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if( !haveBuffSpace( uiTableNameLen + FLM_MAX_SEN_LEN * 3 + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the table number.
+
+	f_encodeSEN( uiTableNum, &pucPacketBody);
+	
+	// Output the table name length and table name.
+
+	f_encodeSEN( uiTableNameLen, &pucPacketBody);
+	f_memcpy( pucPacketBody, pszTableName, uiTableNameLen);
+	pucPacketBody += uiTableNameLen;
+	
+	// Output the encryption definition number.
+
+	f_encodeSEN( uiEncDefNum, &pucPacketBody);
+	
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_CREATE_TABLE_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// Now output the column definitions
+	
+	if (RC_BAD( rc = logColumnDefs( pDb, pColumnDefs)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovCreateTable(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiTableNum;
+	char *				pszTableName;
+	FLMUINT				uiTableNameLen;
+	FLMUINT				uiEncDefNum;
+	char *				pszTmp;
+	FLMUINT				uiNumColumnDefs;
+	FLMUINT				uiPacketType;
+	F_COLUMN_DEF *		pColumnDef;
+	F_COLUMN_DEF *		pFirstColDef;
+	F_COLUMN_DEF *		pLastColDef;
+	FLMUINT				uiColumnNameLen;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	FLMBOOL				bHitEnd;
+	
+	// Get the table number from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
+	{
+		goto Exit;
+	}
+	
+	// Get the table name length and table name from the packet.
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNameLen)))
+	{
+		goto Exit;
+	}
+	m_tmpPool.poolReset( NULL);
+	if (RC_BAD( rc = m_tmpPool.poolAlloc( uiTableNameLen + 1,
+				(void **)&pszTableName)))
+	{
+		goto Exit;
+	}
+	f_memcpy( pszTableName, pucPacketBody, uiTableNameLen);
+	pucPacketBody += uiTableNameLen;
+	pszTableName [uiTableNameLen] = 0;
+	
+	// Get the encryption definition number from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiEncDefNum)))
+	{
+		goto Exit;
+	}
+	// Get the column definitions.
+	
+	pucPacketBody = pucEnd = NULL;
+	uiNumColumnDefs = 0;
+	pFirstColDef = NULL;
+	pLastColDef = NULL;
+	for (;;)
+	{
+
+		// If we have used everything in our current packet, get another.
+
+		if (pucPacketBody == pucEnd)
+		{
+			if( RC_BAD( rc = getPacket( 
+				pDb, FALSE, &uiPacketType, &pucPacketBody, &uiPacketBodyLen,
+				&bHitEnd)))
+			{
+				goto Exit;
+			}
+			
+			// Should not hit the end of the RFL here!
+			
+			if (bHitEnd)
+			{
+				rc = RC_SET( NE_SFLM_RFL_INCOMPLETE);
+				goto Exit;
+			}
+			
+			if (uiPacketType != RFL_COLUMN_DEF_PACKET)
+			{
+				rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+				goto Exit;
+			}
+			pucEnd = pucPacketBody + uiPacketBodyLen;
+		}
+		
+		// Get the column name length and name.
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&uiColumnNameLen)))
+		{
+			goto Exit;
+		}
+		if (!uiColumnNameLen)
+		{
+			break;
+		}
+		if (RC_BAD( rc = m_tmpPool.poolAlloc( sizeof( F_COLUMN_DEF),
+									(void **)&pColumnDef)))
+		{
+			goto Exit;
+		}
+		uiNumColumnDefs++;
+		pColumnDef->pNext = NULL;
+		if (pLastColDef)
+		{
+			pLastColDef->pNext = pColumnDef;
+		}
+		else
+		{
+			pFirstColDef = pColumnDef;
+		}
+		pLastColDef = pColumnDef;
+		pColumnDef->uiColumnNameLen = uiColumnNameLen;
+		if (RC_BAD( rc = m_tmpPool.poolAlloc( uiColumnNameLen + 1,
+					(void **)&pszTmp)))
+		{
+			goto Exit;
+		}
+		f_memcpy( pszTmp, pucPacketBody, uiColumnNameLen);
+		pucPacketBody += uiColumnNameLen;
+		pszTmp [uiColumnNameLen] = 0;
+		pColumnDef->pszColumnName = pszTmp;
+		
+		// Get the data type.
+		
+		pColumnDef->eColumnDataType = (eDataType)(*pucPacketBody);
+		switch (pColumnDef->eColumnDataType)
+		{
+			case SFLM_STRING_TYPE:
+			case SFLM_NUMBER_TYPE:
+			case SFLM_BINARY_TYPE:
+				break;
+			default:
+				rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+				goto Exit;
+		}
+		pucPacketBody++;
+		
+		// Get the maximum length
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&pColumnDef->uiMaxLen)))
+		{
+			goto Exit;
+		}
+		
+		// Get the flags
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&pColumnDef->uiFlags)))
+		{
+			goto Exit;
+		}
+		
+		// Get the encryption definition number
+	
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&pColumnDef->uiEncDefNum)))
+		{
+			goto Exit;
+		}
+	}
+	
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportCreateTable(
+			peAction, uiTableNum, pszTableName, uiTableNameLen,
+			uiEncDefNum, pFirstColDef, uiNumColumnDefs)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pDb->createTable( uiTableNum, pszTableName, uiTableNameLen,
+									uiEncDefNum, pFirstColDef, uiNumColumnDefs)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_tmpPool.poolReset( NULL);
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logIndexColumnDefs(
+	F_Db *				pDb,
+	F_INDEX_COL_DEF *	pIxColDefs)
+{
+	RCODE					rc = NE_SFLM_OK;
+	F_INDEX_COL_DEF *	pIxColDef;
+	FLMUINT				uiPacketLen = RFL_PACKET_OVERHEAD;
+	FLMBYTE *			pucOut;
+
+	flmAssert( isLoggingEnabled());
+
+	if( !haveBuffSpace( RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// Go through each column's definition
+	
+	for (pIxColDef = pIxColDefs; pIxColDef; pIxColDef = pIxColDef->pNext)
+	{
+		if( RC_BAD( rc = makeRoom( pDb,
+			FLM_MAX_SEN_LEN * 4,
+			&uiPacketLen, RFL_INDEX_COLUMN_DEF_PACKET, NULL, NULL)))
+		{
+			goto Exit;
+		}
+		
+		pucOut = getPacketPtr() + uiPacketLen;
+		
+		// Output the column number
+
+		f_encodeSEN( pIxColDef->uiColumnNum, &pucOut);
+		
+		// Output the flags.
+		
+		f_encodeSEN( pIxColDef->uiFlags, &pucOut);
+		
+		// Output the comparison rules
+		
+		f_encodeSEN( pIxColDef->uiCompareRules, &pucOut);
+		
+		// Output the limit
+		
+		f_encodeSEN( pIxColDef->uiLimit, &pucOut);
+	}
+	
+	// Add a column number of zero to terminate the columns.
+
+	if (RC_BAD( rc = makeRoom( pDb, 1, &uiPacketLen,
+												RFL_INDEX_COLUMN_DEF_PACKET, NULL, NULL)))
+	{
+		goto Exit;
+	}
+
+	pucOut = getPacketPtr() + uiPacketLen;
+	*pucOut++ = 0;
+	uiPacketLen++;
+	
+	// Finish the packet.
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_INDEX_COLUMN_DEF_PACKET, 
+		uiPacketLen - RFL_PACKET_OVERHEAD, FALSE)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logCreateIndex(
+	F_Db *				pDb,
+	FLMUINT				uiTableNum,
+	FLMUINT				uiIndexNum,
+	const char *		pszIndexName,
+	FLMUINT				uiIndexNameLen,
+	FLMUINT				uiEncDefNum,
+	F_INDEX_COL_DEF *	pIxColDefs,
+	FLMUINT				uiFlags)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if( !haveBuffSpace( uiIndexNameLen + FLM_MAX_SEN_LEN * 5 + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the table number.
+
+	f_encodeSEN( uiTableNum, &pucPacketBody);
+	
+	// Output the index number.
+
+	f_encodeSEN( uiIndexNum, &pucPacketBody);
+	
+	// Output the index name length and index name.
+
+	f_encodeSEN( uiIndexNameLen, &pucPacketBody);
+	f_memcpy( pucPacketBody, pszIndexName, uiIndexNameLen);
+	pucPacketBody += uiIndexNameLen;
+	
+	// Output the encryption definition number.
+
+	f_encodeSEN( uiEncDefNum, &pucPacketBody);
+	
+	// Output the flags.
+
+	f_encodeSEN( uiFlags, &pucPacketBody);
+	
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_CREATE_INDEX_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// Now output the column definitions for the index
+	
+	if (RC_BAD( rc = logIndexColumnDefs( pDb, pIxColDefs)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovCreateIndex(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE						rc = NE_SFLM_OK;
+	FLMUINT					uiTableNum;
+	FLMUINT					uiIndexNum;
+	char *					pszIndexName;
+	FLMUINT					uiIndexNameLen;
+	FLMUINT					uiEncDefNum;
+	FLMUINT					uiFlags;
+	FLMUINT					uiNumIxColDefs;
+	FLMUINT					uiPacketType;
+	F_INDEX_COL_DEF *		pIxColDef;
+	F_INDEX_COL_DEF *		pFirstIxColDef;
+	F_INDEX_COL_DEF *		pLastIxColDef;
+	const FLMBYTE *		pucEnd = pucPacketBody + uiPacketBodyLen;
+	FLMBOOL					bHitEnd;
+	FLMUINT					uiColumnNum;
+	
+	// Get the table number from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
+	{
+		goto Exit;
+	}
+	
+	// Get the index number from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiIndexNum)))
+	{
+		goto Exit;
+	}
+	
+	// Get the index name length and index name from the packet.
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiIndexNameLen)))
+	{
+		goto Exit;
+	}
+	m_tmpPool.poolReset( NULL);
+	if (RC_BAD( rc = m_tmpPool.poolAlloc( uiIndexNameLen + 1,
+				(void **)&pszIndexName)))
+	{
+		goto Exit;
+	}
+	f_memcpy( pszIndexName, pucPacketBody, uiIndexNameLen);
+	pucPacketBody += uiIndexNameLen;
+	pszIndexName [uiIndexNameLen] = 0;
+	
+	// Get the encryption definition number from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiEncDefNum)))
+	{
+		goto Exit;
+	}
+	
+	// Get the index flags from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiFlags)))
+	{
+		goto Exit;
+	}
+	
+	// Get the index column definitions.
+	
+	pucPacketBody = pucEnd = NULL;
+	uiNumIxColDefs = 0;
+	pFirstIxColDef = NULL;
+	pLastIxColDef = NULL;
+	for (;;)
+	{
+
+		// If we have used everything in our current packet, get another.
+
+		if (pucPacketBody == pucEnd)
+		{
+			if( RC_BAD( rc = getPacket( 
+				pDb, FALSE, &uiPacketType, &pucPacketBody, &uiPacketBodyLen,
+				&bHitEnd)))
+			{
+				goto Exit;
+			}
+			
+			// Should not hit the end of the RFL here!
+			
+			if (bHitEnd)
+			{
+				rc = RC_SET( NE_SFLM_RFL_INCOMPLETE);
+				goto Exit;
+			}
+			
+			if (uiPacketType != RFL_INDEX_COLUMN_DEF_PACKET)
+			{
+				rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+				goto Exit;
+			}
+			pucEnd = pucPacketBody + uiPacketBodyLen;
+		}
+		
+		// Get the column number
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&uiColumnNum)))
+		{
+			goto Exit;
+		}
+		if (!uiColumnNum)
+		{
+			break;
+		}
+		if (RC_BAD( rc = m_tmpPool.poolAlloc( sizeof( F_INDEX_COL_DEF),
+									(void **)&pIxColDef)))
+		{
+			goto Exit;
+		}
+		uiNumIxColDefs++;
+		pIxColDef->pNext = NULL;
+		if (pLastIxColDef)
+		{
+			pLastIxColDef->pNext = pIxColDef;
+		}
+		else
+		{
+			pFirstIxColDef = pIxColDef;
+		}
+		pLastIxColDef = pIxColDef;
+		pIxColDef->uiColumnNum = uiColumnNum;
+
+		// Get the flags
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&pIxColDef->uiFlags)))
+		{
+			goto Exit;
+		}
+		
+		// Get the comparison rules
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&pIxColDef->uiCompareRules)))
+		{
+			goto Exit;
+		}
+		
+		// Get the limit
+		
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+									&pIxColDef->uiLimit)))
+		{
+			goto Exit;
+		}
+	}
+	
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportCreateIndex(
+			peAction, uiTableNum, uiIndexNum, pszIndexName, uiIndexNameLen,
+			uiEncDefNum, uiFlags, pFirstIxColDef, uiNumIxColDefs)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pDb->createIndex( uiTableNum, uiIndexNum, pszIndexName, uiIndexNameLen,
+									uiEncDefNum, uiFlags, pFirstIxColDef, uiNumIxColDefs)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_tmpPool.poolReset( NULL);
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logIndexSet(
+	F_Db *		pDb,
+	FLMUINT		uiIndexNum,
+	FLMUINT64	ui64StartRowId,
+	FLMUINT64	ui64EndRowId)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if (!haveBuffSpace( FLM_MAX_SEN_LEN * 3 + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the index number.
+
+	f_encodeSEN( uiIndexNum, &pucPacketBody);
+	
+	// Output the start row id.
+
+	f_encodeSEN( ui64StartRowId, &pucPacketBody);
+	
+	// Output the end row id.
+
+	f_encodeSEN( ui64EndRowId, &pucPacketBody);
+
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+	if (RC_BAD( rc = finishPacket( pDb, RFL_INDEX_SET_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovIndexSet(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiIndexNum;
+	FLMUINT64			ui64StartRowId;
+	FLMUINT64			ui64EndRowId;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	
+	// Get the index number from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiIndexNum)))
+	{
+		goto Exit;
+	}
+	
+	// Get the start row ID from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64StartRowId)))
+	{
+		goto Exit;
+	}
+	
+	// Get the end row ID from the packet
+	
+	if (RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64EndRowId)))
+	{
+		goto Exit;
+	}
+	
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportIndexSet(
+			peAction, uiIndexNum, ui64StartRowId, ui64EndRowId)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if (RC_BAD( rc = pDb->indexSetOfRows( uiIndexNum, ui64StartRowId,
+			ui64EndRowId, NULL, NULL, NULL, NULL, NULL)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
 RCODE F_Rfl::logColumnValues(
 	F_Db *				pDb,
 	FLMUINT				uiTableNum,
-	F_COLUMN_VALUE *	pColumnValues,
-	FLMUINT				uiNumColumnValues)
+	F_COLUMN_VALUE *	pColumnValues)
 {
-	RCODE				rc = NE_SFLM_OK;
-	FLMUINT			uiPacketLen = RFL_PACKET_OVERHEAD;
-	FLMUINT			uiBytesLeftToWrite;
-	FLMUINT			uiBytesToWrite;
-	FLMBYTE *		pucValue;
-	FLMBYTE *		pucOut;
-	FLMBYTE *		pucIV;
-	FLMBYTE *		pucStart;
-	F_TABLE *		pTable = pDb->m_pDict->getTable( uiTableNum);
-	F_COLUMN *		pColumn;
-	F_ENCDEF *		pTableEncDef = (pTable->lfInfo.uiEncDefNum)
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiPacketLen = RFL_PACKET_OVERHEAD;
+	FLMUINT				uiBytesLeftToWrite;
+	FLMUINT				uiBytesToWrite;
+	FLMBYTE *			pucValue;
+	FLMBYTE *			pucOut;
+	FLMBYTE *			pucIV;
+	FLMBYTE *			pucStart;
+	F_TABLE *			pTable = pDb->m_pDict->getTable( uiTableNum);
+	F_COLUMN *			pColumn;
+	F_ENCDEF *			pTableEncDef = (pTable->lfInfo.uiEncDefNum)
 											? pDb->m_pDict->getEncDef( pTable->lfInfo.uiEncDefNum)
 											: (F_ENCDEF *)NULL;
-	F_ENCDEF *		pEncDef;
-	FLMUINT			uiIVLen;
-	FLMUINT			uiEncLen;
-	FLMUINT			uiSenLen1;
-	FLMUINT			uiSenLen2;
-	FLMUINT			uiSpaceNeeded;
-	FLMUINT			uiEncOutputLen;
-	FLMUINT			uiBytesAvail;
+	F_ENCDEF *			pEncDef;
+	FLMUINT				uiIVLen;
+	FLMUINT				uiEncLen;
+	FLMUINT				uiSenLen1;
+	FLMUINT				uiSenLen2;
+	FLMUINT				uiSpaceNeeded;
+	FLMUINT				uiEncOutputLen;
+	FLMUINT				uiBytesAvail;
+	F_COLUMN_VALUE *	pColumnValue;
 
 	flmAssert( isLoggingEnabled());
 
@@ -3934,11 +4793,11 @@ RCODE F_Rfl::logColumnValues(
 	
 	// Go through each column's data
 	
-	while (uiNumColumnValues)
+	for (pColumnValue = pColumnValues; pColumnValue; pColumnValue = pColumnValue->pNext)
 	{
-		pColumn = pDb->m_pDict->getColumn( pTable, pColumnValues->uiColumnNum);
+		pColumn = pDb->m_pDict->getColumn( pTable, pColumnValue->uiColumnNum);
 		
-		if( RC_BAD( rc = makeRoom( pDb, FLM_MAX_SEN_LEN * 2 + 1,
+		if( RC_BAD( rc = makeRoom( pDb, FLM_MAX_SEN_LEN * 2,
 			&uiPacketLen, RFL_COLUMN_DATA_PACKET, NULL, NULL)))
 		{
 			goto Exit;
@@ -3948,20 +4807,16 @@ RCODE F_Rfl::logColumnValues(
 
 		// Output the column number.
 	
-		f_encodeSEN( pColumnValues->uiColumnNum, &pucOut);
+		f_encodeSEN( pColumnValue->uiColumnNum, &pucOut);
 		
-		// Output the data type.
-		
-		*pucOut++ = (FLMBYTE)pColumnValues->eColumnDataType;
-	
 		// Output the value length
 	
-		f_encodeSEN( pColumnValues->uiValueLen, &pucOut);
+		f_encodeSEN( pColumnValue->uiValueLen, &pucOut);
 		
 		uiPacketLen += (FLMUINT)(pucOut - pucStart);
 		
-		uiBytesLeftToWrite = pColumnValues->uiValueLen;
-		pucValue = pColumnValues->pucColumnValue;
+		uiBytesLeftToWrite = pColumnValue->uiValueLen;
+		pucValue = pColumnValue->pucColumnValue;
 		while (uiBytesLeftToWrite)
 		{
 			
@@ -4086,8 +4941,6 @@ Finish_Packet:
 			
 			uiPacketLen = RFL_PACKET_OVERHEAD;
 		}
-		pColumnValues++;
-		uiNumColumnValues--;
 	}
 	
 	// Add a column number of zero to terminate the columns.
@@ -4121,8 +4974,7 @@ Desc:
 RCODE F_Rfl::logInsertRow(
 	F_Db *				pDb,
 	FLMUINT				uiTableNum,
-	F_COLUMN_VALUE *	pColumnValues,
-	FLMUINT				uiNumColumnValues)
+	F_COLUMN_VALUE *	pColumnValues)
 {
 	RCODE			rc = NE_SFLM_OK;
 	FLMUINT		uiPacketBodyLen;
@@ -4149,7 +5001,7 @@ RCODE F_Rfl::logInsertRow(
 	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
 	// this is calculating the maximum packet body length that would be needed.
 
-	if( !haveBuffSpace( FLM_MAX_SEN_LEN * 2 + RFL_PACKET_OVERHEAD))
+	if( !haveBuffSpace( FLM_MAX_SEN_LEN + RFL_PACKET_OVERHEAD))
 	{
 		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
 		{
@@ -4165,10 +5017,6 @@ RCODE F_Rfl::logInsertRow(
 
 	f_encodeSEN( uiTableNum, &pucPacketBody);
 
-	// Output the number of column values
-
-	f_encodeSEN( uiNumColumnValues, &pucPacketBody);
-
 	// Finish the packet - calculate the actual packet body length.
 
 	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
@@ -4182,8 +5030,7 @@ RCODE F_Rfl::logInsertRow(
 	
 	// Now output the column data
 	
-	if (RC_BAD( rc = logColumnValues( pDb, uiTableNum,
-								pColumnValues, uiNumColumnValues)))
+	if (RC_BAD( rc = logColumnValues( pDb, uiTableNum, pColumnValues)))
 	{
 		goto Exit;
 	}
@@ -4204,10 +5051,11 @@ RCODE F_Rfl::recovInsertRow(
 {
 	RCODE					rc = NE_SFLM_OK;
 	FLMUINT				uiTableNum;
-	FLMUINT				uiNumColumnValues;
 	FLMUINT				uiPacketType;
-	F_COLUMN_VALUE *	pColValues;
 	F_COLUMN_VALUE *	pColumnValue;
+	F_COLUMN_VALUE *	pFirstColValue;
+	F_COLUMN_VALUE *	pLastColValue;
+	FLMUINT				uiNumColumnValues;
 	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
 	FLMUINT				uiIVLen;
 	FLMBOOL				bHitEnd;
@@ -4237,267 +5085,234 @@ RCODE F_Rfl::recovInsertRow(
 	pTableEncDef = (pTable->lfInfo.uiEncDefNum)
 						? pDb->m_pDict->getEncDef( pTable->lfInfo.uiEncDefNum)
 						: (F_ENCDEF *)NULL;
-						
-	// Get the number of column values from the packet.
-	
-	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiNumColumnValues)))
+
+	pFirstColValue = NULL;
+	pLastColValue = NULL;
+	pucPacketBody = pucEnd = NULL;
+	uiNumColumnValues = 0;
+	for (;;)
 	{
-		goto Exit;
-	}
-	
-	// Get the column values.
-	
-	if (uiNumColumnValues)
-	{
+
+		// If we have used everything in our current packet, get another.
+
+		if (pucPacketBody == pucEnd)
+		{
+			if( RC_BAD( rc = getPacket( 
+				pDb, FALSE, &uiPacketType, &pucPacketBody, &uiPacketBodyLen,
+				&bHitEnd)))
+			{
+				goto Exit;
+			}
+			
+			// Should not hit the end of the RFL here!
+			
+			if (bHitEnd)
+			{
+				rc = RC_SET( NE_SFLM_RFL_INCOMPLETE);
+				goto Exit;
+			}
+			
+			if (uiPacketType != RFL_COLUMN_DATA_PACKET)
+			{
+				rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+				goto Exit;
+			}
+			pucEnd = pucPacketBody + uiPacketBodyLen;
+		}
 		
-		// Allocate space for the values.
+		// Get the column number.
 		
-		m_tmpPool.poolReset( NULL);
-		if (RC_BAD( rc = m_tmpPool.poolAlloc(
-					sizeof( F_COLUMN_VALUE) * uiNumColumnValues,
-					(void **)&pColValues)))
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiColumnNum)))
 		{
 			goto Exit;
 		}
 		
-		// Go into a loop processing packets until we have retrieved all of
-		// the columns. At that point, we had better be at the end
-		// of the column data.
+		// A zero column number means we are at the end
 		
-		pColumnValue = pColValues;
-		pucPacketBody = pucEnd = NULL;
-		for (;;)
+		if (!uiColumnNum)
 		{
-
-			// If we have used everything in our current packet, get another.
-	
-			if (pucPacketBody == pucEnd)
-			{
-				if( RC_BAD( rc = getPacket( 
-					pDb, FALSE, &uiPacketType, &pucPacketBody, &uiPacketBodyLen,
-					&bHitEnd)))
-				{
-					goto Exit;
-				}
-				
-				// Should not hit the end of the RFL here!
-				
-				if (bHitEnd)
-				{
-					rc = RC_SET( NE_SFLM_RFL_INCOMPLETE);
-					goto Exit;
-				}
-				
-				if (uiPacketType != RFL_COLUMN_DATA_PACKET)
-				{
-					rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-					goto Exit;
-				}
-				pucEnd = pucPacketBody + uiPacketBodyLen;
-			}
-			
-			// Get the column number.
-			
-			if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiColumnNum)))
-			{
-				goto Exit;
-			}
-			
-			// A zero column number means we are at the end
-			
-			if (!uiColumnNum)
-			{
-				
-				// Shouldn't have hit zero if we still have column values to
-				// process.
-				
-				if (uiNumColumnValues)
-				{
-					rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-					goto Exit;
-				}
-				break;
-			}
-			if ((pColumn = pDb->m_pDict->getColumn( pTable, uiColumnNum)) == NULL)
-			{
-				rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-				goto Exit;
-			}
-			pColumnValue->uiColumnNum = uiColumnNum;
-			
-			// Get the data type
-			
-			if (pucPacketBody >= pucEnd)
-			{
-				rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-				goto Exit;
-			}
-			pColumnValue->eColumnDataType = (eDataType)(*pucPacketBody);
-			switch (pColumnValue->eColumnDataType)
-			{
-				case SFLM_STRING_TYPE:
-				case SFLM_NUMBER_TYPE:
-				case SFLM_BINARY_TYPE:
-					break;
-				default:
-					rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-					goto Exit;
-			}
-			pucPacketBody++;
-			
-			// Get the value length.
+			break;
+		}
+		if ((pColumn = pDb->m_pDict->getColumn( pTable, uiColumnNum)) == NULL)
+		{
+			rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+			goto Exit;
+		}
+		uiNumColumnValues++;
+		if (RC_BAD( rc = m_tmpPool.poolAlloc( sizeof( F_COLUMN_VALUE),
+									(void **)&pColumnValue)))
+		{
+			goto Exit;
+		}
+		pColumnValue->pNext = NULL;
+		if (pLastColValue)
+		{
+			pLastColValue->pNext = pColumnValue;
+		}
+		else
+		{
+			pFirstColValue = pColumnValue;
+		}
+		pLastColValue = pColumnValue;
+		pColumnValue->uiColumnNum = uiColumnNum;
 		
-			if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
-									&uiBytesLeftToRead)))
-			{
-				goto Exit;
-			}
-			
-			// Get the value, if there is one.
+		// Get the data type
+		
+		if (pucPacketBody >= pucEnd)
+		{
+			rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+			goto Exit;
+		}
+		
+		// Get the value length.
+	
+		if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+								&uiBytesLeftToRead)))
+		{
+			goto Exit;
+		}
+		
+		// Get the value, if there is one.
 
-			if ((pColumnValue->uiValueLen = uiBytesLeftToRead) != 0)
+		if ((pColumnValue->uiValueLen = uiBytesLeftToRead) != 0)
+		{
+			pEncDef = (pColumn->uiEncDefNum)
+						 ? pDb->m_pDict->getEncDef( pColumn->uiEncDefNum)
+						 : pTableEncDef;
+						 
+			// If data is encrypted, allocate enough so that we can
+			// decrypt in place - rounding up to nearest encryption boundary
+			// should ensure that.
+			
+			if (!pEncDef)
 			{
-				pEncDef = (pColumn->uiEncDefNum)
-							 ? pDb->m_pDict->getEncDef( pColumn->uiEncDefNum)
-							 : pTableEncDef;
-							 
-				// If data is encrypted, allocate enough so that we can
-				// decrypt in place - rounding up to nearest encryption boundary
-				// should ensure that.
+				if (RC_BAD( rc = m_tmpPool.poolAlloc( uiBytesLeftToRead,
+											(void **)&pucValue)))
+				{
+					goto Exit;
+				}
+			}
+			else
+			{
+				if (RC_BAD( rc = m_tmpPool.poolAlloc( getEncLen( uiBytesLeftToRead),
+											(void **)&pucValue)))
+				{
+					goto Exit;
+				}
+			}
+			pColumnValue->pucColumnValue = pucValue;
+			
+			// Now get the value.
+			
+			while (uiBytesLeftToRead)
+			{
+				
+				// If we have used up our current packet, get another.
+				
+				if (pucPacketBody == pucEnd)
+				{
+					if( RC_BAD( rc = getPacket( 
+						pDb, FALSE, &uiPacketType, &pucPacketBody, &uiPacketBodyLen,
+						&bHitEnd)))
+					{
+						goto Exit;
+					}
+					
+					// Should not hit the end of the RFL here!
+					
+					if (bHitEnd)
+					{
+						rc = RC_SET( NE_SFLM_RFL_INCOMPLETE);
+						goto Exit;
+					}
+					
+					if (uiPacketType != RFL_COLUMN_DATA_PACKET)
+					{
+						rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+						goto Exit;
+					}
+					pucEnd = pucPacketBody + uiPacketBodyLen;
+				}
+				
+				// Getting data is simple if it is not encrypted.
 				
 				if (!pEncDef)
 				{
-					if (RC_BAD( rc = m_tmpPool.poolAlloc( uiBytesLeftToRead,
-												(void **)&pucValue)))
+					uiBytesToRead = (FLMUINT)(pucEnd - pucPacketBody);
+					if (uiBytesToRead > uiBytesLeftToRead)
 					{
-						goto Exit;
+						uiBytesToRead = uiBytesLeftToRead;
 					}
+					f_memcpy( pucValue, pucPacketBody, uiBytesToRead);
+					pucPacketBody += uiBytesToRead;
+					pucValue += uiBytesToRead;
+					uiBytesLeftToRead -= uiBytesToRead;
 				}
 				else
 				{
-					if (RC_BAD( rc = m_tmpPool.poolAlloc( getEncLen( uiBytesLeftToRead),
-												(void **)&pucValue)))
+					
+					// Encrypted data should have the encrypted length, the
+					// length of data encrypted, an IV, and the encrypted
+					// data - all in the same packet.
+					
+					if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+											&uiEncLen)))
 					{
 						goto Exit;
 					}
-				}
-				pColumnValue->pucColumnValue = pucValue;
-				
-				// Now get the value.
-				
-				while (uiBytesLeftToRead)
-				{
-					
-					// If we have used up our current packet, get another.
-					
-					if (pucPacketBody == pucEnd)
+					if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
+											&uiBytesToRead)))
 					{
-						if( RC_BAD( rc = getPacket( 
-							pDb, FALSE, &uiPacketType, &pucPacketBody, &uiPacketBodyLen,
-							&bHitEnd)))
-						{
-							goto Exit;
-						}
-						
-						// Should not hit the end of the RFL here!
-						
-						if (bHitEnd)
-						{
-							rc = RC_SET( NE_SFLM_RFL_INCOMPLETE);
-							goto Exit;
-						}
-						
-						if (uiPacketType != RFL_COLUMN_DATA_PACKET)
-						{
-							rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-							goto Exit;
-						}
-						pucEnd = pucPacketBody + uiPacketBodyLen;
+						goto Exit;
+					}
+					if (uiBytesToRead > uiEncLen || uiBytesToRead > uiBytesLeftToRead)
+					{
+						rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+						goto Exit;
+					}
+					uiIVLen = pEncDef->pCcs->getIVLen();
+					flmAssert( uiIVLen == 8 || uiIVLen == 16);
+					
+					// Make sure packet has the IV and the encrypted data.
+					
+					if (pucPacketBody + uiIVLen + uiEncLen > pucEnd)
+					{
+						rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+						goto Exit;
 					}
 					
-					// Getting data is simple if it is not encrypted.
+					// Get the IV from the packet.
 					
-					if (!pEncDef)
+					f_memcpy( ucIV, pucPacketBody, uiIVLen);
+					pucPacketBody += uiIVLen;
+					
+					// Get the encrypted data into our buffer.
+					
+					f_memcpy( pucValue, pucPacketBody, uiEncLen);
+					
+					// Decrypt the data in place.
+					
+					if (RC_BAD( rc = pDb->decryptData( pEncDef->uiEncDefNum, ucIV,
+						pucValue, uiEncLen, pucValue, uiEncLen)))
 					{
-						uiBytesToRead = (FLMUINT)(pucEnd - pucPacketBody);
-						if (uiBytesToRead > uiBytesLeftToRead)
-						{
-							uiBytesToRead = uiBytesLeftToRead;
-						}
-						f_memcpy( pucValue, pucPacketBody, uiBytesToRead);
-						pucPacketBody += uiBytesToRead;
-						pucValue += uiBytesToRead;
-						uiBytesLeftToRead -= uiBytesToRead;
+						goto Exit;
 					}
-					else
-					{
-						
-						// Encrypted data should have the encrypted length, the
-						// length of data encrypted, an IV, and the encrypted
-						// data - all in the same packet.
-						
-						if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
-												&uiEncLen)))
-						{
-							goto Exit;
-						}
-						if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd,
-												&uiBytesToRead)))
-						{
-							goto Exit;
-						}
-						if (uiBytesToRead > uiEncLen || uiBytesToRead > uiBytesLeftToRead)
-						{
-							rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-							goto Exit;
-						}
-						uiIVLen = pEncDef->pCcs->getIVLen();
-						flmAssert( uiIVLen == 8 || uiIVLen == 16);
-						
-						// Make sure packet has the IV and the encrypted data.
-						
-						if (pucPacketBody + uiIVLen + uiEncLen > pucEnd)
-						{
-							rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-							goto Exit;
-						}
-						
-						// Get the IV from the packet.
-						
-						f_memcpy( ucIV, pucPacketBody, uiIVLen);
-						pucPacketBody += uiIVLen;
-						
-						// Get the encrypted data into our buffer.
-						
-						f_memcpy( pucValue, pucPacketBody, uiEncLen);
-						
-						// Decrypt the data in place.
-						
-						if (RC_BAD( rc = pDb->decryptData( pEncDef->uiEncDefNum, ucIV,
-							pucValue, uiEncLen, pucValue, uiEncLen)))
-						{
-							goto Exit;
-						}
-						
-						// Increment our value buffer only past the decrypted data.
-						// Increment the packet body pointer past the encrypted data.
-						
-						pucValue += uiBytesToRead;
-						uiBytesLeftToRead -= uiBytesToRead;
-						pucPacketBody += uiEncLen;
-					}
+					
+					// Increment our value buffer only past the decrypted data.
+					// Increment the packet body pointer past the encrypted data.
+					
+					pucValue += uiBytesToRead;
+					uiBytesLeftToRead -= uiBytesToRead;
+					pucPacketBody += uiEncLen;
 				}
 			}
-			
-			uiNumColumnValues--;
-			pColumnValue++;
 		}
 	}
 	
 	if (m_pRestoreStatus)
 	{
 		if( RC_BAD( rc = m_pRestoreStatus->reportInsertRow(
-			peAction, uiTableNum, pColValues, uiNumColumnValues)))
+			peAction, uiTableNum, pFirstColValue, uiNumColumnValues)))
 		{
 			goto Exit;
 		}
@@ -4509,7 +5324,7 @@ RCODE F_Rfl::recovInsertRow(
 		}
 	}
 	
-	if( RC_BAD( rc = pDb->insertRow( uiTableNum, pColValues, uiNumColumnValues)))
+	if( RC_BAD( rc = pDb->insertRow( uiTableNum, pFirstColValue)))
 	{
 		goto Exit;
 	}
@@ -5843,6 +6658,57 @@ Finish_Transaction:
 				goto Finish_Transaction;
 			}
 
+			case RFL_CREATE_TABLE_PACKET:
+			{
+				if( RC_BAD( rc = recovCreateTable( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+			
+			case RFL_CREATE_INDEX_PACKET:
+			{
+				if( RC_BAD( rc = recovCreateIndex( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+			
+			case RFL_INDEX_SET_PACKET:			
+			{
+				if( RC_BAD( rc = recovIndexSet( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+			
 			case RFL_INSERT_ROW_PACKET:
 			{
 				if( RC_BAD( rc = recovInsertRow( pDb, 
