@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Tue Jun 27 14:41:47 MST 2006 - dsanders@novell.com
+
+- Needed to make some typedefs public for Solaris 8.
+- Also fixed so that flaimtk.h is copied from ftk.h when building srcdist
+
+-------------------------------------------------------------------
+Fri Jun 23 01:15:10 CEST 2006 - ro@suse.de
+
+- removed buggy self-provides from devel package 
+
+-------------------------------------------------------------------
 Thu Jun 22 16:47:31 MST 2006 - dsanders@novell.com
 
 - Modified common toolkit formatter to support colors when logging.
