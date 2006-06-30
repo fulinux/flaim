@@ -1938,3 +1938,128 @@ Exit:
 
 	return( rc);
 }
+
+//------------------------------------------------------------------------------
+// Desc:	Process the open database statement.  The "OPEN DATABASE" keywords
+//			have already been parsed.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::processOpenDatabase( void)
+{
+	RCODE					rc = NE_SFLM_OK;
+	char					szDatabaseName [F_PATH_MAX_SIZE + 1];
+	FLMUINT				uiDatabaseNameLen;
+	char					szDataDirName [F_PATH_MAX_SIZE + 1];
+	FLMUINT				uiDataDirNameLen;
+	char					szRflDirName [F_PATH_MAX_SIZE + 1];
+	FLMUINT				uiRflDirNameLen;
+	F_DbSystem			dbSystem;
+	char					szPassword [300];
+	FLMUINT				uiPasswordLen;
+	FLMUINT				uiFlags;
+	char					szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT				uiTokenLineOffset;
+	
+	// SYNTAX: OPEN DATABASE databasename
+	// [DATA_DIR=<DataDirName>] [RFL_DIR=<RflDirName>]
+	// [PASSWORD=<password>] [ALLOW_LIMITED]
+
+	// Whitespace must follow the "OPEN DATABASE"
+
+	if (RC_BAD( rc = skipWhitespace( TRUE)))
+	{
+		goto Exit;
+	}
+
+	// Get the database name.
+
+	if (RC_BAD( rc = getUTF8String( FALSE, (FLMBYTE *)szDatabaseName,
+							sizeof( szDatabaseName),
+							&uiDatabaseNameLen)))
+	{
+		goto Exit;
+	}
+	
+	szDataDirName [0] = 0;
+	szRflDirName [0] = 0;
+	szPassword [0] = 0;
+	uiFlags = 0;
+	
+	// See if there are any options
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
+									&uiTokenLineOffset)))
+		{
+			if (rc == NE_SFLM_EOF_HIT)
+			{
+				rc = NE_SFLM_OK;
+				break;
+			}
+			else
+			{
+				goto Exit;
+			}
+		}
+		
+		if (f_stricmp( szToken, "data_dir") == 0)
+		{
+			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szDataDirName,
+									sizeof( szDataDirName),
+									&uiDataDirNameLen)))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "data_dir") == 0)
+		{
+			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szRflDirName,
+									sizeof( szRflDirName),
+									&uiRflDirNameLen)))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "password") == 0)
+		{
+			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szPassword,
+									sizeof( szPassword),
+									&uiPasswordLen)))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "allow_limited") == 0)
+		{
+			uiFlags |= SFLM_ALLOW_LIMITED_MODE;
+		}
+		else
+		{
+			// Move the line offset back to the beginning of the token
+			// so it can be processed by the next SQL statement in the
+			// stream.
+			
+			m_uiCurrLineOffset = uiTokenLineOffset;
+			break;
+		}
+	}
+	
+	if (m_pDb)
+	{
+		m_pDb->Release();
+		m_pDb = NULL;
+	}
+	
+	// Open the database
+	
+	if (RC_BAD( rc = dbSystem.openDatabase( szDatabaseName, szDataDirName,
+										szRflDirName, szPassword, uiFlags, &m_pDb)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
