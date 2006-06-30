@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	This file contains the F_DbSystem::dbRemove method.
+// Desc:	This file contains the F_DbSystem::dropDatabase method.
 //
 // Tabs:	3
 //
@@ -26,17 +26,12 @@
 #include "flaimsys.h"
 
 /****************************************************************************
-Desc:		Deletes all files of a database
+Desc:	Drops a database - all physical files will be deleted.
 ****************************************************************************/
-RCODE F_DbSystem::dbRemove(
+RCODE F_DbSystem::dropDatabase(
 	const char *		pszDbName,
-		// [IN] Name of source database to be deleted.
 	const char *		pszDataDir,
-		// [IN] Directory where data files are located.
 	const char *		pszRflDir,
-		// [IN] RFL directory of database. NULL can be
-		// passed to indicate that the log files are located
-		// in the same directory as the other database files.
 	FLMBOOL				bRemoveRflFiles)
 {
 	RCODE					rc = NE_SFLM_OK;
@@ -317,3 +312,110 @@ Exit:
 
 	return( rc);
 }
+
+//------------------------------------------------------------------------------
+// Desc:	Process the drop database statement.  The "DROP DATABASE" keywords
+//			have already been parsed.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::processDropDatabase( void)
+{
+	RCODE					rc = NE_SFLM_OK;
+	char					szDatabaseName [F_PATH_MAX_SIZE + 1];
+	FLMUINT				uiDatabaseNameLen;
+	char					szDataDirName [F_PATH_MAX_SIZE + 1];
+	FLMUINT				uiDataDirNameLen;
+	char					szRflDirName [F_PATH_MAX_SIZE + 1];
+	FLMUINT				uiRflDirNameLen;
+	FLMBOOL				bRemoveRflFiles;
+	F_DbSystem			dbSystem;
+	char					szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT				uiTokenLineOffset;
+	
+	// SYNTAX: DROP DATABASE databasename
+	// [DATA_DIR=<DataDirName>] [RFL_DIR=<RflDirName>]
+	// [REMOVE_RFL_FILES]
+
+	// Whitespace must follow the "DROP DATABASE"
+
+	if (RC_BAD( rc = skipWhitespace( TRUE)))
+	{
+		goto Exit;
+	}
+
+	// Get the database name.
+
+	if (RC_BAD( rc = getUTF8String( FALSE, (FLMBYTE *)szDatabaseName,
+							sizeof( szDatabaseName),
+							&uiDatabaseNameLen)))
+	{
+		goto Exit;
+	}
+	
+	szDataDirName [0] = 0;
+	szRflDirName [0] = 0;
+	bRemoveRflFiles = FALSE;
+	
+	// See if there are any options
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
+									&uiTokenLineOffset)))
+		{
+			if (rc == NE_SFLM_EOF_HIT)
+			{
+				rc = NE_SFLM_OK;
+				break;
+			}
+			else
+			{
+				goto Exit;
+			}
+		}
+		
+		if (f_stricmp( szToken, "data_dir") == 0)
+		{
+			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szDataDirName,
+									sizeof( szDataDirName),
+									&uiDataDirNameLen)))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "data_dir") == 0)
+		{
+			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szRflDirName,
+									sizeof( szRflDirName),
+									&uiRflDirNameLen)))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "remove_rfl_files") == 0)
+		{
+			bRemoveRflFiles = TRUE;
+		}
+		else
+		{
+			// Move the line offset back to the beginning of the token
+			// so it can be processed by the next SQL statement in the
+			// stream.
+			
+			m_uiCurrLineOffset = uiTokenLineOffset;
+			break;
+		}
+	}
+	
+	// Drop the database
+	
+	if (RC_BAD( rc = dbSystem.dropDatabase( szDatabaseName, szDataDirName,
+										szRflDirName, bRemoveRflFiles)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+}
+
