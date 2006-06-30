@@ -1337,7 +1337,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		dbRemove( pszDbPath, pszDataDir, NULL, FALSE);
+		dropDatabase( pszDbPath, pszDataDir, NULL, FALSE);
 	}
 
 	return( rc);
