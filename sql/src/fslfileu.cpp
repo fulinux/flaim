@@ -997,8 +997,11 @@ RCODE F_Db::maintBlockChainFree(
 
 	if (!uiEndBlkAddr)
 	{
-		gv_SFlmSysData.pRowCacheMgr->removeRow( this, SFLM_TBLNUM_BLOCK_CHAINS,
-									ui64MaintRowId);
+		if (RC_BAD( rc = deleteRow( SFLM_TBLNUM_BLOCK_CHAINS, ui64MaintRowId,
+									FALSE)))
+		{
+			goto Exit;
+		}
 	}
 	else
 	{
