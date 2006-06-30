@@ -80,8 +80,8 @@ typedef enum
 	SQL_NO_ERROR = 0,
 	SQL_ERR_EXPECTING_WHITESPACE,			///< 1 = Whitespace required.
 	SQL_ERR_EXPECTING_INTO,					///< 2 = Expecting "INTO" keyword.
-	SQL_ERR_ILLEGAL_TABLE_NAME_CHAR,		///< 3 = Illegal character in table name.
-	SQL_ERR_TABLE_NAME_TOO_LONG,			///< 4 = Table name is too long.
+	SQL_ERR_ILLEGAL_NAME_CHAR,				///< 3 = Illegal character in table name, index name, column name, or encryption definition name.
+	SQL_ERR_NAME_TOO_LONG,					///< 4 = Table name, index name, column name, or encryption definition name is too long.
 	SQL_ERR_UNDEFINED_TABLE,				///< 5 = Table name that was specified is not defined.
 	SQL_ERR_TABLE_ALREADY_DEFINED,		///< 6 = Table name is already defined in the database.
 	SQL_ERR_EXPECTING_COMMA,				///< 7 = Expecting comma.
@@ -117,6 +117,16 @@ typedef enum
 	SQL_ERR_INVALID_INDEX_OPTION,			///< 37 = Invalid index column option specified.
 	SQL_ERR_INVALID_COL_INDEX_OPTION,	///< 38 = Index option cannot be used for the specified column.
 	SQL_ERR_MULTIPLE_INDEX_OPTIONS,		///< 39 = Cannot specify more than one of value, eachword, presence, substring, or metaphone indexing options.
+	SQL_ERR_INVALID_DROP_OPTION,			///< 40 = DROP option is invalid.
+	SQL_ERR_UNEXPECTED_EOF,					///< 41 = Unexpected end of input stream, incomplete SQL statement.
+	SQL_ERR_INVALID_SQL_STATEMENT,		///< 42 = Invalid SQL statement.
+	SQL_ERR_INVALID_CHARACTER,				///< 43 = Invalid character encountered when parsing SQL statement.
+	SQL_ERR_EXPECTING_VALUES,				///< 44 = Expecting "VALUES" keyword.
+	SQL_ERR_TABLE_NOT_FOR_INDEX,			///< 45 = Table name specified is not associated with the specified index.
+	SQL_ERR_CANNOT_DROP_SYSTEM_INDEX,	///< 46 = Cannot drop internal system indexes.
+	SQL_ERR_CANNOT_DROP_SYSTEM_TABLE,	///< 47 = Cannot drop internal system tables.
+	SQL_ERR_UNDEFINED_ENCDEF,				///< 48 = Encryption definition specified does not exist.
+	SQL_ERR_ENCDEF_ALREADY_DEFINED,		///< 49 = Encryption definition name is already defined in the database.
 
 	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
 	SQL_NUM_ERRORS
@@ -1313,6 +1323,11 @@ typedef struct
 #define NE_SFLM_INVALID_COMPARE_RULES_VALUE		0xE131	///< 0xE131 = Invalid value for the "compare rules" option in an index definition.
 #define NE_SFLM_INVALID_SORT_DESCENDING_VALUE	0xE132	///< 0xE132 = Invalid value for the "sort descending" option in an index definition.
 #define NE_SFLM_INVALID_SORT_MISSING_HIGH_VALUE	0xE133	///< 0xE133 = Invalid value for the "sort missing high" option in an index definition.
+#define NE_SFLM_CANNOT_DROP_SYSTEM_INDEX			0xE134	///< 0xE134 = Not allowed to drop system indexes.
+#define NE_SFLM_CANNOT_DROP_SYSTEM_TABLE			0xE135	///< 0xE135 = Not allowed to drop system tables.
+#define NE_SFLM_CANNOT_DELETE_IN_SYSTEM_TABLE	0xE136	///< 0xE136 = Not allowed to delete directly from system tables.
+#define NE_SFLM_CANNOT_INSERT_IN_SYSTEM_TABLE	0xE137	///< 0xE137 = Not allowed to insert directly into system tables.
+#define NE_SFLM_CANNOT_UPDATE_IN_SYSTEM_TABLE	0xE138	///< 0xE138 = Not allowed to update directly into system tables.
 
 // Query Errors
 
@@ -1533,6 +1548,11 @@ flminterface IF_RestoreStatus : public F_Object
 		F_COLUMN_VALUE *		pColumnValues,
 		FLMUINT					uiNumColumnValues) = 0;
 		
+	virtual RCODE reportDeleteRow(
+		eRestoreAction *		peAction,
+		FLMUINT					uiTableNum,
+		FLMUINT64				ui64RowId) = 0;
+		
 	virtual RCODE reportCreateTable(
 		eRestoreAction *		peAction,
 		FLMUINT					uiTableNum,
@@ -1541,6 +1561,10 @@ flminterface IF_RestoreStatus : public F_Object
 		FLMUINT					uiEncDefNum,
 		F_COLUMN_DEF *			pColumnDefs,
 		FLMUINT					uiNumColumnDefs) = 0;
+		
+	virtual RCODE reportDropTable(
+		eRestoreAction *		peAction,
+		FLMUINT					uiTableNum) = 0;
 		
 	virtual RCODE reportCreateIndex(
 		eRestoreAction *		peAction,
@@ -1552,6 +1576,10 @@ flminterface IF_RestoreStatus : public F_Object
 		FLMUINT					uiFlags,
 		F_INDEX_COL_DEF *		pIxColDefs,
 		FLMUINT					uiNumIxColDefs) = 0;
+		
+	virtual RCODE reportDropIndex(
+		eRestoreAction *		peAction,
+		FLMUINT					uiIndexNum) = 0;
 		
 	virtual RCODE reportIndexSet(
 		eRestoreAction *		peAction,
