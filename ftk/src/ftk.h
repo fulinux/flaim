@@ -180,7 +180,7 @@
 		#else
 			#error Platform not supported
 		#endif
-
+		
 		// Basic type definitions
 
 		#if defined( FLM_UNIX)
@@ -197,13 +197,6 @@
 			typedef int									FLMINT32;
 			typedef short								FLMINT16;
 			typedef signed char						FLMINT8;
-			#if defined( FLM_GNUC)
-				typedef __builtin_va_list			f_va_list;
-			#elif defined( FLM_SOLARIS)
-				typedef void *							f_va_list;
-			#else
-				typedef char *							f_va_list;
-			#endif
 
 			#if defined( FLM_64BIT) || defined( FLM_OSX) || \
 				 defined( FLM_S390) || defined( FLM_HPUX) || defined( FLM_AIX)
@@ -231,16 +224,12 @@
 					typedef unsigned int				FLMUINT32;
 					typedef __w64 unsigned int		FLMSIZET;
 				#endif
-				
-				typedef char *							f_va_list;
-
 			#elif defined( FLM_NLM)
 			
 				typedef unsigned long int			FLMUINT;
 				typedef long int						FLMINT;
 				typedef unsigned long int			FLMUINT32;
 				typedef unsigned						FLMSIZET;
-				typedef unsigned long 				f_va_list;
 			#else
 				#error Platform not supported
 			#endif
@@ -365,20 +354,13 @@
 	
 	#define f_alignedsize(n) \
 		((sizeof(n) + FLM_ALIGN_SIZE - 1) & ~(FLM_ALIGN_SIZE - 1) )
-	
-	#if defined( FLM_GNUC)
-		#define f_va_start( list, name) \
-			__builtin_va_start( list, name)
-			
-		#define f_va_arg( list, type) \
-			__builtin_va_arg( list, type)
-			
-		#define f_va_end( list) \
-			__builtin_va_end( list)
-	#elif defined( FLM_NLM)
+
+	#if defined( FLM_RING_ZERO_NLM)
 		#define f_argsize(x) \
 			((sizeof(x)+sizeof(int)-1) & ~(sizeof(int)-1))
 
+		typedef unsigned long	f_va_list;
+		
 		#define f_va_start(ap, parmN) \
 			((void)((ap) = (unsigned long)&(parmN) + f_argsize(parmN)))
 			
@@ -386,24 +368,12 @@
 			(*(type *)(((ap) += f_argsize(type)) - (f_argsize(type))))
 			
 		#define f_va_end(ap) ((void)0)
-	#elif defined( FLM_SOLARIS)
-		#define f_va_start( list, name) \
-			((void)((list) = (f_va_list)&__builtin_va_alist))
-
-		#define f_va_arg( list, type) \
-			((type *)__builtin_va_arg_incr((type *)(list)))[0]
-
-		#define f_va_end( list) \
-			(void)(list)
 	#else
-		#define f_va_start( list, name) \
-			((list) = (f_va_list)&(name) + f_alignedsize( name))
-			
-		#define f_va_arg( list, type) \
-			(*(type *)((list += f_alignedsize( type)) - f_alignedsize( type)))
-			
-		#define f_va_end( list) \
-			((list) = (f_va_list)0)
+		#include <stdarg.h>
+		#define f_va_list		va_list
+		#define f_va_start	va_start
+		#define f_va_arg		va_arg
+		#define f_va_end		va_end
 	#endif
 
 	// flmnovtbl keeps MS compilers from generating vtables for interfaces
