@@ -40,9 +40,24 @@ RCODE F_Db::insertRow(
 	FLMUINT				uiNumChars;
 	FLMBOOL				bNeg;
 	F_COLUMN_VALUE *	pColumnValue;
-	F_TABLE *			pTable = m_pDict->getTable( uiTableNum);
+	F_TABLE *			pTable;
 	F_COLUMN *			pColumn;
+	FLMBOOL				bStartedTrans = FALSE;
+	
+	// Make sure we are in an update transaction.
+	
+	if (RC_BAD( rc = checkTransaction( SFLM_UPDATE_TRANS, &bStartedTrans)))
+	{
+		goto Exit;
+	}
 
+	pTable = m_pDict->getTable( uiTableNum);
+	if (pTable->bSystemTable)
+	{
+		rc = RC_SET( NE_SFLM_CANNOT_INSERT_IN_SYSTEM_TABLE);
+		goto Exit;
+	}
+	
 	// Create a row object.
 	
 	if (RC_BAD( rc = gv_SFlmSysData.pRowCacheMgr->createRow( this,
@@ -127,7 +142,23 @@ RCODE F_Db::insertRow(
 		goto Exit;
 	}
 
+	// Commit the transaction if we started it
+	
+	if (bStartedTrans)
+	{
+		bStartedTrans = FALSE;
+		if (RC_BAD( rc = transCommit()))
+		{
+			goto Exit;
+		}
+	}
+
 Exit:
+
+	if (bStartedTrans)
+	{
+		transAbort();
+	}
 
 	if (pRow)
 	{
@@ -155,6 +186,8 @@ RCODE SQLStatement::processInsertRow( void)
 	char					szTableName [MAX_SQL_NAME_LEN + 1];
 	FLMUINT				uiTableNameLen;
 	F_TABLE *			pTable;
+	char					szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT				uiTokenLineOffset;
 
 	// If we are in a read transaction, we cannot do this operation
 	
@@ -166,23 +199,10 @@ RCODE SQLStatement::processInsertRow( void)
 	// SYNTAX: INSERT INTO table_name (column1,column2,...) VALUES (value1,value2,...)
 	// OR:     INSERT INTO table_name VALUES (value1,value2,...)
 
-	// Whitespace must follow the "INSERT"
-
-	if (RC_BAD( rc = skipWhitespace( TRUE)))
-	{
-		goto Exit;
-	}
-
 	// INTO must follow the INSERT.
 
-	if (!lineHasToken( "into"))
+	if (RC_BAD( rc = haveToken( "into", FALSE, SQL_ERR_EXPECTING_INTO)))
 	{
-		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
-				SQL_ERR_EXPECTING_INTO,
-				m_uiCurrLineFilePos,
-				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
 		goto Exit;
 	}
 
@@ -208,32 +228,59 @@ RCODE SQLStatement::processInsertRow( void)
 				SQL_ERR_CANNOT_UPDATE_SYSTEM_TABLE,
 				m_uiCurrLineFilePos,
 				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
+		rc = RC_SET( NE_SFLM_CANNOT_INSERT_IN_SYSTEM_TABLE);
 		goto Exit;
 	}
 	
-	// Whitespace does not have to follow the table name
-
-	if (RC_BAD( rc = skipWhitespace( FALSE)))
-	{
-		goto Exit;
-	}
-
 	// If left paren follows table name, then columns are being listed.
 
 	pFirstColValue = NULL;
 	pLastColValue = NULL;
-	if (lineHasToken( "("))
+	if (RC_BAD( rc = haveToken( "(", FALSE)))
+	{
+		if (rc != NE_SFLM_NOT_FOUND)
+		{
+			rc = NE_SFLM_OK;
+			for (uiLoop = 0, pColumn = pTable->pColumns;
+				  uiLoop < pTable->uiNumColumns;
+				  uiLoop++, pColumn++)
+			{
+				if (pColumn->uiColumnNum)
+				{
+					// Allocate a column value.
+					
+					if (RC_BAD( rc = m_tmpPool.poolAlloc( sizeof( F_COLUMN_VALUE),
+												(void **)&pColumnValue)))
+					{
+						goto Exit;
+					}
+					pColumnValue->uiColumnNum = pColumn->uiColumnNum;
+					pColumnValue->uiValueLen = 0;
+					pColumnValue->pNext = NULL;
+					if (pLastColValue)
+					{
+						pLastColValue->pNext = pColumnValue;
+					}
+					else
+					{
+						pFirstColValue = pColumnValue;
+					}
+					pLastColValue = pColumnValue;
+				}
+			}
+		}
+		else
+		{
+			goto Exit;
+		}
+	}
+	else
 	{
 
 		// Get the list of columns for which there will be values.
 		
 		for (;;)
 		{
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
-			{
-				goto Exit;
-			}
 			
 			// Get the column name
 			
@@ -280,21 +327,22 @@ RCODE SQLStatement::processInsertRow( void)
 				pLastColValue = pColumnValue;
 			}
 
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+										&uiTokenLineOffset)))
 			{
 				goto Exit;
 			}
 			
 			// See if we are at the end of the list of columns
 			
-			if (lineHasToken( ")"))
+			if (f_stricmp( szToken, ")") == 0)
 			{
 				break;
 			}
-			else if (!lineHasToken( ","))
+			else if (f_stricmp( szToken, ",") != 0)
 			{
 				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
+						uiTokenLineOffset,
 						SQL_ERR_EXPECTING_COMMA,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
@@ -303,68 +351,20 @@ RCODE SQLStatement::processInsertRow( void)
 			}
 		}
 	}
-	else
-	{
-		
-		for (uiLoop = 0, pColumn = pTable->pColumns;
-			  uiLoop < pTable->uiNumColumns;
-			  uiLoop++, pColumn++)
-		{
-			if (pColumn->uiColumnNum)
-			{
-				// Allocate a column value.
-				
-				if (RC_BAD( rc = m_tmpPool.poolAlloc( sizeof( F_COLUMN_VALUE),
-											(void **)&pColumnValue)))
-				{
-					goto Exit;
-				}
-				pColumnValue->uiColumnNum = pColumn->uiColumnNum;
-				pColumnValue->uiValueLen = 0;
-				pColumnValue->pNext = NULL;
-				if (pLastColValue)
-				{
-					pLastColValue->pNext = pColumnValue;
-				}
-				else
-				{
-					pFirstColValue = pColumnValue;
-				}
-				pLastColValue = pColumnValue;
-			}
-		}
-	}
 
 	// Allow for no values to be specified if no columns were.
 	
 	if (pFirstColValue)
 	{
-		if (!lineHasToken( "values"))
+		if (RC_BAD( rc = haveToken( "values", FALSE, SQL_ERR_EXPECTING_VALUES)))
 		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_INTO,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
 		}
 		
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
-		{
-			goto Exit;
-		}
-			
 		// Should be a left paren
 		
-		if (!lineHasToken( "("))
+		if (RC_BAD( rc = haveToken( "(", FALSE, SQL_ERR_EXPECTING_LPAREN)))
 		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_LPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
 		}
 		
@@ -390,14 +390,8 @@ RCODE SQLStatement::processInsertRow( void)
 			}
 			if ((pColumnValue = pColumnValue->pNext) == NULL)
 			{
-				if (!lineHasToken( ")"))
+				if (RC_BAD( rc = haveToken( ")", FALSE, SQL_ERR_EXPECTING_RPAREN)))
 				{
-					setErrInfo( m_uiCurrLineNum,
-							m_uiCurrLineOffset,
-							SQL_ERR_EXPECTING_RPAREN,
-							m_uiCurrLineFilePos,
-							m_uiCurrLineBytes);
-					rc = RC_SET( NE_SFLM_INVALID_SQL);
 					goto Exit;
 				}
 				else
@@ -405,14 +399,8 @@ RCODE SQLStatement::processInsertRow( void)
 					break;
 				}
 			}
-			else if (!lineHasToken( ","))
+			else if (RC_BAD( rc = haveToken( ",", FALSE, SQL_ERR_EXPECTING_COMMA)))
 			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_EXPECTING_COMMA,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
 		}
@@ -445,5 +433,4 @@ Exit:
 
 	return( rc);
 }
-
 
