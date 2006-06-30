@@ -679,9 +679,39 @@ RCODE SQLStatement::getUTF8String(
 		}
 		else if (ucChar == ucQuoteChar)
 		{
-			break;
+			
+			// If nothing follows the quote character, or the thing
+			// that follows is not a quote character, we are at the
+			// end of the string.
+			
+			if ((ucChar = getChar()) == 0 ||
+				 ucChar != ucQuoteChar)
+			{
+				if (ucChar)
+				{
+					ungetChar();
+				}
+				break;
+			}
+			if (uiNumChars == uiStrBufSize)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_UTF8_STRING_TOO_LARGE,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+			
+			*pszStr++ = ucChar;
+			uiNumChars++;
 		}
-		else if (ucChar == ASCII_SPACE && ucChar == ASCII_TAB ||
+		
+		// Non-quoted strings will end when we hit whitespace or
+		// a comma or right paren.
+		
+		else if (ucChar == ASCII_SPACE || ucChar == ASCII_TAB ||
 					ucChar == ',' || ucChar == ')')
 		{
 			ungetChar();
