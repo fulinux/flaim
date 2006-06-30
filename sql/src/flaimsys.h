@@ -1909,6 +1909,11 @@ public:
 		FLMUINT				uiTableNum,
 		F_COLUMN_VALUE *	pColumnValues);
 		
+	RCODE deleteRow(
+		FLMUINT				uiTableNum,
+		FLMUINT64			ui64RowId,
+		FLMBOOL				bLogDelete);
+		
 	RCODE createTable(
 		FLMUINT				uiTableNum,
 		const char *		pszTableName,
@@ -1916,6 +1921,9 @@ public:
 		FLMUINT				uiEncDefNum,
 		F_COLUMN_DEF *		pColumnDefs,
 		FLMUINT				uiNumColumnDefs);
+		
+	RCODE dropTable(
+		FLMUINT				uiTableNum);
 		
 	RCODE createIndex(
 		FLMUINT				uiTableNum,
@@ -1926,6 +1934,9 @@ public:
 		FLMUINT				uiFlags,
 		F_INDEX_COL_DEF *	pIxColDefs,
 		FLMUINT				uiNumIxColDefs);
+
+	RCODE dropIndex(
+		FLMUINT				uiIndexNum);
 		
 private:
 
@@ -3151,7 +3162,7 @@ public:
 		const char *		pszDestRflDir,
 		IF_DbCopyStatus *	ifpStatus);
 
-	RCODE dbRemove(
+	RCODE dropDatabase(
 		const char *		pszDbName,
 		const char *		pszDataDir,
 		const char *		pszRflDir,
