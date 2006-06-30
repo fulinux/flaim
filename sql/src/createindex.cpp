@@ -51,6 +51,14 @@ RCODE F_Db::createIndex(
 	const char *		pszIndexOn;
 	FLMUINT				uiIndexOnLen;
 	F_INDEX *			pIndex;
+	FLMBOOL				bStartedTrans = FALSE;
+	
+	// Make sure we are in an update transaction.
+	
+	if (RC_BAD( rc = checkTransaction( SFLM_UPDATE_TRANS, &bStartedTrans)))
+	{
+		goto Exit;
+	}
 	
 	// Create a new dictionary, if we don't already have one.
 	
@@ -421,7 +429,23 @@ RCODE F_Db::createIndex(
 		}
 	}
 	
+	// Commit the transaction if we started it
+	
+	if (bStartedTrans)
+	{
+		bStartedTrans = FALSE;
+		if (RC_BAD( rc = transCommit()))
+		{
+			goto Exit;
+		}
+	}
+
 Exit:
+
+	if (bStartedTrans)
+	{
+		transAbort();
+	}
 
 	if (pRow)
 	{
@@ -446,15 +470,21 @@ RCODE SQLStatement::processCreateIndex(
 	FLMUINT					uiTableNameLen;
 	char						szColumnName [MAX_SQL_NAME_LEN + 1];
 	FLMUINT					uiColumnNameLen;
+	char						szEncDefName [MAX_SQL_NAME_LEN + 1];
+	FLMUINT					uiEncDefNameLen;
 	F_INDEX_COL_DEF *		pIxColDef;
 	F_INDEX_COL_DEF *		pFirstIxColDef;
 	F_INDEX_COL_DEF *		pLastIxColDef;
 	FLMUINT					uiNumIxColumns;
 	F_TABLE *				pTable;
 	F_INDEX *				pIndex;
+	F_ENCDEF *				pEncDef;
+	FLMUINT					uiEncDefNum;
 	F_COLUMN *				pColumn;
 	FLMBOOL					bDone;
 	FLMUINT					uiFlags;
+	char						szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT					uiTokenLineOffset;
 	
 	// If we are in a read transaction, we cannot do this operation
 	
@@ -465,6 +495,7 @@ RCODE SQLStatement::processCreateIndex(
 
 	// SYNTAX: CREATE [UNIQUE] INDEX <indexname> ON <tablename>
 	//		(<column_name> [DESC], ...)
+	//		[ABSPOS] [OFFLINE] [SUSPENDED] [ENCRYPT_WITH <EncDefName>]
 	
 	if (bUnique)
 	{
@@ -499,24 +530,11 @@ RCODE SQLStatement::processCreateIndex(
 	
 	// The keyword "ON" must follow
 	
-	if (!lineHasToken( "on"))
+	if (RC_BAD( rc = haveToken( "on", FALSE, SQL_ERR_EXPECTING_ON)))
 	{
-		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
-				SQL_ERR_EXPECTING_ON,
-				m_uiCurrLineFilePos,
-				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
 		goto Exit;
 	}
 
-	// Whitespace must follow "ON"
-	
-	if (RC_BAD( rc = skipWhitespace( TRUE)))
-	{
-		goto Exit;
-	}
-	
 	// Get the table name - must exist.
 	
 	if (RC_BAD( rc = getTableName( TRUE, szTableName, sizeof( szTableName),
@@ -525,23 +543,10 @@ RCODE SQLStatement::processCreateIndex(
 		goto Exit;
 	}
 	
-	// Skip any whitespace after the table name.
-
-	if (RC_BAD( rc = skipWhitespace( FALSE)))
-	{
-		goto Exit;
-	}
-
 	// Left paren must follow table name
 	
-	if (!lineHasToken( "("))
+	if (RC_BAD( rc = haveToken( "(", FALSE, SQL_ERR_EXPECTING_LPAREN)))
 	{
-		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
-				SQL_ERR_EXPECTING_LPAREN,
-				m_uiCurrLineFilePos,
-				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
 		goto Exit;
 	}
 	
@@ -552,11 +557,6 @@ RCODE SQLStatement::processCreateIndex(
 	uiNumIxColumns = 0;
 	for (;;)
 	{
-		
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
-		{
-			goto Exit;
-		}
 		
 		// Get the column name
 		
@@ -609,34 +609,21 @@ RCODE SQLStatement::processCreateIndex(
 		bDone = FALSE;
 		for (;;)
 		{
-			if (lineHasToken( ","))
-			{
-				break;
-			}
-			if (lineHasToken( ")"))
-			{
-				bDone = TRUE;
-				break;
-			}
-			
-			// Better be whitespace, followed by a valid keyword or a comma
-			// or a right paren.
-			
-			if (RC_BAD( rc = skipWhitespace( TRUE)))
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+											&uiTokenLineOffset)))
 			{
 				goto Exit;
 			}
-			
-			if (lineHasToken( ","))
+			if (f_stricmp( szToken, ",") == 0)
 			{
 				break;
 			}
-			if (lineHasToken( ")"))
+			else if (f_stricmp( szToken, ")") == 0)
 			{
 				bDone = TRUE;
 				break;
 			}
-			if (lineHasToken( SFLM_VALUE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_VALUE_OPTION_STR) == 0)
 			{
 				if ((pIxColDef->uiFlags &
 					 (ICD_VALUE | ICD_EACHWORD | ICD_PRESENCE | ICD_METAPHONE | ICD_SUBSTRING)))
@@ -652,7 +639,7 @@ Multiple_Ix_Options:
 				}
 				pIxColDef->uiFlags |= ICD_VALUE;
 			}
-			else if (lineHasToken( SFLM_EACHWORD_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_EACHWORD_OPTION_STR) == 0)
 			{
 				if ((pIxColDef->uiFlags &
 					 (ICD_VALUE | ICD_EACHWORD | ICD_PRESENCE | ICD_METAPHONE | ICD_SUBSTRING)))
@@ -672,7 +659,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiFlags |= ICD_EACHWORD;
 			}
-			else if (lineHasToken( SFLM_PRESENCE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_PRESENCE_OPTION_STR) == 0)
 			{
 				if ((pIxColDef->uiFlags &
 					 (ICD_VALUE | ICD_EACHWORD | ICD_PRESENCE | ICD_METAPHONE | ICD_SUBSTRING)))
@@ -681,7 +668,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiFlags |= ICD_PRESENCE;
 			}
-			else if (lineHasToken( SFLM_METAPHONE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_METAPHONE_OPTION_STR) == 0)
 			{
 				if ((pIxColDef->uiFlags &
 					 (ICD_VALUE | ICD_EACHWORD | ICD_PRESENCE | ICD_METAPHONE | ICD_SUBSTRING)))
@@ -694,7 +681,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiFlags |= ICD_METAPHONE;
 			}
-			else if (lineHasToken( SFLM_SUBSTRING_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_SUBSTRING_OPTION_STR) == 0)
 			{
 				if ((pIxColDef->uiFlags &
 					 (ICD_VALUE | ICD_EACHWORD | ICD_PRESENCE | ICD_METAPHONE | ICD_SUBSTRING)))
@@ -707,25 +694,25 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiFlags |= ICD_SUBSTRING;
 			}
-			else if (lineHasToken( SFLM_DESCENDING_OPTION_STR) ||
-						lineHasToken( "desc"))
+			else if (f_stricmp( szToken, SFLM_DESCENDING_OPTION_STR) == 0 ||
+						f_stricmp( szToken, "desc") == 0)
 			{
 				pIxColDef->uiFlags |= ICD_DESCENDING;
 			}
-			else if (lineHasToken( SFLM_ASCENDING_OPTION_STR) ||
-						lineHasToken( "asc"))
+			else if (f_stricmp( szToken, SFLM_ASCENDING_OPTION_STR) == 0 ||
+						f_stricmp( szToken, "asc") == 0)
 			{
 				pIxColDef->uiFlags &= (~(ICD_DESCENDING));
 			}
-			else if (lineHasToken( SFLM_SORT_MISSING_HIGH_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_SORT_MISSING_HIGH_OPTION_STR) == 0)
 			{
 				pIxColDef->uiFlags |= ICD_MISSING_HIGH;
 			}
-			else if (lineHasToken( SFLM_SORT_MISSING_LOW_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_SORT_MISSING_LOW_OPTION_STR) == 0)
 			{
 				pIxColDef->uiFlags &= (~(ICD_MISSING_HIGH));
 			}
-			else if (lineHasToken( SFLM_CASE_INSENSITIVE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_CASE_INSENSITIVE_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -733,7 +720,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_CASE_INSENSITIVE;
 			}
-			else if (lineHasToken( SFLM_COMPRESS_WHITESPACE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_COMPRESS_WHITESPACE_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -741,7 +728,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_COMPRESS_WHITESPACE;
 			}
-			else if (lineHasToken( SFLM_NO_WHITESPACE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_NO_WHITESPACE_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -749,7 +736,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_NO_WHITESPACE;
 			}
-			else if (lineHasToken( SFLM_NOUNDERSCORE_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_NOUNDERSCORE_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -757,7 +744,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_NO_UNDERSCORES;
 			}
-			else if (lineHasToken( SFLM_NODASH_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_NODASH_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -765,7 +752,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_NO_DASHES;
 			}
-			else if (lineHasToken( SFLM_WHITESPACE_AS_SPACE_STR))
+			else if (f_stricmp( szToken, SFLM_WHITESPACE_AS_SPACE_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -773,7 +760,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_WHITESPACE_AS_SPACE;
 			}
-			else if (lineHasToken( SFLM_IGNORE_LEADINGSPACES_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_IGNORE_LEADINGSPACES_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -781,7 +768,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_IGNORE_LEADING_SPACE;
 			}
-			else if (lineHasToken( SFLM_IGNORE_TRAILINGSPACES_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_IGNORE_TRAILINGSPACES_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE)
 				{
@@ -789,7 +776,7 @@ Invalid_Ix_Option:
 				}
 				pIxColDef->uiCompareRules |= FLM_COMP_IGNORE_TRAILING_SPACE;
 			}
-			else if (lineHasToken( SFLM_LIMIT_OPTION_STR))
+			else if (f_stricmp( szToken, SFLM_LIMIT_OPTION_STR) == 0)
 			{
 				if (pColumn->eDataTyp != SFLM_STRING_TYPE &&
 					 pColumn->eDataTyp != SFLM_BINARY_TYPE)
@@ -804,7 +791,7 @@ Invalid_Ix_Option:
 			else
 			{
 				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
+						uiTokenLineOffset,
 						SQL_ERR_INVALID_INDEX_OPTION,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
@@ -835,11 +822,70 @@ Invalid_Ix_Option:
 		}
 	}
 	
+	// See if there are any options for the index itself
+	
+	uiEncDefNum = 0;
+	for (;;)
+	{
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
+									&uiTokenLineOffset)))
+		{
+			if (rc == NE_SFLM_EOF_HIT)
+			{
+				rc = NE_SFLM_OK;
+				break;
+			}
+			else
+			{
+				goto Exit;
+			}
+		}
+		
+		if (f_stricmp( szToken, "offline") == 0)
+		{
+			
+			// Ignore offline option if suspended was specified.
+			
+			if (!(uiFlags & IXD_SUSPENDED))
+			{
+				uiFlags |= IXD_OFFLINE;
+			}
+		}
+		else if (f_stricmp( szToken, "suspended") == 0)
+		{
+			uiFlags &= (~(IXD_OFFLINE));
+			uiFlags |= IXD_SUSPENDED;
+		}
+		else if (f_stricmp( szToken, "abspos") == 0)
+		{
+			uiFlags |= IXD_ABS_POS;
+		}
+		else if (f_stricmp( szToken, "encrypt_with") == 0)
+		{
+			if (RC_BAD( rc = getEncDefName( TRUE, szEncDefName, sizeof( szEncDefName),
+										&uiEncDefNameLen, &pEncDef)))
+			{
+				goto Exit;
+			}
+			uiEncDefNum = pEncDef->uiEncDefNum;
+		}
+		else
+		{
+			
+			// Move the line offset back to the beginning of the token
+			// so it can be processed by the next SQL statement in the
+			// stream.
+			
+			m_uiCurrLineOffset = uiTokenLineOffset;
+			break;
+		}
+	}
+	
 	// Create the index.
 
 	if (RC_BAD( rc = m_pDb->createIndex( pTable->uiTableNum, 0,
-										szIndexName, uiIndexNameLen, 0, uiFlags,
-										pFirstIxColDef, uiNumIxColumns)))
+										szIndexName, uiIndexNameLen, uiEncDefNum,
+										uiFlags, pFirstIxColDef, uiNumIxColumns)))
 	{
 		goto Exit;
 	}

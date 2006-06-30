@@ -457,7 +457,7 @@ Exit:
 		{
 			F_DbSystem	dbSystem;
 
-			dbSystem.dbRemove( pszFilePath, pszDataDir, pszRflDir, TRUE);
+			dbSystem.dropDatabase( pszFilePath, pszDataDir, pszRflDir, TRUE);
 		}
 	}
 	else if( uiRflToken)
@@ -485,6 +485,8 @@ RCODE SQLStatement::processCreateDatabase( void)
 	FLMUINT				uiLanguageLen;
 	SFLM_CREATE_OPTS	createOpts;
 	F_DbSystem			dbSystem;
+	char					szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT				uiTokenLineOffset;
 	
 	// SYNTAX: CREATE DATABASE databasename [CREATE_OPTIONS( <ParamName>=value,...)]
 
@@ -533,42 +535,45 @@ RCODE SQLStatement::processCreateDatabase( void)
 
 	// See if there are "CREATE_OPTIONS"
 
-	if (lineHasToken( "create_options"))
+	if (RC_BAD( rc = haveToken( "create_options", TRUE)))
 	{
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		if (rc == NE_SFLM_NOT_FOUND)
+		{
+			rc = NE_SFLM_OK;
+		}
+		else
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+	
+		// Left paren must follow "CREATE_OPTIONS"
+		
+		if (RC_BAD( rc = haveToken( "(", FALSE, SQL_ERR_EXPECTING_LPAREN)))
 		{
 			goto Exit;
 		}
 		
-		// Left paren must follow "CREATE_OPTIONS"
-		
-		if (lineHasToken( "("))
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+											&uiTokenLineOffset)))
 		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_LPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
+		}
+		
+		// See if the list of create options is empty.
+		
+		if (f_stricmp( szToken, ")") == 0)
+		{
+			goto Create_Database;
 		}
 		
 		// Get all of the create options
 		
 		for (;;)
 		{
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
-			{
-				goto Exit;
-			}
-			
-			// See if we are at the end of the list of create options.
-			
-			if (lineHasToken( ")"))
-			{
-				break;
-			}
-			else if (lineHasToken( "data_dir"))
+			if (f_stricmp( szToken, "data_dir") == 0)
 			{
 				if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szDataDirName,
 										sizeof( szDataDirName),
@@ -577,7 +582,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "rfl_dir"))
+			else if (f_stricmp( szToken, "rfl_dir") == 0)
 			{
 				if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szRflDirName,
 										sizeof( szRflDirName),
@@ -586,7 +591,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "block_size"))
+			else if (f_stricmp( szToken, "block_size") == 0)
 			{
 				if (RC_BAD( rc = getUINT( TRUE, &createOpts.uiBlockSize)))
 				{
@@ -603,35 +608,35 @@ RCODE SQLStatement::processCreateDatabase( void)
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "min_rfl_size"))
+			else if (f_stricmp( szToken, "min_rfl_size") == 0)
 			{
 				if (RC_BAD( rc = getUINT( TRUE, &createOpts.uiMinRflFileSize)))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "max_rfl_size"))
+			else if (f_stricmp( szToken, "max_rfl_size") == 0)
 			{
 				if (RC_BAD( rc = getUINT( TRUE, &createOpts.uiMaxRflFileSize)))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "keep_rfl"))
+			else if (f_stricmp( szToken, "keep_rfl") == 0)
 			{
 				if (RC_BAD( rc = getBool( TRUE, &createOpts.bKeepRflFiles)))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "log_aborted_trans"))
+			else if (f_stricmp( szToken, "log_aborted_trans") == 0)
 			{
 				if (RC_BAD( rc = getBool( TRUE, &createOpts.bLogAbortedTransToRfl)))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "language"))
+			else if (f_stricmp( szToken, "language") == 0)
 			{
 				if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szLanguage,
 										sizeof( szLanguage),
@@ -661,7 +666,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 			else
 			{
 				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
+						uiTokenLineOffset,
 						SQL_ERR_INVALID_DB_CREATE_PARAM,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
@@ -669,31 +674,40 @@ RCODE SQLStatement::processCreateDatabase( void)
 				goto Exit;
 			}
 			
-			// Skip any white space
+			// Option must be followed by a comma or right paren
 			
-			if (RC_BAD( rc = skipWhitespace( FALSE)))
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+												&uiTokenLineOffset)))
 			{
 				goto Exit;
 			}
 			
-			// See if we are at the end of the list of create options
-			
-			if (lineHasToken( ")"))
+			if (f_stricmp( szToken, ")") == 0)
 			{
 				break;
 			}
-			else if (!lineHasToken( ","))
+			else if (f_stricmp( szToken, ",") != 0)
 			{
 				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
+						uiTokenLineOffset,
 						SQL_ERR_EXPECTING_COMMA,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
 				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
+			
+			// Comma must be followed by the next option
+			
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+												&uiTokenLineOffset)))
+			{
+				goto Exit;
+			}
 		}
 	}
+	
+Create_Database:
 	
 	if (m_pDb)
 	{

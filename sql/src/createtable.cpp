@@ -47,6 +47,14 @@ RCODE F_Db::createTable(
 	FLMUINT				uiLen;
 	F_COLUMN_DEF *		pColumnDef;
 	FLMUINT				uiColumnNum;
+	FLMBOOL				bStartedTrans = FALSE;
+	
+	// Make sure we are in an update transaction.
+	
+	if (RC_BAD( rc = checkTransaction( SFLM_UPDATE_TRANS, &bStartedTrans)))
+	{
+		goto Exit;
+	}
 	
 	// Create a new dictionary, if we don't already have one.
 	
@@ -243,7 +251,23 @@ RCODE F_Db::createTable(
 		goto Exit;
 	}
 
+	// Commit the transaction if we started it
+	
+	if (bStartedTrans)
+	{
+		bStartedTrans = FALSE;
+		if (RC_BAD( rc = transCommit()))
+		{
+			goto Exit;
+		}
+	}
+
 Exit:
+
+	if (bStartedTrans)
+	{
+		transAbort();
+	}
 
 	if (pRow)
 	{
@@ -258,10 +282,16 @@ Exit:
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getDataType(
 	eDataType *	peDataType,
-	FLMUINT *	puiMax)
+	FLMUINT *	puiMax,
+	FLMUINT *	puiEncDefNum)
 {
-	RCODE		rc = NE_SFLM_OK;
-	
+	RCODE			rc = NE_SFLM_OK;
+	char			szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT		uiTokenLineOffset;
+	char			szEncDefName [MAX_SQL_NAME_LEN + 1];
+	FLMUINT		uiEncDefNameLen;
+	F_ENCDEF *	pEncDef;
+
 	// Leading whitespace has already been skipped
 	
 	// Valid data types are:
@@ -278,68 +308,56 @@ RCODE SQLStatement::getDataType(
 	//		varbinary(n)
 	//		long varbinary
 	
-	if (lineHasToken( "char") ||
-		 lineHasToken( "varchar") ||
-		 lineHasToken( "varwchar"))
+	if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+								&uiTokenLineOffset)))
 	{
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		goto Exit;
+	}
+	
+	if (f_stricmp( szToken, "char") == 0 ||
+		 f_stricmp( szToken, "varchar") == 0 ||
+		 f_stricmp( szToken, "varwchar") == 0)
+	{
+		if (RC_BAD( rc = haveToken( "(", FALSE, SQL_ERR_EXPECTING_LPAREN)))
 		{
-			goto Exit;
-		}
-		if (!lineHasToken( "("))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_LPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
 		}
 		if (RC_BAD( rc = getUINT( FALSE, puiMax)))
 		{
 			goto Exit;
 		}
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		if (RC_BAD( rc = haveToken( ")", FALSE, SQL_ERR_EXPECTING_RPAREN)))
 		{
-			goto Exit;
-		}
-		if (!lineHasToken( ")"))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_RPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
 		}
 		*peDataType = SFLM_STRING_TYPE;
 	}
-	else if (lineHasToken( "longvarchar") ||
-				lineHasToken( "longwvarchar"))
+	else if (f_stricmp( szToken, "longvarchar") == 0 ||
+				f_stricmp( szToken, "longwvarchar") == 0)
 	{
 		*peDataType = SFLM_STRING_TYPE;
 		*puiMax = 0;
 	}
-	else if (lineHasToken( "longvarbinary"))
+	else if (f_stricmp( szToken, "longvarbinary") == 0)
 	{
 		*peDataType = SFLM_BINARY_TYPE;
 		*puiMax = 0;
 	}
-	else if (lineHasToken( "long"))
+	else if (f_stricmp( szToken, "long") == 0)
 	{
-		if (RC_BAD( rc = skipWhitespace( TRUE)))
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+									&uiTokenLineOffset)))
 		{
 			goto Exit;
 		}
-		if (lineHasToken( "varchar") ||
-			 lineHasToken( "varwchar"))
+	
+		if (f_stricmp( szToken, "varchar") == 0 ||
+			 f_stricmp( szToken, "varwchar") == 0)
 		{
 			*peDataType = SFLM_STRING_TYPE;
 			*puiMax = 0;
 		}
-		else if (lineHasToken( "varbinary"))
+		else if (f_stricmp( szToken, "varbinary") == 0)
 		{
 			*peDataType = SFLM_BINARY_TYPE;
 			*puiMax = 0;
@@ -349,46 +367,26 @@ RCODE SQLStatement::getDataType(
 			goto Invalid_Data_Type;
 		}
 	}
-	else if (lineHasToken( "smallint") ||
-				lineHasToken( "integer") ||
-				lineHasToken( "tinyint") ||
-				lineHasToken( "bigint"))
+	else if (f_stricmp( szToken, "smallint") == 0 ||
+				f_stricmp( szToken, "integer") == 0 ||
+				f_stricmp( szToken, "tinyint") == 0 ||
+				f_stricmp( szToken, "bigint") == 0)
 	{
 		*peDataType = SFLM_NUMBER_TYPE;
 	}
-	else if (lineHasToken( "binary") ||
-			   lineHasToken( "varbinary"))
+	else if (f_stricmp( szToken, "binary") == 0 ||
+			   f_stricmp( szToken, "varbinary") == 0)
 	{
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		if (RC_BAD( rc = haveToken( "(", FALSE, SQL_ERR_EXPECTING_LPAREN)))
 		{
-			goto Exit;
-		}
-		if (!lineHasToken( "("))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_LPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
 		}
 		if (RC_BAD( rc = getUINT( FALSE, puiMax)))
 		{
 			goto Exit;
 		}
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
+		if (RC_BAD( rc = haveToken( ")", FALSE, SQL_ERR_EXPECTING_RPAREN)))
 		{
-			goto Exit;
-		}
-		if (!lineHasToken( ")"))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_RPAREN,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
 		}
 		*peDataType = SFLM_BINARY_TYPE;
@@ -397,12 +395,35 @@ RCODE SQLStatement::getDataType(
 	{
 Invalid_Data_Type:
 		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
+				uiTokenLineOffset,
 				SQL_ERR_INVALID_DATA_TYPE,
 				m_uiCurrLineFilePos,
 				m_uiCurrLineBytes);
 		rc = RC_SET( NE_SFLM_INVALID_SQL);
 		goto Exit;
+	}
+	
+	// See if they specified any encryption.
+	
+	if (RC_BAD( rc = haveToken( "encrypt_with", FALSE)))
+	{
+		if (rc == NE_SFLM_NOT_FOUND)
+		{
+			rc = NE_SFLM_OK;
+		}
+		else
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		if (RC_BAD( rc = getEncDefName( TRUE, szEncDefName, sizeof( szEncDefName),
+									&uiEncDefNameLen, &pEncDef)))
+		{
+			goto Exit;
+		}
+		*puiEncDefNum = pEncDef->uiEncDefNum;
 	}
 	
 Exit:
@@ -421,12 +442,18 @@ RCODE SQLStatement::processCreateTable( void)
 	FLMUINT				uiTableNameLen;
 	char					szColumnName [MAX_SQL_NAME_LEN + 1];
 	FLMUINT				uiColumnNameLen;
+	char					szEncDefName [MAX_SQL_NAME_LEN + 1];
+	FLMUINT				uiEncDefNameLen;
 	char *				pszTmp;
 	F_COLUMN_DEF *		pColumnDef;
 	F_COLUMN_DEF *		pFirstColDef;
 	F_COLUMN_DEF *		pLastColDef;
 	FLMUINT				uiNumColumnDefs;
 	F_TABLE *			pTable;
+	F_ENCDEF *			pEncDef;
+	FLMUINT				uiEncDefNum;
+	char					szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT				uiTokenLineOffset;
 	
 	// If we are in a read transaction, we cannot do this operation
 	
@@ -436,6 +463,7 @@ RCODE SQLStatement::processCreateTable( void)
 	}
 
 	// SYNTAX: CREATE TABLE <tablename> (<column_name> <data_type,...)
+	// [ENCRYPT_WITH <EncDefName>]
 
 	// Whitespace must follow the "CREATE TABLE"
 
@@ -452,23 +480,10 @@ RCODE SQLStatement::processCreateTable( void)
 		goto Exit;
 	}
 	
-	// Skip any whitespace after the table name.
-
-	if (RC_BAD( rc = skipWhitespace( FALSE)))
-	{
-		goto Exit;
-	}
-
 	// Left paren must follow table name
 	
-	if (!lineHasToken( "("))
+	if (RC_BAD( rc = haveToken( "(", FALSE, SQL_ERR_EXPECTING_LPAREN)))
 	{
-		setErrInfo( m_uiCurrLineNum,
-				m_uiCurrLineOffset,
-				SQL_ERR_EXPECTING_LPAREN,
-				m_uiCurrLineFilePos,
-				m_uiCurrLineBytes);
-		rc = RC_SET( NE_SFLM_INVALID_SQL);
 		goto Exit;
 	}
 	
@@ -479,10 +494,6 @@ RCODE SQLStatement::processCreateTable( void)
 	uiNumColumnDefs = 0;
 	for (;;)
 	{
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
-		{
-			goto Exit;
-		}
 		
 		// Get the column name
 		
@@ -534,7 +545,8 @@ RCODE SQLStatement::processCreateTable( void)
 		// Data type must follow
 		
 		if (RC_BAD( rc = getDataType( &pColumnDef->eColumnDataType,
-												&pColumnDef->uiMaxLen)))
+												&pColumnDef->uiMaxLen,
+												&pColumnDef->uiEncDefNum)))
 		{
 			goto Exit;
 		}
@@ -546,13 +558,19 @@ RCODE SQLStatement::processCreateTable( void)
 			goto Exit;
 		}
 		
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+									&uiTokenLineOffset)))
+		{
+			goto Exit;
+		}
+		
 		// See if we are at the end of the list of columns
 		
-		if (lineHasToken( ")"))
+		if (f_stricmp( szToken, ")") == 0)
 		{
 			break;
 		}
-		else if (!lineHasToken( ","))
+		else if (f_stricmp( szToken, ",") != 0)
 		{
 			setErrInfo( m_uiCurrLineNum,
 					m_uiCurrLineOffset,
@@ -564,10 +582,34 @@ RCODE SQLStatement::processCreateTable( void)
 		}
 	}
 	
+	// See if an encryption definition was specified
+	
+	uiEncDefNum = 0;
+	if (RC_BAD( rc = haveToken( "encrypt_with", TRUE)))
+	{
+		if (rc == NE_SFLM_NOT_FOUND || rc == NE_SFLM_EOF_HIT)
+		{
+			rc = NE_SFLM_OK;
+		}
+		else
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		if (RC_BAD( rc = getEncDefName( TRUE, szEncDefName, sizeof( szEncDefName),
+									&uiEncDefNameLen, &pEncDef)))
+		{
+			goto Exit;
+		}
+		uiEncDefNum = pEncDef->uiEncDefNum;
+	}
+	
 	// Create the table
 	
-	if (RC_BAD( rc = m_pDb->createTable( 0, szTableName, uiTableNameLen, 0,
-										pFirstColDef, uiNumColumnDefs)))
+	if (RC_BAD( rc = m_pDb->createTable( 0, szTableName, uiTableNameLen,
+										uiEncDefNum, pFirstColDef, uiNumColumnDefs)))
 	{
 		goto Exit;
 	}
