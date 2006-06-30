@@ -49,6 +49,8 @@ class SQLStatement : public F_Object
 {
 public:
 
+#define MAX_SQL_TOKEN_SIZE		80
+
 	SQLStatement();
 
 	virtual ~SQLStatement();
@@ -119,9 +121,17 @@ private:
 	RCODE skipWhitespace(
 		FLMBOOL	bRequired);
 
-	FLMBOOL lineHasToken(
-		const char *	pszToken);
+	RCODE haveToken(
+		const char *	pszToken,
+		FLMBOOL			bEofOK,
+		SQLParseError	eNotHaveErr = SQL_NO_ERROR);
 
+	RCODE getToken(
+		char *		pszToken,
+		FLMUINT		uiTokenBufSize,
+		FLMBOOL		bEofOK,
+		FLMUINT *	puiTokenLineOffset);
+		
 	FINLINE void setErrInfo(
 		FLMUINT			uiErrLineNum,
 		FLMUINT			uiErrLineOffset,
@@ -161,6 +171,13 @@ private:
 		FLMUINT		uiNameBufSize,
 		FLMUINT *	puiNameLen);
 		
+	RCODE getEncDefName(
+		FLMBOOL		bMustExist,
+		char *		pszEncDefName,
+		FLMUINT		uiEncDefNameBufSize,
+		FLMUINT *	puiEncDefNameLen,
+		F_ENCDEF **	ppEncDef);
+
 	RCODE getTableName(
 		FLMBOOL		bMustExist,
 		char *		pszTableName,
@@ -194,14 +211,23 @@ private:
 
 	RCODE processCreateDatabase( void);
 	
+	RCODE processOpenDatabase( void);
+	
+	RCODE processDropDatabase( void);
+	
 	RCODE getDataType(
 		eDataType *	peDataType,
-		FLMUINT *	puiMax);
+		FLMUINT *	puiMax,
+		FLMUINT *	puiEncDefNum);
 		
 	RCODE processCreateTable( void);
 	
+	RCODE processDropTable( void);
+	
 	RCODE processCreateIndex(
 		FLMBOOL	bUnique);
+	
+	RCODE processDropIndex( void);
 	
 	RCODE processInsertRow( void);
 	

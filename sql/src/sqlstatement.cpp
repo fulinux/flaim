@@ -97,33 +97,248 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	See if the current line has the specified token in it starting
-		from the current offset.
+Desc:	See if the next token in the stream is the specified keyword.
 ****************************************************************************/
-FLMBOOL SQLStatement::lineHasToken(
-	const char *	pszToken)
+RCODE SQLStatement::getToken(
+	char *		pszToken,
+	FLMUINT		uiTokenBufSize,
+	FLMBOOL		bEofOK,
+	FLMUINT *	puiTokenLineOffset)
 {
-	FLMUINT			uiOffset;
+	RCODE		rc = NE_SFLM_OK;
+	FLMUINT	uiOffset;
+	char		cChar;
 	
-	uiOffset = m_uiCurrLineOffset;
-	while (uiOffset < m_uiCurrLineBytes)
+	// Always leave room for a null terminating character
+	
+	uiTokenBufSize--;
+	
+	// Token buffer must hold at least one character and a null terminating
+	// character!
+	
+	if (!uiTokenBufSize)
 	{
-		if (m_pucCurrLineBuf [uiOffset] != (char)(*pszToken))
+		rc = RC_SET( NE_SFLM_BUFFER_OVERFLOW);
+		goto Exit;
+	}
+	
+	// Skip any whitespace preceding the token
+	
+	if (RC_BAD( rc = skipWhitespace( FALSE)))
+	{
+		if (rc == NE_SFLM_EOF_HIT)
 		{
-			
-			// Do NOT change m_uiCurrLineOffset if we return FALSE.
-			
-			return( FALSE);
+			if (!bEofOK)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_UNEXPECTED_EOF,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+			}
 		}
-		pszToken++;
+		goto Exit;
+	}
+	
+	// If the first character is alphanumeric, we need to parse until
+	// we hit a non-alphanumeric character.
+
+	*puiTokenLineOffset = uiOffset = m_uiCurrLineOffset;	
+	cChar = (char)m_pucCurrLineBuf [uiOffset];
+	
+	if ((cChar >= 'a' && cChar <= 'z') ||
+		 (cChar >= 'A' && cChar <= 'Z') ||
+		 (cChar >= '0' && cChar <= '9') ||
+		 cChar == '_')
+	{
+		*pszToken++ = cChar;
+		uiTokenBufSize--;
 		uiOffset++;
-		if (*pszToken == 0)
+		while (uiOffset < m_uiCurrLineBytes)
 		{
-			m_uiCurrLineOffset = uiOffset;
-			return( TRUE);
+			cChar = (char)m_pucCurrLineBuf [uiOffset];
+			if ((cChar >= 'a' && cChar <= 'z') ||
+				 (cChar >= 'A' && cChar <= 'Z') ||
+				 (cChar >= '0' && cChar <= '9') ||
+				 cChar == '_')
+			{
+				if (!uiTokenBufSize)
+				{
+					rc = RC_SET( NE_SFLM_BUFFER_OVERFLOW);
+					goto Exit;
+				}
+				*pszToken++ = cChar;
+				uiTokenBufSize--;
+				uiOffset++;
+			}
+			else
+			{
+				break;
+			}
+		}
+		*pszToken = 0;
+		m_uiCurrLineOffset = uiOffset;
+	}
+	else
+	{
+		switch (cChar)
+		{
+			case ',':
+			case '(':
+			case ')':
+			case '[':
+			case ']':
+			case '{':
+			case '}':
+			case '$':
+			case '@':
+			case '.':
+			case ':':
+			case ';':
+			case '"':
+			case '\'':
+			case '?':
+			case '#':
+				*pszToken++ = cChar;
+				*pszToken = 0;
+				m_uiCurrLineOffset = uiOffset + 1;
+				break;
+			case '>':
+			case '<':
+			case '+':
+			case '-':
+			case '*':
+			case '/':
+			case '=':
+			case '!':
+			case '%':
+			case '^':
+				*pszToken++ = cChar;
+				if (uiOffset + 1 < m_uiCurrLineBytes &&
+					 m_pucCurrLineBuf [uiOffset + 1] == '=')
+				{
+					if (uiTokenBufSize < 2)
+					{
+						rc = RC_SET( NE_SFLM_BUFFER_OVERFLOW);
+						goto Exit;
+					}
+					*pszToken++ = '=';
+					m_uiCurrLineOffset = uiOffset + 2;
+				}
+				else
+				{
+					m_uiCurrLineOffset = uiOffset + 1;
+				}
+				*pszToken = 0;
+				break;
+			case '|':
+				*pszToken++ = cChar;
+				if (uiOffset + 1 < m_uiCurrLineBytes &&
+					 (m_pucCurrLineBuf [uiOffset + 1] == '=' ||
+					  m_pucCurrLineBuf [uiOffset + 1] == '|'))
+				{
+					if (uiTokenBufSize < 2)
+					{
+						rc = RC_SET( NE_SFLM_BUFFER_OVERFLOW);
+						goto Exit;
+					}
+					*pszToken++ = (char)m_pucCurrLineBuf [uiOffset + 1];
+					m_uiCurrLineOffset = uiOffset + 2;
+				}
+				else
+				{
+					m_uiCurrLineOffset = uiOffset + 1;
+				}
+				*pszToken = 0;
+				break;
+			case '&':
+				*pszToken++ = cChar;
+				if (uiOffset + 1 < m_uiCurrLineBytes &&
+					 (m_pucCurrLineBuf [uiOffset + 1] == '=' ||
+					  m_pucCurrLineBuf [uiOffset + 1] == '&'))
+				{
+					if (uiTokenBufSize < 2)
+					{
+						rc = RC_SET( NE_SFLM_BUFFER_OVERFLOW);
+						goto Exit;
+					}
+					*pszToken++ = (char)m_pucCurrLineBuf [uiOffset + 1];
+					m_uiCurrLineOffset = uiOffset + 2;
+				}
+				else
+				{
+					m_uiCurrLineOffset = uiOffset + 1;
+				}
+				*pszToken = 0;
+				break;
+			default:
+				setErrInfo( m_uiCurrLineNum,
+						m_uiCurrLineOffset,
+						SQL_ERR_INVALID_CHARACTER,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
 		}
 	}
-	return( FALSE);
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	See if the next token in the stream is the specified keyword.
+****************************************************************************/
+RCODE SQLStatement::haveToken(
+	const char *	pszToken,
+	FLMBOOL			bEofOK,
+	SQLParseError	eNotHaveErr)
+{
+	RCODE		rc = NE_SFLM_OK;
+	char		szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT	uiTokenLineOffset;
+	
+	if (RC_BAD( rc = getToken( szToken, sizeof( szToken), bEofOK,
+								&uiTokenLineOffset)))
+	{
+		if (rc == NE_SFLM_EOF_HIT)
+		{
+			flmAssert( bEofOK && eNotHaveErr == SQL_NO_ERROR);
+			rc = RC_SET( NE_SFLM_NOT_FOUND);
+		}
+		goto Exit;
+	}
+	if (f_stricmp( pszToken, szToken) != 0)
+	{
+		
+		// Restore the position where the token started - so it can
+		// still be parsed.
+		
+		m_uiCurrLineOffset = uiTokenLineOffset;
+
+		// At this point, we know we don't have the token
+		
+		if (eNotHaveErr != SQL_NO_ERROR)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset,
+					eNotHaveErr,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+		}
+		else
+		{
+			rc = RC_SET( NE_SFLM_NOT_FOUND);
+		}
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
 }
 
 /****************************************************************************
@@ -364,28 +579,16 @@ RCODE SQLStatement::getUTF8String(
 	FLMBOOL		bEscaped = FALSE;
 	FLMUINT		uiNumChars = 0;
 	
-	// Skip leading whitespace
-	
+	if (bMustHaveEqual)
+	{
+		if (RC_BAD( rc = haveToken( "=", FALSE, SQL_ERR_EXPECTING_EQUAL)))
+		{
+			goto Exit;
+		}
+	}
 	if (RC_BAD( rc = skipWhitespace( FALSE)))
 	{
 		goto Exit;
-	}
-	if (bMustHaveEqual)
-	{
-		if (!lineHasToken( "="))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_EQUAL,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
-		{
-			goto Exit;
-		}
 	}
 	
 	// Always leave room for a null terminating character
@@ -581,28 +784,16 @@ RCODE SQLStatement::getNumber(
 	
 	*pbNeg = FALSE;
 	
-	// Skip leading whitespace
-	
+	if (bMustHaveEqual)
+	{
+		if (RC_BAD( rc = haveToken( "=", FALSE, SQL_ERR_EXPECTING_EQUAL)))
+		{
+			goto Exit;
+		}
+	}
 	if (RC_BAD( rc = skipWhitespace( FALSE)))
 	{
 		goto Exit;
-	}
-	if (bMustHaveEqual)
-	{
-		if (!lineHasToken( "="))
-		{
-			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset,
-					SQL_ERR_EXPECTING_EQUAL,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		if (RC_BAD( rc = skipWhitespace( FALSE)))
-		{
-			goto Exit;
-		}
 	}
 	
 	uiSavedLineNum = m_uiCurrLineNum;
@@ -882,6 +1073,11 @@ RCODE SQLStatement::getName(
 	FLMUINT		uiCharCount = 0;
 	FLMBYTE		ucChar;
 	
+	if (RC_BAD( rc = skipWhitespace( FALSE)))
+	{
+		goto Exit;
+	}
+	
 	// Always leave room for a null terminating character.
 	
 	uiNameBufSize--;
@@ -900,7 +1096,7 @@ RCODE SQLStatement::getName(
 	{
 		setErrInfo( m_uiCurrLineNum,
 				m_uiCurrLineOffset - 1,
-				SQL_ERR_ILLEGAL_TABLE_NAME_CHAR,
+				SQL_ERR_ILLEGAL_NAME_CHAR,
 				m_uiCurrLineFilePos,
 				m_uiCurrLineBytes);
 		rc = RC_SET( NE_SFLM_INVALID_SQL);
@@ -924,7 +1120,7 @@ RCODE SQLStatement::getName(
 			{
 				setErrInfo( m_uiCurrLineNum,
 						m_uiCurrLineOffset - 1,
-						SQL_ERR_TABLE_NAME_TOO_LONG,
+						SQL_ERR_NAME_TOO_LONG,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
 				rc = RC_SET( NE_SFLM_INVALID_SQL);
@@ -947,6 +1143,62 @@ Exit:
 	{
 		*puiNameLen = uiCharCount;
 	}
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
+// Desc:	Parse the encryption definition name for the current statement.
+//			Make sure it is valid.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::getEncDefName(
+	FLMBOOL		bMustExist,
+	char *		pszEncDefName,
+	FLMUINT		uiEncDefNameBufSize,
+	FLMUINT *	puiEncDefNameLen,
+	F_ENCDEF **	ppEncDef)
+{
+	RCODE		rc = NE_SFLM_OK;
+
+	if (RC_BAD( rc = getName( pszEncDefName, uiEncDefNameBufSize, puiEncDefNameLen)))
+	{
+		goto Exit;
+	}
+	
+	// See if the encryption definition name is defined
+	
+	if ((*ppEncDef = m_pDb->m_pDict->findEncDef( pszEncDefName)) == NULL)
+	{
+		if (bMustExist)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset - 1,
+					SQL_ERR_UNDEFINED_ENCDEF,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+		else
+		{
+			rc = NE_SFLM_OK;
+		}
+	}
+	else
+	{
+		if (!bMustExist)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset - 1,
+					SQL_ERR_ENCDEF_ALREADY_DEFINED,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+	}
+
+Exit:
+
 	return( rc);
 }
 
@@ -1503,7 +1755,8 @@ RCODE SQLStatement::executeSQL(
 	SQL_STATS *		pSQLStats)
 {
 	RCODE		rc = NE_SFLM_OK;
-	FLMBOOL	bWhitespaceRequired = FALSE;
+	char		szToken [MAX_SQL_TOKEN_SIZE + 1];
+	FLMUINT	uiTokenLineOffset;
 
 	// Reset the state of the parser
 
@@ -1519,89 +1772,62 @@ RCODE SQLStatement::executeSQL(
 
 	for (;;)
 	{
-		if (RC_BAD( rc = skipWhitespace( bWhitespaceRequired)))
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
+											&uiTokenLineOffset)))
 		{
-			if (rc == NE_SFLM_EOF_HIT)
-			{
-				rc = NE_SFLM_OK;
-				break;
-			}
 			goto Exit;
 		}
-
-		if (lineHasToken( "insert"))
+		if (f_stricmp( szToken, "insert") == 0)
 		{
 			if (RC_BAD( rc = processInsertRow()))
 			{
 				goto Exit;
 			}
 		}
-		else if (lineHasToken( "open"))
+		else if (f_stricmp( szToken, "open") == 0)
 		{
-			if (RC_BAD( rc = skipWhitespace( TRUE)))
+			if (RC_BAD( rc = haveToken( "database", FALSE, SQL_ERR_INVALID_OPEN_OPTION)))
 			{
 				goto Exit;
 			}
-			if (lineHasToken( "database"))
+			if (RC_BAD( rc = processOpenDatabase()))
 			{
-// visit: Need to fix this up.
-//				if (RC_BAD( rc = processOpenDatabase()))
-//				{
-//					goto Exit;
-//				}
-			}
-			else
-			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_INVALID_OPEN_OPTION,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
 		}
-		else if (lineHasToken( "create"))
+		else if (f_stricmp( szToken, "create") == 0)
 		{
-			if (RC_BAD( rc = skipWhitespace( TRUE)))
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+												&uiTokenLineOffset)))
 			{
 				goto Exit;
 			}
-			if (lineHasToken( "database"))
+			if (f_stricmp( szToken, "database") == 0)
 			{
 				if (RC_BAD( rc = processCreateDatabase()))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "table"))
+			else if (f_stricmp( szToken, "table") == 0)
 			{
 				if (RC_BAD( rc = processCreateTable()))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "index"))
+			else if (f_stricmp( szToken, "index") == 0)
 			{
 				if (RC_BAD( rc = processCreateIndex( FALSE)))
 				{
 					goto Exit;
 				}
 			}
-			else if (lineHasToken( "unique"))
+			else if (f_stricmp( szToken, "unique") == 0)
 			{
-				if (RC_BAD( rc = skipWhitespace( TRUE)))
+				if (RC_BAD( rc = haveToken( "index", FALSE,
+												SQL_ERR_EXPECTING_INDEX)))
 				{
-					goto Exit;
-				}
-				if (!lineHasToken( "index"))
-				{
-					setErrInfo( m_uiCurrLineNum,
-							m_uiCurrLineOffset,
-							SQL_ERR_EXPECTING_INDEX,
-							m_uiCurrLineFilePos,
-							m_uiCurrLineBytes);
-					rc = RC_SET( NE_SFLM_INVALID_SQL);
 					goto Exit;
 				}
 				if (RC_BAD( rc = processCreateIndex( TRUE)))
@@ -1612,7 +1838,7 @@ RCODE SQLStatement::executeSQL(
 			else
 			{
 				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
+						uiTokenLineOffset,
 						SQL_ERR_INVALID_CREATE_OPTION,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
@@ -1620,7 +1846,55 @@ RCODE SQLStatement::executeSQL(
 				goto Exit;
 			}
 		}
-		bWhitespaceRequired = TRUE;
+		else if (f_stricmp( szToken, "drop") == 0)
+		{
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+												&uiTokenLineOffset)))
+			{
+				goto Exit;
+			}
+			if (f_stricmp( szToken, "database") == 0)
+			{
+				if (RC_BAD( rc = processDropDatabase()))
+				{
+					goto Exit;
+				}
+			}
+			else if (f_stricmp( szToken, "table") == 0)
+			{
+				if (RC_BAD( rc = processDropTable()))
+				{
+					goto Exit;
+				}
+			}
+			else if (f_stricmp( szToken, "index") == 0)
+			{
+				if (RC_BAD( rc = processDropIndex()))
+				{
+					goto Exit;
+				}
+			}
+			else
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_INVALID_DROP_OPTION,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+		}
+		else
+		{
+			setErrInfo( m_uiCurrLineNum,
+					uiTokenLineOffset,
+					SQL_ERR_INVALID_SQL_STATEMENT,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
 	}
 
 	// Call the status hook one last time
@@ -1640,6 +1914,11 @@ RCODE SQLStatement::executeSQL(
 	}
 
 Exit:
+
+	if (rc == NE_SFLM_EOF_HIT)
+	{
+		rc = NE_SFLM_OK;
+	}
 
 	if( RC_BAD( rc) && pSQLStats)
 	{
@@ -1661,3 +1940,4 @@ Exit:
 
 	return( rc);
 }
+
