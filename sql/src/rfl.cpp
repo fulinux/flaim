@@ -4259,6 +4259,118 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
+RCODE F_Rfl::logDropTable(
+	F_Db *				pDb,
+	FLMUINT				uiTableNum)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if( !haveBuffSpace( FLM_MAX_SEN_LEN + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the table number
+
+	f_encodeSEN( uiTableNum, &pucPacketBody);
+
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+	flmAssert( uiPacketBodyLen <= FLM_MAX_SEN_LEN);
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_DROP_TABLE_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovDropTable(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiTableNum;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	
+	// Get the table number from the packet
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
+	{
+		goto Exit;
+	}
+	
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportDropTable(
+			peAction, uiTableNum)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pDb->dropTable( uiTableNum)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_tmpPool.poolReset( NULL);
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
 RCODE F_Rfl::logIndexColumnDefs(
 	F_Db *				pDb,
 	F_INDEX_COL_DEF *	pIxColDefs)
@@ -4604,6 +4716,118 @@ RCODE F_Rfl::recovCreateIndex(
 	
 	if( RC_BAD( rc = pDb->createIndex( uiTableNum, uiIndexNum, pszIndexName, uiIndexNameLen,
 									uiEncDefNum, uiFlags, pFirstIxColDef, uiNumIxColDefs)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_tmpPool.poolReset( NULL);
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logDropIndex(
+	F_Db *				pDb,
+	FLMUINT				uiIndexNum)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if( !haveBuffSpace( FLM_MAX_SEN_LEN + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the index number
+
+	f_encodeSEN( uiIndexNum, &pucPacketBody);
+
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+	flmAssert( uiPacketBodyLen <= FLM_MAX_SEN_LEN);
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_DROP_INDEX_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovDropIndex(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiIndexNum;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	
+	// Get the index number from the packet
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiIndexNum)))
+	{
+		goto Exit;
+	}
+	
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportDropIndex(
+			peAction, uiIndexNum)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pDb->dropIndex( uiIndexNum)))
 	{
 		goto Exit;
 	}
@@ -5020,7 +5244,7 @@ RCODE F_Rfl::logInsertRow(
 	// Finish the packet - calculate the actual packet body length.
 
 	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
-	flmAssert( uiPacketBodyLen <= FLM_MAX_SEN_LEN * 2);
+	flmAssert( uiPacketBodyLen <= FLM_MAX_SEN_LEN);
 
 	if (RC_BAD( rc = finishPacket( pDb, RFL_INSERT_ROW_PACKET,
 		uiPacketBodyLen, FALSE)))
@@ -5325,6 +5549,131 @@ RCODE F_Rfl::recovInsertRow(
 	}
 	
 	if( RC_BAD( rc = pDb->insertRow( uiTableNum, pFirstColValue)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_tmpPool.poolReset( NULL);
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logDeleteRow(
+	F_Db *				pDb,
+	FLMUINT				uiTableNum,
+	FLMUINT64			ui64RowId)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if( !haveBuffSpace( FLM_MAX_SEN_LEN * 2 + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the table number
+
+	f_encodeSEN( uiTableNum, &pucPacketBody);
+
+	// Output the row ID
+
+	f_encodeSEN( ui64RowId, &pucPacketBody);
+	
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+	flmAssert( uiPacketBodyLen <= FLM_MAX_SEN_LEN * 2);
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_DELETE_ROW_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovDeleteRow(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiTableNum;
+	FLMUINT64			ui64RowId;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	
+	// Get the table number from the packet
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
+	{
+		goto Exit;
+	}
+	
+	// Get the row ID from the packet
+
+	if (RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64RowId)))
+	{
+		goto Exit;
+	}
+	
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportDeleteRow(
+			peAction, uiTableNum, ui64RowId)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pDb->deleteRow( uiTableNum, ui64RowId, FALSE)))
 	{
 		goto Exit;
 	}
@@ -6675,9 +7024,43 @@ Finish_Transaction:
 				break;
 			}
 			
+			case RFL_DROP_TABLE_PACKET:
+			{
+				if( RC_BAD( rc = recovDropTable( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+			
 			case RFL_CREATE_INDEX_PACKET:
 			{
 				if( RC_BAD( rc = recovCreateIndex( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+			
+			case RFL_DROP_INDEX_PACKET:
+			{
+				if( RC_BAD( rc = recovDropIndex( pDb, 
 					pucPacketBody, uiPacketBodyLen, &eAction)))
 				{
 					goto Exit;
@@ -6726,6 +7109,23 @@ Finish_Transaction:
 				break;
 			}
 			
+			case RFL_DELETE_ROW_PACKET:
+			{
+				if( RC_BAD( rc = recovDeleteRow( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+
 			default:
 			{
 				// Should not be getting other packet types at this

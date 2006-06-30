@@ -51,6 +51,9 @@ class IXKeyCompare;
 #define RFL_INDEX_SET_PACKET					18
 #define RFL_INSERT_ROW_PACKET					19
 #define RFL_COLUMN_DATA_PACKET				20
+#define RFL_DELETE_ROW_PACKET					21
+#define RFL_DROP_INDEX_PACKET					22
+#define RFL_DROP_TABLE_PACKET					23
 
 #define RFL_PACKET_TYPE_MASK					0x7F
 
@@ -224,6 +227,16 @@ public:
 		FLMUINT				uiPacketBodyLen,
 		eRestoreAction *	peAction);
 		
+	RCODE logDropTable(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum);
+		
+	RCODE recovDropTable(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+		
 	RCODE logIndexColumnDefs(
 		F_Db *				pDb,
 		F_INDEX_COL_DEF *	pIxColDefs);
@@ -244,6 +257,16 @@ public:
 		FLMUINT				uiPacketBodyLen,
 		eRestoreAction *	peAction);
 
+	RCODE logDropIndex(
+		F_Db *				pDb,
+		FLMUINT				uiIndexNum);
+		
+	RCODE recovDropIndex(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+		
 	RCODE logIndexSet(
 		F_Db *				pDb,
 		FLMUINT				uiIndexNum,
@@ -267,6 +290,17 @@ public:
 		F_COLUMN_VALUE *	pColumnValues);
 		
 	RCODE recovInsertRow(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+		
+	RCODE logDeleteRow(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum,
+		FLMUINT64			ui64RowId);
+		
+	RCODE recovDeleteRow(
 		F_Db *				pDb,
 		const FLMBYTE *	pucPacketBody,
 		FLMUINT				uiPacketBodyLen,
