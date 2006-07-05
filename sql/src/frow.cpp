@@ -3206,7 +3206,7 @@ RCODE F_Row::setNumber64(
 	{
 		case SFLM_NUMBER_TYPE:
 		{
-			if (ui64Value <= 0x7F)
+			if (!bNeg && ui64Value <= 0x7F)
 			{
 				if (RC_BAD( rc = allocColumnDataSpace( pDb, uiColumnNum, 1, FALSE)))
 				{
@@ -3590,6 +3590,39 @@ void F_Row::getDataLen(
 			*puiDataLen = pColumnItem->uiDataLen;
 		}
 	}
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE F_Row::setValue(
+	F_Db *					pDb,
+	FLMUINT					uiColumnNum,
+	const FLMBYTE *		pucValue,
+	FLMUINT					uiValueLen)
+{
+	RCODE	rc = NE_SFLM_OK;
+
+	if (RC_BAD( rc = allocColumnDataSpace( pDb, uiColumnNum, uiValueLen, FALSE)))
+	{
+		goto Exit;
+	}
+	if (uiValueLen)
+	{
+		FLMBYTE *	pucTmp = getColumnDataPtr( uiColumnNum);
+		
+		f_memcpy( pucTmp, pucValue, uiValueLen);
+	}
+	setRowDirty( pDb, FALSE);
+
+Exit:
+
+	if( RC_BAD( rc))
+	{
+		pDb->setMustAbortTrans( rc);
+	}
+	
+	return( rc);
 }
 
 /*****************************************************************************

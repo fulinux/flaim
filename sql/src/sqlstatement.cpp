@@ -565,18 +565,138 @@ Exit:
 }
 
 //------------------------------------------------------------------------------
+// Desc:	Parse a binary value.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::getBinaryValue(
+	F_DynaBuf *	pDynaBuf)
+{
+	RCODE		rc = NE_SFLM_OK;
+	FLMBYTE	ucChar;
+	FLMBOOL	bHaveHighNibble = FALSE;
+	FLMBYTE	ucByte = 0;
+	
+	for (;;)
+	{
+		
+		// If we hit end of line, just get the next line.
+		
+		if ((ucChar = getChar()) == 0)
+		{
+			if (RC_BAD( rc = getLine()))
+			{
+				goto Exit;
+			}
+			continue;
+		}
+		
+		// If we hit the right paren, we are done
+		
+		if (ucChar == ')')
+		{
+			break;
+		}
+		
+		if (ucChar >= '0' && ucChar <= '9')
+		{
+			if (bHaveHighNibble)
+			{
+				if (RC_BAD( rc = pDynaBuf->appendByte( ucByte | (FLMBYTE)(ucChar - '0'))))
+				{
+					goto Exit;
+				}
+				bHaveHighNibble = FALSE;
+			}
+			else
+			{
+				ucByte = (FLMBYTE)((ucChar - '0') << 4);
+				bHaveHighNibble = TRUE;
+			}
+		}
+		else if (ucChar >= 'a' && ucChar <= 'f')
+		{
+			if (bHaveHighNibble)
+			{
+				if (RC_BAD( rc = pDynaBuf->appendByte( ucByte | (FLMBYTE)(ucChar - 'a' + 10))))
+				{
+					goto Exit;
+				}
+				bHaveHighNibble = FALSE;
+			}
+			else
+			{
+				ucByte = (FLMBYTE)((ucChar - 'a' + 10) << 4);
+				bHaveHighNibble = TRUE;
+			}
+		}
+		else if (ucChar >= 'A' && ucChar <= 'F')
+		{
+			if (bHaveHighNibble)
+			{
+				if (RC_BAD( rc = pDynaBuf->appendByte( ucByte | (FLMBYTE)(ucChar - 'A' + 10))))
+				{
+					goto Exit;
+				}
+				bHaveHighNibble = FALSE;
+			}
+			else
+			{
+				ucByte = (FLMBYTE)((ucChar - 'A' + 10) << 4);
+				bHaveHighNibble = TRUE;
+			}
+		}
+		else if (ucChar == ' ' || ucChar == '\t' || ucChar == ',' ||
+					ucChar == ';' || ucChar == ':')
+		{
+			
+			// Some characters we will just ignore - who really cares - lets'
+			// be forgiving.
+			
+		}
+		else
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset - 1,
+					SQL_ERR_NON_HEX_CHAR_IN_BINARY,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+			
+		}
+	}
+	
+	// If we have an unprocessed high nibble, add it to the dynamic buffer.
+	
+	if (bHaveHighNibble)
+	{
+		if (RC_BAD( rc = pDynaBuf->appendByte( ucByte)))
+		{
+			goto Exit;
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
 // Desc:	Parse a UTF8 string from the input stream.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getUTF8String(
 	FLMBOOL		bMustHaveEqual,
+	FLMBOOL		bStripWildcardEscapes,
 	FLMBYTE *	pszStr,
 	FLMUINT		uiStrBufSize,
-	FLMUINT *	puiStrLen)
+	FLMUINT *	puiStrLen,
+	FLMUINT *	puiNumChars,
+	F_DynaBuf *	pDynaBuf)
 {
 	RCODE			rc = NE_SFLM_OK;
 	FLMBYTE		ucChar;
 	FLMBYTE		ucQuoteChar = 0;
 	FLMBOOL		bEscaped = FALSE;
+	FLMUINT		uiStrLen = 0;
 	FLMUINT		uiNumChars = 0;
 	
 	if (bMustHaveEqual)
@@ -590,10 +710,14 @@ RCODE SQLStatement::getUTF8String(
 	{
 		goto Exit;
 	}
-	
-	// Always leave room for a null terminating character
-	
-	uiStrBufSize--;
+
+	if (!pDynaBuf)
+	{
+		
+		// Always leave room for a null terminating character
+		
+		uiStrBufSize--;
+	}
 	
 	// See if we have a quote character.
 	
@@ -648,29 +772,70 @@ RCODE SQLStatement::getUTF8String(
 						ucChar == ',' || ucChar == ')')
 			{
 			}
+			else if (ucChar == '*')
+			{
+				if (!bStripWildcardEscapes)
+				{
+					if (!pDynaBuf)
+					{
+						if (uiStrLen == uiStrBufSize)
+						{
+							setErrInfo( m_uiCurrLineNum,
+									m_uiCurrLineOffset - 1,
+									SQL_ERR_UTF8_STRING_TOO_LARGE,
+									m_uiCurrLineFilePos,
+									m_uiCurrLineBytes);
+							rc = RC_SET( NE_SFLM_INVALID_SQL);
+							goto Exit;
+						}
+						
+						*pszStr++ = '\\';
+					}
+					else
+					{
+						if (RC_BAD( rc = pDynaBuf->appendByte( '\\')))
+						{
+							goto Exit;
+						}
+					}
+					uiStrLen++;
+					uiNumChars++;
+				}
+			}
 			else
 			{
 				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
+						m_uiCurrLineOffset - 1,
 						SQL_ERR_INVALID_ESCAPED_CHARACTER,
 						m_uiCurrLineFilePos,
 						m_uiCurrLineBytes);
 				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
-			
-			if (uiNumChars == uiStrBufSize)
+	
+			if (!pDynaBuf)
 			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_UTF8_STRING_TOO_LARGE,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
+				if (uiStrLen == uiStrBufSize)
+				{
+					setErrInfo( m_uiCurrLineNum,
+							m_uiCurrLineOffset - 1,
+							SQL_ERR_UTF8_STRING_TOO_LARGE,
+							m_uiCurrLineFilePos,
+							m_uiCurrLineBytes);
+					rc = RC_SET( NE_SFLM_INVALID_SQL);
+					goto Exit;
+				}
+				
+				*pszStr++ = ucChar;
 			}
-			
-			*pszStr++ = ucChar;
+			else
+			{
+				if (RC_BAD( rc = pDynaBuf->appendByte( ucChar)))
+				{
+					goto Exit;
+				}
+			}
+			uiStrLen++;
 			uiNumChars++;
 		}
 		else if (ucChar == '\\')
@@ -693,18 +858,29 @@ RCODE SQLStatement::getUTF8String(
 				}
 				break;
 			}
-			if (uiNumChars == uiStrBufSize)
+			if (!pDynaBuf)
 			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_UTF8_STRING_TOO_LARGE,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
+				if (uiStrLen == uiStrBufSize)
+				{
+					setErrInfo( m_uiCurrLineNum,
+							m_uiCurrLineOffset - 1,
+							SQL_ERR_UTF8_STRING_TOO_LARGE,
+							m_uiCurrLineFilePos,
+							m_uiCurrLineBytes);
+					rc = RC_SET( NE_SFLM_INVALID_SQL);
+					goto Exit;
+				}
+	
+				*pszStr++ = ucChar;
 			}
-			
-			*pszStr++ = ucChar;
+			else
+			{
+				if (RC_BAD( rc = pDynaBuf->appendByte( ucChar)))
+				{
+					goto Exit;
+				}
+			}
+			uiStrLen++;
 			uiNumChars++;
 		}
 		
@@ -719,20 +895,31 @@ RCODE SQLStatement::getUTF8String(
 		}
 		else
 		{
-			if (uiNumChars == uiStrBufSize)
+			if (!pDynaBuf)
 			{
-				setErrInfo( m_uiCurrLineNum,
-						m_uiCurrLineOffset,
-						SQL_ERR_UTF8_STRING_TOO_LARGE,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
+				if (uiStrLen == uiStrBufSize)
+				{
+					setErrInfo( m_uiCurrLineNum,
+							m_uiCurrLineOffset - 1,
+							SQL_ERR_UTF8_STRING_TOO_LARGE,
+							m_uiCurrLineFilePos,
+							m_uiCurrLineBytes);
+					rc = RC_SET( NE_SFLM_INVALID_SQL);
+					goto Exit;
+				}
+				
+				// Save the character to our buffer.
+				
+				*pszStr++ = ucChar;
 			}
-			
-			// Save the character to our buffer.
-			
-			*pszStr++ = ucChar;
+			else
+			{
+				if (RC_BAD( rc = pDynaBuf->appendByte( ucChar)))
+				{
+					goto Exit;
+				}
+			}
+			uiStrLen++;
 			uiNumChars++;
 			
 			// Handle multi-byte UTF8 characters.  The getLine() method has
@@ -743,40 +930,61 @@ RCODE SQLStatement::getUTF8String(
 			{
 				
 				// It is at least two bytes.
-				
-				if (uiNumChars == uiStrBufSize)
-				{
-					setErrInfo( m_uiCurrLineNum,
-							m_uiCurrLineOffset,
-							SQL_ERR_UTF8_STRING_TOO_LARGE,
-							m_uiCurrLineFilePos,
-							m_uiCurrLineBytes);
-					rc = RC_SET( NE_SFLM_INVALID_SQL);
-					goto Exit;
-				}
+
 				ucChar = getChar();
 				flmAssert( (ucChar >> 6) == 0x02);
-				*pszStr++ = ucChar;
-				uiNumChars++;
-				
-				// See if it is three bytes.
-				
-				if ((ucChar >> 5) != 0x06)
+				if (!pDynaBuf)
 				{
-					if (uiNumChars == uiStrBufSize)
+					if (uiStrLen == uiStrBufSize)
 					{
 						setErrInfo( m_uiCurrLineNum,
-								m_uiCurrLineOffset,
+								m_uiCurrLineOffset - 1,
 								SQL_ERR_UTF8_STRING_TOO_LARGE,
 								m_uiCurrLineFilePos,
 								m_uiCurrLineBytes);
 						rc = RC_SET( NE_SFLM_INVALID_SQL);
 						goto Exit;
 					}
+					*pszStr++ = ucChar;
+				}
+				else
+				{
+					if (RC_BAD( rc = pDynaBuf->appendByte( ucChar)))
+					{
+						goto Exit;
+					}
+				}
+				
+				uiStrLen++;
+				
+				// See if it is three bytes.
+				
+				if ((ucChar >> 5) != 0x06)
+				{
 					ucChar = getChar();
 					flmAssert( (ucChar >> 6) == 0x02);
-					*pszStr++ = ucChar;
-					uiNumChars++;
+					if (!pDynaBuf)
+					{
+						if (uiStrLen == uiStrBufSize)
+						{
+							setErrInfo( m_uiCurrLineNum,
+									m_uiCurrLineOffset - 1,
+									SQL_ERR_UTF8_STRING_TOO_LARGE,
+									m_uiCurrLineFilePos,
+									m_uiCurrLineBytes);
+							rc = RC_SET( NE_SFLM_INVALID_SQL);
+							goto Exit;
+						}
+						*pszStr++ = ucChar;
+					}
+					else
+					{
+						if (RC_BAD( rc = pDynaBuf->appendByte( ucChar)))
+						{
+							goto Exit;
+						}
+					}
+					uiStrLen++;
 				}
 			}
 		}
@@ -785,7 +993,25 @@ RCODE SQLStatement::getUTF8String(
 	// There will always be room for a null terminating byte if we
 	// get to this point.
 
-	*pszStr = 0;	
+	if (!pDynaBuf)
+	{
+		*pszStr = 0;
+	}
+	else
+	{
+		if (RC_BAD( rc = pDynaBuf->appendByte( 0)))
+		{
+			goto Exit;
+		}
+	}
+	if (puiStrLen)
+	{
+		*puiStrLen = uiStrLen;
+	}
+	if (puiNumChars)
+	{
+		*puiNumChars = uiNumChars;
+	}
 	
 Exit:
 
@@ -1028,8 +1254,8 @@ RCODE SQLStatement::getBool(
 	char			szBool [20];
 	FLMUINT		uiBoolLen;
 	
-	if (RC_BAD( rc = getUTF8String( bMustHaveEqual, (FLMBYTE *)szBool,
-								sizeof( szBool), &uiBoolLen)))
+	if (RC_BAD( rc = getUTF8String( bMustHaveEqual, TRUE, (FLMBYTE *)szBool,
+								sizeof( szBool), &uiBoolLen, NULL, NULL)))
 	{
 		goto Exit;
 	}
@@ -1097,7 +1323,8 @@ Exit:
 RCODE SQLStatement::getName(
 	char *		pszName,
 	FLMUINT		uiNameBufSize,
-	FLMUINT *	puiNameLen)
+	FLMUINT *	puiNameLen,
+	FLMUINT *	puiTokenLineOffset)
 {
 	RCODE			rc = NE_SFLM_OK;
 	FLMUINT		uiCharCount = 0;
@@ -1111,11 +1338,11 @@ RCODE SQLStatement::getName(
 	// Always leave room for a null terminating character.
 	
 	uiNameBufSize--;
+	*puiTokenLineOffset = m_uiCurrLineOffset;
 
 	// Get the first character - must be between A and Z
 
 	ucChar = getChar();
-
 	if ((ucChar >= 'a' && ucChar <= 'z') ||
 		 (ucChar >= 'A' && ucChar <= 'Z'))
 	{
@@ -1188,8 +1415,10 @@ RCODE SQLStatement::getEncDefName(
 	F_ENCDEF **	ppEncDef)
 {
 	RCODE		rc = NE_SFLM_OK;
+	FLMUINT	uiTokenLineOffset;
 
-	if (RC_BAD( rc = getName( pszEncDefName, uiEncDefNameBufSize, puiEncDefNameLen)))
+	if (RC_BAD( rc = getName( pszEncDefName, uiEncDefNameBufSize,
+								puiEncDefNameLen, &uiTokenLineOffset)))
 	{
 		goto Exit;
 	}
@@ -1201,7 +1430,7 @@ RCODE SQLStatement::getEncDefName(
 		if (bMustExist)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_UNDEFINED_ENCDEF,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);
@@ -1218,7 +1447,7 @@ RCODE SQLStatement::getEncDefName(
 		if (!bMustExist)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_ENCDEF_ALREADY_DEFINED,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);
@@ -1243,8 +1472,10 @@ RCODE SQLStatement::getTableName(
 	F_TABLE **	ppTable)
 {
 	RCODE		rc = NE_SFLM_OK;
+	FLMUINT	uiTokenLineOffset;
 
-	if (RC_BAD( rc = getName( pszTableName, uiTableNameBufSize, puiTableNameLen)))
+	if (RC_BAD( rc = getName( pszTableName, uiTableNameBufSize,
+								puiTableNameLen, &uiTokenLineOffset)))
 	{
 		goto Exit;
 	}
@@ -1260,7 +1491,7 @@ RCODE SQLStatement::getTableName(
 		if (bMustExist)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_UNDEFINED_TABLE,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);
@@ -1277,7 +1508,7 @@ RCODE SQLStatement::getTableName(
 		if (!bMustExist)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_TABLE_ALREADY_DEFINED,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);
@@ -1302,8 +1533,10 @@ RCODE SQLStatement::getIndexName(
 	F_INDEX **	ppIndex)
 {
 	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiTokenLineOffset;
 
-	if (RC_BAD( rc = getName( pszIndexName, uiIndexNameBufSize, puiIndexNameLen)))
+	if (RC_BAD( rc = getName( pszIndexName, uiIndexNameBufSize,
+							puiIndexNameLen, &uiTokenLineOffset)))
 	{
 		goto Exit;
 	}
@@ -1319,7 +1552,7 @@ RCODE SQLStatement::getIndexName(
 		if (bMustExist)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_UNDEFINED_INDEX,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);
@@ -1336,7 +1569,7 @@ RCODE SQLStatement::getIndexName(
 		if (!bMustExist)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_INDEX_ALREADY_DEFINED,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);
@@ -1522,7 +1755,8 @@ RCODE SQLStatement::getStringValue(
 	pColumnValue->pucColumnValue = pucValue;
 	f_encodeSEN( uiNumChars, &pucValue);
 	
-	// Copy the string from the dynaBuf to the column.
+	// Copy the string from the dynaBuf to the column - NOTE: includes
+	// null terminating byte.
 	
 	f_memcpy( pucValue, dynaBuf.getBufferPtr(), dynaBuf.getDataLength());
 	
@@ -1541,27 +1775,30 @@ RCODE SQLStatement::getNumberValue(
 	FLMUINT64	ui64Value = 0;
 	FLMBOOL		bNeg = FALSE;
 	FLMBYTE *	pucValue;
+	FLMBYTE		ucNumBuf [40];
+	FLMUINT		uiValLen;
 
 	if (RC_BAD( rc = getNumber( FALSE, &ui64Value, &bNeg, TRUE)))
 	{
 		goto Exit;
 	}
 	
-	// Allocate space for ui64Value SEN plus one byte for the sign.
+	// Convert to storage format.
 	
-	pColumnValue->uiValueLen = f_getSENByteCount( ui64Value) + 1;
-	if (RC_BAD( rc = m_tmpPool.poolAlloc( pColumnValue->uiValueLen,
-											(void **)&pucValue)))
+	uiValLen = sizeof( ucNumBuf);
+	if (RC_BAD( rc = flmNumber64ToStorage( ui64Value, &uiValLen, ucNumBuf,
+								bNeg, FALSE)))
 	{
 		goto Exit;
 	}
+	
+	if (RC_BAD( rc = m_tmpPool.poolAlloc( uiValLen, (void **)&pucValue)))
+	{
+		goto Exit;
+	}
+	pColumnValue->uiValueLen = uiValLen;
 	pColumnValue->pucColumnValue = pucValue;
-	
-	*pucValue++ = (FLMBYTE)(bNeg ? (FLMBYTE)1 : (FLMBYTE)0);
-	
-	// Set the number into the data.  uiNumChars will hold bNeg.
-	
-	f_encodeSEN( ui64Value, &pucValue);
+	f_memcpy( pucValue, ucNumBuf, uiValLen);
 	
 Exit:
 
@@ -1810,6 +2047,20 @@ RCODE SQLStatement::executeSQL(
 		if (f_stricmp( szToken, "insert") == 0)
 		{
 			if (RC_BAD( rc = processInsertRow()))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "update") == 0)
+		{
+			if (RC_BAD( rc = processUpdateRows()))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "delete") == 0)
+		{
+			if (RC_BAD( rc = processDeleteRows()))
 			{
 				goto Exit;
 			}

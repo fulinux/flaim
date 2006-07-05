@@ -499,9 +499,9 @@ RCODE SQLStatement::processCreateDatabase( void)
 
 	// Get the database name.
 
-	if (RC_BAD( rc = getUTF8String( FALSE, (FLMBYTE *)szDatabaseName,
+	if (RC_BAD( rc = getUTF8String( FALSE, TRUE, (FLMBYTE *)szDatabaseName,
 							sizeof( szDatabaseName),
-							&uiDatabaseNameLen)))
+							&uiDatabaseNameLen, NULL, NULL)))
 	{
 		goto Exit;
 	}
@@ -575,18 +575,18 @@ RCODE SQLStatement::processCreateDatabase( void)
 		{
 			if (f_stricmp( szToken, "data_dir") == 0)
 			{
-				if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szDataDirName,
+				if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szDataDirName,
 										sizeof( szDataDirName),
-										&uiDataDirNameLen)))
+										&uiDataDirNameLen, NULL, NULL)))
 				{
 					goto Exit;
 				}
 			}
 			else if (f_stricmp( szToken, "rfl_dir") == 0)
 			{
-				if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szRflDirName,
+				if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szRflDirName,
 										sizeof( szRflDirName),
-										&uiRflDirNameLen)))
+										&uiRflDirNameLen, NULL, NULL)))
 				{
 					goto Exit;
 				}
@@ -638,9 +638,9 @@ RCODE SQLStatement::processCreateDatabase( void)
 			}
 			else if (f_stricmp( szToken, "language") == 0)
 			{
-				if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szLanguage,
+				if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szLanguage,
 										sizeof( szLanguage),
-										&uiLanguageLen)))
+										&uiLanguageLen, NULL, NULL)))
 				{
 					goto Exit;
 				}

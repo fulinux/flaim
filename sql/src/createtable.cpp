@@ -498,7 +498,7 @@ RCODE SQLStatement::processCreateTable( void)
 		// Get the column name
 		
 		if (RC_BAD( rc = getName( szColumnName, sizeof( szColumnName),
-										&uiColumnNameLen)))
+										&uiColumnNameLen, &uiTokenLineOffset)))
 		{
 			goto Exit;
 		}

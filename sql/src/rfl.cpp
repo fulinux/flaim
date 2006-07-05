@@ -5267,24 +5267,24 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE F_Rfl::recovInsertRow(
+RCODE F_Rfl::getColumnValues(
 	F_Db *				pDb,
-	const FLMBYTE *	pucPacketBody,
-	FLMUINT				uiPacketBodyLen,
-	eRestoreAction *	peAction)
+	F_TABLE *			pTable,
+	F_COLUMN_VALUE **	ppFirstColValue,
+	FLMUINT *			puiNumColumnValues)
 {
 	RCODE					rc = NE_SFLM_OK;
-	FLMUINT				uiTableNum;
 	FLMUINT				uiPacketType;
 	F_COLUMN_VALUE *	pColumnValue;
-	F_COLUMN_VALUE *	pFirstColValue;
-	F_COLUMN_VALUE *	pLastColValue;
-	FLMUINT				uiNumColumnValues;
-	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	F_COLUMN_VALUE *	pFirstColValue = NULL;
+	F_COLUMN_VALUE *	pLastColValue = NULL;
+	FLMUINT				uiNumColumnValues = 0;
+	const FLMBYTE *	pucPacketBody = NULL;
+	const FLMBYTE *	pucEnd = NULL;
+	FLMUINT				uiPacketBodyLen;
 	FLMUINT				uiIVLen;
 	FLMBOOL				bHitEnd;
 	FLMUINT				uiColumnNum;
-	F_TABLE *			pTable;
 	F_COLUMN *			pColumn;
 	F_ENCDEF *			pTableEncDef;
 	F_ENCDEF *			pEncDef;
@@ -5294,26 +5294,9 @@ RCODE F_Rfl::recovInsertRow(
 	FLMUINT				uiEncLen;
 	FLMBYTE				ucIV [16];
 	
-	// Get the table number from the packet
-
-	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
-	{
-		goto Exit;
-	}
-	if ((pTable = pDb->m_pDict->getTable( uiTableNum)) == NULL ||
-		 pTable->bSystemTable)
-	{
-		rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
-		goto Exit;
-	}
 	pTableEncDef = (pTable->lfInfo.uiEncDefNum)
 						? pDb->m_pDict->getEncDef( pTable->lfInfo.uiEncDefNum)
 						: (F_ENCDEF *)NULL;
-
-	pFirstColValue = NULL;
-	pLastColValue = NULL;
-	pucPacketBody = pucEnd = NULL;
-	uiNumColumnValues = 0;
 	for (;;)
 	{
 
@@ -5532,6 +5515,49 @@ RCODE F_Rfl::recovInsertRow(
 			}
 		}
 	}
+Exit:
+	*ppFirstColValue = pFirstColValue;
+	*puiNumColumnValues = uiNumColumnValues;
+	
+	return( rc);
+}
+	
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovInsertRow(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiTableNum;
+	F_TABLE *			pTable;
+	F_COLUMN_VALUE *	pFirstColValue;
+	FLMUINT				uiNumColumnValues;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	
+	// Get the table number from the packet
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
+	{
+		goto Exit;
+	}
+	if ((pTable = pDb->m_pDict->getTable( uiTableNum)) == NULL ||
+		 pTable->bSystemTable)
+	{
+		rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+		goto Exit;
+	}
+	
+	// Get the column values.
+	
+	if (RC_BAD( rc = getColumnValues( pDb, pTable, &pFirstColValue,
+								&uiNumColumnValues)))
+	{
+		goto Exit;
+	}
 	
 	if (m_pRestoreStatus)
 	{
@@ -5556,6 +5582,167 @@ RCODE F_Rfl::recovInsertRow(
 Exit:
 
 	m_tmpPool.poolReset( NULL);
+
+	m_ui64CurrTransID = 0;
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::logUpdateRow(
+	F_Db *				pDb,
+	FLMUINT				uiTableNum,
+	FLMUINT64			ui64RowId,
+	F_COLUMN_VALUE *	pColumnValues)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiPacketBodyLen;
+	FLMBYTE *	pucPacketBody;
+	FLMBYTE *	pucPacketStart;
+	
+	flmAssert( pDb->m_uiFlags & FDB_HAS_FILE_LOCK);
+	
+	// Do nothing if logging is disabled.
+
+	if( !isLoggingEnabled())
+	{
+		goto Exit;
+	}
+
+	// Better be in the middle of a transaction.
+
+	flmAssert( m_ui64CurrTransID);
+
+	// Increment the operation count
+	
+	m_uiOperCount++;
+	
+	// Make sure we have space in the RFL buffer for a complete packet.  NOTE:
+	// this is calculating the maximum packet body length that would be needed.
+
+	if( !haveBuffSpace( FLM_MAX_SEN_LEN * 2 + RFL_PACKET_OVERHEAD))
+	{
+		if( RC_BAD( rc = flush( pDb, m_pCurrentBuf)))
+		{
+			goto Exit;
+		}
+	}
+
+	// Get a pointer to where we will be laying down the packet body.
+
+	pucPacketBody = pucPacketStart = getPacketBodyPtr();
+
+	// Output the table number
+
+	f_encodeSEN( uiTableNum, &pucPacketBody);
+
+	// Output the row ID
+
+	f_encodeSEN( ui64RowId, &pucPacketBody);
+	
+	// Finish the packet - calculate the actual packet body length.
+
+	uiPacketBodyLen = (FLMUINT)(pucPacketBody - pucPacketStart);
+	flmAssert( uiPacketBodyLen <= FLM_MAX_SEN_LEN * 2);
+
+	if (RC_BAD( rc = finishPacket( pDb, RFL_UPDATE_ROW_PACKET,
+		uiPacketBodyLen, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// Now output the column data
+	
+	if (RC_BAD( rc = logColumnValues( pDb, uiTableNum, pColumnValues)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/********************************************************************
+Desc:
+*********************************************************************/
+RCODE F_Rfl::recovUpdateRow(
+	F_Db *				pDb,
+	const FLMBYTE *	pucPacketBody,
+	FLMUINT				uiPacketBodyLen,
+	eRestoreAction *	peAction)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMUINT				uiTableNum;
+	F_TABLE *			pTable;
+	FLMUINT64			ui64RowId;
+	F_Row *				pRow = NULL;
+	F_COLUMN_VALUE *	pFirstColValue;
+	FLMUINT				uiNumColumnValues;
+	const FLMBYTE *	pucEnd = pucPacketBody + uiPacketBodyLen;
+	
+	// Get the table number from the packet
+
+	if (RC_BAD( rc = f_decodeSEN( &pucPacketBody, pucEnd, &uiTableNum)))
+	{
+		goto Exit;
+	}
+	if ((pTable = pDb->m_pDict->getTable( uiTableNum)) == NULL ||
+		 pTable->bSystemTable)
+	{
+		rc = RC_SET( NE_SFLM_BAD_RFL_PACKET);
+		goto Exit;
+	}
+	
+	// Get the row ID from the packet
+
+	if (RC_BAD( rc = f_decodeSEN64( &pucPacketBody, pucEnd, &ui64RowId)))
+	{
+		goto Exit;
+	}
+	
+	// Get the column values.
+
+	if (RC_BAD( rc = getColumnValues( pDb, pTable, &pFirstColValue,
+								&uiNumColumnValues)))
+	{
+		goto Exit;
+	}
+	if (m_pRestoreStatus)
+	{
+		if( RC_BAD( rc = m_pRestoreStatus->reportUpdateRow(
+			peAction, uiTableNum, ui64RowId, pFirstColValue, uiNumColumnValues)))
+		{
+			goto Exit;
+		}
+
+		if( *peAction == SFLM_RESTORE_ACTION_STOP)
+		{
+			m_ui64CurrTransID = 0;
+			goto Exit;
+		}
+	}
+	
+	if (RC_BAD( rc = gv_SFlmSysData.pRowCacheMgr->retrieveRow( pDb,
+							uiTableNum, ui64RowId, &pRow)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDb->updateRow( uiTableNum, &pRow, pFirstColValue)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	m_tmpPool.poolReset( NULL);
+	
+	if (pRow)
+	{
+		pRow->ReleaseRow();
+	}
 
 	m_ui64CurrTransID = 0;
 	return( rc);
@@ -7095,6 +7282,23 @@ Finish_Transaction:
 			case RFL_INSERT_ROW_PACKET:
 			{
 				if( RC_BAD( rc = recovInsertRow( pDb, 
+					pucPacketBody, uiPacketBodyLen, &eAction)))
+				{
+					goto Exit;
+				}
+				
+				if( eAction == SFLM_RESTORE_ACTION_STOP)
+				{
+					bLastTransEndedAtFileEOF = FALSE;
+					goto Finish_Recovery;
+				}
+				
+				break;
+			}
+			
+			case RFL_UPDATE_ROW_PACKET:
+			{
+				if( RC_BAD( rc = recovUpdateRow( pDb, 
 					pucPacketBody, uiPacketBodyLen, &eAction)))
 				{
 					goto Exit;

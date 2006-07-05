@@ -1474,16 +1474,17 @@ public:
 
 typedef struct KEY_GEN_INFO
 {
-	F_TABLE *		pTable;
-	F_INDEX *		pIndex;
-	F_Row *			pRow;
-	FLMBOOL			bIsAsia;
-	FLMBOOL			bIsCompound;
-	FLMBOOL			bAddKeys;
-	FLMBYTE *		pucKeyBuf;
-	FLMBYTE *		pucData;
-	FLMUINT			uiDataBufSize;
-	FLMBOOL			bDataBufAllocated;
+	F_TABLE *			pTable;
+	F_INDEX *			pIndex;
+	F_Row *				pRow;
+	F_COLUMN_VALUE *	pColumnValues;
+	FLMBOOL				bIsAsia;
+	FLMBOOL				bIsCompound;
+	FLMBOOL				bAddKeys;
+	FLMBYTE *			pucKeyBuf;
+	FLMBYTE *			pucData;
+	FLMUINT				uiDataBufSize;
+	FLMBOOL				bDataBufAllocated;
 } KEY_GEN_INFO;
 
 /*****************************************************************************
@@ -1909,10 +1910,25 @@ public:
 		FLMUINT				uiTableNum,
 		F_COLUMN_VALUE *	pColumnValues);
 		
+	RCODE updateRow(
+		FLMUINT				uiTableNum,
+		F_Row **				ppRow,
+		F_COLUMN_VALUE *	pColumnValues);
+		
 	RCODE deleteRow(
 		FLMUINT				uiTableNum,
 		FLMUINT64			ui64RowId,
 		FLMBOOL				bLogDelete);
+		
+	RCODE deleteSelectedRows(
+		FLMUINT		uiTableNum,
+		SQLQuery *	pSqlQuery);
+		
+	RCODE updateSelectedRows(
+		FLMUINT			uiTableNum,
+		SQLQuery *		pSqlQuery,
+		COLUMN_SET *	pFirstColumnSet,
+		FLMUINT			uiNumColumnsToSet);
 		
 	RCODE createTable(
 		FLMUINT				uiTableNum,
@@ -2180,15 +2196,17 @@ private:
 		FLMUINT	uiKeyLen);
 		
 	RCODE buildKeys(
-		F_INDEX *	pIndex,
-		F_TABLE *	pTable,
-		F_Row *		pOldRow,
-		F_Row *		pNewRow);
+		F_INDEX *			pIndex,
+		F_TABLE *			pTable,
+		F_Row *				pRow,
+		FLMBOOL				bAddKeys,
+		F_COLUMN_VALUE *	pColumnValues);
 		
 	RCODE updateIndexKeys(
-		FLMUINT	uiTableNum,
-		F_Row *	pOldRow,
-		F_Row *	pNewRow);
+		FLMUINT				uiTableNum,
+		F_Row *				pRow,
+		FLMBOOL				bAddKeys,
+		F_COLUMN_VALUE *	pColumnValues);
 		
 	void indexingAfterCommit( void);
 

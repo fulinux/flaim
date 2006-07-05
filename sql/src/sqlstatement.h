@@ -30,6 +30,21 @@
 
 #define MAX_SQL_NAME_LEN	128
 
+class SQLQuery;
+
+typedef struct COLUMN_SET
+{
+	FLMUINT			uiColumnNum;
+	SQLQuery *		pSqlQuery;
+	COLUMN_SET *	pNext;
+} COLUMN_SET;
+
+typedef struct TABLE_ITEM
+{
+	FLMUINT			uiTableNum;
+	const char *	pszTableAlias;
+} TABLE_ITEM;
+
 typedef enum
 {
 	SQL_PARSE_STATS
@@ -146,11 +161,17 @@ private:
 		m_sqlStats.uiErrLineBytes = uiErrLineBytes;
 	}
 
+	RCODE getBinaryValue(
+		F_DynaBuf *	pDynaBuf);
+		
 	RCODE getUTF8String(
 		FLMBOOL		bMustHaveEqual,
+		FLMBOOL		bStripWildcardEscapes,
 		FLMBYTE *	pszStr,
 		FLMUINT		uiStrBufSize,
-		FLMUINT *	puiStrLen);
+		FLMUINT *	puiStrLen,
+		FLMUINT *	puiNumChars,
+		F_DynaBuf *	pDynaBuf);
 		
 	RCODE getNumber(
 		FLMBOOL		bMustHaveEqual,
@@ -169,7 +190,8 @@ private:
 	RCODE getName(
 		char *		pszName,
 		FLMUINT		uiNameBufSize,
-		FLMUINT *	puiNameLen);
+		FLMUINT *	puiNameLen,
+		FLMUINT *	puiTokenLineOffset);
 		
 	RCODE getEncDefName(
 		FLMBOOL		bMustExist,
@@ -231,6 +253,29 @@ private:
 	
 	RCODE processInsertRow( void);
 	
+	RCODE parseSetColumns(
+		TABLE_ITEM *	pTableList,
+		COLUMN_SET **	ppFirstColumnSet,
+		COLUMN_SET **	ppLastColumnSet,
+		FLMUINT *		puiNumColumnsToSet);
+		
+	RCODE processUpdateRows( void);
+	
+	RCODE processDeleteRows( void);
+	
+	RCODE processAlphaToken(
+		TABLE_ITEM *	pTableList,
+		FLMBOOL			bSelectStatement,
+		FLMBOOL			bUpdateExpression,
+		SQLQuery *		pSqlQuery,
+		FLMBOOL *		pbDone);
+		
+	RCODE parseCriteria(
+		TABLE_ITEM *	pTableList,
+		FLMBOOL			bSelectStatement,
+		FLMBOOL			bUpdateExpression,
+		SQLQuery *		pSqlQuery);
+		
 	// Data
 
 	F_Db *						m_pDb;

@@ -1864,7 +1864,7 @@ private:
 		
 	RCODE _makeWriteCopy(
 		F_Db *			pDb,
-		F_Row **	ppRow);
+		F_Row **			ppRow);
 		
 	// Private Data
 	
@@ -2463,6 +2463,12 @@ public:
 		return( setNumber64( pDb, uiColumnNum, ui64Value, bNeg));
 	}
 
+	RCODE setValue(
+		F_Db *				pDb,
+		FLMUINT				uiColumnNum,
+		const FLMBYTE *	pucValue,
+		FLMUINT				uiValueLen);
+	
 	RCODE setUTF8(
 		F_Db *			pDb,
 		FLMUINT			uiColumnNum,

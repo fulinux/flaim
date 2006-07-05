@@ -446,8 +446,8 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 					break;
 
 				case SQL_BINARY_VAL:
-					pucFromBuf = pFromValue->val.pucBuf;
-					uiFromBufLen = pFromValue->uiDataLen;
+					pucFromBuf = pFromValue->val.bin.pucValue;
+					uiFromBufLen = pFromValue->val.bin.uiByteLen;
 					if (!bInclFrom)
 					{
 						
@@ -584,8 +584,8 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 					break;
 
 				case SQL_BINARY_VAL:
-					pucUntilBuf = pUntilValue->val.pucBuf;
-					uiUntilBufLen = pUntilValue->uiDataLen;
+					pucUntilBuf = pUntilValue->val.bin.pucValue;
+					uiUntilBufLen = pUntilValue->val.bin.uiByteLen;
 					if (!bInclUntil)
 					{
 						
@@ -1353,8 +1353,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 
 		case SQL_MATCH_OP:
 			flmAssert( pPred->pFromValue->eValType == SQL_UTF8_VAL);
-			pucFromUTF8Buf = pPred->pFromValue->val.pucBuf;
-			uiFromBufLen = pPred->pFromValue->uiDataLen;
+			pucFromUTF8Buf = pPred->pFromValue->val.str.pszStr;
+			uiFromBufLen = pPred->pFromValue->val.str.uiByteLen;
 			uiCompareRules = pIcd->uiCompareRules;
 
 			if (RC_BAD( rc = flmUTF8FindWildcard( pucFromUTF8Buf, &uiWildcardPos,
@@ -1450,8 +1450,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				if (pPred->pFromValue)
 				{
 					flmAssert( pPred->pFromValue->eValType == SQL_UTF8_VAL);
-					pucFromUTF8Buf = pPred->pFromValue->val.pucBuf;
-					uiFromBufLen = pPred->pFromValue->uiDataLen;
+					pucFromUTF8Buf = pPred->pFromValue->val.str.pszStr;
+					uiFromBufLen = pPred->pFromValue->val.str.uiByteLen;
 				}
 				else
 				{
@@ -1463,8 +1463,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				if (pPred->pUntilValue)
 				{
 					flmAssert( pPred->pUntilValue->eValType == SQL_UTF8_VAL);
-					pucUntilUTF8Buf = pPred->pUntilValue->val.pucBuf;
-					uiUntilBufLen = pPred->pUntilValue->uiDataLen;
+					pucUntilUTF8Buf = pPred->pUntilValue->val.str.pszStr;
+					uiUntilBufLen = pPred->pUntilValue->val.str.uiByteLen;
 				}
 				else
 				{
@@ -1487,8 +1487,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				if (pPred->pUntilValue)
 				{
 					flmAssert( pPred->pUntilValue->eValType == SQL_UTF8_VAL);
-					pucFromUTF8Buf = pPred->pUntilValue->val.pucBuf;
-					uiFromBufLen = pPred->pUntilValue->uiDataLen;
+					pucFromUTF8Buf = pPred->pUntilValue->val.str.pszStr;
+					uiFromBufLen = pPred->pUntilValue->val.str.uiByteLen;
 				}
 				else
 				{
@@ -1501,8 +1501,8 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				if (pPred->pFromValue)
 				{
 					flmAssert( pPred->pFromValue->eValType == SQL_UTF8_VAL);
-					pucUntilUTF8Buf = pPred->pFromValue->val.pucBuf;
-					uiUntilBufLen = pPred->pFromValue->uiDataLen;
+					pucUntilUTF8Buf = pPred->pFromValue->val.str.pszStr;
+					uiUntilBufLen = pPred->pFromValue->val.str.uiByteLen;
 				}
 				else
 				{

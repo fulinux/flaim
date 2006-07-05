@@ -127,6 +127,20 @@ typedef enum
 	SQL_ERR_CANNOT_DROP_SYSTEM_TABLE,	///< 47 = Cannot drop internal system tables.
 	SQL_ERR_UNDEFINED_ENCDEF,				///< 48 = Encryption definition specified does not exist.
 	SQL_ERR_ENCDEF_ALREADY_DEFINED,		///< 49 = Encryption definition name is already defined in the database.
+	SQL_ERR_INVALID_WHERE_TABLE,			///< 50 = Invalid table name or alias specified for column in where clause.
+	SQL_ERR_AMBIGUOUS_COLUMN_NAME,		///< 51 = Ambiguous column name specified in where clause - belongs to more than one table.
+	SQL_ERR_INVALID_WHERE_COLUMN,			///< 52 = Invalid column specified in where clause.
+	SQL_ERR_UNEXPECTED_NOT_OPERATOR,		///< 53 = Unexpected NOT operator in where clause.
+	SQL_ERR_EXPECTING_OPERATOR,			///< 54 = Expecting an operator in where clause.
+	SQL_ERR_INVALID_OPERAND,				///< 55 = Invalid operand specified in where clause.
+	SQL_ERR_UNEXPECTED_LPAREN,				///< 56 = Unexpected left parenthesis in where clause.
+	SQL_ERR_UNEXPECTED_RPAREN,				///< 57 = Unexpected right parenthesis in where clause.
+	SQL_ERR_UNMATCHED_RPAREN,				///< 58 = Right paren in where clause not matched with a left paren.
+	SQL_ERR_NON_HEX_CHAR_IN_BINARY,		///< 59 = Invalid non-hex character in binary value.
+	SQL_ERR_EXPECTING_FROM,					///< 60 = Expecting "FROM" keyword.
+	SQL_ERR_EXPECTING_WHERE,				///< 61 = Expecting "WHERE" keyword.
+	SQL_ERR_EXPECTING_SET,					///< 62 = Expecting "SET" keyword.
+	SQL_ERR_EXPECTING_PERIOD,				///< 63 = Expecting a period after the table name.
 
 	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
 	SQL_NUM_ERRORS
@@ -1351,6 +1365,8 @@ typedef struct
 #define NE_SFLM_Q_ILLEGAL_OPERATOR					0xE211	///< 0xE211 = Illegal operator specified in query expression.
 #define NE_SFLM_Q_ILLEGAL_COMPARE_RULES			0xE212	///< 0xE212 = Illegal combination comparison rules specified in query expression.
 #define NE_SFLM_Q_UNEXPECTED_COLUMN					0xE213	///< 0xE213 = Not expecting a column name in query expression.
+#define NE_SFLM_Q_UNEXPECTED_CONSTANT				0xE214	///< 0xE214 = Not expecting a constant in query expression.
+#define NE_SFLM_Q_UNEXPECTED_BOOLEAN				0xE215	///< 0xE215 = Not expecting a boolean constant in query expression.
 
 // Desc:	NICI / Encryption Errors
 
@@ -1450,13 +1466,8 @@ typedef struct F_INDEX_COL_DEF
 typedef struct F_COLUMN_VALUE
 {
 	FLMUINT				uiColumnNum;		///< Column number.
-	FLMBYTE*				pucColumnValue;	///< Column's value.\  For string data it is a SEN followed by a UTF8 string.\  The SEN
-													///< gives the number of characters (as opposed to bytes) in the string.\  For number
-													///< data there are two pieces.\  The first byte is a 1 or 0, indicating if the
-													///< number is negative (1=negative, 0=positive).\  Following that byte is a
-													///< SEN that contains the absolute value of the number.\  Binary data may be anything.\  NOTE:
-													///< The pucColumnValue and uiValueLen fields are NOT set for the CREATE TABLE statement.
-	FLMUINT				uiValueLen;			///< Length of column's value.\  Not set for the CREATE TABLE statement.
+	FLMBYTE*				pucColumnValue;	///< Column's value.\  Needs to already be in storage format.
+	FLMUINT				uiValueLen;			///< Length of column's value.
 	F_COLUMN_VALUE *	pNext;				///< Next column in linked list.
 } F_COLUMN_VALUE;
 
@@ -1545,6 +1556,13 @@ flminterface IF_RestoreStatus : public F_Object
 	virtual RCODE reportInsertRow(
 		eRestoreAction *		peAction,
 		FLMUINT					uiTableNum,
+		F_COLUMN_VALUE *		pColumnValues,
+		FLMUINT					uiNumColumnValues) = 0;
+		
+	virtual RCODE reportUpdateRow(
+		eRestoreAction *		peAction,
+		FLMUINT					uiTableNum,
+		FLMUINT64				ui64RowId,
 		F_COLUMN_VALUE *		pColumnValues,
 		FLMUINT					uiNumColumnValues) = 0;
 		

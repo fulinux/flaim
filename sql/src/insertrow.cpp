@@ -34,11 +34,6 @@ RCODE F_Db::insertRow(
 {
 	RCODE					rc = NE_SFLM_OK;
 	F_Row *				pRow = NULL;
-	const FLMBYTE *	pucValue;
-	const FLMBYTE *	pucEnd;
-	FLMUINT64			ui64Num;
-	FLMUINT				uiNumChars;
-	FLMBOOL				bNeg;
 	F_COLUMN_VALUE *	pColumnValue;
 	F_TABLE *			pTable;
 	F_COLUMN *			pColumn;
@@ -76,60 +71,51 @@ RCODE F_Db::insertRow(
 		{
 			continue;
 		}
+		
+		// Make sure the data does not exceed the maximum if it is string
+		// or binary.
+		
 		pColumn = m_pDict->getColumn( pTable, pColumnValue->uiColumnNum);
-		switch (pColumn->eDataTyp)
+		if (pColumn->uiMaxLen)
 		{
-			case SFLM_STRING_TYPE:
-				pucValue = (const FLMBYTE *)pColumnValue->pucColumnValue;
-				pucEnd = pucValue + pColumnValue->uiValueLen;
-				if (RC_BAD( rc = f_decodeSEN( &pucValue, pucEnd, &uiNumChars)))
-				{
-					goto Exit;
-				}
-				if (RC_BAD( rc = pRow->setUTF8( this,
-												pColumnValue->uiColumnNum,
-												(const char *)pucValue,
-												(FLMUINT)(pucEnd - pucValue),
-												uiNumChars)))
-				{
-					goto Exit;
-				}
-				break;
-			case SFLM_NUMBER_TYPE:
-				pucValue = (const FLMBYTE *)pColumnValue->pucColumnValue;
-				pucEnd = pucValue + pColumnValue->uiValueLen;
+			if (pColumn->eDataTyp == SFLM_STRING_TYPE)
+			{
+				FLMUINT				uiNumChars;
+				const FLMBYTE *	pucData = (const FLMBYTE *)pColumnValue->pucColumnValue;
+				const FLMBYTE *	pucEnd = pucData + pColumnValue->uiValueLen;
 				
-				bNeg = (FLMBOOL)(*pucValue ? (FLMBOOL)TRUE : (FLMBOOL)FALSE);
-				pucValue++;
+				// Number of characters is the first part of the value
 				
-				if (RC_BAD( rc = f_decodeSEN64( &pucValue, pucEnd, &ui64Num)))
+				if (RC_BAD( rc = f_decodeSEN( &pucData, pucEnd, &uiNumChars)))
 				{
 					goto Exit;
 				}
-				if (RC_BAD( rc = pRow->setNumber64( this,
-										pColumnValue->uiColumnNum, ui64Num, bNeg)))
+				if (pColumnValue->uiValueLen > uiNumChars)
 				{
+					rc = RC_SET( NE_SFLM_STRING_TOO_LONG);
 					goto Exit;
 				}
-				break;
-			case SFLM_BINARY_TYPE:
-				if (RC_BAD( rc = pRow->setBinary( this,
-												pColumnValue->uiColumnNum,
-												(const void *)(pColumnValue->pucColumnValue),
-												pColumnValue->uiValueLen)))
+			}
+			else if (pColumn->eDataTyp == SFLM_BINARY_TYPE)
+			{
+				if (pColumnValue->uiValueLen > pColumn->uiMaxLen)
 				{
+					rc = RC_SET( NE_SFLM_BINARY_TOO_LONG);
 					goto Exit;
 				}
-				break;
-			default:
-				flmAssert( 0);
-				break;
+			}
+		}
+		if (RC_BAD( rc = pRow->setValue( this, pColumnValue->uiColumnNum,
+													pColumnValue->pucColumnValue,
+													pColumnValue->uiValueLen)))
+		{
+			goto Exit;
 		}
 	}
 	
 	// Do whatever indexing needs to be done.
 	
-	if (RC_BAD( rc = updateIndexKeys( uiTableNum, NULL, pRow)))
+	if (RC_BAD( rc = updateIndexKeys( uiTableNum, pRow, TRUE, NULL)))
 	{
 		goto Exit;
 	}
@@ -285,7 +271,7 @@ RCODE SQLStatement::processInsertRow( void)
 			// Get the column name
 			
 			if (RC_BAD( rc = getName( szColumnName, sizeof( szColumnName),
-											&uiColumnNameLen)))
+											&uiColumnNameLen, &uiTokenLineOffset)))
 			{
 				goto Exit;
 			}
@@ -297,7 +283,7 @@ RCODE SQLStatement::processInsertRow( void)
 				if ((pColumn = m_pDb->m_pDict->findColumn( pTable, szColumnName)) == NULL)
 				{
 					setErrInfo( m_uiCurrLineNum,
-							m_uiCurrLineOffset,
+							uiTokenLineOffset,
 							SQL_ERR_UNDEFINED_COLUMN,
 							m_uiCurrLineFilePos,
 							m_uiCurrLineBytes);

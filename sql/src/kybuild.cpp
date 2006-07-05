@@ -36,6 +36,25 @@ FSTATIC RCODE kyAddRowIdToKey(
 	FLMUINT			uiIDBufSize,
 	FLMUINT *		puiIDLen);
 
+FSTATIC RCODE getColumnIStream(
+	F_Db *				pDb,
+	F_Row *				pRow,
+	F_COLUMN_VALUE *	pColumnValues,
+	FLMUINT				uiColumnNum,
+	FLMBOOL *			pbIsNull,
+	F_BufferIStream *	pBufferIStream,
+	eDataType *			peDataType,
+	FLMUINT *			puiDataLength);
+	
+FSTATIC RCODE getColumnTextIStream(
+	F_Db *				pDb,
+	F_Row *				pRow,
+	F_COLUMN_VALUE *	pColumnValues,
+	FLMUINT				uiColumnNum,
+	FLMBOOL *			pbIsNull,
+	F_BufferIStream *	pBufferIStream,
+	FLMUINT *			puiNumChars);
+	
 /****************************************************************************
 Desc:	Append row ID to the key buffer.
 ****************************************************************************/
@@ -313,6 +332,118 @@ Exit:
 	return( rc);
 }
 
+/*****************************************************************************
+Desc:
+******************************************************************************/
+FSTATIC RCODE getColumnIStream(
+	F_Db *				pDb,
+	F_Row *				pRow,
+	F_COLUMN_VALUE *	pColumnValues,
+	FLMUINT				uiColumnNum,
+	FLMBOOL *			pbIsNull,
+	F_BufferIStream *	pBufferIStream,
+	eDataType *			peDataType,
+	FLMUINT *			puiDataLength)
+{
+	RCODE					rc = NE_SFLM_OK;
+	F_TABLE *			pTable;
+	F_COLUMN *			pColumn;
+	F_COLUMN_VALUE *	pColumnValue;
+	
+	// See if there is a column data item
+	
+	pColumnValue = pColumnValues;
+	while (pColumnValue && pColumnValue->uiColumnNum != uiColumnNum)
+	{
+		pColumnValue = pColumnValue->pNext;
+	}
+	
+	if (!pColumnValue)
+	{
+		rc = pRow->getIStream( pDb, uiColumnNum, pbIsNull, pBufferIStream,
+										peDataType, puiDataLength);
+		goto Exit;
+	}
+	
+	*pbIsNull = FALSE;
+	if (!pColumnValue->uiValueLen)
+	{
+		*pbIsNull = TRUE;
+		goto Exit;
+	}
+	if (puiDataLength)
+	{
+		*puiDataLength = pColumnValue->uiValueLen;
+	}
+	if (peDataType)
+	{
+		pTable = pDb->getDict()->getTable( pRow->getTableNum());
+		pColumn = pDb->getDict()->getColumn( pTable, uiColumnNum);
+		*peDataType = pColumn->eDataTyp;
+	}
+	if (RC_BAD( rc = pBufferIStream->open( (const char *)pColumnValue->pucColumnValue,
+							pColumnValue->uiValueLen, NULL)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+	
+/*****************************************************************************
+Desc:
+******************************************************************************/
+FSTATIC RCODE getColumnTextIStream(
+	F_Db *				pDb,
+	F_Row *				pRow,
+	F_COLUMN_VALUE *	pColumnValues,
+	FLMUINT				uiColumnNum,
+	FLMBOOL *			pbIsNull,
+	F_BufferIStream *	pBufferIStream,
+	FLMUINT *			puiNumChars)
+{
+	RCODE			rc = NE_SFLM_OK;
+	eDataType	eDataTyp;
+	FLMUINT		uiDataLength;
+
+	*puiNumChars = 0;
+
+	if( RC_BAD( rc = getColumnIStream( pDb, pRow, pColumnValues,
+								uiColumnNum, pbIsNull,
+								pBufferIStream, &eDataTyp, &uiDataLength)))
+	{
+		goto Exit;
+	}
+
+	if (eDataTyp != SFLM_STRING_TYPE)
+	{
+		rc = RC_SET_AND_ASSERT( NE_SFLM_BAD_DATA_TYPE);
+		goto Exit;
+	}
+	
+	if (*pbIsNull)
+	{
+		goto Exit;
+	}
+
+	// Skip the leading SEN so that the stream is positioned to
+	// read raw utf8.
+
+	if (pBufferIStream->remainingSize())
+	{
+		if (RC_BAD( rc = f_readSEN( pBufferIStream, puiNumChars)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
 /****************************************************************************
 Desc:	Generate the keys for a text component.
 ****************************************************************************/
@@ -346,9 +477,11 @@ RCODE F_Db::genTextKeyComponents(
 	
 	uiKeyLen += 2;
 	uiSaveKeyLen = uiKeyLen;
-	
-	if (RC_BAD( rc = m_keyGenInfo.pRow->getTextIStream( this, pIcd->uiColumnNum,
-									&bIsNull, &columnBufferIStream, &uiNumChars)))
+
+	if (RC_BAD( rc = getColumnTextIStream( this, m_keyGenInfo.pRow,
+									m_keyGenInfo.pColumnValues,
+									pIcd->uiColumnNum, &bIsNull,
+									&columnBufferIStream, &uiNumChars)))
 	{
 		goto Exit;
 	}
@@ -646,7 +779,9 @@ RCODE F_Db::genOtherKeyComponent(
 	}
 	else
 	{
-		if (RC_BAD( rc = m_keyGenInfo.pRow->getIStream( this,
+		if (RC_BAD( rc = getColumnIStream( this,
+											m_keyGenInfo.pRow,
+											m_keyGenInfo.pColumnValues,
 											pIcd->uiColumnNum,
 											&bIsNull, &columnBufferIStream,
 											&eDataTyp, &uiDataLength)))
@@ -757,10 +892,11 @@ Exit:
 Desc:	Build all keys from combinations of CDLs.  Add keys to KREF table.
 ****************************************************************************/
 RCODE F_Db::buildKeys(
-	F_INDEX *	pIndex,
-	F_TABLE *	pTable,
-	F_Row *		pOldRow,
-	F_Row *		pNewRow)
+	F_INDEX *			pIndex,
+	F_TABLE *			pTable,
+	F_Row *				pRow,
+	FLMBOOL				bAddKeys,
+	F_COLUMN_VALUE *	pColumnValues)
 {
 	RCODE			rc = NE_SFLM_OK;
 	FLMBYTE		ucDataBuf [STACK_DATA_BUF_SIZE];
@@ -784,23 +920,27 @@ RCODE F_Db::buildKeys(
 	m_keyGenInfo.uiDataBufSize = sizeof( ucDataBuf);
 	m_keyGenInfo.bDataBufAllocated = FALSE;
 	
-	// Build the keys for the old row.
+	// Build the keys for the row.
 	
-	if (pOldRow)
+	m_keyGenInfo.pRow = pRow;
+	m_keyGenInfo.pColumnValues = NULL;
+	m_keyGenInfo.bAddKeys = bAddKeys;
+	if (RC_BAD( rc = buildKeys( pIndex->pKeyIcds, 1, 0)))
 	{
-		m_keyGenInfo.pRow = pOldRow;
-		m_keyGenInfo.bAddKeys = FALSE;
-		if (RC_BAD( rc = buildKeys( pIndex->pKeyIcds, 1, 0)))
-		{
-			goto Exit;
-		}
+		goto Exit;
 	}
+		
+	// Add the new keys, if this is an update operation.
+	// pColumnValues will be non-NULL for update operations.
 	
-	// Build all of the keys for the new row
-
-	if (pNewRow)
+	if (pColumnValues)
 	{
-		m_keyGenInfo.pRow = pNewRow;
+		// The bAddKeys that was passed in better have been FALSE - to delete
+		// the old keys, and pRow should have been pointing to the old
+		// row before it was modified.
+		
+		flmAssert( !bAddKeys);
+		m_keyGenInfo.pColumnValues = pColumnValues;
 		m_keyGenInfo.bAddKeys = TRUE;
 		if (RC_BAD( rc = buildKeys( pIndex->pKeyIcds, 1, 0)))
 		{
@@ -835,32 +975,22 @@ Desc:	Routine that is called when inserting, modifying, or removing a row
 		from a table.
 ****************************************************************************/
 RCODE F_Db::updateIndexKeys(
-	FLMUINT	uiTableNum,
-	F_Row *	pOldRow,
-	F_Row *	pNewRow)
+	FLMUINT				uiTableNum,
+	F_Row *				pRow,
+	FLMBOOL				bAddKeys,
+	F_COLUMN_VALUE *	pColumnValues)
 {
-	RCODE			rc = NE_SFLM_OK;
-	F_TABLE *	pTable = m_pDict->getTable( uiTableNum);
-	F_INDEX *	pIndex;
-	FLMUINT		uiIndexNum;
-	FLMUINT64	ui64RowId;
+	RCODE					rc = NE_SFLM_OK;
+	F_TABLE *			pTable = m_pDict->getTable( uiTableNum);
+	F_INDEX *			pIndex;
+	FLMUINT				uiIndexNum;
+	FLMUINT				uiColumnNum;
+	ICD *					pIcd;
+	FLMUINT				uiLoop;
+	FLMUINT64			ui64RowId;
+	F_COLUMN_VALUE *	pColumnValue;
 	
-	if (pOldRow)
-	{
-		ui64RowId = pOldRow->getRowId();
-		
-		// New row, if any, should have same row ID as old row.
-		
-		flmAssert( !pNewRow || pNewRow->getRowId() == ui64RowId);
-	}
-	else
-	{
-		flmAssert( pNewRow);
-		ui64RowId = pNewRow->getRowId();
-	}
-	
-//VISIT - Don't call this routine on a modify operation if none of the columns
-//that were modified are indexed.  The higher level routine can make this check.
+	ui64RowId = pRow->getRowId();
 	
 	// Go through each index on this table.
 	
@@ -872,11 +1002,58 @@ RCODE F_Db::updateIndexKeys(
 		if (!(pIndex->uiFlags & (IXD_OFFLINE | IXD_SUSPENDED)) ||
 			 ui64RowId <= pIndex->ui64LastRowIndexed)
 		{
-			if (RC_BAD( rc = buildKeys( pIndex, pTable, pOldRow, pNewRow)))
+			FLMBOOL	bBuildKeys = TRUE;
+			
+			// If we are doing a modify operation, see if any of the columns
+			// in this index are actually going to be modified.
+			
+			if (pColumnValues)
 			{
-				goto Exit;
+				bBuildKeys = FALSE;
+				pColumnValue = pColumnValues;
+				while (pColumnValue && !bBuildKeys)
+				{
+					uiColumnNum = pColumnValue->uiColumnNum;
+					
+					// See if it is one of the key columns
+					
+					for (pIcd = pIndex->pKeyIcds, uiLoop = 0;
+						  !bBuildKeys && uiLoop < pIndex->uiNumKeyComponents;
+						  uiLoop++, pIcd++)
+					{
+						if (pIcd->uiColumnNum == uiColumnNum)
+						{
+							bBuildKeys = TRUE;
+							break;
+						}
+					}
+					
+					// See if it is one of the data columns
+					
+					for (pIcd = pIndex->pDataIcds, uiLoop = 0;
+						  !bBuildKeys && uiLoop < pIndex->uiNumDataComponents;
+						  uiLoop++, pIcd++)
+					{
+						if (pIcd->uiColumnNum == uiColumnNum)
+						{
+							bBuildKeys = TRUE;
+							break;
+						}
+					}
+					pColumnValue = pColumnValue->pNext;
+				}
+			}
+			
+			if (bBuildKeys)
+			{
+				if (RC_BAD( rc = buildKeys( pIndex, pTable, pRow, bAddKeys,
+												pColumnValues)))
+				{
+					goto Exit;
+				}
 			}
 		}
+		
 		uiIndexNum = pIndex->uiNextIndexNum;
 	}
 	

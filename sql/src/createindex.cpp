@@ -561,7 +561,7 @@ RCODE SQLStatement::processCreateIndex(
 		// Get the column name
 		
 		if (RC_BAD( rc = getName( szColumnName, sizeof( szColumnName),
-										&uiColumnNameLen)))
+										&uiColumnNameLen, &uiTokenLineOffset)))
 		{
 			goto Exit;
 		}
@@ -572,7 +572,7 @@ RCODE SQLStatement::processCreateIndex(
 		if ((pColumn = m_pDb->m_pDict->findColumn( pTable, szColumnName)) == NULL)
 		{
 			setErrInfo( m_uiCurrLineNum,
-					m_uiCurrLineOffset - 1,
+					uiTokenLineOffset,
 					SQL_ERR_UNDEFINED_COLUMN,
 					m_uiCurrLineFilePos,
 					m_uiCurrLineBytes);

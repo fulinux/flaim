@@ -70,7 +70,7 @@ RCODE F_Db::deleteRow(
 	
 	// Delete any index keys for the row.
 	
-	if (RC_BAD( rc = updateIndexKeys( uiTableNum, pRow, NULL)))
+	if (RC_BAD( rc = updateIndexKeys( uiTableNum, pRow, FALSE, NULL)))
 	{
 		goto Exit;
 	}
@@ -131,6 +131,196 @@ Exit:
 	if (pBTree)
 	{
 		pBTree->Release();
+	}
+
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
+// Desc:	Delete selected rows from the database.
+//------------------------------------------------------------------------------
+RCODE F_Db::deleteSelectedRows(
+	FLMUINT		uiTableNum,
+	SQLQuery *	pSqlQuery)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMBOOL		bStartedTrans = FALSE;
+	F_TABLE *	pTable;
+	F_Row *		pRow = NULL;
+	
+	// Make sure we are in an update transaction.
+	
+	if (RC_BAD( rc = checkTransaction( SFLM_UPDATE_TRANS, &bStartedTrans)))
+	{
+		goto Exit;
+	}
+	
+	// Cannot delete from internal system tables.
+	
+	pTable = m_pDict->getTable( uiTableNum);
+	if (pTable->bSystemTable)
+	{
+		rc = RC_SET( NE_SFLM_CANNOT_DELETE_IN_SYSTEM_TABLE);
+		goto Exit;
+	}
+	
+	// Execute the query
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = pSqlQuery->getNext( &pRow)))
+		{
+			if (rc == NE_SFLM_EOF_HIT)
+			{
+				rc = NE_SFLM_OK;
+				break;
+			}
+			else
+			{
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = deleteRow( uiTableNum, pRow->m_ui64RowId, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// Commit the transaction if we started it
+	
+	if (bStartedTrans)
+	{
+		bStartedTrans = FALSE;
+		if (RC_BAD( rc = transCommit()))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	if (pRow)
+	{
+		pRow->ReleaseRow();
+	}
+
+	if (bStartedTrans)
+	{
+		transAbort();
+	}
+
+	return( rc);
+}
+	
+//------------------------------------------------------------------------------
+// Desc:	Process the DELETE statement.  The "DELETE" keyword has already been
+//			parsed.
+//------------------------------------------------------------------------------
+RCODE SQLStatement::processDeleteRows( void)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FLMBOOL				bStartedTrans = FALSE;
+	char					szTableName [MAX_SQL_NAME_LEN + 1];
+	FLMUINT				uiTableNameLen;
+	F_TABLE *			pTable;
+	TABLE_ITEM			tableList [2];
+	SQLQuery				sqlQuery;
+
+	// If we are in a read transaction, we cannot do this operation
+	
+	if (RC_BAD( rc = m_pDb->checkTransaction( SFLM_UPDATE_TRANS, &bStartedTrans)))
+	{
+		goto Exit;
+	}
+
+	// SYNTAX: DELETE FROM table_name WHERE select-criteria
+
+	// FROM must follow the DELETE.
+
+	if (RC_BAD( rc = haveToken( "from", FALSE, SQL_ERR_EXPECTING_FROM)))
+	{
+		goto Exit;
+	}
+
+	// Whitespace must follow the "FROM"
+
+	if (RC_BAD( rc = skipWhitespace( TRUE)))
+	{
+		goto Exit;
+	}
+
+	// Get the table name.
+
+	if (RC_BAD( rc = getTableName( TRUE, szTableName, sizeof( szTableName),
+								&uiTableNameLen, &pTable)))
+	{
+		goto Exit;
+	}
+	
+	if (pTable->bSystemTable)
+	{
+		setErrInfo( m_uiCurrLineNum,
+				m_uiCurrLineOffset,
+				SQL_ERR_CANNOT_UPDATE_SYSTEM_TABLE,
+				m_uiCurrLineFilePos,
+				m_uiCurrLineBytes);
+		rc = RC_SET( NE_SFLM_CANNOT_DELETE_IN_SYSTEM_TABLE);
+		goto Exit;
+	}
+	
+	// See if we have a WHERE clause
+	
+	if (RC_BAD( rc = haveToken( "where", TRUE)))
+	{
+		if (rc == NE_SFLM_NOT_FOUND || rc == NE_SFLM_EOF_HIT)
+		{
+			if (RC_BAD( rc = sqlQuery.addTable( pTable->uiTableNum, NULL)))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+	
+		tableList [0].uiTableNum = pTable->uiTableNum;
+		tableList [0].pszTableAlias = pTable->pszTableName;
+		
+		// Null terminate the list.
+		
+		tableList [1].uiTableNum = 0;
+		if (RC_BAD( rc = parseCriteria( &tableList [0], FALSE, FALSE, &sqlQuery)))
+		{
+			goto Exit;
+		}
+	}
+	
+	if (RC_BAD( rc = m_pDb->deleteSelectedRows( pTable->uiTableNum, &sqlQuery)))
+	{
+		goto Exit;
+	}
+	
+	// Commit the transaction if we started it
+	
+	if (bStartedTrans)
+	{
+		bStartedTrans = FALSE;
+		if (RC_BAD( rc = m_pDb->transCommit()))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	if (bStartedTrans)
+	{
+		m_pDb->transAbort();
 	}
 
 	return( rc);

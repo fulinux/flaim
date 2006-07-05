@@ -344,9 +344,9 @@ RCODE SQLStatement::processDropDatabase( void)
 
 	// Get the database name.
 
-	if (RC_BAD( rc = getUTF8String( FALSE, (FLMBYTE *)szDatabaseName,
+	if (RC_BAD( rc = getUTF8String( FALSE, TRUE, (FLMBYTE *)szDatabaseName,
 							sizeof( szDatabaseName),
-							&uiDatabaseNameLen)))
+							&uiDatabaseNameLen, NULL, NULL)))
 	{
 		goto Exit;
 	}
@@ -375,18 +375,18 @@ RCODE SQLStatement::processDropDatabase( void)
 		
 		if (f_stricmp( szToken, "data_dir") == 0)
 		{
-			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szDataDirName,
+			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szDataDirName,
 									sizeof( szDataDirName),
-									&uiDataDirNameLen)))
+									&uiDataDirNameLen, NULL, NULL)))
 			{
 				goto Exit;
 			}
 		}
 		else if (f_stricmp( szToken, "data_dir") == 0)
 		{
-			if (RC_BAD( rc = getUTF8String( TRUE, (FLMBYTE *)szRflDirName,
+			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szRflDirName,
 									sizeof( szRflDirName),
-									&uiRflDirNameLen)))
+									&uiRflDirNameLen, NULL, NULL)))
 			{
 				goto Exit;
 			}

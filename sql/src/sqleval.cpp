@@ -212,8 +212,8 @@ FSTATIC RCODE sqlCompareText(
 
 	if( !(pLValue->uiFlags & SQL_VAL_IS_STREAM))
 	{
-		if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.pucBuf,
-											pLValue->uiDataLen)))
+		if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
+											pLValue->val.str.uiByteLen)))
 		{
 			goto Exit;
 		}
@@ -227,8 +227,8 @@ FSTATIC RCODE sqlCompareText(
 
 	if( !(pRValue->uiFlags & SQL_VAL_IS_STREAM))
 	{
-		if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.pucBuf,
-											pRValue->uiDataLen)))
+		if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
+											pRValue->val.str.uiByteLen)))
 		{
 			goto Exit;
 		}
@@ -288,8 +288,8 @@ FSTATIC RCODE sqlCompareBinary(
 
 	if( !(pLValue->uiFlags & SQL_VAL_IS_STREAM))
 	{
-		if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.pucBuf,
-											pLValue->uiDataLen)))
+		if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
+											pLValue->val.str.uiByteLen)))
 		{
 			goto Exit;
 		}
@@ -303,8 +303,8 @@ FSTATIC RCODE sqlCompareBinary(
 
 	if( !(pRValue->uiFlags & SQL_VAL_IS_STREAM))
 	{
-		if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.pucBuf,
-											pRValue->uiDataLen)))
+		if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
+											pRValue->val.str.uiByteLen)))
 		{
 			goto Exit;
 		}

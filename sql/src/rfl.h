@@ -54,6 +54,7 @@ class IXKeyCompare;
 #define RFL_DELETE_ROW_PACKET					21
 #define RFL_DROP_INDEX_PACKET					22
 #define RFL_DROP_TABLE_PACKET					23
+#define RFL_UPDATE_ROW_PACKET					24
 
 #define RFL_PACKET_TYPE_MASK					0x7F
 
@@ -289,7 +290,25 @@ public:
 		FLMUINT				uiTableNum,
 		F_COLUMN_VALUE *	pColumnValues);
 		
+	RCODE getColumnValues(
+		F_Db *				pDb,
+		F_TABLE *			pTable,
+		F_COLUMN_VALUE **	ppFirstColValue,
+		FLMUINT *			puiNumColumnValues);
+		
 	RCODE recovInsertRow(
+		F_Db *				pDb,
+		const FLMBYTE *	pucPacketBody,
+		FLMUINT				uiPacketBodyLen,
+		eRestoreAction *	peAction);
+	
+	RCODE logUpdateRow(
+		F_Db *				pDb,
+		FLMUINT				uiTableNum,
+		FLMUINT64			ui64RowId,
+		F_COLUMN_VALUE *	pColumnValues);
+		
+	RCODE recovUpdateRow(
 		F_Db *				pDb,
 		const FLMBYTE *	pucPacketBody,
 		FLMUINT				uiPacketBodyLen,

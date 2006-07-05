@@ -2397,7 +2397,7 @@ RCODE SQLQuery::optimizeTable(
 	SQL_NODE *				pOperand;
 	SQL_PRED *				pPred;
 	void *					pvMark = m_pool.poolMark();
-	SQLTableCursor *	pSQLTableCursor = NULL;
+	SQLTableCursor *		pSQLTableCursor = NULL;
 	
 	// This routine should not be called if the table has already been
 	// marked to do a table scan.
@@ -2663,16 +2663,13 @@ RCODE SQLQuery::optimize( void)
 	
 	// Make sure we have a completed expression
 
-	if (m_pCurrParseState)
+	if (!criteriaIsComplete())
 	{
-		if (m_pCurrParseState->pPrev ||
-			 m_pCurrParseState->uiNestLevel ||
-			 (m_pCurrParseState->pLastNode &&
-			  m_pCurrParseState->pLastNode->eNodeType == FLM_OPERATOR_NODE))
-		{
-			rc = RC_SET( NE_SFLM_Q_INCOMPLETE_QUERY_EXPR);
-			goto Exit;
-		}
+		rc = RC_SET( NE_SFLM_Q_INCOMPLETE_QUERY_EXPR);
+		goto Exit;
+	}
+	else if (m_pCurrParseState)
+	{
 		m_pQuery = m_pCurrParseState->pRootNode;
 	}
 

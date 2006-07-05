@@ -41,7 +41,8 @@ class FSTableCursor;
 //-------------------------------------------------------------------------
 typedef enum
 {
-	SQL_OPERATOR_NODE = 0,
+	SQL_NO_NODE = 0,
+	SQL_OPERATOR_NODE,
 	SQL_VALUE_NODE,
 	SQL_COLUMN_NODE,
 	SQL_PRED_NODE
@@ -134,6 +135,19 @@ typedef struct SQL_OP
 	FLMUINT						uiCompareRules;
 } SQL_OP;
 
+typedef struct SQL_STRING_VALUE
+{
+	FLMBYTE *		pszStr;			// Should always be null-terminated.
+	FLMUINT			uiByteLen;		// Includes null-terminating character.
+	FLMUINT			uiNumChars;		// Does not count null-terminating character.
+} SQL_STRING_VALUE;
+
+typedef struct SQL_BINARY_VALUE
+{
+	FLMBYTE *		pucValue;
+	FLMUINT			uiByteLen;
+} SQL_BINARY_VALUE;
+
 typedef struct SQL_VALUE
 {
 	eSQLValTypes	eValType;
@@ -160,7 +174,8 @@ typedef struct SQL_VALUE
 		FLMUINT64				ui64Val;
 		FLMINT					iVal;
 		FLMINT64					i64Val;
-		FLMBYTE *				pucBuf;
+		SQL_STRING_VALUE		str;
+		SQL_BINARY_VALUE		bin;
 		IF_PosIStream *		pIStream;
 	} val;									// Holds or points to the atom value.
 } SQL_VALUE;
@@ -303,15 +318,13 @@ typedef struct SQL_DNF_NODE
 //-------------------------------------------------------------------------
 // Desc: SQLQuery class - for building up an SQL query.
 //-------------------------------------------------------------------------
-class SQLQuery
+class SQLQuery : public F_Object
 {
 public:
 
 	SQLQuery();
 	
 	~SQLQuery();
-
-private:
 
 	FINLINE FLMBOOL expectingOperand( void)
 	{
@@ -322,20 +335,118 @@ private:
 	{
 		return( m_pCurrParseState->bExpectingOperator);
 	}
+	
+	RCODE addOperator(
+		eSQLQueryOperators	eOperator,
+		FLMUINT					uiCompareRules);
+		
+	RCODE allocOperandNode(
+		eSQLNodeTypes	eNodeType,
+		SQL_NODE **		ppSQLNode);
+		
+	RCODE addTable(
+		FLMUINT			uiTableNum,
+		SQL_TABLE **	ppTable);
+		
+	RCODE addColumn(
+		FLMUINT	uiTableNum,
+		FLMUINT	uiColumnNum);
+		
+	RCODE addUTF8String(
+		const FLMBYTE *	pszUTF8Str,
+		FLMUINT				uiStrLen,
+		FLMUINT				uiNumChars);
+		
+	RCODE addBinary(
+		const FLMBYTE *	pucValue,
+		FLMUINT				uiValueLen);
+		
+	RCODE addUINT64(
+		FLMUINT64		ui64Num);
+		
+	RCODE addINT64(
+		FLMINT64			i64Num);
+		
+	RCODE addUINT(
+		FLMUINT			uiNum);
+
+	RCODE addINT(
+		FLMINT			iNum);
+		
+	FINLINE RCODE addNumber(
+		FLMUINT64		ui64Num,
+		FLMBOOL			bNeg)
+	{
+		if (!bNeg)
+		{
+			if (ui64Num <= (FLMUINT64)(FLM_MAX_UINT))
+			{
+				return( addUINT( (FLMUINT)ui64Num));
+			}
+			else
+			{
+				return( addUINT64( ui64Num));
+			}
+		}
+		else
+		{
+			if (ui64Num <= (FLMUINT64)(FLM_MAX_INT))
+			{
+				return( addINT( (FLMINT)(-((FLMINT64)ui64Num))));
+			}
+			else
+			{
+				return( addINT64( -((FLMINT64)ui64Num)));
+			}
+		}
+	}
+		
+	RCODE addBoolean(
+		FLMBOOL	bValue,
+		FLMBOOL	bUnknown);
+		
+	FINLINE FLMBOOL criteriaIsComplete( void)
+	{
+		// Make sure we have a completed expression
+	
+		if (m_pCurrParseState)
+		{
+			if (m_pCurrParseState->pPrev ||
+				 m_pCurrParseState->uiNestLevel ||
+				 (m_pCurrParseState->pLastNode &&
+				  m_pCurrParseState->pLastNode->eNodeType == SQL_OPERATOR_NODE))
+			{
+				return( FALSE);
+			}
+		}
+		return( TRUE);
+	}
+	
+	RCODE getNext(
+		F_Row **	ppRow);
+	
+	RCODE getPrev(
+		F_Row **	ppRow);
+		
+	RCODE getFirst(
+		F_Row **	ppRow);
+		
+	RCODE getLast(
+		F_Row **	ppRow);
+
+	RCODE evalCriteria(
+		SQL_VALUE *	pSqlValue,
+		F_Pool *		pPool,
+		F_Row *		pRow);
+		
+private:
+
 	RCODE allocParseState( void);
 	
 	RCODE allocValueNode(
 		FLMUINT			uiValLen,
 		eSQLValTypes	eValType,
 		SQL_NODE **		ppSQLNode);
-		
-	RCODE addOperator(
-		eSQLQueryOperators	eOperator,
-		FLMUINT					uiCompareRules);
-		
-	RCODE addColumn(
-		FLMUINT	uiTableNum,
-		FLMUINT	uiColumnNum);
 		
 	RCODE intersectPredicates(
 		SQL_PRED *				pPred,

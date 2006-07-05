@@ -211,7 +211,7 @@ RCODE F_Db::indexSetOfRows(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = buildKeys( pIndex, pTable, NULL, pRow)))
+		if (RC_BAD( rc = buildKeys( pIndex, pTable, pRow, TRUE, NULL)))
 		{
 			goto Exit;
 		}
