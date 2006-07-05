@@ -5601,6 +5601,21 @@ void * F_Object::operator new(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
+void * F_Object::operator new(
+	FLMSIZET			uiSize)
+#ifndef FLM_WATCOM_NLM
+		throw()
+#endif
+{
+	void *	pvReturnPtr = NULL;
+
+	f_allocImp( uiSize, &pvReturnPtr, TRUE, NULL, 0);
+	return( pvReturnPtr);
+}
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
 void * F_Object::operator new[](
 	FLMSIZET			uiSize,
 	const char *	pszFile,
@@ -5612,6 +5627,21 @@ void * F_Object::operator new[](
 	void *	pvReturnPtr = NULL;
 
 	f_allocImp( uiSize, &pvReturnPtr, TRUE, pszFile, iLine);
+	return( pvReturnPtr);
+}
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
+void * F_Object::operator new[](
+	FLMSIZET			uiSize)
+#ifndef FLM_WATCOM_NLM
+		throw()
+#endif
+{
+	void *	pvReturnPtr = NULL;
+
+	f_allocImp( uiSize, &pvReturnPtr, TRUE, NULL, 0);
 	return( pvReturnPtr);
 }
 
