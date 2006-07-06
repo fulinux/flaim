@@ -1343,29 +1343,38 @@ libs: status clean dircheck $(ftk_static_lib) $(ftk_shared_lib)
 # -- *.cpp -> *$(obj_suffix) --
 
 ifdef win_target
-define cpp_to_obj_template
-$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
-	$$(ec)$$(compiler) $$(ccflags) /Fo$$(call hostpath,$$@) $$(call hostpath,$$<)
-endef
+$(lib_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fo$(call hostpath,$@) $(call hostpath,$<)
 endif
 
-ifdef unix_target
-define cpp_to_obj_template
-$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
-	$$(ec)$$(gprintf) "$$<\n"
-	$$(ec)$$(compiler) $$(ccflags) -c $$< -o $$@
-endef
+ifdef win_target
+$(test_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fo$(call hostpath,$@) $(call hostpath,$<)
 endif
 
 ifdef netware_target
-define cpp_to_obj_template
-$$($(1)_obj_dir)/%$(obj_suffix) : %.cpp
-	$$(ec)$$(gprintf) "$$(notdir $$(strip $$@))\n"
-	$$(ec)$$(call hostpath,$$(compiler)) $$(call hostpath,$$<) /fo=$$(call hostpath,$$@)
-endef
+$(lib_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$(notdir $(strip $@))\n"
+	$(ec)$(call hostpath,$(compiler)) $(call hostpath,$<) /fo=$(call hostpath,$@)
 endif
 
-$(foreach tmpl,lib test,$(eval $(call cpp_to_obj_template,$(tmpl))))
+ifdef netware_target
+$(test_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$(notdir $(strip $@))\n"
+	$(ec)$(call hostpath,$(compiler)) $(call hostpath,$<) /fo=$(call hostpath,$@)
+endif
+
+ifdef unix_target
+$(lib_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$<\n"
+	$(ec)$(compiler) $(ccflags) -c $< -o $@
+endif
+
+ifdef unix_target
+$(test_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$<\n"
+	$(ec)$(compiler) $(ccflags) -c $< -o $@
+endif
 
 # -- ftk.lib and libftk.a --
 

@@ -1214,7 +1214,7 @@ FLMINT32 FLMAPI f_atomicInc(
 	{
 		return( (FLMINT32)OSAtomicIncrement32( (int32_t *)piTarget));
 	}
-	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	{
 		return( sparc_atomic_add_32( piTarget, 1));
 	}
@@ -1263,7 +1263,7 @@ FLMINT32 FLMAPI f_atomicDec(
 	{
 		return( (FLMINT32)OSAtomicDecrement32( (int32_t *)piTarget));
 	}
-	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	{
 		return( sparc_atomic_add_32( piTarget, -1));
 	}
@@ -1335,7 +1335,7 @@ FLMINT32 FLMAPI f_atomicExchange(
 		
 		return( (FLMINT32)iOldVal);
 	}
-	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	{
 		return( sparc_atomic_xchg_32( piTarget, i32NewVal));
 	}

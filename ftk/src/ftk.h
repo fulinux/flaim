@@ -42,6 +42,7 @@
 		#undef FLM_LINUX
 		#undef FLM_SOLARIS
 		#undef FLM_SPARC
+		#undef FLM_SPARC_PLUS
 		#undef FLM_HPUX
 		#undef FLM_OSX
 		#undef FLM_BIG_ENDIAN
@@ -111,6 +112,9 @@
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT
+				#if defined( __sparcv8plus) || defined( __sparcv9)
+					#define FLM_SPARC_PLUS
+				#endif
 			#endif
 		#elif defined( sun)
 			#define FLM_SOLARIS
@@ -120,6 +124,9 @@
 			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
+				#if defined( __sparcv8plus) || defined( __sparcv9)
+					#define FLM_SPARC_PLUS
+				#endif
 			#endif
 		#elif defined( __hpux) || defined( hpux)
 			#define FLM_HPUX

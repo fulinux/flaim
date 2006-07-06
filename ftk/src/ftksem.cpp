@@ -191,7 +191,7 @@ void FLMAPI f_mutexDestroy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_SOLARIS)
+#if defined( FLM_SOLARIS) 
 void FLMAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
@@ -491,8 +491,6 @@ FINLINE int _sema_timedwait(
 	unsigned int	msecs)
 {
 	int					iErr = 0;
-   struct timeval		now;
-	struct timespec	abstime;
 
    // If timeout is F_SEM_WAITFOREVER, do sem_wait.
 
@@ -502,20 +500,26 @@ FINLINE int _sema_timedwait(
       return( iErr);
    }
 
-   gettimeofday( &now, NULL);
-	abstime.tv_sec = now.tv_sec + ((msecs) ? (msecs / 1000) : 0);
-	abstime.tv_nsec = ( now.tv_usec + ((msecs % 1000) *	1000)) * 1000;
-
-Restart:
-
-	if( (iErr = sema_timedwait( pSem, &abstime)) != 0)
+	for( ;;)
 	{
-		if( iErr == EINTR)
+		if( (iErr = sema_trywait( pSem)) != 0)
 		{
-			iErr = 0;
-			goto Restart;
+			if( iErr == EINTR)
+			{
+				iErr = 0;
+			}
+
+			f_sleep( f_min( msecs, 10));
+			msecs -= f_min( msecs, 10);
+
+			if( !msecs)
+			{
+				iErr = -1;
+				goto Exit;
+			}
+
+			continue;
 		}
-		goto Exit;
 	}
 
 Exit:
@@ -605,11 +609,11 @@ RCODE f_semWait(
 
 	f_assert( hSem != F_SEM_NULL);
 
-	//catch the F_SEM_WAITFOREVER flag so we can directly call _sema_wait
-	//instead of passing F_SEM_WAITFOREVER through to _sema_timedwait.
-	//Note that on AIX the datatype of the uiTimeout (in the timespec
-	//struct) is surprisingly a signed int, which makes this catch
-	//essential.
+	// Catch the F_SEM_WAITFOREVER flag so we can directly call _sema_wait
+	// instead of passing F_SEM_WAITFOREVER through to _sema_timedwait.
+	// Note that on AIX the datatype of the uiTimeout (in the timespec
+	// struct) is surprisingly a signed int, which makes this catch
+	// essential.
 
 	if( uiTimeout == F_SEM_WAITFOREVER)
 	{

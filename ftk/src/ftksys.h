@@ -183,7 +183,7 @@
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
-	#if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	#if defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	extern "C" FLMINT32 sparc_atomic_add_32(
 		volatile FLMINT32 *		piTarget,
 		FLMINT32						iDelta);
@@ -192,7 +192,7 @@
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
-	#if defined( FLM_SOLARIS) && defined( FLM_SPARC) && !defined( FLM_GNUC)
+	#if defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	extern "C" FLMINT32 sparc_atomic_xchg_32(
 		volatile FLMINT32 *		piTarget,
 		FLMINT32						iNewValue);
