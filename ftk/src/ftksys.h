@@ -145,6 +145,7 @@
 		#include <unistd.h>
 		#include <utime.h>
 		#include <aio.h>
+		#include <sched.h>
 		#include <arpa/inet.h>
 		#include <netinet/tcp.h>
 		#include <sys/mman.h>

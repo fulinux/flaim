@@ -837,7 +837,7 @@ ifdef unix_target
 			compiler = CC
 			exe_linker = CC
 			shared_linker = ld
-			compiler_version := $(shell $(compiler) -V)	
+			compiler_version := $(shell $(compiler) -V 2>&1)	
 			ifneq (,$(findstring Sun C++,$(compiler_version)))
 				sun_studio_compiler = yes
 			endif
