@@ -6154,10 +6154,6 @@ RCODE ScaGetBlock(
 		goto Exit;
 	}
 
-	// Release CPU to prevent CPU hog
-
-	f_yieldCPU();
-
 	// Lock the mutex
 
 	f_mutexLock( gv_FlmSysData.hShareMutex);
@@ -6755,10 +6751,6 @@ RCODE ScaLogPhysBlk(
 #ifdef FLM_DBG_LOG
 	FLMUINT16			ui16OldFlags;
 #endif
-
-	// Release CPU to prevent CPU hog
-
-	f_yieldCPU();
 
 	flmAssert( pSCache->pPrevInVersionList == NULL);
 
