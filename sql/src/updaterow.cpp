@@ -769,6 +769,15 @@ FSTATIC RCODE convertValueToStorageFormat(
 {
 	RCODE			rc = NE_SFLM_OK;
 	
+	// Check for a missing value - return a NULL.
+	
+	if (pSqlValue->eValType == SQL_MISSING_VAL)
+	{
+		pColValue->uiValueLen = 0;
+		pColValue->pucColumnValue = NULL;
+		goto Exit;
+	}
+	
 	switch (pColumn->eDataTyp)
 	{
 		case SFLM_STRING_TYPE:
@@ -823,7 +832,7 @@ RCODE F_Db::updateSelectedRows(
 	F_COLUMN_VALUE *	pColValue;
 	F_COLUMN_ITEM *	pColItem;
 	COLUMN_SET *		pColSet;
-	SQL_VALUE			sqlValue;
+	SQL_VALUE *			pSqlValue;
 	F_Pool				tmpPool;
 	FLMBOOL				bValueChanged;
 	
@@ -899,14 +908,17 @@ Set_Null_Value:
 			}
 			else
 			{
-				if (RC_BAD( rc = pColSet->pSqlQuery->evalCriteria( &sqlValue,
-													&tmpPool, pRow)))
+				if (RC_BAD( rc = sqlEvalCriteria(  this,
+													pSqlQuery->m_pQuery,
+													&pSqlValue,
+													&tmpPool, pRow,
+													m_pDatabase->m_uiDefaultLanguage)))
 				{
 					goto Exit;
 				}
 				pColumn = m_pDict->getColumn( pTable, pColSet->uiColumnNum);
 				
-				if (RC_BAD( rc = convertValueToStorageFormat( &sqlValue,
+				if (RC_BAD( rc = convertValueToStorageFormat( pSqlValue,
 											pColumn, pColValue, &tmpPool)))
 				{
 					goto Exit;
@@ -1122,6 +1134,15 @@ RCODE SQLStatement::parseSetColumns(
 		if (pSqlQuery)
 		{
 			if (RC_BAD( rc = parseCriteria( pTableList, FALSE, TRUE, pSqlQuery)))
+			{
+				goto Exit;
+			}
+			
+			// Strip out NOT operators, resolve constant arithmetic expressions,
+			// and weed out boolean constants, but do not flatten the AND
+			// and OR operators in the query tree.
+	
+			if (RC_BAD( rc = pSqlQuery->reduceTree( FALSE)))
 			{
 				goto Exit;
 			}

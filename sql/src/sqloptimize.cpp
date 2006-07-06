@@ -975,13 +975,13 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 				{
 					pTable = pSQLNode->pFirstChild->nd.column.pTable;
 					uiColumnNum = pSQLNode->pFirstChild->nd.column.uiColumnNum;
-					pValue = &pSQLNode->pLastChild->nd.value;
+					pValue = &pSQLNode->pLastChild->currVal;
 				}
 				else
 				{
-					pTable = pSQLNode->pFirstChild->nd.column.pTable;
-					uiColumnNum = pSQLNode->pFirstChild->nd.column.uiColumnNum;
-					pValue = &pSQLNode->pFirstChild->nd.value;
+					pTable = pSQLNode->pLastChild->nd.column.pTable;
+					uiColumnNum = pSQLNode->pLastChild->nd.column.uiColumnNum;
+					pValue = &pSQLNode->pFirstChild->currVal;
 					
 					// Need to invert the operator in this case.
 					
@@ -1061,7 +1061,7 @@ FSTATIC SQL_NODE * sqlEvalLogicalOperands(
 	{
 		if (isSQLNodeBool( pChildNode))
 		{
-			eChildBoolVal = pChildNode->nd.value.val.eBool;
+			eChildBoolVal = pChildNode->currVal.val.eBool;
 		}
 		else
 		{
@@ -1209,11 +1209,14 @@ FSTATIC SQL_NODE * sqlClipNotNode(
 }
 
 //-------------------------------------------------------------------------
-// Desc:	Flatten the query tree.  This coalesces AND and OR nodes so that
-//			they can have multiple operands.  This will also strip out NOT nodes
-//			and resolve constant expressions to a single node.
+// Desc:	Reduce the query tree.  This will strip out NOT nodes and
+//			resolve constant expressions to a single node.  It also weeds
+//			out all boolean constants that are operands of AND or OR operators.
+//			Finally, if the bFlattenTree parameter is TRUE, it will coalesce
+//			AND and OR nodes so that they can have multiple operands.
 //-------------------------------------------------------------------------
-RCODE SQLQuery::flattenTree( void)
+RCODE SQLQuery::reduceTree(
+	FLMBOOL	bFlattenTree)
 {
 	RCODE						rc = NE_SFLM_OK;
 	SQL_NODE *				pSQLNode = m_pQuery;
@@ -1266,7 +1269,7 @@ RCODE SQLQuery::flattenTree( void)
 						rc = RC_SET( NE_SFLM_Q_ILLEGAL_OPERAND);
 						goto Exit;
 					}
-					if (pParentNode->nd.op.eOperator == eOperator)
+					if (bFlattenTree && pParentNode->nd.op.eOperator == eOperator)
 					{
 						
 						// Move all of pSQLNode's children become the immediate
@@ -1401,15 +1404,15 @@ RCODE SQLQuery::flattenTree( void)
 			// If bNotted is TRUE and we have a boolean value, change
 			// the value: FALSE ==> TRUE, TRUE ==> FALSE.
 
-			if (bNotted && pSQLNode->nd.value.eValType == SQL_BOOL_VAL)
+			if (bNotted && pSQLNode->currVal.eValType == SQL_BOOL_VAL)
 			{
-				if (pSQLNode->nd.value.val.eBool == SQL_TRUE)
+				if (pSQLNode->currVal.val.eBool == SQL_TRUE)
 				{
-					pSQLNode->nd.value.val.eBool = SQL_FALSE;
+					pSQLNode->currVal.val.eBool = SQL_FALSE;
 				}
-				else if (pSQLNode->nd.value.val.eBool == SQL_FALSE)
+				else if (pSQLNode->currVal.val.eBool == SQL_FALSE)
 				{
-					pSQLNode->nd.value.val.eBool = SQL_TRUE;
+					pSQLNode->currVal.val.eBool = SQL_TRUE;
 				}
 			}
 
@@ -1419,7 +1422,7 @@ RCODE SQLQuery::flattenTree( void)
 
 			if (pParentNode)
 			{
-				if (pSQLNode->nd.value.eValType == SQL_BOOL_VAL)
+				if (pSQLNode->currVal.eValType == SQL_BOOL_VAL)
 				{
 					if (!isSQLLogicalOp( pParentNode->nd.op.eOperator))
 					{
@@ -1475,15 +1478,15 @@ RCODE SQLQuery::flattenTree( void)
 				 pSQLNode->pLastChild->eNodeType == SQL_VALUE_NODE)
 			{
 				if (RC_BAD( rc = sqlEvalArithOperator(
-											&pSQLNode->pFirstChild->nd.value,
-											&pSQLNode->pLastChild->nd.value,
+											&pSQLNode->pFirstChild->currVal,
+											&pSQLNode->pLastChild->currVal,
 											pSQLNode->nd.op.eOperator,
-											&pSQLNode->nd.value)))
+											&pSQLNode->currVal)))
 				{
 					goto Exit;
 				}
 				pSQLNode->eNodeType = SQL_VALUE_NODE;
-				pSQLNode->nd.value.uiFlags = SQL_VAL_IS_CONSTANT;
+				pSQLNode->currVal.uiFlags = SQL_VAL_IS_CONSTANT;
 				pSQLNode->pFirstChild = NULL;
 				pSQLNode->pLastChild = NULL;
 			}
@@ -2668,10 +2671,6 @@ RCODE SQLQuery::optimize( void)
 		rc = RC_SET( NE_SFLM_Q_INCOMPLETE_QUERY_EXPR);
 		goto Exit;
 	}
-	else if (m_pCurrParseState)
-	{
-		m_pQuery = m_pCurrParseState->pRootNode;
-	}
 
 	m_uiLanguage = m_pDb->getDefaultLanguage();
 
@@ -2695,8 +2694,8 @@ RCODE SQLQuery::optimize( void)
 
 	if (m_pQuery->eNodeType == SQL_VALUE_NODE)
 	{
-		if (m_pQuery->nd.value.eValType == SQL_BOOL_VAL &&
-			 m_pQuery->nd.value.val.eBool == SQL_TRUE)
+		if (m_pQuery->currVal.eValType == SQL_BOOL_VAL &&
+			 m_pQuery->currVal.val.eBool == SQL_TRUE)
 		{
 			m_bScan = TRUE;
 		}
@@ -2720,9 +2719,11 @@ RCODE SQLQuery::optimize( void)
 		goto Exit;
 	}
 
-	// Flatten the AND and OR operators in the query tree.
+	// Flatten the AND and OR operators in the query tree.  Strip out
+	// NOT operators, resolve constant arithmetic expressions, and
+	// weed out boolean constants.
 	
-	if (RC_BAD( rc = flattenTree()))
+	if (RC_BAD( rc = reduceTree( TRUE)))
 	{
 		goto Exit;
 	}

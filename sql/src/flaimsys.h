@@ -4411,7 +4411,7 @@ private:
 
 // More includes
 
-#include "flaimodbc.h"
+#include "sqlquery.h"
 #include "fscursor.h"
 
 #endif // FLAIMSYS_H

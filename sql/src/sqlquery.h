@@ -152,21 +152,18 @@ typedef struct SQL_VALUE
 {
 	eSQLValTypes	eValType;
 	FLMUINT			uiFlags;
-#define SQL_VAL_IS_STREAM		0x0001
-#define SQL_VAL_IS_CONSTANT	0x0002	// During query evaluation, this indicates
+#define SQL_VAL_IS_CONSTANT	0x0001	// During query evaluation, this indicates
 													// that this value is a constant.  If it
-													// is a FLM_UTF8_VAL, then asterisks will
+													// is a SQL_UTF8_VAL, then asterisks will
 													// be treated as a wildcard, unless
 													// escaped (\*).  If the value is NOT
 													// a constant, the asterisk is NEVER
 													// treated as a wildcard, and the
 													// backslash is NEVER treated as an
 													// escape character.
-#define SQL_VAL_HAS_WILDCARDS	0x0004	// This is only set if the value is a
-													// constant, FLM_UTF8_VAL, that has
+#define SQL_VAL_HAS_WILDCARDS	0x0002	// This is only set if the value is a
+													// constant, SQL_UTF8_VAL, that has
 													// wildcards.
-	FLMUINT		uiDataLen;					// Length in bytes if the type is text
-													// or binary
 	union
 	{
 		SQLBoolType				eBool;
@@ -176,7 +173,6 @@ typedef struct SQL_VALUE
 		FLMINT64					i64Val;
 		SQL_STRING_VALUE		str;
 		SQL_BINARY_VALUE		bin;
-		IF_PosIStream *		pIStream;
 	} val;									// Holds or points to the atom value.
 } SQL_VALUE;
 
@@ -259,8 +255,10 @@ typedef struct SQL_NODE
 	eSQLNodeTypes	eNodeType;			// Type of node this is
 	FLMUINT			uiNestLevel;		// Nesting level of node - only used when
 												// setting up the query
-	FLMBOOL			bUsedValue;			// Used during evaluation
-	FLMBOOL			bLastValue;			// Used during evaluation
+	SQL_VALUE		currVal;				// Used only during evaluation to store
+												// temporary results thus far.  This is
+												// also used for constant operands
+												// (eNodeType == SQL_VALUE_NODE)
 	FLMBOOL			bNotted;
 	SQL_NODE *		pParent;				// Parent of this query node
 	SQL_NODE *		pPrevSib;			// Previous sibling of this query node
@@ -271,30 +269,16 @@ typedef struct SQL_NODE
 	{
 		SQL_OP		op;
 		SQL_COLUMN	column;
-		SQL_VALUE	value;
 		SQL_PRED		pred;
 	} nd;
 } SQL_NODE;
 
 FINLINE FLMBOOL isSQLNodeBool(
-	SQL_NODE *	pNode
-	)
+	SQL_NODE *	pNode)
 {
 	return( (pNode->eNodeType == SQL_VALUE_NODE &&
-				pNode->nd.value.eValType == SQL_BOOL_VAL) ? TRUE : FALSE);
+				pNode->currVal.eValType == SQL_BOOL_VAL) ? TRUE : FALSE);
 }
-
-typedef struct SQL_PARSE_STATE
-{
-	SQL_NODE *				pRootNode;
-	SQL_NODE *				pCurOperatorNode;
-	SQL_NODE *				pLastNode;
-	FLMUINT					uiNestLevel;
-	FLMBOOL					bExpectingOperator;
-	FLMBOOL					bExpectingLParen;
-	SQL_PARSE_STATE *		pPrev;
-	SQL_PARSE_STATE *		pNext;
-} SQL_PARSE_STATE;
 
 typedef struct SQL_SUBQUERY
 {
@@ -328,12 +312,12 @@ public:
 
 	FINLINE FLMBOOL expectingOperand( void)
 	{
-		return( !m_pCurrParseState->bExpectingOperator);
+		return( !m_bExpectingOperator);
 	}
 
 	FINLINE FLMBOOL expectingOperator( void)
 	{
-		return( m_pCurrParseState->bExpectingOperator);
+		return( m_bExpectingOperator);
 	}
 	
 	RCODE addOperator(
@@ -409,17 +393,10 @@ public:
 	{
 		// Make sure we have a completed expression
 	
-		if (m_pCurrParseState)
-		{
-			if (m_pCurrParseState->pPrev ||
-				 m_pCurrParseState->uiNestLevel ||
-				 (m_pCurrParseState->pLastNode &&
-				  m_pCurrParseState->pLastNode->eNodeType == SQL_OPERATOR_NODE))
-			{
-				return( FALSE);
-			}
-		}
-		return( TRUE);
+		return( (m_uiNestLevel ||
+			 		(m_pLastNode && m_pLastNode->eNodeType == SQL_OPERATOR_NODE))
+				  ? FALSE
+				  : TRUE);
 	}
 	
 	RCODE getNext(
@@ -434,15 +411,11 @@ public:
 	RCODE getLast(
 		F_Row **	ppRow);
 
-	RCODE evalCriteria(
-		SQL_VALUE *	pSqlValue,
-		F_Pool *		pPool,
-		F_Row *		pRow);
-		
+	RCODE reduceTree(
+		FLMBOOL	bFlattenTree);
+
 private:
 
-	RCODE allocParseState( void);
-	
 	RCODE allocValueNode(
 		FLMUINT			uiValLen,
 		eSQLValTypes	eValType,
@@ -477,8 +450,6 @@ private:
 		
 	RCODE convertOperandsToPredicates( void);
 		
-	RCODE flattenTree( void);
-
 	RCODE convertToDNF( void);
 
 	RCODE getPredKeys(
@@ -508,13 +479,16 @@ private:
 	
 	F_Pool				m_pool;
 	FLMUINT				m_uiLanguage;
-	SQL_PARSE_STATE *	m_pCurrParseState;
+	SQL_NODE *			m_pQuery;
+	SQL_NODE *			m_pCurOperatorNode;
+	SQL_NODE *			m_pLastNode;
+	FLMUINT				m_uiNestLevel;
+	FLMBOOL				m_bExpectingOperator;
 	SQL_SUBQUERY *		m_pFirstSubQuery;
 	SQL_SUBQUERY *		m_pLastSubQuery;
 	SQL_TABLE *			m_pFirstTable;
 	SQL_TABLE *			m_pLastTable;
 	FLMBOOL				m_bOptimized;
-	SQL_NODE *			m_pQuery;
 	F_Database *		m_pDatabase;
 	F_Db *				m_pDb;
 	FLMBOOL				m_bScan;
@@ -547,5 +521,13 @@ RCODE sqlEvalArithOperator(				// sqleval.cpp
 	SQL_VALUE *				pRValue,
 	eSQLQueryOperators	eOperator,
 	SQL_VALUE *				pResult);
+	
+RCODE sqlEvalCriteria(						// sqleval.cpp
+	F_Db *			pDb,
+	SQL_NODE *		pQueryExpr,
+	SQL_VALUE **	ppSqlValue,
+	F_Pool *			pPool,
+	F_Row *			pRow,
+	FLMUINT			uiLanguage);
 
 #endif	// #ifndef FLAIMODBC_H

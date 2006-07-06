@@ -119,49 +119,6 @@ SQLQuery::~SQLQuery()
 }
 
 //-------------------------------------------------------------------------
-// Desc:	Allocate a structure for keeping track of the state of the
-//			current SQL query.
-//-------------------------------------------------------------------------
-RCODE SQLQuery::allocParseState( void)
-{
-	RCODE					rc = NE_SFLM_OK;
-	SQL_PARSE_STATE *	pParseState;
-
-	if (!m_pCurrParseState || !m_pCurrParseState->pNext)
-	{
-		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_PARSE_STATE),
-												(void **)&pParseState)))
-		{
-			goto Exit;
-		}
-		if ((pParseState->pPrev = m_pCurrParseState) != NULL)
-		{
-			m_pCurrParseState->pNext = pParseState;
-		}
-		m_pCurrParseState = pParseState;
-	}
-	else
-	{
-		SQL_PARSE_STATE *	pSaveNext;
-		SQL_PARSE_STATE *	pSavePrev;
-
-		m_pCurrParseState = m_pCurrParseState->pNext;
-
-		// Zero out everything except for the prev and next pointers
-
-		pSaveNext = m_pCurrParseState->pNext;
-		pSavePrev = m_pCurrParseState->pPrev;
-		f_memset( m_pCurrParseState, 0, sizeof( SQL_PARSE_STATE));
-		m_pCurrParseState->pNext = pSaveNext;
-		m_pCurrParseState->pPrev = pSavePrev;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-//-------------------------------------------------------------------------
 // Desc:	Unlinks a node from its parent and siblings.  This routine assumes
 //			that the test has already been made that the node has a parent.
 //-------------------------------------------------------------------------
@@ -235,20 +192,6 @@ RCODE SQLQuery::allocValueNode(
 	RCODE			rc = NE_SFLM_OK;
 	SQL_NODE *	pSQLNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
-	if (m_pCurrParseState->bExpectingLParen)
-	{
-		rc = RC_SET( NE_SFLM_Q_EXPECTING_LPAREN);
-		goto Exit;
-	}
-
 	if (!expectingOperand())
 	{
 		rc = RC_SET( NE_SFLM_Q_UNEXPECTED_VALUE);
@@ -262,8 +205,8 @@ RCODE SQLQuery::allocValueNode(
 	}
 	pSQLNode = *ppSQLNode;
 	pSQLNode->eNodeType = SQL_VALUE_NODE;
-	pSQLNode->nd.value.eValType = eValType;
-	pSQLNode->nd.value.uiFlags = SQL_VAL_IS_CONSTANT;
+	pSQLNode->currVal.eValType = eValType;
+	pSQLNode->currVal.uiFlags = SQL_VAL_IS_CONSTANT;
 
 	// For string and binary data, allocate a buffer.
 
@@ -272,33 +215,33 @@ RCODE SQLQuery::allocValueNode(
 		if (eValType == SQL_UTF8_VAL)
 		{
 			if (RC_BAD( rc = m_pool.poolAlloc( uiValLen,
-													(void **)&pSQLNode->nd.value.val.str.pszStr)))
+													(void **)&pSQLNode->currVal.val.str.pszStr)))
 			{
 				goto Exit;
 			}
-			pSQLNode->nd.value.val.str.uiByteLen = uiValLen;
+			pSQLNode->currVal.val.str.uiByteLen = uiValLen;
 		}
 		else if (eValType == SQL_BINARY_VAL)
 		{
 			if (RC_BAD( rc = m_pool.poolAlloc( uiValLen,
-													(void **)&pSQLNode->nd.value.val.bin.pucValue)))
+													(void **)&pSQLNode->currVal.val.bin.pucValue)))
 			{
 				goto Exit;
 			}
-			pSQLNode->nd.value.val.bin.uiByteLen = uiValLen;
+			pSQLNode->currVal.val.bin.uiByteLen = uiValLen;
 		}
 	}
 	
-	if (m_pCurrParseState->pRootNode)
+	if (m_pQuery)
 	{
-		sqlLinkLastChild( m_pCurrParseState->pCurOperatorNode, pSQLNode);
+		sqlLinkLastChild( m_pCurOperatorNode, pSQLNode);
 	}
 	else
 	{
-		m_pCurrParseState->pRootNode = pSQLNode;
+		m_pQuery = pSQLNode;
 	}
-	m_pCurrParseState->bExpectingOperator = TRUE;
-	m_pCurrParseState->pLastNode = pSQLNode;
+	m_bExpectingOperator = TRUE;
+	m_pLastNode = pSQLNode;
 
 Exit:
 
@@ -316,23 +259,6 @@ RCODE SQLQuery::addOperator(
 	SQL_NODE *		pSQLNode;
 	SQL_NODE *		pParentNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
-	// If we are expecting a left paren (for a function), that is
-	// the only thing that is acceptable at this point.
-
-	if (m_pCurrParseState->bExpectingLParen && eOperator != SQL_LPAREN_OP)
-	{
-		rc = RC_SET( NE_SFLM_Q_EXPECTING_LPAREN);
-		goto Exit;
-	}
-	
 	if (eOperator == SQL_MINUS_OP && expectingOperand())
 	{
 		eOperator = SQL_NEG_OP;
@@ -349,8 +275,7 @@ RCODE SQLQuery::addOperator(
 				rc = RC_SET( NE_SFLM_Q_UNEXPECTED_LPAREN);
 				goto Exit;
 			}
-			m_pCurrParseState->uiNestLevel++;
-			m_pCurrParseState->bExpectingLParen = FALSE;
+			m_uiNestLevel++;
 			goto Exit;
 
 		case SQL_RPAREN_OP:
@@ -359,12 +284,12 @@ RCODE SQLQuery::addOperator(
 				rc = RC_SET( NE_SFLM_Q_UNEXPECTED_RPAREN);
 				goto Exit;
 			}
-			if (!m_pCurrParseState->uiNestLevel)
+			if (!m_uiNestLevel)
 			{
 				rc = RC_SET( NE_SFLM_Q_UNMATCHED_RPAREN);
 				goto Exit;
 			}
-			m_pCurrParseState->uiNestLevel--;
+			m_uiNestLevel--;
 
 			goto Exit;
 
@@ -416,12 +341,12 @@ RCODE SQLQuery::addOperator(
 	pSQLNode->eNodeType = SQL_OPERATOR_NODE;
 	pSQLNode->nd.op.eOperator = eOperator;
 	pSQLNode->nd.op.uiCompareRules = uiCompareRules;
-	pSQLNode->uiNestLevel = m_pCurrParseState->uiNestLevel;
+	pSQLNode->uiNestLevel = m_uiNestLevel;
 
 	// Go up the stack until an operator whose nest level or precedence is <
 	// this one's is encountered, then link this one in as the last child
 
-	pParentNode = m_pCurrParseState->pCurOperatorNode;
+	pParentNode = m_pCurOperatorNode;
 	while (pParentNode &&
 			 (pParentNode->uiNestLevel > pSQLNode->uiNestLevel ||
 			  (pParentNode->uiNestLevel == pSQLNode->uiNestLevel &&
@@ -432,11 +357,11 @@ RCODE SQLQuery::addOperator(
 	}
 	if (!pParentNode)
 	{
-		if (m_pCurrParseState->pRootNode)
+		if (m_pQuery)
 		{
-			sqlLinkLastChild( pSQLNode, m_pCurrParseState->pRootNode);
+			sqlLinkLastChild( pSQLNode, m_pQuery);
 		}
-		m_pCurrParseState->pRootNode = pSQLNode;
+		m_pQuery = pSQLNode;
 	}
 	else if (eOperator == SQL_NOT_OP || eOperator == SQL_NEG_OP)
 	{
@@ -466,7 +391,7 @@ RCODE SQLQuery::addOperator(
 #endif
 
 		sqlLinkLastChild( pParentNode, pSQLNode);
-		flmAssert( !m_pCurrParseState->bExpectingOperator);
+		flmAssert( !m_bExpectingOperator);
 	}
 	else
 	{
@@ -502,9 +427,9 @@ RCODE SQLQuery::addOperator(
 		sqlLinkLastChild( pParentNode, pSQLNode);
 	}
 
-	m_pCurrParseState->pCurOperatorNode = pSQLNode;
-	m_pCurrParseState->bExpectingOperator = FALSE;
-	m_pCurrParseState->pLastNode = pSQLNode;
+	m_pCurOperatorNode = pSQLNode;
+	m_bExpectingOperator = FALSE;
+	m_pLastNode = pSQLNode;
 
 Exit:
 
@@ -528,16 +453,16 @@ RCODE SQLQuery::allocOperandNode(
 	}
 	pSQLNode->eNodeType = eNodeType;
 
-	if (m_pCurrParseState->pRootNode)
+	if (m_pQuery)
 	{
-		sqlLinkLastChild( m_pCurrParseState->pCurOperatorNode, pSQLNode);
+		sqlLinkLastChild( m_pCurOperatorNode, pSQLNode);
 	}
 	else
 	{
-		m_pCurrParseState->pRootNode = pSQLNode;
+		m_pQuery = pSQLNode;
 	}
-	m_pCurrParseState->bExpectingOperator = TRUE;
-	m_pCurrParseState->pLastNode = *ppSQLNode = pSQLNode;
+	m_bExpectingOperator = TRUE;
+	m_pLastNode = *ppSQLNode = pSQLNode;
 	
 Exit:
 
@@ -553,14 +478,6 @@ RCODE SQLQuery::addTable(
 {
 	RCODE				rc = NE_SFLM_OK;
 	SQL_TABLE *		pTable;
-
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
 
 	// Add or find the table structure for the node.
 	
@@ -608,14 +525,6 @@ RCODE SQLQuery::addColumn(
 	SQL_NODE *		pSQLNode;
 	SQL_TABLE *		pTable;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -652,14 +561,6 @@ RCODE SQLQuery::addUINT64(
 	RCODE				rc = NE_SFLM_OK;
 	SQL_NODE *		pSQLNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -674,9 +575,9 @@ RCODE SQLQuery::addUINT64(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_UINT64_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;	
-	pSQLNode->nd.value.val.ui64Val = ui64Num;
+	pSQLNode->currVal.eValType = SQL_UINT64_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;	
+	pSQLNode->currVal.val.ui64Val = ui64Num;
 
 Exit:
 
@@ -692,14 +593,6 @@ RCODE SQLQuery::addUINT(
 	RCODE				rc = NE_SFLM_OK;
 	SQL_NODE *		pSQLNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -714,9 +607,9 @@ RCODE SQLQuery::addUINT(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_UINT_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;	
-	pSQLNode->nd.value.val.uiVal = uiNum;
+	pSQLNode->currVal.eValType = SQL_UINT_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;	
+	pSQLNode->currVal.val.uiVal = uiNum;
 
 Exit:
 
@@ -732,14 +625,6 @@ RCODE SQLQuery::addINT64(
 	RCODE				rc = NE_SFLM_OK;
 	SQL_NODE *		pSQLNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -754,9 +639,9 @@ RCODE SQLQuery::addINT64(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_INT64_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;	
-	pSQLNode->nd.value.val.i64Val = i64Num;
+	pSQLNode->currVal.eValType = SQL_INT64_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;	
+	pSQLNode->currVal.val.i64Val = i64Num;
 
 Exit:
 
@@ -772,14 +657,6 @@ RCODE SQLQuery::addINT(
 	RCODE				rc = NE_SFLM_OK;
 	SQL_NODE *		pSQLNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -794,9 +671,9 @@ RCODE SQLQuery::addINT(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_INT_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;	
-	pSQLNode->nd.value.val.iVal = iNum;
+	pSQLNode->currVal.eValType = SQL_INT_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;	
+	pSQLNode->currVal.val.iVal = iNum;
 
 Exit:
 
@@ -813,14 +690,6 @@ RCODE SQLQuery::addBoolean(
 	RCODE				rc = NE_SFLM_OK;
 	SQL_NODE *		pSQLNode;
 
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -835,19 +704,19 @@ RCODE SQLQuery::addBoolean(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_BOOL_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;
+	pSQLNode->currVal.eValType = SQL_BOOL_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;
 	if (bUnknown)
 	{
-		pSQLNode->nd.value.val.eBool = SQL_UNKNOWN;
+		pSQLNode->currVal.val.eBool = SQL_UNKNOWN;
 	}
 	else if (bValue)
 	{
-		pSQLNode->nd.value.val.eBool = SQL_TRUE;
+		pSQLNode->currVal.val.eBool = SQL_TRUE;
 	}
 	else
 	{
-		pSQLNode->nd.value.val.eBool = SQL_FALSE;
+		pSQLNode->currVal.val.eBool = SQL_FALSE;
 	}
 
 Exit:
@@ -867,14 +736,6 @@ RCODE SQLQuery::addUTF8String(
 	SQL_NODE *			pSQLNode;
 	FLMBYTE *			pszTmp;
 	
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -898,11 +759,11 @@ RCODE SQLQuery::addUTF8String(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_UTF8_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;
-	pSQLNode->nd.value.val.str.pszStr = pszTmp;	
-	pSQLNode->nd.value.val.str.uiByteLen = uiStrLen + 1;
-	pSQLNode->nd.value.val.str.uiNumChars = uiNumChars;
+	pSQLNode->currVal.eValType = SQL_UTF8_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;
+	pSQLNode->currVal.val.str.pszStr = pszTmp;	
+	pSQLNode->currVal.val.str.uiByteLen = uiStrLen + 1;
+	pSQLNode->currVal.val.str.uiNumChars = uiNumChars;
 	f_memcpy( pszTmp, pszUTF8Str, uiStrLen);
 	pszTmp [uiStrLen] = 0;
 	
@@ -912,7 +773,7 @@ RCODE SQLQuery::addUTF8String(
 	{
 		if (*pszTmp == '*')
 		{
-			pSQLNode->nd.value.uiFlags |= SQL_VAL_HAS_WILDCARDS;
+			pSQLNode->currVal.uiFlags |= SQL_VAL_HAS_WILDCARDS;
 			break;
 		}
 		else if (*pszTmp == '\\')
@@ -946,14 +807,6 @@ RCODE SQLQuery::addBinary(
 	SQL_NODE *	pSQLNode;
 	FLMBYTE *	pucTmp;
 	
-	if (!m_pCurrParseState)
-	{
-		if (RC_BAD( rc = allocParseState()))
-		{
-			goto Exit;
-		}
-	}
-
 	// Must be expecting an operand
 
 	if (!expectingOperand())
@@ -972,10 +825,10 @@ RCODE SQLQuery::addBinary(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.value.eValType = SQL_BINARY_VAL;
-	pSQLNode->nd.value.uiFlags |= SQL_VAL_IS_CONSTANT;
-	pSQLNode->nd.value.val.bin.uiByteLen = uiValueLen;
-	pSQLNode->nd.value.val.bin.pucValue = pucTmp;	
+	pSQLNode->currVal.eValType = SQL_BINARY_VAL;
+	pSQLNode->currVal.uiFlags |= SQL_VAL_IS_CONSTANT;
+	pSQLNode->currVal.val.bin.uiByteLen = uiValueLen;
+	pSQLNode->currVal.val.bin.pucValue = pucTmp;	
 	f_memcpy( pucTmp, pucValue, uiValueLen);
 	
 Exit:

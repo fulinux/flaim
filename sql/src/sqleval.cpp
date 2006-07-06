@@ -34,6 +34,11 @@ FSTATIC RCODE sqlCompareText(
 	FLMUINT			uiLanguage,
 	FLMINT *			piResult);
 	
+FSTATIC RCODE sqlApproxCompare(
+	SQL_VALUE *		pLValue,
+	SQL_VALUE *		pRValue,
+	FLMINT *			piResult);
+	
 FSTATIC RCODE sqlCompareBinary(
 	SQL_VALUE *		pLValue,
 	SQL_VALUE *		pRValue,
@@ -154,6 +159,27 @@ FSTATIC void sqlArithOpSUMinus(
 	SQL_VALUE *	pRValue,
 	SQL_VALUE *	pResult);
 
+FSTATIC RCODE sqlCompareOperands(
+	FLMUINT					uiLanguage,
+	SQL_VALUE *				pLValue,
+	SQL_VALUE *				pRValue,
+	eSQLQueryOperators	eOperator,
+	FLMUINT					uiCompareRules,
+	FLMBOOL					bNotted,
+	SQLBoolType *			peBool);
+	
+FSTATIC RCODE sqlGetColumnValue(
+	F_Db *		pDb,
+	F_Row *		pRow,
+	FLMUINT		uiTableNum,
+	FLMUINT		uiColumnNum,
+	F_Pool *		pPool,
+	SQL_VALUE *	pSqlValue);
+	
+FSTATIC RCODE sqlEvalOperator(
+	FLMUINT		uiLanguage,
+	SQL_NODE *	pQNode);
+	
 typedef void SQL_ARITH_OP(
 	SQL_VALUE *		pLValue,
 	SQL_VALUE *		pRValue,
@@ -210,34 +236,20 @@ FSTATIC RCODE sqlCompareText(
 
 	// Open the streams
 
-	if( !(pLValue->uiFlags & SQL_VAL_IS_STREAM))
+	if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
+										pLValue->val.str.uiByteLen)))
 	{
-		if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
-											pLValue->val.str.uiByteLen)))
-		{
-			goto Exit;
-		}
-
-		pLStream = &bufferLStream;
-	}
-	else
-	{
-		pLStream = pLValue->val.pIStream;
+		goto Exit;
 	}
 
-	if( !(pRValue->uiFlags & SQL_VAL_IS_STREAM))
+	pLStream = &bufferLStream;
+
+	if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
+										pRValue->val.str.uiByteLen)))
 	{
-		if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
-											pRValue->val.str.uiByteLen)))
-		{
-			goto Exit;
-		}
-		pRStream = &bufferRStream;
+		goto Exit;
 	}
-	else
-	{
-		pRStream = pRValue->val.pIStream;
-	}
+	pRStream = &bufferRStream;
 
 	if( RC_BAD( rc = f_compareUTF8Streams( 
 		pLStream, 
@@ -255,8 +267,141 @@ Exit:
 }
 
 //-------------------------------------------------------------------------
+// Desc:	Performs approximate compare on two strings.
+//-------------------------------------------------------------------------
+FSTATIC RCODE sqlApproxCompare(
+	SQL_VALUE *				pLValue,
+	SQL_VALUE *				pRValue,
+	FLMINT *					piResult)
+{
+	RCODE						rc = NE_SFLM_OK;
+	FLMUINT					uiLMeta;
+	FLMUINT					uiRMeta;
+	FLMUINT64				ui64StartPos;
+	F_BufferIStream		bufferLStream;
+	IF_PosIStream *		pLStream;
+	F_BufferIStream		bufferRStream;
+	IF_PosIStream *		pRStream;
+
+	// Types must be text
+
+	if (pLValue->eValType != SQL_UTF8_VAL ||
+		 pRValue->eValType != SQL_UTF8_VAL)
+	{
+		rc = RC_SET_AND_ASSERT( NE_SFLM_NOT_IMPLEMENTED);
+		goto Exit;
+	}
+
+	// Open the streams
+
+	if (RC_BAD( rc = bufferLStream.open( 
+		(const char *)pLValue->val.str.pszStr, pLValue->val.str.uiByteLen)))
+	{
+		goto Exit;
+	}
+	pLStream = &bufferLStream;
+
+	if( RC_BAD( rc = bufferRStream.open( 
+		(const char *)pRValue->val.str.pszStr, pRValue->val.str.uiByteLen)))
+	{
+		goto Exit;
+	}
+	pRStream = &bufferRStream;
+	
+	if ((pLValue->uiFlags & SQL_VAL_IS_CONSTANT) ||
+		 !(pRValue->uiFlags & SQL_VAL_IS_CONSTANT))
+	{
+		for( ;;)
+		{
+			if (RC_BAD( rc = f_getNextMetaphone( pLStream, &uiLMeta)))
+			{
+				if( rc == NE_FLM_EOF_HIT)
+				{
+					*piResult = 0;
+					rc = NE_SFLM_OK;
+				}
+				goto Exit;
+			}
+
+			ui64StartPos = pRStream->getCurrPosition();
+
+			for( ;;)
+			{
+				if( RC_BAD( rc = f_getNextMetaphone( pRStream, &uiRMeta)))
+				{
+					if( rc == NE_FLM_EOF_HIT)
+					{
+						rc = NE_SFLM_OK;
+						*piResult = -1;
+					}
+
+					goto Exit;
+				}
+
+				if( uiLMeta == uiRMeta)
+				{
+					break;
+				}
+
+			}
+
+			if( RC_BAD( rc = pRStream->positionTo( ui64StartPos)))
+			{
+				goto Exit;
+			}
+		}
+	}
+	else
+	{
+		for( ;;)
+		{
+			if( RC_BAD( rc = f_getNextMetaphone( pRStream, &uiRMeta)))
+			{
+				if( rc == NE_FLM_EOF_HIT)
+				{
+					*piResult = 0;
+					rc = NE_SFLM_OK;
+				}
+				goto Exit;
+			}
+
+			ui64StartPos = pLStream->getCurrPosition();
+
+			for( ;;)
+			{
+				if( RC_BAD( rc = f_getNextMetaphone( pLStream, &uiLMeta)))
+				{
+					if( rc == NE_FLM_EOF_HIT)
+					{
+						rc = NE_SFLM_OK;
+						*piResult = 1;
+					}
+
+					goto Exit;
+				}
+
+				if( uiLMeta == uiRMeta)
+				{
+					break;
+				}
+
+			}
+
+			if( RC_BAD( rc = pLStream->positionTo( ui64StartPos)))
+			{
+				goto Exit;
+			}
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+	
+//-------------------------------------------------------------------------
 // Desc:	Performs binary comparison on two streams - may be text or binary,
-//			it really doesn't matter.  Returns XFLM_TRUE or XFLM_FALSE.
+//			it really doesn't matter.  Returns SQL_TRUE or SQL_FALSE.
 //-------------------------------------------------------------------------
 FSTATIC RCODE sqlCompareBinary(
 	SQL_VALUE *		pLValue,
@@ -286,34 +431,19 @@ FSTATIC RCODE sqlCompareBinary(
 
 	// Open the streams
 
-	if( !(pLValue->uiFlags & SQL_VAL_IS_STREAM))
+	if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
+										pLValue->val.str.uiByteLen)))
 	{
-		if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
-											pLValue->val.str.uiByteLen)))
-		{
-			goto Exit;
-		}
+		goto Exit;
+	}
+	pLStream = &bufferLStream;
 
-		pLStream = &bufferLStream;
-	}
-	else
+	if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
+										pRValue->val.str.uiByteLen)))
 	{
-		pLStream = pLValue->val.pIStream;
+		goto Exit;
 	}
-
-	if( !(pRValue->uiFlags & SQL_VAL_IS_STREAM))
-	{
-		if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
-											pRValue->val.str.uiByteLen)))
-		{
-			goto Exit;
-		}
-		pRStream = &bufferRStream;
-	}
-	else
-	{
-		pRStream = pRValue->val.pIStream;
-	}
+	pRStream = &bufferRStream;
 
 	for (;;)
 	{
@@ -1417,6 +1547,122 @@ FSTATIC void sqlArithOpSUMinus(
 }
 
 /***************************************************************************
+Desc:	Do a comparison operator.
+***************************************************************************/
+FSTATIC RCODE sqlCompareOperands(
+	FLMUINT					uiLanguage,
+	SQL_VALUE *				pLValue,
+	SQL_VALUE *				pRValue,
+	eSQLQueryOperators	eOperator,
+	FLMUINT					uiCompareRules,
+	FLMBOOL					bNotted,
+	SQLBoolType *			peBool)
+{
+	RCODE			rc = NE_SFLM_OK;
+	FLMINT		iCmp;
+
+	if (!pLValue || pLValue->eValType == SQL_MISSING_VAL ||
+		 !pRValue || pRValue->eValType == SQL_MISSING_VAL ||
+		 !sqlCanCompare( pLValue, pRValue))
+	{
+		*peBool = SQL_UNKNOWN;
+	}
+
+	// At this point, both operands are known to be present and are of
+	// types that can be compared.  The comparison
+	// will therefore be performed according to the
+	// operator specified.
+	
+	else
+	{
+		switch (eOperator)
+		{
+			case SQL_EQ_OP:
+			case SQL_NE_OP:
+				if (pLValue->eValType == SQL_UTF8_VAL ||
+					 pRValue->eValType == SQL_UTF8_VAL)
+				{
+					if (RC_BAD( rc = sqlCompareText( pLValue, pRValue,
+						uiCompareRules, TRUE, uiLanguage, &iCmp)))
+					{
+						goto Exit;
+					}
+				}
+				else
+				{
+					if (RC_BAD( rc = sqlCompare( pLValue, pRValue, 
+						uiCompareRules, uiLanguage, &iCmp)))
+					{
+						goto Exit;
+					}
+				}
+				if (eOperator == SQL_EQ_OP)
+				{
+					*peBool = (iCmp == 0 ? SQL_TRUE : SQL_FALSE);
+				}
+				else
+				{
+					*peBool = (iCmp != 0 ? SQL_TRUE : SQL_FALSE);
+				}
+				break;
+
+			case SQL_APPROX_EQ_OP:
+				if (RC_BAD( rc = sqlApproxCompare( pLValue, pRValue, &iCmp)))
+				{
+					goto Exit;
+				}
+				*peBool = (iCmp == 0 ? SQL_TRUE : SQL_FALSE);
+				break;
+
+			case SQL_LT_OP:
+				if (RC_BAD( rc = sqlCompare( pLValue, pRValue, 
+					uiCompareRules, uiLanguage, &iCmp)))
+				{
+					goto Exit;
+				}
+				*peBool = (iCmp < 0 ? SQL_TRUE : SQL_FALSE);
+				break;
+
+			case SQL_LE_OP:
+				if (RC_BAD( rc = sqlCompare( pLValue, pRValue, 
+					uiCompareRules, uiLanguage, &iCmp)))
+				{
+					goto Exit;
+				}
+				*peBool = (iCmp <= 0 ? SQL_TRUE : SQL_FALSE);
+				break;
+
+			case SQL_GT_OP:
+				if (RC_BAD( rc = sqlCompare( pLValue, pRValue, 
+					uiCompareRules, uiLanguage, &iCmp)))
+				{
+					goto Exit;
+				}
+				*peBool = (iCmp > 0 ? SQL_TRUE : SQL_FALSE);
+				break;
+
+			case SQL_GE_OP:
+				if (RC_BAD( rc = sqlCompare( pLValue, pRValue, 
+					uiCompareRules, uiLanguage, &iCmp)))
+				{
+					goto Exit;
+				}
+				*peBool = (iCmp >= 0 ? SQL_TRUE : SQL_FALSE);
+				break;
+
+			default:
+				*peBool = SQL_UNKNOWN;
+				rc = RC_SET_AND_ASSERT( NE_SFLM_QUERY_SYNTAX);
+				goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
 Desc:	Do an arithmetic operator.
 ***************************************************************************/
 RCODE sqlEvalArithOperator(
@@ -1479,6 +1725,516 @@ RCODE sqlEvalArithOperator(
 					SQL_FIRST_ARITH_OP) * 4) + uiOffset];
 	fnOp( pLValue, pRValue, pResult);
 
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:	Get a column's value from the passed in row.  Return it in pSqlValue.
+***************************************************************************/
+FSTATIC RCODE sqlGetColumnValue(
+	F_Db *		pDb,
+	F_Row *		pRow,
+	FLMUINT		uiTableNum,
+	FLMUINT		uiColumnNum,
+	F_Pool *		pPool,
+	SQL_VALUE *	pSqlValue)
+{
+	RCODE					rc = NE_SFLM_OK;
+	F_TABLE *			pTable = pDb->getDict()->getTable( uiTableNum);
+	F_COLUMN *			pColumn = pDb->getDict()->getColumn( pTable, uiColumnNum);
+	FLMBOOL				bNeg;
+	FLMUINT64			ui64Value;
+	FLMBOOL				bIsNull;
+	FLMUINT				uiDataLen;
+	const FLMBYTE *	pucColumnData;
+	const FLMBYTE *	pucEnd;
+	
+	flmAssert( pTable->uiTableNum == uiTableNum);
+	
+	pRow->getDataLen( pDb, uiColumnNum, &uiDataLen, &bIsNull);
+	if (bIsNull)
+	{
+		pSqlValue->eValType = SQL_MISSING_VAL;
+		goto Exit;
+	}
+	pucColumnData = (const FLMBYTE *)pRow->getColumnDataPtr( uiColumnNum);
+	switch (pColumn->eDataTyp)
+	{
+		case SFLM_STRING_TYPE:
+		
+			// Decode the number of characters directly from the column's
+			// data buffer.  Then copy only whatever part remains after that.
+
+			pSqlValue->eValType = SQL_UTF8_VAL;			
+			pucEnd = pucColumnData + uiDataLen;
+			if (RC_BAD( rc = f_decodeSEN( &pucColumnData, pucEnd,
+										&pSqlValue->val.str.uiNumChars)))
+			{
+				goto Exit;
+			}
+			uiDataLen = (FLMUINT)(pucEnd - pucColumnData);
+			pSqlValue->val.str.uiByteLen = uiDataLen;
+			if (RC_BAD( rc = pPool->poolAlloc( uiDataLen,
+										(void **)&pSqlValue->val.str.pszStr)))
+			{
+				goto Exit;
+			}
+			f_memcpy( pSqlValue->val.str.pszStr, pucColumnData, uiDataLen);
+			break;
+			
+		case SFLM_NUMBER_TYPE:
+			if (RC_BAD( rc = flmStorageNumberToNumber( pucColumnData, uiDataLen,
+										&ui64Value, &bNeg)))
+			{
+				goto Exit;
+			}
+			if (!bNeg)
+			{
+				if (ui64Value <= (FLMUINT64)(FLM_MAX_UINT))
+				{
+					pSqlValue->eValType = SQL_UINT_VAL;
+					pSqlValue->val.uiVal = (FLMUINT)ui64Value;
+				}
+				else
+				{
+					pSqlValue->eValType = SQL_UINT64_VAL;
+					pSqlValue->val.ui64Val = ui64Value;
+				}
+			}
+			else
+			{
+				if (-((FLMINT64)ui64Value) <= (FLMINT64)(FLM_MIN_INT))
+				{
+					pSqlValue->eValType = SQL_INT_VAL;
+					pSqlValue->val.iVal = (FLMINT)(-((FLMINT64)ui64Value));
+				}
+				else
+				{
+					pSqlValue->eValType = SQL_INT64_VAL;
+					pSqlValue->val.i64Val = -((FLMINT64)ui64Value);
+				}
+			}
+			break;
+			
+		case SFLM_BINARY_TYPE:
+			pSqlValue->eValType = SQL_BINARY_VAL;
+			if (RC_BAD( rc = pPool->poolAlloc( uiDataLen,
+										(void **)&pSqlValue->val.bin.pucValue)))
+			{
+				goto Exit;
+			}
+			pSqlValue->val.bin.uiByteLen = uiDataLen;
+			f_memcpy( pSqlValue->val.bin.pucValue, pucColumnData, uiDataLen);
+			break;
+		
+		default:
+			flmAssert( 0);
+			rc = RC_SET( NE_SFLM_FAILURE);
+			goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:	Evaluate a simple operator.
+***************************************************************************/
+FSTATIC RCODE sqlEvalOperator(
+	FLMUINT		uiLanguage,
+	SQL_NODE *	pQNode)
+{
+	RCODE				rc = NE_SFLM_OK;
+	SQL_NODE *		pLeftOperand;
+	SQL_NODE *		pRightOperand;
+	SQLBoolType		eBool;
+
+	// Right now we are only able to do operator nodes.
+
+	flmAssert( pQNode->eNodeType == SQL_OPERATOR_NODE);
+
+	pLeftOperand = pQNode->pFirstChild;
+	pRightOperand = pQNode->pLastChild;
+
+	pQNode->currVal.eValType = SQL_MISSING_VAL;
+
+	switch (pQNode->nd.op.eOperator)
+	{
+		case SQL_AND_OP:
+		case SQL_OR_OP:
+			pQNode->currVal.eValType = SQL_BOOL_VAL;
+		
+			// There may be multiple operands here.  We have already looked
+			// at all of the operands.  If this is an AND we know that all
+			// of them were either TRUE or UNKNOWN.  If this is an OR, we know
+			// that all of the previous operands were either FALSE or UNKNOWN.
+			// If we had hit a FALSE for an AND or a TRUE for an OR, we would
+			// not have come to this point.  Now we just need to determine if
+			// any of the operands are UNKNOWN.  If so, that is what we will
+			// set this node's value to.  Otherwise, we will set it to TRUE for
+			// AND and FALSE for OR.
+			
+			while (pLeftOperand)
+			{
+			
+				// Get the left operand
+	
+				if (pLeftOperand->eNodeType == SQL_OPERATOR_NODE)
+				{
+	
+					// This operator may not have been evaluated because of missing
+					// column values in one or both operands, in which case
+					// its state will be SQL_MISSING_VALUE.  If it was evaluated,
+					// its state should show a boolean value.
+	
+					if (pLeftOperand->currVal.eValType == SQL_MISSING_VAL)
+					{
+						eBool = (pLeftOperand->bNotted ? SQL_TRUE : SQL_FALSE);
+					}
+					else
+					{
+						flmAssert( pLeftOperand->currVal.eValType == SQL_BOOL_VAL);
+						eBool = pLeftOperand->currVal.val.eBool;
+					}
+				}
+				else if (pLeftOperand->eNodeType == SQL_COLUMN_NODE)
+				{
+					if (!pLeftOperand->bNotted)
+					{
+						eBool = (pLeftOperand->currVal.eValType != SQL_MISSING_VAL)
+										  ? SQL_TRUE
+										  : SQL_FALSE;
+					}
+					else
+					{
+						eBool = (pLeftOperand->currVal.eValType != SQL_MISSING_VAL)
+										  ? SQL_FALSE
+										  : SQL_TRUE;
+					}
+				}
+				else
+				{
+					flmAssert( pLeftOperand->eNodeType == SQL_VALUE_NODE);
+					flmAssert( pLeftOperand->currVal.eValType == SQL_BOOL_VAL);
+					eBool = pLeftOperand->currVal.val.eBool;
+				}
+				
+				// eBool better not have FALSE for an AND operator or
+				// TRUE for an OR operator.
+				
+				flmAssert( (pQNode->nd.op.eOperator == SQL_AND_OP &&
+							    eBool != SQL_FALSE) ||
+								(pQNode->nd.op.eOperator == SQL_OR_OP &&
+								 eBool != SQL_TRUE));
+								 
+				
+				if (eBool == SQL_UNKNOWN)
+				{
+					pQNode->currVal.val.eBool = SQL_UNKNOWN;
+					break;
+				}
+				pLeftOperand = pLeftOperand->pNextSib;
+			}
+			
+			// If we didn't hit an UNKNOWN, set the node's value to TRUE for
+			// an AND operator and FALSE for an OR operator.
+			
+			if (!pLeftOperand)
+			{
+				pQNode->currVal.val.eBool = pQNode->nd.op.eOperator == SQL_AND_OP
+													 ? SQL_TRUE
+													 : SQL_FALSE;
+			}
+			break;
+
+		case SQL_EQ_OP:
+		case SQL_APPROX_EQ_OP:
+		case SQL_NE_OP:
+		case SQL_LT_OP:
+		case SQL_LE_OP:
+		case SQL_GT_OP:
+		case SQL_GE_OP:
+			pQNode->currVal.eValType = SQL_BOOL_VAL;
+			if (RC_BAD( rc = sqlCompareOperands( uiLanguage,
+										&pLeftOperand->currVal,
+										&pRightOperand->currVal,
+										pQNode->nd.op.eOperator,
+										pQNode->nd.op.uiCompareRules,
+										pQNode->bNotted,
+										&pQNode->currVal.val.eBool)))
+			{
+				goto Exit;
+			}
+			break;
+
+		case SQL_BITAND_OP:
+		case SQL_BITOR_OP:
+		case SQL_BITXOR_OP:
+		case SQL_MULT_OP:
+		case SQL_DIV_OP:
+		case SQL_MOD_OP:
+		case SQL_PLUS_OP:
+		case SQL_MINUS_OP:
+		case SQL_NEG_OP:
+		
+			if (RC_BAD( rc = sqlEvalArithOperator( &pLeftOperand->currVal,
+										&pRightOperand->currVal,
+										pQNode->nd.op.eOperator,
+										&pQNode->currVal)))
+			{
+				goto Exit;
+			}
+			break;
+		
+		default:
+			break;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:	Evaluate a query expression.
+***************************************************************************/
+RCODE sqlEvalCriteria(
+	F_Db *			pDb,
+	SQL_NODE *		pQueryExpr,
+	SQL_VALUE **	ppSqlValue,
+	F_Pool *			pPool,
+	F_Row *			pRow,
+	FLMUINT			uiLanguage)
+{
+	RCODE				rc = NE_SFLM_OK;
+	SQL_NODE *		pCurrNode;
+	SQL_VALUE *		pSqlValue;
+	SQLBoolType		eBoolVal;
+	SQLBoolType		eBoolPartialEval;
+
+	// If the query is empty, return a value of SQL_TRUE.
+
+	if (!pQueryExpr)
+	{
+		if (RC_BAD( rc = pPool->poolAlloc( sizeof( SQL_VALUE),
+									(void **)ppSqlValue)))
+		{
+			goto Exit;
+		}
+		pSqlValue = *ppSqlValue;
+		pSqlValue->eValType = SQL_BOOL_VAL;
+		pSqlValue->uiFlags = SQL_VAL_IS_CONSTANT;
+		pSqlValue->val.eBool = SQL_TRUE;
+		goto Exit;
+	}
+	
+	// If the query is a constant, return pointer to its value.
+	
+	if (pQueryExpr->eNodeType == SQL_VALUE_NODE)
+	{
+		*ppSqlValue = &pQueryExpr->currVal;
+		goto Exit;
+	}
+	
+	// If the query is a column, get the column's value from the
+	// row that was passed in.
+	
+	if (pQueryExpr->eNodeType == SQL_COLUMN_NODE)
+	{
+		*ppSqlValue = &pQueryExpr->currVal;
+		rc = sqlGetColumnValue( pDb, pRow,
+									pQueryExpr->nd.column.pTable->uiTableNum,
+									pQueryExpr->nd.column.uiColumnNum,
+									pPool, *ppSqlValue);
+		goto Exit;
+	}
+
+	// Perform the evaluation
+
+	pCurrNode = pQueryExpr;
+	for (;;)
+	{
+		while (pCurrNode->pFirstChild)
+		{
+			pCurrNode = pCurrNode->pFirstChild;
+		}
+
+		// We should be positioned on a leaf node that is either a
+		// value or a column
+
+		if (pCurrNode->eNodeType == SQL_COLUMN_NODE)
+		{
+			if (RC_BAD( rc = sqlGetColumnValue( pDb, pRow,
+									pCurrNode->nd.column.pTable->uiTableNum,
+									pCurrNode->nd.column.uiColumnNum,
+									pPool, &pCurrNode->currVal)))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			
+			// Better be a constant
+
+			flmAssert( pCurrNode->eNodeType == SQL_VALUE_NODE);
+		}
+			
+		// When we get to this point, we have at least one leaf
+		// level operand in hand - pCurrNode.
+		// See if we can evaluate the operator of pCurrNode.
+		// This will take care of any short-circuiting evaluation
+		// that can be done.
+		
+		for (;;)
+		{
+			if (pCurrNode == pQueryExpr)
+			{
+				*ppSqlValue = &pQueryExpr->currVal;
+				goto Exit;
+			}
+	
+			// If the current node's parent is an AND or OR
+			// operator, see if we even need to go to the next
+			// sibling.
+	
+			flmAssert( pCurrNode->pParent->eNodeType == SQL_OPERATOR_NODE);
+			if (isSQLLogicalOp( pCurrNode->pParent->nd.op.eOperator))
+			{
+				// All NOT operators should have been weeded out of the tree
+				// by now.
+				
+				flmAssert( pCurrNode->pParent->nd.op.eOperator != SQL_NOT_OP);
+				eBoolVal = SQL_UNKNOWN;
+				eBoolPartialEval = pCurrNode->pParent->nd.op.eOperator == SQL_AND_OP
+										  ? SQL_FALSE
+										  : SQL_TRUE;
+				if (pCurrNode->eNodeType == SQL_OPERATOR_NODE)
+				{
+	
+					// It may not have been evaluated because of missing
+					// values in one or both operands, in which case
+					// its state will be SQL_MISSING_VALUE.  If it was
+					// evaluated, its state should show a boolean value.
+	
+					if (pCurrNode->currVal.eValType == SQL_MISSING_VAL)
+					{
+						eBoolVal = (pCurrNode->bNotted ? SQL_TRUE : SQL_FALSE);
+					}
+					else
+					{
+						flmAssert( pCurrNode->currVal.eValType == SQL_BOOL_VAL);
+						eBoolVal = pCurrNode->currVal.val.eBool;
+					}
+				}
+				else if (pCurrNode->eNodeType == SQL_COLUMN_NODE)
+				{
+					if (!pCurrNode->bNotted)
+					{
+						eBoolVal = (pCurrNode->currVal.eValType == SQL_MISSING_VAL)
+										? SQL_FALSE
+										: SQL_TRUE;
+					}
+					else
+					{
+						eBoolVal = (pCurrNode->currVal.eValType == SQL_MISSING_VAL)
+										? SQL_TRUE
+										: SQL_FALSE;
+					}
+				}
+				else
+				{
+					flmAssert( pCurrNode->eNodeType == SQL_VALUE_NODE);
+					
+					// Only allowed value node underneath a logical operator is
+					// a boolean value that has a value of SQL_UNKNOWN.
+					// SQL_FALSE and SQL_TRUE will already have been weeded out.
+	
+					flmAssert( pCurrNode->currVal.eValType == SQL_BOOL_VAL &&
+								  pCurrNode->currVal.val.eBool == SQL_UNKNOWN);
+	
+					// No need to set eBoolVal to SQL_UNKNOWN, because it will never
+					// match eBoolPartialEval in the test below.  eBoolPartialEval
+					// is always either SQL_FALSE or SQL_TRUE.
+	
+					// eBoolVal = SQL_UNKNOWN;
+	
+				}
+				if (eBoolVal == eBoolPartialEval)
+				{
+					pCurrNode = pCurrNode->pParent;
+					pCurrNode->currVal.eValType = SQL_BOOL_VAL;
+					pCurrNode->currVal.val.eBool = eBoolVal;
+				}
+				else
+				{
+					goto Check_Sibling_Operand;
+				}
+			}
+			else if (isSQLCompareOp( pCurrNode->pParent->nd.op.eOperator))
+			{
+				
+				// We can short-circuit the comparison - avoid getting the
+				// sibling operand - if the current node is a missing value.
+				// If the value is missing, the comparison operator will
+				// return a boolean SQL_UNKNOWN, regardless of what the
+				// other operand is.
+				
+				if (pCurrNode->currVal.eValType == SQL_MISSING_VAL)
+				{
+					pCurrNode = pCurrNode->pParent;
+					pCurrNode->currVal.eValType = SQL_BOOL_VAL;
+					pCurrNode->currVal.val.eBool = SQL_UNKNOWN;
+				}
+				else
+				{
+					goto Check_Sibling_Operand;
+				}
+			}
+			else if (isSQLArithOp(  pCurrNode->pParent->nd.op.eOperator))
+			{
+				
+				// We can short-circuit the arithmetic operation - avoid getting the
+				// sibling operand - if the current node is a missing value.
+				// If the value is missing, the arithmetic operation will
+				// return a missing value, regardless of what the
+				// other operand is.
+				
+				if (pCurrNode->currVal.eValType == SQL_MISSING_VAL)
+				{
+					pCurrNode = pCurrNode->pParent;
+					pCurrNode->currVal.eValType = SQL_MISSING_VAL;
+				}
+				else
+				{
+					goto Check_Sibling_Operand;
+				}
+			}
+			else
+			{
+
+Check_Sibling_Operand:
+
+				if (pCurrNode->pNextSib)
+				{
+					pCurrNode = pCurrNode->pNextSib;
+					break;
+				}
+				pCurrNode = pCurrNode->pParent;
+	
+				// All operands are now present - do evaluation
+	
+				if (RC_BAD( rc = sqlEvalOperator( uiLanguage, pCurrNode)))
+				{
+					goto Exit;
+				}
+			}
+		}
+	}
+	
 Exit:
 
 	return( rc);
