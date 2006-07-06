@@ -878,6 +878,10 @@ ifdef unix_target
 			compiler = CC
 			exe_linker = CC
 			shared_linker = ld
+			compiler_version := $(shell $(compiler) -V 2>&1)
+			ifneq (,$(findstring Sun C++,$(compiler_version)))
+				sun_studio_compiler = yes
+			endif
 		endif
 	endif
 
@@ -942,7 +946,10 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),solaris)
 		ifeq ($(usenativecc),yes)
-			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
+			ccflags += -KPIC
+			ifeq ($(sun_studio_compiler),yes)
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
+			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
 			else
@@ -1442,29 +1449,72 @@ libs: status clean dircheck $(flaim_static_lib) $(flaim_shared_lib)
 # -- *.cpp -> *$(obj_suffix) --
 
 ifdef win_target
-define cpp_to_obj_template
-$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
-	$$(ec)$$(compiler) $$(ccflags) /Fo$$(call hostpath,$$@) $$(call hostpath,$$<)
-endef
+$(lib_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fo$(call hostpath,$@) $(call hostpath,$<)
+endif
+
+ifdef win_target
+$(util_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fo$(call hostpath,$@) $(call hostpath,$<)
+endif
+
+ifdef win_target
+$(sample_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fo$(call hostpath,$@) $(call hostpath,$<)
+endif
+
+ifdef win_target
+$(test_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(compiler) $(ccflags) /Fo$(call hostpath,$@) $(call hostpath,$<)
 endif
 
 ifdef unix_target
-define cpp_to_obj_template
-$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
-	$$(ec)$$(gprintf) "$$<\n"
-	$$(ec)$$(compiler) $$(ccflags) -c $$< -o $$@
-endef
+$(lib_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$<\n"
+	$(ec)$(compiler) $(ccflags) -c $< -o $@
+endif
+
+ifdef unix_target
+$(util_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$<\n"
+	$(ec)$(compiler) $(ccflags) -c $< -o $@
+endif
+
+ifdef unix_target
+$(sample_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$<\n"
+	$(ec)$(compiler) $(ccflags) -c $< -o $@
+endif
+
+ifdef unix_target
+$(test_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$<\n"
+	$(ec)$(compiler) $(ccflags) -c $< -o $@
 endif
 
 ifdef netware_target
-define cpp_to_obj_template
-$$($(1)_obj_dir)/%$(obj_suffix) : %.cpp
-	$$(ec)$$(gprintf) "$$(notdir $$(strip $$@))\n"
-	$$(ec)$$(call hostpath,$$(compiler)) $$(call hostpath,$$<) /fo=$$(call hostpath,$$@)
-endef
+$(lib_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$(notdir $(strip $@))\n"
+	$(ec)$(call hostpath,$(compiler)) $(call hostpath,$<) /fo=$(call hostpath,$@)
 endif
 
-$(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
+ifdef netware_target
+$(util_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$(notdir $(strip $@))\n"
+	$(ec)$(call hostpath,$(compiler)) $(call hostpath,$<) /fo=$(call hostpath,$@)
+endif
+
+ifdef netware_target
+$(sample_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$(notdir $(strip $@))\n"
+	$(ec)$(call hostpath,$(compiler)) $(call hostpath,$<) /fo=$(call hostpath,$@)
+endif
+
+ifdef netware_target
+$(test_obj_dir)/%$(obj_suffix) : %.cpp
+	$(ec)$(gprintf) "$(notdir $(strip $@))\n"
+	$(ec)$(call hostpath,$(compiler)) $(call hostpath,$<) /fo=$(call hostpath,$@)
+endif
 
 ifdef win_target
 $(lib_sobj_dir)/%$(obj_suffix) : %.cpp

@@ -2167,7 +2167,7 @@ RCODE IFlmTestImpl::resumeIndexTest(
 			break;
 		}
 		
-		f_yieldCPU();
+		f_sleep( 50);
 	}
 	
 	bPassed = TRUE;
