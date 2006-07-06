@@ -837,6 +837,10 @@ ifdef unix_target
 			compiler = CC
 			exe_linker = CC
 			shared_linker = ld
+			compiler_version := $(shell $(compiler) -V)	
+			ifneq (,$(findstring Sun C++,$(compiler_version)))
+				sun_studio_compiler = yes
+			endif
 		endif
 	endif
 
@@ -905,7 +909,10 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),solaris)
 		ifeq ($(usenativecc),yes)
-			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse
+			ccflags += -KPIC
+			ifeq ($(sun_studio_compiler),yes)
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse
+			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
 			else
