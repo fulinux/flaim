@@ -431,7 +431,8 @@ RCODE flmWriteLogHdr(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pCFileHdl->sectorWrite( 0, uiBytesWritten, 
+	if( RC_BAD( rc = pCFileHdl->sectorWrite( 
+		0, f_roundUp( uiBytesWritten, 512), 
 		pFile->pucLogHdrWriteBuf, NULL, &uiBytesWritten)))
 	{
 		if (pDbStats)
