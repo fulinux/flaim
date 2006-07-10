@@ -127,9 +127,9 @@ typedef enum
 	SQL_ERR_CANNOT_DROP_SYSTEM_TABLE,	///< 47 = Cannot drop internal system tables.
 	SQL_ERR_UNDEFINED_ENCDEF,				///< 48 = Encryption definition specified does not exist.
 	SQL_ERR_ENCDEF_ALREADY_DEFINED,		///< 49 = Encryption definition name is already defined in the database.
-	SQL_ERR_INVALID_WHERE_TABLE,			///< 50 = Invalid table name or alias specified for column in where clause.
+	SQL_ERR_UNDEFINED_TABLE_NAME,			///< 50 = Invalid table name or alias specified for column name specifier.
 	SQL_ERR_AMBIGUOUS_COLUMN_NAME,		///< 51 = Ambiguous column name specified in where clause - belongs to more than one table.
-	SQL_ERR_INVALID_WHERE_COLUMN,			///< 52 = Invalid column specified in where clause.
+	SQL_ERR_INVALID_COLUMN_NAME,			///< 52 = Invalid column name specified.
 	SQL_ERR_UNEXPECTED_NOT_OPERATOR,		///< 53 = Unexpected NOT operator in where clause.
 	SQL_ERR_EXPECTING_OPERATOR,			///< 54 = Expecting an operator in where clause.
 	SQL_ERR_INVALID_OPERAND,				///< 55 = Invalid operand specified in where clause.
@@ -141,6 +141,10 @@ typedef enum
 	SQL_ERR_EXPECTING_WHERE,				///< 61 = Expecting "WHERE" keyword.
 	SQL_ERR_EXPECTING_SET,					///< 62 = Expecting "SET" keyword.
 	SQL_ERR_EXPECTING_PERIOD,				///< 63 = Expecting a period after the table name.
+	SQL_ERR_DUPLICATE_TABLE_NAME,			///< 64 = Table name specified multiple times in SELECT statement.
+	SQL_ERR_DUPLICATE_ALIAS_NAME,			///< 65 = Table alias name specified multiple times in SELECT statement.
+	SQL_ERR_TOO_MANY_TABLES,				///< 66 = Too many tables specified in SELECT statement.
+	SQL_ERR_EXPECTING_BY,					///< 67 = Expecting "BY" keyword.
 
 	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
 	SQL_NUM_ERRORS
@@ -1367,6 +1371,11 @@ typedef struct
 #define NE_SFLM_Q_UNEXPECTED_COLUMN					0xE213	///< 0xE213 = Not expecting a column name in query expression.
 #define NE_SFLM_Q_UNEXPECTED_CONSTANT				0xE214	///< 0xE214 = Not expecting a constant in query expression.
 #define NE_SFLM_Q_UNEXPECTED_BOOLEAN				0xE215	///< 0xE215 = Not expecting a boolean constant in query expression.
+#define NE_SFLM_Q_AMBIGUOUS_COLUMN_NAME			0xE216	///< 0xE216 = Column name specified in SELECT statement found in multiple tables - must specify table.
+#define NE_SFLM_Q_INVALID_COLUMN_NAME				0xE217	///< 0xE217 = Column name specified in SELECT statement not defined in the tables that were specified.
+#define NE_SFLM_Q_UNDEFINED_TABLE_FOR_COLUMN		0xE218	///< 0xE218 = Table name specified for a column in SELECT statement not defined in the tables that were specified.
+#define NE_SFLM_Q_BAD_ORDER_BY_TABLE				0xE219	///< 0xE219 = Table name specified in ORDER BY is not part of the query.
+#define NE_SFLM_Q_DUP_COLUMN_IN_ORDER_BY			0xE21A	///< 0xE21A = Duplicate table.column name specified in ORDER BY part of query.
 
 // Desc:	NICI / Encryption Errors
 

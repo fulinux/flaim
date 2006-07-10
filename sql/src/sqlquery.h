@@ -246,8 +246,10 @@ typedef struct SQL_TABLE
 
 typedef struct SQL_COLUMN
 {
-	SQL_TABLE *	pTable;
-	FLMUINT		uiColumnNum;
+	const char *	pszTableAlias;
+	const char *	pszColumnName;
+	SQL_TABLE *		pTable;
+	FLMUINT			uiColumnNum;
 } SQL_COLUMN;
 
 typedef struct SQL_NODE
@@ -272,6 +274,13 @@ typedef struct SQL_NODE
 		SQL_PRED		pred;
 	} nd;
 } SQL_NODE;
+
+typedef struct SQL_ORDER_BY
+{
+	SQL_TABLE *		pTable;
+	FLMUINT			uiColumnNum;
+	SQL_ORDER_BY *	pNext;
+} SQL_ORDER_BY;
 
 FINLINE FLMBOOL isSQLNodeBool(
 	SQL_NODE *	pNode)
@@ -331,6 +340,15 @@ public:
 	RCODE addTable(
 		FLMUINT			uiTableNum,
 		SQL_TABLE **	ppTable);
+		
+	RCODE resolveColumnNames(
+		TABLE_ITEM *	pTableList);
+		
+	RCODE addColumn(
+		const char *	pszTableAlias,
+		FLMUINT			uiTableAliasLen,
+		const char *	pszColumnName,
+		FLMUINT			uiColumnNameLen);
 		
 	RCODE addColumn(
 		FLMUINT	uiTableNum,
@@ -398,6 +416,11 @@ public:
 				  ? FALSE
 				  : TRUE);
 	}
+	
+	RCODE orderBy(
+		FLMUINT	uiTableNum,
+		FLMUINT	uiColumnNum,
+		FLMBOOL	bDescending);
 	
 	RCODE getNext(
 		F_Row **	ppRow);
@@ -488,6 +511,9 @@ private:
 	SQL_SUBQUERY *		m_pLastSubQuery;
 	SQL_TABLE *			m_pFirstTable;
 	SQL_TABLE *			m_pLastTable;
+	SQL_ORDER_BY *		m_pFirstOrderBy;
+	SQL_ORDER_BY *		m_pLastOrderBy;
+	FLMBOOL				m_bResolveNames;
 	FLMBOOL				m_bOptimized;
 	F_Database *		m_pDatabase;
 	F_Db *				m_pDb;

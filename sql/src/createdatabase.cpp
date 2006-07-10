@@ -557,7 +557,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 		}
 		
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-											&uiTokenLineOffset)))
+											&uiTokenLineOffset, NULL)))
 		{
 			goto Exit;
 		}
@@ -677,7 +677,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 			// Option must be followed by a comma or right paren
 			
 			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-												&uiTokenLineOffset)))
+												&uiTokenLineOffset, NULL)))
 			{
 				goto Exit;
 			}
@@ -700,7 +700,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 			// Comma must be followed by the next option
 			
 			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-												&uiTokenLineOffset)))
+												&uiTokenLineOffset, NULL)))
 			{
 				goto Exit;
 			}

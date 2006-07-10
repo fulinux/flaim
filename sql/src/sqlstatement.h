@@ -32,6 +32,12 @@
 
 class SQLQuery;
 
+typedef struct SELECT_EXPR
+{
+	SQLQuery *		pSqlQuery;
+	SELECT_EXPR *	pNext;
+} SELECT_EXPR;
+
 typedef struct COLUMN_SET
 {
 	FLMUINT			uiColumnNum;
@@ -145,7 +151,8 @@ private:
 		char *		pszToken,
 		FLMUINT		uiTokenBufSize,
 		FLMBOOL		bEofOK,
-		FLMUINT *	puiTokenLineOffset);
+		FLMUINT *	puiTokenLineOffset,
+		FLMUINT *	puiTokenLen);
 		
 	FINLINE void setErrInfo(
 		FLMUINT			uiErrLineNum,
@@ -257,7 +264,8 @@ private:
 		TABLE_ITEM *	pTableList,
 		COLUMN_SET **	ppFirstColumnSet,
 		COLUMN_SET **	ppLastColumnSet,
-		FLMUINT *		puiNumColumnsToSet);
+		FLMUINT *		puiNumColumnsToSet,
+		FLMBOOL *		pbHadWhere);
 		
 	RCODE processUpdateRows( void);
 	
@@ -265,17 +273,24 @@ private:
 	
 	RCODE processAlphaToken(
 		TABLE_ITEM *	pTableList,
-		FLMBOOL			bSelectStatement,
-		FLMBOOL			bUpdateExpression,
+		const char **	ppszTerminatingTokens,
+		const char **	ppszTerminator,
 		SQLQuery *		pSqlQuery,
 		FLMBOOL *		pbDone);
 		
 	RCODE parseCriteria(
 		TABLE_ITEM *	pTableList,
-		FLMBOOL			bSelectStatement,
-		FLMBOOL			bUpdateExpression,
+		const char **	ppszTerminatingTokens,
+		FLMBOOL			bEofOK,
+		const char **	ppszTerminator,
 		SQLQuery *		pSqlQuery);
 		
+	RCODE parseSelectExpressions(
+		SELECT_EXPR **	ppFirstSelectExpr,
+		SELECT_EXPR **	ppLastSelectExpr);
+		
+	RCODE processSelect( void);
+	
 	// Data
 
 	F_Db *						m_pDb;
@@ -298,4 +313,13 @@ friend class F_Db;
 friend class F_Database;
 };
 
+RCODE resolveColumnName(
+	F_Db *				pDb,
+	TABLE_ITEM *		pTableList,
+	const char *		pszTableAlias,
+	const char *		pszColumnName,
+	FLMUINT *			puiTableNum,
+	FLMUINT *			puiColumnNum,
+	SQLParseError *	peParseError);
+	
 #endif // SQLSTATEMENT_H

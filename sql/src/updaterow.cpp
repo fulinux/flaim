@@ -25,6 +25,13 @@
 
 #include "flaimsys.h"
 
+static const char * gv_setExprTerminators [3] =
+{
+	"where",
+	",",
+	NULL
+};
+
 FSTATIC RCODE convertValueToStringFormat(
 	SQL_VALUE *			pSqlValue,
 	F_COLUMN *			pColumn,
@@ -1005,14 +1012,14 @@ Exit:
 }
 
 //------------------------------------------------------------------------------
-// Desc:	Process the UPDATE statement.  The "UPDATE" keyword has already been
-//			parsed.
+// Desc:	Parse the columns that are to be set in the UPDATE statement.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::parseSetColumns(
 	TABLE_ITEM *	pTableList,
 	COLUMN_SET **	ppFirstColumnSet,
 	COLUMN_SET **	ppLastColumnSet,
-	FLMUINT *		puiNumColumnsToSet)
+	FLMUINT *		puiNumColumnsToSet,
+	FLMBOOL *		pbHadWhere)
 {
 	RCODE				rc = NE_SFLM_OK;
 	char				szToken [MAX_SQL_TOKEN_SIZE + 1];
@@ -1023,6 +1030,8 @@ RCODE SQLStatement::parseSetColumns(
 	FLMUINT			uiTokenLineOffset;
 	COLUMN_SET *	pColumnSet;
 	SQLQuery *		pSqlQuery = NULL;
+	
+	*pbHadWhere = FALSE;
 	
 	// Must have the keyword "SET"
 	
@@ -1131,9 +1140,41 @@ RCODE SQLStatement::parseSetColumns(
 		// Now parse the criteria for the SET command, unless NULL has already
 		// been detected.
 		
-		if (pSqlQuery)
+		if (!pSqlQuery)
 		{
-			if (RC_BAD( rc = parseCriteria( pTableList, FALSE, TRUE, pSqlQuery)))
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
+												&uiTokenLineOffset, NULL)))
+			{
+				if (rc == NE_SFLM_EOF_HIT)
+				{
+					rc = NE_SFLM_OK;
+					break;
+				}
+				goto Exit;
+			}
+			else if (f_stricmp( szToken, "where") == 0)
+			{
+				*pbHadWhere = TRUE;
+				break;
+			}
+			else if (f_stricmp( szToken, ",") != 0)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_EXPECTING_COMMA,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+		}
+		else
+		{
+			const char *	pszTerminator;
+			
+			if (RC_BAD( rc = parseCriteria( pTableList,
+										&gv_setExprTerminators [0], TRUE,
+										&pszTerminator, pSqlQuery)))
 			{
 				goto Exit;
 			}
@@ -1146,43 +1187,21 @@ RCODE SQLStatement::parseSetColumns(
 			{
 				goto Exit;
 			}
-		}
 		
-		// Next token should either be a comma or the WHERE keyword, or we
-		// should have hit EOF.
-		
-		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
-									&uiTokenLineOffset)))
-		{
-			if (rc == NE_SFLM_EOF_HIT)
+			// Next token should either be a comma or the WHERE keyword, or we
+			// should have hit EOF.  pszTerminator will return NULL if EOF was
+			// hit.
+			
+			if (!pszTerminator)
 			{
-				rc = NE_SFLM_OK;
 				break;
 			}
-			else
+			
+			if (f_stricmp( pszTerminator, "where") == 0)
 			{
-				goto Exit;
+				*pbHadWhere = TRUE;
+				break;
 			}
-		}
-		
-		if (f_stricmp( szToken, "where") == 0)
-		{
-			
-			// Push the WHERE token back into the input stream - so that
-			// the caller can handle it.
-			
-			m_uiCurrLineOffset = uiTokenLineOffset;
-			break;
-		}
-		else if (f_stricmp( szToken, ",") != 0)
-		{
-			setErrInfo( m_uiCurrLineNum,
-					uiTokenLineOffset,
-					SQL_ERR_EXPECTING_COMMA,
-					m_uiCurrLineFilePos,
-					m_uiCurrLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
 		}
 	}
 	
@@ -1207,6 +1226,7 @@ RCODE SQLStatement::processUpdateRows( void)
 	COLUMN_SET *		pLastColumnSet = NULL;
 	FLMUINT				uiNumColumnsToSet = 0;
 	SQLQuery				sqlQuery;
+	FLMBOOL				bHadWhere;
 
 	// If we are in a read transaction, we cannot do this operation
 	
@@ -1250,31 +1270,24 @@ RCODE SQLStatement::processUpdateRows( void)
 	tableList [1].uiTableNum = 0;
 	
 	if (RC_BAD( rc = parseSetColumns( &tableList [0], &pFirstColumnSet,
-								&pLastColumnSet, &uiNumColumnsToSet)))
+								&pLastColumnSet, &uiNumColumnsToSet,
+								&bHadWhere)))
 	{
 		goto Exit;
 	}
 	
 	// See if we have a WHERE clause
 	
-	if (RC_BAD( rc = haveToken( "where", TRUE)))
+	if (!bHadWhere)
 	{
-		if (rc == NE_SFLM_NOT_FOUND || rc == NE_SFLM_EOF_HIT)
-		{
-			if (RC_BAD( rc = sqlQuery.addTable( pTable->uiTableNum, NULL)))
-			{
-				goto Exit;
-			}
-		}
-		else
+		if (RC_BAD( rc = sqlQuery.addTable( pTable->uiTableNum, NULL)))
 		{
 			goto Exit;
 		}
 	}
 	else
 	{
-	
-		if (RC_BAD( rc = parseCriteria( &tableList [0], FALSE, FALSE, &sqlQuery)))
+		if (RC_BAD( rc = parseCriteria( &tableList [0], NULL, TRUE, NULL, &sqlQuery)))
 		{
 			goto Exit;
 		}

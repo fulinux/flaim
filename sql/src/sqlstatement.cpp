@@ -103,11 +103,13 @@ RCODE SQLStatement::getToken(
 	char *		pszToken,
 	FLMUINT		uiTokenBufSize,
 	FLMBOOL		bEofOK,
-	FLMUINT *	puiTokenLineOffset)
+	FLMUINT *	puiTokenLineOffset,
+	FLMUINT *	puiTokenLen)
 {
 	RCODE		rc = NE_SFLM_OK;
 	FLMUINT	uiOffset;
 	char		cChar;
+	char *	pszTokenStart = pszToken;
 	
 	// Always leave room for a null terminating character
 	
@@ -283,6 +285,11 @@ RCODE SQLStatement::getToken(
 		}
 	}
 	
+	if (puiTokenLen)
+	{
+		*puiTokenLen = (FLMUINT)(pszToken - pszTokenStart);
+	}
+	
 Exit:
 
 	return( rc);
@@ -301,7 +308,7 @@ RCODE SQLStatement::haveToken(
 	FLMUINT	uiTokenLineOffset;
 	
 	if (RC_BAD( rc = getToken( szToken, sizeof( szToken), bEofOK,
-								&uiTokenLineOffset)))
+								&uiTokenLineOffset, NULL)))
 	{
 		if (rc == NE_SFLM_EOF_HIT)
 		{
@@ -2040,11 +2047,18 @@ RCODE SQLStatement::executeSQL(
 	for (;;)
 	{
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
-											&uiTokenLineOffset)))
+											&uiTokenLineOffset, NULL)))
 		{
 			goto Exit;
 		}
-		if (f_stricmp( szToken, "insert") == 0)
+		if (f_stricmp( szToken, "select") == 0)
+		{
+			if (RC_BAD( rc = processSelect()))
+			{
+				goto Exit;
+			}
+		}
+		else if (f_stricmp( szToken, "insert") == 0)
 		{
 			if (RC_BAD( rc = processInsertRow()))
 			{
@@ -2079,7 +2093,7 @@ RCODE SQLStatement::executeSQL(
 		else if (f_stricmp( szToken, "create") == 0)
 		{
 			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-												&uiTokenLineOffset)))
+												&uiTokenLineOffset, NULL)))
 			{
 				goto Exit;
 			}
@@ -2130,7 +2144,7 @@ RCODE SQLStatement::executeSQL(
 		else if (f_stricmp( szToken, "drop") == 0)
 		{
 			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-												&uiTokenLineOffset)))
+												&uiTokenLineOffset, NULL)))
 			{
 				goto Exit;
 			}

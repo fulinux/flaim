@@ -360,7 +360,7 @@ RCODE SQLStatement::processDropDatabase( void)
 	for (;;)
 	{
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
-									&uiTokenLineOffset)))
+									&uiTokenLineOffset, NULL)))
 		{
 			if (rc == NE_SFLM_EOF_HIT)
 			{

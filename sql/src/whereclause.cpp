@@ -33,6 +33,11 @@ FSTATIC void sqlLinkLastChild(
 	SQL_NODE *	pParent,
 	SQL_NODE *	pChild);
 	
+FSTATIC FLMBOOL isTerminatingToken(
+	const char *	pszToken,
+	const char **	ppszTerminatingTokens,
+	const char **	ppszTerminator);
+	
 static FLMUINT uiSQLOpPrecedenceTable[ SQL_NEG_OP - SQL_AND_OP + 1] =
 {
 	2,		// SQL_AND_OP
@@ -73,6 +78,9 @@ SQLQuery::SQLQuery()
 	m_pLastSubQuery = NULL;
 	m_pFirstTable = NULL;
 	m_pLastTable = NULL;
+	m_pFirstOrderBy = NULL;
+	m_pLastOrderBy = NULL;
+	m_bResolveNames = FALSE;
 	m_bOptimized = FALSE;
 	m_bScan = FALSE;
 	m_bScanIndex = FALSE;
@@ -553,6 +561,240 @@ Exit:
 }
 
 //-------------------------------------------------------------------------
+// Desc:	Determine which table/column a table alias name and column name
+//			refer to.
+//-------------------------------------------------------------------------
+RCODE resolveColumnName(
+	F_Db *				pDb,
+	TABLE_ITEM *		pTableList,
+	const char *		pszTableAlias,
+	const char *		pszColumnName,
+	FLMUINT *			puiTableNum,
+	FLMUINT *			puiColumnNum,
+	SQLParseError *	peParseError)
+{
+	RCODE				rc = NE_SFLM_OK;
+	F_COLUMN *		pColumn;
+	F_TABLE *		pTable;
+	F_COLUMN *		pFoundColumn;
+	F_TABLE *		pFoundTable;
+	TABLE_ITEM *	pTableItem;
+	
+	if (pszTableAlias)
+	{
+		for (pTableItem = pTableList; pTableItem->uiTableNum; pTableItem++)
+		{
+			if (f_stricmp( pszTableAlias, pTableItem->pszTableAlias) == 0)
+			{
+				pTable = pDb->getDict()->getTable( pTableItem->uiTableNum);
+				if ((pColumn = pDb->getDict()->findColumn( pTable,
+											pszColumnName)) == NULL)
+				{
+					if (peParseError)
+					{
+						*peParseError = SQL_ERR_INVALID_COLUMN_NAME;
+					}
+					rc = RC_SET( NE_SFLM_Q_INVALID_COLUMN_NAME);
+					goto Exit;
+				}
+				*puiTableNum = pTable->uiTableNum;
+				*puiColumnNum = pColumn->uiColumnNum;
+				goto Exit;
+			}
+		}
+		
+		// If we get this far, we didn't find the table.
+		
+		if (peParseError)
+		{
+			*peParseError = SQL_ERR_UNDEFINED_TABLE_NAME;
+		}
+		rc = RC_SET( NE_SFLM_Q_UNDEFINED_TABLE_FOR_COLUMN);
+		goto Exit;
+	}
+	else
+	{
+		pFoundColumn = NULL;
+		pFoundTable = NULL;
+		for (pTableItem = pTableList; pTableItem->uiTableNum; pTableItem++)
+		{
+			pTable = pDb->getDict()->getTable( pTableItem->uiTableNum);
+			if ((pColumn = pDb->getDict()->findColumn( pTable,
+										pszColumnName)) != NULL)
+			{
+				// Column name is ambiguous - belongs to more than one of
+				// the tables specified.
+				
+				if (pFoundColumn)
+				{
+					if (peParseError)
+					{
+						*peParseError = SQL_ERR_AMBIGUOUS_COLUMN_NAME;
+					}
+					rc = RC_SET( NE_SFLM_Q_AMBIGUOUS_COLUMN_NAME);
+					goto Exit;
+				}
+				pFoundColumn = pColumn;
+				pFoundTable = pTable;
+			}
+		}
+		
+		if (!pFoundColumn)
+		{
+			if (peParseError)
+			{
+				*peParseError = SQL_ERR_INVALID_COLUMN_NAME;
+			}
+			rc = RC_SET( NE_SFLM_Q_INVALID_COLUMN_NAME);
+			goto Exit;
+		}
+		*puiTableNum = pFoundTable->uiTableNum;
+		*puiColumnNum = pFoundColumn->uiColumnNum;
+	}
+	if (peParseError)
+	{
+		*peParseError = SQL_NO_ERROR;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Resolve all of the column names that have been specified to one of
+//			the tables specified in the table list.  Each column must belong
+//			to one of the tables in the list.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::resolveColumnNames(
+	TABLE_ITEM *	pTableList)
+{
+	RCODE				rc = NE_SFLM_OK;
+	SQL_NODE *		pSQLNode;
+	SQL_TABLE *		pSQLTable;
+	FLMUINT			uiTableNum;
+	FLMUINT			uiColumnNum;
+
+	// May not be any names to resolve if the select statement specifed "*"
+	// for the list of columns.
+	
+	if (!m_bResolveNames)
+	{
+		goto Exit;
+	}
+	
+	pSQLNode = m_pQuery;
+	
+	for (;;)
+	{
+		if (pSQLNode->pFirstChild)
+		{
+			pSQLNode = pSQLNode->pFirstChild;
+			continue;
+		}
+		
+		if (pSQLNode->eNodeType == SQL_COLUMN_NODE)
+		{
+			if (RC_BAD( rc = resolveColumnName( m_pDb, pTableList,
+									pSQLNode->nd.column.pszTableAlias,
+									pSQLNode->nd.column.pszColumnName,
+									&uiTableNum, &uiColumnNum, NULL)))
+			{
+				goto Exit;
+			}
+			
+			if (RC_BAD( rc = addTable( uiTableNum, &pSQLTable)))
+			{
+				goto Exit;
+			}
+			pSQLNode->nd.column.pTable = pSQLTable;
+			pSQLNode->nd.column.uiColumnNum = uiColumnNum;
+		}
+		
+		// Continue to the next sibling - or the next sibling of the first
+		// node in parent chain that has a sibling.
+		
+		for (;;)
+		{
+			if (pSQLNode->pNextSib)
+			{
+				pSQLNode = pSQLNode->pNextSib;
+				break;
+			}
+			if ((pSQLNode = pSQLNode->pParent) == NULL)
+			{
+				break;
+			}
+		}
+		if (!pSQLNode)
+		{
+			break;
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Add a column name.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::addColumn(
+	const char *	pszTableAlias,
+	FLMUINT			uiTableAliasLen,
+	const char *	pszColumnName,
+	FLMUINT			uiColumnNameLen)
+{
+	RCODE				rc = NE_SFLM_OK;
+	SQL_NODE *		pSQLNode;
+	char *			pszTmp;
+
+	// Must be expecting an operand
+
+	if (!expectingOperand())
+	{
+		rc = RC_SET( NE_SFLM_Q_UNEXPECTED_COLUMN);
+		goto Exit;
+	}
+
+	// Allocate a column node
+
+	if (RC_BAD( rc = allocOperandNode( SQL_COLUMN_NODE, &pSQLNode)))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = m_pool.poolAlloc( uiTableAliasLen + uiColumnNameLen + 2,
+									(void **)&pszTmp)))
+	{
+		goto Exit;
+	}
+	
+	// Save the names - will resolve to numbers later.
+	
+	if (uiTableAliasLen)
+	{
+		pSQLNode->nd.column.pszTableAlias = pszTmp;
+		f_memcpy( pszTmp, pszTableAlias, uiTableAliasLen + 1);
+		pszTmp += (uiTableAliasLen + 1);
+	}
+	else
+	{
+		pSQLNode->nd.column.pszTableAlias = NULL;
+	}
+	pSQLNode->nd.column.pszColumnName = pszTmp;
+	f_memcpy( pszTmp, pszColumnName, uiColumnNameLen + 1);
+	pSQLNode->nd.column.pTable = NULL;
+	pSQLNode->nd.column.uiColumnNum = 0;
+	
+	m_bResolveNames = TRUE;
+
+Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
 // Desc:	Add a FLMUINT64 number constant.
 //-------------------------------------------------------------------------
 RCODE SQLQuery::addUINT64(
@@ -836,14 +1078,107 @@ Exit:
 	return( rc);
 }
 
+//-------------------------------------------------------------------------
+// Desc:	Add an ORDER BY component
+//-------------------------------------------------------------------------
+RCODE SQLQuery::orderBy(
+	FLMUINT	uiTableNum,
+	FLMUINT	uiColumnNum,
+	FLMBOOL	bDescending)
+{
+	RCODE				rc = NE_SFLM_OK;
+	SQL_TABLE *		pTable;
+	SQL_ORDER_BY *	pOrderBy;
+
+	// Find the table structure for the table - should already exist.
+	
+	pTable = m_pFirstTable;
+	while (pTable && pTable->uiTableNum != uiTableNum)
+	{
+		pTable = pTable->pNext;
+	}
+	if (!pTable)
+	{
+		rc = RC_BAD( NE_SFLM_Q_BAD_ORDER_BY_TABLE);
+		goto Exit;
+	}
+	
+	// Make sure that the order by component has not already been
+	// specified.
+	
+	pOrderBy = m_pFirstOrderBy;
+	while (pOrderBy)
+	{
+		if (pOrderBy->pTable == pTable &&
+			 pOrderBy->uiColumnNum == uiColumnNum)
+		{
+			rc = RC_SET( NE_SFLM_Q_DUP_COLUMN_IN_ORDER_BY);
+			goto Exit;
+		}
+		pOrderBy = pOrderBy->pNext;
+	}
+	
+	// Allocate an SQL_ORDER_BY structure and link it into the list of
+	// SQL_ORDER_BY structures.  It is assumed that the order in which this
+	// method is called specifies 1st, 2nd, 3rd, etc. order of the sort
+	// components.
+	
+	if (RC_BAD( rc = m_pool.poolAlloc( sizeof( SQL_ORDER_BY),
+								(void **)&pOrderBy)))
+	{
+		goto Exit;
+	}
+	pOrderBy->pTable = pTable;
+	pOrderBy->uiColumnNum = uiColumnNum;
+	pOrderBy->pNext = NULL;
+	if (m_pLastOrderBy)
+	{
+		m_pLastOrderBy->pNext = pOrderBy;
+	}
+	else
+	{
+		m_pFirstOrderBy = pOrderBy;
+	}
+	m_pLastOrderBy = pOrderBy;
+	
+Exit:
+
+	return( rc);
+}
+
+//------------------------------------------------------------------------------
+// Desc:	Determine if the current token is one that would terminate the
+//			expression.
+//------------------------------------------------------------------------------
+FSTATIC FLMBOOL isTerminatingToken(
+	const char *	pszToken,
+	const char **	ppszTerminatingTokens,
+	const char **	ppszTerminator)
+{
+	FLMUINT	uiLoop;
+	
+	if (ppszTerminatingTokens)
+	{
+		for (uiLoop = 0; ppszTerminatingTokens [uiLoop]; uiLoop++)
+		{
+			if (f_stricmp( ppszTerminatingTokens [uiLoop], pszToken) == 0)
+			{
+				*ppszTerminator = ppszTerminatingTokens [uiLoop];
+				return( TRUE);
+			}
+		}
+	}
+	return( FALSE);	
+}
+
 //------------------------------------------------------------------------------
 // Desc:	Process a token in the expression that begins with an alphabetic
 // 		character.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::processAlphaToken(
 	TABLE_ITEM *	pTableList,
-	FLMBOOL			bSelectStatement,
-	FLMBOOL			bUpdateExpression,
+	const char **	ppszTerminatingTokens,
+	const char **	ppszTerminator,
 	SQLQuery *		pSqlQuery,
 	FLMBOOL *		pbDone)
 {
@@ -852,20 +1187,21 @@ RCODE SQLStatement::processAlphaToken(
 	FLMUINT			uiSaveLineOffset;
 	FLMUINT			uiSaveLineFilePos;
 	FLMUINT			uiSaveLineBytes;
-	char				szToken [MAX_SQL_TOKEN_SIZE + 1];
+	char				szToken [MAX_SQL_NAME_LEN + 1];
+	FLMUINT			uiTokenLen;
+	char				szColumnName [MAX_SQL_NAME_LEN + 1];
+	FLMUINT			uiColumnNameLen;
 	FLMUINT			uiTokenLineOffset;
-	TABLE_ITEM *	pTableItem;
-	F_TABLE *		pTable;
-	F_COLUMN *		pColumn;
+	FLMUINT			uiTableNum;
+	FLMUINT			uiColumnNum;
+	SQLParseError	eParseError;
 	FLMBYTE			ucBuffer [200];
 	F_DynaBuf		dynaBuf( ucBuffer, sizeof( ucBuffer));
 	
 	*pbDone = FALSE;
-	
-	if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE, &uiTokenLineOffset)))
+	if (RC_BAD( rc = getName( szToken, sizeof( szToken),
+										&uiTokenLen, &uiTokenLineOffset)))
 	{
-		// Cannot be EOF hit at this point.
-		flmAssert( rc != NE_SFLM_EOF_HIT);
 		goto Exit;
 	}
 	uiSaveLineNum = m_uiCurrLineNum;
@@ -873,22 +1209,11 @@ RCODE SQLStatement::processAlphaToken(
 	uiSaveLineFilePos = m_uiCurrLineFilePos;
 	uiSaveLineBytes = m_uiCurrLineBytes;
 	
-	// If this is a select statement, see we have hit the "ORDER" keyword
-	// because that signals the beginning of the ORDER BY clause.
-	// If this is an expression in the SET part of an UPDATE statement,
-	// see if we have hit the "WHERE" keyword - which would signal the
-	// end of the criteria.
-	
-	if ((bSelectStatement && f_stricmp( szToken, "order") == 0) ||
-		 (bUpdateExpression && f_stricmp( szToken, "where") == 0))
+	if (isTerminatingToken( szToken, ppszTerminatingTokens,
+									ppszTerminator))
 	{
 		if (pSqlQuery->criteriaIsComplete())
 		{
-			
-			// This essentially pushes the toke back into the stream so that
-			// it will be handled later.
-			
-			m_uiCurrLineOffset = uiTokenLineOffset;
 			*pbDone = TRUE;
 			goto Exit;
 		}
@@ -995,107 +1320,86 @@ RCODE SQLStatement::processAlphaToken(
 	// name or a table alias.  See if there is a period for the
 	// next token.
 	
-	pTableItem = NULL;
 	if (RC_BAD( rc = haveToken( ".", TRUE)))
 	{
-		F_COLUMN *	pFoundColumn;
-		F_TABLE *	pFoundTable;
-		
 		if (rc != NE_SFLM_NOT_FOUND && rc != NE_SFLM_EOF_HIT)
 		{
 			goto Exit;
 		}
 		rc = NE_SFLM_OK;
 		
-		// See if the column name is valid for more than one
-		// of the tables.  If so, it is ambiguous.
-		
-		pFoundColumn = NULL;
-		pFoundTable = NULL;
-		for (pTableItem = pTableList; pTableItem->uiTableNum; pTableItem++)
+		if (!pTableList)
 		{
-			pTable = m_pDb->m_pDict->getTable( pTableItem->uiTableNum);
-			if ((pColumn = m_pDb->m_pDict->findColumn( pTable, szToken)) != NULL)
+			
+			// If there is no table list, the list of tables has not yet been
+			// specified, so we will have to save this column in a slightly
+			// different way.
+		
+			if (RC_BAD( rc = pSqlQuery->addColumn( NULL, 0, szToken, uiTokenLen)))
 			{
-				// Column name is ambiguous - belongs to more than one of
-				// the tables specified.
-				
-				if (pFoundColumn)
+				goto Exit;
+			}
+		}
+		else
+		{
+			if (RC_BAD( rc = resolveColumnName( m_pDb, pTableList, NULL,
+											szToken, &uiTableNum, &uiColumnNum,
+											&eParseError)))
+			{
+				if (eParseError != SQL_NO_ERROR)
 				{
 					setErrInfo( uiSaveLineNum,
 							uiSaveLineOffset,
-							SQL_ERR_AMBIGUOUS_COLUMN_NAME,
+							eParseError,
 							uiSaveLineFilePos,
 							uiSaveLineBytes);
-					rc = RC_SET( NE_SFLM_INVALID_SQL);
-					goto Exit;
 				}
-				pFoundColumn = pColumn;
-				pFoundTable = pTable;
+				goto Exit;
 			}
-		}
-		
-		if (!pFoundColumn)
-		{
-			setErrInfo( uiSaveLineNum,
-					uiSaveLineOffset,
-					SQL_ERR_INVALID_WHERE_COLUMN,
-					uiSaveLineFilePos,
-					uiSaveLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		if (RC_BAD( rc = pSqlQuery->addColumn( pFoundTable->uiTableNum,
-								pFoundColumn->uiColumnNum)))
-		{
-			goto Exit;
+			if (RC_BAD( rc = pSqlQuery->addColumn( uiTableNum, uiColumnNum)))
+			{
+				goto Exit;
+			}
 		}
 	}
 	else
 	{
 		
-		// Token better be a table alias.
-		
-		for (pTableItem = pTableList; pTableItem->uiTableNum; pTableItem++)
+		if (RC_BAD( rc = getName( szColumnName, sizeof( szColumnName),
+								&uiColumnNameLen, &uiTokenLineOffset)))
 		{
-			if (f_stricmp( pTableItem->pszTableAlias, szToken) == 0)
+			goto Exit;
+		}
+
+		if (!pTableList)
+		{
+			
+			// No table list yet - save using the table alias and column name.
+		
+			if (RC_BAD( rc = pSqlQuery->addColumn( szToken, uiTokenLen,
+											szColumnName, uiColumnNameLen)))
 			{
-				break;
+				goto Exit;
 			}
 		}
-		if (!pTableItem->uiTableNum)
+		else
 		{
-			setErrInfo( uiSaveLineNum,
-					uiSaveLineOffset,
-					SQL_ERR_INVALID_WHERE_TABLE,
-					uiSaveLineFilePos,
-					uiSaveLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
+			if (RC_BAD( rc = resolveColumnName( m_pDb, pTableList, szToken,
+											szColumnName, &uiTableNum, &uiColumnNum,
+											&eParseError)))
+			{
+				if (eParseError != SQL_NO_ERROR)
+				{
+					setErrInfo( uiSaveLineNum,
+							uiSaveLineOffset,
+							eParseError,
+							uiSaveLineFilePos,
+							uiSaveLineBytes);
+				}
+				goto Exit;
+			}
 		}
-		pTable = m_pDb->m_pDict->getTable( pTableItem->uiTableNum);
-		
-		// Get next token - better be a column name for the table.
-		
-		if (RC_BAD( rc = getToken( szToken, sizeof( szToken),
-									TRUE, &uiTokenLineOffset)))
-		{
-			// Cannot be EOF hit at this point.
-			flmAssert( rc != NE_SFLM_EOF_HIT);
-			goto Exit;
-		}
-		if ((pColumn = m_pDb->m_pDict->findColumn( pTable, szToken)) == NULL)
-		{
-			setErrInfo( uiSaveLineNum,
-					uiSaveLineOffset,
-					SQL_ERR_INVALID_WHERE_COLUMN,
-					uiSaveLineFilePos,
-					uiSaveLineBytes);
-			rc = RC_SET( NE_SFLM_INVALID_SQL);
-			goto Exit;
-		}
-		if (RC_BAD( rc = pSqlQuery->addColumn( pTable->uiTableNum,
-								pColumn->uiColumnNum)))
+		if (RC_BAD( rc = pSqlQuery->addColumn( uiTableNum, uiColumnNum)))
 		{
 			goto Exit;
 		}
@@ -1107,14 +1411,13 @@ Exit:
 }
 
 //------------------------------------------------------------------------------
-// Desc:	Process the WHERE clause of a SELECT, DELETE, or UPDATE statement.
-//			The "WHERE" keyword has already been parsed.  If it is the
-//			SELECT statement, the "ORDER BY" keyword can terminate the clause.
+// Desc:	Process criteria.
 //------------------------------------------------------------------------------
 RCODE SQLStatement::parseCriteria(
 	TABLE_ITEM *	pTableList,
-	FLMBOOL			bSelectStatement,
-	FLMBOOL			bUpdateExpression,
+	const char **	ppszTerminatingTokens,
+	FLMBOOL			bEofOK,
+	const char **	ppszTerminator,
 	SQLQuery *		pSqlQuery)
 {
 	RCODE						rc = NE_SFLM_OK;
@@ -1124,7 +1427,7 @@ RCODE SQLStatement::parseCriteria(
 	FLMBYTE					ucBuffer [200];
 	F_DynaBuf				dynaBuf( ucBuffer, sizeof( ucBuffer));
 	FLMUINT					uiNumChars;
-	eSQLQueryOperators	eOperator;
+	eSQLQueryOperators	eOperator = SQL_UNKNOWN_OP;
 	FLMUINT					uiNestedParens = 0;
 	FLMUINT					uiTokenLineOffset;
 	
@@ -1136,13 +1439,26 @@ RCODE SQLStatement::parseCriteria(
 		{
 			if (rc == NE_SFLM_EOF_HIT)
 			{
-				if (!pSqlQuery->criteriaIsComplete())
+				*ppszTerminator = NULL;
+				if (bEofOK)
 				{
-					goto Incomplete_Query;
+					if (!pSqlQuery->criteriaIsComplete())
+					{
+						goto Incomplete_Query;
+					}
+					else
+					{
+						rc = NE_SFLM_OK;
+					}
 				}
 				else
 				{
-					rc = NE_SFLM_OK;
+					setErrInfo( m_uiCurrLineNum,
+							m_uiCurrLineOffset,
+							SQL_ERR_UNEXPECTED_EOF,
+							m_uiCurrLineFilePos,
+							m_uiCurrLineBytes);
+					rc = RC_SET( NE_SFLM_INVALID_SQL);
 				}
 			}
 			goto Exit;
@@ -1338,7 +1654,8 @@ Add_Operator:
 					FLMBOOL	bDone;
 					
 					if (RC_BAD( rc = processAlphaToken( pTableList,
-												bSelectStatement, bUpdateExpression,
+												ppszTerminatingTokens,
+												ppszTerminator,
 												pSqlQuery, &bDone)))
 					{
 						goto Exit;
@@ -1376,17 +1693,13 @@ Add_Operator:
 						goto Exit;
 					}
 				}
-				else if (cChar == ',' && bUpdateExpression &&
-							pSqlQuery->criteriaIsComplete())
-				{
-					
-					// Comma is left in the stream, so it can be handled by
-					// the caller.
-					
-					goto Exit;
-				}
+				
+				// At this point, it has to be an invalid token for selection
+				// criteria.
+				
 				else
 				{
+					
 Incomplete_Query:
 					if (pSqlQuery->expectingOperator())
 					{

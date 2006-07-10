@@ -309,7 +309,7 @@ RCODE SQLStatement::getDataType(
 	//		long varbinary
 	
 	if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-								&uiTokenLineOffset)))
+								&uiTokenLineOffset, NULL)))
 	{
 		goto Exit;
 	}
@@ -346,7 +346,7 @@ RCODE SQLStatement::getDataType(
 	else if (f_stricmp( szToken, "long") == 0)
 	{
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-									&uiTokenLineOffset)))
+									&uiTokenLineOffset, NULL)))
 		{
 			goto Exit;
 		}
@@ -559,7 +559,7 @@ RCODE SQLStatement::processCreateTable( void)
 		}
 		
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-									&uiTokenLineOffset)))
+									&uiTokenLineOffset, NULL)))
 		{
 			goto Exit;
 		}

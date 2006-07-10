@@ -314,7 +314,7 @@ RCODE SQLStatement::processInsertRow( void)
 			}
 
 			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-										&uiTokenLineOffset)))
+										&uiTokenLineOffset, NULL)))
 			{
 				goto Exit;
 			}

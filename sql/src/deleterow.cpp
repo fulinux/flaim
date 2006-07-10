@@ -294,7 +294,7 @@ RCODE SQLStatement::processDeleteRows( void)
 		// Null terminate the list.
 		
 		tableList [1].uiTableNum = 0;
-		if (RC_BAD( rc = parseCriteria( &tableList [0], FALSE, FALSE, &sqlQuery)))
+		if (RC_BAD( rc = parseCriteria( &tableList [0], NULL, TRUE, NULL, &sqlQuery)))
 		{
 			goto Exit;
 		}

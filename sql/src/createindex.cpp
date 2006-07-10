@@ -610,7 +610,7 @@ RCODE SQLStatement::processCreateIndex(
 		for (;;)
 		{
 			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
-											&uiTokenLineOffset)))
+											&uiTokenLineOffset, NULL)))
 			{
 				goto Exit;
 			}
@@ -828,7 +828,7 @@ Invalid_Ix_Option:
 	for (;;)
 	{
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
-									&uiTokenLineOffset)))
+									&uiTokenLineOffset, NULL)))
 		{
 			if (rc == NE_SFLM_EOF_HIT)
 			{
