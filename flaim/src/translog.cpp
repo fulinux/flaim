@@ -24,8 +24,9 @@
 
 #include "flaimsys.h"
 
-FSTATIC void lgWriteComplete(
-	IF_IOBuffer *	pIOBuffer);
+FSTATIC void FLMAPI lgWriteComplete(
+	IF_IOBuffer *		pIOBuffer,
+	void *				pvData);
 
 /****************************************************************************
 Desc:
@@ -64,16 +65,17 @@ void scaLogWrite(
 Desc:	This is the callback routine that is called when a disk write is
 		completed.
 ****************************************************************************/
-FSTATIC void lgWriteComplete(
-	IF_IOBuffer * 		pIOBuffer)
+FSTATIC void FLMAPI lgWriteComplete(
+	IF_IOBuffer * 		pIOBuffer,
+	void *				pvData)
 {
 #ifdef FLM_DBG_LOG
-	FFILE *		pFile = (FFILE *)pIOBuffer->getCompletionCallbackData( 0);
+	FFILE *		pFile = (FFILE *)pIOBuffer->getCallbackData( 0);
 	FLMUINT		uiBlockSize = pFile->FileHdr.uiBlockSize;
 	FLMUINT		uiLength = pIOBuffer->getBufferSize();
 	char *		pszEvent;
 #endif
-	DB_STATS *	pDbStats = (DB_STATS *)pIOBuffer->getStats();
+	DB_STATS *	pDbStats = (DB_STATS *)pvData;
 
 #ifdef FLM_DBG_LOG
 	pszEvent = (char *)(RC_OK( pIOBuffer->getCompletionCode())
@@ -85,12 +87,11 @@ FSTATIC void lgWriteComplete(
 
 	if (pDbStats)
 	{
-
 		// Must lock mutex, because this may be called from async write
 		// completion at any time.
 
 		f_mutexLock( gv_FlmSysData.hShareMutex);
-		pDbStats->LogBlockWrites.ui64ElapMilli += pIOBuffer->getElapTime();
+		pDbStats->LogBlockWrites.ui64ElapMilli += pIOBuffer->getElapsedTime();
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 	}
 }
@@ -101,65 +102,40 @@ Desc:	This routine flushes a log buffer to the log file.
 RCODE lgFlushLogBuffer(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
-	FFILE *				pFile,
-	FLMBOOL				bDoAsync)
+	FFILE *				pFile)
 {
-	RCODE				rc = FERR_OK;
-	FLMUINT			uiBytesWritten;
-	IF_IOBuffer *	pAsyncBuffer;
+	RCODE					rc = FERR_OK;
 
-	if (!bDoAsync)
-	{
-		pAsyncBuffer = NULL;
-	}
-	else
-	{
-		pAsyncBuffer = pFile->pCurrLogBuffer;
-	}
-
-	if (pDbStats)
+	if( pDbStats)
 	{
 		pDbStats->bHaveStats = TRUE;
 		pDbStats->LogBlockWrites.ui64Count++;
 		pDbStats->LogBlockWrites.ui64TotalBytes += pFile->uiCurrLogWriteOffset;
 	}
 
-	pFile->pCurrLogBuffer->setCompletionCallback( lgWriteComplete);
-	pFile->pCurrLogBuffer->setCompletionCallbackData( 0,
-		(void *)pFile);
+	pFile->pCurrLogBuffer->setCompletionCallback( lgWriteComplete, pDbStats);
+	pFile->pCurrLogBuffer->addCallbackData( (void *)pFile);
+	
 	pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-	pFile->pCurrLogBuffer->startTimer( pDbStats);
 
-	// NOTE: No guarantee that pFile->pCurrLogBuffer will still be around
-	// after the call to WriteBlock, unless we are doing
-	// non-asynchronous write.
-
-	rc = pSFileHdl->writeBlock( pFile->uiCurrLogBlkAddr,
-				pFile->uiCurrLogWriteOffset,
-				pFile->pCurrLogBuffer->getBuffer(),
-				pAsyncBuffer, &uiBytesWritten);
-				
-	if (!pAsyncBuffer)
-	{
-		pFile->pCurrLogBuffer->notifyComplete( rc);
-	}
-	
-	pFile->pCurrLogBuffer = NULL;
-
-	if (RC_BAD( rc))
+	if( RC_BAD( rc = pSFileHdl->writeBlock( pFile->uiCurrLogBlkAddr,
+				pFile->uiCurrLogWriteOffset, pFile->pCurrLogBuffer)))
 	{
 		if (pDbStats)
 		{
 			pDbStats->uiWriteErrors++;
 		}
+		
 		goto Exit;
 	}
 	
 Exit:
 
 	pFile->uiCurrLogWriteOffset = 0;
+	pFile->pCurrLogBuffer->Release();
 	pFile->pCurrLogBuffer = NULL;
+
 	return( rc);
 }
 
@@ -170,20 +146,16 @@ RCODE lgOutputBlock(
 	DB_STATS	*			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	SCACHE *				pLogBlock,		// Cached log block.
-	FLMBYTE *			pucBlk,			// Pointer to the corresponding modified
-												// block in cache.  This block will be
-												// modified to the logged version of
-												// the block
-	FLMBOOL				bDoAsync,		// Do asynchronous writes?
-	FLMUINT *			puiLogEofRV)	// Returns log EOF
+	SCACHE *				pLogBlock,
+	FLMBYTE *			pucBlk,
+	FLMUINT *			puiLogEofRV)
 {
-	RCODE			rc = FERR_OK;
-	FLMUINT		uiFilePos = *puiLogEofRV;
-	FLMUINT		uiBlkSize = pFile->FileHdr.uiBlockSize;
-	FLMBYTE *	pucLogBlk;
-	FLMUINT		uiBlkAddress;
-	FLMUINT		uiLogBufferSize;
+	RCODE					rc = FERR_OK;
+	FLMUINT				uiFilePos = *puiLogEofRV;
+	FLMUINT				uiBlkSize = pFile->FileHdr.uiBlockSize;
+	FLMBYTE *			pucLogBlk;
+	FLMUINT				uiBlkAddress;
+	FLMUINT				uiLogBufferSize;
 
 	// Time for a new block file?
 	
@@ -195,8 +167,7 @@ RCODE lgOutputBlock(
 
 		if (pFile->uiCurrLogWriteOffset)
 		{
-			if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl,
-											pFile, bDoAsync)))
+			if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl, pFile)))
 			{
 				goto Exit;
 			}
@@ -244,7 +215,7 @@ RCODE lgOutputBlock(
 		for( ;;)
 		{
 			if (RC_BAD( rc = pFile->pBufferMgr->getBuffer( 
-				&pFile->pCurrLogBuffer, uiLogBufferSize, uiLogBufferSize)))
+				uiLogBufferSize, &pFile->pCurrLogBuffer)))
 			{
 				// If we failed to get a buffer of the requested size,
 				// reduce the buffer size by half and try again
@@ -256,6 +227,7 @@ RCODE lgOutputBlock(
 					{
 						goto Exit;
 					}
+					
 					rc = FERR_OK;
 					continue;
 				}
@@ -267,7 +239,7 @@ RCODE lgOutputBlock(
 
 	// Copy data from log block to the log buffer
 
-	pucLogBlk = pFile->pCurrLogBuffer->getBuffer() +
+	pucLogBlk = pFile->pCurrLogBuffer->getBufferPtr() +
 						pFile->uiCurrLogWriteOffset;
 	f_memcpy( pucLogBlk, pLogBlock->pucBlk, uiBlkSize);
 
@@ -311,11 +283,10 @@ RCODE lgOutputBlock(
 
 	// If this log buffer is full, write it out
 
-	if (pFile->uiCurrLogWriteOffset == 
+	if( pFile->uiCurrLogWriteOffset == 
 		pFile->pCurrLogBuffer->getBufferSize())
 	{
-		if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl,
-									pFile, bDoAsync)))
+		if( RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl, pFile)))
 		{
 			goto Exit;
 		}

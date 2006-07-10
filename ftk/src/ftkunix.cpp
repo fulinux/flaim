@@ -70,28 +70,15 @@
 #endif
 
 static pthread_mutex_t			gv_atomicMutex = PTHREAD_MUTEX_INITIALIZER;
+extern FLMATOMIC					gv_openFiles;
 
 /******************************************************************************
 Desc:
 *******************************************************************************/
 F_FileHdl::F_FileHdl()
 {
-	m_bFileOpened = FALSE;
-	m_bDeleteOnRelease = FALSE;
-	m_bOpenedReadOnly = FALSE;
-	m_pszFileName = NULL;
-	
+	initCommonData();
 	m_fd = -1;
-	m_uiExtendSize = 0;
-	m_uiBytesPerSector = 0;
-	m_ui64NotOnSectorBoundMask = 0;
-	m_ui64GetSectorBoundMask = 0;
-	m_uiExtendSize = 0;
-	m_ui64CurrentPos = 0;
-	m_bDoDirectIO = FALSE;
-	m_bOpenedInAsyncMode = FALSE;
-	m_pucAlignedBuff = NULL;
-	m_uiAlignedBuffSize = 0;
 }
 
 /******************************************************************************
@@ -104,33 +91,29 @@ F_FileHdl::~F_FileHdl()
 		(void)close();
 	}
 	
-	if( m_pucAlignedBuff)
-	{
-		free( m_pucAlignedBuff);
-	}
-	
-	if (m_pszFileName)
-	{
-		f_free( &m_pszFileName);
-	}
+	freeCommonData();
 }
 
 /***************************************************************************
 Desc:	Open or create a file.
 ***************************************************************************/
 RCODE F_FileHdl::openOrCreate(
-	const char *	pszFileName,
-   FLMUINT			uiAccess,
-	FLMBOOL			bCreateFlag)
+	const char *		pszFileName,
+   FLMUINT				uiIoFlags,
+	FLMBOOL				bCreateFlag)
 {
 	RCODE					rc = NE_FLM_OK;
 	FLMBOOL				bDoDirectIO = FALSE;
-	char					szSaveFileName[ F_PATH_MAX_SIZE];
+	FLMBOOL				bUsingAsync = FALSE;
 	int         		openFlags = O_RDONLY;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+	
+	f_assert( m_fd == -1);
+	f_assert( !m_bFileOpened);
+	f_assert( !m_pszFileName);
 
 #if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
-	bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
+	bDoDirectIO = (uiIoFlags & FLM_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
 	// HPUX needs this defined to access files larger than 2 GB.  The Linux
@@ -141,17 +124,21 @@ RCODE F_FileHdl::openOrCreate(
 	openFlags |= O_LARGEFILE;
 #endif
 
-	// Save the file name in case we have to create the directory
+	// Save the file path
 
-	if( bCreateFlag && (uiAccess & FLM_IO_CREATE_DIR))
+	if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
 	{
-		f_strcpy( szSaveFileName, pszFileName);
+		goto Exit;
 	}
+
+	f_strcpy( m_pszFileName, pszFileName);
+	
+	// Determine the i/o flags
 
    if( bCreateFlag)
    {
 		openFlags |= O_CREAT;
-		if( uiAccess & FLM_IO_EXCL)
+		if( uiIoFlags & FLM_IO_EXCL)
 		{
 	  		openFlags |= O_EXCL;
 		}
@@ -161,23 +148,20 @@ RCODE F_FileHdl::openOrCreate(
 		}
 	}
 
-   if( !(uiAccess & FLM_IO_RDONLY))
+   if( !(uiIoFlags & FLM_IO_RDONLY))
 	{
 		openFlags |= O_RDWR;
 	}
 	
-   if( !(uiAccess & FLM_IO_RDONLY))
+   if( !(uiIoFlags & FLM_IO_RDONLY))
 	{
       openFlags |= O_RDWR;
 	}
 	
-	// If doing direct IO, need to get the sector size.
+	// Determine if direct and async i/o are supported
 
 	if( bDoDirectIO)
 	{
-		// Can't do direct IO if the block size isn't a multiple of
-		// the sector size.
-
 #if defined( FLM_LINUX)
 		{
 			FLMUINT		uiMajor;
@@ -190,10 +174,7 @@ RCODE F_FileHdl::openOrCreate(
 				(uiMajor == 2 && uiMinor == 6 && uiRevision >= 5))
 			{
 				openFlags |= O_DIRECT;
-				if( pFileSystem->canDoAsync())
-				{
-					m_bOpenedInAsyncMode = TRUE;
-				}
+				bUsingAsync = TRUE;
 			}
 			else
 			{
@@ -201,10 +182,7 @@ RCODE F_FileHdl::openOrCreate(
 			}
 		}
 #elif defined( FLM_SOLARIS) || defined( FLM_OSX)
-		if( pFileSystem->canDoAsync())
-		{
-			m_bOpenedInAsyncMode = TRUE;
-		}
+		bUsingAsync = TRUE;
 #endif
 	}
 	
@@ -214,17 +192,17 @@ Retry_Create:
 
 	if ((m_fd = ::open( pszFileName, openFlags, 0600)) == -1)
 	{
-		if ((errno == ENOENT) && (uiAccess & FLM_IO_CREATE_DIR))
+		if ((errno == ENOENT) && (uiIoFlags & FLM_IO_CREATE_DIR))
 		{
 			char	szTemp[ F_PATH_MAX_SIZE];
 			char	szIoDirPath[ F_PATH_MAX_SIZE];
 
-			uiAccess &= ~FLM_IO_CREATE_DIR;
+			uiIoFlags &= ~FLM_IO_CREATE_DIR;
 
 			// Remove the file name for which we are creating the directory
 
-			if( RC_OK( pFileSystem->pathReduce( szSaveFileName,
-													szIoDirPath, szTemp)))
+			if( RC_OK( pFileSystem->pathReduce( 
+				m_pszFileName, szIoDirPath, szTemp)))
 			{
 				if( RC_OK( rc = pFileSystem->createDir( szIoDirPath)))
 				{
@@ -241,7 +219,7 @@ Retry_Create:
 		{
 			openFlags &= ~O_DIRECT;
 			bDoDirectIO = FALSE;
-			m_bOpenedInAsyncMode = FALSE;
+			bUsingAsync = FALSE;
 			goto Retry_Create;
 		}
 #endif
@@ -250,12 +228,23 @@ Retry_Create:
 		goto Exit;
 	}
 
+	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
+	{
+		m_bDeleteOnRelease = TRUE;
+	}
+	else
+	{
+		m_bDeleteOnRelease = FALSE;
+	}
+	
 #if defined( FLM_SOLARIS)
 	if( bDoDirectIO)
 	{
 		directio( m_fd, DIRECTIO_ON);
 	}
 #endif
+
+	// Get the sector size
 
 #if defined( FLM_SOLARIS) || defined( FLM_LINUX)
 	m_uiBytesPerSector = DEV_BSIZE;
@@ -275,233 +264,40 @@ Retry_Create:
 
 	m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
 	m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
+
+	// Allocate at least 64K - this will handle most read and write
+	// operations and will also be a multiple of the sector size most of
+	// the time.  The calculation below rounds it up to the next sector
+	// boundary if it is not already on one.
+
+	m_uiAlignedBuffSize = 64 * 1024;
+	if( bDoDirectIO)
+	{
+		m_uiAlignedBuffSize = roundToNextSector( m_uiAlignedBuffSize);
+	}
+
+	if( RC_BAD( rc = f_allocAlignedBuffer( m_uiAlignedBuffSize, 
+		&m_pucAlignedBuff)))
+	{
+		goto Exit;
+	}
+
+	m_bFileOpened = TRUE;
 	m_bDoDirectIO = bDoDirectIO;
+	m_bOpenedInAsyncMode = bUsingAsync;
+	m_ui64CurrentPos = 0;
+	m_bOpenedReadOnly = (uiIoFlags & FLM_IO_RDONLY) ? TRUE : FALSE;
+	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
+	f_atomicInc( &gv_openFiles);
 
 Exit:
 
 	if( RC_BAD( rc))
 	{
-		m_fd = -1;
-		m_bDoDirectIO = FALSE;
-		m_bOpenedInAsyncMode = FALSE;
+		close();
 	}
 	
    return( rc);
-}
-
-/******************************************************************************
-Desc:	Create a file 
-******************************************************************************/
-RCODE F_FileHdl::create(
-	const char *	pszFileName,
-	FLMUINT			uiIoFlags)
-{
-	RCODE			rc = NE_FLM_OK;
-
-	f_assert( !m_bFileOpened);
-
-	if( m_bDeleteOnRelease)
-	{
-		// This file handle had better not been used for another file
-		// before.  Otherwise, we will get a memory leak.
-
-		f_assert( m_pszFileName == NULL);
-
-		// Note: 'OpenOrCreate' will set m_pszFileName
-		
-		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
-		{
-			goto Exit;
-		}
-
-		f_strcpy( m_pszFileName, pszFileName);
-	}
-
-	if( RC_BAD( rc = openOrCreate( pszFileName, uiIoFlags, TRUE)))
-	{
-		goto Exit;
-	}
-	
-	m_bFileOpened = TRUE;
-	m_ui64CurrentPos = 0;
-	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
-
-Exit:
-
-	if( RC_BAD( rc) && m_bDeleteOnRelease && m_pszFileName)
-	{
-		f_free( &m_pszFileName);
-	}
-
-	return( rc);
-}
-
-/******************************************************************************
-Desc:
-******************************************************************************/
-RCODE F_FileHdl::createUnique(
-	char *				pszDirName,
-	const char *		pszFileExtension,
-	FLMUINT				uiIoFlags)
-{
-	RCODE					rc = NE_FLM_OK;
-	char *				pszTmp;
-	FLMBOOL				bModext = TRUE;
-	FLMUINT				uiBaseTime = 0;
-	FLMBYTE				ucHighByte = 0;
-	char					szFileName[ F_FILENAME_SIZE];
-	char *				pszDirPath;
-	char					szDirPath[ F_PATH_MAX_SIZE];
-	char					szTmpPath[ F_PATH_MAX_SIZE];
-	FLMUINT				uiCount;
-	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
-	
-	f_assert( !m_bFileOpened);
-	f_memset( szFileName, 0, sizeof( szFileName));
-
-	if( m_bDeleteOnRelease)
-	{
-		// This file handle had better not been used for another file
-		// before.  Otherwise, we will get a memory leak.
-
-		f_assert( !m_pszFileName);
-	}
-
-	if( !pszDirName || pszDirName[ 0] == '\0')
-	{
-		f_strcpy( szDirPath, "./");
-	}
-	else
-	{
-		f_strcpy( szDirPath, pszDirName);
-	}
-	pszDirPath = &szDirPath [0];
-
-   // Search backwards replacing trailing spaces with NULLs.
-
-	pszTmp = pszDirPath;
-	pszTmp += (f_strlen( pszTmp) - 1);
-	while (*pszTmp == ' ' && pszTmp >= pszDirPath)
-	{
-		*pszTmp = 0;
-		pszTmp--;
-	}
-
-	// Append a slash if one isn't already there
-
-	if (pszTmp >= pszDirPath && *pszTmp != '/')
-	{
-		pszTmp++;
-		*pszTmp++ = '/';
-	}
-	else
-	{
-		pszTmp++;
-	}
-	*pszTmp = 0;
-
-	if( pszFileExtension && f_strlen( pszFileExtension) >= 3)
-	{
-		bModext = FALSE;
-	}
-
-	uiCount = 0;
-	do
-	{
-		pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName,
-										pszFileExtension,
-										&ucHighByte, bModext);
-
-		f_strcpy( szTmpPath, pszDirPath);
-		pFileSystem->pathAppend( szTmpPath, szFileName);
-		if( m_pszFileName)
-		{
-			f_free( &m_pszFileName);
-		}
-		
-		rc = create( szTmpPath, uiIoFlags | FLM_IO_EXCL);
-		
-		if (rc == NE_FLM_IO_DISK_FULL)
-		{
-			pFileSystem->deleteFile( pszDirPath);
-			goto Exit;
-		}
-		
-		if( rc == NE_FLM_IO_PATH_NOT_FOUND || rc == NE_FLM_IO_INVALID_PASSWORD)
-		{
-			goto Exit;
-		}
-	} while ((rc != NE_FLM_OK) && (uiCount++ < 10));
-
-   // Check if the path was created
-
-   if( uiCount >= 10 && rc != NE_FLM_OK)
-   {
-		rc = RC_SET( NE_FLM_IO_PATH_CREATE_FAILURE);
-		goto Exit;
-   }
-
-	m_bFileOpened = TRUE;
-	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
-
-	// Created file name needs to be returned.
-
-	f_strcpy( pszDirName, szTmpPath);
-
-Exit:
-
-	if( RC_BAD( rc) && m_pszFileName)
-	{
-		f_free( &m_pszFileName);
-		m_pszFileName = NULL;
-	}
-	
-	return( rc);
-}
-
-/******************************************************************************
-Desc:	Open a file
-******************************************************************************/
-RCODE F_FileHdl::open(
-	const char *	pszFileName,
-	FLMUINT			uiIoFlags)
-{
-	RCODE			rc = NE_FLM_OK;
-
-	f_assert( !m_bFileOpened);
-
-	if( m_bDeleteOnRelease)
-	{
-		// This file handle had better not been used for another file
-		// before.  Otherwise, we will get a memory leak.
-
-		f_assert( !m_pszFileName);
-
-		if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
-		{
-			goto Exit;
-		}
-	}
-
-	if( RC_BAD( rc = openOrCreate( pszFileName, uiIoFlags, FALSE)))
-	{
-		goto Exit;
-	}
-
-	m_bFileOpened = TRUE;
-	m_ui64CurrentPos = 0;
-	m_bOpenedReadOnly = (uiIoFlags & FLM_IO_RDONLY) ? TRUE : FALSE;
-	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
-
-Exit:
-
-	if( RC_BAD( rc) && m_bDeleteOnRelease && m_pszFileName)
-	{
-		f_free( &m_pszFileName);
-		m_pszFileName = NULL;
-	}
-
-	return( rc);
 }
 
 /******************************************************************************
@@ -509,38 +305,33 @@ Desc:	Close a file
 ******************************************************************************/
 RCODE FLMAPI F_FileHdl::close( void)
 {
-	FLMBOOL	bDeleteAllowed = TRUE;
-	RCODE		rc = NE_FLM_OK;
-
-	if( !m_bFileOpened)
+	if( m_fd != -1)
 	{
-		goto Exit;
+		::close( m_fd);
+		m_fd = -1;
 	}
-
-	::close( m_fd);
 	
-	m_fd = -1;
-	m_bFileOpened = FALSE;
-	m_bOpenedReadOnly = FALSE;
-	m_bOpenedExclusive = FALSE;
-
 	if( m_bDeleteOnRelease)
 	{
-		f_assert( m_pszFileName);
-
-		if( bDeleteAllowed)
-		{
-			f_getFileSysPtr()->deleteFile( m_pszFileName);
-		}
+		f_getFileSysPtr()->deleteFile( m_pszFileName);
 		m_bDeleteOnRelease = FALSE;
-
-		f_free( &m_pszFileName);
-		m_pszFileName = NULL;
 	}
+	
+	if( m_bFileOpened)
+	{
+		f_atomicDec( &gv_openFiles);
+	}
+	
+	freeCommonData();
+	
+	m_bFileOpened = FALSE;
+	m_ui64CurrentPos = 0;
+	m_bOpenedReadOnly = FALSE;
+	m_bOpenedExclusive = FALSE;
+	m_bDoDirectIO = FALSE;
+	m_bOpenedInAsyncMode = FALSE;
 
-Exit:
-
-	return( rc);
+	return( NE_FLM_OK);
 }
 
 /******************************************************************************
@@ -593,395 +384,6 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	return( NE_FLM_OK);
 }
 
-/****************************************************************************
-Desc:	Position and do a single read operation.
-****************************************************************************/
-RCODE F_FileHdl::doOneRead(
-	FLMUINT64		ui64ReadOffset,
-	FLMUINT			uiBytesToRead,
-	void *			pvReadBuffer,
-	FLMUINT *		puiBytesRead)
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMINT			iTmp;
-	FLMUINT			uiBytesRead = 0;
-
-	if( !m_bOpenedInAsyncMode)
-	{
-		if( (iTmp = pread( m_fd, pvReadBuffer, 
-			uiBytesToRead, ui64ReadOffset)) == -1)
-		{
-			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
-			goto Exit;
-		}
-
-		uiBytesRead = (FLMUINT)iTmp;
-	}
-	else
-#ifdef FLM_LIBC_NLM
-	{
-		rc = RC_SET_AND_ASSERT( NE_FLM_READING_FILE);
-		goto Exit;
-	}
-#else
-	{
-		struct aiocb		tmpAio;
-		struct aiocb *		ppAioList[ 1];
-		
-		f_memset( &tmpAio, 0, sizeof( struct aiocb));
-		tmpAio.aio_lio_opcode = LIO_READ;
-		tmpAio.aio_sigevent.sigev_notify = SIGEV_NONE;
-		tmpAio.aio_fildes = m_fd;
-		tmpAio.aio_offset = ui64ReadOffset;
-		tmpAio.aio_nbytes = uiBytesToRead;
-		tmpAio.aio_buf = pvReadBuffer;
-		
-		if( aio_read( &tmpAio) != 0)
-		{
-			f_assert( 0);
-			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
-			goto Exit;
-		}
-
-		ppAioList[ 0] = &tmpAio;
-		
-		for( ;;)
-		{
-			FLMINT 	iAsyncResult;
-			
-			if( aio_suspend( ppAioList, 1, NULL) != 0)
-			{
-				if( errno == EINTR)
-				{
-					continue;
-				}
-				
-				f_assert( 0);
-				rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
-				goto Exit;
-			}
-			
-			iAsyncResult = aio_error( &tmpAio);
-			
-			if( !iAsyncResult)
-			{
-				if( (iAsyncResult = aio_return( &tmpAio)) < 0)
-				{
-					f_assert( 0);
-					rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
-					goto Exit;
-				}
-		
-				uiBytesRead = (FLMUINT)iAsyncResult;
-				break;
-			}
-			
-			if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
-			{
-				continue;
-			}
-			
-			f_assert( 0);
-			rc = f_mapPlatformError( iAsyncResult, NE_FLM_READING_FILE);
-			goto Exit;
-		}
-	}
-#endif
-
-	if( uiBytesRead < uiBytesToRead)
-	{
-		rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-		goto Exit;
-	}
-	
-Exit:
-
-	if( puiBytesRead)
-	{
-		*puiBytesRead = uiBytesRead;
-	}
-
-	return( rc);
-}
-
-/******************************************************************************
-Desc:	Read from a file
-******************************************************************************/
-RCODE F_FileHdl::directRead(
-	FLMUINT64		ui64ReadOffset,
-	FLMUINT			uiBytesToRead,	
-   void *			pvBuffer,
-	FLMUINT *		puiBytesRead)
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMUINT			uiBytesRead;
-	FLMBYTE *		pucReadBuffer;
-	FLMBYTE *		pucDestBuffer;
-	FLMUINT			uiMaxBytesToRead;
-	FLMBOOL			bHitEOF;
-	
-	f_assert( m_bFileOpened);
-	f_assert( m_bDoDirectIO);
-	
-	if( puiBytesRead)
-	{
-		*puiBytesRead = 0;
-	}
-
-	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
-	{
-		ui64ReadOffset = m_ui64CurrentPos;
-	}
-
-	// This loop does multiple reads (if necessary) to get all of the
-	// data.  It uses aligned buffers and reads at sector offsets.
-
-	pucDestBuffer = (FLMBYTE *)pvBuffer;
-	for (;;)
-	{
-		// See if we are using an aligned buffer.  If not, allocate
-		// one (if not already allocated), and use it.
-
-		if( (ui64ReadOffset & m_ui64NotOnSectorBoundMask) ||
-			 (uiBytesToRead & m_ui64NotOnSectorBoundMask) ||
-			 (((FLMUINT64)(FLMUINT)pucDestBuffer) & m_ui64NotOnSectorBoundMask))
-		{
-			if( !m_pucAlignedBuff)
-			{
-				if( RC_BAD( rc = allocAlignedBuffer()))
-				{
-					goto Exit;
-				}
-			}
-			pucReadBuffer = m_pucAlignedBuff;
-
-			// Must read enough bytes to cover all of the sectors that
-			// contain the data we are trying to read.  The value of
-			// (ui64ReadOffset & m_ui64NotOnSectorBoundMask) will give us the
-			// number of additional bytes that are in the sector prior to
-			// the read offset.  We then round that up to the next sector
-			// to get the total number of bytes we are going to read.
-
-			uiMaxBytesToRead = (FLMUINT)roundToNextSector( 
-					uiBytesToRead + (ui64ReadOffset & m_ui64NotOnSectorBoundMask));
-
-			// Can't read more than the aligned buffer will hold.
-
-			if( uiMaxBytesToRead > m_uiAlignedBuffSize)
-			{
-				uiMaxBytesToRead = m_uiAlignedBuffSize;
-			}
-		}
-		else
-		{
-			uiMaxBytesToRead = (FLMUINT)roundToNextSector( uiBytesToRead);
-			f_assert( uiMaxBytesToRead >= uiBytesToRead);
-			pucReadBuffer = pucDestBuffer;
-		}
-
-		bHitEOF = FALSE;
-
-		if( RC_BAD( rc = doOneRead( truncateToPrevSector( ui64ReadOffset), 
-			uiMaxBytesToRead, pucReadBuffer, &uiBytesRead)))
-		{
-			if( rc != NE_FLM_IO_END_OF_FILE)
-			{
-				goto Exit;
-			}
-			
-			rc = NE_FLM_OK;
-		}
-		
-		if( uiBytesRead < uiMaxBytesToRead)
-		{
-			bHitEOF = TRUE;
-		}
-
-		// If the offset we want to read from is not on a sector
-		// boundary, increment the read buffer pointer to the
-		// offset where the data we need starts and decrement the
-		// bytes read by the difference between the start of the
-		// sector and the actual read offset.
-
-		if( ui64ReadOffset & m_ui64NotOnSectorBoundMask)
-		{
-			pucReadBuffer += (ui64ReadOffset & m_ui64NotOnSectorBoundMask);
-			f_assert( uiBytesRead >= m_uiBytesPerSector);
-			uiBytesRead -= (FLMUINT)(ui64ReadOffset & m_ui64NotOnSectorBoundMask);
-		}
-
-		// If bytes read is more than we actually need, truncate it back
-		// so that we only copy what we actually need.
-
-		if( uiBytesRead > uiBytesToRead)
-		{
-			uiBytesRead = uiBytesToRead;
-		}
-
-		uiBytesToRead -= uiBytesRead;
-
-		if( puiBytesRead)
-		{
-			(*puiBytesRead) += uiBytesRead;
-		}
-		
-		m_ui64CurrentPos = ui64ReadOffset + uiBytesRead;
-
-		// If using a different buffer for reading, copy the
-		// data read into the destination buffer.
-
-		if( pucDestBuffer != pucReadBuffer)
-		{
-			f_memcpy( pucDestBuffer, pucReadBuffer, uiBytesRead);
-		}
-
-		if( !uiBytesToRead)
-		{
-			break;
-		}
-
-		// Still more to read - did we hit EOF above?
-
-		if( bHitEOF)
-		{
-			rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-			break;
-		}
-
-		pucDestBuffer += uiBytesRead;
-		ui64ReadOffset += uiBytesRead;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/******************************************************************************
-Desc:	Read from a file
-******************************************************************************/
-RCODE FLMAPI F_FileHdl::read(
-	FLMUINT64		ui64ReadOffset,
-	FLMUINT			uiBytesToRead,	
-   void *			pvBuffer,
-   FLMUINT *		puiBytesRead)
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMINT      	iBytesRead;
-	
-	f_assert( m_bFileOpened);
-
-	if( m_bDoDirectIO || m_bOpenedInAsyncMode)
-	{
-		rc = directRead( ui64ReadOffset, uiBytesToRead, 
-			pvBuffer, puiBytesRead);
-		goto Exit;
-	}
-
-	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
-	{
-		ui64ReadOffset = m_ui64CurrentPos;
-	}
-	
-	if( (iBytesRead = pread( m_fd, pvBuffer, 
-		uiBytesToRead, ui64ReadOffset)) == -1)
-	{
-		rc = f_mapPlatformError(errno, NE_FLM_READING_FILE);
-		goto Exit;
-	}
-
-	if( puiBytesRead)
-	{
-		*puiBytesRead = (FLMUINT)iBytesRead;
-	}
-	
-	m_ui64CurrentPos = ui64ReadOffset + (FLMUINT)iBytesRead;
-	
-	if( (FLMUINT)iBytesRead < uiBytesToRead)
-	{
-		rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-		goto Exit;
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/******************************************************************************
-Note:	This function assumes that the pvBuffer that is passed in is
-		a multiple of a the sector size.
-******************************************************************************/
-RCODE FLMAPI F_FileHdl::sectorRead(
-	FLMUINT64		ui64ReadOffset,
-	FLMUINT			uiBytesToRead,
-   void *			pvBuffer,
-   FLMUINT *		puiBytesRead)
-{
-	if( m_bDoDirectIO || m_bOpenedInAsyncMode)
-	{
-		return( directRead( ui64ReadOffset, uiBytesToRead, 
-			pvBuffer, puiBytesRead));
-	}
-	else
-	{
-		return( read( ui64ReadOffset, uiBytesToRead, pvBuffer, puiBytesRead));
-	}
-}
-
-/******************************************************************************
-Desc:	Sets current position of file.
-******************************************************************************/
-RCODE FLMAPI F_FileHdl::seek(
-	FLMUINT64		ui64Offset,
-	FLMINT			iWhence,
-	FLMUINT64 *		pui64NewOffset)
-{
-	RCODE				rc = NE_FLM_OK;
-
-	f_assert( m_bFileOpened);
-	
-	switch( iWhence)
-	{
-		case FLM_IO_SEEK_CUR:
-		{
-			m_ui64CurrentPos += ui64Offset;
-			break;
-		}
-		
-		case FLM_IO_SEEK_SET:
-		{
-			m_ui64CurrentPos = ui64Offset;
-			break;
-		}
-		
-		case FLM_IO_SEEK_END:
-		{
-			if( RC_BAD( rc = size( &m_ui64CurrentPos)))
-			{
-				goto Exit;
-			}
-			
-			break;
-		}
-		
-		default:
-		{
-			rc = RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED);
-			goto Exit;
-		}
-	}
-	
-	if( pui64NewOffset)
-	{
-		*pui64NewOffset = m_ui64CurrentPos;
-	}
-
-Exit:
-
-	return( rc);
-}
-
 /******************************************************************************
 Desc:	Return the size of the file
 ******************************************************************************/
@@ -1007,17 +409,6 @@ Exit:
 }
 
 /******************************************************************************
-Desc:
-******************************************************************************/
-RCODE FLMAPI F_FileHdl::tell(
-	FLMUINT64 *		pui64Offset)
-{
-	f_assert( m_bFileOpened);
-	*pui64Offset = m_ui64CurrentPos;
-	return( NE_FLM_OK);
-}
-
-/******************************************************************************
 Desc:	Truncate the file to the indicated size
 ******************************************************************************/
 RCODE FLMAPI F_FileHdl::truncate(
@@ -1038,24 +429,177 @@ Exit:
 	return( rc);
 }
 
-/******************************************************************************
-Desc:	Write to a file
-******************************************************************************/
-RCODE FLMAPI F_FileHdl::write(
-	FLMUINT64		ui64WriteOffset,
-	FLMUINT			uiBytesToWrite,
-	const void *	pvBuffer,
-	FLMUINT *		puiBytesWrittenRV)
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdl::lowLevelRead(
+	FLMUINT64				ui64ReadOffset,
+	FLMUINT					uiBytesToRead,
+	void *					pvBuffer,
+	IF_IOBuffer *			pIOBuffer,
+	FLMUINT *				puiBytesRead)
 {
-	RCODE			rc = NE_FLM_OK;
-	FLMINT      iBytesWritten = 0;
-	
-	f_assert( m_bFileOpened);
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiBytesRead = 0;
+	F_FileAsyncClient *	pAsyncClient = NULL;
+	FLMBOOL					bWaitForRead = FALSE;
 
-	if( m_bDoDirectIO || m_bOpenedInAsyncMode)
+	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
 	{
-		rc = directWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer, 
-			NULL, puiBytesWrittenRV);
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+
+	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
+	{
+		ui64ReadOffset = m_ui64CurrentPos;
+	}
+	
+	if( !pvBuffer)
+	{
+		pvBuffer = pIOBuffer->getBufferPtr();
+	}
+
+#ifndef FLM_LIBC_NLM	
+	if( m_bOpenedInAsyncMode)
+	{
+		struct aiocb *		pAIO;
+		
+		if( RC_BAD( rc = allocFileAsyncClient( &pAsyncClient)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pAsyncClient->prepareForAsync( pIOBuffer)))
+		{
+			goto Exit;
+		}
+		
+		if( !pIOBuffer)
+		{
+			f_assert( pvBuffer);
+			bWaitForRead = TRUE;
+		}
+			
+		pAsyncClient->m_uiBytesToDo = uiBytesToRead;
+		pAIO = &pAsyncClient->m_aio;
+
+		pAIO->aio_lio_opcode = LIO_READ;
+		pAIO->aio_sigevent.sigev_notify = SIGEV_NONE;
+		pAIO->aio_fildes = m_fd;
+		pAIO->aio_offset = ui64ReadOffset;
+		pAIO->aio_nbytes = uiBytesToRead;
+		pAIO->aio_buf = pvBuffer;
+		pIOBuffer = NULL;
+		
+		if( aio_read( pAIO) != 0)
+		{
+			f_assert( 0);
+			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
+			pAsyncClient->notifyComplete( rc, uiBytesRead, FALSE);
+			goto Exit;
+		}
+
+		if( bWaitForRead)
+		{
+			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			{
+				if( rc != NE_FLM_IO_END_OF_FILE)
+				{
+					goto Exit;
+				}
+	
+				rc = NE_FLM_OK;
+			}
+	
+			uiBytesRead = pAsyncClient->m_uiBytesDone;
+		}
+		else
+		{
+			uiBytesRead = uiBytesToRead;
+		}
+	}
+	else
+#endif
+	{
+		FLMINT		iBytesRead;
+		
+		if( pIOBuffer)
+		{
+			pIOBuffer->setPending();
+		}
+	
+		if( (iBytesRead = pread( m_fd, pvBuffer, 
+			uiBytesToRead, ui64ReadOffset)) == -1)
+		{
+			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
+		}
+		else
+		{
+			uiBytesRead = (FLMUINT)iBytesRead;
+		}
+
+		if( pIOBuffer)
+		{
+			pIOBuffer->notifyComplete( rc);
+			pIOBuffer = NULL;
+		}
+		
+		if( RC_BAD( rc))
+		{
+			goto Exit;
+		}
+	}
+	
+	m_ui64CurrentPos += uiBytesRead;
+
+	if( uiBytesRead < uiBytesToRead)
+	{
+		rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+		goto Exit;
+	}
+	
+Exit:
+
+	f_assert( uiBytesRead || RC_BAD( rc));
+
+	if( pAsyncClient)
+	{
+		pAsyncClient->Release();
+	}
+
+	if( pIOBuffer && !pIOBuffer->isPending())
+	{
+		f_assert( RC_BAD( rc));
+		pIOBuffer->notifyComplete( rc);
+	}
+	
+	if( puiBytesRead)
+	{
+		*puiBytesRead = uiBytesRead;
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdl::lowLevelWrite(
+	FLMUINT64				ui64WriteOffset,
+	FLMUINT					uiBytesToWrite,
+	const void *			pvBuffer,
+	IF_IOBuffer *			pIOBuffer,
+	FLMUINT *				puiBytesWritten)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiBytesWritten = 0;
+	F_FileAsyncClient *	pAsyncClient = NULL;
+	FLMBOOL					bWaitForWrite = FALSE;
+	
+	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
 		goto Exit;
 	}
 	
@@ -1064,387 +608,127 @@ RCODE FLMAPI F_FileHdl::write(
 		ui64WriteOffset = m_ui64CurrentPos;
 	}
 
-  	if( (iBytesWritten = pwrite( m_fd, pvBuffer,
-		uiBytesToWrite, ui64WriteOffset)) == -1)
+	if( !pvBuffer)
 	{
-		rc = f_mapPlatformError(errno, NE_FLM_WRITING_FILE);
-		goto Exit;
+		pvBuffer = pIOBuffer->getBufferPtr();
 	}
 
-	if( puiBytesWrittenRV)
+#ifndef FLM_LIBC_NLM	
+	if( m_bOpenedInAsyncMode)
 	{
-		*puiBytesWrittenRV = (FLMUINT)iBytesWritten;
+		struct aiocb *		pAIO;
+
+		if( RC_BAD( rc = allocFileAsyncClient( &pAsyncClient)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pAsyncClient->prepareForAsync( pIOBuffer)))
+		{
+			goto Exit;
+		}
+			
+		if( !pIOBuffer)
+		{
+			bWaitForWrite = TRUE;
+		}
+			
+		pAsyncClient->m_uiBytesToDo = uiBytesToWrite;
+		pAIO = &pAsyncClient->m_aio;
+		pAIO->aio_lio_opcode = LIO_WRITE;
+		pAIO->aio_sigevent.sigev_notify = SIGEV_NONE;
+		pAIO->aio_fildes = m_fd;
+		pAIO->aio_offset = ui64WriteOffset;
+		pAIO->aio_nbytes = uiBytesToWrite;
+		pAIO->aio_buf = (void *)pvBuffer;
+		pIOBuffer = NULL;
+		
+		if( aio_write( pAIO) != 0)
+		{
+			f_assert( 0);
+			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			pAsyncClient->notifyComplete( rc, uiBytesWritten, FALSE);
+			goto Exit;
+		}
+		
+		if( bWaitForWrite)
+		{
+			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			{
+				if( rc != NE_FLM_IO_DISK_FULL)
+				{
+					goto Exit;
+				}
+	
+				rc = NE_FLM_OK;
+			}
+				
+			uiBytesWritten = pAsyncClient->m_uiBytesDone; 
+		}
+		else
+		{
+			uiBytesWritten = uiBytesToWrite;
+		}
+	}
+	else
+#endif
+	{
+		FLMINT		iBytesWritten;
+		
+		if( pIOBuffer)
+		{
+			pIOBuffer->setPending();
+		}
+		
+		if( (iBytesWritten = pwrite( m_fd, 
+			pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
+		{
+			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+		}
+		else
+		{
+			uiBytesWritten = (FLMUINT)iBytesWritten;
+		}
+
+		if( pIOBuffer)
+		{
+			pIOBuffer->notifyComplete( rc);
+			pIOBuffer = NULL;
+		}
+		
+		if( RC_BAD( rc))
+		{
+			goto Exit;
+		}
 	}
 	
-	m_ui64CurrentPos = ui64WriteOffset + (FLMUINT)iBytesWritten;
-	
-	if( (FLMUINT)iBytesWritten < uiBytesToWrite)
+	m_ui64CurrentPos += uiBytesWritten;
+
+	if( uiBytesWritten < uiBytesToWrite)
 	{
 		rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
 		goto Exit;
 	}
-
-Exit:
-
-	return( rc);
-}
-
-/******************************************************************************
-Desc:	Allocate an aligned buffer.
-******************************************************************************/
-RCODE F_FileHdl::allocAlignedBuffer( void)
-{
-	RCODE		rc = NE_FLM_OK;
-	
-	if( m_pucAlignedBuff)
-	{
-		goto Exit;
-	}
-
-	// Allocate at least 64K - this will handle most read and write
-	// operations and will also be a multiple of the sector size most of
-	// the time.  The calculation below rounds it up to the next sector
-	// boundary if it is not already on one.
-
-	m_uiAlignedBuffSize = (FLMUINT)roundToNextSector( 64 * 1024);
-	f_assert( m_uiAlignedBuffSize >= m_uiBytesPerSector);
-	
-#if defined( FLM_SOLARIS)
-	if( (m_pucAlignedBuff = (FLMBYTE *)memalign( 
-		sysconf( _SC_PAGESIZE), m_uiAlignedBuffSize)) == NULL)
-#elif defined( FLM_OSX) || defined( FLM_LIBC_NLM)
-	if( (m_pucAlignedBuff = (FLMBYTE *)malloc( m_uiAlignedBuffSize)) == NULL)
-#else
-	if( posix_memalign( (void **)&m_pucAlignedBuff, 
-		sysconf( _SC_PAGESIZE), m_uiAlignedBuffSize) == -1)
-#endif
-	{
-		m_uiAlignedBuffSize = 0;
-		rc = f_mapPlatformError( errno, NE_FLM_MEM);
-		goto Exit;
-	}
 	
 Exit:
 
-	return( rc);
-}
-
-/******************************************************************************
-Note:	This routine assumes that the size of pvBuffer is a multiple of
-		sector size and can be used to write out full sectors.  Even if
-		uiBytesToWrite does not account for full sectors, data from the
-		buffer will still be written out - a partial sector on disk will
-		not be preserved.
-******************************************************************************/
-RCODE F_FileHdl::directWrite(
-	FLMUINT64			ui64WriteOffset,
-	FLMUINT				uiBytesToWrite,
-	const void *		pvBuffer,
-	IF_IOBuffer *		pBufferObj,
-	FLMUINT *			puiBytesWrittenRV)
-{
-	RCODE					rc = NE_FLM_OK;
-	FLMUINT				uiBytesRead = 0;
-	FLMBYTE *			pucWriteBuffer;
-	FLMBYTE *			pucSrcBuffer;
-	FLMUINT				uiTotalBytesToWrite;
-	FLMUINT				uiBufBytesToWrite;
-	FLMUINT				uiBytesWritten = 0;
-	FLMBOOL				bWaitForWrite = (pBufferObj == NULL)
-										? TRUE
-										: FALSE;
-	FLMUINT64			ui64LastWriteOffset;
-
-	f_assert( m_bFileOpened);
-
-	if( !bWaitForWrite)
+	if( pAsyncClient)
 	{
-		f_assert( m_bOpenedInAsyncMode);
+		pAsyncClient->Release();
 	}
 	
-	if( puiBytesWrittenRV)
+	if( pIOBuffer && !pIOBuffer->isPending())
 	{
-		*puiBytesWrittenRV = 0;
+		f_assert( RC_BAD( rc));
+		pIOBuffer->notifyComplete( rc);
 	}
 
-	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
+	if( puiBytesWritten)
 	{
-		ui64WriteOffset = m_ui64CurrentPos;
+		*puiBytesWritten = uiBytesWritten;
 	}
-
-	// This loop is for direct IO - must make sure we use
-	// aligned buffers.
-
-	pucSrcBuffer = (FLMBYTE *)pvBuffer;
-	for (;;)
-	{
-
-		// See if we are using an aligned buffer.  If not, allocate
-		// one (if not already allocated), and use it.
-
-		if ((ui64WriteOffset & m_ui64NotOnSectorBoundMask) ||
-			 (uiBytesToWrite & m_ui64NotOnSectorBoundMask) ||
-			 (((FLMUINT)pucSrcBuffer) & m_ui64NotOnSectorBoundMask))
-		{
-
-			// Cannot do an async write if we have to use a temporary buffer
-			
-			bWaitForWrite = TRUE;
-
-			if (!m_pucAlignedBuff)
-			{
-				if (RC_BAD( rc = allocAlignedBuffer()))
-				{
-					goto Exit;
-				}
-			}
-			pucWriteBuffer = m_pucAlignedBuff;
-
-			// Must write enough bytes to cover all of the sectors that
-			// contain the data we are trying to write out.  The value of
-			// (ui64WriteOffset & m_ui64NotOnSectorBoundMask) will give us the
-			// number of additional bytes that are in the sector prior to
-			// the read offset.  We then round to the next sector to get the
-			// total number of bytes we are going to write.
-
-			uiTotalBytesToWrite = (FLMUINT)roundToNextSector( uiBytesToWrite +
-									  (ui64WriteOffset & m_ui64NotOnSectorBoundMask));
-
-			// Can't write more than the aligned buffer will hold.
-
-			if (uiTotalBytesToWrite > m_uiAlignedBuffSize)
-			{
-				uiTotalBytesToWrite = m_uiAlignedBuffSize;
-				uiBufBytesToWrite = (FLMUINT)(uiTotalBytesToWrite -
-										(ui64WriteOffset & m_ui64NotOnSectorBoundMask));
-			}
-			else
-			{
-				uiBufBytesToWrite = uiBytesToWrite;
-			}
-
-			// If the write offset is not on a sector boundary, we must
-			// read at least the first sector into the buffer.
-
-			if( (ui64WriteOffset & m_ui64NotOnSectorBoundMask) ||
-				 uiBufBytesToWrite < m_uiBytesPerSector)
-			{
-
-				// Read the first sector that is to be written out.
-				// Read one sector's worth of data - so that we will
-				// preserve what is already in the sector before
-				// writing it back out again.
-
-				if (RC_BAD( rc = doOneRead( truncateToPrevSector( ui64WriteOffset),
-					m_uiBytesPerSector, pucWriteBuffer, &uiBytesRead)))
-				{
-					if( rc != NE_FLM_IO_END_OF_FILE)
-					{
-						goto Exit;
-					}
-					
-					rc = NE_FLM_OK;
-					f_memset( &pucWriteBuffer[ uiBytesRead], 0, 
-						m_uiBytesPerSector - uiBytesRead);
-				}
-			}
-
-			// If the last sector's worth of data we are writing out is only a
-			// partial sector, we must read in this sector as well.
-
-			if( uiTotalBytesToWrite > m_uiBytesPerSector && 
-				((ui64WriteOffset + uiBufBytesToWrite) & m_ui64NotOnSectorBoundMask))
-			{
-				FLMBYTE *	pucReadBuf;
-				
-				pucReadBuf = &pucWriteBuffer[ 
-										uiTotalBytesToWrite - m_uiBytesPerSector];
-				
-
-				// Read the last sector that is to be written out.
-				// Read one sector's worth of data - so that we will
-				// preserve what is already in the sector before
-				// writing it back out again.
-
-				if( RC_BAD( rc = doOneRead(
-					truncateToPrevSector( ui64WriteOffset + uiBufBytesToWrite),
-					m_uiBytesPerSector, pucReadBuf, &uiBytesRead)))
-				{
-					if( rc != NE_FLM_IO_END_OF_FILE)
-					{
-						goto Exit;
-					}
-					
-					rc = NE_FLM_OK;
-					f_memset( &pucReadBuf[ uiBytesRead], 0,
-						m_uiBytesPerSector - uiBytesRead);
-				}
-			}
-
-			// Finally, copy the data from the source buffer into the
-			// write buffer.
-
-			f_memcpy( &pucWriteBuffer[ ui64WriteOffset & m_ui64NotOnSectorBoundMask],
-								pucSrcBuffer, uiBufBytesToWrite);
-		}
-		else
-		{
-			pucWriteBuffer = pucSrcBuffer;
-			uiTotalBytesToWrite = uiBytesToWrite;
-			uiBufBytesToWrite = uiBytesToWrite;
-		}
-
-		// Position the file to the nearest sector below the write offset.
-
-		ui64LastWriteOffset = (FLMUINT)truncateToPrevSector( ui64WriteOffset);
-		
-		if( !m_bOpenedInAsyncMode)
-		{
-			FLMINT		iBytesWritten;
-			
-			if( (iBytesWritten = pwrite( m_fd, 
-				pucWriteBuffer, uiTotalBytesToWrite, ui64LastWriteOffset)) == -1)
-			{
-				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-				goto Exit;
-			}
-			
-			uiBytesWritten = (FLMUINT)iBytesWritten;
-			f_assert( uiBytesWritten == uiTotalBytesToWrite);
-		}
-		else
-#ifdef FLM_LIBC_NLM
-		{
-			rc = RC_SET_AND_ASSERT( NE_FLM_WRITING_FILE);
-			goto Exit;
-		}
-#else
-		{
-			struct aiocb *		pAio;
-			struct aiocb		tmpAio;
-			
-			if( pBufferObj)
-			{
-				pAio = ((F_IOBuffer *)pBufferObj)->getAIOStruct();
-			}
-			else
-			{
-				pAio = &tmpAio;
-				f_assert( bWaitForWrite);
-			}
-			
-			f_memset( pAio, 0, sizeof( struct aiocb));
-			pAio->aio_lio_opcode = LIO_WRITE;
-			pAio->aio_sigevent.sigev_notify = SIGEV_NONE;
-			pAio->aio_fildes = m_fd;
-			pAio->aio_offset = ui64LastWriteOffset;
-			pAio->aio_nbytes = uiTotalBytesToWrite;
-			pAio->aio_buf = pucWriteBuffer;
-			
-			if( aio_write( pAio) != 0)
-			{
-				f_assert( 0);
-				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-				goto Exit;
-			}
-
-			if( bWaitForWrite)
-			{
-				struct aiocb *		ppAioList[ 1];
-				
-				ppAioList[ 0] = pAio;
-				
-				for( ;;)
-				{
-					FLMINT 	iAsyncResult;
-					
-					if( aio_suspend( ppAioList, 1, NULL) != 0)
-					{
-						if( errno == EINTR)
-						{
-							continue;
-						}
-						
-						f_assert( 0);
-						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-						goto Exit;
-					}
-					
-					iAsyncResult = aio_error( pAio);
-					
-					if( !iAsyncResult)
-					{
-						if( (iAsyncResult = aio_return( pAio)) < 0)
-						{
-							f_assert( 0);
-							rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-							goto Exit;
-						}
-						
-						uiBytesWritten = (FLMUINT)iAsyncResult;
-						f_assert( uiBytesWritten == uiTotalBytesToWrite);
-						break;
-					}
-					
-					if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
-					{
-						continue;
-					}
-					
-					f_assert( 0);
-					rc = f_mapPlatformError( iAsyncResult, NE_FLM_WRITING_FILE);
-					goto Exit;
-				}
-			}
-			else
-			{
-				pBufferObj->makePending();
-				uiBytesWritten = uiTotalBytesToWrite;
-			}
-		}
-#endif
-
-		if (uiBytesWritten < uiTotalBytesToWrite)
-		{
-			rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
-			goto Exit;
-		}
-
-		uiBytesToWrite -= uiBufBytesToWrite;
-		
-		if( puiBytesWrittenRV)
-		{
-			(*puiBytesWrittenRV) += uiBufBytesToWrite;
-		}
-		
-		m_ui64CurrentPos = ui64WriteOffset + uiBufBytesToWrite;
-		
-		if (!uiBytesToWrite)
-		{
-			break;
-		}
-
-		pucSrcBuffer += uiBufBytesToWrite;
-		ui64WriteOffset += uiBufBytesToWrite;
-	}
-
-Exit:
-
-	if( pBufferObj && !pBufferObj->isPending())
-	{
-		pBufferObj->notifyComplete( rc);
-	}
-
+	
 	return( rc);
-}
-
-/******************************************************************************
-Desc:	Returns flag indicating whether or not we can do async writes.
-******************************************************************************/
-FLMBOOL FLMAPI F_FileHdl::canDoAsync()
-{
-	f_assert( m_bFileOpened);
-	return( m_bOpenedInAsyncMode);
 }
 
 /******************************************************************************

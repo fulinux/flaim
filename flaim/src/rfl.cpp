@@ -54,14 +54,14 @@ F_Rfl::F_Rfl()
 	m_pCurrentBuf = NULL;
 	m_uiRflWriteBufs = DEFAULT_RFL_WRITE_BUFFERS;
 	m_uiBufferSize = DEFAULT_RFL_BUFFER_SIZE;
-	f_memset( &m_Buf1, 0, sizeof(m_Buf1));
-	f_memset( &m_Buf2, 0, sizeof(m_Buf2));
+	f_memset( &m_Buf1, 0, sizeof( m_Buf1));
+	f_memset( &m_Buf2, 0, sizeof( m_Buf2));
 	m_bKeepRflFiles = FALSE;
 	m_uiRflMinFileSize = DEFAULT_MIN_RFL_FILE_SIZE;
 	m_uiRflMaxFileSize = DEFAULT_MAX_RFL_FILE_SIZE;
 	m_pFileHdl = NULL;
 	m_uiLastRecoverFileNum = 0;
-	f_memset( m_ucCurrSerialNum, 0, sizeof(m_ucCurrSerialNum));
+	f_memset( m_ucCurrSerialNum, 0, sizeof( m_ucCurrSerialNum));
 	m_bLoggingOff = FALSE;
 	m_bLoggingUnknown = FALSE;
 	m_uiUnknownPacketLen = 0;
@@ -93,48 +93,42 @@ Desc:
 *********************************************************************/
 F_Rfl::~F_Rfl()
 {
-
-	// Better not be in the middle of logging unknown packets for the
-	// application.
-
 	flmAssert( !m_bLoggingUnknown);
 
-	if (m_Buf1.pIOBuffer)
+	if( m_Buf1.pIOBuffer)
 	{
 		m_Buf1.pIOBuffer->Release();
 		m_Buf1.pIOBuffer = NULL;
 	}
 
-	if (m_Buf2.pIOBuffer)
+	if( m_Buf2.pIOBuffer)
 	{
 		m_Buf2.pIOBuffer->Release();
 		m_Buf2.pIOBuffer = NULL;
 	}
 
-	if (m_Buf1.pBufferMgr)
+	if( m_Buf1.pBufferMgr)
 	{
-		flmAssert( !m_Buf1.pBufferMgr->havePendingIO() && 
-					  !m_Buf1.pBufferMgr->haveUsed());
+		flmAssert( !m_Buf1.pBufferMgr->isIOPending());
 
 		m_Buf1.pBufferMgr->Release();
 		m_Buf1.pBufferMgr = NULL;
 	}
 
-	if (m_Buf2.pBufferMgr)
+	if( m_Buf2.pBufferMgr)
 	{
-		flmAssert( !m_Buf2.pBufferMgr->havePendingIO() && 
-					  !m_Buf2.pBufferMgr->haveUsed());
+		flmAssert( !m_Buf2.pBufferMgr->isIOPending());
 
 		m_Buf2.pBufferMgr->Release();
 		m_Buf2.pBufferMgr = NULL;
 	}
 
-	if (m_hBufMutex != F_MUTEX_NULL)
+	if( m_hBufMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &m_hBufMutex);
 	}
 
-	if (m_pFileHdl)
+	if( m_pFileHdl)
 	{
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
@@ -326,11 +320,12 @@ RCODE F_Rfl::positionTo(
 		uiBytesToRead = MOD_512( uiFileOffset);
 		m_pCurrentBuf->uiRflFileOffset = ROUND_DOWN_TO_NEAREST_512( uiFileOffset);
 		m_pCurrentBuf->uiRflBufBytes = MOD_512( uiFileOffset);
+
 		if (m_pCurrentBuf->uiRflBufBytes)
 		{
-			if (RC_BAD( rc = m_pFileHdl->sectorRead( 
+			if (RC_BAD( rc = m_pFileHdl->read( 
 				m_pCurrentBuf->uiRflFileOffset, m_pCurrentBuf->uiRflBufBytes,
-				m_pCurrentBuf->pIOBuffer->getBuffer(), &uiBytesRead)))
+				m_pCurrentBuf->pIOBuffer->getBufferPtr(), &uiBytesRead)))
 			{
 				if (rc == FERR_IO_END_OF_FILE)
 				{
@@ -641,43 +636,37 @@ RCODE F_Rfl::setup(
 
 	// Allocate memory for the RFL buffers
 
-	if (!gv_FlmSysData.bOkToDoAsyncWrites)
+	if( !gv_FlmSysData.pFileSystem->canDoAsync())
 	{
 		m_uiRflWriteBufs = 1;
 		m_uiBufferSize = DEFAULT_RFL_WRITE_BUFFERS * DEFAULT_RFL_BUFFER_SIZE;
 	}
 
-	if (RC_BAD( rc = f_mutexCreate( &m_hBufMutex)))
+	if( RC_BAD( rc = f_mutexCreate( &m_hBufMutex)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_Buf1.pBufferMgr)))
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( m_uiRflWriteBufs, 
+		m_uiRflWriteBufs * m_uiBufferSize, TRUE, &m_Buf1.pBufferMgr)))
 	{
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_Buf2.pBufferMgr)))
+	if( RC_BAD( rc = m_Buf1.pBufferMgr->getBuffer( 
+		m_uiBufferSize, &m_Buf1.pIOBuffer)))
 	{
 		goto Exit;
 	}
 
-	m_Buf1.pBufferMgr->enableKeepBuffer();
-	m_Buf1.pBufferMgr->setMaxBuffers( m_uiRflWriteBufs);
-	m_Buf1.pBufferMgr->setMaxBytes( m_uiRflWriteBufs * m_uiBufferSize);
-
-	if (RC_BAD( rc = m_Buf1.pBufferMgr->getBuffer( &m_Buf1.pIOBuffer,
-				  m_uiBufferSize, m_uiBufferSize)))
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( m_uiRflWriteBufs, 
+		m_uiRflWriteBufs * m_uiBufferSize, TRUE, &m_Buf2.pBufferMgr)))
 	{
 		goto Exit;
 	}
 
-	m_Buf2.pBufferMgr->enableKeepBuffer();
-	m_Buf2.pBufferMgr->setMaxBuffers( m_uiRflWriteBufs);
-	m_Buf2.pBufferMgr->setMaxBytes( m_uiRflWriteBufs * m_uiBufferSize);
-
-	if (RC_BAD( rc = m_Buf2.pBufferMgr->getBuffer( &m_Buf2.pIOBuffer,
-				  m_uiBufferSize, m_uiBufferSize)))
+	if( RC_BAD( rc = m_Buf2.pBufferMgr->getBuffer( 
+		m_uiBufferSize, &m_Buf2.pIOBuffer)))
 	{
 		goto Exit;
 	}
@@ -707,17 +696,18 @@ RCODE F_Rfl::waitForWrites(
 	RFL_BUFFER *	pBuffer,
 	FLMBOOL			bIsWriter)
 {
-	RCODE			rc = FERR_OK;
-	RCODE			TempRc;
-	RFL_WAITER	Waiter;
-	FLMBOOL		bMutexLocked = TRUE;
+	RCODE				rc = FERR_OK;
+	RCODE				TempRc;
+	RFL_WAITER		Waiter;
+	FLMBOOL			bMutexLocked = TRUE;
 
 	// Put self on the wait queue for the buffer.
 
 	Waiter.uiThreadId = f_threadId();
 	Waiter.bIsWriter = bIsWriter;
 	Waiter.hESem = F_SEM_NULL;
-	if (RC_BAD( rc = f_semCreate( &Waiter.hESem)))
+	
+	if( RC_BAD( rc = f_semCreate( &Waiter.hESem)))
 	{
 		goto Exit;
 	}
@@ -728,6 +718,7 @@ RCODE F_Rfl::waitForWrites(
 	rc = RC_SET( FERR_FAILURE);
 	Waiter.pRc = &rc;
 	Waiter.pNext = NULL;
+	
 	if (pBuffer->pLastWaiter)
 	{
 		pBuffer->pLastWaiter->pNext = &Waiter;
@@ -743,31 +734,27 @@ RCODE F_Rfl::waitForWrites(
 
 	// Now just wait to be signaled.
 
-	if (RC_BAD( TempRc = f_semWait( Waiter.hESem, F_SEM_WAITFOREVER)))
+	if( RC_BAD( TempRc = f_semWait( Waiter.hESem, F_SEM_WAITFOREVER)))
 	{
 		flmAssert( 0);
 		rc = TempRc;
 	}
 	else
 	{
-
 		// Process that signaled us better set the rc to something besides
 		// FERR_FAILURE.
-
-		if (rc == FERR_FAILURE)
-		{
-			flmAssert( 0);
-		}
+		
+		flmAssert( rc != FERR_FAILURE);
 	}
 
 Exit:
 
-	if (Waiter.hESem != F_SEM_NULL)
+	if( Waiter.hESem != F_SEM_NULL)
 	{
 		f_semDestroy( &Waiter.hESem);
 	}
 
-	if (bMutexLocked)
+	if( bMutexLocked)
 	{
 		f_mutexUnlock( m_hBufMutex);
 	}
@@ -778,7 +765,7 @@ Exit:
 /********************************************************************
 Desc:	If a commit is in progress, wait for it to finish.
 *********************************************************************/
-RCODE F_Rfl::waitForCommit(void)
+RCODE F_Rfl::waitForCommit( void)
 {
 	RCODE		rc = FERR_OK;
 	FLMBOOL	bMutexLocked = FALSE;
@@ -850,8 +837,7 @@ RCODE F_Rfl::writeHeader(
 
 	// Write out the header
 
-	if (RC_BAD( rc = m_pFileHdl->sectorWrite( 0L, 512, ucBuf,
-				  NULL, &uiBytesWritten)))
+	if (RC_BAD( rc = m_pFileHdl->write( 0L, 512, ucBuf, &uiBytesWritten)))
 	{
 
 		// Remap disk full error
@@ -1016,9 +1002,11 @@ RCODE F_Rfl::openFile(
 	}
 
 	// Open the file.
+	
+	f_assert( !m_pFileHdl);
 
 	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szRflFileName,
-			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &m_pFileHdl)))
+			gv_FlmSysData.uiFileOpenFlags, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1028,7 +1016,7 @@ RCODE F_Rfl::openFile(
 	
 	// Read the header.
 
-	if (RC_BAD( rc = m_pFileHdl->sectorRead( 0, 512, ucBuf, &uiBytesRead)))
+	if (RC_BAD( rc = m_pFileHdl->read( 0, 512, ucBuf, &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
 		{
@@ -1142,10 +1130,11 @@ RCODE F_Rfl::createFile(
 	}
 
 	// Create the file
+	
+	f_assert( !m_pFileHdl);
 
 	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->createFile( szRflFileName,
-		FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-		&m_pFileHdl)))
+		gv_FlmSysData.uiFileCreateFlags, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1286,7 +1275,7 @@ RCODE F_Rfl::flush(
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesWritten;
 	IF_IOBuffer *	pNewBuffer = NULL;
-	IF_IOBuffer *	pAsyncBuf = NULL;
+	IF_IOBuffer *	pIOBuffer = NULL;
 	FLMBYTE *		pucOldBuffer;
 	FLMUINT			uiFileOffset;
 	FLMUINT			uiBufBytes;
@@ -1297,7 +1286,7 @@ RCODE F_Rfl::flush(
 		// Must wait for stuff in committing buffer, if any, before going
 		// ahead here.
 
-		if (pBuffer != m_pCommitBuf)
+		if( pBuffer != m_pCommitBuf)
 		{
 			if (RC_BAD( rc = waitForCommit()))
 			{
@@ -1305,9 +1294,9 @@ RCODE F_Rfl::flush(
 			}
 		}
 
-		if (m_uiRflWriteBufs > 1 && m_pFileHdl->canDoAsync())
+		if( m_uiRflWriteBufs > 1 && m_pFileHdl->canDoAsync())
 		{
-			pAsyncBuf = pBuffer->pIOBuffer;
+			pIOBuffer = pBuffer->pIOBuffer;
 		}
 
 		if ((FLMUINT) (-1) - pBuffer->uiRflFileOffset <= pBuffer->uiRflBufBytes)
@@ -1316,13 +1305,14 @@ RCODE F_Rfl::flush(
 			goto Exit;
 		}
 
-		pucOldBuffer = pBuffer->pIOBuffer->getBuffer();
+		pucOldBuffer = pBuffer->pIOBuffer->getBufferPtr();
 		uiFileOffset = pBuffer->uiRflFileOffset;
 		uiBufBytes = pBuffer->uiRflBufBytes;
+		
 		if (m_uiRflWriteBufs > 1)
 		{
-			if (RC_BAD( rc = pBuffer->pBufferMgr->getBuffer( &pNewBuffer,
-						  m_uiBufferSize, m_uiBufferSize)))
+			if (RC_BAD( rc = pBuffer->pBufferMgr->getBuffer( 
+				m_uiBufferSize, &pNewBuffer)))
 			{
 				goto Exit;
 			}
@@ -1333,13 +1323,27 @@ RCODE F_Rfl::flush(
 
 			if (!bFinalWrite)
 			{
-				copyLastBlock( pBuffer, pucOldBuffer, pNewBuffer->getBuffer(),
+				copyLastBlock( pBuffer, pucOldBuffer, pNewBuffer->getBufferPtr(),
 									uiCurrPacketLen, bStartingNewFile);
 			}
 		}
+		
+		if( pIOBuffer)
+		{
+			FLMUINT		uiBytesToWrite =	(FLMUINT)f_roundUp( uiBufBytes, 
+														m_pFileHdl->getSectorSize());
 
-		if( RC_OK( rc = m_pFileHdl->sectorWrite( uiFileOffset, uiBufBytes, 
-											  pucOldBuffer, pAsyncBuf, &uiBytesWritten)))
+			rc = m_pFileHdl->write( uiFileOffset, uiBytesToWrite, pIOBuffer);
+		}
+		else
+		{
+			pBuffer->pIOBuffer->setPending();
+
+			rc = m_pFileHdl->write( uiFileOffset, uiBufBytes, 
+											  pucOldBuffer, &uiBytesWritten);			
+		}
+
+		if( RC_OK( rc))
 		{
 			if( m_bKeepRflFiles)
 			{
@@ -1369,12 +1373,12 @@ RCODE F_Rfl::flush(
 		
 		if (m_uiRflWriteBufs == 1)
 		{
-
 			// We are counting on the fact that the write completed. When we
 			// only have one buffer, we cannot do async writes.
 
-			flmAssert( !pAsyncBuf);
-			if (RC_OK( rc) && !bFinalWrite)
+			flmAssert( !pIOBuffer);
+			
+			if( RC_OK( rc) && !bFinalWrite)
 			{
 				copyLastBlock( pBuffer, pucOldBuffer, pucOldBuffer,
 									uiCurrPacketLen, bStartingNewFile);
@@ -1383,29 +1387,25 @@ RCODE F_Rfl::flush(
 			// DO NOT call notifyComplete - that would put
 			// pBuffer->pIOBuffer into the avail list, and we don't want
 			// that. We simply want to keep reusing it.
-
 		}
 		else
 		{
-
 			// No need to call copyLastBlock, because it was called above
-			// before calling sectorWrite. The part of the old buffer that
+			// before calling write. The part of the old buffer that
 			// needs to be transferred to the new buffer has already been
 			// transferred.
 
-			if (!pAsyncBuf)
+			if( !pIOBuffer)
 			{
 				pBuffer->pIOBuffer->notifyComplete( rc);
 			}
 
+			pBuffer->pIOBuffer->Release();
 			pBuffer->pIOBuffer = pNewBuffer;
 		}
 
-		if (RC_BAD( rc))
+		if( RC_BAD( rc))
 		{
-
-			// Remap disk full error
-
 			if (rc == FERR_IO_DISK_FULL)
 			{
 				rc = RC_SET( FERR_RFL_DEVICE_FULL);
@@ -1444,8 +1444,8 @@ void F_Rfl::switchBuffers(void)
 	m_pCurrentBuf->uiRflFileOffset = pOldBuffer->uiRflFileOffset;
 	if (pOldBuffer->uiRflBufBytes)
 	{
-		copyLastBlock( m_pCurrentBuf, pOldBuffer->pIOBuffer->getBuffer(),
-							m_pCurrentBuf->pIOBuffer->getBuffer(), 0, FALSE);
+		copyLastBlock( m_pCurrentBuf, pOldBuffer->pIOBuffer->getBufferPtr(),
+							m_pCurrentBuf->pIOBuffer->getBufferPtr(), 0, FALSE);
 	}
 }
 
@@ -2447,7 +2447,7 @@ RCODE F_Rfl::finishPacket(
 
 	// Get a pointer to packet header.
 
-	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBuffer()[
+	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBufferPtr()[
 											m_pCurrentBuf->uiRflBufBytes]);
 
 	// Set the packet address in the packet header.
@@ -4949,8 +4949,8 @@ RCODE F_Rfl::readPacket(
 			// Move the bytes left in the buffer down to the beginning of
 			// the buffer.
 
-			f_memmove( m_pCurrentBuf->pIOBuffer->getBuffer(),
-						 &(m_pCurrentBuf->pIOBuffer->getBuffer()[m_uiRflReadOffset]),
+			f_memmove( m_pCurrentBuf->pIOBuffer->getBufferPtr(),
+						 &(m_pCurrentBuf->pIOBuffer->getBufferPtr()[m_uiRflReadOffset]),
 							 m_pCurrentBuf->uiRflBufBytes - m_uiRflReadOffset);
 			m_pCurrentBuf->uiRflBufBytes -= m_uiRflReadOffset;
 			m_pCurrentBuf->uiRflFileOffset += m_uiRflReadOffset;
@@ -4989,7 +4989,7 @@ RCODE F_Rfl::readPacket(
 		// Read enough to get the entire packet.
 
 		if (RC_BAD( rc = m_pRestore->read( uiReadLen, &(
-						  m_pCurrentBuf->pIOBuffer->getBuffer()[
+						  m_pCurrentBuf->pIOBuffer->getBufferPtr()[
 						  m_pCurrentBuf->uiRflBufBytes]), &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
@@ -5060,8 +5060,8 @@ RCODE F_Rfl::readPacket(
 
 		// Read to get the entire packet.
 
-		if (RC_BAD( rc = m_pFileHdl->sectorRead( m_pCurrentBuf->uiRflFileOffset,
-					  uiReadLen, m_pCurrentBuf->pIOBuffer->getBuffer(), 
+		if (RC_BAD( rc = m_pFileHdl->read( m_pCurrentBuf->uiRflFileOffset,
+					  uiReadLen, m_pCurrentBuf->pIOBuffer->getBufferPtr(), 
 					  &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
@@ -5283,7 +5283,7 @@ Get_Next_File:
 	// Verify the packet address.
 
 	m_uiPacketAddress = m_pCurrentBuf->uiRflFileOffset + m_uiRflReadOffset;
-	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBuffer()[m_uiRflReadOffset]);
+	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBufferPtr()[m_uiRflReadOffset]);
 	if ((FLMUINT) FB2UD( &pucPacket[RFL_PACKET_ADDRESS_OFFSET]) != m_uiPacketAddress)
 	{
 		rc = RC_SET( FERR_BAD_RFL_PACKET);
@@ -5319,7 +5319,7 @@ Get_Next_File:
 		goto Exit;
 	}
 
-	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBuffer()[m_uiRflReadOffset]);
+	pucPacket = &(m_pCurrentBuf->pIOBuffer->getBufferPtr()[m_uiRflReadOffset]);
 
 	// At this point, we are guaranteed to have the entire packet in the
 	// buffer.
@@ -7227,7 +7227,7 @@ Retry_Open:
 			}
 
 			if (RC_BAD( rc = m_pRestore->read( uiReadLen,
-						  m_pCurrentBuf->pIOBuffer->getBuffer(), &uiBytesRead)))
+						  m_pCurrentBuf->pIOBuffer->getBufferPtr(), &uiBytesRead)))
 			{
 				goto Exit;
 			}
@@ -8413,6 +8413,7 @@ Exit:
 		pUnkStream->Release();
 		pUnkStream = NULL;
 	}
+	
 	*ppUnknownStream = (F_UnknownStream *)pUnkStream;
 	return( rc);
 }

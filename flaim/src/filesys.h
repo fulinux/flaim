@@ -1169,8 +1169,7 @@ struct UCUR;
 	RCODE lgFlushLogBuffer(
 		DB_STATS *			pDbStats,
 		F_SuperFileHdl *	pSFileHdl,
-		FFILE *				pFile,
-		FLMBOOL				bDoAsync);
+		FFILE *				pFile);
 	
 	RCODE lgOutputBlock(
 		DB_STATS *			pDbStats,
@@ -1178,7 +1177,6 @@ struct UCUR;
 		FFILE *				pFile,
 		SCACHE *				pLogBlock,
 		FLMBYTE *			pucBlk,
-		FLMBOOL				bDoAsync,
 		FLMUINT *			puiLogEofRV);
 	
 	void lgSetSyncCheckpoint(

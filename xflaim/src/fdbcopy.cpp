@@ -25,14 +25,10 @@
 
 #include "flaimsys.h"
 
-// Local prototypes
-
-typedef struct Copied_Name *	COPIED_NAME_p;
-
-typedef struct Copied_Name
+typedef struct COPIED_NAME
 {
 	char				szPath[ F_PATH_MAX_SIZE];
-	COPIED_NAME_p	pNext;
+	COPIED_NAME *	pNext;
 } COPIED_NAME;
 
 typedef struct
@@ -228,11 +224,20 @@ RCODE F_DbSystem::copyDb(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient)))
+	if( RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient, 
+		gv_XFlmSysData.pFileHdlCache,
+		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
 
+	// Close all unused file handles
+	
+	if( gv_XFlmSysData.pFileHdlCache)
+	{
+		gv_XFlmSysData.pFileHdlCache->closeUnusedFiles();
+	}
+	
 	// Lock the destination database, if not already locked.
 	// This is so we can overwrite it without necessarily
 	// deleting it.  May unlock and re-lock the global mutex.
@@ -352,7 +357,9 @@ retry:
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient)))
+	if( RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient, 
+		gv_XFlmSysData.pFileHdlCache,
+		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -469,8 +476,8 @@ retry:
 
 	// Close all file handles in the source and destination
 
-	pSrcSFileHdl->releaseFiles( TRUE);
-	pDestSFileHdl->releaseFiles( TRUE);
+	pSrcSFileHdl->releaseFiles();
+	pDestSFileHdl->releaseFiles();
 
 	// Copy the database files.
 
@@ -696,7 +703,7 @@ Exit:
 
 	while (pCopiedList)
 	{
-		COPIED_NAME_p	pNext = pCopiedList->pNext;
+		COPIED_NAME *	pNext = pCopiedList->pNext;
 
 		// If the overall copy failed, delete the copied file.
 
@@ -822,7 +829,7 @@ FSTATIC RCODE flmCopyFile(
 
 		// Read data from source file.
 
-		if (RC_BAD( rc = pSrcFileHdl->sectorRead( uiOffset, uiBytesToRead,
+		if (RC_BAD( rc = pSrcFileHdl->read( uiOffset, uiBytesToRead,
 									pucBuffer, &uiBytesRead)))
 		{
 			if (rc == NE_FLM_IO_END_OF_FILE)
@@ -900,7 +907,7 @@ FSTATIC RCODE flmCopyFile(
 
 	if (ppCopiedListRV)
 	{
-		COPIED_NAME_p	pCopyName;
+		COPIED_NAME *	pCopyName;
 
 		if( RC_BAD( rc = f_alloc( (FLMUINT)sizeof( COPIED_NAME), &pCopyName)))
 		{

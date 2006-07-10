@@ -1884,7 +1884,7 @@ Get_Operand:
 			 pLhs->eType != FLM_UNKNOWN)
 		{
 
-			// VISIT: We should optimized to flunk or pass text compares.
+			// VISIT: We should be optimized to flunk or pass text compares.
 			// The problems come with comparing only up to the first
 			// wildcard.
 

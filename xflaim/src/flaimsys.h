@@ -5261,13 +5261,11 @@ private:
 		const char *			pszDestRflDir,
 		IF_DbCopyStatus *		ifpStatus);
 
-	static RCODE monitorThrd(
+	static RCODE FLMAPI monitorThrd(
 		IF_Thread *		pThread);
 		
-	static RCODE cacheCleanupThrd(
+	static RCODE FLMAPI cacheCleanupThrd(
 		IF_Thread *		pThread);
-
-	static void checkNotUsedObjects( void);
 
 	FLMATOMIC					m_refCnt;
 
@@ -8470,6 +8468,10 @@ public:
 	FLMUINT FLMAPI getFileOffset(
 		FLMUINT					uiBlockAddr);
 		
+	FLMUINT FLMAPI getBlockAddress(
+		FLMUINT					uiFileNumber,
+		FLMUINT					uiFileOffset);
+
 	RCODE FLMAPI getFilePath(
 		FLMUINT					uiFileNumber,
 		char *					pszPath);

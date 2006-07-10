@@ -467,6 +467,8 @@
 	#define NE_FLM_CHECKING_FILE_EXISTENCE					0xC22A			///< 0xC22A - Unexpected error occurred while checking to see if a file exists.
 	#define NE_FLM_RENAMING_FILE								0xC22B			///< 0xC22B - Unexpected error occurred while renaming a file.
 	#define NE_FLM_SETTING_FILE_INFO							0xC22C			///< 0xC22C - Unexpected error occurred while setting a file's information.
+	#define NE_FLM_IO_PENDING									0xC22D			///< 0xC22D - I/O has not yet completed
+	#define NE_FLM_ASYNC_FAILED								0xC22E			///< 0xC22E - An async I/O operation failed
 
 	// Stream Errors - These are new
 
@@ -532,6 +534,7 @@
 	flminterface IF_DirHdl;
 	flminterface IF_FileHdl;
 	flminterface IF_FileSystem;
+	flminterface IF_FileHdlCache;
 	flminterface IF_IStream;
 	flminterface IF_PosIStream;
 	flminterface IF_ResultSet;
@@ -541,6 +544,7 @@
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
 	flminterface IF_IOBuffer;
+	flminterface IF_AsyncClient;
 	flminterface IF_Block;
 	
 	class F_Pool;
@@ -788,10 +792,7 @@
 		FLM_THREAD_STATUS_INITIALIZING,
 		FLM_THREAD_STATUS_RUNNING,
 		FLM_THREAD_STATUS_SLEEPING,
-		FLM_THREAD_STATUS_TERMINATING,
-		FLM_THREAD_STATUS_STARTING_TRANS,
-		FLM_THREAD_STATUS_COMMITTING_TRANS,
-		FLM_THREAD_STATUS_ABORTING_TRANS
+		FLM_THREAD_STATUS_TERMINATING
 	} eThreadStatus;
 	
 	#define F_THREAD_MIN_STACK_SIZE				(16 * 1024)
@@ -800,7 +801,7 @@
 	#define F_DEFAULT_THREAD_GROUP				0
 	#define F_INVALID_THREAD_GROUP				0xFFFFFFFF
 	
-	typedef RCODE (* F_THREAD_FUNC)(IF_Thread *);
+	typedef RCODE (FLMAPI * F_THREAD_FUNC)(IF_Thread *);
 	
 	/****************************************************************************
 	Desc:	Startup and shutdown
@@ -1112,12 +1113,18 @@
 	FLMUINT f_msize(
 		void *			pvPtr);
 		
-	RCODE FLMAPI f_allocAlignedBuffer(
+	RCODE FLMAPI f_allocAlignedBufferImp(
 		FLMUINT			uiMinSize,
 		void **			ppvAlloc);
 		
-	void FLMAPI f_freeAlignedBuffer(
+	#define f_allocAlignedBuffer(s,p) \
+		f_allocAlignedBufferImp( (s), (void **)(p))
+		
+	void FLMAPI f_freeAlignedBufferImp(
 		void **			ppvAlloc);
+		
+	#define f_freeAlignedBuffer(p) \
+		f_freeAlignedBufferImp( (void **)(p))
 		
 	RCODE FLMAPI f_getMemoryInfo(
 		FLMUINT64 *		pui64TotalPhysMem,
@@ -1195,7 +1202,7 @@
 		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
 	
 		virtual void FLMAPI truncate(
-			FLMUINT64				ui64Offset) = 0;
+			FLMUINT64				ui64Offset = 0) = 0;
 			
 		virtual RCODE FLMAPI read(
 			void *					pvBuffer,
@@ -1472,6 +1479,10 @@
 			const char *			pszFileName,
 			FLMUINT *				puiTimeStamp) = 0;
 
+		virtual RCODE FLMAPI getFileSize(
+			const char *			pszFileName,
+			FLMUINT64 *				pui64FileSize) = 0;
+			
 		virtual RCODE FLMAPI deleteFile(
 			const char *			pszFileName) = 0;
 
@@ -1537,6 +1548,15 @@
 			const char *			pszTemplate) = 0;
 			
 		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
+		
+		virtual RCODE FLMAPI allocIOBuffer(
+			FLMUINT					uiMinSize,
+			IF_IOBuffer **			ppIOBuffer) = 0;
+			
+		virtual RCODE FLMAPI allocFileHandleCache(
+			FLMUINT					uiMaxCachedFiles,
+			FLMUINT					uiIdleTimeoutSecs,
+			IF_FileHdlCache **	ppFileHdlCache) = 0;
 	};
 	
 	RCODE FLMAPI FlmGetFileSystem(
@@ -1544,6 +1564,8 @@
 
 	IF_FileSystem * FLMAPI f_getFileSysPtr( void);
 
+	FLMUINT FLMAPI f_getOpenFileCount( void);
+	
 	RCODE FLMAPI f_chdir(
 		const char *			pszDir);
 		
@@ -1562,7 +1584,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface FLMEXP IF_FileHdl : public F_Object
+	flminterface FLMEXP IF_FileHdl : virtual public F_Object
 	{
 		virtual RCODE FLMAPI flush( void) = 0;
 
@@ -1572,6 +1594,22 @@
 			void *					pvBuffer,
 			FLMUINT *				puiBytesRead = NULL) = 0;
 
+		virtual RCODE FLMAPI read(
+			FLMUINT64				ui64ReadOffset,
+			FLMUINT					uiBytesToRead,
+			IF_IOBuffer *			pIOBuffer) = 0;
+			
+		virtual RCODE FLMAPI write(
+			FLMUINT64				ui64Offset,
+			FLMUINT					uiLength,
+			const void *			pvBuffer,
+			FLMUINT *				puiBytesWritten = NULL) = 0;
+
+		virtual RCODE FLMAPI write(
+			FLMUINT64				ui64WriteOffset,
+			FLMUINT					uiBytesToWrite,
+			IF_IOBuffer *			pIOBuffer) = 0;
+			
 		virtual RCODE FLMAPI seek(
 			FLMUINT64				ui64Offset,
 			FLMINT					iWhence,
@@ -1584,26 +1622,7 @@
 			FLMUINT64 *				pui64Offset) = 0;
 
 		virtual RCODE FLMAPI truncate(
-			FLMUINT64				ui64Size) = 0;
-
-		virtual RCODE FLMAPI write(
-			FLMUINT64				ui64Offset,
-			FLMUINT					uiLength,
-			const void *			pvBuffer,
-			FLMUINT *				puiBytesWritten = NULL) = 0;
-
-		virtual RCODE FLMAPI sectorRead(
-			FLMUINT64				ui64ReadOffset,
-			FLMUINT					uiBytesToRead,
-			void *					pvBuffer,
-			FLMUINT *				puiBytesReadRV = NULL) = 0;
-
-		virtual RCODE FLMAPI sectorWrite(
-			FLMUINT64				ui64WriteOffset,
-			FLMUINT					uiBytesToWrite,
-			const void *			pvBuffer,
-			IF_IOBuffer *			pBufferObj,
-			FLMUINT *				puiBytesWritten = NULL) = 0;
+			FLMUINT64				ui64Offset = 0) = 0;
 
 		virtual RCODE FLMAPI close( void) = 0;
 
@@ -1619,11 +1638,37 @@
 			
 		virtual FLMBOOL FLMAPI isReadOnly( void) = 0;
 		
+		virtual FLMBOOL FLMAPI isOpen( void) = 0;
+		
 		virtual RCODE FLMAPI lock( void) = 0;
 	
 		virtual RCODE FLMAPI unlock( void) = 0;
 	};
 	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface FLMEXP IF_FileHdlCache : public F_Object
+	{
+		virtual RCODE FLMAPI openFile(
+			const char *			pszFileName,
+			FLMUINT					uiIoFlags,
+			IF_FileHdl **			ppFile) = 0;
+		
+		virtual RCODE FLMAPI createFile(
+			const char *			pszFileName,
+			FLMUINT					uiIoFlags,
+			IF_FileHdl **			ppFile) = 0;
+
+		virtual void FLMAPI closeUnusedFiles( 
+			FLMUINT					uiUnusedTime = 0) = 0;
+			
+		virtual FLMUINT FLMAPI getOpenThreshold( void) = 0;
+		
+		virtual RCODE FLMAPI setOpenThreshold(
+			FLMUINT					uiMaxOpenFiles) = 0;
+	};
+
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1663,7 +1708,7 @@
 			FLMUINT64 *				pui64FileSize) = 0;
 	
 		virtual RCODE FLMAPI truncate(
-			FLMUINT64				ui64NewSize) = 0;
+			FLMUINT64				ui64Offset = 0) = 0;
 			
 		virtual void FLMAPI close(
 			FLMBOOL					bDelete = FALSE) = 0;
@@ -1675,16 +1720,6 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	typedef struct
-	{
-		IF_FileHdl *				pFileHdl;
-		FLMUINT						uiFileNumber;
-		FLMBOOL						bDirty;
-	} CHECKED_OUT_FILE_HDL;
-
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
 	flminterface FLMEXP IF_SuperFileClient : public F_Object
 	{
 		virtual FLMUINT FLMAPI getFileNumber(
@@ -1692,6 +1727,10 @@
 			
 		virtual FLMUINT FLMAPI getFileOffset(
 			FLMUINT					uiBlockAddr) = 0;
+			
+		virtual FLMUINT FLMAPI getBlockAddress(
+			FLMUINT					uiFileNumber,
+			FLMUINT					uiFileOffset) = 0;
 			
 		virtual RCODE FLMAPI getFilePath(
 			FLMUINT					uiFileNumber,
@@ -1709,250 +1748,175 @@
 	
 		virtual ~F_SuperFileHdl();
 	
-		RCODE setup(
-			IF_SuperFileClient *		pSuperFileClient);
+		RCODE FLMAPI setup(
+			IF_SuperFileClient *		pSuperFileClient,
+			IF_FileHdlCache *			pFileHdlCache,
+			FLMBOOL						bUseDirectIO);
 	
-		RCODE createFile(
-			FLMUINT					uiFileNumber);
-	
-		RCODE readBlock(
-			FLMUINT					uiBlkAddress,
-			FLMUINT					uiBytesToRead,
-			void *					pvBuffer,
-			FLMUINT *				puiBytesRead);
-	
-		RCODE writeBlock(
-			FLMUINT					uiBlkAddress,
-			FLMUINT					uiBytesToWrite,
-			const void *			pvBuffer,
-			IF_IOBuffer *			pIOBuffer,
-			FLMUINT *				puiBytesWritten);
-	
-		RCODE readHeader(
-			FLMUINT					uiOffset,
-			FLMUINT					uiBytesToRead,
-			void *					pvBuffer,
-			FLMUINT *				puiBytesRead);
-	
-		RCODE writeHeader(
-			FLMUINT					uiOffset,
-			FLMUINT					uiBytesToWrite,
-			const void *			pvBuffer,
-			FLMUINT *				puiBytesWritten);
-	
-		RCODE getFilePath(
+		RCODE FLMAPI createFile(
 			FLMUINT					uiFileNumber,
-			char *					pszPath);
-	
-		RCODE	getFileHdl(
+			IF_FileHdl **			ppFileHdl = NULL);
+			
+		RCODE	FLMAPI getFileHdl(
 			FLMUINT					uiFileNumber,
 			FLMBOOL					bGetForUpdate,
 			IF_FileHdl **			ppFileHdlRV);
 	
-		RCODE getFileSize(
+		RCODE FLMAPI readBlock(
+			FLMUINT					uiBlkAddress,
+			FLMUINT					uiBytesToRead,
+			void *					pvBuffer,
+			FLMUINT *				puiBytesRead);
+	
+		RCODE FLMAPI writeBlock(
+			FLMUINT					uiBlkAddress,
+			FLMUINT					uiBytesToWrite,
+			const void *			pvBuffer,
+			FLMUINT *				puiBytesWritten);
+	
+		RCODE FLMAPI writeBlock(
+			FLMUINT					uiBlkAddress,
+			FLMUINT					uiBytesToWrite,
+			IF_IOBuffer *			pIOBuffer);
+			
+		RCODE FLMAPI getFilePath(
+			FLMUINT					uiFileNumber,
+			char *					pszPath);
+	
+		RCODE FLMAPI getFileSize(
 			FLMUINT					uiFileNumber,
 			FLMUINT64 *				pui64FileSize);
 	
-		RCODE releaseFile(
-			FLMUINT					uiFileNum,
-			FLMBOOL					bCloseFile);
+		RCODE FLMAPI releaseFiles( void);
 	
-		RCODE releaseFiles(
-			FLMBOOL					bCloseFiles);
-	
-		RCODE truncateFile(
+		RCODE FLMAPI truncateFile(
 			FLMUINT					uiEOFBlkAddress);
 	
-		void truncateFiles(
+		RCODE FLMAPI truncateFile(
+			FLMUINT					uiFileNumber,
+			FLMUINT					uiOffset);
+
+		void FLMAPI truncateFiles(
 			FLMUINT					uiStartFileNum,
 			FLMUINT					uiEndFileNum);
 	
-		RCODE releaseFile(
-			CHECKED_OUT_FILE_HDL *	pChkFileHdl,
-			FLMBOOL						bCloseFile);
+		RCODE FLMAPI flush( void);
 	
-		FINLINE void enableFlushMinimize( void)
-		{
-			m_bMinimizeFlushes = TRUE;
-		}
-	
-		void disableFlushMinimize( void);
-	
-		RCODE flush( void);
-	
-		FINLINE void setBlockSize(
+		FINLINE void FLMAPI setBlockSize(
 			FLMUINT		uiBlockSize)
 		{
 			m_uiBlockSize = uiBlockSize;
 		}
 	
-		FINLINE void setExtendSize(
+		FINLINE void FLMAPI setExtendSize(
 			FLMUINT		uiExtendSize)
 		{
 			m_uiExtendSize = uiExtendSize;
 		}
 	
-		FINLINE void setMaxAutoExtendSize(
+		FINLINE void FLMAPI setMaxAutoExtendSize(
 			FLMUINT		uiMaxAutoExtendSize)
 		{
 			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 		}
 	
-		FINLINE FLMBOOL canDoAsync( void)
-		{
-			if( m_pCheckedOutFileHdls[ 0].pFileHdl)
-			{
-				return( m_pCheckedOutFileHdls[ 0].pFileHdl->canDoAsync());
-			}
-			else
-			{
-				IF_FileHdl *		pFileHdl;
-	
-				if( RC_OK( getFileHdl( 0, FALSE, &pFileHdl)))
-				{
-					return( pFileHdl->canDoAsync());
-				}
-			}
-	
-			return( FALSE);
-		}
+		FLMBOOL FLMAPI canDoAsync( void);
 	
 	private:
 	
-		FINLINE CHECKED_OUT_FILE_HDL * getCkoFileHdlPtr(
-			FLMUINT		uiFileNum,
-			FLMUINT *	puiSlot)
-		{
-			*puiSlot = (uiFileNum
-				? (uiFileNum % (m_uiCkoArraySize - 1)) + 1
-				: 0);
-	
-			return( &m_pCheckedOutFileHdls[ *puiSlot]);
-		}
-	
-		FINLINE void clearCkoFileHdl(
-			CHECKED_OUT_FILE_HDL *		pCkoFileHdl)
-		{
-			pCkoFileHdl->pFileHdl = NULL;
-			pCkoFileHdl->uiFileNumber = 0;
-			pCkoFileHdl->bDirty = FALSE;
-		}
-	
-		void copyCkoFileHdls(
-			CHECKED_OUT_FILE_HDL *	pSrcCkoArray,
-			FLMUINT						uiSrcHighestUsedSlot);
-	
-		RCODE reallocCkoArray(
-			FLMUINT					uiFileNum);
-	
-		#define MAX_CHECKED_OUT_FILE_HDLS	8
-		
 		IF_SuperFileClient *		m_pSuperFileClient;
-		CHECKED_OUT_FILE_HDL		m_CheckedOutFileHdls[ MAX_CHECKED_OUT_FILE_HDLS + 1];
-		CHECKED_OUT_FILE_HDL *	m_pCheckedOutFileHdls;
-		FLMUINT						m_uiCkoArraySize;
+		IF_FileHdlCache *			m_pFileHdlCache;
+		IF_FileHdl *				m_pCFileHdl;
+		IF_FileHdl *				m_pBlockFileHdl;
+		FLMBOOL						m_bCFileDirty;
+		FLMBOOL						m_bBlockFileDirty;
+		FLMUINT						m_uiBlockFileNum;
 		FLMUINT						m_uiBlockSize;
 		FLMUINT						m_uiExtendSize;
 		FLMUINT						m_uiMaxAutoExtendSize;
-		FLMUINT						m_uiLowestDirtySlot;
-		FLMUINT						m_uiHighestDirtySlot;
-		FLMUINT						m_uiHighestUsedSlot;
-		FLMUINT						m_uiHighestFileNumber;
-		FLMBOOL						m_bMinimizeFlushes;
-		FLMBOOL						m_bSetupCalled;
+		FLMUINT						m_uiDirectIOFlag;
 	};
 
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface FLMEXP IF_AsyncClient : virtual public F_Object
+	{
+		virtual RCODE FLMAPI waitToComplete(
+			FLMBOOL								bRelease) = 0;
+		
+		virtual RCODE FLMAPI getCompletionCode( void) = 0;
+		
+		virtual FLMUINT FLMAPI getElapsedTime( void) = 0;
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	typedef void (FLMAPI * F_BUFFER_COMPLETION_FUNC)(IF_IOBuffer *, void *);
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface FLMEXP IF_IOBuffer : virtual public F_Object
+	{
+		virtual FLMBYTE * FLMAPI getBufferPtr( void) = 0;
+	
+		virtual FLMUINT FLMAPI getBufferSize( void) = 0;
+		
+		virtual void FLMAPI setCompletionCallback(
+			F_BUFFER_COMPLETION_FUNC	fnCompletion,
+			void *							pvData) = 0;
+			
+		virtual RCODE FLMAPI addCallbackData(
+			void *							pvData) = 0;
+			
+		virtual void * FLMAPI getCallbackData(
+			FLMUINT							uiSlot) = 0;
+			
+		virtual FLMUINT FLMAPI getCallbackDataCount( void) = 0;
+			
+		virtual void FLMAPI setAsyncClient(
+			IF_AsyncClient *				pAsyncClient) = 0;
+			
+		virtual void FLMAPI notifyComplete(
+			RCODE								completionRc) = 0;
+			
+		virtual void FLMAPI setPending( void) = 0;
+		
+		virtual void FLMAPI clearPending( void) = 0;
+		
+		virtual FLMBOOL FLMAPI isPending( void) = 0;
+		
+		virtual FLMBOOL FLMAPI isComplete( void) = 0;
+		
+		virtual RCODE FLMAPI waitToComplete( void) = 0;
+		
+		virtual RCODE FLMAPI getCompletionCode( void) = 0;
+
+		virtual FLMUINT FLMAPI getElapsedTime( void) = 0;
+	};
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface FLMEXP IF_IOBufferMgr : public F_Object
 	{
-		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;
-	
-		virtual void FLMAPI setMaxBuffers(
-			FLMUINT					uiMaxBuffers) = 0;
-	
-		virtual void FLMAPI setMaxBytes(
-			FLMUINT					uiMaxBytes) = 0;
-	
-		virtual void FLMAPI enableKeepBuffer( void) = 0;
-	
 		virtual RCODE FLMAPI getBuffer(
-			IF_IOBuffer **			ppIOBuffer,
 			FLMUINT					uiBufferSize,
-			FLMUINT					uiBlockSize) = 0;
+			IF_IOBuffer **			ppIOBuffer) = 0;
 	
-		virtual FLMBOOL FLMAPI havePendingIO( void) = 0;
-	
-		virtual FLMBOOL FLMAPI haveUsed( void) = 0;
+		virtual FLMBOOL FLMAPI isIOPending( void) = 0;
+		
+		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;
 	};
 	
 	RCODE FLMAPI FlmAllocIOBufferMgr(
-		IF_IOBufferMgr **			ppBufferMgr);
-
-	#define FLM_MAX_IO_BUFFER_BLOCKS			16
-	
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	typedef void (* WRITE_COMPLETION_CB)(
-		IF_IOBuffer *				pWriteBuffer);
+		FLMUINT					uiMaxBuffers,
+		FLMUINT					uiMaxBytes,
+		FLMBOOL					bReuseBuffers,
+		IF_IOBufferMgr **		ppIOBufferMgr);
 		
-	/****************************************************************************
-	Desc:
-	****************************************************************************/
-	flminterface FLMEXP IF_IOBuffer : public F_Object
-	{
-		typedef enum
-		{
-			MGR_LIST_NONE,
-			MGR_LIST_AVAIL,
-			MGR_LIST_PENDING,
-			MGR_LIST_USED
-		} eBufferMgrList;
-	
-		virtual RCODE FLMAPI setupBuffer(
-			FLMUINT					uiBufferSize,
-			FLMUINT					uiBlockSize) = 0;
-	
-		virtual FLMBYTE * FLMAPI getBuffer( void) = 0;
-	
-		virtual FLMUINT FLMAPI getBufferSize( void) = 0;
-	
-		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
-	
-		virtual void FLMAPI notifyComplete(
-			RCODE						rc) = 0;
-			
-		virtual void FLMAPI signalComplete(
-			RCODE						rc) = 0;
-	
-		virtual void FLMAPI setCompletionCallback(
-			WRITE_COMPLETION_CB 	fnCompletion) = 0;
-	
-		virtual void FLMAPI setCompletionCallbackData(
-			FLMUINT					uiBlockNumber,
-			void *					pvData) = 0;
-	
-		virtual void * FLMAPI getCompletionCallbackData(
-			FLMUINT					uiBlockNumber) = 0;
-	
-		virtual RCODE FLMAPI getCompletionCode( void) = 0;
-	
-		virtual eBufferMgrList FLMAPI getList( void) = 0;
-	
-		virtual void FLMAPI makePending( void) = 0;
-		
-		virtual FLMBOOL FLMAPI isPending( void) = 0;
-		
-		virtual void FLMAPI startTimer(
-			void *					pvStats) = 0;
-			
-		virtual void * FLMAPI getStats( void) = 0;
-		
-		virtual FLMUINT64 FLMAPI getElapTime( void) = 0;
-	};
-	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -3602,6 +3566,191 @@
 			f_memmove((FLMBYTE *)(data) + (FLMINT)(distance), \
 			(FLMBYTE *)(data), (unsigned)(size))
 
+	/***************************************************************************
+	Desc:
+	***************************************************************************/
+	class FLMEXP F_Printf : public F_Object
+	{
+	public:
+	
+	#define MAX_LOG_BUF_CHARS	255
+	
+		F_Printf()
+		{
+		}
+		
+		virtual ~F_Printf()
+		{
+		}
+	
+		FLMINT FLMAPI strvPrintf(
+			char *					pszDestStr,
+			const char *			pszFormat,
+			f_va_list *				args);
+
+		FLMINT FLMAPI strPrintf(
+			char *			pszDestStr,
+			const char *	pszFormat,
+			...);
+	
+		FLMINT FLMAPI logvPrintf(
+			IF_LogMessageClient *	pLogMsg,
+			const char *				pszFormat,
+			f_va_list *					args);
+			
+		FLMINT FLMAPI logPrintf(
+			IF_LogMessageClient *	pLogMsg,
+			const char *				pszFormat,
+			...);
+	
+	private:
+	
+		void processFieldInfo(
+			const char **		ppszFormat,
+			FLMUINT *			puiWidth,
+			FLMUINT *			puiPrecision,
+			FLMUINT *			puiFlags,
+			f_va_list *			args);
+	
+		void stringFormatter(
+			char					cFormatChar,
+			FLMUINT				uiWidth,
+			FLMUINT				uiPrecision,
+			FLMUINT				uiFlags,
+			f_va_list *			args);
+	
+		void colorFormatter(
+			char					cFormatChar,
+			eColorType			eColor,
+			FLMUINT				uiFlags);
+			
+		void charFormatter(
+			char					cFormatChar,
+			f_va_list *			args);
+	
+		void errorFormatter(
+			f_va_list *			args);
+	
+		void notHandledFormatter( void);
+	
+		void numberFormatter(
+			char					cFormatChar,
+			FLMUINT				uiWidth,
+			FLMUINT				uiPrecision,
+			FLMUINT				uiFlags,
+			f_va_list *			args);
+		
+		void parseArgs(
+			const char *			pszFormat,
+			f_va_list *				args);
+		
+		void processFormatString(
+			FLMUINT					uiLen,
+			...);
+			
+		FLMUINT printNumber(
+			FLMUINT64			ui64Val,
+			FLMUINT				uiBase,
+			FLMBOOL				bUpperCase,
+			FLMBOOL				bCommas,
+			char *				pszBuf);
+			
+		void outputLogBuffer( void);
+		
+		FINLINE void outputChar(
+			char		cChar)
+		{
+			if (!m_pLogMsg)
+			{
+				*m_pszDestStr++ = cChar;
+			}
+			else
+			{
+				m_szLogBuf [m_uiCharOffset++] = cChar;
+				m_uiNumLogChars++;
+				if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+				{
+					outputLogBuffer();
+				}
+			}
+		}
+		
+		FINLINE void memsetChar(
+			char		cChar,
+			FLMUINT	uiCount)
+		{
+			if (!m_pLogMsg)
+			{
+				f_memset( m_pszDestStr, cChar, uiCount);
+				m_pszDestStr += uiCount;
+			}
+			else
+			{
+				FLMUINT	uiTmpCount;
+				
+				while (uiCount)
+				{
+					uiTmpCount = uiCount;
+					if (m_uiCharOffset + uiTmpCount > MAX_LOG_BUF_CHARS)
+					{
+						uiTmpCount = MAX_LOG_BUF_CHARS - m_uiCharOffset;
+					}
+					f_memset( &m_szLogBuf [m_uiCharOffset], cChar, uiTmpCount);
+					m_uiCharOffset += uiTmpCount;
+					m_uiNumLogChars += uiTmpCount;
+					uiCount -= uiTmpCount;
+					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+					{
+						outputLogBuffer();
+					}
+				}
+			}
+		}
+
+		FINLINE void outputStr(
+			const char *	pszStr,
+			FLMUINT			uiLen)
+		{
+			if (!m_pLogMsg)
+			{
+				f_memcpy( m_pszDestStr, pszStr, uiLen);
+				m_pszDestStr += uiLen;
+			}
+			else
+			{
+				FLMUINT	uiTmpLen;
+				
+				while (uiLen)
+				{
+					uiTmpLen = uiLen;
+					if (m_uiCharOffset + uiTmpLen > MAX_LOG_BUF_CHARS)
+					{
+						uiTmpLen = MAX_LOG_BUF_CHARS - m_uiCharOffset;
+					}
+					f_memcpy( &m_szLogBuf [m_uiCharOffset], pszStr, uiTmpLen);
+					m_uiCharOffset += uiTmpLen;
+					m_uiNumLogChars += uiTmpLen;
+					uiLen -= uiTmpLen;
+					pszStr += uiTmpLen;
+					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+					{
+						outputLogBuffer();
+					}
+				}
+			}
+		}
+		
+		// Variables used to do the printf stuff
+	
+		char							m_szLogBuf [MAX_LOG_BUF_CHARS + 1];
+		FLMUINT						m_uiNumLogChars;
+		FLMUINT						m_uiCharOffset;
+		char *						m_pszDestStr;
+		IF_LogMessageClient *	m_pLogMsg;
+		eColorType					m_eCurrentForeColor;
+		eColorType					m_eCurrentBackColor;
+	};
+	
 	/****************************************************************************
 	Desc: XML
 	****************************************************************************/
@@ -5449,7 +5598,7 @@
 		}
 	
 		FINLINE void FLMAPI truncate(
-			FLMUINT64		ui64Offset)
+			FLMUINT64		ui64Offset = 0)
 		{
 			f_assert( m_bIsOpen);
 			f_assert( ui64Offset >= m_uiOffset);
@@ -6220,11 +6369,10 @@
 	public:
 
 		F_FixedBlk();
-		~F_FixedBlk()
+
+		virtual ~F_FixedBlk()
 		{
 		}
-
-		/* virtual methods that must be implemented */
 
 		eDynRSetBlkTypes blkType()
 		{
@@ -6267,11 +6415,9 @@
 
 	protected:
 
-		// Variables
-
 		F_DYNSET_COMPARE_FUNC	m_fnCompare;
 		void *						m_pvUserData;
-		eDynRSetBlkTypes					m_eBlkType;
+		eDynRSetBlkTypes			m_eBlkType;
 		FLMUINT						m_uiEntrySize;
 		FLMUINT						m_uiNumSlots;
 		FLMUINT						m_uiPosition;
@@ -6292,22 +6438,21 @@
 			m_pAccess = NULL;
 		}
 
-		~F_DynSearchSet()
+		virtual ~F_DynSearchSet()
 		{
-			if (m_pAccess)
+			if( m_pAccess)
 			{
 				m_pAccess->Release();
 			}
 		}
 
 		RCODE FLMAPI setup(
-			char *			pszTmpDir,
-			FLMUINT			uiEntrySize);
+			char *						pszTmpDir,
+			FLMUINT						uiEntrySize);
 
 		FINLINE void FLMAPI setCompareFunc(
 			F_DYNSET_COMPARE_FUNC	fnCompare,
-			void *					pvUserData
-			)
+			void *						pvUserData)
 		{
 			m_fnCompare = fnCompare;
 			m_pvUserData = pvUserData;
@@ -6315,12 +6460,11 @@
 		}
 
 		RCODE FLMAPI addEntry(
-			void *	pvEntry);
+			void *						pvEntry);
 
 		FINLINE RCODE FLMAPI findMatch(
-			void *	pvMatchEntry,
-			void *	pvFoundEntry
-			)
+			void *						pvMatchEntry,
+			void *						pvFoundEntry)
 		{
 			return m_pAccess->search( pvMatchEntry, pvFoundEntry);
 		}
@@ -6332,18 +6476,16 @@
 
 		FINLINE FLMUINT FLMAPI getTotalEntries( void)
 		{
-			return m_pAccess->getTotalEntries();
+			return( m_pAccess->getTotalEntries());
 		}
 
 	private:
 
-		// Variables
-
 		F_DYNSET_COMPARE_FUNC	m_fnCompare;
-		void *					m_pvUserData;
-		FLMUINT					m_uiEntrySize;
-		F_FixedBlk *			m_pAccess;
-		char						m_szFileName [F_PATH_MAX_SIZE];
+		void *						m_pvUserData;
+		FLMUINT						m_uiEntrySize;
+		F_FixedBlk *				m_pAccess;
+		char							m_szFileName[ F_PATH_MAX_SIZE];
 	};
 
 	/***************************************************************************
@@ -6354,212 +6496,178 @@
 	{
 		void *		pFirstInBucket;
 		FLMUINT		uiHashValue;
-	} FBUCKET;
+	} F_BUCKET;
 	
 	RCODE FLMAPI f_allocHashTable(
 		FLMUINT					uiHashTblSize,
-		FBUCKET **				ppHashTblRV);
+		F_BUCKET **				ppHashTblRV);
 		
 	FLMUINT FLMAPI f_strHashBucket(
 		char *					pszStr,
-		FBUCKET *				pHashTbl,
+		F_BUCKET *				pHashTbl,
 		FLMUINT					uiNumBuckets);
 		
 	FLMUINT FLMAPI f_binHashBucket(
 		void *					pBuf,
 		FLMUINT					uiBufLen,
-		FBUCKET *				pHashTbl,
+		F_BUCKET *				pHashTbl,
 		FLMUINT					uiNumBuckets);
 	
+	/***************************************************************************
+	Desc:
+	***************************************************************************/
+	class F_HashObject : virtual public F_Object
+	{
+	public:
+	
+		#define F_INVALID_HASH_BUCKET				(~((FLMUINT)0))
+	
+		F_HashObject()
+		{
+			m_pNextInBucket = NULL;
+			m_pPrevInBucket = NULL;
+			m_pNextInGlobal = NULL;
+			m_pPrevInGlobal = NULL;
+			m_uiHashBucket = F_INVALID_HASH_BUCKET;
+			m_ui32KeyCRC = 0;
+			m_uiTimeAdded = 0;
+		}
+	
+		virtual ~F_HashObject()
+		{
+			flmAssert( !m_pNextInBucket);
+			flmAssert( !m_pPrevInBucket);
+			flmAssert( !m_pNextInGlobal);
+			flmAssert( !m_pPrevInGlobal);
+			flmAssert( !getRefCount());
+		}
+	
+		virtual const void * FLMAPI getKey( void) = 0;
+		
+		virtual FLMUINT FLMAPI getKeyLength( void) = 0;
+		
+		FINLINE FLMUINT FLMAPI getKeyCRC( void)
+		{
+			return( m_ui32KeyCRC);
+		}
+	
+		FINLINE FLMUINT FLMAPI getHashBucket( void)
+		{
+			return( m_uiHashBucket);
+		}
+	
+		FINLINE F_HashObject * FLMAPI getNextInGlobal( void)
+		{
+			return( m_pNextInGlobal);
+		}
+		
+		FINLINE F_HashObject * FLMAPI getNextInBucket( void)
+		{
+			return( m_pNextInBucket);
+		}
+		
+		virtual FLMUINT FLMAPI getObjectType( void) = 0;
+	
+	protected:
+	
+		void setHashBucket(
+			FLMUINT		uiHashBucket)
+		{
+			m_uiHashBucket = uiHashBucket;
+		}
+	
+		F_HashObject *		m_pNextInBucket;
+		F_HashObject *		m_pPrevInBucket;
+		F_HashObject *		m_pNextInGlobal;
+		F_HashObject *		m_pPrevInGlobal;
+		FLMUINT				m_uiHashBucket;
+		FLMUINT				m_uiTimeAdded;
+		FLMUINT32			m_ui32KeyCRC;
+	
+	friend class F_HashTable;
+	};
+
+	/***************************************************************************
+	Desc: Hash tables
+	***************************************************************************/
+	class F_HashTable : public F_Object
+	{
+	public:
+	
+		F_HashTable();
+	
+		virtual ~F_HashTable();
+	
+		RCODE FLMAPI setupHashTable(
+			FLMBOOL				bMultithreaded,
+			FLMUINT				uiNumBuckets,
+			FLMUINT				uiMaxObjects);
+	
+		RCODE FLMAPI addObject(
+			F_HashObject *		pObject,
+			FLMBOOL				bAllowDuplicates = FALSE);
+	
+		RCODE FLMAPI getNextObjectInGlobal(
+			F_HashObject **	ppObject);
+	
+		RCODE FLMAPI getNextObjectInBucket(
+			F_HashObject **	ppObject);
+		
+		RCODE FLMAPI getObject(
+			const void *		pvKey,
+			FLMUINT				uiKeyLen,
+			F_HashObject **	ppObject,
+			FLMBOOL				bRemove = FALSE);
+	
+		RCODE FLMAPI removeObject(
+			void *				pvKey,
+			FLMUINT				uiKeyLen);
+	
+		RCODE FLMAPI removeObject(
+			F_HashObject *		pObject);
+
+		void FLMAPI removeAllObjects( void);
+		
+		void FLMAPI removeAgedObjects(
+			FLMUINT				uiMaxAge);
+			
+		FLMUINT FLMAPI getMaxObjects( void);
+			
+		RCODE FLMAPI setMaxObjects(
+			FLMUINT				uiMaxObjects);
+	
+	private:
+	
+		FLMUINT getHashBucket(
+			const void *		pvKey,
+			FLMUINT				uiLen,
+			FLMUINT32 *			pui32KeyCRC = NULL);
+	
+		void linkObject(
+			F_HashObject *		pObject,
+			FLMUINT				uiBucket);
+	
+		void unlinkObject(
+			F_HashObject *		pObject);
+	
+		RCODE findObject(
+			const void *		pvKey,
+			FLMUINT				uiKeyLen,
+			F_HashObject **	ppObject);
+	
+		F_MUTEX 				m_hMutex;
+		F_HashObject *		m_pMRUObject;
+		F_HashObject *		m_pLRUObject;
+		F_HashObject **	m_ppHashTable;
+		FLMUINT				m_uiBuckets;
+		FLMUINT				m_uiObjects;
+		FLMUINT				m_uiMaxObjects;
+	};
+
 	/****************************************************************************
 										Process ID Functions
 	****************************************************************************/
 
 	FLMUINT f_getpid( void);
-
-	/*============================================================================
-	Desc:
-	============================================================================*/
-	class FLMEXP F_Printf : public F_Object
-	{
-	public:
-	
-	#define MAX_LOG_BUF_CHARS	255
-	
-		F_Printf()
-		{
-		}
-		
-		virtual ~F_Printf()
-		{
-		}
-	
-		FLMINT FLMAPI strvPrintf(
-			char *					pszDestStr,
-			const char *			pszFormat,
-			f_va_list *				args);
-
-		FLMINT FLMAPI strPrintf(
-			char *			pszDestStr,
-			const char *	pszFormat,
-			...);
-	
-		FLMINT FLMAPI logvPrintf(
-			IF_LogMessageClient *	pLogMsg,
-			const char *				pszFormat,
-			f_va_list *					args);
-			
-		FLMINT FLMAPI logPrintf(
-			IF_LogMessageClient *	pLogMsg,
-			const char *				pszFormat,
-			...);
-	
-	private:
-	
-		void processFieldInfo(
-			const char **		ppszFormat,
-			FLMUINT *			puiWidth,
-			FLMUINT *			puiPrecision,
-			FLMUINT *			puiFlags,
-			f_va_list *			args);
-	
-		void stringFormatter(
-			char					cFormatChar,
-			FLMUINT				uiWidth,
-			FLMUINT				uiPrecision,
-			FLMUINT				uiFlags,
-			f_va_list *			args);
-	
-		void colorFormatter(
-			char					cFormatChar,
-			eColorType			eColor,
-			FLMUINT				uiFlags);
-			
-		void charFormatter(
-			char					cFormatChar,
-			f_va_list *			args);
-	
-		void errorFormatter(
-			f_va_list *			args);
-	
-		void notHandledFormatter( void);
-	
-		void numberFormatter(
-			char					cFormatChar,
-			FLMUINT				uiWidth,
-			FLMUINT				uiPrecision,
-			FLMUINT				uiFlags,
-			f_va_list *			args);
-		
-		void parseArgs(
-			const char *			pszFormat,
-			f_va_list *				args);
-		
-		void processFormatString(
-			FLMUINT					uiLen,
-			...);
-			
-		FLMUINT printNumber(
-			FLMUINT64			ui64Val,
-			FLMUINT				uiBase,
-			FLMBOOL				bUpperCase,
-			FLMBOOL				bCommas,
-			char *				pszBuf);
-			
-		void outputLogBuffer( void);
-		
-		FINLINE void outputChar(
-			char		cChar)
-		{
-			if (!m_pLogMsg)
-			{
-				*m_pszDestStr++ = cChar;
-			}
-			else
-			{
-				m_szLogBuf [m_uiCharOffset++] = cChar;
-				m_uiNumLogChars++;
-				if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
-				{
-					outputLogBuffer();
-				}
-			}
-		}
-		
-		FINLINE void memsetChar(
-			char		cChar,
-			FLMUINT	uiCount)
-		{
-			if (!m_pLogMsg)
-			{
-				f_memset( m_pszDestStr, cChar, uiCount);
-				m_pszDestStr += uiCount;
-			}
-			else
-			{
-				FLMUINT	uiTmpCount;
-				
-				while (uiCount)
-				{
-					uiTmpCount = uiCount;
-					if (m_uiCharOffset + uiTmpCount > MAX_LOG_BUF_CHARS)
-					{
-						uiTmpCount = MAX_LOG_BUF_CHARS - m_uiCharOffset;
-					}
-					f_memset( &m_szLogBuf [m_uiCharOffset], cChar, uiTmpCount);
-					m_uiCharOffset += uiTmpCount;
-					m_uiNumLogChars += uiTmpCount;
-					uiCount -= uiTmpCount;
-					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
-					{
-						outputLogBuffer();
-					}
-				}
-			}
-		}
-
-		FINLINE void outputStr(
-			const char *	pszStr,
-			FLMUINT			uiLen)
-		{
-			if (!m_pLogMsg)
-			{
-				f_memcpy( m_pszDestStr, pszStr, uiLen);
-				m_pszDestStr += uiLen;
-			}
-			else
-			{
-				FLMUINT	uiTmpLen;
-				
-				while (uiLen)
-				{
-					uiTmpLen = uiLen;
-					if (m_uiCharOffset + uiTmpLen > MAX_LOG_BUF_CHARS)
-					{
-						uiTmpLen = MAX_LOG_BUF_CHARS - m_uiCharOffset;
-					}
-					f_memcpy( &m_szLogBuf [m_uiCharOffset], pszStr, uiTmpLen);
-					m_uiCharOffset += uiTmpLen;
-					m_uiNumLogChars += uiTmpLen;
-					uiLen -= uiTmpLen;
-					pszStr += uiTmpLen;
-					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
-					{
-						outputLogBuffer();
-					}
-				}
-			}
-		}
-		
-		// Variables used to do the printf stuff
-	
-		char							m_szLogBuf [MAX_LOG_BUF_CHARS + 1];
-		FLMUINT						m_uiNumLogChars;
-		FLMUINT						m_uiCharOffset;
-		char *						m_pszDestStr;
-		IF_LogMessageClient *	m_pLogMsg;
-		eColorType					m_eCurrentForeColor;
-		eColorType					m_eCurrentBackColor;
-	};
 
 #endif // FTK_H

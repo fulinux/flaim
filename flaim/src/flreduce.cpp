@@ -62,23 +62,22 @@ Notes: The size of the database file is reduced by freeing a specified
 FLMEXP RCODE FLMAPI FlmDbReduceSize(
 	HFDB				hDb,
 	FLMUINT			uiCount,
-	FLMUINT *		puiCountRV
-	)
+	FLMUINT *		puiCountRV)
 {
-	RCODE			rc;
-	FDB *			pDb = (FDB *) hDb;
-	F_Rfl *		pRfl = NULL;
-	FLMUINT		uiLogicalEOF;	 			/* Local variable- change dbd->logEof last*/
-	FLMUINT		uiBlkAddr;
-	FLMUINT		uiNumBlksMoved = 0;			/* Initialize before again: goto loop */
-	FLMUINT		uiBlkSize;
-	FLMBYTE		BlkHeader [BH_OVHD + BH_OVHD ];	/* Enough for future log extent */
-	FLMINT		iType;
-	FLMBOOL		bIgnore;
-	FLMBOOL		bLoggingWasOff = FALSE;
-	FLMBOOL		bRestoreLoggingOffFlag = FALSE;
-	FLMBOOL		bLockedDatabase = FALSE;
-	FLMBOOL		bDone = FALSE;
+	RCODE				rc = FERR_OK;
+	FDB *				pDb = (FDB *) hDb;
+	F_Rfl *			pRfl = NULL;
+	FLMUINT			uiLogicalEOF;
+	FLMUINT			uiBlkAddr;
+	FLMUINT			uiNumBlksMoved = 0;
+	FLMUINT			uiBlkSize;
+	FLMBYTE			BlkHeader [BH_OVHD + BH_OVHD ];
+	FLMINT			iType;
+	FLMBOOL			bIgnore;
+	FLMBOOL			bLoggingWasOff = FALSE;
+	FLMBOOL			bRestoreLoggingOffFlag = FALSE;
+	FLMBOOL			bLockedDatabase = FALSE;
+	FLMBOOL			bDone = FALSE;
 
 	// Lock the database if not already locked.
 	// Cannot lose exclusive access between the checkpoint and
@@ -183,30 +182,24 @@ Transmission_Error:
 
 	uiLogicalEOF = pDb->LogHdr.uiLogicalEOF;
 
-	while( (pDb->LogHdr.uiFirstAvailBlkAddr != BT_END )
-		 && ((!uiCount) || (uiNumBlksMoved < uiCount)))
+	while( (pDb->LogHdr.uiFirstAvailBlkAddr != BT_END) &&
+			 ((!uiCount) || (uiNumBlksMoved < uiCount)))
 	{
 
 		// Read the last block and determine block type
 
 		if( FSGetFileOffset( uiLogicalEOF) == 0)
 		{
-			IF_FileHdl *		pFileHdl = NULL;
 			FLMUINT				uiFileNumber = FSGetFileNumber( uiLogicalEOF) - 1;
 			FLMUINT64			ui64FileSize;
 			FLMUINT				uiTemp;
-
-			if( RC_BAD( rc = pDb->pSFileHdl->getFileHdl( 
-				uiFileNumber, TRUE, &pFileHdl)))
+			
+			if( RC_BAD( rc = pDb->pSFileHdl->getFileSize( uiFileNumber, 
+				&ui64FileSize))) 
 			{
 				goto Reduce_Size_Error;
 			}
 			
-			if( RC_BAD( rc = pFileHdl->size( &ui64FileSize)))
-			{
-				goto Reduce_Size_Error;
-			}
-
 			// Adjust to a block bounds
 			
 			uiTemp = (FLMUINT)((ui64FileSize / uiBlkSize) * uiBlkSize);
@@ -274,7 +267,6 @@ Transmission_Error:
 		{
 			FLMUINT				uiFileNumber = FSGetFileNumber( uiLogicalEOF);
 			FLMUINT64			ui64FileOffset;
-			IF_FileHdl *		pFileHdl = NULL;
 
 			if( uiFileNumber <= 1)
 			{
@@ -288,13 +280,8 @@ Transmission_Error:
 			
 			// Compute the end of the previous block file.
 			
-			if( RC_BAD( rc = pDb->pSFileHdl->getFileHdl( 
-				uiFileNumber, TRUE, &pFileHdl)))
-			{
-				goto Exit;
-			}
-
-			if( RC_BAD( rc = pFileHdl->size( &ui64FileOffset)))
+			if( RC_BAD( rc = pDb->pSFileHdl->getFileSize( uiFileNumber, 
+				&ui64FileOffset)))
 			{
 				goto Exit;
 			}
@@ -366,16 +353,16 @@ Exit:
 		*puiCountRV = uiNumBlksMoved;
 	}
 
-	if (bRestoreLoggingOffFlag)
+	if( bRestoreLoggingOffFlag)
 	{
 		pRfl->setLoggingOffState( bLoggingWasOff);
 	}
 
-	if (bLockedDatabase)
+	if( bLockedDatabase)
 	{
-		(void) FlmDbUnlock( hDb);
+		FlmDbUnlock( hDb);
 	}
-
+	
 	flmExit( FLM_DB_REDUCE_SIZE, pDb, rc);
 	return( rc);
 
@@ -398,18 +385,14 @@ FSTATIC RCODE FLRReadBlkHdr(
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesRead;
 	FLMUINT			uiNumLooks;
-	IF_FileHdl *	pTmpFileHdl = NULL;
 	SCACHE *			pBlkSCache;
 	DB_STATS *		pDbStats = pDb->pDbStats;
 	LFILE_STATS *	pLFileStats;
 	F_TMSTAMP		StartTime;
 	FLMUINT64		ui64ElapTime;
 
-	/**-----------------------------------------------
-	***  See if first the block is in cache.
-	***  Previous writes may not have been forced out
-	***  to cache.
-	***----------------------------------------------*/
+	// See if first the block is in cache.  Previous writes may not have been
+	// forced out to cache.
 
 	if (RC_BAD( rc = ScaGetBlock( pDb, NULL, BHT_LEAF,
 											uiBlkAddress, &uiNumLooks,
@@ -418,7 +401,7 @@ FSTATIC RCODE FLRReadBlkHdr(
 		goto Exit;
 	}
 
-	if (pBlkSCache)		// If found in cache ...
+	if (pBlkSCache)
 	{
 		f_memcpy( pucBlockHeader, pBlkSCache->pucBlk, BH_OVHD);
 		ScaReleaseCache( pBlkSCache, FALSE);
@@ -430,13 +413,9 @@ FSTATIC RCODE FLRReadBlkHdr(
 			ui64ElapTime = 0;
 			f_timeGetTimeStamp( &StartTime);
 		}
-
-		if( RC_OK( rc = pDb->pSFileHdl->getFileHdl(
-			FSGetFileNumber( uiBlkAddress), TRUE, &pTmpFileHdl)))
-		{
-			rc = pTmpFileHdl->read( FSGetFileOffset( uiBlkAddress), 
-					BH_OVHD, pucBlockHeader, &uiBytesRead);
-		}
+		
+		rc = pDb->pSFileHdl->readBlock( uiBlkAddress, BH_OVHD, 
+			pucBlockHeader, &uiBytesRead);
 
 		if (pDbStats)
 		{
@@ -502,23 +481,16 @@ FSTATIC RCODE FLRReadBlkHdr(
 			}
 		}
 
-		if (RC_BAD( rc))
+		if( RC_BAD( rc))
 		{
-			if (rc != FERR_IO_END_OF_FILE && rc != FERR_MEM)
-			{
-				pDb->pSFileHdl->releaseFile( FSGetFileNumber( uiBlkAddress),
-														TRUE);
-			}
 			goto Exit;
 		}
+		
 		pucBlockHeader [BH_CHECKSUM_LOW] = (FLMBYTE) uiBlkAddress;
 	}
 
-	/**---------------------------------------------------
-	***  If the block address does not agree with what 
-	***  is expected then the block is a log extent.
-	***  Otherwise the block contains the type it is.
-	***--------------------------------------------------*/
+	// If the block address does not agree with what is expected then the
+	// block is a log extent.  Otherwise the block contains the type it is.
 
 	if (piTypeRV)
 	{
@@ -526,7 +498,8 @@ FSTATIC RCODE FLRReadBlkHdr(
 	}
 				
 Exit:
-	return( rc );
+
+	return( rc);
 }
 
 /****************************************************************************
@@ -537,7 +510,7 @@ Notes:	Some of this code could be called in movePcodeLFHBlk but we have
 ****************************************************************************/
 FSTATIC RCODE FLRMoveBtreeBlk(
 	FDB *			pDb,
-	FLMUINT		uiBlkAddr,		// Block Address
+	FLMUINT		uiBlkAddr,
 	FLMUINT		uiLfNumber,
 	FLMBOOL *	pbDone)
 {
@@ -553,14 +526,14 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 	FLMUINT		uiRightBlkAddr;
 	SCACHE *		pFreeSCache;
 	FLMBOOL		bReleaseCache2 = FALSE;
-	BTSK			StackArea;			 		/* Single stack allocation */
-	BTSK *		pStack = &StackArea;		/* Points to stack - easier to use */
-	FLMUINT		uiElmOvhd;				 	/* Number of bytes in block overhead */
-	FLMUINT		uiSearchKeyLen;		 		/* Length of block's 1st key */
+	BTSK			StackArea;
+	BTSK *		pStack = &StackArea;
+	FLMUINT		uiElmOvhd;
+	FLMUINT		uiSearchKeyLen;
 	FLMBYTE		ucKeyBuf [MAX_KEY_SIZ];
-	FLMBYTE		ucSearchKey [MAX_KEY_SIZ];/* Holds block's 1st key */
+	FLMBYTE		ucSearchKey [MAX_KEY_SIZ];
 	FLMUINT		uiTargetLevel;
-	FLMUINT		uiLevel;						/* Level numbers in the btree */
+	FLMUINT		uiLevel;
 	FLMUINT		uiRootBlkFlag;
 	FLMUINT		uiSavePrevTransID;
 	FLMUINT		uiSavePrevBlkAddr;
@@ -599,24 +572,14 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 	}
 	pucBlk = pSCache->pucBlk;
 
-	/**--------------------------------------------------
-	***  Added 05/04/93
-	***  Need to make sure that LFILE is up to date.
-	***  Force reading it in.  This does a block read
-	***  so the cache will get hit without a great
-	***  performance loss.  This is the safest place
-	***  to do this because only pSCache is pinned.
-	***------------------------------------------------*/
+	// Need to make sure that LFILE is up to date.
 
 	if (RC_BAD( rc = flmLFileRead( pDb, pLFile)))
 	{
 		goto Exit;
 	}
 
-	/**----------------------------------------
-	***  Get all of the information from the
-	***  block like linkages and a search key.
-	***---------------------------------------*/
+	// Get all of the information from the block like linkages and a search key.
 
 	uiLeftBlkAddr  = FB2UD( &pucBlk [BH_PREV_BLK ]);
 	uiRightBlkAddr = FB2UD( &pucBlk [BH_NEXT_BLK ]);
@@ -632,7 +595,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		uiElmOvhd = BNE_KEY_START;
 		break;
 	case BHT_NON_LEAF_DATA:
-		uiElmOvhd = 0; // First key starts at BH_OVHD
+		uiElmOvhd = 0;
 		break;
 	case BHT_NON_LEAF_COUNTS:
 		uiElmOvhd = BNE_KEY_COUNTS_START;
@@ -643,15 +606,12 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 	}
 
 	uiSearchKeyLen = (uiBlockType == BHT_NON_LEAF_DATA 
-					? 4 
-					: BBE_GET_KL( &pucBlk [BH_OVHD ]));
+								? 4 
+								: BBE_GET_KL( &pucBlk [BH_OVHD ]));
 
 	f_memcpy( ucSearchKey, &pucBlk [BH_OVHD + uiElmOvhd ], uiSearchKeyLen );
 	
-	/**-------------------------------
-	***  Get the next free block.
-	***  Copy block to free block.
-	***------------------------------*/
+	// Get the next free block.  Copy block to free block.
 
 	if (RC_BAD( rc = FSBlockUseNextAvail( pDb, pLFile, &pFreeSCache)))
 	{
@@ -661,13 +621,11 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 	pucFreeBlk = pFreeSCache->pucBlk;	
 	uiFreeBlkAddr = GET_BH_ADDR( pucFreeBlk);
 
-	/*
-	The free block has been logged and set to dirty
-	in FSBlockUseNextAvail().
-	BUT, need to preserve previous transaction ID and previous
-	block address - those should NOT be copied over from the block
-	we are switching with.
-	*/
+	// The free block has been logged and set to dirty
+	// in FSBlockUseNextAvail().
+	// BUT, need to preserve previous transaction ID and previous
+	// block address - those should NOT be copied over from the block
+	// we are switching with.
 
 	uiSavePrevTransID = (FLMUINT)FB2UD(
 									&pFreeSCache->pucBlk [BH_PREV_TRANS_ID]);
@@ -688,16 +646,13 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 	bReleaseCache2 = FALSE;
 	uiRootBlkFlag = (FLMUINT)(BH_IS_ROOT_BLK( pucBlk ));
 
-	/* Done with block. */
+	// Done with block.
 
 	ScaReleaseCache( pSCache, FALSE);
 	bReleaseCache = FALSE;
 
-	/**----------------------------------------------
-	***  If this is a root block this is easy!
-	***  Otherwise you must find the blocks parent
-	***  and next/prev blocks and change linkages.
-	***---------------------------------------------*/
+	// If this is a root block this is easy!  Otherwise you must find the 
+	// blocks parent and next/prev blocks and change linkages.
 
 	if( uiRootBlkFlag)
 	{
@@ -725,12 +680,9 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		goto Exit;
 	}
 
-	/**--------------------------------------------------
-	***  Read left and right blocks and adjust their 
-	***  pointers to point to the new block.
-	***  This doesn't matter what level of the b-tree
-	***  you are on.
-	***--------------------------------------------------*/
+	// Read left and right blocks and adjust their pointers to point to
+	// the new block.  This doesn't matter what level of the b-tree
+	// you are on.
 
 	if( uiLeftBlkAddr != BT_END)
 	{
@@ -739,11 +691,14 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		{
 			goto Exit;
 		}
+		
 		bReleaseCache = TRUE;
+		
 		if (RC_BAD( rc = ScaLogPhysBlk( pDb, &pSCache)))
 		{
 			goto Exit;
 		}
+		
 		pucBlk = pSCache->pucBlk;
 		UD2FBA( (FLMUINT32)uiFreeBlkAddr, &pucBlk [BH_NEXT_BLK ]);
 		ScaReleaseCache( pSCache, FALSE);
@@ -757,7 +712,9 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		{
 			goto Exit;
 		}
+		
 		bReleaseCache = TRUE;
+		
 		if (RC_BAD( rc = ScaLogPhysBlk( pDb, &pSCache)))
 		{
 			goto Exit;
@@ -769,12 +726,10 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		bReleaseCache = FALSE;
 	}
 
-	/**--------------------------------------------------
-	***  Now for the hard part!  Build a search key.
-	***  Scan down the tree one level above blk.
-	***  Scan right until find element that has child blk
-	***  that matches uiBlkAddr and adjust child blk addr.
-	***--------------------------------------------------*/
+	// Now for the hard part!  Build a search key.
+	// Scan down the tree one level above blk.
+	// Scan right until find element that has child blk
+	// that matches uiBlkAddr and adjust child blk addr.
 
 	if (RC_BAD(rc = FSGetBlock( pDb, pLFile,
 										  pLFile->uiRootBlk, pStack)))
@@ -788,7 +743,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		uiLevel = (FLMUINT)CABLK_ELM( pStack, BH_LEVEL );
 		pStack->uiLevel = uiLevel;
 
-		/* Scan the block for the matching key */
+		// Scan the block for the matching key
 
 		if( pStack->uiBlkType != BHT_NON_LEAF_DATA)
 		{
@@ -813,12 +768,10 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		}
 	}
 
-	/**----------------------------------------------------------
-	***  The block MUST be a non-leaf block so our job is easier.
-	***  Scan the elements going right to find the element that
-	***  has the matching block address.
-	***  Set NO_STACK flag so get next element doesn't pop stack!
-	***-----------------------------------------------------------*/
+	// The block MUST be a non-leaf block so our job is easier.
+	// Scan the elements going right to find the element that
+	// has the matching block address.
+	// Set NO_STACK flag so get next element doesn't pop stack!
 
 	pStack->uiFlags = NO_STACK;
 	
@@ -827,7 +780,7 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 		if (FSChildBlkAddr( pStack) == uiBlkAddr )
 		{
 
-			/* FOUND THE BLOCK ! ! ! */
+			// Found the block
 			
 			if (RC_BAD( rc = FSLogPhysBlk( pDb, pStack)))
 			{
@@ -847,14 +800,17 @@ FSTATIC RCODE FLRMoveBtreeBlk(
 			}
 			goto Exit;
 		}
-	}		
-	/* WOW - WE ARE DONE ! ! ! */
+	}
+	
 Exit:
+
 	FSReleaseBlock( &StackArea, FALSE);
+	
 	if (bReleaseCache)
 	{
 		ScaReleaseCache( pSCache, FALSE);
 	}
+	
 	if (bReleaseCache2)
 	{
 		ScaReleaseCache( pFreeSCache, FALSE);
@@ -1067,7 +1023,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 	FLMBOOL		bFirstChainFlag;
 	FLMBYTE *	pucLogHdr = &pFile->ucUncommittedLogHdr [0];
 
-	/* Check for first avail block condition. */
+	// Check for first avail block condition.
 
 	if (uiBlkAddr == pDb->LogHdr.uiFirstAvailBlkAddr)
 	{
@@ -1078,16 +1034,16 @@ FSTATIC RCODE FLRFreeAvailBlk(
 		goto Exit;
 	}
 
-	/* Not first block -- resolve pointers */
-
-	/* Read the block header and get pointers */
+	// Read the block header and get pointers
 
 	if (RC_BAD( rc = FLRReadBlkHdr( pDb, uiBlkAddr,
 									ucBlkHeader, (FLMINT *)0 )))
 	{
 		goto Exit;
 	}
-	uiPrevBlkAddr = uiBlkAddr;			/* Call uses uiPrevBlkAddr */
+	
+	uiPrevBlkAddr = uiBlkAddr;
+	
 	if (RC_BAD( rc = FLRFindPrevAvailBlk( pDb, &uiPrevBlkAddr,
 													  &bFirstChainFlag)))
 	{
@@ -1097,8 +1053,6 @@ FSTATIC RCODE FLRFreeAvailBlk(
 	uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
 	if (pFile->FileHdr.uiVersionNum >= 111)
 	{
-		/* Only valid for versions 1.11 and higher */
-
 		uiPbcAddr = ALGetPBC( ucBlkHeader);
 		uiNbcAddr = ALGetNBC( ucBlkHeader);
 		flmDecrUint( &pucLogHdr [LOG_PF_NUM_AVAIL_BLKS], 1);
@@ -1108,9 +1062,9 @@ FSTATIC RCODE FLRFreeAvailBlk(
 		uiPbcAddr = uiNbcAddr = 0;
 	}
 
-	/* Check for unexpected error conditions. */
+	// Check for unexpected error conditions
 
-	if (( uiPrevBlkAddr == uiBlkAddr)  ||
+	if( (uiPrevBlkAddr == uiBlkAddr)  ||
 			((!uiNbcAddr) && ( uiPbcAddr)) || 
 			(( uiNbcAddr) && (!uiPbcAddr)))
 	{
@@ -1118,12 +1072,10 @@ FSTATIC RCODE FLRFreeAvailBlk(
 		goto Exit;
 	}
 
-	/**--------------------------------
-	***  NON-CHAIN BLOCK
-	***  This is also minor verion 0
-	***-------------------------------*/
+	// NON-CHAIN BLOCK
+	// This is also minor verion 0
 
-	if (!uiNbcAddr)				 /* either both are zero or both non-zero*/
+	if (!uiNbcAddr)
 	{
 		if (RC_BAD( rc = ScaGetBlock( pDb, NULL, BHT_FREE,
 										uiPrevBlkAddr, NULL, &pSCache)))
@@ -1148,16 +1100,6 @@ FSTATIC RCODE FLRFreeAvailBlk(
 		bReleaseCache = FALSE;
 		goto Exit;
 	}
-
-	/**--------------------------------
-	***  CHAIN BLOCK
-	***  Only in minor verion > 0 
-	***-------------------------------*/
-
-	/**--------------------------------
-	***  CHAIN BLOCK - previous block
-	***  is nbc (next backchain)
-	***-------------------------------*/
 
 	if (uiPrevBlkAddr == uiNbcAddr)
 	{
@@ -1199,18 +1141,6 @@ FSTATIC RCODE FLRFreeAvailBlk(
 			bReleaseCache = FALSE;
 		}
 	}
-
-	/**--------------------------------
-	***  CHAIN BLOCK - next block
-	***  is pbc (previous backchain)
-	***
-	***									|----------->>-PBC->>---------|
-	***									|                             |
-	***		header ----> FREE -->>-nextBlk->>--------> FREE
-	***									|                             |
-	***									|---------<<-NBC-<<-----------|
-	***-------------------------------*/
-
 	else if ((uiNextBlkAddr == uiPbcAddr) && (uiNextBlkAddr != BT_END))
 	{
 		if (RC_BAD( rc = ScaGetBlock( pDb, NULL, BHT_FREE,
@@ -1274,13 +1204,6 @@ FSTATIC RCODE FLRFreeAvailBlk(
 			bReleaseCache = FALSE;
 		}
 	}
-
-	/**-----------------------------------
-	***  CHAIN BLOCK - normal chain block
-	***  No adjacent chain blocks
-	***  May be the last block in the chain
-	***----------------------------------*/
-
 	else
 	{
 		if (RC_BAD( rc = ScaGetBlock( pDb, NULL, BHT_FREE,
@@ -1353,6 +1276,7 @@ FSTATIC RCODE FLRFreeAvailBlk(
 	}
 
 Exit:
+
 	if (bReleaseCache)
 	{
 		ScaReleaseCache( pSCache, FALSE);
@@ -1381,61 +1305,70 @@ FSTATIC RCODE  FLRFindPrevAvailBlk(
 
 	if( RC_BAD( rc = FLRReadBlkHdr( pDb, uiTargetBlkAddr,
 											  ucBlkHeader, (FLMINT *)0 )))
+	{
 		goto Exit;
+	}
 
 	uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
 	if ( uiNextBlkAddr == pDb->LogHdr.uiFirstAvailBlkAddr)
 	{
-		/* Done */
 		goto Exit;
 	}
 
-	/* Find next chain block */
+	// Find next chain block
 
 	uiNbcAddr = ALGetNBC( ucBlkHeader);
 	
-	while( ( !uiNbcAddr) && ( uiNextBlkAddr != BT_END))
+	while( (!uiNbcAddr) && ( uiNextBlkAddr != BT_END))
 	{
 		if( RC_BAD( rc = FLRReadBlkHdr( pDb, uiNextBlkAddr,
 												  ucBlkHeader, (FLMINT *)0)))
+		{
 			goto Exit;
+		}
 
-		if( ( uiTempBlkAddr = GET_BH_ADDR( ucBlkHeader)) != uiNextBlkAddr)
+		if( (uiTempBlkAddr = GET_BH_ADDR( ucBlkHeader)) != uiNextBlkAddr)
 		{
 			rc = RC_SET( FERR_DATA_ERROR);
 			goto Exit;
 		}
+		
 		uiNbcAddr = ALGetNBC( ucBlkHeader);
 		uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
 	}
 
-	/* Now find the previous avail block */
+	// Now find the previous avail block
 
 	if( uiNbcAddr == BT_END)
 	{
 		uiNextBlkAddr = pDb->LogHdr.uiFirstAvailBlkAddr;
-		*pbFirstChainFlagRV = TRUE;		/* Within first chain */
+		*pbFirstChainFlagRV = TRUE;
 	}
 	else
+	{
 		uiNextBlkAddr = uiNbcAddr;
+	}
 
-	while( ( uiNextBlkAddr != uiTargetBlkAddr) && ( uiNextBlkAddr != BT_END))
+	while( (uiNextBlkAddr != uiTargetBlkAddr) && (uiNextBlkAddr != BT_END))
 	{
 		if (RC_BAD( rc = FLRReadBlkHdr( pDb, uiNextBlkAddr,
 												  ucBlkHeader, (FLMINT *)0 )))
+		{
 			goto Exit;
+		}
 
-		if( ( uiTempBlkAddr = GET_BH_ADDR( ucBlkHeader)) != uiNextBlkAddr)
+		if( (uiTempBlkAddr = GET_BH_ADDR( ucBlkHeader)) != uiNextBlkAddr)
 		{
 			rc = RC_SET( FERR_DATA_ERROR);
 			goto Exit;
 		}
+		
 		uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
 	}
 
 	*puiBlkAddrRV = uiTempBlkAddr;
 
 Exit:
-	return( rc );
-}
 
+	return( rc);
+}

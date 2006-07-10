@@ -77,11 +77,12 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 		goto Exit;
 	}
 
+	gv_FlmSysData.pFileHdlCache->closeUnusedFiles();
+
 	// Open the file so we can get the log header.
 
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
-		pszDbName, FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 
-		&pFileHdl)))
+		pszDbName, gv_FlmSysData.uiFileOpenFlags, &pFileHdl)))
 	{
 		goto Exit;
 	}

@@ -49,7 +49,7 @@ FSTATIC void copyIndexListStatus(
 	IXLIST_STATUS *	pSrcIxListStatus,
 	FLMBOOL				bTransferKeyList);
 
-FSTATIC RCODE imonDoIndexList(
+FSTATIC RCODE FLMAPI imonDoIndexList(
 	IF_Thread *			pThread);
 
 /****************************************************************************
@@ -1401,7 +1401,7 @@ Exit:
 /****************************************************************************
 Desc:	Thread to perform a query for a web page.
 ****************************************************************************/
-FSTATIC RCODE imonDoIndexList(
+FSTATIC RCODE FLMAPI imonDoIndexList(
 	IF_Thread *		pThread)
 {
 	RCODE					rc;

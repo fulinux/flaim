@@ -2718,7 +2718,7 @@ RCODE IFlmTestImpl::backupRestoreDbTest( void)
 	if (RC_BAD( rc = FlmDbRestore( DB_RESTORE_NAME_STR, NULL, BACKUP_PATH,
 								NULL, NULL, NULL)))
 	{
-		MAKE_ERROR_STRING( "calling FlmDbBackupEnd", rc, m_szFailInfo);
+		MAKE_ERROR_STRING( "calling FlmDbRestore", rc, m_szFailInfo);
 		goto Exit;
 	}
 	bPassed = TRUE;

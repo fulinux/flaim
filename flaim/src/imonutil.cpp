@@ -3928,7 +3928,7 @@ void F_DatabasePage::printGlobalDatabaseList( void)
 {
 	FLMBOOL			bHighlight;
 	FLMUINT			uiLoop;
-	FBUCKET *		pBucket;
+	F_BUCKET *		pBucket;
 	FFILE *			pFile;
 
 	// Table

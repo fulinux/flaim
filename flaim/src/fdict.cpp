@@ -3803,9 +3803,9 @@ FSTATIC RCODE fdictFixupIfdPointers(
 		}
 
 		// Move the field type to the pIfd->uiFlags
+
 		IFD_SET_FIELD_TYPE( pIfd, ITT_FLD_GET_TYPE( pItt));
 		
-		// Visit: We could verify all of the fields in the field path.
 		// Need to include 'any', 'use', 'parent' tags as valid tags.
 
 		if( !pItt->pvItem)

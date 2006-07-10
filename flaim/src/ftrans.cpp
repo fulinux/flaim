@@ -119,7 +119,7 @@ FLMEXP RCODE FLMAPI FlmDbTransBegin(
 
 		if( pucHeader)
 		{
-			if( RC_BAD( rc = pDb->pSFileHdl->readHeader( 
+			if( RC_BAD( rc = pDb->pSFileHdl->readBlock( 
 				0, 2048, pucHeader, &uiBytesRead)))
 			{
 				goto Exit;
@@ -1265,12 +1265,10 @@ Desc:	This routine commits an active transaction for a particular
 		transaction is committed locally.
 ****************************************************************************/
 RCODE flmCommitDbTrans(
-	FDB *			pDb,
-	FLMUINT		uiNewLogicalEOF,		// New logical end-of-file.  This is only
-												// set by the FlmDbReduceSize function when
-												// it is truncating the file.
-	FLMBOOL		bForceCheckpoint,		// Force a checkpoint?
-	FLMBOOL *	pbEmpty)					// May be NULL
+	FDB *				pDb,
+	FLMUINT			uiNewLogicalEOF,
+	FLMBOOL			bForceCheckpoint,
+	FLMBOOL *		pbEmpty)
 {
 	RCODE	  			rc = FERR_OK;
 	FLMBYTE *		pucUncommittedLogHdr;
@@ -1425,21 +1423,16 @@ RCODE flmCommitDbTrans(
 
 			// Test for buildup of dirty cache blocks.
 
-			if (((pTmpSCache) &&
-				  (!pTmpSCache->uiUseCount) &&
-				  (pTmpSCache->ui16Flags &
-					(CA_DIRTY | CA_LOG_FOR_CP | CA_WRITE_TO_LOG)))
-
-			||	// Test for end of roll-forward log.
-
-				pRfl->atEndOfLog()
-			||
-				bForceCheckpoint)
+			if( (pTmpSCache && !pTmpSCache->uiUseCount &&
+				  (pTmpSCache->ui16Flags & 
+						(CA_DIRTY | CA_LOG_FOR_CP | CA_WRITE_TO_LOG))) ||
+				pRfl->atEndOfLog() || bForceCheckpoint)
 			{
 				bForceCheckpoint = TRUE;
 				uiCPFileNum = pRfl->getCurrFileNum();
 				uiCPOffset = pRfl->getCurrReadOffset();
 			}
+			
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 		}
 	}
@@ -1457,10 +1450,11 @@ RCODE flmCommitDbTrans(
 
 	// Set the new logical EOF if passed in.
 
-	if (uiNewLogicalEOF)
+	if( uiNewLogicalEOF)
 	{
 		pDb->LogHdr.uiLogicalEOF = uiNewLogicalEOF;
 	}
+	
 	UD2FBA( (FLMUINT32)pDb->LogHdr.uiLogicalEOF,
 		&pucUncommittedLogHdr [LOG_LOGICAL_EOF]);
 
@@ -1644,9 +1638,9 @@ Exit1:
 			flmAssert( 0);
 			(void)pFile->pRfl->completeTransWrites( pDb, FALSE, TRUE);
 		}
-		else if (!bForceCheckpoint)
+		else if( !bForceCheckpoint)
 		{
-			if (bIndexAfterCommit)
+			if( bIndexAfterCommit)
 			{
 				rc = pFile->pRfl->completeTransWrites( pDb, TRUE, FALSE);
 				flmIndexingAfterCommit( pDb);
@@ -1674,10 +1668,12 @@ Exit1:
 						TRUE, CP_TIME_INTERVAL_REASON,
 						uiCPFileNum, uiCPOffset);
 			}
+			
 			if (bIndexAfterCommit)
 			{
 				flmIndexingAfterCommit( pDb);
 			}
+			
 			flmUnlinkDbFromTrans( pDb, TRUE);
 		}
 

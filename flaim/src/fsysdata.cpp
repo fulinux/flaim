@@ -42,12 +42,11 @@
 	#define FLM_MAX_CACHE_SIZE			(~((FLMUINT)0))
 #endif
 
+#define DEFAULT_OPEN_THRESHOLD		100		// 100 file handles to cache
+#define DEFAULT_MAX_AVAIL_TIME		900		// 15 minutes
+
 FLMATOMIC			gv_flmSysSpinLock = 0;
 FLMUINT				gv_uiFlmSysStartupCount = 0;
-
-FSTATIC void flmInitHashTbl(
-	FBUCKET *         	pHashTable,
-	FLMUINT					uiHashEntries);
 
 FSTATIC RCODE flmGetCacheBytes(
 	FLMUINT		uiPercent,
@@ -84,7 +83,7 @@ FSTATIC void flmCleanup( void);
 FSTATIC void flmUnlinkFileFromBucket(
 	FFILE *			pFile);
 
-RCODE flmSystemMonitor(
+RCODE FLMAPI flmSystemMonitor(
 	IF_Thread *		pThread);
 
 FSTATIC RCODE flmRegisterHttpCallback(
@@ -154,67 +153,6 @@ FINLINE void flmFreeDictList(
 	}
 	
 	*ppDictRV = NULL;
-}
-
-/****************************************************************************
-Desc: This routine initializes a hash table.
-****************************************************************************/
-FSTATIC void flmInitHashTbl(
-	FBUCKET *				pHashTable,
-	FLMUINT					uiHashEntries)
-{
-	FLMUINT		uiCnt;
-	FLMUINT		uiRandVal;
-	FLMUINT		uiTempVal;
-
-	for( uiCnt = 0; uiCnt < uiHashEntries; uiCnt++)
-	{
-		pHashTable [uiCnt].uiHashValue = (FLMBYTE)uiCnt;
-		pHashTable [uiCnt].pFirstInBucket = NULL;
-	}
-	
-	if (uiHashEntries <= 256)
-	{
-		for (uiCnt = 0; uiCnt < uiHashEntries - 1; uiCnt++)
-		{
-			uiRandVal = f_getRandomUINT32( (FLMUINT32)uiCnt, (FLMUINT32)(uiHashEntries - 1));
-			
-			if (uiRandVal != uiCnt)
-			{
-				uiTempVal = (FLMBYTE)pHashTable [uiCnt].uiHashValue;
-				pHashTable [uiCnt].uiHashValue = pHashTable [uiRandVal].uiHashValue;
-				pHashTable [uiRandVal].uiHashValue = uiTempVal;
-			}
-		}
-	}
-}
-
-/****************************************************************************
-Desc: This routine allocates and initializes a hash table.
-****************************************************************************/
-RCODE flmAllocHashTbl(
-	FLMUINT		uiHashTblSize,
-	FBUCKET **	ppHashTblRV)
-{
-	RCODE					rc = FERR_OK;
-	FBUCKET *			pHashTbl = NULL;
-
-	// Allocate memory for the hash table
-
-	if( RC_BAD( rc = f_calloc(
-		(FLMUINT)(sizeof( FBUCKET)) * uiHashTblSize, &pHashTbl)))
-	{
-		goto Exit;
-	}
-
-	// Initialize the hash table
-
-	flmInitHashTbl( pHashTbl, uiHashTblSize);
-	
-Exit:
-
-	*ppHashTblRV = pHashTbl;
-	return( rc);
 }
 
 /****************************************************************************
@@ -382,7 +320,6 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	// call to f_memoryInit().
 
 	gv_FlmSysData.hShareMutex = F_MUTEX_NULL;
-	gv_FlmSysData.hFileHdlMutex = F_MUTEX_NULL;
 	gv_FlmSysData.uiMaxStratifyIterations = DEFAULT_MAX_STRATIFY_ITERATIONS;
 	gv_FlmSysData.uiMaxStratifyTime = DEFAULT_MAX_STRATIFY_TIME;
 
@@ -391,7 +328,15 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	gv_FlmSysData.UpdateEvents.hMutex = F_MUTEX_NULL;
 	gv_FlmSysData.LockEvents.hMutex = F_MUTEX_NULL;
 	gv_FlmSysData.SizeEvents.hMutex = F_MUTEX_NULL;
+	
+	// Set the default file open flags
+	
+	gv_FlmSysData.uiFileOpenFlags = 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT;
 
+	gv_FlmSysData.uiFileCreateFlags = 
+		gv_FlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
+		
 #ifdef FLM_DBG_LOG
 	flmDbgLogInit();
 #endif
@@ -484,6 +429,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 
 	gv_FlmSysData.uiMaxCache = uiCacheBytes;
 	uiCacheBytes >>= 1;
+	
 	if (RC_BAD( rc = ScaInit( uiCacheBytes)))
 	{
 		goto Exit;
@@ -502,16 +448,6 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	}
 
 	if (RC_BAD( rc = f_mutexCreate( &gv_FlmSysData.hQueryMutex)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD(rc = f_mutexCreate( &gv_FlmSysData.hFileHdlMutex)))
-	{
-		goto Exit;
-	}
-
-	if (RC_BAD(rc = f_mutexCreate( &gv_FlmSysData.hServerLockMgrMutex)))
 	{
 		goto Exit;
 	}
@@ -536,7 +472,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 
 	// Allocate memory for the file name hash table
 
-	if (RC_BAD(rc = flmAllocHashTbl( FILE_HASH_ENTRIES,
+	if (RC_BAD(rc = f_allocHashTable( FILE_HASH_ENTRIES,
 								&gv_FlmSysData.pFileHashTbl)))
 	{
 		goto Exit;
@@ -551,8 +487,15 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 		goto Exit;
 	}
 	
-	gv_FlmSysData.bOkToDoAsyncWrites = gv_FlmSysData.pFileSystem->canDoAsync();
-
+	// Allocate a file handle cache
+	
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->allocFileHandleCache( 
+		DEFAULT_OPEN_THRESHOLD, DEFAULT_MAX_UNUSED_TIME,		
+		&gv_FlmSysData.pFileHdlCache)))
+	{
+		goto Exit;
+	}
+	
 	// Set up the session manager
 
 	if( (gv_FlmSysData.pSessionMgr = f_new F_SessionMgr) == NULL)
@@ -599,6 +542,7 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	iHandle  = (int)f_getpid();
 
 	// Initialize NICI
+	
 	if (CCS_Init(&iHandle))
 	{
 		// Failure.
@@ -1139,7 +1083,38 @@ FLMEXP RCODE FLMAPI FlmConfig(
 	{
 		case FLM_OPEN_THRESHOLD:
 		{
+			rc = gv_FlmSysData.pFileHdlCache->setOpenThreshold( (FLMUINT)Value1);
 			break;
+		}
+		
+		case FLM_DIRECT_IO_STATE:
+		{
+			// Direct I/O state can only be changed when there are no open
+			// databases.  We also only allow DIO to be disabled on Unix
+			// platforms.
+
+#ifdef FLM_UNIX			
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			
+			if( !gv_FlmSysData.uiOpenFFiles)
+			{
+				if( (FLMBOOL)Value1)
+				{
+					gv_FlmSysData.uiFileOpenFlags = 
+						FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT;
+				}
+				else
+				{
+					gv_FlmSysData.uiFileOpenFlags = 
+						FLM_IO_RDWR | FLM_IO_SH_DENYNONE;
+				}
+				
+				gv_FlmSysData.uiFileCreateFlags = 
+					gv_FlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
+			}
+			
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+#endif
 		}
 	
 		case FLM_CACHE_LIMIT:
@@ -1621,8 +1596,7 @@ Desc : Gets configured shared attributes.
 ****************************************************************************/
 FLMEXP RCODE FLMAPI FlmGetConfig(
 	eFlmConfigTypes	eConfigType,
-	void *				Value1
-	)
+	void *				Value1)
 {
 	RCODE		rc = FERR_OK;
 
@@ -1652,11 +1626,31 @@ FLMEXP RCODE FLMAPI FlmGetConfig(
 			break;
 	
 		case FLM_OPEN_FILES:
+		{
+			*((FLMUINT *)Value1) = f_getOpenFileCount();
 			break;
+		}
 	
 		case FLM_OPEN_THRESHOLD:
+			*((FLMUINT *)Value1) = gv_FlmSysData.pFileHdlCache->getOpenThreshold();
 			break;
 	
+		case FLM_DIRECT_IO_STATE:
+		{
+			f_mutexLock( gv_FlmSysData.hShareMutex);
+			
+			if( gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT)
+			{
+				*((FLMBOOL *)Value1) = TRUE;
+			}
+			else
+			{
+				*((FLMBOOL *)Value1) = FALSE;
+			}
+			
+			f_mutexUnlock( gv_FlmSysData.hShareMutex);
+		}
+		
 		case FLM_TMPDIR:
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 	
@@ -2229,8 +2223,7 @@ Desc: This routine frees a registered event.
 FSTATIC void flmFreeEvent(
 	FEVENT *			pEvent,
 	F_MUTEX			hMutex,
-	FEVENT **		ppEventListRV
-	)
+	FEVENT **		ppEventListRV)
 {
 	f_mutexLock( hMutex);
 	if (pEvent->pPrev)
@@ -2335,7 +2328,7 @@ FSTATIC void flmCleanup( void)
 
 	if (gv_FlmSysData.pFileHashTbl)
 	{
-		FBUCKET *   pFileHashTbl;
+		F_BUCKET *   pFileHashTbl;
 
 		// flmFreeFile expects the global mutex to be locked
 		// IMPORTANT NOTE: pFileHashTbl is ALWAYS allocated
@@ -2391,16 +2384,6 @@ FSTATIC void flmCleanup( void)
 		f_mutexDestroy( &gv_FlmSysData.hShareMutex);
 	}
 
-	if (gv_FlmSysData.hFileHdlMutex != F_MUTEX_NULL)
-	{
-		f_mutexDestroy( &gv_FlmSysData.hFileHdlMutex);
-	}
-
-	if (gv_FlmSysData.hServerLockMgrMutex != F_MUTEX_NULL)
-	{
-		f_mutexDestroy( &gv_FlmSysData.hServerLockMgrMutex);
-	}
-
 	if (gv_FlmSysData.HttpConfigParms.hMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &gv_FlmSysData.HttpConfigParms.hMutex);
@@ -2446,12 +2429,12 @@ FSTATIC void flmCleanup( void)
 	
 	// Free (release) FLAIM's File Shared File System Object.
 
-	if (gv_FlmSysData.pFileSystem)
+	if( gv_FlmSysData.pFileSystem)
 	{
 		gv_FlmSysData.pFileSystem->Release();
 		gv_FlmSysData.pFileSystem = NULL;
 	}
-
+	
 #ifdef FLM_DBG_LOG
 	flmDbgLogExit();
 #endif
@@ -2470,6 +2453,14 @@ FSTATIC void flmCleanup( void)
 	{
 		gv_FlmSysData.pThreadMgr->Release();
 		gv_FlmSysData.pThreadMgr = NULL;
+	}
+	
+	// Release the file handle cache
+	
+	if( gv_FlmSysData.pFileHdlCache)
+	{
+		gv_FlmSysData.pFileHdlCache->Release();
+		gv_FlmSysData.pFileHdlCache = NULL;
 	}
 	
 	// Release the slab manager
@@ -2584,7 +2575,7 @@ RCODE flmLinkFileToBucket(
 {
 	RCODE			rc = FERR_OK;
 	FFILE *		pTmpFile;
-	FBUCKET *	pBucket;
+	F_BUCKET *	pBucket;
 	FLMUINT		uiBucket;
 	char			szDbPathStr[ F_PATH_MAX_SIZE];
 
@@ -2600,16 +2591,19 @@ RCODE flmLinkFileToBucket(
 
 	uiBucket = f_strHashBucket( szDbPathStr, pBucket, FILE_HASH_ENTRIES);
 	pBucket = &pBucket [uiBucket];
+	
 	if (pBucket->pFirstInBucket)
 	{
 		pTmpFile = (FFILE *)pBucket->pFirstInBucket;
 		pTmpFile->pPrev = pFile;
 	}
+	
 	pFile->uiBucket = uiBucket;
 	pFile->pPrev = (FFILE *)NULL;
 	pFile->pNext = (FFILE *)pBucket->pFirstInBucket;
 	pBucket->pFirstInBucket = pFile;
-
+	gv_FlmSysData.uiOpenFFiles++;
+	
 Exit:
 
 	return( rc);
@@ -2622,9 +2616,7 @@ Desc: This routine unlinks an FFILE structure from its name hash bucket.
 		locked.
 ****************************************************************************/
 FSTATIC void flmUnlinkFileFromBucket(
-	FFILE *  pFile       /* Pointer to file that is to be unlinked from
-									its name hash bucket. */
-	)
+	FFILE *  	pFile)
 {
 	if (pFile->uiBucket != 0xFFFF)
 	{
@@ -2642,6 +2634,9 @@ FSTATIC void flmUnlinkFileFromBucket(
 		}
 		pFile->uiBucket = 0xFFFF;
 	}
+	
+	flmAssert( gv_FlmSysData.uiOpenFFiles);
+	gv_FlmSysData.uiOpenFFiles--;
 }
 
 /****************************************************************************
@@ -2777,6 +2772,9 @@ void flmCheckNUStructs(
 			break;
 		}
 	}
+	
+	gv_FlmSysData.pFileHdlCache->closeUnusedFiles( 
+		FLM_TIMER_UNITS_TO_SECS( gv_FlmSysData.uiMaxUnusedTime));
 }
 
 /****************************************************************************
@@ -2785,14 +2783,10 @@ Desc: This routine unlinks an FDICT structure from its FFILE structure and
 		NOTE: This routine assumes that the global mutex is locked.
 ****************************************************************************/
 void flmUnlinkDict(
-	FDICT * pDict   /* FDICT that is to be unlinked from its FFFILE
-							 structure. */
-	)
+	FDICT * 		pDict)
 {
-	/*
-	Now unlink the local dictionary from its file - if it is connected
-	to one.
-	*/
+	// Now unlink the local dictionary from its file - if it is connected
+	// to one.
 
 	if (pDict->pFile)
 	{
@@ -2912,7 +2906,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-RCODE flmSystemMonitor(
+RCODE FLMAPI flmSystemMonitor(
 	IF_Thread *		pThread)
 {
 	FLMUINT			uiLastUnusedCleanupTime = 0;
@@ -3381,7 +3375,7 @@ RCODE F_Session::setupSession(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pDbTable->setupHashTable( FALSE, 16))) 
+	if( RC_BAD( rc = m_pDbTable->setupHashTable( FALSE, 16, 0))) 
 	{
 		goto Exit;
 	}
@@ -3403,7 +3397,7 @@ RCODE F_Session::addDbHandle(
 {
 	RCODE				rc = FERR_OK;
 	F_SessionDb *	pSessionDb = NULL;
-	void *			pvKey;
+	const void *	pvKey;
 	FLMUINT			uiKeyLen;
 
 	if( (pSessionDb = f_new F_SessionDb) == NULL)
@@ -3424,7 +3418,9 @@ RCODE F_Session::addDbHandle(
 
 	if( pucKey)
 	{
-		pvKey = pSessionDb->getKey( &uiKeyLen);
+		pvKey = pSessionDb->getKey();
+		uiKeyLen = pSessionDb->getKeyLength();
+		
 		flmAssert( uiKeyLen == F_SESSION_DB_KEY_LEN);
 		f_memcpy( pucKey, (FLMBYTE *)pvKey, uiKeyLen);
 	}
@@ -3538,7 +3534,7 @@ void F_Session::releaseFileResources(
 			pNextObject->AddRef();
 		}
 
-		if( pObject->objectType() == HASH_DB_OBJ)
+		if( pObject->getObjectType() == HASH_DB_OBJ)
 		{
 			pSessionDb = (F_SessionDb *)pObject;
 
@@ -3733,16 +3729,19 @@ void F_Session::unlockSession( void)
 /****************************************************************************
 Desc:	Gets the session object's hash key
 ****************************************************************************/
-void * F_Session::getKey(
-	FLMUINT *	puiKeyLen)
+const void * FLMAPI F_Session::getKey( void)
 {
-	if( puiKeyLen)
-	{
-		*puiKeyLen = (FLMUINT)sizeof( m_ucKey);
-	}
-	return( (void *)(&m_ucKey[ 0]));
+	return( m_ucKey);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_Session::getKeyLength( void)
+{
+	return( sizeof( m_ucKey));
+}
+	
 /****************************************************************************
 Desc:	Adds a reference to the session object.  The mutex is locked prior
 		to incrementing the count since multiple threads are allowed to
@@ -3826,7 +3825,7 @@ void F_SessionMgr::releaseFileResources(
 
 	while( pObject)
 	{
-		flmAssert( pObject->objectType() == HASH_SESSION_OBJ);
+		flmAssert( pObject->getObjectType() == HASH_SESSION_OBJ);
 
 		pSession = (F_Session *)pObject;
 		if( (pObject = pObject->getNextInGlobal()) != NULL)
@@ -3876,7 +3875,7 @@ void F_SessionMgr::shutdownSessions()
 
 	while( pObject)
 	{
-		flmAssert( pObject->objectType() == HASH_SESSION_OBJ);
+		flmAssert( pObject->getObjectType() == HASH_SESSION_OBJ);
 
 		pSession = (F_Session *)pObject;
 		if( (pObject = pObject->getNextInGlobal()) != NULL)
@@ -3926,7 +3925,7 @@ RCODE F_SessionMgr::setupSessionMgr( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pSessionTable->setupHashTable( FALSE, 128)))
+	if( RC_BAD( rc = m_pSessionTable->setupHashTable( FALSE, 128, 0)))
 	{
 		goto Exit;
 	}
@@ -4094,7 +4093,7 @@ void F_SessionMgr::timeoutInactiveSessions(
 
 	while( pObject)
 	{
-		flmAssert( pObject->objectType() == HASH_SESSION_OBJ);
+		flmAssert( pObject->getObjectType() == HASH_SESSION_OBJ);
 
 		pSession = (F_Session *)pObject;
 		if( (pObject = pObject->getNextInGlobal()) != NULL)
@@ -4125,444 +4124,6 @@ Exit:
 		f_mutexUnlock( m_hMutex);
 	}
 }
-
-/****************************************************************************
-Desc:	Constructor
-****************************************************************************/
-F_HashTable::F_HashTable()
-{
-	m_hMutex = F_MUTEX_NULL;
-	m_pGlobalList = NULL;
-	m_ppHashTable = NULL;
-	m_uiBuckets = 0;
-}
-
-/****************************************************************************
-Desc:	Destructor
-****************************************************************************/
-F_HashTable::~F_HashTable()
-{
-	F_HashObject *		pCur;
-	F_HashObject *		pNext;
-
-	pCur = m_pGlobalList;
-	while( pCur)
-	{
-		pNext = pCur->m_pNextInGlobal;
-		unlinkObject( pCur);
-		pCur->Release();
-		pCur = pNext;
-	}
-
-	if( m_ppHashTable)
-	{
-		f_free( &m_ppHashTable);
-	}
-
-	if( m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexDestroy( &m_hMutex);
-	}
-}
-
-/****************************************************************************
-Desc:	Configures the hash table prior to first use
-****************************************************************************/
-RCODE F_HashTable::setupHashTable(
-	FLMBOOL			bMultithreaded,
-	FLMUINT			uiNumBuckets)
-{
-	RCODE			rc = FERR_OK;
-
-	flmAssert( uiNumBuckets);
-
-	// Create the hash table
-
-	if( RC_BAD( rc = f_alloc( 
-		sizeof( F_HashObject *) * uiNumBuckets, &m_ppHashTable)))
-	{
-		goto Exit;
-	}
-
-	m_uiBuckets = uiNumBuckets;
-	f_memset( m_ppHashTable, 0, sizeof( F_HashObject *) * uiNumBuckets);
-
-	if( bMultithreaded)
-	{
-		// Initialize the mutex
-
-		if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Retrieves an object from the hash table with the specified key.
-		This routine assumes the table's mutex has already been locked.
-		A reference IS NOT added to the object for the caller.
-****************************************************************************/
-RCODE F_HashTable::findObject(
-	void *				pvKey,
-	FLMUINT				uiKeyLen,
-	F_HashObject **	ppObject)
-{
-	F_HashObject *		pObject = NULL;
-	FLMUINT				uiBucket;
-	FLMUINT32			ui32CRC = 0;
-	RCODE					rc = FERR_OK;
-
-	*ppObject = NULL;
-
-	// Calculate the hash bucket and mutex offset
-
-	uiBucket = getHashBucket( pvKey, uiKeyLen, &ui32CRC);
-
-	// Search the bucket for an object with a matching
-	// key.
-
-	pObject = m_ppHashTable[ uiBucket];
-	while( pObject)
-	{
-		if( pObject->getKeyCRC() == ui32CRC)
-		{
-			void *		pvTmpKey;
-			FLMUINT		uiTmpKeyLen;
-
-			pvTmpKey = pObject->getKey( &uiTmpKeyLen);
-			if( uiTmpKeyLen == uiKeyLen && 
-				f_memcmp( pvTmpKey, pvKey, uiKeyLen) == 0)
-			{
-				break;
-			}
-		}
-		pObject = pObject->m_pNextInBucket;
-	}
-
-	if( !pObject)
-	{
-		rc = RC_SET( FERR_NOT_FOUND);
-		goto Exit;
-	}
-
-	*ppObject = pObject;
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Adds an object to the hash table
-****************************************************************************/
-RCODE F_HashTable::addObject(
-	F_HashObject *		pObject)
-{
-	FLMUINT				uiBucket;
-	F_HashObject *		pTmp;
-	void *				pvKey;
-	FLMUINT				uiKeyLen;
-	FLMUINT32			ui32CRC;
-	FLMBOOL				bMutexLocked = FALSE;
-	RCODE					rc = FERR_OK;
-
-	// Calculate and set the objects hash bucket
-
-	flmAssert( pObject->getHashBucket() == F_INVALID_HASH_BUCKET);
-
-	pvKey = pObject->getKey( &uiKeyLen);
-	flmAssert( uiKeyLen);
-
-	uiBucket = getHashBucket( pvKey, uiKeyLen, &ui32CRC);
-	pObject->setKeyCRC( ui32CRC);
-
-	// Lock the mutex
-
-	if( m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexLock( m_hMutex);
-		bMutexLocked = TRUE;
-	}
-
-	// Make sure the object doesn't already exist
-
-	if( RC_BAD( rc = findObject( pvKey, uiKeyLen, &pTmp)))
-	{
-		if( rc != FERR_NOT_FOUND)
-		{
-			goto Exit;
-		}
-		rc = FERR_OK;
-	}
-	else
-	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_EXISTS);
-		goto Exit;
-	}
-
-	// Add a reference to the object
-
-	pObject->AddRef();
-
-	// Link the object into the appropriate lists
-
-	linkObject( pObject, uiBucket);
-
-Exit:
-
-	// Unlock the mutex
-
-	if( bMutexLocked)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Returns the next object in the linked list of objects in the hash
-		table.  If *ppObject == NULL, the first object will be returned.
-****************************************************************************/
-RCODE F_HashTable::getNextObjectInGlobal(
-	F_HashObject **	ppObject)
-{
-	FLMBOOL				bMutexLocked = FALSE;
-	F_HashObject *		pOldObj;
-	RCODE					rc = FERR_OK;
-
-	// Lock the mutex
-
-	if( m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexLock( m_hMutex);
-		bMutexLocked = TRUE;
-	}
-
-	if( !(*ppObject))
-	{
-		*ppObject = m_pGlobalList;
-	}
-	else
-	{
-		pOldObj = *ppObject;
-		*ppObject = (*ppObject)->m_pNextInGlobal;
-		pOldObj->Release();
-	}
-
-	if( *ppObject == NULL)
-	{
-		rc = RC_SET( FERR_EOF_HIT);
-		goto Exit;
-	}
-
-	(*ppObject)->AddRef();
-
-Exit:
-
-	if( bMutexLocked)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Retrieves an object from the hash table with the specified key
-****************************************************************************/
-RCODE F_HashTable::getObject(
-	void *				pvKey,
-	FLMUINT				uiKeyLen,
-	F_HashObject **	ppObject,
-	FLMBOOL				bRemove)
-{
-	F_HashObject *	pObject;
-	FLMBOOL			bMutexLocked = FALSE;
-	RCODE				rc = FERR_OK;
-
-	// Lock the mutex
-
-	if( m_hMutex != F_MUTEX_NULL)
-	{
-		f_mutexLock( m_hMutex);
-		bMutexLocked = TRUE;
-	}
-
-	// Search for an object with a matching key.
-
-	if( RC_BAD( rc = findObject( pvKey, uiKeyLen, &pObject)))
-	{
-		goto Exit;
-	}
-
-	if( pObject && bRemove)
-	{
-		unlinkObject( pObject);
-		if( !ppObject)
-		{
-			pObject->Release();
-			pObject = NULL;
-		}
-	}
-
-	if( ppObject)
-	{
-		if( !bRemove)
-		{
-			pObject->AddRef();
-		}
-		*ppObject = pObject;
-		pObject = NULL;
-	}
-
-Exit:
-
-	if( bMutexLocked)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:	Removes an object from the hash table by key
-****************************************************************************/
-RCODE F_HashTable::removeObject(
-	void *			pvKey,
-	FLMUINT			uiKeyLen)
-{
-	return( getObject( pvKey, uiKeyLen, NULL, TRUE));
-}
-
-/****************************************************************************
-Desc:	Removes an object from the hash table by object pointer
-****************************************************************************/
-RCODE F_HashTable::removeObject(
-	F_HashObject *		pObject)
-{
-	FLMUINT		uiKeyLen;
-	void *		pvKey;
-
-	pvKey = pObject->getKey( &uiKeyLen);
-	return( getObject( pvKey, uiKeyLen, NULL, TRUE));
-}
-
-/****************************************************************************
-Desc:	Calculates the hash bucket of a key and optionally returns the key's
-		CRC.
-****************************************************************************/
-FLMUINT F_HashTable::getHashBucket(
-	void *		pvKey,
-	FLMUINT		uiLen,
-	FLMUINT32 *	pui32KeyCRC)
-{
-	FLMUINT32	ui32CRC = 0;
-
-	f_updateCRC( (FLMBYTE *)pvKey, uiLen, &ui32CRC);
-	if( pui32KeyCRC)
-	{
-		*pui32KeyCRC = ui32CRC;
-	}
-	return( ui32CRC % m_uiBuckets);
-}
-
-/****************************************************************************
-Desc:		Links an object to the global list and also to its bucket
-Notes:	This routine assumes that the bucket's mutex is already locked
-			if the hash table is multi-threaded.
-****************************************************************************/
-void F_HashTable::linkObject(
-	F_HashObject *		pObject,
-	FLMUINT				uiBucket)
-{
-	flmAssert( uiBucket < m_uiBuckets);
-	flmAssert( pObject->getHashBucket() == F_INVALID_HASH_BUCKET);
-
-	// Set the object's bucket
-
-	pObject->setHashBucket( uiBucket);
-
-	// Link the object to its hash bucket
-
-	pObject->m_pNextInBucket = m_ppHashTable[ uiBucket];
-	if( m_ppHashTable[ uiBucket])
-	{
-		m_ppHashTable[ uiBucket]->m_pPrevInBucket = pObject;
-	}
-	m_ppHashTable[ uiBucket] = pObject;
-
-	// Link to the global list
-
-	pObject->m_pNextInGlobal = m_pGlobalList;
-	if( m_pGlobalList)
-	{
-		m_pGlobalList->m_pPrevInGlobal = pObject;
-	}
-	m_pGlobalList = pObject;
-}
-
-/****************************************************************************
-Desc:		Unlinks an object from its bucket and the global list.
-Notes:	This routine assumes that the bucket's mutex is already locked
-			if the hash table is multi-threaded.
-****************************************************************************/
-void F_HashTable::unlinkObject(
-	F_HashObject *		pObject)
-{
-	FLMUINT		uiBucket = pObject->getHashBucket();
-
-	// Is the bucket valid?
-
-	flmAssert( uiBucket < m_uiBuckets);
-
-	// Unlink from the hash bucket
-
-	if( pObject->m_pNextInBucket)
-	{
-		pObject->m_pNextInBucket->m_pPrevInBucket = pObject->m_pPrevInBucket;
-	}
-
-	if( pObject->m_pPrevInBucket)
-	{
-		pObject->m_pPrevInBucket->m_pNextInBucket = pObject->m_pNextInBucket;
-	}
-	else
-	{
-		m_ppHashTable[ uiBucket] = pObject->m_pNextInBucket;
-	}
-
-	pObject->m_pPrevInBucket = NULL;
-	pObject->m_pNextInBucket = NULL;
-	pObject->setHashBucket( F_INVALID_HASH_BUCKET);
-
-	// Unlink from the global list
-
-	if( pObject->m_pNextInGlobal)
-	{
-		pObject->m_pNextInGlobal->m_pPrevInGlobal = pObject->m_pPrevInGlobal;
-	}
-
-	if( pObject->m_pPrevInGlobal)
-	{
-		pObject->m_pPrevInGlobal->m_pNextInGlobal = pObject->m_pNextInGlobal;
-	}
-	else
-	{
-		m_pGlobalList = pObject->m_pNextInGlobal;
-	}
-
-	pObject->m_pPrevInGlobal = NULL;
-	pObject->m_pNextInGlobal = NULL;
-}
-
 /****************************************************************************
 Desc:	Constructor
 ****************************************************************************/
@@ -4615,14 +4176,17 @@ RCODE F_SessionDb::setupSessionDb(
 /****************************************************************************
 Desc:	Returns the key and key length of a database object
 ****************************************************************************/
-void * F_SessionDb::getKey(
-	FLMUINT *	puiKeyLen)
+const void * FLMAPI F_SessionDb::getKey( void)
 {
-	if( puiKeyLen)
-	{
-		*puiKeyLen = (FLMUINT)sizeof( m_ucKey);
-	}
-	return( (void *)(&m_ucKey[ 0]));
+	return( m_ucKey);
+}
+
+/****************************************************************************
+Desc:	Returns the key and key length of a database object
+****************************************************************************/
+FLMUINT FLMAPI F_SessionDb::getKeyLength( void)
+{
+	return( sizeof( m_ucKey));
 }
 
 /****************************************************************************
@@ -4763,6 +4327,16 @@ FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
 	return( FSGetFileOffset( uiBlockAddr));
 }
 		
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
+	FLMUINT					uiFileNumber,
+	FLMUINT					uiFileOffset)
+{
+	return( FSBlkAddress( uiFileNumber, uiFileOffset));
+}
+
 /****************************************************************************
 Desc:
 ****************************************************************************/

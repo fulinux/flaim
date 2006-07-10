@@ -204,19 +204,6 @@ void F_FlmSysDataPage::write_data(
 
 	
 	
-	
-	// hFileHdlMutex - File handle mutex
-	printAddress( (void *)&gv_FlmSysData.hFileHdlMutex, szAddress);
-	printHTMLString(
-		"hFileHdlMutex",
-		"F_MUTEX",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.hFileHdlMutex,
-		(char *)szAddress,
-		(bHighlight = !bHighlight));
-	
-	
-	
 	// pFileSystem - File system
 	printAddress( (void *)gv_FlmSysData.pFileSystem, szAddress);
 	printHTMLString(
@@ -239,17 +226,6 @@ void F_FlmSysDataPage::write_data(
 		(char *)(gv_FlmSysData.bTempDirSet ? "Yes" : "No"),
 		(bHighlight = !bHighlight));
 
-	
-	
-	
-	// bOkToDoAsyncWrites - Asynchronous writes
-	printHTMLString(
-		"bOkToDoAsyncWrites",
-		"FLMBOOL",
-		(void *)&gv_FlmSysData,
-		(void *)&gv_FlmSysData.bOkToDoAsyncWrites,
-		(char *)(gv_FlmSysData.bOkToDoAsyncWrites ? "Yes" : "No"),
-		(bHighlight = !bHighlight));
 	
 	
 	

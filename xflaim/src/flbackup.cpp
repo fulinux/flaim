@@ -80,19 +80,15 @@ public:
 
 private:
 
-	// Methods
-
 	RCODE signalThread( void);
 
 	RCODE _setup( void);
 
-	static RCODE readThread(
+	static RCODE FLMAPI readThread(
 		IF_Thread *			pThread);
 
-	static RCODE writeThread(
+	static RCODE FLMAPI writeThread(
 		IF_Thread *			pThread);
-
-	// Data
 
 	FLMBOOL					m_bSetup;
 	FLMBOOL					m_bFirstRead;
@@ -1095,7 +1091,9 @@ RCODE F_DbSystem::dbRestore(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSFile->setup( &SFileClient)))
+	if( RC_BAD( rc = pSFile->setup( &SFileClient,
+		gv_XFlmSysData.pFileHdlCache,
+		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -1619,7 +1617,7 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup sequence number to the value in the
 		// database's DB header.
 
-		if( RC_BAD( rc = pSFile->readHeader( 0, sizeof( XFLM_DB_HDR),
+		if( RC_BAD( rc = pSFile->readBlock( 0, sizeof( XFLM_DB_HDR),
 											&dbHdr, &uiTmp)))
 		{
 			goto Exit;
@@ -1681,7 +1679,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	// Write the database header
 
-	if( RC_BAD( rc = pSFile->writeHeader( 0,
+	if( RC_BAD( rc = pSFile->writeBlock( 0,
 		uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 	{
 		goto Exit;
@@ -1755,22 +1753,8 @@ FSTATIC RCODE flmRestoreFile(
 
 		// Write the block to the database
 
-#ifdef FLM_UNIX
-
-		// Unix systems can have sector sizes that are larger than our
-		// typical 4K database blocks.  The Unix implementation of SectorWrite
-		// (called by writeBlock) will write the passed-in block and clobber any
-		// additional data beyond the end of the block to the end of the sector if
-		// it has enough room in the block buffer to write a full sector.  If the
-		// block buffer is less than a full sector, the Unix SectorWrite will only
-		// write out the amount requested, not a full sector.
-
 		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-			uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
-#else
-		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-			uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
-#endif
+			uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 		{
 			if( rc == NE_FLM_IO_PATH_NOT_FOUND ||
 				 rc == NE_FLM_IO_INVALID_FILENAME)
@@ -1788,13 +1772,8 @@ FSTATIC RCODE flmRestoreFile(
 					goto Exit;
 				}
 
-#ifdef FLM_UNIX
 				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-					uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
-#else
-				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,
-					uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
-#endif
+					uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 				{
 					goto Exit;
 				}
@@ -2474,7 +2453,7 @@ Exit:
 /****************************************************************************
 Desc: This thread reads data in the background
 ****************************************************************************/
-RCODE F_BackerStream::readThread(
+RCODE FLMAPI F_BackerStream::readThread(
 	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
@@ -2513,7 +2492,7 @@ Exit:
 /****************************************************************************
 Desc: This thread writes data in the background
 ****************************************************************************/
-RCODE F_BackerStream::writeThread(
+RCODE FLMAPI F_BackerStream::writeThread(
 	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();

@@ -473,15 +473,9 @@ Desc:	This routine recovers all records in the database for all
 *****************************************************************************/
 FSTATIC RCODE bldRecovData(
 	FDB *					pDb,
-	REBUILD_STATE *	pRebuildState,			// Pointer to rebuild state information.
-														// This structure has the container
-														// number being recovered.
-	CONTAINER_INFO *	pContainerInfo,		// Information being remembered for
-														// ALL containers.
-	FLMBOOL				bRecovDictRecs,		// Flag indicating whether we are to
-														// doing a pass to recover dictionary
-														// data or regular data.
-
+	REBUILD_STATE *	pRebuildState,
+	CONTAINER_INFO *	pContainerInfo,
+	FLMBOOL				bRecovDictRecs,
 	FLMBOOL *			pbStartedTransRV)
 {
 	RCODE					rc = FERR_OK;
@@ -504,10 +498,8 @@ FSTATIC RCODE bldRecovData(
 	RECOV_DICT_INFO *	pRecovDictInfo = NULL;
 	FLMUINT				uiFileNumber = 0;
 	FLMUINT				uiOffset = 0;
-	IF_FileHdl *		pFileHdl = NULL;
 	FLMUINT				uiMaxFileSize = pRebuildState->uiMaxFileSize;
-	FLMUINT				uiDbVersion =
-							pRebuildState->pHdrInfo->FileHdr.uiVersionNum;
+	FLMUINT				uiDbVersion = pRebuildState->pHdrInfo->FileHdr.uiVersionNum;
 
 	// Read through all blocks in the file -- looking for leaf blocks
 	// of containers. Read until we get an error or run out of file.
@@ -519,38 +511,35 @@ FSTATIC RCODE bldRecovData(
 												  : (FLMINT)REBUILD_RECOVER_DATA);
 	pCallbackData->bStartFlag = TRUE;
 	pCallbackData->ui64BytesExamined = 0;
+	
 	for (;;)
 	{
 		if (uiOffset >= uiMaxFileSize || !uiFileNumber)
 		{
 			uiOffset = 0;
 			uiFileNumber++;
-			if (uiFileNumber > MAX_DATA_BLOCK_FILE_NUMBER( uiDbVersion))
+			
+			if( uiFileNumber > MAX_DATA_BLOCK_FILE_NUMBER( uiDbVersion))
 			{
 				break;
-			}
-
-			if (RC_BAD( rc = pSFileHdl->getFileHdl( 
-				uiFileNumber, FALSE, &pFileHdl)))
-			{
-				if (rc == FERR_IO_PATH_NOT_FOUND ||
-					 rc == FERR_IO_INVALID_PATH)
-				{
-					rc = FERR_OK;
-					break;
-				}
-				goto Exit;
 			}
 		}
 
 		// Read the block into memory.
-
-		if (RC_BAD( rc = pFileHdl->sectorRead( uiOffset, uiBlockSize,
-												pucBlk, &uiBytesRead)))
+		
+		if( RC_BAD( rc = pSFileHdl->readBlock( 
+			FSBlkAddress( uiFileNumber, uiOffset), uiBlockSize, 
+			pucBlk, &uiBytesRead)))
 		{
-			if (rc == FERR_IO_END_OF_FILE)
+			if( rc == FERR_IO_PATH_NOT_FOUND)
 			{
-				if (!uiBytesRead)
+				rc = FERR_OK;
+				break;
+			}
+			
+			if( rc == FERR_IO_END_OF_FILE)
+			{
+				if( !uiBytesRead)
 				{
 
 					// Set uiOffset so we will go to the next file.
@@ -569,7 +558,7 @@ FSTATIC RCODE bldRecovData(
 			}
 		}
 
-		if (fnStatusFunc)
+		if( fnStatusFunc)
 		{
 			pCallbackData->ui64BytesExamined += (FLMUINT64)uiBlockSize;
 			if (RC_BAD( rc = (*fnStatusFunc)( FLM_REBUILD_STATUS,
@@ -2318,7 +2307,7 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 	// Open the database file for reading header information
 	
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszSourceDbPath, 
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pCFileHdl)))
+		gv_FlmSysData.uiFileOpenFlags, &pCFileHdl)))
 	{
 		goto Exit;
 	}
@@ -2474,7 +2463,9 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSFileHdl->setup( pSFileClient)))
+	if( RC_BAD( rc = pSFileHdl->setup( pSFileClient,
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -2720,7 +2711,6 @@ FSTATIC RCODE bldDetermineBlkSize(
 	FLMUINT					uiCount4K = 0;
 	FLMUINT					uiCount8K = 0;
 	FLMUINT64				ui64BytesDone = 0;
-	IF_FileHdl *			pFileHdl = NULL;
 	F_SuperFileHdl *		pSFileHdl = NULL;
 	F_SuperFileClient *	pSFileClient = NULL;
 
@@ -2744,7 +2734,9 @@ FSTATIC RCODE bldDetermineBlkSize(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSFileHdl->setup( pSFileClient)))  
+	if( RC_BAD( rc = pSFileHdl->setup( pSFileClient,  
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -2760,21 +2752,11 @@ FSTATIC RCODE bldDetermineBlkSize(
 		{
 			uiOffset = 0;
 			uiFileNumber++;
-			if (RC_BAD( rc = pSFileHdl->getFileHdl( 
-				uiFileNumber, FALSE, &pFileHdl)))
-			{
-				if (rc == FERR_IO_PATH_NOT_FOUND)
-				{
-					rc = RC_SET( FERR_IO_END_OF_FILE);
-					break;
-				}
-				goto Exit;
-			}
 		}
 
-		if ((RC_OK(rc = pFileHdl->read( uiOffset, BH_OVHD, ucBlkHeader,
-									  &uiBytesRead))) ||
-			 (rc == FERR_IO_END_OF_FILE))
+		if( (RC_OK( rc = pSFileHdl->readBlock( 
+			FSBlkAddress( uiFileNumber, uiOffset), BH_OVHD, 
+				ucBlkHeader, &uiBytesRead))) || rc == FERR_IO_END_OF_FILE)
 		{
 			if (RC_OK( rc))
 			{
@@ -2834,6 +2816,12 @@ FSTATIC RCODE bldDetermineBlkSize(
 		}
 		else
 		{
+			if( rc == FERR_IO_PATH_NOT_FOUND)
+			{
+				rc = RC_SET( FERR_IO_END_OF_FILE);
+				break;
+			}
+			
 			goto Exit;
 		}
 	}

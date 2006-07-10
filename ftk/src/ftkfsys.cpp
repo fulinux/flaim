@@ -25,9 +25,132 @@
 
 #include "ftksys.h"
 
-#define	FHM_AVAIL_LIST		0
-#define	FHM_USED_LIST		1
-#define	FHM_LNODE_COUNT	2
+class F_FileHdlCache;
+
+FSTATIC FLMBOOL f_canReducePath(
+	const char *	pszSource);
+
+FSTATIC const char * f_findFileNameStart(
+	const char * 	pszPath);
+
+FSTATIC char * f_getPathComponent(
+	char **			ppszPath,
+	FLMUINT *		puiEndChar);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_CachedFileHdl : public F_FileHdl, public F_HashObject
+{
+public:
+
+	F_CachedFileHdl()
+	{
+		m_pucKey = NULL;
+		m_uiKeyLen = 0;
+		m_bInAvailList = FALSE;
+		m_pFileHdlCache = NULL;
+	}
+	
+	virtual ~F_CachedFileHdl()
+	{
+		if( m_pucKey)
+		{
+			f_free( &m_pucKey);
+		}
+	}
+	
+	FLMINT FLMAPI AddRef( void)
+	{
+		return( ++m_refCnt);
+	}
+
+	FLMINT FLMAPI Release( void);
+	
+	FINLINE const void * FLMAPI getKey( void)
+	{
+		return( m_pucKey);
+	}
+	
+	FINLINE FLMUINT FLMAPI getKeyLength( void)
+	{
+		return( m_uiKeyLen);
+	}
+	
+	FINLINE FLMUINT FLMAPI getObjectType( void)
+	{
+		return( 0);
+	}
+
+private:
+
+	FLMBYTE *					m_pucKey;
+	FLMUINT						m_uiKeyLen;
+	FLMBOOL						m_bInAvailList;
+	F_FileHdlCache *			m_pFileHdlCache;
+	
+	friend class F_FileHdlCache;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_FileHdlCache : public IF_FileHdlCache
+{
+public:
+
+	F_FileHdlCache();
+	
+	virtual ~F_FileHdlCache();
+	
+	RCODE setup(
+		FLMUINT					uiMaxCachedFiles,
+		FLMUINT					uiIdleTimeoutSecs);
+		
+	FINLINE RCODE FLMAPI openFile(
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		IF_FileHdl **			ppFile)
+	{
+		return( openOrCreate( pszFileName, uiIoFlags, FALSE, ppFile));
+	}
+	
+	FINLINE RCODE FLMAPI createFile(
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		IF_FileHdl **			ppFile)
+	{
+		return( openOrCreate( pszFileName, uiIoFlags, TRUE, ppFile));
+	}
+
+	void FLMAPI closeUnusedFiles(
+		FLMUINT					uiUnusedTime);
+	
+	FLMUINT FLMAPI getOpenThreshold( void)
+	{
+		return( m_pAvailList->getMaxObjects());
+	}
+	
+	RCODE FLMAPI setOpenThreshold(
+		FLMUINT					uiMaxOpenFiles);
+			
+private:
+
+	RCODE openOrCreate(
+		const char *			pszFileName,
+		FLMUINT					uiIoFlags,
+		FLMBOOL					bCreate,
+		IF_FileHdl **			ppFile);
+		
+	static RCODE FLMAPI timeoutThread(
+		IF_Thread *				pThread);
+	
+	IF_Thread *					m_pTimeoutThread;
+	F_HashTable *				m_pAvailList;
+	FLMUINT						m_uiMaxIdleTime;
+	
+	friend class F_CachedFileHdl;
+};
 
 /****************************************************************************
 Desc:
@@ -49,22 +172,16 @@ FINLINE void f_setupTime(
 	FLMBYTE *	pbyHighByte)
 {
 	FLMUINT		uiSdTime = 0;
+	
 	f_timeGetSeconds( &uiSdTime);
 	*pbyHighByte = (FLMBYTE)(uiSdTime >> 24);
 	uiSdTime = uiSdTime << 5;
+	
 	if( *puiBaseTime < uiSdTime)
+	{
 		*puiBaseTime = uiSdTime;
+	}
 }
-
-FSTATIC FLMBOOL f_canReducePath(
-	const char *	pszSource);
-
-FSTATIC const char * f_findFileNameStart(
-	const char * 	pszPath);
-
-FSTATIC char * f_getPathComponent(
-	char **			ppszPath,
-	FLMUINT *		puiEndChar);
 
 /****************************************************************************
 Desc:	Returns TRUE if character is a "slash" separator
@@ -806,6 +923,37 @@ Exit:
 /****************************************************************************
 Desc: Determine if a path is a directory.
 ****************************************************************************/
+RCODE FLMAPI F_FileSystem::getFileSize(
+	const char *			pszFileName,
+	FLMUINT64 *				pui64FileSize)
+{
+	RCODE						rc = NE_FLM_OK;
+	IF_FileHdl *			pFileHdl = NULL;
+	
+	if( RC_BAD( rc = openFile( pszFileName, 
+			FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &pFileHdl)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pFileHdl->size( pui64FileSize)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc: Determine if a path is a directory.
+****************************************************************************/
 FLMBOOL FLMAPI F_FileSystem::isDir(
 	const char *		pszDirName)
 {
@@ -910,10 +1058,10 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 Desc:	Copy a file.
 ****************************************************************************/
 RCODE FLMAPI F_FileSystem::copyFile(
-	const char *	pszSrcFileName,	// Name of source file to be copied.
-	const char *	pszDestFileName,	// Name of destination file.
-	FLMBOOL			bOverwrite,			// Overwrite destination file?
-	FLMUINT64 *		pui64BytesCopied)	// Returns number of bytes copied.
+	const char *	pszSrcFileName,
+	const char *	pszDestFileName,
+	FLMBOOL			bOverwrite,
+	FLMUINT64 *		pui64BytesCopied)
 {
 	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pSrcFileHdl = NULL;
@@ -998,12 +1146,12 @@ Exit:
 Desc:	Do a partial copy from one file into another file.
 ****************************************************************************/
 RCODE FLMAPI F_FileSystem::copyPartialFile(
-	IF_FileHdl *	pSrcFileHdl,			// Source file handle.
-	FLMUINT64		ui64SrcOffset,			// Offset to start copying from.
-	FLMUINT64		ui64SrcSize,			// Bytes to copy
-	IF_FileHdl *	pDestFileHdl,			// Destination file handle
-	FLMUINT64		ui64DestOffset,		// Destination start offset.
-	FLMUINT64 *		pui64BytesCopiedRV)	// Returns number of bytes copied
+	IF_FileHdl *	pSrcFileHdl,
+	FLMUINT64		ui64SrcOffset,
+	FLMUINT64		ui64SrcSize,
+	IF_FileHdl *	pDestFileHdl,
+	FLMUINT64		ui64DestOffset,
+	FLMUINT64 *		pui64BytesCopiedRV)
 {
 	RCODE				rc = NE_FLM_OK;
 	FLMBYTE *		pucBuffer = NULL;
@@ -1254,14 +1402,16 @@ RCODE FLMAPI F_FileSystem::getSectorSize(
 		}
 	}
 
-	if (!GetDiskFreeSpace( (LPCTSTR)pszVolume, &udSectorsPerCluster,
+	if( !GetDiskFreeSpace( (LPCTSTR)pszVolume, &udSectorsPerCluster,
 			&udBytesPerSector, &udNumberOfFreeClusters,
 			&udTotalNumberOfClusters))
 	{
+		f_assert( 0);
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_INITIALIZING_IO_SYSTEM);
 		*puiSectorSize = 0;
 		goto Exit;
 	}
+	
 	*puiSectorSize = (FLMUINT)udBytesPerSector;
 	
 Exit:
@@ -2274,4 +2424,1329 @@ RCODE FLMAPI f_pathAppend(
 	const char *			pszPathComponent)
 {
 	return( f_getFileSysPtr()->pathAppend( pszPath, pszPathComponent)); 
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_FileHdlCache::F_FileHdlCache()
+{
+	m_pTimeoutThread = NULL;
+	m_pAvailList = NULL;
+	m_uiMaxIdleTime = 0;
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_FileHdlCache::~F_FileHdlCache()
+{
+	if( m_pTimeoutThread)
+	{
+		m_pTimeoutThread->stopThread();
+		m_pTimeoutThread->Release();
+		m_pTimeoutThread = NULL;
+	}
+	
+	if( m_pAvailList)
+	{
+		m_pAvailList->Release();
+		m_pAvailList = NULL;
+	}
+	
+	m_uiMaxIdleTime = 0;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdlCache::setup(
+	FLMUINT		uiMaxCachedFiles,
+	FLMUINT		uiIdleTimeoutSecs)
+{
+	RCODE			rc = NE_FLM_OK;
+	
+	if( (m_pAvailList = f_new F_HashTable) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = m_pAvailList->setupHashTable( TRUE, 
+		uiMaxCachedFiles, uiMaxCachedFiles)))
+	{
+		goto Exit;
+	}
+	
+	m_uiMaxIdleTime = uiIdleTimeoutSecs;
+	
+	if( RC_BAD( rc = f_threadCreate( &m_pTimeoutThread,
+		timeoutThread, "F_FileHdlCache Timeout", F_DEFAULT_THREAD_GROUP, 0,
+		this, NULL, F_THREAD_DEFAULT_STACK_SIZE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdlCache::setOpenThreshold(
+	FLMUINT					uiMaxOpenFiles)
+{
+	return( m_pAvailList->setMaxObjects( uiMaxOpenFiles));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdlCache::openOrCreate(
+	const char *			pszFileName,
+	FLMUINT					uiIoFlags,
+	FLMBOOL					bCreate,
+	IF_FileHdl **			ppFile)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_CachedFileHdl *		pFileHdl = NULL;
+	F_HashObject *			pHashObject;
+	FLMUINT					uiNameLen = f_strlen( pszFileName);
+	FLMUINT					uiKeyLen = uiNameLen + 4;
+	FLMBYTE					ucKeyBuf[ F_PATH_MAX_SIZE + 4];
+	
+	UD2FBA( uiIoFlags, ucKeyBuf);
+	f_memcpy( &ucKeyBuf[ 4], pszFileName, uiNameLen);
+	
+	if( RC_BAD( rc = m_pAvailList->getObject( ucKeyBuf, uiKeyLen, 
+		&pHashObject, TRUE)))
+	{
+		if( rc != NE_FLM_NOT_FOUND)
+		{
+			goto Exit;
+		}
+		
+		if( (pFileHdl = f_new F_CachedFileHdl) == NULL)
+		{
+			rc = RC_SET( NE_FLM_MEM);
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pFileHdl->openOrCreate( pszFileName, 
+			uiIoFlags, bCreate)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = f_alloc( uiKeyLen, &pFileHdl->m_pucKey)))
+		{
+			goto Exit;
+		}
+		
+		f_memcpy( pFileHdl->m_pucKey, ucKeyBuf, uiKeyLen);
+		pFileHdl->m_uiKeyLen = uiKeyLen;
+		pFileHdl->m_pFileHdlCache = this;
+	}
+	else
+	{
+		pFileHdl = (F_CachedFileHdl *)pHashObject;
+		pFileHdl->m_bInAvailList = FALSE;
+
+		if( bCreate)
+		{
+			if( RC_BAD( rc = pFileHdl->truncate()))
+			{
+				goto Exit;
+			}
+		}
+	}
+	
+	*ppFile = pFileHdl;
+	pFileHdl = NULL;
+	
+Exit:
+
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_FileHdlCache::closeUnusedFiles(
+	FLMUINT			uiUnusedTime)
+{
+	if( !uiUnusedTime)
+	{
+		m_pAvailList->removeAllObjects();
+	}
+	else
+	{
+		m_pAvailList->removeAgedObjects( uiUnusedTime);
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdlCache::timeoutThread(
+	IF_Thread *			pThread)
+{
+	FLMUINT				uiCurrentTime;
+	FLMUINT				uiLastPurgeTime = FLM_GET_TIMER();
+	F_FileHdlCache *	pThis = (F_FileHdlCache *)pThread->getParm1();
+	
+	for( ;;)
+	{
+		if( pThread->getShutdownFlag())
+		{
+			break;
+		}
+		
+		uiCurrentTime = FLM_GET_TIMER();
+		
+		if( FLM_TIMER_UNITS_TO_SECS( 
+			FLM_ELAPSED_TIME( uiCurrentTime, uiLastPurgeTime)) >= 
+				pThis->m_uiMaxIdleTime)
+		{
+			pThis->m_pAvailList->removeAgedObjects( pThis->m_uiMaxIdleTime);
+			uiLastPurgeTime = uiCurrentTime;
+		}
+
+		f_sleep( 100);
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI F_CachedFileHdl::Release( void)
+{
+	FLMINT					iRefCnt = --m_refCnt;
+	F_FileHdlCache *		pFileHdlCache = m_pFileHdlCache;
+	
+	if( !iRefCnt)
+	{
+		if( pFileHdlCache)
+		{
+			f_assert( getHashBucket() == F_INVALID_HASH_BUCKET);
+
+			if( m_bInAvailList)
+			{
+				// This should only happen if the object is being released
+				// by the avail list hash table
+				
+				m_bInAvailList = FALSE;
+			}
+			else if( isOpen())
+			{
+				if( RC_OK( pFileHdlCache->m_pAvailList->addObject( this, TRUE)))
+				{
+					m_bInAvailList = TRUE;
+				}
+			}
+		}
+
+		if( !m_refCnt)
+		{
+			delete this;
+		}
+	}
+
+	return( iRefCnt);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI F_FileSystem::allocFileHandleCache(
+	FLMUINT						uiMaxCachedFiles,
+	FLMUINT						uiIdleTimeoutSecs,
+	IF_FileHdlCache **		ppFileHdlCache)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_FileHdlCache *			pFileHdlCache = NULL;
+	
+	if( (pFileHdlCache = f_new F_FileHdlCache) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pFileHdlCache->setup( 
+		uiMaxCachedFiles, uiIdleTimeoutSecs)))
+	{
+		goto Exit;
+	}
+	
+	*ppFileHdlCache = pFileHdlCache;
+	pFileHdlCache = NULL;
+	
+Exit:
+
+	if( pFileHdlCache)
+	{
+		pFileHdlCache->Release();
+	}
+
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI F_FileSystem::allocIOBuffer(
+	FLMUINT				uiMinSize,
+	IF_IOBuffer **		ppIOBuffer)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_IOBuffer *		pIOBuffer = NULL;
+	
+	if( (pIOBuffer = f_new F_IOBuffer) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIOBuffer->setupBuffer( uiMinSize, NULL)))
+	{
+		goto Exit;
+	}
+	
+	*ppIOBuffer = pIOBuffer;
+	pIOBuffer = NULL;
+	
+Exit:
+
+	if( pIOBuffer)
+	{
+		pIOBuffer->Release();
+	}
+
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+void F_FileHdl::initCommonData( void)
+{
+	m_pszFileName = NULL;
+	m_uiBytesPerSector = 0;
+	m_ui64NotOnSectorBoundMask = 0;
+	m_ui64GetSectorBoundMask = 0;
+	m_uiExtendSize = 0;
+	m_uiMaxAutoExtendSize = 0;
+	m_pucAlignedBuff = NULL;
+	m_uiAlignedBuffSize = 0;
+	m_ui64CurrentPos = 0;
+	m_bFileOpened = FALSE;
+	m_bDeleteOnRelease = FALSE;
+	m_bOpenedReadOnly = FALSE;
+	m_bOpenedExclusive = FALSE;
+	m_bOpenedInAsyncMode = FALSE;
+	m_bDoDirectIO = FALSE;
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+void F_FileHdl::freeCommonData( void)
+{
+	if( m_pucAlignedBuff)
+	{
+		f_freeAlignedBuffer( (void **)&m_pucAlignedBuff);
+		m_uiAlignedBuffSize = 0;
+	}
+	
+	if( m_pszFileName)
+	{
+		f_free( &m_pszFileName);
+	}
+}
+
+/****************************************************************************
+Desc:	Open a file
+****************************************************************************/
+RCODE F_FileHdl::open(
+	const char *	pszFileName,
+	FLMUINT			uiIoFlags)
+{
+	return( openOrCreate( pszFileName, uiIoFlags, FALSE));
+}
+
+/****************************************************************************
+Desc:	Create a file
+****************************************************************************/
+RCODE F_FileHdl::create(
+	const char *	pszFileName,
+	FLMUINT			uiIoFlags)
+{
+	return( openOrCreate( pszFileName, uiIoFlags, TRUE));
+}
+
+/****************************************************************************
+Desc:	Create a unique file name in the specified directory
+****************************************************************************/
+RCODE F_FileHdl::createUnique(
+	char *				pszDirName,
+	const char *		pszFileExtension,
+	FLMUINT				uiIoFlags)
+{
+	RCODE					rc = NE_FLM_OK;
+	char *				pszTmp;
+	FLMBOOL				bModext = TRUE;
+	FLMUINT				uiBaseTime = 0;
+	FLMBYTE				ucHighByte = 0;
+	char					szFileName[ F_FILENAME_SIZE];
+	char					szDirPath[ F_PATH_MAX_SIZE];
+	char					szTmpPath[ F_PATH_MAX_SIZE];
+	FLMUINT				uiCount;
+	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
+
+	f_assert( !m_bFileOpened);
+	f_assert( !m_pszFileName);
+	
+	szFileName[0] = '\0';
+	szTmpPath[0] = '\0';
+
+#if defined( FLM_UNIX)	
+	if( !pszDirName || pszDirName[ 0] == '\0')
+	{
+		f_strcpy( szDirPath, "./");
+	}
+	else
+#endif
+	{
+		f_strcpy( szDirPath, pszDirName);
+	}
+
+   // Truncate any trailing spaces
+
+	pszTmp = (char *)szDirPath;
+	pszTmp += (f_strlen( pszTmp) - 1);
+	
+	while( pszTmp >= (char *)szDirPath && (*pszTmp == 0x20))
+	{
+		*pszTmp = 0;
+		pszTmp--;
+	}
+
+	// Append a slash if one isn't already there
+
+#if defined( FLM_UNIX)
+	if( pszTmp >= (char *)szDirPath && *pszTmp != '/')
+	{
+		pszTmp++;
+		*pszTmp++ = '/';
+	}
+#else
+	if( pszTmp >= (char *)szDirPath && *pszTmp != '\\')
+	{
+		pszTmp++;
+		*pszTmp++ = '\\';
+	}
+#endif
+	else
+	{
+		pszTmp++;
+	}
+	
+	*pszTmp = 0;
+
+	if( pszFileExtension && f_strlen( pszFileExtension) >= 3)
+	{
+		bModext = FALSE;
+	}
+
+	uiCount = 0;
+	do
+	{
+		pFileSystem->pathCreateUniqueName( &uiBaseTime, szFileName, 
+			pszFileExtension, &ucHighByte, bModext);
+
+		f_strcpy( szTmpPath, szDirPath);
+		pFileSystem->pathAppend( szTmpPath, szFileName);
+		
+		rc = create( szTmpPath, uiIoFlags | FLM_IO_EXCL);
+		
+	} while( rc != NE_FLM_OK && (uiCount++ < 10));
+
+   // Check if the path was created
+
+   if( uiCount >= 10 && rc != NE_FLM_OK)
+   {
+		rc = RC_SET( NE_FLM_IO_PATH_CREATE_FAILURE);
+		goto Exit;
+   }
+
+	// Created file name needs to be returned
+	
+	f_strcpy( pszDirName, szTmpPath);
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI F_FileAsyncClient::Release()
+{
+	FLMINT		iRefCnt;
+	
+	if( m_refCnt == 1)
+	{
+		f_assert( !m_pFileHdl);
+		f_assert( !m_pIOBuffer);
+
+		f_mutexLock( F_FileHdl::m_hAsyncListMutex);
+		
+		if( F_FileHdl::m_uiAvailAsyncCount < 32)
+		{
+			f_assert( !m_pNext);
+			m_pNext = F_FileHdl::m_pFirstAvailAsync;
+			F_FileHdl::m_pFirstAvailAsync = this;
+			F_FileHdl::m_uiAvailAsyncCount++;
+
+			m_completionRc = NE_FLM_OK;
+			m_uiBytesToDo = 0;
+			m_uiBytesDone = 0;
+			iRefCnt = m_refCnt;
+		}
+		else
+		{
+			iRefCnt = --m_refCnt;
+		}
+		
+		f_mutexUnlock( F_FileHdl::m_hAsyncListMutex);
+	}
+	else
+	{
+		iRefCnt = --m_refCnt;
+	}
+	
+	if( !m_refCnt)
+	{
+		delete this;
+	}
+
+	return( iRefCnt);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_FileAsyncClient::~F_FileAsyncClient()
+{
+	f_assert( !m_pNext);
+	
+#ifdef FLM_WIN
+	if( m_Overlapped.hEvent)
+	{
+		CloseHandle( m_Overlapped.hEvent);
+	}
+#endif
+
+#ifdef FLM_RING_ZERO_NLM
+	if( m_hSem)
+	{
+		(void)kSemaphoreFree( m_hSem);
+		m_hSem = NULL;
+	}
+#endif
+
+	if( m_pFileHdl)
+	{
+		m_pFileHdl->Release();
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileAsyncClient::prepareForAsync(
+	IF_IOBuffer *		pIOBuffer)
+{
+	RCODE					rc = NE_FLM_OK;
+
+	if( m_pIOBuffer || !m_pFileHdl)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+#ifdef FLM_WIN	
+	if( !m_Overlapped.hEvent)
+	{
+		if( (m_Overlapped.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL)) == NULL)
+		{
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
+			goto Exit;
+		}
+	}
+	else
+	{
+		if( !ResetEvent( m_Overlapped.hEvent))
+		{
+			rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
+			goto Exit;
+		}
+	}
+#endif
+
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS)
+	f_memset( &m_aio, 0, sizeof( m_aio));
+#endif
+	
+#ifdef FLM_RING_ZERO_NLM
+	if( !m_hSem)
+	{
+		if( (m_hSem = kSemaphoreAlloc( (BYTE *)"FTK_SEM", 0)) == NULL)
+		{
+			rc = RC_SET( NE_FLM_MEM);
+			goto Exit;
+		}
+	}
+#endif
+
+	m_completionRc = NE_FLM_IO_PENDING;
+	m_uiBytesToDo = 0;
+	m_uiBytesDone = 0;
+	m_uiStartTime = FLM_GET_TIMER();
+	m_uiEndTime = m_uiStartTime;
+	
+	if( pIOBuffer)
+	{
+		pIOBuffer->setAsyncClient( this);
+		m_pIOBuffer = pIOBuffer;
+		m_pIOBuffer->AddRef();
+		m_pIOBuffer->setPending();
+	}
+	
+Exit:
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileAsyncClient::waitToComplete(
+	FLMBOOL		bRelease)
+{
+	RCODE			completionRc = NE_FLM_OK;
+	FLMUINT		uiBytesDone = 0;
+
+#if defined( FLM_WIN)
+	DWORD		udBytesDone;
+
+	if( !GetOverlappedResult( m_pFileHdl->m_hFile, &m_Overlapped,
+										&udBytesDone, TRUE))
+	{
+		completionRc = f_mapPlatformError( GetLastError(), NE_FLM_ASYNC_FAILED);
+	}
+	
+	uiBytesDone = (FLMUINT)udBytesDone;
+#endif
+
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS)
+	FLMINT						iAsyncResult;
+	const struct aiocb *		ppAio[ 1];
+	
+	ppAio[ 0] = &m_aio;
+
+	for( ;;)
+	{
+		aio_suspend( ppAio, 1, NULL);
+		iAsyncResult = aio_error( &m_aio);
+
+		if( !iAsyncResult)
+		{
+			if( (iAsyncResult = aio_return( &m_aio)) < 0)
+			{
+				f_assert( 0);
+				completionRc = f_mapPlatformError( errno, NE_FLM_ASYNC_FAILED);
+			}
+			else
+			{
+				uiBytesDone = (FLMUINT)iAsyncResult;
+			}
+				
+			break;
+		}
+			
+		if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
+		{
+			continue;
+		}
+				
+		f_assert( 0);
+		completionRc = f_mapPlatformError( iAsyncResult, NE_FLM_ASYNC_FAILED);
+	}
+#endif
+
+#ifdef FLM_RING_ZERO_NLM
+	if( kSemaphoreWait( m_hSem) != 0)
+	{
+		f_assert( 0);
+	}
+	
+	f_assert( kSemaphoreExamineCount( m_hSem) == 0);
+	
+	if( RC_BAD( completionRc))
+	{
+		m_uiBytesDone = 0;
+	}
+	else
+	{
+		m_uiBytesDone = m_uiBytesToDo;
+		uiBytesDone = m_uiBytesDone;
+	}
+	
+#endif
+
+	notifyComplete( completionRc, uiBytesDone, bRelease);
+	return( completionRc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_FileAsyncClient::notifyComplete(
+	RCODE				completionRc,
+	FLMUINT			uiBytesDone,
+	FLMBOOL			bRelease)
+{
+	m_uiEndTime = FLM_GET_TIMER();
+
+	m_completionRc = completionRc;
+	m_uiBytesDone = uiBytesDone;
+	
+	if( m_pIOBuffer)
+	{
+		m_pIOBuffer->notifyComplete( m_completionRc);
+		m_pIOBuffer->Release();
+		m_pIOBuffer = NULL;
+	}
+	
+	if( m_pFileHdl)
+	{
+		m_pFileHdl->Release();
+		m_pFileHdl = NULL;
+	}
+	
+	if( bRelease)
+	{
+		Release();
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_FileAsyncClient::getElapsedTime( void)
+{
+	return( FLM_TIMER_UNITS_TO_MILLI( 
+		FLM_ELAPSED_TIME( m_uiEndTime, m_uiStartTime)));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileAsyncClient::getCompletionCode( void)
+{
+	return( m_completionRc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_FileAsyncClient::signalComplete(
+	RCODE				rc,
+	FLMUINT			uiBytesDone)
+{
+	F_UNREFERENCED_PARM( uiBytesDone);
+	
+#ifdef FLM_RING_ZERO_NLM
+	m_completionRc = rc;
+
+	f_assert( kSemaphoreExamineCount( m_hSem) == 0);
+	kSemaphoreSignal( m_hSem);
+#else
+	F_UNREFERENCED_PARM( rc);
+#endif
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdl::allocFileAsyncClient(
+	F_FileAsyncClient **		ppAsyncClient)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_FileAsyncClient *		pAsyncClient = NULL;
+	FLMBOOL						bMutexLocked = FALSE;
+	
+	f_mutexLock( m_hAsyncListMutex);
+	bMutexLocked = TRUE;
+	
+	if( m_pFirstAvailAsync)
+	{
+		pAsyncClient = m_pFirstAvailAsync;
+		m_pFirstAvailAsync = m_pFirstAvailAsync->m_pNext;
+		pAsyncClient->m_pNext = NULL;
+		m_uiAvailAsyncCount--;
+	}
+	else
+	{
+		f_mutexUnlock( m_hAsyncListMutex);
+		bMutexLocked = FALSE;
+	
+		if( (pAsyncClient = f_new F_FileAsyncClient) == NULL)
+		{
+			rc = RC_SET( NE_FLM_MEM);
+			goto Exit;
+		}
+	}
+	
+	pAsyncClient->m_pFileHdl = this;
+	pAsyncClient->m_pFileHdl->AddRef();
+
+	*ppAsyncClient = pAsyncClient;
+	pAsyncClient = NULL;
+	
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hAsyncListMutex);
+	}
+
+	if( pAsyncClient)
+	{
+		pAsyncClient->Release();
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Read from a file
+****************************************************************************/
+RCODE F_FileHdl::directRead(
+	FLMUINT64		ui64ReadOffset,
+	FLMUINT			uiBytesToRead,
+   void *			pvBuffer,
+	IF_IOBuffer *	pIOBuffer,
+   FLMUINT *		puiBytesRead)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiBytesRead = 0;
+	FLMUINT			uiCurrentBytesRead;
+	FLMBYTE *		pucReadBuffer;
+	FLMBYTE *		pucDestBuffer;
+	FLMUINT			uiMaxBytesToRead;
+	FLMBOOL			bHitEOF;
+	
+	if( !m_bFileOpened || !m_bDoDirectIO || !uiBytesToRead)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
+	{
+		ui64ReadOffset = m_ui64CurrentPos;
+	}
+
+	// This loop does multiple reads (if necessary) to get all of the
+	// data.  It uses aligned buffers and reads at sector offsets.
+
+	pucDestBuffer = (FLMBYTE *)pvBuffer;
+	for (;;)
+	{
+
+		// See if we are using an aligned buffer.  If not, allocate
+		// one (if not already allocated), and use it.
+
+		if ((ui64ReadOffset & m_ui64NotOnSectorBoundMask) ||
+			 (((FLMUINT64)pucDestBuffer) & m_ui64NotOnSectorBoundMask) ||
+			 (((FLMUINT64)uiBytesToRead & m_ui64NotOnSectorBoundMask)))
+		{
+			pucReadBuffer = m_pucAlignedBuff;
+
+			// Must read enough bytes to cover all of the sectors that
+			// contain the data we are trying to read.  The value of
+			// (ui64ReadOffset & m_ui64NotOnSectorBoundMask) will give us the
+			// number of additional bytes that are in the sector prior to
+			// the read offset.  We then round that up to the next sector
+			// to get the total number of bytes we are going to read.
+
+			uiMaxBytesToRead = (FLMUINT)roundToNextSector( uiBytesToRead +
+										(ui64ReadOffset & m_ui64NotOnSectorBoundMask));
+
+			// Can't read more than the aligned buffer will hold.
+
+			if (uiMaxBytesToRead > m_uiAlignedBuffSize)
+			{
+				uiMaxBytesToRead = m_uiAlignedBuffSize;
+			}
+		}
+		else
+		{
+			uiMaxBytesToRead = (FLMUINT)roundToNextSector( uiBytesToRead);
+			f_assert( uiMaxBytesToRead >= uiBytesToRead);
+			pucReadBuffer = pucDestBuffer;
+		}
+
+		bHitEOF = FALSE;
+		
+		if( RC_BAD( rc = lowLevelRead( truncateToPrevSector( ui64ReadOffset),
+			uiMaxBytesToRead, pucReadBuffer, pIOBuffer, &uiCurrentBytesRead)))
+		{
+			if( rc != NE_FLM_IO_END_OF_FILE)
+			{
+				goto Exit;
+			}
+
+			bHitEOF = TRUE;
+			rc = NE_FLM_OK;
+		}
+		
+		// If the offset we want to read from is not on a sector
+		// boundary, increment the read buffer pointer to the
+		// offset where the data we need starts and decrement the
+		// bytes read by the difference between the start of the
+		// sector and the actual read offset.
+
+		if( uiCurrentBytesRead && ui64ReadOffset & m_ui64NotOnSectorBoundMask)
+		{
+			pucReadBuffer += (ui64ReadOffset & m_ui64NotOnSectorBoundMask);
+			f_assert( uiCurrentBytesRead >= m_uiBytesPerSector);
+			uiCurrentBytesRead -= (FLMUINT)(ui64ReadOffset & m_ui64NotOnSectorBoundMask);
+		}
+
+		// If bytes read is more than we actually need, truncate it back
+		// so that we only copy what we actually need.
+
+		if( uiCurrentBytesRead > uiBytesToRead)
+		{
+			uiCurrentBytesRead = uiBytesToRead;
+		}
+		
+		uiBytesToRead -= uiCurrentBytesRead;
+		uiBytesRead += uiCurrentBytesRead;
+		
+		// If using a different buffer for reading, copy the
+		// data read into the destination buffer.
+
+		if( pucDestBuffer != pucReadBuffer)
+		{
+			f_memcpy( pucDestBuffer, pucReadBuffer, uiCurrentBytesRead);
+		}
+		
+		if( !uiBytesToRead)
+		{
+			break;
+		}
+
+		// Still more to read - did we hit EOF above?
+
+		if( bHitEOF)
+		{
+			rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+			break;
+		}
+		
+		pucDestBuffer += uiCurrentBytesRead;
+		ui64ReadOffset += uiCurrentBytesRead;
+	}
+
+Exit:
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = uiBytesRead;
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:		Write to a file using direct I/O
+****************************************************************************/
+RCODE F_FileHdl::directWrite(
+	FLMUINT64				ui64WriteOffset,
+	FLMUINT					uiBytesToWrite,
+   const void *			pvBuffer,
+	IF_IOBuffer *			pIOBuffer,
+   FLMUINT *				puiBytesWritten)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMBYTE *				pucWriteBuffer;
+	FLMBYTE *				pucSrcBuffer;
+	FLMUINT					uiBytesWritten = 0;
+	FLMUINT					uiMaxBytesToWrite;
+	FLMUINT					uiBytesBeingOutput;
+	FLMBOOL					bWaitForWrite = (pIOBuffer == NULL)
+										? TRUE
+										: FALSE;
+	FLMUINT64				ui64LastWriteOffset;
+	FLMUINT					uiLastWriteSize;
+	FLMBOOL					bOffsetOnSectorBound;
+	FLMBOOL					bBufferOnSectorBound;
+	FLMBOOL					bSizeIsSectorMultiple;
+
+	if( !m_bFileOpened || !m_bDoDirectIO || !uiBytesToWrite)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
+	{
+		ui64WriteOffset = m_ui64CurrentPos;
+	}
+
+	if( pIOBuffer)
+	{
+		pucSrcBuffer = pIOBuffer->getBufferPtr();
+	}
+	else
+	{
+		pucSrcBuffer = (FLMBYTE *)pvBuffer;
+	}
+	
+	for (;;)
+	{
+		bOffsetOnSectorBound = (ui64WriteOffset & m_ui64NotOnSectorBoundMask) 
+												? FALSE 
+												: TRUE;
+		bBufferOnSectorBound = (((FLMUINT)pucSrcBuffer) & m_ui64NotOnSectorBoundMask)
+												? FALSE
+												: TRUE;
+		bSizeIsSectorMultiple = (uiBytesToWrite & m_ui64NotOnSectorBoundMask)
+												? FALSE
+												: TRUE;
+
+		if( !bOffsetOnSectorBound ||
+			 !bBufferOnSectorBound ||
+			 !bSizeIsSectorMultiple)
+		{
+			bWaitForWrite = TRUE;
+			pucWriteBuffer = m_pucAlignedBuff;
+
+			// Must write enough bytes to cover all of the sectors that
+			// contain the data we are trying to write out.  The value of
+			// (ui64WriteOffset & m_ui64NotOnSectorBoundMask) will give us the
+			// number of additional bytes that are in the sector prior to
+			// the read offset.  We then round to the next sector to get the
+			// total number of bytes we are going to write.
+
+			uiMaxBytesToWrite = (FLMUINT)roundToNextSector( uiBytesToWrite +
+									  (ui64WriteOffset & m_ui64NotOnSectorBoundMask));
+
+			// Can't write more than the aligned buffer will hold.
+
+			if( uiMaxBytesToWrite > m_uiAlignedBuffSize)
+			{
+				uiMaxBytesToWrite = m_uiAlignedBuffSize;
+				uiBytesBeingOutput = (FLMUINT)(uiMaxBytesToWrite -
+										(ui64WriteOffset & m_ui64NotOnSectorBoundMask));
+			}
+			else
+			{
+				uiBytesBeingOutput = uiBytesToWrite;
+			}
+
+			// If the write offset is not on a sector boundary, we must
+			// read at least the first sector into the buffer.
+
+			if( ui64WriteOffset & m_ui64NotOnSectorBoundMask)
+			{
+
+				// Read the first sector that is to be written out.
+				// Read one sector's worth of data - so that we will
+				// preserve what is already in the sector before
+				// writing it back out again.
+
+				if( RC_BAD( rc = lowLevelRead(
+					truncateToPrevSector( ui64WriteOffset),
+					m_uiBytesPerSector, pucWriteBuffer, NULL, NULL)))
+				{
+					goto Exit;
+				}
+			}
+
+			// If we are writing more than one sector, and the last sector's
+			// worth of data we are writing out is only a partial sector,
+			// we must read in this sector as well.
+
+			if( (uiMaxBytesToWrite > m_uiBytesPerSector) &&
+				 (uiMaxBytesToWrite > uiBytesToWrite))
+			{
+
+				// Read the last sector that is to be written out.
+				// Read one sector's worth of data - so that we will
+				// preserve what is already in the sector before
+				// writing it back out again.
+
+				if( RC_BAD( rc = lowLevelRead(
+					(truncateToPrevSector( ui64WriteOffset)) +
+						(uiMaxBytesToWrite - m_uiBytesPerSector),
+					m_uiBytesPerSector,
+					(&pucWriteBuffer[ uiMaxBytesToWrite - m_uiBytesPerSector]),
+					NULL, NULL)))
+				{
+					if (rc == NE_FLM_IO_END_OF_FILE)
+					{
+						rc = NE_FLM_OK;
+						f_memset( &pucWriteBuffer [uiMaxBytesToWrite - m_uiBytesPerSector],
+										0, m_uiBytesPerSector);
+					}
+					else
+					{
+						goto Exit;
+					}
+				}
+			}
+
+			// Finally, copy the data from the source buffer into the
+			// write buffer.
+
+			f_memcpy( &pucWriteBuffer[ ui64WriteOffset & m_ui64NotOnSectorBoundMask],
+								pucSrcBuffer, uiBytesBeingOutput);
+		}
+		else
+		{
+			pucWriteBuffer = pucSrcBuffer;
+			uiMaxBytesToWrite = uiBytesToWrite;
+			uiBytesBeingOutput = uiBytesToWrite;
+		}
+
+		// Position the file to the nearest sector below the write offset.
+
+		ui64LastWriteOffset = truncateToPrevSector( ui64WriteOffset);
+		uiLastWriteSize = uiMaxBytesToWrite;
+		
+		if( !bWaitForWrite)
+		{
+			f_assert( pucWriteBuffer == pIOBuffer->getBufferPtr());
+			
+			if( RC_BAD( rc = lowLevelWrite( ui64LastWriteOffset, 
+				uiMaxBytesToWrite, NULL, pIOBuffer, NULL)))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( pIOBuffer)
+			{
+				pIOBuffer->setPending();
+			}
+			
+			rc = lowLevelWrite( ui64LastWriteOffset, uiMaxBytesToWrite, 
+				pucWriteBuffer, NULL, NULL);
+				
+			if( pIOBuffer)
+			{
+				pIOBuffer->notifyComplete( rc);
+				pIOBuffer = NULL;
+			}
+				
+			if( RC_BAD( rc))
+			{
+				goto Exit;
+			}
+		}
+
+		uiBytesToWrite -= uiBytesBeingOutput;
+		uiBytesWritten += uiBytesBeingOutput;
+		
+		if( !uiBytesToWrite)
+		{
+			break;
+		}
+		
+		pucSrcBuffer += uiBytesBeingOutput;
+		ui64WriteOffset += uiBytesBeingOutput;
+	}
+
+Exit:
+
+	if( puiBytesWritten)
+	{
+		*puiBytesWritten = uiBytesWritten;
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Sets current position of file.
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::seek(
+	FLMUINT64			ui64Offset,
+	FLMINT				iWhence,
+	FLMUINT64 *			pui64NewOffset)
+{
+	RCODE	rc = NE_FLM_OK;
+
+	switch (iWhence)
+	{
+		case FLM_IO_SEEK_CUR:
+		{
+			m_ui64CurrentPos += ui64Offset;
+			break;
+		}
+		
+		case FLM_IO_SEEK_SET:
+		{
+			m_ui64CurrentPos = ui64Offset;
+			break;
+		}
+		
+		case FLM_IO_SEEK_END:
+		{
+			if( RC_BAD( rc = size( &m_ui64CurrentPos )))
+			{
+				goto Exit;
+			}
+			break;
+		}
+		
+		default:
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED);
+			goto Exit;
+		}
+	}
+	
+	if( pui64NewOffset)
+	{
+		*pui64NewOffset = m_ui64CurrentPos;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::tell(
+	FLMUINT64 *		pui64Offset)
+{
+	*pui64Offset = m_ui64CurrentPos;
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::read(
+	FLMUINT64			ui64Offset,
+	FLMUINT				uiLength,
+	void *				pvBuffer,
+	FLMUINT *			puiBytesRead)
+{
+	if( m_bDoDirectIO)
+	{
+		return( directRead( ui64Offset, uiLength, pvBuffer,
+			NULL, puiBytesRead));
+	}
+	else
+	{
+		return( lowLevelRead( ui64Offset, uiLength, pvBuffer, 
+			NULL, puiBytesRead));
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::read(
+	FLMUINT64		ui64ReadOffset,
+	FLMUINT			uiBytesToRead,
+	IF_IOBuffer *	pIOBuffer)
+{
+	return( directRead( ui64ReadOffset, uiBytesToRead,
+		NULL, pIOBuffer, NULL));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::write(
+	FLMUINT64		ui64WriteOffset,
+	FLMUINT			uiBytesToWrite,
+	const void *	pvBuffer,
+	FLMUINT *		puiBytesWritten)
+{
+	if( m_bDoDirectIO)
+	{
+		return( directWrite( ui64WriteOffset, uiBytesToWrite, pvBuffer,
+								NULL, puiBytesWritten));
+	}
+	else
+	{
+		return( lowLevelWrite( ui64WriteOffset, uiBytesToWrite, 
+			pvBuffer, NULL, puiBytesWritten));
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_FileHdl::write(
+	FLMUINT64			ui64WriteOffset,
+	FLMUINT				uiBytesToWrite,
+	IF_IOBuffer *		pIOBuffer)
+{
+	RCODE		rc = NE_FLM_OK;
+
+	if( m_bDoDirectIO)
+	{
+		if( RC_BAD( rc = directWrite( ui64WriteOffset, uiBytesToWrite,
+				NULL, pIOBuffer, NULL)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		pIOBuffer->setPending();
+		
+		rc = lowLevelWrite( ui64WriteOffset, uiBytesToWrite, 
+			pIOBuffer->getBufferPtr(), NULL, NULL);
+
+		pIOBuffer->notifyComplete( rc);
+
+		if( RC_BAD( rc))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
 }

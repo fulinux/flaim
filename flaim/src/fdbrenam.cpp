@@ -277,23 +277,24 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	// First make sure we have closed the databases and gotten rid of
 	// them from our internal memory tables - in case they had been open.
 
-	if (RC_BAD( rc = FlmConfig( FLM_CLOSE_FILE, 
+	if( RC_BAD( rc = FlmConfig( FLM_CLOSE_FILE, 
 		(void *)pszDbName, (void *)pszDataDir)))
 	{
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = FlmConfig( FLM_CLOSE_FILE, 
+	if( RC_BAD( rc = FlmConfig( FLM_CLOSE_FILE, 
 		(void *)pszFullNewName, (void *)pszDataDir)))
 	{
 		goto Exit;
 	}
+	
+	gv_FlmSysData.pFileHdlCache->closeUnusedFiles();
 
 	// Open the file so we can get the log header.
 
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszDbName, 
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 
-		&pFileHdl)))
+		gv_FlmSysData.uiFileOpenFlags, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -336,6 +337,7 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 
 		pszDataExtOld--;
 	}
+	
 	if (*pszExtOld != '.')
 	{
 		pszExtOld = pszOldName + f_strlen( pszOldName);

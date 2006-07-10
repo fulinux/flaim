@@ -42,14 +42,14 @@ FSTATIC RCODE flmReadFileHdr(
 FSTATIC void flmFreeCPInfo(
 	CP_INFO **		ppCPInfoRV);
 
-FSTATIC RCODE flmCPThread(
+FSTATIC RCODE FLMAPI flmCPThread(
 	IF_Thread *		pThread);
 
 FSTATIC RCODE flmDoRecover(
 	FDB *				pDb,
 	F_Restore *		pRestoreObj);
 
-FSTATIC RCODE flmDbMonitor(
+FSTATIC RCODE FLMAPI flmDbMonitor(
 	IF_Thread *		pThread);
 	
 /****************************************************************************
@@ -365,7 +365,7 @@ Desc: This routine performs all of the necessary steps to complete
 		waiting for the open or create to complete.
 ****************************************************************************/
 RCODE flmCompleteOpenOrCreate(
-	FDB * *	ppDb,
+	FDB **	ppDb,
 	RCODE		rc,
 	FLMBOOL	bNewFile,
 	FLMBOOL	bAllocatedFdb)
@@ -632,7 +632,9 @@ RCODE flmOpenFile(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient)))
+		if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
+			gv_FlmSysData.pFileHdlCache, 
+			(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 		{
 			goto Exit;
 		}
@@ -1014,7 +1016,9 @@ FSTATIC RCODE flmPhysFileOpen(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient)))
+	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -1103,7 +1107,7 @@ RCODE flmFindFile(
 	FFILE **				ppFileRV)
 {
 	RCODE       	rc = FERR_OK;
-	FBUCKET *   	pBucket;
+	F_BUCKET *   	pBucket;
 	FLMUINT			uiBucket;
 	FLMBOOL			bMutexLocked = TRUE;
 	FFILE *			pFile;
@@ -1272,25 +1276,24 @@ RCODE flmAllocFile(
 
 	// If a password was passed in, allocate a buffer for it.
 	
-	if (pszDbPassword && pszDbPassword[0])
+	if( pszDbPassword && pszDbPassword[0])
 	{
 		if (RC_BAD( rc = f_calloc( f_strlen( pszDbPassword) + 1, 
 			&pFile->pszDbPassword)))
 		{
 			goto Exit;
 		}
-		f_memcpy( pFile->pszDbPassword, pszDbPassword, f_strlen(pszDbPassword));
+		
+		f_memcpy( pFile->pszDbPassword, pszDbPassword, f_strlen( pszDbPassword));
 	}
 
 	// Setup the write buffer managers.
 	
-	if( RC_BAD( rc = FlmAllocIOBufferMgr( &pFile->pBufferMgr)))
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( MAX_PENDING_WRITES, 
+		MAX_WRITE_BUFFER_BYTES, FALSE, &pFile->pBufferMgr)))
 	{
 		goto Exit;
 	}
-
-	pFile->pBufferMgr->setMaxBuffers( MAX_PENDING_WRITES);
-	pFile->pBufferMgr->setMaxBytes( MAX_WRITE_BUFFER_BYTES);
 
 	// Initialize members of FFILE.
 
@@ -1316,6 +1319,7 @@ RCODE flmAllocFile(
 	{
 		goto Exit;
 	}
+	
 	flmLinkFileToNUList( pFile);
 
 	// Allocate a lock object for write locking.
@@ -1371,7 +1375,7 @@ FSTATIC RCODE flmReadFileHdr(
 	// Read and verify the file and log headers.
 	
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszDbPath, 
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pFileHdl)))
+		gv_FlmSysData.uiFileOpenFlags, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1552,7 +1556,9 @@ RCODE flmStartCPThread(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient))) 
+	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient, 
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -1629,7 +1635,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-FSTATIC RCODE flmCPThread(
+FSTATIC RCODE FLMAPI flmCPThread(
 	IF_Thread *			pThread)
 {
 	RCODE					rc = FERR_OK;
@@ -2208,7 +2214,7 @@ Clear_Session_ID:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE flmDbMonitor(
+RCODE FLMAPI flmDbMonitor(
 	IF_Thread *		pThread)
 {
 	RCODE				rc = FERR_OK;

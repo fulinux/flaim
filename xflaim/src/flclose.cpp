@@ -136,7 +136,7 @@ RCODE FLMAPI F_DbSystem::waitToClose(
 	const char *		pszDbPath)
 {
 	RCODE					rc = NE_XFLM_OK;
-	FBUCKET *			pBucket;
+	F_BUCKET *			pBucket;
 	FLMUINT				uiBucket;
 	F_Database *		pDatabase = NULL;
 	char					szDbPathStr1[ F_PATH_MAX_SIZE];

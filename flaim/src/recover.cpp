@@ -41,12 +41,6 @@ FSTATIC RCODE flmProcessBeforeImage(
 
 /****************************************************************************
 Desc:	This routine reads the next before-image block from the file.
-Ret:	FERR_OK
-			Indicates that the desired data was successfully read.
-		FERR_INCOMPLETE_LOG
-			Indicates that we would have read beyond the log end-of-file.
-		other
-			other FLAIM error codes
 ****************************************************************************/
 FSTATIC RCODE flmReadLog(
 	FDB *					pDb,
@@ -174,14 +168,6 @@ Exit:
 Desc:	This routine reads and processes a before-image block record
 		in the log file.  The reapply flag indicates whether the
 		block should be written back to the database file.
-Ret:	FERR_OK
-			Indicates that the before-image record was successfully read
-			and processed.
-		FERR_INVALID_BLOCK_LENGTH
-			This error is returned if the block length read from the log
-			file is invalid.
-		other
-			other FLAIM error codes
 ****************************************************************************/
 FSTATIC RCODE flmProcessBeforeImage(
 	FDB *					pDb,
@@ -273,7 +259,7 @@ FSTATIC RCODE flmProcessBeforeImage(
 	pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
 	rc = pDb->pSFileHdl->writeBlock( uiBlkAddress, uiBlkLength, pBlk,
-						 NULL, &uiBytesWritten);
+						 &uiBytesWritten);
 						 
 #ifdef FLM_DBG_LOG
 	flmDbgLogWrite( pFile->uiFFileId, uiBlkAddress, 0,
@@ -303,21 +289,13 @@ RCODE flmWriteLogHdr(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	FLMBYTE *			pucLogHdr,			// Log header buffer.
-	FLMBYTE *			pucCPLogHdr,		// Log header as it was at the time
-													// of the checkpoint.
-	FLMBOOL				bIsCheckpoint)		// Are we writing a checkpoint?  If we
-													// we are, we may write the log header
-													// as is.  Otherwise, we need to make
-													// sure we don't write out certain
-													// parts of the log header - they must
-													// not be updated on disk until a
-													// checkpoint actually occurs.
+	FLMBYTE *			pucLogHdr,
+	FLMBYTE *			pucCPLogHdr,
+	FLMBOOL				bIsCheckpoint)
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiBytesWritten;
+	FLMUINT			uiBytesToWrite;
 	FLMUINT			uiNewCheckSum;
-	IF_FileHdl *	pCFileHdl = NULL;
 	FLMBYTE *		pucTmpLogHdr;
 	F_TMSTAMP		StartTime;
 
@@ -334,7 +312,7 @@ RCODE flmWriteLogHdr(
 	}
 
 	pucTmpLogHdr = &pFile->pucLogHdrWriteBuf[ 16];
-	uiBytesWritten = LOG_HEADER_SIZE + 16;
+	uiBytesToWrite = LOG_HEADER_SIZE + 16;
 
 	// Very Important Note:  FlmDbConfig relies on the fact that we will
 	// write out the prefix area of the database header.  Do not remove
@@ -418,22 +396,17 @@ RCODE flmWriteLogHdr(
 
 	// Now update the log header record on disk
 
-	if (pDbStats)
+	if( pDbStats)
 	{
 		pDbStats->bHaveStats = TRUE;
 		pDbStats->LogHdrWrites.ui64Count++;
-		pDbStats->LogHdrWrites.ui64TotalBytes += uiBytesWritten;
+		pDbStats->LogHdrWrites.ui64TotalBytes += uiBytesToWrite;
 		f_timeGetTimeStamp( &StartTime);
 	}
 	
-	if( RC_BAD( rc = pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pCFileHdl->sectorWrite( 
-		0, f_roundUp( uiBytesWritten, 512), 
-		pFile->pucLogHdrWriteBuf, NULL, &uiBytesWritten)))
+	if( RC_BAD( rc = pSFileHdl->writeBlock( 0, 
+		(FLMUINT)f_roundUp( uiBytesToWrite, 512),
+		pFile->pucLogHdrWriteBuf, NULL)))
 	{
 		if (pDbStats)
 		{
@@ -443,12 +416,12 @@ RCODE flmWriteLogHdr(
 		goto Exit;
 	}
 
-	if (pDbStats)
+	if( pDbStats)
 	{
 		flmAddElapTime( &StartTime, &pDbStats->LogHdrWrites.ui64ElapMilli);
 	}
 
-	if (RC_BAD( rc = pCFileHdl->flush()))
+	if( RC_BAD( rc = pSFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -509,7 +482,6 @@ RCODE flmPhysRollback(
 	// blocks along the way.
 
 	uiCurrAddr = uiFirstLogBlkAddr;
-	pDb->pSFileHdl->enableFlushMinimize();
 	while (FSAddrIsBelow( uiCurrAddr, uiLogEOF))
 	{
 		if (RC_BAD( rc = flmProcessBeforeImage( pDb,
@@ -528,8 +500,6 @@ RCODE flmPhysRollback(
 	}
 
 Exit:
-
-	pDb->pSFileHdl->disableFlushMinimize();
 
 	// Free the memory handle, if one was allocated.
 

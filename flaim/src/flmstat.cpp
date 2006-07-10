@@ -1317,9 +1317,6 @@ BLOCKIO_STATS * flmGetBlockIOStatPtr(
 		pLFileStats->bHaveStats =
 		pDbStats->bHaveStats = TRUE;
 		
-		// VISIT: Consider a one level tree.  
-		// Is it more important to count root stats over leaf stats?
-		
 		// Consider invalid type.
 
 		if ((BH_GET_TYPE( pBlk) != BHT_LEAF) &&

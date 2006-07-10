@@ -297,7 +297,7 @@ int main(
 	{
 		goto Exit;
 	}
-
+	
 Exit:
 
 	if( pTest)
@@ -310,6 +310,11 @@ Exit:
 		pArgs->Release();
 	}
 	
+#ifdef FLM_NLM
+	f_conPrintf( "\nPress any key to exit ... ");
+	f_conGetKey();
+#endif
+
 #ifdef FLM_NLM
 	f_conExit();
 #endif

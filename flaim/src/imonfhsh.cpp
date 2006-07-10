@@ -37,7 +37,7 @@ RCODE F_FileHashTblPage::display(
 	FLMINT		iSindex;
 	FLMINT		iNindex;
 	FLMBOOL		found = FALSE;
-	FBUCKET *	pFileHashTbl;
+	F_BUCKET *	pFileHashTbl;
 	FLMBOOL		buckets[FILE_HASH_ENTRIES];
 	FLMINT		next[FILE_HASH_ENTRIES];
 	FLMBOOL		bRefresh;

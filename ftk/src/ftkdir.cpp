@@ -229,10 +229,10 @@ FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
 #elif defined( FLM_UNIX) || defined ( FLM_LIBC_NLM)
 		ui64Size = m_FindData.FileStat.st_size;
 #elif defined( FLM_RING_ZERO_NLM)
-		if( m_FindData.pCurrentItem != NULL )
-		{
-			ui64Size = m_FindData.pCurrentItem->DFileSize;
-		}
+		char		szTmpPath[ F_PATH_MAX_SIZE];
+
+		currentItemPath( szTmpPath);
+		(void)f_getFileSysPtr()->getFileSize( szTmpPath, &ui64Size);
 #endif
 	}
 	return( ui64Size);
@@ -330,7 +330,7 @@ RCODE FLMAPI F_DirHdl::next( void)
 			}
 			else
 			{
-				m_rc = f_mapPlatformError(lError, NE_FLM_READING_FILE);
+				m_rc = f_mapPlatformError( lError, NE_FLM_READING_FILE);
 			}
 			
 			break;

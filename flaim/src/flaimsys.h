@@ -1076,10 +1076,6 @@ RCODE flmGetCSConnection(
 void flmCloseCSConnection(
 	CS_CONTEXT **		ppCSContext);
 
-RCODE flmAllocHashTbl(
-	FLMUINT        	uiHashTblSize,
-	FBUCKET **			ppHashTblRV);
-
 RCODE flmGetTmpDir(
 	char *				pszOutputTmpDir);
 
@@ -1543,7 +1539,7 @@ RCODE impFileIsExpImp(
 	
 	void flmDbgLogExit( void);
 
-#endif	// #ifdef FLM_DBG_LOG
+#endif	// FLM_DBG_LOG
 
 void flmDeleteCCSRefs(
 	FDICT *		pDict);
@@ -2602,6 +2598,10 @@ public:
 		
 	FLMUINT FLMAPI getFileOffset(
 		FLMUINT					uiBlockAddr);
+		
+	FLMUINT FLMAPI getBlockAddress(
+		FLMUINT					uiFileNumber,
+		FLMUINT					uiFileOffset);
 		
 	RCODE FLMAPI getFilePath(
 		FLMUINT					uiFileNumber,

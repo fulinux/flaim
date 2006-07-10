@@ -278,7 +278,9 @@ RCODE flmCreateNewFile(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient)))
+	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -474,34 +476,33 @@ FSTATIC RCODE flmInitFileHdrs(
 	CREATE_OPTS *	pCreateOpts,
 	FLMUINT			uiBlkSize,
 	FLMUINT			uiTransID,
-	FLMBYTE *		pInitBuf)
+	FLMBYTE *		pucInitBuf)
 {
 	RCODE				rc = FERR_OK;
 	FFILE *			pFile = pDb->pFile;
 	FLMBYTE *		pucLastCommittedLogHdr;
 	FLMUINT			uiLogicalEOF;
-	FLMUINT			uiWriteBytes;
 	FLMUINT			uiMinRflFileSize;
 	FLMUINT			uiMaxRflFileSize;
 	FLMBYTE *		pucBuf = NULL;
 
 	// Initialize the FFILE structure and first 2048 bytes/blk of the file.
 
-	f_memset( pInitBuf, 0, uiBlkSize);
+	f_memset( pucInitBuf, 0, uiBlkSize);
 	flmInitFileHdrInfo( pCreateOpts, &pFile->FileHdr,
-						 &pInitBuf [FLAIM_HEADER_START]);
+						 &pucInitBuf [FLAIM_HEADER_START]);
 	if (pCreateOpts)
 	{
-		flmSetFilePrefix( pInitBuf, pCreateOpts->uiAppMajorVer,
+		flmSetFilePrefix( pucInitBuf, pCreateOpts->uiAppMajorVer,
 								pCreateOpts->uiAppMinorVer);
 	}
 	else
 	{
-		flmSetFilePrefix( pInitBuf, 0, 0);
+		flmSetFilePrefix( pucInitBuf, 0, 0);
 	}
 
-	if (RC_BAD( rc = pDb->pSFileHdl->writeHeader( 0L, uiBlkSize,
-				pInitBuf, &uiWriteBytes)))
+	if (RC_BAD( rc = pDb->pSFileHdl->writeBlock( 0L, uiBlkSize, 
+		pucInitBuf, NULL)))
 	{
 		goto Exit;
 	}
@@ -697,22 +698,21 @@ FSTATIC RCODE flmInitFileHdrs(
 
 	// Initialize and output the first LFH block
 
-	f_memset( pInitBuf, 0, uiBlkSize); 
-	SET_BH_ADDR( pInitBuf, (FLMUINT32)pFile->FileHdr.uiFirstLFHBlkAddr);
-	pInitBuf [BH_TYPE] = BHT_LFH_BLK;
-	UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_PREV_BLK]);
-	UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_NEXT_BLK]);
-	UW2FBA( (FLMUINT16)BH_OVHD, &pInitBuf [BH_ELM_END]);
-	UD2FBA( (FLMUINT32)uiTransID, &pInitBuf [BH_TRANS_ID]);
+	f_memset( pucInitBuf, 0, uiBlkSize); 
+	SET_BH_ADDR( pucInitBuf, (FLMUINT32)pFile->FileHdr.uiFirstLFHBlkAddr);
+	pucInitBuf [BH_TYPE] = BHT_LFH_BLK;
+	UD2FBA( (FLMUINT32)BT_END,  &pucInitBuf [BH_PREV_BLK]);
+	UD2FBA( (FLMUINT32)BT_END,  &pucInitBuf [BH_NEXT_BLK]);
+	UW2FBA( (FLMUINT16)BH_OVHD, &pucInitBuf [BH_ELM_END]);
+	UD2FBA( (FLMUINT32)uiTransID, &pucInitBuf [BH_TRANS_ID]);
 
-	BlkCheckSum( pInitBuf, CHECKSUM_SET,
+	BlkCheckSum( pucInitBuf, CHECKSUM_SET,
 						pFile->FileHdr.uiFirstLFHBlkAddr,
 							uiBlkSize);
 	pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 	pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-	if (RC_BAD( rc = pDb->pSFileHdl->writeBlock(
-								pFile->FileHdr.uiFirstLFHBlkAddr,
-								uiBlkSize, pInitBuf, NULL, &uiWriteBytes)))
+	if( RC_BAD( rc = pDb->pSFileHdl->writeBlock(
+				pFile->FileHdr.uiFirstLFHBlkAddr, uiBlkSize, pucInitBuf, NULL)))
 	{
 		goto Exit;
 	}
@@ -723,20 +723,20 @@ FSTATIC RCODE flmInitFileHdrs(
 	{
 		FLMUINT	uiPcodeAddr;
 
-		f_memset( pInitBuf, 0, uiBlkSize);
+		f_memset( pucInitBuf, 0, uiBlkSize);
 		uiPcodeAddr = pFile->FileHdr.uiFirstLFHBlkAddr + uiBlkSize;
-		SET_BH_ADDR( pInitBuf, (FLMUINT32)uiPcodeAddr);
-		pInitBuf [BH_TYPE] = BHT_PCODE_BLK;
-		UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_PREV_BLK]);
-		UD2FBA( (FLMUINT32)BT_END,  &pInitBuf [BH_NEXT_BLK]);
-		UW2FBA( (FLMUINT16)BH_OVHD, &pInitBuf [BH_ELM_END]);
-		UD2FBA( (FLMUINT32)uiTransID, &pInitBuf [BH_TRANS_ID]);
+		SET_BH_ADDR( pucInitBuf, (FLMUINT32)uiPcodeAddr);
+		pucInitBuf [BH_TYPE] = BHT_PCODE_BLK;
+		UD2FBA( (FLMUINT32)BT_END,  &pucInitBuf [BH_PREV_BLK]);
+		UD2FBA( (FLMUINT32)BT_END,  &pucInitBuf [BH_NEXT_BLK]);
+		UW2FBA( (FLMUINT16)BH_OVHD, &pucInitBuf [BH_ELM_END]);
+		UD2FBA( (FLMUINT32)uiTransID, &pucInitBuf [BH_TRANS_ID]);
 
-		BlkCheckSum( pInitBuf, CHECKSUM_SET, uiPcodeAddr, uiBlkSize);
+		BlkCheckSum( pucInitBuf, CHECKSUM_SET, uiPcodeAddr, uiBlkSize);
 		pDb->pSFileHdl->setMaxAutoExtendSize( pFile->uiMaxFileSize);
 		pDb->pSFileHdl->setExtendSize( pFile->uiFileExtendSize);
-		if (RC_BAD( rc = pDb->pSFileHdl->writeBlock( uiPcodeAddr,
-									uiBlkSize, pInitBuf, NULL, &uiWriteBytes)))
+		if (RC_BAD( rc = pDb->pSFileHdl->writeBlock( 
+			uiPcodeAddr, uiBlkSize, pucInitBuf, NULL)))
 		{
 			goto Exit;
 		}

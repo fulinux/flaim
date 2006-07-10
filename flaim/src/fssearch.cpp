@@ -88,8 +88,6 @@ RCODE FSBtSearch(
 			goto Exit;
 		}
 
-		// VISIT: Verify byLevel for cyclic loops.
-
 		if (!pStack->uiLevel)
 		{
 			// Leaf level - we are done.

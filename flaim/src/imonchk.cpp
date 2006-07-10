@@ -74,7 +74,7 @@ FSTATIC RCODE CheckStatusCB(
 	void *		pvParm2,
 	void *		pvAppData);
 
-FSTATIC RCODE imonDoCheck(
+FSTATIC RCODE FLMAPI imonDoCheck(
 	IF_Thread *		pThread);
 
 FSTATIC void imonLogStr(
@@ -1108,7 +1108,7 @@ RCODE F_CheckDbPage::runCheck(
 	// Start a thread to do the check.
 
 	if (RC_BAD( rc = f_threadCreate( &pThread, imonDoCheck,
-							"WEB DB CHECK", gv_uiDbThrdGrp, 1,
+							"IMON DB CHECK", gv_uiDbThrdGrp, 1,
 							(void *)pCheckStatus, (void *)hDb)))
 	{
 		goto Exit;
@@ -1792,7 +1792,7 @@ Exit:
 /****************************************************************************
 Desc:	Thread to perform a database check for a web page.
 ****************************************************************************/
-FSTATIC RCODE imonDoCheck(
+FSTATIC RCODE FLMAPI imonDoCheck(
 	IF_Thread *		pThread)
 {
 	RCODE						rc;

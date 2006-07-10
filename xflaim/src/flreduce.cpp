@@ -132,18 +132,12 @@ RCODE FLMAPI F_Db::reduceSize(
 
 		if( FSGetFileOffset( uiLogicalEOF) == 0)
 		{
-			IF_FileHdl *	pFileHdl;
 			FLMUINT			uiFileNumber = FSGetFileNumber( uiLogicalEOF) - 1;
 			FLMUINT64		ui64FileSize;
 			FLMUINT64		ui64Temp;
-
-			if (RC_BAD( rc = m_pSFileHdl->getFileHdl(
-										uiFileNumber, TRUE, &pFileHdl)))
-			{
-				goto Exit;
-			}
-
-			if (RC_BAD( rc = pFileHdl->size( &ui64FileSize)))
+			
+			if (RC_BAD( rc = m_pSFileHdl->getFileSize( 
+				uiFileNumber, &ui64FileSize)))
 			{
 				goto Exit;
 			}
@@ -205,7 +199,6 @@ RCODE FLMAPI F_Db::reduceSize(
 		{
 			FLMUINT			uiFileNumber = FSGetFileNumber( uiLogicalEOF);
 			FLMUINT64		ui64FileOffset;
-			IF_FileHdl *	pFileHdl;
 
 			if (uiFileNumber <= 1)
 			{
@@ -219,13 +212,8 @@ RCODE FLMAPI F_Db::reduceSize(
 
 			// Compute the end of the previous block file.
 
-			if (RC_BAD( rc = m_pSFileHdl->getFileHdl(
-										uiFileNumber, TRUE, &pFileHdl)))
-			{
-				goto Exit;
-			}
-
-			if (RC_BAD( rc = pFileHdl->size( &ui64FileOffset)))
+			if (RC_BAD( rc = m_pSFileHdl->getFileSize( 
+				uiFileNumber, &ui64FileOffset)))
 			{
 				goto Exit;
 			}
@@ -323,7 +311,6 @@ RCODE F_Db::readBlkHdr(
 	RCODE						rc = NE_XFLM_OK;
 	FLMUINT					uiBytesRead;
 	FLMUINT					uiNumLooks;
-	IF_FileHdl *			pTmpFileHdl = NULL;
 	F_CachedBlock *		pBlkSCache;
 	XFLM_LFILE_STATS *	pLFileStats;
 	F_TMSTAMP				StartTime;
@@ -351,12 +338,8 @@ RCODE F_Db::readBlkHdr(
 			f_timeGetTimeStamp( &StartTime);
 		}
 
-		if (RC_OK( rc = m_pSFileHdl->getFileHdl(
-								FSGetFileNumber( uiBlkAddress), TRUE, &pTmpFileHdl)))
-		{
-			rc = pTmpFileHdl->read( FSGetFileOffset( uiBlkAddress),
-					SIZEOF_LARGEST_BLK_HDR, pBlkHdr, &uiBytesRead);
-		}
+		rc = m_pSFileHdl->readBlock( uiBlkAddress,
+				SIZEOF_LARGEST_BLK_HDR, pBlkHdr, &uiBytesRead);
 
 		if (m_pDbStats)
 		{
@@ -414,9 +397,9 @@ RCODE F_Db::readBlkHdr(
 		{
 			if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_XFLM_MEM)
 			{
-				m_pSFileHdl->releaseFile( FSGetFileNumber( uiBlkAddress),
-														TRUE);
+				m_pSFileHdl->releaseFiles();
 			}
+			
 			goto Exit;
 		}
 	}

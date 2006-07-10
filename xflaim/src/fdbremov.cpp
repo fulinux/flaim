@@ -77,6 +77,13 @@ RCODE F_DbSystem::dbRemove(
 		goto Exit;
 	}
 
+	// Close all unused file handles
+	
+	if( gv_XFlmSysData.pFileHdlCache)
+	{
+		gv_XFlmSysData.pFileHdlCache->closeUnusedFiles();
+	}
+	
 	if (pszDataDir && *pszDataDir)
 	{
 		if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathReduce( 

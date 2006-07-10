@@ -138,7 +138,6 @@ RCODE BlkCheckSum(
 		// will be zero), so forgiving it will be OK most of the time.
 		// So that those don't cause us to report block checksum errors,
 		// we just allow it - checksumming isn't a perfect check anyway.
-		// VISIT: We do eventually want to get rid of this forgiving code.
 		
 		if (uiNewChecksum == uiCurrChecksum ||
 			 ((!uiNewChecksum) && (uiCurrChecksum == 1)))

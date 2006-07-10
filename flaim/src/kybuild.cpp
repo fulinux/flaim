@@ -1621,9 +1621,9 @@ FSTATIC FLMINT _KrefCompare(
 
 	// Compare (SORT1) #2, (SORT2) #3: KEY - including NULL character at
 	// end.
-	//
+
 	// Comparing the NULL character advoids checking the key length.
-	//
+
 	// VISIT: There could be a BUG where key length should be checked, but
 	// it has to do with not storing all compound key pieces in the key.
 	

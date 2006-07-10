@@ -109,7 +109,7 @@ private:
 
 	void cleanupLockObject( void);
 
-	static RCODE timeoutThread(
+	static RCODE FLMAPI timeoutThread(
 		IF_Thread *				pThread);
 
 	void insertWaiter(
@@ -267,7 +267,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_LockObject::timeoutThread(
+RCODE FLMAPI F_LockObject::timeoutThread(
 	IF_Thread *			pThread)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -368,7 +368,10 @@ void FLMAPI F_LockObject::timeoutAllWaiters( void)
 {
 	F_LOCK_WAITER *	pLockWaiter;
 	
-	f_mutexLock( m_hMutex);
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+	}
 	
 	while( m_pFirstInList) 
 	{
@@ -378,7 +381,10 @@ void FLMAPI F_LockObject::timeoutAllWaiters( void)
 		f_semSignal( pLockWaiter->hWaitSem);
 	}
 	
-	f_mutexUnlock( m_hMutex);
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
 }
 
 /****************************************************************************

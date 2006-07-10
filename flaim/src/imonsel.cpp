@@ -38,7 +38,7 @@ FSTATIC RCODE queryStatusCB(
 	void *	pvParm2,
 	void *	pvUserData);
 
-FSTATIC RCODE imonDoQuery(
+FSTATIC RCODE FLMAPI imonDoQuery(
 	IF_Thread *		pThread);
 
 /****************************************************************************
@@ -820,7 +820,7 @@ RCODE F_SelectPage::runQuery(
 	// Start a thread to do the query.
 
 	if( RC_BAD( rc = f_threadCreate( &pThread, imonDoQuery,
-							"WEB QUERY",
+							"IMON QUERY",
 							gv_uiDbThrdGrp, 1,
 							(void *)pQueryStatus, (void *)hDb)))
 	{
@@ -1047,7 +1047,7 @@ Exit:
 /****************************************************************************
 Desc:	Thread to perform a query for a web page.
 ****************************************************************************/
-FSTATIC RCODE imonDoQuery(
+FSTATIC RCODE FLMAPI imonDoQuery(
 	IF_Thread *		pThread)
 {
 	RCODE				rc;

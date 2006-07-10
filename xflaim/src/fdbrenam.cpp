@@ -122,7 +122,9 @@ RCODE F_DbSystem::dbRename(
 		rc = RC_SET( NE_XFLM_INVALID_PARM);
 		goto Exit;
 	}
+	
 	f_strcpy( pszNewName, pszOldName);
+	
 	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->pathAppend( 
 		pszNewName, szNewBase)))
 	{
@@ -160,9 +162,17 @@ RCODE F_DbSystem::dbRename(
 	{
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = checkDatabaseClosed( pszFullNewName, pszDataDir)))
 	{
 		goto Exit;
+	}
+	
+	// Close all unused file handles
+	
+	if( gv_XFlmSysData.pFileHdlCache)
+	{
+		gv_XFlmSysData.pFileHdlCache->closeUnusedFiles();
 	}
 
 	// Start renaming files, beginning with the main DB file.

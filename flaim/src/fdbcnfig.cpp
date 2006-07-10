@@ -934,8 +934,7 @@ FSTATIC RCODE flmDbGetSizes(
 			// Open the file and get its size.
 
 			if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szTmpName,
-			  						FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-									&pFileHdl)))
+			  						gv_FlmSysData.uiFileOpenFlags, &pFileHdl)))
 			{
 				if (rc == FERR_IO_PATH_NOT_FOUND || rc == FERR_IO_INVALID_PATH)
 				{
@@ -1022,12 +1021,10 @@ FSTATIC RCODE flmDbGetSizes(
 
 						// Open the file and get its size.
 
-						if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile(
-												szTmpName,
-			  									FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-												&pFileHdl)))
+						if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile(
+							szTmpName, gv_FlmSysData.uiFileOpenFlags, &pFileHdl)))
 						{
-							if (rc == FERR_IO_PATH_NOT_FOUND ||
+							if( rc == FERR_IO_PATH_NOT_FOUND ||
 								 rc == FERR_IO_INVALID_PATH)
 							{
 								rc = FERR_OK;
@@ -1040,7 +1037,7 @@ FSTATIC RCODE flmDbGetSizes(
 						}
 						else
 						{
-							if (RC_BAD( rc = pFileHdl->size( &ui64LastFileSize)))
+							if( RC_BAD( rc = pFileHdl->size( &ui64LastFileSize)))
 							{
 								goto Exit;
 							}

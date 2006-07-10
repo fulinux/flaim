@@ -249,7 +249,7 @@ RCODE F_Db::processBeforeImage(
 	m_pSFileHdl->setMaxAutoExtendSize( m_pDatabase->m_uiMaxFileSize);
 	m_pSFileHdl->setExtendSize( m_pDatabase->m_uiFileExtendSize);
 	rc = m_pSFileHdl->writeBlock( uiBlkAddress, uiBlkLength, pBlkHdr,
-						 NULL, &uiBytesWritten);
+						 &uiBytesWritten);
 #ifdef FLM_DBG_LOG
 	flmDbgLogWrite( m_pDatabase, uiBlkAddress, 0, ui64TransID,
 								"ROLLBACK");
@@ -290,7 +290,6 @@ RCODE F_Database::writeDbHdr(
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiBytesWritten;
-	IF_FileHdl *	pCFileHdl = NULL;
 	XFLM_DB_HDR *	pTmpDbHdr;
 	F_TMSTAMP		StartTime;
 
@@ -354,13 +353,8 @@ RCODE F_Database::writeDbHdr(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if( RC_BAD( rc = pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
-	{
-		goto Exit;
-	}
-
-	if( RC_BAD( rc = pCFileHdl->sectorWrite( 0,
-		uiBytesWritten, pTmpDbHdr, NULL, &uiBytesWritten)))
+	if( RC_BAD( rc = pSFileHdl->writeBlock( 0,
+		uiBytesWritten, pTmpDbHdr, &uiBytesWritten)))
 	{
 		if (pDbStats)
 		{
@@ -377,7 +371,7 @@ RCODE F_Database::writeDbHdr(
 
 	// Finally, force the header to disk.
 
-	if (RC_BAD( rc = pCFileHdl->flush()))
+	if (RC_BAD( rc = pSFileHdl->flush()))
 	{
 		goto Exit;
 	}
@@ -435,7 +429,6 @@ RCODE F_Db::physRollback(
 	// blocks along the way.
 
 	uiCurrAddr = uiFirstLogBlkAddr;
-	m_pSFileHdl->enableFlushMinimize();
 	while (FSAddrIsBelow( uiCurrAddr, uiLogEOF))
 	{
 		if (RC_BAD( rc = processBeforeImage( uiLogEOF, &uiCurrAddr,
@@ -454,7 +447,6 @@ RCODE F_Db::physRollback(
 	}
 
 Exit:
-	m_pSFileHdl->disableFlushMinimize();
 
 	// Free the memory handle, if one was allocated.
 

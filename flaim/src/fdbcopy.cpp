@@ -79,6 +79,8 @@ FLMEXP RCODE FLMAPI FlmDbCopy(
 	{
 		goto Exit;
 	}
+	
+	gv_FlmSysData.pFileHdlCache->closeUnusedFiles();	
 
 	// Open the database so we can force a checkpoint.
 
@@ -236,7 +238,9 @@ FSTATIC RCODE flmCopyDb(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient)))
+	if( RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient, 
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -350,7 +354,9 @@ FSTATIC RCODE flmCopyDb(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient)))
+	if( RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient, 
+		gv_FlmSysData.pFileHdlCache, 
+		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -437,10 +443,9 @@ FSTATIC RCODE flmCopyDb(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
-							pszActualSrcRflPath,
-							FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-							&pTmpFileHdl)))
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
+				pszActualSrcRflPath, gv_FlmSysData.uiFileOpenFlags,
+				&pTmpFileHdl)))
 		{
 			if (rc == FERR_IO_PATH_NOT_FOUND ||
 				 rc == FERR_IO_INVALID_PATH)
@@ -509,8 +514,8 @@ FSTATIC RCODE flmCopyDb(
 
 	// Close all file handles in the source and destination
 
-	pSrcSFileHdl->releaseFiles( TRUE);
-	pDestSFileHdl->releaseFiles( TRUE);
+	pSrcSFileHdl->releaseFiles();
+	pDestSFileHdl->releaseFiles();
 
 	// Copy the database files.
 
@@ -900,8 +905,7 @@ FSTATIC RCODE flmCopyFile(
 	// Open the source file.
 
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
-		pDbCopyInfo->szSrcFileName,
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 
+		pDbCopyInfo->szSrcFileName, gv_FlmSysData.uiFileOpenFlags, 
 		&pSrcFileHdl)))
 	{
 		goto Exit;
@@ -911,8 +915,7 @@ FSTATIC RCODE flmCopyFile(
 	// not exist, attempt to create it.
 
 	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
-		pDbCopyInfo->szDestFileName,
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, 
+		pDbCopyInfo->szDestFileName, gv_FlmSysData.uiFileOpenFlags,
 		&pDestFileHdl)))
 	{
 		if (rc != FERR_IO_PATH_NOT_FOUND &&
@@ -922,9 +925,7 @@ FSTATIC RCODE flmCopyFile(
 		}
 
 		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->createFile( 
-			pDbCopyInfo->szDestFileName,
-			FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE |
-			FLM_IO_CREATE_DIR | FLM_IO_DIRECT, 
+			pDbCopyInfo->szDestFileName, gv_FlmSysData.uiFileCreateFlags, 
 			&pDestFileHdl)))
 		{
 			goto Exit;
@@ -949,8 +950,7 @@ FSTATIC RCODE flmCopyFile(
 	{
 		// Read the first 2K of the source file.
 
-		if (RC_BAD( rc = pSrcFileHdl->sectorRead( 0L, 2048,
-									pucBuffer, &uiBytesRead)))
+		if (RC_BAD( rc = pSrcFileHdl->read( 0L, 2048, pucBuffer, &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
 			{
@@ -980,20 +980,16 @@ FSTATIC RCODE flmCopyFile(
 			f_memset( ucLogHdr, 0, sizeof(ucLogHdr));
 		}
 
-		/*
-		Set the transaction ID to zero.  MUST ALSO SET THE TRANS ACTIVE FLAG
-		TO FALSE - OTHERWISE READERS WILL ATTEMPT TO DECREMENT THE
-		TRANSACTION ID AND WILL END UP WITH 0xFFFFFFFF - very bad!
-		We must use zero, because it is the only transaction ID that will not
-		appear on ANY block.
-		*/
+		// Set the transaction ID to zero.  MUST ALSO SET THE TRANS ACTIVE FLAG
+		// TO FALSE - OTHERWISE READERS WILL ATTEMPT TO DECREMENT THE
+		// TRANSACTION ID AND WILL END UP WITH 0xFFFFFFFF - very bad!
+		// We must use zero, because it is the only transaction ID that will not
+		// appear on ANY block.
 
 		UD2FBA( 0, &ucLogHdr [LOG_CURR_TRANS_ID]);
 
-		/*
-		Recalculate the log header checksum so that readers will not get a
-		checksum error.
-		*/
+		// Recalculate the log header checksum so that readers will not get a
+		// checksum error.
 
 		uiNewChecksum = lgHdrCheckSum( ucLogHdr, FALSE);
 		UW2FBA( (FLMUINT16)uiNewChecksum, &ucLogHdr [LOG_HDR_CHECKSUM]);
@@ -1032,7 +1028,7 @@ FSTATIC RCODE flmCopyFile(
 
 		// Read data from source file.
 
-		if (RC_BAD( rc = pSrcFileHdl->sectorRead( uiOffset, uiBytesToRead,
+		if (RC_BAD( rc = pSrcFileHdl->read( uiOffset, uiBytesToRead,
 									pucBuffer, &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
@@ -1089,7 +1085,9 @@ FSTATIC RCODE flmCopyFile(
 		// than we asked for.
 
 		if (uiOffset >= uiEndOffset || uiBytesRead < uiBytesToRead)
+		{
 			break;
+		}
 	}
 
 	// If we overwrote the destination file, as opposed to creating

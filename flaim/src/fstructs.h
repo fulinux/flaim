@@ -787,31 +787,21 @@ Desc:		This is the FLAIM Shared System Data Structure.  It is the anchor
 ***************************************************************************/
 typedef struct FLMSYSDATA
 {
+	FLMUINT				uiOpenFFiles;	// Number of open FFILEs
 	FFILE *				pMrnuFile;		// Pointer to the most recently non-used
 												// FFILE structure.
 	FFILE *				pLrnuFile;		// Pointer to the least recently non-used
 												// FFILE structure.
-	FBUCKET *			pFileHashTbl;	// File name hash table (array of FBUCKET).
+	F_BUCKET *			pFileHashTbl;	// File name hash table (array of F_BUCKET).
 #define						FILE_HASH_ENTRIES		256
 
 	FLMUINT				uiNextFFileId;	// ID that will be assigned to the next
 												// FFILE created by flmAllocFile.
-
 	F_MUTEX				hShareMutex;	// Mutex for controlling access to
 												// FFILE structures, and shared cache.
-	F_MUTEX				hFileHdlMutex;	// Mutex for controlling
-												// access to shared file handles.
-	F_MUTEX				hServerLockMgrMutex;
-												// Mutex for controlling access to
-												// the server lock manager.
-
-	IF_FileSystem *	pFileSystem;// File system used to configure options
+	IF_FileSystem *	pFileSystem;	// File system used to configure options
 												// for interacting with OS file system.
-
 	FLMBOOL				bTempDirSet;	// TRUE if temporary directory has been set
-
-	FLMBOOL				bOkToDoAsyncWrites;
-												// OK To do async writes, if available.
 	FLMBOOL				bCheckCache;	// Do extra checking of cache?
 	FLMUINT				uiMaxCPInterval;
 												// Maximum number of seconds to allow between
@@ -851,7 +841,6 @@ typedef struct FLMSYSDATA
 	RCACHE_MGR			RCacheMgr;		// Record cache manager
 	IF_Thread *			pMonitorThrd;	// Monitor thread
 	FLM_STATS			Stats;			// Statistics structure
-
 	F_MUTEX				hQueryMutex;	// Mutex for managing query list
 	QUERY_HDR *			pNewestQuery;	// Head of query list (newest)
 	QUERY_HDR *			pOldestQuery;	// Tail of query list (oldest)
@@ -864,14 +853,12 @@ typedef struct FLMSYSDATA
 	FLMBOOL				bStatsInitialized;
 												// Has statistics structure been
 												// initialized?
-
 	char					szTempDir[ F_PATH_MAX_SIZE];
 												// Temporary working directory for
 												// ResultSets, RecordCache
 												// and other sub-systems that need 
 												// temporary files.  This is aligned
 												// on a 4-byte boundary
-
 	FLMUINT				uiMaxUnusedTime;
 												// Maximum number of timer units to keep
 												// unused structures in memory before
@@ -882,19 +869,18 @@ typedef struct FLMSYSDATA
 	FEVENT_HDR			SizeEvents;		// Size threshold events
 	F_Pool				KRefPool;		// Memory Pool that is only used by 
 												// record updaters for key building
-
 	HTTPCONFIGPARAMS	HttpConfigParms;
-	
 	FLMUINT				uiMaxFileSize;
 	IF_LoggerClient *	pLogger;
 	IF_SlabManager *	pSlabManager;
-
 	IF_ThreadMgr *		pThreadMgr;
+	IF_FileHdlCache *	pFileHdlCache;
 	F_SessionMgr *		pSessionMgr;
 	F_MUTEX				hHttpSessionMutex;
-	
 	FLMUINT				uiMaxStratifyIterations;
 	FLMUINT				uiMaxStratifyTime;
+	FLMUINT				uiFileOpenFlags;
+	FLMUINT				uiFileCreateFlags;
 
 } FLMSYSDATA;
 
@@ -1790,81 +1776,6 @@ typedef enum
 } eHashObjType;
 
 /****************************************************************************
-Desc: FLAIM object base class
-****************************************************************************/
-class F_HashObject : public F_Object
-{
-public:
-
-#define F_INVALID_HASH_BUCKET				(~((FLMUINT)0))
-
-	F_HashObject()
-	{
-		m_pNextInBucket = NULL;
-		m_pPrevInBucket = NULL;
-		m_pNextInGlobal = NULL;
-		m_pPrevInGlobal = NULL;
-		m_uiHashBucket = F_INVALID_HASH_BUCKET;
-		m_ui32CRC = 0xFFFFFFFF;
-	}
-
-	virtual ~F_HashObject()
-	{
-		flmAssert( !m_pNextInBucket);
-		flmAssert( !m_pPrevInBucket);
-		flmAssert( !m_pNextInGlobal);
-		flmAssert( !m_pPrevInGlobal);
-	}
-
-	virtual void * getKey(
-		FLMUINT *	puiKeyLen) = 0;
-
-	FLMUINT getHashBucket( void)
-	{
-		return( m_uiHashBucket);
-	}
-
-	FLMUINT32 getKeyCRC( void)
-	{
-		return( m_ui32CRC);
-	}
-
-	FINLINE F_HashObject * getNextInGlobal( void)
-	{
-		return( m_pNextInGlobal);
-	}
-
-	virtual eHashObjType objectType( void) = 0;
-
-protected:
-
-	// Methods
-
-	void setHashBucket(
-		FLMUINT		uiHashBucket)
-	{
-		m_uiHashBucket = uiHashBucket;
-	}
-
-	void setKeyCRC(
-		FLMUINT32	ui32CRC)
-	{
-		m_ui32CRC = ui32CRC;
-	}
-
-	// Data
-
-	F_HashObject *		m_pNextInBucket;
-	F_HashObject *		m_pPrevInBucket;
-	F_HashObject *		m_pNextInGlobal;
-	F_HashObject *		m_pPrevInGlobal;
-	FLMUINT				m_uiHashBucket;
-	FLMUINT32			m_ui32CRC;
-
-friend class F_HashTable;
-};
-
-/****************************************************************************
 Desc: FLAIM session database object
 ****************************************************************************/
 class F_SessionDb : public F_HashObject
@@ -1879,15 +1790,16 @@ public:
 		F_Session *	pSession,
 		HFDB			hDb);
 
-	void * getKey(
-		FLMUINT *	puiKeyLen = NULL);
+	const void * FLMAPI getKey( void);
+	
+	FLMUINT FLMAPI getKeyLength( void);
 
 	FINLINE HFDB getDbHandle( void)
 	{
 		return( m_hDb);
 	}
 
-	FINLINE eHashObjType objectType( void)
+	FINLINE FLMUINT FLMAPI getObjectType( void)
 	{
 		return( HASH_DB_OBJ);
 	}
@@ -1947,14 +1859,15 @@ public:
 
 	FLMUINT getNextToken( void);
 
-	void * getKey(
-		FLMUINT *	puiKeyLen = NULL);
+	const void * FLMAPI getKey( void);
+	
+	FLMUINT FLMAPI getKeyLength( void);
 
 	FLMINT FLMAPI AddRef();
 
 	FLMINT FLMAPI Release();
 
-	FINLINE eHashObjType objectType( void)
+	FINLINE FLMUINT FLMAPI getObjectType( void)
 	{
 		return( HASH_SESSION_OBJ);
 	}
@@ -2045,65 +1958,6 @@ private:
 	FLMUINT				m_uiNextId;
 	F_HashTable *		m_pSessionTable;
 	FLMUINT				m_uiNextToken;
-};
-
-/****************************************************************************
-Desc: FLAIM hash table
-****************************************************************************/
-class F_HashTable : public F_Object
-{
-public:
-
-	F_HashTable();
-
-	virtual ~F_HashTable();
-
-	RCODE setupHashTable(
-		FLMBOOL				bMultithreaded,
-		FLMUINT				uiNumBuckets);
-
-	RCODE addObject(
-		F_HashObject *		pObject);
-
-	RCODE getNextObjectInGlobal(
-		F_HashObject **	ppObject);
-
-	RCODE getObject(
-		void *				pvKey,
-		FLMUINT				uiKeyLen,
-		F_HashObject **	ppObject,
-		FLMBOOL				bRemove = FALSE);
-
-	RCODE removeObject(
-		void *				pvKey,
-		FLMUINT				uiKeyLen);
-
-	RCODE removeObject(
-		F_HashObject *		pObject);
-
-private:
-
-	FLMUINT getHashBucket(
-		void *				pvKey,
-		FLMUINT				uiLen,
-		FLMUINT32 *			pui32KeyCRC = NULL);
-
-	void linkObject(
-		F_HashObject *		pObject,
-		FLMUINT				uiBucket);
-
-	void unlinkObject(
-		F_HashObject *		pObject);
-
-	RCODE findObject(
-		void *				pvKey,
-		FLMUINT				uiKeyLen,
-		F_HashObject **	ppObject);
-
-	F_MUTEX 				m_hMutex;
-	F_HashObject *		m_pGlobalList;
-	F_HashObject **	m_ppHashTable;
-	FLMUINT				m_uiBuckets;
 };
 
 #include "fpackoff.h"

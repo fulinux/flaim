@@ -65,7 +65,7 @@ FSTATIC RCODE flmModifyTrackerRec(
 	FLMUINT			uiDrn,
 	FlmRecord *		pRecord);
 
-FSTATIC RCODE flmMaintThread(
+FSTATIC RCODE FLMAPI flmMaintThread(
 	IF_Thread *		pThread);
 
 FSTATIC RCODE fdictRemoveIndexes(
@@ -2875,7 +2875,7 @@ Exit:
 /***************************************************************************
 Desc: 
 *****************************************************************************/
-FSTATIC RCODE flmMaintThread(
+FSTATIC RCODE FLMAPI flmMaintThread(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = FERR_OK;
@@ -3021,7 +3021,6 @@ FSTATIC RCODE flmMaintThread(
 				}
 
 				rc = FERR_OK;
-				pThread->setThreadStatus( FLM_THREAD_STATUS_ABORTING_TRANS);
 				(void)flmAbortDbTrans( pDb);
 				bStartedTrans = FALSE;
 				break;
@@ -3055,8 +3054,6 @@ FSTATIC RCODE flmMaintThread(
 					}
 				}
 				
-				pThread->setThreadStatus( FLM_THREAD_STATUS_COMMITTING_TRANS);
-
 				// Commit the transaction
 
 				pStatus->eDoing = FLM_MAINT_ENDING_TRANS;

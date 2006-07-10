@@ -134,16 +134,14 @@ public:
 
 private:
 
-	// Methods
-
 	RCODE signalThread( void);
 
 	RCODE _setup( void);
 
-	static RCODE readThread(
+	static RCODE FLMAPI readThread(
 		IF_Thread *			pThread);
 
-	static RCODE writeThread(
+	static RCODE FLMAPI writeThread(
 		IF_Thread *			pThread);
 
 	FLMBOOL					m_bSetup;
@@ -1224,6 +1222,8 @@ FLMEXP RCODE FLMAPI FlmDbRestore(
 	(void)FlmConfig( FLM_CLOSE_FILE, (void *)pszDbPath,
 								(void *)pszDataDir);
 
+	gv_FlmSysData.pFileHdlCache->closeUnusedFiles();
+
 	// Lock the global mutex
 
 	f_mutexLock( gv_FlmSysData.hShareMutex);
@@ -1800,7 +1800,9 @@ FSTATIC RCODE flmRestoreFile(
 			goto Exit;
 		}
 	
-		if( RC_BAD( rc = pSFile->setup( pSFileClient)))
+		if( RC_BAD( rc = pSFile->setup( pSFileClient, 
+			gv_FlmSysData.pFileHdlCache, 
+			(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 		{
 			goto Exit;
 		}
@@ -1808,12 +1810,9 @@ FSTATIC RCODE flmRestoreFile(
 		pSFile->setBlockSize( uiBlockSize);
 	
 		// Don't want to do extra file extensions or flush when file
-		// is extended.  Setting the extend size to ~0 has the effect
-		// of not updating the directory entry (a time-consuming operation)
-		// on Windows platforms.  On all other platforms, we will just
-		// go with the default behavior.
+		// is extended.
 	
-		pSFile->setExtendSize( (FLMUINT)(~0));
+		pSFile->setExtendSize( 0);
 		*ppSFile = pSFile;
 		(*ppSFile)->AddRef();
 	}
@@ -1933,8 +1932,8 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup sequence number to the value in the
 		// database's log header.
 
-		if( RC_BAD( rc = 	pSFile->readHeader( 
-			DB_LOG_HEADER_START + LOG_INC_BACKUP_SEQ_NUM, 
+		if( RC_BAD( rc = 	pSFile->readBlock( 
+			FSBlkAddress( 0, DB_LOG_HEADER_START + LOG_INC_BACKUP_SEQ_NUM), 
 			4, ucTmpSeqNum, &uiTmp)))
 		{
 			goto Exit;
@@ -1949,8 +1948,8 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup serial number to the value in the
 		// database's log header.
 
-		if( RC_BAD( rc = 	pSFile->readHeader( 
-			DB_LOG_HEADER_START + LOG_INC_BACKUP_SERIAL_NUM, 
+		if( RC_BAD( rc = 	pSFile->readBlock( 
+			FSBlkAddress( 0, DB_LOG_HEADER_START + LOG_INC_BACKUP_SERIAL_NUM), 
 			F_SERIAL_NUM_SIZE, ucTmpSerialNum, &uiTmp)))
 		{
 			goto Exit;
@@ -2004,7 +2003,7 @@ FSTATIC RCODE flmRestoreFile(
 
 	// Write the database header
 
-	if( RC_BAD( rc = pSFile->writeHeader( 0, 
+	if( RC_BAD( rc = pSFile->writeBlock( FSBlkAddress( 0, 0), 
 		uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 	{
 		goto Exit;
@@ -2090,17 +2089,9 @@ FSTATIC RCODE flmRestoreFile(
 		pucBlkBuf[ BH_CHECKSUM_LOW] = ucLowChecksumByte;
 
 		// Write the block to the database
-		//
-		// Unix systems can have sector sizes that are larger than our
-		// typical 4K database blocks.  The Unix implementation of SectorWrite
-		// (called by writeBlock) will write the passed-in block and clobber any
-		// additional data beyond the end of the block to the end of the sector if
-		// it has enough room in the block buffer to write a full sector.  If the
-		// block buffer is less than a full sector, the Unix SectorWrite will only
-		// write out the amount requested, not a full sector.
 
 		if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,  
-			uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
+			uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 		{
 			if( rc == FERR_IO_PATH_NOT_FOUND ||
 				 rc == FERR_IO_INVALID_PATH)
@@ -2120,7 +2111,7 @@ FSTATIC RCODE flmRestoreFile(
 				}
 
 				if( RC_BAD( rc = pSFile->writeBlock( uiBlkAddr,  
-					uiBlockSize, pucBlkBuf, NULL, &uiBytesWritten)))
+					uiBlockSize, pucBlkBuf, &uiBytesWritten)))
 				{
 					goto Exit;
 				}
@@ -2793,11 +2784,11 @@ Exit:
 /****************************************************************************
 Desc:		This thread reads data in the background
 ****************************************************************************/
-RCODE F_BackerStream::readThread(
+RCODE FLMAPI F_BackerStream::readThread(
 	IF_Thread *			pThread)
 {
-	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 	RCODE					rc = FERR_OK;
+	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
 
 	for( ;;)
 	{
@@ -2837,7 +2828,7 @@ Exit:
 /****************************************************************************
 Desc:		This thread writes data in the background
 ****************************************************************************/
-RCODE F_BackerStream::writeThread(
+RCODE FLMAPI F_BackerStream::writeThread(
 	IF_Thread *			pThread)
 {
 	RCODE					rc = FERR_OK;
@@ -3030,8 +3021,7 @@ RCODE F_FSRestore::openRflFile(
 	// Open the file.
 
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( 
-		szRflPath, FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-		&m_pFileHdl)))
+		szRflPath, gv_FlmSysData.uiFileOpenFlags, &m_pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -3067,13 +3057,11 @@ RCODE F_FSRestore::openIncFile(
 	flmAssert( m_bSetupCalled);
 	flmAssert( !m_pMultiFileHdl);
 
-	/*
-	Since this is a non-interactive restore, we will "guess"
-	that incremental backups are located in the same parent
-	directory as the main backup set.  We will further assume
-	that the incremental backup sets have been named XXXXXXXX.INC,
-	where X is a hex digit.
-	*/
+	// Since this is a non-interactive restore, we will "guess"
+	// that incremental backups are located in the same parent
+	// directory as the main backup set.  We will further assume
+	// that the incremental backup sets have been named XXXXXXXX.INC,
+	// where X is a hex digit.
 
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->pathReduce( m_szBackupSetPath, 
 		szIncPath, NULL)))
@@ -3112,8 +3100,8 @@ RCODE F_FSRestore::read(
 	void *			pvBuffer,
 	FLMUINT *		puiBytesRead)
 {
-	FLMUINT		uiBytesRead = 0;
 	RCODE			rc = FERR_OK;
+	FLMUINT		uiBytesRead = 0;
 
 	flmAssert( m_bSetupCalled);
 	flmAssert( m_pFileHdl || m_pMultiFileHdl);
@@ -3134,6 +3122,8 @@ RCODE F_FSRestore::read(
 			goto Exit;
 		}
 	}
+	
+	f_assert( uiBytesRead <= uiLength);
 
 Exit:
 

@@ -24,7 +24,7 @@
 
 #include "flaimsys.h"
 
-FSTATIC RCODE flmBackgroundIndexBuildThrd(
+FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread);
 
 FSTATIC void stopBackgroundIndexThread(
@@ -1089,7 +1089,7 @@ Desc:		Thread that will build an index in the background.
 			Caller will create a pDb to use.  This pDb must be
 			freed at the conclusion of the routine.
 ****************************************************************************/
-FSTATIC RCODE flmBackgroundIndexBuildThrd(
+FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = FERR_OK;
@@ -1370,7 +1370,6 @@ Loop_Again:
 			goto Exit;
 		}
 
-		pThread->setThreadStatus( FLM_THREAD_STATUS_COMMITTING_TRANS);
 		if( pBackgroundIx->indexStatus.uiRecordsProcessed - 
 			savedIxStatus.uiRecordsProcessed)
 		{

@@ -100,7 +100,7 @@ RCODE FSVersionConversion40(
 			// VISIT: the change may not be necessary - may be new version.
 			// Look at the root block type.
 			
-			if( pStack != stackBuf) // &&  ? Need to look at real block type?
+			if( pStack != stackBuf)
 			{
 				DbConvertInfo.uiContainer = pLFile->uiLfNum;
 

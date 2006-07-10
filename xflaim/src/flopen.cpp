@@ -30,7 +30,7 @@
 FSTATIC void flmFreeCPInfo(
 	CP_INFO **	ppCPInfoRV);
 
-FSTATIC RCODE flmCPThread(
+FSTATIC RCODE FLMAPI flmCPThread(
 	IF_Thread *		pThread);
 	
 /***************************************************************************
@@ -305,11 +305,6 @@ RCODE F_DbSystem::openDatabase(
 
 	f_mutexLock( gv_XFlmSysData.hShareMutex);
 	bMutexLocked = TRUE;
-
-	// Free any unused structures that have been unused for the maximum
-	// amount of time.  May unlock and re-lock the global mutex.
-
-	checkNotUsedObjects();
 
 	// Look up the file using findDatabase to see if we already
 	// have the file open.
@@ -692,23 +687,24 @@ RCODE F_Database::physOpen(
 	IF_RestoreClient *	pRestoreObj,
 	IF_RestoreStatus *	pRestoreStatus)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE						rc = NE_XFLM_OK;
 
 	// See if we need to read in the database header.  If the database was
 	// already open (bNewDatabase == FALSE), we don't need to again.
 
-	if (bNewDatabase)
+	if( bNewDatabase)
 	{
 
 		// Read in the database header.
 
-		if (RC_BAD( rc = readDbHdr( pDb->m_pDbStats, pDb->m_pSFileHdl,
-											 (FLMBYTE *)pszPassword,
-											 (uiOpenFlags & XFLM_ALLOW_LIMITED_MODE) ? TRUE : FALSE)))
+		if (RC_BAD( rc = readDbHdr( pszFilePath, pDb->m_pDbStats,
+			(FLMBYTE *)pszPassword, (uiOpenFlags & XFLM_ALLOW_LIMITED_MODE) 
+													? TRUE 
+													: FALSE)))
 		{
 			goto Exit;
 		}
-
+		
 		// Allocate the pRfl object.  Could not do this until this point
 		// because we need to have the version number, block size, etc.
 		// setup in the database header.
@@ -726,6 +722,8 @@ RCODE F_Database::physOpen(
 			goto Exit;
 		}
 	}
+
+	pDb->m_pSFileHdl->setBlockSize( m_uiBlockSize);
 
 	// We must have exclusive access.  Create a lock file for that
 	// purpose, if there is not already a lock file.
@@ -754,7 +752,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		(void)pDb->m_pSFileHdl->releaseFiles( TRUE);
+		(void)pDb->m_pSFileHdl->releaseFiles();
 	}
 
 	return( rc);
@@ -800,7 +798,7 @@ RCODE F_DbSystem::findDatabase(
 	F_Database **	ppDatabase)
 {
 	RCODE				rc = NE_XFLM_OK;
-	FBUCKET *		pBucket;
+	F_BUCKET *		pBucket;
 	FLMUINT			uiBucket;
 	FLMBOOL			bMutexLocked = TRUE;
 	F_Database *	pDatabase;
@@ -1015,7 +1013,7 @@ F_Database::F_Database(
 	f_memset( &m_lastCommittedDbHdr, 0, sizeof( m_lastCommittedDbHdr));
 	f_memset( &m_checkpointDbHdr, 0, sizeof( m_checkpointDbHdr));
 	f_memset( &m_uncommittedDbHdr, 0, sizeof( m_uncommittedDbHdr));
-	
+
 	m_pBufferMgr = NULL;
 	m_pCurrLogBuffer = NULL;
 	m_uiCurrLogWriteOffset = 0;
@@ -1235,7 +1233,7 @@ F_Database::~F_Database()
 		m_pBufferMgr->Release();
 		m_pBufferMgr = NULL;
 	}
-
+	
 	// Free the log header write buffer
 
 	if (m_pDbHdrWriteBuf)
@@ -1397,13 +1395,11 @@ RCODE F_Database::setupDatabase(
 
 	// Setup the write buffer managers.
 	
-	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_pBufferMgr)))
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( MAX_PENDING_WRITES,
+		MAX_WRITE_BUFFER_BYTES, FALSE, &m_pBufferMgr)))
 	{
 		goto Exit;
 	}
-
-	m_pBufferMgr->setMaxBuffers( MAX_PENDING_WRITES);
-	m_pBufferMgr->setMaxBytes( MAX_WRITE_BUFFER_BYTES);
 
 	// Initialize members of F_Database object.
 
@@ -1493,32 +1489,35 @@ Desc: This routine reads the header information for an existing
 		flaim database and makes sure we have a valid database.
 *****************************************************************************/
 RCODE F_Database::readDbHdr(
+	const char *			pszDbPath,
 	XFLM_DB_STATS *		pDbStats,
-	F_SuperFileHdl *		pSFileHdl,
 	FLMBYTE *				pszPassword,
 	FLMBOOL					bAllowLimited)
 {
-	RCODE				rc = NE_XFLM_OK;
-	IF_FileHdl *	pCFileHdl = NULL;
+	RCODE						rc = NE_XFLM_OK;
+	IF_FileHdl *			pFileHdl = NULL;
 
-	if (RC_BAD( rc = pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( pszDbPath, 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
 	// Read and verify the database header.
 
-	if (RC_BAD( rc = flmReadAndVerifyHdrInfo( pDbStats, pCFileHdl,
+	if (RC_BAD( rc = flmReadAndVerifyHdrInfo( pDbStats, pFileHdl,
 									&m_lastCommittedDbHdr)))
 	{
 		goto Exit;
 	}
+	
 	m_uiBlockSize = (FLMUINT)m_lastCommittedDbHdr.ui16BlockSize;
 	m_uiDefaultLanguage = (FLMUINT)m_lastCommittedDbHdr.ui8DefaultLanguage;
 	m_uiMaxFileSize = (FLMUINT)m_lastCommittedDbHdr.ui32MaxFileSize;
 	m_uiSigBitsInBlkSize = calcSigBits( m_uiBlockSize);
 
 	// Initialize the master database key from the database header
+	
 	m_bAllowLimitedMode = bAllowLimited;
 
 	if (pszPassword && *pszPassword)
@@ -1571,13 +1570,9 @@ RCODE F_Database::readDbHdr(
 
 Exit:
 
-	// Need to close the .db file so that we can set the block size.
-	// This will allow direct I/O to be used when accessing the file later.
-
-	if (pCFileHdl)
+	if( pFileHdl)
 	{
-		(void)pSFileHdl->releaseFile( (FLMUINT)0, TRUE);
-		pSFileHdl->setBlockSize( m_uiBlockSize);
+		pFileHdl->Release();
 	}
 
 	return( rc);
@@ -1662,7 +1657,9 @@ RCODE F_Database::startCPThread( void)
 
 	// Set up the super file
 
-	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient)))
+	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient, 
+		gv_XFlmSysData.pFileHdlCache,
+		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -1860,7 +1857,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-FSTATIC RCODE flmCPThread(
+FSTATIC RCODE FLMAPI flmCPThread(
 	IF_Thread *		pThread)
 {
 	CP_INFO *			pCPInfo = (CP_INFO *)pThread->getParm1();

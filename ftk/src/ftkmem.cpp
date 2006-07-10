@@ -4429,7 +4429,7 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_allocAlignedBuffer(
+RCODE FLMAPI f_allocAlignedBufferImp(
 	FLMUINT			uiMinSize,
 	void **			ppvAlloc)
 {
@@ -4472,7 +4472,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_freeAlignedBuffer(
+void FLMAPI f_freeAlignedBufferImp(
 	void **			ppvAlloc)
 {
 	if( *ppvAlloc)

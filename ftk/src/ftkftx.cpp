@@ -445,17 +445,17 @@ FSTATIC FLMUINT ftxMapFlmColorToWin32(
 	eColorType		uiColor);
 #endif
 	
-RCODE _ftxBackgroundThread(
+RCODE FLMAPI _ftxBackgroundThread(
 	IF_Thread *		pThread);
 
 FLMBOOL ftxKBTest( void);
 
 FLMUINT ftxKBGetChar( void);
 
-RCODE _ftxDefaultDisplayHandler(
+RCODE FLMAPI _ftxDefaultDisplayHandler(
 	IF_Thread *		pThread);
 
-RCODE _ftxDefaultKeyboardHandler(
+RCODE FLMAPI _ftxDefaultKeyboardHandler(
 	IF_Thread *		pThread);
 
 #if defined( FLM_UNIX)
@@ -4817,7 +4817,7 @@ FSTATIC ftxWin32CharPair * ftxWin32GetExtendedKeycode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE _ftxDefaultDisplayHandler(
+RCODE FLMAPI _ftxDefaultDisplayHandler(
 	IF_Thread *		pThread)
 {
 #if defined( FLM_WIN)
@@ -4862,7 +4862,7 @@ RCODE _ftxDefaultDisplayHandler(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE _ftxDefaultKeyboardHandler(
+RCODE FLMAPI _ftxDefaultKeyboardHandler(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiChar;
@@ -4965,7 +4965,7 @@ RCODE _ftxDefaultKeyboardHandler(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE _ftxBackgroundThread(
+RCODE FLMAPI _ftxBackgroundThread(
 	IF_Thread *		pThread)
 {
 	for( ;;)
@@ -5652,7 +5652,7 @@ static FLMUINT ftxUnixHandleEsc( void)
 			{
 				c = FKB_ALT_F1 + c - KEY_F(1);
 			}
-			else if( c2 == erasechar() || c2 == '' || c2 == 0127)
+			else if( c2 == erasechar() || c2 == 0127)
 			{
 				c = FKB_ESCAPE;
 			}

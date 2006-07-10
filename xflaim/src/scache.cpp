@@ -26,6 +26,7 @@
 #include "flaimsys.h"
 
 #define MAX_BLOCKS_TO_SORT			500
+#define FLM_MAX_IO_BUFFER_BLOCKS 16
 
 FSTATIC void ScaNotify(
 	FNOTIFY *			pNotify,
@@ -1205,15 +1206,11 @@ RCODE F_Database::flushLogBlocks(
 											: (F_CachedBlock **)NULL);
 	FLMUINT				uiTotalLoggedBlocks = 0;
 	FLMBOOL				bForceCheckpoint = *pbForceCheckpoint;
-	FLMBOOL				bDoAsync;
 #ifdef FLM_DBG_LOG
 	FLMUINT16			ui16OldFlags;
 #endif
 
 	m_uiCurrLogWriteOffset = 0;
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
-				  ? TRUE
-				  : FALSE;
 
 	// Get the correct log header.  If we are in an update transaction,
 	// need to use the uncommitted log header.  Otherwise, use the last
@@ -1453,7 +1450,7 @@ RCODE F_Database::flushLogBlocks(
 			if (RC_BAD( rc = lgOutputBlock( pDbStats, pSFileHdl,
 											pLastBlockToLog,
 											pLastBlockToLog->m_pPrevInVersionList->m_pBlkHdr,
-											bDoAsync, &uiLogEof)))
+											&uiLogEof)))
 			{
 				goto Exit;
 			}
@@ -1523,8 +1520,7 @@ Write_Log_Blocks:
 
 			if (m_uiCurrLogWriteOffset)
 			{
-				if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl,
-											bDoAsync)))
+				if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl)))
 				{
 					goto Exit;
 				}
@@ -1533,12 +1529,9 @@ Write_Log_Blocks:
 			// If doing async, wait for pending writes to complete before writing
 			// the log header.
 
-			if (bDoAsync)
+			if (RC_BAD( rc = m_pBufferMgr->waitForAllPendingIO()))
 			{
-				if (RC_BAD( rc = m_pBufferMgr->waitForAllPendingIO()))
-				{
-					goto Exit;
-				}
+				goto Exit;
 			}
 
 			// Must wait for all RFL writes before writing out log header.
@@ -1737,24 +1730,21 @@ Exit:
 			// Don't care what rc is at this point.  Just calling
 			// lgFlushLogBuffer to clear the buffer.
 
-			(void)lgFlushLogBuffer( pDbStats, pSFileHdl, bDoAsync);
+			(void)lgFlushLogBuffer( pDbStats, pSFileHdl);
 		}
 
 		// Need to wait for any async writes to complete.
 
-		if (bDoAsync)
+		if (bMutexLocked)
 		{
-			if (bMutexLocked)
-			{
-				f_mutexUnlock( gv_XFlmSysData.hBlockCacheMutex);
-				bMutexLocked = FALSE;
-			}
-
-			// Don't care about rc here, but we don't want to leave
-			// this routine until all pending IO is taken care of.
-
-			(void)m_pBufferMgr->waitForAllPendingIO();
+			f_mutexUnlock( gv_XFlmSysData.hBlockCacheMutex);
+			bMutexLocked = FALSE;
 		}
+
+		// Don't care about rc here, but we don't want to leave
+		// this routine until all pending IO is taken care of.
+
+		(void)m_pBufferMgr->waitForAllPendingIO();
 		
 		if (!bMutexLocked)
 		{
@@ -1832,7 +1822,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 	flmAssert( m_pCurrLogBuffer == NULL);
 
 	*pbForceCheckpoint = bForceCheckpoint;
@@ -1842,35 +1832,39 @@ Exit:
 /****************************************************************************
 Desc:	This routine is called whenever a write of a dirty block completes.
 ****************************************************************************/
-FSTATIC void scaWriteComplete(
-	IF_IOBuffer *	pIOBuffer)
+FSTATIC void FLMAPI scaWriteComplete(
+	IF_IOBuffer *		pIOBuffer,
+	void *				pvData)
 {
-	RCODE					rc = pIOBuffer->getCompletionCode();
-	FLMUINT				uiNumBlocks = pIOBuffer->getBufferSize() /
-											pIOBuffer->getBlockSize();
-	F_CachedBlock *	pSCache;
+	RCODE					rc;
+	FLMUINT				uiNumBlocks = 0;
+	F_CachedBlock *	pSCache = NULL;
 	F_Database *		pDatabase;
-	XFLM_DB_STATS *	pDbStats = (XFLM_DB_STATS *)pIOBuffer->getStats();
+	XFLM_DB_STATS *	pDbStats = (XFLM_DB_STATS *)pvData;
 	FLMUINT				uiMilliPerBlock = 0;
 	FLMUINT				uiExtraMilli = 0;
-
 #ifdef FLM_DBG_LOG
-	FLMUINT16	ui16OldFlags;
+	FLMUINT16			ui16OldFlags;
 #endif
 
-	if (pDbStats)
+	f_assert( pIOBuffer->isComplete());
+
+	rc = pIOBuffer->getCompletionCode();
+	uiNumBlocks = pIOBuffer->getCallbackDataCount();
+
+	if( pDbStats)
 	{
-		FLMUINT64			ui64ElapMilli = pIOBuffer->getElapTime();
+		FLMUINT64	ui64ElapMilli = pIOBuffer->getElapsedTime();
 
 		uiMilliPerBlock = (FLMUINT)(ui64ElapMilli / (FLMUINT64)uiNumBlocks);
 		uiExtraMilli = (FLMUINT)(ui64ElapMilli % (FLMUINT64)uiNumBlocks);
 	}
 
 	f_mutexLock( gv_XFlmSysData.hBlockCacheMutex);
-	while (uiNumBlocks)
+	while( uiNumBlocks)
 	{
 		uiNumBlocks--;
-		pSCache = (F_CachedBlock *)pIOBuffer->getCompletionCallbackData( uiNumBlocks);
+		pSCache = (F_CachedBlock *)pIOBuffer->getCallbackData( uiNumBlocks);
 		pDatabase = pSCache->getDatabase();
 
 		if (pDbStats)
@@ -3765,77 +3759,6 @@ Do_Free_Pass:
 }
 
 /****************************************************************************
-Desc:	Write an IO buffer to disk.
-****************************************************************************/
-RCODE F_Database::writeContiguousBlocks(
-	XFLM_DB_STATS *	pDbStats,
-	F_SuperFileHdl *	pSFileHdl,
-	IF_IOBuffer *		pIOBuffer,
-	FLMUINT				uiBlkAddress,
-	FLMBOOL				bDoAsync)
-{
-	RCODE					rc = NE_XFLM_OK;
-	FLMBYTE *			pucWriteBuffer;
-	IF_IOBuffer *		pAsyncBuffer;
-	FLMUINT				uiBytesWritten;
-	FLMUINT				uiWriteLen;
-
-	pucWriteBuffer = pIOBuffer->getBuffer();
-
-	if (!bDoAsync)
-	{
-		pAsyncBuffer = NULL;
-	}
-	else
-	{
-		pAsyncBuffer = pIOBuffer;
-	}
-
-	// Determine how many bytes to write
-
-	uiWriteLen = pIOBuffer->getBufferSize();
-	pSFileHdl->setMaxAutoExtendSize( m_uiMaxFileSize);
-	pSFileHdl->setExtendSize( m_uiFileExtendSize);
-
-	pIOBuffer->startTimer( pDbStats);
-
-	// NOTE: No guarantee that pIOBuffer will still be around
-	// after the call to writeBlock, unless we are doing
-	// non-asynchronous write.
-
-	rc = pSFileHdl->writeBlock( uiBlkAddress, uiWriteLen,
-					pucWriteBuffer, pAsyncBuffer, &uiBytesWritten);
-	if (!pAsyncBuffer)
-	{
-		pIOBuffer->notifyComplete( rc);
-	}
-	pIOBuffer = NULL;
-
-	if (RC_BAD( rc))
-	{
-		if (pDbStats)
-		{
-			pDbStats->bHaveStats = TRUE;
-			pDbStats->uiWriteErrors++;
-		}
-		
-		goto Exit;
-	}
-
-Exit:
-
-	// If we allocated a write buffer, but did not do a write with it
-	// still need to do the notify to clean up cache blocks.
-
-	if (pIOBuffer)
-	{
-		flmAssert( RC_BAD( rc));
-		pIOBuffer->notifyComplete( rc);
-	}
-	return( rc);
-}
-
-/****************************************************************************
 Desc:	Prepares a block to be written out.  Calculates the checksum and
 		converts the block to native format if not currently in native
 		format.
@@ -3883,7 +3806,6 @@ RCODE F_Database::writeSortedBlocks(
 	FLMUINT *			puiDirtyCacheLeft,
 	FLMBOOL *			pbForceCheckpoint,
 	FLMBOOL				bIsCPThread,
-	FLMBOOL				bDoAsync,
 	FLMUINT				uiNumSortedBlocks,
 	FLMBOOL *			pbWroteAll)
 {
@@ -4078,13 +4000,12 @@ Add_Contiguous_Block:
 		// Ask for a buffer of the size needed.
 
 		flmAssert( pIOBuffer == NULL);
-		if (RC_BAD( rc = m_pBufferMgr->getBuffer(
-						&pIOBuffer, uiContiguousBlocks * m_uiBlockSize,
-						m_uiBlockSize)))
+		if (RC_BAD( rc = m_pBufferMgr->getBuffer( 
+			uiContiguousBlocks * m_uiBlockSize, &pIOBuffer))) 
 		{
 			goto Exit;
 		}
-		pIOBuffer->setCompletionCallback( scaWriteComplete);
+		pIOBuffer->setCompletionCallback( scaWriteComplete, pDbStats);
 
 		// Callback will now take care of everything between
 		// uiStartOffset and uiStartOffset + uiNumSortedBlocksProcessed - 1
@@ -4132,7 +4053,7 @@ Add_Contiguous_Block:
 			// Set callback data so we will release these and clear
 			// the pending flag if we don't do the I/O.
 
-			pIOBuffer->setCompletionCallbackData( uiLoop, pSCache);
+			pIOBuffer->addCallbackData( pSCache);
 		}
 
 		if (bMutexLocked)
@@ -4143,7 +4064,7 @@ Add_Contiguous_Block:
 
 		// Copy blocks into the IO buffer.
 
-		pucBuffer = pIOBuffer->getBuffer();
+		pucBuffer = pIOBuffer->getBufferPtr();
 		for (uiLoop = 0;
 			  uiLoop < uiBlockCount;
 			  uiLoop++, pucBuffer += m_uiBlockSize)
@@ -4171,10 +4092,26 @@ Add_Contiguous_Block:
 				goto Exit;
 			}
 		}
-
-		rc = writeContiguousBlocks( pDbStats, pSFileHdl,
-					pIOBuffer, uiStartBlkAddr, bDoAsync);
+		
+		pSFileHdl->setMaxAutoExtendSize( m_uiMaxFileSize);
+		pSFileHdl->setExtendSize( m_uiFileExtendSize);
+	
+		rc = pSFileHdl->writeBlock( uiStartBlkAddr, 
+			pIOBuffer->getBufferSize(), pIOBuffer);
+			
+		pIOBuffer->Release();
 		pIOBuffer = NULL;
+		
+		if( RC_BAD( rc))
+		{
+			if (pDbStats)
+			{
+				pDbStats->bHaveStats = TRUE;
+				pDbStats->uiWriteErrors++;
+			}
+			
+			goto Exit;
+		}
 
 		// See if we should give up our write lock.  Will do so if we
 		// are not forcing a checkpoint and we have not exceeded the
@@ -4274,7 +4211,6 @@ RCODE F_Database::flushDirtyBlocks(
 	RCODE					rc = NE_XFLM_OK;
 	RCODE					rc2;
 	F_CachedBlock *	pSCache;
-	FLMBOOL				bDoAsync;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMUINT				uiSortedBlocks = 0;
 	FLMUINT				uiBlockCount = 0;
@@ -4291,12 +4227,6 @@ RCODE F_Database::flushDirtyBlocks(
 		m_pCPInfo->bWritingDataBlocks = TRUE;
 		unlockMutex();
 	}
-
-	// See if we can do async IO.
-
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
-				  ? TRUE
-				  : FALSE;
 
 	flmAssert( !m_pPendingWriteList);
 
@@ -4451,7 +4381,7 @@ Force_Checkpoint:
 			rc = writeSortedBlocks( pDbStats, pSFileHdl,
 									uiMaxDirtyCache, &uiDirtyCacheLeft,
 									&bForceCheckpoint, bIsCPThread,
-									bDoAsync, uiSortedBlocks, pbWroteAll);
+									uiSortedBlocks, pbWroteAll);
 		}
 		else
 		{
@@ -4516,17 +4446,13 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	if (bDoAsync)
+	// Wait for writes to complete.
+
+	if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
 	{
-
-		// Wait for writes to complete.
-
-		if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+		if (RC_OK( rc))
 		{
-			if (RC_OK( rc))
-			{
-				rc = rc2;
-			}
+			rc = rc2;
 		}
 	}
 
@@ -4534,7 +4460,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 
 	// Don't keep around a large block array if we happened to
 	// allocate one that is bigger than our normal size.  It may
@@ -4558,7 +4484,6 @@ RCODE F_Database::reduceDirtyCache(
 	RCODE					rc = NE_XFLM_OK;
 	RCODE					rc2;
 	F_CachedBlock *	pSCache;
-	FLMBOOL				bDoAsync;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMUINT				uiDirtyCacheLeft;
 	FLMUINT				uiSortedBlocks = 0;
@@ -4567,13 +4492,6 @@ RCODE F_Database::reduceDirtyCache(
 	FLMBOOL				bWroteAll;
 
 	flmAssert( !m_uiLogCacheCount);
-
-	// See if we can do async IO.
-
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && 
-					pSFileHdl->canDoAsync())
-						? TRUE
-						: FALSE;
 
 	flmAssert( !m_pPendingWriteList);
 
@@ -4631,7 +4549,7 @@ RCODE F_Database::reduceDirtyCache(
 	bWroteAll = TRUE;
 
 	rc = writeSortedBlocks( pDbStats, pSFileHdl, 0, &uiDirtyCacheLeft,
-			&bForceCheckpoint, FALSE, bDoAsync, uiSortedBlocks, &bWroteAll);
+			&bForceCheckpoint, FALSE, uiSortedBlocks, &bWroteAll);
 	
 	uiSortedBlocks = 0;
 
@@ -4666,16 +4584,13 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	if( bDoAsync)
-	{
-		// Wait for writes to complete.
+	// Wait for writes to complete.
 
-		if( RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+	if( RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+	{
+		if( RC_OK( rc))
 		{
-			if( RC_OK( rc))
-			{
-				rc = rc2;
-			}
+			rc = rc2;
 		}
 	}
 
@@ -4683,7 +4598,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 
 	// Don't keep around a large block array if we happened to
 	// allocate one that is bigger than our normal size.  It may
@@ -4722,7 +4637,6 @@ RCODE F_Database::reduceNewBlocks(
 	RCODE					rc = NE_XFLM_OK;
 	RCODE					rc2;
 	F_CachedBlock *	pSCache;
-	FLMBOOL				bDoAsync = FALSE;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMUINT				uiSortedBlocks = 0;
 	FLMUINT				uiDirtyCacheLeft;
@@ -4735,12 +4649,6 @@ RCODE F_Database::reduceNewBlocks(
 		m_pCPInfo->bWritingDataBlocks = TRUE;
 		unlockMutex();
 	}
-
-	// See if we can do async IO.
-
-	bDoAsync = (gv_XFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
-				  ? TRUE
-				  : FALSE;
 
 	flmAssert( !m_pPendingWriteList);
 	uiDirtyCacheLeft = m_uiDirtyCacheCount * m_uiBlockSize;
@@ -4813,7 +4721,7 @@ RCODE F_Database::reduceNewBlocks(
 		rc = writeSortedBlocks( pDbStats, pSFileHdl,
 								~((FLMUINT)0), &uiDirtyCacheLeft,
 								&bForceCheckpoint, FALSE,
-								bDoAsync, uiSortedBlocks, &bDummy);
+								uiSortedBlocks, &bDummy);
 
 		if( RC_OK( rc))
 		{
@@ -4864,17 +4772,13 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	if (bDoAsync)
+	// Wait for writes to complete.
+
+	if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
 	{
-
-		// Wait for writes to complete.
-
-		if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+		if (RC_OK( rc))
 		{
-			if (RC_OK( rc))
-			{
-				rc = rc2;
-			}
+			rc = rc2;
 		}
 	}
 
@@ -4882,7 +4786,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 
 	// Don't keep around a large block array if we happened to
 	// allocate one that is bigger than our normal size.  It may
@@ -6930,8 +6834,6 @@ RCODE F_Database::finishCheckpoint(
 	}
 	else if (bTruncateLog)
 	{
-		IF_FileHdl *		pCFileHdl;
-
 		if (uiHighLogFileNumber)
 		{
 			(void)pSFileHdl->truncateFiles(
@@ -6939,10 +6841,7 @@ RCODE F_Database::finishCheckpoint(
 					uiHighLogFileNumber);
 		}
 
-		if (RC_OK( pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
-		{
-			(void)pCFileHdl->truncate( LOG_THRESHOLD_SIZE);
-		}
+		pSFileHdl->truncateFile( 0, LOG_THRESHOLD_SIZE);
 	}
 
 #ifdef FLM_DBG_LOG
@@ -7056,6 +6955,11 @@ RCODE F_Database::finishCheckpoint(
 			goto Exit;
 		}
 	}
+	
+	if( RC_BAD( rc = pSFileHdl->flush()))
+	{
+		goto Exit;
+	}
 
 	// Re-enable the RFL volume OK flag - in case it was turned off somewhere.
 
@@ -7153,8 +7057,6 @@ RCODE F_Database::doCheckpoint(
 	FLMUINT				uiMaxDirtyCache;
 	F_CachedBlock *	pSCache;
 	FLMUINT				uiTimestamp;
-
-	pSFileHdl->enableFlushMinimize();
 
 	if (m_pCPInfo)
 	{
@@ -7255,14 +7157,14 @@ Exit:
 	// the checkpoint thread to force checkpoints whenever it is woke
 	// up until it succeeds (see flopen.cpp).
 
-	if (RC_BAD( rc) && bForceCheckpoint)
+	if( RC_BAD( rc) && bForceCheckpoint)
 	{
 		m_CheckpointRc = rc;
 	}
 
 	// Timestamp all of the items in the free list
 
-	if (bForceCheckpoint)
+	if( bForceCheckpoint)
 	{
 		uiTimestamp = FLM_GET_TIMER();
 		
@@ -7276,15 +7178,13 @@ Exit:
 		f_mutexUnlock( gv_XFlmSysData.hBlockCacheMutex);
 	}
 
-	if (m_pCPInfo)
+	if( m_pCPInfo)
 	{
 		lockMutex();
 		m_pCPInfo->bDoingCheckpoint = FALSE;
 		unlockMutex();
 	}
-
-	pSFileHdl->disableFlushMinimize();
-
+	
 	return( rc);
 }
 

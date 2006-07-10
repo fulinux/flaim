@@ -470,7 +470,7 @@
 		RCODE					defaultRc);
 	
 	FLMUINT f_getNSSOpenFlags(
-		FLMUINT				uiAccess,
+		FLMUINT				uiIoFlags,
 		FLMBOOL				bDoDirectIo);
 	
 	typedef FLMINT (* zROOT_KEY_FUNC)(
@@ -644,6 +644,8 @@
 		int					iArgC,
 		char **				ppszArgV);
 		
+	extern FLMATOMIC		gv_openFiles;
+	
 #endif
 	
 /***************************************************************************
@@ -691,8 +693,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x08" "zRootKey")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 
@@ -700,8 +701,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x06" "zClose")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 
@@ -709,8 +709,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x07" "zCreate")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 
@@ -718,8 +717,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x05" "zOpen")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -727,8 +725,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x07" "zDelete")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -736,8 +733,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x05" "zRead")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -745,8 +741,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x08" "zDIORead")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -754,8 +749,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x08" "zGetInfo")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -763,8 +757,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x0B" "zModifyInfo")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -772,8 +765,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x07" "zSetEOF")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -781,8 +773,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x06" "zWrite")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 		
@@ -790,8 +781,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x09" "zDIOWrite")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 
@@ -799,8 +789,7 @@ RCODE f_nssInitialize( void)
 			(unsigned long)f_getNLMHandle(),
 			(unsigned char *)"\x07" "zRename")) == NULL)
 		{
-			flmAssert( 0);
-			rc = RC_SET( NE_FLM_INITIALIZING_IO_SYSTEM);
+			rc = RC_SET_AND_ASSERT( NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
 
@@ -811,6 +800,7 @@ RCODE f_nssInitialize( void)
 			rc = MapNSSError( lStatus, NE_FLM_INITIALIZING_IO_SYSTEM);
 			goto Exit;
 		}
+		
 		gv_bNSSKeyInitialized = TRUE;
 	}
 
@@ -869,7 +859,7 @@ FSTATIC RCODE MapNSSError(
 			break;
 
 		case zERR_OUT_OF_SPACE:
-			rc = RC_SET( NE_FLM_IO_DISK_FULL);
+			rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
 			break;
 
 		case zERR_NO_OPEN_PRIVILEGE:
@@ -919,7 +909,7 @@ FSTATIC RCODE MapNSSError(
 			rc = RC_SET( NE_FLM_MEM);
 			break;
 		case zERR_NOT_SUPPORTED:
-			rc = RC_SET( NE_FLM_NOT_IMPLEMENTED);
+			rc = RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED);
 			break;
 		case zERR_END_OF_FILE:
 		case zERR_BEYOND_EOF:
@@ -968,26 +958,26 @@ Desc:		Map flaim I/O flags to NDS I/O flags for NSS volumes
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
 FLMUINT f_getNSSOpenFlags(
-   FLMUINT	uiAccess,
-	FLMBOOL	bDoDirectIo)
+   FLMUINT		uiIoFlags,
+	FLMBOOL		bDoDirectIo)
 {
-	FLMUINT	lFlags = zRR_ALLOW_SECURE_DIRECTORY_ACCESS |
-						zRR_CANT_DELETE_WHILE_OPEN;
+	FLMUINT		lFlags = zRR_ALLOW_SECURE_DIRECTORY_ACCESS |
+								zRR_CANT_DELETE_WHILE_OPEN;
 
-	if (uiAccess & (FLM_IO_RDONLY | FLM_IO_RDWR))
+	if (uiIoFlags & (FLM_IO_RDONLY | FLM_IO_RDWR))
 	{
 		lFlags |= zRR_READ_ACCESS;
 	}
-	if (uiAccess & FLM_IO_RDWR)
+	if (uiIoFlags & FLM_IO_RDWR)
 	{
 		lFlags |= zRR_WRITE_ACCESS;
 	}
 
-	if (uiAccess & FLM_IO_SH_DENYRW)
+	if (uiIoFlags & FLM_IO_SH_DENYRW)
 	{
 		lFlags |= zRR_DENY_READ;
 	}
-	if (uiAccess & (FLM_IO_SH_DENYWR | FLM_IO_SH_DENYRW))
+	if (uiIoFlags & (FLM_IO_SH_DENYWR | FLM_IO_SH_DENYRW))
 	{
 		lFlags |= zRR_DENY_WRITE;
 	}
@@ -1004,27 +994,27 @@ Desc:		Map flaim I/O flags to NetWare I/O flags
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
 LONG f_getNWOpenFlags(
-   FLMUINT		uiAccess,
+   FLMUINT		uiIoFlags,
 	FLMBOOL		bDoDirectIo)
 {
 	LONG	lFlags = 0;
 
-	if (uiAccess & (FLM_IO_RDONLY | FLM_IO_RDWR))
+	if (uiIoFlags & (FLM_IO_RDONLY | FLM_IO_RDWR))
 	{
 		lFlags |= READ_ACCESS_BIT;
 	}
 	
-	if (uiAccess & FLM_IO_RDWR)
+	if (uiIoFlags & FLM_IO_RDWR)
 	{
 		lFlags |= WRITE_ACCESS_BIT;
 	}
 
-	if (uiAccess & FLM_IO_SH_DENYRW )
+	if (uiIoFlags & FLM_IO_SH_DENYRW )
 	{
 		lFlags |= DENY_READ_BIT;
 	}
 	
-	if (uiAccess & (FLM_IO_SH_DENYWR | FLM_IO_SH_DENYRW))
+	if (uiIoFlags & (FLM_IO_SH_DENYWR | FLM_IO_SH_DENYRW))
 	{
 		lFlags |= DENY_WRITE_BIT;
 	}
@@ -1034,7 +1024,55 @@ LONG f_getNWOpenFlags(
 		lFlags |= NEVER_READ_AHEAD_BIT;
 	}
 	
-	return( lFlags );
+	return( lFlags);
+}
+#endif
+
+/****************************************************************************
+Desc: Legacy async I/O completion callback
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+FSTATIC void DirectIONoWaitCallBack(
+	LONG		unknownAlwaysZero,
+	LONG		callbackData,
+	LONG 		completionCode)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_FileAsyncClient *	pAsyncClient = (F_FileAsyncClient *)callbackData;
+
+	F_UNREFERENCED_PARM( unknownAlwaysZero);
+	
+	if( completionCode != DFSNormalCompletion)
+	{
+		rc = DfsMapError( completionCode, NE_FLM_DIRECT_WRITING_FILE);
+	}
+
+	f_assert( pAsyncClient->getBytesToDo());
+	pAsyncClient->signalComplete( rc, 0);
+}
+#endif
+
+/****************************************************************************
+Desc: NSS async I/O completion callback
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+FSTATIC void nssDioCallback(
+	FLMUINT	reserved,
+	FLMUINT	callbackData,
+	FLMUINT	completionCode)
+{
+	RCODE						rc = NE_FLM_OK;
+	F_FileAsyncClient *	pAsyncClient = (F_FileAsyncClient *)callbackData;
+
+	F_UNREFERENCED_PARM( reserved);
+
+	if( completionCode != zOK)
+	{
+		rc = MapNSSError( completionCode, NE_FLM_DIRECT_WRITING_FILE);
+	}
+
+	f_assert( pAsyncClient->getBytesToDo());
+	pAsyncClient->signalComplete( rc, 0);
 }
 #endif
 
@@ -1044,21 +1082,12 @@ Desc:		Default Constructor for F_FileHdl class
 #if defined( FLM_RING_ZERO_NLM)
 F_FileHdl::F_FileHdl()
 {
-	m_bFileOpened = FALSE;
-	m_bDeleteOnClose = FALSE;
-	m_bOpenedExclusive = FALSE;
-	m_bOpenedReadOnly = FALSE;
+	initCommonData();
 	m_lFileHandle = -1;
 	m_lOpenAttr = 0;
-	m_uiCurrentPos = 0;
 	m_lVolumeID = F_NW_DEFAULT_VOLUME_NUMBER;
 	m_bDoSuballocation = FALSE;
 	m_lLNamePathCount = 0;
-	m_pszIoPath = NULL;
-	m_uiExtendSize = 0;
-	m_uiMaxFileSize = f_getMaxFileSize();
-	m_uiMaxAutoExtendSize = m_uiMaxFileSize;
-	m_bDoDirectIO = FALSE;
 	m_lSectorsPerBlock = 0;
 	m_lMaxBlocks = 0;
 	m_NssKey = 0;
@@ -1077,6 +1106,8 @@ F_FileHdl::~F_FileHdl( void)
 	{
 		(void)close();
 	}
+	
+	freeCommonData();
 }
 #endif
 
@@ -1086,7 +1117,7 @@ Desc:		Open or create a file.
 #if defined( FLM_RING_ZERO_NLM)
 RCODE F_FileHdl::openOrCreate(
 	const char *		pFileName,
-   FLMUINT				uiAccess,
+   FLMUINT				uiIoFlags,
 	FLMBOOL				bCreateFlag)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -1094,86 +1125,55 @@ RCODE F_FileHdl::openOrCreate(
 	void *				unused2;
 	char *				pszQualifiedPath = NULL;
 	LONG					lErrorCode;
-	FLMBYTE *			pTmpLNamePath;
-	char *				pSaveFileName;
 	FLMBYTE *			pLNamePath;
 	LONG *				plLNamePathCount;
-	LONG					LNamePathCount;
 	struct VolumeInformationStructure *
 							pVolumeInfo;
 	char *				pszTemp;
 	char *				pIoDirPath;
 	FLMBOOL				bNssVolume = FALSE;
+	FLMBOOL				bDoDirectIO;
+	FLMBOOL				bUsingAsync = FALSE;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
-	m_bDoDirectIO = (uiAccess & FLM_IO_DIRECT) ? TRUE : FALSE;
-
-	if( uiAccess & FLM_IO_DELETE_ON_RELEASE)
+	bDoDirectIO = (uiIoFlags & FLM_IO_DIRECT) ? TRUE : FALSE;
+	
+	if( bDoDirectIO)
 	{
-		if( !m_pszIoPath)
-		{
-			if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszIoPath)))
-			{
-				goto Exit;
-			}
-		}
-		
-		f_strcpy( m_pszIoPath, pFileName);
-		m_bDeleteOnClose = TRUE;
+		bUsingAsync = TRUE;
 	}
-	else
+	
+	// Save the file path
+	
+	if( RC_BAD( rc = f_alloc( F_PATH_MAX_SIZE, &m_pszFileName)))
 	{
-		m_bDeleteOnClose = FALSE;
+		goto Exit;
 	}
-
-	if (RC_BAD( rc = f_alloc(
-								(FLMUINT)(F_PATH_MAX_SIZE +
-											 F_PATH_MAX_SIZE +
-											 F_PATH_MAX_SIZE +
-											 F_PATH_MAX_SIZE +
-											 sizeof( struct VolumeInformationStructure) +
-											 F_PATH_MAX_SIZE),
-											 &pszQualifiedPath)))
+	
+	f_strcpy( m_pszFileName, pFileName);
+	
+	// Allocate other temporary buffers
+	
+	if( RC_BAD( rc = f_alloc( (FLMUINT)(F_PATH_MAX_SIZE + F_PATH_MAX_SIZE +
+		F_PATH_MAX_SIZE + sizeof( struct VolumeInformationStructure) +
+		F_PATH_MAX_SIZE), &pszQualifiedPath)))
 	{
 		goto Exit;
 	}
 
-	pTmpLNamePath = (((FLMBYTE *)pszQualifiedPath) + F_PATH_MAX_SIZE);
-	pSaveFileName = (((char *)pTmpLNamePath) + F_PATH_MAX_SIZE);
-	pIoDirPath = (((char *)pSaveFileName) + F_PATH_MAX_SIZE);
+	pIoDirPath = (((char *)pszQualifiedPath) + F_PATH_MAX_SIZE);
 	pVolumeInfo = (struct VolumeInformationStructure *)
 								(((char *)pIoDirPath) + F_PATH_MAX_SIZE);
 	pszTemp = (char *)(((char *)(pVolumeInfo)) +
 									sizeof( struct VolumeInformationStructure));
 
-
-	// Save the file name in case we have to create the directory
-
-	if((bCreateFlag) && (uiAccess & FLM_IO_CREATE_DIR))
-	{
-		f_strcpy( pSaveFileName, pFileName);
-	}
-
-	if( !m_pszIoPath)
-	{
-		pLNamePath = pTmpLNamePath;
-		plLNamePathCount = &LNamePathCount;
-	}
-	else
-	{
-		pLNamePath = (FLMBYTE *)m_pszIoPath;
-		plLNamePathCount = &m_lLNamePathCount;
-	}
+	pLNamePath = (FLMBYTE *)m_pszFileName;
+	plLNamePathCount = &m_lLNamePathCount;
 	
 	ConvertToQualifiedNWPath( pFileName, pszQualifiedPath);
 
-	lErrorCode = ConvertPathToLNameFormat(
-		pszQualifiedPath,
-		&m_lVolumeID,
-		&bNssVolume,
-		pLNamePath,
-		plLNamePathCount);
-	if( lErrorCode != 0)
+	if( (lErrorCode = ConvertPathToLNameFormat( pszQualifiedPath, &m_lVolumeID,
+							&bNssVolume, pLNamePath, plLNamePathCount)) != 0)
 	{
       rc = f_mapPlatformError( lErrorCode, NE_FLM_PARSING_FILE_NAME);
 		goto Exit;
@@ -1181,44 +1181,50 @@ RCODE F_FileHdl::openOrCreate(
 
 	// Determine if the volume is NSS or not
 
-	if (gv_bNSSKeyInitialized && bNssVolume)
+	if( gv_bNSSKeyInitialized)
 	{
-		m_bNSS = TRUE;
+		if( bNssVolume)
+		{
+			m_bNSS = TRUE;
+		}
 	}
 
-	if ( m_bDoDirectIO )
+	if( bDoDirectIO)
 	{
-		if (!m_bNSS)
+		if( !m_bNSS)
 		{
-			lErrorCode = 
-				ReturnVolumeMappingInformation( m_lVolumeID, pVolumeInfo);
-			if (lErrorCode != 0)
+			if( (lErrorCode = ReturnVolumeMappingInformation( 
+				m_lVolumeID, pVolumeInfo)) != 0)
 			{
 				rc = DfsMapError( lErrorCode, NE_FLM_INITIALIZING_IO_SYSTEM);
 				goto Exit;
 			}
 			
-			m_lSectorsPerBlock = (LONG)(pVolumeInfo->VolumeAllocationUnitSizeInBytes /
-										FLM_NLM_SECTOR_SIZE);
-			m_lMaxBlocks = (LONG)(m_uiMaxFileSize /
+			m_lSectorsPerBlock = 
+					(LONG)(pVolumeInfo->VolumeAllocationUnitSizeInBytes /
+							 FLM_NLM_SECTOR_SIZE);
+			m_lMaxBlocks = (LONG)(f_getMaxFileSize() /
 								(FLMUINT)pVolumeInfo->VolumeAllocationUnitSizeInBytes);
 		}
 		else
 		{
-			m_lMaxBlocks = (LONG)(m_uiMaxFileSize / (FLMUINT)65536);
+			m_lMaxBlocks = (LONG)(f_getMaxFileSize() / (FLMUINT)65536);
 		}
 	}
 
+	m_uiBytesPerSector = FLM_NLM_SECTOR_SIZE;
+	m_ui64NotOnSectorBoundMask = m_uiBytesPerSector - 1;
+	m_ui64GetSectorBoundMask = ~m_ui64NotOnSectorBoundMask;
+	
 	// Set up the file characteristics requested by caller.
 
-	if (bCreateFlag)
+	if( bCreateFlag)
 	{
-
 		// File is to be created
 
-		if (f_netwareTestIfFileExists( pszQualifiedPath ) == NE_FLM_OK)
+		if( f_netwareTestIfFileExists( pszQualifiedPath ) == NE_FLM_OK)
 		{
-			if (uiAccess & FLM_IO_EXCL)
+			if( uiIoFlags & FLM_IO_EXCL)
 			{
 				rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 				goto Exit;
@@ -1230,11 +1236,11 @@ RCODE F_FileHdl::openOrCreate(
 
 	// Try to create or open the file
 
-	if (m_bNSS)
+	if( m_bNSS)
 	{
 		FLMINT	lStatus;
 
-		if (bCreateFlag)
+		if( bCreateFlag)
 		{
 			FLMUINT64	qFileAttr;
 
@@ -1246,22 +1252,22 @@ RCODE F_FileHdl::openOrCreate(
 
 Retry_NSS_Create:
 
-			m_lOpenAttr = f_getNSSOpenFlags( uiAccess, m_bDoDirectIO);
-			if ((lStatus = gv_zCreateFunc( gv_NssRootKey, 1, 0,
+			m_lOpenAttr = f_getNSSOpenFlags( uiIoFlags, bDoDirectIO);
+			if( (lStatus = gv_zCreateFunc( gv_NssRootKey, 1, 0,
 				zNSPACE_LONG | zMODE_UTF8, pszQualifiedPath, zFILE_REGULAR,
 				qFileAttr, zCREATE_DELETE_IF_THERE, (FLMUINT)m_lOpenAttr,
 				&m_NssKey)) != zOK)
 			{
-				if (uiAccess & FLM_IO_CREATE_DIR)
+				if( uiIoFlags & FLM_IO_CREATE_DIR)
 				{
-					uiAccess &= ~FLM_IO_CREATE_DIR;
+					uiIoFlags &= ~FLM_IO_CREATE_DIR;
 
 					// Remove the file name for which we are creating the directory.
 
-					if( pFileSystem->pathReduce( pSaveFileName, 
+					if( pFileSystem->pathReduce( m_pszFileName, 
 						pIoDirPath, pszTemp) == NE_FLM_OK)
 					{
-						if (RC_OK( pFileSystem->createDir( pIoDirPath)))
+						if( RC_OK( pFileSystem->createDir( pIoDirPath)))
 						{
 							goto Retry_NSS_Create;
 						}
@@ -1269,27 +1275,30 @@ Retry_NSS_Create:
 				}
 				
 				rc = MapNSSError( lStatus,
-							(RCODE)(m_bDoDirectIO
+							(RCODE)(bDoDirectIO
 									  ? (RCODE)NE_FLM_DIRECT_CREATING_FILE
 									  : (RCODE)NE_FLM_CREATING_FILE));
 				goto Exit;
 			}
+			
+			m_bNSSFileOpen = TRUE;
 		}
 		else
 		{
-			m_lOpenAttr = f_getNSSOpenFlags( uiAccess, m_bDoDirectIO);
-			if ((lStatus = gv_zOpenFunc( gv_NssRootKey, 1,
+			m_lOpenAttr = f_getNSSOpenFlags( uiIoFlags, bDoDirectIO);
+			if( (lStatus = gv_zOpenFunc( gv_NssRootKey, 1,
 				zNSPACE_LONG | zMODE_UTF8, pszQualifiedPath, (FLMUINT)m_lOpenAttr,
 				&m_NssKey)) != zOK)
 			{
 				rc = MapNSSError( lStatus,
-							(RCODE)(m_bDoDirectIO
+							(RCODE)(bDoDirectIO
 									  ? (RCODE)NE_FLM_DIRECT_OPENING_FILE
 									  : (RCODE)NE_FLM_OPENING_FILE));
 				goto Exit;
 			}
+			
+			m_bNSSFileOpen = TRUE;
 		}
-		m_bNSSFileOpen = TRUE;
 	}
 	else
 	{
@@ -1302,18 +1311,18 @@ Retry_NSS_Create:
 										IMMEDIATE_PURGE_BIT);
 
 Retry_Create:
+
 			lErrorCode = CreateFile( 0, 1, m_lVolumeID, 0, (BYTE *)pLNamePath,
 				*plLNamePathCount, LONGNameSpace, m_lOpenAttr, 0xff,
-				PrimaryDataStream, &m_lFileHandle, &unused, &unused2
-				);
+				PrimaryDataStream, &m_lFileHandle, &unused, &unused2);
 
-			if ((lErrorCode != 0) && (uiAccess & FLM_IO_CREATE_DIR))
+			if( lErrorCode != 0 && (uiIoFlags & FLM_IO_CREATE_DIR))
 			{
-				uiAccess &= ~FLM_IO_CREATE_DIR;
+				uiIoFlags &= ~FLM_IO_CREATE_DIR;
 
 				// Remove the file name for which we are creating the directory
 
-				if( pFileSystem->pathReduce( pSaveFileName, 
+				if( pFileSystem->pathReduce( m_pszFileName, 
 					pIoDirPath, pszTemp) == NE_FLM_OK)
 				{
 					if( RC_OK( pFileSystem->createDir( pIoDirPath)))
@@ -1334,7 +1343,7 @@ Retry_Create:
 		}
 		else
 		{
-			m_lOpenAttr = f_getNWOpenFlags(uiAccess, m_bDoDirectIO);
+			m_lOpenAttr = f_getNWOpenFlags(uiIoFlags, bDoDirectIO);
 			lErrorCode = OpenFile( 0, 1, m_lVolumeID, 0, (BYTE *)pLNamePath,
 				*plLNamePathCount, LONGNameSpace, 0, m_lOpenAttr,
 				PrimaryDataStream, &m_lFileHandle, &unused, &unused2);
@@ -1351,20 +1360,20 @@ Retry_Create:
 
 		// Check if the file operation was successful
 
-		if ( lErrorCode != 0)
+		if( lErrorCode != 0)
 		{
 			rc = f_mapPlatformError( lErrorCode,
 						(RCODE)(bCreateFlag
-								  ? (RCODE)(m_bDoDirectIO
+								  ? (RCODE)(bDoDirectIO
 												? (RCODE)NE_FLM_DIRECT_CREATING_FILE
 												: (RCODE)NE_FLM_CREATING_FILE)
-								  : (RCODE)(m_bDoDirectIO
+								  : (RCODE)(bDoDirectIO
 												? (RCODE)NE_FLM_DIRECT_OPENING_FILE
 												: (RCODE)NE_FLM_OPENING_FILE)));
 			goto Exit;
 		}
 
-		if (bCreateFlag)
+		if( bCreateFlag)
 		{
 			// Revoke the file handle rights and close the file
 			// (signified by passing 2 for the QueryFlag parameter).
@@ -1384,20 +1393,21 @@ Retry_Create:
 			{
 				lErrorCode = CloseFile( 0, 1, m_lFileHandle);
 			}
+			
 			m_lOpenAttr = 0;
 
-			if ( lErrorCode != 0 )
+			if( lErrorCode != 0)
 			{
 				rc = f_mapPlatformError(lErrorCode, NE_FLM_CLOSING_FILE);
 				goto Exit;
 			}
 
-			m_lOpenAttr = f_getNWOpenFlags(uiAccess, m_bDoDirectIO);
+			m_lOpenAttr = f_getNWOpenFlags(uiIoFlags, bDoDirectIO);
 			lErrorCode = OpenFile( 0, 1, m_lVolumeID, 0, (BYTE *)pLNamePath,
 				*plLNamePathCount, LONGNameSpace, 0, m_lOpenAttr,
 				PrimaryDataStream, &m_lFileHandle, &unused, &unused2);
 
-			if ( lErrorCode != 0 )
+			if( lErrorCode != 0)
 			{
 				// Too many error codes map to 255, so we put in a special
 				// case check here.
@@ -1409,7 +1419,7 @@ Retry_Create:
 				else
 				{
 					rc = f_mapPlatformError( lErrorCode,
-								(RCODE)(m_bDoDirectIO
+								(RCODE)(bDoDirectIO
 										 ? (RCODE)NE_FLM_DIRECT_OPENING_FILE
 										 : (RCODE)NE_FLM_OPENING_FILE));
 				}
@@ -1417,12 +1427,12 @@ Retry_Create:
 			}
 		}
 		
-		if ( m_bDoDirectIO)
+		if( bDoDirectIO)
 		{
 			lErrorCode = SwitchToDirectFileMode(0, m_lFileHandle);
-			if (lErrorCode != 0)
+			if( lErrorCode != 0)
 			{
-				if (RevokeFileHandleRights( 0, 1, 
+				if( RevokeFileHandleRights( 0, 1, 
 					m_lFileHandle, 2, m_lOpenAttr & 0x0000000F, &unused) == 0xFF)
 				{
 					(void)CloseFile( 0, 1, m_lFileHandle);
@@ -1436,196 +1446,53 @@ Retry_Create:
 		}
 	}
 
-Exit:
-
-	if (RC_BAD( rc))
+	if( uiIoFlags & FLM_IO_DELETE_ON_RELEASE)
 	{
-		m_lFileHandle = -1;
-		m_lOpenAttr = 0;
-		m_bNSSFileOpen = FALSE;
+		m_bDeleteOnRelease = TRUE;
+	}
+	else
+	{
+		m_bDeleteOnRelease = FALSE;
 	}
 
-	if (pszQualifiedPath)
+	// Allocate at least 64K - this will handle most read and write
+	// operations and will also be a multiple of the sector size most of
+	// the time.  The calculation below rounds it up to the next sector
+	// boundary if it is not already on one.
+
+	m_uiAlignedBuffSize = 64 * 1024;
+	if( bDoDirectIO)
+	{
+		m_uiAlignedBuffSize = (FLMUINT)roundToNextSector( m_uiAlignedBuffSize);
+	}
+
+	if( RC_BAD( rc = f_allocAlignedBuffer( m_uiAlignedBuffSize, 
+		&m_pucAlignedBuff)))
+	{
+		goto Exit;
+	}
+	
+	m_bFileOpened = TRUE;
+	m_bDoDirectIO = bDoDirectIO;
+	m_bOpenedInAsyncMode = bUsingAsync;
+	m_ui64CurrentPos = 0;
+	m_bOpenedReadOnly = (uiIoFlags & FLM_IO_RDONLY) ? TRUE : FALSE;
+	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
+	f_atomicInc( &gv_openFiles);
+
+Exit:
+
+	if( RC_BAD( rc))
+	{
+		close();
+	}
+
+	if( pszQualifiedPath)
 	{
 		f_free( &pszQualifiedPath);
 	}
 
-   return( rc );
-}
-#endif
-
-/****************************************************************************
-Desc:		Create a file 
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::create(
-	const char *		pIoPath,
-	FLMUINT				uiIoFlags)
-{
-	RCODE			rc = NE_FLM_OK;
-
-	flmAssert( m_bFileOpened == FALSE);
-
-	if( RC_BAD( rc = openOrCreate( pIoPath, uiIoFlags, TRUE)))
-	{
-		goto Exit;
-	}
-
-	m_bFileOpened = TRUE;
-	m_uiCurrentPos = 0;
-	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::createUnique(
-	char *				pIoPath,
-	const char *		pszFileExtension,
-	FLMUINT				uiIoFlags)
-{
-	RCODE					rc = NE_FLM_OK;
-	char *				pszTmp;
-	FLMBOOL				bModext = TRUE;
-	FLMUINT				uiBaseTime = 0;
-	FLMBYTE				ucHighByte = 0;
-	char					ucFileName[ F_FILENAME_SIZE];
-	char					szDirPath[ F_PATH_MAX_SIZE];
-	char					szTmpPath[ F_PATH_MAX_SIZE];
-	FLMUINT				uiCount;
-	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
-
-	f_memset( ucFileName, 0, sizeof( ucFileName));
-
-	flmAssert( m_bFileOpened == FALSE);
-
-	f_strcpy( szDirPath, pIoPath);
-
-   // Search backwards replacing trailing spaces with NULLs.
-
-	pszTmp = szDirPath;
-	pszTmp += (f_strlen( pszTmp) - 1);
-	while ((*pszTmp == 0x20) && pszTmp >= szDirPath)
-	{
-		*pszTmp = 0;
-		pszTmp--;
-	}
-
-	// Append a backslash if one isn't already there
-
-	if (pszTmp >= szDirPath && *pszTmp != '\\')
-	{
-		pszTmp++;
-		*pszTmp++ = '\\';
-	}
-	else
-	{
-		pszTmp++;
-	}
-	*pszTmp = 0;
-
-	if ((pszFileExtension) && (f_strlen( pszFileExtension) >= 3))
-	{
-		bModext = FALSE;
-	}
-
-	uiCount = 0;
-	do
-	{
-		pFileSystem->pathCreateUniqueName( &uiBaseTime, ucFileName,
-				pszFileExtension, &ucHighByte, bModext);
-
-		f_strcpy( szTmpPath, szDirPath);
-		pFileSystem->pathAppend( szTmpPath, ucFileName);
-
-		rc = create( szTmpPath, uiIoFlags | FLM_IO_EXCL);
-
-		if (rc == NE_FLM_IO_DISK_FULL)
-		{
-			(void)f_netwareDeleteFile( szTmpPath);
-			goto Exit;
-		}
-
-		if ((rc == NE_FLM_IO_PATH_NOT_FOUND) || (rc == NE_FLM_IO_INVALID_PASSWORD))
-		{
-			goto Exit;
-		}
-	} while ((rc != NE_FLM_OK) && (uiCount++ < 10));
-
-   // Check if the path was created
-
-   if ((uiCount >= 10) && (rc != NE_FLM_OK))
-   {
-		rc = RC_SET( NE_FLM_IO_PATH_CREATE_FAILURE);
-		goto Exit;
-   }
-
-	m_bFileOpened = TRUE;
-	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
-
-	// Created file name needs to be returned.
-
-	f_strcpy( pIoPath, szTmpPath);
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Open a file
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::open(
-	const char *	pIoPath,
-	FLMUINT			uiIoFlags)
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMUINT			uiStartTime;
-	FLMUINT			ui15Secs;
-	FLMUINT			uiCurrTime;
-
-	flmAssert( m_bFileOpened == FALSE);
-
-	ui15Secs = FLM_SECS_TO_TIMER_UNITS( 15);
-	uiStartTime = FLM_GET_TIMER();
-
-	do
-	{
-		if( RC_OK( rc = openOrCreate( pIoPath, uiIoFlags, FALSE)))
-		{
-			break;
-		}
-
-		if( rc != NE_FLM_IO_TOO_MANY_OPEN_FILES)
-		{
-			goto Exit;
-		}
-
-		f_sleep( 50);
-		uiCurrTime = FLM_GET_TIMER();
-	} while( FLM_ELAPSED_TIME( uiCurrTime, uiStartTime) < ui15Secs);
-	
-	if ( RC_BAD(rc) )
-	{
-		goto Exit;
-	}
-
-	m_bFileOpened = TRUE;
-	m_uiCurrentPos = 0;
-	m_bOpenedReadOnly = (uiIoFlags & FLM_IO_RDONLY) ? TRUE : FALSE;
-	m_bOpenedExclusive = (uiIoFlags & FLM_IO_SH_DENYRW) ? TRUE : FALSE;
-
-Exit:
-
-	return( rc);
+   return( rc);
 }
 #endif
 
@@ -1633,27 +1500,20 @@ Exit:
 Desc:		Close a file
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::close()
+RCODE FLMAPI F_FileHdl::close( void)
 {
-	LONG			unused;
-	FLMBOOL		bDeleteAllowed = TRUE;
-	RCODE			rc = NE_FLM_OK;
-
-	if( !m_bFileOpened)
+	if( m_bNSS)
 	{
-		goto Exit;
-	}
-
-	if (m_bNSS)
-	{
-		if (m_bNSSFileOpen)
+		if( m_bNSSFileOpen)
 		{
 			(void)gv_zCloseFunc( m_NssKey);
 			m_bNSSFileOpen = FALSE;
 		}
 	}
-	else
+	else if( m_lFileHandle != -1)
 	{
+		LONG			unused;
+
 		// Revoke the file handle rights and close the file
 		// (signified by passing 2 for the QueryFlag parameter).
 		// If this call fails and returns a 255 error, it may
@@ -1672,560 +1532,44 @@ RCODE FLMAPI F_FileHdl::close()
 		{
 			(void)CloseFile( 0, 1, m_lFileHandle);
 		}
+		
+		m_lFileHandle = -1;
 	}
 
-	m_lOpenAttr = 0;
-	m_lFileHandle = -1;
-	m_bFileOpened = m_bOpenedReadOnly = m_bOpenedExclusive = FALSE;
-
-	if( m_bDeleteOnClose)
+	if( m_bDeleteOnRelease)
 	{
-		if( bDeleteAllowed)
+		if( m_bNSS)
 		{
-			if (m_bNSS)
-			{
-				(void)gv_zDeleteFunc( gv_NssRootKey, 0, zNSPACE_LONG | zMODE_UTF8,
-									m_pszIoPath, zMATCH_ALL, 0);
-			}
-			else
-			{
-				(void)EraseFile( 0, 1, m_lVolumeID, 0, (BYTE *)m_pszIoPath,
-					m_lLNamePathCount, LONGNameSpace, 0);
-			}
+			(void)gv_zDeleteFunc( gv_NssRootKey, 0, zNSPACE_LONG | zMODE_UTF8,
+								m_pszFileName, zMATCH_ALL, 0);
+		}
+		else
+		{
+			(void)EraseFile( 0, 1, m_lVolumeID, 0, (BYTE *)m_pszFileName,
+				m_lLNamePathCount, LONGNameSpace, 0);
 		}
 
-		m_bDeleteOnClose = FALSE;
+		m_bDeleteOnRelease = FALSE;
 		m_lLNamePathCount = 0;
 	}
-
-	if( m_pszIoPath)
-	{
-		f_free( &m_pszIoPath);
-	}
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Read from a file
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::read(
-	FLMUINT64			ui64Offset,
-	FLMUINT				uiLength,
-	void *				pvBuffer,
-	FLMUINT *			puiBytesRead)
-{
-	RCODE					rc = NE_FLM_OK;
-
-	if ( m_bDoDirectIO)
-	{
-		if( RC_BAD( rc = _directIORead( (FLMUINT)ui64Offset, uiLength, 
-					pvBuffer, puiBytesRead)))
-		{
-			goto Exit;
-		}
-	}
-	else
-	{
-		if( RC_BAD( rc = _read( (FLMUINT)ui64Offset, uiLength, 
-			pvBuffer, puiBytesRead)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Read from a file
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::_read(
-	FLMUINT		uiReadOffset,
-	FLMUINT		uiBytesToRead,	
-   void *		pvBuffer,
-   FLMUINT *	puiBytesReadRV)
-{
-	RCODE			rc = NE_FLM_OK;
-	FCBType *	fcb;
-	LONG			lBytesRead;
-	LONG			lErr;
 	
-	flmAssert( m_bFileOpened == TRUE);
-
-	if( puiBytesReadRV)
+	if( m_bFileOpened)
 	{
-		*puiBytesReadRV = 0;
+		f_atomicDec( &gv_openFiles);
 	}
+	
+	freeCommonData();
 
-	if (uiReadOffset == FLM_IO_CURRENT_POS)
-		uiReadOffset = m_uiCurrentPos;
+	m_bFileOpened = FALSE;
+	m_ui64CurrentPos = 0;
+	m_bOpenedReadOnly = FALSE;
+	m_bOpenedExclusive = FALSE;
+	m_bDoDirectIO = FALSE;
+	m_bOpenedInAsyncMode = FALSE;
+	m_lOpenAttr = 0;
+	m_lFileHandle = -1;
 
-	if (m_bNSS)
-	{
-		FLMINT	lStatus;
-		FLMUINT	nBytesRead;
-
-		if ((lStatus = gv_zReadFunc( m_NssKey, 0, (FLMUINT64)uiReadOffset,
-									(FLMUINT)uiBytesToRead, pvBuffer,
-									&nBytesRead)) != zOK)
-		{
-			rc = MapNSSError( lStatus, NE_FLM_READING_FILE);
-			goto Exit;
-		}
-
-		if( puiBytesReadRV)
-		{
-			*puiBytesReadRV = (FLMUINT)nBytesRead;
-		}
-
-		if ((FLMUINT)nBytesRead < uiBytesToRead)
-		{
-			rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-		}
-		m_uiCurrentPos = uiReadOffset + (FLMUINT)nBytesRead;
-	}
-	else
-	{
-		lErr = MapFileHandleToFCB( m_lFileHandle, &fcb );
-		if ( lErr != 0 )
-		{
-			rc = f_mapPlatformError( lErr, NE_FLM_SETTING_UP_FOR_READ);
-			goto Exit;
-		}
-		lErr = ReadFile( fcb->Station, m_lFileHandle, uiReadOffset,
-					uiBytesToRead, &lBytesRead, pvBuffer);
-		if ( lErr == 0 )
-		{
-			if( puiBytesReadRV)
-			{
-				*puiBytesReadRV = (FLMUINT) lBytesRead;
-			}
-
-			if (lBytesRead < (LONG)uiBytesToRead)
-			{
-				rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-			}
-			m_uiCurrentPos = uiReadOffset + lBytesRead;
-		}
-		else
-		{
-			rc = f_mapPlatformError(lErr, NE_FLM_READING_FILE);
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Returns m_uiCurrentPos
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::tell(
-	FLMUINT64 *			pui64Offset)
-{
-	*pui64Offset = m_uiCurrentPos;
 	return( NE_FLM_OK);
-}
-#endif
-
-/****************************************************************************
-Desc:		Calls the Direct IO-style read routine
-Note:		Where possible, the caller should attempt to read on sector
-			boundaries and full sectors.  This routine will do the
-			necessary work if this is not done, but it will be less
-			efficient.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::_directIORead(
-	FLMUINT		uiReadOffset,
-	FLMUINT		uiBytesToRead,	
-   void *		pvBuffer,
-   FLMUINT *	puiBytesReadRV)
-{
-	RCODE			rc = NE_FLM_OK;
-	FLMBYTE *	pucBuffer = (FLMBYTE *)pvBuffer;
-	LONG			lStartSector;
-	LONG			lSectorCount;
-	LONG			lResult;
-	BYTE			ucSectorBuf [FLM_NLM_SECTOR_SIZE];
-	FLMUINT		uiBytesToCopy;
-	FLMUINT		uiSectorOffset;
-	FLMUINT		uiTotal;
-	FLMINT		lStatus;
-
-	flmAssert( m_bFileOpened == TRUE);
-
-	if( puiBytesReadRV)
-	{
-		*puiBytesReadRV = 0;
-	}
-
-	if (uiReadOffset == FLM_IO_CURRENT_POS)
-		uiReadOffset = m_uiCurrentPos;
-
-	// Calculate the starting sector.
-
-	lStartSector = uiReadOffset / FLM_NLM_SECTOR_SIZE;
-
-	// See if the offset is on a sector boundary.  If not, we must read
-	// into the local sector buffer and then copy into the buffer.
-	// We must also read into the local buffer if our read size is less
-	// than the sector size.
-
-	if ((uiReadOffset % FLM_NLM_SECTOR_SIZE != 0) ||
-		 (uiBytesToRead < FLM_NLM_SECTOR_SIZE))
-	{
-		if (m_bNSS)
-		{
-			if ((lStatus = gv_zDIOReadFunc( m_NssKey, 
-									(FLMUINT64)lStartSector, 1,
-									(FLMUINT)0, NULL, ucSectorBuf)) != zOK)
-			{
-				rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
-				goto Exit;
-			}
-		}
-		else
-		{
-			lResult = DirectReadFile(
-				0,
-				m_lFileHandle,
-				lStartSector,
-				1,
-				ucSectorBuf
-				);
-			if (lResult != 0)
-			{
-				rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
-				goto Exit;
-			}
-		}
-
-		// Copy the part of the sector that was requested into the buffer.
-
-		uiSectorOffset = uiReadOffset % FLM_NLM_SECTOR_SIZE;
-
-		if ((uiBytesToCopy = uiBytesToRead) > FLM_NLM_SECTOR_SIZE - uiSectorOffset)
-			uiBytesToCopy = FLM_NLM_SECTOR_SIZE - uiSectorOffset;
-		f_memcpy( pucBuffer, &ucSectorBuf [uiSectorOffset], uiBytesToCopy);
-		pucBuffer += uiBytesToCopy;
-		uiBytesToRead -= (FLMUINT)uiBytesToCopy;
-		m_uiCurrentPos += (FLMUINT)uiBytesToCopy;
-
-		if( puiBytesReadRV)
-		{
-   		(*puiBytesReadRV) += (FLMUINT)uiBytesToCopy;
-		}
-
-		// See if we got everything we wanted to with this read.
-
-		if (!uiBytesToRead)
-			goto Exit;
-
-		// Go to the next sector boundary
-
-		lStartSector++;
-	}
-
-	// At this point, we are poised to read on a sector boundary.  See if we
-	// have at least one full sector to read.  If so, we can read it directly
-	// into the provided buffer.  If not, we must use the temporary sector
-	// buffer.
-
-	if (uiBytesToRead >= FLM_NLM_SECTOR_SIZE)
-	{
-		lSectorCount = (LONG)(uiBytesToRead / FLM_NLM_SECTOR_SIZE);
-Try_Read:
-		if (m_bNSS)
-		{
-			if ((lStatus = gv_zDIOReadFunc( m_NssKey,
-									(FLMUINT64)lStartSector,
-									(FLMUINT)lSectorCount,
-									(FLMUINT)0, NULL, pucBuffer)) != zOK)
-			{
-				if ((lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF) &&
-					 (lSectorCount > 1))
-				{
-
-					// See if we can read one less sector.  We will return
-					// NE_FLM_IO_END_OF_FILE in this case.
-
-					lSectorCount--;
-					rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-					goto Try_Read;
-				}
-				rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
-				goto Exit;
-			}
-		}
-		else
-		{
-			lResult = DirectReadFile( 0, m_lFileHandle, lStartSector,
-				lSectorCount, pucBuffer);
-				
-			if (lResult != 0)
-			{
-				if ((lResult == DFSOperationBeyondEndOfFile) &&
-					 (lSectorCount > 1))
-				{
-
-					// See if we can read one less sector.  We will return
-					// NE_FLM_IO_END_OF_FILE in this case.
-
-					lSectorCount--;
-					rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-					goto Try_Read;
-				}
-				rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
-				goto Exit;
-			}
-		}
-		
-		uiTotal = (FLMUINT)(lSectorCount * FLM_NLM_SECTOR_SIZE);
-		pucBuffer += uiTotal;
-		m_uiCurrentPos += uiTotal;
-
-		if( puiBytesReadRV)
-		{
-   		(*puiBytesReadRV) += uiTotal;
-		}
-		uiBytesToRead -= uiTotal;
-
-		// See if we got everything we wanted to or could with this read.
-
-		if ((!uiBytesToRead) || (rc == NE_FLM_IO_END_OF_FILE))
-			goto Exit;
-
-		// Go to the next sector after the ones we just read
-
-		lStartSector += lSectorCount;
-	}
-
-	// At this point, we have less than a sector's worth to read, so we must
-	// read it into a local buffer.
-
-	if (m_bNSS)
-	{
-		if ((lStatus = gv_zDIOReadFunc( m_NssKey, 
-								(FLMUINT64)lStartSector, 1,
-								(FLMUINT)0, NULL, ucSectorBuf)) != zOK)
-		{
-			rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
-			goto Exit;
-		}
-	}
-	else
-	{
-		lResult = DirectReadFile( 0, m_lFileHandle, lStartSector, 1, ucSectorBuf);
-		if (lResult != 0)
-		{
-			rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
-			goto Exit;
-		}
-	}
-
-	// Copy the part of the sector that was requested into the buffer.
-
-	m_uiCurrentPos += uiBytesToRead;
-
-	if( puiBytesReadRV)
-	{
-  		(*puiBytesReadRV) += uiBytesToRead;
-	}
-
-	f_memcpy( pucBuffer, ucSectorBuf, uiBytesToRead);
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Might call the direct IO routine in the future
-Note:		This function assumes that the pvBuffer that is passed in is
-			a multiple of a sector size (512 bytes).
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::sectorRead(
-	FLMUINT64		ui64ReadOffset,
-	FLMUINT			uiBytesToRead,
-	void *			pvBuffer,
-	FLMUINT *		puiBytesReadRV)
-{
-	RCODE				rc = NE_FLM_OK;
-
-	if( m_bDoDirectIO)
-	{
-		if( RC_BAD( rc = _directIOSectorRead( (FLMUINT)ui64ReadOffset, 
-			uiBytesToRead, pvBuffer, puiBytesReadRV)))
-		{
-			goto Exit;
-		}
-	}
-	else
-	{
-		if( RC_BAD( rc = _read( (FLMUINT)ui64ReadOffset, uiBytesToRead, 
-			pvBuffer, puiBytesReadRV)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Calls the direct IO Read routine
-Note:		This function assumes that the pvBuffer that is passed in is
-			a multiple of a sector size (512 bytes).
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::_directIOSectorRead(
-	FLMUINT		uiReadOffset,
-	FLMUINT		uiBytesToRead,	
-   void *		pvBuffer,
-   FLMUINT *	puiBytesReadRV)
-{
-	RCODE		rc = NE_FLM_OK;
-	LONG		lStartSector;
-	LONG		lSectorCount;
-	LONG		lResult;
-	FLMINT	lStatus;
-
-	flmAssert( m_bFileOpened == TRUE);
-
-	if (uiReadOffset == FLM_IO_CURRENT_POS)
-		uiReadOffset = m_uiCurrentPos;
-
-	if (uiReadOffset % FLM_NLM_SECTOR_SIZE != 0)
-	{
-		rc = _read( uiReadOffset, uiBytesToRead, pvBuffer, puiBytesReadRV);
-		goto Exit;
-	}
-
-	// Calculate the starting sector
-
-	lStartSector = uiReadOffset / FLM_NLM_SECTOR_SIZE;
-	lSectorCount = (LONG)(uiBytesToRead / FLM_NLM_SECTOR_SIZE);
-	if (uiBytesToRead % FLM_NLM_SECTOR_SIZE != 0)
-		lSectorCount++;
-
-Try_Read:
-
-	if (m_bNSS)
-	{
-		if ((lStatus = gv_zDIOReadFunc( m_NssKey,
-								(FLMUINT64)lStartSector,
-								(FLMUINT)lSectorCount,
-								(FLMUINT)0, NULL, pvBuffer)) != zOK)
-		{
-			if ((lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF) &&
-				 (lSectorCount > 1))
-			{
-
-				// See if we can read one less sector.  We will return
-				// NE_FLM_IO_END_OF_FILE in this case.
-
-				lSectorCount--;
-				uiBytesToRead = (FLMUINT)(lSectorCount * FLM_NLM_SECTOR_SIZE);
-				rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-				goto Try_Read;
-			}
-			uiBytesToRead = 0;
-			rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
-			goto Exit;
-		}
-	}
-	else
-	{
-		lResult = DirectReadFile( 0, m_lFileHandle,
-										lStartSector, lSectorCount,(BYTE *)pvBuffer);
-		if (lResult != 0)
-		{
-			if ((lResult == DFSOperationBeyondEndOfFile) &&
-					(lSectorCount > 1))
-			{
-				// See if we can read one less sector.  We will return
-				// NE_FLM_IO_END_OF_FILE in this case.
-
-				lSectorCount--;
-				uiBytesToRead = (FLMUINT)(lSectorCount * FLM_NLM_SECTOR_SIZE);
-				rc = RC_SET( NE_FLM_IO_END_OF_FILE);
-				goto Try_Read;
-			}
-			uiBytesToRead = 0;
-			rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
-			goto Exit;
-		}
-	}
-	m_uiCurrentPos += uiBytesToRead;
-
-Exit:
-
-	if( puiBytesReadRV)
-	{
-  		*puiBytesReadRV = uiBytesToRead;
-	}
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Sets current position of file.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::seek(
-	FLMUINT64		ui64Offset,
-	FLMINT			iWhence,
-	FLMUINT64 *		pui64NewOffset)
-{
-	RCODE			rc = NE_FLM_OK;
-
-	switch (iWhence)
-	{
-		case FLM_IO_SEEK_CUR:
-			m_uiCurrentPos += (FLMUINT)ui64Offset;
-			break;
-			
-		case FLM_IO_SEEK_SET:
-			m_uiCurrentPos = (FLMUINT)ui64Offset;
-			break;
-			
-		case FLM_IO_SEEK_END:
-			if( RC_BAD( rc = size( &ui64Offset)))
-			{
-				goto Exit;
-			}
-			m_uiCurrentPos = (FLMUINT)ui64Offset;
-			break;
-			
-		default:
-			rc = RC_SET( NE_FLM_NOT_IMPLEMENTED);
-			goto Exit;
-	}
-	
-	*pui64NewOffset = m_uiCurrentPos;
-	
-Exit:
-
-	return( rc);
 }
 #endif
 
@@ -2240,12 +1584,12 @@ RCODE FLMAPI F_FileHdl::size(
 	LONG				lErr;
 	LONG				lSize;
 
-	if (m_bNSS)
+	if( m_bNSS)
 	{
 		FLMINT	lStatus;
 		zInfo_s	Info;
 
-		if ((lStatus = gv_zGetInfoFunc( m_NssKey,
+		if( (lStatus = gv_zGetInfoFunc( m_NssKey,
 								zGET_STORAGE_USED,
 								sizeof( Info), zINFO_VERSION_A,
 								&Info)) != zOK)
@@ -2253,16 +1597,17 @@ RCODE FLMAPI F_FileHdl::size(
 			rc = MapNSSError( lStatus, NE_FLM_GETTING_FILE_INFO);
 			goto Exit;
 		}
-		flmAssert( Info.infoVersion == zINFO_VERSION_A);
+		
+		f_assert( Info.infoVersion == zINFO_VERSION_A);
 		*pui64Size = (FLMUINT64)Info.std.logicalEOF;
 	}
 	else
 	{
-		lErr = GetFileSize( 0, m_lFileHandle, &lSize);
-		if ( lErr != 0 )
+		if( (lErr = GetFileSize( 0, m_lFileHandle, &lSize)) != 0)
 		{
 			rc = f_mapPlatformError( lErr, NE_FLM_GETTING_FILE_SIZE);
 		}
+		
 		*pui64Size = (FLMUINT64)lSize;
 	}
 
@@ -2284,13 +1629,13 @@ RCODE FLMAPI F_FileHdl::truncate(
 	RCODE				rc = NE_FLM_OK;
 	LONG				lErr;
 
-	flmAssert( m_bFileOpened == TRUE);
+	f_assert( m_bFileOpened);
 
-	if (m_bNSS)
+	if( m_bNSS)
 	{
 		FLMINT	lStatus;
 		
-		if ((lStatus = gv_zSetEOFFunc( m_NssKey, 0, ui64Size,
+		if( (lStatus = gv_zSetEOFFunc( m_NssKey, 0, ui64Size,
 								zSETSIZE_NON_SPARSE_FILE |
 								zSETSIZE_NO_ZERO_FILL |
 								zSETSIZE_UNDO_ON_ERR)) != zOK)
@@ -2301,352 +1646,17 @@ RCODE FLMAPI F_FileHdl::truncate(
 	}
 	else
 	{
-		if ((lErr = SetFileSize( 0, m_lFileHandle, (FLMUINT)ui64Size, TRUE)) != 0)
+		if( (lErr = SetFileSize( 0, m_lFileHandle, (FLMUINT)ui64Size, TRUE)) != 0)
 		{
 			rc = f_mapPlatformError( lErr, NE_FLM_TRUNCATING_FILE);
 			goto Exit;
 		}
 	}
 	
-	if (m_uiCurrentPos > ui64Size)
+	if( m_ui64CurrentPos > ui64Size)
 	{
-		m_uiCurrentPos = (FLMUINT)ui64Size;
+		m_ui64CurrentPos = ui64Size;
 	}
-	
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Write to a file
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::write(
-	FLMUINT64		ui64Offset,
-	FLMUINT			uiLength,
-	const void *	pvBuffer,
-	FLMUINT *		puiBytesWritten)
-{
-	RCODE				rc = NE_FLM_OK;
-
-	if( m_bDoDirectIO)
-	{
-		if( RC_BAD( rc = _directIOWrite( (FLMUINT)ui64Offset, uiLength, 
-					pvBuffer, puiBytesWritten)))
-		{
-			goto Exit;
-		}
-	}
-	else
-	{
-		if( RC_BAD( rc = _write( (FLMUINT)ui64Offset, uiLength, 
-					pvBuffer, puiBytesWritten)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Write to a file
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::_write(
-	FLMUINT			uiWriteOffset,
-	FLMUINT			uiBytesToWrite,
-	const void *	pvBuffer,
-	FLMUINT *		puiBytesWrittenRV)
-{
-	RCODE				rc = NE_FLM_OK;
-	LONG				lErr;
-	FCBType *		fcb;
-
-	flmAssert( m_bFileOpened == TRUE);
-
-	*puiBytesWrittenRV = 0;
-
-	if (uiWriteOffset == FLM_IO_CURRENT_POS)
-	{
-		uiWriteOffset = m_uiCurrentPos;
-	}
-	else
-	{
-		m_uiCurrentPos = uiWriteOffset;
-	}
-	
-	if( m_bNSS)
-	{
-		FLMINT	lStatus;
-		FLMUINT	nBytesWritten;
-
-		if( (lStatus = gv_zWriteFunc( m_NssKey, 0, (FLMUINT64)uiWriteOffset,
-			(FLMUINT)uiBytesToWrite, pvBuffer, &nBytesWritten)) != zOK)
-		{
-			rc = MapNSSError( lStatus, NE_FLM_WRITING_FILE);
-			goto Exit;
-		}
-		
-		if( nBytesWritten != (FLMUINT)uiBytesToWrite)
-		{
-			rc = RC_SET( NE_FLM_IO_DISK_FULL);
-			goto Exit;
-		}
-	}
-	else
-	{
-		if( (lErr = MapFileHandleToFCB( m_lFileHandle, &fcb )) != 0)
-		{
-			rc = f_mapPlatformError( lErr, NE_FLM_SETTING_UP_FOR_WRITE);
-			goto Exit;
-		}
-
-		if( (lErr = WriteFile( fcb->Station, m_lFileHandle, uiWriteOffset,
-					uiBytesToWrite, (void *)pvBuffer)) != 0)
-		{
-			rc = f_mapPlatformError( lErr, NE_FLM_WRITING_FILE);
-			goto Exit;
-		}
-	}
-	
-	*puiBytesWrittenRV = uiBytesToWrite;
-	m_uiCurrentPos = uiWriteOffset + uiBytesToWrite;
-	
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Calls the direct IO Write routine.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::_directIOWrite(
-	FLMUINT			uiWriteOffset,
-	FLMUINT			uiBytesToWrite,
-	const void *	pvBuffer,
-	FLMUINT *		puiBytesWrittenRV)
-{
-	RCODE				rc = NE_FLM_OK;
-	FLMBYTE *		pucBuffer = (FLMBYTE *)pvBuffer;
-	LONG				lStartSector;
-	LONG				lSectorCount;
-	LONG				lResult;
-	BYTE				ucSectorBuf[ FLM_NLM_SECTOR_SIZE];
-	FLMUINT			uiBytesToCopy;
-	FLMUINT			uiSectorOffset;
-	FLMUINT			uiTotal;
-	FLMINT			lStatus;
-
-	flmAssert( m_bFileOpened == TRUE);
-
-	*puiBytesWrittenRV = 0;
-
-	if( uiWriteOffset == FLM_IO_CURRENT_POS)
-	{
-		uiWriteOffset = m_uiCurrentPos;
-	}
-	else
-	{
-		m_uiCurrentPos = uiWriteOffset;
-	}
-	
-	// Calculate the starting sector
-
-	lStartSector = uiWriteOffset / FLM_NLM_SECTOR_SIZE;
-
-	// See if the offset is on a sector boundary.  If not, we must first read
-	// the sector into memory, overwrite it with data from the input
-	// buffer and write it back out again.
-
-	if( (uiWriteOffset % FLM_NLM_SECTOR_SIZE != 0) || 
-		 (uiBytesToWrite < FLM_NLM_SECTOR_SIZE))
-	{
-		if( m_bNSS)
-		{
-			if( (lStatus = gv_zDIOReadFunc( m_NssKey, 
-				(FLMUINT64)lStartSector,
-				(FLMUINT)1, (FLMUINT)0, NULL, ucSectorBuf)) != zOK)
-			{
-				if (lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF)
-				{
-					f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
-
-					// Expand the file
-
-					if( RC_BAD( rc = expand( lStartSector, 1)))
-					{
-						goto Exit;
-					}
-				}
-				else
-				{
-					rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
-					goto Exit;
-				}
-			}
-		}
-		else
-		{
-			lResult = DirectReadFile( 0, m_lFileHandle, lStartSector, 
-												1, ucSectorBuf);
-												
-			if( lResult == DFSHoleInFileError || 
-				 lResult == DFSOperationBeyondEndOfFile )
-			{
-				f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
-
-				// Expand the file
-
-				if( RC_BAD( rc = expand( lStartSector, 1)))
-				{
-					goto Exit;
-				}
-			}
-			else if( lResult != 0)
-			{
-				rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
-				goto Exit;
-			}
-		}
-
-		// Copy the part of the buffer that is being written back into
-		// the sector buffer.
-
-		uiSectorOffset = uiWriteOffset % FLM_NLM_SECTOR_SIZE;
-
-		if( (uiBytesToCopy = uiBytesToWrite) > FLM_NLM_SECTOR_SIZE - uiSectorOffset)
-		{
-			uiBytesToCopy = FLM_NLM_SECTOR_SIZE - uiSectorOffset;
-		}
-		
-		f_memcpy( &ucSectorBuf [uiSectorOffset], pucBuffer, uiBytesToCopy);
-		pucBuffer += uiBytesToCopy;
-		uiBytesToWrite -= (FLMUINT)uiBytesToCopy;
-		m_uiCurrentPos += (FLMUINT)uiBytesToCopy;
-		(*puiBytesWrittenRV) += (FLMUINT)uiBytesToCopy;
-
-		// Write the sector buffer back out
-
-		if( RC_BAD( rc = writeSectors( &ucSectorBuf [0], lStartSector, 1, NULL)))
-		{
-			goto Exit;
-		}
-
-		// See if we wrote everything we wanted to with this write
-
-		if (!uiBytesToWrite)
-		{
-			goto Exit;
-		}
-
-		// Go to the next sector boundary
-
-		lStartSector++;
-	}
-
-	// At this point, we are poised to write on a sector boundary.  See if we
-	// have at least one full sector to write.  If so, we can write it directly
-	// from the provided buffer.  If not, we must use the temporary sector
-	// buffer.
-
-	if( uiBytesToWrite >= FLM_NLM_SECTOR_SIZE)
-	{
-		lSectorCount = (LONG)(uiBytesToWrite / FLM_NLM_SECTOR_SIZE);
-		
-		if( RC_BAD( rc = writeSectors( (void *)pucBuffer, lStartSector,
-									lSectorCount, NULL)))
-		{
-			goto Exit;
-		}
-		
-		uiTotal = (FLMUINT)(lSectorCount * FLM_NLM_SECTOR_SIZE);
-		pucBuffer += uiTotal;
-		m_uiCurrentPos += uiTotal;
-		(*puiBytesWrittenRV) += uiTotal;
-		uiBytesToWrite -= uiTotal;
-
-		// See if we wrote everything we wanted to with this write
-
-		if( !uiBytesToWrite)
-		{
-			goto Exit;
-		}
-
-		// Go to the next sector after the ones we just wrote
-
-		lStartSector += lSectorCount;
-	}
-
-	// At this point, we have less than a sector's worth to write, so we must
-	// first read the sector from disk, alter it, and then write it back out.
-
-	if( m_bNSS)
-	{
-		if( (lStatus = gv_zDIOReadFunc( m_NssKey, (FLMUINT64)lStartSector,
-			(FLMUINT)1, (FLMUINT)0, NULL, ucSectorBuf)) != zOK)
-		{
-			if( lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF)
-			{
-				f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
-
-				// Expand the file
-
-				if( RC_BAD( rc = expand( lStartSector, 1)))
-				{
-					goto Exit;
-				}
-			}
-			else
-			{
-				rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
-				goto Exit;
-			}
-		}
-	}
-	else
-	{
-		lResult = DirectReadFile( 0, m_lFileHandle, lStartSector,
-											1, ucSectorBuf);
-											
-		if( lResult == DFSHoleInFileError)
-		{
-			f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
-
-			// Expand the file
-
-			if( RC_BAD( rc = expand( lStartSector, 1)))
-			{
-				goto Exit;
-			}
-		}
-		else if( lResult != 0)
-		{
-			rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
-			goto Exit;
-		}
-	}
-
-	// Copy the rest of the output buffer into the sector buffer
-
-	f_memcpy( ucSectorBuf, pucBuffer, uiBytesToWrite);
-
-	// Write the sector back to disk
-
-	if( RC_BAD( rc = writeSectors( &ucSectorBuf [0], lStartSector, 1, NULL)))
-	{
-		goto Exit;
-	}
-
-	m_uiCurrentPos += uiBytesToWrite;
-	(*puiBytesWrittenRV) += uiBytesToWrite;
 	
 Exit:
 
@@ -2659,8 +1669,8 @@ Desc:		Expand a file for writing.
 ***************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
 RCODE F_FileHdl::expand(
-	LONG		lStartSector,
-	LONG		lSectorsToAlloc)
+	LONG			lStartSector,
+	LONG			lSectorsToAlloc)
 {
 	RCODE			rc = NE_FLM_OK;
 	LONG			lResult;
@@ -2702,7 +1712,7 @@ RCODE F_FileHdl::expand(
 	// Last block number better be greater than or equal to
 	// start block number.
 
-	flmAssert( lLastBlockNumber >= lStartBlockNumber);
+	f_assert( lLastBlockNumber >= lStartBlockNumber);
 	lMinToAlloc = (lLastBlockNumber - lStartBlockNumber) + 1;
 
 	if( lExtendSize < 5)
@@ -2741,7 +1751,7 @@ RCODE F_FileHdl::expand(
 		
 		if( lTotalToAlloc < lMinToAlloc)
 		{
-			rc = RC_SET( NE_FLM_IO_DISK_FULL);
+			rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
 			goto Exit;
 		}
 	}
@@ -2813,7 +1823,7 @@ RCODE F_FileHdl::expand(
 					}
 					else
 					{
-						rc = RC_SET( NE_FLM_IO_DISK_FULL);
+						rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
 						goto Exit;
 					}
 				}
@@ -2845,7 +1855,7 @@ RCODE F_FileHdl::expand(
 					continue;
 				}
 			}
-			else if (lResult != 0)
+			else if( lResult != 0)
 			{
 				rc = DfsMapError( lResult, NE_FLM_EXPANDING_FILE);
 				goto Exit;
@@ -2916,386 +1926,12 @@ Exit:
 #endif
 
 /****************************************************************************
-Desc:		Calls the direct IO Write routine.  Handles both asynchronous writes
-			and synchronous writes.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::writeSectors(
-	void *			pvBuffer,
-	LONG				lStartSector,
-	LONG				lSectorCount,
-	IF_IOBuffer *	pBufferObj,
-	FLMBOOL *		pbDidAsync)
-{
-	RCODE				rc = NE_FLM_OK;
-	LONG				lResult;
-	FLMBOOL			bAlreadyExpanded = FALSE;
-	FLMINT			lStatus;
-	FLMBOOL			bMadePending;
-
-	// Keep trying write until we succeed or get an error we can't deal with.
-	// Actually, this will NOT loop forever.  At most, it will try twice - 
-	// and then it is only when we get a hole in the file error.
-
-	bMadePending = FALSE;
-	for (;;)
-	{
-		if (m_bNSS)
-		{
-			if( pBufferObj)
-			{
-				if (!bMadePending)
-				{
-					flmAssert( pbDidAsync);
-					pBufferObj->makePending();
-					bMadePending = TRUE;
-				}
-				lStatus = gv_zDIOWriteFunc( m_NssKey,
-									(FLMUINT64)lStartSector,
-									(FLMUINT)lSectorCount,
-									(FLMUINT)pBufferObj,
-									nssDioCallback,
-									pvBuffer);
-			}
-			else
-			{
-				lStatus = gv_zDIOWriteFunc( m_NssKey,
-									(FLMUINT64)lStartSector,
-									(FLMUINT)lSectorCount, (FLMUINT)0, NULL, pvBuffer);
-			}
-
-			// We may need to allocate space to do this write
-
-			if (lStatus == zERR_END_OF_FILE ||
-				 lStatus == zERR_BEYOND_EOF || 
-				 lStatus == zERR_HOLE_IN_DIO_FILE)
-			{
-				if (bAlreadyExpanded)
-				{
-					flmAssert( 0);
-					rc = MapNSSError( lStatus, NE_FLM_DIRECT_WRITING_FILE);
-					goto Exit;
-				}
-
-				// Expand the file
-
-				if (RC_BAD( rc = expand( lStartSector, lSectorCount)))
-				{
-					goto Exit;
-				}
-				bAlreadyExpanded = TRUE;
-				continue;
-			}
-			else if (lStatus != 0)
-			{
-				rc = MapNSSError( lStatus, NE_FLM_DIRECT_WRITING_FILE);
-				goto Exit;
-			}
-			else
-			{
-				if (pBufferObj)
-				{
-					*pbDidAsync = TRUE;
-				}
-				break;
-			}
-		}
-		else
-		{
-			LONG		lSize;
-			FLMBOOL	bNeedToWriteEOF;
-
-			// Determine if this write will change the EOF.  If so, pre-expand
-			// the file.
-
-			lResult = GetFileSize( 0, m_lFileHandle, &lSize);
-			if (lResult != 0)
-			{
-				rc = f_mapPlatformError( lResult, NE_FLM_GETTING_FILE_SIZE);
-				goto Exit;
-			}
-			
-			bNeedToWriteEOF = (lSize < (lStartSector + lSectorCount) * FLM_NLM_SECTOR_SIZE)
-											? TRUE
-											: FALSE;
-											
-			if( pBufferObj)
-			{
-				if (!bMadePending)
-				{
-					flmAssert( pbDidAsync);
-					pBufferObj->makePending();
-					bMadePending = TRUE;
-				}
-				
-				lResult = DirectWriteFileNoWait( 0, m_lFileHandle,
-									lStartSector,lSectorCount,
-									(BYTE *)pvBuffer, DirectIONoWaitCallBack, 
-									(LONG)pBufferObj);
-			}
-			else
-			{
-				lResult = DirectWriteFile( 0, m_lFileHandle,
-									lStartSector, lSectorCount, (BYTE *)pvBuffer);
-			}
-
-			// We may need to allocate space to do this write
-
-			if( lResult == DFSHoleInFileError || 
-				 lResult == DFSOperationBeyondEndOfFile)
-			{
-				if( bAlreadyExpanded)
-				{
-					flmAssert( 0);
-					rc = DfsMapError( lResult, NE_FLM_DIRECT_WRITING_FILE);
-					goto Exit;
-				}
-
-				// Expand the file
-
-				if( RC_BAD( rc = expand( lStartSector, lSectorCount)))
-				{
-					goto Exit;
-				}
-				
-				bAlreadyExpanded = TRUE;
-
-				// The Expand method forces the file EOF in the directory
-				// entry to be written to disk.
-
-				bNeedToWriteEOF = FALSE;
-				continue;
-			}
-			else if (lResult != 0)
-			{
-				rc = DfsMapError( lResult, NE_FLM_DIRECT_WRITING_FILE);
-				goto Exit;
-			}
-			else
-			{
-				if( pBufferObj)
-				{
-					*pbDidAsync = TRUE;
-				}
-
-				// If bNeedToWriteEOF is TRUE, we need to force EOF to disk.
-
-				if( bNeedToWriteEOF)
-				{
-					LONG	lFileSizeInSectors;
-					LONG	lExtraSectors;
-
-					// Set the EOF to the nearest block boundary - so we don't
-					// have to do this very often.
-
-					lFileSizeInSectors = lStartSector + lSectorCount;
-					lExtraSectors = lFileSizeInSectors % m_lSectorsPerBlock;
-					
-					if (lExtraSectors)
-					{
-						lFileSizeInSectors += (m_lSectorsPerBlock - lExtraSectors);
-					}
-					
-					if ((lResult = SetFileSize( 0, m_lFileHandle,
-											(FLMUINT)lFileSizeInSectors * FLM_NLM_SECTOR_SIZE,
-											FALSE)) != 0)
-					{
-						rc = DfsMapError( lResult, NE_FLM_TRUNCATING_FILE);
-						goto Exit;
-					}
-				}
-
-				break;
-			}
-		}
-	}
-	
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc: Legacy async I/O completion callback
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-FSTATIC void DirectIONoWaitCallBack(
-	LONG		unknownAlwaysZero,
-	LONG		callbackData,
-	LONG 		completionCode)
-{
-	IF_IOBuffer *	pIOBuffer = (IF_IOBuffer *)callbackData;
-
-	F_UNREFERENCED_PARM( unknownAlwaysZero);
-
-	pIOBuffer->signalComplete(
-		(RCODE)(completionCode == DFSNormalCompletion
-				  ? NE_FLM_OK
-				  : DfsMapError( completionCode, NE_FLM_DIRECT_WRITING_FILE)));
-}
-#endif
-
-/****************************************************************************
-Desc: NSS async I/O completion callback
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-FSTATIC void nssDioCallback(
-	FLMUINT	reserved,
-	FLMUINT	callbackData,
-	FLMUINT	completionCode)
-{
-	IF_IOBuffer *	pIOBuffer = (IF_IOBuffer *)callbackData;
-
-	F_UNREFERENCED_PARM( reserved);
-
-	pIOBuffer->signalComplete( 
-		(RCODE)(completionCode == zOK
-				  ? NE_FLM_OK
-				  : MapNSSError( completionCode, NE_FLM_DIRECT_WRITING_FILE)));
-}
-#endif
-
-/****************************************************************************
-Desc:		Might call the direct IO Write routine in the future
-Note:		This routine assumes that the size of pvBuffer is a multiple of
-			sector size (512 bytes) and can be used to write out full
-			sectors.  Even if uiBytesToWrite does not account for full sectors,
-			data from the buffer will still be written out - a partial sector
-			on disk will not be preserved.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::sectorWrite(
-	FLMUINT64			ui64WriteOffset,
-	FLMUINT				uiBytesToWrite,
-	const void *		pvBuffer,
-	IF_IOBuffer *		pBufferObj,
-	FLMUINT *			puiBytesWrittenRV)
-{
-	RCODE					rc = NE_FLM_OK;
-
-	if( m_bDoDirectIO)
-	{
-		if( RC_BAD( rc = _directIOSectorWrite( (FLMUINT)ui64WriteOffset, 
-			uiBytesToWrite, pvBuffer, pBufferObj, puiBytesWrittenRV)))
-		{
-			goto Exit;
-		}
-	}
-	else
-	{
-		flmAssert( !pBufferObj);
-		
-		if( RC_BAD( rc = _write( (FLMUINT)ui64WriteOffset, 
-			uiBytesToWrite, pvBuffer, puiBytesWrittenRV)))
-		{
-			goto Exit;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-#endif
-
-/****************************************************************************
-Desc:		Calls the direct IO-style write routine.
-Note:		This routine assumes that the size of pvBuffer is a multiple of
-			sector size (512 bytes) and can be used to write out full
-			sectors.  Even if uiBytesToWrite does not account for full sectors,
-			data from the buffer will still be written out - a partial sector
-			on disk will not be preserved.
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-RCODE F_FileHdl::_directIOSectorWrite(
-	FLMUINT			uiWriteOffset,
-	FLMUINT			uiBytesToWrite,
-	const void *	pvBuffer,
-	IF_IOBuffer *	pBufferObj,
-	FLMUINT *		puiBytesWrittenRV)
-{
-	RCODE		rc = NE_FLM_OK;
-	LONG		lStartSector;
-	LONG		lSectorCount;
-	FLMBOOL	bDidAsync = FALSE;
-
-	flmAssert( m_bFileOpened == TRUE);
-
-	if (uiWriteOffset == FLM_IO_CURRENT_POS)
-	{
-		uiWriteOffset = m_uiCurrentPos;
-	}
-	else
-	{
-		m_uiCurrentPos = uiWriteOffset;
-	}
-	
-	if (uiWriteOffset % FLM_NLM_SECTOR_SIZE != 0)
-	{
-		rc = write( uiWriteOffset, uiBytesToWrite, pvBuffer,
-							puiBytesWrittenRV);
-		goto Exit;
-	}
-
-	// Calculate the starting sector and number of sectors to write
-
-	lStartSector = uiWriteOffset / FLM_NLM_SECTOR_SIZE;
-	lSectorCount = (LONG)(uiBytesToWrite / FLM_NLM_SECTOR_SIZE);
-	if (uiBytesToWrite % FLM_NLM_SECTOR_SIZE != 0)
-	{
-		FLMBYTE *	pucBuffer = (FLMBYTE *)pvBuffer;
-
-		lSectorCount++;
-
-		// Zero out the part of the buffer that was not included in
-		// uiBytesToWrite - because it will still be written to disk.
-
-		f_memset( &pucBuffer [uiBytesToWrite], 0,
-					(FLMUINT)(FLM_NLM_SECTOR_SIZE - (uiBytesToWrite % FLM_NLM_SECTOR_SIZE)));
-	}
-
-	if( RC_BAD( rc = writeSectors( (void *)pvBuffer, lStartSector, lSectorCount,
-											pBufferObj, &bDidAsync)))
-	{
-		goto Exit;
-	}
-
-	m_uiCurrentPos += uiBytesToWrite;
-
-	if( puiBytesWrittenRV)
-	{
-		*puiBytesWrittenRV = uiBytesToWrite;
-	}
-
-Exit:
-
-	if( !bDidAsync && pBufferObj)
-	{
-		pBufferObj->notifyComplete( rc);
-	}
-	
-	return( rc);
-}
-#endif
-
-/****************************************************************************
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
 RCODE F_FileHdl::flush( void)
 {
 	return( NE_FLM_OK);
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_RING_ZERO_NLM)
-FLMBOOL F_FileHdl::canDoAsync( void)
-{
-	return( m_bDoDirectIO);
 }
 #endif
 
@@ -3465,7 +2101,7 @@ FSTATIC RCODE nssTurnOffRenameInhibit(
 		goto Exit;
 	}
 	
-	flmAssert( Info.infoVersion == zINFO_VERSION_A);
+	f_assert( Info.infoVersion == zINFO_VERSION_A);
 
 	// See if the rename inhibit bit is set.
 
@@ -4351,5 +2987,900 @@ Desc:
 #if defined( FLM_OSX)
 void gv_fnlm()
 {
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE F_FileHdl::lowLevelRead(
+	FLMUINT64				ui64ReadOffset,
+	FLMUINT					uiBytesToRead,
+	void *					pvBuffer,
+	IF_IOBuffer *			pIOBuffer,
+	FLMUINT *				puiBytesRead)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiBytesRead = 0;
+
+	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+
+	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
+	{
+		ui64ReadOffset = m_ui64CurrentPos;
+	}
+	
+	if( !pvBuffer)
+	{
+		pvBuffer = pIOBuffer->getBufferPtr();
+	}
+
+	if( pIOBuffer)
+	{
+		pIOBuffer->setPending();
+	}
+
+	rc = internalBlockingRead( ui64ReadOffset, uiBytesToRead, pvBuffer, 
+		&uiBytesRead);
+
+	m_ui64CurrentPos += uiBytesRead;
+	
+	if( pIOBuffer)
+	{
+		pIOBuffer->notifyComplete( rc);
+		pIOBuffer = NULL;
+	}
+	
+	if( RC_BAD( rc))
+	{
+		goto Exit;
+	}
+	
+	if( uiBytesRead < uiBytesToRead)
+	{
+		rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+		goto Exit;
+	}
+	
+Exit:
+
+	f_assert( uiBytesRead || RC_BAD( rc));
+	f_assert( uiBytesRead <= uiBytesToRead);
+
+	if( pIOBuffer && !pIOBuffer->isPending())
+	{
+		f_assert( RC_BAD( rc));
+		pIOBuffer->notifyComplete( rc);
+	}
+	
+	if( puiBytesRead)
+	{
+		*puiBytesRead = uiBytesRead;
+	}
+
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE F_FileHdl::internalBlockingRead(
+	FLMUINT64	ui64ReadOffset,
+	FLMUINT		uiBytesToRead,	
+   void *		pvBuffer,
+   FLMUINT *	puiBytesRead)
+{
+	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiBytesRead = 0;
+	FLMUINT		uiBytesRemaining = uiBytesToRead;
+	
+	f_assert( uiBytesToRead);
+	
+	if( m_bDoDirectIO)
+	{
+		FLMBYTE *	pucBuffer = (FLMBYTE *)pvBuffer;
+		LONG			lStartSector;
+		LONG			lSectorCount;
+		LONG			lResult;
+		BYTE			ucSectorBuf[ FLM_NLM_SECTOR_SIZE];
+		FLMUINT		uiBytesToCopy;
+		FLMUINT		uiSectorOffset;
+		FLMUINT		uiTotal;
+		FLMINT		lStatus;
+	
+		// Calculate the starting sector.
+	
+		lStartSector = (LONG)(ui64ReadOffset / FLM_NLM_SECTOR_SIZE);
+	
+		// See if the offset is on a sector boundary.  If not, we must read
+		// into the local sector buffer and then copy into the buffer.
+		// We must also read into the local buffer if our read size is less
+		// than the sector size.
+	
+		if( (ui64ReadOffset % FLM_NLM_SECTOR_SIZE != 0) ||
+			 (uiBytesRemaining < FLM_NLM_SECTOR_SIZE))
+		{
+			if( m_bNSS)
+			{
+				if( (lStatus = gv_zDIOReadFunc( m_NssKey, 
+										(FLMUINT64)lStartSector, 1,
+										(FLMUINT)0, NULL, ucSectorBuf)) != zOK)
+				{
+					rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
+					goto Exit;
+				}
+			}
+			else
+			{
+				if( (lResult = DirectReadFile( 0, m_lFileHandle, lStartSector,
+					1, ucSectorBuf)) != 0)
+				{
+					rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
+					goto Exit;
+				}
+			}
+	
+			// Copy the part of the sector that was requested into the buffer.
+	
+			uiSectorOffset = (FLMUINT)(ui64ReadOffset % FLM_NLM_SECTOR_SIZE);
+	
+			if( (uiBytesToCopy = uiBytesRemaining) > 
+					FLM_NLM_SECTOR_SIZE - uiSectorOffset)
+			{
+				uiBytesToCopy = FLM_NLM_SECTOR_SIZE - uiSectorOffset;
+			}
+			
+			f_memcpy( pucBuffer, &ucSectorBuf[ uiSectorOffset], uiBytesToCopy);
+			pucBuffer += uiBytesToCopy;
+			uiBytesRemaining -= (FLMUINT)uiBytesToCopy;
+			uiBytesRead += uiBytesToCopy;
+	
+			// See if we got everything we wanted to with this read.
+	
+			if( !uiBytesRemaining)
+			{
+				goto Exit;
+			}
+	
+			// Go to the next sector boundary
+	
+			lStartSector++;
+		}
+	
+		// At this point, we are poised to read on a sector boundary.  See if we
+		// have at least one full sector to read.  If so, we can read it directly
+		// into the provided buffer.  If not, we must use the temporary sector
+		// buffer.
+	
+		if( uiBytesRemaining >= FLM_NLM_SECTOR_SIZE)
+		{
+			lSectorCount = (LONG)(uiBytesRemaining / FLM_NLM_SECTOR_SIZE);
+	Try_Read:
+			if( m_bNSS)
+			{
+				if( (lStatus = gv_zDIOReadFunc( m_NssKey,
+						(FLMUINT64)lStartSector, (FLMUINT)lSectorCount,
+						(FLMUINT)0, NULL, pucBuffer)) != zOK)
+				{
+					if( (lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF) &&
+						 (lSectorCount > 1))
+					{
+	
+						// See if we can read one less sector.  We will return
+						// NE_FLM_IO_END_OF_FILE in this case.
+	
+						lSectorCount--;
+						rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+						goto Try_Read;
+					}
+					
+					rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
+					goto Exit;
+				}
+			}
+			else
+			{
+				if( (lResult = DirectReadFile( 0, m_lFileHandle, lStartSector,
+					lSectorCount, pucBuffer)) != 0)
+				{
+					if( lResult == DFSOperationBeyondEndOfFile && lSectorCount > 1)
+					{
+						// See if we can read one less sector.  We will return
+						// NE_FLM_IO_END_OF_FILE in this case.
+	
+						lSectorCount--;
+						rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+						goto Try_Read;
+					}
+					
+					rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
+					goto Exit;
+				}
+			}
+			
+			uiTotal = (FLMUINT)(lSectorCount * FLM_NLM_SECTOR_SIZE);
+			pucBuffer += uiTotal;
+			uiBytesRead += uiTotal;
+			uiBytesRemaining -= uiTotal;
+	
+			// See if we got everything we wanted to or could with this read.
+	
+			if( !uiBytesRemaining || rc == NE_FLM_IO_END_OF_FILE)
+			{
+				goto Exit;
+			}
+	
+			// Go to the next sector after the ones we just read
+	
+			lStartSector += lSectorCount;
+		}
+	
+		// At this point, we have less than a sector's worth to read, so we must
+		// read it into a local buffer.
+	
+		if( m_bNSS)
+		{
+			if( (lStatus = gv_zDIOReadFunc( m_NssKey, (FLMUINT64)lStartSector, 1,
+				(FLMUINT)0, NULL, ucSectorBuf)) != zOK)
+			{
+				rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( (lResult = DirectReadFile( 0, m_lFileHandle, 
+				lStartSector, 1, ucSectorBuf)) != 0)
+			{
+				rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
+				goto Exit;
+			}
+		}
+	
+		// Copy the part of the sector that was requested into the buffer.
+	
+		uiBytesRead += uiBytesRemaining;
+		f_memcpy( pucBuffer, ucSectorBuf, uiBytesRemaining);
+	}
+	else
+	{
+		FCBType *	fcb;
+		LONG			lBytesRead;
+		LONG			lErr;
+
+		if( m_bNSS)
+		{
+			FLMINT	lStatus;
+	
+			if( (lStatus = gv_zReadFunc( m_NssKey, 0, ui64ReadOffset,
+					(FLMUINT)uiBytesRemaining, pvBuffer, &uiBytesRead)) != zOK)
+			{
+				f_assert( 0);
+				rc = MapNSSError( lStatus, NE_FLM_READING_FILE);
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( (lErr = MapFileHandleToFCB( m_lFileHandle, &fcb)) != 0)
+			{
+				rc = f_mapPlatformError( lErr, NE_FLM_SETTING_UP_FOR_READ);
+				goto Exit;
+			}
+			
+			if( (lErr = ReadFile( fcb->Station, m_lFileHandle, 
+				(LONG)ui64ReadOffset, uiBytesRemaining,
+				&lBytesRead, pvBuffer)) != 0)
+			{
+				rc = f_mapPlatformError( lErr, NE_FLM_READING_FILE);
+			}
+
+			uiBytesRead = (FLMUINT)lBytesRead;
+		}
+	}
+
+	if( uiBytesRead < uiBytesToRead)
+	{
+		rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+		goto Exit;
+	}
+	
+Exit:
+
+	f_assert( uiBytesRead <= uiBytesToRead);
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = uiBytesRead;
+	}
+
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE F_FileHdl::lowLevelWrite(
+	FLMUINT64				ui64WriteOffset,
+	FLMUINT					uiBytesToWrite,
+	const void *			pvBuffer,
+	IF_IOBuffer *			pIOBuffer,
+	FLMUINT *				puiBytesWritten)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiBytesWritten = 0;
+	F_FileAsyncClient *	pAsyncClient = NULL;
+	FLMBOOL					bWaitForWrite = FALSE;
+	
+	f_assert( uiBytesToWrite);
+	f_assert( !m_bDoDirectIO || (ui64WriteOffset % FLM_NLM_SECTOR_SIZE) == 0);
+	f_assert( !m_bDoDirectIO || (uiBytesToWrite % FLM_NLM_SECTOR_SIZE) == 0);
+	
+	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
+	{
+		ui64WriteOffset = m_ui64CurrentPos;
+	}
+
+	if( !pvBuffer)
+	{
+		pvBuffer = pIOBuffer->getBufferPtr();
+	}
+
+	if( m_bOpenedInAsyncMode)
+	{
+		LONG				lStartSector;
+		LONG				lSectorCount;
+
+		if( RC_BAD( rc = allocFileAsyncClient( &pAsyncClient)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = pAsyncClient->prepareForAsync( pIOBuffer)))
+		{
+			goto Exit;
+		}
+			
+		if( !pIOBuffer)
+		{
+			bWaitForWrite = TRUE;
+		}
+			
+		pAsyncClient->m_uiBytesToDo = uiBytesToWrite;
+		pIOBuffer = NULL;
+		
+		// Calculate the starting sector and number of sectors to write
+	
+		lStartSector = (LONG)(ui64WriteOffset / FLM_NLM_SECTOR_SIZE);
+		lSectorCount = (LONG)(uiBytesToWrite / FLM_NLM_SECTOR_SIZE);
+		
+		if( RC_BAD( rc = writeSectors( pvBuffer, pAsyncClient, 
+			lStartSector, lSectorCount)))
+		{
+			pAsyncClient->notifyComplete( rc, 0, FALSE);
+			goto Exit;
+		}
+			
+		if( bWaitForWrite)
+		{
+			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			{
+				if( rc != NE_FLM_IO_DISK_FULL)
+				{
+					goto Exit;
+				}
+	
+				rc = NE_FLM_OK;
+			}
+				
+			f_assert( pAsyncClient->m_uiBytesDone);
+			uiBytesWritten = pAsyncClient->m_uiBytesDone; 
+		}
+		else
+		{
+			uiBytesWritten = uiBytesToWrite;
+		}
+		
+		m_ui64CurrentPos += uiBytesWritten;
+	}
+	else
+	{
+		if( pIOBuffer)
+		{
+			pIOBuffer->setPending();
+		}
+		
+		rc = internalBlockingWrite( ui64WriteOffset, uiBytesToWrite, 
+					pvBuffer, &uiBytesWritten);
+		
+		m_ui64CurrentPos += uiBytesWritten;
+
+		if( pIOBuffer)
+		{
+			pIOBuffer->notifyComplete( rc);
+			pIOBuffer = NULL;
+		}
+		
+		if( RC_BAD( rc))
+		{
+			goto Exit;
+		}
+	}
+	
+	if( uiBytesWritten < uiBytesToWrite)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+		goto Exit;
+	}
+	
+Exit:
+
+	if( pAsyncClient)
+	{
+		pAsyncClient->Release();
+	}
+	
+	if( pIOBuffer && !pIOBuffer->isPending())
+	{
+		f_assert( RC_BAD( rc));
+		pIOBuffer->notifyComplete( rc);
+	}
+
+	if( puiBytesWritten)
+	{
+		*puiBytesWritten = uiBytesWritten;
+	}
+	
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE F_FileHdl::internalBlockingWrite(
+	FLMUINT64			ui64WriteOffset,
+	FLMUINT				uiBytesToWrite,	
+	const void *		pvBuffer,
+	FLMUINT *			puiBytesWritten)
+{
+	RCODE					rc = NE_FLM_OK;
+	LONG					lErr;
+	FCBType *			fcb;
+	FLMUINT				uiBytesWritten = 0;
+	FLMUINT				uiBytesRemaining = uiBytesToWrite;
+
+	if( m_bDoDirectIO)
+	{
+		FLMBYTE *		pucBuffer = (FLMBYTE *)pvBuffer;
+		LONG				lStartSector;
+		LONG				lSectorCount;
+		LONG				lResult;
+		BYTE				ucSectorBuf[ FLM_NLM_SECTOR_SIZE];
+		FLMUINT			uiBytesToCopy;
+		FLMUINT			uiSectorOffset;
+		FLMUINT			uiTotal;
+		FLMINT			lStatus;
+	
+		// Calculate the starting sector
+	
+		lStartSector = (LONG)(ui64WriteOffset / FLM_NLM_SECTOR_SIZE);
+	
+		// See if the offset is on a sector boundary.  If not, we must first read
+		// the sector into memory, overwrite it with data from the input
+		// buffer and write it back out again.
+	
+		if( (ui64WriteOffset % FLM_NLM_SECTOR_SIZE != 0) || 
+			 (uiBytesRemaining < FLM_NLM_SECTOR_SIZE))
+		{
+			if( m_bNSS)
+			{
+				if( (lStatus = gv_zDIOReadFunc( m_NssKey, 
+					(FLMUINT64)lStartSector,
+					(FLMUINT)1, (FLMUINT)0, NULL, ucSectorBuf)) != zOK)
+				{
+					if( lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF)
+					{
+						f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
+	
+						// Expand the file
+	
+						if( RC_BAD( rc = expand( lStartSector, 1)))
+						{
+							goto Exit;
+						}
+					}
+					else
+					{
+						rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
+						goto Exit;
+					}
+				}
+			}
+			else
+			{
+				lResult = DirectReadFile( 0, m_lFileHandle, lStartSector, 
+													1, ucSectorBuf);
+													
+				if( lResult == DFSHoleInFileError || 
+					 lResult == DFSOperationBeyondEndOfFile )
+				{
+					f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
+	
+					// Expand the file
+	
+					if( RC_BAD( rc = expand( lStartSector, 1)))
+					{
+						goto Exit;
+					}
+				}
+				else if( lResult != 0)
+				{
+					rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
+					goto Exit;
+				}
+			}
+	
+			// Copy the part of the buffer that is being written back into
+			// the sector buffer.
+	
+			uiSectorOffset = (FLMUINT)(ui64WriteOffset % FLM_NLM_SECTOR_SIZE);
+	
+			if( (uiBytesToCopy = uiBytesRemaining) > 
+					(FLM_NLM_SECTOR_SIZE - uiSectorOffset))
+			{
+				uiBytesToCopy = FLM_NLM_SECTOR_SIZE - uiSectorOffset;
+			}
+			
+			f_memcpy( &ucSectorBuf [uiSectorOffset], pucBuffer, uiBytesToCopy);
+			pucBuffer += uiBytesToCopy;
+			uiBytesRemaining -= uiBytesToCopy;
+			uiBytesWritten += uiBytesToCopy;
+	
+			// Write the sector buffer back out
+	
+			if( RC_BAD( rc = writeSectors( &ucSectorBuf [0], NULL,
+				lStartSector, 1))) 
+			{
+				goto Exit;
+			}
+	
+			// See if we wrote everything we wanted to with this write
+	
+			if( !uiBytesRemaining)
+			{
+				goto Exit;
+			}
+	
+			// Go to the next sector boundary
+	
+			lStartSector++;
+		}
+	
+		// At this point, we are poised to write on a sector boundary.  See if we
+		// have at least one full sector to write.  If so, we can write it directly
+		// from the provided buffer.  If not, we must use the temporary sector
+		// buffer.
+	
+		if( uiBytesRemaining >= FLM_NLM_SECTOR_SIZE)
+		{
+			lSectorCount = (LONG)(uiBytesRemaining / FLM_NLM_SECTOR_SIZE);
+			
+			if( RC_BAD( rc = writeSectors( (const void *)pucBuffer, NULL,
+				lStartSector, lSectorCount)))
+			{
+				goto Exit;
+			}
+			
+			uiTotal = (FLMUINT)(lSectorCount * FLM_NLM_SECTOR_SIZE);
+			pucBuffer += uiTotal;
+			uiBytesWritten += uiTotal;
+			uiBytesRemaining -= uiTotal;
+	
+			// See if we wrote everything we wanted to with this write
+	
+			if( !uiBytesRemaining)
+			{
+				goto Exit;
+			}
+	
+			// Go to the next sector after the ones we just wrote
+	
+			lStartSector += lSectorCount;
+		}
+	
+		// At this point, we have less than a sector's worth to write, so we must
+		// first read the sector from disk, alter it, and then write it back out.
+	
+		if( m_bNSS)
+		{
+			if( (lStatus = gv_zDIOReadFunc( m_NssKey, (FLMUINT64)lStartSector,
+				(FLMUINT)1, (FLMUINT)0, NULL, ucSectorBuf)) != zOK)
+			{
+				if( lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF)
+				{
+					f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
+	
+					// Expand the file
+	
+					if( RC_BAD( rc = expand( lStartSector, 1)))
+					{
+						goto Exit;
+					}
+				}
+				else
+				{
+					rc = MapNSSError( lStatus, NE_FLM_DIRECT_READING_FILE);
+					goto Exit;
+				}
+			}
+		}
+		else
+		{
+			lResult = DirectReadFile( 0, m_lFileHandle, lStartSector,
+												1, ucSectorBuf);
+												
+			if( lResult == DFSHoleInFileError)
+			{
+				f_memset( ucSectorBuf, 0, sizeof( ucSectorBuf));
+	
+				// Expand the file
+	
+				if( RC_BAD( rc = expand( lStartSector, 1)))
+				{
+					goto Exit;
+				}
+			}
+			else if( lResult != 0)
+			{
+				rc = DfsMapError( lResult, NE_FLM_DIRECT_READING_FILE);
+				goto Exit;
+			}
+		}
+	
+		// Copy the rest of the output buffer into the sector buffer
+	
+		f_memcpy( ucSectorBuf, pucBuffer, uiBytesRemaining);
+	
+		// Write the sector back to disk
+	
+		if( RC_BAD( rc = writeSectors( &ucSectorBuf[ 0], NULL, lStartSector, 1)))
+		{
+			goto Exit;
+		}
+	
+		uiBytesWritten += uiBytesRemaining;
+	}
+	else
+	{
+		if( m_bNSS)
+		{
+			FLMINT	lStatus;
+	
+			if( (lStatus = gv_zWriteFunc( m_NssKey, 0, ui64WriteOffset,
+				uiBytesRemaining, pvBuffer, &uiBytesWritten)) != zOK)
+			{
+				rc = MapNSSError( lStatus, NE_FLM_WRITING_FILE);
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( (lErr = MapFileHandleToFCB( m_lFileHandle, &fcb)) != 0)
+			{
+				rc = f_mapPlatformError( lErr, NE_FLM_SETTING_UP_FOR_WRITE);
+				goto Exit;
+			}
+	
+			if( (lErr = WriteFile( fcb->Station, m_lFileHandle,
+				(LONG)ui64WriteOffset, uiBytesRemaining, (void *)pvBuffer)) != 0)
+			{
+				rc = f_mapPlatformError( lErr, NE_FLM_WRITING_FILE);
+				goto Exit;
+			}
+			
+			uiBytesWritten = uiBytesRemaining;
+		}
+	}
+	
+	if( uiBytesWritten < uiBytesToWrite)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+		goto Exit;
+	}
+	
+Exit:
+
+	if( puiBytesWritten)
+	{
+		*puiBytesWritten = uiBytesWritten;
+	}
+
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE F_FileHdl::writeSectors(
+	const void *			pvBuffer,
+	F_FileAsyncClient *	pAsyncClient,
+	LONG						lStartSector,
+	LONG						lSectorCount)
+{
+	RCODE				rc = NE_FLM_OK;
+	LONG				lResult;
+	FLMINT			lStatus;
+	FLMBOOL			bExpanded = FALSE;
+
+	// Keep trying write until we succeed or get an error we can't deal with.
+	// Actually, this will NOT loop forever.  At most, it will try twice - 
+	// and then it is only when we get a hole in the file error.
+
+	for( ;;)
+	{
+		if( m_bNSS)
+		{
+			if( pAsyncClient)
+			{
+				lStatus = gv_zDIOWriteFunc( m_NssKey, (FLMUINT64)lStartSector,
+									(FLMUINT)lSectorCount, (FLMUINT)pAsyncClient,
+									nssDioCallback, pvBuffer);
+			}
+			else
+			{
+				lStatus = gv_zDIOWriteFunc( m_NssKey, (FLMUINT64)lStartSector,
+									(FLMUINT)lSectorCount, (FLMUINT)0, NULL, pvBuffer);
+			}
+
+			// We may need to allocate space to do this write
+
+			if( lStatus == zERR_END_OF_FILE || lStatus == zERR_BEYOND_EOF || 
+				 lStatus == zERR_HOLE_IN_DIO_FILE)
+			{
+				if( bExpanded)
+				{
+					f_assert( 0);
+					rc = MapNSSError( lStatus, NE_FLM_DIRECT_WRITING_FILE);
+					goto Exit;
+				}
+
+				// Expand the file
+
+				if( RC_BAD( rc = expand( lStartSector, lSectorCount)))
+				{
+					goto Exit;
+				}
+				
+				bExpanded = TRUE;
+				continue;
+			}
+			else if( lStatus != 0)
+			{
+				rc = MapNSSError( lStatus, NE_FLM_DIRECT_WRITING_FILE);
+				goto Exit;
+			}
+			
+			break;
+		}
+		else
+		{
+			LONG			lSize;
+			FLMBOOL		bNeedToWriteEOF;
+
+			// Determine if this write will change the EOF.  If so, pre-expand
+			// the file.
+
+			if( (lResult = GetFileSize( 0, m_lFileHandle, &lSize)) != 0)
+			{
+				rc = f_mapPlatformError( lResult, NE_FLM_GETTING_FILE_SIZE);
+				goto Exit;
+			}
+			
+			bNeedToWriteEOF = 
+				(lSize < (lStartSector + lSectorCount) * FLM_NLM_SECTOR_SIZE)
+											? TRUE
+											: FALSE;
+											
+			if( pAsyncClient)
+			{
+				lResult = DirectWriteFileNoWait( 0, m_lFileHandle,
+									lStartSector,lSectorCount,
+									(BYTE *)pvBuffer, DirectIONoWaitCallBack, 
+									(LONG)pAsyncClient);
+			}
+			else
+			{
+				lResult = DirectWriteFile( 0, m_lFileHandle,
+									lStartSector, lSectorCount, (BYTE *)pvBuffer);
+			}
+
+			// We may need to allocate space to do this write
+
+			if( lResult == DFSHoleInFileError ||
+				 lResult == DFSOperationBeyondEndOfFile)
+			{
+				if( bExpanded)
+				{
+					f_assert( 0);
+					rc = DfsMapError( lResult, NE_FLM_DIRECT_WRITING_FILE);
+					goto Exit;
+				}
+
+				// Expand the file
+
+				if( RC_BAD( rc = expand( lStartSector, lSectorCount)))
+				{
+					goto Exit;
+				}
+				
+				bExpanded = TRUE;
+
+				// The Expand method forces the file EOF in the directory
+				// entry to be written to disk.
+
+				bNeedToWriteEOF = FALSE;
+				continue;
+			}
+			else if( lResult != 0)
+			{
+				rc = DfsMapError( lResult, NE_FLM_DIRECT_WRITING_FILE);
+				goto Exit;
+			}
+			else
+			{
+				// If bNeedToWriteEOF is TRUE, we need to force EOF to disk.
+
+				if( bNeedToWriteEOF)
+				{
+					LONG	lFileSizeInSectors;
+					LONG	lExtraSectors;
+
+					// Set the EOF to the nearest block boundary - so we don't
+					// have to do this very often.
+
+					lFileSizeInSectors = lStartSector + lSectorCount;
+					lExtraSectors = lFileSizeInSectors % m_lSectorsPerBlock;
+					
+					if( lExtraSectors)
+					{
+						lFileSizeInSectors += (m_lSectorsPerBlock - lExtraSectors);
+					}
+					
+					if( (lResult = SetFileSize( 0, m_lFileHandle,
+						(FLMUINT)lFileSizeInSectors * FLM_NLM_SECTOR_SIZE,
+						FALSE)) != 0)
+					{
+						rc = DfsMapError( lResult, NE_FLM_TRUNCATING_FILE);
+						goto Exit;
+					}
+				}
+
+				break;
+			}
+		}
+	}
+	
+Exit:
+
+	return( rc);
 }
 #endif

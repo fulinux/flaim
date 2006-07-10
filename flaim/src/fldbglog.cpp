@@ -31,51 +31,47 @@ FSTATIC void _flmDbgLogFlush( void);
 FSTATIC void _flmDbgOutputMsg(
 	char *	pszMsg);
 
-// Global data
-
-F_MUTEX				g_hDbgLogMutex = F_MUTEX_NULL;
-F_FileSystem *		g_pFileSystem = NULL;
-F_FileHdl *			g_pLogFile = NULL;
-char *				g_pszLogBuf = NULL;
-FLMUINT				g_uiLogBufOffset = 0;
-FLMUINT				g_uiLogFileOffset = 0;
-FLMBOOL				g_bDbgLogEnabled = TRUE;
+F_MUTEX				gv_hDbgLogMutex = F_MUTEX_NULL;
+IF_FileSystem *	gv_pFileSystem = NULL;
+IF_FileHdl *		gv_pLogFile = NULL;
+char *				gv_pszLogBuf = NULL;
+FLMUINT				gv_uiLogBufOffset = 0;
+FLMUINT				gv_uiLogFileOffset = 0;
+FLMBOOL				gv_bDbgLogEnabled = TRUE;
 
 #define DBG_LOG_BUFFER_SIZE		((FLMUINT)512000)
-
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void flmDbgLogInit( void)
 {
-	FLMBYTE			szLogPath[ 256];
 	RCODE				rc	= FERR_OK;
+	char				szLogPath[ 256];
 
-	flmAssert( g_hDbgLogMutex == F_MUTEX_NULL);
-	flmAssert( g_pFileSystem == NULL);
+	flmAssert( gv_hDbgLogMutex == F_MUTEX_NULL);
+	flmAssert( gv_pFileSystem == NULL);
 
 	// Allocate a buffer for the log
 
 	if( RC_BAD( rc = f_alloc( 
-		DBG_LOG_BUFFER_SIZE + 1024, &g_pszLogBuf)))
+		DBG_LOG_BUFFER_SIZE + 1024, &gv_pszLogBuf)))
 	{
 		goto Exit;
 	}
 
 	// Create the mutex
 
-	if( RC_BAD( f_mutexCreate( &g_hDbgLogMutex)))
+	if( RC_BAD( f_mutexCreate( &gv_hDbgLogMutex)))
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
 	// Create a new file system object
-
-	if( (g_pFileSystem = f_new F_FileSystem) == NULL)
+	
+	if( RC_BAD( rc = FlmGetFileSystem( &gv_pFileSystem)))
 	{
-		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
@@ -89,16 +85,17 @@ void flmDbgLogInit( void)
 
 	// Create the file.
 
-	if( RC_BAD( rc = g_pFileSystem->Create( szLogPath, 
-		F_IO_RDWR | F_IO_EXCL | F_IO_SH_DENYNONE | F_IO_DIRECT, &g_pLogFile)))
+	if( RC_BAD( rc = gv_pFileSystem->createFile( szLogPath, 
+		FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+		&gv_pLogFile)))
 	{
 
 		// See if we can open the file and then truncate it.
 
-		if( RC_OK( g_pFileSystem->Open( szLogPath,
-							F_IO_RDWR | F_IO_SH_DENYNONE | F_IO_DIRECT, &g_pLogFile)))
+		if( RC_OK( gv_pFileSystem->openFile( szLogPath,
+			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &gv_pLogFile)))
 		{
-			if( RC_BAD( rc = g_pLogFile->Truncate( 0)))
+			if( RC_BAD( rc = gv_pLogFile->truncate()))
 			{
 				goto Exit;
 			}
@@ -119,12 +116,12 @@ Desc:
 ****************************************************************************/
 void flmDbgLogExit( void)
 {
-	if( g_bDbgLogEnabled)
+	if( gv_bDbgLogEnabled)
 	{
 		// Output "Log End" message
-		f_mutexLock( g_hDbgLogMutex);
+		f_mutexLock( gv_hDbgLogMutex);
 		_flmDbgOutputMsg( "--- LOG END ---");
-		f_mutexUnlock( g_hDbgLogMutex);
+		f_mutexUnlock( gv_hDbgLogMutex);
 		
 		// Flush the log
 		flmDbgLogFlush();
@@ -132,32 +129,32 @@ void flmDbgLogExit( void)
 
 	// Free all resources
 
-	if( g_hDbgLogMutex != F_MUTEX_NULL)
+	if( gv_hDbgLogMutex != F_MUTEX_NULL)
 	{
-		f_mutexDestroy( &g_hDbgLogMutex);
+		f_mutexDestroy( &gv_hDbgLogMutex);
 	}
 
-	if( g_pszLogBuf)
+	if( gv_pszLogBuf)
 	{
-		f_free( &g_pszLogBuf);
+		f_free( &gv_pszLogBuf);
 	}
 
-	if( g_pLogFile)
+	if( gv_pLogFile)
 	{
-		g_pLogFile->Truncate( g_uiLogFileOffset + g_uiLogBufOffset);
-		g_pLogFile->Close();
-		g_pLogFile->Release();
-		g_pLogFile = NULL;
+		gv_pLogFile->truncate( gv_uiLogFileOffset + gv_uiLogBufOffset);
+		gv_pLogFile->close();
+		gv_pLogFile->Release();
+		gv_pLogFile = NULL;
 	}
 
-	if( g_pFileSystem)
+	if( gv_pFileSystem)
 	{
-		g_pFileSystem->Release();
-		g_pFileSystem = NULL;
+		gv_pFileSystem->Release();
+		gv_pFileSystem = NULL;
 	}
-	g_bDbgLogEnabled = FALSE;
+	
+	gv_bDbgLogEnabled = FALSE;
 }
-
 
 /****************************************************************************
 Desc:
@@ -171,8 +168,10 @@ void flmDbgLogWrite(
 {
 	char		pszTmpBuf[ 256];
 	
-	if( !g_bDbgLogEnabled)
+	if( !gv_bDbgLogEnabled)
+	{
 		return;
+	}
 
 	if( !uiWriteAddress)
 	{
@@ -187,11 +186,10 @@ void flmDbgLogWrite(
     			(unsigned)uiBlkAddress, (unsigned)uiWriteAddress,
 				(unsigned)uiTransId, pszEvent);
 	}
-	f_mutexLock( g_hDbgLogMutex);
+	f_mutexLock( gv_hDbgLogMutex);
 	_flmDbgOutputMsg( pszTmpBuf);
-	f_mutexUnlock( g_hDbgLogMutex);
+	f_mutexUnlock( gv_hDbgLogMutex);
 }
-
 
 /****************************************************************************
 Desc:
@@ -207,7 +205,7 @@ void flmDbgLogUpdate(
 	char		pszTmpBuf[ 256];
 	char		szErr [12];
 	
-	if (!g_bDbgLogEnabled)
+	if (!gv_bDbgLogEnabled)
 	{
 		return;
 	}
@@ -235,11 +233,10 @@ void flmDbgLogUpdate(
 			szErr);
 	}
 
-	f_mutexLock( g_hDbgLogMutex);
+	f_mutexLock( gv_hDbgLogMutex);
 	_flmDbgOutputMsg( pszTmpBuf);
-	f_mutexUnlock( g_hDbgLogMutex);
+	f_mutexUnlock( gv_hDbgLogMutex);
 }
-
 
 /****************************************************************************
 Desc:
@@ -247,24 +244,25 @@ Desc:
 void flmDbgLogMsg(
 	char *		pszMsg)
 {
-	if (!g_bDbgLogEnabled)
+	if (!gv_bDbgLogEnabled)
+	{
 		return;
-	f_mutexLock( g_hDbgLogMutex);
+	}
+	
+	f_mutexLock( gv_hDbgLogMutex);
 	_flmDbgOutputMsg( pszMsg);
-	f_mutexUnlock( g_hDbgLogMutex);
+	f_mutexUnlock( gv_hDbgLogMutex);
 }
-
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void flmDbgLogFlush( void)
 {
-	f_mutexLock( g_hDbgLogMutex);
+	f_mutexLock( gv_hDbgLogMutex);
 	_flmDbgLogFlush();
-	f_mutexUnlock( g_hDbgLogMutex);
+	f_mutexUnlock( gv_hDbgLogMutex);
 }
-
 
 /****************************************************************************
 Desc:
@@ -273,8 +271,8 @@ FSTATIC void _flmDbgLogFlush( void)
 {
 	FLMUINT			uiBytesToWrite;
 	FLMUINT			uiBytesWritten;
-	char *			pszBufPtr = g_pszLogBuf;
-	FLMUINT			uiTotalToWrite = g_uiLogBufOffset;
+	char *			pszBufPtr = gv_pszLogBuf;
+	FLMUINT			uiTotalToWrite = gv_uiLogBufOffset;
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBufferSize = DBG_LOG_BUFFER_SIZE + 1024;
 
@@ -289,34 +287,32 @@ FSTATIC void _flmDbgLogFlush( void)
 			uiBytesToWrite = uiTotalToWrite;
 		}
 
-		if( RC_BAD( rc = g_pLogFile->sectorWrite(
-			g_uiLogFileOffset, uiBytesToWrite,
-			pszBufPtr, uiBufferSize, NULL, &uiBytesWritten, FALSE)))
+		if( RC_BAD( rc = gv_pLogFile->write( gv_uiLogFileOffset, uiBytesToWrite,
+			pszBufPtr, &uiBytesWritten)))
 		{
 			goto Exit;
 		}
 
 		flmAssert( uiBytesToWrite == uiBytesWritten);
-		g_uiLogFileOffset += uiBytesWritten;
+		gv_uiLogFileOffset += uiBytesWritten;
 		pszBufPtr += uiBytesWritten;
 		uiBufferSize -= uiBytesWritten;
 		uiTotalToWrite -= uiBytesWritten;
 	}
 
-	if (g_uiLogBufOffset & 0x1FF)
+	if (gv_uiLogBufOffset & 0x1FF)
 	{
-		if (g_uiLogBufOffset > 512)
+		if (gv_uiLogBufOffset > 512)
 		{
-			f_memcpy( g_pszLogBuf,
-				&g_pszLogBuf [g_uiLogBufOffset & 0xFFFFFE00],
-					512);
-			g_uiLogBufOffset &= 0x1FF;
+			f_memcpy( gv_pszLogBuf,
+				&gv_pszLogBuf [gv_uiLogBufOffset & 0xFFFFFE00], 512);
+			gv_uiLogBufOffset &= 0x1FF;
 		}
-		g_uiLogFileOffset -= g_uiLogBufOffset;
+		gv_uiLogFileOffset -= gv_uiLogBufOffset;
 	}
 	else
 	{
-		g_uiLogBufOffset = 0;
+		gv_uiLogBufOffset = 0;
 	}
 
 Exit:
@@ -324,19 +320,18 @@ Exit:
 	flmAssert( RC_OK( rc));
 }
 
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
 void _flmDbgOutputMsg(
 	char *		pszMsg)
 {
-	char *	pszBufPtr = &(g_pszLogBuf[ g_uiLogBufOffset]);
+	char *	pszBufPtr = &(gv_pszLogBuf[ gv_uiLogBufOffset]);
 
 	f_sprintf( pszBufPtr, "%s\n", pszMsg);
-	g_uiLogBufOffset += f_strlen( pszBufPtr);
+	gv_uiLogBufOffset += f_strlen( pszBufPtr);
 
-	if( g_uiLogBufOffset >= DBG_LOG_BUFFER_SIZE)
+	if( gv_uiLogBufOffset >= DBG_LOG_BUFFER_SIZE)
 	{
 		_flmDbgLogFlush();
 	}

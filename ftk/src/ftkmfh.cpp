@@ -207,6 +207,7 @@ F_MultiFileHdl::F_MultiFileHdl(
 	m_pLockFileHdl = NULL;
 	f_memset( m_pFileHdlList, 0, sizeof( FH_INFO) * F_MULTI_FHDL_LIST_SIZE);
 	m_uiMaxFileSize = uiMaxFileSize;
+	
 	if( !m_uiMaxFileSize)
 	{
 		m_uiMaxFileSize = F_MULTI_FHDL_DEFAULT_MAX_FILE_SIZE;
@@ -553,7 +554,7 @@ RCODE F_MultiFileHdl::open(
 
 	// Find all data files to determine the EOF
 
-	for( rc = pDir->next(); !RC_BAD( rc) ; rc = pDir->next())
+	for( rc = pDir->next(); !RC_BAD( rc); rc = pDir->next())
 	{
 		if( RC_OK( getFileNum( pDir->currentItemName(), &uiTmp)))
 		{
@@ -626,6 +627,7 @@ RCODE F_MultiFileHdl::read(
 	void *		pvBuffer,				// Buffer
 	FLMUINT *	puiBytesRead)			// [out] Number of bytes read
 {
+	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiFileNum = getFileNum( ui64Offset);
 	FLMUINT			uiFileOffset = getFileOffset( ui64Offset);
 	FLMUINT			uiTmp;
@@ -633,7 +635,6 @@ RCODE F_MultiFileHdl::read(
 	FLMUINT			uiBytesToRead;
 	FLMUINT			uiMaxReadLen;
 	IF_FileHdl *	pFileHdl;
-	RCODE				rc = NE_FLM_OK;
 
 	// Handle the case of a 0-byte read
 

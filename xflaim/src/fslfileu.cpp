@@ -2606,7 +2606,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_Database::maintenanceThread(
+RCODE FLMAPI F_Database::maintenanceThread(
 	IF_Thread *		pThread)
 {
 	RCODE				rc = NE_XFLM_OK;

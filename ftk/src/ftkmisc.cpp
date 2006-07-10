@@ -34,6 +34,11 @@ static IF_FileSystem *			gv_pFileSystem = NULL;
 static FLMUINT						gv_uiMaxFileSize = FLM_MAXIMUM_FILE_SIZE;
 static F_XML *						gv_pXml = NULL;
 
+FLMATOMIC							gv_openFiles = 0;
+F_MUTEX 								F_FileHdl::m_hAsyncListMutex = F_MUTEX_NULL;
+F_FileAsyncClient *				F_FileHdl::m_pFirstAvailAsync = NULL;
+FLMUINT								F_FileHdl::m_uiAvailAsyncCount = 0;
+
 FSTATIC RCODE f_initRandomGenerator( void);
 
 FSTATIC void f_freeRandomGenerator( void);
@@ -133,6 +138,11 @@ RCODE FLMAPI ftkStartup( void)
 		goto Exit;
 	}
 	
+	if( RC_BAD( rc = f_initFileAsyncClientList()))
+	{
+		goto Exit;
+	}
+	
 	if( RC_BAD( rc = f_allocThreadMgr( &gv_pThreadMgr)))
 	{
 		goto Exit;
@@ -213,11 +223,15 @@ void FLMAPI ftkShutdown( void)
 		return;
 	}
 	
+	f_assert( !gv_openFiles);
+	
 	if( gv_pThreadMgr)
 	{
 		gv_pThreadMgr->Release();
 		gv_pThreadMgr = NULL;
 	}
+	
+	f_freeFileAsyncClientList();
 	
 	if( gv_pFileSystem)
 	{
@@ -1401,6 +1415,14 @@ IF_FileSystem * FLMAPI f_getFileSysPtr( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
+FLMUINT FLMAPI f_getOpenFileCount( void)
+{
+	return( gv_openFiles);
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
 IF_ThreadMgr * f_getThreadMgrPtr( void)
 {
 	return( gv_pThreadMgr);
@@ -2141,10 +2163,10 @@ Desc: This routine allocates and initializes a hash table.
 ****************************************************************************/
 RCODE FLMAPI f_allocHashTable(
 	FLMUINT					uiHashTblSize,
-	FBUCKET **				ppHashTblRV)
+	F_BUCKET **				ppHashTblRV)
 {
 	RCODE						rc = NE_FLM_OK;
-	FBUCKET *				pHashTbl = NULL;
+	F_BUCKET *				pHashTbl = NULL;
 	IF_RandomGenerator *	pRandGen = NULL;
 	FLMUINT					uiCnt;
 	FLMUINT					uiRandVal;
@@ -2153,7 +2175,7 @@ RCODE FLMAPI f_allocHashTable(
 	// Allocate memory for the hash table
 
 	if (RC_BAD( rc = f_calloc(
-		(FLMUINT)(sizeof( FBUCKET)) * uiHashTblSize, &pHashTbl)))
+		(FLMUINT)(sizeof( F_BUCKET)) * uiHashTblSize, &pHashTbl)))
 	{
 		goto Exit;
 	}
@@ -2204,7 +2226,7 @@ Desc: This routine determines the hash bucket for a string.
 ****************************************************************************/
 FLMUINT FLMAPI f_strHashBucket(
 	char *		pszStr,
-	FBUCKET *	pHashTbl,
+	F_BUCKET *	pHashTbl,
 	FLMUINT		uiNumBuckets)
 {
 	FLMUINT	uiHashIndex;
@@ -2234,7 +2256,7 @@ Desc: This routine determines the hash bucket for a binary array of
 FLMUINT FLMAPI f_binHashBucket(
 	void *		pBuf,
 	FLMUINT		uiBufLen,
-	FBUCKET *	pHashTbl,
+	F_BUCKET *	pHashTbl,
 	FLMUINT		uiNumBuckets)
 {
 	FLMUINT		uiHashIndex;
@@ -2254,3 +2276,727 @@ FLMUINT FLMAPI f_binHashBucket(
 	return( uiHashIndex);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_HashTable::F_HashTable()
+{
+	m_hMutex = F_MUTEX_NULL;
+	m_pMRUObject = NULL;
+	m_pLRUObject = NULL;
+	m_ppHashTable = NULL;
+	m_uiBuckets = 0;
+	m_uiObjects = 0;
+	m_uiMaxObjects = 0;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+F_HashTable::~F_HashTable()
+{
+	F_HashObject *		pCur;
+	F_HashObject *		pNext;
+
+	pCur = m_pMRUObject;
+	while( pCur)
+	{
+		pNext = pCur->m_pNextInGlobal;
+		unlinkObject( pCur);
+		pCur->Release();
+		pCur = pNext;
+	}
+
+	f_assert( !m_uiObjects);
+	f_assert( !m_pMRUObject);
+	f_assert( !m_pLRUObject);
+
+	if( m_ppHashTable)
+	{
+		f_free( &m_ppHashTable);
+	}
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &m_hMutex);
+	}
+}
+
+/****************************************************************************
+Desc:	Configures the hash table prior to first use
+****************************************************************************/
+RCODE FLMAPI F_HashTable::setupHashTable(
+	FLMBOOL			bMultithreaded,
+	FLMUINT			uiNumBuckets,
+	FLMUINT			uiMaxObjects)
+{
+	RCODE			rc = NE_FLM_OK;
+
+	flmAssert( uiNumBuckets);
+
+	// Create the hash table
+
+	if( RC_BAD( rc = f_alloc( 
+		sizeof( F_HashObject *) * uiNumBuckets, &m_ppHashTable)))
+	{
+		goto Exit;
+	}
+	
+	m_uiObjects = 0;
+	m_uiMaxObjects = uiMaxObjects;
+	m_uiBuckets = uiNumBuckets;
+	f_memset( m_ppHashTable, 0, sizeof( F_HashObject *) * uiNumBuckets);
+
+	if( bMultithreaded)
+	{
+		// Initialize the mutex
+
+		if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Retrieves an object from the hash table with the specified key.
+		This routine assumes the table's mutex has already been locked.
+		A reference IS NOT added to the object for the caller.
+****************************************************************************/
+RCODE F_HashTable::findObject(
+	const void *		pvKey,
+	FLMUINT				uiKeyLen,
+	F_HashObject **	ppObject)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_HashObject *		pObject = NULL;
+	FLMUINT				uiBucket;
+	FLMUINT32			ui32CRC = 0;
+
+	*ppObject = NULL;
+
+	// Calculate the hash bucket and mutex offset
+
+	uiBucket = getHashBucket( pvKey, uiKeyLen, &ui32CRC);
+
+	// Search the bucket for an object with a matching
+	// key.
+
+	pObject = m_ppHashTable[ uiBucket];
+	while( pObject)
+	{
+		if( pObject->getKeyCRC() == ui32CRC)
+		{
+			const void *	pvTmpKey = pObject->getKey();
+			FLMUINT			uiTmpKeyLen = pObject->getKeyLength();
+
+			if( uiTmpKeyLen == uiKeyLen &&
+				f_memcmp( pvTmpKey, pvKey, uiKeyLen) == 0)
+			{
+				break;
+			}
+		}
+		
+		pObject = pObject->m_pNextInBucket;
+	}
+
+	if( !pObject)
+	{
+		rc = RC_SET( NE_FLM_NOT_FOUND);
+		goto Exit;
+	}
+
+	*ppObject = pObject;
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Adds an object to the hash table
+****************************************************************************/
+RCODE FLMAPI F_HashTable::addObject(
+	F_HashObject *		pObject,
+	FLMBOOL				bAllowDuplicates)
+{
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiBucket;
+	F_HashObject *		pTmp;
+	const void *		pvKey;
+	FLMUINT				uiKeyLen;
+	FLMUINT32			ui32CRC;
+	FLMBOOL				bMutexLocked = FALSE;
+
+	// Calculate and set the objects hash bucket
+
+	flmAssert( pObject->getHashBucket() == F_INVALID_HASH_BUCKET);
+
+	pvKey = pObject->getKey();
+	uiKeyLen = pObject->getKeyLength();
+	flmAssert( uiKeyLen);
+
+	uiBucket = getHashBucket( pvKey, uiKeyLen, &ui32CRC);
+	pObject->m_ui32KeyCRC = ui32CRC;
+
+	// Lock the mutex
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+
+	// Make sure the object doesn't already exist
+
+	if( !bAllowDuplicates)
+	{
+		if( RC_BAD( rc = findObject( pvKey, uiKeyLen, &pTmp)))
+		{
+			if( rc != NE_FLM_NOT_FOUND)
+			{
+				goto Exit;
+			}
+			rc = NE_FLM_OK;
+		}
+		else
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_EXISTS);
+			goto Exit;
+		}
+	}
+
+	// Add a reference to the object
+
+	pObject->AddRef();
+
+	// Link the object into the appropriate lists
+
+	linkObject( pObject, uiBucket);
+	
+	// Make sure the maximum number of objects hasn't been exceeded
+	
+	if( m_uiMaxObjects)
+	{
+		while( m_uiObjects > m_uiMaxObjects)
+		{
+			if( (pTmp = m_pLRUObject) == NULL)
+			{
+				break;
+			}
+
+			unlinkObject( pTmp);
+		}
+	}
+
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Returns the next object in the linked list of objects in the hash
+		table.  If *ppObject == NULL, the first object will be returned.
+****************************************************************************/
+RCODE FLMAPI F_HashTable::getNextObjectInGlobal(
+	F_HashObject **	ppObject)
+{
+	RCODE					rc = NE_FLM_OK;
+	FLMBOOL				bMutexLocked = FALSE;
+	F_HashObject *		pOldObj;
+
+	// Lock the mutex
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+
+	if( !(*ppObject))
+	{
+		*ppObject = m_pMRUObject;
+	}
+	else
+	{
+		pOldObj = *ppObject;
+		*ppObject = (*ppObject)->m_pNextInGlobal;
+		pOldObj->Release();
+	}
+
+	if( *ppObject == NULL)
+	{
+		rc = RC_SET( NE_FLM_EOF_HIT);
+		goto Exit;
+	}
+
+	(*ppObject)->AddRef();
+
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_HashTable::getNextObjectInBucket(
+	F_HashObject **	ppObject)
+{
+	RCODE					rc = NE_FLM_OK;
+	FLMBOOL				bMutexLocked = FALSE;
+	F_HashObject *		pOldObj;
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+
+	if( !(*ppObject))
+	{
+		rc = RC_SET( NE_FLM_EOF_HIT);
+		goto Exit;
+	}
+	
+	pOldObj = *ppObject;
+	*ppObject = (*ppObject)->m_pNextInBucket;
+	pOldObj->Release();
+
+	if( *ppObject == NULL)
+	{
+		rc = RC_SET( NE_FLM_EOF_HIT);
+		goto Exit;
+	}
+
+	(*ppObject)->AddRef();
+
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Retrieves an object from the hash table with the specified key
+****************************************************************************/
+RCODE FLMAPI F_HashTable::getObject(
+	const void *		pvKey,
+	FLMUINT				uiKeyLen,
+	F_HashObject **	ppObject,
+	FLMBOOL				bRemove)
+{
+	RCODE				rc = NE_FLM_OK;
+	F_HashObject *	pObject;
+	FLMBOOL			bMutexLocked = FALSE;
+
+	// Lock the mutex
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+
+	// Search for an object with a matching key.
+
+	if( RC_BAD( rc = findObject( pvKey, uiKeyLen, &pObject)))
+	{
+		goto Exit;
+	}
+
+	if( pObject && bRemove)
+	{
+		unlinkObject( pObject);
+		if( !ppObject)
+		{
+			pObject->Release();
+			pObject = NULL;
+		}
+	}
+
+	if( ppObject)
+	{
+		if( !bRemove)
+		{
+			pObject->AddRef();
+		}
+		
+		*ppObject = pObject;
+		pObject = NULL;
+	}
+
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Removes an object from the hash table by key
+****************************************************************************/
+RCODE FLMAPI F_HashTable::removeObject(
+	void *			pvKey,
+	FLMUINT			uiKeyLen)
+{
+	return( getObject( pvKey, uiKeyLen, NULL, TRUE));
+}
+
+/****************************************************************************
+Desc:	Removes an object from the hash table by object pointer
+****************************************************************************/
+RCODE FLMAPI F_HashTable::removeObject(
+	F_HashObject *		pObject)
+{
+	const void *	pvKey = pObject->getKey();
+	FLMUINT			uiKeyLen = pObject->getKeyLength();
+
+	return( getObject( pvKey, uiKeyLen, NULL, TRUE));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_HashTable::removeAllObjects( void)
+{
+	F_HashObject *		pCur;
+	FLMBOOL				bMutexLocked = FALSE;
+
+	for( ;;)
+	{
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+		
+		if( (pCur = m_pMRUObject) == NULL)
+		{
+			break;
+		}
+
+		unlinkObject( pCur);
+
+		if( bMutexLocked)
+		{
+			f_mutexUnlock( m_hMutex);
+			bMutexLocked = FALSE;
+		}
+
+		pCur->Release();
+	}
+
+	f_assert( !m_pMRUObject);
+	f_assert( !m_pLRUObject);
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_HashTable::removeAgedObjects(
+	FLMUINT				uiMaxAge)
+{
+	F_HashObject *		pCur;
+	FLMBOOL				bMutexLocked = FALSE;
+	FLMUINT				uiCurrentTime = FLM_GET_TIMER();
+
+	for( ;;)
+	{
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+		
+		if( (pCur = m_pLRUObject) == NULL)
+		{
+			break;
+		}
+		
+		if( FLM_TIMER_UNITS_TO_SECS( 
+			FLM_ELAPSED_TIME( uiCurrentTime, pCur->m_uiTimeAdded)) < uiMaxAge)
+		{
+			break;
+		}
+
+		unlinkObject( pCur);
+
+		if( bMutexLocked)
+		{
+			f_mutexUnlock( m_hMutex);
+			bMutexLocked = FALSE;
+		}
+
+		pCur->Release();
+	}
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT FLMAPI F_HashTable::getMaxObjects( void)
+{
+	FLMUINT		uiMaxObjects;
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+	}
+	
+	uiMaxObjects = m_uiMaxObjects;
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( m_uiMaxObjects);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_HashTable::setMaxObjects(
+	FLMUINT				uiMaxObjects)
+{
+	F_HashObject *		pCur;
+	FLMBOOL				bMutexLocked = FALSE;
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+	
+	m_uiMaxObjects = uiMaxObjects;
+	
+	while( m_uiObjects > m_uiMaxObjects)
+	{
+		if( !bMutexLocked && m_hMutex != F_MUTEX_NULL)
+		{
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+		
+		if( (pCur = m_pLRUObject) == NULL)
+		{
+			break;
+		}
+		
+		unlinkObject( pCur);
+
+		if( bMutexLocked)
+		{
+			f_mutexUnlock( m_hMutex);
+			bMutexLocked = FALSE;
+		}
+
+		pCur->Release();
+	}
+	
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( NE_FLM_OK);
+}
+	
+/****************************************************************************
+Desc:	Calculates the hash bucket of a key and optionally returns the key's
+		CRC.
+****************************************************************************/
+FLMUINT F_HashTable::getHashBucket(
+	const void *	pvKey,
+	FLMUINT			uiLen,
+	FLMUINT32 *		pui32KeyCRC)
+{
+	FLMUINT32		ui32CRC = 0;
+
+	f_updateCRC( (FLMBYTE *)pvKey, uiLen, &ui32CRC);
+	
+	if( pui32KeyCRC)
+	{
+		*pui32KeyCRC = ui32CRC;
+	}
+	
+	return( ui32CRC % m_uiBuckets);
+}
+
+/****************************************************************************
+Desc:		Links an object to the global list and also to its bucket
+Notes:	This routine assumes that the bucket's mutex is already locked
+			if the hash table is multi-threaded.
+****************************************************************************/
+void F_HashTable::linkObject(
+	F_HashObject *		pObject,
+	FLMUINT				uiBucket)
+{
+	f_assert( uiBucket < m_uiBuckets);
+	f_assert( pObject->getHashBucket() == F_INVALID_HASH_BUCKET);
+
+	// Set the object's bucket
+
+	pObject->setHashBucket( uiBucket);
+
+	// Link the object to its hash bucket
+
+	pObject->m_pNextInBucket = m_ppHashTable[ uiBucket];
+	if( m_ppHashTable[ uiBucket])
+	{
+		m_ppHashTable[ uiBucket]->m_pPrevInBucket = pObject;
+	}
+	m_ppHashTable[ uiBucket] = pObject;
+
+	// Link to the global list
+
+	if( (pObject->m_pNextInGlobal = m_pMRUObject) != NULL)
+	{
+		m_pMRUObject->m_pPrevInGlobal = pObject;
+	}
+	else
+	{
+		m_pLRUObject = pObject;
+	}
+	
+	pObject->m_uiTimeAdded = FLM_GET_TIMER();
+	m_pMRUObject = pObject;
+	m_uiObjects++;
+}
+
+/****************************************************************************
+Desc:		Unlinks an object from its bucket and the global list.
+Notes:	This routine assumes that the bucket's mutex is already locked
+			if the hash table is multi-threaded.
+****************************************************************************/
+void F_HashTable::unlinkObject(
+	F_HashObject *		pObject)
+{
+	FLMUINT		uiBucket = pObject->getHashBucket();
+
+	// Is the bucket valid?
+
+	flmAssert( uiBucket < m_uiBuckets);
+
+	// Unlink from the hash bucket
+
+	if( pObject->m_pNextInBucket)
+	{
+		pObject->m_pNextInBucket->m_pPrevInBucket = pObject->m_pPrevInBucket;
+	}
+
+	if( pObject->m_pPrevInBucket)
+	{
+		pObject->m_pPrevInBucket->m_pNextInBucket = pObject->m_pNextInBucket;
+	}
+	else
+	{
+		m_ppHashTable[ uiBucket] = pObject->m_pNextInBucket;
+	}
+
+	pObject->m_pPrevInBucket = NULL;
+	pObject->m_pNextInBucket = NULL;
+	pObject->setHashBucket( F_INVALID_HASH_BUCKET);
+
+	// Unlink from the global list
+
+	if( pObject->m_pNextInGlobal)
+	{
+		pObject->m_pNextInGlobal->m_pPrevInGlobal = pObject->m_pPrevInGlobal;
+	}
+	else
+	{
+		m_pLRUObject = pObject->m_pPrevInGlobal;
+	}
+
+	if( pObject->m_pPrevInGlobal)
+	{
+		pObject->m_pPrevInGlobal->m_pNextInGlobal = pObject->m_pNextInGlobal;
+	}
+	else
+	{
+		m_pMRUObject = pObject->m_pNextInGlobal;
+	}
+
+	pObject->m_pPrevInGlobal = NULL;
+	pObject->m_pNextInGlobal = NULL;
+	pObject->m_uiTimeAdded = 0;
+
+	f_assert( m_uiObjects);
+	m_uiObjects--;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE f_initFileAsyncClientList( void)
+{
+	RCODE			rc = NE_FLM_OK;
+	
+	if( RC_BAD( rc = f_mutexCreate( &F_FileHdl::m_hAsyncListMutex)))
+	{
+		goto Exit;
+	}
+	
+	F_FileHdl::m_pFirstAvailAsync = NULL;
+	F_FileHdl::m_uiAvailAsyncCount = 0;
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void f_freeFileAsyncClientList( void)
+{
+	F_FileAsyncClient *		pAsyncClient;
+	
+	while( F_FileHdl::m_pFirstAvailAsync)
+	{
+		pAsyncClient = F_FileHdl::m_pFirstAvailAsync;
+		F_FileHdl::m_pFirstAvailAsync = F_FileHdl::m_pFirstAvailAsync->m_pNext;
+		pAsyncClient->m_pNext = NULL;
+		delete pAsyncClient;
+	}
+	
+	if( F_FileHdl::m_hAsyncListMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &F_FileHdl::m_hAsyncListMutex);
+	}
+	
+	F_FileHdl::m_uiAvailAsyncCount = 0;
+}

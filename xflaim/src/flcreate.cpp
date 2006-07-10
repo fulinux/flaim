@@ -91,11 +91,6 @@ RCODE FLMAPI F_DbSystem::dbCreate(
 	f_mutexLock( gv_XFlmSysData.hShareMutex);
 	bMutexLocked = TRUE;
 
-	// Free any unused structures that have been unused for the maximum
-	// amount of time.  May unlock and re-lock the global mutex.
-
-	checkNotUsedObjects();
-
 	for( ;;)
 	{
 
@@ -404,9 +399,8 @@ RCODE F_Db::initDbFiles(
 	if (!m_pDatabase->m_bTempDb)
 	{
 		pBlkHdr->ui32BlkCRC = calcBlkCRC( pBlkHdr, SIZEOF_STD_BLK_HDR);
-		if (RC_BAD( rc = m_pSFileHdl->writeBlock(
-									(FLMUINT)pBlkHdr->ui32BlkAddr,
-									uiBlkSize, pucBuf, NULL, &uiWriteBytes)))
+		if (RC_BAD( rc = m_pSFileHdl->writeBlock( pBlkHdr->ui32BlkAddr,
+			uiBlkSize, pucBuf, &uiWriteBytes)))
 		{
 			goto Exit;
 		}

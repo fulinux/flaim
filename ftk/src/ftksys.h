@@ -42,11 +42,11 @@
 	class F_FileHdl;
 	class F_Thread;
 	class F_ThreadMgr;
-	class F_IOBufferMgr;
 	class F_FileSystem;
 	class F_ThreadMgr;
 	class F_ResultSet;
 	class F_ResultSetBlk;
+	class F_IOBufferMgr;
 
 	/****************************************************************************
 	Desc: Global data
@@ -104,6 +104,9 @@
 	
 		// Function XXX not inlined
 		#pragma warning( disable : 4710) 
+
+		// Flow in or out of inline asm code suppresses global optimization
+		#pragma warning( disable : 4740) 
 		
 		#define ENDLINE			ENDLINE_CRLF
 		
@@ -271,19 +274,71 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	typedef enum
+	{
+		MGR_LIST_NONE,
+		MGR_LIST_AVAIL,
+		MGR_LIST_PENDING,
+		MGR_LIST_USED
+	} eBufferMgrList;
+		
+	#define F_DEFAULT_CBDATA_SLOTS		16
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	class F_IOBuffer : public IF_IOBuffer
 	{
 	public:
 	
-		F_IOBuffer();
+		F_IOBuffer()
+		{
+			m_pucBuffer = NULL;
+			m_uiBufferSize = 0;
+			m_pBufferMgr = NULL;
+			m_pAsyncClient = NULL;
+			m_fnCompletion = NULL;
+			m_pvData = NULL;
+			m_ppCallbackData = m_callbackData;
+			m_uiMaxCallbackData = F_DEFAULT_CBDATA_SLOTS;
+			m_pPrev = NULL;
+			m_pNext = NULL;
+			m_eList = MGR_LIST_NONE;
+			resetBuffer();
+		}
+
+		virtual ~F_IOBuffer()
+		{
+			if( m_pucBuffer)
+			{
+				cleanupBuffer();
+				f_freeAlignedBuffer( (void **)&m_pucBuffer);
+			}
+			
+			if( m_pAsyncClient)
+			{
+				m_pAsyncClient->Release();
+			}
+		}
 	
-		virtual ~F_IOBuffer();
+		FLMINT FLMAPI Release( void);
+
+		RCODE setupBuffer(
+			FLMUINT					uiBufferSize,
+			F_IOBufferMgr *		pBufferMgr);
+			
+		FINLINE void resetBuffer( void)
+		{
+			f_assert( !m_pAsyncClient);
+
+			cleanupBuffer();						
+			m_uiElapsedTime = 0;
+			m_completionRc = NE_FLM_OK;
+			m_bPending = FALSE;
+			m_bCompleted = FALSE;
+		}
 	
-		RCODE FLMAPI setupBuffer(
-			FLMUINT	uiBufferSize,
-			FLMUINT	uiBlockSize);
-	
-		FINLINE FLMBYTE * FLMAPI getBuffer( void)
+		FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
 		{
 			return( m_pucBuffer);
 		}
@@ -293,124 +348,218 @@
 			return( m_uiBufferSize);
 		}
 	
-		FINLINE FLMUINT FLMAPI getBlockSize( void)
-		{
-			return( m_uiBlockSize);
-		}
-	
-		void FLMAPI notifyComplete(
-			RCODE			rc);
-			
-		void FLMAPI signalComplete(
-			RCODE			rc);
-	
 		FINLINE void FLMAPI setCompletionCallback(
-			WRITE_COMPLETION_CB 	fnCompletion)
+			F_BUFFER_COMPLETION_FUNC	fnCompletion,
+			void *							pvData)
 		{
 			m_fnCompletion = fnCompletion;
+			m_pvData = pvData;
 		}
-	
-		FINLINE void FLMAPI setCompletionCallbackData(
-			FLMUINT	uiBlockNumber,
-			void *	pvData)
+		
+		RCODE FLMAPI addCallbackData(
+			void *							pvData);
+			
+		void * FLMAPI getCallbackData(
+			FLMUINT							uiSlot);
+			
+		FINLINE FLMUINT FLMAPI getCallbackDataCount( void)
 		{
-			f_assert( uiBlockNumber < FLM_MAX_IO_BUFFER_BLOCKS);
-			m_UserData [uiBlockNumber] = pvData;
+			return( m_uiCallbackDataCount);
 		}
-	
-		FINLINE void * FLMAPI getCompletionCallbackData(
-			FLMUINT	uiBlockNumber)
+		
+		FINLINE void FLMAPI cleanupBuffer( void)
 		{
-			f_assert( uiBlockNumber < FLM_MAX_IO_BUFFER_BLOCKS);
-			return( m_UserData [uiBlockNumber]);
+			if( m_fnCompletion)
+			{
+				m_fnCompletion( this, m_pvData);
+			}
+			
+			m_fnCompletion = NULL;
+			m_pvData = NULL;
+			
+			if( m_ppCallbackData && m_ppCallbackData != m_callbackData)
+			{
+				f_free( &m_ppCallbackData);
+			}
+			
+			m_uiMaxCallbackData = F_DEFAULT_CBDATA_SLOTS;
+			m_uiCallbackDataCount = 0;
+			m_ppCallbackData = m_callbackData;
 		}
-	
+			
+		void FLMAPI setAsyncClient(
+			IF_AsyncClient *				pAsyncClient)
+		{
+			if( m_pAsyncClient)
+			{
+				m_pAsyncClient->Release();
+			}
+			
+			if( (m_pAsyncClient = pAsyncClient) != NULL)
+			{
+				m_pAsyncClient->AddRef();
+			}
+		}
+			
+		void FLMAPI getAsyncClient(
+			IF_AsyncClient **				ppAsyncClient)
+		{
+			if( (*ppAsyncClient = m_pAsyncClient) != NULL)
+			{
+				(*ppAsyncClient)->AddRef();
+			}
+		}
+		
+		void FLMAPI setPending( void);
+		
+		void FLMAPI clearPending( void);
+		
+		void FLMAPI notifyComplete(
+			RCODE							completionRc);
+			
+		FINLINE FLMBOOL FLMAPI isPending( void)
+		{
+			return( m_bPending);
+		}
+		
+		FINLINE RCODE FLMAPI waitToComplete( void)
+		{
+			RCODE		rc = NE_FLM_OK;
+			
+			f_assert( m_bPending);
+			
+			if( m_pAsyncClient)
+			{
+				IF_AsyncClient * 	pAsyncClient = m_pAsyncClient;
+				
+				m_pAsyncClient = NULL;
+				rc = pAsyncClient->waitToComplete( TRUE);
+			}
+			
+			return( rc);
+		}
+		
+		FINLINE FLMBOOL FLMAPI isComplete( void)
+		{
+			return( m_bCompleted);
+		}
+		
 		FINLINE RCODE FLMAPI getCompletionCode( void)
 		{
+			f_assert( m_bCompleted);
 			return( m_completionRc);
 		}
-	
-		FINLINE eBufferMgrList FLMAPI getList( void)
+
+		FINLINE FLMUINT FLMAPI getElapsedTime( void)
 		{
-			return( m_eList);
+			f_assert( m_bCompleted);
+			return( m_uiElapsedTime);
 		}
-	
-		void FLMAPI makePending( void);
-		
-		FLMBOOL FLMAPI isPending( void);
-	
-		void FLMAPI startTimer(
-			void *					pvStats);
 			
-		void * FLMAPI getStats( void);
-		
-		FLMUINT64 FLMAPI getElapTime( void);
-		
-	#ifdef FLM_WIN
-		FINLINE OVERLAPPED * getOverlapped( void)
-		{
-			return( &m_Overlapped);
-		}
-	
-		FINLINE void setFileHandle(
-			HANDLE	FileHandle)
-		{
-			m_FileHandle = FileHandle;
-		}
-	#endif
-	
-	#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
-		FINLINE struct aiocb * getAIOStruct( void)
-		{
-			return( &m_aio);
-		}
-	#endif
-	
 	private:
 	
-		// Only called by the buffer manager
+		FLMBYTE *						m_pucBuffer;
+		FLMUINT							m_uiBufferSize;
+		F_IOBufferMgr *				m_pBufferMgr;
+		IF_AsyncClient *				m_pAsyncClient;
+		F_BUFFER_COMPLETION_FUNC	m_fnCompletion;
+		void *							m_pvData;
+		FLMUINT							m_uiElapsedTime;
+		RCODE								m_completionRc;
+		FLMBOOL							m_bPending;
+		FLMBOOL							m_bCompleted;
+		FLMUINT							m_uiStartTime;
+		FLMUINT							m_uiEndTime;
+		void *							m_callbackData[ F_DEFAULT_CBDATA_SLOTS];
+		void **							m_ppCallbackData;
+		FLMUINT							m_uiCallbackDataCount;
+		FLMUINT							m_uiMaxCallbackData;
+		F_IOBuffer *					m_pPrev;
+		F_IOBuffer *					m_pNext;
+		eBufferMgrList					m_eList;
+		
+		friend class F_FileAsyncClient;
+		friend class F_IOBufferMgr;
+	};
 	
-		RCODE setupIOBuffer(
-			IF_IOBufferMgr *	pIOBufferMgr);
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class FLMEXP F_FileAsyncClient : public IF_AsyncClient
+	{
+	public:
 	
-		FLMBOOL isIOComplete( void);
+		F_FileAsyncClient()
+		{
+			m_pFileHdl = NULL;
+			m_pIOBuffer = NULL;
+			m_completionRc = NE_FLM_OK;
+			m_uiBytesToDo = 0;
+			m_uiBytesDone = 0;
+			m_pNext = NULL;
+		#ifdef FLM_WIN
+			m_Overlapped.hEvent = 0;
+		#endif
+		#ifdef FLM_RING_ZERO_NLM
+			m_hSem = NULL;
+		#endif
+		}
+		
+		~F_FileAsyncClient();
+		
+		FLMINT FLMAPI Release();
+
+		RCODE FLMAPI waitToComplete(
+			FLMBOOL						bRelease);
+
+		RCODE FLMAPI getCompletionCode( void);
+		
+		FLMUINT FLMAPI getElapsedTime( void);
+		
+		F_FileAsyncClient *			m_pNext;
+		
+		void signalComplete(
+			RCODE							rc,
+			FLMUINT						uiBytesDone);
+			
+		FLMUINT getBytesToDo( void)
+		{
+			return( m_uiBytesToDo);
+		}
+
+	private:
 	
-		RCODE waitToComplete( void);
-	
-		// Private methods and variables
-	
-		F_IOBufferMgr *		m_pIOBufferMgr;
-		FLMBYTE *				m_pucBuffer;
-		void *					m_UserData[ FLM_MAX_IO_BUFFER_BLOCKS];
-		FLMUINT					m_uiBufferSize;
-		FLMUINT					m_uiBlockSize;
-		eBufferMgrList			m_eList;
-		FLMBOOL					m_bDeleteOnNotify;
-	#ifdef FLM_WIN
-		HANDLE					m_FileHandle;
-		OVERLAPPED				m_Overlapped;
+		RCODE prepareForAsync(
+			IF_IOBuffer *				pIOBuffer);
+		
+		void FLMAPI notifyComplete(
+			RCODE							completionRc,
+			FLMUINT						uiBytesDone,
+			FLMBOOL						bRelease);
+
+		F_FileHdl *						m_pFileHdl;
+		IF_IOBuffer *					m_pIOBuffer;
+		RCODE								m_completionRc;
+		FLMUINT							m_uiBytesToDo;
+		FLMUINT							m_uiBytesDone;
+		FLMUINT							m_uiStartTime;
+		FLMUINT							m_uiEndTime;
+	#if defined( FLM_WIN)
+		OVERLAPPED						m_Overlapped;
 	#endif
 	#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
-		struct aiocb			m_aio;
+		struct aiocb					m_aio;
 	#endif
-		F_IOBuffer *			m_pNext;
-		F_IOBuffer *			m_pPrev;
-		WRITE_COMPLETION_CB	m_fnCompletion;
-		RCODE						m_completionRc;
-		F_TMSTAMP				m_StartTime;
-		FLMUINT64				m_ui64ElapMilli;
-		void *					m_pStats;
-#ifdef FLM_RING_ZERO_NLM
-		SEMAPHORE				m_hSem;
-#endif
+	#ifdef FLM_RING_ZERO_NLM
+		SEMAPHORE						m_hSem;
+	#endif
 	
-		friend class F_IOBufferMgr;
+		friend class F_FileHdl;
 	};
 
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	#ifdef FLM_WIN
 	class F_FileHdl : public IF_FileHdl
 	{
 	public:
@@ -419,426 +568,55 @@
 	
 		virtual ~F_FileHdl();
 	
-		RCODE FLMAPI close( void);
-		
 		RCODE FLMAPI flush( void);
-	
+		
 		RCODE FLMAPI read(
-			FLMUINT64		ui64Offset,
-			FLMUINT			uiLength,
-			void *			pvBuffer,
-			FLMUINT *		puiBytesRead);
-	
-		RCODE FLMAPI seek(
-			FLMUINT64		ui64Offset,
-			FLMINT			iWhence,
-			FLMUINT64 *		pui64NewOffset);
-	
-		RCODE FLMAPI size(
-			FLMUINT64 *		pui64Size);
-	
-		RCODE FLMAPI tell(
-			FLMUINT64 *		pui64Offset);
-	
-		RCODE FLMAPI truncate(
-			FLMUINT64		ui64Size);
-	
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			void *				pvBuffer,
+			FLMUINT *			puiBytesRead = NULL);
+
+		RCODE FLMAPI read(
+			FLMUINT64			ui64ReadOffset,
+			FLMUINT				uiBytesToRead,
+			IF_IOBuffer *		pIOBuffer);
+			
 		RCODE FLMAPI write(
-			FLMUINT64		ui64Offset,
-			FLMUINT			uiLength,
-			const void *	pvBuffer,
-			FLMUINT *		puiBytesWritten);
-	
-		FINLINE RCODE FLMAPI sectorRead(
-			FLMUINT64		ui64ReadOffset,
-			FLMUINT			uiBytesToRead,
-			void *			pvBuffer,
-			FLMUINT *		puiBytesReadRV)
-		{
-			if (m_bDoDirectIO)
-			{
-				return( directRead( ui64ReadOffset, uiBytesToRead,
-						pvBuffer, puiBytesReadRV));
-			}
-			else
-			{
-				return( read( ui64ReadOffset, uiBytesToRead, 
-						pvBuffer, puiBytesReadRV));
-			}
-		}
-	
-		FINLINE RCODE FLMAPI sectorWrite(
+			FLMUINT64			ui64Offset,
+			FLMUINT				uiLength,
+			const void *		pvBuffer,
+			FLMUINT *			puiBytesWritten = NULL);
+
+		RCODE FLMAPI write(
 			FLMUINT64			ui64WriteOffset,
 			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV)
-		{
-			if (m_bDoDirectIO)
-			{
-				return( directWrite( ui64WriteOffset, uiBytesToWrite,
-						pvBuffer, pBufferObj, puiBytesWrittenRV));
-			}
-			else
-			{
-				f_assert( !pBufferObj);
-				return( write( ui64WriteOffset, uiBytesToWrite, pvBuffer,
-									puiBytesWrittenRV));
-			}
-		}
-	
+			IF_IOBuffer *		pIOBuffer);
+			
+		RCODE FLMAPI seek(
+			FLMUINT64			ui64Offset,
+			FLMINT				iWhence,
+			FLMUINT64 *			pui64NewOffset = NULL);
+
+		RCODE FLMAPI size(
+			FLMUINT64 *			pui64Size);
+
+		RCODE FLMAPI tell(
+			FLMUINT64 *			pui64Offset);
+
+		RCODE FLMAPI truncate(
+			FLMUINT64			ui64Offset = 0);
+
+		RCODE FLMAPI close( void);
+		
 		FINLINE FLMBOOL FLMAPI canDoAsync( void)
 		{
 			return( m_bOpenedInAsyncMode);
 		}
 	
 		FINLINE void FLMAPI setExtendSize(
-			FLMUINT		uiExtendSize)
-		{
-			m_uiExtendSize = uiExtendSize;
-		}
-	
-		FINLINE void FLMAPI setMaxAutoExtendSize(
-			FLMUINT		uiMaxAutoExtendSize)
-		{
-			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
-		}
-	
-		FINLINE FLMBOOL FLMAPI isReadOnly( void)
-		{
-			return( m_bOpenedReadOnly);
-		}
-		
-		RCODE FLMAPI lock( void);
-	
-		RCODE FLMAPI unlock( void);
-		
-		FINLINE FLMUINT FLMAPI getSectorSize( void)
-		{
-			return( m_uiBytesPerSector);
-		}
-		
-	private:
-	
-		RCODE create(
-			const char *	pszFileName,
-			FLMUINT			uiIoFlags);
-	
-		RCODE createUnique(
-			char *			pszDirName,
-			const char *	pszFileExtension,
-			FLMUINT			uiIoFlags);
-	
-		RCODE open(
-			const char *	pszFileName,
-			FLMUINT			uiIoFlags);
-	
-		FINLINE HANDLE getFileHandle( void)
-		{
-			return m_FileHandle;
-		}
-	
-		RCODE openOrCreate(
-			const char *	pszFileName,
-			FLMUINT			uiAccess,
-			FLMBOOL			bCreateFlag);
-	
-		RCODE doOneRead(
-			FLMUINT64		ui64Offset,
-			FLMUINT			uiLength,
-			void *			pvBuffer,
-			FLMUINT *		puiBytesRead);
-	
-		RCODE directRead(
-			FLMUINT64		uiOffset,
-			FLMUINT			uiLength,
-			void *			pvBuffer,
-			FLMUINT *		puiBytesRead);
-	
-		RCODE directWrite(
-			FLMUINT64		uiOffset,
-			FLMUINT			uiLength,
-			const void *	pvBuffer,
-			IF_IOBuffer *	pBufferObj,
-			FLMUINT *		puiBytesWritten);
-	
-		FINLINE FLMUINT64 roundToNextSector(
-			FLMUINT64		ui64Bytes)
-		{
-			return( (ui64Bytes + m_ui64NotOnSectorBoundMask) & 
-							m_ui64GetSectorBoundMask);
-		}
-	
-		FINLINE FLMUINT64 truncateToPrevSector(
-			FLMUINT64		ui64Offset)
-		{
-			return( ui64Offset & m_ui64GetSectorBoundMask);
-		}
-	
-		RCODE extendFile(
-			FLMUINT64		ui64EndOfLastWrite,
-			FLMUINT			uiMaxBytesToExtend,
-			FLMBOOL			bFlush);
-			
-		RCODE allocAlignedBuffer( void);
-	
-		FLMBOOL				m_bFileOpened;
-		FLMBOOL				m_bDeleteOnRelease;
-		FLMBOOL				m_bOpenedReadOnly;
-		FLMBOOL				m_bOpenedExclusive;
-		char *				m_pszFileName;
-		HANDLE				m_FileHandle;
-		FLMUINT				m_uiBytesPerSector;
-		FLMUINT64			m_ui64NotOnSectorBoundMask;
-		FLMUINT64			m_ui64GetSectorBoundMask;
-		FLMBOOL				m_bDoDirectIO;
-		FLMUINT				m_uiExtendSize;
-		FLMUINT				m_uiMaxAutoExtendSize;
-		FLMBYTE *			m_pucAlignedBuff;
-		FLMUINT				m_uiAlignedBuffSize;
-		FLMUINT64			m_ui64CurrentPos;
-		FLMBOOL				m_bOpenedInAsyncMode;
-		OVERLAPPED			m_Overlapped;
-		
-		friend class F_FileSystem;
-		friend class F_MultiFileHdl;
-	};
-	#endif
-
-	/***************************************************************************
-	Desc:
-	***************************************************************************/
-	#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-	class F_FileHdl : public IF_FileHdl
-	{
-	public:
-	
-		F_FileHdl();
-	
-		~F_FileHdl();
-	
-		RCODE FLMAPI flush( void);
-	
-		RCODE FLMAPI read(
-			FLMUINT64			ui64Offset,
-			FLMUINT				uiLength,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesRead);
-	
-		RCODE FLMAPI seek(
-			FLMUINT64			ui64Offset,
-			FLMINT				iWhence,
-			FLMUINT64 *			pui64NewOffset);
-	
-		RCODE FLMAPI size(
-			FLMUINT64 *			pui64Size);
-	
-		RCODE FLMAPI tell(
-			FLMUINT64 *			pui64Offset);
-	
-		RCODE FLMAPI truncate(
-			FLMUINT64			ui64Size);
-	
-		RCODE FLMAPI write(
-			FLMUINT64			ui64Offset,
-			FLMUINT				uiLength,
-			const void *		pvBuffer,
-			FLMUINT *			puiBytesWritten);
-	
-		RCODE FLMAPI sectorRead(
-			FLMUINT64			ui64ReadOffset,
-			FLMUINT				uiBytesToRead,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesReadRV);
-	
-		RCODE FLMAPI sectorWrite(
-			FLMUINT64			ui64WriteOffset,
-			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV)
-		{
-			if( m_bDoDirectIO)
-			{
-				return( directWrite( ui64WriteOffset, uiBytesToWrite, 
-					pvBuffer, pBufferObj, puiBytesWrittenRV));
-			}
-			else
-			{
-				return( write( ui64WriteOffset, uiBytesToWrite,
-					pvBuffer, puiBytesWrittenRV));
-			}
-		}
-	
-		RCODE FLMAPI close( void);
-													
-		FLMBOOL FLMAPI canDoAsync( void);
-	
-		FINLINE FLMBOOL FLMAPI usingDirectIo( void)
-		{
-			return( m_bDoDirectIO);
-		}
-	
-		FINLINE void FLMAPI setExtendSize(
 			FLMUINT				uiExtendSize)
 		{
-			m_uiExtendSize = uiExtendSize;
-		}
-	
-		FINLINE void FLMAPI setMaxAutoExtendSize(
-			FLMUINT)
-		{
-		}
-	
-		RCODE FLMAPI lock( void);
-	
-		RCODE FLMAPI unlock( void);
-	
-		FINLINE FLMBOOL FLMAPI isReadOnly( void)
-		{
-			return( m_bOpenedReadOnly);
-		}
-		
-		FINLINE FLMUINT FLMAPI getSectorSize( void)
-		{
-			return( m_uiBytesPerSector);
-		}
-	
-	private:
-	
-		RCODE create(
-			const char *		pszFileName,
-			FLMUINT				uiIoFlags);
-	
-		RCODE createUnique(
-			char *				pszDirName,
-			const char *		pszFileExtension,
-			FLMUINT				uiIoFlags);
-	
-		RCODE open(
-			const char *		pszFileName,
-			FLMUINT				uiIoFlags);
-	
-		RCODE openOrCreate(
-			const char *		pszFileName,
-			FLMUINT				uiAccess,
-			FLMBOOL				bCreateFlag);
-	
-		FINLINE FLMUINT64 roundToNextSector(
-			FLMUINT64		ui64Bytes)
-		{
-			return( (ui64Bytes + m_ui64NotOnSectorBoundMask) & 
-							m_ui64GetSectorBoundMask);
-		}
-		
-		FINLINE FLMUINT64 truncateToPrevSector(
-			FLMUINT64		ui64Offset)
-		{
-			return( ui64Offset & m_ui64GetSectorBoundMask);
-		}
-	
-		RCODE doOneRead(
-			FLMUINT64			ui64Offset,
-			FLMUINT				uiLength,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesRead);
-			
-		RCODE directRead(
-			FLMUINT64			ui64ReadOffset,
-			FLMUINT				uiBytesToRead,	
-			void *				pvBuffer,
-			FLMUINT *			puiBytesRead);
-	
-		RCODE directWrite(
-			FLMUINT64			ui64WriteOffset,
-			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV);
-		
-		RCODE allocAlignedBuffer( void);
-		
-		FLMBOOL					m_bFileOpened;
-		FLMBOOL					m_bDeleteOnRelease;
-		FLMBOOL					m_bOpenedReadOnly;
-		FLMBOOL					m_bOpenedExclusive;
-		char *					m_pszFileName;
-		int				   	m_fd;
-		FLMUINT					m_uiBytesPerSector;
-		FLMUINT64				m_ui64NotOnSectorBoundMask;
-		FLMUINT64				m_ui64GetSectorBoundMask;
-		FLMUINT64				m_ui64CurrentPos;
-		FLMUINT					m_uiExtendSize;
-		FLMBOOL					m_bOpenedInAsyncMode;
-		FLMBOOL					m_bDoDirectIO;
-		FLMBYTE *				m_pucAlignedBuff;
-		FLMUINT					m_uiAlignedBuffSize;
-		
-		friend class F_FileSystem;
-		friend class F_MultiFileHdl;
-	};
-	#endif
-	
-	/***************************************************************************
-	Desc:
-	***************************************************************************/
-	#if defined( FLM_RING_ZERO_NLM)
-	class F_FileHdl : public IF_FileHdl
-	{
-	public:
-	
-		F_FileHdl();
-	
-		virtual ~F_FileHdl();
-	
-		RCODE FLMAPI flush( void);
-	
-		RCODE FLMAPI read(
-			FLMUINT64			ui64Offset,
-			FLMUINT				uiLength,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesRead);
-	
-		RCODE FLMAPI seek(
-			FLMUINT64			ui64Offset,
-			FLMINT				iWhence,
-			FLMUINT64 *			pui64NewOffset);
-	
-		RCODE FLMAPI size(
-			FLMUINT64 *			pui64Size);
-	
-		RCODE FLMAPI tell(
-			FLMUINT64 *			pui64Offset);
-	
-		RCODE FLMAPI truncate(
-			FLMUINT64			ui64Size);
-	
-		RCODE FLMAPI write(
-			FLMUINT64			ui64Offset,
-			FLMUINT				uiLength,
-			const void *		pvBuffer,
-			FLMUINT *			puiBytesWritten);
-	
-		RCODE FLMAPI sectorRead(
-			FLMUINT64			ui64ReadOffset,
-			FLMUINT				uiBytesToRead,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesReadRV);
-	
-		RCODE FLMAPI sectorWrite(
-			FLMUINT64			ui64WriteOffset,
-			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV);
-	
-		RCODE FLMAPI close( void);
-													
-		FLMBOOL FLMAPI canDoAsync( void);
-	
-		FINLINE void FLMAPI setExtendSize(
-			FLMUINT				uiExtendSize)
-		{
+			f_assert( uiExtendSize < FLM_MAX_UINT);
 			m_uiExtendSize = uiExtendSize;
 		}
 	
@@ -848,291 +626,173 @@
 			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 		}
 	
-		FINLINE void FLMAPI setSuballocation(
-			FLMBOOL				bDoSuballocation)
-		{
-			m_bDoSuballocation = bDoSuballocation;
-		}
-	
-		FINLINE FLMUINT FLMAPI getSectorSize( void)
-		{
-			return( FLM_NLM_SECTOR_SIZE);
-		}
-	
 		FINLINE FLMBOOL FLMAPI isReadOnly( void)
 		{
 			return( m_bOpenedReadOnly);
+		}
+		
+		FINLINE FLMBOOL FLMAPI isOpen( void)
+		{
+			return( m_bFileOpened);
+		}
+		
+		FINLINE FLMUINT FLMAPI getSectorSize( void)
+		{
+			return( m_uiBytesPerSector);
 		}
 		
 		RCODE FLMAPI lock( void);
 	
 		RCODE FLMAPI unlock( void);
 		
+		static F_MUTEX 				m_hAsyncListMutex;
+		static F_FileAsyncClient *	m_pFirstAvailAsync;
+		static FLMUINT					m_uiAvailAsyncCount;
+
 	private:
+	
+		FINLINE FLMUINT64 roundToNextSector(
+			FLMUINT64				ui64Bytes)
+		{
+			f_assert( m_ui64GetSectorBoundMask);
+			f_assert( m_ui64NotOnSectorBoundMask);
+			
+			return( (ui64Bytes + m_ui64NotOnSectorBoundMask) & 
+							m_ui64GetSectorBoundMask);
+		}
+	
+		FINLINE FLMUINT64 truncateToPrevSector(
+			FLMUINT64				ui64Offset)
+		{
+			return( ui64Offset & m_ui64GetSectorBoundMask);
+		}
+	
+		FINLINE const char * getFileName( void)
+		{
+			return( m_pszFileName);
+		}
+		
+		RCODE allocFileAsyncClient(
+			F_FileAsyncClient **		ppAsyncClient);
+			
+		void initCommonData( void);
+	
+		void freeCommonData( void);
+		
+		RCODE create(
+			const char *			pszFileName,
+			FLMUINT					uiIoFlags);
+	
+		RCODE createUnique(
+			char *					pszDirName,
+			const char *			pszFileExtension,
+			FLMUINT					uiIoFlags);
+	
+		RCODE open(
+			const char *			pszFileName,
+			FLMUINT					uiIoFlags);
+	
+		RCODE openOrCreate(
+			const char *			pszFileName,
+			FLMUINT					uiAccess,
+			FLMBOOL					bCreateFlag);
+	
+		RCODE lowLevelRead(
+			FLMUINT64				ui64Offset,
+			FLMUINT					uiLength,
+			void *					pvBuffer,
+			IF_IOBuffer *			pIOBuffer,
+			FLMUINT *				puiBytesRead);
+	
+		RCODE lowLevelWrite(
+			FLMUINT64				ui64WriteOffset,
+			FLMUINT					uiBytesToWrite,
+			const void *			pvBuffer,
+			IF_IOBuffer *			pIOBuffer,
+			FLMUINT *				puiBytesWritten);
+			
+		RCODE directRead(
+			FLMUINT64				ui64ReadOffset,
+			FLMUINT					uiBytesToRead,
+			void *					pvBuffer,
+			IF_IOBuffer *			pIOBuffer,
+			FLMUINT *				puiBytesRead);
+			
+		RCODE directWrite(
+			FLMUINT64				ui64WriteOffset,
+			FLMUINT					uiBytesToWrite,
+			const void *			pvBuffer,
+			IF_IOBuffer *			pIOBuffer,
+			FLMUINT *				puiBytesWritten);
+			
+	#if defined( FLM_RING_ZERO_NLM)
 	
 		RCODE setup( void);							
 	
-		RCODE create(
-			const char *		pszFileName,
-			FLMUINT				uiIoFlags);
-			
-		RCODE createUnique(
-			char *				pszDirName,
-			const char *		pszFileExtension,
-			FLMUINT				uiIoFlags);
-	
-		RCODE open(
-			const char *		pszFileName,
-			FLMUINT				uiIoFlags);
-			
-		RCODE openOrCreate(
-			const char	*		pszFileName,
-			FLMUINT				uiAccess,
-			FLMBOOL				bCreateFlag);
-	
-		RCODE _read(
-			FLMUINT				uiOffset,
-			FLMUINT				uiLength,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesRead);
-	
-		RCODE _directIORead(
-			FLMUINT				uiOffset,
-			FLMUINT				uiLength,
-			void *				pvBuffer,
-			FLMUINT *			puiBytesRead);
-	
-		RCODE _directIOSectorRead(
-			FLMUINT				uiReadOffset,
-			FLMUINT				uiBytesToRead,	
-			void *				pvBuffer,
-			FLMUINT *			puiBytesReadRV);
-	
-		RCODE _write(
-			FLMUINT				uiWriteOffset,
-			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			FLMUINT *			puiBytesWrittenRV);
-	
-		RCODE _directIOWrite(
-			FLMUINT				uiWriteOffset,
-			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			FLMUINT *			puiBytesWrittenRV);
-	
 		RCODE expand(
-			LONG					lStartSector,
-			LONG					lSectorsToAlloc);
+			LONG						lStartSector,
+			LONG						lSectorsToAlloc);
 	
+		RCODE internalBlockingRead(
+			FLMUINT64				ui64ReadOffset,
+			FLMUINT					uiBytesToRead,	
+			void *					pvBuffer,
+			FLMUINT *				puiBytesRead);
+
+		RCODE internalBlockingWrite(
+			FLMUINT64				ui64WriteOffset,
+			FLMUINT					uiBytesToWrite,	
+			const void *			pvBuffer,
+			FLMUINT *				puiBytesWritten);
+
 		RCODE writeSectors(
-			void *				pvBuffer,
-			LONG					lStartSector,
-			LONG					lSectorCount,
-			IF_IOBuffer *		pBufferObj,
-			FLMBOOL *			pbDidAsync = NULL);
-	
-		RCODE _directIOSectorWrite(
-			FLMUINT				uiWriteOffset,
-			FLMUINT				uiBytesToWrite,
-			const void *		pvBuffer,
-			IF_IOBuffer *		pBufferObj,
-			FLMUINT *			puiBytesWrittenRV);
-	
-		char *					m_pszIoPath;
-		FLMBOOL					m_bDeleteOnClose;
-		FLMUINT					m_uiMaxFileSize;
-		FLMBOOL					m_bFileOpened;
-		FLMBOOL					m_bOpenedExclusive;
-		FLMBOOL					m_bOpenedReadOnly;
-		LONG						m_lFileHandle;
-		LONG						m_lOpenAttr;
-		LONG						m_lVolumeID;
-		LONG						m_lLNamePathCount;
-		FLMBOOL					m_bDoSuballocation;
-		FLMUINT					m_uiExtendSize;
-		FLMUINT					m_uiMaxAutoExtendSize;
-		FLMBOOL					m_bDoDirectIO;
-		LONG						m_lSectorsPerBlock;
-		LONG						m_lMaxBlocks;
-		FLMUINT					m_uiCurrentPos;
-		FLMBOOL					m_bNSS;
-		FLMINT64					m_NssKey;
-		FLMBOOL					m_bNSSFileOpen;
+			const void *			pvBuffer,
+			F_FileAsyncClient *	pAsyncClient,
+			LONG						lStartSector,
+			LONG						lSectorCount);
+			
+	#endif
+			
+		char *						m_pszFileName;
+		FLMUINT						m_uiBytesPerSector;
+		FLMUINT64					m_ui64NotOnSectorBoundMask;
+		FLMUINT64					m_ui64GetSectorBoundMask;
+		FLMUINT						m_uiExtendSize;
+		FLMUINT						m_uiMaxAutoExtendSize;
+		FLMBYTE *					m_pucAlignedBuff;
+		FLMUINT						m_uiAlignedBuffSize;
+		FLMUINT64					m_ui64CurrentPos;
+		FLMBOOL						m_bFileOpened;
+		FLMBOOL						m_bDeleteOnRelease;
+		FLMBOOL						m_bOpenedReadOnly;
+		FLMBOOL						m_bOpenedExclusive;
+		FLMBOOL						m_bDoDirectIO;
+		FLMBOOL						m_bOpenedInAsyncMode;
+		
+	#if defined( FLM_WIN)
+		HANDLE						m_hFile;
+		FLMBOOL						m_bFlushRequired;
+	#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+		int				   		m_fd;
+	#elif defined( FLM_RING_ZERO_NLM)		
+		LONG							m_lFileHandle;
+		LONG							m_lOpenAttr;
+		LONG							m_lVolumeID;
+		LONG							m_lLNamePathCount;
+		FLMBOOL						m_bDoSuballocation;
+		LONG							m_lSectorsPerBlock;
+		LONG							m_lMaxBlocks;
+		FLMBOOL						m_bNSS;
+		FLMINT64						m_NssKey;
+		FLMBOOL						m_bNSSFileOpen;
+	#endif
 
 		friend class F_FileSystem;
 		friend class F_MultiFileHdl;
+		friend class F_FileHdlCache;
+		friend class F_FileAsyncClient;
 	};
-	#endif
-
-	/***************************************************************************
-	Desc:
-	***************************************************************************/
-	#if 0
-	class F_FileHdlMgr : public IF_FileHdlMgr
-	{
-	public:
 	
-		F_FileHdlMgr();
-	
-		virtual FINLINE ~F_FileHdlMgr()
-		{
-			if (m_hMutex != F_MUTEX_NULL)
-			{
-				lockMutex( FALSE);
-				freeUsedList( TRUE);
-				freeAvailList( TRUE);
-				unlockMutex( FALSE);
-				f_mutexDestroy( &m_hMutex);
-			}
-		}
-	
-		FINLINE void FLMAPI setOpenThreshold(
-			FLMUINT		uiOpenThreshold)
-		{
-			if (m_bIsSetup)
-			{
-				lockMutex( FALSE);
-				m_uiOpenThreshold = uiOpenThreshold;
-				unlockMutex( FALSE);
-			}
-		}
-	
-		FINLINE void FLMAPI setMaxAvailTime(
-			FLMUINT		uiMaxAvailTime)
-		{
-			if (m_bIsSetup)
-			{
-				lockMutex( FALSE);
-				m_uiMaxAvailTime = uiMaxAvailTime;
-				unlockMutex( FALSE);
-			}
-		}
-	
-		FINLINE FLMUINT FLMAPI getUniqueId( void)
-		{
-			FLMUINT	uiTemp;
-	
-			lockMutex( FALSE);
-			uiTemp = ++m_uiFileIdCounter;
-			unlockMutex( FALSE);
-			return( uiTemp);
-		}
-	
-		void FLMAPI findAvail(
-			FLMUINT			uiFileId,
-			IF_FileHdl **	ppFileHdl);
-	
-		void FLMAPI removeFileHdls(
-			FLMUINT			uiFileId);
-	
-		void FLMAPI checkAgedFileHdls(
-			FLMUINT			uiMinSecondsOpened);
-	
-		FINLINE FLMUINT FLMAPI getOpenThreshold( void)
-		{
-			return( m_uiOpenThreshold);
-		}
-	
-		FINLINE FLMUINT FLMAPI getOpenedFiles( void)
-		{
-			FLMUINT		uiTemp;
-	
-			lockMutex( FALSE);
-			uiTemp = m_uiNumUsed + m_uiNumAvail;
-			unlockMutex( FALSE);
-			return( uiTemp);
-		}
-	
-		FINLINE FLMUINT FLMAPI getMaxAvailTime( void)
-		{
-			return( m_uiMaxAvailTime);
-		}
-	
-	private:
-	
-		RCODE setupFileHdlMgr(
-			FLMUINT		uiOpenThreshold = FLM_DEFAULT_OPEN_THRESHOLD,
-			FLMUINT		uiMaxAvailTime = FLM_DEFAULT_MAX_AVAIL_TIME);
-	
-		void freeAvailList(
-			FLMBOOL			bMutexAlreadyLocked);
-	
-		void freeUsedList(
-			FLMBOOL			bMutexAlreadyLocked);
-	
-		FINLINE void insertInUsedList(
-			FLMBOOL			bMutexAlreadyLocked,
-			IF_FileHdl *	pFileHdl,
-			FLMBOOL			bInsertAtEnd)
-		{
-			insertInList( bMutexAlreadyLocked,
-				pFileHdl, bInsertAtEnd,
-				&m_pFirstUsed, &m_pLastUsed, &m_uiNumUsed);
-		}
-	
-		void makeAvailAndRelease(
-			FLMBOOL			bMutexAlreadyLocked,
-			IF_FileHdl *	pFileHdl);
-	
-		void FINLINE releaseOneAvail(
-			FLMBOOL			bMutexAlreadyLocked)
-		{
-			lockMutex( bMutexAlreadyLocked);
-			if (m_pFirstAvail)
-			{
-				removeFromList( TRUE,
-					m_pFirstAvail, &m_pFirstAvail, &m_pLastAvail, &m_uiNumAvail);
-			}
-			unlockMutex( bMutexAlreadyLocked);
-		}
-	
-		void insertInList(
-			FLMBOOL				bMutexAlreadyLocked,
-			IF_FileHdl *		pFileHdl,
-			FLMBOOL				bInsertAtEnd,
-			IF_FileHdl **		ppFirst,
-			IF_FileHdl **		ppLast,
-			FLMUINT *			puiCount);
-	
-		void removeFromList(
-			FLMBOOL				bMutexAlreadyLocked,
-			IF_FileHdl *		pFileHdl,
-			IF_FileHdl **		ppFirst,
-			IF_FileHdl **		ppLast,
-			FLMUINT *			puiCount);
-	
-		FINLINE void lockMutex(
-			FLMBOOL				bMutexAlreadyLocked)
-		{
-			if (m_hMutex != F_MUTEX_NULL && !bMutexAlreadyLocked)
-			{
-				f_mutexLock( m_hMutex);
-			}
-		}
-	
-		FINLINE void unlockMutex(
-			FLMBOOL				bMutexAlreadyLocked)
-		{
-			if (m_hMutex != F_MUTEX_NULL && !bMutexAlreadyLocked)
-			{
-				f_mutexUnlock( m_hMutex);
-			}
-		}
-	
-		F_MUTEX					m_hMutex;
-		FLMUINT					m_uiOpenThreshold;
-		FLMUINT					m_uiMaxAvailTime;
-		IF_FileHdl *			m_pFirstUsed;
-		IF_FileHdl *			m_pLastUsed;
-		FLMUINT					m_uiNumUsed;
-		IF_FileHdl *			m_pFirstAvail;
-		IF_FileHdl *			m_pLastAvail;
-		FLMUINT					m_uiNumAvail;
-		FLMBOOL					m_bIsSetup;
-		FLMUINT					m_uiFileIdCounter;
-	};
-	#endif
-
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1301,7 +961,6 @@
 
 		F_FileSystem()
 		{
-			m_bCanDoAsync = FALSE;
 		}
 
 		virtual ~F_FileSystem()
@@ -1369,6 +1028,10 @@
 			const char *			pszFileName,
 			FLMUINT *				puiTimeStamp);
 
+		RCODE FLMAPI getFileSize(
+			const char *			pszFileName,
+			FLMUINT64 *				pui64FileSize);
+			
 		RCODE FLMAPI deleteFile(
 			const char *			pszFileName);
 
@@ -1435,11 +1098,28 @@
 
 		FLMBOOL FLMAPI canDoAsync( void);
 			
+		RCODE FLMAPI getFileId(
+			const char *			pszFileName,
+			FLMUINT64 *				pui64FileId);
+			
+		RCODE FLMAPI allocIOBuffer(
+			FLMUINT					uiMinSize,
+			IF_IOBuffer **			ppIOBuffer);
+			
+		RCODE FLMAPI allocFileHandleCache(
+			FLMUINT					uiMaxCachedFiles,
+			FLMUINT					uiIdleTimeoutSecs,
+			IF_FileHdlCache **	ppFileHdlCache);
+			
 	private:
 
 		RCODE removeEmptyDir(
 			const char *			pszDirName);
 
+		RCODE allocFileAsyncClient(
+			F_FileHdl *				pFileHdl,
+			F_FileAsyncClient **	ppAsyncClient);
+	
 	#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 		RCODE renameSafe(
 			const char *			pszSrcFile,
@@ -1503,6 +1183,10 @@
 	RCODE f_initCRCTable( void);
 
 	void f_freeCRCTable( void);
+	
+	RCODE f_initFileAsyncClientList( void);
+	
+	void f_freeFileAsyncClientList( void);
 	
 	RCODE f_allocFileSystem(
 		IF_FileSystem **	ppFileSystem);

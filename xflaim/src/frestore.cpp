@@ -118,7 +118,7 @@ RCODE F_FSRestore::openRflFile(
 	char				szRflPath[ F_PATH_MAX_SIZE];
 	char				szBaseName[ F_FILENAME_SIZE];
 	FLMUINT			uiBaseNameSize;
-	XFLM_DB_HDR			dbHdr;
+	XFLM_DB_HDR		dbHdr;
 	IF_FileHdl *	pFileHdl = NULL;
 
 	flmAssert( m_bSetupCalled);

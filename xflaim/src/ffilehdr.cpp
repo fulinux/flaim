@@ -380,6 +380,40 @@ Exit:
 }
 
 /***************************************************************************
+Desc:	This routine reads the header information in a FLAIM database,
+		verifies the password, and returns the file header and log
+		header information.
+*****************************************************************************/
+RCODE flmGetHdrInfo(
+	F_SuperFileHdl *	pSFileHdl,
+	XFLM_DB_HDR *		pDbHdr,
+	FLMUINT32 *			pui32CalcCRC)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_FileHdl *	pCFileHdl = NULL;
+
+	if( RC_BAD( rc = pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = flmReadAndVerifyHdrInfo( NULL, pCFileHdl, 
+		pDbHdr, pui32CalcCRC)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( pCFileHdl)
+	{
+		pCFileHdl->Release();
+	}
+
+	return( rc);
+}
+
+/***************************************************************************
 Desc:	This routine reads and verifies the information contained in the
 		file header and log header of a FLAIM database.
 *****************************************************************************/

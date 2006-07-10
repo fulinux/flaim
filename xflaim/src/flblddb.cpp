@@ -146,7 +146,6 @@ public:
 private:
 
 	RCODE readBlock(
-		IF_FileHdl *		pFileHdl,
 		FLMUINT				uiFileNumber,
 		FLMUINT				uiFileOffset,
 		F_SCAN_STATE *		pScanState);
@@ -486,7 +485,9 @@ Retry:
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = m_pSFileHdl->setup( &SFileClient)))
+	if( RC_BAD( rc = m_pSFileHdl->setup( &SFileClient,
+		gv_XFlmSysData.pFileHdlCache,
+		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
 	{
 		goto Exit;
 	}
@@ -1893,7 +1894,6 @@ RCODE F_RebuildNodeIStream::close( void)
 Desc:
 *****************************************************************************/
 RCODE F_RebuildNodeIStream::readBlock(
-	IF_FileHdl *				pFileHdl,
 	FLMUINT						uiFileNumber,
 	FLMUINT						uiFileOffset,
 	F_SCAN_STATE *				pScanState)
@@ -1907,17 +1907,9 @@ RCODE F_RebuildNodeIStream::readBlock(
 	F_BLK_HDR *					pBlkHdr = pScanState->blkUnion.pBlkHdr;
 	FLMBYTE *					pucBlk = pScanState->blkUnion.pucBlk;
 	
-	if( !pFileHdl)
-	{
-		if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->getFileHdl( 
-			uiFileNumber, FALSE, &pFileHdl)))
-		{
-			goto Exit;
-		}
-	}
-	
-	if( RC_BAD( rc = pFileHdl->sectorRead( uiFileOffset, uiBlockSize, 
-		pucBlk, NULL)))
+	if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->readBlock( 
+		FSBlkAddress( uiFileNumber, uiFileOffset), 
+		uiBlockSize, pucBlk, NULL)))
 	{
 		goto Exit;
 	}
@@ -2020,7 +2012,6 @@ RCODE F_RebuildNodeIStream::readNextSequentialBlock(
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT				uiBlkCollectionNum;
-	IF_FileHdl *		pFileHdl = NULL;
 	FLMUINT				uiBlockSize = m_pDbRebuild->getBlockSize();
 	FLMUINT				uiTryNextCount = 0;
 
@@ -2048,32 +2039,20 @@ TryNextFile:
 				rc = RC_SET( NE_XFLM_EOF_HIT);
 				goto Exit;
 			}
-	
-			if( RC_BAD( rc = m_pDbRebuild->m_pSFileHdl->getFileHdl( 
-				pScanState->uiFileNumber, FALSE, &pFileHdl)))
-			{
-				if( rc == NE_FLM_IO_PATH_NOT_FOUND ||
-					 rc == NE_FLM_IO_INVALID_FILENAME)
-				{
-					rc = NE_XFLM_OK;
-					uiTryNextCount++;
-					goto TryNextFile;
-				}
-				
-				goto Exit;
-			}
 		}
 		else
 		{
 			pScanState->uiFileOffset += uiBlockSize;
 		}
 		
-		if( RC_BAD( rc = readBlock( pFileHdl, pScanState->uiFileNumber, 
+		if( RC_BAD( rc = readBlock( pScanState->uiFileNumber, 
 			pScanState->uiFileOffset, pScanState)))
 		{
-			if( rc == NE_FLM_IO_END_OF_FILE)
+			if( rc == NE_FLM_IO_END_OF_FILE ||
+				 rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
 				rc = NE_XFLM_OK;
+				uiTryNextCount++;
 				goto TryNextFile;
 			}
 			else if( rc == NE_XFLM_DATA_ERROR)
@@ -2236,7 +2215,7 @@ RCODE F_RebuildNodeIStream::readContinuationElm( void)
 	{
 		F_BLK_HDR *		pBlkHdr = m_pCurState->blkUnion.pBlkHdr;
 
-		if( RC_BAD( rc = readBlock( NULL, 
+		if( RC_BAD( rc = readBlock( 
 			FSGetFileNumber( pBlkHdr->ui32NextBlkInChain), 
 			FSGetFileOffset( pBlkHdr->ui32NextBlkInChain), &m_tmpState)))
 		{
@@ -2319,7 +2298,7 @@ RCODE F_RebuildNodeIStream::readFirstDataOnlyBlock( void)
 
 	flmAssert( pElmInfo->uiDataOnlyBlkAddr);
 
-	if( RC_BAD( rc = readBlock( NULL, 
+	if( RC_BAD( rc = readBlock( 
 		FSGetFileNumber( pElmInfo->uiDataOnlyBlkAddr),
 		FSGetFileOffset( pElmInfo->uiDataOnlyBlkAddr), &m_tmpState)))
 	{
@@ -2394,7 +2373,7 @@ RCODE F_RebuildNodeIStream::readNextDataOnlyBlock( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = readBlock( NULL, 
+	if( RC_BAD( rc = readBlock( 
 		FSGetFileNumber( ui32NextBlkAddr), 
 		FSGetFileOffset( ui32NextBlkAddr), &m_tmpState)))
 	{
@@ -2686,7 +2665,7 @@ RCODE F_RebuildNodeIStream::readNode(
 	}
 	f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
 
-	if( RC_BAD( rc = readBlock( NULL, FSGetFileNumber( ui32BlkAddr),
+	if( RC_BAD( rc = readBlock( FSGetFileNumber( ui32BlkAddr),
 		FSGetFileOffset( ui32BlkAddr), &m_firstElmState)))
 	{
 		goto Exit;
@@ -2783,30 +2762,19 @@ RCODE F_DbRebuild::determineBlkSize(
 TryNextFile:
 			uiOffset = 0;
 			uiFileNumber++;
-
-			if( RC_BAD( rc = m_pSFileHdl->getFileHdl( uiFileNumber, 
-				FALSE, &pFileHdl)))
-			{
-				if( rc == NE_FLM_IO_PATH_NOT_FOUND)
-				{
-					rc = NE_XFLM_OK;
-					break;
-				}
-
-				goto Exit;
-			}
 		}
 
 		if( RC_BAD( rc = pFileHdl->read( uiOffset, 
 			SIZEOF_STD_BLK_HDR, &blkHdr, &uiBytesRead)))
 		{
-			if( rc != NE_XFLM_EOF_HIT)
+			if( rc == NE_XFLM_EOF_HIT ||
+				 rc == NE_FLM_IO_PATH_NOT_FOUND)
 			{
-				goto Exit;
+				rc = NE_XFLM_OK;
+				goto TryNextFile;
 			}
-
-			rc = NE_XFLM_OK;
-			goto TryNextFile;
+			
+			goto Exit;
 		}
 
 		ui64BytesDone += (FLMUINT64)XFLM_MIN_BLOCK_SIZE;

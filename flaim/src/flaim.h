@@ -1757,8 +1757,14 @@
 		/// Input: pvValue2 is (FLMUINT), query stratify time limit (seconds).\ \n
 		/// FlmGetConfig().\   Get maximum query stratify iterations.\ \n
 		/// Output: pvValue is (FLMUINT *), maximum query stratify iterations.
-		FLM_QUERY_STRATIFY_LIMITS
+		FLM_QUERY_STRATIFY_LIMITS,
 
+		/// FlmConfig().\  Enable or disable direct I/O.\ \n
+		/// Input: pvValue1 is (FLMBOOL), TRUE = enable, FALSE = disable.\ \n
+		/// FlmGetConfig().\   Get direct I/O state.\ \n
+		/// Output: pvValue is (FLMBOOL *), TRUE = enabled, FALSE = disabled.
+		FLM_DIRECT_IO_STATE
+		
 	} eFlmConfigTypes;
 
 	// Defaults for certain settable items

@@ -349,8 +349,8 @@ RCODE flmWriteVersionNum(
 	szVersionStr[ 3] = (FLMBYTE)(uiVersionNum % 10) + '0';
 	szVersionStr[ 4] = 0;
 
-	if (RC_OK( rc = pSFileHdl->writeHeader(
-					FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS, 
+	if (RC_OK( rc = pSFileHdl->writeBlock(
+					FSBlkAddress( 0, FLAIM_HEADER_START + FLM_FILE_FORMAT_VER_POS), 
 					FLM_FILE_FORMAT_VER_LEN,
 					szVersionStr, &uiWriteBytes)))
 	{

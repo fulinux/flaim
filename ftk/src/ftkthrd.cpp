@@ -852,18 +852,6 @@ void FLMAPI F_Thread::setThreadStatus(
 			pszStatus = "Terminating";
 			break;
 
-		case FLM_THREAD_STATUS_STARTING_TRANS:
-			pszStatus = "Starting transaction";
-			break;
-
-		case FLM_THREAD_STATUS_COMMITTING_TRANS:
-			pszStatus = "Committing transaction";
-			break;
-
-		case FLM_THREAD_STATUS_ABORTING_TRANS:
-			pszStatus = "Aborting transaction";
-			break;
-
 		case FLM_THREAD_STATUS_UNKNOWN:
 		default:
 			pszStatus = "Unknown";

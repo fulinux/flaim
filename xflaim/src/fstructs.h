@@ -155,8 +155,7 @@ FINLINE void blkSetNativeFormat(
 Desc:	Test to see if a block type is a B-Tree block type.
 ****************************************************************************/
 FINLINE FLMBOOL blkIsBTree(
-	F_BLK_HDR *	pBlkHdr
-	)
+	F_BLK_HDR *	pBlkHdr)
 {
 	return( (pBlkHdr->ui8BlkType != BT_FREE &&
 				pBlkHdr->ui8BlkType != BT_LFH_BLK)
@@ -168,8 +167,7 @@ FINLINE FLMBOOL blkIsBTree(
 Desc:	Test to see if a block type is a NEW B-Tree block type.
 ****************************************************************************/
 FINLINE FLMBOOL blkIsNewBTree(
-	F_BLK_HDR *	pBlkHdr
-	)
+	F_BLK_HDR *	pBlkHdr)
 {
 	return( (pBlkHdr->ui8BlkType >= BT_LEAF)
 				? TRUE
@@ -182,8 +180,7 @@ Desc:	Determine where the block ends.
 FINLINE FLMUINT blkGetEnd(
 	FLMUINT		uiBlockSize,
 	FLMUINT		uiBlkHdrSize,
-	F_BLK_HDR *	pBlkHdr
-	)
+	F_BLK_HDR *	pBlkHdr)
 {
 	return( (FLMUINT)(blkIsNewBTree( pBlkHdr)
 							? uiBlockSize
@@ -195,22 +192,19 @@ FINLINE FLMUINT blkGetEnd(
 }
 
 FINLINE void setBlockEncrypted(
-	F_BLK_HDR *	pBlkHdr
-	)
+	F_BLK_HDR *	pBlkHdr)
 {
 	pBlkHdr->ui8BlkFlags |= BLK_IS_ENCRYPTED;
 }
 
 FINLINE void unsetBlockEncrypted(
-	F_BLK_HDR *	pBlkHdr
-	)
+	F_BLK_HDR *	pBlkHdr)
 {
 	pBlkHdr->ui8BlkFlags &= (~(BLK_IS_ENCRYPTED));
 }
 
 FINLINE FLMBOOL isEncryptedBlk(
-	F_BLK_HDR *		pBlkHdr
-	)
+	F_BLK_HDR *		pBlkHdr)
 {
 	return( (pBlkHdr->ui8BlkFlags & BLK_IS_ENCRYPTED) ? TRUE : FALSE);
 }
@@ -956,8 +950,8 @@ private:
 		FLMINT					iLineNumber);
 
 	RCODE readDbHdr(
+		const char *			pszDbPath,
 		XFLM_DB_STATS *		pDbStats,
-		F_SuperFileHdl *		pSFileHdl,
 		FLMBYTE *				pszPassword,
 		FLMBOOL					bAllowLimited);
 
@@ -1029,13 +1023,6 @@ private:
 		F_SuperFileHdl *		pSFileHdl,
 		FLMUINT *				puiBlocksFlushed);
 
-	RCODE writeContiguousBlocks(
-		XFLM_DB_STATS *		pDbStats,
-		F_SuperFileHdl *		pSFileHdl,
-		IF_IOBuffer *			pIOBuffer,
-		FLMUINT					uiBlkAddress,
-		FLMBOOL					bDoAsync);
-
 	RCODE writeSortedBlocks(
 		XFLM_DB_STATS *		pDbStats,
 		F_SuperFileHdl *		pSFileHdl,
@@ -1043,7 +1030,6 @@ private:
 		FLMUINT *				puiDirtyCacheLeft,
 		FLMBOOL *				pbForceCheckpoint,
 		FLMBOOL					bIsCPThread,
-		FLMBOOL					bDoAsync,
 		FLMUINT					uiNumSortedBlocks,
 		FLMBOOL *				pbWroteAll);
 
@@ -1081,15 +1067,13 @@ private:
 
 	RCODE lgFlushLogBuffer(
 		XFLM_DB_STATS *		pDbStats,
-		F_SuperFileHdl *		pSFileHdl,
-		FLMBOOL					bDoAsync);
+		F_SuperFileHdl *		pSFileHdl);
 
 	RCODE lgOutputBlock(
 		XFLM_DB_STATS *	pDbStats,
 		F_SuperFileHdl *	pSFileHdl,
 		F_CachedBlock *	pLogBlock,
 		F_BLK_HDR *			pBlkHdr,
-		FLMBOOL				bDoAsync,
 		FLMUINT *			puiLogEofRV);
 
 	FLMUINT lFileFindEmpty(
@@ -1129,7 +1113,7 @@ private:
 		FLMBOOL				bCounts,
 		FLMBOOL				bHaveData);
 
-	static RCODE maintenanceThread(
+	static RCODE FLMAPI maintenanceThread(
 		IF_Thread *			pThread);
 
 	F_Database *			m_pNext;					// Next F_Database structure in in name hash
@@ -1370,151 +1354,6 @@ typedef struct F_Event_Hdr
 												// the event list.
 } FEVENT_HDR;
 
-typedef enum
-{
-	HASH_SESSION_OBJ = 0,
-	HASH_DB_OBJ
-} eHashObjType;
-
-/*===========================================================================
-Desc: FLAIM object base class
-===========================================================================*/
-class F_HashObject : public F_Object
-{
-public:
-
-#define F_INVALID_HASH_BUCKET				(~((FLMUINT)0))
-
-	F_HashObject()
-	{
-		m_pNextInBucket = NULL;
-		m_pPrevInBucket = NULL;
-		m_pNextInGlobal = NULL;
-		m_pPrevInGlobal = NULL;
-		m_uiHashBucket = F_INVALID_HASH_BUCKET;
-		m_ui32CRC = 0xFFFFFFFF;
-	}
-
-	virtual ~F_HashObject()
-	{
-		flmAssert( !m_pNextInBucket);
-		flmAssert( !m_pPrevInBucket);
-		flmAssert( !m_pNextInGlobal);
-		flmAssert( !m_pPrevInGlobal);
-		flmAssert( !getRefCount());
-	}
-
-	virtual void * getKey(
-		FLMUINT *	puiKeyLen) = 0;
-
-	FLMUINT getHashBucket( void)
-	{
-		return( m_uiHashBucket);
-	}
-
-	FLMUINT32 getKeyCRC( void)
-	{
-		return( m_ui32CRC);
-	}
-
-	FINLINE F_HashObject * getNextInGlobal( void)
-	{
-		return( m_pNextInGlobal);
-	}
-
-	virtual eHashObjType objectType( void) = 0;
-
-protected:
-
-	// Methods
-
-	void setHashBucket(
-		FLMUINT		uiHashBucket)
-	{
-		m_uiHashBucket = uiHashBucket;
-	}
-
-	void setKeyCRC(
-		FLMUINT32	ui32CRC)
-	{
-		m_ui32CRC = ui32CRC;
-	}
-
-	// Data
-
-	F_HashObject *		m_pNextInBucket;
-	F_HashObject *		m_pPrevInBucket;
-	F_HashObject *		m_pNextInGlobal;
-	F_HashObject *		m_pPrevInGlobal;
-	FLMUINT				m_uiHashBucket;
-	FLMUINT32			m_ui32CRC;
-
-friend class F_HashTable;
-};
-
-/*===========================================================================
-Desc: FLAIM hash table
-===========================================================================*/
-class F_HashTable : public F_Object
-{
-public:
-
-	F_HashTable();
-
-	~F_HashTable();
-
-	RCODE setupHashTable(
-		FLMBOOL				bMultithreaded,
-		FLMUINT				uiNumBuckets);
-
-	RCODE addObject(
-		F_HashObject *		pObject);
-
-	RCODE getNextObjectInGlobal(
-		F_HashObject **	ppObject);
-
-	RCODE getObject(
-		void *				pvKey,
-		FLMUINT				uiKeyLen,
-		F_HashObject **	ppObject,
-		FLMBOOL				bRemove = FALSE);
-
-	RCODE removeObject(
-		void *				pvKey,
-		FLMUINT				uiKeyLen);
-
-	RCODE removeObject(
-		F_HashObject *		pObject);
-
-private:
-
-	// Methods
-
-	FLMUINT getHashBucket(
-		void *				pvKey,
-		FLMUINT				uiLen,
-		FLMUINT32 *			pui32KeyCRC = NULL);
-
-	void linkObject(
-		F_HashObject *		pObject,
-		FLMUINT				uiBucket);
-
-	void unlinkObject(
-		F_HashObject *		pObject);
-
-	RCODE findObject(
-		void *				pvKey,
-		FLMUINT				uiKeyLen,
-		F_HashObject **	ppObject);
-
-	// Data
-
-	F_MUTEX 				m_hMutex;
-	F_HashObject *		m_pGlobalList;
-	F_HashObject **	m_ppHashTable;
-	FLMUINT				m_uiBuckets;
-};
-
 typedef struct node_loc
 {
 	FLMUINT32	ui32DatabaseId;
@@ -1532,7 +1371,7 @@ Desc:		This is the FLAIM Shared System Data Structure.  It is the anchor
 ***************************************************************************/
 typedef struct FlmSystemData
 {
-	FBUCKET *				pDatabaseHashTbl;	// Database name hash table (array of FBUCKET).
+	F_BUCKET *				pDatabaseHashTbl;	// Database name hash table (array of FBUCKET).
 #define FILE_HASH_ENTRIES		256
 
 	F_MUTEX					hShareMutex;	// Mutex for controlling access to
@@ -1620,9 +1459,11 @@ typedef struct FlmSystemData
 	IF_XML *					pXml;
 	IF_FileSystem	*		pFileSystem;
 	IF_ThreadMgr *			pThreadMgr;
+	IF_FileHdlCache *		pFileHdlCache;
 	FLMUINT					uiIndexingThreadGroup;
 	FLMUINT					uiDbThreadGroup;
 	FLMUINT					uiCheckpointThreadGroup;
+	FLMUINT					uiFileOpenFlags;
 
 } FLMSYSDATA;
 
