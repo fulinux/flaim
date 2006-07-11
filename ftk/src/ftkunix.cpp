@@ -712,12 +712,10 @@ RCODE F_FileHdl::lowLevelWrite(
 						m_pucAlignedBuff, uiCurrBytesToExtend, 
 						ui64CurrFileSize)) == -1)
 					{
-					#ifndef FLM_LIBC_NLM
-						if( errno == EINTER)
+						if( errno == EINTR)
 						{
 							continue;
 						}
-					#endif
 						
 						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 						goto Exit;
@@ -784,12 +782,10 @@ RCODE F_FileHdl::lowLevelWrite(
 					if( (iBytesWritten = pwrite( m_fd, 
 						pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
 					{
-					#ifndef FLM_LIBC_NLM
-						if( errno == EINTER)
+						if( errno == EINTR)
 						{
 							continue;
 						}
-					#endif
 						
 						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 					}
@@ -851,12 +847,10 @@ RCODE F_FileHdl::lowLevelWrite(
 			if( (iBytesWritten = pwrite( m_fd, 
 				pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
 			{
-			#ifndef FLM_LIBC_NLM
-				if( errno == EINTER)
+				if( errno == EINTR)
 				{
 					continue;
 				}
-			#endif
 				
 				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 			}
