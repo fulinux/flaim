@@ -2754,6 +2754,7 @@ void F_FileHdl::initCommonData( void)
 	m_bOpenedExclusive = FALSE;
 	m_bOpenedInAsyncMode = FALSE;
 	m_bDoDirectIO = FALSE;
+	m_numAsyncPending = 0;
 }
 
 /*****************************************************************************
@@ -2761,6 +2762,8 @@ Desc:
 ******************************************************************************/
 void F_FileHdl::freeCommonData( void)
 {
+	f_assert( !m_numAsyncPending);
+	
 	if( m_pucAlignedBuff)
 	{
 		f_freeAlignedBuffer( (void **)&m_pucAlignedBuff);
@@ -3033,6 +3036,8 @@ RCODE F_FileAsyncClient::prepareForAsync(
 		m_pIOBuffer->setPending();
 	}
 	
+	f_atomicInc( &m_pFileHdl->m_numAsyncPending);
+	
 Exit:
 
 	return( rc);
@@ -3141,6 +3146,8 @@ void FLMAPI F_FileAsyncClient::notifyComplete(
 	
 	if( m_pFileHdl)
 	{
+		f_assert( m_pFileHdl->m_numAsyncPending);
+		f_atomicDec( &m_pFileHdl->m_numAsyncPending);
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}
@@ -3267,6 +3274,10 @@ RCODE F_FileHdl::directRead(
 	if( ui64ReadOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64ReadOffset = m_ui64CurrentPos;
+	}
+	else
+	{
+		m_ui64CurrentPos = ui64ReadOffset;
 	}
 
 	// This loop does multiple reads (if necessary) to get all of the
@@ -3422,6 +3433,10 @@ RCODE F_FileHdl::directWrite(
 	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64WriteOffset = m_ui64CurrentPos;
+	}
+	else
+	{
+		m_ui64CurrentPos = ui64WriteOffset;
 	}
 
 	if( pIOBuffer)

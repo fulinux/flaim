@@ -480,6 +480,10 @@ RCODE F_FileHdl::lowLevelRead(
 	{
 		ui64ReadOffset = m_ui64CurrentPos;
 	}
+	else
+	{
+		m_ui64CurrentPos = ui64ReadOffset;
+	}
 	
 	if( !pvBuffer)
 	{
@@ -646,6 +650,7 @@ RCODE F_FileHdl::lowLevelWrite(
 	FLMUINT					uiBytesWritten = 0;
 	F_FileAsyncClient *	pAsyncClient = NULL;
 	FLMBOOL					bWaitForWrite = FALSE;
+	FLMBYTE *				pucExtendBuffer = NULL;
 	
 	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
 	{
@@ -657,8 +662,12 @@ RCODE F_FileHdl::lowLevelWrite(
 	{
 		ui64WriteOffset = m_ui64CurrentPos;
 	}
+	else
+	{
+		m_ui64CurrentPos = ui64WriteOffset;
+	}
 
-	if( m_bDoDirectIO)
+	if( m_bDoDirectIO && !m_numAsyncPending)
 	{
 		FLMUINT64			ui64CurrFileSize;
 		FLMUINT				uiTotalBytesToExtend;
@@ -698,19 +707,25 @@ RCODE F_FileHdl::lowLevelWrite(
 
 			if( uiTotalBytesToExtend)
 			{
-				FLMUINT		uiCurrBytesToExtend;
 				FLMINT		iBytesWritten;
+				FLMUINT		uiCurrBytesToExtend;
+				FLMUINT		uiExtendBufferSize;
 				
-				f_memset( m_pucAlignedBuff, 0, m_uiAlignedBuffSize);
+				uiExtendBufferSize = f_min( uiTotalBytesToExtend, 64 * 1024);
+				
+				if( RC_BAD( rc = f_allocAlignedBuffer( 
+					uiExtendBufferSize, &pucExtendBuffer)))
+				{
+					goto Exit;
+				}
 				
 				while( uiTotalBytesToExtend)
 				{
 					uiCurrBytesToExtend = f_min( 
-										uiTotalBytesToExtend, m_uiAlignedBuffSize);
+									uiTotalBytesToExtend, uiExtendBufferSize);
 					
-					if( (iBytesWritten = pwrite( m_fd, 
-						m_pucAlignedBuff, uiCurrBytesToExtend, 
-						ui64CurrFileSize)) == -1)
+					if( (iBytesWritten = pwrite( m_fd, pucExtendBuffer, 
+						uiCurrBytesToExtend, ui64CurrFileSize)) == -1)
 					{
 						if( errno == EINTR)
 						{
@@ -893,6 +908,11 @@ Exit:
 	{
 		f_assert( RC_BAD( rc));
 		pIOBuffer->notifyComplete( rc);
+	}
+	
+	if( pucExtendBuffer)
+	{
+		f_freeAlignedBuffer( &pucExtendBuffer);
 	}
 
 	if( puiBytesWritten)

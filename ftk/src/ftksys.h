@@ -768,6 +768,7 @@
 		FLMBOOL						m_bOpenedExclusive;
 		FLMBOOL						m_bDoDirectIO;
 		FLMBOOL						m_bOpenedInAsyncMode;
+		FLMATOMIC					m_numAsyncPending;
 		
 	#if defined( FLM_WIN)
 		HANDLE						m_hFile;

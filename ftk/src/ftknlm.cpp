@@ -3014,6 +3014,10 @@ RCODE F_FileHdl::lowLevelRead(
 	{
 		ui64ReadOffset = m_ui64CurrentPos;
 	}
+	else
+	{
+		m_ui64CurrentPos = ui64ReadOffset;
+	}
 	
 	if( !pvBuffer)
 	{
@@ -3334,6 +3338,10 @@ RCODE F_FileHdl::lowLevelWrite(
 	if( ui64WriteOffset == FLM_IO_CURRENT_POS)
 	{
 		ui64WriteOffset = m_ui64CurrentPos;
+	}
+	else
+	{
+		m_ui64CurrentPos = ui64WriteOffset;
 	}
 
 	if( !pvBuffer)
