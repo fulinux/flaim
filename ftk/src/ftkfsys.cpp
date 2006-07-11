@@ -3059,7 +3059,7 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete(
 	uiBytesDone = (FLMUINT)udBytesDone;
 #endif
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS)
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
 	FLMINT						iAsyncResult;
 	const struct aiocb *		ppAio[ 1];
 	
