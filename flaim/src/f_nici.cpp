@@ -253,7 +253,7 @@ RCODE F_CCS::unwrapKey(
 	if( CCS_UnwrapKey( context, wrappingKeyHandle, pucWrappedKey,
 		ui32WrappedKeyLength, &m_keyHandle) != 0)
 	{
-		rc = RC_SET( FERR_NICI_UNWRAPKEY_FAILED);
+		rc = RC_SET_AND_ASSERT( FERR_NICI_UNWRAPKEY_FAILED);
 		goto Exit;
 	}
 
@@ -1403,9 +1403,14 @@ RCODE F_CCS::getKeyToStore(
 		}
 
 		if (RC_BAD( rc = pB64Encoder->read( pvB64Buffer, 
-			ui32PaddedLength, &uiB64Length)))
+			0xFFFFFFFF, &uiB64Length)))
 		{
-			goto ExitCtx;
+			if( rc != NE_FLM_EOF_HIT)
+			{
+				goto ExitCtx;
+			}
+			
+			rc = NE_FLM_OK;
 		}
 
 		flmAssert( uiB64Length < (FLMUINT)(ui32PaddedLength * 2));
