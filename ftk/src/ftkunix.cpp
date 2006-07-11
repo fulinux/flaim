@@ -386,8 +386,16 @@ RCODE FLMAPI F_FileHdl::flush( void)
 
 	// OS X doesn't support true direct I/O.  To force data all the way to the
 	// disk platters, a call to fcntl with the F_FULLFSYNC flag is required.
+	// However, fsync is MUCH faster, but only ensures that the data is delivered
+	// to the drive.  If the drive's write-back cache is enabled (very common
+	// with ATA drives), the data may not be written to the disk platters
+	// until the drive determines an optimal time to do the write.
 
+#ifdef FLM_OSX_FULL_FLUSH
 	if( fcntl( m_fd, F_FULLFSYNC, 0) == -1)
+#else
+	if( fsync( m_fd) != 0)
+#endif
 	{
 		 return( f_mapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 	}
