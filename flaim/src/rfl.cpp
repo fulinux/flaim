@@ -329,7 +329,7 @@ RCODE F_Rfl::positionTo(
 			{
 				if (rc == FERR_IO_END_OF_FILE)
 				{
-					rc = RC_SET( FERR_NOT_RFL);
+					rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 				}
 				else
 				{
@@ -340,7 +340,7 @@ RCODE F_Rfl::positionTo(
 			}
 			else if (uiBytesRead < m_pCurrentBuf->uiRflBufBytes)
 			{
-				rc = RC_SET( FERR_NOT_RFL);
+				rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 				goto Exit;
 			}
 		}
@@ -890,14 +890,14 @@ RCODE F_Rfl::verifyHeader(
 
 	if (f_memcmp( &pucHeader[RFL_NAME_POS], RFL_NAME, RFL_NAME_LEN) != 0)
 	{
-		rc = RC_SET( FERR_NOT_RFL);
+		rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 		goto Exit;
 	}
 
 	if (f_memcmp( &pucHeader[RFL_VERSION_POS], 
 					  RFL_VERSION, RFL_VERSION_LEN) != 0)
 	{
-		rc = RC_SET( FERR_NOT_RFL);
+		rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 		goto Exit;
 	}
 
@@ -1020,7 +1020,7 @@ RCODE F_Rfl::openFile(
 	{
 		if (rc == FERR_IO_END_OF_FILE)
 		{
-			rc = RC_SET( FERR_NOT_RFL);
+			rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 		}
 		else
 		{
@@ -1034,7 +1034,7 @@ RCODE F_Rfl::openFile(
 
 	if (uiBytesRead < 512)
 	{
-		rc = RC_SET( FERR_NOT_RFL);
+		rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 		goto Exit;
 	}
 
@@ -5216,7 +5216,7 @@ Get_Next_File:
 
 				if (uiBytesRead < 512)
 				{
-					rc = RC_SET( FERR_NOT_RFL);
+					rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 					goto Exit;
 				}
 
@@ -7170,7 +7170,7 @@ Retry_Open:
 
 		if (uiBytesRead < 512)
 		{
-			rc = RC_SET( FERR_NOT_RFL);
+			rc = RC_SET_AND_ASSERT( FERR_NOT_RFL);
 			goto Exit;
 		}
 
