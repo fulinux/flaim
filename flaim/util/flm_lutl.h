@@ -24,11 +24,11 @@
 
 #include "flm_dlst.h"
 
-RCODE flstIndexManagerThread(
+RCODE FLMAPI flstIndexManagerThread(
 	IF_Thread *		pThread);
 
-RCODE flstMemoryManagerThread(
+RCODE FLMAPI flstMemoryManagerThread(
 	IF_Thread *		pThread);
 
-RCODE flstTrackerMonitorThread(
+RCODE FLMAPI flstTrackerMonitorThread(
 	IF_Thread *		pThread);
