@@ -774,6 +774,7 @@
 		FLMBOOL						m_bFlushRequired;
 	#elif defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 		int				   		m_fd;
+		FLMBOOL						m_bFlushRequired;
 	#elif defined( FLM_RING_ZERO_NLM)		
 		LONG							m_lFileHandle;
 		LONG							m_lOpenAttr;

@@ -79,6 +79,7 @@ F_FileHdl::F_FileHdl()
 {
 	initCommonData();
 	m_fd = -1;
+	m_bFlushRequired = FALSE;
 }
 
 /******************************************************************************
@@ -285,7 +286,7 @@ Retry_Create:
 	m_uiAlignedBuffSize = 64 * 1024;
 	if( bDoDirectIO)
 	{
-		m_uiAlignedBuffSize = roundToNextSector( m_uiAlignedBuffSize);
+		m_uiAlignedBuffSize = (FLMUINT)roundToNextSector( m_uiAlignedBuffSize);
 	}
 
 	if( RC_BAD( rc = f_allocAlignedBuffer( m_uiAlignedBuffSize, 
@@ -393,7 +394,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	
 #else
 
-	if( !m_bDoDirectIO)
+	if( !m_bDoDirectIO || m_bFlushRequired)
 	{
 		if( fdatasync( m_fd) != 0)
 		{
@@ -402,7 +403,8 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	}
 
 #endif
-	
+
+	m_bFlushRequired = FALSE;
 	return( NE_FLM_OK);
 }
 
@@ -445,6 +447,8 @@ RCODE FLMAPI F_FileHdl::truncate(
 		rc = f_mapPlatformError( errno, NE_FLM_TRUNCATING_FILE);
 		goto Exit;
 	}
+	
+	m_bFlushRequired = TRUE;
 
 Exit:
 
@@ -654,6 +658,86 @@ RCODE F_FileHdl::lowLevelWrite(
 		ui64WriteOffset = m_ui64CurrentPos;
 	}
 
+	if( m_bDoDirectIO)
+	{
+		FLMUINT64			ui64CurrFileSize;
+		FLMUINT				uiTotalBytesToExtend;
+	
+		// Determine if the write will extend the file beyond its
+		// current size.
+		
+		if( RC_BAD( rc = size( &ui64CurrFileSize)))
+		{
+			goto Exit;
+		}
+		
+		if( ui64WriteOffset + uiBytesToWrite > ui64CurrFileSize)
+		{
+			if( (uiTotalBytesToExtend = m_uiExtendSize) != 0)
+			{
+				if( ui64CurrFileSize > m_uiMaxAutoExtendSize)
+				{
+					uiTotalBytesToExtend = 0;
+				}
+				else
+				{
+					// Don't extend beyond maximum file size.
+
+					if( m_uiMaxAutoExtendSize - ui64CurrFileSize < uiTotalBytesToExtend)
+					{
+						uiTotalBytesToExtend = 
+							(FLMUINT)(m_uiMaxAutoExtendSize - ui64CurrFileSize);
+					}
+
+					// If the extend size is not on a sector boundary, round it down.
+
+					uiTotalBytesToExtend = 
+						(FLMUINT)truncateToPrevSector( uiTotalBytesToExtend);
+				}
+			}
+
+			if( uiTotalBytesToExtend)
+			{
+				FLMUINT		uiCurrBytesToExtend;
+				FLMINT		iBytesWritten;
+				
+				f_memset( m_pucAlignedBuff, 0, m_uiAlignedBuffSize);
+				
+				while( uiTotalBytesToExtend)
+				{
+					uiCurrBytesToExtend = f_min( 
+										uiTotalBytesToExtend, m_uiAlignedBuffSize);
+					
+					if( (iBytesWritten = pwrite( m_fd, 
+						m_pucAlignedBuff, uiCurrBytesToExtend, 
+						ui64CurrFileSize)) == -1)
+					{
+					#ifndef FLM_LIBC_NLM
+						if( errno == EINTER)
+						{
+							continue;
+						}
+					#endif
+						
+						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+						goto Exit;
+					}
+					
+					uiTotalBytesToExtend -= uiCurrBytesToExtend;
+					ui64CurrFileSize += uiCurrBytesToExtend;
+				
+					if( (FLMUINT)iBytesWritten < uiCurrBytesToExtend)
+					{
+						rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+						goto Exit;
+					}
+				}
+				
+				m_bFlushRequired = TRUE;
+			}
+		}
+	}
+	
 	if( !pvBuffer)
 	{
 		pvBuffer = pIOBuffer->getBufferPtr();
@@ -694,21 +778,33 @@ RCODE F_FileHdl::lowLevelWrite(
 			if( errno == EAGAIN || errno == ENOSYS)
 			{
 				FLMINT		iBytesWritten;
-				
-				if( (iBytesWritten = pwrite( m_fd, 
-					pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
+
+				for( ;;)
 				{
-					rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-				}
-				else
-				{
-					uiBytesWritten = (FLMUINT)iBytesWritten;
-					m_ui64CurrentPos += uiBytesWritten;
-				
-					if( uiBytesWritten < uiBytesToWrite)
+					if( (iBytesWritten = pwrite( m_fd, 
+						pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
 					{
-						rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+					#ifndef FLM_LIBC_NLM
+						if( errno == EINTER)
+						{
+							continue;
+						}
+					#endif
+						
+						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 					}
+					else
+					{
+						uiBytesWritten = (FLMUINT)iBytesWritten;
+						m_ui64CurrentPos += uiBytesWritten;
+					
+						if( uiBytesWritten < uiBytesToWrite)
+						{
+							rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+						}
+					}
+					
+					break;
 				}
 			}
 			else
@@ -750,14 +846,26 @@ RCODE F_FileHdl::lowLevelWrite(
 			pIOBuffer->setPending();
 		}
 		
-		if( (iBytesWritten = pwrite( m_fd, 
-			pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
+		for( ;;)
 		{
-			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-		}
-		else
-		{
-			uiBytesWritten = (FLMUINT)iBytesWritten;
+			if( (iBytesWritten = pwrite( m_fd, 
+				pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
+			{
+			#ifndef FLM_LIBC_NLM
+				if( errno == EINTER)
+				{
+					continue;
+				}
+			#endif
+				
+				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			}
+			else
+			{
+				uiBytesWritten = (FLMUINT)iBytesWritten;
+			}
+			
+			break;
 		}
 
 		if( pIOBuffer)
@@ -1089,7 +1197,9 @@ Desc:
 ****************************************************************************/
 void FLMAPI f_yieldCPU( void)
 {
+#ifndef FLM_LIBC_NLM
 	sched_yield();
+#endif
 }
 
 /**********************************************************************
