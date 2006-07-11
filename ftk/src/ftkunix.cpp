@@ -244,9 +244,21 @@ Retry_Create:
 	}
 #endif
 
+#if defined( FLM_OSX)
+	if( bDoDirectIO)
+	{
+		if( fcntl( m_fd, F_NOCACHE, 1) == -1)
+		{
+			f_assert( 0);
+			bDoDirectIO = FALSE;
+			bUsingAsync = FALSE;
+		}
+	}
+#endif
+
 	// Get the sector size
 
-#if defined( FLM_SOLARIS) || defined( FLM_LINUX)
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
 	m_uiBytesPerSector = DEV_BSIZE;
 #else
 	{
@@ -342,6 +354,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	f_assert( m_bFileOpened);
 	
 #ifdef FLM_SOLARIS
+
 	// Direct I/O on Solaris is ADVISORY, meaning that the
 	// operating system may or may not actually honor the
 	// option for some or all operations on a given file.
@@ -367,18 +380,27 @@ RCODE FLMAPI F_FileHdl::flush( void)
 	{
 		 return( f_mapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 	}
+	
+#elif defined( FLM_OSX)
+
+	// OS X doesn't support true direct I/O.  To force data all the way to the
+	// disk platters, a call to fcntl with the F_FULLFSYNC flag is required.
+
+	if( fcntl( m_fd, F_FULLFSYNC, 0) == -1)
+	{
+		 return( f_mapPlatformError( errno, NE_FLM_FLUSHING_FILE));
+	}
+	
 #else
+
 	if( !m_bDoDirectIO)
 	{
-	#ifdef FLM_OSX
-		if( fsync( m_fd) != 0)
-	#else
 		if( fdatasync( m_fd) != 0)
-	#endif
 		{
 			 return( f_mapPlatformError( errno, NE_FLM_FLUSHING_FILE));
 		}
 	}
+
 #endif
 	
 	return( NE_FLM_OK);
@@ -460,7 +482,7 @@ RCODE F_FileHdl::lowLevelRead(
 		pvBuffer = pIOBuffer->getBufferPtr();
 	}
 
-#ifndef FLM_LIBC_NLM	
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
 	if( m_bOpenedInAsyncMode)
 	{
 		struct aiocb *		pAIO;
@@ -494,8 +516,32 @@ RCODE F_FileHdl::lowLevelRead(
 		
 		if( aio_read( pAIO) != 0)
 		{
-			f_assert( 0);
-			rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
+			if( errno == EAGAIN || errno == ENOSYS)
+			{
+				FLMINT		iBytesRead;
+				
+				if( (iBytesRead = pread( m_fd, pvBuffer, 
+					uiBytesToRead, ui64ReadOffset)) == -1)
+				{
+					rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
+				}
+				else
+				{
+					uiBytesRead = (FLMUINT)iBytesRead;
+					m_ui64CurrentPos += uiBytesRead;
+				
+					if( uiBytesRead < uiBytesToRead)
+					{
+						rc = RC_SET( NE_FLM_IO_END_OF_FILE);
+					}
+				}
+			}
+			else
+			{
+				f_assert( 0);
+				rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
+			}
+			
 			pAsyncClient->notifyComplete( rc, uiBytesRead, FALSE);
 			goto Exit;
 		}
@@ -613,7 +659,7 @@ RCODE F_FileHdl::lowLevelWrite(
 		pvBuffer = pIOBuffer->getBufferPtr();
 	}
 
-#ifndef FLM_LIBC_NLM	
+#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
 	if( m_bOpenedInAsyncMode)
 	{
 		struct aiocb *		pAIO;
@@ -645,8 +691,32 @@ RCODE F_FileHdl::lowLevelWrite(
 		
 		if( aio_write( pAIO) != 0)
 		{
-			f_assert( 0);
-			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			if( errno == EAGAIN || errno == ENOSYS)
+			{
+				FLMINT		iBytesWritten;
+				
+				if( (iBytesWritten = pwrite( m_fd, 
+					pvBuffer, uiBytesToWrite, ui64WriteOffset)) == -1)
+				{
+					rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+				}
+				else
+				{
+					uiBytesWritten = (FLMUINT)iBytesWritten;
+					m_ui64CurrentPos += uiBytesWritten;
+				
+					if( uiBytesWritten < uiBytesToWrite)
+					{
+						rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+					}
+				}
+			}
+			else
+			{
+				f_assert( 0);
+				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			}
+			
 			pAsyncClient->notifyComplete( rc, uiBytesWritten, FALSE);
 			goto Exit;
 		}
