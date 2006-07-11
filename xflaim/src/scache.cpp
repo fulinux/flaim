@@ -33,9 +33,6 @@ FSTATIC void ScaNotify(
 	F_CachedBlock *	pUseSCache,
 	RCODE					NotifyRc);
 
-FSTATIC void scaWriteComplete(
-	IF_IOBuffer *	pIOBuffer);
-
 #ifdef SCACHE_LINK_CHECKING
 FSTATIC void scaVerify(
 	int				iPlace);
