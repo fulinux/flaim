@@ -650,7 +650,7 @@ Get_File_Name:
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient)))
+	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient, NULL, TRUE)))
 	{
 		ViewShowRCError( "setting up super file handle", rc);
 		goto Exit;
@@ -670,7 +670,7 @@ Get_File_Name:
 		}
 	}
 
-	gv_pSFileHdl->releaseFiles( TRUE);
+	gv_pSFileHdl->releaseFiles();
 
 	if (RC_BAD( rc = FlmDbOpen( gv_szViewFileName, gv_szDataDir,
 										 gv_szRflDir, FO_DONT_REDO_LOG,
