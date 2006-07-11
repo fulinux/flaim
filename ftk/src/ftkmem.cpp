@@ -77,6 +77,12 @@
 
 #endif
 
+#if defined( FLM_UNIX)
+	#ifndef MAP_ANONYMOUS
+		#define MAP_ANONYMOUS	MAP_ANON
+	#endif
+#endif
+
 /************************************************************************
 Desc:
 *************************************************************************/
@@ -2647,11 +2653,6 @@ void * F_SlabManager::allocSlabFromSystem( void)
 		return( NULL);
 	}
 #elif defined( FLM_UNIX)
-
-#ifndef MAP_ANONYMOUS
-	#define MAP_ANONYMOUS	MAP_ANON
-#endif
-
 	if( (pSlab = mmap( 0, m_uiSlabSize, 
 		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) == MAP_FAILED)
 	{
@@ -4442,27 +4443,47 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
 		goto Exit;
 	}
-	f_memset( *ppvAlloc, 0, uiMinSize);
-#elif defined( FLM_LINUX)
-	if( posix_memalign( ppvAlloc, sysconf( _SC_PAGESIZE), uiMinSize) != 0)
-	{
-		rc = f_mapPlatformError( errno, NE_FLM_MEM);
-		goto Exit;
-	}
-	f_memset( *ppvAlloc, 0, uiMinSize);
 #elif defined( FLM_SOLARIS)
 	if( (*ppvAlloc = memalign( sysconf( _SC_PAGESIZE), uiMinSize)) == NULL)
 	{
 		rc = f_mapPlatformError( errno, NE_FLM_MEM);
 		goto Exit;
 	}
-	f_memset( *ppvAlloc, 0, uiMinSize);
+#elif defined( FLM_LINUX) 
+	if( posix_memalign( ppvAlloc, sysconf( _SC_PAGESIZE), uiMinSize) != 0)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		goto Exit;
+	}
+#elif defined( FLM_UNIX)
+	{
+		FLMUINT		uiAllocSize;
+		FLMUINT		uiPageSize = (FLMUINT)sysconf( _SC_PAGESIZE);
+		FLMBYTE *	pucAlloc;
+		
+		uiAllocSize = f_roundUp( uiMinSize, uiPageSize) + uiPageSize;
+		
+		if( (pucAlloc = (FLMBYTE *)mmap( 0, uiAllocSize,
+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 
+			-1, 0)) == MAP_FAILED)
+		{
+			rc = f_mapPlatformError( errno, NE_FLM_MEM);
+			goto Exit;
+		}
+		
+		f_assert( ((FLMUINT)(pucAlloc) % uiPageSize) == 0);
+		
+		UD2FBA( uiAllocSize, pucAlloc);
+		*ppvAlloc = (void *)(pucAlloc + uiPageSize);
+	}
 #else
-	if( RC_BAD( rc = f_calloc( uiMinSize, ppvAlloc)))
+	if( RC_BAD( rc = f_alloc( uiMinSize, ppvAlloc)))
 	{
 		goto Exit;
 	}
 #endif
+
+	f_memset( *ppvAlloc, 0, uiMinSize);
 
 Exit:
 
@@ -4482,6 +4503,16 @@ void FLMAPI f_freeAlignedBufferImp(
 		*ppvAlloc = NULL;
 #elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
 		free( *ppvAlloc);
+		*ppvAlloc = NULL;
+#elif defined( FLM_UNIX)
+		{
+			FLMUINT		uiAllocSize;
+			FLMUINT		uiPageSize = (FLMUINT)sysconf( _SC_PAGESIZE);
+			
+			uiAllocSize = FB2UD( (FLMBYTE *)(*ppvAlloc) - uiPageSize);
+			munmap( *ppvAlloc, uiAllocSize);
+		}
+		
 		*ppvAlloc = NULL;
 #else
 		f_free( ppvAlloc);
