@@ -4509,7 +4509,8 @@ void FLMAPI f_freeAlignedBufferImp(
 			FLMUINT		uiAllocSize;
 			FLMUINT		uiPageSize = (FLMUINT)sysconf( _SC_PAGESIZE);
 			
-			uiAllocSize = FB2UD( (FLMBYTE *)(*ppvAlloc) - uiPageSize);
+			*ppvAlloc = ((FLMBYTE *)(*ppvAlloc)) - uiPageSize;
+			uiAllocSize = FB2UD( (FLMBYTE *)(*ppvAlloc));
 			munmap( *ppvAlloc, uiAllocSize);
 		}
 		
