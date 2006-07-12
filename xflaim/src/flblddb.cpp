@@ -684,20 +684,28 @@ Retry:
 		{
 			goto Exit;
 		}
-		
-		// To make the new key active, we need to close the 
-		// database and reopen it.
-		
-		m_pDb->Release();
-		m_pDb = NULL;
-		
-		if( RC_BAD( rc = gv_pXFlmDbSystem->openDb( pszDestDbPath, pszDestDataDir,
-			pszDestRflDir, pszPassword, 0, (IF_Db **)&m_pDb)))
-		{
-			goto Exit;
-		}
 	}
+		
+	// Need to close the database and re-open it to make the new key active
+	// and/or to disable background threads.
+	
+	m_pDb->Release();
+	m_pDb = NULL;
+	
+	// Open the destination database without starting the background threads.
+	// We don't want the background threads to be active while the restore
+	// is taking place, because RFL logging is disabled for the duration
+	// of the restore.  We don't want the background threads to try to
+	// start transactions in this state.
 
+	if( RC_BAD( rc = gv_pXFlmDbSystem->openDb( pszDestDbPath, pszDestDataDir,
+		pszDestRflDir, pszPassword, XFLM_DONT_RESUME_THREADS, (IF_Db **)&m_pDb)))
+	{
+		goto Exit;
+	}
+	
+	// Set the rebuild flag
+	
 	m_pDb->m_uiFlags |= FDB_REBUILDING_DATABASE;
 
 	// Disable RFL logging
