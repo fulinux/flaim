@@ -3926,6 +3926,7 @@
 			
 		virtual RCODE FLMAPI resize(
 			FLMUINT 					uiNumBytes,
+			FLMBOOL					bPreallocate,
 			FLMUINT *				puiActualSize = NULL) = 0;
 	
 		virtual void FLMAPI incrementTotalBytesAllocated(
@@ -3963,9 +3964,9 @@
 			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
 		virtual void * FLMAPI allocCell(
-			IF_Relocator *			pRelocator = NULL,
-			void *					pvInitialData = NULL,
-			FLMUINT					uiDataSize = 0) = 0;
+			IF_Relocator *			pRelocator,
+			void *					pvInitialData,
+			FLMUINT					uiDataSize) = 0;
 	
 		virtual void * FLMAPI allocCell(
 			IF_Relocator *			pRelocator,

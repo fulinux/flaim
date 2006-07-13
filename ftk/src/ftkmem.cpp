@@ -198,6 +198,7 @@ public:
 		
 	RCODE FLMAPI resize(
 		FLMUINT 				uiNumBytes,
+		FLMBOOL				bPreallocate,
 		FLMUINT *			puiActualSize = NULL);
 
 	void FLMAPI incrementTotalBytesAllocated(
@@ -2277,7 +2278,7 @@ RCODE FLMAPI F_SlabManager::setup(
 	
 	if( uiPreallocSize)
 	{
-		if( RC_BAD( rc = resize( uiPreallocSize, NULL)))
+		if( RC_BAD( rc = resize( uiPreallocSize, TRUE, NULL)))
 		{
 			goto Exit;
 		}
@@ -2293,6 +2294,7 @@ Desc:
 ****************************************************************************/
 RCODE FLMAPI F_SlabManager::resize(
 	FLMUINT 			uiNumBytes,
+	FLMBOOL			bPreallocate,
 	FLMUINT *		puiActualSize)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -2350,7 +2352,7 @@ RCODE FLMAPI F_SlabManager::resize(
 			m_uiTotalBytesAllocated -= m_uiSlabSize;
 		}
 	}
-	else
+	else if( bPreallocate)
 	{
 		// Allocate the required number of slabs
 		
@@ -2392,8 +2394,15 @@ RCODE FLMAPI F_SlabManager::resize(
 	{
 		*puiActualSize = m_uiTotalSlabs * m_uiSlabSize;
 	}
-
-	m_uiPreallocSlabs = m_uiTotalSlabs;
+	
+	if( bPreallocate)
+	{
+		m_uiPreallocSlabs = m_uiTotalSlabs;
+	}
+	else
+	{
+		m_uiPreallocSlabs = 0;
+	}
 	
 Exit:
 

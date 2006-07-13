@@ -449,7 +449,7 @@ Exit:
 Desc:	Truncate the file to the indicated size
 ******************************************************************************/
 RCODE FLMAPI F_FileHdl::truncate(
-	FLMUINT64		uiNew64Size)
+	FLMUINT64		ui64NewSize)
 {
 	RCODE				rc = NE_FLM_OK;
 	FLMUINT64		ui64CurrentSize;
@@ -466,7 +466,7 @@ RCODE FLMAPI F_FileHdl::truncate(
 		goto Exit;
 	}
 
-	if( ftruncate( m_fd, ui64Size) == -1)
+	if( ftruncate( m_fd, ui64NewSize) == -1)
 	{
 		rc = f_mapPlatformError( errno, NE_FLM_TRUNCATING_FILE);
 		goto Exit;
@@ -675,7 +675,6 @@ RCODE F_FileHdl::lowLevelWrite(
 	F_FileAsyncClient *	pAsyncClient = NULL;
 	FLMBOOL					bWaitForWrite = FALSE;
 	FLMBYTE *				pucExtendBuffer = NULL;
-	FLMUINT					uiTotalBytesToExtend;
 	
 	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
 	{
@@ -694,6 +693,9 @@ RCODE F_FileHdl::lowLevelWrite(
 	
 	if( m_bDoDirectIO && !m_numAsyncPending && m_uiExtendSize)
 	{
+		FLMUINT64		ui64CurrFileSize;
+		FLMUINT			uiTotalBytesToExtend;
+		
 		if( RC_BAD( rc = getPreWriteExtendSize( ui64WriteOffset, uiBytesToWrite,
 			&ui64CurrFileSize, &uiTotalBytesToExtend)))
 		{
