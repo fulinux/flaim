@@ -1221,7 +1221,7 @@ FINLINE void posix_atomic_lock( void)
 #if defined( FLM_SOLARIS)
 	for( ;;)
 	{
-		if( _lwp_mutex_lock( gv_atomicMutex) == 0)
+		if( _lwp_mutex_lock( &gv_atomicMutex) == 0)
 		{
 			break;
 		}
