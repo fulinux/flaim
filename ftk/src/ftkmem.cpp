@@ -1028,7 +1028,7 @@ FSTATIC FLMBOOL initMemTracking( void)
 			SymInitialize( gv_hMemProcess, NULL, TRUE);
 			
 			gv_bTrackLeaks = TRUE;
-			gv_bStackWalk = TRUE;
+			gv_bStackWalk = FALSE;
 #endif
 			gv_bMemTrackingInitialized = TRUE;
 		}
