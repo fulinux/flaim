@@ -194,8 +194,8 @@ FSTATIC RCODE flmGetCacheBytes(
 	}
 	
 	uiMem = (FLMUINT)((bCalcOnAvailMem)
-							? (FLMUINT)ui64TotalPhysMem
-							: (FLMUINT)ui64AvailPhysMem);
+							? (FLMUINT)ui64AvailPhysMem
+							: (FLMUINT)ui64TotalPhysMem);
 	
 	// If we are basing the calculation on available physical memory,
 	// take in to account what has already been allocated.
@@ -331,11 +331,19 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	
 	// Set the default file open flags
 	
+#ifdef FLM_UNIX
+	gv_FlmSysData.uiFileOpenFlags = 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE;
+
+	gv_FlmSysData.uiFileCreateFlags = 
+		gv_FlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
+#else
 	gv_FlmSysData.uiFileOpenFlags = 
 		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT;
 
 	gv_FlmSysData.uiFileCreateFlags = 
 		gv_FlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
+#endif
 		
 #ifdef FLM_DBG_LOG
 	flmDbgLogInit();
@@ -582,31 +590,20 @@ FSTATIC RCODE flmSetCacheLimits(
 	{
 		uiNewTotalCacheSize = FLM_MAX_CACHE_SIZE;
 	}
-	
-	if( gv_FlmSysData.bDynamicCacheAdjust || !bPreallocateCache)
-	{
-DONT_PREALLOCATE:
 
-		if( uiNewTotalCacheSize < gv_FlmSysData.uiMaxCache)
-		{
-			bResizeAfterConfig = TRUE;
-		}
-		else
-		{
-			if( RC_BAD( rc = gv_FlmSysData.pSlabManager->resize( 0)))
-			{
-				goto Exit;
-			}
-		}
-		
-		gv_FlmSysData.bCachePreallocated = FALSE;
-	}
-	else
+	if( bPreallocateCache)
 	{
+		if( gv_FlmSysData.bDynamicCacheAdjust)
+		{
+			// Can't pre-allocate and dynamically adjust.
+
+			goto DONT_PREALLOCATE;
+
+		}
+
 		if( RC_BAD( rc = gv_FlmSysData.pSlabManager->resize( 
 			uiNewTotalCacheSize, &uiNewTotalCacheSize)))
 		{
-
 			// Log a message indicating that we couldn't pre-allocate
 			// the cache
 
@@ -618,7 +615,14 @@ DONT_PREALLOCATE:
 		
 		gv_FlmSysData.bCachePreallocated = TRUE;
 	}
+	else
+	{
+DONT_PREALLOCATE:
 
+		bResizeAfterConfig = TRUE;
+		gv_FlmSysData.bCachePreallocated = FALSE;
+	}
+	
 	if( gv_FlmSysData.uiBlockCachePercentage == 100)
 	{
 		uiNewBlockCacheSize = uiNewTotalCacheSize;
@@ -639,13 +643,14 @@ DONT_PREALLOCATE:
 
 	if( bResizeAfterConfig)
 	{
-		(void)gv_FlmSysData.pSlabManager->resize( 0);
+		if( gv_FlmSysData.pSlabManager->totalBytesAllocated() > 
+			 uiNewTotalCacheSize)
+		{
+			(void)gv_FlmSysData.pSlabManager->resize( uiNewTotalCacheSize);
+		}
 	}
 	
 	gv_FlmSysData.uiMaxCache = uiNewTotalCacheSize;
-	
-Exit:
-
 	return( rc);
 }
 
