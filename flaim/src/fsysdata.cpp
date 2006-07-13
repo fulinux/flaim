@@ -1116,6 +1116,7 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 #endif
+			break;
 		}
 	
 		case FLM_CACHE_LIMIT:
