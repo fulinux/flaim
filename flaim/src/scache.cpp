@@ -7894,7 +7894,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				bTruncateRflFile = TRUE;
 				if (uiTruncateRflSize > (pFile->uiFileExtendSize * 2))
 				{
-					uiTruncateRflSize = (pFile->uiFileExtendSize * 2);
+					uiTruncateRflSize = pFile->uiFileExtendSize;
 				}
 				else if (uiTruncateRflSize < 512)
 				{
