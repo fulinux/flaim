@@ -2436,6 +2436,7 @@ F_CachedBlock::F_CachedBlock(
 	m_uiUseCount = 0;
 	m_ui16Flags = 0;
 	m_ui16BlkSize = (FLMUINT16)uiBlockSize;
+	m_bCanRelocate = FALSE;
 	
 #ifdef FLM_DEBUG
 	m_uiChecksum = 0;
@@ -2576,6 +2577,7 @@ Reuse_Block:
 
 		m_Usage.uiCount++;
 		m_Usage.uiByteCount += pSCache->memSize();
+		pSCache->m_bCanRelocate = TRUE;
 		
 		if (shouldRehash( m_Usage.uiCount, m_uiNumBuckets))
 		{
@@ -5283,16 +5285,12 @@ RCODE F_Database::createBlock(
 
 	if( !gv_XFlmSysData.pGlobalCacheMgr->cacheOverLimit())
 	{
-		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->lockMutex();
-
-		if( (pSCache = new( uiBlockSize, TRUE) F_CachedBlock( uiBlockSize)) == NULL)
+		if( (pSCache = new( uiBlockSize) F_CachedBlock( uiBlockSize)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
 
-		pSCache->m_uiUseCount++;
-		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->unlockMutex();
 		bLocalCacheAllocation = TRUE;
 	}
 
@@ -5350,7 +5348,7 @@ RCODE F_Database::createBlock(
 
 		// Set use count to one so the block cannot be replaced.
 
-		pSCache->m_uiUseCount--;
+		pSCache->m_bCanRelocate = TRUE;
 		pSCache->useForThread( 0);
 	}
 	else
@@ -5648,16 +5646,13 @@ RCODE F_Database::logPhysBlk(
 
 	if( !gv_XFlmSysData.pGlobalCacheMgr->cacheOverLimit())
 	{
-		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->lockMutex();
-
-		if( (pNewSCache = new( uiBlockSize, TRUE) F_CachedBlock( uiBlockSize)) == NULL)
+		if( (pNewSCache = new( uiBlockSize) F_CachedBlock( 
+			uiBlockSize)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
 
-		pNewSCache->m_uiUseCount++;
-		gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->unlockMutex();
 		bLocalCacheAllocation = TRUE;
 
 		// Copy the old block's data into this one.
@@ -5684,7 +5679,7 @@ RCODE F_Database::logPhysBlk(
 
 		// Set use count to one so the block cannot be replaced.
 
-		pNewSCache->m_uiUseCount--;
+		pNewSCache->m_bCanRelocate = TRUE;
 		pNewSCache->useForThread( 0);
 	}
 	else
@@ -5976,7 +5971,7 @@ RCODE F_BlockCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pBlockAllocator->setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL, uiBlockSizes,
+		TRUE, gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL, uiBlockSizes,
 		&m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
@@ -7193,7 +7188,14 @@ Notes:	This routine assumes the cache block cache mutex is locked
 FLMBOOL F_BlockRelocator::canRelocate(
 	void *		pvAlloc)
 {
-	return( ((F_CachedBlock *)pvAlloc)->m_uiUseCount ? FALSE : TRUE);
+	F_CachedBlock *		pBlock = ((F_CachedBlock *)pvAlloc);
+
+	if( !pBlock->m_bCanRelocate)
+	{
+		return( FALSE);
+	}
+	
+	return( pBlock->m_uiUseCount ? FALSE : TRUE);
 }
 
 /****************************************************************************
@@ -7728,24 +7730,43 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+void FLMAPI F_CachedBlock::objectAllocInit(
+	void *		pvAlloc,
+	FLMUINT		uiSize)
+{
+	F_UNREFERENCED_PARM( uiSize);
+	
+	// Need to make sure that m_bCanRelocate is initialized to zero
+	// prior to unlocking the mutex.  This is so the allocator 
+	// doesn't see garbage values that may cause it to relocate the object 
+	// before the constructor has been called.
+	
+	((F_CachedBlock *)pvAlloc)->m_bCanRelocate = FALSE;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 void * F_CachedBlock::operator new(
 	FLMSIZET			uiSize,
-	FLMUINT			uiBlockSize,
-	FLMBOOL			bAllocMutexLocked)
+	FLMUINT			uiBlockSize)
 #ifndef FLM_NLM	
 	throw()
 #endif
 {
-	void *	pvPtr;
+	void *		pvPtr;
 	
 	flmAssert( uiSize == sizeof( F_CachedBlock));
+
 	if( RC_BAD( gv_XFlmSysData.pBlockCacheMgr->m_pBlockAllocator->allocBuf(
 		&gv_XFlmSysData.pBlockCacheMgr->m_blockRelocator,
-		uiSize + uiBlockSize, (FLMBYTE **)&pvPtr, bAllocMutexLocked)))
+		uiSize + uiBlockSize, F_CachedBlock::objectAllocInit,
+		(FLMBYTE **)&pvPtr)))
 	{
 		pvPtr = NULL;
 	}
-
+	
+	flmAssert( !((F_CachedBlock *)pvPtr)->m_bCanRelocate); 
 	return( pvPtr);
 }
 

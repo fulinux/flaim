@@ -17785,19 +17785,22 @@ RCODE F_AttrItem::resizePayloadBuffer(
 	
 	if( uiCurrentSize != uiTotalNeeded)
 	{
-		FLMUINT	uiOldSize = memSize();
 		FLMUINT	uiNewSize;
 		FLMUINT	uiSize;
+		FLMUINT	uiOldSize;
+		
+		if (!bMutexAlreadyLocked)
+		{
+			f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
+			bMutexLocked = TRUE;
+		}
+
+		uiOldSize = memSize();
 
 		if( uiTotalNeeded <= sizeof( FLMBYTE *))
 		{
 			if( uiCurrentSize && uiCurrentSize > sizeof( FLMBYTE *))
 			{
-				if (!bMutexAlreadyLocked)
-				{
-					f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
-					bMutexLocked = TRUE;
-				}
 				m_pucPayload -= sizeof( F_AttrItem *);
 				gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf( m_uiPayloadLen + 
 					sizeof( F_AttrItem *), &m_pucPayload);
@@ -17819,12 +17822,6 @@ RCODE F_AttrItem::resizePayloadBuffer(
 		{
 			F_AttrItem *	pAttrItem = this;
 
-			if (!bMutexAlreadyLocked)
-			{
-				f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
-				bMutexLocked = TRUE;
-			}
-			
 			if( uiCurrentSize && uiCurrentSize > sizeof( FLMBYTE *))
 			{
 				m_pucPayload -= sizeof( F_AttrItem *);
@@ -17851,28 +17848,35 @@ RCODE F_AttrItem::resizePayloadBuffer(
 			flmAssert( *((F_AttrItem **)m_pucPayload) == this);
 			m_pucPayload += sizeof( F_AttrItem *);
 		}
+
 		m_uiPayloadLen = uiTotalNeeded;
 		uiNewSize = memSize();
-		if (uiNewSize > uiOldSize)
+
+		if( uiNewSize > uiOldSize)
 		{
 			uiSize = uiNewSize - uiOldSize;
 			m_pCachedNode->m_uiTotalAttrSize += uiSize;
+
 			if (m_pCachedNode->m_ui64HighTransId != FLM_MAX_UINT64)
 			{
 				gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiOldVerBytes += uiSize;
 			}
+
 			gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiByteCount += uiSize;
 		}
 		else if (uiNewSize < uiOldSize)
 		{
 			uiSize = uiOldSize - uiNewSize;
+			
 			flmAssert( m_pCachedNode->m_uiTotalAttrSize >= uiSize);
 			m_pCachedNode->m_uiTotalAttrSize -= uiSize;
+
 			if (m_pCachedNode->m_ui64HighTransId != FLM_MAX_UINT64)
 			{
 				flmAssert( gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiOldVerBytes >= uiSize);
 				gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiOldVerBytes -= uiSize;
 			}
+
 			flmAssert( gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiByteCount >= uiSize);
 			gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiByteCount -= uiSize;
 		}

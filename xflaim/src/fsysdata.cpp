@@ -1120,58 +1120,51 @@ RCODE F_GlobalCacheMgr::setCacheLimit(
 	FLMBOOL		bPreallocateCache)
 {
 	RCODE			rc = NE_XFLM_OK;
+	FLMUINT		uiOldCacheSize = m_uiMaxBytes;
 	
 	if( uiNewTotalCacheSize > FLM_MAX_CACHE_SIZE)
 	{
 		uiNewTotalCacheSize = FLM_MAX_CACHE_SIZE;
 	}
 	
-	if( m_bDynamicCacheAdjust || !bPreallocateCache)
+	if( bPreallocateCache)
 	{
-DONT_PREALLOCATE:
-
-		if( uiNewTotalCacheSize < m_uiMaxBytes)
+		if( m_bDynamicCacheAdjust)
 		{
-			m_uiMaxBytes = uiNewTotalCacheSize;
-			m_uiMaxSlabs = m_uiMaxBytes / m_pSlabManager->getSlabSize();
-			f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
-			gv_XFlmSysData.pNodeCacheMgr->reduceCache();
-			f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
-			
-			f_mutexLock( gv_XFlmSysData.hBlockCacheMutex);
-			rc = gv_XFlmSysData.pBlockCacheMgr->reduceCache( NULL);
-			f_mutexUnlock( gv_XFlmSysData.hBlockCacheMutex);
-			if( RC_BAD( rc))
-			{
-				goto Exit;
-			}
+			// Can't pre-allocate and dynamically adjust.
+
+			bPreallocateCache = FALSE;
 		}
 		else
 		{
-			if( RC_BAD( rc = m_pSlabManager->resize( 0)))
+			if( RC_BAD( rc = m_pSlabManager->resize( 
+				uiNewTotalCacheSize, TRUE, &uiNewTotalCacheSize)))
 			{
-				goto Exit;
+				bPreallocateCache = FALSE;
 			}
 		}
-		
-		m_bCachePreallocated = FALSE;
 	}
-	else
-	{
-		if( RC_BAD( m_pSlabManager->resize( 
-			uiNewTotalCacheSize, &uiNewTotalCacheSize)))
-		{
-			goto DONT_PREALLOCATE;				
-		}
-		
-		m_bCachePreallocated = TRUE;
-	}
-
+	
 	m_uiMaxBytes = uiNewTotalCacheSize;
 	m_uiMaxSlabs = m_uiMaxBytes / m_pSlabManager->getSlabSize();
+	m_bCachePreallocated = bPreallocateCache;
 	
-Exit:
-
+	if( uiNewTotalCacheSize < uiOldCacheSize)
+	{
+		f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
+		gv_XFlmSysData.pNodeCacheMgr->reduceCache();
+		f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
+		
+		f_mutexLock( gv_XFlmSysData.hBlockCacheMutex);
+		gv_XFlmSysData.pBlockCacheMgr->reduceCache( NULL);
+		f_mutexUnlock( gv_XFlmSysData.hBlockCacheMutex);
+	}
+	
+	if( !bPreallocateCache)
+	{
+		m_pSlabManager->resize( uiNewTotalCacheSize, FALSE);
+	}
+	
 	return( rc);
 }
 

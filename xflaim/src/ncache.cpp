@@ -291,7 +291,7 @@ RCODE F_NodeCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pNodeAllocator->setup( 
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_nodeRelocator, 
+		FALSE, gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_nodeRelocator, 
 		sizeof( F_CachedNode), &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
@@ -305,7 +305,7 @@ RCODE F_NodeCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pBufAllocator->setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, 
+		FALSE, gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, 
 		NULL, &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
@@ -319,8 +319,8 @@ RCODE F_NodeCacheMgr::initCache( void)
 	}
 
 	if( RC_BAD( rc = m_pAttrItemAllocator->setup(
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager, &m_attrItemRelocator,
-		sizeof( F_AttrItem), &m_Usage.slabUsage, NULL)))
+		FALSE, gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager,
+		&m_attrItemRelocator, sizeof( F_AttrItem), &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
 	}
@@ -1644,9 +1644,9 @@ RCODE F_CachedNode::resizeChildElmList(
 		goto Exit;
 	}
 
-	if( !bMutexAlreadyLocked)
+	if (!bMutexAlreadyLocked)
 	{
-		flmAssert( nodeInUse());
+		f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 	}
 
 	uiOldSize = memSize();
@@ -1685,11 +1685,6 @@ RCODE F_CachedNode::resizeChildElmList(
 		}
 		
 		flmAssert( *((F_CachedNode **)pucActualAlloc) == this);
-	}
-	
-	if (!bMutexAlreadyLocked)
-	{
-		f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 	}
 	
 	if (RC_OK( rc))
@@ -1757,9 +1752,9 @@ RCODE F_CachedNode::resizeAttrList(
 		goto Exit;
 	}
 
-	if( !bMutexAlreadyLocked)
+	if (!bMutexAlreadyLocked)
 	{
-		flmAssert( nodeInUse());
+		f_mutexLock( gv_XFlmSysData.hNodeCacheMutex);
 	}
 
 	uiOldSize = memSize();
@@ -5184,7 +5179,7 @@ void * F_CachedNode::operator new(
 	f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
 
 	return( gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->allocCell(
-				&gv_XFlmSysData.pNodeCacheMgr->m_nodeRelocator));
+				&gv_XFlmSysData.pNodeCacheMgr->m_nodeRelocator, NULL, 0));
 }
 
 /****************************************************************************
@@ -5245,7 +5240,8 @@ void F_CachedNode::operator delete(
 		return;
 	}
 
-	gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->freeCell( (FLMBYTE *)ptr, FALSE);
+	f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
+	gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->freeCell( (FLMBYTE *)ptr);
 }
 
 /****************************************************************************
@@ -5276,8 +5272,11 @@ F_AttrItem::~F_AttrItem()
 		flmAssert( gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiByteCount >= uiSize);
 		gv_XFlmSysData.pNodeCacheMgr->m_Usage.uiByteCount -= uiSize;
 	}
+	
 	if( m_uiPayloadLen > sizeof( FLMBYTE *))
 	{
+		f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
+		
 		m_pucPayload -= sizeof( F_AttrItem *);
 		gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->freeBuf( 
 			m_uiPayloadLen + sizeof( F_AttrItem *),
@@ -5301,7 +5300,7 @@ void * F_AttrItem::operator new(
 	f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
 
 	return( gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->allocCell(
-				&gv_XFlmSysData.pNodeCacheMgr->m_attrItemRelocator));
+				&gv_XFlmSysData.pNodeCacheMgr->m_attrItemRelocator, NULL, 0));
 }
 
 /****************************************************************************
@@ -5362,7 +5361,8 @@ void F_AttrItem::operator delete(
 		return;
 	}
 
-	gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->freeCell( (FLMBYTE *)ptr, FALSE);
+	f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
+	gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->freeCell( (FLMBYTE *)ptr);
 }
 
 /****************************************************************************

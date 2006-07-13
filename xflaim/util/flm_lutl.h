@@ -23,8 +23,8 @@
 // $Id: flm_lutl.h 3117 2006-01-19 13:34:36 -0700 (Thu, 19 Jan 2006) dsanders $
 //------------------------------------------------------------------------------
 
-RCODE flstIndexManagerThread(
+RCODE FLMAPI flstIndexManagerThread(
 	IF_Thread *		pThread);
 
-RCODE flstMemoryManagerThread(
+RCODE FLMAPI flstMemoryManagerThread(
 	IF_Thread *		pThread);

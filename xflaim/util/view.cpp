@@ -582,7 +582,7 @@ Get_File_Name:
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient)))
+	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient, NULL, TRUE)))
 	{
 		ViewShowRCError( "setting up super file handle", rc);
 		goto Exit;
@@ -590,8 +590,9 @@ Get_File_Name:
 
 	rc = ViewReadAndVerifyHdrInfo( NULL);
 
-	gv_pSFileHdl->releaseFiles(TRUE);
+	gv_pSFileHdl->releaseFiles();
 	gv_pSFileHdl->setBlockSize( (FLMUINT)gv_ViewDbHdr.ui16BlockSize);
+
 	if (RC_BAD( rc))
 	{
 		if (rc == NE_XFLM_IO_PATH_NOT_FOUND)

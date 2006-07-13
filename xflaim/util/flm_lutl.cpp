@@ -202,7 +202,7 @@ Desc:	Thread that displays the current status of all indexes in a database
 Note:	The caller must open the database and pass a handle to the thread.
 		The handle will be closed when the thread exits.
 *****************************************************************************/
-RCODE flstIndexManagerThread(
+RCODE FLMAPI flstIndexManagerThread(
 	IF_Thread *		pThread)
 {
 	RCODE						rc = NE_XFLM_OK;
@@ -836,7 +836,7 @@ Name:	flstMemoryManagerThread
 Desc:	Thread that displays the current status of a database's cache
 Note:	The caller must pass a valid share handle to the thread on startup.
 *****************************************************************************/
-RCODE flstMemoryManagerThread(
+RCODE FLMAPI flstMemoryManagerThread(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = NE_XFLM_OK;

@@ -378,13 +378,13 @@ public:
 	FINLINE void incrTotalBytes(
 		FLMUINT	uiIncrAmount)
 	{
-		m_pSlabManager->incrementTotalBytesAllocated( uiIncrAmount, FALSE);
+		m_pSlabManager->incrementTotalBytesAllocated( uiIncrAmount);
 	}
 	
 	FINLINE void decrTotalBytes(
 		FLMUINT	uiDecrAmount)
 	{
-		m_pSlabManager->decrementTotalBytesAllocated( uiDecrAmount, FALSE);
+		m_pSlabManager->decrementTotalBytesAllocated( uiDecrAmount);
 	}
 	
 	FINLINE FLMUINT totalBytes( void)
@@ -542,8 +542,7 @@ public:
 
 	FINLINE F_CachedBlock ** blockHash(
 		FLMUINT	uiSigBitsInBlkSize,
-		FLMUINT	uiBlkAddress
-		)
+		FLMUINT	uiBlkAddress)
 	{
 		return( &m_ppHashBuckets[ (uiBlkAddress >> 
 			uiSigBitsInBlkSize) & m_uiHashMask]);
@@ -563,14 +562,6 @@ public:
 		{
 			f_mutexUnlock( gv_XFlmSysData.hBlockCacheMutex);
 		}
-	}
-
-	FINLINE void getUsageStats(
-		FLM_SLAB_USAGE *		pUsage)
-	{
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->lockMutex();
-		f_memcpy( pUsage, &m_Usage, sizeof( FLM_SLAB_USAGE));
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->unlockMutex();
 	}
 
 private:
@@ -954,6 +945,7 @@ public:
 	
 	// Unset the dirty flag on a cache block.
 	// This routine assumes that the block cache mutex is locked.
+	
 	FINLINE void unsetDirtyFlag( void)
 	{
 		flmAssert( m_ui16Flags & CA_DIRTY);
@@ -1001,6 +993,7 @@ public:
 	// Increment the use count on a cache block for a particular
 	// thread.  NOTE: This routine assumes that the block cache mutex
 	// is locked.
+	
 	FINLINE void useForThread(
 	#ifdef FLM_DEBUG
 		FLMUINT		uiThreadId)
@@ -1030,6 +1023,7 @@ public:
 	// Decrement the use count on a cache block for a particular
 	// thread.  NOTE: This routine assumes that the block cache mutex
 	// is locked.
+	
 	FINLINE void releaseForThread( void)
 	{
 		if (!m_uiUseCount)
@@ -1067,6 +1061,7 @@ public:
 
 	// Tests if a block can be freed from cache.
 	// NOTE: This routine assumes that the block cache mutex is locked.
+	
 	FINLINE FLMBOOL canBeFreed( void)
 	{
 		if (!m_uiUseCount && !m_ui16Flags)
@@ -1098,8 +1093,9 @@ public:
 			// impossible for a block to be written out without having a
 			// pointer to some prior version of the block.  The only
 			// exception to this is a newly created block - but in that
-			// case, the block does not need to have a prior version pointer
-			// - because there are none!
+			// case, the block does not need to have a prior version pointer -
+			// because there are none!
+			
 			// This assertion is obvious for a version of a block that is
 			// being read from the rollback log - it would be impossible
 			// to be reading such a block from the rollback log if it hadn't
@@ -1142,8 +1138,7 @@ public:
 
 	void * operator new(
 		FLMSIZET			uiSize,
-		FLMUINT			uiBlockSize,
-		FLMBOOL			bAllocMutexLocked = FALSE)
+		FLMUINT			uiBlockSize)
 	#if !defined( FLM_NLM)
 		throw()
 	#endif
@@ -1296,6 +1291,7 @@ private:
 	
 	// Link a cache block to its hash bucket.  This routine assumes
 	// that the block cache mutex has already been locked.
+	
 	FINLINE void linkToHashBucket(
 		F_CachedBlock **	ppSCacheBucket)
 	{
@@ -1312,6 +1308,7 @@ private:
 	
 	// Unlink a cache block from its hash bucket.  This routine assumes
 	// that the block cache mutex has already been locked.
+	
 	FINLINE void unlinkFromHashBucket(
 		F_CachedBlock **	ppSCacheBucket)
 	{
@@ -1340,6 +1337,10 @@ private:
 		m_pNextInHashBucket = NULL;
 		m_pPrevInHashBucket = NULL;
 	}
+
+	static void FLMAPI objectAllocInit(
+		void *				pvAlloc,
+		FLMUINT				uiSize);
 
 	void unlinkCache(
 		FLMBOOL				bFreeIt,
@@ -1405,6 +1406,8 @@ private:
 														// that indicate various things about the
 														// block's current state.
 	FLMUINT16			m_ui16BlkSize;			// Block size
+	FLMBOOL				m_bCanRelocate;		// Can the block object be relocated
+														// if defragmenting memory?
 
 // NOTE: Keep debug items at the END of the structure.
 
@@ -1647,18 +1650,11 @@ public:
 		}
 	}
 
-	FINLINE void getUsageStats(
-		FLM_SLAB_USAGE *		pUsage)
-	{
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->lockMutex();
-		f_memcpy( pUsage, &m_Usage, sizeof( FLM_SLAB_USAGE));
-		gv_XFlmSysData.pGlobalCacheMgr->m_pSlabManager->unlockMutex();
-	}
-	
 private:
 
 	// Hash function for hashing to nodes in node cache.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE F_CachedNode ** nodeHash(
 		FLMUINT64	ui64NodeId)
 	{
@@ -1964,6 +1960,8 @@ public:
 	{
 		FLMUINT	uiSize = gv_XFlmSysData.pNodeCacheMgr->m_pAttrItemAllocator->getCellSize();
 
+		f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
+		
 		if( m_uiPayloadLen > sizeof( FLMBYTE *))
 		{
 			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getTrueSize( 
@@ -2177,7 +2175,9 @@ public:
 
 	FINLINE FLMBOOL canBeFreed( void)
 	{
-		return( (!nodeInUse() && !readingInNode() && !nodeIsDirty()) ? TRUE : FALSE);
+		return( (!nodeInUse() && !readingInNode() && !nodeIsDirty()) 
+							? TRUE 
+							: FALSE);
 	}
 	
 	// This method assumes that the node cache mutex has been locked.
@@ -2700,6 +2700,7 @@ public:
 		void *			ptr);
 
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void incrNodeUseCount( void)
 	{
 		m_uiCacheFlags = (m_uiCacheFlags & (~(NCA_COUNTER_BITS))) |
@@ -2707,6 +2708,7 @@ public:
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void decrNodeUseCount( void)
 	{
 		m_uiCacheFlags = (m_uiCacheFlags & (~(NCA_COUNTER_BITS))) |
@@ -2714,12 +2716,14 @@ public:
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void incrStreamUseCount( void)
 	{
 		m_uiStreamUseCount++;
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void decrStreamUseCount( void)
 	{
 		flmAssert( m_uiStreamUseCount);
@@ -2750,6 +2754,7 @@ public:
 	}
 
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE FLMBOOL nodeUncommitted( void)
 	{
 		return( (m_uiCacheFlags & NCA_UNCOMMITTED ) ? TRUE : FALSE);
@@ -2977,84 +2982,98 @@ public:
 private:
 
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE FLMBOOL readingInNode( void)
 	{
 		return( (m_uiCacheFlags & NCA_READING_IN ) ? TRUE : FALSE);
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void setReadingIn( void)
 	{
 		m_uiCacheFlags |= NCA_READING_IN;
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unsetReadingIn( void)
 	{
 		m_uiCacheFlags &= (~(NCA_READING_IN));
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void setUncommitted( void)
 	{
 		m_uiCacheFlags |= NCA_UNCOMMITTED;
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unsetUncommitted( void)
 	{
 		m_uiCacheFlags &= (~(NCA_UNCOMMITTED));
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE FLMBOOL nodeIsLatestVer( void)
 	{
 		return( (m_uiCacheFlags & NCA_LATEST_VER ) ? TRUE : FALSE);
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void setLatestVer( void)
 	{
 		m_uiCacheFlags |= NCA_LATEST_VER;
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unsetLatestVer( void)
 	{
 		m_uiCacheFlags &= (~(NCA_LATEST_VER));
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void setPurged( void)
 	{
 		m_uiCacheFlags |= NCA_PURGED;
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unsetPurged( void)
 	{
 		m_uiCacheFlags &= (~(NCA_PURGED));
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE FLMBOOL nodeLinkedToDatabase( void)
 	{
 		return( (m_uiCacheFlags & NCA_LINKED_TO_DATABASE ) ? TRUE : FALSE);
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void setLinkedToDatabase( void)
 	{
 		m_uiCacheFlags |= NCA_LINKED_TO_DATABASE;
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unsetLinkedToDatabase( void)
 	{
 		m_uiCacheFlags &= (~(NCA_LINKED_TO_DATABASE));
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE FLMBOOL nodeInUse( void)
 	{
 		return( (m_uiCacheFlags & NCA_COUNTER_BITS ) ? TRUE : FALSE);
@@ -3062,6 +3081,7 @@ private:
 	
 	// Unlink a node from the global purged list.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unlinkFromPurged( void)
 	{
 		if (m_pNextInGlobal)
@@ -3085,6 +3105,7 @@ private:
 	
 	// Link a node to an F_Database list at the head of the list.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void linkToDatabaseAtHead(
 		F_Database *	pDatabase)
 	{
@@ -3132,10 +3153,10 @@ private:
 	
 	// Link a node to an F_Database list at the end of the list.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void linkToDatabaseAtEnd(
 		F_Database *	pDatabase)
 	{
-		
 		// Node cannot be a dirty node.
 		
 		flmAssert( !nodeIsDirty());
@@ -3156,11 +3177,11 @@ private:
 	
 	// Unlink a node from its F_Database list.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unlinkFromDatabase( void)
 	{
 		if( nodeLinkedToDatabase())
 		{
-			
 			// If this is the last dirty node, change the database's
 			// last dirty pointer to point to the previous node, if any.
 			
@@ -3199,6 +3220,7 @@ private:
 	
 	// Link a node into its hash bucket.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void linkToHashBucket( void)
 	{
 		F_CachedNode ** ppHashBucket = gv_XFlmSysData.pNodeCacheMgr->nodeHash( 
@@ -3218,6 +3240,7 @@ private:
 	
 	// Unlink a node from its hash bucket.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unlinkFromHashBucket( void)
 	{
 		flmAssert( m_pNewerVersion == NULL);
@@ -3246,6 +3269,7 @@ private:
 	
 	// Unlink a node from its version list.
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void linkToVerList(
 		F_CachedNode *	pNewerVer,
 		F_CachedNode *	pOlderVer)
@@ -3263,6 +3287,7 @@ private:
 	
 	// Unlink a node from its version list.  This routine
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unlinkFromVerList( void)
 	{
 		if (m_pNewerVersion)
@@ -3281,6 +3306,7 @@ private:
 
 	// Link a node into the heap list
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void linkToHeapList( void)
 	{
 		flmAssert( !m_pPrevInHeapList);
@@ -3298,6 +3324,7 @@ private:
 	
 	// Unlink a node from the heap list
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unlinkFromHeapList( void)
 	{
 		flmAssert( m_uiFlags & FDOM_HEAP_ALLOC);
@@ -3322,6 +3349,7 @@ private:
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void linkToOldList( void)
 	{
 		flmAssert( !m_pPrevInOldList);
@@ -3336,6 +3364,7 @@ private:
 	}
 	
 	// Assumes that the node cache mutex has already been locked.
+	
 	FINLINE void unlinkFromOldList( void)
 	{
 		if (m_pNextInOldList)
@@ -3360,6 +3389,8 @@ private:
 	{
 		FLMUINT	uiSize = gv_XFlmSysData.pNodeCacheMgr->m_pNodeAllocator->getCellSize(); 
 				
+		f_assertMutexLocked( gv_XFlmSysData.hNodeCacheMutex);
+		
 		if (m_pucData)
 		{
 			uiSize += gv_XFlmSysData.pNodeCacheMgr->m_pBufAllocator->getTrueSize( 

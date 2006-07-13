@@ -2555,8 +2555,10 @@ RetryLock:
 	{
 		if( pThread->getShutdownFlag())
 		{
+			rc = RC_SET( NE_XFLM_DATABASE_LOCK_REQ_TIMEOUT);
 			goto Exit;
 		}
+		
 		if( RC_BAD( rc = m_pDatabase->m_pDatabaseLockObj->unlock()))
 		{
 			goto Exit;
@@ -2586,6 +2588,7 @@ RetryLock:
 
 			flmAssert( pThread->getShutdownFlag());
 		}
+		
 		goto Exit;
 	}
 
