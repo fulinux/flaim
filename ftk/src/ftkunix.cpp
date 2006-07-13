@@ -69,7 +69,12 @@
 	static FLMUINT					gv_uiLinuxRevision = 0;
 #endif
 
-static pthread_mutex_t			gv_atomicMutex = PTHREAD_MUTEX_INITIALIZER;
+#ifdef FLM_SOLARIS
+	static lwp_mutex_t			gv_atomicMutex = DEFAULTMUTEX;
+#else
+	static pthread_mutex_t		gv_atomicMutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 extern FLMATOMIC					gv_openFiles;
 
 /******************************************************************************
@@ -444,11 +449,22 @@ Exit:
 Desc:	Truncate the file to the indicated size
 ******************************************************************************/
 RCODE FLMAPI F_FileHdl::truncate(
-	FLMUINT64		ui64Size)
+	FLMUINT64		uiNew64Size)
 {
 	RCODE				rc = NE_FLM_OK;
+	FLMUINT64		ui64CurrentSize;
 
 	f_assert( m_bFileOpened);
+
+	if( RC_BAD( rc = size( &ui64CurrentSize)))
+	{
+		goto Exit;
+	}
+	
+	if( ui64NewSize >= ui64CurrentSize)
+	{
+		goto Exit;
+	}
 
 	if( ftruncate( m_fd, ui64Size) == -1)
 	{
@@ -659,6 +675,7 @@ RCODE F_FileHdl::lowLevelWrite(
 	F_FileAsyncClient *	pAsyncClient = NULL;
 	FLMBOOL					bWaitForWrite = FALSE;
 	FLMBYTE *				pucExtendBuffer = NULL;
+	FLMUINT					uiTotalBytesToExtend;
 	
 	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
 	{
@@ -674,88 +691,58 @@ RCODE F_FileHdl::lowLevelWrite(
 	{
 		m_ui64CurrentPos = ui64WriteOffset;
 	}
-
-	if( m_bDoDirectIO && !m_numAsyncPending)
-	{
-		FLMUINT64			ui64CurrFileSize;
-		FLMUINT				uiTotalBytesToExtend;
 	
-		// Determine if the write will extend the file beyond its
-		// current size.
-		
-		if( RC_BAD( rc = size( &ui64CurrFileSize)))
+	if( m_bDoDirectIO && !m_numAsyncPending && m_uiExtendSize)
+	{
+		if( RC_BAD( rc = getPreWriteExtendSize( ui64WriteOffset, uiBytesToWrite,
+			&ui64CurrFileSize, &uiTotalBytesToExtend)))
 		{
 			goto Exit;
 		}
-		
-		if( ui64WriteOffset + uiBytesToWrite > ui64CurrFileSize)
+	
+		if( uiTotalBytesToExtend)
 		{
-			if( (uiTotalBytesToExtend = m_uiExtendSize) != 0)
+			FLMINT		iBytesWritten;
+			FLMUINT		uiCurrBytesToExtend;
+			FLMUINT		uiExtendBufferSize;
+			
+			uiExtendBufferSize = f_min( uiTotalBytesToExtend, 64 * 1024);
+			
+			if( RC_BAD( rc = f_allocAlignedBuffer( 
+				uiExtendBufferSize, &pucExtendBuffer)))
 			{
-				if( ui64CurrFileSize > m_uiMaxAutoExtendSize)
-				{
-					uiTotalBytesToExtend = 0;
-				}
-				else
-				{
-					// Don't extend beyond maximum file size.
-
-					if( m_uiMaxAutoExtendSize - ui64CurrFileSize < uiTotalBytesToExtend)
-					{
-						uiTotalBytesToExtend = 
-							(FLMUINT)(m_uiMaxAutoExtendSize - ui64CurrFileSize);
-					}
-
-					// If the extend size is not on a sector boundary, round it down.
-
-					uiTotalBytesToExtend = 
-						(FLMUINT)truncateToPrevSector( uiTotalBytesToExtend);
-				}
+				goto Exit;
 			}
-
-			if( uiTotalBytesToExtend)
+			
+			while( uiTotalBytesToExtend)
 			{
-				FLMINT		iBytesWritten;
-				FLMUINT		uiCurrBytesToExtend;
-				FLMUINT		uiExtendBufferSize;
+				uiCurrBytesToExtend = f_min( 
+								uiTotalBytesToExtend, uiExtendBufferSize);
 				
-				uiExtendBufferSize = f_min( uiTotalBytesToExtend, 64 * 1024);
-				
-				if( RC_BAD( rc = f_allocAlignedBuffer( 
-					uiExtendBufferSize, &pucExtendBuffer)))
+				if( (iBytesWritten = pwrite( m_fd, pucExtendBuffer, 
+					uiCurrBytesToExtend, ui64CurrFileSize)) == -1)
 				{
+					if( errno == EINTR)
+					{
+						continue;
+					}
+					
+					rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 					goto Exit;
 				}
 				
-				while( uiTotalBytesToExtend)
+				uiTotalBytesToExtend -= uiCurrBytesToExtend;
+				ui64CurrFileSize += uiCurrBytesToExtend;
+			
+				if( (FLMUINT)iBytesWritten < uiCurrBytesToExtend)
 				{
-					uiCurrBytesToExtend = f_min( 
-									uiTotalBytesToExtend, uiExtendBufferSize);
-					
-					if( (iBytesWritten = pwrite( m_fd, pucExtendBuffer, 
-						uiCurrBytesToExtend, ui64CurrFileSize)) == -1)
-					{
-						if( errno == EINTR)
-						{
-							continue;
-						}
-						
-						rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-						goto Exit;
-					}
-					
-					uiTotalBytesToExtend -= uiCurrBytesToExtend;
-					ui64CurrFileSize += uiCurrBytesToExtend;
-				
-					if( (FLMUINT)iBytesWritten < uiCurrBytesToExtend)
-					{
-						rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
-						goto Exit;
-					}
+					rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+					goto Exit;
 				}
-				
-				m_bFlushRequired = TRUE;
 			}
+		
+			f_freeAlignedBuffer( &pucExtendBuffer);
+			m_bFlushRequired = TRUE;
 		}
 	}
 	
@@ -1227,16 +1214,46 @@ void FLMAPI f_yieldCPU( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
+FINLINE void posix_atomic_lock( void)
+{
+#if defined( FLM_SOLARIS)
+	for( ;;)
+	{
+		if( _lwp_mutex_lock( gv_atomicMutex) == 0)
+		{
+			break;
+		}
+	}
+#else
+	pthread_mutex_lock( &gv_atomicMutex);
+#endif
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
+FINLINE void posix_atomic_unlock( void)
+{
+#if defined( FLM_SOLARIS)
+	_lwp_mutex_unlock( &gv_atomicMutex);
+#else
+	pthread_mutex_unlock( &gv_atomicMutex);
+#endif
+}
+
+/**********************************************************************
+Desc:
+**********************************************************************/
 FLMINT32 posix_atomic_add_32(
 	volatile FLMINT32 *		piTarget,
 	FLMINT32						iDelta)
 {
 	FLMINT32		i32RetVal;
-	
-	pthread_mutex_lock( &gv_atomicMutex);
+
+	posix_atomic_lock();
 	(*piTarget) += iDelta;
 	i32RetVal = *piTarget;
-	pthread_mutex_unlock( &gv_atomicMutex);
+	posix_atomic_unlock();
 	
 	return( i32RetVal);
 }
@@ -1250,10 +1267,10 @@ FLMINT32 posix_atomic_xchg_32(
 {
 	FLMINT32		i32RetVal;
 	
-	pthread_mutex_lock( &gv_atomicMutex);
+	posix_atomic_lock();
 	i32RetVal = *piTarget;
 	*piTarget = iNewValue;
-	pthread_mutex_unlock( &gv_atomicMutex);
+	posix_atomic_unlock();
 	
 	return( i32RetVal);
 }

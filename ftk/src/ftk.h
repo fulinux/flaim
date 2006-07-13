@@ -2164,10 +2164,21 @@
 		
 	void FLMAPI f_mutexUnlock(
 		F_MUTEX						hMutex);
-	
+
+#ifdef FLM_DEBUG
 	void FLMAPI f_assertMutexLocked(
 		F_MUTEX						hMutex);
+#else
+	#define f_assertMutexLocked( h) (void)(h)
+#endif
 
+#ifdef FLM_DEBUG
+	void FLMAPI f_assertMutexNotLocked(
+		F_MUTEX						hMutex);
+#else
+	#define f_assertMutexNotLocked( h) (void)(h)
+#endif
+		
 	/****************************************************************************
 	Desc: Semaphores
 	****************************************************************************/
@@ -3895,8 +3906,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	typedef void (* F_ALLOC_INIT_FUNC)(
-		void *				pvAlloc);
+	typedef void (FLMAPI * F_ALLOC_INIT_FUNC)(
+		void *				pvAlloc,
+		FLMUINT				uiSize);
 	
 	/****************************************************************************
 	Desc:
@@ -3907,35 +3919,28 @@
 			FLMUINT 					uiPreallocSize) = 0;
 			
 		virtual RCODE FLMAPI allocSlab(
-			void **					ppSlab,
-			FLMBOOL					bMutexLocked) = 0;
+			void **					ppSlab) = 0;
 			
 		virtual void FLMAPI freeSlab(
-			void **					ppSlab,
-			FLMBOOL					bMutexLocked) = 0;
+			void **					ppSlab) = 0;
 			
 		virtual RCODE FLMAPI resize(
 			FLMUINT 					uiNumBytes,
-			FLMUINT *				puiActualSize = NULL,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
+			FLMUINT *				puiActualSize = NULL) = 0;
 	
 		virtual void FLMAPI incrementTotalBytesAllocated(
-			FLMUINT					uiCount,
-			FLMBOOL					bMutexLocked) = 0;
+			FLMUINT					uiCount) = 0;
 	
 		virtual void FLMAPI decrementTotalBytesAllocated(
-			FLMUINT					uiCount,
-			FLMBOOL					bMutexLocked) = 0;
+			FLMUINT					uiCount) = 0;
 	
 		virtual FLMUINT FLMAPI getSlabSize( void) = 0;
 	
 		virtual FLMUINT FLMAPI getTotalSlabs( void) = 0;
 		
-		virtual void FLMAPI lockMutex( void) = 0;
-		
-		virtual void FLMAPI unlockMutex( void) = 0;
-		
 		virtual FLMUINT FLMAPI totalBytesAllocated( void) = 0;
+
+		virtual FLMUINT FLMAPI getTotalSlabBytesAllocated( void) = 0;
 	
 		virtual FLMUINT FLMAPI availSlabs( void) = 0;
 	};
@@ -3950,6 +3955,7 @@
 	flminterface FLMEXP IF_FixedAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
+			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pDefaultRelocator,
 			FLMUINT					uiCellSize,
@@ -3959,17 +3965,14 @@
 		virtual void * FLMAPI allocCell(
 			IF_Relocator *			pRelocator = NULL,
 			void *					pvInitialData = NULL,
-			FLMUINT					uiDataSize = 0,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
+			FLMUINT					uiDataSize = 0) = 0;
 	
 		virtual void * FLMAPI allocCell(
 			IF_Relocator *			pRelocator,
-			F_ALLOC_INIT_FUNC		fnAllocInit,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
+			F_ALLOC_INIT_FUNC		fnAllocInit) = 0;
 	
 		virtual void FLMAPI freeCell( 
-			void *					ptr,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
+			void *					ptr) = 0;
 	
 		virtual void FLMAPI freeUnused( void) = 0;
 	
@@ -3989,6 +3992,7 @@
 	flminterface FLMEXP IF_BufferAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
+			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pDefaultRelocator,
 			FLM_SLAB_USAGE *		pUsageStats,
@@ -4002,6 +4006,13 @@
 			FLMBYTE **				ppucBuffer,
 			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
 	
+		virtual RCODE FLMAPI allocBuf(
+			IF_Relocator *			pRelocator,
+			FLMUINT					uiSize,
+			F_ALLOC_INIT_FUNC		fnAllocInit,
+			FLMBYTE **				ppucBuffer,
+			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
+			
 		virtual RCODE FLMAPI reallocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiOldSize,
@@ -4033,6 +4044,7 @@
 	flminterface FLMEXP IF_MultiAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(
+			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pDefaultRelocator,
 			FLMUINT *				puiCellSizes,
@@ -4042,14 +4054,18 @@
 		virtual RCODE FLMAPI allocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiSize,
-			FLMBYTE **				ppucBuffer,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
+			FLMBYTE **				ppucBuffer) = 0;
 	
+		virtual RCODE FLMAPI allocBuf(
+			IF_Relocator *			pRelocator,
+			FLMUINT					uiSize,
+			F_ALLOC_INIT_FUNC		fnAllocInit,
+			FLMBYTE **				ppucBuffer) = 0;
+
 		virtual RCODE FLMAPI reallocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiNewSize,
-			FLMBYTE **				ppucBuffer,
-			FLMBOOL					bMutexLocked = FALSE) = 0;
+			FLMBYTE **				ppucBuffer) = 0;
 	
 		virtual void FLMAPI freeBuf(
 			FLMBYTE **				ppucBuffer) = 0;
@@ -4058,10 +4074,6 @@
 	
 		virtual FLMUINT FLMAPI getTrueSize(
 			FLMBYTE *				pucBuffer) = 0;
-	
-		virtual void FLMAPI lockMutex( void) = 0;
-	
-		virtual void FLMAPI unlockMutex( void) = 0;
 	};
 	
 	RCODE FLMAPI FlmAllocMultiAllocator(

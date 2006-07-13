@@ -247,7 +247,6 @@ void FLMAPI ftkShutdown( void)
 	}
 
 	f_loggerShutdown();
-	
 	f_freeRandomGenerator();
 	f_freeCharMappingTables();
 	f_memoryCleanup();

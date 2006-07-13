@@ -255,6 +255,9 @@ void FLMAPI f_mutexUnlock(
 }
 #endif
 
+#undef f_assertMutexLocked
+#undef f_assertMutexNotLocked
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -262,6 +265,47 @@ Desc:
 void FLMAPI f_assertMutexLocked(
 	F_MUTEX)
 {
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_UNIX) || defined( FLM_NLM)
+void FLMAPI f_assertMutexNotLocked(
+	F_MUTEX)
+{
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_assertMutexLocked(
+	F_MUTEX		hMutex)
+{
+#ifdef FLM_DEBUG
+	f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
+	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
+#else
+	F_UNREFERENCED_PARM( hMutex);
+#endif
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+void FLMAPI f_assertMutexNotLocked(
+	F_MUTEX		hMutex)
+{
+#ifdef FLM_DEBUG
+	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId != _threadid);
+#else
+	F_UNREFERENCED_PARM( hMutex);
+#endif
 }
 #endif
 
@@ -774,22 +818,6 @@ void FLMAPI f_mutexUnlock(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_assertMutexLocked(
-	F_MUTEX		hMutex)
-{
-#ifdef FLM_DEBUG
-	f_assert( ((F_INTERLOCK *)hMutex)->locked == 1);
-	f_assert( ((F_INTERLOCK *)hMutex)->uiThreadId == _threadid);
-#else
-	F_UNREFERENCED_PARM( hMutex);
-#endif
-}
-#endif
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifdef FLM_WIN
 RCODE FLMAPI f_semCreate(
 	F_SEM *		phSem)
 {
@@ -830,10 +858,8 @@ RCODE FLMAPI f_semWait(
 	{
 		return( NE_FLM_OK);
 	}
-	else
-	{
-		return( RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE));
-	}
+	
+	return( RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE));
 }
 #endif
 

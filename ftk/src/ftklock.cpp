@@ -308,14 +308,14 @@ RCODE FLMAPI F_LockObject::timeoutThread(
 			f_mutexUnlock( pThis->m_hMutex);
 		}
 
-		for( uiLoop = 0; uiLoop < 100; uiLoop++)
+		for( uiLoop = 0; uiLoop < 20; uiLoop++)
 		{
 			if( pThread->getShutdownFlag())
 			{
 				goto Exit;
 			}
 		
-			f_sleep( 10);
+			f_sleep( 50);
 		}
 	}
 
@@ -417,12 +417,12 @@ void F_LockObject::insertWaiter(
 		FLMUINT	uiElapTime;
 		FLMUINT	uiTimeLeft;
 
-		while (pPrevLockWaiter)
+		while( pPrevLockWaiter)
 		{
 			// Waiters with zero wait time go to end of list.
 			// They never time out.
 
-			if (!pPrevLockWaiter->uiWaitTime)
+			if( !pPrevLockWaiter->uiWaitTime)
 			{
 
 				// Should go BEFORE the first zero waiter.
@@ -430,9 +430,9 @@ void F_LockObject::insertWaiter(
 				pPrevLockWaiter = pPrevLockWaiter->pPrevByTime;
 				break;
 			}
-			else if (!pLockWaiter->uiWaitTime)
+			else if( !pLockWaiter->uiWaitTime)
 			{
-				if (!pPrevLockWaiter->pNextByTime)
+				if( !pPrevLockWaiter->pNextByTime)
 				{
 					break;
 				}
@@ -449,7 +449,8 @@ void F_LockObject::insertWaiter(
 
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 										pPrevLockWaiter->uiWaitStartTime);
-				if (uiElapTime >= pPrevLockWaiter->uiWaitTime)
+										
+				if( uiElapTime >= pPrevLockWaiter->uiWaitTime)
 				{
 					uiTimeLeft = 0;
 				}
@@ -461,14 +462,14 @@ void F_LockObject::insertWaiter(
 				// New lock waiter will time out before previous lock
 				// waiter - insert it BEFORE the previous lock waiter.
 
-				if (pLockWaiter->uiWaitTime < uiTimeLeft)
+				if( pLockWaiter->uiWaitTime < uiTimeLeft)
 				{
 					pPrevLockWaiter = pPrevLockWaiter->pPrevByTime;
 					break;
 				}
 				else
 				{
-					if (!pPrevLockWaiter->pNextByTime)
+					if( !pPrevLockWaiter->pNextByTime)
 					{
 						break;
 					}
@@ -481,7 +482,7 @@ void F_LockObject::insertWaiter(
 
 	// Insert into list AFTER pPrevLockWaiter.
 
-	if ((pLockWaiter->pPrevByTime = pPrevLockWaiter) != NULL)
+	if( (pLockWaiter->pPrevByTime = pPrevLockWaiter) != NULL)
 	{
 		if ((pLockWaiter->pNextByTime = pPrevLockWaiter->pNextByTime) != NULL)
 		{
@@ -568,7 +569,6 @@ RCODE FLMAPI F_LockObject::lock(
 
 	if (m_pFirstInList || m_bExclLock || (bExclReq && m_uiSharedLockCnt))
 	{
-
 		// Object is locked by another thread, wait to get lock.
 
 		if( !uiMaxWaitSecs)
@@ -633,7 +633,6 @@ RCODE FLMAPI F_LockObject::lock(
 	}
 	else
 	{
-
 		// Object is NOT locked in a conflicting mode.  Grant the
 		// lock immediately.
 
@@ -653,7 +652,6 @@ RCODE FLMAPI F_LockObject::lock(
 
 			if (pLockStats)
 			{
-
 				// If m_bStartTimeSet is TRUE, we started the
 				// clock the last time nobody had the exclusive
 				// lock, so we need to sum up idle time now.
@@ -896,7 +894,6 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 		pLockWaiter = m_pFirstInList;
 		for( ; pLockWaiter; pLockWaiter = pLockWaiter->pNextInList)
 		{
-
 			// Count the number of exclusive and shared waiters.
 
 			if (pLockWaiter->bExclReq)

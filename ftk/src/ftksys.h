@@ -725,7 +725,19 @@
 			IF_IOBuffer *			pIOBuffer,
 			FLMUINT *				puiBytesWritten);
 			
-	#if defined( FLM_RING_ZERO_NLM)
+		RCODE getPreWriteExtendSize(
+			FLMUINT64				ui64WriteOffset,
+			FLMUINT					uiBytesToWrite,
+			FLMUINT64 *				pui64CurrFileSize,
+			FLMUINT *				puiTotalBytesToExtend);
+	
+	#if defined( FLM_WIN)
+	
+		RCODE extendFile(
+			FLMUINT64				ui64FileSize,
+			FLMUINT					uiTotalBytesToExtend);
+	
+	#elif defined( FLM_RING_ZERO_NLM)
 	
 		RCODE setup( void);							
 	

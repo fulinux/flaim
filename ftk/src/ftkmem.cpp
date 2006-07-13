@@ -160,20 +160,20 @@ Desc:
 #endif
 
 #ifdef FLM_DEBUG
-FSTATIC FLMUINT * memWalkStack( void);
-
-FSTATIC FLMBOOL initMemTracking( void);
-
-FSTATIC void saveMemTrackingInfo(
-	F_MEM_HDR *		pHdr);
-
-FSTATIC void updateMemTrackingInfo(
-	F_MEM_HDR *		pHdr);
-
-FSTATIC void freeMemTrackingInfo(
-	FLMBOOL			bMutexAlreadyLocked,
-	FLMUINT			uiId,
-	FLMUINT *		puiStack);
+	FSTATIC FLMUINT * memWalkStack( void);
+	
+	FSTATIC FLMBOOL initMemTracking( void);
+	
+	FSTATIC void saveMemTrackingInfo(
+		F_MEM_HDR *		pHdr);
+	
+	FSTATIC void updateMemTrackingInfo(
+		F_MEM_HDR *		pHdr);
+	
+	FSTATIC void freeMemTrackingInfo(
+		FLMBOOL			bMutexAlreadyLocked,
+		FLMUINT			uiId,
+		FLMUINT *		puiStack);
 #endif
 
 /****************************************************************************
@@ -191,51 +191,34 @@ public:
 		FLMUINT 				uiPreallocSize);
 		
 	RCODE FLMAPI allocSlab(
-		void **				ppSlab,
-		FLMBOOL				bMutexLocked);
+		void **				ppSlab);
 		
 	void FLMAPI freeSlab(
-		void **				ppSlab,
-		FLMBOOL				bMutexLocked);
+		void **				ppSlab);
 		
 	RCODE FLMAPI resize(
 		FLMUINT 				uiNumBytes,
-		FLMUINT *			puiActualSize = NULL,
-		FLMBOOL				bMutexLocked = FALSE);
+		FLMUINT *			puiActualSize = NULL);
 
 	void FLMAPI incrementTotalBytesAllocated(
-		FLMUINT					uiCount,
-		FLMBOOL					bMutexLocked)
+		FLMUINT				uiCount)
 	{
-		if( !bMutexLocked)
-		{
-			lockMutex();
-		}
-		
-		m_uiTotalBytesAllocated += uiCount;	
-		
-		if( !bMutexLocked)
-		{
-			unlockMutex();
-		}
+		f_assertMutexNotLocked( m_hMutex);
+
+		f_mutexLock( m_hMutex);
+		m_uiTotalBytesAllocated += uiCount;
+		f_mutexUnlock( m_hMutex);
 	}
 
 	void FLMAPI decrementTotalBytesAllocated(
-		FLMUINT					uiCount,
-		FLMBOOL					bMutexLocked)
+		FLMUINT				uiCount)
 	{
-		if( !bMutexLocked)
-		{
-			lockMutex();
-		}
-		
+		f_assertMutexNotLocked( m_hMutex);
+
+		f_mutexLock( m_hMutex);
 		f_assert( m_uiTotalBytesAllocated >= uiCount);
-		m_uiTotalBytesAllocated -= uiCount;	
-		
-		if( !bMutexLocked)
-		{
-			unlockMutex();
-		}
+		m_uiTotalBytesAllocated -= uiCount;
+		f_mutexUnlock( m_hMutex);
 	}
 
 	FLMUINT FLMAPI getSlabSize( void)
@@ -248,19 +231,20 @@ public:
 		return( m_uiTotalSlabs);
 	}
 	
-	void FLMAPI lockMutex( void)
-	{
-		f_mutexLock( m_hMutex);
-	}
-	
-	void FLMAPI unlockMutex( void)
-	{
-		f_mutexUnlock( m_hMutex);
-	}
-	
 	FLMUINT FLMAPI totalBytesAllocated( void)
 	{
 		return( m_uiTotalBytesAllocated);
+	}
+
+	FLMUINT FLMAPI getTotalSlabBytesAllocated( void)
+	{
+		FLMUINT		uiTotalSlabBytes;
+
+		f_mutexLock( m_hMutex);
+		uiTotalSlabBytes = m_uiSlabSize * m_uiTotalSlabs;
+		f_mutexUnlock( m_hMutex);
+
+		return( uiTotalSlabBytes);
 	}
 
 	FLMUINT FLMAPI availSlabs( void)
@@ -286,14 +270,14 @@ private:
 	} SLABHEADER;
 
 	static FLMINT FLMAPI slabAddrCompareFunc(
-		void *		pvBuffer,
-		FLMUINT		uiPos1,
-		FLMUINT		uiPos2);
+		void *				pvBuffer,
+		FLMUINT				uiPos1,
+		FLMUINT				uiPos2);
 
 	static void FLMAPI slabAddrSwapFunc(
-		void *		pvBuffer,
-		FLMUINT		uiPos1,
-		FLMUINT		uiPos2);
+		void *				pvBuffer,
+		FLMUINT				uiPos1,
+		FLMUINT				uiPos2);
 	
 	F_MUTEX					m_hMutex;
 	FLMUINT					m_uiTotalBytesAllocated;
@@ -304,13 +288,13 @@ private:
 	FLMUINT					m_uiAvailSlabs;
 	FLMUINT					m_uiInUseSlabs;
 	FLMUINT					m_uiPreallocSlabs;
-#ifdef FLM_SOLARIS
-	int						m_DevZero;
-#endif
 
 friend class F_FixedAlloc;
 };
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 typedef struct SLAB
 {
 	void *		pvAllocator;
@@ -324,6 +308,9 @@ typedef struct SLAB
 	FLMUINT16	ui16AllocatedCells;
 } SLAB;
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 typedef struct CELLHEADER
 {
 	SLAB *			pContainingSlab;
@@ -332,12 +319,18 @@ typedef struct CELLHEADER
 #endif
 } CELLHEADER;
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 typedef struct CELLHEADER2
 {
 	CELLHEADER		cellHeader;
 	IF_Relocator *	pRelocator;
 } CELLHEADER2;
 
+/****************************************************************************
+Desc:
+****************************************************************************/
 typedef struct CELLAVAILNEXT
 {
 	FLMBYTE *	pNextInList;
@@ -359,6 +352,7 @@ public:
 	virtual ~F_FixedAlloc();
 
 	RCODE FLMAPI setup(
+		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pDefaultRelocator,
 		FLMUINT					uiCellSize,
@@ -366,82 +360,16 @@ public:
 		FLMUINT *				puiTotalBytesAllocated);
 
 	void * FLMAPI allocCell(
-		IF_Relocator *		pRelocator,
-		void *				pvInitialData = NULL,
-		FLMUINT				uiDataSize = 0,
-		FLMBOOL				bMutexLocked = FALSE)
-	{
-		void *	pvCell;
-		
-		f_assert( pRelocator || m_pDefaultRelocator);
-
-		if( !bMutexLocked)
-		{
-			m_pSlabManager->lockMutex();
-		}
-		
-		if( (pvCell = getCell( pRelocator)) == NULL)
-		{
-			goto Exit;
-		}
-		
-		if( uiDataSize == sizeof( FLMUINT *))
-		{
-			*((FLMUINT *)pvCell) = *((FLMUINT *)pvInitialData); 
-		}
-		else if( uiDataSize)
-		{
-			f_memcpy( pvCell, pvInitialData, uiDataSize);
-		}
-		
-	Exit:
-		
-		if( !bMutexLocked)
-		{
-			m_pSlabManager->unlockMutex();
-		}
-		
-		return( pvCell);
-	}
+		IF_Relocator *			pRelocator,
+		void *					pvInitialData = NULL,
+		FLMUINT					uiDataSize = 0);
 
 	void * FLMAPI allocCell(
-		IF_Relocator *				pRelocator,
-		F_ALLOC_INIT_FUNC			fnAllocInit,
-		FLMBOOL						bMutexLocked)
-	{
-		void *	pvCell;
-
-		if( !bMutexLocked)
-		{
-			m_pSlabManager->lockMutex();
-		}
-		
-		if( (pvCell = getCell( pRelocator)) == NULL)
-		{
-			goto Exit;
-		}
-		
-		if( pvCell && fnAllocInit)
-		{
-			fnAllocInit( pvCell);
-		}
-	
-	Exit:
-		
-		if( !bMutexLocked)
-		{
-			m_pSlabManager->unlockMutex();
-		}
-		
-		return( pvCell);
-	}
+		IF_Relocator *			pRelocator,
+		F_ALLOC_INIT_FUNC		fnAllocInit);
 	
 	void FLMAPI freeCell( 
-		void *		ptr,
-		FLMBOOL		bMutexLocked)
-	{
-		freeCell( ptr, bMutexLocked, FALSE, NULL);
-	}
+		void *					ptr);
 
 	void FLMAPI freeUnused( void);
 
@@ -457,33 +385,32 @@ public:
 private:
 
 	void * getCell(
-		IF_Relocator *		pRelocator);
+		IF_Relocator *			pRelocator);
 
 	SLAB * getAnotherSlab( void);
 
 	static FLMUINT getAllocAlignedSize(
-		FLMUINT		uiAskedForSize)
+		FLMUINT					uiAskedForSize)
 	{
 		return( (uiAskedForSize + FLM_ALLOC_ALIGN) & (~FLM_ALLOC_ALIGN));
 	}
 
 	void freeSlab( 
-		SLAB *			pSlab);
+		SLAB *					pSlab);
 
 	void freeCell(
-		void *		pCell,
-		FLMBOOL		bMutexLocked,
-		FLMBOOL		bFreeIfEmpty,
-		FLMBOOL *	pbFreedSlab);
+		void *					pCell,
+		FLMBOOL					bFreeIfEmpty,
+		FLMBOOL *				pbFreedSlab);
 
 #ifdef FLM_DEBUG
 	void testForLeaks( void);
 #endif
 
 	static FLMINT FLMAPI slabAddrCompareFunc(
-		void *		pvBuffer,
-		FLMUINT		uiPos1,
-		FLMUINT		uiPos2)
+		void *					pvBuffer,
+		FLMUINT					uiPos1,
+		FLMUINT					uiPos2)
 	{
 		SLAB *		pSlab1 = (((SLAB **)pvBuffer)[ uiPos1]);
 		SLAB *		pSlab2 = (((SLAB **)pvBuffer)[ uiPos2]);
@@ -499,9 +426,9 @@ private:
 	}
 
 	static void FLMAPI slabAddrSwapFunc(
-		void *		pvBuffer,
-		FLMUINT		uiPos1,
-		FLMUINT		uiPos2)
+		void *					pvBuffer,
+		FLMUINT					uiPos1,
+		FLMUINT					uiPos2)
 	{
 		SLAB **		ppSlab1 = &(((SLAB **)pvBuffer)[ uiPos1]);
 		SLAB **		ppSlab2 = &(((SLAB **)pvBuffer)[ uiPos2]);
@@ -512,23 +439,24 @@ private:
 		*ppSlab2 = pTmp;
 	}
 
-	IF_SlabManager *		m_pSlabManager;
-	SLAB *					m_pFirstSlab;
-	SLAB *					m_pLastSlab;
-	SLAB *					m_pFirstSlabWithAvailCells;
-	SLAB *					m_pLastSlabWithAvailCells;
-	IF_Relocator *			m_pDefaultRelocator;
-	FLMBOOL					m_bAvailListSorted;
-	FLMUINT					m_uiSlabsWithAvailCells;
-	FLMUINT					m_uiSlabHeaderSize;
-	FLMUINT					m_uiCellHeaderSize;
-	FLMUINT					m_uiCellSize;
-	FLMUINT					m_uiSizeOfCellAndHeader; 
-	FLMUINT					m_uiTotalFreeCells;
-	FLMUINT					m_uiCellsPerSlab;
-	FLMUINT					m_uiSlabSize;
-	FLM_SLAB_USAGE *		m_pUsageStats;
-	FLMUINT *				m_puiTotalBytesAllocated;
+	IF_SlabManager *			m_pSlabManager;
+	SLAB *						m_pFirstSlab;
+	SLAB *						m_pLastSlab;
+	SLAB *						m_pFirstSlabWithAvailCells;
+	SLAB *						m_pLastSlabWithAvailCells;
+	IF_Relocator *				m_pDefaultRelocator;
+	FLMBOOL						m_bAvailListSorted;
+	FLMUINT						m_uiSlabsWithAvailCells;
+	FLMUINT						m_uiSlabHeaderSize;
+	FLMUINT						m_uiCellHeaderSize;
+	FLMUINT						m_uiCellSize;
+	FLMUINT						m_uiSizeOfCellAndHeader; 
+	FLMUINT						m_uiTotalFreeCells;
+	FLMUINT						m_uiCellsPerSlab;
+	FLMUINT						m_uiSlabSize;
+	FLM_SLAB_USAGE *			m_pUsageStats;
+	FLMUINT *					m_puiTotalBytesAllocated;
+	F_MUTEX						m_hMutex;
 	
 friend class F_BufferAlloc;
 friend class F_MultiAlloc;
@@ -545,11 +473,13 @@ public:
 	{
 		f_memset( m_ppAllocators, 0, sizeof( m_ppAllocators));
 		m_pSlabManager = NULL;
+		m_hMutex = F_MUTEX_NULL;
 	}
 
 	virtual ~F_BufferAlloc();
 
 	RCODE FLMAPI setup(
+		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pDefaultRelocator,
 		FLM_SLAB_USAGE *		pUsageStats,
@@ -563,6 +493,13 @@ public:
 		FLMBYTE **				ppucBuffer,
 		FLMBOOL *				pbAllocatedOnHeap = NULL);
 
+	RCODE FLMAPI allocBuf(
+		IF_Relocator *			pRelocator,
+		FLMUINT					uiSize,
+		F_ALLOC_INIT_FUNC		fnAllocInit,
+		FLMBYTE **				ppucBuffer,
+		FLMBOOL *				pbAllocatedOnHeap = NULL);
+			
 	RCODE FLMAPI reallocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiOldSize,
@@ -594,6 +531,7 @@ private:
 
 	IF_SlabManager *			m_pSlabManager;
 	IF_FixedAlloc *			m_ppAllocators[ NUM_BUF_ALLOCATORS];
+	F_MUTEX						m_hMutex;
 };
 
 /****************************************************************************
@@ -608,6 +546,7 @@ public:
 		m_pSlabManager = NULL;
 		m_puiCellSizes = NULL;
 		m_ppAllocators = NULL;
+		m_hMutex = F_MUTEX_NULL;
 	}
 
 	~F_MultiAlloc()
@@ -616,6 +555,7 @@ public:
 	}
 
 	RCODE FLMAPI setup(
+		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pDefaultRelocator,
 		FLMUINT *				puiCellSizes,
@@ -625,43 +565,27 @@ public:
 	RCODE FLMAPI allocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiSize,
-		FLMBYTE **				ppucBuffer,
-		FLMBOOL					bMutexLocked);
+		FLMBYTE **				ppucBuffer);
 
+	RCODE FLMAPI allocBuf(
+		IF_Relocator *			pRelocator,
+		FLMUINT					uiSize,
+		F_ALLOC_INIT_FUNC		fnAllocInit,
+		FLMBYTE **				ppucBuffer);
+		
 	RCODE FLMAPI reallocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiNewSize,
-		FLMBYTE **				ppucBuffer,
-		FLMBOOL					bMutexLocked);
+		FLMBYTE **				ppucBuffer);
 
 	void FLMAPI freeBuf(
-		FLMBYTE **				ppucBuffer)
-	{
-		if( ppucBuffer && *ppucBuffer)
-		{
-			getAllocator( *ppucBuffer)->freeCell( *ppucBuffer, FALSE);
-			*ppucBuffer = NULL;
-		}
-	}
+		FLMBYTE **				ppucBuffer);
 
 	void FLMAPI defragmentMemory( void);
 
 	FLMUINT FLMAPI getTrueSize(
-		FLMBYTE *				pucBuffer)
-	{
-		return( getAllocator( pucBuffer)->getCellSize());
-	}
+		FLMBYTE *				pucBuffer);
 
-	void FLMAPI lockMutex( void)
-	{
-		m_pSlabManager->lockMutex();
-	}
-
-	void FLMAPI unlockMutex( void)
-	{
-		m_pSlabManager->unlockMutex();
-	}
-		
 private:
 
 	IF_FixedAlloc * getAllocator(
@@ -675,6 +599,7 @@ private:
 	IF_SlabManager *			m_pSlabManager;
 	FLMUINT *					m_puiCellSizes;
 	IF_FixedAlloc **			m_ppAllocators;
+	F_MUTEX						m_hMutex;
 };
 
 class F_ObjRefTracker;
@@ -763,11 +688,11 @@ private:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-class TrackingRecord : public F_ListItem
+class F_TrackingRecord : public F_ListItem
 {
 public:
 
-	TrackingRecord( void * pReferenceID, void * pSubrefID)
+	F_TrackingRecord( void * pReferenceID, void * pSubrefID)
 	{
 		m_pReferenceID = pReferenceID;
 		m_pSubrefID = pSubrefID;
@@ -775,7 +700,7 @@ public:
 		f_memset( m_stack, 0, sizeof(m_stack));
 	}
 	
-	virtual ~TrackingRecord()
+	virtual ~F_TrackingRecord()
 	{
 	}
 
@@ -1322,22 +1247,25 @@ void logMemLeak(
 	// Format message to be logged.
 
 	f_strcpy( pszTmp, "Abort=Debug, Retry=Continue, Ignore=Don't Show\r\n");
+	
 	while (*pszTmp)
 	{
 		pszTmp++;
 	}
+	
 #if defined( FLM_WIN) && defined( FLM_64BIT)
 	f_sprintf(	pszTmp, "Unfreed Pointer: 0x%016I64x\r\n", (FLMUINT)(&pHdr [1]));
 #else
 	f_sprintf(	pszTmp, "Unfreed Pointer: 0x%08x\r\n",
 		(unsigned)((FLMUINT)(&pHdr [1])));
 #endif
-	while (*pszTmp)
+
+	while( *pszTmp)
 	{
 		pszTmp++;
 	}
 
-	if (pHdr->pszFileName)
+	if( pHdr->pszFileName)
 	{
 		f_sprintf( pszTmp, "Source: %s, Line#: %u\r\n", pHdr->pszFileName,
 								(unsigned)pHdr->iLineNumber);
@@ -1347,7 +1275,7 @@ void logMemLeak(
 		}
 	}
 
-	if (pHdr->uiAllocCnt)
+	if( pHdr->uiAllocCnt)
 	{
 		f_sprintf( pszTmp, "Malloc #: %u\r\n", (unsigned)pHdr->uiAllocCnt);
 		while (*pszTmp)
@@ -1355,13 +1283,15 @@ void logMemLeak(
 			pszTmp++;
 		}
   	}
+	
 	f_sprintf( (char *)pszTmp, "Size: %u bytes\r\n", (unsigned)pHdr->uiDataSize);
-	while (*pszTmp)
+	
+	while( *pszTmp)
 	{
 		pszTmp++;
 	}
 
-	if (pHdr->puiStack)
+	if( pHdr->puiStack)
 	{
 		FLMUINT *			puiStack = pHdr->puiStack;
 		FLMUINT				uiLen = pszTmp - pszMessageBuffer;
@@ -2279,9 +2209,6 @@ F_SlabManager::F_SlabManager()
 	m_uiAvailSlabs = 0;
 	m_uiInUseSlabs = 0;
 	m_uiPreallocSlabs = 0;
-#ifdef FLM_SOLARIS
-	m_DevZero = -1;
-#endif
 }
 
 /****************************************************************************
@@ -2301,13 +2228,6 @@ F_SlabManager::~F_SlabManager()
 	{
 		f_mutexDestroy( &m_hMutex);
 	}
-	
-#ifdef FLM_SOLARIS
-	if( m_DevZero > 0)
-	{
-		close( m_DevZero);
-	}
-#endif
 }
 
 /****************************************************************************
@@ -2336,14 +2256,6 @@ RCODE FLMAPI F_SlabManager::setup(
 	}
 #endif
 
-#ifdef FLM_SOLARIS
-	if( (m_DevZero = open( "/dev/zero", O_RDWR)) == -1)
-	{
-		rc = RC_SET( NE_FLM_MEM);
-		goto Exit;
-	}
-#endif
-
 	if( !uiSysSlabSize)
 	{
 		uiSysSlabSize = uiSlabSize;
@@ -2365,14 +2277,10 @@ RCODE FLMAPI F_SlabManager::setup(
 	
 	if( uiPreallocSize)
 	{
-		lockMutex();
-
-		if( RC_BAD( rc = resize( uiPreallocSize, NULL, TRUE)))
+		if( RC_BAD( rc = resize( uiPreallocSize, NULL)))
 		{
 			goto Exit;
 		}
-
-		unlockMutex();
 	}
 		
 Exit:
@@ -2385,19 +2293,17 @@ Desc:
 ****************************************************************************/
 RCODE FLMAPI F_SlabManager::resize(
 	FLMUINT 			uiNumBytes,
-	FLMUINT *		puiActualSize,
-	FLMBOOL			bMutexLocked)
+	FLMUINT *		puiActualSize)
 {
 	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiSlabsNeeded;
 	void *			pSlab;
-	FLMBOOL			bUnlockMutex = FALSE;
+	FLMBOOL			bMutexLocked = FALSE;
 
-	if( !bMutexLocked)
-	{
-		lockMutex();
-		bUnlockMutex = TRUE;
-	}
+	f_assertMutexNotLocked( m_hMutex);
+
+	f_mutexLock( m_hMutex);
+	bMutexLocked = TRUE;
 	
 	if( puiActualSize)
 	{
@@ -2437,9 +2343,11 @@ RCODE FLMAPI F_SlabManager::resize(
 			
 			f_assert( m_uiTotalSlabs);
 			f_assert( m_uiInUseSlabs);
+			f_assert( m_uiTotalBytesAllocated);
 			
 			m_uiAvailSlabs--;
 			m_uiTotalSlabs--;
+			m_uiTotalBytesAllocated -= m_uiSlabSize;
 		}
 	}
 	else
@@ -2476,6 +2384,7 @@ RCODE FLMAPI F_SlabManager::resize(
 
 			m_uiTotalSlabs++;
 			m_uiAvailSlabs++;
+			m_uiTotalBytesAllocated += m_uiSlabSize;
 		}
 	}
 	
@@ -2493,9 +2402,9 @@ Exit:
 		freeAllSlabs();
 	}
 
-	if( bUnlockMutex)
+	if( bMutexLocked)
 	{
-		unlockMutex();
+		f_mutexUnlock( m_hMutex);
 	}
 	
 	return( rc);
@@ -2505,17 +2414,15 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE FLMAPI F_SlabManager::allocSlab(
-	void **				ppSlab,
-	FLMBOOL				bMutexLocked)
+	void **				ppSlab)
 {
 	RCODE			rc = NE_FLM_OK;
-	FLMBOOL		bUnlockMutex = FALSE;
+	FLMBOOL		bMutexLocked = FALSE;
 
-	if( !bMutexLocked)
-	{
-		lockMutex();
-		bUnlockMutex = TRUE;
-	}
+	f_assertMutexNotLocked( m_hMutex);
+
+	f_mutexLock( m_hMutex);
+	bMutexLocked = TRUE;
 	
 	if( m_pFirstInSlabList)
 	{
@@ -2539,22 +2446,29 @@ RCODE FLMAPI F_SlabManager::allocSlab(
 	else
 	{
 		f_assert( !m_uiAvailSlabs);
-
+		
+		f_mutexUnlock( m_hMutex);
+		bMutexLocked = FALSE;
+		
 		if( (*ppSlab = allocSlabFromSystem()) == NULL)
 		{
 			rc = RC_SET( NE_FLM_MEM);
 			goto Exit;
 		}
 		
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+		
 		m_uiTotalSlabs++;
 		m_uiInUseSlabs++;
+		m_uiTotalBytesAllocated += m_uiSlabSize;
 	}
 	
 Exit:
 
-	if( bUnlockMutex)
+	if( bMutexLocked)
 	{
-		unlockMutex();
+		f_mutexUnlock( m_hMutex);
 	}
 	
 	return( rc);
@@ -2564,19 +2478,13 @@ Exit:
 Desc:
 ****************************************************************************/
 void FLMAPI F_SlabManager::freeSlab(
-	void **				ppSlab,
-	FLMBOOL				bMutexLocked)
+	void **				ppSlab)
 {
-	FLMBOOL				bUnlockMutex = FALSE;
-	
 	f_assert( ppSlab && *ppSlab);
-	
-	if( !bMutexLocked)
-	{
-		lockMutex();
-		bUnlockMutex = TRUE;
-	}
+	f_assertMutexNotLocked( m_hMutex);
 
+	f_mutexLock( m_hMutex);
+	
 	if( m_uiTotalSlabs <= m_uiPreallocSlabs)
 	{
 		((SLABHEADER *)*ppSlab)->pPrev = NULL;
@@ -2598,20 +2506,23 @@ void FLMAPI F_SlabManager::freeSlab(
 	}
 	else
 	{
+		f_mutexUnlock( m_hMutex);
+		
 		releaseSlabToSystem( *ppSlab);
 		*ppSlab = NULL;
 		
+		f_mutexLock( m_hMutex);
+	
 		f_assert( m_uiTotalSlabs);
 		f_assert( m_uiInUseSlabs);
+		f_assert( m_uiTotalBytesAllocated);
 		
 		m_uiTotalSlabs--;
 		m_uiInUseSlabs--;
+		m_uiTotalBytesAllocated -= m_uiSlabSize;
 	}
 	
-	if( bUnlockMutex)
-	{
-		unlockMutex();
-	}
+	f_mutexUnlock( m_hMutex);
 }
 
 /****************************************************************************
@@ -2630,6 +2541,7 @@ void F_SlabManager::freeAllSlabs( void)
 		m_pFirstInSlabList = pNextSlab;
 		m_uiTotalSlabs--;
 		m_uiAvailSlabs--;
+		m_uiTotalBytesAllocated -= m_uiSlabSize;
 	}
 	
 	f_assert( !m_uiAvailSlabs);
@@ -2644,32 +2556,75 @@ void * F_SlabManager::allocSlabFromSystem( void)
 	void *		pSlab;
 	
 #ifdef FLM_WIN
+
 	pSlab = VirtualAlloc( NULL,
 		(DWORD)m_uiSlabSize, MEM_COMMIT, PAGE_READWRITE);
-#elif defined( FLM_SOLARIS)
-	if( (pSlab = mmap( 0, m_uiSlabSize, 
-		PROT_READ | PROT_WRITE, MAP_PRIVATE, m_DevZero, 0)) == MAP_FAILED)
-	{
-		return( NULL);
-	}
-#elif defined( FLM_UNIX)
+		
+#elif defined( FLM_UNIX) && !defined( FLM_SOLARIS)
+
 	if( (pSlab = mmap( 0, m_uiSlabSize, 
 		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) == MAP_FAILED)
 	{
 		return( NULL);
 	}
+	
+	// We don't use mmap on Solaris because of the amount of address
+	// space it consumes for red-zones and rounding.  The following is from
+	// the Solaris mmap man page:
+	//	
+	// The mmap() function aligns based on the length of  the  map-
+	// ping.  When  determining  the  amount of space to add to the
+	// address space, mmap() includes two  8-Kbyte  pages,  one  at
+	// each  end  of the mapping that are not mapped and are there-
+	// fore used as "red-zone" pages.  Attempts to reference  these
+	// pages result in access violations.
+	//	
+	// The size requested is incremented by the 16 Kbytes for these
+	// pages  and is then subject to rounding constraints. The con-
+	// straints are:
+	//
+	// o	For 32-bit processes:
+	//
+	//     If length > 4 Mbytes
+	//        round to 4-Mbyte multiple
+	//     elseif length > 512 Kbytes
+	//        round to 512-Kbyte multiple
+	//     else
+	//        round to 64-Kbyte multiple
+	//
+	// o	For 64-bit processes:
+	//
+	//     If length > 4 Mbytes
+	//        round to 4-Mbyte multiple
+	//     else
+	//        round to 1-Mbyte multiple
+	//
+	// The net result is that for a 32-bit process:
+	//
+	// o	If an mmap() request is made for 4 Mbytes,  it  results
+	//		in 4 Mbytes + 16 Kbytes and is rounded up to 8 Mbytes.
+	//
+	// o	If an mmap() request is made for 512 Kbytes, it results
+	//		in 512 Kbytes + 16 Kbytes and is rounded up to 1 Mbyte.
+	//
+	// o	If an mmap() request is made for 1 Mbyte, it results in
+	//		1 Mbyte + 16 Kbytes and is rounded up to 1.5 Mbytes.
+	//
+	// o	Each 8-Kbyte mmap request "consumes" 64 Kbytes of  vir-
+	//		tual address space.
+	
 #else
+
 	if( RC_BAD( f_alloc( m_uiSlabSize, &pSlab)))
 	{
 		return( NULL);
 	}
+	
 #endif
-
-	incrementTotalBytesAllocated( m_uiSlabSize, TRUE);
 
 	return( pSlab);
 }
-		
+	
 /****************************************************************************
 Desc:	Assumes that the mutex is locked
 ****************************************************************************/
@@ -2680,15 +2635,11 @@ void F_SlabManager::releaseSlabToSystem(
 	
 #ifdef FLM_WIN
 	VirtualFree( pSlab, 0, MEM_RELEASE);
-#elif defined( FLM_SOLARIS)
-	munmap( (char *)pSlab, m_uiSlabSize);
-#elif defined( FLM_UNIX)
+#elif defined( FLM_UNIX) && !defined( FLM_SOLARIS)
 	munmap( pSlab, m_uiSlabSize);
 #else
 	f_free( &pSlab);
 #endif
-
-	decrementTotalBytesAllocated( m_uiSlabSize, TRUE);
 }
 
 /****************************************************************************
@@ -2743,6 +2694,8 @@ RCODE F_SlabManager::sortSlabList( void)
 	void *			smallSortBuf[ SMALL_SORT_BUF_SIZE];
 	void *			pCurSlab;
 	void *			pPrevSib;
+
+	f_assertMutexLocked( m_hMutex);
 
 	if( m_uiAvailSlabs <= 1)
 	{
@@ -2842,6 +2795,7 @@ F_FixedAlloc::F_FixedAlloc()
 	m_uiSlabSize = 0;
 	m_pUsageStats = NULL;
 	m_puiTotalBytesAllocated = NULL;
+	m_hMutex = F_MUTEX_NULL;
 }
 
 /****************************************************************************
@@ -2865,12 +2819,18 @@ F_FixedAlloc::~F_FixedAlloc()
 	{
 		m_pDefaultRelocator->Release();
 	}
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &m_hMutex);
+	}
 }
 
 /****************************************************************************
 Desc:	Setup method for any setup that can fail 
 ****************************************************************************/
 RCODE F_FixedAlloc::setup(
+	FLMBOOL					bMultiThreaded,
 	IF_SlabManager *		pSlabManager,
 	IF_Relocator *			pDefaultRelocator,
 	FLMUINT					uiCellSize,
@@ -2881,7 +2841,15 @@ RCODE F_FixedAlloc::setup(
 
 	f_assert( pSlabManager);
 	f_assert( uiCellSize);
-	f_assert( pUsageStats != NULL);
+	f_assert( pUsageStats);
+	
+	if( bMultiThreaded)
+	{
+		if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
+		{
+			goto Exit;
+		}
+	}
 	
 	m_pUsageStats = pUsageStats;
 	m_puiTotalBytesAllocated = puiTotalBytesAllocated;
@@ -2901,6 +2869,7 @@ RCODE F_FixedAlloc::setup(
 	// Get the alloc-aligned versions of all the sizes
 
 	m_uiSlabHeaderSize = getAllocAlignedSize( sizeof( SLAB));
+	
 	if (pDefaultRelocator)
 	{
 		m_uiCellHeaderSize = getAllocAlignedSize( sizeof( CELLHEADER));
@@ -2909,6 +2878,7 @@ RCODE F_FixedAlloc::setup(
 	{
 		m_uiCellHeaderSize = getAllocAlignedSize( sizeof( CELLHEADER2));
 	}
+	
 	m_uiCellSize = getAllocAlignedSize( m_uiCellSize);
 
 	// Ensure that there's enough space for our overhead
@@ -2917,17 +2887,99 @@ RCODE F_FixedAlloc::setup(
 
 	m_uiSizeOfCellAndHeader = m_uiCellHeaderSize + m_uiCellSize;
 
-	m_uiCellsPerSlab =
-		(m_uiSlabSize - m_uiSlabHeaderSize) /
-		m_uiSizeOfCellAndHeader;
+	m_uiCellsPerSlab = 
+		(m_uiSlabSize - m_uiSlabHeaderSize) / m_uiSizeOfCellAndHeader;
 
 	f_assert( m_uiCellsPerSlab);
 	f_assert( m_uiCellsPerSlab <= FLM_MAX_UINT16);
 	f_assert( (m_uiCellsPerSlab * m_uiCellSize) < m_uiSlabSize);
 	
+Exit:
+	
 	return( rc);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * FLMAPI F_FixedAlloc::allocCell(
+	IF_Relocator *		pRelocator,
+	void *				pvInitialData,
+	FLMUINT				uiDataSize)
+{
+	void *				pvCell;
+	FLMBOOL				bMutexLocked = FALSE;
+	
+	f_assert( pRelocator || m_pDefaultRelocator);
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+	
+	if( (pvCell = getCell( pRelocator)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	if( uiDataSize == sizeof( FLMUINT *))
+	{
+		*((FLMUINT *)pvCell) = *((FLMUINT *)pvInitialData); 
+	}
+	else if( uiDataSize)
+	{
+		f_memcpy( pvCell, pvInitialData, uiDataSize);
+	}
+	
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( pvCell);
+}
+
+/****************************************************************************
+Desc:	Public method to free a cell of memory back to the system. 
+****************************************************************************/
+void * FLMAPI F_FixedAlloc::allocCell(
+	IF_Relocator *				pRelocator,
+	F_ALLOC_INIT_FUNC			fnAllocInit)
+{
+	void *						pvCell;
+	FLMBOOL						bMutexLocked = FALSE;
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+	
+	if( (pvCell = getCell( pRelocator)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	if( pvCell && fnAllocInit)
+	{
+		fnAllocInit( pvCell, m_uiCellSize);
+	}
+
+Exit:
+	
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( pvCell);
+}
+	
 /****************************************************************************
 Desc:	Private, internal method to fetch a cell
 ****************************************************************************/
@@ -2937,6 +2989,13 @@ void * F_FixedAlloc::getCell(
 	SLAB *			pSlab = NULL;
 	FLMBYTE *		pCell = NULL;
 	CELLHEADER *	pHeader;
+
+#ifdef FLM_DEBUG
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexLocked( m_hMutex);
+	}
+#endif
 
 	// If there's a slab that has an avail cell, that one gets priority
 
@@ -3072,16 +3131,41 @@ Exit:
 /****************************************************************************
 Desc:	Public method to free a cell of memory back to the system. 
 ****************************************************************************/
+void FLMAPI F_FixedAlloc::freeCell( 
+	void *		ptr)
+{
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+	}
+	
+	freeCell( ptr, FALSE, NULL);
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+}
+	
+/****************************************************************************
+Desc:	Public method to free a cell of memory back to the system. 
+****************************************************************************/
 void F_FixedAlloc::freeCell(
 	void *		pCell,
-	FLMBOOL		bMutexLocked,
 	FLMBOOL		bFreeIfEmpty,
 	FLMBOOL *	pbFreedSlab)
 {
 	CELLAVAILNEXT *	pCellContents;
 	CELLHEADER *		pHeader;
 	SLAB *				pSlab;
-	FLMBOOL				bUnlockMutex = FALSE;
+
+#ifdef FLM_DEBUG
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexLocked( m_hMutex);
+	}
+#endif
 
 	if( pbFreedSlab)
 	{
@@ -3093,12 +3177,6 @@ void F_FixedAlloc::freeCell(
 		return;
 	}
 	
-	if( !bMutexLocked)
-	{
-		m_pSlabManager->lockMutex();
-		bUnlockMutex = TRUE;
-	}
-
 	pCellContents = (CELLAVAILNEXT *)pCell;
 	pHeader = (CELLHEADER *)(((FLMBYTE *)pCell) - m_uiCellHeaderSize);
 	pSlab = pHeader->pContainingSlab;
@@ -3230,11 +3308,6 @@ void F_FixedAlloc::freeCell(
 
 Exit:
 
-	if( bUnlockMutex)
-	{
-		m_pSlabManager->unlockMutex();
-	}
-
 	return;
 }
 
@@ -3245,7 +3318,14 @@ SLAB * F_FixedAlloc::getAnotherSlab( void)
 {
 	SLAB *	pSlab = NULL;
 	
-	if( RC_BAD( m_pSlabManager->allocSlab( (void **)&pSlab, TRUE)))
+#ifdef FLM_DEBUG
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexLocked( m_hMutex);
+	}
+#endif
+
+	if( RC_BAD( m_pSlabManager->allocSlab( (void **)&pSlab)))
 	{
 		goto Exit;
 	}
@@ -3282,6 +3362,11 @@ void F_FixedAlloc::freeSlab(
 #endif
 
 	f_assert( pSlab);
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexLocked( m_hMutex);
+	}
 
 	// Memory corruption detected!
 
@@ -3351,7 +3436,7 @@ void F_FixedAlloc::freeSlab(
 	m_uiSlabsWithAvailCells--;
 	f_assert( m_uiTotalFreeCells >= pSlab->ui16AvailCellCount);
 	m_uiTotalFreeCells -= pSlab->ui16AvailCellCount;
-	m_pSlabManager->freeSlab( (void **)&pSlab, TRUE);
+	m_pSlabManager->freeSlab( (void **)&pSlab);
 	
 	if( m_pUsageStats)
 	{
@@ -3369,11 +3454,15 @@ void F_FixedAlloc::freeSlab(
 /****************************************************************************
 Desc:	Public method to free all the memory in the system.  
 ****************************************************************************/
-void F_FixedAlloc::freeAll( void)
+void FLMAPI F_FixedAlloc::freeAll( void)
 {
 	SLAB *		pFreeMe;
 
-	m_pSlabManager->lockMutex();
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+	}
 
 	while( m_pFirstSlab)
 	{
@@ -3391,8 +3480,11 @@ void F_FixedAlloc::freeAll( void)
 	m_uiSlabsWithAvailCells = 0;
 	m_bAvailListSorted = TRUE;
 	m_uiTotalFreeCells = 0;
-	
-	m_pSlabManager->unlockMutex();	
+
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
 }
 
 /****************************************************************************
@@ -3413,8 +3505,14 @@ void F_FixedAlloc::defragmentMemory( void)
 	FLMUINT			uiSortEntries = 0;
 #define SMALL_SORT_BUF_SIZE 256
 	SLAB *			smallSortBuf[ SMALL_SORT_BUF_SIZE];
+	FLMBOOL			bMutexLocked = FALSE;
 
-	m_pSlabManager->lockMutex();
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
 	
 	if( m_uiTotalFreeCells < m_uiCellsPerSlab)
 	{
@@ -3558,7 +3656,7 @@ void F_FixedAlloc::defragmentMemory( void)
 					f_memcpy( pucReloc, pucOriginal, m_uiCellSize);
 					pRelocator->relocate( pucOriginal, pucReloc);
 
-					freeCell( pucOriginal, TRUE, TRUE, &bSlabFreed);
+					freeCell( pucOriginal, TRUE, &bSlabFreed);
 					
 					if( bSlabFreed)
 					{
@@ -3573,7 +3671,10 @@ void F_FixedAlloc::defragmentMemory( void)
 
 Exit:
 
-	m_pSlabManager->unlockMutex();
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
 
 	if( pSortBuf && pSortBuf != smallSortBuf)
 	{
@@ -3584,11 +3685,15 @@ Exit:
 /****************************************************************************
 Desc:		
 ****************************************************************************/ 
-void F_FixedAlloc::freeUnused( void)
+void FLMAPI F_FixedAlloc::freeUnused( void)
 {
 	SLAB *			pSlab;
 
-	m_pSlabManager->lockMutex();
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+	}
 
 	if( (pSlab = m_pFirstSlabWithAvailCells) != NULL &&
 		!pSlab->ui16AllocatedCells)
@@ -3602,7 +3707,10 @@ void F_FixedAlloc::freeUnused( void)
 		freeSlab( pSlab);
 	}
 
-	m_pSlabManager->unlockMutex();
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
 }
 
 /****************************************************************************
@@ -3666,22 +3774,36 @@ F_BufferAlloc::~F_BufferAlloc()
 	{
 		m_pSlabManager->Release();
 	}
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &m_hMutex);
+	}
 }
 	
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
 RCODE F_BufferAlloc::setup(
+	FLMBOOL					bMultiThreaded,
 	IF_SlabManager *		pSlabManager,
 	IF_Relocator *			pDefaultRelocator,
 	FLM_SLAB_USAGE *		pUsageStats,
 	FLMUINT *				puiTotalBytesAllocated)
 {
-	RCODE			rc = NE_FLM_OK;
-	FLMUINT		uiLoop;
-	FLMUINT		uiSize;
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiLoop;
+	FLMUINT					uiSize;
 	
 	f_assert( pSlabManager);
+	
+	if( bMultiThreaded)
+	{
+		if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
+		{
+			goto Exit;
+		}
+	}
 	
 	m_pSlabManager = pSlabManager;
 	m_pSlabManager->AddRef();
@@ -3768,8 +3890,9 @@ RCODE F_BufferAlloc::setup(
 				goto Exit;
 		}
 
-		if (RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( pSlabManager,
-			pDefaultRelocator, uiSize, pUsageStats, puiTotalBytesAllocated)))
+		if (RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( FALSE,
+			pSlabManager, pDefaultRelocator, uiSize, 
+			pUsageStats, puiTotalBytesAllocated)))
 		{
 			goto Exit;
 		}
@@ -3783,7 +3906,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE F_BufferAlloc::allocBuf(
+RCODE FLMAPI F_BufferAlloc::allocBuf(
 	IF_Relocator *		pRelocator,
 	FLMUINT				uiSize,
 	void *				pvInitialData,
@@ -3793,6 +3916,7 @@ RCODE F_BufferAlloc::allocBuf(
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_FixedAlloc *	pAllocator = getAllocator( uiSize);
+	FLMBOOL				bMutexLocked = FALSE;
 
 	if( pbAllocatedOnHeap)
 	{
@@ -3803,6 +3927,13 @@ RCODE F_BufferAlloc::allocBuf(
 	{
 		f_assert( pAllocator->getCellSize() >= uiSize);
 
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_assertMutexNotLocked( m_hMutex);
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+			
 		if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( pRelocator, 
 			pvInitialData, uiDataSize)) == NULL)
 		{
@@ -3817,8 +3948,7 @@ RCODE F_BufferAlloc::allocBuf(
 			goto Exit;
 		}
 		
-		m_pSlabManager->incrementTotalBytesAllocated( 
-			f_msize( *ppucBuffer), FALSE);
+		m_pSlabManager->incrementTotalBytesAllocated( f_msize( *ppucBuffer));
 		
 		if( pvInitialData)
 		{
@@ -3832,6 +3962,11 @@ RCODE F_BufferAlloc::allocBuf(
 	}
 	
 Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
 	
 	return( rc);
 }
@@ -3839,20 +3974,87 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE F_BufferAlloc::reallocBuf(
-	IF_Relocator *		pRelocator,
-	FLMUINT				uiOldSize,
-	FLMUINT				uiNewSize,
-	void *				pvInitialData,
-	FLMUINT				uiDataSize,
-	FLMBYTE **			ppucBuffer,
-	FLMBOOL *			pbAllocatedOnHeap)
+RCODE FLMAPI F_BufferAlloc::allocBuf(
+	IF_Relocator *			pRelocator,
+	FLMUINT					uiSize,
+	F_ALLOC_INIT_FUNC		fnAllocInit,
+	FLMBYTE **				ppucBuffer,
+	FLMBOOL *				pbAllocatedOnHeap)
 {
-	RCODE					rc = NE_FLM_OK;
-	FLMBYTE *			pucTmp;
-	IF_FixedAlloc *	pOldAllocator;
-	IF_FixedAlloc *	pNewAllocator;
-	FLMBOOL				bLockedMutex = FALSE;
+	RCODE						rc = NE_FLM_OK;
+	IF_FixedAlloc *		pAllocator = getAllocator( uiSize);
+	FLMBOOL					bMutexLocked = FALSE;
+
+	if( pbAllocatedOnHeap)
+	{
+		*pbAllocatedOnHeap = FALSE;
+	}
+	
+	if( pAllocator)
+	{
+		f_assert( pAllocator->getCellSize() >= uiSize);
+		
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_assertMutexNotLocked( m_hMutex);
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+		
+		if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( 
+			pRelocator, fnAllocInit)) == NULL)
+		{
+			rc = RC_SET( NE_FLM_MEM);
+			goto Exit;
+		}
+	}
+	else
+	{
+		if( RC_BAD( rc = f_alloc( uiSize, ppucBuffer)))
+		{
+			goto Exit;
+		}
+		
+		m_pSlabManager->incrementTotalBytesAllocated( f_msize( *ppucBuffer));
+		
+		if( fnAllocInit)
+		{
+			fnAllocInit( *ppucBuffer, uiSize);
+		}
+		
+		if( pbAllocatedOnHeap)
+		{
+			*pbAllocatedOnHeap = TRUE;
+		}
+	}
+	
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/ 
+RCODE FLMAPI F_BufferAlloc::reallocBuf(
+	IF_Relocator *			pRelocator,
+	FLMUINT					uiOldSize,
+	FLMUINT					uiNewSize,
+	void *					pvInitialData,
+	FLMUINT					uiDataSize,
+	FLMBYTE **				ppucBuffer,
+	FLMBOOL *				pbAllocatedOnHeap)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMBYTE *				pucTmp;
+	IF_FixedAlloc *		pOldAllocator;
+	IF_FixedAlloc *		pNewAllocator;
+	FLMBOOL					bMutexLocked = FALSE;
 
 	f_assert( uiNewSize);
 	
@@ -3873,9 +4075,6 @@ RCODE F_BufferAlloc::reallocBuf(
 		goto Exit;
 	}
 	
-	m_pSlabManager->lockMutex();
-	bLockedMutex = TRUE;
-
 	if( pbAllocatedOnHeap)
 	{
 		*pbAllocatedOnHeap = FALSE;
@@ -3883,12 +4082,19 @@ RCODE F_BufferAlloc::reallocBuf(
 	
 	if( pOldAllocator)
 	{
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_assertMutexNotLocked( m_hMutex);
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+		
 		if( pNewAllocator)
 		{
 			f_assert( pOldAllocator != pNewAllocator);
 
 			if( (pucTmp = (FLMBYTE *)pNewAllocator->allocCell( pRelocator,
-										NULL, 0, TRUE)) == NULL)
+										NULL, 0)) == NULL)
 			{
 				rc = RC_SET( NE_FLM_MEM);
 				goto Exit;
@@ -3901,8 +4107,7 @@ RCODE F_BufferAlloc::reallocBuf(
 				goto Exit;
 			}
 			
-			m_pSlabManager->incrementTotalBytesAllocated( 
-				f_msize( pucTmp), bLockedMutex);
+			m_pSlabManager->incrementTotalBytesAllocated( f_msize( pucTmp));
 			
 			if( pbAllocatedOnHeap)
 			{
@@ -3911,13 +4116,20 @@ RCODE F_BufferAlloc::reallocBuf(
 		}
 
 		f_memcpy( pucTmp, *ppucBuffer, f_min( uiOldSize, uiNewSize));
-		pOldAllocator->freeCell( *ppucBuffer, TRUE);
+		pOldAllocator->freeCell( *ppucBuffer);
 		*ppucBuffer = pucTmp;
 	}
 	else
 	{
 		if( pNewAllocator)
 		{
+			if( m_hMutex != F_MUTEX_NULL)
+			{
+				f_assertMutexNotLocked( m_hMutex);
+				f_mutexLock( m_hMutex);
+				bMutexLocked = TRUE;
+			}
+			
 			if( (pucTmp = (FLMBYTE *)pNewAllocator->allocCell( pRelocator, 
 				*ppucBuffer, f_min( uiOldSize, uiNewSize))) == NULL)
 			{
@@ -3925,8 +4137,13 @@ RCODE F_BufferAlloc::reallocBuf(
 				goto Exit;
 			}
 
-			m_pSlabManager->decrementTotalBytesAllocated( 
-					f_msize( *ppucBuffer), bLockedMutex);			
+			if( bMutexLocked)
+			{
+				f_mutexUnlock( m_hMutex);
+				bMutexLocked = FALSE;
+			}
+
+			m_pSlabManager->decrementTotalBytesAllocated( f_msize( *ppucBuffer));			
 			f_free( ppucBuffer);
 			*ppucBuffer = pucTmp;
 		}
@@ -3942,11 +4159,8 @@ RCODE F_BufferAlloc::reallocBuf(
 				goto Exit;
 			}
 			
-			m_pSlabManager->decrementTotalBytesAllocated( 
-				uiOldAllocSize, bLockedMutex);
-
-			m_pSlabManager->incrementTotalBytesAllocated( 
-				f_msize( *ppucBuffer), bLockedMutex);
+			m_pSlabManager->decrementTotalBytesAllocated( uiOldAllocSize);
+			m_pSlabManager->incrementTotalBytesAllocated( f_msize( *ppucBuffer));
 			
 			if( pbAllocatedOnHeap)
 			{
@@ -3957,9 +4171,9 @@ RCODE F_BufferAlloc::reallocBuf(
 
 Exit:
 
-	if( bLockedMutex)
+	if( bMutexLocked)
 	{
-		m_pSlabManager->unlockMutex();
+		f_mutexUnlock( m_hMutex);
 	}
 	
 	return( rc);
@@ -3972,17 +4186,29 @@ void F_BufferAlloc::freeBuf(
 	FLMUINT				uiSize,
 	FLMBYTE **			ppucBuffer)
 {
-	IF_FixedAlloc *		pAllocator = getAllocator( uiSize);
+	IF_FixedAlloc *	pAllocator = getAllocator( uiSize);
+	FLMBOOL				bMutexLocked = FALSE;
 	
 	if( pAllocator)
 	{
-		pAllocator->freeCell( *ppucBuffer, FALSE);
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_assertMutexNotLocked( m_hMutex);
+			f_mutexLock( m_hMutex);
+			bMutexLocked = TRUE;
+		}
+		
+		pAllocator->freeCell( *ppucBuffer);
 		*ppucBuffer = NULL;
+		
+		if( bMutexLocked)
+		{
+			f_mutexUnlock( m_hMutex);
+		}
 	}
 	else
 	{
-		m_pSlabManager->decrementTotalBytesAllocated( 
-			f_msize( *ppucBuffer), FALSE);			
+		m_pSlabManager->decrementTotalBytesAllocated( f_msize( *ppucBuffer));			
 		f_free( ppucBuffer);
 	}
 }
@@ -3992,8 +4218,14 @@ Desc:
 ****************************************************************************/ 
 void F_BufferAlloc::defragmentMemory( void)
 {
-	FLMUINT	uiLoop;
+	FLMUINT		uiLoop;
 
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+	}
+	
 	for( uiLoop = 0; uiLoop < NUM_BUF_ALLOCATORS; uiLoop++)
 	{
 		if( m_ppAllocators[ uiLoop])
@@ -4003,6 +4235,11 @@ void F_BufferAlloc::defragmentMemory( void)
 		}
 
 		uiLoop++;
+	}
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
 	}
 }
 
@@ -4152,6 +4389,7 @@ IF_FixedAlloc * F_BufferAlloc::getAllocator(
 Desc:
 ****************************************************************************/ 
 RCODE F_MultiAlloc::setup(
+	FLMBOOL					bMultiThreaded,
 	IF_SlabManager *		pSlabManager,
 	IF_Relocator *			pDefaultRelocator,
 	FLMUINT *				puiCellSizes,
@@ -4161,6 +4399,14 @@ RCODE F_MultiAlloc::setup(
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiLoop;
 	FLMUINT		uiCellCount;
+	
+	if( bMultiThreaded)
+	{
+		if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
+		{
+			goto Exit;
+		}
+	}
 
 	m_pSlabManager = pSlabManager;
 	m_pSlabManager->AddRef();
@@ -4186,8 +4432,7 @@ RCODE F_MultiAlloc::setup(
 		goto Exit;
 	}
 	
-	m_pSlabManager->incrementTotalBytesAllocated( 
-		f_msize( m_puiCellSizes), FALSE);
+	m_pSlabManager->incrementTotalBytesAllocated( f_msize( m_puiCellSizes));
 	
 	f_memcpy( m_puiCellSizes, puiCellSizes, 
 		(uiCellCount + 1) * sizeof( FLMUINT));
@@ -4200,8 +4445,7 @@ RCODE F_MultiAlloc::setup(
 		goto Exit;
 	}
 	
-	m_pSlabManager->incrementTotalBytesAllocated( 
-		f_msize( m_ppAllocators), FALSE);
+	m_pSlabManager->incrementTotalBytesAllocated( f_msize( m_ppAllocators));
 
 	uiLoop = 0;
 	while( m_puiCellSizes[ uiLoop])
@@ -4212,8 +4456,8 @@ RCODE F_MultiAlloc::setup(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( pSlabManager,
-			pDefaultRelocator, m_puiCellSizes[ uiLoop], 
+		if( RC_BAD( rc = m_ppAllocators[ uiLoop]->setup( FALSE, 
+			pSlabManager, pDefaultRelocator, m_puiCellSizes[ uiLoop], 
 			pUsageStats, puiTotalBytesAllocated)))
 		{
 			goto Exit;
@@ -4239,35 +4483,29 @@ void F_MultiAlloc::cleanup( void)
 {
 	FLMUINT		uiLoop = 0;
 
-	if( !m_puiCellSizes || !m_ppAllocators)
+	if( m_puiCellSizes && m_ppAllocators)
 	{
-		goto Exit;
-	}
-
-	while( m_puiCellSizes[ uiLoop])
-	{
-		if( m_ppAllocators[ uiLoop])
+		while( m_puiCellSizes[ uiLoop])
 		{
-			m_ppAllocators[ uiLoop]->Release();
-			m_ppAllocators[ uiLoop] = NULL;
+			if( m_ppAllocators[ uiLoop])
+			{
+				m_ppAllocators[ uiLoop]->Release();
+				m_ppAllocators[ uiLoop] = NULL;
+			}
+	
+			uiLoop++;
 		}
-
-		uiLoop++;
 	}
-
-Exit:
 
 	if( m_puiCellSizes)
 	{
-		m_pSlabManager->decrementTotalBytesAllocated( 
-			f_msize( m_puiCellSizes), FALSE);
+		m_pSlabManager->decrementTotalBytesAllocated( f_msize( m_puiCellSizes));
 		f_free( &m_puiCellSizes);
 	}
 	
 	if( m_ppAllocators)
 	{
-		m_pSlabManager->decrementTotalBytesAllocated( 
-			f_msize( m_ppAllocators), FALSE);
+		m_pSlabManager->decrementTotalBytesAllocated( f_msize( m_ppAllocators));
 		f_free( &m_ppAllocators);
 	}
 	
@@ -4276,25 +4514,37 @@ Exit:
 		m_pSlabManager->Release();
 		m_pSlabManager = NULL;
 	}
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &m_hMutex);
+	}
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE F_MultiAlloc::allocBuf(
+RCODE FLMAPI F_MultiAlloc::allocBuf(
 	IF_Relocator *		pRelocator,
 	FLMUINT				uiSize,
-	FLMBYTE **			ppucBuffer,
-	FLMBOOL				bMutexLocked)
+	FLMBYTE **			ppucBuffer)
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_FixedAlloc *	pAllocator = getAllocator( uiSize);
+	FLMBOOL				bMutexLocked = FALSE;
 	
 	f_assert( pAllocator);
 	f_assert( pAllocator->getCellSize() >= uiSize);
 	
-	if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( pRelocator, 
-		NULL, 0, bMutexLocked)) == NULL)
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+	
+	if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( 
+		pRelocator, NULL, 0)) == NULL)
 	{
 		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
@@ -4302,29 +4552,73 @@ RCODE F_MultiAlloc::allocBuf(
 
 Exit:
 
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
 	return( rc);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE F_MultiAlloc::reallocBuf(
+RCODE FLMAPI F_MultiAlloc::allocBuf(
+	IF_Relocator *			pRelocator,
+	FLMUINT					uiSize,
+	F_ALLOC_INIT_FUNC		fnAllocInit,
+	FLMBYTE **				ppucBuffer)
+{
+	RCODE					rc = NE_FLM_OK;
+	IF_FixedAlloc *	pAllocator = getAllocator( uiSize);
+	FLMBOOL				bMutexLocked = FALSE;
+	
+	f_assert( pAllocator);
+	f_assert( pAllocator->getCellSize() >= uiSize);
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
+	}
+	
+	if( (*ppucBuffer = (FLMBYTE *)pAllocator->allocCell( 
+		pRelocator, fnAllocInit)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+
+Exit:
+
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/ 
+RCODE FLMAPI F_MultiAlloc::reallocBuf(
 	IF_Relocator *		pRelocator,
 	FLMUINT				uiNewSize,
-	FLMBYTE **			ppucBuffer,
-	FLMBOOL				bMutexLocked)
+	FLMBYTE **			ppucBuffer)
 {
 	RCODE					rc = NE_FLM_OK;
 	FLMBYTE *			pucTmp;
 	IF_FixedAlloc *	pOldAllocator;
 	IF_FixedAlloc *	pNewAllocator;
-	FLMBOOL				bLockedMutex = FALSE;
+	FLMBOOL				bMutexLocked = FALSE;
 
 	f_assert( uiNewSize);
 
 	if( !(*ppucBuffer))
 	{
-		rc = allocBuf( pRelocator, uiNewSize, ppucBuffer, FALSE);
+		rc = allocBuf( pRelocator, uiNewSize, ppucBuffer);
 		goto Exit;
 	}
 
@@ -4338,27 +4632,28 @@ RCODE F_MultiAlloc::reallocBuf(
 		goto Exit;
 	}
 	
-	if( !bMutexLocked)
+	if( m_hMutex != F_MUTEX_NULL)
 	{
-		m_pSlabManager->lockMutex();
-		bLockedMutex = TRUE;
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+		bMutexLocked = TRUE;
 	}
-
+	
 	if( (pucTmp = (FLMBYTE *)pNewAllocator->allocCell( pRelocator, *ppucBuffer, 
-		f_min( uiNewSize, pOldAllocator->getCellSize()), TRUE)) == NULL)
+		f_min( uiNewSize, pOldAllocator->getCellSize()))) == NULL)
 	{
 		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 
-	pOldAllocator->freeCell( *ppucBuffer, TRUE);
+	pOldAllocator->freeCell( *ppucBuffer);
 	*ppucBuffer = pucTmp;
 	
 Exit:
 
-	if( bLockedMutex)
+	if( bMutexLocked)
 	{
-		m_pSlabManager->unlockMutex();
+		f_mutexUnlock( m_hMutex);
 	}
 
 	return( rc);
@@ -4367,10 +4662,64 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
+void FLMAPI F_MultiAlloc::freeBuf(
+	FLMBYTE **				ppucBuffer)
+{
+	if( ppucBuffer && *ppucBuffer)
+	{
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_assertMutexNotLocked( m_hMutex);
+			f_mutexLock( m_hMutex);
+		}
+		
+		getAllocator( *ppucBuffer)->freeCell( *ppucBuffer);
+		*ppucBuffer = NULL;
+		
+		if( m_hMutex != F_MUTEX_NULL)
+		{
+			f_mutexUnlock( m_hMutex);
+		}
+	}
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/ 
+FLMUINT FLMAPI F_MultiAlloc::getTrueSize(
+	FLMBYTE *				pucBuffer)
+{
+	FLMUINT			uiSize;
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+	}
+	
+	uiSize = getAllocator( pucBuffer)->getCellSize();
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	return( uiSize);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/ 
 void F_MultiAlloc::defragmentMemory( void)
 {
 	FLMUINT		uiLoop = 0;
 
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexNotLocked( m_hMutex);
+		f_mutexLock( m_hMutex);
+	}
+	
 	while( m_puiCellSizes[ uiLoop])
 	{
 		if( m_ppAllocators[ uiLoop])
@@ -4380,6 +4729,11 @@ void F_MultiAlloc::defragmentMemory( void)
 		}
 
 		uiLoop++;
+	}
+	
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_mutexUnlock( m_hMutex);
 	}
 }
 
@@ -4416,14 +4770,18 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 	SLAB *				pSlab;
 	IF_FixedAlloc *	pAllocator = NULL;
 
-	m_pSlabManager->lockMutex();
+#ifdef FLM_DEBUG
+	if( m_hMutex != F_MUTEX_NULL)
+	{
+		f_assertMutexLocked( m_hMutex);
+	}
+#endif
 	
 	pHeader = (CELLHEADER *)(pucBuffer - 
 			F_FixedAlloc::getAllocAlignedSize( sizeof( CELLHEADER2)));
 	pSlab = pHeader->pContainingSlab;
 	pAllocator = (IF_FixedAlloc *)pSlab->pvAllocator;
 
-	m_pSlabManager->unlockMutex();
 	return( pAllocator);
 }
 
@@ -5003,11 +5361,11 @@ F_ObjRefTracker::~F_ObjRefTracker(void)
 Desc: Track the given reference.
 ****************************************************************************/
 void F_ObjRefTracker::trackRef(
-	void *		pReferenceID,
-	void *		pSubrefID)
+	void *					pReferenceID,
+	void *					pSubrefID)
 {
-	TrackingRecord *	pTrackingRec = NULL;
-	void **				pStack;
+	F_TrackingRecord *	pTrackingRec = NULL;
+	void **					pStack;
 	
 	if( m_hRefListMutex == F_MUTEX_NULL)
 	{
@@ -5026,7 +5384,8 @@ void F_ObjRefTracker::trackRef(
 	// If there is insufficient memory to allocate a tracking record, 
 	// then we will never know if this reference is properly released.
 	
-	if( (pTrackingRec = f_new TrackingRecord( pReferenceID, pSubrefID)) == NULL)
+	if( (pTrackingRec = f_new F_TrackingRecord( 
+		pReferenceID, pSubrefID)) == NULL)
 	{
 		char	pucMessage[ 100];
 		
@@ -5057,11 +5416,11 @@ Exit:
 Desc:	This reference has been released, don't track it any more.
 ****************************************************************************/
 void F_ObjRefTracker::untrackRef(
-	void *		pReferenceID,
-	void *		pSubrefID)
+	void *					pReferenceID,
+	void *					pSubrefID)
 {
-	TrackingRecord *	pTrackingRec = NULL;
-	FLMBOOL				bListLocked = FALSE;
+	F_TrackingRecord *	pTrackingRec = NULL;
+	FLMBOOL					bListLocked = FALSE;
 
 	if( m_hRefListMutex == F_MUTEX_NULL)
 	{
@@ -5080,7 +5439,7 @@ void F_ObjRefTracker::untrackRef(
 	
 	// Try to find the reference in the list
 	
-	pTrackingRec = (TrackingRecord *) m_pListManager->getItem( 0, 0);
+	pTrackingRec = (F_TrackingRecord *) m_pListManager->getItem( 0, 0);
 	while( pTrackingRec)
 	{
 		if( pTrackingRec->getReferenceID() == pReferenceID
@@ -5093,7 +5452,7 @@ void F_ObjRefTracker::untrackRef(
 			break;
 		}
 		
-		pTrackingRec = (TrackingRecord *) pTrackingRec->getNextListItem();
+		pTrackingRec = (F_TrackingRecord *) pTrackingRec->getNextListItem();
 	}
 	
 	if( !pTrackingRec)
@@ -5122,18 +5481,18 @@ Exit:
 Desc: Check the list for references that were never released.
 ****************************************************************************/
 void F_ObjRefTracker::checkForUnreleasedRefs(
-	FLMUINT *		puiCount)
+	FLMUINT *				puiCount)
 {
-	RCODE					rc = NE_FLM_OK;
-	TrackingRecord *	pTrackingRec;
-	FLMUINT64			ui64FileCursor;
-	FLMUINT				uiLoop;
-	char					pucSymbol[ 125];
-	char					pucBuffer[ 150];
-	FLMBOOL				bHeaderDisplayed;
-	IF_FileHdl *		pFileHdl = NULL;
-	FLMBOOL				bListLocked = FALSE;
-	FLMUINT				uiCount = 0;
+	RCODE						rc = NE_FLM_OK;
+	F_TrackingRecord *	pTrackingRec;
+	FLMUINT64				ui64FileCursor;
+	FLMUINT					uiLoop;
+	char						pucSymbol[ 125];
+	char						pucBuffer[ 150];
+	FLMBOOL					bHeaderDisplayed;
+	IF_FileHdl *			pFileHdl = NULL;
+	FLMBOOL					bListLocked = FALSE;
+	FLMUINT					uiCount = 0;
 
 	if( m_hRefListMutex == F_MUTEX_NULL)
 	{
@@ -5175,9 +5534,9 @@ void F_ObjRefTracker::checkForUnreleasedRefs(
 	
 	// Process all unreleased references
 	
-	for( pTrackingRec = (TrackingRecord *)	m_pListManager->getItem( 0, 0);
+	for( pTrackingRec = (F_TrackingRecord *)m_pListManager->getItem( 0, 0);
    		pTrackingRec;
-			pTrackingRec = (TrackingRecord *) m_pListManager->getItem( 0, 0))
+			pTrackingRec = (F_TrackingRecord *)m_pListManager->getItem( 0, 0))
 	{
 		void **		pStack;
 
@@ -5259,18 +5618,18 @@ void F_ObjRefTracker::setAddressFormatter(
 Desc:	Converts a return address to displayable format
 ****************************************************************************/
 void F_ObjRefTracker::formatAddress(
-	char *		pucBuffer,
-	FLMUINT		uiSize,
-	void *		pAddress)
+	char *				pucBuffer,
+	FLMUINT				uiSize,
+	void *				pAddress)
 {
 #ifdef FLM_WIN
-	PIMAGEHLP_SYMBOL			pihs = NULL;
+	PIMAGEHLP_SYMBOL	pihs = NULL;
 #ifdef FLM_64BIT
-	DWORD64						displacement;
+	DWORD64				displacement;
 #else
-	DWORD							displacement;
+	DWORD					displacement;
 #endif
-	RCODE							rc = NE_FLM_OK;
+	RCODE					rc = NE_FLM_OK;
 #endif
 
 	if( m_pAddrFmtHook)
@@ -5419,7 +5778,7 @@ void F_ObjRefTracker::getCallStack(
 ****************************************************************************/
 #if defined( FLM_NLM)
 
-	void *DMGetEBP(void);
+	void * DMGetEBP(void);
 
 #if defined( __MWERKS__)
 

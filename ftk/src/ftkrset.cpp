@@ -1519,10 +1519,6 @@ RCODE F_ResultSet::mergeSort( void)
 
 	// Set output file and truncate it.
 
-	// OpenFilex() Closes and creats a new file.
-	// This is prefered over truncating the file because
-	// if a database gets truncated we will be blamed.
-
 	rc = (m_bOutput2ndFile)
 			? openFile( &m_pMultiFileHdl2)
 			: openFile( &m_pMultiFileHdl1);

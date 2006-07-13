@@ -781,8 +781,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 		}
 	}
 
-	// Convert it to a local time, so we can adjust based on our own
-	// GroupWise time zone.
+	// Convert it to a local time
 		
 	if( FileTimeToLocalFileTime( &(find_data.ftLastWriteTime),
 											&ftLocalFileTime) == FALSE)
@@ -791,8 +790,7 @@ RCODE FLMAPI F_FileSystem::getFileTimeStamp(
 		goto Exit;
 	}
 
-	// Convert the local time to a system time so we can map it into
-	// a GroupWise Date\Time structure
+	// Convert the local time to a system time
 		
 	if( FileTimeToSystemTime( &ftLocalFileTime,
 									   &stLastFileWriteTime) == FALSE)
@@ -839,8 +837,10 @@ Exit:
 	{
        return( f_mapPlatformError( errno, NE_FLM_GETTING_FILE_INFO));
 	}
+	
+	// Return the UTC time
 
-	*puiTimeStamp = (FLMUINT)filestatus.st_mtime; // st_mtime is UTC
+	*puiTimeStamp = (FLMUINT)filestatus.st_mtime;
 	return NE_FLM_OK;
 	
 #elif defined( FLM_RING_ZERO_NLM)
@@ -887,11 +887,11 @@ Exit:
 		LONG				MinMask = 0x07E0;
 		LONG				HourMask = 0xF800;
 		
-		//Get the low-order 16 bits
+		// Get the low-order 16 bits
 		
 		uiTime = (FLMUINT)pFileInfo->DLastUpdatedDateAndTime;
 		
-		//Get the high-order 16 bits
+		// Get the high-order 16 bits
 		
 		uiDate = (FLMUINT)(pFileInfo->DLastUpdatedDateAndTime >> 16);
 
@@ -1733,17 +1733,19 @@ void FLMAPI F_FileSystem::pathParse(
 	{
 		*pszServer = 0;
 	}
+	
 	if (pszVolume)
 	{
 		*pszVolume = 0;
 	}
+	
 	if (pszDirPath)
 	{
 		*pszDirPath = 0;
 	}
+	
 	if (pszFileName)
 	{
-
 		// Get the file name
 
 		*pszFileName = 0;
@@ -1777,6 +1779,7 @@ void FLMAPI F_FileSystem::pathParse(
 	{
 		pszColon++;
 	}
+	
 	if (*pszColon || bUNC)
 	{
 		
@@ -2141,16 +2144,17 @@ void FLMAPI F_FileSystem::pathCreateUniqueName(
 	*(pszFileName + 8) = NATIVE_DOT;
 	f_memset( (pszFileName + 9), NATIVE_ZERO, 3 );
 	
-	if ( ( pszFileExt != NULL ))
+	if( (pszFileExt != NULL))
 	{
 		if ((iLength = f_strlen(pszFileExt)) > 3)
 		{
 			iLength = 3;
 		}
+		
       f_memmove( (pszFileName + 9), pszFileExt, iLength);
    }
 
-	if( bModext == TRUE)
+	if( bModext)
 	{
 		f_hexToNative((FLMBYTE)(uiSdTmp & 0x0000001F), pszFileName+(11));
    }
@@ -2900,6 +2904,61 @@ Exit:
 	return( rc);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdl::getPreWriteExtendSize(
+	FLMUINT64		ui64WriteOffset,
+	FLMUINT			uiBytesToWrite,
+	FLMUINT64 *		pui64CurrFileSize,
+	FLMUINT *		puiTotalBytesToExtend)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiTotalBytesToExtend = 0;
+	FLMUINT64		ui64CurrFileSize = 0;
+	
+	// Determine if the write will extend the file beyond its
+	// current size.
+	
+	if( RC_BAD( rc = size( &ui64CurrFileSize)))
+	{
+		goto Exit;
+	}
+	
+	if( ui64WriteOffset + uiBytesToWrite > ui64CurrFileSize)
+	{
+		if( (uiTotalBytesToExtend = m_uiExtendSize) != 0)
+		{
+			if( ui64CurrFileSize > m_uiMaxAutoExtendSize)
+			{
+				uiTotalBytesToExtend = 0;
+			}
+			else
+			{
+				// Don't extend beyond maximum file size.
+
+				if( m_uiMaxAutoExtendSize - ui64CurrFileSize < uiTotalBytesToExtend)
+				{
+					uiTotalBytesToExtend = 
+						(FLMUINT)(m_uiMaxAutoExtendSize - ui64CurrFileSize);
+				}
+
+				// If the extend size is not on a sector boundary, round it down.
+
+				uiTotalBytesToExtend = 
+					(FLMUINT)truncateToPrevSector( uiTotalBytesToExtend);
+			}
+		}
+	}
+	
+Exit:
+
+	*pui64CurrFileSize = ui64CurrFileSize;
+	*puiTotalBytesToExtend = uiTotalBytesToExtend;
+
+	return( rc);
+}
+	
 /****************************************************************************
 Desc:
 ****************************************************************************/

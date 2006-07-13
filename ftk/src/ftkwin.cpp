@@ -484,6 +484,8 @@ RCODE F_FileHdl::lowLevelWrite(
 	DWORD						uiBytesWritten = 0;
 	F_FileAsyncClient *	pAsyncClient = NULL;
 	FLMBOOL					bWaitForWrite = FALSE;
+	FLMUINT					uiTotalBytesToExtend;
+	FLMUINT64				ui64CurrFileSize;
 	
 	if( pIOBuffer && pvBuffer && pvBuffer != pIOBuffer->getBufferPtr())
 	{
@@ -499,60 +501,20 @@ RCODE F_FileHdl::lowLevelWrite(
 	{
 		m_ui64CurrentPos = ui64WriteOffset;
 	}
-
-	if( m_bDoDirectIO)
+	
+	if( m_bDoDirectIO && !m_numAsyncPending && m_uiExtendSize)
 	{
-		FLMUINT64			ui64CurrFileSize;
-		FLMUINT				uiTotalBytesToExtend;
-		LARGE_INTEGER		liTmp;
-
-		// Determine if the write will extend the file beyond its
-		// current size.
-		
-		if( RC_BAD( rc = size( &ui64CurrFileSize)))
+		if( RC_BAD( rc = getPreWriteExtendSize( ui64WriteOffset, uiBytesToWrite,
+			&ui64CurrFileSize, &uiTotalBytesToExtend)))
 		{
 			goto Exit;
 		}
 		
-		if( ui64WriteOffset + uiBytesToWrite > ui64CurrFileSize)
+		if( uiTotalBytesToExtend)
 		{
-			m_bFlushRequired = TRUE;
-
-			if( (uiTotalBytesToExtend = m_uiExtendSize) != 0)
+			if( RC_BAD( rc = extendFile( ui64CurrFileSize, uiTotalBytesToExtend)))
 			{
-				if( ui64CurrFileSize > m_uiMaxAutoExtendSize)
-				{
-					uiTotalBytesToExtend = 0;
-				}
-				else
-				{
-					// Don't extend beyond maximum file size.
-
-					if( m_uiMaxAutoExtendSize - ui64CurrFileSize < uiTotalBytesToExtend)
-					{
-						uiTotalBytesToExtend = m_uiMaxAutoExtendSize - ui64CurrFileSize;
-					}
-
-					// If the extend size is not on a sector boundary, round it down.
-
-					uiTotalBytesToExtend = truncateToPrevSector( uiTotalBytesToExtend);
-				}
-			}
-
-			if( uiTotalBytesToExtend)
-			{
-				liTmp.QuadPart = ui64CurrFileSize + uiTotalBytesToExtend;
-				if( !SetFilePointerEx( m_hFile, liTmp, NULL, FILE_BEGIN))
-				{
-					rc = f_mapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
-					goto Exit;
-				}
-
-				if( !SetEndOfFile( m_hFile))
-				{
-					rc = f_mapPlatformError( GetLastError(), NE_FLM_SETTING_FILE_INFO);
-					goto Exit;
-				}
+				goto Exit;
 			}
 		}
 	}
@@ -707,31 +669,160 @@ WARNING: Direct IO methods are calling this method.  Make sure that all changes
 			to this method work in direct IO mode.
 ****************************************************************************/
 RCODE FLMAPI F_FileHdl::truncate(
-	FLMUINT64		ui64Size)
+	FLMUINT64		ui64NewSize)
 {
 	RCODE					rc = NE_FLM_OK;
 	LARGE_INTEGER		liTmp;
+	FLMUINT64			ui64CurrentSize;
 
 	f_assert( m_bFileOpened);
-
-	// Position the file to the nearest sector below the read offset.
 	
-	liTmp.QuadPart = ui64Size;
+	if( RC_BAD( rc = size( &ui64CurrentSize)))
+	{
+		goto Exit;
+	}
+	
+	if( ui64NewSize >= ui64CurrentSize)
+	{
+		goto Exit;
+	}
+
+	liTmp.QuadPart = ui64NewSize;
 	if( !SetFilePointerEx( m_hFile, liTmp, NULL, FILE_BEGIN))
 	{
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
 		goto Exit;
 	}
 		
-   // Set the new file size.
-
 	if( !SetEndOfFile( m_hFile))
 	{
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_TRUNCATING_FILE);
 		goto Exit;
 	}
 	
+	m_bFlushRequired = TRUE;
+	
 Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdl::extendFile(
+	FLMUINT64				ui64FileSize,
+	FLMUINT					uiTotalBytesToExtend)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT					uiBytesToWrite;
+	FLMUINT					uiBytesWritten;
+	FLMBYTE *				pucBuffer = NULL;
+	FLMUINT					uiBufferSize;
+	F_FileAsyncClient *	pAsyncClient = NULL;
+	
+	uiBufferSize = 64 * 1024;
+	if( RC_BAD( rc = f_allocAlignedBuffer( uiBufferSize, &pucBuffer)))
+	{
+		goto Exit;
+	}
+	
+	f_memset( pucBuffer, 0, uiBufferSize);
+
+	// Extend the file until we run out of bytes to write.
+
+	while( uiTotalBytesToExtend)
+	{
+		if( (uiBytesToWrite = uiBufferSize) > uiTotalBytesToExtend)
+		{
+			uiBytesToWrite = uiTotalBytesToExtend;
+		}
+		
+		if( m_bOpenedInAsyncMode)
+		{
+			OVERLAPPED *		pOverlapped;
+			
+			if( RC_BAD( rc = allocFileAsyncClient( &pAsyncClient)))
+			{
+				goto Exit;
+			}
+			
+			if( RC_BAD( rc = pAsyncClient->prepareForAsync( NULL)))
+			{
+				goto Exit;
+			}
+				
+			pAsyncClient->m_uiBytesToDo = uiBytesToWrite;
+			pOverlapped = &pAsyncClient->m_Overlapped;
+			pOverlapped->Offset = (DWORD)(ui64FileSize & 0xFFFFFFFF);
+			pOverlapped->OffsetHigh = (DWORD)(ui64FileSize >> 32);
+			
+			if( !WriteFile( m_hFile, pucBuffer,
+				uiBytesToWrite, &uiBytesWritten, pOverlapped))
+			{
+				DWORD		udErrCode = GetLastError();
+				
+				if( udErrCode != ERROR_IO_PENDING)
+				{
+					rc = f_mapPlatformError( udErrCode, NE_FLM_WRITING_FILE);
+					pAsyncClient->notifyComplete( rc, uiBytesWritten, FALSE);
+					goto Exit;
+				}
+			}
+			
+			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			{
+				goto Exit;
+			}
+					
+			uiBytesWritten = pAsyncClient->m_uiBytesDone;
+			pAsyncClient->Release();
+			pAsyncClient = NULL;
+		}
+		else
+		{
+			LONG		lDummy = 0;
+
+			if( SetFilePointer( m_hFile, (LONG)ui64FileSize,
+						&lDummy, FILE_BEGIN) == 0xFFFFFFFF)
+			{
+				rc = f_mapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
+				goto Exit;
+			}
+			
+			if( !WriteFile( m_hFile, (LPVOID)pucBuffer,
+						(DWORD)uiBytesToWrite, &uiBytesWritten, NULL))
+			{
+				rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
+				goto Exit;
+			}
+		}
+
+		// No more room on disk
+
+		if( uiBytesWritten < uiBytesToWrite)
+		{
+			rc = RC_SET( NE_FLM_IO_DISK_FULL);
+			goto Exit;
+		}
+		
+		uiTotalBytesToExtend -= uiBytesToWrite;
+		ui64FileSize += uiBytesToWrite;
+	}
+	
+	m_bFlushRequired = TRUE;
+
+Exit:
+
+	if( pucBuffer)
+	{
+		f_freeAlignedBuffer( &pucBuffer);
+	}
+	
+	if( pAsyncClient)
+	{
+		pAsyncClient->Release();
+	}
 
 	return( rc);
 }
