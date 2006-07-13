@@ -800,7 +800,7 @@ RCODE flmRcaInit(
 	}
 	
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRCacheAlloc->setup(
-		gv_FlmSysData.pSlabManager, pRCacheRelocator, sizeof( RCACHE), 
+		FALSE, gv_FlmSysData.pSlabManager, pRCacheRelocator, sizeof( RCACHE), 
 		&gv_FlmSysData.RCacheMgr.Usage.SlabUsage, 
 		&gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated)))
 	{
@@ -822,7 +822,7 @@ RCODE flmRcaInit(
 	}
 
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecAlloc->setup(
-		gv_FlmSysData.pSlabManager, pRecRelocator, sizeof( FlmRecord),
+		TRUE, gv_FlmSysData.pSlabManager, pRecRelocator, sizeof( FlmRecord),
 		&gv_FlmSysData.RCacheMgr.Usage.SlabUsage,
 		&gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated)))
 	{
@@ -844,7 +844,7 @@ RCODE flmRcaInit(
 	}
 	
 	if( RC_BAD( rc = gv_FlmSysData.RCacheMgr.pRecBufAlloc->setup( 
-		gv_FlmSysData.pSlabManager, pRecBufferRelocator,
+		TRUE, gv_FlmSysData.pSlabManager, pRecBufferRelocator,
 		&gv_FlmSysData.RCacheMgr.Usage.SlabUsage,
 		&gv_FlmSysData.RCacheMgr.Usage.uiTotalBytesAllocated))) 
 	{
@@ -1002,13 +1002,6 @@ FSTATIC RCODE flmRcaRehash( void)
 		goto Exit;
 	}
 
-	// Subtract off old size and add in new size.
-
-//	gv_FlmSysData.RCacheMgr.pRCacheAlloc->decBytesAllocated(
-//			(sizeof( RCACHE *) * uiOldHashTblSize));
-//	gv_FlmSysData.RCacheMgr.pRCacheAlloc->incrementTotalBytesAllocated(
-//			(sizeof( RCACHE *) * uiNewHashTblSize));
-
 	gv_FlmSysData.RCacheMgr.uiNumBuckets = uiNewHashTblSize;
 	gv_FlmSysData.RCacheMgr.uiHashMask = uiNewHashTblSize - 1;
 
@@ -1151,8 +1144,6 @@ void flmRcaExit( void)
 	if (gv_FlmSysData.RCacheMgr.ppHashBuckets)
 	{
 		f_free( &gv_FlmSysData.RCacheMgr.ppHashBuckets);
-//		gv_FlmSysData.RCacheMgr.pRCacheAlloc->decrementTotalBytesAllocated(
-//			(sizeof( RCACHE *) * gv_FlmSysData.RCacheMgr.uiNumBuckets));
 	}
 
 	// Free the mutex that controls access to record cache.
@@ -1292,6 +1283,8 @@ FSTATIC RCODE flmRcaAllocCacheStruct(
 {
 	RCODE				rc = FERR_OK;
 	
+	f_assertMutexLocked( gv_FlmSysData.RCacheMgr.hMutex);
+	
 	if( (*ppRCache = 
 		(RCACHE *)gv_FlmSysData.RCacheMgr.pRCacheAlloc->allocCell()) == NULL)
 	{
@@ -1323,6 +1316,7 @@ FSTATIC void flmRcaFreeCacheStruct(
 	RCACHE **		ppRCache)
 {
 	flmAssert( !RCA_IS_IN_HEAP_LIST( (*ppRCache)->uiFlags));
+	f_assertMutexLocked( gv_FlmSysData.RCacheMgr.hMutex);
 	
 	gv_FlmSysData.RCacheMgr.pRCacheAlloc->freeCell( *ppRCache);
 	*ppRCache = NULL;	
@@ -1336,8 +1330,8 @@ Desc:	Cleanup old records in cache that are no longer needed by any
 		transaction.
 ****************************************************************************/
 void flmRcaCleanupCache(
-	FLMUINT	uiMaxLockTime,
-	FLMBOOL	bMutexesLocked)
+	FLMUINT			uiMaxLockTime,
+	FLMBOOL			bMutexesLocked)
 {
 	RCACHE *			pTmpRCache;
 	RCACHE *			pPrevRCache;
@@ -2329,19 +2323,19 @@ Desc:	This routine inserts a record into the record cache.  This is ONLY
 		have been put there by a prior call to FlmRecordModify.
 ****************************************************************************/
 RCODE flmRcaInsertRec(
-	FDB *			pDb,
-	LFILE *		pLFile,						// Container record is in.
-	FLMUINT		uiDrn,						// DRN of record
-	FlmRecord *	pRecord)						// Record to be inserted.
+	FDB *				pDb,
+	LFILE *			pLFile,
+	FLMUINT			uiDrn,
+	FlmRecord *		pRecord)
 {
-	RCODE					rc = FERR_OK;
-	FFILE *				pFile = pDb->pFile;
-	FLMUINT				uiContainer = pLFile->uiLfNum;
-	FLMBOOL				bMutexLocked = FALSE;
-	RCACHE *				pRCache;
-	RCACHE *				pNewerRCache;
-	RCACHE *				pOlderRCache;
-	FLMBOOL				bDontPoisonCache = pDb->uiFlags & FDB_DONT_POISON_CACHE
+	RCODE				rc = FERR_OK;
+	FFILE *			pFile = pDb->pFile;
+	FLMUINT			uiContainer = pLFile->uiLfNum;
+	FLMBOOL			bMutexLocked = FALSE;
+	RCACHE *			pRCache;
+	RCACHE *			pNewerRCache;
+	RCACHE *			pOlderRCache;
+	FLMBOOL			bDontPoisonCache = pDb->uiFlags & FDB_DONT_POISON_CACHE
 														? TRUE
 														: FALSE;
 
@@ -2471,7 +2465,7 @@ RCODE flmRcaInsertRec(
 	// We are positioned to insert the new record.  For an update, it
 	// must always be the newest version.
 
-	flmAssert( pNewerRCache == NULL);
+	flmAssert( !pNewerRCache);
 
 #ifdef FLM_CHECK_RECORD
 	if (RC_BAD( rc = pRecord->checkRecord()))

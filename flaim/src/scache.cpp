@@ -1496,10 +1496,11 @@ Desc:	This routine frees the memory for a cache block and decrements the
 		NOTE:  This routine assumes that the global mutex is already locked.
 ****************************************************************************/
 FSTATIC void ScaFree(
-	SCACHE *			pSCache
-	)
+	SCACHE *			pSCache)
 {
 	FLMUINT	uiSize = SCA_MEM_SIZE( pSCache);
+	
+	f_assertMutexLocked( gv_FlmSysData.hShareMutex);
 
 	if (pSCache->uiHighTransID != 0xFFFFFFFF)
 	{
@@ -2216,11 +2217,11 @@ FSTATIC RCODE ScaFlushLogBlocks(
 		// Do all of the blocks from oldest to most current.  Stop when we
 		// hit the first log block.
 
-		while (pLastBlockToLog)
+		while( pLastBlockToLog)
 		{
 			FLMUINT	uiLogPos = uiLogEof;
 
-			if (RC_BAD( rc = lgOutputBlock( pDbStats, pSFileHdl,
+			if( RC_BAD( rc = lgOutputBlock( pDbStats, pSFileHdl,
 											pFile, pLastBlockToLog,
 											pLastBlockToLog->pPrevInVersionList->pucBlk,
 											&uiLogEof)))
@@ -2228,7 +2229,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 				goto Exit;
 			}
 
-			if (pLastBlockToLog->ui16Flags & (CA_WRITE_TO_LOG | CA_LOG_FOR_CP))
+			if( pLastBlockToLog->ui16Flags & (CA_WRITE_TO_LOG | CA_LOG_FOR_CP))
 			{
 				flmAssert( uiDirtyCacheLeft >= uiBlockSize);
 				uiDirtyCacheLeft -= uiBlockSize;
@@ -2238,7 +2239,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 			// transaction, and this is the first block we have logged,
 			// remember the block address where we logged it.
 
-			if ((pLastBlockToLog->ui16Flags & CA_WRITE_TO_LOG) &&
+			if( (pLastBlockToLog->ui16Flags & CA_WRITE_TO_LOG) &&
 				 !pFile->uiFirstLogBlkAddress)
 			{
 				// This better not EVER happen in the CP thread.
@@ -2254,7 +2255,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 			// that we can write it out to the log header when we
 			// complete the checkpoint.
 
-			if ((pLastBlockToLog->ui16Flags & CA_LOG_FOR_CP) &&
+			if( (pLastBlockToLog->ui16Flags & CA_LOG_FOR_CP) &&
 				 !pFile->uiFirstLogCPBlkAddress)
 			{
 				bLoggedFirstCPBlk = TRUE;
@@ -2263,7 +2264,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 
 			// Break when we hit the first log block.
 
-			if (pLastBlockToLog == pFirstBlockToLog)
+			if( pLastBlockToLog == pFirstBlockToLog)
 			{
 				break;
 			}
@@ -2280,8 +2281,7 @@ FSTATIC RCODE ScaFlushLogBlocks(
 
 Write_Log_Blocks:
 
-		if (uiTotalLoggedBlocks &&				// Must be at least one logged block
-			 (uiTotalLoggedBlocks >= 2000 || bDone))
+		if( uiTotalLoggedBlocks && (uiTotalLoggedBlocks >= 2000 || bDone))
 		{
 			if (bMutexLocked)
 			{
@@ -2302,14 +2302,14 @@ Write_Log_Blocks:
 			// If doing async, wait for pending writes to complete before writing
 			// the log header.
 
-			if (RC_BAD( rc = pFile->pBufferMgr->waitForAllPendingIO()))
+			if( RC_BAD( rc = pFile->pBufferMgr->waitForAllPendingIO()))
 			{
 				goto Exit;
 			}
 
 			// Must wait for all RFL writes before writing out log header.
 
-			if (!bIsCPThread)
+			if( !bIsCPThread)
 			{
 				(void)pFile->pRfl->seeIfRflWritesDone( TRUE);
 			}
@@ -2320,7 +2320,7 @@ Write_Log_Blocks:
 			uiSaveEOFAddr = (FLMUINT)FB2UD( &pucLogHdr [LOG_ROLLBACK_EOF]);
 			UD2FBA( (FLMUINT32)uiLogEof, &pucLogHdr [LOG_ROLLBACK_EOF]);
 
-			if (bLoggedFirstCPBlk)
+			if( bLoggedFirstCPBlk)
 			{
 				uiSaveFirstCPBlkAddr =
 					(FLMUINT)FB2UD( &pucLogHdr [LOG_PL_FIRST_CP_BLOCK_ADDR]);
@@ -2328,10 +2328,9 @@ Write_Log_Blocks:
 								&pucLogHdr [LOG_PL_FIRST_CP_BLOCK_ADDR]);
 			}
 
-			if (RC_BAD( rc = flmWriteLogHdr( pDbStats, pSFileHdl, pFile,
+			if( RC_BAD( rc = flmWriteLogHdr( pDbStats, pSFileHdl, pFile,
 									pucLogHdr, pFile->ucCheckpointLogHdr, FALSE)))
 			{
-
 				// If the write of the log header fails,
 				// we want to restore the log header to what it was before
 				// because we always use the log header from memory instead
@@ -2339,11 +2338,13 @@ Write_Log_Blocks:
 				// current for many fields as of the last checkpoint.
 
 				UD2FBA( (FLMUINT32)uiSaveEOFAddr, &pucLogHdr [LOG_ROLLBACK_EOF]);
-				if (bLoggedFirstCPBlk)
+				
+				if( bLoggedFirstCPBlk)
 				{
 					UD2FBA( (FLMUINT32)uiSaveFirstCPBlkAddr,
 									&pucLogHdr [LOG_PL_FIRST_CP_BLOCK_ADDR]);
 				}
+				
 				goto Exit;
 			}
 
@@ -2353,12 +2354,12 @@ Write_Log_Blocks:
 			// log header for subsequent transactions or the checkpoint thread
 			// itself.
 
-			if (!bIsCPThread)
+			if( !bIsCPThread)
 			{
 				f_memcpy( &pFile->ucLastCommittedLogHdr [LOG_ROLLBACK_EOF],
 					&pucLogHdr [LOG_ROLLBACK_EOF], 4);
 
-				if (bLoggedFirstCPBlk)
+				if( bLoggedFirstCPBlk)
 				{
 					f_memcpy(
 						&pFile->ucLastCommittedLogHdr [LOG_PL_FIRST_CP_BLOCK_ADDR],
@@ -2375,6 +2376,7 @@ Write_Log_Blocks:
 
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			bMutexLocked = TRUE;
+			
 			if (pCPInfo)
 			{
 				pCPInfo->uiLogBlocksWritten += uiTotalLoggedBlocks;
@@ -2415,14 +2417,14 @@ Write_Log_Blocks:
 
 				// Unlink from list of transaction log blocks
 
-				if (pTmpSCache->ui16Flags & CA_WRITE_TO_LOG)
+				if( pTmpSCache->ui16Flags & CA_WRITE_TO_LOG)
 				{
 					ScaUnlinkFromTransLogList( pTmpSCache, pFile);
 				}
 
 				// Unset logging flags on logged block.
 
-				if (pTmpSCache->ui16Flags & (CA_WRITE_TO_LOG | CA_LOG_FOR_CP))
+				if( pTmpSCache->ui16Flags & (CA_WRITE_TO_LOG | CA_LOG_FOR_CP))
 				{
 					flmAssert( pFile->uiLogCacheCount);
 					pFile->uiLogCacheCount--;
@@ -2434,7 +2436,7 @@ Write_Log_Blocks:
 #ifdef FLM_DBG_LOG
 				scaLogFlgChange( pTmpSCache, ui16OldFlags, 'D');
 #endif
-				if (!pTmpSCache->uiUseCount &&
+				if( !pTmpSCache->uiUseCount &&
 				    !pTmpSCache->ui16Flags &&
 					 !ScaNeededByReadTrans( pTmpSCache->pFile, pTmpSCache))
 				{
@@ -2456,7 +2458,7 @@ Write_Log_Blocks:
 		}
 		else if( !bDone)
 		{
-			if (!bMutexLocked)
+			if( !bMutexLocked)
 			{
 				f_mutexLock( gv_FlmSysData.hShareMutex);
 				bMutexLocked = TRUE;
@@ -2474,7 +2476,7 @@ Write_Log_Blocks:
 			}
 		}
 
-		if (bDone)
+		if( bDone)
 		{
 			break;
 		}
@@ -2493,14 +2495,14 @@ Write_Log_Blocks:
 
 Exit:
 
-	if (RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
 		// Flush the last log buffer, if not already flushed.
 
-		if (pFile->uiCurrLogWriteOffset)
+		if( pFile->uiCurrLogWriteOffset)
 		{
 
-			if (bMutexLocked)
+			if( bMutexLocked)
 			{
 				f_mutexUnlock( gv_FlmSysData.hShareMutex);
 				bMutexLocked = FALSE;
@@ -2514,7 +2516,7 @@ Exit:
 
 		// Need to wait for any async writes to complete.
 
-		if (bMutexLocked)
+		if( bMutexLocked)
 		{
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			bMutexLocked = FALSE;
@@ -2525,7 +2527,7 @@ Exit:
 
 		(void)pFile->pBufferMgr->waitForAllPendingIO();
 
-		if (!bMutexLocked)
+		if( !bMutexLocked)
 		{
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			bMutexLocked = TRUE;
@@ -2533,7 +2535,7 @@ Exit:
 
 		// Clean up the log blocks array - releasing blocks, etc.
 
-		while (uiTotalLoggedBlocks)
+		while( uiTotalLoggedBlocks)
 		{
 			FLMBYTE *	pucTmp;
 
@@ -2587,17 +2589,18 @@ Exit:
 
 		// Things to restore to their original state if we had an error.
 
-		if (bLoggedFirstBlk)
+		if( bLoggedFirstBlk)
 		{
 			pFile->uiFirstLogBlkAddress = 0;
 		}
-		if (bLoggedFirstCPBlk)
+		
+		if( bLoggedFirstCPBlk)
 		{
 			pFile->uiFirstLogCPBlkAddress = 0;
 		}
 	}
 
-	if (bMutexLocked)
+	if( bMutexLocked)
 	{
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 		bMutexLocked = FALSE;
@@ -2716,6 +2719,7 @@ FSTATIC void FLMAPI scaWriteComplete(
 		}
 
 		ScaReleaseForThread( pSCache);
+		
 		if( pSCache->ui16Flags & CA_DIRTY)
 		{
 			flmAssert( pSCache->ui16Flags & CA_WRITE_PENDING);
@@ -2723,6 +2727,7 @@ FSTATIC void FLMAPI scaWriteComplete(
 			ui16OldFlags = pSCache->ui16Flags;
 #endif
 			scaClearFlags( pSCache, CA_WRITE_PENDING);
+			
 			if( RC_OK( rc))
 			{
 				scaUnsetDirtyFlag( pSCache, pFile);
@@ -3147,6 +3152,8 @@ FSTATIC RCODE scaAllocCacheBlock(
 	RCODE			rc = FERR_OK;
 	SCACHE *		pSCache;
 
+	f_assertMutexLocked( gv_FlmSysData.hShareMutex);
+
 	if( (pSCache = (SCACHE *)gv_FlmSysData.SCacheMgr.pAllocators[ 
 		uiBlockSize == 4096 ? 0 : 1]->allocCell()) == NULL)
 	{
@@ -3184,8 +3191,8 @@ Desc:	Allocate a cache block.  If we are at the cache limit, unused cache
 		mutex is locked.
 ****************************************************************************/
 FSTATIC RCODE ScaAllocCache(
-	FDB *			pDb,
-	SCACHE **	ppSCacheRV)
+	FDB *				pDb,
+	SCACHE **		ppSCacheRV)
 {
 	RCODE				rc = FERR_OK;
 	FFILE *			pFile = pDb->pFile;
@@ -6336,7 +6343,7 @@ RCODE ScaCreateBlock(
 
 	// First see if there is a free block in the avail list
 
-	if (pDb->LogHdr.uiFirstAvailBlkAddr != BT_END)
+	if( pDb->LogHdr.uiFirstAvailBlkAddr != BT_END)
 	{
 		rc = FSBlockUseNextAvail( pDb, pLFile, ppSCacheRV);
 		goto Exit;
@@ -6349,23 +6356,23 @@ RCODE ScaCreateBlock(
 
 	// Time for a new block file?
 	
-	if (FSGetFileOffset(uiBlkAddress) >= pFile->uiMaxFileSize)
+	if( FSGetFileOffset( uiBlkAddress) >= pFile->uiMaxFileSize)
 	{
 		FLMUINT	uiFileNumber = FSGetFileNumber( uiBlkAddress) + 1;
 
-		if (uiFileNumber >
-				MAX_DATA_BLOCK_FILE_NUMBER(
-					pFile->FileHdr.uiVersionNum))
+		if( uiFileNumber > 
+				MAX_DATA_BLOCK_FILE_NUMBER( pFile->FileHdr.uiVersionNum))
 		{
 			rc = RC_SET( FERR_DB_FULL);
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pDb->pSFileHdl->createFile( uiFileNumber)))
+		if( RC_BAD( rc = pDb->pSFileHdl->createFile( uiFileNumber)))
 		{
 			goto Exit;
 		}
-		uiBlkAddress = FSBlkAddress( uiFileNumber, 0 );
+		
+		uiBlkAddress = FSBlkAddress( uiFileNumber, 0);
 	}
 
 	// Allocate a cache block for this new block.  If we have older
@@ -7029,7 +7036,7 @@ RCODE ScaInit(
 		}
 		
 		if( RC_BAD( rc = gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop]->setup( 
-			gv_FlmSysData.pSlabManager, pSCacheRelocator, 
+			FALSE, gv_FlmSysData.pSlabManager, pSCacheRelocator, 
 			sizeof( SCACHE) + uiBlockSize,
 			&gv_FlmSysData.SCacheMgr.Usage.SlabUsage,
 			&gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated)))
@@ -7800,10 +7807,10 @@ FSTATIC RCODE scaFinishCheckpoint(
 		 (pFile->pFirstReadTrans->LogHdr.uiCurrTransID >=
 			uiCurrTransID))
 	{
-		// We may want to truncate the log file if it has grown real big.
+		// We may want to truncate the log file if it has grown really big.
 	
 		if ((uiHighLogFileNumber > 0) ||
-			 (FSGetFileOffset( uiLogEof) > LOG_THRESHOLD_SIZE))
+			 (FSGetFileOffset( uiLogEof) > pFile->uiFileExtendSize))
 		{
 			bTruncateLog = TRUE;
 		}
@@ -7877,15 +7884,17 @@ FSTATIC RCODE scaFinishCheckpoint(
 			{
 				UD2FBA( 512, &pucCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
 			}
+			
 			uiTruncateRflSize =
 				(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
-			if ((uiSaveTransOffset >= RFL_TRUNCATE_SIZE) ||
+				
+			if( (uiSaveTransOffset >= (pFile->uiFileExtendSize * 2)) ||
 			    (uiSaveTransOffset >= uiTruncateRflSize))
 			{
 				bTruncateRflFile = TRUE;
-				if (uiTruncateRflSize > RFL_TRUNCATE_SIZE)
+				if (uiTruncateRflSize > (pFile->uiFileExtendSize * 2))
 				{
-					uiTruncateRflSize = RFL_TRUNCATE_SIZE;
+					uiTruncateRflSize = (pFile->uiFileExtendSize * 2);
 				}
 				else if (uiTruncateRflSize < 512)
 				{
@@ -7910,16 +7919,12 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 			if (!pFile->pRfl->seeIfRflVolumeOk() && uiLastTransOffset > 512)
 			{
-				uiRflFileNum =
-								FB2UD( &pucCommittedLogHdr [LOG_RFL_FILE_NUM]) + 1;
-				UD2FBA( 0,
-					&pucCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
-				UD2FBA( uiRflFileNum,
-					&pucCommittedLogHdr [LOG_RFL_FILE_NUM]);
-				UD2FBA( 512,
-					&pucCommittedLogHdr [LOG_RFL_LAST_CP_OFFSET]);
-				UD2FBA( uiRflFileNum,
-					&pucCommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM]);
+				uiRflFileNum = FB2UD( &pucCommittedLogHdr [LOG_RFL_FILE_NUM]) + 1;
+				
+				UD2FBA( 0, &pucCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+				UD2FBA( uiRflFileNum, &pucCommittedLogHdr [LOG_RFL_FILE_NUM]);
+				UD2FBA( 512, &pucCommittedLogHdr [LOG_RFL_LAST_CP_OFFSET]);
+				UD2FBA( uiRflFileNum, &pucCommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM]);
 			}
 			else
 			{
@@ -7971,7 +7976,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 					uiHighLogFileNumber);
 		}
 		
-		(void)pSFileHdl->truncateFile( 0, LOG_THRESHOLD_SIZE);
+		(void)pSFileHdl->truncateFile( 0, pFile->uiFileExtendSize);
 	}
 
 #ifdef FLM_DBG_LOG
@@ -8198,10 +8203,12 @@ RCODE ScaDoCheckpoint(
 		pCPInfo->bDoingCheckpoint = TRUE;
 		pCPInfo->uiStartTime = (FLMUINT)FLM_GET_TIMER();
 		pCPInfo->bForcingCheckpoint = bForceCheckpoint;
-		if (bForceCheckpoint)
+		
+		if( bForceCheckpoint)
 		{
 			pCPInfo->uiForceCheckpointStartTime = pCPInfo->uiStartTime;
 		}
+		
 		pCPInfo->iForceCheckpointReason = iForceReason;
 		pCPInfo->uiDataBlocksWritten =
 		pCPInfo->uiLogBlocksWritten = 0;
@@ -8210,7 +8217,7 @@ RCODE ScaDoCheckpoint(
 	uiTotalToWrite = (pFile->uiDirtyCacheCount + pFile->uiLogCacheCount) *
 						pFile->FileHdr.uiBlockSize;
 
-	if (bForceCheckpoint)
+	if( bForceCheckpoint)
 	{
 		if (gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty)
 		{
@@ -8223,7 +8230,7 @@ RCODE ScaDoCheckpoint(
 	// to the highest possible value - which will not require us to get
 	// it below anything - because it is already within limits.
 
-	if (gv_FlmSysData.SCacheMgr.uiMaxDirtyCache &&
+	if( gv_FlmSysData.SCacheMgr.uiMaxDirtyCache &&
 		 uiTotalToWrite > gv_FlmSysData.SCacheMgr.uiMaxDirtyCache)
 	{
 		uiMaxDirtyCache = gv_FlmSysData.SCacheMgr.uiLowDirtyCache;
@@ -8232,6 +8239,7 @@ RCODE ScaDoCheckpoint(
 	{
 		uiMaxDirtyCache = ~((FLMUINT)0);
 	}
+	
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 
 	// Write out log blocks first.
@@ -8246,7 +8254,7 @@ RCODE ScaDoCheckpoint(
 
 	// If we didn't write out all log blocks, we got interrupted.
 
-	if (!bWroteAll)
+	if( !bWroteAll)
 	{
 		flmAssert( !bForceCheckpoint);
 		goto Exit;
@@ -8254,16 +8262,15 @@ RCODE ScaDoCheckpoint(
 
 	// Now write out dirty blocks
 
-	if (RC_BAD( rc = ScaFlushDirtyBlocks( pDbStats, pSFileHdl, pFile,
-								uiMaxDirtyCache,
-								bForceCheckpoint, TRUE, &bWroteAll)))
+	if( RC_BAD( rc = ScaFlushDirtyBlocks( pDbStats, pSFileHdl, pFile,
+			uiMaxDirtyCache, bForceCheckpoint, TRUE, &bWroteAll)))
 	{
 		goto Exit;
 	}
 
 	// If we didn't write out all dirty blocks, we got interrupted
 
-	if (!bWroteAll)
+	if( !bWroteAll)
 	{
 		flmAssert( !bForceCheckpoint);
 		goto Exit;
@@ -8272,9 +8279,8 @@ RCODE ScaDoCheckpoint(
 	// All dirty blocks and log blocks have been written, so we just
 	// need to finish the checkpoint.
 
-	if (RC_BAD( rc = scaFinishCheckpoint( pDbStats, pSFileHdl, pFile,
-								bDoTruncate, uiCPFileNum, uiCPOffset,
-								uiCPStartTime, uiTotalToWrite)))
+	if( RC_BAD( rc = scaFinishCheckpoint( pDbStats, pSFileHdl, pFile,
+		bDoTruncate, uiCPFileNum, uiCPOffset, uiCPStartTime, uiTotalToWrite)))
 	{
 		goto Exit;
 	}
@@ -8289,7 +8295,7 @@ Exit:
 	// the checkpoint thread to force checkpoints whenever it is woke
 	// up until it succeeds (see flopen.cpp).
 
-	if (RC_BAD( rc) && bForceCheckpoint)
+	if( RC_BAD( rc) && bForceCheckpoint)
 	{
 		pFile->CheckpointRc = rc;
 	}
@@ -8302,6 +8308,7 @@ Exit:
 	{
 		uiTimestamp = FLM_GET_TIMER();
 		pSCache = gv_FlmSysData.SCacheMgr.pFirstFree;
+		
 		while( pSCache)
 		{
 			pSCache->uiBlkAddress = uiTimestamp;
@@ -8309,7 +8316,7 @@ Exit:
 		}
 	}
 
-	if (pCPInfo)
+	if( pCPInfo)
 	{
 		pCPInfo->bDoingCheckpoint = FALSE;
 	}
