@@ -518,6 +518,21 @@ RCODE F_FileHdl::lowLevelWrite(
 			}
 		}
 	}
+	else
+	{
+		if( RC_BAD( rc = size( &ui64CurrFileSize)))
+		{
+			goto Exit;
+		}
+
+		if( ui64CurrFileSize <= ui64WriteOffset + uiBytesToWrite)
+		{
+			// The file is being extended.  We must force a flush
+			// to ensure that the directory entry is updated.
+
+			m_bFlushRequired = TRUE;
+		}
+	}
 	
 	if( !pvBuffer)
 	{
