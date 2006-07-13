@@ -1286,7 +1286,8 @@ FSTATIC RCODE flmRcaAllocCacheStruct(
 	f_assertMutexLocked( gv_FlmSysData.RCacheMgr.hMutex);
 	
 	if( (*ppRCache = 
-		(RCACHE *)gv_FlmSysData.RCacheMgr.pRCacheAlloc->allocCell()) == NULL)
+		(RCACHE *)gv_FlmSysData.RCacheMgr.pRCacheAlloc->allocCell( 
+		NULL, NULL)) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;

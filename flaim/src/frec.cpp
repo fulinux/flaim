@@ -4628,9 +4628,12 @@ void * FlmRecord::locateFieldByPosition(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FlmRecord::objectAllocInit(
-	void *		pvAlloc)
+void FLMAPI FlmRecord::objectAllocInit(
+	void *		pvAlloc,
+	FLMUINT		uiSize)
 {
+	F_UNREFERENCED_PARM( uiSize);
+	
 	// Need to make sure that m_refCnt and m_uiFlags are initialized to zero
 	// prior to unlocking the mutex.  This is so the FLAIM allocator 
 	// doesn't see garbage values that may cause it to relocate the object 

@@ -602,7 +602,7 @@ FSTATIC RCODE flmSetCacheLimits(
 		}
 
 		if( RC_BAD( rc = gv_FlmSysData.pSlabManager->resize( 
-			uiNewTotalCacheSize, &uiNewTotalCacheSize)))
+			uiNewTotalCacheSize, TRUE, &uiNewTotalCacheSize)))
 		{
 			// Log a message indicating that we couldn't pre-allocate
 			// the cache
@@ -643,11 +643,7 @@ DONT_PREALLOCATE:
 
 	if( bResizeAfterConfig)
 	{
-		if( gv_FlmSysData.pSlabManager->totalBytesAllocated() > 
-			 uiNewTotalCacheSize)
-		{
-			(void)gv_FlmSysData.pSlabManager->resize( uiNewTotalCacheSize);
-		}
+		(void)gv_FlmSysData.pSlabManager->resize( uiNewTotalCacheSize, FALSE);
 	}
 	
 	gv_FlmSysData.uiMaxCache = uiNewTotalCacheSize;

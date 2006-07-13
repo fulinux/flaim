@@ -3155,7 +3155,7 @@ FSTATIC RCODE scaAllocCacheBlock(
 	f_assertMutexLocked( gv_FlmSysData.hShareMutex);
 
 	if( (pSCache = (SCACHE *)gv_FlmSysData.SCacheMgr.pAllocators[ 
-		uiBlockSize == 4096 ? 0 : 1]->allocCell()) == NULL)
+		uiBlockSize == 4096 ? 0 : 1]->allocCell( NULL, NULL)) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;

@@ -4615,8 +4615,9 @@
 		FLMINT Release( 
 			FLMBOOL			bMutexLocked);
 
-		static void objectAllocInit(
-			void *			pvAlloc);
+		static void FLMAPI objectAllocInit(
+			void *			pvAlloc,
+			FLMUINT			uiSize);
 			
 		void * parent( 
 			FlmField *		pField);
