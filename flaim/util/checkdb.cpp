@@ -216,8 +216,8 @@ int main(
 	int				iArgC,
 	char **			ppucArgV)
 {
-	int		iResCode = 0;
-	F_Pool	LogPool;
+	int				iResCode = 0;
+	F_Pool *			pLogPool = NULL;
 
 	gv_bBatchMode = FALSE;
 	gv_bShutdown = FALSE;
@@ -242,9 +242,15 @@ int main(
 		goto Exit;
 	}
 
-	LogPool.poolInit( 1024);
+	if( (pLogPool = f_new F_Pool) == NULL)
+	{
+		f_conStrOut( "\nCould not allocate a pool object.\n");
+		goto Exit;
+	}
+
+	pLogPool->poolInit( 1024);
 	
-	if( RC_BAD( LogPool.poolAlloc( MAX_LOG_BUF, (void **)&gv_pucLogBuffer)))
+	if( RC_BAD( pLogPool->poolAlloc( MAX_LOG_BUF, (void **)&gv_pucLogBuffer)))
 	{
 		f_conStrOut( "\nCould not allocat memory.\n");
 		goto Exit;
@@ -299,6 +305,11 @@ Exit:
 	{
 		gv_pFileSystem->Release();
 		gv_pFileSystem = NULL;
+	}
+
+	if( pLogPool)
+	{
+		pLogPool->Release();
 	}
 
 	f_conExit();
