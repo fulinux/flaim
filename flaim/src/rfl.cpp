@@ -1094,11 +1094,6 @@ RCODE F_Rfl::createFile(
 		goto Exit;
 	}
 
-	// Delete the file if it already exists - don't care about return code
-	// here
-
-	(void) gv_FlmSysData.pFileSystem->deleteFile( szRflFileName);
-
 	// If DB is 4.3 or greater and we are in the same directory as our
 	// database files, see if we need to create the subdirectory.
 	// Otherwise, the RFL directory should already have been created. If
@@ -1108,7 +1103,6 @@ RCODE F_Rfl::createFile(
 
 	if (m_bCreateRflDir)
 	{
-
 		// If it already exists, don't attempt to create it.
 
 		if (RC_BAD( rc = gv_FlmSysData.pFileSystem->doesFileExist( m_szRflDir)))
@@ -1133,10 +1127,26 @@ RCODE F_Rfl::createFile(
 	
 	f_assert( !m_pFileHdl);
 
-	if (RC_BAD( rc = gv_FlmSysData.pFileSystem->createFile( szRflFileName,
-		gv_FlmSysData.uiFileCreateFlags, &m_pFileHdl)))
+	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( szRflFileName,
+		gv_FlmSysData.uiFileOpenFlags, &m_pFileHdl)))
 	{
-		goto Exit;
+		if( rc != FERR_IO_PATH_NOT_FOUND)
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = gv_FlmSysData.pFileSystem->createFile( szRflFileName,
+			gv_FlmSysData.uiFileCreateFlags, &m_pFileHdl)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		if( RC_BAD( rc = m_pFileHdl->truncate( m_pFile->uiFileExtendSize)))
+		{
+			goto Exit;
+		}
 	}
 
 	m_pFileHdl->setMaxAutoExtendSize( m_uiRflMaxFileSize);

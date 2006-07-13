@@ -608,7 +608,6 @@ struct UCUR;
 	// Max file size and log threshold.
 
 	#define MAX_FILE_SIZE_VER40			((FLMUINT)0x7FF00000)
-	#define LOG_THRESHOLD_SIZE				((FLMUINT) 0x40000)
 
 	FINLINE FLMUINT flmGetMaxFileSize(
 		FLMUINT		uiDbVersion,
@@ -630,17 +629,11 @@ struct UCUR;
 
 	// Very large threshhold is the size we will allow the physical
 	// log to grow to before we force a truncation.	 At the low end,
-	// it is about 10 megabytes.	At the high end it is about
+	// it is about 32 megabytes.  At the high end it is about
 	// 1 gigabyte.
 
-	#define LOW_VERY_LARGE_LOG_THRESHOLD_SIZE		((FLMUINT)0xA00000)
-	#define HIGH_VERY_LARGE_LOG_THRESHOLD_SIZE	((FLMUINT) 0x40000000)
-
-	// RFL_TRUNCATE_SIZE is the size we will let an RFL file grow to
-	// before we truncate it back.  RFL files are only truncated if
-	// we are configured to delete old RFL files.
-
-	#define RFL_TRUNCATE_SIZE							((FLMUINT)1024 * (FLMUINT)1024 * (FLMUINT)10)
+	#define LOW_VERY_LARGE_LOG_THRESHOLD_SIZE		((FLMUINT)0x2000000)
+	#define HIGH_VERY_LARGE_LOG_THRESHOLD_SIZE	((FLMUINT)0x40000000)
 
 	void ScaCleanupCache(
 		FLMUINT				uiMaxLockTime);
