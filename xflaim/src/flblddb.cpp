@@ -486,8 +486,8 @@ Retry:
 	}
 	
 	if( RC_BAD( rc = m_pSFileHdl->setup( &SFileClient,
-		gv_XFlmSysData.pFileHdlCache,
-		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_XFlmSysData.pFileHdlCache, gv_XFlmSysData.uiFileOpenFlags,
+		gv_XFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}

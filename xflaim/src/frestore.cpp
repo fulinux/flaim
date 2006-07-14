@@ -131,7 +131,7 @@ RCODE F_FSRestore::openRflFile(
 	{
 
 		if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( m_szDbPath,
-			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pFileHdl)))
+			gv_XFlmSysData.uiFileOpenFlags, &pFileHdl)))
 		{
 			goto Exit;
 		}
@@ -162,7 +162,7 @@ RCODE F_FSRestore::openRflFile(
 	// Open the file.
 
 	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( szRflPath,
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &m_pFileHdl)))
+		gv_XFlmSysData.uiFileOpenFlags, &m_pFileHdl)))
 	{
 		goto Exit;
 	}

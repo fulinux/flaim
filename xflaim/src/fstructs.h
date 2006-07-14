@@ -1464,6 +1464,7 @@ typedef struct FlmSystemData
 	FLMUINT					uiDbThreadGroup;
 	FLMUINT					uiCheckpointThreadGroup;
 	FLMUINT					uiFileOpenFlags;
+	FLMUINT					uiFileCreateFlags;
 
 } FLMSYSDATA;
 

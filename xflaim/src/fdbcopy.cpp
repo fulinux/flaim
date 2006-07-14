@@ -225,8 +225,8 @@ RCODE F_DbSystem::copyDb(
 	}
 
 	if( RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient, 
-		gv_XFlmSysData.pFileHdlCache,
-		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_XFlmSysData.pFileHdlCache, gv_XFlmSysData.uiFileOpenFlags,
+		gv_XFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -358,8 +358,8 @@ retry:
 	}
 
 	if( RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient, 
-		gv_XFlmSysData.pFileHdlCache,
-		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_XFlmSysData.pFileHdlCache, gv_XFlmSysData.uiFileOpenFlags,
+		gv_XFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -777,8 +777,7 @@ FSTATIC RCODE flmCopyFile(
 	// Open the source file.
 
 	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( 
-		pDbCopyInfo->szSrcFileName,
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
+		pDbCopyInfo->szSrcFileName, gv_XFlmSysData.uiFileOpenFlags, 
 		&pSrcFileHdl)))
 	{
 		goto Exit;
@@ -788,9 +787,9 @@ FSTATIC RCODE flmCopyFile(
 	// First attempt to open the destination file.  If it does
 	// not exist, attempt to create it.
 
-	if (RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( pDbCopyInfo->szDestFileName,
-			FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT,
-			&pDestFileHdl)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( 
+		pDbCopyInfo->szDestFileName, gv_XFlmSysData.uiFileOpenFlags,
+		&pDestFileHdl)))
 	{
 		if (rc != NE_FLM_IO_PATH_NOT_FOUND &&
 			 rc != NE_FLM_IO_INVALID_FILENAME)
@@ -799,10 +798,8 @@ FSTATIC RCODE flmCopyFile(
 		}
 
 		if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( 
-								pDbCopyInfo->szDestFileName,
-								FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE |
-								FLM_IO_CREATE_DIR | FLM_IO_DIRECT,
-								&pDestFileHdl)))
+			pDbCopyInfo->szDestFileName, gv_XFlmSysData.uiFileCreateFlags,
+			&pDestFileHdl)))
 		{
 			goto Exit;
 		}

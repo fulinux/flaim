@@ -1498,7 +1498,7 @@ RCODE F_Database::readDbHdr(
 	IF_FileHdl *			pFileHdl = NULL;
 
 	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( pszDbPath, 
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pFileHdl)))
+		gv_XFlmSysData.uiFileOpenFlags, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1658,8 +1658,8 @@ RCODE F_Database::startCPThread( void)
 	// Set up the super file
 
 	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient, 
-		gv_XFlmSysData.pFileHdlCache,
-		(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_XFlmSysData.pFileHdlCache, gv_XFlmSysData.uiFileOpenFlags,
+		gv_XFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}

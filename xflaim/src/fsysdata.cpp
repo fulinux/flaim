@@ -720,8 +720,8 @@ RCODE F_Db::linkToDatabase(
 		}
 
 		if( RC_BAD( rc = m_pSFileHdl->setup( pSFileClient, 
-			gv_XFlmSysData.pFileHdlCache,
-			(gv_XFlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+			gv_XFlmSysData.pFileHdlCache, gv_XFlmSysData.uiFileOpenFlags,
+			gv_XFlmSysData.uiFileCreateFlags)))
 		{
 			goto Exit;
 		}
@@ -1315,6 +1315,12 @@ RCODE F_DbSystem::init( void)
 	{
 		goto Exit;
 	}
+
+	gv_XFlmSysData.uiFileOpenFlags = 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT | FLM_IO_MISALIGNED_OK;
+
+	gv_XFlmSysData.uiFileCreateFlags = 
+		gv_XFlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
 
 	// Initialize all of the fields
 

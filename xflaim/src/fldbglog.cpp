@@ -80,8 +80,8 @@ void flmDbgLogInit( void)
 
 	// Create the file - truncate if it exists already.
 
-	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->Create( szLogPath, 
-		XFLM_IO_RDWR | XFLM_IO_SH_DENYNONE | XFLM_IO_DIRECT, &g_pLogFile)))
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->createFile( szLogPath, 
+		gv_XFlmSysData.uiFileCreateFlags, &g_pLogFile)))
 	{
 		goto Exit;
 	}
