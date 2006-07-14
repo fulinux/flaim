@@ -598,7 +598,6 @@ FSTATIC RCODE flmSetCacheLimits(
 			// Can't pre-allocate and dynamically adjust.
 
 			goto DONT_PREALLOCATE;
-
 		}
 
 		if( RC_BAD( rc = gv_FlmSysData.pSlabManager->resize( 
@@ -1017,7 +1016,7 @@ Exit:
 /****************************************************************************
 Desc : Deregister our http callback function
 ****************************************************************************/
-FSTATIC RCODE flmDeregisterHttpCallback()
+FSTATIC RCODE flmDeregisterHttpCallback( void)
 {
 	RCODE		rc = FERR_OK;
 	if (!gv_FlmSysData.HttpConfigParms.bRegistered)
@@ -3018,7 +3017,7 @@ RCODE FLMAPI flmSystemMonitor(
 				MAX_SESSION_INACTIVE_SECS, FALSE);
 		}
 
-		f_sleep( 1000);
+		pThread->sleep( 1000);
 	}
 
 	return( FERR_OK);

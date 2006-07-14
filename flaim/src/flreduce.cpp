@@ -43,10 +43,12 @@ FSTATIC RCODE FLRMovePcodeLFHBlk(
 
 FSTATIC RCODE FLRFreeAvailBlk(
 	FDB *			pDb,
+	FLMBYTE *	pucBlkHeader,
 	FLMUINT		uiBlkAddr);
 
 FSTATIC RCODE FLRFindPrevAvailBlk(
 	FDB *			pDb,
+	FLMBYTE *	pucBlkHeader,
 	FLMUINT *	puiBlkAddrRV,
 	FLMBOOL *	pbFirstChainFlagRV);
 
@@ -71,13 +73,19 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 	FLMUINT			uiBlkAddr;
 	FLMUINT			uiNumBlksMoved = 0;
 	FLMUINT			uiBlkSize;
-	FLMBYTE			BlkHeader [BH_OVHD + BH_OVHD ];
+	FLMUINT			uiLogicalFileNum;
+	FLMBYTE *		pucBlkHeader = NULL;
 	FLMINT			iType;
 	FLMBOOL			bIgnore;
 	FLMBOOL			bLoggingWasOff = FALSE;
 	FLMBOOL			bRestoreLoggingOffFlag = FALSE;
 	FLMBOOL			bLockedDatabase = FALSE;
 	FLMBOOL			bDone = FALSE;
+
+	if( RC_BAD( rc = f_allocAlignedBuffer( MAX_BLOCK_SIZE, &pucBlkHeader)))
+	{
+		goto Exit;
+	}
 
 	// Lock the database if not already locked.
 	// Cannot lose exclusive access between the checkpoint and
@@ -92,7 +100,7 @@ FLMEXP RCODE FLMAPI FlmDbReduceSize(
 		bLockedDatabase = TRUE;
 	}
 
-	if (IsInCSMode( pDb))
+	if( IsInCSMode( pDb))
 	{
 		fdbInitCS( pDb);
 
@@ -173,7 +181,6 @@ Transmission_Error:
 	// Make sure that commit does something.
 
 	pDb->bHadUpdOper = TRUE;
-
 	uiBlkSize = pDb->pFile->FileHdr.uiBlockSize;
 
 	// Get the logical end of file and use internally.
@@ -212,16 +219,18 @@ Transmission_Error:
 			
 		uiBlkAddr = uiLogicalEOF - uiBlkSize;
 
-		if (RC_BAD( rc = FLRReadBlkHdr( pDb, uiBlkAddr, BlkHeader, &iType)))
+		if( RC_BAD( rc = FLRReadBlkHdr( pDb, uiBlkAddr, pucBlkHeader, &iType)))
 		{
 			goto Reduce_Size_Error;
 		}
+
+		uiLogicalFileNum = FB2UW( &pucBlkHeader[ BH_LOG_FILE_NUM]);
 
 		switch( iType )
 		{
 			case	BHT_FREE:
 			{
-				rc = FLRFreeAvailBlk( pDb, uiBlkAddr );
+				rc = FLRFreeAvailBlk( pDb, pucBlkHeader, uiBlkAddr);
 				break;
 			}
 
@@ -229,8 +238,7 @@ Transmission_Error:
 			case	BHT_NON_LEAF:
 			case	BHT_NON_LEAF_DATA:
 			{
-				rc = FLRMoveBtreeBlk( pDb, uiBlkAddr,
-							 FB2UW( &BlkHeader [BH_LOG_FILE_NUM ]), &bDone);
+				rc = FLRMoveBtreeBlk( pDb, uiBlkAddr, uiLogicalFileNum, &bDone);
 				break;
 			}
 
@@ -362,6 +370,11 @@ Exit:
 	{
 		FlmDbUnlock( hDb);
 	}
+
+	if( pucBlkHeader)
+	{
+		f_freeAlignedBuffer( &pucBlkHeader);
+	}
 	
 	flmExit( FLM_DB_REDUCE_SIZE, pDb, rc);
 	return( rc);
@@ -377,10 +390,10 @@ Reduce_Size_Error:
 Desc:	Read the block header and return the type of block it is
 ****************************************************************************/
 FSTATIC RCODE FLRReadBlkHdr(
-	FDB *			pDb,
-	FLMUINT		uiBlkAddress,
-	FLMBYTE *	pucBlockHeader,
-	FLMINT *		piTypeRV	)
+	FDB *				pDb,
+	FLMUINT			uiBlkAddress,
+	FLMBYTE *		pucBlockHeader,
+	FLMINT *			piTypeRV)
 {
 	RCODE				rc = FERR_OK;
 	FLMUINT			uiBytesRead;
@@ -394,33 +407,34 @@ FSTATIC RCODE FLRReadBlkHdr(
 	// See if first the block is in cache.  Previous writes may not have been
 	// forced out to cache.
 
-	if (RC_BAD( rc = ScaGetBlock( pDb, NULL, BHT_LEAF,
-											uiBlkAddress, &uiNumLooks,
-										 	&pBlkSCache)))
+	if( RC_BAD( rc = ScaGetBlock( pDb, NULL, BHT_LEAF,
+		uiBlkAddress, &uiNumLooks, &pBlkSCache)))
 	{
 		goto Exit;
 	}
 
-	if (pBlkSCache)
+	if( pBlkSCache)
 	{
 		f_memcpy( pucBlockHeader, pBlkSCache->pucBlk, BH_OVHD);
 		ScaReleaseCache( pBlkSCache, FALSE);
 	}
 	else
 	{
-		if (pDbStats)
+		if( pDbStats)
 		{
 			ui64ElapTime = 0;
 			f_timeGetTimeStamp( &StartTime);
 		}
 		
-		rc = pDb->pSFileHdl->readBlock( uiBlkAddress, BH_OVHD, 
+		rc = pDb->pSFileHdl->readBlock( uiBlkAddress, 
+			pDb->pFile->FileHdr.uiBlockSize, 
 			pucBlockHeader, &uiBytesRead);
 
-		if (pDbStats)
+		if( pDbStats)
 		{
 			flmAddElapTime( &StartTime, &ui64ElapTime);
-			if (RC_BAD( rc))
+
+			if( RC_BAD( rc))
 			{
 				pDbStats->bHaveStats = TRUE;
 				pDbStats->uiReadErrors++;
@@ -432,7 +446,7 @@ FSTATIC RCODE FLRReadBlkHdr(
 				FLMUINT				uiBlkType;
 
 				uiLFileNum = FB2UW( &pucBlockHeader [BH_LOG_FILE_NUM]);
-				if (!uiLFileNum)
+				if( !uiLFileNum)
 				{
 					pLFileStats = NULL;
 					uiBlkType = (FLMUINT)BH_GET_TYPE( pucBlockHeader);
@@ -1008,11 +1022,11 @@ Desc:	Free the input avail block.  Link the block out of the free list
 ****************************************************************************/
 FSTATIC RCODE FLRFreeAvailBlk(
 	FDB *			pDb,
+	FLMBYTE *	pucBlkHeader,
 	FLMUINT		uiBlkAddr)
 {
 	RCODE			rc = FERR_OK;
 	FFILE *		pFile = pDb->pFile;
-	FLMBYTE		ucBlkHeader [BH_OVHD];
 	FLMBYTE *	pucBlk;
 	FLMUINT		uiPrevBlkAddr;
 	FLMUINT		uiNextBlkAddr;
@@ -1037,29 +1051,29 @@ FSTATIC RCODE FLRFreeAvailBlk(
 	// Read the block header and get pointers
 
 	if (RC_BAD( rc = FLRReadBlkHdr( pDb, uiBlkAddr,
-									ucBlkHeader, (FLMINT *)0 )))
+									pucBlkHeader, (FLMINT *)0 )))
 	{
 		goto Exit;
 	}
 	
 	uiPrevBlkAddr = uiBlkAddr;
+	uiNextBlkAddr = FB2UD( &pucBlkHeader[ BH_NEXT_BLK]);
 	
-	if (RC_BAD( rc = FLRFindPrevAvailBlk( pDb, &uiPrevBlkAddr,
-													  &bFirstChainFlag)))
+	if( pFile->FileHdr.uiVersionNum >= 111)
 	{
-		goto Exit;
-	}
-
-	uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
-	if (pFile->FileHdr.uiVersionNum >= 111)
-	{
-		uiPbcAddr = ALGetPBC( ucBlkHeader);
-		uiNbcAddr = ALGetNBC( ucBlkHeader);
-		flmDecrUint( &pucLogHdr [LOG_PF_NUM_AVAIL_BLKS], 1);
+		uiPbcAddr = ALGetPBC( pucBlkHeader);
+		uiNbcAddr = ALGetNBC( pucBlkHeader);
+		flmDecrUint( &pucLogHdr[ LOG_PF_NUM_AVAIL_BLKS], 1);
 	}
 	else
 	{
 		uiPbcAddr = uiNbcAddr = 0;
+	}
+
+	if( RC_BAD( rc = FLRFindPrevAvailBlk( pDb, pucBlkHeader,
+		&uiPrevBlkAddr, &bFirstChainFlag)))
+	{
+		goto Exit;
 	}
 
 	// Check for unexpected error conditions
@@ -1291,11 +1305,11 @@ Desc:	Move an avail block out of the avail block list.
 ****************************************************************************/
 FSTATIC RCODE  FLRFindPrevAvailBlk(
 	FDB *			pDb,
+	FLMBYTE *	pucBlkHeader,
 	FLMUINT *	puiBlkAddrRV,
 	FLMBOOL *	pbFirstChainFlagRV)
 {
 	RCODE			rc = FERR_OK;
-	FLMBYTE		ucBlkHeader [BH_OVHD ];
 	FLMUINT		uiTargetBlkAddr = *puiBlkAddrRV;
 	FLMUINT		uiNextBlkAddr;
 	FLMUINT		uiNbcAddr;
@@ -1304,37 +1318,37 @@ FSTATIC RCODE  FLRFindPrevAvailBlk(
 	*pbFirstChainFlagRV = FALSE;
 
 	if( RC_BAD( rc = FLRReadBlkHdr( pDb, uiTargetBlkAddr,
-											  ucBlkHeader, (FLMINT *)0 )))
+		pucBlkHeader, (FLMINT *)0)))
 	{
 		goto Exit;
 	}
 
-	uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
-	if ( uiNextBlkAddr == pDb->LogHdr.uiFirstAvailBlkAddr)
+	uiNextBlkAddr = FB2UD( &pucBlkHeader[ BH_NEXT_BLK]);
+	if( uiNextBlkAddr == pDb->LogHdr.uiFirstAvailBlkAddr)
 	{
 		goto Exit;
 	}
 
 	// Find next chain block
 
-	uiNbcAddr = ALGetNBC( ucBlkHeader);
+	uiNbcAddr = ALGetNBC( pucBlkHeader);
 	
-	while( (!uiNbcAddr) && ( uiNextBlkAddr != BT_END))
+	while( !uiNbcAddr && (uiNextBlkAddr != BT_END))
 	{
 		if( RC_BAD( rc = FLRReadBlkHdr( pDb, uiNextBlkAddr,
-												  ucBlkHeader, (FLMINT *)0)))
+												  pucBlkHeader, (FLMINT *)0)))
 		{
 			goto Exit;
 		}
 
-		if( (uiTempBlkAddr = GET_BH_ADDR( ucBlkHeader)) != uiNextBlkAddr)
+		if( (uiTempBlkAddr = GET_BH_ADDR( pucBlkHeader)) != uiNextBlkAddr)
 		{
 			rc = RC_SET( FERR_DATA_ERROR);
 			goto Exit;
 		}
 		
-		uiNbcAddr = ALGetNBC( ucBlkHeader);
-		uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
+		uiNbcAddr = ALGetNBC( pucBlkHeader);
+		uiNextBlkAddr = FB2UD( &pucBlkHeader [BH_NEXT_BLK]);
 	}
 
 	// Now find the previous avail block
@@ -1352,18 +1366,18 @@ FSTATIC RCODE  FLRFindPrevAvailBlk(
 	while( (uiNextBlkAddr != uiTargetBlkAddr) && (uiNextBlkAddr != BT_END))
 	{
 		if (RC_BAD( rc = FLRReadBlkHdr( pDb, uiNextBlkAddr,
-												  ucBlkHeader, (FLMINT *)0 )))
+												  pucBlkHeader, (FLMINT *)0 )))
 		{
 			goto Exit;
 		}
 
-		if( (uiTempBlkAddr = GET_BH_ADDR( ucBlkHeader)) != uiNextBlkAddr)
+		if( (uiTempBlkAddr = GET_BH_ADDR( pucBlkHeader)) != uiNextBlkAddr)
 		{
 			rc = RC_SET( FERR_DATA_ERROR);
 			goto Exit;
 		}
 		
-		uiNextBlkAddr = FB2UD( &ucBlkHeader [BH_NEXT_BLK]);
+		uiNextBlkAddr = FB2UD( &pucBlkHeader [BH_NEXT_BLK]);
 	}
 
 	*puiBlkAddrRV = uiTempBlkAddr;

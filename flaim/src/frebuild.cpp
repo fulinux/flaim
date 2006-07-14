@@ -235,8 +235,9 @@ RCODE flmDbRebuildFile(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = f_alloc( pRebuildState->pHdrInfo->FileHdr.uiBlockSize,
-									&pRebuildState->pBlk)))
+	if( RC_BAD( rc = f_allocAlignedBuffer( 
+		pRebuildState->pHdrInfo->FileHdr.uiBlockSize,
+		&pRebuildState->pBlk)))
 	{
 		goto Exit;
 	}
@@ -338,7 +339,7 @@ Exit:
 
 	if (pRebuildState->pBlk)
 	{
-		f_free( &pRebuildState->pBlk);
+		f_freeAlignedBuffer( &pRebuildState->pBlk);
 	}
 
 	if (bStartedTrans)
@@ -2464,8 +2465,7 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 	}
 
 	if( RC_BAD( rc = pSFileHdl->setup( pSFileClient,
-		gv_FlmSysData.pFileHdlCache, 
-		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags, 0)))
 	{
 		goto Exit;
 	}
@@ -2735,8 +2735,7 @@ FSTATIC RCODE bldDetermineBlkSize(
 	}
 
 	if( RC_BAD( rc = pSFileHdl->setup( pSFileClient,  
-		gv_FlmSysData.pFileHdlCache, 
-		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags, 0)))
 	{
 		goto Exit;
 	}

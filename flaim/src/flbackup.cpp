@@ -249,12 +249,16 @@ FLMEXP RCODE FLMAPI FlmDbBackupBegin(
 
 	// Allocate the backup handle
 
-	if( RC_BAD( rc = f_alloc( sizeof( FBak), &pFBak)))
+	if( RC_BAD( rc = f_calloc( sizeof( FBak), &pFBak)))
 	{
 		goto Exit;
 	}
 
-	f_memset( pFBak, 0, sizeof( FBak));
+	if( RC_BAD( rc = f_allocAlignedBuffer( 2048, &pFBak->pucDbHeader)))
+	{
+		goto Exit;
+	}
+
 	pFBak->hDb = hDb;
 	pFBak->uiDbVersion = uiDbVersion;
 
@@ -266,14 +270,14 @@ FLMEXP RCODE FLMAPI FlmDbBackupBegin(
 
 	if( RC_BAD( rc = FlmDbTransBegin( hDb, 
 		uiTransType | FLM_DONT_KILL_TRANS | FLM_DONT_POISON_CACHE,
-		FLM_NO_TIMEOUT, pFBak->ucDbHeader)))
+		FLM_NO_TIMEOUT, pFBak->pucDbHeader)))
 	{
 		goto Exit;
 	}
 
 	pFBak->bTransStarted = TRUE;
 	pFBak->uiTransType = uiTransType;
-	pLogHdr = &pFBak->ucDbHeader[ DB_LOG_HEADER_START];
+	pLogHdr = &pFBak->pucDbHeader[ DB_LOG_HEADER_START];
 
 	// Don't allow an incremental backup to be performed
 	// if a full backup has not yet been done.
@@ -387,6 +391,11 @@ Exit:
 			if( pFBak->bTransStarted)
 			{
 				(void)FlmDbTransAbort( hDb);
+			}
+
+			if( pFBak->pucDbHeader)
+			{
+				f_freeAlignedBuffer( &pFBak->pucDbHeader);
 			}
 
 			f_free( &pFBak);
@@ -598,7 +607,7 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 	UD2FBA( (FLMUINT32)uiBlockSize,
 		&pucBlkBuf[ FLM_BACKER_DB_BLOCK_SIZE_OFFSET]);
 	uiMaxFileSize = flmGetMaxFileSize( pFBak->uiDbVersion,
-								&pFBak->ucDbHeader [DB_LOG_HEADER_START]);
+								&pFBak->pucDbHeader [DB_LOG_HEADER_START]);
 	UD2FBA( (FLMUINT32)uiMaxFileSize,
 		&pucBlkBuf[ FLM_BACKER_BFMAX_OFFSET]);
 	UD2FBA( (FLMUINT32)FLM_BACKER_MTU_SIZE,
@@ -640,7 +649,7 @@ FLMEXP RCODE FLMAPI FlmDbBackup(
 
 	f_memset( &pucBlkBuf[ uiBlkBufOffset], 0, uiBlockSize);
 	f_memcpy( &pucBlkBuf[ uiBlkBufOffset],
-		pFBak->ucDbHeader, F_TRANS_HEADER_SIZE);
+		pFBak->pucDbHeader, F_TRANS_HEADER_SIZE);
 	pLogHdr = &pucBlkBuf[ uiBlkBufOffset + DB_LOG_HEADER_START];
 	uiBlkBufOffset += uiBlockSize;
 
@@ -1023,11 +1032,11 @@ FLMEXP RCODE FLMAPI FlmDbBackupEnd(
 		else
 		{
 			if( RC_BAD( rc = FlmDbTransBegin( (HFDB)pDb, 
-				FLM_UPDATE_TRANS,	FLM_NO_TIMEOUT, pFBak->ucDbHeader)))
+				FLM_UPDATE_TRANS,	FLM_NO_TIMEOUT, pFBak->pucDbHeader)))
 			{
 				goto Exit;
 			}
-			pLogHdr = &pFBak->ucDbHeader[ DB_LOG_HEADER_START]; 
+			pLogHdr = &pFBak->pucDbHeader[ DB_LOG_HEADER_START]; 
 			bStartedTrans = TRUE;
 		}
 
@@ -1110,7 +1119,7 @@ FLMEXP RCODE FLMAPI FlmDbBackupEnd(
 		else
 		{
 			if( RC_BAD( rc = fcsDbTransCommitEx( (HFDB)pDb, TRUE, 
-				pFBak->ucDbHeader)))
+				pFBak->pucDbHeader)))
 			{
 				goto Exit;
 			}
@@ -1142,6 +1151,11 @@ Exit:
 	}
 
 	// Free the backup handle
+
+	if( pFBak->pucDbHeader)
+	{
+		f_freeAlignedBuffer( &pFBak->pucDbHeader);
+	}
 
 	f_free( &pFBak);
 
@@ -1531,7 +1545,7 @@ Exit:
 
 	if (pucDbKey)
 	{
-		f_free(&pucDbKey);
+		f_free( &pucDbKey);
 	}
 
 	if ( pszTempPassword)
@@ -1801,18 +1815,13 @@ FSTATIC RCODE flmRestoreFile(
 		}
 	
 		if( RC_BAD( rc = pSFile->setup( pSFileClient, 
-			gv_FlmSysData.pFileHdlCache, 
-			(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+			gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+			gv_FlmSysData.uiFileCreateFlags)))
 		{
 			goto Exit;
 		}
 
 		pSFile->setBlockSize( uiBlockSize);
-	
-		// Don't want to do extra file extensions or flush when file
-		// is extended.
-	
-		pSFile->setExtendSize( 0);
 		*ppSFile = pSFile;
 		(*ppSFile)->AddRef();
 	}

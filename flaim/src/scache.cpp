@@ -3354,6 +3354,7 @@ FSTATIC RCODE ScaReadTheBlock(
 	DB_STATS *		pDbStats = pDb->pDbStats;
 	F_TMSTAMP		StartTime;
 	FLMUINT64		ui64ElapMilli;
+	FLMUINT			uiEncryptSize;
 
 	// We should NEVER be attempting to read a block address that is
 	// beyond the current logical end of file.
@@ -3390,8 +3391,8 @@ FSTATIC RCODE ScaReadTheBlock(
 		f_timeGetTimeStamp( &StartTime);
 	}
 
-	if (RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
-								 uiBlkSize, pucBlk, &uiBytesRead)))
+	if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
+		uiBlkSize, pDb->pucAlignedReadBuf, &uiBytesRead)))
 	{
 		if (pDbStats)
 		{
@@ -3411,6 +3412,15 @@ FSTATIC RCODE ScaReadTheBlock(
 		}
 		goto Exit;
 	}
+
+	uiEncryptSize = (FLMUINT)getEncryptSize( pDb->pucAlignedReadBuf);
+	if( uiEncryptSize < BH_OVHD || uiEncryptSize > uiBlkSize)
+	{
+		rc = RC_SET_AND_ASSERT( FERR_DATA_ERROR);
+		goto Exit;
+	}
+
+	f_memcpy( pucBlk, pDb->pucAlignedReadBuf, uiEncryptSize);
 
 #ifdef FLM_DBG_LOG
 	if (uiFilePos != uiBlkAddress)
@@ -7880,23 +7890,24 @@ FSTATIC RCODE scaFinishCheckpoint(
 			// beginning of the next transaction.  We don't want to lose
 			// that, so if it is zero, we don't change it.
 
-			else if (FB2UD( &pucCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]) != 0)
+			else if (FB2UD( &pucCommittedLogHdr[ LOG_RFL_LAST_TRANS_OFFSET]) != 0)
 			{
-				UD2FBA( 512, &pucCommittedLogHdr [LOG_RFL_LAST_TRANS_OFFSET]);
+				UD2FBA( 512, &pucCommittedLogHdr[ LOG_RFL_LAST_TRANS_OFFSET]);
 			}
 			
 			uiTruncateRflSize =
-				(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_RFL_MIN_FILE_SIZE]);
+				(FLMUINT)FB2UD( &pucCommittedLogHdr[ LOG_RFL_MIN_FILE_SIZE]);
 				
 			if( (uiSaveTransOffset >= (pFile->uiFileExtendSize * 2)) ||
 			    (uiSaveTransOffset >= uiTruncateRflSize))
 			{
 				bTruncateRflFile = TRUE;
-				if (uiTruncateRflSize > (pFile->uiFileExtendSize * 2))
+
+				if( uiTruncateRflSize > (pFile->uiFileExtendSize * 2))
 				{
 					uiTruncateRflSize = pFile->uiFileExtendSize;
 				}
-				else if (uiTruncateRflSize < 512)
+				else if( uiTruncateRflSize < 512)
 				{
 					uiTruncateRflSize = 512;
 				}
@@ -8073,7 +8084,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 	// Truncate the RFL file, if the truncate flag was set above.
 
-	if (bTruncateRflFile)
+	if( bTruncateRflFile)
 	{
 		(void)pFile->pRfl->truncate( uiTruncateRflSize);
 	}
@@ -8081,9 +8092,9 @@ FSTATIC RCODE scaFinishCheckpoint(
 	// Truncate the files, if requested to do so - this would be a request of
 	// FlmDbReduceSize.
 
-	if (bDoTruncate)
+	if( bDoTruncate)
 	{
-		if (RC_BAD( rc = pSFileHdl->truncateFile(
+		if( RC_BAD( rc = pSFileHdl->truncateFile(
 							(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LOGICAL_EOF]))))
 		{
 			goto Exit;
@@ -8113,7 +8124,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 	// If we were calculating our maximum dirty cache, finish the
 	// calculation.
 
-	if (uiCPStartTime)
+	if( uiCPStartTime)
 	{
 		FLMUINT	uiCPEndTime = FLM_GET_TIMER();
 		FLMUINT	uiCPElapsedTime = FLM_ELAPSED_TIME( uiCPEndTime, uiCPStartTime);
@@ -8127,7 +8138,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 		uiElapsedMilli = FLM_TIMER_UNITS_TO_MILLI( uiCPElapsedTime);
 
-		if (uiElapsedMilli >= 500)
+		if( uiElapsedMilli >= 500)
 		{
 
 			// Calculate what could be written in 15 seconds - set maximum
@@ -8138,7 +8149,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 			uiMaximum = (FLMUINT)(((FLMUINT64)uiTotalToWrite *
 							 (FLMUINT64)ui15Seconds) / (FLMUINT64)uiCPElapsedTime);
-			if (uiMaximum)
+			if( uiMaximum)
 			{
 				// Low is maximum minus what could be written in roughly
 				// two seconds.
@@ -8147,13 +8158,13 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 				// Only set the maximum if we are still in auto-calculate mode.
 
-				if (gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty)
+				if( gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty)
 				{
 					f_mutexLock( gv_FlmSysData.hShareMutex);
 
 					// Test flag again after locking the mutex
 
-					if (gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty)
+					if( gv_FlmSysData.SCacheMgr.bAutoCalcMaxDirty)
 					{
 						gv_FlmSysData.SCacheMgr.uiMaxDirtyCache = uiMaximum;
 						gv_FlmSysData.SCacheMgr.uiLowDirtyCache = uiLow;

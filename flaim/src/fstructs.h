@@ -1292,6 +1292,7 @@ typedef struct FDB
 	F_SEM						hWaitSem;			// Semaphore used when waiting to
 														// acquire a file or write lock
 														// on the database
+	FLMBYTE *				pucAlignedReadBuf;// Aligned buffer for block reads
 #ifdef FLM_DEBUG
 
 	//NOTE: Always set - no need to be part of memset.
@@ -1686,9 +1687,9 @@ typedef struct FBak
 	FLMBOOL			bCompletedBackup;
 	FBackupType		eBackupType;
 	RCODE				backupRc;
+	FLMBYTE *		pucDbHeader;
 	FLMBYTE			ucNextIncSerialNum[ F_SERIAL_NUM_SIZE];
 	FLMBYTE			ucDbPath[ F_PATH_MAX_SIZE];
-	FLMBYTE			ucDbHeader[ F_TRANS_HEADER_SIZE];
 } FBak;
 
 /****************************************************************************

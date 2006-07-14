@@ -239,8 +239,7 @@ FSTATIC RCODE flmCopyDb(
 	}
 
 	if( RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient, 
-		gv_FlmSysData.pFileHdlCache, 
-		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags, 0)))
 	{
 		goto Exit;
 	}
@@ -355,8 +354,8 @@ FSTATIC RCODE flmCopyDb(
 	}
 	
 	if( RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient, 
-		gv_FlmSysData.pFileHdlCache, 
-		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+		gv_FlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -535,8 +534,8 @@ FSTATIC RCODE flmCopyDb(
 			goto Exit;
 		}
 
-		// For file #0, don't copy first 2K - it will be set up to show
-		// maintenance in progress.  Then the first 2K will be copied
+		// For the control file, don't copy first 2K - it will be set up 
+		// to show maintenance in progress.  Then the first 2K will be copied
 		// later.
 
 		if (!uiFileNumber)
@@ -898,7 +897,7 @@ FSTATIC RCODE flmCopyFile(
 	FLMUINT			uiBytesRead;
 	FLMUINT			uiBytesWritten;
 	FLMUINT			uiOffset;
-	FLMBYTE			ucLogHdr [LOG_HEADER_SIZE];
+	FLMBYTE *		pucLogHdr = NULL;
 	FLMUINT			uiNewChecksum;
 	FLMBOOL			bCreatedDestFile = FALSE;
 
@@ -933,9 +932,16 @@ FSTATIC RCODE flmCopyFile(
 		bCreatedDestFile = TRUE;
 	}
 								
-	// Allocate a buffer for reading and writing.
+	// Allocate a buffer for reading and writing
 
-	if (RC_BAD( rc = f_alloc( uiBufferSize, &pucBuffer)))
+	if( RC_BAD( rc = f_allocAlignedBuffer( uiBufferSize, &pucBuffer)))
+	{
+		goto Exit;
+	}
+
+	// Allocate a buffer for the log header
+
+	if( RC_BAD( rc = f_allocAlignedBuffer( 2048, &pucLogHdr)))
 	{
 		goto Exit;
 	}
@@ -950,7 +956,7 @@ FSTATIC RCODE flmCopyFile(
 	{
 		// Read the first 2K of the source file.
 
-		if (RC_BAD( rc = pSrcFileHdl->read( 0L, 2048, pucBuffer, &uiBytesRead)))
+		if (RC_BAD( rc = pSrcFileHdl->read( 0, 2048, pucBuffer, &uiBytesRead)))
 		{
 			if (rc == FERR_IO_END_OF_FILE)
 			{
@@ -966,18 +972,17 @@ FSTATIC RCODE flmCopyFile(
 
 		if (uiBytesRead < 2048)
 		{
-			f_memset( &pucBuffer [uiBytesRead], 0, (int)(2048 - uiBytesRead));
+			f_memset( &pucBuffer[ uiBytesRead], 0, (int)(2048 - uiBytesRead));
 		}
 
 		// Attempt to read the log header from the destination file.
 		// It is OK if we can't read it, because if we created the
 		// destination file, these bytes may not be present.
 
-		if ((bCreatedDestFile) ||
-			 (RC_BAD( pDestFileHdl->read( 16L, LOG_HEADER_SIZE,
-											ucLogHdr, &uiBytesRead))))
+		if( bCreatedDestFile ||
+			 RC_BAD( pDestFileHdl->read( 0, 2048, pucLogHdr, &uiBytesRead)))
 		{
-			f_memset( ucLogHdr, 0, sizeof(ucLogHdr));
+			f_memset( pucLogHdr, 0, sizeof( 2048));
 		}
 
 		// Set the transaction ID to zero.  MUST ALSO SET THE TRANS ACTIVE FLAG
@@ -986,20 +991,20 @@ FSTATIC RCODE flmCopyFile(
 		// We must use zero, because it is the only transaction ID that will not
 		// appear on ANY block.
 
-		UD2FBA( 0, &ucLogHdr [LOG_CURR_TRANS_ID]);
+		UD2FBA( 0, &pucLogHdr[ 16 + LOG_CURR_TRANS_ID]);
 
 		// Recalculate the log header checksum so that readers will not get a
 		// checksum error.
 
-		uiNewChecksum = lgHdrCheckSum( ucLogHdr, FALSE);
-		UW2FBA( (FLMUINT16)uiNewChecksum, &ucLogHdr [LOG_HDR_CHECKSUM]);
-		f_memcpy( &pucBuffer [16], ucLogHdr, LOG_HEADER_SIZE);
+		uiNewChecksum = lgHdrCheckSum( &pucLogHdr[ 16], FALSE);
+		UW2FBA( (FLMUINT16)uiNewChecksum, &pucLogHdr[ 16 + LOG_HDR_CHECKSUM]);
+		f_memcpy( &pucBuffer[ 16], &pucLogHdr[ 16], LOG_HEADER_SIZE);
 
 		// Write this "special" first 2K into the destination file.
 		// The real first 2K from the source file will be copied in
 		// at a later time.
 
-		if (RC_BAD( rc = pDestFileHdl->write( 0L, 2048, 
+		if (RC_BAD( rc = pDestFileHdl->write( 0, 2048, 
 			pucBuffer, &uiBytesWritten)))
 		{
 			goto Exit;
@@ -1011,7 +1016,7 @@ FSTATIC RCODE flmCopyFile(
 
 		if (pucInMemLogHdr)
 		{
-			f_memcpy( pucInMemLogHdr, ucLogHdr, LOG_HEADER_SIZE);
+			f_memcpy( pucInMemLogHdr, &pucLogHdr[ 16], LOG_HEADER_SIZE);
 		}
 	}
 
@@ -1061,7 +1066,7 @@ FSTATIC RCODE flmCopyFile(
 			 (uiOffset <= 16) &&
 			 (uiOffset + uiBytesWritten >= 16 + LOG_HEADER_SIZE))
 		{
-			f_memcpy( pucInMemLogHdr, &pucBuffer [16 - uiOffset],
+			f_memcpy( pucInMemLogHdr, &pucBuffer[ 16 - uiOffset],
 								LOG_HEADER_SIZE);
 		}
 
@@ -1123,17 +1128,22 @@ FSTATIC RCODE flmCopyFile(
 
 Exit:
 
-	if (pucBuffer)
+	if( pucBuffer)
 	{
-		f_free( &pucBuffer);
+		f_freeAlignedBuffer( &pucBuffer);
 	}
 
-	if (pSrcFileHdl)
+	if( pucLogHdr)
+	{
+		f_freeAlignedBuffer( &pucLogHdr);
+	}
+
+	if( pSrcFileHdl)
 	{
 		pSrcFileHdl->Release();
 	}
 
-	if (pDestFileHdl)
+	if( pDestFileHdl)
 	{
 		pDestFileHdl->flush();
 		pDestFileHdl->Release();
@@ -1142,7 +1152,7 @@ Exit:
 	// Attempt to delete the destination file if
 	// we didn't successfully copy it.
 
-	if (RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
 		(void)pFileSystem->deleteFile( pDbCopyInfo->szDestFileName);
 	}

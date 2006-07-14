@@ -1148,8 +1148,7 @@ Desc:	Output the current thread status to the web page.
 void F_CheckDbPage::getCheckStatus(
 	FLMUINT			uiCheckThreadId,
 	FLMBOOL			bStopCheck,
-	CHECK_STATUS *	pCheckStatus
-	)
+	CHECK_STATUS *	pCheckStatus)
 {
 	FLMUINT			uiThreadId;
 	IF_Thread *		pThread = NULL;
@@ -1881,7 +1880,7 @@ FSTATIC RCODE FLMAPI imonDoCheck(
 
 		// Pause one second
 
-		f_sleep( 1000);
+		pThread->sleep( 1000);
 	}
 
 Exit:

@@ -205,7 +205,7 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 	// Allocate memory for a read buffer, the log header, and various
 	// file names.
 
-	if (RC_BAD( rc = f_alloc( 
+	if( RC_BAD( rc = f_allocAlignedBuffer( 
 		2048 + LOG_HEADER_SIZE + F_PATH_MAX_SIZE * 5, &pucBuffer)))
 	{
 		goto Exit;
@@ -492,19 +492,19 @@ FLMEXP RCODE FLMAPI FlmDbRename(
 
 Exit:
 
-	if (pFileHdl)
+	if( pFileHdl)
 	{
 		pFileHdl->Release();
 	}
 	
-	if (pucBuffer)
+	if( pucBuffer)
 	{
-		f_free( &pucBuffer);
+		f_freeAlignedBuffer( &pucBuffer);
 	}
 
 	// Free the list of renamed files.
 
-	while (pRenameList)
+	while( pRenameList)
 	{
 		DBRenameInfo *		pRenameFile;
 

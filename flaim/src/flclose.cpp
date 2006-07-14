@@ -142,6 +142,13 @@ Finish_Close:
 		f_semDestroy( &pDb->hWaitSem);
 	}
 
+	// Free the read buffer
+
+	if( pDb->pucAlignedReadBuf)
+	{
+		f_freeAlignedBuffer( &pDb->pucAlignedReadBuf);
+	}
+
 	// Free the FDB.
 
 	f_free( phDbRV);

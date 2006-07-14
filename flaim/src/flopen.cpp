@@ -304,7 +304,7 @@ Desc:    Allocates and initializes an FDB structure for a database which
 			is to be opened or created.
 ****************************************************************************/
 RCODE flmAllocFdb(
-	FDB * *		ppDb)
+	FDB **		ppDb)
 {
 	RCODE			rc = FERR_OK;
 	FDB *			pDb = NULL;
@@ -342,9 +342,15 @@ RCODE flmAllocFdb(
 		goto Exit;
 	}
 
+	if( RC_BAD( rc = f_allocAlignedBuffer( MAX_BLOCK_SIZE,
+		&pDb->pucAlignedReadBuf)))
+	{
+		goto Exit;
+	}
+
 	// Set up statistics.
 
-	if (RC_BAD( rc = flmStatInit( &pDb->Stats, FALSE)))
+	if( RC_BAD( rc = flmStatInit( &pDb->Stats, FALSE)))
 	{
 		goto Exit;
 	}
@@ -633,8 +639,8 @@ RCODE flmOpenFile(
 		}
 		
 		if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
-			gv_FlmSysData.pFileHdlCache, 
-			(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+			gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+			gv_FlmSysData.uiFileCreateFlags)))
 		{
 			goto Exit;
 		}
@@ -1017,8 +1023,8 @@ FSTATIC RCODE flmPhysFileOpen(
 	}
 	
 	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
-		gv_FlmSysData.pFileHdlCache, 
-		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+		gv_FlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -1557,8 +1563,8 @@ RCODE flmStartCPThread(
 	}
 
 	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient, 
-		gv_FlmSysData.pFileHdlCache, 
-		(gv_FlmSysData.uiFileOpenFlags & FLM_IO_DIRECT) ? TRUE : FALSE)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+		gv_FlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -1655,9 +1661,9 @@ FSTATIC RCODE FLMAPI flmCPThread(
 	}
 
 	pThread->setThreadStatus( FLM_THREAD_STATUS_SLEEPING);
-	while (!bTerminate)
+	while( !bTerminate)
 	{
-		f_sleep( 1000);
+		pThread->sleep( 1000);
 
 		// See if we should terminate the thread - pointer to
 		// super file handle should be NULL.
@@ -2337,7 +2343,7 @@ DoneWithRflSizeEvent:;
 		
 Exit:
 			
-		f_sleep( 1000);
+		pThread->sleep( 1000);
 	}
 
 	return( FERR_OK);

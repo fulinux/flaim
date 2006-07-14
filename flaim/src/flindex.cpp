@@ -1452,7 +1452,7 @@ Exit:
 
 			// Sleep a half second and try again.
 
-			f_sleep( 500);
+			pThread->sleep( 500);
 			goto Loop_Again;
 		}
 		else
@@ -1481,7 +1481,7 @@ Exit:
 				break;
 			}
 
-			f_sleep( 1000);
+			pThread->sleep( 1000);
 		}
 	}
 

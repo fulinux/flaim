@@ -811,38 +811,43 @@ RCODE F_Rfl::writeHeader(
 	FLMBOOL		bKeepSignature)
 {
 	RCODE			rc = FERR_OK;
-	FLMBYTE		ucBuf [512];
+	FLMBYTE *	pucBuffer = NULL;
 	FLMUINT		uiBytesWritten;
 
 	flmAssert( m_pFile);
 	flmAssert( m_pFileHdl);
 
-	f_memset( ucBuf, 0, sizeof(ucBuf));
-	f_memcpy( &ucBuf[RFL_NAME_POS], RFL_NAME, RFL_NAME_LEN);
-	f_memcpy( &ucBuf[RFL_VERSION_POS], RFL_VERSION, RFL_VERSION_LEN);
-	UD2FBA( (FLMUINT32) uiFileNum, &ucBuf[RFL_FILE_NUMBER_POS]);
-	UD2FBA( (FLMUINT32) uiEof, &ucBuf[RFL_EOF_POS]);
+	if( RC_BAD( rc = f_allocAlignedBuffer( 512, &pucBuffer)))
+	{
+		goto Exit;
+	}
+
+	f_memset( pucBuffer, 0, 512);
+	f_memcpy( &pucBuffer[ RFL_NAME_POS], RFL_NAME, RFL_NAME_LEN);
+	f_memcpy( &pucBuffer[ RFL_VERSION_POS], RFL_VERSION, RFL_VERSION_LEN);
+
+	UD2FBA( (FLMUINT32)uiFileNum, &pucBuffer[ RFL_FILE_NUMBER_POS]);
+	UD2FBA( (FLMUINT32)uiEof, &pucBuffer[ RFL_EOF_POS]);
 
 	if (m_pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
 	{
-		f_memcpy( &ucBuf[RFL_DB_SERIAL_NUM_POS],
+		f_memcpy( &pucBuffer[ RFL_DB_SERIAL_NUM_POS],
 					&m_pFile->ucLastCommittedLogHdr[LOG_DB_SERIAL_NUM],
 					F_SERIAL_NUM_SIZE);
-		f_memcpy( &ucBuf[RFL_SERIAL_NUM_POS], pucSerialNum, F_SERIAL_NUM_SIZE);
-		f_memcpy( &ucBuf[RFL_NEXT_FILE_SERIAL_NUM_POS], pucNextSerialNum,
+		f_memcpy( &pucBuffer[ RFL_SERIAL_NUM_POS], pucSerialNum, F_SERIAL_NUM_SIZE);
+		f_memcpy( &pucBuffer[ RFL_NEXT_FILE_SERIAL_NUM_POS], pucNextSerialNum,
 					F_SERIAL_NUM_SIZE);
-		f_strcpy( (char *) &ucBuf[RFL_KEEP_SIGNATURE_POS],
+		f_strcpy( (char *) &pucBuffer[ RFL_KEEP_SIGNATURE_POS],
 					((bKeepSignature) ? RFL_KEEP_SIGNATURE : RFL_NOKEEP_SIGNATURE));
 	}
 
 	// Write out the header
 
-	if (RC_BAD( rc = m_pFileHdl->write( 0L, 512, ucBuf, &uiBytesWritten)))
+	if( RC_BAD( rc = m_pFileHdl->write( 0L, 512, pucBuffer, &uiBytesWritten)))
 	{
-
 		// Remap disk full error
 
-		if (rc == FERR_IO_DISK_FULL)
+		if( rc == FERR_IO_DISK_FULL)
 		{
 			rc = RC_SET( FERR_RFL_DEVICE_FULL);
 			m_bRflVolumeFull = TRUE;
@@ -854,7 +859,7 @@ RCODE F_Rfl::writeHeader(
 
 	// Flush the file handle to ensure it is forced to disk.
 
-	if (RC_BAD( rc = m_pFileHdl->flush()))
+	if( RC_BAD( rc = m_pFileHdl->flush()))
 	{
 
 		// Remap disk full error
@@ -870,6 +875,11 @@ RCODE F_Rfl::writeHeader(
 	}
 
 Exit:
+
+	if( pucBuffer)
+	{
+		f_freeAlignedBuffer( &pucBuffer);
+	}
 
 	return (rc);
 }
@@ -961,15 +971,20 @@ RCODE F_Rfl::openFile(
 {
 	RCODE				rc = FERR_OK;
 	char				szRflFileName[ F_PATH_MAX_SIZE];
-	FLMBYTE			ucBuf[ 512];
+	FLMBYTE *		pucBuffer = NULL;
 	FLMUINT			uiBytesRead;
 
 	flmAssert( m_pFile);
 
+	if( RC_BAD( rc = f_allocAlignedBuffer( 512, &pucBuffer)))
+	{
+		goto Exit;
+	}
+
 	// If we have a file open and it is not the file number passed in,
 	// close it.
 
-	if (m_pFileHdl)
+	if( m_pFileHdl)
 	{
 		if (m_pCurrentBuf->uiCurrFileNum != uiFileNum)
 		{
@@ -1016,7 +1031,7 @@ RCODE F_Rfl::openFile(
 	
 	// Read the header.
 
-	if (RC_BAD( rc = m_pFileHdl->read( 0, 512, ucBuf, &uiBytesRead)))
+	if (RC_BAD( rc = m_pFileHdl->read( 0, 512, pucBuffer, &uiBytesRead)))
 	{
 		if (rc == FERR_IO_END_OF_FILE)
 		{
@@ -1040,7 +1055,7 @@ RCODE F_Rfl::openFile(
 
 	// Verify the header information
 
-	if (RC_BAD( rc = verifyHeader( ucBuf, uiFileNum, pucSerialNum)))
+	if (RC_BAD( rc = verifyHeader( pucBuffer, uiFileNum, pucSerialNum)))
 	{
 		goto Exit;
 	}
@@ -1051,10 +1066,15 @@ RCODE F_Rfl::openFile(
 	
 Exit:
 
-	if (RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
 		waitForCommit();
 		closeFile();
+	}
+
+	if( pucBuffer)
+	{
+		f_freeAlignedBuffer( &pucBuffer);
 	}
 
 	return (rc);
@@ -6878,10 +6898,10 @@ RCODE F_Rfl::readUnknown(
 	FLMBYTE *	pucBuffer,
 	FLMUINT *	puiBytesRead)
 {
-	RCODE		rc = FERR_OK;
-	FLMUINT	uiPacketType;
-	FLMUINT	uiBytesRead = 0;
-	FLMUINT	uiBytesToCopy;
+	RCODE			rc = FERR_OK;
+	FLMUINT		uiPacketType;
+	FLMUINT		uiBytesRead = 0;
+	FLMUINT		uiBytesToCopy;
 
 	// If we have read through all of the unknown packets, return
 	// FERR_EOF_HIT.

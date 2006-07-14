@@ -1138,7 +1138,7 @@ FSTATIC RCODE FLMAPI imonDoQuery(
 
 		if (!pQueryStatus->bQueryRunning)
 		{
-			f_sleep( 1000);
+			pThread->sleep( 1000);
 			continue;
 		}
 

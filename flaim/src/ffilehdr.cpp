@@ -225,7 +225,7 @@ Desc:	This routine reads and verifies the information contained in the
 RCODE flmReadAndVerifyHdrInfo(
 	DB_STATS *		pDbStats,
 	IF_FileHdl *	pFileHdl,
-	FLMBYTE *		pReadBuf,
+	FLMBYTE *		pucReadBuf,
 	FILE_HDR *		pFileHdrRV,
 	LOG_HDR *		pLogHdrRV,
 	FLMBYTE *		pLogHdr)
@@ -233,34 +233,31 @@ RCODE flmReadAndVerifyHdrInfo(
 	RCODE				rc = FERR_OK;
 	RCODE				rc0;
 	RCODE				rc1;
-	FLMBYTE *		pBuf;
+	FLMBYTE *		pucBuf;
 	FLMBYTE *		pucLogHdr;
 	FLMUINT			uiBytesRead;
 	FLMUINT			uiVersionNum;
 
 	// Read the fixed information area
 
-	f_memset( pReadBuf, 0, 2048);
-
-	rc0 = pFileHdl->read( 1L, 2047, &pReadBuf [1], &uiBytesRead);
+	rc0 = pFileHdl->read( 0, 2048, pucReadBuf, &uiBytesRead);
 	
 	// Increment bytes read - to account for byte zero, which
 	// was not really read in.
 
-	uiBytesRead++;
-	pBuf = pReadBuf;
-	*pBuf = 0xFF;
+	pucBuf = pucReadBuf;
+	*pucBuf = 0xFF;
 
 	// Before doing any checking, get whatever we can from the
 	// first 2048 bytes.  For the flmGetHdrInfo routine, we want
 	// to get whatever we can from the headers, even if it is
 	// invalid.
 
-	rc1 = flmGetFileHdrInfo( pBuf, &pBuf[ FLAIM_HEADER_START], pFileHdrRV);
+	rc1 = flmGetFileHdrInfo( pucBuf, &pucBuf[ FLAIM_HEADER_START], pFileHdrRV);
 
 	// Get the log header information
 
-	pucLogHdr = &pBuf[ DB_LOG_HEADER_START];
+	pucLogHdr = &pucBuf[ DB_LOG_HEADER_START];
 
 	if( pLogHdr)
 	{
@@ -377,24 +374,24 @@ RCODE flmGetHdrInfo(
 	FLMBYTE *			pLogHdr)
 {
 	RCODE					rc = FERR_OK;
-	FLMBYTE *			pBuf = NULL;
+	FLMBYTE *			pucBuf = NULL;
 
-	if (RC_BAD( rc = f_alloc( 2048, &pBuf)))
+	if( RC_BAD( rc = f_allocAlignedBuffer( 2048, &pucBuf)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = flmReadAndVerifyHdrInfo( NULL, pFileHdl, pBuf, pFileHdrRV,
-			pLogHdrRV, pLogHdr)))
+	if( RC_BAD( rc = flmReadAndVerifyHdrInfo( NULL, pFileHdl, 
+		pucBuf, pFileHdrRV, pLogHdrRV, pLogHdr)))
 	{
 		goto Exit;
 	}
 
 Exit:
 
-	if( pBuf)
+	if( pucBuf)
 	{
-		f_free( &pBuf);
+		f_freeAlignedBuffer( &pucBuf);
 	}
 
 	return( rc);

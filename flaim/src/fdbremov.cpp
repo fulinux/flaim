@@ -88,8 +88,8 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 	}
 
 	// Allocate a buffer for reading the header stuff.
-
-	if (RC_BAD( rc = f_alloc( 2048, &pucBuffer)))
+	
+	if( RC_BAD( rc = f_allocAlignedBuffer( 2048, &pucBuffer)))
 	{
 		goto Exit;
 	}
@@ -379,22 +379,22 @@ FLMEXP RCODE FLMAPI FlmDbRemove(
 
 Exit:
 
-	if (pszTmpName)
+	if( pszTmpName)
 	{
 		f_free( &pszTmpName);
 	}
 	
-	if (pFileHdl)
+	if( pFileHdl)
 	{
 		pFileHdl->Release();
 	}
 	
-	if (pucBuffer)
+	if( pucBuffer)
 	{
-		f_free( &pucBuffer);
+		f_freeAlignedBuffer( &pucBuffer);
 	}
 	
-	if (pDirHdl)
+	if( pDirHdl)
 	{
 		pDirHdl->Release();
 	}
