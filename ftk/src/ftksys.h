@@ -780,6 +780,7 @@
 		FLMBOOL						m_bOpenedExclusive;
 		FLMBOOL						m_bDoDirectIO;
 		FLMBOOL						m_bOpenedInAsyncMode;
+		FLMBOOL						m_bRequireAlignedIO;
 		FLMATOMIC					m_numAsyncPending;
 		
 	#if defined( FLM_WIN)

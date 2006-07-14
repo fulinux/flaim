@@ -2757,6 +2757,7 @@ void F_FileHdl::initCommonData( void)
 	m_bOpenedReadOnly = FALSE;
 	m_bOpenedExclusive = FALSE;
 	m_bOpenedInAsyncMode = FALSE;
+	m_bRequireAlignedIO = FALSE;
 	m_bDoDirectIO = FALSE;
 	m_numAsyncPending = 0;
 }
@@ -3353,6 +3354,12 @@ RCODE F_FileHdl::directRead(
 			 (((FLMUINT64)pucDestBuffer) & m_ui64NotOnSectorBoundMask) ||
 			 (((FLMUINT64)uiBytesToRead & m_ui64NotOnSectorBoundMask)))
 		{
+			if( m_bRequireAlignedIO)
+			{
+				rc = RC_SET_AND_ASSERT( NE_FLM_MISALIGNED_IO);
+				goto Exit;
+			}
+			
 			pucReadBuffer = m_pucAlignedBuff;
 
 			// Must read enough bytes to cover all of the sectors that
@@ -3399,7 +3406,7 @@ RCODE F_FileHdl::directRead(
 		// bytes read by the difference between the start of the
 		// sector and the actual read offset.
 
-		if( uiCurrentBytesRead && ui64ReadOffset & m_ui64NotOnSectorBoundMask)
+		if( uiCurrentBytesRead && (ui64ReadOffset & m_ui64NotOnSectorBoundMask))
 		{
 			pucReadBuffer += (ui64ReadOffset & m_ui64NotOnSectorBoundMask);
 			f_assert( uiCurrentBytesRead >= m_uiBytesPerSector);
@@ -3523,6 +3530,12 @@ RCODE F_FileHdl::directWrite(
 			 !bBufferOnSectorBound ||
 			 !bSizeIsSectorMultiple)
 		{
+			if( m_bRequireAlignedIO)
+			{
+				rc = RC_SET_AND_ASSERT( NE_FLM_MISALIGNED_IO);
+				goto Exit;
+			}
+
 			bWaitForWrite = TRUE;
 			pucWriteBuffer = m_pucAlignedBuff;
 

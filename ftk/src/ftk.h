@@ -469,7 +469,8 @@
 	#define NE_FLM_SETTING_FILE_INFO							0xC22C			///< 0xC22C - Unexpected error occurred while setting a file's information.
 	#define NE_FLM_IO_PENDING									0xC22D			///< 0xC22D - I/O has not yet completed
 	#define NE_FLM_ASYNC_FAILED								0xC22E			///< 0xC22E - An async I/O operation failed
-
+	#define NE_FLM_MISALIGNED_IO								0xC22F			///< 0xC22F - Misaligned buffer, offset, or sector multiple encountered during I/O request
+	
 	// Stream Errors - These are new
 
 	#define NE_FLM_STREAM_DECOMPRESS_ERROR					0xC400			///< 0xC400 - Error decompressing data stream.
@@ -653,6 +654,7 @@
 	#define FLM_IO_SH_DENYNONE						0x0040
 	#define FLM_IO_DIRECT							0x0080
 	#define FLM_IO_DELETE_ON_RELEASE				0x0100
+	#define FLM_IO_MISALIGNED_OK					0x0200
 
 	// File Positioning Definitions
 
@@ -1751,7 +1753,8 @@
 		RCODE FLMAPI setup(
 			IF_SuperFileClient *		pSuperFileClient,
 			IF_FileHdlCache *			pFileHdlCache,
-			FLMBOOL						bUseDirectIO);
+			FLMUINT						uiFileOpenFlags,
+			FLMUINT						uiFileCreateFlags);
 	
 		RCODE FLMAPI createFile(
 			FLMUINT					uiFileNumber,
@@ -1834,7 +1837,8 @@
 		FLMUINT						m_uiBlockSize;
 		FLMUINT						m_uiExtendSize;
 		FLMUINT						m_uiMaxAutoExtendSize;
-		FLMUINT						m_uiDirectIOFlag;
+		FLMUINT						m_uiFileOpenFlags;
+		FLMUINT						m_uiFileCreateFlags;
 	};
 
 	/****************************************************************************
@@ -2305,6 +2309,9 @@
 		virtual FLMUINT FLMAPI getThreadGroup( void) = 0;
 	
 		virtual void FLMAPI cleanupThread( void) = 0;
+		
+		virtual void FLMAPI sleep(
+			FLMUINT					uiMilliseconds) = 0;
 	};
 	
 	RCODE FLMAPI f_threadCreate(

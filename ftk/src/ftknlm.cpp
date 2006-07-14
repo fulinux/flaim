@@ -1472,6 +1472,14 @@ Retry_Create:
 		goto Exit;
 	}
 	
+	if( bDoDirectIO)
+	{
+		if( (uiIoFlags & FLM_IO_MISALIGNED_OK) == 0)
+		{
+			m_bRequireAlignedIO = TRUE;
+		}
+	}
+	
 	m_bFileOpened = TRUE;
 	m_bDoDirectIO = bDoDirectIO;
 	m_bOpenedInAsyncMode = bUsingAsync;

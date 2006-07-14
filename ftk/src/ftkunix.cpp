@@ -299,6 +299,14 @@ Retry_Create:
 	{
 		goto Exit;
 	}
+	
+	if( bDoDirectIO)
+	{
+		if( (uiIoFlags & FLM_IO_MISALIGNED_OK) == 0)
+		{
+			m_bRequireAlignedIO = TRUE;
+		}
+	}
 
 	m_bFileOpened = TRUE;
 	m_bDoDirectIO = bDoDirectIO;
@@ -515,7 +523,7 @@ RCODE F_FileHdl::lowLevelRead(
 	}
 
 #if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
-	if( m_bOpenedInAsyncMode)
+	if( m_bOpenedInAsyncMode && pIOBuffer)
 	{
 		struct aiocb *		pAIO;
 		

@@ -266,6 +266,9 @@ public:
 
 	void FLMAPI cleanupThread( void);
 
+	void FLMAPI sleep(
+			FLMUINT		uiMilliseconds);
+
 	F_MUTEX				m_hMutex;
 	F_Thread *			m_pPrev;
 	F_Thread *			m_pNext;
@@ -776,6 +779,28 @@ void FLMAPI F_Thread::cleanupThread( void)
 	m_exitRc = NE_FLM_OK;
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_Thread::sleep(
+	FLMUINT		uiMilliseconds)
+{
+	FLMUINT		uiTimeToSleep;
+	
+	if( !uiMilliseconds)
+	{
+		f_yieldCPU();
+		return;
+	}
+	
+	while( uiMilliseconds && !m_bShutdown)
+	{
+		uiTimeToSleep = f_min( uiMilliseconds, 50);
+		f_sleep( uiTimeToSleep);
+		uiMilliseconds -= uiTimeToSleep;
+	}
+}
+			
 /****************************************************************************
 Desc:    Set the thread's status
 ****************************************************************************/

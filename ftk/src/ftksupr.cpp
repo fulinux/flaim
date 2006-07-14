@@ -39,7 +39,8 @@ F_SuperFileHdl::F_SuperFileHdl( void)
 	m_uiBlockSize = 0;
 	m_uiExtendSize = (8 * 1024 * 1024);
 	m_uiMaxAutoExtendSize = f_getMaxFileSize();
-	m_uiDirectIOFlag = 0;
+	m_uiFileOpenFlags = 0;
+	m_uiFileCreateFlags = 0;
 }
 
 /****************************************************************************
@@ -85,7 +86,8 @@ Desc:	Configures the super file object
 RCODE FLMAPI F_SuperFileHdl::setup(
 	IF_SuperFileClient *		pSuperFileClient,
 	IF_FileHdlCache *			pFileHdlCache,
-	FLMBOOL						bUseDirectIO)
+	FLMUINT						uiFileOpenFlags,
+	FLMUINT						uiFileCreateFlags)
 {
 	RCODE			rc = NE_FLM_OK;
 
@@ -107,10 +109,8 @@ RCODE FLMAPI F_SuperFileHdl::setup(
 		}
 	}
 	
-	if( bUseDirectIO)
-	{
-		m_uiDirectIOFlag |= FLM_IO_DIRECT;
-	}
+	m_uiFileOpenFlags = uiFileOpenFlags;
+	m_uiFileCreateFlags = uiFileCreateFlags;
 	
 Exit:
 
@@ -129,6 +129,15 @@ RCODE FLMAPI F_SuperFileHdl::createFile(
 	IF_FileHdl *	pFileHdl = NULL;
 
 	f_assert( m_uiBlockSize);
+	
+	// If the file creation flags are not set we won't allow this operation
+	// to continue
+	
+	if( !m_uiFileCreateFlags)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
 	
 	// See if we already have an open file handle (or if we can open the file).
 	// If so, truncate the file and use it.
@@ -150,10 +159,9 @@ RCODE FLMAPI F_SuperFileHdl::createFile(
 		{
 			goto Exit;
 		}
-	
+		
 		if( RC_BAD( rc = m_pFileHdlCache->createFile( szFilePath,
-			FLM_IO_RDWR | FLM_IO_EXCL | FLM_IO_SH_DENYNONE | m_uiDirectIOFlag,
-			&pFileHdl)))
+			m_uiFileCreateFlags, &pFileHdl)))
 		{
 			goto Exit;
 		}
@@ -585,8 +593,7 @@ RCODE FLMAPI F_SuperFileHdl::getFileHdl(
 			}
 		
 			if( RC_BAD( rc = m_pFileHdlCache->openFile( szFilePath,
-				FLM_IO_RDWR | FLM_IO_SH_DENYNONE | m_uiDirectIOFlag,
-				&pFileHdl)))
+				m_uiFileOpenFlags, &pFileHdl)))
 			{
 				goto Exit;
 			}
@@ -632,8 +639,7 @@ RCODE FLMAPI F_SuperFileHdl::getFileHdl(
 			}
 		
 			if( RC_BAD( rc = m_pFileHdlCache->openFile( szFilePath,
-				FLM_IO_RDWR | FLM_IO_SH_DENYNONE | m_uiDirectIOFlag,
-				&pFileHdl)))
+				m_uiFileOpenFlags, &pFileHdl)))
 			{
 				goto Exit;
 			}
