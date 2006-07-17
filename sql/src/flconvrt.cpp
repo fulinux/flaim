@@ -633,7 +633,9 @@ RCODE F_Db::rollOverDbKey( void)
 			if (rc == NE_SFLM_EOF_HIT)
 			{
 				rc = NE_SFLM_OK;
+				break;
 			}
+			
 			goto Exit;
 		}
 		
@@ -644,6 +646,7 @@ RCODE F_Db::rollOverDbKey( void)
 		{
 			goto Exit;
 		}
+		
 		if (bIsNull)
 		{
 			rc = RC_SET_AND_ASSERT( NE_SFLM_NULL_ENCDEF_NUM);

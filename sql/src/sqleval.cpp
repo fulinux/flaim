@@ -1555,7 +1555,7 @@ FSTATIC RCODE sqlCompareOperands(
 	SQL_VALUE *				pRValue,
 	eSQLQueryOperators	eOperator,
 	FLMUINT					uiCompareRules,
-	FLMBOOL					bNotted,
+	FLMBOOL,					// bNotted,
 	SQLBoolType *			peBool)
 {
 	RCODE			rc = NE_SFLM_OK;

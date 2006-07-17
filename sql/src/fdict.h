@@ -166,7 +166,7 @@ typedef struct NAME_INFO
 {
 	const char *	pszName;
 	FLMUINT			uiItemNum;
-};
+} NAME_INFO;
 
 /**************************************************************************
 Desc:	This class is the name table class.

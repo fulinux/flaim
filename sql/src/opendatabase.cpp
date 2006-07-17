@@ -30,7 +30,7 @@
 FSTATIC void flmFreeCPInfo(
 	CP_INFO **	ppCPInfoRV);
 
-FSTATIC RCODE flmCPThread(
+FSTATIC RCODE FLMAPI flmCPThread(
 	IF_Thread *		pThread);
 	
 /***************************************************************************
@@ -753,7 +753,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		(void)pDb->m_pSFileHdl->releaseFiles( TRUE);
+		(void)pDb->m_pSFileHdl->releaseFiles();
 	}
 
 	return( rc);
@@ -799,7 +799,7 @@ RCODE F_DbSystem::findDatabase(
 	F_Database **	ppDatabase)
 {
 	RCODE				rc = NE_SFLM_OK;
-	FBUCKET *		pBucket;
+	F_BUCKET *		pBucket;
 	FLMUINT			uiBucket;
 	FLMBOOL			bMutexLocked = TRUE;
 	F_Database *	pDatabase;
@@ -1391,13 +1391,11 @@ RCODE F_Database::setupDatabase(
 
 	// Setup the write buffer managers.
 	
-	if( RC_BAD( rc = FlmAllocIOBufferMgr( &m_pBufferMgr)))
+	if( RC_BAD( rc = FlmAllocIOBufferMgr( MAX_PENDING_WRITES, 
+		MAX_WRITE_BUFFER_BYTES, FALSE, &m_pBufferMgr)))
 	{
 		goto Exit;
 	}
-
-	m_pBufferMgr->setMaxBuffers( MAX_PENDING_WRITES);
-	m_pBufferMgr->setMaxBytes( MAX_WRITE_BUFFER_BYTES);
 
 	// Initialize members of F_Database object.
 
@@ -1570,7 +1568,7 @@ Exit:
 
 	if (pCFileHdl)
 	{
-		(void)pSFileHdl->releaseFile( (FLMUINT)0, TRUE);
+		(void)pSFileHdl->releaseFiles();
 		pSFileHdl->setBlockSize( m_uiBlockSize);
 	}
 
@@ -1656,7 +1654,9 @@ RCODE F_Database::startCPThread( void)
 
 	// Set up the super file
 
-	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient)))
+	if (RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient,
+		gv_SFlmSysData.pFileHdlCache, gv_SFlmSysData.uiFileOpenFlags,
+		gv_SFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -1854,7 +1854,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-FSTATIC RCODE flmCPThread(
+FSTATIC RCODE FLMAPI flmCPThread(
 	IF_Thread *		pThread)
 {
 	CP_INFO *			pCPInfo = (CP_INFO *)pThread->getParm1();

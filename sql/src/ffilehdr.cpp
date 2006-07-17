@@ -352,7 +352,13 @@ FSTATIC RCODE verifyDbHdr(
 
 	switch (pDbHdr->ui32DbVersion)
 	{
+		case SFLM_CURRENT_VERSION_NUM:
+		{
+			break;
+		}
+		
 		default:
+		{
 			if (pDbHdr->ui32DbVersion > SFLM_CURRENT_VERSION_NUM)
 			{
 				rc = RC_SET( NE_SFLM_NEWER_FLAIM);
@@ -361,7 +367,9 @@ FSTATIC RCODE verifyDbHdr(
 			{
 				rc = RC_SET( NE_SFLM_UNSUPPORTED_VERSION);
 			}
+			
 			goto Exit;
+		}
 	}
 
 	// Validate the checksum

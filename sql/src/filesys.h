@@ -151,10 +151,6 @@ RCODE flmCreateLckFile(
 	const char *			pszFilePath,
 	IF_FileHdl **			ppLockFileHdl);
 
-RCODE flmAllocHashTbl(
-	FLMUINT					uiHashTblSize,
-	FBUCKET **				ppHashTblRV);
-
 RCODE flmWaitNotifyReq(
 	F_MUTEX					hMutex,
 	F_SEM						hSem,

@@ -740,7 +740,7 @@ RCODE F_Dict::addEncDef(
 	eEncAlgorithm	eEncAlg,
 	FLMUINT			uiEncKeySize,
 	FLMBYTE *		pucEncKey,
-	FLMUINT			uiEncKeyLen)
+	FLMUINT)		// uiEncKeyLen)
 {
 	RCODE			rc = NE_SFLM_OK;
 	F_ENCDEF *	pEncDef;

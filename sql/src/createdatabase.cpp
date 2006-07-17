@@ -155,7 +155,7 @@ RCODE F_Db::initDbFiles(
 		pBlkHdr->ui32BlkCRC = calcBlkCRC( pBlkHdr, SIZEOF_STD_BLK_HDR);
 		if (RC_BAD( rc = m_pSFileHdl->writeBlock(
 									(FLMUINT)pBlkHdr->ui32BlkAddr,
-									uiBlkSize, pucBuf, NULL, &uiWriteBytes)))
+									uiBlkSize, pucBuf, &uiWriteBytes)))
 		{
 			goto Exit;
 		}

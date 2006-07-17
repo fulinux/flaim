@@ -96,69 +96,6 @@ FSTATIC RCODE flmGetIniFileName(
 	FLMUINT			uiBufferSz);
 
 /****************************************************************************
-Desc: This routine allocates and initializes a hash table.
-****************************************************************************/
-RCODE flmAllocHashTbl(
-	FLMUINT		uiHashTblSize,
-	FBUCKET **	ppHashTblRV)
-{
-	RCODE						rc = NE_SFLM_OK;
-	FBUCKET *				pHashTbl = NULL;
-	IF_RandomGenerator *	pRandGen = NULL;
-	FLMUINT					uiCnt;
-	FLMUINT					uiRandVal;
-	FLMUINT					uiTempVal;
-	
-	// Allocate memory for the hash table
-
-	if (RC_BAD( rc = f_calloc(
-		(FLMUINT)(sizeof( FBUCKET)) * uiHashTblSize, &pHashTbl)))
-	{
-		goto Exit;
-	}
-
-	// Set up the random number generator
-	
-	if( RC_BAD( rc = FlmAllocRandomGenerator( &pRandGen)))
-	{
-		goto Exit;
-	}
-
-	pRandGen->setSeed( 1);
-
-	for (uiCnt = 0; uiCnt < uiHashTblSize; uiCnt++)
-	{
-		pHashTbl [uiCnt].uiHashValue = (FLMBYTE)uiCnt;
-		pHashTbl [uiCnt].pFirstInBucket = NULL;
-	}
-
-	if( uiHashTblSize <= 256)
-	{
-		for( uiCnt = 0; uiCnt < uiHashTblSize - 1; uiCnt++)
-		{
-			uiRandVal = (FLMBYTE) pRandGen->getUINT32( (FLMUINT32)uiCnt,
-										(FLMUINT32)(uiHashTblSize - 1));
-			if( uiRandVal != uiCnt)
-			{
-				uiTempVal = (FLMBYTE)pHashTbl [uiCnt].uiHashValue;
-				pHashTbl [uiCnt].uiHashValue = pHashTbl [uiRandVal].uiHashValue;
-				pHashTbl [uiRandVal].uiHashValue = uiTempVal;
-			}
-		}
-	}
-
-Exit:
-
-	if( pRandGen)
-	{
-		pRandGen->Release();
-	}
-
-	*ppHashTblRV = pHashTbl;
-	return( rc);
-}
-
-/****************************************************************************
 Desc: This routine determines the number of cache bytes to use for caching
 		based on a percentage of available physical memory or a percentage
 		of physical memory (depending on bCalcOnAvailMem flag).
@@ -669,7 +606,7 @@ RCODE F_Database::linkToBucket( void)
 {
 	RCODE				rc = NE_SFLM_OK;
 	F_Database *	pTmpDatabase;
-	FBUCKET *		pBucket;
+	F_BUCKET *		pBucket;
 	FLMUINT			uiBucket;
 
 	pBucket = gv_SFlmSysData.pDatabaseHashTbl;
@@ -751,7 +688,9 @@ RCODE F_Db::linkToDatabase(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = m_pSFileHdl->setup( pSFileClient)))
+		if( RC_BAD( rc = m_pSFileHdl->setup( pSFileClient, 
+			gv_SFlmSysData.pFileHdlCache, gv_SFlmSysData.uiFileOpenFlags,
+			gv_SFlmSysData.uiFileCreateFlags)))
 		{
 			goto Exit;
 		}
@@ -874,7 +813,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-RCODE F_DbSystem::monitorThrd(
+RCODE FLMAPI F_DbSystem::monitorThrd(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLastUnusedCleanupTime = 0;
@@ -1168,59 +1107,52 @@ RCODE F_GlobalCacheMgr::setCacheLimit(
 	FLMUINT		uiNewTotalCacheSize,
 	FLMBOOL		bPreallocateCache)
 {
-	RCODE			rc = NE_SFLM_OK;
+	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiOldCacheSize = m_uiMaxBytes;
 	
 	if( uiNewTotalCacheSize > FLM_MAX_CACHE_SIZE)
 	{
 		uiNewTotalCacheSize = FLM_MAX_CACHE_SIZE;
 	}
 	
-	if( m_bDynamicCacheAdjust || !bPreallocateCache)
+	if( bPreallocateCache)
 	{
-DONT_PREALLOCATE:
-
-		if( uiNewTotalCacheSize < m_uiMaxBytes)
+		if( m_bDynamicCacheAdjust)
 		{
-			m_uiMaxBytes = uiNewTotalCacheSize;
-			m_uiMaxSlabs = m_uiMaxBytes / m_pSlabManager->getSlabSize();
-			f_mutexLock( gv_SFlmSysData.hRowCacheMutex);
-			gv_SFlmSysData.pRowCacheMgr->reduceCache();
-			f_mutexUnlock( gv_SFlmSysData.hRowCacheMutex);
-			
-			f_mutexLock( gv_SFlmSysData.hBlockCacheMutex);
-			rc = gv_SFlmSysData.pBlockCacheMgr->reduceCache( NULL);
-			f_mutexUnlock( gv_SFlmSysData.hBlockCacheMutex);
-			if( RC_BAD( rc))
-			{
-				goto Exit;
-			}
+			// Can't pre-allocate and dynamically adjust.
+
+			bPreallocateCache = FALSE;
 		}
 		else
 		{
-			if( RC_BAD( rc = m_pSlabManager->resize( 0)))
+			if( RC_BAD( rc = m_pSlabManager->resize( 
+				uiNewTotalCacheSize, TRUE, &uiNewTotalCacheSize)))
 			{
-				goto Exit;
+				bPreallocateCache = FALSE;
 			}
 		}
-		
-		m_bCachePreallocated = FALSE;
 	}
-	else
-	{
-		if( RC_BAD( m_pSlabManager->resize( 
-			uiNewTotalCacheSize, &uiNewTotalCacheSize)))
-		{
-			goto DONT_PREALLOCATE;				
-		}
-		
-		m_bCachePreallocated = TRUE;
-	}
-
+	
 	m_uiMaxBytes = uiNewTotalCacheSize;
 	m_uiMaxSlabs = m_uiMaxBytes / m_pSlabManager->getSlabSize();
+	m_bCachePreallocated = bPreallocateCache;
 	
-Exit:
-
+	if( uiNewTotalCacheSize < uiOldCacheSize)
+	{
+		f_mutexLock( gv_SFlmSysData.hRowCacheMutex);
+		gv_SFlmSysData.pRowCacheMgr->reduceCache();
+		f_mutexUnlock( gv_SFlmSysData.hRowCacheMutex);
+		
+		f_mutexLock( gv_SFlmSysData.hBlockCacheMutex);
+		gv_SFlmSysData.pBlockCacheMgr->reduceCache( NULL);
+		f_mutexUnlock( gv_SFlmSysData.hBlockCacheMutex);
+	}
+	
+	if( !bPreallocateCache)
+	{
+		m_pSlabManager->resize( uiNewTotalCacheSize, FALSE);
+	}
+	
 	return( rc);
 }
 
@@ -1313,6 +1245,14 @@ RCODE F_DbSystem::init( void)
 		goto Exit;
 	}
 	
+	// Set up a file handle cache
+	
+	if( RC_BAD( rc = gv_SFlmSysData.pFileSystem->allocFileHandleCache( 32, 120, 
+		&gv_SFlmSysData.pFileHdlCache)))
+	{
+		goto Exit;
+	}
+	
 	gv_SFlmSysData.uiIndexingThreadGroup = 
 		gv_SFlmSysData.pThreadMgr->allocGroupId();
 		
@@ -1324,14 +1264,6 @@ RCODE F_DbSystem::init( void)
 
 	flmAssert( FB2UD( (FLMBYTE *)"\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
 	flmAssert( FB2UW( (FLMBYTE *)"\x0A\x0B") == 0x0B0A);
-
-#ifdef FLM_DEBUG
-
-	// Variables for memory allocation tracking.
-
-	gv_SFlmSysData.bTrackLeaks = TRUE;
-	gv_SFlmSysData.hMemTrackingMutex = F_MUTEX_NULL;
-#endif
 
 	gv_SFlmSysData.hRowCacheMutex = F_MUTEX_NULL;
 	gv_SFlmSysData.hBlockCacheMutex = F_MUTEX_NULL;
@@ -1355,6 +1287,12 @@ RCODE F_DbSystem::init( void)
 	{
 		goto Exit;
 	}
+
+	gv_SFlmSysData.uiFileOpenFlags = 
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT | FLM_IO_MISALIGNED_OK;
+
+	gv_SFlmSysData.uiFileCreateFlags = 
+		gv_SFlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
 
 	// Initialize all of the fields
 
@@ -1440,7 +1378,7 @@ RCODE F_DbSystem::init( void)
 
 	// Allocate memory for the file name hash table.
 
-	if (RC_BAD(rc = flmAllocHashTbl( FILE_HASH_ENTRIES,
+	if (RC_BAD(rc = f_allocHashTable( FILE_HASH_ENTRIES,
 								&gv_SFlmSysData.pDatabaseHashTbl)))
 	{
 		goto Exit;
@@ -1614,6 +1552,14 @@ void F_DbSystem::cleanup( void)
 		gv_SFlmSysData.pCacheCleanupThrd = NULL;
 	}
 
+	// Release the file handle cache
+	
+	if( gv_SFlmSysData.pFileHdlCache)
+	{
+		gv_SFlmSysData.pFileHdlCache->Release();
+		gv_SFlmSysData.pFileHdlCache = NULL;
+	}
+	
 	// Release the thread manager
 
 	if( gv_SFlmSysData.pThreadMgr)
@@ -1626,7 +1572,7 @@ void F_DbSystem::cleanup( void)
 
 	if (gv_SFlmSysData.pDatabaseHashTbl)
 	{
-		FBUCKET *   pDatabaseHashTbl;
+		F_BUCKET *   pDatabaseHashTbl;
 
 		// F_Database destructor expects the global mutex to be locked
 		// IMPORTANT NOTE: pDatabaseHashTbl is ALWAYS allocated

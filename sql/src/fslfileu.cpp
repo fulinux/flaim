@@ -796,7 +796,7 @@ Exit:
 Desc:	Thread that will delete block chains from deleted indexes and
 		tables in the background.
 ****************************************************************************/
-RCODE F_Database::maintenanceThread(
+RCODE FLMAPI F_Database::maintenanceThread(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = NE_SFLM_OK;
@@ -855,62 +855,59 @@ Retry:
 	{
 		pThread->setThreadStatus( FLM_THREAD_STATUS_RUNNING);
 		
-		for( ;;)
+		if( RC_BAD( rc = pDb->beginBackgroundTrans( pThread)))
 		{
-			if( RC_BAD( rc = pDb->beginBackgroundTrans( pThread)))
-			{
-				goto Exit;
-			}
-			bStartedTrans = TRUE;
-				
-			pTableCursor->resetCursor();
-			if (RC_BAD( rc = pTableCursor->setupRange( pDb, SFLM_TBLNUM_BLOCK_CHAINS,
-													1, FLM_MAX_UINT64, NULL, NULL, NULL)))
-			{
-				goto Exit;
-			}
+			goto Exit;
+		}
+		bStartedTrans = TRUE;
 			
-			// Free up to 25 blocks per transaction.
-			
-			uiBlocksToFree = 25;
-			while (uiBlocksToFree)
-			{
-	
-				if (RC_BAD( rc = pTableCursor->nextRow( pDb, &pRow, &ui64MaintRowId)))
-				{
-					if (rc != NE_SFLM_EOF_HIT)
-					{
-						RC_UNEXPECTED_ASSERT( rc);
-						goto Exit;
-					}
-					rc = NE_SFLM_OK;
-					break;
-				}
-				if (RC_BAD( rc = pRow->getUINT( pDb,
-							SFLM_COLNUM_BLOCK_CHAINS_BLOCK_ADDRESS, &uiBlkAddress,
-							&bIsNull)))
-				{
-					goto Exit;
-				}
-				if (bIsNull)
-				{
-					rc = RC_SET_AND_ASSERT( NE_SFLM_DATA_ERROR);
-					goto Exit;
-				}
-				
-				if( RC_BAD( rc = pDb->maintBlockChainFree(
-					ui64MaintRowId, uiBlkAddress, uiBlocksToFree, 0, &uiBlocksFreed)))
-				{
-					goto Exit;
-				}
-				uiBlocksToFree -= uiBlocksFreed;
-			}
+		pTableCursor->resetCursor();
+		if (RC_BAD( rc = pTableCursor->setupRange( pDb, SFLM_TBLNUM_BLOCK_CHAINS,
+												1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+		{
+			goto Exit;
+		}
+		
+		// Free up to 25 blocks per transaction.
+		
+		uiBlocksToFree = 25;
+		while (uiBlocksToFree)
+		{
 
-			bStartedTrans = FALSE;
-			if( RC_BAD( rc = pDb->commitTrans( 0, FALSE)))
+			if (RC_BAD( rc = pTableCursor->nextRow( pDb, &pRow, &ui64MaintRowId)))
+			{
+				if (rc != NE_SFLM_EOF_HIT)
+				{
+					RC_UNEXPECTED_ASSERT( rc);
+					goto Exit;
+				}
+				rc = NE_SFLM_OK;
+				break;
+			}
+			if (RC_BAD( rc = pRow->getUINT( pDb,
+						SFLM_COLNUM_BLOCK_CHAINS_BLOCK_ADDRESS, &uiBlkAddress,
+						&bIsNull)))
 			{
 				goto Exit;
 			}
+			if (bIsNull)
+			{
+				rc = RC_SET_AND_ASSERT( NE_SFLM_DATA_ERROR);
+				goto Exit;
+			}
+			
+			if( RC_BAD( rc = pDb->maintBlockChainFree(
+				ui64MaintRowId, uiBlkAddress, uiBlocksToFree, 0, &uiBlocksFreed)))
+			{
+				goto Exit;
+			}
+			uiBlocksToFree -= uiBlocksFreed;
+		}
+
+		bStartedTrans = FALSE;
+		if( RC_BAD( rc = pDb->commitTrans( 0, FALSE)))
+		{
+			goto Exit;
 		}
 
 		pThread->setThreadStatus( FLM_THREAD_STATUS_SLEEPING);

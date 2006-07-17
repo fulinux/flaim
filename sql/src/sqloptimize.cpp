@@ -1592,15 +1592,15 @@ Exit:
 //			new sub-tree as the last child of pParentNode.
 //-------------------------------------------------------------------------
 FSTATIC RCODE copyAndLinkSubTree(
-	F_Pool *			pPool,
-	SQL_DNF_NODE *	pSrcSubTree,
-	SQL_DNF_NODE *	pParentNode)
+	F_Pool *				pPool,
+	SQL_DNF_NODE *		pSrcSubTree,
+	SQL_DNF_NODE *)	// pParentNode)
 {
-	RCODE				rc = NE_SFLM_OK;
-	SQL_DNF_NODE *	pNewSubTree = NULL;
-	SQL_DNF_NODE *	pCurrDestParentNode = NULL;
-	SQL_DNF_NODE *	pCurrSrcNode = pSrcSubTree;
-	SQL_DNF_NODE *	pNewDestNode = NULL;
+	RCODE					rc = NE_SFLM_OK;
+	SQL_DNF_NODE *		pNewSubTree = NULL;
+	SQL_DNF_NODE *		pCurrDestParentNode = NULL;
+	SQL_DNF_NODE *		pCurrSrcNode = pSrcSubTree;
+	SQL_DNF_NODE *		pNewDestNode = NULL;
 	
 	for (;;)
 	{

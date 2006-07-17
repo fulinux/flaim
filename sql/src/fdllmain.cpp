@@ -86,8 +86,8 @@ FLMEXTC RCODE DllCanUnloadNow( void)
 
 		if (gv_SFlmSysData.pDatabaseHashTbl)
 		{
-			FBUCKET *   pDatabaseHashTbl;
-			FLMUINT		uiCnt;
+			F_BUCKET *   	pDatabaseHashTbl;
+			FLMUINT			uiCnt;
 
 			for (uiCnt = 0, pDatabaseHashTbl = gv_SFlmSysData.pDatabaseHashTbl;
 				uiCnt < FILE_HASH_ENTRIES;

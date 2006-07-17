@@ -1082,9 +1082,9 @@ Exit:
 // Desc:	Add an ORDER BY component
 //-------------------------------------------------------------------------
 RCODE SQLQuery::orderBy(
-	FLMUINT	uiTableNum,
-	FLMUINT	uiColumnNum,
-	FLMBOOL	bDescending)
+	FLMUINT			uiTableNum,
+	FLMUINT			uiColumnNum,
+	FLMBOOL)			// bDescending)
 {
 	RCODE				rc = NE_SFLM_OK;
 	SQL_TABLE *		pTable;

@@ -448,7 +448,7 @@ Exit:
 Desc:	Generate the keys for a text component.
 ****************************************************************************/
 RCODE F_Db::genTextKeyComponents(
-	F_COLUMN *	pColumn,
+	F_COLUMN *,	// pColumn,
 	ICD *			pIcd,
 	FLMUINT		uiKeyComponent,
 	FLMUINT		uiKeyLen,
@@ -752,10 +752,10 @@ Exit:
 Desc:	Generate the keys for other data types besides text.
 ****************************************************************************/
 RCODE F_Db::genOtherKeyComponent(
-	F_COLUMN *	pColumn,
-	ICD *			pIcd,
-	FLMUINT		uiKeyComponent,
-	FLMUINT		uiKeyLen)
+	F_COLUMN *,	// pColumn,
+	ICD *				pIcd,
+	FLMUINT			uiKeyComponent,
+	FLMUINT			uiKeyLen)
 {
 	RCODE					rc = NE_SFLM_OK;
 	FLMUINT				uiElmLen;

@@ -827,7 +827,7 @@ RCODE F_Db::updateSelectedRows(
 	FLMUINT			uiTableNum,
 	SQLQuery *		pSqlQuery,
 	COLUMN_SET *	pFirstColumnSet,
-	FLMUINT			uiNumColumnsToSet)
+	FLMUINT)			// uiNumColumnsToSet)
 {
 	RCODE					rc = NE_SFLM_OK;
 	FLMBOOL				bStartedTrans = FALSE;

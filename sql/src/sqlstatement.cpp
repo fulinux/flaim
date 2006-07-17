@@ -1078,9 +1078,11 @@ RCODE SQLStatement::getNumber(
 		
 		// Ignore white space
 		
+		if( f_isWhitespace( ucChar))
 		{
 			continue;
 		}
+		
 		if (ucChar >= '0' && ucChar <= '9')
 		{
 			uiDigitValue = (FLMUINT)(ucChar - '0');
@@ -2049,8 +2051,15 @@ RCODE SQLStatement::executeSQL(
 		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
 											&uiTokenLineOffset, NULL)))
 		{
-			goto Exit;
+			if( rc != NE_SFLM_EOF_HIT)
+			{
+				goto Exit;
+			}
+			
+			rc = NE_SFLM_OK;
+			break;
 		}
+		
 		if (f_stricmp( szToken, "select") == 0)
 		{
 			if (RC_BAD( rc = processSelect()))
@@ -2081,10 +2090,12 @@ RCODE SQLStatement::executeSQL(
 		}
 		else if (f_stricmp( szToken, "open") == 0)
 		{
-			if (RC_BAD( rc = haveToken( "database", FALSE, SQL_ERR_INVALID_OPEN_OPTION)))
+			if (RC_BAD( rc = haveToken( "database", FALSE, 
+				SQL_ERR_INVALID_OPEN_OPTION)))
 			{
 				goto Exit;
 			}
+			
 			if (RC_BAD( rc = processOpenDatabase()))
 			{
 				goto Exit;

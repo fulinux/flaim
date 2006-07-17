@@ -857,13 +857,6 @@ private:
 		F_SuperFileHdl *		pSFileHdl,
 		FLMUINT *				puiBlocksFlushed);
 
-	RCODE writeContiguousBlocks(
-		SFLM_DB_STATS *		pDbStats,
-		F_SuperFileHdl *		pSFileHdl,
-		IF_IOBuffer *			pIOBuffer,
-		FLMUINT					uiBlkAddress,
-		FLMBOOL					bDoAsync);
-
 	RCODE writeSortedBlocks(
 		SFLM_DB_STATS *		pDbStats,
 		F_SuperFileHdl *		pSFileHdl,
@@ -871,7 +864,6 @@ private:
 		FLMUINT *				puiDirtyCacheLeft,
 		FLMBOOL *				pbForceCheckpoint,
 		FLMBOOL					bIsCPThread,
-		FLMBOOL					bDoAsync,
 		FLMUINT					uiNumSortedBlocks,
 		FLMBOOL *				pbWroteAll);
 
@@ -909,15 +901,13 @@ private:
 
 	RCODE lgFlushLogBuffer(
 		SFLM_DB_STATS *		pDbStats,
-		F_SuperFileHdl *		pSFileHdl,
-		FLMBOOL					bDoAsync);
+		F_SuperFileHdl *		pSFileHdl);
 
 	RCODE lgOutputBlock(
 		SFLM_DB_STATS *	pDbStats,
 		F_SuperFileHdl *	pSFileHdl,
 		F_CachedBlock *	pLogBlock,
 		F_BLK_HDR *			pBlkHdr,
-		FLMBOOL				bDoAsync,
 		FLMUINT *			puiLogEofRV);
 
 	FLMUINT lFileFindEmpty(
@@ -947,7 +937,7 @@ private:
 		FLMBOOL				bCounts,
 		FLMBOOL				bHaveData);
 
-	static RCODE maintenanceThread(
+	static RCODE FLMAPI maintenanceThread(
 		IF_Thread *			pThread);
 
 	F_Database *			m_pNext;					// Next F_Database structure in in name hash
@@ -1192,7 +1182,7 @@ Desc:		This is the FLAIM Shared System Data Structure.  It is the anchor
 ***************************************************************************/
 typedef struct FLMSYSDATA
 {
-	FBUCKET *				pDatabaseHashTbl;	// Database name hash table (array of FBUCKET).
+	F_BUCKET *				pDatabaseHashTbl;	// Database name hash table
 #define FILE_HASH_ENTRIES		256
 
 	F_MUTEX					hShareMutex;	// Mutex for controlling access to
@@ -1266,37 +1256,6 @@ typedef struct FLMSYSDATA
 	FLMUINT					uiLinuxRevision;
 #endif
 
-#ifdef FLM_DEBUG
-	// Variables for memory allocation tracking.
-
-	FLMBOOL					bTrackLeaks;
-	FLMBOOL					bLogLeaks;
-	FLMBOOL					bStackWalk;
-	FLMBOOL					bMemTrackingInitialized;
-	FLMUINT					uiInitThreadId;
-	F_MUTEX					hMemTrackingMutex;
-	void **					ppvMemTrackingPtrs;
-	FLMUINT					uiMemTrackingPtrArraySize;
-	FLMUINT					uiMemNumPtrs;
-	FLMUINT					uiMemNextPtrSlotToUse;
-	FLMUINT					uiAllocCnt;
-	#if defined( FLM_WIN)
-		HANDLE				hMemProcess;
-	#endif
-
-	#ifdef DEBUG_SIM_OUT_OF_MEM
-		FLMUINT				uiOutOfMemSimEnabledFlag;
-		// We pick a random number for the flag so that it is hard to accidentally
-		// turn this flag on by writing memory out-of-bounds.
-		
-		#define OUT_OF_MEM_SIM_ENABLED_FLAG 2149614134UL
-		
-		F_RandomGenerator	memSimRandomGen;
-		FLMUINT				uiSimOutOfMemFailTotal;
-		FLMUINT				uiSimOutOfMemFailSequence;
-	#endif
-#endif
-
 	IF_FileSystem	*		pFileSystem;
 	F_MUTEX					hIniMutex;
 	IF_ThreadMgr *			pThreadMgr;
@@ -1304,9 +1263,9 @@ typedef struct FLMSYSDATA
 	FLMUINT					uiCheckpointThreadGroup;
 	F_MUTEX					hHttpSessionMutex;
 	F_BtPool *				pBtPool;
-#ifdef FLM_NLM
-	FLMBOOL					bUseNSSFileHdls;
-#endif
+	IF_FileHdlCache *		pFileHdlCache;
+	FLMUINT					uiFileOpenFlags;
+	FLMUINT					uiFileCreateFlags;
 } FLMSYSDATA;
 
 #ifndef ALLOCATE_SYS_DATA

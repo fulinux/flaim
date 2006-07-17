@@ -118,6 +118,9 @@ RCODE flmMakeErr(
 	int				iLine,
 	FLMBOOL			bAssert)
 {
+	F_UNREFERENCED_PARM( pszFile);
+	F_UNREFERENCED_PARM( iLine);
+	
 	if( bAssert)
 	{
 		flmAssert( 0);

@@ -1181,17 +1181,17 @@ public:
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite);
 
-	virtual FLMINT getRefCount( void)
+	virtual FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_BackupClient::getRefCount());
 	}
 
-	virtual FLMINT AddRef( void)
+	virtual FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_BackupClient::AddRef());
 	}
 
-	virtual FLMINT Release( void)
+	virtual FLMINT FLMAPI Release( void)
 	{
 		return( IF_BackupClient::Release());
 	}
@@ -1237,17 +1237,17 @@ public:
 
 	RCODE abortFile( void);
 
-	virtual FLMINT getRefCount( void)
+	virtual FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_RestoreClient::getRefCount());
 	}
 
-	virtual FLMINT AddRef( void)
+	virtual FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_RestoreClient::AddRef());
 	}
 
-	virtual FLMINT Release( void)
+	virtual FLMINT FLMAPI Release( void)
 	{
 		return( IF_RestoreClient::Release());
 	}
@@ -1456,17 +1456,17 @@ public:
 		return( NE_SFLM_OK);
 	}
 
-	virtual FLMINT getRefCount( void)
+	virtual FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_RestoreStatus::getRefCount());
 	}
 
-	virtual FLMINT AddRef( void)
+	virtual FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_RestoreStatus::AddRef());
 	}
 
-	virtual FLMINT Release( void)
+	virtual FLMINT FLMAPI Release( void)
 	{
 		return( IF_RestoreStatus::Release());
 	}
@@ -2707,7 +2707,7 @@ public:
 	{
 	}
 
-	FINLINE RCODE compare(
+	FINLINE RCODE FLMAPI compare(
 		const void *	pvKey1,
 		FLMUINT			uiKeyLen1,
 		const void *	pvKey2,
@@ -2745,17 +2745,17 @@ public:
 		m_pOldRow = pOldRow;
 	}
 	
-	virtual FLMINT getRefCount( void)
+	virtual FLMINT FLMAPI getRefCount( void)
 	{
 		return( IF_ResultSetCompare::getRefCount());
 	}
 
-	virtual FLMINT AddRef( void)
+	virtual FLMINT FLMAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FLMINT Release( void)
+	virtual FLMINT FLMAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}
@@ -2927,9 +2927,9 @@ public:
 	{
 	}
 
-	virtual FLMINT AddRef( void);
+	virtual FLMINT FLMAPI AddRef( void);
 
-	virtual FLMINT Release( void);
+	virtual FLMINT FLMAPI Release( void);
 
 	RCODE init( void);
 
@@ -3321,10 +3321,10 @@ private:
 		const char *			pszDestRflDir,
 		IF_DbCopyStatus *		ifpStatus);
 
-	static RCODE monitorThrd(
+	static RCODE FLMAPI monitorThrd(
 		IF_Thread *		pThread);
 		
-	static RCODE cacheCleanupThrd(
+	static RCODE FLMAPI cacheCleanupThrd(
 		IF_Thread *		pThread);
 
 	static void checkNotUsedObjects( void);
@@ -3459,36 +3459,36 @@ public:
 		FLMUINT32		ui32BlkAddr = 0,
 		FLMUINT			uiOffsetIndex = 0);
 
-	FINLINE FLMUINT64 totalSize( void)
+	FINLINE FLMUINT64 FLMAPI totalSize( void)
 	{
 		return( m_uiStreamSize);
 	}
 
-	FINLINE FLMUINT64 remainingSize( void)
+	FINLINE FLMUINT64 FLMAPI remainingSize( void)
 	{
 		return( m_uiStreamSize - (m_uiBufferStartOffset + m_uiBufferOffset));
 	}
 
-	FINLINE RCODE close( void)
+	FINLINE RCODE FLMAPI close( void)
 	{
 		reset();
 		return( NE_SFLM_OK);
 	}
 
-	RCODE positionTo(
+	RCODE FLMAPI positionTo(
 		FLMUINT64		ui64Position);
 
-	FINLINE FLMUINT64 getCurrPosition( void)
+	FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
 	{
 		return( m_uiBufferStartOffset + m_uiBufferOffset);
 	}
 
-	RCODE read(
+	RCODE FLMAPI read(
 		void *			pvBuffer,
 		FLMUINT			uiBytesToRead,
 		FLMUINT *		puiBytesRead);
 
-	FLMINT Release( void);
+	FLMINT FLMAPI Release( void);
 	
 	FINLINE FLMUINT32 getBlkAddr( void)
 	{
@@ -4393,6 +4393,10 @@ public:
 	FLMUINT FLMAPI getFileOffset(
 		FLMUINT					uiBlockAddr);
 		
+	FLMUINT FLMAPI getBlockAddress(
+		FLMUINT					uiFileNumber,
+		FLMUINT					uiFileOffset);
+			
 	RCODE FLMAPI getFilePath(
 		FLMUINT					uiFileNumber,
 		char *					pszPath);

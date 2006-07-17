@@ -228,7 +228,9 @@ RCODE F_DbSystem::copyDb(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient)))
+	if (RC_BAD( rc = pSrcSFileHdl->setup( pSrcSFileClient, 
+		gv_SFlmSysData.pFileHdlCache, gv_SFlmSysData.uiFileOpenFlags,
+		gv_SFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -352,7 +354,9 @@ retry:
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient)))
+	if (RC_BAD( rc = pDestSFileHdl->setup( pDestSFileClient,
+		gv_SFlmSysData.pFileHdlCache, gv_SFlmSysData.uiFileOpenFlags,
+		gv_SFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -469,8 +473,8 @@ retry:
 
 	// Close all file handles in the source and destination
 
-	pSrcSFileHdl->releaseFiles( TRUE);
-	pDestSFileHdl->releaseFiles( TRUE);
+	pSrcSFileHdl->releaseFiles();
+	pDestSFileHdl->releaseFiles();
 
 	// Copy the database files.
 
@@ -822,7 +826,7 @@ FSTATIC RCODE flmCopyFile(
 
 		// Read data from source file.
 
-		if (RC_BAD( rc = pSrcFileHdl->sectorRead( uiOffset, uiBytesToRead,
+		if (RC_BAD( rc = pSrcFileHdl->read( uiOffset, uiBytesToRead,
 									pucBuffer, &uiBytesRead)))
 		{
 			if (rc == NE_FLM_IO_END_OF_FILE)

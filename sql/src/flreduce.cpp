@@ -414,8 +414,7 @@ RCODE F_Db::readBlkHdr(
 		{
 			if (rc != NE_FLM_IO_END_OF_FILE && rc != NE_SFLM_MEM)
 			{
-				m_pSFileHdl->releaseFile( FSGetFileNumber( uiBlkAddress),
-														TRUE);
+				m_pSFileHdl->releaseFiles();
 			}
 			goto Exit;
 		}

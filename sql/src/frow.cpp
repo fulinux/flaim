@@ -93,10 +93,6 @@ F_Row::F_Row()
 	
 	m_uiTableNum = 0;
 	m_ui64RowId = 0;
-	
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 
 /****************************************************************************
@@ -180,10 +176,6 @@ void F_Row::freePurged( void)
 
 	unsetPurged();
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-
 	delete this;
 }
 
@@ -235,25 +227,13 @@ void F_Row::freeCache(
 
 	if (!bPutInPurgeList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		delete this;
 	}
 	else
 	{
-#ifdef FLM_CACHE_PROTECT	
-		unprotectCachedItem();
-#endif
 		if ((m_pNextInGlobal = gv_SFlmSysData.pRowCacheMgr->m_pPurgeList) != NULL)
 		{
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInGlobal->unprotectCachedItem();
-#endif
 			m_pNextInGlobal->m_pPrevInGlobal = this;
-#ifdef FLM_CACHE_PROTECT	
-			m_pNextInGlobal->protectCachedItem();
-#endif
 		}
 		gv_SFlmSysData.pRowCacheMgr->m_pPurgeList = this;
 		
@@ -262,9 +242,6 @@ void F_Row::freeCache(
 		
 		m_uiFlags &= ~(FROW_DIRTY | FROW_NEW);
 		setPurged();
-#ifdef FLM_CACHE_PROTECT	
-		protectCachedItem();
-#endif
 		flmAssert( !m_pPrevInGlobal);
 	}
 }
@@ -297,7 +274,7 @@ RCODE F_RowCacheMgr::initCache( void)
 	// Set up the F_Row object allocator
 
 	if (RC_BAD( rc = m_pRowAllocator->setup(
-		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager,
+		TRUE, gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager,
 		&m_rowRelocator, sizeof( F_Row), &m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
@@ -311,7 +288,7 @@ RCODE F_RowCacheMgr::initCache( void)
 	// Set up the buffer allocator for F_Row objects
 
 	if (RC_BAD( rc = m_pBufAllocator->setup(
-		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL,
+		TRUE, gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL,
 		&m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
@@ -377,134 +354,62 @@ void F_RowRelocator::relocate(
 
 	if (pNewRow->m_pPrevInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInDatabase->unprotectCachedItem();
-#endif
 		pNewRow->m_pPrevInDatabase->m_pNextInDatabase = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInDatabase->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pNextInDatabase)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInDatabase->unprotectCachedItem();
-#endif
 		pNewRow->m_pNextInDatabase->m_pPrevInDatabase = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInDatabase->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pPrevInGlobal)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInGlobal->unprotectCachedItem();
-#endif
 		pNewRow->m_pPrevInGlobal->m_pNextInGlobal = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInGlobal->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pNextInGlobal)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInGlobal->unprotectCachedItem();
-#endif
 		pNewRow->m_pNextInGlobal->m_pPrevInGlobal = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInGlobal->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pPrevInBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInBucket->unprotectCachedItem();
-#endif
 		pNewRow->m_pPrevInBucket->m_pNextInBucket = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInBucket->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pNextInBucket)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInBucket->unprotectCachedItem();
-#endif
 		pNewRow->m_pNextInBucket->m_pPrevInBucket = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInBucket->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pOlderVersion)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pOlderVersion->unprotectCachedItem();
-#endif
 		pNewRow->m_pOlderVersion->m_pNewerVersion = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pOlderVersion->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pNewerVersion)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNewerVersion->unprotectCachedItem();
-#endif
 		pNewRow->m_pNewerVersion->m_pOlderVersion = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNewerVersion->protectCachedItem();
-#endif
 	}
 	
 	if (pNewRow->m_pPrevInHeapList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInHeapList->unprotectCachedItem();
-#endif
 		pNewRow->m_pPrevInHeapList->m_pNextInHeapList = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInHeapList->protectCachedItem();
-#endif
 	}
 	
 	if (pNewRow->m_pNextInHeapList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInHeapList->unprotectCachedItem();
-#endif
 		pNewRow->m_pNextInHeapList->m_pPrevInHeapList = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInHeapList->protectCachedItem();
-#endif
 	}
 
 	if (pNewRow->m_pPrevInOldList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInOldList->unprotectCachedItem();
-#endif
 		pNewRow->m_pPrevInOldList->m_pNextInOldList = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pPrevInOldList->protectCachedItem();
-#endif
 	}
 	
 	if (pNewRow->m_pNextInOldList)
 	{
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInOldList->unprotectCachedItem();
-#endif
 		pNewRow->m_pNextInOldList->m_pPrevInOldList = pNewRow;
-#ifdef FLM_CACHE_PROTECT	
-		pNewRow->m_pNextInOldList->protectCachedItem();
-#endif
 	}
 	
 	if( pDatabase)
@@ -1499,14 +1404,7 @@ RCODE F_Row::resizeDataBuffer(
 	flmAssert( *((F_Row **)pucActualAlloc) == this);
 	setRowAndDataPtr( pucActualAlloc);
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
 	m_uiColumnDataBufSize = uiSize;
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
-		
 	uiNewSize = memSize();
 	
 	if (m_ui64HighTransId != FLM_MAX_UINT64)
@@ -1552,20 +1450,12 @@ RCODE F_Row::resizeColumnList(
 	FLMBYTE *	pucActualAlloc;
 	FLMBOOL		bHeapAlloc = FALSE;
 	void *		pvThis = this;
-#ifdef FLM_CACHE_PROTECT	
-	FLMBOOL		bProtectRow = FALSE;
-#endif
 	
 	if( uiColumnCount == m_uiNumColumns)
 	{
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-	bProtectRow = TRUE;
-#endif
-	
 	if( !bMutexAlreadyLocked)
 	{
 		flmAssert( rowInUse());
@@ -1657,13 +1547,6 @@ RCODE F_Row::resizeColumnList(
 
 Exit:
 
-#ifdef FLM_CACHE_PROTECT	
-	if( bProtectRow)
-	{
-		protectCachedItem();
-	}
-#endif
-	
 	return( rc);
 }
 
@@ -2248,10 +2131,6 @@ RCODE F_Row::flushRow(
 	f_mutexLock( gv_SFlmSysData.hRowCacheMutex);
 	bMutexLocked = TRUE;
 
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-
 	incrRowUseCount();
 	f_mutexUnlock( gv_SFlmSysData.hRowCacheMutex);
 	bMutexLocked = FALSE;
@@ -2262,9 +2141,6 @@ RCODE F_Row::flushRow(
 	bMutexLocked = TRUE;
 
 	decrRowUseCount();
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 
 	if( RC_BAD( rc))
 	{
@@ -2368,7 +2244,7 @@ Desc:
 RCODE F_Row::readRow(
 	F_Db *			pDb,
 	FLMUINT			uiTableNum,
-	FLMUINT64		ui64RowId,
+	FLMUINT64,		// ui64RowId,
 	IF_IStream *	pIStream,
 	FLMUINT			uiRowDataLength)
 {
@@ -2693,10 +2569,6 @@ Start_Find:
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	pRow->unprotectCachedItem();
-#endif
-	
 	pRow->m_ui64RowId = ui64RowId;
 	pRow->m_uiTableNum = uiTableNum;
 
@@ -2754,9 +2626,6 @@ Start_Find:
 							  : pRow), rc);
 	}
 	pRow->decrRowUseCount();
-#ifdef FLM_CACHE_PROTECT	
-	pRow->protectCachedItem();
-#endif
 
 	// If we did not succeed, free the F_Row structure.
 
@@ -2839,10 +2708,6 @@ RCODE F_RowCacheMgr::createRow(
 		goto Exit;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	pRow->unprotectCachedItem();
-#endif
-
 	pRow->m_ui64RowId = pTable->lfInfo.ui64NextRowId;
 	pTable->lfInfo.ui64NextRowId++;
 	pTable->lfInfo.bNeedToWriteOut = TRUE;
@@ -2874,10 +2739,6 @@ RCODE F_RowCacheMgr::createRow(
 	*ppRow = pRow;
 	pRow->incrRowUseCount();
 
-#ifdef FLM_CACHE_PROTECT	
-	pRow->protectCachedItem();
-#endif
-
 Exit:
 
 	if (bMutexLocked)
@@ -2900,9 +2761,6 @@ RCODE F_RowCacheMgr::_makeWriteCopy(
 	F_Row *			pNewerRow = NULL;
 	F_Row *			pOlderRow = *ppRow;
 	FLMBOOL			bMutexLocked = FALSE;
-#ifdef FLM_CACHE_PROTECT	
-	FLMBOOL			bProtectNewerRow = FALSE;
-#endif
 	
 	flmAssert( pOlderRow->m_ui64HighTransId == FLM_MAX_UINT64);
 	flmAssert( !pOlderRow->m_pNewerVersion);
@@ -2935,11 +2793,6 @@ RCODE F_RowCacheMgr::_makeWriteCopy(
 	pOlderRow->unlinkFromDatabase();
 	pOlderRow->linkToDatabaseAtHead( pDatabase);
 
-#ifdef FLM_CACHE_PROTECT	
-	pNewerRow->unprotectCachedItem();
-	bProtectNewerRow = TRUE;
-#endif
-	
 	pNewerRow->m_pDatabase = pDatabase;
 	pNewerRow->m_uiFlags = pOlderRow->m_uiFlags;
 	pNewerRow->m_uiOffsetIndex = pOlderRow->m_uiOffsetIndex;
@@ -2989,11 +2842,6 @@ RCODE F_RowCacheMgr::_makeWriteCopy(
 	*ppRow = pNewerRow;
 	pNewerRow->incrRowUseCount();
 
-#ifdef FLM_CACHE_PROTECT	
-	pNewerRow->protectCachedItem();
-	bProtectNewerRow = FALSE;
-#endif
-	
 	// Set pNewerRow to NULL so it won't get freed at Exit
 
 	pNewerRow = NULL;
@@ -3491,7 +3339,7 @@ Exit:
 Desc:
 ******************************************************************************/	
 RCODE F_Row::getBinary(
-	F_Db *				pDb,
+	F_Db *,				// pDb,
 	FLMUINT				uiColumnNum,
 	void *				pvBuffer,
 	FLMUINT				uiBufferLen,
@@ -3567,7 +3415,7 @@ void F_Row::setToNull(
 Desc:
 ******************************************************************************/	
 void F_Row::getDataLen(
-	F_Db *				pDb,
+	F_Db *,				// pDb,
 	FLMUINT				uiColumnNum,
 	FLMUINT *			puiDataLen,
 	FLMBOOL *			pbIsNull)
@@ -4260,10 +4108,6 @@ void F_Row::setRowDirty(
 	F_Db *		pDb,
 	FLMBOOL		bNew)
 {
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-	
 	if (!rowIsDirty())
 	{
 		f_mutexLock( gv_SFlmSysData.hRowCacheMutex);
@@ -4303,10 +4147,6 @@ void F_Row::setRowDirty(
 	{
 		m_uiFlags |= FROW_NEW;
 	}
-
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 	
 /****************************************************************************
@@ -4316,10 +4156,6 @@ void F_Row::unsetRowDirtyAndNew(
 	F_Db *			pDb,
 	FLMBOOL			bMutexAlreadyLocked)
 {
-#ifdef FLM_CACHE_PROTECT	
-	unprotectCachedItem();
-#endif
-	
 	// When outputting a binary or text stream, it is possible that the
 	// dirty flag was unset when the last buffer was output
 	
@@ -4348,10 +4184,6 @@ void F_Row::unsetRowDirtyAndNew(
 			f_mutexUnlock( gv_SFlmSysData.hRowCacheMutex);
 		}
 	}
-
-#ifdef FLM_CACHE_PROTECT	
-	protectCachedItem();
-#endif
 }
 	
 /*****************************************************************************
@@ -4486,14 +4318,8 @@ void * F_Row::operator new(
 	flmAssert( uiSize == sizeof( F_Row));
 	f_assertMutexLocked( gv_SFlmSysData.hRowCacheMutex);
 
-	if( (pvCell = 
-		gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->allocCell(
-				&gv_SFlmSysData.pRowCacheMgr->m_rowRelocator)) != NULL)
-	{
-#ifdef FLM_CACHE_PROTECT	
-		gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->unprotectCell( pvCell);
-#endif
-	}
+	pvCell = gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->allocCell(
+				&gv_SFlmSysData.pRowCacheMgr->m_rowRelocator, NULL);
 
 	return( pvCell);
 }
@@ -4556,10 +4382,7 @@ void F_Row::operator delete(
 		return;
 	}
 
-#ifdef FLM_CACHE_PROTECT	
-	gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->protectCell( ptr);
-#endif
-	gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->freeCell( (FLMBYTE *)ptr, FALSE);
+	gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->freeCell( (FLMBYTE *)ptr);
 }
 
 /****************************************************************************
@@ -4587,7 +4410,7 @@ void F_Row::operator delete(
 		return;
 	}
 
-	gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->freeCell( (FLMBYTE *)ptr, FALSE);
+	gv_SFlmSysData.pRowCacheMgr->m_pRowAllocator->freeCell( (FLMBYTE *)ptr);
 }
 #endif
 

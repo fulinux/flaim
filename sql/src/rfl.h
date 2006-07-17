@@ -424,7 +424,7 @@ public:
 
 	FINLINE FLMBYTE * getPacketPtr( void)
 	{
-		return( &(m_pCurrentBuf->pIOBuffer->getBuffer()[
+		return( &(m_pCurrentBuf->pIOBuffer->getBufferPtr()[
 						m_pCurrentBuf->uiRflBufBytes]));
 	}
 
@@ -434,7 +434,7 @@ public:
 	{
 		if( m_pCurrentBuf->pBufferMgr)
 		{
-			flmAssert( !m_pCurrentBuf->pBufferMgr->havePendingIO());
+			flmAssert( !m_pCurrentBuf->pBufferMgr->isIOPending());
 		}
 		if (m_pFileHdl)
 		{
@@ -535,7 +535,7 @@ private:
 
 	FINLINE FLMBYTE * getPacketBodyPtr( void)
 	{
-		return( &(m_pCurrentBuf->pIOBuffer->getBuffer()[
+		return( &(m_pCurrentBuf->pIOBuffer->getBufferPtr()[
 			m_pCurrentBuf->uiRflBufBytes + RFL_PACKET_OVERHEAD]));
 	}
 

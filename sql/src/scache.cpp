@@ -26,6 +26,7 @@
 #include "flaimsys.h"
 
 #define MAX_BLOCKS_TO_SORT			500
+#define FLM_MAX_IO_BUFFER_BLOCKS 16
 
 FSTATIC void ScaNotify(
 	FNOTIFY *			pNotify,
@@ -64,7 +65,7 @@ FINLINE FLMINT scaCompare(
 Desc:	Compare two cache blocks during a sort to determine which 
 		one has lower address.
 *****************************************************************************/
-FINLINE FLMINT scaSortCompare(
+FINLINE FLMINT FLMAPI scaSortCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -76,7 +77,7 @@ FINLINE FLMINT scaSortCompare(
 /***************************************************************************
 Desc:	Swap two entries in cache table during sort.
 *****************************************************************************/
-FINLINE void scaSortSwap(
+FINLINE void FLMAPI scaSortSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -1205,15 +1206,11 @@ RCODE F_Database::flushLogBlocks(
 											: (F_CachedBlock **)NULL);
 	FLMUINT				uiTotalLoggedBlocks = 0;
 	FLMBOOL				bForceCheckpoint = *pbForceCheckpoint;
-	FLMBOOL				bDoAsync;
 #ifdef FLM_DBG_LOG
 	FLMUINT16			ui16OldFlags;
 #endif
 
 	m_uiCurrLogWriteOffset = 0;
-	bDoAsync = (gv_SFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
-				  ? TRUE
-				  : FALSE;
 
 	// Get the correct log header.  If we are in an update transaction,
 	// need to use the uncommitted log header.  Otherwise, use the last
@@ -1453,7 +1450,7 @@ RCODE F_Database::flushLogBlocks(
 			if (RC_BAD( rc = lgOutputBlock( pDbStats, pSFileHdl,
 											pLastBlockToLog,
 											pLastBlockToLog->m_pPrevInVersionList->m_pBlkHdr,
-											bDoAsync, &uiLogEof)))
+											&uiLogEof)))
 			{
 				goto Exit;
 			}
@@ -1523,8 +1520,7 @@ Write_Log_Blocks:
 
 			if (m_uiCurrLogWriteOffset)
 			{
-				if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl,
-											bDoAsync)))
+				if (RC_BAD( rc = lgFlushLogBuffer( pDbStats, pSFileHdl)))
 				{
 					goto Exit;
 				}
@@ -1533,12 +1529,9 @@ Write_Log_Blocks:
 			// If doing async, wait for pending writes to complete before writing
 			// the log header.
 
-			if (bDoAsync)
+			if (RC_BAD( rc = m_pBufferMgr->waitForAllPendingIO()))
 			{
-				if (RC_BAD( rc = m_pBufferMgr->waitForAllPendingIO()))
-				{
-					goto Exit;
-				}
+				goto Exit;
 			}
 
 			// Must wait for all RFL writes before writing out log header.
@@ -1737,24 +1730,21 @@ Exit:
 			// Don't care what rc is at this point.  Just calling
 			// lgFlushLogBuffer to clear the buffer.
 
-			(void)lgFlushLogBuffer( pDbStats, pSFileHdl, bDoAsync);
+			(void)lgFlushLogBuffer( pDbStats, pSFileHdl);
 		}
 
 		// Need to wait for any async writes to complete.
 
-		if (bDoAsync)
+		if (bMutexLocked)
 		{
-			if (bMutexLocked)
-			{
-				f_mutexUnlock( gv_SFlmSysData.hBlockCacheMutex);
-				bMutexLocked = FALSE;
-			}
-
-			// Don't care about rc here, but we don't want to leave
-			// this routine until all pending IO is taken care of.
-
-			(void)m_pBufferMgr->waitForAllPendingIO();
+			f_mutexUnlock( gv_SFlmSysData.hBlockCacheMutex);
+			bMutexLocked = FALSE;
 		}
+
+		// Don't care about rc here, but we don't want to leave
+		// this routine until all pending IO is taken care of.
+
+		(void)m_pBufferMgr->waitForAllPendingIO();
 		
 		if (!bMutexLocked)
 		{
@@ -1832,7 +1822,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 	flmAssert( m_pCurrLogBuffer == NULL);
 
 	*pbForceCheckpoint = bForceCheckpoint;
@@ -1842,35 +1832,42 @@ Exit:
 /****************************************************************************
 Desc:	This routine is called whenever a write of a dirty block completes.
 ****************************************************************************/
-FSTATIC void scaWriteComplete(
-	IF_IOBuffer *	pIOBuffer)
+/****************************************************************************
+Desc:	This routine is called whenever a write of a dirty block completes.
+****************************************************************************/
+FSTATIC void FLMAPI scaWriteComplete(
+	IF_IOBuffer *		pIOBuffer,
+	void *				pvData)
 {
-	RCODE					rc = pIOBuffer->getCompletionCode();
-	FLMUINT				uiNumBlocks = pIOBuffer->getBufferSize() /
-											pIOBuffer->getBlockSize();
-	F_CachedBlock *	pSCache;
+	RCODE					rc;
+	FLMUINT				uiNumBlocks = 0;
+	F_CachedBlock *	pSCache = NULL;
 	F_Database *		pDatabase;
-	SFLM_DB_STATS *	pDbStats = (SFLM_DB_STATS *)pIOBuffer->getStats();
+	SFLM_DB_STATS *	pDbStats = (SFLM_DB_STATS *)pvData;
 	FLMUINT				uiMilliPerBlock = 0;
 	FLMUINT				uiExtraMilli = 0;
-
 #ifdef FLM_DBG_LOG
-	FLMUINT16	ui16OldFlags;
+	FLMUINT16			ui16OldFlags;
 #endif
 
-	if (pDbStats)
+	f_assert( pIOBuffer->isComplete());
+
+	rc = pIOBuffer->getCompletionCode();
+	uiNumBlocks = pIOBuffer->getCallbackDataCount();
+
+	if( pDbStats)
 	{
-		FLMUINT64			ui64ElapMilli = pIOBuffer->getElapTime();
+		FLMUINT64	ui64ElapMilli = pIOBuffer->getElapsedTime();
 
 		uiMilliPerBlock = (FLMUINT)(ui64ElapMilli / (FLMUINT64)uiNumBlocks);
 		uiExtraMilli = (FLMUINT)(ui64ElapMilli % (FLMUINT64)uiNumBlocks);
 	}
 
 	f_mutexLock( gv_SFlmSysData.hBlockCacheMutex);
-	while (uiNumBlocks)
+	while( uiNumBlocks)
 	{
 		uiNumBlocks--;
-		pSCache = (F_CachedBlock *)pIOBuffer->getCompletionCallbackData( uiNumBlocks);
+		pSCache = (F_CachedBlock *)pIOBuffer->getCallbackData( uiNumBlocks);
 		pDatabase = pSCache->getDatabase();
 
 		if (pDbStats)
@@ -3763,77 +3760,6 @@ Do_Free_Pass:
 }
 
 /****************************************************************************
-Desc:	Write an IO buffer to disk.
-****************************************************************************/
-RCODE F_Database::writeContiguousBlocks(
-	SFLM_DB_STATS *	pDbStats,
-	F_SuperFileHdl *	pSFileHdl,
-	IF_IOBuffer *		pIOBuffer,
-	FLMUINT				uiBlkAddress,
-	FLMBOOL				bDoAsync)
-{
-	RCODE					rc = NE_SFLM_OK;
-	FLMBYTE *			pucWriteBuffer;
-	IF_IOBuffer *		pAsyncBuffer;
-	FLMUINT				uiBytesWritten;
-	FLMUINT				uiWriteLen;
-
-	pucWriteBuffer = pIOBuffer->getBuffer();
-
-	if (!bDoAsync)
-	{
-		pAsyncBuffer = NULL;
-	}
-	else
-	{
-		pAsyncBuffer = pIOBuffer;
-	}
-
-	// Determine how many bytes to write
-
-	uiWriteLen = pIOBuffer->getBufferSize();
-	pSFileHdl->setMaxAutoExtendSize( m_uiMaxFileSize);
-	pSFileHdl->setExtendSize( m_uiFileExtendSize);
-
-	pIOBuffer->startTimer( pDbStats);
-
-	// NOTE: No guarantee that pIOBuffer will still be around
-	// after the call to writeBlock, unless we are doing
-	// non-asynchronous write.
-
-	rc = pSFileHdl->writeBlock( uiBlkAddress, uiWriteLen,
-					pucWriteBuffer, pAsyncBuffer, &uiBytesWritten);
-	if (!pAsyncBuffer)
-	{
-		pIOBuffer->notifyComplete( rc);
-	}
-	pIOBuffer = NULL;
-
-	if (RC_BAD( rc))
-	{
-		if (pDbStats)
-		{
-			pDbStats->bHaveStats = TRUE;
-			pDbStats->uiWriteErrors++;
-		}
-		
-		goto Exit;
-	}
-
-Exit:
-
-	// If we allocated a write buffer, but did not do a write with it
-	// still need to do the notify to clean up cache blocks.
-
-	if (pIOBuffer)
-	{
-		flmAssert( RC_BAD( rc));
-		pIOBuffer->notifyComplete( rc);
-	}
-	return( rc);
-}
-
-/****************************************************************************
 Desc:	Prepares a block to be written out.  Calculates the checksum and
 		converts the block to native format if not currently in native
 		format.
@@ -3881,7 +3807,6 @@ RCODE F_Database::writeSortedBlocks(
 	FLMUINT *			puiDirtyCacheLeft,
 	FLMBOOL *			pbForceCheckpoint,
 	FLMBOOL				bIsCPThread,
-	FLMBOOL				bDoAsync,
 	FLMUINT				uiNumSortedBlocks,
 	FLMBOOL *			pbWroteAll)
 {
@@ -4076,13 +4001,12 @@ Add_Contiguous_Block:
 		// Ask for a buffer of the size needed.
 
 		flmAssert( pIOBuffer == NULL);
-		if (RC_BAD( rc = m_pBufferMgr->getBuffer(
-						&pIOBuffer, uiContiguousBlocks * m_uiBlockSize,
-						m_uiBlockSize)))
+		if (RC_BAD( rc = m_pBufferMgr->getBuffer( 
+			uiContiguousBlocks * m_uiBlockSize, &pIOBuffer))) 
 		{
 			goto Exit;
 		}
-		pIOBuffer->setCompletionCallback( scaWriteComplete);
+		pIOBuffer->setCompletionCallback( scaWriteComplete, pDbStats);
 
 		// Callback will now take care of everything between
 		// uiStartOffset and uiStartOffset + uiNumSortedBlocksProcessed - 1
@@ -4130,7 +4054,7 @@ Add_Contiguous_Block:
 			// Set callback data so we will release these and clear
 			// the pending flag if we don't do the I/O.
 
-			pIOBuffer->setCompletionCallbackData( uiLoop, pSCache);
+			pIOBuffer->addCallbackData( pSCache);
 		}
 
 		if (bMutexLocked)
@@ -4141,7 +4065,7 @@ Add_Contiguous_Block:
 
 		// Copy blocks into the IO buffer.
 
-		pucBuffer = pIOBuffer->getBuffer();
+		pucBuffer = pIOBuffer->getBufferPtr();
 		for (uiLoop = 0;
 			  uiLoop < uiBlockCount;
 			  uiLoop++, pucBuffer += m_uiBlockSize)
@@ -4169,10 +4093,26 @@ Add_Contiguous_Block:
 				goto Exit;
 			}
 		}
-
-		rc = writeContiguousBlocks( pDbStats, pSFileHdl,
-					pIOBuffer, uiStartBlkAddr, bDoAsync);
+		
+		pSFileHdl->setMaxAutoExtendSize( m_uiMaxFileSize);
+		pSFileHdl->setExtendSize( m_uiFileExtendSize);
+	
+		rc = pSFileHdl->writeBlock( uiStartBlkAddr, 
+			pIOBuffer->getBufferSize(), pIOBuffer);
+			
+		pIOBuffer->Release();
 		pIOBuffer = NULL;
+		
+		if( RC_BAD( rc))
+		{
+			if (pDbStats)
+			{
+				pDbStats->bHaveStats = TRUE;
+				pDbStats->uiWriteErrors++;
+			}
+			
+			goto Exit;
+		}
 
 		// See if we should give up our write lock.  Will do so if we
 		// are not forcing a checkpoint and we have not exceeded the
@@ -4272,7 +4212,6 @@ RCODE F_Database::flushDirtyBlocks(
 	RCODE					rc = NE_SFLM_OK;
 	RCODE					rc2;
 	F_CachedBlock *	pSCache;
-	FLMBOOL				bDoAsync;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMUINT				uiSortedBlocks = 0;
 	FLMUINT				uiBlockCount = 0;
@@ -4289,12 +4228,6 @@ RCODE F_Database::flushDirtyBlocks(
 		m_pCPInfo->bWritingDataBlocks = TRUE;
 		unlockMutex();
 	}
-
-	// See if we can do async IO.
-
-	bDoAsync = (gv_SFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
-				  ? TRUE
-				  : FALSE;
 
 	flmAssert( !m_pPendingWriteList);
 
@@ -4449,7 +4382,7 @@ Force_Checkpoint:
 			rc = writeSortedBlocks( pDbStats, pSFileHdl,
 									uiMaxDirtyCache, &uiDirtyCacheLeft,
 									&bForceCheckpoint, bIsCPThread,
-									bDoAsync, uiSortedBlocks, pbWroteAll);
+									uiSortedBlocks, pbWroteAll);
 		}
 		else
 		{
@@ -4514,17 +4447,13 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	if (bDoAsync)
+	// Wait for writes to complete.
+
+	if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
 	{
-
-		// Wait for writes to complete.
-
-		if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+		if (RC_OK( rc))
 		{
-			if (RC_OK( rc))
-			{
-				rc = rc2;
-			}
+			rc = rc2;
 		}
 	}
 
@@ -4532,7 +4461,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 
 	// Don't keep around a large block array if we happened to
 	// allocate one that is bigger than our normal size.  It may
@@ -4556,7 +4485,6 @@ RCODE F_Database::reduceDirtyCache(
 	RCODE					rc = NE_SFLM_OK;
 	RCODE					rc2;
 	F_CachedBlock *	pSCache;
-	FLMBOOL				bDoAsync;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMUINT				uiDirtyCacheLeft;
 	FLMUINT				uiSortedBlocks = 0;
@@ -4565,13 +4493,6 @@ RCODE F_Database::reduceDirtyCache(
 	FLMBOOL				bWroteAll;
 
 	flmAssert( !m_uiLogCacheCount);
-
-	// See if we can do async IO.
-
-	bDoAsync = (gv_SFlmSysData.bOkToDoAsyncWrites && 
-					pSFileHdl->canDoAsync())
-						? TRUE
-						: FALSE;
 
 	flmAssert( !m_pPendingWriteList);
 
@@ -4629,7 +4550,7 @@ RCODE F_Database::reduceDirtyCache(
 	bWroteAll = TRUE;
 
 	rc = writeSortedBlocks( pDbStats, pSFileHdl, 0, &uiDirtyCacheLeft,
-			&bForceCheckpoint, FALSE, bDoAsync, uiSortedBlocks, &bWroteAll);
+			&bForceCheckpoint, FALSE, uiSortedBlocks, &bWroteAll);
 	
 	uiSortedBlocks = 0;
 
@@ -4664,16 +4585,13 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	if( bDoAsync)
-	{
-		// Wait for writes to complete.
+	// Wait for writes to complete.
 
-		if( RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+	if( RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+	{
+		if( RC_OK( rc))
 		{
-			if( RC_OK( rc))
-			{
-				rc = rc2;
-			}
+			rc = rc2;
 		}
 	}
 
@@ -4681,7 +4599,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 
 	// Don't keep around a large block array if we happened to
 	// allocate one that is bigger than our normal size.  It may
@@ -4720,7 +4638,6 @@ RCODE F_Database::reduceNewBlocks(
 	RCODE					rc = NE_SFLM_OK;
 	RCODE					rc2;
 	F_CachedBlock *	pSCache;
-	FLMBOOL				bDoAsync = FALSE;
 	FLMBOOL				bMutexLocked = FALSE;
 	FLMUINT				uiSortedBlocks = 0;
 	FLMUINT				uiDirtyCacheLeft;
@@ -4733,12 +4650,6 @@ RCODE F_Database::reduceNewBlocks(
 		m_pCPInfo->bWritingDataBlocks = TRUE;
 		unlockMutex();
 	}
-
-	// See if we can do async IO.
-
-	bDoAsync = (gv_SFlmSysData.bOkToDoAsyncWrites && pSFileHdl->canDoAsync())
-				  ? TRUE
-				  : FALSE;
 
 	flmAssert( !m_pPendingWriteList);
 	uiDirtyCacheLeft = m_uiDirtyCacheCount * m_uiBlockSize;
@@ -4811,7 +4722,7 @@ RCODE F_Database::reduceNewBlocks(
 		rc = writeSortedBlocks( pDbStats, pSFileHdl,
 								~((FLMUINT)0), &uiDirtyCacheLeft,
 								&bForceCheckpoint, FALSE,
-								bDoAsync, uiSortedBlocks, &bDummy);
+								uiSortedBlocks, &bDummy);
 
 		if( RC_OK( rc))
 		{
@@ -4862,17 +4773,13 @@ Exit:
 		bMutexLocked = FALSE;
 	}
 
-	if (bDoAsync)
+	// Wait for writes to complete.
+
+	if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
 	{
-
-		// Wait for writes to complete.
-
-		if (RC_BAD( rc2 = m_pBufferMgr->waitForAllPendingIO()))
+		if (RC_OK( rc))
 		{
-			if (RC_OK( rc))
-			{
-				rc = rc2;
-			}
+			rc = rc2;
 		}
 	}
 
@@ -4880,7 +4787,7 @@ Exit:
 
 	// Better not be any incomplete writes at this point.
 
-	flmAssert( !m_pBufferMgr->havePendingIO());
+	flmAssert( !m_pBufferMgr->isIOPending());
 
 	// Don't keep around a large block array if we happened to
 	// allocate one that is bigger than our normal size.  It may
@@ -5318,7 +5225,7 @@ RCODE F_Database::createBlock(
 	F_Db *				pDb,
 	F_CachedBlock **	ppSCacheRV)
 {
-	RCODE					rc = NE_SFLM_OK;
+	RCODE					rc = NE_FLM_OK;
 	FLMUINT				uiBlkAddress;
 	F_BLK_HDR *			pBlkHdr;
 	F_CachedBlock *	pSCache = NULL;
@@ -5380,16 +5287,12 @@ RCODE F_Database::createBlock(
 
 	if( !gv_SFlmSysData.pGlobalCacheMgr->cacheOverLimit())
 	{
-		gv_SFlmSysData.pBlockCacheMgr->m_pBlockAllocator->lockMutex();
-
-		if( (pSCache = new( uiBlockSize, TRUE) F_CachedBlock( uiBlockSize)) == NULL)
+		if( (pSCache = new( uiBlockSize) F_CachedBlock( uiBlockSize)) == NULL)
 		{
 			rc = RC_SET( NE_SFLM_MEM);
 			goto Exit;
 		}
 
-		pSCache->m_uiUseCount++;
-		gv_SFlmSysData.pBlockCacheMgr->m_pBlockAllocator->unlockMutex();
 		bLocalCacheAllocation = TRUE;
 	}
 
@@ -5447,7 +5350,7 @@ RCODE F_Database::createBlock(
 
 		// Set use count to one so the block cannot be replaced.
 
-		pSCache->m_uiUseCount--;
+		pSCache->m_bCanRelocate = TRUE;
 		pSCache->useForThread( 0);
 	}
 	else
@@ -5745,16 +5648,13 @@ RCODE F_Database::logPhysBlk(
 
 	if( !gv_SFlmSysData.pGlobalCacheMgr->cacheOverLimit())
 	{
-		gv_SFlmSysData.pBlockCacheMgr->m_pBlockAllocator->lockMutex();
-
-		if( (pNewSCache = new( uiBlockSize, TRUE) F_CachedBlock( uiBlockSize)) == NULL)
+		if( (pNewSCache = new( uiBlockSize) F_CachedBlock( 
+			uiBlockSize)) == NULL)
 		{
 			rc = RC_SET( NE_SFLM_MEM);
 			goto Exit;
 		}
 
-		pNewSCache->m_uiUseCount++;
-		gv_SFlmSysData.pBlockCacheMgr->m_pBlockAllocator->unlockMutex();
 		bLocalCacheAllocation = TRUE;
 
 		// Copy the old block's data into this one.
@@ -5781,7 +5681,7 @@ RCODE F_Database::logPhysBlk(
 
 		// Set use count to one so the block cannot be replaced.
 
-		pNewSCache->m_uiUseCount--;
+		pNewSCache->m_bCanRelocate = TRUE;
 		pNewSCache->useForThread( 0);
 	}
 	else
@@ -6073,7 +5973,7 @@ RCODE F_BlockCacheMgr::initCache( void)
 	}
 
 	if (RC_BAD( rc = m_pBlockAllocator->setup(
-		gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL, uiBlockSizes,
+		TRUE, gv_SFlmSysData.pGlobalCacheMgr->m_pSlabManager, NULL, uiBlockSizes,
 		&m_Usage.slabUsage, NULL)))
 	{
 		goto Exit;
@@ -7152,8 +7052,6 @@ RCODE F_Database::doCheckpoint(
 	F_CachedBlock *	pSCache;
 	FLMUINT				uiTimestamp;
 
-	pSFileHdl->enableFlushMinimize();
-
 	if (m_pCPInfo)
 	{
 		lockMutex();
@@ -7280,8 +7178,6 @@ Exit:
 		m_pCPInfo->bDoingCheckpoint = FALSE;
 		unlockMutex();
 	}
-
-	pSFileHdl->disableFlushMinimize();
 
 	return( rc);
 }
@@ -7787,24 +7683,43 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+void FLMAPI F_CachedBlock::objectAllocInit(
+	void *		pvAlloc,
+	FLMUINT		uiSize)
+{
+	F_UNREFERENCED_PARM( uiSize);
+	
+	// Need to make sure that m_bCanRelocate is initialized to zero
+	// prior to unlocking the mutex.  This is so the allocator 
+	// doesn't see garbage values that may cause it to relocate the object 
+	// before the constructor has been called.
+	
+	((F_CachedBlock *)pvAlloc)->m_bCanRelocate = FALSE;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 void * F_CachedBlock::operator new(
 	FLMSIZET			uiSize,
-	FLMUINT			uiBlockSize,
-	FLMBOOL			bAllocMutexLocked)
+	FLMUINT			uiBlockSize)
 #ifndef FLM_NLM	
 	throw()
 #endif
 {
-	void *	pvPtr;
+	void *		pvPtr;
 	
 	flmAssert( uiSize == sizeof( F_CachedBlock));
+
 	if( RC_BAD( gv_SFlmSysData.pBlockCacheMgr->m_pBlockAllocator->allocBuf(
 		&gv_SFlmSysData.pBlockCacheMgr->m_blockRelocator,
-		uiSize + uiBlockSize, (FLMBYTE **)&pvPtr, bAllocMutexLocked)))
+		uiSize + uiBlockSize, F_CachedBlock::objectAllocInit,
+		(FLMBYTE **)&pvPtr)))
 	{
 		pvPtr = NULL;
 	}
-
+	
+	flmAssert( !((F_CachedBlock *)pvPtr)->m_bCanRelocate); 
 	return( pvPtr);
 }
 
