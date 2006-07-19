@@ -28,6 +28,17 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
+typedef struct
+{
+	F_MUTEX						hMutex;
+	F_NOTIFY *					pNotifyList;
+	FLMUINT						uiWriteThread;
+	FLMINT						iRefCnt;
+} F_RWLOCK_IMP;
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 #if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
 typedef struct
 {
@@ -670,7 +681,7 @@ RCODE f_semWait(
 	{
 		if( _sema_timedwait( (sema_t *)hSem, (unsigned int)uiTimeout))
 		{
-			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
+			rc = RC_SET( NE_FLM_WAIT_TIMEOUT);
 		}
 	}
 
@@ -745,7 +756,7 @@ RCODE FLMAPI f_semWait(
 	{
 		if( kSemaphoreTimedWait( (SEMAPHORE)hSem, (UINT)uiTimeout) != 0)
 		{
-			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
+			rc = RC_SET( NE_FLM_WAIT_TIMEOUT);
 		}
 	}
 	
@@ -854,12 +865,12 @@ RCODE FLMAPI f_semWait(
 	F_SEM			hSem,
 	FLMUINT		uiTimeout)
 {
-	if( WaitForSingleObject( hSem, uiTimeout ) == WAIT_OBJECT_0)
+	if( WaitForSingleObject( hSem, uiTimeout) == WAIT_OBJECT_0)
 	{
 		return( NE_FLM_OK);
 	}
 	
-	return( RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE));
+	return( RC_SET( NE_FLM_WAIT_TIMEOUT));
 }
 #endif
 
@@ -873,3 +884,357 @@ void FLMAPI f_semSignal(
 	(void)ReleaseSemaphore( hSem, 1, NULL);
 }
 #endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC void f_rwlockNotify(
+	F_RWLOCK_IMP *		pReadWriteLock)
+{
+	F_NOTIFY *			pNotify = pReadWriteLock->pNotifyList;
+	FLMBOOL				bFoundWriter = FALSE;
+	
+	f_assertMutexLocked( pReadWriteLock->hMutex);
+	
+	while( pNotify && !bFoundWriter)
+	{
+		F_SEM			hSem;
+
+		*(pNotify->pRc) = NE_FLM_OK;
+		hSem = pNotify->hSem;
+		bFoundWriter = (FLMBOOL)pNotify->pvData;
+		pNotify = pNotify->pNext;
+		f_semSignal( hSem);
+	}
+	
+	pReadWriteLock->pNotifyList = pNotify;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_rwlockCreate(
+	F_RWLOCK *			phReadWriteLock)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_RWLOCK_IMP *		pReadWriteLock = NULL;
+	
+	if( RC_BAD( rc = f_calloc( sizeof( F_RWLOCK_IMP), &pReadWriteLock)))
+	{
+		goto Exit;
+	}
+	
+	pReadWriteLock->hMutex = F_MUTEX_NULL;
+	
+	if( RC_BAD( rc = f_mutexCreate( &pReadWriteLock->hMutex)))
+	{
+		goto Exit;
+	}
+	
+	*phReadWriteLock = (F_RWLOCK)pReadWriteLock;
+	pReadWriteLock = NULL;
+	
+Exit:
+
+	if( pReadWriteLock)
+	{
+		f_rwlockDestroy( (F_RWLOCK *)&pReadWriteLock);
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI f_rwlockDestroy(
+	F_RWLOCK *			phReadWriteLock)
+{
+	F_RWLOCK_IMP *		pReadWriteLock = (F_RWLOCK_IMP *)*phReadWriteLock;
+	
+	if( pReadWriteLock)
+	{
+		f_assert( !pReadWriteLock->pNotifyList);
+		
+		if( pReadWriteLock->hMutex != F_MUTEX_NULL)
+		{
+			f_mutexDestroy( &pReadWriteLock->hMutex);
+		}
+		
+		f_free( &pReadWriteLock);
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_rwlockAcquire(
+	F_RWLOCK				hReadWriteLock,
+	F_SEM					hSem,
+	FLMBOOL				bWriter)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_RWLOCK_IMP *		pReadWriteLock = (F_RWLOCK_IMP *)hReadWriteLock;
+	FLMBOOL				bMutexLocked = FALSE;
+	
+	f_mutexLock( pReadWriteLock->hMutex);
+	bMutexLocked = TRUE;
+	
+	if( bWriter)
+	{
+		if( pReadWriteLock->iRefCnt != 0)
+		{
+			rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)bWriter, 
+				&pReadWriteLock->pNotifyList); 
+		}
+		
+		if( RC_OK( rc))
+		{
+			f_assert( !pReadWriteLock->iRefCnt);
+			pReadWriteLock->iRefCnt = -1;
+			pReadWriteLock->uiWriteThread = f_threadId();
+		}
+	}
+	else
+	{	 
+		if( pReadWriteLock->iRefCnt < 0 || pReadWriteLock->pNotifyList)
+		{
+			rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)bWriter, 
+				&pReadWriteLock->pNotifyList); 
+		}
+		
+		if( RC_OK( rc))
+		{
+			pReadWriteLock->iRefCnt++;
+		}
+	}
+	
+	f_assert( RC_BAD( rc) || pReadWriteLock->iRefCnt);
+	
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( pReadWriteLock->hMutex);
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_rwlockPromote(
+	F_RWLOCK				hReadWriteLock,
+	F_SEM					hSem)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_RWLOCK_IMP *		pReadWriteLock = (F_RWLOCK_IMP *)hReadWriteLock;
+	FLMBOOL				bMutexLocked = FALSE;
+	
+	f_mutexLock( pReadWriteLock->hMutex);
+	bMutexLocked = TRUE;
+	
+	if( pReadWriteLock->iRefCnt <= 0)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	pReadWriteLock->iRefCnt--;
+		
+	if( pReadWriteLock->iRefCnt != 0)
+	{
+		rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)TRUE, 
+			&pReadWriteLock->pNotifyList); 
+	}
+	
+	if( RC_OK( rc))
+	{
+		f_assert( !pReadWriteLock->iRefCnt);
+		pReadWriteLock->iRefCnt = -1;
+		pReadWriteLock->uiWriteThread = f_threadId();
+	}
+
+Exit:
+
+	f_assert( RC_BAD( rc) || pReadWriteLock->iRefCnt);
+	
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( pReadWriteLock->hMutex);
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_rwlockTryAcquire(
+	F_RWLOCK				hReadWriteLock,
+	FLMBOOL				bWriter)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_RWLOCK_IMP *		pReadWriteLock = (F_RWLOCK_IMP *)hReadWriteLock;
+	
+	f_mutexLock( pReadWriteLock->hMutex);
+	
+	if( bWriter)
+	{
+		if( pReadWriteLock->iRefCnt != 0)
+		{
+			rc = RC_SET( NE_FLM_WAIT_TIMEOUT);
+		}
+		else
+		{
+			pReadWriteLock->iRefCnt = -1;
+			pReadWriteLock->uiWriteThread = f_threadId();
+		}
+	}
+	else
+	{
+		if( pReadWriteLock->iRefCnt < 0 || pReadWriteLock->pNotifyList)
+		{
+			rc = RC_SET( NE_FLM_WAIT_TIMEOUT);
+		}
+		else
+		{
+			pReadWriteLock->iRefCnt++;
+		}
+	}
+	
+	f_assert( RC_BAD( rc) || pReadWriteLock->iRefCnt);
+	f_mutexUnlock( pReadWriteLock->hMutex);
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_rwlockRelease(
+	F_RWLOCK				hReadWriteLock)
+{
+	RCODE					rc = NE_FLM_OK;
+	F_RWLOCK_IMP *		pReadWriteLock = (F_RWLOCK_IMP *)hReadWriteLock;
+	FLMBOOL				bMutexLocked = FALSE;
+	
+	f_mutexLock( pReadWriteLock->hMutex);
+	bMutexLocked = TRUE;
+	
+	if( pReadWriteLock->iRefCnt > 0)
+	{
+		pReadWriteLock->iRefCnt--;
+	}
+	else if( pReadWriteLock->iRefCnt == -1)
+	{
+		f_assert( pReadWriteLock->uiWriteThread == f_threadId());
+		pReadWriteLock->iRefCnt = 0;
+	}
+	else
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_ILLEGAL_OP);
+		goto Exit;
+	}
+	
+	if( !pReadWriteLock->iRefCnt && pReadWriteLock->pNotifyList)
+	{
+		f_rwlockNotify( pReadWriteLock);
+	}
+	
+Exit:
+	
+	f_assert( RC_BAD( rc) || pReadWriteLock->iRefCnt >= 0);
+	
+	if( bMutexLocked)
+	{
+		f_mutexUnlock( pReadWriteLock->hMutex);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc: This routine links a request into a notification list and
+		then waits to be notified that the event has occurred.  The mutex
+		is assumed to protect the notify list.
+****************************************************************************/
+RCODE FLMAPI f_notifyWait(
+	F_MUTEX			hMutex,
+	F_SEM				hSem,
+	void *			pvData,
+	F_NOTIFY **		ppNotifyList)
+{
+	RCODE				rc = NE_FLM_OK;
+	RCODE				tmpRc;
+	F_NOTIFY			stackNotify;
+	F_NOTIFY *		pNotify = &stackNotify;
+	
+	f_assertMutexLocked( hMutex);
+	f_memset( &stackNotify, 0, sizeof( F_NOTIFY));
+	
+	pNotify->uiThreadId = f_threadId();
+	pNotify->hSem = F_SEM_NULL;
+	
+	if( hSem == F_SEM_NULL)
+	{
+		if( RC_BAD( rc = f_semCreate( &pNotify->hSem)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		pNotify->hSem = hSem;
+	}
+	
+	pNotify->pRc = &rc;
+	pNotify->pvData = pvData;
+	
+	pNotify->pNext = *ppNotifyList;
+	*ppNotifyList = pNotify;
+
+	// Unlock the mutex and wait on the semaphore
+
+	f_mutexUnlock( hMutex);
+
+	if( RC_BAD( tmpRc = f_semWait( pNotify->hSem, F_SEM_WAITFOREVER)))
+	{
+		rc = tmpRc;
+	}
+
+	// Free the semaphore
+	
+	if( hSem != pNotify->hSem)
+	{
+		f_semDestroy( &pNotify->hSem);
+	}
+
+	// Relock the mutex
+
+	f_mutexLock( hMutex);
+
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	This routine notifies threads waiting for a pending read or write
+		to complete.  This routine assumes that the notify list mutex
+		is already locked.
+****************************************************************************/
+void FLMAPI f_notifySignal(
+	F_NOTIFY *			pNotifyList,
+	RCODE					notifyRc)
+{
+	while( pNotifyList)
+	{
+		F_SEM			hSem;
+
+		*(pNotifyList->pRc) = notifyRc;
+		hSem = pNotifyList->hSem;
+		pNotifyList = pNotifyList->pNext;
+		
+		f_semSignal( hSem);
+	}
+}

@@ -481,7 +481,7 @@
 	
 	#define NE_FLM_COULD_NOT_CREATE_SEMAPHORE				0xC500			///< 0xC500 - Could not create a semaphore.
 	#define NE_FLM_BAD_UTF8										0xC501			///< 0xC501 - An invalid byte sequence was found in a UTF-8 string
-	#define NE_FLM_ERROR_WAITING_ON_SEMPAHORE				0xC502			///< 0xC502 - Error occurred while waiting on a sempahore.
+	#define NE_FLM_ERROR_WAITING_ON_SEMAPHORE				0xC502			///< 0xC502 - Error occurred while waiting on a sempahore.
 	#define NE_FLM_BAD_SEN										0xC503			///< 0xC503 - Invalid simple encoded number.
 	#define NE_FLM_COULD_NOT_START_THREAD					0xC504			///< 0xC504 - Problem starting a new thread.
 	#define NE_FLM_BAD_BASE64_ENCODING						0xC505			///< 0xC505 - Invalid base64 sequence encountered.
@@ -492,6 +492,7 @@
 	#define NE_FLM_COULD_NOT_CREATE_MUTEX					0xC50A			///< 0xC50A - Error occurred while creating or initializing a mutex.
 	#define NE_FLM_BAD_PLATFORM_FORMAT						0xC50B			///< 0xC50B	- In-memory alignment of disk structures is incorrect
 	#define NE_FLM_LOCK_REQ_TIMEOUT							0xC50C			///< 0xC50C	- Timeout while waiting for a lock object
+	#define NE_FLM_WAIT_TIMEOUT								0xC50D			///< 0xC50D - Timeout while waiting on a semaphore, condition variable, or reader/writer lock
 	
 	// Network Errors - Must be the same as they were for FLAIM
 
@@ -1629,6 +1630,8 @@
 		virtual RCODE FLMAPI close( void) = 0;
 
 		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
+		
+		virtual FLMBOOL FLMAPI canDoDirectIO( void) = 0;
 
 		virtual void FLMAPI setExtendSize(
 			FLMUINT					uiExtendSize) = 0;
@@ -1824,6 +1827,8 @@
 		}
 	
 		FLMBOOL FLMAPI canDoAsync( void);
+		
+		FLMBOOL FLMAPI canDoDirectIO( void);
 	
 	private:
 	
@@ -2203,6 +2208,58 @@
 	void FLMAPI f_semSignal(
 		F_SEM							hSem);
 
+	/****************************************************************************
+	Desc: Notify Lists
+	****************************************************************************/
+		
+	typedef struct F_NOTIFY
+	{
+		F_NOTIFY *					pNext;		///< Pointer to next F_NOTIFY structure in list.
+		FLMUINT						uiThreadId;	///< ID of thread requesting the notify
+		RCODE  *						pRc;			///< Pointer to a return code variable that is to
+														///< be filled in when the operation is completed.
+														///< The thread requesting notification supplies
+														///< the return code variable to be filled in.
+		void *						pvData;		///< Data that is passed through to a custom
+														///< notify routine
+		F_SEM							hSem;			///< Semaphore that will be signaled when the
+														///< operation is complete.
+	} F_NOTIFY;
+
+	RCODE FLMAPI f_notifyWait(
+		F_MUTEX						hMutex,
+		F_SEM							hSem,
+		void *						pvData,
+		F_NOTIFY **					ppNotifyList);
+		
+	void FLMAPI f_notifySignal(
+		F_NOTIFY *					pNotifyList,
+		RCODE							notifyRc);
+		
+	/****************************************************************************
+	Desc: Reader / Writer Locks
+	****************************************************************************/
+	typedef void *					F_RWLOCK;
+	#define F_RWLOCK_NULL		NULL
+	
+	RCODE FLMAPI f_rwlockCreate(
+		F_RWLOCK *					phReadWriteLock);
+		
+	void FLMAPI f_rwlockDestroy(
+		F_RWLOCK *					phReadWriteLock);
+		
+	RCODE FLMAPI f_rwlockAcquire(
+		F_RWLOCK						hReadWriteLock,
+		F_SEM							hSem,
+		FLMBOOL						bWriter);
+		
+	RCODE FLMAPI f_rwlockPromote(
+		F_RWLOCK						hReadWriteLock,
+		F_SEM							hSem);
+		
+	RCODE FLMAPI f_rwlockRelease(
+		F_RWLOCK						hReadWriteLock);
+	
 	/****************************************************************************
 	Desc: Thread manager
 	****************************************************************************/
@@ -4824,8 +4881,6 @@
 			) = 0;
 	};
 															
-	#define FLM_NO_TIMEOUT				0xFF
-	
 	/**************************************************************************
 	/// Structure used in gathering statistics to hold an operation count and an elapsed time.
 	**************************************************************************/
@@ -4834,7 +4889,6 @@
 		FLMUINT64	ui64Count;							///< Number of times operation was performed
 		FLMUINT64	ui64ElapMilli;						///< Total elapsed time (milliseconds) for the operations.
 	} F_COUNT_TIME_STAT;
-
 	
 	/**************************************************************************
 	/// Structure for returning lock statistics.

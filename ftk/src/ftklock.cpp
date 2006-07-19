@@ -597,7 +597,7 @@ RCODE FLMAPI F_LockObject::lock(
 			LockWait.pLockStats = pLockStats;
 		}
 		
-		if (uiMaxWaitSecs == FLM_NO_TIMEOUT)
+		if (uiMaxWaitSecs >= 0xFF)
 		{
 			LockWait.uiWaitTime = 0;
 		}

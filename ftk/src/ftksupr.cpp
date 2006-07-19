@@ -539,6 +539,31 @@ FLMBOOL FLMAPI F_SuperFileHdl::canDoAsync( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FLMBOOL FLMAPI F_SuperFileHdl::canDoDirectIO( void)
+{
+	FLMBOOL		bCanDoDirectIO = FALSE;
+	
+	if( m_pCFileHdl)
+	{
+		bCanDoDirectIO = m_pCFileHdl->canDoDirectIO();
+	}
+	else
+	{
+		IF_FileHdl *		pFileHdl = NULL;
+		
+		if( RC_OK( getFileHdl( 0, FALSE, &pFileHdl)))
+		{
+			bCanDoDirectIO = pFileHdl->canDoDirectIO();
+			pFileHdl->Release();
+		}
+	}
+	
+	return( bCanDoDirectIO);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 RCODE FLMAPI F_SuperFileHdl::releaseFiles( void)
 {
 	RCODE			rc = NE_FLM_OK;

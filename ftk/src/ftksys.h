@@ -612,6 +612,11 @@
 		{
 			return( m_bOpenedInAsyncMode);
 		}
+		
+		FINLINE FLMBOOL FLMAPI canDoDirectIO( void)
+		{
+			return( m_bDoDirectIO);
+		}
 	
 		FINLINE void FLMAPI setExtendSize(
 			FLMUINT				uiExtendSize)
