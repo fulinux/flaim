@@ -83,6 +83,10 @@
 	#endif
 #endif
 
+#if defined( FLM_UNIX) && !defined( FLM_OSX)
+	#include <dlfcn.h>
+#endif
+
 /************************************************************************
 Desc:
 *************************************************************************/
@@ -2237,9 +2241,9 @@ Desc:
 RCODE FLMAPI F_SlabManager::setup(
 	FLMUINT 				uiPreallocSize)
 {
-	RCODE					rc = NE_FLM_OK;
-	FLMUINT				uiSysSlabSize = 0;
-	FLMUINT				uiSlabSize = 64 * 1024;
+	RCODE			rc = NE_FLM_OK;
+	FLMUINT		uiSysSlabSize = 0;
+	FLMUINT		uiSlabSize = 64 * 1024;
 	
 	if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
 	{
@@ -2846,7 +2850,7 @@ RCODE F_FixedAlloc::setup(
 	FLM_SLAB_USAGE *		pUsageStats,
 	FLMUINT *				puiTotalBytesAllocated)
 {
-	RCODE						rc = NE_FLM_OK;
+	RCODE			rc = NE_FLM_OK;
 
 	f_assert( pSlabManager);
 	f_assert( uiCellSize);
@@ -5240,9 +5244,6 @@ Exit:
 }
 #endif
 
-#if defined( FLM_UNIX) && !defined( FLM_OSX)
-	#include <dlfcn.h>
-#endif
 
 /****************************************************************************
 The NetWare Internal Debugger encrypts all symbols by XORing each character 
