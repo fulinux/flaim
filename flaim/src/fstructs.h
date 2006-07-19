@@ -26,7 +26,6 @@
 #define FSTRUCTS_H
 
 struct FFILE;
-struct FNOTIFY;
 struct QUERY_HDR;
 struct CDL;
 struct FDICT;
@@ -355,7 +354,7 @@ typedef struct SCACHE
 											// just different versions of the same
 											// block.  The next block is an older
 											// version of the block.
-	FNOTIFY *	pNotifyList;		// This is a pointer to a list of threads
+	F_NOTIFY *	pNotifyList;		// This is a pointer to a list of threads
 											// that want to be notified when a pending
 											// I/O is complete.  This pointer is only
 											// non-null if the block is currently being
@@ -572,7 +571,7 @@ typedef struct RCACHE
 													// memory was allocated on the heap
 	RCACHE *				pNextInHeapList;	// Next in the list of records whose
 													// memory was allocated on the heap
-	FNOTIFY *			pNotifyList;		// This is a pointer to a list of
+	F_NOTIFY *			pNotifyList;		// This is a pointer to a list of
 													// threads that want to be notified
 													// when a pending I/O is complete.
 													// This pointer is only non-null if the
@@ -1422,14 +1421,14 @@ typedef struct FFILE
 															// belonging to this file that need
 															// to be logged to the rollback log
 															// for the current transaction.
-	FNOTIFY *				pOpenNotifies;			// Pointer to a list of notifies to
+	F_NOTIFY *				pOpenNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// opened (points to a linked list of
-															// FNOTIFY structures).
-	FNOTIFY *				pCloseNotifies;		// Pointer to a list of notifies to
+															// F_NOTIFY structures).
+	F_NOTIFY *				pCloseNotifies;		// Pointer to a list of notifies to
 															// perform when this file is finally
 															// closed (points to a linked list of
-															// FNOTIFY structures).
+															// F_NOTIFY structures).
 	FDICT *					pDictList;				// Pointer to linked list of 
 															// dictionaries currently being used
 															// for this file.  The linked list
@@ -1522,10 +1521,10 @@ typedef struct FFILE
 	IF_LockObject *		pFileLockObj;			// Object for locking the file.
 	IF_LockObject *		pWriteLockObj;			// Object for locking to do writing.
 	IF_FileHdl *			pLockFileHdl;			// Lock file handle for 3.x databases.
-	FNOTIFY *				pLockNotifies;			// Pointer to a list of notifies to
+	F_NOTIFY *				pLockNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// locked (points to a linked list of
-															// FNOTIFY structures).
+															// F_NOTIFY structures).
 	FLMBOOL					bBeingLocked;			// Flag indicating whether or not this
 															// file is in the process of being
 															// locked for exclusive access.
@@ -1579,26 +1578,6 @@ typedef struct FFILE
 	char *					pszDbPassword;			// A password that was used to open the database (may be NULL).
 	FLMUINT64				ui64RflDiskUsage;		// Current RFL disk space usage estimate (used only if keeping RFL files)
 } FFILE;
-
-/***************************************************************************
-Desc:		This is the notify request structure.  Notify requests are linked
-			off of open requests for files or read requests for files so that
-			when an operation is complete	that multiple threads are waiting
-			on, all of them will be notified.
-***************************************************************************/
-typedef struct FNOTIFY
-{
-	FNOTIFY *		pNext;		// Pointer to next FNOTIFY structure in list.
-	FLMUINT			uiThreadId;	// ID of thread requesting the notify
-	RCODE  *			pRc;			// Pointer to a return code variable that is to
-										// be filled in when the operation is completed.
-										// The thread requesting notification supplies
-										// the return code variable to be filled in.
-	void *			UserData;	// Other user data that the notifier might use
-										// to transfer other information to the waiter.
-	F_SEM				hSem;			// Semaphore that will be signaled when the
-										// operation is complete.
-} FNOTIFY;
 
 /****************************************************************************
 Desc:	 	Structure used to pass information to the checkpoint thread for 3.x
@@ -1891,7 +1870,7 @@ private:
 	FLMUINT				m_uiThreadId;
 	FLMUINT				m_uiThreadLockCount;
 	F_MUTEX				m_hMutex;
-	FNOTIFY *			m_pNotifyList;
+	F_NOTIFY *			m_pNotifyList;
 	F_NameTable *		m_pNameTable;
 	FLMUINT				m_uiDictSeqNum;
 	FLMUINT				m_uiNameTableFFileId;

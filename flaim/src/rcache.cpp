@@ -174,11 +174,8 @@ FSTATIC RCODE flmRcaRehash( void);
 FSTATIC RCODE flmRcaSetMemLimit(
 	FLMUINT			uiMaxCacheBytes);
 
-FSTATIC RCODE flmRcaWaitNotify(
-	FNOTIFY **		ppNotifyListRV);
-
 FSTATIC void flmRcaNotify(
-	FNOTIFY *		pNotify,
+	F_NOTIFY *		pNotify,
 	RCACHE *			pUseRCache,
 	RCODE				NotifyRc);
 
@@ -1182,80 +1179,12 @@ void flmRcaExit( void)
 }
 
 /****************************************************************************
-Desc: This routine links a notify request into a notification list and
-		then waits to be notified that the event has occurred.
-		NOTE: This routine assumes that the record cache mutex is locked and that
-		it is supposed to unlock it.  It will relock the mutex on its way out.
-****************************************************************************/
-FSTATIC RCODE flmRcaWaitNotify(
-	FNOTIFY **			ppNotifyListRV)
-{
-	FNOTIFY *      pNotify = NULL;
-	RCODE          TempRc;
-	RCODE          rc = FERR_OK;
-	F_SEM				hSem;
-
-	// First create a notify request and link it into the list.
-
-	if (RC_OK( rc = f_calloc( (FLMUINT)(sizeof( FNOTIFY)), &pNotify)))
-	{
-		// Allocate a semaphore for the notify request.
-
-		pNotify->uiThreadId = f_threadId();
-		pNotify->hSem = F_SEM_NULL;
-		rc = f_semCreate( &pNotify->hSem);
-	}
-
-	if (RC_BAD( rc))
-	{
-		if (pNotify)
-		{
-			if (pNotify->hSem != F_SEM_NULL)
-			{
-				f_semDestroy( &pNotify->hSem);
-			}
-
-			f_free( &pNotify);
-		}
-
-		goto Exit;
-	}
-
-	pNotify->pRc = &rc;
-	pNotify->UserData = NULL;
-	pNotify->pNext = *ppNotifyListRV;
-	*ppNotifyListRV = pNotify;
-	hSem = pNotify->hSem;
-
-	// Unlock the mutex and wait on the semaphore.
-
-	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
-	if (RC_BAD( TempRc = f_semWait( hSem, F_SEM_WAITFOREVER)))
-	{
-		rc = TempRc;
-	}
-
-	// Free the semaphore and the notify structure.
-
-	f_semDestroy( &hSem);
-	f_free( &pNotify);
-
-	// Relock the record cache mutex
-
-	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
-
-Exit:
-
-	return( rc);
-}
-
-/****************************************************************************
 Desc:	This routine notifies threads waiting for a pending read to complete.
 		NOTE:  This routine assumes that the record cache mutex is already
 		locked.
 ****************************************************************************/
 FSTATIC void flmRcaNotify(
-	FNOTIFY *			pNotify,
+	F_NOTIFY *			pNotify,
 	RCACHE *				pUseRCache,
 	RCODE					NotifyRc)
 {
@@ -1558,9 +1487,10 @@ Desc:	This routine finds a record in the record cache.  If it cannot
 		has been locked.
 ****************************************************************************/
 void flmRcaFindRec(
+	FFILE *			pFile,
+	F_SEM				hWaitSem,
 	FLMUINT			uiContainer,
 	FLMUINT			uiDrn,
-	FFILE *			pFile,
 	FLMUINT			uiVersionNeeded,
 	FLMBOOL			bDontPoisonCache,
 	FLMUINT *		puiNumLooks,
@@ -1568,11 +1498,11 @@ void flmRcaFindRec(
 	RCACHE **		ppNewerRCache,
 	RCACHE **		ppOlderRCache)
 {
-	RCACHE *		pRCache;
-	FLMUINT		uiNumLooks = 0;
-	FLMBOOL		bFound;
-	RCACHE *		pNewerRCache;
-	RCACHE *		pOlderRCache;
+	RCACHE *			pRCache;
+	FLMUINT			uiNumLooks = 0;
+	FLMBOOL			bFound;
+	RCACHE *			pNewerRCache;
+	RCACHE *			pOlderRCache;
 
 	// Search down the hash bucket for the matching item.
 
@@ -1620,7 +1550,8 @@ Start_Find:
 				// in a version that satisfies our request.
 
 				gv_FlmSysData.RCacheMgr.uiIoWaits++;
-				if (RC_BAD( flmRcaWaitNotify( &pRCache->pNotifyList)))
+				if( RC_BAD( f_notifyWait( gv_FlmSysData.RCacheMgr.hMutex, 
+					hWaitSem, NULL, &pRCache->pNotifyList)))
 				{
 
 					// Don't care what error the other thread had reading
@@ -2012,14 +1943,14 @@ FSTATIC void flmRcaLinkToFFILE(
 Desc:	This routine retrieves a record from the record cache.
 ****************************************************************************/
 RCODE flmRcaRetrieveRec(
-	FDB *				pDb,
-	FLMBOOL *		pbTransStarted,
-	FLMUINT			uiContainer,			// Container record is in.
-	FLMUINT			uiDrn,					// DRN of record.
-	FLMBOOL			bOkToGetFromDisk,		// If not in cache, OK to get from disk?
-	BTSK *			pStack,					// Use stack to retrieve, if NON-NULL.
-	LFILE *			pLFile,					// LFILE to use, if retrieving with stack
-	FlmRecord **	ppRecord)
+	FDB *					pDb,
+	FLMBOOL *			pbTransStarted,
+	FLMUINT				uiContainer,			// Container record is in.
+	FLMUINT				uiDrn,					// DRN of record.
+	FLMBOOL				bOkToGetFromDisk,		// If not in cache, OK to get from disk?
+	BTSK *				pStack,					// Use stack to retrieve, if NON-NULL.
+	LFILE *				pLFile,					// LFILE to use, if retrieving with stack
+	FlmRecord **		ppRecord)
 {
 	RCODE					rc = FERR_OK;
 	FLMBOOL				bRCacheMutexLocked = FALSE;
@@ -2034,7 +1965,7 @@ RCODE flmRcaRetrieveRec(
 	FLMUINT				uiLowTransId;
 	FLMBOOL				bMostCurrent;
 	FLMUINT				uiCurrTransId;
-	FNOTIFY *			pNotify;
+	F_NOTIFY *			pNotify;
 	FLMUINT				uiNumLooks;
 	FLMBOOL				bInitializedFdb = FALSE;
 	FLMBOOL				bDontPoisonCache = pDb->uiFlags & FDB_DONT_POISON_CACHE
@@ -2094,10 +2025,9 @@ RCODE flmRcaRetrieveRec(
 
 Start_Find:
 
-	flmRcaFindRec( uiContainer, uiDrn, pFile,
-						uiCurrTransId, bDontPoisonCache, 
-						&uiNumLooks, &pRCache,
-						&pNewerRCache, &pOlderRCache);
+	flmRcaFindRec( pFile, pDb->hWaitSem, uiContainer, uiDrn, 
+		uiCurrTransId, bDontPoisonCache, &uiNumLooks, &pRCache, 
+		&pNewerRCache, &pOlderRCache);
 
 	if (pRCache)
 	{
@@ -2384,7 +2314,7 @@ RCODE flmRcaInsertRec(
 
 	// See if we can find the record in cache
 
-	flmRcaFindRec( uiContainer, uiDrn, pFile,
+	flmRcaFindRec( pFile, pDb->hWaitSem, uiContainer, uiDrn,
 						pDb->LogHdr.uiCurrTransID,	bDontPoisonCache, NULL, &pRCache,
 						&pNewerRCache, &pOlderRCache);
 
@@ -2543,12 +2473,12 @@ RCODE flmRcaRemoveRec(
 	FLMUINT		uiContainer,
 	FLMUINT		uiDrn)
 {
-	RCODE					rc = FERR_OK;
-	FLMBOOL				bMutexLocked = FALSE;
-	RCACHE *				pRCache;
-	RCACHE *				pNewerRCache;
-	RCACHE *				pOlderRCache;
-	FFILE *				pFile = pDb->pFile;
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bMutexLocked = FALSE;
+	RCACHE *		pRCache;
+	RCACHE *		pNewerRCache;
+	RCACHE *		pOlderRCache;
+	FFILE *		pFile = pDb->pFile;
 
 	flmAssert( uiDrn != 0);
 
@@ -2572,7 +2502,7 @@ RCODE flmRcaRemoveRec(
 
 	// See if we can find the record in cache
 
-	flmRcaFindRec( uiContainer, uiDrn, pFile,
+	flmRcaFindRec( pFile, pDb->hWaitSem, uiContainer, uiDrn,
 						pDb->LogHdr.uiCurrTransID, FALSE, NULL, &pRCache,
 						&pNewerRCache, &pOlderRCache);
 

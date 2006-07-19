@@ -92,7 +92,7 @@ FSTATIC void _ScaDbgReleaseForThread(
 #endif
 
 FSTATIC void ScaNotify(
-	FNOTIFY *		pNotify,
+	F_NOTIFY *		pNotify,
 	SCACHE *			pUseSCache,
 	RCODE				NotifyRc);
 
@@ -1334,27 +1334,29 @@ Desc:	This routine notifies threads waiting for a pending read or write
 		locked.
 ****************************************************************************/
 FSTATIC void ScaNotify(
-	FNOTIFY *			pNotify,
+	F_NOTIFY *			pNotify,
 	SCACHE *				pUseSCache,
-	RCODE					NotifyRc
-	)
+	RCODE					NotifyRc)
 {
-	while (pNotify)
+	while( pNotify)
 	{
 		F_SEM	hSem;
 
 		*(pNotify->pRc) = NotifyRc;
-		if (RC_OK( NotifyRc))
+		
+		if( RC_OK( NotifyRc))
 		{
-			if (pNotify->UserData)
+			if( pNotify->pvData)
 			{
-				*((SCACHE **)pNotify->UserData) = pUseSCache;
+				*((SCACHE **)pNotify->pvData) = pUseSCache;
 			}
+			
 			if (pUseSCache)
 			{
 				ScaUseForThread( pUseSCache, &(pNotify->uiThreadId));
 			}
 		}
+		
 		hSem = pNotify->hSem;
 		pNotify = pNotify->pNext;
 		f_semSignal( hSem);
@@ -1368,8 +1370,7 @@ Desc:	This routine logs information about changes to a cache block's flags
 FSTATIC void scaLogFlgChange(
 	SCACHE *		pSCache,
 	FLMUINT16	ui16OldFlags,
-	char			cPlace
-	)
+	char			cPlace)
 {
 	char			szBuf [60];
 	char *		pszTmp;
@@ -1524,8 +1525,7 @@ Desc:	This routine unlinks a cache block from all of its lists and then
 FSTATIC void ScaUnlinkCache(
 	SCACHE *				pSCache,
 	FLMBOOL				bFreeIt,
-	RCODE					NotifyRc
-	)
+	RCODE					NotifyRc)
 {
 #ifdef FLM_DEBUG
 	SCACHE_USE *	pUse;
@@ -3338,14 +3338,10 @@ Desc:	This routine attempts to read a block from disk.  It will
 FSTATIC RCODE ScaReadTheBlock(
 	FDB *	  				pDb,
 	LFILE *				pLFile,
-	TMP_READ_STATS *	pTmpReadStats,		// READ statistics.
-	FLMBYTE *			pucBlk,				// Pointer to buffer where block is
-													// to be read into.
-	FLMUINT				uiFilePos,			// File position to be read from.  If
-													// file position != block address, we
-													// are reading from the log.
-	FLMUINT				uiBlkAddress		// Block address that is to be read.
-	)
+	TMP_READ_STATS *	pTmpReadStats,
+	FLMBYTE *			pucBlk,
+	FLMUINT				uiFilePos,
+	FLMUINT				uiBlkAddress)
 {
 	RCODE	  			rc = FERR_OK;
 	FLMUINT			uiBytesRead;
@@ -3384,43 +3380,62 @@ FSTATIC RCODE ScaReadTheBlock(
 		else
 		{
 			pTmpReadStats->BlockReads.ui64Count++;
-			pTmpReadStats->BlockReads.ui64TotalBytes +=
-				uiBlkSize;
+			pTmpReadStats->BlockReads.ui64TotalBytes += uiBlkSize;
 		}
 		ui64ElapMilli = 0;
 		f_timeGetTimeStamp( &StartTime);
 	}
-
-	if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
-		uiBlkSize, pDb->pucAlignedReadBuf, &uiBytesRead)))
+	
+	if( pDb->pSFileHdl->canDoDirectIO())
 	{
-		if (pDbStats)
+		if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
+			uiBlkSize, pDb->pucAlignedReadBuf, &uiBytesRead)))
 		{
-			pDbStats->uiReadErrors++;
+			if (pDbStats)
+			{
+				pDbStats->uiReadErrors++;
+			}
+	
+			if (rc == FERR_IO_END_OF_FILE)
+			{
+				// Should only be possible when reading a root block,
+				// because the root block address in the LFILE may be
+				// a block that was just created by an update
+				// transaction.
+	
+				flmAssert( pDb->uiKilledTime);
+				rc = RC_SET( FERR_OLD_VIEW);
+			}
+			goto Exit;
 		}
-
-		if (rc == FERR_IO_END_OF_FILE)
+	
+		uiEncryptSize = (FLMUINT)getEncryptSize( pDb->pucAlignedReadBuf);
+		if( uiEncryptSize < BH_OVHD || uiEncryptSize > uiBlkSize)
 		{
-
-			// Should only be possible when reading a root block,
-			// because the root block address in the LFILE may be
-			// a block that was just created by an update
-			// transaction.
-
-			flmAssert( pDb->uiKilledTime);
-			rc = RC_SET( FERR_OLD_VIEW);
+			rc = RC_SET_AND_ASSERT( FERR_DATA_ERROR);
+			goto Exit;
 		}
-		goto Exit;
+	
+		f_memcpy( pucBlk, pDb->pucAlignedReadBuf, uiEncryptSize);
 	}
-
-	uiEncryptSize = (FLMUINT)getEncryptSize( pDb->pucAlignedReadBuf);
-	if( uiEncryptSize < BH_OVHD || uiEncryptSize > uiBlkSize)
+	else
 	{
-		rc = RC_SET_AND_ASSERT( FERR_DATA_ERROR);
-		goto Exit;
+		if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
+			uiBlkSize, pucBlk, &uiBytesRead)))
+		{
+			if (pDbStats)
+			{
+				pDbStats->uiReadErrors++;
+			}
+	
+			if (rc == FERR_IO_END_OF_FILE)
+			{
+				flmAssert( pDb->uiKilledTime);
+				rc = RC_SET( FERR_OLD_VIEW);
+			}
+			goto Exit;
+		}
 	}
-
-	f_memcpy( pucBlk, pDb->pucAlignedReadBuf, uiEncryptSize);
 
 #ifdef FLM_DBG_LOG
 	if (uiFilePos != uiBlkAddress)
@@ -3993,9 +4008,8 @@ Get_Next_Block:
 			if (pNextSCache->ui16Flags & CA_READ_PENDING)
 			{
 				gv_FlmSysData.SCacheMgr.uiIoWaits++;
-				if (RC_BAD( rc = flmWaitNotifyReq( gv_FlmSysData.hShareMutex,
-												&pNextSCache->pNotifyList,
-												(void *)&pNextSCache)))
+				if (RC_BAD( rc = f_notifyWait( gv_FlmSysData.hShareMutex, 
+					pDb->hWaitSem, (void *)&pNextSCache, &pNextSCache->pNotifyList)))
 				{
 					goto Exit;
 				}
@@ -4519,7 +4533,7 @@ FSTATIC RCODE ScaReadIntoCache(
 	RCODE				rc = FERR_OK;
 	SCACHE *			pSCache;
 	SCACHE *			pTmpSCache;
-	FNOTIFY *		pNotify;
+	F_NOTIFY *		pNotify;
 	FLMUINT			uiFilePos;
 	FLMUINT			uiNewerBlkLowTransID = 0;
 	FLMUINT			uiExpectedLowTransID = 0;
@@ -6136,18 +6150,17 @@ RCODE ScaGetBlock(
 		pSBlkVerCache = pSCache;
 		uiBlkVersion = pDb->LogHdr.uiCurrTransID;
 
-		for (;;)
+		for( ;;)
 		{
 
 			// If the block is being read into memory, wait for the read
 			// to complete so we can see what it is.
 
-			if (pSCache && (pSCache->ui16Flags & CA_READ_PENDING))
+			if( pSCache && (pSCache->ui16Flags & CA_READ_PENDING))
 			{
 				gv_FlmSysData.SCacheMgr.uiIoWaits++;
-				if (RC_BAD( rc = flmWaitNotifyReq( gv_FlmSysData.hShareMutex,
-												&pSCache->pNotifyList,
-												(void *)&pSCache)))
+				if( RC_BAD( rc = f_notifyWait( gv_FlmSysData.hShareMutex,
+					pDb->hWaitSem, (void *)&pSCache, &pSCache->pNotifyList)))
 				{
 					goto Exit;
 				}
@@ -6171,9 +6184,10 @@ RCODE ScaGetBlock(
 				pSMoreRecentVerCache = NULL;
 				continue;
 			}
-			if (!pSCache || uiBlkVersion > pSCache->uiHighTransID)
+			
+			if( !pSCache || uiBlkVersion > pSCache->uiHighTransID)
 			{
-				if (puiNumLooksRV)
+				if( puiNumLooksRV)
 				{
 					*puiNumLooksRV = uiNumLooks;
 					*ppSCacheRV = NULL;

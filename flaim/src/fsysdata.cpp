@@ -93,26 +93,6 @@ FSTATIC RCODE flmRegisterHttpCallback(
 FSTATIC RCODE flmDeregisterHttpCallback( void);
 
 /****************************************************************************
-Desc: This routine frees all of the notify requests in a list of requests.
-****************************************************************************/
-FINLINE void flmFreeNotifyList(
-	FNOTIFY **	ppNotifyRV)
-{
-	FNOTIFY *	pTmp;
-	FNOTIFY *   pNotify = *ppNotifyRV;
-
-	while (pNotify)
-	{
-		f_semDestroy( &pNotify->hSem);
-		pTmp = pNotify;
-		pNotify = pNotify->pNext;
-		(void)f_free( &pTmp);
-	}
-	
-	*ppNotifyRV = NULL;
-}
-
-/****************************************************************************
 Desc: Sets the path for all temporary files that come into use within a
 		FLAIM share structure.  The share mutex should be locked when
 		settting when called from FlmConfig().
@@ -849,18 +829,16 @@ Retry:
 	// If the file is in the process of being opened by another
 	// thread, wait for the open to complete.
 
-	if (pFile->uiFlags & DBF_BEING_OPENED)
+	if( pFile->uiFlags & DBF_BEING_OPENED)
 	{
-		if (RC_BAD( rc = flmWaitNotifyReq( gv_FlmSysData.hShareMutex,
-												&pFile->pOpenNotifies,
-												(void *)0)))
+		if( RC_BAD( rc = f_notifyWait( 
+			gv_FlmSysData.hShareMutex, F_SEM_NULL, NULL, &pFile->pOpenNotifies)))
 		{
-			// GW Bug #24307.  If flmWaitNotifyReq returns a bad RC, assume that
-			// the other thread will unlock and free the pFile structure.  This
-			// routine should only unlock the pFile if an error occurs at some
-			// other point.  See flmVerifyFileUse.
+			// If f_notifyWait returns a bad RC, assume that the other thread
+			// will unlock and free the pFile structure.  This routine should
+			// only unlock the pFile if an error occurs at some other point.
+			// See flmVerifyFileUse.
 
-			// *ppFileRV is set to NULL at Exit.
 			goto Exit;
 		}
 
@@ -2027,9 +2005,9 @@ Notes:	The global mutex is assumed to be locked when entering the
 			exits, however.
 ****************************************************************************/
 void flmFreeFile(
-	FFILE *  		pFile)    		// File to be freed.
+	FFILE *  		pFile)
 {
-	FNOTIFY *	pCloseNotifies;
+	F_NOTIFY *	pCloseNotifies;
 
 	// See if another thread is in the process of closing
 	// this FFILE.  It is possible for this to happen, since
@@ -2108,12 +2086,9 @@ void flmFreeFile(
 		pFile->pRfl = NULL;
 	}
 
-	// Free any open notify requests associated with the file.
-	// We shouldn't have any open notifies at this point, but
-	// we'll be nice and clean up any resources anyway.
+	// We shouldn't have any open notifies at this point
 
 	flmAssert( pFile->pOpenNotifies == NULL);
-	flmFreeNotifyList( &pFile->pOpenNotifies);
 
 	// Save pCloseNotifies -- we will notify any waiters once the
 	// FFILE has been freed.
@@ -2495,75 +2470,6 @@ FLMEXP void FLMAPI FlmShutdown( void)
 	flmLockSysData();
 	flmCleanup();
 	flmUnlockSysData();
-}
-
-/****************************************************************************
-Desc: This routine links a notify request into a notification list and
-		then waits to be notified that the event has occurred.
-Notes:
-		This routine assumes that the shared mutex is locked and that
-		it is supposed to unlock it.
-****************************************************************************/
-RCODE flmWaitNotifyReq(
-	F_MUTEX			hMutex,
-	FNOTIFY **		ppNotifyListRV,
-	void *			UserData)
-{
-	FNOTIFY *      pNotify = NULL;
-	RCODE          TempRc;
-	RCODE          rc = FERR_OK;
-	F_SEM				hSem;
-
-	// First create a notify request and link it into the list
-
-	if (RC_OK( rc = f_calloc( (FLMUINT)(sizeof( FNOTIFY)), &pNotify)))
-	{
-
-		// Allocate a semaphore for the notify request
-
-		pNotify->uiThreadId = f_threadId();
-		pNotify->hSem = F_SEM_NULL;
-		rc = f_semCreate( &pNotify->hSem);
-	}
-	
-	if (RC_BAD( rc))
-	{
-		if (pNotify)
-		{
-			if (pNotify->hSem != F_SEM_NULL)
-			{
-				f_semDestroy( &pNotify->hSem);
-			}
-			f_free( &pNotify);
-		}
-		goto Exit;
-	}
-	pNotify->pRc = &rc;
-	pNotify->UserData = UserData;
-	pNotify->pNext = *ppNotifyListRV;
-	*ppNotifyListRV = pNotify;
-	hSem = pNotify->hSem;
-
-	// Unlock the mutex and wait on the semaphore
-
-	f_mutexUnlock( hMutex);
-	if (RC_BAD( TempRc = f_semWait( hSem, F_SEM_WAITFOREVER)))
-	{
-		rc = TempRc;
-	}
-
-	// Free the semaphore and the notify structure
-
-	f_semDestroy( &hSem);
-	f_free( &pNotify);
-
-	// Relock the mutex
-
-	f_mutexLock( hMutex);
-
-Exit:
-
-	return( rc);
 }
 
 /****************************************************************************
@@ -3678,7 +3584,8 @@ RCODE F_Session::lockSession(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = flmWaitNotifyReq( m_hMutex, &m_pNotifyList, NULL)))
+		if( RC_BAD( rc = f_notifyWait( m_hMutex, F_SEM_NULL, NULL, 
+			&m_pNotifyList)))
 		{
 			goto Exit;
 		}

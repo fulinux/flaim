@@ -710,11 +710,10 @@ Desc: This routine checks to see if it is OK for another FDB to use a file.
 ****************************************************************************/
 RCODE flmVerifyFileUse(
 	F_MUTEX		hMutex,
-	FFILE **		ppFileRV
-	)
+	FFILE **		ppFileRV)
 {
-	RCODE    rc = FERR_OK;
-	FFILE *	pFile = *ppFileRV;
+	RCODE    	rc = FERR_OK;
+	FFILE *		pFile = *ppFileRV;
 
 	// Can't open the file if it is being closed by someone else.
 
@@ -727,13 +726,12 @@ RCODE flmVerifyFileUse(
 	// If the file is in the process of being opened by another
 	// thread, wait for the open to complete.
 
-	if (pFile->uiFlags & DBF_BEING_OPENED)
+	if( pFile->uiFlags & DBF_BEING_OPENED)
 	{
-		if (RC_BAD( rc = flmWaitNotifyReq( hMutex,
-												&pFile->pOpenNotifies,
-												(void *)0)))
+		if( RC_BAD( rc = f_notifyWait( hMutex, F_SEM_NULL, 
+			NULL, &pFile->pOpenNotifies)))
 		{
-			// GW Bug #24307.  If flmWaitNotifyReq returns a bad RC, assume that
+			// If f_notifyWait returns a bad RC, assume that
 			// the other thread will unlock and free the pFile structure.  This
 			// routine should only unlock the pFile if an error occurs at some
 			// other point.  See flmVerifyFileUse.
@@ -866,11 +864,11 @@ RCODE flmGetExclAccess(
 	{
 
 		// If the file is in the process of being locked by another
-		// thread, wait for the lock to complete.  NOTE: flmWaitNotifyReq will
+		// thread, wait for the lock to complete.  NOTE: f_notifyWait will
 		// re-lock the mutex before returning.
 
-		rc = flmWaitNotifyReq( gv_FlmSysData.hShareMutex, &pFile->pLockNotifies,
-												(void *)0);
+		rc = f_notifyWait( gv_FlmSysData.hShareMutex, F_SEM_NULL, NULL,
+					&pFile->pLockNotifies);
 		goto Exit;
 	}
 	else
@@ -896,7 +894,7 @@ Exit:
 
 	if (bNotifyWaiters)
 	{
-		FNOTIFY *		pNotify;
+		F_NOTIFY *		pNotify;
 		F_SEM				hSem;
 
 		// Notify any thread waiting on the lock what its status is
@@ -1073,7 +1071,7 @@ RCODE flmNewFileFinish(
 	FFILE *		pFile,
 	RCODE			OpenRc)
 {
-	FNOTIFY *	pNotify;
+	F_NOTIFY *	pNotify;
 	F_SEM			hSem;
 
 	if (!pFile)
@@ -1097,7 +1095,7 @@ RCODE flmNewFileFinish(
 	
 Exit:
 
-	return OpenRc;
+	return( OpenRc);
 }
 
 /****************************************************************************
@@ -1210,9 +1208,8 @@ Retry:
 		// Put ourselves into the notify list and then re-try
 		// the lookup when we wake up
 
-		if (RC_BAD( rc = flmWaitNotifyReq( gv_FlmSysData.hShareMutex,
-												&pFile->pCloseNotifies,
-												(void *)0)))
+		if (RC_BAD( rc = f_notifyWait( 
+			gv_FlmSysData.hShareMutex, F_SEM_NULL, NULL, &pFile->pCloseNotifies)))
 		{
 			goto Exit;
 		}

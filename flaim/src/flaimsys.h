@@ -1085,11 +1085,6 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	FLMBOOL				bMutexLocked,
 	FLMUINT *			puiThreadId = NULL);
 
-RCODE flmWaitNotifyReq(
-	F_MUTEX				hMutex,
-	FNOTIFY **			ppNotifyListRV,
-	void *				UserData);
-
 RCODE flmLinkFileToBucket(
 	FFILE *				pFile);
 	
@@ -1142,9 +1137,10 @@ RCODE flmRcaConfig(
 void flmRcaExit( void);
 
 void flmRcaFindRec(
+	FFILE *				pFile,
+	F_SEM					hWaitSem,
 	FLMUINT				uiContainer,
 	FLMUINT				uiDrn,
-	FFILE *				pFile,
 	FLMUINT				uiVersionNeeded,
 	FLMBOOL				bDontPoisonCache,
 	FLMUINT *			puiNumLooks,

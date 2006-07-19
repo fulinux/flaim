@@ -640,15 +640,8 @@ RCODE F_RCachePage::display(
 	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
 	bRCLocked = TRUE;
 
-	flmRcaFindRec(uiContainer, 
-					  uiDrn, 
-					  pFile, 
-					  uiVersion, 
-					  TRUE, 
-					  0, 
-					  &pRCache, 
-					  &pNewerRCache, 
-					  &pOlderRCache);
+	flmRcaFindRec( pFile, F_SEM_NULL, uiContainer, uiDrn, uiVersion, TRUE, 
+					  0, &pRCache, &pNewerRCache, &pOlderRCache);
 
 	// We want to hold the RCache and pFile in memory while we render this page.
 	if (pRCache)
@@ -1224,15 +1217,8 @@ RCODE F_RecordPage::display(
 	f_mutexLock( gv_FlmSysData.hShareMutex);
 	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
 
-	flmRcaFindRec( uiContainer, 
-					   uiDrn, 
-					   pFile, 
-					   uiVersion, 
-					   TRUE, 
-					   0, 
-					   &pRCache, 
-					   &pNewerRCache, 
-					   &pOlderRCache);
+	flmRcaFindRec( pFile, F_SEM_NULL, uiContainer, uiDrn, uiVersion, 
+					   TRUE, 0, &pRCache, &pNewerRCache, &pOlderRCache);
 
 	if (pRCache)
 	{
