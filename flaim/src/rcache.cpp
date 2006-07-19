@@ -175,9 +175,9 @@ FSTATIC RCODE flmRcaSetMemLimit(
 	FLMUINT			uiMaxCacheBytes);
 
 FSTATIC void flmRcaNotify(
-	F_NOTIFY *		pNotify,
-	RCACHE *			pUseRCache,
-	RCODE				NotifyRc);
+	F_NOTIFY_LIST_ITEM *		pNotify,
+	RCACHE *						pUseRCache,
+	RCODE							NotifyRc);
 
 FSTATIC RCODE flmRcaAllocCacheStruct(
 	RCACHE **		ppRCache);
@@ -1184,9 +1184,9 @@ Desc:	This routine notifies threads waiting for a pending read to complete.
 		locked.
 ****************************************************************************/
 FSTATIC void flmRcaNotify(
-	F_NOTIFY *			pNotify,
-	RCACHE *				pUseRCache,
-	RCODE					NotifyRc)
+	F_NOTIFY_LIST_ITEM *	pNotify,
+	RCACHE *					pUseRCache,
+	RCODE						NotifyRc)
 {
 	while (pNotify)
 	{
@@ -1943,32 +1943,32 @@ FSTATIC void flmRcaLinkToFFILE(
 Desc:	This routine retrieves a record from the record cache.
 ****************************************************************************/
 RCODE flmRcaRetrieveRec(
-	FDB *					pDb,
-	FLMBOOL *			pbTransStarted,
-	FLMUINT				uiContainer,			// Container record is in.
-	FLMUINT				uiDrn,					// DRN of record.
-	FLMBOOL				bOkToGetFromDisk,		// If not in cache, OK to get from disk?
-	BTSK *				pStack,					// Use stack to retrieve, if NON-NULL.
-	LFILE *				pLFile,					// LFILE to use, if retrieving with stack
-	FlmRecord **		ppRecord)
+	FDB *						pDb,
+	FLMBOOL *				pbTransStarted,
+	FLMUINT					uiContainer,			// Container record is in.
+	FLMUINT					uiDrn,					// DRN of record.
+	FLMBOOL					bOkToGetFromDisk,		// If not in cache, OK to get from disk?
+	BTSK *					pStack,					// Use stack to retrieve, if NON-NULL.
+	LFILE *					pLFile,					// LFILE to use, if retrieving with stack
+	FlmRecord **			ppRecord)
 {
-	RCODE					rc = FERR_OK;
-	FLMBOOL				bRCacheMutexLocked = FALSE;
-	FFILE *				pFile = pDb->pFile;
-	RCACHE *				pRCache;
-	RCACHE *				pNewerRCache;
-	RCACHE *				pOlderRCache;
-	FlmRecord *			pRecord = NULL;
-	FLMBOOL				bGotFromDisk = FALSE;
-	FlmRecord *			pNewRecord = NULL;
-	FlmRecord *			pOldRecord = NULL;
-	FLMUINT				uiLowTransId;
-	FLMBOOL				bMostCurrent;
-	FLMUINT				uiCurrTransId;
-	F_NOTIFY *			pNotify;
-	FLMUINT				uiNumLooks;
-	FLMBOOL				bInitializedFdb = FALSE;
-	FLMBOOL				bDontPoisonCache = pDb->uiFlags & FDB_DONT_POISON_CACHE
+	RCODE						rc = FERR_OK;
+	FLMBOOL					bRCacheMutexLocked = FALSE;
+	FFILE *					pFile = pDb->pFile;
+	RCACHE *					pRCache;
+	RCACHE *					pNewerRCache;
+	RCACHE *					pOlderRCache;
+	FlmRecord *				pRecord = NULL;
+	FLMBOOL					bGotFromDisk = FALSE;
+	FlmRecord *				pNewRecord = NULL;
+	FlmRecord *				pOldRecord = NULL;
+	FLMUINT					uiLowTransId;
+	FLMBOOL					bMostCurrent;
+	FLMUINT					uiCurrTransId;
+	F_NOTIFY_LIST_ITEM *	pNotify;
+	FLMUINT					uiNumLooks;
+	FLMBOOL					bInitializedFdb = FALSE;
+	FLMBOOL					bDontPoisonCache = pDb->uiFlags & FDB_DONT_POISON_CACHE
 														? TRUE 
 														: FALSE;
 

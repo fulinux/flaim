@@ -31,7 +31,7 @@ Desc:
 typedef struct
 {
 	F_MUTEX						hMutex;
-	F_NOTIFY *					pNotifyList;
+	F_NOTIFY_LIST_ITEM *		pNotifyList;
 	FLMUINT						uiWriteThread;
 	FLMINT						iRefCnt;
 } F_RWLOCK_IMP;
@@ -889,10 +889,10 @@ void FLMAPI f_semSignal(
 Desc:
 ****************************************************************************/
 FSTATIC void f_rwlockNotify(
-	F_RWLOCK_IMP *		pReadWriteLock)
+	F_RWLOCK_IMP *				pReadWriteLock)
 {
-	F_NOTIFY *			pNotify = pReadWriteLock->pNotifyList;
-	FLMBOOL				bFoundWriter = FALSE;
+	F_NOTIFY_LIST_ITEM *		pNotify = pReadWriteLock->pNotifyList;
+	FLMBOOL						bFoundWriter = FALSE;
 	
 	f_assertMutexLocked( pReadWriteLock->hMutex);
 	
@@ -1159,18 +1159,18 @@ Desc: This routine links a request into a notification list and
 		is assumed to protect the notify list.
 ****************************************************************************/
 RCODE FLMAPI f_notifyWait(
-	F_MUTEX			hMutex,
-	F_SEM				hSem,
-	void *			pvData,
-	F_NOTIFY **		ppNotifyList)
+	F_MUTEX						hMutex,
+	F_SEM							hSem,
+	void *						pvData,
+	F_NOTIFY_LIST_ITEM **	ppNotifyList)
 {
-	RCODE				rc = NE_FLM_OK;
-	RCODE				tmpRc;
-	F_NOTIFY			stackNotify;
-	F_NOTIFY *		pNotify = &stackNotify;
+	RCODE							rc = NE_FLM_OK;
+	RCODE							tmpRc;
+	F_NOTIFY_LIST_ITEM		stackNotify;
+	F_NOTIFY_LIST_ITEM *		pNotify = &stackNotify;
 	
 	f_assertMutexLocked( hMutex);
-	f_memset( &stackNotify, 0, sizeof( F_NOTIFY));
+	f_memset( &stackNotify, 0, sizeof( F_NOTIFY_LIST_ITEM));
 	
 	pNotify->uiThreadId = f_threadId();
 	pNotify->hSem = F_SEM_NULL;
@@ -1224,8 +1224,8 @@ Desc:	This routine notifies threads waiting for a pending read or write
 		is already locked.
 ****************************************************************************/
 void FLMAPI f_notifySignal(
-	F_NOTIFY *			pNotifyList,
-	RCODE					notifyRc)
+	F_NOTIFY_LIST_ITEM *	pNotifyList,
+	RCODE						notifyRc)
 {
 	while( pNotifyList)
 	{

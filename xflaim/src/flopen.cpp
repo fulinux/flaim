@@ -633,8 +633,8 @@ Exit:
 
 	if (bNotifyWaiters)
 	{
-		F_NOTIFY *	pNotify;
-		F_SEM			hSem;
+		F_NOTIFY_LIST_ITEM *		pNotify;
+		F_SEM							hSem;
 
 		// Notify any thread waiting on the lock what its status is.
 
@@ -767,8 +767,8 @@ void F_Database::newDatabaseFinish(
 	RCODE			OpenRc)  // Return code to send to other threads that are
 								// waiting for the open to complete.
 {
-	F_NOTIFY *	pNotify;
-	F_SEM			hSem;
+	F_NOTIFY_LIST_ITEM *	pNotify;
+	F_SEM						hSem;
 
 	// Notify anyone waiting on the operation what its status is.
 
@@ -1071,9 +1071,9 @@ Notes:	The global mutex is assumed to be locked when entering the
 ****************************************************************************/
 F_Database::~F_Database()
 {
-	F_NOTIFY *	pCloseNotifies;
-	F_Dict *    pDict;
-	F_Dict *		pTmpDict;
+	F_NOTIFY_LIST_ITEM *	pCloseNotifies;
+	F_Dict *    			pDict;
+	F_Dict *					pTmpDict;
 
 	// At this point, the use count better be zero
 

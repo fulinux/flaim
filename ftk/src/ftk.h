@@ -2212,9 +2212,9 @@
 	Desc: Notify Lists
 	****************************************************************************/
 		
-	typedef struct F_NOTIFY
+	typedef struct F_NOTIFY_LIST_ITEM
 	{
-		F_NOTIFY *					pNext;		///< Pointer to next F_NOTIFY structure in list.
+		F_NOTIFY_LIST_ITEM *		pNext;		///< Pointer to next F_NOTIFY_LIST_ITEM structure in list.
 		FLMUINT						uiThreadId;	///< ID of thread requesting the notify
 		RCODE  *						pRc;			///< Pointer to a return code variable that is to
 														///< be filled in when the operation is completed.
@@ -2224,16 +2224,16 @@
 														///< notify routine
 		F_SEM							hSem;			///< Semaphore that will be signaled when the
 														///< operation is complete.
-	} F_NOTIFY;
+	} F_NOTIFY_LIST_ITEM;
 
 	RCODE FLMAPI f_notifyWait(
 		F_MUTEX						hMutex,
 		F_SEM							hSem,
 		void *						pvData,
-		F_NOTIFY **					ppNotifyList);
+		F_NOTIFY_LIST_ITEM **	ppNotifyList);
 		
 	void FLMAPI f_notifySignal(
-		F_NOTIFY *					pNotifyList,
+		F_NOTIFY_LIST_ITEM *		pNotifyList,
 		RCODE							notifyRc);
 		
 	/****************************************************************************

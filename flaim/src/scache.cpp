@@ -92,9 +92,9 @@ FSTATIC void _ScaDbgReleaseForThread(
 #endif
 
 FSTATIC void ScaNotify(
-	F_NOTIFY *		pNotify,
-	SCACHE *			pUseSCache,
-	RCODE				NotifyRc);
+	F_NOTIFY_LIST_ITEM *	pNotify,
+	SCACHE *					pUseSCache,
+	RCODE						NotifyRc);
 
 FSTATIC void ScaFree(
 	SCACHE *			pSCache);
@@ -1334,9 +1334,9 @@ Desc:	This routine notifies threads waiting for a pending read or write
 		locked.
 ****************************************************************************/
 FSTATIC void ScaNotify(
-	F_NOTIFY *			pNotify,
-	SCACHE *				pUseSCache,
-	RCODE					NotifyRc)
+	F_NOTIFY_LIST_ITEM *		pNotify,
+	SCACHE *						pUseSCache,
+	RCODE							NotifyRc)
 {
 	while( pNotify)
 	{
@@ -4530,17 +4530,17 @@ FSTATIC RCODE ScaReadIntoCache(
 	FLMBOOL *			pbGotFromDisk)		// Returns TRUE if block was read
 													// from disk
 {
-	RCODE				rc = FERR_OK;
-	SCACHE *			pSCache;
-	SCACHE *			pTmpSCache;
-	F_NOTIFY *		pNotify;
-	FLMUINT			uiFilePos;
-	FLMUINT			uiNewerBlkLowTransID = 0;
-	FLMUINT			uiExpectedLowTransID = 0;
-	FLMBOOL			bFoundVer;
-	FLMBOOL			bDiscard;
-	FLMUINT			uiSavePrevLowTransID;
-	FLMUINT			uiSavePrevHighTransID;
+	RCODE							rc = FERR_OK;
+	SCACHE *						pSCache;
+	SCACHE *						pTmpSCache;
+	F_NOTIFY_LIST_ITEM *		pNotify;
+	FLMUINT						uiFilePos;
+	FLMUINT						uiNewerBlkLowTransID = 0;
+	FLMUINT						uiExpectedLowTransID = 0;
+	FLMBOOL						bFoundVer;
+	FLMBOOL						bDiscard;
+	FLMUINT						uiSavePrevLowTransID;
+	FLMUINT						uiSavePrevHighTransID;
 
 	*pbGotFromDisk = FALSE;
 

@@ -311,14 +311,14 @@ RCODE flmWriteLogHdr(
 		goto Exit;
 	}
 
-	pucTmpLogHdr = &pFile->pucLogHdrWriteBuf[ 16];
+	pucTmpLogHdr = &pFile->pucLogHdrIOBuf[ 16];
 	uiBytesToWrite = LOG_HEADER_SIZE + 16;
 
 	// Very Important Note:  FlmDbConfig relies on the fact that we will
 	// write out the prefix area of the database header.  Do not remove
 	// this code.
 
-	flmSetFilePrefix( pFile->pucLogHdrWriteBuf, pFile->FileHdr.uiAppMajorVer,
+	flmSetFilePrefix( pFile->pucLogHdrIOBuf, pFile->FileHdr.uiAppMajorVer,
 							pFile->FileHdr.uiAppMinorVer);
 
 	// Only copy the part of the header that is relevant for this
@@ -406,7 +406,7 @@ RCODE flmWriteLogHdr(
 	
 	if( RC_BAD( rc = pSFileHdl->writeBlock( 0, 
 		(FLMUINT)f_roundUp( uiBytesToWrite, 512),
-		pFile->pucLogHdrWriteBuf, NULL)))
+		pFile->pucLogHdrIOBuf, NULL)))
 	{
 		if (pDbStats)
 		{

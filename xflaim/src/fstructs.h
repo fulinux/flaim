@@ -1155,14 +1155,14 @@ private:
 															// belonging to this database that need
 															// to be logged to the rollback log
 															// for the current transaction.
-	F_NOTIFY *				m_pOpenNotifies;		// Pointer to a list of notifies to
+	F_NOTIFY_LIST_ITEM *	m_pOpenNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
 															// opened (points to a linked list of
-															// F_NOTIFY structures).
-	F_NOTIFY *				m_pCloseNotifies;		// Pointer to a list of notifies to
+															// F_NOTIFY_LIST_ITEM structures).
+	F_NOTIFY_LIST_ITEM *	m_pCloseNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
 															// closed (points to a linked list of
-															// F_NOTIFY structures).
+															// F_NOTIFY_LIST_ITEM structures).
 	F_Dict *					m_pDictList;			// Pointer to linked list of
 															// dictionaries currently being used
 															// for this database.  The linked list
@@ -1225,10 +1225,10 @@ private:
 	IF_LockObject *		m_pDatabaseLockObj;	// Object for locking the database.
 	IF_LockObject *		m_pWriteLockObj;		// Object for locking to do writing.
 	IF_FileHdl *			m_pLockFileHdl;		// Lock file handle.
-	F_NOTIFY *				m_pLockNotifies;		// Pointer to a list of notifies to
+	F_NOTIFY_LIST_ITEM *	m_pLockNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
 															// locked (points to a linked list of
-															// F_NOTIFY structures).
+															// F_NOTIFY_LIST_ITEM structures).
 	FLMBOOL					m_bBeingLocked;		// Flag indicating whether or not this
 															// database is in the process of being
 															// locked for exclusive access.

@@ -354,7 +354,8 @@ typedef struct SCACHE
 											// just different versions of the same
 											// block.  The next block is an older
 											// version of the block.
-	F_NOTIFY *	pNotifyList;		// This is a pointer to a list of threads
+	F_NOTIFY_LIST_ITEM *	pNotifyList;
+											// This is a pointer to a list of threads
 											// that want to be notified when a pending
 											// I/O is complete.  This pointer is only
 											// non-null if the block is currently being
@@ -571,7 +572,7 @@ typedef struct RCACHE
 													// memory was allocated on the heap
 	RCACHE *				pNextInHeapList;	// Next in the list of records whose
 													// memory was allocated on the heap
-	F_NOTIFY *			pNotifyList;		// This is a pointer to a list of
+	F_NOTIFY_LIST_ITEM *	pNotifyList;	// This is a pointer to a list of
 													// threads that want to be notified
 													// when a pending I/O is complete.
 													// This pointer is only non-null if the
@@ -1421,14 +1422,14 @@ typedef struct FFILE
 															// belonging to this file that need
 															// to be logged to the rollback log
 															// for the current transaction.
-	F_NOTIFY *				pOpenNotifies;			// Pointer to a list of notifies to
+	F_NOTIFY_LIST_ITEM *	pOpenNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// opened (points to a linked list of
-															// F_NOTIFY structures).
-	F_NOTIFY *				pCloseNotifies;		// Pointer to a list of notifies to
+															// F_NOTIFY_LIST_ITEM structures).
+	F_NOTIFY_LIST_ITEM *	pCloseNotifies;		// Pointer to a list of notifies to
 															// perform when this file is finally
 															// closed (points to a linked list of
-															// F_NOTIFY structures).
+															// F_NOTIFY_LIST_ITEM structures).
 	FDICT *					pDictList;				// Pointer to linked list of 
 															// dictionaries currently being used
 															// for this file.  The linked list
@@ -1516,15 +1517,15 @@ typedef struct FFILE
 	FLMUINT					uiCurrLogWriteOffset;// Offset in current write buffer
 	FLMUINT					uiCurrLogBlkAddr;		// Address of first block in the current
 															// buffer.
-	FLMBYTE *				pucLogHdrWriteBuf;	// Aligned buffer (on win) for writing
+	FLMBYTE *				pucLogHdrIOBuf;		// Aligned buffer for reading and writing
 															// the log header.
 	IF_LockObject *		pFileLockObj;			// Object for locking the file.
 	IF_LockObject *		pWriteLockObj;			// Object for locking to do writing.
 	IF_FileHdl *			pLockFileHdl;			// Lock file handle for 3.x databases.
-	F_NOTIFY *				pLockNotifies;			// Pointer to a list of notifies to
+	F_NOTIFY_LIST_ITEM *	pLockNotifies;			// Pointer to a list of notifies to
 															// perform when this file is finally
 															// locked (points to a linked list of
-															// F_NOTIFY structures).
+															// F_NOTIFY_LIST_ITEM structures).
 	FLMBOOL					bBeingLocked;			// Flag indicating whether or not this
 															// file is in the process of being
 															// locked for exclusive access.
@@ -1855,29 +1856,29 @@ public:
 private:
 
 	RCODE lockSession(
-		FLMBOOL			bWait = TRUE);
+		FLMBOOL				bWait = TRUE);
 	
-	void unlockSession();
+	void unlockSession( void);
 
 	void signalLockWaiters(
-		RCODE				rc,
-		FLMBOOL			bMutexLocked);
+		RCODE					rc,
+		FLMBOOL				bMutexLocked);
 
-	F_SessionMgr *		m_pSessionMgr;
-	F_Session *			m_pNext;
-	F_Session *			m_pPrev;
-	FLMUINT				m_uiLastUsed;
-	FLMUINT				m_uiThreadId;
-	FLMUINT				m_uiThreadLockCount;
-	F_MUTEX				m_hMutex;
-	F_NOTIFY *			m_pNotifyList;
-	F_NameTable *		m_pNameTable;
-	FLMUINT				m_uiDictSeqNum;
-	FLMUINT				m_uiNameTableFFileId;
-	FLMUINT				m_uiNextToken;
-	F_HashTable *		m_pDbTable;
+	F_SessionMgr *			m_pSessionMgr;
+	F_Session *				m_pNext;
+	F_Session *				m_pPrev;
+	FLMUINT					m_uiLastUsed;
+	FLMUINT					m_uiThreadId;
+	FLMUINT					m_uiThreadLockCount;
+	F_MUTEX					m_hMutex;
+	F_NOTIFY_LIST_ITEM *	m_pNotifyList;
+	F_NameTable *			m_pNameTable;
+	FLMUINT					m_uiDictSeqNum;
+	FLMUINT					m_uiNameTableFFileId;
+	FLMUINT					m_uiNextToken;
+	F_HashTable *			m_pDbTable;
 #define F_SESSION_KEY_LEN			((sizeof( FLMUINT) * 5))
-	FLMBYTE				m_ucKey[ F_SESSION_KEY_LEN];
+	FLMBYTE					m_ucKey[ F_SESSION_KEY_LEN];
 
 friend class F_SessionMgr;
 };

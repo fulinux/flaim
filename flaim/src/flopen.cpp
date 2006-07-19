@@ -894,8 +894,8 @@ Exit:
 
 	if (bNotifyWaiters)
 	{
-		F_NOTIFY *		pNotify;
-		F_SEM				hSem;
+		F_NOTIFY_LIST_ITEM *		pNotify;
+		F_SEM							hSem;
 
 		// Notify any thread waiting on the lock what its status is
 
@@ -1071,8 +1071,8 @@ RCODE flmNewFileFinish(
 	FFILE *		pFile,
 	RCODE			OpenRc)
 {
-	F_NOTIFY *	pNotify;
-	F_SEM			hSem;
+	F_NOTIFY_LIST_ITEM *	pNotify;
+	F_SEM						hSem;
 
 	if (!pFile)
 	{
@@ -1270,12 +1270,12 @@ RCODE flmAllocFile(
 	// Allocate a buffer for writing the database header
 	
 	if( RC_BAD( rc = f_allocAlignedBuffer( MAX_BLOCK_SIZE, 
-		(void **)&pFile->pucLogHdrWriteBuf)))
+		(void **)&pFile->pucLogHdrIOBuf)))
 	{
 		goto Exit;
 	}
 	
-	f_memset( pFile->pucLogHdrWriteBuf, 0, MAX_BLOCK_SIZE);
+	f_memset( pFile->pucLogHdrIOBuf, 0, MAX_BLOCK_SIZE);
 
 	// If a password was passed in, allocate a buffer for it.
 	
@@ -1384,7 +1384,7 @@ FSTATIC RCODE flmReadFileHdr(
 	}
 
 	if (RC_BAD( rc = flmReadAndVerifyHdrInfo( pDbStats,
-		pFileHdl, pFile->pucLogHdrWriteBuf, 
+		pFileHdl, pFile->pucLogHdrIOBuf, 
 		&pFile->FileHdr, pLogHdr, NULL)))
 	{
 		goto Exit;
@@ -1393,10 +1393,10 @@ FSTATIC RCODE flmReadFileHdr(
 	// Shove stuff into the log header area of the pFile.
 	// IMPORTANT NOTE! - This code assumes that DB_LOG_HEADER_START
 	// is found in the first 2K of the file - i.e., it will be inside
-	// the pFile->pucLogHdrWriteBuf that we read above.
+	// the pFile->pucLogHdrIOBuf that we read above.
 
 	f_memcpy( pFile->ucLastCommittedLogHdr,
-			&pFile->pucLogHdrWriteBuf[ DB_LOG_HEADER_START], LOG_HEADER_SIZE);
+			&pFile->pucLogHdrIOBuf[ DB_LOG_HEADER_START], LOG_HEADER_SIZE);
 
 	// Create the database wrapping key from the data in Log Header
 

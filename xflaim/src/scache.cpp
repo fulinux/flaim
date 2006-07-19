@@ -29,9 +29,9 @@
 #define FLM_MAX_IO_BUFFER_BLOCKS 16
 
 FSTATIC void ScaNotify(
-	F_NOTIFY *			pNotify,
-	F_CachedBlock *	pUseSCache,
-	RCODE					NotifyRc);
+	F_NOTIFY_LIST_ITEM *		pNotify,
+	F_CachedBlock *			pUseSCache,
+	RCODE							NotifyRc);
 
 #ifdef SCACHE_LINK_CHECKING
 FSTATIC void scaVerify(
@@ -573,9 +573,9 @@ Desc:	This routine notifies threads waiting for a pending read or write
 		locked.
 ****************************************************************************/
 FSTATIC void ScaNotify(
-	F_NOTIFY *			pNotify,
-	F_CachedBlock *	pUseSCache,
-	RCODE					NotifyRc)
+	F_NOTIFY_LIST_ITEM *	pNotify,
+	F_CachedBlock *		pUseSCache,
+	RCODE						NotifyRc)
 {
 	while( pNotify)
 	{
@@ -3417,14 +3417,14 @@ RCODE F_Database::readIntoCache(
 	FLMBOOL *			pbGotFromDisk)		// Returns TRUE if block was read
 													// from disk
 {
-	RCODE					rc = NE_XFLM_OK;
-	F_CachedBlock *	pSCache;
-	F_CachedBlock *	pTmpSCache;
-	F_NOTIFY *			pNotify;
-	FLMUINT				uiFilePos;
-	FLMUINT64			ui64NewerBlkLowTransID = 0;
-	FLMBOOL				bFoundVer;
-	FLMBOOL				bDiscard;
+	RCODE							rc = NE_XFLM_OK;
+	F_CachedBlock *			pSCache;
+	F_CachedBlock *			pTmpSCache;
+	F_NOTIFY_LIST_ITEM *		pNotify;
+	FLMUINT						uiFilePos;
+	FLMUINT64					ui64NewerBlkLowTransID = 0;
+	FLMBOOL						bFoundVer;
+	FLMBOOL						bDiscard;
 
 	flmAssert( this == pDb->m_pDatabase);
 

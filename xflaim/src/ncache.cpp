@@ -875,9 +875,9 @@ Desc:	This routine notifies threads waiting for a pending read to complete.
 		NOTE:  This routine assumes that the node cache mutex is already locked.
 ****************************************************************************/
 void F_NodeCacheMgr::notifyWaiters(
-	F_NOTIFY *			pNotify,
-	F_CachedNode *		pUseNode,
-	RCODE					NotifyRc)
+	F_NOTIFY_LIST_ITEM *	pNotify,
+	F_CachedNode *			pUseNode,
+	RCODE						NotifyRc)
 {
 	while (pNotify)
 	{
@@ -1914,21 +1914,20 @@ RCODE F_NodeCacheMgr::retrieveNode(
 	F_Db *			pDb,
 	FLMUINT			uiCollection,			// Collection node is in.
 	FLMUINT64		ui64NodeId,				// Node ID
-	F_DOMNode **	ppDOMNode
-	)
+	F_DOMNode **	ppDOMNode)
 {
-	RCODE					rc = NE_XFLM_OK;
-	FLMBOOL				bMutexLocked = FALSE;
-	F_Database *		pDatabase = pDb->m_pDatabase;
-	F_CachedNode *		pNode;
-	F_CachedNode *		pNewerNode;
-	F_CachedNode *		pOlderNode;
-	FLMUINT64			ui64LowTransId;
-	FLMBOOL				bMostCurrent;
-	FLMUINT64			ui64CurrTransId;
-	F_NOTIFY *			pNotify;
-	FLMUINT				uiNumLooks;
-	FLMBOOL				bDontPoisonCache = pDb->m_uiFlags & FDB_DONT_POISON_CACHE
+	RCODE							rc = NE_XFLM_OK;
+	FLMBOOL						bMutexLocked = FALSE;
+	F_Database *				pDatabase = pDb->m_pDatabase;
+	F_CachedNode *				pNode;
+	F_CachedNode *				pNewerNode;
+	F_CachedNode *				pOlderNode;
+	FLMUINT64					ui64LowTransId;
+	FLMBOOL						bMostCurrent;
+	FLMUINT64					ui64CurrTransId;
+	F_NOTIFY_LIST_ITEM *		pNotify;
+	FLMUINT						uiNumLooks;
+	FLMBOOL						bDontPoisonCache = pDb->m_uiFlags & FDB_DONT_POISON_CACHE
 														? TRUE 
 														: FALSE;
 

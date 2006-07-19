@@ -311,19 +311,11 @@ FLMEXP RCODE FLMAPI FlmStartup( void)
 	
 	// Set the default file open flags
 	
-#ifdef FLM_UNIX
-	gv_FlmSysData.uiFileOpenFlags = 
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE;
-
-	gv_FlmSysData.uiFileCreateFlags = 
-		gv_FlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
-#else
 	gv_FlmSysData.uiFileOpenFlags = 
 		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT;
 
 	gv_FlmSysData.uiFileCreateFlags = 
 		gv_FlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
-#endif
 		
 #ifdef FLM_DBG_LOG
 	flmDbgLogInit();
@@ -2007,7 +1999,7 @@ Notes:	The global mutex is assumed to be locked when entering the
 void flmFreeFile(
 	FFILE *  		pFile)
 {
-	F_NOTIFY *	pCloseNotifies;
+	F_NOTIFY_LIST_ITEM *		pCloseNotifies;
 
 	// See if another thread is in the process of closing
 	// this FFILE.  It is possible for this to happen, since
@@ -2139,9 +2131,9 @@ void flmFreeFile(
 
 	// Free the log header write buffer
 
-	if( pFile->pucLogHdrWriteBuf)
+	if( pFile->pucLogHdrIOBuf)
 	{
-		f_freeAlignedBuffer( (void **)&pFile->pucLogHdrWriteBuf);
+		f_freeAlignedBuffer( (void **)&pFile->pucLogHdrIOBuf);
 	}
 
 	pFile->krefPool.poolFree();

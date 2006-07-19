@@ -1380,7 +1380,7 @@ private:
 														// just different versions of the same
 														// block.  The next block is an older
 														// version of the block.
-	F_NOTIFY *			m_pNotifyList;			// This is a pointer to a list of threads
+	F_NOTIFY_LIST_ITEM *	m_pNotifyList;		// This is a pointer to a list of threads
 														// that want to be notified when a pending
 														// I/O is complete.  This pointer is only
 														// non-null if the block is currently being
@@ -1668,9 +1668,9 @@ private:
 		F_CachedNode **	ppNode);
 		
 	void notifyWaiters(
-		F_NOTIFY *		pNotify,
-		F_CachedNode *	pUseNode,
-		RCODE				NotifyRc);
+		F_NOTIFY_LIST_ITEM *	pNotify,
+		F_CachedNode *			pUseNode,
+		RCODE						NotifyRc);
 		
 	void linkIntoNodeCache(
 		F_CachedNode *	pNewerNode,
@@ -3486,7 +3486,7 @@ private:
 	
 	FLMUINT64				m_ui64LowTransId;
 	FLMUINT64				m_ui64HighTransId;
-	F_NOTIFY *				m_pNotifyList;
+	F_NOTIFY_LIST_ITEM *	m_pNotifyList;
 	FLMUINT					m_uiCacheFlags;
 	FLMUINT					m_uiStreamUseCount;
 	
