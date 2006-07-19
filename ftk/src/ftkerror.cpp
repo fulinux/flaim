@@ -85,7 +85,7 @@ RCODE FLMAPI f_mapPlatformError(
 
 		case EINVAL:
 		{
-			return( RC_SET_AND_ASSERT( NE_FLM_IO_PATH_TOO_LONG));
+			return( RC_SET_AND_ASSERT( NE_FLM_INVALID_PARM));
 		}
 
 		case EIO:
