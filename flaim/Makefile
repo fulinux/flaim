@@ -47,6 +47,15 @@ minor_version = 9
 
 version = $(major_version).$(minor_version).$(svn_revision)
 
+# libtool versions are updated according to the following rules:
+#
+# 1. Start with a version of 0.0.0 for a library
+# 2. Update the version number immediately before a public release of the software
+# 3. If the library source code has changed at all since the last update, increment revision
+# 4. If any interfaces have been added, removed, or changed since the last update, increment current
+# 5. If any interfaces have been added since the last public release, increment age
+# 6. If any interfaces have been removed since the last public release, set age to 0
+
 so_current = 2
 so_revision = 0
 so_age = 1
