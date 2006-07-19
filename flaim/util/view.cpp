@@ -650,7 +650,9 @@ Get_File_Name:
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient, NULL, TRUE)))
+	if (RC_BAD( rc = gv_pSFileHdl->setup( pSFileClient, 
+		gv_FlmSysData.pFileHdlCache, 
+		gv_FlmSysData.uiFileOpenFlags, gv_FlmSysData.uiFileCreateFlags)))
 	{
 		ViewShowRCError( "setting up super file handle", rc);
 		goto Exit;
