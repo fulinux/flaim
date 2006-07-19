@@ -152,12 +152,6 @@ RCODE flmCreateLckFile(
 	const char *			pszFilePath,
 	IF_FileHdl **			ppLockFileHdl);
 
-RCODE flmWaitNotifyReq(
-	F_MUTEX					hMutex,
-	F_SEM						hSem,
-	FNOTIFY **				ppNotifyListRV,
-	void *					pvUserData);
-
 RCODE flmReadAndVerifyHdrInfo(
 	XFLM_DB_STATS *		pDbStats,
 	IF_FileHdl *			pFileHdl,

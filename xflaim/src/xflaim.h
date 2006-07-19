@@ -349,6 +349,10 @@
 
 	#define XFLM_MAX_KEY_SIZE				1024
 	
+	// "Wait forever" when starting a transaction
+	
+	#define FLM_NO_TIMEOUT					0xFF
+	
 	// Node types.  The order of these enums
 	// must be preserved as the code sometimes
 	// depends on the order to test ranges of

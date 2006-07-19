@@ -866,8 +866,8 @@ RCODE F_NodeCacheMgr::waitNotify(
 	F_Db *				pDb,
 	F_CachedNode **	ppNode)
 {
-	return( flmWaitNotifyReq( gv_XFlmSysData.hNodeCacheMutex, 
-		pDb->m_hWaitSem, &((*ppNode)->m_pNotifyList), ppNode));
+	return( f_notifyWait( gv_XFlmSysData.hNodeCacheMutex, 
+		pDb->m_hWaitSem, ppNode, &((*ppNode)->m_pNotifyList)));
 }
 
 /****************************************************************************
@@ -875,7 +875,7 @@ Desc:	This routine notifies threads waiting for a pending read to complete.
 		NOTE:  This routine assumes that the node cache mutex is already locked.
 ****************************************************************************/
 void F_NodeCacheMgr::notifyWaiters(
-	FNOTIFY *			pNotify,
+	F_NOTIFY *			pNotify,
 	F_CachedNode *		pUseNode,
 	RCODE					NotifyRc)
 {
@@ -886,7 +886,7 @@ void F_NodeCacheMgr::notifyWaiters(
 		*(pNotify->pRc) = NotifyRc;
 		if (RC_OK( NotifyRc))
 		{
-			*((F_CachedNode **)pNotify->pvUserData) = pUseNode;
+			*((F_CachedNode **)pNotify->pvData) = pUseNode;
 			pUseNode->incrNodeUseCount();
 		}
 		hSem = pNotify->hSem;
@@ -1926,7 +1926,7 @@ RCODE F_NodeCacheMgr::retrieveNode(
 	FLMUINT64			ui64LowTransId;
 	FLMBOOL				bMostCurrent;
 	FLMUINT64			ui64CurrTransId;
-	FNOTIFY *			pNotify;
+	F_NOTIFY *			pNotify;
 	FLMUINT				uiNumLooks;
 	FLMBOOL				bDontPoisonCache = pDb->m_uiFlags & FDB_DONT_POISON_CACHE
 														? TRUE 

@@ -29,7 +29,7 @@
 #define FLM_MAX_IO_BUFFER_BLOCKS 16
 
 FSTATIC void ScaNotify(
-	FNOTIFY *			pNotify,
+	F_NOTIFY *			pNotify,
 	F_CachedBlock *	pUseSCache,
 	RCODE					NotifyRc);
 
@@ -573,26 +573,28 @@ Desc:	This routine notifies threads waiting for a pending read or write
 		locked.
 ****************************************************************************/
 FSTATIC void ScaNotify(
-	FNOTIFY *			pNotify,
+	F_NOTIFY *			pNotify,
 	F_CachedBlock *	pUseSCache,
 	RCODE					NotifyRc)
 {
-	while (pNotify)
+	while( pNotify)
 	{
 		F_SEM	hSem;
 
 		*(pNotify->pRc) = NotifyRc;
-		if (RC_OK( NotifyRc))
+		if( RC_OK( NotifyRc))
 		{
-			if (pNotify->pvUserData)
+			if( pNotify->pvData)
 			{
-				*((F_CachedBlock **)pNotify->pvUserData) = pUseSCache;
+				*((F_CachedBlock **)pNotify->pvData) = pUseSCache;
 			}
-			if (pUseSCache)
+			
+			if( pUseSCache)
 			{
 				pUseSCache->useForThread( pNotify->uiThreadId);
 			}
 		}
+		
 		hSem = pNotify->hSem;
 		pNotify = pNotify->pNext;
 		f_semSignal( hSem);
@@ -605,8 +607,7 @@ Desc:	This routine logs information about changes to a cache block's flags
 #ifdef FLM_DBG_LOG
 void F_CachedBlock::logFlgChange(
 	FLMUINT16	ui16OldFlags,
-	char			cPlace
-	)
+	char			cPlace)
 {
 	char			szBuf [60];
 	char *		pszTmp;
@@ -614,6 +615,7 @@ void F_CachedBlock::logFlgChange(
 
 	szBuf [0] = cPlace;
 	szBuf [1] = '-';
+	
 	f_strcpy( &szBuf[2], "FLG:");
 	pszTmp = &szBuf [6];
 
@@ -3038,9 +3040,9 @@ Get_Next_Block:
 			if (pNextSCache->m_ui16Flags & CA_READ_PENDING)
 			{
 				gv_XFlmSysData.pBlockCacheMgr->m_uiIoWaits++;
-				if (RC_BAD( rc = flmWaitNotifyReq( 
+				if (RC_BAD( rc = f_notifyWait( 
 					gv_XFlmSysData.hBlockCacheMutex, pDb->m_hWaitSem,
-					&pNextSCache->m_pNotifyList, (void *)&pNextSCache)))
+					(void *)&pNextSCache, &pNextSCache->m_pNotifyList)))
 				{
 					goto Exit;
 				}
@@ -3418,7 +3420,7 @@ RCODE F_Database::readIntoCache(
 	RCODE					rc = NE_XFLM_OK;
 	F_CachedBlock *	pSCache;
 	F_CachedBlock *	pTmpSCache;
-	FNOTIFY *			pNotify;
+	F_NOTIFY *			pNotify;
 	FLMUINT				uiFilePos;
 	FLMUINT64			ui64NewerBlkLowTransID = 0;
 	FLMBOOL				bFoundVer;
@@ -5047,9 +5049,9 @@ RCODE F_Database::getBlock(
 			if (pSCache && (pSCache->m_ui16Flags & CA_READ_PENDING))
 			{
 				gv_XFlmSysData.pBlockCacheMgr->m_uiIoWaits++;
-				if (RC_BAD( rc = flmWaitNotifyReq( 
+				if (RC_BAD( rc = f_notifyWait( 
 					gv_XFlmSysData.hBlockCacheMutex, pDb->m_hWaitSem, 
-					&pSCache->m_pNotifyList, (void *)&pSCache)))
+					(void *)&pSCache, &pSCache->m_pNotifyList)))
 				{
 					goto Exit;
 				}

@@ -477,10 +477,10 @@ RCODE F_Database::verifyOkToUse(
 		}
 		
 		*pbWaited = TRUE;
-		if (RC_BAD( rc = flmWaitNotifyReq( 
-			gv_XFlmSysData.hShareMutex, hWaitSem, &m_pOpenNotifies, (void *)0)))
+		if( RC_BAD( rc = f_notifyWait( 
+			gv_XFlmSysData.hShareMutex, hWaitSem, NULL,&m_pOpenNotifies)))
 		{
-			// If flmWaitNotifyReq returns a bad RC, assume that the other
+			// If f_notifyWait returns a bad RC, assume that the other
 			// thread will unlock and free the F_Database object.  This
 			// routine should only unlock the object if an error occurs at
 			// some other point.
@@ -603,7 +603,7 @@ RCODE F_Database::getExclAccess(
 	if (m_bBeingLocked)
 	{
 		// If the database is in the process of being locked by another
-		// thread, wait for the lock to complete.  NOTE: flmWaitNotifyReq will
+		// thread, wait for the lock to complete.  NOTE: f_notifyWait will
 		// re-lock the mutex before returning.
 		
 		if( RC_BAD( rc = f_semCreate( &hWaitSem)))
@@ -611,7 +611,7 @@ RCODE F_Database::getExclAccess(
 			goto Exit;
 		}
 
-		rc = flmWaitNotifyReq( m_hMutex, hWaitSem, &m_pLockNotifies, (void *)0);
+		rc = f_notifyWait( m_hMutex, hWaitSem, NULL, &m_pLockNotifies);
 		goto Exit;
 	}
 
@@ -633,7 +633,7 @@ Exit:
 
 	if (bNotifyWaiters)
 	{
-		FNOTIFY *	pNotify;
+		F_NOTIFY *	pNotify;
 		F_SEM			hSem;
 
 		// Notify any thread waiting on the lock what its status is.
@@ -767,7 +767,7 @@ void F_Database::newDatabaseFinish(
 	RCODE			OpenRc)  // Return code to send to other threads that are
 								// waiting for the open to complete.
 {
-	FNOTIFY *	pNotify;
+	F_NOTIFY *	pNotify;
 	F_SEM			hSem;
 
 	// Notify anyone waiting on the operation what its status is.
@@ -895,8 +895,8 @@ Retry:
 		// Put ourselves into the notify list and then re-try
 		// the lookup when we wake up
 
-		if (RC_BAD( rc = flmWaitNotifyReq( gv_XFlmSysData.hShareMutex, hWaitSem,
-			&pDatabase->m_pCloseNotifies, (void *)0)))
+		if (RC_BAD( rc = f_notifyWait( gv_XFlmSysData.hShareMutex, hWaitSem,
+			NULL, &pDatabase->m_pCloseNotifies)))
 		{
 			goto Exit;
 		}
@@ -1071,7 +1071,7 @@ Notes:	The global mutex is assumed to be locked when entering the
 ****************************************************************************/
 F_Database::~F_Database()
 {
-	FNOTIFY *	pCloseNotifies;
+	F_NOTIFY *	pCloseNotifies;
 	F_Dict *    pDict;
 	F_Dict *		pTmpDict;
 

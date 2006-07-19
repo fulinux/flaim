@@ -196,8 +196,8 @@ Retry:
 
 	if( pDatabase->m_uiFlags & DBF_BEING_OPENED)
 	{
-		flmWaitNotifyReq( gv_XFlmSysData.hShareMutex, hWaitSem,
-			&pDatabase->m_pOpenNotifies, NULL);
+		f_notifyWait( gv_XFlmSysData.hShareMutex, hWaitSem, NULL,
+			&pDatabase->m_pOpenNotifies);
 		goto Retry;
 	}
 	else
@@ -205,9 +205,8 @@ Retry:
 		// The database is open.  Put ourselves into the close notify list
 		// so that we will wake up when the database has been closed.
 
-		if( RC_BAD( rc = flmWaitNotifyReq(
-			gv_XFlmSysData.hShareMutex, hWaitSem, 
-			&pDatabase->m_pCloseNotifies, NULL)))
+		if( RC_BAD( rc = f_notifyWait( gv_XFlmSysData.hShareMutex, hWaitSem, 
+			NULL, &pDatabase->m_pCloseNotifies)))
 		{
 			goto Exit;
 		}

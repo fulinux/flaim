@@ -606,40 +606,6 @@ FSTATIC void flmFreeEvent(
 }
 
 /****************************************************************************
-Desc:		This routine links a notify request into a notification list and
-			then waits to be notified that the event has occurred.
-Notes:	This routine assumes that the shared mutex is locked and that
-			it is supposed to unlock it.
-****************************************************************************/
-RCODE flmWaitNotifyReq(
-	F_MUTEX			hMutex,
-	F_SEM				hSem,
-	FNOTIFY **		ppNotifyListRV,
-	void *			pvUserData)
-{
-	RCODE          rc = NE_XFLM_OK;
-	RCODE          TempRc;
-	FNOTIFY      	notifyItem;
-
-	notifyItem.hSem = hSem;
-	notifyItem.uiThreadId = f_threadId();
-	notifyItem.pRc = &rc;
-	notifyItem.pvUserData = pvUserData;
-	notifyItem.pNext = *ppNotifyListRV;
-	*ppNotifyListRV = &notifyItem;
-
-	f_mutexUnlock( hMutex);
-	
-	if( RC_BAD( TempRc = f_semWait( notifyItem.hSem, F_SEM_WAITFOREVER)))
-	{
-		rc = TempRc;
-	}
-
-	f_mutexLock( hMutex);
-	return( rc);
-}
-
-/****************************************************************************
 Desc: This routine links an F_Database structure to its name hash bucket.
 		NOTE: This function assumes that the global mutex has been
 		locked.

@@ -533,26 +533,6 @@ friend class F_Database;
 friend class F_Dict;
 };
 
-/***************************************************************************
-Desc:		This is the notify request structure.  Notify requests are linked
-			off of open requests for files or read requests for files so that
-			when an operation is complete	that multiple threads are waiting
-			on, all of them will be notified.
-***************************************************************************/
-typedef struct FNotify
-{
-	FNotify *		pNext;		// Pointer to next FNOTIFY structure in list.
-	FLMUINT			uiThreadId;	// ID of thread requesting the notify
-	RCODE  *			pRc;			// Pointer to a return code variable that is to
-										// be filled in when the operation is completed.
-										// The thread requesting notification supplies
-										// the return code variable to be filled in.
-	void *			pvUserData;	// Other user data that the notifier might use
-										// to transfer other information to the waiter.
-	F_SEM				hSem;			// Semaphore that will be signaled when the
-										// operation is complete.
-} FNOTIFY;
-
 // Flags for the uiKrAction parameter - used in sorting/indexing.
 
 #define KREF_DEL_KEYS			0x01
@@ -1175,14 +1155,14 @@ private:
 															// belonging to this database that need
 															// to be logged to the rollback log
 															// for the current transaction.
-	FNOTIFY *				m_pOpenNotifies;		// Pointer to a list of notifies to
+	F_NOTIFY *				m_pOpenNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
 															// opened (points to a linked list of
-															// FNOTIFY structures).
-	FNOTIFY *				m_pCloseNotifies;		// Pointer to a list of notifies to
+															// F_NOTIFY structures).
+	F_NOTIFY *				m_pCloseNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
 															// closed (points to a linked list of
-															// FNOTIFY structures).
+															// F_NOTIFY structures).
 	F_Dict *					m_pDictList;			// Pointer to linked list of
 															// dictionaries currently being used
 															// for this database.  The linked list
@@ -1245,10 +1225,10 @@ private:
 	IF_LockObject *		m_pDatabaseLockObj;	// Object for locking the database.
 	IF_LockObject *		m_pWriteLockObj;		// Object for locking to do writing.
 	IF_FileHdl *			m_pLockFileHdl;		// Lock file handle.
-	FNOTIFY *				m_pLockNotifies;		// Pointer to a list of notifies to
+	F_NOTIFY *				m_pLockNotifies;		// Pointer to a list of notifies to
 															// perform when this database is finally
 															// locked (points to a linked list of
-															// FNOTIFY structures).
+															// F_NOTIFY structures).
 	FLMBOOL					m_bBeingLocked;		// Flag indicating whether or not this
 															// database is in the process of being
 															// locked for exclusive access.
