@@ -674,7 +674,7 @@ RCODE f_semWait(
 	{
 		if( _sema_wait( (sema_t *)hSem))
 		{
-			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
+			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMAPHORE);
 		}
 	}
 	else
@@ -749,7 +749,7 @@ RCODE FLMAPI f_semWait(
 	{
 		if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
 		{
-			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMPAHORE);
+			rc = RC_SET( NE_FLM_ERROR_WAITING_ON_SEMAPHORE);
 		}
 	}
 	else
