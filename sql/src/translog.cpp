@@ -25,9 +25,10 @@
 
 #include "flaimsys.h"
 
-FSTATIC void lgWriteComplete(
-	IF_IOBuffer *	pIOBuffer);
-
+FSTATIC void FLMAPI lgWriteComplete(
+	IF_IOBuffer *	pIOBuffer,
+	void *			pvData);
+	
 #ifdef FLM_DBG_LOG
 /****************************************************************************
 Desc:	This routine is used to write out information about logged blocks to
