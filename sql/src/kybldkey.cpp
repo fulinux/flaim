@@ -25,23 +25,11 @@
 
 #include "flaimsys.h"
 
-FSTATIC FLMUINT kyAddInclComponent(
-	FLMUINT			uiNumKeyComponents,
-	FLMUINT			uiKeyComponent,
-	FLMBYTE *		pucKeyEnd,
-	FLMBOOL			bFromKey,
-	FLMUINT			uiMaxSpaceLeft);
-	
-FINLINE void flmSetupFirstToLastKey(
-	FLMBYTE *			pucFromKey,
-	FLMUINT *			puiFromKeyLen,
-	FLMBYTE *			pucUntilKey,
-	FLMUINT *			puiUntilKeyLen);
-	
 FSTATIC RCODE flmAddNonTextKeyPiece(
 	SQL_PRED *			pPred,
 	F_INDEX *			pIndex,
 	FLMUINT				uiKeyComponent,
+	ICD *					pIcd,
 	F_COLUMN *			pColumn,
 	F_DataVector *		pFromSearchKey,
 	FLMBYTE *			pucFromKey,
@@ -49,7 +37,9 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	F_DataVector *		pUntilSearchKey,
 	FLMBYTE *			pucUntilKey,
 	FLMUINT *			puiUntilKeyLen,
-	FLMBOOL *			pbCanCompareOnKey);
+	FLMBOOL *			pbCanCompareOnKey,
+	FLMBOOL *			pbFromIncl,
+	FLMBOOL *			pbUntilIncl);
 
 FSTATIC RCODE flmUTF8FindWildcard(
 	const FLMBYTE *	pucValue,
@@ -72,7 +62,7 @@ FSTATIC RCODE flmSelectBestSubstr(
 
 FSTATIC void setFromCaseByte(
 	FLMBYTE *			pucFromKey,
-	FLMUINT *			puiFromKeyLen,
+	FLMUINT *			puiFromComponentLen,
 	FLMUINT				uiCaseLen,
 	FLMBOOL				bIsDBCS,
 	FLMBOOL				bAscending,
@@ -80,7 +70,7 @@ FSTATIC void setFromCaseByte(
 	
 FSTATIC void setUntilCaseByte(
 	FLMBYTE *			pucUntilKey,
-	FLMUINT *			puiUntilKeyLen,
+	FLMUINT *			puiUntilComponentLen,
 	FLMUINT				uiCaseLen,
 	FLMBOOL				bIsDBCS,
 	FLMBOOL				bAscending,
@@ -90,91 +80,16 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	SQL_PRED *			pPred,
 	F_INDEX *			pIndex,
 	FLMUINT				uiKeyComponent,
+	ICD *					pIcd,
 	F_DataVector *		pFromSearchKey,
 	FLMBYTE *			pucFromKey,
 	FLMUINT *			puiFromKeyLen,
 	F_DataVector *		pUntilSearchKey,
 	FLMBYTE *			pucUntilKey,
 	FLMUINT *			puiUntilKeyLen,
-	FLMBOOL *			pbCanCompareOnKey);
-
-/****************************************************************************
-Desc:	Add what is needed to an until key so that it is greater than or equal
-		for all possible components that come after the primary component.
-		In other words, this key should be less than any keys whose primary
-		component is greater than it, but greater than all keys whose primary
-		component is less than or equal to it.
-****************************************************************************/
-FSTATIC FLMUINT kyAddInclComponent(
-	FLMUINT		uiNumKeyComponents,
-	FLMUINT		uiKeyComponent,
-	FLMBYTE *	pucKeyEnd,
-	FLMBOOL		bFromKey,
-	FLMUINT		uiMaxSpaceLeft)
-{
-	FLMUINT	uiBytesAdded = 0;
-	
-	// If there is a next key component that would be expected, set it to
-	// the highest possible value.
-	
-	if (uiKeyComponent < uiNumKeyComponents)
-	{
-		
-		// Must at least be room for a 2 byte length.
-		
-		if (uiMaxSpaceLeft >= 2)
-		{
-			// Need 2nd key component to sort lower if it is the from key
-			// higher if it is the until key.  Note that KEY_LOW_VALUE and
-			// KEY_HIGH_VALUE always sort lower/higher no matter whether the
-			// component is ascending or descending.
-			
-			if (bFromKey)
-			{
-				UW2FBA( (FLMUINT16)KEY_LOW_VALUE, pucKeyEnd);
-			}
-			else
-			{
-				UW2FBA( (FLMUINT16)KEY_HIGH_VALUE, pucKeyEnd);
-			}
-			uiBytesAdded = 2;
-		}
-	}
-	else
-	{
-		
-		// There are no more key components.
-		// Output one byte of 0xFF - which should be higher than any
-		// possible SEN that could be output for document ID and node IDs.
-		// Only do this for until keys.  For from keys, no need to add
-		// anything, because an empty list of IDs will be be inclusive
-		// on the from side - it will sort lower, and therefore be inclusive.
-		
-		if (uiMaxSpaceLeft && !bFromKey)
-		{
-			*pucKeyEnd = 0xFF;
-			uiBytesAdded = 1;
-		}
-	}
-	
-	return( uiBytesAdded);
-}
-
-/****************************************************************************
-Desc:	Setup a first-to-last key for the index.
-****************************************************************************/
-FINLINE void flmSetupFirstToLastKey(
-	FLMBYTE *		pucFromKey,
-	FLMUINT *		puiFromKeyLen,
-	FLMBYTE *		pucUntilKey,
-	FLMUINT *		puiUntilKeyLen
-	)
-{
-	UW2FBA( KEY_LOW_VALUE, pucFromKey);
-	UW2FBA( KEY_HIGH_VALUE, pucUntilKey);
-	*puiFromKeyLen = 2;
-	*puiUntilKeyLen = 2;
-}
+	FLMBOOL *			pbCanCompareOnKey,
+	FLMBOOL *			pbFromIncl,
+	FLMBOOL *			pbUntilIncl);
 
 /****************************************************************************
 Desc:		Add a key piece to the from and until key.  Text fields are not 
@@ -186,6 +101,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	SQL_PRED *		pPred,
 	F_INDEX *		pIndex,
 	FLMUINT			uiKeyComponent,
+	ICD *				pIcd,
 	F_COLUMN *		pColumn,
 	F_DataVector *	pFromSearchKey,
 	FLMBYTE *		pucFromKey,
@@ -193,14 +109,13 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	F_DataVector *	pUntilSearchKey,
 	FLMBYTE *		pucUntilKey,
 	FLMUINT *		puiUntilKeyLen,
-	FLMBOOL *		pbCanCompareOnKey)
+	FLMBOOL *		pbCanCompareOnKey,
+	FLMBOOL *		pbFromIncl,
+	FLMBOOL *		pbUntilIncl)
 {
 	RCODE						rc = NE_SFLM_OK;
-	ICD *						pIcd = pIndex->pKeyIcds + uiKeyComponent - 1;
-	FLMUINT					uiFromKeyLen = 0;
-	FLMUINT					uiUntilKeyLen = 0;
-	FLMBYTE *				pucFromKeyLenPos = pucFromKey;
-	FLMBYTE *				pucUntilKeyLenPos = pucUntilKey;
+	FLMBYTE *				pucFromKeyLenPos;
+	FLMBYTE *				pucUntilKeyLenPos;
 	FLMBOOL					bDataTruncated;
 	FLMBYTE *				pucFromBuf;
 	FLMUINT					uiFromBufLen;
@@ -221,100 +136,137 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 	FLMBOOL					bInclUntil;
 	FLMBOOL					bAscending = (pIcd->uiFlags & ICD_DESCENDING) ? FALSE: TRUE;
 	F_BufferIStream		bufferIStream;
+	FLMUINT					uiFromKeyLen = *puiFromKeyLen;
+	FLMUINT					uiUntilKeyLen = *puiUntilKeyLen;
+	FLMUINT					uiFromComponentLen;
+	FLMUINT					uiUntilComponentLen;
+	FLMUINT					uiFromSpaceLeft;
+	FLMUINT					uiUntilSpaceLeft;
 	
 	// Leave room for the component length
 
-	pucFromKey += 2;
-	pucUntilKey += 2;
-	
+	pucFromKeyLenPos = pucFromKey + uiFromKeyLen;
+	pucUntilKeyLenPos = pucUntilKey + uiUntilKeyLen;
+	pucFromKey = pucFromKeyLenPos + 2;
+	pucUntilKey = pucUntilKeyLenPos + 2;
+	uiFromSpaceLeft = SFLM_MAX_KEY_SIZE - uiFromKeyLen - 2;
+	uiUntilSpaceLeft = SFLM_MAX_KEY_SIZE - uiUntilKeyLen - 2;
+
 	// Handle the presence case here - this is not done in kyCollate.
 
 	if (pIcd->uiFlags & ICD_PRESENCE)
 	{
-		f_UINT32ToBigEndian( (FLMUINT32)pIcd->uiColumnNum, pucFromKey);
-		uiFromKeyLen = uiUntilKeyLen = 4;
-		f_memcpy( pucUntilKey, pucFromKey, uiUntilKeyLen);
+		
+		// If we don't have enough space for the component in the from
+		// key, just get all values.
+		
+		if (uiFromSpaceLeft < 4)
+		{
+			uiFromComponentLen = KEY_LOW_VALUE;
+		}
+		else
+		{
+			f_UINT32ToBigEndian( (FLMUINT32)pIcd->uiColumnNum, pucFromKey);
+			uiFromComponentLen = 4;
+		}
+		
+		// If we don't have enough space for the component in the until
+		// key, just get all values.
+		
+		if (uiUntilSpaceLeft < 4)
+		{
+			uiUntilComponentLen = KEY_HIGH_VALUE;
+		}
+		else
+		{
+			f_UINT32ToBigEndian( (FLMUINT32)pIcd->uiColumnNum, pucUntilKey);
+			uiUntilComponentLen = 4;
+		}
 	}
 	else if (pIcd->uiFlags & ICD_METAPHONE)
 	{
 		if (pPred->eOperator != SQL_APPROX_EQ_OP ||
 			 pPred->pFromValue->eValType != SQL_UTF8_VAL)
 		{
-			flmSetupFirstToLastKey( pucFromKeyLenPos, puiFromKeyLen,
-											pucUntilKeyLenPos, puiUntilKeyLen);
+			uiFromComponentLen = KEY_LOW_VALUE;
+			uiUntilComponentLen = KEY_HIGH_VALUE;
 			if (pPred->eOperator != SQL_EXISTS_OP)
 			{
 				*pbCanCompareOnKey = FALSE;
 			}
-			goto Exit;
 		}
-		*pbCanCompareOnKey = FALSE;
-
-		// The value type in pPred->pFromValue is SQL_UTF8_VAL, but the
-		// calling routine should have put the metaphone value into
-		// pPred->pFromValue->val.uiVal.  Sort of weird, but was the
-		// only way we could evaluate the cost of multiple words in
-		// the string.
-
-		uiFromBufLen = sizeof( ucFromNumberBuf);
-		if( RC_BAD( rc = FlmUINT2Storage( pPred->pFromValue->val.uiVal,
-								&uiFromBufLen, ucFromNumberBuf)))
+		else
 		{
-			goto Exit;
-		}
-		pucFromBuf = &ucFromNumberBuf [0];
-		
-		if (RC_BAD( rc = bufferIStream.open( 
-			(const char *)pucFromBuf, uiFromBufLen)))
-		{
-			goto Exit;
-		}
-
-		uiFromKeyLen = SFLM_MAX_KEY_SIZE - 2;
-		bDataTruncated = FALSE;
-		
-		// Pass 0 for compare rules because it is non-text
-		
-		if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
-								&bufferIStream, SFLM_NUMBER_TYPE,
-								pIcd->uiFlags, 0,
-								pIcd->uiLimit, NULL, NULL, 
-								pIndex->uiLanguage, FALSE, FALSE,
-								&bDataTruncated, NULL)))
-		{
-			goto Exit;
-		}
-		
-		bufferIStream.close();
-		
-		if (bDataTruncated)
-		{
-			// This should never happen on numeric data.
-
-			flmAssert( 0);
 			*pbCanCompareOnKey = FALSE;
+	
+			// The value type in pPred->pFromValue is SQL_UTF8_VAL, but the
+			// calling routine should have put the metaphone value into
+			// pPred->pFromValue->val.uiVal.  Sort of weird, but was the
+			// only way we could evaluate the cost of multiple words in
+			// the string.
+	
+			uiFromBufLen = sizeof( ucFromNumberBuf);
+			if( RC_BAD( rc = FlmUINT2Storage( pPred->pFromValue->val.uiVal,
+									&uiFromBufLen, ucFromNumberBuf)))
+			{
+				goto Exit;
+			}
+			pucFromBuf = &ucFromNumberBuf [0];
+			
+			if (RC_BAD( rc = bufferIStream.open( 
+				(const char *)pucFromBuf, uiFromBufLen)))
+			{
+				goto Exit;
+			}
+	
+			uiFromComponentLen = uiFromSpaceLeft;
+			bDataTruncated = FALSE;
+			
+			// Pass 0 for compare rules because it is non-text
+			
+			if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromComponentLen,
+									&bufferIStream, SFLM_NUMBER_TYPE,
+									pIcd->uiFlags, 0,
+									pIcd->uiLimit, NULL, NULL, 
+									pIndex->uiLanguage, FALSE, FALSE,
+									&bDataTruncated, NULL)))
+			{
+				goto Exit;
+			}
+			
+			bufferIStream.close();
+			
+			// Key component needs to fit in both the from and until
+			// buffers.  If it will not, we simply set it up to search
+			// from first to last - all values.
+			
+			if (bDataTruncated || uiUntilSpaceLeft < uiFromComponentLen)
+			{
+				uiFromComponentLen = KEY_LOW_VALUE;
+				uiUntilComponentLen = KEY_HIGH_VALUE;
+				*pbCanCompareOnKey = FALSE;
+			}
+			else
+			{
+				if ((uiUntilComponentLen = uiFromComponentLen) != 0)
+				{
+					f_memcpy( pucUntilKey, pucFromKey, uiFromComponentLen);
+				}
+			}
 		}
+	}
+	else if (pPred->eOperator == SQL_EXISTS_OP ||
+				pPred->eOperator == SQL_NE_OP ||
+				pPred->eOperator == SQL_APPROX_EQ_OP)
+	{
+		
+		// Setup a first-to-last key
 
-		if (uiFromKeyLen)
-		{
-			f_memcpy( pucUntilKey, pucFromKey, uiFromKeyLen);
-		}
-
-		uiUntilKeyLen = uiFromKeyLen;
+		uiFromComponentLen = KEY_LOW_VALUE;
+		uiUntilComponentLen = KEY_HIGH_VALUE;
 	}
 	else
 	{
-		if (pPred->eOperator == SQL_EXISTS_OP ||
-			 pPred->eOperator == SQL_NE_OP ||
-			 pPred->eOperator == SQL_APPROX_EQ_OP)
-		{
-
-			// Setup a first-to-last key
-
-			flmSetupFirstToLastKey( pucFromKeyLenPos, puiFromKeyLen,
-											pucUntilKeyLenPos, puiUntilKeyLen);
-			goto Exit;
-		}
 
 		// Only other operator possible is the range operator
 
@@ -334,7 +286,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			pUntilValue = pPred->pFromValue;
 			bInclUntil = pPred->bInclFrom;
 		}
-
+		
 		// Set up from buffer
 
 		if (!pFromValue)
@@ -609,21 +561,11 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		// Generate the keys using the from and until buffers that
 		// have been set up.
 
-		if (!pucFromBuf && !pucUntilBuf)
-		{
-			
-			// setup a first-to-last key
-
-			flmSetupFirstToLastKey( pucFromKeyLenPos, puiFromKeyLen,
-											pucUntilKeyLenPos, puiUntilKeyLen);
-			goto Exit;
-		}
-
 		// Set up the from key
 		
 		if (!pucFromBuf)
 		{
-			uiFromKeyLen = KEY_LOW_VALUE;
+			uiFromComponentLen = KEY_LOW_VALUE;
 		}
 		else
 		{
@@ -633,12 +575,12 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 
-			uiFromKeyLen = SFLM_MAX_KEY_SIZE - 2;
+			uiFromComponentLen = uiFromSpaceLeft;
 			bDataTruncated = FALSE;
 			
 			// Pass 0 for compare rules on non-text component.
 			
-			if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
+			if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromComponentLen,
 									&bufferIStream, pColumn->eDataTyp,
 									pIcd->uiFlags, 0,
 									pIcd->uiLimit, NULL, NULL, 
@@ -653,20 +595,28 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			if (bDataTruncated)
 			{
 				*pbCanCompareOnKey = FALSE;
-				
-				// Save the original data into pFromSearchKey so the comparison
-				// routines can do a comparison on the full value if
-				// necessary.
-
-				// Better only be a binary data type at this point.
-
-				flmAssert( pFromValue->eValType == SQL_BINARY_VAL);
-				if (RC_BAD( rc = pFromSearchKey->setBinary( uiKeyComponent - 1,
-											pucFromBuf, uiFromBufLen)))
+				if (pFromValue->eValType != SQL_BINARY_VAL)
 				{
-					goto Exit;
+					
+					// Couldn't fit the key into the remaining buffer space, so
+					// we will just ask for all values.
+					
+					uiFromComponentLen = KEY_LOW_VALUE;
 				}
-				uiFromFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
+				else
+				{
+				
+					// Save the original data into pFromSearchKey so the comparison
+					// routines can do a comparison on the full value if
+					// necessary.
+				
+					if (RC_BAD( rc = pFromSearchKey->setBinary( uiKeyComponent - 1,
+												pucFromBuf, uiFromBufLen)))
+					{
+						goto Exit;
+					}
+					uiFromFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
+				}
 			}
 		}
 
@@ -674,15 +624,28 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 
 		if (!pucUntilBuf)
 		{
-			uiUntilKeyLen = KEY_HIGH_VALUE;
+			uiUntilComponentLen = KEY_HIGH_VALUE;
 		}
-		else if (pucUntilBuf == pucFromBuf)
+		
+		// Little optimization here if both the from and until are pointing
+		// to the same data - it is an EQ operator, and we don't need
+		// to do the collation again if we have room in the until buffer
+		// and we didn't truncate the from key.
+		
+		else if (pucUntilBuf == pucFromBuf &&
+					uiFromComponentLen != KEY_LOW_VALUE &&
+					uiUntilSpaceLeft >= uiFromComponentLen &&
+					!(uiFromFlags & TRUNCATED_FLAG))
 		{
-			if (uiFromKeyLen)
+			
+			// If the truncated flag is not set in the from key, neither
+			// should the search key flag be set.
+			
+			flmAssert( !(uiFromFlags & SEARCH_KEY_FLAG));
+			if ((uiUntilComponentLen = uiFromComponentLen) != 0)
 			{
-				f_memcpy( pucUntilKey, pucFromKey, uiFromKeyLen);
+				f_memcpy( pucUntilKey, pucFromKey, uiFromComponentLen);
 			}
-			uiUntilKeyLen = uiFromKeyLen;
 			
 			// The "exclusive" flags better not have been set in this
 			// case - because this should only be possible if the operator
@@ -690,24 +653,6 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			
 			flmAssert( !(uiFromFlags & EXCLUSIVE_GT_FLAG) &&
 						  !(uiUntilFlags & EXCLUSIVE_LT_FLAG));
-			
-			if (uiFromFlags & SEARCH_KEY_FLAG)
-			{
-				
-				// Save the original data into pUntilSearchKey so the comparison
-				// routines can do a comparison on the full value if
-				// necessary.
-
-				// Better only be a binary data type at this point.
-
-				flmAssert( pUntilValue->eValType == SQL_BINARY_VAL);
-				if (RC_BAD( rc = pUntilSearchKey->setBinary( uiKeyComponent - 1,
-											pucUntilBuf, uiUntilBufLen)))
-				{
-					goto Exit;
-				}
-				uiUntilFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
-			}
 		}
 		else
 		{
@@ -716,12 +661,12 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			{
 				goto Exit;
 			}
-			uiUntilKeyLen = SFLM_MAX_KEY_SIZE - 2;
+			uiUntilComponentLen = uiUntilSpaceLeft;
 			bDataTruncated = FALSE;
 			
 			// Pass 0 for compare rule because it is a non-text piece.
 			
-			if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilKeyLen,
+			if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilComponentLen,
 									&bufferIStream, pColumn->eDataTyp,
 									pIcd->uiFlags, 0,
 									pIcd->uiLimit, NULL, NULL, 
@@ -736,60 +681,60 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			if (bDataTruncated)
 			{
 				*pbCanCompareOnKey = FALSE;
-				
-				// Save the original data into pUntilSearchKey so the comparison
-				// routines can do a comparison on the full value if
-				// necessary.
-
-				// Better only be a binary data type at this point.
-
-				flmAssert( pUntilValue->eValType == SQL_BINARY_VAL);
-				if (RC_BAD( rc = pUntilSearchKey->setBinary( uiKeyComponent - 1,
-											pucUntilBuf, uiUntilBufLen)))
+				if (pUntilValue->eValType != SQL_BINARY_VAL)
 				{
-					goto Exit;
+					
+					// Couldn't fit the key into the remaining buffer space, so
+					// we will just ask for all values.
+					
+					uiUntilComponentLen = KEY_HIGH_VALUE;
+				}
+				else
+				{
+				
+					// Save the original data into pUntilSearchKey so the comparison
+					// routines can do a comparison on the full value if
+					// necessary.
+	
+					if (RC_BAD( rc = pUntilSearchKey->setBinary( uiKeyComponent - 1,
+												pucUntilBuf, uiUntilBufLen)))
+					{
+						goto Exit;
+					}
 				}
 				uiUntilFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
 			}
 		}
 	}
 
-	UW2FBA( (FLMUINT16)(uiFromKeyLen | uiFromFlags), pucFromKeyLenPos);
-	UW2FBA( (FLMUINT16)(uiUntilKeyLen | uiUntilFlags), pucUntilKeyLenPos);
+	UW2FBA( (FLMUINT16)(uiFromComponentLen | uiFromFlags), pucFromKeyLenPos);
+	UW2FBA( (FLMUINT16)(uiUntilComponentLen | uiUntilFlags), pucUntilKeyLenPos);
 	
-	if (!(uiFromFlags & EXCLUSIVE_GT_FLAG) && uiFromKeyLen < SFLM_MAX_KEY_SIZE - 2)
-	{
-		uiFromKeyLen += kyAddInclComponent( pIndex->uiNumKeyComponents, uiKeyComponent,
-														&pucFromKey [uiFromKeyLen],
-														TRUE, SFLM_MAX_KEY_SIZE - 2 - uiFromKeyLen);
-	}
-	if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG) && uiUntilKeyLen < SFLM_MAX_KEY_SIZE - 2)
-	{
-		uiUntilKeyLen += kyAddInclComponent( pIndex->uiNumKeyComponents, uiKeyComponent,
-										&pucUntilKey [uiUntilKeyLen],
-										FALSE, SFLM_MAX_KEY_SIZE - 2 - uiUntilKeyLen);
-	}
-		
 	// Set the FROM and UNTIL key length return values.
 
-	if (uiFromKeyLen != KEY_HIGH_VALUE && uiFromKeyLen != KEY_LOW_VALUE)
+	uiFromKeyLen += 2;
+	if (uiFromComponentLen != KEY_LOW_VALUE)
 	{
-		*puiFromKeyLen = uiFromKeyLen + 2;
+		uiFromKeyLen += uiFromComponentLen;
+		if (!(uiFromFlags & EXCLUSIVE_GT_FLAG))
+		{
+			*pbFromIncl = TRUE;
+		}
 	}
-	else
+	uiUntilKeyLen += 2;
+	if (uiUntilComponentLen != KEY_HIGH_VALUE)
 	{
-		*puiFromKeyLen = 2;
-	}
-	if (uiUntilKeyLen != KEY_HIGH_VALUE && uiUntilKeyLen != KEY_LOW_VALUE)
-	{
-		*puiUntilKeyLen = uiUntilKeyLen + 2;
-	}
-	else
-	{
-		*puiUntilKeyLen = 2;
+		uiUntilKeyLen += uiUntilComponentLen;
+		if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG))
+		{
+			*pbUntilIncl = TRUE;
+		}
 	}
 	
 Exit:
+
+	*puiFromKeyLen = uiFromKeyLen;
+	*puiUntilKeyLen = uiUntilKeyLen;
 
 	return( rc);
 }
@@ -1151,7 +1096,7 @@ Desc:	Set the case byte on the from key for a case-insensitive search
 ****************************************************************************/
 FSTATIC void setFromCaseByte(
 	FLMBYTE *	pucFromKey,
-	FLMUINT *	puiFromKeyLen,
+	FLMUINT *	puiFromComponentLen,
 	FLMUINT		uiCaseLen,
 	FLMBOOL		bIsDBCS,
 	FLMBOOL		bAscending,
@@ -1161,10 +1106,10 @@ FSTATIC void setFromCaseByte(
 	// Subtract off all but the case marker.
 	// Remember that for DBCS (Asian) the case marker is two bytes.
 
-	*puiFromKeyLen -= (uiCaseLen -
-							 ((FLMUINT)(bIsDBCS
-										  ? (FLMUINT)2
-										  : (FLMUINT)1)));
+	*puiFromComponentLen -= (uiCaseLen -
+									 ((FLMUINT)(bIsDBCS
+												  ? (FLMUINT)2
+												  : (FLMUINT)1)));
 	if (bExcl)
 	{
 		if (bAscending)
@@ -1176,7 +1121,7 @@ FSTATIC void setFromCaseByte(
 			// following key:
 			// key == abc+6 (COLL_MARKER | SC_UPPER) + 1
 			
-			pucFromKey[ *puiFromKeyLen - 1] = (COLL_MARKER | SC_UPPER);
+			pucFromKey[ *puiFromComponentLen - 1] = (COLL_MARKER | SC_UPPER);
 		}
 		else
 		{
@@ -1188,7 +1133,7 @@ FSTATIC void setFromCaseByte(
 			// following key:
 			// key == abc+4 (COLL_MARKER | SC_LOWER)
 			
-			pucFromKey[ *puiFromKeyLen - 1] = (COLL_MARKER | SC_LOWER);
+			pucFromKey[ *puiFromComponentLen - 1] = (COLL_MARKER | SC_LOWER);
 		}
 	}
 	else	// Inclusive
@@ -1202,7 +1147,7 @@ FSTATIC void setFromCaseByte(
 			// we need the following key:
 			// key == abc+4 (COLL_MARKER | SC_LOWER)
 			
-			pucFromKey [*puiFromKeyLen - 1] = COLL_MARKER | SC_LOWER;
+			pucFromKey [*puiFromComponentLen - 1] = COLL_MARKER | SC_LOWER;
 		}
 		else
 		{
@@ -1214,7 +1159,7 @@ FSTATIC void setFromCaseByte(
 			// following key:
 			// key == abc+6 (COLL_MARKER | SC_UPPER)
 			
-			pucFromKey [*puiFromKeyLen - 1] = COLL_MARKER | SC_UPPER;
+			pucFromKey [*puiFromComponentLen - 1] = COLL_MARKER | SC_UPPER;
 		}
 	}
 }
@@ -1225,7 +1170,7 @@ Desc:	Set the case byte on the until key for a case-insensitive search
 ****************************************************************************/
 FSTATIC void setUntilCaseByte(
 	FLMBYTE *	pucUntilKey,
-	FLMUINT *	puiUntilKeyLen,
+	FLMUINT *	puiUntilComponentLen,
 	FLMUINT		uiCaseLen,
 	FLMBOOL		bIsDBCS,
 	FLMBOOL		bAscending,
@@ -1235,10 +1180,10 @@ FSTATIC void setUntilCaseByte(
 	// Subtract off all but the case marker.
 	// Remember that for DBCS (Asian) the case marker is two bytes.
 
-	*puiUntilKeyLen -= (uiCaseLen -
-							  ((FLMUINT)(bIsDBCS
-										    ? (FLMUINT)2
-										    : (FLMUINT)1)));
+	*puiUntilComponentLen -= (uiCaseLen -
+									  ((FLMUINT)(bIsDBCS
+													 ? (FLMUINT)2
+													 : (FLMUINT)1)));
 	if (bExcl)
 	{
 		if (bAscending)
@@ -1250,7 +1195,7 @@ FSTATIC void setUntilCaseByte(
 			// the following key:
 			// key == abc+4 (COLL_MARKER | SC_LOWER)
 			
-			pucUntilKey[ *puiUntilKeyLen - 1] = (COLL_MARKER | SC_LOWER);
+			pucUntilKey[ *puiUntilComponentLen - 1] = (COLL_MARKER | SC_LOWER);
 		}
 		else
 		{
@@ -1262,7 +1207,7 @@ FSTATIC void setUntilCaseByte(
 			// the following key:
 			// key == abc+6 (COLL_MARKER | SC_UPPER) + 1
 			
-			pucUntilKey[ *puiUntilKeyLen - 1] = (COLL_MARKER | SC_UPPER);
+			pucUntilKey[ *puiUntilComponentLen - 1] = (COLL_MARKER | SC_UPPER);
 		}
 	}
 	else
@@ -1276,7 +1221,7 @@ FSTATIC void setUntilCaseByte(
 			// the following key:
 			// key == abc+6 (COLL_MARKER | SC_UPPER)
 			
-			pucUntilKey [*puiUntilKeyLen - 1] = (COLL_MARKER | SC_UPPER);
+			pucUntilKey [*puiUntilComponentLen - 1] = (COLL_MARKER | SC_UPPER);
 		}
 		else
 		{
@@ -1288,7 +1233,7 @@ FSTATIC void setUntilCaseByte(
 			// the following key:
 			// key == abc+4 (COLL_MARKER | SC_LOWER)
 			
-			pucUntilKey [*puiUntilKeyLen - 1] = (COLL_MARKER | SC_LOWER);
+			pucUntilKey [*puiUntilComponentLen - 1] = (COLL_MARKER | SC_LOWER);
 		}
 	}
 }
@@ -1300,25 +1245,28 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	SQL_PRED *		pPred,
 	F_INDEX *		pIndex,
 	FLMUINT			uiKeyComponent,
+	ICD *				pIcd,
 	F_DataVector *	pFromSearchKey,
 	FLMBYTE *		pucFromKey,
 	FLMUINT *		puiFromKeyLen,
 	F_DataVector *	pUntilSearchKey,
 	FLMBYTE *		pucUntilKey,
 	FLMUINT *		puiUntilKeyLen,
-	FLMBOOL *		pbCanCompareOnKey)
+	FLMBOOL *		pbCanCompareOnKey,
+	FLMBOOL *		pbFromIncl,
+	FLMBOOL *		pbUntilIncl)
 {
 	RCODE       			rc = NE_SFLM_OK;
-	ICD *						pIcd = pIndex->pKeyIcds + uiKeyComponent - 1;
-	FLMUINT					uiFromKeyLen = 0;
-	FLMUINT					uiUntilKeyLen = 0;
-	FLMBYTE *				pucFromKeyLenPos = pucFromKey;
-	FLMBYTE *				pucUntilKeyLenPos = pucUntilKey;
+	FLMBYTE *				pucFromKeyLenPos;
+	FLMBYTE *				pucUntilKeyLenPos;
 	FLMUINT					uiLanguage = pIndex->uiLanguage;
-	FLMUINT					uiCollationLen = 0;
+	FLMUINT					uiFromCollationLen = 0;
+	FLMUINT					uiUntilCollationLen = 0;
 	FLMUINT					uiCharCount;
-	FLMUINT					uiCaseLen;
-	FLMBOOL					bOriginalCharsLost = FALSE;
+	FLMUINT					uiFromCaseLen;
+	FLMUINT					uiUntilCaseLen;
+	FLMBOOL					bFromOriginalCharsLost = FALSE;
+	FLMBOOL					bUntilOriginalCharsLost = FALSE;
 	FLMBOOL					bIsDBCS = (uiLanguage >= FLM_FIRST_DBCS_LANG &&
 								  uiLanguage <= FLM_LAST_DBCS_LANG)
 								  ? TRUE
@@ -1338,12 +1286,28 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	const FLMBYTE *		pucUntilUTF8Buf = NULL;
 	FLMUINT					uiUntilBufLen = 0;
 	FLMUINT					uiWildcardPos;
-	FLMBOOL					bDataTruncated;
+	FLMBOOL					bFromDataTruncated;
+	FLMBOOL					bUntilDataTruncated;
 	FLMUINT					uiFromFlags = 0;
 	FLMUINT					uiUntilFlags = 0;
 	FLMUINT					uiCompareRules;
 	FLMBOOL					bAscending = (pIcd->uiFlags & ICD_DESCENDING) ? FALSE: TRUE;
 	F_BufferIStream		bufferIStream;
+	FLMUINT					uiFromKeyLen = *puiFromKeyLen;
+	FLMUINT					uiUntilKeyLen = *puiUntilKeyLen;
+	FLMUINT					uiFromComponentLen;
+	FLMUINT					uiUntilComponentLen;
+	FLMUINT					uiFromSpaceLeft;
+	FLMUINT					uiUntilSpaceLeft;
+	
+	// Leave room for the component length
+
+	pucFromKeyLenPos = pucFromKey + uiFromKeyLen;
+	pucUntilKeyLenPos = pucUntilKey + uiUntilKeyLen;
+	pucFromKey = pucFromKeyLenPos + 2;
+	pucUntilKey = pucUntilKeyLenPos + 2;
+	uiFromSpaceLeft = SFLM_MAX_KEY_SIZE - uiFromKeyLen - 2;
+	uiUntilSpaceLeft = SFLM_MAX_KEY_SIZE - uiUntilKeyLen - 2;
 
 	switch (pPred->eOperator)
 	{
@@ -1568,21 +1532,9 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		*pbCanCompareOnKey = FALSE;
 	}
 	
-	if (!pucFromUTF8Buf && !pucUntilUTF8Buf)
-	{
-		
-		// setup a first-to-last key
-		
-		flmSetupFirstToLastKey( pucFromKeyLenPos, puiFromKeyLen,
-										pucUntilKeyLenPos, puiUntilKeyLen);
-		goto Exit;
-	}
-
-	pucFromKey += 2;
-	pucUntilKey += 2;
 	if (!pucFromUTF8Buf)
 	{
-		uiFromKeyLen = KEY_LOW_VALUE;
+		uiFromComponentLen = KEY_LOW_VALUE;
 	}
 	else
 	{
@@ -1595,23 +1547,23 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		// Add ICD_ESC_CHAR to the icd flags because
 		// the search string must have BACKSLASHES and '*' escaped.
 
-		uiFromKeyLen = SFLM_MAX_KEY_SIZE - 2;
-		bDataTruncated = FALSE;
-		if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromKeyLen,
+		uiFromComponentLen = uiFromSpaceLeft;
+		bFromDataTruncated = FALSE;
+		if (RC_BAD( rc = KYCollateValue( pucFromKey, &uiFromComponentLen,
 								&bufferIStream, SFLM_STRING_TYPE,
 							pIcd->uiFlags | ICD_ESC_CHAR, pIcd->uiCompareRules,
 							pIcd->uiLimit,
-							&uiCollationLen, &uiCaseLen,
+							&uiFromCollationLen, &uiFromCaseLen,
 							uiLanguage, bDoFirstSubstring,
-							FALSE, &bDataTruncated,
-							&bOriginalCharsLost)))
+							FALSE, &bFromDataTruncated,
+							&bFromOriginalCharsLost)))
 		{
 			goto Exit;
 		}
 		
 		bufferIStream.close();
 		
-		if (bDataTruncated)
+		if (bFromDataTruncated)
 		{
 			*pbCanCompareOnKey = FALSE;
 			
@@ -1626,7 +1578,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			}
 			uiFromFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
 		}
-		else if (bOriginalCharsLost)
+		else if (bFromOriginalCharsLost)
 		{
 			*pbCanCompareOnKey = FALSE;
 		}
@@ -1637,30 +1589,82 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			// Handle scenario of a case-sensitive index, but search is
 			// case-insensitive.
 
-			if (uiFromKeyLen &&
+			if (uiFromComponentLen &&
 				 (bIsDBCS ||
 				   (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
 					 bCaseInsensitive)))
 			{
-				setFromCaseByte( pucFromKey, &uiFromKeyLen, uiCaseLen,
+				setFromCaseByte( pucFromKey, &uiFromComponentLen, uiFromCaseLen,
 										bIsDBCS, bAscending,
 										(uiFromFlags & EXCLUSIVE_GT_FLAG)
 										? TRUE
 										: FALSE);
 			}
 		}
+	}
+
+	// Do the until key now
+
+	if (!pucUntilUTF8Buf)
+	{
+		uiUntilComponentLen = KEY_HIGH_VALUE;
+	}
+	else if (pucFromUTF8Buf == pucUntilUTF8Buf)
+	{
+		
+		// Handle case where from and until buffers are the same.
+		// This should only be possible in the equality case or match begin
+		// case, in which cases neither the EXCLUSIVE_LT_FLAG or the
+		// EXCLUSIVE_GT_FLAG should be set.
+		
+		flmAssert( uiFromBufLen == uiUntilBufLen);
+		flmAssert( !(uiFromFlags & (EXCLUSIVE_GT_FLAG | EXCLUSIVE_LT_FLAG)));
+		flmAssert( !(uiUntilFlags & (EXCLUSIVE_GT_FLAG | EXCLUSIVE_LT_FLAG)));
+		
+		// Need to collate the until key from the original data if
+		// the from key was truncated or there is not enough room in
+		// the until key.  Otherwise, we can simply copy
+		// the from key into the until key - a little optimization.
+		
+		if (uiUntilSpaceLeft >= uiFromComponentLen && !bFromDataTruncated)
+		{
+			if ((uiUntilComponentLen = uiFromComponentLen) != 0)
+			{
+				f_memcpy( pucUntilKey, pucFromKey, uiFromComponentLen);
+			}
+			uiUntilCaseLen = uiFromCaseLen;
+			uiUntilCollationLen = uiFromCollationLen;
+			bUntilOriginalCharsLost = bFromOriginalCharsLost;
+			bUntilDataTruncated = FALSE;
+		}
 		else
 		{
-			// Handle case where from and until buffers are the same.
-			// This should only be possible in the equality case or match begin
-			// case, in which cases neither the EXCLUSIVE_LT_FLAG or the
-			// EXCLUSIVE_GT_FLAG should be set.
+			if (RC_BAD( rc = bufferIStream.open( 
+				(const char *)pucUntilUTF8Buf, uiUntilBufLen)))
+			{
+				goto Exit;
+			}
+	
+			// Add ICD_ESC_CHAR to the icd flags because
+			// the search string must have BACKSLASHES and '*' escaped.
+	
+			uiUntilComponentLen = uiUntilSpaceLeft;
+			bUntilDataTruncated = FALSE;
+			if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilComponentLen,
+								&bufferIStream, SFLM_STRING_TYPE,
+								pIcd->uiFlags | ICD_ESC_CHAR, pIcd->uiCompareRules,
+								pIcd->uiLimit,
+								&uiUntilCollationLen, &uiUntilCaseLen,
+								uiLanguage, bDoFirstSubstring, 
+								FALSE, &bUntilDataTruncated,
+								&bUntilOriginalCharsLost)))
+			{
+				goto Exit;
+			}
 			
-			flmAssert( uiFromBufLen == uiUntilBufLen);
-			flmAssert( !(uiFromFlags & (EXCLUSIVE_GT_FLAG | EXCLUSIVE_LT_FLAG)));
-			flmAssert( !(uiUntilFlags & (EXCLUSIVE_GT_FLAG | EXCLUSIVE_LT_FLAG)));
+			bufferIStream.close();
 			
-			if (uiFromFlags & SEARCH_KEY_FLAG)
+			if (bUntilDataTruncated)
 			{
 				
 				// Save the original data into pUntilSearchKey so the comparison
@@ -1672,151 +1676,106 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				{
 					goto Exit;
 				}
+				*pbCanCompareOnKey = FALSE;
 				uiUntilFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
 			}
-			
-			if (bDoMatchBegin)
+			else if (bUntilOriginalCharsLost)
 			{
-				if (bAscending)
-				{
-					
-					// Handle scenario of a case-sensitive index, but search is
-					// case-insensitive.
-			
-					if (uiFromKeyLen &&
-						 (bIsDBCS ||
-						  (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
-						   bCaseInsensitive)))
-					{
-						setFromCaseByte( pucFromKey, &uiFromKeyLen, uiCaseLen,
-												bIsDBCS, bAscending, FALSE);
-					}
+				*pbCanCompareOnKey = FALSE;
+			}
+		}
 		
-					// From key is set up properly, setup until key.
-					
-					if (uiCollationLen)
-					{
-						f_memcpy( pucUntilKey, pucFromKey, uiCollationLen);
-					}
-					
-					// Fill the rest of the until key with high values.
+		if (bDoMatchBegin)
+		{
+			if (bAscending)
+			{
+				
+				// Handle scenario of a case-sensitive index, but search is
+				// case-insensitive.
 		
-					f_memset( &pucUntilKey[ uiCollationLen], 0xFF,
-									SFLM_MAX_KEY_SIZE - uiCollationLen - 2);
-					uiUntilKeyLen = SFLM_MAX_KEY_SIZE - 2;
-				}
-				else
+				if (uiFromComponentLen &&
+					 (bIsDBCS ||
+					  (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
+						bCaseInsensitive)))
 				{
-					
-					// Copy from key into until key.
-
-					if (uiFromKeyLen)
-					{
-						f_memcpy( pucUntilKey, pucFromKey, uiFromKeyLen);
-					}
-					uiUntilKeyLen = uiFromKeyLen;
-					
-					if (uiUntilKeyLen &&
-						 (bIsDBCS ||
-						  (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
-						   bCaseInsensitive)))
-					{
-						// NOTE: Always inclusive because this is a matchbegin.
-					
-						setUntilCaseByte( pucUntilKey, &uiUntilKeyLen, uiCaseLen,
+					setFromCaseByte( pucFromKey, &uiFromComponentLen, uiFromCaseLen,
 											bIsDBCS, bAscending, FALSE);
-					}
-										
-					// Fill rest of from key with high values after collation values.
-					
-					f_memset( &pucFromKey[ uiCollationLen], 0xFF,
-								SFLM_MAX_KEY_SIZE - uiCollationLen - 2);
-					uiFromKeyLen = SFLM_MAX_KEY_SIZE - 2;
 				}
+	
+				// Fill everything after the collation values in the until
+				// key with high values (0xFF)
+	
+				f_memset( &pucUntilKey[ uiUntilCollationLen], 0xFF,
+								uiUntilSpaceLeft - uiUntilCollationLen);
+				uiUntilComponentLen = uiUntilSpaceLeft;
 			}
 			else
 			{
 				
-				// Copy from key into until key.
-
-				if (!uiFromKeyLen)
+				if (uiUntilComponentLen &&
+					 (bIsDBCS ||
+					  (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
+						bCaseInsensitive)))
 				{
-					uiUntilKeyLen = 0;
+					// NOTE: Always inclusive because this is a matchbegin.
+				
+					setUntilCaseByte( pucUntilKey, &uiUntilComponentLen, uiUntilCaseLen,
+										bIsDBCS, bAscending, FALSE);
+				}
+									
+				// Fill rest of from key with high values after collation values.
+				
+				f_memset( &pucFromKey[ uiFromCollationLen], 0xFF,
+							uiFromSpaceLeft - uiFromCollationLen);
+				uiFromComponentLen = uiFromSpaceLeft;
+			}
+		}
+		else
+		{
+			if (bDoFirstSubstring)
+			{
+				FLMUINT	uiBytesToRemove = (bIsDBCS) ? 2 : 1;
+				
+				if (bAscending)
+				{
+					
+					// Get rid of the first substring byte in the until
+					// key.
+					
+					f_memmove( &pucUntilKey [uiUntilCollationLen],
+								  &pucUntilKey [uiUntilCollationLen + uiBytesToRemove],
+								  uiUntilComponentLen - uiUntilCollationLen - uiBytesToRemove);
+					uiUntilComponentLen -= uiBytesToRemove;
 				}
 				else
 				{
-					if (!bDoFirstSubstring)
-					{
-						f_memcpy( pucUntilKey, pucFromKey, uiFromKeyLen);
-						uiUntilKeyLen = uiFromKeyLen;
-					}
-					else if (bAscending)
-					{
-						
-						// Do two copies so that the first substring byte is gone
-						// in the until key.
-						
-						f_memcpy( pucUntilKey, pucFromKey, uiCollationLen);
-						uiUntilKeyLen = uiCollationLen;
-						if (bIsDBCS)
-						{
-							uiCollationLen++;
-						}
-						uiCollationLen++;
-						f_memcpy( &pucUntilKey [uiUntilKeyLen],
-										pucFromKey + uiCollationLen,
-										uiFromKeyLen - uiCollationLen);
-						uiUntilKeyLen += (uiFromKeyLen - uiCollationLen);
-					}
-					else
-					{
-						
-						// Descending order - put the string without the
-						// first-substring-marker into the from key instead of
-						// the until key.
-						
-						f_memcpy( pucUntilKey, pucFromKey, uiFromKeyLen);
-						uiUntilKeyLen = uiFromKeyLen;
-						
-						// Modify from key to NOT have first-substring-marker.
-						
-						f_memcpy( pucUntilKey, pucFromKey, uiCollationLen);
-						uiFromKeyLen = uiCollationLen;
-						if (bIsDBCS)
-						{
-							uiCollationLen++;
-						}
-						uiCollationLen++;
-						f_memcpy( &pucFromKey [uiFromKeyLen],
-										pucUntilKey + uiCollationLen,
-										uiUntilKeyLen - uiCollationLen);
-						uiFromKeyLen += (uiUntilKeyLen - uiCollationLen);
-					}
-				
-					// Handle scenario of a case-sensitive index, but search is
-					// case-insensitive.
+					
+					// Descending order - put the string without the
+					// first-substring-marker into the from key instead of
+					// the until key.
+					
+					f_memmove( &pucFromKey [uiFromCollationLen],
+								  &pucFromKey [uiFromCollationLen + uiBytesToRemove],
+								  uiFromComponentLen - uiFromCollationLen - uiBytesToRemove);
+					uiFromComponentLen -= uiBytesToRemove;
+				}
 			
-					if (bIsDBCS ||
-						 (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
-						  bCaseInsensitive))
-					{
-						setFromCaseByte( pucFromKey, &uiFromKeyLen, uiCaseLen,
-													bIsDBCS, bAscending, FALSE);
-						setUntilCaseByte( pucUntilKey, &uiUntilKeyLen, uiCaseLen,
-													bIsDBCS, bAscending, FALSE);
-					}
+				// Handle scenario of a case-sensitive index, but search is
+				// case-insensitive.
+		
+				if (bIsDBCS ||
+					 (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
+					  bCaseInsensitive))
+				{
+					setFromCaseByte( pucFromKey, &uiFromComponentLen, uiFromCaseLen,
+												bIsDBCS, bAscending, FALSE);
+					setUntilCaseByte( pucUntilKey, &uiUntilComponentLen, uiUntilCaseLen,
+												bIsDBCS, bAscending, FALSE);
 				}
 			}
 		}
 	}
-
-	// Do the until key now
-
-	if (!pucUntilUTF8Buf)
-	{
-		uiUntilKeyLen = KEY_HIGH_VALUE;
-	}
-	else if (pucFromUTF8Buf != pucUntilUTF8Buf)
+	else // pucFromUTF8Buf != pucUntilUTF8Buf
 	{
 		if (RC_BAD( rc = bufferIStream.open( 
 			(const char *)pucUntilUTF8Buf, uiUntilBufLen)))
@@ -1827,23 +1786,23 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		// Add ICD_ESC_CHAR to the icd flags because
 		// the search string must have BACKSLASHES and '*' escaped.
 
-		uiUntilKeyLen = SFLM_MAX_KEY_SIZE - 2;
-		bDataTruncated = FALSE;
-		if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilKeyLen,
+		uiUntilComponentLen = uiUntilSpaceLeft;
+		bUntilDataTruncated = FALSE;
+		if (RC_BAD( rc = KYCollateValue( pucUntilKey, &uiUntilComponentLen,
 							&bufferIStream, SFLM_STRING_TYPE,
 							pIcd->uiFlags | ICD_ESC_CHAR, pIcd->uiCompareRules,
 							pIcd->uiLimit,
-							&uiCollationLen, &uiCaseLen,
+							&uiUntilCollationLen, &uiUntilCaseLen,
 							uiLanguage, bDoFirstSubstring, 
-							FALSE, &bDataTruncated,
-							&bOriginalCharsLost)))
+							FALSE, &bUntilDataTruncated,
+							&bUntilOriginalCharsLost)))
 		{
 			goto Exit;
 		}
 		
 		bufferIStream.close();
 		
-		if (bDataTruncated)
+		if (bUntilDataTruncated)
 		{
 			
 			// Save the original data into pUntilSearchKey so the comparison
@@ -1858,17 +1817,17 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			*pbCanCompareOnKey = FALSE;
 			uiUntilFlags |= (SEARCH_KEY_FLAG | TRUNCATED_FLAG);
 		}
-		else if (bOriginalCharsLost)
+		else if (bUntilOriginalCharsLost)
 		{
 			*pbCanCompareOnKey = FALSE;
 		}
 
-		if (uiUntilKeyLen &&
+		if (uiUntilComponentLen &&
 			 (bIsDBCS ||
 			  (!(pIcd->uiCompareRules & FLM_COMP_CASE_INSENSITIVE) &&
 			   bCaseInsensitive)))
 		{
-			setUntilCaseByte( pucUntilKey, &uiUntilKeyLen, uiCaseLen,
+			setUntilCaseByte( pucUntilKey, &uiUntilComponentLen, uiUntilCaseLen,
 									bIsDBCS, bAscending,
 									(uiUntilFlags & EXCLUSIVE_LT_FLAG)
 									? TRUE
@@ -1879,36 +1838,25 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	UW2FBA( (FLMUINT16)(uiFromKeyLen | uiFromFlags), pucFromKeyLenPos);
 	UW2FBA( (FLMUINT16)(uiUntilKeyLen | uiUntilFlags), pucUntilKeyLenPos);
 	
-	if (!(uiFromFlags & EXCLUSIVE_GT_FLAG) && uiFromKeyLen < SFLM_MAX_KEY_SIZE - 2)
-	{
-		uiFromKeyLen += kyAddInclComponent( pIndex->uiNumKeyComponents, uiKeyComponent,
-										&pucFromKey [uiFromKeyLen],
-										TRUE, SFLM_MAX_KEY_SIZE - 2 - uiFromKeyLen);
-	}
-	if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG) && uiUntilKeyLen < SFLM_MAX_KEY_SIZE - 2)
-	{
-		uiUntilKeyLen += kyAddInclComponent( pIndex->uiNumKeyComponents, uiKeyComponent,
-										&pucUntilKey [uiUntilKeyLen],
-										FALSE, SFLM_MAX_KEY_SIZE - 2 - uiUntilKeyLen);
-	}
-		
-	// Set the FROM and UNTIL key lengths
+	// Set the FROM and UNTIL key length return values.
 
-	if (uiFromKeyLen != KEY_HIGH_VALUE && uiFromKeyLen != KEY_LOW_VALUE)
+	uiFromKeyLen += 2;
+	if (uiFromComponentLen != KEY_LOW_VALUE)
 	{
-		*puiFromKeyLen = uiFromKeyLen + 2;
+		uiFromKeyLen += uiFromComponentLen;
+		if (!(uiFromFlags & EXCLUSIVE_GT_FLAG))
+		{
+			*pbFromIncl = TRUE;
+		}
 	}
-	else
+	uiUntilKeyLen += 2;
+	if (uiUntilComponentLen != KEY_HIGH_VALUE)
 	{
-		*puiFromKeyLen = 2;
-	}
-	if (uiUntilKeyLen != KEY_HIGH_VALUE && uiUntilKeyLen != KEY_LOW_VALUE)
-	{
-		*puiUntilKeyLen = uiUntilKeyLen + 2;
-	}
-	else
-	{
-		*puiUntilKeyLen = 2;
+		uiUntilKeyLen += uiUntilComponentLen;
+		if (!(uiUntilFlags & EXCLUSIVE_LT_FLAG))
+		{
+			*pbUntilIncl = TRUE;
+		}
 	}
 	
 Exit:
@@ -1925,7 +1873,8 @@ RCODE flmBuildFromAndUntilKeys(
 	F_Dict *			pDict,
 	F_INDEX *		pIndex,
 	F_TABLE *		pTable,
-	SQL_PRED *		pPred,
+	SQL_PRED **		ppKeyComponents,
+	FLMUINT			uiComponentsUsed,
 	F_DataVector *	pFromSearchKey,
 	FLMBYTE *		pucFromKey,
 	FLMUINT *		puiFromKeyLen,
@@ -1935,61 +1884,141 @@ RCODE flmBuildFromAndUntilKeys(
 	FLMBOOL *		pbDoRowMatch,
 	FLMBOOL *		pbCanCompareOnKey)
 {
-	RCODE	rc = NE_SFLM_OK;
+	RCODE			rc = NE_SFLM_OK;
+	FLMUINT		uiKeyComponent;
+	SQL_PRED *	pPred;
+	F_COLUMN *	pColumn;
+	ICD *			pIcd;
+	FLMBOOL		bFromIncl;
+	FLMBOOL		bUntilIncl;
+	FLMUINT		uiFromKeyLen = 0;
+	FLMUINT		uiUntilKeyLen = 0;
 								
-	*puiFromKeyLen = *puiUntilKeyLen = 0;
 	*pbDoRowMatch = FALSE;
 	*pbCanCompareOnKey = TRUE;
 
-	if (!pPred)
+	if (!uiComponentsUsed)
 	{
 		
 		// Setup a first-to-last key
 		
-		flmSetupFirstToLastKey( pucFromKey, puiFromKeyLen,
-										pucUntilKey, puiUntilKeyLen);
+		UW2FBA( KEY_LOW_VALUE, pucFromKey);
+		UW2FBA( KEY_HIGH_VALUE, pucUntilKey);
+		uiFromKeyLen += 2;
+		uiUntilKeyLen += 2;
 		*pbDoRowMatch = TRUE;
 		*pbCanCompareOnKey = FALSE;
 	}
 	else
 	{
-		F_COLUMN *	pColumn;
-		ICD *			pIcd;
+		for (uiKeyComponent = 1, pIcd = pIndex->pKeyIcds;
+			  uiKeyComponent <= uiComponentsUsed;
+			  uiKeyComponent++, pIcd++)
+		{
+			
+			// At this point, we always better have room to put at least
+			// two bytes in the key.
+			
+			flmAssert( SFLM_MAX_KEY_SIZE - uiFromKeyLen >= 2 &&
+				 		  SFLM_MAX_KEY_SIZE - uiUntilKeyLen >= 2);
+						  
+			pPred = ppKeyComponents [uiKeyComponent - 1];
 
-		// Predicates we are looking at should NEVER be notted.  They
-		// will have been weeded out earlier.
-
-		flmAssert( !pPred->bNotted);
+			// Predicates we are looking at should NEVER be notted.  They
+			// will have been weeded out earlier.
 	
-		// Handle special cases for indexing presence and/or exists predicate.
-
-		pIcd = pIndex->pKeyIcds;
-		pColumn = pDict->getColumn( pTable, pIcd->uiColumnNum);
-		if (pColumn->eDataTyp == SFLM_STRING_TYPE &&
-					!(pIcd->uiFlags & (ICD_PRESENCE | ICD_METAPHONE)) &&
-					pPred->eOperator != SQL_EXISTS_OP)
-		{
-			if (RC_BAD( rc = flmAddTextKeyPiece( pPred, pIndex, 1,
-						pFromSearchKey, pucFromKey, puiFromKeyLen,
-						pUntilSearchKey, pucUntilKey, puiUntilKeyLen,
-						pbCanCompareOnKey)))
+			flmAssert( !pPred->bNotted);
+			
+			bFromIncl = FALSE;
+			bUntilIncl = FALSE;
+		
+			// Handle special cases for indexing presence and/or exists predicate.
+	
+			pColumn = pDict->getColumn( pTable, pIcd->uiColumnNum);
+			if (pColumn->eDataTyp == SFLM_STRING_TYPE &&
+						!(pIcd->uiFlags & (ICD_PRESENCE | ICD_METAPHONE)) &&
+						pPred->eOperator != SQL_EXISTS_OP)
 			{
-				goto Exit;
+				if (RC_BAD( rc = flmAddTextKeyPiece( pPred, pIndex,
+							uiKeyComponent, pIcd,
+							pFromSearchKey, pucFromKey, &uiFromKeyLen,
+							pUntilSearchKey, pucUntilKey, &uiUntilKeyLen,
+							pbCanCompareOnKey, &bFromIncl, &bUntilIncl)))
+				{
+					goto Exit;
+				}
 			}
-		}
-		else
-		{
-			if (RC_BAD( rc = flmAddNonTextKeyPiece( pPred, pIndex, 1, pColumn,
-										pFromSearchKey, pucFromKey, puiFromKeyLen,
-										pUntilSearchKey, pucUntilKey, puiUntilKeyLen,
-										pbCanCompareOnKey)))
+			else
 			{
-				goto Exit;
+				if (RC_BAD( rc = flmAddNonTextKeyPiece( pPred, pIndex,
+											uiKeyComponent, pIcd, pColumn,
+											pFromSearchKey, pucFromKey, &uiFromKeyLen,
+											pUntilSearchKey, pucUntilKey, &uiUntilKeyLen,
+											pbCanCompareOnKey, &bFromIncl, &bUntilIncl)))
+				{
+					goto Exit;
+				}
+			}
+			
+			// If this is our last component, see if the from or until
+			// component is inclusive, in which case we need to add one
+			// more component to the key so it will be "inclusive".
+			
+			if (uiKeyComponent == uiComponentsUsed ||
+				 SFLM_MAX_KEY_SIZE - uiFromKeyLen < 2 ||
+				 SFLM_MAX_KEY_SIZE - uiUntilKeyLen < 2)
+			{
+				
+				// bFromIncl means we had a >= or == for the component.
+				// If there is a next key component that would be expected, set it to
+				// the lowest possible value.  There must also be room for a
+				// two byte value.
+				
+				if (bFromIncl &&
+					 uiKeyComponent < pIndex->uiNumKeyComponents &&
+					 SFLM_MAX_KEY_SIZE - uiFromKeyLen >= 2)
+				{
+					UW2FBA( (FLMUINT16)KEY_LOW_VALUE, &pucFromKey [uiFromKeyLen]);
+					uiFromKeyLen += 2;
+				}
+				
+				// bUntilIncl means we had a <= or == for the component.
+				// If there is a next key component that would be expected, set it to
+				// the highest possible value.
+					
+				if (bUntilIncl)
+				{
+					if (uiKeyComponent < pIndex->uiNumKeyComponents)
+					{
+						if (SFLM_MAX_KEY_SIZE - uiUntilKeyLen >= 2)
+						{
+							UW2FBA( (FLMUINT16)KEY_LOW_VALUE, &pucUntilKey [uiUntilKeyLen]);
+							uiUntilKeyLen += 2;
+						}
+					}
+					else if (SFLM_MAX_KEY_SIZE - uiUntilKeyLen >= 1)
+					{
+						
+						// There are no more key components.
+						// Output one byte of 0xFF - which should be higher than any
+						// possible SEN that could be output for row ID.
+						// Only do this for until keys.  For from keys, no need to add
+						// anything, because an empty list of IDs will be be inclusive
+						// on the from side - it will sort lower, and therefore be inclusive.
+						
+						pucUntilKey [uiUntilKeyLen] = 0xFF;
+						uiUntilKeyLen++;
+					}
+				}
+				break;
 			}
 		}
 	}
 
 Exit:
+
+	*puiFromKeyLen = uiFromKeyLen;
+	*puiUntilKeyLen = uiUntilKeyLen;
 
 	if (!(*pbCanCompareOnKey))
 	{
