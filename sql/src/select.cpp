@@ -482,6 +482,19 @@ RCODE SQLStatement::processSelect( void)
 			{
 				break;
 			}
+			
+			// Token better be a comma
+			
+			if (f_stricmp( szToken, ",") != 0)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_EXPECTING_COMMA,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
 		}
 	}
 	
