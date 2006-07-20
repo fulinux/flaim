@@ -2046,7 +2046,7 @@ RCODE sqlEvalCriteria(
 	{
 		*ppSqlValue = &pQueryExpr->currVal;
 		rc = sqlGetColumnValue( pDb, pRow,
-									pQueryExpr->nd.column.pTable->uiTableNum,
+									pQueryExpr->nd.column.pSQLTable->uiTableNum,
 									pQueryExpr->nd.column.uiColumnNum,
 									pPool, *ppSqlValue);
 		goto Exit;
@@ -2068,7 +2068,7 @@ RCODE sqlEvalCriteria(
 		if (pCurrNode->eNodeType == SQL_COLUMN_NODE)
 		{
 			if (RC_BAD( rc = sqlGetColumnValue( pDb, pRow,
-									pCurrNode->nd.column.pTable->uiTableNum,
+									pCurrNode->nd.column.pSQLTable->uiTableNum,
 									pCurrNode->nd.column.uiColumnNum,
 									pPool, &pCurrNode->currVal)))
 			{
