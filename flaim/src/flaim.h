@@ -1782,6 +1782,8 @@
 	#define DEFAULT_MAX_UNUSED_TIME				120
 	#define DEFAULT_BLOCK_CACHE_PERCENTAGE		50
 	#define DEFAULT_FILE_EXTEND_SIZE				(8192 * 1024)
+	#define DEFAULT_RFL_FOOTPRINT_SIZE			(100 * 1024 * 1024)
+	#define DEFAULT_RBL_FOOTPRINT_SIZE			(100 * 1024 * 1024)
 	#define DEFAULT_MAX_STRATIFY_ITERATIONS	10000
 	#define DEFAULT_MAX_STRATIFY_TIME			10
 
@@ -2245,10 +2247,14 @@
 		FDB_SET_RFL_SIZE_THRESHOLD,			///< Sets the RFL size threshold (in K bytes).  If registered to receive RFL size events, an event will
 														///< be reported when the on-disk size of the RFL exceeds this value.\  pvValue1 is a FLMUINT which
 														///< specifies the threshold value in K bytes.
-		FDB_SET_RFL_SIZE_EVENT_INTERVALS		///< Sets the criteria for determining how often to report RFL size events once the RFL exceeds the
+		FDB_SET_RFL_SIZE_EVENT_INTERVALS,	///< Sets the criteria for determining how often to report RFL size events once the RFL exceeds the
 														///< size threshold.\  pvValue1 is a FLMUINT which specifies the minimum number of seconds between
 														///< events.\  pvValue2 is a FLMUINT  which specifies the minimum increase in K bytes of the RFL
 														///< between events.
+		FDB_RFL_FOOTPRINT_SIZE,					///< Set the footprint size of the RFL when files are not being kept.\  pvValue1 is a FLMUINT
+														///< which specifies the footprint size (in bytes).
+		FDB_RBL_FOOTPRINT_SIZE					///< Set the footprint size of the roll-back log.\  pvValue1 is a FLMUINT
+														///< which specifies the footprint size (in bytes).
 	} eDbConfigType;
 
 	/// Options for FlmDbGetConfig().
@@ -2309,8 +2315,12 @@
 														///< returns the sequence number.
 		FDB_GET_DICT_SEQ_NUM,					///< Get the dictionary sequence number.\   pvValue1 is a FLMUINT * that returns the sequence number.
 		FDB_GET_FFILE_ID,							///< Get the database's unique ID number.\   pvValue1 is a FLMUINT * that returns the number.
-		FDB_GET_MUST_CLOSE_RC					///< Get the ::RCODE that caused the "must close" flag to be set on the database.\   pvValue1 is
+		FDB_GET_MUST_CLOSE_RC,					///< Get the ::RCODE that caused the "must close" flag to be set on the database.\   pvValue1 is
 														///< an ::RCODE * that returns the ::RCODE.
+		FDB_GET_RFL_FOOTPRINT_SIZE,			///< Get the RFL footprint size.\  pvValue1 is a FLMUINT * which returns the RFL footprint size.\   NOTE:
+														///< This size may be set by calling FlmDbConfig() using the eDbConfigType::FDB_RFL_FOOTPRINT_SIZE option.
+		FDB_GET_RBL_FOOTPRINT_SIZE				///< Get the roll-back log footprint size.\  pvValue1 is a FLMUINT * which returns the RBL footprint size.\   NOTE:
+														///< This size may be set by calling FlmDbConfig() using the eDbConfigType::FDB_RBL_FOOTPRINT_SIZE option.
 	} eDbGetConfigType;
 
 	/// Create a new database.

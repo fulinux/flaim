@@ -176,7 +176,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	FLMBOOL				bDoTruncate,
+	FLMBOOL				bTruncateRollBackLog,
 	FLMUINT				uiCPFileNum,
 	FLMUINT				uiCPOffset,
 	FLMUINT				uiCPStartTime,
@@ -7604,7 +7604,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	FLMBOOL				bDoTruncate,
+	FLMBOOL				bTruncateRollBackLog,
 	FLMUINT				uiCPFileNum,
 	FLMUINT				uiCPOffset,
 	FLMUINT				uiCPStartTime,
@@ -7619,7 +7619,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 	FLMUINT			uiSaveCPFileNum;
 	FLMBOOL			bTruncateLog = FALSE;
 	FLMBOOL			bTruncateRflFile = FALSE;
-	FLMUINT			uiTruncateRflSize = 0;
+	FLMUINT			uiRflTruncateSize = 0;
 	FLMUINT			uiLogEof;
 	FLMUINT			uiHighLogFileNumber;
 #ifdef FLM_DBG_LOG
@@ -7666,7 +7666,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 	uiLogEof = (FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_ROLLBACK_EOF]);
 	uiHighLogFileNumber = FSGetFileNumber( uiLogEof);
 
-	if (uiHighLogFileNumber > 0 || bDoTruncate ||
+	if( uiHighLogFileNumber > 0 || bTruncateRollBackLog ||
 		 FSGetFileOffset( uiLogEof) > LOW_VERY_LARGE_LOG_THRESHOLD_SIZE)
 	{
 		CP_INFO *		pCPInfo = pFile->pCPInfo;
@@ -7677,7 +7677,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 		FLMUINT			uiFirstDbInactiveSecs;
 		FLMUINT			uiElapTime;
 		FLMUINT			uiLastMsgTime = FLM_GET_TIMER();
-		FLMBOOL			bMustTruncate = (bDoTruncate ||
+		FLMBOOL			bMustTruncate = (bTruncateRollBackLog ||
 											  uiHighLogFileNumber ||
 											  FSGetFileOffset( uiLogEof) >=
 												HIGH_VERY_LARGE_LOG_THRESHOLD_SIZE)
@@ -7748,7 +7748,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 				pFirstDb->pPrevReadTrans = NULL;
 
-				if ((pFirstDb->pNextReadTrans = pFile->pFirstKilledTrans) != NULL)
+				if( (pFirstDb->pNextReadTrans = pFile->pFirstKilledTrans) != NULL)
 				{
 					pFirstDb->pNextReadTrans->pPrevReadTrans = pFirstDb;
 				}
@@ -7761,10 +7761,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				uiElapTime = FLM_ELAPSED_TIME( uiTime, uiFirstDbInactiveTime);
 				uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
-				flmLogMessage( 
-					F_DEBUG_MESSAGE,
-					FLM_YELLOW,
-					FLM_BLACK,
+				flmLogMessage( F_DEBUG_MESSAGE, FLM_YELLOW, FLM_BLACK,
 					"Killed transaction 0x%08X."
 					"  Thread: 0x%08X."
 					"  Inactive time: %u seconds.",
@@ -7778,7 +7775,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 			}
 			else if( !bMustTruncate)
 			{
-				if (iWaitCnt >= 200)
+				if( iWaitCnt >= 200)
 				{
 					break;
 				}
@@ -7801,10 +7798,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 					uiElapTime = FLM_ELAPSED_TIME( uiTime, uiFirstDbInactiveTime);
 					uiFirstDbInactiveSecs = FLM_TIMER_UNITS_TO_SECS( uiElapTime);
 
-					flmLogMessage(
-						F_DEBUG_MESSAGE,
-						FLM_YELLOW,
-						FLM_BLACK,
+					flmLogMessage( F_DEBUG_MESSAGE, FLM_YELLOW, FLM_BLACK,
 						"Waiting for transaction 0x%08X to complete."
 						"  Thread: 0x%08X."
 						"  Inactive time: %u seconds.",
@@ -7817,6 +7811,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 				f_sleep( 100);
 			}
+
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			pFirstDb = pFile->pFirstReadTrans;
 		}
@@ -7827,30 +7822,32 @@ FSTATIC RCODE scaFinishCheckpoint(
 		}
 	}
 
-	if ((!pFile->pFirstReadTrans) ||
-		 (pFile->pFirstReadTrans->LogHdr.uiCurrTransID >=
-			uiCurrTransID))
+	if( !pFile->pFirstReadTrans ||
+		 pFile->pFirstReadTrans->LogHdr.uiCurrTransID >= uiCurrTransID)
 	{
 		// We may want to truncate the log file if it has grown really big.
 	
-		if ((uiHighLogFileNumber > 0) ||
-			 (FSGetFileOffset( uiLogEof) > pFile->uiFileExtendSize))
+		if( uiHighLogFileNumber > 0 ||
+			 FSGetFileOffset( uiLogEof) > pFile->uiRblFootprintSize)
 		{
 			bTruncateLog = TRUE;
 		}
+		
 		UD2FBA( (FLMUINT32)pFile->FileHdr.uiBlockSize,
-						&pucCommittedLogHdr [LOG_ROLLBACK_EOF]);
+						&pucCommittedLogHdr[ LOG_ROLLBACK_EOF]);
 #ifdef FLM_DBG_LOG
 		bResetRBL = TRUE;
 #endif
 	}
-	UD2FBA( 0, &pucCommittedLogHdr [LOG_PL_FIRST_CP_BLOCK_ADDR]);
+	
+	UD2FBA( 0, &pucCommittedLogHdr[ LOG_PL_FIRST_CP_BLOCK_ADDR]);
 
 	// Set the checkpoint RFL file number and offset to be the same as
 	// the last transaction's RFL file number and offset if nothing
 	// is passed in.  If a non-zero uiCPFileNum is passed in, it is because
 	// we are checkpointing the last transaction that has been recovered
 	// by the recovery process.
+	//
 	// In this case, instead of moving the pointers all the way forward,
 	// to the last committed transaction, we simply move them forward to
 	// the last recovered transaction.
@@ -7880,12 +7877,11 @@ FSTATIC RCODE scaFinishCheckpoint(
 		f_memcpy( &pucCommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM],
 					 &pucCommittedLogHdr [LOG_RFL_FILE_NUM], 4);
 
-		if (!pucCommittedLogHdr [LOG_KEEP_RFL_FILES])
+		if( !pucCommittedLogHdr [LOG_KEEP_RFL_FILES])
 		{
 			UD2FBA( 512, &pucCommittedLogHdr [LOG_RFL_LAST_CP_OFFSET]);
-			if (bResetRflFile)
+			if( bResetRflFile)
 			{
-
 				// This will cause the RFL file to be recreated on the
 				// next transaction - causing the keep signature to be
 				// changed.  Also need to set up to use new serial
@@ -7898,37 +7894,20 @@ FSTATIC RCODE scaFinishCheckpoint(
 				f_createSerialNumber(
 						&pucCommittedLogHdr [LOG_RFL_NEXT_SERIAL_NUM]);
 			}
-
-			// If LOG_RFL_LAST_TRANS_OFFSET is zero, someone has set this up
-			// intentionally to cause the RFL file to be created at the
-			// beginning of the next transaction.  We don't want to lose
-			// that, so if it is zero, we don't change it.
-
 			else if (FB2UD( &pucCommittedLogHdr[ LOG_RFL_LAST_TRANS_OFFSET]) != 0)
 			{
+				// If LOG_RFL_LAST_TRANS_OFFSET is zero, someone has set this up
+				// intentionally to cause the RFL file to be created at the
+				// beginning of the next transaction.  We don't want to lose
+				// that, so if it is zero, we don't change it.
+
 				UD2FBA( 512, &pucCommittedLogHdr[ LOG_RFL_LAST_TRANS_OFFSET]);
 			}
 			
-			uiTruncateRflSize =
-				(FLMUINT)FB2UD( &pucCommittedLogHdr[ LOG_RFL_MIN_FILE_SIZE]);
-				
-			if( (uiSaveTransOffset >= (pFile->uiFileExtendSize * 2)) ||
-			    (uiSaveTransOffset >= uiTruncateRflSize))
+			if( uiSaveTransOffset >= pFile->uiRflFootprintSize)
 			{
 				bTruncateRflFile = TRUE;
-
-				if( uiTruncateRflSize > (pFile->uiFileExtendSize * 2))
-				{
-					uiTruncateRflSize = pFile->uiFileExtendSize;
-				}
-				else if( uiTruncateRflSize < 512)
-				{
-					uiTruncateRflSize = 512;
-				}
-
-				// Set to nearest 512 byte boundary
-
-				uiTruncateRflSize &= 0xFFFFFE00;
+				uiRflTruncateSize = pFile->uiRflFootprintSize;
 			}
 		}
 		else
@@ -7958,7 +7937,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				// for the transaction offset to still be zero at this point if
 				// we haven't done a non-empty transaction yet.
 
-				if (!uiLastTransOffset)
+				if( !uiLastTransOffset)
 				{
 					uiLastTransOffset = 512;
 				}
@@ -7979,7 +7958,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 	// Write the log header - this will complete the checkpoint.
 
-	if (RC_BAD( rc = flmWriteLogHdr( pDbStats, pSFileHdl, pFile,
+	if( RC_BAD( rc = flmWriteLogHdr( pDbStats, pSFileHdl, pFile,
 									pucCommittedLogHdr,
 									pFile->ucCheckpointLogHdr, TRUE)))
 	{
@@ -7991,17 +7970,24 @@ FSTATIC RCODE scaFinishCheckpoint(
 		f_mutexUnlock( gv_FlmSysData.hShareMutex);
 		goto Exit;
 	}
-	else if (bTruncateLog)
+	else if( bTruncateLog)
 	{
-		if (uiHighLogFileNumber)
+		FLMUINT		uiRblFootprintSize = pFile->uiRblFootprintSize;
+		
+		if( uiHighLogFileNumber)
 		{
-			(void)pSFileHdl->truncateFiles(
-					FIRST_LOG_BLOCK_FILE_NUMBER(
-						pFile->FileHdr.uiVersionNum),
-					uiHighLogFileNumber);
+			(void)pSFileHdl->truncateFiles( 
+				FIRST_LOG_BLOCK_FILE_NUMBER( pFile->FileHdr.uiVersionNum), 
+				uiHighLogFileNumber);
 		}
 		
-		(void)pSFileHdl->truncateFile( 0, pFile->uiFileExtendSize);
+		if( uiRblFootprintSize < pFile->FileHdr.uiBlockSize)
+		{
+			flmAssert( 0);
+			uiRblFootprintSize = pFile->FileHdr.uiBlockSize;
+		}
+		
+		(void)pSFileHdl->truncateFile( 0, uiRblFootprintSize);
 	}
 
 #ifdef FLM_DBG_LOG
@@ -8021,6 +8007,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 				(unsigned)pFile->uiFFileId,
 				(unsigned)FB2UD( &pucCommittedLogHdr [LOG_LAST_CP_TRANS_ID]));
 		}
+		
 		flmDbgLogMsg( szMsg);
 	}
 #endif
@@ -8040,30 +8027,29 @@ FSTATIC RCODE scaFinishCheckpoint(
 	uiNewCPFileNum =
 		(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_RFL_LAST_CP_FILE_NUM]);
 
-	if (!pucCommittedLogHdr [LOG_KEEP_RFL_FILES] &&
-		 uiSaveCPFileNum != uiNewCPFileNum &&
-		 uiNewCPFileNum > 1)
+	if( !pucCommittedLogHdr [LOG_KEEP_RFL_FILES] &&
+		 uiSaveCPFileNum != uiNewCPFileNum && uiNewCPFileNum > 1)
 	{
 		FLMUINT	uiLastRflFileDeleted =
 						(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LAST_RFL_FILE_DELETED]);
 
 		uiLastRflFileDeleted++;
-		while (uiLastRflFileDeleted < uiNewCPFileNum)
+		
+		while( uiLastRflFileDeleted < uiNewCPFileNum)
 		{
 			char		szLogFilePath [F_PATH_MAX_SIZE];
 			RCODE		TempRc;
 
-			if (RC_BAD( pFile->pRfl->getFullRflFileName(
-										uiLastRflFileDeleted,
-										szLogFilePath)))
+			if( RC_BAD( pFile->pRfl->getFullRflFileName( 
+				uiLastRflFileDeleted, szLogFilePath)))
 			{
 				break;
 			}
 
-			if (RC_BAD( TempRc = gv_FlmSysData.pFileSystem->deleteFile( 
+			if( RC_BAD( TempRc = gv_FlmSysData.pFileSystem->deleteFile( 
 				szLogFilePath)))
 			{
-				if (TempRc != FERR_IO_PATH_NOT_FOUND &&
+				if( TempRc != FERR_IO_PATH_NOT_FOUND &&
 					 TempRc != FERR_IO_INVALID_PATH)
 				{
 					break;
@@ -8075,15 +8061,14 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 		// If we actually deleted a file, update the log header.
 
-		if (uiLastRflFileDeleted !=
+		if( uiLastRflFileDeleted !=
 				(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LAST_RFL_FILE_DELETED]))
 		{
 			UD2FBA( (FLMUINT32)uiLastRflFileDeleted, 
 				&pucCommittedLogHdr [LOG_LAST_RFL_FILE_DELETED]);
 
-			if (RC_BAD( rc = flmWriteLogHdr( pDbStats, pSFileHdl, pFile,
-									pucCommittedLogHdr,
-									pFile->ucCheckpointLogHdr, TRUE)))
+			if( RC_BAD( rc = flmWriteLogHdr( pDbStats, pSFileHdl, pFile,
+				pucCommittedLogHdr, pFile->ucCheckpointLogHdr, TRUE)))
 			{
 				goto Exit;
 			}
@@ -8100,13 +8085,13 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 	if( bTruncateRflFile)
 	{
-		(void)pFile->pRfl->truncate( uiTruncateRflSize);
+		(void)pFile->pRfl->truncate( uiRflTruncateSize);
 	}
 
 	// Truncate the files, if requested to do so - this would be a request of
 	// FlmDbReduceSize.
 
-	if( bDoTruncate)
+	if( bTruncateRollBackLog)
 	{
 		if( RC_BAD( rc = pSFileHdl->truncateFile(
 							(FLMUINT)FB2UD( &pucCommittedLogHdr [LOG_LOGICAL_EOF]))))
@@ -8163,6 +8148,7 @@ FSTATIC RCODE scaFinishCheckpoint(
 
 			uiMaximum = (FLMUINT)(((FLMUINT64)uiTotalToWrite *
 							 (FLMUINT64)ui15Seconds) / (FLMUINT64)uiCPElapsedTime);
+
 			if( uiMaximum)
 			{
 				// Low is maximum minus what could be written in roughly
@@ -8206,7 +8192,7 @@ RCODE ScaDoCheckpoint(
 	DB_STATS *			pDbStats,
 	F_SuperFileHdl *	pSFileHdl,
 	FFILE *				pFile,
-	FLMBOOL				bDoTruncate,
+	FLMBOOL				bTruncateRollBackLog,
 	FLMBOOL				bForceCheckpoint,
 	FLMINT				iForceReason,
 	FLMUINT				uiCPFileNum,
@@ -8270,9 +8256,8 @@ RCODE ScaDoCheckpoint(
 	// Write out log blocks first.
 
 	bWroteAll = TRUE;
-	if (RC_BAD( rc = ScaFlushLogBlocks( pDbStats, pSFileHdl, pFile,
-								TRUE, uiMaxDirtyCache,
-								&bForceCheckpoint, &bWroteAll)))
+	if( RC_BAD( rc = ScaFlushLogBlocks( pDbStats, pSFileHdl, pFile,
+			TRUE, uiMaxDirtyCache, &bForceCheckpoint, &bWroteAll)))
 	{
 		goto Exit;
 	}
@@ -8305,7 +8290,7 @@ RCODE ScaDoCheckpoint(
 	// need to finish the checkpoint.
 
 	if( RC_BAD( rc = scaFinishCheckpoint( pDbStats, pSFileHdl, pFile,
-		bDoTruncate, uiCPFileNum, uiCPOffset, uiCPStartTime, uiTotalToWrite)))
+		bTruncateRollBackLog, uiCPFileNum, uiCPOffset, uiCPStartTime, uiTotalToWrite)))
 	{
 		goto Exit;
 	}
@@ -8698,7 +8683,6 @@ RCODE ScaDecryptBlock(
 		pucBuffer[ BH_ENCRYPTED] = 1;
 		goto Exit;
 	}
-
 
 #ifndef FLM_USE_NICI
 	rc = RC_SET( FERR_ENCRYPTION_UNAVAILABLE);

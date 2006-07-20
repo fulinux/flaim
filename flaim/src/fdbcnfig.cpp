@@ -25,10 +25,10 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE flmDbGetSizes(
-	FDB *			pDb,
-	FLMUINT64 *	pui64DbFileSize,
-	FLMUINT64 *	pui64RollbackFileSize,
-	FLMUINT64 *	pui64RflFileSize);
+	FDB *						pDb,
+	FLMUINT64 *				pui64DbFileSize,
+	FLMUINT64 *				pui64RollbackFileSize,
+	FLMUINT64 *				pui64RflFileSize);
 
 void flmGetCPInfo(
 	void *					pFilePtr,
@@ -50,9 +50,9 @@ FLMEXP void FLMAPI FlmSetIndexingCallback(
 Desc:	 Returns indexing callback function
 *******************************************************************************/
 FLMEXP void FLMAPI FlmGetIndexingCallback(
-	HFDB				hDb,
-	IX_CALLBACK *	pfnIxCallback,
-	void **			ppvAppData)
+	HFDB						hDb,
+	IX_CALLBACK *			pfnIxCallback,
+	void **					ppvAppData)
 {
 	if (pfnIxCallback)
 	{
@@ -90,8 +90,8 @@ Desc : Returns to the user the sessions current Rec Validator Hook values.
 *******************************************************************************/
 FLMEXP void FLMAPI FlmGetRecValidatorHook(
 	HFDB						hDb,
-	REC_VALIDATOR_HOOK * pfnRecValidatorHook, // [out] RecValidator func pointer
-	void **					ppvAppData)				// [out] application data
+	REC_VALIDATOR_HOOK * pfnRecValidatorHook,
+	void **					ppvAppData)
 {
 	if (pfnRecValidatorHook)
 	{
@@ -109,9 +109,9 @@ Desc : Configures a callback function which is called to return general
 		 purpose information.
 *******************************************************************************/
 FLMEXP void FLMAPI FlmSetStatusHook(
-	HFDB				hDb,
-	STATUS_HOOK    fnStatusHook,
-	void *			pvAppData)
+	HFDB						hDb,
+	STATUS_HOOK    		fnStatusHook,
+	void *					pvAppData)
 {
 	((FDB *)hDb)->fnStatus = fnStatusHook;
 	((FDB *)hDb)->StatusData = pvAppData;
@@ -121,9 +121,9 @@ FLMEXP void FLMAPI FlmSetStatusHook(
 Desc : Returns to the user the session's current status hook values.
 *******************************************************************************/
 FLMEXP void FLMAPI FlmGetStatusHook(
-	HFDB				hDb,
-	STATUS_HOOK *	pfnStatusHook,
-	void **			ppvAppData)
+	HFDB						hDb,
+	STATUS_HOOK *			pfnStatusHook,
+	void **					ppvAppData)
 {
 	if (pfnStatusHook)
 	{
@@ -140,18 +140,18 @@ FLMEXP void FLMAPI FlmGetStatusHook(
 Desc:	Allows an application to configure various options for a database.
 *******************************************************************************/
 FLMEXP RCODE FLMAPI FlmDbConfig(
-	HFDB				hDb,
-	eDbConfigType	eConfigType,
-	void *			pvValue1,
-	void *		   pvValue2)
+	HFDB						hDb,
+	eDbConfigType			eConfigType,
+	void *					pvValue1,
+	void *		   		pvValue2)
 {
-	RCODE			rc = FERR_OK;
-	FDB *			pDb = (FDB *)hDb;
-	FFILE *		pFile = pDb->pFile;
-	LFILE *		pLFile;
-	FLMBOOL		bDbInitialized = FALSE;
-	FLMBOOL		bStartedTrans = FALSE;
-	FLMBOOL		bDbLocked = FALSE;
+	RCODE						rc = FERR_OK;
+	FDB *						pDb = (FDB *)hDb;
+	FFILE *					pFile = pDb->pFile;
+	LFILE *					pLFile;
+	FLMBOOL					bDbInitialized = FALSE;
+	FLMBOOL					bStartedTrans = FALSE;
+	FLMBOOL					bDbLocked = FALSE;
 	
 	// Process the client/server request
 
@@ -231,6 +231,8 @@ FLMEXP RCODE FLMAPI FlmDbConfig(
 			}
 
 			case FDB_FILE_EXTEND_SIZE:
+			case FDB_RFL_FOOTPRINT_SIZE:
+			case FDB_RBL_FOOTPRINT_SIZE:
 			{
 				if( RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_NUMBER1,
 					(FLMUINT)pvValue1)))
@@ -649,6 +651,19 @@ Transmission_Error:
 		case FDB_FILE_EXTEND_SIZE:
 		{
 			pFile->uiFileExtendSize = (FLMUINT)pvValue1;
+			break;
+		}
+
+		case FDB_RFL_FOOTPRINT_SIZE:
+		{
+			pFile->uiRflFootprintSize = f_roundUp( (FLMUINT)pvValue1, 512);
+			break;
+		}
+		
+		case FDB_RBL_FOOTPRINT_SIZE:
+		{
+			pFile->uiRblFootprintSize = f_roundUp( (FLMUINT)pvValue1, 
+														pFile->FileHdr.uiBlockSize);
 			break;
 		}
 
@@ -1107,7 +1122,8 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_TYPE, (FLMUINT)eGetConfigType)))
+		if (RC_BAD( rc = Wire.sendNumber( WIRE_VALUE_TYPE, 
+			(FLMUINT)eGetConfigType)))
 		{
 			goto Transmission_Error;
 		}
@@ -1176,6 +1192,8 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			case FDB_GET_LAST_BACKUP_TRANS_ID:
 			case FDB_GET_BLOCKS_CHANGED_SINCE_BACKUP:
 			case FDB_GET_FILE_EXTEND_SIZE:
+			case FDB_GET_RFL_FOOTPRINT_SIZE:
+			case FDB_GET_RBL_FOOTPRINT_SIZE:
 			case FDB_GET_APP_DATA:
 			case FDB_GET_NEXT_INC_BACKUP_SEQ_NUM:
 			case FDB_GET_DICT_SEQ_NUM:
@@ -1211,7 +1229,8 @@ FLMEXP RCODE FLMAPI FlmDbGetConfig(
 			
 			case FDB_GET_CHECKPOINT_INFO:
 			{
-				rc = fcsExtractCheckpointInfo( Wire.getHTD(), (CHECKPOINT_INFO *)pvValue1);
+				rc = fcsExtractCheckpointInfo( Wire.getHTD(), 
+							(CHECKPOINT_INFO *)pvValue1);
 				break;
 			}
 			
@@ -1568,6 +1587,18 @@ Transmission_Error:
 			break;
 		}
 	
+		case FDB_GET_RFL_FOOTPRINT_SIZE:
+		{
+			*((FLMUINT *)pvValue1) = pDb->pFile->uiRflFootprintSize;
+			break;
+		}
+
+		case FDB_GET_RBL_FOOTPRINT_SIZE:
+		{
+			*((FLMUINT *)pvValue1) = pDb->pFile->uiRblFootprintSize;
+			break;
+		}
+		
 		case FDB_GET_APP_DATA:
 		{
 			*((void **)pvValue1) = pDb->pvAppData;

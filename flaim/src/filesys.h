@@ -690,7 +690,7 @@ struct UCUR;
 		DB_STATS *			pDbStats,
 		F_SuperFileHdl *	pSFileHdl,
 		FFILE *				pFile,
-		FLMBOOL				bDoTruncate,
+		FLMBOOL				bTruncateRollBackLog,
 		FLMBOOL				bForceCheckpoint,
 		FLMINT				iForceReason,
 		FLMUINT				uiCPFileNum,

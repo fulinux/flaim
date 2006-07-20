@@ -1448,6 +1448,11 @@ typedef struct FFILE
 															// header information for the file.
 	FLMUINT					uiMaxFileSize;			// Maximum file size.
 	FLMUINT					uiFileExtendSize;		// Bytes to extend files by.
+	FLMUINT					uiRflFootprintSize;	// When RFL files are not being kept,
+															// this is the desired footprint of
+															// the RFL on disk
+	FLMUINT					uiRblFootprintSize;	// This is the desired footprint of
+															// the RBL on disk
 	FLMUINT					uiUpdateTransID;		// This is the transaction ID currently
 															// being used by an active update
 															// transaction on this file.  When

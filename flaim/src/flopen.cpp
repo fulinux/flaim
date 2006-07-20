@@ -1265,6 +1265,9 @@ RCODE flmAllocFile(
 	pFile->uiFFileId = gv_FlmSysData.uiNextFFileId++;
 	pFile->pCPInfo = NULL;
 	pFile->uiFileExtendSize = DEFAULT_FILE_EXTEND_SIZE;
+	pFile->uiRflFootprintSize = DEFAULT_RFL_FOOTPRINT_SIZE;
+	pFile->uiRblFootprintSize = DEFAULT_RBL_FOOTPRINT_SIZE;
+
 	pFile->krefPool.poolInit( 8192);
 
 	// Allocate a buffer for writing the database header

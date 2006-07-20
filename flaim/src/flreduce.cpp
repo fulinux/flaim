@@ -329,7 +329,9 @@ Transmission_Error:
 	// Commit the transaction
 
 	{
-		FLMBOOL	bFlagSet;
+		FLMBOOL		bFlagSet;
+		FLMUINT		uiSaveRflFootprintSize = pDb->pFile->uiRflFootprintSize;
+		FLMUINT		uiSaveRblFootprintSize = pDb->pFile->uiRblFootprintSize;
 		
 		if (pDb->uiFlags & FDB_DO_TRUNCATE)
 		{
@@ -340,8 +342,19 @@ Transmission_Error:
 			bFlagSet = FALSE;
 			pDb->uiFlags |= FDB_DO_TRUNCATE;
 		}
+		
+		// Set the roll-forward and roll-back log thresholds to
+		// their minimum sizes
+		
+		pDb->pFile->uiRflFootprintSize = 512;
+		pDb->pFile->uiRblFootprintSize = pDb->pFile->FileHdr.uiBlockSize;
 
 		rc = flmCommitDbTrans( pDb, uiLogicalEOF, TRUE);
+		
+		// Restore the RFL and RBL footprint sizes
+		
+		pDb->pFile->uiRflFootprintSize = uiSaveRflFootprintSize;
+		pDb->pFile->uiRblFootprintSize = uiSaveRblFootprintSize;
 		
 		if (!bFlagSet)
 		{
