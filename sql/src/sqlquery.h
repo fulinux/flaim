@@ -112,7 +112,7 @@ FINLINE FLMBOOL isSQLValNativeNum(
 
 typedef struct SQL_PRED
 {
-	SQL_TABLE *				pTable;
+	SQL_TABLE *				pSQLTable;
 	FLMUINT					uiColumnNum;
 	eSQLQueryOperators	eOperator;		// Operator of the predicate
 	FLMUINT					uiCompareRules;// Comparison rules
@@ -211,7 +211,7 @@ FINLINE FLMBOOL sqlCanCompare(
 
 typedef struct SQL_KEY
 {
-	SQL_INDEX *				pIndex;
+	SQL_INDEX *				pSQLIndex;
 	FLMUINT					uiComponentsUsed;
 	SQL_PRED **				ppKeyComponents;
 	SQL_KEY *				pNext;
@@ -222,7 +222,7 @@ typedef struct SQL_INDEX
 {
 	FLMUINT		uiIndexNum;
 	FLMUINT		uiNumComponents;
-	SQL_TABLE *	pTable;
+	SQL_TABLE *	pSQLTable;
 	SQL_KEY *	pFirstKey;
 	SQL_KEY *	pLastKey;
 	SQL_INDEX *	pNext;
@@ -236,10 +236,10 @@ typedef struct SQL_TABLE
 	FLMUINT					uiCost;
 	FLMBOOL					bScan;
 	FLMBOOL					bScanIndex;
-	FLMUINT					uiIndex;
+	FLMUINT					uiIndexNum;
 	FLMBOOL					bIndexSet;
-	SQL_INDEX *				pFirstIndex;
-	SQL_INDEX *				pLastIndex;
+	SQL_INDEX *				pFirstSQLIndex;
+	SQL_INDEX *				pLastSQLIndex;
 	SQL_TABLE *				pNext;
 	SQL_TABLE *				pPrev;
 } SQL_TABLE;
@@ -248,7 +248,7 @@ typedef struct SQL_COLUMN
 {
 	const char *	pszTableAlias;
 	const char *	pszColumnName;
-	SQL_TABLE *		pTable;
+	SQL_TABLE *		pSQLTable;
 	FLMUINT			uiColumnNum;
 } SQL_COLUMN;
 
@@ -277,8 +277,9 @@ typedef struct SQL_NODE
 
 typedef struct SQL_ORDER_BY
 {
-	SQL_TABLE *		pTable;
+	SQL_TABLE *		pSQLTable;
 	FLMUINT			uiColumnNum;
+	FLMBOOL			bDescending;
 	SQL_ORDER_BY *	pNext;
 } SQL_ORDER_BY;
 
@@ -339,7 +340,7 @@ public:
 		
 	RCODE addTable(
 		FLMUINT			uiTableNum,
-		SQL_TABLE **	ppTable);
+		SQL_TABLE **	ppSQLTable);
 		
 	RCODE resolveColumnNames(
 		TABLE_ITEM *	pTableList);
@@ -453,18 +454,10 @@ private:
 		FLMBOOL *				pbAlwaysFalse,
 		FLMBOOL *				pbIntersected);
 		
-	RCODE unionPredicates(
-		SQL_PRED *				pPred,
-		eSQLQueryOperators	eOperator,
-		FLMUINT					uiCompareRules,
-		FLMBOOL					bNotted,
-		SQL_VALUE *				pValue,
-		FLMBOOL *				pbUnioned);
-		
 	RCODE addPredicate(
 		SQL_SUBQUERY *			pSubQuery,
 		FLMUINT *				puiOperand,
-		SQL_TABLE *				pTable,
+		SQL_TABLE *				pSQLTable,
 		FLMUINT					uiColumnNum,
 		eSQLQueryOperators	eOperator,
 		FLMUINT					uiCompareRules,
@@ -477,14 +470,14 @@ private:
 
 	RCODE getPredKeys(
 		SQL_PRED *	pPred,
-		SQL_TABLE *	pTable);
+		SQL_TABLE *	pSQLTable);
 		
 	RCODE chooseBestIndex(
-		SQL_TABLE *	pTable,
+		SQL_TABLE *	pSQLTable,
 		FLMUINT *	puiCost);
 		
 	RCODE calcTableScanCost(
-		SQL_TABLE *			pTable,
+		SQL_TABLE *			pSQLTable,
 		FLMUINT64 *			pui64Cost,
 		FSTableCursor **	ppFSTableCursor);
 		
@@ -494,7 +487,7 @@ private:
 		
 	RCODE optimizeTable(
 		SQL_SUBQUERY *	pSubQuery,
-		SQL_TABLE *		pTable);
+		SQL_TABLE *		pSQLTable);
 		
 	RCODE optimizeSubQueries( void);
 	
@@ -509,8 +502,8 @@ private:
 	FLMBOOL				m_bExpectingOperator;
 	SQL_SUBQUERY *		m_pFirstSubQuery;
 	SQL_SUBQUERY *		m_pLastSubQuery;
-	SQL_TABLE *			m_pFirstTable;
-	SQL_TABLE *			m_pLastTable;
+	SQL_TABLE *			m_pFirstSQLTable;
+	SQL_TABLE *			m_pLastSQLTable;
 	SQL_ORDER_BY *		m_pFirstOrderBy;
 	SQL_ORDER_BY *		m_pLastOrderBy;
 	FLMBOOL				m_bResolveNames;
