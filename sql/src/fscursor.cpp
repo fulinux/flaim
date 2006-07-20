@@ -127,7 +127,8 @@ RCODE FSIndexCursor::setupKeys(
 	F_Db *			pDb,
 	F_INDEX *		pIndex,
 	F_TABLE *		pTable,
-	SQL_PRED *		pPred,
+	SQL_PRED **		ppKeyComponents,
+	FLMUINT			uiComponentsUsed,
 	FLMBOOL *		pbDoRowMatch,
 	FLMBOOL *		pbCanCompareOnKey,
 	FLMUINT64 *		pui64LeafBlocksBetween,	// [out] blocks between the stacks
@@ -145,10 +146,9 @@ RCODE FSIndexCursor::setupKeys(
 		goto Exit;
 	}
 
-// VISIT: NEED TO REDO THIS
-
 	if (RC_BAD( rc = flmBuildFromAndUntilKeys( pDb->getDict(), pIndex, pTable,
-			pPred, &m_fromExtKey, m_fromKey.ucKey, &m_fromKey.uiKeyLen, 
+			ppKeyComponents, uiComponentsUsed,
+			&m_fromExtKey, m_fromKey.ucKey, &m_fromKey.uiKeyLen, 
 			&m_untilExtKey, m_untilKey.ucKey, &m_untilKey.uiKeyLen,
 			pbDoRowMatch, pbCanCompareOnKey)))
 	{
