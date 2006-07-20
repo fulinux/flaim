@@ -76,8 +76,8 @@ SQLQuery::SQLQuery()
 	m_pool.poolInit( 1024);
 	m_pFirstSubQuery = NULL;
 	m_pLastSubQuery = NULL;
-	m_pFirstTable = NULL;
-	m_pLastTable = NULL;
+	m_pFirstSQLTable = NULL;
+	m_pLastSQLTable = NULL;
 	m_pFirstOrderBy = NULL;
 	m_pLastOrderBy = NULL;
 	m_bResolveNames = FALSE;
@@ -482,39 +482,39 @@ Exit:
 //-------------------------------------------------------------------------
 RCODE SQLQuery::addTable(
 	FLMUINT			uiTableNum,
-	SQL_TABLE **	ppTable)
+	SQL_TABLE **	ppSQLTable)
 {
 	RCODE				rc = NE_SFLM_OK;
-	SQL_TABLE *		pTable;
+	SQL_TABLE *		pSQLTable;
 
 	// Add or find the table structure for the node.
 	
-	pTable = m_pFirstTable;
-	while (pTable && pTable->uiTableNum != uiTableNum)
+	pSQLTable = m_pFirstSQLTable;
+	while (pSQLTable && pSQLTable->uiTableNum != uiTableNum)
 	{
-		pTable = pTable->pNext;
+		pSQLTable = pSQLTable->pNext;
 	}
-	if (!pTable)
+	if (!pSQLTable)
 	{
 		if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_TABLE),
-										(void **)&pTable)))
+										(void **)&pSQLTable)))
 		{
 			goto Exit;
 		}
-		pTable->uiTableNum = uiTableNum;
-		if ((pTable->pPrev = m_pLastTable) != NULL)
+		pSQLTable->uiTableNum = uiTableNum;
+		if ((pSQLTable->pPrev = m_pLastSQLTable) != NULL)
 		{
-			m_pLastTable->pNext = pTable;
+			m_pLastTSQLable->pNext = pSQLTable;
 		}
 		else
 		{
-			m_pFirstTable = pTable;
+			m_pFirstSQLTable = pSQLTable;
 		}
-		m_pLastTable = pTable;
+		m_pLastSQLTable = pSQLTable;
 	}
-	if (ppTable)
+	if (ppSQLTable)
 	{
-		*ppTable = pTable;
+		*ppSQLTable = pSQLTable;
 	}
 
 Exit:
@@ -531,7 +531,7 @@ RCODE SQLQuery::addColumn(
 {
 	RCODE				rc = NE_SFLM_OK;
 	SQL_NODE *		pSQLNode;
-	SQL_TABLE *		pTable;
+	SQL_TABLE *		pSQLTable;
 
 	// Must be expecting an operand
 
@@ -541,7 +541,7 @@ RCODE SQLQuery::addColumn(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = addTable( uiTableNum, &pTable)))
+	if (RC_BAD( rc = addTable( uiTableNum, &pSQLTable)))
 	{
 		goto Exit;
 	}
@@ -552,7 +552,7 @@ RCODE SQLQuery::addColumn(
 	{
 		goto Exit;
 	}
-	pSQLNode->nd.column.pTable = pTable;
+	pSQLNode->nd.column.pSQLTable = pSQLTable;
 	pSQLNode->nd.column.uiColumnNum = uiColumnNum;
 
 Exit:
@@ -707,7 +707,7 @@ RCODE SQLQuery::resolveColumnNames(
 			{
 				goto Exit;
 			}
-			pSQLNode->nd.column.pTable = pSQLTable;
+			pSQLNode->nd.column.pSQLTable = pSQLTable;
 			pSQLNode->nd.column.uiColumnNum = uiColumnNum;
 		}
 		
@@ -784,7 +784,7 @@ RCODE SQLQuery::addColumn(
 	}
 	pSQLNode->nd.column.pszColumnName = pszTmp;
 	f_memcpy( pszTmp, pszColumnName, uiColumnNameLen + 1);
-	pSQLNode->nd.column.pTable = NULL;
+	pSQLNode->nd.column.pSQLTable = NULL;
 	pSQLNode->nd.column.uiColumnNum = 0;
 	
 	m_bResolveNames = TRUE;
@@ -1084,20 +1084,20 @@ Exit:
 RCODE SQLQuery::orderBy(
 	FLMUINT			uiTableNum,
 	FLMUINT			uiColumnNum,
-	FLMBOOL)			// bDescending)
+	FLMBOOL			bDescending)
 {
 	RCODE				rc = NE_SFLM_OK;
-	SQL_TABLE *		pTable;
+	SQL_TABLE *		pSQLTable;
 	SQL_ORDER_BY *	pOrderBy;
 
 	// Find the table structure for the table - should already exist.
 	
-	pTable = m_pFirstTable;
-	while (pTable && pTable->uiTableNum != uiTableNum)
+	pSQLTable = m_pFirstSQLTable;
+	while (pSQLTable && pSQLTable->uiTableNum != uiTableNum)
 	{
-		pTable = pTable->pNext;
+		pSQLTable = pSQLTable->pNext;
 	}
-	if (!pTable)
+	if (!pSQLTable)
 	{
 		rc = RC_BAD( NE_SFLM_Q_BAD_ORDER_BY_TABLE);
 		goto Exit;
@@ -1109,7 +1109,7 @@ RCODE SQLQuery::orderBy(
 	pOrderBy = m_pFirstOrderBy;
 	while (pOrderBy)
 	{
-		if (pOrderBy->pTable == pTable &&
+		if (pOrderBy->pSQLTable == pSQLTable &&
 			 pOrderBy->uiColumnNum == uiColumnNum)
 		{
 			rc = RC_SET( NE_SFLM_Q_DUP_COLUMN_IN_ORDER_BY);
@@ -1128,8 +1128,9 @@ RCODE SQLQuery::orderBy(
 	{
 		goto Exit;
 	}
-	pOrderBy->pTable = pTable;
+	pOrderBy->pSQLTable = pSQLTable;
 	pOrderBy->uiColumnNum = uiColumnNum;
+	pOrderBy->bDescending = bDescending;
 	pOrderBy->pNext = NULL;
 	if (m_pLastOrderBy)
 	{
