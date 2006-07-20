@@ -1487,6 +1487,8 @@ typedef struct KEY_GEN_INFO
 	FLMBOOL				bDataBufAllocated;
 } KEY_GEN_INFO;
 
+#define FLM_NO_TIMEOUT 0xFF
+
 /*****************************************************************************
 Desc: Thread's database object - returned by openDatabase, createDatabase in F_DbSystem class
 *****************************************************************************/
