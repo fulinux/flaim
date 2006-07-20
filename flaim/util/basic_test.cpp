@@ -1804,15 +1804,15 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE IFlmTestImpl::deleteFieldTest(
-	FLMUINT	uiFieldNum
-	)
+	FLMUINT			uiFieldNum)
 {
-	RCODE			rc = FERR_OK;
-	FlmRecord *	pDictRec = NULL;
-	FlmRecord *	pNewRec = NULL;
-	void *		pvField;
-	FLMUINT		uiDrn;
-	FLMBOOL		bPassed = FALSE;
+	RCODE				rc = FERR_OK;
+	FlmRecord *		pDictRec = NULL;
+	FlmRecord *		pNewRec = NULL;
+	void *			pvField;
+	FLMUINT			uiDrn;
+	FLMBOOL			bPassed = FALSE;
+	FLMBOOL			bTransActive = FALSE;
 
 	beginTest( "Delete Field Definition Test");
 
@@ -1927,9 +1927,23 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_CHECKING_FLDS, EACH_CHANGE, NULL, NULL)))
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
+	{
+		goto Exit;
+	}
+	
+	bTransActive = TRUE;
+	
+	if( RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_CHECKING_FLDS, 
+		EACH_CHANGE, NULL, NULL)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	bTransActive = FALSE;
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
 		goto Exit;
 	}
 	
@@ -2023,9 +2037,22 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_PURGED_FLDS, EACH_CHANGE, NULL, NULL)))
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
+	{
+		goto Exit;
+	}
+	
+	bTransActive = TRUE;
+	
+	if( RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_PURGED_FLDS, EACH_CHANGE, NULL, NULL)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	bTransActive = FALSE;
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
 		goto Exit;
 	}
 	
@@ -2062,14 +2089,19 @@ RCODE IFlmTestImpl::deleteFieldTest(
 	
 Exit:
 
-	if (pDictRec)
+	if( pDictRec)
 	{
 		pDictRec->Release();
 	}
 	
-	if (pNewRec)
+	if( pNewRec)
 	{
 		pNewRec->Release();
+	}
+	
+	if( bTransActive)
+	{
+		FlmDbTransAbort( m_hDb);
 	}
 
 	endTest( bPassed);
@@ -2228,7 +2260,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 	
 	// Start an update transaction
 
-	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, 15)))
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
 		goto Exit;
@@ -3417,7 +3449,7 @@ RCODE IFlmTestImpl::reduceSizeTest(
 	
 	// Start a transaction and attempt to do the remove - should fail.
 
-	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, 15)))
+	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
 		goto Exit;
@@ -3466,7 +3498,7 @@ RCODE IFlmTestImpl::reduceSizeTest(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, 15)))
+	if( RC_BAD( rc = FlmDbTransBegin( hDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
 		goto Exit;

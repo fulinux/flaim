@@ -34,16 +34,18 @@ public:
 	DbDict()
 	{
 		m_puiStateTbl = NULL;
-	};
+		m_bInternalTrans = FALSE;
+	}
 
 	~DbDict();
 
-	RCODE Init(
+	RCODE init(
 		FDB *			pDb,
+		FLMBOOL		bInternalTrans,
 		FLMUINT		uiMode,
 		FLMBOOL *	pbFoundPurgeField);
 
-	FINLINE FLMUINT GetState(
+	FINLINE FLMUINT getState(
 		FLMUINT		uiFieldID)
 	{
 		if( uiFieldID > m_uiTblSize)
@@ -56,17 +58,18 @@ public:
 		}
 	}
 
-	RCODE ChangeState(
+	RCODE changeState(
 		FLMUINT		uiFieldID,
 		FLMUINT		uiNewState);
 
-	RCODE Finish( void);
+	RCODE finish( void);
 
 private:
 
-	FDB *			m_pDb;
-	FLMUINT *	m_puiStateTbl;
-	FLMUINT		m_uiTblSize;
+	FDB *				m_pDb;
+	FLMBOOL			m_bInternalTrans;
+	FLMUINT *		m_puiStateTbl;
+	FLMUINT			m_uiTblSize;
 };
 
 /****************************************************************************
@@ -82,6 +85,7 @@ public:
 	{
 		f_memset( &m_SwpInfo, 0, sizeof( SWEEP_INFO));
 		m_pDb = NULL;
+		m_bInternalTrans = FALSE;
 		m_uiCallbackFreq = 0;
 		m_fnStatusHook = NULL;
 		m_UserData = 0;
@@ -94,31 +98,34 @@ public:
 	{
 	}
 
-	FINLINE void Init(
+	FINLINE void init(
 		FDB *			pDb,
+		FLMBOOL		bInternalTrans,
 		FLMUINT		uiCallbackFreq,
 		STATUS_HOOK fnStatusHook,
 		void *	  	UserData)
 	{
 		m_pDb = pDb;
+		m_bInternalTrans = bInternalTrans;
 		m_uiCallbackFreq = uiCallbackFreq;
 		m_fnStatusHook = fnStatusHook;
 		m_UserData = UserData;
 	}
 
-	RCODE NextContainer(
+	RCODE nextContainer(
 		FLMUINT *		puiContainer);
 
-	RCODE NextRecord(
+	RCODE nextRecord(
 		FlmRecord **	ppRecord);
 
-	RCODE UpdateRecord(
+	RCODE updateRecord(
 		FLMUINT			uiDrn,
 		FlmRecord *		pRecord);
 
 private:
 
 	FDB *				m_pDb;
+	FLMBOOL			m_bInternalTrans;
 	FLMUINT			m_uiCallbackFreq;
 	STATUS_HOOK		m_fnStatusHook;
 	void *			m_UserData;
@@ -181,42 +188,61 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 		goto ExitCS;
 	}
 
-	if( ( pDbWalk = f_new DbWalk) == NULL)
+	if( (pDbWalk = f_new DbWalk) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
 
 	f_memset( &SwpInfo, 0, sizeof( SWEEP_INFO));
-
-	if( RC_BAD( rc = fdbInit( pDb, FLM_READ_TRANS | FLM_DONT_POISON_CACHE,
-											0, 0, &bStartedTrans)))
+	
+	if( RC_BAD( rc = fdbInit( pDb, FLM_NO_TRANS,
+		FDB_TRANS_GOING_OK, 0, NULL)))
 	{
 		goto Exit;
 	}
+	
+	if( pDb->uiTransType == FLM_READ_TRANS)
+	{
+		rc = RC_SET_AND_ASSERT( FERR_ILLEGAL_TRANS_OP);
+		goto Exit;
+	}
+	else if( pDb->uiTransType == FLM_NO_TRANS)
+	{
+		if( RC_BAD( rc = flmBeginDbTrans( pDb, FLM_READ_TRANS,
+			0, FLM_DONT_POISON_CACHE)))
+		{
+			goto Exit;
+		}
 
-	pDbWalk->Init( pDb, uiCallbackFreq, fnStatusHook, UserData);
+		bStartedTrans = TRUE;
+	}
+			
+	pDbWalk->init( pDb, bStartedTrans, uiCallbackFreq, fnStatusHook, UserData);
 	SwpInfo.hDb = pDbWalk->m_SwpInfo.hDb = hDb;
 
-	/* Only initialize a DbDict if needed */
+	// Only initialize a DbDict if needed
+	
 	if( (uiSweepMode & SWEEP_CHECKING_FLDS) || 
 		(uiSweepMode & SWEEP_PURGED_FLDS))
 	{
 		FLMBOOL		bFoundPurgeField;
 
-		if( ( pDbDict = f_new DbDict) == NULL)
+		if( (pDbDict = f_new DbDict) == NULL)
 		{
 			rc = RC_SET( FERR_MEM);
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = pDbDict->Init( pDb, uiSweepMode, &bFoundPurgeField)))
+		if( RC_BAD( rc = pDbDict->init( pDb, bStartedTrans, 
+			uiSweepMode, &bFoundPurgeField)))
 		{
 			goto Exit;
 		}
 
 		// If user is performing purge field sweep and dictionary contains no
 		// purged fields then just return.
+
 		if( uiSweepMode == SWEEP_PURGED_FLDS && !bFoundPurgeField)
 		{
 			goto Exit;
@@ -227,11 +253,12 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 	{
 		// Get the next container
 
-		if (RC_BAD( rc = pDbWalk->NextContainer( &uiContainer)))
+		if( RC_BAD( rc = pDbWalk->nextContainer( &uiContainer)))
 		{
-			if (rc == FERR_EOF_HIT)
+			if( rc == FERR_EOF_HIT)
 			{
 				// No more containers to process.
+				
 				rc = FERR_OK;
 				break;
 			}
@@ -241,11 +268,12 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 			}
 		}
 
-		if (!pDbDict &&
+		if( !pDbDict &&
 			 !(uiCallbackFreq & EACH_RECORD || uiCallbackFreq & EACH_FIELD))
 		{
 			// User is performing a status sweep and they are not visiting
 			// each record or field.  Go to next container.
+			
 			continue;
 		}
 
@@ -253,16 +281,16 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 
 		// Visit each record in the container.
 
-		for (;;)
+		for( ;;)
 		{
 			FLMBOOL		bRecChanged;
 			void *		pvField;
 			void *		pvPrevField;
 			FLMUINT		uiDrn;
 
-			if (RC_BAD( rc = pDbWalk->NextRecord( &pRecord)))
+			if( RC_BAD( rc = pDbWalk->nextRecord( &pRecord)))
 			{
-				if (rc == FERR_EOF_HIT)
+				if( rc == FERR_EOF_HIT)
 				{
 					rc = FERR_OK;
 					break;
@@ -283,18 +311,17 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 				SwpInfo.pRecord = pRecord;
 				SwpInfo.pvField = pvField;
 
-				// call the field call-back here..
+				// Call the field call-back
 
-				if ((uiCallbackFreq & EACH_FIELD) && fnStatusHook)
+				if( (uiCallbackFreq & EACH_FIELD) && fnStatusHook)
 				{
-					if (RC_BAD( rc = (fnStatusHook)( FLM_SWEEP_STATUS,
-														(void *)&SwpInfo,
-														(void *)EACH_FIELD,
-														UserData)))
+					if( RC_BAD( rc = (fnStatusHook)( FLM_SWEEP_STATUS,
+							(void *)&SwpInfo, (void *)EACH_FIELD, UserData)))
 					{
-						if (rc == FERR_EOF_HIT)
+						if( rc == FERR_EOF_HIT)
 						{
 							// User returned FERR_EOF_HIT, means skip to next record.
+
 							rc = FERR_OK;
 							break;
 						}
@@ -307,72 +334,71 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 
 				// Continue to next field if no DbDict object.
 
-				if (! pDbDict)
+				if( !pDbDict)
 				{
 					continue;
 				}
 
-				uiState = pDbDict->GetState( pRecord->getFieldID( pvField));
+				uiState = pDbDict->getState( pRecord->getFieldID( pvField));
 				
 				// If the field is encrypted, we need to check the state of the 
 				// encryption definition record as well, since it is being
 				// referenced by this field.
-				if (pRecord->isEncryptedField( pvField))
+				
+				if( pRecord->isEncryptedField( pvField))
 				{
-					uiEncState = pDbDict->GetState( pRecord->getEncryptionID( pvField));
+					uiEncState = pDbDict->getState( 
+											pRecord->getEncryptionID( pvField));
 				}
 				else
 				{
 					uiEncState = 0;
 				}
 				
-				if (!uiState && !uiEncState)
+				if( !uiState && !uiEncState)
 				{
 					continue;
 				}
 
-				if ((uiState == ITT_FLD_STATE_CHECKING ||
+				if( (uiState == ITT_FLD_STATE_CHECKING ||
 					  uiState == ITT_FLD_STATE_PURGE ||
 					  uiEncState == ITT_ENC_STATE_CHECKING ||
 					  uiEncState == ITT_ENC_STATE_PURGE) &&
-					 (uiCallbackFreq & EACH_CHANGE) &&
-					 fnStatusHook)
+					 (uiCallbackFreq & EACH_CHANGE) && fnStatusHook)
 				{
-					if (RC_BAD( rc = (fnStatusHook)( FLM_SWEEP_STATUS,
-																(void *)&SwpInfo,
-																(void *)EACH_CHANGE,
-																UserData)))
+					if( RC_BAD( rc = (fnStatusHook)( FLM_SWEEP_STATUS,
+						(void *)&SwpInfo, (void *)EACH_CHANGE, UserData)))
 					{
 						goto Exit;
 					}
 				}
 
-				if (uiState == ITT_FLD_STATE_CHECKING)
+				if( uiState == ITT_FLD_STATE_CHECKING)
 				{
 					// Change the field's state to 'active'
 
-					if (RC_BAD( rc = pDbDict->ChangeState(
-												pRecord->getFieldID( pvField),
-												ITT_FLD_STATE_ACTIVE)))
+					if( RC_BAD( rc = pDbDict->changeState(
+						pRecord->getFieldID( pvField), ITT_FLD_STATE_ACTIVE)))
 					{
 						goto Exit;
 					}
 				}
-				else if (uiState == ITT_FLD_STATE_PURGE)
+				else if( uiState == ITT_FLD_STATE_PURGE)
 				{
 					// If needed, create writeable version of record and
 					// reposition to field
 
-					if (pRecord->isReadOnly())
+					if( pRecord->isReadOnly())
 					{
 						FlmRecord *	pTmpRec;
 						FLMUINT		uiFieldID = pRecord->getFieldID( pvField);
 						
-						if ((pTmpRec = pRecord->copy()) == NULL)
+						if( (pTmpRec = pRecord->copy()) == NULL)
 						{
 							rc = RC_SET( FERR_MEM);
 							goto Exit;
 						}
+						
 						pRecord->Release();
 						pRecord = pTmpRec;
 
@@ -386,9 +412,9 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 					// Remove the purged field from the record.
 
 					bRecChanged = TRUE;
-					if (pvField == pRecord->root())
+					if( pvField == pRecord->root())
 					{
-						// Passing a NULL pRecord to UpdateRecord will delete
+						// Passing a NULL pRecord to updateRecord will delete
 						// the record.
 
 						pRecord->Release();
@@ -401,7 +427,6 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 					}
 					else
 					{
-
 						// Must save the previous field before removing the
 						// field so we can set pvField to it after removing
 						// pvField.
@@ -412,28 +437,31 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 					}
 				}
 
-				// Check the EncDef state, independant of the field state.  If the field
-				// has been purged, we don't need to update the EncDef record since it
-				// is no longer being referenced by this field.
-				if (uiEncState == ITT_ENC_STATE_CHECKING && uiState != ITT_FLD_STATE_PURGE)
+				// Check the EncDef state, independant of the field state.  If the
+				// field has been purged, we don't need to update the EncDef
+				// record since it is no longer being referenced by this field.
+				
+				if( uiEncState == ITT_ENC_STATE_CHECKING && 
+					 uiState != ITT_FLD_STATE_PURGE)
 				{
 					// Change the EncDef record's state to 'active'
 	
-					if (RC_BAD( rc = pDbDict->ChangeState(
-												pRecord->getEncryptionID( pvField),
-												ITT_ENC_STATE_ACTIVE)))
+					if( RC_BAD( rc = pDbDict->changeState(
+						pRecord->getEncryptionID( pvField), ITT_ENC_STATE_ACTIVE)))
 					{
 						goto Exit;
 					}
 				}
-				// If the EncDef record has a state of purge, then we must change
-				// the field of this record so that it is no longer encrypted.
-				else if (uiEncState == ITT_ENC_STATE_PURGE &&
+				else if( uiEncState == ITT_ENC_STATE_PURGE &&
 							uiState != ITT_FLD_STATE_PURGE)
 				{
 					FLMUINT				uiDataLength = pRecord->getDataLength( pvField);
 					const FLMBYTE *	pucDataSource = pRecord->getDataPtr( pvField);
 					FLMBYTE *			pucDestPtr;
+					
+					// If the EncDef record has a state of purge, then we must
+					// change the field of this record so that it is no longer
+					// encrypted.
 					
 					if( RC_BAD( rc = pRecord->allocStorageSpace( pvField,
 						pRecord->getDataType( pvField), uiDataLength, 0, 0, 0,
@@ -449,9 +477,9 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 
 			// Record was changed because a purged field was found.
 
-			if (bRecChanged)
+			if( bRecChanged)
 			{
-				if (RC_BAD( rc = pDbWalk->UpdateRecord( uiDrn, pRecord)))
+				if( RC_BAD( rc = pDbWalk->updateRecord( uiDrn, pRecord)))
 				{
 					goto Exit;
 				}
@@ -461,9 +489,9 @@ FLMEXP RCODE FLMAPI FlmDbSweep(
 
 	// Now complete any changes needed within the dictionary
 
-	if (pDbDict)
+	if( pDbDict)
 	{
-		rc = pDbDict->Finish();
+		rc = pDbDict->finish();
 	}
 
 Exit:
@@ -480,9 +508,12 @@ Exit:
 		pDbWalk = NULL;
 	}
 
-	if( bStartedTrans && pDb->uiTransType != FLM_NO_TRANS)
+	if( bStartedTrans)
 	{
-		(void)flmAbortDbTrans( pDb);
+		if(  pDb->uiTransType != FLM_NO_TRANS)
+		{
+			(void)flmAbortDbTrans( pDb);
+		}
 	}
 
 ExitCS:
@@ -493,17 +524,14 @@ ExitCS:
 	{
 		pRecord->Release();
 	}
+	
 	return( rc);
 }
-
-//////////////////////////////////////////////////////////////////////////////
-//								DbWalk Class Implementation
-//////////////////////////////////////////////////////////////////////////////
 
 /****************************************************************************
 Desc:	Get the next container within this database
 ****************************************************************************/
-RCODE DbWalk::NextContainer( 				// Returns next container to visit
+RCODE DbWalk::nextContainer(
 	FLMUINT *	puiContainer)
 {
 	LFILE *		pLFileTbl = (LFILE *)m_pDb->pDict->pLFileTbl;
@@ -511,11 +539,11 @@ RCODE DbWalk::NextContainer( 				// Returns next container to visit
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiTblSize;
 
-	for (uiTblSize = m_pDb->pDict->uiLFileCnt;
+	for( uiTblSize = m_pDb->pDict->uiLFileCnt;
 		  m_uiNextLFile < uiTblSize;
 		  m_uiNextLFile++)
 	{
-		if (pLFileTbl [m_uiNextLFile].uiLfType == LF_CONTAINER &&
+		if( pLFileTbl [m_uiNextLFile].uiLfType == LF_CONTAINER &&
 			 (pLFileTbl [m_uiNextLFile].uiLfNum == FLM_DATA_CONTAINER ||
 			  pLFileTbl [m_uiNextLFile].uiLfNum < FLM_DICT_CONTAINER))
 		{
@@ -529,14 +557,12 @@ RCODE DbWalk::NextContainer( 				// Returns next container to visit
 			m_SwpInfo.pRecord = NULL;
 			m_SwpInfo.pvField = NULL;
 
-			if ((m_uiCallbackFreq & EACH_CONTAINER) && m_fnStatusHook)
+			if( (m_uiCallbackFreq & EACH_CONTAINER) && m_fnStatusHook)
 			{
-				if (RC_BAD( rc = (m_fnStatusHook)( FLM_SWEEP_STATUS,
-													(void *)&m_SwpInfo,
-													(void *)EACH_CONTAINER,
-													m_UserData)))
+				if( RC_BAD( rc = (m_fnStatusHook)( FLM_SWEEP_STATUS,
+					(void *)&m_SwpInfo, (void *)EACH_CONTAINER, m_UserData)))
 				{
-					if (rc == FERR_EOF_HIT)
+					if( rc == FERR_EOF_HIT)
 					{
 
 						// User wants to skip this container.
@@ -560,7 +586,7 @@ RCODE DbWalk::NextContainer( 				// Returns next container to visit
 		}
 	}
 
-	if (!bFoundContainer)
+	if( !bFoundContainer)
 	{
 		rc = RC_SET( FERR_EOF_HIT);
 		goto Exit;
@@ -574,65 +600,77 @@ Exit:
 /****************************************************************************
 Desc:	Returns the next record within the current container.
 ****************************************************************************/
-RCODE DbWalk::NextRecord(
-	FlmRecord **	ppRecord)			// Returned record
+RCODE DbWalk::nextRecord(
+	FlmRecord **	ppRecord)
 {
-	RCODE		rc = FERR_OK;
-	FLMUINT	uiDrn;
+	RCODE				rc = FERR_OK;
+	FLMUINT			uiDrn;
 
 	// Loop till we get a record or hit end of container.
 
-	for (;;)
+	for( ;;)
 	{
-		// Abort and start a new read transaction every 1000 records.
-
-		if ((m_uiRecsRead % 1000) == 0)
+		if( m_bInternalTrans)
 		{
+			// Abort and start a new read transaction every 1000 records.
+	
+			if( (m_uiRecsRead % 1000) == 0)
+			{
 AbortTrans:
-			if (m_pDb->uiTransType != FLM_NO_TRANS)
-			{
-				(void)flmAbortDbTrans( m_pDb);
-			}
-
-			if (RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
-				0, FLM_DONT_POISON_CACHE)))
-			{
-				goto Exit;
+	
+				if( m_pDb->uiTransType != FLM_NO_TRANS)
+				{
+					(void)flmAbortDbTrans( m_pDb);
+				}
+	
+				if( RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
+					0, FLM_DONT_POISON_CACHE)))
+				{
+					goto Exit;
+				}
 			}
 		}
 
-		if (*ppRecord)
+		if( *ppRecord)
 		{
 			(*ppRecord)->Release();
 			*ppRecord = NULL;
 		}
 
-		if (RC_BAD( rc = FlmRecordRetrieve( (HFDB)m_pDb,
-									m_SwpInfo.uiContainer,
-									m_uiLastDrn, FO_EXCL,
-									ppRecord, &uiDrn)))
+		if( RC_BAD( rc = FlmRecordRetrieve( (HFDB)m_pDb, m_SwpInfo.uiContainer,
+			m_uiLastDrn, FO_EXCL, ppRecord, &uiDrn)))
 		{
-			if (rc == FERR_OLD_VIEW)
+			if( rc == FERR_OLD_VIEW)
 			{
-				goto AbortTrans;
+				if( m_bInternalTrans)
+				{
+					goto AbortTrans;
+				}
+				
+				goto Exit;
 			}
 
 			// It is possible for the container to go away in the
 			// middle of walking through it, because we are stopping
 			// and starting transactions.
 
-			if (rc == FERR_BAD_CONTAINER)
+			if( rc == FERR_BAD_CONTAINER)
 			{
-
 				// Must abort the transaction because FERR_BAD_CONTAINER
 				// will not allow the transaction to continue
 				// if we are in an update transaction.
-
-				if (m_pDb->uiTransType != FLM_NO_TRANS)
+				
+				if( !m_bInternalTrans)
+				{
+					goto Exit;
+				}
+				
+				if( m_pDb->uiTransType != FLM_NO_TRANS)
 				{
 					(void)flmAbortDbTrans( m_pDb);
 				}
-				if (RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
+				
+				if( RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
 					0, FLM_DONT_POISON_CACHE)))
 				{
 					goto Exit;
@@ -643,8 +681,10 @@ AbortTrans:
 
 				rc = RC_SET( FERR_EOF_HIT);
 			}
+			
 			goto Exit;
 		}
+		
 		m_uiLastDrn = uiDrn;
 		m_uiRecsRead++;
 		m_SwpInfo.pRecord = *ppRecord;
@@ -652,24 +692,26 @@ AbortTrans:
 
 		// Make STATUS_HOOK callback
 
-		if ((m_uiCallbackFreq & EACH_RECORD) && m_fnStatusHook)
+		if( (m_uiCallbackFreq & EACH_RECORD) && m_fnStatusHook)
 		{
-			if ((rc = (m_fnStatusHook)( FLM_SWEEP_STATUS, (void *)&m_SwpInfo,
-												(void *) EACH_RECORD,
-												m_UserData)) == FERR_EOF_HIT)
+			if( (rc = (m_fnStatusHook)( FLM_SWEEP_STATUS, (void *)&m_SwpInfo,
+				(void *) EACH_RECORD, m_UserData)) == FERR_EOF_HIT)
 			{
 				// User wants to skip this record.
+				
 				continue;
 			}
 			else
 			{
 				// Return this record
+				
 				break;
 			}
 		}
 		else
 		{
 			// Return the record
+			
 			break;
 		}
 	}
@@ -680,23 +722,25 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	The last record returned from DbWalk::NextRecord contained 'purged' fields
-		which have been removed. This function will now replace the old record
-		with the new record. This record maybe == NULL, in which case the
-		record will be deleted.
+Desc:	The last record returned from DbWalk::nextRecord contained 'purged' 
+		fields which have been removed. This function will now replace the 
+		old record with the new record. This record may be == NULL, in which
+		case the record will be deleted.
 ****************************************************************************/
-RCODE DbWalk::UpdateRecord(
-	FLMUINT		uiDrn,		// DRN of record to modify or delete
-	FlmRecord *	pRecord		// if NULL delete the record
-	)
+RCODE DbWalk::updateRecord(
+	FLMUINT			uiDrn,
+	FlmRecord *		pRecord)
 {
-	RCODE		rc = FERR_OK;
-	FLMBOOL	bRestartTrans = FALSE;
+	RCODE				rc = FERR_OK;
+	FLMBOOL			bRestartTrans = FALSE;
 
-	if (m_pDb->uiTransType != FLM_NO_TRANS)
+	if( m_bInternalTrans)
 	{
-		(void)flmAbortDbTrans( m_pDb);
-		bRestartTrans = TRUE;
+		if( m_pDb->uiTransType != FLM_NO_TRANS)
+		{
+			(void)flmAbortDbTrans( m_pDb);
+			bRestartTrans = TRUE;
+		}
 	}
 
 	// Either modify or delete the specified record
@@ -713,9 +757,11 @@ RCODE DbWalk::UpdateRecord(
 
 	// Now (if needed) restart the read transaction.
 
-	if (bRestartTrans)
+	if( bRestartTrans)
 	{
-		if (RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
+		flmAssert( m_bInternalTrans);
+		
+		if( RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
 								0, FLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
@@ -728,10 +774,9 @@ Exit:
 }
 
 
-//////////////////////////////////////////////////////////////////////////////
-//								DbDict Class Implementation
-//////////////////////////////////////////////////////////////////////////////
-
+/****************************************************************************
+Desc:
+****************************************************************************/
 DbDict::~DbDict()
 {
 	if( m_pDb)
@@ -749,10 +794,11 @@ DbDict::~DbDict()
 Desc:		Read the dictionary and create a internal table that records
 			the state of field templates within the specified dictionary
 ****************************************************************************/
-RCODE DbDict::Init(
+RCODE DbDict::init(
 	FDB *			pDb,
-	FLMUINT		uiMode,				// are we looking for checking or purged or both
-	FLMBOOL *	pbFoundPurgeField)// [out] dictionary contained field that is marked purged.
+	FLMBOOL		bInternalTrans,
+	FLMUINT		uiMode,
+	FLMBOOL *	pbFoundPurgeField)
 {
 	RCODE			rc = FERR_OK;
 	ITT *			pItt = NULL;
@@ -762,18 +808,20 @@ RCODE DbDict::Init(
 
 	*pbFoundPurgeField = FALSE;
 	m_pDb = pDb;
+	m_bInternalTrans = bInternalTrans;
 
-	/* Need to set a flag that which tells lower level FLAIM code
-		that its okay to:
-			1) Set a field state to 'unused' and
-			2) Delete a field thats in a 'purged' state.
-
-	*/
+	// Need to set a flag that which tells lower level FLAIM code
+	//	that its okay to:
+	//		1) Set a field state to 'unused' and
+	//		2) Delete a field thats in a 'purged' state.
+	
 	m_pDb->bFldStateUpdOk = TRUE;
 
-	/* Allocate state table */
+	// Allocate state table
+	
 	m_uiTblSize = m_pDb->pDict->uiIttCnt;
-	if( RC_BAD( rc = f_calloc(
+	
+	if( RC_BAD( rc = f_calloc( 
 		(m_uiTblSize * sizeof( FLMUINT)), &m_puiStateTbl)))
 	{
 		goto Exit;
@@ -792,11 +840,13 @@ RCODE DbDict::Init(
 		uiStateMask |= ITT_FLD_STATE_PURGE;
 	}
 
-	/* Now loop through the ITT table and set the correct states within
-		the DbDict's state table */
+	// Now loop through the ITT table and set the correct states within
+	// the DbDict's state table
+	
 	for( uiItem = 0; uiItem < uiCount; pItt++, uiItem++)
 	{
-		/* Make sure the entry is a field or an encryption definition record. */
+		// Make sure the entry is a field or an encryption definition record
+		
 		if( ITT_IS_FIELD( pItt))
 		{
 			m_puiStateTbl[ uiItem] = (pItt->uiType & uiStateMask);
@@ -804,31 +854,31 @@ RCODE DbDict::Init(
 			{
 				*pbFoundPurgeField = TRUE;
 
-				/* make sure this field is not references and
-					can therefore be deleted. */
-				if (RC_BAD( rc = flmCheckDictFldRefs( m_pDb->pDict, uiItem)))
+				// Make sure this field is not references and
+				// can therefore be deleted
+				
+				if( RC_BAD( rc = flmCheckDictFldRefs( m_pDb->pDict, uiItem)))
 				{
 					goto Exit;
 				}
 			}
 		}
-		else if  (ITT_IS_ENCDEF( pItt) && !m_pDb->pFile->bInLimitedMode)
+		else if( ITT_IS_ENCDEF( pItt) && !m_pDb->pFile->bInLimitedMode)
 		{
-			if (RC_BAD( rc = fdictGetEncInfo(
-								m_pDb,
-								uiItem,
-								NULL,
-								&m_puiStateTbl[ uiItem])))
+			if( RC_BAD( rc = fdictGetEncInfo( m_pDb, uiItem, NULL,
+				&m_puiStateTbl[ uiItem])))
 			{
 				goto Exit;
 			}
-			if (m_puiStateTbl[ uiItem] == ITT_ENC_STATE_PURGE)
+			
+			if( m_puiStateTbl[ uiItem] == ITT_ENC_STATE_PURGE)
 			{
 				*pbFoundPurgeField = TRUE;
 
-				/* make sure this field is not references and
-					can therefore be deleted. */
-				if (RC_BAD( rc = flmCheckDictEncDefRefs( m_pDb->pDict, uiItem)))
+				// Make sure this field is not references and
+				// can therefore be deleted.
+				
+				if( RC_BAD( rc = flmCheckDictEncDefRefs( m_pDb->pDict, uiItem)))
 				{
 					goto Exit;
 				}
@@ -845,39 +895,45 @@ Exit:
 Desc:	Change the specified field's state.
 		Currently this is only for "Checking" -> "Active"
 ****************************************************************************/
-RCODE DbDict::ChangeState(
-	FLMUINT	uiFieldID,						// Item to change
-	FLMUINT	uiNewState)						// New state
+RCODE DbDict::changeState(
+	FLMUINT		uiFieldID,
+	FLMUINT		uiNewState)
 {
-	RCODE		rc;
-	FLMBOOL	bRestartTrans = FALSE;
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bRestartTrans = FALSE;
 
 	if( m_puiStateTbl[ uiFieldID] != ITT_FLD_STATE_CHECKING)
 	{
 		return( RC_SET( FERR_FAILURE));
 	}
 
-	if( m_pDb->uiTransType != FLM_NO_TRANS)
+	if( m_bInternalTrans)
 	{
-		(void)flmAbortDbTrans( m_pDb);
-		bRestartTrans = TRUE;
+		if( m_pDb->uiTransType != FLM_NO_TRANS)
+		{
+			(void)flmAbortDbTrans( m_pDb);
+			bRestartTrans = TRUE;
+		}
 	}
 
-	/* Change the state tables value for this field/record template */
+	// Change the state tables value for this field/record template
 
 	m_puiStateTbl[ uiFieldID] = 0;
 
-	/* Change the state of the dictionary item. */
+	// Change the state of the dictionary item.
 
 	if( RC_BAD( rc = flmChangeItemState( m_pDb, uiFieldID, uiNewState)))
 	{
 		goto Exit;
 	}
 
-	/* Now restart the read transaction. */
+	// Now restart the read transaction.
+	
 	if( bRestartTrans)
 	{
-		if (RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
+		flmAssert( m_bInternalTrans);
+		
+		if( RC_BAD( rc = flmBeginDbTrans( m_pDb, FLM_READ_TRANS,
 								0, FLM_DONT_POISON_CACHE)))
 		{
 			goto Exit;
@@ -893,32 +949,35 @@ Exit:
 Desc:	Following a complete sweep of a database, this function will
 		handle items that are still marked 'checking' or 'purge'.
 ****************************************************************************/
-RCODE DbDict::Finish()				// Finish will make any final changes to the
-											// database's dictionary
+RCODE DbDict::finish( void)
 {
 	RCODE			rc = FERR_OK;
 	FLMUINT		uiItem;
 
-	/* If we have a read transaction going then end it. */
-	if( m_pDb->uiTransType != FLM_NO_TRANS)
+	// If we have an internal read transaction going then end it.
+	
+	if( m_bInternalTrans)
 	{
-		(void)flmAbortDbTrans( m_pDb);
+		if( m_pDb->uiTransType != FLM_NO_TRANS)
+		{
+			(void)flmAbortDbTrans( m_pDb);
+		}
 	}
 
-	/* Loop through the state table changing:
-		'checking' fields to 'unused' and
-		deleting 'purged' fields */
+	// Loop through the state table changing: 'checking' fields to 'unused' and
+	// deleting 'purged' fields
 
-	for( uiItem = 1; uiItem < m_uiTblSize && RC_OK( rc) ; uiItem++)
+	for( uiItem = 1; uiItem < m_uiTblSize && RC_OK( rc); uiItem++)
 	{
 		if( m_puiStateTbl[ uiItem] == ITT_FLD_STATE_CHECKING)
 		{
-			/* Change state to "unused" */
+			// Change state to "unused"
+			
 			rc = flmChangeItemState( m_pDb, uiItem, ITT_FLD_STATE_UNUSED);
 		}
 		else if( m_puiStateTbl[ uiItem] == ITT_FLD_STATE_PURGE)
 		{
-			/* Delete the 'purged' item */
+			// Delete the 'purged' item
 
 			if( RC_BAD( rc = FlmRecordDelete( (HFDB)m_pDb, FLM_DICT_CONTAINER, 
 				uiItem, FLM_NO_TIMEOUT | FLM_AUTO_TRANS)))
@@ -930,9 +989,12 @@ RCODE DbDict::Finish()				// Finish will make any final changes to the
 
 Exit:
 
-	if( m_pDb->uiTransType != FLM_NO_TRANS)
+	if( m_bInternalTrans)
 	{
-		(void)flmAbortDbTrans( m_pDb);
+		if( m_pDb->uiTransType != FLM_NO_TRANS)
+		{
+			(void)flmAbortDbTrans( m_pDb);
+		}
 	}
 
 	return( rc);
@@ -956,7 +1018,7 @@ RCODE flmChangeItemState(
 	FlmRecord * 	pOldRecord = NULL;
 	void *			pvField;
 
-	// If needed start a update transaction ...
+	// If needed, start a update transaction
 	
 	if( pDb->uiTransType == FLM_NO_TRANS)
 	{
@@ -965,6 +1027,7 @@ RCODE flmChangeItemState(
 		{
 			goto Exit;
 		}
+		
 		bStartedTrans = TRUE;
 	}
 
