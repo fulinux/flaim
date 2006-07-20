@@ -235,7 +235,7 @@ Retry_Create:
 	
 	if( bDoDirectIO)
 	{
-		if( (uiIoFlags & FLM_IO_MISALIGNED_OK) == 0)
+		if( uiIoFlags & FLM_IO_NO_MISALIGNED)
 		{
 			m_bRequireAlignedIO = TRUE;
 		}

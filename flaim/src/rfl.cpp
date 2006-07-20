@@ -285,11 +285,10 @@ Exit:
 Desc:		Positions to the offset specified in the RFL file.
 *********************************************************************/
 RCODE F_Rfl::positionTo(
-	FLMUINT	uiFileOffset)
+	FLMUINT			uiFileOffset)
 {
-	RCODE		rc = FERR_OK;
-	FLMUINT	uiBytesToRead;
-	FLMUINT	uiBytesRead;
+	RCODE				rc = FERR_OK;
+	FLMUINT			uiBytesRead;
 
 	// Should never be attempting to position to something less than 512 -
 	// the header is stored in the first 512 bytes.
@@ -317,7 +316,6 @@ RCODE F_Rfl::positionTo(
 		// Populate the buffer from the 512 byte boundary that is just
 		// before the offset we are trying to position to.
 
-		uiBytesToRead = MOD_512( uiFileOffset);
 		m_pCurrentBuf->uiRflFileOffset = ROUND_DOWN_TO_NEAREST_512( uiFileOffset);
 		m_pCurrentBuf->uiRflBufBytes = MOD_512( uiFileOffset);
 

@@ -655,7 +655,7 @@
 	#define FLM_IO_SH_DENYNONE						0x0040
 	#define FLM_IO_DIRECT							0x0080
 	#define FLM_IO_DELETE_ON_RELEASE				0x0100
-	#define FLM_IO_MISALIGNED_OK					0x0200
+	#define FLM_IO_NO_MISALIGNED					0x0200
 
 	// File Positioning Definitions
 
