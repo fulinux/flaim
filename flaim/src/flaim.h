@@ -4585,13 +4585,33 @@
 		
 		/// Find a level one field ID in a record.
 		void * findLevelOneField(
-			FLMUINT	uiFieldID,			///< Field number of field to be found.
-			FLMBOOL	bFindInclusive		///< OK to find next field after uiFieldID?
+			FLMUINT		uiFieldID,			///< Field number of field to be found.
+			FLMBOOL		bFindInclusive,	///< OK to find next field after uiFieldID?
+			FLMUINT *	puiFieldPos			///< Field position in field ID table is returned here.
 			);
 
-		/// Find a level one field ID in a record.
+		/// Determine if the level one field at the specified position in the field ID table
+		/// matches the passed in field ID.\  If so, return that field pointer.
+		void * getLevelOneField(
+			FLMUINT	uiFieldId,				///< Field id to be matched.
+			FLMUINT	uiLevelOnePosition	///< Level one field position to be checked.
+			);
+
+		/// Get the next level one field after the position specified.\  Make sure
+		/// that the next field has the same field ID as the current field.
 		void * nextLevelOneField(
-			void *	pvLastLevelOneField		///< Last level one field that was found.
+			FLMUINT *	puiFieldPos,			///< Current level one field position.\  Returns
+														///< the next level one field position.
+			FLMBOOL		bFieldIdsMustMatch	///< Specifies whether the field ID of the next
+														///< field in the field ID table must match the
+														///< field ID of the current field position.
+			);
+
+		/// Get the field ID of the field that is in the specified position in the
+		/// field ID table.
+		FLMUINT getLevelOneFieldId(
+			FLMUINT	uiLevelOnePosition		///< Level one field position whose field ID is to
+														///< be returned.
 			);
 
 		void * locateFieldByPosition(

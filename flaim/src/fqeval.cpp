@@ -775,8 +775,8 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 {
 	RCODE				rc = FERR_OK;
 	FQATOM *			pTmpResult = NULL;
-	void *			pvField;
-	void *			pvLastLevelOneField = NULL;
+	void *			pvField = NULL;
+	FLMUINT			uiLastLevelOneFieldPos = 0;
 	FLMUINT *		puiFldPath;
 	FLMUINT			uiCurrFieldPath[ GED_MAXLVLNUM + 1];
 	FLMUINT			uiFieldLevel;
@@ -851,14 +851,14 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 		
 		if (bUseFieldIdLookupTable)
 		{
-			if ((pvLastLevelOneField =
-					pRecord->findLevelOneField( uiLevelOneFieldId, FALSE)) == NULL)
+			if ((pvField =
+					pRecord->findLevelOneField( uiLevelOneFieldId, FALSE,
+										&uiLastLevelOneFieldPos)) == NULL)
 			{
 				goto Exit;
 			}
 			
 			uiCurrFieldPath [0] = puiPToCPath [0];
-			pvField = pvLastLevelOneField;
 			uiFieldLevel = 1;
 		}
 	}
@@ -1030,8 +1030,8 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 			
 			if (bUseFieldIdLookupTable && uiFieldLevel == 1)
 			{
-				pvLastLevelOneField = pvField = pRecord->nextLevelOneField(
-															pvLastLevelOneField);
+				pvField = pRecord->nextLevelOneField(
+												&uiLastLevelOneFieldPos, TRUE);
 			}
 			
 			break;

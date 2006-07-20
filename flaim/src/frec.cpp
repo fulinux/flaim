@@ -5370,24 +5370,61 @@ Exit:
 Desc:	Find a level one field in the record.
 ******************************************************************************/
 void * FlmRecord::findLevelOneField(
-	FLMUINT	uiFieldId,
-	FLMBOOL	bFindInclusive)
+	FLMUINT		uiFieldId,
+	FLMBOOL		bFindInclusive,
+	FLMUINT *	puiFieldPos)
 {
-	FLMUINT		uiInsertPos;
 	FIELD_ID *	pFieldId;
 	void *		pvField = NULL;
 	
 	if (m_pucFieldIdTable)
 	{
-		if ((pFieldId = findFieldId( (FLMUINT16)uiFieldId, 0, &uiInsertPos)) != NULL)
+		if ((pFieldId = findFieldId( (FLMUINT16)uiFieldId, 0, puiFieldPos)) != NULL)
 		{
 			pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
 		}
 		else if (bFindInclusive &&
-					uiInsertPos < getFieldIdTableItemCount( m_pucFieldIdTable))
+					*puiFieldPos < getFieldIdTableItemCount( m_pucFieldIdTable))
 		{
-			pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiInsertPos;
+			pFieldId = getFieldIdTable( m_pucFieldIdTable) + *puiFieldPos;
 			pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+		}
+	}
+	else
+	{
+		flmAssert( m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED);
+	}
+	return( pvField);
+}
+
+/******************************************************************************
+Desc:	Determine if a particular level one field matches the specified field ID
+		If so, return the field pointer.
+******************************************************************************/
+void * FlmRecord::getLevelOneField(
+	FLMUINT	uiFieldId,
+	FLMUINT	uiLevelOnePosition)
+{
+	void *		pvField = NULL;
+	
+	if (m_pucFieldIdTable)
+	{
+		FIELD_ID *	pFieldId;
+
+		if (m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE)
+		{
+			sortFieldIdTable();
+		}
+
+		// See if there is a next field in the array.
+		
+		if (uiLevelOnePosition < getFieldIdTableItemCount( m_pucFieldIdTable))
+		{
+			pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiLevelOnePosition;
+			if (uiFieldId == (FLMUINT)(pFieldId->ui16FieldId))
+			{
+				pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+			}
 		}
 	}
 	else
@@ -5401,33 +5438,35 @@ void * FlmRecord::findLevelOneField(
 Desc:	Find a level one field in the record.
 ******************************************************************************/
 void * FlmRecord::nextLevelOneField(
-	void *	pvLastLevelOneField)
+	FLMUINT *	puiCurrLevelOnePosition,
+	FLMBOOL		bFieldIdsMustMatch)
 {
-	FLMUINT16	ui16FieldId = (FLMUINT16)getFieldID( pvLastLevelOneField);
-	FIELDLINK	ui32FieldOffset = (FIELDLINK)((FLMUINT)pvLastLevelOneField);
-	FLMUINT		uiInsertPos;
-	FIELD_ID *	pFieldId;
 	void *		pvField = NULL;
 	
 	if (m_pucFieldIdTable)
 	{
-		if ((pFieldId = findFieldId( ui16FieldId, ui32FieldOffset,
-											&uiInsertPos)) != NULL)
+		FLMUINT		uiNextPos = *puiCurrLevelOnePosition + 1;
+		FIELD_ID *	pFieldId;
+
+		if (m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE)
+		{
+			sortFieldIdTable();
+		}
+
+		// See if there is a next field in the array.
+		
+		if (uiNextPos < getFieldIdTableItemCount( m_pucFieldIdTable))
 		{
 			
-			// See if there is a next field in the array.
-			
-			if (uiInsertPos + 1 < getFieldIdTableItemCount( m_pucFieldIdTable))
+			// See if the next field in the array has the same field ID as
+			// the current one.
+
+			pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiNextPos;
+			if (!bFieldIdsMustMatch ||
+				 pFieldId->ui16FieldId == (pFieldId - 1)->ui16FieldId)
 			{
-				
-				// See if the next field in the array has the same field ID as
-				// the one we're looking for.
-				
-				pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiInsertPos + 1;
-				if (pFieldId->ui16FieldId == ui16FieldId)
-				{
-					pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
-				}
+				pvField = (void *)((FLMUINT)pFieldId->ui32FieldOffset);
+				*puiCurrLevelOnePosition = uiNextPos;
 			}
 		}
 	}
@@ -5436,6 +5475,41 @@ void * FlmRecord::nextLevelOneField(
 		flmAssert( m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED);
 	}
 	return( pvField);
+}
+
+/******************************************************************************
+Desc:	Get the field ID of a level one field at the specified position.
+******************************************************************************/
+FLMUINT FlmRecord::getLevelOneFieldId(
+	FLMUINT	uiLevelOnePosition)
+{
+	FLMUINT	uiFieldId = 0;
+	
+	if (m_pucFieldIdTable)
+	{
+		FIELD_ID *	pFieldId;
+
+		if (m_uiFlags & RCA_NEED_TO_SORT_FIELD_ID_TABLE)
+		{
+			sortFieldIdTable();
+		}
+
+		// See if there is a next field in the array.
+		
+		if (uiLevelOnePosition < getFieldIdTableItemCount( m_pucFieldIdTable))
+		{
+			
+			// Return the field ID for the position.
+
+			pFieldId = getFieldIdTable( m_pucFieldIdTable) + uiLevelOnePosition;
+			uiFieldId = (FLMUINT)(pFieldId->ui16FieldId);
+		}
+	}
+	else
+	{
+		flmAssert( m_uiFlags & RCA_FIELD_ID_TABLE_ENABLED);
+	}
+	return( uiFieldId);
 }
 
 /******************************************************************************

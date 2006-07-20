@@ -2194,6 +2194,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 	FLMBOOL			bTransActive = FALSE;
 	char				szFieldName [100];
 	FLMUINT			uiFieldId;
+	FLMUINT			uiFieldPos = 0;
 	FLMUINT			uiTmp;
 	FLMUINT			uiCount;
 	FLMUINT			uiLoop1;
@@ -2370,7 +2371,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 	
 	for (uiFieldId = 1000; uiFieldId <= 1600; uiFieldId += 2)
 	{
-		pvDataField = pDataRec->findLevelOneField( uiFieldId, TRUE);
+		pvDataField = pDataRec->findLevelOneField( uiFieldId, TRUE, &uiFieldPos);
 		if (!pvDataField)
 		{
 			rc = RC_SET( FERR_FAILURE);
@@ -2411,7 +2412,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 		uiCount = 1;		
 		for (;;)
 		{
-			pvDataField = pDataRec->nextLevelOneField( pvDataField);
+			pvDataField = pDataRec->nextLevelOneField( &uiFieldPos, TRUE);
 			if (!pvDataField)
 			{
 				if (uiCount != 3)
@@ -2485,7 +2486,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 		
 		for (uiCount = 1; uiCount <= 3; uiCount++)
 		{
-			pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
+			pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE, &uiFieldPos);
 			if (!pvDataField)
 			{
 				rc = RC_SET( FERR_FAILURE);
@@ -2531,7 +2532,7 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 		
 		// All instances should be gone now.
 		
-		pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE);
+		pvDataField = pCopyRec->findLevelOneField( uiFieldId, FALSE, &uiFieldPos);
 		if (pvDataField)
 		{
 			rc = RC_SET( FERR_FAILURE);
