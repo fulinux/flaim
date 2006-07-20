@@ -233,7 +233,7 @@ typedef struct SQL_TABLE
 {
 	FLMUINT					uiTableNum;
 	FSTableCursor *		pFSTableCursor;
-	FLMUINT					uiCost;
+	FLMUINT64				ui64Cost;
 	FLMBOOL					bScan;
 	FLMBOOL					bScanIndex;
 	FLMUINT					uiIndexNum;
@@ -474,7 +474,7 @@ private:
 		
 	RCODE chooseBestIndex(
 		SQL_TABLE *	pSQLTable,
-		FLMUINT *	puiCost);
+		FLMUINT64 *	pui64Cost);
 		
 	RCODE calcTableScanCost(
 		SQL_TABLE *			pSQLTable,
@@ -491,6 +491,8 @@ private:
 		
 	RCODE optimizeSubQueries( void);
 	
+	RCODE setupIndexScan( void);
+
 	RCODE optimize( void);
 	
 	F_Pool				m_pool;
