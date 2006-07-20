@@ -31,7 +31,7 @@ FSTATIC RCODE sqlGetRowIdValue(
 	
 FSTATIC RCODE setupPredicate(
 	SQL_PRED *					pPred,
-	SQL_TABLE *					pTable,
+	SQL_TABLE *					pSQLTable,
 	FLMUINT						uiColumnNum,
 	eSQLQueryOperators		eOperator,
 	FLMUINT						uiCompareRules,
@@ -72,14 +72,12 @@ FSTATIC RCODE distributeAndOverOr(
 	SQL_DNF_NODE *		pOldOrNode,
 	SQL_DNF_NODE **	ppDNFTree);
 	
-#if 0
-FSTATIC FLMBOOL predIsForTable(
+FSTATIC FLMBOOL predIsForOnlyThisTable(
 	SQL_NODE *	pPredRootNode,
-	SQL_TABLE *	pTable);
+	SQL_TABLE *	pSQLTable);
 	
 FSTATIC void rankIndexes(
-	SQL_TABLE *	pTable);
-#endif
+	SQL_TABLE *	pSQLTable);
 	
 //-------------------------------------------------------------------------
 // Desc:	Get the row ID constant from an SQL_VALUE node.
@@ -121,7 +119,7 @@ Exit:
 //-------------------------------------------------------------------------
 FSTATIC RCODE setupPredicate(
 	SQL_PRED *					pPred,
-	SQL_TABLE *					pTable,
+	SQL_TABLE *					pSQLTable,
 	FLMUINT						uiColumnNum,
 	eSQLQueryOperators		eOperator,
 	FLMUINT						uiCompareRules,
@@ -130,7 +128,7 @@ FSTATIC RCODE setupPredicate(
 {
 	RCODE		rc = NE_SFLM_OK;
 
-	pPred->pTable = pTable;
+	pPred->pSQLTable = pSQLTable;
 	pPred->uiColumnNum = uiColumnNum;
 	if (!pValue || pValue->eValType != SQL_UTF8_VAL)
 	{
@@ -463,7 +461,7 @@ RCODE SQLQuery::intersectPredicates(
 			// Change the predicate to the current
 			// operator.
 			
-			if (RC_BAD( rc = setupPredicate( pPred, pPred->pTable,
+			if (RC_BAD( rc = setupPredicate( pPred, pPred->pSQLTable,
 								pPred->uiColumnNum, eOperator, uiCompareRules,
 								bNotted, pValue)))
 			{
@@ -588,195 +586,6 @@ Exit:
 }
 
 //-------------------------------------------------------------------------
-// Desc:	See if a predicate can be unioned with another one.
-//-------------------------------------------------------------------------
-RCODE SQLQuery::unionPredicates(
-	SQL_PRED *				pPred,
-	eSQLQueryOperators	eOperator,
-	FLMUINT					uiCompareRules,
-	FLMBOOL					bNotted,
-	SQL_VALUE *				pValue,
-	FLMBOOL *				pbUnioned)
-{
-	RCODE		rc = NE_SFLM_OK;
-	FLMINT	iCmp;
-	FLMBOOL	bDoMatch;
-
-	*pbUnioned = FALSE;
-	if (!pValue || pValue->eValType != SQL_UTF8_VAL)
-	{
-		bDoMatch = FALSE;
-
-		// Comparison rules don't matter for anything that is
-		// not text, so we normalize them to zero, so the test
-		// below to see if the comparison rule is the same as
-		// the comparison rule of the operator will work.
-
-		uiCompareRules = 0;
-	}
-	else
-	{
-		bDoMatch = (eOperator == SQL_EQ_OP &&
-						(pValue->uiFlags & SQL_VAL_IS_CONSTANT) &&
-						(pValue->uiFlags & SQL_VAL_HAS_WILDCARDS))
-						? TRUE
-						: FALSE;
-	}
-
-	if (eOperator == SQL_EXISTS_OP || eOperator == SQL_NE_OP)
-	{
-
-		// See if there is another operator that is an exact
-		// match of this one.
-
-		if (pPred->eOperator == eOperator &&
-			 pPred->bNotted == bNotted)
-		{
-			
-			// Perfect match - no need to do any more.
-			
-			*pbUnioned = TRUE;
-		}
-	}
-	
-	// See if the operator overlaps with another range operator
-
-	else if (pPred->eOperator == SQL_RANGE_OP &&
-				pPred->uiCompareRules == uiCompareRules &&
-				!bDoMatch &&
-				(eOperator == SQL_EQ_OP ||
-				 eOperator == SQL_LE_OP ||
-				 eOperator == SQL_LT_OP ||
-				 eOperator == SQL_GE_OP ||
-				 eOperator == SQL_GT_OP))
-	{
-		SQL_VALUE *	pFromValue;
-		SQL_VALUE *	pUntilValue;
-		FLMBOOL		bInclFrom;
-		FLMBOOL		bInclUntil;
-
-		pFromValue = (eOperator == SQL_EQ_OP ||
-						  eOperator == SQL_GE_OP ||
-						  eOperator == SQL_GT_OP)
-						  ? pValue
-						  : NULL;
-		pUntilValue = (eOperator == SQL_EQ_OP ||
-							eOperator == SQL_LE_OP ||
-							eOperator == SQL_LT_OP)
-							? pValue
-							: NULL;
-		bInclFrom = (FLMBOOL)(eOperator == SQL_EQ_OP ||
-									 eOperator == SQL_GE_OP
-									 ? TRUE
-									 : FALSE);
-		bInclUntil = (FLMBOOL)(eOperator == SQL_EQ_OP ||
-									  eOperator == SQL_LE_OP
-									  ? TRUE
-									  : FALSE);
-
-		// If the value type is not compatible with the predicate's
-		// value type, we cannot do the comparison, and there is
-		// no overlap.
-
-		if (!sqlCanCompare( pValue, pPred->pFromValue) ||
-			 !sqlCanCompare( pValue, pPred->pUntilValue))
-		{
-			// Nothing to do here
-		}
-		else if (RC_BAD( rc = sqlCompareValues( pFromValue,
-							bInclFrom, TRUE,
-							pPred->pFromValue, pPred->bInclFrom, TRUE,
-							uiCompareRules, m_uiLanguage, &iCmp)))
-		{
-			goto Exit;
-		}
-		else if (iCmp >= 0)
-		{
-
-			// From value is greater than or equal to the predicate's
-			// from value.
-			// If the from value is also less than or equal to the
-			// predicate's until value, we have an overlap.
-
-			if (RC_BAD( rc = sqlCompareValues( pFromValue,
-						bInclFrom, TRUE,
-						pPred->pUntilValue, pPred->bInclUntil, FALSE,
-						uiCompareRules, m_uiLanguage, &iCmp)))
-			{
-				goto Exit;
-			}
-			if (iCmp <= 0)
-			{
-
-				// If the until value is greater than the predicate's
-				// until value, change the predicate's until value.
-
-				if (RC_BAD( rc = sqlCompareValues( pUntilValue,
-							bInclUntil, FALSE,
-							pPred->pUntilValue, pPred->bInclUntil, FALSE,
-							uiCompareRules, m_uiLanguage, &iCmp)))
-				{
-					goto Exit;
-				}
-				if (iCmp > 0)
-				{
-					pPred->pUntilValue = pUntilValue;
-					pPred->bInclUntil = bInclUntil;
-				}
-				*pbUnioned = TRUE;
-				goto Exit;
-			}
-		}
-
-		// At this point we already know that the from value is
-		// less than the predicate's from value.
-		// See if the until value is greater than or equal
-		// to the from value.  If it is we have an overlap.
-
-		else if (RC_BAD( rc = sqlCompareValues( pUntilValue,
-							bInclUntil, FALSE,
-							pPred->pFromValue, pPred->bInclFrom, TRUE,
-							uiCompareRules, m_uiLanguage, &iCmp)))
-		{
-			goto Exit;
-		}
-		else if (iCmp >= 0)
-		{
-
-			// Until value is greater than or equal to the predicate's
-			// from value, so we definitely have an overlap.  We
-			// already know that the from value is less than the
-			// predicate's from value, so we will change that for sure.
-
-			pPred->pFromValue = pFromValue;
-			pPred->bInclFrom = bInclFrom;
-
-			// See if the until value is greater than the
-			// predicate's until value, in which case we need to
-			// change the predicate's until value.
-
-			if (RC_BAD( rc = sqlCompareValues( pUntilValue,
-							bInclUntil, FALSE,
-							pPred->pUntilValue, pPred->bInclUntil, FALSE,
-							uiCompareRules, m_uiLanguage, &iCmp)))
-			{
-				goto Exit;
-			}
-			if (iCmp > 0)
-			{
-				pPred->pUntilValue = pUntilValue;
-				pPred->bInclUntil = bInclUntil;
-			}
-			*pbUnioned = TRUE;
-		}
-	}
-
-Exit:
-
-	return( rc);
-}
-
-//-------------------------------------------------------------------------
 // Desc:	Convert an operand to a predicate.  If it is merged with another
 //			predicate, remove it and return the next node in the list of
 //			operands.  If it is not merged, still return the next node in
@@ -785,7 +594,7 @@ Exit:
 RCODE SQLQuery::addPredicate(
 	SQL_SUBQUERY *			pSubQuery,
 	FLMUINT *				puiOperand,
-	SQL_TABLE *				pTable,
+	SQL_TABLE *				pSQLTable,
 	FLMUINT					uiColumnNum,
 	eSQLQueryOperators	eOperator,
 	FLMUINT					uiCompareRules,
@@ -796,11 +605,11 @@ RCODE SQLQuery::addPredicate(
 	FLMUINT		uiOperand = *puiOperand;
 	FLMUINT		uiLoop;
 	SQL_NODE *	pCurrNode;
-	SQL_NODE *	pOperandNode = pSubQuery->ppOperands [uiOperand];
+	SQL_NODE *	pOperandNode;
 	FLMBOOL		bAlwaysFalse;
 	SQL_PRED *	pPred;
 	
-	// Convert the constant value in a node id predicate to
+	// Convert the constant value in a row id predicate to
 	// a 64 bit unsigned value.
 
 	if (eOperator != SQL_EXISTS_OP && !uiColumnNum)
@@ -823,7 +632,7 @@ RCODE SQLQuery::addPredicate(
 			continue;
 		}
 		pPred = &pCurrNode->nd.pred;
-		if (pPred->pTable == pTable && pPred->uiColumnNum == uiColumnNum)
+		if (pPred->pSQLTable == pSQLTable && pPred->uiColumnNum == uiColumnNum)
 		{
 			FLMBOOL bIntersected;
 			
@@ -891,7 +700,7 @@ RCODE SQLQuery::addPredicate(
 		}
 	}
 
-	// If we didn't find one to intersect with or union with, we need to
+	// If we didn't find one to intersect with, we need to
 	// create a new operand node of type SQL_PRED_NODE.  Can't just modify
 	// this node, because other sub-queries may be pointing to it also, and
 	// they would modify it in a different way.  Unlike other nodes, predicate
@@ -907,11 +716,12 @@ RCODE SQLQuery::addPredicate(
 	
 	pOperandNode->eNodeType = SQL_PRED_NODE;
 	if (RC_BAD( rc = setupPredicate( &pOperandNode->nd.pred,
-								pTable, uiColumnNum,
+								pSQLTable, uiColumnNum,
 								eOperator, uiCompareRules, bNotted, pValue)))
 	{
 		goto Exit;
 	}
+	pSubQuery->ppOperands [uiOperand] = pOperandNode;
 	
 	// Go to the next operand
 	
@@ -934,7 +744,7 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 	RCODE						rc = NE_SFLM_OK;
 	SQL_NODE *				pSQLNode;
 	SQL_VALUE *				pValue;
-	SQL_TABLE *				pTable;
+	SQL_TABLE *				pSQLTable;
 	FLMUINT					uiColumnNum;
 	FLMUINT					uiOperand;
 	SQL_SUBQUERY *			pSubQuery;
@@ -951,7 +761,7 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 			if (pSQLNode->eNodeType == SQL_COLUMN_NODE)
 			{
 				if (RC_BAD( rc = addPredicate( pSubQuery, &uiOperand,
-									pSQLNode->nd.column.pTable,
+									pSQLNode->nd.column.pSQLTable,
 									pSQLNode->nd.column.uiColumnNum,
 									SQL_EXISTS_OP, 0, pSQLNode->bNotted, NULL)))
 				{
@@ -973,13 +783,13 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 				
 				if (pSQLNode->pFirstChild->eNodeType == SQL_COLUMN_NODE)
 				{
-					pTable = pSQLNode->pFirstChild->nd.column.pTable;
+					pSQLTable = pSQLNode->pFirstChild->nd.column.pSQLTable;
 					uiColumnNum = pSQLNode->pFirstChild->nd.column.uiColumnNum;
 					pValue = &pSQLNode->pLastChild->currVal;
 				}
 				else
 				{
-					pTable = pSQLNode->pLastChild->nd.column.pTable;
+					pSQLTable = pSQLNode->pLastChild->nd.column.pSQLTable;
 					uiColumnNum = pSQLNode->pLastChild->nd.column.uiColumnNum;
 					pValue = &pSQLNode->pFirstChild->currVal;
 					
@@ -1011,7 +821,7 @@ RCODE SQLQuery::convertOperandsToPredicates( void)
 				}
 				
 				if (RC_BAD( rc = addPredicate( pSubQuery, &uiOperand,
-									pTable, uiColumnNum,
+									pSQLTable, uiColumnNum,
 									eOperator, pSQLNode->nd.op.uiCompareRules,
 									pSQLNode->bNotted, pValue)))
 				{
@@ -1594,7 +1404,7 @@ Exit:
 FSTATIC RCODE copyAndLinkSubTree(
 	F_Pool *				pPool,
 	SQL_DNF_NODE *		pSrcSubTree,
-	SQL_DNF_NODE *)	// pParentNode)
+	SQL_DNF_NODE *		pParentNode)
 {
 	RCODE					rc = NE_SFLM_OK;
 	SQL_DNF_NODE *		pNewSubTree = NULL;
@@ -1660,6 +1470,22 @@ FSTATIC RCODE copyAndLinkSubTree(
 		}
 		pCurrSrcNode = pCurrSrcNode->pNextSib;
 	}
+	
+	// Link the newly created sub-tree to the passed in parent node as its
+	// last child.
+	
+	flmAssert( pNewSubTree);
+	pNewSubTree->pParent = pParentNode;
+	pNewSubTree->pNextSib = NULL;
+	if ((pNewSubTree->pPrevSib = pParentNode->pLastChild) != NULL)
+	{
+		pNewSubTree->pPrevSib->pNextSib = pNewSubTree;
+	}
+	else
+	{
+		pParentNode->pFirstChild = pNewSubTree;
+	}
+	pParentNode->pLastChild = pNewSubTree;
 	
 Exit:
 
@@ -2032,13 +1858,6 @@ RCODE SQLQuery::convertToDNF( void)
 				  uiLoop++, pExprList = pExprList->pNextSib)
 			{
 				pSubQuery->ppOperands [uiLoop] = pExprList->pNode;
-				
-				// NULL out the node's parent pointer and sibling pointers - just
-				// to keep things tidy.
-				
-				pExprList->pNode->pParent = NULL;
-				pExprList->pNode->pNextSib = NULL;
-				pExprList->pNode->pPrevSib = NULL;
 			}
 		}
 		flmAssert( uiLoop == pSubQuery->uiOperandCount);
@@ -2050,15 +1869,14 @@ Exit:
 	return( rc);
 }
 
-#if 0
 //-------------------------------------------------------------------------
 // Desc: Determine if a particular predicate is associated with the
 //			specified table.  Only return TRUE if the predicate is associated
 //			with this table and only with this table.
 //-------------------------------------------------------------------------
-FSTATIC FLMBOOL predIsForTable(
+FSTATIC FLMBOOL predIsForOnlyThisTable(
 	SQL_NODE *	pPredRootNode,
-	SQL_TABLE *	pTable)
+	SQL_TABLE *	pSQLTable)
 {
 	FLMBOOL		bIsAssociated = FALSE;
 	SQL_NODE *	pCurrNode = pPredRootNode;
@@ -2067,12 +1885,16 @@ FSTATIC FLMBOOL predIsForTable(
 	{
 		if (pCurrNode->eNodeType == SQL_COLUMN_NODE)
 		{
-			 if (pCurrNode->nd.column.pTable == pTable)
+			 if (pCurrNode->nd.column.pSQLTable == pSQLTable)
 			 {
 				 bIsAssociated = TRUE;
 			 }
 			 else
 			 {
+				 
+				 // Predicate is associated with more than the table that
+				 // was passed in.
+				 
 				 bIsAssociated = FALSE;
 				 break;
 			 }
@@ -2119,71 +1941,65 @@ FSTATIC FLMBOOL predIsForTable(
 //-------------------------------------------------------------------------
 RCODE SQLQuery::getPredKeys(
 	SQL_PRED *	pPred,
-	SQL_TABLE *	pTable)
+	SQL_TABLE *	pSQLTable)
 {
 	RCODE				rc = NE_SFLM_OK;
 	ICD *				pIcd;
-	SQL_INDEX *		pIndex;
+	SQL_INDEX *		pSQLIndex;
 	SQL_KEY *		pKey;
-	
-//visit - notes for reference: column number should be unique for the table.
-//visit - notes for reference: no required/non-required pieces for indexes on tables
-
-
-	if (RC_BAD( rc = m_pDb->m_pDict->getAttribute( m_pDb, pPred->uiColumnNum,
-								&defInfo)))
-	{
-		goto Exit;
-	}
+	F_TABLE *		pTable = m_pDb->m_pDict->getTable( pPred->pSQLTable->uiTableNum);
+	F_COLUMN *		pColumn = m_pDb->m_pDict->getColumn( pTable, pPred->uiColumnNum);
+	F_INDEX *		pIndex;
+	FLMUINT			uiKeyComponent;
 	
 	// This ICD chain will only contain ICDs for this particular column on
-	// the table the column belongs to - because column numbers are globally
-	// unique.
+	// the table the column belongs to.
 
-	for (pIcd = defInfo.m_pFirstIcd; pIcd; pIcd = pIcd->pNextInChain)
+	for (pIcd = pColumn->pFirstIcd; pIcd; pIcd = pIcd->pNextInChain)
 	{
 		
 		// If the table has an index specified for it, skip this ICD if
 		// it is not that index.
 		
-		if (pTable->bIndexSet && pTable->uiIndex != pIcd->pIxd->uiIndexNum)
+		if (pSQLTable->bIndexSet && pSQLTable->uiIndexNum != pIcd->uiIndexNum)
 		{
 			continue;
 		}
+		pIndex = m_pDb->m_pDict->getIndex( pIcd->uiIndexNum);
 
 		// Cannot use the index if it is off-line.
 
-		if (pIcd->pIxd->uiFlags & (IXD_OFFLINE | IXD_SUSPENDED))
+		if (pIndex->uiFlags & (IXD_OFFLINE | IXD_SUSPENDED))
 		{
 			continue;
 		}
 		
 		// Find the index off of the table.  If not there, add it.
 		
-		pIndex = pTable->pFirstIndex;
-		while (pIndex->uiIndexNum != pIcd->pIxd->uiIndexNum)
+		pSQLIndex = pSQLTable->pFirstSQLIndex;
+		while (pSQLIndex->uiIndexNum != pIcd->uiIndexNum)
 		{
-			pIndex = pIndex->pNext;
+			pSQLIndex = pSQLIndex->pNext;
 		}
-		if (!pIndex)
+		if (!pSQLIndex)
 		{
 			if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_INDEX),
-												(void **)&pIndex)))
+												(void **)&pSQLIndex)))
 			{
 				goto Exit;
 			}
-			pIndex->pTable = pTable;
-			pIndex->uiIndexNum = pIcd->pIxd->uiIndexNum;
-			pIndex->uiNumComponents = pIcd->pIxd->uiNumKeyComponents;
-			if ((pIndex->pPrev = pTable->pLastIndex) != NULL)
+			pSQLIndex->pSQLTable = pSQLTable;
+			pSQLIndex->uiIndexNum = pIcd->uiIndexNum;
+			pSQLIndex->uiNumComponents = pIndex->uiNumKeyComponents;
+			if ((pSQLIndex->pPrev = pSQLTable->pLastSQLIndex) != NULL)
 			{
-				pIndex->pPrev->pNext = pIndex;
+				pSQLIndex->pPrev->pNext = pSQLIndex;
 			}
 			else
 			{
-				pTable->pFirstIndex = pIndex;
+				pSQLTable->pFirstSQLIndex = pSQLIndex;
 			}
-			pTable->pLastIndex = pIndex;
+			pSQLTable->pLastSQLIndex = pSQLIndex;
 			
 			// Allocate a single key for the index.
 			
@@ -2192,12 +2008,12 @@ RCODE SQLQuery::getPredKeys(
 			{
 				goto Exit;
 			}
-			pIndex->pLastKey = pIndex->pFirstKey = pKey;
-			pKey->pIndex = pIndex;
+			pSQLIndex->pLastKey = pSQLIndex->pFirstKey = pKey;
+			pKey->pSQLIndex = pSQLIndex;
 			
 			// Allocate an array of key components for the key.
 			
-			if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_PRED *) * pIndex->uiNumComponents,
+			if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_PRED *) * pSQLIndex->uiNumComponents,
 												(void **)&pKey->ppKeyComponents)))
 			{
 				goto Exit;
@@ -2205,15 +2021,16 @@ RCODE SQLQuery::getPredKeys(
 		}
 		else
 		{
-			pKey = pIndex->pFirstKey;
+			pKey = pSQLIndex->pFirstKey;
 		}
 		
 		// There should not be multiple predicates in a sub-query that
 		// have the same column, so this key component should NOT already
 		// be populated.
 		
-		flmAssert( !pKey->ppKeyComponents [pIcd->uiKeyComponent - 1]);
-		pKey->ppKeyComponents [pIcd->uiKeyComponent - 1] = pPred;
+		uiKeyComponent = (FLMUINT)(pIcd - pIndex->pKeyIcds); 
+		flmAssert( !pKey->ppKeyComponents [uiKeyComponent]);
+		pKey->ppKeyComponents [uiKeyComponent] = pPred;
 		
 		// NOTE: Costs will be calculated later.
 		
@@ -2230,23 +2047,21 @@ Exit:
 //			give preference over those that don't.
 //-------------------------------------------------------------------------
 FSTATIC void rankIndexes(
-	SQL_TABLE *	pTable)
+	SQL_TABLE *	pSQLTable)
 {
-	SQL_INDEX *	pIndex;
-	SQL_INDEX *	pPrevIndex;
-	SQL_INDEX *	pNextIndex;
+	SQL_INDEX *	pSQLIndex;
+	SQL_INDEX *	pPrevSQLIndex;
+	SQL_INDEX *	pNextSQLIndex;
 	SQL_KEY *	pKey;
-	FLMUINT		uiComponentCount;
-	FLMUINT		uiPrevComponentCount;
 	
-	pIndex = pTable->pFirstIndex;
-	while (pIndex)
+	pSQLIndex = pSQLTable->pFirstSQLIndex;
+	while (pSQLIndex)
 	{
-		pNextIndex = pIndex->pNext;
-		pPrevIndex = pIndex->pPrev;
+		pNextSQLIndex = pSQLIndex->pNext;
+		pPrevSQLIndex = pSQLIndex->pPrev;
 		
 		// There should only be one key off of the index right now.
-		pKey = pIndex->pFirstKey;
+		pKey = pSQLIndex->pFirstKey;
 		flmAssert( !pKey->pNext);
 		
 		// Determine how many of the key's components point to a
@@ -2255,7 +2070,7 @@ FSTATIC void rankIndexes(
 		// we won't use those components to generate a key.
 		
 		pKey->uiComponentsUsed = 0;
-		while (pKey->uiComponentsUsed < pIndex->uiNumComponents &&
+		while (pKey->uiComponentsUsed < pSQLIndex->uiNumComponents &&
 				 pKey->ppKeyComponents [pKey->uiComponentsUsed])
 		{
 			pKey->uiComponentsUsed++;
@@ -2264,48 +2079,48 @@ FSTATIC void rankIndexes(
 		// See if this key is using more components that the key for
 		// prior indexes.
 		
-		while (pPrevIndex)
+		while (pPrevSQLIndex)
 		{
-			if (pKey->uiComponentsUsed > pPrevIndex->pFirstKey->uiComponentsUsed)
+			if (pKey->uiComponentsUsed > pPrevSQLIndex->pFirstKey->uiComponentsUsed)
 			{
 				// Move our current key up in front of the previous key - meaning
 				// it will be evaluated ahead of that key.
 				
-				// First, unlink the index from its current spot.  pIndex->pPrev
-				// must be non-NULL - otherwise, we wouldn't have a pPrevIndex.
+				// First, unlink the index from its current spot.  pSQLIndex->pPrev
+				// must be non-NULL - otherwise, we wouldn't have a pPrevSQLIndex.
 				
-				flmAssert( pIndex->pPrev);
-				pIndex->pPrev->pNext = pIndex->pNext;
-				if (pIndex->pNext)
+				flmAssert( pSQLIndex->pPrev);
+				pSQLIndex->pPrev->pNext = pSQLIndex->pNext;
+				if (pSQLIndex->pNext)
 				{
-					pIndex->pNext->pPrev = pIndex->pPrev;
+					pSQLIndex->pNext->pPrev = pSQLIndex->pPrev;
 				}
 				else
 				{
-					pTable->pLastIndex = pIndex->pPrev;
+					pSQLTable->pLastSQLIndex = pSQLIndex->pPrev;
 				}
 				
-				// Now, link it in front of pPrevIndex
+				// Now, link it in front of pPrevSQLIndex
 				
-				pIndex->pNext = pPrevIndex;
-				if ((pIndex->pPrev = pPrevIndex->pPrev) != NULL)
+				pSQLIndex->pNext = pPrevSQLIndex;
+				if ((pSQLIndex->pPrev = pPrevSQLIndex->pPrev) != NULL)
 				{
-					pIndex->pPrev->pNext = pIndex;
+					pSQLIndex->pPrev->pNext = pSQLIndex;
 				}
 				else
 				{
-					pTable->pFirstIndex = pIndex;
+					pSQLTable->pFirstSQLIndex = pSQLIndex;
 				}
-				pPrevIndex->pPrev = pIndex;
-				pPrevIndex = pIndex->pPrev;
+				pPrevSQLIndex->pPrev = pSQLIndex;
+				pPrevSQLIndex = pSQLIndex->pPrev;
 			}
 			else
 			{
-				pPrevIndex = pPrevIndex->pPrev;
+				pPrevSQLIndex = pPrevSQLIndex->pPrev;
 			}
 		}
 		
-		pIndex = pNextIndex;
+		pSQLIndex = pNextSQLIndex;
 	}
 }
 
@@ -2314,24 +2129,26 @@ FSTATIC void rankIndexes(
 //			generated predicate keys.
 //-------------------------------------------------------------------------
 RCODE SQLQuery::chooseBestIndex(
-	SQL_TABLE *	pTable,
-	FLMUINT *	puiCost)
+	SQL_TABLE *	pSQLTable,
+	FLMUINT64 *	//pui64Cost - VISIT: NEED TO FINISH THIS ROUTINE
+	)
 {
-	RCODE			rc = NE_SFLM_OK
-	SQL_INDEX *	pIndex = pTable->pFirstIndex;
+	RCODE			rc = NE_SFLM_OK;
+	SQL_INDEX *	pSQLIndex = pSQLTable->pFirstSQLIndex;
 	
-	while (pIndex)
+	while (pSQLIndex)
 	{
 		
 		// Should only be one key on each index at this point.
 		
-		flmAssert( pIndex->pFirstKey && pIndex->pFirstKey == pIndex->pLastKey);
+		flmAssert( pSQLIndex->pFirstKey && pSQLIndex->pFirstKey == pSQLIndex->pLastKey);
 		
-		pIndex = pIndex->pNext;
+		pSQLIndex = pSQLIndex->pNext;
 	}
 
-	visit
-Exit:
+//	VISIT - need to finish up this routine
+
+//Exit: - VISIT: WILL USE THIS LABEL PROBABLY WHEN THIS ROUTINE IS FINISHED
 
 	return( rc);
 }
@@ -2340,27 +2157,27 @@ Exit:
 // Desc:	Calculate the cost of doing a table scan for a table.
 //-------------------------------------------------------------------------
 RCODE SQLQuery::calcTableScanCost(
-	SQL_TABLE *			pTable,
+	SQL_TABLE *			pSQLTable,
 	FLMUINT64 *			pui64Cost,
-	SQLTableCursor **	ppSQLTableCursor)
+	FSTableCursor **	ppFSTableCursor)
 {
 	RCODE			rc = NE_SFLM_OK;
 	FLMUINT64	ui64LeafBlocksBetween;
-	FLMUINT64	ui64TotalRefs;
-	FLMUINT		bTotalsEstimated;
+	FLMUINT64	ui64TotalRows;
+	FLMBOOL		bTotalsEstimated;
 	
-	if ((*ppSQLTableCursor = f_new SQLTableCursor) == NULL)
+	if ((*ppFSTableCursor = f_new FSTableCursor) == NULL)
 	{
 		rc = RC_SET( NE_SFLM_MEM);
 		goto Exit;
 	}
-	if (RC_BAD( rc = (*ppSQLTableCursor)->setupRange( m_pDb,
-								pTable->uiTableNum, TRUE, 1, FLM_MAX_UINT64,
-								&ui64LeafBlocksBetween, &ui64TotalRefs,
+	if (RC_BAD( rc = (*ppFSTableCursor)->setupRange( m_pDb,
+								pSQLTable->uiTableNum, 1, FLM_MAX_UINT64,
+								&ui64LeafBlocksBetween, &ui64TotalRows,
 								&bTotalsEstimated)))
 	{
-		(*ppSQLTableCursor)->Release();
-		*ppSQLTableCursor = NULL;
+		(*ppFSTableCursor)->Release();
+		*ppFSTableCursor = NULL;
 		goto Exit;
 	}
 	if (!ui64LeafBlocksBetween)
@@ -2381,10 +2198,13 @@ Exit:
 // Desc:	Merge keys from pSrcTable into pDestTable.
 //-------------------------------------------------------------------------
 RCODE SQLQuery::mergeKeys(
-	SQL_TABLE *	pDestTable,
-	SQL_TABLE *	pSrcTable)
+	SQL_TABLE *	pDestSQLTable,
+	SQL_TABLE *	pSrcSQLTable)
 {
-	visit
+// VISIT: NEED TO FINISH THIS ROUTINE
+	(void)pDestSQLTable;
+	(void)pSrcSQLTable;
+	return( NE_SFLM_OK);
 }
 
 //-------------------------------------------------------------------------
@@ -2392,26 +2212,24 @@ RCODE SQLQuery::mergeKeys(
 //-------------------------------------------------------------------------
 RCODE SQLQuery::optimizeTable(
 	SQL_SUBQUERY *	pSubQuery,
-	SQL_TABLE *		pTable)
+	SQL_TABLE *		pSQLTable)
 {
 	RCODE						rc = NE_SFLM_OK;
-	SQL_TABLE				tmpTable;
+	SQL_TABLE				tmpSQLTable;
 	FLMUINT					uiLoop;
 	SQL_NODE *				pOperand;
-	SQL_PRED *				pPred;
 	void *					pvMark = m_pool.poolMark();
-	SQLTableCursor *		pSQLTableCursor = NULL;
+	FSTableCursor *		pFSTableCursor = NULL;
 	
 	// This routine should not be called if the table has already been
 	// marked to do a table scan.
-visit - the caller should handle this case
 	
-	flmAssert( !pTable->bScan);
+	flmAssert( !pSQLTable->bScan);
 	
-	f_memset( &tmpTable, 0, sizeof( SQL_TABLE));
-	tmpTable.uiTableNum = pTable->uiTableNum;
-	tmpTable.uiIndex = pTable->uiIndex;
-	tmpTable.bIndexSet = pTable->bIndexSet;
+	f_memset( &tmpSQLTable, 0, sizeof( SQL_TABLE));
+	tmpSQLTable.uiTableNum = pSQLTable->uiTableNum;
+	tmpSQLTable.uiIndexNum = pSQLTable->uiIndexNum;
+	tmpSQLTable.bIndexSet = pSQLTable->bIndexSet;
 	
 	// Traverse the predicates of the sub-query.  If any are found
 	// that are not predicates, the table must be scanned.
@@ -2429,47 +2247,39 @@ visit - the caller should handle this case
 			
 			// See if the current table is involved in this predicate.  If so,
 			// and it is the only table involved, the table should be scanned.
-			// Setting pFirstIndex and pLastIndex to NULL will cause this to
+			// Setting pFirstSQLIndex and pLastSQLIndex to NULL will cause this to
 			// happen below.
 			
-			if (predIsForTable( pOperand, pTable))
+			if (predIsForOnlyThisTable( pOperand, pSQLTable))
 			{
 				m_pool.poolReset( pvMark);
-				tmpTable.pFirstIndex = NULL;
-				tmpTable.pLastIndex = NULL;
+				tmpSQLTable.pFirstSQLIndex = NULL;
+				tmpSQLTable.pLastSQLIndex = NULL;
 				break;
 			}
 		}
-		else if (pOperand->nd.pred.pTable == pTable)
+		else if (pOperand->nd.pred.pSQLTable == pSQLTable)
 		{
 			SQL_PRED *	pPred = &pOperand->nd.pred;
 			
 			// We cannot use from and until keys for not/negative operators.
-			// We set pFirstIndex and pLastIndex to NULL to indicate that a
+			// We set pFirstSQLIndex and pLastSQLIndex to NULL to indicate that a
 			// table scan must occur.
 			
 			if ((pPred->bNotted && pPred->eOperator == SQL_MATCH_OP) ||
 				  pPred->eOperator == SQL_NE_OP)
 			{
 				m_pool.poolReset( pvMark);
-				tmpTable.pFirstIndex = NULL;
-				tmpTable.pLastIndex = NULL;
+				tmpSQLTable.pFirstSQLIndex = NULL;
+				tmpSQLTable.pLastSQLIndex = NULL;
 				break;
 			}
-			
-visit - before we collect keys for this predicate, we should check to see
-if the predicate is a subset of any other predicate in previous sub-queries that
-we have already optimized where the predicate in the previous sub-query was used
-to optimize that previous sub-query.  If so, we should simply merge this sub-query with
-that one - it will be a waste of time to get another set of keys for this
-sub-query.  This, of course, implies that we need to keep track of the
-predicates that were selected to optimize a particular sub-query.
 			
 			// See if there are any indexes for this predicate's column.
 			// For now we are just collecting them.  We will calculate
 			// the best one later.
 			
-			if (RC_BAD( rc = getPredKeys( pPred, &tmpTable)))
+			if (RC_BAD( rc = getPredKeys( pPred, &tmpSQLTable)))
 			{
 				goto Exit;
 			}
@@ -2478,11 +2288,11 @@ predicates that were selected to optimize a particular sub-query.
 	
 	// If we didn't find indexes for this table, set the bScan flag.
 
-	if (!tmpTable.pFirstIndex)
+	if (!tmpSQLTable.pFirstSQLIndex)
 	{
-		tmpTable.bScan = TRUE;
-		if (RC_BAD( rc = calcTableScanCost( &tmpTable, &tmpTable.uiCost,
-									&pSQLTableCursor)))
+		tmpSQLTable.bScan = TRUE;
+		if (RC_BAD( rc = calcTableScanCost( &tmpSQLTable, &tmpSQLTable.ui64Cost,
+									&pFSTableCursor)))
 		{
 			goto Exit;
 		}
@@ -2493,13 +2303,13 @@ predicates that were selected to optimize a particular sub-query.
 		// Rank the indexes to determine which ones to estimate cost for
 		// first.
 		
-		rankIndexes( &tmpTable);
+		rankIndexes( &tmpSQLTable);
 		
 		// Find the index with the lowest cost, if any.
 		// If the lowest cost index is still high, estimate the cost of doing
 		// a table scan.
 		
-		if (RC_BAD( rc = chooseBestIndex( &tmpTable, &tmpTable.uiCost)))
+		if (RC_BAD( rc = chooseBestIndex( &tmpSQLTable, &tmpSQLTable.ui64Cost)))
 		{
 			goto Exit;
 		}
@@ -2507,27 +2317,27 @@ predicates that were selected to optimize a particular sub-query.
 		// Should be one index left after this.  If the cost is high, see if
 		// a table scan would be cheaper.
 	
-		if (tmpTable.uiCost > 8)
+		if (tmpSQLTable.ui64Cost > 8)
 		{
-			FLMUINT		uiScanCost;
+			FLMUINT64		ui64ScanCost;
 			
-			if (RC_BAD( rc = calcTableScanCost( &tmpTable, &uiScanCost,
-									&pSQLTableCursor)))
+			if (RC_BAD( rc = calcTableScanCost( &tmpSQLTable, &ui64ScanCost,
+									&pFSTableCursor)))
 			{
 				goto Exit;
 			}
-			if (uiScanCost < tmpTable.uiCost)
+			if (ui64ScanCost < tmpSQLTable.ui64Cost)
 			{
 				m_pool.poolReset( pvMark);
-				tmpTable.uiCost = uiScanCost;
-				tmpTable.bScan = TRUE;
-				tmpTable.pFirstIndex = NULL;
-				tmpTable.pLastIndex = NULL;
+				tmpSQLTable.ui64Cost = ui64ScanCost;
+				tmpSQLTable.bScan = TRUE;
+				tmpSQLTable.pFirstSQLIndex = NULL;
+				tmpSQLTable.pLastSQLIndex = NULL;
 			}
 			else
 			{
-				pSQLTableCursor->Release();
-				pSQLTableCursor = NULL;
+				pFSTableCursor->Release();
+				pFSTableCursor = NULL;
 			}
 		}
 	}
@@ -2535,34 +2345,34 @@ predicates that were selected to optimize a particular sub-query.
 	// If we determined that we must do a table scan, set the bScan flag
 	// for the master table.  Otherwise, merge these keys
 	
-	if (tmpTable.bScan)
+	if (tmpSQLTable.bScan)
 	{
-		pTable->bScan = TRUE;
-		pTable->uiCost = tmpTable.uiCost;
+		pSQLTable->bScan = TRUE;
+		pSQLTable->ui64Cost = tmpSQLTable.ui64Cost;
 		
 		// Better have calculated a cost and have a collection
 		// cursor at this point.
 		
-		flmAssert( pSQLTableCursor);
-		pTable->pSQLTableCursor = pSQLTableCursor;
-		pSQLTableCursor = NULL;
-		pTable->pFirstIndex = NULL;
-		pTable->pLastIndex = NULL;
+		flmAssert( pFSTableCursor);
+		pSQLTable->pFSTableCursor = pFSTableCursor;
+		pFSTableCursor = NULL;
+		pSQLTable->pFirstSQLIndex = NULL;
+		pSQLTable->pLastSQLIndex = NULL;
 	}
 	else
 	{
-		if (RC_BAD( rc = mergeKeys( pTable, &tmpTable)))
+		if (RC_BAD( rc = mergeKeys( pSQLTable, &tmpSQLTable)))
 		{
 			goto Exit;
 		}
-		pTable->uiCost += tmpTable.uiCost;
+		pSQLTable->ui64Cost += tmpSQLTable.ui64Cost;
 	}
 	
 Exit:
 
-	if (pSQLTableCursor)
+	if (pFSTableCursor)
 	{
-		pSQLTableCursor->Release();
+		pFSTableCursor->Release();
 	}
 
 	return( rc);
@@ -2575,17 +2385,17 @@ RCODE SQLQuery::optimizeSubQueries( void)
 {
 	RCODE				rc = NE_SFLM_OK;
 	SQL_SUBQUERY *	pSubQuery;
-	SQL_TABLE *		pTable;
+	SQL_TABLE *		pSQLTable;
 	
 	// For each table in our expression, attempt to pick an index for each
 	// subquery.
 	
-	for (pTable = m_pFirstTable; pTable; pTable = pTable->pNext)
+	for (pSQLTable = m_pFirstSQLTable; pSQLTable; pSQLTable = pSQLTable->pNext)
 	{
 		pSubQuery = m_pFirstSubQuery;
 		while (pSubQuery)
 		{
-			if (RC_BAD( rc = optimizeTable( pSubQuery, pTable)))
+			if (RC_BAD( rc = optimizeTable( pSubQuery, pSQLTable)))
 			{
 				goto Exit;
 			}
@@ -2593,7 +2403,7 @@ RCODE SQLQuery::optimizeSubQueries( void)
 			// If the optimization decided we should scan the table, there
 			// is no need to look at any more sub-queries for this table.
 			
-			if (pTable->bScan)
+			if (pSQLTable->bScan)
 			{
 				break;
 			}
@@ -2602,32 +2412,89 @@ RCODE SQLQuery::optimizeSubQueries( void)
 		
 		// See if a table scan is going to be cheaper.
 		
-		if (!pTable->bScan && pTable->uiCost > 8)
+		if (!pSQLTable->bScan && pSQLTable->ui64Cost > 8)
 		{
-			SQLTableCursor *	pSQLTableCursor = NULL;
-			FLMUINT					uiScanCost;
+			FSTableCursor *	pFSTableCursor = NULL;
+			FLMUINT64			ui64ScanCost;
 			
-			if (RC_BAD( rc = calcTableScanCost( pTable, &uiScanCost,
-										&pSQLTableCursor)))
+			if (RC_BAD( rc = calcTableScanCost( pSQLTable, &ui64ScanCost,
+										&pFSTableCursor)))
 			{
 				goto Exit;
 			}
-			if (uiScanCost < pTable->uiCost)
+			if (ui64ScanCost < pSQLTable->ui64Cost)
 			{
-				pTable->uiCost = uiScanCost;
-				pTable->bScan = TRUE;
-				pTable->pSQLTableCursor = pSQLTableCursor;
-				pTable->pFirstIndex = NULL;
-				pTable->pLastIndex = NULL;
+				pSQLTable->ui64Cost = ui64ScanCost;
+				pSQLTable->bScan = TRUE;
+				pSQLTable->pFSTableCursor = pFSTableCursor;
+				pSQLTable->pFirstSQLIndex = NULL;
+				pSQLTable->pLastSQLIndex = NULL;
 			}
 			else
 			{
-				pSQLTableCursor->Release();
+				pFSTableCursor->Release();
 			}
 		}
 	}
 	
 Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Setup to scan an index - the index was specified by the user.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::setupIndexScan( void)
+{
+	RCODE					rc = NE_SFLM_OK;
+	F_INDEX *			pIndex;
+	F_TABLE *			pTable;
+	FLMBOOL				bDoRowMatch;
+	FLMBOOL				bCanCompareOnKey;
+	FSIndexCursor *	pFSIndexCursor = NULL;
+
+	flmAssert( m_uiIndexNum);
+
+	pIndex = m_pDb->m_pDict->getIndex( m_uiIndexNum);
+	
+//VISIT: Make sure the index is on-line
+
+	pTable = m_pDb->m_pDict->getTable( pIndex->uiTableNum);
+	
+//VISIT: Should only be one table in the table array, and it better match
+//the table this index is associated with.
+//	if (pIndex->uiTableNum != m_uiTableNum)
+//	{
+//		rc = RC_SET( NE_SFLM_BAD_IX);
+//		goto Exit;
+//	}
+
+	if ((pFSIndexCursor = f_new FSIndexCursor) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+	}
+
+	// Setup to scan from beginning of key to end of key.
+
+	if (RC_BAD( rc = pFSIndexCursor->setupKeys( m_pDb, pIndex, pTable,
+								NULL, 0, &bDoRowMatch, &bCanCompareOnKey,
+								NULL, NULL, NULL)))
+	{
+		goto Exit;
+	}
+	m_bScanIndex = TRUE;
+	m_bScan = FALSE;
+	
+//VISIT: Need to put the FSIndexCursor into the table structure - or wherever
+// it belongs.
+
+Exit:
+
+	if (pFSIndexCursor)
+	{
+		pFSIndexCursor->Release();
+	}
 
 	return( rc);
 }
@@ -2678,7 +2545,7 @@ RCODE SQLQuery::optimize( void)
 
 	if (!m_pQuery)
 	{
-		if (m_bIndexSet && m_uiIndex)
+		if (m_bIndexSet && m_uiIndexNum)
 		{
 			rc = setupIndexScan();
 		}
@@ -2705,7 +2572,7 @@ RCODE SQLQuery::optimize( void)
 		}
 	}
 	else if (m_pQuery->eNodeType == SQL_OPERATOR_NODE &&
-		  		isSQLArithOp( pQNode->nd.op.eOperator))
+		  		isSQLArithOp( m_pQuery->nd.op.eOperator))
 	{
 		m_bEmpty = TRUE;
 		goto Exit;
@@ -2713,7 +2580,7 @@ RCODE SQLQuery::optimize( void)
 
 	// If the user explicitly said to NOT use an index, we will not
 
-	if (m_bIndexSet && !m_uiIndex)
+	if (m_bIndexSet && !m_uiIndexNum)
 	{
 		m_bScan = TRUE;
 		goto Exit;
@@ -2756,4 +2623,4 @@ Exit:
 
 	return( rc);
 }
-#endif
+
