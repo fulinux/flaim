@@ -504,7 +504,7 @@ RCODE SQLQuery::addTable(
 		pSQLTable->uiTableNum = uiTableNum;
 		if ((pSQLTable->pPrev = m_pLastSQLTable) != NULL)
 		{
-			m_pLastTSQLable->pNext = pSQLTable;
+			m_pLastSQLTable->pNext = pSQLTable;
 		}
 		else
 		{
