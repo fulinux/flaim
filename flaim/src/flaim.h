@@ -4888,7 +4888,7 @@
 		FLMUINT *		puiDrn );
 
 	/// Positions to and retrieves the first record in the query result set.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorFirst(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord **		ppRecord			///< Pointer to found record, if any, is returned here.\  NULL is returned if no record was found.
@@ -4899,7 +4899,7 @@
 	}
 
 	/// Positions to and retrieves the last record in the query result set.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorLast(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord **		ppRecord			///< Pointer to found record, if any, is returned here.\  NULL is returned if no record was found.
@@ -4910,7 +4910,7 @@
 	}
 
 	/// Positions to and retrieves the next record in the query result set.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorNext(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord **		ppRecord			///< Pointer to found record, if any, is returned here.\  NULL is returned if no record was found.
@@ -4921,7 +4921,7 @@
 	}
 
 	/// Positions to and retrieves the previous record in the query result set.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorPrev(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord **		ppRecord			///< Pointer to found record, if any, is returned here.\  NULL is returned if no record was found.
@@ -4932,7 +4932,7 @@
 	}
 
 	/// Positions to the first record in the query result set and retrieves the record's DRN.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorFirstDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiDrn			///< DRN is returned here.
@@ -4943,7 +4943,7 @@
 	}
 
 	/// Positions to the last record in the query result set and retrieves the record's DRN.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorLastDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiDrn			///< DRN is returned here.
@@ -4954,7 +4954,7 @@
 	}
 
 	/// Positions to the next record in the query result set and retrieves the record's DRN.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorNextDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiDrn			///< DRN is returned here.
@@ -4965,7 +4965,7 @@
 	}
 
 	/// Positions to the previous record in the query result set and retrieves the record's DRN.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FINLINE RCODE FlmCursorPrevDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiDrn			///< DRN is returned here.
@@ -4976,14 +4976,14 @@
 	}
 
 	/// Retrieve current record from query result set.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FLMEXP RCODE FLMAPI FlmCursorCurrent(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord **		ppRecord			///< Pointer to found record, if any, is returned here.\  NULL is returned if no record was found.
 		);
 
 	/// Retrieve the DRN of the current recrord in query result set.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FLMEXP RCODE FLMAPI FlmCursorCurrentDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiDrn			///< DRN is returned here.
@@ -4991,7 +4991,7 @@
 
 	/// Position relative to the current record (forward or backward) in the query result set
 	/// and retrieve the record positioned to.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FLMEXP RCODE FLMAPI FlmCursorMoveRelative(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMINT *				piPosition,		///< On input *piPosition indicates the relative position to move within the
@@ -5006,7 +5006,7 @@
 	/// Get record count for a query result set.  NOTE: This function generates the query result set, counting the
 	/// records as it goes.  Therefore, it may take a long time to compute, depending on the size of the result
 	/// set and whether or not indexes can be used to optimize the query.
-	/// \ingroup queryset
+	/// \ingroup queryret
 	FLMEXP RCODE FLMAPI FlmCursorRecCount(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiCount			///< Count of records in the query result set is returned here.
