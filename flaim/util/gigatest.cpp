@@ -124,7 +124,7 @@ void gigaOutputRcErr(
 
 void gigaOutputLabel(
 	FLMUINT				uiRow,
-	char *				pszLabel,
+	const char *		pszLabel,
 	FLMBOOL				bMutexLocked = FALSE);
 
 void gigaOutputStr(
@@ -301,7 +301,7 @@ void gigaInitGlobalVars( void)
 	gv_pScreen = NULL;
 	gv_pWindow = NULL;
 	gv_hWindowMutex = F_MUTEX_NULL;
-	gv_pszTitle = "GigaTest 1.0 for FLAIM";
+	gv_pszTitle = (char *)"GigaTest 1.0 for FLAIM";
 	gv_uiNumCols = 0;
 	gv_uiNumRows = 0;
 	gv_uiMaxMemory = 0;
@@ -1381,9 +1381,9 @@ void gigaOutputRcErr(
 Desc: Output a label in the LABEL_COLUMN
 *********************************************************************/
 void gigaOutputLabel(
-	FLMUINT	uiRow,
-	char *	pszLabel,
-	FLMBOOL	bMutexLocked)
+	FLMUINT			uiRow,
+	const char *	pszLabel,
+	FLMBOOL			bMutexLocked)
 {
 	char			szLabel [DATA_COLUMN - LABEL_COLUMN];
 	char *		pszTmp;
