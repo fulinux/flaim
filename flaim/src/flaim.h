@@ -2064,7 +2064,7 @@
 		);
 
 	/// Register to catch events from the database system.
-	/// \ingroup Event
+	/// \ingroup event
 	FLMEXP RCODE FLMAPI FlmRegisterForEvent(
 		FEventCategory	eCategory,		///< Category of events to be caught.
 		FEVENT_CB		fnEventCB,		///< Function to be called when events of the specified category happen.
@@ -2073,7 +2073,7 @@
 		);
 
 	/// Deregister event handling function.
-	/// \ingroup Event
+	/// \ingroup event
 	FLMEXP void FLMAPI FlmDeregisterForEvent(
 		HFEVENT *	phEventRV			///< Event handle that was returned by FlmRegisterForEvent().
 		);
