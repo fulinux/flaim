@@ -199,36 +199,6 @@ int __cdecl main(
 {
 	int			iRetCode = 0;
 
-#if defined( FLM_UNIX)
-	struct rlimit l;
-
-	if( getrlimit(RLIMIT_NOFILE, &l) < 0)
-	{
-		fprintf(stderr, "Could not get the maximum number of open files: %s",
-				  strerror(errno)); 
-		exit(1);
-	}
-
-	if( geteuid() == 0)
-	{
-		l.rlim_max = 65536;             // big enough for our needs
-	}
-
-	l.rlim_cur = l.rlim_max;
-
-	// Increase the fd table
-	
-	if( setrlimit(RLIMIT_NOFILE, &l) < 0)
-	{
-		 fprintf(stderr, "Could not increase the number of open files to %ld", 
-					(long)l.rlim_max);
-	}
-	
-#ifdef HAVE_THREAD_H
-	thr_setconcurrency(6);
-#endif
-#endif
-
 	gigaInitGlobalVars();
 
 #ifdef FLM_NLM
@@ -499,20 +469,27 @@ FLMBOOL gigaGetParams(
 			}
 			else if (*pszPtr == 'd' || *pszPtr == 'D')
 			{
-				pszPtr++;
-				if (*pszPtr == 'r' || *pszPtr == 'R')
+				if( f_stricmp( pszPtr, "dio") == 0)
 				{
-					f_strcpy( gv_szRflDir, pszPtr + 1);
-				}
-				else if (*pszPtr == 'd' || *pszPtr == 'D')
-				{
-					f_strcpy( gv_szDataDir, pszPtr + 1);
+					gv_bDisableDirectIO = TRUE;
 				}
 				else
 				{
-					f_sprintf( szMsg, "Invalid option %s", (pszPtr - 1));
-					gigaOutputErrMsg( szMsg);
-					goto Exit;
+					pszPtr++;
+					if (*pszPtr == 'r' || *pszPtr == 'R')
+					{
+						f_strcpy( gv_szRflDir, pszPtr + 1);
+					}
+					else if (*pszPtr == 'd' || *pszPtr == 'D')
+					{
+						f_strcpy( gv_szDataDir, pszPtr + 1);
+					}
+					else
+					{
+						f_sprintf( szMsg, "Invalid option %s", (pszPtr - 1));
+						gigaOutputErrMsg( szMsg);
+						goto Exit;
+					}
 				}
 			}
 			else if (f_stricmp( pszPtr, "B") == 0)
@@ -1041,6 +1018,14 @@ RCODE gigaLoadDatabase( void)
 			gigaOutputRcErr( "setting checkpoint interval", rc);
 			goto Exit;
 		}
+	}
+	
+	// Enable/Disable direct I/O
+	
+	if( RC_BAD( rc = FlmConfig( FLM_DIRECT_IO_STATE, 
+		(void *)!gv_bDisableDirectIO, NULL)))
+	{
+		goto Exit;
 	}
 
 	// Create the database.
