@@ -74,7 +74,7 @@ package_proj_name_and_ver = $(package_proj_name)-$(version)
 
 # -- Determine if we are only cleaning --
 
-util_targets = checkdb rebuild view sample dbshell
+util_targets = checkdb rebuild view sample dbshell gigatest
 test_targets = basictest
 all_targets = java rpms install libs all allutils test $(util_targets) $(test_targets)
 found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
@@ -1385,6 +1385,10 @@ checkdb_src = \
 	checkdb.cpp \
 	$(utilsup_src)
 
+gigatest_src = \
+	gigatest.cpp \
+	$(utilsup_src)
+	
 rebuild_src = \
 	rebuild.cpp \
 	$(utilsup_src)
@@ -1433,6 +1437,9 @@ ut_basictest_obj = $(patsubst %.cpp,$(test_obj_dir)/%$(obj_suffix),$(ut_basictes
 
 checkdb_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(checkdb_src))
 checkdb_exe = $(util_dir)/checkdb$(exe_suffix)
+
+gigatest_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(gigatest_src))
+gigatest_exe = $(util_dir)/gigatest$(exe_suffix)
 
 rebuild_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(rebuild_src))
 rebuild_exe = $(util_dir)/rebuild$(exe_suffix)
@@ -1580,6 +1587,14 @@ $(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
 
+# -- gigatest --
+
+.PHONY : gigatest
+gigatest: status clean dircheck libs $(gigatest_exe)
+$(gigatest_exe): $(gigatest_obj) $(flaim_static_lib)
+	$(ec)$(gprintf) "Linking $@ ...\n"
+	$(call flm_exe_link_cmd,$(util_dir),gigatest,$(gigatest_obj))
+	
 # -- rebuild --
 
 .PHONY : rebuild
@@ -1698,6 +1713,7 @@ ifdef win_target
 	$(ec)$(call copycmd,$(flaim_shared_imp_lib),$(package_shared_lib_stage_dir))
 endif
 	$(ec)$(call copycmd,$(checkdb_exe),$(package_util_stage_dir))
+	$(ec)$(call copycmd,$(gigatest_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(rebuild_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(view_exe),$(package_util_stage_dir))
 	$(ec)$(call copycmd,$(dbshell_exe),$(package_util_stage_dir))
