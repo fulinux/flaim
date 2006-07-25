@@ -656,14 +656,15 @@ Transmission_Error:
 
 		case FDB_RFL_FOOTPRINT_SIZE:
 		{
-			pFile->uiRflFootprintSize = f_roundUp( (FLMUINT)pvValue1, 512);
+			pFile->uiRflFootprintSize = 
+				(FLMUINT)f_roundUp( (FLMUINT)pvValue1, 512);
 			break;
 		}
 		
 		case FDB_RBL_FOOTPRINT_SIZE:
 		{
-			pFile->uiRblFootprintSize = f_roundUp( (FLMUINT)pvValue1, 
-														pFile->FileHdr.uiBlockSize);
+			pFile->uiRblFootprintSize = 
+				(FLMUINT)f_roundUp( (FLMUINT)pvValue1, pFile->FileHdr.uiBlockSize);
 			break;
 		}
 
