@@ -2137,7 +2137,7 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: srcdist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -bs $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet --nodeps -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
 
 # -- RPMS --
