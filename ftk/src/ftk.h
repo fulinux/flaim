@@ -5058,6 +5058,29 @@
 		return( ui64RetVal);
 	}
 	
+	FINLINE void f_setBit(
+		FLMBYTE *		pucBuffer,
+		FLMUINT			uiBit)
+	{
+		pucBuffer[ uiBit >> 3] |= (0x01 << (uiBit & 0x07));
+	}
+			
+	FINLINE void f_clearBit(
+		FLMBYTE *		pucBuffer,
+		FLMUINT			uiBit)
+	{
+		pucBuffer[ uiBit >> 3] &= ~(0x01 << (uiBit & 0x07));
+	}
+	
+	FINLINE FLMBOOL f_isBitSet(
+		FLMBYTE *		pucBuffer,
+		FLMUINT			uiBit)
+	{
+		return( (pucBuffer[ uiBit >> 3] & (0x01 << (uiBit & 0x07))) 
+							? TRUE 
+							: FALSE);
+	}
+	
 	RCODE FLMAPI f_filecpy(
 		const char *				pszSourceFile,
 		const char *				pszData);
@@ -6422,7 +6445,7 @@
 	};
 
 	/***************************************************************************
-	Desc: Dynamic Result Sets
+	Desc: Dynamic result sets
 	***************************************************************************/
 
 	typedef int (* F_DYNSET_COMPARE_FUNC)(
@@ -6739,7 +6762,7 @@
 	};
 
 	/****************************************************************************
-										Process ID Functions
+	Desc: Process ID Functions
 	****************************************************************************/
 
 	FLMUINT f_getpid( void);

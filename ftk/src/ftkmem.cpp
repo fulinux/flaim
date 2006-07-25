@@ -300,25 +300,25 @@ friend class F_FixedAlloc;
 /****************************************************************************
 Desc:
 ****************************************************************************/
-typedef struct SLAB
+typedef struct FIXEDSLAB
 {
 	void *		pvAllocator;
-	SLAB *		pNext;
-	SLAB *		pPrev;
-	SLAB *		pNextSlabWithAvailCells;
-	SLAB *		pPrevSlabWithAvailCells;
+	FIXEDSLAB *	pNext;
+	FIXEDSLAB *	pPrev;
+	FIXEDSLAB *	pNextSlabWithAvailCells;
+	FIXEDSLAB *	pPrevSlabWithAvailCells;
 	FLMBYTE *	pLocalAvailCellListHead;
 	FLMUINT16	ui16NextNeverUsedCell;
 	FLMUINT16	ui16AvailCellCount;
 	FLMUINT16	ui16AllocatedCells;
-} SLAB;
+} FIXEDSLAB;
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 typedef struct CELLHEADER
 {
-	SLAB *			pContainingSlab;
+	FIXEDSLAB *		pContainingSlab;
 #ifdef FLM_DEBUG
 	FLMUINT *		puiStack;
 #endif
@@ -392,7 +392,7 @@ private:
 	void * getCell(
 		IF_Relocator *			pRelocator);
 
-	SLAB * getAnotherSlab( void);
+	FIXEDSLAB * getAnotherSlab( void);
 
 	static FLMUINT getAllocAlignedSize(
 		FLMUINT					uiAskedForSize)
@@ -401,7 +401,7 @@ private:
 	}
 
 	void freeSlab( 
-		SLAB *					pSlab);
+		FIXEDSLAB *				pSlab);
 
 	void freeCell(
 		void *					pCell,
@@ -417,8 +417,8 @@ private:
 		FLMUINT					uiPos1,
 		FLMUINT					uiPos2)
 	{
-		SLAB *		pSlab1 = (((SLAB **)pvBuffer)[ uiPos1]);
-		SLAB *		pSlab2 = (((SLAB **)pvBuffer)[ uiPos2]);
+		FIXEDSLAB *	pSlab1 = (((FIXEDSLAB **)pvBuffer)[ uiPos1]);
+		FIXEDSLAB *	pSlab2 = (((FIXEDSLAB **)pvBuffer)[ uiPos2]);
 
 		f_assert( pSlab1 != pSlab2);
 
@@ -435,9 +435,9 @@ private:
 		FLMUINT					uiPos1,
 		FLMUINT					uiPos2)
 	{
-		SLAB **		ppSlab1 = &(((SLAB **)pvBuffer)[ uiPos1]);
-		SLAB **		ppSlab2 = &(((SLAB **)pvBuffer)[ uiPos2]);
-		SLAB *		pTmp;
+		FIXEDSLAB **			ppSlab1 = &(((FIXEDSLAB **)pvBuffer)[ uiPos1]);
+		FIXEDSLAB **			ppSlab2 = &(((FIXEDSLAB **)pvBuffer)[ uiPos2]);
+		FIXEDSLAB *				pTmp;
 
 		pTmp = *ppSlab1;
 		*ppSlab1 = *ppSlab2;
@@ -445,10 +445,10 @@ private:
 	}
 
 	IF_SlabManager *			m_pSlabManager;
-	SLAB *						m_pFirstSlab;
-	SLAB *						m_pLastSlab;
-	SLAB *						m_pFirstSlabWithAvailCells;
-	SLAB *						m_pLastSlabWithAvailCells;
+	FIXEDSLAB *					m_pFirstSlab;
+	FIXEDSLAB *					m_pLastSlab;
+	FIXEDSLAB *					m_pFirstSlabWithAvailCells;
+	FIXEDSLAB *					m_pLastSlabWithAvailCells;
 	IF_Relocator *				m_pDefaultRelocator;
 	FLMBOOL						m_bAvailListSorted;
 	FLMUINT						m_uiSlabsWithAvailCells;
@@ -1048,7 +1048,7 @@ FSTATIC FLMBOOL initMemTracking( void)
 	// Go into a loop until we see initialized flag set to TRUE
 	// Could be another thread that is doing it.
 
-	while (!gv_bMemTrackingInitialized)
+	while( !gv_bMemTrackingInitialized)
 	{
 		f_sleep( 10);
 	}
@@ -2881,7 +2881,7 @@ RCODE F_FixedAlloc::setup(
 
 	// Get the alloc-aligned versions of all the sizes
 
-	m_uiSlabHeaderSize = getAllocAlignedSize( sizeof( SLAB));
+	m_uiSlabHeaderSize = getAllocAlignedSize( sizeof( FIXEDSLAB));
 	
 	if (pDefaultRelocator)
 	{
@@ -2999,7 +2999,7 @@ Desc:	Private, internal method to fetch a cell
 void * F_FixedAlloc::getCell(
 	IF_Relocator *		pRelocator)
 {
-	SLAB *			pSlab = NULL;
+	FIXEDSLAB *		pSlab = NULL;
 	FLMBYTE *		pCell = NULL;
 	CELLHEADER *	pHeader;
 
@@ -3039,7 +3039,7 @@ void * F_FixedAlloc::getCell(
 		{
 			// Save a copy of the slab we're going to unlink
 
-			SLAB * pSlabToUnlink = pSlab;
+			FIXEDSLAB * pSlabToUnlink = pSlab;
 
 			// Need to keep the NULLNESS of the content of the cell consistent
 			// with the slab's ui16AvailCellCount being equal to 0
@@ -3083,7 +3083,7 @@ void * F_FixedAlloc::getCell(
 		if( !m_pFirstSlab ||
 			(m_pFirstSlab->ui16NextNeverUsedCell == m_uiCellsPerSlab))
 		{
-			SLAB *			pNewSlab;
+			FIXEDSLAB *		pNewSlab;
 
 			if( (pNewSlab = getAnotherSlab()) == NULL)
 			{
@@ -3171,7 +3171,7 @@ void F_FixedAlloc::freeCell(
 {
 	CELLAVAILNEXT *	pCellContents;
 	CELLHEADER *		pHeader;
-	SLAB *				pSlab;
+	FIXEDSLAB *			pSlab;
 
 #ifdef FLM_DEBUG
 	if( m_hMutex != F_MUTEX_NULL)
@@ -3327,9 +3327,9 @@ Exit:
 /****************************************************************************
 Desc:	Grabs another slab of memory from the operating system
 ****************************************************************************/
-SLAB * F_FixedAlloc::getAnotherSlab( void)
+FIXEDSLAB * F_FixedAlloc::getAnotherSlab( void)
 {
-	SLAB *	pSlab = NULL;
+	FIXEDSLAB *	pSlab = NULL;
 	
 #ifdef FLM_DEBUG
 	if( m_hMutex != F_MUTEX_NULL)
@@ -3345,7 +3345,7 @@ SLAB * F_FixedAlloc::getAnotherSlab( void)
 
 	// Initialize the slab header fields
 
-	f_memset( pSlab, 0, sizeof( SLAB));
+	f_memset( pSlab, 0, sizeof( FIXEDSLAB));
 	pSlab->pvAllocator = (void *)this;
 	
 	if( m_pUsageStats)
@@ -3355,7 +3355,7 @@ SLAB * F_FixedAlloc::getAnotherSlab( void)
 	
 	if( m_puiTotalBytesAllocated)
 	{
-		(*m_puiTotalBytesAllocated) += m_pSlabManager->getSlabSize();
+		(*m_puiTotalBytesAllocated) += m_uiSlabSize;
 	}
 
 Exit:
@@ -3367,7 +3367,7 @@ Exit:
 Desc:	Private internal method to free an unused empty slab back to the OS.
 ****************************************************************************/
 void F_FixedAlloc::freeSlab(
-	SLAB *			pSlab)
+	FIXEDSLAB *		pSlab)
 {
 #ifdef FLM_DEBUG
 	CELLAVAILNEXT *		pAvailNext = NULL;
@@ -3459,8 +3459,8 @@ void F_FixedAlloc::freeSlab(
 	
 	if( m_puiTotalBytesAllocated)
 	{
-		f_assert( (*m_puiTotalBytesAllocated) >= m_pSlabManager->getSlabSize());
-		(*m_puiTotalBytesAllocated) -= m_pSlabManager->getSlabSize();
+		f_assert( (*m_puiTotalBytesAllocated) >= m_uiSlabSize);
+		(*m_puiTotalBytesAllocated) -= m_uiSlabSize;
 	}
 }
 
@@ -3469,7 +3469,7 @@ Desc:	Public method to free all the memory in the system.
 ****************************************************************************/
 void FLMAPI F_FixedAlloc::freeAll( void)
 {
-	SLAB *		pFreeMe;
+	FIXEDSLAB *		pFreeMe;
 
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -3506,18 +3506,18 @@ Desc:		If a relocation callback function has been registered, and memory
 ****************************************************************************/ 
 void F_FixedAlloc::defragmentMemory( void)
 {
-	SLAB *			pCurSlab;
-	SLAB *			pPrevSib;
+	FIXEDSLAB *		pCurSlab;
+	FIXEDSLAB *		pPrevSib;
 	CELLHEADER *	pCellHeader;
 	FLMBOOL			bSlabFreed;
 	FLMBYTE *		pucOriginal;
 	FLMBYTE *		pucReloc = NULL;
 	FLMUINT			uiLoop;
-	SLAB **			pSortBuf = NULL;
+	FIXEDSLAB **	pSortBuf = NULL;
 	FLMUINT			uiMaxSortEntries;
 	FLMUINT			uiSortEntries = 0;
 #define SMALL_SORT_BUF_SIZE 256
-	SLAB *			smallSortBuf[ SMALL_SORT_BUF_SIZE];
+	FIXEDSLAB *		smallSortBuf[ SMALL_SORT_BUF_SIZE];
 	FLMBOOL			bMutexLocked = FALSE;
 
 	if( m_hMutex != F_MUTEX_NULL)
@@ -3545,7 +3545,8 @@ void F_FixedAlloc::defragmentMemory( void)
 		}
 		else
 		{
-			if( RC_BAD( f_alloc( uiMaxSortEntries * sizeof( SLAB *), &pSortBuf)))
+			if( RC_BAD( f_alloc( uiMaxSortEntries * sizeof( FIXEDSLAB *),
+				&pSortBuf)))
 			{
 				goto Exit;
 			}
@@ -3700,7 +3701,7 @@ Desc:
 ****************************************************************************/ 
 void FLMAPI F_FixedAlloc::freeUnused( void)
 {
-	SLAB *			pSlab;
+	FIXEDSLAB *		pSlab;
 
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -3733,7 +3734,7 @@ Desc:	Debug method to do mem leak testing.  Any cells allocated via
 #ifdef FLM_DEBUG
 void F_FixedAlloc::testForLeaks( void)
 {
-	SLAB *			pSlabRover = m_pFirstSlab;
+	FIXEDSLAB *		pSlabRover = m_pFirstSlab;
 	CELLHEADER *	pHeader;
 	FLMUINT			uiLoop;
 	F_MEM_HDR		memHeader;
@@ -4780,7 +4781,7 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 	FLMBYTE *			pucBuffer)
 {
 	CELLHEADER *		pHeader;
-	SLAB *				pSlab;
+	FIXEDSLAB *			pSlab;
 	IF_FixedAlloc *	pAllocator = NULL;
 
 #ifdef FLM_DEBUG
