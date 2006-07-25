@@ -2141,7 +2141,7 @@ RCODE F_Db::dictReadEncDefs( void)
 	}
 
 	if (RC_BAD( rc = pTableCursor->setupRange( this, SFLM_TBLNUM_ENCDEFS,
-											1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+											1, FLM_MAX_UINT64, FALSE)))
 	{
 		goto Exit;
 	}
@@ -2298,7 +2298,7 @@ RCODE F_Db::dictReadTables( void)
 	}
 
 	if (RC_BAD( rc = pTableCursor->setupRange( this, SFLM_TBLNUM_TABLES,
-											1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+											1, FLM_MAX_UINT64, FALSE)))
 	{
 		goto Exit;
 	}
@@ -2430,7 +2430,7 @@ RCODE F_Db::dictReadColumns( void)
 	}
 
 	if (RC_BAD( rc = pTableCursor->setupRange( this, SFLM_TBLNUM_COLUMNS,
-											1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+											1, FLM_MAX_UINT64, FALSE)))
 	{
 		goto Exit;
 	}
@@ -2662,7 +2662,7 @@ RCODE F_Db::dictReadIndexes( void)
 	}
 
 	if (RC_BAD( rc = pTableCursor->setupRange( this, SFLM_TBLNUM_INDEXES,
-											1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+											1, FLM_MAX_UINT64, FALSE)))
 	{
 		goto Exit;
 	}
@@ -3033,7 +3033,7 @@ RCODE F_Db::dictReadIndexComponents( void)
 	}
 
 	if (RC_BAD( rc = pTableCursor->setupRange( this, SFLM_TBLNUM_INDEX_COMPONENTS,
-											1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+											1, FLM_MAX_UINT64, FALSE)))
 	{
 		goto Exit;
 	}

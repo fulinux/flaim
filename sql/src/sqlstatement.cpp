@@ -1536,6 +1536,7 @@ Exit:
 //------------------------------------------------------------------------------
 RCODE SQLStatement::getIndexName(
 	FLMBOOL		bMustExist,
+	F_TABLE *	pTable,
 	char *		pszIndexName,
 	FLMUINT		uiIndexNameBufSize,
 	FLMUINT *	puiIndexNameLen,
@@ -1584,6 +1585,19 @@ RCODE SQLStatement::getIndexName(
 					m_uiCurrLineBytes);
 			rc = RC_SET( NE_SFLM_INVALID_SQL);
 			goto Exit;
+		}
+		else if (pTable)
+		{
+			if (pTable->uiTableNum != (*ppIndex)->uiTableNum)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_INDEX_NOT_DEFINED_FOR_TABLE,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
 		}
 	}
 

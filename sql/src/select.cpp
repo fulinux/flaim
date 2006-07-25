@@ -154,6 +154,7 @@ RCODE SQLStatement::processSelect( void)
 	FLMUINT				uiTokenLen;
 	FLMBOOL				bDistinct;
 	F_TABLE *			pTable;
+	F_INDEX *			pIndex;
 	SELECT_EXPR *		pFirstSelectExpr = NULL;
 	SELECT_EXPR *		pLastSelectExpr = NULL;
 	SELECT_EXPR *		pSelectExpr;
@@ -258,6 +259,8 @@ RCODE SQLStatement::processSelect( void)
 		
 		// Add the table name to the list
 		
+		tableList [uiNumTables].bScan = FALSE;
+		tableList [uiNumTables].uiIndexNum = 0;
 		tableList [uiNumTables].uiTableNum = pTable->uiTableNum;
 		tableList [uiNumTables].pszTableAlias = NULL;
 		uiNumTables++;
@@ -285,9 +288,59 @@ RCODE SQLStatement::processSelect( void)
 			bHaveOrderBy = TRUE;
 			break;
 		}
+		else if (f_stricmp( szToken, "using") == 0)
+		{
+Get_Index:
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+											&uiTokenLineOffset, &uiTokenLen)))
+			{
+				goto Exit;
+			}
+			if (f_stricmp( szToken, "noindex") == 0)
+			{
+				tableList [uiNumTables - 1].bScan = TRUE;
+				tableList [uiNumTables - 1].uiIndexNum = 0;
+			}
+			else if (f_stricmp( szToken, "index") == 0)
+			{
+				
+				// Get the index name.
+				
+				if (RC_BAD( rc = getIndexName( TRUE, pTable, szToken, sizeof( szToken),
+											&uiTokenLen, &pIndex)))
+				{
+					goto Exit;
+				}
+				tableList [uiNumTables - 1].bScan = FALSE;
+				tableList [uiNumTables - 1].uiIndexNum = pIndex->uiIndexNum;
+			}
+			else
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_EXPECTING_INDEX_OR_NOINDEX,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
+		}
 		else if ((szToken [0] >= 'a' && szToken [0] <= 'z') ||
 					(szToken [0] >= 'A' && szToken [0] <= 'Z'))
 		{
+			
+			// If token is the keyword "as", it must be followed by the
+			// alias name.
+			
+			if (f_stricmp( szToken, "as") == 0)
+			{
+				if (RC_BAD( rc = getName( szToken, sizeof( szToken),
+												&uiTokenLen, &uiTokenLineOffset)))
+				{
+					goto Exit;
+				}
+			}
+			
 			// See if this alias name has been used in the table list already.
 			
 			for (uiLoop = 0; uiLoop < uiNumTables; uiLoop++)
@@ -315,7 +368,40 @@ RCODE SQLStatement::processSelect( void)
 			}
 			f_memcpy( &tableList [uiNumTables - 1].pszTableAlias, szToken,
 							uiTokenLen + 1);
-			
+			if (RC_BAD( rc = getToken( szToken, sizeof( szToken), TRUE,
+											&uiTokenLineOffset, &uiTokenLen)))
+			{
+				if (rc == NE_SFLM_EOF_HIT)
+				{
+					rc = NE_SFLM_OK;
+					break;
+				}
+				goto Exit;
+			}
+			if (f_stricmp( szToken, "where") == 0)
+			{
+				bHaveWhere = TRUE;
+				break;
+			}
+			else if (f_stricmp( szToken, "order") == 0)
+			{
+				bHaveOrderBy = TRUE;
+				break;
+			}
+			else if (f_stricmp( szToken, "using") == 0)
+			{
+				goto Get_Index;
+			}
+			else if (f_stricmp( szToken, ",") != 0)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_EXPECTING_COMMA,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
+				goto Exit;
+			}
 		}
 		else if (f_stricmp( szToken, ",") != 0)
 		{
@@ -352,6 +438,21 @@ RCODE SQLStatement::processSelect( void)
 		if (RC_BAD( rc = sqlQuery.addTable( tableList [uiLoop].uiTableNum, NULL)))
 		{
 			goto Exit;
+		}
+		if (tableList [uiLoop].bScan)
+		{
+			if (RC_BAD( rc = sqlQuery.setIndex( tableList [uiLoop].uiTableNum, 0)))
+			{
+				goto Exit;
+			}
+		}
+		else if (tableList [uiLoop].uiIndexNum)
+		{
+			if (RC_BAD( rc = sqlQuery.setIndex( tableList [uiLoop].uiTableNum,
+										tableList [uiLoop].uiIndexNum)))
+			{
+				goto Exit;
+			}
 		}
 	}
 	

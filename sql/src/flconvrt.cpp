@@ -618,7 +618,7 @@ RCODE F_Db::rollOverDbKey( void)
 	}
 
 	if (RC_BAD( rc = pTableCursor->setupRange( this, SFLM_TBLNUM_ENCDEFS,
-											1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+											1, FLM_MAX_UINT64, FALSE)))
 	{
 		goto Exit;
 	}

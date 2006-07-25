@@ -610,7 +610,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 					// routines can do a comparison on the full value if
 					// necessary.
 				
-					if (RC_BAD( rc = pFromSearchKey->setBinary( uiKeyComponent - 1,
+					if (RC_BAD( rc = pFromSearchKey->setBinary( uiKeyComponent,
 												pucFromBuf, uiFromBufLen)))
 					{
 						goto Exit;
@@ -696,7 +696,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 					// routines can do a comparison on the full value if
 					// necessary.
 	
-					if (RC_BAD( rc = pUntilSearchKey->setBinary( uiKeyComponent - 1,
+					if (RC_BAD( rc = pUntilSearchKey->setBinary( uiKeyComponent,
 												pucUntilBuf, uiUntilBufLen)))
 					{
 						goto Exit;
@@ -1571,7 +1571,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			// routines can do a comparison on the full value if
 			// necessary.
 
-			if (RC_BAD( rc = pFromSearchKey->setUTF8( uiKeyComponent - 1,
+			if (RC_BAD( rc = pFromSearchKey->setUTF8( uiKeyComponent,
 										pucFromUTF8Buf, uiFromBufLen)))
 			{
 				goto Exit;
@@ -1671,7 +1671,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				// routines can do a comparison on the full value if
 				// necessary.
 	
-				if (RC_BAD( rc = pUntilSearchKey->setUTF8( uiKeyComponent - 1,
+				if (RC_BAD( rc = pUntilSearchKey->setUTF8( uiKeyComponent,
 											pucUntilUTF8Buf, uiUntilBufLen)))
 				{
 					goto Exit;
@@ -1809,7 +1809,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			// routines can do a comparison on the full value if
 			// necessary.
 
-			if (RC_BAD( rc = pUntilSearchKey->setUTF8( uiKeyComponent - 1,
+			if (RC_BAD( rc = pUntilSearchKey->setUTF8( uiKeyComponent,
 										pucUntilUTF8Buf, uiUntilBufLen)))
 			{
 				goto Exit;
@@ -1874,7 +1874,6 @@ RCODE flmBuildFromAndUntilKeys(
 	F_INDEX *		pIndex,
 	F_TABLE *		pTable,
 	SQL_PRED **		ppKeyComponents,
-	FLMUINT			uiComponentsUsed,
 	F_DataVector *	pFromSearchKey,
 	FLMBYTE *		pucFromKey,
 	FLMUINT *		puiFromKeyLen,
@@ -1897,7 +1896,7 @@ RCODE flmBuildFromAndUntilKeys(
 	*pbDoRowMatch = FALSE;
 	*pbCanCompareOnKey = TRUE;
 
-	if (!uiComponentsUsed)
+	if (!ppKeyComponents)
 	{
 		
 		// Setup a first-to-last key
@@ -1911,18 +1910,20 @@ RCODE flmBuildFromAndUntilKeys(
 	}
 	else
 	{
-		for (uiKeyComponent = 1, pIcd = pIndex->pKeyIcds;
-			  uiKeyComponent <= uiComponentsUsed;
+		for (uiKeyComponent = 0, pIcd = pIndex->pKeyIcds;
+			  uiKeyComponent < pIndex->uiNumKeyComponents;
 			  uiKeyComponent++, pIcd++)
 		{
+			if ((pPred = ppKeyComponents [uiKeyComponent]) == NULL)
+			{
+				break;
+			}
 			
 			// At this point, we always better have room to put at least
 			// two bytes in the key.
 			
 			flmAssert( SFLM_MAX_KEY_SIZE - uiFromKeyLen >= 2 &&
 				 		  SFLM_MAX_KEY_SIZE - uiUntilKeyLen >= 2);
-						  
-			pPred = ppKeyComponents [uiKeyComponent - 1];
 
 			// Predicates we are looking at should NEVER be notted.  They
 			// will have been weeded out earlier.
@@ -1964,7 +1965,8 @@ RCODE flmBuildFromAndUntilKeys(
 			// component is inclusive, in which case we need to add one
 			// more component to the key so it will be "inclusive".
 			
-			if (uiKeyComponent == uiComponentsUsed ||
+			if (uiKeyComponent + 1 == pIndex->uiNumKeyComponents ||
+				 !ppKeyComponents [uiKeyComponent + 1] ||
 				 SFLM_MAX_KEY_SIZE - uiFromKeyLen < 2 ||
 				 SFLM_MAX_KEY_SIZE - uiUntilKeyLen < 2)
 			{
@@ -1975,7 +1977,7 @@ RCODE flmBuildFromAndUntilKeys(
 				// two byte value.
 				
 				if (bFromIncl &&
-					 uiKeyComponent < pIndex->uiNumKeyComponents &&
+					 uiKeyComponent + 1 < pIndex->uiNumKeyComponents &&
 					 SFLM_MAX_KEY_SIZE - uiFromKeyLen >= 2)
 				{
 					UW2FBA( (FLMUINT16)KEY_LOW_VALUE, &pucFromKey [uiFromKeyLen]);
@@ -1988,7 +1990,7 @@ RCODE flmBuildFromAndUntilKeys(
 					
 				if (bUntilIncl)
 				{
-					if (uiKeyComponent < pIndex->uiNumKeyComponents)
+					if (uiKeyComponent + 1 < pIndex->uiNumKeyComponents)
 					{
 						if (SFLM_MAX_KEY_SIZE - uiUntilKeyLen >= 2)
 						{

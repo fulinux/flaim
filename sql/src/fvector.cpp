@@ -1353,3 +1353,65 @@ Exit:
 	return( rc);
 }
 
+/****************************************************************************
+Desc:	Copy one data vector into another.
+****************************************************************************/
+RCODE F_DataVector::copyVector(
+	F_DataVector *	pSrcVector)
+{
+	RCODE	rc = NE_SFLM_OK;
+	
+	m_ui64RowId = pSrcVector->m_ui64RowId;
+	
+	// If none of the elements are populated, there is nothing that
+	// needs to be done.
+	
+	if ((m_uiNumElements = pSrcVector->m_uiNumElements) > 0)
+	{
+		if (RC_BAD( rc = allocVectorArray( pSrcVector->m_uiNumElements - 1)))
+		{
+			goto Exit;
+		}
+		f_memcpy( m_pVectorElements, pSrcVector->m_pVectorElements,
+				sizeof( F_VECTOR_ELEMENT) * m_uiNumElements);
+				
+		// Make sure we have enough room in our data buffer.
+		
+		if (pSrcVector->m_uiDataBufOffset > m_uiDataBufLength)
+		{
+			if (m_pucDataBuf == &m_ucIntDataBuf [0])
+			{
+				if (RC_BAD( rc = f_alloc( pSrcVector->m_uiDataBufOffset,
+								&m_pucDataBuf)))
+				{
+					goto Exit;
+				}
+
+			}
+			else
+			{
+				if (RC_BAD( rc = f_realloc( pSrcVector->m_uiDataBufOffset,
+								&m_pucDataBuf)))
+				{
+					goto Exit;
+				}
+			}
+			m_uiDataBufLength = pSrcVector->m_uiDataBufOffset;
+		}
+		
+		// Copy the source data buffer into ours.
+		
+		m_uiDataBufOffset = pSrcVector->m_uiDataBufOffset;
+		f_memcpy( m_pucDataBuf, pSrcVector->m_pucDataBuf,
+					 pSrcVector->m_uiDataBufOffset);
+	}
+	else
+	{
+		m_uiDataBufOffset = 0;
+	}
+	
+Exit:
+
+	return( rc);
+}
+

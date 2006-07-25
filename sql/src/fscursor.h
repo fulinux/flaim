@@ -49,17 +49,19 @@ public:
 	RCODE resetTransaction( 
 		F_Db *			pDb);
 
+	RCODE calculateCost( void);
+	
 	RCODE	setupKeys(
 		F_Db *			pDb,
 		F_INDEX *		pIndex,
 		F_TABLE *		pTable,
-		SQL_PRED **		ppKeyComponents,
-		FLMUINT			uiComponentsUsed,
-		FLMBOOL *		pbDoRowMatch,
-		FLMBOOL *		pbCanCompareOnKey,
-		FLMUINT64 *		pui64LeafBlocksBetween,
-		FLMUINT64 *		pui64TotalRefs,	
-		FLMBOOL *		pbTotalsEstimated);
+		SQL_PRED **		ppKeyComponents);
+		
+	RCODE unionKeys(
+		F_Db *				pDb,
+		FSIndexCursor *	pFSIndexCursor,
+		FLMBOOL *			pbUnioned,
+		FLMINT *				piCompare);
 
 	RCODE currentKey(
 		F_Db *			pDb,
@@ -83,6 +85,21 @@ public:
 		F_DataVector *	pKey,
 		FLMBOOL			bSkipCurrKey);
 
+	FINLINE FLMUINT64 getCost( void)
+	{
+		return( m_ui64Cost);
+	}
+
+	FINLINE FLMBOOL doRowMatch( void)
+	{
+		return( m_bDoRowMatch);
+	}
+	
+	FINLINE FLMBOOL canCompareOnKey( void)
+	{
+		return( m_bCanCompareOnKey);
+	}
+	
 private:
 
 	RCODE useNewDb( 
@@ -168,6 +185,12 @@ private:
 	FLMBOOL				m_bSetup;
 	KEYPOS				m_fromKey;
 	KEYPOS				m_untilKey;
+	FLMUINT64			m_ui64Cost;
+	FLMUINT64			m_ui64LeafBlocksBetween;
+	FLMUINT64			m_ui64TotalRefs;
+	FLMBOOL				m_bTotalsEstimated;
+	FLMBOOL				m_bDoRowMatch;
+	FLMBOOL				m_bCanCompareOnKey;
 	
 	// State information.
 
@@ -208,9 +231,7 @@ public:
 		FLMUINT			uiTableNum,
 		FLMUINT64		ui64LowRowId,
 		FLMUINT64		ui64HighRowId,
-		FLMUINT64 *		pui64LeafBlocksBetween,
-		FLMUINT64 *		pui64TotalRows,
-		FLMBOOL *		pbTotalsEstimated);
+		FLMBOOL			bEstimateCost);
 
 	RCODE currentRow(
 		F_Db *				pDb,
@@ -236,6 +257,11 @@ public:
 		F_Db *				pDb,
 		F_Row **				ppRow,
 		FLMUINT64 *			pui64RowId);
+		
+	FINLINE FLMUINT64 getCost( void)
+	{
+		return( m_ui64Cost);
+	}
 
 private:
 
@@ -304,6 +330,10 @@ private:
 	FLMBOOL				m_bSetup;
 	FLMUINT64			m_ui64FromRowId;
 	FLMUINT64			m_ui64UntilRowId;
+	FLMUINT64			m_ui64Cost;
+	FLMUINT64			m_ui64LeafBlocksBetween;
+	FLMUINT64			m_ui64TotalRows;
+	FLMBOOL				m_bTotalsEstimated;
 	
 	// State information.
 
@@ -321,7 +351,6 @@ RCODE flmBuildFromAndUntilKeys(
 	F_INDEX *		pIndex,
 	F_TABLE *		pTable,
 	SQL_PRED **		ppKeyComponents,
-	FLMUINT			uiComponentsUsed,
 	F_DataVector *	pFromSearchKey,
 	FLMBYTE *		pucFromKey,
 	FLMUINT *		puiFromKeyLen,

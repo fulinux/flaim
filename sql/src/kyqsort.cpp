@@ -331,11 +331,12 @@ Desc:	Compares result set entries during the finalization stage to allow
 RCODE ixKeyCompare(
 	F_Db *				pDb,
 	F_INDEX *			pIndex,
-	F_DataVector *		pSearchKey,
-	F_Row *				pRow1,
-	F_Row *				pRow2,
 	FLMBOOL				bCompareRowId,
+	F_DataVector *		pSearchKey1,
+	F_Row *				pRow1,
 	const void *		pvKey1,
+	F_DataVector *		pSearchKey2,
+	F_Row *				pRow2,
 	FLMUINT				uiKeyLen1,
 	const void *		pvKey2,
 	FLMUINT				uiKeyLen2,
@@ -488,14 +489,14 @@ RCODE ixKeyCompare(
 				
 				if (isSearchKeyComponent( pucKey1))
 				{
-					flmAssert( pSearchKey);
-					ui64RowId1 = pSearchKey->getRowId();
+					flmAssert( pSearchKey1);
+					ui64RowId1 = pSearchKey1->getRowId();
 					
 					// The search key better have a row ID or the untruncated
 					// value.
 					
 					flmAssert( ui64RowId1 ||
-									!pSearchKey->isRightTruncated( uiKeyComponent));
+									!pSearchKey1->isRightTruncated( uiKeyComponent));
 				}
 				else
 				{
@@ -511,14 +512,14 @@ RCODE ixKeyCompare(
 				
 				if (isSearchKeyComponent( pucKey2))
 				{
-					flmAssert( pSearchKey);
-					ui64RowId2 = pSearchKey->getRowId();
+					flmAssert( pSearchKey2);
+					ui64RowId2 = pSearchKey2->getRowId();
 					
 					// The search key better have a row ID or the untruncated
 					// value.
 					
 					flmAssert( ui64RowId2 ||
-									!pSearchKey->isRightTruncated( uiKeyComponent));
+									!pSearchKey2->isRightTruncated( uiKeyComponent));
 				}
 				else
 				{
@@ -550,13 +551,13 @@ RCODE ixKeyCompare(
 						{
 							if (RC_BAD( rc = ixKeyGetUTF8( pDb, pIndex->uiTableNum,
 													pIcd, pRow1, ui64RowId1,
-													pSearchKey, uiKeyComponent, &dynaBuf1)))
+													pSearchKey1, uiKeyComponent, &dynaBuf1)))
 							{
 								goto Exit;
 							}
 							if (RC_BAD( rc = ixKeyGetUTF8( pDb, pIndex->uiTableNum,
 													pIcd, pRow2, ui64RowId2,
-													pSearchKey, uiKeyComponent, &dynaBuf2)))
+													pSearchKey2, uiKeyComponent, &dynaBuf2)))
 							{
 								goto Exit;
 							}
@@ -589,13 +590,13 @@ RCODE ixKeyCompare(
 						{
 							if (RC_BAD( rc = ixKeyGetBinary( pDb, pIndex->uiTableNum,
 													pIcd, pRow1, ui64RowId1,
-													pSearchKey, uiKeyComponent, &dynaBuf1)))
+													pSearchKey1, uiKeyComponent, &dynaBuf1)))
 							{
 								goto Exit;
 							}
 							if (RC_BAD( rc = ixKeyGetBinary( pDb, pIndex->uiTableNum,
 													pIcd, pRow2, ui64RowId2,
-													pSearchKey, uiKeyComponent, &dynaBuf2)))
+													pSearchKey2, uiKeyComponent, &dynaBuf2)))
 							{
 								goto Exit;
 							}
@@ -785,9 +786,10 @@ FINLINE RCODE krefCompareIxAndKey(
 		pIndex = pDb->getDict()->getIndex( (FLMUINT)pKrefA->ui16IxNum);
 	}
 
-	if (RC_BAD( rc = ixKeyCompare( pDb, pIndex, NULL,
-							pKrefA->pRow, pKrefB->pRow, TRUE,
+	if (RC_BAD( rc = ixKeyCompare( pDb, pIndex, TRUE,
+							NULL, pKrefA->pRow,
 							&pKrefA [1], (FLMUINT)pKrefA->ui16KeyLen,
+							NULL, pKrefB->pRow,
 							&pKrefB [1], (FLMUINT)pKrefB->ui16KeyLen, piCompare)))
 	{
 		goto Exit;

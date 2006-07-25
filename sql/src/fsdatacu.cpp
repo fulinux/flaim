@@ -281,9 +281,7 @@ RCODE FSTableCursor::setupRange(
 	FLMUINT			uiTableNum,
 	FLMUINT64		ui64LowRowId,
 	FLMUINT64		ui64HighRowId,
-	FLMUINT64 *		pui64LeafBlocksBetween,	// [out] blocks between the stacks
-	FLMUINT64 *		pui64TotalRows,				// [out]
-	FLMBOOL *		pbTotalsEstimated)		// [out] set to TRUE when estimating.
+	FLMBOOL			bEstimateCost)
 {
 	RCODE			rc = NE_SFLM_OK;
 	F_Btree *	pUntilBTree = NULL;
@@ -303,20 +301,8 @@ RCODE FSTableCursor::setupRange(
 
 	// Want any of the counts back?
 
-	if (pui64LeafBlocksBetween || pui64TotalRows)
+	if (bEstimateCost)
 	{
-		if (pui64LeafBlocksBetween)
-		{
-			*pui64LeafBlocksBetween = 0;
-		}
-		if (pui64TotalRows)
-		{
-			*pui64TotalRows = 0;
-		}
-		if (pbTotalsEstimated)
-		{
-			*pbTotalsEstimated = FALSE;
-		}
 
 		// Position to the FROM and UNTIL key so we can get the stats.
 
@@ -325,6 +311,10 @@ RCODE FSTableCursor::setupRange(
 		{
 			if (rc == NE_SFLM_EOF_HIT)
 			{
+				m_ui64Cost = 0;
+				m_ui64LeafBlocksBetween = 0;
+				m_ui64TotalRows = 0;
+				m_bTotalsEstimated = FALSE;
 				rc = NE_SFLM_OK;
 			}
 			goto Exit;
@@ -357,13 +347,31 @@ RCODE FSTableCursor::setupRange(
 				goto Exit;
 			}
 			if (RC_BAD( rc = m_pbTree->btComputeCounts( pUntilBTree,
-										pui64LeafBlocksBetween, pui64TotalRows,
-										pbTotalsEstimated,
+										&m_ui64LeafBlocksBetween, &m_ui64TotalRows,
+										&m_bTotalsEstimated,
 										(pDb->m_pDatabase->m_uiBlockSize * 3) / 4)))
 			{
 				goto Exit;
 			}
+			if ((m_ui64Cost = m_ui64LeafBlocksBetween) == 0)
+			{
+				m_ui64Cost = 1;
+			}
 		}
+		else
+		{
+			m_ui64Cost = 0;
+			m_ui64LeafBlocksBetween = 0;
+			m_ui64TotalRows = 0;
+			m_bTotalsEstimated = FALSE;
+		}
+	}
+	else
+	{
+		m_ui64Cost = 0;
+		m_ui64LeafBlocksBetween = 0;
+		m_ui64TotalRows = 0;
+		m_bTotalsEstimated = FALSE;
 	}
 
 Exit:

@@ -949,6 +949,9 @@ public:
 	{
 		return( getDataPtr( getVector( uiElementNumber, VECT_SLOT_HAS_DATA)));
 	}
+	
+	RCODE copyVector(
+		F_DataVector *	pSrcVector);
 
 private:
 
@@ -2675,12 +2678,13 @@ private:
 RCODE ixKeyCompare(
 	F_Db *				pDb,
 	F_INDEX *			pIndex,
-	F_DataVector *		pSearchKey,
-	F_Row *				pRow1,
-	F_Row *				pRow2,
 	FLMBOOL				bCompareRowId,
+	F_DataVector *		pSearchKey1,
+	F_Row *				pRow1,
 	const void *		pvKey1,
 	FLMUINT				uiKeyLen1,
+	F_DataVector *		pSearchKey2,
+	F_Row *				pRow2,
 	const void *		pvKey2,
 	FLMUINT				uiKeyLen2,
 	FLMINT *				piCompare);
@@ -2716,9 +2720,10 @@ public:
 		FLMUINT			uiKeyLen2,
 		FLMINT *			piCompare)
 	{
-		return( ixKeyCompare( m_pDb, m_pIndex, m_pSearchKey,
-						m_pOldRow, m_pOldRow, m_bCompareRowId,
-						pvKey1, uiKeyLen1, pvKey2, uiKeyLen2, piCompare));
+		return( ixKeyCompare( m_pDb, m_pIndex, m_bCompareRowId,
+						m_pSearchKey, m_pOldRow, pvKey1, uiKeyLen1,
+						m_pSearchKey, m_pOldRow, pvKey2, uiKeyLen2,
+						piCompare));
 	}
 	
 	FINLINE void setIxInfo(

@@ -515,7 +515,7 @@ RCODE SQLStatement::processCreateIndex(
 
 	// Get the index name - index name must NOT already exist
 	
-	if (RC_BAD( rc = getIndexName( FALSE, szIndexName, sizeof( szIndexName),
+	if (RC_BAD( rc = getIndexName( FALSE, NULL, szIndexName, sizeof( szIndexName),
 							&uiIndexNameLen, &pIndex)))
 	{
 		goto Exit;

@@ -145,6 +145,8 @@ typedef enum
 	SQL_ERR_DUPLICATE_ALIAS_NAME,			///< 65 = Table alias name specified multiple times in SELECT statement.
 	SQL_ERR_TOO_MANY_TABLES,				///< 66 = Too many tables specified in SELECT statement.
 	SQL_ERR_EXPECTING_BY,					///< 67 = Expecting "BY" keyword.
+	SQL_ERR_INDEX_NOT_DEFINED_FOR_TABLE,///< 68 = Index specified is not associated with the specified table.
+	SQL_ERR_EXPECTING_INDEX_OR_NOINDEX,	///< 69 = Expecting INDEX or NOINDEX keyword.
 
 	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
 	SQL_NUM_ERRORS
@@ -1364,18 +1366,20 @@ typedef struct
 #define NE_SFLM_Q_BAD_SEARCH_STRING					0xE20C	///< 0xE20C = String in query criteria is bad.
 #define NE_SFLM_Q_COMPARE_OPERAND_TYPE_MISMATCH	0xE20D	///< 0xE20D = Types of operands in a comparison operator are incompatible, cannot be compared.
 #define NE_SFLM_Q_INVALID_OPERATOR					0xE20E	///< 0xE20E = Invalid operator in query expression.
-#define NE_Q_INVALID_ROW_ID_VALUE					0xE20F	///< 0xE20F = Could not get ROW ID from constant in query expression.
-#define NE_SFLM_Q_EXPECTING_LPAREN					0xE210	///< 0xE210 = Expecting a left parenthesis in query expression.
-#define NE_SFLM_Q_ILLEGAL_OPERATOR					0xE211	///< 0xE211 = Illegal operator specified in query expression.
-#define NE_SFLM_Q_ILLEGAL_COMPARE_RULES			0xE212	///< 0xE212 = Illegal combination comparison rules specified in query expression.
-#define NE_SFLM_Q_UNEXPECTED_COLUMN					0xE213	///< 0xE213 = Not expecting a column name in query expression.
-#define NE_SFLM_Q_UNEXPECTED_CONSTANT				0xE214	///< 0xE214 = Not expecting a constant in query expression.
-#define NE_SFLM_Q_UNEXPECTED_BOOLEAN				0xE215	///< 0xE215 = Not expecting a boolean constant in query expression.
-#define NE_SFLM_Q_AMBIGUOUS_COLUMN_NAME			0xE216	///< 0xE216 = Column name specified in SELECT statement found in multiple tables - must specify table.
-#define NE_SFLM_Q_INVALID_COLUMN_NAME				0xE217	///< 0xE217 = Column name specified in SELECT statement not defined in the tables that were specified.
-#define NE_SFLM_Q_UNDEFINED_TABLE_FOR_COLUMN		0xE218	///< 0xE218 = Table name specified for a column in SELECT statement not defined in the tables that were specified.
-#define NE_SFLM_Q_BAD_ORDER_BY_TABLE				0xE219	///< 0xE219 = Table name specified in ORDER BY is not part of the query.
-#define NE_SFLM_Q_DUP_COLUMN_IN_ORDER_BY			0xE21A	///< 0xE21A = Duplicate table.column name specified in ORDER BY part of query.
+#define NE_SFLM_Q_EXPECTING_LPAREN					0xE20F	///< 0xE20F = Expecting a left parenthesis in query expression.
+#define NE_SFLM_Q_ILLEGAL_OPERATOR					0xE210	///< 0xE210 = Illegal operator specified in query expression.
+#define NE_SFLM_Q_ILLEGAL_COMPARE_RULES			0xE211	///< 0xE211 = Illegal combination comparison rules specified in query expression.
+#define NE_SFLM_Q_UNEXPECTED_COLUMN					0xE212	///< 0xE212 = Not expecting a column name in query expression.
+#define NE_SFLM_Q_UNEXPECTED_CONSTANT				0xE213	///< 0xE213 = Not expecting a constant in query expression.
+#define NE_SFLM_Q_UNEXPECTED_BOOLEAN				0xE214	///< 0xE214 = Not expecting a boolean constant in query expression.
+#define NE_SFLM_Q_AMBIGUOUS_COLUMN_NAME			0xE215	///< 0xE215 = Column name specified in SELECT statement found in multiple tables - must specify table.
+#define NE_SFLM_Q_INVALID_COLUMN_NAME				0xE216	///< 0xE216 = Column name specified in SELECT statement not defined in the tables that were specified.
+#define NE_SFLM_Q_UNDEFINED_TABLE_FOR_COLUMN		0xE217	///< 0xE217 = Table name specified for a column in SELECT statement not defined in the tables that were specified.
+#define NE_SFLM_Q_BAD_ORDER_BY_TABLE				0xE218	///< 0xE218 = Table name specified in ORDER BY is not part of the query.
+#define NE_SFLM_Q_DUP_COLUMN_IN_ORDER_BY			0xE219	///< 0xE219 = Duplicate table.column name specified in ORDER BY part of query.
+#define NE_SFLM_Q_INDEX_NOT_ON_TABLE				0xE21A	///< 0xE21A = Index specified is not associated with the table specified in the query.
+#define NE_SFLM_Q_INVALID_TABLE_FOR_INDEX			0xE21B	///< 0xE21B = Table specified an index is not part of the query.
+#define NE_SFLM_Q_INVALID_INDEX						0xE21C	///< 0xE21C = Index that was specified is invalid.
 
 // Desc:	NICI / Encryption Errors
 

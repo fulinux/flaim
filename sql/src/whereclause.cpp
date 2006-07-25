@@ -82,11 +82,7 @@ SQLQuery::SQLQuery()
 	m_pLastOrderBy = NULL;
 	m_bResolveNames = FALSE;
 	m_bOptimized = FALSE;
-	m_bScan = FALSE;
-	m_bScanIndex = FALSE;
 	m_bEmpty = FALSE;
-	m_uiIndexNum = 0;
-	m_bIndexSet = FALSE;
 	m_pQuery = NULL;
 	m_pDatabase = NULL;
 	m_pDb = NULL;
@@ -95,11 +91,66 @@ SQLQuery::SQLQuery()
 }
 
 //-------------------------------------------------------------------------
+// Desc:	freel all of the SQL_KEY structures associated with an SQL_INDEX.
+//-------------------------------------------------------------------------
+void freeIndexKeys(
+	SQL_INDEX *	pSQLIndex)
+{
+	SQL_KEY *	pSQLKey;
+	
+	for (pSQLKey = pSQLIndex->pFirstSQLKey; pSQLKey; pSQLKey = pSQLKey->pNext)
+	{
+		if (pSQLKey->pFSIndexCursor)
+		{
+			pSQLKey->pFSIndexCursor->Release();
+			pSQLKey->pFSIndexCursor = NULL;
+		}
+	}
+	pSQLIndex->pFirstSQLKey = NULL;
+	pSQLIndex->pLastSQLKey = NULL;
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Free all of the SQL_INDEX structures associated with an SQL_TABLE.
+//-------------------------------------------------------------------------
+void freeTableIndexes(
+	SQL_TABLE *	pSQLTable)
+{
+	SQL_INDEX *	pSQLIndex;
+	
+	for (pSQLIndex = pSQLTable->pFirstSQLIndex; pSQLIndex; pSQLIndex = pSQLIndex->pNext)
+	{
+		freeIndexKeys( pSQLIndex);
+	}
+	pSQLTable->pFirstSQLIndex = NULL;
+	pSQLTable->pLastSQLIndex = NULL;
+}
+
+//-------------------------------------------------------------------------
 // Desc:	Destructor
 //-------------------------------------------------------------------------
 SQLQuery::~SQLQuery()
 {
+	SQL_TABLE *	pSQLTable;
+	
+	// Free all of the table and index cursors.
+	
+	for (pSQLTable = m_pFirstSQLTable; pSQLTable; pSQLTable = pSQLTable->pNext)
+	{
+		if (pSQLTable->pFSTableCursor)
+		{
+			pSQLTable->pFSTableCursor->Release();
+			pSQLTable->pFSTableCursor = NULL;
+		}
+		freeTableIndexes( pSQLTable);
+	}
+	
+	// Free all of the memory allocated from the memory pool.
+	
 	m_pool.poolFree();
+	
+	// Unlink the query from the database it is associated with.
+	
 	if (m_pDatabase)
 	{
 		m_pDatabase->lockMutex();
@@ -512,6 +563,12 @@ RCODE SQLQuery::addTable(
 		}
 		m_pLastSQLTable = pSQLTable;
 	}
+	
+	// These should have been set by the poolCalloc.
+	
+	// pSQLTable->bScan = FALSE;
+	// pSQLTable->uiIndexNum = 0;
+	
 	if (ppSQLTable)
 	{
 		*ppSQLTable = pSQLTable;
@@ -1141,6 +1198,45 @@ RCODE SQLQuery::orderBy(
 		m_pFirstOrderBy = pOrderBy;
 	}
 	m_pLastOrderBy = pOrderBy;
+	
+Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Set an index on a table.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::setIndex(
+	FLMUINT	uiTableNum,
+	FLMUINT	uiIndexNum)
+{
+	RCODE				rc = NE_SFLM_OK;
+	SQL_TABLE *		pSQLTable;
+	
+	flmAssert( !m_bOptimized);
+
+	// Find the table structure for the table - should already exist.
+	
+	pSQLTable = m_pFirstSQLTable;
+	while (pSQLTable && pSQLTable->uiTableNum != uiTableNum)
+	{
+		pSQLTable = pSQLTable->pNext;
+	}
+	if (!pSQLTable)
+	{
+		rc = RC_BAD( NE_SFLM_Q_INVALID_TABLE_FOR_INDEX);
+		goto Exit;
+	}
+	
+	if ((pSQLTable->uiIndexNum = uiIndexNum) == 0)
+	{
+		pSQLTable->bScan = TRUE;
+	}
+	else
+	{
+		pSQLTable->bScan = FALSE;
+	}
 	
 Exit:
 

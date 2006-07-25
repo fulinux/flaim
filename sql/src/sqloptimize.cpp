@@ -24,6 +24,8 @@
 
 #include "flaimsys.h"
 
+#define MINIMUM_COST_ESTIMATE	8
+
 // Local function prototypes
 
 FSTATIC RCODE sqlGetRowIdValue(
@@ -77,7 +79,9 @@ FSTATIC FLMBOOL predIsForOnlyThisTable(
 	SQL_TABLE *	pSQLTable);
 	
 FSTATIC void rankIndexes(
-	SQL_TABLE *	pSQLTable);
+	F_Db *			pDb,
+	SQL_INDEX **	ppFirstSQLIndex,
+	SQL_INDEX **	ppLastSQLIndex);
 	
 //-------------------------------------------------------------------------
 // Desc:	Get the row ID constant from an SQL_VALUE node.
@@ -105,7 +109,7 @@ FSTATIC RCODE sqlGetRowIdValue(
 			pValue->val.ui64Val = (FLMUINT64)(pValue->val.i64Val);
 			break;
 		default:
-			rc = RC_SET_AND_ASSERT( NE_Q_INVALID_ROW_ID_VALUE);
+			rc = RC_SET_AND_ASSERT( NE_SFLM_Q_INVALID_ROW_ID_VALUE);
 			goto Exit;
 	}
 
@@ -1940,18 +1944,20 @@ FSTATIC FLMBOOL predIsForOnlyThisTable(
 // 		with respect to a particular table.
 //-------------------------------------------------------------------------
 RCODE SQLQuery::getPredKeys(
-	SQL_PRED *	pPred,
-	SQL_TABLE *	pSQLTable)
+	F_TABLE *		pTable,
+	FLMUINT			uiForceIndexNum,
+	SQL_PRED *		pPred,
+	SQL_INDEX **	ppFirstSQLIndex,
+	SQL_INDEX **	ppLastSQLIndex)
 {
 	RCODE				rc = NE_SFLM_OK;
 	ICD *				pIcd;
 	SQL_INDEX *		pSQLIndex;
 	SQL_KEY *		pKey;
-	F_TABLE *		pTable = m_pDb->m_pDict->getTable( pPred->pSQLTable->uiTableNum);
 	F_COLUMN *		pColumn = m_pDb->m_pDict->getColumn( pTable, pPred->uiColumnNum);
 	F_INDEX *		pIndex;
 	FLMUINT			uiKeyComponent;
-	
+
 	// This ICD chain will only contain ICDs for this particular column on
 	// the table the column belongs to.
 
@@ -1961,7 +1967,7 @@ RCODE SQLQuery::getPredKeys(
 		// If the table has an index specified for it, skip this ICD if
 		// it is not that index.
 		
-		if (pSQLTable->bIndexSet && pSQLTable->uiIndexNum != pIcd->uiIndexNum)
+		if (uiForceIndexNum && uiForceIndexNum != pIcd->uiIndexNum)
 		{
 			continue;
 		}
@@ -1976,7 +1982,7 @@ RCODE SQLQuery::getPredKeys(
 		
 		// Find the index off of the table.  If not there, add it.
 		
-		pSQLIndex = pSQLTable->pFirstSQLIndex;
+		pSQLIndex = *ppFirstSQLIndex;
 		while (pSQLIndex->uiIndexNum != pIcd->uiIndexNum)
 		{
 			pSQLIndex = pSQLIndex->pNext;
@@ -1988,18 +1994,16 @@ RCODE SQLQuery::getPredKeys(
 			{
 				goto Exit;
 			}
-			pSQLIndex->pSQLTable = pSQLTable;
 			pSQLIndex->uiIndexNum = pIcd->uiIndexNum;
-			pSQLIndex->uiNumComponents = pIndex->uiNumKeyComponents;
-			if ((pSQLIndex->pPrev = pSQLTable->pLastSQLIndex) != NULL)
+			if ((pSQLIndex->pPrev = *ppLastSQLIndex) != NULL)
 			{
 				pSQLIndex->pPrev->pNext = pSQLIndex;
 			}
 			else
 			{
-				pSQLTable->pFirstSQLIndex = pSQLIndex;
+				*ppFirstSQLIndex = pSQLIndex;
 			}
-			pSQLTable->pLastSQLIndex = pSQLIndex;
+			*ppLastSQLIndex = pSQLIndex;
 			
 			// Allocate a single key for the index.
 			
@@ -2008,20 +2012,20 @@ RCODE SQLQuery::getPredKeys(
 			{
 				goto Exit;
 			}
-			pSQLIndex->pLastKey = pSQLIndex->pFirstKey = pKey;
-			pKey->pSQLIndex = pSQLIndex;
+			pSQLIndex->pLastSQLKey = pSQLIndex->pFirstSQLKey = pKey;
 			
 			// Allocate an array of key components for the key.
 			
-			if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_PRED *) * pSQLIndex->uiNumComponents,
-												(void **)&pKey->ppKeyComponents)))
+			if (RC_BAD( rc = m_pool.poolCalloc(
+									sizeof( SQL_PRED *) * pIndex->uiNumKeyComponents,
+									(void **)&pKey->ppPredicates)))
 			{
 				goto Exit;
 			}
 		}
 		else
 		{
-			pKey = pSQLIndex->pFirstKey;
+			pKey = pSQLIndex->pFirstSQLKey;
 		}
 		
 		// There should not be multiple predicates in a sub-query that
@@ -2029,8 +2033,8 @@ RCODE SQLQuery::getPredKeys(
 		// be populated.
 		
 		uiKeyComponent = (FLMUINT)(pIcd - pIndex->pKeyIcds); 
-		flmAssert( !pKey->ppKeyComponents [uiKeyComponent]);
-		pKey->ppKeyComponents [uiKeyComponent] = pPred;
+		flmAssert( !pKey->ppPredicates [uiKeyComponent]);
+		pKey->ppPredicates [uiKeyComponent] = pPred;
 		
 		// NOTE: Costs will be calculated later.
 		
@@ -2042,26 +2046,29 @@ Exit:
 }
 
 //-------------------------------------------------------------------------
-// Desc:	Determine the order in which to evaluate indexes for a particular
-//			table and sub-query.  Those that have a primary key will be
-//			give preference over those that don't.
+// Desc:	Determine the order in which to evaluate indexes.  Those that have
+//			a primary key will be given preference over those that don't.
 //-------------------------------------------------------------------------
 FSTATIC void rankIndexes(
-	SQL_TABLE *	pSQLTable)
+	F_Db *			pDb,
+	SQL_INDEX **	ppFirstSQLIndex,
+	SQL_INDEX **	ppLastSQLIndex)
 {
 	SQL_INDEX *	pSQLIndex;
 	SQL_INDEX *	pPrevSQLIndex;
 	SQL_INDEX *	pNextSQLIndex;
 	SQL_KEY *	pKey;
+	F_INDEX *	pIndex;
 	
-	pSQLIndex = pSQLTable->pFirstSQLIndex;
+	pSQLIndex = *ppFirstSQLIndex;
 	while (pSQLIndex)
 	{
 		pNextSQLIndex = pSQLIndex->pNext;
 		pPrevSQLIndex = pSQLIndex->pPrev;
 		
 		// There should only be one key off of the index right now.
-		pKey = pSQLIndex->pFirstKey;
+		
+		pKey = pSQLIndex->pFirstSQLKey;
 		flmAssert( !pKey->pNext);
 		
 		// Determine how many of the key's components point to a
@@ -2069,9 +2076,10 @@ FSTATIC void rankIndexes(
 		// be pointers after that one, but we really don't care, because
 		// we won't use those components to generate a key.
 		
+		pIndex = pDb->getDict()->getIndex( pSQLIndex->uiIndexNum);
 		pKey->uiComponentsUsed = 0;
-		while (pKey->uiComponentsUsed < pSQLIndex->uiNumComponents &&
-				 pKey->ppKeyComponents [pKey->uiComponentsUsed])
+		while (pKey->uiComponentsUsed < pIndex->uiNumKeyComponents &&
+				 pKey->ppPredicates [pKey->uiComponentsUsed])
 		{
 			pKey->uiComponentsUsed++;
 		}
@@ -2081,7 +2089,7 @@ FSTATIC void rankIndexes(
 		
 		while (pPrevSQLIndex)
 		{
-			if (pKey->uiComponentsUsed > pPrevSQLIndex->pFirstKey->uiComponentsUsed)
+			if (pKey->uiComponentsUsed > pPrevSQLIndex->pFirstSQLKey->uiComponentsUsed)
 			{
 				// Move our current key up in front of the previous key - meaning
 				// it will be evaluated ahead of that key.
@@ -2097,7 +2105,7 @@ FSTATIC void rankIndexes(
 				}
 				else
 				{
-					pSQLTable->pLastSQLIndex = pSQLIndex->pPrev;
+					*ppLastSQLIndex = pSQLIndex->pPrev;
 				}
 				
 				// Now, link it in front of pPrevSQLIndex
@@ -2109,7 +2117,7 @@ FSTATIC void rankIndexes(
 				}
 				else
 				{
-					pSQLTable->pFirstSQLIndex = pSQLIndex;
+					*ppFirstSQLIndex = pSQLIndex;
 				}
 				pPrevSQLIndex->pPrev = pSQLIndex;
 				pPrevSQLIndex = pSQLIndex->pPrev;
@@ -2126,85 +2134,240 @@ FSTATIC void rankIndexes(
 
 //-------------------------------------------------------------------------
 // Desc:	Choose the best index for a table of the indexes for which we have
-//			generated predicate keys.
+//			generated predicate keys.  All other indexes for the table will
+//			be freed
 //-------------------------------------------------------------------------
 RCODE SQLQuery::chooseBestIndex(
-	SQL_TABLE *	pSQLTable,
-	FLMUINT64 *	//pui64Cost - VISIT: NEED TO FINISH THIS ROUTINE
+	F_TABLE *		pTable,
+	SQL_INDEX *		pFirstSQLIndex,
+	SQL_INDEX **	ppBestSQLIndex
 	)
 {
-	RCODE			rc = NE_SFLM_OK;
-	SQL_INDEX *	pSQLIndex = pSQLTable->pFirstSQLIndex;
+	RCODE					rc = NE_SFLM_OK;
+	SQL_INDEX *			pBestSQLIndex = NULL;
+	SQL_KEY *			pSQLKey;
+	FSIndexCursor *	pFSIndexCursor = NULL;
+	F_INDEX *			pIndex;
 	
-	while (pSQLIndex)
+	while (pFirstSQLIndex)
 	{
 		
 		// Should only be one key on each index at this point.
 		
-		flmAssert( pSQLIndex->pFirstKey && pSQLIndex->pFirstKey == pSQLIndex->pLastKey);
+		flmAssert( pFirstSQLIndex->pFirstSQLKey &&
+						pFirstSQLIndex->pFirstSQLKey == pFirstSQLIndex->pLastSQLKey);
 		
-		pSQLIndex = pSQLIndex->pNext;
+		pSQLKey = pFirstSQLIndex->pFirstSQLKey;
+		
+		pIndex = m_pDb->m_pDict->getIndex( pFirstSQLIndex->uiIndexNum);
+		flmAssert( pIndex);
+		
+		// Allocate an index cursor, if necessary.
+		
+		if (!pFSIndexCursor)
+		{
+			if ((pFSIndexCursor = f_new FSIndexCursor) == NULL)
+			{
+				rc = RC_SET( NE_SFLM_MEM);
+				goto Exit;
+			}
+		}
+		else
+		{
+			pFSIndexCursor->resetCursor();
+		}
+		
+		// Setup from and until keys and calculate the cost.
+	
+		if (RC_BAD( rc = pFSIndexCursor->setupKeys( m_pDb, pIndex, pTable,
+									pSQLKey->ppPredicates)))
+		{
+			goto Exit;
+		}
+		
+		// See if this index has a lower cost than our current best index.
+		
+		if (!pBestSQLIndex ||
+			 pFSIndexCursor->getCost() < pBestSQLIndex->pFirstSQLKey->pFSIndexCursor->getCost())
+		{
+			pFirstSQLIndex->pFirstSQLKey->pFSIndexCursor = pFSIndexCursor;
+			
+			// If we have a best index, keep its index cursor so we can just
+			// reset it in the loop above rather than having to free it and
+			// allocate another one - a little optimization.
+			
+			if (!pBestSQLIndex)
+			{
+				pFSIndexCursor = NULL;
+			}
+			else
+			{
+				pFSIndexCursor = pBestSQLIndex->pFirstSQLKey->pFSIndexCursor;
+			}
+			pBestSQLIndex = pFirstSQLIndex;
+			
+			// If our best index's cost is low enough, no need to check any other
+			// indexes.
+			
+			if (pFSIndexCursor->getCost() < MINIMUM_COST_ESTIMATE)
+			{
+				break;
+			}
+		}
+		
+		pFirstSQLIndex = pFirstSQLIndex->pNext;
 	}
 
-//	VISIT - need to finish up this routine
+Exit:
 
-//Exit: - VISIT: WILL USE THIS LABEL PROBABLY WHEN THIS ROUTINE IS FINISHED
+	if (pFSIndexCursor)
+	{
+		pFSIndexCursor->Release();
+	}
+	*ppBestSQLIndex = pBestSQLIndex;
 
 	return( rc);
 }
 		
 //-------------------------------------------------------------------------
-// Desc:	Calculate the cost of doing a table scan for a table.
+// Desc:	Merge keys from pSQLIndex into the list of indexes for pSQLTable.
 //-------------------------------------------------------------------------
-RCODE SQLQuery::calcTableScanCost(
-	SQL_TABLE *			pSQLTable,
-	FLMUINT64 *			pui64Cost,
-	FSTableCursor **	ppFSTableCursor)
+RCODE SQLQuery::mergeKeys(
+	SQL_TABLE *	pSQLTable,
+	SQL_INDEX *	pSQLIndex)
 {
 	RCODE			rc = NE_SFLM_OK;
-	FLMUINT64	ui64LeafBlocksBetween;
-	FLMUINT64	ui64TotalRows;
-	FLMBOOL		bTotalsEstimated;
+	SQL_INDEX *	pFoundSQLIndex;
 	
-	if ((*ppFSTableCursor = f_new FSTableCursor) == NULL)
+	// Should only be one key for this index.
+	
+	flmAssert( pSQLIndex->pFirstSQLKey == pSQLIndex->pLastSQLKey);
+	
+	// See if there is an index for the table that matches this one.  There
+	// should only be one.
+	
+	pFoundSQLIndex = pSQLTable->pFirstSQLIndex;
+	while (pFoundSQLIndex && pFoundSQLIndex->uiIndexNum != pSQLIndex->uiIndexNum)
 	{
-		rc = RC_SET( NE_SFLM_MEM);
-		goto Exit;
+		pFoundSQLIndex = pFoundSQLIndex->pNext;
 	}
-	if (RC_BAD( rc = (*ppFSTableCursor)->setupRange( m_pDb,
-								pSQLTable->uiTableNum, 1, FLM_MAX_UINT64,
-								&ui64LeafBlocksBetween, &ui64TotalRows,
-								&bTotalsEstimated)))
+	
+	if (!pFoundSQLIndex)
 	{
-		(*ppFSTableCursor)->Release();
-		*ppFSTableCursor = NULL;
-		goto Exit;
-	}
-	if (!ui64LeafBlocksBetween)
-	{
-		*pui64Cost = 1;
+		
+		// Did not find a matching index.
+		// Just link the index at the end of the table's list of indexes.
+		// NOTE: It really doesn't matter if it is linked in at the beginning
+		// or the end or the middle somewhere as long as it gets into the
+		// list.
+		
+		if ((pSQLIndex->pPrev = pSQLTable->pLastSQLIndex) != NULL)
+		{
+			pSQLIndex->pPrev->pNext = pSQLIndex;
+		}
+		else
+		{
+			pSQLTable->pFirstSQLIndex = pSQLIndex;
+		}
+		pSQLTable->pLastSQLIndex = pSQLIndex;
+		
+		// Increment the total cost for the table
+		
+		pSQLTable->ui64TotalCost += pSQLIndex->pFirstSQLKey->pFSIndexCursor->getCost();
 	}
 	else
 	{
-		*pui64Cost = ui64LeafBlocksBetween;
+		FLMUINT				ui64SaveCost;
+		FLMBOOL				bUnioned = FALSE;
+		SQL_KEY *			pSQLKey;
+		SQL_KEY *			pIncomingSQLKey = pSQLIndex->pFirstSQLKey;
+		FSIndexCursor *	pMergeFromFSIndexCursor = pIncomingSQLKey->pFSIndexCursor;
+		FLMINT				iCompare;
+		
+		// Found a matching index, see if we can union the incoming index's
+		// key with one of the existing keys for the found index.
+		// If not, we will simply link the new key into the list.
+		
+		pSQLKey = pFoundSQLIndex->pFirstSQLKey;
+		while (pSQLKey)
+		{
+			ui64SaveCost = pSQLKey->pFSIndexCursor->getCost();
+			
+			if (RC_BAD( rc = pSQLKey->pFSIndexCursor->unionKeys( m_pDb,
+									pMergeFromFSIndexCursor, &bUnioned, &iCompare)))
+			{
+				goto Exit;
+			}
+			if (bUnioned)
+			{
+				pSQLTable->ui64TotalCost -= ui64SaveCost;
+				pSQLTable->ui64TotalCost += pSQLKey->pFSIndexCursor->getCost();
+				break;
+			}
+			else if (iCompare < 0)
+			{
+				
+				// The incoming key does not overlap the current key, and is
+				// less than it, so we will link it in before the current key.
+				
+				pIncomingSQLKey->pNext = pSQLKey;
+				if ((pIncomingSQLKey->pPrev = pSQLKey->pPrev) != NULL)
+				{
+					pSQLKey->pPrev->pNext = pIncomingSQLKey;
+				}
+				else
+				{
+					pFoundSQLIndex->pFirstSQLKey = pIncomingSQLKey;
+				}
+				pSQLKey->pPrev = pIncomingSQLKey;
+				
+				// We didn't really union, but we did link it into the list,
+				// so we set this flag to keep us from linking it at the end
+				// of the list outside this loop.
+				
+				bUnioned = TRUE;
+				break;
+			}
+			pSQLKey = pSQLKey->pNext;
+		}
+		
+		// If we did not union with any of the existing keys, this incoming
+		// key is greater than all of the keys in the index (otherwise it
+		// would have been linked into the list in the above loop).  Hence,
+		// we link it in at the end of the list of keys for the found index.
+		// The keys in the list are deliberately kept in ascending order
+		// so that we can traverse through the index in order if need be.
+		
+		if (!bUnioned)
+		{
+			
+			// Link the incoming key as the last key off of the found index.
+			
+			pSQLKey = pSQLIndex->pFirstSQLKey;
+			if ((pSQLKey->pPrev = pFoundSQLIndex->pLastSQLKey) != NULL)
+			{
+				pSQLKey->pPrev->pNext = pSQLKey;
+			}
+			else
+			{
+				pFoundSQLIndex->pFirstSQLKey = pSQLKey;
+			}
+			pFoundSQLIndex->pLastSQLKey = pSQLKey;
+		}
+			
+		// Probably don't need to do this, because we should be getting
+		// rid of the SQL_INDEX structure pointed to by pSQLIndex (the caller
+		// should not use it anymore), but this it keeps us from having
+		// two SQL_INDEX structures point to the same key - just in case
+		// something on the outside changes.
+		
+		pSQLIndex->pFirstSQLKey = NULL;
+		pSQLIndex->pLastSQLKey = NULL;
 	}
 	
 Exit:
 
 	return( rc);
-}
-
-//-------------------------------------------------------------------------
-// Desc:	Merge keys from pSrcTable into pDestTable.
-//-------------------------------------------------------------------------
-RCODE SQLQuery::mergeKeys(
-	SQL_TABLE *	pDestSQLTable,
-	SQL_TABLE *	pSrcSQLTable)
-{
-// VISIT: NEED TO FINISH THIS ROUTINE
-	(void)pDestSQLTable;
-	(void)pSrcSQLTable;
-	return( NE_SFLM_OK);
 }
 
 //-------------------------------------------------------------------------
@@ -2215,21 +2378,18 @@ RCODE SQLQuery::optimizeTable(
 	SQL_TABLE *		pSQLTable)
 {
 	RCODE						rc = NE_SFLM_OK;
-	SQL_TABLE				tmpSQLTable;
+	F_TABLE *				pTable = m_pDb->m_pDict->getTable( pSQLTable->uiTableNum);
+	SQL_INDEX *				pFirstSQLIndex = NULL;
+	SQL_INDEX *				pLastSQLIndex = NULL;
+	SQL_INDEX *				pSQLIndex;
 	FLMUINT					uiLoop;
 	SQL_NODE *				pOperand;
 	void *					pvMark = m_pool.poolMark();
-	FSTableCursor *		pFSTableCursor = NULL;
 	
 	// This routine should not be called if the table has already been
 	// marked to do a table scan.
 	
 	flmAssert( !pSQLTable->bScan);
-	
-	f_memset( &tmpSQLTable, 0, sizeof( SQL_TABLE));
-	tmpSQLTable.uiTableNum = pSQLTable->uiTableNum;
-	tmpSQLTable.uiIndexNum = pSQLTable->uiIndexNum;
-	tmpSQLTable.bIndexSet = pSQLTable->bIndexSet;
 	
 	// Traverse the predicates of the sub-query.  If any are found
 	// that are not predicates, the table must be scanned.
@@ -2252,9 +2412,12 @@ RCODE SQLQuery::optimizeTable(
 			
 			if (predIsForOnlyThisTable( pOperand, pSQLTable))
 			{
+				if (RC_BAD( rc = setupTableScan( pSQLTable)))
+				{
+					goto Exit;
+				}
+				freeTableIndexes( pSQLTable);
 				m_pool.poolReset( pvMark);
-				tmpSQLTable.pFirstSQLIndex = NULL;
-				tmpSQLTable.pLastSQLIndex = NULL;
 				break;
 			}
 		}
@@ -2269,9 +2432,12 @@ RCODE SQLQuery::optimizeTable(
 			if ((pPred->bNotted && pPred->eOperator == SQL_MATCH_OP) ||
 				  pPred->eOperator == SQL_NE_OP)
 			{
+				if (RC_BAD( rc = setupTableScan( pSQLTable)))
+				{
+					goto Exit;
+				}
+				freeTableIndexes( pSQLTable);
 				m_pool.poolReset( pvMark);
-				tmpSQLTable.pFirstSQLIndex = NULL;
-				tmpSQLTable.pLastSQLIndex = NULL;
 				break;
 			}
 			
@@ -2279,101 +2445,41 @@ RCODE SQLQuery::optimizeTable(
 			// For now we are just collecting them.  We will calculate
 			// the best one later.
 			
-			if (RC_BAD( rc = getPredKeys( pPred, &tmpSQLTable)))
+			if (RC_BAD( rc = getPredKeys( pTable, pSQLTable->uiIndexNum,
+											pPred, &pFirstSQLIndex, &pLastSQLIndex)))
 			{
 				goto Exit;
 			}
 		}
 	}
 	
-	// If we didn't find indexes for this table, set the bScan flag.
+	// If we found indexes for the table, choose the best one.
 
-	if (!tmpSQLTable.pFirstSQLIndex)
-	{
-		tmpSQLTable.bScan = TRUE;
-		if (RC_BAD( rc = calcTableScanCost( &tmpSQLTable, &tmpSQLTable.ui64Cost,
-									&pFSTableCursor)))
-		{
-			goto Exit;
-		}
-	}
-	else
+	if (pFirstSQLIndex)
 	{
 	
 		// Rank the indexes to determine which ones to estimate cost for
 		// first.
 		
-		rankIndexes( &tmpSQLTable);
+		rankIndexes( m_pDb, &pFirstSQLIndex, &pLastSQLIndex);
 		
-		// Find the index with the lowest cost, if any.
-		// If the lowest cost index is still high, estimate the cost of doing
-		// a table scan.
+		// Find the index with the lowest cost.
 		
-		if (RC_BAD( rc = chooseBestIndex( &tmpSQLTable, &tmpSQLTable.ui64Cost)))
+		if (RC_BAD( rc = chooseBestIndex( pTable, pFirstSQLIndex, &pSQLIndex)))
 		{
 			goto Exit;
 		}
 		
-		// Should be one index left after this.  If the cost is high, see if
-		// a table scan would be cheaper.
-	
-		if (tmpSQLTable.ui64Cost > 8)
-		{
-			FLMUINT64		ui64ScanCost;
-			
-			if (RC_BAD( rc = calcTableScanCost( &tmpSQLTable, &ui64ScanCost,
-									&pFSTableCursor)))
-			{
-				goto Exit;
-			}
-			if (ui64ScanCost < tmpSQLTable.ui64Cost)
-			{
-				m_pool.poolReset( pvMark);
-				tmpSQLTable.ui64Cost = ui64ScanCost;
-				tmpSQLTable.bScan = TRUE;
-				tmpSQLTable.pFirstSQLIndex = NULL;
-				tmpSQLTable.pLastSQLIndex = NULL;
-			}
-			else
-			{
-				pFSTableCursor->Release();
-				pFSTableCursor = NULL;
-			}
-		}
-	}
-	
-	// If we determined that we must do a table scan, set the bScan flag
-	// for the master table.  Otherwise, merge these keys
-	
-	if (tmpSQLTable.bScan)
-	{
-		pSQLTable->bScan = TRUE;
-		pSQLTable->ui64Cost = tmpSQLTable.ui64Cost;
+		// Merge the selected key for selected index into the keys for the
+		// master table.
 		
-		// Better have calculated a cost and have a collection
-		// cursor at this point.
-		
-		flmAssert( pFSTableCursor);
-		pSQLTable->pFSTableCursor = pFSTableCursor;
-		pFSTableCursor = NULL;
-		pSQLTable->pFirstSQLIndex = NULL;
-		pSQLTable->pLastSQLIndex = NULL;
-	}
-	else
-	{
-		if (RC_BAD( rc = mergeKeys( pSQLTable, &tmpSQLTable)))
+		if (RC_BAD( rc = mergeKeys( pSQLTable, pSQLIndex)))
 		{
 			goto Exit;
 		}
-		pSQLTable->ui64Cost += tmpSQLTable.ui64Cost;
 	}
 	
 Exit:
-
-	if (pFSTableCursor)
-	{
-		pFSTableCursor->Release();
-	}
 
 	return( rc);
 }
@@ -2383,56 +2489,88 @@ Exit:
 //-------------------------------------------------------------------------
 RCODE SQLQuery::optimizeSubQueries( void)
 {
-	RCODE				rc = NE_SFLM_OK;
-	SQL_SUBQUERY *	pSubQuery;
-	SQL_TABLE *		pSQLTable;
+	RCODE					rc = NE_SFLM_OK;
+	SQL_SUBQUERY *		pSubQuery;
+	SQL_TABLE *			pSQLTable;
 	
 	// For each table in our expression, attempt to pick an index for each
 	// subquery.
 	
 	for (pSQLTable = m_pFirstSQLTable; pSQLTable; pSQLTable = pSQLTable->pNext)
 	{
-		pSubQuery = m_pFirstSubQuery;
-		while (pSubQuery)
+		if (pSQLTable->bScan)
 		{
-			if (RC_BAD( rc = optimizeTable( pSubQuery, pSQLTable)))
+			if (RC_BAD( rc = setupTableScan( pSQLTable)))
 			{
 				goto Exit;
 			}
-			
-			// If the optimization decided we should scan the table, there
-			// is no need to look at any more sub-queries for this table.
-			
-			if (pSQLTable->bScan)
-			{
-				break;
-			}
-			pSubQuery = pSubQuery->pNext;
 		}
-		
-		// See if a table scan is going to be cheaper.
-		
-		if (!pSQLTable->bScan && pSQLTable->ui64Cost > 8)
+		else
 		{
-			FSTableCursor *	pFSTableCursor = NULL;
-			FLMUINT64			ui64ScanCost;
+			pSubQuery = m_pFirstSubQuery;
+			while (pSubQuery)
+			{
+				if (RC_BAD( rc = optimizeTable( pSubQuery, pSQLTable)))
+				{
+					goto Exit;
+				}
+				
+				// If the optimization decided we should scan the table, there
+				// is no need to look at any more sub-queries for this table.
+				
+				if (pSQLTable->bScan)
+				{
+					break;
+				}
+				pSubQuery = pSubQuery->pNext;
+			}
 			
-			if (RC_BAD( rc = calcTableScanCost( pSQLTable, &ui64ScanCost,
-										&pFSTableCursor)))
+			// If the table's cost is still zero, that means it was not optimized for
+			// any of the sub-queries, so we need to have it do a table scan or
+			// an index scan.
+			
+			if (!pSQLTable->ui64TotalCost)
 			{
-				goto Exit;
+				if (pSQLTable->uiIndexNum)
+				{
+					if (RC_BAD( rc = setupIndexScan( pSQLTable)))
+					{
+						goto Exit;
+					}
+				}
+				else
+				{
+					if (RC_BAD( rc = setupTableScan( pSQLTable)))
+					{
+						goto Exit;
+					}
+				}
 			}
-			if (ui64ScanCost < pSQLTable->ui64Cost)
+			else if (!pSQLTable->bScan &&
+						pSQLTable->ui64TotalCost > MINIMUM_COST_ESTIMATE)
 			{
-				pSQLTable->ui64Cost = ui64ScanCost;
-				pSQLTable->bScan = TRUE;
-				pSQLTable->pFSTableCursor = pFSTableCursor;
-				pSQLTable->pFirstSQLIndex = NULL;
-				pSQLTable->pLastSQLIndex = NULL;
-			}
-			else
-			{
-				pFSTableCursor->Release();
+				FLMUINT64	ui64SaveCost = pSQLTable->ui64TotalCost;
+				
+				if (RC_BAD( rc = setupTableScan( pSQLTable)))
+				{
+					goto Exit;
+				}
+				if (pSQLTable->pFSTableCursor->getCost() < ui64SaveCost)
+				{
+					pSQLTable->uiIndexNum = 0;
+					freeTableIndexes( pSQLTable);
+				}
+				else
+				{
+					
+					// Get rid of the table cursor that was set up and stay
+					// with the index cursors.
+					
+					pSQLTable->bScan = FALSE;
+					pSQLTable->pFSTableCursor->Release();
+					pSQLTable->pFSTableCursor = NULL;
+					pSQLTable->ui64TotalCost = ui64SaveCost;
+				}
 			}
 		}
 	}
@@ -2443,58 +2581,253 @@ Exit:
 }
 
 //-------------------------------------------------------------------------
-// Desc:	Setup to scan an index - the index was specified by the user.
+// Desc:	Add an SQL_INDEX structure to the list of indexes for an
+//			SQL_TABLE structure.
 //-------------------------------------------------------------------------
-RCODE SQLQuery::setupIndexScan( void)
+RCODE SQLQuery::addIndexToTable(
+	SQL_TABLE *		pSQLTable,
+	FLMUINT			uiIndexNum,
+	SQL_INDEX **	ppSQLIndex)
+{
+	RCODE			rc = NE_SFLM_OK;
+	SQL_INDEX *	pSQLIndex;
+	
+	// Allocate the SQL_INDEX structure
+	
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_INDEX),
+									(void **)&pSQLIndex)))
+	{
+		goto Exit;
+	}
+	
+	// Link index to end of the list of indexes for the table.
+	
+	pSQLIndex->uiIndexNum = uiIndexNum;
+	if ((pSQLIndex->pPrev = pSQLTable->pLastSQLIndex) != NULL)
+	{
+		pSQLTable->pLastSQLIndex->pNext = pSQLIndex;
+	}
+	else
+	{
+		pSQLTable->pFirstSQLIndex = pSQLIndex;
+	}
+	pSQLTable->pLastSQLIndex = pSQLIndex;
+	
+	if (ppSQLIndex)
+	{
+		*ppSQLIndex = pSQLIndex;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Add an SQL_KEY structure to the list of keys for an
+//			SQL_INDEX structure.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::addKeyToIndex(
+	SQL_INDEX *	pSQLIndex,
+	SQL_KEY **	ppSQLKey)
+{
+	RCODE			rc = NE_SFLM_OK;
+	SQL_KEY *	pSQLKey;
+	
+	// Allocate the SQL_KEY structure
+	
+	if (RC_BAD( rc = m_pool.poolCalloc( sizeof( SQL_KEY),
+									(void **)&pSQLKey)))
+	{
+		goto Exit;
+	}
+	
+	// Link key to end of the list of keys for the index.
+	
+	if ((pSQLKey->pPrev = pSQLIndex->pLastSQLKey) != NULL)
+	{
+		pSQLIndex->pLastSQLKey->pNext = pSQLKey;
+	}
+	else
+	{
+		pSQLIndex->pFirstSQLKey = pSQLKey;
+	}
+	pSQLIndex->pLastSQLKey = pSQLKey;
+	
+	*ppSQLKey = pSQLKey;
+	
+Exit:
+
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Setup to scan an index for a table.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::setupIndexScan(
+	SQL_TABLE *	pSQLTable)
 {
 	RCODE					rc = NE_SFLM_OK;
 	F_INDEX *			pIndex;
 	F_TABLE *			pTable;
-	FLMBOOL				bDoRowMatch;
-	FLMBOOL				bCanCompareOnKey;
 	FSIndexCursor *	pFSIndexCursor = NULL;
-
-	flmAssert( m_uiIndexNum);
-
-	pIndex = m_pDb->m_pDict->getIndex( m_uiIndexNum);
+	SQL_INDEX *			pSQLIndex;
+	SQL_KEY *			pSQLKey;
+			
+	// At this point, there should not be any SQL_INDEX structures
+	// associated with the table as yet.
 	
-//VISIT: Make sure the index is on-line
-
-	pTable = m_pDb->m_pDict->getTable( pIndex->uiTableNum);
+	flmAssert( !pSQLTable->pFirstSQLIndex);
 	
-//VISIT: Should only be one table in the table array, and it better match
-//the table this index is associated with.
-//	if (pIndex->uiTableNum != m_uiTableNum)
-//	{
-//		rc = RC_SET( NE_SFLM_BAD_IX);
-//		goto Exit;
-//	}
-
-	if ((pFSIndexCursor = f_new FSIndexCursor) == NULL)
+	if ((pIndex = m_pDb->m_pDict->getIndex( pSQLTable->uiIndexNum)) == NULL)
 	{
-		rc = RC_SET( NE_SFLM_MEM);
+		rc = RC_SET( NE_SFLM_Q_INVALID_INDEX);
+		goto Exit;
+	}
+	if (pSQLTable->uiTableNum != pIndex->uiTableNum)
+	{
+		rc = RC_SET( NE_SFLM_Q_INVALID_TABLE_FOR_INDEX);
+		goto Exit;
+	}
+	pTable = m_pDb->m_pDict->getTable( pSQLTable->uiTableNum);
+	
+	// Make sure the index is not offline.
+	
+	if (pIndex->uiFlags & (IXD_OFFLINE | IXD_SUSPENDED))
+	{
+		rc = RC_SET( NE_SFLM_INDEX_OFFLINE);
+		goto Exit;
 	}
 
-	// Setup to scan from beginning of key to end of key.
-
-	if (RC_BAD( rc = pFSIndexCursor->setupKeys( m_pDb, pIndex, pTable,
-								NULL, 0, &bDoRowMatch, &bCanCompareOnKey,
-								NULL, NULL, NULL)))
+	// Allocate an index structure and associate it with the table.
+	
+	if (RC_BAD( rc = addIndexToTable( pSQLTable, pSQLTable->uiIndexNum,
+								&pSQLIndex)))
 	{
 		goto Exit;
 	}
-	m_bScanIndex = TRUE;
-	m_bScan = FALSE;
 	
-//VISIT: Need to put the FSIndexCursor into the table structure - or wherever
-// it belongs.
+	// Allocate a key structure and associate it with the index.
+	
+	if (RC_BAD( rc = addKeyToIndex( pSQLIndex, &pSQLKey)))
+	{
+		goto Exit;
+	}
+	
+	// Allocate an index cursor and set it up to scan the index from
+	// first to last.
+	
+	if ((pFSIndexCursor = f_new FSIndexCursor) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
 
+	// Setup to scan from beginning of index to end of index.
+
+	if (RC_BAD( rc = pFSIndexCursor->setupKeys( m_pDb, pIndex, pTable, NULL)))
+	{
+		goto Exit;
+	}
+	
+	// Setup a single key for the index.
+	
+	pSQLKey->pFSIndexCursor = pFSIndexCursor;
+	pSQLTable->ui64TotalCost = pFSIndexCursor->getCost();
+	
+	// Set pFSIndexCursor to NULL so it will not be released
+	// below.
+	
+	pFSIndexCursor = NULL;
+	
 Exit:
 
 	if (pFSIndexCursor)
 	{
 		pFSIndexCursor->Release();
 	}
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Setup to scan a table.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::setupTableScan(
+	SQL_TABLE *	pSQLTable)
+{
+	RCODE					rc = NE_SFLM_OK;
+	FSTableCursor *	pFSTableCursor = NULL;
+		
+	pSQLTable->bScan = TRUE;
+	
+	// No index set, or the index that was set was zero, so do
+	// a full table scan.
+	
+	if ((pFSTableCursor = f_new FSTableCursor) == NULL)
+	{
+		rc = RC_SET( NE_SFLM_MEM);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pFSTableCursor->setupRange( m_pDb,
+								pSQLTable->uiTableNum, 1, FLM_MAX_UINT64,
+								TRUE)))
+	{
+		goto Exit;
+	}
+	pSQLTable->pFSTableCursor = pFSTableCursor;
+	pSQLTable->ui64TotalCost = pFSTableCursor->getCost();
+	
+	// Set to NULL so it won't be released at Exit.
+	
+	pFSTableCursor = NULL;
+	
+Exit:
+
+	if (pFSTableCursor)
+	{
+		pFSTableCursor->Release();
+	}
+	return( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	Setup to scan each table that has been specified.  It may be that
+//			indexes were specified for the tables - in which case we will
+//			setup to scan the indexes.
+//-------------------------------------------------------------------------
+RCODE SQLQuery::setupScans( void)
+{
+	RCODE			rc = NE_SFLM_OK;
+	SQL_TABLE *	pSQLTable;
+	
+	// If no tables were specified, the query will return an
+	// empty result.
+	
+	if (!m_pFirstSQLTable)
+	{
+		m_bEmpty = TRUE;
+		goto Exit;
+	}
+	
+	for (pSQLTable = m_pFirstSQLTable; pSQLTable; pSQLTable = pSQLTable->pNext)
+	{
+		if (pSQLTable->uiIndexNum)
+		{
+			if (RC_BAD( rc = setupIndexScan( pSQLTable)))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if (RC_BAD( rc = setupTableScan( pSQLTable)))
+			{
+				goto Exit;
+			}
+		}
+	}
+
+Exit:
 
 	return( rc);
 }
@@ -2541,18 +2874,13 @@ RCODE SQLQuery::optimize( void)
 
 	m_uiLanguage = m_pDb->getDefaultLanguage();
 
-	// An empty expression should scan the database and return everything.
+	// An empty expression should scan the tables listed - using either
+	// the index that was specified for the table, or just scanning
+	// the rows of the table.
 
 	if (!m_pQuery)
 	{
-		if (m_bIndexSet && m_uiIndexNum)
-		{
-			rc = setupIndexScan();
-		}
-		else
-		{
-			m_bScan = TRUE;
-		}
+		rc = setupScans();
 		goto Exit;
 	}
 
@@ -2564,7 +2892,8 @@ RCODE SQLQuery::optimize( void)
 		if (m_pQuery->currVal.eValType == SQL_BOOL_VAL &&
 			 m_pQuery->currVal.val.eBool == SQL_TRUE)
 		{
-			m_bScan = TRUE;
+			rc = setupScans();
+			goto Exit;
 		}
 		else
 		{
@@ -2575,14 +2904,6 @@ RCODE SQLQuery::optimize( void)
 		  		isSQLArithOp( m_pQuery->nd.op.eOperator))
 	{
 		m_bEmpty = TRUE;
-		goto Exit;
-	}
-
-	// If the user explicitly said to NOT use an index, we will not
-
-	if (m_bIndexSet && !m_uiIndexNum)
-	{
-		m_bScan = TRUE;
 		goto Exit;
 	}
 

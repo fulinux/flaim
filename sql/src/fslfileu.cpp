@@ -863,7 +863,7 @@ Retry:
 			
 		pTableCursor->resetCursor();
 		if (RC_BAD( rc = pTableCursor->setupRange( pDb, SFLM_TBLNUM_BLOCK_CHAINS,
-												1, FLM_MAX_UINT64, NULL, NULL, NULL)))
+												1, FLM_MAX_UINT64, FALSE)))
 		{
 			goto Exit;
 		}

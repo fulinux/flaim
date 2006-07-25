@@ -27,6 +27,12 @@
 #include "flaimsys.h"
 #include "fscursor.h"
 
+FSTATIC RCODE copyKey(
+	KEYPOS *			pDestKey,
+	F_DataVector *	pDestSrchKey,
+	KEYPOS *			pSrcKey,
+	F_DataVector *	pSrcSrchKey);
+	
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -75,6 +81,12 @@ void FSIndexCursor::resetCursor( void)
 	m_bAtBOF = TRUE;
 	m_bAtEOF = FALSE;
 	m_bSetup = FALSE;
+	m_bDoRowMatch = FALSE;
+	m_bCanCompareOnKey = TRUE;
+	m_ui64Cost = 0;
+	m_ui64LeafBlocksBetween = 0;
+	m_ui64TotalRefs = 0;
+	m_bTotalsEstimated = FALSE;
 }
 
 /****************************************************************************
@@ -120,6 +132,115 @@ Exit:
 }
 
 /****************************************************************************
+Desc: Estimate the cost of going between the from and until key and
+		fetching every row.
+****************************************************************************/
+RCODE FSIndexCursor::calculateCost( void)
+{
+	RCODE			rc = NE_SFLM_OK;
+	F_Btree *	pUntilBTree = NULL;
+	FLMINT		iCompare;
+
+	// Get a btree object
+
+	if (RC_BAD( rc = gv_SFlmSysData.pBtPool->btpReserveBtree( &pUntilBTree)))
+	{
+		goto Exit;
+	}
+
+	if (RC_OK( rc = setKeyPosition( m_pDb, TRUE, FALSE,
+				&m_fromExtKey, &m_fromKey, &m_curKey, TRUE, NULL, NULL, NULL)))
+	{
+
+		// All keys between FROM and UNTIL may be gone.
+		
+		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+									&m_untilExtKey, NULL,
+									m_curKey.ucKey, m_curKey.uiKeyLen,
+									&m_untilExtKey, NULL,
+									m_untilKey.ucKey, m_untilKey.uiKeyLen,
+									&iCompare)))
+		{
+			goto Exit;
+		}
+		if (iCompare <= 0)
+		{
+			KEYPOS	tmpUntilKey;
+
+			if (RC_OK( rc = pUntilBTree->btOpen( m_pDb, m_pLFile,
+									isAbsolutePositionable(), FALSE,
+									&m_ixCompare)))
+			{
+
+				// Going forward so position is exclusive
+
+				rc = setKeyPosition( m_pDb, FALSE, FALSE,
+					&m_untilExtKey, &m_untilKey,
+					&tmpUntilKey, FALSE, NULL, pUntilBTree, NULL);
+			}
+		}
+		else
+		{
+			rc = RC_SET( NE_SFLM_BOF_HIT);
+			m_bAtBOF = TRUE;
+			m_bAtEOF = FALSE;
+		}
+	}
+	else
+	{
+		if (rc == NE_SFLM_EOF_HIT)
+		{
+			m_bAtEOF = TRUE;
+			m_bAtBOF = FALSE;
+		}
+		else if (rc == NE_SFLM_BOF_HIT)
+		{
+			m_bAtEOF = FALSE;
+			m_bAtBOF = TRUE;
+		}
+	}
+
+	if (RC_BAD( rc))
+	{
+
+		// Empty tree or empty set case.
+
+		if (rc == NE_SFLM_EOF_HIT || rc == NE_SFLM_BOF_HIT)
+		{
+			m_ui64Cost = 0;
+			m_ui64LeafBlocksBetween = 0;
+			m_ui64TotalRefs = 0;
+			m_bTotalsEstimated = FALSE;
+			rc = NE_SFLM_OK;
+		}
+		goto Exit;
+	}
+	else
+	{
+		if (RC_BAD( rc = m_pbTree->btComputeCounts( pUntilBTree,
+									&m_ui64LeafBlocksBetween, &m_ui64TotalRefs,
+									&m_bTotalsEstimated,
+									(m_pDb->m_pDatabase->m_uiBlockSize * 3) / 4)))
+		{
+			goto Exit;
+		}
+		if ((m_ui64Cost = m_ui64LeafBlocksBetween + m_ui64TotalRefs) == 0)
+		{
+			m_ui64Cost = 1;
+		}
+	}
+
+Exit:
+
+	if (pUntilBTree)
+	{
+		gv_SFlmSysData.pBtPool->btpReturnBtree( &pUntilBTree);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
 Desc: Setup the from and until keys in the cursor.  Return counts
 		after positioning to the from and until key in the index.
 ****************************************************************************/
@@ -127,17 +248,9 @@ RCODE FSIndexCursor::setupKeys(
 	F_Db *			pDb,
 	F_INDEX *		pIndex,
 	F_TABLE *		pTable,
-	SQL_PRED **		ppKeyComponents,
-	FLMUINT			uiComponentsUsed,
-	FLMBOOL *		pbDoRowMatch,
-	FLMBOOL *		pbCanCompareOnKey,
-	FLMUINT64 *		pui64LeafBlocksBetween,	// [out] blocks between the stacks
-	FLMUINT64 *		pui64TotalRefs,			// [out] total references
-	FLMBOOL *		pbTotalsEstimated)		// [out] set to TRUE when estimating.
+	SQL_PRED **		ppKeyComponents)
 {
-	RCODE				rc = NE_SFLM_OK;
-	F_Btree *		pUntilBTree = NULL;
-	FLMINT			iCompare;
+	RCODE	rc = NE_SFLM_OK;
 
 	m_uiIndexNum = pIndex->uiIndexNum;
 
@@ -147,10 +260,10 @@ RCODE FSIndexCursor::setupKeys(
 	}
 
 	if (RC_BAD( rc = flmBuildFromAndUntilKeys( pDb->getDict(), pIndex, pTable,
-			ppKeyComponents, uiComponentsUsed,
+			ppKeyComponents,
 			&m_fromExtKey, m_fromKey.ucKey, &m_fromKey.uiKeyLen, 
 			&m_untilExtKey, m_untilKey.ucKey, &m_untilKey.uiKeyLen,
-			pbDoRowMatch, pbCanCompareOnKey)))
+			&m_bDoRowMatch, &m_bCanCompareOnKey)))
 	{
 		goto Exit;
 	}
@@ -158,111 +271,287 @@ RCODE FSIndexCursor::setupKeys(
 	m_curKey.uiKeyLen = 0;
 	m_bSetup = TRUE;
 
-	// Want any of the counts back?
-
-	if (pui64LeafBlocksBetween || pui64TotalRefs)
+	if (RC_BAD( rc = calculateCost()))
 	{
-
-		// Get a btree object
-
-		if (RC_BAD( rc = gv_SFlmSysData.pBtPool->btpReserveBtree( &pUntilBTree)))
-		{
-			goto Exit;
-		}
-
-		if (RC_OK( rc = setKeyPosition( pDb, TRUE, FALSE,
-					&m_fromExtKey, &m_fromKey, &m_curKey, TRUE, NULL, NULL, NULL)))
-		{
-
-			// All keys between FROM and UNTIL may be gone.
-			
-			if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, &m_untilExtKey,
-										NULL, NULL, FALSE,
-										m_curKey.ucKey, m_curKey.uiKeyLen,
-										m_untilKey.ucKey, m_untilKey.uiKeyLen,
-										&iCompare)))
-			{
-				goto Exit;
-			}
-			if (iCompare <= 0)
-			{
-				KEYPOS	tmpUntilKey;
-
-				if (RC_OK( rc = pUntilBTree->btOpen( pDb, m_pLFile,
-										isAbsolutePositionable(), FALSE,
-										&m_ixCompare)))
-				{
-
-					// Going forward so position is exclusive
-
-					rc = setKeyPosition( pDb, FALSE, FALSE,
-						&m_untilExtKey, &m_untilKey,
-						&tmpUntilKey, FALSE, NULL, pUntilBTree, NULL);
-				}
-			}
-			else
-			{
-				rc = RC_SET( NE_SFLM_BOF_HIT);
-				m_bAtBOF = TRUE;
-				m_bAtEOF = FALSE;
-			}
-		}
-		else
-		{
-			if (rc == NE_SFLM_EOF_HIT)
-			{
-				m_bAtEOF = TRUE;
-				m_bAtBOF = FALSE;
-			}
-			else if (rc == NE_SFLM_BOF_HIT)
-			{
-				m_bAtEOF = FALSE;
-				m_bAtBOF = TRUE;
-			}
-		}
-
-		if (RC_BAD( rc))
-		{
-
-			// Empty tree or empty set case.
-
-			if (rc == NE_SFLM_EOF_HIT || rc == NE_SFLM_BOF_HIT)
-			{
-				if (pui64LeafBlocksBetween)
-				{
-					*pui64LeafBlocksBetween = 0;
-				}
-				if (pui64TotalRefs)
-				{
-					*pui64TotalRefs = 0;
-				}
-				if (pbTotalsEstimated)
-				{
-					*pbTotalsEstimated = FALSE;
-				}
-				rc = NE_SFLM_OK;
-			}
-			goto Exit;
-		}
-		else
-		{
-			if (RC_BAD( rc = m_pbTree->btComputeCounts( pUntilBTree,
-										pui64LeafBlocksBetween, pui64TotalRefs,
-										pbTotalsEstimated,
-										(pDb->m_pDatabase->m_uiBlockSize * 3) / 4)))
-			{
-				goto Exit;
-			}
-		}
+		goto Exit;
 	}
 	m_bAtBOF = TRUE;
 
 Exit:
 
-	if (pUntilBTree)
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Set the destination key equal to the source key.
+****************************************************************************/
+FSTATIC RCODE copyKey(
+	KEYPOS *			pDestKey,
+	F_DataVector *	pDestSrchKey,
+	KEYPOS *			pSrcKey,
+	F_DataVector *	pSrcSrchKey)
+{
+	RCODE	rc = NE_SFLM_OK;
+	
+	// Copy the key buffer.
+	
+	if ((pDestKey->uiKeyLen = pSrcKey->uiKeyLen) != 0)
 	{
-		gv_SFlmSysData.pBtPool->btpReturnBtree( &pUntilBTree);
+		f_memcpy( pDestKey->ucKey, pSrcKey->ucKey, pSrcKey->uiKeyLen);
 	}
+	
+	// Copy the data vector.
+
+	if (RC_BAD( rc = pDestSrchKey->copyVector( pSrcSrchKey)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Union the keys from another index cursor into this one.
+****************************************************************************/
+RCODE FSIndexCursor::unionKeys(
+	F_Db *				pDb,
+	FSIndexCursor *	pFSIndexCursor,
+	FLMBOOL *			pbUnioned,
+	FLMINT *				piCompare)
+{
+	RCODE		rc = NE_SFLM_OK;
+	FLMINT	iCompare;
+	FLMBOOL	bIncomingLessThan = FALSE;
+	FLMBOOL	bIncomingGreaterThan = FALSE;
+	
+	*pbUnioned = FALSE;
+	
+	// Make sure both cursors are referencing the same index.  If not,
+	// they cannot be unioned.
+	
+	if (pFSIndexCursor->m_uiIndexNum != m_uiIndexNum)
+	{
+		goto Exit;	// Will return NE_SFLM_OK
+	}
+	
+	// Both cursors better already be setup
+	
+	flmAssert( m_bSetup && pFSIndexCursor->m_bSetup);
+	
+	// Set both cursors to have their m_pDb, m_pIndex, etc. set up.
+	// These are needed for comparison of keys.
+	
+	if (RC_BAD( rc = checkTransaction( pDb)))
+	{
+		goto Exit;
+	}
+	if (RC_BAD( rc = pFSIndexCursor->checkTransaction( pDb)))
+	{
+		goto Exit;
+	}
+	
+	// Compare the two from keys.
+	
+	if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+								&pFSIndexCursor->m_fromExtKey, NULL,
+								pFSIndexCursor->m_fromKey.ucKey,
+								pFSIndexCursor->m_fromKey.uiKeyLen,
+								&m_fromExtKey, NULL,
+								m_fromKey.ucKey,
+								m_fromKey.uiKeyLen,
+								&iCompare)))
+	{
+		goto Exit;
+	}
+	
+	if (iCompare < 0)
+	{
+		
+		// If the incoming from key is less than our from key,
+		// see if the incoming until key is >= our from key.
+		// If so, they overlap.
+		
+		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+									&pFSIndexCursor->m_untilExtKey, NULL,
+									pFSIndexCursor->m_untilKey.ucKey,
+									pFSIndexCursor->m_untilKey.uiKeyLen,
+									&m_fromExtKey, NULL,
+									m_fromKey.ucKey,
+									m_fromKey.uiKeyLen,
+									&iCompare)))
+		{
+			goto Exit;
+		}
+		
+		if (iCompare < 0)
+		{
+			
+			// Incoming until key is less than our from key - no union.
+			
+			*piCompare = -1;
+			goto Exit;
+		}
+		
+		// Incoming from key is < our from key, and incoming until key
+		// is >= our from key - definitely an overlap, and we need to
+		// set our from key equal to the incoming from key.
+			
+		*pbUnioned = TRUE;
+		if (RC_BAD( rc = copyKey( &m_fromKey, &m_fromExtKey,
+										  &pFSIndexCursor->m_fromKey,
+										  &pFSIndexCursor->m_fromExtKey)))
+		{
+			goto Exit;
+		}
+		bIncomingLessThan = TRUE;
+		
+		// Setup so that we will have to reposition on a call to
+		// firstKey or nextKey.
+		
+		m_curKey.uiKeyLen = 0;
+		m_bAtBOF = TRUE;
+		
+		// If the incoming until key was > our from key, see if it is
+		// also greater than our  until key.  If so, our until key will
+		// be set to be equal to the incoming until key.
+		
+		if (iCompare > 0)
+		{
+			goto Compare_Until_Keys;
+		}
+	}
+	else
+	{
+		
+		if (iCompare > 0)
+		{
+			// The incoming from key is > than our from key,
+			// see if the incoming from key is > our until key there
+			// is no overlap.
+			
+			if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+										&pFSIndexCursor->m_fromExtKey, NULL,
+										pFSIndexCursor->m_fromKey.ucKey,
+										pFSIndexCursor->m_fromKey.uiKeyLen,
+										&m_untilExtKey, NULL,
+										m_untilKey.ucKey,
+										m_untilKey.uiKeyLen,
+										&iCompare)))
+			{
+				goto Exit;
+			}
+			
+			if (iCompare > 0)
+			{
+				
+				// Incoming from key is also greater than our until key - no overlap.
+				
+				*piCompare = 1;
+				goto Exit;
+			}
+		}
+		
+		// From key is between our from and until key - definitely a union case.
+		// Just need to see if the incoming until key is > our until key.
+		// If so, set our until key to be equal to the incoming until key.
+		
+		*pbUnioned = TRUE;
+		
+Compare_Until_Keys:
+
+		// Compare the until keys.
+		
+		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+									&pFSIndexCursor->m_untilExtKey, NULL,
+									pFSIndexCursor->m_untilKey.ucKey,
+									pFSIndexCursor->m_untilKey.uiKeyLen,
+									&m_untilExtKey, NULL,
+									m_untilKey.ucKey,
+									m_untilKey.uiKeyLen,
+									&iCompare)))
+		{
+			goto Exit;
+		}
+		if (iCompare > 0)
+		{
+		
+			// Incoming until key is > our until key, set our until key to be
+			// equal to the incoming until key.
+		
+			if (RC_BAD( rc = copyKey( &m_untilKey, &m_untilExtKey,
+											  &pFSIndexCursor->m_untilKey,
+											  &pFSIndexCursor->m_untilExtKey)))
+			{
+				goto Exit;
+			}
+			bIncomingGreaterThan = TRUE;
+		}
+		// else iCompare <= 0
+		// Incoming until key is <= our until key - no need to change our
+		// until key.
+		
+	}
+	
+	// If we need to recalculate the cost, do so here.
+	
+	if (bIncomingLessThan && bIncomingGreaterThan)
+	{
+		
+		// Our range was a complete subset of the incoming range, so
+		// we should be able to just use whatever cost was calculated
+		// for it, unless no cost was calculated, in which case we
+		// need to calculate a cost.
+		
+		if (pFSIndexCursor->m_ui64Cost)
+		{
+			m_ui64Cost = pFSIndexCursor->m_ui64Cost;
+			m_ui64LeafBlocksBetween = pFSIndexCursor->m_ui64LeafBlocksBetween;
+			m_ui64TotalRefs = pFSIndexCursor->m_ui64TotalRefs;
+			m_bTotalsEstimated = pFSIndexCursor->m_bTotalsEstimated;
+		}
+		else
+		{
+			if (RC_BAD( rc = calculateCost()))
+			{
+				goto Exit;
+			}
+		}
+	}
+	
+	// If we have not calculated a cost, or the union created a larger
+	// range of keys on the from or until side, then we need to
+	// recalculate the cost.
+	
+	else if (bIncomingLessThan || bIncomingGreaterThan || !m_ui64Cost)
+	{
+		if (RC_BAD( rc = calculateCost()))
+		{
+			goto Exit;
+		}
+	}
+	
+	// If we unioned the keys, set the do row match and can compare on key
+	// flags to the worst case.  If the incoming cursor required us to
+	// match on the row, then we need to set this cursor to match on the row.
+	// If the incoming cursor did not allow us to compare on the key, then
+	// we don't want to allow this cursor to compare on the key.
+	
+	if (*pbUnioned)
+	{
+		if (pFSIndexCursor->m_bDoRowMatch)
+		{
+			m_bDoRowMatch = TRUE;
+		}
+		if (!pFSIndexCursor->m_bCanCompareOnKey)
+		{
+			m_bCanCompareOnKey = FALSE;
+		}
+		
+	}
+							
+Exit:
 
 	return( rc);
 }
@@ -457,10 +746,11 @@ RCODE FSIndexCursor::setKeyPosition(
 
 			if (!bExcludeKey)
 			{
-				if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, pExtSrchKey,
-											NULL, NULL,
+				if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex,
 											pExtSrchKey ? FALSE : TRUE,
+											pExtSrchKey, NULL,
 											pFoundKey->ucKey, pFoundKey->uiKeyLen,
+											pExtSrchKey, NULL,
 											pSearchKey->ucKey, pSearchKey->uiKeyLen,
 											&iCompare)))
 				{
@@ -601,9 +891,10 @@ RCODE FSIndexCursor::checkIfKeyInRange(
 		// It is already guaranteed to be >= the fromKey, we just need to
 		// make sure it is <= the until key.
 
-		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, &m_untilExtKey,
-								NULL, NULL, FALSE,
+		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+								&m_untilExtKey, NULL,
 								m_curKey.ucKey, m_curKey.uiKeyLen,
+								&m_untilExtKey, NULL,
 								m_untilKey.ucKey, m_untilKey.uiKeyLen,
 								&iCompare)))
 		{
@@ -624,9 +915,10 @@ RCODE FSIndexCursor::checkIfKeyInRange(
 		// It is already guaranteed to be <= the untilKey, we just need to
 		// make sure it is >= the from key.
 
-		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, &m_fromExtKey,
-								NULL, NULL, FALSE,
+		if (RC_BAD( rc = ixKeyCompare( m_pDb, m_pIndex, FALSE,
+								&m_fromExtKey, NULL,
 								m_curKey.ucKey, m_curKey.uiKeyLen,
+								&m_fromExtKey, NULL,
 								m_fromKey.ucKey, m_fromKey.uiKeyLen,
 								&iCompare)))
 		{
@@ -819,8 +1111,10 @@ Check_Key:
 		// If the bSkipCurrKey flag is TRUE, we want to skip keys until
 		// we come to one where the key part is different.
 		
-		if (RC_BAD( rc = ixKeyCompare( pDb, m_pIndex, NULL, NULL, NULL, FALSE,
+		if (RC_BAD( rc = ixKeyCompare( pDb, m_pIndex, FALSE,
+									NULL, NULL,
 									m_curKey.ucKey, m_curKey.uiKeyLen,
+									NULL, NULL,
 									saveCurrentKey.ucKey, saveCurrentKey.uiKeyLen,
 									&iCompare)))
 		{
@@ -1008,9 +1302,10 @@ Check_Key:
 		// If the bSkipCurrKey flag is TRUE, we want to skip keys until
 		// we come to one where the key part is different.
 
-		
-		if (RC_BAD( rc = ixKeyCompare( pDb, m_pIndex, NULL, NULL, NULL, FALSE,
+		if (RC_BAD( rc = ixKeyCompare( pDb, m_pIndex, FALSE,
+									NULL, NULL,
 									m_curKey.ucKey, m_curKey.uiKeyLen,
+									NULL, NULL,
 									saveCurrentKey.ucKey, saveCurrentKey.uiKeyLen,
 									&iCompare)))
 		{

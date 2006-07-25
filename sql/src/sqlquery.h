@@ -211,20 +211,18 @@ FINLINE FLMBOOL sqlCanCompare(
 
 typedef struct SQL_KEY
 {
-	SQL_INDEX *				pSQLIndex;
+	FSIndexCursor *		pFSIndexCursor;
+	SQL_PRED **				ppPredicates;			// Only used to set up pFSIndexCursor
 	FLMUINT					uiComponentsUsed;
-	SQL_PRED **				ppKeyComponents;
-	SQL_KEY *				pNext;
+	SQL_KEY *				pNext;					// Keys are kept in ascending order.
 	SQL_KEY *				pPrev;
 } SQL_KEY;
 
 typedef struct SQL_INDEX
 {
 	FLMUINT		uiIndexNum;
-	FLMUINT		uiNumComponents;
-	SQL_TABLE *	pSQLTable;
-	SQL_KEY *	pFirstKey;
-	SQL_KEY *	pLastKey;
+	SQL_KEY *	pFirstSQLKey;	// First key in list - keys are kept in ascending order.
+	SQL_KEY *	pLastSQLKey;	// Last key in list
 	SQL_INDEX *	pNext;
 	SQL_INDEX *	pPrev;
 } SQL_INDEX;
@@ -233,11 +231,9 @@ typedef struct SQL_TABLE
 {
 	FLMUINT					uiTableNum;
 	FSTableCursor *		pFSTableCursor;
-	FLMUINT64				ui64Cost;
+	FLMUINT64				ui64TotalCost;
 	FLMBOOL					bScan;
-	FLMBOOL					bScanIndex;
 	FLMUINT					uiIndexNum;
-	FLMBOOL					bIndexSet;
 	SQL_INDEX *				pFirstSQLIndex;
 	SQL_INDEX *				pLastSQLIndex;
 	SQL_TABLE *				pNext;
@@ -422,6 +418,10 @@ public:
 		FLMUINT	uiTableNum,
 		FLMUINT	uiColumnNum,
 		FLMBOOL	bDescending);
+		
+	RCODE setIndex(
+		FLMUINT	uiTableNum,
+		FLMUINT	uiIndexNum);
 	
 	RCODE getNext(
 		F_Row **	ppRow);
@@ -469,21 +469,20 @@ private:
 	RCODE convertToDNF( void);
 
 	RCODE getPredKeys(
-		SQL_PRED *	pPred,
-		SQL_TABLE *	pSQLTable);
+		F_TABLE *		pTable,
+		FLMUINT			uiForceIndexNum,
+		SQL_PRED *		pPred,
+		SQL_INDEX **	ppFirstSQLIndex,
+		SQL_INDEX **	ppLastSQLIndex);
 		
 	RCODE chooseBestIndex(
-		SQL_TABLE *	pSQLTable,
-		FLMUINT64 *	pui64Cost);
-		
-	RCODE calcTableScanCost(
-		SQL_TABLE *			pSQLTable,
-		FLMUINT64 *			pui64Cost,
-		FSTableCursor **	ppFSTableCursor);
+		F_TABLE *		pTable,
+		SQL_INDEX *		pFirstSQLIndex,
+		SQL_INDEX **	ppBestSQLIndex);
 		
 	RCODE mergeKeys(
-		SQL_TABLE *	pDestTable,
-		SQL_TABLE *	pSrcTable);
+		SQL_TABLE *	pSQLTable,
+		SQL_INDEX *	pSQLIndex);
 		
 	RCODE optimizeTable(
 		SQL_SUBQUERY *	pSubQuery,
@@ -491,7 +490,22 @@ private:
 		
 	RCODE optimizeSubQueries( void);
 	
-	RCODE setupIndexScan( void);
+	RCODE addIndexToTable(
+		SQL_TABLE *		pSQLTable,
+		FLMUINT			uiIndexNum,
+		SQL_INDEX **	ppSQLIndex);
+		
+	RCODE addKeyToIndex(
+		SQL_INDEX *	pSQLIndex,
+		SQL_KEY **	ppSQLKey);
+		
+	RCODE setupIndexScan(
+		SQL_TABLE *	pSQLTable);
+		
+	RCODE setupTableScan(
+		SQL_TABLE *	pSQLTable);
+		
+	RCODE setupScans( void);
 
 	RCODE optimize( void);
 	
@@ -512,10 +526,6 @@ private:
 	FLMBOOL				m_bOptimized;
 	F_Database *		m_pDatabase;
 	F_Db *				m_pDb;
-	FLMBOOL				m_bScan;
-	FLMBOOL				m_bScanIndex;
-	FLMUINT				m_uiIndexNum;
-	FLMBOOL				m_bIndexSet;
 	FLMBOOL				m_bEmpty;
 	SQLQuery *			m_pNext;		
 	SQLQuery *			m_pPrev;
@@ -551,4 +561,10 @@ RCODE sqlEvalCriteria(						// sqleval.cpp
 	F_Row *			pRow,
 	FLMUINT			uiLanguage);
 
-#endif	// #ifndef FLAIMODBC_H
+void freeIndexKeys(							// whereclause.cpp
+	SQL_INDEX *	pSQLIndex);
+	
+void freeTableIndexes(						// whereclause.cpp
+	SQL_TABLE *	pSQLTable);
+	
+#endif	// #ifndef SQLQUERY_H

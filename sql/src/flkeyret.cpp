@@ -203,9 +203,10 @@ RCODE	F_Db::keyRetrieve(
 		FLMINT	iTmpCmp;
 		
 		if (RC_BAD( rc = ixKeyCompare( this, pIndex,
-						pSearchKey, NULL, NULL,
 						(uiIdMatchFlags == FLM_MATCH_ROW_ID) ? TRUE : FALSE,
+						pSearchKey, NULL,
 						pucFoundKey, uiFoundKeyLen,
+						pSearchKey, NULL,
 						pucSearchKey, uiSearchKeyLen, &iTmpCmp)))
 		{
 			goto Exit;

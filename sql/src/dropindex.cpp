@@ -238,7 +238,7 @@ RCODE SQLStatement::processDropIndex( void)
 
 	// Get the index name - index name must exist
 	
-	if (RC_BAD( rc = getIndexName( TRUE, szIndexName, sizeof( szIndexName),
+	if (RC_BAD( rc = getIndexName( TRUE, NULL, szIndexName, sizeof( szIndexName),
 							&uiIndexNameLen, &pIndex)))
 	{
 		goto Exit;

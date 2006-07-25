@@ -49,6 +49,8 @@ typedef struct TABLE_ITEM
 {
 	FLMUINT			uiTableNum;
 	const char *	pszTableAlias;
+	FLMUINT			uiIndexNum;
+	FLMBOOL			bScan;
 } TABLE_ITEM;
 
 typedef enum
@@ -216,6 +218,7 @@ private:
 
 	RCODE getIndexName(
 		FLMBOOL		bMustExist,
+		F_TABLE *	pTable,
 		char *		pszIndexName,
 		FLMUINT		uiIndexNameBufSize,
 		FLMUINT *	puiIndexNameLen,
