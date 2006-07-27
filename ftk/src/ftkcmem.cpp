@@ -365,8 +365,6 @@ RCODE F_BlockAlloc::setup(
 	m_uiHashMask = ~((FLMUINT)(sysconf( _SC_PAGESIZE) - 1));
 #else
 	m_uiHashMask = FLM_MAX_UINT - 0xFFFF;
-#else
-	
 #endif
 
 Exit:
