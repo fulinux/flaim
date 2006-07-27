@@ -1942,22 +1942,6 @@ RCODE F_RebuildNodeIStream::readBlock(
 					? uiBlockSize
 					: uiBlockSize - (FLMUINT)ui16BlkBytesAvail);
 					
-	// Decrypt the block
-	
-	if( isEncryptedBlk( pBlkHdr))
-	{
-		if( RC_BAD( rc = m_pDbRebuild->m_pDb->getDictionary( &pDict)))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = m_pDbRebuild->m_pDb->getDatabase()->decryptBlock(
-			pDict, pucBlk)))
-		{
-			goto Exit;
-		}
-	}
-	
 	// Compute the checksum and convert the block
 		
 	ui32CRC = calcBlkCRC( pBlkHdr, uiBlkEnd);
@@ -1995,6 +1979,22 @@ RCODE F_RebuildNodeIStream::readBlock(
 		goto Exit;
 	}
 		
+	// Decrypt the block
+	
+	if( isEncryptedBlk( pBlkHdr))
+	{
+		if( RC_BAD( rc = m_pDbRebuild->m_pDb->getDictionary( &pDict)))
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = m_pDbRebuild->m_pDb->getDatabase()->decryptBlock(
+			pDict, pucBlk)))
+		{
+			goto Exit;
+		}
+	}
+	
 	pScanState->uiFileNumber = uiFileNumber;
 	pScanState->uiFileOffset = uiFileOffset;
 	pScanState->uiBlockSize = uiBlockSize;
@@ -2063,7 +2063,7 @@ TryNextFile:
 				uiTryNextCount++;
 				goto TryNextFile;
 			}
-			else if( rc == NE_XFLM_DATA_ERROR)
+			else if( rc == NE_XFLM_DATA_ERROR || rc == NE_XFLM_BLOCK_CRC)
 			{
 				rc = NE_XFLM_OK;
 				continue;
