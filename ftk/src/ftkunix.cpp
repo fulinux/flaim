@@ -186,6 +186,8 @@ RCODE F_FileHdl::openOrCreate(
 			{
 				bDoDirectIO = FALSE;
 			}
+
+			openFlags |= O_NOATIME;
 		}
 #elif defined( FLM_SOLARIS) || defined( FLM_OSX)
 		bUsingAsync = TRUE;
@@ -717,10 +719,16 @@ RCODE F_FileHdl::lowLevelWrite(
 			FLMUINT		uiExtendBufferSize;
 			
 			uiExtendBufferSize = f_min( uiTotalBytesToExtend, 64 * 1024);
-			
+
 			if( RC_BAD( rc = f_allocAlignedBuffer( 
 				uiExtendBufferSize, &pucExtendBuffer)))
 			{
+				goto Exit;
+			}
+			
+			if( ftruncate( m_fd, ui64CurrFileSize + uiTotalBytesToExtend) == -1)
+			{
+				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
 			
