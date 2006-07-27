@@ -687,7 +687,7 @@ void F_BlockAlloc::freeCell(
 	// Add the cell to the slab's free list
 
 	pAvailBlock->ui8NextAvail = pSlab->ui8FirstAvail;
-	pSlab->ui8FirstAvail = uiBlockNum;
+	pSlab->ui8FirstAvail = (FLMUINT8)uiBlockNum;
 	pSlab->ui8AvailBlocks++;
 
 	f_assert( pSlab->ui8AllocatedBlocks);
