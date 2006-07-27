@@ -33,7 +33,8 @@
 
 #define MAX_CACHE_ROW				1
 #define USED_CACHE_ROW				(MAX_CACHE_ROW + 1)
-#define DIRTY_CACHE_ROW				(USED_CACHE_ROW + 1)
+#define ITEMS_CACHED_ROW			(USED_CACHE_ROW + 1)
+#define DIRTY_CACHE_ROW				(ITEMS_CACHED_ROW + 1)
 #define LOG_CACHE_ROW				(DIRTY_CACHE_ROW + 1)
 #define FREE_CACHE_ROW				(LOG_CACHE_ROW + 1)
 #define CP_STATE_ROW					(FREE_CACHE_ROW + 1)
@@ -833,24 +834,31 @@ void gigaUpdateMemInfo( void)
 	char				szBuf [50];
 
 	FlmGetMemoryInfo( &MemInfo);
-	f_sprintf( (char *)szBuf, "Blk: %-10u  Rec: %-10u",
+	
+	f_sprintf( (char *)szBuf, "Blk: %-10u  Record: %-10u",
 								(unsigned)MemInfo.BlockCache.uiMaxBytes,
 								(unsigned)MemInfo.RecordCache.uiMaxBytes);
 	gigaOutputStr( MAX_CACHE_ROW, szBuf);
-	f_sprintf( (char *)szBuf, "Blk: %-10u  Rec: %-10u",
+	
+	f_sprintf( (char *)szBuf, "Blk: %-10u  Record: %-10u",
 								(unsigned)MemInfo.BlockCache.uiTotalBytesAllocated,
 								(unsigned)MemInfo.RecordCache.uiTotalBytesAllocated);
 	gigaOutputStr( USED_CACHE_ROW, szBuf);
 
-	f_sprintf( (char *)szBuf, "Cnt: %-10u  Bytes: %-10u", 
+	f_sprintf( (char *)szBuf, "Blk: %-10u  Record: %-10u",
+								(unsigned)MemInfo.BlockCache.uiCount,
+								(unsigned)MemInfo.RecordCache.uiCount);
+	gigaOutputStr( ITEMS_CACHED_ROW, szBuf);
+	
+	f_sprintf( (char *)szBuf, "Cnt: %-10u  Bytes : %-10u", 
 		(unsigned)MemInfo.uiDirtyCount, (unsigned)MemInfo.uiDirtyBytes);
 	gigaOutputStr( DIRTY_CACHE_ROW, szBuf);
 
-	f_sprintf( (char *)szBuf, "Cnt: %-10u  Bytes: %-10u", 
+	f_sprintf( (char *)szBuf, "Cnt: %-10u  Bytes : %-10u", 
 		(unsigned)MemInfo.uiLogCount, (unsigned)MemInfo.uiLogBytes);
 	gigaOutputStr( LOG_CACHE_ROW, szBuf);
 
-	f_sprintf( (char *)szBuf, "Cnt: %-10u  Bytes: %-10u", 
+	f_sprintf( (char *)szBuf, "Cnt: %-10u  Bytes : %-10u", 
 		(unsigned)MemInfo.uiFreeCount, 
 		(unsigned)MemInfo.uiFreeBytes);
 	gigaOutputStr( FREE_CACHE_ROW, szBuf);
@@ -1062,6 +1070,7 @@ RCODE gigaLoadDatabase( void)
 
 	gigaOutputLabel( MAX_CACHE_ROW, "Maximum Cache Size (bytes)");
 	gigaOutputLabel( USED_CACHE_ROW, "Cache Used (bytes)");
+	gigaOutputLabel( ITEMS_CACHED_ROW, "Cache Used (items)");
 	gigaOutputLabel( DIRTY_CACHE_ROW, "Dirty Cache (bytes)");
 	gigaOutputLabel( LOG_CACHE_ROW, "Log Cache (bytes)");
 	gigaOutputLabel( FREE_CACHE_ROW, "Free Cache (bytes)");

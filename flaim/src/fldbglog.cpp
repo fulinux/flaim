@@ -337,13 +337,13 @@ void _flmDbgOutputMsg(
 	}
 }
 
-#endif	// #ifdef FLM_DBG_LOG
+#else	// #ifdef FLM_DBG_LOG
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if( (defined( FLM_NLM) && !defined( __MWERKS__)) || defined( FLM_OSX))
 void gv_fldbglog()
 {
 }
+
 #endif

@@ -527,7 +527,9 @@ typedef struct SCACHE_MGR
 	FLMUINT				uiHashTblBits;
 											// Number of bits that are significant
 											// for the hash table size.
-	IF_FixedAlloc *	pAllocators[ 2];	
+	IF_FixedAlloc *	pSCacheAllocator;
+											// Fixed size allocator for SCACHE structures
+	IF_BlockAlloc *	pBlockAllocators[ 2];	
 											// Fixed size allocators for cache blocks
 											// We only support 4K and 8K blocks
 

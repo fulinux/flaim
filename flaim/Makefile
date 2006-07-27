@@ -833,7 +833,7 @@ ifdef win_target
 
 	# Libraries that our various components need to link against
 
-	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
+	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib
 	exe_link_libs = $(lib_link_libs)
 
 	# Convert the list of defines into a proper set of command-line params
@@ -1582,7 +1582,7 @@ endif
 # -- checkdb --
 
 .PHONY : checkdb
-checkdb: status clean dircheck libs $(checkdb_exe)
+checkdb: status clean dircheck $(flaim_static_lib) $(checkdb_exe)
 $(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),checkdb,$(checkdb_obj))
@@ -1590,7 +1590,7 @@ $(checkdb_exe): $(checkdb_obj) $(flaim_static_lib)
 # -- gigatest --
 
 .PHONY : gigatest
-gigatest: status clean dircheck libs $(gigatest_exe)
+gigatest: status clean dircheck $(flaim_static_lib) $(gigatest_exe)
 $(gigatest_exe): $(gigatest_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),gigatest,$(gigatest_obj))
@@ -1598,7 +1598,7 @@ $(gigatest_exe): $(gigatest_obj) $(flaim_static_lib)
 # -- rebuild --
 
 .PHONY : rebuild
-rebuild: status clean dircheck libs $(rebuild_exe)
+rebuild: status clean dircheck $(flaim_static_lib) $(rebuild_exe)
 $(rebuild_exe): $(rebuild_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),rebuild,$(rebuild_obj))
@@ -1606,7 +1606,7 @@ $(rebuild_exe): $(rebuild_obj) $(flaim_static_lib)
 # -- view --
 
 .PHONY : view
-view: status clean dircheck libs $(view_exe)
+view: status clean dircheck $(flaim_static_lib) $(view_exe)
 $(view_exe): $(view_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),view,$(view_obj))
@@ -1614,7 +1614,7 @@ $(view_exe): $(view_obj) $(flaim_static_lib)
 # -- dbshell --
 
 .PHONY : dbshell
-dbshell: status clean dircheck libs $(dbshell_exe)
+dbshell: status clean dircheck $(flaim_static_lib) $(dbshell_exe)
 $(dbshell_exe): $(dbshell_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(util_dir),dbshell,$(dbshell_obj))
@@ -1623,7 +1623,7 @@ $(dbshell_exe): $(dbshell_obj) $(flaim_static_lib)
 
 .PHONY : sample
 ifndef netware_target
-sample: status clean dircheck libs $(sample_exe)
+sample: status clean dircheck $(flaim_static_lib) $(sample_exe)
 $(sample_exe): $(sample_obj) $(flaim_static_lib)
 	$(ec)$(gprintf) "Linking $@ ...\n"
 	$(call flm_exe_link_cmd,$(sample_dir),sample,$(sample_obj))

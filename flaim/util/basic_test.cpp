@@ -95,7 +95,7 @@ public:
 	
 	RCODE addRecordTest(
 		FLMUINT *	puiDrn);
-	
+		
 	RCODE largeFieldTest( void);
 	
 	RCODE modifyRecordTest(
@@ -466,8 +466,7 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE IFlmTestImpl::addRecordTest(
-	FLMUINT *	puiDrn
-	)
+	FLMUINT *		puiDrn)
 {
 	RCODE				rc = FERR_OK;
 	FlmRecord *		pRec = NULL;
@@ -558,7 +557,8 @@ RCODE IFlmTestImpl::addRecordTest(
 
 	// Reserve the next DRN - so it should not be used.
 
-	if (RC_BAD( rc = FlmReserveNextDrn( m_hDb, FLM_DATA_CONTAINER, &uiReserveDrn)))
+	if (RC_BAD( rc = FlmReserveNextDrn( m_hDb, 
+		FLM_DATA_CONTAINER, &uiReserveDrn)))
 	{
 		MAKE_ERROR_STRING( "calling FlmReserveNextDrn", rc, m_szFailInfo);
 		goto Exit;
@@ -592,6 +592,7 @@ RCODE IFlmTestImpl::addRecordTest(
 		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (*puiDrn <= uiReserveDrn)
 	{
 		rc = RC_SET( FERR_FAILURE);
@@ -612,28 +613,38 @@ RCODE IFlmTestImpl::addRecordTest(
 				MAKE_ERROR_STRING( "calling FlmRecord->copy()", rc, m_szFailInfo);
 				goto Exit;
 			}
-			if ((pvField = pCopyRec->find( pCopyRec->root(), FIRST_NAME_TAG)) == NULL)
+			
+			if ((pvField = pCopyRec->find( 
+				pCopyRec->root(), FIRST_NAME_TAG)) == NULL)
 			{
 				rc = RC_SET( FERR_DATA_ERROR);
-				MAKE_ERROR_STRING( "corruption calling FlmRecord->copy()", rc, m_szFailInfo);
+				MAKE_ERROR_STRING( "corruption calling FlmRecord->copy()", 
+					rc, m_szFailInfo);
 				goto Exit;
 			}
-			if( RC_BAD( rc = pCopyRec->setNative( pvField, gv_pszGivenNames [uiLoop2])))
+			
+			if( RC_BAD( rc = pCopyRec->setNative( pvField, 
+				gv_pszGivenNames [uiLoop2])))
 			{
 				MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
 				goto Exit;
 			}
+			
 			if ((pvField = pCopyRec->find( pCopyRec->root(), LAST_NAME_TAG)) == NULL)
 			{
 				rc = RC_SET( FERR_DATA_ERROR);
-				MAKE_ERROR_STRING( "corruption calling FlmRecord->copy()", rc, m_szFailInfo);
+				MAKE_ERROR_STRING( "corruption calling FlmRecord->copy()", 
+					rc, m_szFailInfo);
 				goto Exit;
 			}
-			if( RC_BAD( rc = pCopyRec->setNative( pvField, gv_pszFamilyNames [uiLoop])))
+			
+			if( RC_BAD( rc = pCopyRec->setNative( pvField, 
+				gv_pszFamilyNames [uiLoop])))
 			{
 				MAKE_ERROR_STRING( "calling setNative", rc, m_szFailInfo);
 				goto Exit;
 			}
+			
 			uiDrn2 = 0;
 			if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
 				&uiDrn2, pCopyRec, 0)))
@@ -641,6 +652,7 @@ RCODE IFlmTestImpl::addRecordTest(
 				MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
 				goto Exit;
 			}
+			
 			if (uiDrn2 <= uiLastDrn)
 			{
 				rc = RC_SET( FERR_FAILURE);
@@ -649,6 +661,7 @@ RCODE IFlmTestImpl::addRecordTest(
 					(unsigned)uiDrn2, (unsigned)uiLastDrn);
 				goto Exit;
 			}
+			
 			uiLastDrn = uiDrn2;
 			pCopyRec->Release();
 			pCopyRec = NULL;
@@ -656,6 +669,7 @@ RCODE IFlmTestImpl::addRecordTest(
 	}
 
 	// Commit the transaction
+	//
 	// If FlmDbTransCommit returns without an error, the changes made
 	// above will be durable even if the system crashes.
 
@@ -665,7 +679,6 @@ RCODE IFlmTestImpl::addRecordTest(
 		goto Exit;
 	}
 	bTransActive = FALSE;
-
 	bPassed = TRUE;
 	
 Exit:
@@ -1144,19 +1157,22 @@ RCODE IFlmTestImpl::keyRetrieveTest(
 		if ((pvField = pFoundKey->find( pFoundKey->root(), LAST_NAME_TAG)) == NULL)
 		{
 			rc = RC_SET( FERR_DATA_ERROR);
-			MAKE_ERROR_STRING( "corruption calling FlmRecord->find()", rc, m_szFailInfo);
+			MAKE_ERROR_STRING( "corruption calling FlmRecord->find()",
+				rc, m_szFailInfo);
 			goto Exit;
 		}
 		uiLen = sizeof( szCurrLastName);
 		if (RC_BAD( rc = pFoundKey->getNative( pvField, szCurrLastName, &uiLen)))
 		{
-			MAKE_ERROR_STRING( "calling FlmRecord->getNative()", rc, m_szFailInfo);
+			MAKE_ERROR_STRING( "calling FlmRecord->getNative()", 
+				rc, m_szFailInfo);
 			goto Exit;
 		}
 		if ((pvField = pFoundKey->find( pFoundKey->root(), FIRST_NAME_TAG)) == NULL)
 		{
 			rc = RC_SET( FERR_DATA_ERROR);
-			MAKE_ERROR_STRING( "corruption calling FlmRecord->find()", rc, m_szFailInfo);
+			MAKE_ERROR_STRING( "corruption calling FlmRecord->find()", 
+				rc, m_szFailInfo);
 			goto Exit;
 		}
 		uiLen = sizeof( szCurrFirstName);
@@ -1854,7 +1870,8 @@ RCODE IFlmTestImpl::deleteFieldTest(
 	if (pDictRec->getFieldID( pDictRec->root()) != FLM_FIELD_TAG)
 	{
 		rc = RC_SET( FERR_FAILURE);
-		f_sprintf( m_szFailInfo, "Dictionary record %u, is not a field definition!",
+		f_sprintf( m_szFailInfo, 
+				"Dictionary record %u, is not a field definition!",
 				(unsigned)uiFieldNum);
 		goto Exit;
 	}
@@ -1905,7 +1922,8 @@ RCODE IFlmTestImpl::deleteFieldTest(
 	else
 	{
 		rc = RC_SET( FERR_FAILURE);
-		f_sprintf( m_szFailInfo, "Should not be able to set field %'s state to unused!",
+		f_sprintf( m_szFailInfo, 
+				"Should not be able to set field %'s state to unused!",
 				(unsigned)uiFieldNum);
 		goto Exit;
 	}
@@ -1974,7 +1992,8 @@ RCODE IFlmTestImpl::deleteFieldTest(
 	if (pDictRec->getFieldID( pDictRec->root()) != FLM_FIELD_TAG)
 	{
 		rc = RC_SET( FERR_FAILURE);
-		f_sprintf( m_szFailInfo, "Dictionary record %u, is not a field definition!",
+		f_sprintf( m_szFailInfo, 
+				"Dictionary record %u, is not a field definition!",
 				(unsigned)uiFieldNum);
 		goto Exit;
 	}
@@ -2015,8 +2034,9 @@ RCODE IFlmTestImpl::deleteFieldTest(
 		if (f_strnicmp( szState, "acti", 4) != 0)
 		{
 			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Dictionary record %u's state should be active!",
-					(unsigned)uiFieldNum);
+			f_sprintf( m_szFailInfo, 
+				"Dictionary record %u's state should be active!",
+				(unsigned)uiFieldNum);
 			goto Exit;
 		}
 	}
@@ -2044,7 +2064,8 @@ RCODE IFlmTestImpl::deleteFieldTest(
 	
 	bTransActive = TRUE;
 	
-	if( RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_PURGED_FLDS, EACH_CHANGE, NULL, NULL)))
+	if( RC_BAD( rc = FlmDbSweep( m_hDb, SWEEP_PURGED_FLDS, 
+		EACH_CHANGE, NULL, NULL)))
 	{
 		MAKE_ERROR_STRING( "calling FlmDbSweep", rc, m_szFailInfo);
 		goto Exit;
@@ -2407,7 +2428,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 		if (!pvDataField)
 		{
 			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Could not find next level one after field #%u",
+			f_sprintf( m_szFailInfo, 
+				"Could not find next level one after field #%u",
 				(unsigned)uiFieldId);
 			goto Exit;
 		}
@@ -2418,7 +2440,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 		if (uiTmp != uiFieldId + 1)
 		{
 			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Incorrect field ID (%u) returned from level one field #%u (incl)",
+			f_sprintf( m_szFailInfo, 
+				"Incorrect field ID (%u) returned from level one field #%u (incl)",
 				(unsigned)uiTmp, (unsigned)(uiFieldId + 1));
 			goto Exit;
 		}
@@ -2462,8 +2485,9 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 				if (uiCount > 3)
 				{
 					rc = RC_SET( FERR_FAILURE);
-					f_sprintf( m_szFailInfo, "Too many instances of level one fields with ID #%u",
-										(unsigned)(uiFieldId + 1));
+					f_sprintf( m_szFailInfo, 
+						"Too many instances of level one fields with ID #%u",
+						(unsigned)(uiFieldId + 1));
 					goto Exit;
 				}
 				
@@ -2473,7 +2497,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 				if (uiTmp != uiFieldId + 1)
 				{
 					rc = RC_SET( FERR_FAILURE);
-					f_sprintf( m_szFailInfo, "Incorrect field ID (%u) returned from instance #%u of level one field #%u",
+					f_sprintf( m_szFailInfo, 
+						"Incorrect field ID (%u) returned from instance #%u of level one field #%u",
 						(unsigned)uiTmp, (unsigned)uiCount, (unsigned)(uiFieldId + 1));
 					goto Exit;
 				}
@@ -2488,7 +2513,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 				if (uiTmp != uiFieldId + 1)
 				{
 					rc = RC_SET( FERR_FAILURE);
-					f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from instance #%u of level one field #%u",
+					f_sprintf( m_szFailInfo, 
+						"Incorrect value (%u) returned from instance #%u of level one field #%u",
 						(unsigned)uiTmp, (unsigned)uiCount, (unsigned)(uiFieldId + 1));
 					goto Exit;
 				}
@@ -2522,7 +2548,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 			if (!pvDataField)
 			{
 				rc = RC_SET( FERR_FAILURE);
-				f_sprintf( m_szFailInfo, "Could not find instance #%u of level one field #%u",
+				f_sprintf( m_szFailInfo, 
+					"Could not find instance #%u of level one field #%u",
 					(unsigned)uiCount, (unsigned)uiFieldId);
 				goto Exit;
 			}
@@ -2533,7 +2560,8 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 			if (uiTmp != uiFieldId)
 			{
 				rc = RC_SET( FERR_FAILURE);
-				f_sprintf( m_szFailInfo, "Incorrect field ID (%u) returned from instance #%u of level one field #%u",
+				f_sprintf( m_szFailInfo, 
+					"Incorrect field ID (%u) returned from instance #%u of level one field #%u",
 					(unsigned)uiTmp, (unsigned)uiCount, (unsigned)uiFieldId);
 				goto Exit;
 			}
@@ -2545,10 +2573,12 @@ RCODE IFlmTestImpl::sortedFieldsTest(
 				MAKE_ERROR_STRING( "calling getUINT", rc, m_szFailInfo);
 				goto Exit;
 			}
+			
 			if (uiTmp != uiFieldId)
 			{
 				rc = RC_SET( FERR_FAILURE);
-				f_sprintf( m_szFailInfo, "Incorrect value (%u) returned from instance #%u of level one field #%u",
+				f_sprintf( m_szFailInfo, 
+					"Incorrect value (%u) returned from instance #%u of level one field #%u",
 					(unsigned)uiTmp, (unsigned)uiCount, (unsigned)uiFieldId);
 				goto Exit;
 			}
@@ -2830,7 +2860,8 @@ RCODE IFlmTestImpl::compareRecords(
 												&uiLevel2, &uiDataType2, &uiDataLength2,
 												&uiEncLength2, &uiEncId2)))
 		{
-			MAKE_ERROR_STRING( "calling FlmRecord->getFieldInfo", rc, m_szFailInfo);
+			MAKE_ERROR_STRING( "calling FlmRecord->getFieldInfo", 
+				rc, m_szFailInfo);
 			goto Exit;
 		}
 		
@@ -2846,7 +2877,8 @@ RCODE IFlmTestImpl::compareRecords(
 		if (uiLevel1 != uiLevel2)
 		{
 			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Field Level mismatch in %s, Fld: %u, %s: %u, %s: %u",
+			f_sprintf( m_szFailInfo, 
+				"Field Level mismatch in %s, Fld: %u, %s: %u, %s: %u",
 				pszWhat, (unsigned)uiFieldNum1,
 				pszDb1, (unsigned)uiLevel1,
 				pszDb2, (unsigned)uiLevel2);
@@ -2855,7 +2887,8 @@ RCODE IFlmTestImpl::compareRecords(
 		if (uiDataLength1 != uiDataLength2)
 		{
 			rc = RC_SET( FERR_FAILURE);
-			f_sprintf( m_szFailInfo, "Field Length mismatch in %s, Fld: %u, %s: %u, %s: %u",
+			f_sprintf( m_szFailInfo, 
+				"Field Length mismatch in %s, Fld: %u, %s: %u, %s: %u",
 				pszWhat, (unsigned)uiFieldNum1,
 				pszDb1, (unsigned)uiDataLength1,
 				pszDb2, (unsigned)uiDataLength2);
@@ -3800,14 +3833,17 @@ RCODE IFlmTestImpl::execute( void)
 	{
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = removeDbTest( DB_NAME_STR)))
 	{
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = removeDbTest( DB_RESTORE_NAME_STR)))
 	{
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = removeDbTest( DB_REBUILD_NAME_STR)))
 	{
 		goto Exit;
@@ -3816,7 +3852,5 @@ RCODE IFlmTestImpl::execute( void)
 Exit:
 
 	FlmShutdown();
-
 	return( rc);
 }
-

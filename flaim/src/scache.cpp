@@ -327,6 +327,35 @@ public:
 		void *	pvOldAlloc);
 };
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+class F_BlockRelocator : public IF_Relocator
+{
+public:
+
+	F_BlockRelocator( FLMUINT uiBlockSize)
+	{
+		m_uiSigBitsInBlkSize = flmGetSigBits( uiBlockSize);
+	}
+	
+	virtual ~F_BlockRelocator()
+	{
+	}
+
+	SCACHE * getSCachePtr(
+		void *		pvAlloc);
+	
+	void FLMAPI relocate(
+		void *		pvOldAlloc,
+		void *		pvNewAlloc);
+
+	FLMBOOL FLMAPI canRelocate(
+		void *		pvOldAlloc);
+		
+	FLMUINT			m_uiSigBitsInBlkSize;
+};
+
 /***************************************************************************
 Desc:
 *****************************************************************************/
@@ -1512,8 +1541,10 @@ FSTATIC void ScaFree(
 	}
 
 	gv_FlmSysData.SCacheMgr.Usage.uiCount--;
-	gv_FlmSysData.SCacheMgr.pAllocators[ 
-		pSCache->ui16BlkSize == 4096 ? 0 : 1]->freeCell( pSCache);
+	gv_FlmSysData.SCacheMgr.pBlockAllocators[ 
+		pSCache->ui16BlkSize == 4096 ? 0 : 1]->freeBlock( 
+		(void **)&pSCache->pucBlk);
+	gv_FlmSysData.SCacheMgr.pSCacheAllocator->freeCell( pSCache);
 	pSCache = NULL;
 }
 
@@ -2852,8 +2883,9 @@ void ScaCleanupCache(
 
 	// Defrag cache memory
 
-	gv_FlmSysData.SCacheMgr.pAllocators[ 0]->defragmentMemory();
-	gv_FlmSysData.SCacheMgr.pAllocators[ 1]->defragmentMemory();
+	gv_FlmSysData.SCacheMgr.pBlockAllocators[ 0]->defragmentMemory();
+	gv_FlmSysData.SCacheMgr.pBlockAllocators[ 1]->defragmentMemory();
+	gv_FlmSysData.SCacheMgr.pSCacheAllocator->defragmentMemory();
 
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
 }
@@ -3153,17 +3185,23 @@ FSTATIC RCODE scaAllocCacheBlock(
 	SCACHE *		pSCache;
 
 	f_assertMutexLocked( gv_FlmSysData.hShareMutex);
-
-	if( (pSCache = (SCACHE *)gv_FlmSysData.SCacheMgr.pAllocators[ 
-		uiBlockSize == 4096 ? 0 : 1]->allocCell( NULL, NULL)) == NULL)
+	
+	if( (pSCache = (SCACHE *)gv_FlmSysData.SCacheMgr.pSCacheAllocator->allocCell( 
+		NULL, NULL)) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-
+	
 	f_memset( pSCache, 0, sizeof( SCACHE));
-	pSCache->pucBlk = (FLMBYTE *)(&pSCache[ 1]);
-
+	
+	if( RC_BAD( rc = gv_FlmSysData.SCacheMgr.pBlockAllocators[ 
+		uiBlockSize == 4096 ? 0 : 1]->allocBlock( (void **)&pSCache->pucBlk)))
+	{
+		gv_FlmSysData.SCacheMgr.pSCacheAllocator->freeCell( pSCache);
+		goto Exit;
+	}
+	
 	// Set the block size.
 
 	pSCache->ui16BlkSize = (FLMUINT16)uiBlockSize;
@@ -3343,14 +3381,13 @@ FSTATIC RCODE ScaReadTheBlock(
 	FLMUINT				uiFilePos,
 	FLMUINT				uiBlkAddress)
 {
-	RCODE	  			rc = FERR_OK;
-	FLMUINT			uiBytesRead;
-	FFILE *			pFile = pDb->pFile;
-	FLMUINT			uiBlkSize = pFile->FileHdr.uiBlockSize;
-	DB_STATS *		pDbStats = pDb->pDbStats;
-	F_TMSTAMP		StartTime;
-	FLMUINT64		ui64ElapMilli;
-	FLMUINT			uiEncryptSize;
+	RCODE	  				rc = FERR_OK;
+	FLMUINT				uiBytesRead;
+	FFILE *				pFile = pDb->pFile;
+	FLMUINT				uiBlkSize = pFile->FileHdr.uiBlockSize;
+	DB_STATS *			pDbStats = pDb->pDbStats;
+	F_TMSTAMP			StartTime;
+	FLMUINT64			ui64ElapMilli;
 
 	// We should NEVER be attempting to read a block address that is
 	// beyond the current logical end of file.
@@ -3386,55 +3423,20 @@ FSTATIC RCODE ScaReadTheBlock(
 		f_timeGetTimeStamp( &StartTime);
 	}
 	
-	if( pDb->pSFileHdl->canDoDirectIO())
+	if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
+		uiBlkSize, pucBlk, &uiBytesRead)))
 	{
-		if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
-			uiBlkSize, pDb->pucAlignedReadBuf, &uiBytesRead)))
+		if (pDbStats)
 		{
-			if (pDbStats)
-			{
-				pDbStats->uiReadErrors++;
-			}
-	
-			if (rc == FERR_IO_END_OF_FILE)
-			{
-				// Should only be possible when reading a root block,
-				// because the root block address in the LFILE may be
-				// a block that was just created by an update
-				// transaction.
-	
-				flmAssert( pDb->uiKilledTime);
-				rc = RC_SET( FERR_OLD_VIEW);
-			}
-			goto Exit;
+			pDbStats->uiReadErrors++;
 		}
-	
-		uiEncryptSize = (FLMUINT)getEncryptSize( pDb->pucAlignedReadBuf);
-		if( uiEncryptSize < BH_OVHD || uiEncryptSize > uiBlkSize)
+
+		if (rc == FERR_IO_END_OF_FILE)
 		{
-			rc = RC_SET_AND_ASSERT( FERR_DATA_ERROR);
-			goto Exit;
+			flmAssert( pDb->uiKilledTime);
+			rc = RC_SET( FERR_OLD_VIEW);
 		}
-	
-		f_memcpy( pucBlk, pDb->pucAlignedReadBuf, uiEncryptSize);
-	}
-	else
-	{
-		if( RC_BAD( rc = pDb->pSFileHdl->readBlock( uiFilePos,
-			uiBlkSize, pucBlk, &uiBytesRead)))
-		{
-			if (pDbStats)
-			{
-				pDbStats->uiReadErrors++;
-			}
-	
-			if (rc == FERR_IO_END_OF_FILE)
-			{
-				flmAssert( pDb->uiKilledTime);
-				rc = RC_SET( FERR_OLD_VIEW);
-			}
-			goto Exit;
-		}
+		goto Exit;
 	}
 
 #ifdef FLM_DBG_LOG
@@ -7028,6 +7030,7 @@ RCODE ScaInit(
 	FLMUINT					uiLoop;
 	FLMUINT					uiBlockSize;
 	F_SCacheRelocator *	pSCacheRelocator = NULL;
+	F_BlockRelocator *	pBlockRelocator = NULL;
 
 	f_memset( &gv_FlmSysData.SCacheMgr, 0, sizeof( SCACHE_MGR));
 	gv_FlmSysData.SCacheMgr.Usage.uiMaxBytes = uiMaxSharedCache;
@@ -7039,34 +7042,58 @@ RCODE ScaInit(
 		goto Exit;
 	}
 	
-	// Allocate a re-locator object
+	// Allocate the SCACHE re-locator object
 
 	if( (pSCacheRelocator = f_new F_SCacheRelocator) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
-		
+	
+	// Initialize the SCACHE allocator
+	
+	if( RC_BAD( rc = FlmAllocFixedAllocator(
+		&gv_FlmSysData.SCacheMgr.pSCacheAllocator)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = gv_FlmSysData.SCacheMgr.pSCacheAllocator->setup( 
+		FALSE, gv_FlmSysData.pSlabManager, pSCacheRelocator, sizeof( SCACHE),
+		&gv_FlmSysData.SCacheMgr.Usage.SlabUsage,
+		&gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated)))
+	{
+		goto Exit;
+	}
+	
 	// Initialize the cache block allocators
 
 	for( uiLoop = 0, uiBlockSize = 4096; 
 		  uiLoop < 2; 
 		  uiLoop++, uiBlockSize *= 2)
 	{
-		if( RC_BAD( rc = FlmAllocFixedAllocator(
-			&gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop])))
+		if( RC_BAD( rc = FlmAllocBlockAllocator(
+			&gv_FlmSysData.SCacheMgr.pBlockAllocators[ uiLoop])))
 		{
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop]->setup( 
-			FALSE, gv_FlmSysData.pSlabManager, pSCacheRelocator, 
-			sizeof( SCACHE) + uiBlockSize,
+		if( (pBlockRelocator = f_new F_BlockRelocator( uiBlockSize)) == NULL)
+		{
+			rc = RC_SET( FERR_MEM);
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = gv_FlmSysData.SCacheMgr.pBlockAllocators[ uiLoop]->setup( 
+			FALSE, gv_FlmSysData.pSlabManager, pBlockRelocator, uiBlockSize,
 			&gv_FlmSysData.SCacheMgr.Usage.SlabUsage,
 			&gv_FlmSysData.SCacheMgr.Usage.uiTotalBytesAllocated)))
 		{
 			goto Exit;
 		}
+		
+		pBlockRelocator->Release();
+		pBlockRelocator = NULL;
 	}
 
 Exit:
@@ -7074,6 +7101,11 @@ Exit:
 	if( pSCacheRelocator)
 	{
 		pSCacheRelocator->Release();
+	}
+	
+	if( pBlockRelocator)
+	{
+		pBlockRelocator->Release();
 	}
 
 	return( rc);
@@ -7377,16 +7409,25 @@ void ScaExit( void)
 	// released.
 
 	scaReduceFreeCache( TRUE);
+	
+	// Free all of the cache structs and the allocator
+	
+	if( gv_FlmSysData.SCacheMgr.pSCacheAllocator)
+	{
+		gv_FlmSysData.SCacheMgr.pSCacheAllocator->freeAll();
+		gv_FlmSysData.SCacheMgr.pSCacheAllocator->Release();
+		gv_FlmSysData.SCacheMgr.pSCacheAllocator = NULL;
+	}
 
 	// Free all of the cache blocks and allocators
 
 	for( uiLoop = 0; uiLoop < 2; uiLoop++)
 	{
-		if( gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop])
+		if( gv_FlmSysData.SCacheMgr.pBlockAllocators[ uiLoop])
 		{
-			gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop]->freeAll();
-			gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop]->Release();
-			gv_FlmSysData.SCacheMgr.pAllocators[ uiLoop] = NULL;
+			gv_FlmSysData.SCacheMgr.pBlockAllocators[ uiLoop]->freeAll();
+			gv_FlmSysData.SCacheMgr.pBlockAllocators[ uiLoop]->Release();
+			gv_FlmSysData.SCacheMgr.pBlockAllocators[ uiLoop] = NULL;
 		}
 	}
 
@@ -8252,7 +8293,7 @@ RCODE ScaDoCheckpoint(
 	}
 	
 	f_mutexUnlock( gv_FlmSysData.hShareMutex);
-
+	
 	// Write out log blocks first.
 
 	bWroteAll = TRUE;
@@ -8337,7 +8378,6 @@ Exit:
 
 /****************************************************************************
 Desc:		
-Notes:	This routine assumes the global mutex is locked
 ****************************************************************************/
 FLMBOOL F_SCacheRelocator::canRelocate(
 	void *		pvAlloc)
@@ -8346,8 +8386,6 @@ FLMBOOL F_SCacheRelocator::canRelocate(
 
 	if( pSCache->uiUseCount)
 	{
-		// The block cannot be moved because it has a use count
-
 		return( FALSE);
 	}
 
@@ -8357,7 +8395,6 @@ FLMBOOL F_SCacheRelocator::canRelocate(
 /****************************************************************************
 Desc:		Fixes up all pointers needed to allow an SCACHE struct to be
 			moved to a different location in memory
-Notes:	This routine assumes the global mutex is locked
 ****************************************************************************/
 void F_SCacheRelocator::relocate(
 	void *		pvOldAlloc,
@@ -8500,11 +8537,106 @@ void F_SCacheRelocator::relocate(
 		pSCacheMgr->pLastFree = pNewSCache;
 	}
 
-	pNewSCache->pucBlk = (FLMBYTE *)&pNewSCache[ 1];
-
 #ifdef FLM_DEBUG
 	f_memset( pOldSCache, 0, sizeof( SCACHE));
 #endif
+}
+
+/****************************************************************************
+Desc:		
+****************************************************************************/
+SCACHE * F_BlockRelocator::getSCachePtr(
+	void *		pvAlloc)
+{
+	FLMBYTE *	pucBlock = (FLMBYTE *)pvAlloc;
+	FLMUINT		uiBlockAddr;
+	SCACHE *		pSCache;
+	SCACHE **	ppSCacheBucket;
+	
+	// Determine the block address and find the block in cache
+	
+	uiBlockAddr = GET_BH_ADDR( pucBlock);
+	ppSCacheBucket = ScaHash( m_uiSigBitsInBlkSize, uiBlockAddr);
+
+	// Search down the linked list of SCACHE structures off of the bucket
+	// looking for the correct cache block.
+	
+	pSCache = *ppSCacheBucket;
+	while( pSCache)
+	{
+		if( pSCache->uiBlkAddress == uiBlockAddr)
+		{
+			if( pSCache->pucBlk == pucBlock)
+			{
+				break;
+			}
+			else
+			{
+				SCACHE *		pTmpSCache;
+
+				// Search the version list
+
+				pTmpSCache = pSCache->pPrevInVersionList;
+				while( pTmpSCache)
+				{
+					if( pTmpSCache->pucBlk == pucBlock)
+					{
+						pSCache = pTmpSCache;
+						break;
+					}
+
+					pTmpSCache = pTmpSCache->pPrevInVersionList;
+				}
+
+				pTmpSCache = pSCache->pNextInVersionList;
+				while( pTmpSCache)
+				{
+					if( pTmpSCache->pucBlk == pucBlock)
+					{
+						pSCache = pTmpSCache;
+						break;
+					}
+
+					pTmpSCache = pTmpSCache->pNextInVersionList;
+				}
+			}
+		}
+		
+		pSCache = pSCache->pNextInHashBucket;
+	}
+	
+	return( pSCache);
+}
+
+/****************************************************************************
+Desc:		
+****************************************************************************/
+FLMBOOL F_BlockRelocator::canRelocate(
+	void *		pvAlloc)
+{
+	SCACHE *		pSCache = getSCachePtr( pvAlloc);
+	
+	if( !pSCache || pSCache->uiUseCount)
+	{
+		return( FALSE);
+	}
+
+	return( TRUE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_BlockRelocator::relocate(
+	void *		pvOldAlloc,
+	void *		pvNewAlloc)
+{
+	SCACHE *		pSCache = getSCachePtr( pvOldAlloc);
+	
+	flmAssert( pSCache);
+	flmAssert( pSCache->pucBlk == pvOldAlloc);
+	
+	pSCache->pucBlk = (FLMBYTE *)pvNewAlloc;
 }
 
 /****************************************************************************
