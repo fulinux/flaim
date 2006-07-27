@@ -718,12 +718,22 @@ RCODE F_FileHdl::lowLevelWrite(
 			FLMUINT		uiCurrBytesToExtend;
 			FLMUINT		uiExtendBufferSize;
 			
-			uiExtendBufferSize = f_min( uiTotalBytesToExtend, 64 * 1024);
+			uiExtendBufferSize = f_min( uiTotalBytesToExtend, 1024 * 1024);
 
-			if( RC_BAD( rc = f_allocAlignedBuffer( 
-				uiExtendBufferSize, &pucExtendBuffer)))
+			for( ;;)
 			{
-				goto Exit;
+				if( RC_OK( rc = f_allocAlignedBuffer( 
+					uiExtendBufferSize, &pucExtendBuffer)))
+				{
+					break;
+				}
+
+				if( uiExtendBufferSize <= (32 * 1024))
+				{
+					goto Exit;
+				}
+
+				uiExtendBufferSize >>= 1; 
 			}
 			
 			if( ftruncate( m_fd, ui64CurrFileSize + uiTotalBytesToExtend) == -1)
