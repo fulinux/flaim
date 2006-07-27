@@ -31,8 +31,10 @@ Desc:
 typedef struct SLABINFO
 {
 	void *			pvSlab;
-	SLABINFO *		pPrevInList;
-	SLABINFO *		pNextInList;
+	SLABINFO *		pPrevInGlobal;
+	SLABINFO *		pNextInGlobal;
+	SLABINFO *		pPrevInBucket;
+	SLABINFO *		pNextInBucket;
 	SLABINFO *		pPrevSlabWithAvail;
 	SLABINFO *		pNextSlabWithAvail;
 	FLMUINT8			ui8NextNeverUsed;
@@ -55,15 +57,16 @@ typedef struct AVAILBLOCK
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class F_CacheAlloc : public F_Object
+class F_BlockAlloc : public IF_BlockAlloc
 {
 public:
 
-	F_CacheAlloc();
+	F_BlockAlloc();
 
-	virtual ~F_CacheAlloc();
+	virtual ~F_BlockAlloc();
 
 	RCODE FLMAPI setup(
+		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiBlockSize,
@@ -99,6 +102,12 @@ private:
 	void freeCell(
 		SLABINFO **				ppSlab,
 		void **					ppvCell);
+		
+	FINLINE FLMUINT getHashBucket(
+		void *				pvAlloc)
+	{
+		return( (((FLMUINT)pvAlloc) & m_uiHashMask) % m_uiBuckets);
+	}
 
 	IF_SlabManager *			m_pSlabManager;
 	IF_Relocator *				m_pRelocator;
@@ -107,6 +116,9 @@ private:
 	SLABINFO *					m_pLastSlab;
 	SLABINFO *					m_pFirstSlabWithAvail;
 	SLABINFO *					m_pLastSlabWithAvail;
+	SLABINFO **					m_pHashTable;
+	FLMUINT						m_uiBuckets;
+	FLMUINT						m_uiHashMask;
 	FLMBOOL						m_bAvailListSorted;
 	FLMUINT						m_uiSlabSize;
 	FLMUINT						m_uiBlockSize;
@@ -129,7 +141,7 @@ public:
 
 	F_SlabInfoRelocator()
 	{
-		m_pCacheAlloc = NULL;
+		m_pBlockAlloc = NULL;
 	}
 	
 	virtual ~F_SlabInfoRelocator()
@@ -145,9 +157,9 @@ public:
 		
 private:
 
-	F_CacheAlloc *		m_pCacheAlloc;
+	F_BlockAlloc *		m_pBlockAlloc;
 		
-friend class F_CacheAlloc;
+friend class F_BlockAlloc;
 };
 
 /****************************************************************************
@@ -191,7 +203,7 @@ void FLMAPI slabInfoAddrSwapFunc(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_CacheAlloc::F_CacheAlloc()
+F_BlockAlloc::F_BlockAlloc()
 {
 	m_pSlabManager = NULL;
 	m_pRelocator = NULL;
@@ -200,6 +212,9 @@ F_CacheAlloc::F_CacheAlloc()
 	m_pLastSlab = NULL;
 	m_pFirstSlabWithAvail = NULL;
 	m_pLastSlabWithAvail = NULL;
+	m_pHashTable = NULL;
+	m_uiBuckets = 0;
+	m_uiHashMask = 0;
 	m_bAvailListSorted = FALSE;
 	m_uiSlabSize = 0;
 	m_uiBlockSize = 0;
@@ -214,7 +229,7 @@ F_CacheAlloc::F_CacheAlloc()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_CacheAlloc::~F_CacheAlloc()
+F_BlockAlloc::~F_BlockAlloc()
 {
 	cleanup();
 }
@@ -222,9 +237,14 @@ F_CacheAlloc::~F_CacheAlloc()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void F_CacheAlloc::cleanup( void)
+void F_BlockAlloc::cleanup( void)
 {
 	freeAll();
+	
+	if( m_pHashTable)
+	{
+		f_free( &m_pHashTable);
+	}
 	
 	if( m_pInfoAllocator)
 	{
@@ -253,7 +273,8 @@ void F_CacheAlloc::cleanup( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_CacheAlloc::setup(
+RCODE F_BlockAlloc::setup(
+	FLMBOOL						bMultiThreaded,
 	IF_SlabManager *			pSlabManager,
 	IF_Relocator *				pRelocator,
 	FLMUINT						uiBlockSize,
@@ -274,9 +295,12 @@ RCODE F_CacheAlloc::setup(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
+	if( bMultiThreaded)
 	{
-		goto Exit;
+		if( RC_BAD( rc = f_mutexCreate( &m_hMutex)))
+		{
+			goto Exit;
+		}
 	}
 	
 	m_pUsageStats = pUsageStats;
@@ -290,9 +314,12 @@ RCODE F_CacheAlloc::setup(
 	
 	m_uiBlockSize = uiBlockSize;
 	m_uiSlabSize = m_pSlabManager->getSlabSize();
+	f_assert( (m_uiSlabSize % 1024) == 0);
 	
 	m_uiBlocksPerSlab = m_uiSlabSize / m_uiBlockSize;
-	f_assert( F_ALLOC_MAP_BITS >= m_uiBlocksPerSlab); 
+	f_assert( F_ALLOC_MAP_BITS >= m_uiBlocksPerSlab);
+	
+	// Set up the SLABINFO allocator
 	
 	if( RC_BAD( rc = FlmAllocFixedAllocator( &m_pInfoAllocator)))
 	{
@@ -305,7 +332,7 @@ RCODE F_CacheAlloc::setup(
 		goto Exit;
 	}
 	
-	pSlabInfoRelocator->m_pCacheAlloc = this;
+	pSlabInfoRelocator->m_pBlockAlloc = this;
 	
 	if( RC_BAD( rc = m_pInfoAllocator->setup( FALSE, m_pSlabManager, 
 		pSlabInfoRelocator, sizeof( SLABINFO), 
@@ -313,6 +340,21 @@ RCODE F_CacheAlloc::setup(
 	{
 		goto Exit;
 	}
+	
+	// Set up the hash table
+	
+	m_uiBuckets = m_uiSlabSize - 1;
+	if( RC_BAD( rc = f_calloc( sizeof( SLABINFO *) * m_uiBuckets, 
+		&m_pHashTable)))
+	{
+		goto Exit;
+	}
+
+	// Determine the number of bits to mask off a slab and/or
+	// cell address to determine the correct hash SLABINFO
+	// hash bucket
+	
+	m_uiHashMask = ~((FLMUINT)(m_uiSlabSize - 1));
 
 Exit:
 
@@ -332,7 +374,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_CacheAlloc::allocBlock(
+RCODE FLMAPI F_BlockAlloc::allocBlock(
 	void **				ppvBlock)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -350,6 +392,8 @@ RCODE FLMAPI F_CacheAlloc::allocBlock(
 		goto Exit;
 	}
 	
+	f_assert( ((FLMUINT)(*ppvBlock) % m_uiBlockSize) == 0);
+
 Exit:
 
 	if( bMutexLocked)
@@ -363,12 +407,16 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_CacheAlloc::freeBlock(
+void FLMAPI F_BlockAlloc::freeBlock(
 	void **				ppvBlock)
 {
 	SLABINFO *			pSlab = NULL;
-//	FLMBYTE *			pucBlock = (FLMBYTE *)*ppvBlock;
+	void *				pvBlock = *ppvBlock;
+	FLMUINT				uiBucket;
 	FLMBOOL				bMutexLocked = FALSE;
+	
+	f_assert( pvBlock);
+	f_assert( ((FLMUINT)pvBlock % m_uiBlockSize) == 0);
 	
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -377,9 +425,29 @@ void FLMAPI F_CacheAlloc::freeBlock(
 		bMutexLocked = TRUE;
 	}
 	
-	f_assert( 0); // VISIT: Need to locate the slab!!!!
+	uiBucket = getHashBucket( pvBlock);
+	pSlab = m_pHashTable[ uiBucket];
+	
+	while( pSlab)
+	{
+		if( pvBlock >= pSlab->pvSlab && 
+			pvBlock <= ((FLMBYTE *)pSlab->pvSlab + (m_uiSlabSize - m_uiBlockSize)))
+		{
+			break;
+		}
+		
+		pSlab = pSlab->pNextInBucket;
+	}
+	
+	if( !pSlab || !pSlab->pvSlab)
+	{
+		f_assert( 0);
+		goto Exit;
+	}
 	
 	freeCell( &pSlab, ppvBlock);
+	
+Exit:
 	
 	if( bMutexLocked)
 	{
@@ -390,7 +458,7 @@ void FLMAPI F_CacheAlloc::freeBlock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_CacheAlloc::getCell(
+RCODE F_BlockAlloc::getCell(
 	SLABINFO **		ppSlab,
 	void **			ppvCell)
 {
@@ -473,16 +541,21 @@ RCODE F_CacheAlloc::getCell(
 			 (m_pFirstSlab->ui8NextNeverUsed == m_uiBlocksPerSlab))
 		{
 			SLABINFO *		pNewSlab;
+			FLMUINT			uiBucket;
 			
 			if( RC_BAD( rc = getAnotherSlab( &pNewSlab)))
 			{
 				goto Exit;
 			}
 			
+			f_assert( pNewSlab->pvSlab);
+
+			// Link the slab into the global list
+			
 			if( m_pFirstSlab)
 			{
-				pNewSlab->pNextInList = m_pFirstSlab;
-				m_pFirstSlab->pPrevInList = pNewSlab;
+				pNewSlab->pNextInGlobal = m_pFirstSlab;
+				m_pFirstSlab->pPrevInGlobal = pNewSlab;
 			}
 			else
 			{
@@ -490,6 +563,16 @@ RCODE F_CacheAlloc::getCell(
 			}
 
 			m_pFirstSlab = pNewSlab;
+			
+			// Link the slab to its hash bucket
+			
+			uiBucket = getHashBucket( pNewSlab->pvSlab);
+			if( (pNewSlab->pNextInBucket = m_pHashTable[ uiBucket]) != NULL)
+			{
+				m_pHashTable[ uiBucket]->pPrevInBucket = pNewSlab;
+			}
+			
+			m_pHashTable[ uiBucket] = pNewSlab;
 		}
 
 		pSlab = m_pFirstSlab;
@@ -522,7 +605,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void F_CacheAlloc::freeCell(
+void F_BlockAlloc::freeCell(
 	SLABINFO **		ppSlab,
 	void **			ppvCell)
 {
@@ -549,7 +632,7 @@ void F_CacheAlloc::freeCell(
 	
 	// Verify that the cell address is on a block boundary
 	
-	f_assert( ((pCell - (FLMBYTE *)pSlab->pvSlab) & m_uiBlockSize) == 0);
+	f_assert( ((pCell - (FLMBYTE *)pSlab->pvSlab) % m_uiBlockSize) == 0);
 	
 	// Determine the block number
 
@@ -670,7 +753,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_CacheAlloc::getAnotherSlab(
+RCODE F_BlockAlloc::getAnotherSlab(
 	SLABINFO **		ppSlab)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -690,14 +773,14 @@ RCODE F_CacheAlloc::getAnotherSlab(
 		goto Exit;
 	}
 	
+	f_memset( pSlab, 0, sizeof( SLABINFO));
+	
 	if( RC_BAD( rc = m_pSlabManager->allocSlab( &pSlab->pvSlab)))
 	{
-		m_pInfoAllocator->freeCell( &pSlab);
+		m_pInfoAllocator->freeCell( pSlab);
 		goto Exit;
 	}
 
-	f_memset( pSlab, 0, sizeof( SLABINFO));
-	
 	if( m_pUsageStats)
 	{
 		m_pUsageStats->ui64Slabs++;
@@ -718,7 +801,7 @@ Exit:
 /****************************************************************************
 Desc:	Private internal method to free an unused empty slab back to the OS.
 ****************************************************************************/
-void F_CacheAlloc::freeSlab(
+void F_BlockAlloc::freeSlab(
 	SLABINFO **			ppSlab)
 {
 	SLABINFO *			pSlab = *ppSlab;
@@ -750,24 +833,40 @@ void F_CacheAlloc::freeSlab(
 		}
 	}
 
-	// Unlink from all-slabs-list
+	// Unlink from the global list
 
-	if( pSlab->pNextInList)
+	if( pSlab->pNextInGlobal)
 	{
-		pSlab->pNextInList->pPrevInList = pSlab->pPrevInList;
+		pSlab->pNextInGlobal->pPrevInGlobal = pSlab->pPrevInGlobal;
 	}
 	else
 	{
-		m_pLastSlab = pSlab->pPrevInList;
+		m_pLastSlab = pSlab->pPrevInGlobal;
 	}
 
-	if( pSlab->pPrevInList)
+	if( pSlab->pPrevInGlobal)
 	{
-		pSlab->pPrevInList->pNextInList = pSlab->pNextInList;
+		pSlab->pPrevInGlobal->pNextInGlobal = pSlab->pNextInGlobal;
 	}
 	else
 	{
-		m_pFirstSlab = pSlab->pNextInList;
+		m_pFirstSlab = pSlab->pNextInGlobal;
+	}
+	
+	// Unlink from the hash bucket
+	
+	if( pSlab->pNextInBucket)
+	{
+		pSlab->pNextInBucket->pPrevInBucket = pSlab->pPrevInBucket;
+	}
+
+	if( pSlab->pPrevInBucket)
+	{
+		pSlab->pPrevInBucket->pNextInBucket = pSlab->pNextInBucket;
+	}
+	else
+	{
+		m_pHashTable[ getHashBucket( pSlab->pvSlab)] = pSlab->pNextInBucket;
 	}
 
 	// Unlink from slabs-with-avail-cells list
@@ -798,7 +897,7 @@ void F_CacheAlloc::freeSlab(
 	f_assert( m_uiTotalAvailBlocks >= pSlab->ui8AvailBlocks);
 	m_uiTotalAvailBlocks -= pSlab->ui8AvailBlocks;
 	m_pSlabManager->freeSlab( (void **)&pSlab->pvSlab);
-	m_pInfoAllocator->freeCell( &pSlab);
+	m_pInfoAllocator->freeCell( pSlab);
 	
 	if( m_pUsageStats)
 	{
@@ -818,7 +917,7 @@ void F_CacheAlloc::freeSlab(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_CacheAlloc::freeAll( void)
+void FLMAPI F_BlockAlloc::freeAll( void)
 {
 	SLABINFO *		pFreeMe;
 
@@ -831,7 +930,7 @@ void FLMAPI F_CacheAlloc::freeAll( void)
 	while( m_pFirstSlab)
 	{
 		pFreeMe = m_pFirstSlab;
-		m_pFirstSlab = m_pFirstSlab->pNextInList;
+		m_pFirstSlab = m_pFirstSlab->pNextInGlobal;
 		freeSlab( &pFreeMe);
 	}
 
@@ -844,6 +943,11 @@ void FLMAPI F_CacheAlloc::freeAll( void)
 	m_uiSlabsWithAvail = 0;
 	m_bAvailListSorted = TRUE;
 	m_uiTotalAvailBlocks = 0;
+	
+	if( m_pHashTable)
+	{
+		f_memset( m_pHashTable, 0, sizeof( SLABINFO *) * m_uiBuckets);
+	}
 
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -854,7 +958,7 @@ void FLMAPI F_CacheAlloc::freeAll( void)
 /****************************************************************************
 Desc:		
 ****************************************************************************/ 
-void FLMAPI F_CacheAlloc::freeUnused( void)
+void FLMAPI F_BlockAlloc::freeUnused( void)
 {
 	SLABINFO *		pSlab;
 
@@ -884,7 +988,7 @@ void FLMAPI F_CacheAlloc::freeUnused( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void F_CacheAlloc::defragmentMemory( void)
+void F_BlockAlloc::defragmentMemory( void)
 {
 	RCODE				rc = NE_FLM_OK;
 	SLABINFO *		pCurSlab;
@@ -1086,53 +1190,90 @@ void F_SlabInfoRelocator::relocate(
 {
 	SLABINFO *		pOldSlabInfo = (SLABINFO *)pvOldAlloc;
 	SLABINFO *		pNewSlabInfo = (SLABINFO *)pvNewAlloc;
-	F_CacheAlloc *	pCacheAlloc = m_pCacheAlloc;
+	F_BlockAlloc *	pBlockAlloc = m_pBlockAlloc;
 	
-	if( pOldSlabInfo->pPrevInList)
+	// Fix the global links
+	
+	if( pOldSlabInfo->pPrevInGlobal)
 	{
-		f_assert( pOldSlabInfo != pCacheAlloc->m_pFirstSlab); 
-		pOldSlabInfo->pPrevInList->pNextInList = pNewSlabInfo;
+		f_assert( pOldSlabInfo != pBlockAlloc->m_pFirstSlab); 
+		pOldSlabInfo->pPrevInGlobal->pNextInGlobal = pNewSlabInfo;
 	}
 	else
 	{
-		f_assert( pOldSlabInfo == pCacheAlloc->m_pFirstSlab); 
-		pCacheAlloc->m_pFirstSlab = pNewSlabInfo;
+		f_assert( pOldSlabInfo == pBlockAlloc->m_pFirstSlab); 
+		pBlockAlloc->m_pFirstSlab = pNewSlabInfo;
 	}
 	
-	if( pOldSlabInfo->pNextInList)
+	if( pOldSlabInfo->pNextInGlobal)
 	{
-		f_assert( pOldSlabInfo != pCacheAlloc->m_pLastSlab);
-		pOldSlabInfo->pNextInList->pPrevInList = pNewSlabInfo;
+		f_assert( pOldSlabInfo != pBlockAlloc->m_pLastSlab);
+		pOldSlabInfo->pNextInGlobal->pPrevInGlobal = pNewSlabInfo;
 	}
 	else
 	{
-		f_assert( pOldSlabInfo == pCacheAlloc->m_pLastSlab);
-		pCacheAlloc->m_pLastSlab = pNewSlabInfo;
+		f_assert( pOldSlabInfo == pBlockAlloc->m_pLastSlab);
+		pBlockAlloc->m_pLastSlab = pNewSlabInfo;
 	}
+	
+	// Fix the hash links
+
+	if( pOldSlabInfo->pPrevInBucket)
+	{
+		pOldSlabInfo->pPrevInBucket->pNextInBucket = pNewSlabInfo;
+	}
+	else
+	{
+		FLMUINT		uiBucket = pBlockAlloc->getHashBucket( pOldSlabInfo->pvSlab);
+		
+		f_assert( pBlockAlloc->m_pHashTable[ uiBucket] == pOldSlabInfo);
+		pBlockAlloc->m_pHashTable[ uiBucket] = pNewSlabInfo; 
+	}
+	
+	if( pOldSlabInfo->pNextInBucket)
+	{
+		pOldSlabInfo->pNextInBucket->pPrevInBucket = pNewSlabInfo;
+	}
+	
+	// Fix the avail list links
 	
 	if( pOldSlabInfo->pPrevSlabWithAvail)
 	{
-		f_assert( pOldSlabInfo != pCacheAlloc->m_pFirstSlabWithAvail);
+		f_assert( pOldSlabInfo != pBlockAlloc->m_pFirstSlabWithAvail);
 		pOldSlabInfo->pPrevSlabWithAvail->pNextSlabWithAvail = pNewSlabInfo;
 	}
 	else
 	{
-		f_assert( pOldSlabInfo == pCacheAlloc->m_pFirstSlabWithAvail);
-		pCacheAlloc->m_pFirstSlabWithAvail = pNewSlabInfo;
+		f_assert( pOldSlabInfo == pBlockAlloc->m_pFirstSlabWithAvail);
+		pBlockAlloc->m_pFirstSlabWithAvail = pNewSlabInfo;
 	}
 	
 	if( pOldSlabInfo->pNextSlabWithAvail)
 	{
-		f_assert( pOldSlabInfo != pCacheAlloc->m_pLastSlabWithAvail);
+		f_assert( pOldSlabInfo != pBlockAlloc->m_pLastSlabWithAvail);
 		pOldSlabInfo->pNextSlabWithAvail->pPrevSlabWithAvail = pNewSlabInfo;
 	}
 	else
 	{
-		f_assert( pOldSlabInfo == pCacheAlloc->m_pLastSlabWithAvail);
-		pCacheAlloc->m_pLastSlabWithAvail = pNewSlabInfo;
+		f_assert( pOldSlabInfo == pBlockAlloc->m_pLastSlabWithAvail);
+		pBlockAlloc->m_pLastSlabWithAvail = pNewSlabInfo;
 	}
 	
 #ifdef FLM_DEBUG
 	f_memset( pOldSlabInfo, 0, sizeof( SLABINFO));
 #endif
+}
+
+/****************************************************************************
+Desc:	
+****************************************************************************/
+RCODE FLMAPI FlmAllocBlockAllocator(
+	IF_BlockAlloc **			ppBlockAllocator)
+{
+	if( (*ppBlockAllocator = f_new F_BlockAlloc) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
 }

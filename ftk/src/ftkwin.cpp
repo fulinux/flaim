@@ -20,7 +20,7 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: fwin.cpp 3115 2006-01-19 13:24:39 -0700 (Thu, 19 Jan 2006) dsanders $
+// $Id$
 //------------------------------------------------------------------------------
 
 #include "ftksys.h"
@@ -61,8 +61,15 @@ RCODE F_FileHdl::openOrCreate(
 	DWORD					udCreateMode = 0;
 	DWORD					udAttrFlags = 0;
 	DWORD					udErrCode;
+	HANDLE      		hToken;
+	TOKEN_PRIVILEGES	tp;
+	TOKEN_PRIVILEGES	oldtp;
+	DWORD					udTokenPrivSize = sizeof( TOKEN_PRIVILEGES);          
+	LUID					luid;
 	FLMBOOL				bOpenInAsyncMode = FALSE;
 	FLMBOOL				bDoDirectIO;
+	FLMBOOL				bRestoreTokenPrivileges = FALSE;
+	FLMBOOL				bClosePrivToken = FALSE;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	f_assert( !m_bFileOpened);
@@ -165,7 +172,32 @@ RCODE F_FileHdl::openOrCreate(
 	{
       udAccessMode = GENERIC_READ;
 	}
+	
+	// Attempt to enable the "manage volume" privilege while the file is being
+	// opened/created.  This will allow subsequent file extend operations to
+	// be done via calls to SetFileValidData().
 
+	if( OpenProcessToken( GetCurrentProcess(), 
+		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+	{
+		bClosePrivToken = TRUE;
+		
+		if( LookupPrivilegeValue( NULL, SE_MANAGE_VOLUME_NAME, &luid))
+		{
+			ZeroMemory ( &tp, sizeof( tp));
+			
+			tp.PrivilegeCount = 1;
+			tp.Privileges[0].Luid = luid;
+			tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+			
+			if( AdjustTokenPrivileges( hToken, FALSE, &tp, 
+				sizeof( TOKEN_PRIVILEGES), &oldtp, &udTokenPrivSize))
+			{
+				bRestoreTokenPrivileges = TRUE;
+			}
+		}
+	}
+			
 Retry_Create:
 
 	if( (m_hFile = CreateFile( (LPCTSTR)pszFileName, udAccessMode,
@@ -251,6 +283,17 @@ Retry_Create:
 	f_atomicInc( &gv_openFiles);
 
 Exit:
+
+	if( bRestoreTokenPrivileges)
+	{
+		AdjustTokenPrivileges( hToken, FALSE, &oldtp, 
+			udTokenPrivSize, NULL, NULL);
+	}
+	
+	if( bClosePrivToken)
+	{
+		CloseHandle( hToken);
+	}
 
 	if( RC_BAD( rc))
 	{
@@ -742,8 +785,38 @@ RCODE F_FileHdl::extendFile(
 	FLMUINT					uiBytesWritten;
 	FLMBYTE *				pucBuffer = NULL;
 	FLMUINT					uiBufferSize;
+	FLMUINT64				ui64NewFileSize = ui64FileSize + uiTotalBytesToExtend;
+	LARGE_INTEGER			liTmp;
 	F_FileAsyncClient *	pAsyncClient = NULL;
+
+	// Try to extend the file using SetFileValidData.  This will allocate blocks
+	// without zero-filling them.  This call is very fast, but is only available
+	// on WinXP/2003 and newer systems and only if the file was opened while the
+	// process had "volume manage" permission (which the open/create code in 
+	// this file tries to acquire).  If we aren't able to extend the file this
+	// way, the code will fall-back to the slower approach of zero-filling the 
+	// extent to cause blocks to be allocated to the file.
+
+	liTmp.QuadPart = ui64NewFileSize;
+	if( !SetFilePointerEx( m_hFile, liTmp, NULL, FILE_BEGIN))
+	{
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_POSITIONING_IN_FILE);
+		goto Exit;
+	}
 	
+	if( !SetEndOfFile( m_hFile))
+	{
+		rc = f_mapPlatformError( GetLastError(), NE_FLM_WRITING_FILE);
+		goto Exit;
+	}
+	
+	if( SetFileValidData( m_hFile, ui64NewFileSize))
+	{
+		// The call was successful.  We are done.
+
+		goto Exit;
+	}
+
 	uiBufferSize = 64 * 1024;
 	if( RC_BAD( rc = f_allocAlignedBuffer( uiBufferSize, &pucBuffer)))
 	{

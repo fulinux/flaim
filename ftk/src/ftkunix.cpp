@@ -1324,11 +1324,14 @@ Exit:
 	return( rc);
 }
 
-#endif // FLM_UNIX
+#else // FLM_UNIX
 
-#if defined( FLM_WATCOM_NLM)
-	int fposixDummy(void)
-	{
-		return( 0);
-	}
+/**********************************************************************
+Desc:
+**********************************************************************/
+int ftkunixDummy(void)
+{
+	return( 0);
+}
+
 #endif

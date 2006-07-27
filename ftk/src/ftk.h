@@ -4054,6 +4054,35 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	flminterface IF_BlockAlloc : public F_Object
+	{
+		virtual RCODE FLMAPI setup(
+			FLMBOOL					bMultiThreaded,
+			IF_SlabManager *		pSlabManager,
+			IF_Relocator *			pRelocator,
+			FLMUINT					uiBlockSize,
+			FLM_SLAB_USAGE *		pUsageStats,
+			FLMUINT *				puiTotalBytesAllocated) = 0;
+	
+		virtual RCODE FLMAPI allocBlock(
+			void **					ppvBlock) = 0;
+	
+		virtual void FLMAPI freeBlock(
+			void **					ppvBlock) = 0;
+	
+		virtual void FLMAPI freeUnused( void) = 0;
+	
+		virtual void FLMAPI freeAll( void) = 0;
+	
+		virtual void FLMAPI defragmentMemory( void) = 0;
+	};
+
+	RCODE FLMAPI FlmAllocBlockAllocator(
+		IF_BlockAlloc **			ppBlockAllocator);
+		
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	flminterface FLMEXP IF_BufferAlloc : public F_Object
 	{
 		virtual RCODE FLMAPI setup(

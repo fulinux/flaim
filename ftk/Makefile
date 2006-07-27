@@ -793,7 +793,7 @@ ifdef win_target
 		
 	# Libraries that our various components need to link against
 
-	link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib
+	link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib
 
 	# Convert the list of defines into a proper set of command-line params
 
