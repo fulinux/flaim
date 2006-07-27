@@ -1190,6 +1190,14 @@ FLMUINT f_getFSBlockSize(
 }
 
 /****************************************************************************
+Desc: Remove this error pragma if you really intend to run with
+		mutex-based atomics
+****************************************************************************/
+#if defined( FLM_SOLARIS) && !defined( FLM_SPARC_PLUS)
+	#error This Solaris build will use mutex-based atomics.
+#endif
+
+/****************************************************************************
 Desc:
 ****************************************************************************/
 #if defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)

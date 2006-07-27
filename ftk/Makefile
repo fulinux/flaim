@@ -928,7 +928,7 @@ ifdef unix_target
 				# Must support 64 bit file sizes - even for 32 bit builds.
 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
-				ccflags += -xarch=generic
+				ccflags += -xarch=v8plus
 			endif
 		endif
 	endif
@@ -1008,7 +1008,7 @@ ifdef unix_target
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
 			else
-				link_flags += -xarch=generic
+				link_flags += -xarch=v8plus
 			endif
 		endif
 
