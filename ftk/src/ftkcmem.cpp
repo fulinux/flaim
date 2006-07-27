@@ -350,22 +350,7 @@ RCODE F_BlockAlloc::setup(
 		goto Exit;
 	}
 
-	// Determine the number of bits to mask off a slab and/or
-	// cell address to determine the correct hash SLABINFO
-	// hash bucket
-	
-#ifdef FLM_WIN
-	{
-		SYSTEM_INFO		sysInfo;
-
-		GetSystemInfo( &sysInfo);
-		m_uiHashMask = ~((FLMUINT)(sysInfo.dwAllocationGranularity - 1));
-	}
-#elif defined( FLM_UNIX)
-	m_uiHashMask = ~((FLMUINT)(sysconf( _SC_PAGESIZE) - 1));
-#else
-	m_uiHashMask = FLM_MAX_UINT - 0xFFFF;
-#endif
+	m_uiHashMask = ~(FLMUINT)((m_uiSlabSize - 1));
 
 Exit:
 
@@ -423,7 +408,9 @@ void FLMAPI F_BlockAlloc::freeBlock(
 {
 	SLABINFO *			pSlab = NULL;
 	void *				pvBlock = *ppvBlock;
+	FLMUINT				uiLoop;
 	FLMUINT				uiBucket;
+	FLMUINT				uiDelta = m_uiSlabSize - m_uiBlockSize;
 	FLMBOOL				bMutexLocked = FALSE;
 	
 	f_assert( pvBlock);
@@ -436,19 +423,54 @@ void FLMAPI F_BlockAlloc::freeBlock(
 		bMutexLocked = TRUE;
 	}
 	
-	uiBucket = getHashBucket( pvBlock);
-	pSlab = m_pHashTable[ uiBucket];
-	
-	while( pSlab)
+	for( uiLoop = 0; uiLoop < 3; uiLoop++)
 	{
-		if( pvBlock >= pSlab->pvSlab && 
-			pvBlock <= ((FLMBYTE *)pSlab->pvSlab + (m_uiSlabSize - m_uiBlockSize)))
+		switch( uiLoop)
 		{
-			break;
+			case 0:
+			{
+				uiBucket = getHashBucket( pvBlock);
+				break;
+			}
+			
+			case 1:
+			{
+				if( ((FLMUINT)pvBlock) > FLM_MAX_UINT - uiDelta)
+				{
+					break;
+				}
+				
+				uiBucket = getHashBucket( ((FLMBYTE *)pvBlock) + uiDelta);
+				break;
+			}
+				
+			case 2:
+			{
+				if( ((FLMUINT)pvBlock) <= uiDelta)
+				{
+					break;
+				}
+				
+				uiBucket = getHashBucket( ((FLMBYTE *)pvBlock) - uiDelta);
+				break;
+			}
 		}
 		
-		pSlab = pSlab->pNextInBucket;
+		pSlab = m_pHashTable[ uiBucket];
+		
+		while( pSlab)
+		{
+			if( pvBlock >= pSlab->pvSlab && 
+				pvBlock <= ((FLMBYTE *)pSlab->pvSlab + uiDelta))
+			{
+				goto FoundSlab;
+			}
+			
+			pSlab = pSlab->pNextInBucket;
+		}
 	}
+
+FoundSlab:
 	
 	if( !pSlab || !pSlab->pvSlab)
 	{
