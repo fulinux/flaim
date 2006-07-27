@@ -354,7 +354,20 @@ RCODE F_BlockAlloc::setup(
 	// cell address to determine the correct hash SLABINFO
 	// hash bucket
 	
-	m_uiHashMask = ~((FLMUINT)(m_uiSlabSize - 1));
+#ifdef FLM_WIN
+	{
+		SYSTEM_INFO		sysInfo;
+
+		GetSystemInfo( &sysInfo);
+		m_uiHashMask = ~((FLMUINT)(sysInfo.dwAllocationGranularity - 1));
+	}
+#elif defined( FLM_UNIX)
+	m_uiHashMask = ~((FLMUINT)(sysconf( _SC_PAGESIZE) - 1));
+#else
+	m_uiHashMask = FLM_MAX_UINT - 0xFFFF;
+#else
+	
+#endif
 
 Exit:
 
