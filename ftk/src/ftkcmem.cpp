@@ -409,7 +409,7 @@ void FLMAPI F_BlockAlloc::freeBlock(
 	SLABINFO *			pSlab = NULL;
 	void *				pvBlock = *ppvBlock;
 	FLMUINT				uiLoop;
-	FLMUINT				uiBucket;
+	FLMUINT				uiBucket = 0;
 	FLMUINT				uiDelta = m_uiSlabSize - m_uiBlockSize;
 	FLMBOOL				bMutexLocked = FALSE;
 	
