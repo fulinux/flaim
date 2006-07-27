@@ -2568,12 +2568,28 @@ void * F_SlabManager::allocSlabFromSystem( void)
 {
 	void *		pSlab;
 	
-#ifdef FLM_WIN
+#if defined( FLM_WIN)
 
 	pSlab = VirtualAlloc( NULL,
 		(DWORD)m_uiSlabSize, MEM_COMMIT, PAGE_READWRITE);
 		
-#elif defined( FLM_UNIX) && !defined( FLM_SOLARIS)
+#elif defined( FLM_SOLARIS)
+
+	if( (pSlab = memalign( sysconf( _SC_PAGESIZE), m_uiSlabSize)) == NULL)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		goto Exit;
+	}
+	
+#elif defined( FLM_LINUX)
+
+	if( posix_memalign( &pSlab, sysconf( _SC_PAGESIZE), m_uiSlabSize) != 0)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		goto Exit;
+	}
+	
+#elif defined( FLM_UNIX)
 
 	if( (pSlab = mmap( 0, m_uiSlabSize, 
 		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) == MAP_FAILED)
@@ -2648,8 +2664,8 @@ void F_SlabManager::releaseSlabToSystem(
 	
 #ifdef FLM_WIN
 	VirtualFree( pSlab, 0, MEM_RELEASE);
-#elif defined( FLM_UNIX) && !defined( FLM_SOLARIS)
-	munmap( pSlab, m_uiSlabSize);
+#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
+	free( pSlab);
 #else
 	f_free( &pSlab);
 #endif
