@@ -261,10 +261,9 @@ ifeq (,$(HOSTTYPE))
 	ifneq (,$(findstring nvalid,$(HOSTTYPE)))
 		HOSTTYPE := $(shell uname -m)
 	endif
-endif
-
-ifeq (,$(HOSTTYPE))
-	HOSTYPE := $(shell uname -p)
+	ifneq (,$(findstring unknown,$(HOSTTYPE)))
+		HOSTTYPE := $(shell uname -m)
+	endif
 endif
 
 ifeq (,$(HOSTTYPE))
