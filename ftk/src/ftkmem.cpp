@@ -4780,13 +4780,13 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 #elif defined( FLM_SOLARIS)
 	if( (*ppvAlloc = memalign( sysconf( _SC_PAGESIZE), uiMinSize)) == NULL)
 	{
-		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 #elif defined( FLM_LINUX) 
 	if( posix_memalign( ppvAlloc, sysconf( _SC_PAGESIZE), uiMinSize) != 0)
 	{
-		rc = f_mapPlatformError( errno, NE_FLM_MEM);
+		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
 #elif defined( FLM_UNIX)
@@ -4801,7 +4801,7 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 
 			-1, 0)) == MAP_FAILED)
 		{
-			rc = f_mapPlatformError( errno, NE_FLM_MEM);
+			rc = RC_SET( NE_FLM_MEM);
 			goto Exit;
 		}
 		
