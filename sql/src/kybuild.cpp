@@ -381,8 +381,9 @@ FSTATIC RCODE getColumnIStream(
 		pColumn = pDb->getDict()->getColumn( pTable, uiColumnNum);
 		*peDataType = pColumn->eDataTyp;
 	}
-	if (RC_BAD( rc = pBufferIStream->open( (const char *)pColumnValue->pucColumnValue,
-							pColumnValue->uiValueLen, NULL)))
+	if (RC_BAD( rc = pBufferIStream->openStream( 
+		(const char *)pColumnValue->pucColumnValue,
+		pColumnValue->uiValueLen, NULL)))
 	{
 		goto Exit;
 	}
@@ -571,7 +572,7 @@ No_Strings:
 				break;
 			}
 
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)*ppucTmpBuf, uiStrBytes)))
 			{
 				goto Exit;
@@ -590,7 +591,7 @@ No_Strings:
 										NULL, NULL,
 										m_keyGenInfo.pIndex->uiLanguage,
 										FALSE, FALSE, &bDataTruncated, NULL);
-			bufferIStream.close();
+			bufferIStream.closeStream();
 
 			if( RC_BAD( rc))
 			{
@@ -625,7 +626,7 @@ No_Strings:
 				goto Exit;
 			}
 
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)ucStorageBuf, uiStorageLen)))
 			{
 				goto Exit;
@@ -642,7 +643,7 @@ No_Strings:
 										NULL, NULL,
 										m_keyGenInfo.pIndex->uiLanguage,
 										FALSE, FALSE, NULL, NULL);
-			bufferIStream.close();
+			bufferIStream.closeStream();
 
 			if( RC_BAD( rc))
 			{
@@ -686,7 +687,7 @@ No_Strings:
 				break;
 			}
 
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)*ppucTmpBuf, uiStrBytes)))
 			{
 				goto Exit;
@@ -707,7 +708,7 @@ No_Strings:
 										bHadAtLeastOneString ? FALSE : TRUE, FALSE,
 										&bDataTruncated, NULL);
 
-			bufferIStream.close();
+			bufferIStream.closeStream();
 
 			if( RC_BAD( rc))
 			{

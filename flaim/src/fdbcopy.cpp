@@ -1101,7 +1101,7 @@ FSTATIC RCODE flmCopyFile(
 
 	if (!bCreatedDestFile && bOkToTruncate)
 	{
-		if (RC_BAD( rc = pDestFileHdl->truncate( uiOffset)))
+		if (RC_BAD( rc = pDestFileHdl->truncateFile( uiOffset)))
 		{
 			goto Exit;
 		}

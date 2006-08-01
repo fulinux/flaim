@@ -4955,7 +4955,7 @@ RCODE F_Query::optimizePredicate(
 			}
 
 			uiCost = 0;
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)pPred->pFromValue->val.pucBuf,
 				pPred->pFromValue->uiDataLen)))
 			{

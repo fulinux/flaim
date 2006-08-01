@@ -373,7 +373,6 @@ Exit:
 	if( gv_bLoggingEnabled)
 	{
 		bldLogFlush();
-		gv_pLogFile->close();
 		gv_pLogFile->Release();
 		gv_pLogFile = NULL;
 	}

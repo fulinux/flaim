@@ -114,14 +114,14 @@ public:
 	
 	~F_RebuildNodeIStream()
 	{
-		close();
+		closeStream();
 	}
 
-	RCODE open(
+	RCODE openStream(
 		F_DbRebuild *		pRebuild,
 		FLMBOOL				bRecovDictionary);
 
-	RCODE FLMAPI close( void);
+	RCODE FLMAPI closeStream( void);
 	
 	RCODE FLMAPI read(
 		void *				pvBuffer,
@@ -790,7 +790,7 @@ Exit:
 
 	if( pLockFileHdl)
 	{
-		pLockFileHdl->close();
+		pLockFileHdl->closeFile();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -990,7 +990,7 @@ RCODE F_DbRebuild::recoverNodes(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( this, bRecoverDictionary)))
+	if( RC_BAD( rc = pIStream->openStream( this, bRecoverDictionary)))
 	{
 		goto Exit;
 	}
@@ -1822,9 +1822,9 @@ Exit:
 /***************************************************************************
 Desc:
 *****************************************************************************/
-RCODE F_RebuildNodeIStream::open(
-	F_DbRebuild *			pDbRebuild,
-	FLMBOOL					bRecovDictionary)
+RCODE F_RebuildNodeIStream::openStream(
+	F_DbRebuild *		pDbRebuild,
+	FLMBOOL				bRecovDictionary)
 {
 	RCODE			rc = NE_XFLM_OK;
 	
@@ -1862,7 +1862,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);	
@@ -1871,7 +1871,7 @@ Exit:
 /***************************************************************************
 Desc:
 *****************************************************************************/
-RCODE F_RebuildNodeIStream::close( void)
+RCODE F_RebuildNodeIStream::closeStream( void)
 {
 	if( m_pucFirstElmBlk)
 	{

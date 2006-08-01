@@ -254,7 +254,7 @@ RCODE FlmBlobImp::closeFile()
 {
 	if( m_pFileHdl)
 	{
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		m_bFileAccessed = FALSE;
 
 		m_pFileHdl->Release();

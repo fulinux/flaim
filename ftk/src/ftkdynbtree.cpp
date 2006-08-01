@@ -1194,7 +1194,7 @@ void F_BtreeRoot::closeFile( void)
 	{
 		F_FileSystem	fileSystem;
 
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		fileSystem.deleteFile( m_pszFileName);
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;

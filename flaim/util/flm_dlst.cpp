@@ -678,7 +678,7 @@ RCODE F_DynamicList::dumpToFile()
 			pTmp = pTmp->pNext;
 		}
 
-		pFileHdl->close();
+		pFileHdl->closeFile();
 	}
 
 Exit_local:

@@ -453,7 +453,7 @@ RCODE FLMAPI F_FileSystem::createFile(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pFileHdl->create( pszFileName, uiIoFlags)))
+	if (RC_BAD( rc = pFileHdl->createFile( pszFileName, uiIoFlags)))
 	{
 		goto Exit;
 	}
@@ -488,7 +488,7 @@ RCODE FLMAPI F_FileSystem::createUniqueFile(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pFileHdl->createUnique( pszPath, 
+	if( RC_BAD( rc = pFileHdl->createUniqueFile( pszPath, 
 			pszFileExtension,	uiIoFlags)))
 	{
 		goto Exit;
@@ -523,7 +523,7 @@ RCODE FLMAPI F_FileSystem::openFile(
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = pFileHdl->open( pszFileName, uiIoFlags)))
+	if (RC_BAD( rc = pFileHdl->openFile( pszFileName, uiIoFlags)))
 	{
 		goto Exit;
 	}
@@ -1119,13 +1119,13 @@ Exit:
 
 	if( pSrcFileHdl)
 	{
-		pSrcFileHdl->close();
+		pSrcFileHdl->closeFile();
 		pSrcFileHdl->Release();
 	}
 	
 	if( pDestFileHdl)
 	{
-		pDestFileHdl->close();
+		pDestFileHdl->closeFile();
 		pDestFileHdl->Release();
 	}
 	
@@ -1612,7 +1612,7 @@ Exit:
 
 	if( pFileHdl)
 	{
-		pFileHdl->close();
+		pFileHdl->closeFile();
 		pFileHdl->Release();
 		pFileHdl = NULL;
 	}
@@ -2560,7 +2560,7 @@ RCODE F_FileHdlCache::openOrCreate(
 
 		if( bCreate)
 		{
-			if( RC_BAD( rc = pFileHdl->truncate()))
+			if( RC_BAD( rc = pFileHdl->truncateFile()))
 			{
 				goto Exit;
 			}
@@ -2784,7 +2784,7 @@ void F_FileHdl::freeCommonData( void)
 /****************************************************************************
 Desc:	Open a file
 ****************************************************************************/
-RCODE F_FileHdl::open(
+RCODE F_FileHdl::openFile(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
@@ -2794,7 +2794,7 @@ RCODE F_FileHdl::open(
 /****************************************************************************
 Desc:	Create a file
 ****************************************************************************/
-RCODE F_FileHdl::create(
+RCODE F_FileHdl::createFile(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags)
 {
@@ -2804,7 +2804,7 @@ RCODE F_FileHdl::create(
 /****************************************************************************
 Desc:	Create a unique file name in the specified directory
 ****************************************************************************/
-RCODE F_FileHdl::createUnique(
+RCODE F_FileHdl::createUniqueFile(
 	char *				pszDirName,
 	const char *		pszFileExtension,
 	FLMUINT				uiIoFlags)
@@ -2884,7 +2884,7 @@ RCODE F_FileHdl::createUnique(
 		f_strcpy( szTmpPath, szDirPath);
 		pFileSystem->pathAppend( szTmpPath, szFileName);
 		
-		rc = create( szTmpPath, uiIoFlags | FLM_IO_EXCL);
+		rc = createFile( szTmpPath, uiIoFlags | FLM_IO_EXCL);
 		
 	} while( rc != NE_FLM_OK && (uiCount++ < 10));
 

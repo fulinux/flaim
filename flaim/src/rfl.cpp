@@ -1161,7 +1161,7 @@ RCODE F_Rfl::createFile(
 	}
 	else
 	{
-		if( RC_BAD( rc = m_pFileHdl->truncate( m_pFile->uiFileExtendSize)))
+		if( RC_BAD( rc = m_pFileHdl->truncateFile( m_pFile->uiFileExtendSize)))
 		{
 			goto Exit;
 		}
@@ -2119,7 +2119,7 @@ RCODE F_Rfl::seeIfNeedNewFile(
 			uiCurrFileEOF = ROUND_DOWN_TO_NEAREST_512( uiCurrFileEOF) + 512;
 		}
 
-		if (RC_BAD( rc = m_pFileHdl->truncate( uiCurrFileEOF)))
+		if (RC_BAD( rc = m_pFileHdl->truncateFile( uiCurrFileEOF)))
 		{
 			goto Exit;
 		}
@@ -2317,7 +2317,7 @@ RCODE F_Rfl::finishCurrFile(
 			uiTruncateSize = ROUND_DOWN_TO_NEAREST_512( uiTruncateSize) + 512;
 		}
 
-		if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
+		if (RC_BAD( rc = m_pFileHdl->truncateFile( uiTruncateSize)))
 		{
 			goto Exit;
 		}
@@ -2550,7 +2550,7 @@ RCODE F_Rfl::truncate(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
+	if (RC_BAD( rc = m_pFileHdl->truncateFile( uiTruncateSize)))
 	{
 		m_bRflVolumeOk = FALSE;
 		goto Exit;

@@ -126,6 +126,7 @@
 				#define _LARGE_FILES
 			#endif
 			#include <sys/vminfo.h>
+			#include <dlfcn.h>
 		#endif
 
 		#include <stdio.h>
@@ -603,10 +604,10 @@
 		RCODE FLMAPI tell(
 			FLMUINT64 *			pui64Offset);
 
-		RCODE FLMAPI truncate(
+		RCODE FLMAPI truncateFile(
 			FLMUINT64			ui64Offset = 0);
 
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeFile( void);
 		
 		FINLINE FLMBOOL FLMAPI canDoAsync( void)
 		{
@@ -684,16 +685,16 @@
 	
 		void freeCommonData( void);
 		
-		RCODE create(
+		RCODE createFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags);
 	
-		RCODE createUnique(
+		RCODE createUniqueFile(
 			char *					pszDirName,
 			const char *			pszFileExtension,
 			FLMUINT					uiIoFlags);
 	
-		RCODE open(
+		RCODE openFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags);
 	
@@ -1175,7 +1176,6 @@
 		FLMBYTE *			pszFileName);
 		
 	#if defined( FLM_LINUX)
-
 		void f_setupLinuxKernelVersion( void);
 
 		void f_getLinuxKernelVersion(
@@ -1190,6 +1190,12 @@
 			FLMUINT64 *		pui64AvailMem);
 	#endif
 
+	#if defined( FLM_AIX)
+		void f_getAIXMemInfo(
+			FLMUINT64 *		pui64TotalMem,
+			FLMUINT64 *		pui64AvailMem);
+	#endif
+			
 	void f_memoryInit( void);
 	
 	void f_memoryCleanup( void);

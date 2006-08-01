@@ -236,16 +236,16 @@ FSTATIC RCODE sqlCompareText(
 
 	// Open the streams
 
-	if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
-										pLValue->val.str.uiByteLen)))
+	if (RC_BAD( rc = bufferLStream.openStream( 
+		(const char *)pLValue->val.str.pszStr, pLValue->val.str.uiByteLen)))
 	{
 		goto Exit;
 	}
 
 	pLStream = &bufferLStream;
 
-	if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
-										pRValue->val.str.uiByteLen)))
+	if( RC_BAD( rc = bufferRStream.openStream( 
+		(const char *)pRValue->val.str.pszStr, pRValue->val.str.uiByteLen)))
 	{
 		goto Exit;
 	}
@@ -294,14 +294,14 @@ FSTATIC RCODE sqlApproxCompare(
 
 	// Open the streams
 
-	if (RC_BAD( rc = bufferLStream.open( 
+	if (RC_BAD( rc = bufferLStream.openStream( 
 		(const char *)pLValue->val.str.pszStr, pLValue->val.str.uiByteLen)))
 	{
 		goto Exit;
 	}
 	pLStream = &bufferLStream;
 
-	if( RC_BAD( rc = bufferRStream.open( 
+	if( RC_BAD( rc = bufferRStream.openStream( 
 		(const char *)pRValue->val.str.pszStr, pRValue->val.str.uiByteLen)))
 	{
 		goto Exit;
@@ -431,15 +431,15 @@ FSTATIC RCODE sqlCompareBinary(
 
 	// Open the streams
 
-	if (RC_BAD( rc = bufferLStream.open( (const char *)pLValue->val.str.pszStr,
-										pLValue->val.str.uiByteLen)))
+	if (RC_BAD( rc = bufferLStream.openStream( 
+		(const char *)pLValue->val.str.pszStr, pLValue->val.str.uiByteLen)))
 	{
 		goto Exit;
 	}
 	pLStream = &bufferLStream;
 
-	if( RC_BAD( rc = bufferRStream.open( (const char *)pRValue->val.str.pszStr,
-										pRValue->val.str.uiByteLen)))
+	if( RC_BAD( rc = bufferRStream.openStream( 
+		(const char *)pRValue->val.str.pszStr, pRValue->val.str.uiByteLen)))
 	{
 		goto Exit;
 	}

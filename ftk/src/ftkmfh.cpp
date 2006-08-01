@@ -50,21 +50,20 @@ public:
 
 	virtual ~F_MultiFileHdl();
 
-	void FLMAPI close(
+	void FLMAPI closeFile(
 		FLMBOOL			bDelete = FALSE);
 
-
-	RCODE FLMAPI create(
+	RCODE FLMAPI createFile(
 		const char *	pszPath);
 
-	RCODE FLMAPI createUnique(
+	RCODE FLMAPI createUniqueFile(
 		const char *	pszPath,
 		const char *	pszFileExtension);
 
 	RCODE FLMAPI deleteMultiFile(
 		const char *	pszPath);
 
-	RCODE FLMAPI open(
+	RCODE FLMAPI openFile(
 		const char *	pszPath);
 
 	RCODE FLMAPI flush( void);
@@ -91,7 +90,7 @@ public:
 		return( NE_FLM_OK);
 	}
 
-	RCODE FLMAPI truncate(
+	RCODE FLMAPI truncateFile(
 		FLMUINT64	ui64NewSize);
 
 private:
@@ -118,7 +117,7 @@ private:
 
 			// Release the lock file
 
-			(void)m_pLockFileHdl->close();
+			(void)m_pLockFileHdl->closeFile();
 			m_pLockFileHdl->Release();
 			m_pLockFileHdl = NULL;
 
@@ -221,7 +220,7 @@ F_MultiFileHdl::~F_MultiFileHdl()
 {
 	if( m_bOpen)
 	{
-		close();
+		closeFile();
 	}
 
 	f_assert( !m_pLockFileHdl);
@@ -230,7 +229,7 @@ F_MultiFileHdl::~F_MultiFileHdl()
 /****************************************************************************
 Desc:	Closes all data files associated with the object
 ****************************************************************************/
-void F_MultiFileHdl::close(
+void F_MultiFileHdl::closeFile(
 	FLMBOOL			bDelete)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -252,7 +251,7 @@ void F_MultiFileHdl::close(
 			{
 				(void)m_pFileHdlList[ uiLoop].pFileHdl->flush();
 			}
-			m_pFileHdlList[ uiLoop].pFileHdl->close();
+			m_pFileHdlList[ uiLoop].pFileHdl->closeFile();
 			m_pFileHdlList[ uiLoop].pFileHdl->Release();
 			f_memset( &m_pFileHdlList[ uiLoop], 0, sizeof( FH_INFO));
 		}
@@ -368,7 +367,7 @@ Exit:
 /****************************************************************************
 Desc: Creates a new 64-bit "file"
 ****************************************************************************/
-RCODE F_MultiFileHdl::create(
+RCODE F_MultiFileHdl::createFile(
 	const char *	pszPath)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -420,7 +419,7 @@ Exit:
 /****************************************************************************
 Desc:	Creates a new 64-bit file with a unique, generated name
 ****************************************************************************/
-RCODE F_MultiFileHdl::createUnique(
+RCODE F_MultiFileHdl::createUniqueFile(
 	const char *		pszPath,					// Directory where the file is to be created
 	const char *		pszFileExtension)		// Extension to be used on the new file.
 {
@@ -513,7 +512,7 @@ Exit:
 /****************************************************************************
 Desc: Opens an existing 64-bit file
 ****************************************************************************/
-RCODE F_MultiFileHdl::open(
+RCODE F_MultiFileHdl::openFile(
 	const char *	pszPath)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -821,7 +820,7 @@ RCODE F_MultiFileHdl::getFileHdl(
 			goto Exit;
 		}
 
-		pTmpHdl->close();
+		pTmpHdl->closeFile();
 		pTmpHdl->Release();
 		pTmpHdl = NULL;
 
@@ -956,7 +955,7 @@ RCODE F_MultiFileHdl::createLockFile(
 	uiIoFlags |= FLM_IO_DELETE_ON_RELEASE;
 #endif
 
-	if( RC_BAD( pLockFileHdl->create( szLockPath, uiIoFlags)))
+	if( RC_BAD( pLockFileHdl->createFile( szLockPath, uiIoFlags)))
 	{
 #ifndef FLM_UNIX
 		if (RC_BAD( pFileSystem->deleteFile( szLockPath)))
@@ -964,14 +963,14 @@ RCODE F_MultiFileHdl::createLockFile(
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
-		else if (RC_BAD( pLockFileHdl->create( szLockPath, uiIoFlags)))
+		else if (RC_BAD( pLockFileHdl->createFile( szLockPath, uiIoFlags)))
 		{
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
 		}
 #else
 
-		if( RC_BAD( pLockFileHdl->open( szLockPath, uiIoFlags)))
+		if( RC_BAD( pLockFileHdl->openFile( szLockPath, uiIoFlags)))
 		{
 			rc = RC_SET( NE_FLM_IO_ACCESS_DENIED);
 			goto Exit;
@@ -994,7 +993,7 @@ Exit:
 
 	if (pLockFileHdl)
 	{
-		(void)pLockFileHdl->close();
+		(void)pLockFileHdl->closeFile();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -1005,7 +1004,7 @@ Exit:
 Desc:	This is a private method that will truncate the spill file back to
 		the specified size.
 ****************************************************************************/
-RCODE F_MultiFileHdl::truncate(
+RCODE F_MultiFileHdl::truncateFile(
 	FLMUINT64		ui64NewSize)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -1017,7 +1016,7 @@ RCODE F_MultiFileHdl::truncate(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pFileHdl->truncate( getFileOffset( ui64NewSize))))
+	if (RC_BAD( rc = pFileHdl->truncateFile( getFileOffset( ui64NewSize))))
 	{
 		goto Exit;
 	}

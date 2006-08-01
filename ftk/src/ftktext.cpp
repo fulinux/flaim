@@ -7223,7 +7223,7 @@ RCODE f_verifyMetaphoneRoutines( void)
 			break;
 		}
 
-		if( RC_BAD( rc = pBufferStream->open( 
+		if( RC_BAD( rc = pBufferStream->openStream( 
 			pMetaMap->pszWord, f_strlen( pMetaMap->pszWord))))
 		{
 			goto Exit;
@@ -7242,7 +7242,7 @@ RCODE f_verifyMetaphoneRoutines( void)
 			goto Exit;
 		}
 
-		pBufferStream->close();
+		pBufferStream->closeStream();
 		pMetaMap++;
 	}
 
@@ -7371,25 +7371,25 @@ RCODE FLMAPI f_compareUnicodeStrings(
 	F_CollIStream			lStream;
 	F_CollIStream			rStream;
 
-	if( RC_BAD( rc = bufferLStream.open( 
+	if( RC_BAD( rc = bufferLStream.openStream( 
 		(const char *)puzLString, uiLStrBytes)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = bufferRStream.open( 
+	if( RC_BAD( rc = bufferRStream.openStream( 
 		(const char *)puzRString, uiRStrBytes)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = lStream.open( &bufferLStream, TRUE, uiLanguage,
+	if( RC_BAD( rc = lStream.openStream( &bufferLStream, TRUE, uiLanguage,
 		uiCompareRules, bLeftWild)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = rStream.open( &bufferRStream, TRUE, uiLanguage,
+	if( RC_BAD( rc = rStream.openStream( &bufferRStream, TRUE, uiLanguage,
 		uiCompareRules, bRightWild)))
 	{
 		goto Exit;
@@ -7427,25 +7427,25 @@ RCODE FLMAPI f_compareUTF8Strings(
 	F_CollIStream			lStream;
 	F_CollIStream			rStream;
 
-	if (RC_BAD( rc = bufferLStream.open( 
+	if (RC_BAD( rc = bufferLStream.openStream( 
 		(const char *)pucLString, uiLStrBytes)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = bufferRStream.open( 
+	if( RC_BAD( rc = bufferRStream.openStream( 
 		(const char *)pucRString, uiRStrBytes)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = lStream.open( &bufferLStream, FALSE, uiLanguage,
+	if( RC_BAD( rc = lStream.openStream( &bufferLStream, FALSE, uiLanguage,
 								uiCompareRules, bLeftWild)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = rStream.open( &bufferRStream, FALSE, uiLanguage,
+	if( RC_BAD( rc = rStream.openStream( &bufferRStream, FALSE, uiLanguage,
 								uiCompareRules, bRightWild)))
 	{
 		goto Exit;
@@ -7480,13 +7480,13 @@ RCODE FLMAPI f_compareUTF8Streams(
 	F_CollIStream			lStream;
 	F_CollIStream			rStream;
 
-	if( RC_BAD( rc = lStream.open( pLStream, FALSE, uiLanguage,
+	if( RC_BAD( rc = lStream.openStream( pLStream, FALSE, uiLanguage,
 								uiCompareRules, bLeftWild)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = rStream.open( pRStream, FALSE, uiLanguage,
+	if( RC_BAD( rc = rStream.openStream( pRStream, FALSE, uiLanguage,
 								uiCompareRules, bRightWild)))
 	{
 		goto Exit;
@@ -7520,13 +7520,13 @@ RCODE FLMAPI f_compareUnicodeStreams(
 	F_CollIStream			lStream;
 	F_CollIStream			rStream;
 
-	if( RC_BAD( rc = lStream.open( pLStream, TRUE, uiLanguage,
+	if( RC_BAD( rc = lStream.openStream( pLStream, TRUE, uiLanguage,
 								uiCompareRules, bLeftWild)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = rStream.open( pRStream, TRUE, uiLanguage,
+	if( RC_BAD( rc = rStream.openStream( pRStream, TRUE, uiLanguage,
 								uiCompareRules, bRightWild)))
 	{
 		goto Exit;

@@ -996,7 +996,7 @@ RCODE F_DataVector::outputKey(
 						}
 					}
 	
-					if (RC_BAD( rc = pBufferStream->open( 
+					if (RC_BAD( rc = pBufferStream->openStream( 
 						(const char *)pucDataPtr, uiDataLen)))
 					{
 						goto Exit;
@@ -1011,7 +1011,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 	
-					pBufferStream->close();
+					pBufferStream->closeStream();
 				}
 				else if (pVector->uiDataType == XFLM_NUMBER_TYPE)
 				{
@@ -1043,7 +1043,7 @@ RCODE F_DataVector::outputKey(
 						}
 					}
 					
-					if (RC_BAD( rc = pBufferStream->open( 
+					if (RC_BAD( rc = pBufferStream->openStream( 
 						(const char *)ucStorageBuf, uiStorageLen)))
 					{
 						goto Exit;
@@ -1061,7 +1061,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 					
-					pBufferStream->close();
+					pBufferStream->closeStream();
 				}
 			}
 			else
@@ -1090,7 +1090,7 @@ RCODE F_DataVector::outputKey(
 						}
 					}
 					
-					if (RC_BAD( rc = pBufferStream->open( 
+					if (RC_BAD( rc = pBufferStream->openStream( 
 						(const char *)pucDataPtr, uiDataLen)))
 					{
 						goto Exit;
@@ -1111,7 +1111,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 					
-					pBufferStream->close();					
+					pBufferStream->closeStream();					
 				}
 			}
 

@@ -93,7 +93,7 @@ RCODE F_FSRestore::openBackupSet( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pMultiFileHdl->open( m_szBackupSetPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->openFile( m_szBackupSetPath)))
 	{
 		m_pMultiFileHdl->Release();
 		m_pMultiFileHdl = NULL;
@@ -141,7 +141,6 @@ RCODE F_FSRestore::openRflFile(
 			goto Exit;
 		}
 
-		pFileHdl->close();
 		pFileHdl->Release();
 		pFileHdl = NULL;
 
@@ -213,7 +212,7 @@ RCODE F_FSRestore::openIncFile(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pMultiFileHdl->open( szIncPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->openFile( szIncPath)))
 	{
 		m_pMultiFileHdl->Release();
 		m_pMultiFileHdl = NULL;

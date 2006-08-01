@@ -703,7 +703,7 @@ RCODE F_DynamicList::dumpToFile()
 			pTmp = pTmp->pNext;
 		}
 
-		(void)pFileHdl->close();
+		(void)pFileHdl->closeFile();
 
 	}
 

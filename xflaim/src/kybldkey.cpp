@@ -267,7 +267,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			}
 		}
 
-		if (RC_BAD( rc = pBufferIStream->open( 
+		if (RC_BAD( rc = pBufferIStream->openStream( 
 			(const char *)pucFromBuf, uiFromBufLen)))
 		{
 			goto Exit;
@@ -288,7 +288,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			goto Exit;
 		}
 		
-		pBufferIStream->close();
+		pBufferIStream->closeStream();
 		
 		if (bDataTruncated)
 		{
@@ -638,7 +638,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				}
 			}
 			
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)pucFromBuf, uiFromBufLen)))
 			{
 				goto Exit;
@@ -659,7 +659,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 			
-			pBufferIStream->close();
+			pBufferIStream->closeStream();
 
 			if (bDataTruncated)
 			{
@@ -730,7 +730,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				}
 			}
 			
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)pucUntilBuf, uiUntilBufLen)))
 			{
 				goto Exit;
@@ -750,7 +750,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 			
-			pBufferIStream->close();
+			pBufferIStream->closeStream();
 
 			if (bDataTruncated)
 			{
@@ -1615,7 +1615,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			}
 		}
 		
-		if (RC_BAD( rc = pBufferIStream->open( 
+		if (RC_BAD( rc = pBufferIStream->openStream( 
 			(const char *)pucFromUTF8Buf, uiFromBufLen)))
 		{
 			goto Exit;
@@ -1638,7 +1638,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			goto Exit;
 		}
 		
-		pBufferIStream->close();
+		pBufferIStream->closeStream();
 		
 		if (bDataTruncated)
 		{
@@ -1855,7 +1855,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			}
 		}
 		
-		if (RC_BAD( rc = pBufferIStream->open( 
+		if (RC_BAD( rc = pBufferIStream->openStream( 
 			(const char *)pucUntilUTF8Buf, uiUntilBufLen)))
 		{
 			goto Exit;
@@ -1878,7 +1878,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			goto Exit;
 		}
 		
-		pBufferIStream->close();
+		pBufferIStream->closeStream();
 		
 		if (bDataTruncated)
 		{

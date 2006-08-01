@@ -6840,7 +6840,7 @@ RCODE F_Database::finishCheckpoint(
 
 		if (RC_OK( pSFileHdl->getFileHdl( 0, TRUE, &pCFileHdl)))
 		{
-			(void)pCFileHdl->truncate( LOG_THRESHOLD_SIZE);
+			(void)pCFileHdl->truncateFile( LOG_THRESHOLD_SIZE);
 		}
 	}
 

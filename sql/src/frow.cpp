@@ -1691,7 +1691,7 @@ FLMINT F_BTreeIStream::Release( void)
 	
 	if (m_refCnt == 0)
 	{
-		close();
+		closeStream();
 		if( gv_SFlmSysData.pBTreeIStreamPool)
 		{
 			m_refCnt = 1;
@@ -1710,7 +1710,7 @@ FLMINT F_BTreeIStream::Release( void)
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE F_BTreeIStream::open(
+RCODE F_BTreeIStream::openStream(
 	F_Db *		pDb,
 	FLMUINT		uiTableNum,
 	FLMUINT64	ui64RowId,
@@ -1734,7 +1734,7 @@ RCODE F_BTreeIStream::open(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = open( pDb, pBTree, FLM_EXACT, uiTableNum, ui64RowId,
+	if (RC_BAD( rc = openStream( pDb, pBTree, FLM_EXACT, uiTableNum, ui64RowId,
 		ui32BlkAddr, uiOffsetIndex)))
 	{
 		goto Exit;
@@ -1752,7 +1752,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -1761,7 +1761,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE F_BTreeIStream::open(
+RCODE F_BTreeIStream::openStream(
 	F_Db *			pDb,
 	F_Btree *		pBTree,
 	FLMUINT			uiFlags,
@@ -1818,7 +1818,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -2459,7 +2459,7 @@ RCODE F_RowCacheMgr::readRowFromDisk(
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = btreeIStream.open( pDb, pBTree, FLM_EXACT,
+	if (RC_BAD( rc = btreeIStream.openStream( pDb, pBTree, FLM_EXACT,
 								uiTableNum, ui64RowId, 0, 0)))
 	{
 		goto Exit;
@@ -2488,7 +2488,7 @@ Exit:
 
 	if (bCloseIStream)
 	{
-		btreeIStream.close();
+		btreeIStream.closeStream();
 	}
 
 	if (pBTree)
@@ -3572,8 +3572,9 @@ RCODE F_Row::getIStream(
 		pColumn = pDb->m_pDict->getColumn( pTable, uiColumnNum);
 		*peDataType = pColumn->eDataTyp;
 	}
-	if (RC_BAD( rc = pBufferIStream->open( (const char *)getColumnDataPtr( uiColumnNum),
-							pColumnItem->uiDataLen, NULL)))
+	if (RC_BAD( rc = pBufferIStream->openStream( 
+		(const char *)getColumnDataPtr( uiColumnNum), 
+		pColumnItem->uiDataLen, NULL)))
 	{
 		goto Exit;
 	}

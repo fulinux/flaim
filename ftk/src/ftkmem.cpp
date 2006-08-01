@@ -87,6 +87,10 @@
 	#include <dlfcn.h>
 #endif
 
+#if defined( FLM_AIX)
+	typedef int (* VMGETINFO_FUNC)(void *, int, int);
+#endif
+
 /************************************************************************
 Desc:
 *************************************************************************/
@@ -1451,7 +1455,8 @@ void logMemLeak(
 			{
 				(void)pFileHdl->flush();
 			}
-			pFileHdl->close();
+			
+			pFileHdl->closeFile();
 		}
 	}
 	
@@ -2573,6 +2578,10 @@ void * F_SlabManager::allocSlabFromSystem( void)
 	pSlab = VirtualAlloc( NULL,
 		(DWORD)m_uiSlabSize, MEM_COMMIT, PAGE_READWRITE);
 		
+#elif defined( FLM_RING_ZERO_NLM)
+
+	pSlab = Alloc( m_uiSlabSize, gv_lAllocRTag)
+
 #elif defined( FLM_SOLARIS)
 
 	pSlab = memalign( sysconf( _SC_PAGESIZE), m_uiSlabSize);
@@ -2587,7 +2596,7 @@ void * F_SlabManager::allocSlabFromSystem( void)
 #elif defined( FLM_UNIX)
 
 	pSlab = valloc( m_uiSlabSize);
-
+	
 #else
 
 	if( RC_BAD( f_alloc( m_uiSlabSize, &pSlab)))
@@ -2610,6 +2619,8 @@ void F_SlabManager::releaseSlabToSystem(
 	
 #ifdef FLM_WIN
 	VirtualFree( pSlab, 0, MEM_RELEASE);
+#elif defined( FLM_RING_ZERO_NLM)
+	Free( pSlab);
 #elif defined( FLM_UNIX)
 	free( pSlab);
 #else
@@ -4770,51 +4781,64 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 {
 	RCODE		rc = NE_FLM_OK;
 	
-#ifdef FLM_WIN
+#if defined( FLM_WIN)
+
 	if ((*ppvAlloc = (void *)VirtualAlloc( NULL,
 		uiMinSize, MEM_COMMIT, PAGE_READWRITE)) == NULL)
 	{
 		rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
 		goto Exit;
 	}
+	
 #elif defined( FLM_SOLARIS)
+
 	if( (*ppvAlloc = memalign( sysconf( _SC_PAGESIZE), uiMinSize)) == NULL)
 	{
 		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
-#elif defined( FLM_LINUX) 
+	
+#elif defined( FLM_LINUX)
+
 	if( posix_memalign( ppvAlloc, sysconf( _SC_PAGESIZE), uiMinSize) != 0)
 	{
 		rc = RC_SET( NE_FLM_MEM);
 		goto Exit;
 	}
+	
 #elif defined( FLM_UNIX)
+
+	if( (*ppvAlloc = valloc( uiMinSize)) == NULL)
 	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+#else
+
+	{
+		FLMUINT		uiPageSize = 512;
 		FLMUINT		uiAllocSize;
-		FLMUINT		uiPageSize = (FLMUINT)sysconf( _SC_PAGESIZE);
 		FLMBYTE *	pucAlloc;
+		FLMBYTE *	pucStartOfAlloc;
 		
 		uiAllocSize = f_roundUp( uiMinSize, uiPageSize) + uiPageSize;
 		
-		if( (pucAlloc = (FLMBYTE *)mmap( 0, uiAllocSize,
-			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 
-			-1, 0)) == MAP_FAILED)
+		if( RC_BAD( rc = f_alloc( uiAllocSize, &pucAlloc)))
 		{
-			rc = RC_SET( NE_FLM_MEM);
 			goto Exit;
 		}
 		
-		f_assert( ((FLMUINT)(pucAlloc) % uiPageSize) == 0);
+		pucStartOfAlloc = pucAlloc;
+		pucAlloc += (uiPageSize - (((FLMUINT)pucAlloc) % uiPageSize));
 		
-		UD2FBA( uiAllocSize, pucAlloc);
-		*ppvAlloc = (void *)(pucAlloc + uiPageSize);
+		f_assert( ((FLMUINT)(pucAlloc) % uiPageSize) == 0);
+
+		U642FBA( (FLMUINT64)pucStartOfAlloc, pucAlloc - 8);
+		*ppvAlloc = pucAlloc;
 	}
-#else
-	if( RC_BAD( rc = f_alloc( uiMinSize, ppvAlloc)))
-	{
-		goto Exit;
-	}
+
+
 #endif
 
 	f_memset( *ppvAlloc, 0, uiMinSize);
@@ -4832,25 +4856,26 @@ void FLMAPI f_freeAlignedBufferImp(
 {
 	if( *ppvAlloc)
 	{
-#ifdef FLM_WIN
+#if defined( FLM_WIN)
+
 		(void)VirtualFree( *ppvAlloc, 0, MEM_RELEASE);
 		*ppvAlloc = NULL;
-#elif defined( FLM_LINUX) || defined( FLM_SOLARIS)
+		
+#elif defined( FLM_UNIX)
+
 		free( *ppvAlloc);
 		*ppvAlloc = NULL;
-#elif defined( FLM_UNIX)
-		{
-			FLMUINT		uiAllocSize;
-			FLMUINT		uiPageSize = (FLMUINT)sysconf( _SC_PAGESIZE);
-			
-			*ppvAlloc = ((FLMBYTE *)(*ppvAlloc)) - uiPageSize;
-			uiAllocSize = FB2UD( (FLMBYTE *)(*ppvAlloc));
-			munmap( *ppvAlloc, uiAllocSize);
-		}
 		
-		*ppvAlloc = NULL;
 #else
-		f_free( ppvAlloc);
+
+		{
+			FLMBYTE *		pucAlloc;
+			
+			pucAlloc = (FLMBYTE *)FB2U64( ((FLMBYTE *)(*ppvAlloc)) - 8);
+			f_free( &pucAlloc);
+			*ppvAlloc = NULL;
+		}
+
 #endif
 	}
 }
@@ -4946,30 +4971,9 @@ RCODE FLMAPI f_getMemoryInfo(
 		#endif
 	
 		#ifdef FLM_AIX
-				struct vminfo		tmpvminfo;
-			#ifdef _SC_PAGESIZE
-				long		iPageSize = sysconf(_SC_PAGESIZE);
-			#else
-				long		iPageSize = 4096;
-			#endif
+			
+			f_getAIXMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
 		
-				if( iPageSize == -1)
-				{
-					// If sysconf returned an error, resort to using the default
-					// page size for the Power architecture.
-		
-					iPageSize = 4096;
-				}
-		
-				ui64TotalPhysMem = HIGH_FLMUINT;
-				ui64AvailPhysMem = HIGH_FLMUINT;
-				
-				if( vmgetinfo( &tmpvminfo, VMINFO, sizeof( tmpvminfo)) != -1)
-				{
-					ui64TotalPhysMem = tmpvminfo.memsizepgs * iPageSize;
-					ui64AvailPhysMem = tmpvminfo.numfrb * iPageSize;
-				}
-				
 		#elif defined( FLM_LINUX)
 		
 				f_getLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
@@ -5163,6 +5167,65 @@ Exit:
 	}
 }
 #endif
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+#ifdef FLM_AIX
+void f_getAIXMemInfo(
+	FLMUINT64 *		pui64TotalMem,
+	FLMUINT64 *		pui64AvailMem)
+{
+	struct vminfo		tmpvminfo;
+	FLMUINT64			ui64TotalPhysMem;
+	FLMUINT64			ui64AvailPhysMem;
+	void *				pvModule = NULL;
+	VMGETINFO_FUNC		fnVMGetInfo;
+
+#ifdef _SC_PAGESIZE
+	long					iPageSize = sysconf(_SC_PAGESIZE);
+#else
+	long					iPageSize = 4096;
+#endif
+
+	if( iPageSize == -1)
+	{
+		// If sysconf returned an error, resort to using the default
+		// page size for the Power architecture.
+
+		iPageSize = 4096;
+	}
+	
+	ui64TotalPhysMem = FLM_MAX_UINT;
+	ui64AvailPhysMem = FLM_MAX_UINT;
+	
+	if( (pvModule = dlopen( "/unix", RTLD_NOW | RTLD_GLOBAL)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	if( (fnVMGetInfo = (VMGETINFO_FUNC)dlsym( pvModule, "vmgetinfo")) == NULL)
+	{
+		goto Exit;
+	}
+	
+	if( fnVMGetInfo( &tmpvminfo, VMINFO, sizeof( tmpvminfo)) != -1)
+	{
+		ui64TotalPhysMem = tmpvminfo.memsizepgs * iPageSize;
+		ui64AvailPhysMem = tmpvminfo.numfrb * iPageSize;
+	}
+	
+Exit:
+
+	if( pvModule)
+	{
+		dlclose( pvModule);
+	}
+	
+	*pui64TotalMem = ui64TotalPhysMem;
+	*pui64AvailMem = ui64AvailPhysMem;
+}
+#endif				
 
 /****************************************************************************
 Desc:

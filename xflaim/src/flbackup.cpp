@@ -1859,7 +1859,7 @@ F_DefaultBackupClient::~F_DefaultBackupClient()
 {
 	if (m_pMultiFileHdl)
 	{
-		m_pMultiFileHdl->close();
+		m_pMultiFileHdl->closeFile();
 		m_pMultiFileHdl->Release();
 	}
 }
@@ -1898,7 +1898,7 @@ RCODE F_DefaultBackupClient::WriteData(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = m_pMultiFileHdl->create( m_szPath)))
+		if( RC_BAD( rc = m_pMultiFileHdl->createFile( m_szPath)))
 		{
 			m_pMultiFileHdl->Release();
 			m_pMultiFileHdl = NULL;

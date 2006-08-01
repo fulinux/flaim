@@ -173,7 +173,7 @@ public:
 	RCODE	setTcpDelay(
 		FLMBOOL			bOn);
 
-	RCODE FLMAPI close( void);
+	RCODE FLMAPI closeStream( void);
 
 private:
 
@@ -230,7 +230,7 @@ RCODE FLMAPI FlmOpenBufferIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pucBuffer, uiLength)))
+	if( RC_BAD( rc = pIStream->openStream( pucBuffer, uiLength)))
 	{
 		goto Exit;
 	}
@@ -265,7 +265,7 @@ RCODE FLMAPI FlmOpenBase64EncoderIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pSourceIStream, bLineBreaks)))
+	if( RC_BAD( rc = pIStream->openStream( pSourceIStream, bLineBreaks)))
 	{
 		goto Exit;
 	}
@@ -299,7 +299,7 @@ RCODE FLMAPI FlmOpenBase64DecoderIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pSourceIStream)))
+	if( RC_BAD( rc = pIStream->openStream( pSourceIStream)))
 	{
 		goto Exit;
 	}
@@ -333,7 +333,7 @@ RCODE FLMAPI FlmOpenFileIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pszPath)))
+	if( RC_BAD( rc = pIStream->openStream( pszPath)))
 	{
 		goto Exit;
 	}
@@ -368,7 +368,7 @@ RCODE FLMAPI FlmOpenMultiFileIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pszDirectory, pszBaseName)))
+	if( RC_BAD( rc = pIStream->openStream( pszDirectory, pszBaseName)))
 	{
 		goto Exit;
 	}
@@ -403,7 +403,7 @@ RCODE FLMAPI FlmOpenBufferedIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pSourceIStream, uiBufferSize)))
+	if( RC_BAD( rc = pIStream->openStream( pSourceIStream, uiBufferSize)))
 	{
 		goto Exit;
 	}
@@ -437,7 +437,7 @@ RCODE FLMAPI FlmOpenUncompressingIStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIStream->open( pSourceIStream)))
+	if( RC_BAD( rc = pIStream->openStream( pSourceIStream)))
 	{
 		goto Exit;
 	}
@@ -472,7 +472,7 @@ RCODE FLMAPI FlmOpenFileOStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pOStream->open( pszPath, bTruncateIfExists)))
+	if( RC_BAD( rc = pOStream->openStream( pszPath, bTruncateIfExists)))
 	{
 		goto Exit;
 	}
@@ -509,7 +509,7 @@ RCODE FLMAPI FlmOpenMultiFileOStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pOStream->create( pszDirectory, pszBaseName, 
+	if( RC_BAD( rc = pOStream->createStream( pszDirectory, pszBaseName, 
 		uiMaxFileSize, bOkToOverwrite)))
 	{
 		goto Exit;
@@ -545,7 +545,7 @@ RCODE FLMAPI FlmOpenBufferedOStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pOStream->open( pDestOStream, uiBufferSize)))
+	if( RC_BAD( rc = pOStream->openStream( pDestOStream, uiBufferSize)))
 	{
 		goto Exit;
 	}
@@ -579,7 +579,7 @@ RCODE FLMAPI FlmOpenCompressingOStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pOStream->open( pDestOStream)))
+	if( RC_BAD( rc = pOStream->openStream( pDestOStream)))
 	{
 		goto Exit;
 	}
@@ -632,12 +632,12 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileIStream::open(
+RCODE FLMAPI F_FileIStream::openStream(
 	const char *		pszFilePath)
 {
 	RCODE			rc = NE_FLM_OK;
 
-	close();
+	closeStream();
 
 	if( RC_BAD( rc = f_getFileSysPtr()->openFile( (char *)pszFilePath,
 		FLM_IO_RDONLY | FLM_IO_SH_DENYNONE, &m_pFileHdl)))
@@ -653,13 +653,13 @@ Exit:
 /****************************************************************************
 Desc:	Closes the input stream and frees any resources
 *****************************************************************************/
-RCODE F_FileIStream::close( void)
+RCODE F_FileIStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
 	if( m_pFileHdl)
 	{
-		rc = m_pFileHdl->close();
+		rc = m_pFileHdl->closeFile();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}
@@ -756,7 +756,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedIStream::open(
+RCODE FLMAPI F_BufferedIStream::openStream(
 	IF_IStream *	pIStream,
 	FLMUINT			uiBufferSize)
 {
@@ -784,7 +784,7 @@ Exit:
 
 	if (RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -857,7 +857,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedIStream::close( void)
+RCODE FLMAPI F_BufferedIStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
@@ -865,7 +865,7 @@ RCODE FLMAPI F_BufferedIStream::close( void)
 	{
 		if( m_pIStream->getRefCount() == 1)
 		{
-			rc = m_pIStream->close();
+			rc = m_pIStream->closeStream();
 		}
 
 		m_pIStream->Release();
@@ -887,7 +887,7 @@ RCODE FLMAPI F_BufferedIStream::close( void)
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileOStream::open(
+RCODE FLMAPI F_FileOStream::openStream(
 	const char *		pszFilePath,
 	FLMBOOL				bTruncateIfExists)
 {
@@ -941,9 +941,9 @@ RCODE FLMAPI F_FileOStream::open(
 
 Exit:
 
-	if (RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -987,7 +987,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileOStream::close( void)
+RCODE FLMAPI F_FileOStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1004,7 +1004,7 @@ RCODE FLMAPI F_FileOStream::close( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_MultiFileIStream::open(
+RCODE FLMAPI F_MultiFileIStream::openStream(
 	const char *	pszDirectory,
 	const char *	pszBaseName)
 {
@@ -1078,7 +1078,7 @@ RCODE F_MultiFileIStream::rollToNextFile( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileIStream->open( (const char *)szFilePath)))
+	if( RC_BAD( rc = pFileIStream->openStream( (const char *)szFilePath)))
 	{
 		if (rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
@@ -1094,7 +1094,7 @@ RCODE F_MultiFileIStream::rollToNextFile( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pBufferedIStream->open( pFileIStream, 16384)))
+	if( RC_BAD( rc = pBufferedIStream->openStream( pFileIStream, 16384)))
 	{
 		goto Exit;
 	}
@@ -1194,7 +1194,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_MultiFileIStream::close( void)
+RCODE FLMAPI F_MultiFileIStream::closeStream( void)
 {
 	if( m_pIStream)
 	{
@@ -1215,7 +1215,7 @@ RCODE FLMAPI F_MultiFileIStream::close( void)
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE F_MultiFileOStream::create(
+RCODE F_MultiFileOStream::createStream(
 	const char *	pszDirectory,
 	const char *	pszBaseName,
 	FLMUINT			uiMaxFileSize,
@@ -1365,7 +1365,7 @@ RCODE F_MultiFileOStream::rollToNextFile( void)
 
 	if( m_pOStream)
 	{
-		if( RC_BAD( rc = m_pOStream->close()))
+		if( RC_BAD( rc = m_pOStream->closeStream()))
 		{
 			goto Exit;
 		}
@@ -1405,7 +1405,7 @@ RCODE F_MultiFileOStream::rollToNextFile( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileOStream->open( (const char *)szFilePath, TRUE)))
+	if( RC_BAD( rc = pFileOStream->openStream( (const char *)szFilePath, TRUE)))
 	{
 		goto Exit;
 	}
@@ -1416,7 +1416,7 @@ RCODE F_MultiFileOStream::rollToNextFile( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pBufferedOStream->open( pFileOStream, 16384)))
+	if( RC_BAD( rc = pBufferedOStream->openStream( pFileOStream, 16384)))
 	{
 		goto Exit;
 	}
@@ -1513,13 +1513,13 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_MultiFileOStream::close( void)
+RCODE FLMAPI F_MultiFileOStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
 	if( m_pOStream)
 	{
-		rc = m_pOStream->close();
+		rc = m_pOStream->closeStream();
 		m_pOStream->Release();
 		m_pOStream = NULL;
 	}
@@ -1537,7 +1537,7 @@ RCODE FLMAPI F_MultiFileOStream::close( void)
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedOStream::open(
+RCODE FLMAPI F_BufferedOStream::openStream(
 	IF_OStream *	pOStream,
 	FLMUINT			uiBufferSize)
 {
@@ -1635,7 +1635,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedOStream::close( void)
+RCODE FLMAPI F_BufferedOStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1645,7 +1645,7 @@ RCODE FLMAPI F_BufferedOStream::close( void)
 		{
 			if( m_pOStream->getRefCount() == 1)
 			{
-				rc = m_pOStream->close();
+				rc = m_pOStream->closeStream();
 			}
 		}
 
@@ -1669,13 +1669,13 @@ Desc:
 ******************************************************************************/
 F_BufferIStream::~F_BufferIStream()
 {
-	close();
+	closeStream();
 }
 
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_BufferIStream::open(
+RCODE FLMAPI F_BufferIStream::openStream(
 	const char *	pucBuffer,
 	FLMUINT			uiLength,
 	char **			ppucAllocatedBuffer)
@@ -1715,7 +1715,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_BufferIStream::close( void)
+RCODE FLMAPI F_BufferIStream::closeStream( void)
 {
 	if( m_bIsOpen)
 	{
@@ -1786,7 +1786,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Base64DecoderIStream::open(
+RCODE FLMAPI F_Base64DecoderIStream::openStream(
 	IF_IStream *	pIStream)
 {
 	RCODE		rc = NE_FLM_OK;
@@ -1922,7 +1922,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Base64EncoderIStream::open(
+RCODE FLMAPI F_Base64EncoderIStream::openStream(
 	IF_IStream *	pIStream,
 	FLMBOOL			bLineBreaks)
 {
@@ -2084,7 +2084,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_CompressingOStream::open(
+RCODE FLMAPI F_CompressingOStream::openStream(
 	IF_OStream *		pOStream)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2128,7 +2128,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -2336,7 +2336,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_CompressingOStream::close( void)
+RCODE FLMAPI F_CompressingOStream::closeStream( void)
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMBYTE		ucOut[ 2];	
@@ -2365,11 +2365,11 @@ RCODE FLMAPI F_CompressingOStream::close( void)
 		{
 			if (RC_OK( rc))
 			{
-				rc = m_pOStream->close();
+				rc = m_pOStream->closeStream();
 			}
 			else
 			{
-				m_pOStream->close();
+				m_pOStream->closeStream();
 			}
 		}
 
@@ -2391,7 +2391,7 @@ RCODE FLMAPI F_CompressingOStream::close( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_UncompressingIStream::open(
+RCODE FLMAPI F_UncompressingIStream::openStream(
 	IF_IStream *		pIStream)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2448,7 +2448,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -2637,7 +2637,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_UncompressingIStream::close( void)
+RCODE FLMAPI F_UncompressingIStream::closeStream( void)
 {
 	if( m_pIStream)
 	{
@@ -2688,7 +2688,7 @@ F_TCPStream::~F_TCPStream( void)
 {
 	if( m_bConnected)
 	{
-		close();
+		closeStream();
 	}
 
 #ifndef FLM_UNIX
@@ -3287,7 +3287,7 @@ Exit:
 /********************************************************************
 Desc: Closes any open connections
 *********************************************************************/
-RCODE FLMAPI F_TCPStream::close( void)
+RCODE FLMAPI F_TCPStream::closeStream( void)
 {
 	if( m_iSocket == INVALID_SOCKET)
 	{

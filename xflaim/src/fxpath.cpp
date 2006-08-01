@@ -2451,7 +2451,7 @@ RCODE F_XPath::parseQuery(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pBufferStream->open( 
+	if( RC_BAD( rc = pBufferStream->openStream( 
 		(const char *)pszQuery, f_strlen( pszQuery))))
 	{
 		goto Exit;

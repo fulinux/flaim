@@ -168,7 +168,7 @@ RCODE FLMAPI F_SuperFileHdl::createFile(
 	}
 	else
 	{
-		if( RC_BAD( rc = pFileHdl->truncate()))
+		if( RC_BAD( rc = pFileHdl->truncateFile()))
 		{
 			goto Exit;
 		}
@@ -383,7 +383,7 @@ RCODE	FLMAPI F_SuperFileHdl::truncateFile(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->truncate( uiBlockOffset)))
+	if( RC_BAD( rc = pFileHdl->truncateFile( uiBlockOffset)))
 	{
 		goto Exit;
 	}
@@ -400,7 +400,7 @@ RCODE	FLMAPI F_SuperFileHdl::truncateFile(
 			break;
 		}
 
-		if( RC_BAD( rc = pFileHdl->truncate()))
+		if( RC_BAD( rc = pFileHdl->truncateFile()))
 		{
 			goto Exit;
 		}
@@ -431,7 +431,7 @@ RCODE	FLMAPI F_SuperFileHdl::truncateFile(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->truncate( uiOffset)))
+	if( RC_BAD( rc = pFileHdl->truncateFile( uiOffset)))
 	{
 		goto Exit;
 	}
@@ -463,7 +463,7 @@ void FLMAPI F_SuperFileHdl::truncateFiles(
 	{
 		if( RC_OK( getFileHdl( uiFileNumber, TRUE, &pFileHdl)))
 		{
-			pFileHdl->truncate();
+			pFileHdl->truncateFile();
 			pFileHdl->Release();
 		}
 	}

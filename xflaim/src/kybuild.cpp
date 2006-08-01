@@ -1228,7 +1228,7 @@ No_Strings:
 				break;
 			}
 
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)*ppucTmpBuf, uiStrBytes)))
 			{
 				goto Exit;
@@ -1247,7 +1247,7 @@ No_Strings:
 										NULL, NULL,
 										m_keyGenInfo.pIxd->uiLanguage,
 										FALSE, FALSE, &bDataTruncated, NULL);
-			pBufferIStream->close();
+			pBufferIStream->closeStream();
 
 			if( RC_BAD( rc))
 			{
@@ -1282,7 +1282,7 @@ No_Strings:
 				goto Exit;
 			}
 
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)ucStorageBuf, uiStorageLen)))
 			{
 				goto Exit;
@@ -1299,7 +1299,7 @@ No_Strings:
 										NULL, NULL,
 										m_keyGenInfo.pIxd->uiLanguage,
 										FALSE, FALSE, NULL, NULL);
-			pBufferIStream->close();
+			pBufferIStream->closeStream();
 
 			if( RC_BAD( rc))
 			{
@@ -1343,7 +1343,7 @@ No_Strings:
 				break;
 			}
 
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)*ppucTmpBuf, uiStrBytes)))
 			{
 				goto Exit;
@@ -1364,7 +1364,7 @@ No_Strings:
 										bHadAtLeastOneString ? FALSE : TRUE, FALSE,
 										&bDataTruncated, NULL);
 
-			pBufferIStream->close();
+			pBufferIStream->closeStream();
 
 			if( RC_BAD( rc))
 			{

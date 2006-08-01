@@ -1073,7 +1073,7 @@ FSTATIC RCODE fqCompareText(
 			goto Exit;
 		}
 		
-		if (RC_BAD( rc = pBufferLStream->open( 
+		if (RC_BAD( rc = pBufferLStream->openStream( 
 			(const char *)pLValue->val.pucBuf, pLValue->uiDataLen)))
 		{
 			goto Exit;
@@ -1093,7 +1093,7 @@ FSTATIC RCODE fqCompareText(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = pBufferRStream->open( 
+		if( RC_BAD( rc = pBufferRStream->openStream( 
 			(const char *)pRValue->val.pucBuf, pRValue->uiDataLen)))
 		{
 			goto Exit;
@@ -1171,7 +1171,7 @@ FSTATIC RCODE fqApproxCompare(
 			goto Exit;
 		}
 		
-		if (RC_BAD( rc = pBufferLStream->open( 
+		if (RC_BAD( rc = pBufferLStream->openStream( 
 			(const char *)pLValue->val.pucBuf, pLValue->uiDataLen)))
 		{
 			goto Exit;
@@ -1191,7 +1191,7 @@ FSTATIC RCODE fqApproxCompare(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = pBufferRStream->open( 
+		if( RC_BAD( rc = pBufferRStream->openStream( 
 			(const char *)pRValue->val.pucBuf, pRValue->uiDataLen)))
 		{
 			goto Exit;
@@ -1345,7 +1345,7 @@ FSTATIC RCODE fqCompareBinary(
 			goto Exit;
 		}
 		
-		if (RC_BAD( rc = pBufferLStream->open( 
+		if (RC_BAD( rc = pBufferLStream->openStream( 
 			(const char *)pLValue->val.pucBuf, pLValue->uiDataLen)))
 		{
 			goto Exit;
@@ -1360,7 +1360,7 @@ FSTATIC RCODE fqCompareBinary(
 
 	if( !(pRValue->uiFlags & VAL_IS_STREAM))
 	{
-		if( RC_BAD( rc = pBufferRStream->open( 
+		if( RC_BAD( rc = pBufferRStream->openStream( 
 			(const char *)pRValue->val.pucBuf, pRValue->uiDataLen)))
 		{
 			goto Exit;

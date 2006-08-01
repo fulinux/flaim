@@ -213,7 +213,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 			}
 			pucFromBuf = &ucFromNumberBuf [0];
 			
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)pucFromBuf, uiFromBufLen)))
 			{
 				goto Exit;
@@ -234,7 +234,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 			
-			bufferIStream.close();
+			bufferIStream.closeStream();
 			
 			// Key component needs to fit in both the from and until
 			// buffers.  If it will not, we simply set it up to search
@@ -569,7 +569,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		}
 		else
 		{
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)pucFromBuf, uiFromBufLen)))
 			{
 				goto Exit;
@@ -590,7 +590,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 			
-			bufferIStream.close();
+			bufferIStream.closeStream();
 
 			if (bDataTruncated)
 			{
@@ -656,7 +656,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 		}
 		else
 		{
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)pucUntilBuf, uiUntilBufLen)))
 			{
 				goto Exit;
@@ -676,7 +676,7 @@ FSTATIC RCODE flmAddNonTextKeyPiece(
 				goto Exit;
 			}
 			
-			bufferIStream.close();
+			bufferIStream.closeStream();
 
 			if (bDataTruncated)
 			{
@@ -1538,7 +1538,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	}
 	else
 	{
-		if (RC_BAD( rc = bufferIStream.open( 
+		if (RC_BAD( rc = bufferIStream.openStream( 
 			(const char *)pucFromUTF8Buf, uiFromBufLen)))
 		{
 			goto Exit;
@@ -1561,7 +1561,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			goto Exit;
 		}
 		
-		bufferIStream.close();
+		bufferIStream.closeStream();
 		
 		if (bFromDataTruncated)
 		{
@@ -1639,7 +1639,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 		}
 		else
 		{
-			if (RC_BAD( rc = bufferIStream.open( 
+			if (RC_BAD( rc = bufferIStream.openStream( 
 				(const char *)pucUntilUTF8Buf, uiUntilBufLen)))
 			{
 				goto Exit;
@@ -1662,7 +1662,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 				goto Exit;
 			}
 			
-			bufferIStream.close();
+			bufferIStream.closeStream();
 			
 			if (bUntilDataTruncated)
 			{
@@ -1777,7 +1777,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 	}
 	else // pucFromUTF8Buf != pucUntilUTF8Buf
 	{
-		if (RC_BAD( rc = bufferIStream.open( 
+		if (RC_BAD( rc = bufferIStream.openStream( 
 			(const char *)pucUntilUTF8Buf, uiUntilBufLen)))
 		{
 			goto Exit;
@@ -1800,7 +1800,7 @@ FSTATIC RCODE flmAddTextKeyPiece(
 			goto Exit;
 		}
 		
-		bufferIStream.close();
+		bufferIStream.closeStream();
 		
 		if (bUntilDataTruncated)
 		{

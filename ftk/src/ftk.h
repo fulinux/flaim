@@ -1165,7 +1165,7 @@
 			FLMUINT					uiBytesToRead,
 			FLMUINT *				puiBytesRead = NULL) = 0;
 
-		virtual RCODE FLMAPI close( void) = 0;
+		virtual RCODE FLMAPI closeStream( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1188,7 +1188,7 @@
 	****************************************************************************/
 	flminterface FLMEXP IF_BufferIStream : public IF_PosIStream
 	{
-		virtual RCODE FLMAPI open(
+		virtual RCODE FLMAPI openStream(
 			const char *			pucBuffer,
 			FLMUINT					uiLength,
 			char **					ppucAllocatedBuffer = NULL) = 0;
@@ -1197,14 +1197,14 @@
 	
 		virtual FLMUINT64 FLMAPI remainingSize( void) = 0;
 	
-		virtual RCODE FLMAPI close( void) = 0;
+		virtual RCODE FLMAPI closeStream( void) = 0;
 	
 		virtual RCODE FLMAPI positionTo(
 			FLMUINT64				ui64Position) = 0;
 	
 		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
 	
-		virtual void FLMAPI truncate(
+		virtual void FLMAPI truncateStream(
 			FLMUINT64				ui64Offset = 0) = 0;
 			
 		virtual RCODE FLMAPI read(
@@ -1291,14 +1291,14 @@
 
 	flminterface FLMEXP IF_CollIStream : public IF_PosIStream
 	{
-		virtual RCODE FLMAPI open(
+		virtual RCODE FLMAPI openStream(
 			IF_PosIStream *		pIStream,
 			FLMBOOL					bUnicodeStream,
 			FLMUINT					uiLanguage,
 			FLMUINT					uiCompareRules,
 			FLMBOOL					bMayHaveWildCards) = 0;
 			
-		virtual RCODE FLMAPI close( void) = 0;
+		virtual RCODE FLMAPI closeStream( void) = 0;
 	
 		virtual RCODE FLMAPI read(
 			void *					pvBuffer,
@@ -1339,7 +1339,7 @@
 			FLMUINT					uiBytesToWrite,
 			FLMUINT *				puiBytesWritten = NULL) = 0;
 
-		virtual RCODE FLMAPI close( void) = 0;
+		virtual RCODE FLMAPI closeStream( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1624,10 +1624,10 @@
 		virtual RCODE FLMAPI tell(
 			FLMUINT64 *				pui64Offset) = 0;
 
-		virtual RCODE FLMAPI truncate(
+		virtual RCODE FLMAPI truncateFile(
 			FLMUINT64				ui64Offset = 0) = 0;
 
-		virtual RCODE FLMAPI close( void) = 0;
+		virtual RCODE FLMAPI closeFile( void) = 0;
 
 		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
 		
@@ -1679,14 +1679,14 @@
 	****************************************************************************/
 	flminterface FLMEXP IF_MultiFileHdl : public F_Object
 	{
-		virtual RCODE FLMAPI create(
+		virtual RCODE FLMAPI createFile(
 			const char *			pszPath) = 0;
 	
-		virtual RCODE FLMAPI createUnique(
+		virtual RCODE FLMAPI createUniqueFile(
 			const char *			pszPath,
 			const char *			pszFileExtension) = 0;
 	
-		virtual RCODE FLMAPI open(
+		virtual RCODE FLMAPI openFile(
 			const char *			pszPath) = 0;
 	
 		virtual RCODE FLMAPI deleteMultiFile(
@@ -1712,10 +1712,10 @@
 		virtual RCODE FLMAPI size(
 			FLMUINT64 *				pui64FileSize) = 0;
 	
-		virtual RCODE FLMAPI truncate(
+		virtual RCODE FLMAPI truncateFile(
 			FLMUINT64				ui64Offset = 0) = 0;
 			
-		virtual void FLMAPI close(
+		virtual void FLMAPI closeFile(
 			FLMBOOL					bDelete = FALSE) = 0;
 	};
 	
@@ -5681,7 +5681,7 @@
 	
 		virtual ~F_BufferIStream();
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			const char *		pucBuffer,
 			FLMUINT				uiLength,
 			char **				ppucAllocatedBuffer = NULL);
@@ -5698,7 +5698,7 @@
 			return( m_uiBufferLen - m_uiOffset);
 		}
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 		FINLINE RCODE FLMAPI positionTo(
 			FLMUINT64		ui64Position)
@@ -5723,7 +5723,7 @@
 			return( m_uiOffset);
 		}
 	
-		FINLINE void FLMAPI truncate(
+		FINLINE void FLMAPI truncateStream(
 			FLMUINT64		ui64Offset = 0)
 		{
 			f_assert( m_bIsOpen);
@@ -5785,10 +5785,10 @@
 			}
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			const char *	pszPath);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 		RCODE FLMAPI positionTo(
 			FLMUINT64		ui64Position);
@@ -5825,10 +5825,10 @@
 	
 		virtual ~F_BufferedIStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_IStream *		pIStream,
 			FLMUINT				uiBufferSize);
 	
@@ -5837,7 +5837,7 @@
 			FLMUINT				uiBytesToRead,
 			FLMUINT *			puiBytesRead);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 		FINLINE FLMUINT64 FLMAPI totalSize( void)
 		{
@@ -5917,10 +5917,10 @@
 	
 		virtual ~F_BufferedOStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_OStream *	pOStream,
 			FLMUINT			uiBufferSize);
 	
@@ -5929,7 +5929,7 @@
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 		RCODE FLMAPI flush( void);
 	
@@ -5955,10 +5955,10 @@
 	
 		virtual ~F_FileOStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			const char *	pszFilePath,
 			FLMBOOL			bTruncateIfExists);
 	
@@ -5967,7 +5967,7 @@
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 	private:
 	
@@ -5990,10 +5990,10 @@
 	
 		virtual ~F_MultiFileIStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			const char *	pszDirectory,
 			const char *	pszBaseName);
 	
@@ -6002,7 +6002,7 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 	private:
 	
@@ -6032,10 +6032,10 @@
 	
 		virtual ~F_MultiFileOStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE create(
+		RCODE createStream(
 			const char *	pszDirectory,
 			const char *	pszBaseName,
 			FLMUINT			uiMaxFileSize,
@@ -6046,7 +6046,7 @@
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 		RCODE processDirectory(
 			const char *	pszDirectory,
@@ -6090,7 +6090,7 @@
 			}
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_PosIStream *	pIStream,
 			FLMBOOL				bUnicodeStream,
 			FLMUINT				uiLanguage,
@@ -6115,7 +6115,7 @@
 			return( NE_FLM_OK);
 		}
 	
-		RCODE FLMAPI close( void)
+		RCODE FLMAPI closeStream( void)
 		{
 			if( m_pIStream)
 			{
@@ -6253,10 +6253,10 @@
 	
 		virtual ~F_Base64DecoderIStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_IStream *	pIStream);
 		
 		RCODE FLMAPI read(
@@ -6264,7 +6264,7 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 			
-		FINLINE RCODE FLMAPI close( void)
+		FINLINE RCODE FLMAPI closeStream( void)
 		{
 			RCODE		rc = NE_FLM_OK;
 			
@@ -6272,7 +6272,7 @@
 			{
 				if( m_pIStream->getRefCount() == 1)
 				{
-					rc = m_pIStream->close();
+					rc = m_pIStream->closeStream();
 				}
 	
 				m_pIStream->Release();
@@ -6307,10 +6307,10 @@
 	
 		virtual ~F_Base64EncoderIStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_IStream *	pIStream,
 			FLMBOOL			bLineBreaks);
 		
@@ -6319,7 +6319,7 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 	
-		FINLINE RCODE FLMAPI close( void)
+		FINLINE RCODE FLMAPI closeStream( void)
 		{
 			RCODE		rc = NE_FLM_OK;
 			
@@ -6327,7 +6327,7 @@
 			{
 				if( m_pIStream->getRefCount() == 1)
 				{
-					rc = m_pIStream->close();
+					rc = m_pIStream->closeStream();
 				}
 	
 				m_pIStream->Release();
@@ -6376,10 +6376,10 @@
 	
 		virtual ~F_CompressingOStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_OStream *	pOStream);
 	
 		RCODE FLMAPI write(
@@ -6387,7 +6387,7 @@
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 	
 	private:
 	
@@ -6441,10 +6441,10 @@
 	
 		virtual ~F_UncompressingIStream()
 		{
-			close();
+			closeStream();
 		}
 	
-		RCODE FLMAPI open(
+		RCODE FLMAPI openStream(
 			IF_IStream *	pIStream);
 	
 		RCODE FLMAPI read(
@@ -6452,7 +6452,7 @@
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 	
-		RCODE FLMAPI close( void);
+		RCODE FLMAPI closeStream( void);
 		
 	private:
 	

@@ -938,7 +938,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),aix)
 		ifeq ($(usenativecc),yes)
-			ccflags += -qthreaded
+			ccflags += -qthreaded -qstrict
 			ifeq ($(target_word_size),64)
 				ccflags += -q64
 			else
@@ -987,6 +987,7 @@ ifdef unix_target
 
 	shared_link_flags =
 	link_flags = -o $@
+	libr_flags =
 
 	ifeq ($(compiler),g++)
 		ifneq ($(target_processor_family),ia64)
@@ -1019,6 +1020,13 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),aix)
+		ifeq ($(target_word_size),64)
+			link_flags += -q64
+			libr_flags = -X64
+		else
+			link_flags += -q32
+			libr_flags = -X32
+		endif
 		link_libs += -lm -lc -lcurses
 	endif
 
@@ -1407,7 +1415,7 @@ ifdef unix_target
 ifeq ($(target_os_family),osx)
 	$(ec)$(libr) -static -o $@ $+
 else
-	$(ec)$(libr) -rcs $@ $+
+	$(ec)$(libr) $(libr_flags) -rcs $@ $+
 endif
 endif
 ifdef netware_target
@@ -1467,6 +1475,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call copycmd,Doxyfile,$(package_stage_dir))
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
+	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 ifneq ($(host_os_family),win)

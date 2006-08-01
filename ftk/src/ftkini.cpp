@@ -337,7 +337,7 @@ Exit:
 	
 	if( m_pFileHdl)
 	{
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}
@@ -477,7 +477,7 @@ Exit:
 
 	if (m_pFileHdl)
 	{
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 	}

@@ -1291,9 +1291,10 @@ RCODE FlmShell::executeCmdLine( void)
 				}
 			}
 			
-			pBufIStream->open( m_ppCurrArgV[ 2], f_strlen( m_ppCurrArgV[ 2]));
+			pBufIStream->openStream( m_ppCurrArgV[ 2], 
+							f_strlen( m_ppCurrArgV[ 2]));
 			tmpRc = xpathObj.parseQuery( pDb, pBufIStream, &query);
-			pBufIStream->close();
+			pBufIStream->closeStream();
 			
 			con_printf( "Result: 0x%08X\n\n", (unsigned)tmpRc);
 		}
@@ -1318,7 +1319,7 @@ RCODE FlmShell::executeCmdLine( void)
 				}
 			}
 			
-			pBufIStream->open( m_ppCurrArgV[ 1], f_strlen( m_ppCurrArgV[ 1]));
+			pBufIStream->openStream( m_ppCurrArgV[ 1], f_strlen( m_ppCurrArgV[ 1]));
 			for( ;;)
 			{
 				RCODE	tmpRc;
@@ -1340,7 +1341,7 @@ MetaExit:
 
 			if( pBufIStream)
 			{
-				pBufIStream->close();
+				pBufIStream->closeStream();
 			}
 		}
 	}
@@ -3959,7 +3960,7 @@ FLMINT fshellFileSystemTest(
 
 	pShell->con_printf( "\nFinished random scan.\n");
 
-	if( RC_BAD( rc = pFileHdl->close()))
+	if( RC_BAD( rc = pFileHdl->closeFile()))
 	{
 		goto Exit;
 	}

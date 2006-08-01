@@ -790,7 +790,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 					
-					if (RC_BAD( rc = bufferIStream.open( 
+					if (RC_BAD( rc = bufferIStream.openStream( 
 						(const char *)pucDataPtr, uiDataLen)))
 					{
 						goto Exit;
@@ -804,7 +804,8 @@ RCODE F_DataVector::outputKey(
 						}
 						goto Exit;
 					}
-					bufferIStream.close();					
+					
+					bufferIStream.closeStream();					
 				}
 				else if (pVector->eDataTyp == SFLM_NUMBER_TYPE)
 				{
@@ -828,7 +829,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 
-					if (RC_BAD( rc = bufferIStream.open( 
+					if (RC_BAD( rc = bufferIStream.openStream( 
 						(const char *)ucStorageBuf, uiStorageLen)))
 					{
 						goto Exit;
@@ -845,7 +846,8 @@ RCODE F_DataVector::outputKey(
 					{
 						goto Exit;
 					}
-					bufferIStream.close();					
+					
+					bufferIStream.closeStream();					
 				}
 			}
 			else
@@ -867,7 +869,7 @@ RCODE F_DataVector::outputKey(
 				if (uiDataLen)
 				{
 					
-					if (RC_BAD( rc = bufferIStream.open( 
+					if (RC_BAD( rc = bufferIStream.openStream( 
 						(const char *)pucDataPtr, uiDataLen)))
 					{
 						goto Exit;
@@ -888,7 +890,7 @@ RCODE F_DataVector::outputKey(
 						goto Exit;
 					}
 					
-					bufferIStream.close();					
+					bufferIStream.closeStream();					
 				}
 			}
 

@@ -94,7 +94,7 @@ F_FileHdl::~F_FileHdl()
 {
 	if( m_bFileOpened)
 	{
-		(void)close();
+		(void)closeFile();
 	}
 	
 	freeCommonData();
@@ -322,7 +322,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeFile();
 	}
 	
    return( rc);
@@ -331,7 +331,7 @@ Exit:
 /******************************************************************************
 Desc:	Close a file
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::close( void)
+RCODE FLMAPI F_FileHdl::closeFile( void)
 {
 	if( m_fd != -1)
 	{
@@ -458,7 +458,7 @@ Exit:
 /******************************************************************************
 Desc:	Truncate the file to the indicated size
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::truncate(
+RCODE FLMAPI F_FileHdl::truncateFile(
 	FLMUINT64		ui64NewSize)
 {
 	RCODE				rc = NE_FLM_OK;

@@ -958,11 +958,11 @@ RCODE F_ResultSet::setupFromFile( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pMultiFileHdl1->open( m_szIoFilePath1)))
+	if( RC_BAD( rc = m_pMultiFileHdl1->openFile( m_szIoFilePath1)))
 	{
 		if( rc == NE_FLM_IO_PATH_NOT_FOUND)
 		{
-			if( RC_BAD( rc = m_pMultiFileHdl1->create( m_szIoFilePath1)))
+			if( RC_BAD( rc = m_pMultiFileHdl1->createFile( m_szIoFilePath1)))
 			{
 				rc = NE_FLM_OK;
 				m_pMultiFileHdl1->Release();
@@ -1394,7 +1394,7 @@ Exit:
 		{
 			if( m_bFile1Opened)
 			{
-				m_pMultiFileHdl1->close( TRUE);
+				m_pMultiFileHdl1->closeFile( TRUE);
 				m_bFile1Opened = FALSE;
 			}
 
@@ -1409,7 +1409,7 @@ Exit:
 		{
 			if( m_bFile2Opened)
 			{
-				m_pMultiFileHdl2->close( TRUE);
+				m_pMultiFileHdl2->closeFile( TRUE);
 				m_bFile2Opened = FALSE;
 			}
 
@@ -2386,7 +2386,7 @@ void F_ResultSet::closeFile(
 	{
 		if( m_bFile1Opened)
 		{
-			m_pMultiFileHdl1->close( bDelete);
+			m_pMultiFileHdl1->closeFile( bDelete);
 			m_bFile1Opened = FALSE;
 		}
 
@@ -2400,7 +2400,7 @@ void F_ResultSet::closeFile(
 	{
 		if( m_bFile2Opened)
 		{
-			m_pMultiFileHdl2->close( TRUE);
+			m_pMultiFileHdl2->closeFile( TRUE);
 			m_bFile2Opened = FALSE;
 		}
 
@@ -2444,7 +2444,7 @@ RCODE F_ResultSet::openFile(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = (*ppMultiFileHdl)->createUnique( pszDirPath,
+	if( RC_BAD( rc = (*ppMultiFileHdl)->createUniqueFile( pszDirPath,
 										FRSET_FILENAME_EXTENSION)))
 	{
 		(*ppMultiFileHdl)->Release();
@@ -2458,25 +2458,6 @@ Exit:
 
 	return( rc);
 }
-
-///*****************************************************************************
-//Desc:		Create and empty data vector and return it's interface...
-//*****************************************************************************/
-//RCODE FLMAPI F_DbSystem::createIFResultSet(
-//	IF_ResultSet **	ppResultSet)
-//{
-//	RCODE	rc = NE_FLM_OK;
-//
-//	if( (*ppResultSet = f_new FResultSet) == NULL)
-//	{
-//		rc = RC_SET( NE_FLM_MEM);
-//		goto Exit;
-//	}
-//	
-//Exit:
-//
-//	return( rc);
-//}
 
 /*****************************************************************************
 Desc:
@@ -3834,15 +3815,15 @@ RCODE F_ResultSetBlk::truncate(
 {
 	RCODE				rc = NE_FLM_OK;
 
-	if( RC_BAD( rc = (*m_ppMultiFileHdl)->truncate( 
+	if( RC_BAD( rc = (*m_ppMultiFileHdl)->truncateFile( 
 		m_BlockHeader.ui64FilePos)))
 	{
 		goto Exit;
 	}
 
-	(*m_ppMultiFileHdl)->close( FALSE);
+	(*m_ppMultiFileHdl)->closeFile( FALSE);
 
-	if( RC_BAD( rc = (*m_ppMultiFileHdl)->open( ( char *)pszPath)))
+	if( RC_BAD( rc = (*m_ppMultiFileHdl)->openFile( ( char *)pszPath)))
 	{
 		goto Exit;
 	}

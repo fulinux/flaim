@@ -1866,7 +1866,7 @@ RCODE F_NodeCacheMgr::readNodeFromDisk(
 	{
 		goto Exit;
 	}
-	if (RC_BAD( rc = btreeIStream.open( pDb, pBTree, XFLM_EXACT,
+	if (RC_BAD( rc = btreeIStream.openStream( pDb, pBTree, XFLM_EXACT,
 								uiCollection, ui64NodeId, 0, 0)))
 	{
 		goto Exit;
@@ -1894,12 +1894,12 @@ RCODE F_NodeCacheMgr::readNodeFromDisk(
 
 Exit:
 
-	if (bCloseIStream)
+	if( bCloseIStream)
 	{
-		btreeIStream.close();
+		btreeIStream.closeStream();
 	}
 
-	if (pBTree)
+	if( pBTree)
 	{
 		pBTree->Release();
 	}

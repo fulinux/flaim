@@ -2233,7 +2233,7 @@ FSTATIC RCODE flmDefaultBackerWriteHook(
 			goto Exit;
 		}
 
-		if( RC_BAD( rc = pState->pMultiFileHdl->create( pState->szPath)))
+		if( RC_BAD( rc = pState->pMultiFileHdl->createFile( pState->szPath)))
 		{
 			pState->pMultiFileHdl->Release();
 			pState->pMultiFileHdl = NULL;
@@ -2260,10 +2260,8 @@ Exit:
 	return( rc);
 }
 
-// F_BackerStream methods
-
 /****************************************************************************
-Desc:		Constructor
+Desc:
 ****************************************************************************/
 F_BackerStream::F_BackerStream( void)
 {
@@ -2291,7 +2289,7 @@ F_BackerStream::F_BackerStream( void)
 }
 
 /****************************************************************************
-Desc:		Destructor
+Desc:
 ****************************************************************************/
 F_BackerStream::~F_BackerStream( void)
 {
@@ -2318,9 +2316,8 @@ F_BackerStream::~F_BackerStream( void)
 	}
 }
 
-
 /****************************************************************************
-Desc:		Start any background threads
+Desc: Start any background threads
 ****************************************************************************/
 RCODE F_BackerStream::startThreads( void)
 {
@@ -2386,7 +2383,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Shut down any background threads
+Desc: Shut down any background threads
 ****************************************************************************/
 void F_BackerStream::shutdownThreads( void)
 {
@@ -2407,7 +2404,7 @@ void F_BackerStream::shutdownThreads( void)
 }
 
 /****************************************************************************
-Desc:		Setup method to use the backer stream as an input stream
+Desc: Setup method to use the backer stream as an input stream
 ****************************************************************************/
 RCODE F_BackerStream::setup(
 	FLMUINT				uiMTUSize,
@@ -2441,7 +2438,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Setup method to use the backer stream as an output stream
+Desc: Setup method to use the backer stream as an output stream
 ****************************************************************************/
 RCODE F_BackerStream::setup(
 	FLMUINT				uiMTUSize,
@@ -2477,7 +2474,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Performs setup operations common to read and write streams
+Desc: Performs setup operations common to read and write streams
 ****************************************************************************/
 RCODE F_BackerStream::_setup( void)
 {
@@ -2516,7 +2513,7 @@ Exit:
 }
 	
 /****************************************************************************
-Desc:		Reads data from the input stream
+Desc: Reads data from the input stream
 ****************************************************************************/
 RCODE F_BackerStream::read(
 	FLMUINT				uiLength,
@@ -2603,7 +2600,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Writes data to the output stream
+Desc: Writes data to the output stream
 ****************************************************************************/
 RCODE F_BackerStream::write(
 	FLMUINT				uiLength,
@@ -2661,7 +2658,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Flushes any pending writes to the output stream
+Desc: Flushes any pending writes to the output stream
 ****************************************************************************/
 RCODE F_BackerStream::flush( void)
 {
@@ -2715,8 +2712,8 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Signals the read or write thread indicating that data is needed or
-			that data is available.
+Desc: Signals the read or write thread indicating that data is needed or
+		that data is available.
 ****************************************************************************/
 RCODE F_BackerStream::signalThread( void)
 {
@@ -2791,7 +2788,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		This thread reads data in the background
+Desc: This thread reads data in the background
 ****************************************************************************/
 RCODE FLMAPI F_BackerStream::readThread(
 	IF_Thread *			pThread)
@@ -2835,7 +2832,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		This thread writes data in the background
+Desc:	This thread writes data in the background
 ****************************************************************************/
 RCODE FLMAPI F_BackerStream::writeThread(
 	IF_Thread *			pThread)
@@ -2955,7 +2952,7 @@ RCODE F_FSRestore::openBackupSet( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = m_pMultiFileHdl->open( m_szBackupSetPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->openFile( m_szBackupSetPath)))
 	{
 		m_pMultiFileHdl->Release();
 		m_pMultiFileHdl = NULL;
@@ -3086,7 +3083,7 @@ RCODE F_FSRestore::openIncFile(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = m_pMultiFileHdl->open( szIncPath)))
+	if( RC_BAD( rc = m_pMultiFileHdl->openFile( szIncPath)))
 	{
 		m_pMultiFileHdl->Release();
 		m_pMultiFileHdl = NULL;

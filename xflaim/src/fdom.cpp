@@ -85,7 +85,7 @@ public:
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE FLMAPI close( void)
+	FINLINE RCODE FLMAPI closeStream( void)
 	{
 		return( NE_XFLM_OK);
 	}
@@ -108,7 +108,7 @@ FLMINT FLMAPI F_BTreeIStream::Release( void)
 	
 	if (m_refCnt == 0)
 	{
-		close();
+		closeStream();
 		if( gv_XFlmSysData.pNodePool)
 		{
 			m_refCnt = 1;
@@ -2809,7 +2809,7 @@ public:
 	
 	~F_AsciiStorageStream()
 	{
-		close();
+		closeStream();
 	}
 		
 	RCODE FLMAPI read(
@@ -2817,7 +2817,7 @@ public:
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE FLMAPI close( void)
+	FINLINE RCODE FLMAPI closeStream( void)
 	{
 		if( m_pIStream)
 		{
@@ -2828,7 +2828,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE open(
+	RCODE openStream(
 		IF_IStream *		pIStream);
 		
 private:
@@ -2839,7 +2839,7 @@ private:
 /*****************************************************************************
 Desc: Open an Ascii storage stream.
 ******************************************************************************/
-RCODE F_AsciiStorageStream::open(
+RCODE F_AsciiStorageStream::openStream(
 	IF_IStream *	pIStream)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -2847,7 +2847,7 @@ RCODE F_AsciiStorageStream::open(
 	FLMUINT	uiLen;
 	FLMUINT	uiSENLen;
 
-	close();
+	closeStream();
 	m_pIStream = pIStream;
 	m_pIStream->AddRef();
 	
@@ -2879,7 +2879,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -2962,7 +2962,7 @@ public:
 	
 	~F_BinaryToTextStream()
 	{
-		close();
+		closeStream();
 	}
 		
 	RCODE FLMAPI read(
@@ -2970,7 +2970,7 @@ public:
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE FLMAPI close( void)
+	FINLINE RCODE FLMAPI closeStream( void)
 	{
 		if( m_pEncoderStream)
 		{
@@ -2981,7 +2981,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE open(
+	RCODE openStream(
 		IF_IStream *		pIStream,
 		FLMUINT				uiDataLen,
 		FLMUINT *			puiTextLength);
@@ -2997,7 +2997,7 @@ private:
 /*****************************************************************************
 Desc: Open a binary-to-text stream.
 ******************************************************************************/
-RCODE F_BinaryToTextStream::open(
+RCODE F_BinaryToTextStream::openStream(
 	IF_IStream *	pIStream,
 	FLMUINT			uiDataLen,
 	FLMUINT *		puiTextLength)
@@ -3006,7 +3006,7 @@ RCODE F_BinaryToTextStream::open(
 	FLMBYTE *	pucSen;
 	FLMUINT		uiOutputLen;
 
-	close();
+	closeStream();
 	
 	// Set up the SEN buffer.  Calculate length to be 4 bytes for every 3
 	// binary bytes.
@@ -3042,7 +3042,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -4971,7 +4971,7 @@ RCODE F_CachedNode::getIStream(
 		}
 		pIStream = pBTreeIStream;
 
-		if( RC_BAD( rc = pBTreeIStream->open( pDb, getCollection(),
+		if( RC_BAD( rc = pBTreeIStream->openStream( pDb, getCollection(),
 			getNodeId(), getBlkAddr(), getOffsetIndex())))
 		{
 			goto Exit;
@@ -5060,7 +5060,7 @@ RCODE F_CachedNode::getIStream(
 		
 		pIStream = pNodeBufferIStream;
 
-		if( RC_BAD( rc = pNodeBufferIStream->open( 
+		if( RC_BAD( rc = pNodeBufferIStream->openStream( 
 			(const char *)pCachedNode->getDataPtr(), 
 			pCachedNode->getDataLength())))
 		{
@@ -5137,7 +5137,7 @@ RCODE F_CachedNode::getRawIStream(
 	}
 	pIStream = pBTreeIStream;
 
-	if( RC_BAD( rc = pBTreeIStream->open( pDb, getCollection(),
+	if( RC_BAD( rc = pBTreeIStream->openStream( pDb, getCollection(),
 		getNodeId(), getBlkAddr(), getOffsetIndex())))
 	{
 		goto Exit;
@@ -5917,7 +5917,7 @@ RCODE FLMAPI F_DOMNode::getBinary(
 	{
 		F_AsciiStorageStream	asciiStream;
 		
-		if( RC_BAD( rc = asciiStream.open( pIStream)))
+		if( RC_BAD( rc = asciiStream.openStream( pIStream)))
 		{
 			goto Exit;
 		}
@@ -10880,7 +10880,8 @@ RCODE flmReadStorageAsText(
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = pConvStream->open( (const char *)ucConvBuf, uiDataLen)))
+		if( RC_BAD( rc = pConvStream->openStream( 
+			(const char *)ucConvBuf, uiDataLen)))
 		{
 			goto Exit;
 		}
@@ -10897,7 +10898,7 @@ RCODE flmReadStorageAsText(
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = pConvStream->open( 
+			if( RC_BAD( rc = pConvStream->openStream( 
 				(const char *)pucStorageData, uiDataLen)))
 			{
 				goto Exit;
@@ -10906,7 +10907,7 @@ RCODE flmReadStorageAsText(
 			pStream = pConvStream;
 		}
 		
-		if( RC_BAD( rc = binaryToTextStream.open( pStream, 
+		if( RC_BAD( rc = binaryToTextStream.openStream( pStream, 
 			uiDataLen, &uiDataLen)))
 		{
 			goto Exit;
@@ -11717,7 +11718,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE F_BTreeIStream::open(
+RCODE F_BTreeIStream::openStream(
 	F_Db *			pDb,
 	FLMUINT			uiCollection,
 	FLMUINT64		ui64NodeId,
@@ -11746,8 +11747,8 @@ RCODE F_BTreeIStream::open(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = open( pDb, pBTree, XFLM_EXACT, uiCollection, ui64NodeId,
-		ui32BlkAddr, uiOffsetIndex)))
+	if( RC_BAD( rc = openStream( pDb, pBTree, XFLM_EXACT, 
+		uiCollection, ui64NodeId, ui32BlkAddr, uiOffsetIndex)))
 	{
 		goto Exit;
 	}
@@ -11764,7 +11765,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -11773,7 +11774,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE F_BTreeIStream::open(
+RCODE F_BTreeIStream::openStream(
 	F_Db *			pDb,
 	F_Btree *		pBTree,
 	FLMUINT			uiFlags,
@@ -11830,7 +11831,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeStream();
 	}
 
 	return( rc);
@@ -14800,7 +14801,7 @@ RCODE F_Db::findNode(
 	// XFLM_INCL, XFLM_EXCL, XFLM_FIRST, or XFLM_LAST.  So we will
 	// need to reassign ui64NodeId once we have located the node.
 
-	if( RC_BAD( rc = btreeIStream.open( this, pBTree,
+	if( RC_BAD( rc = btreeIStream.openStream( this, pBTree,
 		uiFlags, uiCollection, *pui64NodeId, 0, 0)))
 	{
 		goto Exit;
@@ -14809,7 +14810,7 @@ RCODE F_Db::findNode(
 
 	// Close the input stream
 
-	btreeIStream.close();
+	btreeIStream.closeStream();
 
 Exit:
 
@@ -17709,7 +17710,7 @@ RCODE F_CachedNode::getIStream(
 	{
 		flmAssert( pAttrItem->m_uiIVLen);
 		
-		if( RC_BAD( rc = pNodeBufferIStream->open( NULL, 
+		if( RC_BAD( rc = pNodeBufferIStream->openStream( NULL, 
 			pAttrItem->getAttrDataBufferSize(), (char **)&pucAllocatedBuffer)))
 		{
 			goto Exit;
@@ -17727,7 +17728,7 @@ RCODE F_CachedNode::getIStream(
 	}
 	else
 	{
-		if( RC_BAD( rc = pNodeBufferIStream->open(
+		if( RC_BAD( rc = pNodeBufferIStream->openStream(
 			(const char *)pAttrItem->getAttrDataPtr(),
 			pAttrItem->getAttrDataLength())))
 		{
@@ -17963,7 +17964,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_NodeBufferIStream::open(
+RCODE FLMAPI F_NodeBufferIStream::openStream(
 	const char *		pucBuffer,
 	FLMUINT				uiLength,
 	char **				ppucAllocatedBuffer)
@@ -17976,7 +17977,7 @@ RCODE FLMAPI F_NodeBufferIStream::open(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pBufferIStream->open( pucBuffer, 
+	if( RC_BAD( rc = pBufferIStream->openStream( pucBuffer, 
 		uiLength, ppucAllocatedBuffer)))
 	{
 		goto Exit;

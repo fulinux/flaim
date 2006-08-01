@@ -971,7 +971,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),aix)
 		ifeq ($(usenativecc),yes)
-			ccflags += -qthreaded
+			ccflags += -qthreaded -qstrict
 			ifeq ($(target_word_size),64)
 				ccflags += -q64
 			else
@@ -1020,6 +1020,7 @@ ifdef unix_target
 
 	shared_link_flags =
 	link_flags = -o $@
+	libr_flags =
 
 	ifeq ($(compiler),g++)
 		ifneq ($(target_processor_family),ia64)
@@ -1055,6 +1056,14 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),aix)
+		ifeq ($(target_word_size),64)
+			link_flags += -q64
+			libr_flags = -X64
+		else
+			link_flags += -q32
+			libr_flags = -X32
+		endif
+		
 		lib_link_libs += -lm -lc -lcurses
 		exe_link_libs += -lm -lc -lcurses
 	endif
@@ -1550,7 +1559,7 @@ ifdef unix_target
 ifeq ($(target_os_family),osx)
 	$(ec)$(libr) -static -o $@ $+
 else
-	$(ec)$(libr) -rcs $@ $+
+	$(ec)$(libr) $(libr_flags) -rcs $@ $+
 endif
 endif
 ifdef netware_target

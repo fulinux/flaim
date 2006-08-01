@@ -9971,7 +9971,7 @@ RCODE F_Db::dictCreate(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pStream->open( pszDictBuf, 0)))
+	if (RC_BAD( rc = pStream->openStream( pszDictBuf, 0)))
 	{
 		goto Exit;
 	}
@@ -9992,7 +9992,7 @@ Exit:
 
 	if( bFileOpen)
 	{
-		pDictFileHdl->close();
+		pDictFileHdl->closeFile();
 	}
 
 	if( pDictFileHdl)

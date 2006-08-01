@@ -5383,14 +5383,14 @@ public:
 		m_uiEncDefId = 0;
 	}
 
-	RCODE open(
+	RCODE openStream(
 		F_Db *			pDb,
 		FLMUINT			uiCollection,
 		FLMUINT64		ui64NodeId,
 		FLMUINT32		ui32BlkAddr = 0,
 		FLMUINT			uiOffsetIndex = 0);
 
-	RCODE open(
+	RCODE openStream(
 		F_Db *			pDb,
 		F_Btree *		pBTree,
 		FLMUINT			uiFlags,
@@ -5409,7 +5409,7 @@ public:
 		return( m_uiStreamSize - (m_uiBufferStartOffset + m_uiBufferOffset));
 	}
 
-	FINLINE RCODE FLMAPI close( void)
+	FINLINE RCODE FLMAPI closeStream( void)
 	{
 		reset();
 		return( NE_XFLM_OK);
@@ -5489,7 +5489,7 @@ public:
 		reset();
 	}
 
-	RCODE FLMAPI open(
+	RCODE FLMAPI openStream(
 		const char *		pucBuffer,
 		FLMUINT				uiLength,
 		char **				ppucAllocatedBuffer = NULL);
@@ -5504,7 +5504,7 @@ public:
 		return( m_pBufferIStream->remainingSize());
 	}
 
-	FINLINE RCODE FLMAPI close( void)
+	FINLINE RCODE FLMAPI closeStream( void)
 	{
 		RCODE		rc = NE_FLM_OK;
 		
@@ -5539,7 +5539,7 @@ public:
 	FINLINE void FLMAPI truncate(
 		FLMUINT			uiOffset)
 	{
-		m_pBufferIStream->truncate( uiOffset);
+		m_pBufferIStream->truncateStream( uiOffset);
 	}
 		
 	FINLINE void reset( void)

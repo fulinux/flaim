@@ -1104,7 +1104,7 @@ F_FileHdl::~F_FileHdl( void)
 {
 	if( m_bFileOpened)
 	{
-		(void)close();
+		(void)closeFile();
 	}
 	
 	freeCommonData();
@@ -1492,7 +1492,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeFile();
 	}
 
 	if( pszQualifiedPath)
@@ -1508,7 +1508,7 @@ Exit:
 Desc:		Close a file
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::close( void)
+RCODE FLMAPI F_FileHdl::closeFile( void)
 {
 	if( m_bNSS)
 	{

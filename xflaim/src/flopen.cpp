@@ -558,7 +558,7 @@ Exit:
 
 	if (pLockFileHdl)
 	{
-		(void)pLockFileHdl->close();
+		(void)pLockFileHdl->closeFile();
 		pLockFileHdl->Release();
 		pLockFileHdl = NULL;
 	}
@@ -1221,7 +1221,7 @@ F_Database::~F_Database()
 
 	if (m_pLockFileHdl)
 	{
-		(void)m_pLockFileHdl->close();
+		(void)m_pLockFileHdl->closeFile();
 		m_pLockFileHdl->Release();
 		m_pLockFileHdl = NULL;
 	}

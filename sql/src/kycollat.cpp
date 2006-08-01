@@ -127,7 +127,7 @@ RCODE KYCollateValue(
 				goto Exit;
 			}
 			
-			if (RC_BAD( rc = pBufferIStream->open( 
+			if (RC_BAD( rc = pBufferIStream->openStream( 
 				(const char *)dynaBuf.getBufferPtr(), dynaBuf.getDataLength())))
 			{
 				goto Exit;

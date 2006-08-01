@@ -4430,7 +4430,7 @@ RCODE F_NodeVerifier::finalize(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pBufferStream->open( 
+	if( RC_BAD( rc = pBufferStream->openStream( 
 		(const char *)m_pucBuf, m_uiBytesInBuf)))
 	{
 		goto Exit;

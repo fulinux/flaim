@@ -3450,14 +3450,14 @@ public:
 		m_uiDataLength = 0;
 	}
 
-	RCODE open(
+	RCODE openStream(
 		F_Db *			pDb,
 		FLMUINT			uiTableNum,
 		FLMUINT64		ui64RowId,
 		FLMUINT32		ui32BlkAddr = 0,
 		FLMUINT			uiOffsetIndex = 0);
 
-	RCODE open(
+	RCODE openStream(
 		F_Db *			pDb,
 		F_Btree *		pBTree,
 		FLMUINT			uiFlags,
@@ -3476,7 +3476,7 @@ public:
 		return( m_uiStreamSize - (m_uiBufferStartOffset + m_uiBufferOffset));
 	}
 
-	FINLINE RCODE FLMAPI close( void)
+	FINLINE RCODE FLMAPI closeStream( void)
 	{
 		reset();
 		return( NE_SFLM_OK);

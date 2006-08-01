@@ -44,7 +44,7 @@ Desc:
 ****************************************************************************/
 F_FileHdl::~F_FileHdl()
 {
-	close();
+	closeFile();
 }
 
 /***************************************************************************
@@ -297,7 +297,7 @@ Exit:
 
 	if( RC_BAD( rc))
 	{
-		close();
+		closeFile();
 	}
 	
    return( rc);
@@ -306,7 +306,7 @@ Exit:
 /****************************************************************************
 Desc:	Close a file
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::close( void)
+RCODE FLMAPI F_FileHdl::closeFile( void)
 {
 	if( m_bFlushRequired)
 	{
@@ -734,8 +734,8 @@ Desc:		Truncate the file to the indicated size
 WARNING: Direct IO methods are calling this method.  Make sure that all changes
 			to this method work in direct IO mode.
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::truncate(
-	FLMUINT64		ui64NewSize)
+RCODE FLMAPI F_FileHdl::truncateFile(
+	FLMUINT64			ui64NewSize)
 {
 	RCODE					rc = NE_FLM_OK;
 	LARGE_INTEGER		liTmp;

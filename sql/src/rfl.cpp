@@ -126,7 +126,7 @@ F_Rfl::~F_Rfl()
 
 	if (m_pFileHdl)
 	{
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 		m_pDatabase = NULL;
@@ -1894,14 +1894,14 @@ RCODE F_Rfl::seeIfNeedNewFile(
 			uiCurrFileEOF = ROUND_DOWN_TO_NEAREST_512( uiCurrFileEOF) + 512;
 		}
 		
-		if (RC_BAD( rc = m_pFileHdl->truncate( uiCurrFileEOF)))
+		if (RC_BAD( rc = m_pFileHdl->truncateFile( uiCurrFileEOF)))
 		{
 			goto Exit;
 		}
 
 		// Close the file handle.
 
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
@@ -2079,14 +2079,14 @@ RCODE F_Rfl::finishCurrFile(
 		{
 			uiTruncateSize = ROUND_DOWN_TO_NEAREST_512( uiTruncateSize) + 512;
 		}
-		if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
+		if (RC_BAD( rc = m_pFileHdl->truncateFile( uiTruncateSize)))
 		{
 			goto Exit;
 		}
 
 		// Close the file handle.
 
-		m_pFileHdl->close();
+		m_pFileHdl->closeFile();
 		m_pFileHdl->Release();
 		m_pFileHdl = NULL;
 
@@ -2290,7 +2290,7 @@ RCODE F_Rfl::truncate(
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = m_pFileHdl->truncate( uiTruncateSize)))
+	if (RC_BAD( rc = m_pFileHdl->truncateFile( uiTruncateSize)))
 	{
 		m_bRflVolumeOk = FALSE;
 		goto Exit;

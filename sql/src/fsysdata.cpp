@@ -1289,7 +1289,7 @@ RCODE F_DbSystem::init( void)
 	}
 
 	gv_SFlmSysData.uiFileOpenFlags = 
-		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT | FLM_IO_MISALIGNED_OK;
+		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT;
 
 	gv_SFlmSysData.uiFileCreateFlags = 
 		gv_SFlmSysData.uiFileOpenFlags | FLM_IO_EXCL | FLM_IO_CREATE_DIR;
