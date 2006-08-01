@@ -279,9 +279,8 @@ RCODE flmCreateNewFile(
 	}
 	
 	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
-		gv_FlmSysData.pFileHdlCache, 
-		gv_FlmSysData.uiFileOpenFlags | FLM_IO_NO_MISALIGNED,
-		gv_FlmSysData.uiFileCreateFlags | FLM_IO_NO_MISALIGNED)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+		gv_FlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}

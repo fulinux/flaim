@@ -125,8 +125,9 @@
 			#ifndef _LARGE_FILES
 				#define _LARGE_FILES
 			#endif
-			#include <sys/vminfo.h>
 			#include <dlfcn.h>
+			#include <sys/vminfo.h>
+			#include <sys/statfs.h>
 		#endif
 
 		#include <stdio.h>
@@ -548,7 +549,7 @@
 	#if defined( FLM_WIN)
 		OVERLAPPED						m_Overlapped;
 	#endif
-	#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+	#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 		struct aiocb					m_aio;
 	#endif
 	#ifdef FLM_RING_ZERO_NLM

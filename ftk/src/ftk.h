@@ -51,6 +51,8 @@
 		#undef FLM_S390
 		#undef FLM_IA64
 		#undef FLM_GNUC
+		#undef FLM_HAS_ASYNC_IO
+		#undef FLM_HAS_DIRECT_IO
 		
 		#if defined( __GNUC__)
 			#define FLM_GNUC
@@ -67,6 +69,10 @@
 			#elif defined( __MWERKS__)
 				#define FLM_MWERKS_NLM
 			#endif
+			#if defined( FLM_RING_ZERO_NLM)
+				#define FLM_HAS_ASYNC_IO
+				#define FLM_HAS_DIRECT_IO
+			#endif
 		#elif defined( _WIN64)
 			#define FLM_WIN
 			#define FLM_OSTYPE_STR "Windows"
@@ -74,9 +80,13 @@
 				#define FLM_64BIT
 			#endif
 			#define FLM_STRICT_ALIGNMENT
+			#define FLM_HAS_ASYNC_IO
+			#define FLM_HAS_DIRECT_IO
 		#elif defined( _WIN32)
 			#define FLM_WIN
 			#define FLM_OSTYPE_STR "Windows"
+			#define FLM_HAS_ASYNC_IO
+			#define FLM_HAS_DIRECT_IO
 		#elif defined( _AIX)
 			#define FLM_AIX
 			#define FLM_OSTYPE_STR "AIX"
@@ -116,6 +126,8 @@
 					#define FLM_SPARC_PLUS
 				#endif
 			#endif
+			#define FLM_HAS_ASYNC_IO
+			#define FLM_HAS_DIRECT_IO
 		#elif defined( sun)
 			#define FLM_SOLARIS
 			#define FLM_OSTYPE_STR "Solaris"
@@ -128,6 +140,8 @@
 					#define FLM_SPARC_PLUS
 				#endif
 			#endif
+			#define FLM_HAS_ASYNC_IO
+			#define FLM_HAS_DIRECT_IO
 		#elif defined( __hpux) || defined( hpux)
 			#define FLM_HPUX
 			#define FLM_OSTYPE_STR "HPUX"
@@ -143,6 +157,8 @@
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT			
 			#endif
+			#define FLM_HAS_ASYNC_IO
+			#define FLM_HAS_DIRECT_IO
 		#else
 				#error Platform architecture is undefined.
 		#endif

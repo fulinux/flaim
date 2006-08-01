@@ -414,6 +414,7 @@ Desc:
 RCODE F_FileSystem::setup( void)
 {
 #if defined( FLM_WIN)
+
 	OSVERSIONINFO		versionInfo;
 
 	versionInfo.dwOSVersionInfoSize = sizeof( OSVERSIONINFO);
@@ -430,8 +431,13 @@ RCODE F_FileSystem::setup( void)
 		 versionInfo.dwPlatformId != VER_PLATFORM_WIN32s)
 		 ? TRUE
 		 : FALSE;
+
 #else
 	m_bCanDoAsync = TRUE;
+#endif
+
+#if !defined( FLM_HAS_ASYNC_IO)
+	m_bCanDoAsync = FALSE;
 #endif
 
 	return( NE_FLM_OK);
@@ -3067,7 +3073,7 @@ RCODE F_FileAsyncClient::prepareForAsync(
 	}
 #endif
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS)
+#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 	f_memset( &m_aio, 0, sizeof( m_aio));
 #endif
 	
@@ -3124,7 +3130,7 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete(
 	uiBytesDone = (FLMUINT)udBytesDone;
 #endif
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 	FLMINT						iAsyncResult;
 	const struct aiocb *		ppAio[ 1];
 	
@@ -3132,7 +3138,11 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete(
 
 	for( ;;)
 	{
+#ifdef FLM_AIX
+		aio_suspend( 1, ppAio);
+#else
 		aio_suspend( ppAio, 1, NULL);
+#endif
 		iAsyncResult = aio_error( &m_aio);
 
 		if( !iAsyncResult)

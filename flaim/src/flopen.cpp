@@ -639,9 +639,8 @@ RCODE flmOpenFile(
 		}
 		
 		if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
-			gv_FlmSysData.pFileHdlCache, 
-			gv_FlmSysData.uiFileOpenFlags | FLM_IO_NO_MISALIGNED,
-			gv_FlmSysData.uiFileCreateFlags | FLM_IO_NO_MISALIGNED)))
+			gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+			gv_FlmSysData.uiFileCreateFlags)))
 		{
 			goto Exit;
 		}
@@ -1023,8 +1022,7 @@ FSTATIC RCODE flmPhysFileOpen(
 	
 	if( RC_BAD( rc = pDb->pSFileHdl->setup( pSFileClient, 
 		gv_FlmSysData.pFileHdlCache, 
-		gv_FlmSysData.uiFileOpenFlags | FLM_IO_NO_MISALIGNED,
-		gv_FlmSysData.uiFileCreateFlags | FLM_IO_NO_MISALIGNED)))
+		gv_FlmSysData.uiFileOpenFlags, gv_FlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}
@@ -1383,7 +1381,7 @@ FSTATIC RCODE flmReadFileHdr(
 	// Read and verify the file and log headers.
 	
 	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszDbPath, 
-		gv_FlmSysData.uiFileOpenFlags | FLM_IO_NO_MISALIGNED, &pFileHdl)))
+		gv_FlmSysData.uiFileOpenFlags, &pFileHdl)))
 	{
 		goto Exit;
 	}
@@ -1565,9 +1563,8 @@ RCODE flmStartCPThread(
 	}
 
 	if( RC_BAD( rc = pCPInfo->pSFileHdl->setup( pSFileClient, 
-		gv_FlmSysData.pFileHdlCache, 
-		gv_FlmSysData.uiFileOpenFlags | FLM_IO_NO_MISALIGNED,
-		gv_FlmSysData.uiFileCreateFlags | FLM_IO_NO_MISALIGNED)))
+		gv_FlmSysData.pFileHdlCache, gv_FlmSysData.uiFileOpenFlags,
+		gv_FlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
 	}

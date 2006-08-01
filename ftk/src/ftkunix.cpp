@@ -118,7 +118,7 @@ RCODE F_FileHdl::openOrCreate(
 	f_assert( !m_bFileOpened);
 	f_assert( !m_pszFileName);
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( FLM_UNIX) && defined( FLM_HAS_DIRECT_IO)
 	bDoDirectIO = (uiIoFlags & FLM_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
@@ -189,6 +189,9 @@ RCODE F_FileHdl::openOrCreate(
 
 			openFlags |= O_NOATIME;
 		}
+#elif defined( FLM_AIX)
+		openFlags |= O_DIRECT;
+		bUsingAsync = TRUE;
 #elif defined( FLM_SOLARIS) || defined( FLM_OSX)
 		bUsingAsync = TRUE;
 #endif
@@ -222,7 +225,7 @@ Retry_Create:
 				}
 			}
 		}
-#ifdef FLM_LINUX
+#if defined( FLM_LINUX) || defined( FLM_AIX)
 		else if( errno == EINVAL && bDoDirectIO)
 		{
 			openFlags &= ~O_DIRECT;
@@ -266,7 +269,7 @@ Retry_Create:
 
 	// Get the sector size
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( DEV_BSIZE)
 	m_uiBytesPerSector = DEV_BSIZE;
 #else
 	{
@@ -524,7 +527,7 @@ RCODE F_FileHdl::lowLevelRead(
 		pvBuffer = pIOBuffer->getBufferPtr();
 	}
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 	if( m_bOpenedInAsyncMode && pIOBuffer)
 	{
 		struct aiocb *		pAIO;
@@ -547,16 +550,31 @@ RCODE F_FileHdl::lowLevelRead(
 			
 		pAsyncClient->m_uiBytesToDo = uiBytesToRead;
 		pAIO = &pAsyncClient->m_aio;
-
+		
+	#ifdef FLM_AIX
+		pAIO->aio_whence = SEEK_SET;
+		pAIO->aio_fp = m_fd;
+		pAIO->aio_flag = 0;
+		pAIO->aio_handle = pAIO;
+		pAIO->aio_offset = ui64ReadOffset;
+		pAIO->aio_nbytes = uiBytesToRead;
+		pAIO->aio_buf = (char *)pvBuffer;
+	#else
 		pAIO->aio_lio_opcode = LIO_READ;
 		pAIO->aio_sigevent.sigev_notify = SIGEV_NONE;
 		pAIO->aio_fildes = m_fd;
 		pAIO->aio_offset = ui64ReadOffset;
 		pAIO->aio_nbytes = uiBytesToRead;
 		pAIO->aio_buf = pvBuffer;
+	#endif
+
 		pIOBuffer = NULL;
 		
+	#ifdef FLM_AIX
+		if( aio_read( m_fd, pAIO) != 0)
+	#else
 		if( aio_read( pAIO) != 0)
+	#endif
 		{
 			if( errno == EAGAIN || errno == ENOSYS)
 			{
@@ -779,7 +797,7 @@ RCODE F_FileHdl::lowLevelWrite(
 		pvBuffer = pIOBuffer->getBufferPtr();
 	}
 
-#if defined( FLM_LINUX) || defined( FLM_SOLARIS) || defined( FLM_OSX)
+#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 	if( m_bOpenedInAsyncMode)
 	{
 		struct aiocb *		pAIO;
@@ -801,15 +819,30 @@ RCODE F_FileHdl::lowLevelWrite(
 			
 		pAsyncClient->m_uiBytesToDo = uiBytesToWrite;
 		pAIO = &pAsyncClient->m_aio;
+	#ifdef FLM_AIX
+		pAIO->aio_whence = SEEK_SET;
+		pAIO->aio_fp = m_fd;
+		pAIO->aio_flag = 0;
+		pAIO->aio_handle = pAIO;
+		pAIO->aio_offset = ui64WriteOffset;
+		pAIO->aio_nbytes = uiBytesToWrite;
+		pAIO->aio_buf = (char *)pvBuffer;
+	#else
 		pAIO->aio_lio_opcode = LIO_WRITE;
 		pAIO->aio_sigevent.sigev_notify = SIGEV_NONE;
 		pAIO->aio_fildes = m_fd;
 		pAIO->aio_offset = ui64WriteOffset;
 		pAIO->aio_nbytes = uiBytesToWrite;
-		pAIO->aio_buf = (void *)pvBuffer;
+		pAIO->aio_buf = pvBuffer;
+	#endif
+		
 		pIOBuffer = NULL;
 		
+	#ifdef FLM_AIX
+		if( aio_write( m_fd, pAIO) != 0)
+	#else
 		if( aio_write( pAIO) != 0)
+	#endif
 		{
 			if( errno == EAGAIN || errno == ENOSYS)
 			{
@@ -1169,12 +1202,14 @@ FLMUINT f_getFSBlockSize(
 
 #if defined( FLM_SOLARIS)
 	struct statvfs statfsbuf;
+	
 	if (statvfs( (char *)pszDir, &statfsbuf) == 0)
 	{
 		uiFSBlkSize = (FLMUINT)statfsbuf.f_bsize;
 	}
-#elif defined( FLM_LINUX) || defined( FLM_OSX)
+#elif defined( FLM_LINUX) || defined( FLM_OSX) || defined( FLM_AIX)
 	struct statfs statfsbuf;
+	
 	if (statfs( (char *)pszDir, &statfsbuf) == 0)
 	{
 		uiFSBlkSize = (FLMUINT)statfsbuf.f_bsize;
