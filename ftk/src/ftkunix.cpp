@@ -118,7 +118,7 @@ RCODE F_FileHdl::openOrCreate(
 	f_assert( !m_bFileOpened);
 	f_assert( !m_pszFileName);
 
-#if defined( FLM_UNIX) && defined( FLM_HAS_DIRECT_IO)
+#if defined( FLM_HAS_DIRECT_IO)
 	bDoDirectIO = (uiIoFlags & FLM_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
@@ -833,7 +833,7 @@ RCODE F_FileHdl::lowLevelWrite(
 		pAIO->aio_fildes = m_fd;
 		pAIO->aio_offset = ui64WriteOffset;
 		pAIO->aio_nbytes = uiBytesToWrite;
-		pAIO->aio_buf = pvBuffer;
+		pAIO->aio_buf = (void *)pvBuffer;
 	#endif
 		
 		pIOBuffer = NULL;
