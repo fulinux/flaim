@@ -47,6 +47,9 @@
 	#define FLM_MAX_CACHE_SIZE			(~((FLMUINT)0))
 #endif
 
+#define DEFAULT_OPEN_THRESHOLD		100		// 100 file handles to cache
+#define DEFAULT_MAX_AVAIL_TIME		900		// 15 minutes
+
 static FLMATOMIC		gv_flmSysSpinLock = 0;
 static FLMBOOL			gv_bFlmStarted = FALSE;
 static FLMBOOL			gv_bToolkitStarted = FALSE;
@@ -643,6 +646,7 @@ RCODE F_Db::linkToDatabase(
 	F_Database *			pDatabase)
 {
 	RCODE						rc = NE_XFLM_OK;
+	IF_FileHdl *			pTmpFileHdl = NULL;
 	F_SuperFileClient *	pSFileClient = NULL;
 
 	// If the use count on the file used to be zero, unlink it from the
@@ -678,9 +682,32 @@ RCODE F_Db::linkToDatabase(
 			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
-		
+
+		if( !pDatabase->m_uiMaxFileSize)
+		{
+			XFLM_DB_HDR		tmpDbHdr;
+
+			if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->openFile( 
+				pDatabase->m_pszDbPath, gv_XFlmSysData.uiFileOpenFlags,
+				&pTmpFileHdl)))
+			{
+				goto Exit;
+			}
+
+			if( RC_BAD( rc = flmReadAndVerifyHdrInfo( NULL, 
+				pTmpFileHdl, &tmpDbHdr)))
+			{
+				goto Exit;
+			}
+
+			pDatabase->m_uiMaxFileSize = tmpDbHdr.ui32MaxFileSize;
+			pTmpFileHdl->Release();
+			pTmpFileHdl = NULL;
+		}
+	
 		if( RC_BAD( rc = pSFileClient->setup( 
-			pDatabase->m_pszDbPath, pDatabase->m_pszDataDir)))
+			pDatabase->m_pszDbPath, pDatabase->m_pszDataDir, 
+			pDatabase->m_uiMaxFileSize)))
 		{
 			goto Exit;
 		}
@@ -691,11 +718,6 @@ RCODE F_Db::linkToDatabase(
 		{
 			goto Exit;
 		}
-
-		if( pDatabase->m_lastCommittedDbHdr.ui32DbVersion)
-		{
-			m_pSFileHdl->setBlockSize( pDatabase->m_uiBlockSize);
-		}
 	}
 
 Exit:
@@ -703,6 +725,11 @@ Exit:
 	if( pSFileClient)
 	{
 		pSFileClient->Release();
+	}
+
+	if( pTmpFileHdl)
+	{
+		pTmpFileHdl->Release();
 	}
 
 	return( rc);
@@ -1230,9 +1257,9 @@ RCODE F_DbSystem::init( void)
 	}
 	
 	// Set up a file handle cache
-	// VISIT
 	
-	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->allocFileHandleCache( 32, 120, 
+	if( RC_BAD( rc = gv_XFlmSysData.pFileSystem->allocFileHandleCache( 
+		DEFAULT_OPEN_THRESHOLD, DEFAULT_MAX_AVAIL_TIME, 
 		&gv_XFlmSysData.pFileHdlCache)))
 	{
 		goto Exit;
@@ -1925,40 +1952,12 @@ Desc:		Close all files in the file handle cache that have not been
 RCODE FLMAPI F_DbSystem::closeUnusedFiles(
 	FLMUINT		uiSeconds)
 {
-	RCODE			rc = NE_XFLM_OK;
-	FLMUINT		uiValue;
-	FLMUINT		uiCurrTime;
-	FLMUINT		uiSave;
-
-	// Convert seconds to timer units
-
-	uiValue = FLM_SECS_TO_TIMER_UNITS( uiSeconds);
-
-	// Free any other unused structures that have not been used for the
-	// specified amount of time.
-
-	uiCurrTime = (FLMUINT)FLM_GET_TIMER();
-	f_mutexLock( gv_XFlmSysData.hShareMutex);
-
-	// Temporarily set the maximum unused seconds in the FLMSYSDATA structure
-	// to the value that was passed in to Value1.  Restore it after
-	// calling checkNotUsedObject.
-
-	uiSave = gv_XFlmSysData.uiMaxUnusedTime;
-	gv_XFlmSysData.uiMaxUnusedTime = uiValue;
-
-	// May unlock and re-lock the global mutex.
-
-	gv_XFlmSysData.uiMaxUnusedTime = uiSave;
-	f_mutexUnlock( gv_XFlmSysData.hShareMutex);
-
 	if( gv_XFlmSysData.pFileHdlCache)
 	{
-		// VISIT: check timeout value
-		gv_XFlmSysData.pFileHdlCache->closeUnusedFiles();
+		gv_XFlmSysData.pFileHdlCache->closeUnusedFiles( uiSeconds);
 	}
 
-	return( rc);
+	return( NE_XFLM_OK);
 }
 
 /****************************************************************************
@@ -3443,6 +3442,7 @@ F_SuperFileClient::F_SuperFileClient()
 	m_pszDataFileBaseName = NULL;
 	m_uiExtOffset = 0;
 	m_uiDataExtOffset = 0;
+	m_uiMaxFileSize = 0;
 }
 	
 /****************************************************************************
@@ -3461,7 +3461,8 @@ Desc:
 ****************************************************************************/
 RCODE F_SuperFileClient::setup(
 	const char *	pszCFileName,
-	const char *	pszDataDir)
+	const char *	pszDataDir,
+	FLMUINT			uiMaxFileSize)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiNameLen;
@@ -3515,6 +3516,8 @@ RCODE F_SuperFileClient::setup(
 			m_pszCFileName, &m_uiDataExtOffset);
 		m_uiExtOffset = m_uiDataExtOffset;
 	}
+	
+	m_uiMaxFileSize = uiMaxFileSize;
 
 Exit:
 
@@ -3547,6 +3550,15 @@ FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
 	FLMUINT					uiFileOffset)
 {
 	return( FSBlkAddress( uiFileNumber, uiFileOffset));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
+{
+	f_assert( m_uiMaxFileSize);
+	return( m_uiMaxFileSize);
 }
 
 /****************************************************************************

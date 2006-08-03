@@ -8460,7 +8460,8 @@ public:
 	
 	RCODE setup(
 		const char *			pszCFileName,
-		const char *			pszDataDir);
+		const char *			pszDataDir,
+		FLMUINT					uiMaxFileSize);
 	
 	FLMUINT FLMAPI getFileNumber(
 		FLMUINT					uiBlockAddr);
@@ -8476,6 +8477,8 @@ public:
 		FLMUINT					uiFileNumber,
 		char *					pszPath);
 		
+	FLMUINT64 FLMAPI getMaxFileSize( void);
+		
 	static void bldSuperFileExtension(
 		FLMUINT					uiFileNum,
 		char *					pszFileExtension);
@@ -8486,6 +8489,7 @@ private:
 	char *						m_pszDataFileBaseName;
 	FLMUINT						m_uiExtOffset;
 	FLMUINT						m_uiDataExtOffset;
+	FLMUINT						m_uiMaxFileSize;
 };
 	
 #endif // FLAIMSYS_H

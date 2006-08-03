@@ -1086,7 +1086,7 @@ RCODE F_DbSystem::dbRestore(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = SFileClient.setup( pszDbPath, pszDataDir)))
+	if( RC_BAD( rc = SFileClient.setup( pszDbPath, pszDataDir, 0)))
 	{
 		goto Exit;
 	}
@@ -1559,18 +1559,8 @@ FSTATIC RCODE flmRestoreFile(
 		rc = RC_SET_AND_ASSERT( NE_XFLM_INCONSISTENT_BACKUP);
 		goto Exit;
 	}
+
 	uiMaxFileSize = (FLMUINT)pDbHdr->ui32MaxFileSize;
-
-	// Set the database version number and block size into the
-	// super file handle.  We only do this if the file being restored
-	// is the full backup.  It will always be first in the restore sequence,
-	// and thus we only need to set these values into the super file handle
-	// at that time.
-
-	if( !bIncremental)
-	{
-		pSFile->setBlockSize( uiBlockSize);
-	}
 
 	// Make sure the maximum block file size matches what was read from the
 	// backup header.

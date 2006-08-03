@@ -213,7 +213,7 @@ RCODE F_DbSystem::copyDb(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pSrcSFileClient->setup( pszSrcDbName, pszSrcDataDir)))
+	if( RC_BAD( rc = pSrcSFileClient->setup( pszSrcDbName, pszSrcDataDir, 0)))
 	{
 		goto Exit;
 	}
@@ -346,7 +346,7 @@ retry:
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pDestSFileClient->setup( pszDestDbName, pszDestDataDir)))
+	if( RC_BAD( rc = pDestSFileClient->setup( pszDestDbName, pszDestDataDir, 0)))
 	{
 		goto Exit;
 	}

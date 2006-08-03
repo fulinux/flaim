@@ -290,11 +290,11 @@ RCODE F_DbSystem::openDatabase(
 	IF_FileHdl *			pLockFileHdl,
 	IF_Db **					ppDb)
 {
-	RCODE				rc = NE_XFLM_OK;
-	FLMBOOL			bNewDatabase = FALSE;
-	FLMBOOL			bMutexLocked = FALSE;
-	F_Db *			pDb = NULL;
-	FLMBOOL			bNeedToOpen = FALSE;
+	RCODE						rc = NE_XFLM_OK;
+	FLMBOOL					bNewDatabase = FALSE;
+	FLMBOOL					bMutexLocked = FALSE;
+	F_Db *					pDb = NULL;
+	FLMBOOL					bNeedToOpen = FALSE;
 
 	// Allocate and initialize an F_Db object.
 
@@ -722,8 +722,6 @@ RCODE F_Database::physOpen(
 			goto Exit;
 		}
 	}
-
-	pDb->m_pSFileHdl->setBlockSize( m_uiBlockSize);
 
 	// We must have exclusive access.  Create a lock file for that
 	// purpose, if there is not already a lock file.
@@ -1526,6 +1524,7 @@ RCODE F_Database::readDbHdr(
 		{
 			f_free( &m_pszDbPasswd);
 		}
+
 		if ( RC_BAD( rc = f_alloc( 
 			(f_strlen( (const char *)pszPassword) + 1), &m_pszDbPasswd)))
 		{
@@ -1546,15 +1545,17 @@ RCODE F_Database::readDbHdr(
 		// If the key was encrypted in a password, then the pszPassword parameter better
 		// be the key used to encrypt it.  If the key was not encrypted in a password,
 		// then pszPassword parameter should be NULL.
+
 		rc = m_pWrappingKey->setKeyFromStore(
 								m_lastCommittedDbHdr.DbKey,
 								pszPassword, NULL);
 	}
 	
-	if (RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
 		// NE_XFLM_UNSUPPORTED_FEATURE is returned when we've been compiled
 		// without NICI support
+
 		if ((rc == NE_XFLM_UNSUPPORTED_FEATURE) || bAllowLimited)
 		{
 			m_bInLimitedMode = TRUE;
@@ -1565,6 +1566,7 @@ RCODE F_Database::readDbHdr(
 			goto Exit;
 		}
 	}
+
 	// Note that we might still end up in limited mode if we can't verify all the keys
 	// that are stored in the dictionary.
 
@@ -1650,7 +1652,8 @@ RCODE F_Database::startCPThread( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pSFileClient->setup( m_pszDbPath, m_pszDataDir)))
+	if( RC_BAD( rc = pSFileClient->setup( m_pszDbPath, m_pszDataDir,
+		m_uiMaxFileSize)))
 	{
 		goto Exit;
 	}
@@ -1662,11 +1665,6 @@ RCODE F_Database::startCPThread( void)
 		gv_XFlmSysData.uiFileCreateFlags)))
 	{
 		goto Exit;
-	}
-
-	if (m_lastCommittedDbHdr.ui32DbVersion)
-	{
-		pCPInfo->pSFileHdl->setBlockSize( m_uiBlockSize);
 	}
 
 	f_memset( &pCPInfo->Stats, 0, sizeof( XFLM_STATS));

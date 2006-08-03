@@ -131,31 +131,23 @@ RCODE FLMAPI F_DbSystem::dbCreate(
 	{
 		goto Exit;
 	}
+
 	bNewDatabase = TRUE;
+	pDatabase->m_uiMaxFileSize = gv_XFlmSysData.uiMaxFileSize;
 
 	// Link the F_Db object to the F_Database object.
 
 	rc = pDb->linkToDatabase( pDatabase);
+	
 	f_mutexUnlock( gv_XFlmSysData.hShareMutex);
 	bMutexLocked = FALSE;
+
 	if (RC_BAD( rc))
 	{
 		goto Exit;
 	}
 
 	// If the database has not already been created, do so now.
-
-	// Determine what to set file block size to.
-
-	if (pCreateOpts != NULL)
-	{
-		pDb->m_pSFileHdl->setBlockSize(
-			flmAdjustBlkSize( pCreateOpts->uiBlockSize));
-	}
-	else
-	{
-		pDb->m_pSFileHdl->setBlockSize( XFLM_DEFAULT_BLKSIZ);
-	}
 
 	if (RC_OK( gv_XFlmSysData.pFileSystem->doesFileExist( pszFilePath)))
 	{
@@ -167,6 +159,7 @@ RCODE FLMAPI F_DbSystem::dbCreate(
 
 	pDb->m_pSFileHdl->setMaxAutoExtendSize( gv_XFlmSysData.uiMaxFileSize);
 	pDb->m_pSFileHdl->setExtendSize( pDb->m_pDatabase->m_uiFileExtendSize);
+	
 	if (RC_BAD( rc = pDb->m_pSFileHdl->createFile( 0)))
 	{
 		goto Exit;

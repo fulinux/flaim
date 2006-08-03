@@ -480,7 +480,7 @@ Retry:
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = SFileClient.setup( pszSourceDbPath, pszSourceDataDir)))
+	if( RC_BAD( rc = SFileClient.setup( pszSourceDbPath, pszSourceDataDir, 0)))
 	{
 		goto Exit;
 	}
@@ -632,8 +632,6 @@ Retry:
 	{
 		pCreateOpts->uiBlockSize = m_dbHdr.ui16BlockSize;
 	}
-
-	m_pSFileHdl->setBlockSize( m_dbHdr.ui16BlockSize);
 
 	// Create the destination database
 
