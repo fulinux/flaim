@@ -442,12 +442,8 @@ RCODE FLMAPI F_Thread::startThread(
 	unsigned					uiThreadId;
 #endif
 #if defined( FLM_UNIX)
-	#if defined( _POSIX_THREADS)
-		pthread_attr_t		thread_attr;
-		pthread_t			uiThreadId;
-	#else
-		threadid_p			uiThreadId;
-	#endif
+	pthread_attr_t			thread_attr;
+	pthread_t				uiThreadId;
 #endif
 
 	f_assert( fnThread != NULL && m_fnThread == NULL);
@@ -574,33 +570,18 @@ RCODE FLMAPI F_Thread::startThread(
 		goto Exit;
 	}
 #elif defined( FLM_UNIX)
-	#ifdef  _POSIX_THREADS
-		pthread_attr_init( &thread_attr);
-		pthread_attr_setdetachstate( &thread_attr, PTHREAD_CREATE_DETACHED);
+	pthread_attr_init( &thread_attr);
+	pthread_attr_setdetachstate( &thread_attr, PTHREAD_CREATE_DETACHED);
 
-		if (pthread_create( &uiThreadId, &thread_attr,
-				threadStub, this) != 0)
-		{
-			rc = RC_SET( NE_FLM_COULD_NOT_START_THREAD);
-			goto Exit;
-		}
-	#else
-		m_uiStackSize = f_max( m_uiStackSize, thr_minstack());
-		m_uiStackSize = f_max( m_uiStackSize, thr_min_stack());
+	if (pthread_create( &uiThreadId, &thread_attr,
+			threadStub, this) != 0)
+	{
+		rc = RC_SET( NE_FLM_COULD_NOT_START_THREAD);
+		goto Exit;
+	}
 
-		if( thr_create( (void*)NULL, (size_t)uiStackSize,
-			threadStub, this, (long)0, &uiThreadId) != 0)
-		{
-			rc = RC_SET( NE_FLM_COULD_NOT_START_THREAD);
-			goto Exit;
-		}
-	#endif
-
-		m_uiThreadId = (FLMUINT)uiThreadId;
-
-	#ifdef _POSIX_THREADS
-		pthread_attr_destroy( &thread_attr);
-	#endif
+	m_uiThreadId = (FLMUINT)uiThreadId;
+	pthread_attr_destroy( &thread_attr);
 #endif
 
 	// Code is not designed to handle a thread ID of 0

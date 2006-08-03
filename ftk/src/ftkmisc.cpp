@@ -107,8 +107,16 @@ RCODE FLMAPI ftkStartup( void)
 	// Sanity check -- make sure we are using the correct
 	// byte-swap macros for this platform
 
-	flmAssert( FB2UD( (FLMBYTE *)"\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
-	flmAssert( FB2UW( (FLMBYTE *)"\x0A\x0B") == 0x0B0A);
+	f_assert( FB2UD( (FLMBYTE *)"\x0A\x0B\x0C\x0D") == 0x0D0C0B0A);
+	f_assert( FB2UW( (FLMBYTE *)"\x0A\x0B") == 0x0B0A);
+	
+	// Verify that the platform word size is correct
+	
+#ifdef FLM_64BIT
+	f_assert( sizeof( FLMUINT) == 8);
+#else
+	f_assert( sizeof( FLMUINT) == 4);
+#endif
 
 #if defined( FLM_RING_ZERO_NLM)
 	if( RC_BAD( rc = f_netwareStartup()))
@@ -1144,7 +1152,7 @@ Notes:	This is a base 24 alphanumeric value where
 FLMBYTE FLMAPI f_getBase24DigitChar( 
 	FLMBYTE		ucValue)
 {
-	flmAssert( ucValue <= 23);
+	f_assert( ucValue <= 23);
 
 	if( ucValue <= 9)
 	{
@@ -1629,7 +1637,7 @@ RCODE FLMAPI f_decodeSEN64(
 	
 			default:
 				*pui64Value = 0;
-				flmAssert( 0);
+				f_assert( 0);
 				break;
 		}
 	}
@@ -1717,7 +1725,7 @@ FLMUINT FLMAPI f_encodeSEN(
 	FLMBYTE *		pucBuffer = *ppucBuffer;
 	FLMUINT			uiSenLen = f_getSENByteCount( ui64Value);
 
-	flmAssert( uiSizeWanted <= FLM_MAX_SEN_LEN && 
+	f_assert( uiSizeWanted <= FLM_MAX_SEN_LEN && 
 				  (!uiSizeWanted || uiSizeWanted >= uiSenLen));
 
 	uiSenLen = uiSizeWanted > uiSenLen ? uiSizeWanted : uiSenLen;
@@ -1861,7 +1869,7 @@ void F_ListManager::insertFirst(
 {
 	F_ListNode *		pListNode;
 	
-	flmAssert( uiList < m_uiListNodeCnt);
+	f_assert( uiList < m_uiListNodeCnt);
 	
 	pNewFirstItem->AddRef();
 	pListNode = &m_pListNodes[ uiList];
@@ -1894,7 +1902,7 @@ void F_ListManager::insertLast(
 {
 	F_ListNode *		pListNode;
 	
-	flmAssert( uiList < m_uiListNodeCnt);
+	f_assert( uiList < m_uiListNodeCnt);
 	
 	pNewLastItem->AddRef();
 	pListNode = &m_pListNodes[ uiList];
@@ -1930,7 +1938,7 @@ F_ListItem * F_ListManager::getItem(
 	
 	// Check bounds with assert.  
 	
-	flmAssert( uiList < m_uiListNodeCnt );
+	f_assert( uiList < m_uiListNodeCnt );
 
 	pListNode = &m_pListNodes[ uiList ];
 	pListItem = pListNode ? pListNode->pNextItem : NULL;
@@ -1954,7 +1962,7 @@ void F_ListManager::removeItem(
 	F_ListItem *		pPrevItem;
 	F_ListItem *		pNextItem;
 	
-	flmAssert( uiList < m_uiListNodeCnt);
+	f_assert( uiList < m_uiListNodeCnt);
 
 	pMgrListNode = &m_pListNodes[ uiList];
 
@@ -2020,7 +2028,7 @@ void F_ListManager::clearList(
 	FLMUINT			uiListCnt;
 	F_ListNode *	pListNode;
 
-	flmAssert( (FLM_ALL_LISTS == uiList) || (uiList < m_uiListNodeCnt));
+	f_assert( (FLM_ALL_LISTS == uiList) || (uiList < m_uiListNodeCnt));
 
 	if( uiList == FLM_ALL_LISTS)
 	{
@@ -2049,7 +2057,7 @@ void F_ListManager::clearList(
 
 		// At this point the ListCount should be at 0.
 		
-		flmAssert( !pListNode->uiListCount);
+		f_assert( !pListNode->uiListCount);
 
 		// Clear the managers head and tail list pointers.
 		
@@ -2067,7 +2075,7 @@ FLMUINT F_ListManager::getItemCount(
 	FLMUINT			uiCount = 0;
 	F_ListNode *	pListNode;
 
-	flmAssert( (FLM_ALL_LISTS == uiList) || (uiList < m_uiListNodeCnt));
+	f_assert( (FLM_ALL_LISTS == uiList) || (uiList < m_uiListNodeCnt));
 
 	if( uiList == FLM_ALL_LISTS)
 	{
@@ -2097,12 +2105,12 @@ F_ListItem::~F_ListItem()
 	FLMUINT			uiLoop;
 	F_ListNode *	pTmpNd;
 
-	flmAssert( !m_bInList);
+	f_assert( !m_bInList);
 
 	for( uiLoop = 0; uiLoop < m_uiListNodeCnt; uiLoop++)
 	{
 		pTmpNd = &m_pListNodes[ uiLoop];
-		flmAssert( !pTmpNd->pPrevItem && !pTmpNd->pNextItem);
+		f_assert( !pTmpNd->pPrevItem && !pTmpNd->pNextItem);
 	}
 #endif
 }
@@ -2115,9 +2123,9 @@ void F_ListItem::setup(
 	F_ListNode *		pListNodes,
 	FLMUINT				uiListNodeCnt)
 {
-	flmAssert( pListMgr);
-	flmAssert( pListNodes);
-	flmAssert( uiListNodeCnt);
+	f_assert( pListMgr);
+	f_assert( pListNodes);
+	f_assert( uiListNodeCnt);
 
 	m_pListManager = pListMgr;
 	m_uiListNodeCnt = uiListNodeCnt;
@@ -2133,7 +2141,7 @@ void F_ListItem::removeFromList(
 	FLMUINT			uiList)
 {
 
-	flmAssert( (uiList < m_uiListNodeCnt) || (uiList == FLM_ALL_LISTS));
+	f_assert( (uiList < m_uiListNodeCnt) || (uiList == FLM_ALL_LISTS));
 
 	if( uiList == FLM_ALL_LISTS)
 	{
@@ -2331,7 +2339,7 @@ RCODE FLMAPI F_HashTable::setupHashTable(
 {
 	RCODE			rc = NE_FLM_OK;
 
-	flmAssert( uiNumBuckets);
+	f_assert( uiNumBuckets);
 
 	// Create the hash table
 
@@ -2433,11 +2441,11 @@ RCODE FLMAPI F_HashTable::addObject(
 
 	// Calculate and set the objects hash bucket
 
-	flmAssert( pObject->getHashBucket() == F_INVALID_HASH_BUCKET);
+	f_assert( pObject->getHashBucket() == F_INVALID_HASH_BUCKET);
 
 	pvKey = pObject->getKey();
 	uiKeyLen = pObject->getKeyLength();
-	flmAssert( uiKeyLen);
+	f_assert( uiKeyLen);
 
 	uiBucket = getHashBucket( pvKey, uiKeyLen, &ui32CRC);
 	pObject->m_ui32KeyCRC = ui32CRC;
@@ -2907,7 +2915,7 @@ void F_HashTable::unlinkObject(
 
 	// Is the bucket valid?
 
-	flmAssert( uiBucket < m_uiBuckets);
+	f_assert( uiBucket < m_uiBuckets);
 
 	// Unlink from the hash bucket
 

@@ -1424,10 +1424,37 @@ Exit:
 
 	return( rc);
 
-#else
+#elif defined( DEV_BSIZE)
 	F_UNREFERENCED_PARM( pszFileName);
-	*puiSectorSize = (FLMUINT)sysconf( _SC_PAGESIZE);
+	*puiSectorSize = (FLMUINT)DEV_BSIZE;
 	return( NE_FLM_OK);
+#else
+
+	int				hFile = -1;
+	struct stat		filestats;
+	
+	if( (hFile = open( pszFileName, O_RDONLY, 0600)) == -1)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_OPENING_FILE);
+		goto Exit;
+	}
+	
+	if( fstat( hFile, &filestats) != 0)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_OPENING_FILE);
+		goto Exit;
+	}
+
+	*puiSectorSize = (FLMUINT)filestats.st_blksize;
+	
+Exit:
+
+	if( hFile != -1)
+	{
+		close( hFile);
+	}
+	
+	return( rc);
 #endif
 }
 
@@ -3130,44 +3157,48 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete(
 	uiBytesDone = (FLMUINT)udBytesDone;
 #endif
 
-#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
-	FLMINT						iAsyncResult;
-	const struct aiocb *		ppAio[ 1];
-	
-	ppAio[ 0] = &m_aio;
-
-	for( ;;)
+#if defined( FLM_UNIX)
+	#if defined( FLM_HAS_ASYNC_IO)
 	{
-#ifdef FLM_AIX
-		aio_suspend( 1, ppAio);
-#else
-		aio_suspend( ppAio, 1, NULL);
-#endif
-		iAsyncResult = aio_error( &m_aio);
-
-		if( !iAsyncResult)
+		FLMINT						iAsyncResult;
+		const struct aiocb *		ppAio[ 1];
+		
+		ppAio[ 0] = &m_aio;
+	
+		for( ;;)
 		{
-			if( (iAsyncResult = aio_return( &m_aio)) < 0)
+		#ifdef FLM_AIX
+			aio_suspend( 1, ppAio);
+		#else
+			aio_suspend( ppAio, 1, NULL);
+		#endif
+			iAsyncResult = aio_error( &m_aio);
+	
+			if( !iAsyncResult)
 			{
-				f_assert( 0);
-				completionRc = f_mapPlatformError( errno, NE_FLM_ASYNC_FAILED);
-			}
-			else
-			{
-				uiBytesDone = (FLMUINT)iAsyncResult;
+				if( (iAsyncResult = aio_return( &m_aio)) < 0)
+				{
+					f_assert( 0);
+					completionRc = f_mapPlatformError( errno, NE_FLM_ASYNC_FAILED);
+				}
+				else
+				{
+					uiBytesDone = (FLMUINT)iAsyncResult;
+				}
+					
+				break;
 			}
 				
-			break;
+			if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
+			{
+				continue;
+			}
+					
+			f_assert( 0);
+			completionRc = f_mapPlatformError( iAsyncResult, NE_FLM_ASYNC_FAILED);
 		}
-			
-		if( iAsyncResult == EINTR || iAsyncResult == EINPROGRESS)
-		{
-			continue;
-		}
-				
-		f_assert( 0);
-		completionRc = f_mapPlatformError( iAsyncResult, NE_FLM_ASYNC_FAILED);
 	}
+	#endif
 #endif
 
 #ifdef FLM_RING_ZERO_NLM

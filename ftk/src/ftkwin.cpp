@@ -563,7 +563,7 @@ RCODE F_FileHdl::lowLevelWrite(
 		
 		if( uiTotalBytesToExtend)
 		{
-			if( RC_BAD( rc = extendFile( ui64CurrFileSize, uiTotalBytesToExtend)))
+			if( RC_BAD( rc = extendFile( ui64CurrFileSize + uiTotalBytesToExtend)))
 			{
 				goto Exit;
 			}
@@ -730,9 +730,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:		Truncate the file to the indicated size
-WARNING: Direct IO methods are calling this method.  Make sure that all changes
-			to this method work in direct IO mode.
+Desc: Truncate the file to the indicated size
 ****************************************************************************/
 RCODE FLMAPI F_FileHdl::truncateFile(
 	FLMUINT64			ui64NewSize)
@@ -777,18 +775,32 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE F_FileHdl::extendFile(
-	FLMUINT64				ui64FileSize,
-	FLMUINT					uiTotalBytesToExtend)
+	FLMUINT64				ui64NewFileSize)
 {
 	RCODE						rc = NE_FLM_OK;
 	FLMUINT					uiBytesToWrite;
 	FLMUINT					uiBytesWritten;
 	FLMBYTE *				pucBuffer = NULL;
 	FLMUINT					uiBufferSize;
-	FLMUINT64				ui64NewFileSize = ui64FileSize + uiTotalBytesToExtend;
+	FLMUINT64				ui64FileSize;
+	FLMUINT64				ui64TotalBytesToExtend = 0;
 	LARGE_INTEGER			liTmp;
 	F_FileAsyncClient *	pAsyncClient = NULL;
-
+	
+	// Get the current file size
+	
+	if( RC_BAD( rc = size( &ui64FileSize)))
+	{
+		goto Exit;
+	}
+	
+	// File is already the requested size
+	
+	if( ui64FileSize >= ui64NewFileSize)
+	{
+		goto Exit;
+	}
+	
 	// Try to extend the file using SetFileValidData.  This will allocate blocks
 	// without zero-filling them.  This call is very fast, but is only available
 	// on WinXP/2003 and newer systems and only if the file was opened while the
@@ -816,6 +828,12 @@ RCODE F_FileHdl::extendFile(
 
 		goto Exit;
 	}
+	
+	// Determine the number of bytes to extend
+	
+	ui64TotalBytesToExtend = ui64NewFileSize - ui64FileSize;
+	
+	// Allocate a zero-filled buffer for extending
 
 	uiBufferSize = 64 * 1024;
 	if( RC_BAD( rc = f_allocAlignedBuffer( uiBufferSize, &pucBuffer)))
@@ -827,11 +845,11 @@ RCODE F_FileHdl::extendFile(
 
 	// Extend the file until we run out of bytes to write.
 
-	while( uiTotalBytesToExtend)
+	while( ui64TotalBytesToExtend)
 	{
-		if( (uiBytesToWrite = uiBufferSize) > uiTotalBytesToExtend)
+		if( (uiBytesToWrite = uiBufferSize) > ui64TotalBytesToExtend)
 		{
-			uiBytesToWrite = uiTotalBytesToExtend;
+			uiBytesToWrite = (FLMUINT)ui64TotalBytesToExtend;
 		}
 		
 		if( m_bOpenedInAsyncMode)
@@ -902,7 +920,7 @@ RCODE F_FileHdl::extendFile(
 			goto Exit;
 		}
 		
-		uiTotalBytesToExtend -= uiBytesToWrite;
+		ui64TotalBytesToExtend -= uiBytesToWrite;
 		ui64FileSize += uiBytesToWrite;
 	}
 	

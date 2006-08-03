@@ -36,9 +36,8 @@ F_SuperFileHdl::F_SuperFileHdl( void)
 	m_uiBlockFileNum = 0;
 	m_bBlockFileDirty = FALSE;
 	m_bCFileDirty = FALSE;
-	m_uiBlockSize = 0;
 	m_uiExtendSize = (8 * 1024 * 1024);
-	m_uiMaxAutoExtendSize = f_getMaxFileSize();
+	m_uiMaxAutoExtendSize = 0;
 	m_uiFileOpenFlags = 0;
 	m_uiFileCreateFlags = 0;
 }
@@ -111,6 +110,7 @@ RCODE FLMAPI F_SuperFileHdl::setup(
 	
 	m_uiFileOpenFlags = uiFileOpenFlags;
 	m_uiFileCreateFlags = uiFileCreateFlags;
+	m_uiMaxAutoExtendSize = f_getMaxFileSize();
 	
 Exit:
 
@@ -127,8 +127,6 @@ RCODE FLMAPI F_SuperFileHdl::createFile(
 	RCODE				rc = NE_FLM_OK;
 	char				szFilePath[ F_PATH_MAX_SIZE];
 	IF_FileHdl *	pFileHdl = NULL;
-
-	f_assert( m_uiBlockSize);
 	
 	// If the file creation flags are not set we won't allow this operation
 	// to continue
@@ -162,6 +160,14 @@ RCODE FLMAPI F_SuperFileHdl::createFile(
 		
 		if( RC_BAD( rc = m_pFileHdlCache->createFile( szFilePath,
 			m_uiFileCreateFlags, &pFileHdl)))
+		{
+			goto Exit;
+		}
+		
+		pFileHdl->Release();
+		pFileHdl = NULL;
+		
+		if( RC_BAD( rc = getFileHdl( uiFileNumber, TRUE, &pFileHdl)))
 		{
 			goto Exit;
 		}
@@ -202,8 +208,6 @@ RCODE FLMAPI F_SuperFileHdl::readBlock(
 	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
 
-	f_assert( m_uiBlockSize);
-
 	if( RC_BAD( rc = getFileHdl(
 		m_pSuperFileClient->getFileNumber( uiBlkAddress), FALSE, &pFileHdl)))
 	{
@@ -237,8 +241,6 @@ RCODE F_SuperFileHdl::writeBlock(
 {
 	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
-
-	f_assert( m_uiBlockSize);
 
 	if( RC_BAD( rc = getFileHdl(
 		m_pSuperFileClient->getFileNumber( uiBlkAddress), TRUE, &pFileHdl)))
@@ -295,8 +297,6 @@ RCODE F_SuperFileHdl::writeBlock(
 {
 	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
-
-	f_assert( m_uiBlockSize);
 
 	if( RC_BAD( rc = getFileHdl(
 		m_pSuperFileClient->getFileNumber( uiBlkAddress), TRUE, &pFileHdl)))
@@ -404,6 +404,77 @@ RCODE	FLMAPI F_SuperFileHdl::truncateFile(
 		{
 			goto Exit;
 		}
+	}
+
+Exit:
+
+	if( pFileHdl)
+	{
+		pFileHdl->Release();
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	Extends to an end of file block address.
+****************************************************************************/
+RCODE	FLMAPI F_SuperFileHdl::allocateBlocks(
+	FLMUINT			uiStartAddress,
+	FLMUINT			uiEndAddress)
+{
+	RCODE 			rc = NE_FLM_OK;
+	FLMUINT			uiStartFile;
+	FLMUINT			uiEndFile;
+	FLMUINT			uiEndOffset;
+	FLMUINT			uiCurrentFile;
+	IF_FileHdl *	pFileHdl = NULL;
+	
+	uiStartFile = m_pSuperFileClient->getFileNumber( uiStartAddress);
+	uiCurrentFile = uiStartFile;
+	
+	uiEndFile = m_pSuperFileClient->getFileNumber( uiEndAddress);
+	uiEndOffset = m_pSuperFileClient->getFileOffset( uiEndAddress);
+	
+	for( ;;)
+	{
+		if( uiCurrentFile > uiEndFile)
+		{
+			break;
+		}
+		
+		if( RC_BAD( rc = getFileHdl( uiCurrentFile, TRUE, &pFileHdl)))
+		{
+			if( rc != NE_FLM_IO_PATH_NOT_FOUND)
+			{
+				goto Exit;
+			}
+			
+			if( RC_BAD( rc = createFile( uiCurrentFile, &pFileHdl)))
+			{
+				goto Exit;
+			}
+		}
+		
+		if( uiCurrentFile == uiEndFile)
+		{
+			if( RC_BAD( rc = pFileHdl->extendFile( uiEndOffset)))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( RC_BAD( rc = pFileHdl->extendFile( 
+				m_pSuperFileClient->getMaxFileSize())))
+			{
+				goto Exit;
+			}
+		}
+
+		pFileHdl->Release();
+		pFileHdl = NULL;
+		uiCurrentFile++;
 	}
 
 Exit:

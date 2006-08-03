@@ -121,13 +121,33 @@
 			#include "config.h"
 		#endif
 
+		#ifdef FLM_OSX
+			#include <sys/resource.h>
+			#include <sys/param.h>
+			#include <sys/mount.h>
+			#include <libkern/OSAtomic.h>
+		#endif
+
+		#ifdef FLM_SOLARIS
+			#include <signal.h>
+			#include <synch.h>
+		#endif
+
 		#ifdef FLM_AIX
 			#ifndef _LARGE_FILES
 				#define _LARGE_FILES
 			#endif
 			#include <dlfcn.h>
+			#include <sys/atomic_op.h>
 			#include <sys/vminfo.h>
 			#include <sys/statfs.h>
+		#endif
+
+		#ifdef FLM_HPUX
+			#include <sys/pstat.h>
+			#include <sys/param.h>
+			#include <sys/unistd.h>
+			#include <sys/fs/vx_ioctl.h>
 		#endif
 
 		#include <stdio.h>
@@ -158,22 +178,6 @@
 		#include <sys/socket.h>
 		#include <sys/stat.h>
 		#include <sys/time.h>
-
-		#ifdef FLM_AIX
-			#include <sys/atomic_op.h>
-		#endif
-
-		#ifdef FLM_OSX
-			#include <sys/resource.h>
-			#include <sys/param.h>
-			#include <sys/mount.h>
-			#include <libkern/OSAtomic.h>
-		#endif
-
-		#ifdef FLM_SOLARIS
-			#include <signal.h>
-			#include <synch.h>
-		#endif
 
 		typedef int						SOCKET;
 		#define INVALID_SOCKET		-1
@@ -604,9 +608,12 @@
 
 		RCODE FLMAPI tell(
 			FLMUINT64 *			pui64Offset);
+			
+		RCODE FLMAPI extendFile(
+			FLMUINT64			ui64FileSize);
 
 		RCODE FLMAPI truncateFile(
-			FLMUINT64			ui64Offset = 0);
+			FLMUINT64			ui64FileSize = 0);
 
 		RCODE FLMAPI closeFile( void);
 		
@@ -738,13 +745,7 @@
 			FLMUINT64 *				pui64CurrFileSize,
 			FLMUINT *				puiTotalBytesToExtend);
 	
-	#if defined( FLM_WIN)
-	
-		RCODE extendFile(
-			FLMUINT64				ui64FileSize,
-			FLMUINT					uiTotalBytesToExtend);
-	
-	#elif defined( FLM_RING_ZERO_NLM)
+	#if defined( FLM_RING_ZERO_NLM)
 	
 		RCODE setup( void);							
 	
@@ -1197,6 +1198,12 @@
 			FLMUINT64 *		pui64AvailMem);
 	#endif
 			
+	#if defined( FLM_HPUX)
+		void f_getHPUXMemInfo(
+			FLMUINT64 *		pui64TotalMem,
+			FLMUINT64 *		pui64AvailMem);
+	#endif
+	
 	void f_memoryInit( void);
 	
 	void f_memoryCleanup( void);

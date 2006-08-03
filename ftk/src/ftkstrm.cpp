@@ -2782,7 +2782,7 @@ RCODE F_TCPStream::openConnection(
 	for( iTries = 0; iTries < iMaxTries; iTries++ )
 	{			
 		iSockErr = 0;
-		if( connect( m_iSocket, (struct sockaddr *)&address,
+		if( connect( m_iSocket, (struct sockaddr *)((void *)&address),
 			(unsigned)sizeof(struct sockaddr)) >= 0)
 		{
 			break;

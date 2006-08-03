@@ -122,11 +122,10 @@ RCODE F_FileHdl::openOrCreate(
 	bDoDirectIO = (uiIoFlags & FLM_IO_DIRECT) ? TRUE : FALSE;
 #endif
 
-	// HPUX needs this defined to access files larger than 2 GB.  The Linux
-	// man pages *say* it's needed although as of Suse 9.1 it actually
-	// isn't.  Including this flag on Linux anyway just it case...
+	// The Linux man pages *say* O_LARGEFILE is needed, although as of 
+	// SUSE 9.1 it actually isn't.  Including this flag on Linux just it case...
 	
-#if defined( FLM_HPUX) || defined( FLM_LINUX)
+#if defined( FLM_LINUX)
 	openFlags |= O_LARGEFILE;
 #endif
 
@@ -168,7 +167,7 @@ RCODE F_FileHdl::openOrCreate(
 
 	if( bDoDirectIO)
 	{
-#if defined( FLM_LINUX)
+	#if defined( FLM_LINUX)
 		{
 			FLMUINT		uiMajor;
 			FLMUINT		uiMinor;
@@ -189,12 +188,14 @@ RCODE F_FileHdl::openOrCreate(
 
 			openFlags |= O_NOATIME;
 		}
-#elif defined( FLM_AIX)
+	#elif defined( FLM_AIX)
 		openFlags |= O_DIRECT;
 		bUsingAsync = TRUE;
-#elif defined( FLM_SOLARIS) || defined( FLM_OSX)
+	#elif defined( FLM_HPUX)
 		bUsingAsync = TRUE;
-#endif
+	#elif defined( FLM_SOLARIS) || defined( FLM_OSX)
+		bUsingAsync = TRUE;
+	#endif
 	}
 	
 Retry_Create:
@@ -252,6 +253,17 @@ Retry_Create:
 	if( bDoDirectIO)
 	{
 		directio( m_fd, DIRECTIO_ON);
+	}
+#endif
+
+#if defined( FLM_HPUX)
+	if( bDoDirectIO)
+	{
+		if( ioctl( m_fd, VX_SETCACHE, VX_DIRECT) == -1)
+		{
+			bDoDirectIO = FALSE;
+			bUsingAsync = FALSE;
+		}
 	}
 #endif
 
@@ -732,63 +744,10 @@ RCODE F_FileHdl::lowLevelWrite(
 	
 		if( uiTotalBytesToExtend)
 		{
-			FLMINT		iBytesWritten;
-			FLMUINT		uiCurrBytesToExtend;
-			FLMUINT		uiExtendBufferSize;
-			
-			uiExtendBufferSize = f_min( uiTotalBytesToExtend, 1024 * 1024);
-
-			for( ;;)
+			if( RC_BAD( rc = extendFile( ui64CurrFileSize + uiTotalBytesToExtend)))
 			{
-				if( RC_OK( rc = f_allocAlignedBuffer( 
-					uiExtendBufferSize, &pucExtendBuffer)))
-				{
-					break;
-				}
-
-				if( uiExtendBufferSize <= (32 * 1024))
-				{
-					goto Exit;
-				}
-
-				uiExtendBufferSize >>= 1; 
-			}
-			
-			if( ftruncate( m_fd, ui64CurrFileSize + uiTotalBytesToExtend) == -1)
-			{
-				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 				goto Exit;
 			}
-			
-			while( uiTotalBytesToExtend)
-			{
-				uiCurrBytesToExtend = f_min( 
-								uiTotalBytesToExtend, uiExtendBufferSize);
-				
-				if( (iBytesWritten = pwrite( m_fd, pucExtendBuffer, 
-					uiCurrBytesToExtend, ui64CurrFileSize)) == -1)
-				{
-					if( errno == EINTR)
-					{
-						continue;
-					}
-					
-					rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
-					goto Exit;
-				}
-				
-				uiTotalBytesToExtend -= uiCurrBytesToExtend;
-				ui64CurrFileSize += uiCurrBytesToExtend;
-			
-				if( (FLMUINT)iBytesWritten < uiCurrBytesToExtend)
-				{
-					rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
-					goto Exit;
-				}
-			}
-		
-			f_freeAlignedBuffer( &pucExtendBuffer);
-			m_bFlushRequired = TRUE;
 		}
 	}
 	
@@ -979,6 +938,127 @@ Exit:
 	return( rc);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE F_FileHdl::extendFile(
+	FLMUINT64				ui64NewFileSize)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMBYTE *				pucExtendBuffer = NULL;
+	FLMUINT					uiExtendBufferSize;
+	FLMUINT					uiCurrBytesToExtend;
+	FLMINT					iBytesWritten;
+	FLMUINT64				ui64FileSize;
+	FLMUINT64				ui64TotalBytesToExtend = 0;
+	
+	// Get the current file size
+	
+	if( RC_BAD( rc = size( &ui64FileSize)))
+	{
+		goto Exit;
+	}
+	
+	// File is already the requested size
+	
+	if( ui64FileSize >= ui64NewFileSize)
+	{
+		goto Exit;
+	}
+	
+#if defined( FLM_HPUX)
+	{
+		struct vx_ext		extendInfo;
+		struct stat			filestats;
+	
+		if( fstat( m_fd, &filestats) != 0)
+		{
+			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			goto Exit;
+		}
+
+		// If this is a JFS volume, we may be able to use an ioctl command
+		// to extend the file.  If this doesn't work, we'll revert to
+		// the slow way of extending the file.
+		
+		f_memset( &extendInfo, 0, sizeof( extendInfo));
+		extendInfo.ext_size = 0;
+		extendInfo.reserve = ui64NewFileSize / filestats.st_blksize;
+		extendInfo.a_flags = VX_CHGSIZE;
+		
+		if( ioctl( m_fd, VX_SETEXT, &extendInfo) == 0)
+		{
+			// The call succeeded.  Our work is done.
+			
+			goto Exit;
+		}
+	}
+#endif
+	
+	ui64TotalBytesToExtend = ui64NewFileSize - ui64FileSize;
+	uiExtendBufferSize = (FLMUINT)f_min( ui64TotalBytesToExtend, 1024 * 1024);
+
+	for( ;;)
+	{
+		if( RC_OK( rc = f_allocAlignedBuffer( 
+			uiExtendBufferSize, &pucExtendBuffer)))
+		{
+			break;
+		}
+
+		if( uiExtendBufferSize <= (32 * 1024))
+		{
+			goto Exit;
+		}
+
+		uiExtendBufferSize >>= 1; 
+	}
+	
+	if( ftruncate( m_fd, ui64NewFileSize) == -1)
+	{
+		rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+		goto Exit;
+	}
+	
+	while( ui64TotalBytesToExtend)
+	{
+		uiCurrBytesToExtend = (FLMUINT)f_min( 
+						ui64TotalBytesToExtend, uiExtendBufferSize);
+		
+		if( (iBytesWritten = pwrite( m_fd, pucExtendBuffer, 
+			uiCurrBytesToExtend, ui64FileSize)) == -1)
+		{
+			if( errno == EINTR)
+			{
+				continue;
+			}
+			
+			rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
+			goto Exit;
+		}
+		
+		ui64TotalBytesToExtend -= uiCurrBytesToExtend;
+		ui64FileSize += uiCurrBytesToExtend;
+	
+		if( (FLMUINT)iBytesWritten < uiCurrBytesToExtend)
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_IO_DISK_FULL);
+			goto Exit;
+		}
+	}
+	
+	m_bFlushRequired = TRUE;
+	
+Exit:
+
+	if( pucExtendBuffer)
+	{
+		f_freeAlignedBuffer( &pucExtendBuffer);
+	}
+	
+	return( rc);
+}
+	
 /******************************************************************************
 Desc:	Attempts to lock byte 0 of the file.  This method is used to
 		lock byte 0 of the .lck file to ensure that only one process

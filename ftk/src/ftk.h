@@ -148,6 +148,8 @@
 			#define FLM_UNIX
 			#define FLM_BIG_ENDIAN
 			#define FLM_STRICT_ALIGNMENT
+			#define FLM_HAS_ASYNC_IO
+			#define FLM_HAS_DIRECT_IO
 		#elif defined( __APPLE__)
 			#define FLM_OSX
 			#define FLM_OSTYPE_STR "OSX"
@@ -178,7 +180,17 @@
 			#error Cannot define both FLM_32BIT and FLM_64BIT
 		#endif
 		
-		#ifdef FLM_NLM
+		#if defined( __x86_64__) || defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
+			#if !defined( FLM_64BIT)
+				#error Platform word size is incorrect
+			#endif
+		#else
+			#if !defined( FLM_32BIT)
+				#error Platform word size is incorrect
+			#endif
+		#endif
+					 
+ 		#ifdef FLM_NLM
 			#define FSTATIC
 		#else
 			#define FSTATIC		static
@@ -1639,9 +1651,12 @@
 
 		virtual RCODE FLMAPI tell(
 			FLMUINT64 *				pui64Offset) = 0;
+			
+		virtual RCODE FLMAPI extendFile(
+			FLMUINT64				ui64FileSize) = 0;
 
 		virtual RCODE FLMAPI truncateFile(
-			FLMUINT64				ui64Offset = 0) = 0;
+			FLMUINT64				ui64FileSize = 0) = 0;
 
 		virtual RCODE FLMAPI closeFile( void) = 0;
 
@@ -1756,6 +1771,8 @@
 		virtual RCODE FLMAPI getFilePath(
 			FLMUINT					uiFileNumber,
 			char *					pszPath) = 0;
+			
+		virtual FLMUINT64 FLMAPI getMaxFileSize( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1811,6 +1828,10 @@
 	
 		RCODE FLMAPI releaseFiles( void);
 	
+		RCODE	FLMAPI allocateBlocks(
+			FLMUINT					uiStartAddress,
+			FLMUINT					uiEndAddress);
+			
 		RCODE FLMAPI truncateFile(
 			FLMUINT					uiEOFBlkAddress);
 	
@@ -1823,12 +1844,6 @@
 			FLMUINT					uiEndFileNum);
 	
 		RCODE FLMAPI flush( void);
-	
-		FINLINE void FLMAPI setBlockSize(
-			FLMUINT		uiBlockSize)
-		{
-			m_uiBlockSize = uiBlockSize;
-		}
 	
 		FINLINE void FLMAPI setExtendSize(
 			FLMUINT		uiExtendSize)
@@ -1855,7 +1870,7 @@
 		FLMBOOL						m_bCFileDirty;
 		FLMBOOL						m_bBlockFileDirty;
 		FLMUINT						m_uiBlockFileNum;
-		FLMUINT						m_uiBlockSize;
+		FLMUINT						m_uiMaxFileSize;
 		FLMUINT						m_uiExtendSize;
 		FLMUINT						m_uiMaxAutoExtendSize;
 		FLMUINT						m_uiFileOpenFlags;

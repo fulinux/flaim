@@ -3101,7 +3101,7 @@ void * F_FixedAlloc::getCell(
 #endif
 	if (!m_pDefaultRelocator)
 	{
-		((CELLHEADER2 *)pHeader)->pRelocator = pRelocator;
+		((CELLHEADER2 *)((void *)pHeader))->pRelocator = pRelocator;
 	}
 
 	if( m_pUsageStats)
@@ -3621,7 +3621,7 @@ void F_FixedAlloc::defragmentMemory( void)
 					(uiLoop * m_uiSizeOfCellAndHeader));
 			if ((pRelocator = m_pDefaultRelocator) == NULL)
 			{
-				pRelocator = ((CELLHEADER2 *)pCellHeader)->pRelocator;
+				pRelocator = ((CELLHEADER2 *)((void *)pCellHeader))->pRelocator;
 			}
 
 			if( pCellHeader->pContainingSlab)
@@ -4790,6 +4790,10 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 		goto Exit;
 	}
 	
+#elif defined( FLM_RING_ZERO_NLM)
+
+	pSlab = Alloc( m_uiSlabSize, gv_lAllocRTag)
+
 #elif defined( FLM_SOLARIS)
 
 	if( (*ppvAlloc = memalign( sysconf( _SC_PAGESIZE), uiMinSize)) == NULL)
@@ -4822,7 +4826,7 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 		FLMBYTE *	pucAlloc;
 		FLMBYTE *	pucStartOfAlloc;
 		
-		uiAllocSize = f_roundUp( uiMinSize, uiPageSize) + uiPageSize;
+		uiAllocSize = (FLMUINT)(f_roundUp( uiMinSize, uiPageSize) + uiPageSize);
 		
 		if( RC_BAD( rc = f_alloc( uiAllocSize, &pucAlloc)))
 		{
@@ -4861,6 +4865,11 @@ void FLMAPI f_freeAlignedBufferImp(
 		(void)VirtualFree( *ppvAlloc, 0, MEM_RELEASE);
 		*ppvAlloc = NULL;
 		
+#elif defined( FLM_RING_ZERO_NLM)
+
+	Free( *ppvAlloc)
+	*ppvAlloc = NULL;
+
 #elif defined( FLM_UNIX)
 
 		free( *ppvAlloc);
@@ -4932,51 +4941,17 @@ RCODE FLMAPI f_getMemoryInfo(
 		FLMUINT			uiProcMemLimit = FLM_MAX_UINT;
 		FLMUINT			uiProcVMemLimit = FLM_MAX_UINT;
 		
-		#if defined( RLIMIT_VMEM)
-		{
-			struct rlimit	rlim;
-
-			// Bump the process soft virtual limit up to the hard limit
-			
-			if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
-			{
-				rlim.rlim_cur = RLIM_INFINITY;
-				rlim.rlim_max = RLIM_INFINITY;
-			}
-
-			if( rlim.rlim_cur != RLIM_INFINITY)
-			{
-				uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
-			}
-		}
-		#endif
-
-		#if defined( RLIMIT_DATA)
-		{
-			struct rlimit	rlim;
-
-			// Bump the process soft heap limit up to the hard limit
-			
-			if( getrlimit( RLIMIT_DATA, &rlim) != 0)
-			{
-				rlim.rlim_cur = RLIM_INFINITY;
-				rlim.rlim_max = RLIM_INFINITY;
-			}
-
-			if( rlim.rlim_cur != RLIM_INFINITY)
-			{
-				uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
-			}
-		}
-		#endif
-	
-		#ifdef FLM_AIX
+		#if defined( FLM_LINUX)
+		
+				f_getLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
+		
+		#elif defined( FLM_AIX)
 			
 			f_getAIXMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
 		
-		#elif defined( FLM_LINUX)
+		#elif defined( FLM_HPUX)
 		
-				f_getLinuxMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
+			f_getHPUXMemInfo( &ui64TotalPhysMem, &ui64AvailPhysMem);
 		
 		#elif defined( _SC_PAGESIZE) && defined( _SC_AVPHYS_PAGES)
 
@@ -4996,6 +4971,40 @@ RCODE FLMAPI f_getMemoryInfo(
 		// The process might be limited in the amount of memory it
 		// can access.
 
+		#if defined( RLIMIT_VMEM)
+		{
+			struct rlimit	rlim;
+
+			if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
+			{
+				rlim.rlim_cur = RLIM_INFINITY;
+				rlim.rlim_max = RLIM_INFINITY;
+			}
+
+			if( rlim.rlim_cur != RLIM_INFINITY)
+			{
+				uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
+			}
+		}
+		#endif
+
+		#if defined( RLIMIT_DATA)
+		{
+			struct rlimit	rlim;
+
+			if( getrlimit( RLIMIT_DATA, &rlim) != 0)
+			{
+				rlim.rlim_cur = RLIM_INFINITY;
+				rlim.rlim_max = RLIM_INFINITY;
+			}
+
+			if( rlim.rlim_cur != RLIM_INFINITY)
+			{
+				uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
+			}
+		}
+		#endif
+	
 		if( ui64TotalPhysMem > uiProcMemLimit)
 		{
 			ui64TotalPhysMem = uiProcMemLimit;
@@ -5226,6 +5235,40 @@ Exit:
 	*pui64AvailMem = ui64AvailPhysMem;
 }
 #endif				
+
+/***************************************************************************
+Desc:
+***************************************************************************/
+#ifdef FLM_HPUX
+void f_getHPUXMemInfo(
+	FLMUINT64 *		pui64TotalMem,
+	FLMUINT64 *		pui64AvailMem)
+{
+	FLMUINT					uiPageSize;
+	struct pst_static		pst;
+	struct pst_dynamic	dyn;
+
+	if( pstat_getstatic( &pst, sizeof( pst), (size_t)1, 0) == -1)
+	{
+		uiPageSize = 4096;
+	}
+	else
+	{
+		uiPageSize = pst.page_size;
+	}
+	
+	if( pstat_getdynamic( &dyn, sizeof( dyn), 1, 0) != -1)
+	{
+		*pui64AvailMem = dyn.psd_free * uiPageSize;
+	}
+	else
+	{
+		*pui64AvailMem = pst.physical_memory * uiPageSize;
+	}
+	
+	*pui64TotalMem = pst.physical_memory * uiPageSize;
+}
+#endif
 
 /****************************************************************************
 Desc:

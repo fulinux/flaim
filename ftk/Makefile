@@ -272,6 +272,12 @@ ifndef host_os_family
 endif
 
 ifndef host_os_family
+	ifneq (,$(findstring HP-UX,$(OSTYPE)))
+		host_os_family = hpux
+	endif
+endif
+
+ifndef host_os_family
    $(error Host operating system could not be determined.  You may need to export OSTYPE from the environment.)
 endif
 
@@ -391,17 +397,20 @@ ifeq (,$(HOSTTYPE))
 endif
 
 ifeq (,$(HOSTTYPE))
-	HOSTTYPE := $(shell uname -p)
-	ifneq (,$(findstring nvalid,$(HOSTTYPE)))
-		HOSTTYPE := $(shell uname -m)
+	ifneq ($(host_os_family),hpux)
+		HOSTTYPE := $(shell uname -p)
 	endif
-	ifneq (,$(findstring unknown,$(HOSTTYPE)))
+	ifeq (,$(HOSTTYPE))
 		HOSTTYPE := $(shell uname -m)
+	else
+		ifneq (,$(findstring nvalid,$(HOSTTYPE)))
+			HOSTTYPE := $(shell uname -m)
+		else
+			ifneq (,$(findstring unknown,$(HOSTTYPE)))
+				HOSTTYPE := $(shell uname -m)
+			endif
+		endif
 	endif
-endif
-
-ifeq (,$(HOSTTYPE))
-	HOSTYPE := $(shell uname -p)
 endif
 
 ifeq (,$(HOSTTYPE))
@@ -952,9 +961,19 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),hpux)
 		ifeq ($(usenativecc),yes)
-			# Must support 64 bit file sizes - even for 32 bit builds.
-
-			ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+		
+				# Disable "Placement operator delete invocation is not yet
+				# implemented" warning
+		
+				ccflags += +W930
+		
+			ifeq ($(target_word_size),64)
+				ccflags += +DD64
+			else
+				# Must support 64 bit file sizes - even for 32 bit builds.
+	
+				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+			endif
 		endif
 	endif
 
@@ -1031,6 +1050,9 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),hpux)
+		ifeq ($(target_word_size),64)
+			link_flags += +DD64
+		endif
 		link_libs += -lm -lc -lrt -lcurses
 	endif
 
