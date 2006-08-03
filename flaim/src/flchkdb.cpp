@@ -4128,7 +4128,7 @@ FSTATIC RCODE chkSetupLfTable(
 					goto Exit;
 				}
 
-				pLogicalFile->pIfd = (IFD *) (&pLogicalFile->pIxd[1]);
+				pLogicalFile->pIfd = (IFD *)((void *)(&pLogicalFile->pIxd[1]));
 				f_memcpy( pLogicalFile->pIxd, pTmpIxd, sizeof(IXD));
 				f_memcpy( pLogicalFile->pIfd, pTmpIfd,
 							sizeof(IFD) * pTmpIxd->uiNumFlds);

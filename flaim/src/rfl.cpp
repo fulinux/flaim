@@ -1368,7 +1368,7 @@ RCODE F_Rfl::flush(
 			pBuffer->pIOBuffer->setPending();
 
 			rc = m_pFileHdl->write( uiFileOffset, uiBufBytes, 
-											  pucOldBuffer, &uiBytesWritten);			
+											  pucOldBuffer, &uiBytesWritten);
 		}
 
 		if( RC_OK( rc))
@@ -1405,16 +1405,13 @@ RCODE F_Rfl::flush(
 			// only have one buffer, we cannot do async writes.
 
 			flmAssert( !pIOBuffer);
+			pBuffer->pIOBuffer->notifyComplete( rc);											  
 			
 			if( RC_OK( rc) && !bFinalWrite)
 			{
 				copyLastBlock( pBuffer, pucOldBuffer, pucOldBuffer,
 									uiCurrPacketLen, bStartingNewFile);
 			}
-
-			// DO NOT call notifyComplete - that would put
-			// pBuffer->pIOBuffer into the avail list, and we don't want
-			// that. We simply want to keep reusing it.
 		}
 		else
 		{
@@ -1606,8 +1603,7 @@ Desc: Wait for the transaction writes to be finished.
 RCODE F_Rfl::completeTransWrites(
 	FDB *			pDb,
 	FLMBOOL		bCommitting,
-	FLMBOOL		bOkToUnlock
-	)
+	FLMBOOL		bOkToUnlock)
 {
 	RCODE			rc = FERR_OK;
 	RCODE			tmpRc;
@@ -1799,7 +1795,7 @@ RCODE F_Rfl::completeTransWrites(
 		goto Exit;
 	}
 
-	// Wait for any pending IO off of the log buffer
+	// Wait for any pending I/O off of the log buffer
 
 	if (RC_BAD( tmpRc = m_pCommitBuf->pBufferMgr->waitForAllPendingIO()))
 	{
@@ -1944,6 +1940,8 @@ FLMBYTE RflCalcChecksum(
 #else
 	pucSectionEnd = pucStart + (sizeof( FLMUINT) - ((FLMUINT)pucStart & 0x3));
 #endif
+
+	flmAssert( pucSectionEnd >= pucStart);
 
 	if (pucSectionEnd > pucEnd)
 	{

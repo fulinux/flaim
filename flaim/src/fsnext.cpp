@@ -467,7 +467,7 @@ FLMUINT FSGetDomain(
 		{
 			curElm += BBE_GET_KL( curElm) + uiElmOvhd;
 			uiDinDomain = ((FLMUINT) * curElm++) << 16;
-			uiDinDomain |= ((FLMUINT16) * curElm++) << 8;
+			uiDinDomain |= (FLMUINT)(((FLMUINT16) * curElm++) << 8);
 			uiDinDomain |= *curElm++;
 		}
 	}

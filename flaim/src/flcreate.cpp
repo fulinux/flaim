@@ -112,6 +112,7 @@ RCODE flmCreateNewFile(
 	RCODE						rc = FERR_OK;
 	FDB *						pDb = NULL;
 	FFILE *					pFile;
+	FLMUINT					uiMaxFileSize;
 	FLMBOOL					bFileCreated = FALSE;
 	FLMBOOL					bNewFile = FALSE;
 	FLMBOOL					bMutexLocked = FALSE;
@@ -259,6 +260,15 @@ RCODE flmCreateNewFile(
 
 	flmAssert( !pDb->pSFileHdl);
 	flmAssert( pFile->FileHdr.uiVersionNum);
+
+	if( pFile->FileHdr.uiVersionNum >= FLM_FILE_FORMAT_VER_4_3)
+	{
+		uiMaxFileSize = gv_FlmSysData.uiMaxFileSize;
+	}
+	else
+	{
+		uiMaxFileSize = MAX_FILE_SIZE_VER40;
+	}
 	
 	if( (pDb->pSFileHdl = f_new F_SuperFileHdl) == NULL)
 	{
@@ -284,8 +294,6 @@ RCODE flmCreateNewFile(
 	{
 		goto Exit;
 	}
-
-	pDb->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
 
 	// Create the .db file.
 

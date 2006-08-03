@@ -1821,7 +1821,6 @@ FSTATIC RCODE flmRestoreFile(
 			goto Exit;
 		}
 
-		pSFile->setBlockSize( uiBlockSize);
 		*ppSFile = pSFile;
 		(*ppSFile)->AddRef();
 	}

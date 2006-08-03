@@ -49,7 +49,7 @@ class FSDataCursor;
 #define FLM_RESULT_MASK					0xF00
 
 #define FLM_SET_RESULT(uiStatus,uiResult) \
-	((uiStatus) = ((uiStatus) & (~(FLM_RESULT_MASK))) | ((uiResult) << 8))
+	((uiStatus) = ((uiStatus) & (~(FLM_RESULT_MASK))) | (FLMUINT)((uiResult) << 8))
 
 #define FLM_GET_RESULT(uiStatus) \
 	(FLMUINT)(((uiStatus) & (FLM_RESULT_MASK)) >> 8)

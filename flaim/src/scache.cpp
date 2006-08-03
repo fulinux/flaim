@@ -5045,6 +5045,18 @@ FSTATIC RCODE scaWriteSortedBlocks(
 	SCACHE *				pSCache;
 	IF_IOBuffer *		pIOBuffer = NULL;
 	FLMBYTE *			pucBuffer;
+	
+	// Extend the database to its new size
+	
+	if( bForceCheckpoint && pSFileHdl->canDoDirectIO() && uiNumSortedBlocks > 1)
+	{
+		if( RC_BAD( rc = pSFileHdl->allocateBlocks(
+			pFile->ppBlocksDone[ 0]->uiBlkAddress,
+			pFile->ppBlocksDone[ uiNumSortedBlocks - 1]->uiBlkAddress)))
+		{
+			goto Exit;
+		}
+	}
 
 	uiOffset = 0;
 	for (;;)
@@ -6717,8 +6729,7 @@ RCODE ScaLogPhysBlk(
 		// count.
 
 		if( (FLMUINT)FB2UD( &pucBlkBuf [BH_TRANS_ID]) <
-			 (FLMUINT)FB2UD(
-						&pFile->ucUncommittedLogHdr [LOG_LAST_BACKUP_TRANS_ID]))
+			 (FLMUINT)FB2UD( &pFile->ucUncommittedLogHdr [LOG_LAST_BACKUP_TRANS_ID]))
 		{
 			flmIncrUint(
 				&pFile->ucUncommittedLogHdr [LOG_BLK_CHG_SINCE_BACKUP], 1);

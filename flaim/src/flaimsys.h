@@ -2603,6 +2603,8 @@ public:
 		FLMUINT					uiFileNumber,
 		char *					pszPath);
 		
+	FLMUINT64 FLMAPI getMaxFileSize( void);
+		
 	static void bldSuperFileExtension(
 		FLMUINT					uiVersionNum,
 		FLMUINT					uiFileNum,

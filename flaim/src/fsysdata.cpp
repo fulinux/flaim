@@ -4240,6 +4240,19 @@ FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
+{
+	if( m_uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
+	{
+		return( gv_FlmSysData.uiMaxFileSize);
+	}
+	
+	return( MAX_FILE_SIZE_VER40);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 RCODE FLMAPI F_SuperFileClient::getFilePath(
 	FLMUINT			uiFileNumber,
 	char *			pszPath)

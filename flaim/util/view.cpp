@@ -658,8 +658,6 @@ Get_File_Name:
 		goto Exit;
 	}
 	
-	gv_pSFileHdl->setBlockSize( gv_ViewHdrInfo.FileHdr.uiBlockSize);
-
 	if( RC_BAD( rc = ViewReadAndVerifyHdrInfo()))
 	{
 		if (rc == FERR_IO_PATH_NOT_FOUND)

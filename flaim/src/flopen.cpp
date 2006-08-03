@@ -644,8 +644,6 @@ RCODE flmOpenFile(
 		{
 			goto Exit;
 		}
-
-		pDb->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
 	}
 
 	if (bNewFile && !(uiOpenFlags & FO_DONT_REDO_LOG))
@@ -1026,8 +1024,6 @@ FSTATIC RCODE flmPhysFileOpen(
 	{
 		goto Exit;
 	}
-
-	pDb->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
 
 	// We must have exclusive access.  Create a lock file for that
 	// purpose, if there is not already a lock file.
@@ -1569,8 +1565,6 @@ RCODE flmStartCPThread(
 		goto Exit;
 	}
 
-	pCPInfo->pSFileHdl->setBlockSize( pFile->FileHdr.uiBlockSize);
-	
 	if( RC_BAD( rc = flmStatInit( &pCPInfo->Stats, FALSE)))
 	{
 		goto Exit;

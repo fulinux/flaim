@@ -2470,7 +2470,6 @@ FLMEXP RCODE FLMAPI FlmDbRebuild(
 		goto Exit;
 	}
 
-	pSFileHdl->setBlockSize( pCreateOpts->uiBlockSize);
 	pRebuildState->pSFileHdl = pSFileHdl;
 
 	// Calculate the file size.
