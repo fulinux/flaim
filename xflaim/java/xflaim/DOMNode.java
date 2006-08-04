@@ -1716,8 +1716,12 @@ public class DOMNode
 	 * Desc:
 	 */
 	private native void _release(
-		long		lThis);	
-	
+		long		lThis);
+		
+	public long getThis()
+	{
+		return m_this;
+	}
 	
 	private long	m_this;
 	private Db		m_jdb;
