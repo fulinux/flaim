@@ -8,9 +8,9 @@
 extern "C" {
 #endif
 #undef xflaim_XFlaimException_serialVersionUID
-#define xflaim_XFlaimException_serialVersionUID -3042686055658047285i64
+#define xflaim_XFlaimException_serialVersionUID -3042686055658047285LL
 #undef xflaim_XFlaimException_serialVersionUID
-#define xflaim_XFlaimException_serialVersionUID -3387516993124229948i64
+#define xflaim_XFlaimException_serialVersionUID -3387516993124229948LL
 #ifdef __cplusplus
 }
 #endif
