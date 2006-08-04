@@ -361,6 +361,14 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1getAttributeNamespace
 
 /*
  * Class:     xflaim_Db
+ * Method:    _getDataType
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDataType
+  (JNIEnv *, jobject, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_Db
  * Method:    _backupBegin
  * Signature: (JIIIJ)J
  */
@@ -374,6 +382,70 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1backupBegin
  */
 JNIEXPORT void JNICALL Java_xflaim_Db__1keyRetrieve
   (JNIEnv *, jobject, jlong, jint, jlong, jint, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _changeItemState
+ * Signature: (JIILjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1changeItemState
+  (JNIEnv *, jobject, jlong, jint, jint, jstring);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getRflFileName
+ * Signature: (JIZ)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1getRflFileName
+  (JNIEnv *, jobject, jlong, jint, jboolean);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setNextNodeId
+ * Signature: (JIJ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setNextNodeId
+  (JNIEnv *, jobject, jlong, jint, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setNextDictNum
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setNextDictNum
+  (JNIEnv *, jobject, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setRflKeepFilesFlag
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setRflKeepFilesFlag
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getRflKeepFlag
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getRflKeepFlag
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setRflDir
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setRflDir
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getRflDir
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1getRflDir
+  (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus
 }

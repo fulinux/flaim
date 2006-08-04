@@ -967,6 +967,13 @@ public class Db
 		return( NewNode);		
 	}
 
+	public int getDataType(
+		int	iDictType,
+		int	iNameId) throws XFlaimException
+	{
+		return( _getDataType( m_this, iDictType, iNameId));
+	}
+
 	/**
 	 * Sets up XFlaim to perform a backup operation
 	 * @param eBackupType The type of backup to perform.  Must be one of the
@@ -1038,6 +1045,58 @@ public class Db
 		_import( m_this, jIStream, iCollection);
 	}
 	
+	public void changeItemState(
+		int				iDictType,
+		int				iDictNum,
+		String			sState) throws XFlaimException
+	{
+		_changeItemState( m_this, iDictType, iDictNum, sState);
+	}
+
+	public String getRflFileName(
+		int				iFileNum,
+		boolean			bBaseOnly) throws XFlaimException
+	{
+		return( _getRflFileName( m_this, iFileNum, bBaseOnly));
+	}
+		
+	public void setNextNodeId(
+		int				iCollection,
+		long				lNextNodeId) throws XFlaimException
+	{
+		_setNextNodeId( m_this, iCollection, lNextNodeId);
+	}
+
+	public void setNextDictNum(
+		int				iDictType,
+		int				iDictNumber) throws XFlaimException
+	{
+		_setNextDictNum( m_this, iDictType, iDictNumber);
+	}
+	
+	public void setRflKeepFilesFlag(
+		boolean			bKeep) throws XFlaimException
+	{
+		_setRflKeepFilesFlag( m_this, bKeep);
+	}
+		
+	public boolean getRflKeepFlag() throws XFlaimException
+	{
+		return( _getRflKeepFlag( m_this));
+	}
+	
+	public void setRflDir(
+		String			sRflDir) throws XFlaimException
+	{
+		_setRflDir( m_this, sRflDir);
+	}
+		
+	public String getRflDir() throws XFlaimException
+	{
+		return( _getRflDir( m_this));
+	}
+	
+
 	private native void _release(
 		long				lThis);
 
@@ -1191,6 +1250,11 @@ public class Db
 		long	lThis,
 		int	iDictNumber) throws XFlaimException;
 		
+	private native int _getDataType(
+		long	lThis,
+		int	iDictType,
+		int	iNameId) throws XFlaimException;
+
 	/**
 	 * Desc:
 	 */
@@ -1211,6 +1275,41 @@ public class Db
 		int				iFlags,
 		long				lFoundKey) throws XFlaimException;
  
+	private native void _changeItemState(
+		long				lThis,
+		int				iDictType,
+		int				iDictNum,
+		String			sState) throws XFlaimException;
+
+	private native String _getRflFileName(
+		long				lThis,
+		int				iFileNum,
+		boolean			bBaseOnly) throws XFlaimException;
+		
+	private native void _setNextNodeId(
+		long				lThis,
+		int				iCollection,
+		long				lNextNodeId) throws XFlaimException;
+
+	private native void _setNextDictNum(
+		long				lThis,
+		int				iDictType,
+		int				iDictNumber) throws XFlaimException;
+
+	private native void _setRflKeepFilesFlag(
+		long				lThis,
+		boolean			bKeep) throws XFlaimException;
+		
+	private native boolean _getRflKeepFlag(
+		long				lThis) throws XFlaimException;
+		
+	private native void _setRflDir(
+		long				lThis,
+		String			sRflDir) throws XFlaimException;
+		
+	private native String _getRflDir(
+		long				lThis) throws XFlaimException;
+	
 	long 					m_this;
 	private DbSystem 	m_dbSystem;
 }
@@ -1233,28 +1332,9 @@ LIST OF METHODS NOT YET IMPLEMENTED
 		
 		virtual RCODE FLMAPI rollOverDbKey( void) = 0;
 			
-		virtual RCODE FLMAPI changeItemState(
-			FLMUINT					uiDictType,
-			FLMUINT					uiDictNum,
-			const char *			pszState) = 0;
-
 		virtual RCODE FLMAPI upgrade(
 			IF_UpgradeClient *	pUpgradeClient) = 0;
 			
-//here
-
-		virtual RCODE FLMAPI getDataType(
-			FLMUINT					uiDictType,
-			FLMUINT					uiNameId,
-			FLMUINT *				puiDataType) = 0;
-
-		virtual void FLMAPI getRflFileName(
-			FLMUINT					uiFileNum,
-			FLMBOOL					bBaseOnly,
-			char *					pszFileName,
-			FLMUINT *				puiFileNameBufSize,
-			FLMBOOL *				pbNameTruncated = NULL) = 0;
-
 		virtual RCODE FLMAPI import(
 			IF_IStream *			pIStream,
 			FLMUINT					uiCollection,
@@ -1273,27 +1353,9 @@ LIST OF METHODS NOT YET IMPLEMENTED
 			IF_OStream *			pOStream,
 			eExportFormatType		eFormat = XFLM_EXPORT_INDENT) = 0;
 			
-		virtual RCODE FLMAPI setNextNodeId(
-			FLMUINT					uiCollection,
-			FLMUINT64				ui64NextNodeId) = 0;
-
-		virtual RCODE FLMAPI setNextDictNum(
-			FLMUINT					uiDictType,
-			FLMUINT					uiDictNumber) = 0;
+//here
 
 		// Configuration "set" and "get" methods
-
-		virtual RCODE FLMAPI setRflKeepFilesFlag(
-			FLMBOOL					bKeep) = 0;
-
-		virtual RCODE FLMAPI getRflKeepFlag(
-			FLMBOOL *				pbKeep) = 0;
-
-		virtual RCODE FLMAPI setRflDir(
-			const char *			pszNewRflDir) = 0;
-
-		virtual void FLMAPI getRflDir(
-			char *					pszRflDir) = 0;
 
 		virtual RCODE FLMAPI getRflFileNum(
 			FLMUINT *				puiRflFileNum) = 0;

@@ -35,6 +35,11 @@ FSTATIC RCODE getUniString(
 	jstring		sStr,
 	F_DynaBuf *	pDynaBuf);
 	
+FSTATIC RCODE getNativeString(
+	JNIEnv *		pEnv,
+	jstring		sStr,
+	F_DynaBuf *	pDynaBuf);
+	
 FSTATIC RCODE getDictName(
 	IF_Db *			pDb,
 	FLMUINT			uiDictType,
@@ -474,6 +479,32 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDataType(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iDictType,
+	jint				iNameId)
+{
+	RCODE		rc = NE_XFLM_OK;
+	IF_Db *	pDb = THIS_FDB();
+	FLMUINT	uiDataType;
+	
+	if (RC_BAD( rc = pDb->getDataType( (FLMUINT)iDictType, (FLMUINT)iNameId,
+									&uiDataType)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiDataType);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT void JNICALL Java_xflaim_Db__1import(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
@@ -786,6 +817,46 @@ Exit:
 	if (puzStr)
 	{
 		pEnv->ReleaseStringChars( sStr, puzStr);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE getNativeString(
+	JNIEnv *		pEnv,
+	jstring		sStr,
+	F_DynaBuf *	pDynaBuf)
+{
+	RCODE				rc = NE_XFLM_OK;
+	const char *	pszStr = NULL;
+	FLMUINT			uiStrCharCount;
+	
+	if (sStr)
+	{
+		pszStr = pEnv->GetStringUTFChars( sStr, NULL);
+		uiStrCharCount = (FLMUINT)pEnv->GetStringUTFLength( sStr);
+		if (RC_BAD( rc = pDynaBuf->appendData( pszStr, uiStrCharCount)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		pDynaBuf->truncateData( 0);
+	}
+	if (RC_BAD( rc = pDynaBuf->appendByte( 0)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	if (pszStr)
+	{
+		pEnv->ReleaseStringUTFChars( sStr, pszStr);
 	}
 
 	return( rc);
@@ -1542,3 +1613,201 @@ Exit:
 
 	return;
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1changeItemState(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iDictType,
+	jint				iDictNum,
+	jstring			sState)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMBYTE		ucState [80];
+	F_DynaBuf	stateBuf( ucState, sizeof( ucState));
+	
+	if (RC_BAD( rc = getNativeString( pEnv, sState, &stateBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->changeItemState( (FLMUINT)iDictType,
+									(FLMUINT)iDictNum,
+									(const char *)stateBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1getRflFileName(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iFileNum,
+	jboolean			bBaseOnly)
+{
+	IF_Db *		pDb = THIS_FDB();
+	char			szRflFileName [F_PATH_MAX_SIZE];
+	FLMUINT		uiFileNameBufSize = sizeof( szRflFileName);
+	
+	pDb->getRflFileName( (FLMUINT)iFileNum,
+									(FLMBOOL)(bBaseOnly ? TRUE : FALSE),
+									szRflFileName, &uiFileNameBufSize, NULL);
+	return( pEnv->NewStringUTF( szRflFileName));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setNextNodeId(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iCollection,
+	jlong				lNextNodeId)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->setNextNodeId( (FLMUINT)iCollection,
+									(FLMUINT64)lNextNodeId)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setNextDictNum(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iDictType,
+	jint				iDictNumber)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->setNextDictNum( (FLMUINT)iDictType,
+									(FLMUINT)iDictNumber)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setRflKeepFilesFlag(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jboolean			bKeep)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->setRflKeepFilesFlag( (FLMBOOL)(bKeep ? TRUE : FALSE))))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getRflKeepFlag(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMBOOL		bKeep = FALSE;
+	
+	if (RC_BAD( rc = pDb->getRflKeepFlag( &bKeep)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( bKeep ? JNI_TRUE : JNI_FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setRflDir(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sRflDir)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMBYTE		ucDirBuf [200];
+	F_DynaBuf	dirBuf( ucDirBuf, sizeof( ucDirBuf));
+	
+	if (RC_BAD( rc = getNativeString( pEnv, sRflDir, &dirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->setRflDir( (const char *)dirBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1getRflDir(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	char			szRflDir [F_PATH_MAX_SIZE];
+	
+	pDb->getRflDir( szRflDir);
+	return( pEnv->NewStringUTF( szRflDir));
+}
+
