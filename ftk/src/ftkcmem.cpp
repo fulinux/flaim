@@ -523,7 +523,9 @@ RCODE F_BlockAlloc::getCell(
 		pSlab->ui8AvailBlocks--;
 		m_uiTotalAvailBlocks--;
 		
+		f_assert( !f_isBitSet( pSlab->ucAllocMap, pSlab->ui8FirstAvail));
 		f_setBit( pSlab->ucAllocMap, pSlab->ui8FirstAvail);
+		f_assert( f_isBitSet( pSlab->ucAllocMap, pSlab->ui8FirstAvail));
 		
 		// A free block holds as its contents the next pointer in the free chain.
 		// Free chains do not span slabs.
@@ -543,6 +545,7 @@ RCODE F_BlockAlloc::getCell(
 			f_assert( !pSlabToUnlink->pPrevSlabWithAvail);				
 
 			// Update m_pFirstSlabWithAvail to point to the next one
+			// and unlink from slabs-with-avail-cells list
 
 			if( (m_pFirstSlabWithAvail =
 				pSlabToUnlink->pNextSlabWithAvail) == NULL)
@@ -550,15 +553,15 @@ RCODE F_BlockAlloc::getCell(
 				f_assert( m_pLastSlabWithAvail == pSlabToUnlink);
 				m_pLastSlabWithAvail = NULL;
 			}
-
-			// Unlink from slabs-with-avail-cells list
-
-			if( pSlabToUnlink->pNextSlabWithAvail)
+			else
 			{
 				pSlabToUnlink->pNextSlabWithAvail->pPrevSlabWithAvail =
 					pSlabToUnlink->pPrevSlabWithAvail;
 				pSlabToUnlink->pNextSlabWithAvail = NULL;
 			}
+
+			f_assert( !pSlabToUnlink->pPrevSlabWithAvail);
+			f_assert( !pSlabToUnlink->pNextSlabWithAvail);
 
 			// Decrement the slab count
 
@@ -614,7 +617,9 @@ RCODE F_BlockAlloc::getCell(
 		pCell = (((FLMBYTE *)pSlab->pvSlab) + 
 									(pSlab->ui8NextNeverUsed * m_uiBlockSize));
 
+		f_assert( !f_isBitSet( pSlab->ucAllocMap, pSlab->ui8NextNeverUsed));
 		f_setBit( pSlab->ucAllocMap, pSlab->ui8NextNeverUsed);									
+		f_assert( f_isBitSet( pSlab->ucAllocMap, pSlab->ui8NextNeverUsed));
 		pSlab->ui8NextNeverUsed++;
 	}
 
@@ -697,10 +702,12 @@ void F_BlockAlloc::freeCell(
 
 	if( !m_pFirstSlabWithAvail)
 	{
-		m_pFirstSlabWithAvail = pSlab;
-		m_pLastSlabWithAvail = pSlab;
 		f_assert( !pSlab->pNextSlabWithAvail);
 		f_assert( !pSlab->pPrevSlabWithAvail);
+		f_assert( !m_pLastSlabWithAvail);
+		
+		m_pFirstSlabWithAvail = pSlab;
+		m_pLastSlabWithAvail = pSlab;
 		m_uiSlabsWithAvail++;
 		m_bAvailListSorted = TRUE;
 	}
@@ -716,8 +723,10 @@ void F_BlockAlloc::freeCell(
 
 		pSlab->pNextSlabWithAvail = m_pFirstSlabWithAvail;
 		pSlab->pPrevSlabWithAvail = NULL;
+		
 		m_pFirstSlabWithAvail->pPrevSlabWithAvail = pSlab;
 		m_pFirstSlabWithAvail = pSlab;
+		
 		m_uiSlabsWithAvail++;
 	}
 
@@ -741,12 +750,12 @@ void F_BlockAlloc::freeCell(
 		{
 			// Link the slab to the front of the avail list so that
 			// it can be freed quickly at some point in the future
+			
+			f_assert( pSlab->pPrevSlabWithAvail);
+			f_assert( pSlab->pNextSlabWithAvail || pSlab == m_pLastSlabWithAvail);
 
-			if( pSlab->pPrevSlabWithAvail)
-			{
-				pSlab->pPrevSlabWithAvail->pNextSlabWithAvail =
+			pSlab->pPrevSlabWithAvail->pNextSlabWithAvail =
 					pSlab->pNextSlabWithAvail;
-			}
 
 			if( pSlab->pNextSlabWithAvail)
 			{
@@ -874,6 +883,7 @@ void F_BlockAlloc::freeSlab(
 	}
 	else
 	{
+		f_assert( m_pLastSlab == pSlab);
 		m_pLastSlab = pSlab->pPrevInGlobal;
 	}
 
@@ -883,6 +893,7 @@ void F_BlockAlloc::freeSlab(
 	}
 	else
 	{
+		f_assert( m_pFirstSlab == pSlab);
 		m_pFirstSlab = pSlab->pNextInGlobal;
 	}
 	
@@ -899,6 +910,7 @@ void F_BlockAlloc::freeSlab(
 	}
 	else
 	{
+		f_assert( m_pHashTable[ getHashBucket( pSlab->pvSlab)] == pSlab);
 		m_pHashTable[ getHashBucket( pSlab->pvSlab)] = pSlab->pNextInBucket;
 	}
 
@@ -911,6 +923,7 @@ void F_BlockAlloc::freeSlab(
 	}
 	else
 	{
+		f_assert( m_pLastSlabWithAvail == pSlab);
 		m_pLastSlabWithAvail = pSlab->pPrevSlabWithAvail;
 	}
 
@@ -921,6 +934,7 @@ void F_BlockAlloc::freeSlab(
 	}
 	else
 	{
+		f_assert( m_pFirstSlabWithAvail == pSlab);
 		m_pFirstSlabWithAvail = pSlab->pNextSlabWithAvail;
 	}
 
@@ -929,6 +943,7 @@ void F_BlockAlloc::freeSlab(
 	
 	f_assert( m_uiTotalAvailBlocks >= pSlab->ui8AvailBlocks);
 	m_uiTotalAvailBlocks -= pSlab->ui8AvailBlocks;
+	
 	m_pSlabManager->freeSlab( (void **)&pSlab->pvSlab);
 	m_pInfoAllocator->freeCell( pSlab);
 	
@@ -952,7 +967,8 @@ Desc:
 ****************************************************************************/
 void FLMAPI F_BlockAlloc::freeAll( void)
 {
-	SLABINFO *		pFreeMe;
+	SLABINFO *		pNextSlab;
+	SLABINFO *		pCurSlab;
 
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -960,22 +976,24 @@ void FLMAPI F_BlockAlloc::freeAll( void)
 		f_mutexLock( m_hMutex);
 	}
 
-	while( m_pFirstSlab)
+	pCurSlab = m_pFirstSlab;
+
+	while( pCurSlab)
 	{
-		pFreeMe = m_pFirstSlab;
-		m_pFirstSlab = m_pFirstSlab->pNextInGlobal;
-		freeSlab( &pFreeMe);
+		pNextSlab = pCurSlab->pNextInGlobal;
+		freeSlab( &pCurSlab);
+		pCurSlab = pNextSlab;
 	}
 
 	f_assert( !m_uiTotalAvailBlocks);
+	f_assert( !m_pFirstSlab);
+	f_assert( !m_pLastSlab);
+	f_assert( !m_pFirstSlabWithAvail);
+	f_assert( !m_pLastSlabWithAvail);
+	f_assert( !m_uiSlabsWithAvail);
+	f_assert( !m_uiTotalAvailBlocks);
 
-	m_pFirstSlab = NULL;
-	m_pLastSlab = NULL;
-	m_pFirstSlabWithAvail = NULL;
-	m_pLastSlabWithAvail = NULL;
-	m_uiSlabsWithAvail = 0;
 	m_bAvailListSorted = TRUE;
-	m_uiTotalAvailBlocks = 0;
 	
 	if( m_pHashTable)
 	{
@@ -991,7 +1009,7 @@ void FLMAPI F_BlockAlloc::freeAll( void)
 /****************************************************************************
 Desc:		
 ****************************************************************************/ 
-void FLMAPI F_BlockAlloc::freeUnused( void)
+void FLMAPI F_BlockAlloc::freeUnused( void) // VISIT
 {
 	SLABINFO *		pSlab;
 
@@ -1001,8 +1019,7 @@ void FLMAPI F_BlockAlloc::freeUnused( void)
 		f_mutexLock( m_hMutex);
 	}
 
-	if( (pSlab = m_pFirstSlabWithAvail) != NULL &&
-		!pSlab->ui8AllocatedBlocks)
+	if( (pSlab = m_pFirstSlabWithAvail) != NULL && !pSlab->ui8AllocatedBlocks)
 	{
 		freeSlab( &pSlab);
 	}
