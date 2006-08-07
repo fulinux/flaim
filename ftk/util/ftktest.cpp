@@ -35,6 +35,9 @@ FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 FSTATIC RCODE FLMAPI ftkAtomicDecThread(
 	IF_Thread *		pThread);
 	
+FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
+	IF_Thread *		pThread);
+	
 FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
 	IF_Thread *		pThread);
 	
@@ -195,6 +198,31 @@ FSTATIC RCODE ftkTestAtomics( void)
 		goto Exit;
 	}
 	
+	f_printf( "Creating atomic inc/dec threads: ");
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		if( RC_BAD( rc = 	f_threadCreate( &pThreadList[ uiLoop], 
+			ftkAtomicIncDecThread)))
+		{
+			goto Exit;
+		}
+	}
+	
+	f_printf( "%u\n", uiLoop);	
+		
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		pThreadList[ uiLoop]->waitToComplete();
+		f_threadDestroy( &pThreadList[ uiLoop]);
+	}
+	
+	if( gv_refCount != 0)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+		goto Exit;
+	}
+	
 	gv_spinLock = 0;
 	
 	f_printf( "Creating atomic exchange threads: ");
@@ -274,6 +302,31 @@ FSTATIC RCODE FLMAPI ftkAtomicDecThread(
 		{
 			f_yieldCPU();
 		}
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
+	IF_Thread *		pThread)
+{
+	FLMUINT		uiLoop;
+	
+	F_UNREFERENCED_PARM( pThread);
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
+	{
+		f_atomicInc( &gv_refCount);
+		
+		if( (uiLoop % 128) == 0)
+		{
+			f_yieldCPU();
+		}
+		
+		f_atomicDec( &gv_refCount);
 	}
 	
 	return( NE_FLM_OK);
