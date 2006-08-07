@@ -25,7 +25,7 @@
 #include "ftk.h"
 
 #define F_ATOM_TEST_THREADS		64
-#define F_ATOM_TEST_ITERATIONS	1000000
+#define F_ATOM_TEST_ITERATIONS	100000
 
 FSTATIC RCODE ftkTestAtomics( void);
 
@@ -35,7 +35,11 @@ FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 FSTATIC RCODE FLMAPI ftkAtomicDecThread(
 	IF_Thread *		pThread);
 	
+FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
+	IF_Thread *		pThread);
+	
 FSTATIC FLMATOMIC						gv_refCount;
+FSTATIC FLMATOMIC						gv_spinLock;
 	
 /****************************************************************************
 Desc:
@@ -191,6 +195,33 @@ FSTATIC RCODE ftkTestAtomics( void)
 		goto Exit;
 	}
 	
+	gv_spinLock = 0;
+	
+	f_printf( "Creating atomic exchange threads: ");
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		if( RC_BAD( rc = 	f_threadCreate( &pThreadList[ uiLoop], 
+			ftkAtomicExchangeThread)))
+		{
+			goto Exit;
+		}
+	}
+	
+	f_printf( "%u\n", uiLoop);	
+		
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		pThreadList[ uiLoop]->waitToComplete();
+		f_threadDestroy( &pThreadList[ uiLoop]);
+	}
+	
+	if( gv_refCount != F_ATOM_TEST_THREADS * F_ATOM_TEST_ITERATIONS)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+		goto Exit;
+	}
+	
 Exit:
 
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
@@ -217,9 +248,9 @@ FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
 	{
 		f_atomicInc( &gv_refCount);
-		if( (uiLoop % 64) == 0)
+		if( (uiLoop % 128) == 0)
 		{
-			f_sleep( 0);
+			f_yieldCPU();
 		}
 	}
 	
@@ -239,10 +270,43 @@ FSTATIC RCODE FLMAPI ftkAtomicDecThread(
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
 	{
 		f_atomicDec( &gv_refCount);
-		if( (uiLoop % 8) == 0)
+		if( (uiLoop % 128) == 0)
 		{
-			f_sleep( 0);
+			f_yieldCPU();
 		}
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
+	IF_Thread *		pThread)
+{
+	FLMUINT		uiLoop;
+	FLMATOMIC	uiTmp;
+	
+	F_UNREFERENCED_PARM( pThread);
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
+	{
+		while( f_atomicExchange( &gv_spinLock, 1) == 1)
+		{
+			f_yieldCPU();
+		}
+		
+		uiTmp = gv_refCount + 1;
+		
+		if( (uiLoop % 128) == 0)
+		{
+			f_yieldCPU();
+		}
+		
+		gv_refCount = uiTmp;
+		
+		f_atomicExchange( &gv_spinLock, 0);
 	}
 	
 	return( NE_FLM_OK);
