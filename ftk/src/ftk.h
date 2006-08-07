@@ -2400,6 +2400,8 @@
 		
 		virtual void FLMAPI sleep(
 			FLMUINT					uiMilliseconds) = 0;
+			
+		virtual void FLMAPI waitToComplete( void) = 0;
 	};
 	
 	RCODE FLMAPI f_threadCreate(

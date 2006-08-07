@@ -24,6 +24,19 @@
 
 #include "ftk.h"
 
+#define F_ATOM_TEST_THREADS		64
+#define F_ATOM_TEST_ITERATIONS	1000000
+
+FSTATIC RCODE ftkTestAtomics( void);
+
+FSTATIC RCODE FLMAPI ftkAtomicIncThread(
+	IF_Thread *		pThread);
+	
+FSTATIC RCODE FLMAPI ftkAtomicDecThread(
+	IF_Thread *		pThread);
+	
+FSTATIC FLMATOMIC						gv_refCount;
+	
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -45,6 +58,8 @@ int main( void)
 	{
 		goto Exit;
 	}
+	
+	// Run some simple tests
 	
 	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
 	{
@@ -85,6 +100,14 @@ int main( void)
 	f_sprintf( szTmpBuf, "Hello, World! (You're number %u)\n", 1);
 	f_printf( szTmpBuf);
 	
+	// Run a multi-threaded test to verify the proper operation of
+	// the atomic operations
+	
+	if( RC_BAD( rc = ftkTestAtomics()))
+	{
+		goto Exit;
+	}
+	
 Exit:
 
 	if( pDirHdl)
@@ -104,4 +127,123 @@ Exit:
 
 	ftkShutdown();
 	return( (int)rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE ftkTestAtomics( void)
+{
+	RCODE					rc = NE_FLM_OK;
+	IF_Thread *			pThreadList[ F_ATOM_TEST_THREADS];
+	FLMUINT				uiLoop;
+	
+	gv_refCount = 0;
+	f_memset( pThreadList, 0, sizeof( IF_Thread *) * F_ATOM_TEST_THREADS);
+
+	f_printf( "Creating atomic increment threads: ");
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		if( RC_BAD( rc = 	f_threadCreate( &pThreadList[ uiLoop], 
+			ftkAtomicIncThread)))
+		{
+			goto Exit;
+		}
+	}
+	
+	f_printf( "%u\n", uiLoop);	
+		
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		pThreadList[ uiLoop]->waitToComplete();
+		f_threadDestroy( &pThreadList[ uiLoop]);
+	}
+	
+	if( gv_refCount != F_ATOM_TEST_THREADS * F_ATOM_TEST_ITERATIONS)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+		goto Exit;
+	}
+
+	f_printf( "Creating atomic decrement threads: ");
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		if( RC_BAD( rc = 	f_threadCreate( &pThreadList[ uiLoop], 
+			ftkAtomicDecThread)))
+		{
+			goto Exit;
+		}
+	}
+	
+	f_printf( "%u\n", uiLoop);	
+		
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		pThreadList[ uiLoop]->waitToComplete();
+		f_threadDestroy( &pThreadList[ uiLoop]);
+	}
+	
+	if( gv_refCount != 0)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+		goto Exit;
+	}
+	
+Exit:
+
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		if( pThreadList[ uiLoop])
+		{
+			f_threadDestroy( &pThreadList[ uiLoop]);
+		}
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE FLMAPI ftkAtomicIncThread(
+	IF_Thread *		pThread)
+{
+	FLMUINT		uiLoop;
+	
+	F_UNREFERENCED_PARM( pThread);
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
+	{
+		f_atomicInc( &gv_refCount);
+		if( (uiLoop % 64) == 0)
+		{
+			f_sleep( 0);
+		}
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE FLMAPI ftkAtomicDecThread(
+	IF_Thread *		pThread)
+{
+	FLMUINT		uiLoop;
+	
+	F_UNREFERENCED_PARM( pThread);
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
+	{
+		f_atomicDec( &gv_refCount);
+		if( (uiLoop % 8) == 0)
+		{
+			f_sleep( 0);
+		}
+	}
+	
+	return( NE_FLM_OK);
 }

@@ -268,6 +268,8 @@ public:
 
 	void FLMAPI sleep(
 			FLMUINT		uiMilliseconds);
+			
+	void FLMAPI waitToComplete( void);
 
 	F_MUTEX				m_hMutex;
 	F_Thread *			m_pPrev;
@@ -616,7 +618,7 @@ Exit:
 }
 
 /****************************************************************************
-Desc:    Stop a running thread
+Desc: Stop a running thread
 ****************************************************************************/
 void FLMAPI F_Thread::stopThread( void)
 {
@@ -632,6 +634,17 @@ void FLMAPI F_Thread::stopThread( void)
 	// Reset the shutdown flag in case this object is re-used.
 
 	m_bShutdown = FALSE;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void FLMAPI F_Thread::waitToComplete( void)
+{
+	while( m_bRunning)
+	{
+		f_sleep( 10);
+	}
 }
 
 /****************************************************************************
