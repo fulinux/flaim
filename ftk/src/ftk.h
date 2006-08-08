@@ -56,8 +56,13 @@
 		
 		#if defined( __GNUC__)
 			#define FLM_GNUC
+			#if defined( __arch64__)
+				#if !defined( FLM_64BIT)
+					#define FLM_64BIT
+				#endif
+			#endif
 		#endif		
-	
+
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
 			#define FLM_NLM
 			#if !defined( FLM_RING_ZERO_NLM) && !defined( FLM_LIBC_NLM)
@@ -122,7 +127,8 @@
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT
-				#if defined( __sparcv8plus) || defined( __sparcv9)
+				#if defined( __sparcv8plus) || defined( __sparcv9) || defined( __sparcv9__) || \
+		  			 defined( __sparc_v8__) || defined( __sparc_v9__) || defined( __arch64__)
 					#define FLM_SPARC_PLUS
 				#endif
 			#endif
