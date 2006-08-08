@@ -7,6 +7,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+/*
+ * Class:     xflaim_CREATEOPTS
+ * Method:    initIDs
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_xflaim_CREATEOPTS_initIDs
+  (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

@@ -31,7 +31,22 @@
 
 #define THIS_DBSYS() \
 	((F_DbSystem *)(FLMUINT)lThis)
+	
+// Field IDs for the CREATEOPTS class.
 
+static jfieldID	CREATEOPTS_fidBlockSize = NULL;
+static jfieldID	CREATEOPTS_fidVersionNum = NULL;
+static jfieldID	CREATEOPTS_fidMinRflFileSize = NULL;
+static jfieldID	CREATEOPTS_fidMaxRflFileSize = NULL;
+static jfieldID	CREATEOPTS_fidKeepRflFiles = NULL;
+static jfieldID	CREATEOPTS_fidLogAbortedTransToRfl = NULL;
+static jfieldID	CREATEOPTS_fidDefaultLanguage = NULL;
+
+FSTATIC void getCreateOpts(
+	JNIEnv *					pEnv,
+	jobject					createOpts,
+	XFLM_CREATE_OPTS *	pCreateOpts);
+	
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -52,6 +67,81 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createDbSystem(
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_CREATEOPTS_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jCREATEOPTSClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((CREATEOPTS_fidBlockSize = pEnv->GetFieldID( jCREATEOPTSClass,
+								"iBlockSize", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CREATEOPTS_fidVersionNum = pEnv->GetFieldID( jCREATEOPTSClass,
+								"iVersionNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CREATEOPTS_fidMinRflFileSize = pEnv->GetFieldID( jCREATEOPTSClass,
+								"iMinRflFileSize", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CREATEOPTS_fidMaxRflFileSize = pEnv->GetFieldID( jCREATEOPTSClass,
+								"iMaxRflFileSize", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CREATEOPTS_fidKeepRflFiles = pEnv->GetFieldID( jCREATEOPTSClass,
+								"bKeepRflFiles", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CREATEOPTS_fidLogAbortedTransToRfl = pEnv->GetFieldID( jCREATEOPTSClass,
+							"bLogAbortedTransToRfl", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CREATEOPTS_fidDefaultLanguage = pEnv->GetFieldID( jCREATEOPTSClass,
+								"iDefaultLanguage", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:	Get create options from the CREATEOPTS Java object.
+****************************************************************************/
+FSTATIC void getCreateOpts(
+	JNIEnv *					pEnv,
+	jobject					createOpts,
+	XFLM_CREATE_OPTS *	pCreateOpts)
+{
+	pCreateOpts->uiBlockSize = (FLMUINT)pEnv->GetIntField( createOpts,
+			CREATEOPTS_fidBlockSize); 
+	pCreateOpts->uiVersionNum = (FLMUINT)pEnv->GetIntField( createOpts,
+			CREATEOPTS_fidVersionNum);
+	pCreateOpts->uiMinRflFileSize = (FLMUINT)pEnv->GetIntField( createOpts,
+			CREATEOPTS_fidMinRflFileSize); 
+	pCreateOpts->uiMaxRflFileSize = (FLMUINT)pEnv->GetIntField( createOpts,
+			CREATEOPTS_fidMaxRflFileSize); 
+	pCreateOpts->bKeepRflFiles = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
+			CREATEOPTS_fidKeepRflFiles) ? TRUE : FALSE); 
+	pCreateOpts->bLogAbortedTransToRfl = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
+			CREATEOPTS_fidLogAbortedTransToRfl) ? TRUE : FALSE); 
+	pCreateOpts->uiDefaultLanguage = (FLMUINT)pEnv->GetIntField( createOpts,
+			CREATEOPTS_fidDefaultLanguage);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 	JNIEnv *					pEnv,
 	jobject,					// obj,
@@ -66,7 +156,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 	RCODE						rc = NE_XFLM_OK;
 	F_Db *					pDb = NULL;
 	XFLM_CREATE_OPTS		Opts;
-	XFLM_CREATE_OPTS *	pOpts = &Opts;
+	XFLM_CREATE_OPTS *	pOpts;
 	char *					pszFilePath = NULL;
 	char *					pszDataDir = NULL;
 	char *					pszRflDir = NULL;
@@ -102,32 +192,8 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 	}
 	else
 	{
-		jclass class_CREATEOPTS = pEnv->FindClass( "xflaim/CREATEOPTS");
-												
-		Opts.uiBlockSize = pEnv->GetIntField( CreateOpts, 
-			pEnv->GetFieldID( class_CREATEOPTS, "iBlockSize", "I"));
-			
-		Opts.uiVersionNum = pEnv->GetIntField( CreateOpts, 
-			pEnv->GetFieldID( class_CREATEOPTS, "iVersionNum", "I"));
-			
-		Opts.uiMinRflFileSize = pEnv->GetIntField( CreateOpts, 
-			pEnv->GetFieldID( class_CREATEOPTS, "iMinRflFileSize", "I"));
-			
-		Opts.uiMaxRflFileSize = pEnv->GetIntField( CreateOpts, 
-			pEnv->GetFieldID( class_CREATEOPTS, "iMaxRflFileSize", "I"));
-			
-		Opts.bKeepRflFiles = pEnv->GetBooleanField( CreateOpts, 
-			pEnv->GetFieldID( class_CREATEOPTS, "bKeepRflFiles", "Z"))
-					? TRUE
-					: FALSE;
-		  
-		Opts.bLogAbortedTransToRfl = pEnv->GetBooleanField( CreateOpts, 
-			pEnv->GetFieldID( class_CREATEOPTS, "bLogAbortedTransToRfl", "Z"))
-					? TRUE
-					: FALSE;
-					
-		Opts.uiDefaultLanguage = pEnv->GetIntField( CreateOpts,
-			pEnv->GetFieldID( class_CREATEOPTS, "iDefaultLanguage", "I"));
+		getCreateOpts( pEnv, CreateOpts, &Opts);
+		pOpts = &Opts;
 	}
 	
 	if (RC_BAD( rc = THIS_DBSYS()->dbCreate( pszFilePath, pszDataDir,
@@ -721,3 +787,228 @@ Exit:
 
 	return( (jlong)(FLMUINT)ifpDataVector);
 }
+
+/****************************************************************************
+Desc: Rebuild status callback
+****************************************************************************/
+class JavaDbRebuildStatus : public IF_DbRebuildStatus
+{
+public:
+
+	JavaDbRebuildStatus(
+		JNIEnv *		pEnv,
+		jobject		jDbRebuildStatusObject)
+	{
+		m_pEnv = pEnv;
+		
+		// Get a global reference to keep the object from being garbage
+		// collected, and to allow it to be called across invocations into
+		// the native interface.  Otherwise, the reference will be lost and
+		// cannot be used by the callback function.
+		
+		m_jDbRebuildStatusObject = pEnv->NewGlobalRef( jDbRebuildStatusObject);
+		m_jReportRebuildMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jDbRebuildStatusObject),
+													"reportRebuild",
+													"(IVLLLLL)I");
+		m_jReportRebuildErrMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jDbRebuildStatusObject),
+													"reportRebuildErr",
+													"(IIIIIIIIL)I");
+	}
+	
+	virtual ~JavaDbRebuildStatus()
+	{
+		if (m_jDbRebuildStatusObject)
+		{
+			m_pEnv->DeleteGlobalRef( m_jDbRebuildStatusObject);
+		}
+	}
+			
+	RCODE FLMAPI reportRebuild(
+		XFLM_REBUILD_INFO *	pRebuild)
+	{
+		
+		// VERY IMPORTANT NOTE!  m_pEnv points to the environment that was
+		// passed in when this object was set up.  It is thread-specific, so
+		// it is important that the callback happen inside the same thread
+		// where the setIndexingStatusObject method was called.  It will not
+		// work to set the index status object in one thread, but then do
+		// the index operation in another thread.
+		
+		return( (RCODE)m_pEnv->CallIntMethod( m_jDbRebuildStatusObject,
+									m_jReportRebuildMethodId,
+									(jint)pRebuild->iDoingFlag,
+									(jboolean)(pRebuild->bStartFlag ? JNI_TRUE : JNI_FALSE),
+									(jlong)pRebuild->ui64FileSize,
+									(jlong)pRebuild->ui64BytesExamined,
+									(jlong)pRebuild->ui64TotNodes,
+									(jlong)pRebuild->ui64NodesRecov,
+									(jlong)pRebuild->ui64DiscardedDocs));
+	}
+	
+	RCODE FLMAPI reportRebuildErr(
+		XFLM_CORRUPT_INFO *	pCorruptInfo)
+	{
+		return( (RCODE)m_pEnv->CallIntMethod( m_jDbRebuildStatusObject,
+									m_jReportRebuildErrMethodId,
+									(jint)pCorruptInfo->iErrCode,
+									(jint)pCorruptInfo->uiErrLocale,
+									(jint)pCorruptInfo->uiErrLfNumber,
+									(jint)pCorruptInfo->uiErrLfType,
+									(jint)pCorruptInfo->uiErrBTreeLevel,
+									(jint)pCorruptInfo->uiErrBlkAddress,
+									(jint)pCorruptInfo->uiErrParentBlkAddress,
+									(jint)pCorruptInfo->uiErrElmOffset,
+									(jlong)pCorruptInfo->ui64ErrNodeId));
+	}
+	
+private:
+
+	JNIEnv *		m_pEnv;
+	jobject		m_jDbRebuildStatusObject;
+	jmethodID	m_jReportRebuildMethodId;
+	jmethodID	m_jReportRebuildErrMethodId;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRebuild(
+	JNIEnv *			pEnv,
+  	jobject,			// obj,
+  	jlong				lThis,
+	jstring			sSourceDbPath,
+	jstring			sSourceDataDir,
+	jstring			sDestDbPath,
+	jstring			sDestDataDir,
+	jstring			sDestRflDir,
+	jstring			sDictPath,
+	jstring			sPassword,
+	jobject			createOpts,
+	jobject			jDbRebuildStatusObj)
+{
+	RCODE							rc = NE_XFLM_OK;
+	JavaDbRebuildStatus *	pDbRebuildStatusObj = NULL;
+	F_DbSystem *				pDbSystem = THIS_DBSYS();
+	XFLM_CREATE_OPTS			createOptions;
+	XFLM_CREATE_OPTS *		pCreateOptions;
+	FLMUINT64					ui64TotNodes;
+	FLMUINT64					ui64NodesRecov;
+	FLMUINT64					ui64DiscardedDocs;
+	FLMBYTE						ucSourceDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf					sourceDbPathBuf( ucSourceDbPath, sizeof( ucSourceDbPath));
+	FLMBYTE						ucSourceDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf					sourceDataDirBuf( ucSourceDataDir, sizeof( ucSourceDataDir));
+	FLMBYTE						ucDestDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf					destDbPathBuf( ucDestDbPath, sizeof( ucDestDbPath));
+	FLMBYTE						ucDestDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf					destDataDirBuf( ucDestDataDir, sizeof( ucDestDataDir));
+	FLMBYTE						ucDestRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf					destRflDirBuf( ucDestRflDir, sizeof( ucDestRflDir));
+	FLMBYTE						ucDictPath [F_PATH_MAX_SIZE];
+	F_DynaBuf					dictPathBuf( ucDictPath, sizeof( ucDictPath));
+	FLMBYTE						ucPassword [100];
+	F_DynaBuf					passwordBuf( ucPassword, sizeof( ucPassword));
+	
+	// Get all of the string parameters into buffers.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sSourceDbPath, &sourceDbPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sSourceDataDir, &sourceDataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDestDbPath, &destDbPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDestDataDir, &destDataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDestRflDir, &destRflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDictPath, &dictPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sPassword, &passwordBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Setup callback object, if one was passed in
+	
+	if (jDbRebuildStatusObj)
+	{
+		if ((pDbRebuildStatusObj = f_new JavaDbRebuildStatus( pEnv,
+													jDbRebuildStatusObj)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+	}
+	
+	// Set up the create options.
+	
+	if (!createOpts)
+	{
+		pCreateOptions = NULL;
+	}
+	else
+	{
+		getCreateOpts( pEnv, createOpts, &createOptions);
+		pCreateOptions = &createOptions;
+	}
+	
+	// Call the rebuild function.
+	
+	if (RC_BAD( rc = pDbSystem->dbRebuild(
+				(const char *)sourceDbPathBuf.getBufferPtr(),
+				sourceDataDirBuf.getDataLength() > 1
+				? (const char *)sourceDataDirBuf.getBufferPtr()
+				: (const char *)NULL,
+				(const char *)destDbPathBuf.getBufferPtr(),
+				destDataDirBuf.getDataLength() > 1
+				? (const char *)destDataDirBuf.getBufferPtr()
+				: (const char *)NULL,
+				destRflDirBuf.getDataLength() > 1
+				? (const char *)destRflDirBuf.getBufferPtr()
+				: (const char *)NULL,
+				dictPathBuf.getDataLength() > 1
+				? (const char *)dictPathBuf.getBufferPtr()
+				: (const char *)NULL,
+				passwordBuf.getDataLength() > 1
+				? (const char *)passwordBuf.getBufferPtr()
+				: (const char *)NULL,
+				pCreateOptions,
+				&ui64TotNodes,
+				&ui64NodesRecov,
+				&ui64DiscardedDocs,
+				pDbRebuildStatusObj)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	if (pDbRebuildStatusObj)
+	{
+		pDbRebuildStatusObj->Release();
+	}
+
+	return;
+}
+

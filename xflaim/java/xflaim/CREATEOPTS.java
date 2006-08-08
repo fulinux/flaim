@@ -48,4 +48,5 @@ public final class CREATEOPTS
 		bLogAbortedTransToRfl = false;
 		iDefaultLanguage = 0;
 	}
+	private static native void initIDs();
 }

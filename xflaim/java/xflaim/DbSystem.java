@@ -365,24 +365,28 @@ public class DbSystem
 				   bOverwriteDestOk, Status);
 	}
 
-	/**
-	 * Desc:
-	 */
+	public void dbRebuild(
+		String					sSourceDbPath,
+		String					sSourceDataDir,
+		String					sDestDbPath,
+		String					sDestDataDir,
+		String					sDestRflDir,
+		String					sDictPath,
+		String					sPassword,
+		CREATEOPTS				createOpts,
+		RebuildStatus			rebuildStatus) throws XFlaimException
+	{
+		_dbRebuild( m_this, sSourceDbPath, sSourceDataDir, sDestDbPath,
+						sDestDataDir, sDestRflDir, sDictPath, sPassword,
+						createOpts, rebuildStatus);
+	}
+
 	private native long _createDbSystem();
 	
-	/**
-	 * Desc:
-	 */
 	private native void _init( long lThis);
 	
-	/**
-	 * Desc:
-	 */
 	private native void _exit( long lThis);
 
-	/**
-	 * Desc:
-	 */
 	private native long _dbCreate(
 		long					lThis,
 		String 				DbFileName,
@@ -400,9 +404,6 @@ public class DbSystem
 		String				Password,
 		boolean				bAllowLimited);
 
-	/**
-	 * Desc:
-	 */
 	private native void _dbRemove(
 		long					lThis,
 		String				DbFileName,
@@ -410,9 +411,6 @@ public class DbSystem
 		String				RflDir,
 		boolean				bRemoveRflFiles);
 
-	/**
-	 * Desc:
-	 */
 	private native long _dbCheck(
 		long					lThis,
 		String				sDbFileName,
@@ -422,9 +420,6 @@ public class DbSystem
 		int					iFlags,
 		DbCheckStatus		Status) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _dbCopy(
 		long					lThis,
 		String				sSrcDbName,
@@ -435,9 +430,6 @@ public class DbSystem
 		String				sDestRflDir,
 		DbCopyStatus		Status) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _dbRestore(
 		long					lThis,
 		String				sDbPath,
@@ -448,9 +440,6 @@ public class DbSystem
 		RestoreClient		RestoreClient,
 		RestoreStatus		RestoreStatus) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native void _dbRename(
 		long					lThis,
 		String				sDbName,
@@ -460,25 +449,288 @@ public class DbSystem
 		boolean				bOverwriteDestOk,
 		DbRenameStatus		Status) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _openBufferIStream(
 		long					lThis,
 		String				sBuffer) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _openFileIStream(
 		long					lThis,
 		String				sPath);
 
-	/**
-	 * Desc:
-	 */
 	private native long _createJDataVector(
 		long					lRef);
 
+	private native void _dbRebuild(
+		long						lThis,
+		String					sSourceDbPath,
+		String					sSourceDataDir,
+		String					sDestDbPath,
+		String					sDestDataDir,
+		String					sDestRflDir,
+		String					sDictPath,
+		String					sPassword,
+		CREATEOPTS				createOpts,
+		RebuildStatus			rebuildStatus) throws XFlaimException;
+
 	private long			m_this;
 }
+
+/*
+
+METHODS NOT YET IMPLEMENTED
+
+virtual RCODE FLMAPI updateIniFile(
+	const char *	pszParamName,
+	const char *	pszValue) = 0;
+
+virtual void FLMAPI getFileSystem(
+	IF_FileSystem **		ppFileSystem) = 0;
+
+virtual RCODE FLMAPI dbDup(
+	IF_Db *					pDb,
+	IF_Db **					ppDb) = 0;
+
+virtual const char * FLMAPI checkErrorToStr(
+	FLMINT	iCheckErrorCode) = 0;
+
+virtual RCODE FLMAPI openMultiFileIStream(
+	const char *			pszDirectory,
+	const char *			pszBaseName,
+	IF_IStream **			ppIStream) = 0;
+	
+virtual RCODE FLMAPI openBufferedIStream(
+	IF_IStream *			pIStream,
+	FLMUINT					uiBufferSize,
+	IF_IStream **			ppIStream) = 0;
+
+virtual RCODE FLMAPI openUncompressingIStream(
+	IF_IStream *			pIStream,
+	IF_IStream **			ppIStream) = 0;
+	
+virtual RCODE FLMAPI openFileOStream(
+	const char *		pszFileName,
+	FLMBOOL				bTruncateIfExists,
+	IF_OStream **		ppOStream) = 0;
+	
+virtual RCODE FLMAPI openMultiFileOStream(
+	const char *		pszDirectory,
+	const char *		pszBaseName,
+	FLMUINT				uiMaxFileSize,
+	FLMBOOL				bOkToOverwrite,
+	IF_OStream **		ppStream) = 0;
+	
+virtual RCODE FLMAPI removeMultiFileStream(
+	const char *		pszDirectory,
+	const char *		pszBaseName) = 0;
+	
+virtual RCODE FLMAPI openBufferedOStream(
+	IF_OStream *		pOStream,
+	FLMUINT				uiBufferSize,
+	IF_OStream **		ppOStream) = 0;
+	
+virtual RCODE FLMAPI openCompressingOStream(
+	IF_OStream *		pOStream,
+	IF_OStream **		ppOStream) = 0;
+	
+virtual RCODE FLMAPI writeToOStream(
+	IF_IStream *		pIStream,
+	IF_OStream *		pOStream) = 0;
+	
+virtual RCODE FLMAPI openBase64Encoder(
+	IF_IStream *			pInputStream,
+	FLMBOOL					bInsertLineBreaks,
+	IF_IStream **			ppEncodedStream) = 0;
+
+virtual RCODE FLMAPI openBase64Decoder(
+	IF_IStream *			pInputStream,
+	IF_IStream **			ppDecodedStream) = 0;
+
+virtual RCODE FLMAPI createIFDataVector(
+	IF_DataVector **		ifppDV) = 0;
+
+virtual RCODE FLMAPI createIFResultSet(
+	IF_ResultSet **		ifppResultSet) = 0;
+
+virtual RCODE FLMAPI createIFQuery(
+	IF_Query **				ifppQuery) = 0;
+
+virtual void FLMAPI freeMem(
+	void **					ppMem) = 0;
+
+virtual RCODE FLMAPI setDynamicMemoryLimit(
+	FLMUINT					uiCacheAdjustPercent,
+	FLMUINT					uiCacheAdjustMin,
+	FLMUINT					uiCacheAdjustMax,
+	FLMUINT					uiCacheAdjustMinToLeave) = 0;
+
+virtual RCODE FLMAPI setHardMemoryLimit(
+	FLMUINT					uiPercent,
+	FLMBOOL					bPercentOfAvail,
+	FLMUINT					uiMin,
+	FLMUINT					uiMax,
+	FLMUINT					uiMinToLeave,
+	FLMBOOL					bPreallocate = FALSE) = 0;
+
+virtual FLMBOOL FLMAPI getDynamicCacheSupported( void) = 0;
+
+virtual void FLMAPI getCacheInfo(
+	XFLM_CACHE_INFO *		pCacheInfo) = 0;
+
+virtual void FLMAPI enableCacheDebug(
+	FLMBOOL					bDebug) = 0;
+
+virtual FLMBOOL FLMAPI cacheDebugEnabled( void) = 0;
+
+virtual RCODE FLMAPI closeUnusedFiles(
+	FLMUINT					uiSeconds) = 0;
+
+virtual void FLMAPI startStats( void) = 0;
+
+virtual void FLMAPI stopStats( void) = 0;
+
+virtual void FLMAPI resetStats( void) = 0;
+
+virtual RCODE FLMAPI getStats(
+	XFLM_STATS *			pFlmStats) = 0;
+
+virtual void FLMAPI freeStats(
+	XFLM_STATS *			pFlmStats) = 0;
+
+virtual RCODE FLMAPI setTempDir(
+	const char *			pszPath) = 0;
+
+virtual RCODE FLMAPI getTempDir(
+	char *					pszPath) = 0;
+
+virtual void FLMAPI setCheckpointInterval(
+	FLMUINT					uiSeconds) = 0;
+
+virtual FLMUINT FLMAPI getCheckpointInterval( void) = 0;
+
+virtual void FLMAPI setCacheAdjustInterval(
+	FLMUINT					uiSeconds) = 0;
+
+virtual FLMUINT FLMAPI getCacheAdjustInterval( void) = 0;
+
+virtual void FLMAPI setCacheCleanupInterval(
+	FLMUINT					uiSeconds) = 0;
+
+virtual FLMUINT FLMAPI getCacheCleanupInterval( void) = 0;
+
+virtual void FLMAPI setUnusedCleanupInterval(
+	FLMUINT					uiSeconds) = 0;
+
+virtual FLMUINT FLMAPI getUnusedCleanupInterval( void) = 0;
+
+virtual void FLMAPI setMaxUnusedTime(
+	FLMUINT					uiSeconds) = 0;
+
+virtual FLMUINT FLMAPI getMaxUnusedTime( void) = 0;
+
+virtual void FLMAPI setLogger(
+	IF_LoggerClient *		pLogger) = 0;
+
+virtual void FLMAPI enableExtendedServerMemory(
+	FLMBOOL					bEnable) = 0;
+
+virtual FLMBOOL FLMAPI extendedServerMemoryEnabled( void) = 0;
+
+virtual void FLMAPI deactivateOpenDb(
+	const char *			pszDatabasePath,
+	const char *			pszDataFilePath) = 0;
+
+virtual void FLMAPI setQuerySaveMax(
+	FLMUINT					uiMaxToSave) = 0;
+
+virtual FLMUINT FLMAPI getQuerySaveMax( void) = 0;
+
+virtual void FLMAPI setDirtyCacheLimits(
+	FLMUINT					uiMaxDirty,
+	FLMUINT					uiLowDirty) = 0;
+
+virtual void FLMAPI getDirtyCacheLimits(
+	FLMUINT *				puiMaxDirty,
+	FLMUINT *				puiLowDirty) = 0;
+
+virtual RCODE FLMAPI getThreadInfo(
+	IF_ThreadInfo **		ifppThreadInfo) = 0;
+
+virtual RCODE FLMAPI registerForEvent(
+	eEventCategory			eCategory,
+	IF_EventClient *		ifpEventClient) = 0;
+
+virtual void FLMAPI deregisterForEvent(
+	eEventCategory			eCategory,
+	IF_EventClient *		ifpEventClient) = 0;
+
+virtual RCODE FLMAPI getNextMetaphone(
+	IF_IStream *			ifpIStream,
+	FLMUINT *				puiMetaphone,
+	FLMUINT *				puiAltMetaphone = NULL) = 0;
+	
+virtual RCODE FLMAPI compareUTF8Strings(
+	const FLMBYTE *	pucLString,
+	FLMUINT				uiLStrBytes,
+	FLMBOOL				bLeftWild,
+	const FLMBYTE *	pucRString,
+	FLMUINT				uiRStrBytes,
+	FLMBOOL				bRightWild,
+	FLMUINT				uiCompareRules,
+	FLMUINT				uiLanguage,
+	FLMINT *				piResult) = 0;
+	
+virtual RCODE FLMAPI compareUnicodeStrings(
+	const FLMUNICODE *	puzLString,
+	FLMUINT					uiLStrBytes,
+	FLMBOOL					bLeftWild,
+	const FLMUNICODE *	puzRString,
+	FLMUINT					uiRStrBytes,
+	FLMBOOL					bRightWild,
+	FLMUINT					uiCompareRules,
+	FLMUINT					uiLanguage,
+	FLMINT *					piResult) = 0;
+
+virtual RCODE FLMAPI utf8IsSubStr(
+	const FLMBYTE *	pszString,
+	const FLMBYTE *	pszSubString,
+	FLMUINT				uiCompareRules,
+	FLMUINT				uiLanguage,
+	FLMBOOL *			pbExists) = 0;
+
+virtual FLMBOOL FLMAPI uniIsUpper(
+	FLMUNICODE			uzChar) = 0;
+
+virtual FLMBOOL FLMAPI uniIsLower(
+	FLMUNICODE			uzChar) = 0;
+
+virtual FLMBOOL FLMAPI uniIsAlpha(
+	FLMUNICODE			uzChar) = 0;
+
+virtual FLMBOOL FLMAPI uniIsDecimalDigit(
+	FLMUNICODE			uzChar) = 0;
+
+virtual FLMUNICODE FLMAPI uniToLower(
+	FLMUNICODE			uzChar) = 0;
+	
+virtual RCODE FLMAPI nextUCS2Char(
+	const FLMBYTE **	ppszUTF8,
+	const FLMBYTE *	pszEndOfUTF8String,
+	FLMUNICODE *		puzChar) = 0;
+	
+virtual RCODE FLMAPI numUCS2Chars(
+	const FLMBYTE *	pszUTF8,
+	FLMUINT *			puiNumChars) = 0;
+	
+virtual RCODE FLMAPI waitToClose(
+	const char *	pszDbFileName) = 0;
+
+virtual RCODE FLMAPI createIFNodeInfo(
+	IF_NodeInfo **				ifppNodeInfo) = 0;
+	
+virtual RCODE FLMAPI createIFBTreeInfo(
+	IF_BTreeInfo **			ifppBTreeInfo) = 0;
+
+virtual RCODE FLMAPI clearCache(
+	IF_Db *					pDb) = 0;
+
+*/

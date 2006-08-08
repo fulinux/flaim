@@ -78,16 +78,6 @@ static jfieldID	LockUser_fidTime = NULL;
 #define THIS_FDB() \
 	((IF_Db *)(FLMUINT)lThis)
 
-FSTATIC RCODE getUniString(
-	JNIEnv *		pEnv,
-	jstring		sStr,
-	F_DynaBuf *	pDynaBuf);
-	
-FSTATIC RCODE getUTF8String(
-	JNIEnv *		pEnv,
-	jstring		sStr,
-	F_DynaBuf *	pDynaBuf);
-	
 FSTATIC RCODE getDictName(
 	IF_Db *			pDb,
 	FLMUINT			uiDictType,
@@ -1174,7 +1164,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE getUniString(
+RCODE getUniString(
 	JNIEnv *		pEnv,
 	jstring		sStr,
 	F_DynaBuf *	pDynaBuf)
@@ -1215,7 +1205,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE getUTF8String(
+RCODE getUTF8String(
 	JNIEnv *		pEnv,
 	jstring		sStr,
 	F_DynaBuf *	pDynaBuf)

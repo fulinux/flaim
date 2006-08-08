@@ -111,6 +111,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openFileIStream
 JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createJDataVector
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _dbRebuild
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lxflaim/CREATEOPTS;Lxflaim/RebuildStatus;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRebuild
+  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobject, jobject);
+
 #ifdef __cplusplus
 }
 #endif

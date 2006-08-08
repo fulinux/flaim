@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// Desc:
+// Desc:	RebuildStatus Interface
 //
 // Tabs:	3
 //
-//		Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
+//		Copyright (c) 2006 Novell, Inc. All Rights Reserved.
 //
 //		This program is free software; you can redistribute it and/or
 //		modify it under the terms of version 2 of the GNU General Public
@@ -20,32 +20,30 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: $
+// $Id$
 //------------------------------------------------------------------------------
+package xflaim;
 
-#ifndef JNIFTK_H
-#define JNIFTK_H
-
-	#ifndef FLM_DONT_USE_COM
-		#define FLM_DONT_USE_COM
-	#endif
-	
-	#include "xflaim.h"
-	#include "ftk.h"	
-	#include "jni.h"
-	
-	void ThrowError(
-		RCODE			rc,
-		JNIEnv *		pEnv);
-	
-	RCODE getUniString(
-		JNIEnv *		pEnv,
-		jstring		sStr,
-		F_DynaBuf *	pDynaBuf);
+interface RebuildStatus 
+{
+	public int reportRebuild(
+		int				iDoingFlag,
+		boolean			bStartFlag,
+		long				l64FileSize,
+		long				lBytesExamined,
+		long				lTotNodes,
+		long				lNodesRecov,
+		long				lDiscardedDocs);
 		
-	RCODE getUTF8String(
-		JNIEnv *		pEnv,
-		jstring		sStr,
-		F_DynaBuf *	pDynaBuf);
-	
-#endif // JNIFTK_H
+	public int reportRebuildErr(
+		int			iErrCode,
+		int			iErrLocale,
+		int			iErrLfNumber,
+		int			iErrLfType,
+		int			iErrBTreeLevel,
+		int			iErrBlkAddress,
+		int			iErrParentBlkAddress,
+		int			iErrElmOffset,
+		long			lErrNodeId);
+}	
+
