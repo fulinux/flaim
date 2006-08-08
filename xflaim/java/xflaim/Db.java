@@ -1312,6 +1312,76 @@ public class Db
 		return( _getCheckpointInfo( m_this));
 	}
 		
+	/**
+	 * Export XML to a text file.
+	 * 
+	 * @param startNode The node in the XML document to export.  All of its
+	 * sub-tree will be exported.
+	 * @param sFileName File the XML is to be exported to.  File will be
+	 * overwritten.
+	 * @param iFormat Formatting to use when exporting.  Should be one of
+	 * {@link xflaim.ExportFormatType ExportFormatType}.
+	 * @throws XFlaimException
+	 */
+	public void exportXML(
+		DOMNode	startNode,
+		String	sFileName,
+		int		iFormat) throws XFlaimException
+	{
+		_exportXML( m_this, startNode.getThis(), sFileName, iFormat);
+	}
+			
+	/**
+	 * Export XML to a string.
+	 * 
+	 * @param startNode The node in the XML document to export.  All of its
+	 * sub-tree will be exported.
+	 * @param iFormat Formatting to use when exporting.  Should be one of
+	 * {@link xflaim.ExportFormatType ExportFormatType}.
+	 * @throws XFlaimException
+	 */
+	public String exportXML(
+		DOMNode	startNode,
+		int		iFormat) throws XFlaimException
+	{
+		return( _exportXML( m_this, startNode.getThis(), iFormat));
+	}
+			
+	public LockUser[] getLockWaiters() throws XFlaimException
+	{
+		return( _getLockWaiters( m_this));
+	}
+			
+	public void setDeleteStatusObject(
+		DeleteStatus	deleteStatusObj) throws XFlaimException
+	{
+		_setDeleteStatusObject( m_this, deleteStatusObj);
+	}
+	
+	public void setIndexingClientObject(
+		IxClient			ixClientObj) throws XFlaimException
+	{
+		_setIndexingClientObject( m_this, ixClientObj);
+	}
+		
+	public void setIndexingStatusObject(
+		IxStatus			ixStatusObj) throws XFlaimException
+	{
+		_setIndexingStatusObject( m_this, ixStatusObj);
+	}
+	
+	public void setCommitClientObject(
+		CommitClient	commitClientObj) throws XFlaimException
+	{
+		_setCommitClientObject( m_this, commitClientObj);
+	}
+
+	public void upgrade() throws XFlaimException
+	{
+		_upgrade( m_this);
+	}
+		
+	
 	private native void _release(
 		long				lThis);
 
@@ -1624,44 +1694,40 @@ public class Db
 	private native CheckpointInfo _getCheckpointInfo(
 		long				lThis) throws XFlaimException;
 		
+	private native void _exportXML(
+		long		lThis,
+		long		lStartNode,
+		String	sFileName,
+		int		iFormat) throws XFlaimException;
+			
+	private native String _exportXML(
+		long		lThis,
+		long		lStartNode,
+		int		iFormat) throws XFlaimException;
+			
+	private native LockUser[] _getLockWaiters(
+		long		lThis) throws XFlaimException;
+		
+	private native void _setDeleteStatusObject(
+		long				lThis,
+		DeleteStatus	deleteStatusObj) throws XFlaimException;
+			
+	private native void _setIndexingClientObject(
+		long				lThis,
+		IxClient			ixClientObj) throws XFlaimException;
+		
+	private native void _setIndexingStatusObject(
+		long				lThis,
+		IxStatus			ixStatusObj) throws XFlaimException;
+		
+	private native void _setCommitClientObject(
+		long				lThis,
+		CommitClient	commitClientObj) throws XFlaimException;
+		
+	private native void _upgrade(
+		long				lThis) throws XFlaimException;
+		
 	long 					m_this;
 	private DbSystem 	m_dbSystem;
 }
 
-/*
-
-LIST OF METHODS NOT YET IMPLEMENTED
-
-		virtual RCODE FLMAPI upgrade(
-			IF_UpgradeClient *	pUpgradeClient) = 0;
-			
-		virtual RCODE FLMAPI importDocument(
-			IF_IStream *			ifpStream,
-			FLMUINT					uiCollection,
-			IF_DOMNode **			ppDocumentNode = NULL,
-			XFLM_IMPORT_STATS *	pImportStats = NULL) = 0;
-
-		virtual RCODE FLMAPI exportXML(
-			IF_DOMNode *			pStartNode,
-			IF_OStream *			pOStream,
-			eExportFormatType		eFormat = XFLM_EXPORT_INDENT) = 0;
-			
-		virtual void FLMAPI setDeleteStatusObject(
-			IF_DeleteStatus *		pDeleteStatus) = 0;
-
-		virtual void FLMAPI setCommitClientObject(
-			IF_CommitClient *		pCommitClient) = 0;
-
-		virtual void FLMAPI setIndexingClientObject(
-			IF_IxClient *			pIxClient) = 0;
-
-		virtual void FLMAPI setIndexingStatusObject(
-			IF_IxStatus *			pIxStatus) = 0;
-
-		virtual void FLMAPI getCheckpointInfo(
-			XFLM_CHECKPOINT_INFO *	pCheckpointInfo) = 0;
-
-		virtual RCODE FLMAPI getLockWaiters(
-			IF_LockInfoClient *	pLockInfo) = 0;
-
-*/

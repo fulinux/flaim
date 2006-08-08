@@ -719,6 +719,70 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_Db__1getSerialNumber
 JNIEXPORT jobject JNICALL Java_xflaim_Db__1getCheckpointInfo
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     xflaim_Db
+ * Method:    _exportXML
+ * Signature: (JJLjava/lang/String;I)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1exportXML__JJLjava_lang_String_2I
+  (JNIEnv *, jobject, jlong, jlong, jstring, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _exportXML
+ * Signature: (JJI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1exportXML__JJI
+  (JNIEnv *, jobject, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockWaiters
+ * Signature: (J)[Lxflaim/LockUser;
+ */
+JNIEXPORT jobjectArray JNICALL Java_xflaim_Db__1getLockWaiters
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setDeleteStatusObject
+ * Signature: (JLxflaim/DeleteStatus;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setDeleteStatusObject
+  (JNIEnv *, jobject, jlong, jobject);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setIndexingClientObject
+ * Signature: (JLxflaim/IxClient;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setIndexingClientObject
+  (JNIEnv *, jobject, jlong, jobject);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setIndexingStatusObject
+ * Signature: (JLxflaim/IxStatus;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setIndexingStatusObject
+  (JNIEnv *, jobject, jlong, jobject);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setCommitClientObject
+ * Signature: (JLxflaim/CommitClient;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setCommitClientObject
+  (JNIEnv *, jobject, jlong, jobject);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _upgrade
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1upgrade
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

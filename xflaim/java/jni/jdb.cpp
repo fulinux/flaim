@@ -28,47 +28,53 @@
 #include "xflaim_IndexStatus.h"
 #include "xflaim_ImportStats.h"
 #include "xflaim_CheckpointInfo.h"
+#include "xflaim_LockUser.h"
 #include "jniftk.h"
 
 // Field IDs for the IndexStatus class in JAVA.
 
-static jfieldID	fidIndexNum = NULL;
-static jfieldID	fidState = NULL;
-static jfieldID	fidStartTime = NULL;
-static jfieldID	fidLastDocumentIndexed = NULL;
-static jfieldID	fidKeysProcessed = NULL;
-static jfieldID	fidDocumentsProcessed = NULL;
-static jfieldID	fidTransactions = NULL;
+static jfieldID	IndexStatus_fidIndexNum = NULL;
+static jfieldID	IndexStatus_fidState = NULL;
+static jfieldID	IndexStatus_fidStartTime = NULL;
+static jfieldID	IndexStatus_fidLastDocumentIndexed = NULL;
+static jfieldID	IndexStatus_fidKeysProcessed = NULL;
+static jfieldID	IndexStatus_fidDocumentsProcessed = NULL;
+static jfieldID	IndexStatus_fidTransactions = NULL;
 
 // Field IDs for the ImportStats class in JAVA.
 
-static jfieldID	fidLines = NULL;
-static jfieldID	fidChars = NULL;
-static jfieldID	fidAttributes = NULL;
-static jfieldID	fidElements = NULL;
-static jfieldID	fidText = NULL;
-static jfieldID	fidDocuments = NULL;
-static jfieldID	fidErrLineNum = NULL;
-static jfieldID	fidErrLineOffset = NULL;
-static jfieldID	fidErrorType = NULL;
-static jfieldID	fidErrLineFilePos = NULL;
-static jfieldID	fidErrLineBytes = NULL;
-static jfieldID	fidUTF8Encoding = NULL;
+static jfieldID	ImportStats_fidLines = NULL;
+static jfieldID	ImportStats_fidChars = NULL;
+static jfieldID	ImportStats_fidAttributes = NULL;
+static jfieldID	ImportStats_fidElements = NULL;
+static jfieldID	ImportStats_fidText = NULL;
+static jfieldID	ImportStats_fidDocuments = NULL;
+static jfieldID	ImportStats_fidErrLineNum = NULL;
+static jfieldID	ImportStats_fidErrLineOffset = NULL;
+static jfieldID	ImportStats_fidErrorType = NULL;
+static jfieldID	ImportStats_fidErrLineFilePos = NULL;
+static jfieldID	ImportStats_fidErrLineBytes = NULL;
+static jfieldID	ImportStats_fidUTF8Encoding = NULL;
 
 // Field IDs for the CheckpointInfo class in JAVA
 	
-static jfieldID	fidRunning = NULL;
-static jfieldID	fidRunningTime = NULL;
-static jfieldID	fidForcingCheckpoint = NULL;
-static jfieldID	fidForceCheckpointRunningTime = NULL;
-static jfieldID	fidForceCheckpointReason = NULL;
-static jfieldID	fidWritingDataBlocks = NULL;
-static jfieldID	fidLogBlocksWritten = NULL;
-static jfieldID	fidDataBlocksWritten = NULL;
-static jfieldID	fidDirtyCacheBytes = NULL;
-static jfieldID	fidBlockSize = NULL;
-static jfieldID	fidWaitTruncateTime = NULL;
-	
+static jfieldID	CheckpointInfo_fidRunning = NULL;
+static jfieldID	CheckpointInfo_fidRunningTime = NULL;
+static jfieldID	CheckpointInfo_fidForcingCheckpoint = NULL;
+static jfieldID	CheckpointInfo_fidForceCheckpointRunningTime = NULL;
+static jfieldID	CheckpointInfo_fidForceCheckpointReason = NULL;
+static jfieldID	CheckpointInfo_fidWritingDataBlocks = NULL;
+static jfieldID	CheckpointInfo_fidLogBlocksWritten = NULL;
+static jfieldID	CheckpointInfo_fidDataBlocksWritten = NULL;
+static jfieldID	CheckpointInfo_fidDirtyCacheBytes = NULL;
+static jfieldID	CheckpointInfo_fidBlockSize = NULL;
+static jfieldID	CheckpointInfo_fidWaitTruncateTime = NULL;
+
+// Field IDs for the LockUser class in JAVA
+
+static jfieldID	LockUser_fidThreadId = NULL;
+static jfieldID	LockUser_fidTime = NULL;
+
 #define THIS_FDB() \
 	((IF_Db *)(FLMUINT)lThis)
 
@@ -528,57 +534,57 @@ JNIEXPORT void JNICALL Java_xflaim_CheckpointInfo_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((fidRunning = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidRunning = pEnv->GetFieldID( jCheckpointInfoClass,
 								"bRunning", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iRunningTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
 								"bForcingCheckpoint", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iForceCheckpointRunningTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iForceCheckpointReason", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
 							"bWritingDataBlocks", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iLogBlocksWritten", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iDataBlocksWritten", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iDirtyCacheBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iBlockSize", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((CheckpointInfo_fidWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iWaitTruncateTime", "I")) == NULL)
 	{
 		goto Exit;
@@ -599,37 +605,37 @@ JNIEXPORT void JNICALL Java_xflaim_IndexStatus_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((fidIndexNum = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidIndexNum = pEnv->GetFieldID( jIndexStatusClass,
 								"iIndexNum", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidState = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidState = pEnv->GetFieldID( jIndexStatusClass,
 								"iState", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidStartTime = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidStartTime = pEnv->GetFieldID( jIndexStatusClass,
 								"iStartTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
 								"lLastDocumentIndexed", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
 								"lKeysProcessed", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
 							"lDocumentsProcessed", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidTransactions = pEnv->GetFieldID( jIndexStatusClass,
+	if ((IndexStatus_fidTransactions = pEnv->GetFieldID( jIndexStatusClass,
 								"lTransactions", "J")) == NULL)
 	{
 		goto Exit;
@@ -650,68 +656,94 @@ JNIEXPORT void JNICALL Java_xflaim_ImportStats_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((fidIndexNum = pEnv->GetFieldID( jImportStatsClass,
+	if ((IndexStatus_fidIndexNum = pEnv->GetFieldID( jImportStatsClass,
 								"iIndexNum", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidLines = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidLines = pEnv->GetFieldID( jImportStatsClass,
 								"iLines", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidChars = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidChars = pEnv->GetFieldID( jImportStatsClass,
 								"iChars", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidAttributes = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidAttributes = pEnv->GetFieldID( jImportStatsClass,
 								"iAttributes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidElements = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidElements = pEnv->GetFieldID( jImportStatsClass,
 								"iElements", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidText = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidText = pEnv->GetFieldID( jImportStatsClass,
 								"iText", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidDocuments = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidDocuments = pEnv->GetFieldID( jImportStatsClass,
 							"iDocuments", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidErrLineNum = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidErrLineNum = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineNum", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineOffset", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidErrorType = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidErrorType = pEnv->GetFieldID( jImportStatsClass,
 								"iErrorType", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineFilePos", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((fidUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
+	if ((ImportStats_fidUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
 								"bUTF8Encoding", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_LockUser_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jIndexStatusClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((LockUser_fidThreadId = pEnv->GetFieldID( jIndexStatusClass,
+								"iThreadId", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((LockUser_fidTime = pEnv->GetFieldID( jIndexStatusClass,
+								"iTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
@@ -758,16 +790,16 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus(
 	
 	// Set the fields in the object
 	
-	pEnv->SetIntField( jIndexStatus, fidIndexNum, iIndex);
-	pEnv->SetIntField( jIndexStatus, fidState, (jint)ixStatus.eState);
-	pEnv->SetIntField( jIndexStatus, fidStartTime, (jint)ixStatus.uiStartTime);
-	pEnv->SetLongField( jIndexStatus, fidLastDocumentIndexed,
+	pEnv->SetIntField( jIndexStatus, IndexStatus_fidIndexNum, iIndex);
+	pEnv->SetIntField( jIndexStatus, IndexStatus_fidState, (jint)ixStatus.eState);
+	pEnv->SetIntField( jIndexStatus, IndexStatus_fidStartTime, (jint)ixStatus.uiStartTime);
+	pEnv->SetLongField( jIndexStatus, IndexStatus_fidLastDocumentIndexed,
 						(jlong)ixStatus.ui64LastDocumentIndexed);
-	pEnv->SetLongField( jIndexStatus, fidKeysProcessed,
+	pEnv->SetLongField( jIndexStatus, IndexStatus_fidKeysProcessed,
 						(jlong)ixStatus.ui64KeysProcessed);
-	pEnv->SetLongField( jIndexStatus, fidDocumentsProcessed,
+	pEnv->SetLongField( jIndexStatus, IndexStatus_fidDocumentsProcessed,
 						(jlong)ixStatus.ui64DocumentsProcessed);
-	pEnv->SetLongField( jIndexStatus, fidTransactions,
+	pEnv->SetLongField( jIndexStatus, IndexStatus_fidTransactions,
 						(jlong)ixStatus.ui64Transactions);
 	
 Exit:
@@ -875,18 +907,18 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1import(
 	
 	// Set the fields in the object
 	
-	pEnv->SetIntField( jImportStats, fidLines, (jint)importStats.uiLines);
-	pEnv->SetIntField( jImportStats, fidChars, (jint)importStats.uiChars);
-	pEnv->SetIntField( jImportStats, fidAttributes, (jint)importStats.uiAttributes);
-	pEnv->SetIntField( jImportStats, fidElements, (jint)importStats.uiElements);
-	pEnv->SetIntField( jImportStats, fidText, (jint)importStats.uiText);
-	pEnv->SetIntField( jImportStats, fidDocuments, (jint)importStats.uiDocuments);
-	pEnv->SetIntField( jImportStats, fidErrLineNum, (jint)importStats.uiErrLineNum);
-	pEnv->SetIntField( jImportStats, fidErrLineOffset, (jint)importStats.uiErrLineOffset);
-	pEnv->SetIntField( jImportStats, fidErrorType, (jint)importStats.eErrorType);
-	pEnv->SetIntField( jImportStats, fidErrLineFilePos, (jint)importStats.uiErrLineFilePos);
-	pEnv->SetIntField( jImportStats, fidErrLineBytes, (jint)importStats.uiErrLineBytes);
-	pEnv->SetBooleanField( jImportStats, fidUTF8Encoding,
+	pEnv->SetIntField( jImportStats, ImportStats_fidLines, (jint)importStats.uiLines);
+	pEnv->SetIntField( jImportStats, ImportStats_fidChars, (jint)importStats.uiChars);
+	pEnv->SetIntField( jImportStats, ImportStats_fidAttributes, (jint)importStats.uiAttributes);
+	pEnv->SetIntField( jImportStats, ImportStats_fidElements, (jint)importStats.uiElements);
+	pEnv->SetIntField( jImportStats, ImportStats_fidText, (jint)importStats.uiText);
+	pEnv->SetIntField( jImportStats, ImportStats_fidDocuments, (jint)importStats.uiDocuments);
+	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineNum, (jint)importStats.uiErrLineNum);
+	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineOffset, (jint)importStats.uiErrLineOffset);
+	pEnv->SetIntField( jImportStats, ImportStats_fidErrorType, (jint)importStats.eErrorType);
+	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineFilePos, (jint)importStats.uiErrLineFilePos);
+	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineBytes, (jint)importStats.uiErrLineBytes);
+	pEnv->SetBooleanField( jImportStats, ImportStats_fidUTF8Encoding,
 		(jboolean)(importStats.eXMLEncoding == XFLM_XML_UTF8_ENCODING
 					  ? JNI_TRUE
 					  : JNI_FALSE));
@@ -2134,7 +2166,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1setRflDir(
 {
 	RCODE			rc = NE_XFLM_OK;
 	IF_Db *		pDb = THIS_FDB();
-	FLMBYTE		ucDirBuf [200];
+	FLMBYTE		ucDirBuf [F_PATH_MAX_SIZE];
 	F_DynaBuf	dirBuf( ucDirBuf, sizeof( ucDirBuf));
 	
 	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &dirBuf)))
@@ -2841,31 +2873,673 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1getCheckpointInfo(
 	
 	// Set the fields in the object
 	
-	pEnv->SetBooleanField( jCheckpointInfo, fidRunning,
+	pEnv->SetBooleanField( jCheckpointInfo, CheckpointInfo_fidRunning,
 		(jboolean)(checkpointInfo.bRunning ? JNI_TRUE : JNI_FALSE));
-	pEnv->SetIntField( jCheckpointInfo, fidRunningTime,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidRunningTime,
 		(jint)checkpointInfo.uiRunningTime);
-	pEnv->SetBooleanField( jCheckpointInfo, fidForcingCheckpoint,
+	pEnv->SetBooleanField( jCheckpointInfo, CheckpointInfo_fidForcingCheckpoint,
 		(jboolean)(checkpointInfo.bForcingCheckpoint ? JNI_TRUE : JNI_FALSE));
-	pEnv->SetIntField( jCheckpointInfo, fidForceCheckpointRunningTime,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidForceCheckpointRunningTime,
 		(jint)checkpointInfo.uiForceCheckpointRunningTime);
-	pEnv->SetIntField( jCheckpointInfo, fidForceCheckpointReason,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidForceCheckpointReason,
 		(jint)checkpointInfo.iForceCheckpointReason);
-	pEnv->SetBooleanField( jCheckpointInfo, fidWritingDataBlocks,
+	pEnv->SetBooleanField( jCheckpointInfo, CheckpointInfo_fidWritingDataBlocks,
 		(jboolean)(checkpointInfo.bWritingDataBlocks ? JNI_TRUE : JNI_FALSE));
-	pEnv->SetIntField( jCheckpointInfo, fidLogBlocksWritten,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidLogBlocksWritten,
 		(jint)checkpointInfo.uiLogBlocksWritten);
-	pEnv->SetIntField( jCheckpointInfo, fidDataBlocksWritten,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidDataBlocksWritten,
 		(jint)checkpointInfo.uiDataBlocksWritten);
-	pEnv->SetIntField( jCheckpointInfo, fidDirtyCacheBytes,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidDirtyCacheBytes,
 		(jint)checkpointInfo.uiDirtyCacheBytes);
-	pEnv->SetIntField( jCheckpointInfo, fidBlockSize,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidBlockSize,
 		(jint)checkpointInfo.uiBlockSize);
-	pEnv->SetIntField( jCheckpointInfo, fidWaitTruncateTime,
+	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidWaitTruncateTime,
 		(jint)checkpointInfo.uiWaitTruncateTime);
 	
 Exit:
 
 	return( jCheckpointInfo);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1exportXML__JJLjava_lang_String_2I(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lStartNode,
+	jstring			sFileName,
+	jint				iFormat)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	IF_DOMNode *	pStartNode = (IF_DOMNode *)((FLMUINT)lStartNode);
+	IF_OStream *	pOStream = NULL;
+	FLMBYTE			ucFileName [F_PATH_MAX_SIZE];
+	F_DynaBuf		fileNameBuf( ucFileName, sizeof( ucFileName));
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sFileName, &fileNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = FlmOpenFileOStream( (const char *)fileNameBuf.getBufferPtr(),
+								TRUE, &pOStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->exportXML( pStartNode, pOStream,
+							(eExportFormatType)iFormat)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	if (pOStream)
+	{
+		pOStream->Release();
+	}
+
+	return;
+}
+
+/****************************************************************************
+Desc:	Output stream that writes to a dynamic buffer.
+****************************************************************************/
+class DynaBufOStream : public IF_OStream
+{
+public:
+
+	DynaBufOStream(
+		F_DynaBuf *	pDynaBuf)
+	{
+		m_pDynaBuf = pDynaBuf;
+		m_pDynaBuf->truncateData( 0);
+	}
+	
+	virtual ~DynaBufOStream()
+	{
+	}
+	
+	RCODE FLMAPI write(
+		const void *	pvBuffer,
+		FLMUINT			uiBytesToWrite,
+		FLMUINT *		puiBytesWritten = NULL)
+	{
+		RCODE	rc = NE_XFLM_OK;
+		
+		if (RC_BAD( rc = m_pDynaBuf->appendData( pvBuffer, uiBytesToWrite)))
+		{
+			goto Exit;
+		}
+		if (puiBytesWritten)
+		{
+			*puiBytesWritten = uiBytesToWrite;
+		}
+	Exit:
+		return( rc);
+	}
+	
+	RCODE FLMAPI closeStream( void)
+	{
+		return( m_pDynaBuf->appendByte( 0));
+	}
+	
+private:
+
+	F_DynaBuf *	m_pDynaBuf;
+	
+};
+	
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1exportXML__JJI(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lStartNode,
+	jint				iFormat)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	IF_DOMNode *	pStartNode = (IF_DOMNode *)((FLMUINT)lStartNode);
+	FLMBYTE			ucBuffer [512];
+	F_DynaBuf		dynaBuf( ucBuffer, sizeof( ucBuffer));
+	DynaBufOStream	dynaOStream( &dynaBuf);
+	jstring			jXML = NULL;
+	
+	if (RC_BAD( rc = pDb->exportXML( pStartNode, &dynaOStream,
+							(eExportFormatType)iFormat)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Create a string and return it.
+
+	jXML = pEnv->NewStringUTF( (const char *)dynaBuf.getBufferPtr());
+
+Exit:
+
+	return( jXML);
+}
+
+/****************************************************************************
+Desc:	Client for getting lock information.
+****************************************************************************/
+class	JavaLockInfoClient : public IF_LockInfoClient
+{
+public:
+
+	JavaLockInfoClient()
+	{
+		m_pLockUsers = NULL;
+		m_uiNumLockUsers = 0;
+	}
+	
+	virtual ~JavaLockInfoClient()
+	{
+		if (m_pLockUsers)
+		{
+			f_free( &m_pLockUsers);
+		}
+	}
+	
+	FLMBOOL FLMAPI setLockCount(
+		FLMUINT	uiTotalLocks)
+	{
+		if (RC_BAD( f_calloc( sizeof( F_LOCK_USER) * uiTotalLocks,
+								&m_pLockUsers)))
+		{
+			return( FALSE);
+		}
+		else
+		{
+			m_uiNumLockUsers = uiTotalLocks;
+			return( TRUE);
+		}
+	}
+	
+	FLMBOOL FLMAPI addLockInfo(
+		FLMUINT		uiLockNum,
+		FLMUINT		uiThreadID,
+		FLMUINT		uiTime)
+	{
+		if (uiLockNum < m_uiNumLockUsers)
+		{
+			m_pLockUsers [uiLockNum].uiThreadId = uiThreadID;
+			m_pLockUsers [uiLockNum].uiTime = uiTime;
+		}
+		return( TRUE);
+	}
+	
+	FINLINE FLMUINT getLockCount( void)
+	{
+		return( m_uiNumLockUsers);
+	}
+	
+	FINLINE F_LOCK_USER * getLockUsers( void)
+	{
+		return( m_pLockUsers);
+	}
+	
+private:
+
+	F_LOCK_USER *	m_pLockUsers;
+	FLMUINT			m_uiNumLockUsers;
+};
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jobjectArray JNICALL Java_xflaim_Db__1getLockWaiters(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_Db *					pDb = THIS_FDB();
+	jclass					jLockUserClass = NULL;
+	jobjectArray			jLockUsers = NULL;
+	jobject					jLockUser = NULL;
+	JavaLockInfoClient	lockInfoClient;
+	F_LOCK_USER *			pLockUser;
+	FLMUINT					uiLoop;
+	
+	if (RC_BAD( rc = pDb->getLockWaiters( &lockInfoClient)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Find the LockUser class
+
+	if ((jLockUserClass = pEnv->FindClass( "xflaim/LockUser")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate the array of lock users.
+	
+	if ((jLockUsers = pEnv->NewObjectArray( (jsize)lockInfoClient.getLockCount(),
+										jLockUserClass, NULL)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Now allocate each lock user and set its members.
+	
+	for (uiLoop = 0, pLockUser = lockInfoClient.getLockUsers();
+		  uiLoop < lockInfoClient.getLockCount();
+		  uiLoop++, pLockUser++)
+	{
+		// Allocate a lock user object.
+		
+		if ((jLockUser = pEnv->AllocObject( jLockUserClass)) == NULL)
+		{
+			goto Exit;
+		}
+		pEnv->SetIntField( jLockUser, LockUser_fidThreadId, (jint)pLockUser->uiThreadId);
+		pEnv->SetIntField( jLockUser, LockUser_fidTime, (jint)pLockUser->uiTime);
+		pEnv->SetObjectArrayElement( jLockUsers, (jsize)uiLoop, jLockUser);
+    }
+
+Exit:
+
+	return( jLockUsers);
+}
+
+/****************************************************************************
+Desc: Delete status callback
+****************************************************************************/
+class JavaDeleteStatus : public IF_DeleteStatus
+{
+public:
+
+	JavaDeleteStatus(
+		JNIEnv *		pEnv,
+		jobject		jDeleteStatusObject)
+	{
+		m_pEnv = pEnv;
+		
+		// Get a global reference to keep the object from being garbage
+		// collected, and to allow it to be called across invocations into
+		// the native interface.  Otherwise, the reference will be lost and
+		// cannot be used by the callback function.
+		
+		m_jDeleteStatusObject = pEnv->NewGlobalRef( jDeleteStatusObject);
+		m_jReportDeleteMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jDeleteStatusObject),
+													"reportDelete",
+													"(II)I");
+	}
+	
+	virtual ~JavaDeleteStatus()
+	{
+		if (m_jDeleteStatusObject)
+		{
+			m_pEnv->DeleteGlobalRef( m_jDeleteStatusObject);
+		}
+	}
+			
+	RCODE FLMAPI reportDelete(
+		FLMUINT	uiBlocksDeleted,
+		FLMUINT	uiBlockSize)
+	{
+		// VERY IMPORTANT NOTE!  m_pEnv points to the environment that was
+		// passed in when this object was set up.  It is thread-specific, so
+		// it is important that the callback happen inside the same thread
+		// where the setDeleteStatusObject method was called.  It will not
+		// work to set the delete status object in one thread, but then do
+		// the delete operation in another thread.
+		
+		return( (RCODE)m_pEnv->CallIntMethod( m_jDeleteStatusObject,
+										m_jReportDeleteMethodId, (jint)uiBlocksDeleted,
+										(jint)uiBlockSize));
+	}
+	
+private:
+
+	JNIEnv *		m_pEnv;
+	jobject		m_jDeleteStatusObject;
+	jmethodID	m_jReportDeleteMethodId;
+	
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setDeleteStatusObject(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jobject			jDeleteStatusObject)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_Db *					pDb = THIS_FDB();
+	JavaDeleteStatus *	pDeleteStatusObj = NULL;
+	
+	if (jDeleteStatusObject)
+	{
+		if ((pDeleteStatusObj = f_new JavaDeleteStatus( pEnv,
+													jDeleteStatusObject)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+	}
+
+	pDb->setDeleteStatusObject( pDeleteStatusObj);
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc: Indexing client callback
+****************************************************************************/
+class JavaIxClient : public IF_IxClient
+{
+public:
+
+	JavaIxClient(
+		JNIEnv *		pEnv,
+		jobject		jIxClientObject)
+	{
+		m_pEnv = pEnv;
+		
+		// Get a global reference to keep the object from being garbage
+		// collected, and to allow it to be called across invocations into
+		// the native interface.  Otherwise, the reference will be lost and
+		// cannot be used by the callback function.
+		
+		m_jIxClientObject = pEnv->NewGlobalRef( jIxClientObject);
+		m_jDoIndexingMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jIxClientObject),
+													"doIndexing",
+													"(IIL)I");
+	}
+	
+	virtual ~JavaIxClient()
+	{
+		if (m_jIxClientObject)
+		{
+			m_pEnv->DeleteGlobalRef( m_jIxClientObject);
+		}
+	}
+			
+	RCODE FLMAPI doIndexing(
+		IF_Db *			pDb,
+		FLMUINT			uiIndexNum,
+		FLMUINT			uiCollection,
+		IF_DOMNode *	pDocNode)
+	{
+		RCODE			rc = NE_XFLM_OK;
+		FLMUINT64	ui64NodeId;
+		
+		// VERY IMPORTANT NOTE!  m_pEnv points to the environment that was
+		// passed in when this object was set up.  It is thread-specific, so
+		// it is important that the callback happen inside the same thread
+		// where the setIndexingClientObject method was called.  It will not
+		// work to set the index client object in one thread, but then do
+		// the index operation in another thread.
+		
+		if (RC_BAD( rc = pDocNode->getNodeId( pDb, &ui64NodeId)))
+		{
+			goto Exit;
+		}
+		rc = (RCODE)m_pEnv->CallIntMethod( m_jIxClientObject,
+										m_jDoIndexingMethodId, (jint)uiIndexNum,
+										(jint)uiCollection, (jlong)ui64NodeId);
+	Exit:
+	
+		return( rc);
+	}
+	
+private:
+
+	JNIEnv *		m_pEnv;
+	jobject		m_jIxClientObject;
+	jmethodID	m_jDoIndexingMethodId;
+	
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setIndexingClientObject(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jobject			jIxClientObject)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_Db *					pDb = THIS_FDB();
+	JavaIxClient *			pIxClientObj = NULL;
+	
+	if (jIxClientObject)
+	{
+		if ((pIxClientObj = f_new JavaIxClient( pEnv,
+													jIxClientObject)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+	}
+
+	pDb->setIndexingClientObject( pIxClientObj);
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc: Indexing status callback
+****************************************************************************/
+class JavaIxStatus : public IF_IxStatus
+{
+public:
+
+	JavaIxStatus(
+		JNIEnv *		pEnv,
+		jobject		jIxStatusObject)
+	{
+		m_pEnv = pEnv;
+		
+		// Get a global reference to keep the object from being garbage
+		// collected, and to allow it to be called across invocations into
+		// the native interface.  Otherwise, the reference will be lost and
+		// cannot be used by the callback function.
+		
+		m_jIxStatusObject = pEnv->NewGlobalRef( jIxStatusObject);
+		m_jReportIndexMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jIxStatusObject),
+													"reportIndex",
+													"(L)I");
+	}
+	
+	virtual ~JavaIxStatus()
+	{
+		if (m_jIxStatusObject)
+		{
+			m_pEnv->DeleteGlobalRef( m_jIxStatusObject);
+		}
+	}
+			
+	RCODE FLMAPI reportIndex(
+		FLMUINT64		ui64LastDocumentId)
+	{
+		
+		// VERY IMPORTANT NOTE!  m_pEnv points to the environment that was
+		// passed in when this object was set up.  It is thread-specific, so
+		// it is important that the callback happen inside the same thread
+		// where the setIndexingStatusObject method was called.  It will not
+		// work to set the index status object in one thread, but then do
+		// the index operation in another thread.
+		
+		return( (RCODE)m_pEnv->CallIntMethod( m_jIxStatusObject,
+									m_jReportIndexMethodId, (jlong)ui64LastDocumentId));
+	}
+	
+private:
+
+	JNIEnv *		m_pEnv;
+	jobject		m_jIxStatusObject;
+	jmethodID	m_jReportIndexMethodId;
+	
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setIndexingStatusObject(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jobject			jIxStatusObject)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_Db *					pDb = THIS_FDB();
+	JavaIxStatus *			pIxStatusObj = NULL;
+	
+	if (jIxStatusObject)
+	{
+		if ((pIxStatusObj = f_new JavaIxStatus( pEnv,
+													jIxStatusObject)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+	}
+
+	pDb->setIndexingStatusObject( pIxStatusObj);
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc: Commit client callback
+****************************************************************************/
+class JavaCommitClient : public IF_CommitClient
+{
+public:
+
+	JavaCommitClient(
+		JNIEnv *		pEnv,
+		jobject		dbObj,
+		jobject		jCommitClientObject)
+	{
+		m_pEnv = pEnv;
+		
+		// Get a global reference to keep the object from being garbage
+		// collected, and to allow it to be called across invocations into
+		// the native interface.  Otherwise, the reference will be lost and
+		// cannot be used by the callback function.
+		
+		m_jCommitClientObject = pEnv->NewGlobalRef( jCommitClientObject);
+		m_jDbObj = pEnv->NewGlobalRef( dbObj);
+		m_jCommitMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jCommitClientObject),
+													"commit",
+													"(Lxflaim/Db;)V");
+	}
+	
+	virtual ~JavaCommitClient()
+	{
+		if (m_jCommitClientObject)
+		{
+			m_pEnv->DeleteGlobalRef( m_jCommitClientObject);
+		}
+		if (m_jDbObj)
+		{
+			m_pEnv->DeleteGlobalRef( m_jDbObj);
+		}
+	}
+			
+	void FLMAPI commit(
+		IF_Db *			// pDb
+		)
+	{
+		
+		// VERY IMPORTANT NOTE!  m_pEnv points to the environment that was
+		// passed in when this object was set up.  It is thread-specific, so
+		// it is important that the callback happen inside the same thread
+		// where the setCommitClientObject method was called.  It will not
+		// work to set the commit client object in one thread, but then do
+		// the commit operation in another thread.
+		
+		m_pEnv->CallVoidMethod( m_jCommitClientObject, m_jCommitMethodId, m_jDbObj);
+	}
+	
+private:
+
+	JNIEnv *		m_pEnv;
+	jobject		m_jDbObj;
+	jobject		m_jCommitClientObject;
+	jmethodID	m_jCommitMethodId;
+	
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setCommitClientObject(
+	JNIEnv *			pEnv,
+	jobject			dbObj,
+	jlong				lThis,
+	jobject			jCommitClientObject)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_Db *					pDb = THIS_FDB();
+	JavaCommitClient *	pCommitClientObj = NULL;
+	
+	if (jCommitClientObject)
+	{
+		if ((pCommitClientObj = f_new JavaCommitClient( pEnv, dbObj,
+													jCommitClientObject)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+	}
+
+	pDb->setCommitClientObject( pCommitClientObj);
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1upgrade(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE		rc = NE_XFLM_OK;
+	IF_Db *	pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->upgrade( NULL)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return;
 }
 

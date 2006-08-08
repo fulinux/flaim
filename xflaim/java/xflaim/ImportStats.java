@@ -25,7 +25,7 @@
 package xflaim;
 
 /**
- * The IndexState class provides members that give an index's current state.
+ * The ImportStats class provides members that import statistics.
  */
 public class ImportStats 
 {

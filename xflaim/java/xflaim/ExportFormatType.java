@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// Desc:	IndexStatus Class
+// Desc:	ExportFormatType
 //
 // Tabs:	3
 //
-//		Copyright (c) 2006 Novell, Inc. All Rights Reserved.
+//		Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
 //
 //		This program is free software; you can redistribute it and/or
 //		modify it under the terms of version 2 of the GNU General Public
@@ -22,22 +22,18 @@
 //
 // $Id$
 //------------------------------------------------------------------------------
+
 package xflaim;
 
 /**
- * The IndexStatus class provides members that give an index's current status.
+ * Provides enums for index states.
  */
-public class IndexStatus 
+
+public final class ExportFormatType
 {
-	public int			iIndexNum;
-	public int			iState;						// Should be one of the values defined in IndexState class
-	public int			iStartTime;					// Start time of the offline process, or zero.
-	public long			lLastDocumentIndexed;	// Value of the last document ID that was processed, unless -1.
-															// If -1, the index is online.
-	public long			lKeysProcessed;			// Keys processed in indexing thread.
-	public long			lDocumentsProcessed;		// Documents processed in indexing thread.
-	public long			lTransactions;				// Number of transactions started by indexing thread.
-	
-	private static native void initIDs();
+	public static final int XFLM_EXPORT_NO_FORMAT = 0;
+	public static final int XFLM_EXPORT_NEW_LINE = 1;
+	public static final int XFLM_EXPORT_INDENT = 2;
+	public static final int XFLM_EXPORT_INDENT_DATA = 3;
 }
 

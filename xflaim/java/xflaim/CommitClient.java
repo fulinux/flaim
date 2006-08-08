@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	IndexStatus Class
+// Desc:	CommitClient Interface
 //
 // Tabs:	3
 //
@@ -24,20 +24,9 @@
 //------------------------------------------------------------------------------
 package xflaim;
 
-/**
- * The IndexStatus class provides members that give an index's current status.
- */
-public class IndexStatus 
+interface CommitClient 
 {
-	public int			iIndexNum;
-	public int			iState;						// Should be one of the values defined in IndexState class
-	public int			iStartTime;					// Start time of the offline process, or zero.
-	public long			lLastDocumentIndexed;	// Value of the last document ID that was processed, unless -1.
-															// If -1, the index is online.
-	public long			lKeysProcessed;			// Keys processed in indexing thread.
-	public long			lDocumentsProcessed;		// Documents processed in indexing thread.
-	public long			lTransactions;				// Number of transactions started by indexing thread.
-	
-	private static native void initIDs();
-}
+	public void commit(
+		Db	db);
+}	
 
