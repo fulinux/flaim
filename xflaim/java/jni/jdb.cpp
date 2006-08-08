@@ -3254,7 +3254,7 @@ public:
 		m_jIxClientObject = pEnv->NewGlobalRef( jIxClientObject);
 		m_jDoIndexingMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jIxClientObject),
 													"doIndexing",
-													"(IIL)I");
+													"(IIJ)I");
 	}
 	
 	virtual ~JavaIxClient()
@@ -3353,7 +3353,7 @@ public:
 		m_jIxStatusObject = pEnv->NewGlobalRef( jIxStatusObject);
 		m_jReportIndexMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jIxStatusObject),
 													"reportIndex",
-													"(L)I");
+													"(J)I");
 	}
 	
 	virtual ~JavaIxStatus()

@@ -809,10 +809,10 @@ public:
 		m_jDbRebuildStatusObject = pEnv->NewGlobalRef( jDbRebuildStatusObject);
 		m_jReportRebuildMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jDbRebuildStatusObject),
 													"reportRebuild",
-													"(IVLLLLL)I");
+													"(IZJJJJJ)I");
 		m_jReportRebuildErrMethodId = pEnv->GetMethodID( pEnv->GetObjectClass( jDbRebuildStatusObject),
 													"reportRebuildErr",
-													"(IIIIIIIIL)I");
+													"(IIIIIIIIJ)I");
 	}
 	
 	virtual ~JavaDbRebuildStatus()
