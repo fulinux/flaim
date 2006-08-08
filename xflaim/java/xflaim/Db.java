@@ -241,6 +241,26 @@ public class Db
 		_indexResume( m_this, iIndex);
 	}
 	
+	private native int _indexGetNext(
+		long	lThis,
+		int	iCurrIndex) throws XFlaimException;
+
+	public int indexGetNext(
+		int	iCurrIndex) throws XFlaimException
+	{
+		return( _indexGetNext( m_this, iCurrIndex));
+	}
+
+	private native IndexStatus _indexStatus(
+		long	lThis,
+		int	iIndex) throws XFlaimException;
+		
+	public IndexStatus indexStatus(
+		int	iIndex) throws XFlaimException
+	{
+		return( _indexStatus( m_this, iIndex));
+	}
+
 	private native int _reduceSize(
 		long	lThis,
 		int	iCount) throws XFlaimException;
@@ -1038,11 +1058,40 @@ public class Db
 	 * @param iCollection
 	 * @throws XFlaimException
 	 */
-	public void Import(
+	public ImportStats Import(
 		PosIStream		jIStream,
 		int				iCollection) throws XFlaimException
 	{
-		_import( m_this, jIStream, iCollection);
+		return( _import( m_this, jIStream.getThis(), iCollection, 0,
+						InsertLoc.XFLM_LAST_CHILD));
+	}
+	
+	/**
+	 * Imports an XML document into the XFlaim database.  The import requires
+	 * an update transaction (TransactionType.UPDATE_TRANS). If the document
+	 * cannot be imported, an XFlaimEXception exception will be thrown.
+	 * @param jIStream
+	 * @param iCollection
+	 * @param NodeToLinkTo
+	 * @param iInsertLoc.  Should be one of the members of {@link
+	 * xflaim.InsertLoc InsertLoc}.
+	 * @throws XFlaimException
+	 */
+	public ImportStats Import(
+		PosIStream		jIStream,
+		int				iCollection,
+		DOMNode			NodeToLinkTo,
+		int				iInsertLoc) throws XFlaimException
+	{
+		if (NodeToLinkTo == null)
+		{
+			return( _import( m_this, jIStream.getThis(), iCollection, 0, iInsertLoc));
+		}
+		else
+		{
+			return( _import( m_this, jIStream.getThis(), iCollection,
+							NodeToLinkTo.getThis(), iInsertLoc));
+		}
 	}
 	
 	public void changeItemState(
@@ -1096,7 +1145,173 @@ public class Db
 		return( _getRflDir( m_this));
 	}
 	
+	public int getRflFileNum() throws XFlaimException
+	{
+		return( _getRflFileNum( m_this));
+	}
 
+	public int getHighestNotUsedRflFileNum() throws XFlaimException
+	{
+		return( _getHighestNotUsedRflFileNum( m_this));
+	}
+
+	public void setRflFileSizeLimits(
+		int				iMinRflSize,
+		int				iMaxRflSize) throws XFlaimException
+	{
+		_setRflFileSizeLimits( m_this, iMinRflSize, iMaxRflSize);
+	}
+
+	public int getMinRflFileSize() throws XFlaimException
+	{
+		return( _getMinRflFileSize( m_this));
+	}
+	
+	public int getMaxRflFileSize() throws XFlaimException
+	{
+		return( _getMaxRflFileSize( m_this));
+	}
+
+	public void rflRollToNextFile() throws XFlaimException
+	{
+		_rflRollToNextFile( m_this);
+	}
+
+	public void setKeepAbortedTransInRflFlag(
+		boolean			bKeep) throws XFlaimException
+	{
+		_setKeepAbortedTransInRflFlag( m_this, bKeep);
+	}
+
+	public boolean getKeepAbortedTransInRflFlag() throws XFlaimException
+	{
+		return( _getKeepAbortedTransInRflFlag( m_this));
+	}
+
+	public void setAutoTurnOffKeepRflFlag(
+		boolean			bAutoTurnOff) throws XFlaimException
+	{
+		_setAutoTurnOffKeepRflFlag( m_this, bAutoTurnOff);
+	}
+
+	public boolean getAutoTurnOffKeepRflFlag() throws XFlaimException
+	{
+		return( _getAutoTurnOffKeepRflFlag( m_this));
+	}
+
+	public void setFileExtendSize(
+		int				iFileExtendSize) throws XFlaimException
+	{
+		_setFileExtendSize( m_this, iFileExtendSize);
+	}
+
+	public int getFileExtendSize() throws XFlaimException
+	{
+		return( _getFileExtendSize( m_this));
+	}
+	
+	public int getDbVersion() throws XFlaimException
+	{
+		return( _getDbVersion( m_this));
+	}
+
+	public int getBlockSize() throws XFlaimException
+	{
+		return( _getBlockSize( m_this));
+	}
+
+	public int getDefaultLanguage() throws XFlaimException
+	{
+		return( _getDefaultLanguage( m_this));
+	}
+	
+	public long getTransID() throws XFlaimException
+	{
+		return( _getTransID( m_this));
+	}
+
+	public String getDbControlFileName() throws XFlaimException
+	{
+		return( _getDbControlFileName( m_this));
+	}
+	
+	public long getLastBackupTransID() throws XFlaimException
+	{
+		return( _getLastBackupTransID( m_this));
+	}
+
+	public int getBlocksChangedSinceBackup() throws XFlaimException
+	{
+		return( _getBlocksChangedSinceBackup( m_this));
+	}
+
+	public int getNextIncBackupSequenceNum() throws XFlaimException
+	{
+		return( _getNextIncBackupSequenceNum( m_this));
+	}
+	
+	public long getDiskSpaceDataSize()throws XFlaimException
+	{
+		return( _getDiskSpaceDataSize( m_this));
+	}
+
+	public long getDiskSpaceRollbackSize() throws XFlaimException
+	{
+		return( _getDiskSpaceRollbackSize( m_this));
+	}
+		
+	public long getDiskSpaceRflSize() throws XFlaimException
+	{
+		return( _getDiskSpaceRflSize( m_this));
+	}
+	
+	public long getDiskSpaceTotalSize() throws XFlaimException
+	{
+		return( _getDiskSpaceTotalSize( m_this));
+	}
+	
+	public int getMustCloseRC() throws XFlaimException
+	{
+		return( _getMustCloseRC( m_this));
+	}
+
+	public int getAbortRC() throws XFlaimException
+	{
+		return( _getAbortRC( m_this));
+	}
+
+	public void setMustAbortTrans(
+		int				iRc) throws XFlaimException
+	{
+		_setMustAbortTrans( m_this, iRc);
+	}
+
+	public void enableEncryption() throws XFlaimException
+	{
+		_enableEncryption( m_this);
+	}
+
+	public void wrapKey(
+		String			sPassword) throws XFlaimException
+	{
+		_wrapKey( m_this, sPassword);
+	}
+		
+	public void rollOverDbKey() throws XFlaimException
+	{
+		_rollOverDbKey( m_this);
+	}
+
+	public byte[] getSerialNumber() throws XFlaimException
+	{
+		return( _getSerialNumber( m_this));
+	}
+
+	public CheckpointInfo getCheckpointInfo() throws XFlaimException
+	{
+		return( _getCheckpointInfo( m_this));
+	}
+		
 	private native void _release(
 		long				lThis);
 
@@ -1123,10 +1338,12 @@ public class Db
 		long	lThis,
 		int	iTimeout) throws XFlaimException;
 		
-	private native void _import(
+	private native ImportStats _import(
 		long				lThis,
-		PosIStream		jIStream,
-		int				iCollection) throws XFlaimException;
+		long				lIStream,
+		int				iCollection,
+		long				lNodeToLinkTo,
+		int				iInsertLoc) throws XFlaimException;
 
  	private native long _getFirstDocument(
  		long				lThis,
@@ -1255,9 +1472,6 @@ public class Db
 		int	iDictType,
 		int	iNameId) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _backupBegin(
 		long				lThis,
 		int				eBackupType,
@@ -1265,9 +1479,6 @@ public class Db
 		int				iMaxLockWait,
 		long				lReusedRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _keyRetrieve(
 		long				lThis,
 		int				iIndex,
@@ -1310,6 +1521,109 @@ public class Db
 	private native String _getRflDir(
 		long				lThis) throws XFlaimException;
 	
+	private native int _getRflFileNum(
+		long				lThis) throws XFlaimException;
+
+	private native int _getHighestNotUsedRflFileNum(
+		long				lThis) throws XFlaimException;
+
+	private native void _setRflFileSizeLimits(
+		long				lThis,
+		int				iMinRflSize,
+		int				iMaxRflSize) throws XFlaimException;
+
+	private native int _getMinRflFileSize(
+		long				lThis) throws XFlaimException;
+	
+	private native int _getMaxRflFileSize(
+		long				lThis) throws XFlaimException;
+
+	private native void _rflRollToNextFile(
+		long				lThis) throws XFlaimException;
+
+	private native void _setKeepAbortedTransInRflFlag(
+		long				lThis,
+		boolean			bKeep) throws XFlaimException;
+
+	private native boolean _getKeepAbortedTransInRflFlag(
+		long				lThis) throws XFlaimException;
+
+	private native void _setAutoTurnOffKeepRflFlag(
+		long				lThis,
+		boolean			bAutoTurnOff) throws XFlaimException;
+
+	private native boolean _getAutoTurnOffKeepRflFlag(
+		long				lThis) throws XFlaimException;
+
+	private native void _setFileExtendSize(
+		long				lThis,
+		int				iFileExtendSize) throws XFlaimException;
+
+	private native int _getFileExtendSize(
+		long				lThis) throws XFlaimException;
+
+	private native int _getDbVersion(
+		long				lThis) throws XFlaimException;
+
+	private native int _getBlockSize(
+		long				lThis) throws XFlaimException;
+
+	private native int _getDefaultLanguage(
+		long				lThis) throws XFlaimException;
+
+	private native long _getTransID(
+		long				lThis) throws XFlaimException;
+
+	private native String _getDbControlFileName(
+		long				lThis) throws XFlaimException;
+
+	private native long _getLastBackupTransID(
+		long				lThis) throws XFlaimException;
+
+	private native int _getBlocksChangedSinceBackup(
+		long				lThis) throws XFlaimException;
+
+	private native int _getNextIncBackupSequenceNum(
+		long				lThis) throws XFlaimException;
+
+	private native long _getDiskSpaceDataSize(
+		long				lThis) throws XFlaimException;
+
+	private native long _getDiskSpaceRollbackSize(
+		long				lThis) throws XFlaimException;
+		
+	private native long _getDiskSpaceRflSize(
+		long				lThis) throws XFlaimException;
+	
+	private native long _getDiskSpaceTotalSize(
+		long				lThis) throws XFlaimException;
+
+	private native int _getMustCloseRC(
+		long				lThis) throws XFlaimException;
+
+	private native int _getAbortRC(
+		long				lThis) throws XFlaimException;
+
+	private native void _setMustAbortTrans(
+		long				lThis,
+		int				iRc) throws XFlaimException;
+		
+	private native void _enableEncryption(
+		long				lThis) throws XFlaimException;
+
+	private native void _wrapKey(
+		long				lThis,
+		String			sPassword) throws XFlaimException;
+		
+	private native void _rollOverDbKey(
+		long				lThis) throws XFlaimException;
+			
+	private native byte[] _getSerialNumber(
+		long				lThis) throws XFlaimException;
+		
+	private native CheckpointInfo _getCheckpointInfo(
+		long				lThis) throws XFlaimException;
+		
 	long 					m_this;
 	private DbSystem 	m_dbSystem;
 }
@@ -1318,30 +1632,9 @@ public class Db
 
 LIST OF METHODS NOT YET IMPLEMENTED
 
-		virtual RCODE FLMAPI indexStatus(
-			FLMUINT					uiIndexNum,
-			XFLM_INDEX_STATUS *	pIndexStatus) = 0;
-
-		virtual RCODE FLMAPI indexGetNext(
-			FLMUINT *				puiIndexNum) = 0;
-
-		virtual RCODE FLMAPI enableEncryption( void) = 0;
-
-		virtual RCODE FLMAPI wrapKey(
-			const char *	pszPassword = NULL) = 0;
-		
-		virtual RCODE FLMAPI rollOverDbKey( void) = 0;
-			
 		virtual RCODE FLMAPI upgrade(
 			IF_UpgradeClient *	pUpgradeClient) = 0;
 			
-		virtual RCODE FLMAPI import(
-			IF_IStream *			pIStream,
-			FLMUINT					uiCollection,
-			IF_DOMNode *			pNodeToLinkTo = NULL,
-			eNodeInsertLoc			eInsertLoc = XFLM_LAST_CHILD,
-			XFLM_IMPORT_STATS *	pImportStats = NULL) = 0;
-
 		virtual RCODE FLMAPI importDocument(
 			IF_IStream *			ifpStream,
 			FLMUINT					uiCollection,
@@ -1353,48 +1646,6 @@ LIST OF METHODS NOT YET IMPLEMENTED
 			IF_OStream *			pOStream,
 			eExportFormatType		eFormat = XFLM_EXPORT_INDENT) = 0;
 			
-//here
-
-		// Configuration "set" and "get" methods
-
-		virtual RCODE FLMAPI getRflFileNum(
-			FLMUINT *				puiRflFileNum) = 0;
-
-		virtual RCODE FLMAPI getHighestNotUsedRflFileNum(
-			FLMUINT *				puiHighestNotUsedRflFileNum) = 0;
-
-		virtual RCODE FLMAPI setRflFileSizeLimits(
-			FLMUINT					uiMinRflSize,
-			FLMUINT					uiMaxRflSize) = 0;
-
-		virtual RCODE FLMAPI getRflFileSizeLimits(
-			FLMUINT *				puiRflMinFileSize,
-			FLMUINT *				puiRflMaxFileSize) = 0;
-
-		virtual RCODE FLMAPI rflRollToNextFile( void) = 0;
-
-		virtual RCODE FLMAPI setKeepAbortedTransInRflFlag(
-			FLMBOOL					bKeep) = 0;
-
-		virtual RCODE FLMAPI getKeepAbortedTransInRflFlag(
-			FLMBOOL *				pbKeep) = 0;
-
-		virtual RCODE FLMAPI setAutoTurnOffKeepRflFlag(
-			FLMBOOL					bAutoTurnOff) = 0;
-
-		virtual RCODE FLMAPI getAutoTurnOffKeepRflFlag(
-			FLMBOOL *				pbAutoTurnOff) = 0;
-
-		virtual void FLMAPI setFileExtendSize(
-			FLMUINT					uiFileExtendSize) = 0;
-
-		virtual FLMUINT FLMAPI getFileExtendSize( void) = 0;
-
-		virtual void FLMAPI setAppData(
-			void *			pvAppData) = 0;
-
-		virtual void * FLMAPI getAppData( void) = 0;
-
 		virtual void FLMAPI setDeleteStatusObject(
 			IF_DeleteStatus *		pDeleteStatus) = 0;
 
@@ -1407,47 +1658,10 @@ LIST OF METHODS NOT YET IMPLEMENTED
 		virtual void FLMAPI setIndexingStatusObject(
 			IF_IxStatus *			pIxStatus) = 0;
 
-		// Configuration information getting methods
-
-		virtual FLMUINT FLMAPI getDbVersion( void) = 0;
-
-		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
-
-		virtual FLMUINT FLMAPI getDefaultLanguage( void) = 0;
-
-		virtual FLMUINT64 FLMAPI getTransID( void) = 0;
-
 		virtual void FLMAPI getCheckpointInfo(
 			XFLM_CHECKPOINT_INFO *	pCheckpointInfo) = 0;
-
-		virtual RCODE FLMAPI getDbControlFileName(
-			char *					pszControlFileName,
-			FLMUINT					uiControlFileBufSize) = 0;
 
 		virtual RCODE FLMAPI getLockWaiters(
 			IF_LockInfoClient *	pLockInfo) = 0;
 
-		virtual RCODE FLMAPI getLastBackupTransID(
-			FLMUINT64 *				pui64LastBackupTransID) = 0;
-
-		virtual RCODE FLMAPI getBlocksChangedSinceBackup(
-			FLMUINT *				puiBlocksChangedSinceBackup) = 0;
-
-		virtual RCODE FLMAPI getNextIncBackupSequenceNum(
-			FLMUINT *				puiNextIncBackupSequenceNum) = 0;
-
-		virtual void FLMAPI getSerialNumber(
-			char *					pucSerialNumber) = 0;
-
-		virtual RCODE FLMAPI getDiskSpaceUsage(
-			FLMUINT64 *				pui64DataSize,
-			FLMUINT64 *				pui64RollbackSize,
-			FLMUINT64 *				pui64RflSize) = 0;
-
-		virtual RCODE FLMAPI getMustCloseRC( void) = 0;
-
-		virtual RCODE FLMAPI getAbortRC( void) = 0;
-
-		virtual void FLMAPI setMustAbortTrans(
-			RCODE						rc) = 0;
 */

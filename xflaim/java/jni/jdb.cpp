@@ -25,8 +25,50 @@
 
 #include "xflaim.h"
 #include "xflaim_Db.h"
+#include "xflaim_IndexStatus.h"
+#include "xflaim_ImportStats.h"
+#include "xflaim_CheckpointInfo.h"
 #include "jniftk.h"
 
+// Field IDs for the IndexStatus class in JAVA.
+
+static jfieldID	fidIndexNum = NULL;
+static jfieldID	fidState = NULL;
+static jfieldID	fidStartTime = NULL;
+static jfieldID	fidLastDocumentIndexed = NULL;
+static jfieldID	fidKeysProcessed = NULL;
+static jfieldID	fidDocumentsProcessed = NULL;
+static jfieldID	fidTransactions = NULL;
+
+// Field IDs for the ImportStats class in JAVA.
+
+static jfieldID	fidLines = NULL;
+static jfieldID	fidChars = NULL;
+static jfieldID	fidAttributes = NULL;
+static jfieldID	fidElements = NULL;
+static jfieldID	fidText = NULL;
+static jfieldID	fidDocuments = NULL;
+static jfieldID	fidErrLineNum = NULL;
+static jfieldID	fidErrLineOffset = NULL;
+static jfieldID	fidErrorType = NULL;
+static jfieldID	fidErrLineFilePos = NULL;
+static jfieldID	fidErrLineBytes = NULL;
+static jfieldID	fidUTF8Encoding = NULL;
+
+// Field IDs for the CheckpointInfo class in JAVA
+	
+static jfieldID	fidRunning = NULL;
+static jfieldID	fidRunningTime = NULL;
+static jfieldID	fidForcingCheckpoint = NULL;
+static jfieldID	fidForceCheckpointRunningTime = NULL;
+static jfieldID	fidForceCheckpointReason = NULL;
+static jfieldID	fidWritingDataBlocks = NULL;
+static jfieldID	fidLogBlocksWritten = NULL;
+static jfieldID	fidDataBlocksWritten = NULL;
+static jfieldID	fidDirtyCacheBytes = NULL;
+static jfieldID	fidBlockSize = NULL;
+static jfieldID	fidWaitTruncateTime = NULL;
+	
 #define THIS_FDB() \
 	((IF_Db *)(FLMUINT)lThis)
 
@@ -35,7 +77,7 @@ FSTATIC RCODE getUniString(
 	jstring		sStr,
 	F_DynaBuf *	pDynaBuf);
 	
-FSTATIC RCODE getNativeString(
+FSTATIC RCODE getUTF8String(
 	JNIEnv *		pEnv,
 	jstring		sStr,
 	F_DynaBuf *	pDynaBuf);
@@ -455,6 +497,287 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1indexGetNext(
+	JNIEnv *			pEnv,
+	jobject,			// jobject
+	jlong				lThis,
+	jint				iCurrIndex)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	FLMUINT			uiCurrIndex = (FLMUINT)iCurrIndex;
+	
+	if (RC_BAD( rc = pDb->indexGetNext( &uiCurrIndex)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jint)uiCurrIndex);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_CheckpointInfo_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jCheckpointInfoClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fidRunning = pEnv->GetFieldID( jCheckpointInfoClass,
+								"bRunning", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iRunningTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
+								"bForcingCheckpoint", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iForceCheckpointRunningTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iForceCheckpointReason", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
+							"bWritingDataBlocks", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iLogBlocksWritten", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iDataBlocksWritten", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iDirtyCacheBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iBlockSize", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iWaitTruncateTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_IndexStatus_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jIndexStatusClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fidIndexNum = pEnv->GetFieldID( jIndexStatusClass,
+								"iIndexNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidState = pEnv->GetFieldID( jIndexStatusClass,
+								"iState", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidStartTime = pEnv->GetFieldID( jIndexStatusClass,
+								"iStartTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
+								"lLastDocumentIndexed", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
+								"lKeysProcessed", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
+							"lDocumentsProcessed", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidTransactions = pEnv->GetFieldID( jIndexStatusClass,
+								"lTransactions", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_ImportStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jImportStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fidIndexNum = pEnv->GetFieldID( jImportStatsClass,
+								"iIndexNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidLines = pEnv->GetFieldID( jImportStatsClass,
+								"iLines", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidChars = pEnv->GetFieldID( jImportStatsClass,
+								"iChars", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidAttributes = pEnv->GetFieldID( jImportStatsClass,
+								"iAttributes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidElements = pEnv->GetFieldID( jImportStatsClass,
+								"iElements", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidText = pEnv->GetFieldID( jImportStatsClass,
+								"iText", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidDocuments = pEnv->GetFieldID( jImportStatsClass,
+							"iDocuments", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidErrLineNum = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineOffset", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidErrorType = pEnv->GetFieldID( jImportStatsClass,
+								"iErrorType", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineFilePos", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fidUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
+								"bUTF8Encoding", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus(
+	JNIEnv *			pEnv,
+	jobject,			// jobject
+	jlong				lThis,
+	jint				iIndex)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_Db *				pDb = THIS_FDB();
+	XFLM_INDEX_STATUS	ixStatus;
+	jclass				jIndexStatusClass = NULL;
+	jobject				jIndexStatus = NULL;
+	
+	if (RC_BAD( rc = pDb->indexStatus( (FLMUINT)iIndex, &ixStatus)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Find the IndexStatus class
+
+	if ((jIndexStatusClass = pEnv->FindClass( "xflaim/IndexStatus")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate an index status class.
+	
+	if ((jIndexStatus = pEnv->AllocObject( jIndexStatusClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Set the fields in the object
+	
+	pEnv->SetIntField( jIndexStatus, fidIndexNum, iIndex);
+	pEnv->SetIntField( jIndexStatus, fidState, (jint)ixStatus.eState);
+	pEnv->SetIntField( jIndexStatus, fidStartTime, (jint)ixStatus.uiStartTime);
+	pEnv->SetLongField( jIndexStatus, fidLastDocumentIndexed,
+						(jlong)ixStatus.ui64LastDocumentIndexed);
+	pEnv->SetLongField( jIndexStatus, fidKeysProcessed,
+						(jlong)ixStatus.ui64KeysProcessed);
+	pEnv->SetLongField( jIndexStatus, fidDocumentsProcessed,
+						(jlong)ixStatus.ui64DocumentsProcessed);
+	pEnv->SetLongField( jIndexStatus, fidTransactions,
+						(jlong)ixStatus.ui64Transactions);
+	
+Exit:
+
+	return( jIndexStatus);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1reduceSize(
 	JNIEnv *			pEnv,
 	jobject,			// jobject
@@ -505,20 +828,22 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_Db__1import(
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1import(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jobject			jIStream,
-	jint				iCollection)
+	jlong				lIStream,
+	jint				iCollection,
+	jlong				lNodeToLinkTo,
+	jint				iInsertLoc)
 {
 	RCODE						rc = NE_XFLM_OK;
-	IF_PosIStream *		pIStream = NULL;
+	IF_PosIStream *		pIStream = (IF_PosIStream *)((FLMUINT)lIStream);
+	IF_DOMNode *			pNodeToLinkTo = (IF_DOMNode *)((FLMUINT)lNodeToLinkTo);
 	IF_Db *					pDb = THIS_FDB();
-	
-	jclass class_JIStream = pEnv->FindClass( "xflaim/PosIStream");
-	jfieldID fid_this = pEnv->GetFieldID( class_JIStream, "m_this", "J");
-	pIStream = (IF_PosIStream *)((FLMUINT)pEnv->GetLongField( jIStream, fid_this));
+	XFLM_IMPORT_STATS		importStats;
+	jclass					jImportStatsClass = NULL;
+	jobject					jImportStats = NULL;
 	
 	if (!pIStream)
 	{
@@ -526,15 +851,48 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1import(
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pDb->import( pIStream, (FLMUINT)iCollection)))
+	if (RC_BAD( rc = pDb->import( pIStream, (FLMUINT)iCollection,
+									pNodeToLinkTo, (eNodeInsertLoc)iInsertLoc,
+									&importStats)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 
+	// Find the ImportStats class
+
+	if ((jImportStatsClass = pEnv->FindClass( "xflaim/ImportStats")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate an import stats class.
+	
+	if ((jImportStats = pEnv->AllocObject( jImportStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Set the fields in the object
+	
+	pEnv->SetIntField( jImportStats, fidLines, (jint)importStats.uiLines);
+	pEnv->SetIntField( jImportStats, fidChars, (jint)importStats.uiChars);
+	pEnv->SetIntField( jImportStats, fidAttributes, (jint)importStats.uiAttributes);
+	pEnv->SetIntField( jImportStats, fidElements, (jint)importStats.uiElements);
+	pEnv->SetIntField( jImportStats, fidText, (jint)importStats.uiText);
+	pEnv->SetIntField( jImportStats, fidDocuments, (jint)importStats.uiDocuments);
+	pEnv->SetIntField( jImportStats, fidErrLineNum, (jint)importStats.uiErrLineNum);
+	pEnv->SetIntField( jImportStats, fidErrLineOffset, (jint)importStats.uiErrLineOffset);
+	pEnv->SetIntField( jImportStats, fidErrorType, (jint)importStats.eErrorType);
+	pEnv->SetIntField( jImportStats, fidErrLineFilePos, (jint)importStats.uiErrLineFilePos);
+	pEnv->SetIntField( jImportStats, fidErrLineBytes, (jint)importStats.uiErrLineBytes);
+	pEnv->SetBooleanField( jImportStats, fidUTF8Encoding,
+		(jboolean)(importStats.eXMLEncoding == XFLM_XML_UTF8_ENCODING
+					  ? JNI_TRUE
+					  : JNI_FALSE));
 Exit:
 
-	return;
+	return( jImportStats);
 }
 
 /****************************************************************************
@@ -825,7 +1183,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE getNativeString(
+FSTATIC RCODE getUTF8String(
 	JNIEnv *		pEnv,
 	jstring		sStr,
 	F_DynaBuf *	pDynaBuf)
@@ -1630,7 +1988,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1changeItemState(
 	FLMBYTE		ucState [80];
 	F_DynaBuf	stateBuf( ucState, sizeof( ucState));
 	
-	if (RC_BAD( rc = getNativeString( pEnv, sState, &stateBuf)))
+	if (RC_BAD( rc = getUTF8String( pEnv, sState, &stateBuf)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1779,7 +2137,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1setRflDir(
 	FLMBYTE		ucDirBuf [200];
 	F_DynaBuf	dirBuf( ucDirBuf, sizeof( ucDirBuf));
 	
-	if (RC_BAD( rc = getNativeString( pEnv, sRflDir, &dirBuf)))
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &dirBuf)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1809,5 +2167,705 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1getRflDir(
 	
 	pDb->getRflDir( szRflDir);
 	return( pEnv->NewStringUTF( szRflDir));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getRflFileNum(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiFileNum = 0;
+	
+	if (RC_BAD( rc = pDb->getRflFileNum( &uiFileNum)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiFileNum);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getHighestNotUsedRflFileNum(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiFileNum = 0;
+	
+	if (RC_BAD( rc = pDb->getHighestNotUsedRflFileNum( &uiFileNum)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiFileNum);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setRflFileSizeLimits(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iMinRflSize,
+	jint				iMaxRflSize)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->setRflFileSizeLimits( (FLMUINT)iMinRflSize,
+									(FLMUINT)iMaxRflSize)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getMinRflFileSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiMinFileSize = 0;
+	FLMUINT		uiMaxFileSize = 0;
+	
+	if (RC_BAD( rc = pDb->getRflFileSizeLimits( &uiMinFileSize, &uiMaxFileSize)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiMinFileSize);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getMaxRflFileSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiMinFileSize = 0;
+	FLMUINT		uiMaxFileSize = 0;
+	
+	if (RC_BAD( rc = pDb->getRflFileSizeLimits( &uiMinFileSize, &uiMaxFileSize)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiMaxFileSize);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1rflRollToNextFile(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->rflRollToNextFile()))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setKeepAbortedTransInRflFlag(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jboolean			bKeep)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->setKeepAbortedTransInRflFlag( (FLMBOOL)(bKeep ? TRUE : FALSE))))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getKeepAbortedTransInRflFlag(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMBOOL		bKeep = FALSE;
+	
+	if (RC_BAD( rc = pDb->getKeepAbortedTransInRflFlag( &bKeep)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jboolean)(bKeep ? JNI_TRUE : JNI_FALSE));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setAutoTurnOffKeepRflFlag(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jboolean			bAutoTurnOff)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->setAutoTurnOffKeepRflFlag( (FLMBOOL)(bAutoTurnOff ? TRUE : FALSE))))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getAutoTurnOffKeepRflFlag(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMBOOL		bAutoTurnOff = FALSE;
+	
+	if (RC_BAD( rc = pDb->getAutoTurnOffKeepRflFlag( &bAutoTurnOff)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jboolean)(bAutoTurnOff ? JNI_TRUE : JNI_FALSE));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setFileExtendSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iFileExtendSize)
+{
+	IF_Db *		pDb = THIS_FDB();
+	
+	pDb->setFileExtendSize( (FLMUINT)iFileExtendSize);
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getFileExtendSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	
+	return( (jint)pDb->getFileExtendSize());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDbVersion(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	
+	return( (jint)pDb->getDbVersion());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getBlockSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	
+	return( (jint)pDb->getBlockSize());
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDefaultLanguage(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	
+	return( (jint)pDb->getDefaultLanguage());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getTransID(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	
+	return( (jlong)pDb->getTransID());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1getDbControlFileName(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	char			szFileName [F_PATH_MAX_SIZE];
+	
+	szFileName [0] = 0;
+	if (RC_BAD( rc = pDb->getDbControlFileName( szFileName, sizeof( szFileName))))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( pEnv->NewStringUTF( szFileName));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getLastBackupTransID(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT64	ui64LastBackupTransID = 0;
+	
+	if (RC_BAD( rc = pDb->getLastBackupTransID( &ui64LastBackupTransID)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)ui64LastBackupTransID);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getBlocksChangedSinceBackup(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiBlocksChangedSinceBackup = 0;
+	
+	if (RC_BAD( rc = pDb->getBlocksChangedSinceBackup( &uiBlocksChangedSinceBackup)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiBlocksChangedSinceBackup);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getNextIncBackupSequenceNum(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiNextIncBackupSequenceNum = 0;
+	
+	if (RC_BAD( rc = pDb->getNextIncBackupSequenceNum( &uiNextIncBackupSequenceNum)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiNextIncBackupSequenceNum);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceDataSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT64	ui64Size = 0;
+	
+	if (RC_BAD( rc = pDb->getDiskSpaceUsage( &ui64Size, NULL, NULL)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)ui64Size);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceRollbackSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT64	ui64Size = 0;
+	
+	if (RC_BAD( rc = pDb->getDiskSpaceUsage( NULL, &ui64Size, NULL)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)ui64Size);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceRflSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT64	ui64Size = 0;
+	
+	if (RC_BAD( rc = pDb->getDiskSpaceUsage( NULL, NULL, &ui64Size)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)ui64Size);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceTotalSize(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT64	ui64DataSize = 0;
+	FLMUINT64	ui64RollbackSize = 0;
+	FLMUINT64	ui64RflSize = 0;
+	
+	if (RC_BAD( rc = pDb->getDiskSpaceUsage( &ui64DataSize, &ui64RollbackSize,
+										&ui64RflSize)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)(ui64DataSize + ui64RollbackSize + ui64RflSize));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getMustCloseRC(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	return( (jint)pDb->getMustCloseRC());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getAbortRC(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	return( (jint)pDb->getAbortRC());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1setMustAbortTrans(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iRc)
+{
+	IF_Db *		pDb = THIS_FDB();
+	pDb->setMustAbortTrans( (RCODE)iRc);
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1enableEncryption(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->enableEncryption()))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1wrapKey(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sPassword)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMBYTE		ucPassword [200];
+	F_DynaBuf	passwordBuf( ucPassword, sizeof( ucPassword));
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sPassword, &passwordBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->wrapKey( (const char *)passwordBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Db__1rollOverDbKey(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	
+	if (RC_BAD( rc = pDb->rollOverDbKey()))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jbyteArray JNICALL Java_xflaim_Db__1getSerialNumber(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *		pDb = THIS_FDB();
+	char			ucSerialNumber [XFLM_SERIAL_NUM_SIZE];
+	jbyteArray	jSerialNumber;
+	
+	pDb->getSerialNumber( ucSerialNumber);
+	
+	if ((jSerialNumber = pEnv->NewByteArray( (jsize)XFLM_SERIAL_NUM_SIZE)) == NULL)
+	{
+		goto Exit;
+	}
+	
+   pEnv->SetByteArrayRegion( jSerialNumber, (jsize)0, (jsize)XFLM_SERIAL_NUM_SIZE,
+					(const jbyte *)ucSerialNumber);
+
+Exit:
+
+	return( jSerialNumber);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1getCheckpointInfo(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	IF_Db *					pDb = THIS_FDB();
+	XFLM_CHECKPOINT_INFO	checkpointInfo;
+	jclass					jCheckpointInfoClass = NULL;
+	jobject					jCheckpointInfo = NULL;
+	
+	pDb->getCheckpointInfo( &checkpointInfo);
+
+	// Find the IndexStatus class
+
+	if ((jCheckpointInfoClass = pEnv->FindClass( "xflaim/CheckpointInfo")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate an index status class.
+	
+	if ((jCheckpointInfo = pEnv->AllocObject( jCheckpointInfoClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Set the fields in the object
+	
+	pEnv->SetBooleanField( jCheckpointInfo, fidRunning,
+		(jboolean)(checkpointInfo.bRunning ? JNI_TRUE : JNI_FALSE));
+	pEnv->SetIntField( jCheckpointInfo, fidRunningTime,
+		(jint)checkpointInfo.uiRunningTime);
+	pEnv->SetBooleanField( jCheckpointInfo, fidForcingCheckpoint,
+		(jboolean)(checkpointInfo.bForcingCheckpoint ? JNI_TRUE : JNI_FALSE));
+	pEnv->SetIntField( jCheckpointInfo, fidForceCheckpointRunningTime,
+		(jint)checkpointInfo.uiForceCheckpointRunningTime);
+	pEnv->SetIntField( jCheckpointInfo, fidForceCheckpointReason,
+		(jint)checkpointInfo.iForceCheckpointReason);
+	pEnv->SetBooleanField( jCheckpointInfo, fidWritingDataBlocks,
+		(jboolean)(checkpointInfo.bWritingDataBlocks ? JNI_TRUE : JNI_FALSE));
+	pEnv->SetIntField( jCheckpointInfo, fidLogBlocksWritten,
+		(jint)checkpointInfo.uiLogBlocksWritten);
+	pEnv->SetIntField( jCheckpointInfo, fidDataBlocksWritten,
+		(jint)checkpointInfo.uiDataBlocksWritten);
+	pEnv->SetIntField( jCheckpointInfo, fidDirtyCacheBytes,
+		(jint)checkpointInfo.uiDirtyCacheBytes);
+	pEnv->SetIntField( jCheckpointInfo, fidBlockSize,
+		(jint)checkpointInfo.uiBlockSize);
+	pEnv->SetIntField( jCheckpointInfo, fidWaitTruncateTime,
+		(jint)checkpointInfo.uiWaitTruncateTime);
+	
+Exit:
+
+	return( jCheckpointInfo);
 }
 

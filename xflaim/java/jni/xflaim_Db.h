@@ -89,6 +89,22 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1indexResume
 
 /*
  * Class:     xflaim_Db
+ * Method:    _indexGetNext
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1indexGetNext
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _indexStatus
+ * Signature: (JI)Lxflaim/IndexStatus;
+ */
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
  * Method:    _reduceSize
  * Signature: (JI)I
  */
@@ -170,10 +186,10 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1doCheckpoint
 /*
  * Class:     xflaim_Db
  * Method:    _import
- * Signature: (JLxflaim/PosIStream;I)V
+ * Signature: (JJIJI)Lxflaim/ImportStats;
  */
-JNIEXPORT void JNICALL Java_xflaim_Db__1import
-  (JNIEnv *, jobject, jlong, jobject, jint);
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1import
+  (JNIEnv *, jobject, jlong, jlong, jint, jlong, jint);
 
 /*
  * Class:     xflaim_Db
@@ -445,6 +461,262 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1setRflDir
  * Signature: (J)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_xflaim_Db__1getRflDir
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getRflFileNum
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getRflFileNum
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getHighestNotUsedRflFileNum
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getHighestNotUsedRflFileNum
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setRflFileSizeLimits
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setRflFileSizeLimits
+  (JNIEnv *, jobject, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getMinRflFileSize
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getMinRflFileSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getMaxRflFileSize
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getMaxRflFileSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _rflRollToNextFile
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1rflRollToNextFile
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setKeepAbortedTransInRflFlag
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setKeepAbortedTransInRflFlag
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getKeepAbortedTransInRflFlag
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getKeepAbortedTransInRflFlag
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setAutoTurnOffKeepRflFlag
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setAutoTurnOffKeepRflFlag
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getAutoTurnOffKeepRflFlag
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getAutoTurnOffKeepRflFlag
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setFileExtendSize
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setFileExtendSize
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getFileExtendSize
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getFileExtendSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDbVersion
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDbVersion
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getBlockSize
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getBlockSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDefaultLanguage
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDefaultLanguage
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getTransID
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getTransID
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDbControlFileName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_xflaim_Db__1getDbControlFileName
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLastBackupTransID
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getLastBackupTransID
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getBlocksChangedSinceBackup
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getBlocksChangedSinceBackup
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getNextIncBackupSequenceNum
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getNextIncBackupSequenceNum
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDiskSpaceDataSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceDataSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDiskSpaceRollbackSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceRollbackSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDiskSpaceRflSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceRflSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getDiskSpaceTotalSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDiskSpaceTotalSize
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getMustCloseRC
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getMustCloseRC
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getAbortRC
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getAbortRC
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _setMustAbortTrans
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1setMustAbortTrans
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _enableEncryption
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1enableEncryption
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _wrapKey
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1wrapKey
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _rollOverDbKey
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1rollOverDbKey
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getSerialNumber
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_xflaim_Db__1getSerialNumber
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getCheckpointInfo
+ * Signature: (J)Lxflaim/CheckpointInfo;
+ */
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1getCheckpointInfo
   (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus

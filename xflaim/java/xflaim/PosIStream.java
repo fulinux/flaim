@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 // Desc:	Positionable Input Stream
 //
@@ -107,6 +108,11 @@ public class PosIStream
 		m_dbSystem = null;
 	}
 	
+	public long getThis()
+	{
+		return( m_this);
+	}
+	
 	/**
 	 *
 	 */
@@ -116,3 +122,4 @@ public class PosIStream
 	private DbSystem		m_dbSystem;
 	private String			m_sBuffer;
 }
+
