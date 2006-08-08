@@ -1233,7 +1233,7 @@ FLMINT32 FLMAPI f_atomicInc(
 	}
 	#elif defined( FLM_OSX)
 	{
-		return( (FLMINT32)OSAtomicIncrement32( (int32_t *)piTarget));
+		return( (FLMINT32)OSAtomicIncrement32Barrier( (int32_t *)piTarget));
 	}
 	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	{
@@ -1282,7 +1282,7 @@ FLMINT32 FLMAPI f_atomicDec(
 	}
 	#elif defined( FLM_OSX)
 	{
-		return( (FLMINT32)OSAtomicDecrement32( (int32_t *)piTarget));
+		return( (FLMINT32)OSAtomicDecrement32Barrier( (int32_t *)piTarget));
 	}
 	#elif defined( FLM_SOLARIS) && defined( FLM_SPARC_PLUS) && !defined( FLM_GNUC)
 	{
@@ -1347,7 +1347,7 @@ FLMINT32 FLMAPI f_atomicExchange(
 		{
 			iOldVal = (int32_t)*piTarget;
 
-			if( OSAtomicCompareAndSwap32( iOldVal, i32NewVal, 
+			if( OSAtomicCompareAndSwap32Barrier( iOldVal, i32NewVal, 
 					(int32_t *)piTarget))
 			{
 				break;
