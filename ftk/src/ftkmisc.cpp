@@ -1251,6 +1251,10 @@ FLMINT32 FLMAPI f_atomicInc(
 	
 		return( i32Tmp + 1);
 	}
+	#elif defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+	{
+		return( ppc_atomic_add( piTarget, 1));
+	}
 	#elif defined( FLM_UNIX)
 		return( posix_atomic_add_32( piTarget, 1));
 	#else
@@ -1299,6 +1303,10 @@ FLMINT32 FLMAPI f_atomicDec(
 							: "0" (-1), "m" (*piTarget));
 	
 		return( i32Tmp - 1);
+	}
+	#elif defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+	{
+		return( ppc_atomic_add( piTarget, -1));
 	}
 	#elif defined( FLM_UNIX)
 		return( posix_atomic_add_32( piTarget, -1));
@@ -1372,6 +1380,10 @@ FLMINT32 FLMAPI f_atomicExchange(
 							: "r" (i32NewVal), "m" (*piTarget), "a" (*piTarget));
 	
 		return( i32OldVal);
+	}
+	#elif defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+	{
+		return( ppc_atomic_xchg( piTarget, i32NewVal));
 	}
 	#elif defined( FLM_UNIX)
 		return( posix_atomic_xchg_32( piTarget, i32NewVal));

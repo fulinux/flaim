@@ -1355,6 +1355,57 @@ void sparc_asm_code( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
+#if defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+FLMATOMIC ppc_atomic_add(
+	FLMATOMIC *		piTarget,
+	FLMINT32			iDelta)
+{
+	long	result;
+
+	__asm__ __volatile__(
+		"sync\n"
+		"1:\n"
+		"lwarx		%0, 0, %2\n"
+		"addc			%0, %0, %3\n"
+		"stwcx.		%0, 0, %2\n"
+		"bne-			1b\n"
+		"isync"
+			: "=&b" (result), "=m" (*piTarget)
+			: "b" (piTarget), "r" (iDelta)
+			: "cr0", "memory");
+
+	return( result);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+FLMATOMIC ppc_atomic_xchg(
+	FLMATOMIC *		piTarget,
+	FLMATOMIC		iNewValue)
+{
+	long	iOldVal;
+
+	__asm__ __volatile__(
+		"sync\n"
+		"1:\n"
+		"lwarx		%0, 0, %2\n"
+		"stwcx.		%3, 0, %2\n"
+		"bne-			1b\n"
+		"isync"
+			: "=&b" (iOldVal), "=m" (*piTarget)
+			: "b" (piTarget), "r" (iNewValue)
+			: "cr0", "memory");
+
+	return( iOldVal);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 void FLMAPI f_yieldCPU( void)
 {
 #ifndef FLM_LIBC_NLM

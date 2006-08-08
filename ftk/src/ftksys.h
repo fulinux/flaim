@@ -211,6 +211,24 @@
 	/**********************************************************************
 	Desc:
 	**********************************************************************/
+	#if defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+		extern "C"  FLMATOMIC ppc_atomic_add(
+			FLMATOMIC *		piTarget,
+			FLMINT32			iDelta);
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	#if defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+		extern "C"  FLMATOMIC ppc_atomic_xchg(
+			FLMATOMIC *		piTarget,
+			FLMATOMIC		iNewValue);
+	#endif
+	
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
 	#if defined( FLM_AIX)
 	FINLINE int aix_atomic_add(
 		volatile int *			piTarget,
