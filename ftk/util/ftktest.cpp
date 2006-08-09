@@ -27,7 +27,7 @@
 #define F_ATOM_TEST_THREADS		64
 #define F_ATOM_TEST_ITERATIONS	100000
 
-RCODE ftkTestAtomics( void);
+FSTATIC RCODE ftkTestAtomics( void);
 
 FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 	IF_Thread *		pThread);
@@ -41,8 +41,14 @@ FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
 FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
 	IF_Thread *		pThread);
 	
-FSTATIC RCODE ftkChecksumTest( void);
+FSTATIC RCODE ftkFastChecksumTest( void);
 
+FSTATIC RCODE ftkPacketChecksumTest( void);
+
+FSTATIC FLMBYTE ftkSlowPacketChecksum(
+	const FLMBYTE *	pucPacket,
+	FLMUINT				uiBytesToChecksum);
+	
 FSTATIC FLMATOMIC						gv_refCount;
 FSTATIC FLMATOMIC						gv_spinLock;
 	
@@ -113,14 +119,19 @@ int main( void)
 	// Run a multi-threaded test to verify the proper operation of
 	// the atomic operations
 	
-//	if( RC_BAD( rc = ftkTestAtomics()))
-//	{
-//		goto Exit;
-//	}
+	if( RC_BAD( rc = ftkTestAtomics()))
+	{
+		goto Exit;
+	}
 	
 	// Test the checksum routines
 	
-	if( RC_BAD( rc = ftkChecksumTest()))
+	if( RC_BAD( rc = ftkFastChecksumTest()))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = ftkPacketChecksumTest()))
 	{
 		goto Exit;
 	}
@@ -378,7 +389,7 @@ FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
 /********************************************************************
 Desc:
 *********************************************************************/
-FSTATIC RCODE ftkChecksumTest( void)
+FSTATIC RCODE ftkFastChecksumTest( void)
 {
 	RCODE				rc = NE_FLM_OK;
 	FLMUINT			uiSlowAdds = 0;
@@ -471,4 +482,160 @@ Exit:
 	}
 	
 	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+FSTATIC RCODE ftkPacketChecksumTest( void)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiDataLength;
+	FLMBYTE *		pucData = NULL;
+	FLMUINT			uiSlowChecksum = 0;
+	FLMUINT			uiFastChecksum = 0;
+	FLMUINT			uiLoop;
+	FLMUINT			uiIter;
+	FLMUINT			uiPass;
+	FLMUINT			uiStartTime;
+	FLMUINT			uiSlowTime = 0;
+	FLMUINT			uiFastTime = 0;
+	
+	f_printf( "Running checksum tests ... ");
+	
+	uiDataLength = 8192;
+	if( RC_BAD( rc = f_alloc( uiDataLength, &pucData)))
+	{
+		goto Exit;
+	}
+	
+	for( uiIter = 0; uiIter < 1000; uiIter++)
+	{
+		for( uiLoop = 0; uiLoop < uiDataLength; uiLoop++)
+		{
+			pucData[ uiLoop] = f_getRandomByte();
+		}
+		
+		uiStartTime = FLM_GET_TIMER();
+		for( uiPass = 0; uiPass < 100; uiPass++)
+		{
+			uiSlowChecksum = ftkSlowPacketChecksum( pucData, uiDataLength);
+		}
+		uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		
+		uiStartTime = FLM_GET_TIMER();
+		for( uiPass = 0; uiPass < 100; uiPass++)
+		{
+			uiFastChecksum = f_calcPacketChecksum( pucData, uiDataLength); 
+		}
+		uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	
+		if( uiSlowChecksum != uiFastChecksum)
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+			goto Exit;
+		}
+	}
+	
+	f_printf( "Slow time = %u ms, FastTime = %u ms. ", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
+	
+Exit:
+
+	f_printf( "done.\n");
+	
+	if( pucData)
+	{
+		f_free( &pucData);
+	}
+	
+	return( rc);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+FSTATIC FLMBYTE ftkSlowPacketChecksum(
+	const FLMBYTE *	pucPacket,
+	FLMUINT				uiBytesToChecksum)
+{
+	FLMUINT				uiChecksum = 0;
+	FLMBYTE				ucTmp;
+	const FLMBYTE *	pucEnd;
+	const FLMBYTE *	pucSectionEnd;
+	const FLMBYTE *	pucCur;
+
+	// Checksum is calculated for every byte in the packet that comes
+	// after the checksum byte.
+
+	pucCur = pucPacket;
+	pucEnd = pucPacket + uiBytesToChecksum;
+
+#ifdef FLM_64BIT
+	pucSectionEnd = pucPacket + (sizeof( FLMUINT) - ((FLMUINT)pucPacket & 0x7));
+#else
+	pucSectionEnd = pucPacket + (sizeof( FLMUINT) - ((FLMUINT)pucPacket & 0x3));
+#endif
+
+	flmAssert( pucSectionEnd >= pucPacket);
+
+	if (pucSectionEnd > pucEnd)
+	{
+		pucSectionEnd = pucEnd;
+	}
+
+	while (pucCur < pucSectionEnd)
+	{
+		uiChecksum = (uiChecksum << 8) + *pucCur++;
+	}
+
+#ifdef FLM_64BIT
+	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
+#else
+	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
+#endif
+
+	while (pucCur < pucSectionEnd)
+	{
+		uiChecksum ^= *((FLMUINT *) pucCur);
+		pucCur += sizeof(FLMUINT);
+	}
+
+	while (pucCur < pucEnd)
+	{
+		uiChecksum ^= *pucCur++;
+	}
+
+	ucTmp = (FLMBYTE) uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE) uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE) uiChecksum;
+
+#ifdef FLM_64BIT
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+#endif
+
+	ucTmp ^= (FLMBYTE) (uiChecksum >> 8);
+	uiChecksum = ucTmp;
+
+	if ((uiChecksum = ucTmp) == 0)
+	{
+		uiChecksum = 1;
+	}
+
+	return ((FLMBYTE) uiChecksum);
 }

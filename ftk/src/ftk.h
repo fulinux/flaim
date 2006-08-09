@@ -2516,7 +2516,11 @@
 		FLMUINT						uiLength,
 		FLMUINT *					puiAdds = NULL,
 		FLMUINT *					puiXORs = NULL);
-	
+
+	FLMBYTE FLMAPI f_calcPacketChecksum(
+		FLMBYTE *					pucPacket,
+		FLMUINT						uiBytesToChecksum);
+		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/

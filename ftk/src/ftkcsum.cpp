@@ -758,3 +758,94 @@ void FLMAPI f_updateCRC(
 
 	*pui32CRC = ui32CRC;
 }
+
+/********************************************************************
+Desc:
+*********************************************************************/
+FLMBYTE FLMAPI f_calcPacketChecksum(
+	FLMBYTE *		pucPacket,
+	FLMUINT			uiBytesToChecksum)
+{
+	FLMUINT			uiChecksum = 0;
+	
+#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
+	if( gv_mmxCheckSumFlag == 1)
+	{
+		unsigned long		uiAdds = 0;
+		unsigned long		uiXORs = 0;
+		
+		ftkFastCheckSumMMX( pucPacket, &uiAdds, &uiXORs, uiBytesToChecksum);
+		uiChecksum = uiXORs;
+	}
+	else
+#endif
+	{
+		FLMBYTE *	pucEnd;
+		FLMBYTE *	pucSectionEnd;
+		FLMBYTE *	pucCur;
+		FLMBYTE		ucTmp;
+		
+		pucCur = pucPacket;
+		pucEnd = pucPacket + uiBytesToChecksum;
+	
+	#ifdef FLM_64BIT
+		pucSectionEnd = pucPacket + (sizeof( FLMUINT) - ((FLMUINT)pucPacket & 0x7));
+	#else
+		pucSectionEnd = pucPacket + (sizeof( FLMUINT) - ((FLMUINT)pucPacket & 0x3));
+	#endif
+	
+		if( pucSectionEnd > pucEnd)
+		{
+			pucSectionEnd = pucEnd;
+		}
+	
+		while( pucCur < pucSectionEnd)
+		{
+			uiChecksum = (uiChecksum << 8) + *pucCur++;
+		}
+	
+	#ifdef FLM_64BIT
+		pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
+	#else
+		pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
+	#endif
+	
+		while( pucCur < pucSectionEnd)
+		{
+			uiChecksum ^= *((FLMUINT *)pucCur);
+			pucCur += sizeof( FLMUINT);
+		}
+	
+		while( pucCur < pucEnd)
+		{
+			uiChecksum ^= *pucCur++;
+		}
+	
+		ucTmp = (FLMBYTE)uiChecksum;
+	
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	
+	#ifdef FLM_64BIT
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	#endif
+	
+		ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
+		uiChecksum = (FLMUINT)ucTmp;
+	}
+
+	return( (FLMBYTE)(uiChecksum != 0 ? uiChecksum : 1));
+}
