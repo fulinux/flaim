@@ -145,7 +145,7 @@
 		  			 defined( __sparc_v8__) || defined( __sparc_v9__) || defined( __arch64__)
 					#define FLM_SPARC_PLUS
 				#endif
-			#elif defined( __x86__) || defined( __x86)
+			#elif defined( __x86__) || defined( __i386__) || defined( __x86_64__)  
 				#define FLM_X86
 			#else
 				#error Platform architecture not supported
@@ -186,7 +186,7 @@
 				#define FLM_PPC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT			
-			#elif defined( __x86__)
+			#elif defined( __x86__) || defined( __x86_64__)
 				#define FLM_X86
 			#else
 				#error Platform architecture not supported

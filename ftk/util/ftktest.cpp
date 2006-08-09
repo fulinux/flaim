@@ -27,7 +27,7 @@
 #define F_ATOM_TEST_THREADS		64
 #define F_ATOM_TEST_ITERATIONS	100000
 
-FSTATIC RCODE ftkTestAtomics( void);
+RCODE ftkTestAtomics( void);
 
 FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 	IF_Thread *		pThread);
@@ -113,10 +113,10 @@ int main( void)
 	// Run a multi-threaded test to verify the proper operation of
 	// the atomic operations
 	
-	if( RC_BAD( rc = ftkTestAtomics()))
-	{
-		goto Exit;
-	}
+//	if( RC_BAD( rc = ftkTestAtomics()))
+//	{
+//		goto Exit;
+//	}
 	
 	// Test the checksum routines
 	
@@ -149,7 +149,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE ftkTestAtomics( void)
+RCODE ftkTestAtomics( void)
 {
 	RCODE					rc = NE_FLM_OK;
 	IF_Thread *			pThreadList[ F_ATOM_TEST_THREADS];

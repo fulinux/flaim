@@ -27,39 +27,27 @@
 
 static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 
-#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
+#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
 
 	static unsigned long gv_mmxCheckSumFlag = 1;
 	
 	#if defined( FLM_WATCOM_NLM)
 	
-		extern void FastCheckSumMMX(
-				void *			pBlk,
-				unsigned long *puiChecksum,	
-				unsigned long *puiXORdata,
-				unsigned long	uiNumberOfBytes);
-		
-		extern void FastCheckSum386(
-				void *			pBlk,
-				unsigned long *puiChecksum,	
-				unsigned long *puiXORdata,
-				unsigned long	uiNumberOfBytes);
+		extern void ftkFastCheckSumMMX(
+				void *				pBlk,
+				unsigned long *	puiChecksum,	
+				unsigned long *	puiXORdata,
+				unsigned long		uiNumberOfBytes);
 		
 		extern unsigned long ftkGetMMXSupported(void);
 		
 	#else
 	
-		static void FastCheckSumMMX(
-				void *			pBlk,
-				unsigned long *puiChecksum,	
-				unsigned long *puiXORdata,
-				unsigned long	uiNumberOfBytes);
-		
-		static void FastCheckSum386(
-				void *			pBlk,
-				unsigned long *puiChecksum,	
-				unsigned long *puiXORdata,
-				unsigned long	uiNumberOfBytes);
+		static void ftkFastCheckSumMMX(
+				void *				pBlk,
+				unsigned long *	puiChecksum,	
+				unsigned long *	puiXORdata,
+				unsigned long		uiNumberOfBytes);
 		
 		static unsigned long ftkGetMMXSupported(void);
 		
@@ -68,11 +56,9 @@ static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 #endif
 
 /********************************************************************
-Desc: Returns 1 if the CPU supports MMX
-Ret:	0 or 1 if CPU supports MMX
+Desc:
 *********************************************************************/
-#if defined( FLM_WATCOM_NLM)
-
+#if defined( FLM_WATCOM_NLM) && defined( FLM_RING_ZERO_NLM)
 	#pragma aux ftkGetMMXSupported parm;
 	#pragma aux ftkGetMMXSupported = \
 		0xB8 0x01 0x00 0x00 0x00            /* mov		eax, 1  				*/\
@@ -81,35 +67,81 @@ Ret:	0 or 1 if CPU supports MMX
 		0xF7 0xC2 0x00 0x00 0x80 0x00       /* test		edx, (1 SHL 23) 	*/\
 		0x0F 0x95 0xC0                      /* setnz	al  						*/\
 		modify exact [EAX EBX ECX EDX];
-
-#elif defined( FLM_WIN) && !defined( FLM_64BIT)
-
-	unsigned long ftkGetMMXSupported( void)
-	{
-		unsigned long bMMXSupported;
-		__asm
-		{
-			mov		eax, 1
-			cpuid
-			xor		eax, eax
-			test		edx, (1 SHL 23)
-			setnz		al
-			mov		bMMXSupported, eax
-		}
-		
-		return( bMMXSupported);
-	}
-	
 #endif
 
 /********************************************************************
-Desc: Performs part of the FLAIM block checksum algorithm 
-		using MMX instructions.
+Desc:
+*********************************************************************/
+#if defined( FLM_WATCOM_NLM) && defined( FLM_LIBC_NLM)
+unsigned long ftkGetMMXSupported( void)
+{
+	return( 1);
+}
+#endif
+
+/********************************************************************
+Desc:
+*********************************************************************/
+#if defined( FLM_X86) && defined( FLM_WIN)
+unsigned long ftkGetMMXSupported( void)
+{
+	unsigned long bMMXSupported;
+	__asm
+	{
+		mov		eax, 1
+		cpuid
+		xor		eax, eax
+		test		edx, (1 SHL 23)
+		setnz		al
+		mov		bMMXSupported, eax
+	}
+	
+	return( bMMXSupported);
+}
+#endif
+	
+/********************************************************************
+Desc:
+*********************************************************************/
+#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_LINUX)
+unsigned long ftkGetMMXSupported( void)
+{
+	FLMUINT32 	bMMXSupported;
+	
+	__asm__ __volatile__(
+		"push		%%ebx\n"
+		"mov		$1, %%eax\n"
+		"cpuid\n"
+		"xor		%%eax, %%eax\n"
+		"test		$0x800000, %%edx\n"
+		"setnz	%%al\n"
+		"mov		%%eax, %0\n"
+		"pop		%%ebx\n"
+			: "=&r" (bMMXSupported)
+			:
+			: "%eax", "%ecx", "%edx");
+	
+	return( bMMXSupported);
+}
+#endif
+
+/********************************************************************
+Desc:
+*********************************************************************/
+#if defined( FLM_X86) && defined( FLM_64BIT)
+unsigned long ftkGetMMXSupported( void)
+{
+	return( 1);
+}
+#endif
+
+/********************************************************************
+Desc:
 *********************************************************************/
 #if defined( FLM_WATCOM_NLM)
 
-	#pragma aux FastCheckSumMMX parm [ESI] [eax] [ebx] [ecx];
-	#pragma aux FastCheckSumMMX = \
+	#pragma aux ftkFastCheckSumMMX parm [ESI] [eax] [ebx] [ecx];
+	#pragma aux ftkFastCheckSumMMX = \
 		0x50                          /* push	eax			;save the sum pointer  								*/\
 		0x53                          /* push	ebx			;save the xor pointer 								*/\
 		0x8B 0x10                     /* mov	edx, [eax]	;for local add 										*/\
@@ -188,312 +220,367 @@ Desc: Performs part of the FLAIM block checksum algorithm
 		0x89 0x17                     /* mov	[edi], edx 																*/\
 		parm [ESI] [eax] [ebx] [ecx]	\
 		modify exact [eax ebx ecx edx ESI EDI];
-
-#elif defined( FLM_WIN) && !defined( FLM_64BIT)
-
-	static void FastCheckSumMMX(
-			void *				pBlk,
-			unsigned long *	puiChecksum,	
-			unsigned long *	puiXORdata,
-			unsigned long		uiNumberOfBytes)
-	{
-		__asm
-		{
-				mov		esi, pBlk
-	
-				// Load up the starting checksum values into edx (add) and ebx (XOR)
-	
-				mov		eax, puiChecksum
-				mov		edx, [eax]
-				and		edx, 0ffh			;clear unneeded bits 
-				mov		eax, puiXORdata
-				mov		ebx, [eax]
-				and		ebx, 0ffh			;clear unneeded bits 
-				mov		ecx, uiNumberOfBytes
-				mov		edi, ecx				;save the amount to copy 
-	
-				cmp		ecx, 32				;see if we have enough for the big loop 
-				jb			MediumStuff 					
-	
-				shr		ecx, 5				;convert length to 32 byte blocks
-				and		edi, 01fh			;change saved length to remainder
-				pxor		mm5, mm5				;wasted space to 16 byte align the upcoming loop - check tHIS..
-				
-				movd		mm4, edx				;set ADD
-				movd		mm5, ebx				;set XOR
-	
-	BigStuffLoop:
-													;load up mm0 - mm3 with 8 bytes each of data.
-				movq		mm0, [esi]
-				movq		mm1, [esi + 8]
-				movq		mm2, [esi + 16]
-				movq		mm3, [esi + 24]
-				add		esi, 32				;move the data pointer ahead 32
-													;add mm0 - mm3 to mm4
-													;xor mm0 - mm3 with mm5
-				paddb		mm4, mm0
-				pxor		mm5, mm0
-				paddb		mm4, mm1
-				pxor		mm5, mm1
-				paddb		mm4, mm2
-				pxor		mm5, mm2
-				paddb		mm4, mm3
-				pxor		mm5, mm3
-				dec		ecx					;see if there is more to do
-				jnz		BigStuffLoop 
-													;mm4 contains the sum to this point
-													;mm5 contains the xor to this point
-													;edi contains the bytes left 
-													;esi points to data left to do
-													;extract the xor value from mm5 and put it in ebx
-				movd		ebx, mm5
-				psrlq		mm5, 32 
-				movd		eax, mm5
-				xor		ebx, eax
-													;extract the sum value from mm4 and put it in dl & dh 
-				movq		mm0, mm4
-				psrlq		mm0, 32 
-				paddb		mm4, mm0
-				movq		mm0, mm4
-				psrlq		mm0, 16 
-				paddb		mm4, mm0
-				movd		edx, mm4
-				emms								;end of MMX stuff
-	
-				mov		ecx, edi				;load up the rest of the length 
-													;dl contains half the sum to this point
-													;dh contains half the sum to this point
-													;ebx contains the xor to this point - 32 bits wide.
-													;ecx contains the bytes still left to do 
-													;esi contains pointer to data to checksum 
-	MediumStuff:
-				cmp		ecx, 4
-				jb			SmallStuff
-				shr		ecx, 2
-				and		edi, 3
-	
-	DSSumLoop:
-				mov		eax, [esi]
-				add		esi, 4
-				xor		ebx, eax
-				add		dl, al
-				add		dh, ah
-				shr		eax, 16
-				add		dl, al
-				add		dh, ah
-				dec		ecx
-				jnz		DSSumLoop
-				mov		ecx, edi				;load up the rest of the length 
-													;dl contains half the sum to this point 
-													;dh contains half the sum to this point 
-													;ebx contains the xor to this point - 32 bits wide.
-													;ecx contains the bytes still left to do 
-													;esi contains pointer to data to checksum 
-	SmallStuff:
-				add		dl, dh				;get complete sum in dl 
-				mov		eax, ebx				;get complete xor in bl
-				shr		eax, 16 						
-				xor		bx, ax 							
-				xor		bl, bh 							
-				cmp		ecx, 0				;see if anything left to do - 3 or less bytes 
-				jz			Done 							
-	
-	SmallStuffLoop: 						
-				mov		al, [esi] 						
-				inc		esi								
-				add		dl, al 							
-				xor		bl, al 							
-				dec		ecx 							
-				jnz		SmallStuffLoop 				
-	Done: 									
-				and		edx, 0ffh			;clear unneeded bits 
-				and		ebx, 0ffh			;clear unneeded bits 
-	
-				// Set the return values.
-	
-				mov		eax, puiChecksum
-				mov		[eax], edx
-	
-				mov		eax, puiXORdata
-				mov		[eax], ebx
-		}
-		return;
-	}
 #endif
 
-/******************************************************************************
-Desc: Performs part of the FLAIM block checksum algorithm 
-		using 386 and NOT MMX instructions.
-******************************************************************************/
-#if defined( FLM_WATCOM_NLM)
-
-	#pragma aux FastCheckSum386 parm [ESI] [eax] [ebx] [ecx];
-
-	#pragma aux FastCheckSum386 = \
-	0x50                            /* push	eax			;save the sum pointer  	*/\
-	0x53                            /* push	ebx			;save the xor pointer 	*/\
-	0x8B 0x10                       /* mov		edx, [eax]	;for local add 			*/\
-	0x81 0xE2 0xFF 0x00 0x00 0x00	  /* and		edx, 0ffh	;clear unneeded bits		*/\
-	0x8B 0x1B                       /* mov		ebx, [ebx]	;for local xor 			*/\
-	0x81 0xE3 0xFF 0x00 0x00 0x00   /* and		ebx, 0ffh	;clear unneeded bits		*/\
-											  /* ;dl contains the sum to this point 			*/\
-											  /* ;ebx contains the xor to this point			*/\
-											  /* ;ecx contains the bytes still left to do	*/\
-											  /* ;esi contains pointer to data to checksum	*/\
-	0x83 0xF9 0x04                  /* cmp		ecx, 4 										*/\
-	0x0F 0x82 0x1F 0x00 0x00 0x00	  /* jb		#SmallStuff 								*/\
-	0x8B 0xF9                       /* mov		edi, ecx 									*/\
-	0xC1 0xE9 0x02                  /* shr		ecx, 2 										*/\
-	0x83 0xE7 0x03                  /* and		edi, 3 										*/\
-											  /* #DSSumLoop: 											*/\
-	0x8B 0x06                       /* mov		eax, [esi] 									*/\
-	0x83 0xC6 0x04                  /* add		esi, 4 										*/\
-	0x33 0xD8                       /* xor		ebx, eax 									*/\
-	0x02 0xD0                       /* add		dl, al 										*/\
-	0x02 0xF4                       /* add		dh, ah 										*/\
-	0xC1 0xE8 0x10                  /* shr		eax, 16 										*/\
-	0x02 0xD0                       /* add		dl, al 										*/\
-	0x02 0xF4                       /* add		dh, ah 										*/\
-	0x49                            /* dec		ecx 											*/\
-	0x75 0xEB                       /* jnz		#DSSumLoop 									*/\
-	0x8B 0xCF                       /* mov		ecx, edi	;load up the rest of len	*/\
-											  /* ;dl contains half the sum to this point 	*/\
-											  /* ;dh contains half the sum to this point 	*/\
-											  /* ;ebx contains the xor to this point			*/\
-											  /* ;ecx contains the bytes still left to do	*/\
-											  /* ;esi contains pointer to data to checksum	*/\
-											  /* #SmallStuff: 										*/\
-	0x02 0xD6                       /* add		dl, dh		;get complete sum in dl */\
-	0x8B 0xC3                       /* mov		eax, ebx	;get complete xor in bl		*/\
-	0xC1 0xE8 0x10                  /* shr		eax, 16 										*/\
-	0x66 0x33 0xD8                  /* xor		bx, ax 										*/\
-	0x32 0xDF                       /* xor		bl, bh 										*/\
-	0x83 0xF9 0x00                  /* cmp		ecx, 0										*/\
-	0x0F 0x84 0x0A 0x00 0x00 0x00	  /* jz		#Done 										*/\
-											  /* #SmallStuffLoop: 									*/\
-	0x8A 0x06                       /* mov		al, [esi] 									*/\
-	0x46                            /* inc		esi											*/\
-	0x02 0xD0                       /* add		dl, al 										*/\
-	0x32 0xD8                       /* xor		bl, al 										*/\
-	0x49                            /* dec		ecx 											*/\
-	0x75 0xF6                       /* jnz		#SmallStuffLoop 							*/\
-											  /* #Done: 												*/\
-	0x81 0xE2 0xFF 0x00 0x00 0x00   /* and		edx, 0ffh	;clear unneeded bits		*/\
-	0x58                            /* pop		eax 											*/\
-	0x81 0xE3 0xFF 0x00 0x00 0x00   /* and		ebx, 0ffh	;clear unneeded bits		*/\
-	0x5F                            /* pop		edi 											*/\
-	0x89 0x18                       /* mov		[eax], ebx 									*/\
-	0x89 0x17                       /* mov		[edi], edx 									*/\
-	parm [ESI] [eax] [ebx] [ecx]	\
-	modify exact [eax ebx ecx edx ESI EDI];
-
-#elif defined( FLM_WIN) && !defined( FLM_64BIT)
-
-	static void FastCheckSum386(
-			void *			pBlk,
-			unsigned long *puiChecksum,	
-			unsigned long *puiXORdata,
-			unsigned long	uiNumberOfBytes)
-	{
-		__asm
-		{
-				mov		esi, pBlk
-
-				// Load up the starting checksum values into edx (add) and ebx (XOR)
-
-				mov		eax, puiChecksum
-				mov		edx, [eax]				// Set local add
-				and		edx, 0ffh			;clear unneeded bits 
-				mov		eax, puiXORdata
-				mov		ebx, [eax]
-				and		ebx, 0ffh			;clear unneeded bits 
-				mov		ecx, uiNumberOfBytes
-
-											;dl contains the sum to this point 		
-											;ebx contains the xor to this point - 32 bits wide. 
-											;ecx contains the bytes still left to do 
-											;esi contains pointer to data to checksum 
-				cmp		ecx, 4 							
-				jb			SmallStuff 					
-				mov		edi, ecx 						
-				shr		ecx, 2 							
-				and		edi, 3
-
-	DSSumLoop: 								
-				mov		eax, [esi] 						
-				add		esi, 4 							
-				xor		ebx, eax 						
-				add		dl, al 							
-				add		dh, ah 							
-				shr		eax, 16 						
-				add		dl, al 							
-				add		dh, ah 							
-				dec		ecx 							
-				jnz		DSSumLoop 						
-				mov		ecx, edi		;load up the rest of the length 
-											;dl contains half the sum to this point 	
-											;dh contains half the sum to this point 	
-											;ebx contains the xor to this point - 32 bits wide. 
-											;ecx contains the bytes still left to do 
-											;esi contains pointer to data to checksum
-
-	SmallStuff: 							
-				add		dl, dh		;get complete sum in dl 
-				mov		eax, ebx		;get complete xor in bl
-				shr		eax, 16 						
-				xor		bx, ax 							
-				xor		bl, bh 							
-				cmp		ecx, 0		;see if anything left to do - 3 or less bytes 
-				jz			Done 							
-
-	SmallStuffLoop: 						
-				mov		al, [esi] 						
-				inc		esi								
-				add		dl, al 							
-				xor		bl, al 							
-				dec		ecx 							
-				jnz		SmallStuffLoop
-
-	Done:
-				and		edx, 0ffh	;clear unneeded bits 
-				and		ebx, 0ffh	;clear unneeded bits 
-			
-				// Set the return values.
-
-				mov		eax, puiChecksum		// Address of add result/start
-				mov		[eax], edx
-
-				mov		eax, puiXORdata		// Address of xor result/start
-				mov		[eax], ebx
-		}
-
-		return;
-	}
-#endif
-
-/******************************************************************************
-Desc: Performs part of the FLAIM block checksum algorithm 
-		using MMX or 386 instructions.
-Note:	FastCheckSum will start with the checksum and xordata you
-		pass in.  It assumes that the data is already dword aligned.
-******************************************************************************/
-#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
-void FastCheckSum(
-		void *			pBlk,
-		FLMUINT *		puiChecksum,	
-		FLMUINT *		puiXORdata,
-		FLMUINT			uiNumberOfBytes)
+/********************************************************************
+Desc:
+*********************************************************************/
+#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_WIN)
+static void ftkFastCheckSumMMX(
+		void *				pBlk,
+		unsigned long *	puiChecksum,	
+		unsigned long *	puiXORdata,
+		unsigned long		uiNumberOfBytes)
 {
-	if( gv_mmxCheckSumFlag == 1)
+	__asm
 	{
-		FastCheckSumMMX( (void *) pBlk, (unsigned long *) puiChecksum, 
-					(unsigned long *) puiXORdata, (unsigned long) uiNumberOfBytes);
+			mov		esi, pBlk
+
+			// Load up the starting checksum values into edx (add) and ebx (XOR)
+
+			mov		eax, puiChecksum
+			mov		edx, [eax]
+			and		edx, 0ffh			;clear unneeded bits 
+			mov		eax, puiXORdata
+			mov		ebx, [eax]
+			and		ebx, 0ffh			;clear unneeded bits 
+			mov		ecx, uiNumberOfBytes
+			mov		edi, ecx				;save the amount to copy 
+
+			cmp		ecx, 32				;see if we have enough for the big loop 
+			jb			MediumStuff 					
+
+			shr		ecx, 5				;convert length to 32 byte blocks
+			and		edi, 01fh			;change saved length to remainder
+			pxor		mm5, mm5				;wasted space to 16 byte align the upcoming loop - check tHIS..
+			
+			movd		mm4, edx				;set ADD
+			movd		mm5, ebx				;set XOR
+
+BigStuffLoop:
+												;load up mm0 - mm3 with 8 bytes each of data.
+			movq		mm0, [esi]
+			movq		mm1, [esi + 8]
+			movq		mm2, [esi + 16]
+			movq		mm3, [esi + 24]
+			add		esi, 32				;move the data pointer ahead 32
+												;add mm0 - mm3 to mm4
+												;xor mm0 - mm3 with mm5
+			paddb		mm4, mm0
+			pxor		mm5, mm0
+			paddb		mm4, mm1
+			pxor		mm5, mm1
+			paddb		mm4, mm2
+			pxor		mm5, mm2
+			paddb		mm4, mm3
+			pxor		mm5, mm3
+			dec		ecx					;see if there is more to do
+			jnz		BigStuffLoop 
+												;mm4 contains the sum to this point
+												;mm5 contains the xor to this point
+												;edi contains the bytes left 
+												;esi points to data left to do
+												;extract the xor value from mm5 and put it in ebx
+			movd		ebx, mm5
+			psrlq		mm5, 32 
+			movd		eax, mm5
+			xor		ebx, eax
+												;extract the sum value from mm4 and put it in dl & dh 
+			movq		mm0, mm4
+			psrlq		mm0, 32 
+			paddb		mm4, mm0
+			movq		mm0, mm4
+			psrlq		mm0, 16 
+			paddb		mm4, mm0
+			movd		edx, mm4
+			emms								;end of MMX stuff
+
+			mov		ecx, edi				;load up the rest of the length 
+												;dl contains half the sum to this point
+												;dh contains half the sum to this point
+												;ebx contains the xor to this point - 32 bits wide.
+												;ecx contains the bytes still left to do 
+												;esi contains pointer to data to checksum 
+MediumStuff:
+			cmp		ecx, 4
+			jb			SmallStuff
+			shr		ecx, 2
+			and		edi, 3
+
+DSSumLoop:
+			mov		eax, [esi]
+			add		esi, 4
+			xor		ebx, eax
+			add		dl, al
+			add		dh, ah
+			shr		eax, 16
+			add		dl, al
+			add		dh, ah
+			dec		ecx
+			jnz		DSSumLoop
+			mov		ecx, edi				;load up the rest of the length 
+												;dl contains half the sum to this point 
+												;dh contains half the sum to this point 
+												;ebx contains the xor to this point - 32 bits wide.
+												;ecx contains the bytes still left to do 
+												;esi contains pointer to data to checksum 
+SmallStuff:
+			add		dl, dh				;get complete sum in dl 
+			mov		eax, ebx				;get complete xor in bl
+			shr		eax, 16 						
+			xor		bx, ax 							
+			xor		bl, bh 							
+			cmp		ecx, 0				;see if anything left to do - 3 or less bytes 
+			jz			Done 							
+
+SmallStuffLoop: 						
+			mov		al, [esi] 						
+			inc		esi								
+			add		dl, al 							
+			xor		bl, al 							
+			dec		ecx 							
+			jnz		SmallStuffLoop 				
+Done: 									
+			and		edx, 0ffh			;clear unneeded bits 
+			and		ebx, 0ffh			;clear unneeded bits 
+
+			// Set the return values.
+
+			mov		eax, puiChecksum
+			mov		[eax], edx
+
+			mov		eax, puiXORdata
+			mov		[eax], ebx
 	}
-	else
-	{
-		FastCheckSum386( (void *) pBlk, (unsigned long *) puiChecksum, 
-					(unsigned long *) puiXORdata, (unsigned long) uiNumberOfBytes);
-	}
+	return;
+}
+#endif
+
+/********************************************************************
+Desc:
+*********************************************************************/
+#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_LINUX)
+static void ftkFastCheckSumMMX(
+		void *				pBlk,
+		unsigned long *	puiChecksum,	
+		unsigned long *	puiXORdata,
+		unsigned long		uiNumberOfBytes)
+{
+	__asm__ __volatile__(
+			"			push		%%ebx\n"
+			"			mov		%2, %%esi\n"
+			"			mov		%3, %%eax\n"
+			"			mov		(%%eax), %%edx\n"
+			"			and		$0xFF, %%edx\n"
+			"			mov		%4, %%eax\n"
+			"			mov		(%%eax), %%ebx\n"
+			"			and		$0xFF, %%ebx\n" 
+			"			mov		%5, %%ecx\n"
+			"			mov		%%ecx, %%edi\n" 
+			
+			"			cmp		$32, %%ecx\n"
+			"			jb			MediumStuff\n" 					
+			
+			"			shr		$5, %%ecx\n"
+			"			and		$0x01F, %%edi\n"
+			"			pxor		%%mm5, %%mm5\n"
+						
+			"			movd		%%edx, %%mm4\n"
+			"			movd		%%ebx, %%mm5\n"
+			
+			"BigStuffLoop:\n"
+			"			movq		(%%esi), %%mm0\n"
+			"			movq		8(%%esi), %%mm1\n"
+			"			movq		16(%%esi), %%mm2\n"
+			"			movq		24(%%esi), %%mm3\n"
+			"			add		$32, %%esi\n"
+			"			paddb		%%mm0, %%mm4\n"
+			"			pxor		%%mm0, %%mm5\n"
+			"			paddb		%%mm1, %%mm4\n"
+			"			pxor		%%mm1, %%mm5\n"
+			"			paddb		%%mm2, %%mm4\n"
+			"			pxor		%%mm2, %%mm5\n"
+			"			paddb		%%mm3, %%mm4\n"
+			"			pxor		%%mm3, %%mm5\n"
+			"			dec		%%ecx\n"
+			
+			"			jnz		BigStuffLoop\n" 
+			"			movd		%%mm5, %%ebx\n"
+			"			psrlq		$32, %%mm5\n"
+			"			movd		%%mm5, %%eax\n"
+			"			xor		%%eax, %%ebx\n"
+			"			movq		%%mm4, %%mm0\n"
+			"			psrlq		$32, %%mm0\n"
+			"			paddb		%%mm0, %%mm4\n"
+			"			movq		%%mm4, %%mm0\n"
+			"			psrlq		$16, %%mm0\n" 
+			"			paddb		%%mm0, %%mm4\n"
+			"			movd		%%mm4, %%edx\n"
+			"			emms\n"
+			
+			"			mov		%%edi, %%ecx\n"
+			
+			"MediumStuff:\n"
+			"			cmp		$4, %%ecx\n"
+			"			jb			SmallStuff\n"
+			"			shr		$2, %%ecx\n"
+			"			and		$3, %%edi\n"
+			
+			"DSSumLoop:\n"
+			"			mov		(%%esi), %%eax\n"
+			"			add		$4, %%esi\n"
+			"			xor		%%eax, %%ebx\n"
+			"			add		%%al, %%dl\n"
+			"			add		%%ah, %%dh\n"
+			"			shr		$16, %%eax\n"
+			"			add		%%al, %%dl\n"
+			"			add		%%ah, %%dh\n"
+			"			dec		%%ecx\n"
+			"			jnz		DSSumLoop\n"
+			"			mov		%%edi, %%ecx\n"
+			
+			"SmallStuff:\n"
+			"			add		%%dh, %%dl\n" 
+			"			mov		%%ebx, %%eax\n"
+			"			shr		$16, %%eax\n"				
+			"			xor		%%ax, %%bx\n" 							
+			"			xor		%%bh, %%bl\n"							
+			"			cmp		$0, %%ecx\n" 
+			"			jz			Done\n" 							
+			
+			"SmallStuffLoop:\n" 						
+			"			mov		(%%esi), %%al\n" 						
+			"			inc		%%esi\n"								
+			"			add		%%al, %%dl\n" 							
+			"			xor		%%al, %%bl\n" 							
+			"			dec		%%ecx\n" 							
+			"			jnz		SmallStuffLoop\n" 				
+			"Done:\n" 									
+			"			and		$0xFF, %%edx\n" 
+			"			and		$0xFF, %%ebx\n" 
+			
+			"			mov		%0, %%eax\n"
+			"			mov		%%edx, (%%eax)\n"
+			
+			"			mov		%1, %%eax\n"
+			"			mov		%%ebx, (%%eax)\n"
+			"			pop		%%ebx\n"
+				: "=m" (puiChecksum), "=m" (puiXORdata)
+				: "m" (pBlk), "m" (puiChecksum), "m" (puiXORdata), "m" (uiNumberOfBytes)
+				: "%eax", "%ecx", "%edx", "%esi", "%edi");
+}
+#endif
+
+/********************************************************************
+Desc:
+*********************************************************************/
+#if defined( FLM_X86) && defined( FLM_64BIT) && defined( FLM_LINUX)
+static void ftkFastCheckSumMMX(
+		void *				pBlk,
+		unsigned long *	puiChecksum,	
+		unsigned long *	puiXORdata,
+		unsigned long		uiNumberOfBytes)
+{
+	__asm__ __volatile__(
+			"			mov		%2, %%r8\n"
+			"			mov		%3, %%r9\n"
+			"			mov		(%%r9), %%edx\n"
+			"			and		$0xFF, %%edx\n"
+			"			mov		%4, %%r9\n"
+			"			mov		(%%r9), %%ebx\n"
+			"			and		$0xFF, %%ebx\n" 
+			"			mov		%5, %%ecx\n"
+			"			mov		%%ecx, %%edi\n" 
+			
+			"			cmp		$32, %%ecx\n"
+			"			jb			MediumStuff\n" 					
+			
+			"			shr		$5, %%ecx\n"
+			"			and		$0x01F, %%edi\n"
+			"			pxor		%%mm5, %%mm5\n"
+						
+			"			movd		%%edx, %%mm4\n"
+			"			movd		%%ebx, %%mm5\n"
+			
+			"BigStuffLoop:\n"
+			"			movq		(%%r8), %%mm0\n"
+			"			movq		8(%%r8), %%mm1\n"
+			"			movq		16(%%r8), %%mm2\n"
+			"			movq		24(%%r8), %%mm3\n"
+			"			add		$32, %%r8\n"
+			"			paddb		%%mm0, %%mm4\n"
+			"			pxor		%%mm0, %%mm5\n"
+			"			paddb		%%mm1, %%mm4\n"
+			"			pxor		%%mm1, %%mm5\n"
+			"			paddb		%%mm2, %%mm4\n"
+			"			pxor		%%mm2, %%mm5\n"
+			"			paddb		%%mm3, %%mm4\n"
+			"			pxor		%%mm3, %%mm5\n"
+			"			dec		%%ecx\n"
+			
+			"			jnz		BigStuffLoop\n" 
+			"			movd		%%mm5, %%ebx\n"
+			"			psrlq		$32, %%mm5\n"
+			"			movd		%%mm5, %%eax\n"
+			"			xor		%%eax, %%ebx\n"
+			"			movq		%%mm4, %%mm0\n"
+			"			psrlq		$32, %%mm0\n"
+			"			paddb		%%mm0, %%mm4\n"
+			"			movq		%%mm4, %%mm0\n"
+			"			psrlq		$16, %%mm0\n" 
+			"			paddb		%%mm0, %%mm4\n"
+			"			movd		%%mm4, %%edx\n"
+			"			emms\n"
+			
+			"			mov		%%edi, %%ecx\n"
+			
+			"MediumStuff:\n"
+			"			cmp		$4, %%ecx\n"
+			"			jb			SmallStuff\n"
+			"			shr		$2, %%ecx\n"
+			"			and		$3, %%edi\n"
+			
+			"DSSumLoop:\n"
+			"			mov		(%%r8), %%eax\n"
+			"			add		$4, %%r8\n"
+			"			xor		%%eax, %%ebx\n"
+			"			add		%%al, %%dl\n"
+			"			add		%%ah, %%dh\n"
+			"			shr		$16, %%eax\n"
+			"			add		%%al, %%dl\n"
+			"			add		%%ah, %%dh\n"
+			"			dec		%%ecx\n"
+			"			jnz		DSSumLoop\n"
+			"			mov		%%edi, %%ecx\n"
+			
+			"SmallStuff:\n"
+			"			add		%%dh, %%dl\n" 
+			"			mov		%%ebx, %%eax\n"
+			"			shr		$16, %%eax\n"				
+			"			xor		%%ax, %%bx\n" 							
+			"			xor		%%bh, %%bl\n"							
+			"			cmp		$0, %%ecx\n" 
+			"			jz			Done\n" 							
+			
+			"SmallStuffLoop:\n" 						
+			"			mov		(%%r8), %%al\n" 						
+			"			inc		%%r8\n"								
+			"			add		%%al, %%dl\n"
+			"			xor		%%al, %%bl\n" 							
+			"			dec		%%ecx\n" 							
+			"			jnz		SmallStuffLoop\n" 				
+			"Done:\n" 									
+			"			and		$0xFF, %%edx\n" 
+			"			and		$0xFF, %%ebx\n" 
+			
+			"			mov		%0, %%r9\n"
+			"			mov		%%edx, (%%r9)\n"
+			
+			"			mov		%1, %%r9\n"
+			"			mov		%%ebx, (%%r9)\n"
+				: "=m" (puiChecksum), "=m" (puiXORdata)
+				: "m" (pBlk), "m" (puiChecksum), "m" (puiXORdata), "m" (uiNumberOfBytes)
+				: "%eax", "%ebx", "%ecx", "%edi", "%edx", "%r8", "%r9");
 }
 #endif
 
@@ -502,8 +589,7 @@ Desc: Sets the global variable to check if MMX instructions are allowed.
 ******************************************************************************/
 void f_initFastCheckSum( void)
 {
-#if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
-
+#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
 	// NOTE that ftkGetMMXSupported assumes that we are running on at least a
 	// pentium.  The check to see if we are on a pentium requires that  we
 	// modify the flags register, and we can't do that if we are running
@@ -543,23 +629,26 @@ FLMUINT32 FLMAPI f_calcFastChecksum(
 		uiXORs = *puiXORs;
 	}
 
-#if defined( FLM_NLM) || (defined( FLM_WIN) && !defined( FLM_64BIT))
-
-	FastCheckSum( pucData, &uiAdds, &uiXORs, uiLength);
-
-#else
-	
-	FLMBYTE *		pucCur = pucData;
-	FLMBYTE *		pucEnd = pucData + uiLength;
-
-	while( pucCur < pucEnd)	
+#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
+	if( gv_mmxCheckSumFlag == 1)
 	{
-		uiAdds += *pucCur;
-		uiXORs ^= *pucCur++;
+		ftkFastCheckSumMMX( (void *) pucData, (unsigned long *) &uiAdds, 
+					(unsigned long *) &uiXORs, (unsigned long) uiLength);
 	}
-
-	uiAdds &= 0xFF;
+	else
 #endif
+	{
+		FLMBYTE *		pucCur = pucData;
+		FLMBYTE *		pucEnd = pucData + uiLength;
+	
+		while( pucCur < pucEnd)	
+		{
+			uiAdds += *pucCur;
+			uiXORs ^= *pucCur++;
+		}
+	
+		uiAdds &= 0xFF;
+	}
 
 	if( puiAdds)
 	{
