@@ -1875,6 +1875,20 @@ FLMUINT32 FLMAPI f_getRandomUINT32(
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FLMBYTE FLMAPI f_getRandomByte( void)
+{
+	FLMBYTE		ucValue;
+
+	f_mutexLock( gv_hRandomGenMutex);	
+	ucValue = (FLMBYTE)(gv_pRandomGenerator->getUINT32( 0, 0xFF));
+	f_mutexUnlock( gv_hRandomGenMutex);	
+	
+	return( ucValue);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 void F_ListManager::insertFirst(
 	FLMUINT				uiList,
 	F_ListItem *		pNewFirstItem)

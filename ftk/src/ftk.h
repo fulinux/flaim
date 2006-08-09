@@ -41,15 +41,16 @@
 		#undef FLM_AIX
 		#undef FLM_LINUX
 		#undef FLM_SOLARIS
-		#undef FLM_SPARC
-		#undef FLM_SPARC_PLUS
 		#undef FLM_HPUX
 		#undef FLM_OSX
-		#undef FLM_BIG_ENDIAN
-		#undef FLM_PPC
-		#undef FLM_STRICT_ALIGNMENT
 		#undef FLM_S390
 		#undef FLM_IA64
+		#undef FLM_PPC
+		#undef FLM_SPARC
+		#undef FLM_SPARC_PLUS
+		#undef FLM_X86
+		#undef FLM_BIG_ENDIAN
+		#undef FLM_STRICT_ALIGNMENT
 		#undef FLM_GNUC
 		#undef FLM_HAS_ASYNC_IO
 		#undef FLM_HAS_DIRECT_IO
@@ -64,6 +65,11 @@
 		#endif		
 
 		#if defined( __NETWARE__) || defined( NLM) || defined( N_PLAT_NLM)
+			#if defined( __WATCOMC__) && defined( __386__)
+				#define FLM_X86
+			#else
+				#error Platform architecture not supported
+			#endif
 			#define FLM_NLM
 			#if !defined( FLM_RING_ZERO_NLM) && !defined( FLM_LIBC_NLM)
 				#define FLM_RING_ZERO_NLM
@@ -79,6 +85,9 @@
 				#define FLM_HAS_DIRECT_IO
 			#endif
 		#elif defined( _WIN64)
+			#if defined( _M_IX6) || defined( _M_X64)
+				#define FLM_X86
+			#endif
 			#define FLM_WIN
 			#define FLM_OSTYPE_STR "Windows"
 			#ifndef FLM_64BIT
@@ -88,6 +97,11 @@
 			#define FLM_HAS_ASYNC_IO
 			#define FLM_HAS_DIRECT_IO
 		#elif defined( _WIN32)
+			#if defined( _M_IX86) || defined( _M_X64)
+				#define FLM_X86
+			#else
+				#error Platform architecture not supported
+			#endif
 			#define FLM_WIN
 			#define FLM_OSTYPE_STR "Windows"
 			#define FLM_HAS_ASYNC_IO
@@ -131,6 +145,10 @@
 		  			 defined( __sparc_v8__) || defined( __sparc_v9__) || defined( __arch64__)
 					#define FLM_SPARC_PLUS
 				#endif
+			#elif defined( __x86__) || defined( __x86)
+				#define FLM_X86
+			#else
+				#error Platform architecture not supported
 			#endif
 			#define FLM_HAS_ASYNC_IO
 			#define FLM_HAS_DIRECT_IO
@@ -145,6 +163,10 @@
 				#if defined( __sparcv8plus) || defined( __sparcv9)
 					#define FLM_SPARC_PLUS
 				#endif
+			#elif defined( i386) || defined( _i386)
+				#define FLM_X86
+			#else
+				#error Platform architecture not supported
 			#endif
 			#define FLM_HAS_ASYNC_IO
 			#define FLM_HAS_DIRECT_IO
@@ -164,6 +186,10 @@
 				#define FLM_PPC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT			
+			#elif defined( __x86__)
+				#define FLM_X86
+			#else
+				#error Platform architecture not supported
 			#endif
 			#define FLM_HAS_ASYNC_IO
 			#define FLM_HAS_DIRECT_IO
@@ -173,8 +199,8 @@
 	
 		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
 			#if defined( FLM_UNIX)
-				#if defined( __x86_64__) || defined( _LP64) || \
-					 defined( __LP64__) || defined( __sparcv9)
+				#if defined( __x86_64__) || defined( _M_X64) || \
+					 defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
 					#define FLM_64BIT
 				#endif
 			#endif
@@ -186,7 +212,8 @@
 			#error Cannot define both FLM_32BIT and FLM_64BIT
 		#endif
 		
-		#if defined( __x86_64__) || defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
+		#if defined( __x86_64__) || defined( _M_X64) || \
+			 defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
 			#if !defined( FLM_64BIT)
 				#error Platform word size is incorrect
 			#endif
@@ -2180,6 +2207,8 @@
 		FLMUINT32					ui32Low = 0,
 		FLMUINT32					ui32High = FLM_MAX_RANDOM);
 	
+	FLMBYTE FLMAPI f_getRandomByte( void);
+		
 	/**********************************************************************
 	Desc:	Atomic operations
 	**********************************************************************/

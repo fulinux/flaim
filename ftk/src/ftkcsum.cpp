@@ -45,7 +45,7 @@ static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 				unsigned long *puiXORdata,
 				unsigned long	uiNumberOfBytes);
 		
-		extern unsigned long GetMMXSupported(void);
+		extern unsigned long ftkGetMMXSupported(void);
 		
 	#else
 	
@@ -61,7 +61,7 @@ static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 				unsigned long *puiXORdata,
 				unsigned long	uiNumberOfBytes);
 		
-		static unsigned long GetMMXSupported(void);
+		static unsigned long ftkGetMMXSupported(void);
 		
 	#endif
 	
@@ -73,8 +73,8 @@ Ret:	0 or 1 if CPU supports MMX
 *********************************************************************/
 #if defined( FLM_WATCOM_NLM)
 
-	#pragma aux GetMMXSupported parm;
-	#pragma aux GetMMXSupported = \
+	#pragma aux ftkGetMMXSupported parm;
+	#pragma aux ftkGetMMXSupported = \
 		0xB8 0x01 0x00 0x00 0x00            /* mov		eax, 1  				*/\
 		0x0F 0xA2                         	/* CPUID  							*/\
 		0x33 0xC0                         	/* xor		eax, eax 			*/\
@@ -84,7 +84,7 @@ Ret:	0 or 1 if CPU supports MMX
 
 #elif defined( FLM_WIN) && !defined( FLM_64BIT)
 
-	unsigned long GetMMXSupported( void)
+	unsigned long ftkGetMMXSupported( void)
 	{
 		unsigned long bMMXSupported;
 		__asm
@@ -504,7 +504,7 @@ void f_initFastCheckSum( void)
 {
 #if (defined( FLM_WIN) && !defined( FLM_64BIT)) || defined( FLM_NLM)
 
-	// NOTE that GetMMXSupported assumes that we are running on at least a
+	// NOTE that ftkGetMMXSupported assumes that we are running on at least a
 	// pentium.  The check to see if we are on a pentium requires that  we
 	// modify the flags register, and we can't do that if we are running
 	// in ring3.  Because NetWare 5 - according to our product marketing -
@@ -513,7 +513,7 @@ void f_initFastCheckSum( void)
 	// can do MMX instructions - unless you can assume that even on NT you
 	// will be on at least a P5.
 
-	gv_mmxCheckSumFlag = GetMMXSupported();
+	gv_mmxCheckSumFlag = ftkGetMMXSupported();
 #endif
 }
 

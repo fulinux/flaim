@@ -41,6 +41,8 @@ FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
 FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
 	IF_Thread *		pThread);
 	
+FSTATIC RCODE ftkChecksumTest( void);
+
 FSTATIC FLMATOMIC						gv_refCount;
 FSTATIC FLMATOMIC						gv_spinLock;
 	
@@ -104,6 +106,7 @@ int main( void)
 	pBTree->btDeleteTree();
 	pBTree->Release();
 
+	f_printf( "Running sprintf test: ");
 	f_sprintf( szTmpBuf, "Hello, World! (You're number %u)\n", 1);
 	f_printf( szTmpBuf);
 	
@@ -111,6 +114,13 @@ int main( void)
 	// the atomic operations
 	
 	if( RC_BAD( rc = ftkTestAtomics()))
+	{
+		goto Exit;
+	}
+	
+	// Test the checksum routines
+	
+	if( RC_BAD( rc = ftkChecksumTest()))
 	{
 		goto Exit;
 	}
@@ -363,4 +373,102 @@ FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
 	}
 	
 	return( NE_FLM_OK);
+}
+
+/********************************************************************
+Desc:
+*********************************************************************/
+FSTATIC RCODE ftkChecksumTest( void)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMUINT			uiSlowAdds = 0;
+	FLMUINT			uiSlowXORs = 0;
+	FLMUINT			uiFastAdds = 0;
+	FLMUINT			uiFastXORs = 0;
+	FLMUINT			uiDataLength;
+	FLMBYTE *		pucData = NULL;
+	FLMBYTE *		pucCur;
+	FLMBYTE *		pucEnd;
+	FLMUINT			uiSlowChecksum = 0;
+	FLMUINT			uiFastChecksum = 0;
+	FLMUINT			uiLoop;
+	FLMUINT			uiIter;
+	FLMUINT			uiPass;
+	FLMUINT			uiStartTime;
+	FLMUINT			uiSlowTime = 0;
+	FLMUINT			uiFastTime = 0;
+	
+	f_printf( "Running checksum tests ... ");
+	
+	uiDataLength = 8192;
+	if( RC_BAD( rc = f_alloc( uiDataLength, &pucData)))
+	{
+		goto Exit;
+	}
+	
+	for( uiIter = 0; uiIter < 1000; uiIter++)
+	{
+		for( uiLoop = 0; uiLoop < uiDataLength; uiLoop++)
+		{
+			pucData[ uiLoop] = f_getRandomByte();
+		}
+		
+		uiStartTime = FLM_GET_TIMER();
+		
+		for( uiPass = 0; uiPass < 100; uiPass++)
+		{
+			uiSlowAdds = 0;
+			uiSlowXORs = 0;
+	
+			pucCur = pucData;
+			pucEnd = pucData + uiDataLength;
+		
+			while( pucCur < pucEnd)	
+			{
+				uiSlowAdds += *pucCur;
+				uiSlowXORs ^= *pucCur++;
+			}
+		
+			uiSlowAdds &= 0xFF;
+			uiSlowChecksum = (FLMUINT32)((uiSlowAdds << 16) + uiSlowXORs);
+		}
+		
+		uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		
+		uiStartTime = FLM_GET_TIMER();
+		
+		for( uiPass = 0; uiPass < 100; uiPass++)
+		{
+			uiFastAdds = 0;
+			uiFastXORs = 0;
+	
+			uiFastChecksum = f_calcFastChecksum( pucData, 
+										uiDataLength, &uiFastAdds, &uiFastXORs);
+		}
+		
+		uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	
+		if( (uiSlowAdds != uiFastAdds) || 
+			 (uiSlowXORs != uiFastXORs) || 
+			 (uiSlowChecksum != uiFastChecksum))
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+			goto Exit;
+		}
+	}
+	
+	f_printf( "Slow time = %u ms, FastTime = %u ms. ", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
+	
+Exit:
+
+	f_printf( "done.\n");
+	
+	if( pucData)
+	{
+		f_free( &pucData);
+	}
+	
+	return( rc);
 }
