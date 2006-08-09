@@ -1355,7 +1355,7 @@ void sparc_asm_code( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+#if defined( FLM_PPC) && defined( FLM_GNUC)
 FLMATOMIC ppc_atomic_add(
 	FLMATOMIC *		piTarget,
 	FLMINT32			iDelta)
@@ -1381,7 +1381,7 @@ FLMATOMIC ppc_atomic_add(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_PPC) && defined( FLM_GNUC) && defined( FLM_LINUX)
+#if defined( FLM_PPC) && defined( FLM_GNUC)
 FLMATOMIC ppc_atomic_xchg(
 	FLMATOMIC *		piTarget,
 	FLMATOMIC		iNewValue)

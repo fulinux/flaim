@@ -27,7 +27,7 @@
 
 static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 
-#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
+#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
 
 	static unsigned long gv_mmxCheckSumFlag = 1;
 	
@@ -103,7 +103,7 @@ unsigned long ftkGetMMXSupported( void)
 /********************************************************************
 Desc:
 *********************************************************************/
-#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_LINUX)
+#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_GNUC)
 unsigned long ftkGetMMXSupported( void)
 {
 	FLMUINT32 	bMMXSupported;
@@ -359,7 +359,7 @@ Done:
 /********************************************************************
 Desc:
 *********************************************************************/
-#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_LINUX)
+#if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_GNUC)
 static void ftkFastCheckSumMMX(
 		void *				pBlk,
 		unsigned long *	puiChecksum,	
@@ -474,7 +474,7 @@ static void ftkFastCheckSumMMX(
 /********************************************************************
 Desc:
 *********************************************************************/
-#if defined( FLM_X86) && defined( FLM_64BIT) && defined( FLM_LINUX)
+#if defined( FLM_X86) && defined( FLM_64BIT) && defined( FLM_GNUC)
 static void ftkFastCheckSumMMX(
 		void *				pBlk,
 		unsigned long *	puiChecksum,	
@@ -589,7 +589,7 @@ Desc: Sets the global variable to check if MMX instructions are allowed.
 ******************************************************************************/
 void f_initFastCheckSum( void)
 {
-#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
+#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
 	// NOTE that ftkGetMMXSupported assumes that we are running on at least a
 	// pentium.  The check to see if we are on a pentium requires that  we
 	// modify the flags register, and we can't do that if we are running
@@ -629,7 +629,7 @@ FLMUINT32 FLMAPI f_calcFastChecksum(
 		uiXORs = *puiXORs;
 	}
 
-#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
+#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
 	if( gv_mmxCheckSumFlag == 1)
 	{
 		ftkFastCheckSumMMX( (void *) pucData, (unsigned long *) &uiAdds, 
@@ -768,7 +768,7 @@ FLMBYTE FLMAPI f_calcPacketChecksum(
 {
 	FLMUINT			uiChecksum = 0;
 	
-#if defined( FLM_X86) && (defined( FLM_WIN) || defined( FLM_LINUX) || defined( FLM_NLM))
+#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
 	if( gv_mmxCheckSumFlag == 1)
 	{
 		unsigned long		uiAdds = 0;
