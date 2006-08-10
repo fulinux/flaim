@@ -25,46 +25,28 @@
 
 #include "ftksys.h"
 
-static FLMUINT32 *				gv_pui32CRCTbl = NULL;
-static FLMBOOL						gv_bHaveFastCheckSum = FALSE;
+static FLMUINT32 *		gv_pui32CRCTbl = NULL;
+static FLMBOOL				gv_bCanUseFastCheckSum = FALSE;
 
-#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
+extern "C" void ftkFastChecksum(
+	const void *			pBlk,
+	unsigned long *		puiSum,	
+	unsigned long *		puiXOR,
+	unsigned long			uiNumberOfBytes);
+		
+extern "C" void ftkFastXor(
+	const void *			pBlk,
+	unsigned long *		puiXOR,
+	unsigned long			uiNumberOfBytes);
+		
+extern "C" unsigned long ftkGetMMXSupported(void);
 
-	#if defined( FLM_WATCOM_NLM)
-	
-		extern void ftkFastCheckSumMMX(
-				void *				pBlk,
-				unsigned long *	puiChecksum,	
-				unsigned long *	puiXOR,
-				unsigned long		uiNumberOfBytes);
-		
-		extern unsigned long ftkGetMMXSupported(void);
-		
-	#else
-	
-		static void ftkFastCheckSumMMX(
-				void *				pBlk,
-				unsigned long *	puiChecksum,	
-				unsigned long *	puiXOR,
-				unsigned long		uiNumberOfBytes);
-		
-		static unsigned long ftkGetMMXSupported(void);
-		
+#if defined( FLM_X86)
+	#if defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM)
+		#define FLM_HAVE_FAST_CHECKSUM_ROUTINES
 	#endif
-
 #elif defined( FLM_SPARC_PLUS)
-	
-		extern "C" void sparc_calc_checksum(
-			void *				pBlk,
-			unsigned long *	puiChecksum,	
-			unsigned long *	puiXOR,
-			unsigned long		uiNumberOfBytes);
-		
-		extern "C" void sparc_calc_xor(
-			void *				pBlk,
-			unsigned long *	puiXOR,
-			unsigned long		uiNumberOfBytes);
-
+	#define FLM_HAVE_FAST_CHECKSUM_ROUTINES	
 #endif
 
 /********************************************************************
@@ -152,8 +134,8 @@ Desc:
 *********************************************************************/
 #if defined( FLM_WATCOM_NLM)
 
-	#pragma aux ftkFastCheckSumMMX parm [ESI] [eax] [ebx] [ecx];
-	#pragma aux ftkFastCheckSumMMX = \
+	#pragma aux ftkFastChecksum parm [ESI] [eax] [ebx] [ecx];
+	#pragma aux ftkFastChecksum = \
 		0x50                          /* push	eax			;save the sum pointer  								*/\
 		0x53                          /* push	ebx			;save the xor pointer 								*/\
 		0x8B 0x10                     /* mov	edx, [eax]	;for local add 										*/\
@@ -165,7 +147,6 @@ Desc:
 		0x0F 0x82 0x63 0x00 0x00 0x00	/* jb		#MediumStuff 															*/\
 		0xC1 0xE9 0x05                /* shr	ecx, 5		;convert length to 32 byte blocks				*/\
 		0x83 0xE7 0x1F						/* and	edi, 01fh	;change saved length to remainder				*/\
-		0x0F 0xEF 0xED						/* pxor	mm5, mm5		;wasted space to 16 byte align the loop		*/\
 		0x0F 0x6E 0xE2						/* movd	mm4,edx																	*/\
 		0x0F 0x6E 0xEB						/* movd	mm5,ebx																	*/\
 		0x0F 0x6F 0x06						/* movq	mm0, [esi] 																*/\
@@ -238,11 +219,11 @@ Desc:
 Desc:
 *********************************************************************/
 #if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_WIN)
-static void ftkFastCheckSumMMX(
-		void *				pBlk,
-		unsigned long *	puiChecksum,	
-		unsigned long *	puiXOR,
-		unsigned long		uiNumberOfBytes)
+void ftkFastChecksum(
+	const void *		pBlk,
+	unsigned long *	puiSum,	
+	unsigned long *	puiXOR,
+	unsigned long		uiNumberOfBytes)
 {
 	__asm
 	{
@@ -250,7 +231,7 @@ static void ftkFastCheckSumMMX(
 
 			// Load up the starting checksum values into edx (add) and ebx (XOR)
 
-			mov		eax, puiChecksum
+			mov		eax, puiSum
 			mov		edx, [eax]
 			and		edx, 0ffh			;clear unneeded bits 
 			mov		eax, puiXOR
@@ -264,7 +245,6 @@ static void ftkFastCheckSumMMX(
 
 			shr		ecx, 5				;convert length to 32 byte blocks
 			and		edi, 01fh			;change saved length to remainder
-			pxor		mm5, mm5				;wasted space to 16 byte align the upcoming loop - check tHIS..
 			
 			movd		mm4, edx				;set ADD
 			movd		mm5, ebx				;set XOR
@@ -276,8 +256,7 @@ BigStuffLoop:
 			movq		mm2, [esi + 16]
 			movq		mm3, [esi + 24]
 			add		esi, 32				;move the data pointer ahead 32
-												;add mm0 - mm3 to mm4
-												;xor mm0 - mm3 with mm5
+
 			paddb		mm4, mm0
 			pxor		mm5, mm0
 			paddb		mm4, mm1
@@ -288,38 +267,31 @@ BigStuffLoop:
 			pxor		mm5, mm3
 			dec		ecx					;see if there is more to do
 			jnz		BigStuffLoop 
-												;mm4 contains the sum to this point
-												;mm5 contains the xor to this point
-												;edi contains the bytes left 
-												;esi points to data left to do
-												;extract the xor value from mm5 and put it in ebx
+
 			movd		ebx, mm5
 			psrlq		mm5, 32 
 			movd		eax, mm5
 			xor		ebx, eax
-												;extract the sum value from mm4 and put it in dl & dh 
-			movq		mm0, mm4
+												 
+			movq		mm0, mm4				;extract the sum value from mm4 and put it in dl & dh
 			psrlq		mm0, 32 
 			paddb		mm4, mm0
 			movq		mm0, mm4
 			psrlq		mm0, 16 
 			paddb		mm4, mm0
 			movd		edx, mm4
+			
 			emms								;end of MMX stuff
 
-			mov		ecx, edi				;load up the rest of the length 
-												;dl contains half the sum to this point
-												;dh contains half the sum to this point
-												;ebx contains the xor to this point - 32 bits wide.
-												;ecx contains the bytes still left to do 
-												;esi contains pointer to data to checksum 
+			mov		ecx, edi				;load up the rest of the length
+			
 MediumStuff:
 			cmp		ecx, 4
 			jb			SmallStuff
 			shr		ecx, 2
 			and		edi, 3
 
-DSSumLoop:
+MediumStuffLoop:
 			mov		eax, [esi]
 			add		esi, 4
 			xor		ebx, eax
@@ -329,13 +301,9 @@ DSSumLoop:
 			add		dl, al
 			add		dh, ah
 			dec		ecx
-			jnz		DSSumLoop
-			mov		ecx, edi				;load up the rest of the length 
-												;dl contains half the sum to this point 
-												;dh contains half the sum to this point 
-												;ebx contains the xor to this point - 32 bits wide.
-												;ecx contains the bytes still left to do 
-												;esi contains pointer to data to checksum 
+			jnz		MediumStuffLoop;
+			mov		ecx, edi				;load up the rest of the length
+			
 SmallStuff:
 			add		dl, dh				;get complete sum in dl 
 			mov		eax, ebx				;get complete xor in bl
@@ -358,7 +326,7 @@ Done:
 
 			// Set the return values.
 
-			mov		eax, puiChecksum
+			mov		eax, puiSum
 			mov		[eax], edx
 
 			mov		eax, puiXOR
@@ -371,10 +339,25 @@ Done:
 /********************************************************************
 Desc:
 *********************************************************************/
+#if defined( FLM_X86)
+FINLINE void ftkFastXor(
+	const void *		pBlk,
+	unsigned long *	puiXOR,
+	unsigned long		uiNumberOfBytes)
+{
+	unsigned long		uiSum;
+	
+	ftkFastChecksum( pBlk, &uiSum, puiXOR, uiNumberOfBytes);
+}
+#endif
+
+/********************************************************************
+Desc:
+*********************************************************************/
 #if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_GNUC)
-static void ftkFastCheckSumMMX(
-		void *				pBlk,
-		unsigned long *	puiChecksum,	
+static void ftkFastChecksum(
+		const void *		pBlk,
+		unsigned long *	puiSum,	
 		unsigned long *	puiXOR,
 		unsigned long		uiNumberOfBytes)
 {
@@ -395,7 +378,6 @@ static void ftkFastCheckSumMMX(
 			
 			"			shr		$5, %%ecx\n"
 			"			and		$0x01F, %%edi\n"
-			"			pxor		%%mm5, %%mm5\n"
 						
 			"			movd		%%edx, %%mm4\n"
 			"			movd		%%ebx, %%mm5\n"
@@ -438,7 +420,7 @@ static void ftkFastCheckSumMMX(
 			"			shr		$2, %%ecx\n"
 			"			and		$3, %%edi\n"
 			
-			"DSSumLoop:\n"
+			"MediumStuffLoop:\n"
 			"			mov		(%%esi), %%eax\n"
 			"			add		$4, %%esi\n"
 			"			xor		%%eax, %%ebx\n"
@@ -448,7 +430,7 @@ static void ftkFastCheckSumMMX(
 			"			add		%%al, %%dl\n"
 			"			add		%%ah, %%dh\n"
 			"			dec		%%ecx\n"
-			"			jnz		DSSumLoop\n"
+			"			jnz		MediumStuffLoop\n"
 			"			mov		%%edi, %%ecx\n"
 			
 			"SmallStuff:\n"
@@ -477,8 +459,8 @@ static void ftkFastCheckSumMMX(
 			"			mov		%1, %%eax\n"
 			"			mov		%%ebx, (%%eax)\n"
 			"			pop		%%ebx\n"
-				: "=m" (puiChecksum), "=m" (puiXOR)
-				: "m" (pBlk), "m" (puiChecksum), "m" (puiXOR), "m" (uiNumberOfBytes)
+				: "=m" (puiSum), "=m" (puiXOR)
+				: "m" (pBlk), "m" (puiSum), "m" (puiXOR), "m" (uiNumberOfBytes)
 				: "%eax", "%ecx", "%edx", "%esi", "%edi");
 }
 #endif
@@ -487,9 +469,9 @@ static void ftkFastCheckSumMMX(
 Desc:
 *********************************************************************/
 #if defined( FLM_X86) && defined( FLM_64BIT) && defined( FLM_GNUC)
-static void ftkFastCheckSumMMX(
-		void *				pBlk,
-		unsigned long *	puiChecksum,	
+static void ftkFastChecksum(
+		const void *		pBlk,
+		unsigned long *	puiSum,	
 		unsigned long *	puiXOR,
 		unsigned long		uiNumberOfBytes)
 {
@@ -509,7 +491,6 @@ static void ftkFastCheckSumMMX(
 			
 			"			shr		$5, %%ecx\n"
 			"			and		$0x01F, %%edi\n"
-			"			pxor		%%mm5, %%mm5\n"
 						
 			"			movd		%%edx, %%mm4\n"
 			"			movd		%%ebx, %%mm5\n"
@@ -552,7 +533,7 @@ static void ftkFastCheckSumMMX(
 			"			shr		$2, %%ecx\n"
 			"			and		$3, %%edi\n"
 			
-			"DSSumLoop:\n"
+			"MediumStuffLoop:\n"
 			"			mov		(%%r8), %%eax\n"
 			"			add		$4, %%r8\n"
 			"			xor		%%eax, %%ebx\n"
@@ -562,7 +543,7 @@ static void ftkFastCheckSumMMX(
 			"			add		%%al, %%dl\n"
 			"			add		%%ah, %%dh\n"
 			"			dec		%%ecx\n"
-			"			jnz		DSSumLoop\n"
+			"			jnz		MediumStuffLoop\n"
 			"			mov		%%edi, %%ecx\n"
 			
 			"SmallStuff:\n"
@@ -590,9 +571,36 @@ static void ftkFastCheckSumMMX(
 			
 			"			mov		%1, %%r9\n"
 			"			mov		%%ebx, (%%r9)\n"
-				: "=m" (puiChecksum), "=m" (puiXOR)
-				: "m" (pBlk), "m" (puiChecksum), "m" (puiXOR), "m" (uiNumberOfBytes)
+				: "=m" (puiSum), "=m" (puiXOR)
+				: "m" (pBlk), "m" (puiSum), "m" (puiXOR), "m" (uiNumberOfBytes)
 				: "%eax", "%ebx", "%ecx", "%edi", "%edx", "%r8", "%r9");
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifndef FLM_HAVE_FAST_CHECKSUM_ROUTINES
+void ftkFastChecksum(
+	const void *,		// pBlk,
+	unsigned long *,	// puiSum,	
+	unsigned long *,	// puiXOR,
+	unsigned long)		// uiNumberOfBytes)
+{
+	f_assert( 0);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifndef FLM_HAVE_FAST_CHECKSUM_ROUTINES
+void ftkFastXor(
+	const void *,			// pBlk,
+	unsigned long *,		// puiXOR,
+	unsigned long)			// uiNumberOfBytes)
+{
+	f_assert( 0);
 }
 #endif
 
@@ -604,13 +612,13 @@ void sparc_csum_code( void)
 {
 	// Calculate the sum and xor bytes of a checksum
 
-	asm( ".global sparc_calc_checksum");
+	asm( ".global ftkFastChecksum");
 #ifdef FLM_64BIT
 	asm( ".align 8");
 #else
 	asm( ".align 4");
 #endif
-	asm( "sparc_calc_checksum:");
+	asm( "ftkFastChecksum:");
 	asm( "	save %sp, -96, %sp");
 
 #ifdef FLM_64BIT
@@ -646,18 +654,18 @@ void sparc_csum_code( void)
 #endif
 	asm( "	ret");
 	asm( "	restore");
-	asm( ".type sparc_calc_checksum, #function");
-	asm( ".size sparc_calc_checksum, (.-sparc_calc_checksum)");
+	asm( ".type ftkFastChecksum, #function");
+	asm( ".size ftkFastChecksum, (.-ftkFastChecksum)");
 
 	// Calculate the xor byte of a checksum
 
-	asm( ".global sparc_calc_xor");
+	asm( ".global ftkFastXor");
 #ifdef FLM_64BIT
 	asm( ".align 8");
 #else
 	asm( ".align 4");
 #endif
-	asm( "sparc_calc_xor:");
+	asm( "ftkFastXor:");
 	asm( "	save %sp, -96, %sp");
 
 	asm( "	mov %i0, %l0");
@@ -757,8 +765,8 @@ void sparc_csum_code( void)
 #endif
 	asm( "	ret");
 	asm( "	restore");
-	asm( ".type sparc_calc_xor, #function");
-	asm( ".size sparc_calc_xor, (.-sparc_calc_xor)");
+	asm( ".type ftkFastXor, #function");
+	asm( ".size ftkFastXor, (.-ftkFastXor)");
 }
 #endif
 
@@ -777,9 +785,9 @@ void f_initFastCheckSum( void)
 	// can do MMX instructions - unless you can assume that even on NT you
 	// will be on at least a P5.
 
-	gv_bHaveFastCheckSum = ftkGetMMXSupported() ? TRUE : FALSE;
+	gv_bCanUseFastCheckSum = ftkGetMMXSupported() ? TRUE : FALSE;
 #elif defined( FLM_SPARC_PLUS)
-	gv_bHaveFastCheckSum = TRUE;
+	gv_bCanUseFastCheckSum = TRUE;
 #endif
 }
 
@@ -792,58 +800,53 @@ Desc:	Calculate the checksum for a block.  NOTE: This is ALWAYS done
 FLMUINT32 FLMAPI f_calcFastChecksum(
 	const void *	pvData,
 	FLMUINT			uiLength,
-	FLMUINT *		puiAdds,
-	FLMUINT *		puiXORs)
+	FLMUINT *		puiSum,
+	FLMUINT *		puiXOR)
 {
-	FLMUINT			uiAdds = 0;
-	FLMUINT			uiXORs = 0;
+	FLMUINT			uiSum = 0;
+	FLMUINT			uiXOR = 0;
 	FLMBYTE *		pucData = (FLMBYTE *)pvData;
 	
-	if( puiAdds)
+	if( puiSum)
 	{
-		uiAdds = *puiAdds;
+		uiSum = *puiSum;
 	}
 	
-	if( puiXORs)
+	if( puiXOR)
 	{
-		uiXORs = *puiXORs;
+		uiXOR = *puiXOR;
 	}
 
-#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
-	if( gv_bHaveFastCheckSum)
+	if( gv_bCanUseFastCheckSum)
 	{
-		ftkFastCheckSumMMX( (void *) pucData, (unsigned long *) &uiAdds, 
-					(unsigned long *) &uiXORs, (unsigned long) uiLength);
+		ftkFastChecksum( pvData, (unsigned long *) &uiSum, 
+					(unsigned long *) &uiXOR, (unsigned long) uiLength);
 	}
-#elif defined( FLM_SPARC_PLUS)
-	sparc_calc_checksum( pucData, &uiAdds, &uiXORs, uiLength);
-#endif
-
-	if( !gv_bHaveFastCheckSum)
+	else
 	{
 		FLMBYTE *		pucCur = pucData;
 		FLMBYTE *		pucEnd = pucData + uiLength;
 	
 		while( pucCur < pucEnd)	
 		{
-			uiAdds += *pucCur;
-			uiXORs ^= *pucCur++;
+			uiSum += *pucCur;
+			uiXOR ^= *pucCur++;
 		}
 	
-		uiAdds &= 0xFF;
+		uiSum &= 0xFF;
 	}
 
-	if( puiAdds)
+	if( puiSum)
 	{
-		*puiAdds = uiAdds;
+		*puiSum = uiSum;
 	}
 	
-	if( puiXORs)
+	if( puiXOR)
 	{
-		*puiXORs = uiXORs;
+		*puiXOR = uiXOR;
 	}
 	
-	return( (FLMUINT32)((uiAdds << 16) + uiXORs));
+	return( (FLMUINT32)((uiSum << 16) + uiXOR));
 }
 
 /****************************************************************************
@@ -946,38 +949,29 @@ void FLMAPI f_updateCRC(
 Desc:
 *********************************************************************/
 FLMBYTE FLMAPI f_calcPacketChecksum(
-	FLMBYTE *		pucPacket,
+	const void *	pvPacket,
 	FLMUINT			uiBytesToChecksum)
 {
 	FLMUINT			uiChecksum = 0;
-	unsigned long	uiAdds = 0;
-	unsigned long	uiXORs = 0;
 	
-#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
-	if( gv_bHaveFastCheckSum)
+	if( gv_bCanUseFastCheckSum)
 	{
-		ftkFastCheckSumMMX( pucPacket, &uiAdds, &uiXORs, uiBytesToChecksum);
-		uiChecksum = uiXORs;
+		ftkFastXor( pvPacket, &uiChecksum, uiBytesToChecksum);
 	}
-#elif defined( FLM_SPARC_PLUS)
-	sparc_calc_xor( pucPacket, &uiXORs, uiBytesToChecksum);
-	uiChecksum = uiXORs;
-#endif
-
-	if( !gv_bHaveFastCheckSum)
+	else
 	{
 		FLMBYTE *	pucEnd;
 		FLMBYTE *	pucSectionEnd;
 		FLMBYTE *	pucCur;
 		FLMBYTE		ucTmp;
 		
-		pucCur = pucPacket;
-		pucEnd = pucPacket + uiBytesToChecksum;
+		pucCur = (FLMBYTE *)pvPacket;
+		pucEnd = pucCur + uiBytesToChecksum;
 	
 	#ifdef FLM_64BIT
-		pucSectionEnd = pucPacket + (sizeof( FLMUINT) - ((FLMUINT)pucPacket & 0x7));
+		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x7));
 	#else
-		pucSectionEnd = pucPacket + (sizeof( FLMUINT) - ((FLMUINT)pucPacket & 0x3));
+		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x3));
 	#endif
 	
 		if( pucSectionEnd > pucEnd)

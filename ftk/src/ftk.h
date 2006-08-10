@@ -2514,11 +2514,11 @@
 	FLMUINT32 FLMAPI f_calcFastChecksum(
 		const void *				pvBuffer,
 		FLMUINT						uiLength,
-		FLMUINT *					puiAdds = NULL,
-		FLMUINT *					puiXORs = NULL);
+		FLMUINT *					puiSum = NULL,
+		FLMUINT *					puiXOR = NULL);
 
 	FLMBYTE FLMAPI f_calcPacketChecksum(
-		FLMBYTE *					pucPacket,
+		const void *				pvPacket,
 		FLMUINT						uiBytesToChecksum);
 		
 	/****************************************************************************
