@@ -1917,13 +1917,8 @@ FLMBYTE RflCalcChecksum(
 	FLMUINT				uiPacketBodyLen)
 {
 	FLMUINT				uiBytesToChecksum;
-	FLMUINT				uiChecksum = 0;
-	FLMBYTE				ucTmp;
 	const FLMBYTE *	pucStart;
-	const FLMBYTE *	pucEnd;
-	const FLMBYTE *	pucSectionEnd;
-	const FLMBYTE *	pucCur;
-
+	
 	// Checksum is calculated for every byte in the packet that comes
 	// after the checksum byte.
 
@@ -1932,74 +1927,7 @@ FLMBYTE RflCalcChecksum(
 												RFL_PACKET_OVERHEAD -
 												(RFL_PACKET_CHECKSUM_OFFSET + 1));
 
-	pucCur = pucStart;
-	pucEnd = pucStart + uiBytesToChecksum;
-
-#ifdef FLM_64BIT
-	pucSectionEnd = pucStart + (sizeof( FLMUINT) - ((FLMUINT)pucStart & 0x7));
-#else
-	pucSectionEnd = pucStart + (sizeof( FLMUINT) - ((FLMUINT)pucStart & 0x3));
-#endif
-
-	flmAssert( pucSectionEnd >= pucStart);
-
-	if (pucSectionEnd > pucEnd)
-	{
-		pucSectionEnd = pucEnd;
-	}
-
-	while (pucCur < pucSectionEnd)
-	{
-		uiChecksum = (uiChecksum << 8) +*pucCur++;
-	}
-
-#ifdef FLM_64BIT
-	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
-#else
-	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
-#endif
-
-	while (pucCur < pucSectionEnd)
-	{
-		uiChecksum ^= *((FLMUINT *) pucCur);
-		pucCur += sizeof(FLMUINT);
-	}
-
-	while (pucCur < pucEnd)
-	{
-		uiChecksum ^= *pucCur++;
-	}
-
-	ucTmp = (FLMBYTE) uiChecksum;
-
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE) uiChecksum;
-
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE) uiChecksum;
-
-#ifdef FLM_64BIT
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-#endif
-	ucTmp ^= (FLMBYTE) (uiChecksum >> 8);
-	uiChecksum = ucTmp;
-
-	if ((uiChecksum = ucTmp) == 0)
-	{
-		uiChecksum = 1;
-	}
-
-	return ((FLMBYTE) uiChecksum);
+	return( f_calcPacketChecksum( pucStart, uiBytesToChecksum));
 }
 
 /********************************************************************
@@ -2008,10 +1936,10 @@ Desc:	Flush all completed packets out of the RFL buffer, and shift
 		now room in the buffer for the maximum packet size.
 *********************************************************************/
 RCODE F_Rfl::shiftPacketsDown(
-	FLMUINT	uiCurrPacketLen,
-	FLMBOOL	bStartingNewFile)
+	FLMUINT		uiCurrPacketLen,
+	FLMBOOL		bStartingNewFile)
 {
-	RCODE rc = FERR_OK;
+	RCODE 		rc = FERR_OK;
 
 	// The call to flush will move whatever needs to be moved from the
 	// current buffer into a new buffer if multiple buffers are being used.
@@ -2019,7 +1947,7 @@ RCODE F_Rfl::shiftPacketsDown(
 	// packet that needs to be moved down to the beginning of the buffer -
 	// AFTER writing out the buffer.
 
-	if (RC_BAD( rc = flush( m_pCurrentBuf, FALSE, uiCurrPacketLen,
+	if( RC_BAD( rc = flush( m_pCurrentBuf, FALSE, uiCurrPacketLen,
 				  bStartingNewFile)))
 	{
 		goto Exit;
