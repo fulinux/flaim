@@ -355,7 +355,7 @@ FINLINE void ftkFastXor(
 Desc:
 *********************************************************************/
 #if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_GNUC)
-static void ftkFastChecksum(
+void ftkFastChecksum(
 		const void *		pBlk,
 		unsigned long *	puiSum,	
 		unsigned long *	puiXOR,
@@ -469,7 +469,7 @@ static void ftkFastChecksum(
 Desc:
 *********************************************************************/
 #if defined( FLM_X86) && defined( FLM_64BIT) && defined( FLM_GNUC)
-static void ftkFastChecksum(
+void ftkFastChecksum(
 		const void *		pBlk,
 		unsigned long *	puiSum,	
 		unsigned long *	puiXOR,
