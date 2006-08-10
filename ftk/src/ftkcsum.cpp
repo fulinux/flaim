@@ -26,17 +26,16 @@
 #include "ftksys.h"
 
 static FLMUINT32 *				gv_pui32CRCTbl = NULL;
+static FLMBOOL						gv_bHaveFastCheckSum = FALSE;
 
 #if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
 
-	static unsigned long gv_mmxCheckSumFlag = 1;
-	
 	#if defined( FLM_WATCOM_NLM)
 	
 		extern void ftkFastCheckSumMMX(
 				void *				pBlk,
 				unsigned long *	puiChecksum,	
-				unsigned long *	puiXORdata,
+				unsigned long *	puiXOR,
 				unsigned long		uiNumberOfBytes);
 		
 		extern unsigned long ftkGetMMXSupported(void);
@@ -46,13 +45,26 @@ static FLMUINT32 *				gv_pui32CRCTbl = NULL;
 		static void ftkFastCheckSumMMX(
 				void *				pBlk,
 				unsigned long *	puiChecksum,	
-				unsigned long *	puiXORdata,
+				unsigned long *	puiXOR,
 				unsigned long		uiNumberOfBytes);
 		
 		static unsigned long ftkGetMMXSupported(void);
 		
 	#endif
+
+#elif defined( FLM_SPARC_PLUS)
 	
+		extern "C" void sparc_calc_checksum(
+			void *				pBlk,
+			unsigned long *	puiChecksum,	
+			unsigned long *	puiXOR,
+			unsigned long		uiNumberOfBytes);
+		
+		extern "C" void sparc_calc_xor(
+			void *				pBlk,
+			unsigned long *	puiXOR,
+			unsigned long		uiNumberOfBytes);
+
 #endif
 
 /********************************************************************
@@ -229,7 +241,7 @@ Desc:
 static void ftkFastCheckSumMMX(
 		void *				pBlk,
 		unsigned long *	puiChecksum,	
-		unsigned long *	puiXORdata,
+		unsigned long *	puiXOR,
 		unsigned long		uiNumberOfBytes)
 {
 	__asm
@@ -241,7 +253,7 @@ static void ftkFastCheckSumMMX(
 			mov		eax, puiChecksum
 			mov		edx, [eax]
 			and		edx, 0ffh			;clear unneeded bits 
-			mov		eax, puiXORdata
+			mov		eax, puiXOR
 			mov		ebx, [eax]
 			and		ebx, 0ffh			;clear unneeded bits 
 			mov		ecx, uiNumberOfBytes
@@ -349,7 +361,7 @@ Done:
 			mov		eax, puiChecksum
 			mov		[eax], edx
 
-			mov		eax, puiXORdata
+			mov		eax, puiXOR
 			mov		[eax], ebx
 	}
 	return;
@@ -363,7 +375,7 @@ Desc:
 static void ftkFastCheckSumMMX(
 		void *				pBlk,
 		unsigned long *	puiChecksum,	
-		unsigned long *	puiXORdata,
+		unsigned long *	puiXOR,
 		unsigned long		uiNumberOfBytes)
 {
 	__asm__ __volatile__(
@@ -465,8 +477,8 @@ static void ftkFastCheckSumMMX(
 			"			mov		%1, %%eax\n"
 			"			mov		%%ebx, (%%eax)\n"
 			"			pop		%%ebx\n"
-				: "=m" (puiChecksum), "=m" (puiXORdata)
-				: "m" (pBlk), "m" (puiChecksum), "m" (puiXORdata), "m" (uiNumberOfBytes)
+				: "=m" (puiChecksum), "=m" (puiXOR)
+				: "m" (pBlk), "m" (puiChecksum), "m" (puiXOR), "m" (uiNumberOfBytes)
 				: "%eax", "%ecx", "%edx", "%esi", "%edi");
 }
 #endif
@@ -478,7 +490,7 @@ Desc:
 static void ftkFastCheckSumMMX(
 		void *				pBlk,
 		unsigned long *	puiChecksum,	
-		unsigned long *	puiXORdata,
+		unsigned long *	puiXOR,
 		unsigned long		uiNumberOfBytes)
 {
 	__asm__ __volatile__(
@@ -578,9 +590,175 @@ static void ftkFastCheckSumMMX(
 			
 			"			mov		%1, %%r9\n"
 			"			mov		%%ebx, (%%r9)\n"
-				: "=m" (puiChecksum), "=m" (puiXORdata)
-				: "m" (pBlk), "m" (puiChecksum), "m" (puiXORdata), "m" (uiNumberOfBytes)
+				: "=m" (puiChecksum), "=m" (puiXOR)
+				: "m" (pBlk), "m" (puiChecksum), "m" (puiXOR), "m" (uiNumberOfBytes)
 				: "%eax", "%ebx", "%ecx", "%edi", "%edx", "%r8", "%r9");
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_SPARC_PLUS)
+void sparc_csum_code( void)
+{
+	// Calculate the sum and xor bytes of a checksum
+
+	asm( ".global sparc_calc_checksum");
+#ifdef FLM_64BIT
+	asm( ".align 8");
+#else
+	asm( ".align 4");
+#endif
+	asm( "sparc_calc_checksum:");
+	asm( "	save %sp, -96, %sp");
+
+#ifdef FLM_64BIT
+	asm( "	ldx [%i1], %l1");
+	asm( "	ldx [%i2], %l2");
+#else
+	asm( "	ld [%i1], %l1");
+	asm( "	ld [%i2], %l2");
+#endif
+
+	asm( "	mov %i0, %l0");
+	asm( "	mov %i3, %l3");
+
+	asm( "	clr %l4");
+
+	asm( "	csum_loop:");
+	asm( "		ldub [%l0], %l4");
+	asm( "		add %l4, %l1, %l1");
+	asm( "		xor %l4, %l2, %l2");
+	asm( "		inc %l0");
+	asm( "		subcc %l3, 1, %l3");
+	asm( "		bg csum_loop");
+	asm( "		nop");
+
+	asm( "	and %l1, 0xFF, %l1");
+	asm( "	and %l2, 0xFF, %l2");
+#ifdef FLM_64BIT
+	asm( "	stx %l1, [%i1]");
+	asm( "	stx %l2, [%i2]");
+#else
+	asm( "	st %l1, [%i1]");
+	asm( "	st %l2, [%i2]");
+#endif
+	asm( "	ret");
+	asm( "	restore");
+	asm( ".type sparc_calc_checksum, #function");
+	asm( ".size sparc_calc_checksum, (.-sparc_calc_checksum)");
+
+	// Calculate the xor byte of a checksum
+
+	asm( ".global sparc_calc_xor");
+#ifdef FLM_64BIT
+	asm( ".align 8");
+#else
+	asm( ".align 4");
+#endif
+	asm( "sparc_calc_xor:");
+	asm( "	save %sp, -96, %sp");
+
+	asm( "	mov %i0, %l0");
+#ifdef FLM_64BIT
+	asm( "	ldx [%i1], %l1");
+#else
+	asm( "	ld [%i1], %l1");
+#endif
+
+	asm( "	clr %l3");
+
+	asm( "	mov %i2, %l2");
+#ifdef FLM_64BIT
+	asm( "	and %l2, 0x7, %l2");
+#else
+	asm( "	and %l2, 0x3, %l2");
+#endif
+	asm( "	cmp %l2, 0");
+	asm( "	be init_main_xor_loop");
+	asm( "	nop");
+
+	asm( "	lead_xor_loop:");
+#ifdef FLM_64BIT
+	asm( "		ldx [%l0], %l3");
+#else
+	asm( "		ld [%l0], %l3");
+#endif
+	asm( "		xor %l3, %l1, %l1");
+	asm( "		inc %l0");
+	asm( "		deccc %l2");
+	asm( "		bg lead_xor_loop");
+	asm( "		nop");
+
+	asm( "	init_main_xor_loop:");
+	asm( "		mov %i2, %l2");
+#ifdef FLM_64BIT
+	asm( "		andn %l2, 0x7, %l2");
+	asm( "		cmp %l2, 8");
+#else
+	asm( "		andn %l2, 0x3, %l2");
+	asm( "		cmp %l2, 4");
+#endif
+	asm( "		bl init_tail_xor_loop");
+	asm( "		nop");
+
+	asm( "	main_xor_loop:");
+#ifdef FLM_64BIT
+	asm( "		ldx [%l0], %l3");
+#else
+	asm( "		ld [%l0], %l3");
+#endif
+	asm( "		xor %l3, %l1, %l1");
+#ifdef FLM_64BIT
+	asm( "		add %l0, 8, %l0");
+	asm( "		subcc %l2, 8, %l2");
+#else
+	asm( "		add %l0, 4, %l0");
+	asm( "		subcc %l2, 4, %l2");
+#endif
+	asm( "		bg main_xor_loop");
+	asm( "		nop");
+
+	asm( "	init_tail_xor_loop:");
+	asm( "		cmp %i2, 0");
+	asm( "		be done");
+	
+	asm( "	tail_xor_loop:");
+#ifdef FLM_64BIT
+	asm( "		ldx [%l0], %l3");
+#else
+	asm( "		ld [%l0], %l3");
+#endif
+	asm( "		xor %l3, %l1, %l1");
+	asm( "		inc %l0");
+	asm( "		deccc %l2");
+	asm( "		bg tail_xor_loop");
+	asm( "		nop");
+
+	asm( "	done:");
+	asm( "		mov %l1, %l3");
+#ifdef FLM_64BIT
+	asm( "		mov 7, %l2");
+#else
+	asm( "		mov 3, %l2");
+#endif
+	asm( "		xor_assemble_loop:");
+	asm( "			srlx %l3, 8, %l3");
+	asm( "			xor %l3, %l1, %l1");
+	asm( "			subcc %l2, 1, %l2");
+	asm( "			bg xor_assemble_loop");
+	asm( "			nop");
+	asm( "		and %l1, 0xFF, %l1");
+#ifdef FLM_64BIT
+	asm( "		stx %l1, [%i1]");
+#else
+	asm( "		st %l1, [%i1]");
+#endif
+	asm( "	ret");
+	asm( "	restore");
+	asm( ".type sparc_calc_xor, #function");
+	asm( ".size sparc_calc_xor, (.-sparc_calc_xor)");
 }
 #endif
 
@@ -599,7 +777,9 @@ void f_initFastCheckSum( void)
 	// can do MMX instructions - unless you can assume that even on NT you
 	// will be on at least a P5.
 
-	gv_mmxCheckSumFlag = ftkGetMMXSupported();
+	gv_bHaveFastCheckSum = ftkGetMMXSupported() ? TRUE : FALSE;
+#elif defined( FLM_SPARC_PLUS)
+	gv_bHaveFastCheckSum = TRUE;
 #endif
 }
 
@@ -630,13 +810,16 @@ FLMUINT32 FLMAPI f_calcFastChecksum(
 	}
 
 #if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
-	if( gv_mmxCheckSumFlag == 1)
+	if( gv_bHaveFastCheckSum)
 	{
 		ftkFastCheckSumMMX( (void *) pucData, (unsigned long *) &uiAdds, 
 					(unsigned long *) &uiXORs, (unsigned long) uiLength);
 	}
-	else
+#elif defined( FLM_SPARC_PLUS)
+	sparc_calc_checksum( pucData, &uiAdds, &uiXORs, uiLength);
 #endif
+
+	if( !gv_bHaveFastCheckSum)
 	{
 		FLMBYTE *		pucCur = pucData;
 		FLMBYTE *		pucEnd = pucData + uiLength;
@@ -767,18 +950,21 @@ FLMBYTE FLMAPI f_calcPacketChecksum(
 	FLMUINT			uiBytesToChecksum)
 {
 	FLMUINT			uiChecksum = 0;
+	unsigned long	uiAdds = 0;
+	unsigned long	uiXORs = 0;
 	
 #if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
-	if( gv_mmxCheckSumFlag == 1)
+	if( gv_bHaveFastCheckSum)
 	{
-		unsigned long		uiAdds = 0;
-		unsigned long		uiXORs = 0;
-		
 		ftkFastCheckSumMMX( pucPacket, &uiAdds, &uiXORs, uiBytesToChecksum);
 		uiChecksum = uiXORs;
 	}
-	else
+#elif defined( FLM_SPARC_PLUS)
+	sparc_calc_xor( pucPacket, &uiXORs, uiBytesToChecksum);
+	uiChecksum = uiXORs;
 #endif
+
+	if( !gv_bHaveFastCheckSum)
 	{
 		FLMBYTE *	pucEnd;
 		FLMBYTE *	pucSectionEnd;

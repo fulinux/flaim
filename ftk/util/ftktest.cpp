@@ -409,7 +409,7 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 	FLMUINT			uiSlowTime = 0;
 	FLMUINT			uiFastTime = 0;
 	
-	f_printf( "Running checksum tests ... ");
+	f_printf( "Running checksum tests ");
 	
 	uiDataLength = 8192;
 	if( RC_BAD( rc = f_alloc( uiDataLength, &pucData)))
@@ -466,9 +466,14 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 			goto Exit;
 		}
+
+		if( (uiIter % 100) == 0)
+		{
+			f_printf( ".");
+		}
 	}
 	
-	f_printf( "Slow time = %u ms, Fast time = %u ms. ", 
+	f_printf( " Slow time = %u ms, Fast time = %u ms. ", 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
 	
@@ -501,7 +506,7 @@ FSTATIC RCODE ftkPacketChecksumTest( void)
 	FLMUINT			uiSlowTime = 0;
 	FLMUINT			uiFastTime = 0;
 	
-	f_printf( "Running checksum tests ... ");
+	f_printf( "Running checksum tests ");
 	
 	uiDataLength = 64 * 1024;
 	if( RC_BAD( rc = f_alloc( uiDataLength, &pucData)))
@@ -535,9 +540,14 @@ FSTATIC RCODE ftkPacketChecksumTest( void)
 			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 			goto Exit;
 		}
+
+		if( (uiIter % 100) == 0)
+		{
+			f_printf( ".");
+		}
 	}
 	
-	f_printf( "Slow time = %u ms, Fast time = %u ms. ", 
+	f_printf( " Slow time = %u ms, Fast time = %u ms. ", 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
 	
