@@ -5036,7 +5036,7 @@ FSTATIC RCODE scaWriteSortedBlocks(
 	CP_INFO *			pCPInfo = pFile->pCPInfo;
 	SCACHE *				ppContiguousBlocks[ FLM_MAX_IO_BUFFER_BLOCKS];
 	FLMBOOL				bBlockDirty[ FLM_MAX_IO_BUFFER_BLOCKS];
-	FLMUINT				uiOffset;
+	FLMUINT				uiOffset = 0;
 	FLMUINT				uiTmpOffset;
 	FLMUINT				uiLoop;
 	FLMUINT				uiStartOffset;
@@ -5058,7 +5058,6 @@ FSTATIC RCODE scaWriteSortedBlocks(
 		}
 	}
 
-	uiOffset = 0;
 	for (;;)
 	{
 
