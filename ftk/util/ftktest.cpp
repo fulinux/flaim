@@ -43,7 +43,8 @@ FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
 	
 FSTATIC RCODE ftkFastChecksumTest( void);
 
-FSTATIC RCODE ftkPacketChecksumTest( void);
+FSTATIC RCODE ftkPacketChecksumTest( 
+	FLMUINT				uiPacketSize);
 
 FSTATIC FLMBYTE ftkSlowPacketChecksum(
 	const FLMBYTE *	pucPacket,
@@ -51,6 +52,32 @@ FSTATIC FLMBYTE ftkSlowPacketChecksum(
 	
 FSTATIC FLMATOMIC						gv_refCount;
 FSTATIC FLMATOMIC						gv_spinLock;
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC FLMUINT gv_puiPacketSizes[] =
+{
+	1,
+	5,
+	7,
+	9,
+	11,
+	15,
+	19,
+	21,
+	37,
+	122,
+	127,
+	512,
+	1024,
+	2048,
+	4096,
+	8192,
+	16384,
+	65536,
+	0
+};
 	
 /****************************************************************************
 Desc:
@@ -66,6 +93,7 @@ int main( void)
 	IF_FileSystem *	pFileSystem = NULL;
 	IF_BlockMgr *		pBlockMgr = NULL;
 	IF_BTree *			pBTree = NULL;
+	FLMUINT *			puiPacketSize;
 	FLMUINT32			ui32RootBlkId;
 	char					szTmpBuf[ 128];
 	
@@ -131,9 +159,16 @@ int main( void)
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = ftkPacketChecksumTest()))
+	puiPacketSize = (FLMUINT *)&gv_puiPacketSizes[ 0];
+	
+	while( *puiPacketSize)
 	{
-		goto Exit;
+		if( RC_BAD( rc = ftkPacketChecksumTest( *puiPacketSize)))
+		{
+			goto Exit;
+		}
+		
+		puiPacketSize++;
 	}
 	
 Exit:
@@ -492,10 +527,10 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-FSTATIC RCODE ftkPacketChecksumTest( void)
+FSTATIC RCODE ftkPacketChecksumTest(
+	FLMUINT			uiPacketSize)
 {
 	RCODE				rc = NE_FLM_OK;
-	FLMUINT			uiDataLength;
 	FLMBYTE *		pucData = NULL;
 	FLMUINT			uiSlowChecksum = 0;
 	FLMUINT			uiFastChecksum = 0;
@@ -506,17 +541,17 @@ FSTATIC RCODE ftkPacketChecksumTest( void)
 	FLMUINT			uiSlowTime = 0;
 	FLMUINT			uiFastTime = 0;
 	
-	f_printf( "Running checksum tests ");
+	f_printf( "Running packet checksum tests (size = %u)", 
+		(unsigned)uiPacketSize);
 	
-	uiDataLength = 64 * 1024;
-	if( RC_BAD( rc = f_alloc( uiDataLength, &pucData)))
+	if( RC_BAD( rc = f_alloc( uiPacketSize, &pucData)))
 	{
 		goto Exit;
 	}
 	
 	for( uiIter = 0; uiIter < 1000; uiIter++)
 	{
-		for( uiLoop = 0; uiLoop < uiDataLength; uiLoop++)
+		for( uiLoop = 0; uiLoop < uiPacketSize; uiLoop++)
 		{
 			pucData[ uiLoop] = f_getRandomByte();
 		}
@@ -524,14 +559,14 @@ FSTATIC RCODE ftkPacketChecksumTest( void)
 		uiStartTime = FLM_GET_TIMER();
 		for( uiPass = 0; uiPass < 100; uiPass++)
 		{
-			uiSlowChecksum = ftkSlowPacketChecksum( pucData, uiDataLength);
+			uiSlowChecksum = ftkSlowPacketChecksum( pucData, uiPacketSize);
 		}
 		uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 		
 		uiStartTime = FLM_GET_TIMER();
 		for( uiPass = 0; uiPass < 100; uiPass++)
 		{
-			uiFastChecksum = f_calcPacketChecksum( pucData, uiDataLength); 
+			uiFastChecksum = f_calcPacketChecksum( pucData, uiPacketSize); 
 		}
 		uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 	
