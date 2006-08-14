@@ -557,7 +557,7 @@ Mod_Binary:
 			flmAssert( 0);
 #else
 			IXD *				pIxd;
-			FLMUINT			uiIxNum = FB2UW( &BufPtr [BH_LOG_FILE_NUM]);
+			FLMUINT			uiIxNum = FB2UW( (const FLMBYTE *)&BufPtr [BH_LOG_FILE_NUM]);
 			FLMUINT			uiEncLen = getEncryptSize( (FLMBYTE *)BufPtr) - BH_OVHD;
 			FDB *				pDb = (FDB *)gv_hViewDb;
 			FFILE *			pFile = pDb->pFile;
