@@ -668,50 +668,47 @@ void sparc_csum_code( void)
 	asm( "ftkFastXor:");
 	asm( "	save %sp, -96, %sp");
 
-	asm( "	mov %i0, %l0");
 #ifdef FLM_64BIT
 	asm( "	ldx [%i1], %l1");
 #else
 	asm( "	ld [%i1], %l1");
 #endif
 
+	asm( "	mov %i0, %l0");
+	asm( "	mov %i2, %l2");
+
 	asm( "	clr %l3");
 
-	asm( "	mov %i2, %l2");
 #ifdef FLM_64BIT
-	asm( "	and %l2, 0x7, %l2");
+	asm( "	and %l0, 7, %l4");
 #else
-	asm( "	and %l2, 0x3, %l2");
+	asm( "	and %l0, 3, %l4");
 #endif
-	asm( "	cmp %l2, 0");
-	asm( "	be init_main_xor_loop");
-	asm( "	nop");
 
-	asm( "	lead_xor_loop:");
-#ifdef FLM_64BIT
-	asm( "		ldx [%l0], %l3");
-#else
-	asm( "		ld [%l0], %l3");
-#endif
+	asm( "	cmp %l4, 0");
+	asm( "	be xor_aligned_loop_init");
+
+	asm( "	xor_lead_loop:");
+	asm( "		ldub [%l0], %l3");
 	asm( "		xor %l3, %l1, %l1");
 	asm( "		inc %l0");
-	asm( "		deccc %l2");
-	asm( "		bg lead_xor_loop");
+	asm( "		subcc %l2, 1, %l2");
+	asm( "		be xor_done");
+	asm( "		nop");
+	asm( "		subcc %l4, 1, %l4");
+	asm( "		bg xor_lead_loop");
 	asm( "		nop");
 
-	asm( "	init_main_xor_loop:");
-	asm( "		mov %i2, %l2");
+	asm( "	xor_aligned_loop_init:");
 #ifdef FLM_64BIT
-	asm( "		andn %l2, 0x7, %l2");
 	asm( "		cmp %l2, 8");
 #else
-	asm( "		andn %l2, 0x3, %l2");
 	asm( "		cmp %l2, 4");
 #endif
-	asm( "		bl init_tail_xor_loop");
+	asm( "		bl xor_tail_loop_init");
 	asm( "		nop");
 
-	asm( "	main_xor_loop:");
+	asm( "	xor_aligned_loop:");
 #ifdef FLM_64BIT
 	asm( "		ldx [%l0], %l3");
 #else
@@ -720,31 +717,29 @@ void sparc_csum_code( void)
 	asm( "		xor %l3, %l1, %l1");
 #ifdef FLM_64BIT
 	asm( "		add %l0, 8, %l0");
-	asm( "		subcc %l2, 8, %l2");
+	asm( "		sub %l2, 8, %l2");
+	asm( "		cmp %l2, 7");
 #else
 	asm( "		add %l0, 4, %l0");
-	asm( "		subcc %l2, 4, %l2");
+	asm( "		sub %l2, 4, %l2");
+	asm( "		cmp %l2, 3");
 #endif
-	asm( "		bg main_xor_loop");
+	asm( "		bg xor_aligned_loop");
 	asm( "		nop");
 
-	asm( "	init_tail_xor_loop:");
-	asm( "		cmp %i2, 0");
-	asm( "		be done");
-	
-	asm( "	tail_xor_loop:");
-#ifdef FLM_64BIT
-	asm( "		ldx [%l0], %l3");
-#else
-	asm( "		ld [%l0], %l3");
-#endif
+	asm( "	xor_tail_loop_init:");
+	asm( "		cmp %l2, 1");
+	asm( "		bl xor_done");
+
+	asm( "	xor_tail_loop:");
+	asm( "		ldub [%l0], %l3");
 	asm( "		xor %l3, %l1, %l1");
 	asm( "		inc %l0");
-	asm( "		deccc %l2");
-	asm( "		bg tail_xor_loop");
+	asm( "		subcc %l2, 1, %l2");
+	asm( "		bg xor_tail_loop");
 	asm( "		nop");
 
-	asm( "	done:");
+	asm( "	xor_done:");
 	asm( "		mov %l1, %l3");
 #ifdef FLM_64BIT
 	asm( "		mov 7, %l2");
@@ -763,8 +758,8 @@ void sparc_csum_code( void)
 #else
 	asm( "		st %l1, [%i1]");
 #endif
-	asm( "	ret");
-	asm( "	restore");
+	asm( "		ret");
+	asm( "		restore");
 	asm( ".type ftkFastXor, #function");
 	asm( ".size ftkFastXor, (.-ftkFastXor)");
 }
