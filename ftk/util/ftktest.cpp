@@ -531,7 +531,8 @@ FSTATIC RCODE ftkPacketChecksumTest(
 	FLMUINT			uiPacketSize)
 {
 	RCODE				rc = NE_FLM_OK;
-	FLMBYTE *		pucData = NULL;
+	FLMBYTE *		pucBuffer = NULL;
+	FLMBYTE *		pucData;
 	FLMUINT			uiSlowChecksum = 0;
 	FLMUINT			uiFastChecksum = 0;
 	FLMUINT			uiLoop;
@@ -540,46 +541,55 @@ FSTATIC RCODE ftkPacketChecksumTest(
 	FLMUINT			uiStartTime;
 	FLMUINT			uiSlowTime = 0;
 	FLMUINT			uiFastTime = 0;
+	FLMUINT			uiAlignDelta;
+
+#ifdef FLM_64BIT
+	#define F_MAX_ALIGN_DELTA		7
+#else
+	#define F_MAX_ALIGN_DELTA		3
+#endif
 	
 	f_printf( "Running packet checksum tests (size = %u)", 
 		(unsigned)uiPacketSize);
 	
-	if( RC_BAD( rc = f_alloc( uiPacketSize, &pucData)))
+	if( RC_BAD( rc = f_alloc( uiPacketSize + F_MAX_ALIGN_DELTA, &pucBuffer)))
 	{
 		goto Exit;
 	}
-	
-	for( uiIter = 0; uiIter < 1000; uiIter++)
+
+	for( uiAlignDelta = 0; uiAlignDelta < F_MAX_ALIGN_DELTA; uiAlignDelta++)
 	{
-		for( uiLoop = 0; uiLoop < uiPacketSize; uiLoop++)
-		{
-			pucData[ uiLoop] = f_getRandomByte();
-		}
-		
-		uiStartTime = FLM_GET_TIMER();
-		for( uiPass = 0; uiPass < 100; uiPass++)
-		{
-			uiSlowChecksum = ftkSlowPacketChecksum( pucData, uiPacketSize);
-		}
-		uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
-		
-		uiStartTime = FLM_GET_TIMER();
-		for( uiPass = 0; uiPass < 100; uiPass++)
-		{
-			uiFastChecksum = f_calcPacketChecksum( pucData, uiPacketSize); 
-		}
-		uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		pucData = &pucBuffer[ uiAlignDelta];
 	
-		if( uiSlowChecksum != uiFastChecksum)
+		for( uiIter = 0; uiIter < 100; uiIter++)
 		{
-			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
-			goto Exit;
+			for( uiLoop = 0; uiLoop < uiPacketSize; uiLoop++)
+			{
+				pucData[ uiLoop] = f_getRandomByte();
+			}
+		
+			uiStartTime = FLM_GET_TIMER();
+			for( uiPass = 0; uiPass < 100; uiPass++)
+			{
+				uiSlowChecksum = ftkSlowPacketChecksum( pucData, uiPacketSize);
+			}
+			uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		
+			uiStartTime = FLM_GET_TIMER();
+			for( uiPass = 0; uiPass < 100; uiPass++)
+			{
+				uiFastChecksum = f_calcPacketChecksum( pucData, uiPacketSize); 
+			}
+			uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	
+			if( uiSlowChecksum != uiFastChecksum)
+			{
+				rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+				goto Exit;
+			}
 		}
 
-		if( (uiIter % 100) == 0)
-		{
-			f_printf( ".");
-		}
+		f_printf( ".");
 	}
 	
 	f_printf( " Slow time = %u ms, Fast time = %u ms. ", 
@@ -590,9 +600,9 @@ Exit:
 
 	f_printf( "done.\n");
 	
-	if( pucData)
+	if( pucBuffer)
 	{
-		f_free( &pucData);
+		f_free( &pucBuffer);
 	}
 	
 	return( rc);

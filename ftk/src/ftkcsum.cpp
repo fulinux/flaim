@@ -687,6 +687,13 @@ void sparc_csum_code( void)
 
 	asm( "	cmp %l4, 0");
 	asm( "	be xor_aligned_loop_init");
+	asm( "	nop");
+#ifdef FLM_64BIT
+	asm( "	mov 8, %l5");
+#else
+	asm( "	mov 4, %l5");
+#endif
+	asm( "	sub %l5, %l4, %l4");
 
 	asm( "	xor_lead_loop:");
 	asm( "		ldub [%l0], %l3");
