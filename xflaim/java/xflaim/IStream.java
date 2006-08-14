@@ -1,10 +1,9 @@
-
 //------------------------------------------------------------------------------
-// Desc:	Positionable Input Stream
+// Desc:	Input Stream
 //
 // Tabs:	3
 //
-//		Copyright (c) 2003,2005-2006 Novell, Inc. All Rights Reserved.
+//		Copyright (c) 2006 Novell, Inc. All Rights Reserved.
 //
 //		This program is free software; you can redistribute it and/or
 //		modify it under the terms of version 2 of the GNU General Public
@@ -21,26 +20,25 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: PosIStream.java 3110 2006-01-19 13:09:08 -0700 (Thu, 19 Jan 2006) dsanders $
+// $Id$
 //------------------------------------------------------------------------------
 
 package xflaim;
 
 /**
- * The PosIStream class provides a number of methods that allow java 
+ * The IStream class provides a number of methods that allow java 
  * applications to access the XFlaim native environment, specifically, the
- * IF_PosIStream interface.
+ * IF_IStream interface.
  */
-public class PosIStream 
+public class IStream 
 {
-	PosIStream( 
+	IStream( 
 		long			lRef,
-		String 		sBuffer,
 		DbSystem 	dbSystem) throws XFlaimException
 	{
 		if (lRef == 0)
 		{
-			throw new XFlaimException( -1, "No legal reference to an F_PosIStream");
+			throw new XFlaimException( -1, "No legal reference to an F_IStream");
 		}
 		
 		m_this = lRef;
@@ -51,33 +49,6 @@ public class PosIStream
 		}
 		
 		m_dbSystem = dbSystem;
-		
-		if (sBuffer == null)
-		{
-			throw new XFlaimException( -1, "No legal reference to a buffer");
-		}
-		
-		m_sBuffer = sBuffer;
-	}
-	
-	PosIStream( 
-		long 			lRef,
-		DbSystem 	dbSystem) throws XFlaimException
-	{
-		if (lRef == 0)
-		{
-			throw new XFlaimException( -1, "No legal reference to an IF_PosIStream");
-		}
-		
-		m_this = lRef;
-		
-		if (dbSystem==null)
-		{
-			throw new XFlaimException( -1, "No legal dbSystem reference");
-		}
-		
-		m_dbSystem = dbSystem;
-		m_sBuffer = null;
 	}
 	
 	/**
@@ -120,6 +91,5 @@ public class PosIStream
 
 	private long			m_this;
 	private DbSystem		m_dbSystem;
-	private String			m_sBuffer;
 }
 

@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	CheckpointInfo Class
+// Desc:	SlabUsage Class
 //
 // Tabs:	3
 //
@@ -25,22 +25,15 @@
 package xflaim;
 
 /**
- * The CheckpointInfo class provides members that give an index's current state.
+ * The SlabUsage class provides members that give information about slab usage
  */
-public class CheckpointInfo 
+public class SlabUsage 
 {
-	public boolean		bRunning;
-	public int			iRunningTime;
-	public boolean		bForcingCheckpoint;
-	public int			iForceCheckpointRunningTime;
-	public int			iForceCheckpointReason;
-	public boolean		bWritingDataBlocks;
-	public int			iLogBlocksWritten;
-	public int			iDataBlocksWritten;
-	public int			iDirtyCacheBytes;
-	public int			iBlockSize;
-	public int			iWaitTruncateTime;
-	
+	public long	lSlabs;
+	public long lSlabBytes;
+	public long lAllocatedCells;
+	public long lFreeCells;
+
 	private static native void initIDs();
 }
 

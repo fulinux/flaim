@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// Desc:
+// Desc:	CacheInfo Class
 //
 // Tabs:	3
 //
-//		Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
+//		Copyright (c) 2006 Novell, Inc. All Rights Reserved.
 //
 //		This program is free software; you can redistribute it and/or
 //		modify it under the terms of version 2 of the GNU General Public
@@ -20,23 +20,36 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id: $
+// $Id$
 //------------------------------------------------------------------------------
+package xflaim;
 
-#include "xflaim_PosIStream.h"
-#include "flaimsys.h"
-#include "jniftk.h"
-
-#define THIS_STREAM() \
-	((IF_PosIStream *)(FLMUINT)lThis)
-	
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_PosIStream__1release(
-	JNIEnv *,		// pEnv,
-	jobject,			// obj,
-	jlong				lThis)
+/**
+ * The CacheInfo class provides members that give cache information
+ */
+public class CacheInfo 
 {
-	THIS_STREAM()->Release();
+	public int				iMaxBytes;
+	public int				iTotalBytesAllocated;
+	public boolean			bDynamicCacheAdjust;
+	public int				iCacheAdjustPercent;
+	public int				iCacheAdjustMin;
+	public int				iCacheAdjustMax;
+	public int				iCacheAdjustMinToLeave;
+	public int				iDirtyCount;
+	public int				iDirtyBytes;
+	public int				iNewCount;
+	public int				iNewBytes;
+	public int				iLogCount;
+	public int				iLogBytes;
+	public int				iFreeCount;
+	public int				iFreeBytes;
+	public int				iReplaceableCount;
+	public int				iReplaceableBytes;
+	public boolean			bPreallocatedCache;
+	public CacheUsage		BlockCache;
+	public CacheUsage		NodeCache;
+	
+	private static native void initIDs();
 }
+

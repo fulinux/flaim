@@ -119,6 +119,134 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createJDataVector
 JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRebuild
   (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobject, jobject);
 
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _updateIniFile
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1updateIniFile
+  (JNIEnv *, jobject, jlong, jstring, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _dbDup
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbDup
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openMultiFileIStream
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openMultiFileIStream
+  (JNIEnv *, jobject, jlong, jstring, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openBufferedIStream
+ * Signature: (JJI)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferedIStream
+  (JNIEnv *, jobject, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openUncompressingIStream
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openUncompressingIStream
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openFileOStream
+ * Signature: (JLjava/lang/String;Z)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openFileOStream
+  (JNIEnv *, jobject, jlong, jstring, jboolean);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openMultiFileOStream
+ * Signature: (JLjava/lang/String;Ljava/lang/String;IZ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openMultiFileOStream
+  (JNIEnv *, jobject, jlong, jstring, jstring, jint, jboolean);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _removeMultiFileStream
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1removeMultiFileStream
+  (JNIEnv *, jobject, jlong, jstring, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openBufferedOStream
+ * Signature: (JJI)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferedOStream
+  (JNIEnv *, jobject, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openCompressingOStream
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openCompressingOStream
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _writeToOStream
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1writeToOStream
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openBase64Encoder
+ * Signature: (JJZ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Encoder
+  (JNIEnv *, jobject, jlong, jlong, jboolean);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openBase64Decoder
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Decoder
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setDynamicMemoryLimit
+ * Signature: (JIIII)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setDynamicMemoryLimit
+  (JNIEnv *, jobject, jlong, jint, jint, jint, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setHardMemoryLimit
+ * Signature: (JIZIIIZ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setHardMemoryLimit
+  (JNIEnv *, jobject, jlong, jint, jboolean, jint, jint, jint, jboolean);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getDynamicCacheSupported
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1getDynamicCacheSupported
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

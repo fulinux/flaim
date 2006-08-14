@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	CheckpointInfo Class
+// Desc:
 //
 // Tabs:	3
 //
@@ -20,27 +20,24 @@
 //		To contact Novell about this file by physical or electronic mail,
 //		you may find current contact information at www.novell.com
 //
-// $Id$
+// $Id: $
 //------------------------------------------------------------------------------
-package xflaim;
 
-/**
- * The CheckpointInfo class provides members that give an index's current state.
- */
-public class CheckpointInfo 
-{
-	public boolean		bRunning;
-	public int			iRunningTime;
-	public boolean		bForcingCheckpoint;
-	public int			iForceCheckpointRunningTime;
-	public int			iForceCheckpointReason;
-	public boolean		bWritingDataBlocks;
-	public int			iLogBlocksWritten;
-	public int			iDataBlocksWritten;
-	public int			iDirtyCacheBytes;
-	public int			iBlockSize;
-	public int			iWaitTruncateTime;
+#include "xflaim_IStream.h"
+#include "flaimsys.h"
+#include "jniftk.h"
+
+#define THIS_ISTREAM() \
+	((IF_IStream *)(FLMUINT)lThis)
 	
-	private static native void initIDs();
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_IStream__1release(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	THIS_ISTREAM()->Release();
 }
 

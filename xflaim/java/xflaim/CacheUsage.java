@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:	CheckpointInfo Class
+// Desc:	CacheUsage Class
 //
 // Tabs:	3
 //
@@ -25,21 +25,19 @@
 package xflaim;
 
 /**
- * The CheckpointInfo class provides members that give an index's current state.
+ * The CacheUsage class provides members that give information about cache usage
  */
-public class CheckpointInfo 
+public class CacheUsage 
 {
-	public boolean		bRunning;
-	public int			iRunningTime;
-	public boolean		bForcingCheckpoint;
-	public int			iForceCheckpointRunningTime;
-	public int			iForceCheckpointReason;
-	public boolean		bWritingDataBlocks;
-	public int			iLogBlocksWritten;
-	public int			iDataBlocksWritten;
-	public int			iDirtyCacheBytes;
-	public int			iBlockSize;
-	public int			iWaitTruncateTime;
+	public int			iByteCount;
+	public int			iCount;
+	public int			iOldVerCount;
+	public int			iOldVerBytes;
+	public int			iCacheHits;
+	public int			iCacheHitLooks;
+	public int			iCacheFaults;
+	public int			iCacheFaultLooks;
+	public SlabUsage	slabUsage;
 	
 	private static native void initIDs();
 }

@@ -155,7 +155,7 @@ public class DbSystem
 		String				sDbFileName,
 		String				sDataDir,
 		String				sRflDir,
-		boolean				bRemoveRflFiles)
+		boolean				bRemoveRflFiles) throws XFlaimException
 	{
 		_dbRemove( m_this, sDbFileName, sDataDir, sRflDir, bRemoveRflFiles);
 	}
@@ -210,42 +210,41 @@ public class DbSystem
 	/**
 	 * Opens a buffered input stream.
 	 * @param sBuffer
-	 * @return Returns an instance of PosIStream.
+	 * @return Returns an instance of IStream.
 	 */
-	public PosIStream openBufferIStream(
+	public IStream openBufferIStream(
 		String				sBuffer) throws XFlaimException
 	{
-		PosIStream	jPosIStream = null;
-		long					lRef = 0;
+		IStream	jIStream = null;
+		long		lRef = 0;
 
 		lRef = _openBufferIStream( m_this, sBuffer);
 		
 		if (lRef != 0)
 		{
-			jPosIStream = new PosIStream( lRef,  sBuffer, this);
+			jIStream = new IStream( lRef, this);
 		}
 		
-		return( jPosIStream);
+		return( jIStream);
 	}
 
 	/**
 	 * Opens a file to be used as an input stream.
 	 * @param sPath The pathname of the file to be opened.
-	 * @return Returns an instance of PosIStream.
+	 * @return Returns an instance of IStream.
 	 * @throws XFlaimException
 	 */
-	public PosIStream openFileIStream( String sPath) throws XFlaimException
+	public IStream openFileIStream(
+		String	sPath) throws XFlaimException
 	{
-		PosIStream		jIStream = null;
-		long					lRef = 0;
+		IStream	jIStream = null;
+		long		lRef = 0;
 		
-		lRef = _openFileIStream(
-								m_this,
-								sPath);
+		lRef = _openFileIStream( m_this, sPath);
 
 		if (lRef != 0)
 		{
-			jIStream = new PosIStream( lRef, this);		
+			jIStream = new IStream( lRef, this);		
 		}
 		
 		return( jIStream);
@@ -381,6 +380,213 @@ public class DbSystem
 						createOpts, rebuildStatus);
 	}
 
+	public void updateIniFile(
+		String		sParamName,
+		String		sValue) throws XFlaimException
+	{
+		_updateIniFile( m_this, sParamName, sValue);
+	}
+	
+	public Db dbDup(
+		Db			DbToDup) throws XFlaimException
+	{
+		Db 	jDb = null;
+		long 	jDb_ref;
+											
+		if( (jDb_ref = _dbDup( m_this, DbToDup.getThis())) != 0)
+		{
+			jDb = new Db( jDb_ref, this);
+		}
+		
+		return( jDb);
+	}
+
+	public IStream openMultiFileIStream(
+		String		sDirectory,
+		String		sBaseName) throws XFlaimException
+	{
+		IStream	jIStream = null;
+		long		lRef = 0;
+
+		lRef = _openMultiFileIStream( m_this, sDirectory, sBaseName);
+		
+		if (lRef != 0)
+		{
+			jIStream = new IStream( lRef, this);
+		}
+		
+		return( jIStream);
+	}
+	
+	public IStream openBufferedIStream(
+		IStream		istream,
+		int			iBufferSize) throws XFlaimException
+	{
+		IStream	jIStream = null;
+		long		lRef = 0;
+
+		lRef = _openBufferedIStream( m_this, istream.getThis(), iBufferSize);
+		if (lRef != 0)
+		{
+			jIStream = new IStream( lRef, this);
+		}
+		
+		return( jIStream);
+	}
+	
+	public IStream openUncompressingIStream(
+		IStream	istream) throws XFlaimException
+	{
+		IStream	jIStream = null;
+		long		lRef = 0;
+
+		lRef = _openUncompressingIStream( m_this, istream.getThis());
+		if (lRef != 0)
+		{
+			jIStream = new IStream( lRef, this);
+		}
+		
+		return( jIStream);
+	}
+	
+	public OStream openFileOStream(
+		String				sFileName,
+		boolean				bTruncateIfExists) throws XFlaimException
+	{
+		OStream	jOStream = null;
+		long		lRef = 0;
+
+		lRef = _openFileOStream( m_this, sFileName, bTruncateIfExists);
+		if (lRef != 0)
+		{
+			jOStream = new OStream( lRef, this);
+		}
+		
+		return( jOStream);
+	}
+	
+	public OStream openMultiFileOStream(
+		String				sDirectory,
+		String				sBaseName,
+		int					iMaxFileSize,
+		boolean				bOkToOverwrite) throws XFlaimException
+	{
+		OStream	jOStream = null;
+		long		lRef = 0;
+
+		lRef = _openMultiFileOStream( m_this, sDirectory, sBaseName, iMaxFileSize,
+												bOkToOverwrite);
+		if (lRef != 0)
+		{
+			jOStream = new OStream( lRef, this);
+		}
+		
+		return( jOStream);
+	}
+	
+	public void removeMultiFileStream(
+		String				sDirectory,
+		String				sBaseName) throws XFlaimException
+	{
+		_removeMultiFileStream( m_this, sDirectory, sBaseName);
+	}
+	
+	public OStream openBufferedOStream(
+		OStream				ostream,
+		int					iBufferSize) throws XFlaimException
+	{
+		OStream	jOStream = null;
+		long		lRef = 0;
+
+		lRef = _openBufferedOStream( m_this, ostream.getThis(), iBufferSize);
+		if (lRef != 0)
+		{
+			jOStream = new OStream( lRef, this);
+		}
+		
+		return( jOStream);
+	}
+	
+	public OStream openCompressingOStream(
+		OStream ostream) throws XFlaimException
+	{
+		OStream	jOStream = null;
+		long		lRef = 0;
+
+		lRef = _openCompressingOStream( m_this, ostream.getThis());
+		if (lRef != 0)
+		{
+			jOStream = new OStream( lRef, this);
+		}
+		
+		return( jOStream);
+	}
+	
+	public void writeToOStream(
+		IStream	istream,
+		OStream	ostream) throws XFlaimException
+	{
+		_writeToOStream( m_this, istream.getThis(), ostream.getThis());
+	}
+	
+	public IStream openBase64Encoder(
+		IStream				istream,
+		boolean				bInsertLineBreaks) throws XFlaimException
+	{
+		IStream	jIStream = null;
+		long		lRef = 0;
+
+		lRef = _openBase64Encoder( m_this, istream.getThis(), bInsertLineBreaks);
+		if (lRef != 0)
+		{
+			jIStream = new IStream( lRef, this);
+		}
+		
+		return( jIStream);
+	}
+	
+	public IStream openBase64Decoder(
+		IStream	istream) throws XFlaimException
+	{
+		IStream	jIStream = null;
+		long		lRef = 0;
+
+		lRef = _openBase64Decoder( m_this, istream.getThis());
+		if (lRef != 0)
+		{
+			jIStream = new IStream( lRef, this);
+		}
+		
+		return( jIStream);
+	}
+
+	public void setDynamicMemoryLimit(
+		int	iCacheAdjustPercent,
+		int	iCacheAdjustMin,
+		int	iCacheAdjustMax,
+		int	iCacheAdjustMinToLeave) throws XFlaimException
+	{
+		_setDynamicMemoryLimit( m_this, iCacheAdjustPercent, iCacheAdjustMin,
+							iCacheAdjustMax, iCacheAdjustMinToLeave);
+	}
+
+	public void setHardMemoryLimit(
+		int		iPercent,
+		boolean	bPercentOfAvail,
+		int		iMin,
+		int		iMax,
+		int		iMinToLeave,
+		boolean	bPreallocate) throws XFlaimException
+	{
+		_setHardMemoryLimit( m_this, iPercent, bPercentOfAvail, iMin, iMax,
+					iMinToLeave, bPreallocate);
+	}
+
+	public boolean getDynamicCacheSupported() throws XFlaimException
+	{
+		return( _getDynamicCacheSupported( m_this));
+	}
+
 	private native long _createDbSystem();
 	
 	private native void _init( long lThis);
@@ -409,7 +615,7 @@ public class DbSystem
 		String				DbFileName,
 		String				DataDir,
 		String				RflDir,
-		boolean				bRemoveRflFiles);
+		boolean				bRemoveRflFiles) throws XFlaimException;
 
 	private native long _dbCheck(
 		long					lThis,
@@ -472,6 +678,88 @@ public class DbSystem
 		CREATEOPTS				createOpts,
 		RebuildStatus			rebuildStatus) throws XFlaimException;
 
+	private native void _updateIniFile(
+		long			lThis,
+		String		sParamName,
+		String		sValue) throws XFlaimException;
+
+	private native long _dbDup(
+		long			lThis,
+		long			lDbToDup) throws XFlaimException;
+
+	private native long _openMultiFileIStream(
+		long			lThis,
+		String		sDirectory,
+		String		sBaseName) throws XFlaimException;
+	
+	private native long _openBufferedIStream(
+		long					lThis,
+		long					lIStream,
+		int					iBufferSize) throws XFlaimException;
+
+	private native long _openUncompressingIStream(
+		long					lThis,
+		long					lIStream) throws XFlaimException;
+	
+	private native long _openFileOStream(
+		long					lThis,
+		String				sFileName,
+		boolean				bTruncateIfExists) throws XFlaimException;
+
+	private native long _openMultiFileOStream(
+		long					lThis,
+		String				sDirectory,
+		String				sBaseName,
+		int					iMaxFileSize,
+		boolean				bOkToOverwrite) throws XFlaimException;
+	
+	private native void _removeMultiFileStream(
+		long					lThis,
+		String				sDirectory,
+		String				sBaseName) throws XFlaimException;
+	
+	private native long _openBufferedOStream(
+		long					lThis,
+		long					lOStream,
+		int					iBufferSize) throws XFlaimException;
+	
+	private native long _openCompressingOStream(
+		long					lThis,
+		long					lOStream) throws XFlaimException;
+	
+	private native void _writeToOStream(
+		long					lThis,
+		long					lIstream,
+		long					lOStream) throws XFlaimException;
+	
+	private native long _openBase64Encoder(
+		long					lThis,
+		long					lIstream,
+		boolean				bInsertLineBreaks) throws XFlaimException;
+
+	private native long _openBase64Decoder(
+		long					lThis,
+		long					lIstream) throws XFlaimException;
+
+	private native void _setDynamicMemoryLimit(
+		long	lThis,
+		int	iCacheAdjustPercent,
+		int	iCacheAdjustMin,
+		int	iCacheAdjustMax,
+		int	iCacheAdjustMinToLeave) throws XFlaimException;
+
+	private native void _setHardMemoryLimit(
+		long		lThis,
+		int		iPercent,
+		boolean	bPercentOfAvail,
+		int		iMin,
+		int		iMax,
+		int		iMinToLeave,
+		boolean	bPreallocate) throws XFlaimException;
+
+	private native boolean _getDynamicCacheSupported(
+		long		lThis) throws XFlaimException;
+
 	private long			m_this;
 }
 
@@ -479,74 +767,11 @@ public class DbSystem
 
 METHODS NOT YET IMPLEMENTED
 
-virtual RCODE FLMAPI updateIniFile(
-	const char *	pszParamName,
-	const char *	pszValue) = 0;
-
 virtual void FLMAPI getFileSystem(
 	IF_FileSystem **		ppFileSystem) = 0;
 
-virtual RCODE FLMAPI dbDup(
-	IF_Db *					pDb,
-	IF_Db **					ppDb) = 0;
-
 virtual const char * FLMAPI checkErrorToStr(
 	FLMINT	iCheckErrorCode) = 0;
-
-virtual RCODE FLMAPI openMultiFileIStream(
-	const char *			pszDirectory,
-	const char *			pszBaseName,
-	IF_IStream **			ppIStream) = 0;
-	
-virtual RCODE FLMAPI openBufferedIStream(
-	IF_IStream *			pIStream,
-	FLMUINT					uiBufferSize,
-	IF_IStream **			ppIStream) = 0;
-
-virtual RCODE FLMAPI openUncompressingIStream(
-	IF_IStream *			pIStream,
-	IF_IStream **			ppIStream) = 0;
-	
-virtual RCODE FLMAPI openFileOStream(
-	const char *		pszFileName,
-	FLMBOOL				bTruncateIfExists,
-	IF_OStream **		ppOStream) = 0;
-	
-virtual RCODE FLMAPI openMultiFileOStream(
-	const char *		pszDirectory,
-	const char *		pszBaseName,
-	FLMUINT				uiMaxFileSize,
-	FLMBOOL				bOkToOverwrite,
-	IF_OStream **		ppStream) = 0;
-	
-virtual RCODE FLMAPI removeMultiFileStream(
-	const char *		pszDirectory,
-	const char *		pszBaseName) = 0;
-	
-virtual RCODE FLMAPI openBufferedOStream(
-	IF_OStream *		pOStream,
-	FLMUINT				uiBufferSize,
-	IF_OStream **		ppOStream) = 0;
-	
-virtual RCODE FLMAPI openCompressingOStream(
-	IF_OStream *		pOStream,
-	IF_OStream **		ppOStream) = 0;
-	
-virtual RCODE FLMAPI writeToOStream(
-	IF_IStream *		pIStream,
-	IF_OStream *		pOStream) = 0;
-	
-virtual RCODE FLMAPI openBase64Encoder(
-	IF_IStream *			pInputStream,
-	FLMBOOL					bInsertLineBreaks,
-	IF_IStream **			ppEncodedStream) = 0;
-
-virtual RCODE FLMAPI openBase64Decoder(
-	IF_IStream *			pInputStream,
-	IF_IStream **			ppDecodedStream) = 0;
-
-virtual RCODE FLMAPI createIFDataVector(
-	IF_DataVector **		ifppDV) = 0;
 
 virtual RCODE FLMAPI createIFResultSet(
 	IF_ResultSet **		ifppResultSet) = 0;
@@ -556,22 +781,8 @@ virtual RCODE FLMAPI createIFQuery(
 
 virtual void FLMAPI freeMem(
 	void **					ppMem) = 0;
-
-virtual RCODE FLMAPI setDynamicMemoryLimit(
-	FLMUINT					uiCacheAdjustPercent,
-	FLMUINT					uiCacheAdjustMin,
-	FLMUINT					uiCacheAdjustMax,
-	FLMUINT					uiCacheAdjustMinToLeave) = 0;
-
-virtual RCODE FLMAPI setHardMemoryLimit(
-	FLMUINT					uiPercent,
-	FLMBOOL					bPercentOfAvail,
-	FLMUINT					uiMin,
-	FLMUINT					uiMax,
-	FLMUINT					uiMinToLeave,
-	FLMBOOL					bPreallocate = FALSE) = 0;
-
-virtual FLMBOOL FLMAPI getDynamicCacheSupported( void) = 0;
+	
+//here
 
 virtual void FLMAPI getCacheInfo(
 	XFLM_CACHE_INFO *		pCacheInfo) = 0;

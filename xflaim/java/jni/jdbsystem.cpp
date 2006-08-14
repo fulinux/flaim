@@ -24,6 +24,10 @@
 //------------------------------------------------------------------------------
 
 #include "xflaim_DbSystem.h"
+#include "xflaim_CREATEOPTS.h"
+#include "xflaim_SlabUsage.h"
+#include "xflaim_CacheUsage.h"
+#include "xflaim_CacheInfo.h"
 #include "flaimsys.h"
 #include "jniftk.h"
 #include "jnirestore.h"
@@ -42,6 +46,48 @@ static jfieldID	CREATEOPTS_fidKeepRflFiles = NULL;
 static jfieldID	CREATEOPTS_fidLogAbortedTransToRfl = NULL;
 static jfieldID	CREATEOPTS_fidDefaultLanguage = NULL;
 
+// field IDs for the SlabUsage class.
+
+static jfieldID	SlabUsage_fidSlabs;
+static jfieldID	SlabUsage_fidSlabBytes;
+static jfieldID	SlabUsage_fidAllocatedCells;
+static jfieldID	SlabUsage_fidFreeCells;
+
+// field IDs for the CacheUsage class.
+
+static jfieldID	CacheUsage_fidByteCount = NULL;
+static jfieldID	CacheUsage_fidCount = NULL;
+static jfieldID	CacheUsage_fidOldVerCount = NULL;
+static jfieldID	CacheUsage_fidOldVerBytes = NULL;
+static jfieldID	CacheUsage_fidCacheHits = NULL;
+static jfieldID	CacheUsage_fidCacheHitLooks = NULL;
+static jfieldID	CacheUsage_fidCacheFaults = NULL;
+static jfieldID	CacheUsage_fidCacheFaultLooks = NULL;
+static jfieldID	CacheUsage_fidSlabUsage = NULL;
+
+// field IDs for the CacheInfo class.
+
+static jfieldID	CacheInfo_fidMaxBytes = NULL;
+static jfieldID	CacheInfo_fidTotalBytesAllocated = NULL;
+static jfieldID	CacheInfo_fidDynamicCacheAdjust = NULL;
+static jfieldID	CacheInfo_fidCacheAdjustPercent = NULL;
+static jfieldID	CacheInfo_fidCacheAdjustMin = NULL;
+static jfieldID	CacheInfo_fidCacheAdjustMax = NULL;
+static jfieldID	CacheInfo_fidCacheAdjustMinToLeave = NULL;
+static jfieldID	CacheInfo_fidDirtyCount = NULL;
+static jfieldID	CacheInfo_fidDirtyBytes = NULL;
+static jfieldID	CacheInfo_fidNewCount = NULL;
+static jfieldID	CacheInfo_fidNewBytes = NULL;
+static jfieldID	CacheInfo_fidLogCount = NULL;
+static jfieldID	CacheInfo_fidLogBytes = NULL;
+static jfieldID	CacheInfo_fidFreeCount = NULL;
+static jfieldID	CacheInfo_fidFreeBytes = NULL;
+static jfieldID	CacheInfo_fidReplaceableCount = NULL;
+static jfieldID	CacheInfo_fidReplaceableBytes = NULL;
+static jfieldID	CacheInfo_fidPreallocatedCache = NULL;
+static jfieldID	CacheInfo_fidBlockCache = NULL;
+static jfieldID	CacheInfo_fidNodeCache = NULL;
+	
 FSTATIC void getCreateOpts(
 	JNIEnv *					pEnv,
 	jobject					createOpts,
@@ -62,6 +108,219 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createDbSystem(
 	}
 	
 	return( (jlong)(FLMUINT)pDbSystem);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_SlabUsage_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jSlabUsageClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((SlabUsage_fidSlabs = pEnv->GetFieldID( jSlabUsageClass,
+								"lSlabs", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((SlabUsage_fidSlabBytes = pEnv->GetFieldID( jSlabUsageClass,
+								"lSlabBytes", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((SlabUsage_fidAllocatedCells = pEnv->GetFieldID( jSlabUsageClass,
+								"lAllocatedCells", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((SlabUsage_fidFreeCells = pEnv->GetFieldID( jSlabUsageClass,
+								"lFreeCells", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_CacheUsage_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jCacheUsageClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((CacheUsage_fidByteCount = pEnv->GetFieldID( jCacheUsageClass,
+								"iByteCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidCount = pEnv->GetFieldID( jCacheUsageClass,
+								"iCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidOldVerCount = pEnv->GetFieldID( jCacheUsageClass,
+								"iOldVerCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidOldVerBytes = pEnv->GetFieldID( jCacheUsageClass,
+								"iOldVerBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidCacheHits = pEnv->GetFieldID( jCacheUsageClass,
+								"iCacheHits", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidCacheHitLooks = pEnv->GetFieldID( jCacheUsageClass,
+								"iCacheHitLooks", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidCacheFaults = pEnv->GetFieldID( jCacheUsageClass,
+							"iCacheFaults", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidCacheFaultLooks = pEnv->GetFieldID( jCacheUsageClass,
+								"iCacheFaultLooks", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheUsage_fidSlabUsage = pEnv->GetFieldID( jCacheUsageClass,
+								"slabUsage", "Lxflaim/SlabUsage;")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_CacheInfo_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jCacheInfoClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((CacheInfo_fidMaxBytes = pEnv->GetFieldID( jCacheInfoClass,
+								"iMaxBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidTotalBytesAllocated = pEnv->GetFieldID( jCacheInfoClass,
+								"iTotalBytesAllocated", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidDynamicCacheAdjust = pEnv->GetFieldID( jCacheInfoClass,
+								"bDynamicCacheAdjust", "V")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidCacheAdjustPercent = pEnv->GetFieldID( jCacheInfoClass,
+								"iCacheAdjustPercent", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidCacheAdjustMin = pEnv->GetFieldID( jCacheInfoClass,
+								"iCacheAdjustMin", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidCacheAdjustMax = pEnv->GetFieldID( jCacheInfoClass,
+								"iCacheAdjustMax", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidCacheAdjustMinToLeave = pEnv->GetFieldID( jCacheInfoClass,
+							"iCacheAdjustMinToLeave", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidDirtyCount = pEnv->GetFieldID( jCacheInfoClass,
+								"iDirtyCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidDirtyBytes = pEnv->GetFieldID( jCacheInfoClass,
+								"iDirtyBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidNewCount = pEnv->GetFieldID( jCacheInfoClass,
+								"iNewCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidNewBytes = pEnv->GetFieldID( jCacheInfoClass,
+								"iNewBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidLogCount = pEnv->GetFieldID( jCacheInfoClass,
+								"iLogCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidLogBytes = pEnv->GetFieldID( jCacheInfoClass,
+								"iLogBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidFreeCount = pEnv->GetFieldID( jCacheInfoClass,
+								"iFreeCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidFreeBytes = pEnv->GetFieldID( jCacheInfoClass,
+								"iFreeBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidReplaceableCount = pEnv->GetFieldID( jCacheInfoClass,
+								"iReplaceableCount", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidReplaceableBytes = pEnv->GetFieldID( jCacheInfoClass,
+								"iReplaceableBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidPreallocatedCache = pEnv->GetFieldID( jCacheInfoClass,
+								"bPreallocatedCache", "V")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidBlockCache = pEnv->GetFieldID( jCacheInfoClass,
+								"BlockCache", "Lxflaim/CacheUsage;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((CacheInfo_fidNodeCache = pEnv->GetFieldID( jCacheInfoClass,
+								"NodeCache", "Lxflaim/CacheUsage;")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
 }
 
 /****************************************************************************
@@ -146,7 +405,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 	JNIEnv *					pEnv,
 	jobject,					// obj,
 	jlong						lThis,
-	jstring					sDbFileName,
+	jstring					sDbPath,
 	jstring					sDataDir,
 	jstring					sRflDir,
 	jstring					sDictFileName,
@@ -157,35 +416,46 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 	F_Db *					pDb = NULL;
 	XFLM_CREATE_OPTS		Opts;
 	XFLM_CREATE_OPTS *	pOpts;
-	char *					pszFilePath = NULL;
-	char *					pszDataDir = NULL;
-	char *					pszRflDir = NULL;
-	char *					pszDictFileName = NULL;
-	char *					pszDictBuf = NULL;
-
-	flmAssert( sDbFileName);
-	pszFilePath = (char *)pEnv->GetStringUTFChars( sDbFileName, NULL);
-
-	if (sDataDir)
+	FLMBYTE					ucDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf				dbPathBuf( ucDbPath, sizeof( ucDbPath));
+	FLMBYTE					ucDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf				dataDirBuf( ucDataDir, sizeof( ucDataDir));
+	FLMBYTE					ucRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf				rflDirBuf( ucRflDir, sizeof( ucRflDir));
+	FLMBYTE					ucDictFileName [F_PATH_MAX_SIZE];
+	F_DynaBuf				dictFileNameBuf( ucDictFileName, sizeof( ucDictFileName));
+	FLMBYTE					ucDictBuf [100];
+	F_DynaBuf				dictBufBuf( ucDictBuf, sizeof( ucDictBuf));
+	
+	// Get all of the string parameters into buffers.
+	
+	flmAssert( sDbPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbPath, &dbPathBuf)))
 	{
-		pszDataDir =  (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataDir, &dataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &rflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDictFileName, &dictFileNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDictBuf, &dictBufBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
 	
-	if (sRflDir)
-	{
-		pszRflDir =  (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-	}
-	
-	if (sDictFileName)
-	{
-		pszDictFileName =  (char *)pEnv->GetStringUTFChars( sDictFileName, NULL);
-	}
-	
-	if (sDictBuf)
-	{
-		pszDictBuf =  (char *)pEnv->GetStringUTFChars( sDictBuf, NULL);
-	}
-
 	if (!CreateOpts)
 	{
 		pOpts = NULL;
@@ -196,36 +466,27 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCreate(
 		pOpts = &Opts;
 	}
 	
-	if (RC_BAD( rc = THIS_DBSYS()->dbCreate( pszFilePath, pszDataDir,
-		pszRflDir, pszDictFileName, pszDictBuf, pOpts, (IF_Db **)&pDb)))
+	if (RC_BAD( rc = THIS_DBSYS()->dbCreate(
+							(const char *)dbPathBuf.getBufferPtr(),
+							dataDirBuf.getDataLength() > 1
+							? (const char *)dataDirBuf.getBufferPtr()
+							: (const char *)NULL,
+							rflDirBuf.getDataLength() > 1
+							? (const char *)rflDirBuf.getBufferPtr()
+							: (const char *)NULL,
+							dictFileNameBuf.getDataLength() > 1
+							? (const char *)dictFileNameBuf.getBufferPtr()
+							: (const char *)NULL,
+							dictBufBuf.getDataLength() > 1
+							? (const char *)dictBufBuf.getBufferPtr()
+							: (const char *)NULL,
+							pOpts, (IF_Db **)&pDb)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 
  Exit:
-
-	pEnv->ReleaseStringUTFChars( sDbFileName, pszFilePath);
-
-	if (pszDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
-	}
-
-	if (pszRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
-	}
-
-	if (pszDictFileName)
-	{
-		pEnv->ReleaseStringUTFChars( sDictFileName, pszDictFileName);
-	}
-
-	if (pszDictBuf)
-	{
-		pEnv->ReleaseStringUTFChars( sDictBuf, pszDictBuf);
-	}
 
   	return( (jlong)((FLMUINT)pDb));
 }
@@ -237,7 +498,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbOpen(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jstring			sDbFileName,
+	jstring			sDbPath,
 	jstring			sDataDir,
 	jstring			sRflDir,
 	jstring			sPassword,
@@ -245,33 +506,52 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbOpen(
 {
 	RCODE 			rc = NE_XFLM_OK;
 	F_Db * 			pDb = NULL;
-	char * 			pszFilePath;
-	char *			pszDataDir = NULL;
-	char *			pszRflDir = NULL;
-	char *			pszPassword = NULL;
+	FLMBYTE			ucDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf		dbPathBuf( ucDbPath, sizeof( ucDbPath));
+	FLMBYTE			ucDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf		dataDirBuf( ucDataDir, sizeof( ucDataDir));
+	FLMBYTE			ucRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf		rflDirBuf( ucRflDir, sizeof( ucRflDir));
+	FLMBYTE			ucPassword [100];
+	F_DynaBuf		passwordBuf( ucPassword, sizeof( ucPassword));
  
- 	flmAssert( sDbFileName);
+	// Get all of the string parameters into buffers.
 	
-	pszFilePath = (char *)pEnv->GetStringUTFChars( sDbFileName, NULL);
-	
-	if (sDataDir)
+	flmAssert( sDbPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbPath, &dbPathBuf)))
 	{
-		pszDataDir = (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataDir, &dataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &rflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sPassword, &passwordBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
 	
-	if (sRflDir)
-	{
-		pszRflDir = (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-	}
-	
-	if (sPassword)
-	{
-		pszPassword = (char *)pEnv->GetStringUTFChars( sPassword, NULL);
-	}
-  
- 	if (RC_BAD( rc = THIS_DBSYS()->dbOpen( pszFilePath, pszDataDir,
- 						pszRflDir, pszPassword, bAllowLimited ? TRUE : FALSE,
-						(IF_Db **)&pDb)))
+ 	if (RC_BAD( rc = THIS_DBSYS()->dbOpen(
+							(const char *)dbPathBuf.getBufferPtr(),
+							dataDirBuf.getDataLength() > 1
+							? (const char *)dataDirBuf.getBufferPtr()
+							: (const char *)NULL,
+							rflDirBuf.getDataLength() > 1
+							? (const char *)rflDirBuf.getBufferPtr()
+							: (const char *)NULL,
+							passwordBuf.getDataLength() > 1
+							? (const char *)passwordBuf.getBufferPtr()
+							: (const char *)NULL,
+							bAllowLimited ? TRUE : FALSE,
+							(IF_Db **)&pDb)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -279,23 +559,6 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbOpen(
  	
 Exit:
 
-	pEnv->ReleaseStringUTFChars( sDbFileName, pszFilePath);
-	
-	if (pszDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
-	}
-	
-	if (pszRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
-	}
-	
-	if( pszPassword)
-	{
-		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
-	}
-	
 	return( (jlong)(FLMUINT)pDb);
 }
 
@@ -306,42 +569,55 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRemove(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jstring			sDbName,
+	jstring			sDbPath,
 	jstring			sDataDir,
 	jstring			sRflDir,
 	jboolean			bRemove)
 {
-	char * 			pszName;
-	char *			pszDataDir = NULL;
-	char *			pszRflDir = NULL;
+	RCODE				rc = NE_XFLM_OK;
+	FLMBYTE			ucDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf		dbPathBuf( ucDbPath, sizeof( ucDbPath));
+	FLMBYTE			ucDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf		dataDirBuf( ucDataDir, sizeof( ucDataDir));
+	FLMBYTE			ucRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf		rflDirBuf( ucRflDir, sizeof( ucRflDir));
+ 
+	// Get all of the string parameters into buffers.
+	
+	flmAssert( sDbPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbPath, &dbPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataDir, &dataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &rflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->dbRemove(
+							(const char *)dbPathBuf.getBufferPtr(),
+							dataDirBuf.getDataLength() > 1
+							? (const char *)dataDirBuf.getBufferPtr()
+							: (const char *)NULL,
+							rflDirBuf.getDataLength() > 1
+							? (const char *)rflDirBuf.getBufferPtr()
+							: (const char *)NULL,
+							bRemove ? TRUE : FALSE)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
 
-	flmAssert( sDbName);
-	pszName = (char *)pEnv->GetStringUTFChars( sDbName, NULL);
-	
-	if (sDataDir)
-	{
-		pszDataDir = (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
-	}
-	
-	if (sRflDir)
-	{
-		pszRflDir = (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-	}
-
-	THIS_DBSYS()->dbRemove( pszName, pszDataDir, 
-		pszRflDir, bRemove ? TRUE : FALSE);
-
-	pEnv->ReleaseStringUTFChars( sDbName, pszName);
-	
-	if (pszDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
-	}
-	
-	if (pszRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
-	}
+	return;
 }
 
 /****************************************************************************
@@ -360,40 +636,51 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 	jobject			RestoreStatus)
 {
 	RCODE						rc = NE_XFLM_OK;
-	char * 					pszName;
-	char *					pszDataDir = NULL;
-	char *					pszRflDir = NULL;
-	char *					pszBackupPath = NULL;
-	char *					pszPassword = NULL;
 	JavaVM *					pJvm = NULL;
 	JNIRestoreClient *	pRestoreClient = NULL;
 	JNIRestoreStatus *	pRestoreStatus = NULL;
+	FLMBYTE					ucDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf				dbPathBuf( ucDbPath, sizeof( ucDbPath));
+	FLMBYTE					ucDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf				dataDirBuf( ucDataDir, sizeof( ucDataDir));
+	FLMBYTE					ucBackupPath [F_PATH_MAX_SIZE];
+	F_DynaBuf				backupPathBuf( ucBackupPath, sizeof( ucBackupPath));
+	FLMBYTE					ucRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf				rflDirBuf( ucRflDir, sizeof( ucRflDir));
+	FLMBYTE					ucPassword [100];
+	F_DynaBuf				passwordBuf( ucPassword, sizeof( ucPassword));
+ 
+	// Get all of the string parameters into buffers.
+	
+	flmAssert( sDbPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbPath, &dbPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataDir, &dataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sBackupPath, &backupPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &rflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sPassword, &passwordBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
 
 	pEnv->GetJavaVM( &pJvm);
 
-	flmAssert( sDbPath);
-	pszName = (char *)pEnv->GetStringUTFChars( sDbPath, NULL);
-	
-	if (sDataDir)
-	{
-		pszDataDir =  (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
-	}
-	
-	if (sRflDir)
-	{
-		pszRflDir =  (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-	}
-	
-	if (sBackupPath)
-	{
-		pszBackupPath =  (char *)pEnv->GetStringUTFChars( sBackupPath, NULL);
-	}
-	
-	if (sPassword)
-	{
-		pszPassword =  (char *)pEnv->GetStringUTFChars( sPassword, NULL);
-	}
-	
 	flmAssert( RestoreClient);
 	if ((pRestoreClient = f_new JNIRestoreClient( RestoreClient, pJvm)) == NULL)
 	{
@@ -410,8 +697,21 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore(
 		}		
 	}
 	
-	if (RC_BAD( rc = THIS_DBSYS()->dbRestore( pszName, pszDataDir, pszBackupPath,
-		pszRflDir, pszPassword, pRestoreClient, pRestoreStatus)))
+	if (RC_BAD( rc = THIS_DBSYS()->dbRestore(
+		(const char *)dbPathBuf.getBufferPtr(),
+		dataDirBuf.getDataLength() > 1
+		? (const char *)dataDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		backupPathBuf.getDataLength() > 1
+		? (const char *)backupPathBuf.getBufferPtr()
+		: (const char *)NULL,
+		rflDirBuf.getDataLength() > 1
+		? (const char *)rflDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		passwordBuf.getDataLength() > 1
+		? (const char *)passwordBuf.getBufferPtr()
+		: (const char *)NULL,
+		pRestoreClient, pRestoreStatus)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -428,28 +728,7 @@ Exit:
 	{
 		pRestoreStatus->Release();
 	}
-	
-	pEnv->ReleaseStringUTFChars( sDbPath, pszName);
-	
-	if (pszDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
-	}
-	
-	if (pszRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
-	}
-
-	if (pszBackupPath)
-	{
-		pEnv->ReleaseStringUTFChars( sBackupPath, pszBackupPath);
-	}
-	
-	if (pszPassword)
-	{
-		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
-	}	
+	return;
 }
 
 /****************************************************************************
@@ -459,36 +738,50 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRename(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jstring			sDbName,
+	jstring			sDbPath,
 	jstring			sDataDir,
 	jstring			sRflDir,
 	jstring			sNewDbName,
 	jboolean			bOverwriteDestOk,
 	jobject			Status)
 {
-	RCODE					rc = NE_XFLM_OK;
-	char *				pszDbName = NULL;
-	char *				pszDataDir = NULL;
-	char *				pszRflDir = NULL;
-	char *				pszNewDbName = NULL;
-	JavaVM *				pJvm;
-	JNIRenameStatus *	pStatus = NULL;
-
-	flmAssert( sDbName);
+	RCODE						rc = NE_XFLM_OK;
+	JavaVM *					pJvm;
+	JNIRenameStatus *		pStatus = NULL;
+	FLMBYTE					ucDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf				dbPathBuf( ucDbPath, sizeof( ucDbPath));
+	FLMBYTE					ucDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf				dataDirBuf( ucDataDir, sizeof( ucDataDir));
+	FLMBYTE					ucRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf				rflDirBuf( ucRflDir, sizeof( ucRflDir));
+	FLMBYTE					ucNewDbName [F_PATH_MAX_SIZE];
+	F_DynaBuf				newDbNameBuf( ucNewDbName, sizeof( ucNewDbName));
+ 
+	// Get all of the string parameters into buffers.
+	
+	flmAssert( sDbPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbPath, &dbPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataDir, &dataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &rflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
 	flmAssert( sNewDbName);
-	pszDbName = (char *)pEnv->GetStringUTFChars( sDbName, NULL);
-	pszNewDbName = (char *)pEnv->GetStringUTFChars( sNewDbName, NULL);
-	
-	if (sDataDir)
+	if (RC_BAD( rc = getUTF8String( pEnv, sNewDbName, &newDbNameBuf)))
 	{
-		pszDataDir =  (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
-	
-	if (sRflDir)
-	{
-		pszRflDir =  (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
-	}
-	
+
 	if (Status != NULL)
 	{
 		pEnv->GetJavaVM( &pJvm);
@@ -499,8 +792,16 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRename(
 		}
 	}
 
-	if (RC_BAD(rc = THIS_DBSYS()->dbRename( pszDbName, pszDataDir, pszRflDir,
-			pszNewDbName, bOverwriteDestOk ? TRUE : FALSE, pStatus)))
+	if (RC_BAD(rc = THIS_DBSYS()->dbRename(
+		(const char *)dbPathBuf.getBufferPtr(),
+		dataDirBuf.getDataLength() > 1
+		? (const char *)dataDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		rflDirBuf.getDataLength() > 1
+		? (const char *)rflDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		(const char *)newDbNameBuf.getBufferPtr(),
+		bOverwriteDestOk ? TRUE : FALSE, pStatus)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -512,19 +813,7 @@ Exit:
 	{
 		pStatus->Release();
 	}
-	
-	pEnv->ReleaseStringUTFChars( sDbName, pszDbName);
-	pEnv->ReleaseStringUTFChars( sNewDbName, pszNewDbName);
-	
-	if (pszDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
-	}
-	
-	if (pszRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
-	}	
+	return;
 }
 
 /****************************************************************************
@@ -543,39 +832,54 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy(
 	jobject			Status)
 {
 	RCODE					rc = NE_XFLM_OK;
-	char *				pszSrcDbName = NULL;
-	char *				pszSrcDataDir = NULL;
-	char *				pszSrcRflDir = NULL;
-	char *				pszDestDbName = NULL;
-	char *				pszDestDataDir = NULL;
-	char *				pszDestRflDir = NULL;
 	JavaVM *				pJvm;
 	JNICopyStatus *	pStatus = NULL;
-
-	flmAssert( sSrcDbName);
-	pszSrcDbName = (char *)pEnv->GetStringUTFChars( sSrcDbName, NULL);
+	FLMBYTE				ucSrcDbName [F_PATH_MAX_SIZE];
+	F_DynaBuf			srcDbNameBuf( ucSrcDbName, sizeof( ucSrcDbName));
+	FLMBYTE				ucSrcDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf			srcDataDirBuf( ucSrcDataDir, sizeof( ucSrcDataDir));
+	FLMBYTE				ucSrcRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf			srcRflDirBuf( ucSrcRflDir, sizeof( ucSrcRflDir));
+	FLMBYTE				ucDestDbName [F_PATH_MAX_SIZE];
+	F_DynaBuf			destDbNameBuf( ucDestDbName, sizeof( ucDestDbName));
+	FLMBYTE				ucDestDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf			destDataDirBuf( ucDestDataDir, sizeof( ucDestDataDir));
+	FLMBYTE				ucDestRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf			destRflDirBuf( ucDestRflDir, sizeof( ucDestRflDir));
+ 
+	// Get all of the string parameters into buffers.
 	
-	if (sSrcDataDir)
-	{
-		pszSrcDataDir = (char *)pEnv->GetStringUTFChars( sSrcDataDir, NULL);
-	}
-	
-	if (sSrcRflDir)
-	{
-		pszSrcRflDir = (char *)pEnv->GetStringUTFChars( sSrcRflDir, NULL);
-	}
-
 	flmAssert( sSrcDbName);
-	pszDestDbName = (char *)pEnv->GetStringUTFChars( sDestDbName, NULL);
-
-	if (sDestDataDir)
+	if (RC_BAD( rc = getUTF8String( pEnv, sSrcDbName, &srcDbNameBuf)))
 	{
-		pszDestDataDir = (char *)pEnv->GetStringUTFChars( sDestDataDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
-
-	if (sDestRflDir)
+	if (RC_BAD( rc = getUTF8String( pEnv, sSrcDataDir, &srcDataDirBuf)))
 	{
-		pszDestRflDir = (char *)pEnv->GetStringUTFChars( sDestRflDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sSrcRflDir, &srcRflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	flmAssert( sDestDbName);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDestDbName, &destDbNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDestDataDir, &destDataDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDestRflDir, &destRflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
 
 	if (Status)
@@ -588,8 +892,22 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy(
 		}
 	}
 	
-	if (RC_BAD( rc = THIS_DBSYS()->dbCopy( pszSrcDbName, pszSrcDataDir,
-		pszSrcRflDir, pszDestDbName, pszDestDataDir, pszDestRflDir, pStatus)))
+	if (RC_BAD( rc = THIS_DBSYS()->dbCopy(
+		(const char *)srcDbNameBuf.getBufferPtr(),
+		srcDataDirBuf.getDataLength() > 1
+		? (const char *)srcDataDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		srcRflDirBuf.getDataLength() > 1
+		? (const char *)srcRflDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		(const char *)destDbNameBuf.getBufferPtr(),
+		destDataDirBuf.getDataLength() > 1
+		? (const char *)destDataDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		destRflDirBuf.getDataLength() > 1
+		? (const char *)destRflDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		pStatus)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -601,30 +919,7 @@ Exit:
 	{
 		pStatus->Release();
 	}
-	
-	pEnv->ReleaseStringUTFChars( sSrcDbName, pszSrcDbName);
-	
-	if (pszSrcDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sSrcDataDir, pszSrcDataDir);
-	}
-	
-	if (pszSrcRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sSrcRflDir, pszSrcRflDir);
-	}
-	
-	pEnv->ReleaseStringUTFChars( sDestDbName, pszDestDbName);
-	
-	if (pszDestDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDestDataDir, pszDestDataDir);
-	}
-	
-	if (pszDestRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDestRflDir, pszDestRflDir);
-	}
+	return;
 }
 
 /****************************************************************************
@@ -634,7 +929,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCheck(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jstring			sDbName,
+	jstring			sDbPath,
 	jstring			sDataDir,
 	jstring			sRflDir,
 	jstring			sPassword,
@@ -642,31 +937,41 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCheck(
 	jobject			Status)
 {
 	RCODE					rc = NE_XFLM_OK;
-	char *				pszDbName = NULL;
-	char * 				pszDataDir = NULL;
-	char *				pszRflDir = NULL;
-	char *				pszPassword = NULL;
 	JNICheckStatus *	pStatus = NULL;
 	F_DbInfo *			pDbInfo = NULL;
+	FLMBYTE				ucDbPath [F_PATH_MAX_SIZE];
+	F_DynaBuf			dbPathBuf( ucDbPath, sizeof( ucDbPath));
+	FLMBYTE				ucDataDir [F_PATH_MAX_SIZE];
+	F_DynaBuf			dataDirBuf( ucDataDir, sizeof( ucDataDir));
+	FLMBYTE				ucRflDir [F_PATH_MAX_SIZE];
+	F_DynaBuf			rflDirBuf( ucRflDir, sizeof( ucRflDir));
+	FLMBYTE				ucPassword [100];
+	F_DynaBuf			passwordBuf( ucPassword, sizeof( ucPassword));
+ 
+	// Get all of the string parameters into buffers.
 	
-	flmAssert( sDbName);
-	pszDbName = (char *)pEnv->GetStringUTFChars( sDbName, NULL);
-	
-	if (sDataDir)
+	flmAssert( sDbPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbPath, &dbPathBuf)))
 	{
-		pszDataDir = (char *)pEnv->GetStringUTFChars( sDataDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
-	
-	if (sRflDir)
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataDir, &dataDirBuf)))
 	{
-		pszDataDir = (char *)pEnv->GetStringUTFChars( sRflDir, NULL);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRflDir, &rflDirBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sPassword, &passwordBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
 
-	if (sPassword)
-	{
-		pszPassword = (char *)pEnv->GetStringUTFChars( sPassword, NULL);
-	}	
-	
 	if (Status != NULL)
 	{
 		JavaVM *		pJvm = NULL;
@@ -680,8 +985,18 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbCheck(
 		}		
 	}
 	
-	if (RC_BAD( rc = THIS_DBSYS()->dbCheck( pszDbName, pszDataDir, pszRflDir,
-		pszPassword, (FLMUINT)iFlags, (IF_DbInfo **)&pDbInfo, pStatus)))
+	if (RC_BAD( rc = THIS_DBSYS()->dbCheck(
+		(const char *)dbPathBuf.getBufferPtr(),
+		dataDirBuf.getDataLength() > 1
+		? (const char *)dataDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		rflDirBuf.getDataLength() > 1
+		? (const char *)rflDirBuf.getBufferPtr()
+		: (const char *)NULL,
+		passwordBuf.getDataLength() > 1
+		? (const char *)passwordBuf.getBufferPtr()
+		: (const char *)NULL,
+		(FLMUINT)iFlags, (IF_DbInfo **)&pDbInfo, pStatus)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -693,23 +1008,6 @@ Exit:
 	{
 		pStatus->Release();
 	}
-	
-	pEnv->ReleaseStringUTFChars( sDbName, pszDbName);
-	
-	if (pszDataDir)
-	{
-		pEnv->ReleaseStringUTFChars( sDataDir, pszDataDir);
-	}
-	
-	if (pszRflDir)
-	{
-		pEnv->ReleaseStringUTFChars( sRflDir, pszRflDir);
-	}
-
-	if (pszPassword)
-	{
-		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
-	}	
 	
 	return (jlong)(FLMUINT)pDbInfo;	
 }
@@ -724,19 +1022,52 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferIStream(
 	jstring			sBuffer)
 {
 	RCODE					rc = NE_XFLM_OK;
-	IF_PosIStream *	pIStream = NULL;
-
-	char * pcBuffer = (char *)pEnv->GetStringUTFChars(sBuffer, NULL);
-	FLMUINT uiBufLen = pEnv->GetStringUTFLength( sBuffer);
-
-	if (RC_BAD( rc = THIS_DBSYS()->openBufferIStream( pcBuffer,
-		uiBufLen, &pIStream)))
+	const char *		pszBuffer = NULL;
+	FLMUINT				uiStrCharCount;
+	F_BufferIStream *	pIStream = NULL;
+	char *				pszAllocBuffer = NULL;
+	
+	// Get a pointer to the characters in the string.
+	
+	flmAssert( sBuffer);
+	pszBuffer = pEnv->GetStringUTFChars( sBuffer, NULL);
+	uiStrCharCount = (FLMUINT)pEnv->GetStringUTFLength( sBuffer);
+	flmAssert( uiStrCharCount);
+	
+	// Create the buffer stream object.
+	
+	if ((pIStream = f_new F_BufferIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Call the openStream method so that it will allocate a buffer
+	// internally.  Add one to the size so that we allocate space for
+	// a null terminating byte - because uiStrCharCount does NOT include
+	// the null terminating byte.  Buffer pointer is returned in pucBuffer.
+	
+	if( RC_BAD( rc = pIStream->openStream( NULL, uiStrCharCount + 1, &pszAllocBuffer)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
-
+	
+	// Copy the data from the passed in string into pucBuffer, including the NULL.
+	
+	f_memcpy( pszAllocBuffer, pszBuffer, uiStrCharCount);
+	
+	// NULL terminate the allocated buffer.
+	
+	pszAllocBuffer [uiStrCharCount] = 0;
+	
 Exit:
+
+	if (pszBuffer)
+	{
+		pEnv->ReleaseStringUTFChars( sBuffer, pszBuffer);
+	}
 
 	return( (jlong)((FLMUINT)pIStream));
 }
@@ -751,10 +1082,21 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openFileIStream(
 	jstring			sPath)
 {
 	RCODE					rc = NE_XFLM_OK;
-	char * 				pszPath = (char *)pEnv->GetStringUTFChars( sPath, NULL);
+	FLMBYTE				ucPath [F_PATH_MAX_SIZE];
+	F_DynaBuf			pathBuf( ucPath, sizeof( ucPath));
 	IF_PosIStream *	pIStream = NULL;
+ 
+	// Get all of the string parameters into buffers.
 	
-	if (RC_BAD( rc = THIS_DBSYS()->openFileIStream( pszPath, &pIStream)))
+	flmAssert( sPath);
+	if (RC_BAD( rc = getUTF8String( pEnv, sPath, &pathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openFileIStream(
+								(const char *)pathBuf.getBufferPtr(), &pIStream)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -762,7 +1104,6 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openFileIStream(
 	
 Exit:
 
-	pEnv->ReleaseStringUTFChars( sPath, pszPath);
 	return( (jlong)(FLMUINT)pIStream);
 }
 
@@ -1010,5 +1351,498 @@ Exit:
 	}
 
 	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1updateIniFile(
+	JNIEnv *			pEnv,
+  	jobject,			// obj,
+  	jlong				lThis,
+	jstring			sParamName,
+	jstring			sValue)
+{
+	RCODE							rc = NE_XFLM_OK;
+	F_DbSystem *				pDbSystem = THIS_DBSYS();
+	FLMBYTE						ucParamName [80];
+	F_DynaBuf					paramNameBuf( ucParamName, sizeof( ucParamName));
+	FLMBYTE						ucValue [80];
+	F_DynaBuf					valueBuf( ucValue, sizeof( ucValue));
+	
+	// Get all of the string parameters into buffers.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sParamName, &paramNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sValue, &valueBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Call the rebuild function.
+	
+	if (RC_BAD( rc = pDbSystem->updateIniFile(
+				(const char *)paramNameBuf.getBufferPtr(),
+				(const char *)valueBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbDup(
+	JNIEnv *			pEnv,
+  	jobject,			// obj,
+  	jlong				lThis,
+	jlong				lDbToDup)
+{
+	RCODE				rc = NE_XFLM_OK;
+	F_DbSystem *	pDbSystem = THIS_DBSYS();
+	IF_Db *			pDbToDup = (IF_Db *)((FLMUINT)lDbToDup);
+	IF_Db *			pDb = NULL;
+
+	if (!pDbToDup)
+	{
+		rc = RC_SET( NE_XFLM_INVALID_PARM);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pDbSystem->dbDup( pDbToDup, &pDb)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pDb));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openMultiFileIStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sDirectory,
+	jstring			sBaseName)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_IStream *		pIStream = NULL;
+	FLMBYTE				ucDirectory [F_PATH_MAX_SIZE];
+	F_DynaBuf			directoryBuf( ucDirectory, sizeof( ucDirectory));
+	FLMBYTE				ucBaseName [F_PATH_MAX_SIZE];
+	F_DynaBuf			baseNameBuf( ucBaseName, sizeof( ucBaseName));
+	
+	// Get all of the string parameters into buffers.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sDirectory, &directoryBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sBaseName, &baseNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openMultiFileIStream(
+											(const char *)directoryBuf.getBufferPtr(),
+											(const char *)baseNameBuf.getBufferPtr(),
+											&pIStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferedIStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lIStream,
+	jint				iBufferSize)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_IStream *		pIStream = NULL;
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)lIStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openBufferedIStream( pInputStream,
+												(FLMUINT)iBufferSize, &pIStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openUncompressingIStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lIStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_IStream *		pIStream = NULL;
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)lIStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openUncompressingIStream( pInputStream, &pIStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openFileOStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sFileName,
+	jboolean			bTruncateIfFileExists)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_OStream *		pOStream = NULL;
+	FLMBYTE				ucFileName [F_PATH_MAX_SIZE];
+	F_DynaBuf			fileNameBuf( ucFileName, sizeof( ucFileName));
+	
+	// Get all of the string parameters into buffers.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sFileName, &fileNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openFileOStream(
+								(const char *)fileNameBuf.getBufferPtr(),
+								bTruncateIfFileExists ? TRUE : FALSE, &pOStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pOStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openMultiFileOStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sDirectory,
+	jstring			sBaseName,
+	jint				iMaxFileSize,
+	jboolean			bOkToOverwrite)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_OStream *		pOStream = NULL;
+	FLMBYTE				ucDirectory [F_PATH_MAX_SIZE];
+	F_DynaBuf			directoryBuf( ucDirectory, sizeof( ucDirectory));
+	FLMBYTE				ucBaseName [F_PATH_MAX_SIZE];
+	F_DynaBuf			baseNameBuf( ucBaseName, sizeof( ucBaseName));
+	
+	// Get all of the string parameters into buffers.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sDirectory, &directoryBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sBaseName, &baseNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openMultiFileOStream(
+								(const char *)directoryBuf.getBufferPtr(),
+								(const char *)baseNameBuf.getBufferPtr(),
+								(FLMUINT)iMaxFileSize,
+								bOkToOverwrite ? TRUE : FALSE, &pOStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pOStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1removeMultiFileStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sDirectory,
+	jstring			sBaseName)
+{
+	RCODE					rc = NE_XFLM_OK;
+	FLMBYTE				ucDirectory [F_PATH_MAX_SIZE];
+	F_DynaBuf			directoryBuf( ucDirectory, sizeof( ucDirectory));
+	FLMBYTE				ucBaseName [F_PATH_MAX_SIZE];
+	F_DynaBuf			baseNameBuf( ucBaseName, sizeof( ucBaseName));
+	
+	// Get all of the string parameters into buffers.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sDirectory, &directoryBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sBaseName, &baseNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->removeMultiFileStream(
+								(const char *)directoryBuf.getBufferPtr(),
+								(const char *)baseNameBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferedOStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lInputOStream,
+	jint				iBufferSize)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_OStream *		pOStream = NULL;
+	IF_OStream *		pInputOStream = (IF_OStream *)((FLMUINT)lInputOStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openBufferedOStream(
+								pInputOStream, (FLMUINT)iBufferSize, &pOStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pOStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openCompressingOStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lInputOStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_OStream *		pOStream = NULL;
+	IF_OStream *		pInputOStream = (IF_OStream *)((FLMUINT)lInputOStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openCompressingOStream( pInputOStream, &pOStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pOStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1writeToOStream(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lIStream,
+	jlong				lOStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_IStream *		pIStream = (IF_IStream *)((FLMUINT)lIStream);
+	IF_OStream *		pOStream = (IF_OStream *)((FLMUINT)lOStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->writeToOStream( pIStream, pOStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Encoder(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lIStream,
+	jboolean			bInsertLineBreaks)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_IStream *		pIStream = NULL;
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)lIStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openBase64Encoder( pInputStream,
+								bInsertLineBreaks ? TRUE : FALSE, &pIStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Decoder(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lIStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_IStream *		pIStream = NULL;
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)lIStream);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->openBase64Decoder( pInputStream, &pIStream)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pIStream));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setDynamicMemoryLimit(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iCacheAdjustPercent,
+	jint				iCacheAdjustMin,
+	jint				iCacheAdjustMax,
+	jint				iCacheAdjustMinToLeave)
+{
+	RCODE	rc = NE_XFLM_OK;
+	
+	if (RC_BAD( rc = THIS_DBSYS()->setDynamicMemoryLimit(
+								(FLMUINT)iCacheAdjustPercent,
+								(FLMUINT)iCacheAdjustMin,
+								(FLMUINT)iCacheAdjustMax,
+								(FLMUINT)iCacheAdjustMinToLeave)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setHardMemoryLimit(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iPercent,
+	jboolean			bPercentOfAvail,
+	jint				iMin,
+	jint				iMax,
+	jint				iMinToLeave,
+	jboolean			bPreallocate)
+{
+	RCODE	rc = NE_XFLM_OK;
+	
+	if (RC_BAD( rc = THIS_DBSYS()->setHardMemoryLimit(
+								(FLMUINT)iPercent,
+								bPercentOfAvail? TRUE : FALSE,
+								(FLMUINT)iMin,
+								(FLMUINT)iMax,
+								(FLMUINT)iMinToLeave,
+								bPreallocate ? TRUE : FALSE)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1getDynamicCacheSupported(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( THIS_DBSYS()->getDynamicCacheSupported() ? JNI_TRUE : JNI_FALSE);
 }
 

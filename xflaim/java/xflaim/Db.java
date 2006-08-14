@@ -64,6 +64,11 @@ public class Db
 		close();
 	}
 	
+	public long getThis()
+	{
+		return m_this;
+	}
+	
 	/**
 	 *  Closes the database.
 	 */	
@@ -1059,8 +1064,8 @@ public class Db
 	 * @throws XFlaimException
 	 */
 	public ImportStats Import(
-		PosIStream		jIStream,
-		int				iCollection) throws XFlaimException
+		IStream		jIStream,
+		int			iCollection) throws XFlaimException
 	{
 		return( _import( m_this, jIStream.getThis(), iCollection, 0,
 						InsertLoc.XFLM_LAST_CHILD));
@@ -1078,10 +1083,10 @@ public class Db
 	 * @throws XFlaimException
 	 */
 	public ImportStats Import(
-		PosIStream		jIStream,
-		int				iCollection,
-		DOMNode			NodeToLinkTo,
-		int				iInsertLoc) throws XFlaimException
+		IStream		jIStream,
+		int			iCollection,
+		DOMNode		NodeToLinkTo,
+		int			iInsertLoc) throws XFlaimException
 	{
 		if (NodeToLinkTo == null)
 		{

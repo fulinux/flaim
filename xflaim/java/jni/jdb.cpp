@@ -860,7 +860,7 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1import(
 	jint				iInsertLoc)
 {
 	RCODE						rc = NE_XFLM_OK;
-	IF_PosIStream *		pIStream = (IF_PosIStream *)((FLMUINT)lIStream);
+	IF_IStream *			pIStream = (IF_IStream *)((FLMUINT)lIStream);
 	IF_DOMNode *			pNodeToLinkTo = (IF_DOMNode *)((FLMUINT)lNodeToLinkTo);
 	IF_Db *					pDb = THIS_FDB();
 	XFLM_IMPORT_STATS		importStats;
