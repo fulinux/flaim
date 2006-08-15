@@ -587,6 +587,48 @@ public class DbSystem
 		return( _getDynamicCacheSupported( m_this));
 	}
 
+	public CacheInfo getCacheInfo() throws XFlaimException
+	{
+		return( _getCacheInfo( m_this));
+	}
+
+	public void enableCacheDebug(
+		boolean	bDebug) throws XFlaimException
+	{
+		_enableCacheDebug( m_this, bDebug);
+	}
+
+	public boolean cacheDebugEnabled() throws XFlaimException
+	{
+		return( _cacheDebugEnabled( m_this));
+	}
+
+	public void closeUnusedFiles(
+		int		iSeconds) throws XFlaimException
+	{
+		_closeUnusedFiles( m_this, iSeconds);
+	}
+
+	public void startStats() throws XFlaimException
+	{
+		_startStats( m_this);
+	}
+
+	public void stopStats() throws XFlaimException
+	{
+		_stopStats( m_this);
+	}
+
+	public void resetStats() throws XFlaimException
+	{
+		_resetStats( m_this);
+	}
+
+	public Stats getStats() throws XFlaimException
+	{
+		return( _getStats( m_this));
+	}
+	
 	private native long _createDbSystem();
 	
 	private native void _init( long lThis);
@@ -760,6 +802,32 @@ public class DbSystem
 	private native boolean _getDynamicCacheSupported(
 		long		lThis) throws XFlaimException;
 
+	private native CacheInfo _getCacheInfo(
+		long		lThis) throws XFlaimException;
+
+	private native void _enableCacheDebug(
+		long		lThis,
+		boolean	bDebug) throws XFlaimException;
+
+	private native boolean _cacheDebugEnabled(
+		long		lThis) throws XFlaimException;
+
+	private native void _closeUnusedFiles(
+		long		lThis,
+		int		iSeconds) throws XFlaimException;
+
+	private native void _startStats(
+		long		lThis) throws XFlaimException;
+
+	private native void _stopStats(
+		long		lThis) throws XFlaimException;
+
+	private native void _resetStats(
+		long		lThis) throws XFlaimException;
+
+	private native Stats _getStats(
+		long		lThis) throws XFlaimException;
+
 	private long			m_this;
 }
 
@@ -783,23 +851,6 @@ virtual void FLMAPI freeMem(
 	void **					ppMem) = 0;
 	
 //here
-
-virtual void FLMAPI getCacheInfo(
-	XFLM_CACHE_INFO *		pCacheInfo) = 0;
-
-virtual void FLMAPI enableCacheDebug(
-	FLMBOOL					bDebug) = 0;
-
-virtual FLMBOOL FLMAPI cacheDebugEnabled( void) = 0;
-
-virtual RCODE FLMAPI closeUnusedFiles(
-	FLMUINT					uiSeconds) = 0;
-
-virtual void FLMAPI startStats( void) = 0;
-
-virtual void FLMAPI stopStats( void) = 0;
-
-virtual void FLMAPI resetStats( void) = 0;
 
 virtual RCODE FLMAPI getStats(
 	XFLM_STATS *			pFlmStats) = 0;

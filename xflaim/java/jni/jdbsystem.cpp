@@ -28,6 +28,15 @@
 #include "xflaim_SlabUsage.h"
 #include "xflaim_CacheUsage.h"
 #include "xflaim_CacheInfo.h"
+#include "xflaim_Stats.h"
+#include "xflaim_DbStats.h"
+#include "xflaim_RTransStats.h"
+#include "xflaim_UTransStats.h"
+#include "xflaim_LFileStats.h"
+#include "xflaim_BlockIOStats.h"
+#include "xflaim_DiskIOStat.h"
+#include "xflaim_CountTimeStat.h"
+#include "xflaim_LockStats.h"
 #include "flaimsys.h"
 #include "jniftk.h"
 #include "jnirestore.h"
@@ -38,60 +47,184 @@
 	
 // Field IDs for the CREATEOPTS class.
 
-static jfieldID	CREATEOPTS_fidBlockSize = NULL;
-static jfieldID	CREATEOPTS_fidVersionNum = NULL;
-static jfieldID	CREATEOPTS_fidMinRflFileSize = NULL;
-static jfieldID	CREATEOPTS_fidMaxRflFileSize = NULL;
-static jfieldID	CREATEOPTS_fidKeepRflFiles = NULL;
-static jfieldID	CREATEOPTS_fidLogAbortedTransToRfl = NULL;
-static jfieldID	CREATEOPTS_fidDefaultLanguage = NULL;
+static jfieldID	fid_CREATEOPTS_iBlockSize = NULL;
+static jfieldID	fid_CREATEOPTS_iVersionNum = NULL;
+static jfieldID	fid_CREATEOPTS_iMinRflFileSize = NULL;
+static jfieldID	fid_CREATEOPTS_iMaxRflFileSize = NULL;
+static jfieldID	fid_CREATEOPTS_bKeepRflFiles = NULL;
+static jfieldID	fid_CREATEOPTS_bLogAbortedTransToRfl = NULL;
+static jfieldID	fid_CREATEOPTS_iDefaultLanguage = NULL;
 
 // field IDs for the SlabUsage class.
 
-static jfieldID	SlabUsage_fidSlabs;
-static jfieldID	SlabUsage_fidSlabBytes;
-static jfieldID	SlabUsage_fidAllocatedCells;
-static jfieldID	SlabUsage_fidFreeCells;
+static jfieldID	fid_SlabUsage_lSlabs;
+static jfieldID	fid_SlabUsage_lSlabBytes;
+static jfieldID	fid_SlabUsage_lAllocatedCells;
+static jfieldID	fid_SlabUsage_lFreeCells;
 
 // field IDs for the CacheUsage class.
 
-static jfieldID	CacheUsage_fidByteCount = NULL;
-static jfieldID	CacheUsage_fidCount = NULL;
-static jfieldID	CacheUsage_fidOldVerCount = NULL;
-static jfieldID	CacheUsage_fidOldVerBytes = NULL;
-static jfieldID	CacheUsage_fidCacheHits = NULL;
-static jfieldID	CacheUsage_fidCacheHitLooks = NULL;
-static jfieldID	CacheUsage_fidCacheFaults = NULL;
-static jfieldID	CacheUsage_fidCacheFaultLooks = NULL;
-static jfieldID	CacheUsage_fidSlabUsage = NULL;
+static jfieldID	fid_CacheUsage_iByteCount = NULL;
+static jfieldID	fid_CacheUsage_iCount = NULL;
+static jfieldID	fid_CacheUsage_iOldVerCount = NULL;
+static jfieldID	fid_CacheUsage_iOldVerBytes = NULL;
+static jfieldID	fid_CacheUsage_iCacheHits = NULL;
+static jfieldID	fid_CacheUsage_iCacheHitLooks = NULL;
+static jfieldID	fid_CacheUsage_iCacheFaults = NULL;
+static jfieldID	fid_CacheUsage_iCacheFaultLooks = NULL;
+static jfieldID	fid_CacheUsage_slabUsage = NULL;
 
 // field IDs for the CacheInfo class.
 
-static jfieldID	CacheInfo_fidMaxBytes = NULL;
-static jfieldID	CacheInfo_fidTotalBytesAllocated = NULL;
-static jfieldID	CacheInfo_fidDynamicCacheAdjust = NULL;
-static jfieldID	CacheInfo_fidCacheAdjustPercent = NULL;
-static jfieldID	CacheInfo_fidCacheAdjustMin = NULL;
-static jfieldID	CacheInfo_fidCacheAdjustMax = NULL;
-static jfieldID	CacheInfo_fidCacheAdjustMinToLeave = NULL;
-static jfieldID	CacheInfo_fidDirtyCount = NULL;
-static jfieldID	CacheInfo_fidDirtyBytes = NULL;
-static jfieldID	CacheInfo_fidNewCount = NULL;
-static jfieldID	CacheInfo_fidNewBytes = NULL;
-static jfieldID	CacheInfo_fidLogCount = NULL;
-static jfieldID	CacheInfo_fidLogBytes = NULL;
-static jfieldID	CacheInfo_fidFreeCount = NULL;
-static jfieldID	CacheInfo_fidFreeBytes = NULL;
-static jfieldID	CacheInfo_fidReplaceableCount = NULL;
-static jfieldID	CacheInfo_fidReplaceableBytes = NULL;
-static jfieldID	CacheInfo_fidPreallocatedCache = NULL;
-static jfieldID	CacheInfo_fidBlockCache = NULL;
-static jfieldID	CacheInfo_fidNodeCache = NULL;
+static jfieldID	fid_CacheInfo_iMaxBytes = NULL;
+static jfieldID	fid_CacheInfo_iTotalBytesAllocated = NULL;
+static jfieldID	fid_CacheInfo_bDynamicCacheAdjust = NULL;
+static jfieldID	fid_CacheInfo_iCacheAdjustPercent = NULL;
+static jfieldID	fid_CacheInfo_iCacheAdjustMin = NULL;
+static jfieldID	fid_CacheInfo_iCacheAdjustMax = NULL;
+static jfieldID	fid_CacheInfo_iCacheAdjustMinToLeave = NULL;
+static jfieldID	fid_CacheInfo_iDirtyCount = NULL;
+static jfieldID	fid_CacheInfo_iDirtyBytes = NULL;
+static jfieldID	fid_CacheInfo_iNewCount = NULL;
+static jfieldID	fid_CacheInfo_iNewBytes = NULL;
+static jfieldID	fid_CacheInfo_iLogCount = NULL;
+static jfieldID	fid_CacheInfo_iLogBytes = NULL;
+static jfieldID	fid_CacheInfo_iFreeCount = NULL;
+static jfieldID	fid_CacheInfo_iFreeBytes = NULL;
+static jfieldID	fid_CacheInfo_iReplaceableCount = NULL;
+static jfieldID	fid_CacheInfo_iReplaceableBytes = NULL;
+static jfieldID	fid_CacheInfo_bPreallocatedCache = NULL;
+static jfieldID	fid_CacheInfo_BlockCache = NULL;
+static jfieldID	fid_CacheInfo_NodeCache = NULL;
+
+// field IDs for the Stats class.
+
+static jfieldID	fid_Stats_dbStats = NULL;
+static jfieldID	fid_Stats_iStartTime = NULL;
+static jfieldID	fid_Stats_iStopTime = NULL;
+
+// field IDs for the DbStats class.
+
+static jfieldID	fid_DbStats_sDbName = NULL;
+static jfieldID	fid_DbStats_readTransStats = NULL;
+static jfieldID	fid_DbStats_updateTransStats = NULL;
+static jfieldID	fid_DbStats_lfileStats = NULL;
+static jfieldID	fid_DbStats_lfhBlockStats = NULL;
+static jfieldID	fid_DbStats_availBlockStats = NULL;
+static jfieldID	fid_DbStats_dbHdrWrites = NULL;
+static jfieldID	fid_DbStats_logBlockWrites = NULL;
+static jfieldID	fid_DbStats_logBlockRestores = NULL;
+static jfieldID	fid_DbStats_logBlockReads = NULL;
+static jfieldID	fid_DbStats_iLogBlockChkErrs = NULL;
+static jfieldID	fid_DbStats_iReadErrors = NULL;
+static jfieldID	fid_DbStats_iWriteErrors = NULL;
+static jfieldID	fid_DbStats_lockStats = NULL;
+	
+// field IDs for the RTransStats class
+
+static jfieldID	fid_RTransStats_committedTrans = NULL;
+static jfieldID	fid_RTransStats_abortedTrans = NULL;
+	
+// field IDs for the UTransStats class
+
+static jfieldID	fid_UTransStats_committedTrans = NULL;
+static jfieldID	fid_UTransStats_groupCompletes = NULL;
+static jfieldID	fid_UTransStats_lGroupFinished = NULL;
+static jfieldID	fid_UTransStats_abortedTrans = NULL;
+
+// field IDs for the LFileStats class
+
+static jfieldID	fid_LFileStats_rootBlockStats = NULL;
+static jfieldID	fid_LFileStats_middleBlockStats = NULL;
+static jfieldID	fid_LFileStats_leafBlockStats = NULL;
+static jfieldID	fid_LFileStats_lBlockSplits = NULL;
+static jfieldID	fid_LFileStats_lBlockCombines = NULL;
+static jfieldID	fid_LFileStats_iLFileNum = NULL;
+static jfieldID	fid_LFileStats_bIsIndex = NULL;
+	
+// field IDs for the BlockIOStats class
+
+static jfieldID	fid_BlockIOStats_blockReads = NULL;
+static jfieldID	fid_BlockIOStats_oldViewBlockReads = NULL;
+static jfieldID	fid_BlockIOStats_iBlockChkErrs = NULL;
+static jfieldID	fid_BlockIOStats_iOldViewBlockChkErrs = NULL;
+static jfieldID	fid_BlockIOStats_iOldViewErrors = NULL;
+static jfieldID	fid_BlockIOStats_blockWrites = NULL;
+	
+// field IDs for the DiskIOStat class
+
+static jfieldID	fid_DiskIOStat_lCount = NULL;
+static jfieldID	fid_DiskIOStat_lTotalBytes = NULL;
+static jfieldID	fid_DiskIOStat_lElapMilli = NULL;
+
+// field IDs for the LockStats class
+
+static jfieldID	fid_LockStats_noLocks = NULL;
+static jfieldID	fid_LockStats_waitingForLock = NULL;
+static jfieldID	fid_LockStats_heldLock = NULL;
+
+// field IDs for the CountTimeStat class
+
+static jfieldID	fid_CountTimeStat_lCount = NULL;
+static jfieldID	fid_CountTimeStat_lElapMilli = NULL;
 	
 FSTATIC void getCreateOpts(
 	JNIEnv *					pEnv,
 	jobject					createOpts,
 	XFLM_CREATE_OPTS *	pCreateOpts);
+	
+FSTATIC jobject NewCountTimeStat(
+	JNIEnv *					pEnv,
+	F_COUNT_TIME_STAT *	pCountTimeStat,
+	jclass					jCountTimeStatClass);
+	
+FSTATIC jobject NewRTransStats(
+	JNIEnv *					pEnv,
+	XFLM_RTRANS_STATS *	pRTransStats,
+	jclass					jRTransStatsClass,
+	jclass					jCountTimeStatClass);
+	
+FSTATIC jobject NewUTransStats(
+	JNIEnv *					pEnv,
+	XFLM_UTRANS_STATS *	pUTransStats,
+	jclass					jUTransStatsClass,
+	jclass					jCountTimeStatClass);
+	
+FSTATIC jobject NewLFileStats(
+	JNIEnv *					pEnv,
+	XFLM_LFILE_STATS *	pLFileStats,
+	jclass					jLFileStatsClass,
+	jclass					jBlockIOStatsClass,
+	jclass					jDiskIOStatClass);
+	
+FSTATIC jobject NewDiskIOStat(
+	JNIEnv *					pEnv,
+	XFLM_DISKIO_STAT *	pDiskIOStat,
+	jclass					jDiskIOStatClass);
+	
+FSTATIC jobject NewBlockIOStats(
+	JNIEnv *					pEnv,
+	XFLM_BLOCKIO_STATS *	pBlockIOStats,
+	jclass					jBlockIOStatsClass,
+	jclass					jDiskIOStatClass);
+	
+FSTATIC jobject NewLockStats(
+	JNIEnv *			pEnv,
+	F_LOCK_STATS *	pLockStats,
+	jclass			jLockStatsClass,
+	jclass			jCountTimeStatClass);
+	
+FSTATIC jobject NewDbStats(
+	JNIEnv *				pEnv,
+	XFLM_DB_STATS *	pDbStat,
+	jclass				jDbStatsClass,
+	jclass				jRTransStatsClass,
+	jclass				jUTransStatsClass,
+	jclass				jLFileStatsClass,
+	jclass				jBlockIOStatsClass,
+	jclass				jDiskIOStatClass,
+	jclass				jCountTimeStatClass,
+	jclass				jLockStatsClass);
 	
 /****************************************************************************
 Desc:
@@ -113,29 +246,393 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createDbSystem(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_SlabUsage_initIDs(
+JNIEXPORT void JNICALL Java_xflaim_Stats_initIDs(
 	JNIEnv *	pEnv,
-	jclass	jSlabUsageClass)
+	jclass	jStatsClass)
 {
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((SlabUsage_fidSlabs = pEnv->GetFieldID( jSlabUsageClass,
+	if ((fid_Stats_dbStats = pEnv->GetFieldID( jStatsClass,
+								"dbStats", "[Lxflaim/DbStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_Stats_iStartTime = pEnv->GetFieldID( jStatsClass,
+								"iStartTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_Stats_iStopTime = pEnv->GetFieldID( jStatsClass,
+								"iStopTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jDbStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_DbStats_sDbName = pEnv->GetFieldID( jDbStatsClass,
+								"sDbName", "Ljava/lang/String;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_readTransStats = pEnv->GetFieldID( jDbStatsClass,
+								"readTransStats", "Lxflaim/RTransStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_updateTransStats = pEnv->GetFieldID( jDbStatsClass,
+								"updateTransStats", "Lxflaim/UTransStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_lfileStats = pEnv->GetFieldID( jDbStatsClass,
+								"lfileStats", "[Lxflaim/LFileStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_lfhBlockStats = pEnv->GetFieldID( jDbStatsClass,
+								"lfhBlockStats", "Lxflaim/BlockIOStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_availBlockStats = pEnv->GetFieldID( jDbStatsClass,
+								"availBlockStats", "Lxflaim/BlockIOStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_dbHdrWrites = pEnv->GetFieldID( jDbStatsClass,
+								"dbHdrWrites", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_logBlockWrites = pEnv->GetFieldID( jDbStatsClass,
+								"logBlockWrites", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_logBlockRestores = pEnv->GetFieldID( jDbStatsClass,
+								"logBlockRestores", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_logBlockReads = pEnv->GetFieldID( jDbStatsClass,
+								"logBlockReads", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_iLogBlockChkErrs = pEnv->GetFieldID( jDbStatsClass,
+								"iLogBlockChkErrs", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_iReadErrors = pEnv->GetFieldID( jDbStatsClass,
+								"iReadErrors", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_iWriteErrors = pEnv->GetFieldID( jDbStatsClass,
+								"iWriteErrors", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DbStats_lockStats = pEnv->GetFieldID( jDbStatsClass,
+								"lockStats", "Lxflaim/LockStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_RTransStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jRTransStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_RTransStats_committedTrans = pEnv->GetFieldID( jRTransStatsClass,
+								"committedTrans", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_RTransStats_abortedTrans = pEnv->GetFieldID( jRTransStatsClass,
+								"abortedTrans", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_UTransStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jUTransStatsClass)
+{
+
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_UTransStats_committedTrans = pEnv->GetFieldID( jUTransStatsClass,
+								"committedTrans", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_UTransStats_groupCompletes = pEnv->GetFieldID( jUTransStatsClass,
+								"groupCompletes", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_UTransStats_lGroupFinished = pEnv->GetFieldID( jUTransStatsClass,
+								"lGroupFinished", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_UTransStats_abortedTrans = pEnv->GetFieldID( jUTransStatsClass,
+								"abortedTrans", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_LFileStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jLFileStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_LFileStats_rootBlockStats = pEnv->GetFieldID( jLFileStatsClass,
+								"rootBlockStats", "Lxflaim/BlockIOStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LFileStats_middleBlockStats = pEnv->GetFieldID( jLFileStatsClass,
+								"middleBlockStats", "Lxflaim/BlockIOStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LFileStats_leafBlockStats = pEnv->GetFieldID( jLFileStatsClass,
+								"leafBlockStats", "Lxflaim/BlockIOStats;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LFileStats_lBlockSplits = pEnv->GetFieldID( jLFileStatsClass,
+								"lBlockSplits", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LFileStats_lBlockCombines = pEnv->GetFieldID( jLFileStatsClass,
+								"lBlockCombines", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LFileStats_iLFileNum = pEnv->GetFieldID( jLFileStatsClass,
+								"iLFileNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LFileStats_bIsIndex = pEnv->GetFieldID( jLFileStatsClass,
+								"bIsIndex", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_BlockIOStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jBlockIOStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_BlockIOStats_blockReads = pEnv->GetFieldID( jBlockIOStatsClass,
+								"blockReads", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_BlockIOStats_oldViewBlockReads = pEnv->GetFieldID( jBlockIOStatsClass,
+								"oldViewBlockReads", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_BlockIOStats_iBlockChkErrs = pEnv->GetFieldID( jBlockIOStatsClass,
+								"iBlockChkErrs", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_BlockIOStats_iOldViewBlockChkErrs = pEnv->GetFieldID( jBlockIOStatsClass,
+								"iOldViewBlockChkErrs", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_BlockIOStats_iOldViewErrors = pEnv->GetFieldID( jBlockIOStatsClass,
+								"iOldViewErrors", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_BlockIOStats_blockWrites = pEnv->GetFieldID( jBlockIOStatsClass,
+								"blockWrites", "Lxflaim/DiskIOStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DiskIOStat_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jDiskIOStatClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_DiskIOStat_lCount = pEnv->GetFieldID( jDiskIOStatClass,
+								"lCount", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DiskIOStat_lTotalBytes = pEnv->GetFieldID( jDiskIOStatClass,
+								"lTotalBytes", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_DiskIOStat_lElapMilli = pEnv->GetFieldID( jDiskIOStatClass,
+								"lElapMilli", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_LockStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jLockStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_LockStats_noLocks = pEnv->GetFieldID( jLockStatsClass,
+								"noLocks", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LockStats_waitingForLock = pEnv->GetFieldID( jLockStatsClass,
+								"waitingForLock", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LockStats_heldLock = pEnv->GetFieldID( jLockStatsClass,
+								"heldLock", "Lxflaim/CountTimeStat;")) == NULL)
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_CountTimeStat_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jCountTimeStatClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_CountTimeStat_lCount = pEnv->GetFieldID( jCountTimeStatClass,
+								"lCount", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CountTimeStat_lElapMilli = pEnv->GetFieldID( jCountTimeStatClass,
+								"lElapMilli", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_SlabUsage_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jSlabUsageClass)
+{
+
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_SlabUsage_lSlabs = pEnv->GetFieldID( jSlabUsageClass,
 								"lSlabs", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((SlabUsage_fidSlabBytes = pEnv->GetFieldID( jSlabUsageClass,
+	if ((fid_SlabUsage_lSlabBytes = pEnv->GetFieldID( jSlabUsageClass,
 								"lSlabBytes", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((SlabUsage_fidAllocatedCells = pEnv->GetFieldID( jSlabUsageClass,
+	if ((fid_SlabUsage_lAllocatedCells = pEnv->GetFieldID( jSlabUsageClass,
 								"lAllocatedCells", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((SlabUsage_fidFreeCells = pEnv->GetFieldID( jSlabUsageClass,
+	if ((fid_SlabUsage_lFreeCells = pEnv->GetFieldID( jSlabUsageClass,
 								"lFreeCells", "J")) == NULL)
 	{
 		goto Exit;
@@ -156,47 +653,47 @@ JNIEXPORT void JNICALL Java_xflaim_CacheUsage_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((CacheUsage_fidByteCount = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iByteCount = pEnv->GetFieldID( jCacheUsageClass,
 								"iByteCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidCount = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iCount = pEnv->GetFieldID( jCacheUsageClass,
 								"iCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidOldVerCount = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iOldVerCount = pEnv->GetFieldID( jCacheUsageClass,
 								"iOldVerCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidOldVerBytes = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iOldVerBytes = pEnv->GetFieldID( jCacheUsageClass,
 								"iOldVerBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidCacheHits = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iCacheHits = pEnv->GetFieldID( jCacheUsageClass,
 								"iCacheHits", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidCacheHitLooks = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iCacheHitLooks = pEnv->GetFieldID( jCacheUsageClass,
 								"iCacheHitLooks", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidCacheFaults = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iCacheFaults = pEnv->GetFieldID( jCacheUsageClass,
 							"iCacheFaults", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidCacheFaultLooks = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_iCacheFaultLooks = pEnv->GetFieldID( jCacheUsageClass,
 								"iCacheFaultLooks", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheUsage_fidSlabUsage = pEnv->GetFieldID( jCacheUsageClass,
+	if ((fid_CacheUsage_slabUsage = pEnv->GetFieldID( jCacheUsageClass,
 								"slabUsage", "Lxflaim/SlabUsage;")) == NULL)
 	{
 		goto Exit;
@@ -217,102 +714,102 @@ JNIEXPORT void JNICALL Java_xflaim_CacheInfo_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((CacheInfo_fidMaxBytes = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iMaxBytes = pEnv->GetFieldID( jCacheInfoClass,
 								"iMaxBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidTotalBytesAllocated = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iTotalBytesAllocated = pEnv->GetFieldID( jCacheInfoClass,
 								"iTotalBytesAllocated", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidDynamicCacheAdjust = pEnv->GetFieldID( jCacheInfoClass,
-								"bDynamicCacheAdjust", "V")) == NULL)
+	if ((fid_CacheInfo_bDynamicCacheAdjust = pEnv->GetFieldID( jCacheInfoClass,
+								"bDynamicCacheAdjust", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidCacheAdjustPercent = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iCacheAdjustPercent = pEnv->GetFieldID( jCacheInfoClass,
 								"iCacheAdjustPercent", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidCacheAdjustMin = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iCacheAdjustMin = pEnv->GetFieldID( jCacheInfoClass,
 								"iCacheAdjustMin", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidCacheAdjustMax = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iCacheAdjustMax = pEnv->GetFieldID( jCacheInfoClass,
 								"iCacheAdjustMax", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidCacheAdjustMinToLeave = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iCacheAdjustMinToLeave = pEnv->GetFieldID( jCacheInfoClass,
 							"iCacheAdjustMinToLeave", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidDirtyCount = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iDirtyCount = pEnv->GetFieldID( jCacheInfoClass,
 								"iDirtyCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidDirtyBytes = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iDirtyBytes = pEnv->GetFieldID( jCacheInfoClass,
 								"iDirtyBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidNewCount = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iNewCount = pEnv->GetFieldID( jCacheInfoClass,
 								"iNewCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidNewBytes = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iNewBytes = pEnv->GetFieldID( jCacheInfoClass,
 								"iNewBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidLogCount = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iLogCount = pEnv->GetFieldID( jCacheInfoClass,
 								"iLogCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidLogBytes = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iLogBytes = pEnv->GetFieldID( jCacheInfoClass,
 								"iLogBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidFreeCount = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iFreeCount = pEnv->GetFieldID( jCacheInfoClass,
 								"iFreeCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidFreeBytes = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iFreeBytes = pEnv->GetFieldID( jCacheInfoClass,
 								"iFreeBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidReplaceableCount = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iReplaceableCount = pEnv->GetFieldID( jCacheInfoClass,
 								"iReplaceableCount", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidReplaceableBytes = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_iReplaceableBytes = pEnv->GetFieldID( jCacheInfoClass,
 								"iReplaceableBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidPreallocatedCache = pEnv->GetFieldID( jCacheInfoClass,
-								"bPreallocatedCache", "V")) == NULL)
+	if ((fid_CacheInfo_bPreallocatedCache = pEnv->GetFieldID( jCacheInfoClass,
+								"bPreallocatedCache", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidBlockCache = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_BlockCache = pEnv->GetFieldID( jCacheInfoClass,
 								"BlockCache", "Lxflaim/CacheUsage;")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CacheInfo_fidNodeCache = pEnv->GetFieldID( jCacheInfoClass,
+	if ((fid_CacheInfo_NodeCache = pEnv->GetFieldID( jCacheInfoClass,
 								"NodeCache", "Lxflaim/CacheUsage;")) == NULL)
 	{
 		goto Exit;
@@ -333,37 +830,37 @@ JNIEXPORT void JNICALL Java_xflaim_CREATEOPTS_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((CREATEOPTS_fidBlockSize = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_iBlockSize = pEnv->GetFieldID( jCREATEOPTSClass,
 								"iBlockSize", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CREATEOPTS_fidVersionNum = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_iVersionNum = pEnv->GetFieldID( jCREATEOPTSClass,
 								"iVersionNum", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CREATEOPTS_fidMinRflFileSize = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_iMinRflFileSize = pEnv->GetFieldID( jCREATEOPTSClass,
 								"iMinRflFileSize", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CREATEOPTS_fidMaxRflFileSize = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_iMaxRflFileSize = pEnv->GetFieldID( jCREATEOPTSClass,
 								"iMaxRflFileSize", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CREATEOPTS_fidKeepRflFiles = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_bKeepRflFiles = pEnv->GetFieldID( jCREATEOPTSClass,
 								"bKeepRflFiles", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CREATEOPTS_fidLogAbortedTransToRfl = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_bLogAbortedTransToRfl = pEnv->GetFieldID( jCREATEOPTSClass,
 							"bLogAbortedTransToRfl", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CREATEOPTS_fidDefaultLanguage = pEnv->GetFieldID( jCREATEOPTSClass,
+	if ((fid_CREATEOPTS_iDefaultLanguage = pEnv->GetFieldID( jCREATEOPTSClass,
 								"iDefaultLanguage", "I")) == NULL)
 	{
 		goto Exit;
@@ -383,19 +880,19 @@ FSTATIC void getCreateOpts(
 	XFLM_CREATE_OPTS *	pCreateOpts)
 {
 	pCreateOpts->uiBlockSize = (FLMUINT)pEnv->GetIntField( createOpts,
-			CREATEOPTS_fidBlockSize); 
+			fid_CREATEOPTS_iBlockSize); 
 	pCreateOpts->uiVersionNum = (FLMUINT)pEnv->GetIntField( createOpts,
-			CREATEOPTS_fidVersionNum);
+			fid_CREATEOPTS_iVersionNum);
 	pCreateOpts->uiMinRflFileSize = (FLMUINT)pEnv->GetIntField( createOpts,
-			CREATEOPTS_fidMinRflFileSize); 
+			fid_CREATEOPTS_iMinRflFileSize); 
 	pCreateOpts->uiMaxRflFileSize = (FLMUINT)pEnv->GetIntField( createOpts,
-			CREATEOPTS_fidMaxRflFileSize); 
+			fid_CREATEOPTS_iMaxRflFileSize); 
 	pCreateOpts->bKeepRflFiles = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
-			CREATEOPTS_fidKeepRflFiles) ? TRUE : FALSE); 
+			fid_CREATEOPTS_bKeepRflFiles) ? TRUE : FALSE); 
 	pCreateOpts->bLogAbortedTransToRfl = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
-			CREATEOPTS_fidLogAbortedTransToRfl) ? TRUE : FALSE); 
+			fid_CREATEOPTS_bLogAbortedTransToRfl) ? TRUE : FALSE); 
 	pCreateOpts->uiDefaultLanguage = (FLMUINT)pEnv->GetIntField( createOpts,
-			CREATEOPTS_fidDefaultLanguage);
+			fid_CREATEOPTS_iDefaultLanguage);
 }
 
 /****************************************************************************
@@ -1844,5 +2341,857 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1getDynamicCacheSupported(
 	jlong				lThis)
 {
 	return( THIS_DBSYS()->getDynamicCacheSupported() ? JNI_TRUE : JNI_FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jobject JNICALL Java_xflaim_DbSystem__1getCacheInfo(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	XFLM_CACHE_INFO	cacheInfo;
+	jclass				jCacheInfoClass = NULL;
+	jclass				jCacheUsageClass = NULL;
+	jclass				jSlabUsageClass = NULL;
+	jobject				jCacheInfo = NULL;
+	jobject				jBlockCacheUsage = NULL;
+	jobject				jBlockSlabUsage = NULL;
+	jobject				jNodeCacheUsage = NULL;
+	jobject				jNodeSlabUsage = NULL;
+	
+	THIS_DBSYS()->getCacheInfo( &cacheInfo);
+	
+	// Find the CacheInfo, CacheUsage, and SlabUsage classes
+
+	if ((jCacheInfoClass = pEnv->FindClass( "xflaim/CacheInfo")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jCacheUsageClass = pEnv->FindClass( "xflaim/CacheUsage")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jSlabUsageClass = pEnv->FindClass( "xflaim/SlabUsage")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate a cache info object and the needed cache usage and slab usage
+	// objects.
+	
+	if ((jCacheInfo = pEnv->AllocObject( jCacheInfoClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jBlockCacheUsage = pEnv->AllocObject( jCacheUsageClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jNodeCacheUsage = pEnv->AllocObject( jCacheUsageClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jBlockSlabUsage = pEnv->AllocObject( jSlabUsageClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jNodeSlabUsage = pEnv->AllocObject( jSlabUsageClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Set the Block slab usage fields.
+	
+	pEnv->SetLongField( jBlockSlabUsage, fid_SlabUsage_lSlabs,
+						(jlong)cacheInfo.BlockCache.slabUsage.ui64Slabs);
+	pEnv->SetLongField( jBlockSlabUsage, fid_SlabUsage_lSlabBytes,
+						(jlong)cacheInfo.BlockCache.slabUsage.ui64SlabBytes);
+	pEnv->SetLongField( jBlockSlabUsage, fid_SlabUsage_lAllocatedCells,
+						(jlong)cacheInfo.BlockCache.slabUsage.ui64AllocatedCells);
+	pEnv->SetLongField( jBlockSlabUsage, fid_SlabUsage_lFreeCells,
+						(jlong)cacheInfo.BlockCache.slabUsage.ui64FreeCells);
+	
+	// Set the Node slab usage fields.
+	
+	pEnv->SetLongField( jNodeSlabUsage, fid_SlabUsage_lSlabs,
+						(jlong)cacheInfo.NodeCache.slabUsage.ui64Slabs);
+	pEnv->SetLongField( jNodeSlabUsage, fid_SlabUsage_lSlabBytes,
+						(jlong)cacheInfo.NodeCache.slabUsage.ui64SlabBytes);
+	pEnv->SetLongField( jNodeSlabUsage, fid_SlabUsage_lAllocatedCells,
+						(jlong)cacheInfo.NodeCache.slabUsage.ui64AllocatedCells);
+	pEnv->SetLongField( jNodeSlabUsage, fid_SlabUsage_lFreeCells,
+						(jlong)cacheInfo.NodeCache.slabUsage.ui64FreeCells);
+						
+	// Set the Block cache usage fields
+	
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iByteCount,
+						(jint)cacheInfo.BlockCache.uiByteCount);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iCount,
+						(jint)cacheInfo.BlockCache.uiCount);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iOldVerCount,
+						(jint)cacheInfo.BlockCache.uiOldVerCount);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iOldVerBytes,
+						(jint)cacheInfo.BlockCache.uiOldVerBytes);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iCacheHits,
+						(jint)cacheInfo.BlockCache.uiCacheHits);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iCacheHitLooks,
+						(jint)cacheInfo.BlockCache.uiCacheHitLooks);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iCacheFaults,
+						(jint)cacheInfo.BlockCache.uiCacheFaults);
+	pEnv->SetIntField( jBlockCacheUsage, fid_CacheUsage_iCacheFaultLooks,
+						(jint)cacheInfo.BlockCache.uiCacheFaultLooks);
+	pEnv->SetObjectField( jBlockCacheUsage, fid_CacheUsage_slabUsage,
+						jBlockSlabUsage);
+						
+	// Set the Node cache usage fields
+	
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iByteCount,
+						(jint)cacheInfo.NodeCache.uiByteCount);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iCount,
+						(jint)cacheInfo.NodeCache.uiCount);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iOldVerCount,
+						(jint)cacheInfo.NodeCache.uiOldVerCount);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iOldVerBytes,
+						(jint)cacheInfo.NodeCache.uiOldVerBytes);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iCacheHits,
+						(jint)cacheInfo.NodeCache.uiCacheHits);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iCacheHitLooks,
+						(jint)cacheInfo.NodeCache.uiCacheHitLooks);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iCacheFaults,
+						(jint)cacheInfo.NodeCache.uiCacheFaults);
+	pEnv->SetIntField( jNodeCacheUsage, fid_CacheUsage_iCacheFaultLooks,
+						(jint)cacheInfo.NodeCache.uiCacheFaultLooks);
+	pEnv->SetObjectField( jNodeCacheUsage, fid_CacheUsage_slabUsage,
+						jNodeSlabUsage);
+						
+	// Set the cache info fields.
+	
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iMaxBytes,
+						(jint)cacheInfo.uiMaxBytes);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iTotalBytesAllocated,
+						(jint)cacheInfo.uiTotalBytesAllocated);
+	pEnv->SetBooleanField( jCacheInfo, fid_CacheInfo_bDynamicCacheAdjust,
+						(jboolean)(cacheInfo.bDynamicCacheAdjust ? JNI_TRUE : JNI_FALSE));
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iCacheAdjustPercent,
+						(jint)cacheInfo.uiCacheAdjustPercent);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iCacheAdjustMin,
+						(jint)cacheInfo.uiCacheAdjustMin);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iCacheAdjustMax,
+						(jint)cacheInfo.uiCacheAdjustMax);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iCacheAdjustMinToLeave,
+						(jint)cacheInfo.uiCacheAdjustMinToLeave);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iDirtyCount,
+						(jint)cacheInfo.uiDirtyCount);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iDirtyBytes,
+						(jint)cacheInfo.uiDirtyBytes);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iNewCount,
+						(jint)cacheInfo.uiNewCount);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iNewBytes,
+						(jint)cacheInfo.uiNewBytes);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iLogCount,
+						(jint)cacheInfo.uiLogCount);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iLogBytes,
+						(jint)cacheInfo.uiLogBytes);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iFreeCount,
+						(jint)cacheInfo.uiFreeCount);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iFreeBytes,
+						(jint)cacheInfo.uiFreeBytes);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iReplaceableCount,
+						(jint)cacheInfo.uiReplaceableCount);
+	pEnv->SetIntField( jCacheInfo, fid_CacheInfo_iReplaceableBytes,
+						(jint)cacheInfo.uiReplaceableBytes);
+	pEnv->SetBooleanField( jCacheInfo, fid_CacheInfo_bPreallocatedCache,
+						(jboolean)(cacheInfo.bPreallocatedCache ? JNI_TRUE : JNI_FALSE));
+	pEnv->SetObjectField( jCacheInfo, fid_CacheInfo_BlockCache, jBlockCacheUsage);
+	pEnv->SetObjectField( jCacheInfo, fid_CacheInfo_NodeCache, jNodeCacheUsage);
+	
+Exit:
+
+	return( jCacheInfo);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1enableCacheDebug(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jboolean			bDebug)
+{
+	THIS_DBSYS()->enableCacheDebug( bDebug ? TRUE : FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1cacheDebugEnabled(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( THIS_DBSYS()->cacheDebugEnabled() ? JNI_TRUE : JNI_FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1closeUnusedFiles(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iSeconds)
+{
+	RCODE	rc = NE_XFLM_OK;
+	
+	if (RC_BAD( rc = THIS_DBSYS()->closeUnusedFiles( (FLMUINT)iSeconds)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1startStats(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	THIS_DBSYS()->startStats();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1stopStats(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	THIS_DBSYS()->stopStats();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1resetStats(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	THIS_DBSYS()->resetStats();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewCountTimeStat(
+	JNIEnv *					pEnv,
+	F_COUNT_TIME_STAT *	pCountTimeStat,
+	jclass					jCountTimeStatClass)
+{
+	jobject	jCountTimeStat;
+	
+	if ((jCountTimeStat = pEnv->AllocObject( jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetLongField( jCountTimeStat, fid_CountTimeStat_lCount,
+						(jlong)pCountTimeStat->ui64Count);
+	pEnv->SetLongField( jCountTimeStat, fid_CountTimeStat_lElapMilli,
+						(jlong)pCountTimeStat->ui64ElapMilli);
+	
+Exit:
+
+	return( jCountTimeStat);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewRTransStats(
+	JNIEnv *					pEnv,
+	XFLM_RTRANS_STATS *	pRTransStats,
+	jclass					jRTransStatsClass,
+	jclass					jCountTimeStatClass)
+{
+	jobject	jRTransStats = NULL;
+	jobject	jCommittedTrans;
+	jobject	jAbortedTrans;
+	
+	// Allocate the sub-objects that part of the read transaction
+	// statistics object.
+	
+	if ((jCommittedTrans = NewCountTimeStat( pEnv, &pRTransStats->CommittedTrans,
+										jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jAbortedTrans = NewCountTimeStat( pEnv, &pRTransStats->AbortedTrans,
+										jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Allocate and populate a read transaction statistics object.
+	
+	if ((jRTransStats = pEnv->AllocObject( jRTransStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jRTransStats, fid_RTransStats_committedTrans,
+						jCommittedTrans);
+	pEnv->SetObjectField( jRTransStats, fid_RTransStats_abortedTrans,
+						jAbortedTrans);
+	
+Exit:
+
+	return( jRTransStats);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewUTransStats(
+	JNIEnv *					pEnv,
+	XFLM_UTRANS_STATS *	pUTransStats,
+	jclass					jUTransStatsClass,
+	jclass					jCountTimeStatClass)
+{
+	jobject	jUTransStats = NULL;
+	jobject	jCommittedTrans;
+	jobject	jGroupCompletes;
+	jobject	jAbortedTrans;
+	
+	// Allocate the sub-objects that are part of the update transaction
+	// statistics object.
+	
+	if ((jCommittedTrans = NewCountTimeStat( pEnv, &pUTransStats->CommittedTrans,
+										jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jGroupCompletes = NewCountTimeStat( pEnv, &pUTransStats->GroupCompletes,
+										jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jAbortedTrans = NewCountTimeStat( pEnv, &pUTransStats->AbortedTrans,
+										jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Allocate and populate an update transaction statistics object.
+	
+	if ((jUTransStats = pEnv->AllocObject( jUTransStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jUTransStats, fid_UTransStats_committedTrans,
+						jCommittedTrans);
+	pEnv->SetObjectField( jUTransStats, fid_UTransStats_groupCompletes,
+						jGroupCompletes);
+	pEnv->SetLongField( jUTransStats, fid_UTransStats_lGroupFinished,
+						(jlong)pUTransStats->ui64GroupFinished);
+	pEnv->SetObjectField( jUTransStats, fid_UTransStats_abortedTrans,
+						jAbortedTrans);
+	
+Exit:
+
+	return( jUTransStats);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewLFileStats(
+	JNIEnv *					pEnv,
+	XFLM_LFILE_STATS *	pLFileStats,
+	jclass					jLFileStatsClass,
+	jclass					jBlockIOStatsClass,
+	jclass					jDiskIOStatClass)
+{
+	jobject	jLFileStats = NULL;
+	jobject	jRootBlockStats;
+	jobject	jMiddleBlockStats;
+	jobject	jLeafBlockStats;
+	
+	// Allocate the sub-objects that are part of the LFile statistics object.
+	
+	if ((jRootBlockStats = NewBlockIOStats( pEnv, &pLFileStats->RootBlockStats,
+										jBlockIOStatsClass, jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jMiddleBlockStats = NewBlockIOStats( pEnv, &pLFileStats->MiddleBlockStats,
+										jBlockIOStatsClass, jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLeafBlockStats = NewBlockIOStats( pEnv, &pLFileStats->LeafBlockStats,
+										jBlockIOStatsClass, jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate and populate the LFile statistics object
+	
+	if ((jLFileStats = pEnv->AllocObject( jLFileStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jLFileStats, fid_LFileStats_rootBlockStats,
+				jRootBlockStats);
+	pEnv->SetObjectField( jLFileStats, fid_LFileStats_middleBlockStats,
+				jMiddleBlockStats);
+	pEnv->SetObjectField( jLFileStats, fid_LFileStats_leafBlockStats,
+				jLeafBlockStats);
+	pEnv->SetLongField( jLFileStats, fid_LFileStats_lBlockSplits,
+				(jlong)pLFileStats->ui64BlockSplits);
+	pEnv->SetLongField( jLFileStats, fid_LFileStats_lBlockCombines,
+				(jlong)pLFileStats->ui64BlockCombines);
+	pEnv->SetIntField( jLFileStats, fid_LFileStats_iLFileNum,
+				(jint)pLFileStats->uiLFileNum);
+	pEnv->SetBooleanField( jLFileStats, fid_LFileStats_bIsIndex,
+				(jboolean)(pLFileStats->eLfType == XFLM_LF_INDEX
+							  ? JNI_TRUE
+							  : JNI_FALSE));
+
+Exit:
+
+	return( jLFileStats);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewDiskIOStat(
+	JNIEnv *					pEnv,
+	XFLM_DISKIO_STAT *	pDiskIOStat,
+	jclass					jDiskIOStatClass)
+{
+	jobject	jDiskIOStat;
+	
+	// Allocate and populate the fields of a disk I/O statistics object.
+	
+	if ((jDiskIOStat = pEnv->AllocObject( jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetLongField( jDiskIOStat, fid_DiskIOStat_lCount,
+			(jlong)pDiskIOStat->ui64Count);
+	pEnv->SetLongField( jDiskIOStat, fid_DiskIOStat_lTotalBytes,
+			(jlong)pDiskIOStat->ui64TotalBytes);
+	pEnv->SetLongField( jDiskIOStat, fid_DiskIOStat_lElapMilli,
+			(jlong)pDiskIOStat->ui64ElapMilli);
+	
+Exit:
+
+	return( jDiskIOStat);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewBlockIOStats(
+	JNIEnv *					pEnv,
+	XFLM_BLOCKIO_STATS *	pBlockIOStats,
+	jclass					jBlockIOStatsClass,
+	jclass					jDiskIOStatClass)
+{
+	jobject	jBlockIOStats = NULL;
+	jobject	jBlockReads;
+	jobject	jOldViewBlockReads;
+	jobject	jBlockWrites;
+	
+	// Allocate the sub-objects that are part of the block I/O statistics object.
+	
+	if ((jBlockReads = NewDiskIOStat( pEnv, &pBlockIOStats->BlockReads,
+								jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jOldViewBlockReads = NewDiskIOStat( pEnv, &pBlockIOStats->OldViewBlockReads,
+								jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jBlockWrites = NewDiskIOStat( pEnv, &pBlockIOStats->BlockWrites,
+								jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate and populate the block I/O statistics object.
+	
+	if ((jBlockIOStats = pEnv->AllocObject( jBlockIOStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jBlockIOStats, fid_BlockIOStats_blockReads,
+		jBlockReads);
+	pEnv->SetObjectField( jBlockIOStats, fid_BlockIOStats_oldViewBlockReads,
+		jOldViewBlockReads);
+	pEnv->SetIntField( jBlockIOStats, fid_BlockIOStats_iBlockChkErrs,
+		(jint)pBlockIOStats->uiBlockChkErrs);
+	pEnv->SetIntField( jBlockIOStats, fid_BlockIOStats_iOldViewBlockChkErrs,
+		(jint)pBlockIOStats->uiOldViewBlockChkErrs);
+	pEnv->SetIntField( jBlockIOStats, fid_BlockIOStats_iOldViewErrors,
+		(jint)pBlockIOStats->uiOldViewErrors);
+	pEnv->SetObjectField( jBlockIOStats, fid_BlockIOStats_blockWrites,
+		jBlockWrites);
+	
+Exit:
+
+	return( jBlockIOStats);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewLockStats(
+	JNIEnv *			pEnv,
+	F_LOCK_STATS *	pLockStats,
+	jclass			jLockStatsClass,
+	jclass			jCountTimeStatClass)
+{
+	jobject	jLockStats = NULL;
+	jobject	jNoLocks;
+	jobject	jWaitingForLock;
+	jobject	jHeldLock;
+	
+	// Allocate the sub-objects that are part of the lock statisitcs object.
+
+	if ((jNoLocks = NewCountTimeStat( pEnv, &pLockStats->NoLocks,
+							jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jWaitingForLock = NewCountTimeStat( pEnv, &pLockStats->WaitingForLock,
+							jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jHeldLock = NewCountTimeStat( pEnv, &pLockStats->HeldLock,
+							jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate and populate the lock statistics object.
+	
+	if ((jLockStats = pEnv->AllocObject( jLockStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jLockStats, fid_LockStats_noLocks,
+			jNoLocks);
+	pEnv->SetObjectField( jLockStats, fid_LockStats_waitingForLock,
+			jWaitingForLock);
+	pEnv->SetObjectField( jLockStats, fid_LockStats_heldLock,
+			jHeldLock);
+	
+Exit:
+
+	return( jLockStats);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC jobject NewDbStats(
+	JNIEnv *				pEnv,
+	XFLM_DB_STATS *	pDbStats,
+	jclass				jDbStatsClass,
+	jclass				jRTransStatsClass,
+	jclass				jUTransStatsClass,
+	jclass				jLFileStatsClass,
+	jclass				jBlockIOStatsClass,
+	jclass				jDiskIOStatClass,
+	jclass				jCountTimeStatClass,
+	jclass				jLockStatsClass)
+{
+	jobject					jDbStats = NULL;
+	jstring					jDbName;
+	jobject					jRTransStats;
+	jobject					jUTransStats;
+	jobjectArray			jLFileStatsArray;
+	jobject					jLfhBlockStats;
+	jobject					jAvailBlockStats;
+	jobject					jDbHdrWrites;
+	jobject					jLogBlockWrites;
+	jobject					jLogBlockRestores;
+	jobject					jLogBlockReads;
+	jobject					jLockStats;
+	
+	// Allocate all of the sub-objects that are part of the database statistics
+	// object.
+	
+	if ((jDbName = pEnv->NewStringUTF( pDbStats->pszDbName)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jRTransStats = NewRTransStats( pEnv, &pDbStats->ReadTransStats,
+									jRTransStatsClass, jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jUTransStats = NewUTransStats( pEnv, &pDbStats->UpdateTransStats,
+									jUTransStatsClass, jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLfhBlockStats = NewBlockIOStats( pEnv, &pDbStats->LFHBlockStats,
+									jBlockIOStatsClass, jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jAvailBlockStats = NewBlockIOStats( pEnv, &pDbStats->AvailBlockStats,
+									jBlockIOStatsClass, jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jDbHdrWrites = NewDiskIOStat( pEnv, &pDbStats->DbHdrWrites,
+									jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLogBlockWrites = NewDiskIOStat( pEnv, &pDbStats->LogBlockWrites,
+									jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLogBlockRestores = NewDiskIOStat( pEnv, &pDbStats->LogBlockRestores,
+									jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLogBlockReads = NewDiskIOStat( pEnv, &pDbStats->LogBlockReads,
+									jDiskIOStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLockStats = NewLockStats( pEnv, &pDbStats->LockStats,
+									jLockStatsClass, jCountTimeStatClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Get a logical file array.
+	
+	if (!pDbStats->uiNumLFileStats)
+	{
+		jLFileStatsArray = NULL;
+	}
+	else
+	{
+		jobject					jLFileStats;
+		FLMUINT					uiLoop;
+		XFLM_LFILE_STATS *	pLFileStats;
+		
+		if ((jLFileStatsArray = pEnv->NewObjectArray( (jsize)pDbStats->uiNumLFileStats,
+							jLFileStatsClass, NULL)) == NULL)
+		{
+			goto Exit;
+		}
+		
+		// Populate the LFileStats array
+		
+		for (uiLoop = 0, pLFileStats = pDbStats->pLFileStats;
+			  uiLoop < pDbStats->uiNumLFileStats;
+			  uiLoop++, pLFileStats++)
+		{
+			
+			// Get an LFile statistics object.
+			
+			if ((jLFileStats = NewLFileStats( pEnv, pLFileStats, jLFileStatsClass,
+						jBlockIOStatsClass, jDiskIOStatClass)) == NULL)
+			{
+				goto Exit;
+			}
+			
+			// Put the LFile statistics object into the array of
+			// LFile statistics objects.
+			
+			pEnv->SetObjectArrayElement( jLFileStatsArray, (jsize)uiLoop,
+								jLFileStats);
+		}
+	}
+	
+	// Allocate and populate the database statistics object
+	
+	if ((jDbStats = pEnv->AllocObject( jDbStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jDbStats, fid_DbStats_sDbName,
+		jDbName);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_readTransStats,
+		jRTransStats);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_updateTransStats,
+		jUTransStats);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_lfileStats,
+		jLFileStatsArray);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_lfhBlockStats,
+		jLfhBlockStats);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_availBlockStats,
+		jAvailBlockStats);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_dbHdrWrites,
+		jDbHdrWrites);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_logBlockWrites,
+		jLogBlockWrites);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_logBlockRestores,
+		jLogBlockRestores);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_logBlockReads,
+		jLogBlockReads);
+	pEnv->SetIntField( jDbStats, fid_DbStats_iLogBlockChkErrs,
+		(jint)pDbStats->uiLogBlockChkErrs);
+	pEnv->SetIntField( jDbStats, fid_DbStats_iReadErrors,
+		(jint)pDbStats->uiReadErrors);
+	pEnv->SetIntField( jDbStats, fid_DbStats_iWriteErrors,
+		(jint)pDbStats->uiWriteErrors);
+	pEnv->SetObjectField( jDbStats, fid_DbStats_lockStats,
+		jLockStats);
+			
+Exit:
+
+	return( jDbStats);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jobject JNICALL Java_xflaim_DbSystem__1getStats(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE					rc = NE_XFLM_OK;
+	XFLM_STATS			stats;
+	jclass				jStatsClass;
+	jclass				jDbStatsClass;
+	jclass				jRTransStatsClass;
+	jclass				jUTransStatsClass;
+	jclass				jLFileStatsClass;
+	jclass				jBlockIOStatsClass;
+	jclass				jDiskIOStatClass;
+	jclass				jCountTimeStatClass;
+	jclass				jLockStatsClass;
+	jobject				jStats = NULL;
+	jobjectArray		jDbStatsArray;
+	
+	// Get the statistics.
+	
+	f_memset( &stats, 0, sizeof( XFLM_STATS));
+	if (RC_BAD( rc = THIS_DBSYS()->getStats( &stats)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	// Find all of the needed classes that will be used to populate the
+	// statistics object.
+
+	if ((jStatsClass = pEnv->FindClass( "xflaim/Stats")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jDbStatsClass = pEnv->FindClass( "xflaim/DbStats")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jRTransStatsClass = pEnv->FindClass( "xflaim/RTransStats")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jUTransStatsClass = pEnv->FindClass( "xflaim/UTransStats")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLFileStatsClass = pEnv->FindClass( "xflaim/LFileStats")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jBlockIOStatsClass = pEnv->FindClass( "xflaim/BlockIOStats")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jDiskIOStatClass = pEnv->FindClass( "xflaim/DiskIOStat")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jCountTimeStatClass = pEnv->FindClass( "xflaim/CountTimeStat")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((jLockStatsClass = pEnv->FindClass( "xflaim/LockStats")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate and populate an array of database statistics objects.
+	
+	if (!stats.uiNumDbStats)
+	{
+		jDbStatsArray = NULL;
+	}
+	else
+	{
+		jobject				jDbStats;
+		FLMUINT				uiLoop;
+		XFLM_DB_STATS *	pDbStats;
+		
+		if ((jDbStatsArray = pEnv->NewObjectArray( (jsize)stats.uiNumDbStats,
+							jDbStatsClass, NULL)) == NULL)
+		{
+			goto Exit;
+		}
+		
+		// Populate the DbStats array
+		
+		for (uiLoop = 0, pDbStats = stats.pDbStats;
+			  uiLoop < stats.uiNumDbStats;
+			  uiLoop++, pDbStats++)
+		{
+			
+			// Allocate a database statistics object.
+			
+			if ((jDbStats = NewDbStats( pEnv, pDbStats, jDbStatsClass, jRTransStatsClass,
+					jUTransStatsClass, jLFileStatsClass, jBlockIOStatsClass,
+					jDiskIOStatClass, jCountTimeStatClass, jLockStatsClass)) == NULL)
+			{
+				goto Exit;
+			}
+			
+			// Put the database statistics object into the array of
+			// database statistics objects.
+			
+			pEnv->SetObjectArrayElement( jDbStatsArray, (jsize)uiLoop, jDbStats);
+		}
+	}
+	
+	// Allocate and populate the statistics object
+	
+	if ((jStats = pEnv->AllocObject( jStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	pEnv->SetObjectField( jStats, fid_Stats_dbStats, jDbStatsArray);
+	pEnv->SetIntField( jStats, fid_Stats_iStartTime, (jint)stats.uiStartTime);
+	pEnv->SetIntField( jStats, fid_Stats_iStopTime, (jint)stats.uiStopTime);
+	
+Exit:
+
+	THIS_DBSYS()->freeStats( &stats);
+	return( jStats);
 }
 

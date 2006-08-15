@@ -247,6 +247,70 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setHardMemoryLimit
 JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1getDynamicCacheSupported
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getCacheInfo
+ * Signature: (J)Lxflaim/CacheInfo;
+ */
+JNIEXPORT jobject JNICALL Java_xflaim_DbSystem__1getCacheInfo
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _enableCacheDebug
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1enableCacheDebug
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _cacheDebugEnabled
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1cacheDebugEnabled
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _closeUnusedFiles
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1closeUnusedFiles
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _startStats
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1startStats
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _stopStats
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1stopStats
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _resetStats
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1resetStats
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getStats
+ * Signature: (J)Lxflaim/Stats;
+ */
+JNIEXPORT jobject JNICALL Java_xflaim_DbSystem__1getStats
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

@@ -33,47 +33,47 @@
 
 // Field IDs for the IndexStatus class in JAVA.
 
-static jfieldID	IndexStatus_fidIndexNum = NULL;
-static jfieldID	IndexStatus_fidState = NULL;
-static jfieldID	IndexStatus_fidStartTime = NULL;
-static jfieldID	IndexStatus_fidLastDocumentIndexed = NULL;
-static jfieldID	IndexStatus_fidKeysProcessed = NULL;
-static jfieldID	IndexStatus_fidDocumentsProcessed = NULL;
-static jfieldID	IndexStatus_fidTransactions = NULL;
+static jfieldID	fid_IndexStatus_iIndexNum = NULL;
+static jfieldID	fid_IndexStatus_iState = NULL;
+static jfieldID	fid_IndexStatus_iStartTime = NULL;
+static jfieldID	fid_IndexStatus_lLastDocumentIndexed = NULL;
+static jfieldID	fid_IndexStatus_lKeysProcessed = NULL;
+static jfieldID	fid_IndexStatus_lDocumentsProcessed = NULL;
+static jfieldID	fid_IndexStatus_lTransactions = NULL;
 
 // Field IDs for the ImportStats class in JAVA.
 
-static jfieldID	ImportStats_fidLines = NULL;
-static jfieldID	ImportStats_fidChars = NULL;
-static jfieldID	ImportStats_fidAttributes = NULL;
-static jfieldID	ImportStats_fidElements = NULL;
-static jfieldID	ImportStats_fidText = NULL;
-static jfieldID	ImportStats_fidDocuments = NULL;
-static jfieldID	ImportStats_fidErrLineNum = NULL;
-static jfieldID	ImportStats_fidErrLineOffset = NULL;
-static jfieldID	ImportStats_fidErrorType = NULL;
-static jfieldID	ImportStats_fidErrLineFilePos = NULL;
-static jfieldID	ImportStats_fidErrLineBytes = NULL;
-static jfieldID	ImportStats_fidUTF8Encoding = NULL;
+static jfieldID	fid_ImportStats_iLines = NULL;
+static jfieldID	fid_ImportStats_iChars = NULL;
+static jfieldID	fid_ImportStats_iAttributes = NULL;
+static jfieldID	fid_ImportStats_iElements = NULL;
+static jfieldID	fid_ImportStats_iText = NULL;
+static jfieldID	fid_ImportStats_iDocuments = NULL;
+static jfieldID	fid_ImportStats_iErrLineNum = NULL;
+static jfieldID	fid_ImportStats_iErrLineOffset = NULL;
+static jfieldID	fid_ImportStats_iErrorType = NULL;
+static jfieldID	fid_ImportStats_iErrLineFilePos = NULL;
+static jfieldID	fid_ImportStats_iErrLineBytes = NULL;
+static jfieldID	fid_ImportStats_bUTF8Encoding = NULL;
 
 // Field IDs for the CheckpointInfo class in JAVA
 	
-static jfieldID	CheckpointInfo_fidRunning = NULL;
-static jfieldID	CheckpointInfo_fidRunningTime = NULL;
-static jfieldID	CheckpointInfo_fidForcingCheckpoint = NULL;
-static jfieldID	CheckpointInfo_fidForceCheckpointRunningTime = NULL;
-static jfieldID	CheckpointInfo_fidForceCheckpointReason = NULL;
-static jfieldID	CheckpointInfo_fidWritingDataBlocks = NULL;
-static jfieldID	CheckpointInfo_fidLogBlocksWritten = NULL;
-static jfieldID	CheckpointInfo_fidDataBlocksWritten = NULL;
-static jfieldID	CheckpointInfo_fidDirtyCacheBytes = NULL;
-static jfieldID	CheckpointInfo_fidBlockSize = NULL;
-static jfieldID	CheckpointInfo_fidWaitTruncateTime = NULL;
+static jfieldID	fid_CheckpointInfo_bRunning = NULL;
+static jfieldID	fid_CheckpointInfo_iRunningTime = NULL;
+static jfieldID	fid_CheckpointInfo_bForcingCheckpoint = NULL;
+static jfieldID	fid_CheckpointInfo_iForceCheckpointRunningTime = NULL;
+static jfieldID	fid_CheckpointInfo_iForceCheckpointReason = NULL;
+static jfieldID	fid_CheckpointInfo_bWritingDataBlocks = NULL;
+static jfieldID	fid_CheckpointInfo_iLogBlocksWritten = NULL;
+static jfieldID	fid_CheckpointInfo_iDataBlocksWritten = NULL;
+static jfieldID	fid_CheckpointInfo_iDirtyCacheBytes = NULL;
+static jfieldID	fid_CheckpointInfo_iBlockSize = NULL;
+static jfieldID	fid_CheckpointInfo_iWaitTruncateTime = NULL;
 
 // Field IDs for the LockUser class in JAVA
 
-static jfieldID	LockUser_fidThreadId = NULL;
-static jfieldID	LockUser_fidTime = NULL;
+static jfieldID	fid_LockUser_iThreadId = NULL;
+static jfieldID	fid_LockUser_iTime = NULL;
 
 #define THIS_FDB() \
 	((IF_Db *)(FLMUINT)lThis)
@@ -524,57 +524,57 @@ JNIEXPORT void JNICALL Java_xflaim_CheckpointInfo_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((CheckpointInfo_fidRunning = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_bRunning = pEnv->GetFieldID( jCheckpointInfoClass,
 								"bRunning", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iRunningTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_bForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
 								"bForcingCheckpoint", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iForceCheckpointRunningTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iForceCheckpointReason", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_bWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
 							"bWritingDataBlocks", "Z")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iLogBlocksWritten", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iDataBlocksWritten", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iDirtyCacheBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iBlockSize", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((CheckpointInfo_fidWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
+	if ((fid_CheckpointInfo_iWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
 								"iWaitTruncateTime", "I")) == NULL)
 	{
 		goto Exit;
@@ -595,37 +595,37 @@ JNIEXPORT void JNICALL Java_xflaim_IndexStatus_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((IndexStatus_fidIndexNum = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_iIndexNum = pEnv->GetFieldID( jIndexStatusClass,
 								"iIndexNum", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((IndexStatus_fidState = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_iState = pEnv->GetFieldID( jIndexStatusClass,
 								"iState", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((IndexStatus_fidStartTime = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_iStartTime = pEnv->GetFieldID( jIndexStatusClass,
 								"iStartTime", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((IndexStatus_fidLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_lLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
 								"lLastDocumentIndexed", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((IndexStatus_fidKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_lKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
 								"lKeysProcessed", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((IndexStatus_fidDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_lDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
 							"lDocumentsProcessed", "J")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((IndexStatus_fidTransactions = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_IndexStatus_lTransactions = pEnv->GetFieldID( jIndexStatusClass,
 								"lTransactions", "J")) == NULL)
 	{
 		goto Exit;
@@ -646,67 +646,62 @@ JNIEXPORT void JNICALL Java_xflaim_ImportStats_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((IndexStatus_fidIndexNum = pEnv->GetFieldID( jImportStatsClass,
-								"iIndexNum", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((ImportStats_fidLines = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iLines = pEnv->GetFieldID( jImportStatsClass,
 								"iLines", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidChars = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iChars = pEnv->GetFieldID( jImportStatsClass,
 								"iChars", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidAttributes = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iAttributes = pEnv->GetFieldID( jImportStatsClass,
 								"iAttributes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidElements = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iElements = pEnv->GetFieldID( jImportStatsClass,
 								"iElements", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidText = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iText = pEnv->GetFieldID( jImportStatsClass,
 								"iText", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidDocuments = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iDocuments = pEnv->GetFieldID( jImportStatsClass,
 							"iDocuments", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidErrLineNum = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iErrLineNum = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineNum", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineOffset", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidErrorType = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iErrorType = pEnv->GetFieldID( jImportStatsClass,
 								"iErrorType", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineFilePos", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_iErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
 								"iErrLineBytes", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((ImportStats_fidUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
+	if ((fid_ImportStats_bUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
 								"bUTF8Encoding", "Z")) == NULL)
 	{
 		goto Exit;
@@ -727,12 +722,12 @@ JNIEXPORT void JNICALL Java_xflaim_LockUser_initIDs(
 	
 	// Get the field IDs for the fields in the class.
 	
-	if ((LockUser_fidThreadId = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_LockUser_iThreadId = pEnv->GetFieldID( jIndexStatusClass,
 								"iThreadId", "I")) == NULL)
 	{
 		goto Exit;
 	}
-	if ((LockUser_fidTime = pEnv->GetFieldID( jIndexStatusClass,
+	if ((fid_LockUser_iTime = pEnv->GetFieldID( jIndexStatusClass,
 								"iTime", "I")) == NULL)
 	{
 		goto Exit;
@@ -780,16 +775,16 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus(
 	
 	// Set the fields in the object
 	
-	pEnv->SetIntField( jIndexStatus, IndexStatus_fidIndexNum, iIndex);
-	pEnv->SetIntField( jIndexStatus, IndexStatus_fidState, (jint)ixStatus.eState);
-	pEnv->SetIntField( jIndexStatus, IndexStatus_fidStartTime, (jint)ixStatus.uiStartTime);
-	pEnv->SetLongField( jIndexStatus, IndexStatus_fidLastDocumentIndexed,
+	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iIndexNum, iIndex);
+	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iState, (jint)ixStatus.eState);
+	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iStartTime, (jint)ixStatus.uiStartTime);
+	pEnv->SetLongField( jIndexStatus, fid_IndexStatus_lLastDocumentIndexed,
 						(jlong)ixStatus.ui64LastDocumentIndexed);
-	pEnv->SetLongField( jIndexStatus, IndexStatus_fidKeysProcessed,
+	pEnv->SetLongField( jIndexStatus, fid_IndexStatus_lKeysProcessed,
 						(jlong)ixStatus.ui64KeysProcessed);
-	pEnv->SetLongField( jIndexStatus, IndexStatus_fidDocumentsProcessed,
+	pEnv->SetLongField( jIndexStatus, fid_IndexStatus_lDocumentsProcessed,
 						(jlong)ixStatus.ui64DocumentsProcessed);
-	pEnv->SetLongField( jIndexStatus, IndexStatus_fidTransactions,
+	pEnv->SetLongField( jIndexStatus, fid_IndexStatus_lTransactions,
 						(jlong)ixStatus.ui64Transactions);
 	
 Exit:
@@ -897,18 +892,18 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1import(
 	
 	// Set the fields in the object
 	
-	pEnv->SetIntField( jImportStats, ImportStats_fidLines, (jint)importStats.uiLines);
-	pEnv->SetIntField( jImportStats, ImportStats_fidChars, (jint)importStats.uiChars);
-	pEnv->SetIntField( jImportStats, ImportStats_fidAttributes, (jint)importStats.uiAttributes);
-	pEnv->SetIntField( jImportStats, ImportStats_fidElements, (jint)importStats.uiElements);
-	pEnv->SetIntField( jImportStats, ImportStats_fidText, (jint)importStats.uiText);
-	pEnv->SetIntField( jImportStats, ImportStats_fidDocuments, (jint)importStats.uiDocuments);
-	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineNum, (jint)importStats.uiErrLineNum);
-	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineOffset, (jint)importStats.uiErrLineOffset);
-	pEnv->SetIntField( jImportStats, ImportStats_fidErrorType, (jint)importStats.eErrorType);
-	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineFilePos, (jint)importStats.uiErrLineFilePos);
-	pEnv->SetIntField( jImportStats, ImportStats_fidErrLineBytes, (jint)importStats.uiErrLineBytes);
-	pEnv->SetBooleanField( jImportStats, ImportStats_fidUTF8Encoding,
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iLines, (jint)importStats.uiLines);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iChars, (jint)importStats.uiChars);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iAttributes, (jint)importStats.uiAttributes);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iElements, (jint)importStats.uiElements);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iText, (jint)importStats.uiText);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iDocuments, (jint)importStats.uiDocuments);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineNum, (jint)importStats.uiErrLineNum);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineOffset, (jint)importStats.uiErrLineOffset);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrorType, (jint)importStats.eErrorType);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineFilePos, (jint)importStats.uiErrLineFilePos);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineBytes, (jint)importStats.uiErrLineBytes);
+	pEnv->SetBooleanField( jImportStats, fid_ImportStats_bUTF8Encoding,
 		(jboolean)(importStats.eXMLEncoding == XFLM_XML_UTF8_ENCODING
 					  ? JNI_TRUE
 					  : JNI_FALSE));
@@ -2863,27 +2858,27 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1getCheckpointInfo(
 	
 	// Set the fields in the object
 	
-	pEnv->SetBooleanField( jCheckpointInfo, CheckpointInfo_fidRunning,
+	pEnv->SetBooleanField( jCheckpointInfo, fid_CheckpointInfo_bRunning,
 		(jboolean)(checkpointInfo.bRunning ? JNI_TRUE : JNI_FALSE));
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidRunningTime,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iRunningTime,
 		(jint)checkpointInfo.uiRunningTime);
-	pEnv->SetBooleanField( jCheckpointInfo, CheckpointInfo_fidForcingCheckpoint,
+	pEnv->SetBooleanField( jCheckpointInfo, fid_CheckpointInfo_bForcingCheckpoint,
 		(jboolean)(checkpointInfo.bForcingCheckpoint ? JNI_TRUE : JNI_FALSE));
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidForceCheckpointRunningTime,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iForceCheckpointRunningTime,
 		(jint)checkpointInfo.uiForceCheckpointRunningTime);
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidForceCheckpointReason,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iForceCheckpointReason,
 		(jint)checkpointInfo.iForceCheckpointReason);
-	pEnv->SetBooleanField( jCheckpointInfo, CheckpointInfo_fidWritingDataBlocks,
+	pEnv->SetBooleanField( jCheckpointInfo, fid_CheckpointInfo_bWritingDataBlocks,
 		(jboolean)(checkpointInfo.bWritingDataBlocks ? JNI_TRUE : JNI_FALSE));
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidLogBlocksWritten,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iLogBlocksWritten,
 		(jint)checkpointInfo.uiLogBlocksWritten);
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidDataBlocksWritten,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iDataBlocksWritten,
 		(jint)checkpointInfo.uiDataBlocksWritten);
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidDirtyCacheBytes,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iDirtyCacheBytes,
 		(jint)checkpointInfo.uiDirtyCacheBytes);
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidBlockSize,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iBlockSize,
 		(jint)checkpointInfo.uiBlockSize);
-	pEnv->SetIntField( jCheckpointInfo, CheckpointInfo_fidWaitTruncateTime,
+	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iWaitTruncateTime,
 		(jint)checkpointInfo.uiWaitTruncateTime);
 	
 Exit:
@@ -3136,8 +3131,8 @@ JNIEXPORT jobjectArray JNICALL Java_xflaim_Db__1getLockWaiters(
 		{
 			goto Exit;
 		}
-		pEnv->SetIntField( jLockUser, LockUser_fidThreadId, (jint)pLockUser->uiThreadId);
-		pEnv->SetIntField( jLockUser, LockUser_fidTime, (jint)pLockUser->uiTime);
+		pEnv->SetIntField( jLockUser, fid_LockUser_iThreadId, (jint)pLockUser->uiThreadId);
+		pEnv->SetIntField( jLockUser, fid_LockUser_iTime, (jint)pLockUser->uiTime);
 		pEnv->SetObjectArrayElement( jLockUsers, (jsize)uiLoop, jLockUser);
     }
 
