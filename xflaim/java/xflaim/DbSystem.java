@@ -629,6 +629,191 @@ public class DbSystem
 		return( _getStats( m_this));
 	}
 	
+	public void setTempDir(
+		String	sPath) throws XFlaimException
+	{
+		_setTempDir( m_this, sPath);
+	}
+
+	public String getTempDir() throws XFlaimException
+	{
+		return( _getTempDir( m_this));
+	}
+
+	public void setCheckpointInterval(
+		int		iSeconds) throws XFlaimException
+	{
+		_setCheckpointInterval( m_this, iSeconds);
+	}
+
+	public int getCheckpointInterval() throws XFlaimException
+	{
+		return( _getCheckpointInterval( m_this));
+	}
+
+	public void setCacheAdjustInterval(
+		int		iSeconds) throws XFlaimException
+	{
+		_setCacheAdjustInterval( m_this, iSeconds);
+	}
+
+	public int getCacheAdjustInterval() throws XFlaimException
+	{
+		return( _getCacheAdjustInterval( m_this));
+	}
+
+	public void setCacheCleanupInterval(
+		int		iSeconds) throws XFlaimException
+	{
+		_setCacheCleanupInterval( m_this, iSeconds);
+	}
+
+	public int getCacheCleanupInterval() throws XFlaimException
+	{
+		return( _getCacheCleanupInterval( m_this));
+	}
+
+	public void setUnusedCleanupInterval(
+		int		iSeconds) throws XFlaimException
+	{
+		_setUnusedCleanupInterval( m_this, iSeconds);
+	}
+
+	public int getUnusedCleanupInterval() throws XFlaimException
+	{
+		return( _getUnusedCleanupInterval( m_this));
+	}
+
+	public void setMaxUnusedTime(
+		int		iSeconds) throws XFlaimException
+	{
+		_setMaxUnusedTime( m_this, iSeconds);
+	}
+
+	public int getMaxUnusedTime() throws XFlaimException
+	{
+		return( _getMaxUnusedTime( m_this));
+	}
+
+	public void deactivateOpenDb(
+		String	sDatabasePath,
+		String	sDataFilePath) throws XFlaimException
+	{
+		_deactivateOpenDb( m_this, sDatabasePath, sDataFilePath);
+	}
+	
+	public void setQuerySaveMax(
+		int		iMaxToSave) throws XFlaimException
+	{
+		_setQuerySaveMax( m_this, iMaxToSave);
+	}
+
+	public int getQuerySaveMax() throws XFlaimException
+	{
+		return( _getQuerySaveMax( m_this));
+	}
+
+	public void setDirtyCacheLimits(
+		int		iMaxDirty,
+		int		iLowDirty) throws XFlaimException
+	{
+		_setDirtyCacheLimits( m_this, iMaxDirty, iLowDirty);
+	}
+
+	public int getMaxDirtyCacheLimit() throws XFlaimException
+	{
+		return( _getMaxDirtyCacheLimit( m_this));
+	}
+		
+	public int getLowDirtyCacheLimit() throws XFlaimException
+	{
+		return( _getLowDirtyCacheLimit( m_this));
+	}
+
+	public int compareStrings(
+		String			sLeftString,
+		boolean			bLeftWild,
+		String			sRightString,
+		boolean			bRightWild,
+		boolean			bCaseInsensitive,
+		boolean			bCompressWhitespace,
+		boolean			bNoWhitespace,
+		boolean			bNoUnderscores,
+		boolean			bNoDashes,
+		boolean			bWhitespaceAsSpace,
+		boolean			bIgnoreLeadingSpace,
+		boolean			bIgnoreTrailingSpace,
+		int				iLanguage) throws XFlaimException
+	{
+		return( _compareStrings( m_this,
+						sLeftString, bLeftWild,
+						sRightString, bRightWild,
+						bCaseInsensitive, bCompressWhitespace, bNoWhitespace,
+						bNoUnderscores, bNoDashes, bWhitespaceAsSpace,
+						bIgnoreLeadingSpace, bIgnoreTrailingSpace, iLanguage));
+	}
+	
+	public boolean hasSubStr(
+		String			sString,
+		String			sSubString,
+		boolean			bCaseInsensitive,
+		boolean			bCompressWhitespace,
+		boolean			bNoWhitespace,
+		boolean			bNoUnderscores,
+		boolean			bNoDashes,
+		boolean			bWhitespaceAsSpace,
+		boolean			bIgnoreLeadingSpace,
+		boolean			bIgnoreTrailingSpace,
+		int				iLanguage) throws XFlaimException
+	{
+		return( _hasSubStr( m_this, sString, sSubString, bCaseInsensitive,
+				bCompressWhitespace, bNoWhitespace, bNoUnderscores, bNoDashes,
+				bWhitespaceAsSpace, bIgnoreLeadingSpace, bIgnoreTrailingSpace,
+				iLanguage));
+	}
+	
+	public boolean uniIsUpper(
+		char				uzChar) throws XFlaimException
+	{
+		return( _uniIsUpper( m_this, uzChar));
+	}
+	
+	public boolean _uniIsLower(
+		char				uzChar) throws XFlaimException
+	{
+		return( _uniIsLower( m_this, uzChar));
+	}
+	
+	public boolean uniIsAlpha(
+		char				uzChar) throws XFlaimException
+	{
+		return( _uniIsAlpha( m_this, uzChar));
+	}
+	
+	public boolean uniIsDecimalDigit(
+		char				uzChar) throws XFlaimException
+	{
+		return( _uniIsDecimalDigit( m_this, uzChar));
+	}
+	
+	public char uniToLower(
+		char				uzChar) throws XFlaimException
+	{
+		return( _uniToLower( m_this, uzChar));
+	}
+	
+	public void waitToClose(
+		String			sDbName) throws XFlaimException
+	{
+		_waitToClose( m_this, sDbName);
+	}
+
+	public void clearCache(
+		Db					dbToClear) throws XFlaimException
+	{
+		_clearCache( m_this, dbToClear.getThis());
+	}
+
 	private native long _createDbSystem();
 	
 	private native void _init( long lThis);
@@ -828,6 +1013,129 @@ public class DbSystem
 	private native Stats _getStats(
 		long		lThis) throws XFlaimException;
 
+	private native void _setTempDir(
+		long		lThis,
+		String	sPath) throws XFlaimException;
+
+	private native String _getTempDir(
+		long		lThis) throws XFlaimException;
+
+	private native void _setCheckpointInterval(
+		long		lThis,
+		int		iSeconds) throws XFlaimException;
+
+	private native int _getCheckpointInterval(
+		long		lThis) throws XFlaimException;
+
+	private native void _setCacheAdjustInterval(
+		long		lThis,
+		int		iSeconds) throws XFlaimException;
+
+	private native int _getCacheAdjustInterval(
+		long		lThis) throws XFlaimException;
+
+	private native void _setCacheCleanupInterval(
+		long		lThis,
+		int		iSeconds) throws XFlaimException;
+
+	private native int _getCacheCleanupInterval(
+		long		lThis) throws XFlaimException;
+
+	private native void _setUnusedCleanupInterval(
+		long		lThis,
+		int		iSeconds) throws XFlaimException;
+
+	private native int _getUnusedCleanupInterval(
+		long		lThis) throws XFlaimException;
+
+	private native void _setMaxUnusedTime(
+		long		lThis,
+		int		iSeconds) throws XFlaimException;
+
+	private native int _getMaxUnusedTime(
+		long		lThis) throws XFlaimException;
+
+	private native void _deactivateOpenDb(
+		long		lThis,
+		String	sDatabasePath,
+		String	sDataFilePath) throws XFlaimException;
+
+	private native void _setQuerySaveMax(
+		long		lThis,
+		int		iMaxToSave) throws XFlaimException;
+
+	private native int _getQuerySaveMax(
+		long		lThis) throws XFlaimException;
+
+	private native void _setDirtyCacheLimits(
+		long		lThis,
+		int		iMaxDirty,
+		int		iLowDirty) throws XFlaimException;
+
+	private native int _getMaxDirtyCacheLimit(
+		long		lThis) throws XFlaimException;
+		
+	private native int _getLowDirtyCacheLimit(
+		long		lThis) throws XFlaimException;
+
+	private native int _compareStrings(
+		long				lThis,
+		String			sLeftString,
+		boolean			bLeftWild,
+		String			sRightString,
+		boolean			bRightWild,
+		boolean			bCaseInsensitive,
+		boolean			bCompressWhitespace,
+		boolean			bNoWhitespace,
+		boolean			bNoUnderscores,
+		boolean			bNoDashes,
+		boolean			bWhitespaceAsSpace,
+		boolean			bIgnoreLeadingSpace,
+		boolean			bIgnoreTrailingSpace,
+		int				iLanguage) throws XFlaimException;
+	
+	private native boolean _hasSubStr(
+		long				lThis,
+		String			sString,
+		String			sSubString,
+		boolean			bCaseInsensitive,
+		boolean			bCompressWhitespace,
+		boolean			bNoWhitespace,
+		boolean			bNoUnderscores,
+		boolean			bNoDashes,
+		boolean			bWhitespaceAsSpace,
+		boolean			bIgnoreLeadingSpace,
+		boolean			bIgnoreTrailingSpace,
+		int				iLanguage) throws XFlaimException;
+
+	private native boolean _uniIsUpper(
+		long				lThis,
+		char				uzChar) throws XFlaimException;
+	
+	private native boolean _uniIsLower(
+		long				lThis,
+		char				uzChar) throws XFlaimException;
+	
+	private native boolean _uniIsAlpha(
+		long				lThis,
+		char				uzChar) throws XFlaimException;
+	
+	private native boolean _uniIsDecimalDigit(
+		long				lThis,
+		char				uzChar) throws XFlaimException;
+	
+	private native char _uniToLower(
+		long				lThis,
+		char				uzChar) throws XFlaimException;
+	
+	private native void _waitToClose(
+		long				lThis,
+		String			sDbName) throws XFlaimException;
+
+	private native void _clearCache(
+		long				lThis,
+		long				lDbRef) throws XFlaimException;
+
 	private long			m_this;
 }
 
@@ -835,59 +1143,8 @@ public class DbSystem
 
 METHODS NOT YET IMPLEMENTED
 
-virtual void FLMAPI getFileSystem(
-	IF_FileSystem **		ppFileSystem) = 0;
-
 virtual const char * FLMAPI checkErrorToStr(
 	FLMINT	iCheckErrorCode) = 0;
-
-virtual RCODE FLMAPI createIFResultSet(
-	IF_ResultSet **		ifppResultSet) = 0;
-
-virtual RCODE FLMAPI createIFQuery(
-	IF_Query **				ifppQuery) = 0;
-
-virtual void FLMAPI freeMem(
-	void **					ppMem) = 0;
-	
-//here
-
-virtual RCODE FLMAPI getStats(
-	XFLM_STATS *			pFlmStats) = 0;
-
-virtual void FLMAPI freeStats(
-	XFLM_STATS *			pFlmStats) = 0;
-
-virtual RCODE FLMAPI setTempDir(
-	const char *			pszPath) = 0;
-
-virtual RCODE FLMAPI getTempDir(
-	char *					pszPath) = 0;
-
-virtual void FLMAPI setCheckpointInterval(
-	FLMUINT					uiSeconds) = 0;
-
-virtual FLMUINT FLMAPI getCheckpointInterval( void) = 0;
-
-virtual void FLMAPI setCacheAdjustInterval(
-	FLMUINT					uiSeconds) = 0;
-
-virtual FLMUINT FLMAPI getCacheAdjustInterval( void) = 0;
-
-virtual void FLMAPI setCacheCleanupInterval(
-	FLMUINT					uiSeconds) = 0;
-
-virtual FLMUINT FLMAPI getCacheCleanupInterval( void) = 0;
-
-virtual void FLMAPI setUnusedCleanupInterval(
-	FLMUINT					uiSeconds) = 0;
-
-virtual FLMUINT FLMAPI getUnusedCleanupInterval( void) = 0;
-
-virtual void FLMAPI setMaxUnusedTime(
-	FLMUINT					uiSeconds) = 0;
-
-virtual FLMUINT FLMAPI getMaxUnusedTime( void) = 0;
 
 virtual void FLMAPI setLogger(
 	IF_LoggerClient *		pLogger) = 0;
@@ -896,26 +1153,6 @@ virtual void FLMAPI enableExtendedServerMemory(
 	FLMBOOL					bEnable) = 0;
 
 virtual FLMBOOL FLMAPI extendedServerMemoryEnabled( void) = 0;
-
-virtual void FLMAPI deactivateOpenDb(
-	const char *			pszDatabasePath,
-	const char *			pszDataFilePath) = 0;
-
-virtual void FLMAPI setQuerySaveMax(
-	FLMUINT					uiMaxToSave) = 0;
-
-virtual FLMUINT FLMAPI getQuerySaveMax( void) = 0;
-
-virtual void FLMAPI setDirtyCacheLimits(
-	FLMUINT					uiMaxDirty,
-	FLMUINT					uiLowDirty) = 0;
-
-virtual void FLMAPI getDirtyCacheLimits(
-	FLMUINT *				puiMaxDirty,
-	FLMUINT *				puiLowDirty) = 0;
-
-virtual RCODE FLMAPI getThreadInfo(
-	IF_ThreadInfo **		ifppThreadInfo) = 0;
 
 virtual RCODE FLMAPI registerForEvent(
 	eEventCategory			eCategory,
@@ -930,69 +1167,5 @@ virtual RCODE FLMAPI getNextMetaphone(
 	FLMUINT *				puiMetaphone,
 	FLMUINT *				puiAltMetaphone = NULL) = 0;
 	
-virtual RCODE FLMAPI compareUTF8Strings(
-	const FLMBYTE *	pucLString,
-	FLMUINT				uiLStrBytes,
-	FLMBOOL				bLeftWild,
-	const FLMBYTE *	pucRString,
-	FLMUINT				uiRStrBytes,
-	FLMBOOL				bRightWild,
-	FLMUINT				uiCompareRules,
-	FLMUINT				uiLanguage,
-	FLMINT *				piResult) = 0;
-	
-virtual RCODE FLMAPI compareUnicodeStrings(
-	const FLMUNICODE *	puzLString,
-	FLMUINT					uiLStrBytes,
-	FLMBOOL					bLeftWild,
-	const FLMUNICODE *	puzRString,
-	FLMUINT					uiRStrBytes,
-	FLMBOOL					bRightWild,
-	FLMUINT					uiCompareRules,
-	FLMUINT					uiLanguage,
-	FLMINT *					piResult) = 0;
-
-virtual RCODE FLMAPI utf8IsSubStr(
-	const FLMBYTE *	pszString,
-	const FLMBYTE *	pszSubString,
-	FLMUINT				uiCompareRules,
-	FLMUINT				uiLanguage,
-	FLMBOOL *			pbExists) = 0;
-
-virtual FLMBOOL FLMAPI uniIsUpper(
-	FLMUNICODE			uzChar) = 0;
-
-virtual FLMBOOL FLMAPI uniIsLower(
-	FLMUNICODE			uzChar) = 0;
-
-virtual FLMBOOL FLMAPI uniIsAlpha(
-	FLMUNICODE			uzChar) = 0;
-
-virtual FLMBOOL FLMAPI uniIsDecimalDigit(
-	FLMUNICODE			uzChar) = 0;
-
-virtual FLMUNICODE FLMAPI uniToLower(
-	FLMUNICODE			uzChar) = 0;
-	
-virtual RCODE FLMAPI nextUCS2Char(
-	const FLMBYTE **	ppszUTF8,
-	const FLMBYTE *	pszEndOfUTF8String,
-	FLMUNICODE *		puzChar) = 0;
-	
-virtual RCODE FLMAPI numUCS2Chars(
-	const FLMBYTE *	pszUTF8,
-	FLMUINT *			puiNumChars) = 0;
-	
-virtual RCODE FLMAPI waitToClose(
-	const char *	pszDbFileName) = 0;
-
-virtual RCODE FLMAPI createIFNodeInfo(
-	IF_NodeInfo **				ifppNodeInfo) = 0;
-	
-virtual RCODE FLMAPI createIFBTreeInfo(
-	IF_BTreeInfo **			ifppBTreeInfo) = 0;
-
-virtual RCODE FLMAPI clearCache(
-	IF_Db *					pDb) = 0;
-
 */
+

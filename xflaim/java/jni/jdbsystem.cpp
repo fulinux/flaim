@@ -3195,3 +3195,574 @@ Exit:
 	return( jStats);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setTempDir(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sPath)
+{
+	RCODE				rc = NE_XFLM_OK;
+	FLMBYTE			ucPath [F_PATH_MAX_SIZE];
+	F_DynaBuf		pathBuf( ucPath, sizeof( ucPath));
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sPath, &pathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->setTempDir( (const char *)pathBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jstring JNICALL Java_xflaim_DbSystem__1getTempDir(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	RCODE		rc = NE_XFLM_OK;
+	char		szPath [F_PATH_MAX_SIZE];
+	jstring	jPath = NULL;
+	
+	if (RC_BAD( rc = THIS_DBSYS()->setTempDir( szPath)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	jPath = pEnv->NewStringUTF( szPath);
+	
+Exit:
+
+	return( jPath);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setCheckpointInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iSeconds)
+{
+	THIS_DBSYS()->setCheckpointInterval( (FLMUINT)iSeconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getCheckpointInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( (jint)THIS_DBSYS()->getCheckpointInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setCacheAdjustInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iSeconds)
+{
+	THIS_DBSYS()->setCacheAdjustInterval( (FLMUINT)iSeconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getCacheAdjustInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( (jint)THIS_DBSYS()->getCacheAdjustInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setCacheCleanupInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iSeconds)
+{
+	THIS_DBSYS()->setCacheCleanupInterval( (FLMUINT)iSeconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getCacheCleanupInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( (jint)THIS_DBSYS()->getCacheCleanupInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setUnusedCleanupInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iSeconds)
+{
+	THIS_DBSYS()->setUnusedCleanupInterval( (FLMUINT)iSeconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getUnusedCleanupInterval(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( (jint)THIS_DBSYS()->getUnusedCleanupInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setMaxUnusedTime(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iSeconds)
+{
+	THIS_DBSYS()->setMaxUnusedTime( (FLMUINT)iSeconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getMaxUnusedTime(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( (jint)THIS_DBSYS()->getMaxUnusedTime());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1deactivateOpenDb(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sDatabasePath,
+	jstring			sDataFilePath)
+{
+	RCODE				rc = NE_XFLM_OK;
+	FLMBYTE			ucDatabasePath [F_PATH_MAX_SIZE];
+	F_DynaBuf		databasePathBuf( ucDatabasePath, sizeof( ucDatabasePath));
+	FLMBYTE			ucDataFilePath [F_PATH_MAX_SIZE];
+	F_DynaBuf		dataFilePathBuf( ucDataFilePath, sizeof( ucDataFilePath));
+	
+	// Get the strings.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sDatabasePath, &databasePathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sDataFilePath, &dataFilePathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	THIS_DBSYS()->deactivateOpenDb( (const char *)databasePathBuf.getBufferPtr(),
+					(const char *)(dataFilePathBuf.getDataLength() > 1
+										? (const char *)dataFilePathBuf.getBufferPtr()
+										: (const char *)NULL));
+
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setQuerySaveMax(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iMaxToSave)
+{
+	THIS_DBSYS()->setQuerySaveMax( (FLMUINT)iMaxToSave);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getQuerySaveMax(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( (jint)THIS_DBSYS()->getQuerySaveMax());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setDirtyCacheLimits(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iMaxDirty,
+	jint				iLowDirty)
+{
+	THIS_DBSYS()->setDirtyCacheLimits( (FLMUINT)iMaxDirty, (FLMUINT)iLowDirty);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getMaxDirtyCacheLimit(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	FLMUINT	uiMaxDirty;
+	FLMUINT	uiLowDirty;
+	
+	THIS_DBSYS()->getDirtyCacheLimits( &uiMaxDirty, &uiLowDirty);
+	return( (jint)uiMaxDirty);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getLowDirtyCacheLimit(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	FLMUINT	uiMaxDirty;
+	FLMUINT	uiLowDirty;
+	
+	THIS_DBSYS()->getDirtyCacheLimits( &uiMaxDirty, &uiLowDirty);
+	return( (jint)uiLowDirty);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sLeftString,
+	jboolean			bLeftWild,
+	jstring			sRightString,
+	jboolean			bRightWild,
+	jboolean			bCaseInsensitive,
+	jboolean			bCompressWhitespace,
+	jboolean			bNoWhitespace,
+	jboolean			bNoUnderscores,
+	jboolean			bNoDashes,
+	jboolean			bWhitespaceAsSpace,
+	jboolean			bIgnoreLeadingSpace,
+	jboolean			bIgnoreTrailingSpace,
+	jint				iLanguage)
+{
+	RCODE				rc = NE_XFLM_OK;
+	FLMBYTE			ucLeftString [100];
+	F_DynaBuf		leftStringBuf( ucLeftString, sizeof( ucLeftString));
+	FLMBYTE			ucRightString [100];
+	F_DynaBuf		rightStringBuf( ucRightString, sizeof( ucRightString));
+	FLMUINT			uiCompareRules;
+	FLMINT			iResult = 0;
+	
+	// Get the strings.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sLeftString, &leftStringBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sRightString, &rightStringBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	uiCompareRules = 0;
+	if (bCaseInsensitive)
+	{
+		uiCompareRules |= XFLM_COMP_CASE_INSENSITIVE;
+	}
+	if (bCompressWhitespace)
+	{
+		uiCompareRules |= XFLM_COMP_COMPRESS_WHITESPACE;
+	}
+	if (bNoWhitespace)
+	{
+		uiCompareRules |= XFLM_COMP_NO_WHITESPACE;
+	}
+	if (bNoUnderscores)
+	{
+		uiCompareRules |= XFLM_COMP_NO_UNDERSCORES;
+	}
+	if (bNoDashes)
+	{
+		uiCompareRules |= XFLM_COMP_NO_DASHES;
+	}
+	if (bWhitespaceAsSpace)
+	{
+		uiCompareRules |= XFLM_COMP_WHITESPACE_AS_SPACE;
+	}
+	if (bIgnoreLeadingSpace)
+	{
+		uiCompareRules |= XFLM_COMP_IGNORE_LEADING_SPACE;
+	}
+	if (bIgnoreTrailingSpace)
+	{
+		uiCompareRules |= XFLM_COMP_IGNORE_TRAILING_SPACE;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->compareUTF8Strings(
+			(const FLMBYTE *)leftStringBuf.getBufferPtr(),
+			leftStringBuf.getDataLength() - 1,
+			bLeftWild ? TRUE : FALSE,
+			(const FLMBYTE *)rightStringBuf.getBufferPtr(),
+			rightStringBuf.getDataLength() - 1,
+			bRightWild ? TRUE : FALSE,
+			uiCompareRules, (FLMUINT)iLanguage, &iResult)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jint)iResult);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1hasSubStr(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sString,
+	jstring			sSubString,
+	jboolean			bCaseInsensitive,
+	jboolean			bCompressWhitespace,
+	jboolean			bNoWhitespace,
+	jboolean			bNoUnderscores,
+	jboolean			bNoDashes,
+	jboolean			bWhitespaceAsSpace,
+	jboolean			bIgnoreLeadingSpace,
+	jboolean			bIgnoreTrailingSpace,
+	jint				iLanguage)
+{
+	RCODE				rc = NE_XFLM_OK;
+	FLMBYTE			ucString [100];
+	F_DynaBuf		stringBuf( ucString, sizeof( ucString));
+	FLMBYTE			ucSubString [100];
+	F_DynaBuf		subStringBuf( ucSubString, sizeof( ucSubString));
+	FLMUINT			uiCompareRules;
+	FLMBOOL			bExists = FALSE;
+	
+	// Get the strings.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sString, &stringBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sSubString, &subStringBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	uiCompareRules = 0;
+	if (bCaseInsensitive)
+	{
+		uiCompareRules |= XFLM_COMP_CASE_INSENSITIVE;
+	}
+	if (bCompressWhitespace)
+	{
+		uiCompareRules |= XFLM_COMP_COMPRESS_WHITESPACE;
+	}
+	if (bNoWhitespace)
+	{
+		uiCompareRules |= XFLM_COMP_NO_WHITESPACE;
+	}
+	if (bNoUnderscores)
+	{
+		uiCompareRules |= XFLM_COMP_NO_UNDERSCORES;
+	}
+	if (bNoDashes)
+	{
+		uiCompareRules |= XFLM_COMP_NO_DASHES;
+	}
+	if (bWhitespaceAsSpace)
+	{
+		uiCompareRules |= XFLM_COMP_WHITESPACE_AS_SPACE;
+	}
+	if (bIgnoreLeadingSpace)
+	{
+		uiCompareRules |= XFLM_COMP_IGNORE_LEADING_SPACE;
+	}
+	if (bIgnoreTrailingSpace)
+	{
+		uiCompareRules |= XFLM_COMP_IGNORE_TRAILING_SPACE;
+	}
+	
+	if (RC_BAD( rc = THIS_DBSYS()->utf8IsSubStr(
+			(const FLMBYTE *)stringBuf.getBufferPtr(),
+			(const FLMBYTE *)subStringBuf.getBufferPtr(),
+			uiCompareRules, (FLMUINT)iLanguage, &bExists)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jboolean)(bExists ? JNI_TRUE : JNI_FALSE));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsUpper(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jchar				uzChar)
+{
+	return( THIS_DBSYS()->uniIsUpper( (FLMUNICODE)uzChar) ? JNI_TRUE : JNI_FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsLower(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jchar				uzChar)
+{
+	return( THIS_DBSYS()->uniIsLower( (FLMUNICODE)uzChar) ? JNI_TRUE : JNI_FALSE);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsAlpha(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jchar				uzChar)
+{
+	return( THIS_DBSYS()->uniIsAlpha( (FLMUNICODE)uzChar) ? JNI_TRUE : JNI_FALSE);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsDecimalDigit(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jchar				uzChar)
+{
+	return( THIS_DBSYS()->uniIsDecimalDigit( (FLMUNICODE)uzChar) ? JNI_TRUE : JNI_FALSE);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jchar JNICALL Java_xflaim_DbSystem__1uniToLower(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jchar				uzChar)
+{
+	return( (jchar)THIS_DBSYS()->uniToLower( (FLMUNICODE)uzChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1waitToClose(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sDbName)
+{
+	RCODE				rc = NE_XFLM_OK;
+	FLMBYTE			ucDbName [F_PATH_MAX_SIZE];
+	F_DynaBuf		dbNameBuf( ucDbName, sizeof( ucDbName));
+	
+	// Get the strings.
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sDbName, &dbNameBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = THIS_DBSYS()->waitToClose(
+						(const char *)dbNameBuf.getBufferPtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1clearCache(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbToClear)
+{
+	RCODE		rc = NE_XFLM_OK;
+	IF_Db *	pDbToClear = (IF_Db *)((FLMUINT)lDbToClear);
+	
+	if (RC_BAD( rc = THIS_DBSYS()->clearCache( pDbToClear)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+

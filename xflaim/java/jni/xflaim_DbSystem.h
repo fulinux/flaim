@@ -311,6 +311,222 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1resetStats
 JNIEXPORT jobject JNICALL Java_xflaim_DbSystem__1getStats
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setTempDir
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setTempDir
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getTempDir
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_xflaim_DbSystem__1getTempDir
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setCheckpointInterval
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setCheckpointInterval
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getCheckpointInterval
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getCheckpointInterval
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setCacheAdjustInterval
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setCacheAdjustInterval
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getCacheAdjustInterval
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getCacheAdjustInterval
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setCacheCleanupInterval
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setCacheCleanupInterval
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getCacheCleanupInterval
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getCacheCleanupInterval
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setUnusedCleanupInterval
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setUnusedCleanupInterval
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getUnusedCleanupInterval
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getUnusedCleanupInterval
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setMaxUnusedTime
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setMaxUnusedTime
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getMaxUnusedTime
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getMaxUnusedTime
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _deactivateOpenDb
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1deactivateOpenDb
+  (JNIEnv *, jobject, jlong, jstring, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setQuerySaveMax
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setQuerySaveMax
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getQuerySaveMax
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getQuerySaveMax
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _setDirtyCacheLimits
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1setDirtyCacheLimits
+  (JNIEnv *, jobject, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getMaxDirtyCacheLimit
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getMaxDirtyCacheLimit
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _getLowDirtyCacheLimit
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getLowDirtyCacheLimit
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _compareStrings
+ * Signature: (JLjava/lang/String;ZLjava/lang/String;ZZZZZZZZZI)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jstring, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _hasSubStr
+ * Signature: (JLjava/lang/String;Ljava/lang/String;ZZZZZZZZI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1hasSubStr
+  (JNIEnv *, jobject, jlong, jstring, jstring, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _uniIsUpper
+ * Signature: (JC)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsUpper
+  (JNIEnv *, jobject, jlong, jchar);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _uniIsLower
+ * Signature: (JC)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsLower
+  (JNIEnv *, jobject, jlong, jchar);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _uniIsAlpha
+ * Signature: (JC)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsAlpha
+  (JNIEnv *, jobject, jlong, jchar);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _uniIsDecimalDigit
+ * Signature: (JC)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1uniIsDecimalDigit
+  (JNIEnv *, jobject, jlong, jchar);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _uniToLower
+ * Signature: (JC)C
+ */
+JNIEXPORT jchar JNICALL Java_xflaim_DbSystem__1uniToLower
+  (JNIEnv *, jobject, jlong, jchar);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _waitToClose
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1waitToClose
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _clearCache
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1clearCache
+  (JNIEnv *, jobject, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif
