@@ -27,8 +27,7 @@
 #include "xflaim_DOMNode.h"
 #include "jniftk.h"
 
-#define THIS_NODE() \
-	((IF_DOMNode *)(FLMUINT)lThis)
+#define THIS_NODE() ((IF_DOMNode *)((FLMUINT)lThis))
 
 /****************************************************************************
 Desc:
@@ -37,7 +36,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createNode(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iNodeType,
 	jint				iNameId,
 	jint				iInsertLoc,
@@ -45,16 +44,13 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createNode(
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if( RC_BAD( rc = pThisNode->createNode( ifpDb, (eDomNodeType)iNodeType, 
-			(FLMUINT)iNameId, (eNodeInsertLoc)iInsertLoc, &ifpNewNode, NULL)))
+	if( RC_BAD( rc = pThisNode->createNode( pDb, (eDomNodeType)iNodeType, 
+			(FLMUINT)iNameId, (eNodeInsertLoc)iInsertLoc, &pNewNode, NULL)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -62,7 +58,40 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createNode(
 
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));	
+	return( (jlong)((FLMUINT)pNewNode));	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createChildElement(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iChildElementNameId,
+	jboolean			bFirstChild,
+	jlong				lReusedNodeRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
+	
+	if( RC_BAD( rc = pThisNode->createChildElement( pDb, 
+			(FLMUINT)iChildElementNameId,
+			(eNodeInsertLoc)(bFirstChild ? XFLM_FIRST_CHILD : XFLM_LAST_CHILD),
+			&pNewNode, NULL)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));	
 }
 
 /****************************************************************************
@@ -72,13 +101,13 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1deleteNode(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	
-	if (RC_BAD( rc = pNode->deleteNode( ifpDb)))
+	if (RC_BAD( rc = pNode->deleteNode( pDb)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -96,13 +125,13 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1deleteChildren(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	
-	if (RC_BAD( rc = pNode->deleteChildren( ifpDb)))
+	if (RC_BAD( rc = pNode->deleteChildren( pDb)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -131,22 +160,19 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createAttribute(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iNameId,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if( RC_BAD( rc = pThisNode->createAttribute( ifpDb, 
-		(FLMUINT)iNameId, &ifpNewNode)))
+	if( RC_BAD( rc = pThisNode->createAttribute( pDb, 
+		(FLMUINT)iNameId, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -154,7 +180,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createAttribute(
 
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -164,20 +190,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getFirstAttribute(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if ( RC_BAD( rc = pThisNode->getFirstAttribute( ifpDb, &ifpNewNode)))
+	if ( RC_BAD( rc = pThisNode->getFirstAttribute( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -185,7 +208,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getFirstAttribute(
 	
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));	
+	return( (jlong)((FLMUINT)pNewNode));	
 }
 
 /****************************************************************************
@@ -195,20 +218,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLastAttribute(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if ( RC_BAD( rc = pThisNode->getLastAttribute( ifpDb, &ifpNewNode)))
+	if ( RC_BAD( rc = pThisNode->getLastAttribute( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -216,7 +236,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLastAttribute(
 
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));		
+	return( (jlong)((FLMUINT)pNewNode));		
 }
 
 /****************************************************************************
@@ -226,22 +246,19 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAttribute(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iAttributeId,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if( RC_BAD( rc = pThisNode->getAttribute( ifpDb, (FLMUINT)iAttributeId,
-											   &ifpNewNode)))
+	if( RC_BAD( rc = pThisNode->getAttribute( pDb, (FLMUINT)iAttributeId,
+											   &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -249,7 +266,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAttribute(
 
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));		
+	return( (jlong)((FLMUINT)pNewNode));		
 }
 
 /****************************************************************************
@@ -259,14 +276,14 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1deleteAttribute(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iAttributeId)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	
-	if (RC_BAD( rc = pThisNode->deleteAttribute( ifpDb, (FLMUINT)iAttributeId)))
+	if (RC_BAD( rc = pThisNode->deleteAttribute( pDb, (FLMUINT)iAttributeId)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -284,19 +301,19 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAttribute(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iAttributeId)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	jboolean			bRv = false;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	jboolean			bRv = JNI_FALSE;
 	
-	rc = pThisNode->hasAttribute( ifpDb, (FLMUINT)iAttributeId, NULL);
+	rc = pThisNode->hasAttribute( pDb, (FLMUINT)iAttributeId, NULL);
 	
 	if (RC_OK( rc))
 	{
-		bRv = true;
+		bRv = JNI_TRUE;
 	}
 	else if (rc != NE_XFLM_DOM_NODE_NOT_FOUND)
 	{
@@ -316,14 +333,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAttributes(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMBOOL			bHasAttr = FALSE;
 	
-	if( RC_BAD( rc = pThisNode->hasAttributes( ifpDb, &bHasAttr)))
+	if( RC_BAD( rc = pThisNode->hasAttributes( pDb, &bHasAttr)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -331,7 +348,7 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAttributes(
 
 Exit:
 
-	return( bHasAttr ? true : false);
+	return( bHasAttr ? JNI_TRUE : JNI_FALSE);
 }
 
 /****************************************************************************
@@ -341,14 +358,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasNextSibling(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMBOOL			bHasNextSib = FALSE;
 	
-	if (RC_BAD( rc = pThisNode->hasNextSibling( ifpDb, &bHasNextSib)))
+	if (RC_BAD( rc = pThisNode->hasNextSibling( pDb, &bHasNextSib)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -356,7 +373,7 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasNextSibling(
 	
 Exit:
 
-	return( bHasNextSib ? true : false);
+	return( bHasNextSib ? JNI_TRUE : JNI_FALSE);
 }
 
 /****************************************************************************
@@ -366,14 +383,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasPreviousSibling(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMBOOL			bHasPreviousSib = FALSE;
 	
-	if (RC_BAD( rc = pThisNode->hasPreviousSibling( ifpDb, &bHasPreviousSib)))
+	if (RC_BAD( rc = pThisNode->hasPreviousSibling( pDb, &bHasPreviousSib)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -381,7 +398,7 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasPreviousSibling(
 	
 Exit:
 
-	return( bHasPreviousSib ? true : false);
+	return( bHasPreviousSib ? JNI_TRUE : JNI_FALSE);
 }
 
 /****************************************************************************
@@ -391,14 +408,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasChildren(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMBOOL			bHasChild = FALSE;
 	
-	if (RC_BAD( rc = pThisNode->hasChildren( ifpDb, &bHasChild)))
+	if (RC_BAD( rc = pThisNode->hasChildren( pDb, &bHasChild)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -406,7 +423,7 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasChildren(
 	
 Exit:
 
-	return( bHasChild ? true : false);
+	return( bHasChild ? JNI_TRUE : JNI_FALSE);
 }
 
 /****************************************************************************
@@ -416,14 +433,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1isNamespaceDecl(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMBOOL			bIsDecl = FALSE;
 	
-	if (RC_BAD( rc = pThisNode->isNamespaceDecl( ifpDb, &bIsDecl)))
+	if (RC_BAD( rc = pThisNode->isNamespaceDecl( pDb, &bIsDecl)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -431,7 +448,35 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1isNamespaceDecl(
 	
 Exit:
 
-	return( bIsDecl ? true : false);	
+	return( bIsDecl ? JNI_TRUE : JNI_FALSE);	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDocumentNode(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jlong				lReusedNodeRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
+	
+	if (RC_BAD( rc = pThisNode->getDocumentNode( pDb, &pNewNode)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -441,20 +486,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getParentNode(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getParentNode( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getParentNode( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -462,7 +504,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getParentNode(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -472,20 +514,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getFirstChild(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getFirstChild( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getFirstChild( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -493,7 +532,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getFirstChild(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);		
+	return( (jlong)((FLMUINT)pNewNode));		
 }
 
 /****************************************************************************
@@ -503,20 +542,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLastChild(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getLastChild( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getLastChild( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -524,7 +560,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLastChild(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);		
+	return( (jlong)((FLMUINT)pNewNode));		
 }
 
 /****************************************************************************
@@ -534,20 +570,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getPreviousSibling(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = (IF_DOMNode *)(FLMUINT)lThis;
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getPreviousSibling( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getPreviousSibling( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -555,7 +588,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getPreviousSibling(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -565,20 +598,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getNextSibling(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getNextSibling( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getNextSibling( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -586,7 +616,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getNextSibling(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -596,20 +626,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getPreviousDocument(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getPreviousDocument( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getPreviousDocument( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -617,7 +644,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getPreviousDocument(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -627,20 +654,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getNextDocument(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getNextDocument( ifpDb, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getNextDocument( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -648,7 +672,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getNextDocument(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -658,18 +682,18 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getPrefix(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUNICODE		uzPrefix[ 128];
 	FLMUNICODE *	puzPrefix = uzPrefix;
 	FLMUINT			uiBufSize = sizeof( uzPrefix);
 	FLMUINT			uiNumChars;
 	jstring			sPrefix = NULL;
 	
-	if (RC_BAD( rc = pThisNode->getPrefix( ifpDb, 
+	if (RC_BAD( rc = pThisNode->getPrefix( pDb, 
 		(FLMUNICODE *)NULL, 0, &uiNumChars)))
 	{
 		ThrowError( rc, pEnv);
@@ -687,7 +711,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getPrefix(
 		}
 	}
 	
-	if (RC_BAD( rc = pThisNode->getPrefix( ifpDb, puzPrefix, uiBufSize, NULL)))
+	if (RC_BAD( rc = pThisNode->getPrefix( pDb, puzPrefix, uiBufSize, NULL)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -708,26 +732,130 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getPrefixId(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMUINT			uiPrefixId = 0;
+	
+	if (RC_BAD( rc = pThisNode->getPrefixId( pDb, &uiPrefixId))) 
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;	
+	}
+	
+Exit:
+
+	return( (jint)uiPrefixId);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getEncDefId(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMUINT			uiEncDefId = 0;
+	
+	if (RC_BAD( rc = pThisNode->getEncDefId( pDb, &uiEncDefId))) 
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;	
+	}
+	
+Exit:
+
+	return( (jint)uiEncDefId);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setPrefix(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jstring			sPrefix)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMBYTE			ucPrefix [256];
+	F_DynaBuf		prefixBuf( ucPrefix, sizeof( ucPrefix));
+
+	if (RC_BAD( rc = getUniString( pEnv, sPrefix, &prefixBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pThisNode->setPrefix( pDb, prefixBuf.getUnicodePtr())))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setPrefixId(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iPrefixId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+
+	if (RC_BAD( rc = pThisNode->setPrefixId( pDb, (FLMUINT)iPrefixId)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getChildElement(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iNameId,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getChildElement( ifpDb, 
-		(FLMUINT)iNameId, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getChildElement( pDb, 
+		(FLMUINT)iNameId, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -735,7 +863,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getChildElement(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);	
+	return( (jlong)((FLMUINT)pNewNode));	
 }
 
 /****************************************************************************
@@ -745,23 +873,20 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getSiblingElement(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jint				iNameId,
 	jboolean			bNext,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if (lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if (RC_BAD( rc = pThisNode->getSiblingElement( ifpDb, 
-		(FLMUINT)iNameId, bNext ? TRUE : FALSE, &ifpNewNode)))
+	if (RC_BAD( rc = pThisNode->getSiblingElement( pDb, 
+		(FLMUINT)iNameId, bNext ? TRUE : FALSE, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -769,7 +894,67 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getSiblingElement(
 
 Exit:
 
-	return( (jlong)(FLMUINT)ifpNewNode);	
+	return( (jlong)((FLMUINT)pNewNode));	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAncestorElement(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iNameId,
+	jlong				lReusedNodeRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
+	
+	if (RC_BAD( rc = pThisNode->getAncestorElement( pDb, 
+		(FLMUINT)iNameId, &pNewNode)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDescendantElement(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iNameId,
+	jlong				lReusedNodeRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
+	
+	if (RC_BAD( rc = pThisNode->getDescendantElement( pDb,
+		(FLMUINT)iNameId, &pNewNode)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));	
 }
 
 /****************************************************************************
@@ -779,14 +964,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getParentId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getParentId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getParentId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -804,14 +989,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getNodeId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getNodeId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getNodeId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -829,14 +1014,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDocumentId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getDocumentId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getDocumentId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -854,14 +1039,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getPrevSibId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getPrevSibId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getPrevSibId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -879,14 +1064,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getNextSibId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getNextSibId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getNextSibId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -904,14 +1089,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getFirstChildId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getFirstChildId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getFirstChildId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -929,14 +1114,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLastChildId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT64		ui64Id;
 	
-	if (RC_BAD( rc = pThisNode->getLastChildId( ifpDb, &ui64Id)))
+	if (RC_BAD( rc = pThisNode->getLastChildId( pDb, &ui64Id)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -954,14 +1139,14 @@ JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getNameId(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiId;
 	
-	if (RC_BAD( rc = pThisNode->getNameId( ifpDb, &uiId)))
+	if (RC_BAD( rc = pThisNode->getNameId( pDb, &uiId)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -979,18 +1164,18 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getNamespaceURI(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)	
+	jlong				lDbRef)	
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUNICODE		uzNamespaceURI[ 128];
 	FLMUNICODE *	puzNamespaceURI = uzNamespaceURI;
 	FLMUINT			uiBufSize = sizeof( uzNamespaceURI);
 	FLMUINT			uiNumChars;
 	jstring			sNamespaceURI = NULL;
 	
-	if (RC_BAD( rc = pThisNode->getNamespaceURI( ifpDb, 
+	if (RC_BAD( rc = pThisNode->getNamespaceURI( pDb, 
 		(FLMUNICODE *)NULL, 0, &uiNumChars)))
 	{
 		ThrowError( rc, pEnv);
@@ -1008,7 +1193,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getNamespaceURI(
 		}
 	}
 	
-	if (RC_BAD( rc = pThisNode->getNamespaceURI( ifpDb, puzNamespaceURI,
+	if (RC_BAD( rc = pThisNode->getNamespaceURI( pDb, puzNamespaceURI,
 						uiBufSize, NULL)))
 	{
 		ThrowError( rc, pEnv);
@@ -1034,18 +1219,18 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getLocalName(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = (IF_DOMNode *)(FLMUINT)lThis;
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUNICODE		uzLocalName[ 128];
 	FLMUNICODE *	puzLocalName = uzLocalName;
 	FLMUINT			uiBufSize = sizeof(uzLocalName);
 	FLMUINT			uiNumChars;
 	jstring			sLocalName = NULL;
 	
-	if (RC_BAD( rc = pThisNode->getLocalName( ifpDb, (FLMUNICODE *)NULL, 
+	if (RC_BAD( rc = pThisNode->getLocalName( pDb, (FLMUNICODE *)NULL, 
 		0, &uiNumChars)))
 	{
 		ThrowError( rc, pEnv);
@@ -1063,7 +1248,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getLocalName(
 		}
 	}
 	
-	if (RC_BAD( rc = pThisNode->getLocalName( ifpDb, puzLocalName,
+	if (RC_BAD( rc = pThisNode->getLocalName( pDb, puzLocalName,
 		uiBufSize, NULL)))
 	{
 		ThrowError( rc, pEnv);
@@ -1089,18 +1274,18 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getQualifiedName(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = (IF_DOMNode *)(FLMUINT)lThis;
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUNICODE		uzQualName[ 128];
 	FLMUNICODE *	puzQualName = uzQualName;
 	FLMUINT			uiNumChars;
 	FLMUINT			uiBufSize = sizeof( uzQualName);
 	jstring			sLocalName = NULL;
 	
-	if (RC_BAD( rc = pThisNode->getQualifiedName( ifpDb, (FLMUNICODE *)NULL,
+	if (RC_BAD( rc = pThisNode->getQualifiedName( pDb, (FLMUNICODE *)NULL,
 		0, &uiNumChars)))
 	{
 		ThrowError( rc, pEnv);
@@ -1118,7 +1303,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getQualifiedName(
 		}
 	}
 	
-	if (RC_BAD( rc = pThisNode->getQualifiedName( ifpDb, puzQualName,
+	if (RC_BAD( rc = pThisNode->getQualifiedName( pDb, puzQualName,
 		uiBufSize, NULL)))
 	{
 		ThrowError( rc, pEnv);
@@ -1144,14 +1329,14 @@ JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getCollection(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiColNum;
 	
-	if (RC_BAD( rc = pThisNode->getCollection( ifpDb, &uiColNum)))
+	if (RC_BAD( rc = pThisNode->getCollection( pDb, &uiColNum)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1169,14 +1354,53 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLong(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE					rc = NE_XFLM_OK;
 	IF_DOMNode *		pThisNode = THIS_NODE();
-	IF_Db *				ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMINT64				i64Val;
 	
-	if (RC_BAD( rc = pThisNode->getINT64( ifpDb, &i64Val)))
+	if (RC_BAD( rc = pThisNode->getINT64( pDb, &i64Val)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jlong)i64Val);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAttributeValueLong(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iAttrNameId,
+	jboolean			bDefaultOk,
+	jlong				lDefaultToUse)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DOMNode *		pThisNode = THIS_NODE();
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMINT64				i64Val;
+	
+	if (bDefaultOk)
+	{
+		rc = pThisNode->getAttributeValueINT64( pDb, (FLMUINT)iAttrNameId,
+								&i64Val, (FLMINT64)lDefaultToUse);
+	}
+	else
+	{
+		rc = pThisNode->getAttributeValueINT64( pDb, (FLMUINT)iAttrNameId,
+								&i64Val);
+	}
+	
+	if (RC_BAD( rc))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1194,23 +1418,35 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getString(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef,
+	jint				iStartPos,
+	jint				iNumChars)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUNICODE		uzBuffer[ 128];
 	FLMUNICODE *	puzBuf = uzBuffer;
 	FLMUINT			uiBufSize = sizeof(uzBuffer);
 	FLMUINT			uiNumChars;
 	jstring			sBuf = NULL;
 	
-	if (RC_BAD( rc = pThisNode->getUnicodeChars( ifpDb, &uiNumChars)))
+	if (RC_BAD( rc = pThisNode->getUnicodeChars( pDb, &uiNumChars)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
-	}	
-		
+	}
+	
+	if ((FLMUINT)iStartPos >= uiNumChars)
+	{
+		goto Exit;
+	}
+	uiNumChars -= (FLMUINT)iStartPos;
+	if (iNumChars && (FLMUINT)iNumChars < uiNumChars)
+	{
+		uiNumChars = (FLMUINT)iNumChars;
+	}
+
 	if (uiNumChars * sizeof( FLMUNICODE) >= uiBufSize)
 	{
 		uiBufSize = (uiNumChars + 1) * sizeof(FLMUNICODE);
@@ -1222,8 +1458,8 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getString(
 		}
 	}
 
-	if (RC_BAD( rc = pThisNode->getUnicode( ifpDb, puzBuf, uiBufSize, 0,
-											uiNumChars, NULL)))
+	if (RC_BAD( rc = pThisNode->getUnicode( pDb, puzBuf, uiBufSize,
+											(FLMUINT)iStartPos, uiNumChars, NULL)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1244,18 +1480,49 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getAttributeValueString(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iAttrNameId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMBYTE			ucBuf [256];
+	F_DynaBuf		dynaBuf( ucBuf, sizeof( ucBuf));
+	jstring			sBuf = NULL;
+
+	if (RC_BAD( rc = pThisNode->getAttributeValueUnicode( pDb,
+								(FLMUINT)iAttrNameId, &dynaBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	sBuf = pEnv->NewString( dynaBuf.getUnicodePtr(),
+						(jsize)dynaBuf.getUnicodeLength());
+	
+Exit:
+
+	return( sBuf);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getStringLen(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiVal;
 	
-	if (RC_BAD(rc = pThisNode->getUnicodeChars( ifpDb, &uiVal)))
+	if (RC_BAD(rc = pThisNode->getUnicodeChars( pDb, &uiVal)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1273,14 +1540,14 @@ JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getDataType(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiType;
 	
-	if (RC_BAD( rc = pThisNode->getDataType( ifpDb, &uiType)))
+	if (RC_BAD( rc = pThisNode->getDataType( pDb, &uiType)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1298,14 +1565,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDataLength(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiLength;
 	
-	if (RC_BAD( rc = pThisNode->getDataLength( ifpDb, &uiLength)))
+	if (RC_BAD( rc = pThisNode->getDataLength( pDb, &uiLength)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1323,21 +1590,33 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef,
+	jint				iStartPos,
+	jint				iNumBytes)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiLength;
 	jbyteArray		Data = NULL;
 	void *			pvData = NULL;
-	jboolean			bIsCopy = false;
+	jboolean			bIsCopy = JNI_FALSE;
 	
-	if (RC_BAD(rc = pThisNode->getDataLength( ifpDb, &uiLength)))
+	if (RC_BAD(rc = pThisNode->getDataLength( pDb, &uiLength)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
-	}	
+	}
+	
+	if ((FLMUINT)iStartPos >= uiLength)
+	{
+		goto Exit;
+	}
+	uiLength -= (FLMUINT)iStartPos;
+	if (iNumBytes && (FLMUINT)iNumBytes < uiLength)
+	{
+		uiLength = (FLMUINT)iNumBytes;
+	}
 
 	Data = pEnv->NewByteArray( (jsize)uiLength);
 	
@@ -1348,7 +1627,68 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary(
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = pThisNode->getBinary(ifpDb, pvData, 0, uiLength, NULL)))
+	if (RC_BAD( rc = pThisNode->getBinary( pDb, pvData, (FLMUINT)iStartPos,
+											uiLength, NULL)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	if (pvData)
+	{
+		if (RC_BAD( rc))
+		{
+			pEnv->ReleasePrimitiveArrayCritical( Data, pvData, JNI_ABORT);
+			pEnv->DeleteLocalRef( Data);
+			Data = NULL;
+		}
+		else
+		{
+			pEnv->ReleasePrimitiveArrayCritical( Data, pvData, 0);
+		}
+	}
+
+	return( Data);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getAttributeValueBinary(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iAttrNameId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMUINT			uiLength;
+	jbyteArray		Data = NULL;
+	void *			pvData = NULL;
+	jboolean			bIsCopy = JNI_FALSE;
+	
+	if (RC_BAD(rc = pThisNode->getAttributeValueBinary( pDb, (FLMUINT)iAttrNameId,
+												NULL, 0, &uiLength)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	Data = pEnv->NewByteArray( (jsize)uiLength);
+	
+	if ( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)
+	{
+		rc = RC_SET( NE_XFLM_MEM);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pThisNode->getAttributeValueBinary( pDb, (FLMUINT)iAttrNameId,
+											pvData, uiLength, NULL)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1380,14 +1720,39 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setLong(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
-	jlong				lValue)
+	jlong				lDbRef,
+	jlong				lValue,
+	jint				iEncId)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 
-	if (RC_BAD( rc = pThisNode->setINT64( ifpDb, (FLMINT64)lValue)))
+	if (RC_BAD( rc = pThisNode->setINT64( pDb, (FLMINT64)lValue,
+											(FLMUINT)iEncId)))
+	{
+		ThrowError( rc, pEnv);
+	}
+}
+  
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setAttributeValueLong(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iAttrNameId,
+	jlong				lValue,
+	jint				iEncId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+
+	if (RC_BAD( rc = pThisNode->setAttributeValueINT64( pDb, (FLMUINT)iAttrNameId,
+									(FLMINT64)lValue, (FLMUINT)iEncId)))
 	{
 		ThrowError( rc, pEnv);
 	}
@@ -1400,13 +1765,14 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setString(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jstring			sValue,
-	jboolean			bLast)
+	jboolean			bLast,
+	jint				iEncId)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	jchar *			pszValue = NULL;
 	FLMUINT			uiLength = 0;
 
@@ -1416,8 +1782,8 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setString(
 		uiLength = (FLMUINT)pEnv->GetStringLength( sValue);
 	}
 	
-	if (RC_BAD( rc = pThisNode->setUnicode( ifpDb, pszValue, uiLength,
-		bLast ? TRUE : FALSE)))
+	if (RC_BAD( rc = pThisNode->setUnicode( pDb, pszValue, uiLength,
+		bLast ? TRUE : FALSE, (FLMUINT)iEncId)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1434,19 +1800,57 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setAttributeValueString(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iAttrNameId,
+	jstring			sValue,
+	jint				iEncId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMBYTE			ucValue [256];
+	F_DynaBuf		valueBuf( ucValue, sizeof( ucValue));
+	
+	if (RC_BAD( rc = getUTF8String( pEnv, sValue, &valueBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = pThisNode->setAttributeValueUTF8( pDb, (FLMUINT)iAttrNameId,
+		(const FLMBYTE *)valueBuf.getBufferPtr(), 0, (FLMUINT)iEncId)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+  
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setBinary(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
-	jbyteArray		Value)
+	jlong				lDbRef,
+	jbyteArray		Value,
+	jboolean			bLast,
+	jint				iEncId)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMUINT			uiLength = pEnv->GetArrayLength( Value);
 	void *			pvValue = NULL;
-	jboolean			bIsCopy = false;
+	jboolean			bIsCopy = JNI_FALSE;
 	
 	if( (pvValue = pEnv->GetPrimitiveArrayCritical( Value, &bIsCopy)) == NULL)
 	{
@@ -1455,7 +1859,50 @@ JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setBinary(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pThisNode->setBinary(ifpDb, pvValue, uiLength)))
+	if( RC_BAD( rc = pThisNode->setBinary(pDb, pvValue, uiLength,
+								bLast ? TRUE : FALSE,
+								(FLMUINT)iEncId)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	if (pvValue)
+	{
+		pEnv->ReleasePrimitiveArrayCritical( Value, pvValue, JNI_ABORT);
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setAttributeValueBinary(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jint				iAttrNameId,
+	jbyteArray		Value,
+	jint				iEncId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMUINT			uiLength = pEnv->GetArrayLength( Value);
+	void *			pvValue = NULL;
+	jboolean			bIsCopy = JNI_FALSE;
+	
+	if( (pvValue = pEnv->GetPrimitiveArrayCritical( Value, &bIsCopy)) == NULL)
+	{
+		rc = RC_SET( NE_XFLM_MEM);
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pThisNode->setAttributeValueBinary(pDb, (FLMUINT)iAttrNameId,
+								pvValue, uiLength, (FLMUINT)iEncId)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1492,20 +1939,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createAnnotation(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if( lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if( RC_BAD( rc = pThisNode->createAnnotation( ifpDb, &ifpNewNode, NULL)))
+	if( RC_BAD( rc = pThisNode->createAnnotation( pDb, &pNewNode, NULL)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1513,7 +1957,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createAnnotation(
 
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -1523,20 +1967,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAnnotation(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef,
+	jlong				lDbRef,
 	jlong				lReusedNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
-	IF_DOMNode *	ifpNewNode = NULL;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	IF_DOMNode *	pNewNode = lReusedNodeRef
+									  ? (IF_DOMNode *)((FLMUINT)lReusedNodeRef)
+									  : NULL;
 	
-	if( lReusedNodeRef)
-	{
-		ifpNewNode = (IF_DOMNode *)(FLMUINT)lReusedNodeRef;
-	}
-	
-	if( RC_BAD( rc = pThisNode->getAnnotation( ifpDb, &ifpNewNode)))
+	if( RC_BAD( rc = pThisNode->getAnnotation( pDb, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1544,7 +1985,32 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAnnotation(
 
 Exit:
 
-	return( (jlong)((FLMUINT)ifpNewNode));	
+	return( (jlong)((FLMUINT)pNewNode));	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAnnotationId(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMUINT64		ui64AnnotationId;
+	
+	if( RC_BAD( rc = pThisNode->getAnnotationId( pDb, &ui64AnnotationId)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)ui64AnnotationId);	
 }
 
 /****************************************************************************
@@ -1554,14 +2020,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAnnotation(
  	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lpDbRef)
+	jlong				lDbRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_DOMNode *	pThisNode = THIS_NODE();
-	IF_Db *			ifpDb = (IF_Db *)(FLMUINT)lpDbRef;
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
 	FLMBOOL			bHasAnnotation;
 	
-	if( RC_BAD( rc = pThisNode->hasAnnotation( ifpDb, &bHasAnnotation)))
+	if( RC_BAD( rc = pThisNode->hasAnnotation( pDb, &bHasAnnotation)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1569,5 +2035,81 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAnnotation(
 
 Exit:
 
-	return( (bHasAnnotation ? true : false));
+	return( (bHasAnnotation ? JNI_TRUE : JNI_FALSE));
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getMetaValue(
+ 	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMUINT64		ui64Value;
+	
+	if( RC_BAD( rc = pThisNode->getMetaValue( pDb, &ui64Value)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)ui64Value);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setMetaValue(
+ 	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef,
+	jlong				lValue)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	
+	if( RC_BAD( rc = pThisNode->setMetaValue( pDb, (FLMUINT64)lValue)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1isDataLocalToNode(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jlong				lDbRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DOMNode *	pThisNode = THIS_NODE();
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)lDbRef);
+	FLMBOOL			bLocal = FALSE;
+	
+	if (RC_BAD( rc = pThisNode->isDataLocalToNode( pDb, &bLocal)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( bLocal ? JNI_TRUE : JNI_FALSE);
+}
+

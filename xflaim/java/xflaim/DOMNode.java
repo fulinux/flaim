@@ -31,9 +31,6 @@ package xflaim;
 public class DOMNode 
 {
 	
-	/**
-	 * Desc:
-	 */
 	DOMNode( 
 		long			lThis,
 		Db 			jdb) throws XFlaimException
@@ -53,9 +50,6 @@ public class DOMNode
 		m_jdb = jdb;
 	}
 	
-	/**
-	 * Desc:
-	 */
 	protected void finalize()
 	{
 		// The F_DOMNode and F_Db classes are not thread-safe.  The proper way
@@ -85,9 +79,6 @@ public class DOMNode
 		m_jdb = null;
 	}
 	
-	/**
-	 * Desc:
-	 */
 	public void release()
 	{
 		synchronized( m_jdb)
@@ -99,6 +90,11 @@ public class DOMNode
 		}
 		
 		m_jdb = null;
+	}
+	
+	public long getThis()
+	{
+		return m_this;
 	}
 	
 	/**
@@ -129,14 +125,11 @@ public class DOMNode
 		int			iInsertLoc,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
-		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
 		// See to comments in the finalize function for an explanation of this
 		// call synchronized call
@@ -145,6 +138,59 @@ public class DOMNode
 		{
 			lNewNodeRef = _createNode( m_this, m_jdb.m_this, iNodeType, iNameId,
 									   iInsertLoc, lReusedNodeRef);
+		}
+		
+		if (ReusedNode == null)
+		{
+			NewNode = new DOMNode(lNewNodeRef, m_jdb);
+		}
+		else
+		{
+			NewNode=ReusedNode;
+			NewNode.setRef( lNewNodeRef, m_jdb);
+		}
+		
+		return( NewNode);
+	}
+	
+	/**
+	 * Creates a new element node and inserts it into the database in the
+	 * as either the first or last child of the current node.  An existing
+	 * DOMNode object can optionally be passed in, and it will be reused
+	 * instead of a new object being allocated.
+	 * @param iChildElementNameId The dictionary tag number that represents the
+	 * element node name.
+	 * This value must exist in the dictionary before it can be used here.  The
+	 * value may be one of the predefined ones, or it may be created with
+	 * {@link Db#createElementDef Db::createElementDef}.
+	 * @param bFirstChild Specifies whether the new element is to be created as
+	 * a first or last child.
+	 * @param ReusedNode An instance of DOMNode which is no longer needed and
+	 * can be reassigned to point to different data in the database.  (Reusing
+	 * DOMNode objects is encouraged as it saves the system from allocating
+	 * and freeing memory for each object.)  Can be null, if no instances are
+	 * available to be reused.
+	 * @return Returns an instance of DOMNode
+	 * @throws XFlaimException
+	 */
+	public DOMNode createChildElement(
+		int			iChildElementNameId,
+		boolean		bFirstChild,
+		DOMNode		ReusedNode) throws XFlaimException
+	{
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
+		
+		// See to comments in the finalize function for an explanation of this
+		// call synchronized call
+		
+		synchronized( m_jdb)
+		{
+			lNewNodeRef = _createChildElement( m_this, m_jdb.m_this,
+										iChildElementNameId, bFirstChild, lReusedNodeRef);
 		}
 		
 		if (ReusedNode == null)
@@ -199,6 +245,16 @@ public class DOMNode
 	}
 
 	/**
+ 	* Tests the current node for the ability to hold data.
+ 	* @return Returns true if this is a node type that can have data 
+	* associated with it.
+ 	*/
+	public boolean isDataLocalToNode() throws XFlaimException
+	{
+		return( _isDataLocalToNode( m_this, m_jdb.m_this));
+	}
+	
+	/**
 	 * Creates a new attribute node assigned to the current node.  Note that
 	 * some nodes are not allowed to have attributes.
 	 * @param iNameId The dictionary tag number that represents the node name.
@@ -216,15 +272,12 @@ public class DOMNode
 		int			iNameId,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-
 		// See to comments in the finalize function for an explanation of this
 		// call synchronized call
 		
@@ -260,14 +313,11 @@ public class DOMNode
 	public DOMNode getFirstAttribute(
 		DOMNode ReusedNode) throws XFlaimException
 	{
-		long 		lReusedNodeRef = 0;
-		long 		lNewNodeRef = 0;
-		DOMNode 	NewNode;
-		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 
 		// See the comment in the finalize function for an explanation of
 		// this synchronized call
@@ -304,15 +354,12 @@ public class DOMNode
 	public DOMNode getLastAttribute(
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-
 		// See to comments in the finalize function for an explanation of this
 		// call synchronized call
 		
@@ -352,15 +399,12 @@ public class DOMNode
 		int			iAttributeId,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-
 		// See to comments in the finalize function for an explanation of this
 		// call synchronized call
 		
@@ -502,7 +546,7 @@ public class DOMNode
 	 * @return Returns the next sibling node's node ID.
 	 * @throws XFlaimException
 	 */
-	public long getNextsibId() throws XFlaimException
+	public long getNextSibId() throws XFlaimException
 	{
 		return _getNextSibId(  m_this, m_jdb.m_this);
 	}
@@ -565,7 +609,52 @@ public class DOMNode
 	public void setLong(
 		long			lValue) throws XFlaimException
 	{
-		_setLong( m_this, m_jdb.m_this, lValue);	
+		_setLong( m_this, m_jdb.m_this, lValue, 0);
+	}
+	
+	/**
+	 * Assigns a 64-bit value to this node.
+	 * @param lValue The value to be assigned.
+	 * @param iEncId Encryption definition to use.  If zero is passed, the
+	 * data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setLong(
+		long			lValue,
+		int			iEncId) throws XFlaimException
+	{
+		_setLong( m_this, m_jdb.m_this, lValue, iEncId);	
+	}
+	
+	/**
+	 * Assigns a 64-bit value to an attribute for this element node (node must
+	 * be an element node).
+	 * @param iAttrNameId The attribute id whose value is to be assigned.
+	 * @param lValue The value to be assigned.
+	 * @throws XFlaimException
+	 */
+	public void setAttributeValueLong(
+		int			iAttrNameId,
+		long			lValue) throws XFlaimException
+	{
+		_setAttributeValueLong( m_this, m_jdb.m_this, iAttrNameId, lValue, 0);	
+	}
+	
+	/**
+	 * Assigns a 64-bit value to an attribute for this element node (node must
+	 * be an element node).
+	 * @param iAttrNameId The attribute id whose value is to be assigned.
+	 * @param lValue The value to be assigned.
+	 * @param iEncId Encryption definition to use.  If zero is passed, the
+	 * data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setAttributeValueLong(
+		int			iAttrNameId,
+		long			lValue,
+		int			iEncId) throws XFlaimException
+	{
+		_setAttributeValueLong( m_this, m_jdb.m_this, iAttrNameId, lValue, iEncId);	
 	}
 	
 	/**
@@ -585,7 +674,30 @@ public class DOMNode
 		String		sValue,
 		boolean		bLast) throws XFlaimException
 	{
-		_setString( m_this, m_jdb.m_this, sValue, bLast);
+		_setString( m_this, m_jdb.m_this, sValue, bLast, 0);
+	}
+
+	/**
+	 * Assigns a text string to this node.  Existing text is either
+	 * overwritten or has the new text appended to it.  See the
+	 * explanation for the bLast parameter.
+	 * @param sValue The text to be assigned
+	 * @param bLast Specifies whether sValue is the last text to be
+	 * appended to this node.  If false, then another call to setString
+	 * is expected, and the new text will be appended to the text currently
+	 * stored in this node.  If true, then no more text is expected and 
+	 * another call to setString will overwrite the what is currently
+	 * stored in this node.
+	 * @param iEncId Specifies the encryption definition to use to encryp
+	 * this data.  Zero means that the data is not to be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setString(
+		String		sValue,
+		boolean		bLast,
+		int			iEncId) throws XFlaimException
+	{
+		_setString( m_this, m_jdb.m_this, sValue, bLast, iEncId);
 	}
 
 	/**
@@ -593,12 +705,57 @@ public class DOMNode
 	 * equivalent to setString( sValue, true).
 	 * @param sValue The text to be assigned.
 	 * @throws XFlaimException
-	 * @see #setString( String, boolean)
 	 */
 	public void setString(
 		String		sValue) throws XFlaimException
 	{
-		_setString( m_this, m_jdb.m_this, sValue, true);			
+		_setString( m_this, m_jdb.m_this, sValue, true, 0);			
+	}
+	
+	/**
+	 * Assigns or appends a text string to this node.  This function is
+	 * equivalent to setString( sValue, true, iEncId).
+	 * @param sValue The text to be assigned.
+	 * @param iEncId The encryption id to be used to encrypt the data.  If zero
+	 * the data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setString(
+		String		sValue,
+		int			iEncId) throws XFlaimException
+	{
+		_setString( m_this, m_jdb.m_this, sValue, true, iEncId);			
+	}
+	
+	/**
+	 * Assigns a text string to an attribute for this element node (node must be
+	 * an element node).
+	 * @param iAttrNameId Attribute id of the attribute whose value is to be set.
+	 * @param sValue The text to be assigned.
+	 * @throws XFlaimException
+	 */
+	public void setAttributeValueString(
+		int			iAttrNameId,
+		String		sValue) throws XFlaimException
+	{
+		_setAttributeValueString( m_this, m_jdb.m_this, iAttrNameId, sValue, 0);			
+	}
+	
+	/**
+	 * Assigns a text string to an attribute for this element node (node must be
+	 * an element node).
+	 * @param iAttrNameId Attribute id of the attribute whose value is to be set.
+	 * @param sValue The text to be assigned.
+	 * @param iEncId The encryption id to be used to encrypt the data.  If zero
+	 * the data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setAttributeValueString(
+		int			iAttrNameId,
+		String		sValue,
+		int			iEncId) throws XFlaimException
+	{
+		_setAttributeValueString( m_this, m_jdb.m_this, iAttrNameId, sValue, iEncId);			
 	}
 	
 	/**
@@ -609,7 +766,91 @@ public class DOMNode
 	public void setBinary(
 		byte[] 		Value) throws XFlaimException
 	{
-		_setBinary( m_this, m_jdb.m_this, Value);
+		_setBinary( m_this, m_jdb.m_this, Value, true, 0);
+	}
+
+	/**
+	 * Assigns a piece of binary data to this node.
+	 * @param Value An array of bytes to be stored in this node.
+	 * @param iEncId Encryption id to be used to encrypt the data.  If zero
+	 * is passed, data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setBinary(
+		byte[] 		Value,
+		int			iEncId) throws XFlaimException
+	{
+		_setBinary( m_this, m_jdb.m_this, Value, true, iEncId);
+	}
+
+	/**
+	 * Assigns a piece of binary data to this node.
+	 * @param Value An array of bytes to be stored in this node.
+	 * @param bLast Specifies whether Value is the last data to be
+	 * appended to this node.  If false, then another call to setBinary
+	 * is expected, and the new data will be appended to the data currently
+	 * stored in this node.  If true, then no more data is expected and 
+	 * another call to setBinary will overwrite the what is currently
+	 * stored in this node.
+	 * @throws XFlaimException
+	 */
+	public void setBinary(
+		byte[] 		Value,
+		boolean		bLast) throws XFlaimException
+	{
+		_setBinary( m_this, m_jdb.m_this, Value, bLast, 0);
+	}
+
+	/**
+	 * Assigns a piece of binary data to this node.
+	 * @param Value An array of bytes to be stored in this node.
+	 * @param bLast Specifies whether Value is the last data to be
+	 * appended to this node.  If false, then another call to setBinary
+	 * is expected, and the new data will be appended to the data currently
+	 * stored in this node.  If true, then no more data is expected and 
+	 * another call to setBinary will overwrite the what is currently
+	 * stored in this node.
+	 * @param iEncId Encryption id to be used to encrypt the data.  If zero
+	 * is passed, data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setBinary(
+		byte[] 		Value,
+		boolean		bLast,
+		int			iEncId) throws XFlaimException
+	{
+		_setBinary( m_this, m_jdb.m_this, Value, bLast, iEncId);
+	}
+
+	/**
+	 * Assigns a piece of binary data to an attribute of this element node (node
+	 * must be an element).
+	 * @param iAttrNameId Attribute id of the attribute whose value is to be set.
+	 * @param Value An array of bytes to be stored.
+	 * @throws XFlaimException
+	 */
+	public void setAttributeValueBinary(
+		int			iAttrNameId,
+		byte[] 		Value) throws XFlaimException
+	{
+		_setAttributeValueBinary( m_this, m_jdb.m_this, iAttrNameId, Value, 0);
+	}
+
+	/**
+	 * Assigns a piece of binary data to an attribute of this element node (node
+	 * must be an element).
+	 * @param iAttrNameId Attribute id of the attribute whose value is to be set.
+	 * @param Value An array of bytes to be stored.
+	 * @param iEncId Encryption id to be used to encrypt the data.  If zero
+	 * is passed, data will not be encrypted.
+	 * @throws XFlaimException
+	 */
+	public void setAttributeValueBinary(
+		int			iAttrNameId,
+		byte[] 		Value,
+		int			iEncId) throws XFlaimException
+	{
+		_setAttributeValueBinary( m_this, m_jdb.m_this, iAttrNameId, Value, iEncId);
 	}
 
 	/**
@@ -645,13 +886,61 @@ public class DOMNode
 	}
 
 	/**
+	 * Retrieves the value stored in an attribute associated with this node
+	 * (node must be an element node) as a long. 
+	 * @param iAttrNameId Name of attribute whose value is to be returned.
+	 * @param bDefaultOk If true, specifies that if the attribute is not found
+	 * then the value in lDefaultToUse is to be returned.  If false, and the
+	 * attribute is not found, an exception will be thrown.
+	 * @return Returns the value stored in the element node's attribute.
+	 * @throws XFlaimException
+	 */
+	public long getAttributeValueLong(
+		int		iAttrNameId,
+		boolean	bDefaultOk,
+		long		lDefaultToUse) throws XFlaimException
+	{
+		return _getAttributeValueLong( m_this, m_jdb.m_this, iAttrNameId,
+							bDefaultOk, lDefaultToUse);
+	}
+
+	/**
 	 * Retrieves a string representation of the value stored in this node. 
 	 * @return Returns the value stored in the node.
 	 * @throws XFlaimException
 	 */	
 	public String getString() throws XFlaimException
 	{
-		return _getString( m_this, m_jdb.m_this);
+		return _getString( m_this, m_jdb.m_this, 0, 0);
+	}
+
+	/**
+	 * Retrieves a string representation of the value stored in this node. 
+	 * @param iStartPos Starting character position in string to retrieve from.
+	 * @param iNumChars Maximum number of characters to retrieve.  May return
+	 * fewer than this number of characters if there are not that many
+	 * characters available from the specified starting position.
+	 * @return Returns the sub-string stored in the node.
+	 * @throws XFlaimException
+	 */	
+	public String getSubString(
+		int	iStartPos,
+		int	iNumChars) throws XFlaimException
+	{
+		return _getString( m_this, m_jdb.m_this, iStartPos, iNumChars);
+	}
+
+	/**
+	 * Retrieves a string representation of the value stored in this element
+	 * node's (node must be an element) attribute. 
+	 * @param iAttrNameId Name id of attribute whose value is to be returned.
+	 * @return Returns the value stored in the element node's attribute.
+	 * @throws XFlaimException
+	 */	
+	public String getAttributeValueString(
+		int	iAttrNameId) throws XFlaimException
+	{
+		return _getAttributeValueString( m_this, m_jdb.m_this, iAttrNameId);
 	}
 
 	/**
@@ -673,7 +962,77 @@ public class DOMNode
 	 */
 	public byte[] getBinary() throws XFlaimException
 	{
-		return _getBinary( m_this, m_jdb.m_this);
+		return _getBinary( m_this, m_jdb.m_this, 0, 0);
+	}
+
+	/**
+	 * Retrieves the value of the node as raw data.
+	 * @param iStartPos Starting byte position in binary data to retrieve from.
+	 * @param iNumBytes Maximum number of bytes to retrieve.  May return
+	 * fewer than this number of bytes if there are not that many
+	 * bytes available from the specified starting position.
+	 * @return Returns a byte array containing the requested data from
+	 * the value of this node. 
+	 * @throws XFlaimException
+	 */
+	public byte[] getBinary(
+		int	iStartPos,
+		int	iNumBytes) throws XFlaimException
+	{
+		return _getBinary( m_this, m_jdb.m_this, iStartPos, iNumBytes);
+	}
+
+	/**
+	 * Retrieves the value of the element node's (node must be an element)
+	 * attribute as raw data.
+	 * @param iAttrNameId Name of attribute whose data is to be returned.
+	 * @return Returns a byte array containing the value of this element node's
+	 * attribute. 
+	 * @throws XFlaimException
+	 */
+	public byte[] getAttributeValueBinary(
+		int	iAttrNameId) throws XFlaimException
+	{
+		return _getAttributeValueBinary( m_this, m_jdb.m_this, iAttrNameId);
+	}
+
+	/**
+	 * Retrieves the document node of the current node. 
+	 * @param ReusedNode An instance of DOMNode which is no longer needed and
+	 * can be reassigned to point to different data in the database.  (Reusing
+	 * DOMNode objects is encouraged as it saves the system from allocating
+	 * and freeing memory for each object.)  Can be null, if no instances are
+	 * available to be reused.
+	 * @return Returns an instance of DOMNode 
+	 * @throws XFlaimException
+	 */
+	public DOMNode getDocumentNode(
+		DOMNode			ReusedNode) throws XFlaimException
+	{
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
+		
+		// See to comments in the finalize function for an explanation of this
+		// call synchronized call
+		synchronized( m_jdb)
+		{
+			lNewNodeRef = _getDocumentNode( m_this, m_jdb.m_this, lReusedNodeRef);
+		}
+		
+		if (ReusedNode == null)
+		{
+			NewNode = new DOMNode(lNewNodeRef, m_jdb);
+		}
+		else
+		{
+			NewNode=ReusedNode;
+			NewNode.setRef( lNewNodeRef, m_jdb);
+		}
+		
+		return NewNode;
 	}
 
 	/**
@@ -689,14 +1048,11 @@ public class DOMNode
 	public DOMNode getParentNode(
 		DOMNode			ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
-		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
 		// See to comments in the finalize function for an explanation of this
 		// call synchronized call
@@ -731,15 +1087,12 @@ public class DOMNode
 	public DOMNode getFirstChild(
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// call synchronized call
 		
@@ -774,15 +1127,12 @@ public class DOMNode
 	public DOMNode getLastChild(
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -821,15 +1171,12 @@ public class DOMNode
 		int			eNodeType,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -868,15 +1215,12 @@ public class DOMNode
 		int			iNameId,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -919,15 +1263,12 @@ public class DOMNode
 		boolean		bNext,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -951,6 +1292,94 @@ public class DOMNode
 	}
 
 	/**
+	 * Retrieves the specified element node from the current node's 
+	 * ancestor nodes.
+	 * @param iNameId The name ID of the desired node.
+	 * @param ReusedNode An instance of DOMNode which is no longer needed and
+	 * can be reassigned to point to different data in the database.  (Reusing
+	 * DOMNode objects is encouraged as it saves the system from allocating
+	 * and freeing memory for each object.)  Can be null, if no instances are
+	 * available to be reused.
+	 * @return Returns an instance of DOMNode
+	 * @throws XFlaimException
+	 */
+	public DOMNode getAncestorElement(
+		int			iNameId,
+		DOMNode		ReusedNode) throws XFlaimException
+	{
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
+			
+		// See to comments in the finalize function for an explanation of this
+		// synchronized call
+		
+		synchronized( m_jdb)
+		{
+			lNewNodeRef = _getAncestorElement( m_this, m_jdb.m_this, iNameId,
+											  lReusedNodeRef);
+		}
+			
+		if (ReusedNode == null)
+		{
+			NewNode = new DOMNode(lNewNodeRef, m_jdb);
+		}
+		else
+		{
+			NewNode=ReusedNode;
+			NewNode.setRef( lNewNodeRef, m_jdb);
+		}
+			
+		return NewNode;
+	}
+	
+	/**
+	 * Retrieves the specified element node from the current node's 
+	 * descendant nodes.
+	 * @param iNameId The name ID of the desired node.
+	 * @param ReusedNode An instance of DOMNode which is no longer needed and
+	 * can be reassigned to point to different data in the database.  (Reusing
+	 * DOMNode objects is encouraged as it saves the system from allocating
+	 * and freeing memory for each object.)  Can be null, if no instances are
+	 * available to be reused.
+	 * @return Returns an instance of DOMNode
+	 * @throws XFlaimException
+	 */
+	public DOMNode getDescendantElement(
+		int			iNameId,
+		DOMNode		ReusedNode) throws XFlaimException
+	{
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
+			
+		// See to comments in the finalize function for an explanation of this
+		// synchronized call
+		
+		synchronized( m_jdb)
+		{
+			lNewNodeRef = _getDescendantElement( m_this, m_jdb.m_this, iNameId,
+											  lReusedNodeRef);
+		}
+			
+		if (ReusedNode == null)
+		{
+			NewNode = new DOMNode(lNewNodeRef, m_jdb);
+		}
+		else
+		{
+			NewNode=ReusedNode;
+			NewNode.setRef( lNewNodeRef, m_jdb);
+		}
+			
+		return NewNode;		
+	}
+	
+	/**
 	 * Retrieve's the previous node from the current node's list of 
 	 * siblings nodes. 
 	 * @param ReusedNode An instance of DOMNode which is no longer needed and
@@ -964,15 +1393,12 @@ public class DOMNode
 	public DOMNode getPreviousSibling(
 		DOMNode 		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -1008,15 +1434,12 @@ public class DOMNode
 	public DOMNode getNextSibling(
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -1051,15 +1474,12 @@ public class DOMNode
 	public DOMNode getPreviousDocument(
 		DOMNode		ReusedNode) throws XFlaimException
 	{
-		long 			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
-		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
+
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -1095,15 +1515,12 @@ public class DOMNode
 	public DOMNode getNextDocument(
 		DOMNode 		ReusedNode) throws XFlaimException
 	{
-		long			lReusedNodeRef = 0;
 		long 			lNewNodeRef = 0;
 		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -1135,6 +1552,48 @@ public class DOMNode
 		return _getPrefix( m_this, m_jdb.m_this);
 	}
 
+	/**
+	 * Retrieves the namespace prefix ID for this node
+	 * @return Returns a number containing this node's namespace prefix id
+	 * @throws XFlaimException
+	 */
+	public int getPrefixId() throws XFlaimException
+	{
+		return( _getPrefixId( m_this, m_jdb.m_this));
+	}
+	
+	/**
+	 * Retrieves the encryption definition ID for this node
+	 * @return Returns a number containing this node's encryption definition id
+	 * @throws XFlaimException
+	 */
+	public int getEncDefId() throws XFlaimException
+	{
+		return( _getEncDefId( m_this, m_jdb.m_this));
+	}
+	
+	/**
+	 * Sets the namespace prefix for this node
+	 * @param sPrefix The prefix that is to be set for this node
+	 * @throws XFlaimException
+	 */
+	public void setPrefix(
+		String	sPrefix) throws XFlaimException
+	{
+		_setPrefix( m_this, m_jdb.m_this, sPrefix);
+	}
+	
+	/**
+	 * Sets the namespace prefix for this node
+	 * @param iPrefixId The prefix that is to be set for this node
+	 * @throws XFlaimException
+	 */
+	public void setPrefixId(
+		int		iPrefixId) throws XFlaimException
+	{
+		_setPrefixId( m_this, m_jdb.m_this, iPrefixId);
+	}
+	
 	/**
 	 * Retrieves the namespace URI that this node's name belongs to.
 	 * @return Returns the namespace URI
@@ -1189,15 +1648,12 @@ public class DOMNode
 	public DOMNode createAnnotation(
 		DOMNode			ReusedNode) throws XFlaimException
 	{
-		long 				lReusedNodeRef = 0;
-		long 				lNewNodeRef = 0;
-		DOMNode 			NewNode;
-		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
+
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -1232,15 +1688,12 @@ public class DOMNode
 	public DOMNode getAnnotation(
 		DOMNode			ReusedNode) throws XFlaimException
 	{
-		long 				lReusedNodeRef = 0;
-		long 				lNewNodeRef = 0;
-		DOMNode 			NewNode;
+		long 			lNewNodeRef = 0;
+		DOMNode 		NewNode;
+		long 			lReusedNodeRef = (ReusedNode != null)
+											  ? ReusedNode.m_this
+											  : 0;
 		
-		if (ReusedNode != null)
-		{
-			lReusedNodeRef = ReusedNode.m_this;
-		}
-			
 		// See to comments in the finalize function for an explanation of this
 		// synchronized call
 		
@@ -1263,6 +1716,16 @@ public class DOMNode
 	}
 
 	/**
+	 * Retrieves the id of the annotation associated with this node.
+	 * @return returns the id of the annotation assigned to this node
+	 * @throws XFlaimException
+	 */
+	public long getAnnotationId() throws XFlaimException
+	{
+		return( _getAnnotationId( m_this, m_jdb.m_this));
+	}
+
+	/**
 	 * Checks to see if this node has an annotation
 	 * @return Returns true if the current node has an annotation
 	 * @throws XFlaimException
@@ -1272,6 +1735,17 @@ public class DOMNode
 		return _hasAnnotation( m_this, m_jdb.m_this);
 	}
 
+	public long getMetaValue() throws XFlaimException
+	{
+		return( _getMetaValue( m_this, m_jdb.m_this));
+	}
+	
+	public void setMetaValue(
+		long		lValue) throws XFlaimException
+	{
+		_setMetaValue( m_this, m_jdb.m_this, lValue);
+	}
+	
 	/**
 	 * Reassigns the object to "point" to a new F_DOMNode instance and a new
 	 * Db.  Called by any of the member functions that take a ReusuedNode
@@ -1292,437 +1766,374 @@ public class DOMNode
 		m_jdb = jdb;
 	}
 
-	/**
-	 * Desc:
-	 */
 	long getRef()
 	{
 		return m_this;
 	}
 	
-	/**
-	 * Desc:
-	 */
 	Db getJdb()
 	{
 		return m_jdb;
 	}
 	
-	/**
-	 * Desc:
-	 */
 	 private native long _createNode(
 		 long		lThis,
-		 long		lpDbRef,
+		 long		lDbRef,
 		 int		iNodeType,
 		 int		iNameId,
 		 int		iInsertLoc,
 		 long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native long _createChildElement(
+		long		lThis,
+		long		lDbRef,
+		int		iChildElementNameId,
+		boolean	bFirstChild,
+		long		lReusedNodeRef) throws XFlaimException;
+	
 	private native void _deleteNode(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		 
-	/**
-	 * Desc:
-	 */
 	private native void _deleteChildren(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native int _getNodeType(
 		long		lThis);
 
-	/**
-	 * Desc:
-	 */
 	private native boolean _canHaveData(
 		long 		lThis);
 		
-	/**
-	 * Desc:
-	 */
 	private native long _createAttribute(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iNameId,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getFirstAttribute(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getLastAttribute(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getAttribute(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iAttributeId,
 		long		lReusedNodeRef) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native void _deleteAttribute(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iAttributeId) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native boolean _hasAttribute(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iAttributeId) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native boolean _hasAttributes(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native boolean _hasChildren(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native boolean _hasNextSibling(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native boolean _hasPreviousSibling(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native boolean _isNamespaceDecl(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native long _getDocumentNode(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+
 	private native long _getParentNode(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getFirstChild(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getLastChild(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getChild(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iNodeType,
 		long		lReusedNodeRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getPreviousSibling(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 			
-	/**
-	 * Desc:
-	 */
 	private native long _getNextSibling
 	(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getPreviousDocument
 	(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getNextDocument(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native String _getPrefix(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native int _getPrefixId(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native int _getEncDefId(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native void _setPrefix(
+		long		lThis,
+		long		lDbRef,
+		String	sPrefix) throws XFlaimException;
+		
+	private native void _setPrefixId(
+		long		lThis,
+		long		lDbRef,
+		int		iPrefixId) throws XFlaimException;
+
 	private native long _getChildElement(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iNameId,
 		long		lReusedNodeRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getSiblingElement(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		int		iNameId,
 		boolean	bNext,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native long _getAncestorElement(
+		long		lThis,
+		long		lDbRef,
+		int		iNameId,
+		long		lReusedNodeRef) throws XFlaimException;
+
+	private native long _getDescendantElement(
+		long		lThis,
+		long		lDbRef,
+		int		iNameId,
+		long		lReusedNodeRef) throws XFlaimException;
+		
 	private native long _getParentId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getNodeId(
 		long		lThis,
-		long		lpDbRef);
+		long		lDbRef);
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getDocumentId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getPrevSibId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getNextSibId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getFirstChildId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getLastChildId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getFirstAttrId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getLastAttrId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native int _getNameId(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native String _getNamespaceURI(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native String _getLocalName(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native String _getQualifiedName(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native int _getCollection(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-
-	/**
-	 * Desc:
-	 */
 	private native long _getLong(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native long _getAttributeValueLong(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId,
+		boolean	bDefaultOk,
+		long		lDefaultToUse) throws XFlaimException;
+
 	private native String _getString(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef,
+		int		iStartPos,
+		int		iNumChars) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
+	private native String _getAttributeValueString(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId) throws XFlaimException;
+		
 	private native int _getStringLen(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native int _getDataType(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native long _getDataLength(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native byte[] _getBinary(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException; 
+		long		lDbRef,
+		int		iStartPos,
+		int		iNumBytes) throws XFlaimException; 
 
-	/**
-	 * Desc:
-	 */
+	private native byte[] _getAttributeValueBinary(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId) throws XFlaimException;
+		
 	private native void _setLong(
 		long		lThis,
-		long		lpDbRef,
-		long		lValue) throws XFlaimException;
+		long		lDbRef,
+		long		lValue,
+		int		iEncId) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native void _setAttributeValueLong(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId,
+		long		lValue,
+		int		iEncId) throws XFlaimException;
+
 	private native void _setString(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		String	sValue,
-		boolean	bLast) throws XFlaimException;
+		boolean	bLast,
+		int		iEncId) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native void _setAttributeValueString(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId,
+		String	sValue,
+		int		iEncId) throws XFlaimException;
+
 	private native void _setBinary(
 		long		lThis,
-		long		lpDbRef,
-		byte[]	Value) throws XFlaimException;
+		long		lDbRef,
+		byte[]	Value,
+		boolean	bLast,
+		int		iEncId) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native void _setAttributeValueBinary(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId,
+		byte[]	Value,
+		int		iEncId) throws XFlaimException;
+
 	private native long _createAnnotation(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native long _getAnnotation(
 		long		lThis,
-		long		lpDbRef,
+		long		lDbRef,
 		long		lReusedNodeRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
+	private native long _getAnnotationId(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
 	private native boolean _hasAnnotation(
 		long		lThis,
-		long		lpDbRef) throws XFlaimException;
+		long		lDbRef) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _release(
 		long		lThis);
 		
-	public long getThis()
-	{
-		return m_this;
-	}
+	private native void setPrefix(
+		long		lThis,
+		long		lDbRef,
+		String	sPrefix) throws XFlaimException;
+		
+	private native long _getMetaValue(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
 	
+	private native void _setMetaValue(
+		long		lThis,
+		long		lDbRef,
+		long		lValue) throws XFlaimException;
+
+	private native boolean _isDataLocalToNode(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
 	private long	m_this;
 	private Db		m_jdb;
 }
+

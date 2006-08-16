@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createNode
 
 /*
  * Class:     xflaim_DOMNode
+ * Method:    _createChildElement
+ * Signature: (JJIZJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1createChildElement
+  (JNIEnv *, jobject, jlong, jlong, jint, jboolean, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
  * Method:    _deleteNode
  * Signature: (JJ)V
  */
@@ -137,6 +145,14 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1isNamespaceDecl
 
 /*
  * Class:     xflaim_DOMNode
+ * Method:    _getDocumentNode
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDocumentNode
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
  * Method:    _getParentNode
  * Signature: (JJJ)J
  */
@@ -209,6 +225,38 @@ JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getPrefix
 
 /*
  * Class:     xflaim_DOMNode
+ * Method:    _getPrefixId
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getPrefixId
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _getEncDefId
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_DOMNode__1getEncDefId
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _setPrefix
+ * Signature: (JJLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setPrefix
+  (JNIEnv *, jobject, jlong, jlong, jstring);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _setPrefixId
+ * Signature: (JJI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setPrefixId
+  (JNIEnv *, jobject, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_DOMNode
  * Method:    _getChildElement
  * Signature: (JJIJ)J
  */
@@ -222,6 +270,22 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getChildElement
  */
 JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getSiblingElement
   (JNIEnv *, jobject, jlong, jlong, jint, jboolean, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _getAncestorElement
+ * Signature: (JJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAncestorElement
+  (JNIEnv *, jobject, jlong, jlong, jint, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _getDescendantElement
+ * Signature: (JJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDescendantElement
+  (JNIEnv *, jobject, jlong, jlong, jint, jlong);
 
 /*
  * Class:     xflaim_DOMNode
@@ -345,11 +409,27 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getLong
 
 /*
  * Class:     xflaim_DOMNode
+ * Method:    _getAttributeValueLong
+ * Signature: (JJIZJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAttributeValueLong
+  (JNIEnv *, jobject, jlong, jlong, jint, jboolean, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
  * Method:    _getString
- * Signature: (JJ)Ljava/lang/String;
+ * Signature: (JJII)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getString
-  (JNIEnv *, jobject, jlong, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _getAttributeValueString
+ * Signature: (JJI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_xflaim_DOMNode__1getAttributeValueString
+  (JNIEnv *, jobject, jlong, jlong, jint);
 
 /*
  * Class:     xflaim_DOMNode
@@ -378,34 +458,66 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getDataLength
 /*
  * Class:     xflaim_DOMNode
  * Method:    _getBinary
- * Signature: (JJ)[B
+ * Signature: (JJII)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getBinary
-  (JNIEnv *, jobject, jlong, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _getAttributeValueBinary
+ * Signature: (JJI)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_xflaim_DOMNode__1getAttributeValueBinary
+  (JNIEnv *, jobject, jlong, jlong, jint);
 
 /*
  * Class:     xflaim_DOMNode
  * Method:    _setLong
- * Signature: (JJJ)V
+ * Signature: (JJJI)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setLong
-  (JNIEnv *, jobject, jlong, jlong, jlong);
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _setAttributeValueLong
+ * Signature: (JJIJI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setAttributeValueLong
+  (JNIEnv *, jobject, jlong, jlong, jint, jlong, jint);
 
 /*
  * Class:     xflaim_DOMNode
  * Method:    _setString
- * Signature: (JJLjava/lang/String;Z)V
+ * Signature: (JJLjava/lang/String;ZI)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setString
-  (JNIEnv *, jobject, jlong, jlong, jstring, jboolean);
+  (JNIEnv *, jobject, jlong, jlong, jstring, jboolean, jint);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _setAttributeValueString
+ * Signature: (JJILjava/lang/String;I)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setAttributeValueString
+  (JNIEnv *, jobject, jlong, jlong, jint, jstring, jint);
 
 /*
  * Class:     xflaim_DOMNode
  * Method:    _setBinary
- * Signature: (JJ[B)V
+ * Signature: (JJ[BZI)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setBinary
-  (JNIEnv *, jobject, jlong, jlong, jbyteArray);
+  (JNIEnv *, jobject, jlong, jlong, jbyteArray, jboolean, jint);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _setAttributeValueBinary
+ * Signature: (JJI[BI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setAttributeValueBinary
+  (JNIEnv *, jobject, jlong, jlong, jint, jbyteArray, jint);
 
 /*
  * Class:     xflaim_DOMNode
@@ -425,6 +537,14 @@ JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAnnotation
 
 /*
  * Class:     xflaim_DOMNode
+ * Method:    _getAnnotationId
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getAnnotationId
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
  * Method:    _hasAnnotation
  * Signature: (JJ)Z
  */
@@ -438,6 +558,38 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1hasAnnotation
  */
 JNIEXPORT void JNICALL Java_xflaim_DOMNode__1release
   (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    setPrefix
+ * Signature: (JJLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode_setPrefix
+  (JNIEnv *, jobject, jlong, jlong, jstring);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _getMetaValue
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DOMNode__1getMetaValue
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _setMetaValue
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DOMNode__1setMetaValue
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     xflaim_DOMNode
+ * Method:    _isDataLocalToNode
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DOMNode__1isDataLocalToNode
+  (JNIEnv *, jobject, jlong, jlong);
 
 #ifdef __cplusplus
 }
