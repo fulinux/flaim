@@ -283,7 +283,8 @@ public class Db
 	 * @param iIndex The index that is being searched
 	 * @param jSearchKey The DataVector search key
 	 * @param iFlags The search flags that direct how the next key will
-	 * be determined.
+	 * be determined.  This should be values from
+	 * {@link xflaim.SearchFlags SearchFlags} that are ORed together.
 	 * @param jFoundKey This parameter is used during subsequent calls 
 	 * to keyRetrieve.  The returned DataVector is passed in as this 
 	 * parameter so that it may be reused, thus preventing the unnecessary 

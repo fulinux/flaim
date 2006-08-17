@@ -735,41 +735,20 @@ public class DbSystem
 		boolean			bLeftWild,
 		String			sRightString,
 		boolean			bRightWild,
-		boolean			bCaseInsensitive,
-		boolean			bCompressWhitespace,
-		boolean			bNoWhitespace,
-		boolean			bNoUnderscores,
-		boolean			bNoDashes,
-		boolean			bWhitespaceAsSpace,
-		boolean			bIgnoreLeadingSpace,
-		boolean			bIgnoreTrailingSpace,
+		int				iCompareRules,
 		int				iLanguage) throws XFlaimException
 	{
-		return( _compareStrings( m_this,
-						sLeftString, bLeftWild,
-						sRightString, bRightWild,
-						bCaseInsensitive, bCompressWhitespace, bNoWhitespace,
-						bNoUnderscores, bNoDashes, bWhitespaceAsSpace,
-						bIgnoreLeadingSpace, bIgnoreTrailingSpace, iLanguage));
+		return( _compareStrings( m_this, sLeftString, bLeftWild,
+						sRightString, bRightWild, iCompareRules, iLanguage));
 	}
 	
 	public boolean hasSubStr(
 		String			sString,
 		String			sSubString,
-		boolean			bCaseInsensitive,
-		boolean			bCompressWhitespace,
-		boolean			bNoWhitespace,
-		boolean			bNoUnderscores,
-		boolean			bNoDashes,
-		boolean			bWhitespaceAsSpace,
-		boolean			bIgnoreLeadingSpace,
-		boolean			bIgnoreTrailingSpace,
+		int				iCompareRules,
 		int				iLanguage) throws XFlaimException
 	{
-		return( _hasSubStr( m_this, sString, sSubString, bCaseInsensitive,
-				bCompressWhitespace, bNoWhitespace, bNoUnderscores, bNoDashes,
-				bWhitespaceAsSpace, bIgnoreLeadingSpace, bIgnoreTrailingSpace,
-				iLanguage));
+		return( _hasSubStr( m_this, sString, sSubString, iCompareRules, iLanguage));
 	}
 	
 	public boolean uniIsUpper(
@@ -1084,28 +1063,14 @@ public class DbSystem
 		boolean			bLeftWild,
 		String			sRightString,
 		boolean			bRightWild,
-		boolean			bCaseInsensitive,
-		boolean			bCompressWhitespace,
-		boolean			bNoWhitespace,
-		boolean			bNoUnderscores,
-		boolean			bNoDashes,
-		boolean			bWhitespaceAsSpace,
-		boolean			bIgnoreLeadingSpace,
-		boolean			bIgnoreTrailingSpace,
+		int				iCompareRules,
 		int				iLanguage) throws XFlaimException;
 	
 	private native boolean _hasSubStr(
 		long				lThis,
 		String			sString,
 		String			sSubString,
-		boolean			bCaseInsensitive,
-		boolean			bCompressWhitespace,
-		boolean			bNoWhitespace,
-		boolean			bNoUnderscores,
-		boolean			bNoDashes,
-		boolean			bWhitespaceAsSpace,
-		boolean			bIgnoreLeadingSpace,
-		boolean			bIgnoreTrailingSpace,
+		int				iCompareRules,
 		int				iLanguage) throws XFlaimException;
 
 	private native boolean _uniIsUpper(

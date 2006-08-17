@@ -458,18 +458,18 @@ JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1getLowDirtyCacheLimit
 /*
  * Class:     xflaim_DbSystem
  * Method:    _compareStrings
- * Signature: (JLjava/lang/String;ZLjava/lang/String;ZZZZZZZZZI)I
+ * Signature: (JLjava/lang/String;ZLjava/lang/String;ZII)I
  */
 JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings
-  (JNIEnv *, jobject, jlong, jstring, jboolean, jstring, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint);
+  (JNIEnv *, jobject, jlong, jstring, jboolean, jstring, jboolean, jint, jint);
 
 /*
  * Class:     xflaim_DbSystem
  * Method:    _hasSubStr
- * Signature: (JLjava/lang/String;Ljava/lang/String;ZZZZZZZZI)Z
+ * Signature: (JLjava/lang/String;Ljava/lang/String;II)Z
  */
 JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1hasSubStr
-  (JNIEnv *, jobject, jlong, jstring, jstring, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint);
+  (JNIEnv *, jobject, jlong, jstring, jstring, jint, jint);
 
 /*
  * Class:     xflaim_DbSystem

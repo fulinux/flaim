@@ -3480,14 +3480,7 @@ JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings(
 	jboolean			bLeftWild,
 	jstring			sRightString,
 	jboolean			bRightWild,
-	jboolean			bCaseInsensitive,
-	jboolean			bCompressWhitespace,
-	jboolean			bNoWhitespace,
-	jboolean			bNoUnderscores,
-	jboolean			bNoDashes,
-	jboolean			bWhitespaceAsSpace,
-	jboolean			bIgnoreLeadingSpace,
-	jboolean			bIgnoreTrailingSpace,
+	jint				iCompareRules,
 	jint				iLanguage)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -3495,7 +3488,6 @@ JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings(
 	F_DynaBuf		leftStringBuf( ucLeftString, sizeof( ucLeftString));
 	FLMBYTE			ucRightString [100];
 	F_DynaBuf		rightStringBuf( ucRightString, sizeof( ucRightString));
-	FLMUINT			uiCompareRules;
 	FLMINT			iResult = 0;
 	
 	// Get the strings.
@@ -3511,40 +3503,6 @@ JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings(
 		goto Exit;
 	}
 	
-	uiCompareRules = 0;
-	if (bCaseInsensitive)
-	{
-		uiCompareRules |= XFLM_COMP_CASE_INSENSITIVE;
-	}
-	if (bCompressWhitespace)
-	{
-		uiCompareRules |= XFLM_COMP_COMPRESS_WHITESPACE;
-	}
-	if (bNoWhitespace)
-	{
-		uiCompareRules |= XFLM_COMP_NO_WHITESPACE;
-	}
-	if (bNoUnderscores)
-	{
-		uiCompareRules |= XFLM_COMP_NO_UNDERSCORES;
-	}
-	if (bNoDashes)
-	{
-		uiCompareRules |= XFLM_COMP_NO_DASHES;
-	}
-	if (bWhitespaceAsSpace)
-	{
-		uiCompareRules |= XFLM_COMP_WHITESPACE_AS_SPACE;
-	}
-	if (bIgnoreLeadingSpace)
-	{
-		uiCompareRules |= XFLM_COMP_IGNORE_LEADING_SPACE;
-	}
-	if (bIgnoreTrailingSpace)
-	{
-		uiCompareRules |= XFLM_COMP_IGNORE_TRAILING_SPACE;
-	}
-	
 	if (RC_BAD( rc = THIS_DBSYS()->compareUTF8Strings(
 			(const FLMBYTE *)leftStringBuf.getBufferPtr(),
 			leftStringBuf.getDataLength() - 1,
@@ -3552,7 +3510,7 @@ JNIEXPORT jint JNICALL Java_xflaim_DbSystem__1compareStrings(
 			(const FLMBYTE *)rightStringBuf.getBufferPtr(),
 			rightStringBuf.getDataLength() - 1,
 			bRightWild ? TRUE : FALSE,
-			uiCompareRules, (FLMUINT)iLanguage, &iResult)))
+			(FLMUINT)iCompareRules, (FLMUINT)iLanguage, &iResult)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -3572,14 +3530,7 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1hasSubStr(
 	jlong				lThis,
 	jstring			sString,
 	jstring			sSubString,
-	jboolean			bCaseInsensitive,
-	jboolean			bCompressWhitespace,
-	jboolean			bNoWhitespace,
-	jboolean			bNoUnderscores,
-	jboolean			bNoDashes,
-	jboolean			bWhitespaceAsSpace,
-	jboolean			bIgnoreLeadingSpace,
-	jboolean			bIgnoreTrailingSpace,
+	jint				iCompareRules,
 	jint				iLanguage)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -3587,7 +3538,6 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1hasSubStr(
 	F_DynaBuf		stringBuf( ucString, sizeof( ucString));
 	FLMBYTE			ucSubString [100];
 	F_DynaBuf		subStringBuf( ucSubString, sizeof( ucSubString));
-	FLMUINT			uiCompareRules;
 	FLMBOOL			bExists = FALSE;
 	
 	// Get the strings.
@@ -3603,44 +3553,10 @@ JNIEXPORT jboolean JNICALL Java_xflaim_DbSystem__1hasSubStr(
 		goto Exit;
 	}
 	
-	uiCompareRules = 0;
-	if (bCaseInsensitive)
-	{
-		uiCompareRules |= XFLM_COMP_CASE_INSENSITIVE;
-	}
-	if (bCompressWhitespace)
-	{
-		uiCompareRules |= XFLM_COMP_COMPRESS_WHITESPACE;
-	}
-	if (bNoWhitespace)
-	{
-		uiCompareRules |= XFLM_COMP_NO_WHITESPACE;
-	}
-	if (bNoUnderscores)
-	{
-		uiCompareRules |= XFLM_COMP_NO_UNDERSCORES;
-	}
-	if (bNoDashes)
-	{
-		uiCompareRules |= XFLM_COMP_NO_DASHES;
-	}
-	if (bWhitespaceAsSpace)
-	{
-		uiCompareRules |= XFLM_COMP_WHITESPACE_AS_SPACE;
-	}
-	if (bIgnoreLeadingSpace)
-	{
-		uiCompareRules |= XFLM_COMP_IGNORE_LEADING_SPACE;
-	}
-	if (bIgnoreTrailingSpace)
-	{
-		uiCompareRules |= XFLM_COMP_IGNORE_TRAILING_SPACE;
-	}
-	
 	if (RC_BAD( rc = THIS_DBSYS()->utf8IsSubStr(
 			(const FLMBYTE *)stringBuf.getBufferPtr(),
 			(const FLMBYTE *)subStringBuf.getBufferPtr(),
-			uiCompareRules, (FLMUINT)iLanguage, &bExists)))
+			(FLMUINT)iCompareRules, (FLMUINT)iLanguage, &bExists)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;

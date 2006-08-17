@@ -49,6 +49,11 @@ public class DataVector
 		m_dbSystem = dbSystem;
 	}
 	
+	public long getThis()
+	{
+		return m_this;
+	}
+	
 	/**
 	 * Finalizer method, used to ensure that we release the actual C++ object.
 	 */

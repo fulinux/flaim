@@ -58,18 +58,10 @@ JNIEXPORT void JNICALL Java_xflaim_Query__1addXPathComponent
 /*
  * Class:     xflaim_Query
  * Method:    _addOperator
- * Signature: (JI)V
+ * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_xflaim_Query__1addOperator
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Query
- * Method:    _addStringOperator
- * Signature: (JIZZZZZZZZ)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Query__1addStringOperator
-  (JNIEnv *, jobject, jlong, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean);
+  (JNIEnv *, jobject, jlong, jint, jint);
 
 /*
  * Class:     xflaim_Query
@@ -102,6 +94,166 @@ JNIEXPORT void JNICALL Java_xflaim_Query__1addLongValue
  */
 JNIEXPORT void JNICALL Java_xflaim_Query__1addBoolean
   (JNIEnv *, jobject, jlong, jboolean, jboolean);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getFirst
+ * Signature: (JJJI)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1getFirst
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getLast
+ * Signature: (JJJI)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1getLast
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getNext
+ * Signature: (JJJII)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1getNext
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getPrev
+ * Signature: (JJJII)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1getPrev
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getCurrent
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1getCurrent
+  (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _resetQuery
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1resetQuery
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getStatsAndOptInfo
+ * Signature: (J)[Lxflaim/OptInfo;
+ */
+JNIEXPORT jobjectArray JNICALL Java_xflaim_Query__1getStatsAndOptInfo
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _setDupHandling
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1setDupHandling
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _setIndex
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1setIndex
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getIndex
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Query__1getIndex
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _usesMultipleIndexes
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_Query__1usesMultipleIndexes
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _addSortKey
+ * Signature: (JJZZIIIIZZ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1addSortKey
+  (JNIEnv *, jobject, jlong, jlong, jboolean, jboolean, jint, jint, jint, jint, jboolean, jboolean);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _enablePositioning
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1enablePositioning
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _positionTo
+ * Signature: (JJJII)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1positionTo
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _positionTo2
+ * Signature: (JJJIJI)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Query__1positionTo2
+  (JNIEnv *, jobject, jlong, jlong, jlong, jint, jlong, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getPosition
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Query__1getPosition
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _buildResultSet
+ * Signature: (JJI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1buildResultSet
+  (JNIEnv *, jobject, jlong, jlong, jint);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _stopBuildingResultSet
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1stopBuildingResultSet
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _enableResultSetEncryption
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Query__1enableResultSetEncryption
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Query
+ * Method:    _getResultSetCounts
+ * Signature: (JJIZ)Lxflaim/ResultSetCounts;
+ */
+JNIEXPORT jobject JNICALL Java_xflaim_Query__1getResultSetCounts
+  (JNIEnv *, jobject, jlong, jlong, jint, jboolean);
 
 #ifdef __cplusplus
 }
