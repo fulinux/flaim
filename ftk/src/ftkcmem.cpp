@@ -1286,27 +1286,35 @@ void F_SlabInfoRelocator::relocate(
 	}
 	
 	// Fix the avail list links
-	
-	if( pOldSlabInfo->pPrevSlabWithAvail)
+		
+	if( pOldSlabInfo->ui8AvailBlocks)
 	{
-		f_assert( pOldSlabInfo != pBlockAlloc->m_pFirstSlabWithAvail);
-		pOldSlabInfo->pPrevSlabWithAvail->pNextSlabWithAvail = pNewSlabInfo;
+		if( pOldSlabInfo->pPrevSlabWithAvail)
+		{
+			f_assert( pOldSlabInfo != pBlockAlloc->m_pFirstSlabWithAvail);
+			pOldSlabInfo->pPrevSlabWithAvail->pNextSlabWithAvail = pNewSlabInfo;
+		}
+		else
+		{
+			f_assert( pOldSlabInfo == pBlockAlloc->m_pFirstSlabWithAvail);
+			pBlockAlloc->m_pFirstSlabWithAvail = pNewSlabInfo;
+		}
+		
+		if( pOldSlabInfo->pNextSlabWithAvail)
+		{
+			f_assert( pOldSlabInfo != pBlockAlloc->m_pLastSlabWithAvail);
+			pOldSlabInfo->pNextSlabWithAvail->pPrevSlabWithAvail = pNewSlabInfo;
+		}
+		else
+		{
+			f_assert( pOldSlabInfo == pBlockAlloc->m_pLastSlabWithAvail);
+			pBlockAlloc->m_pLastSlabWithAvail = pNewSlabInfo;
+		}
 	}
 	else
 	{
-		f_assert( pOldSlabInfo == pBlockAlloc->m_pFirstSlabWithAvail);
-		pBlockAlloc->m_pFirstSlabWithAvail = pNewSlabInfo;
-	}
-	
-	if( pOldSlabInfo->pNextSlabWithAvail)
-	{
-		f_assert( pOldSlabInfo != pBlockAlloc->m_pLastSlabWithAvail);
-		pOldSlabInfo->pNextSlabWithAvail->pPrevSlabWithAvail = pNewSlabInfo;
-	}
-	else
-	{
-		f_assert( pOldSlabInfo == pBlockAlloc->m_pLastSlabWithAvail);
-		pBlockAlloc->m_pLastSlabWithAvail = pNewSlabInfo;
+		f_assert( !pOldSlabInfo->pPrevSlabWithAvail);
+		f_assert( !pOldSlabInfo->pNextSlabWithAvail);
 	}
 	
 #ifdef FLM_DEBUG
