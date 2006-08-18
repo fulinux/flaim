@@ -3533,7 +3533,7 @@
 
 	0 [@<ID>@] field <name>          # FLM_FIELD_TAG
 	| 1 type <below>                 # FLM_TYPE_TAG
-			{context|number|text|binary|real|date|time|tmstamp|blob}]
+			{context|number|text|binary|blob}]
 	[ 1 state <below>                # FLM_STATE_TAG - what is the state of the field
 			{ *active                  #  The field is active (being used).
 			| checking                 #  User request to determine if field is used.
@@ -3562,60 +3562,25 @@
 	*/
 
 	/*
-	Area Definition
-	Desc: An area allows the application to define a logical location that
-			blob files can be placed.
-
-	0 [@<ID>@] area <name>           # FLM_AREA_TAG
-	[{1 base* 0* | <ID>}             # FLM_BASE_TAG - 0 = same area a DB location
-	  [ 2 subdirectory <string>]     # FLM_SUBDIRECTORY_TAG
-			3 subd ...
-	|{1 machine pc|mac|unix}...      # FLM_MACHINE_TAG
-	  [ 2 order <driver>[;<driver>]...] # FLM_ORDER_TAG
-		 2 driver .* | <tag>          # FLM_DRIVER_TAG
-		 [ 3 directory <string>]      # FLM_DIRECTORY_TAG
-	]
-	[ 1 blob]                        # FLM_BLOB_TAG
-	  [ 2 options compress,encrypt,checksum]  # FLM_OPTIONS_TAG
-	  [ 2 threshold 1* | <#>]        # FLM_THRESHOLD_TAG - k-bytes before moved to
-												#  external file
-	[ 1 subname]                     # FLM_SUBNAME_TAG - create/use subdir named:
-	  [ 2 prefix* "SDIR_"* | <str>   # FLM_PREFIX_TAG - 1-5 character prefix
-	  [ 2 suffix* 1* | <#>           # FLM_SUFFIX_TAG - max < 4k, dir suffix
-	*/
-
-	/*
-	Reserved Dictionary Record
-	Desc: Allows user to reserve a typeless ID in a dictionary.
-
-	0 [@<ID>@] reserved <name>       # FLM_RESERVED_TAG
-	*/
-
-	/*
 	Index Definition
 	Desc: Below is the syntax that is used to define a FLAIM index.
 
 	0 [@<ID>@] index <psName>        # FLM_INDEX_TAG
-	[ 1 area** 0** | <ID> ]          # FLM_AREA_TAG - QF files area, 0 = "same as DB"
 	[ 1 container* DEFAULT* | <ID> ] # FLM_CONTAINER_TAG - indexes span only one container
 	[ 1 count KEYS &| REFS* ]        # FLM_COUNT_TAG - key count of keys and/or refs
 	[ 1 language* US* | <language> ] # FLM_LANGUAGE_TAG - for full-text parsing and/or sorting
 
 	  1 key [EACHWORD]					# FLM_KEY_TAG - 'use' defaults based on type
-	  [ 2 base <ID>]                 # FLM_BASE_TAG - base rec/field for fields below
-	  [ 2 combinations*              # FLM_COMBINATIONS_TAG - how to handle repeating fields
-			ALL | NORMALIZED* ]
 	  [ 2 post]                      # FLM_POST_TAG - case-flags post-pended to key
 	  [ 2 required*]                 # FLM_REQUIRED_TAG - key value is required
 	  [ 2 unique]                    # FLM_UNIQUE_TAG - key has only 1 reference
 	  { 2 <field> }...               # FLM_FIELD_TAG - compound key if 2 or more
 		 [ 3 case* mixed* | upper]    # FLM_CASE_TAG - text-only, define chars case
 		 [ 3 <field>]...              # FLM_FIELD_TAG - alternate field(s)
-		 [ 3 paired** ]               # FLM_PAIRED_TAG - add field ID to key
 		 [ 3 optional*                # FLM_OPTIONAL_TAG - component's value is optional
 		  |3 required ]               # FLM_REQUIRED_TAG - component's value is required
-		{[ 3 use* eachword**|value*|field]} # FLM_USE_TAG
-		{[ 3 filter minspace|nodash|nounderscore|minspaces]} # FLM_FILTER_TAG
+		{[ 3 use* eachword**|value*|field|substring]} # FLM_USE_TAG
+		{[ 3 filter minspace|nodash|nounderscore|nospace]} # FLM_FILTER_TAG
 		 [ 3 limit {256 | limit}]
 
 	<field> ==
