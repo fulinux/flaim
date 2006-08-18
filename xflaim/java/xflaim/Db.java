@@ -90,26 +90,34 @@ public class Db
 	/**
 	 * Starts a transaction.
 	 * 
-	 * @param eTransactionType The type of transaction to start (read or
+	 * @param iTransactionType The type of transaction to start (read or
 	 * write).  Should be one of the members of {@link
 	 * xflaim.TransactionType TransactionType}.
 	 * @param iMaxLockWait Maximum lock wait time.  Specifies the amount of
 	 * time to wait for lock requests occuring during the transaction to be
 	 * granted.  Valid values are 0 through 255 seconds.  Zero is used to
-	 * specify no-wait locks.
+	 * specify no-wait locks.  255 specifies that there is no timeout.
 	 * @param iFlags Should be a logical OR'd combination of the members of
 	 * the memers of {@link xflaim.TransactionFlags
 	 * TransactionFlags}.
 	 * @throws XFlaimException
 	 */
 	public void transBegin(
-		int			eTransactionType,
+		int			iTransactionType,
 		int			iMaxLockWait,
 		int			iFlags) throws XFlaimException
 	{
-		_transBegin( m_this, eTransactionType, iMaxLockWait, iFlags);
+		_transBegin( m_this, iTransactionType, iMaxLockWait, iFlags);
 	}
 	
+	/**
+	 * Starts a transaction.  Transaction will be of the same type and same
+	 * snapshot as the passed in Db object.  The passed in Db object should
+	 * be running a read transaction.
+	 * 
+	 * @param Db Database whose transaction is to be copied.
+	 * @throws XFlaimException
+	 */
 	public void transBegin(
 		Db 			jdb) throws XFlaimException
 	{
@@ -126,42 +134,8 @@ public class Db
 		_transCommit( m_this);
 	}
 	
-	public int getTransType() throws XFlaimException
-	{
-		return( _getTransType( m_this));
-	}
-		
-	public void doCheckpoint(
-		int	iTimeout) throws XFlaimException
-	{
-		_doCheckpoint( m_this, iTimeout);
-	}
-
-	private native void _dbLock(
-		long	lThis,
-		int	iLockType,
-		int	iPriority,
-		int	iTimeout) throws XFlaimException;
-		
-	public void dbLock(
-		int	iLockType,
-		int	iPriority,
-		int	iTimeout) throws XFlaimException
-	{
-		_dbLock( m_this, iLockType, iPriority, iTimeout);
-	}
-	
-	private native void _dbUnlock(
-		long	lThis) throws XFlaimException;
-
-	public void dbUnlock() throws XFlaimException
-	{
-		_dbUnlock( m_this);
-	}
-		
 	/**
-	 * Aborts an existing transaction.  If no transaction is running, or the
-	 * transaction commit fails, an XFlaimException exception will be thrown.
+	 * Aborts an existing transaction.
 	 * 
 	 * @throws XFlaimException
 	 */
@@ -170,106 +144,190 @@ public class Db
 		_transAbort( m_this);
 	}
 	
-	private native int _getLockType(
-		long		lThis) throws XFlaimException;
+	/**
+	 * Get the current transaction type.
+	 * @return Returns the type of transaction.  Should be one of
+	 * the members of {@link xflaim.TransactionType TransactionType}.
+	 * @throws XFlaimException
+	 */
+	public int getTransType() throws XFlaimException
+	{
+		return( _getTransType( m_this));
+	}
+		
+	/**
+	 * Perform a checkpoint on the database.
+	 * @param iTimeout lock wait time.  Specifies the amount of
+	 * time to wait for database lock.  Valid values are 0 through 255 seconds.
+	 * Zero is used to specify no-wait locks. 255 is used to specify that there
+	 * is no timeout.
+	 * @param iTimeoutGet the current transaction type.
+	 * @return Returns the type of transaction.  Should be one of
+	 * the members of {@link xflaim.TransactionType TransactionType}.
+	 * @throws XFlaimException
+	 */
+	public void doCheckpoint(
+		int	iTimeout) throws XFlaimException
+	{
+		_doCheckpoint( m_this, iTimeout);
+	}
 
+	/**
+	 * Lock the database.
+	 * @param iLockType Type of lock being requested.  Should be one of the
+	 * values in {@link xflaim.LockType LockType}.
+	 * @param iPriority Priority of lock being requested.
+	 * @param iTimeout lock wait time.  Specifies the amount of
+	 * time to wait for database lock.  Valid values are 0 through 255 seconds.
+	 * Zero is used to specify no-wait locks. 255 is used to specify that there
+	 * is no timeout.
+	 * @throws XFlaimException
+	 */
+	public void dbLock(
+		int	iLockType,
+		int	iPriority,
+		int	iTimeout) throws XFlaimException
+	{
+		_dbLock( m_this, iLockType, iPriority, iTimeout);
+	}
+	
+	/**
+	 * Unlock the database.
+	 * @throws XFlaimException
+	 */
+	public void dbUnlock() throws XFlaimException
+	{
+		_dbUnlock( m_this);
+	}
+
+	/**
+	 * Get the type of database lock current held.
+	 * @return Returns type of database lock currently held.  Should be one of the
+	 * values in {@link xflaim.LockType LockType}.
+	 * @throws XFlaimException
+	 */
 	public int getLockType() throws XFlaimException
 	{
 		return( _getLockType( m_this));
 	}
 
-	private native boolean _getLockImplicit(
-		long		lThis) throws XFlaimException;
-
+	/**
+	 * Determine if the database lock was implicitly obtained (i.e., obtained
+	 * when transBegin was called as opposed to dbLock).
+	 * @return Returns whether lock was obtained implicitly or explicitly.
+	 * @throws XFlaimException
+	 */
 	public boolean getLockImplicit() throws XFlaimException
 	{
 		return( _getLockImplicit( m_this));
 	}
 
-	private native int _getLockThreadId(
-		long		lThis,
-		int		iPriority) throws XFlaimException;
-		
-	public int getLockThreadId(
-		int	iPriority) throws XFlaimException
+	/**
+	 * Returns the thread id of the thread that currently holds the database
+	 * lock at the specified priority.
+	 * @return Returns thread ID.
+	 * @throws XFlaimException
+	 */
+	public int getLockThreadId() throws XFlaimException
 	{
-		return( _getLockThreadId( m_this, iPriority));
+		return( _getLockThreadId( m_this));
 	}
 	
-	private native int _getLockNumExclQueued(
-		long		lThis,
-		int		iPriority) throws XFlaimException;
-		
-	public int getLockNumExclQueued(
-		int	iPriority) throws XFlaimException
+	/**
+	 * Returns the number of threads that are currently waiting to obtain
+	 * an exclusive database lock.
+	 * @return Returns number of threads waiting for exclusive lock.
+	 * @throws XFlaimException
+	 */
+	public int getLockNumExclQueued() throws XFlaimException
 	{
-		return( _getLockNumExclQueued( m_this, iPriority));
+		return( _getLockNumExclQueued( m_this));
 	}
 	
-	private native int _getLockNumSharedQueued(
-		long		lThis,
-		int		iPriority) throws XFlaimException;
-		
-	public int getLockNumSharedQueued(
-		int	iPriority) throws XFlaimException
+	/**
+	 * Returns the number of threads that are currently waiting to obtain
+	 * a shared database lock.
+	 * @return Returns number of threads waiting for shared lock.
+	 * @throws XFlaimException
+	 */
+	public int getLockNumSharedQueued() throws XFlaimException
 	{
-		return( _getLockNumSharedQueued( m_this, iPriority));
+		return( _getLockNumSharedQueued( m_this));
 	}
 	
-	private native int _getLockPriorityCount(
-		long		lThis,
-		int		iPriority) throws XFlaimException;
-		
+	/**
+	 * Returns the number of threads that are currently waiting to obtain
+	 * a database lock whose priority is >= iPriority.
+	 * @param iPriority Priority to look for - a count of all waiting threads with a
+	 * lock priority greater than or equal to this will be returned.
+	 * @return Returns number of threads waiting for a database lock whose
+	 * priority is >= iPriority.
+	 * @throws XFlaimException
+	 */
 	public int getLockPriorityCount(
 		int	iPriority) throws XFlaimException
 	{
 		return( _getLockPriorityCount( m_this, iPriority));
 	}
 	
-	private native void _indexSuspend(
-		long	lThis,
-		int	iIndex) throws XFlaimException;
-
+	/**
+	 * Suspend indexing on the specified index.
+	 * @param iIndex Index to be suspended.
+	 * @throws XFlaimException
+	 */
 	public void indexSuspend(
 		int	iIndex) throws XFlaimException
 	{
 		_indexSuspend( m_this, iIndex);
 	}
 	
-	private native void _indexResume(
-		long	lThis,
-		int	iIndex) throws XFlaimException;
-
+	/**
+	 * Resume indexing on the specified index.
+	 * @param iIndex Index to be resumed.
+	 * @throws XFlaimException
+	 */
 	public void indexResume(
 		int	iIndex) throws XFlaimException
 	{
 		_indexResume( m_this, iIndex);
 	}
 	
-	private native int _indexGetNext(
-		long	lThis,
-		int	iCurrIndex) throws XFlaimException;
-
+	/**
+	 * This method provides a way to iterate through all of the indexes in the
+	 * database.  It returns the index ID of the index that comes after the
+	 * passed in index number.  The first index can be obtained by passing in a
+	 * zero.
+	 * @param iCurrIndex Current index number.  Index that comes after this one
+	 * will be returned.
+	 * @return Returns the index ID of the index that comes after iCurrIndex.
+	 * @throws XFlaimException
+	 */
 	public int indexGetNext(
 		int	iCurrIndex) throws XFlaimException
 	{
 		return( _indexGetNext( m_this, iCurrIndex));
 	}
 
-	private native IndexStatus _indexStatus(
-		long	lThis,
-		int	iIndex) throws XFlaimException;
-		
+	/**
+	 * Returns status information on an index in an {@link xflaim.IndexStatus IndexStatus}
+	 * object.
+	 * @param iIndex Index whose status is to be returned.
+	 * @return Returns an  {@link xflaim.IndexStatus IndexStatus} object.
+	 * @throws XFlaimException
+	 */
 	public IndexStatus indexStatus(
 		int	iIndex) throws XFlaimException
 	{
 		return( _indexStatus( m_this, iIndex));
 	}
 
-	private native int _reduceSize(
-		long	lThis,
-		int	iCount) throws XFlaimException;
-
+	/**
+	 * Return unused blocks back to the file system.
+	 * @param iCount Maximum number of blocks to be returned.
+	 * @return Returns the number of blocks that were actually returned to the
+	 * file system.
+	 * @throws XFlaimException
+	 */
 	public int reduceSize(
 		int	iCount) throws XFlaimException
 	{
@@ -277,38 +335,38 @@ public class Db
 	}
 	
 	/**
-	 * Uses the jSearchKey to retrieve the next key from the specified
-	 * index.
-	 * 
-	 * @param iIndex The index that is being searched
-	 * @param jSearchKey The DataVector search key
-	 * @param iFlags The search flags that direct how the next key will
+	 * Lookup/retrieve keys in an index.
+	 * @param iIndex The index that is being searched.
+	 * @param searchKey The search key that is to be looked up.  NOTE: This
+	 * parameter may be ignored, depending on the iFlags parameter.  See
+	 * {@link xflaim.DataVector DataVector} for information on the DataVector class.
+	 * @param iSearchFlags The search flags that direct how the next key will
 	 * be determined.  This should be values from
 	 * {@link xflaim.SearchFlags SearchFlags} that are ORed together.
-	 * @param jFoundKey This parameter is used during subsequent calls 
-	 * to keyRetrieve.  The returned DataVector is passed in as this 
-	 * parameter so that it may be reused, thus preventing the unnecessary 
-	 * accumulation of IF_DataVector objects in the C++ environment. 
+	 * @param foundKey Key that was found is returned here.  This parameter may be
+	 * used during subsequent calls to keyRetrieve.  The returned DataVector
+	 * is passed in as this  parameter so that it may be reused, thus preventing
+	 * the unnecessary accumulation of IF_DataVector objects in the C++ environment. 
+	 * @throws XFlaimException
 	 */
 	public void keyRetrieve(
 		int				iIndex,
-		DataVector		jSearchKey,
-		int				iFlags,
-		DataVector		jFoundKey) throws XFlaimException
+		DataVector		searchKey,
+		int				iSearchFlags,
+		DataVector		foundKey) throws XFlaimException
 	{
-		long			lKey = jSearchKey.m_this;
-		long			lFoundKey = (jFoundKey == null ? 0 : jFoundKey.m_this);
+		long	lSearchKey = (searchKey == null ? 0 : searchKey.m_this);
+		long	lFoundKey = (foundKey == null ? 0 : foundKey.m_this);
 		
-		_keyRetrieve( m_this, iIndex, lKey, iFlags, lFoundKey);
+		_keyRetrieve( m_this, iIndex, lSearchKey, iSearchFlags, lFoundKey);
 	}
 
 	/**
 	 * Creates a new document node. 
 	 * @param iCollection The collection to store the new document in.
-	 * @return Returns the DOMNode representing the new document.
+	 * @return Returns the (@link xflaim.DOMNode DOMNode} representing the new document.
 	 * @throws XFlaimException
 	 */
-	 
 	 public DOMNode createDocument(
 	 	int			iCollection) throws XFlaimException
 	{
@@ -328,14 +386,15 @@ public class Db
 	/**
 	 * Creates a new root element node. This is the root node of a document
 	 * in the XFlaim database.
-	 * @param iCollection
-	 * @param iTag
-	 * @return
+	 * @param iCollection The collection to store the new node in.
+	 * @param iElementNameId Name of the element to be created.
+	 * @return Returns the (@link xflaim.DOMNode DOMNode} representing the
+	 * root element node.
 	 * @throws XFlaimException
 	 */
 	public DOMNode createRootElement(
 		int		iCollection,
-		int		iTag) throws XFlaimException
+		int		iElementNameId) throws XFlaimException
 	{
 		long 		lNewDocRef;
 		
@@ -344,28 +403,28 @@ public class Db
 		
 		synchronized( this)
 		{
-			lNewDocRef =  _createRootElement( m_this, iCollection, iTag);
+			lNewDocRef =  _createRootElement( m_this, iCollection, iElementNameId);
 		}
 		
 		return (new DOMNode( lNewDocRef, this));
 	}
 	
 	/**
-	 * Method to retrieve the first document in a specified collection.
+	 * Retrieve the first document in a specified collection.
 	 * @param iCollection - The collection from which to retrieve the 
 	 * first document
-	 * @param jDOMNode - If this parameter is non-null, it will be assumed
-	 * that it is no longer needed and will be rendered unusable upon
-	 * returning from this method.
-	 * @return - Returns a DOMNode which is the root node of the requested
-	 * document.
+	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
+	 * can optionally be passed in, and it will be reused instead of a new
+	 * object being allocated.
+	 * @return - Returns a {@link xflaim.DOMNode DOMNode) which is the root node
+	 * of the requested document.
 	 * @throws XFlaimException
 	 */
 	public DOMNode getFirstDocument(
 		int			iCollection,
 		DOMNode		ReusedNode) throws XFlaimException
 	 {
-		DOMNode		jNode = null;
+		DOMNode		newNode = null;
 		long			lNewNodeRef = 0;
 		long			lReusedNodeRef = 0;
 		
@@ -390,33 +449,33 @@ public class Db
 			if (ReusedNode != null)
 			{
 				ReusedNode.setRef( lNewNodeRef, this);
-				jNode = ReusedNode;
+				newNode = ReusedNode;
 			}
 			else
 			{
-				jNode = new DOMNode( lNewNodeRef, this);
+				newNode = new DOMNode( lNewNodeRef, this);
 			}
 		}
 			
-		return( jNode);
+		return( newNode);
 	}
  
 	/**
-	 * Method to retrieve the last document in a specified collection.
+	 * Retrieve the last document in a specified collection.
 	 * @param iCollection - The collection from which to retrieve the 
-	 * last document
-	 * @param jDOMNode - If this parameter is non-null, it will be assumed
-	 * that it is no longer needed and will be rendered unusable upon
-	 * returning from this method.
-	 * @return - Returns a DOMNode which is the root node of the requested
-	 * document.
+	 * last document.
+	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
+	 * can optionally be passed in, and it will be reused instead of a new
+	 * object being allocated.
+	 * @return - Returns a {@link xflaim.DOMNode DOMNode) which is the root node
+	 * of the requested document.
 	 * @throws XFlaimException
 	 */
 	public DOMNode getLastDocument(
 		int			iCollection,
 		DOMNode		ReusedNode) throws XFlaimException
 	 {
-		DOMNode		jNode = null;
+		DOMNode		newNode = null;
 		long			lNewNodeRef = 0;
 		long			lReusedNodeRef = 0;
 		
@@ -441,24 +500,39 @@ public class Db
 			if (ReusedNode != null)
 			{
 				ReusedNode.setRef( lNewNodeRef, this);
-				jNode = ReusedNode;
+				newNode = ReusedNode;
 			}
 			else
 			{
-				jNode = new DOMNode( lNewNodeRef, this);
+				newNode = new DOMNode( lNewNodeRef, this);
 			}
 		}
 			
-		return( jNode);
+		return( newNode);
 	}
  
+	/**
+	 * Retrieve a document based on document ID.
+	 * @param iCollection The collection from which to retrieve the 
+	 * last document.
+	 * @param iSearchFlags Flags that determine what document should be
+	 * returned.  Should be ORed flags from {@link xflaim.SearchFlags SearchFlags}.
+	 * @param lDocumentId Document ID to search for.  iSearchFlags determines
+	 * how this parameter is to be used.
+	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
+	 * can optionally be passed in, and it will be reused instead of a new
+	 * object being allocated.
+	 * @return - Returns a {@link xflaim.DOMNode DOMNode) which is the root node
+	 * of the requested document.
+	 * @throws XFlaimException
+	 */
 	public DOMNode getDocument(
 		int			iCollection,
-		int			iFlags,
+		int			iSearchFlags,
 		long			lDocumentId,
 		DOMNode		ReusedNode) throws XFlaimException
 	 {
-		DOMNode		jNode = null;
+		DOMNode		newNode = null;
 		long			lNewNodeRef = 0;
 		long			lReusedNodeRef = 0;
 		
@@ -472,7 +546,8 @@ public class Db
 		
 		synchronized( this)
 		{
-			lNewNodeRef = _getDocument( m_this, iCollection, iFlags, lDocumentId, lReusedNodeRef);
+			lNewNodeRef = _getDocument( m_this, iCollection, iSearchFlags,
+									lDocumentId, lReusedNodeRef);
 		}
 	
 		// If we got a reference to a native DOMNode back, let's 
@@ -483,22 +558,24 @@ public class Db
 			if (ReusedNode != null)
 			{
 				ReusedNode.setRef( lNewNodeRef, this);
-				jNode = ReusedNode;
+				newNode = ReusedNode;
 			}
 			else
 			{
-				jNode = new DOMNode( lNewNodeRef, this);
+				newNode = new DOMNode( lNewNodeRef, this);
 			}
 		}
 			
-		return( jNode);
+		return( newNode);
 	}
 	
-	private native void _documentDone(
-		long			lThis,
-		int			iCollection,
-		long			lDocumentId) throws XFlaimException;
-
+	/**
+	 * Indicate that modifications to a document are "done".  This allows
+	 * XFLAIM to process the document as needed.
+	 * @param iCollection The collection the document belongs to.
+	 * @param lDocumentId Document ID of document that is "done".
+	 * @throws XFlaimException
+	 */
 	public void documentDone(
 		int			iCollection,
 		long			lDocumentId) throws XFlaimException
@@ -506,24 +583,26 @@ public class Db
 		_documentDone( m_this, iCollection, lDocumentId);
 	}
 	
-	private native void _documentDone(
-		long		lThis,
-		long		lNode) throws XFlaimException;
-
-	public void _documentDone(
-		DOMNode		jDOMNode) throws XFlaimException
+	/**
+	 * Indicate that modifications to a document are "done".  This allows
+	 * XFLAIM to process the document as needed.
+	 * @param domNode The {@link xflaim.DOMNode DOM node} that is the root node
+	 * of the document that is "done".
+	 * @throws XFlaimException
+	 */
+	public void documentDone(
+		DOMNode		domNode) throws XFlaimException
 	{
-		_documentDone( m_this, jDOMNode.getThis());
+		_documentDone( m_this, domNode.getThis());
 	}
 	
 	/**
 	 * Creates a new element definition in the dictionary.
 	 * @param sNamespaceURI The namespace URI that this definition should be
 	 * created in.  If null, the default namespace will be used.
-	 * @param sElementName The name of the definition.
-	 * @param iDataType The type of node this definition will represent.
-	 * Should be one of the constants listed in
-	 * {@link xflaim.FlmDataType FlmDataType}.
+	 * @param sElementName The name of the element.
+	 * @param iDataType The data type for instances of this element.  Should be
+	 * one of the constants listed in {@link xflaim.FlmDataType FlmDataType}.
 	 * @param iRequestedId If non-zero, then xflaim will try to use this
 	 * number as the name ID of the new definition.
 	 * @return Returns the name ID of the new definition.
@@ -546,6 +625,36 @@ public class Db
 			iNewNameId = _createElementDef( m_this, sNamespaceURI,
 											sElementName, iDataType,
 											iRequestedId);
+		}
+		
+		return( iNewNameId);
+	}
+	
+	/**
+	 * Create a "unique" element definition - i.e., an element definition whose
+	 * child elements must all be unique.
+	 * @param sNamespaceURI The namespace URI for the element.
+	 * @param sElementName The name of the element.
+	 * @param iRequestedId If non-zero, then xflaim will try to use this
+	 * number as the name ID of the new definition.
+	 * @return Returns the name ID of the element.
+	 * @throws XFlaimException
+	 */
+	public int createUniqueElmDef(
+		String		sNamespaceURI,
+		String		sElementName,
+		int			iRequestedId) throws XFlaimException
+		
+	{
+		int	iNewNameId;
+		
+		// See the comments in the DOMNode::finalize() function for an
+		// explanation of this call synchronized call
+		
+		synchronized( this)
+		{
+			iNewNameId = _createUniqueElmDef( m_this, sNamespaceURI,
+											sElementName, iRequestedId);
 		}
 		
 		return( iNewNameId);
@@ -576,34 +685,13 @@ public class Db
 		return( iNameId);
 	}
 	
-	public int createUniqueElmDef(
-		String		sNamespaceURI,
-		String		sElementName,
-		int			iRequestedId) throws XFlaimException
-		
-	{
-		int	iNewNameId;
-		
-		// See the comments in the DOMNode::finalize() function for an
-		// explanation of this call synchronized call
-		
-		synchronized( this)
-		{
-			iNewNameId = _createUniqueElmDef( m_this, sNamespaceURI,
-											sElementName, iRequestedId);
-		}
-		
-		return( iNewNameId);
-	}
-	
 	/**
 	 * Creates a new attribute definition in the dictionary.
 	 * @param sNamespaceURI The namespace URI that this definition should be
 	 * created in.  If null, the default namespace will be used.
 	 * @param sAttributeName The name of the attribute.
-	 * @param iDataType The type of node this definition will represent.
-	 * Should be one of the constants listed in
-	 * {@link xflaim.FlmDataType FlmDataType}.
+	 * @param iDataType The data type for instances of this attribute.  Should be
+	 * one of the constants listed in {@link xflaim.FlmDataType FlmDataType}.
 	 * @param iRequestedId If non-zero, then xflaim will try to use this
 	 * number as the name ID of the new definition.
 	 * @return Returns the name ID of the new definition.
@@ -831,6 +919,19 @@ public class Db
 		return( iNameId);
 	}
 	
+	/**
+	 * Retrieve a dictionary definition document.  If found, the root node of
+	 * the document is returned.
+	 * @param iDictType The type of dictionary definition being retrieved.  It
+	 * should be one of a {@link xflaim.DictType DictType}.
+	 * @param iDictNumber The number the dictionary definition being retrieved.
+	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
+	 * can optionally be passed in, and it will be reused instead of a new
+	 * object being allocated.
+	 * @return Returns the root {@link xflaim.DOMNode DOM node} of the dictionary
+	 * definition document.
+	 * @throws XFlaimException
+	 */
 	public DOMNode getDictionaryDef(
 		int			iDictType,
 		int			iDictNumber,
@@ -873,6 +974,14 @@ public class Db
 		return( jNode);
 	}
 	
+	/**
+	 * Get a dictionary definition's name.
+	 * @param iDictType The type of dictionary definition whose name is to be
+	 * returned.  It should be one of a {@link xflaim.DictType DictType}.
+	 * @param iDictNumber The number of the dictionary definition.
+	 * @return Returns the name of the dictionary definition.
+	 * @throws XFlaimException
+	 */
  	public String getDictionaryName(
  		int	iDictType,
 		int	iDictNumber) throws XFlaimException
@@ -880,12 +989,24 @@ public class Db
 		return( _getDictionaryName( m_this, iDictType, iDictNumber));
 	}
  
+	/**
+	 * Get an element definition's namespace.
+	 * @param iDictNumber The number of the element definition.
+	 * @return Returns the namespace for the element definition.
+	 * @throws XFlaimException
+	 */
 	public String getElementNamespace(
 		int	iDictNumber) throws XFlaimException
 	{
 		return( _getElementNamespace( m_this, iDictNumber));
 	}
 		
+	/**
+	 * Get an attribute definition's namespace.
+	 * @param iDictNumber The number of the attribute definition.
+	 * @return Returns the namespace for the attribute definition.
+	 * @throws XFlaimException
+	 */
 	public String getAttributeNamespace(
 		int	iDictNumber) throws XFlaimException
 	{
@@ -893,13 +1014,13 @@ public class Db
 	}
 		
 	/**
-	 * Retrieves the specified node from the specified collection
+	 * Retrieves the specified node from the specified collection.
 	 * @param iCollection The collection where the node is stored.
-	 * @param lNodeId The ID number of the node to be retrieved
-	 * @param ReusedNode Optional.  An existing instance of DOMNode who's
+	 * @param lNodeId The ID number of the node to be retrieved.
+	 * @param ReusedNode An existing instance of {@link xflaim.DOMNode DOMNode} who's
 	 * contents will be replaced with that of the new node.  If null, a
 	 * new instance will be allocated.
-	 * @return Returns a DOMNode representing the retrieved node.
+	 * @return Returns a {@link xflaim.DOMNode DOMNode} representing the retrieved node.
 	 * @throws XFlaimException
 	 */
 	public DOMNode getNode(
@@ -942,15 +1063,15 @@ public class Db
 	}
 
 	/**
-	 * Retrieves the specified attribute node from the specified collection
+	 * Retrieves the specified attribute node from the specified collection.
 	 * @param iCollection The collection where the attribute is stored.
 	 * @param lElementNodeId The ID number of the element node that contains
 	 * the attribute to be retrieved.
 	 * @param iAttrNameId The attribute id of the attribute to be retrieved.
-	 * @param ReusedNode Optional.  An existing instance of DOMNode who's
+	 * @param ReusedNode An existing instance of {@link xflaim.DOMNode DOMNode} who's
 	 * contents will be replaced with that of the new node.  If null, a
 	 * new instance will be allocated.
-	 * @return Returns a DOMNode representing the retrieved node.
+	 * @return Returns a {@link xflaim.DOMNode DOMNode} representing the retrieved node.
 	 * @throws XFlaimException
 	 */
 	public DOMNode getAttribute(
@@ -993,35 +1114,44 @@ public class Db
 		return( NewNode);		
 	}
 
+	/**
+	 * Returns the data type that was specified for a particular dictionary
+	 * definition.  NOTE: This really only applies to element and attribute
+	 * definitions.
+	 * @param iDictType The type of dictionary definition whose data type is to be
+	 * returned.  It should be one of a {@link xflaim.DictType DictType}.
+	 * @param iDictNumber The number of the dictionary definition.
+	 * @return Returns the dictionary definition's data type.
+	 * @throws XFlaimException
+	 */
 	public int getDataType(
 		int	iDictType,
-		int	iNameId) throws XFlaimException
+		int	iDictNumber) throws XFlaimException
 	{
-		return( _getDataType( m_this, iDictType, iNameId));
+		return( _getDataType( m_this, iDictType, iDictNumber));
 	}
 
 	/**
 	 * Sets up XFlaim to perform a backup operation
-	 * @param eBackupType The type of backup to perform.  Must be one of the
-	 * members of {@link xflaim.FlmBackupType
-	 * FlmBackupType}.
-	 * @param eTransType The type of transaction in which the backup operation
+	 * @param iBackupType The type of backup to perform.  Must be one of the
+	 * members of {@link xflaim.FlmBackupType FlmBackupType}.
+	 * @param iTransType The type of transaction in which the backup operation
 	 * will take place.   Must be one of the members of
 	 * {@link xflaim.TransactionType TransactionType}. 
 	 * @param iMaxLockWait  Maximum lock wait time.  Specifies the amount of
 	 * time to wait for lock requests occuring during the backup operation to
 	 * be granted.  Valid values are 0 through 255 seconds.  Zero is used to
-	 * specify no-wait locks.
-	 * @param ReusedBackup Optional.  An existing instance of Backup that
-	 * will be reset with the new settings.  If null, a new instance will
-	 * be allocated.
-	 * @return Returns an instance of Backup configured to perform the
-	 * requested backup operation
+	 * specify no-wait locks. 255 specifies no timeout.
+	 * @param ReusedBackup Optional.  An existing instance of
+	 * {@link xflaim.Backup Backup} that will be reset with the new settings.
+	 * If null, a new instance will be allocated.
+	 * @return Returns an instance of {@link xflaim.Backup Backup} configured to
+	 * perform the requested backup operation.
 	 * @throws XFlaimException
 	 */
 	public Backup backupBegin(
-		int			eBackupType,
-		int			eTransType,
+		int			iBackupType,
+		int			iTransType,
 		int			iMaxLockWait,
 		Backup		ReusedBackup) throws XFlaimException
 	{
@@ -1039,7 +1169,7 @@ public class Db
 		
 		synchronized( this)
 		{
-			lNewRef = _backupBegin( m_this, eBackupType, eTransType,
+			lNewRef = _backupBegin( m_this, iBackupType, iTransType,
 									iMaxLockWait, lReusedRef);
 		}
 		
@@ -1058,48 +1188,68 @@ public class Db
 
 	/**
 	 * Imports an XML document into the XFlaim database.  The import requires
-	 * an update transaction (TransactionType.UPDATE_TRANS). If the document
-	 * cannot be imported, an XFlaimEXception exception will be thrown.
-	 * @param jIStream
-	 * @param iCollection
+	 * an update transaction ({@link xflaim.TransactionType TransactionType}.UPDATE_TRANS).
+	 * If the document cannot be imported, an XFlaimEXception exception will be thrown.
+	 * @param istream Input stream for importing the document.  Could represent
+	 * a file or a buffer.
+	 * @param iCollection Collection the document is to be imported into.
 	 * @throws XFlaimException
 	 */
 	public ImportStats Import(
-		IStream		jIStream,
+		IStream		istream,
 		int			iCollection) throws XFlaimException
 	{
-		return( _import( m_this, jIStream.getThis(), iCollection, 0,
+		return( _import( m_this, istream.getThis(), iCollection, 0,
 						InsertLoc.XFLM_LAST_CHILD));
 	}
 	
 	/**
 	 * Imports an XML document into the XFlaim database.  The import requires
-	 * an update transaction (TransactionType.UPDATE_TRANS). If the document
-	 * cannot be imported, an XFlaimEXception exception will be thrown.
-	 * @param jIStream
-	 * @param iCollection
-	 * @param NodeToLinkTo
-	 * @param iInsertLoc.  Should be one of the members of {@link
+	 * an update transaction ({@link xflaim.TransactionType TransactionType}.UPDATE_TRANS).
+	 * If the document cannot be imported, an XFlaimEXception exception will be thrown.
+	 * @param istream Input stream for importing the document.  Could represent
+	 * a file or a buffer.
+	 * @param iCollection Collection the document is to be imported into.
+	 * @param nodeToLinkTo Node the imported XML should be linked to.
+	 * @param iInsertLoc Specifies how the imported document should be linked to
+	 * the nodeToLinkTo.  Should be one of the members of {@link
 	 * xflaim.InsertLoc InsertLoc}.
+	 * @return Returns an {@link xflaim.ImportStats ImportStats} object which holds
+	 * statistics about what was imported.
 	 * @throws XFlaimException
 	 */
 	public ImportStats Import(
-		IStream		jIStream,
+		IStream		istream,
 		int			iCollection,
-		DOMNode		NodeToLinkTo,
+		DOMNode		nodeToLinkTo,
 		int			iInsertLoc) throws XFlaimException
 	{
-		if (NodeToLinkTo == null)
+		if (nodeToLinkTo == null)
 		{
-			return( _import( m_this, jIStream.getThis(), iCollection, 0, iInsertLoc));
+			return( _import( m_this, istream.getThis(), iCollection, 0, iInsertLoc));
 		}
 		else
 		{
-			return( _import( m_this, jIStream.getThis(), iCollection,
-							NodeToLinkTo.getThis(), iInsertLoc));
+			return( _import( m_this, istream.getThis(), iCollection,
+							nodeToLinkTo.getThis(), iInsertLoc));
 		}
 	}
 	
+	/**
+	 * Change a dictionary definition's state.  This routine is used to determine if
+	 * the dictionary item can be deleted.  It may also be used to force the
+	 * definition to be deleted - once the database has determined that the
+	 * definition is not in use anywhere.  This should only be used for
+	 * element definitions and attribute definitions definitions.
+	 * @param iDictType Type of dictionary definition whose state is being
+	 * changed.  Should be either {@link DictType DictType}.ELEMENT_DEF or
+	 * {@link DictType DictType}.ATTRIBUTE_DEF.
+	 * @param iDictNum Number of element or attribute definition whose state
+	 * is to be changed.
+	 * @param sState.  State the definition is to be changed to.  Must be
+	 * "checking", "purge", or "active".
+	 * @throws XFlaimException
+	 */
 	public void changeItemState(
 		int				iDictType,
 		int				iDictNum,
@@ -1108,6 +1258,15 @@ public class Db
 		_changeItemState( m_this, iDictType, iDictNum, sState);
 	}
 
+	/**
+	 * Get the name of a roll-forward log file.
+	 * @param iFileNum Roll-forward log file number whose name is to be
+	 * returned.
+	 * @param bBaseOnly If true, only the base name of the file will be returned.
+	 * Otherwise, the entire path will be returned.
+	 * @return Name of the file.
+	 * @throws XFlaimException
+	 */
 	public String getRflFileName(
 		int				iFileNum,
 		boolean			bBaseOnly) throws XFlaimException
@@ -1115,6 +1274,15 @@ public class Db
 		return( _getRflFileName( m_this, iFileNum, bBaseOnly));
 	}
 		
+	/**
+	 * Set the next node ID for a collection.  This will be the node ID for
+	 * the next node that is created in the collection.  NOTE: The node ID must
+	 * be greater than or equal to the current next node ID that is already
+	 * set for the collection.  Otherwise, it is ignored.
+	 * @param iCollection Collection whose next node ID is to be set.
+	 * @param lNextNodeId Next node ID for the collection.
+	 * @throws XFlaimException
+	 */
 	public void setNextNodeId(
 		int				iCollection,
 		long				lNextNodeId) throws XFlaimException
@@ -1122,197 +1290,437 @@ public class Db
 		_setNextNodeId( m_this, iCollection, lNextNodeId);
 	}
 
+	/**
+	 * Set the next dictionary number that is to be assigned for a particular
+	 * type if dictionary definition.  The specified "next dictionary number"
+	 * must be greater than the current "next dictionary number".  Otherwise,
+	 * no action is taken.
+	 * @param iDictType  Type of dictionary definition whose "next dictionary
+	 * number" is to be changed.  Should be a valid {@link xflaim.DictType DictType}.
+	 * @param iDictNumber Next dictionary number.
+	 * @throws XFlaimException
+	 */
 	public void setNextDictNum(
-		int				iDictType,
-		int				iDictNumber) throws XFlaimException
+		int	iDictType,
+		int	iNextDictNumber) throws XFlaimException
 	{
-		_setNextDictNum( m_this, iDictType, iDictNumber);
+		_setNextDictNum( m_this, iDictType, iNextDictNumber);
 	}
 	
+	/**
+	 * Specify whether the roll-forward log should keep or not keep RFL files.
+	 * @param bKeep Flag specifying whether to keep or not keep RFL files.
+	 * @throws XFlaimException
+	 */
 	public void setRflKeepFilesFlag(
-		boolean			bKeep) throws XFlaimException
+		boolean	bKeep) throws XFlaimException
 	{
 		_setRflKeepFilesFlag( m_this, bKeep);
 	}
 		
+	/**
+	 * Determine whether or not the roll-forward log files are being kept.
+	 * @return Returns true if RFL files are being kept, false otherwise.
+	 * @throws XFlaimException
+	 */
 	public boolean getRflKeepFlag() throws XFlaimException
 	{
 		return( _getRflKeepFlag( m_this));
 	}
 	
+	/**
+	 * Set the RFL directory.
+	 * @param sRflDir Name of RFL directory.
+	 * @throws XFlaimException
+	 */
 	public void setRflDir(
-		String			sRflDir) throws XFlaimException
+		String	sRflDir) throws XFlaimException
 	{
 		_setRflDir( m_this, sRflDir);
 	}
 		
+	/**
+	 * Get the current RFL directory.
+	 * @return Returns the current RFL directory name.
+	 * @throws XFlaimException
+	 */
 	public String getRflDir() throws XFlaimException
 	{
 		return( _getRflDir( m_this));
 	}
 	
+	/**
+	 * Get the current RFL file number.
+	 * @return Returns the current RFL file number.
+	 * @throws XFlaimException
+	 */
 	public int getRflFileNum() throws XFlaimException
 	{
 		return( _getRflFileNum( m_this));
 	}
 
+	/**
+	 * Get the highest RFL file number that is no longer in use by XFLAIM.
+	 * This RFL file can be removed from the system if needed.
+	 * @return Returns the highest RFL file number that is no longer in use.
+	 * @throws XFlaimException
+	 */
 	public int getHighestNotUsedRflFileNum() throws XFlaimException
 	{
 		return( _getHighestNotUsedRflFileNum( m_this));
 	}
 
+	/**
+	 * Set size limits for RFL files.
+	 * @param iMinRflSize Minimum RFL file size.  Database will roll to the
+	 * next RFL file when the current RFL file reaches this size.  If possible
+	 * it will complete the current transaction before rolling to the next file.
+	 * @param iMaxRflSize Maximum RFL file size.  Database will not allow an
+	 * RFL file to exceed this size.  Even if it is in the middle of a
+	 * transaction, it will roll to the next RFL file before this size is allowed
+	 * to be exceeded.  Thus, the database first looks for an opportunity to
+	 * roll to the next file when the RFL file exceeds iMinRflSize.  If it can
+	 * fit the current transaction in without exceeded iMaxRflSize, it will do
+	 * so and then roll to the next file.  Otherwise, it will roll to the next
+	 * file before iMaxRflSize is exceeded.
+	 * @throws XFlaimException
+	 */
 	public void setRflFileSizeLimits(
-		int				iMinRflSize,
-		int				iMaxRflSize) throws XFlaimException
+		int	iMinRflSize,
+		int	iMaxRflSize) throws XFlaimException
 	{
 		_setRflFileSizeLimits( m_this, iMinRflSize, iMaxRflSize);
 	}
 
+	/**
+	 * Get the minimum RFL file size.  This is the minimum size an RFL file
+	 * must reach before rolling to the next RFL file.
+	 * @return Returns minimum RFL file size.
+	 * @throws XFlaimException
+	 */
 	public int getMinRflFileSize() throws XFlaimException
 	{
 		return( _getMinRflFileSize( m_this));
 	}
 	
+	/**
+	 * Get the maximum RFL file size.  This is the maximum size an RFL file
+	 * is allowed to grow to.  When the current RFL file exceeds the minimum
+	 * RFL file size, the database will attempt to fit the rest of the
+	 * transaction in the current file.  If the transaction completes before
+	 * the current RFL file grows larger than the maximum RFL file size,
+	 * the database will roll to the next RFL file.  However, if the current transaction
+	 * would cause the RFL file to grow larger than the maximum RFL file size,
+	 * the database will roll to the next file before the transaction completes,
+	 * and the transaction will be split across multiple RFL files.
+	 * @return Returns maximum RFL file size.
+	 * @throws XFlaimException
+	 */
 	public int getMaxRflFileSize() throws XFlaimException
 	{
 		return( _getMaxRflFileSize( m_this));
 	}
 
+	/**
+	 * Force the database to roll to the next RFL file.
+	 * @throws XFlaimException
+	 */
 	public void rflRollToNextFile() throws XFlaimException
 	{
 		_rflRollToNextFile( m_this);
 	}
 
+	/**
+	 * Specify whether the roll-forward log should keep or not keep aborted
+	 * transactions.
+	 * @param bKeep Flag specifying whether to keep or not keep aborted
+	 * transactions.
+	 * @throws XFlaimException
+	 */
 	public void setKeepAbortedTransInRflFlag(
-		boolean			bKeep) throws XFlaimException
+		boolean	bKeep) throws XFlaimException
 	{
 		_setKeepAbortedTransInRflFlag( m_this, bKeep);
 	}
 
+	/**
+	 * Determine whether or not the roll-forward log is keeping aborted
+	 * transactions.
+	 * @return Returns true if aborted transactions are being kept, false otherwise.
+	 * @throws XFlaimException
+	 */
 	public boolean getKeepAbortedTransInRflFlag() throws XFlaimException
 	{
 		return( _getKeepAbortedTransInRflFlag( m_this));
 	}
 
+	/**
+	 * Specify whether the roll-forward log should automatically turn off the
+	 * keeping of RFL files if the RFL volume fills up.
+	 * @param bAutoTurnOff Flag specifying whether to automatically turn off the
+	 * keeping of RFL files if the RFL volume fills up.
+	 * @throws XFlaimException
+	 */
 	public void setAutoTurnOffKeepRflFlag(
-		boolean			bAutoTurnOff) throws XFlaimException
+		boolean	bAutoTurnOff) throws XFlaimException
 	{
 		_setAutoTurnOffKeepRflFlag( m_this, bAutoTurnOff);
 	}
 
+	/**
+	 * Determine whether or not keeping of RFL files will automatically be
+	 * turned off if the RFL volume fills up.
+	 * @return Returns true if the keeping of RFL files will automatically be
+	 * turned off when the RFL volume fills up, false otherwise.
+	 * @throws XFlaimException
+	 */
 	public boolean getAutoTurnOffKeepRflFlag() throws XFlaimException
 	{
 		return( _getAutoTurnOffKeepRflFlag( m_this));
 	}
 
+	/**
+	 * Set the file extend size for the database.  This size specifies how much
+	 * to extend a database file when it needs to be extended.
+	 * @param iFileExtendSize  File extend size.
+	 * @throws XFlaimException
+	 */
 	public void setFileExtendSize(
-		int				iFileExtendSize) throws XFlaimException
+		int	iFileExtendSize) throws XFlaimException
 	{
 		_setFileExtendSize( m_this, iFileExtendSize);
 	}
 
+	/**
+	 * Get the file extend size for the database.
+	 * @return Returns file extend size.
+	 * @throws XFlaimException
+	 */
 	public int getFileExtendSize() throws XFlaimException
 	{
 		return( _getFileExtendSize( m_this));
 	}
 	
+	/**
+	 * Get the database version for the database.  This is the version of the
+	 * database, not the code.
+	 * @return Returns database version.
+	 * @throws XFlaimException
+	 */
 	public int getDbVersion() throws XFlaimException
 	{
 		return( _getDbVersion( m_this));
 	}
 
+	/**
+	 * Get the database block size.
+	 * @return Returns database block size.
+	 * @throws XFlaimException
+	 */
 	public int getBlockSize() throws XFlaimException
 	{
 		return( _getBlockSize( m_this));
 	}
 
+	/**
+	 * Get the database default language.
+	 * @return Returns database default language.
+	 * @throws XFlaimException
+	 */
 	public int getDefaultLanguage() throws XFlaimException
 	{
 		return( _getDefaultLanguage( m_this));
 	}
 	
+	/**
+	 * Get the database's current transaction ID.  If no transaction is
+	 * currently running, but this Db object has an exclusive lock on the database,
+	 * the transaction ID of the last committed transaction will be returned.
+	 * If no transaction is running, and this Db object does not have an
+	 * exclusive lock on the database, zero is returned.
+	 * @return Returns transaction ID.
+	 * @throws XFlaimException
+	 */
 	public long getTransID() throws XFlaimException
 	{
 		return( _getTransID( m_this));
 	}
 
+	/**
+	 * Get the name of the database's control file (e.g. mystuff.db).
+	 * @return Returns control file name.
+	 * @throws XFlaimException
+	 */
 	public String getDbControlFileName() throws XFlaimException
 	{
 		return( _getDbControlFileName( m_this));
 	}
 	
+	/**
+	 * Get the transaction ID of the last backup that was taken on the database.
+	 * @return Returns last backup transaction ID.
+	 * @throws XFlaimException
+	 */
 	public long getLastBackupTransID() throws XFlaimException
 	{
 		return( _getLastBackupTransID( m_this));
 	}
 
+	/**
+	 * Get the number of blocks that have changed since the last backup was
+	 * taken.
+	 * @return Returns number of blocks that have changed.
+	 * @throws XFlaimException
+	 */
 	public int getBlocksChangedSinceBackup() throws XFlaimException
 	{
 		return( _getBlocksChangedSinceBackup( m_this));
 	}
 
+	/**
+	 * Get the next incremental backup sequence number for the database.
+	 * @return Returns next incremental backup sequence number.
+	 * @throws XFlaimException
+	 */
 	public int getNextIncBackupSequenceNum() throws XFlaimException
 	{
 		return( _getNextIncBackupSequenceNum( m_this));
 	}
 	
+	/**
+	 * Get the amount of disk space currently being used by data files.
+	 * @return Returns disc space used by data files.
+	 * @throws XFlaimException
+	 */
 	public long getDiskSpaceDataSize()throws XFlaimException
 	{
 		return( _getDiskSpaceDataSize( m_this));
 	}
 
+	/**
+	 * Get the amount of disk space currently being used by rollback files.
+	 * @return Returns disc space used by rollback files.
+	 * @throws XFlaimException
+	 */
 	public long getDiskSpaceRollbackSize() throws XFlaimException
 	{
 		return( _getDiskSpaceRollbackSize( m_this));
 	}
 		
+	/**
+	 * Get the amount of disk space currently being used by RFL files.
+	 * @return Returns disc space used by RFL files.
+	 * @throws XFlaimException
+	 */
 	public long getDiskSpaceRflSize() throws XFlaimException
 	{
 		return( _getDiskSpaceRflSize( m_this));
 	}
 	
+	/**
+	 * Get the amount of disk space currently being used by all types of
+	 * database files.  This includes the total of data files plus rollback
+	 * files plus RFL files.
+	 * @return Returns total disc space used by database files of all types.
+	 * @throws XFlaimException
+	 */
 	public long getDiskSpaceTotalSize() throws XFlaimException
 	{
 		return( _getDiskSpaceTotalSize( m_this));
 	}
 	
+	/**
+	 * Get error code that caused the database to force itself to close.  This should
+	 * be one of the values in {@link xflaim.RCODE RCODE}.
+	 * @return Returns error code that caused the database to force itself to close.
+	 * @throws XFlaimException
+	 */
 	public int getMustCloseRC() throws XFlaimException
 	{
 		return( _getMustCloseRC( m_this));
 	}
 
+	/**
+	 * Get error code that caused the current transaction to require an abort.
+	 * This may be one of the values in {@link xflaim.RCODE RCODE}, but not
+	 * necessarily.
+	 * @return Returns error code that caused the current transaction to require
+	 * itself to abort.
+	 * @throws XFlaimException
+	 */
 	public int getAbortRC() throws XFlaimException
 	{
 		return( _getAbortRC( m_this));
 	}
 
+	/**
+	 * Force the current transaction to abort.  This method should be called
+	 * when the code should not be the code that aborts the transation, but
+	 * wants to require that the transaction be aborted by whatever module has
+	 * the authority to abort or commit the transaction.  An error code may be
+	 * set to indicate what error condition is causing the transaction to be
+	 * aborted.
+	 * @param iRc Error code that indicates why the transaction is aborting.
+	 * @throws XFlaimException
+	 */
 	public void setMustAbortTrans(
-		int				iRc) throws XFlaimException
+		int	iRc) throws XFlaimException
 	{
 		_setMustAbortTrans( m_this, iRc);
 	}
 
+	/**
+	 * Enable encryption for this database.
+	 * @throws XFlaimException
+	 */
 	public void enableEncryption() throws XFlaimException
 	{
 		_enableEncryption( m_this);
 	}
 
+	/**
+	 * Wrap the database key in a password.  This method is called when it is
+	 * desirable to move the database to a different machine.  Normally, the
+	 * database key is wrapped in the local NICI storage key - which means that
+	 * the database can only be opened and accessed on that machine. -- Once
+	 * the database key is wrapped in a password, the password must be
+	 * supplied to the dbOpen method to open the database.
+	 * @param sPassword Password the database key should be wrapped in.
+	 * @throws XFlaimException
+	 */
 	public void wrapKey(
-		String			sPassword) throws XFlaimException
+		String	sPassword) throws XFlaimException
 	{
 		_wrapKey( m_this, sPassword);
 	}
 		
+	/**
+	 * Generate a new database key.  All encryption definition keys will be
+	 * re-wrapped in the new database key.
+	 * @throws XFlaimException
+	 */
 	public void rollOverDbKey() throws XFlaimException
 	{
 		_rollOverDbKey( m_this);
 	}
 
+	/**
+	 * Get the database serial number.
+	 * @return Byte array containing the database serial number.  This number
+	 * is generated and stored in the database when the database is created.
+	 * @throws XFlaimException
+	 */
 	public byte[] getSerialNumber() throws XFlaimException
 	{
 		return( _getSerialNumber( m_this));
 	}
 
+	/**
+	 * Get information about the checkpoint thread's current state.
+	 * @return Checkpoint thread state information is returned in a
+	 * {@link xflaim.CheckpointInfo CheckpointInfo} object.
+	 * @throws XFlaimException
+	 */
 	public CheckpointInfo getCheckpointInfo() throws XFlaimException
 	{
 		return( _getCheckpointInfo( m_this));
@@ -1320,7 +1728,6 @@ public class Db
 		
 	/**
 	 * Export XML to a text file.
-	 * 
 	 * @param startNode The node in the XML document to export.  All of its
 	 * sub-tree will be exported.
 	 * @param sFileName File the XML is to be exported to.  File will be
@@ -1339,7 +1746,6 @@ public class Db
 			
 	/**
 	 * Export XML to a string.
-	 * 
 	 * @param startNode The node in the XML document to export.  All of its
 	 * sub-tree will be exported.
 	 * @param iFormat Formatting to use when exporting.  Should be one of
@@ -1353,41 +1759,92 @@ public class Db
 		return( _exportXML( m_this, startNode.getThis(), iFormat));
 	}
 			
+	/**
+	 * Get the list of threads that are holding the database lock as well as
+	 * the threads that are waiting to obtain the database lock.
+	 * @return Returns an array of {@link xflaim.LockUser LockUser} objects.  The
+	 * zeroeth element in the array is the current holder of the database lock.
+	 * All other elements of the array are threads that are waiting to obtain
+	 * the lock.
+	 * @throws XFlaimException
+	 */
 	public LockUser[] getLockWaiters() throws XFlaimException
 	{
 		return( _getLockWaiters( m_this));
 	}
 			
+	/**
+	 * Set a callback object that will report the progress of an index or
+	 * collection deletion operation.  This object's methods are called only if
+	 * the index or collection is deleted in the foreground.  The delete operation
+	 * must be performed in the same thread where this method is called.
+	 * @param deleteStatusObj An object that implements the {@link xflaim.DeleteStatus
+	 * DeleteStatus} interface.
+	 * @throws XFlaimException
+	 */
 	public void setDeleteStatusObject(
 		DeleteStatus	deleteStatusObj) throws XFlaimException
 	{
 		_setDeleteStatusObject( m_this, deleteStatusObj);
 	}
 	
+	/**
+	 * Set a callback object that will report each document that is being indexed when
+	 * an index definition object is added.  This object's methods are called only if
+	 * the index is added in the foreground.  The index definition must be added
+	 * in the same thread that sets this object.
+	 * @param ixClientObj An object that implements the {@link xflaim.IxClient
+	 * IxClient} interface.
+	 * @throws XFlaimException
+	 */
 	public void setIndexingClientObject(
 		IxClient			ixClientObj) throws XFlaimException
 	{
 		_setIndexingClientObject( m_this, ixClientObj);
 	}
 		
+	/**
+	 * Set a callback object that will report indexing progress when
+	 * an index definition object is added.  This object's methods are called only if
+	 * the index is added in the foreground.  The index definition must be added
+	 * in the same thread that sets this object.
+	 * @param ixStatusObj An object that implements the {@link xflaim.IxStatus
+	 * IxStatus} interface.
+	 * @throws XFlaimException
+	 */
 	public void setIndexingStatusObject(
 		IxStatus			ixStatusObj) throws XFlaimException
 	{
 		_setIndexingStatusObject( m_this, ixStatusObj);
 	}
 	
+	/**
+	 * Set a callback object that will be called after a transaction commit
+	 * has safely saved all transaction data to disk, but before the database
+	 * is unlocked.  This allows an application to do anything it may need to do
+	 * after a commit but before the database is unlocked.  The thread that
+	 * performs the commit must be the thread that sets this object.
+	 * @param commitClientObj An object that implements the {@link xflaim.CommitClient
+	 * CommitClient} interface.
+	 * @throws XFlaimException
+	 */
 	public void setCommitClientObject(
 		CommitClient	commitClientObj) throws XFlaimException
 	{
 		_setCommitClientObject( m_this, commitClientObj);
 	}
 
+	/**
+	 * Upgrade the database to the most current database version.
+	 * @throws XFlaimException
+	 */
 	public void upgrade() throws XFlaimException
 	{
 		_upgrade( m_this);
 	}
-		
 	
+// PRIVATE METHODS
+
 	private native void _release(
 		long				lThis);
 
@@ -1414,13 +1871,70 @@ public class Db
 		long	lThis,
 		int	iTimeout) throws XFlaimException;
 		
-	private native ImportStats _import(
-		long				lThis,
-		long				lIStream,
-		int				iCollection,
-		long				lNodeToLinkTo,
-		int				iInsertLoc) throws XFlaimException;
+	private native void _dbLock(
+		long	lThis,
+		int	iLockType,
+		int	iPriority,
+		int	iTimeout) throws XFlaimException;
+		
+	private native void _dbUnlock(
+		long	lThis) throws XFlaimException;
 
+	private native int _getLockType(
+		long		lThis) throws XFlaimException;
+
+	private native boolean _getLockImplicit(
+		long		lThis) throws XFlaimException;
+
+	private native int _getLockThreadId(
+		long		lThis) throws XFlaimException;
+		
+	private native int _getLockNumExclQueued(
+		long		lThis) throws XFlaimException;
+		
+	private native int _getLockNumSharedQueued(
+		long		lThis) throws XFlaimException;
+		
+	private native int _getLockPriorityCount(
+		long		lThis,
+		int		iPriority) throws XFlaimException;
+		
+	private native void _indexSuspend(
+		long	lThis,
+		int	iIndex) throws XFlaimException;
+
+	private native void _indexResume(
+		long	lThis,
+		int	iIndex) throws XFlaimException;
+
+	private native int _indexGetNext(
+		long	lThis,
+		int	iCurrIndex) throws XFlaimException;
+
+	private native IndexStatus _indexStatus(
+		long	lThis,
+		int	iIndex) throws XFlaimException;
+		
+	private native int _reduceSize(
+		long	lThis,
+		int	iCount) throws XFlaimException;
+
+	private native void _keyRetrieve(
+		long				lThis,
+		int				iIndex,
+		long				lSearchKey,
+		int				iSearchFlags,
+		long				lFoundKey) throws XFlaimException;
+ 
+	private native long _createDocument(
+		long				lThis,
+		int				iCollection) throws XFlaimException;
+
+	private native long _createRootElement(
+		long				lThis,
+		int				iCollection,
+		int				iElementNameId) throws XFlaimException;
+		
  	private native long _getFirstDocument(
  		long				lThis,
  		int				iCollection,
@@ -1434,32 +1948,19 @@ public class Db
  	private native long _getDocument(
  		long				lThis,
  		int				iCollection,
-		int				iFlags,
+		int				iSearchFlags,
 		long				lDocumentId,
  		long				lOldNodeRef) throws XFlaimException;
  
- 	private native long _getNode(
- 		long				lThis,
- 		int				iCollection,
- 		long				lNodeId,
- 		long				lOldNodeRef) throws XFlaimException;
-
-	private native long _getAttribute(
+	private native void _documentDone(
 		long			lThis,
 		int			iCollection,
-		long			lElementNodeId,
-		int			iAttrNameId,
-		long			lOldNodeRef) throws XFlaimException;
-		
-	private native long _createDocument(
-		long				lThis,
-		int				iCollection) throws XFlaimException;
+		long			lDocumentId) throws XFlaimException;
 
-	private native long _createRootElement(
-		long				lThis,
-		int				iCollection,
-		int				iTag) throws XFlaimException;
-		
+	private native void _documentDone(
+		long		lThis,
+		long		lNode) throws XFlaimException;
+
 	private native int _createElementDef(
 		long				lThis,
 		String			sNamespaceURI,
@@ -1467,16 +1968,16 @@ public class Db
 		int				iDataType,
 		int				iRequestedId) throws XFlaimException;
 		
-	private native int _getElementNameId(
-		long				lThis,
-		String			sNamespaceURI,
-		String			sElementName) throws XFlaimException;
-		
 	private native int _createUniqueElmDef(
 		long				lThis,
 		String			sNamespaceURI,
 		String			sElementName,
 		int				iRequestedId) throws XFlaimException;
+		
+	private native int _getElementNameId(
+		long				lThis,
+		String			sNamespaceURI,
+		String			sElementName) throws XFlaimException;
 		
 	private native int _createAttributeDef(
 		long				lThis,
@@ -1543,25 +2044,38 @@ public class Db
 		long	lThis,
 		int	iDictNumber) throws XFlaimException;
 		
+ 	private native long _getNode(
+ 		long				lThis,
+ 		int				iCollection,
+ 		long				lNodeId,
+ 		long				lOldNodeRef) throws XFlaimException;
+
+	private native long _getAttribute(
+		long			lThis,
+		int			iCollection,
+		long			lElementNodeId,
+		int			iAttrNameId,
+		long			lOldNodeRef) throws XFlaimException;
+		
 	private native int _getDataType(
 		long	lThis,
 		int	iDictType,
-		int	iNameId) throws XFlaimException;
+		int	iDictNumber) throws XFlaimException;
 
 	private native long _backupBegin(
 		long				lThis,
-		int				eBackupType,
-		int				eTransType,
+		int				iBackupType,
+		int				iTransType,
 		int				iMaxLockWait,
 		long				lReusedRef) throws XFlaimException;
 
-	private native void _keyRetrieve(
+	private native ImportStats _import(
 		long				lThis,
-		int				iIndex,
-		long				lKey,
-		int				iFlags,
-		long				lFoundKey) throws XFlaimException;
- 
+		long				lIStream,
+		int				iCollection,
+		long				lNodeToLinkTo,
+		int				iInsertLoc) throws XFlaimException;
+
 	private native void _changeItemState(
 		long				lThis,
 		int				iDictType,
@@ -1581,7 +2095,7 @@ public class Db
 	private native void _setNextDictNum(
 		long				lThis,
 		int				iDictType,
-		int				iDictNumber) throws XFlaimException;
+		int				iNextDictNumber) throws XFlaimException;
 
 	private native void _setRflKeepFilesFlag(
 		long				lThis,

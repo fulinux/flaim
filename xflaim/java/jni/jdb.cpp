@@ -75,16 +75,250 @@ static jfieldID	fid_CheckpointInfo_iWaitTruncateTime = NULL;
 static jfieldID	fid_LockUser_iThreadId = NULL;
 static jfieldID	fid_LockUser_iTime = NULL;
 
-#define THIS_FDB() \
-	((IF_Db *)(FLMUINT)lThis)
+#define THIS_FDB() ((IF_Db *)(FLMUINT)lThis)
 
+#define ELEMENT_DEF		1		// Maps to ELM_ELEMENT_TAG
+#define ATTRIBUTE_DEF	2		// Maps to ELM_ATTRIBUTE_TAG
+#define PREFIX_DEF		3		// Maps to ELM_PREFIX_TAG
+#define ENCRYPTION_DEF	4		// Maps to ELM_ENCDEF_TAG
+#define COLLECTION_DEF	5		// Maps to ELM_COLLECTION_TAG
+#define INDEX_DEF			6		// Maps to ELM_INDEX_TAG
+
+FSTATIC RCODE mapDictType(
+	jint			iDictType,
+	FLMUINT *	puiDictType);
+	
 FSTATIC RCODE getDictName(
 	IF_Db *			pDb,
-	FLMUINT			uiDictType,
+	jint				iDictType,
 	FLMUINT			uiDictNumber,
 	FLMBOOL			bGetNamespace,
 	F_DynaBuf *		pDynaBuf);
 	
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_CheckpointInfo_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jCheckpointInfoClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_CheckpointInfo_bRunning = pEnv->GetFieldID( jCheckpointInfoClass,
+								"bRunning", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iRunningTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_bForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
+								"bForcingCheckpoint", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iForceCheckpointRunningTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iForceCheckpointReason", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_bWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
+							"bWritingDataBlocks", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iLogBlocksWritten", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iDataBlocksWritten", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iDirtyCacheBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iBlockSize", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_CheckpointInfo_iWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
+								"iWaitTruncateTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_IndexStatus_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jIndexStatusClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_IndexStatus_iIndexNum = pEnv->GetFieldID( jIndexStatusClass,
+								"iIndexNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_IndexStatus_iState = pEnv->GetFieldID( jIndexStatusClass,
+								"iState", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_IndexStatus_iStartTime = pEnv->GetFieldID( jIndexStatusClass,
+								"iStartTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_IndexStatus_lLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
+								"lLastDocumentIndexed", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_IndexStatus_lKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
+								"lKeysProcessed", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_IndexStatus_lDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
+							"lDocumentsProcessed", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_IndexStatus_lTransactions = pEnv->GetFieldID( jIndexStatusClass,
+								"lTransactions", "J")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_ImportStats_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jImportStatsClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_ImportStats_iLines = pEnv->GetFieldID( jImportStatsClass,
+								"iLines", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iChars = pEnv->GetFieldID( jImportStatsClass,
+								"iChars", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iAttributes = pEnv->GetFieldID( jImportStatsClass,
+								"iAttributes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iElements = pEnv->GetFieldID( jImportStatsClass,
+								"iElements", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iText = pEnv->GetFieldID( jImportStatsClass,
+								"iText", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iDocuments = pEnv->GetFieldID( jImportStatsClass,
+							"iDocuments", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iErrLineNum = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineNum", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineOffset", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iErrorType = pEnv->GetFieldID( jImportStatsClass,
+								"iErrorType", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineFilePos", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_iErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
+								"iErrLineBytes", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_ImportStats_bUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
+								"bUTF8Encoding", "Z")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_LockUser_initIDs(
+	JNIEnv *	pEnv,
+	jclass	jIndexStatusClass)
+{
+	
+	// Get the field IDs for the fields in the class.
+	
+	if ((fid_LockUser_iThreadId = pEnv->GetFieldID( jIndexStatusClass,
+								"iThreadId", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	if ((fid_LockUser_iTime = pEnv->GetFieldID( jIndexStatusClass,
+								"iTime", "I")) == NULL)
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return;
+}
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -330,8 +564,7 @@ Desc:
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockThreadId(
 	JNIEnv *			pEnv,
 	jobject,			// jobject
-	jlong				lThis,
-	jint				iPriority)
+	jlong				lThis)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
@@ -341,7 +574,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockThreadId(
 	FLMUINT			uiNumSharedQueued;
 	FLMUINT			uiPriorityCount;
 	
-	if (RC_BAD( rc = pDb->getLockInfo( (FLMINT)iPriority, &lockType,
+	if (RC_BAD( rc = pDb->getLockInfo( 0, &lockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued, &uiPriorityCount)))
 	{
@@ -360,8 +593,7 @@ Desc:
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumExclQueued(
 	JNIEnv *			pEnv,
 	jobject,			// jobject
-	jlong				lThis,
-	jint				iPriority)
+	jlong				lThis)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
@@ -371,7 +603,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumExclQueued(
 	FLMUINT			uiNumSharedQueued;
 	FLMUINT			uiPriorityCount;
 	
-	if (RC_BAD( rc = pDb->getLockInfo( (FLMINT)iPriority, &lockType,
+	if (RC_BAD( rc = pDb->getLockInfo( 0, &lockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued, &uiPriorityCount)))
 	{
@@ -390,8 +622,7 @@ Desc:
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumSharedQueued(
 	JNIEnv *			pEnv,
 	jobject,			// jobject
-	jlong				lThis,
-	jint				iPriority)
+	jlong				lThis)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
@@ -401,7 +632,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumSharedQueued(
 	FLMUINT			uiNumSharedQueued;
 	FLMUINT			uiPriorityCount;
 	
-	if (RC_BAD( rc = pDb->getLockInfo( (FLMINT)iPriority, &lockType,
+	if (RC_BAD( rc = pDb->getLockInfo( 0, &lockType,
 										&uiThreadId, &uiNumExclQueued,
 										&uiNumSharedQueued, &uiPriorityCount)))
 	{
@@ -441,7 +672,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockPriorityCount(
 
 Exit:
 
-	return( (jint)uiNumSharedQueued);
+	return( (jint)uiPriorityCount);
 }
 
 /****************************************************************************
@@ -512,230 +743,6 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1indexGetNext(
 Exit:
 
 	return( (jint)uiCurrIndex);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_CheckpointInfo_initIDs(
-	JNIEnv *	pEnv,
-	jclass	jCheckpointInfoClass)
-{
-	
-	// Get the field IDs for the fields in the class.
-	
-	if ((fid_CheckpointInfo_bRunning = pEnv->GetFieldID( jCheckpointInfoClass,
-								"bRunning", "Z")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iRunningTime", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_bForcingCheckpoint = pEnv->GetFieldID( jCheckpointInfoClass,
-								"bForcingCheckpoint", "Z")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iForceCheckpointRunningTime = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iForceCheckpointRunningTime", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iForceCheckpointReason = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iForceCheckpointReason", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_bWritingDataBlocks = pEnv->GetFieldID( jCheckpointInfoClass,
-							"bWritingDataBlocks", "Z")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iLogBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iLogBlocksWritten", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iDataBlocksWritten = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iDataBlocksWritten", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iDirtyCacheBytes = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iDirtyCacheBytes", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iBlockSize = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iBlockSize", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_CheckpointInfo_iWaitTruncateTime = pEnv->GetFieldID( jCheckpointInfoClass,
-								"iWaitTruncateTime", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	
-Exit:
-
-	return;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_IndexStatus_initIDs(
-	JNIEnv *	pEnv,
-	jclass	jIndexStatusClass)
-{
-	
-	// Get the field IDs for the fields in the class.
-	
-	if ((fid_IndexStatus_iIndexNum = pEnv->GetFieldID( jIndexStatusClass,
-								"iIndexNum", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_IndexStatus_iState = pEnv->GetFieldID( jIndexStatusClass,
-								"iState", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_IndexStatus_iStartTime = pEnv->GetFieldID( jIndexStatusClass,
-								"iStartTime", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_IndexStatus_lLastDocumentIndexed = pEnv->GetFieldID( jIndexStatusClass,
-								"lLastDocumentIndexed", "J")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_IndexStatus_lKeysProcessed = pEnv->GetFieldID( jIndexStatusClass,
-								"lKeysProcessed", "J")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_IndexStatus_lDocumentsProcessed = pEnv->GetFieldID( jIndexStatusClass,
-							"lDocumentsProcessed", "J")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_IndexStatus_lTransactions = pEnv->GetFieldID( jIndexStatusClass,
-								"lTransactions", "J")) == NULL)
-	{
-		goto Exit;
-	}
-	
-Exit:
-
-	return;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_ImportStats_initIDs(
-	JNIEnv *	pEnv,
-	jclass	jImportStatsClass)
-{
-	
-	// Get the field IDs for the fields in the class.
-	
-	if ((fid_ImportStats_iLines = pEnv->GetFieldID( jImportStatsClass,
-								"iLines", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iChars = pEnv->GetFieldID( jImportStatsClass,
-								"iChars", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iAttributes = pEnv->GetFieldID( jImportStatsClass,
-								"iAttributes", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iElements = pEnv->GetFieldID( jImportStatsClass,
-								"iElements", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iText = pEnv->GetFieldID( jImportStatsClass,
-								"iText", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iDocuments = pEnv->GetFieldID( jImportStatsClass,
-							"iDocuments", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iErrLineNum = pEnv->GetFieldID( jImportStatsClass,
-								"iErrLineNum", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iErrLineOffset = pEnv->GetFieldID( jImportStatsClass,
-								"iErrLineOffset", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iErrorType = pEnv->GetFieldID( jImportStatsClass,
-								"iErrorType", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iErrLineFilePos = pEnv->GetFieldID( jImportStatsClass,
-								"iErrLineFilePos", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_iErrLineBytes = pEnv->GetFieldID( jImportStatsClass,
-								"iErrLineBytes", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_ImportStats_bUTF8Encoding = pEnv->GetFieldID( jImportStatsClass,
-								"bUTF8Encoding", "Z")) == NULL)
-	{
-		goto Exit;
-	}
-	
-Exit:
-
-	return;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_LockUser_initIDs(
-	JNIEnv *	pEnv,
-	jclass	jIndexStatusClass)
-{
-	
-	// Get the field IDs for the fields in the class.
-	
-	if ((fid_LockUser_iThreadId = pEnv->GetFieldID( jIndexStatusClass,
-								"iThreadId", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	if ((fid_LockUser_iTime = pEnv->GetFieldID( jIndexStatusClass,
-								"iTime", "I")) == NULL)
-	{
-		goto Exit;
-	}
-	
-Exit:
-
-	return;
 }
 
 /****************************************************************************
@@ -819,19 +826,22 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getDataType(
+JNIEXPORT void JNICALL Java_xflaim_Db__1keyRetrieve(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jint				iDictType,
-	jint				iNameId)
+	jint				iIndex,
+	jlong				lSearchKey,
+	jint				iSearchFlags,
+	jlong				lFoundKey)
 {
-	RCODE		rc = NE_XFLM_OK;
-	IF_Db *	pDb = THIS_FDB();
-	FLMUINT	uiDataType;
+	RCODE					rc = NE_XFLM_OK;
+	IF_DataVector *	pSearchKey = (IF_DataVector *)((FLMUINT)lSearchKey);
+	IF_DataVector *	pFoundKey = (IF_DataVector *)((FLMUINT)lFoundKey);
+	IF_Db *				pDb = THIS_FDB();
 	
-	if (RC_BAD( rc = pDb->getDataType( (FLMUINT)iDictType, (FLMUINT)iNameId,
-									&uiDataType)))
+	if (RC_BAD( rc = pDb->keyRetrieve( (FLMUINT)iIndex,
+							pSearchKey, (FLMUINT)iSearchFlags, pFoundKey)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -839,77 +849,57 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getDataType(
 	
 Exit:
 
-	return( (jint)uiDataType);
+	return;
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT jobject JNICALL Java_xflaim_Db__1import(
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1createDocument(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jlong				lIStream,
-	jint				iCollection,
-	jlong				lNodeToLinkTo,
-	jint				iInsertLoc)
+	jint				iCollection)
 {
-	RCODE						rc = NE_XFLM_OK;
-	IF_IStream *			pIStream = (IF_IStream *)((FLMUINT)lIStream);
-	IF_DOMNode *			pNodeToLinkTo = (IF_DOMNode *)((FLMUINT)lNodeToLinkTo);
-	IF_Db *					pDb = THIS_FDB();
-	XFLM_IMPORT_STATS		importStats;
-	jclass					jImportStatsClass = NULL;
-	jobject					jImportStats = NULL;
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	IF_DOMNode *	pNewNode = NULL;
 	
-	if (!pIStream)
-	{
-		ThrowError( NE_XFLM_FAILURE, pEnv);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = pDb->import( pIStream, (FLMUINT)iCollection,
-									pNodeToLinkTo, (eNodeInsertLoc)iInsertLoc,
-									&importStats)))
+	if (RC_BAD( rc = pDb->createDocument((FLMUINT)iCollection, &pNewNode)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 
-	// Find the ImportStats class
-
-	if ((jImportStatsClass = pEnv->FindClass( "xflaim/ImportStats")) == NULL)
-	{
-		goto Exit;
-	}
-
-	// Allocate an import stats class.
-	
-	if ((jImportStats = pEnv->AllocObject( jImportStatsClass)) == NULL)
-	{
-		goto Exit;
-	}
-	
-	// Set the fields in the object
-	
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iLines, (jint)importStats.uiLines);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iChars, (jint)importStats.uiChars);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iAttributes, (jint)importStats.uiAttributes);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iElements, (jint)importStats.uiElements);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iText, (jint)importStats.uiText);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iDocuments, (jint)importStats.uiDocuments);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineNum, (jint)importStats.uiErrLineNum);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineOffset, (jint)importStats.uiErrLineOffset);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrorType, (jint)importStats.eErrorType);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineFilePos, (jint)importStats.uiErrLineFilePos);
-	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineBytes, (jint)importStats.uiErrLineBytes);
-	pEnv->SetBooleanField( jImportStats, fid_ImportStats_bUTF8Encoding,
-		(jboolean)(importStats.eXMLEncoding == XFLM_XML_UTF8_ENCODING
-					  ? JNI_TRUE
-					  : JNI_FALSE));
 Exit:
 
-	return( jImportStats);
+	return( (jlong)((FLMUINT)pNewNode));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1createRootElement(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iCollection,
+	jint				iElementNameId)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	IF_DOMNode *	pNewNode = NULL;
+	
+	if (RC_BAD( rc = pDb->createRootElement((FLMUINT)iCollection,
+			(FLMUINT)iElementNameId, &pNewNode)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -925,7 +915,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getFirstDocument(
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
 	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
-														  ? (IF_DOMNode *)(FLMUINT)lOldNodeRef
+														  ? (IF_DOMNode *)((FLMUINT)lOldNodeRef)
 														  : NULL);
 	
 	if (RC_BAD( rc = pDb->getFirstDocument( (FLMUINT)iCollection, &pNewNode)))
@@ -936,7 +926,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getFirstDocument(
 	
 Exit:
 
-	return( (jlong)(FLMUINT)pNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -952,7 +942,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getLastDocument(
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
 	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
-														  ? (IF_DOMNode *)(FLMUINT)lOldNodeRef
+														  ? (IF_DOMNode *)((FLMUINT)lOldNodeRef)
 														  : NULL);
 	
 	if (RC_BAD( rc = pDb->getLastDocument( (FLMUINT)iCollection, &pNewNode)))
@@ -963,7 +953,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getLastDocument(
 	
 Exit:
 
-	return( (jlong)(FLMUINT)pNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -974,18 +964,18 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDocument(
 	jobject,			// obj,
 	jlong				lThis,
 	jint				iCollection,
-	jint				iFlags,
+	jint				iSearchFlags,
 	jlong				lDocumentId,
 	jlong				lOldNodeRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
 	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
-														  ? (IF_DOMNode *)(FLMUINT)lOldNodeRef
+														  ? (IF_DOMNode *)((FLMUINT)lOldNodeRef)
 														  : NULL);
 	
 	if (RC_BAD( rc = pDb->getDocument( (FLMUINT)iCollection,
-									(FLMUINT)iFlags, (FLMUINT64)lDocumentId,
+									(FLMUINT)iSearchFlags, (FLMUINT64)lDocumentId,
 									&pNewNode)))
 	{
 		ThrowError(rc, pEnv);
@@ -994,7 +984,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDocument(
 	
 Exit:
 
-	return( (jlong)(FLMUINT)pNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -1049,197 +1039,6 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1getNode(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iCollection,
-	jlong				lNodeId,
-	jlong				lOldNodeRef)
-{
-	RCODE				rc = NE_XFLM_OK;
-	IF_Db *			pDb = THIS_FDB();
-	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
-														  ? (IF_DOMNode *)(FLMUINT)lOldNodeRef
-														  : NULL);
-
-	if (RC_BAD( rc = pDb->getNode( (FLMUINT)iCollection, (FLMUINT64)lNodeId,
-								   &pNewNode)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;		
-	}
-	
-Exit:
-
-	return( (jlong)(FLMUINT)pNewNode);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1getAttribute(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iCollection,
-	jlong				lElementNodeId,
-	jint				iAttrNameId,
-	jlong				lOldNodeRef)
-{
-	RCODE				rc = NE_XFLM_OK;
-	IF_Db *			pDb = THIS_FDB();
-	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
-														  ? (IF_DOMNode *)(FLMUINT)lOldNodeRef
-														  : NULL);
-
-	if (RC_BAD( rc = pDb->getAttribute( (FLMUINT)iCollection,
-									(FLMUINT64)lElementNodeId,
-								   (FLMUINT)iAttrNameId, &pNewNode)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;		
-	}
-	
-Exit:
-
-	return( (jlong)(FLMUINT)pNewNode);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1createDocument(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iCollection)
-{
-	RCODE				rc = NE_XFLM_OK;
-	IF_Db *			pDb = THIS_FDB();
-	IF_DOMNode *	ifpNewNode = NULL;
-	
-	if (RC_BAD( rc = pDb->createDocument((FLMUINT)iCollection, &ifpNewNode)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-
-Exit:
-
-	return( (jlong)(FLMUINT)ifpNewNode);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1createRootElement(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iCollection,
-	jint				iTag)
-{
-	RCODE				rc = NE_XFLM_OK;
-	IF_Db *			pDb = THIS_FDB();
-	IF_DOMNode *	ifpNewNode = NULL;
-	
-	if (RC_BAD( rc = pDb->createRootElement((FLMUINT)iCollection,
-			(FLMUINT)iTag, &ifpNewNode)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-
-Exit:
-
-	return( (jlong)(FLMUINT)ifpNewNode);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE getUniString(
-	JNIEnv *		pEnv,
-	jstring		sStr,
-	F_DynaBuf *	pDynaBuf)
-{
-	RCODE						rc = NE_XFLM_OK;
-	const FLMUNICODE *	puzStr = NULL;
-	FLMUINT					uiStrCharCount;
-	
-	if (sStr)
-	{
-		puzStr = (const FLMUNICODE *)pEnv->GetStringChars( sStr, NULL);
-		uiStrCharCount = (FLMUINT)pEnv->GetStringLength( sStr);
-		if (RC_BAD( rc = pDynaBuf->appendData( puzStr,
-									sizeof( FLMUNICODE) * uiStrCharCount)))
-		{
-			goto Exit;
-		}
-		if (RC_BAD( rc = pDynaBuf->appendUniChar( 0)))
-		{
-			goto Exit;
-		}
-	}
-	else
-	{
-		pDynaBuf->truncateData( 0);
-	}
-	
-Exit:
-
-	if (puzStr)
-	{
-		pEnv->ReleaseStringChars( sStr, puzStr);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE getUTF8String(
-	JNIEnv *		pEnv,
-	jstring		sStr,
-	F_DynaBuf *	pDynaBuf)
-{
-	RCODE				rc = NE_XFLM_OK;
-	const char *	pszStr = NULL;
-	FLMUINT			uiStrCharCount;
-	
-	if (sStr)
-	{
-		pszStr = pEnv->GetStringUTFChars( sStr, NULL);
-		uiStrCharCount = (FLMUINT)pEnv->GetStringUTFLength( sStr);
-		if (RC_BAD( rc = pDynaBuf->appendData( pszStr, uiStrCharCount)))
-		{
-			goto Exit;
-		}
-	}
-	else
-	{
-		pDynaBuf->truncateData( 0);
-	}
-	if (RC_BAD( rc = pDynaBuf->appendByte( 0)))
-	{
-		goto Exit;
-	}
-	
-Exit:
-
-	if (pszStr)
-	{
-		pEnv->ReleaseStringUTFChars( sStr, pszStr);
-	}
-
-	return( rc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1createElementDef(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
@@ -1289,52 +1088,6 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getElementNameId(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jstring			sNamespaceURI,
-	jstring			sElementName)
-{
-	RCODE			rc = NE_XFLM_OK;
-	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
-	FLMBYTE		ucNamespaceBuf [200];
-	FLMBYTE		ucElementNameBuf [200];
-	F_DynaBuf	namespaceURI( ucNamespaceBuf, sizeof( ucNamespaceBuf));
-	F_DynaBuf	elementName( ucElementNameBuf, sizeof( ucElementNameBuf));
-	
-	if (sNamespaceURI)
-	{
-		if (RC_BAD( rc = getUniString( pEnv, sNamespaceURI, &namespaceURI)))
-		{
-			ThrowError( rc, pEnv);
-			goto Exit;
-		}
-	}
-	
-	flmAssert( sElementName);
-	if (RC_BAD( rc = getUniString( pEnv, sElementName, &elementName)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-	
-	if (RC_BAD( rc = pDb->getElementNameId( namespaceURI.getUnicodePtr(),
-											elementName.getUnicodePtr(), &uiNameId)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;	
-	}
-	
-Exit:
-
-	return( (jint)uiNameId);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1createUniqueElmDef(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
@@ -1370,6 +1123,52 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1createUniqueElmDef(
 	if (RC_BAD( rc = pDb->createUniqueElmDef( namespaceURI.getUnicodePtr(),
 											elementName.getUnicodePtr(),
 											&uiNameId, NULL)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;	
+	}
+	
+Exit:
+
+	return( (jint)uiNameId);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getElementNameId(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jstring			sNamespaceURI,
+	jstring			sElementName)
+{
+	RCODE			rc = NE_XFLM_OK;
+	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiNameId;
+	FLMBYTE		ucNamespaceBuf [200];
+	FLMBYTE		ucElementNameBuf [200];
+	F_DynaBuf	namespaceURI( ucNamespaceBuf, sizeof( ucNamespaceBuf));
+	F_DynaBuf	elementName( ucElementNameBuf, sizeof( ucElementNameBuf));
+	
+	if (sNamespaceURI)
+	{
+		if (RC_BAD( rc = getUniString( pEnv, sNamespaceURI, &namespaceURI)))
+		{
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+	}
+	
+	flmAssert( sElementName);
+	if (RC_BAD( rc = getUniString( pEnv, sElementName, &elementName)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->getElementNameId( namespaceURI.getUnicodePtr(),
+											elementName.getUnicodePtr(), &uiNameId)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;	
@@ -1730,6 +1529,45 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FSTATIC RCODE mapDictType(
+	jint			iDictType,
+	FLMUINT *	puiDictType)
+{
+	RCODE	rc = NE_XFLM_OK;
+	
+	switch (iDictType)
+	{
+		case ELEMENT_DEF:
+			*puiDictType = ELM_ELEMENT_TAG;
+			break;
+		case ATTRIBUTE_DEF:
+			*puiDictType = ELM_ATTRIBUTE_TAG;
+			break;
+		case PREFIX_DEF:
+			*puiDictType = ELM_PREFIX_TAG;
+			break;
+		case ENCRYPTION_DEF:
+			*puiDictType = ELM_ENCDEF_TAG;
+			break;
+		case COLLECTION_DEF:
+			*puiDictType = ELM_COLLECTION_TAG;
+			break;
+		case INDEX_DEF:
+			*puiDictType = ELM_INDEX_TAG;
+			break;
+		default:
+			rc = RC_SET( NE_XFLM_INVALID_PARM);
+			goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDictionaryDef(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
@@ -1741,10 +1579,17 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDictionaryDef(
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
 	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
-														  ? (IF_DOMNode *)(FLMUINT)lOldNodeRef
+														  ? (IF_DOMNode *)((FLMUINT)lOldNodeRef)
 														  : NULL);
+	FLMUINT			uiDictType = 0;
+
+	if (RC_BAD( rc = mapDictType( iDictType, &uiDictType)))
+	{
+		ThrowError(rc, pEnv);
+		goto Exit;
+	}
 	
-	if (RC_BAD( rc = pDb->getDictionaryDef( (FLMUINT)iDictType,
+	if (RC_BAD( rc = pDb->getDictionaryDef( uiDictType,
 									(FLMUINT)iDictNumber, &pNewNode)))
 	{
 		ThrowError(rc, pEnv);
@@ -1753,7 +1598,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDictionaryDef(
 	
 Exit:
 
-	return( (jlong)(FLMUINT)pNewNode);
+	return( (jlong)((FLMUINT)pNewNode));
 }
 
 /****************************************************************************
@@ -1761,7 +1606,7 @@ Desc:
 ****************************************************************************/
 FSTATIC RCODE getDictName(
 	IF_Db *			pDb,
-	FLMUINT			uiDictType,
+	jint				iDictType,
 	FLMUINT			uiDictNumber,
 	FLMBOOL			bGetNamespace,
 	F_DynaBuf *		pDynaBuf)
@@ -1769,6 +1614,12 @@ FSTATIC RCODE getDictName(
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiNameSize = 0;
 	FLMUNICODE *	puzName = NULL;
+	FLMUINT			uiDictType = 0;
+	
+	if (RC_BAD( rc = mapDictType( iDictType, &uiDictType)))
+	{
+		goto Exit;
+	}
 	
 	// Determine how much space is needed to get the name.
 
@@ -1845,7 +1696,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1getDictionaryName(
 	F_DynaBuf		nameBuf( ucNameBuf, sizeof( ucNameBuf));
 	jstring			jName = NULL;
 	
-	if (RC_BAD( rc = getDictName( pDb, (FLMUINT)iDictType, (FLMUINT)iDictNumber,
+	if (RC_BAD( rc = getDictName( pDb, iDictType, (FLMUINT)iDictNumber,
 									FALSE, &nameBuf)))
 	{
 		ThrowError(rc, pEnv);
@@ -1877,7 +1728,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1getElementNamespace(
 	F_DynaBuf		nameBuf( ucNameBuf, sizeof( ucNameBuf));
 	jstring			jName = NULL;
 	
-	if (RC_BAD( rc = getDictName( pDb, ELM_ELEMENT_TAG, (FLMUINT)iDictNumber,
+	if (RC_BAD( rc = getDictName( pDb, ELEMENT_DEF, (FLMUINT)iDictNumber,
 									TRUE, &nameBuf)))
 	{
 		ThrowError(rc, pEnv);
@@ -1909,7 +1760,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1getAttributeNamespace(
 	F_DynaBuf		nameBuf( ucNameBuf, sizeof( ucNameBuf));
 	jstring			jName = NULL;
 	
-	if (RC_BAD( rc = getDictName( pDb, ELM_ATTRIBUTE_TAG, (FLMUINT)iDictNumber,
+	if (RC_BAD( rc = getDictName( pDb, ATTRIBUTE_DEF, (FLMUINT)iDictNumber,
 									TRUE, &nameBuf)))
 	{
 		ThrowError(rc, pEnv);
@@ -1929,26 +1780,116 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getNode(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iCollection,
+	jlong				lNodeId,
+	jlong				lOldNodeRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
+														  ? (IF_DOMNode *)((FLMUINT)lOldNodeRef)
+														  : NULL);
+
+	if (RC_BAD( rc = pDb->getNode( (FLMUINT)iCollection, (FLMUINT64)lNodeId,
+								   &pNewNode)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;		
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getAttribute(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iCollection,
+	jlong				lElementNodeId,
+	jint				iAttrNameId,
+	jlong				lOldNodeRef)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	IF_DOMNode *	pNewNode = (IF_DOMNode *)(lOldNodeRef
+														  ? (IF_DOMNode *)((FLMUINT)lOldNodeRef)
+														  : NULL);
+
+	if (RC_BAD( rc = pDb->getAttribute( (FLMUINT)iCollection,
+									(FLMUINT64)lElementNodeId,
+								   (FLMUINT)iAttrNameId, &pNewNode)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;		
+	}
+	
+Exit:
+
+	return( (jlong)((FLMUINT)pNewNode));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getDataType(
+	JNIEnv *			pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iDictType,
+	jint				iDictNumber)
+{
+	RCODE		rc = NE_XFLM_OK;
+	IF_Db *	pDb = THIS_FDB();
+	FLMUINT	uiDataType;
+	FLMUINT	uiDictType = 0;
+	
+	if (RC_BAD( rc = mapDictType( iDictType, &uiDictType)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->getDataType( uiDictType, (FLMUINT)iDictNumber,
+									&uiDataType)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+Exit:
+
+	return( (jint)uiDataType);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 JNIEXPORT jlong JNICALL Java_xflaim_Db__1backupBegin(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jint				eBackupType,
-	jint				eTransType,
+	jint				iBackupType,
+	jint				iTransType,
 	jint				iMaxLockWait,
 	jlong				lReusedRef)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = THIS_FDB();
-	IF_Backup *		ifpBackup = NULL;
+	IF_Backup *		pBackup = lReusedRef
+									 ? (IF_Backup *)((FLMUINT)lReusedRef)
+									 : NULL;
 	
-	if (lReusedRef)
-	{
-		ifpBackup = (IF_Backup *)(FLMUINT)lReusedRef;
-	}
-	
-	if (RC_BAD( rc = pDb->backupBegin( (eDbBackupType)eBackupType, 
-			(eDbTransType)eTransType, (FLMUINT)iMaxLockWait, &ifpBackup)))
+	if (RC_BAD( rc = pDb->backupBegin( (eDbBackupType)iBackupType, 
+			(eDbTransType)iTransType, (FLMUINT)iMaxLockWait, &pBackup)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -1956,37 +1897,77 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1backupBegin(
 		
 Exit:
 
-	return( (jlong)(FLMUINT)ifpBackup);
+	return( (jlong)((FLMUINT)pBackup));
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_Db__1keyRetrieve(
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1import(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
 	jlong				lThis,
-	jint				iIndex,
-	jlong				lKey,
-	jint				iFlags,
-	jlong				lFoundKey)
+	jlong				lIStream,
+	jint				iCollection,
+	jlong				lNodeToLinkTo,
+	jint				iInsertLoc)
 {
-	RCODE					rc = NE_XFLM_OK;
-	IF_DataVector *	pSearchKey = (IF_DataVector *)(FLMUINT)lKey;
-	IF_DataVector *	pFoundKey = (IF_DataVector *)(FLMUINT)lFoundKey;
-	IF_Db *				pDb = THIS_FDB();
-	FLMUINT				uiIndex = (FLMUINT)iIndex;
-	FLMUINT				uiFlags = (FLMUINT)iFlags;
+	RCODE						rc = NE_XFLM_OK;
+	IF_IStream *			pIStream = (IF_IStream *)((FLMUINT)lIStream);
+	IF_DOMNode *			pNodeToLinkTo = (IF_DOMNode *)((FLMUINT)lNodeToLinkTo);
+	IF_Db *					pDb = THIS_FDB();
+	XFLM_IMPORT_STATS		importStats;
+	jclass					jImportStatsClass = NULL;
+	jobject					jImportStats = NULL;
 	
-	if (RC_BAD( rc = pDb->keyRetrieve( uiIndex, pSearchKey, uiFlags, pFoundKey)))
+	if (!pIStream)
+	{
+		ThrowError( NE_XFLM_FAILURE, pEnv);
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = pDb->import( pIStream, (FLMUINT)iCollection,
+									pNodeToLinkTo, (eNodeInsertLoc)iInsertLoc,
+									&importStats)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
+
+	// Find the ImportStats class
+
+	if ((jImportStatsClass = pEnv->FindClass( "xflaim/ImportStats")) == NULL)
+	{
+		goto Exit;
+	}
+
+	// Allocate an import stats class.
 	
+	if ((jImportStats = pEnv->AllocObject( jImportStatsClass)) == NULL)
+	{
+		goto Exit;
+	}
+	
+	// Set the fields in the object
+	
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iLines, (jint)importStats.uiLines);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iChars, (jint)importStats.uiChars);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iAttributes, (jint)importStats.uiAttributes);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iElements, (jint)importStats.uiElements);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iText, (jint)importStats.uiText);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iDocuments, (jint)importStats.uiDocuments);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineNum, (jint)importStats.uiErrLineNum);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineOffset, (jint)importStats.uiErrLineOffset);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrorType, (jint)importStats.eErrorType);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineFilePos, (jint)importStats.uiErrLineFilePos);
+	pEnv->SetIntField( jImportStats, fid_ImportStats_iErrLineBytes, (jint)importStats.uiErrLineBytes);
+	pEnv->SetBooleanField( jImportStats, fid_ImportStats_bUTF8Encoding,
+		(jboolean)(importStats.eXMLEncoding == XFLM_XML_UTF8_ENCODING
+					  ? JNI_TRUE
+					  : JNI_FALSE));
 Exit:
 
-	return;
+	return( jImportStats);
 }
 
 /****************************************************************************
@@ -2004,6 +1985,13 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1changeItemState(
 	IF_Db *		pDb = THIS_FDB();
 	FLMBYTE		ucState [80];
 	F_DynaBuf	stateBuf( ucState, sizeof( ucState));
+	FLMUINT		uiDictType = 0;
+	
+	if (RC_BAD( rc = mapDictType( iDictType, &uiDictType)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
 	
 	if (RC_BAD( rc = getUTF8String( pEnv, sState, &stateBuf)))
 	{
@@ -2011,8 +1999,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1changeItemState(
 		goto Exit;
 	}
 	
-	if (RC_BAD( rc = pDb->changeItemState( (FLMUINT)iDictType,
-									(FLMUINT)iDictNum,
+	if (RC_BAD( rc = pDb->changeItemState( uiDictType, (FLMUINT)iDictNum,
 									(const char *)stateBuf.getBufferPtr())))
 	{
 		ThrowError( rc, pEnv);
@@ -2077,13 +2064,19 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1setNextDictNum(
 	jobject,			// obj,
 	jlong				lThis,
 	jint				iDictType,
-	jint				iDictNumber)
+	jint				iNextDictNumber)
 {
 	RCODE			rc = NE_XFLM_OK;
 	IF_Db *		pDb = THIS_FDB();
+	FLMUINT		uiDictType = 0;
 	
-	if (RC_BAD( rc = pDb->setNextDictNum( (FLMUINT)iDictType,
-									(FLMUINT)iDictNumber)))
+	if (RC_BAD( rc = mapDictType( iDictType, &uiDictType)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	if (RC_BAD( rc = pDb->setNextDictNum( uiDictType, (FLMUINT)iNextDictNumber)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;

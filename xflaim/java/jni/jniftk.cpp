@@ -50,3 +50,85 @@ void ThrowError(
 	
 	pEnv->Throw( reinterpret_cast<jthrowable>(Exception));
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE getUniString(
+	JNIEnv *		pEnv,
+	jstring		sStr,
+	F_DynaBuf *	pDynaBuf)
+{
+	RCODE						rc = NE_XFLM_OK;
+	const FLMUNICODE *	puzStr = NULL;
+	FLMUINT					uiStrCharCount;
+	
+	if (sStr)
+	{
+		puzStr = (const FLMUNICODE *)pEnv->GetStringChars( sStr, NULL);
+		uiStrCharCount = (FLMUINT)pEnv->GetStringLength( sStr);
+		if (RC_BAD( rc = pDynaBuf->appendData( puzStr,
+									sizeof( FLMUNICODE) * uiStrCharCount)))
+		{
+			goto Exit;
+		}
+		if (RC_BAD( rc = pDynaBuf->appendUniChar( 0)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		pDynaBuf->truncateData( 0);
+	}
+	
+Exit:
+
+	if (puzStr)
+	{
+		pEnv->ReleaseStringChars( sStr, puzStr);
+	}
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE getUTF8String(
+	JNIEnv *		pEnv,
+	jstring		sStr,
+	F_DynaBuf *	pDynaBuf)
+{
+	RCODE				rc = NE_XFLM_OK;
+	const char *	pszStr = NULL;
+	FLMUINT			uiStrCharCount;
+	
+	if (sStr)
+	{
+		pszStr = pEnv->GetStringUTFChars( sStr, NULL);
+		uiStrCharCount = (FLMUINT)pEnv->GetStringUTFLength( sStr);
+		if (RC_BAD( rc = pDynaBuf->appendData( pszStr, uiStrCharCount)))
+		{
+			goto Exit;
+		}
+	}
+	else
+	{
+		pDynaBuf->truncateData( 0);
+	}
+	if (RC_BAD( rc = pDynaBuf->appendByte( 0)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	if (pszStr)
+	{
+		pEnv->ReleaseStringUTFChars( sStr, pszStr);
+	}
+
+	return( rc);
+}
+

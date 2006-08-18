@@ -9,126 +9,6 @@ extern "C" {
 #endif
 /*
  * Class:     xflaim_Db
- * Method:    _dbLock
- * Signature: (JIII)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Db__1dbLock
-  (JNIEnv *, jobject, jlong, jint, jint, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _dbUnlock
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Db__1dbUnlock
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     xflaim_Db
- * Method:    _getLockType
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockType
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     xflaim_Db
- * Method:    _getLockImplicit
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getLockImplicit
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     xflaim_Db
- * Method:    _getLockThreadId
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockThreadId
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _getLockNumExclQueued
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumExclQueued
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _getLockNumSharedQueued
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumSharedQueued
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _getLockPriorityCount
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockPriorityCount
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _indexSuspend
- * Signature: (JI)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Db__1indexSuspend
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _indexResume
- * Signature: (JI)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Db__1indexResume
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _indexGetNext
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1indexGetNext
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _indexStatus
- * Signature: (JI)Lxflaim/IndexStatus;
- */
-JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _reduceSize
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1reduceSize
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _documentDone
- * Signature: (JIJ)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Db__1documentDone__JIJ
-  (JNIEnv *, jobject, jlong, jint, jlong);
-
-/*
- * Class:     xflaim_Db
- * Method:    _documentDone
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL Java_xflaim_Db__1documentDone__JJ
-  (JNIEnv *, jobject, jlong, jlong);
-
-/*
- * Class:     xflaim_Db
  * Method:    _release
  * Signature: (J)V
  */
@@ -185,11 +65,131 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1doCheckpoint
 
 /*
  * Class:     xflaim_Db
- * Method:    _import
- * Signature: (JJIJI)Lxflaim/ImportStats;
+ * Method:    _dbLock
+ * Signature: (JIII)V
  */
-JNIEXPORT jobject JNICALL Java_xflaim_Db__1import
-  (JNIEnv *, jobject, jlong, jlong, jint, jlong, jint);
+JNIEXPORT void JNICALL Java_xflaim_Db__1dbLock
+  (JNIEnv *, jobject, jlong, jint, jint, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _dbUnlock
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1dbUnlock
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockType
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockType
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockImplicit
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_Db__1getLockImplicit
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockThreadId
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockThreadId
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockNumExclQueued
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumExclQueued
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockNumSharedQueued
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockNumSharedQueued
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getLockPriorityCount
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getLockPriorityCount
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _indexSuspend
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1indexSuspend
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _indexResume
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1indexResume
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _indexGetNext
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1indexGetNext
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _indexStatus
+ * Signature: (JI)Lxflaim/IndexStatus;
+ */
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _reduceSize
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1reduceSize
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _keyRetrieve
+ * Signature: (JIJIJ)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_Db__1keyRetrieve
+  (JNIEnv *, jobject, jlong, jint, jlong, jint, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _createDocument
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1createDocument
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _createRootElement
+ * Signature: (JII)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1createRootElement
+  (JNIEnv *, jobject, jlong, jint, jint);
 
 /*
  * Class:     xflaim_Db
@@ -217,35 +217,19 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1getDocument
 
 /*
  * Class:     xflaim_Db
- * Method:    _getNode
- * Signature: (JIJJ)J
+ * Method:    _documentDone
+ * Signature: (JIJ)V
  */
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1getNode
-  (JNIEnv *, jobject, jlong, jint, jlong, jlong);
+JNIEXPORT void JNICALL Java_xflaim_Db__1documentDone__JIJ
+  (JNIEnv *, jobject, jlong, jint, jlong);
 
 /*
  * Class:     xflaim_Db
- * Method:    _getAttribute
- * Signature: (JIJIJ)J
+ * Method:    _documentDone
+ * Signature: (JJ)V
  */
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1getAttribute
-  (JNIEnv *, jobject, jlong, jint, jlong, jint, jlong);
-
-/*
- * Class:     xflaim_Db
- * Method:    _createDocument
- * Signature: (JI)J
- */
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1createDocument
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_Db
- * Method:    _createRootElement
- * Signature: (JII)J
- */
-JNIEXPORT jlong JNICALL Java_xflaim_Db__1createRootElement
-  (JNIEnv *, jobject, jlong, jint, jint);
+JNIEXPORT void JNICALL Java_xflaim_Db__1documentDone__JJ
+  (JNIEnv *, jobject, jlong, jlong);
 
 /*
  * Class:     xflaim_Db
@@ -257,19 +241,19 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1createElementDef
 
 /*
  * Class:     xflaim_Db
- * Method:    _getElementNameId
- * Signature: (JLjava/lang/String;Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_Db__1getElementNameId
-  (JNIEnv *, jobject, jlong, jstring, jstring);
-
-/*
- * Class:     xflaim_Db
  * Method:    _createUniqueElmDef
  * Signature: (JLjava/lang/String;Ljava/lang/String;I)I
  */
 JNIEXPORT jint JNICALL Java_xflaim_Db__1createUniqueElmDef
   (JNIEnv *, jobject, jlong, jstring, jstring, jint);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getElementNameId
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_xflaim_Db__1getElementNameId
+  (JNIEnv *, jobject, jlong, jstring, jstring);
 
 /*
  * Class:     xflaim_Db
@@ -377,6 +361,22 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1getAttributeNamespace
 
 /*
  * Class:     xflaim_Db
+ * Method:    _getNode
+ * Signature: (JIJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getNode
+  (JNIEnv *, jobject, jlong, jint, jlong, jlong);
+
+/*
+ * Class:     xflaim_Db
+ * Method:    _getAttribute
+ * Signature: (JIJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Db__1getAttribute
+  (JNIEnv *, jobject, jlong, jint, jlong, jint, jlong);
+
+/*
+ * Class:     xflaim_Db
  * Method:    _getDataType
  * Signature: (JII)I
  */
@@ -393,11 +393,11 @@ JNIEXPORT jlong JNICALL Java_xflaim_Db__1backupBegin
 
 /*
  * Class:     xflaim_Db
- * Method:    _keyRetrieve
- * Signature: (JIJIJ)V
+ * Method:    _import
+ * Signature: (JJIJI)Lxflaim/ImportStats;
  */
-JNIEXPORT void JNICALL Java_xflaim_Db__1keyRetrieve
-  (JNIEnv *, jobject, jlong, jint, jlong, jint, jlong);
+JNIEXPORT jobject JNICALL Java_xflaim_Db__1import
+  (JNIEnv *, jobject, jlong, jlong, jint, jlong, jint);
 
 /*
  * Class:     xflaim_Db
