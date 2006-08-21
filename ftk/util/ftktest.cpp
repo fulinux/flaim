@@ -5148,8 +5148,15 @@ RCODE ftkTestText( void)
 		bNotFound = flmCh6Brkcar( ui16WpChar, &ui16BaseChar, &ui16DiacriticChar);
 		bNotFound2 = f_breakWPChar( ui16WpChar, &ui16BaseChar2, &ui16DiacriticChar2);
 		
-		if( bNotFound != bNotFound2 || ui16BaseChar != ui16BaseChar2 ||
-			 ui16DiacriticChar != ui16DiacriticChar2)
+		if( bNotFound != bNotFound2)
+		{
+			f_printf( "Diacritic test failed on character 0x%04X.\n", 
+				(unsigned)ui16WpChar);
+			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+			goto Exit;
+		}
+		else if( ui16BaseChar != ui16BaseChar2 ||
+					ui16DiacriticChar != ui16DiacriticChar2)
 		{
 			f_printf( "Diacritic test failed on character 0x%04X.\n", 
 				(unsigned)ui16WpChar);
@@ -5168,7 +5175,14 @@ RCODE ftkTestText( void)
 			bNotFound = flmCh6Cmbcar( &ui16Cmb, (FLMUINT16)uiLoop, (FLMUINT16)uiSubloop);
 			bNotFound2 = f_combineWPChar( &ui16Cmb2, (FLMUINT16)uiLoop, (FLMUINT16)uiSubloop);
 
-			if( bNotFound != bNotFound2 || ui16Cmb != ui16Cmb2)
+			if( bNotFound != bNotFound2)
+			{
+				f_printf( "Diacritic test failed on character 0x%04X + 0x%04X.\n", 
+					(unsigned)uiLoop, (unsigned)uiSubloop);
+				rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+				goto Exit;
+			}
+			else if( ui16Cmb != ui16Cmb2)
 			{
 				f_printf( "Diacritic test failed on character 0x%04X + 0x%04X.\n", 
 					(unsigned)uiLoop, (unsigned)uiSubloop);
