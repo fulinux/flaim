@@ -26,7 +26,7 @@
 #include "flaimsys.h"
 
 /**************************************************************************
-Desc:		Get the Flaim collating string and convert back to a text string
+Desc:		Get the collation string and convert back to a text string
 Ret:		Length of new wpStr
 Notes:	Allocates the area for the word string buffer if will be over 256.
 ***************************************************************************/

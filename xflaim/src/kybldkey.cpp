@@ -1192,25 +1192,25 @@ FSTATIC void setFromCaseByte(
 		if (bAscending)
 		{
 			// Keys are in ascending order:
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
 			// Thus, to exclude all "abc"s on "from" side we need the
 			// following key:
-			// key == abc+6 (COLL_MARKER | SC_UPPER) + 1
+			// key == abc+6 (F_COLL_MARKER | F_SC_UPPER) + 1
 			
-			pucFromKey[ *puiFromKeyLen - 1] = (COLL_MARKER | SC_UPPER);
+			pucFromKey[ *puiFromKeyLen - 1] = (F_COLL_MARKER | F_SC_UPPER);
 		}
 		else
 		{
 			
 			// Keys are in descending order:
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
 			// Thus, to exclude "abc"s on "from" side we need the
 			// following key:
-			// key == abc+4 (COLL_MARKER | SC_LOWER)
+			// key == abc+4 (F_COLL_MARKER | F_SC_LOWER)
 			
-			pucFromKey[ *puiFromKeyLen - 1] = (COLL_MARKER | SC_LOWER);
+			pucFromKey[ *puiFromKeyLen - 1] = (F_COLL_MARKER | F_SC_LOWER);
 		}
 	}
 	else	// Inclusive
@@ -1218,25 +1218,25 @@ FSTATIC void setFromCaseByte(
 		if (bAscending)
 		{
 			// Keys are in ascending order:
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
 			// Thus, to include all "abc"s on "from" side,
 			// we need the following key:
-			// key == abc+4 (COLL_MARKER | SC_LOWER)
+			// key == abc+4 (F_COLL_MARKER | F_SC_LOWER)
 			
-			pucFromKey [*puiFromKeyLen - 1] = COLL_MARKER | SC_LOWER;
+			pucFromKey [*puiFromKeyLen - 1] = F_COLL_MARKER | F_SC_LOWER;
 		}
 		else
 		{
 
 			// Keys are in descending order:
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
 			// Thus, to include all "abc"s on "from" side we need the
 			// following key:
-			// key == abc+6 (COLL_MARKER | SC_UPPER)
+			// key == abc+6 (F_COLL_MARKER | F_SC_UPPER)
 			
-			pucFromKey [*puiFromKeyLen - 1] = COLL_MARKER | SC_UPPER;
+			pucFromKey [*puiFromKeyLen - 1] = F_COLL_MARKER | F_SC_UPPER;
 		}
 	}
 }
@@ -1266,25 +1266,25 @@ FSTATIC void setUntilCaseByte(
 		if (bAscending)
 		{
 			// Keys are in ascending order:
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
 			// Thus, to exclude all "abc"s on the "until" side we need
 			// the following key:
-			// key == abc+4 (COLL_MARKER | SC_LOWER)
+			// key == abc+4 (F_COLL_MARKER | F_SC_LOWER)
 			
-			pucUntilKey[ *puiUntilKeyLen - 1] = (COLL_MARKER | SC_LOWER);
+			pucUntilKey[ *puiUntilKeyLen - 1] = (F_COLL_MARKER | F_SC_LOWER);
 		}
 		else
 		{
 			
 			// Keys are in descending order:
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
 			// Thus, to exclude all "abc"s on the "until" side we need
 			// the following key:
-			// key == abc+6 (COLL_MARKER | SC_UPPER) + 1
+			// key == abc+6 (F_COLL_MARKER | F_SC_UPPER) + 1
 			
-			pucUntilKey[ *puiUntilKeyLen - 1] = (COLL_MARKER | SC_UPPER);
+			pucUntilKey[ *puiUntilKeyLen - 1] = (F_COLL_MARKER | F_SC_UPPER);
 		}
 	}
 	else
@@ -1292,25 +1292,25 @@ FSTATIC void setUntilCaseByte(
 		if (bAscending)
 		{
 			// Keys are in ascending order:
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
 			// Thus, to get include all "abc"s on the "until" side we need
 			// the following key:
-			// key == abc+6 (COLL_MARKER | SC_UPPER)
+			// key == abc+6 (F_COLL_MARKER | F_SC_UPPER)
 			
-			pucUntilKey [*puiUntilKeyLen - 1] = (COLL_MARKER | SC_UPPER);
+			pucUntilKey [*puiUntilKeyLen - 1] = (F_COLL_MARKER | F_SC_UPPER);
 		}
 		else
 		{
 
 			// Keys are in descending order:
-			// "ABC" key == abc+6 (6 is COLL_MARKER | SC_UPPER)
-			// "abc" key == abc+4 (4 is COLL_MARKER | SC_LOWER) 
+			// "ABC" key == abc+6 (6 is F_COLL_MARKER | F_SC_UPPER)
+			// "abc" key == abc+4 (4 is F_COLL_MARKER | F_SC_LOWER) 
 			// Thus, to include all "abc"s on the "until side we need
 			// the following key:
-			// key == abc+4 (COLL_MARKER | SC_LOWER)
+			// key == abc+4 (F_COLL_MARKER | F_SC_LOWER)
 			
-			pucUntilKey [*puiUntilKeyLen - 1] = (COLL_MARKER | SC_LOWER);
+			pucUntilKey [*puiUntilKeyLen - 1] = (F_COLL_MARKER | F_SC_LOWER);
 		}
 	}
 }
