@@ -5642,7 +5642,7 @@ FLMBOOL FLMAPI f_breakWPChar(
 	iTableIndex = ((FLMBYTE)ui16WpChar) - pBaseDiacritic->start_char;
 	
 	if( iTableIndex < 0 ||
-		 iTableIndex > pBaseDiacritic->char_count ||
+		 iTableIndex >= pBaseDiacritic->char_count ||
 		 pBaseDiacritic->table [iTableIndex].base == (FLMBYTE)0xFF)
 	{
 		return( TRUE);

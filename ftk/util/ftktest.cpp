@@ -5155,8 +5155,8 @@ RCODE ftkTestText( void)
 			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 			goto Exit;
 		}
-		else if( ui16BaseChar != ui16BaseChar2 ||
-					ui16DiacriticChar != ui16DiacriticChar2)
+		else if( !bNotFound && (ui16BaseChar != ui16BaseChar2 ||
+					ui16DiacriticChar != ui16DiacriticChar2))
 		{
 			f_printf( "Diacritic test failed on character 0x%04X.\n", 
 				(unsigned)ui16WpChar);
@@ -5182,7 +5182,7 @@ RCODE ftkTestText( void)
 				rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 				goto Exit;
 			}
-			else if( ui16Cmb != ui16Cmb2)
+			else if( !bNotFound && ui16Cmb != ui16Cmb2)
 			{
 				f_printf( "Diacritic test failed on character 0x%04X + 0x%04X.\n", 
 					(unsigned)uiLoop, (unsigned)uiSubloop);
@@ -5220,12 +5220,12 @@ FLMBOOL flmCh6Brkcar(
 	iTableIndex = ((FLMBYTE) ui16WpChar) - pBaseDiacritic->start_char;
 	
 	if( iTableIndex < 0 ||
-		 iTableIndex > pBaseDiacritic->char_count ||
+		 iTableIndex >= pBaseDiacritic->char_count ||
 		 pBaseDiacritic->table[iTableIndex].base == (FLMBYTE) 0xFF)
 	{
 		return (TRUE);
 	}
-
+	
 	if( (HI( ui16WpChar) != F_CHSMUL1) ||
 		 ((flm_ml1_cb60[((FLMBYTE) ui16WpChar) >> 3] >> 
 											(7 - (ui16WpChar & 0x07))) & 0x01))
