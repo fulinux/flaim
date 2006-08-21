@@ -2306,21 +2306,21 @@ Desc:
 ****************************************************************************/
 FSTATIC BASE_DIACRIT * flm_car60_c[ F_NCHSETS] = 
 {
-	(BASE_DIACRIT*)0,						// no composed characters for ascii
+	(BASE_DIACRIT *)0,					// no composed characters for ascii
 	&flm_ml1c,
-	(BASE_DIACRIT*)0,						// no composed characters for multinational 2
-	(BASE_DIACRIT*)0,						// no composed characters for line draw
-	(BASE_DIACRIT*)0,						// no composed characters for typographic
-	(BASE_DIACRIT*)0,						// no composed characters for icons
-	(BASE_DIACRIT*)0,						// no composed characters for math
-	(BASE_DIACRIT*)0,						// no composed characters for math extension
+	(BASE_DIACRIT *)0,					// no composed characters for multinational 2
+	(BASE_DIACRIT *)0,					// no composed characters for line draw
+	(BASE_DIACRIT *)0,					// no composed characters for typographic
+	(BASE_DIACRIT *)0,					// no composed characters for icons
+	(BASE_DIACRIT *)0,					// no composed characters for math
+	(BASE_DIACRIT *)0,					// no composed characters for math extension
 	&flm_grk_c,								// Greek
-	(BASE_DIACRIT*)0,						// Hebrew
+	(BASE_DIACRIT *)0,					// Hebrew
 	&flm_rus_c,								// Cyrillic - Russian
-	(BASE_DIACRIT*)0,						// Hiragana or Katakana (Japanese)
-	(BASE_DIACRIT*)0,						// no composed characters for user
-	(BASE_DIACRIT*)0,						// no composed characters for Arabic
-	(BASE_DIACRIT*)0,						// no composed characters for Arabic Script
+	(BASE_DIACRIT *)0,					// Hiragana or Katakana (Japanese)
+	(BASE_DIACRIT *)0,					// no composed characters for user
+	(BASE_DIACRIT *)0,					// no composed characters for Arabic
+	(BASE_DIACRIT *)0						// no composed characters for Arabic Script
 };
 
 /****************************************************************************
@@ -5268,9 +5268,9 @@ FLMBOOL flmCh6Cmbcar(
 	BASE_DIACRIT_TABLE *	pTable;
 
 	ucCharSet = HI( ui16BaseChar);
-	if( ucCharSet > F_NCHSETS)
+	if( ucCharSet >= F_NCHSETS)
 	{
-		return (TRUE);
+		return( TRUE);
 	}
 
 	// Is base ASCII? If so, look in multinational 1
@@ -5280,7 +5280,7 @@ FLMBOOL flmCh6Cmbcar(
 		ucCharSet = F_CHSMUL1;
 	}
 
-	if( (pBaseDiacritic = flm_car60_c[ucCharSet]) == 0)
+	if( (pBaseDiacritic = flm_car60_c[ ucCharSet]) == 0)
 	{
 		return (TRUE);
 	}

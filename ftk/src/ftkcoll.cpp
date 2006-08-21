@@ -5694,7 +5694,8 @@ FLMBOOL FLMAPI f_combineWPChar(
 	BASE_DIACRIT_TABLE *		pTable;
 
 	ucCharSet = HI( ui16BaseChar);
-	if( ucCharSet > F_NCHSETS)
+	
+	if( ucCharSet >= F_NCHSETS)
 	{
 		return( TRUE);
 	}
