@@ -149,20 +149,20 @@ Exit:
 	return( rc);
 }
 
-
 /****************************************************************************
 Desc:	Get the total bytes represented by a particular block address.
 ****************************************************************************/
 FLMUINT64 FSGetSizeInBytes(
-	FLMUINT	uiMaxFileSize,
-	FLMUINT	uiBlkAddress)
+	FLMUINT		uiMaxFileSize,
+	FLMUINT		uiBlkAddress)
 {
-	FLMUINT	uiFileNum;
-	FLMUINT	uiFileOffset;
+	FLMUINT		uiFileNum;
+	FLMUINT		uiFileOffset;
 	FLMUINT64	ui64Size;
 
 	uiFileNum = FSGetFileNumber( uiBlkAddress);
 	uiFileOffset = FSGetFileOffset( uiBlkAddress);
+	
 	if( uiFileNum > 1)
 	{
 		ui64Size = (FLMUINT64)(((FLMUINT64)uiFileNum - (FLMUINT64)1) *
@@ -173,6 +173,7 @@ FLMUINT64 FSGetSizeInBytes(
 	{
 		ui64Size = (FLMUINT64)uiFileOffset;
 	}
+	
 	return( ui64Size);
 }
 

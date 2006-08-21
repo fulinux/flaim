@@ -883,15 +883,15 @@ Desc:	This routine determines what hash table size best fits the current
 		the minimum and maximum range is closest to the record count.
 ****************************************************************************/
 FSTATIC FLMUINT flmRcaGetBestHashTblSize(
-	FLMUINT	uiCurrRecCount)
+	FLMUINT		uiCurrRecCount)
 {
-	FLMUINT	uiHashTblSize;
-	FLMUINT	uiMaxRecsForHashTblSize;
-	FLMUINT	uiMinRecsForHashTblSize;
-	FLMUINT	uiClosestHashTblSize = 0;
-	FLMUINT	uiDistanceFromMidpoint;
-	FLMUINT	uiLowestDistanceFromMidpoint;
-	FLMUINT	uiHashTblRecsMidpoint;
+	FLMUINT		uiHashTblSize;
+	FLMUINT		uiMaxRecsForHashTblSize;
+	FLMUINT		uiMinRecsForHashTblSize;
+	FLMUINT		uiClosestHashTblSize = 0;
+	FLMUINT		uiDistanceFromMidpoint;
+	FLMUINT		uiLowestDistanceFromMidpoint;
+	FLMUINT		uiHashTblRecsMidpoint;
 
 	uiLowestDistanceFromMidpoint = 0xFFFFFFFF;
 	for (uiHashTblSize = MIN_RCACHE_BUCKETS;
@@ -1074,11 +1074,11 @@ Desc:	This routine configures the record cache manager.  NOTE: This routine
 		assumes that the record cache mutex has been locked.
 ****************************************************************************/
 RCODE flmRcaConfig(
-	FLMUINT			uiType,
-	void *			Value1,
-	void *			Value2)
+	FLMUINT		uiType,
+	void *		Value1,
+	void *		Value2)
 {
-	RCODE		rc = FERR_OK;
+	RCODE			rc = FERR_OK;
 
 	F_UNREFERENCED_PARM( Value2);
 
@@ -1109,6 +1109,8 @@ Desc:	This routine shuts down the record cache manager and frees all
 ****************************************************************************/
 void flmRcaExit( void)
 {
+	FLMUINT		uiCount;
+	
 	if (gv_FlmSysData.RCacheMgr.hMutex != F_MUTEX_NULL)
 	{
 		f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
@@ -1116,17 +1118,26 @@ void flmRcaExit( void)
 
 	// Free all of the record cache objects.
 
+	uiCount = 0;
 	while (gv_FlmSysData.RCacheMgr.pMRURecord)
 	{
-		f_yieldCPU();
+		if( (++uiCount & 0xFF) == 0)
+		{
+			f_yieldCPU();
+		}
+		
 		flmRcaFreeCache( gv_FlmSysData.RCacheMgr.pMRURecord, FALSE);
 	}
 
 	// Must free those in the purge list too.
 
+	uiCount = 0;
 	while (gv_FlmSysData.RCacheMgr.pPurgeList)
 	{
-		f_yieldCPU();
+		if( (++uiCount & 0xFF) == 0)
+		{
+			f_yieldCPU();
+		}
 		flmRcaFreePurged( gv_FlmSysData.RCacheMgr.pPurgeList);
 	}
 
@@ -1538,9 +1549,9 @@ Start_Find:
 	{
 		pNewerRCache = NULL;
 		pOlderRCache = pRCache;
+		
 		for (;;)
 		{
-
 			// If this one is being read in, we need to wait on it.
 
 			if (RCA_IS_READING_IN( pRCache->uiFlags))
@@ -2348,24 +2359,10 @@ RCODE flmRcaInsertRec(
 		{
 			// Found latest UNCOMMITTED VERSION - replace it.
 
-#ifdef FLM_CHECK_RECORD
-			if (RC_BAD( rc = pRecord->checkRecord()))
-			{
-				goto Exit;
-			}
-#endif
-
 			if (RC_BAD( rc = pRecord->compressMemory()))
 			{
 				goto Exit;
 			}
-
-#ifdef FLM_CHECK_RECORD
-			if (RC_BAD( rc = pRecord->checkRecord()))
-			{
-				goto Exit;
-			}
-#endif
 
 			// Replace the old record data with the new record data.
 
@@ -2398,24 +2395,10 @@ RCODE flmRcaInsertRec(
 
 	flmAssert( !pNewerRCache);
 
-#ifdef FLM_CHECK_RECORD
-	if (RC_BAD( rc = pRecord->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
-
 	if (RC_BAD( rc = pRecord->compressMemory()))
 	{
 		goto Exit;
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if (RC_BAD( rc = pRecord->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
 
 	// Allocate a new RCACHE structure.
 
@@ -2594,15 +2577,15 @@ Desc:	This routine is called when an update transaction aborts.  At that
 		the record cache.
 ****************************************************************************/
 void flmRcaAbortTrans(
-	FDB *		pDb)
+	FDB *			pDb)
 {
-	FFILE *			pFile = pDb->pFile;
-	RCACHE *			pRCache;
-	RCACHE *			pOlderVersion;
-	FLMUINT			uiOlderTransId =
-							pDb->LogHdr.uiCurrTransID - 1;
+	FFILE *		pFile = pDb->pFile;
+	RCACHE *		pRCache;
+	RCACHE *		pOlderVersion;
+	FLMUINT		uiOlderTransId = pDb->LogHdr.uiCurrTransID - 1;
 
 	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+	
 	pRCache = pFile->pFirstRecord;
 	while (pRCache)
 	{
@@ -2653,6 +2636,7 @@ void flmRcaAbortTrans(
 			break;
 		}
 	}
+	
 	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 }
 
@@ -2662,11 +2646,12 @@ Desc:	This routine is called when an update transaction commits.  At that
 		currently in record cache for the FFILE.
 ****************************************************************************/
 void flmRcaCommitTrans(
-	FDB *		pDb)
+	FDB *			pDb)
 {
-	RCACHE *			pRCache;
+	RCACHE *		pRCache;
 
 	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+	
 	pRCache = pDb->pFile->pFirstRecord;
 	while (pRCache)
 	{
@@ -2686,6 +2671,7 @@ void flmRcaCommitTrans(
 			break;
 		}
 	}
+	
 	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 }
 
@@ -2695,13 +2681,13 @@ Desc:	This routine is called when a container in the database is deleted.
 		removed from cache.
 ****************************************************************************/
 void flmRcaRemoveContainerRecs(
-	FDB *		pDb,
-	FLMUINT	uiContainer)
+	FDB *			pDb,
+	FLMUINT		uiContainer)
 {
-	FFILE *			pFile = pDb->pFile;
-	RCACHE *			pRCache;
-	RCACHE *			pPrevRCache;
-	FLMUINT			uiTransId = pDb->LogHdr.uiCurrTransID;
+	FFILE *		pFile = pDb->pFile;
+	RCACHE *		pRCache;
+	RCACHE *		pPrevRCache;
+	FLMUINT		uiTransId = pDb->LogHdr.uiCurrTransID;
 
 	f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
 	pRCache = gv_FlmSysData.RCacheMgr.pLRURecord;
@@ -2770,6 +2756,7 @@ void flmRcaRemoveContainerRecs(
 		pRCache = pPrevRCache;
 
 	}
+	
 	f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 }
 
@@ -2778,9 +2765,9 @@ Desc:
 ****************************************************************************/
 #ifdef FLM_DEBUG
 FSTATIC RCODE flmRcaCheck(
-	FDB *			pDb,
-	FLMUINT		uiContainer,
-	FLMUINT		uiDrn)
+	FDB *				pDb,
+	FLMUINT			uiContainer,
+	FLMUINT			uiDrn)
 {
 	LFILE *			pLFile;
 	FlmRecord *		pRecord = NULL;
@@ -2807,7 +2794,7 @@ FSTATIC RCODE flmRcaCheck(
 Desc:	
 ****************************************************************************/
 FLMBOOL F_RecRelocator::canRelocate(
-	void *		pvAlloc)
+	void *			pvAlloc)
 {
 	FlmRecord *		pRec = (FlmRecord *)pvAlloc;
 
@@ -2823,8 +2810,8 @@ FLMBOOL F_RecRelocator::canRelocate(
 Desc:	
 ****************************************************************************/
 void F_RecRelocator::relocate(
-	void *		pvOldAlloc,
-	void *		pvNewAlloc)
+	void *			pvOldAlloc,
+	void *			pvNewAlloc)
 {
 	FlmRecord *		pOldRec = (FlmRecord *)pvOldAlloc;
 	FlmRecord *		pNewRec = (FlmRecord *)pvNewAlloc;
@@ -2842,6 +2829,7 @@ void F_RecRelocator::relocate(
 		flmAssert( *((FlmRecord **)pOldRec->m_pucBuffer) == pOldRec);
 		*((FlmRecord **)pNewRec->m_pucBuffer) = pNewRec;
 	}
+	
 	if( pNewRec->m_pucFieldIdTable)
 	{
 		flmAssert( *((FlmRecord **)pOldRec->m_pucFieldIdTable) == pOldRec);
@@ -2882,11 +2870,12 @@ Done:
 Desc:	
 ****************************************************************************/
 FLMBOOL F_RecBufferRelocator::canRelocate(
-	void *		pvAlloc)
+	void *			pvAlloc)
 {
 	FlmRecord *		pRec = *((FlmRecord **)pvAlloc);
 
-	flmAssert( pRec->m_pucBuffer == pvAlloc || pRec->m_pucFieldIdTable == pvAlloc);
+	flmAssert( pRec->m_pucBuffer == pvAlloc || 
+				  pRec->m_pucFieldIdTable == pvAlloc);
 
 	if( pRec->getRefCount() == 1 && pRec->isCached())
 	{
@@ -2900,8 +2889,8 @@ FLMBOOL F_RecBufferRelocator::canRelocate(
 Desc:	
 ****************************************************************************/
 void F_RecBufferRelocator::relocate(
-	void *		pvOldAlloc,
-	void *		pvNewAlloc)
+	void *			pvOldAlloc,
+	void *			pvNewAlloc)
 {
 	FlmRecord *		pRec = *((FlmRecord **)pvOldAlloc);
 
@@ -2949,8 +2938,8 @@ Desc:		Fixes up all pointers needed to allow an RCACHE struct to be
 Notes:	This routine assumes the rcache mutex is locked
 ****************************************************************************/
 void F_RCacheRelocator::relocate(
-	void *		pvOldAlloc,
-	void *		pvNewAlloc)
+	void *			pvOldAlloc,
+	void *			pvNewAlloc)
 {
 	RCACHE *			pOldRCache = (RCACHE *)pvOldAlloc;
 	RCACHE *			pNewRCache = (RCACHE *)pvNewAlloc;
@@ -3013,6 +3002,7 @@ void F_RCacheRelocator::relocate(
 	}
 	
 	ppBucket = FLM_RCA_HASH( pOldRCache->uiDrn);
+	
 	if( *ppBucket == pOldRCache)
 	{
 		*ppBucket = pNewRCache;

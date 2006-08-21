@@ -78,29 +78,6 @@ class F_CCS;
 // IMPORTANT NOTE: No other include files should follow this one except
 // for fpackoff.h
 
-// Character code high byte values for character sets
-
-#define CHSASCI							0			// ASCII
-#define CHSMUL1							1			// Multinational 1
-#define CHSMUL2							2			// Multinational 2
-#define CHSBOXD							3			// Box drawing
-#define CHSSYM1							4			// Typographic Symbols
-#define CHSSYM2							5			// Iconic Symbols
-#define CHSMATH							6			// Math
-#define CHMATHX							7			// Math Extension
-#define CHSGREK							8			// Greek
-#define CHSHEB								9			// Hebrew
-#define CHSCYR								10			// Cyrillic
-#define CHSKANA							11			// Japanese Kana
-#define CHSUSER							12			// User-defined
-#define CHSARB1							13			// Arabic
-#define CHSARB2							14			// Arabic script
-
-#define NCHSETS							15			// # of character sets (excluding asian)
-#define ACHSETS							0x0E0		// maximum character set value - asian
-#define ACHSMIN							0x024		// minimum character set value - asian
-#define ACHCMAX							0x0FE		// maxmimum character value in asian sets
-
 // Bit patterns for codes in internal text type
 
 #define ASCII_CHAR_CODE					0x00		// 0nnnnnnn
@@ -165,64 +142,6 @@ class F_CCS;
 #define MIN_7BIT_EXP						0x08
 #define MAX_7BIT_EXP						0x78
 
-// Definitions for diacritics
-
-#define grave								0
-#define centerd							1
-#define tilde								2
-#define circum								3	
-#define crossb								4
-#define slash								5	
-#define acute								6
-#define umlaut								7
-#define macron								8
-#define aposab								9
-#define aposbes							10
-#define aposba								11
-#define ring								14
-#define dota								15
-#define dacute								16
-#define cedilla							17
-#define ogonek								18
-#define caron								19
-#define stroke								20
-#define breve								22
-#define dotlesi							239
-#define dotlesj							25
-#define gacute								83		// greek acute
-#define gdia								84		// greek diaeresis
-#define gactdia							85		// acute diaeresis
-#define ggrvdia							86		// grave diaeresis
-#define ggrave								87		// greek grave
-#define gcircm								88		// greek circumflex
-#define gsmooth							89		// smooth breathing
-#define grough								90		// rough breathing
-#define giota								91		// iota subscript
-#define gsmact								92		// smooth breathing acute
-#define grgact								93		// rough breathing acute
-#define gsmgrv								94		// smooth breathing grave
-#define grggrv								95		// rough breathing grave
-#define gsmcir								96		// smooth breathing circumflex
-#define grgcir								97		// rough breathing circumflex
-#define gactio								98		// acute iota
-#define ggrvio								99		// grave iota
-#define gcirio								100	// circumflex iota
-#define gsmio								101	// smooth iota
-#define grgio								102	// rough iota
-#define gsmaio								103	// smooth acute iota
-#define grgaio								104	// rough acute iota
-#define gsmgvio							105	// smooth grave iota
-#define grggvio							106	// rough grave iota
-#define gsmcio								107	// smooth circumflex iota
-#define grgcio								108	// rough circumflex iota
-#define ghprime							81		// high prime
-#define glprime							82		// low prime
-#define racute								200	// russian acute
-#define rgrave								201	// russian grave
-#define rrtdesc							204	// russian right descender
-#define rogonek							205	// russian ogonek
-#define rmacron							206	// russian macron
-
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -241,29 +160,6 @@ Desc:
 		 ) 																\
 	) 																		\
 )
-
-FLMBOOL flmIsUpper(	
-	FLMUINT16			ui16Char);
-			
-FLMUINT16 flmCh6Upper(
-	FLMUINT16			ui16WpChar);
-
-FLMUINT16 flmCh6Lower(
-	FLMUINT16			ui16WpChar);
-			
-FLMBOOL flmCh6Brkcar(	
-	FLMUINT16			ui16WpChar, 
-	FLMUINT16 *			pui16BaseChar,
-	FLMUINT16 *			pui16DiacriticChar);
-
-FLMBOOL flmCh6Cmbcar(	
-	FLMUINT16 *			pui16WpChar, 
-	FLMUINT16			ui16BaseChar,
-	FLMINT16				i16DiacriticChar);
-
-FLMUINT flmUnicodeToWP(
-	const FLMUNICODE *	pUniStr,
-	FLMUINT16 *				pWPChr);
 
 /****************************************************************************
 										General FLAIM

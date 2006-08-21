@@ -434,7 +434,7 @@ RCODE F_CCS::generateEncryptionKeyDES3( void)
 	keyAttr[2].u.f.value = N_TRUE;
 	keyAttr[2].u.f.valueInfo = 0;
 
-	// Generate a AES key
+	// Generate a DES3 key
 	
 	if( CCS_GenerateKey( context, &algorithm, keyAttr, 3,
 		(NICI_BBOOL *)&keySizeChanged, &m_keyHandle, NICI_H_INVALID) != 0)

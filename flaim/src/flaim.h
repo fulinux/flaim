@@ -612,18 +612,18 @@
 			FLMUINT *				puiInsertPos = NULL);
 
 		RCODE insertTagInTables(
-			FLM_TAG_INFO *	pTagInfo,
-			FLMUINT			uiTagNameTblInsertPos,
-			FLMUINT			uiTagTypeAndNameTblInsertPos,
-			FLMUINT			uiTagNumTblInsertPos);
+			FLM_TAG_INFO *			pTagInfo,
+			FLMUINT					uiTagNameTblInsertPos,
+			FLMUINT					uiTagTypeAndNameTblInsertPos,
+			FLMUINT					uiTagNumTblInsertPos);
 
-		F_Pool					m_pool;
-		FLM_TAG_INFO **		m_ppSortedByTagName;
-		FLM_TAG_INFO **		m_ppSortedByTagNum;
-		FLM_TAG_INFO **		m_ppSortedByTagTypeAndName;
-		FLMUINT					m_uiTblSize;
-		FLMUINT					m_uiNumTags;
-		FLMBOOL					m_bTablesSorted;
+		F_Pool						m_pool;
+		FLM_TAG_INFO **			m_ppSortedByTagName;
+		FLM_TAG_INFO **			m_ppSortedByTagNum;
+		FLM_TAG_INFO **			m_ppSortedByTagTypeAndName;
+		FLMUINT						m_uiTblSize;
+		FLMUINT						m_uiNumTags;
+		FLMBOOL						m_bTablesSorted;
 	};
 
 	#define RECID_UNDEFINED		0xFFFFFFFF
@@ -4593,8 +4593,6 @@
 			FLMUINT			uiPosition);
 
 		
-		RCODE checkRecord( void);
-
 		RCODE checkField(
 			FlmField *			pFld);
 

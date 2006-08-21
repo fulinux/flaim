@@ -97,13 +97,6 @@ FlmRecord * FlmRecord::copy( void)
 	FlmRecord *		pNewRec = NULL;
 	FLMBOOL			bHeapAlloc = FALSE;
 	
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
-
 	if( (pNewRec = f_new FlmRecord) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
@@ -168,21 +161,7 @@ FlmRecord * FlmRecord::copy( void)
 	pNewRec->m_uiAvailFields = m_uiAvailFields;
 	pNewRec->m_bHolesInData = m_bHolesInData;
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = pNewRec->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
-
 	pNewRec->compressMemory();
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = pNewRec->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
 
 Exit:
 
@@ -369,14 +348,6 @@ RCODE FlmRecord::setINT(
 		goto Exit;
 	}
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 	uiStorageLen = sizeof( ucStorageBuf);
 	
 	if( RC_BAD( rc = FlmINT2Storage( iNumber, &uiStorageLen, ucStorageBuf)))
@@ -411,14 +382,6 @@ RCODE FlmRecord::setINT(
 
 	f_memcpy( pucData, ucStorageBuf, uiStorageLen);
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 Exit:
 
 	return( rc);
@@ -445,14 +408,6 @@ RCODE FlmRecord::setUINT(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 	uiStorageLen = sizeof( ucStorageBuf);
 	if( RC_BAD( rc = FlmUINT2Storage( uiNumber, &uiStorageLen, ucStorageBuf)))
@@ -487,14 +442,6 @@ RCODE FlmRecord::setUINT(
 
 	f_memcpy( pucData, ucStorageBuf, uiStorageLen);
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 Exit:
 
 	return( rc);
@@ -520,14 +467,6 @@ RCODE FlmRecord::setRecPointer(
 		goto Exit;
 	}
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 	if( uiEncId)
 	{
 		// For encrypted fields, we want to make sure we allocate
@@ -546,14 +485,6 @@ RCODE FlmRecord::setRecPointer(
 	}
 
 	UD2FBA( (FLMUINT32)uiRecPointer, pucData);
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 Exit:
 
@@ -580,14 +511,6 @@ RCODE FlmRecord::setUnicode(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 	// A NULL or empty pUnicode string is allowed - on those 
 	// cases just set the field type.
@@ -638,14 +561,6 @@ RCODE FlmRecord::setUnicode(
 		}
 	}
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 Exit:
 
 	return( rc);
@@ -671,14 +586,6 @@ RCODE FlmRecord::setNative(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 	if( !pszString || *pszString == 0)
 	{
@@ -726,14 +633,6 @@ RCODE FlmRecord::setNative(
 		}
 	}
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 Exit:
 
 	return( rc);
@@ -759,14 +658,6 @@ RCODE FlmRecord::setBinary(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 	if( !uiBufLen)
 	{
@@ -810,14 +701,6 @@ RCODE FlmRecord::setBinary(
 		f_memcpy( pucData, pvBuf, uiBufLen);
 	}
 
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
-
 Exit:
 
 	return( rc);
@@ -843,14 +726,6 @@ RCODE FlmRecord::setBlob(
 		rc = RC_SET( FERR_FAILURE);
 		goto Exit;
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 	if( !uiDataLen)
 	{
@@ -893,14 +768,6 @@ RCODE FlmRecord::setBlob(
 	
 		f_memcpy( pucData, ((FlmBlobImp *)pBlob)->getDataPtr(), uiDataLen);
 	}
-
-#ifdef FLM_CHECK_RECORD
-	if( RC_BAD( rc = checkRecord()))
-	{
-		flmAssert( 0);
-		goto Exit;
-	}
-#endif
 
 Exit:
 
@@ -2897,21 +2764,7 @@ FLMINT FlmRecord::Release(
 
 		if( m_bHolesInData || getFreeMemory())
 		{
-#ifdef FLM_CHECK_RECORD
-			if (RC_BAD( checkRecord()))
-			{
-				flmAssert( 0);
-			}
-#endif
-
 			compactMemory();
-
-#ifdef FLM_CHECK_RECORD
-			if (RC_BAD( checkRecord()))
-			{
-				flmAssert( 0);
-			}
-#endif
 			flmAssert( !getFreeMemory());
 		}
 	}
@@ -4761,33 +4614,6 @@ void FlmRecord::operator delete[](
 }
 
 #endif
-
-/*****************************************************************************
-Desc:	Verify the structural integrity of the FlmRecord
-*****************************************************************************/
-RCODE FlmRecord::checkRecord()
-{
-	RCODE			rc = FERR_OK;
-	FlmField *	pFld;
-
-	// Check each field to make sure it is acceptable.
-	pFld = getFieldPointer( root());
-	while( pFld)
-	{
-		if (RC_BAD( rc = checkField( pFld)))
-		{
-			flmAssert( 0);
-			goto Exit;
-		}
-
-		pFld = nextField( pFld);
-	}
-
-Exit:
-
-	return( rc);
-}
-
 
 /******************************************************************************
 Desc:	Verify the structure and content of the FlmField

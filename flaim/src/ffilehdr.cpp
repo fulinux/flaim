@@ -94,9 +94,9 @@ RCODE flmGetFileHdrInfo(
 	pFileHdrRV->uiAppMinorVer = pPrefixBuf [11];
 	pFileHdrRV->uiDefaultLanguage = pFileHdrBuf [DB_DEFAULT_LANGUAGE];
 	pFileHdrRV->uiVersionNum = uiVersionNum =
-								((FLMUINT16)(pFileHdrBuf [FLM_FILE_FORMAT_VER_POS] - ASCII_ZERO) * 100 +
-							 	 (FLMUINT16)(pFileHdrBuf [FLM_MINOR_VER_POS] - ASCII_ZERO) * 10 +
-							 	 (FLMUINT16)(pFileHdrBuf [FLM_SMINOR_VER_POS] - ASCII_ZERO));
+		((FLMUINT16)(pFileHdrBuf [FLM_FILE_FORMAT_VER_POS] - ASCII_ZERO) * 100 +
+		 (FLMUINT16)(pFileHdrBuf [FLM_MINOR_VER_POS] - ASCII_ZERO) * 10 +
+		 (FLMUINT16)(pFileHdrBuf [FLM_SMINOR_VER_POS] - ASCII_ZERO));
 
 	uiTmpBlkSize = pFileHdrRV->uiBlockSize;
 	if( !VALID_BLOCK_SIZE( uiTmpBlkSize))

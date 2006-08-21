@@ -1070,7 +1070,7 @@ RCODE FSBtNextElm(
 			if (uiKeyLen + uiPKC <= pStack->uiKeyBufSize)
 			{
 				pStack->uiKeyLen = (uiKeyLen + uiPKC);
-				f_memcpy( &pStack->pKeyBuf[uiPKC], &pCurElm[pStack->uiElmOvhd],
+				f_memcpy( &pStack->pKeyBuf[ uiPKC], &pCurElm[ pStack->uiElmOvhd],
 							uiKeyLen);
 			}
 			else

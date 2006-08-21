@@ -172,8 +172,8 @@ FLMEXP RCODE FLMAPI FlmStorage2INT(
 	const FLMBYTE *	pucValue,
 	FLMINT *				piNum)
 {
-	RCODE			rc = FERR_OK;
-	BCD_TYPE		bcd;
+	RCODE					rc = FERR_OK;
+	BCD_TYPE				bcd;
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
@@ -210,8 +210,8 @@ FLMEXP RCODE FLMAPI FlmStorage2UINT(
 	const FLMBYTE *	pucValue,
 	FLMUINT *			puiNum)
 {
-	RCODE			rc = FERR_OK;
-	BCD_TYPE		bcd;
+	RCODE					rc = FERR_OK;
+	BCD_TYPE				bcd;
 
 	if( RC_OK( rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{
@@ -250,8 +250,8 @@ FLMEXP RCODE FLMAPI FlmStorage2UINT32(
 	const FLMBYTE *	pucValue,
 	FLMUINT32 *			pui32Num)
 {
-	RCODE			rc = FERR_OK;
-	BCD_TYPE		bcd;
+	RCODE					rc = FERR_OK;
+	BCD_TYPE				bcd;
 
 	if( RC_OK(rc = flmBcd2Num( uiValueType, uiValueLength, pucValue, &bcd)))
 	{

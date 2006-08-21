@@ -115,6 +115,7 @@ FLMEXP RCODE FLMAPI FlmRecordRetrieve(
 			goto Search_Record;
 		}
 	}
+	
 	if( uiFlag & FO_EXACT)
 	{
 		if( RC_OK( rc = flmRcaRetrieveRec( pDb, &bTransStarted,

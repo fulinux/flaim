@@ -3411,8 +3411,7 @@ FSTATIC RCODE ScaReadTheBlock(
 		if (uiFilePos != uiBlkAddress)
 		{
 			pTmpReadStats->OldViewBlockReads.ui64Count++;
-			pTmpReadStats->OldViewBlockReads.ui64TotalBytes +=
-				uiBlkSize;
+			pTmpReadStats->OldViewBlockReads.ui64TotalBytes += uiBlkSize;
 		}
 		else
 		{
@@ -3597,10 +3596,12 @@ FSTATIC RCODE ScaBlkSanityCheck(
 		f_memset( &LfStats, 0, sizeof( LF_STATS));
 		LogicalFile.pLfStats = &LfStats;
 		LogicalFile.pLFile = pLFile;
+		
 		if (pLFile->uiLfType == LF_INDEX)
 		{
 			bIsIndex = TRUE;
 		}
+		
 		if (bIsIndex)
 		{
 			if (RC_BAD( fdictGetIndex(
@@ -3626,9 +3627,8 @@ FSTATIC RCODE ScaBlkSanityCheck(
 	StateInfo.pBlk = pucBlk;
 	StateInfo.uiBlkAddress = uiBlkAddress;
 
-	if (flmVerifyBlockHeader( &StateInfo, NULL,
-									  pFile->FileHdr.uiBlockSize,
-									  0L, 0L, FALSE, bCheckFullBlkAddr) != FLM_NO_CORRUPTION)
+	if( flmVerifyBlockHeader( &StateInfo, NULL, pFile->FileHdr.uiBlockSize,
+		0L, 0L, FALSE, bCheckFullBlkAddr) != FLM_NO_CORRUPTION)
 	{
 		goto Error_Exit;
 	}
@@ -3676,7 +3676,8 @@ FSTATIC RCODE ScaBlkSanityCheck(
 			}
 			else
 			{
-				if (StateInfo.uiElmOffset + StateInfo.uiElmOvhd > StateInfo.uiEndOfBlock)
+				if (StateInfo.uiElmOffset + StateInfo.uiElmOvhd > 
+					 StateInfo.uiEndOfBlock)
 				{
 					goto Error_Exit;
 				}
@@ -3693,17 +3694,18 @@ FSTATIC RCODE ScaBlkSanityCheck(
 
 			// Make sure the element doesn't go beyond the end of the block
 
-			if (StateInfo.uiElmOffset + StateInfo.uiElmLen > StateInfo.uiEndOfBlock)
+			if( StateInfo.uiElmOffset + StateInfo.uiElmLen > 
+				 StateInfo.uiEndOfBlock)
 			{
 				goto Error_Exit;
 			}
 
-			if (!bMinimalBasicCheck)
+			if( !bMinimalBasicCheck)
 			{
 			
 				// Verify the first/last flags if it is a leaf element
 
-				if (StateInfo.uiBlkType == BHT_LEAF)
+				if( StateInfo.uiBlkType == BHT_LEAF)
 				{
 					FLMUINT	uiFirstFlag = (FLMUINT)(BBE_IS_FIRST( StateInfo.pElm));
 					FLMUINT	uiPrevLastFlag = StateInfo.uiElmLastFlag;
@@ -3819,9 +3821,12 @@ FSTATIC RCODE ScaBlkSanityCheck(
 						{
 							if (StateInfo.uiFOPType != FLM_FOP_REC_INFO)
 							{
-								if (flmVerifyField( StateInfo.pFOPData, StateInfo.uiFOPDataLen,
-														  StateInfo.uiFieldType) != FLM_NO_CORRUPTION)
+								if (flmVerifyField( StateInfo.pFOPData, 
+									StateInfo.uiFOPDataLen,
+									StateInfo.uiFieldType) != FLM_NO_CORRUPTION)
+								{
 									goto Error_Exit;
+								}
 							}
 						}
 
@@ -3836,6 +3841,7 @@ FSTATIC RCODE ScaBlkSanityCheck(
 				}
 			}
 		}
+		
 		StateInfo.uiElmOffset += StateInfo.uiElmLen;
 	}
 
@@ -4095,8 +4101,7 @@ Get_Next_Block:
 
 		// See if this version of the block is what we want
 
-		if ((FLMUINT)FB2UD( &pucBlk [BH_TRANS_ID]) <=
-				pDb->LogHdr.uiCurrTransID)
+		if ((FLMUINT)FB2UD( &pucBlk [BH_TRANS_ID]) <= pDb->LogHdr.uiCurrTransID)
 		{
 
 			// Set the high trans ID on the block
@@ -4143,6 +4148,7 @@ Get_Next_Block:
 					}
 				}
 			}
+			
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			bMutexLocked = FALSE;
 			break;
@@ -4205,8 +4211,7 @@ Get_Next_Block:
 	if (gv_FlmSysData.bCheckCache)
 	{
 		if (RC_BAD( rc = ScaBlkSanityCheck( pDb, pFile, pLFile,
-											pucBlk, uiBlkAddress, TRUE,
-											FLM_EXTENSIVE_CHECK)))
+			pucBlk, uiBlkAddress, TRUE, FLM_EXTENSIVE_CHECK)))
 		{
 			goto Exit;
 		}
@@ -4357,8 +4362,7 @@ FSTATIC void _ScaDbgUseForThread(
 
 	if (!pUse)
 	{
-		if (RC_BAD( f_alloc(
-							(FLMUINT)sizeof( SCACHE_USE), &pUse)))
+		if (RC_BAD( f_alloc( (FLMUINT)sizeof( SCACHE_USE), &pUse)))
 		{
 			ScaDebugMsg( "Could not allocate SCACHE_USE structure",
 						pSCache, NULL);
@@ -4565,6 +4569,7 @@ FSTATIC RCODE ScaReadIntoCache(
 	// an existing one.
 
 	rc = ScaAllocCache( pDb, &pSCache);
+	
 	if (pPrevInVerList)
 	{
 		ScaReleaseForThread( pPrevInVerList);
@@ -4609,6 +4614,7 @@ FSTATIC RCODE ScaReadIntoCache(
 	}
 
 	ScaLinkToFile( pSCache, pDb->pFile);
+	
 	if (!pPrevInVerList)
 	{
 		SCACHE **	ppSCacheBucket;
@@ -4761,7 +4767,7 @@ Desc:	This routine frees all cache blocks that have been modified by
 		transaction is to be aborted.
 ****************************************************************************/
 void ScaFreeModifiedBlocks(
-	FDB *			pDb)
+	FDB *				pDb)
 {
 	FFILE *			pFile = pDb->pFile;
 	SCACHE *			pSCache;
@@ -4929,9 +4935,8 @@ Iterate_Larger_Half:
 			uiLBPos++;
 		}
 
-		while (uiUBPos == uiMIDPos ||
-					(((iCompare = 
-						scaCompare( pCurSCache, ppSCacheTbl [uiUBPos])) < 0)))
+		while( uiUBPos == uiMIDPos ||
+			(((iCompare = scaCompare( pCurSCache, ppSCacheTbl [uiUBPos])) < 0)))
 		{
 			if (!uiUBPos)
 			{
@@ -5143,6 +5148,7 @@ Add_Contiguous_Block:
 
 				uiGap = FSGetFileOffset( pSCache->uiBlkAddress) -
 							FSGetFileOffset( uiLastBlkAddr) - uiBlockSize;
+							
 				if (uiGap > 32 * 1024 - (uiBlockSize * 2))
 				{
 					break;
@@ -5942,10 +5948,8 @@ FLMBOOL flmNeededByReadTrans(
 	// Quick check - so we don't have to traverse all read transactions.
 
 	if ((!pFile->pFirstReadTrans) ||
-		 (uiHighTransId <
-			pFile->pFirstReadTrans->LogHdr.uiCurrTransID) ||
-		 (uiLowTransId >
-			pFile->pLastReadTrans->LogHdr.uiCurrTransID))
+		 (uiHighTransId < pFile->pFirstReadTrans->LogHdr.uiCurrTransID) ||
+		 (uiLowTransId > pFile->pLastReadTrans->LogHdr.uiCurrTransID))
 	{
 		goto Exit;
 	}
@@ -6142,10 +6146,8 @@ RCODE ScaGetBlock(
 		}
 		gv_FlmSysData.SCacheMgr.Usage.uiCacheFaults++;
 		gv_FlmSysData.SCacheMgr.Usage.uiCacheFaultLooks += uiNumLooks;
-		if (RC_BAD( rc = ScaReadIntoCache( pDb,
-										uiBlkType, pLFile,
-										uiBlkAddress,
-										NULL, NULL, &pSCache, &bGotFromDisk)))
+		if (RC_BAD( rc = ScaReadIntoCache( pDb, uiBlkType, pLFile,
+			uiBlkAddress, NULL, NULL, &pSCache, &bGotFromDisk)))
 		{
 			goto Exit;
 		}
@@ -6234,10 +6236,9 @@ RCODE ScaGetBlock(
 				if (pSMoreRecentVerCache)
 				{
 					if( RC_BAD( rc = ScaReadIntoCache( pDb, uiBlkType, pLFile,
-									uiBlkAddress,
-									pSMoreRecentVerCache,
-									pSMoreRecentVerCache->pNextInVersionList,
-									&pSCache, &bGotFromDisk)))
+							uiBlkAddress, pSMoreRecentVerCache,
+							pSMoreRecentVerCache->pNextInVersionList,
+							&pSCache, &bGotFromDisk)))
 					{
 						goto Exit;
 					}
@@ -6245,9 +6246,8 @@ RCODE ScaGetBlock(
 				else
 				{
 					if( RC_BAD( rc = ScaReadIntoCache( pDb, uiBlkType, pLFile,
-									uiBlkAddress,
-									NULL, pSBlkVerCache,
-									&pSCache, &bGotFromDisk)))
+							uiBlkAddress, NULL, pSBlkVerCache, 
+							&pSCache, &bGotFromDisk)))
 					{
 						goto Exit;
 					}
@@ -6361,20 +6361,20 @@ Exit:
 Desc:	Create a data block.
 ****************************************************************************/
 RCODE ScaCreateBlock(
-	FDB *			pDb,
-	LFILE *		pLFile,
-	SCACHE **	ppSCacheRV)
+	FDB *				pDb,
+	LFILE *			pLFile,
+	SCACHE **		ppSCacheRV)
 {
-	RCODE					rc = FERR_OK;
-	FLMUINT				uiBlkAddress;
-	FLMBYTE *			pucBlkBuf;
-	SCACHE *				pSCache;
-	SCACHE *				pOldSCache;
-	FFILE *				pFile = pDb->pFile;
-	FLMBOOL				bMutexLocked = FALSE;
-	FLMUINT				uiOldLogicalEOF;
-	SCACHE **			ppSCacheBucket;
-	FLMUINT				uiBlockSize = pFile->FileHdr.uiBlockSize;
+	RCODE				rc = FERR_OK;
+	FLMUINT			uiBlkAddress;
+	FLMBYTE *		pucBlkBuf;
+	SCACHE *			pSCache;
+	SCACHE *			pOldSCache;
+	FFILE *			pFile = pDb->pFile;
+	FLMBOOL			bMutexLocked = FALSE;
+	FLMUINT			uiOldLogicalEOF;
+	SCACHE **		ppSCacheBucket;
+	FLMUINT			uiBlockSize = pFile->FileHdr.uiBlockSize;
 
 	pDb->bHadUpdOper = TRUE;
 

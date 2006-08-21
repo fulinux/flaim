@@ -708,7 +708,7 @@ RCODE KYAddToKrefTbl(
 	// NULL character is to ensure that the compare in the qsort routine
 	// will work.
 
-	uiSizeNeeded = sizeof(KREF_ENTRY) + uiKrefKeyLen + 1;
+	uiSizeNeeded = sizeof( KREF_ENTRY) + uiKrefKeyLen + 1;
 
 	if( RC_BAD( rc = pKrefCntrl->pPool->poolAlloc( uiSizeNeeded, 
 		(void **)&pKref)))
@@ -787,13 +787,6 @@ RCODE flmEncryptField(
 
 	pvMark = pPool->poolMark();
 
-#ifdef FLM_CHECK_RECORD
-	if (RC_BAD( rc = pRecord->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
-
 	if (!pRecord->isEncryptedField( pvField))
 	{
 		flmAssert( 0);
@@ -864,13 +857,6 @@ RCODE flmEncryptField(
 	pRecord->setEncFlags( pvField,
 								FLD_HAVE_DECRYPTED_DATA | FLD_HAVE_ENCRYPTED_DATA);
 
-#ifdef FLM_CHECK_RECORD
-	if (RC_BAD( rc = pRecord->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
-
 Exit: 
 
 	pPool->poolReset( pvMark);
@@ -896,13 +882,6 @@ RCODE flmDecryptField(
 	void *			pvMark = NULL;
 
 	pvMark = pPool->poolMark();
-
-#ifdef FLM_CHECK_RECORD
-	if (RC_BAD( rc = pRecord->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
 
 	if (!pRecord->isEncryptedField( pvField))
 	{
@@ -942,13 +921,6 @@ RCODE flmDecryptField(
 
 	pRecord->setEncFlags( pvField,
 								FLD_HAVE_DECRYPTED_DATA | FLD_HAVE_ENCRYPTED_DATA);
-
-#ifdef FLM_CHECK_RECORD
-	if (RC_BAD( rc = pRecord->checkRecord()))
-	{
-		goto Exit;
-	}
-#endif
 
 Exit:
 

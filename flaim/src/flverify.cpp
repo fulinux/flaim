@@ -25,10 +25,6 @@
 
 #include "flaimsys.h"
 
-extern FLMBYTE 	gnDaysInMonth[];
-extern FLMBYTE 	SENLenArray[];
-extern FLMBYTE		flm_c60_max[];
-
 FSTATIC eCorruptionType flmVerifyBlobField(
 	FLMBYTE *		pBlobHdr,
 	FLMUINT			uiBlobHdrLen);
@@ -52,6 +48,47 @@ FSTATIC FLMBOOL flmGetSEN(
 	FLMUINT *		puiDrnRV,
 	FLMUINT *		puiNumBytesRV);
 	
+extern FLMBYTE 	gnDaysInMonth[];
+extern FLMBYTE 	SENLenArray[];
+
+#define ASC_N								95
+#define ML1_N								242
+#define ML2_N								145
+#define BOX_N								88
+#define TYP_N								103
+#define ICN_N								255
+#define MTH_N								238
+#define MTX_N								229
+#define GRK_N								219
+#define HEB_N								123
+#define CYR_N								250
+#define KAN_N								63
+#define USR_N								255
+#define ARB_N								196
+#define ARS_N								220
+
+/****************************************************************************
+Desc:	Number of characters in each character set
+****************************************************************************/
+FLMBYTE flm_c60_max[] = 
+{
+	ASC_N,									// ascii
+	ML1_N,									// multinational 1
+	ML2_N,									// multinational 2
+	BOX_N,									// line draw
+	TYP_N,									// typographic
+	ICN_N,									// icons
+	MTH_N,									// math
+	MTX_N,									// math extension
+	GRK_N,									// Greek
+	HEB_N,									// Hebrew
+	CYR_N,									// Cyrillic - Russian
+	KAN_N,									// Kana
+	USR_N,									// user
+	ARB_N,									// Arabic
+	ARS_N,									// Arabic Script
+};
+
 /****************************************************************************
 Desc: Verifies that a WordPerfect character is a legal character.
 ****************************************************************************/
@@ -59,16 +96,16 @@ eCorruptionType flmVerifyWPChar(
 	FLMUINT		uiCharSet,
 	FLMUINT		uiChar)
 {
-	if (uiCharSet < NCHSETS)
+	if (uiCharSet < F_NCHSETS)
 	{
 		if (uiChar >= (FLMUINT) flm_c60_max[uiCharSet])
 		{
 			return (FLM_BAD_CHAR);
 		}
 	}
-	else if ((uiCharSet >= ACHSMIN) && (uiCharSet < ACHSETS))
+	else if ((uiCharSet >= F_ACHSMIN) && (uiCharSet < F_ACHSETS))
 	{
-		if (uiChar > ACHCMAX)
+		if (uiChar > F_ACHCMAX)
 		{
 			return (FLM_BAD_ASIAN_CHAR);
 		}

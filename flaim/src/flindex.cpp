@@ -25,13 +25,13 @@
 #include "flaimsys.h"
 
 FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
-	IF_Thread *		pThread);
+	IF_Thread *			pThread);
 
 FSTATIC void stopBackgroundIndexThread(
-	FDB *				pDb,
-	FLMUINT			uiIndexNum,
-	FLMBOOL			bWait,
-	FLMBOOL *		pbStopped);
+	FDB *					pDb,
+	FLMUINT				uiIndexNum,
+	FLMBOOL				bWait,
+	FLMBOOL *			pbStopped);
 
 FSTATIC RCODE flmIndexStatusCS(
 	FDB *					pDb,
@@ -46,13 +46,13 @@ FLMEXP RCODE FLMAPI FlmIndexStatus(
 	FLMUINT				uiIndexNum,
 	FINDEX_STATUS *	pIndexStatus)
 {
-	RCODE				rc = FERR_OK;
-	FLMBOOL			bStartedAutoTrans = FALSE;
-	FLMUINT 			uiLastDrnIndexed;
-	FDB *				pDb = (FDB *)hDb;
-	F_BKGND_IX *	pBackgroundIx;
-	FLMBOOL			bSuspended;
-	FLMBOOL			bMutexLocked = FALSE;
+	RCODE					rc = FERR_OK;
+	FLMBOOL				bStartedAutoTrans = FALSE;
+	FLMUINT 				uiLastDrnIndexed;
+	FDB *					pDb = (FDB *)hDb;
+	F_BKGND_IX *		pBackgroundIx;
+	FLMBOOL				bSuspended;
+	FLMBOOL				bMutexLocked = FALSE;
 
 	flmAssert( pIndexStatus != NULL);
 
@@ -875,9 +875,9 @@ FSTATIC void stopBackgroundIndexThread(
 	FLMBOOL			bWait,
 	FLMBOOL *		pbStopped)
 {
-	F_BKGND_IX *		pBackgroundIx;
-	FLMUINT				uiThreadId;
-	FLMBOOL				bMutexLocked = FALSE;
+	F_BKGND_IX *	pBackgroundIx;
+	FLMUINT			uiThreadId;
+	FLMBOOL			bMutexLocked = FALSE;
 
 	if( pbStopped)
 	{
@@ -1002,15 +1002,15 @@ Desc:		Thread that will build an index in the background.
 			freed at the conclusion of the routine.
 ****************************************************************************/
 RCODE flmStartIndexBuild(
-	FDB *			pDb,
-	FLMUINT		uiIndexNum)
+	FDB *				pDb,
+	FLMUINT			uiIndexNum)
 {
-	RCODE					rc = FERR_OK;
-	FLMUINT				uiGMT;
-	IXD *					pIxd;
-	F_BKGND_IX *		pBackgroundIx = NULL;
-	char					szThreadName[ F_PATH_MAX_SIZE];
-	char					szBaseName[ F_FILENAME_SIZE];
+	RCODE				rc = FERR_OK;
+	FLMUINT			uiGMT;
+	IXD *				pIxd;
+	F_BKGND_IX *	pBackgroundIx = NULL;
+	char				szThreadName[ F_PATH_MAX_SIZE];
+	char				szBaseName[ F_FILENAME_SIZE];
 
 	f_timeGetSeconds( &uiGMT );
 	
@@ -1090,7 +1090,7 @@ Desc:		Thread that will build an index in the background.
 			freed at the conclusion of the routine.
 ****************************************************************************/
 FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
-	IF_Thread *		pThread)
+	IF_Thread *			pThread)
 {
 	RCODE					rc = FERR_OK;
 	IXD *					pIxd;
@@ -1249,9 +1249,7 @@ Loop_Again:
 		}
 		bStartedTrans = TRUE;
 
-		if( RC_BAD( rc = fdictGetIndex(
-			pDb->pDict,
-			pDb->pFile->bInLimitedMode,
+		if( RC_BAD( rc = fdictGetIndex( pDb->pDict, pDb->pFile->bInLimitedMode,
 			uiIndexNum, NULL, &pIxd, TRUE)))
 		{
 			// Index may have been deleted by another transaction, or
@@ -1303,8 +1301,7 @@ Loop_Again:
 		}
 		else
 		{
-			if( uiFirstDrn == DRN_LAST_MARKER &&
-				 uiContainerNum == 0xFFFFFFFF)
+			if( uiFirstDrn == DRN_LAST_MARKER && uiContainerNum == 0xFFFFFFFF)
 			{
 				goto Exit;
 			}
@@ -1514,10 +1511,10 @@ F_BKGND_IX * flmBackgroundIndexGet(
 	FLMBOOL			bMutexLocked,
 	FLMUINT *		puiThreadId)
 {
-	RCODE					rc = FERR_OK;
-	IF_Thread *			pThread;
-	FLMUINT				uiThreadId;
-	F_BKGND_IX *		pBackgroundIx = NULL;
+	RCODE				rc = FERR_OK;
+	IF_Thread *		pThread;
+	FLMUINT			uiThreadId;
+	F_BKGND_IX *	pBackgroundIx = NULL;
 
 	if( !bMutexLocked)
 	{
@@ -1578,10 +1575,10 @@ FSTATIC RCODE flmIndexStatusCS(
 	FLMUINT				uiIndexNum,
 	FINDEX_STATUS *	pIndexStatus)
 {
-	RCODE				rc = FERR_OK;
-	CS_CONTEXT *	pCSContext = pDb->pCSContext;
-	FCL_WIRE			Wire( pCSContext, pDb);
-	void *			pvMark = pCSContext->pool.poolMark();
+	RCODE					rc = FERR_OK;
+	CS_CONTEXT *		pCSContext = pDb->pCSContext;
+	FCL_WIRE				Wire( pCSContext, pDb);
+	void *				pvMark = pCSContext->pool.poolMark();
 
 	// Set the temporary pool
 
