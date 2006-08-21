@@ -530,7 +530,7 @@
 	#define NE_FLM_SETTING_FILE_INFO							0xC22C			///< 0xC22C - Unexpected error occurred while setting a file's information.
 	#define NE_FLM_IO_PENDING									0xC22D			///< 0xC22D - I/O has not yet completed
 	#define NE_FLM_ASYNC_FAILED								0xC22E			///< 0xC22E - An async I/O operation failed
-	#define NE_FLM_MISALIGNED_IO								0xC22F			///< 0xC22F - Misaligned buffer, offset, or sector multiple encountered during I/O request
+	#define NE_FLM_MISALIGNED_IO								0xC22F			///< 0xC22F - Misaligned buffer or offset encountered during I/O request
 	
 	// Stream Errors - These are new
 
@@ -689,18 +689,104 @@
 	Desc:	Collation flags and constants
 	****************************************************************************/
 	
-	#define HAD_SUB_COLLATION						0x01				// Set if had sub-collating values-diacritics
-	#define HAD_LOWER_CASE							0x02				// Set if you hit a lowercase character
-	#define COLL_FIRST_SUBSTRING					0x03				// First substring marker
-	#define COLL_MARKER 								0x04				// Marks place of sub-collation
+	#define F_HAD_SUB_COLLATION					0x01			// Set if had sub-collating values-diacritics
+	#define F_HAD_LOWER_CASE						0x02			// Set if you hit a lowercase character
+	#define F_COLL_FIRST_SUBSTRING				0x03			// First substring marker
+	#define F_COLL_MARKER 							0x04			// Marks place of sub-collation
 	
-	#define SC_LOWER									0x00				// Only lowercase characters exist
-	#define SC_MIXED									0x01				// Lower/uppercase flags follow in next byte
-	#define SC_UPPER									0x02				// Only upper characters exist
-	#define SC_SUB_COL								0x03				// Sub-collation follows (diacritics|extCh)
+	#define F_SC_LOWER								0x00			// Only lowercase characters exist
+	#define F_SC_MIXED								0x01			// Lower/uppercase flags follow in next byte
+	#define F_SC_UPPER								0x02			// Only upper characters exist
+	#define F_SC_SUB_COL								0x03			// Sub-collation follows (diacritics|extCh)
 	
-	#define COLL_TRUNCATED							0x0C				// This key piece has been truncated from original
-	#define MAX_COL_OPCODE							COLL_TRUNCATED
+	#define F_COLL_TRUNCATED						0x0C			// This key piece has been truncated from original
+	#define F_MAX_COL_OPCODE						F_COLL_TRUNCATED
+
+	#define F_CHSASCI									0				// ASCII
+	#define F_CHSMUL1									1				// Multinational 1
+	#define F_CHSMUL2									2				// Multinational 2
+	#define F_CHSBOXD									3				// Box drawing
+	#define F_CHSSYM1									4				// Typographic Symbols
+	#define F_CHSSYM2									5				// Iconic Symbols
+	#define F_CHSMATH									6				// Math
+	#define F_CHMATHX									7				// Math Extension
+	#define F_CHSGREK									8				// Greek
+	#define F_CHSHEB									9				// Hebrew
+	#define F_CHSCYR									10				// Cyrillic
+	#define F_CHSKANA									11				// Japanese Kana
+	#define F_CHSUSER									12				// User-defined
+	#define F_CHSARB1									13				// Arabic
+	#define F_CHSARB2									14				// Arabic script
+	
+	#define F_NCHSETS									15				// # of character sets (excluding asian)
+	#define F_ACHSETS									0x0E0			// maximum character set value - asian
+	#define F_ACHSMIN									0x024			// minimum character set value - asian
+	#define F_ACHCMAX									0x0FE			// maxmimum character value in asian sets
+
+	/****************************************************************************
+	Desc:	Diacritics
+	****************************************************************************/
+	
+	#define F_GRAVE									0
+	#define F_CENTERD									1
+	#define F_TILDE									2
+	#define F_CIRCUM									3
+	#define F_CROSSB									4
+	#define F_SLASH									5
+	#define F_ACUTE									6
+	#define F_UMLAUT									7
+	#define F_MACRON									8
+	
+	#define F_APOSAB									9
+	#define F_APOSBES									10
+	#define F_APOSBA									11
+	
+	#define F_RING										14
+	#define F_DOTA										15
+	#define F_DACUTE									16
+	#define F_CEDILLA									17
+	#define F_OGONEK									18
+	#define F_CARON									19
+	#define F_STROKE									20
+	
+	#define F_BREVE									22
+	#define F_DOTLESI									239
+	#define F_DOTLESJ									25
+	
+	#define F_GACUTE									83					// greek acute
+	#define F_GDIA										84					// greek diaeresis
+	#define F_GACTDIA									85					// acute diaeresis
+	#define F_GGRVDIA									86					// grave diaeresis
+	#define F_GGRAVE									87					// greek grave
+	#define F_GCIRCM									88					// greek circumflex
+	#define F_GSMOOTH									89					// smooth breathing
+	#define F_GROUGH									90					// rough breathing
+	#define F_GIOTA									91					// iota subscript
+	#define F_GSMACT									92					// smooth breathing acute
+	#define F_GRGACT									93					// rough breathing acute
+	#define F_GSMGRV									94					// smooth breathing grave
+	#define F_GRGGRV									95					// rough breathing grave
+	#define F_GSMCIR									96					// smooth breathing circumflex
+	#define F_GRGCIR									97					// rough breathing circumflex
+	#define F_GACTIO									98					// acute iota
+	#define F_GGRVIO									99					// grave iota
+	#define F_GCIRIO									100				// circumflex iota
+	#define F_GSMIO									101				// smooth iota
+	#define F_GRGIO									102				// rough iota
+	#define F_GSMAIO									103				// smooth acute iota
+	#define F_GRGAIO									104				// rough acute iota
+	#define F_GSMGVIO									105				// smooth grave iota
+	#define F_GRGGVIO									106				// rough grave iota
+	#define F_GSMCIO									107				// smooth circumflex iota
+	#define F_GRGCIO									108				// rough circumflex iota
+	#define F_GHPRIME									81					// high prime
+	#define F_GLPRIME									82					// low prime
+	
+	#define F_RACUTE									200				// russian acute
+	#define F_RGRAVE									201				// russian grave
+	#define F_RRTDESC									204				// russian right descender
+	#define F_ROGONEK									205				// russian ogonek
+	#define F_RMACRON									206				// russian macron
 
 	/****************************************************************************
 	Desc:	I/O Flags
@@ -876,6 +962,12 @@
 	void FLMAPI ftkShutdown( void);
 
 	/****************************************************************************
+	Desc: Global data
+	****************************************************************************/
+
+	extern FLMUINT16 *	gv_pui16USCollationTable;
+
+	/****************************************************************************
 	/// This is a pure virtual base class that other classes inherit from.\   It
 	/// provides methods for reference counting (AddRef, Release).
 	****************************************************************************/
@@ -999,7 +1091,7 @@
 	};
 	
 	/****************************************************************************
-	Desc:		Internal base class
+	Desc: Internal base class
 	****************************************************************************/
 	class FLMEXP F_OSBase
 	{
@@ -2627,6 +2719,45 @@
 		FLMUNICODE					uUniChar,
 		FLMUINT16 *					pui16WPChar);
 		
+	FLMBOOL FLMAPI f_depricatedUnicodeToWP(
+		FLMUNICODE					uUniChar,
+		FLMUINT16 *					pui16WPChar);
+
+	FLMUINT16 FLMAPI f_wpUpper(
+		FLMUINT16					ui16WpChar);
+	
+	FLMBOOL FLMAPI f_wpIsUpper(
+		FLMUINT16					ui16WpChar);
+	
+	FLMUINT16 FLMAPI f_wpLower(
+		FLMUINT16					ui16WpChar);
+	
+	FLMBOOL FLMAPI f_breakWPChar(	
+		FLMUINT16					ui16WpChar,
+		FLMUINT16 *					pui16BaseChar,
+		FLMUINT16 *					pui16DiacriticChar);
+
+	FLMBOOL FLMAPI f_combineWPChar(
+		FLMUINT16 *					pui16WpChar,
+		FLMUINT16					ui16BaseChar,
+		FLMINT16						ui16DiacriticChar);
+
+	FLMUINT16 FLMAPI f_wpGetCollationImp(
+		FLMUINT16					ui16WpChar,
+		FLMUINT						uiLanguage);
+
+	FINLINE FLMUINT16 FLMAPI f_wpGetCollation(
+		FLMUINT16					ui16WpChar,
+		FLMUINT						uiLanguage)
+	{
+		if( uiLanguage == FLM_US_LANG)
+		{
+			return( gv_pui16USCollationTable[ ui16WpChar]);
+		}
+
+		return( f_wpGetCollationImp( ui16WpChar, uiLanguage));
+	}
+
 	RCODE FLMAPI f_wpCheckDoubleCollation(
 		IF_PosIStream *			pIStream,
 		FLMBOOL						bUnicodeStream,
@@ -2636,6 +2767,34 @@
 		FLMBOOL *					pbTwoIntoOne,
 		FLMUINT						uiLanguage);
 	
+	FLMUINT16 FLMAPI f_wpCheckDoubleCollation(
+		FLMUINT16 *					pui16WpChar,
+		FLMBOOL *					pbTwoIntoOne,
+		const FLMBYTE **			ppucInputStr,
+		FLMUINT						uiLanguage);
+	
+	FLMUINT16 FLMAPI f_wpHanToZenkaku(
+		FLMUINT16					ui16WpChar,
+		FLMUINT16					ui16NextWpChar,
+		FLMUINT16 *					pui16Zenkaku);
+
+	FLMUINT16 FLMAPI f_wpZenToHankaku(
+		FLMUINT16					ui16WpChar,
+		FLMUINT16 * 				pui16DakutenOrHandakuten);
+	
+	FLMUINT FLMAPI f_wpToMixed(
+		FLMBYTE *					pucWPStr,
+		FLMUINT						uiWPStrLen,
+		const FLMBYTE *			pucLowUpBitStr,
+		FLMUINT						uiLang);
+
+	RCODE FLMAPI f_asiaParseSubCol(
+		FLMBYTE *			pucWPStr,
+		FLMUINT *			puiWPStrLen,
+		FLMUINT				uiMaxWPBytes,
+		const FLMBYTE *	pucSubColBuf,
+		FLMUINT *			puiSubColBitPos);
+
 	RCODE FLMAPI f_asiaColStr2WPStr(
 		const FLMBYTE *			pucColStr,
 		FLMUINT						uiColStrLen,

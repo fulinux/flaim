@@ -25,124 +25,36 @@
 
 #include "ftksys.h"
 
-// Character set #'s are same as high byte values
-// except for algorithmic set.
-
-#define CHSASCI							0					// ASCII
-#define CHSMUL1							1					// Multinational 1
-#define CHSMUL2							2					// Multinational 2
-#define CHSBOXD							3					// Box drawing
-#define CHSSYM1							4					// Typographic Symbols
-#define CHSSYM2							5					// Iconic Symbols
-#define CHSMATH							6					// Math
-#define CHMATHX							7					// Math Extension
-#define CHSGREK							8					// Greek
-#define CHSHEB								9					// Hebrew
-#define CHSCYR								10					// Cyrillic
-#define CHSKANA							11					// Japanese Kana
-#define CHSUSER							12					// User-defined
-#define CHSARB1							13					// Arabic
-#define CHSARB2							14					// Arabic script
-
-#define NCHSETS							15					// # of character sets (excluding Asian)
-#define WP_MAX_CAR60_SIZE				NCHSETS
-#define ACHSETS							0x0E0				// Maximum character set value - Asian
-#define ACHSMIN							0x024				// Minimum character set value - Asian
-#define ACHCMAX							0x0FE				// Maxmimum character value in Asian sets
-
 // Collating Sequence Equates
 
-#define COLLS								32					// first collating number (space/end of line)
-#define COLS0								255				//  graphics/misc - chars without a collate value
-#define COLS1								(COLLS + 9)		// quotes
-#define COLS2								(COLS1 + 5)		// parens
-#define COLS3								(COLS2 + 6)		// money
-#define COLS4								(COLS3 + 6)		// math ops
-#define COLS5								(COLS4 + 8)		// math others
-#define COLS6								(COLS5 + 14)	// others: %#&@\_|~
-#define COLS7								(COLS6 + 13)	// greek
-#define COLS8								(COLS7 + 25)	// numbers
-#define COLS9								(COLS8 + 10)	// alphabet
-#define COLS10								(COLS9 + 60)	// cyrillic
-#define COLS10h							(COLS9 + 42)	// hebrew - writes over european & cyrilic
-#define COLS10a							(COLS10h + 28)	// arabic - inclusive from 198(C6)-252(FC)
-#define COLS11								253				//	End of list - arabic goes to the end
-#define COLS0_ARABIC						COLS11			// Set if arabic accent marking
-#define COLS0_HEBREW						COLS11			// Set if hebrew accent marking
-#define COLS_ASIAN_MARKS				0x140
-#define COLS_ASIAN_MARK_VAL			0x40				// Without 0x100
+#define COLLS						32					// first collating number (space/end of line)
+#define COLS0						255				//  graphics/misc - chars without a collate value
+#define COLS1						(COLLS + 9)		// quotes
+#define COLS2						(COLS1 + 5)		// parens
+#define COLS3						(COLS2 + 6)		// money
+#define COLS4						(COLS3 + 6)		// math ops
+#define COLS5						(COLS4 + 8)		// math others
+#define COLS6						(COLS5 + 14)	// others: %#&@\_|~
+#define COLS7						(COLS6 + 13)	// greek
+#define COLS8						(COLS7 + 25)	// numbers
+#define COLS9						(COLS8 + 10)	// alphabet
+#define COLS10						(COLS9 + 60)	// cyrillic
+#define COLS10h					(COLS9 + 42)	// hebrew - writes over european & cyrilic
+#define COLS10a					(COLS10h + 28)	// arabic - inclusive from 198(C6)-252(FC)
+#define COLS11						253				//	End of list - arabic goes to the end
+#define COLS0_ARABIC				COLS11			// Set if arabic accent marking
+#define COLS0_HEBREW				COLS11			// Set if hebrew accent marking
+#define COLS_ASIAN_MARKS		0x140
+#define COLS_ASIAN_MARK_VAL	0x40				// Without 0x100
 
-#define SET_CASE_BIT						0x01
-#define SET_KATAKANA_BIT				0x01
-#define SET_WIDTH_BIT					0x02
+#define SET_CASE_BIT				0x01
+#define SET_KATAKANA_BIT		0x01
+#define SET_WIDTH_BIT			0x02
 
-#define UNK_UNICODE_CODE				0xFFFE
+#define UNK_UNICODE_CODE		0xFFFE
 
-#define MAX_SUBCOL_BUF					(500)
-#define MAX_CASE_BYTES	  				(150)
-
-// Definitions for diacritics.
-
-#define grave						0
-#define centerd					1
-#define tilde						2
-#define circum						3
-#define crossb						4
-#define slash						5
-#define acute						6
-#define umlaut						7
-#define macron						8
-
-#define aposab						9
-#define aposbes					10
-#define aposba						11
-
-#define ring						14
-#define dota						15
-#define dacute						16
-#define cedilla					17
-#define ogonek						18
-#define caron						19
-#define stroke						20
-
-#define breve						22
-#define dotlesi					239
-#define dotlesj					25
-
-#define gacute						83					// greek acute
-#define gdia						84					// greek diaeresis
-#define gactdia					85					// acute diaeresis
-#define ggrvdia					86					// grave diaeresis
-#define ggrave						87					// greek grave
-#define gcircm						88					// greek circumflex
-#define gsmooth					89					// smooth breathing
-#define grough						90					// rough breathing
-#define giota						91					// iota subscript
-#define gsmact						92					// smooth breathing acute
-#define grgact						93					// rough breathing acute
-#define gsmgrv						94					// smooth breathing grave
-#define grggrv						95					// rough breathing grave
-#define gsmcir						96					// smooth breathing circumflex
-#define grgcir						97					// rough breathing circumflex
-#define gactio						98					// acute iota
-#define ggrvio						99					// grave iota
-#define gcirio						100				// circumflex iota
-#define gsmio						101				// smooth iota
-#define grgio						102				// rough iota
-#define gsmaio						103				// smooth acute iota
-#define grgaio						104				// rough acute iota
-#define gsmgvio					105				// smooth grave iota
-#define grggvio					106				// rough grave iota
-#define gsmcio						107				// smooth circumflex iota
-#define grgcio						108				// rough circumflex iota
-#define ghprime					81					// high prime
-#define glprime					82					// low prime
-
-#define racute						200				// russian acute
-#define rgrave						201				// russian grave
-#define rrtdesc					204				// russian right descender
-#define rogonek					205				// russian ogonek
-#define rmacron					206				// russian macron
+#define MAX_SUBCOL_BUF			(500)
+#define MAX_CASE_BYTES			(150)
 
 #define ASCTBLLEN					95
 #define MNTBLLEN					219
@@ -234,7 +146,7 @@
 
 #define FIXUP_AREA_SIZE			24						// Number of characters to fix up
 
-FLMUINT16 flmWPAsiaGetCollation(
+FSTATIC FLMUINT16 flmWPAsiaGetCollation(
 	FLMUINT16			ui16WpChar,
 	FLMUINT16			ui16NextWpChar,
 	FLMUINT16   		ui16PrevColValue,
@@ -243,56 +155,10 @@ FLMUINT16 flmWPAsiaGetCollation(
 	FLMBYTE *			pucCaseBits,
 	FLMBOOL				bUppercaseFlag);
 
-FLMUINT16 flmWPGetCollation(
-	FLMUINT16			ui16WpChar,
-	FLMUINT				uiLanguage);
-
-FLMUINT16 flmWPUpper(
-	FLMUINT16			ui16WpChar);
-
-FLMUINT16 flmWPLower(
-	FLMUINT16			ui16WpChar);
-
-FLMBOOL flmWPIsUpper(
-	FLMUINT16			ui16WpChar);
-
-FLMBOOL flmWPBrkcar(	
-	FLMUINT16			ui16WpChar,
-	FLMUINT16 *			pui16BaseChar,
-	FLMUINT16 *			pui16DiacriticChar);
-
-FLMUINT16 flmWPGetSubCol(
+FSTATIC FLMUINT16 flmWPGetSubCol(
 	FLMUINT16			ui16WPValue,
 	FLMUINT16			ui16ColValue,
 	FLMUINT				uiLanguage);
-
-typedef struct
-{
-	FLMBYTE		base;
-	FLMBYTE		diacrit;
-} BASE_DIACRIT_TABLE;
-
-typedef struct
-{
-	FLMUINT16					char_count;		// # of characters in table
-	FLMUINT16					start_char;		// start char.
-	BASE_DIACRIT_TABLE *		table;
-
-} BASE_DIACRIT;
-
-typedef struct
-{
-	FLMBYTE			key;			// character key to search on
-	FLMBYTE *		charPtr;		// character pointer for matched key
-} TBL_B_TO_BP;
-
-typedef struct
-{
-	FLMBYTE		ByteValue;
-	FLMUINT16	WordValue;
-} BYTE_WORD_TBL;
-
-// Static functions
 
 FSTATIC RCODE flmWPCmbSubColBuf(
 	FLMBYTE *			pucWPStr,
@@ -302,28 +168,6 @@ FSTATIC RCODE flmWPCmbSubColBuf(
 	FLMBOOL				bHebrewArabic,
 	FLMUINT *			puiSubColBitPos);
 	
-FSTATIC FLMUINT flmWPToMixed(
-	FLMBYTE *			pucWPStr,
-	FLMUINT				uiWPStrLen,
-	const FLMBYTE *	pucLowUpBitStr,
-	FLMUINT				uiLang);
-
-FSTATIC FLMUINT16 flmWPZenToHankaku(
-	FLMUINT16			ui16WpChar,
-	FLMUINT16 * 		pui16DakutenOrHandakuten);
-
-FSTATIC FLMUINT16 flmWPHanToZenkaku(
-	FLMUINT16			ui16WpChar,
-	FLMUINT16			ui16NextWpChar,
-	FLMUINT16 *			pui16Zenkaku);
-
-FSTATIC RCODE flmAsiaParseSubCol(
-	FLMBYTE *			pucWPStr,
-	FLMUINT *			puiWPStrLen,
-	FLMUINT				uiMaxWPBytes,
-	const FLMBYTE *	pucSubColBuf,
-	FLMUINT *			puiSubColBitPos);
-
 FSTATIC RCODE flmAsiaParseCase(
 	FLMBYTE *			pucWPStr,
 	FLMUINT *			puiWPStrLen,
@@ -339,6 +183,35 @@ static FLMUINT			gv_uiMinUniChar = 0;
 static FLMUINT			gv_uiMaxUniChar = 0;
 static FLMUINT			gv_uiMinWPChar = 0;
 static FLMUINT			gv_uiMaxWPChar = 0;
+FLMUINT16 *				gv_pui16USCollationTable = NULL;
+
+// Typedefs
+
+typedef struct
+{
+	FLMBYTE				base;
+	FLMBYTE				diacrit;
+} BASE_DIACRIT_TABLE;
+
+typedef struct
+{
+	FLMUINT16					char_count;		// # of characters in table
+	FLMUINT16					start_char;		// start char.
+	BASE_DIACRIT_TABLE *		table;
+
+} BASE_DIACRIT;
+
+typedef struct
+{
+	FLMBYTE				key;						// character key to search on
+	FLMBYTE *			charPtr;					// character pointer for matched key
+} TBL_B_TO_BP;
+
+typedef struct
+{
+	FLMBYTE				ByteValue;
+	FLMUINT16			WordValue;
+} BYTE_WORD_TBL;
 
 // Collation tables
 
@@ -399,222 +272,222 @@ Notes:	Diacritical char is always in same set as composed char
 ****************************************************************************/
 static BASE_DIACRIT_TABLE fwp_ml1c_table[] =
 {
-	{'A',acute},
-	{'a',acute},
-	{'A',circum},
-	{'a',circum},
-	{'A',umlaut},
-	{'a',umlaut},
-	{'A',grave},
-	{'a',grave},
-	{'A',ring},
-	{'a',ring},
-	{0xff,0xff},      // no AE diagraph
-	{0xff,0xff},      // no ae diagraph
-	{'C',cedilla},
-	{'c',cedilla},
-	{'E',acute},
-	{'e',acute},
-	{'E',circum},
-	{'e',circum},
-	{'E',umlaut},
-	{'e',umlaut},
-	{'E',grave},
-	{'e',grave},
-	{'I',acute},
-	{dotlesi,acute},
-	{'I',circum},
-	{dotlesi,circum},
-	{'I',umlaut},
-	{dotlesi,umlaut},
-	{'I',grave},
-	{dotlesi,grave},
-	{'N',tilde},
-	{'n',tilde},
-	{'O',acute},
-	{'o',acute},
-	{'O',circum},
-	{'o',circum},
-	{'O',umlaut},
-	{'o',umlaut},
-	{'O',grave},
-	{'o',grave},
-	{'U',acute},
-	{'u',acute},
-	{'U',circum},
-	{'u',circum},
-	{'U',umlaut},
-	{'u',umlaut},
-	{'U',grave},
-	{'u',grave},
-	{'Y',umlaut},
-	{'y',umlaut},
-	{'A',tilde},
-	{'a',tilde},
-	{'D',crossb},
-	{'d',crossb},
-	{'O',slash},
-	{'o',slash},
-	{'O',tilde},
-	{'o',tilde},
-	{'Y',acute},
-	{'y',acute},
-	{0xff,0xff},		// no eth
-	{0xff,0xff},		// no eth
-	{0xff,0xff},		// no Thorn
-	{0xff,0xff},		// no Thorn
-	{'A',breve},
-	{'a',breve},
-	{'A',macron},
-	{'a',macron},
-	{'A',ogonek},
-	{'a',ogonek},
-	{'C',acute},
-	{'c',acute},
-	{'C',caron},
-	{'c',caron},
-	{'C',circum},
-	{'c',circum},
-	{'C',dota},
-	{'c',dota},
-	{'D',caron},
-	{'d',caron},
-	{'E',caron},
-	{'e',caron},
-	{'E',dota},
-	{'e',dota},
-	{'E',macron},
-	{'e',macron},
-	{'E',ogonek},
-	{'e',ogonek},
-	{'G',acute},
-	{'g',acute},
-	{'G',breve},
-	{'g',breve},
-	{'G',caron},
-	{'g',caron},
-	{'G',cedilla},
-	{'g',aposab},
-	{'G',circum},
-	{'g',circum},
-	{'G',dota},
-	{'g',dota},
-	{'H',circum},
-	{'h',circum},
-	{'H',crossb},
-	{'h',crossb},
-	{'I',dota},
-	{dotlesi,dota},
-	{'I',macron},
-	{dotlesi,macron},
-	{'I',ogonek},
-	{'i',ogonek},
-	{'I',tilde},
-	{dotlesi,tilde},
-	{0xff,0xff},		// no IJ digraph
-	{0xff,0xff},		// no ij digraph
-	{'J',circum},
-	{dotlesj,circum},
-	{'K',cedilla},
-	{'k',cedilla},
-	{'L',acute},
-	{'l',acute},
-	{'L',caron},
-	{'l',caron},
-	{'L',cedilla},
-	{'l',cedilla},
-	{'L',centerd},
-	{'l',centerd},
-	{'L',stroke},
-	{'l',stroke},
-	{'N',acute},
-	{'n',acute},
-	{'N',aposba},
-	{'n',aposba},
-	{'N',caron},
-	{'n',caron},
-	{'N',cedilla},
-	{'n',cedilla},
-	{'O',dacute},
-	{'o',dacute},
-	{'O',macron},
-	{'o',macron},
-	{0xff,0xff},		// OE digraph
-	{0xff,0xff},		// oe digraph
-	{'R',acute},
-	{'r',acute},
-	{'R',caron},
-	{'r',caron},
-	{'R',cedilla},
-	{'r',cedilla},
-	{'S',acute},
-	{'s',acute},
-	{'S',caron},
-	{'s',caron},
-	{'S',cedilla},
-	{'s',cedilla},
-	{'S',circum},
-	{'s',circum},
-	{'T',caron},
-	{'t',caron},
-	{'T',cedilla},
-	{'t',cedilla},
-	{'T',crossb},
-	{'t',crossb},
-	{'U',breve},
-	{'u',breve},
-	{'U',dacute},
-	{'u',dacute},
-	{'U',macron},
-	{'u',macron},
-	{'U',ogonek},
-	{'u',ogonek},
-	{'U',ring},
-	{'u',ring},
-	{'U',tilde},
-	{'u',tilde},
-	{'W',circum},
-	{'w',circum},
-	{'Y',circum},
-	{'y',circum},
-	{'Z',acute},
-	{'z',acute},
-	{'Z',caron},
-	{'z',caron},
-	{'Z',dota},
-	{'z',dota},
-	{0xff,0xff},		// no Eng
-	{0xff,0xff},		// no eng
-	{'D',macron},
-	{'d',macron},
-	{'L',macron},
-	{'l',macron},
-	{'N',macron},
-	{'n',macron},
-	{'R',grave},
-	{'r',grave},
-	{'S',macron},
-	{'s',macron},
-	{'T',macron},
-	{'t',macron},
-	{'Y',breve},
-	{'y',breve},
-	{'Y',grave},
-	{'y',grave},
-	{'D',aposbes},
-	{'d',aposbes},
-	{'O',aposbes},
-	{'o',aposbes},
-	{'U',aposbes},
-	{'u',aposbes},
-	{'E',breve},
-	{'e',breve},
-	{'I',breve},
-	{dotlesi,breve},
-	{0xff,0xff},		// no dotless I
-	{0xff,0xff},		// no dotless i
-	{'O',breve},
-	{'o',breve}
+	{'A',			F_ACUTE},
+	{'a',			F_ACUTE},
+	{'A',			F_CIRCUM},
+	{'a',			F_CIRCUM},
+	{'A',			F_UMLAUT},
+	{'a',			F_UMLAUT},
+	{'A',			F_GRAVE},
+	{'a',			F_GRAVE},
+	{'A',			F_RING},
+	{'a',			F_RING},
+	{0xff,		0xff},      // no AE diagraph
+	{0xff,		0xff},      // no ae diagraph
+	{'C',			F_CEDILLA},
+	{'c',			F_CEDILLA},
+	{'E',			F_ACUTE},
+	{'e',			F_ACUTE},
+	{'E',			F_CIRCUM},
+	{'e',			F_CIRCUM},
+	{'E',			F_UMLAUT},
+	{'e',			F_UMLAUT},
+	{'E',			F_GRAVE},
+	{'e',			F_GRAVE},
+	{'I',			F_ACUTE},
+	{F_DOTLESI,	F_ACUTE},
+	{'I',			F_CIRCUM},
+	{F_DOTLESI,	F_CIRCUM},
+	{'I',			F_UMLAUT},
+	{F_DOTLESI,	F_UMLAUT},
+	{'I',			F_GRAVE},
+	{F_DOTLESI,	F_GRAVE},
+	{'N',			F_TILDE},
+	{'n',			F_TILDE},
+	{'O',			F_ACUTE},
+	{'o',			F_ACUTE},
+	{'O',			F_CIRCUM},
+	{'o',			F_CIRCUM},
+	{'O',			F_UMLAUT},
+	{'o',			F_UMLAUT},
+	{'O',			F_GRAVE},
+	{'o',			F_GRAVE},
+	{'U',			F_ACUTE},
+	{'u',			F_ACUTE},
+	{'U',			F_CIRCUM},
+	{'u',			F_CIRCUM},
+	{'U',			F_UMLAUT},
+	{'u',			F_UMLAUT},
+	{'U',			F_GRAVE},
+	{'u',			F_GRAVE},
+	{'Y',			F_UMLAUT},
+	{'y',			F_UMLAUT},
+	{'A',			F_TILDE},
+	{'a',			F_TILDE},
+	{'D',			F_CROSSB},
+	{'d',			F_CROSSB},
+	{'O',			F_SLASH},
+	{'o',			F_SLASH},
+	{'O',			F_TILDE},
+	{'o',			F_TILDE},
+	{'Y',			F_ACUTE},
+	{'y',			F_ACUTE},
+	{0xff,		0xff},		// no eth
+	{0xff,		0xff},		// no eth
+	{0xff,		0xff},		// no Thorn
+	{0xff,		0xff},		// no Thorn
+	{'A',			F_BREVE},
+	{'a',			F_BREVE},
+	{'A',			F_MACRON},
+	{'a',			F_MACRON},
+	{'A',			F_OGONEK},
+	{'a',			F_OGONEK},
+	{'C',			F_ACUTE},
+	{'c',			F_ACUTE},
+	{'C',			F_CARON},
+	{'c',			F_CARON},
+	{'C',			F_CIRCUM},
+	{'c',			F_CIRCUM},
+	{'C',			F_DOTA},
+	{'c',			F_DOTA},
+	{'D',			F_CARON},
+	{'d',			F_CARON},
+	{'E',			F_CARON},
+	{'e',			F_CARON},
+	{'E',			F_DOTA},
+	{'e',			F_DOTA},
+	{'E',			F_MACRON},
+	{'e',			F_MACRON},
+	{'E',			F_OGONEK},
+	{'e',			F_OGONEK},
+	{'G',			F_ACUTE},
+	{'g',			F_ACUTE},
+	{'G',			F_BREVE},
+	{'g',			F_BREVE},
+	{'G',			F_CARON},
+	{'g',			F_CARON},
+	{'G',			F_CEDILLA},
+	{'g',			F_APOSAB},
+	{'G',			F_CIRCUM},
+	{'g',			F_CIRCUM},
+	{'G',			F_DOTA},
+	{'g',			F_DOTA},
+	{'H',			F_CIRCUM},
+	{'h',			F_CIRCUM},
+	{'H',			F_CROSSB},
+	{'h',			F_CROSSB},
+	{'I',			F_DOTA},
+	{F_DOTLESI,	F_DOTA},
+	{'I',			F_MACRON},
+	{F_DOTLESI,	F_MACRON},
+	{'I',			F_OGONEK},
+	{'i',			F_OGONEK},
+	{'I',			F_TILDE},
+	{F_DOTLESI,	F_TILDE},
+	{0xff,		0xff},		// no IJ digraph
+	{0xff,		0xff},		// no ij digraph
+	{'J',			F_CIRCUM},
+	{F_DOTLESJ,	F_CIRCUM},
+	{'K',			F_CEDILLA},
+	{'k',			F_CEDILLA},
+	{'L',			F_ACUTE},
+	{'l',			F_ACUTE},
+	{'L',			F_CARON},
+	{'l',			F_CARON},
+	{'L',			F_CEDILLA},
+	{'l',			F_CEDILLA},
+	{'L',			F_CENTERD},
+	{'l',			F_CENTERD},
+	{'L',			F_STROKE},
+	{'l',			F_STROKE},
+	{'N',			F_ACUTE},
+	{'n',			F_ACUTE},
+	{'N',			F_APOSBA},
+	{'n',			F_APOSBA},
+	{'N',			F_CARON},
+	{'n',			F_CARON},
+	{'N',			F_CEDILLA},
+	{'n',			F_CEDILLA},
+	{'O',			F_DACUTE},
+	{'o',			F_DACUTE},
+	{'O',			F_MACRON},
+	{'o',			F_MACRON},
+	{0xff,		0xff},		// OE digraph
+	{0xff,		0xff},		// oe digraph
+	{'R',			F_ACUTE},
+	{'r',			F_ACUTE},
+	{'R',			F_CARON},
+	{'r',			F_CARON},
+	{'R',			F_CEDILLA},
+	{'r',			F_CEDILLA},
+	{'S',			F_ACUTE},
+	{'s',			F_ACUTE},
+	{'S',			F_CARON},
+	{'s',			F_CARON},
+	{'S',			F_CEDILLA},
+	{'s',			F_CEDILLA},
+	{'S',			F_CIRCUM},
+	{'s',			F_CIRCUM},
+	{'T',			F_CARON},
+	{'t',			F_CARON},
+	{'T',			F_CEDILLA},
+	{'t',			F_CEDILLA},
+	{'T',			F_CROSSB},
+	{'t',			F_CROSSB},
+	{'U',			F_BREVE},
+	{'u',			F_BREVE},
+	{'U',			F_DACUTE},
+	{'u',			F_DACUTE},
+	{'U',			F_MACRON},
+	{'u',			F_MACRON},
+	{'U',			F_OGONEK},
+	{'u',			F_OGONEK},
+	{'U',			F_RING},
+	{'u',			F_RING},
+	{'U',			F_TILDE},
+	{'u',			F_TILDE},
+	{'W',			F_CIRCUM},
+	{'w',			F_CIRCUM},
+	{'Y',			F_CIRCUM},
+	{'y',			F_CIRCUM},
+	{'Z',			F_ACUTE},
+	{'z',			F_ACUTE},
+	{'Z',			F_CARON},
+	{'z',			F_CARON},
+	{'Z',			F_DOTA},
+	{'z',			F_DOTA},
+	{0xff,		0xff},		// no Eng
+	{0xff,		0xff},		// no eng
+	{'D',			F_MACRON},
+	{'d',			F_MACRON},
+	{'L',			F_MACRON},
+	{'l',			F_MACRON},
+	{'N',			F_MACRON},
+	{'n',			F_MACRON},
+	{'R',			F_GRAVE},
+	{'r',			F_GRAVE},
+	{'S',			F_MACRON},
+	{'s',			F_MACRON},
+	{'T',			F_MACRON},
+	{'t',			F_MACRON},
+	{'Y',			F_BREVE},
+	{'y',			F_BREVE},
+	{'Y',			F_GRAVE},
+	{'y',			F_GRAVE},
+	{'D',			F_APOSBES},
+	{'d',			F_APOSBES},
+	{'O',			F_APOSBES},
+	{'o',			F_APOSBES},
+	{'U',			F_APOSBES},
+	{'u',			F_APOSBES},
+	{'E',			F_BREVE},
+	{'e',			F_BREVE},
+	{'I',			F_BREVE},
+	{F_DOTLESI,	F_BREVE},
+	{0xff,		0xff},		// no dotless I
+	{0xff,		0xff},		// no dotless i
+	{'O',			F_BREVE},
+	{'o',			F_BREVE}
 };
 
 /****************************************************************************
@@ -638,169 +511,169 @@ Notes:	Diacritical char is always in same set as composed char
 ****************************************************************************/
 static BASE_DIACRIT_TABLE fwp_grk_c_table[] =
 {
-	{  0, ghprime },					// ALPHA High Prime
-	{  1, gacute },					// alpha acute
-	{ 10, ghprime },					// EPSILON High Prime
-	{ 11, gacute },					// epsilon Acute
-	{ 14, ghprime },					// ETA High Prime
-	{ 15, gacute },					// eta Acute
-	{ 18, ghprime },					// IOTA High Prime
-	{ 19, gacute },					// iota Acute
-	{ 0xFF, 0xFF },					// IOTA Diaeresis
-	{ 19, gdia },						// iota Diaeresis
-	{ 30, ghprime },					// OMICRON High Prime
-	{ 31, gacute },					// omicron Acute
-	{ 42, ghprime },					// UPSILON High Prime
-	{ 43, gacute },					// upsilon Acute
-	{ 0xFF, 0xFF }, 					// UPSILON Diaeresis
-	{ 43,gdia }, 						// upsilon Diaeresis
-	{ 50,ghprime }, 					// OMEGA High Prime
-	{ 51,gacute }, 					// omega Acute
-	{ 0xFF, 0xFF },					// epsilon (Variant)
-	{ 0xFF, 0xFF },					// theta (Variant)
-	{ 0xFF, 0xFF },					// kappa (Variant)
-	{ 0xFF, 0xFF },					// pi (Variant)
-	{ 0xFF, 0xFF },					// rho (Variant)
-	{ 0xFF, 0xFF },					// sigma (Variant)
-	{ 0xFF, 0xFF },					// UPSILON (Variant)
-	{ 0xFF, 0xFF },					// phi (Variant)
-	{ 0xFF, 0xFF },					// omega (Variant)
-	{ 0xFF, 0xFF },					// Greek Question Mark
-	{ 0xFF, 0xFF },					// Greek Semicolon
-	{ 0xFF, 0xFF },					// High Prime
-	{ 0xFF, 0xFF },					// Low Prime
-	{ 0xFF, 0xFF },					// Acute (Greek)
-	{ 0xFF, 0xFF },					// Diaeresis (Greek)
-	{ gacute,gdia },					// Acute Diaeresis
-	{ ggrave, gdia },					// Grave Diaeresis
-	{ 0xFF, 0xFF },					// Grave (Greek)
-	{ 0xFF, 0xFF },					// Circumflex (Greek)
-	{ 0xFF, 0xFF },					// Smooth Breathing
-	{ 0xFF, 0xFF },					// Rough Breathing
-	{ 0xFF, 0xFF },					// Iota Subscript
-	{ gsmooth, gacute },				// Smooth Breathing Acute
-	{ grough, gacute },				// Rough Breathing Acute
-	{ gsmooth, ggrave },				// Smooth Breathing Grave
-	{ grough, ggrave },				// Rough Breathing Grave
-	{ gsmooth, gcircm },				// Smooth Breathing Circumflex
-	{ grough, gcircm },				// Rough Breathing Circumflex
-	{ gacute, giota },				// Acute w/Iota Subscript
-	{ ggrave, giota },				// Grave w/Iota Subscript
-	{ gcircm, giota },				// Circumflex w/Iota Subscript
-	{ gsmooth, giota },				// Smooth Breathing w/Iota Subscript
-	{ grough, giota },				// Rough Breathing w/Iota Subscript
-	{ gsmact, giota },				// Smooth Breathing Acute w/Iota Subscript
-	{ grgact, giota },				// Rough Breathing Acute w/Iota Subscript
-	{ gsmgrv, giota },				// Smooth Breathing Grave w/Iota Subscript
-	{ grggrv, giota },				// Rough Breathing Grave w/Iota Subscript
-	{ gsmcir, giota },				// Smooth Breathing Circumflex w/Iota Sub
-	{ grgcir, giota },				// Rough Breathing Circumflex w/Iota Sub
-	{ 1, ggrave },						// alpha Grave
-	{ 1, gcircm },						// alpha Circumflex
-	{ 1, giota	 },					// alpha w/Iota
-	{ 1, gactio },						// alpha Acute w/Iota
-	{ 1, ggrvio },						// alpha Grave w/Iota
-	{ 1, gcirio },						// alpha Circumflex w/Iota
-	{ 1, gsmooth },					// alpha Smooth
-	{ 1, gsmact },						// alpha Smooth Acute
-	{ 1, gsmgrv },						// alpha Smooth Grave
-	{ 1, gsmcir },						// alpha Smooth Circumflex
-	{ 1, gsmio	 },					// alpha Smooth w/Iota
-	{ 1, gsmaio },						// alpha Smooth Acute w/Iota
-	{ 1, gsmgvio },					// alpha Smooth Grave w/Iota
-	{ 1, gsmcio },						// alpha Smooth Circumflex w/Iota
-	{ 1, grough },						// alpha Rough
-	{ 1, grgact },						// alpha Rough Acute
-	{ 1, grggrv },						// alpha Rough Grave
-	{ 1, grgcir },						// alpha Rough Circumflex
-	{ 1, grgio	 },					// alpha Rough w/Iota
-	{ 1, grgaio },						// alpha Rough Acute w/Iota
-	{ 1, grggvio },					// alpha Rough Grave w/Iota
-	{ 1, grgcio },						// alpha Rough Circumflex w/Iota
-	{ 11, ggrave },					// epsilon Grave
-	{ 11, gsmooth },					// epsilon Smooth
-	{ 11, gsmact },					// epsilon Smooth Acute
-	{ 11, gsmgrv },					// epsilon Smooth Grave
-	{ 11, grough },					// epsilon Rough
-	{ 11, grgact },					// epsilon Rough Acute
-	{ 11, grggrv },					// epsilon Rough Grave
-	{ 15, ggrave },					// eta Grave
-	{ 15, gcircm },					// eta Circumflex
-	{ 15, giota },						// eta w/Iota
-	{ 15, gactio },					// eta Acute w/Iota
-	{ 15, ggrvio },					// eta Grave w/Iota
-	{ 15, gcirio },					// eta Circumflex w/Iota
-	{ 15, gsmooth },					// eta Smooth
-	{ 15, gsmact },					// eta Smooth Acute
-	{ 15, gsmgrv },					// eta Smooth Grave
-	{ 15, gsmcir },					// eta Smooth Circumflex
-	{ 15, gsmio },						// eta Smooth w/Iota
-	{ 15, gsmaio },					// eta Smooth Acute w/Iota
-	{ 15, gsmgvio },					// eta Smooth Grave w/Iota
-	{ 15, gsmcio },					// eta Smooth Circumflex w/Iota
-	{ 15, grough },					// eta Rough
-	{ 15, grgact },					// eta Rough Acute
-	{ 15, grggrv },					// eta Rough Grave
-	{ 15, grgcir },					// eta Rough Circumflex
-	{ 15, grgio },						// eta Rough w/Iota
-	{ 15, grgaio },					// eta Rough Acute w/Iota
-	{ 15, grggvio },					// eta Rough Grave w/Iota
-	{ 15, grgcio },					// eta Rough Circumflex w/Iota
-	{ 19, ggrave },					// iota Grave
-	{ 19, gcircm },					// iota Circumflex
-	{ 19, gactdia },					// iota Acute Diaeresis
-	{ 19, ggrvdia },					// iota Grave Diaeresis
-	{ 19, gsmooth },					// iota Smooth
-	{ 19, gsmact },					// iota Smooth Acute
-	{ 19, gsmgrv },					// iota Smooth Grave
-	{ 19, gsmcir },					// iota Smooth Circumflex
-	{ 19, grough },					// iota Rough
-	{ 19, grgact },					// iota Rough Acute
-	{ 19, grggrv },					// iota Rough Grave
-	{ 19, grgcir },					// iota Rough Circumflex
-	{ 31, ggrave },					// omicron Grave
-	{ 31, gsmooth },					// omicron Smooth
-	{ 31, gsmact },					// omicron Smooth Acute
-	{ 31, gsmgrv },					// omicron Smooth Grave
-	{ 31, grough },					// omicron Rough
-	{ 31, grgact },					// omicron Rough Acute
-	{ 31, grggrv },					// omicron Rough Grave
-	{ 0xFF, 0xFF },					// rho rough
-	{ 0xFF, 0xFF },					// rho smooth
-	{ 43, ggrave },					// upsilon Grave
-	{ 43, gcircm },					// upsilon Circumflex
-	{ 43, gactdia },					// upsilon Acute Diaeresis
-	{ 43, ggrvdia },					// upsilon Grave Diaeresis
-	{ 43, gsmooth },					// upsilon Smooth
-	{ 43, gsmact },					// upsilon Smooth Acute
-	{ 43, gsmgrv },					// upsilon Smooth Grave
-	{ 43, gsmcir },					// upsilon Smooth Circumflex
-	{ 43, grough },					// upsilon Rough
-	{ 43, grgact },					// upsilon Rough Acute
-	{ 43, grggrv },					// upsilon Rough Grave
-	{ 43, grgcir },					// upsilon Rough Circumflex
-	{ 51, ggrave },					// omega Grave
-	{ 51, gcircm },					// omega Circumflex
-	{ 51, giota },						// omega w/Iota
-	{ 51, gactio },					// omega Acute w/Iota
-	{ 51, ggrvio },					// omega Grave w/Iota
-	{ 51, gcirio },					// omega Circumflex w/Iota
-	{ 51, gsmooth },					// omega Smooth
-	{ 51, gsmact },					// omega Smooth Acute
-	{ 51, gsmgrv },					// omega Smooth Grave
-	{ 51, gsmcir },					// omega Smooth Circumflex
-	{ 51, gsmio },						// omega Smooth w/Iota
-	{ 51, gsmaio },					// omega Smooth Acute w/Iota
-	{ 51, gsmgvio },					// omega Smooth Grave w/Iota
-	{ 51, gsmcio },					// omega Smooth Circumflex w/Iota
-	{ 51, grough },					// omega Rough
-	{ 51, grgact },					// omega Rough Acute
-	{ 51, grggrv },					// omega Rough Grave
-	{ 51, grgcir },					// omega Rough Circumflex
-	{ 51, grgio },						// omega Rough w/Iota
-	{ 51, grgaio },					// omega Rough Acute w/Iota
-	{ 51, grggvio },					// omega Rough Grave w/Iota
-	{ 51, grgcio}						// omega Rough Circumflex w/Iota
+	{  0, 			F_GHPRIME },					// ALPHA High Prime
+	{  1, 			F_GACUTE },						// alpha acute
+	{ 10, 			F_GHPRIME },					// EPSILON High Prime
+	{ 11, 			F_GACUTE },						// epsilon Acute
+	{ 14, 			F_GHPRIME },					// ETA High Prime
+	{ 15, 			F_GACUTE },						// eta Acute
+	{ 18, 			F_GHPRIME },					// IOTA High Prime
+	{ 19, 			F_GACUTE },						// iota Acute
+	{ 0xFF, 			0xFF },							// IOTA Diaeresis
+	{ 19, 			F_GDIA },						// iota Diaeresis
+	{ 30, 			F_GHPRIME },					// OMICRON High Prime
+	{ 31, 			F_GACUTE },						// omicron Acute
+	{ 42, 			F_GHPRIME },					// UPSILON High Prime
+	{ 43, 			F_GACUTE },						// upsilon Acute
+	{ 0xFF, 			0xFF }, 							// UPSILON Diaeresis
+	{ 43, 			F_GDIA }, 						// upsilon Diaeresis
+	{ 50, 			F_GHPRIME }, 					// OMEGA High Prime
+	{ 51, 			F_GACUTE }, 					// omega Acute
+	{ 0xFF, 			0xFF },							// epsilon (Variant)
+	{ 0xFF, 			0xFF },							// theta (Variant)
+	{ 0xFF, 			0xFF },							// kappa (Variant)
+	{ 0xFF, 			0xFF },							// pi (Variant)
+	{ 0xFF, 			0xFF },							// rho (Variant)
+	{ 0xFF, 			0xFF },							// sigma (Variant)
+	{ 0xFF, 			0xFF },							// UPSILON (Variant)
+	{ 0xFF, 			0xFF },							// phi (Variant)
+	{ 0xFF, 			0xFF },							// omega (Variant)
+	{ 0xFF, 			0xFF },							// Greek Question Mark
+	{ 0xFF, 			0xFF },							// Greek Semicolon
+	{ 0xFF, 			0xFF },							// High Prime
+	{ 0xFF, 			0xFF },							// Low Prime
+	{ 0xFF, 			0xFF },							// Acute (Greek)
+	{ 0xFF, 			0xFF },							// Diaeresis (Greek)
+	{ F_GACUTE, 	F_GDIA },						// Acute Diaeresis
+	{ F_GGRAVE, 	F_GDIA },						// Grave Diaeresis
+	{ 0xFF, 			0xFF },							// Grave (Greek)
+	{ 0xFF, 			0xFF },							// Circumflex (Greek)
+	{ 0xFF, 			0xFF },							// Smooth Breathing
+	{ 0xFF, 			0xFF },							// Rough Breathing
+	{ 0xFF, 			0xFF },							// Iota Subscript
+	{ F_GSMOOTH,	F_GACUTE },						// Smooth Breathing Acute
+	{ F_GROUGH, 	F_GACUTE },						// Rough Breathing Acute
+	{ F_GSMOOTH, 	F_GGRAVE },						// Smooth Breathing Grave
+	{ F_GROUGH, 	F_GGRAVE },						// Rough Breathing Grave
+	{ F_GSMOOTH, 	F_GCIRCM },						// Smooth Breathing Circumflex
+	{ F_GROUGH, 	F_GCIRCM },						// Rough Breathing Circumflex
+	{ F_GACUTE, 	F_GIOTA },						// Acute w/Iota Subscript
+	{ F_GGRAVE, 	F_GIOTA },						// Grave w/Iota Subscript
+	{ F_GCIRCM, 	F_GIOTA },						// Circumflex w/Iota Subscript
+	{ F_GSMOOTH, 	F_GIOTA },						// Smooth Breathing w/Iota Subscript
+	{ F_GROUGH, 	F_GIOTA },						// Rough Breathing w/Iota Subscript
+	{ F_GSMACT, 	F_GIOTA },						// Smooth Breathing Acute w/Iota Subscript
+	{ F_GRGACT, 	F_GIOTA },						// Rough Breathing Acute w/Iota Subscript
+	{ F_GSMGRV, 	F_GIOTA },						// Smooth Breathing Grave w/Iota Subscript
+	{ F_GRGGRV, 	F_GIOTA },						// Rough Breathing Grave w/Iota Subscript
+	{ F_GSMCIR, 	F_GIOTA },						// Smooth Breathing Circumflex w/Iota Sub
+	{ F_GRGCIR, 	F_GIOTA },						// Rough Breathing Circumflex w/Iota Sub
+	{ 1, 				F_GGRAVE },						// alpha Grave
+	{ 1, 				F_GCIRCM },						// alpha Circumflex
+	{ 1, 				F_GIOTA },						// alpha w/Iota
+	{ 1, 				F_GACTIO },						// alpha Acute w/Iota
+	{ 1, 				F_GGRVIO },						// alpha Grave w/Iota
+	{ 1, 				F_GCIRIO },						// alpha Circumflex w/Iota
+	{ 1, 				F_GSMOOTH },					// alpha Smooth
+	{ 1, 				F_GSMACT },						// alpha Smooth Acute
+	{ 1, 				F_GSMGRV },						// alpha Smooth Grave
+	{ 1, 				F_GSMCIR },						// alpha Smooth Circumflex
+	{ 1, 				F_GSMIO },						// alpha Smooth w/Iota
+	{ 1, 				F_GSMAIO },						// alpha Smooth Acute w/Iota
+	{ 1, 				F_GSMGVIO },					// alpha Smooth Grave w/Iota
+	{ 1, 				F_GSMCIO },						// alpha Smooth Circumflex w/Iota
+	{ 1, 				F_GROUGH },						// alpha Rough
+	{ 1, 				F_GRGACT },						// alpha Rough Acute
+	{ 1, 				F_GRGGRV },						// alpha Rough Grave
+	{ 1, 				F_GRGCIR },						// alpha Rough Circumflex
+	{ 1, 				F_GRGIO	 },					// alpha Rough w/Iota
+	{ 1, 				F_GRGAIO },						// alpha Rough Acute w/Iota
+	{ 1, 				F_GRGGVIO },					// alpha Rough Grave w/Iota
+	{ 1, 				F_GRGCIO },						// alpha Rough Circumflex w/Iota
+	{ 11, 			F_GGRAVE },						// epsilon Grave
+	{ 11, 			F_GSMOOTH },					// epsilon Smooth
+	{ 11, 			F_GSMACT },						// epsilon Smooth Acute
+	{ 11, 			F_GSMGRV },						// epsilon Smooth Grave
+	{ 11, 			F_GROUGH },						// epsilon Rough
+	{ 11, 			F_GRGACT },						// epsilon Rough Acute
+	{ 11, 			F_GRGGRV },						// epsilon Rough Grave
+	{ 15, 			F_GGRAVE },						// eta Grave
+	{ 15, 			F_GCIRCM },						// eta Circumflex
+	{ 15, 			F_GIOTA },						// eta w/Iota
+	{ 15, 			F_GACTIO },						// eta Acute w/Iota
+	{ 15, 			F_GGRVIO },						// eta Grave w/Iota
+	{ 15, 			F_GCIRIO },						// eta Circumflex w/Iota
+	{ 15,				F_GSMOOTH },					// eta Smooth
+	{ 15, 			F_GSMACT },						// eta Smooth Acute
+	{ 15, 			F_GSMGRV },						// eta Smooth Grave
+	{ 15, 			F_GSMCIR },						// eta Smooth Circumflex
+	{ 15, 			F_GSMIO },						// eta Smooth w/Iota
+	{ 15, 			F_GSMAIO },						// eta Smooth Acute w/Iota
+	{ 15, 			F_GSMGVIO },					// eta Smooth Grave w/Iota
+	{ 15, 			F_GSMCIO },						// eta Smooth Circumflex w/Iota
+	{ 15, 			F_GROUGH },						// eta Rough
+	{ 15, 			F_GRGACT },						// eta Rough Acute
+	{ 15, 			F_GRGGRV },						// eta Rough Grave
+	{ 15, 			F_GRGCIR },						// eta Rough Circumflex
+	{ 15, 			F_GRGIO },						// eta Rough w/Iota
+	{ 15, 			F_GRGAIO },						// eta Rough Acute w/Iota
+	{ 15, 			F_GRGGVIO },					// eta Rough Grave w/Iota
+	{ 15, 			F_GRGCIO },						// eta Rough Circumflex w/Iota
+	{ 19, 			F_GGRAVE },						// iota Grave
+	{ 19, 			F_GCIRCM },						// iota Circumflex
+	{ 19, 			F_GACTDIA },					// iota Acute Diaeresis
+	{ 19, 			F_GGRVDIA },					// iota Grave Diaeresis
+	{ 19, 			F_GSMOOTH },					// iota Smooth
+	{ 19, 			F_GSMACT },						// iota Smooth Acute
+	{ 19, 			F_GSMGRV },						// iota Smooth Grave
+	{ 19, 			F_GSMCIR },						// iota Smooth Circumflex
+	{ 19, 			F_GROUGH },						// iota Rough
+	{ 19, 			F_GRGACT },						// iota Rough Acute
+	{ 19, 			F_GRGGRV },						// iota Rough Grave
+	{ 19, 			F_GRGCIR },						// iota Rough Circumflex
+	{ 31, 			F_GGRAVE },						// omicron Grave
+	{ 31, 			F_GSMOOTH },					// omicron Smooth
+	{ 31, 			F_GSMACT },						// omicron Smooth Acute
+	{ 31, 			F_GSMGRV },						// omicron Smooth Grave
+	{ 31, 			F_GROUGH },						// omicron Rough
+	{ 31, 			F_GRGACT },						// omicron Rough Acute
+	{ 31, 			F_GRGGRV },						// omicron Rough Grave
+	{ 0xFF, 			0xFF },							// rho rough
+	{ 0xFF, 			0xFF },							// rho smooth
+	{ 43, 			F_GGRAVE },						// upsilon Grave
+	{ 43, 			F_GCIRCM },						// upsilon Circumflex
+	{ 43, 			F_GACTDIA },					// upsilon Acute Diaeresis
+	{ 43, 			F_GGRVDIA },					// upsilon Grave Diaeresis
+	{ 43, 			F_GSMOOTH },					// upsilon Smooth
+	{ 43, 			F_GSMACT },						// upsilon Smooth Acute
+	{ 43, 			F_GSMGRV },						// upsilon Smooth Grave
+	{ 43, 			F_GSMCIR },						// upsilon Smooth Circumflex
+	{ 43, 			F_GROUGH },						// upsilon Rough
+	{ 43, 			F_GRGACT },						// upsilon Rough Acute
+	{ 43, 			F_GRGGRV },						// upsilon Rough Grave
+	{ 43, 			F_GRGCIR },						// upsilon Rough Circumflex
+	{ 51, 			F_GGRAVE },						// omega Grave
+	{ 51, 			F_GCIRCM },						// omega Circumflex
+	{ 51, 			F_GIOTA },						// omega w/Iota
+	{ 51, 			F_GACTIO },						// omega Acute w/Iota
+	{ 51, 			F_GGRVIO },						// omega Grave w/Iota
+	{ 51, 			F_GCIRIO },						// omega Circumflex w/Iota
+	{ 51, 			F_GSMOOTH },					// omega Smooth
+	{ 51, 			F_GSMACT },						// omega Smooth Acute
+	{ 51, 			F_GSMGRV },						// omega Smooth Grave
+	{ 51, 			F_GSMCIR },						// omega Smooth Circumflex
+	{ 51, 			F_GSMIO },						// omega Smooth w/Iota
+	{ 51, 			F_GSMAIO },						// omega Smooth Acute w/Iota
+	{ 51, 			F_GSMGVIO },					// omega Smooth Grave w/Iota
+	{ 51, 			F_GSMCIO },						// omega Smooth Circumflex w/Iota
+	{ 51, 			F_GROUGH },						// omega Rough
+	{ 51, 			F_GRGACT },						// omega Rough Acute
+	{ 51, 			F_GRGGRV },						// omega Rough Grave
+	{ 51, 			F_GRGCIR },						// omega Rough Circumflex
+	{ 51, 			F_GRGIO },						// omega Rough w/Iota
+	{ 51, 			F_GRGAIO },						// omega Rough Acute w/Iota
+	{ 51, 			F_GRGGVIO },					// omega Rough Grave w/Iota
+	{ 51, 			F_GRGCIO}						// omega Rough Circumflex w/Iota
 };
 
 /****************************************************************************
@@ -824,126 +697,126 @@ Notes:	Diacritical char is always in same set as composed char
 ****************************************************************************/
 static BASE_DIACRIT_TABLE fwp_rus_c_table[] =
 {
-	{ 14, 204 },					// ZHE with right descender
-	{ 15, 204 },					// zhe with right descender
-	{ 0xFF, 0xFF},					// DZE
-	{ 0xFF, 0xFF},					// dze
-	{ 0xFF, 0xFF},					// Z
-	{ 0xFF, 0xFF},					// z
-	{ 18, 206 },					// II with macron
-	{ 19, 206},						// ii with macron
-	{ 0xFF, 0xFF},					// I
-	{ 0xFF, 0xFF},					// i
-	{ 0xFF, 0xFF},					// YI
-	{ 0xFF, 0xFF},					// yi
-	{ 0xFF, 0xFF},					// I ligature
-	{ 0xFF, 0xFF},					// i ligature
-	{ 0xFF, 0xFF},					// JE
-	{ 0xFF, 0xFF},					// je
-	{ 0xFF, 0xFF},					// KJE
-	{ 0xFF, 0xFF},					// kje
-	{ 22, 204},						// KA with right descender
-	{ 23, 204},						// ka with right descender
-	{ 22, 205 },					// KA ogonek
-	{ 23, 205 },					// ka ogonek
-	{ 0xFF, 0xFF},					// KA vertical bar
-	{ 0xFF, 0xFF},					// ka vertical bar
-	{ 0xFF, 0xFF},					// LJE
-	{ 0xFF, 0xFF},					// lje
-	{ 28, 204 },					// EN with right descender
-	{ 29, 204 },					// en with right descender
-	{ 0xFF, 0xFF},					// NJE
-	{ 0xFF, 0xFF},					// nje
-	{ 0xFF, 0xFF},					// ROUND OMEGA
-	{ 0xFF, 0xFF},					// round omega
-	{ 0xFF, 0xFF},					// OMEGA
-	{ 0xFF, 0xFF},					// omega
-	{ 0xFF, 0xFF},					// TSHE
-	{ 0xFF, 0xFF},					// tshe
-	{ 0xFF, 0xFF},					// SHORT U
-	{ 0xFF, 0xFF},					// short u
-	{ 40, 206},						// U with macron
-	{ 41, 206 },					// u with macron
-	{ 0xFF, 0xFF},					// STRAIGHT U
-	{ 0xFF, 0xFF},					// straight u
-	{ 0xFF, 0xFF},					// STRAIGHT U BAR
-	{ 0xFF, 0xFF},					// straight u bar
-	{ 0xFF, 0xFF},					// OU ligature
-	{ 0xFF, 0xFF},					// ou ligature
-	{ 44, 204 },					// KHA with right descender
-	{ 45, 204 },					// kha with right descender
-	{ 44, 205 },					// KHA ogonek
-	{ 45, 205 },					// kha ogonek
-	{ 0xFF, 0xFF},					// H
-	{ 0xFF, 0xFF},					// h
-	{ 0xFF, 0xFF},					// OMEGA titlo
-	{ 0xFF, 0xFF},					// omega titlo
-	{ 0xFF, 0xFF},					// DZHE
-	{ 0xFF, 0xFF},					// dzhe
-	{ 48, 204 },					// CHE with right descender
-	{ 49, 204 },					// che with right descender
-	{ 0xFF, 0xFF},					// CHE vertical bar
-	{ 0xFF, 0xFF},					// che vertical bar
-	{ 0xFF, 0xFF},					// SHCHA (variant)
-	{ 0xFF, 0xFF},					// shcha (variant)
-	{ 0xFF, 0xFF},					// YAT
-	{ 0xFF, 0xFF},					// yat
-	{ 0xFF, 0xFF},					// YUS BOLSHOI
-	{ 0xFF, 0xFF},					// yus bolshoi
-	{ 0xFF, 0xFF},					// BIG MALYI
-	{ 0xFF, 0xFF},					// big malyi
-	{ 0xFF, 0xFF},					// KSI
-	{ 0xFF, 0xFF},					// ksi
-	{ 0xFF, 0xFF},					// PSI
-	{ 0xFF, 0xFF},					// psi
-	{ 0xFF, 0xFF},					// FITA
-	{ 0xFF, 0xFF},					// fita
-	{ 0xFF, 0xFF},					// IZHITSA
-	{ 0xFF, 0xFF},					// izhitsa
-	{ 00, racute},					// Russian A acute
-	{ 01, racute },				// Russian a acute
-	{ 10, racute },				// Russian IE acute
-	{ 11, racute },				// Russian ie acute
-	{ 78, racute },				// Russian E acute
-	{ 79, racute },				// Russian e acute
-	{ 18, racute },				// Russian II acute
-	{ 19, racute },				// Russian ii acute
-	{ 88, racute },				// Russian I acute
-	{ 89, racute },				// Russian i acute
-	{ 90, racute },				// Russian YI acute
-	{ 91, racute },				// Russian yi acute
-	{ 30, racute },				// Russian O acute
-	{ 31, racute },				// Russian o acute
-	{ 40, racute },				// Russian U acute
-	{ 41, racute },				// Russian u acute
-	{ 56, racute },				// Russian YERI acute
-	{ 57, racute },				// Russian yeri acute
-	{ 60, racute },				// Russian REVERSED E acute
-	{ 61, racute },				// Russian reversed e acute
-	{ 62, racute },				// Russian IU acute
-	{ 63, racute },				// Russian iu acute
-	{ 64, racute },				// Russian IA acute
-	{ 65, racute },				// Russian ia acute
-	{ 00, rgrave },				// Russian A grave
-	{ 01, rgrave },				// Russian a grave
-	{ 10, rgrave },				// Russian IE grave
-	{ 11, rgrave },				// Russian ie grave
-	{ 12, rgrave },				// Russian YO grave
-	{ 13, rgrave },				// Russian yo grave
-	{ 18, rgrave },				// Russian I grave
-	{ 19, rgrave },				// Russian i grave
-	{ 30, rgrave },				// Russian O grave
-	{ 31, rgrave },				// Russian o grave
-	{ 40, rgrave },				// Russian U grave
-	{ 41, rgrave },				// Russian u grave
-	{ 56, rgrave },				// Russian YERI grave
-	{ 57, rgrave },				// Russian yeri grave
-	{ 60, rgrave },				// Russian REVERSED E grave
-	{ 61, rgrave },				// Russian reversed e grave
-	{ 62, rgrave },				// Russian IU grave
-	{ 63, rgrave },				// Russian iu grave
-	{ 64, rgrave },				// Russian IA grave
-	{ 65, rgrave}					// Russian ia grave
+	{ 14, 			204 },					// ZHE with right descender
+	{ 15, 			204 },					// zhe with right descender
+	{ 0xFF, 			0xFF },					// DZE
+	{ 0xFF, 			0xFF },					// dze
+	{ 0xFF, 			0xFF },					// Z
+	{ 0xFF, 			0xFF },					// z
+	{ 18, 			206 },					// II with macron
+	{ 19, 			206 },					// ii with macron
+	{ 0xFF, 			0xFF },					// I
+	{ 0xFF, 			0xFF },					// i
+	{ 0xFF, 			0xFF },					// YI
+	{ 0xFF, 			0xFF },					// yi
+	{ 0xFF, 			0xFF },					// I ligature
+	{ 0xFF, 			0xFF },					// i ligature
+	{ 0xFF, 			0xFF },					// JE
+	{ 0xFF, 			0xFF },					// je
+	{ 0xFF, 			0xFF },					// KJE
+	{ 0xFF, 			0xFF },					// kje
+	{ 22, 			204 },					// KA with right descender
+	{ 23, 			204 },					// ka with right descender
+	{ 22, 			205 },					// KA ogonek
+	{ 23, 			205 },					// ka ogonek
+	{ 0xFF, 			0xFF },					// KA vertical bar
+	{ 0xFF, 			0xFF },					// ka vertical bar
+	{ 0xFF, 			0xFF },					// LJE
+	{ 0xFF, 			0xFF },					// lje
+	{ 28, 			204 },					// EN with right descender
+	{ 29, 			204 },					// en with right descender
+	{ 0xFF, 			0xFF },					// NJE
+	{ 0xFF, 			0xFF },					// nje
+	{ 0xFF, 			0xFF },					// ROUND OMEGA
+	{ 0xFF, 			0xFF },					// round omega
+	{ 0xFF, 			0xFF },					// OMEGA
+	{ 0xFF, 			0xFF },					// omega
+	{ 0xFF, 			0xFF },					// TSHE
+	{ 0xFF, 			0xFF },					// tshe
+	{ 0xFF, 			0xFF },					// SHORT U
+	{ 0xFF, 			0xFF },					// short u
+	{ 40, 			206 },					// U with macron
+	{ 41, 			206 },					// u with macron
+	{ 0xFF, 			0xFF },					// STRAIGHT U
+	{ 0xFF, 			0xFF },					// straight u
+	{ 0xFF, 			0xFF },					// STRAIGHT U BAR
+	{ 0xFF, 			0xFF },					// straight u bar
+	{ 0xFF, 			0xFF },					// OU ligature
+	{ 0xFF, 			0xFF },					// ou ligature
+	{ 44, 			204 },					// KHA with right descender
+	{ 45, 			204 },					// kha with right descender
+	{ 44, 			205 },					// KHA ogonek
+	{ 45, 			205 },					// kha ogonek
+	{ 0xFF, 			0xFF },					// H
+	{ 0xFF, 			0xFF },					// h
+	{ 0xFF, 			0xFF },					// OMEGA titlo
+	{ 0xFF, 			0xFF },					// omega titlo
+	{ 0xFF, 			0xFF },					// DZHE
+	{ 0xFF, 			0xFF },					// dzhe
+	{ 48, 			204 },					// CHE with right descender
+	{ 49, 			204 },					// che with right descender
+	{ 0xFF, 			0xFF },					// CHE vertical bar
+	{ 0xFF, 			0xFF },					// che vertical bar
+	{ 0xFF, 			0xFF },					// SHCHA (variant)
+	{ 0xFF, 			0xFF },					// shcha (variant)
+	{ 0xFF, 			0xFF },					// YAT
+	{ 0xFF, 			0xFF },					// yat
+	{ 0xFF, 			0xFF },					// YUS BOLSHOI
+	{ 0xFF, 			0xFF },					// yus bolshoi
+	{ 0xFF, 			0xFF },					// BIG MALYI
+	{ 0xFF, 			0xFF },					// big malyi
+	{ 0xFF, 			0xFF },					// KSI
+	{ 0xFF, 			0xFF },					// ksi
+	{ 0xFF, 			0xFF },					// PSI
+	{ 0xFF, 			0xFF },					// psi
+	{ 0xFF, 			0xFF },					// FITA
+	{ 0xFF, 			0xFF },					// fita
+	{ 0xFF, 			0xFF },					// IZHITSA
+	{ 0xFF, 			0xFF },					// izhitsa
+	{ 00, 			F_RACUTE },				// Russian A acute
+	{ 01, 			F_RACUTE },				// Russian a acute
+	{ 10, 			F_RACUTE },				// Russian IE acute
+	{ 11, 			F_RACUTE },				// Russian ie acute
+	{ 78, 			F_RACUTE },				// Russian E acute
+	{ 79, 			F_RACUTE },				// Russian e acute
+	{ 18, 			F_RACUTE },				// Russian II acute
+	{ 19, 			F_RACUTE },				// Russian ii acute
+	{ 88, 			F_RACUTE },				// Russian I acute
+	{ 89, 			F_RACUTE },				// Russian i acute
+	{ 90, 			F_RACUTE },				// Russian YI acute
+	{ 91, 			F_RACUTE },				// Russian yi acute
+	{ 30, 			F_RACUTE },				// Russian O acute
+	{ 31, 			F_RACUTE },				// Russian o acute
+	{ 40, 			F_RACUTE },				// Russian U acute
+	{ 41, 			F_RACUTE },				// Russian u acute
+	{ 56, 			F_RACUTE },				// Russian YERI acute
+	{ 57, 			F_RACUTE },				// Russian yeri acute
+	{ 60, 			F_RACUTE },				// Russian REVERSED E acute
+	{ 61, 			F_RACUTE },				// Russian reversed e acute
+	{ 62, 			F_RACUTE },				// Russian IU acute
+	{ 63, 			F_RACUTE },				// Russian iu acute
+	{ 64, 			F_RACUTE },				// Russian IA acute
+	{ 65, 			F_RACUTE },				// Russian ia acute
+	{ 00, 			F_RGRAVE },				// Russian A grave
+	{ 01, 			F_RGRAVE },				// Russian a grave
+	{ 10, 			F_RGRAVE },				// Russian IE grave
+	{ 11, 			F_RGRAVE },				// Russian ie grave
+	{ 12, 			F_RGRAVE },				// Russian YO grave
+	{ 13, 			F_RGRAVE },				// Russian yo grave
+	{ 18, 			F_RGRAVE },				// Russian I grave
+	{ 19, 			F_RGRAVE },				// Russian i grave
+	{ 30, 			F_RGRAVE },				// Russian O grave
+	{ 31, 			F_RGRAVE },				// Russian o grave
+	{ 40, 			F_RGRAVE },				// Russian U grave
+	{ 41, 			F_RGRAVE },				// Russian u grave
+	{ 56, 			F_RGRAVE },				// Russian YERI grave
+	{ 57, 			F_RGRAVE },				// Russian yeri grave
+	{ 60, 			F_RGRAVE },				// Russian REVERSED E grave
+	{ 61, 			F_RGRAVE },				// Russian reversed e grave
+	{ 62, 			F_RGRAVE },				// Russian IU grave
+	{ 63, 			F_RGRAVE },				// Russian iu grave
+	{ 64, 			F_RGRAVE },				// Russian IA grave
+	{ 65, 			F_RGRAVE }					// Russian ia grave
 };
 
 /****************************************************************************
@@ -959,7 +832,7 @@ static BASE_DIACRIT fwp_rus_c =
 /****************************************************************************
 Desc:		Table of pointers to character component tables.
 ****************************************************************************/
-static BASE_DIACRIT * fwp_car60_c[ NCHSETS] =
+static BASE_DIACRIT * fwp_car60_c[ F_NCHSETS] =
 {
 	(BASE_DIACRIT*)0,    // no composed characters for ascii.
 	&fwp_ml1c,
@@ -1302,7 +1175,7 @@ static FLMBYTE MapCS26ToCharSet11[ 86] =
 
 /****************************************************************************
 Desc:		Conversion from single (Hankaku) to double (Zenkaku) wide characters
-			Used in flmWPHanToZenkaku()
+			Used in f_wpHanToZenkaku()
 			Maps from charset 11 to CS24 (punctuation) (starting from 11,0)
 ****************************************************************************/
 static FLMBYTE From0AToZen[] =
@@ -3010,12 +2883,12 @@ Desc:		This table describes and gives addresses for collating 5.0
 ***************************************************************************/
 static TBL_B_TO_BP fwp_col60Tbl[] =
 {
-	{CHSASCI, fwp_asc60Tbl},	// ascii - " " - "~"
-	{CHSMUL1, fwp_mn60Tbl},		// multinational
-	{CHSSYM1, fwp_sym60Tbl},	// symbols
-	{CHSGREK, fwp_grk60Tbl},	// greek
-	{CHSCYR,  fwp_cyrl60Tbl},	// Cyrillic - Russian
-	{0xFF, 	 0}					// table terminator
+	{F_CHSASCI, fwp_asc60Tbl},
+	{F_CHSMUL1, fwp_mn60Tbl},
+	{F_CHSSYM1, fwp_sym60Tbl},
+	{F_CHSGREK, fwp_grk60Tbl},
+	{F_CHSCYR,  fwp_cyrl60Tbl},
+	{0xFF, 	 	0}
 };
 
 /****************************************************************************
@@ -3024,15 +2897,15 @@ Desc:		This table is for sorting the hebrew/arabic languages.
 ****************************************************************************/
 static TBL_B_TO_BP fwp_HebArabicCol60Tbl[] =
 {
-	{CHSASCI,	fwp_asc60Tbl},		// ascii - " " - "~"
-	{CHSMUL1,	fwp_mn60Tbl},		// multinational
-	{CHSSYM1,	fwp_sym60Tbl},		// symbols
-	{CHSGREK,	fwp_grk60Tbl},		// greek
-	{CHSHEB,		fwp_heb60TblA},	// Hebrew
-	{CHSHEB,		fwp_heb60TblB},	// Hebrew
-	{CHSARB1,	fwp_ar160Tbl},		// Arabic Set 1
-	{CHSARB2,	fwp_ar260Tbl},		// Arabic Set 2
-	{0xff, 		0}						// table terminator
+	{F_CHSASCI,	fwp_asc60Tbl},
+	{F_CHSMUL1,	fwp_mn60Tbl},
+	{F_CHSSYM1,	fwp_sym60Tbl},
+	{F_CHSGREK,	fwp_grk60Tbl},
+	{F_CHSHEB,	fwp_heb60TblA},
+	{F_CHSHEB,	fwp_heb60TblB},
+	{F_CHSARB1,	fwp_ar160Tbl},
+	{F_CHSARB2,	fwp_ar260Tbl},
+	{0xff, 		0}
 };
 
 /****************************************************************************
@@ -5192,11 +5065,11 @@ FINLINE FLMBOOL charIsUpper(
 											 ui16Char <= ASCII_LOWER_Z)
 											 ? (FLMBOOL)FALSE
 											 : (FLMBOOL)TRUE)
-							: flmWPIsUpper( ui16Char)));
+							: f_wpIsUpper( ui16Char)));
 }
 
 /****************************************************************************
-Desc:		getNextCharState can be thought of as a 2 dimentional array with
+Desc:		flmGetNextCharState can be thought of as a 2 dimentional array with
 			i and j as the row and column indicators respectively.  If a value
 			exists at the intersection of i and j, it is returned.  Sparse array
 			techniques are used to minimize memory usage.
@@ -5204,18 +5077,17 @@ Desc:		getNextCharState can be thought of as a 2 dimentional array with
 Return:	0 = no valid next state
 			non-zero = valid next state, offset for action, or collating value
 ****************************************************************************/
-FINLINE FLMUINT16 getNextCharState(
+FINLINE FLMUINT16 flmGetNextCharState(
 	FLMUINT		i,
 	FLMUINT		j)
 {
-	FLMUINT		k, x;
+	FLMUINT		k;
+	FLMUINT		x;
 
-	for( k = fwp_indexi[ x =
-			(i > START_COL) ? (START_ALL) : i ]; // adjust so don't use full tables
+	for( k = fwp_indexi[ x = (i > START_COL) ? (START_ALL) : i];
 		  k <= (FLMUINT) (fwp_indexi[ x + 1] - 1);
 		  k++ )
 	{
-		// FIXUP_AREA_SIZE should be 24.
 		if(  j == fwp_indexj[ k])
 		{
 			return( fwp_valuea[ (i > START_COL)
@@ -5224,7 +5096,7 @@ FINLINE FLMUINT16 getNextCharState(
 		}
 	}
 
-	return(0);
+	return( 0);
 }
 
 /****************************************************************************
@@ -5258,6 +5130,37 @@ FLMBOOL FLMAPI f_unicodeToWP(
 }
 
 /****************************************************************************
+Desc:		Convert a Unicode character to its WP equivalent using the
+			depricated FLAIM conversion rules
+Ret:		Returns TRUE if the character could be converted
+****************************************************************************/
+FLMBOOL FLMAPI f_depricatedUnicodeToWP(
+	FLMUNICODE			uUniChar,		// Unicode character to convert
+	FLMUINT16 *			pui16WPChar)	// Returns 0 or WPChar converted.
+{
+	if( uUniChar < 127)
+	{
+		*pui16WPChar = uUniChar;
+		return( TRUE);
+	}
+
+	if( uUniChar < gv_uiMinUniChar || 
+		 uUniChar > gv_uiMaxUniChar ||
+		 uUniChar > 0x222E)
+	{
+		*pui16WPChar = 0;
+		return( FALSE);
+	}
+
+	if( (*pui16WPChar = gv_pUnicodeToWP60[ uUniChar - gv_uiMinUniChar]) != 0)
+	{
+		return( TRUE);
+	}
+
+	return( FALSE);
+}
+
+/****************************************************************************
 Desc:		Convert a WP character to its Unicode equivalent
 ****************************************************************************/
 RCODE FLMAPI f_wpToUnicode(
@@ -5274,10 +5177,15 @@ RCODE FLMAPI f_wpToUnicode(
 
 	if( ui16WPChar < gv_uiMinWPChar || ui16WPChar > gv_uiMaxWPChar)
 	{
-		return( RC_SET_AND_ASSERT( NE_FLM_CONV_ILLEGAL));
+		*puUniChar = 0;
+		return( RC_SET( NE_FLM_CONV_ILLEGAL));
 	}
 
-	*puUniChar = gv_pWP60ToUnicode[ ui16WPChar - gv_uiMinWPChar];
+	if( (*puUniChar = gv_pWP60ToUnicode[ ui16WPChar - gv_uiMinWPChar]) == 0)
+	{
+		return( RC_SET( NE_FLM_CONV_ILLEGAL));
+	}
+
 	return( NE_FLM_OK);
 }
 
@@ -5519,7 +5427,7 @@ Exit:
 /****************************************************************************
 Desc:	Converts a character to upper case (if possible)
 ****************************************************************************/
-FLMUINT16 flmWPUpper(
+FLMUINT16 FLMAPI f_wpUpper(
 	FLMUINT16	ui16WpChar)
 {
 	if( ui16WpChar < 256)
@@ -5535,28 +5443,28 @@ FLMUINT16 flmWPUpper(
 	{
 		FLMBYTE	ucCharSet = (FLMBYTE)(ui16WpChar >> 8);
 
-		if( ucCharSet == CHSMUL1)
+		if( ucCharSet == F_CHSMUL1)
 		{
 			FLMBYTE	ucChar = (FLMBYTE)(ui16WpChar & 0xFF);
 
-			if( ucChar >= fwp_caseConvertableRange[ (CHSMUL1-1) * 2] &&
-				 ucChar <= fwp_caseConvertableRange[ ((CHSMUL1-1) * 2) + 1])
+			if( ucChar >= fwp_caseConvertableRange[ (F_CHSMUL1 - 1) * 2] &&
+				 ucChar <= fwp_caseConvertableRange[ ((F_CHSMUL1 - 1) * 2) + 1])
 			{
 				return( ui16WpChar & 0xFFFE);
 			}
 		}
-		else if( ucCharSet == CHSGREK)
+		else if( ucCharSet == F_CHSGREK)
 		{
 			if( (ui16WpChar & 0xFF) <=
-						fwp_caseConvertableRange[ ((CHSGREK-1) * 2) + 1])
+						fwp_caseConvertableRange[ ((F_CHSGREK - 1) * 2) + 1])
 			{
 				return( ui16WpChar & 0xFFFE);
 			}
 		}
-		else if( ucCharSet == CHSCYR)
+		else if( ucCharSet == F_CHSCYR)
 		{
 			if( (ui16WpChar & 0xFF) <=
-						fwp_caseConvertableRange[ ((CHSCYR-1) * 2) + 1])
+						fwp_caseConvertableRange[ ((F_CHSCYR - 1) * 2) + 1])
 			{
 				return( ui16WpChar & 0xFFFE);
 			}
@@ -5600,7 +5508,7 @@ FLMUINT16 flmWPUpper(
 /****************************************************************************
 Desc:	Checks to see if WP character is upper case
 ****************************************************************************/
-FLMBOOL flmWPIsUpper(
+FLMBOOL FLMAPI f_wpIsUpper(
 	FLMUINT16	ui16WpChar)
 {
 	FLMBYTE	ucChar;
@@ -5623,13 +5531,9 @@ FLMBOOL flmWPIsUpper(
 
 	ucCharSet = (FLMBYTE) (ui16WpChar >> 8);
 
-	// CHSMUL1 == Multinational 1 character set
-	// CHSGREK == Greek character set
-	// CHSCYR == Cyrillic character set
-
-	if( (ucCharSet == CHSMUL1 && ucChar >= 26 && ucChar <= 241) ||
-		 (ucCharSet == CHSGREK && ucChar <= 69) ||
-		 (ucCharSet == CHSCYR && ucChar <= 199))
+	if( (ucCharSet == F_CHSMUL1 && ucChar >= 26 && ucChar <= 241) ||
+		 (ucCharSet == F_CHSGREK && ucChar <= 69) ||
+		 (ucCharSet == F_CHSCYR && ucChar <= 199))
 	{
 		return( (ucChar & 1) ? FALSE : TRUE);
 	}
@@ -5642,7 +5546,7 @@ FLMBOOL flmWPIsUpper(
 /****************************************************************************
 Desc:	Converts a character to lower case (if possible)
 ****************************************************************************/
-FLMUINT16 flmWPLower(
+FLMUINT16 FLMAPI f_wpLower(
 	FLMUINT16	ui16WpChar)
 {
 	if( ui16WpChar < 256)
@@ -5656,28 +5560,28 @@ FLMUINT16 flmWPLower(
 	{
 		FLMBYTE	ucCharSet = (FLMBYTE)(ui16WpChar >> 8);
 
-		if( ucCharSet == CHSMUL1)
+		if( ucCharSet == F_CHSMUL1)
 		{
 			FLMBYTE	ucChar = (FLMBYTE)(ui16WpChar & 0xFF);
 
-			if( ucChar >= fwp_caseConvertableRange[ (CHSMUL1-1) * 2] &&
-				 ucChar <= fwp_caseConvertableRange[ ((CHSMUL1-1) * 2) + 1] )
+			if( ucChar >= fwp_caseConvertableRange[ (F_CHSMUL1 - 1) * 2] &&
+				 ucChar <= fwp_caseConvertableRange[ ((F_CHSMUL1 - 1) * 2) + 1] )
 			{
 				return( ui16WpChar | 1);
 			}
 		}
-		else if( ucCharSet == CHSGREK)
+		else if( ucCharSet == F_CHSGREK)
 		{
 			if( (ui16WpChar & 0xFF) <=
-						fwp_caseConvertableRange[ ((CHSGREK-1) * 2) + 1])
+						fwp_caseConvertableRange[ ((F_CHSGREK - 1) * 2) + 1])
 			{
 				return( ui16WpChar | 1);
 			}
 		}
-		else if( ucCharSet == CHSCYR)
+		else if( ucCharSet == F_CHSCYR)
 		{
 			if( (ui16WpChar & 0xFF) <=
-						fwp_caseConvertableRange[ ((CHSCYR-1) * 2) + 1])
+						fwp_caseConvertableRange[ ((F_CHSCYR-1) * 2) + 1])
 			{
 				return( ui16WpChar | 1);
 			}
@@ -5720,10 +5624,8 @@ FLMUINT16 flmWPLower(
 
 /****************************************************************************
 Desc:	Break a WP character into a base and a diacritical char.
-Ret: 	TRUE - if not found
-		FALSE - if found
 ****************************************************************************/
-FLMBOOL flmWPBrkcar(
+FLMBOOL FLMAPI f_breakWPChar(
 	FLMUINT16		ui16WpChar,
 	FLMUINT16 *		pui16BaseChar,
 	FLMUINT16 *		pui16DiacriticChar)
@@ -5731,12 +5633,14 @@ FLMBOOL flmWPBrkcar(
 	BASE_DIACRIT *		pBaseDiacritic;
 	FLMINT				iTableIndex;
 
-	if( (pBaseDiacritic = fwp_car60_c[ HI(ui16WpChar)]) == 0)
+	if( HI(ui16WpChar) >= F_NCHSETS ||
+		 (pBaseDiacritic = fwp_car60_c[ HI(ui16WpChar)]) == 0)
 	{
 		return( TRUE);
 	}
 
 	iTableIndex = ((FLMBYTE)ui16WpChar) - pBaseDiacritic->start_char;
+	
 	if( iTableIndex < 0 ||
 		 iTableIndex > pBaseDiacritic->char_count ||
 		 pBaseDiacritic->table [iTableIndex].base == (FLMBYTE)0xFF)
@@ -5744,7 +5648,7 @@ FLMBOOL flmWPBrkcar(
 		return( TRUE);
 	}
 
-	if( (HI( ui16WpChar) != CHSMUL1) ||
+	if( (HI( ui16WpChar) != F_CHSMUL1) ||
 		 ((fwp_ml1_cb60[ ((FLMBYTE) ui16WpChar) >> 3] >>
 			(7 - (ui16WpChar & 0x07))) & 0x01))
 	{
@@ -5769,45 +5673,109 @@ FLMBOOL flmWPBrkcar(
 	return( FALSE);
 }
 
+/****************************************************************************
+Desc:	Take a base and a diacritic and compose a WP character.
+		Note on base character: i's and j's must be dotless i's and j's (for
+		those which use them) or they will not be found.
+Ret: 	TRUE - if not found
+		FALSE  - if found
+Notes: ascii characters with diacriticals are in multi-national if anywhere;
+		 all other base chars with diacritics are found in their own sets.
+****************************************************************************/
+FLMBOOL FLMAPI f_combineWPChar(
+	FLMUINT16 *		pui16WpChar,
+	FLMUINT16		ui16BaseChar,
+	FLMINT16			ui16DiacriticChar)
+{
+	FLMUINT						uiRemaining;
+	FLMBYTE						ucCharSet;
+	FLMBYTE						ucChar;
+	BASE_DIACRIT *				pBaseDiacritic;
+	BASE_DIACRIT_TABLE *		pTable;
+
+	ucCharSet = HI( ui16BaseChar);
+	if( ucCharSet > F_NCHSETS)
+	{
+		return( TRUE);
+	}
+
+	// Is base ASCII?  If so, look in multinational 1
+
+	if( !ucCharSet)
+	{
+		ucCharSet = F_CHSMUL1;
+	}
+
+	if( ucCharSet >= F_NCHSETS ||
+		 (pBaseDiacritic = fwp_car60_c[ ucCharSet]) == 0)
+	{
+		return( TRUE);
+	}
+
+	ucChar = LO( ui16BaseChar);
+	ui16DiacriticChar = LO( ui16DiacriticChar);
+	pTable = pBaseDiacritic->table;
+
+	for( uiRemaining = pBaseDiacritic->char_count;
+		  uiRemaining;
+		  uiRemaining--, pTable++ )
+	{
+		// Same base?
+
+		if( pTable->base == ucChar &&
+			 (pTable->diacrit & 0x7F) == ui16DiacriticChar)
+		{
+			// Same diacritic?
+
+			*pui16WpChar = (FLMUINT16) (((FLMUINT16) ucCharSet << 8) +
+					(pBaseDiacritic->start_char +
+					 (FLMUINT16)(pTable - pBaseDiacritic->table)));
+			return( FALSE);
+		}
+	}
+
+	return( TRUE);
+}
+
 /**************************************************************************
 Desc:	Find the collating value of a WP character
 ret:	Collating value (COLS0 is high value - undefined WP char)
 ***********************************************************************/
-FLMUINT16 flmWPGetCollation(
-	FLMUINT16	ui16WpChar,
-	FLMUINT		uiLanguage)
+FLMUINT16 FLMAPI f_wpGetCollationImp(
+	FLMUINT16		ui16WpChar,
+	FLMUINT			uiLanguage)
 {
 	FLMUINT16		ui16State;
 	FLMBYTE			ucCharVal;
 	FLMBYTE			ucCharSet;
-	FLMBOOL			bHebrewArabicFlag = FALSE;
-	TBL_B_TO_BP *	pColTbl = fwp_col60Tbl;
+	FLMBOOL			bHebrewArabicFlag;
+	TBL_B_TO_BP *	pColTbl;
 
-	// State ONLY for non-US
-
-	if( uiLanguage != FLM_US_LANG)
+	if( uiLanguage == FLM_US_LANG)
 	{
-		if( uiLanguage == FLM_AR_LANG ||		// Arabic
-			 uiLanguage == FLM_FA_LANG ||		// Farsi - persian
-			 uiLanguage == FLM_HE_LANG ||		// Hebrew
-			 uiLanguage == FLM_UR_LANG) 			// Urdu
-		{
-			pColTbl = fwp_HebArabicCol60Tbl;
-			bHebrewArabicFlag = TRUE;
-		}
-		else
-		{
-			// check if uiLanguage candidate for alternate double collating
+		return( gv_pui16USCollationTable[ ui16WpChar]);
+	}
+	else if( uiLanguage == FLM_AR_LANG || uiLanguage == FLM_FA_LANG ||
+				uiLanguage == FLM_HE_LANG || uiLanguage == FLM_UR_LANG)
+	{
+		pColTbl = fwp_HebArabicCol60Tbl;
+		bHebrewArabicFlag = TRUE;
+	}
+	else
+	{
+		// Check if uiLanguage candidate for alternate double collating
 
-			ui16State = getNextCharState( START_COL, uiLanguage);
-			if( 0 != (ui16State = getNextCharState( (ui16State
-							?	ui16State		// look at special case languages
-							:	START_ALL),		// look at US and European
-							(FLMUINT) ui16WpChar)))
-			{
-				return( ui16State);
-			}
+		ui16State = flmGetNextCharState( START_COL, uiLanguage);
+		if( 0 != (ui16State = flmGetNextCharState( (ui16State
+						?	ui16State		// look at special case languages
+						:	START_ALL),		// look at US and European
+						(FLMUINT) ui16WpChar)))
+		{
+			return( ui16State);
 		}
+
+		pColTbl = fwp_col60Tbl;
+		bHebrewArabicFlag = FALSE;
 	}
 
 	ucCharVal = (FLMBYTE)ui16WpChar;
@@ -5817,14 +5785,12 @@ FLMUINT16 flmWPGetCollation(
 	{
 		if( pColTbl->key == ucCharSet)
 		{
-			FLMBYTE *	pucColVals;	// table of collating values
-
-			pucColVals = pColTbl->charPtr;
+			FLMBYTE *	pucColVals = pColTbl->charPtr;
 
 			// Check if the value is in the range of collated chars
 			// Above lower range of table?
 
-			if (ucCharVal >= *pucColVals)
+			if( ucCharVal >= *pucColVals)
 			{
 				// Make value zero based to index
 
@@ -5844,16 +5810,14 @@ FLMUINT16 flmWPGetCollation(
 		// Go to next table entry
 
 		pColTbl++;
+
 	} while( pColTbl->key != 0xFF);
 
 	if( bHebrewArabicFlag)
 	{
-		if( ucCharSet == CHSHEB ||
-			 ucCharSet == CHSARB1 ||
-			 ucCharSet == CHSARB2)
+		if( ucCharSet == F_CHSHEB || ucCharSet == F_CHSARB1 || 
+			 ucCharSet == F_CHSARB2)
 		{
-			// Same as COLS0_HEBREW
-
 			return( COLS0_ARABIC);
 		}
 	}
@@ -5880,22 +5844,22 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 	FLMBOOL *			pbTwoIntoOne,
 	FLMUINT				uiLanguage)
 {
-	RCODE			rc = NE_FLM_OK;
-	FLMUINT16	ui16CurState;
-	FLMUINT16	ui16WpChar;
-	FLMUNICODE	uzLastChar = 0;
-	FLMUNICODE	uChar = *puzChar;
-	FLMUNICODE	uDummy;
-	FLMBOOL		bUpperFlag;
-	FLMUINT64	ui64SavePosition = pIStream->getCurrPosition();
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT16			ui16CurState;
+	FLMUINT16			ui16WpChar;
+	FLMUNICODE			uzLastChar = 0;
+	FLMUNICODE			uChar = *puzChar;
+	FLMUNICODE			uDummy;
+	FLMBOOL				bUpperFlag;
+	FLMUINT64			ui64SavePosition = pIStream->getCurrPosition();
 
 	if (!f_unicodeToWP( *puzChar, &ui16WpChar))
 	{
 		ui16WpChar = UNK_UNICODE_CODE;
 	}
-	bUpperFlag = flmWPIsUpper( ui16WpChar);
+	bUpperFlag = f_wpIsUpper( ui16WpChar);
 
-	if ((ui16CurState = getNextCharState( 0, uiLanguage)) == 0)
+	if ((ui16CurState = flmGetNextCharState( 0, uiLanguage)) == 0)
 	{
 		*pbTwoIntoOne = FALSE;
 		*puzChar2 = 0;
@@ -5907,10 +5871,14 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 		switch (ui16CurState)
 		{
 			case INSTSG:
+			{
 				*puzChar = *puzChar2 = (FLMUNICODE)f_toascii( 's');
 				*pbTwoIntoOne = FALSE;
 				goto Exit;
+			}
+			
 			case INSTAE:
+			{
 				if (bUpperFlag)
 				{
 					*puzChar = (FLMUNICODE)f_toascii( 'A');
@@ -5923,7 +5891,10 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 				}
 				*pbTwoIntoOne = FALSE;
 				goto Exit;
+			}
+			
 			case INSTIJ:
+			{
 				if (bUpperFlag)
 				{
 					*puzChar = (FLMUNICODE)f_toascii( 'I');
@@ -5936,7 +5907,10 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 				}
 				*pbTwoIntoOne = FALSE;
 				goto Exit;
+			}
+			
 			case INSTOE:
+			{
 				if (bUpperFlag)
 				{
 					*puzChar = (FLMUNICODE)f_toascii( 'O');
@@ -5949,7 +5923,10 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 				}
 				*pbTwoIntoOne = FALSE;
 				goto Exit;
+			}
+			
 			case WITHAA:
+			{
 				*puzChar = (FLMUNICODE)(bUpperFlag
 													? (FLMUNICODE)0xC5
 													: (FLMUNICODE)0xE5);
@@ -5982,7 +5959,10 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 
 				ui64SavePosition = pIStream->getCurrPosition();
 				break;
+			}
+			
 			case AFTERC:
+			{
 				*puzChar = (FLMUINT16)(bUpperFlag
 													? (FLMUNICODE)f_toascii( 'C')
 													: (FLMUNICODE)f_toascii( 'c'));
@@ -6022,23 +6002,33 @@ Position_After_2nd:
 					ui64SavePosition = pIStream->getCurrPosition();
 				}
 				goto Exit;
+			}
+			
 			case AFTERH:
+			{
 				*puzChar = (FLMUINT16)(bUpperFlag
 													? (FLMUNICODE)f_toascii( 'H')
 													: (FLMUNICODE)f_toascii( 'h'));
 				goto Position_After_2nd;
+			}
+			
 			case AFTERL:
+			{
 				*puzChar = (FLMUINT16)(bUpperFlag
 													? (FLMUNICODE)f_toascii( 'L')
 													: (FLMUNICODE)f_toascii( 'l'));
 				goto Position_After_2nd;
+			}
+			
 			default:
+			{
 				// Handles STATE1 through STATE11 also
 				break;
+			}
 		}
 
-		if ((ui16CurState = getNextCharState( ui16CurState,
-									flmWPLower( ui16WpChar))) == 0)
+		if ((ui16CurState = flmGetNextCharState( ui16CurState,
+									f_wpLower( ui16WpChar))) == 0)
 		{
 			break;
 		}
@@ -6083,6 +6073,169 @@ Exit:
 }
 
 /****************************************************************************
+Desc:		Check for double characters that sort as 1 (like ch in Spanish) or
+			1 character that should sort as 2 (like � sorts as ae in French).
+Return:	0 = nothing changes.  Otherwise, *pui16WpChar is the first
+			character, and the return value contains the 2nd character.
+			In addition, *pbTwoIntoOne will be TRUE if we should take two
+			characters and treat as one (i.e, change the collation on the
+			outside to one more than the collation of the first character).
+****************************************************************************/
+FLMUINT16 FLMAPI f_wpCheckDoubleCollation(
+	FLMUINT16 *			pui16WpChar,
+	FLMBOOL *			pbTwoIntoOne,
+	const FLMBYTE **	ppucInputStr,
+	FLMUINT				uiLanguage)
+{
+	FLMUINT16			ui16CurState;
+	FLMUINT16			ui16WpChar;
+	FLMUINT16			ui16SecondChar;
+	FLMUINT16			ui16LastChar = 0;
+	FLMUINT				uiInLen;
+	FLMBOOL				bUpperFlag;
+
+	ui16WpChar = *pui16WpChar;
+	bUpperFlag = f_wpIsUpper( ui16WpChar);
+
+	uiInLen = 0;
+	ui16SecondChar = 0;
+
+	// Primer read
+
+	if ((ui16CurState = flmGetNextCharState( 0, uiLanguage)) == 0)
+	{
+		goto Exit;
+	}
+
+	for (;;)
+	{
+		switch (ui16CurState)
+		{
+			case INSTSG:
+			{
+				*pui16WpChar = ui16SecondChar = (FLMUINT16) f_toascii( 's');
+				*pbTwoIntoOne = FALSE;
+				goto Exit;
+			}
+			
+			case INSTAE:
+			{
+				if (bUpperFlag)
+				{
+					*pui16WpChar = (FLMUINT16) f_toascii( 'A');
+					ui16SecondChar = (FLMUINT16) f_toascii( 'E');
+				}
+				else
+				{
+					*pui16WpChar = (FLMUINT16) f_toascii( 'a');
+					ui16SecondChar = (FLMUINT16) f_toascii( 'e');
+				}
+
+				*pbTwoIntoOne = FALSE;
+				goto Exit;
+			}
+			
+			case INSTIJ:
+			{
+				if (bUpperFlag)
+				{
+					*pui16WpChar = (FLMUINT16) f_toascii( 'I');
+					ui16SecondChar = (FLMUINT16) f_toascii( 'J');
+				}
+				else
+				{
+					*pui16WpChar = (FLMUINT16) f_toascii( 'i');
+					ui16SecondChar = (FLMUINT16) f_toascii( 'j');
+				}
+
+				*pbTwoIntoOne = FALSE;
+				goto Exit;
+			}
+			
+			case INSTOE:
+			{
+				if (bUpperFlag)
+				{
+					*pui16WpChar = (FLMUINT16) f_toascii( 'O');
+					ui16SecondChar = (FLMUINT16) f_toascii( 'E');
+				}
+				else
+				{
+					*pui16WpChar = (FLMUINT16) f_toascii( 'o');
+					ui16SecondChar = (FLMUINT16) f_toascii( 'e');
+				}
+
+				*pbTwoIntoOne = FALSE;
+				goto Exit;
+			}
+			
+			case WITHAA:
+			{
+				*pui16WpChar = (FLMUINT16) (bUpperFlag 
+														? (FLMUINT16) 0x122 
+														: (FLMUINT16) 0x123);
+				(*ppucInputStr)++;
+				break;
+			}
+			
+			case AFTERC:
+			{
+				*pui16WpChar = (FLMUINT16) (bUpperFlag 
+														? (FLMUINT16) f_toascii( 'C') 
+														: (FLMUINT16) f_toascii( 'c'));
+				ui16SecondChar = ui16LastChar;
+				*pbTwoIntoOne = TRUE;
+				(*ppucInputStr)++;
+				goto Exit;
+			}
+			
+			case AFTERH:
+			{
+				*pui16WpChar = (FLMUINT16) (bUpperFlag 
+														? (FLMUINT16) f_toascii( 'H') 
+														: (FLMUINT16) f_toascii( 'h'));
+				ui16SecondChar = ui16LastChar;
+				*pbTwoIntoOne = TRUE;
+				(*ppucInputStr)++;
+				goto Exit;
+			}
+			
+			case AFTERL:
+			{
+				*pui16WpChar = (FLMUINT16) (bUpperFlag 
+														? (FLMUINT16) f_toascii( 'L') 
+														: (FLMUINT16) f_toascii( 'l'));
+				ui16SecondChar = ui16LastChar;
+				*pbTwoIntoOne = TRUE;
+				(*ppucInputStr)++;
+				goto Exit;
+			}
+			
+			default:
+			{
+
+				// Handles STATE1 through STATE11 also
+
+				break;
+			}
+		}
+
+		if ((ui16CurState = flmGetNextCharState( ui16CurState, 
+				f_wpLower( ui16WpChar))) == 0)
+		{
+			goto Exit;
+		}
+
+		ui16LastChar = ui16WpChar;
+		ui16WpChar = (FLMUINT16) * ((*ppucInputStr) + (uiInLen++));
+	}
+
+Exit:
+
+	return (ui16SecondChar);
+}
+
+/****************************************************************************
 Desc:	Returns the collation value of the input WP character.
 		If in charset 11 will convert the character to Zenkaku (double wide).
 In:	ui16WpChar - Char to collate off of - could be in CS0..14 or x24..up
@@ -6119,22 +6272,22 @@ Terms:
 
 ****************************************************************************/
 FLMUINT16 flmWPAsiaGetCollation(
-	FLMUINT16	ui16WpChar,				// WP char to get collation values
-	FLMUINT16	ui16NextWpChar,		// Next WP char - for CS11 voicing marks
-	FLMUINT16   ui16PrevColValue,		// Previous collating value
-	FLMUINT16 *	pui16ColValue,			// Returns collation value
-	FLMUINT16 * pui16SubColVal,		// Returns sub-collation value
-	FLMBYTE *	pucCaseBits,		 	// Returns case bits value
-	FLMBOOL		bUppercaseFlag)		// Set if to convert to uppercase
+	FLMUINT16		ui16WpChar,				// WP char to get collation values
+	FLMUINT16		ui16NextWpChar,		// Next WP char - for CS11 voicing marks
+	FLMUINT16   	ui16PrevColValue,		// Previous collating value
+	FLMUINT16 *		pui16ColValue,			// Returns collation value
+	FLMUINT16 * 	pui16SubColVal,		// Returns sub-collation value
+	FLMBYTE *		pucCaseBits,		 	// Returns case bits value
+	FLMBOOL			bUppercaseFlag)		// Set if to convert to uppercase
 {
-	FLMUINT16	ui16ColValue;
-	FLMUINT16	ui16SubColVal;
-	FLMBYTE		ucCaseBits = 0;
-	FLMBYTE		ucCharSet = (FLMBYTE)(ui16WpChar >> 8);
-	FLMBYTE		ucCharVal = (FLMBYTE)(ui16WpChar & 0xFF);
-	FLMUINT16	ui16Hankaku;
-	FLMUINT		uiLoop;
-	FLMUINT16	ui16ReturnValue = 1;
+	FLMUINT16		ui16ColValue;
+	FLMUINT16		ui16SubColVal;
+	FLMBYTE			ucCaseBits = 0;
+	FLMBYTE			ucCharSet = (FLMBYTE)(ui16WpChar >> 8);
+	FLMBYTE			ucCharVal = (FLMBYTE)(ui16WpChar & 0xFF);
+	FLMUINT16		ui16Hankaku;
+	FLMUINT			uiLoop;
+	FLMUINT16		ui16ReturnValue = 1;
 
 	ui16ColValue = ui16SubColVal = 0;
 
@@ -6165,9 +6318,9 @@ Latin_Greek_Cyrillic:
 		// YES: Pass FLM_US_LANG because this is what we want -
 		// Prevents double character sorting.
 
-		ui16ColValue = flmWPGetCollation( ui16WpChar, FLM_US_LANG);
+		ui16ColValue = f_wpGetCollation( ui16WpChar, FLM_US_LANG);
 
-		if (bUppercaseFlag || flmWPIsUpper( ui16WpChar))
+		if (bUppercaseFlag || f_wpIsUpper( ui16WpChar))
 		{
 			// Uppercase - set case bit
 
@@ -6179,7 +6332,7 @@ Latin_Greek_Cyrillic:
 		if( ui16ColValue == COLS0)
 		{
 			ui16ReturnValue = 0;
-			if( !flmWPIsUpper( ui16WpChar))
+			if( !f_wpIsUpper( ui16WpChar))
 			{
 				// Convert to uppercase
 
@@ -6190,24 +6343,24 @@ Latin_Greek_Cyrillic:
 		}
 		else if( ucCharSet) 				// Don't bother with ascii
 		{
-			if( !flmWPIsUpper( ui16WpChar))
+			if( !f_wpIsUpper( ui16WpChar))
 			{
 				// Convert to uppercase
 
 				ui16WpChar--;
 			}
 
-        	if( ucCharSet == CHSMUL1)
+        	if( ucCharSet == F_CHSMUL1)
 			{
 				FLMUINT16	ui16Base;
 				FLMUINT16	ui16Diacritic;
 
-				ui16SubColVal = !flmWPBrkcar( ui16WpChar, &ui16Base,
+				ui16SubColVal = !f_breakWPChar( ui16WpChar, &ui16Base,
 															&ui16Diacritic)
 									  ? fwp_dia60Tbl[ ui16Diacritic & 0xFF]
 									  : ui16WpChar;
 			}
-			else if( ucCharSet == CHSGREK) // GREEK
+			else if( ucCharSet == F_CHSGREK)
          {
          	if( ui16WpChar >= 0x834 ||		// [8,52] or above
             	 ui16WpChar == 0x804 ||		// [8,4] BETA Medial | Terminal
@@ -6216,7 +6369,7 @@ Latin_Greek_Cyrillic:
 					ui16SubColVal = ui16WpChar;
 				}
 			}
-			else if( ucCharSet == CHSCYR)	// CYRILLIC
+			else if( ucCharSet == F_CHSCYR)
 			{
            	if( ui16WpChar >= 0xA90)		// [10, 144] or above
 				{
@@ -6238,7 +6391,7 @@ Latin_Greek_Cyrillic:
 		// All characters in charset 11 will convert to CS24 or CS26.
 		// when combining the collation and the sub-collation values.
 
-		if( flmWPHanToZenkaku( ui16WpChar,
+		if( f_wpHanToZenkaku( ui16WpChar,
 			ui16NextWpChar, &ui16KanaChar ) == 2)
 		{
 			// Return 2
@@ -6294,7 +6447,7 @@ Latin_Greek_Cyrillic:
 	// combined with the sub-collation value will format a character in
 	// CS24.  The width bit will then convert back to CS11.
 
-	if( (ui16Hankaku = flmWPZenToHankaku( ui16WpChar, NULL)) != 0)
+	if( (ui16Hankaku = f_wpZenToHankaku( ui16WpChar, NULL)) != 0)
 	{
 		if( (ui16Hankaku >> 8) != 11)			// if CharSet11 was a CS24 symbol
 		{
@@ -6376,7 +6529,7 @@ Desc:		Convert a zenkaku (double wide) char to a hankaku (single wide) char
 Ret:		Hankaku char or 0 if a conversion doesn't exist
 Notes:	Taken from CHAR.ASM -  zen2han_f routine
 ****************************************************************************/
-FSTATIC FLMUINT16 flmWPZenToHankaku(
+FLMUINT16 FLMAPI f_wpZenToHankaku(
 	FLMUINT16	ui16WpChar,
 	FLMUINT16 * pui16DakutenOrHandakuten)
 {
@@ -6397,12 +6550,13 @@ FSTATIC FLMUINT16 flmWPZenToHankaku(
 			{
 				// List is sorted so table entry is more you are done
 
-				if( Zen24ToHankaku [uiLoop].ByteValue >= ucCharVal)
+				if( Zen24ToHankaku[ uiLoop].ByteValue >= ucCharVal)
 				{
-					if( Zen24ToHankaku [uiLoop].ByteValue == ucCharVal)
+					if( Zen24ToHankaku[ uiLoop].ByteValue == ucCharVal)
 					{
-						ui16Hankaku = Zen24ToHankaku [uiLoop].WordValue;
+						ui16Hankaku = Zen24ToHankaku[ uiLoop].WordValue;
 					}
+
 					break;
 				}
 			}
@@ -6528,7 +6682,7 @@ Ret:		0 = no conversion
 Notes:	Taken from char.asm - han2zen()
 			From8ToZen could be taken out and placed in code.
 ****************************************************************************/
-FSTATIC FLMUINT16 flmWPHanToZenkaku(
+FLMUINT16 FLMAPI f_wpHanToZenkaku(
 	FLMUINT16	ui16WpChar,
 	FLMUINT16	ui16NextWpChar,
 	FLMUINT16 *	pui16Zenkaku)
@@ -6624,7 +6778,7 @@ FSTATIC FLMUINT16 flmWPHanToZenkaku(
 		{
 			if( ucCharVal < 5)
 			{
-				ui16Zenkaku = 0x2400 + From11AToZen[ ucCharVal ];
+				ui16Zenkaku = 0x2400 + From11AToZen[ ucCharVal];
 			}
 			else if( ucCharVal < 0x3D)		// katakana?
 			{
@@ -6636,7 +6790,7 @@ FSTATIC FLMUINT16 flmWPHanToZenkaku(
 				}
 				else
 				{
-					if( ui16NextWpChar == 0xB3D)		// dakuten? - voicing
+					if( ui16NextWpChar == 0xB3D)
 					{
 						// First check exception(s) then
 						// check if voicing exists! - will NOT access out of table
@@ -6688,11 +6842,10 @@ FSTATIC FLMUINT16 flmWPHanToZenkaku(
 
 		default:
 		{
-			// Instead of includes more tables from char.asm - look down the
-			// Zen24Tohankaku[] table for a matching value - not much slower.
+			// Look in the Zen24Tohankaku table for a matching value
 
 			for( uiLoop = 0;
-				  uiLoop < (sizeof(Zen24ToHankaku) / sizeof(BYTE_WORD_TBL));
+				  uiLoop < (sizeof( Zen24ToHankaku) / sizeof( BYTE_WORD_TBL));
 				  uiLoop++)
 			{
 				if( Zen24ToHankaku[ uiLoop].WordValue == ui16WpChar)
@@ -6732,9 +6885,6 @@ FLMUINT FLMAPI f_languageToNum(
 		if( f_langtbl [uiTablePos]   == ucFirstChar &&
 			 f_langtbl [uiTablePos+1] == ucSecondChar)
 		{
-
-			// Return uiTablePos div 2
-
 			return( uiTablePos >> 1);
 		}
 	}
@@ -6800,22 +6950,22 @@ FLMUINT16 flmWPGetSubCol(
 
 	// This just happens to work with all WP character values.
 
-	if (!flmWPIsUpper( ui16WPValue))
+	if (!f_wpIsUpper( ui16WPValue))
 	{
 		ui16WPValue &= ~1;
 	}
 
 	switch (ucCharSet)
 	{
-		case CHSMUL1:
-
+		case F_CHSMUL1:
+		{
 			// If you cannot break down a char into base and
 			// diacritic then you cannot combine the charaacter
 			// later when converting back the key.  So, write
 			// the entire WP char in the sub-collation area.
 			// We can ONLY SUPPORT MULTINATIONAL 1 for brkcar()
 
-			if (flmWPBrkcar( ui16WPValue, &ui16Base, &ui16SubColVal))
+			if (f_breakWPChar( ui16WPValue, &ui16Base, &ui16SubColVal))
 			{
 
 				// WordPerfect character cannot be broken down.
@@ -6836,22 +6986,21 @@ FLMUINT16 flmWPGetSubCol(
 			// Bug 11/16/92 = was only writing a "1" and not "10"
 
 			ui16SubColVal = (
-					(ui16SubColVal & 0xFF) == umlaut
+					(ui16SubColVal & 0xFF) == F_UMLAUT
 					&& ( (uiLanguage == FLM_SU_LANG) ||
 						  (uiLanguage == FLM_SV_LANG) ||
 						  (uiLanguage == FLM_CZ_LANG) ||
 						  (uiLanguage == FLM_SL_LANG)
 						)
 					)
-				?	(FLMUINT16)(fwp_dia60Tbl[ ring] + 1)	// umlaut must be after ring above
+				?	(FLMUINT16)(fwp_dia60Tbl[ F_RING] + 1)	// umlaut must be after ring above
 				:	(FLMUINT16)(fwp_dia60Tbl[ ui16SubColVal & 0xFF]);
 
 			break;
+		}
 
-		case CHSGREK:
-
-			// Greek
-
+		case F_CHSGREK:
+		{
 			if( (ucCharVal >= 52)  ||		// Keep case bit for 52-69 else ignore
           	 (ui16WPValue == 0x804) ||	// [ 8,4] BETA Medial | Terminal
 				 (ui16WPValue == 0x826)) 	// [ 8,38] SIGMA termainal
@@ -6860,18 +7009,20 @@ FLMUINT16 flmWPGetSubCol(
 			}
 			// else no subcollation to worry about
 			break;
+		}
 
-		case CHSCYR:
+		case F_CHSCYR:
+		{
 			if (ucCharVal >= 144)
 			{
 				ui16SubColVal = ui16WPValue;
 			}
-			// else no subcollation to worry about
 
-			// VISIT: Georgian covers 208-249 - no collation defined yet
 			break;
+		}
 
-		case CHSHEB:	// Hebrew
+		case F_CHSHEB:
+		{
 
 			// Three sections in Hebrew:
 			//		0..26 - main characters
@@ -6888,8 +7039,10 @@ FLMUINT16 flmWPGetSubCol(
 				ui16SubColVal = ui16WPValue;
 			}
 			break;
+		}
 
-		case CHSARB1:	// Arabic 1
+		case F_CHSARB1:	// Arabic 1
+		{
 
 			// Three sections in Arabic:
 			//		00..37  - accents that display OVER a previous character
@@ -6926,8 +7079,10 @@ FLMUINT16 flmWPGetSubCol(
 				}
 			}
 			break;
+		}
 
-		case CHSARB2:			// Arabic 2
+		case F_CHSARB2:			// Arabic 2
+		{
 
 			// There are some characters that share the same slot
 			// Check the bit table if above character 64
@@ -6938,7 +7093,7 @@ FLMUINT16 flmWPGetSubCol(
 				ui16SubColVal = ui16WPValue;
 			}
 			break;
-
+		}
 	}
 
 Exit:
@@ -7054,6 +7209,7 @@ GetNextChar:
 				
 				ui64AfterLastSpacePos = m_pIStream->getCurrPosition();
 			}
+			
 			goto GetNextChar;
 		}
 	}
@@ -7188,13 +7344,13 @@ Process_Char:
 	{
 		if (!bAsian)
 		{
-			ui16Col = flmWPGetCollation( ui16WpChar, m_uiLanguage);
+			ui16Col = f_wpGetCollation( ui16WpChar, m_uiLanguage);
 			if (bTwoIntoOne)
 			{
 				// Since two characters were merged into one, increment
 				// the collation value by one.  In the case of something
 				// like 'ch', there is a collation value between 'c' and
-				// 'd'.  flmWPGetCollation would have returned the
+				// 'd'.  f_wpGetCollation would have returned the
 				// collation value for 'c' ... incrementing by one gives
 				// us the proper collation value for 'ch' (i.e., the
 				// collation value between 'c' and 'd').
@@ -7253,7 +7409,7 @@ Process_Char:
 				if( ui16WpChar && ui16SubCol == ui16WpChar)
 				{
 					ui16SubCol = flmWPGetSubCol(
-												flmWPUpper( ui16WpChar),
+												f_wpUpper( ui16WpChar),
 												ui16Col, m_uiLanguage);
 				}
 			}
@@ -7274,14 +7430,14 @@ Process_Char:
 		{
 			if (!bAsian && ui16WpChar)
 			{
-				// flmWPIsUpper() returns FALSE if the character is lower or
+				// f_wpIsUpper() returns FALSE if the character is lower or
 				// TRUE if the character is not lower case.
 	
-				if( flmWPIsUpper( ui16WpChar))
+				if( f_wpIsUpper( ui16WpChar))
 				{
 					if( bTwoIntoOne)
 					{
-						if( flmWPIsUpper( ui16NextWpChar))
+						if( f_wpIsUpper( ui16NextWpChar))
 						{
 							ucCase = 0x03;
 						}
@@ -7610,13 +7766,13 @@ Desc:		Called by ftkStartup, this routine initializes the Unicode to
 ****************************************************************************/
 RCODE f_initCharMappingTables( void)
 {
+	RCODE				rc = NE_FLM_OK;
 	FLMUINT16 *		puStaticPtr;
 	FLMUINT			uiLoop;
 	FLMUINT			uiEntries;
 	FLMUINT			uiOffset;
-	RCODE				rc = NE_FLM_OK;
 
-	if( gv_pUnicodeToWP60 || gv_pWP60ToUnicode)
+	if( gv_pUnicodeToWP60 || gv_pWP60ToUnicode || gv_pui16USCollationTable)
 	{
 		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 		goto Exit;
@@ -7704,6 +7860,62 @@ RCODE f_initCharMappingTables( void)
 		gv_pWP60ToUnicode[ uiOffset] = puStaticPtr[ 0];
 	}
 
+	// Allocate the US collation mapping table
+
+	uiEntries = 0x10000;
+	if (RC_BAD( rc = f_calloc( uiEntries * sizeof( FLMUINT16),
+		&gv_pui16USCollationTable)))
+	{
+		goto Exit;
+	}
+
+	// Populate the US collation mapping table
+
+	for( uiLoop = 0; uiLoop < uiEntries; uiLoop++)
+	{
+		FLMBYTE			ucCharVal = (FLMBYTE)uiLoop;
+		FLMBYTE			ucCharSet = (FLMBYTE)(uiLoop >> 8);
+		TBL_B_TO_BP *	pColTbl = fwp_col60Tbl;
+
+		do
+		{
+			if( pColTbl->key == ucCharSet)
+			{
+				FLMBYTE *	pucColVals = pColTbl->charPtr;
+
+				// Check if the value is in the range of collated chars
+				// Above lower range of table?
+
+				if( ucCharVal >= *pucColVals)
+				{
+					// Make value zero based to index
+
+					ucCharVal -= *pucColVals++;
+
+					// Below maximum number of table entries?
+
+					if( ucCharVal < *pucColVals++)
+					{
+						// Return collated value.
+
+						gv_pui16USCollationTable[ uiLoop] = pucColVals[ ucCharVal];
+						break;
+					}
+				}
+			}
+
+			// Go to next table entry
+
+			pColTbl++;
+
+		} while( pColTbl->key != 0xFF);
+
+		if( pColTbl->key == 0xFF)
+		{
+			gv_pui16USCollationTable[ uiLoop] = COLS0;
+		}
+	}
+
 Exit:
 
 	if( RC_BAD( rc))
@@ -7716,6 +7928,11 @@ Exit:
 		if( gv_pWP60ToUnicode)
 		{
 			f_free( &gv_pWP60ToUnicode);
+		}
+
+		if( gv_pui16USCollationTable)
+		{
+			f_free( &gv_pui16USCollationTable);
 		}
 
 		gv_uiMinUniChar = 0;
@@ -7744,6 +7961,11 @@ void f_freeCharMappingTables( void)
 		f_free( &gv_pWP60ToUnicode);
 	}
 
+	if( gv_pui16USCollationTable)
+	{
+		f_free( &gv_pui16USCollationTable);
+	}
+
 	gv_uiMinUniChar = 0;
 	gv_uiMaxUniChar = 0;
 
@@ -7757,7 +7979,7 @@ Out:	 	WP characters that have been modified to their original case
 Ret:		Number of bytes used in the lower/upper buffer
 Notes:	Only WP to lower case conversion is done here for each bit NOT set.
 ***************************************************************************/
-FSTATIC FLMUINT flmWPToMixed(
+FLMUINT FLMAPI f_wpToMixed(
 	FLMBYTE *			pucWPStr,			// Existing WP string to modify
 	FLMUINT				uiWPStrLen,			// Length of the WP string in bytes
 	const FLMBYTE *	pucLowUpBitStr,	// Lower/upper case bit string
@@ -7776,11 +7998,10 @@ FSTATIC FLMUINT flmWPToMixed(
 							: (FLMBYTE)0 ;
 
 	// For each character (two bytes) in the word string ...
-	for( uiNumChars = uiWPStrLen >> 1,
-				ucMaskByte = 0;							// Force first time to get a byte
-				uiNumChars--;
-				pucWPStr += 2,								// Next WP character - word
-				ucMaskByte >>= 1)							// Next bit to mask and check
+
+	for( uiNumChars = uiWPStrLen >> 1, ucMaskByte = 0;
+		  uiNumChars--;
+		  pucWPStr += 2, ucMaskByte >>= 1)
 	{
 		if( ucMaskByte == 0)
 		{
@@ -7808,10 +8029,10 @@ FSTATIC FLMUINT flmWPToMixed(
 
 				// Check if charact within region of character set
 
-				if( ((ucCharSet == CHSMUL1) &&
+				if( ((ucCharSet == F_CHSMUL1) &&
 						((ucCharVal >= 26) && (ucCharVal <= 241))) ||
-					((ucCharSet == CHSGREK) && (ucCharVal <= 69)) ||
-					((ucCharSet == CHSCYR) && (ucCharVal <= 199)))
+					((ucCharSet == F_CHSGREK) && (ucCharVal <= 69)) ||
+					((ucCharSet == F_CHSCYR) && (ucCharVal <= 199)))
 				{
 					uiTempWord |= 0x01;		// Set the bit ... don't increment!
 				}
@@ -7822,68 +8043,6 @@ FSTATIC FLMUINT flmWPToMixed(
 
 	uiNumChars = uiWPStrLen >> 1;
 	return( bytesInBits( uiNumChars));
-}
-
-/****************************************************************************
-Desc:	Take a base and a diacritic and compose a WP character.
-		Note on base character: i's and j's must be dotless i's and j's (for
-		those which use them) or they will not be found.
-Ret: 	TRUE - if not found
-		FALSE  - if found
-Notes: ascii characters with diacriticals are in multi-national if anywhere;
-		 all other base chars with diacritics are found in their own sets.
-****************************************************************************/
-FSTATIC FLMBOOL flmWPCmbcar(
-	FLMUINT16 *	pui16WpChar,
-	FLMUINT16	ui16BaseChar,
-	FLMINT16		ui16DiacriticChar)
-{
-	FLMUINT						uiRemaining;
-	FLMBYTE						ucCharSet;
-	FLMBYTE						ucChar;
-	BASE_DIACRIT *				pBaseDiacritic;
-	BASE_DIACRIT_TABLE *		pTable;
-
-	ucCharSet = HI( ui16BaseChar);
-	if( ucCharSet > WP_MAX_CAR60_SIZE)
-	{
-		return( TRUE);
-	}
-
-	// Is base ASCII?  If so, look in multinational 1
-
-	if( !ucCharSet)
-	{
-		ucCharSet = CHSMUL1;
-	}
-
-	if( (pBaseDiacritic = fwp_car60_c[ucCharSet]) == 0)
-	{
-		return( TRUE);
-	}
-
-	ucChar = LO( ui16BaseChar);
-	ui16DiacriticChar = LO( ui16DiacriticChar);
-	pTable = pBaseDiacritic->table;
-	for( uiRemaining = pBaseDiacritic->char_count;
-		  uiRemaining;
-		  uiRemaining--, pTable++ )
-	{
-		// Same base?
-
-		if( pTable->base == ucChar &&
-			 (pTable->diacrit & 0x7F) == ui16DiacriticChar)
-		{
-			// Same diacritic?
-
-			*pui16WpChar = (FLMUINT16) (((FLMUINT16) ucCharSet << 8) +
-					(pBaseDiacritic->start_char +
-					 (FLMUINT16)(pTable - pBaseDiacritic->table)));
-			return( FALSE);
-		}
-	}
-
-	return( TRUE);
 }
 
 /****************************************************************************
@@ -8041,7 +8200,7 @@ RCODE flmUTF8ToColText(
 
 			if (!charIsUpper( ui16WpChr))
 			{
-				uiFlags |= HAD_LOWER_CASE;
+				uiFlags |= F_HAD_LOWER_CASE;
 			}
 			else
 			{
@@ -8056,7 +8215,7 @@ RCODE flmUTF8ToColText(
 		// Get the collated value from the WP character-if not collating value
 
 		if ((pucCollatedStr[ uiColLen++] =
-				(FLMBYTE)(flmWPGetCollation( ui16WpChr, uiLanguage))) >= COLS11)
+				(FLMBYTE)(f_wpGetCollation( ui16WpChr, uiLanguage))) >= COLS11)
 		{
 			FLMUINT	uiTemp;
 
@@ -8125,7 +8284,7 @@ store_extended_char:
 
 			ucSubColBuf [(uiSubColBitPos + 8) >> 3] = 0;
 			ucSubColBuf [(uiSubColBitPos + 16) >> 3] = 0;
-			uiFlags |= HAD_SUB_COLLATION;
+			uiFlags |= F_HAD_SUB_COLLATION;
 
 			// Set 110 bits in sub-collation - continued from above.
 			// No need to explicitly set the zero, but must increment
@@ -8178,14 +8337,14 @@ store_extended_char:
 
 				switch( ucCharSet)
 				{
-					case CHSMUL1:	// Multinational 1
+					case F_CHSMUL1:	// Multinational 1
 					{
 						// If we cannot break down a char into base and
 						// diacritic we cannot combine the charaacter
 						// later when converting back the key.  In that case,
 						// write the entire WP char in the sub-collation area.
 
-						if( flmWPBrkcar( ui16WpChr, &ui16Base, &ui16SubColVal))
+						if( f_breakWPChar( ui16WpChr, &ui16Base, &ui16SubColVal))
 						{
 							goto store_extended_char;
 						}
@@ -8196,19 +8355,19 @@ store_extended_char:
 						// NOTE: The "unlaut" character must sort after the "ring"
 						// character.
 
-						ui16SubColVal = ((ui16SubColVal & 0xFF) == umlaut	&&
+						ui16SubColVal = ((ui16SubColVal & 0xFF) == F_UMLAUT &&
 											  (uiLanguage == FLM_SU_LANG ||
 												uiLanguage == FLM_SV_LANG ||
 												uiLanguage == FLM_CZ_LANG ||
 												uiLanguage == FLM_SL_LANG))
-							?	(FLMUINT16)(fwp_dia60Tbl[ ring] + 1)
+							?	(FLMUINT16)(fwp_dia60Tbl[ F_RING] + 1)
 							:	(FLMUINT16)(fwp_dia60Tbl[ ui16SubColVal & 0xFF]);
 
 store_sub_col:
 						// Set the next byte that follows in the sub collation buffer.
 
 						ucSubColBuf[ (uiSubColBitPos + 8) >> 3] = 0;
-						uiFlags |= HAD_SUB_COLLATION;
+						uiFlags |= F_HAD_SUB_COLLATION;
 
 						// Set the 10 bits - no need to explicitly set the zero, but
 						// must increment for it.
@@ -8223,7 +8382,7 @@ store_sub_col:
 						break;
 					}
 
-					case CHSGREK:		// Greek
+					case F_CHSGREK:		// Greek
 					{
 						if (ucChar >= 52  ||			// Keep case bit for 52-69 else ignore
           				 ui16WpChr == 0x804 ||	// [ 8,4] BETA Medial | Terminal
@@ -8239,7 +8398,7 @@ store_sub_col:
 						break;
 					}
 
-					case CHSCYR:
+					case F_CHSCYR:
 					{
 						if (ucChar >= 144)
 						{
@@ -8256,7 +8415,7 @@ store_sub_col:
 						break;
 					}
 
-					case CHSHEB:		// Hebrew
+					case F_CHSHEB:		// Hebrew
 					{
 						// Three sections in Hebrew:
 						//		0..26 - main characters
@@ -8280,7 +8439,7 @@ store_sub_col:
 						break;
 					}
 
-					case CHSARB1:		// Arabic 1
+					case F_CHSARB1:		// Arabic 1
 					{
 						// Three sections in Arabic:
 						//		00..37  - accents that display OVER a previous character
@@ -8323,7 +8482,7 @@ store_sub_col:
 						break;
 					}
 
-					case CHSARB2:			// Arabic 2
+					case F_CHSARB2:			// Arabic 2
 					{
 						// There are some characters that share the same slot
 						// Check the bit table if above character 64
@@ -8382,7 +8541,7 @@ store_sub_col:
 						ucCaseBits[ (uiCaseBitPos + 7) >> 3] = 0;
 						if( !charIsUpper( ui16WpChr2))
 						{
-							uiFlags |= HAD_LOWER_CASE;
+							uiFlags |= F_HAD_LOWER_CASE;
 						}
 						else
 						{
@@ -8401,7 +8560,7 @@ store_sub_col:
 					// We have a digraph, get second collation value
 
 					pucCollatedStr[ uiColLen++] =
-						(FLMBYTE)(flmWPGetCollation( ui16WpChr2, uiLanguage));
+						(FLMBYTE)(f_wpGetCollation( ui16WpChr2, uiLanguage));
 
 					// Normal case, assume no diacritics set
 
@@ -8462,12 +8621,12 @@ store_sub_col:
 
 	if (bFirstSubstring)
 	{
-		pucCollatedStr[ uiColLen++] = COLL_FIRST_SUBSTRING;
+		pucCollatedStr[ uiColLen++] = F_COLL_FIRST_SUBSTRING;
 	}
 
 	if (bDataTruncated)
 	{
-		pucCollatedStr[ uiColLen++ ] = COLL_TRUNCATED;
+		pucCollatedStr[ uiColLen++ ] = F_COLL_TRUNCATED;
 	}
 
 	// Return NOTHING if no values found
@@ -8489,20 +8648,21 @@ store_sub_col:
 	}
 
 	// Done putting the string into 4 sections - build the COLLATED KEY
-	// Don't set uiUppercaseFlag earlier than here because SC_LOWER may be zero
+	// Don't set uiUppercaseFlag earlier than here because F_SC_LOWER 
+	// may be zero
 
 	uiUppercaseFlag = (uiLanguage == FLM_GR_LANG)
-								? SC_LOWER
-								: SC_UPPER;
+								? F_SC_LOWER
+								: F_SC_UPPER;
 
 	// Did we write anything to the subcollation area?
-	// The default terminating characters is (COLL_MARKER|SC_UPPER)
+	// The default terminating characters is (F_COLL_MARKER | F_SC_UPPER)
 
-	if (uiFlags & HAD_SUB_COLLATION)
+	if (uiFlags & F_HAD_SUB_COLLATION)
 	{
 		// Writes out a 0x7
 
-		pucCollatedStr[ uiColLen++] = COLL_MARKER | SC_SUB_COL;
+		pucCollatedStr[ uiColLen++] = F_COLL_MARKER | F_SC_SUB_COL;
 
 		// Move the sub-collation into the collating string
 
@@ -8514,20 +8674,20 @@ store_sub_col:
 	// Move the upper/lower case stuff - force bits for Greek ONLY
 	// This is such a small size that a memcpy is not worth it
 
-	if( uiFlags & HAD_LOWER_CASE)
+	if( uiFlags & F_HAD_LOWER_CASE)
 	{
 		FLMUINT		uiNumBytes = bytesInBits( uiCaseBitPos);
 		FLMBYTE *	pucCasePtr = ucCaseBits;
 
 		// Output the 0x5
 
-		pucCollatedStr[ uiColLen++] = (FLMBYTE)(COLL_MARKER | SC_MIXED);
+		pucCollatedStr[ uiColLen++] = (FLMBYTE)(F_COLL_MARKER | F_SC_MIXED);
 		if( puiCaseLen)
 		{
 			*puiCaseLen = uiNumBytes + 1;
 		}
 
-		if( uiUppercaseFlag == SC_LOWER)
+		if( uiUppercaseFlag == F_SC_LOWER)
 		{
 			// Negate case bits for languages (like GREEK) that sort
 			// upper case before lower case.
@@ -8550,7 +8710,7 @@ store_sub_col:
 		// All characters are either upper or lower case, as determined
 		// by uiUppercaseFlag.
 
-		pucCollatedStr[ uiColLen++] = (FLMBYTE)(COLL_MARKER | uiUppercaseFlag);
+		pucCollatedStr[ uiColLen++] = (FLMBYTE)(F_COLL_MARKER | uiUppercaseFlag);
 		if( puiCaseLen)
 		{
 			*puiCaseLen = 1;
@@ -8600,7 +8760,7 @@ RCODE FLMAPI f_colStr2WPStr(
 
 	if( uiLang == FLM_US_LANG)
 	{
-		while( uiLength && (pucColStr[ uiPos] > MAX_COL_OPCODE))
+		while( uiLength && (pucColStr[ uiPos] > F_MAX_COL_OPCODE))
 		{
 			uiLength--;
 
@@ -8639,7 +8799,7 @@ RCODE FLMAPI f_colStr2WPStr(
 			bHebrewArabic = TRUE;
 		}
 
-		while( uiLength && (pucColStr[ uiPos] > MAX_COL_OPCODE))
+		while( uiLength && (pucColStr[ uiPos] > F_MAX_COL_OPCODE))
 		{
 			uiLength--;
 			uiColChar = (FLMUINT)pucColStr[ uiPos++];
@@ -8757,7 +8917,7 @@ RCODE FLMAPI f_colStr2WPStr(
 
 	// Check first substring before truncated
 
-	if( uiLength && pucColStr[ uiPos] == COLL_FIRST_SUBSTRING)
+	if( uiLength && pucColStr[ uiPos] == F_COLL_FIRST_SUBSTRING)
 	{
 		if( pbFirstSubstring)
 		{
@@ -8769,7 +8929,7 @@ RCODE FLMAPI f_colStr2WPStr(
 
 	// Is the key truncated?
 
-	if( uiLength && pucColStr[ uiPos] == COLL_TRUNCATED)
+	if( uiLength && pucColStr[ uiPos] == F_COLL_TRUNCATED)
 	{
 		if( pbDataTruncated)
 		{
@@ -8783,7 +8943,7 @@ RCODE FLMAPI f_colStr2WPStr(
 	// Still more to process - first work on the sub-collation (diacritics)
 	// Hebrew/Arabic may have empty collation area
 
-	if( uiLength && (pucColStr[ uiPos] == (COLL_MARKER | SC_SUB_COL)))
+	if( uiLength && (pucColStr[ uiPos] == (F_COLL_MARKER | F_SC_SUB_COL)))
 	{
 		FLMUINT	uiTempLen;
 
@@ -8809,10 +8969,10 @@ RCODE FLMAPI f_colStr2WPStr(
 		// Take care of the lower and upper case conversion
 		// If mixed case then convert using case bits
 
-		if( pucColStr[ uiPos++] & SC_MIXED)	// Increment pos here!
+		if( pucColStr[ uiPos++] & F_SC_MIXED)	// Increment pos here!
 		{
 			// Don't pre-increment pos on line below!
-			uiPos += flmWPToMixed( pucWPStr, uiWPStrLen,
+			uiPos += f_wpToMixed( pucWPStr, uiWPStrLen,
 				&pucColStr[ uiPos], uiLang);
 		}
 		// else 0x04 or 0x06 - all characters already in uppercase
@@ -8985,7 +9145,7 @@ RCODE FLMAPI f_asiaUTF8ToColText(
 
 		if( ui16SubColVal)
 		{
-			uiFlags |= HAD_SUB_COLLATION;
+			uiFlags |= F_HAD_SUB_COLLATION;
 			if( ui16SubColVal <= 31)	// 5 bit - store bits 10
 			{
 				setBit( ucSubColBuf, uiSubColBitPos);
@@ -9090,13 +9250,13 @@ RCODE FLMAPI f_asiaUTF8ToColText(
 	if( bFirstSubstring)
 	{
 		pucColStr[ uiColLen++] = 0;
-		pucColStr[ uiColLen++] = COLL_FIRST_SUBSTRING;
+		pucColStr[ uiColLen++] = F_COLL_FIRST_SUBSTRING;
 	}
 
 	if( bDataTruncated)
 	{
 		pucColStr[ uiColLen++] = 0;
-		pucColStr[ uiColLen++] = COLL_TRUNCATED;
+		pucColStr[ uiColLen++] = F_COLL_TRUNCATED;
 	}
 
 	// Return NOTHING if no values found
@@ -9112,10 +9272,10 @@ RCODE FLMAPI f_asiaUTF8ToColText(
 
 	// Done putting the String into 3 sections - build the COLLATED KEY
 
-	if( uiFlags & HAD_SUB_COLLATION)
+	if( uiFlags & F_HAD_SUB_COLLATION)
 	{
 		pucColStr[ uiColLen++] = 0;
-		pucColStr[ uiColLen++] = COLL_MARKER | SC_SUB_COL;
+		pucColStr[ uiColLen++] = F_COLL_MARKER | F_SC_SUB_COL;
 
 		// Move the Sub-collation (diacritics) into the collating string
 
@@ -9127,7 +9287,7 @@ RCODE FLMAPI f_asiaUTF8ToColText(
 	// Always represent the marker as 2 bytes and case bits in Asia
 
 	pucColStr[ uiColLen++] = 0;
-	pucColStr[ uiColLen++] = COLL_MARKER | SC_MIXED;
+	pucColStr[ uiColLen++] = F_COLL_MARKER | F_SC_MIXED;
 
 	uiLength = (FLMUINT)(bytesInBits( uiLowUpBitPos));
 	f_memcpy( &pucColStr[ uiColLen ], ucLowUpBuf, uiLength);
@@ -9158,7 +9318,7 @@ Notes:	For each bit in the sub-collation section:
 	110 - align to next byte & take word value as extended character
 
 ****************************************************************************/
-FSTATIC RCODE flmAsiaParseSubCol(
+RCODE FLMAPI f_asiaParseSubCol(
 	FLMBYTE *			pucWPStr,
 	FLMUINT *			puiWPStrLen,
 	FLMUINT				uiMaxWPBytes,
@@ -9208,7 +9368,7 @@ FSTATIC RCODE flmAsiaParseSubCol(
 					{
 						// Convert to WP diacritic and combine characters
 
-						flmWPCmbcar( &ui16WpChar, ui16WpChar,
+						f_combineWPChar( &ui16WpChar, ui16WpChar,
 							(FLMUINT16)ml1_COLtoD[ ui16Diac]);
 
 						// Even if cmbcar fails, WpChar is still set to a valid value
@@ -9350,9 +9510,7 @@ FSTATIC RCODE flmAsiaParseCase(
 
 	// For each character (two bytes) in the string ...
 
-	for( uiCharCnt = uiWPStrLen >> 1,	// Total number of words in word string
-			ucMaskByte = 0;						// Force first time to get a byte
-			uiCharCnt--;)
+	for( uiCharCnt = uiWPStrLen >> 1, ucMaskByte = 0; uiCharCnt--;)
 	{
 		FLMBYTE	ucChar;
 		FLMBYTE	ucCharSet;
@@ -9405,7 +9563,7 @@ FSTATIC RCODE flmAsiaParseCase(
 					}
 					else
 					{
-						flmWPHanToZenkaku( ui16WpChar, 0, &ui16WpChar);
+						f_wpHanToZenkaku( ui16WpChar, 0, &ui16WpChar);
 					}
 				}
 				else if( ucCharSet == 8)	// Greek
@@ -9428,7 +9586,7 @@ FSTATIC RCODE flmAsiaParseCase(
 				}
 				else
 				{
-					flmWPHanToZenkaku( ui16WpChar, 0, &ui16WpChar);
+					f_wpHanToZenkaku( ui16WpChar, 0, &ui16WpChar);
 				}
 
 				ucCharSet = (FLMBYTE)(ui16WpChar >> 8);
@@ -9446,12 +9604,15 @@ FSTATIC RCODE flmAsiaParseCase(
 				switch( ucCharSet)
 				{
 					case	0:
+					{
 						// Bit zero only if lower case
 
 						ui16WpChar |= 0x20;
 						break;
+					}
 
 					case	1:
+					{
 						// In upper/lower case region?
 
 						if( ucChar >= 26)
@@ -9459,8 +9620,10 @@ FSTATIC RCODE flmAsiaParseCase(
 							ui16WpChar++;
 						}
 						break;
+					}
 
 					case	8:
+					{
 						// All lowercase after 69
 
 						if( ucChar <= 69)
@@ -9468,8 +9631,10 @@ FSTATIC RCODE flmAsiaParseCase(
 							ui16WpChar++;
 						}
 						break;
+					}
 
 					case	10:
+					{
 						// No cases after 199
 
 						if( ucChar <= 199)
@@ -9477,21 +9642,26 @@ FSTATIC RCODE flmAsiaParseCase(
 							ui16WpChar++;
 						}
 						break;
+					}
 
 					case	0x25:
 					case	0x26:
+					{
 						// Should be double wide latin or Greek
 						// Add offset to convert to lowercase
 
 						ui16WpChar += 0x20;
 						break;
+					}
 
 					case	0x27:
+					{
 						// Double wide cyrillic only
 						// Add offset to convert to lowercase
 
 						ui16WpChar += 0x30;
 						break;
+					}
 				}
 			}
 		}
@@ -9503,7 +9673,7 @@ FSTATIC RCODE flmAsiaParseCase(
 				{
 					FLMUINT16	ui16NextChar = 0;
 
-					ui16WpChar = flmWPZenToHankaku( ui16WpChar, &ui16NextChar);
+					ui16WpChar = f_wpZenToHankaku( ui16WpChar, &ui16NextChar);
 					if( ui16NextChar)	// Move everyone down
 					{
 						if( (*puiWPStrLen) + 2 > uiMaxWPBytes)
@@ -9524,7 +9694,7 @@ FSTATIC RCODE flmAsiaParseCase(
 				}
 				else if( ucCharSet == 0x24)
 				{
-					ui16WpChar = flmWPZenToHankaku( ui16WpChar, NULL);
+					ui16WpChar = f_wpZenToHankaku( ui16WpChar, NULL);
 				}
 				ucMaskByte >>= 1;	// Eat the next bit
 			}
@@ -9587,7 +9757,7 @@ RCODE FLMAPI f_asiaColStr2WPStr(
 		FLMBYTE	ucCharSet = pucColStr[ uiColStrPos];
 
 		ui16ColChar = (FLMUINT16)((ucCharSet << 8) + ucChar);
-		if( ui16ColChar <= MAX_COL_OPCODE)
+		if( ui16ColChar <= F_MAX_COL_OPCODE)
 		{
 			break;
 		}
@@ -9687,7 +9857,8 @@ RCODE FLMAPI f_asiaColStr2WPStr(
 									pucColStr[ uiColStrPos + 1]);
 
 		// First substring is before truncated.
-		if( ui16ColChar == COLL_FIRST_SUBSTRING)
+		
+		if( ui16ColChar == F_COLL_FIRST_SUBSTRING)
 		{
 			if( pbFirstSubstring)
 			{
@@ -9700,7 +9871,7 @@ RCODE FLMAPI f_asiaColStr2WPStr(
 										pucColStr[ uiColStrPos + 1]);
 		}
 
-		if( ui16ColChar == COLL_TRUNCATED)
+		if( ui16ColChar == F_COLL_TRUNCATED)
 		{
 			if( pbDataTruncated)
 			{
@@ -9712,7 +9883,7 @@ RCODE FLMAPI f_asiaColStr2WPStr(
 										pucColStr[ uiColStrPos+1]);
 		}
 
-		if( ui16ColChar == (COLL_MARKER | SC_SUB_COL))
+		if( ui16ColChar == (F_COLL_MARKER | F_SC_SUB_COL))
 		{
 			FLMUINT 	uiTempLen;
 
@@ -9720,7 +9891,7 @@ RCODE FLMAPI f_asiaColStr2WPStr(
 
 			uiColStrPos += 2;
 			uiLength -= 2;
-			if( RC_BAD( rc = flmAsiaParseSubCol( pucWPStr, &uiWPStrLen,
+			if( RC_BAD( rc = f_asiaParseSubCol( pucWPStr, &uiWPStrLen,
 				uiMaxWPBytes, &pucColStr[ uiColStrPos], &uiTempLen)))
 			{
 				goto Exit;
@@ -9743,7 +9914,7 @@ RCODE FLMAPI f_asiaColStr2WPStr(
 									pucColStr[ uiColStrPos + 1]);
 check_case:
 
-		if( ui16ColChar == (COLL_MARKER | SC_MIXED))
+		if( ui16ColChar == (F_COLL_MARKER | F_SC_MIXED))
 		{
 			uiColStrPos += 2;
 
@@ -9842,7 +10013,7 @@ after_last_character:
 				{
 					// Convert to WP diacritic and combine characters
 
-					flmWPCmbcar( &ui16WPChar, ui16WPChar,
+					f_combineWPChar( &ui16WPChar, ui16WPChar,
 						(FLMUINT16)ml1_COLtoD[ ui16Diac]);
 
 					// Even if cmbcar fails, wpchar is still set to a valid value
@@ -9921,6 +10092,7 @@ after_last_character:
 			uiNumChars = 0;	// Set so we won't loop forever!
 			goto after_last_character;	// process trailing bit
 		}
+		
 		uiSubColBitPos++;	// Eat the last '0' bit
 	}
 
