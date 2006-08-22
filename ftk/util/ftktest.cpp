@@ -4451,12 +4451,49 @@ Desc:
 RCODE ftkTestAtomics( void)
 {
 	RCODE					rc = NE_FLM_OK;
+	F_MUTEX				hMutex = F_MUTEX_NULL;
 	IF_Thread *			pThreadList[ F_ATOM_TEST_THREADS];
+	FLMUINT				uiStartTime;
+	FLMUINT				uiSlowTime = 0;
+	FLMUINT				uiFastTime = 0;
 	FLMUINT				uiLoop;
+	FLMATOMIC			uiTmp;
 	
 	gv_refCount = 0;
 	f_memset( pThreadList, 0, sizeof( IF_Thread *) * F_ATOM_TEST_THREADS);
+	
+	if( RC_BAD( rc = f_mutexCreate( &hMutex)))
+	{
+		goto Exit;
+	}
+	
+	f_printf( "Running native atomic inc vs. mutex atomic inc ... ");
+	
+	uiStartTime = FLM_GET_TIMER();
+	uiTmp = 0;
+	
+	for( uiLoop = 0; uiLoop < 1000000; uiLoop++)
+	{
+		f_mutexLock( hMutex);
+		uiTmp++;
+		f_mutexUnlock( hMutex);
+	}
+	
+	uiSlowTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	uiStartTime = FLM_GET_TIMER();
 
+	uiTmp = 0;
+	for( uiLoop = 0; uiLoop < 1000000; uiLoop++)
+	{
+		f_atomicInc( &uiTmp);
+	}
+	
+	uiFastTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime);
+	
+	f_printf( " Slow time = %u ms, Fast time = %u ms.\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
+	
 	f_printf( "Creating atomic increment threads: ");
 	
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
@@ -4567,6 +4604,11 @@ Exit:
 		{
 			f_threadDestroy( &pThreadList[ uiLoop]);
 		}
+	}
+	
+	if( hMutex != F_MUTEX_NULL)
+	{
+		f_mutexDestroy( &hMutex);
 	}
 
 	return( rc);
