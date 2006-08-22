@@ -17,18 +17,10 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createDbSystem
 
 /*
  * Class:     xflaim_DbSystem
- * Method:    _init
+ * Method:    _release
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1init
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     xflaim_DbSystem
- * Method:    _exit
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1exit
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1release
   (JNIEnv *, jobject, jlong);
 
 /*
@@ -57,6 +49,14 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRemove
 
 /*
  * Class:     xflaim_DbSystem
+ * Method:    _dbRestore
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lxflaim/RestoreClient;Lxflaim/RestoreStatus;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore
+  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jstring, jobject, jobject);
+
+/*
+ * Class:     xflaim_DbSystem
  * Method:    _dbCheck
  * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILxflaim/DbCheckStatus;)J
  */
@@ -73,19 +73,19 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbCopy
 
 /*
  * Class:     xflaim_DbSystem
- * Method:    _dbRestore
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lxflaim/RestoreClient;Lxflaim/RestoreStatus;)V
- */
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRestore
-  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jstring, jobject, jobject);
-
-/*
- * Class:     xflaim_DbSystem
  * Method:    _dbRename
  * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLxflaim/DbRenameStatus;)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRename
   (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jboolean, jobject);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _dbRebuild
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lxflaim/CREATEOPTS;Lxflaim/RebuildStatus;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRebuild
+  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobject, jobject);
 
 /*
  * Class:     xflaim_DbSystem
@@ -102,38 +102,6 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferIStream
  */
 JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openFileIStream
   (JNIEnv *, jobject, jlong, jstring);
-
-/*
- * Class:     xflaim_DbSystem
- * Method:    _createJDataVector
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createJDataVector
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     xflaim_DbSystem
- * Method:    _dbRebuild
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lxflaim/CREATEOPTS;Lxflaim/RebuildStatus;)V
- */
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1dbRebuild
-  (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobject, jobject);
-
-/*
- * Class:     xflaim_DbSystem
- * Method:    _updateIniFile
- * Signature: (JLjava/lang/String;Ljava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_xflaim_DbSystem__1updateIniFile
-  (JNIEnv *, jobject, jlong, jstring, jstring);
-
-/*
- * Class:     xflaim_DbSystem
- * Method:    _dbDup
- * Signature: (JJ)J
- */
-JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbDup
-  (JNIEnv *, jobject, jlong, jlong);
 
 /*
  * Class:     xflaim_DbSystem
@@ -157,6 +125,22 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferedIStream
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openUncompressingIStream
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openBase64Encoder
+ * Signature: (JJZ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Encoder
+  (JNIEnv *, jobject, jlong, jlong, jboolean);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _openBase64Decoder
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Decoder
   (JNIEnv *, jobject, jlong, jlong);
 
 /*
@@ -209,18 +193,26 @@ JNIEXPORT void JNICALL Java_xflaim_DbSystem__1writeToOStream
 
 /*
  * Class:     xflaim_DbSystem
- * Method:    _openBase64Encoder
- * Signature: (JJZ)J
+ * Method:    _createJDataVector
+ * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Encoder
-  (JNIEnv *, jobject, jlong, jlong, jboolean);
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createJDataVector
+  (JNIEnv *, jobject, jlong);
 
 /*
  * Class:     xflaim_DbSystem
- * Method:    _openBase64Decoder
+ * Method:    _updateIniFile
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_xflaim_DbSystem__1updateIniFile
+  (JNIEnv *, jobject, jlong, jstring, jstring);
+
+/*
+ * Class:     xflaim_DbSystem
+ * Method:    _dbDup
  * Signature: (JJ)J
  */
-JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBase64Decoder
+JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1dbDup
   (JNIEnv *, jobject, jlong, jlong);
 
 /*
