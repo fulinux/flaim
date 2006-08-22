@@ -51,6 +51,9 @@ FSTATIC RCODE ftkTestAtomics( void);
 FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 	IF_Thread *			pThread);
 	
+FSTATIC RCODE FLMAPI ftkAtomicIncMutexThread(
+	IF_Thread *			pThread);
+	
 FSTATIC RCODE FLMAPI ftkAtomicDecThread(
 	IF_Thread *			pThread);
 	
@@ -4390,21 +4393,6 @@ int main( void)
 	f_assert( F_ROGONEK == rogonek);
 	f_assert( F_RMACRON == rmacron);
 	
-	// Make sure text stuff is working
-	
-	if( RC_BAD( rc = ftkTestText()))
-	{
-		goto Exit;
-	}
-	
-	// Run a multi-threaded test to verify the proper operation of
-	// the atomic operations
-	
-	if( RC_BAD( rc = ftkTestAtomics()))
-	{
-		goto Exit;
-	}
-	
 	// Test the checksum routines
 	
 	if( RC_BAD( rc = ftkFastChecksumTest()))
@@ -4422,6 +4410,21 @@ int main( void)
 		}
 		
 		puiPacketSize++;
+	}
+	
+	// Make sure text stuff is working
+	
+	if( RC_BAD( rc = ftkTestText()))
+	{
+		goto Exit;
+	}
+	
+	// Run a multi-threaded test to verify the proper operation of
+	// the atomic operations
+	
+	if( RC_BAD( rc = ftkTestAtomics()))
+	{
+		goto Exit;
 	}
 	
 Exit:
@@ -4454,12 +4457,12 @@ RCODE ftkTestAtomics( void)
 	F_MUTEX				hMutex = F_MUTEX_NULL;
 	IF_Thread *			pThreadList[ F_ATOM_TEST_THREADS];
 	FLMUINT				uiStartTime;
-	FLMUINT				uiSlowTime = 0;
-	FLMUINT				uiFastTime = 0;
+	FLMUINT				uiBaseTime = 0;
+	FLMUINT				uiToolkitTime = 0;
+	FLMUINT				uiElapsedTime;
 	FLMUINT				uiLoop;
 	FLMATOMIC			uiTmp;
 	
-	gv_refCount = 0;
 	f_memset( pThreadList, 0, sizeof( IF_Thread *) * F_ATOM_TEST_THREADS);
 	
 	if( RC_BAD( rc = f_mutexCreate( &hMutex)))
@@ -4479,7 +4482,7 @@ RCODE ftkTestAtomics( void)
 		f_mutexUnlock( hMutex);
 	}
 	
-	uiSlowTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	uiBaseTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 	uiStartTime = FLM_GET_TIMER();
 
 	uiTmp = 0;
@@ -4488,25 +4491,26 @@ RCODE ftkTestAtomics( void)
 		f_atomicInc( &uiTmp);
 	}
 	
-	uiFastTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime);
+	uiToolkitTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime);
 	
-	f_printf( " Slow time = %u ms, Fast time = %u ms.\n", 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
+	f_printf( " Base time = %u ms, FTK time = %u ms.\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiBaseTime), 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiToolkitTime));
 	
-	f_printf( "Creating atomic increment threads: ");
-	
+	f_printf( "Running atomic increment test (mutex-based) ... ");
+	gv_refCount = 0;
+	uiStartTime = FLM_GET_TIMER();
+
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
 		if( RC_BAD( rc = 	f_threadCreate( &pThreadList[ uiLoop], 
-			ftkAtomicIncThread)))
+			ftkAtomicIncMutexThread, NULL, F_DEFAULT_THREAD_GROUP, 
+			0, (void *)hMutex)))
 		{
 			goto Exit;
 		}
 	}
 	
-	f_printf( "%u\n", uiLoop);	
-		
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
 		pThreadList[ uiLoop]->waitToComplete();
@@ -4519,7 +4523,41 @@ RCODE ftkTestAtomics( void)
 		goto Exit;
 	}
 
-	f_printf( "Creating atomic decrement threads: ");
+	uiElapsedTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	f_printf( "Done.  Time = %u\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiElapsedTime));
+
+	f_printf( "Running atomic increment test ... ");
+	gv_refCount = 0;
+	uiStartTime = FLM_GET_TIMER();
+
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		if( RC_BAD( rc = 	f_threadCreate( &pThreadList[ uiLoop], 
+			ftkAtomicIncThread)))
+		{
+			goto Exit;
+		}
+	}
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
+	{
+		pThreadList[ uiLoop]->waitToComplete();
+		f_threadDestroy( &pThreadList[ uiLoop]);
+	}
+	
+	if( gv_refCount != F_ATOM_TEST_THREADS * F_ATOM_TEST_ITERATIONS)
+	{
+		rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+		goto Exit;
+	}
+
+	uiElapsedTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	f_printf( "Done.  Time = %u\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiElapsedTime));
+
+	f_printf( "Running atomic decrement test ... ");
+	uiStartTime = FLM_GET_TIMER();
 	
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
@@ -4530,8 +4568,6 @@ RCODE ftkTestAtomics( void)
 		}
 	}
 	
-	f_printf( "%u\n", uiLoop);	
-		
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
 		pThreadList[ uiLoop]->waitToComplete();
@@ -4544,7 +4580,13 @@ RCODE ftkTestAtomics( void)
 		goto Exit;
 	}
 	
-	f_printf( "Creating atomic inc/dec threads: ");
+	uiElapsedTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	f_printf( "Done.  Time = %u\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiElapsedTime));
+
+	f_printf( "Running atomic inc/dec test ... ");
+	gv_refCount = 0;
+	uiStartTime = FLM_GET_TIMER();
 	
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
@@ -4555,8 +4597,6 @@ RCODE ftkTestAtomics( void)
 		}
 	}
 	
-	f_printf( "%u\n", uiLoop);	
-		
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
 		pThreadList[ uiLoop]->waitToComplete();
@@ -4569,9 +4609,13 @@ RCODE ftkTestAtomics( void)
 		goto Exit;
 	}
 	
+	uiElapsedTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	f_printf( "Done.  Time = %u\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiElapsedTime));
+
+	f_printf( "Running atomic exchange test ... ");
 	gv_spinLock = 0;
-	
-	f_printf( "Creating atomic exchange threads: ");
+	uiStartTime = FLM_GET_TIMER();
 	
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
@@ -4582,8 +4626,6 @@ RCODE ftkTestAtomics( void)
 		}
 	}
 	
-	f_printf( "%u\n", uiLoop);	
-		
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
 	{
 		pThreadList[ uiLoop]->waitToComplete();
@@ -4596,6 +4638,10 @@ RCODE ftkTestAtomics( void)
 		goto Exit;
 	}
 	
+	uiElapsedTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	f_printf( "Done.  Time = %u\n", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiElapsedTime));
+
 Exit:
 
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_THREADS; uiLoop++)
@@ -4627,6 +4673,30 @@ FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
 	{
 		f_atomicInc( &gv_refCount);
+		if( (uiLoop % 128) == 0)
+		{
+			f_yieldCPU();
+		}
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC RCODE FLMAPI ftkAtomicIncMutexThread(
+	IF_Thread *		pThread)
+{
+	FLMUINT		uiLoop;
+	F_MUTEX		hMutex = (F_MUTEX)pThread->getParm1();
+	
+	for( uiLoop = 0; uiLoop < F_ATOM_TEST_ITERATIONS; uiLoop++)
+	{
+		f_mutexLock( hMutex);
+		gv_refCount++;
+		f_mutexUnlock( hMutex);
+
 		if( (uiLoop % 128) == 0)
 		{
 			f_yieldCPU();
@@ -4722,22 +4792,22 @@ Desc:
 FSTATIC RCODE ftkFastChecksumTest( void)
 {
 	RCODE				rc = NE_FLM_OK;
-	FLMUINT			uiSlowAdds = 0;
-	FLMUINT			uiSlowXORs = 0;
-	FLMUINT			uiFastAdds = 0;
-	FLMUINT			uiFastXORs = 0;
+	FLMUINT			uiBaseAdds = 0;
+	FLMUINT			uiBaseXORs = 0;
+	FLMUINT			uiToolkitAdds = 0;
+	FLMUINT			uiToolkitXORs = 0;
 	FLMUINT			uiDataLength;
 	FLMBYTE *		pucData = NULL;
 	FLMBYTE *		pucCur;
 	FLMBYTE *		pucEnd;
-	FLMUINT			uiSlowChecksum = 0;
-	FLMUINT			uiFastChecksum = 0;
+	FLMUINT			uiBaseChecksum = 0;
+	FLMUINT			uiToolkitChecksum = 0;
 	FLMUINT			uiLoop;
 	FLMUINT			uiIter;
 	FLMUINT			uiPass;
 	FLMUINT			uiStartTime;
-	FLMUINT			uiSlowTime = 0;
-	FLMUINT			uiFastTime = 0;
+	FLMUINT			uiBaseTime = 0;
+	FLMUINT			uiToolkitTime = 0;
 	
 	f_printf( "Running checksum tests ");
 	
@@ -4758,40 +4828,40 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 		
 		for( uiPass = 0; uiPass < 100; uiPass++)
 		{
-			uiSlowAdds = 0;
-			uiSlowXORs = 0;
+			uiBaseAdds = 0;
+			uiBaseXORs = 0;
 	
 			pucCur = pucData;
 			pucEnd = pucData + uiDataLength;
 		
 			while( pucCur < pucEnd)	
 			{
-				uiSlowAdds += *pucCur;
-				uiSlowXORs ^= *pucCur++;
+				uiBaseAdds += *pucCur;
+				uiBaseXORs ^= *pucCur++;
 			}
 		
-			uiSlowAdds &= 0xFF;
-			uiSlowChecksum = (FLMUINT32)((uiSlowAdds << 16) + uiSlowXORs);
+			uiBaseAdds &= 0xFF;
+			uiBaseChecksum = (FLMUINT32)((uiBaseAdds << 16) + uiBaseXORs);
 		}
 		
-		uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		uiBaseTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 		
 		uiStartTime = FLM_GET_TIMER();
 		
 		for( uiPass = 0; uiPass < 100; uiPass++)
 		{
-			uiFastAdds = 0;
-			uiFastXORs = 0;
+			uiToolkitAdds = 0;
+			uiToolkitXORs = 0;
 	
-			uiFastChecksum = f_calcFastChecksum( pucData, 
-										uiDataLength, &uiFastAdds, &uiFastXORs);
+			uiToolkitChecksum = f_calcFastChecksum( pucData, 
+										uiDataLength, &uiToolkitAdds, &uiToolkitXORs);
 		}
 		
-		uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		uiToolkitTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 	
-		if( (uiSlowAdds != uiFastAdds) || 
-			 (uiSlowXORs != uiFastXORs) || 
-			 (uiSlowChecksum != uiFastChecksum))
+		if( (uiBaseAdds != uiToolkitAdds) || 
+			 (uiBaseXORs != uiToolkitXORs) || 
+			 (uiBaseChecksum != uiToolkitChecksum))
 		{
 			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 			goto Exit;
@@ -4803,9 +4873,9 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 		}
 	}
 	
-	f_printf( " Slow time = %u ms, Fast time = %u ms. ", 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
+	f_printf( " Base time = %u ms, FTK time = %u ms. ", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiBaseTime), 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiToolkitTime));
 	
 Exit:
 
@@ -4828,14 +4898,14 @@ FSTATIC RCODE ftkPacketChecksumTest(
 	RCODE				rc = NE_FLM_OK;
 	FLMBYTE *		pucBuffer = NULL;
 	FLMBYTE *		pucData;
-	FLMUINT			uiSlowChecksum = 0;
-	FLMUINT			uiFastChecksum = 0;
+	FLMUINT			uiBaseChecksum = 0;
+	FLMUINT			uiToolkitChecksum = 0;
 	FLMUINT			uiLoop;
 	FLMUINT			uiIter;
 	FLMUINT			uiPass;
 	FLMUINT			uiStartTime;
-	FLMUINT			uiSlowTime = 0;
-	FLMUINT			uiFastTime = 0;
+	FLMUINT			uiBaseTime = 0;
+	FLMUINT			uiToolkitTime = 0;
 	FLMUINT			uiAlignDelta;
 
 #ifdef FLM_64BIT
@@ -4866,18 +4936,18 @@ FSTATIC RCODE ftkPacketChecksumTest(
 			uiStartTime = FLM_GET_TIMER();
 			for( uiPass = 0; uiPass < 100; uiPass++)
 			{
-				uiSlowChecksum = ftkSlowPacketChecksum( pucData, uiPacketSize);
+				uiBaseChecksum = ftkSlowPacketChecksum( pucData, uiPacketSize);
 			}
-			uiSlowTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+			uiBaseTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 		
 			uiStartTime = FLM_GET_TIMER();
 			for( uiPass = 0; uiPass < 100; uiPass++)
 			{
-				uiFastChecksum = f_calcPacketChecksum( pucData, uiPacketSize); 
+				uiToolkitChecksum = f_calcPacketChecksum( pucData, uiPacketSize); 
 			}
-			uiFastTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+			uiToolkitTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 	
-			if( uiSlowChecksum != uiFastChecksum)
+			if( uiBaseChecksum != uiToolkitChecksum)
 			{
 				rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
 				goto Exit;
@@ -4887,9 +4957,9 @@ FSTATIC RCODE ftkPacketChecksumTest(
 		f_printf( ".");
 	}
 	
-	f_printf( " Slow time = %u ms, Fast time = %u ms. ", 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiSlowTime), 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiFastTime));
+	f_printf( " Base time = %u ms, FTK time = %u ms. ", 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiBaseTime), 
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiToolkitTime));
 	
 Exit:
 
@@ -5002,8 +5072,8 @@ RCODE ftkTestText( void)
 	FLMUINT			uiLoop;
 	FLMUINT			uiSubloop;
 	FLMUINT			uiStartTime;
-	FLMUINT			uiSlowTime;
-	FLMUINT			uiFastTime;
+	FLMUINT			uiBaseTime;
+	FLMUINT			uiToolkitTime;
 	FLMUINT16		ui16WpChar;
 	FLMUINT16		ui16BaseChar;
 	FLMUINT16		ui16BaseChar2;
@@ -5065,7 +5135,7 @@ RCODE ftkTestText( void)
 		}
 	}
 
-	uiSlowTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	uiBaseTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 	uiStartTime = FLM_GET_TIMER();
 
 	for( uiLoop = 0; uiLoop < 100; uiLoop++)
@@ -5076,10 +5146,10 @@ RCODE ftkTestText( void)
 		}
 	}
 
-	uiFastTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+	uiToolkitTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 
-	f_printf( "Slow time = %u, Fast time = %u.  Done.\n",
-		(unsigned)uiSlowTime, (unsigned)uiFastTime);
+	f_printf( "Base time = %u, FTK time = %u.  Done.\n",
+		(unsigned)uiBaseTime, (unsigned)uiToolkitTime);
 
 	f_printf( "Running Zenkaku to Hankaku conversion tests ... ");
 	

@@ -39,6 +39,10 @@ F_MUTEX 								F_FileHdl::m_hAsyncListMutex = F_MUTEX_NULL;
 F_FileAsyncClient *				F_FileHdl::m_pFirstAvailAsync = NULL;
 FLMUINT								F_FileHdl::m_uiAvailAsyncCount = 0;
 
+#ifdef FLM_SPARC_PLUS
+void *								gv_pSparcAsmDummy = (void *)sparc_asm_code;
+#endif
+
 FSTATIC RCODE f_initRandomGenerator( void);
 
 FSTATIC void f_freeRandomGenerator( void);

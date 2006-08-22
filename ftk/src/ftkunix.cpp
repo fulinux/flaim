@@ -1316,7 +1316,7 @@ Desc: Remove this error pragma if you really intend to run with
 Desc:
 ****************************************************************************/
 #if defined( FLM_SPARC_PLUS)
-void sparc_asm_code( void)
+extern "C" void sparc_asm_code( void)
 {
 	asm( ".align 8");
 	asm( ".global sparc_atomic_add_32");

@@ -45,8 +45,6 @@ extern "C" unsigned long ftkGetMMXSupported(void);
 	#if defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM)
 		#define FLM_HAVE_FAST_CHECKSUM_ROUTINES
 	#endif
-#elif defined( FLM_SPARC_PLUS)
-	#define FLM_HAVE_FAST_CHECKSUM_ROUTINES	
 #endif
 
 /********************************************************************
@@ -604,178 +602,6 @@ void ftkFastXor(
 }
 #endif
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-#if defined( FLM_SPARC_PLUS)
-volatile void sparc_csum_code( void)
-{
-	// Calculate the sum and xor bytes of a checksum
-
-	asm( ".global ftkFastChecksum");
-#ifdef FLM_64BIT
-	asm( ".align 8");
-#else
-	asm( ".align 4");
-#endif
-	asm( "ftkFastChecksum:");
-	asm( "	save %sp, -96, %sp");
-
-#ifdef FLM_64BIT
-	asm( "	ldx [%i1], %l1");
-	asm( "	ldx [%i2], %l2");
-#else
-	asm( "	ld [%i1], %l1");
-	asm( "	ld [%i2], %l2");
-#endif
-
-	asm( "	mov %i0, %l0");
-	asm( "	mov %i3, %l3");
-
-	asm( "	clr %l4");
-
-	asm( "	csum_loop:");
-	asm( "		ldub [%l0], %l4");
-	asm( "		add %l4, %l1, %l1");
-	asm( "		xor %l4, %l2, %l2");
-	asm( "		inc %l0");
-	asm( "		subcc %l3, 1, %l3");
-	asm( "		bg csum_loop");
-	asm( "		nop");
-
-	asm( "	and %l1, 0xFF, %l1");
-	asm( "	and %l2, 0xFF, %l2");
-#ifdef FLM_64BIT
-	asm( "	stx %l1, [%i1]");
-	asm( "	stx %l2, [%i2]");
-#else
-	asm( "	st %l1, [%i1]");
-	asm( "	st %l2, [%i2]");
-#endif
-	asm( "	ret");
-	asm( "	restore");
-	asm( ".type ftkFastChecksum, #function");
-	asm( ".size ftkFastChecksum, (.-ftkFastChecksum)");
-
-	// Calculate the xor byte of a checksum
-
-	asm( ".global ftkFastXor");
-#ifdef FLM_64BIT
-	asm( ".align 8");
-#else
-	asm( ".align 4");
-#endif
-	asm( "ftkFastXor:");
-	asm( "	save %sp, -96, %sp");
-
-#ifdef FLM_64BIT
-	asm( "	ldx [%i1], %l1");
-#else
-	asm( "	ld [%i1], %l1");
-#endif
-
-	asm( "	mov %i0, %l0");
-	asm( "	mov %i2, %l2");
-
-	asm( "	clr %l3");
-
-#ifdef FLM_64BIT
-	asm( "	and %l0, 7, %l4");
-#else
-	asm( "	and %l0, 3, %l4");
-#endif
-
-	asm( "	cmp %l4, 0");
-	asm( "	be xor_aligned_loop_init");
-	asm( "	nop");
-#ifdef FLM_64BIT
-	asm( "	mov 8, %l5");
-#else
-	asm( "	mov 4, %l5");
-#endif
-	asm( "	sub %l5, %l4, %l4");
-
-	asm( "	xor_lead_loop:");
-	asm( "		ldub [%l0], %l3");
-	asm( "		xor %l3, %l1, %l1");
-	asm( "		inc %l0");
-	asm( "		subcc %l2, 1, %l2");
-	asm( "		be xor_done");
-	asm( "		nop");
-	asm( "		subcc %l4, 1, %l4");
-	asm( "		bg xor_lead_loop");
-	asm( "		nop");
-
-	asm( "	xor_aligned_loop_init:");
-#ifdef FLM_64BIT
-	asm( "		cmp %l2, 8");
-#else
-	asm( "		cmp %l2, 4");
-#endif
-	asm( "		bl xor_tail_loop_init");
-	asm( "		nop");
-
-	asm( "	xor_aligned_loop:");
-#ifdef FLM_64BIT
-	asm( "		ldx [%l0], %l3");
-#else
-	asm( "		ld [%l0], %l3");
-#endif
-	asm( "		xor %l3, %l1, %l1");
-#ifdef FLM_64BIT
-	asm( "		add %l0, 8, %l0");
-	asm( "		sub %l2, 8, %l2");
-	asm( "		cmp %l2, 7");
-#else
-	asm( "		add %l0, 4, %l0");
-	asm( "		sub %l2, 4, %l2");
-	asm( "		cmp %l2, 3");
-#endif
-	asm( "		bg xor_aligned_loop");
-	asm( "		nop");
-
-	asm( "	xor_tail_loop_init:");
-	asm( "		cmp %l2, 1");
-	asm( "		bl xor_done");
-
-	asm( "	xor_tail_loop:");
-	asm( "		ldub [%l0], %l3");
-	asm( "		xor %l3, %l1, %l1");
-	asm( "		inc %l0");
-	asm( "		subcc %l2, 1, %l2");
-	asm( "		bg xor_tail_loop");
-	asm( "		nop");
-
-	asm( "	xor_done:");
-	asm( "		mov %l1, %l3");
-#ifdef FLM_64BIT
-	asm( "		mov 7, %l2");
-#else
-	asm( "		mov 3, %l2");
-#endif
-	asm( "		xor_assemble_loop:");
-#ifdef FLM_64BIT
-	asm( "			srlx %l3, 8, %l3");
-#else
-	asm( "			srl %l3, 8, %l3");
-#endif
-	asm( "			xor %l3, %l1, %l1");
-	asm( "			subcc %l2, 1, %l2");
-	asm( "			bg xor_assemble_loop");
-	asm( "			nop");
-	asm( "		and %l1, 0xFF, %l1");
-#ifdef FLM_64BIT
-	asm( "		stx %l1, [%i1]");
-#else
-	asm( "		st %l1, [%i1]");
-#endif
-	asm( "		ret");
-	asm( "		restore");
-	asm( ".type ftkFastXor, #function");
-	asm( ".size ftkFastXor, (.-ftkFastXor)");
-}
-#endif
-
 /******************************************************************************
 Desc: Sets the global variable to check if MMX instructions are allowed.
 ******************************************************************************/
@@ -792,8 +618,6 @@ void f_initFastCheckSum( void)
 	// will be on at least a P5.
 
 	gv_bCanUseFastCheckSum = ftkGetMMXSupported() ? TRUE : FALSE;
-#elif defined( FLM_SPARC_PLUS)
-	gv_bCanUseFastCheckSum = TRUE;
 #endif
 }
 
@@ -823,22 +647,24 @@ FLMUINT32 FLMAPI f_calcFastChecksum(
 		uiXOR = *puiXOR;
 	}
 
+#ifdef FLM_HAVE_FAST_CHECKSUM_ROUTINES
 	if( gv_bCanUseFastCheckSum)
 	{
 		ftkFastChecksum( pvData, (unsigned long *) &uiSum, 
 					(unsigned long *) &uiXOR, (unsigned long) uiLength);
 	}
 	else
+#endif
 	{
-		FLMBYTE *		pucCur = pucData;
-		FLMBYTE *		pucEnd = pucData + uiLength;
+		register FLMBYTE *	pucCur = pucData;
+		register FLMBYTE *	pucEnd = pucData + uiLength;
 	
 		while( pucCur < pucEnd)	
 		{
-			uiSum += *pucCur;
+		 	uiSum += *pucCur;
 			uiXOR ^= *pucCur++;
 		}
-	
+
 		uiSum &= 0xFF;
 	}
 
@@ -960,11 +786,13 @@ FLMBYTE FLMAPI f_calcPacketChecksum(
 {
 	FLMUINT			uiChecksum = 0;
 	
+#ifdef FLM_HAVE_FAST_CHECKSUM_ROUTINES
 	if( gv_bCanUseFastCheckSum)
 	{
 		ftkFastXor( pvPacket, &uiChecksum, uiBytesToChecksum);
 	}
 	else
+#endif
 	{
 		FLMBYTE *	pucEnd;
 		FLMBYTE *	pucSectionEnd;
@@ -973,7 +801,7 @@ FLMBYTE FLMAPI f_calcPacketChecksum(
 		
 		pucCur = (FLMBYTE *)pvPacket;
 		pucEnd = pucCur + uiBytesToChecksum;
-	
+
 	#ifdef FLM_64BIT
 		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x7));
 	#else

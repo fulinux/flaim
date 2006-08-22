@@ -857,7 +857,7 @@ ifdef unix_target
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
 			exe_linker = CC
-			shared_linker = ld
+			shared_linker = CC
 			compiler_version := $(shell $(compiler) -V 2>&1)	
 			ifneq (,$(findstring Sun C++,$(compiler_version)))
 				sun_studio_compiler = yes
@@ -931,6 +931,9 @@ ifdef unix_target
 	ifeq ($(target_os_family),solaris)
 		ifeq ($(usenativecc),yes)
 			ccflags += -KPIC
+			ifeq ($(target_build_type),release)
+				ccflags += -xO3
+			endif
 			ifeq ($(sun_studio_compiler),yes)
 				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse
 			endif
@@ -1109,7 +1112,7 @@ ifdef netware_target
 	shared_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	compiler = "$(call normpath,$(wc_dir))/binnt/wpp386.exe"
 
-	ifneq ($(build),release)
+	ifneq ($(target_build_type),release)
 		ccdefs += FLM_DEBUG
 	endif
 	
@@ -1121,7 +1124,7 @@ ifdef netware_target
 
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
 
-	ifeq ($(build),release)
+	ifeq ($(target_build_type),release)
 		ccflags += /oair
 	else
 		ccflags += /hc

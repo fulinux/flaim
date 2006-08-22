@@ -194,6 +194,13 @@
 	Desc:
 	**********************************************************************/
 	#if defined( FLM_SPARC_PLUS)
+		extern "C" void sparc_asm_code( void);
+	#endif
+
+	/**********************************************************************
+	Desc:
+	**********************************************************************/
+	#if defined( FLM_SPARC_PLUS)
 	extern "C" FLMINT32 sparc_atomic_add_32(
 		volatile FLMINT32 *		piTarget,
 		FLMINT32						iDelta);
