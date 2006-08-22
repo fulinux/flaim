@@ -608,7 +608,7 @@ void ftkFastXor(
 Desc:
 ****************************************************************************/
 #if defined( FLM_SPARC_PLUS)
-void sparc_csum_code( void)
+volatile void sparc_csum_code( void)
 {
 	// Calculate the sum and xor bytes of a checksum
 
@@ -754,7 +754,11 @@ void sparc_csum_code( void)
 	asm( "		mov 3, %l2");
 #endif
 	asm( "		xor_assemble_loop:");
+#ifdef FLM_64BIT
 	asm( "			srlx %l3, 8, %l3");
+#else
+	asm( "			srl %l3, 8, %l3");
+#endif
 	asm( "			xor %l3, %l1, %l1");
 	asm( "			subcc %l2, 1, %l2");
 	asm( "			bg xor_assemble_loop");
