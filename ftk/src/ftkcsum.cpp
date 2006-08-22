@@ -26,7 +26,9 @@
 #include "ftksys.h"
 
 static FLMUINT32 *		gv_pui32CRCTbl = NULL;
+#if defined( FLM_X86) && (defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM))
 static FLMBOOL				gv_bCanUseFastCheckSum = FALSE;
+#endif
 
 extern "C" void ftkFastChecksum(
 	const void *			pBlk,
