@@ -368,7 +368,7 @@ RCODE FSReadElement(
 						}
 
 						// If we are going to the next block, lock down this
-						// block beacause data pointers are pointing to it.
+						// block because data pointers are pointing to it.
 
 						if (RC_BAD( FSBlkNextElm( pStack)))
 						{
@@ -573,7 +573,7 @@ RCODE FSReadElement(
 					pDataPiece = pDataPiece->pNext;
 				} while (pDataPiece);
 
-				// If the field is encrypted, then we must decrypt it here.
+				// If the field is encrypted, we must decrypt it here.
 
 				if (pField->uiEncId && !pDb->pFile->bInLimitedMode)
 				{
@@ -599,9 +599,6 @@ RCODE FSReadElement(
 
 	if (*ppRecord)
 	{
-
-		// We shouldn't hit this case, but in case we do we will deal with it.
-
 		flmAssert( 0);
 		(*ppRecord)->Release();
 	}
