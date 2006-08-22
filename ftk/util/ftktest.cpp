@@ -4808,6 +4808,8 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 	FLMUINT			uiStartTime;
 	FLMUINT			uiBaseTime = 0;
 	FLMUINT			uiToolkitTime = 0;
+	FLMUINT			uiCRCTime = 0;
+	FLMUINT32		ui32CRC = 0;
 	
 	f_printf( "Running checksum tests ");
 	
@@ -4845,7 +4847,6 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 		}
 		
 		uiBaseTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
-		
 		uiStartTime = FLM_GET_TIMER();
 		
 		for( uiPass = 0; uiPass < 100; uiPass++)
@@ -4858,6 +4859,14 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 		}
 		
 		uiToolkitTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
+		uiStartTime = FLM_GET_TIMER();
+		
+		for( uiPass = 0; uiPass < 100; uiPass++)
+		{
+			f_updateCRC( pucData, uiDataLength, &ui32CRC); 
+		}
+		
+		uiCRCTime += FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime); 
 	
 		if( (uiBaseAdds != uiToolkitAdds) || 
 			 (uiBaseXORs != uiToolkitXORs) || 
@@ -4873,9 +4882,10 @@ FSTATIC RCODE ftkFastChecksumTest( void)
 		}
 	}
 	
-	f_printf( " Base time = %u ms, FTK time = %u ms. ", 
+	f_printf( " Base time = %u ms, FTK time = %u ms, CRC time = %u ms. ", 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiBaseTime), 
-		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiToolkitTime));
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiToolkitTime),
+		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiCRCTime));
 	
 Exit:
 
