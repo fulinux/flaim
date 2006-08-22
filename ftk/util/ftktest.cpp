@@ -4493,7 +4493,7 @@ RCODE ftkTestAtomics( void)
 	
 	uiToolkitTime = FLM_ELAPSED_TIME( FLM_GET_TIMER(), uiStartTime);
 	
-	f_printf( " Base time = %u ms, FTK time = %u ms.\n", 
+	f_printf( " Mutex-based time = %u ms, Native-based time = %u ms.\n", 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiBaseTime), 
 		(unsigned)FLM_TIMER_UNITS_TO_MILLI( uiToolkitTime));
 	
@@ -5075,12 +5075,12 @@ RCODE ftkTestText( void)
 	FLMUINT			uiBaseTime;
 	FLMUINT			uiToolkitTime;
 	FLMUINT16		ui16WpChar;
-	FLMUINT16		ui16BaseChar;
-	FLMUINT16		ui16BaseChar2;
-	FLMUINT16		ui16DiacriticChar;
-	FLMUINT16		ui16DiacriticChar2;
-	FLMUINT16		ui16Cmb;
-	FLMUINT16		ui16Cmb2;
+	FLMUINT16		ui16BaseChar = 0;
+	FLMUINT16		ui16BaseChar2 = 0;
+	FLMUINT16		ui16DiacriticChar = 0;
+	FLMUINT16		ui16DiacriticChar2 = 0;
+	FLMUINT16		ui16Cmb = 0;
+	FLMUINT16		ui16Cmb2 = 0;
 	FLMUNICODE		uzUniChar;
 	FLMUINT16		ui16TmpWpChar;
 	

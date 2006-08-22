@@ -34,11 +34,6 @@ extern "C" void ftkFastChecksum(
 	unsigned long *		puiXOR,
 	unsigned long			uiNumberOfBytes);
 		
-extern "C" void ftkFastXor(
-	const void *			pBlk,
-	unsigned long *		puiXOR,
-	unsigned long			uiNumberOfBytes);
-		
 extern "C" unsigned long ftkGetMMXSupported(void);
 
 #if defined( FLM_X86)
@@ -337,21 +332,6 @@ Done:
 /********************************************************************
 Desc:
 *********************************************************************/
-#if defined( FLM_X86)
-FINLINE void ftkFastXor(
-	const void *		pBlk,
-	unsigned long *	puiXOR,
-	unsigned long		uiNumberOfBytes)
-{
-	unsigned long		uiSum;
-	
-	ftkFastChecksum( pBlk, &uiSum, puiXOR, uiNumberOfBytes);
-}
-#endif
-
-/********************************************************************
-Desc:
-*********************************************************************/
 #if defined( FLM_X86) && defined( FLM_32BIT) && defined( FLM_GNUC)
 void ftkFastChecksum(
 		const void *		pBlk,
@@ -589,19 +569,6 @@ void ftkFastChecksum(
 }
 #endif
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-#ifndef FLM_HAVE_FAST_CHECKSUM_ROUTINES
-void ftkFastXor(
-	const void *,			// pBlk,
-	unsigned long *,		// puiXOR,
-	unsigned long)			// uiNumberOfBytes)
-{
-	f_assert( 0);
-}
-#endif
-
 /******************************************************************************
 Desc: Sets the global variable to check if MMX instructions are allowed.
 ******************************************************************************/
@@ -785,81 +752,72 @@ FLMBYTE FLMAPI f_calcPacketChecksum(
 	FLMUINT			uiBytesToChecksum)
 {
 	FLMUINT			uiChecksum = 0;
-	
-#ifdef FLM_HAVE_FAST_CHECKSUM_ROUTINES
-	if( gv_bCanUseFastCheckSum)
-	{
-		ftkFastXor( pvPacket, &uiChecksum, uiBytesToChecksum);
-	}
-	else
-#endif
-	{
-		FLMBYTE *	pucEnd;
-		FLMBYTE *	pucSectionEnd;
-		FLMBYTE *	pucCur;
-		FLMBYTE		ucTmp;
+	FLMBYTE *		pucEnd;
+	FLMBYTE *		pucSectionEnd;
+	FLMBYTE *		pucCur;
+	FLMBYTE			ucTmp;
 		
-		pucCur = (FLMBYTE *)pvPacket;
-		pucEnd = pucCur + uiBytesToChecksum;
+	pucCur = (FLMBYTE *)pvPacket;
+	pucEnd = pucCur + uiBytesToChecksum;
 
-	#ifdef FLM_64BIT
-		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x7));
-	#else
-		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x3));
-	#endif
-	
-		if( pucSectionEnd > pucEnd)
-		{
-			pucSectionEnd = pucEnd;
-		}
-	
-		while( pucCur < pucSectionEnd)
-		{
-			uiChecksum = (uiChecksum << 8) + *pucCur++;
-		}
-	
-	#ifdef FLM_64BIT
-		pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
-	#else
-		pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
-	#endif
-	
-		while( pucCur < pucSectionEnd)
-		{
-			uiChecksum ^= *((FLMUINT *)pucCur);
-			pucCur += sizeof( FLMUINT);
-		}
-	
-		while( pucCur < pucEnd)
-		{
-			uiChecksum ^= *pucCur++;
-		}
-	
-		ucTmp = (FLMBYTE)uiChecksum;
-	
-		uiChecksum >>= 8;
-		ucTmp ^= (FLMBYTE)uiChecksum;
-	
-		uiChecksum >>= 8;
-		ucTmp ^= (FLMBYTE)uiChecksum;
-	
-	#ifdef FLM_64BIT
-		uiChecksum >>= 8;
-		ucTmp ^= (FLMBYTE)uiChecksum;
-	
-		uiChecksum >>= 8;
-		ucTmp ^= (FLMBYTE)uiChecksum;
-	
-		uiChecksum >>= 8;
-		ucTmp ^= (FLMBYTE)uiChecksum;
-	
-		uiChecksum >>= 8;
-		ucTmp ^= (FLMBYTE)uiChecksum;
-	#endif
-	
-		ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
-		uiChecksum = (FLMUINT)ucTmp;
+#ifdef FLM_64BIT
+	pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x7));
+#else
+	pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x3));
+#endif
+
+	if( pucSectionEnd > pucEnd)
+	{
+		pucSectionEnd = pucEnd;
 	}
+	
+	while( pucCur < pucSectionEnd)
+	{
+		uiChecksum = (uiChecksum << 8) + *pucCur++;
+	}
+	
+#ifdef FLM_64BIT
+	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
+#else
+	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
+#endif
+	
+	while( pucCur < pucSectionEnd)
+	{
+		uiChecksum ^= *((FLMUINT *)pucCur);
+		pucCur += sizeof( FLMUINT);
+	}
+	
+	while( pucCur < pucEnd)
+	{
+		uiChecksum ^= *pucCur++;
+	}
+	
+	ucTmp = (FLMBYTE)uiChecksum;
+	
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+	
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+	
+#ifdef FLM_64BIT
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+	
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+	
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+	
+	uiChecksum >>= 8;
+	ucTmp ^= (FLMBYTE)uiChecksum;
+#endif
+	
+	ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
+	uiChecksum = (FLMUINT)ucTmp;
 
 	return( (FLMBYTE)(uiChecksum != 0 ? uiChecksum : 1));
 }
+

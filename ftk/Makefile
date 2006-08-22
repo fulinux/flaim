@@ -896,10 +896,6 @@ ifdef unix_target
 
 		ccdefs += N_PLAT_UNIX _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64
 
-		ifdef jhome	
-			inc_dirs += $(subst $(sp),@,"$(jhome)/include/linux")
-		endif
-		
 		ifeq ($(target_build_type),release)
 			ccflags += \
 				-O \
