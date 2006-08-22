@@ -980,8 +980,15 @@ ifdef unix_target
 			inc_dirs += $(subst $(sp),@,"$(jhome)/include/solaris")
 		endif
 
+	ifeq ($(target_os_family),solaris)
 		ifeq ($(usenativecc),yes)
-			ccflags += -KPIC -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
+			ccflags += -KPIC
+			ifeq ($(target_build_type),release)
+				ccflags += -xO3
+			endif
+			ifeq ($(sun_studio_compiler),yes)
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse
+			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
 			else
@@ -1148,7 +1155,7 @@ ifdef netware_target
 	shared_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	compiler = "$(call normpath,$(wc_dir))/binnt/wpp386.exe"
 
-	ifneq ($(build),release)
+	ifneq ($(target_build_type),release)
 		ccdefs += FLM_DEBUG
 	endif
 
@@ -1160,7 +1167,7 @@ ifdef netware_target
 	
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
 
-	ifeq ($(build),release)
+	ifeq ($(target_build_type),release)
 		ccflags += /oair
 	else
 		ccflags += /hc
