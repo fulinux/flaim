@@ -1363,7 +1363,6 @@ FLMATOMIC ppc_atomic_add(
 	long	result;
 
 	__asm__ __volatile__(
-		"sync\n"
 		"1:\n"
 		"lwarx		%0, 0, %2\n"
 		"addc			%0, %0, %3\n"
@@ -1389,7 +1388,6 @@ FLMATOMIC ppc_atomic_xchg(
 	long	iOldVal;
 
 	__asm__ __volatile__(
-		"sync\n"
 		"1:\n"
 		"lwarx		%0, 0, %2\n"
 		"stwcx.		%3, 0, %2\n"
