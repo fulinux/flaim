@@ -53,6 +53,7 @@ unix_target =
 netware_target =
 submake_targets =
 netware_ring_0_target =
+sparc_generic =
 
 # -- Enable command echoing --
 
@@ -404,6 +405,12 @@ ifdef requested_word_size
 	else
       $(error Unsupported target word size)
 	endif
+endif
+
+# -- Other targets and options --
+
+ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
+	sparc_generic = yes
 endif
 
 # -- Helper functions --
@@ -902,6 +909,31 @@ ifdef unix_target
 		libr = ar
 	endif
 
+	gcc_optimization_flags = \
+		-O \
+		-foptimize-sibling-calls \
+		-fstrength-reduce -fcse-follow-jumps \
+		-fcse-skip-blocks \
+		-frerun-cse-after-loop \
+		-frerun-loop-opt \
+		-fgcse \
+		-fgcse-lm \
+		-fgcse-sm \
+		-fdelete-null-pointer-checks \
+		-fexpensive-optimizations \
+		-fregmove \
+		-fsched-interblock \
+		-fsched-spec \
+		-fcaller-saves \
+		-fpeephole2 \
+		-freorder-blocks \
+		-freorder-functions \
+		-falign-functions \
+		-falign-jumps \
+		-falign-loops \
+		-falign-labels \
+		-fcrossjumping
+		
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
@@ -947,30 +979,7 @@ ifdef unix_target
 		endif
 		
 		ifeq ($(target_build_type),release)
-			ccflags += \
-				-O \
-				-foptimize-sibling-calls \
-				-fstrength-reduce -fcse-follow-jumps \
-				-fcse-skip-blocks \
-				-frerun-cse-after-loop \
-				-frerun-loop-opt \
-				-fgcse \
-				-fgcse-lm \
-				-fgcse-sm \
-				-fdelete-null-pointer-checks \
-				-fexpensive-optimizations \
-				-fregmove \
-				-fsched-interblock \
-				-fsched-spec \
-				-fcaller-saves \
-				-fpeephole2 \
-				-freorder-blocks \
-				-freorder-functions \
-				-falign-functions \
-				-falign-jumps \
-				-falign-loops \
-				-falign-labels \
-				-fcrossjumping
+			ccflags += $(gcc_optimization_flags)
 		endif
 	endif
 
@@ -980,7 +989,6 @@ ifdef unix_target
 			inc_dirs += $(subst $(sp),@,"$(jhome)/include/solaris")
 		endif
 
-	ifeq ($(target_os_family),solaris)
 		ifeq ($(usenativecc),yes)
 			ccflags += -KPIC
 			ifeq ($(target_build_type),release)
@@ -995,7 +1003,13 @@ ifdef unix_target
 				# Must support 64 bit file sizes - even for 32 bit builds.
 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
-				ccflags += -xarch=v8plus
+				
+				ifdef sparc_generic
+					ccflags += -xarch=generic
+					ccdefs += FLM_SPARC_GENERIC
+				else
+					ccflags += -xarch=v8plus
+				endif
 			endif
 		endif
 	endif
@@ -1024,6 +1038,9 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),osx)
 		ccdefs += OSX
+		ifeq ($(target_build_type),release)
+			ccflags += $(gcc_optimization_flags)
+		endif
 		inc_dirs += /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers
 	endif
 
@@ -2266,6 +2283,10 @@ linux:
 solaris:
 	$(ec)$(gprintf) ""
 
+.PHONY : sparcgeneric
+sparcgeneric:
+	$(ec)$(gprintf) ""
+	
 .PHONY : osx
 osx:
 	$(ec)$(gprintf) ""
