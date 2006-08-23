@@ -30,7 +30,6 @@ package xflaim;
 public class DataVector
 {
 	long		m_this;
-	DbSystem	m_dbSystem;
 
 	/**
 	 * Constructor for the DataVector object.  This object provides access to
@@ -41,12 +40,10 @@ public class DataVector
 	 * @param dbSystem A reference to a DbSystem object
 	 */
 	public DataVector(
-		long		lRef,
-		DbSystem	dbSystem)
+		long		lRef)
 	{
 		super();
 		m_this = lRef;
-		m_dbSystem = dbSystem;
 	}
 	
 	public long getThis()
@@ -64,29 +61,26 @@ public class DataVector
 			_release( m_this);
 			m_this = 0;
 		}
-		
-		m_dbSystem = null;
 	}
 	
 	/**
-	 * Method to set the document Id of the search target.
-	 * @param lDocId
+	 * Set the document ID of the data vector.
+	 * @param lDocId Document ID for the data vector.
+	 * @throws XFlaimException
 	 */
 	public void setDocumentID(
-		long		lDocId)
+		long		lDocId) throws XFlaimException
 	{
 		_setDocumentId( m_this, lDocId);
 	}
 	
 	/**
-	 * Method to set the ID of the search target.  The ID referred to here is
-	 * the node Id which is actually a 64 bit unsigned value in the XFlaim
-	 * database. 
-	 * @param iElementNumber
-	 * @param lID
+	 * Set the node ID of an element in the data vector. 
+	 * @param iElementNumber Element whose node ID is to be set.
+	 * @param lID Node ID value that is to be set.
 	 * @throws XFlaimException
 	 */
-	public void setId(
+	public void setID(
 		int			iElementNumber,
 		long			lID) throws XFlaimException
 	{
@@ -94,15 +88,14 @@ public class DataVector
 	}
 	
 	/**
-	 * Method to set the name ID of the search target.  the name Id is a
-	 * numeric value that is used to represent the field or tag of the
-	 * target element.
-	 * @param iElementNumber
-	 * @param iNameId
-	 * @param bIsAttr A boolean flag that indicates whether or not the key 
-	 * is an attribute.
-	 * @param bIsData A boolean flag that indicates whether or not the key
-	 * is a data component.
+	 * Set the name ID of an element in the data vector.
+	 * @param iElementNumber Element whose name ID is to be set.
+	 * @param iNameId Name ID that is to be set into the element.
+	 * @param bIsAttr A boolean flag that indicates whether or not this
+	 * name ID is an attribute or an element.  A value of true means it is
+	 * an attribute, false means it is an element.
+	 * @param bIsData A boolean flag that indicates whether or not the
+	 * element is a data component as opposed to a key component.
 	 * @throws XFlaimException
 	 */
 	public void setNameId(
@@ -115,39 +108,9 @@ public class DataVector
 	}
 
 	/**
-	 * Method to set the value of the target key to an integer value.  For 
-	 * purposes of this interface, an integer is defined to be 32 bits, signed.
-	 * The iNum parameter will be tested to ensure that is falls within range.
-	 * If it is too large, an exception will be thrown.
-	 * @param iElementNumber
-	 * @param iNum The 32 bit signed integer value
-	 * @throws XFlaimException
-	 */
-	public void setINT(
-		int			iElementNumber,
-		int			iNum) throws XFlaimException
-	{
-		_setINT( m_this, iElementNumber, iNum);
-	}
-	
-	/**
-	 * Special purpose function - NOT for general consumption.
-	 * @param iElementNumber
-	 * @param iUNum
-	 * @throws XFlaimException
-	 */
-	public void setUINT(
-		int			iElementNumber,
-		int			iUNum) throws XFlaimException
-	{
-		_setUINT( m_this, iElementNumber, iUNum);
-	}
-
-	/**
-	 * Method to set the value of the target key to a long value.  For 
-	 * purposes of this interface, a long is defined to be 64 bits, signed.
-	 * @param iElementNumber
-	 * @param lNum The 64 bit signed integer value
+	 * Set the value of an element in the data vector to a long value.
+	 * @param iElementNumber Element whose value is to be set.
+	 * @param lNum The long value that is to be set into the element.
 	 * @throws XFlaimException
 	 */
 	public void setLong(
@@ -158,9 +121,9 @@ public class DataVector
 	}
 
 	/**
-	 * Method to set the value of the target key to a string value.
-	 * @param iElementNumber
-	 * @param sValue
+	 * Set the value of an element in the data vector to a String value.
+	 * @param iElementNumber Element whose value is to be set.
+	 * @param sValue The string value that is to be set into the element.
 	 * @throws XFlaimException
 	 */
 	public void setString(
@@ -171,9 +134,9 @@ public class DataVector
 	}
 	
 	/**
-	 * Method to set the value of the target key to a binary value.
-	 * @param iElementNumber
-	 * @param Value
+	 * Set the value of an element in the data vector to a binary value.
+	 * @param iElementNumber Element whose value is to be set.
+	 * @param Value The binary value that is to be set into the element.
 	 * @throws XFlaimException
 	 */
 	public void setBinary(
@@ -184,169 +147,178 @@ public class DataVector
 	}
 	
 	/**
-	 * Method to set a flag in the target key that indicates that the key is
-	 * right truncated.
-	 * @param iElementNumber
+	 * Set a flag of an element in the data vector to indicate that the value
+	 * is right truncated.
+	 * @param iElementNumber Element whose "right truncated" flag is to be set.
+	 * @throws XFlaimException
 	 */
 	public void setRightTruncated(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		_setRightTruncated( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to set a flag in the target key that indicates that the key is
-	 * left truncated.
-	 * @param iElementNumber
+	 * Set a flag of an element in the data vector to indicate that the value
+	 * is left truncated.
+	 * @param iElementNumber Element whose "left truncated" flag is to be set.
+	 * @throws XFlaimException
 	 */
 	public void setLeftTruncated(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		_setLeftTruncated( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to clear a flag in the target key that indicates that the key
-	 * is right truncated.
-	 * @param iElementNumber
+	 * Clear the "right truncated" flag of an element in the data vector.
+	 * @param iElementNumber Element whose "right truncated" flag is to be cleared.
+	 * @throws XFlaimException
 	 */
 	public void clearRightTruncated(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		_clearRightTruncated( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to clear a flag in the target key that indicates that the key
-	 * is left truncated.
-	 * @param iElementNumber
+	 * Clear the "left truncated" flag of an element in the data vector.
+	 * @param iElementNumber Element whose "left truncated" flag is to be cleared.
+	 * @throws XFlaimException
 	 */
 	public void clearLeftTruncated(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		_clearLeftTruncated( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to get the Document ID of the target key.
-	 * @return Document Id
+	 * Determine if an element in the data vector is "right truncated."
+	 * @param iElementNumber Element whose "right truncated" flag is to be checked.
+	 * @return Returns flag indicating whether or not the specified element is
+	 * "right truncated."
+	 * @throws XFlaimException
 	 */
-	public long getDocumentID()
+	public void isRightTruncated(
+		int		iElementNumber) throws XFlaimException
+	{
+		_isRightTruncated( m_this, iElementNumber);
+	}
+
+	/**
+	 * Determine if an element in the data vector is "left truncated."
+	 * @param iElementNumber Element whose "left truncated" flag is to be checked.
+	 * @return Returns flag indicating whether or not the specified element is
+	 * "left truncated."
+	 * @throws XFlaimException
+	 */
+	public void isLeftTruncated(
+		int		iElementNumber) throws XFlaimException
+	{
+		_isLeftTruncated( m_this, iElementNumber);
+	}
+
+	/**
+	 * Get the Document ID for the data vector.
+	 * @return Returns document ID.
+	 * @throws XFlaimException
+	 */
+	public long getDocumentID() throws XFlaimException
 	{
 		return _getDocumentID( m_this);
 	}
 
 	/**
-	 * Method to get the node Id of the element specified (iElementNumber) of
-	 * the target key.
-	 * @param iElementNumber
-	 * @return Node Id
+	 * Get the node ID for an element in the data vector.
+	 * @param iElementNumber Element whose node ID is to be returned.
+	 * @return Returns element's node ID.
+	 * @throws XFlaimException
 	 */
 	public long getID(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _getID( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to get the name Id of the element specified (iElementNumber) of
-	 * the target key.
-	 * @param iElementNumber
-	 * @return Name Id
+	 * Get the name ID for an element in the data vector.
+	 * @param iElementNumber Element whose name ID is to be returned.
+	 * @return Returns element's name ID.
+	 * @throws XFlaimException
 	 */
 	public int getNameId(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _getNameId( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to find out if the element specified (iElementNumber) is an
-	 * attribute of the target key.
-	 * @param iElementNumber
-	 * @return boolean true or false
+	 * Determine the name ID for an element in the data vector is an attribute
+	 * name ID or an element name ID
+	 * @param iElementNumber Element whose name ID is to be tested.
+	 * @return Returns flag indicating if the name ID is an element name
+	 * (returns false) or an attribute name (returns true).
+	 * @throws XFlaimException
 	 */
 	public boolean isAttr(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _isAttr( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to find out if the element specified (iElementNumber) is a data
-	 * component of the target key.
-	 * @param iElementNumber
-	 * @return boolean true or false
+	 * Determine an element in the data vector is a data component.
+	 * @param iElementNumber Element to be tested.
+	 * @return Returns flag indicating if the element is a data component.
+	 * @throws XFlaimException
 	 */
 	public boolean isDataComponent(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _isDataComponent( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to find out if the element specified (iElementNumber) is a key
-	 * component of the target key.
-	 * @param iElementNumber
-	 * @return boolean true or false
+	 * Determine an element in the data vector is a key component.
+	 * @param iElementNumber Element to be tested.
+	 * @return Returns flag indicating if the element is a key component.
+	 * @throws XFlaimException
 	 */
 	public boolean isKeyComponent(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _isKeyComponent( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to get the length of the data value of the element specified 
-	 * (iElementNumber) of the target key.
-	 * @param iElementNumber
-	 * @return The data length
+	 * Get the length of the data value of an element in the data vector.
+	 * @param iElementNumber Element whose data value length is to be returned.
+	 * @return Returns element's data value length.
+	 * @throws XFlaimException
 	 */
 	public int getDataLength(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _getDataLength( m_this, iElementNumber);
 	}
 
 	/**
-	 * Desc:
+	 * Get the type of the data value of an element in the data vector.
+	 * @param iElementNumber Element whose data value type is to be returned.
+	 * @return Returns element's data value type.  This will be one of the
+	 * values of {@link xflaim.FlmDataType FlmDataType).
+	 * @throws XFlaimException
 	 */
 	public int getDataType(
-		int		iElementNumber)
+		int		iElementNumber) throws XFlaimException
 	{
 		return _getDataType( m_this, iElementNumber);
 	}
 
 	/**
-	 * Method to get the value of the element specified (iElementNumber) of the
-	 * target key as an integer.  An integer is a 32 bit signed value.
-	 * @param iElementNumber
-	 * @return 32 bit signed integer
-	 * @throws XFlaimException
-	 */
-	public int getINT(
-		int		iElementNumber) throws XFlaimException
-	{
-		return _getINT( m_this, iElementNumber);
-	}
-
-	/**
-	 * ** This is a special purpose method and not for general consumption **
-	 * @param iElementNumber
-	 * @return 32 bit signed integer
-	 * @throws XFlaimException
-	 */
-	public int getUINT(
-		int		iElementNumber) throws XFlaimException
-	{
-		return _getUINT( m_this, iElementNumber);
-	}
-
-	/**
-	 * Method to get the value of the element specified (iElementNumber) of the
-	 * target key as a long.  An long is a 64 bit signed value.
-	 * @param iElementNumber
-	 * @return 64 bit signed integer
+	 * Get the value of an element in the data vector as a long value.
+	 * @param iElementNumber Element whose data value is to be returned.
+	 * @return Returns element's data value as a long.
 	 * @throws XFlaimException
 	 */
 	public long getLong(
@@ -356,10 +328,9 @@ public class DataVector
 	}
 	
 	/**
-	 * Method to get the value of the element specified (iElementNumber) of the
-	 * target key as a String.
-	 * @param iElementNumber
-	 * @return String
+	 * Get the value of an element in the data vector as a String.
+	 * @param iElementNumber Element whose data value is to be returned.
+	 * @return Returns element's data value as a string.
 	 * @throws XFlaimException
 	 */
 	public String getString(
@@ -369,11 +340,9 @@ public class DataVector
 	}
 
 	/**
-	 * Method to get the value of the element specified (iElementNumber) of the
-	 * target key as binary data.
-	 * @param iElementNumber
-	 * @return Returns a byte array containing the value of the specified
-	 * element
+	 * Get the value of an element in the data vector as a binary value.
+	 * @param iElementNumber Element whose data value is to be returned.
+	 * @return Returns element's data value as a binary value.
 	 * @throws XFlaimException
 	 */
 	public byte[] getBinary(
@@ -383,16 +352,19 @@ public class DataVector
 	}
 
 	/**
-	 * Method to generate a buffer that holds the target key as stored in 
-	 * the index.
-	 * @param jDb
-	 * @param iIndexNum
-	 * @param bOutputIds
-	 * @return byte[] key buffer
+	 * Return a buffer that is an index key for the elements in the vector.  The
+	 * key is generated using the definition of the index from the specified
+	 * database.
+	 * @param jDb Database containing the index definition for which we want to
+	 * generate a key.
+	 * @param iIndexNum Index number for which we want to generate a key.
+	 * @param bOutputIds Flag that specifies whether or not node ids and
+	 * document ids in the data vector are to be included in the generated key.
+	 * @return Returns the generated index key.
 	 * @throws XFlaimException
 	 */
 	public byte[] outputKey(
-		Db		jDb,
+		Db				jDb,
 		int			iIndexNum,
 		boolean		bOutputIds) throws XFlaimException
 	{
@@ -400,10 +372,14 @@ public class DataVector
 	}
 
 	/**
-	 * Method to generate a buffer that holds only the data of the target key.
-	 * @param jDb
-	 * @param iIndexNum
-	 * @return byte[]
+	 * Return a buffer that contains the data component part of an index key.
+	 * the buffer is composed from the elements in the data vector that are
+	 * data components.
+	 * @param jDb Database containing the index definition for which we want to
+	 * generate the data component.
+	 * @param iIndexNum Index number for which we want to generate the data
+	 * component.
+	 * @return Returns the generated data component part of an index key.
 	 * @throws XFlaimException
 	 */
 	public byte[] outputData(
@@ -414,275 +390,177 @@ public class DataVector
 	}
 
 	/**
-	 * Method to populate a DataVector object from an index key.
-	 * @param jDb
-	 * @param iIndexNum
-	 * @param Key
-	 * @param iKeyLen
+	 * Populate the data vector's key components using a buffer that contains
+	 * an index key.
+	 * @param jDb Database containing the index definition that is to be used to
+	 * parse through the key buffer to determine the key components.
+	 * @param iIndexNum Index number to be used to parse through the key buffer
+	 * to determine the key components.
+	 * @param Key Buffer containing the index key to be parsed.
 	 * @throws XFlaimException
 	 */
 	public void inputKey(
 		Db				jDb,
 		int			iIndexNum,
-		byte[]		Key,
-		int			iKeyLen) throws XFlaimException
+		byte[]		Key) throws XFlaimException
 	{
-		_inputKey( m_this, jDb.m_this, iIndexNum, Key, iKeyLen);
+		_inputKey( m_this, jDb.m_this, iIndexNum, Key);
 	}
 
 	/**
-	 * Method to populate a portion of a DataVector object from the data part of 
-	 * an index key.
-	 * @param jDb
-	 * @param iIndexNum
+	 * Populate the data vector's data components using a buffer that contains
+	 * an index key's data components.
+	 * @param jDb Database containing the index definition that is to be used to
+	 * parse through the data buffer to determine the data components.
+	 * @param iIndexNum Index number to be used to parse through the data buffer
+	 * to determine the data components.
+	 * @param Data Buffer containing the index key's data components to be parsed.
 	 * @throws XFlaimException
 	 */
 	public void inputData(
 		Db				jDb,
 		int			iIndexNum,
-		byte[]		Data,
-		int			iDataLen) throws XFlaimException
+		byte[]		Data) throws XFlaimException
 	{
-		_inputData( m_this, jDb.m_this, iIndexNum, Data, iDataLen);
+		_inputData( m_this, jDb.m_this, iIndexNum, Data);
 	}
 	
 	/**
-	 * Method to reset the contents of the DataVector object.
+	 * Reset the contents of the data vector.
+	 * @throws XFlaimException
 	 */
-	public void reset()
+	public void reset() throws XFlaimException
 	{
 		_reset( m_this);
 	}
+	
+// PRIVATE METHODS
 
-	/**
-	 * Desc:
-	 */
 	private native void _release( 
 		long 		lThis);
 	
-	/**
-	 * Desc:
-	 */
 	private native void _setDocumentId(
 		long		lThis,
-		long		lDocId);
+		long		lDocId) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _setID(
 		long		lThis,
 		int		iElementNumber,
-		long		lID);
+		long		lID) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native void _setNameId(
 		long		lThis,
 		int		iElementNumber,
 		int		iNameId,
 		boolean	bIsAttr,
-		boolean	bIsData);
+		boolean	bIsData) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
-	private native void _setINT(
-		long		lThis,
-		int		iElementNumber,
-		int		iNum);
-		
-	/**
-	 * Desc:
-	 */
-	private native void _setUINT(
-		long		lThis,
-		int		iElementNumber,
-		int		iUNum);
-		
-	/**
-	 * Desc:
-	 */
 	private native void _setLong(
 		long		lThis,
 		int		iElementNumber,
-		long		lNum);
+		long		lNum) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native void _setString(
 		long		lThis,
 		int		iElementNumber,
-		String	sValue);
+		String	sValue) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native void _setBinary(
 		long		lThis,
 		int		iElementNumber,
-		byte[]	Value);
+		byte[]	Value) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native void _setRightTruncated(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _setLeftTruncated(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _clearRightTruncated(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _clearLeftTruncated(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
+	private native boolean _isRightTruncated(
+		long		lThis,
+		int		iElementNumber) throws XFlaimException;
+	
+	private native boolean _isLeftTruncated(
+		long		lThis,
+		int		iElementNumber) throws XFlaimException;
+	
 	private native long _getDocumentID(
-		long		lThis);
+		long		lThis) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native long _getID(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 		
-	/**
-	 * Desc:
-	 */
 	private native int _getNameId(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native boolean _isAttr(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native boolean _isDataComponent(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native boolean _isKeyComponent(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native int _getDataLength(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native int _getDataType(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
-	private native int _getINT(
-		long		lThis,
-		int		iElementNumber);
-
-	/**
-	 * Desc:
-	 */
-	private native int _getUINT(
-		long		lThis,
-		int		iElementNumber);
-
-	/**
-	 * Desc:
-	 */
 	private native long _getLong(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native String _getString(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native byte[] _getBinary(
 		long		lThis,
-		int		iElementNumber);
+		int		iElementNumber) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native byte[] _outputKey(
 		long		lThis,
 		long		ljDbRef,
 		int		iIndexNum,
-		boolean	bOutputIds);
+		boolean	bOutputIds) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native byte[] _outputData(
 		long		lThis,
 		long		ljDbRef,
-		int		iIndexNum);
+		int		iIndexNum) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _inputKey(
 		long		lThis,
 		long		ljDbRef,
 		int		iIndexNum,
-		byte[]	Key,
-		int		iKeyLen);
+		byte[]	Key) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _inputData(
 		long		lThis,
 		long		ljDbRef,
 		int		iIndexNum,
-		byte[]	Data,
-		int		iDataLen);
+		byte[]	Data) throws XFlaimException;
 
-	/**
-	 * Desc:
-	 */
 	private native void _reset(
-		long		lThis);
+		long		lThis) throws XFlaimException;
 }
+

@@ -96,66 +96,6 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setNameId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_DataVector__1setINT(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iElementNumber,
-	jint				iNum)
-{
-	RCODE				rc = NE_XFLM_OK;
-
-	if (iNum  > 0x7FFFFFFF)
-	{
-		ThrowError( NE_XFLM_CONV_DEST_OVERFLOW, pEnv);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = THIS_VECTOR()->setINT( 
-		(FLMUINT)iElementNumber, (FLMINT)iNum)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-
-Exit:
-
-	return;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_DataVector__1setUINT(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iElementNumber,
-	jint				iUNum)
-{
-	RCODE				rc = NE_XFLM_OK;
-	FLMUINT			uiNum = (FLMUINT)iUNum;
-	
-	if (uiNum  > 0xFFFFFFFF)
-	{
-		ThrowError( NE_XFLM_CONV_DEST_OVERFLOW, pEnv);
-		goto Exit;
-	}
-
-	if (RC_BAD( rc = THIS_VECTOR()->setUINT( (FLMUINT)iElementNumber, uiNum)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-
-Exit:
-
-	return;
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 JNIEXPORT void JNICALL Java_xflaim_DataVector__1setLong(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
@@ -166,7 +106,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setLong(
 	RCODE				rc = NE_XFLM_OK;
 	
 	if (RC_BAD( rc = THIS_VECTOR()->setINT64( 
-			(FLMUINT)iElementNumber, (FLMUINT64)lNum)))
+			(FLMUINT)iElementNumber, (FLMINT64)lNum)))
 	{
 		ThrowError( rc, pEnv);
 	}
@@ -183,17 +123,17 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setString(
 	jstring			sValue)
 {
 	RCODE				rc = NE_XFLM_OK;
-	jchar *			puzValue = NULL;
-	FLMBOOL			bMustRelease = FALSE;
-	
-	if (sValue)
+	FLMBYTE			ucValue [256];
+	F_DynaBuf		valueBuf( ucValue, sizeof( ucValue));
+
+	if (RC_BAD( rc = getUniString( pEnv, sValue, &valueBuf)))
 	{
-		puzValue = (jchar *)pEnv->GetStringCritical( sValue, NULL);
-		bMustRelease = TRUE;
+		ThrowError( rc, pEnv);
+		goto Exit;
 	}
 	
 	if (RC_BAD( rc = THIS_VECTOR()->setUnicode( 
-		(FLMUINT)iElementNumber, puzValue)))
+		(FLMUINT)iElementNumber, valueBuf.getUnicodePtr())))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -201,10 +141,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setString(
 
 Exit:
 
-	if (bMustRelease)
-	{
-		pEnv->ReleaseStringCritical( sValue, puzValue);
-	}
+	return;
 }
 
 /****************************************************************************
@@ -293,6 +230,34 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1clearLeftTruncated(
 	jint				iElementNumber)
 {
 	THIS_VECTOR()->clearLeftTruncated( (FLMUINT)iElementNumber);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DataVector__1isRightTruncated(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iElementNumber)
+{
+	return( (jboolean)(THIS_VECTOR()->isRightTruncated( (FLMUINT)iElementNumber)
+							 ? JNI_TRUE
+							 : JNI_FALSE));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jboolean JNICALL Java_xflaim_DataVector__1isLeftTruncated(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis,
+	jint				iElementNumber)
+{
+	return( (jboolean)(THIS_VECTOR()->isLeftTruncated( (FLMUINT)iElementNumber)
+							 ? JNI_TRUE
+							 : JNI_FALSE));
 }
 
 /****************************************************************************
@@ -390,53 +355,6 @@ JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getDataType(
 	jint				iElementNumber)
 {
 	return( (jint)(THIS_VECTOR()->getDataType( (FLMUINT)iElementNumber)));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getINT(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iElementNumber)
-{
-	RCODE				rc = NE_XFLM_OK;
-	FLMINT			iINT;
-	
-	if (RC_BAD( rc = THIS_VECTOR()->getINT( (FLMUINT)iElementNumber, &iINT)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-
-Exit:
-
-	return( (jint)iINT);	
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getUINT(
-	JNIEnv *			pEnv,
-	jobject,			// obj,
-	jlong				lThis,
-	jint				iElementNumber)
-{
-	RCODE				rc = NE_XFLM_OK;
-	FLMINT			iINT;
-	
-	if (RC_BAD( rc = THIS_VECTOR()->getUINT( (FLMUINT)iElementNumber, 
-		(FLMUINT *)&iINT)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
-
-Exit:
-
-	return( (jint)iINT);	
 }
 
 /****************************************************************************
@@ -587,8 +505,16 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputKey(
 	void *			pvKey = NULL;
 	jboolean			bIsCopy = false;
 	FLMBOOL			bMustRelease = false;
+	FLMBYTE			ucKey [XFLM_MAX_KEY_SIZE];			
+
+	if (RC_BAD( rc = THIS_VECTOR()->outputKey( pDb, (FLMUINT)iIndexNum,
+			(bOutputIds ? TRUE : FALSE), ucKey,
+			sizeof( ucKey), &uiLength)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
 	
-	uiLength = XFLM_MAX_KEY_SIZE;
 	Key = pEnv->NewByteArray( (jsize)uiLength);
 	
 	if( (pvKey = pEnv->GetPrimitiveArrayCritical( Key, &bIsCopy)) == NULL)
@@ -597,16 +523,9 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputKey(
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
-	
 	bMustRelease = true;
-	
-	if (RC_BAD( rc = THIS_VECTOR()->outputKey( pDb, (FLMUINT)iIndexNum,
-			(bOutputIds ? TRUE : FALSE), (FLMBYTE *)pvKey,
-			uiLength, &uiLength)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
+
+	f_memcpy( pvKey, ucKey, uiLength);
 	
 Exit:
 
@@ -639,13 +558,48 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputData(
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = (IF_Db *)(FLMUINT)ljDbRef;
-	FLMUINT			uiLength;
+	FLMUINT			uiLength = 0;
 	jbyteArray		Data;
 	void *			pvData = NULL;
 	jboolean			bIsCopy = false;
 	FLMBOOL			bMustRelease = false;
+	FLMBYTE			ucBuf [512];
+	FLMUINT			uiBufSize = sizeof( ucBuf);
+	FLMBYTE *		pucBuf = &ucBuf [0];
 	
-	uiLength = XFLM_MAX_KEY_SIZE;
+	// Try until we have a big enough buffer.
+	
+	for (;;)
+	{
+		if (RC_OK( rc = THIS_VECTOR()->outputData( pDb, (FLMUINT)iIndexNum,
+			(FLMBYTE *)pucBuf, uiBufSize, &uiLength)))
+		{
+			break;
+		}
+		if (rc != NE_XFLM_CONV_DEST_OVERFLOW)
+		{
+			ThrowError( rc, pEnv);
+			goto Exit;
+		}
+		uiBufSize += 2048;
+		if (pucBuf == &ucBuf [0])
+		{
+			if (RC_BAD( rc = f_alloc( uiBufSize, &pucBuf)))
+			{
+				ThrowError( rc, pEnv);
+				goto Exit;
+			}
+		}
+		else
+		{
+			if (RC_BAD( rc = f_realloc( uiBufSize, &pucBuf)))
+			{
+				ThrowError( rc, pEnv);
+				goto Exit;
+			}
+		}
+	}
+		
 	Data = pEnv->NewByteArray( (jsize)uiLength);
 	
 	if ( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)
@@ -654,17 +608,16 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputData(
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
-	
 	bMustRelease = true;
+	f_memcpy( pvData, pucBuf, uiLength);
 	
-	if (RC_BAD( rc = THIS_VECTOR()->outputData( pDb, (FLMUINT)iIndexNum,
-		(FLMBYTE *)pvData, uiLength, &uiLength)))
-	{
-		ThrowError( rc, pEnv);
-		goto Exit;
-	}
 	
 Exit:
+
+	if (pucBuf != &ucBuf [0])
+	{
+		f_free( &pucBuf);
+	}
 
 	if (bMustRelease)
 	{
@@ -692,14 +645,15 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputKey(
 	jlong				lThis,
 	jlong				ljDbRef,
 	jint				iIndexNum,
-	jbyteArray		Key,
-	jint				iKeyLen)
+	jbyteArray		Key)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = (IF_Db *)(FLMUINT)ljDbRef;
 	void *			pvKey = NULL;
 	jboolean			bIsCopy = false;
 	FLMBOOL			bMustRelease = false;
+	FLMUINT			uiKeyLen = (FLMUINT)pEnv->GetArrayLength( Key);
+
 	
 	if ( (pvKey = pEnv->GetPrimitiveArrayCritical( Key, &bIsCopy)) == NULL)
 	{
@@ -711,7 +665,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputKey(
 	bMustRelease = true;
 	
 	if (RC_BAD( rc = THIS_VECTOR()->inputKey( pDb, (FLMUINT)iIndexNum,
-		(FLMBYTE *)pvKey, (FLMUINT)iKeyLen)))
+		(FLMBYTE *)pvKey, uiKeyLen)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -734,14 +688,14 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputData(
 	jlong				lThis,
 	jlong				ljDbRef,
 	jint				iIndexNum,
-	jbyteArray		Data,
-	jint				iDataLen)
+	jbyteArray		Data)
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = (IF_Db *)(FLMUINT)ljDbRef;
 	void *			pvData = NULL;
 	jboolean			bIsCopy = false;
 	FLMBOOL			bMustRelease = false;
+	FLMUINT			uiDataLen = (FLMUINT)pEnv->GetArrayLength( Data);
 	
 	if( (pvData = pEnv->GetPrimitiveArrayCritical( Data, &bIsCopy)) == NULL)
 	{
@@ -753,7 +707,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputData(
 	bMustRelease = true;
 	
 	if (RC_BAD( rc = THIS_VECTOR()->inputKey( pDb, (FLMUINT)iIndexNum,
-		(FLMBYTE *)pvData, (FLMUINT)iDataLen)))
+		(FLMBYTE *)pvData, uiDataLen)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
@@ -777,3 +731,4 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1reset(
 {
 	THIS_VECTOR()->reset();
 }
+

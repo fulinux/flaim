@@ -678,11 +678,11 @@ public class DbSystem
 		DataVector		jDataVector = null;
 		long				lRef = 0;
 		
-		lRef = _createJDataVector(m_this);
+		lRef = _createJDataVector( m_this);
 							
 		if (lRef != 0)
 		{
-			jDataVector = new DataVector(lRef, this);
+			jDataVector = new DataVector(lRef);
 		}
 		
 		return jDataVector;

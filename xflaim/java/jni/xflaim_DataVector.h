@@ -41,22 +41,6 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1setNameId
 
 /*
  * Class:     xflaim_DataVector
- * Method:    _setINT
- * Signature: (JII)V
- */
-JNIEXPORT void JNICALL Java_xflaim_DataVector__1setINT
-  (JNIEnv *, jobject, jlong, jint, jint);
-
-/*
- * Class:     xflaim_DataVector
- * Method:    _setUINT
- * Signature: (JII)V
- */
-JNIEXPORT void JNICALL Java_xflaim_DataVector__1setUINT
-  (JNIEnv *, jobject, jlong, jint, jint);
-
-/*
- * Class:     xflaim_DataVector
  * Method:    _setLong
  * Signature: (JIJ)V
  */
@@ -109,6 +93,22 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1clearRightTruncated
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DataVector__1clearLeftTruncated
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DataVector
+ * Method:    _isRightTruncated
+ * Signature: (JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DataVector__1isRightTruncated
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     xflaim_DataVector
+ * Method:    _isLeftTruncated
+ * Signature: (JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_xflaim_DataVector__1isLeftTruncated
   (JNIEnv *, jobject, jlong, jint);
 
 /*
@@ -177,22 +177,6 @@ JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getDataType
 
 /*
  * Class:     xflaim_DataVector
- * Method:    _getINT
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getINT
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_DataVector
- * Method:    _getUINT
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_xflaim_DataVector__1getUINT
-  (JNIEnv *, jobject, jlong, jint);
-
-/*
- * Class:     xflaim_DataVector
  * Method:    _getLong
  * Signature: (JI)J
  */
@@ -234,18 +218,18 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputData
 /*
  * Class:     xflaim_DataVector
  * Method:    _inputKey
- * Signature: (JJI[BI)V
+ * Signature: (JJI[B)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputKey
-  (JNIEnv *, jobject, jlong, jlong, jint, jbyteArray, jint);
+  (JNIEnv *, jobject, jlong, jlong, jint, jbyteArray);
 
 /*
  * Class:     xflaim_DataVector
  * Method:    _inputData
- * Signature: (JJI[BI)V
+ * Signature: (JJI[B)V
  */
 JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputData
-  (JNIEnv *, jobject, jlong, jlong, jint, jbyteArray, jint);
+  (JNIEnv *, jobject, jlong, jlong, jint, jbyteArray);
 
 /*
  * Class:     xflaim_DataVector
