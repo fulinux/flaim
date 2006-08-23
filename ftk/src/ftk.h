@@ -217,7 +217,9 @@
 		#endif
 		
 		#if defined( __x86_64__) || defined( _M_X64) || \
-			 defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
+			 defined( _LP64) || defined( __LP64__) || \
+			 defined( __arch64__) || \
+			 defined( __sparcv8plus) || defined( __sparcv9)
 			#if !defined( FLM_64BIT)
 				#error Platform word size is incorrect
 			#endif
