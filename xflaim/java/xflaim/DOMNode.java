@@ -225,29 +225,20 @@ public class DOMNode
 	}
 
 	/**
-	 * Checks the type of node.  Returned value will be one of those listed in
+	 * Returns the type of node.  Returned value will be one of those listed in
 	 * {@link xflaim.FlmDomNodeType FlmDomNodeType}.
 	 * @return Returns the type of the current node.
 	 */
-	public int getNodeType()
+	public int getNodeType() throws XFlaimException
 	{
 		return _getNodeType( m_this);
 	}
 
 	/**
- 	* Tests the current node for the ability to hold data.
- 	* @return Returns true if this is a node type that can have data 
-	* associated with it.
- 	*/
-	public boolean canHaveData()
-	{
-		return _canHaveData( m_this);
-	}
-
-	/**
- 	* Tests the current node for the ability to hold data.
- 	* @return Returns true if this is a node type that can have data 
-	* associated with it.
+ 	* Determine if data for the current node is associated with the node, or
+	* with a child node.  Element nodes may not have data associated with them,
+	* but with child data nodes instead.
+ 	* @return Returns true if this node's data is associated with it.
  	*/
 	public boolean isDataLocalToNode() throws XFlaimException
 	{
@@ -571,26 +562,6 @@ public class DOMNode
 		return _getLastChildId(  m_this, m_jdb.m_this);
 	}
 
-	/**
-	 * Retrieves the node ID for this node's first attribute.
-	 * @return Returns the first attribute node's node ID.
-	 * @throws XFlaimException
-	 */
-	public long getFirstAttrId() throws XFlaimException
-	{
-		return _getFirstAttrId(  m_this, m_jdb.m_this);
-	}
-
-	/**
-	 * Retrieves the node ID for this node's last attribute 
-	 * @return Returns the last attribute node's node ID.
-	 * @throws XFlaimException
-	 */
-	public long getLastAttrId() throws XFlaimException
-	{
-		return _getLastAttrId(  m_this, m_jdb.m_this);
-	}	
-	
 	/**
 	 * Retrieves this node's name ID. 
 	 * @return Returns the name ID for this node.
@@ -1168,7 +1139,7 @@ public class DOMNode
 	 * @throws XFlaimException
 	 */
 	public DOMNode getChild(
-		int			eNodeType,
+		int			iNodeType,
 		DOMNode		ReusedNode) throws XFlaimException
 	{
 		long 			lNewNodeRef = 0;
@@ -1183,7 +1154,7 @@ public class DOMNode
 		synchronized( m_jdb)
 		{
 			lNewNodeRef = _getChild( m_this, m_jdb.m_this, 
-									eNodeType, lReusedNodeRef);
+									iNodeType, lReusedNodeRef);
 		}
 			
 		if (ReusedNode == null)
@@ -1735,11 +1706,21 @@ public class DOMNode
 		return _hasAnnotation( m_this, m_jdb.m_this);
 	}
 
+	/**
+	 * Returns the meta-value for the node.
+	 * @return Returns meta-value for the node.
+	 * @throws XFlaimException
+	 */
 	public long getMetaValue() throws XFlaimException
 	{
 		return( _getMetaValue( m_this, m_jdb.m_this));
 	}
 	
+	/**
+	 * Set the meta-value for the node.
+	 * @param lValue Meta-value to set.
+	 * @throws XFlaimException
+	 */
 	public void setMetaValue(
 		long		lValue) throws XFlaimException
 	{
@@ -1760,7 +1741,7 @@ public class DOMNode
 	*/
 	void setRef(
 		long	lDomNodeRef,
-		Db	jdb)
+		Db		jdb)
 	{
 		m_this = lDomNodeRef;
 		m_jdb = jdb;
@@ -1776,7 +1757,12 @@ public class DOMNode
 		return m_jdb;
 	}
 	
-	 private native long _createNode(
+// PRIVATE NATIVE METHODS
+	
+	private native void _release(
+		long		lThis);
+		
+	private native long _createNode(
 		 long		lThis,
 		 long		lDbRef,
 		 int		iNodeType,
@@ -1800,11 +1786,12 @@ public class DOMNode
 		long		lDbRef) throws XFlaimException;
 		
 	private native int _getNodeType(
-		long		lThis);
+		long		lThis) throws XFlaimException;
 
-	private native boolean _canHaveData(
-		long 		lThis);
-		
+	private native boolean _isDataLocalToNode(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
 	private native long _createAttribute(
 		long		lThis,
 		long		lDbRef,
@@ -1841,10 +1828,6 @@ public class DOMNode
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
 		
-	private native boolean _hasChildren(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-	
 	private native boolean _hasNextSibling(
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
@@ -1853,105 +1836,14 @@ public class DOMNode
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
 	
+	private native boolean _hasChildren(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+	
 	private native boolean _isNamespaceDecl(
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
 
-	private native long _getDocumentNode(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-
-	private native long _getParentNode(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-
-	private native long _getFirstChild(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-		
-	private native long _getLastChild(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-
-	private native long _getChild(
-		long		lThis,
-		long		lDbRef,
-		int		iNodeType,
-		long		lReusedNodeRef) throws XFlaimException;
-		
-	private native long _getPreviousSibling(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-			
-	private native long _getNextSibling
-	(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-		
-	private native long _getPreviousDocument
-	(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-		
-	private native long _getNextDocument(
-		long		lThis,
-		long		lDbRef,
-		long		lReusedNodeRef) throws XFlaimException;
-		
-	private native String _getPrefix(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native int _getPrefixId(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native int _getEncDefId(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native void _setPrefix(
-		long		lThis,
-		long		lDbRef,
-		String	sPrefix) throws XFlaimException;
-		
-	private native void _setPrefixId(
-		long		lThis,
-		long		lDbRef,
-		int		iPrefixId) throws XFlaimException;
-
-	private native long _getChildElement(
-		long		lThis,
-		long		lDbRef,
-		int		iNameId,
-		long		lReusedNodeRef) throws XFlaimException;
-		
-	private native long _getSiblingElement(
-		long		lThis,
-		long		lDbRef,
-		int		iNameId,
-		boolean	bNext,
-		long		lReusedNodeRef) throws XFlaimException;
-
-	private native long _getAncestorElement(
-		long		lThis,
-		long		lDbRef,
-		int		iNameId,
-		long		lReusedNodeRef) throws XFlaimException;
-
-	private native long _getDescendantElement(
-		long		lThis,
-		long		lDbRef,
-		int		iNameId,
-		long		lReusedNodeRef) throws XFlaimException;
-		
 	private native long _getParentId(
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
@@ -1980,78 +1872,9 @@ public class DOMNode
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
 
-	private native long _getFirstAttrId(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native long _getLastAttrId(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
 	private native int _getNameId(
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
-		
-	private native String _getNamespaceURI(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-		
-	private native String _getLocalName(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native String _getQualifiedName(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-		
-	private native int _getCollection(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-		
-	private native long _getLong(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native long _getAttributeValueLong(
-		long		lThis,
-		long		lDbRef,
-		int		iAttrNameId,
-		boolean	bDefaultOk,
-		long		lDefaultToUse) throws XFlaimException;
-
-	private native String _getString(
-		long		lThis,
-		long		lDbRef,
-		int		iStartPos,
-		int		iNumChars) throws XFlaimException;
-		
-	private native String _getAttributeValueString(
-		long		lThis,
-		long		lDbRef,
-		int		iAttrNameId) throws XFlaimException;
-		
-	private native int _getStringLen(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-		
-	private native int _getDataType(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-		
-	private native long _getDataLength(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
-
-	private native byte[] _getBinary(
-		long		lThis,
-		long		lDbRef,
-		int		iStartPos,
-		int		iNumBytes) throws XFlaimException; 
-
-	private native byte[] _getAttributeValueBinary(
-		long		lThis,
-		long		lDbRef,
-		int		iAttrNameId) throws XFlaimException;
 		
 	private native void _setLong(
 		long		lThis,
@@ -2094,6 +1917,160 @@ public class DOMNode
 		byte[]	Value,
 		int		iEncId) throws XFlaimException;
 
+	private native long _getDataLength(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native int _getDataType(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+		
+	private native long _getLong(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native long _getAttributeValueLong(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId,
+		boolean	bDefaultOk,
+		long		lDefaultToUse) throws XFlaimException;
+
+	private native String _getString(
+		long		lThis,
+		long		lDbRef,
+		int		iStartPos,
+		int		iNumChars) throws XFlaimException;
+		
+	private native String _getAttributeValueString(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId) throws XFlaimException;
+		
+	private native int _getStringLen(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+		
+	private native byte[] _getBinary(
+		long		lThis,
+		long		lDbRef,
+		int		iStartPos,
+		int		iNumBytes) throws XFlaimException; 
+
+	private native byte[] _getAttributeValueBinary(
+		long		lThis,
+		long		lDbRef,
+		int		iAttrNameId) throws XFlaimException;
+
+	private native long _getDocumentNode(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+
+	private native long _getParentNode(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+
+	private native long _getFirstChild(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native long _getLastChild(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+
+	private native long _getChild(
+		long		lThis,
+		long		lDbRef,
+		int		iNodeType,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native long _getChildElement(
+		long		lThis,
+		long		lDbRef,
+		int		iNameId,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native long _getSiblingElement(
+		long		lThis,
+		long		lDbRef,
+		int		iNameId,
+		boolean	bNext,
+		long		lReusedNodeRef) throws XFlaimException;
+
+	private native long _getAncestorElement(
+		long		lThis,
+		long		lDbRef,
+		int		iNameId,
+		long		lReusedNodeRef) throws XFlaimException;
+
+	private native long _getDescendantElement(
+		long		lThis,
+		long		lDbRef,
+		int		iNameId,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native long _getPreviousSibling(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+			
+	private native long _getNextSibling(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native long _getPreviousDocument(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native long _getNextDocument(
+		long		lThis,
+		long		lDbRef,
+		long		lReusedNodeRef) throws XFlaimException;
+		
+	private native String _getPrefix(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native int _getPrefixId(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native int _getEncDefId(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native void _setPrefix(
+		long		lThis,
+		long		lDbRef,
+		String	sPrefix) throws XFlaimException;
+		
+	private native void _setPrefixId(
+		long		lThis,
+		long		lDbRef,
+		int		iPrefixId) throws XFlaimException;
+
+	private native String _getNamespaceURI(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+		
+	private native String _getLocalName(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+
+	private native String _getQualifiedName(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+		
+	private native int _getCollection(
+		long		lThis,
+		long		lDbRef) throws XFlaimException;
+		
 	private native long _createAnnotation(
 		long		lThis,
 		long		lDbRef,
@@ -2112,14 +2089,6 @@ public class DOMNode
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
 
-	private native void _release(
-		long		lThis);
-		
-	private native void setPrefix(
-		long		lThis,
-		long		lDbRef,
-		String	sPrefix) throws XFlaimException;
-		
 	private native long _getMetaValue(
 		long		lThis,
 		long		lDbRef) throws XFlaimException;
@@ -2128,10 +2097,6 @@ public class DOMNode
 		long		lThis,
 		long		lDbRef,
 		long		lValue) throws XFlaimException;
-
-	private native boolean _isDataLocalToNode(
-		long		lThis,
-		long		lDbRef) throws XFlaimException;
 
 	private long	m_this;
 	private Db		m_jdb;
