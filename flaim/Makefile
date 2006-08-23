@@ -471,7 +471,7 @@ endif
 # -- Other targets and options --
 
 ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
-	generic_sparc = yes
+	sparc_generic = yes
 endif
 
 # -- Helper functions --
