@@ -1305,10 +1305,9 @@ FLMUINT f_getFSBlockSize(
 }
 
 /****************************************************************************
-Desc: Remove this error pragma if you really intend to run with
-		mutex-based atomics
+Desc:
 ****************************************************************************/
-#if defined( FLM_SPARC) && !defined( FLM_SPARC_PLUS)
+#if defined( FLM_SPARC) && !defined( FLM_GENERIC_SPARC) && !defined( FLM_SPARC_PLUS)
 	#error This build will use mutex-based atomics.
 #endif
 
@@ -1316,7 +1315,7 @@ Desc: Remove this error pragma if you really intend to run with
 Desc:
 ****************************************************************************/
 #if defined( FLM_SPARC_PLUS)
-extern "C" void sparc_asm_code( void)
+extern "C" void sparc_atomic_code( void)
 {
 	asm( ".align 8");
 	asm( ".global sparc_atomic_add_32");

@@ -187,6 +187,7 @@ unix_target =
 netware_target =
 submake_targets =
 netware_ring_0_target =
+generic_sparc =
 
 # -- Enable command echoing --
 
@@ -551,6 +552,12 @@ ifdef requested_word_size
 	else
       $(error Unsupported target word size)
 	endif
+endif
+
+# -- Other targets and options --
+
+ifneq (,$(findstring genericsparc,$(MAKECMDGOALS)))
+	generic_sparc = yes
 endif
 
 # -- Helper functions --
@@ -939,7 +946,11 @@ ifdef unix_target
 				# Must support 64 bit file sizes - even for 32 bit builds.
 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
-				ccflags += -xarch=v8plus
+				ifdef generic_sparc
+					ccflags += -xarch=generic
+				else
+					ccflags += -xarch=v8plus
+				endif
 			endif
 		endif
 	endif
@@ -1774,6 +1785,10 @@ linux:
 solaris:
 	$(ec)$(gprintf) ""
 
+.PHONY : genericsparc
+genericsparc:
+	$(ec)$(gprintf) ""
+	
 .PHONY : osx
 osx:
 	$(ec)$(gprintf) ""
