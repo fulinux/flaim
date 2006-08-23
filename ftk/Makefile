@@ -860,6 +860,31 @@ ifdef unix_target
 		libr = ar
 	endif
 
+	gcc_optimization_flags = \
+		-O \
+		-foptimize-sibling-calls \
+		-fstrength-reduce -fcse-follow-jumps \
+		-fcse-skip-blocks \
+		-frerun-cse-after-loop \
+		-frerun-loop-opt \
+		-fgcse \
+		-fgcse-lm \
+		-fgcse-sm \
+		-fdelete-null-pointer-checks \
+		-fexpensive-optimizations \
+		-fregmove \
+		-fsched-interblock \
+		-fsched-spec \
+		-fcaller-saves \
+		-fpeephole2 \
+		-freorder-blocks \
+		-freorder-functions \
+		-falign-functions \
+		-falign-jumps \
+		-falign-loops \
+		-falign-labels \
+		-fcrossjumping
+				
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
@@ -904,30 +929,7 @@ ifdef unix_target
 		ccdefs += N_PLAT_UNIX _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64
 
 		ifeq ($(target_build_type),release)
-			ccflags += \
-				-O \
-				-foptimize-sibling-calls \
-				-fstrength-reduce -fcse-follow-jumps \
-				-fcse-skip-blocks \
-				-frerun-cse-after-loop \
-				-frerun-loop-opt \
-				-fgcse \
-				-fgcse-lm \
-				-fgcse-sm \
-				-fdelete-null-pointer-checks \
-				-fexpensive-optimizations \
-				-fregmove \
-				-fsched-interblock \
-				-fsched-spec \
-				-fcaller-saves \
-				-fpeephole2 \
-				-freorder-blocks \
-				-freorder-functions \
-				-falign-functions \
-				-falign-jumps \
-				-falign-loops \
-				-falign-labels \
-				-fcrossjumping
+			ccflags += $(gcc_optimization_flags)
 		endif
 	endif
 
@@ -991,6 +993,10 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),osx)
 		ccdefs += OSX
+
+		ifeq ($(target_build_type),release)
+			ccflags += $(gcc_optimization_flags)
+		endif
 	endif
 
 	ccdefs += _REENTRANT
