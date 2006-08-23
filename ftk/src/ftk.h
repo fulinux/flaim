@@ -141,7 +141,7 @@
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
 				#define FLM_STRICT_ALIGNMENT
-				#if !defined ( FLM_GENERIC_SPARC)
+				#if !defined ( FLM_SPARC_GENERIC)
 					#if defined( __sparcv8plus) || defined( __sparcv9) || defined( __sparcv9__) || \
 						 defined( __sparc_v8__) || defined( __sparc_v9__) || defined( __arch64__)
 						#define FLM_SPARC_PLUS
@@ -162,7 +162,7 @@
 			#if defined( sparc) || defined( __sparc) || defined( __sparc__)
 				#define FLM_SPARC
 				#define FLM_BIG_ENDIAN
-				#if !defined ( FLM_GENERIC_SPARC)
+				#if !defined ( FLM_SPARC_GENERIC)
 					#if defined( __sparcv8plus) || defined( __sparcv9)
 						#define FLM_SPARC_PLUS
 					#endif

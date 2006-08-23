@@ -1307,7 +1307,7 @@ FLMUINT f_getFSBlockSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_SPARC) && !defined( FLM_GENERIC_SPARC) && !defined( FLM_SPARC_PLUS)
+#if defined( FLM_SPARC) && !defined( FLM_SPARC_GENERIC) && !defined( FLM_SPARC_PLUS)
 	#error This build will use mutex-based atomics.
 #endif
 

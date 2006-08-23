@@ -556,7 +556,7 @@ endif
 
 # -- Other targets and options --
 
-ifneq (,$(findstring genericsparc,$(MAKECMDGOALS)))
+ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
 	generic_sparc = yes
 endif
 
@@ -946,8 +946,10 @@ ifdef unix_target
 				# Must support 64 bit file sizes - even for 32 bit builds.
 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+				
 				ifdef generic_sparc
 					ccflags += -xarch=generic
+					ccdefs += FLM_SPARC_GENERIC
 				else
 					ccflags += -xarch=v8plus
 				endif
@@ -1785,8 +1787,8 @@ linux:
 solaris:
 	$(ec)$(gprintf) ""
 
-.PHONY : genericsparc
-genericsparc:
+.PHONY : sparcgeneric
+sparcgeneric:
 	$(ec)$(gprintf) ""
 	
 .PHONY : osx
