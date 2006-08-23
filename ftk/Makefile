@@ -187,7 +187,7 @@ unix_target =
 netware_target =
 submake_targets =
 netware_ring_0_target =
-generic_sparc =
+sparc_generic =
 
 # -- Enable command echoing --
 
@@ -557,7 +557,7 @@ endif
 # -- Other targets and options --
 
 ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
-	generic_sparc = yes
+	sparc_generic = yes
 endif
 
 # -- Helper functions --
@@ -949,7 +949,7 @@ ifdef unix_target
 
 				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
 				
-				ifdef generic_sparc
+				ifdef sparc_generic
 					ccflags += -xarch=generic
 					ccdefs += FLM_SPARC_GENERIC
 				else
