@@ -26,8 +26,40 @@
 #include "jniftk.h"
 #include "xflaim_Backup.h"
 
-#define THIS_BACKUP() \
-	((IF_Backup *)(FLMUINT)lThis)
+#define THIS_BACKUP() ((IF_Backup *)(FLMUINT)lThis)
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT void JNICALL Java_xflaim_Backup__1release(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	THIS_BACKUP()->Release();	
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Backup__1getBackupTransId(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( THIS_BACKUP()->getBackupTransId());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+JNIEXPORT jlong JNICALL Java_xflaim_Backup__1getLastBackupTransId(
+	JNIEnv *,		// pEnv,
+	jobject,			// obj,
+	jlong				lThis)
+{
+	return( THIS_BACKUP()->getLastBackupTransId());
+}
 
 /****************************************************************************
 Desc:
@@ -222,42 +254,44 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 	jlong				lThis,
 	jstring			sBackupPath,
 	jstring			sPassword,
-	jobject			Client,
-	jobject			Status)
+	jobject			backupClient,
+	jobject			backupStatus)
 {
 	RCODE						rc = NE_XFLM_OK;
 	IF_Backup *				pBackup = THIS_BACKUP();
 	FLMUINT					uiSeqNum = 0;
 	JavaVM *					pJvm;
-	char *					pszBackupPath = NULL;
-	char *					pszPassword = NULL;
 	JNIBackupClient *		pClient;
 	JNIBackupStatus *		pStatus = NULL;
- 
+	FLMBYTE					ucBackupPath [F_PATH_MAX_SIZE];
+	F_DynaBuf				backupPathBuf( ucBackupPath, sizeof( ucBackupPath));
+	FLMBYTE					ucPassword [100];
+	F_DynaBuf				passwordBuf( ucPassword, sizeof( ucPassword));
 	
-	flmAssert( Client);
+	if (RC_BAD( rc = getUTF8String( pEnv, sBackupPath, &backupPathBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	if (RC_BAD( rc = getUTF8String( pEnv, sPassword, &passwordBuf)))
+	{
+		ThrowError( rc, pEnv);
+		goto Exit;
+	}
+	
+	flmAssert( backupClient);
 	
 	pEnv->GetJavaVM( &pJvm);
-	if( (pClient = f_new JNIBackupClient( Client, pJvm)) == NULL)
+	if( (pClient = f_new JNIBackupClient( backupClient, pJvm)) == NULL)
 	{
 		rc = RC_SET( NE_XFLM_MEM);
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 	
-	if (sBackupPath)
+	if (backupStatus)
 	{
-		pszBackupPath = (char *)pEnv->GetStringUTFChars( sBackupPath, NULL);
-	}
-	
-	if (sPassword)
-	{
-		pszPassword = (char *)pEnv->GetStringUTFChars( sPassword, NULL);
-	}
-	
-	if (Status)
-	{
-		if( (pStatus = f_new JNIBackupStatus( Status, pJvm)) == NULL)
+		if( (pStatus = f_new JNIBackupStatus( backupStatus, pJvm)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			ThrowError( rc, pEnv);
@@ -265,24 +299,20 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 		}
 	}
 	
-	if (RC_BAD( rc = pBackup->backup( pszBackupPath, pszPassword, pClient,
-		pStatus, &uiSeqNum)))
+	if (RC_BAD( rc = pBackup->backup(
+							(const char *)(backupPathBuf.getDataLength() > 1
+											   ? (const char *)backupPathBuf.getBufferPtr()
+												: (const char *)NULL),
+							(const char *)(passwordBuf.getDataLength() > 1
+											   ? (const char *)passwordBuf.getBufferPtr()
+												: (const char *)NULL),
+							pClient, pStatus, &uiSeqNum)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 	
 Exit:
-
-	if( pszBackupPath)
-	{
-		pEnv->ReleaseStringUTFChars( sBackupPath, pszBackupPath);
-	}
-	
-	if( pszPassword)
-	{
-		pEnv->ReleaseStringUTFChars( sPassword, pszPassword);
-	}
 
 	if (pClient)
 	{
@@ -319,35 +349,3 @@ Exit:
 	return;	
 }
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jlong JNICALL Java_xflaim_Backup__1getBackupTransId(
-	JNIEnv *,		// pEnv,
-	jobject,			// obj,
-	jlong				lThis)
-{
-	return( THIS_BACKUP()->getBackupTransId());
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT jlong JNICALL Java_xflaim_Backup__1getLastBackupTransId(
-	JNIEnv *,		// pEnv,
-	jobject,			// obj,
-	jlong				lThis)
-{
-	return( THIS_BACKUP()->getLastBackupTransId());
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-JNIEXPORT void JNICALL Java_xflaim_Backup__1release(
-	JNIEnv *,		// pEnv,
-	jobject,			// obj,
-	jlong				lThis)
-{
-	THIS_BACKUP()->Release();	
-}

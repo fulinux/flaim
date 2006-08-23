@@ -59,7 +59,7 @@ public class Backup
 	}
 	
 	/**
-	 * Get the transaction ID for this backup operation 
+	 * Get the transaction ID for this backup operation. 
 	 * @return Returns the transaction ID for this backup operation.
 	 */
 	public long getBackupTransId()
@@ -69,8 +69,8 @@ public class Backup
 	
 	/**
 	 * Gets the transaction ID for the last backup job run on this database.
-	 * @return returns the transaction ID for the last backup job run on this
-	 * database.
+	 * @return Returns the transaction ID for the last backup job run on the
+	 * database associated with this Backup object.
 	 */
 	public long getLastBackupTransId()
 	{
@@ -79,16 +79,16 @@ public class Backup
 	
 	/**
 	 * Performs the backup operation.  <code>sBackupPath</code> and <code>
-	 * Client</code> are mutually exclusive.  If <code>Client</code> is null,
+	 * backupClient</code> are mutually exclusive.  If <code>backupClient</code> is null,
 	 * then an instance of <code>DefaultBackupClient</code> will be created
 	 * and <code>sBackupPath</code> passed into its constructor.  If <code>
 	 * Client</code> is non-null, <code>sBackupPath</code> is ignored.
 	 * @param sBackupPath Optional.  The full pathname of a file to store the
 	 * backed up data.
-	 * @param Client Optional.  If non-null, then it will be used as the backup
+	 * @param backupClient Optional.  If non-null, then it will be used as the backup
 	 * client.
-	 * @param Status Optional.  If non-null, then <code>Status.backupStatus
-	 * </code> will be called periodicly to inform the application about the
+	 * @param backupStatus Optional.  If non-null, then <code>backupStatus.backupStatus
+	 * </code> will be called periodically to inform the application about the
 	 * progress of the backup operation.
 	 * @return Returns the sequence number of this backup.  (This is for
 	 * informational purposes only; for instance, users can use it to label
@@ -98,16 +98,16 @@ public class Backup
 	public long backup(
 		String				sBackupPath,
 		String				sPassword,
-		BackupClient		Client,
-		BackupStatus		Status) throws XFlaimException
+		BackupClient		backupClient,
+		BackupStatus		backupStatus) throws XFlaimException
 	{
-		BackupClient	BackupClient;
+		BackupClient	backClient;
 		
-		if (Client == null)
+		if (backupClient == null)
 		{
 			try
 			{
-				BackupClient = new DefaultBackupClient( sBackupPath);
+				backClient = new DefaultBackupClient( sBackupPath);
 			}
 			catch (FileNotFoundException e)
 			{
@@ -118,14 +118,15 @@ public class Backup
 		}
 		else
 		{
-			BackupClient = Client;
+			backClient = backupClient;
 		}
 		
-		return _backup( m_this, sBackupPath, sPassword, BackupClient, Status);
+		return _backup( m_this, sBackupPath, sPassword, backClient, backupStatus);
 	}
 
 	/**
-	 * Desc:
+	 * Ends the backup operation.
+	 * @throws XFlaimException
 	 */
 	public void endBackup() throws XFlaimException
 	{
@@ -148,17 +149,22 @@ public class Backup
 		m_jdb = jdb;
 	}
 
-	/**
-	 * Desc:
-	 */
 	long getRef()
 	{
 		return m_this;
 	}
 	
-	/**
-	 * Desc:
-	 */
+// PRIVATE METHODS
+	
+	private native void _release(
+		long				lThis);
+	
+	private native long _getBackupTransId(
+		long				lThis);
+	
+	private native long _getLastBackupTransId(
+		long				lThis);
+		
 	private native long _backup(
 		long				lThis,
 		String			sBackupPath,
@@ -166,30 +172,10 @@ public class Backup
 		BackupClient	Client,
 		BackupStatus	Status) throws XFlaimException;
 	
-	/**
-	 * Desc:
-	 */
 	private native void _endBackup(
 		long				lThis) throws XFlaimException;
-	
-	/**
-	 * Desc:
-	 */
-	private native long _getBackupTransId(
-		long				lThis);
-	
-	/**
-	 * Desc:
-	 */
-	private native long _getLastBackupTransId(
-		long				lThis);
-		
-	/**
-	 * Desc:
-	 */
-	private native void _release(
-		long				lThis);
 	
 	private long			m_this;
 	private Db				m_jdb;
 }
+

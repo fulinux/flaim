@@ -9,18 +9,10 @@ extern "C" {
 #endif
 /*
  * Class:     xflaim_Backup
- * Method:    _backup
- * Signature: (JLjava/lang/String;Ljava/lang/String;Lxflaim/BackupClient;Lxflaim/BackupStatus;)J
- */
-JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup
-  (JNIEnv *, jobject, jlong, jstring, jstring, jobject, jobject);
-
-/*
- * Class:     xflaim_Backup
- * Method:    _endBackup
+ * Method:    _release
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_xflaim_Backup__1endBackup
+JNIEXPORT void JNICALL Java_xflaim_Backup__1release
   (JNIEnv *, jobject, jlong);
 
 /*
@@ -41,10 +33,18 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1getLastBackupTransId
 
 /*
  * Class:     xflaim_Backup
- * Method:    _release
+ * Method:    _backup
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Lxflaim/BackupClient;Lxflaim/BackupStatus;)J
+ */
+JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup
+  (JNIEnv *, jobject, jlong, jstring, jstring, jobject, jobject);
+
+/*
+ * Class:     xflaim_Backup
+ * Method:    _endBackup
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_xflaim_Backup__1release
+JNIEXPORT void JNICALL Java_xflaim_Backup__1endBackup
   (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus
