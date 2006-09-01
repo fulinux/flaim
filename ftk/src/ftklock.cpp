@@ -591,13 +591,13 @@ RCODE FLMAPI F_LockObject::lock(
 		LockWait.iPriority = iPriority;
 		LockWait.uiWaitStartTime = (FLMUINT)FLM_GET_TIMER();
 		
-		if (bExclReq && pLockStats)
+		if( bExclReq && pLockStats)
 		{
 			f_timeGetTimeStamp( &LockWait.StartTime);
 			LockWait.pLockStats = pLockStats;
 		}
 		
-		if (uiMaxWaitSecs >= 0xFF)
+		if( uiMaxWaitSecs >= 0xFF)
 		{
 			LockWait.uiWaitTime = 0;
 		}
@@ -615,7 +615,7 @@ RCODE FLMAPI F_LockObject::lock(
 
 		// Now just wait to be signaled.
 
-		if( RC_BAD( TempRc = f_semWait( hWaitSem, F_SEM_WAITFOREVER)))
+		if( RC_BAD( TempRc = f_semWait( hWaitSem, F_WAITFOREVER)))
 		{
 			RC_UNEXPECTED_ASSERT( TempRc);
 			rc = TempRc;

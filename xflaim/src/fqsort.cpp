@@ -1634,7 +1634,7 @@ RCODE F_Query::waitResultSetBuild(
 	m_pSortResultSet->unlockMutex();
 	bMutexLocked = FALSE;
 	
-	if (RC_BAD( TempRc = f_semWait( waiter.hESem, F_SEM_WAITFOREVER)))
+	if (RC_BAD( TempRc = f_semWait( waiter.hESem, F_WAITFOREVER)))
 	{
 		flmAssert( 0);
 		rc = TempRc;

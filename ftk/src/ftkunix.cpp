@@ -614,13 +614,13 @@ RCODE F_FileHdl::lowLevelRead(
 				rc = f_mapPlatformError( errno, NE_FLM_READING_FILE);
 			}
 			
-			pAsyncClient->notifyComplete( rc, uiBytesRead, FALSE);
+			pAsyncClient->notifyComplete( rc, uiBytesRead);
 			goto Exit;
 		}
 
 		if( bWaitForRead)
 		{
-			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			if( RC_BAD( rc = pAsyncClient->waitToComplete()))
 			{
 				if( rc != NE_FLM_IO_END_OF_FILE)
 				{
@@ -839,13 +839,13 @@ RCODE F_FileHdl::lowLevelWrite(
 				rc = f_mapPlatformError( errno, NE_FLM_WRITING_FILE);
 			}
 			
-			pAsyncClient->notifyComplete( rc, uiBytesWritten, FALSE);
+			pAsyncClient->notifyComplete( rc, uiBytesWritten);
 			goto Exit;
 		}
 		
 		if( bWaitForWrite)
 		{
-			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			if( RC_BAD( rc = pAsyncClient->waitToComplete()))
 			{
 				if( rc != NE_FLM_IO_DISK_FULL)
 				{

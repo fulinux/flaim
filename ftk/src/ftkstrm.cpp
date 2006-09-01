@@ -104,6 +104,10 @@ class	F_TCPStream : public IF_IStream, public IF_OStream
 {
 public:
 
+	#if defined( FLM_WIN) && _MSC_VER < 1300
+		using IF_IStream::operator delete;
+	#endif
+
 	F_TCPStream( void);
 	
 	virtual ~F_TCPStream( void);

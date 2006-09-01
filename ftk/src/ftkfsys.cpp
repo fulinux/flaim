@@ -36,7 +36,7 @@ FSTATIC const char * f_findFileNameStart(
 FSTATIC char * f_getPathComponent(
 	char **			ppszPath,
 	FLMUINT *		puiEndChar);
-
+	
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -62,7 +62,7 @@ public:
 	
 	FLMINT FLMAPI AddRef( void)
 	{
-		return( ++m_refCnt);
+		return( f_atomicInc( &m_refCnt));
 	}
 
 	FLMINT FLMAPI Release( void);
@@ -1430,6 +1430,7 @@ Exit:
 	return( NE_FLM_OK);
 #else
 
+	RCODE				rc = NE_FLM_OK;
 	int				hFile = -1;
 	struct stat		filestats;
 	
@@ -2667,7 +2668,7 @@ Desc:
 ****************************************************************************/
 FLMINT FLMAPI F_CachedFileHdl::Release( void)
 {
-	FLMINT					iRefCnt = --m_refCnt;
+	FLMINT					iRefCnt = f_atomicDec( &m_refCnt);
 	F_FileHdlCache *		pFileHdlCache = m_pFileHdlCache;
 	
 	if( !iRefCnt)
@@ -2996,39 +2997,81 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_FileAsyncClient::Release()
+FLMINT FLMAPI F_FileAsyncClient::Release(
+	FLMBOOL		bOkToReuse)
 {
 	FLMINT		iRefCnt;
 	
 	if( m_refCnt == 1)
 	{
-		f_assert( !m_pFileHdl);
+#if !defined( FLM_UNIX)
+		FLMUINT		uiSignalCount = f_semGetSignalCount( m_hSem);
+#endif
+
+#if !defined( FLM_UNIX)
+		f_assert( uiSignalCount <= 1);
+#endif
+
 		f_assert( !m_pIOBuffer);
+		f_assert( !m_pFileHdl);
 
-		f_mutexLock( F_FileHdl::m_hAsyncListMutex);
-		
-		if( F_FileHdl::m_uiAvailAsyncCount < 32)
+#if !defined( FLM_UNIX)
+		if( uiSignalCount == 1)
 		{
-			f_assert( !m_pNext);
-			m_pNext = F_FileHdl::m_pFirstAvailAsync;
-			F_FileHdl::m_pFirstAvailAsync = this;
-			F_FileHdl::m_uiAvailAsyncCount++;
+			// The application may not have cared to wait on this
+			// individual write to complete.  Since the
+			// semaphore has been signaled, we need to consume
+			// the signal so that the next time this
+			// async client is used, the semaphore will
+			// block until that I/O operation is complete.
 
-			m_completionRc = NE_FLM_OK;
-			m_uiBytesToDo = 0;
-			m_uiBytesDone = 0;
-			iRefCnt = m_refCnt;
+			f_semWait( m_hSem, F_WAITFOREVER);
+		}
+#endif
+
+		if( m_pIOBuffer)
+		{
+			m_pIOBuffer->Release();
+			m_pIOBuffer = NULL;
+		}
+
+		if( m_pFileHdl)
+		{
+			m_pFileHdl->Release();
+			m_pFileHdl = NULL;
+		}
+
+		if( bOkToReuse)
+		{
+			f_mutexLock( F_FileHdl::m_hAsyncListMutex);
+			
+			if( F_FileHdl::m_uiAvailAsyncCount < 32)
+			{
+				f_assert( !m_pNext);
+				m_pNext = F_FileHdl::m_pFirstAvailAsync;
+				F_FileHdl::m_pFirstAvailAsync = this;
+				F_FileHdl::m_uiAvailAsyncCount++;
+
+				m_completionRc = NE_FLM_OK;
+				m_uiBytesToDo = 0;
+				m_uiBytesDone = 0;
+				iRefCnt = m_refCnt;
+			}
+			else
+			{
+				iRefCnt = f_atomicDec( &m_refCnt);
+			}
+			
+			f_mutexUnlock( F_FileHdl::m_hAsyncListMutex);
 		}
 		else
 		{
-			iRefCnt = --m_refCnt;
+			iRefCnt = f_atomicDec( &m_refCnt);
 		}
-		
-		f_mutexUnlock( F_FileHdl::m_hAsyncListMutex);
 	}
 	else
 	{
-		iRefCnt = --m_refCnt;
+		iRefCnt = f_atomicDec( &m_refCnt);
 	}
 	
 	if( !m_refCnt)
@@ -3045,22 +3088,15 @@ Desc:
 F_FileAsyncClient::~F_FileAsyncClient()
 {
 	f_assert( !m_pNext);
+	f_assert( !m_refCnt);
 	
-#ifdef FLM_WIN
-	if( m_Overlapped.hEvent)
+#if !defined( FLM_UNIX)
+	if( m_hSem != F_SEM_NULL)
 	{
-		CloseHandle( m_Overlapped.hEvent);
+		f_semDestroy( &m_hSem);
 	}
 #endif
-
-#ifdef FLM_RING_ZERO_NLM
-	if( m_hSem)
-	{
-		(void)kSemaphoreFree( m_hSem);
-		m_hSem = NULL;
-	}
-#endif
-
+	
 	if( m_pFileHdl)
 	{
 		m_pFileHdl->Release();
@@ -3081,40 +3117,22 @@ RCODE F_FileAsyncClient::prepareForAsync(
 		goto Exit;
 	}
 	
-#ifdef FLM_WIN	
-	if( !m_Overlapped.hEvent)
+#if !defined( FLM_UNIX)
+	if( m_hSem == F_SEM_NULL)
 	{
-		if( (m_Overlapped.hEvent = CreateEvent( NULL, TRUE, FALSE, NULL)) == NULL)
+		if( RC_BAD( rc = f_semCreate( &m_hSem)))
 		{
-			rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
 			goto Exit;
 		}
 	}
-	else
-	{
-		if( !ResetEvent( m_Overlapped.hEvent))
-		{
-			rc = f_mapPlatformError( GetLastError(), NE_FLM_MEM);
-			goto Exit;
-		}
-	}
+
+	f_assert( f_semGetSignalCount( m_hSem) == 0);
 #endif
 
 #if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 	f_memset( &m_aio, 0, sizeof( m_aio));
 #endif
 	
-#ifdef FLM_RING_ZERO_NLM
-	if( !m_hSem)
-	{
-		if( (m_hSem = kSemaphoreAlloc( (BYTE *)"FTK_SEM", 0)) == NULL)
-		{
-			rc = RC_SET( NE_FLM_MEM);
-			goto Exit;
-		}
-	}
-#endif
-
 	m_completionRc = NE_FLM_IO_PENDING;
 	m_uiBytesToDo = 0;
 	m_uiBytesDone = 0;
@@ -3139,25 +3157,13 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileAsyncClient::waitToComplete(
-	FLMBOOL		bRelease)
+RCODE FLMAPI F_FileAsyncClient::waitToComplete( void)
 {
 	RCODE			completionRc = NE_FLM_OK;
-	FLMUINT		uiBytesDone = 0;
-
-#if defined( FLM_WIN)
-	DWORD		udBytesDone;
-
-	if( !GetOverlappedResult( m_pFileHdl->m_hFile, &m_Overlapped,
-										&udBytesDone, TRUE))
-	{
-		completionRc = f_mapPlatformError( GetLastError(), NE_FLM_ASYNC_FAILED);
-	}
-	
-	uiBytesDone = (FLMUINT)udBytesDone;
-#endif
 
 #if defined( FLM_UNIX)
+	FLMUINT		uiBytesDone = 0;
+
 	#if defined( FLM_HAS_ASYNC_IO)
 	{
 		FLMINT						iAsyncResult;
@@ -3199,29 +3205,26 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete(
 		}
 	}
 	#endif
+
+	notifyComplete( completionRc, uiBytesDone);
+#else
+	if( RC_BAD( completionRc = f_semWait( m_hSem, F_WAITFOREVER)))
+	{
+		return( completionRc);
+	}
+
+	f_assert( f_semGetSignalCount( m_hSem) == 0);
+
+	if( m_pIOBuffer)
+	{
+		f_assert( !m_pIOBuffer->isPending());
+	}
+
+	f_assert( m_completionRc != NE_FLM_IO_PENDING);
+	
+	completionRc = m_completionRc;	
 #endif
 
-#ifdef FLM_RING_ZERO_NLM
-	if( kSemaphoreWait( m_hSem) != 0)
-	{
-		f_assert( 0);
-	}
-	
-	f_assert( kSemaphoreExamineCount( m_hSem) == 0);
-	
-	if( RC_BAD( completionRc))
-	{
-		m_uiBytesDone = 0;
-	}
-	else
-	{
-		m_uiBytesDone = m_uiBytesToDo;
-		uiBytesDone = m_uiBytesDone;
-	}
-	
-#endif
-
-	notifyComplete( completionRc, uiBytesDone, bRelease);
 	return( completionRc);
 }
 	
@@ -3230,20 +3233,20 @@ Desc:
 ****************************************************************************/
 void FLMAPI F_FileAsyncClient::notifyComplete(
 	RCODE				completionRc,
-	FLMUINT			uiBytesDone,
-	FLMBOOL			bRelease)
+	FLMUINT			uiBytesDone)
 {
+	f_assert( m_completionRc == NE_FLM_IO_PENDING);
+	f_assert( !m_pIOBuffer || m_pIOBuffer->isPending());
+
+	AddRef();
+
+	m_completionRc = completionRc;
+	m_uiBytesDone = uiBytesDone;
+
 	m_uiEndTime = FLM_GET_TIMER();
 
 	m_completionRc = completionRc;
 	m_uiBytesDone = uiBytesDone;
-	
-	if( m_pIOBuffer)
-	{
-		m_pIOBuffer->notifyComplete( m_completionRc);
-		m_pIOBuffer->Release();
-		m_pIOBuffer = NULL;
-	}
 	
 	if( m_pFileHdl)
 	{
@@ -3253,10 +3256,23 @@ void FLMAPI F_FileAsyncClient::notifyComplete(
 		m_pFileHdl = NULL;
 	}
 	
-	if( bRelease)
+	if( m_pIOBuffer)
 	{
-		Release();
+		IF_IOBuffer * pIOBuffer = m_pIOBuffer;
+
+		m_pIOBuffer = NULL;
+		pIOBuffer->notifyComplete( m_completionRc);
+		pIOBuffer->Release();
+		pIOBuffer = NULL;
 	}
+
+#if !defined( FLM_UNIX)
+	f_semSignal( m_hSem);
+	f_assert( f_semGetSignalCount( m_hSem) == 1);
+#endif
+
+	f_assert( !m_pIOBuffer || !m_pIOBuffer->isPending());
+	Release();
 }
 
 /****************************************************************************
@@ -3274,25 +3290,6 @@ Desc:
 RCODE FLMAPI F_FileAsyncClient::getCompletionCode( void)
 {
 	return( m_completionRc);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-void F_FileAsyncClient::signalComplete(
-	RCODE				rc,
-	FLMUINT			uiBytesDone)
-{
-	F_UNREFERENCED_PARM( uiBytesDone);
-	
-#ifdef FLM_RING_ZERO_NLM
-	m_completionRc = rc;
-
-	f_assert( kSemaphoreExamineCount( m_hSem) == 0);
-	kSemaphoreSignal( m_hSem);
-#else
-	F_UNREFERENCED_PARM( rc);
-#endif
 }
 
 /****************************************************************************

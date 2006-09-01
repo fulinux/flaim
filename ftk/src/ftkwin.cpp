@@ -32,6 +32,22 @@ extern FLMATOMIC					gv_openFiles;
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FSTATIC VOID CALLBACK f_fileIOCompletionRoutine(
+	DWORD 					dwErrorCode,
+	DWORD 					dwNumberOfBytesTransfered,
+	LPOVERLAPPED			lpOverlapped)
+{
+	F_FileAsyncClient *	pAsyncClient;
+	
+	pAsyncClient = (F_FileAsyncClient *)(lpOverlapped->hEvent);
+	pAsyncClient->notifyComplete(
+			f_mapPlatformError( dwErrorCode, NE_FLM_ASYNC_FAILED),
+			(FLMUINT)dwNumberOfBytesTransfered);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 F_FileHdl::F_FileHdl()
 {
 	initCommonData();
@@ -422,24 +438,37 @@ RCODE F_FileHdl::lowLevelRead(
 		pOverlapped = &pAsyncClient->m_Overlapped;
 		pOverlapped->Offset = (DWORD)(ui64ReadOffset & 0xFFFFFFFF);
 		pOverlapped->OffsetHigh = (DWORD)(ui64ReadOffset >> 32);
+		pOverlapped->hEvent = (HANDLE)pAsyncClient;
 		pIOBuffer = NULL;
 		
-		if( !ReadFile( m_hFile, pvBuffer, uiBytesToRead, 
-			&uiBytesRead, pOverlapped))
+RetryRead:
+
+		if( !ReadFileEx( m_hFile, pvBuffer, uiBytesToRead, 
+			pOverlapped, f_fileIOCompletionRoutine))
 		{
 			DWORD		udErrCode = GetLastError();
 			
-			if( udErrCode != ERROR_IO_PENDING)
+			if( rc == ERROR_NOT_ENOUGH_MEMORY ||
+				 rc == ERROR_INVALID_USER_BUFFER)
+			{
+				// The ReadFileEx function may fail, returning the messages 
+				// ERROR_INVALID_USER_BUFFER or ERROR_NOT_ENOUGH_MEMORY if there 
+				// are too many outstanding asynchronous I/O requests
+
+				f_sleep( 10);
+				goto RetryRead;
+			}
+			else if( udErrCode != ERROR_IO_PENDING)
 			{
 				rc = f_mapPlatformError( udErrCode, NE_FLM_READING_FILE);
-				pAsyncClient->notifyComplete( rc, uiBytesRead, FALSE);
+				pAsyncClient->notifyComplete( rc, 0);
 				goto Exit;
 			}
 		}
 		
 		if( bWaitForRead)
 		{
-			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			if( RC_BAD( rc = pAsyncClient->waitToComplete()))
 			{
 				if( rc != NE_FLM_IO_END_OF_FILE)
 				{
@@ -611,24 +640,37 @@ RCODE F_FileHdl::lowLevelWrite(
 		pOverlapped = &pAsyncClient->m_Overlapped;
 		pOverlapped->Offset = (DWORD)(ui64WriteOffset & 0xFFFFFFFF);
 		pOverlapped->OffsetHigh = (DWORD)(ui64WriteOffset >> 32);
+		pOverlapped->hEvent = (HANDLE)pAsyncClient;
 		pIOBuffer = NULL;
 		
-		if( !WriteFile( m_hFile, pvBuffer,
-			uiBytesToWrite, &uiBytesWritten, pOverlapped))
+RetryWrite:
+
+		if( !WriteFileEx( m_hFile, pvBuffer,
+			uiBytesToWrite, pOverlapped, f_fileIOCompletionRoutine))
 		{
 			DWORD		udErrCode = GetLastError();
-			
-			if( udErrCode != ERROR_IO_PENDING)
+
+			if( rc == ERROR_NOT_ENOUGH_MEMORY ||
+				 rc == ERROR_INVALID_USER_BUFFER)
+			{
+				// The WriteFileEx function may fail, returning the messages 
+				// ERROR_INVALID_USER_BUFFER or ERROR_NOT_ENOUGH_MEMORY if there 
+				// are too many outstanding asynchronous I/O requests
+
+				f_sleep( 10);
+				goto RetryWrite;
+			}
+			else if( udErrCode != ERROR_IO_PENDING)
 			{
 				rc = f_mapPlatformError( udErrCode, NE_FLM_WRITING_FILE);
-				pAsyncClient->notifyComplete( rc, uiBytesWritten, FALSE);
+				pAsyncClient->notifyComplete( rc, 0);
 				goto Exit;
 			}
 		}
 		
 		if( bWaitForWrite)
 		{
-			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			if( RC_BAD( rc = pAsyncClient->waitToComplete()))
 			{
 				if( rc != NE_FLM_IO_DISK_FULL)
 				{
@@ -870,21 +912,34 @@ RCODE F_FileHdl::extendFile(
 			pOverlapped = &pAsyncClient->m_Overlapped;
 			pOverlapped->Offset = (DWORD)(ui64FileSize & 0xFFFFFFFF);
 			pOverlapped->OffsetHigh = (DWORD)(ui64FileSize >> 32);
+			pOverlapped->hEvent = (HANDLE)pAsyncClient;
 			
-			if( !WriteFile( m_hFile, pucBuffer,
-				uiBytesToWrite, &uiBytesWritten, pOverlapped))
+RetryWrite:
+
+			if( !WriteFileEx( m_hFile, pucBuffer,
+				uiBytesToWrite, pOverlapped, f_fileIOCompletionRoutine))
 			{
 				DWORD		udErrCode = GetLastError();
 				
-				if( udErrCode != ERROR_IO_PENDING)
+				if( rc == ERROR_NOT_ENOUGH_MEMORY ||
+					rc == ERROR_INVALID_USER_BUFFER)
+				{
+					// The WriteFileEx function may fail, returning the messages 
+					// ERROR_INVALID_USER_BUFFER or ERROR_NOT_ENOUGH_MEMORY if there 
+					// are too many outstanding asynchronous I/O requests
+
+					f_sleep( 10);
+					goto RetryWrite;
+				}
+				else if( udErrCode != ERROR_IO_PENDING)
 				{
 					rc = f_mapPlatformError( udErrCode, NE_FLM_WRITING_FILE);
-					pAsyncClient->notifyComplete( rc, uiBytesWritten, FALSE);
+					pAsyncClient->notifyComplete( rc, 0);
 					goto Exit;
 				}
 			}
 			
-			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			if( RC_BAD( rc = pAsyncClient->waitToComplete()))
 			{
 				goto Exit;
 			}
@@ -982,7 +1037,7 @@ Desc:
 ****************************************************************************/
 void FLMAPI f_yieldCPU( void)
 {
-	Sleep( 0);
+	SleepEx( 0, true);
 }
 
 /**********************************************************************

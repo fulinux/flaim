@@ -1048,7 +1048,7 @@ FSTATIC void DirectIONoWaitCallBack(
 	}
 
 	f_assert( pAsyncClient->getBytesToDo());
-	pAsyncClient->signalComplete( rc, 0);
+	pAsyncClient->notifyComplete( rc, 0);
 }
 #endif
 
@@ -1072,7 +1072,7 @@ FSTATIC void nssDioCallback(
 	}
 
 	f_assert( pAsyncClient->getBytesToDo());
-	pAsyncClient->signalComplete( rc, 0);
+	pAsyncClient->notifyComplete( rc, 0);
 }
 #endif
 
@@ -1631,7 +1631,7 @@ WARNING: Direct IO methods are calling this method.  Make sure that all
 			changes to this method work in direct IO mode.
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::truncate(
+RCODE FLMAPI F_FileHdl::truncateFile(
 	FLMUINT64		ui64Size)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -3388,7 +3388,7 @@ RCODE F_FileHdl::lowLevelWrite(
 		if( RC_BAD( rc = writeSectors( pvBuffer, pAsyncClient, 
 			lStartSector, lSectorCount)))
 		{
-			pAsyncClient->notifyComplete( rc, 0, FALSE);
+			pAsyncClient->notifyComplete( rc, 0);
 			goto Exit;
 		}
 			
@@ -3462,6 +3462,49 @@ Exit:
 		*puiBytesWritten = uiBytesWritten;
 	}
 	
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+RCODE F_FileHdl::extendFile(
+	FLMUINT64				ui64NewFileSize)
+{
+	RCODE						rc = NE_FLM_OK;
+	FLMUINT64				ui64FileSize;
+	FLMUINT					uiStartSector;
+	FLMUINT					uiSectorCount;
+	
+	// Get the current file size
+	
+	if( RC_BAD( rc = size( &ui64FileSize)))
+	{
+		goto Exit;
+	}
+	
+	// File is already the requested size
+	
+	if( ui64FileSize >= ui64NewFileSize)
+	{
+		goto Exit;
+	}
+	
+	// Determine the number of sectors in the file
+	
+	uiStartSector = (FLMUINT)(ui64FileSize / FLM_NLM_SECTOR_SIZE);
+	uiSectorCount = (FLMUINT)(f_roundUp( ui64NewFileSize - ui64FileSize, 
+										FLM_NLM_SECTOR_SIZE) / FLM_NLM_SECTOR_SIZE);
+	
+	if( RC_BAD( rc = expand( uiStartSector, uiSectorCount)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
 	return( rc);
 }
 #endif

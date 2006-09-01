@@ -2678,7 +2678,7 @@ RCODE F_BackerStream::flush( void)
 		// Wait for the background thread to become idle.  When it
 		// does, we know that all writes have completed.
 
-		if( RC_BAD( rc = f_semWait( m_hIdleSem, F_SEM_WAITFOREVER)))
+		if( RC_BAD( rc = f_semWait( m_hIdleSem, F_WAITFOREVER)))
 		{
 			goto Exit;
 		}
@@ -2732,7 +2732,7 @@ RCODE F_BackerStream::signalThread( void)
 
 	// Wait for the thread to become idle
 
-	if( RC_BAD( rc = f_semWait( m_hIdleSem, F_SEM_WAITFOREVER)))
+	if( RC_BAD( rc = f_semWait( m_hIdleSem, F_WAITFOREVER)))
 	{
 		goto Exit;
 	}
@@ -2800,7 +2800,7 @@ RCODE FLMAPI F_BackerStream::readThread(
 		f_semSignal( pBackerStream->m_hIdleSem);
 
 		if( RC_BAD( rc = f_semWait( pBackerStream->m_hDataSem,
-			F_SEM_WAITFOREVER)))
+			F_WAITFOREVER)))
 		{
 			goto Exit;
 		}
@@ -2844,7 +2844,7 @@ RCODE FLMAPI F_BackerStream::writeThread(
 		f_semSignal( pBackerStream->m_hIdleSem);
 
 		if( RC_BAD( rc = f_semWait( pBackerStream->m_hDataSem,
-			F_SEM_WAITFOREVER)))
+			F_WAITFOREVER)))
 		{
 			goto Exit;
 		}

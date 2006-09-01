@@ -298,7 +298,7 @@ Desc:
 void FLMAPI f_sleep(
 	FLMUINT		uiMilliseconds)
 {
-	Sleep( (DWORD)uiMilliseconds);
+	SleepEx( (DWORD)uiMilliseconds, true);
 }
 #endif
 
@@ -3023,7 +3023,7 @@ void f_freeFileAsyncClientList( void)
 		pAsyncClient = F_FileHdl::m_pFirstAvailAsync;
 		F_FileHdl::m_pFirstAvailAsync = F_FileHdl::m_pFirstAvailAsync->m_pNext;
 		pAsyncClient->m_pNext = NULL;
-		delete pAsyncClient;
+		pAsyncClient->Release( FALSE);
 	}
 	
 	if( F_FileHdl::m_hAsyncListMutex != F_MUTEX_NULL)

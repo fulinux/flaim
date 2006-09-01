@@ -2928,7 +2928,7 @@ FSTATIC RCODE FLMAPI flmMaintThread(
 
 		// Wait for work to become available
 
-		if( RC_BAD( rc = f_semWait( pFile->hMaintSem, F_SEM_WAITFOREVER)))
+		if( RC_BAD( rc = f_semWait( pFile->hMaintSem, F_WAITFOREVER)))
 		{
 			goto Exit;
 		}

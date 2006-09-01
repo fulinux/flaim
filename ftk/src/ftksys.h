@@ -344,8 +344,19 @@
 				m_pAsyncClient->Release();
 			}
 		}
+
+		FLMINT FLMAPI AddRef( void)
+		{
+			return( f_atomicInc( &m_refCnt));
+		}
+
+		FLMINT Release(
+			FLMBOOL					bMutexAlreadyLocked);
 	
-		FLMINT FLMAPI Release( void);
+		FLMINT FLMAPI Release( void)
+		{
+			return( Release( FALSE));
+		}
 
 		RCODE setupBuffer(
 			FLMUINT					uiBufferSize,
@@ -450,14 +461,9 @@
 		{
 			RCODE		rc = NE_FLM_OK;
 			
-			f_assert( m_bPending);
-			
 			if( m_pAsyncClient)
 			{
-				IF_AsyncClient * 	pAsyncClient = m_pAsyncClient;
-				
-				m_pAsyncClient = NULL;
-				rc = pAsyncClient->waitToComplete( TRUE);
+				rc = m_pAsyncClient->waitToComplete();
 			}
 			
 			return( rc);
@@ -521,20 +527,25 @@
 			m_uiBytesToDo = 0;
 			m_uiBytesDone = 0;
 			m_pNext = NULL;
+		#ifndef FLM_UNIX
+			m_hSem = F_SEM_NULL;
+		#endif
 		#ifdef FLM_WIN
 			m_Overlapped.hEvent = 0;
-		#endif
-		#ifdef FLM_RING_ZERO_NLM
-			m_hSem = NULL;
 		#endif
 		}
 		
 		~F_FileAsyncClient();
 		
-		FLMINT FLMAPI Release();
+		FLMINT FLMAPI AddRef( void)
+		{
+			return( f_atomicInc( &m_refCnt));
+		}
 
-		RCODE FLMAPI waitToComplete(
-			FLMBOOL						bRelease);
+		FLMINT FLMAPI Release(
+			FLMBOOL						bOkToReuse = TRUE);
+
+		RCODE FLMAPI waitToComplete( void);
 
 		RCODE FLMAPI getCompletionCode( void);
 		
@@ -542,25 +553,18 @@
 		
 		F_FileAsyncClient *			m_pNext;
 		
-		void signalComplete(
-			RCODE							rc,
-			FLMUINT						uiBytesDone);
-			
 		FLMUINT getBytesToDo( void)
 		{
 			return( m_uiBytesToDo);
 		}
 
-	private:
-	
+		void FLMAPI notifyComplete(
+			RCODE							completionRc,
+			FLMUINT						uiBytesDone);
+
 		RCODE prepareForAsync(
 			IF_IOBuffer *				pIOBuffer);
 		
-		void FLMAPI notifyComplete(
-			RCODE							completionRc,
-			FLMUINT						uiBytesDone,
-			FLMBOOL						bRelease);
-
 		F_FileHdl *						m_pFileHdl;
 		IF_IOBuffer *					m_pIOBuffer;
 		RCODE								m_completionRc;
@@ -568,17 +572,15 @@
 		FLMUINT							m_uiBytesDone;
 		FLMUINT							m_uiStartTime;
 		FLMUINT							m_uiEndTime;
+	#ifndef FLM_UNIX
+		F_SEM								m_hSem;
+	#endif
 	#if defined( FLM_WIN)
 		OVERLAPPED						m_Overlapped;
 	#endif
 	#if defined( FLM_UNIX) && defined( FLM_HAS_ASYNC_IO)
 		struct aiocb					m_aio;
 	#endif
-	#ifdef FLM_RING_ZERO_NLM
-		SEMAPHORE						m_hSem;
-	#endif
-	
-		friend class F_FileHdl;
 	};
 
 	/***************************************************************************
@@ -592,6 +594,23 @@
 	
 		virtual ~F_FileHdl();
 	
+		FLMINT FLMAPI AddRef( void)
+		{
+			return( f_atomicInc( &m_refCnt));
+		}
+
+		FLMINT FLMAPI Release( void)
+		{
+			FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
+			
+			if( !iRefCnt)
+			{
+				delete this;
+			}
+			
+			return( iRefCnt);
+		}
+
 		RCODE FLMAPI flush( void);
 		
 		RCODE FLMAPI read(
@@ -1138,6 +1157,8 @@
 			FLMBOOL					bReadOnly);
 
 		FLMBOOL FLMAPI canDoAsync( void);
+		
+		FLMUINT FLMAPI getPendingAsyncCount( void);
 			
 		RCODE FLMAPI getFileId(
 			const char *			pszFileName,

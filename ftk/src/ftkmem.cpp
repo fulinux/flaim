@@ -2580,7 +2580,7 @@ void * F_SlabManager::allocSlabFromSystem( void)
 		
 #elif defined( FLM_RING_ZERO_NLM)
 
-	pSlab = Alloc( m_uiSlabSize, gv_lAllocRTag)
+	pSlab = Alloc( m_uiSlabSize, gv_lAllocRTag);
 
 #elif defined( FLM_SOLARIS)
 
@@ -4792,7 +4792,11 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 	
 #elif defined( FLM_RING_ZERO_NLM)
 
-	pSlab = Alloc( m_uiSlabSize, gv_lAllocRTag)
+	if( (*ppvAlloc = Alloc( uiMinSize, gv_lAllocRTag)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
 
 #elif defined( FLM_SOLARIS)
 
@@ -4867,7 +4871,7 @@ void FLMAPI f_freeAlignedBufferImp(
 		
 #elif defined( FLM_RING_ZERO_NLM)
 
-	Free( *ppvAlloc)
+	Free( *ppvAlloc);
 	*ppvAlloc = NULL;
 
 #elif defined( FLM_UNIX)

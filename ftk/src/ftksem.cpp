@@ -52,6 +52,17 @@ typedef struct
 Desc:
 ****************************************************************************/
 #if defined( FLM_WIN)
+typedef struct
+{
+	HANDLE					hWinSem;
+	FLMATOMIC				uiSignalCount;
+} sema_t;
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_WIN)
 RCODE FLMAPI f_mutexCreate(
 	F_MUTEX *	phMutex)
 {
@@ -496,9 +507,9 @@ FINLINE int _sema_timedwait(
    struct timeval		now;
 	struct timespec	abstime;
 
-   // If timeout is F_SEM_WAITFOREVER, do sem_wait.
+   // If timeout is F_WAITFOREVER, do sem_wait.
 
-   if( msecs == F_SEM_WAITFOREVER)
+   if( msecs == F_WAITFOREVER)
    {
       iErr = _sema_wait( pSem);
       return( iErr);
@@ -547,9 +558,9 @@ FINLINE int _sema_timedwait(
 {
 	int					iErr = 0;
 
-   // If timeout is F_SEM_WAITFOREVER, do sem_wait.
+   // If timeout is F_WAITFOREVER, do sem_wait.
 
-   if( msecs == F_SEM_WAITFOREVER)
+   if( msecs == F_WAITFOREVER)
    {
       iErr = _sema_wait( pSem);
       return( iErr);
@@ -607,7 +618,7 @@ Desc:
 RCODE f_semCreate(
 	F_SEM *		phSem)
 {
-	RCODE	rc = NE_FLM_OK;
+	RCODE			rc = NE_FLM_OK;
 
 	f_assert( phSem != NULL);
 
@@ -664,13 +675,13 @@ RCODE f_semWait(
 
 	f_assert( hSem != F_SEM_NULL);
 
-	// Catch the F_SEM_WAITFOREVER flag so we can directly call _sema_wait
-	// instead of passing F_SEM_WAITFOREVER through to _sema_timedwait.
+	// Catch the F_WAITFOREVER flag so we can directly call _sema_wait
+	// instead of passing F_WAITFOREVER through to _sema_timedwait.
 	// Note that on AIX the datatype of the uiTimeout (in the timespec
 	// struct) is surprisingly a signed int, which makes this catch
 	// essential.
 
-	if( uiTimeout == F_SEM_WAITFOREVER)
+	if( uiTimeout == F_WAITFOREVER)
 	{
 		if( _sema_wait( (sema_t *)hSem))
 		{
@@ -701,6 +712,17 @@ void FLMAPI f_semSignal(
 #else
 	sema_signal( (sema_t *)hSem);
 #endif
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
+FLMUINT FLMAPI f_semGetSignalCount(
+	F_SEM							hSem)
+{
+	return( (FLMUINT)((sema_t *)hSem)->count);
 }
 #endif
 
@@ -745,7 +767,7 @@ RCODE FLMAPI f_semWait(
 {
 	RCODE			rc = NE_FLM_OK;
 	
-	if( uiTimeout == F_SEM_WAITFOREVER)
+	if( uiTimeout == F_WAITFOREVER)
 	{
 		if( kSemaphoreWait( (SEMAPHORE)hSem) != 0)
 		{
@@ -772,6 +794,17 @@ void FLMAPI f_semSignal(
 	F_SEM			hSem)
 {
 	(void)kSemaphoreSignal( (SEMAPHORE)hSem);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#if defined( FLM_RING_ZERO_NLM)
+FLMUINT FLMAPI f_semGetSignalCount(
+	F_SEM							hSem)
+{
+	return( (FLMUINT)kSemaphoreExamineCount( (SEMAPHORE)hSem));
 }
 #endif
 
@@ -832,13 +865,39 @@ Desc:
 RCODE FLMAPI f_semCreate(
 	F_SEM *		phSem)
 {
-	if( (*phSem = CreateSemaphore( (LPSECURITY_ATTRIBUTES)NULL,
-		0, 10000, NULL )) == NULL)
+	RCODE			rc = NE_FLM_OK;
+	sema_t *		pSem = NULL;
+
+	f_assert( phSem != NULL);
+	f_assert( *phSem == F_SEM_NULL);
+
+	if( RC_BAD( rc = f_calloc( sizeof( sema_t), &pSem)))
 	{
-		return( RC_SET( NE_FLM_COULD_NOT_CREATE_SEMAPHORE));
+		goto Exit;
 	}
 
-	return NE_FLM_OK;
+	if( (pSem->hWinSem = CreateSemaphore( (LPSECURITY_ATTRIBUTES)NULL,
+		0, 10000, NULL )) == NULL)
+	{
+		rc = RC_SET( NE_FLM_COULD_NOT_CREATE_SEMAPHORE);
+	}
+	
+	*phSem = pSem;
+	pSem = NULL;
+
+Exit:
+
+	if( pSem)
+	{
+		if( pSem->hWinSem)
+		{
+			CloseHandle( pSem->hWinSem);
+		}
+		
+		f_free( &pSem);
+	}
+
+	return( rc);
 }
 #endif
 	
@@ -849,11 +908,19 @@ Desc:
 void FLMAPI f_semDestroy(
 	F_SEM *		phSem)
 {
-	if (*phSem != F_SEM_NULL)
+	sema_t *		pSem = (sema_t *)(*phSem); 
+	
+	if( pSem)
 	{
-		CloseHandle( *phSem);
-		*phSem = F_SEM_NULL;
+		if( pSem->hWinSem)
+		{
+			CloseHandle( pSem->hWinSem);
+		}
+		
+		f_free( &pSem);
 	}
+		
+	*phSem = F_SEM_NULL;
 }
 #endif
 	
@@ -865,11 +932,27 @@ RCODE FLMAPI f_semWait(
 	F_SEM			hSem,
 	FLMUINT		uiTimeout)
 {
-	if( WaitForSingleObject( hSem, uiTimeout) == WAIT_OBJECT_0)
+	DWORD			dwStatus;
+
+	for( ;;)
 	{
-		return( NE_FLM_OK);
+		dwStatus = WaitForSingleObjectEx( ((sema_t *)hSem)->hWinSem,
+														uiTimeout, true);
+
+		if( dwStatus == WAIT_OBJECT_0)
+		{
+			f_atomicDec( &((sema_t *)hSem)->uiSignalCount);
+			return( NE_FLM_OK);
+		}
+
+		if( dwStatus == WAIT_IO_COMPLETION)
+		{
+			continue;
+		}
+
+		break;
 	}
-	
+
 	return( RC_SET( NE_FLM_WAIT_TIMEOUT));
 }
 #endif
@@ -881,7 +964,19 @@ Desc:
 void FLMAPI f_semSignal(
 	F_SEM			hSem)
 {
-	(void)ReleaseSemaphore( hSem, 1, NULL);
+	f_atomicInc( &((sema_t *)hSem)->uiSignalCount);
+	(void)ReleaseSemaphore( ((sema_t *)hSem)->hWinSem, 1, NULL);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_WIN
+FLMUINT FLMAPI f_semGetSignalCount(
+	F_SEM							hSem)
+{
+	return( ((sema_t *)hSem)->uiSignalCount);
 }
 #endif
 
@@ -1170,6 +1265,8 @@ RCODE FLMAPI f_notifyWait(
 	F_NOTIFY_LIST_ITEM *		pNotify = &stackNotify;
 	
 	f_assertMutexLocked( hMutex);
+	f_assert( pNotify != *ppNotifyList);
+
 	f_memset( &stackNotify, 0, sizeof( F_NOTIFY_LIST_ITEM));
 	
 	pNotify->uiThreadId = f_threadId();
@@ -1197,7 +1294,7 @@ RCODE FLMAPI f_notifyWait(
 
 	f_mutexUnlock( hMutex);
 
-	if( RC_BAD( tmpRc = f_semWait( pNotify->hSem, F_SEM_WAITFOREVER)))
+	if( RC_BAD( tmpRc = f_semWait( pNotify->hSem, F_WAITFOREVER)))
 	{
 		rc = tmpRc;
 	}

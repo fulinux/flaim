@@ -290,13 +290,13 @@
 				#elif _MSC_VER >= 1300
 					typedef unsigned long __w64	FLMUINT;
 					typedef long __w64				FLMINT;
-					typedef unsigned int				FLMUINT32;
+					typedef __w64 unsigned int				FLMUINT32;
 					typedef __w64 unsigned int		FLMSIZET;
 				#else
 					typedef unsigned long			FLMUINT;
 					typedef long						FLMINT;
 					typedef unsigned int				FLMUINT32;
-					typedef __w64 unsigned int		FLMSIZET;
+					typedef unsigned int				FLMSIZET;
 				#endif
 			#elif defined( FLM_NLM)
 			
@@ -341,6 +341,7 @@
 		
 		#define F_FILENAME_SIZE						256
 		#define F_PATH_MAX_SIZE						256
+		#define F_WAITFOREVER						(0xFFFFFFFF)
 
 		#define FLM_MAX_UINT							((FLMUINT)(-1L))
 		#define FLM_MAX_INT							((FLMINT)(((FLMUINT)(-1L)) >> 1))
@@ -1506,6 +1507,9 @@
 	****************************************************************************/
 	flminterface FLMEXP IF_IOStream : public IF_IStream, public IF_OStream
 	{
+		#if defined( FLM_WIN) && _MSC_VER < 1300
+			using IF_IStream::operator delete;
+		#endif
 	};
 	
 	/****************************************************************************
@@ -2013,8 +2017,7 @@
 	****************************************************************************/
 	flminterface FLMEXP IF_AsyncClient : virtual public F_Object
 	{
-		virtual RCODE FLMAPI waitToComplete(
-			FLMBOOL								bRelease) = 0;
+		virtual RCODE FLMAPI waitToComplete( void) = 0;
 		
 		virtual RCODE FLMAPI getCompletionCode( void) = 0;
 		
@@ -2357,7 +2360,6 @@
 	****************************************************************************/
 	typedef void *					F_SEM;
 	#define F_SEM_NULL			NULL
-	#define F_SEM_WAITFOREVER	(0xFFFFFFFF)
 	
 	RCODE FLMAPI f_semCreate(
 		F_SEM *						phSem);
@@ -2370,6 +2372,9 @@
 		FLMUINT						uiTimeout);
 	
 	void FLMAPI f_semSignal(
+		F_SEM							hSem);
+
+	FLMUINT FLMAPI f_semGetSignalCount(
 		F_SEM							hSem);
 
 	/****************************************************************************
@@ -4788,7 +4793,7 @@
 			FLMBYTE		ucChar)
 		{
 			RCODE			rc = NE_FLM_OK;
-			FLMBYTE *	pucTmp;
+			FLMBYTE *	pucTmp = NULL;
 			
 			if( RC_BAD( rc = allocSpace( 1, (void **)&pucTmp)))
 			{
@@ -4806,7 +4811,7 @@
 			FLMUNICODE	uChar)
 		{
 			RCODE				rc = NE_FLM_OK;
-			FLMUNICODE *	puTmp;
+			FLMUNICODE *	puTmp = NULL;
 			
 			if( RC_BAD( rc = allocSpace( sizeof( FLMUNICODE), (void **)&puTmp)))
 			{

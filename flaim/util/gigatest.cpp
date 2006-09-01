@@ -32,19 +32,19 @@
 #define DATA_COLUMN					35
 
 #define MAX_CACHE_ROW				1
-#define USED_CACHE_ROW				(MAX_CACHE_ROW + 1)
-#define ITEMS_CACHED_ROW			(USED_CACHE_ROW + 1)
-#define DIRTY_CACHE_ROW				(ITEMS_CACHED_ROW + 1)
-#define LOG_CACHE_ROW				(DIRTY_CACHE_ROW + 1)
-#define FREE_CACHE_ROW				(LOG_CACHE_ROW + 1)
-#define CP_STATE_ROW					(FREE_CACHE_ROW + 1)
-#define DB_NAME_ROW					(CP_STATE_ROW + 1)
-#define TOTAL_TO_LOAD_ROW			(DB_NAME_ROW + 1)
-#define TRANS_SIZE_ROW				(TOTAL_TO_LOAD_ROW + 1)
-#define TOTAL_LOADED_ROW			(TRANS_SIZE_ROW + 1)
-#define ADDS_PER_SEC_CURRENT		(TOTAL_LOADED_ROW + 1)
-#define ADDS_PER_SEC_OVERALL		(ADDS_PER_SEC_CURRENT + 1)
-#define ELAPSED_TIME_ROW			(ADDS_PER_SEC_OVERALL + 1)
+#define USED_CACHE_ROW				2
+#define ITEMS_CACHED_ROW			3
+#define DIRTY_CACHE_ROW				4
+#define LOG_CACHE_ROW				5
+#define FREE_CACHE_ROW				6
+#define CP_STATE_ROW					7
+#define DB_NAME_ROW					8
+#define TOTAL_TO_LOAD_ROW			9
+#define TRANS_SIZE_ROW				10
+#define TOTAL_LOADED_ROW			11
+#define ADDS_PER_SEC_CURRENT		12
+#define ADDS_PER_SEC_OVERALL		13
+#define ELAPSED_TIME_ROW			14
 
 char						gv_szDibName[ 200];
 char						gv_szDataDir[ 200];

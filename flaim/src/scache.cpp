@@ -5173,12 +5173,14 @@ Add_Contiguous_Block:
 					ppSCacheBucket = ScaHash( pFile->FileHdr.uiSigBitsInBlkSize,
 							uiBlkAddress);
 					pTmpSCache = *ppSCacheBucket;
+					
 					while (pTmpSCache &&
 							 (pTmpSCache->uiBlkAddress != uiBlkAddress ||
 							  pTmpSCache->pFile != pFile))
 					{
 						pTmpSCache = pTmpSCache->pNextInHashBucket;
 					}
+					
 					if (!pTmpSCache ||
 						 (pTmpSCache->ui16Flags &
 							(CA_READ_PENDING | CA_WRITE_PENDING | CA_WRITE_INHIBIT)) ||

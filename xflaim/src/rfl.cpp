@@ -733,7 +733,7 @@ RCODE F_Rfl::waitForWrites(
 
 	// Now just wait to be signaled.
 
-	if (RC_BAD( TempRc = f_semWait( Waiter.hESem, F_SEM_WAITFOREVER)))
+	if (RC_BAD( TempRc = f_semWait( Waiter.hESem, F_WAITFOREVER)))
 	{
 		RC_UNEXPECTED_ASSERT( TempRc);
 		rc = TempRc;
