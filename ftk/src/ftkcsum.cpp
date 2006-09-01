@@ -754,72 +754,84 @@ FLMBYTE FLMAPI f_calcPacketChecksum(
 	FLMUINT			uiBytesToChecksum)
 {
 	FLMUINT			uiChecksum = 0;
-	FLMBYTE *		pucEnd;
-	FLMBYTE *		pucSectionEnd;
-	FLMBYTE *		pucCur;
-	FLMBYTE			ucTmp;
+	
+#ifdef FLM_HAVE_FAST_CHECKSUM_ROUTINES
+	if( gv_bCanUseFastCheckSum)
+	{
+		FLMUINT		uiSum;
 		
-	pucCur = (FLMBYTE *)pvPacket;
-	pucEnd = pucCur + uiBytesToChecksum;
-
-#ifdef FLM_64BIT
-	pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x7));
-#else
-	pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x3));
+		ftkFastChecksum( pvPacket, (unsigned long *) &uiSum, 
+				(unsigned long *) &uiChecksum, (unsigned long) uiBytesToChecksum);
+	}
+	else
 #endif
-
-	if( pucSectionEnd > pucEnd)
-	{
-		pucSectionEnd = pucEnd;
+	{	
+		FLMBYTE *		pucEnd;
+		FLMBYTE *		pucSectionEnd;
+		FLMBYTE *		pucCur;
+		FLMBYTE			ucTmp;
+			
+		pucCur = (FLMBYTE *)pvPacket;
+		pucEnd = pucCur + uiBytesToChecksum;
+	
+	#ifdef FLM_64BIT
+		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x7));
+	#else
+		pucSectionEnd = pucCur + (sizeof( FLMUINT) - ((FLMUINT)pucCur & 0x3));
+	#endif
+	
+		if( pucSectionEnd > pucEnd)
+		{
+			pucSectionEnd = pucEnd;
+		}
+		
+		while( pucCur < pucSectionEnd)
+		{
+			uiChecksum = (uiChecksum << 8) + *pucCur++;
+		}
+		
+	#ifdef FLM_64BIT
+		pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
+	#else
+		pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
+	#endif
+		
+		while( pucCur < pucSectionEnd)
+		{
+			uiChecksum ^= *((FLMUINT *)pucCur);
+			pucCur += sizeof( FLMUINT);
+		}
+		
+		while( pucCur < pucEnd)
+		{
+			uiChecksum ^= *pucCur++;
+		}
+		
+		ucTmp = (FLMBYTE)uiChecksum;
+		
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+		
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+		
+	#ifdef FLM_64BIT
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+		
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+		
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+		
+		uiChecksum >>= 8;
+		ucTmp ^= (FLMBYTE)uiChecksum;
+	#endif
+		
+		ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
+		uiChecksum = (FLMUINT)ucTmp;
 	}
-	
-	while( pucCur < pucSectionEnd)
-	{
-		uiChecksum = (uiChecksum << 8) + *pucCur++;
-	}
-	
-#ifdef FLM_64BIT
-	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFFFFFFFFF8); 
-#else
-	pucSectionEnd = (FLMBYTE *)((FLMUINT)pucEnd & 0xFFFFFFFC); 
-#endif
-	
-	while( pucCur < pucSectionEnd)
-	{
-		uiChecksum ^= *((FLMUINT *)pucCur);
-		pucCur += sizeof( FLMUINT);
-	}
-	
-	while( pucCur < pucEnd)
-	{
-		uiChecksum ^= *pucCur++;
-	}
-	
-	ucTmp = (FLMBYTE)uiChecksum;
-	
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-	
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-	
-#ifdef FLM_64BIT
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-	
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-	
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-	
-	uiChecksum >>= 8;
-	ucTmp ^= (FLMBYTE)uiChecksum;
-#endif
-	
-	ucTmp ^= (FLMBYTE)(uiChecksum >> 8);
-	uiChecksum = (FLMUINT)ucTmp;
 
 	return( (FLMBYTE)(uiChecksum != 0 ? uiChecksum : 1));
 }
-
