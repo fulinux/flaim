@@ -334,6 +334,10 @@ RCODE GedGetINT(
 	NODE *      		node,
 	FLMINT *				piNumberRV);
 
+RCODE GedGetINT64(
+	NODE *      		node,
+	FLMINT64 *			pi64NumberRV);
+
 RCODE GedGetINT32(
 	NODE *      		node,
 	FLMINT32 *			pi32NumberRV);
@@ -345,6 +349,10 @@ RCODE GedGetINT16(
 RCODE GedGetUINT(
 	NODE *      		node,
 	FLMUINT *			puiNumberRV);
+
+RCODE GedGetUINT64(
+	NODE *      		node,
+	FLMUINT64 *			pui64NumberRV);
 
 RCODE GedGetUINT32(
 	NODE *      		node,
@@ -399,6 +407,20 @@ RCODE GedPutUINT(
 	F_Pool *       	pPool,
 	NODE *      		nd,
 	FLMUINT				uiNumber,
+	FLMUINT				uiEncId = 0,
+	FLMUINT				uiEncSize = 0);
+
+RCODE GedPutUINT64(
+	F_Pool *       	pPool,
+	NODE *      		nd,
+	FLMUINT64			ui64Number,
+	FLMUINT				uiEncId = 0,
+	FLMUINT				uiEncSize = 0);
+
+RCODE GedPutINT64(
+	F_Pool *       	pPool,
+	NODE *      		nd,
+	FLMINT64				i64Number,
 	FLMUINT				uiEncId = 0,
 	FLMUINT				uiEncSize = 0);
 
@@ -495,13 +517,19 @@ RCODE GedGetRecSource(
 	FLMUINT *   		puiContainer,
 	FLMUINT *   		puiRecId);
 
-#define FLM_MAX_NIB_CNT		11
-
 RCODE flmBcd2Num(
 	FLMUINT				uiValueType,
 	FLMUINT				uiValueLength,
-	const FLMBYTE *	pucValue,				
-	BCD_TYPE  *			bcd);
+	const FLMBYTE *	pucValue,
+	FLMUINT *			puiNum,
+	FLMBOOL *			pbNegFlag);
+
+RCODE flmBcd2Num64(
+	FLMUINT				uiValueType,
+	FLMUINT				uiValueLength,
+	const FLMBYTE *	pucValue,
+	FLMUINT64 *			pui64Num,
+	FLMBOOL *			pbNegFlag);
 
 /****************************************************************************
 Desc:		These functions are used to parse GEDCOM buffers/files. They 
@@ -1792,6 +1820,7 @@ FINLINE RCODE flmCheckVersionNum(
 		case FLM_FILE_FORMAT_VER_4_52:
 		case FLM_FILE_FORMAT_VER_4_60:
 		case FLM_FILE_FORMAT_VER_4_61:
+		case FLM_FILE_FORMAT_VER_4_62:
 			break;
 		default:
 			if( uiVersionNum > FLM_CUR_FILE_FORMAT_VER_NUM)
@@ -2088,10 +2117,12 @@ eCorruptionType flmVerifyTextField(
 	FLMUINT				uiTextLen);
 
 eCorruptionType flmVerifyNumberField(
+	STATE_INFO *		pStateInfo,													
 	FLMBYTE *			pNumber,
 	FLMUINT				uiNumberLen);
 
 eCorruptionType flmVerifyField(
+	STATE_INFO *		pStateInfo,
 	FLMBYTE *			pField,
 	FLMUINT				uiFieldLen,
 	FLMUINT				uiFieldType);

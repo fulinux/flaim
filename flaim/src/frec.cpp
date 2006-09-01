@@ -390,6 +390,67 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
+RCODE FlmRecord::setINT64(
+	void *		pvField,
+	FLMINT64		i64Number,
+	FLMUINT		uiEncId)
+{
+	RCODE				rc = FERR_OK;
+	FLMBYTE *		pucData;
+	FLMBYTE			ucStorageBuf[ F_MAX_NUM64_BUF + 1];
+	FLMUINT			uiStorageLen;
+	FLMUINT			uiEncDataLen = 0;
+	FLMUINT			uiEncFlags = 0;
+
+	if( isReadOnly() || isCached())
+	{
+		flmAssert( 0);
+		rc = RC_SET( FERR_FAILURE);
+		goto Exit;
+	}
+
+	uiStorageLen = sizeof( ucStorageBuf);
+	
+	if( RC_BAD( rc = FlmINT64ToStorage( i64Number, &uiStorageLen, ucStorageBuf)))
+	{
+		goto Exit;
+	}
+	
+	if( uiEncId)
+	{
+		// For encrypted fields, we want to make sure we allocate
+		// enough space for the encrypted data too.  The data does 
+		// not get encrypted until the call to FlmRecordModify or
+		// FlmRecordAdd.
+
+		if( uiStorageLen % 16)
+		{
+			uiEncDataLen = uiStorageLen + (16 - (uiStorageLen % 16));
+		}
+		else
+		{
+			uiEncDataLen = uiStorageLen;
+		}
+		
+		uiEncFlags = FLD_HAVE_DECRYPTED_DATA;
+	}
+
+	if( RC_BAD( rc = getNewDataPtr( getFieldPointer( pvField), FLM_NUMBER_TYPE,
+		uiStorageLen, uiEncDataLen, uiEncId, uiEncFlags, &pucData, NULL)))
+	{
+		goto Exit;
+	}
+
+	f_memcpy( pucData, ucStorageBuf, uiStorageLen);
+
+Exit:
+
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
 RCODE FlmRecord::setUINT(
 	void *			pvField,
 	FLMUINT			uiNumber,
@@ -411,6 +472,66 @@ RCODE FlmRecord::setUINT(
 
 	uiStorageLen = sizeof( ucStorageBuf);
 	if( RC_BAD( rc = FlmUINT2Storage( uiNumber, &uiStorageLen, ucStorageBuf)))
+	{
+		goto Exit;
+	}
+
+	if( uiEncId)
+	{
+		// For encrypted fields, we want to make sure we allocate
+		// enough space for the encrypted data too.  The data does 
+		// not get encrypted until the call to FlmRecordModify or
+		// FlmRecordAdd.
+
+		if( uiStorageLen % 16)
+		{
+			uiEncDataLen = uiStorageLen + (16 - (uiStorageLen % 16));
+		}
+		else
+		{
+			uiEncDataLen = uiStorageLen;
+		}
+		
+		uiEncFlags = FLD_HAVE_DECRYPTED_DATA;
+	}
+
+	if( RC_BAD( rc = getNewDataPtr( getFieldPointer( pvField), FLM_NUMBER_TYPE,
+		uiStorageLen, uiEncDataLen, uiEncId, uiEncFlags, &pucData, NULL)))
+	{
+		goto Exit;
+	}
+
+	f_memcpy( pucData, ucStorageBuf, uiStorageLen);
+
+Exit:
+
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE FlmRecord::setUINT64(
+	void *			pvField,
+	FLMUINT64		ui64Number,
+	FLMUINT			uiEncId)
+{
+	RCODE				rc = FERR_OK;
+	FLMBYTE *		pucData;
+	FLMBYTE			ucStorageBuf[ F_MAX_NUM64_BUF + 1];
+	FLMUINT			uiStorageLen;
+	FLMUINT			uiEncDataLen = 0;
+	FLMUINT			uiEncFlags = 0;
+
+	if( isReadOnly() || isCached())
+	{
+		flmAssert( 0);
+		rc = RC_SET( FERR_FAILURE);
+		goto Exit;
+	}
+
+	uiStorageLen = sizeof( ucStorageBuf);
+	if( RC_BAD( rc = FlmUINT64ToStorage( ui64Number, &uiStorageLen, ucStorageBuf)))
 	{
 		goto Exit;
 	}
@@ -4260,6 +4381,96 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
+RCODE FlmRecord::getINT32(
+	void *			pvField,
+	FLMINT32 *		pi32Number)
+{
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bEncrypted;
+	FlmField *	pField = getFieldPointer( pvField);
+
+	if (!pField)
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+
+	bEncrypted = isEncryptedField( pField);
+
+	if (!bEncrypted ||
+		 (getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
+	{
+		rc = FlmStorage2INT32( getFieldDataType( pField),
+									getFieldDataLength( pField),
+									(const FLMBYTE *)getDataPtr( pField),
+									pi32Number);
+	}
+	else if (bEncrypted &&
+		 		!(getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
+	{
+		rc = RC_SET( FERR_ENCRYPTION_UNAVAILABLE);
+		goto Exit;
+	}
+	else
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE FlmRecord::getINT64(
+	void *			pvField,
+	FLMINT64 *		pi64Number)
+{
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bEncrypted;
+	FlmField *	pField = getFieldPointer( pvField);
+
+	if (!pField)
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+
+	bEncrypted = isEncryptedField( pField);
+
+	if (!bEncrypted ||
+		 (getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
+	{
+		rc = FlmStorage2INT64( getFieldDataType( pField),
+									  getFieldDataLength( pField),
+									  (const FLMBYTE *)getDataPtr( pField),
+									  pi64Number);
+	}
+	else if (bEncrypted &&
+		 		!(getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
+	{
+		rc = RC_SET( FERR_ENCRYPTION_UNAVAILABLE);
+		goto Exit;
+	}
+	else
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
 RCODE FlmRecord::getUINT(
 	void *			pvField,
 	FLMUINT *		puiNumber)
@@ -4328,6 +4539,52 @@ RCODE FlmRecord::getUINT32(
 										getFieldDataLength( pField),
 										(const FLMBYTE *)getDataPtr( pField),
 										pui32Number);
+	}
+	else if (bEncrypted &&
+		 		!(getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
+	{
+		rc = RC_SET( FERR_ENCRYPTION_UNAVAILABLE);
+		goto Exit;
+	}
+	else
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+
+Exit:
+
+	return( rc);
+
+}
+
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE FlmRecord::getUINT64(
+	void *			pvField,
+	FLMUINT64 *		pui64Number)
+{
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bEncrypted;
+	FlmField *	pField = getFieldPointer( pvField);
+
+	if (!pField)
+	{
+		rc = RC_SET( FERR_NOT_FOUND);
+		goto Exit;
+	}
+
+	bEncrypted = isEncryptedField( pField);
+
+	if (!bEncrypted ||
+	 	 (getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
+	{
+		rc = FlmStorage2UINT64(	getFieldDataType( pField),
+										getFieldDataLength( pField),
+										(const FLMBYTE *)getDataPtr( pField),
+										pui64Number);
 	}
 	else if (bEncrypted &&
 		 		!(getEncFlags( pField) & FLD_HAVE_DECRYPTED_DATA))
@@ -5686,11 +5943,11 @@ void * RecCursor::Scan(
 	void *		pvIDMatch = NULL;
 	FLMUINT		uiTargetLevel = pTargetCursor->Level();
 	FLMBOOL		bAdvanced = FALSE;
+	RecCursor	candidate = this;
 
 	*peMatchType = GRD_NoMatch;
 
-	for (RecCursor candidate = this;
-		  candidate.Level() >= uiTargetLevel && !candidate.EndOfRecord();
+	for ( ; candidate.Level() >= uiTargetLevel && !candidate.EndOfRecord();
 		  candidate.Advance(), bAdvanced = TRUE)
 	{
 		if (pTargetCursor->FieldIdIsEqualTo( &candidate))
@@ -5896,22 +6153,28 @@ RCODE flmAddField(
 			{
 				case 0:
 					uiNum = (FLMUINT)(*((FLMUINT *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
 					break;
 				case 1:
 					uiNum = (FLMUINT)(*((FLMBYTE *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
 					break;
 				case 2:
 					uiNum = (FLMUINT)(*((FLMUINT16 *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
 					break;
 				case 4:
 					uiNum = (FLMUINT)(*((FLMUINT32 *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
+					break;
+				case 8:
+					rc = pRecord->setUINT64( pvField, *((FLMUINT64 *)(pvData)));
 					break;
 				default:
 					flmAssert( 0);
 					rc = RC_SET( FERR_INVALID_PARM);
 					goto Exit;
 			}
-			rc = pRecord->setUINT( pvField, uiNum);
 			break;
 		}
 		case FLM_BINARY_TYPE:
@@ -5970,22 +6233,28 @@ RCODE flmModField(
 			{
 				case 0:
 					uiNum = (FLMUINT)(*((FLMUINT *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
+					break;
 				case 1:
 					uiNum = (FLMUINT)(*((FLMBYTE *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
 					break;
 				case 2:
 					uiNum = (FLMUINT)(*((FLMUINT16 *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
 					break;
 				case 4:
 					uiNum = (FLMUINT)(*((FLMUINT32 *)(pvData)));
+					rc = pRecord->setUINT( pvField, uiNum);
+					break;
+				case 8:
+					rc = pRecord->setUINT64( pvField, *((FLMUINT64 *)(pvData)));
 					break;
 				default:
 					flmAssert( 0);
 					rc = RC_SET( FERR_INVALID_PARM);
 					goto Exit;
 			}
-			
-			rc = pRecord->setUINT( pvField, uiNum);
 			break;
 		}
 		
@@ -6105,3 +6374,4 @@ RCODE flmDecrField(
 	
 	return( rc);
 }
+

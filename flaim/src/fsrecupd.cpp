@@ -306,7 +306,7 @@ FSTATIC RCODE FSBldRecElement(
 		{
 			if( uiFldType == FLM_NUMBER_TYPE)
 			{
-				if( uiValueLen > 6)
+				if( uiValueLen > 11)
 				{
 					flmAssert( 0);
 					rc = RC_SET( FERR_BAD_DATA_LENGTH);

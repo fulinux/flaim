@@ -1173,6 +1173,55 @@ RCODE FCS_DIS::readHTD(
 
 				break;
 			}
+			
+			case HTD_TYPE_UINT64:
+			{
+				FLMUINT64		ui64Value;
+
+				if( pNode)
+				{
+					GedValTypeSet( pNode, FLM_NUMBER_TYPE);
+				}
+
+				if( ppRecord)
+				{
+					if( RC_BAD( rc = (*ppRecord)->insertLast( ucLevel, 
+						ui16Tag, FLM_NUMBER_TYPE, &pField)))
+					{
+						goto Exit;
+					}
+				}
+
+				if( !bHasValue)
+				{
+					break;
+				}
+
+				// Read an unsigned 64-bit integer.
+
+				if( RC_BAD( rc = readUInt64( &ui64Value)))
+				{
+					goto Exit;
+				}
+
+				if( pNode)
+				{
+					if( RC_BAD( rc = GedPutUINT64( pPool, pNode, ui64Value)))
+					{
+						goto Exit;
+					}
+				}
+
+				if( ppRecord)
+				{
+					if( RC_BAD( rc = (*ppRecord)->setUINT64( pField, ui64Value)))
+					{
+						goto Exit;
+					}
+				}
+
+				break;
+			}
 
 			case HTD_TYPE_INT:
 			{
@@ -1215,6 +1264,55 @@ RCODE FCS_DIS::readHTD(
 				if( ppRecord)
 				{
 					if( RC_BAD( rc = (*ppRecord)->setINT( pField, i32Value)))
+					{
+						goto Exit;
+					}
+				}
+
+				break;
+			}
+
+			case HTD_TYPE_INT64:
+			{
+				FLMINT64		i64Value;
+
+				if( pNode)
+				{
+					GedValTypeSet( pNode, FLM_NUMBER_TYPE);
+				}
+
+				if( ppRecord)
+				{
+					if( RC_BAD( rc = (*ppRecord)->insertLast( ucLevel, 
+						ui16Tag, FLM_NUMBER_TYPE, &pField)))
+					{
+						goto Exit;
+					}
+				}
+
+				if( !bHasValue)
+				{
+					break;
+				}
+
+				// Read a signed 64-bit integer.
+
+				if( RC_BAD( rc = readInt64( &i64Value)))
+				{
+					goto Exit;
+				}
+
+				if( pNode)
+				{
+					if( RC_BAD( rc = GedPutINT64( pPool, pNode, i64Value)))
+					{
+						goto Exit;
+					}
+				}
+
+				if( ppRecord)
+				{
+					if( RC_BAD( rc = (*ppRecord)->setINT64( pField, i64Value)))
 					{
 						goto Exit;
 					}
@@ -1945,11 +2043,44 @@ RCODE FCS_DOS::writeHTD(
 
 					if( ((*pucCurData & 0xF0) == 0xB0))
 					{
-						uiDescriptor |= HTD_TYPE_INT;
+						FLMINT64		i64Value;
+
+						if( (pCurNode && RC_BAD( rc = GedGetINT64( 
+								pCurNode, &i64Value))) ||
+							(pCurField && RC_BAD( rc = pRecord->getINT64( 
+								pCurField, &i64Value))))
+						{
+							goto Exit;
+						}
+						if (i64Value >= (FLMINT64)(FLM_MIN_INT32) &&
+							 i64Value <= (FLMINT64)(FLM_MAX_INT32))
+						{
+							uiDescriptor |= HTD_TYPE_INT;
+						}
+						else
+						{
+							uiDescriptor |= HTD_TYPE_INT64;
+						}
 					}
 					else
 					{
-						uiDescriptor |= HTD_TYPE_UINT;
+						FLMUINT64		ui64Value;
+
+						if( (pCurNode && RC_BAD( rc = GedGetUINT64( 
+								pCurNode, &ui64Value))) ||
+							(pCurField && RC_BAD( rc = pRecord->getUINT64( 
+								pCurField, &ui64Value))))
+						{
+							goto Exit;
+						}
+						if (ui64Value <= (FLMUINT64)(FLM_MAX_UINT32))
+						{
+							uiDescriptor |= HTD_TYPE_UINT;
+						}
+						else
+						{
+							uiDescriptor |= HTD_TYPE_UINT64;
+						}
 					}
 					break;
 				}
@@ -2147,45 +2278,90 @@ RCODE FCS_DOS::writeHTD(
 				{
 					if( uiCurDataLen)
 					{	
-						if( uiDescriptor & HTD_TYPE_INT)
+						if( uiDescriptor & HTD_TYPE_INT64)
 						{
 							// Since the number is negative, extract and send it
-							// as a signed 32-bit value.
+							// as a signed 64-bit value.
 
-							FLMINT		iValue;
+							FLMINT64		i64Value;
 
-							if( (pCurNode && RC_BAD( rc = GedGetINT( 
-									pCurNode, &iValue))) ||
-								(pCurField && RC_BAD( rc = pRecord->getINT( 
-									pCurField, &iValue))))
+							if( (pCurNode && RC_BAD( rc = GedGetINT64( 
+									pCurNode, &i64Value))) ||
+								(pCurField && RC_BAD( rc = pRecord->getINT64( 
+									pCurField, &i64Value))))
 							{
 								goto Exit;
 							}
 
 							// Write the value.
 
-							if( RC_BAD( rc = writeInt32( (FLMINT32)iValue)))
+							if( RC_BAD( rc = writeInt64( i64Value)))
+							{
+								goto Exit;
+							}
+						}
+						else if( uiDescriptor & HTD_TYPE_INT)
+						{
+							// Since the number is negative, extract and send it
+							// as a signed 32-bit value.
+
+							FLMINT32		i32Value;
+
+							if( (pCurNode && RC_BAD( rc = GedGetINT32( 
+									pCurNode, &i32Value))) ||
+								(pCurField && RC_BAD( rc = pRecord->getINT32( 
+									pCurField, &i32Value))))
+							{
+								goto Exit;
+							}
+
+							// Write the value.
+
+							if( RC_BAD( rc = writeInt32( i32Value)))
+							{
+								goto Exit;
+							}
+						}
+						else if( uiDescriptor & HTD_TYPE_UINT64)
+						{
+							// The number is non-negative 64 bit
+
+							FLMUINT64		ui64Value;
+
+							if( (pCurNode && RC_BAD( rc = GedGetUINT64( 
+									pCurNode, &ui64Value))) ||
+								(pCurField && RC_BAD( rc = pRecord->getUINT64( 
+									pCurField, &ui64Value))))
+							{
+								goto Exit;
+							}
+
+							// Write the value.
+
+							if( RC_BAD( rc = writeUInt64( ui64Value)))
 							{
 								goto Exit;
 							}
 						}
 						else
 						{
-							// The number is non-negative
+							flmAssert( uiDescriptor & HTD_TYPE_UINT);
+							
+							// The number is non-negative 32 bit
 
-							FLMUINT		uiValue;
+							FLMUINT32		ui32Value;
 
-							if( (pCurNode && RC_BAD( rc = GedGetUINT( 
-									pCurNode, &uiValue))) ||
-								(pCurField && RC_BAD( rc = pRecord->getUINT( 
-									pCurField, &uiValue))))
+							if( (pCurNode && RC_BAD( rc = GedGetUINT32( 
+									pCurNode, &ui32Value))) ||
+								(pCurField && RC_BAD( rc = pRecord->getUINT32( 
+									pCurField, &ui32Value))))
 							{
 								goto Exit;
 							}
 
 							// Write the value.
 
-							if( RC_BAD( rc = writeUInt32( (FLMUINT32)uiValue)))
+							if( RC_BAD( rc = writeUInt32( ui32Value)))
 							{
 								goto Exit;
 							}

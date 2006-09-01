@@ -3821,7 +3821,7 @@ FSTATIC RCODE ScaBlkSanityCheck(
 						{
 							if (StateInfo.uiFOPType != FLM_FOP_REC_INFO)
 							{
-								if (flmVerifyField( StateInfo.pFOPData, 
+								if (flmVerifyField( &StateInfo, StateInfo.pFOPData, 
 									StateInfo.uiFOPDataLen,
 									StateInfo.uiFieldType) != FLM_NO_CORRUPTION)
 								{

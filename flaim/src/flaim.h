@@ -149,7 +149,7 @@
 	#define FERR_BAD_RFL_FILE_NUMBER			0xC014									///< 0xC014 - Bad RFL file number in RFL file header.
 	#define FERR_CANNOT_DEL_ITEM				0xC015									///< 0xC015 - Cannot delete field definitions.
 	#define FERR_CANNOT_MOD_FIELD_TYPE		0xC016									///< 0xC016 - Cannot modify a field's type.
-	#define FERR_NOT_USED_C017					0xC017									///< 0xC017 - Not used
+	#define FERR_64BIT_NUMS_NOT_SUPPORTED	0xC017									///< 0xC017 - 64 bit numbers not supported for databases whose revision is less than 462
 	#define FERR_CONV_BAD_DEST_TYPE			0xC018									///< 0xC018 - Bad destination type specified for conversion.
 	#define FERR_CONV_BAD_DIGIT				0xC019									///< 0xC019 - Non-numeric digit found in text to numeric conversion.
 	#define FERR_CONV_BAD_SRC_TYPE			0xC01A									///< 0xC01A - Bad source type specified for conversion.
@@ -417,8 +417,9 @@
 	#define FLM_FILE_FORMAT_VER_4_52					452	// Added ability to delete indexes in the background
 	#define FLM_FILE_FORMAT_VER_4_60					460	// Added support for encrypted attributes
 	#define FLM_FILE_FORMAT_VER_4_61					461	// Added support for RFL disk usage limits, large field values, and async I/O on Linux and Solaris
-	#define FLM_CUR_FILE_FORMAT_VER_NUM				FLM_FILE_FORMAT_VER_4_61
-	#define FLM_CUR_FILE_FORMAT_VER_STR				"4.61"
+	#define FLM_FILE_FORMAT_VER_4_62					462	// Added support for 64 bit numbers
+	#define FLM_CUR_FILE_FORMAT_VER_NUM				FLM_FILE_FORMAT_VER_4_62
+	#define FLM_CUR_FILE_FORMAT_VER_STR				"4.62"
 
 		FLMUINT		uiMinRflFileSize;				///< Minimum bytes per RFL file.
 	#define DEFAULT_MIN_RFL_FILE_SIZE	((FLMUINT)100 * (FLMUINT)1024 * (FLMUINT)1024)
@@ -1199,6 +1200,8 @@
 		FLM_INT32_VAL,				///< 3 - 32 bit signed integer value.
 		FLM_REAL_VAL,				///< 4 - Real number value.\   NOTE: Not currently supported.
 		FLM_REC_PTR_VAL,			///< 5 - DRN value.
+		FLM_UINT64_VAL,			///< 6 - 64 bit unsigned integer value.
+		FLM_INT64_VAL,				///< 7 - 64 bit signed integer value.
 		FLM_BINARY_VAL = 9,		///< 9 - Binary value.
 		FLM_STRING_VAL,			///< 10 - ASCII string value.
 		FLM_UNICODE_VAL,			///< 11 - Unicode string value.
@@ -3205,6 +3208,7 @@
 	} FlmLogMessageType;
 
 	#define F_MAX_NUM_BUF		12
+	#define F_MAX_NUM64_BUF		24
 
 	/// Convert a FLMUINT value to FLAIM's internal storage format for numbers.
 	/// \ingroup storageconversion
@@ -3215,11 +3219,29 @@
 		FLMBYTE *		pucStorageBuf	///< Number converted to FLAIM's internal storage format is returned here.
 		);
 
+	/// Convert a FLMUINT64 value to FLAIM's internal storage format for numbers.
+	/// \ingroup storageconversion
+	FLMEXP RCODE FLMAPI FlmUINT64ToStorage(
+		FLMUINT64		ui64Num,			///< Number to convert.
+		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM64_BUF
+												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
+		FLMBYTE *		pucStorageBuf	///< Number converted to FLAIM's internal storage format is returned here.
+		);
+
 	/// Convert a FLMINT value to FLAIM's internal storage format for numbers.
 	/// \ingroup storageconversion
 	FLMEXP RCODE FLMAPI FlmINT2Storage(
 		FLMINT			iNum,				///< Number to convert.
 		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM_BUF
+												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
+		FLMBYTE *		pucStorageBuf	///< Number converted to FLAIM's internal storage format is returned here.
+		);
+
+	/// Convert a FLMINT64 value to FLAIM's internal storage format for numbers.
+	/// \ingroup storageconversion
+	FLMEXP RCODE FLMAPI FlmINT64ToStorage(
+		FLMINT64			i64Num,			///< Number to convert.
+		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM64_BUF
 												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
 		FLMBYTE *		pucStorageBuf	///< Number converted to FLAIM's internal storage format is returned here.
 		);
@@ -3246,6 +3268,17 @@
 		FLMUINT32 *			pui32Num			///< Converted number is returned here.
 		);
 
+	/// Convert a value from FLAIM's internal format to a FLMUINT64.  Note that the value may be a FLM_NUMBER_TYPE,
+	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
+	/// \ingroup storageconversion
+	FLMEXP RCODE FLMAPI FlmStorage2UINT64(
+		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
+													///< FLM_CONTEXT_TYPE.
+		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
+		const FLMBYTE *	pucValue,		///< Value to be converted.\  Data is expected to be in FLAIM's internal format.
+		FLMUINT64 *			pui64Num			///< Converted number is returned here.
+		);
+
 	/// Convert a value from FLAIM's internal format to a FLMINT.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
@@ -3255,6 +3288,28 @@
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
 		const FLMBYTE *	pucValue,		///< Value to be converted.\  Data is expected to be in FLAIM's internal format.
 		FLMINT *				puiNum			///< Converted number is returned here.
+		);
+
+	/// Convert a value from FLAIM's internal format to a FLMINT32.  Note that the value may be a FLM_NUMBER_TYPE,
+	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
+	/// \ingroup storageconversion
+	FLMEXP RCODE FLMAPI FlmStorage2INT32(
+		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
+													///< FLM_CONTEXT_TYPE.
+		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
+		const FLMBYTE *	pucValue,		///< Value to be converted.\  Data is expected to be in FLAIM's internal format.
+		FLMINT32 *			pui32Num			///< Converted number is returned here.
+		);
+
+	/// Convert a value from FLAIM's internal format to a FLMINT64.  Note that the value may be a FLM_NUMBER_TYPE,
+	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
+	/// \ingroup storageconversion
+	FLMEXP RCODE FLMAPI FlmStorage2INT64(
+		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
+													///< FLM_CONTEXT_TYPE.
+		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
+		const FLMBYTE *	pucValue,		///< Value to be converted.\  Data is expected to be in FLAIM's internal format.
+		FLMINT64 *			pui64Num			///< Converted number is returned here.
 		);
 
 	/// Convert a unicode string to FLAIM's internal storage format.
@@ -3847,6 +3902,18 @@
 			FLMINT *			piNumber		///< Number is returned here.
 			);
 
+		/// Get a field's value as a FLMINT32.  Data conversions will be done if the field is a FLM_CONTEXT_TYPE or FLM_TEXT_TYPE.
+		RCODE getINT32( 
+			void *			pvField,		///< Field whose value is to be retrieved (and converted if necessary).
+			FLMINT32 *		pi32Number	///< Number is returned here.
+			);
+
+		/// Get a field's value as a FLMINT64.  Data conversions will be done if the field is a FLM_CONTEXT_TYPE or FLM_TEXT_TYPE.
+		RCODE getINT64( 
+			void *			pvField,		///< Field whose value is to be retrieved (and converted if necessary).
+			FLMINT64 *		pi64Number	///< Number is returned here.
+			);
+
 		/// Get a field's value as a FLMUINT.  Data conversions will be done if the field is a FLM_CONTEXT_TYPE or FLM_TEXT_TYPE.
 		RCODE getUINT( 
 			void *			pvField,		///< Field whose value is to be retrieved (and converted if necessary).
@@ -3857,6 +3924,12 @@
 		RCODE getUINT32(
 			void *			pvField,			///< Field whose value is to be retrieved (and converted if necessary).
 			FLMUINT32 *		pui32Number		///< Number is returned here.
+			);
+
+		/// Get a field's value as a FLMUINT64.  Data conversions will be done if the field is a FLM_CONTEXT_TYPE or FLM_TEXT_TYPE.
+		RCODE getUINT64(
+			void *			pvField,			///< Field whose value is to be retrieved (and converted if necessary).
+			FLMUINT64 *		pui64Number		///< Number is returned here.
 			);
 
 		/// Get the number of bytes needed to retrieve a field's value as a unicode string.  The value may be either
@@ -3991,10 +4064,28 @@
 												///< encryption key for that encryption definition will be used to encrypt this value.
 			);
 
+		/// Set a field's value to a FLMINT64 value.  The resulting data type for the field will be FLM_NUMBER_TYPE.
+		RCODE setINT64(
+			void *			pvField,		///< Field whose value is to be set.
+			FLMINT64			i64Number,	///< Value to set.
+			FLMUINT			uiEncId = 0	///< Encryption ID.\  If zero, the value will not be encrypted.\  If non-zero, the number
+												///< should be the ID of an encryption definition record in the data dictionary.\  The
+												///< encryption key for that encryption definition will be used to encrypt this value.
+			);
+
 		/// Set a field's value to a FLMUINT value.  The resulting data type for the field will be FLM_NUMBER_TYPE.
 		RCODE setUINT( 
 			void *			pvField,		///< Field whose value is to be set.
 			FLMUINT			uiNumber,	///< Value to set.
+			FLMUINT			uiEncId = 0	///< Encryption ID.\  If zero, the value will not be encrypted.\  If non-zero, the number
+												///< should be the ID of an encryption definition record in the data dictionary.\  The
+												///< encryption key for that encryption definition will be used to encrypt this value.
+			);
+
+		/// Set a field's value to a FLMUINT64 value.  The resulting data type for the field will be FLM_NUMBER_TYPE.
+		RCODE setUINT64( 
+			void *			pvField,		///< Field whose value is to be set.
+			FLMUINT64		ui64Number,	///< Value to set.
 			FLMUINT			uiEncId = 0	///< Encryption ID.\  If zero, the value will not be encrypted.\  If non-zero, the number
 												///< should be the ID of an encryption definition record in the data dictionary.\  The
 												///< encryption key for that encryption definition will be used to encrypt this value.

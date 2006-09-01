@@ -35,12 +35,19 @@ FSTATIC const char * gv_pszSampleDictionary =
 	" 1 type number\n"
 	"0 @5@ field Misc\n"
 	" 1 type binary\n"
+	"0 @6@ field Numbers\n"
+	" 1 type number\n"
 	"0 @100@ index LastFirst_IX\n"
 	" 1 language US\n"
 	" 1 key\n"
 	"  2 field 2\n"
 	"   3 required\n"
 	"  2 field 3\n"
+	"   3 required\n"
+	"0 @101@ index NUMBER_IX\n"
+	" 1 language US\n"
+	" 1 key\n"
+	"  2 field 6\n"
 	"   3 required\n";
 
 #define PERSON_TAG						1
@@ -48,7 +55,9 @@ FSTATIC const char * gv_pszSampleDictionary =
 #define FIRST_NAME_TAG					3
 #define AGE_TAG							4
 #define MISC_TAG							5
+#define NUMBER_TAG						6
 #define LAST_NAME_FIRST_NAME_IX		100
+#define NUMBER_IX							101
 
 #ifdef FLM_NLM
 	#define DB_NAME_STR					"SYS:\\SAMPLE.DB"
@@ -65,6 +74,167 @@ FSTATIC const char * gv_pszSampleDictionary =
 	#define DB_REBUILD_NAME_STR		"samplerebuild.db"
 	#define BACKUP_PATH					"samplebackup"
 #endif
+
+typedef struct NUM_IX_VALUE
+{
+	FLMBOOL		bUnsigned;
+	FLMUINT64	ui64Value;
+	FLMINT64		i64Value;
+} NUM_IX_VALUE;
+
+#define NUM_NUM_KEYS	17
+static NUM_IX_VALUE gv_ExpectedNumIxValues [NUM_NUM_KEYS] = 
+{
+	{FALSE,	0,											(FLMINT64)FLM_MIN_INT64},
+	{FALSE,	0,											(FLMINT64)FLM_MIN_INT64 + 1},
+	{FALSE,	0,											(FLMINT64)(FLM_MIN_INT32) - 1},
+	{FALSE,	0,											(FLMINT64)(FLM_MIN_INT32)},
+	{FALSE,	0,											(FLMINT64)(FLM_MIN_INT32) + 1},
+	{FALSE,	0,											(FLMINT64)(-1)},
+	{TRUE,	0,											0},
+	{TRUE,	(FLMUINT64)FLM_MAX_INT32 - 1,		0},
+	{TRUE,	(FLMUINT64)FLM_MAX_INT32,			0},
+	{TRUE,	(FLMUINT64)FLM_MAX_INT32 + 1,		0},
+	{TRUE,	(FLMUINT64)FLM_MAX_UINT32,			0},
+	{TRUE,	(FLMUINT64)FLM_MAX_UINT32 + 1,	0},
+	{TRUE,	(FLMUINT64)FLM_MAX_INT64 - 1,		0},
+	{TRUE,	(FLMUINT64)FLM_MAX_INT64,			0},
+	{TRUE,	(FLMUINT64)FLM_MAX_INT64 + 1,		0},
+	{TRUE,	(FLMUINT64)FLM_MAX_UINT64 - 1,	0},
+	{TRUE,	(FLMUINT64)FLM_MAX_UINT64,			0}
+};
+	
+typedef struct FLMUINT_TEST
+{
+	FLMUINT		uiNum;
+	RCODE			rcExpectedGetUINT;
+	RCODE			rcExpectedGetINT;
+	RCODE			rcExpectedGetUINT64;
+	RCODE			rcExpectedGetINT64;
+} FLMUINT_TEST;
+
+typedef struct FLMUINT64_TEST
+{
+	FLMUINT64	ui64Num;
+	RCODE			rcExpectedGetUINT;
+	RCODE			rcExpectedGetINT;
+	RCODE			rcExpectedGetUINT64;
+	RCODE			rcExpectedGetINT64;
+} UNSIGNED63_TEST;
+
+typedef struct FLMINT_TEST
+{
+	FLMINT		iNum;
+	RCODE			rcExpectedGetUINT;
+	RCODE			rcExpectedGetINT;
+	RCODE			rcExpectedGetUINT64;
+	RCODE			rcExpectedGetINT64;
+} FLMINT_TEST;
+
+typedef struct FLMINT64_TEST
+{
+	FLMINT64		i64Num;
+	RCODE			rcExpectedGetUINT;
+	RCODE			rcExpectedGetINT;
+	RCODE			rcExpectedGetUINT64;
+	RCODE			rcExpectedGetINT64;
+} FLMINT64_TEST;
+
+/***************************************************************************
+Desc: FLMUINT numbers to test
+****************************************************************************/
+#define NUM_FLMUINT_TESTS	3
+static FLMUINT_TEST gv_FLMUINTTests [NUM_FLMUINT_TESTS] =
+{
+	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
+	{0,										FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+#ifdef FLM64_BIT
+	{FLM_MAX_UINT,							FERR_OK,							FERR_CONV_NUM_OVERFLOW, FERR_OK,							FERR_CONV_NUM_OVERFLOW},
+	((FLMUINT)(FLM_MAX_UINT32),		FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+#else
+	{FLM_MAX_UINT,							FERR_OK,							FERR_CONV_NUM_OVERFLOW, FERR_OK,							FERR_OK},
+	{(FLMUINT)(FLM_MAX_UINT32),		FERR_OK,							FERR_CONV_NUM_OVERFLOW, FERR_OK,							FERR_OK}
+#endif
+};
+
+/***************************************************************************
+Desc: FLMINT numbers to test
+****************************************************************************/
+#define NUM_FLMINT_TESTS	7
+static FLMINT_TEST gv_FLMINTTests [NUM_FLMINT_TESTS] =
+{
+	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
+	{-1,										FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MIN_INT,							FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MAX_INT,							FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{(FLMINT)FLM_MIN_INT32,				FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{(FLMINT)(FLM_MIN_INT32) + 1,		FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{(FLMINT)(FLM_MAX_INT32),			FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{(FLMINT)(FLM_MAX_INT32) - 1,		FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK}
+};
+
+/***************************************************************************
+Desc: FLMUINT64 numbers to test
+****************************************************************************/
+#ifndef FLM64_BIT
+	#define NUM_FLMUINT64_TESTS	8
+#else
+	#define NUM_FLMUINT64_TESTS	7
+#endif
+static FLMUINT64_TEST gv_FLMUINT64Tests [NUM_FLMUINT64_TESTS] =
+{
+	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
+	{0,										FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+#ifndef FLM64_BIT
+	{(FLMUINT64)(FLM_MAX_UINT) + 1,	FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+#endif
+	{(FLMUINT64)(FLM_MAX_UINT32) + 1,FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+#ifdef FLM64_BIT
+	{(FLMUINT64)(FLM_MAX_INT64) - 1,	FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{(FLMUINT64)(FLM_MAX_INT64),		FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{(FLMUINT64)(FLM_MAX_INT64) + 1,	FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
+	{FLM_MAX_UINT64 - 1,					FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
+	{FLM_MAX_UINT64,						FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
+#else
+	{(FLMUINT64)(FLM_MAX_INT64) - 1,	FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+	{(FLMUINT64)(FLM_MAX_INT64),		FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+	{(FLMUINT64)(FLM_MAX_INT64) + 1,	FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
+	{FLM_MAX_UINT64 - 1,					FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
+	{FLM_MAX_UINT64,						FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW}
+#endif
+};
+
+/***************************************************************************
+Desc: FLMINT64 numbers to test
+****************************************************************************/
+#ifndef FLM64_BIT
+	#define NUM_FLMINT64_TESTS	9
+#else
+	#define NUM_FLMINT64_TESTS	7
+#endif
+static FLMINT64_TEST gv_FLMINT64Tests [NUM_FLMINT64_TESTS] =
+{
+	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
+	{-1,										FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+#ifndef FLM64_BIT
+	{(FLMINT64)(FLM_MIN_INT) - 1,		FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{(FLMINT64)(FLM_MAX_INT) + 1,		FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+#endif
+	{(FLMINT64)(FLM_MIN_INT32) - 1,	FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+#ifdef FLM64_BIT
+	{(FLMINT64)(FLM_MAX_INT32) + 1,	FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{FLM_MIN_INT64,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MIN_INT64 + 1,					FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MAX_INT64 - 1,					FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{FLM_MAX_INT64,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+#else
+	{(FLMINT64)(FLM_MAX_INT32) + 1,	FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+	{FLM_MIN_INT64,						FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MIN_INT64 + 1,					FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MAX_INT64 - 1,					FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
+	{FLM_MAX_INT64,						FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK}
+#endif
+};
 
 /***************************************************************************
 Desc:
@@ -137,6 +307,43 @@ public:
 	RCODE sortedFieldsQueryTest(
 		FLMUINT		uiDrn,
 		FLMBOOL		bDoRootedFieldPaths);
+		
+	RCODE addRecWithFLMUINT(
+		FLMUINT		uiNum,
+		FLMUINT *	puiDrn);
+		
+	RCODE addRecWithFLMUINT64(
+		FLMUINT64	ui64Num,
+		FLMUINT *	puiDrn);
+		
+	RCODE addRecWithFLMINT(
+		FLMINT		iNum,
+		FLMUINT *	puiDrn);
+		
+	RCODE addRecWithFLMINT64(
+		FLMINT64		i64Num,
+		FLMUINT *	puiDrn);
+		
+	RCODE numbersTest(
+		FLMUINT *	puiDrn);
+		
+	RCODE reopenDbTest( void);
+		
+	RCODE testNumField(
+		FLMUINT *	puiDrn,
+		FLMUINT		uiExpectedNum,
+		RCODE			rcExpectedUINT,
+		FLMINT		iExpectedNum,
+		RCODE			rcExpectedINT,
+		FLMUINT64	ui64ExpectedNum,
+		RCODE			rcExpectedUINT64,
+		FLMINT64		i64ExpectedNum,
+		RCODE			rcExpectedINT64);
+		
+	RCODE numbersRetrieveTest(
+		FLMUINT	uiDrn);
+		
+	RCODE numbersKeyRetrieveTest( void);
 		
 	RCODE backupRestoreDbTest( void);
 	
@@ -2746,6 +2953,875 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+RCODE IFlmTestImpl::addRecWithFLMUINT(
+	FLMUINT		uiNum,
+	FLMUINT *	puiDrn)
+{
+	RCODE			rc = FERR_OK;
+	char			szErr [100];
+	void *		pvDataField;
+	FLMUINT		uiTestNum;
+	FlmRecord *	pDataRec = NULL;
+	FLMUINT		uiDrn;
+	
+	// Create a person object
+
+	if( (pDataRec = f_new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
+		FLM_TEXT_TYPE, &pvDataField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDataRec->insertLast( 1, NUMBER_TAG,
+		FLM_NUMBER_TYPE, &pvDataField)))
+	{
+		f_sprintf( szErr, "calling insertLast to add Unsigned %u",
+			(unsigned)uiNum);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pDataRec->setUINT( pvDataField, uiNum)))
+	{
+		f_sprintf( szErr, "calling setUINT to add Unsigned %u",
+			(unsigned)uiNum);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Verify that we get back the expected data.
+	// Set the test number to a different value than the passed in value to
+	// ensure that we are actually changing it in the get call.
+	
+	uiTestNum = uiNum + 1;
+	if (RC_BAD( rc = pDataRec->getUINT( pvDataField, &uiTestNum)))
+	{
+		f_sprintf( szErr, "calling getUINT for Unsigned value %u",
+			(unsigned)uiNum);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (uiTestNum != uiNum)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, 
+			"Unsigned value set not retrieved, Set: %u, Retrieved: %u",
+			(unsigned)uiNum, (unsigned)uiTestNum);
+		goto Exit;
+	}
+	
+	uiDrn = 0;	
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		&uiDrn, pDataRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (puiDrn)
+	{
+		*puiDrn = uiDrn;
+	}
+	
+Exit:
+
+	if (pDataRec)
+	{
+		pDataRec->Release();
+	}
+	
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::addRecWithFLMUINT64(
+	FLMUINT64	ui64Num,
+	FLMUINT *	puiDrn)
+{
+	RCODE			rc = FERR_OK;
+	char			szErr [100];
+	void *		pvDataField;
+	FLMUINT64	ui64TestNum;
+	FlmRecord *	pDataRec = NULL;
+	FLMUINT		uiDrn;
+	
+	// Create a person object
+
+	if( (pDataRec = f_new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
+		FLM_TEXT_TYPE, &pvDataField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDataRec->insertLast( 1, NUMBER_TAG,
+		FLM_NUMBER_TYPE, &pvDataField)))
+	{
+		f_sprintf( szErr, "calling insertLast to add Unsigned64 %I64u", ui64Num);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pDataRec->setUINT64( pvDataField, ui64Num)))
+	{
+		f_sprintf( szErr, "calling setUINT64 to add Unsigned64 %I64u", ui64Num);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Verify that we get back the expected data.
+	// Set the test number to a different value than the passed in value to
+	// ensure that we are actually changing it in the get call.
+	
+	ui64TestNum = ui64Num + 1;
+	if (RC_BAD( rc = pDataRec->getUINT64( pvDataField, &ui64TestNum)))
+	{
+		f_sprintf( szErr, "calling getUINT64 for Unsigned64 value %I64u", ui64Num);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (ui64TestNum != ui64Num)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, 
+			"Unsigned64 value set not retrieved, Set: %I64u, Retrieved: %I64u",
+			ui64Num, ui64TestNum);
+		goto Exit;
+	}
+	
+	uiDrn = 0;	
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		&uiDrn, pDataRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (puiDrn)
+	{
+		*puiDrn = uiDrn;
+	}
+	
+Exit:
+
+	if (pDataRec)
+	{
+		pDataRec->Release();
+	}
+	
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::addRecWithFLMINT(
+	FLMINT		iNum,
+	FLMUINT *	puiDrn)
+{
+	RCODE			rc = FERR_OK;
+	char			szErr [100];
+	void *		pvDataField;
+	FLMINT		iTestNum;
+	FlmRecord *	pDataRec = NULL;
+	FLMUINT		uiDrn;
+	
+	// Create a person object
+
+	if( (pDataRec = f_new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
+		FLM_TEXT_TYPE, &pvDataField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDataRec->insertLast( 1, NUMBER_TAG,
+		FLM_NUMBER_TYPE, &pvDataField)))
+	{
+		f_sprintf( szErr, "calling insertLast to add Signed %d", (int)iNum);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pDataRec->setINT( pvDataField, iNum)))
+	{
+		f_sprintf( szErr, "calling setINT to add Signed %d", (int)iNum);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Verify that we get back the expected data.
+	// Set the test number to a different value than the passed in value to
+	// ensure that we are actually changing it in the get call.
+	
+	iTestNum = iNum + 1;
+	if (RC_BAD( rc = pDataRec->getINT( pvDataField, &iTestNum)))
+	{
+		f_sprintf( szErr, "calling getINT for Signed value %d", (int)iNum);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (iTestNum != iNum)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, 
+			"Signed value set not retrieved, Set: %d, Retrieved: %d",
+			(int)iNum, (int)iTestNum);
+		goto Exit;
+	}
+	
+	uiDrn = 0;	
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		&uiDrn, pDataRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (puiDrn)
+	{
+		*puiDrn = uiDrn;
+	}
+	
+Exit:
+
+	if (pDataRec)
+	{
+		pDataRec->Release();
+	}
+	
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::addRecWithFLMINT64(
+	FLMINT64		i64Num,
+	FLMUINT *	puiDrn)
+{
+	RCODE			rc = FERR_OK;
+	char			szErr [100];
+	void *		pvDataField;
+	FLMINT64		i64TestNum;
+	FlmRecord *	pDataRec = NULL;
+	FLMUINT		uiDrn;
+	
+	// Create a person object
+
+	if( (pDataRec = f_new FlmRecord) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
+		FLM_TEXT_TYPE, &pvDataField)))
+	{
+		MAKE_ERROR_STRING( "calling insertLast", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pDataRec->insertLast( 1, NUMBER_TAG,
+		FLM_NUMBER_TYPE, &pvDataField)))
+	{
+		f_sprintf( szErr, "calling insertLast to add Signed64 %I64d", i64Num);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (RC_BAD( rc = pDataRec->setINT64( pvDataField, i64Num)))
+	{
+		f_sprintf( szErr, "calling setINT64 to add Signed64 %I64d", i64Num);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Verify that we get back the expected data.
+	// Set the test number to a different value than the passed in value to
+	// ensure that we are actually changing it in the get call.
+	
+	i64TestNum = i64Num + 1;
+	if (RC_BAD( rc = pDataRec->getINT64( pvDataField, &i64TestNum)))
+	{
+		f_sprintf( szErr, "calling getINT64 for Signed64 value %I64d", i64Num);
+		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (i64TestNum != i64Num)
+	{
+		rc = RC_SET( FERR_FAILURE);
+		f_sprintf( m_szFailInfo, 
+			"Signed64 value set not retrieved, Set: %I64d, Retrieved: %I64d",
+			i64Num, i64TestNum);
+		goto Exit;
+	}
+	
+	uiDrn = 0;	
+	if( RC_BAD( rc = FlmRecordAdd( m_hDb, FLM_DATA_CONTAINER, 
+		&uiDrn, pDataRec, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordAdd", rc, m_szFailInfo);
+		goto Exit;
+	}
+	if (puiDrn)
+	{
+		*puiDrn = uiDrn;
+	}
+	
+Exit:
+
+	if (pDataRec)
+	{
+		pDataRec->Release();
+	}
+	
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::numbersTest(
+	FLMUINT *	puiDrn)
+{
+	RCODE					rc = FERR_OK;
+	FLMBOOL				bPassed = FALSE;
+	FLMBOOL				bTransActive = FALSE;
+	FLMUINT				uiLoop;
+	FLMUINT_TEST *		pFLMUINTTest;
+	FLMUINT64_TEST *	pFLMUINT64Test;
+	FLMINT_TEST *		pFLMINTTest;
+	FLMINT64_TEST *	pFLMINT64Test;
+
+	beginTest( "64 Bit Numbers Test");
+
+	// Start an update transaction
+
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_UPDATE_TRANS, FLM_NO_TIMEOUT)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+
+	for (uiLoop = 0, pFLMUINTTest = &gv_FLMUINTTests [0];
+		  uiLoop < NUM_FLMUINT_TESTS;
+		  uiLoop++, pFLMUINTTest++)
+	{
+		if (RC_BAD( rc = addRecWithFLMUINT( pFLMUINTTest->uiNum, puiDrn)))
+		{
+			goto Exit;
+		}
+
+		// Don't want to get anything except the first DRN
+
+		puiDrn = NULL;
+	}
+	for (uiLoop = 0, pFLMINTTest = &gv_FLMINTTests [0];
+		  uiLoop < NUM_FLMINT_TESTS;
+		  uiLoop++, pFLMINTTest++)
+	{
+		if (RC_BAD( rc = addRecWithFLMINT( pFLMINTTest->iNum, puiDrn)))
+		{
+			goto Exit;
+		}
+		// Don't want to get anything except the first DRN
+
+		puiDrn = NULL;
+	}
+	for (uiLoop = 0, pFLMUINT64Test = &gv_FLMUINT64Tests [0];
+		  uiLoop < NUM_FLMUINT64_TESTS;
+		  uiLoop++, pFLMUINT64Test++)
+	{
+		if (RC_BAD( rc = addRecWithFLMUINT64( pFLMUINT64Test->ui64Num, puiDrn)))
+		{
+			goto Exit;
+		}
+
+		// Don't want to get anything except the first DRN
+
+		puiDrn = NULL;
+	}
+	for (uiLoop = 0, pFLMINT64Test = &gv_FLMINT64Tests [0];
+		  uiLoop < NUM_FLMINT64_TESTS;
+		  uiLoop++, pFLMINT64Test++)
+	{
+		if (RC_BAD( rc = addRecWithFLMINT64( pFLMINT64Test->i64Num, puiDrn)))
+		{
+			goto Exit;
+		}
+
+		// Don't want to get anything except the first DRN
+
+		puiDrn = NULL;
+	}
+	
+	if( RC_BAD( rc = FlmDbTransCommit( m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransCommit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = FALSE;
+	
+	bPassed = TRUE;
+	
+Exit:
+
+	if (bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::testNumField(
+	FLMUINT *	puiDrn,
+	FLMUINT		uiExpectedNum,
+	RCODE			rcExpectedUINT,
+	FLMINT		iExpectedNum,
+	RCODE			rcExpectedINT,
+	FLMUINT64	ui64ExpectedNum,
+	RCODE			rcExpectedUINT64,
+	FLMINT64		i64ExpectedNum,
+	RCODE			rcExpectedINT64)
+{
+	RCODE				rc = FERR_OK;
+	FLMUINT			uiNum;
+	FLMINT			iNum;
+	FLMUINT64		ui64Num;
+	FLMINT64			i64Num;
+	FlmRecord *		pDataRec = NULL;
+	void *			pvField;
+	FLMUINT			uiDrn;
+	
+	if (RC_BAD( rc = FlmRecordRetrieve( m_hDb, FLM_DATA_CONTAINER, *puiDrn,
+					FO_EXACT, &pDataRec, &uiDrn)))
+	{
+		MAKE_ERROR_STRING( "calling FlmRecordRetrieve", rc, m_szFailInfo);
+		goto Exit;
+	}
+	(*puiDrn)++;
+
+	pvField = pDataRec->firstChild( pDataRec->root());
+	
+	// Test FLMUINT - set number different from expected number so we can verify
+	// that we actually changed the value.
+	
+	uiNum = uiExpectedNum + 1;
+	rc = pDataRec->getUINT( pvField, &uiNum);
+	if (rc != rcExpectedUINT)
+	{
+		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getUINT, expected %e. Num: %u",
+				rc, rcExpectedUINT, (unsigned)uiExpectedNum);
+		if (rc == FERR_OK)
+		{
+			rc = RC_SET( FERR_FAILURE);
+		}
+		goto Exit;
+	}
+	else if (RC_OK( rc))
+	{
+		if (uiNum != uiExpectedNum)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Unexpected UINT (%u) from getUINT, expected %u",
+					(unsigned)uiNum, (unsigned)uiExpectedNum);
+			goto Exit;
+		}
+	}
+	else
+	{
+		// Need to set to FERR_OK, even though we expected it to fail,
+		// so the caller will not exit.
+		
+		rc = FERR_OK;
+	}
+	
+	// Test FLMINT - set number different from expected number so we can verify
+	// that we actually changed the value.
+	
+	iNum = iExpectedNum + 1;
+	rc = pDataRec->getINT( pvField, &iNum);
+	if (rc != rcExpectedINT)
+	{
+		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getINT, expected %e. Num: %d",
+				rc, rcExpectedINT, (int)iExpectedNum);
+		if (rc == FERR_OK)
+		{
+			rc = RC_SET( FERR_FAILURE);
+		}
+		goto Exit;
+	}
+	else if (RC_OK( rc))
+	{
+		if (iNum != iExpectedNum)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Unexpected INT (%d) from getINT, expected %d",
+					(int)iNum, (int)iExpectedNum);
+			goto Exit;
+		}
+	}
+	else
+	{
+		// Need to set to FERR_OK, even though we expected it to fail,
+		// so the caller will not exit.
+		
+		rc = FERR_OK;
+	}
+	
+	// Test FLMUINT64 - set number different from expected number so we can verify
+	// that we actually changed the value.
+	
+	ui64Num = ui64ExpectedNum + 1;
+	rc = pDataRec->getUINT64( pvField, &ui64Num);
+	if (rc != rcExpectedUINT64)
+	{
+		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getUINT64, expected %e. Num: %I64u",
+				rc, rcExpectedUINT64, ui64ExpectedNum);
+		if (rc == FERR_OK)
+		{
+			rc = RC_SET( FERR_FAILURE);
+		}
+		goto Exit;
+	}
+	else if (RC_OK( rc))
+	{
+		if (ui64Num != ui64ExpectedNum)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Unexpected UINT64 (%I64u) from getUINT64, expected %I64u",
+					ui64Num, ui64ExpectedNum);
+			goto Exit;
+		}
+	}
+	else
+	{
+		// Need to set to FERR_OK, even though we expected it to fail,
+		// so the caller will not exit.
+		
+		rc = FERR_OK;
+	}
+	
+	// Test FLMINT64 - set number different from expected number so we can verify
+	// that we actually changed the value.
+	
+	i64Num = i64ExpectedNum + 1;
+	rc = pDataRec->getINT64( pvField, &i64Num);
+	if (rc != rcExpectedINT64)
+	{
+		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getINT64, expected %e. Num: %I64d",
+				rc, rcExpectedINT64, i64ExpectedNum);
+		if (rc == FERR_OK)
+		{
+			rc = RC_SET( FERR_FAILURE);
+		}
+		goto Exit;
+	}
+	else if (RC_OK( rc))
+	{
+		if (i64Num != i64ExpectedNum)
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Unexpected INT64 (%I64d) from getINT64, expected %I64d",
+					i64Num, i64ExpectedNum);
+			goto Exit;
+		}
+	}
+	else
+	{
+		// Need to set to FERR_OK, even though we expected it to fail,
+		// so the caller will not exit.
+		
+		rc = FERR_OK;
+	}
+	
+Exit:
+
+	if (pDataRec)
+	{
+		pDataRec->Release();
+	}
+	
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::numbersRetrieveTest(
+	FLMUINT	uiDrn)
+{
+	RCODE					rc = FERR_OK;
+	FLMBOOL				bPassed = FALSE;
+	FLMUINT				uiLoop;
+	FLMUINT_TEST *		pFLMUINTTest;
+	FLMUINT64_TEST *	pFLMUINT64Test;
+	FLMINT_TEST *		pFLMINTTest;
+	FLMINT64_TEST *	pFLMINT64Test;
+
+	beginTest( "64 Bit Numbers Query Test");
+	
+	for (uiLoop = 0, pFLMUINTTest = &gv_FLMUINTTests [0];
+		  uiLoop < NUM_FLMUINT_TESTS;
+		  uiLoop++, pFLMUINTTest++)
+	{
+		if (RC_BAD( rc = testNumField( &uiDrn,
+									(FLMUINT)pFLMUINTTest->uiNum, pFLMUINTTest->rcExpectedGetUINT,
+									(FLMINT)pFLMUINTTest->uiNum, pFLMUINTTest->rcExpectedGetINT,
+									(FLMUINT64)pFLMUINTTest->uiNum, pFLMUINTTest->rcExpectedGetUINT64,
+									(FLMINT64)pFLMUINTTest->uiNum, pFLMUINTTest->rcExpectedGetINT64)))
+		{
+			goto Exit;
+		}
+	}
+	for (uiLoop = 0, pFLMINTTest = &gv_FLMINTTests [0];
+		  uiLoop < NUM_FLMINT_TESTS;
+		  uiLoop++, pFLMINTTest++)
+	{
+		if (RC_BAD( rc = testNumField( &uiDrn,
+									(FLMUINT)pFLMINTTest->iNum, pFLMINTTest->rcExpectedGetUINT,
+									(FLMINT)pFLMINTTest->iNum, pFLMINTTest->rcExpectedGetINT,
+									(FLMUINT64)pFLMINTTest->iNum, pFLMINTTest->rcExpectedGetUINT64,
+									(FLMINT64)pFLMINTTest->iNum, pFLMINTTest->rcExpectedGetINT64)))
+		{
+			goto Exit;
+		}
+	}
+	for (uiLoop = 0, pFLMUINT64Test = &gv_FLMUINT64Tests [0];
+		  uiLoop < NUM_FLMUINT64_TESTS;
+		  uiLoop++, pFLMUINT64Test++)
+	{
+		if (RC_BAD( rc = testNumField( &uiDrn,
+									(FLMUINT)pFLMUINT64Test->ui64Num, pFLMUINT64Test->rcExpectedGetUINT,
+									(FLMINT)pFLMUINT64Test->ui64Num, pFLMUINT64Test->rcExpectedGetINT,
+									(FLMUINT64)pFLMUINT64Test->ui64Num, pFLMUINT64Test->rcExpectedGetUINT64,
+									(FLMINT64)pFLMUINT64Test->ui64Num, pFLMUINT64Test->rcExpectedGetINT64)))
+		{
+			goto Exit;
+		}
+	}
+	for (uiLoop = 0, pFLMINT64Test = &gv_FLMINT64Tests [0];
+		  uiLoop < NUM_FLMINT64_TESTS;
+		  uiLoop++, pFLMINT64Test++)
+	{
+		if (RC_BAD( rc = testNumField( &uiDrn,
+									(FLMUINT)pFLMINT64Test->i64Num, pFLMINT64Test->rcExpectedGetUINT,
+									(FLMINT)pFLMINT64Test->i64Num, pFLMINT64Test->rcExpectedGetINT,
+									(FLMUINT64)pFLMINT64Test->i64Num, pFLMINT64Test->rcExpectedGetUINT64,
+									(FLMINT64)pFLMINT64Test->i64Num, pFLMINT64Test->rcExpectedGetINT64)))
+		{
+			goto Exit;
+		}
+	}
+
+	bPassed = TRUE;
+	
+Exit:
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::numbersKeyRetrieveTest( void)
+{
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bPassed = FALSE;
+	FLMUINT		uiFlags = FO_FIRST;
+	FlmRecord *	pSearchKey = NULL;
+	FlmRecord *	pFoundKey = NULL;
+	FLMUINT		uiFoundDrn = 0;
+	void *		pvField;
+	FLMUINT		uiCurrKey = 0;
+	FLMUINT64	ui64Num;
+	FLMINT64		i64Num;
+
+	beginTest( "Numbers FlmKeyRetrieve Test");
+	for (;;)
+	{
+		if (RC_BAD( rc = FlmKeyRetrieve( m_hDb, NUMBER_IX,
+								0, pSearchKey, 0, uiFlags,
+								&pFoundKey, &uiFoundDrn)))
+		{
+			if (rc == FERR_EOF_HIT)
+			{
+				if (uiCurrKey != NUM_NUM_KEYS)
+				{
+					rc = RC_SET( FERR_DATA_ERROR);
+					f_sprintf( m_szFailInfo, "Unexpected number of keys in index: %u, Expected %u",
+						(unsigned)uiCurrKey, (unsigned)NUM_NUM_KEYS);
+					goto Exit;
+				}
+				rc = FERR_OK;
+				break;
+			}
+			else
+			{
+				MAKE_ERROR_STRING( "calling FlmKeyRetrieve", rc, m_szFailInfo);
+				goto Exit;
+			}
+		}
+		
+		// Make sure we have not matched all of the expected keys yet.
+		
+		if (uiCurrKey == NUM_NUM_KEYS)
+		{
+			rc = RC_SET( FERR_DATA_ERROR);
+			f_sprintf( m_szFailInfo, "Too many keys in index, only expecting %u",
+				(unsigned)NUM_NUM_KEYS);
+			goto Exit;
+		}
+		
+		// Make sure this key is greater than the last key.
+		
+		if ((pvField = pFoundKey->find( pFoundKey->root(), NUMBER_TAG)) == NULL)
+		{
+			rc = RC_SET( FERR_DATA_ERROR);
+			MAKE_ERROR_STRING( "corruption calling FlmRecord->find()",
+				rc, m_szFailInfo);
+			goto Exit;
+		}
+
+		if (gv_ExpectedNumIxValues [uiCurrKey].bUnsigned)
+		{
+			if (RC_BAD( rc = pFoundKey->getUINT64( pvField, &ui64Num)))
+			{
+				MAKE_ERROR_STRING( "calling FlmRecord->getUINT64", rc, m_szFailInfo);
+				goto Exit;
+			}
+			if (ui64Num != gv_ExpectedNumIxValues [uiCurrKey].ui64Value)
+			{
+				rc = RC_SET( FERR_DATA_ERROR);
+				f_sprintf( m_szFailInfo, "Unexpected unsigned value in index key[%u]: %I64u, Expected: %I64u",
+					(unsigned)uiCurrKey, ui64Num, gv_ExpectedNumIxValues [uiCurrKey].ui64Value);
+				goto Exit;
+			}
+		}
+		else
+		{
+			if (RC_BAD( rc = pFoundKey->getINT64( pvField, &i64Num)))
+			{
+				MAKE_ERROR_STRING( "calling FlmRecord->getINT64", rc, m_szFailInfo);
+				goto Exit;
+			}
+			if (i64Num != gv_ExpectedNumIxValues [uiCurrKey].i64Value)
+			{
+				rc = RC_SET( FERR_DATA_ERROR);
+				f_sprintf( m_szFailInfo, "Unexpected signed value in index key[%u]: %I64d, Expected: %I64d",
+					(unsigned)uiCurrKey, i64Num, gv_ExpectedNumIxValues [uiCurrKey].i64Value);
+				goto Exit;
+			}
+		}
+		
+		// Setup to get the next key.
+
+		uiCurrKey++;		
+		uiFlags = FO_EXCL;
+		if (pSearchKey)
+		{
+			pSearchKey->Release();
+		}
+		pSearchKey = pFoundKey;
+		pFoundKey = NULL;
+		uiFoundDrn = 0;
+	}
+	bPassed = TRUE;
+
+Exit:
+
+	if (pSearchKey)
+	{
+		pSearchKey->Release();
+	}
+	if (pFoundKey)
+	{
+		pFoundKey->Release();
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::reopenDbTest( void)
+{
+	RCODE		rc = FERR_OK;
+	FLMBOOL	bPassed = FALSE;
+	char		szDbName [F_PATH_MAX_SIZE];
+
+	beginTest( "Close & Reopen Database Test");
+	
+	// Close the database
+	
+	if (RC_BAD( rc = FlmDbClose( &m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbClose", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Force everything to really close.
+	
+	f_strcpy( szDbName, DB_NAME_STR);
+	if (RC_BAD( rc = FlmConfig( FLM_CLOSE_FILE, (void *)&szDbName [0], NULL)))
+	{
+		MAKE_ERROR_STRING( "calling FlmConfig(FLM_CLOSE_FILE)", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	// Force everything from cache.
+	
+	if (RC_BAD( rc = FlmConfig( FLM_CLOSE_UNUSED_FILES, (void *)0, (void *)0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmConfig(FLM_CLOSE_UNUSED_FILES)", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Reopen the database.
+	
+	if( RC_BAD( rc = FlmDbOpen( DB_NAME_STR, NULL, NULL,
+								FO_DONT_RESUME_BACKGROUND_THREADS, NULL, &m_hDb)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbOpen", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	bPassed = TRUE;
+	
+Exit:
+
+	endTest( bPassed);
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::backupRestoreDbTest( void)
 {
 	RCODE		rc = FERR_OK;
@@ -3763,6 +4839,35 @@ RCODE IFlmTestImpl::execute( void)
 		goto Exit;
 	}
 	if (RC_BAD( rc = sortedFieldsQueryTest( uiDrn, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// Numbers test
+	
+	if (RC_BAD( rc = numbersTest( &uiDrn)))
+	{
+		goto Exit;
+	}
+	
+	// Close and reopen the database to force everything to be written to
+	// disk and to have things removed from cache.
+	
+	if (RC_BAD( rc = reopenDbTest()))
+	{
+		goto Exit;
+	}
+	
+	// Numbers query test.
+	
+	if (RC_BAD( rc = numbersRetrieveTest( uiDrn)))
+	{
+		goto Exit;
+	}
+	
+	// Numbers key retrieve test.
+	
+	if (RC_BAD( rc = numbersKeyRetrieveTest()))
 	{
 		goto Exit;
 	}

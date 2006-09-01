@@ -25,9 +25,6 @@
 #include "flaimsys.h"
 
 extern FLMBYTE arr[];
-extern FLMBYTE ucMaxBcdINT32[];
-extern FLMBYTE ucMinBcdINT32[];
-extern FLMBYTE ucMaxBcdUINT32[];
 
 #define BINARY_GED_HEADER_LEN 8
 
@@ -1547,53 +1544,77 @@ RCODE GedPutUINT(
 {
 	RCODE			rc = FERR_OK;
 	FLMBYTE *	pucPtr;
-	FLMBYTE		ucNibStk[F_MAX_NUM_BUF + 1];
-	FLMBYTE *	pucNibStk;
-
+	FLMBYTE		ucStorageBuf[F_MAX_NUM_BUF + 1];
+	FLMUINT		uiStorageLen;
+	
 	if (pNode == NULL)
 	{
 		rc = RC_SET( FERR_CONV_NULL_DEST);
 		goto Exit;
 	}
 
-	// push spare (undefined) nibble for possible half-used terminating
-	// byte
-
-	pucNibStk = &ucNibStk[1];
-
-	// push terminator nibble -- popped last
-
-	*pucNibStk++ = 0x0F;
-
-	// push digits;
-	// do 32 bit division until we get down to 16 bits
-	
-	while (uiNum >= 10)
+	uiStorageLen = sizeof( ucStorageBuf);
+	if( RC_BAD( rc = FlmUINT2Storage( uiNum, &uiStorageLen, ucStorageBuf)))
 	{
-		*pucNibStk++ = (FLMBYTE) (uiNum % 10); // push BCD nibbles in reverse
-															// order
-		uiNum /= 10;
+		goto Exit;
 	}
 
-	*pucNibStk++ = (FLMBYTE) uiNum;				// push last nibble of number
-
-	// Determine number of bytes required for BCD number & allocate space
+	// Allocate the needed space.
 
 	if ((pucPtr = (FLMBYTE *) GedAllocSpace( pPool, pNode, FLM_NUMBER_TYPE,
-			((pucNibStk - ucNibStk) >> 1), uiEncId, uiEncSize)) == NULL)
+			uiStorageLen, uiEncId, uiEncSize)) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	f_memcpy( pucPtr, ucStorageBuf, uiStorageLen);
 
-	// Pop stack and pack nibbles into byte stream a pair at a time
-
-	do
+	if (pNode->ui32EncId)
 	{
-		*pucPtr++ = (FLMBYTE) ((pucNibStk[-1] << 4) | pucNibStk[-2]);
-	} while ((pucNibStk -= 2) > &ucNibStk[1]);
+		pNode->ui32EncFlags = FLD_HAVE_DECRYPTED_DATA;
+	}
 
-	// spare stack byte stops seg wrap
+Exit:
+
+	return (rc);
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE GedPutUINT64(
+	F_Pool *		pPool,
+	NODE *		pNode,
+	FLMUINT64	ui64Num,
+	FLMUINT		uiEncId,
+	FLMUINT		uiEncSize)
+{
+	RCODE			rc = FERR_OK;
+	FLMBYTE *	pucPtr;
+	FLMBYTE		ucStorageBuf[F_MAX_NUM64_BUF + 1];
+	FLMUINT		uiStorageLen;
+	
+	if (pNode == NULL)
+	{
+		rc = RC_SET( FERR_CONV_NULL_DEST);
+		goto Exit;
+	}
+
+	uiStorageLen = sizeof( ucStorageBuf);
+	if( RC_BAD( rc = FlmUINT64ToStorage( ui64Num, &uiStorageLen, ucStorageBuf)))
+	{
+		goto Exit;
+	}
+
+	// Allocate the needed space.
+
+	if ((pucPtr = (FLMBYTE *) GedAllocSpace( pPool, pNode, FLM_NUMBER_TYPE,
+			uiStorageLen, uiEncId, uiEncSize)) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+	f_memcpy( pucPtr, ucStorageBuf, uiStorageLen);
 
 	if (pNode->ui32EncId)
 	{
@@ -1616,11 +1637,9 @@ RCODE GedPutINT(
 	FLMUINT		uiEncSize)
 {
 	RCODE			rc = FERR_OK;
-	FLMUINT		uiNum;
 	FLMBYTE *	pucPtr;
-	FLMBYTE		ucNibStk[ F_MAX_NUM_BUF + 1];
-	FLMBYTE *	pucNibStk;
-	FLMINT		iNegFlag;
+	FLMBYTE		ucStorageBuf[F_MAX_NUM_BUF + 1];
+	FLMUINT		uiStorageLen;
 
 	if (!pNode)
 	{
@@ -1628,40 +1647,68 @@ RCODE GedPutINT(
 		goto Exit;
 	}
 
-	pucNibStk = &ucNibStk[1];
-	*pucNibStk++ = 0x0F;
-	uiNum = ((iNegFlag = iNum < 0) != 0) ? -iNum : iNum;
-
-	while (uiNum >= 10)
+	uiStorageLen = sizeof( ucStorageBuf);
+	if( RC_BAD( rc = FlmINT2Storage( iNum, &uiStorageLen, ucStorageBuf)))
 	{
-		*pucNibStk++ = (FLMBYTE) (uiNum % 10);
-		uiNum /= 10;
+		goto Exit;
 	}
-
-	*pucNibStk++ = (FLMBYTE) uiNum;
-
-	if (iNegFlag)
-	{
-		*pucNibStk++ = 0x0B;
-	}
-
+	
 	// Determine number of bytes required for BCD number & allocate space
 
 	if ((pucPtr = (FLMBYTE *) GedAllocSpace( pPool, pNode, FLM_NUMBER_TYPE,
-				((pucNibStk - ucNibStk) >> 1), uiEncId, uiEncSize)) == NULL)
+				uiStorageLen, uiEncId, uiEncSize)) == NULL)
 	{
 		rc = RC_SET( FERR_MEM);
 		goto Exit;
 	}
+	f_memcpy( pucPtr, ucStorageBuf, uiStorageLen);
 
-	// Pop stack and pack nibbles into byte stream a pair at a time
-
-	do
+	if (pNode->ui32EncId)
 	{
-		*pucPtr++ = (FLMBYTE) ((pucNibStk[-1] << 4) | pucNibStk[-2]);
-	} while ((pucNibStk -= 2) > &ucNibStk[1]);
+		pNode->ui32EncFlags = FLD_HAVE_DECRYPTED_DATA;
+	}
 
-	// spare stack byte stops seg wrap
+Exit:
+
+	return (rc);
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE GedPutINT64(
+	F_Pool *		pPool,
+	NODE *		pNode,
+	FLMINT64		i64Num,
+	FLMUINT		uiEncId,
+	FLMUINT		uiEncSize)
+{
+	RCODE			rc = FERR_OK;
+	FLMBYTE *	pucPtr;
+	FLMBYTE		ucStorageBuf[F_MAX_NUM64_BUF + 1];
+	FLMUINT		uiStorageLen;
+
+	if (!pNode)
+	{
+		rc = RC_SET( FERR_CONV_NULL_DEST);
+		goto Exit;
+	}
+
+	uiStorageLen = sizeof( ucStorageBuf);
+	if( RC_BAD( rc = FlmINT64ToStorage( i64Num, &uiStorageLen, ucStorageBuf)))
+	{
+		goto Exit;
+	}
+	
+	// Determine number of bytes required for BCD number & allocate space
+
+	if ((pucPtr = (FLMBYTE *) GedAllocSpace( pPool, pNode, FLM_NUMBER_TYPE,
+				uiStorageLen, uiEncId, uiEncSize)) == NULL)
+	{
+		rc = RC_SET( FERR_MEM);
+		goto Exit;
+	}
+	f_memcpy( pucPtr, ucStorageBuf, uiStorageLen);
 
 	if (pNode->ui32EncId)
 	{
@@ -1680,8 +1727,7 @@ RCODE GedGetINT(
 	NODE *		pNode,
 	FLMINT *		piNum)
 {
-	RCODE			rc = FERR_OK;
-	BCD_TYPE 	bcd;
+	RCODE	rc = FERR_OK;
 
 	if (pNode->ui32EncId)
 	{
@@ -1692,29 +1738,39 @@ RCODE GedGetINT(
 		}
 	}
 
-	if (RC_BAD( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				  (const FLMBYTE *) GedValPtr( pNode), &bcd)))
+	if (RC_BAD( rc = FlmStorage2INT( GedValType( pNode), GedValLen( pNode),
+				  (const FLMBYTE *) GedValPtr( pNode), piNum)))
 	{
 		goto Exit;
 	}
 
-	if (bcd.bNegFlag)
+Exit:
+
+	return (rc);
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE GedGetINT64(
+	NODE *		pNode,
+	FLMINT64 *	pi64Num)
+{
+	RCODE	rc = FERR_OK;
+
+	if (pNode->ui32EncId)
 	{
-		*piNum = -((FLMINT) bcd.uiNum);
-		rc = (bcd.uiNibCnt < 11) || 
-			  (bcd.uiNibCnt == 11 && (!bcd.pucPtr || 
-			  		(f_memcmp( bcd.pucPtr, ucMinBcdINT32, 6) <= 0))) 
-							? FERR_OK 
-							: RC_SET( FERR_CONV_NUM_UNDERFLOW);
+		if (!(pNode->ui32EncFlags & FLD_HAVE_DECRYPTED_DATA))
+		{
+			rc = RC_SET( FERR_FLD_NOT_DECRYPTED);
+			goto Exit;
+		}
 	}
-	else
+
+	if (RC_BAD( rc = FlmStorage2INT64( GedValType( pNode), GedValLen( pNode),
+				  (const FLMBYTE *) GedValPtr( pNode), pi64Num)))
 	{
-		*piNum = (FLMINT) bcd.uiNum;
-		rc = (bcd.uiNibCnt < 10) || 
-			  (bcd.uiNibCnt == 10 && (!bcd.pucPtr || 
-			  		(f_memcmp( bcd.pucPtr, ucMaxBcdINT32, 5) <= 0))) 
-							? FERR_OK 
-							: RC_SET( FERR_CONV_NUM_OVERFLOW);
+		goto Exit;
 	}
 
 Exit:
@@ -1729,8 +1785,7 @@ RCODE GedGetINT32(
 	NODE *			pNode,
 	FLMINT32 *		pi32Num)
 {
-	RCODE				rc = FERR_OK;
-	BCD_TYPE 		bcd;
+	RCODE	rc = FERR_OK;
 
 	if (pNode->ui32EncId)
 	{
@@ -1741,27 +1796,10 @@ RCODE GedGetINT32(
 		}
 	}
 
-	if (RC_OK( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				 (const FLMBYTE *) GedValPtr( pNode), &bcd)))
+	if (RC_BAD( rc = FlmStorage2INT32( GedValType( pNode), GedValLen( pNode),
+									(const FLMBYTE *)GedValPtr( pNode), pi32Num)))
 	{
-		if (bcd.bNegFlag)
-		{
-			*pi32Num = -((FLMINT32) bcd.uiNum);
-			rc = (bcd.uiNibCnt < 11) || 
-				  (bcd.uiNibCnt == 11 && (!bcd.pucPtr || 
-				  		(f_memcmp( bcd.pucPtr, ucMinBcdINT32, 6) <= 0)))
-				  				? FERR_OK 
-								: RC_SET( FERR_CONV_NUM_UNDERFLOW);
-		}
-		else
-		{
-			*pi32Num = (FLMINT32) bcd.uiNum;
-			rc = (bcd.uiNibCnt < 10) || 
-				  (bcd.uiNibCnt == 10 && 
-				  		(!bcd.pucPtr || (f_memcmp( bcd.pucPtr, ucMaxBcdINT32, 5) <= 0))) 
-								? FERR_OK 
-								: RC_SET( FERR_CONV_NUM_OVERFLOW);
-		}
+		goto Exit;
 	}
 
 Exit:
@@ -1776,8 +1814,9 @@ RCODE GedGetINT16(
 	NODE *			pNode,
 	FLMINT16 *		pi16Num)
 {
-	RCODE				rc = FERR_OK;
-	BCD_TYPE 		bcd;
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiNum;
+	FLMBOOL	bNegFlag;
 
 	if (pNode->ui32EncId)
 	{
@@ -1789,21 +1828,36 @@ RCODE GedGetINT16(
 	}
 
 	if (RC_OK( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				 (const FLMBYTE *) GedValPtr( pNode), &bcd)))
+				 (const FLMBYTE *) GedValPtr( pNode), &uiNum, &bNegFlag)))
 	{
-		if (bcd.bNegFlag)
+		if (bNegFlag)
 		{
-			*pi16Num = -((FLMINT16) (bcd.uiNum));
-			rc = (bcd.uiNibCnt < 6) || (bcd.uiNibCnt == 6 && bcd.uiNum <= FLM_MAX_INT16) 
-						? FERR_OK 
-						: RC_SET( FERR_CONV_NUM_UNDERFLOW);
+			
+			// We will have checked to make sure we are not less than
+			// -(FLM_MAX_INT + 1), but this is smaller than
+			// than -(FLM_MAX_INT16 + 1),
+			// so we need to check to make sure we are not less than
+			// -(FLM_MAX_INT32 + 1)
+			
+			if (uiNum > (FLMUINT)(FLM_MAX_INT16) + 1)
+			{
+				rc = RC_SET( FERR_CONV_NUM_UNDERFLOW);
+				goto Exit;
+			}
+			*pi16Num = -((FLMINT16)uiNum);
+		}
+		
+		// If the value is positive, we will have checked to make sure the
+		// number did not overflow FLM_MAX_UINT, but not FLM_MAX_INT16.
+		
+		else if (uiNum > (FLMUINT)(FLM_MAX_INT16))
+		{
+			rc = RC_SET( FERR_CONV_NUM_OVERFLOW);
+			goto Exit;
 		}
 		else
 		{
-			*pi16Num = (FLMINT16) bcd.uiNum;
-			rc = (bcd.uiNibCnt < 5) || (bcd.uiNibCnt == 5 && bcd.uiNum < FLM_MAX_INT16) 
-						? FERR_OK 
-						: RC_SET( FERR_CONV_NUM_OVERFLOW);
+			*pi16Num = (FLMINT16)uiNum;
 		}
 	}
 
@@ -1819,8 +1873,7 @@ RCODE GedGetUINT(
 	NODE *			pNode,
 	FLMUINT *		puiNum)
 {
-	RCODE				rc = FERR_OK;
-	BCD_TYPE 		bcd;
+	RCODE		rc = FERR_OK;
 
 	if (pNode->ui32EncId)
 	{
@@ -1831,30 +1884,10 @@ RCODE GedGetUINT(
 		}
 	}
 
-	if (RC_OK( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				 (const FLMBYTE *) GedValPtr( pNode), &bcd)))
+	if (RC_BAD( rc = FlmStorage2UINT( GedValType( pNode), GedValLen( pNode),
+				 (const FLMBYTE *) GedValPtr( pNode), puiNum)))
 	{
-		*puiNum = bcd.uiNum;
-
-		if (bcd.bNegFlag)
-		{
-			rc = RC_SET( FERR_CONV_NUM_UNDERFLOW);
-		}
-		else if (bcd.uiNibCnt < 10)
-		{
-			rc = FERR_OK;
-		}
-		else if (bcd.uiNibCnt == 10)
-		{
-			rc = ( !bcd.pucPtr ||
-					 (f_memcmp( bcd.pucPtr, ucMaxBcdUINT32, 5) <= 0)) 
-					 		? FERR_OK 
-							: RC_SET( FERR_CONV_NUM_OVERFLOW);
-		}
-		else
-		{
-			rc = RC_SET( FERR_CONV_NUM_OVERFLOW);
-		}
+		goto Exit;
 	}
 
 Exit:
@@ -1869,8 +1902,9 @@ RCODE GedGetUINT8(
 	NODE *			pNode,
 	FLMUINT8 *		pui8Num)
 {
-	RCODE				rc = FERR_OK;
-	BCD_TYPE 		bcd;
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiNum;
+	FLMBOOL	bNegFlag;
 
 	if (pNode->ui32EncId)
 	{
@@ -1882,15 +1916,49 @@ RCODE GedGetUINT8(
 	}
 
 	if (RC_OK( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				 (const FLMBYTE *) GedValPtr( pNode), &bcd)))
+				 (const FLMBYTE *) GedValPtr( pNode), &uiNum, &bNegFlag)))
 	{
-		*pui8Num = (FLMUINT8) bcd.uiNum;
-		rc = bcd.bNegFlag 
-					? RC_SET( FERR_CONV_NUM_UNDERFLOW) 
-					: (bcd.uiNibCnt < 3) ||
-					  (bcd.uiNibCnt == 3 && bcd.uiNum < FLM_MAX_UINT8) 
-					  		? FERR_OK 
-							: RC_SET( FERR_CONV_NUM_OVERFLOW);
+		if (bNegFlag)
+		{
+			rc = RC_SET( FERR_CONV_NUM_UNDERFLOW);
+		}
+		else if (uiNum > (FLMUINT)(FLM_MAX_UINT8))
+		{
+			rc = RC_SET( FERR_CONV_NUM_OVERFLOW);
+		}
+		else
+		{
+			*pui8Num = (FLMUINT8)uiNum;
+		}
+	}
+
+Exit:
+
+	return (rc);
+}
+
+/*****************************************************************************
+Desc:
+*****************************************************************************/
+RCODE GedGetUINT64(
+	NODE *			pNode,
+	FLMUINT64 *		pui64Num)
+{
+	RCODE		rc = FERR_OK;
+
+	if (pNode->ui32EncId)
+	{
+		if (!(pNode->ui32EncFlags & FLD_HAVE_DECRYPTED_DATA))
+		{
+			rc = RC_SET( FERR_FLD_NOT_DECRYPTED);
+			goto Exit;
+		}
+	}
+
+	if (RC_BAD( rc = FlmStorage2UINT64( GedValType( pNode), GedValLen( pNode),
+				 (const FLMBYTE *) GedValPtr( pNode), pui64Num)))
+	{
+		goto Exit;
 	}
 
 Exit:
@@ -1905,8 +1973,7 @@ RCODE GedGetUINT32(
 	NODE *			pNode,
 	FLMUINT32 *		pui32Num)
 {
-	RCODE				rc = FERR_OK;
-	BCD_TYPE 		bcd;
+	RCODE	rc = FERR_OK;
 
 	if (pNode->ui32EncId)
 	{
@@ -1917,29 +1984,10 @@ RCODE GedGetUINT32(
 		}
 	}
 
-	if (RC_OK( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				 (const FLMBYTE *) GedValPtr( pNode), &bcd)))
+	if (RC_BAD( rc = FlmStorage2UINT32( GedValType( pNode), GedValLen( pNode),
+				 (const FLMBYTE *) GedValPtr( pNode), pui32Num)))
 	{
-		*pui32Num = (FLMUINT32) bcd.uiNum;
-
-		if (bcd.bNegFlag)
-		{
-			rc = RC_SET( FERR_CONV_NUM_UNDERFLOW);
-		}
-		else if (bcd.uiNibCnt < 10)
-		{
-			rc = FERR_OK;
-		}
-		else if (bcd.uiNibCnt == 10)
-		{
-			rc = (!bcd.pucPtr || (f_memcmp( bcd.pucPtr, ucMaxBcdUINT32, 5) <= 0)) 
-							? FERR_OK 
-							: RC_SET( FERR_CONV_NUM_OVERFLOW);
-		}
-		else
-		{
-			rc = RC_SET( FERR_CONV_NUM_OVERFLOW);
-		}
+		goto Exit;
 	}
 
 Exit:
@@ -1954,8 +2002,9 @@ RCODE GedGetUINT16(
 	NODE *			pNode,
 	FLMUINT16 *		pui16Num)
 {
-	BCD_TYPE 		bcd;
-	RCODE				rc = FERR_OK;
+	RCODE		rc = FERR_OK;
+	FLMUINT	uiNum;
+	FLMBOOL	bNegFlag;
 
 	if (pNode->ui32EncId)
 	{
@@ -1967,15 +2016,20 @@ RCODE GedGetUINT16(
 	}
 
 	if (RC_OK( rc = flmBcd2Num( GedValType( pNode), GedValLen( pNode),
-				 (const FLMBYTE *) GedValPtr( pNode), &bcd)) == FERR_OK)
+				 (const FLMBYTE *) GedValPtr( pNode), &uiNum, &bNegFlag)))
 	{
-		*pui16Num = (FLMUINT16) bcd.uiNum;
-		rc = bcd.bNegFlag 
-					? RC_SET( FERR_CONV_NUM_UNDERFLOW) 
-					: (bcd.uiNibCnt < 5) || 
-					  (bcd.uiNibCnt == 5 && bcd.uiNum < FLM_MAX_UINT16) 
-					  		? FERR_OK 
-							: RC_SET( FERR_CONV_NUM_OVERFLOW);
+		if (bNegFlag)
+		{
+			rc = RC_SET( FERR_CONV_NUM_UNDERFLOW);
+		}
+		else if (uiNum > (FLMUINT)(FLM_MAX_UINT16))
+		{
+			rc = RC_SET( FERR_CONV_NUM_OVERFLOW);
+		}
+		else
+		{
+			*pui16Num = (FLMUINT16)uiNum;
+		}
 	}
 
 Exit:
@@ -3197,23 +3251,28 @@ RCODE gedAddField(
 			{
 				case 0:
 					uiNum = (FLMUINT)(*((FLMUINT *)(pvData)));
+					rc = GedPutUINT( pPool, pChildNode, uiNum);
 					break;
 				case 1:
 					uiNum = (FLMUINT)(*((FLMBYTE *)(pvData)));
+					rc = GedPutUINT( pPool, pChildNode, uiNum);
 					break;
 				case 2:
 					uiNum = (FLMUINT)(*((FLMUINT16 *)(pvData)));
+					rc = GedPutUINT( pPool, pChildNode, uiNum);
 					break;
 				case 4:
 					uiNum = (FLMUINT)(*((FLMUINT32 *)(pvData)));
+					rc = GedPutUINT( pPool, pChildNode, uiNum);
+					break;
+				case 8:
+					rc = GedPutUINT64( pPool, pChildNode, *((FLMUINT64 *)(pvData)));
 					break;
 				default:
 					flmAssert( 0);
 					rc = RC_SET( FERR_INVALID_PARM);
 					goto Exit;
 			}
-			
-			rc = GedPutUINT( pPool, pChildNode, uiNum);
 			break;
 		}
 		

@@ -39,7 +39,8 @@ FSTATIC RCODE tokenGet(
 
 FSTATIC FLMBOOL tokenIsNum(
 	const char *	pszToken,
-	FLMUINT *		puiNum);
+	FLMUINT64		ui64Max,
+	FLMUINT64 *		pui64Num);
 	
 FSTATIC FLMBOOL tokenIsOperator(
 	const char *	pszToken,
@@ -326,6 +327,10 @@ FSTATIC RCODE tokenGet(
 		{
 			*peType = FLM_UINT32_VAL;
 		}
+		else if (f_stricmp( pszTokenStart, "unsigned64") == 0)
+		{
+			*peType = FLM_UINT64_VAL;
+		}
 		else if (f_stricmp( pszTokenStart, "boolean") == 0)
 		{
 			*peType = FLM_BOOL_VAL;
@@ -333,6 +338,10 @@ FSTATIC RCODE tokenGet(
 		else if (f_stricmp( pszTokenStart, "signed") == 0)
 		{
 			*peType = FLM_INT32_VAL;
+		}
+		else if (f_stricmp( pszTokenStart, "signed64") == 0)
+		{
+			*peType = FLM_INT64_VAL;
 		}
 		else if (f_stricmp( pszTokenStart, "context") == 0)
 		{
@@ -632,7 +641,7 @@ FINLINE QTYPES mapFieldTypeToValType(
 		case FLM_TEXT_TYPE:
 			return( FLM_UNICODE_VAL);
 		case FLM_NUMBER_TYPE:
-			return( FLM_UINT32_VAL);
+			return( FLM_UINT64_VAL);
 		case FLM_CONTEXT_TYPE:
 			return( FLM_REC_PTR_VAL);
 		case FLM_BINARY_TYPE:
@@ -665,8 +674,9 @@ FSTATIC FLMBOOL tokenIsField(
 	FLMBOOL			bIsNum;
 	FLMBOOL			bIsDrnNum;
 	FLMBOOL			bIsTagNum;
+	FLMUINT64		ui64Num;
 	FLMUINT			uiNum;
-	FLMUINT			uiTagNum;
+	FLMUINT64		ui64TagNum;
 	FLMUINT			uiFieldType;
 	char				szNameBuf[ 128];
 	char *			pszNameEnd;
@@ -705,7 +715,8 @@ FSTATIC FLMBOOL tokenIsField(
 			bIsTagName = FALSE;
 		}
 		
-		bIsNum = tokenIsNum( szNameBuf, &uiNum);
+		bIsNum = tokenIsNum( szNameBuf, (FLMUINT64)(FLM_MAX_UINT16), &ui64Num);
+		uiNum = (FLMUINT)ui64Num;
 		bIsDrnNum = FALSE;
 		
 		if( f_stricmp( szNameBuf, "DRN") == 0)
@@ -715,7 +726,7 @@ FSTATIC FLMBOOL tokenIsField(
 		}
 		
 		bIsTagNum = (f_strnicmp( szNameBuf, "TAG_", 4) == 0 &&
-						 tokenIsNum( &szNameBuf[ 4], &uiTagNum))
+						 tokenIsNum( &szNameBuf[ 4], (FLMUINT64)65535, &ui64TagNum))
 						 ? TRUE
 						 : FALSE;
 						 
@@ -745,7 +756,7 @@ FSTATIC FLMBOOL tokenIsField(
 			}
 			else if( bIsTagNum)
 			{
-				uiFieldNum = uiTagNum;
+				uiFieldNum = (FLMUINT)ui64TagNum;
 			}
 			else
 			{
@@ -919,7 +930,7 @@ RCODE tokenGetUnicode(
 				char 			szNumBuf[ 32];
 				char *		pszNumEnd;
 				FLMBOOL		bIsNum;
-				FLMUINT		uiNum;
+				FLMUINT64	ui64Num;
 
 				// Skip white space and commas
 
@@ -948,11 +959,11 @@ RCODE tokenGetUnicode(
 					break;
 				}
 
-				bIsNum = tokenIsNum( szNumBuf, &uiNum);
+				bIsNum = tokenIsNum( szNumBuf, (FLMUINT64)(FLM_MAX_UINT16), &ui64Num);
 
-				if( bIsNum && uiNum && uiNum <= 0xFFFE)
+				if( bIsNum && ui64Num && ui64Num <= 0xFFFE)
 				{
-					*puzTmp++ = (FLMUNICODE)uiNum;
+					*puzTmp++ = (FLMUNICODE)ui64Num;
 				}
 				else
 				{
@@ -1106,9 +1117,10 @@ FSTATIC RCODE tokenGetValue(
 	FLMUINT *		puiValBufSize)
 {
 	RCODE				rc = FERR_OK;
-	FLMUINT			uiNum;
 	FLMINT32			i32Num;
 	FLMUINT32		ui32Num;
+	FLMUINT64		ui64Num;
+	FLMINT64			i64Num;
 
 	if (bQuoted || eValueType == FLM_UNICODE_VAL)
 	{
@@ -1120,42 +1132,145 @@ FSTATIC RCODE tokenGetValue(
 		}
 	}
 	else if (eValueType == FLM_UINT32_VAL ||
-				eValueType == FLM_INT32_VAL)
+				eValueType == FLM_UINT64_VAL ||
+				eValueType == FLM_INT32_VAL ||
+				eValueType == FLM_INT64_VAL)
 	{
-		FLMBOOL	bNeg = FALSE;
-
+		FLMUINT64	ui64Max;
+		FLMBOOL		bNeg;
+		
 		if (*pszToken == '-')
 		{
 			bNeg = TRUE;
 			pszToken++;
 		}
-		if (tokenIsNum( pszToken, &uiNum))
+		else
 		{
-			if (*puiValBufSize < sizeof( FLMINT32))
+			bNeg = FALSE;
+		}
+		
+		if (eValueType == FLM_UINT32_VAL)
+		{
+			if (bNeg)
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_INT32) + 1;
+			}
+			else
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_UINT32);
+			}
+		}
+		else if (eValueType == FLM_INT32_VAL)
+		{
+			if (bNeg)
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_INT32) + 1;
+			}
+			else
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_INT32);
+			}
+		}
+		else if (eValueType == FLM_UINT64_VAL)
+		{
+			if (bNeg)
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_INT64) + 1;
+			}
+			else
+			{
+				ui64Max = FLM_MAX_UINT64;
+			}
+		}
+		else
+		{
+			if (bNeg)
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_INT64) + 1;
+			}
+			else
+			{
+				ui64Max = (FLMUINT64)(FLM_MAX_INT64);
+			}
+		}
+		if (tokenIsNum( pszToken, ui64Max, &ui64Num))
+		{
+			if (*puiValBufSize < sizeof( FLMUINT64))
 			{
 				if (RC_BAD( rc = allocValueSpace( ppvVal, puiValBufSize,
-											sizeof( FLMINT32))))
+											sizeof( FLMUINT64))))
 				{
 					goto Exit;
 				}
 			}
-			if (bNeg || eValueType == FLM_INT32_VAL)
+			if (bNeg || eValueType == FLM_INT32_VAL || eValueType == FLM_INT64_VAL)
 			{
-				i32Num = (FLMINT32)uiNum;
-				if (bNeg)
+				if (eValueType == FLM_INT32_VAL || eValueType == FLM_UINT32_VAL)
 				{
-					i32Num = -i32Num;
+					if (bNeg)
+					{
+						if (ui64Num == ui64Max)
+						{
+							
+							// If the number is negative, the maximum will have been
+							// set up to be the minimum negative 32 bit integer.
+							
+							i32Num = FLM_MIN_INT32;
+						}
+						else
+						{
+							i32Num = -((FLMINT32)ui64Num);
+						}
+					}
+					else
+					{
+						i32Num = (FLMINT32)ui64Num;
+					}
+					*peValType = FLM_INT32_VAL;
+					*((FLMINT32 *)(*ppvVal)) = i32Num;
+					*puiValLen = sizeof( FLMINT32);
 				}
-				*peValType = FLM_INT32_VAL;
-				*((FLMINT32 *)(*ppvVal)) = i32Num;
-				*puiValLen = sizeof( FLMINT32);
+				else
+				{
+					if (bNeg)
+					{
+						if (ui64Num == ui64Max)
+						{
+							
+							// If the number is negative, the maximum will have been
+							// set up to be the minimum negative 64 bit integer.
+							
+							i64Num = FLM_MIN_INT64;
+						}
+						else
+						{
+							i64Num = -((FLMINT64)ui64Num);
+						}
+					}
+					else
+					{
+						i64Num = (FLMINT64)ui64Num;
+					}
+					*peValType = FLM_INT64_VAL;
+					*((FLMINT64 *)(*ppvVal)) = i64Num;
+					*puiValLen = sizeof( FLMINT64);
+				}
 			}
 			else
 			{
-				ui32Num = (FLMUINT32)uiNum;
-				*peValType = FLM_UINT32_VAL;
-				*((FLMUINT32 *)(*ppvVal)) = ui32Num;
-				*puiValLen = sizeof( FLMUINT32);
+				if (eValueType == FLM_UINT32_VAL)
+				{
+					ui32Num = (FLMUINT32)ui64Num;
+					*peValType = FLM_UINT32_VAL;
+					*((FLMUINT32 *)(*ppvVal)) = ui32Num;
+					*puiValLen = sizeof( FLMUINT32);
+				}
+				else
+				{
+					*peValType = FLM_UINT64_VAL;
+					*((FLMUINT64 *)(*ppvVal)) = ui64Num;
+					*puiValLen = sizeof( FLMUINT64);
+				}
 			}
 		}
 		else
@@ -1174,9 +1289,9 @@ FSTATIC RCODE tokenGetValue(
 				goto Exit;
 			}
 		}
-		if (tokenIsNum( pszToken, &uiNum))
+		if (tokenIsNum( pszToken, (FLMUINT64)(FLM_MAX_UINT32), &ui64Num))
 		{
-			ui32Num = (FLMUINT32)uiNum;
+			ui32Num = (FLMUINT32)ui64Num;
 			*peValType = FLM_REC_PTR_VAL;
 			*((FLMUINT32 *)(*ppvVal)) = ui32Num;
 			*puiValLen = sizeof( FLMUINT32);
@@ -1197,10 +1312,10 @@ FSTATIC RCODE tokenGetValue(
 				goto Exit;
 			}
 		}
-		if (tokenIsNum( pszToken, &uiNum))
+		if (tokenIsNum( pszToken, FLM_MAX_UINT64, &ui64Num))
 		{
 			*peValType = FLM_BOOL_VAL;
-			*((FLMBOOL *)(*ppvVal)) = uiNum ? TRUE : FALSE;
+			*((FLMBOOL *)(*ppvVal)) = ui64Num ? TRUE : FALSE;
 			*puiValLen = sizeof( FLMBOOL);
 		}
 		else if (f_stricmp( pszToken, "false") == 0)
@@ -1247,12 +1362,21 @@ FSTATIC RCODE tokenGetValue(
 		// a number.  If that doesn't work, simply
 		// use text.
 
-		if (tokenIsNum( pszToken, &uiNum))
+		if (tokenIsNum( pszToken, FLM_MAX_UINT64, &ui64Num))
 		{
-			ui32Num = (FLMUINT32)uiNum;
-			*peValType = FLM_UINT32_VAL;
-			*((FLMUINT32 *)(*ppvVal)) = ui32Num;
-			*puiValLen = sizeof( FLMUINT32);
+			if (ui64Num <= (FLMUINT64)(FLM_MAX_UINT32))
+			{
+				ui32Num = (FLMUINT32)ui64Num;
+				*peValType = FLM_UINT32_VAL;
+				*((FLMUINT32 *)(*ppvVal)) = ui32Num;
+				*puiValLen = sizeof( FLMUINT32);
+			}
+			else
+			{
+				*peValType = FLM_UINT64_VAL;
+				*((FLMUINT64 *)(*ppvVal)) = ui64Num;
+				*puiValLen = sizeof( FLMUINT64);
+			}
 		}
 		else
 		{
@@ -1290,7 +1414,7 @@ FLMEXP RCODE FLMAPI FlmParseQuery(
 	char *				pszToken = NULL;
 	FLMUINT				uiTokenBufSize;
 	FLMBOOL				bQuoted;
-	FLMUINT				uiNum;
+	FLMUINT64			ui64Num;
 
 	// Allocate space for tokens and values.  These will be
 	// reallocated as needed.
@@ -1404,7 +1528,7 @@ Add_Field:
 			{
 				goto Add_Field;
 			}
-			else if (tokenIsNum( pszToken, &uiNum))
+			else if (tokenIsNum( pszToken, FLM_MAX_UINT64, &ui64Num))
 			{
 				goto Get_Value;
 			}
@@ -1433,6 +1557,8 @@ Add_Field:
 				case FLM_UNICODE_VAL:
 				case FLM_INT32_VAL:
 				case FLM_UINT32_VAL:
+				case FLM_UINT64_VAL:
+				case FLM_INT64_VAL:
 				case FLM_REC_PTR_VAL:
 				case FLM_BINARY_VAL:
 				case FLM_BOOL_VAL:
@@ -1472,10 +1598,11 @@ Desc:	Determine if a token is a number.
 ****************************************************************************/
 FSTATIC FLMBOOL tokenIsNum(
 	const char *	pszToken,
-	FLMUINT *		puiNum)
+	FLMUINT64		ui64Max,
+	FLMUINT64 *		pui64Num)
 {
 	FLMBOOL		bIsNum = TRUE;
-	FLMUINT		uiNum;
+	FLMUINT64	ui64Num;
 	FLMBOOL		bAllowHex = FALSE;
 
 	if (*pszToken == 0)
@@ -1491,14 +1618,14 @@ FSTATIC FLMBOOL tokenIsNum(
 		bAllowHex = TRUE;
 	}
 
-	uiNum = 0;
+	ui64Num = 0;
 	while (*pszToken)
 	{
 		if (*pszToken >= '0' && *pszToken <= '9')
 		{
 			if (!bAllowHex)
 			{
-				if (uiNum > (FLMUINT)(-1) / 10)
+				if (ui64Num > ui64Max / 10)
 				{
 
 					// Number would overflow.
@@ -1508,12 +1635,12 @@ FSTATIC FLMBOOL tokenIsNum(
 				}
 				else
 				{
-					uiNum *= 10;
+					ui64Num *= 10;
 				}
 			}
 			else
 			{
-				if (uiNum > (FLMUINT)(-1) >> 4)
+				if (ui64Num > ui64Max >> 4)
 				{
 
 					// Number would overflow.
@@ -1521,13 +1648,21 @@ FSTATIC FLMBOOL tokenIsNum(
 					bIsNum = FALSE;
 					goto Exit;
 				}
-				uiNum <<= 4;
+				ui64Num <<= 4;
 			}
-			uiNum += (FLMUINT)(*pszToken - '0');
+			if (ui64Num > ui64Max - (FLMUINT64)(*pszToken - '0'))
+			{
+				
+				// Number would overflow.
+				
+				bIsNum = FALSE;
+				goto Exit;
+			}
+			ui64Num += (FLMUINT64)(*pszToken - '0');
 		}
 		else if (bAllowHex)
 		{
-			if (uiNum > (FLMUINT)(-1) >> 4)
+			if (ui64Num > ui64Max >> 4)
 			{
 
 				// Number would overflow.
@@ -1537,13 +1672,29 @@ FSTATIC FLMBOOL tokenIsNum(
 			}
 			if (*pszToken >= 'A' && *pszToken <= 'F')
 			{
-				uiNum <<= 4;
-				uiNum += (FLMUINT)(*pszToken - 'A') + 10;
+				ui64Num <<= 4;
+				if (ui64Num > ui64Max - (FLMUINT64)(*pszToken - 'A' + 10))
+				{
+					
+					// Number would overflow.
+					
+					bIsNum = FALSE;
+					goto Exit;
+				}
+				ui64Num += (FLMUINT)(*pszToken - 'A') + 10;
 			}
 			else if (*pszToken >= 'a' && *pszToken <= 'f')
 			{
-				uiNum <<= 4;
-				uiNum += (FLMUINT)(*pszToken - 'a') + 10;
+				ui64Num <<= 4;
+				if (ui64Num > ui64Max - (FLMUINT64)(*pszToken - 'a' + 10))
+				{
+					
+					// Number would overflow.
+					
+					bIsNum = FALSE;
+					goto Exit;
+				}
+				ui64Num += (FLMUINT)(*pszToken - 'a') + 10;
 			}
 			else
 			{
@@ -1559,9 +1710,10 @@ FSTATIC FLMBOOL tokenIsNum(
 		pszToken++;
 	}
 
-	*puiNum = uiNum;
+	*pui64Num = ui64Num;
 
 Exit:
 
 	return( bIsNum);
 }
+

@@ -2683,7 +2683,7 @@ FSTATIC RCODE fsvIteratorWhereParse(
 
 				if (bNegative)
 				{
-					FLMINT32 i32Value;
+					FLMINT64	i64Value;
 
 					if (uiTag == FCS_ITERATOR_REC_PTR_VALUE)
 					{
@@ -2691,38 +2691,38 @@ FSTATIC RCODE fsvIteratorWhereParse(
 						goto Exit;
 					}
 
-					if (RC_BAD( rc = GedGetINT32( pCurNode, &i32Value)))
+					if (RC_BAD( rc = GedGetINT64( pCurNode, &i64Value)))
 					{
 						goto Exit;
 					}
 
-					if (RC_BAD( rc = FlmCursorAddValue( hIterator, FLM_INT32_VAL,
-								  &i32Value, 0)))
+					if (RC_BAD( rc = FlmCursorAddValue( hIterator, FLM_INT64_VAL,
+								  &i64Value, 0)))
 					{
 						goto Exit;
 					}
 				}
 				else
 				{
-					FLMUINT32	ui32Value;
+					FLMUINT64	ui64Value;
 					FLMUINT		uiValue;
 
-					if (RC_BAD( rc = GedGetUINT32( pCurNode, &ui32Value)))
+					if (RC_BAD( rc = GedGetUINT64( pCurNode, &ui64Value)))
 					{
 						goto Exit;
 					}
 
 					if (uiTag == FCS_ITERATOR_NUMBER_VALUE)
 					{
-						if (RC_BAD( rc = FlmCursorAddValue( hIterator, FLM_UINT32_VAL,
-									  &ui32Value, 0)))
+						if (RC_BAD( rc = FlmCursorAddValue( hIterator, FLM_UINT64_VAL,
+									  &ui64Value, 0)))
 						{
 							goto Exit;
 						}
 					}
 					else if (uiTag == FCS_ITERATOR_REC_PTR_VALUE)
 					{
-						uiValue = ui32Value;
+						uiValue = (FLMUINT)ui64Value;
 						if (RC_BAD( rc = FlmCursorAddValue( hIterator,
 									  FLM_REC_PTR_VAL, &uiValue, 0)))
 						{

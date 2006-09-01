@@ -1413,7 +1413,7 @@ FSTATIC RCODE bldGetOneRec(
 				{
 					if (!pStateInfo->uiEncId)
 					{
-						eCorruptionCode = flmVerifyField( pValue,
+						eCorruptionCode = flmVerifyField( pStateInfo, pValue,
 															  pStateInfo->uiFieldLen,
 															  pStateInfo->uiFieldType);
 					}
@@ -1431,7 +1431,7 @@ FSTATIC RCODE bldGetOneRec(
 						{
 							goto Exit;
 						}
-							eCorruptionCode = flmVerifyField( pData,
+							eCorruptionCode = flmVerifyField( pStateInfo, pData,
 																  pStateInfo->uiFieldLen,
 																  pStateInfo->uiFieldType);
 					}

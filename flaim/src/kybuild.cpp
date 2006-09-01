@@ -24,6 +24,23 @@
 
 #include "flaimsys.h"
 
+// Constants for checking to see if numbers are greater than what will fit
+// in 32 bits.  the B at the beginning signifies a negative value
+
+static const FLMBYTE gv_ucMinInt32 [6] =
+{
+	0xB2,0x14,0x74,0x83,0x64,0x8F
+};
+
+// Note that the last byte is 0xFF, but it could be 0xF1, 0xF2, etc - it really
+// doesn't matter what is in the lower nibble, because the number terminates
+// when it sees the F in the high nibble.
+
+static const FLMBYTE gv_ucMaxUInt32 [6] =
+{
+	0x42,0x94,0x96,0x72,0x95,0xFF
+};
+							
 #define KREF_TBL_SIZE					512			
 #define KREF_TBL_THRESHOLD				400
 #define KREF_POOL_BLOCK_SIZE			8192
@@ -83,6 +100,7 @@ RCODE flmProcessRecFlds(
 	void *			pathFlds[GED_MAXLVLNUM + 1];
 	FLMUINT			uiLeafFieldLevel;
 	void *			pvField;
+	FLMUINT			uiDbVersion = pDb->pFile->FileHdr.uiVersionNum;
 
 	if ((pvField = pRecord->root()) == NULL)
 	{
@@ -100,6 +118,7 @@ RCODE flmProcessRecFlds(
 		FLMUINT	uiEncFlags = 0;
 		FLMUINT	uiEncId = 0;
 		FLMUINT	uiEncState;
+		FLMUINT	uiFieldType = pRecord->getDataType( pvField);
 
 		if (RC_BAD( rc = fdictGetField( pDb->pDict, uiTagNum, &uiItemType,
 					  &pIfdChain, &uiFldState)))
@@ -109,7 +128,7 @@ RCODE flmProcessRecFlds(
 
 			pDb->Diag.uiInfoFlags |= (FLM_DIAG_FIELD_NUM | FLM_DIAG_FIELD_TYPE);
 			pDb->Diag.uiFieldNum = uiTagNum;
-			pDb->Diag.uiFieldType = (FLMUINT) pRecord->getDataType( pvField);
+			pDb->Diag.uiFieldType = uiFieldType;
 			goto Exit;
 		}
 
@@ -206,24 +225,109 @@ RCODE flmProcessRecFlds(
 			}
 		}
 
-		if (uiItemType != pRecord->getDataType( pvField) &&
-			 uiTagNum < FLM_DICT_FIELD_NUMS)
+		if (uiItemType != uiFieldType && uiTagNum < FLM_DICT_FIELD_NUMS)
 		{
 			rc = RC_SET( FERR_BAD_FIELD_TYPE);
 			pDb->Diag.uiInfoFlags |= (FLM_DIAG_FIELD_NUM | FLM_DIAG_FIELD_TYPE);
 			pDb->Diag.uiFieldNum = uiTagNum;
-			pDb->Diag.uiFieldType = (FLMUINT) pRecord->getDataType( pvField);
+			pDb->Diag.uiFieldType = uiFieldType;
 			goto Exit;
 		}
 
-		if (pRecord->getDataType( pvField) == FLM_BLOB_TYPE &&
-			 (!(uiAction & KREF_INDEXING_ONLY)))
+		if (uiFieldType == FLM_BLOB_TYPE)
 		{
-			if (RC_BAD( rc = flmBlobPlaceInTransactionList( pDb, 
-				((uiAction & KREF_DEL_KEYS) ? BLOB_DELETE_ACTION : BLOB_ADD_ACTION),
-				pRecord, pvField)))
+			if (!(uiAction & KREF_INDEXING_ONLY))
 			{
-				goto Exit;
+				if (RC_BAD( rc = flmBlobPlaceInTransactionList( pDb, 
+					((uiAction & KREF_DEL_KEYS) ? BLOB_DELETE_ACTION : BLOB_ADD_ACTION),
+					pRecord, pvField)))
+				{
+					goto Exit;
+				}
+			}
+		}
+		else if (uiFieldType == FLM_NUMBER_TYPE)
+		{
+			
+			// Make sure if the database version is not at least 4.62 that we
+			// don't allow numbers that are too large into the database.
+			
+			if (uiDbVersion < FLM_FILE_FORMAT_VER_4_62)
+			{
+				const FLMBYTE *	pucDataPtr;
+				FLMUINT				uiDataLength = pRecord->getDataLength( pvField);
+				
+				// All data lengths less than six will be ok.  All data lengths
+				// greater than six will be bad.
+				
+				if (uiDataLength < 6)
+				{
+					// For numbers whose data length is less than six, the number
+					// is guaranteed to fit in 32 bits.
+				}
+				else if (uiDataLength > 6)
+				{
+					
+					// Any numbers whose data length is greater than six are more
+					// than 32 bits.
+					
+					rc = RC_SET( FERR_64BIT_NUMS_NOT_SUPPORTED);
+					goto Exit;
+				}
+				else	// uiDataLength == 6
+				{
+				
+					// Check for encryption - make sure we have the decrypted data to
+					// look at.
+			
+					if (pRecord->isEncryptedField( pvField) &&
+						 !(pRecord->getEncFlags( pvField) & FLD_HAVE_DECRYPTED_DATA))
+					{
+						rc = RC_SET( FERR_ENCRYPTION_UNAVAILABLE);
+						goto Exit;
+					}
+					pucDataPtr = pRecord->getDataPtr( pvField);
+					
+					// See if the number is negative.
+					
+					if ((*pucDataPtr & 0xF0) == 0xB0)
+					{
+						// The sixth byte should have an F in either the upper or
+						// lower nibble.  If it is in the upper nibble, the number
+						// will fit in 32 bits.
+						
+						if ((pucDataPtr [5] & 0xF0) == 0xF0)
+						{
+							// F was in upper nibble, number will fit in 32 bits.
+						}
+						else
+						{
+							// The sixth byte should have an F in the lower nibble, so
+							// it is ok to compare all six bytes.  We are looking for
+							// something greater than B2,14,74,83,64,8F
+							
+							if (f_memcmp( pucDataPtr, gv_ucMinInt32, 6) > 0)
+							{
+								rc = RC_SET( FERR_64BIT_NUMS_NOT_SUPPORTED);
+								goto Exit;
+							}
+						}
+					}
+					else
+					{
+						// If the sixth byte is not an F in the high nibble, we
+						// have more than a 32 bit value.  If it has an F in the
+						// high nibble, check the first five bytes to make sure
+						// they are not greater than 42,94,96,72,95
+						
+						if ((pucDataPtr [5] & 0xF0) != 0xF0 ||
+							 f_memcmp( pucDataPtr, gv_ucMaxUInt32, 5) > 0)
+						{
+							rc = RC_SET( FERR_64BIT_NUMS_NOT_SUPPORTED);
+							goto Exit;
+						}
+					}
+				}
 			}
 		}
 

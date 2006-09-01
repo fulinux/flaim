@@ -95,12 +95,6 @@ Desc:	 	Macros used for determining the nature and precedence of OP codes.
 #define IS_BUF_TYPE( e)			((e) == FLM_TEXT_VAL || \
 										 (e) == FLM_BINARY_VAL)
 
-#define IS_UNSIGNED( e)			((e) == FLM_UINT32_VAL)
-
-#define IS_SIGNED( e)			((e) == FLM_INT32_VAL)
-
-#define IS_REAL( e)				((e) == FLM_REAL_VAL)
-
 #define DO_REVERSE( e)			(((e) == FLM_GT_OP) ? FLM_LT_OP : \
 										((e) == FLM_LT_OP) ? FLM_GT_OP : \
 										((e) == FLM_GE_OP) ? FLM_LE_OP : \
@@ -156,6 +150,8 @@ typedef struct FQATOM
 		FLMUINT					uiBool;
 		FLMUINT					uiVal;
 		FLMINT					iVal;
+		FLMUINT64				ui64Val;
+		FLMINT64					i64Val;
 		F_TIME					Time;
 		F_DATE					Date;
 		F_TMSTAMP				TimeStamp;
@@ -385,11 +381,6 @@ typedef struct CURSOR
 	FLMUINT					uiCursorId;
 } CURSOR;
 
-typedef RCODE FQ_OPERATION(
-	FQATOM *	lhs,							// Left hand side
-	FQATOM *	rhs,							// Right hand side
-	FQATOM *	pResult);					// Newly allocated result side
-
 RCODE flmCurDbInit(
 	CURSOR *		pCursor);
 
@@ -457,9 +448,6 @@ RCODE flmCurEvalCompareOp(
 	FLMBOOL			bHaveKey,
 	FQATOM *			pResult);
 
-RCODE flmCurDoNeg(
-	FQATOM *			pResult);
-
 FLMUINT flmCurDoMatchOp(
 	FQATOM *			lhs,
 	FQATOM *			rhs,
@@ -476,9 +464,6 @@ FLMUINT flmCurDoContainsOp(
 	FQATOM *			lhs,
 	FQATOM *			rhs,
 	FLMUINT			uiLang);
-
-RCODE flmCurDoNeg(
-	FQATOM *			pResult);
 
 FLMINT flmTextCompare(
 	FLMBYTE *		pLeftBuf,

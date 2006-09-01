@@ -451,9 +451,17 @@ FSTATIC void flmLogPredicate(
 					f_logPrintf( pLogMsg, "%u",
 						(unsigned)pQNode->pQAtom->val.uiVal);
 					break;
+				case FLM_UINT64_VAL:
+					f_logPrintf( pLogMsg, "%I64u",
+						pQNode->pQAtom->val.ui64Val);
+					break;
 				case FLM_INT32_VAL:
 					f_logPrintf( pLogMsg, "%d",
 						(int)pQNode->pQAtom->val.iVal);
+					break;
+				case FLM_INT64_VAL:
+					f_logPrintf( pLogMsg, "%I64d",
+						pQNode->pQAtom->val.i64Val);
 					break;
 				case FLM_BINARY_VAL:
 					pLogMsg->appendString( "BINARY(");

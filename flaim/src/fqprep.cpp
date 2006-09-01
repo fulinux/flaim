@@ -640,10 +640,22 @@ RCODE flmCurCopyQNode(
 				break;
 			}
 			
+			case FLM_INT64_VAL:
+			{
+				pVal = (void *)&pSrcNode->pQAtom->val.i64Val;
+				break;
+			}
+			
 			case FLM_REC_PTR_VAL:
 			case FLM_UINT32_VAL:
 			{
 				pVal = (void *)&pSrcNode->pQAtom->val.uiVal;
+				break;
+			}
+			
+			case FLM_UINT64_VAL:
+			{
+				pVal = (void *)&pSrcNode->pQAtom->val.ui64Val;
 				break;
 			}
 			

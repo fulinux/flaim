@@ -24,6 +24,10 @@
 
 #include "flaimsys.h"
 
+#define IS_UNSIGNED( e)			((e) == FLM_UINT32_VAL || (e) == FLM_UINT64_VAL)
+
+#define IS_SIGNED( e)			((e) == FLM_INT32_VAL || (e) == FLM_INT64_VAL)
+
 FSTATIC FLMUINT flmCurEvalTrueFalse(
 	FQATOM *				pElm);
 
@@ -67,330 +71,995 @@ FSTATIC RCODE flmCurEvalLogicalOp(
 	FLMBOOL				bHaveKey,
 	FQATOM *				pResult);
 
-FSTATIC RCODE OpSyntaxError(
-	FQATOM *				pLhs,
-	FQATOM * 			pRhs,
-	FQATOM * 			pResult);
-
-FSTATIC RCODE OpUUBitAND(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUBitOR(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUBitXOR(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUMult(
-	FQATOM *				pLhs,
-	FQATOM * 			pRhs,
-	FQATOM * 			pResult);
-
-FSTATIC RCODE OpUSMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSSMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSUMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpURMult(
-	FQATOM * 			pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRUMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSRMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRSMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRRMult(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUSDiv(
-	FQATOM *				pLhs, 
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSSDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSUDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpURDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRUDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSRDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRSDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRRDiv(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUMod(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUSMod(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSSMod(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSUMod(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUSPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSSPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSUPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpURPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRUPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSRPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRSPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRRPlus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUUMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpUSMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSSMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSUMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpURMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRUMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpSRMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRSMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
-FSTATIC RCODE OpRRMinus(
-	FQATOM *				pLhs,
-	FQATOM *				pRhs,
-	FQATOM *				pResult);
-
 #define IS_EXPORT_PTR(e) \
 	((e) == FLM_TEXT_VAL || (e) == FLM_BINARY_VAL)
 
-/****************************************************************************
-Desc:
-****************************************************************************/
-FQ_OPERATION * FQ_DoOperation[((LAST_ARITH_OP - FIRST_ARITH_OP) + 1) * 9] =
-{
-	// BITAND
+FSTATIC void fqOpUUBitAND(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUBitOR(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUBitXOR(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUSMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSSMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSUMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUSDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSSDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSUDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUSMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSSMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSUMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUSPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSSPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSUPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUUMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpUSMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSSMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC void fqOpSUMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult);
+
+FSTATIC RCODE flmCurDoNeg(
+	FQATOM *	pResult);
 	
-	OpUUBitAND,
-	OpUUBitAND,
-	OpSyntaxError,
-	OpUUBitAND,
-	OpUUBitAND,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
+typedef void FQ_OPERATION(
+	FQATOM *		pLValue,
+	FQATOM *		pRValue,
+	FQATOM *		pResult);
 
-	// BITOR
-
-	OpUUBitOR,
-	OpUUBitOR,
-	OpSyntaxError,
-	OpUUBitOR,
-	OpUUBitOR,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-
-	// BITXOR
-
-	OpUUBitXOR,
-	OpUUBitXOR,
-	OpSyntaxError,
-	OpUUBitXOR,
-	OpUUBitXOR,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-
-	// MULT
-
-	OpUUMult,
-	OpUSMult,
-	OpURMult,
-	OpSUMult,
-	OpSSMult,
-	OpSRMult,
-	OpRUMult,
-	OpRSMult,
-	OpRRMult,
-
-	// DIV
-
-	OpUUDiv,
-	OpUSDiv,
-	OpURDiv,
-	OpSUDiv,
-	OpSSDiv,
-	OpSRDiv,
-	OpRUDiv,
-	OpRSDiv,
-	OpRRDiv,
-
-	// MOD
-
-	OpUUMod,
-	OpUSMod,
-	OpSyntaxError,
-	OpSUMod,
-	OpSSMod,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-	OpSyntaxError,
-
-	// PLUS
-
-	OpUUPlus,
-	OpUSPlus,
-	OpURPlus,
-	OpSUPlus,
-	OpSSPlus,
-	OpSRPlus,
-	OpRUPlus,
-	OpRSPlus,
-	OpRRPlus,
-
-	// MINUS
-
-	OpUUMinus,
-	OpUSMinus,
-	OpURMinus,
-	OpSUMinus,
-	OpSSMinus,
-	OpSRMinus,
-	OpRUMinus,
-	OpRSMinus,
-	OpRRMinus
+FQ_OPERATION * FQ_ArithOpTable[ 
+	((LAST_ARITH_OP - FIRST_ARITH_OP) + 1) * 4 ] =
+{
+/*	U = Unsigned		S = Signed
+					U + U					U + S
+						S + U					S + S */
+/* BITAND */	fqOpUUBitAND,		fqOpUUBitAND,
+						fqOpUUBitAND,		fqOpUUBitAND,
+/* BITOR  */	fqOpUUBitOR,		fqOpUUBitOR,
+						fqOpUUBitOR,		fqOpUUBitOR,
+/* BITXOR */	fqOpUUBitXOR,		fqOpUUBitXOR,
+						fqOpUUBitXOR,		fqOpUUBitXOR,
+/* MULT   */	fqOpUUMult,			fqOpUSMult,
+						fqOpSUMult,			fqOpSSMult,
+/* DIV    */	fqOpUUDiv,			fqOpUSDiv,
+						fqOpSUDiv,			fqOpSSDiv,
+/* MOD    */	fqOpUUMod,			fqOpUSMod,
+						fqOpSUMod,			fqOpSSMod,
+/* PLUS   */	fqOpUUPlus,			fqOpUSPlus,
+						fqOpSUPlus,			fqOpSSPlus,
+/* MINUS  */	fqOpUUMinus,		fqOpUSMinus,
+						fqOpSUMinus,		fqOpSSMinus
 };
+
+/***************************************************************************
+Desc:	Determines if number is the native type.
+***************************************************************************/
+FINLINE FLMBOOL isNativeNum(
+	QTYPES	eType)
+{
+	return( eType == FLM_UINT32_VAL || eType == FLM_INT32_VAL
+			 ? TRUE
+			 : FALSE);
+}
+
+/***************************************************************************
+Desc:		Returns a 64-bit unsigned integer
+***************************************************************************/
+FINLINE FLMUINT64 fqGetUInt64(
+	FQATOM *		pValue)
+{
+	if (pValue->eType == FLM_UINT32_VAL)
+	{
+		return( (FLMUINT64)pValue->val.uiVal);
+	}
+	else if( pValue->eType == FLM_UINT64_VAL)
+	{
+		return( pValue->val.ui64Val);
+	}
+	else if( pValue->eType == FLM_INT64_VAL)
+	{
+		if( pValue->val.i64Val >= 0)
+		{
+			return( (FLMUINT64)pValue->val.i64Val);
+		}
+	}
+	else if( pValue->eType == FLM_INT32_VAL)
+	{
+		if( pValue->val.iVal >= 0)
+		{
+			return( (FLMUINT64)pValue->val.iVal);
+		}
+	}
+	
+	flmAssert( 0);
+	return( 0);
+}
+
+/***************************************************************************
+Desc:		Returns a 64-bit signed integer
+***************************************************************************/
+FINLINE FLMINT64 fqGetInt64(
+	FQATOM *		pValue)
+{
+	if (pValue->eType == FLM_INT32_VAL)
+	{
+		return( (FLMINT64)pValue->val.iVal);
+	}
+	else if( pValue->eType == FLM_INT64_VAL)
+	{
+		return( pValue->val.i64Val);
+	}
+	else if( pValue->eType == FLM_UINT32_VAL)
+	{
+		return( (FLMINT64)pValue->val.uiVal);
+	}
+	else if( pValue->eType == FLM_UINT64_VAL)
+	{
+		if( pValue->val.ui64Val <= (FLMUINT64)FLM_MAX_INT64)
+		{
+			return( (FLMINT64)pValue->val.ui64Val);
+		}
+	}
+		
+	flmAssert( 0);
+	return( 0);
+}
+
+/***************************************************************************
+Desc:		Performs the bit and operation
+***************************************************************************/
+FSTATIC void fqOpUUBitAND(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) &&  isNativeNum( pRValue->eType))
+	{
+		pResult->val.uiVal = pLValue->val.uiVal & pRValue->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.ui64Val = 
+			fqGetUInt64( pLValue) & fqGetUInt64( pRValue);
+		pResult->eType = FLM_UINT64_VAL;
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the bit or operation
+***************************************************************************/
+FSTATIC void fqOpUUBitOR(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.uiVal = pLValue->val.uiVal | pRValue->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.ui64Val = 
+			fqGetUInt64( pLValue) | fqGetUInt64( pRValue);
+		pResult->eType = FLM_UINT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the bit xor operation
+***************************************************************************/
+FSTATIC void fqOpUUBitXOR(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.uiVal = pLValue->val.uiVal ^ pRValue->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.ui64Val = 
+			fqGetUInt64( pLValue) ^ fqGetUInt64( pRValue);
+		pResult->eType = FLM_UINT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the multiply operation
+***************************************************************************/
+FSTATIC void fqOpUUMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.uiVal = pLValue->val.uiVal * pRValue->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.ui64Val = 
+			fqGetUInt64( pLValue) * fqGetUInt64( pRValue);
+		pResult->eType = FLM_UINT64_VAL;
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the multiply operation
+***************************************************************************/
+FSTATIC void fqOpUSMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.iVal = (FLMINT)pLValue->val.uiVal * pRValue->val.iVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		pResult->val.i64Val = (FLMINT64)
+			fqGetUInt64( pLValue) * fqGetInt64( pRValue);
+		pResult->eType = FLM_INT64_VAL;
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the multiply operation
+***************************************************************************/
+FSTATIC void fqOpSSMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.iVal = pLValue->val.iVal * pRValue->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) 
+									? FLM_INT32_VAL 
+									: FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.i64Val = (FLMINT64)(fqGetInt64( pLValue) *
+										fqGetInt64( pRValue));
+
+		pResult->eType = (pResult->val.i64Val < 0) 
+									? FLM_INT64_VAL 
+									: FLM_UINT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the multiply operation
+***************************************************************************/
+FSTATIC void fqOpSUMult(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.iVal = pLValue->val.iVal * 
+			(FLMINT)pRValue->val.uiVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		pResult->val.i64Val = (FLMINT64)
+			(fqGetInt64( pLValue) * fqGetUInt64( pRValue));
+		pResult->eType = FLM_INT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the divide operation
+***************************************************************************/
+FSTATIC void fqOpUUDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.uiVal)
+		{
+			pResult->val.uiVal = pLValue->val.uiVal / pRValue->val.uiVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+
+		if( ui64RValue)
+		{
+			pResult->val.ui64Val = ui64LValue / ui64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the divide operation
+***************************************************************************/
+FSTATIC void fqOpUSDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.iVal)
+		{
+			pResult->val.iVal = pLValue->val.uiVal / pRValue->val.iVal;
+			pResult->eType = FLM_INT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMINT64		i64RValue = fqGetInt64( pRValue);
+
+		if( i64RValue)
+		{
+			pResult->val.i64Val = ui64LValue  / i64RValue;
+			pResult->eType = FLM_INT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the divide operation
+***************************************************************************/
+FSTATIC void fqOpSSDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.iVal)
+		{
+			pResult->val.iVal = pLValue->val.iVal / pRValue->val.iVal;
+			pResult->eType = (pResult->val.iVal < 0) 
+										? FLM_INT32_VAL : FLM_UINT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMINT64		i64LValue = fqGetInt64( pLValue);
+		FLMINT64		i64RValue = fqGetInt64( pRValue);
+
+		if( i64RValue)
+		{
+			pResult->val.i64Val = i64LValue  / i64RValue;
+			pResult->eType = (pResult->val.i64Val < 0) 
+										? FLM_INT64_VAL : FLM_UINT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the divide operation
+***************************************************************************/
+FSTATIC void fqOpSUDiv(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.uiVal)
+		{
+			pResult->val.iVal = pLValue->val.iVal / pRValue->val.uiVal;
+			pResult->eType = FLM_INT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMINT64		i64LValue = fqGetInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+
+		if( ui64RValue)
+		{
+			pResult->val.i64Val = i64LValue  / ui64RValue;
+			pResult->eType = FLM_INT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// Divide by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the modulo operation
+***************************************************************************/
+FSTATIC void fqOpUUMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.uiVal)
+		{
+			pResult->val.uiVal = pLValue->val.uiVal % pRValue->val.uiVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+
+		if( ui64RValue)
+		{
+			pResult->val.ui64Val = ui64LValue  % ui64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the modulo operation
+***************************************************************************/
+FSTATIC void fqOpUSMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.iVal)
+		{
+			pResult->val.iVal = pLValue->val.uiVal % pRValue->val.iVal;
+			pResult->eType = FLM_INT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMINT64		i64RValue = fqGetInt64( pRValue);
+
+		if( i64RValue)
+		{
+			pResult->val.i64Val = ui64LValue  % i64RValue;
+			pResult->eType = FLM_INT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs the modulo operation
+***************************************************************************/
+FSTATIC void fqOpSSMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.iVal)
+		{
+			pResult->val.iVal = pLValue->val.iVal % pRValue->val.iVal;
+			pResult->eType = (pResult->val.iVal < 0) 
+										? FLM_INT32_VAL : FLM_UINT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMINT64		i64LValue = fqGetInt64( pLValue);
+		FLMINT64		i64RValue = fqGetInt64( pRValue);
+
+		if( i64RValue)
+		{
+			pResult->val.i64Val = i64LValue % i64RValue;
+			pResult->eType = (pResult->val.i64Val < 0) 
+										? FLM_INT64_VAL : FLM_UINT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+
+/***************************************************************************
+Desc:		Performs the modulo operation
+***************************************************************************/
+FSTATIC void fqOpSUMod(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.uiVal)
+		{
+			pResult->val.iVal = pLValue->val.iVal % pRValue->val.uiVal;
+			pResult->eType = FLM_INT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+	else
+	{
+		FLMINT64		i64LValue = fqGetInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+
+		if( ui64RValue)
+		{
+			pResult->val.i64Val = i64LValue  % ui64RValue;
+			pResult->eType = FLM_INT64_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = 0;				// MOD by ZERO case.
+			pResult->eType = NO_TYPE;
+		}
+	}
+}
+
+/***************************************************************************
+Desc:		Performs an addition operation
+***************************************************************************/
+FSTATIC void fqOpUUPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.uiVal = pLValue->val.uiVal + pRValue->val.uiVal;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.ui64Val = 
+			fqGetUInt64( pLValue) + fqGetUInt64( pRValue);
+		pResult->eType = FLM_UINT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs an addition operation
+***************************************************************************/
+FSTATIC void fqOpUSPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if (pRValue->val.iVal < 0)
+		{
+			FLMINT	iTmpVal = -pRValue->val.iVal;
+			
+			if ((FLMUINT)iTmpVal > pLValue->val.uiVal)
+			{
+				pResult->val.iVal = -(iTmpVal - (FLMINT)pLValue->val.uiVal);
+				pResult->eType = FLM_INT32_VAL;
+			}
+			else
+			{
+				pResult->val.uiVal = pLValue->val.uiVal - (FLMUINT)iTmpVal;
+				pResult->eType = FLM_UINT32_VAL;
+			}
+		}
+		else
+		{
+			pResult->val.uiVal = pLValue->val.uiVal + (FLMUINT)pRValue->val.iVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMINT64		i64RValue = fqGetInt64( pRValue);
+
+		if (i64RValue < 0)
+		{
+			i64RValue = -i64RValue;
+			
+			if ((FLMUINT64)i64RValue > ui64LValue)
+			{
+				pResult->val.i64Val = -(i64RValue - (FLMINT64)ui64LValue);
+				pResult->eType = FLM_INT64_VAL;
+			}
+			else
+			{
+				pResult->val.ui64Val = ui64LValue - (FLMUINT64)i64RValue;
+				pResult->eType = FLM_UINT64_VAL;
+			}
+		}
+		else
+		{
+			pResult->val.ui64Val = ui64LValue + (FLMUINT64)i64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+	}
+}
+
+/***************************************************************************
+Desc:		Performs an addition operation
+***************************************************************************/
+FSTATIC void fqOpSSPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.iVal = pLValue->val.iVal + pRValue->val.iVal;
+		pResult->eType = (pResult->val.iVal < 0) 
+									? FLM_INT32_VAL : FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.i64Val = 
+			fqGetInt64( pLValue) + fqGetInt64( pRValue);
+		pResult->eType = (pResult->val.i64Val < 0) 
+									? FLM_INT64_VAL : FLM_UINT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs an addition operation
+***************************************************************************/
+FSTATIC void fqOpSUPlus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if (pLValue->val.iVal < 0)
+		{
+			FLMINT	iTmpVal = -pLValue->val.iVal;
+			
+			if ((FLMUINT)iTmpVal > pRValue->val.uiVal)
+			{
+				pResult->val.iVal = -(iTmpVal - (FLMINT)pRValue->val.uiVal);
+				pResult->eType = FLM_INT32_VAL;
+			}
+			else
+			{
+				pResult->val.uiVal = pRValue->val.uiVal - (FLMUINT)iTmpVal;
+				pResult->eType = FLM_UINT32_VAL;
+			}
+		}
+		else
+		{
+			pResult->val.uiVal = (FLMUINT)pLValue->val.iVal + pRValue->val.uiVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+	}
+	else
+	{
+		FLMINT64		i64LValue = fqGetInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+		
+		if (i64LValue < 0)
+		{
+			i64LValue = -i64LValue;
+			
+			if ((FLMUINT64)i64LValue > ui64RValue)
+			{
+				pResult->val.i64Val = -(i64LValue - (FLMINT64)ui64RValue);
+				pResult->eType = FLM_INT64_VAL;
+			}
+			else
+			{
+				pResult->val.ui64Val = ui64RValue - (FLMUINT64)i64LValue;
+				pResult->eType = FLM_UINT64_VAL;
+			}
+		}
+		else
+		{
+			pResult->val.ui64Val = (FLMUINT64)i64LValue + ui64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+	}
+}
+
+/***************************************************************************
+Desc:		Performs a subtraction operation
+***************************************************************************/
+FSTATIC void fqOpUUMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pLValue->val.uiVal >= pRValue->val.uiVal)
+		{
+			pResult->val.uiVal = pLValue->val.uiVal - pRValue->val.uiVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+		else
+		{
+			pResult->val.iVal = -((FLMINT)(pRValue->val.uiVal - pLValue->val.uiVal));
+			pResult->eType = FLM_INT32_VAL;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+
+		if( ui64LValue >= ui64RValue)
+		{
+			pResult->val.ui64Val = ui64LValue - ui64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+		else
+		{
+			pResult->val.i64Val = -((FLMINT64)(ui64RValue - ui64LValue));
+			pResult->eType = FLM_INT64_VAL;
+		}
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs a subtraction operation
+***************************************************************************/
+FSTATIC void fqOpUSMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{	
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		if( pRValue->val.iVal < 0) 
+		{
+			FLMINT	iTmpVal = -pRValue->val.iVal;
+			
+			pResult->val.uiVal = pLValue->val.uiVal + (FLMUINT)iTmpVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+		else if ((FLMUINT)pRValue->val.iVal > pLValue->val.uiVal)
+		{
+			pResult->val.iVal = (FLMINT)pLValue->val.uiVal - pRValue->val.iVal;
+			pResult->eType = FLM_INT32_VAL;
+		}
+		else
+		{
+			pResult->val.uiVal = pLValue->val.uiVal - (FLMUINT)pRValue->val.iVal;
+			pResult->eType = FLM_UINT32_VAL;
+		}
+	}
+	else
+	{
+		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
+		FLMINT64		i64RValue = fqGetInt64( pRValue);
+
+		if( i64RValue < 0)
+		{
+			i64RValue = -i64RValue;
+			
+			pResult->val.ui64Val = ui64LValue + (FLMUINT64)i64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+		else if ((FLMUINT64)i64RValue > ui64LValue)
+		{
+			pResult->val.i64Val = (FLMINT64)ui64LValue - i64RValue;
+			pResult->eType = FLM_INT64_VAL;
+		}
+		else
+		{
+			pResult->val.ui64Val = ui64LValue - (FLMUINT64)i64RValue;
+			pResult->eType = FLM_UINT64_VAL;
+		}
+	}
+}
+	
+/***************************************************************************
+Desc:		Performs a subtraction operation
+***************************************************************************/
+FSTATIC void fqOpSSMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.iVal = pLValue->val.iVal - pRValue->val.iVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		pResult->val.i64Val = fqGetInt64( pLValue) - fqGetInt64( pRValue);
+		pResult->eType = FLM_INT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:		Performs a subtraction operation
+***************************************************************************/
+FSTATIC void fqOpSUMinus(
+	FQATOM *	pLValue,
+	FQATOM *	pRValue,
+	FQATOM *	pResult)
+{
+	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	{
+		pResult->val.iVal = pLValue->val.iVal - (FLMINT)pRValue->val.uiVal;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		FLMINT64		i64LValue = fqGetInt64( pLValue);
+		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
+
+		pResult->val.i64Val = i64LValue - (FLMINT64)ui64RValue;
+		pResult->eType = FLM_INT64_VAL;
+	}
+}
 
 /****************************************************************************
 Desc: Evaluates a list of QATOM elements, and returns a complex boolean
@@ -440,8 +1109,28 @@ FSTATIC FLMUINT flmCurEvalTrueFalse(
 						uiTrueFalse |= FLM_FALSE;
 					}
 					break;
+				case FLM_INT64_VAL:
+					if (pTmpQAtom->val.i64Val)
+					{
+						uiTrueFalse |= FLM_TRUE;
+					}
+					else
+					{
+						uiTrueFalse |= FLM_FALSE;
+					}
+					break;
 				case FLM_UINT32_VAL:
 					if (pTmpQAtom->val.uiVal)
+					{
+						uiTrueFalse |= FLM_TRUE;
+					}
+					else
+					{
+						uiTrueFalse |= FLM_FALSE;
+					}
+					break;
+				case FLM_UINT64_VAL:
+					if (pTmpQAtom->val.ui64Val)
 					{
 						uiTrueFalse |= FLM_TRUE;
 					}
@@ -568,6 +1257,48 @@ RCODE flmCurGetAtomVal(
 			break;
 		}
 		
+		case FLM_INT64_VAL:
+		{
+			if (!pField || pRecord->getDataLength( pField) == 0)
+			{
+				// Default value
+				
+				pResult->val.i64Val = 0;
+			}
+			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
+			{
+				if (RC_BAD( rc = pRecord->getINT64( pField, &pResult->val.i64Val)))
+				{
+
+					// Try to get the number as an unsigned value. For purposes
+					// of evaluation, the 64-bit value will still be treated as
+					// signed. In effect, the large positive value is wrapped and
+					// becomes a negative value.
+
+					if (rc == FERR_CONV_NUM_OVERFLOW)
+					{
+						rc = pRecord->getUINT64( pField, &pResult->val.ui64Val);
+						eFldType = FLM_UINT64_VAL;
+					}
+				}
+			}
+			else if (uiType == FLM_CONTEXT_TYPE)
+			{
+				rc = pRecord->getUINT( pField, &pResult->val.uiVal);
+				eFldType = FLM_UINT32_VAL;
+			}
+			else
+			{
+				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
+			}
+
+			if (RC_OK( rc))
+			{
+				pResult->eType = eFldType;
+			}
+			break;
+		}
+		
 		case FLM_UINT32_VAL:
 		case FLM_REC_PTR_VAL:
 		{
@@ -597,6 +1328,48 @@ RCODE flmCurGetAtomVal(
 			else if (uiType == FLM_CONTEXT_TYPE)
 			{
 				rc = pRecord->getUINT( pField, &(pResult->val.uiVal));
+			}
+			else
+			{
+				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
+			}
+
+			if (RC_OK( rc))
+			{
+				pResult->eType = eFldType;
+			}
+			break;
+		}
+		
+		case FLM_UINT64_VAL:
+		{
+			if (!pField || pRecord->getDataLength( pField) == 0)
+			{
+				// Default value
+				
+				pResult->val.ui64Val = 0;
+			}
+			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
+			{
+				if (RC_BAD( rc = pRecord->getUINT64( pField, &pResult->val.ui64Val)))
+				{
+
+					// Try to get the number as a signed value. For purposes of
+					// evaluation, the 64-bit value will still be treated as
+					// unsigned. In effect, the negative value is wrapped and
+					// becomes a large positive value.
+
+					if (rc == FERR_CONV_NUM_UNDERFLOW)
+					{
+						rc = pRecord->getINT64( pField, &pResult->val.i64Val);
+						eFldType = FLM_INT64_VAL;
+					}
+				}
+			}
+			else if (uiType == FLM_CONTEXT_TYPE)
+			{
+				rc = pRecord->getUINT( pField, &(pResult->val.uiVal));
+				eFldType = FLM_REC_PTR_VAL;
 			}
 			else
 			{
@@ -712,6 +1485,16 @@ RCODE flmCurGetAtomVal(
 								&pResult->val.iVal)))
 						{
 							pResult->eType = FLM_INT32_VAL;
+						}
+						else if (RC_OK( rc = pRecord->getUINT64( pField, 
+								&pResult->val.ui64Val)))
+						{
+							pResult->eType = FLM_UINT64_VAL;
+						}
+						else if (RC_OK( rc = pRecord->getINT64( pField, 
+								&pResult->val.i64Val)))
+						{
+							pResult->eType = FLM_INT64_VAL;
 						}
 						break;
 					}
@@ -1360,21 +2143,50 @@ Get_Operand:
 		}
 		else
 		{
-			int		opPos = (eOp - FIRST_ARITH_OP) * 9;
-			QTYPES	lhType = (QTYPES) (pLhs->eType - FLM_UINT32_VAL);
-			QTYPES	rhType = (QTYPES) (pRhs->eType - FLM_UINT32_VAL);
-
-			if (lhType > 2 || rhType > 2)
+			FQ_OPERATION *		fnOp;
+			FLMUINT				uiOffset = 0;
+			
+			if( IS_UNSIGNED( pLhs->eType))
+			{
+				if( IS_UNSIGNED( pRhs->eType))
+				{
+					uiOffset = 0;
+				}
+				else if( IS_SIGNED( pRhs->eType))
+				{
+					uiOffset = 1;
+				}
+				else
+				{
+					rc = RC_SET( FERR_CURSOR_SYNTAX);
+					goto Exit;
+				}
+			}
+			else if( IS_SIGNED( pLhs->eType))
+			{
+				if( IS_UNSIGNED( pRhs->eType))
+				{
+					uiOffset = 2;
+				}
+				else if( IS_SIGNED( pRhs->eType))
+				{
+					uiOffset = 3;
+				}
+				else
+				{
+					rc = RC_SET( FERR_CURSOR_SYNTAX);
+					goto Exit;
+				}
+			}
+			else
 			{
 				rc = RC_SET( FERR_CURSOR_SYNTAX);
 				goto Exit;
 			}
 
-			opPos += (lhType * 3) + rhType;
-
-			// Call through a table the operation handling routine.
-
-			rc = (FQ_DoOperation[opPos]) (pLhs, pRhs, pTmpQAtom);
+			fnOp = FQ_ArithOpTable[ ((((FLMUINT)eOp) - 
+							FIRST_ARITH_OP) * 4) + uiOffset];
+			fnOp( pLhs, pRhs, pTmpQAtom);
 		}
 
 		// Doing contextless, do them all - loop through right hand
@@ -2689,677 +3501,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE OpSyntaxError(
-	FQATOM *		pLhs,
-	FQATOM *		pRhs,
-	FQATOM *		pResult)
-{
-	F_UNREFERENCED_PARM( pLhs);
-	F_UNREFERENCED_PARM( pRhs);
-	F_UNREFERENCED_PARM( pResult);
-	
-	return (RC_SET( FERR_CURSOR_SYNTAX));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUBitAND(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.uiVal = pLhs->val.uiVal & pRhs->val.uiVal;
-	pResult->eType = FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUBitOR(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.uiVal = pLhs->val.uiVal | pRhs->val.uiVal;
-	pResult->eType = FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUBitXOR(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.uiVal = pLhs->val.uiVal ^ pRhs->val.uiVal;
-	pResult->eType = FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.uiVal = pLhs->val.uiVal * pRhs->val.uiVal;
-	pResult->eType = FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUSMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.iVal = (FLMINT) pLhs->val.uiVal * pRhs->val.iVal;
-	pResult->eType = FLM_INT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSSMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.iVal = pLhs->val.iVal * pRhs->val.iVal;
-	pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSUMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.iVal = pLhs->val.iVal * (FLMINT) pRhs->val.uiVal;
-	pResult->eType = FLM_INT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpURMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRUMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSRMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRSMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRRMult(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.uiVal)
-	{
-		pResult->val.uiVal = pLhs->val.uiVal / pRhs->val.uiVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		// Divide by ZERO case.
-		
-		pResult->val.uiVal = 0;
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUSDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.iVal)
-	{
-		pResult->val.iVal = (FLMINT) pLhs->val.uiVal / pRhs->val.iVal;
-		pResult->eType = FLM_INT32_VAL;
-	}
-	else
-	{
-		// Divide by ZERO case.
-
-		pResult->val.uiVal = 0;
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSSDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.iVal)
-	{
-		pResult->val.iVal = pLhs->val.iVal / pRhs->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.uiVal = 0; // divide by ZERO case
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSUDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.uiVal)
-	{
-		pResult->val.iVal = pLhs->val.iVal / (FLMINT) pRhs->val.uiVal;
-		pResult->eType = FLM_INT32_VAL;
-	}
-	else	// Divide by ZERO case - let's try not to crash.
-	{
-		pResult->val.uiVal = 0;
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpURDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRUDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSRDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRSDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRRDiv(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUMod(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.uiVal != 0)
-	{
-		pResult->val.uiVal = pLhs->val.uiVal % pRhs->val.uiVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.uiVal = 0; // MOD by ZERO case.
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUSMod(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.iVal != 0)
-	{
-		pResult->val.iVal = (FLMINT) pLhs->val.uiVal / pRhs->val.iVal;
-		pResult->eType = FLM_INT32_VAL;
-	}
-	else
-	{
-		pResult->val.uiVal = 0; // MOD by ZERO case
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSSMod(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.iVal != 0)
-	{
-		pResult->val.iVal = pLhs->val.iVal % pRhs->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-	else
-	{
-		// MOD by ZERO case
-		
-		pResult->val.uiVal = 0;
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSUMod(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.uiVal != 0)
-	{
-		pResult->val.iVal = pLhs->val.iVal % ((FLMINT) pRhs->val.uiVal);
-		pResult->eType = FLM_INT32_VAL;
-	}
-	else
-	{
-		// Divide by ZERO case.
-		
-		pResult->val.uiVal = 0;
-		pResult->eType = FLM_UNKNOWN;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.uiVal = pLhs->val.uiVal + pRhs->val.uiVal;
-	pResult->eType = FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUSPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if ((pRhs->val.iVal >= 0) || (pLhs->val.uiVal > MAX_SIGNED_VAL))
-	{
-		pResult->val.uiVal = pLhs->val.uiVal + (FLMUINT) pRhs->val.iVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.iVal = (FLMINT) pLhs->val.uiVal + pRhs->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSSPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	pResult->val.iVal = pLhs->val.iVal + pRhs->val.iVal;
-	pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSUPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if ((pLhs->val.iVal >= 0) || (pRhs->val.uiVal > MAX_SIGNED_VAL))
-	{
-		pResult->val.uiVal = (FLMUINT) pLhs->val.iVal + pRhs->val.uiVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.iVal = pLhs->val.iVal + (FLMINT) pRhs->val.uiVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpURPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRUPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSRPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRSPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRRPlus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUUMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pLhs->val.uiVal >= pRhs->val.uiVal)
-	{
-		pResult->val.uiVal = pLhs->val.uiVal - pRhs->val.uiVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.iVal = (FLMINT) (pLhs->val.uiVal - pRhs->val.uiVal);
-		pResult->eType = FLM_INT32_VAL;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpUSMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-
-	if (pRhs->val.iVal < 0)
-	{
-		pResult->val.uiVal = pLhs->val.uiVal - pRhs->val.iVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.iVal = (FLMINT) pLhs->val.uiVal - pRhs->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSSMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if ((pLhs->val.iVal > 0) && (pRhs->val.iVal < 0))
-	{
-		pResult->val.uiVal = (FLMUINT) (pLhs->val.iVal - pRhs->val.iVal);
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.iVal = pLhs->val.iVal - pRhs->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSUMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	if (pRhs->val.uiVal > MAX_SIGNED_VAL)
-	{
-		pResult->val.iVal = (pLhs->val.iVal - MAX_SIGNED_VAL) - 
-										(FLMINT) (pRhs->val.uiVal - MAX_SIGNED_VAL);
-		pResult->eType = FLM_INT32_VAL;
-	}
-	else
-	{
-		pResult->val.iVal = pLhs->val.iVal - (FLMINT) pRhs->val.uiVal;
-		pResult->eType = (pResult->val.iVal < 0) ? FLM_INT32_VAL : FLM_UINT32_VAL;
-	}
-
-	return (FERR_OK);
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpURMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRUMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpSRMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRSMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FSTATIC RCODE OpRRMinus(
-	FQATOM *	pLhs,
-	FQATOM *	pRhs,
-	FQATOM *	pResult)
-{
-	return (OpSyntaxError( pLhs, pRhs, pResult));
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-RCODE flmCurDoNeg(
+FSTATIC RCODE flmCurDoNeg(
 	FQATOM *	pResult)
 {
 	RCODE		rc = FERR_OK;
@@ -3371,19 +3513,41 @@ RCODE flmCurDoNeg(
 	{
 		if (IS_UNSIGNED( pTmpQAtom->eType))
 		{
-			if (pTmpQAtom->val.uiVal >= MAX_SIGNED_VAL)
+			if (isNativeNum( pTmpQAtom->eType))
 			{
-				pTmpQAtom->eType = NO_TYPE;
+				if (pTmpQAtom->val.uiVal >= (FLMUINT)(FLM_MAX_INT32) + 1)
+				{
+					pTmpQAtom->eType = NO_TYPE;
+				}
+				else
+				{
+					pTmpQAtom->val.iVal = -((FLMINT)(pTmpQAtom->val.uiVal));
+					pTmpQAtom->eType = FLM_INT32_VAL;
+				}
 			}
 			else
 			{
-				pTmpQAtom->val.iVal = -((FLMINT) (pTmpQAtom->val.uiVal));
-				pTmpQAtom->eType = FLM_INT32_VAL;
+				if (pTmpQAtom->val.ui64Val >= (FLMUINT64)(FLM_MAX_INT64) + 1)
+				{
+					pTmpQAtom->eType = NO_TYPE;
+				}
+				else
+				{
+					pTmpQAtom->val.i64Val = -((FLMINT64)(pTmpQAtom->val.ui64Val));
+					pTmpQAtom->eType = FLM_INT64_VAL;
+				}
 			}
 		}
 		else if (IS_SIGNED( pTmpQAtom->eType))
 		{
-			pTmpQAtom->val.iVal *= -1;
+			if (isNativeNum( pTmpQAtom->eType))
+			{
+				pTmpQAtom->val.iVal *= -1;
+			}
+			else
+			{
+				pTmpQAtom->val.i64Val *= -1;
+			}
 		}
 		else if (pTmpQAtom->eType != FLM_UNKNOWN)
 		{
@@ -3549,6 +3713,13 @@ FLMINT flmCurDoRelationalOp(
 					break;
 				}
 				
+				case FLM_UINT64_VAL:
+				{
+					iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.uiVal),
+													pRhs->val.ui64Val);
+					break;
+				}
+				
 				case FLM_INT32_VAL:
 				{
 					if (pRhs->val.iVal < 0)
@@ -3559,6 +3730,74 @@ FLMINT flmCurDoRelationalOp(
 					{
 						iCompVal = FQ_COMPARE( pLhs->val.uiVal, 
 													  (FLMUINT) pRhs->val.iVal);
+					}
+					break;
+				}
+				
+				case FLM_INT64_VAL:
+				{
+					if (pRhs->val.i64Val < 0)
+					{
+						iCompVal = 1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( (FLMINT64)(pLhs->val.uiVal), 
+													  pRhs->val.i64Val);
+					}
+					break;
+				}
+				
+				default:
+				{
+					flmAssert( 0);
+					break;
+				}
+
+			}
+			break;
+		}
+		
+		case FLM_UINT64_VAL:
+		{
+			switch (pRhs->eType)
+			{
+				case FLM_UINT32_VAL:
+				{
+					iCompVal = FQ_COMPARE( pLhs->val.ui64Val, (FLMUINT64)pRhs->val.uiVal);
+					break;
+				}
+				
+				case FLM_UINT64_VAL:
+				{
+					iCompVal = FQ_COMPARE( pLhs->val.ui64Val, pRhs->val.ui64Val);
+					break;
+				}
+				
+				case FLM_INT32_VAL:
+				{
+					if (pRhs->val.iVal < 0)
+					{
+						iCompVal = 1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( pLhs->val.ui64Val, 
+													  (FLMUINT64)(pRhs->val.iVal));
+					}
+					break;
+				}
+				
+				case FLM_INT64_VAL:
+				{
+					if (pRhs->val.i64Val < 0)
+					{
+						iCompVal = 1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( pLhs->val.ui64Val, 
+													  (FLMUINT64)(pRhs->val.i64Val));
 					}
 					break;
 				}
@@ -3583,6 +3822,12 @@ FLMINT flmCurDoRelationalOp(
 					break;
 				}
 				
+				case FLM_INT64_VAL:
+				{
+					iCompVal = FQ_COMPARE( (FLMINT64)(pLhs->val.iVal), pRhs->val.i64Val);
+					break;
+				}
+				
 				case FLM_UINT32_VAL:
 				{
 					if (pLhs->val.iVal < 0)
@@ -3593,6 +3838,73 @@ FLMINT flmCurDoRelationalOp(
 					{
 						iCompVal = FQ_COMPARE( (FLMUINT) pLhs->val.iVal, 
 													  pRhs->val.uiVal);
+					}
+					break;
+				}
+				
+				case FLM_UINT64_VAL:
+				{
+					if (pLhs->val.iVal < 0)
+					{
+						iCompVal = -1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.iVal), 
+													  pRhs->val.ui64Val);
+					}
+					break;
+				}
+				
+				default:
+				{
+					flmAssert( 0);
+					break;
+				}
+			}
+			break;
+		}
+		
+		case FLM_INT64_VAL:
+		{
+			switch (pRhs->eType)
+			{
+				case FLM_INT32_VAL:
+				{
+					iCompVal = FQ_COMPARE( pLhs->val.i64Val, (FLMINT64)(pRhs->val.iVal));
+					break;
+				}
+				
+				case FLM_INT64_VAL:
+				{
+					iCompVal = FQ_COMPARE( pLhs->val.i64Val, pRhs->val.i64Val);
+					break;
+				}
+				
+				case FLM_UINT32_VAL:
+				{
+					if (pLhs->val.i64Val < 0)
+					{
+						iCompVal = -1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( pLhs->val.i64Val, 
+													  (FLMINT64)(pRhs->val.uiVal));
+					}
+					break;
+				}
+				
+				case FLM_UINT64_VAL:
+				{
+					if (pLhs->val.i64Val < 0)
+					{
+						iCompVal = -1;
+					}
+					else
+					{
+						iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.i64Val), 
+													  pRhs->val.ui64Val);
 					}
 					break;
 				}
@@ -3608,10 +3920,19 @@ FLMINT flmCurDoRelationalOp(
 		
 		case FLM_REC_PTR_VAL:
 		{
-			flmAssert( pRhs->eType == FLM_REC_PTR_VAL || 
-						  pRhs->eType == FLM_UINT32_VAL);
-						  
-			iCompVal = FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal);
+			if (pRhs->eType == FLM_REC_PTR_VAL ||
+				 pRhs->eType == FLM_UINT32_VAL)
+			{
+				iCompVal = FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal);
+			}
+			else if (pRhs->eType == FLM_UINT64_VAL)
+			{
+				iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.uiVal), pRhs->val.ui64Val);
+			}
+			else
+			{
+				flmAssert( 0);
+			}
 			break;
 		}
 		

@@ -521,8 +521,14 @@ RCODE flmPutValInAtom(
 		case FLM_REC_PTR_VAL:
 			pQAtom->val.uiVal = *((FLMUINT *)pvVal);
 			break;
+		case FLM_UINT64_VAL:
+			pQAtom->val.ui64Val = *((FLMUINT64 *)pvVal);
+			break;
 		case FLM_INT32_VAL:
 			pQAtom->val.iVal = *((FLMINT *)pvVal);
+			break;
+		case FLM_INT64_VAL:
+			pQAtom->val.i64Val = *((FLMINT64 *)pvVal);
 			break;
 		case FLM_BINARY_VAL:
 		case FLM_TEXT_VAL:
@@ -614,10 +620,22 @@ RCODE flmCurMakeQNode(
 			break;
 		}
 		
+		case FLM_INT64_VAL:
+		{
+			pQAtom->val.i64Val = *(FLMINT64 *)pVal;
+			break;
+		}
+		
 		case FLM_REC_PTR_VAL:
 		case FLM_UINT32_VAL:
 		{
 			pQAtom->val.uiVal = *(FLMUINT *)pVal;
+			break;
+		}
+		
+		case FLM_UINT64_VAL:
+		{
+			pQAtom->val.ui64Val = *(FLMUINT64 *)pVal;
 			break;
 		}
 		
@@ -839,13 +857,14 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 			pTmpVal = &uiVal;
 			break;
 
+		case FLM_UINT64_VAL:
+		case FLM_INT64_VAL:
 		case FLM_TEXT_VAL:
-			pTmpVal = pVal;
-			eValType = FLM_TEXT_VAL;
-			break;
-
 		case FLM_BINARY_VAL:
-			eValType = FLM_BINARY_VAL;
+		
+			// pTmpVal is already pointing to pVal, and
+			// eValType does not need to be changed.
+			
 			break;
 
 		default:

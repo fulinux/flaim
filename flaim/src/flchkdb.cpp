@@ -3101,7 +3101,7 @@ FSTATIC RCODE chkVerifyElmFields(
 				{
 					if (!pStateInfo->uiEncId)
 					{
-						*peElmCorruptCode = flmVerifyField( pValue,
+						*peElmCorruptCode = flmVerifyField( pStateInfo, pValue,
 																	  pStateInfo->uiFieldLen,
 																	  pStateInfo->uiFieldType);
 					}
@@ -3118,7 +3118,7 @@ FSTATIC RCODE chkVerifyElmFields(
 								goto Exit;
 							}
 
-							*peElmCorruptCode = flmVerifyField( pData,
+							*peElmCorruptCode = flmVerifyField( pStateInfo, pData,
 									pStateInfo->uiFieldLen, pStateInfo->uiFieldType);
 						}
 						else

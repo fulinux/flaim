@@ -128,16 +128,6 @@ FSTATIC FLMUINT flmCountCharacters(
 	FLMUINT				uiMaxToCount,
 	FLMUINT				uiIfdFlags);
 
-FSTATIC void flmUintToBCD(
-	FLMUINT				uiValue,
-	FLMBYTE *			pNumberBuf,
-	FLMUINT *			puiValueLen);
-
-FSTATIC void flmIntToBCD(
-	FLMINT				iValue,
-	FLMBYTE *			pNumberBuf,
-	FLMUINT *			puiValueLen);
-
 /****************************************************************************
 Desc: Compares the contents of the key buffers for two cursor positioning keys,
 		returning one of the following values:
@@ -1633,7 +1623,7 @@ RCODE flmBuildFromAndUntilKeys(
 	FLMBOOL				bDoKeyMatch = FALSE;
 	FLMBOOL				bOriginalCharsLost;
 	FLMBOOL				bDBCSLanguage;
-	FLMBYTE				pNumberBuf[8];
+	FLMBYTE				ucNumberBuf [ F_MAX_NUM64_BUF + 1];
 	FLMUINT				uiTempLen;
 	FLMUINT				uiMaxKeySize;
 
@@ -2024,11 +2014,33 @@ RCODE flmBuildFromAndUntilKeys(
 
 						if (IFD_GET_FIELD_TYPE( pIfd) == FLM_NUMBER_TYPE)
 						{
-							flmIntToBCD( iValue, pNumberBuf, &uiTempLen);
+							uiTempLen = sizeof( ucNumberBuf);
+							(void)FlmINT2Storage( iValue, &uiTempLen, ucNumberBuf);
 						}
 						else
 						{
-							UD2FBA( (FLMUINT32)iValue, pNumberBuf);
+							UD2FBA( (FLMUINT32)iValue, ucNumberBuf);
+							uiTempLen = 4;
+						}
+						break;
+					}
+
+					case FLM_INT64_VAL:
+					{
+						FLMINT64	i64Value = pCurPred->pVal->val.i64Val;
+						if (pCurPred->eOperator == FLM_GT_OP)
+						{
+							i64Value++;
+						}
+
+						if (IFD_GET_FIELD_TYPE( pIfd) == FLM_NUMBER_TYPE)
+						{
+							uiTempLen = sizeof( ucNumberBuf);
+							(void)FlmINT64ToStorage( i64Value, &uiTempLen, ucNumberBuf);
+						}
+						else
+						{
+							UD2FBA( (FLMUINT32)i64Value, ucNumberBuf);
 							uiTempLen = 4;
 						}
 						break;
@@ -2045,11 +2057,34 @@ RCODE flmBuildFromAndUntilKeys(
 
 						if (IFD_GET_FIELD_TYPE( pIfd) == FLM_NUMBER_TYPE)
 						{
-							flmUintToBCD( uiValue, pNumberBuf, &uiTempLen);
+							uiTempLen = sizeof( ucNumberBuf);
+							(void)FlmUINT2Storage( uiValue, &uiTempLen, ucNumberBuf);
 						}
 						else
 						{
-							UD2FBA( (FLMUINT32)uiValue, pNumberBuf);
+							UD2FBA( (FLMUINT32)uiValue, ucNumberBuf);
+							uiTempLen = 4;
+						}
+						break;
+					}
+
+					case FLM_UINT64_VAL:
+					{
+						FLMUINT64	ui64Value = pCurPred->pVal->val.ui64Val;
+						
+						if (pCurPred->eOperator == FLM_GT_OP)
+						{
+							ui64Value++;
+						}
+
+						if (IFD_GET_FIELD_TYPE( pIfd) == FLM_NUMBER_TYPE)
+						{
+							uiTempLen = sizeof( ucNumberBuf);
+							(void)FlmUINT64ToStorage( ui64Value, &uiTempLen, ucNumberBuf);
+						}
+						else
+						{
+							UD2FBA( (FLMUINT32)ui64Value, ucNumberBuf);
 							uiTempLen = 4;
 						}
 						break;
@@ -2098,7 +2133,7 @@ RCODE flmBuildFromAndUntilKeys(
 
 				if (RC_BAD( rc = flmAddKeyPiece( uiMaxKeySize, pIfd, FALSE, 
 							pFromKey, &uiFromKeyPos, bFromAtFirst, pUntilKey, 
-							&uiUntilKeyPos, bUntilAtEnd, (FLMBYTE*) pNumberBuf, 
+							&uiUntilKeyPos, bUntilAtEnd, ucNumberBuf, 
 							uiTempLen, &bDataTruncated, &bDoneBuilding)))
 				{
 					goto Exit;
@@ -2966,72 +3001,3 @@ FSTATIC FLMUINT flmCountCharacters(
 	return (uiNumChars);
 }
 
-/****************************************************************************
-Desc:	Cheating routine to blast out an internal number without using the
-		pool to allocate space.
-****************************************************************************/
-FSTATIC void flmUintToBCD(
-	FLMUINT		uiNum,
-	FLMBYTE *	pNumberBuf,
-	FLMUINT *	puiValueLen)
-{
-	FLMBYTE		ucNibStk[ F_MAX_NUM_BUF + 1];
-	FLMBYTE *	pucNibStk;
-
-	pucNibStk = &ucNibStk[1];
-	*pucNibStk++ = 0x0F;
-
-	while (uiNum >= 10)
-	{
-		*pucNibStk++ = (FLMBYTE) (uiNum % 10);
-		uiNum /= 10;
-	}
-
-	*pucNibStk++ = (FLMBYTE) uiNum;
-	*puiValueLen = (pucNibStk - ucNibStk) >> 1;
-
-	do
-	{
-		*pNumberBuf++ = (FLMBYTE) ((pucNibStk[-1] << 4) | pucNibStk[-2]);
-	} while ((pucNibStk -= 2) > &ucNibStk[1]);
-}
-
-/****************************************************************************
-Desc:	Cheating routine to blast out an internal number without using the
-		pool to allocate space. Code taken from gnbcd.cpp.
-****************************************************************************/
-FSTATIC void flmIntToBCD(
-	FLMINT			iNum,
-	FLMBYTE *		pNumberBuf,
-	FLMUINT *		puiValueLen)
-{
-	FLMUINT			uiNum;
-	FLMBYTE			ucNibStk[F_MAX_NUM_BUF + 1];
-	FLMBYTE *		pucNibStk;
-	FLMINT			iNegFlag;
-
-	ucNibStk[0] = 0;
-	ucNibStk[1] = 0x0F;
-	pucNibStk = &ucNibStk[2];
-	uiNum = ((iNegFlag = iNum < 0) != 0) ? -iNum : iNum;
-
-	while (uiNum >= 10)
-	{
-		*pucNibStk++ = (FLMBYTE) (uiNum % 10);
-		uiNum /= 10;
-	}
-
-	*pucNibStk++ = (FLMBYTE) uiNum;
-
-	if (iNegFlag)
-	{
-		*pucNibStk++ = 0x0B;
-	}
-
-	*puiValueLen = (pucNibStk - ucNibStk) >> 1;
-
-	do
-	{
-		*pNumberBuf++ = (FLMBYTE) ((pucNibStk[-1] << 4) | pucNibStk[-2]);
-	} while ((pucNibStk -= 2) > &ucNibStk[1]);
-}

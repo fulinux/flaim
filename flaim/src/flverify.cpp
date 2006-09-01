@@ -402,6 +402,7 @@ eCorruptionType flmVerifyTextField(
 Desc:	This routine verifies a number field.
 ****************************************************************************/
 eCorruptionType flmVerifyNumberField(
+	STATE_INFO *	pStateInfo,
 	FLMBYTE *		pNumber,
 	FLMUINT			uiNumberLen)
 {
@@ -517,11 +518,23 @@ eCorruptionType flmVerifyNumberField(
 			return (FLM_BAD_NUMBER_FIELD);
 		}
 
-		// Numbers greater than 11 digits not yet supported.
-
-		if (!bRealNumberFlag && (uiNibbleCount > 11))
+		if (pStateInfo->uiVersionNum >= FLM_FILE_FORMAT_VER_4_62)
 		{
-			return (FLM_BAD_NUMBER_FIELD);
+			// Numbers greater than 21 digits not yet supported.
+
+			if (!bRealNumberFlag && (uiNibbleCount > 21))
+			{
+				return (FLM_BAD_NUMBER_FIELD);
+			}
+		}
+		else
+		{
+			// Numbers greater than 11 digits not yet supported.
+
+			if (!bRealNumberFlag && (uiNibbleCount > 11))
+			{
+				return (FLM_BAD_NUMBER_FIELD);
+			}
 		}
 	}
 }
@@ -666,9 +679,10 @@ FSTATIC eCorruptionType flmVerifyBlobField(
 Desc:
 ****************************************************************************/
 eCorruptionType flmVerifyField(
-	FLMBYTE*		pField,
-	FLMUINT		uiFieldLen,
-	FLMUINT		uiFieldType)
+	STATE_INFO *	pStateInfo,
+	FLMBYTE*			pField,
+	FLMUINT			uiFieldLen,
+	FLMUINT			uiFieldType)
 {
 	if (((uiFieldLen) && (!pField)) || ((!uiFieldLen) && (pField)))
 	{
@@ -684,7 +698,7 @@ eCorruptionType flmVerifyField(
 		
 		case FLM_NUMBER_TYPE:
 		{
-			return (flmVerifyNumberField( pField, uiFieldLen));
+			return (flmVerifyNumberField( pStateInfo, pField, uiFieldLen));
 		}
 		
 		case FLM_BINARY_TYPE:

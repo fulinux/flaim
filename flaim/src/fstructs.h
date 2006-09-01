@@ -1682,18 +1682,6 @@ typedef struct FBak
 /****************************************************************************
 Desc:
 ****************************************************************************/
-typedef struct BCD_TYPE
-{
-	const FLMBYTE *	pucPtr;
-	FLMUINT				uiNibCnt;
-	FLMUINT				uiNum;
-	FLMBOOL				bNegFlag;
-	FLMBYTE				ucNumBuf[ F_MAX_NUM_BUF];
-} BCD_TYPE;
-
-/****************************************************************************
-Desc:
-****************************************************************************/
 typedef struct GED_STREAM
 {
 	IF_FileHdl *	pFileHdl;

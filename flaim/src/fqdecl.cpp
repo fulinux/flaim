@@ -296,6 +296,15 @@ FSTATIC RCODE flmSendCursorWhere(
 							goto Exit;
 						}
 						break;
+					case FLM_UINT64_VAL:
+						if (RC_BAD( rc = gedAddField( pPool, pRootNode,
+													FCS_ITERATOR_NUMBER_VALUE,
+													(void *)&pQNode->pQAtom->val.ui64Val,
+													8, FLM_NUMBER_TYPE)))
+						{
+							goto Exit;
+						}
+						break;
 					case FLM_INT32_VAL:
 						if ((pFldNode = GedNodeMake( pPool,
 												FCS_ITERATOR_NUMBER_VALUE,
@@ -306,6 +315,20 @@ FSTATIC RCODE flmSendCursorWhere(
 						GedChildGraft( pRootNode, pFldNode, GED_LAST);
 						if (RC_BAD( rc = GedPutINT( pPool, pFldNode,
 													pQNode->pQAtom->val.iVal)))
+						{
+							goto Exit;
+						}
+						break;
+					case FLM_INT64_VAL:
+						if ((pFldNode = GedNodeMake( pPool,
+												FCS_ITERATOR_NUMBER_VALUE,
+												&rc)) == NULL)
+						{
+							goto Exit;
+						}
+						GedChildGraft( pRootNode, pFldNode, GED_LAST);
+						if (RC_BAD( rc = GedPutINT64( pPool, pFldNode,
+													pQNode->pQAtom->val.i64Val)))
 						{
 							goto Exit;
 						}
