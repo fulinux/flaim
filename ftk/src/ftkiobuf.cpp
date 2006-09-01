@@ -276,7 +276,8 @@ Retry:
 		
 		f_mutexLock( m_hMutex);
 		bMutexLocked = TRUE;
-		pPending->Release();
+		
+		pPending->Release( bMutexLocked);
 		
 		if( RC_BAD( rc))
 		{
@@ -443,6 +444,7 @@ FLMINT F_IOBuffer::Release(
 	if( m_pBufferMgr && !bMutexAlreadyLocked)
 	{
 		hMutex = m_pBufferMgr->m_hMutex;
+		f_assertMutexNotLocked( hMutex);
 		f_mutexLock( hMutex);
 	}
 	
