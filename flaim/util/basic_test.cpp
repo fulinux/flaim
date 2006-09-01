@@ -148,9 +148,9 @@ static FLMUINT_TEST gv_FLMUINTTests [NUM_FLMUINT_TESTS] =
 {
 	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
 	{0,										FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
-#ifdef FLM64_BIT
+#ifdef FLM_64BIT
 	{FLM_MAX_UINT,							FERR_OK,							FERR_CONV_NUM_OVERFLOW, FERR_OK,							FERR_CONV_NUM_OVERFLOW},
-	((FLMUINT)(FLM_MAX_UINT32),		FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
+	{(FLMUINT)(FLM_MAX_UINT32),		FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
 #else
 	{FLM_MAX_UINT,							FERR_OK,							FERR_CONV_NUM_OVERFLOW, FERR_OK,							FERR_OK},
 	{(FLMUINT)(FLM_MAX_UINT32),		FERR_OK,							FERR_CONV_NUM_OVERFLOW, FERR_OK,							FERR_OK}
@@ -176,7 +176,7 @@ static FLMINT_TEST gv_FLMINTTests [NUM_FLMINT_TESTS] =
 /***************************************************************************
 Desc: FLMUINT64 numbers to test
 ****************************************************************************/
-#ifndef FLM64_BIT
+#ifndef FLM_64BIT
 	#define NUM_FLMUINT64_TESTS	8
 #else
 	#define NUM_FLMUINT64_TESTS	7
@@ -185,17 +185,18 @@ static FLMUINT64_TEST gv_FLMUINT64Tests [NUM_FLMUINT64_TESTS] =
 {
 	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
 	{0,										FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
-#ifndef FLM64_BIT
+#ifndef FLM_64BIT
 	{(FLMUINT64)(FLM_MAX_UINT) + 1,	FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
 #endif
-	{(FLMUINT64)(FLM_MAX_UINT32) + 1,FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
-#ifdef FLM64_BIT
+#ifdef FLM_64BIT
+	{(FLMUINT64)(FLM_MAX_UINT32) + 1,FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
 	{(FLMUINT64)(FLM_MAX_INT64) - 1,	FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
 	{(FLMUINT64)(FLM_MAX_INT64),		FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
 	{(FLMUINT64)(FLM_MAX_INT64) + 1,	FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
 	{FLM_MAX_UINT64 - 1,					FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
 	{FLM_MAX_UINT64,						FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
 #else
+	{(FLMUINT64)(FLM_MAX_UINT32) + 1,FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
 	{(FLMUINT64)(FLM_MAX_INT64) - 1,	FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
 	{(FLMUINT64)(FLM_MAX_INT64),		FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
 	{(FLMUINT64)(FLM_MAX_INT64) + 1,	FERR_CONV_NUM_OVERFLOW,		FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_CONV_NUM_OVERFLOW},
@@ -207,7 +208,7 @@ static FLMUINT64_TEST gv_FLMUINT64Tests [NUM_FLMUINT64_TESTS] =
 /***************************************************************************
 Desc: FLMINT64 numbers to test
 ****************************************************************************/
-#ifndef FLM64_BIT
+#ifndef FLM_64BIT
 	#define NUM_FLMINT64_TESTS	9
 #else
 	#define NUM_FLMINT64_TESTS	7
@@ -216,18 +217,19 @@ static FLMINT64_TEST gv_FLMINT64Tests [NUM_FLMINT64_TESTS] =
 {
 	// Number								GetFLMUINT RCODE				GetFLMINT RCODE			GetFLMUINT64 RCODE			GetFLMINT64 RCODE
 	{-1,										FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
-#ifndef FLM64_BIT
+#ifndef FLM_64BIT
 	{(FLMINT64)(FLM_MIN_INT) - 1,		FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
 	{(FLMINT64)(FLM_MAX_INT) + 1,		FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
 #endif
-	{(FLMINT64)(FLM_MIN_INT32) - 1,	FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
-#ifdef FLM64_BIT
+#ifdef FLM_64BIT
+	{(FLMINT64)(FLM_MIN_INT32) - 1,	FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
 	{(FLMINT64)(FLM_MAX_INT32) + 1,	FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
 	{FLM_MIN_INT64,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
 	{FLM_MIN_INT64 + 1,					FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
 	{FLM_MAX_INT64 - 1,					FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
-	{FLM_MAX_INT64,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK,						FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
+	{FLM_MAX_INT64,						FERR_OK,							FERR_OK,						FERR_OK,							FERR_OK},
 #else
+	{(FLMINT64)(FLM_MIN_INT32) - 1,	FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
 	{(FLMINT64)(FLM_MAX_INT32) + 1,	FERR_OK,							FERR_CONV_NUM_OVERFLOW,	FERR_OK,							FERR_OK},
 	{FLM_MIN_INT64,						FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
 	{FLM_MIN_INT64 + 1,					FERR_CONV_NUM_UNDERFLOW,	FERR_CONV_NUM_UNDERFLOW,FERR_CONV_NUM_UNDERFLOW,	FERR_OK},
@@ -3431,6 +3433,7 @@ RCODE IFlmTestImpl::testNumField(
 	rc = pDataRec->getUINT( pvField, &uiNum);
 	if (rc != rcExpectedUINT)
 	{
+		f_assert( 0);
 		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getUINT, expected %e. Num: %u",
 				rc, rcExpectedUINT, (unsigned)uiExpectedNum);
 		if (rc == FERR_OK)
@@ -3443,7 +3446,7 @@ RCODE IFlmTestImpl::testNumField(
 	{
 		if (uiNum != uiExpectedNum)
 		{
-			rc = RC_SET( FERR_FAILURE);
+			rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 			f_sprintf( m_szFailInfo, "Unexpected UINT (%u) from getUINT, expected %u",
 					(unsigned)uiNum, (unsigned)uiExpectedNum);
 			goto Exit;
@@ -3468,7 +3471,7 @@ RCODE IFlmTestImpl::testNumField(
 				rc, rcExpectedINT, (int)iExpectedNum);
 		if (rc == FERR_OK)
 		{
-			rc = RC_SET( FERR_FAILURE);
+			rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		}
 		goto Exit;
 	}
@@ -3497,6 +3500,7 @@ RCODE IFlmTestImpl::testNumField(
 	rc = pDataRec->getUINT64( pvField, &ui64Num);
 	if (rc != rcExpectedUINT64)
 	{
+		f_assert( 0);
 		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getUINT64, expected %e. Num: %I64u",
 				rc, rcExpectedUINT64, ui64ExpectedNum);
 		if (rc == FERR_OK)
@@ -3509,7 +3513,7 @@ RCODE IFlmTestImpl::testNumField(
 	{
 		if (ui64Num != ui64ExpectedNum)
 		{
-			rc = RC_SET( FERR_FAILURE);
+			rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 			f_sprintf( m_szFailInfo, "Unexpected UINT64 (%I64u) from getUINT64, expected %I64u",
 					ui64Num, ui64ExpectedNum);
 			goto Exit;
@@ -3530,6 +3534,7 @@ RCODE IFlmTestImpl::testNumField(
 	rc = pDataRec->getINT64( pvField, &i64Num);
 	if (rc != rcExpectedINT64)
 	{
+		f_assert( 0);
 		f_sprintf( m_szFailInfo, "Unexpected rc (%e) from getINT64, expected %e. Num: %I64d",
 				rc, rcExpectedINT64, i64ExpectedNum);
 		if (rc == FERR_OK)
@@ -3542,9 +3547,9 @@ RCODE IFlmTestImpl::testNumField(
 	{
 		if (i64Num != i64ExpectedNum)
 		{
-			rc = RC_SET( FERR_FAILURE);
 			f_sprintf( m_szFailInfo, "Unexpected INT64 (%I64d) from getINT64, expected %I64d",
 					i64Num, i64ExpectedNum);
+			rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 			goto Exit;
 		}
 	}
