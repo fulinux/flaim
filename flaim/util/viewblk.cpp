@@ -471,7 +471,7 @@ FSTATIC FLMINT OutputElmRecord(
 			}
 			else
 			{
-				eCorruptionCode = flmVerifyField( StateInfo->pFOPData,
+				eCorruptionCode = flmVerifyField( StateInfo, StateInfo->pFOPData,
 													 StateInfo->uiFOPDataLen,
 													 StateInfo->uiFieldType);
 			}
