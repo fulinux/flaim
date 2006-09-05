@@ -37,8 +37,11 @@ FLMEXP RCODE FLMAPI FlmUINT2Storage(
 	FLMUINT *	puiBufLength,
 	FLMBYTE *	pBuf)
 {
-	FLMBYTE		ucNibStk[ F_MAX_NUM_BUF + 1];
+	FLMBYTE		ucNibStk[ F_MAX_NUM64_BUF + 1];
 	FLMBYTE *	pucNibStk;
+#ifdef FLM_DEBUG
+	FLMBYTE *	pucNibStkEnd = &ucNibStk[ sizeof( ucNibStk)];
+#endif
 
 	flmAssert( *puiBufLength >= F_MAX_NUM_BUF);
 
@@ -64,6 +67,7 @@ FLMEXP RCODE FLMAPI FlmUINT2Storage(
 	// push last nibble of number
 	
 	*pucNibStk++ = (FLMBYTE)uiNum;
+	f_assert( pucNibStk <= pucNibStkEnd);
 
 	// count: nibbleCount / 2 and truncate
 
@@ -150,9 +154,12 @@ FLMEXP RCODE FLMAPI FlmINT2Storage(
 	FLMBYTE *	pBuf)
 {
 	FLMUINT		uiNum;
-	FLMBYTE		ucNibStk[ F_MAX_NUM_BUF + 1];
+	FLMBYTE		ucNibStk[ F_MAX_NUM64_BUF + 1];
 	FLMBYTE *	pucNibStk;
 	FLMBOOL		bNegFlag;
+#ifdef FLM_DEBUG
+	FLMBYTE *	pucNibStkEnd = &ucNibStk[ sizeof( ucNibStk)];
+#endif
 
 	flmAssert( *puiBufLength >= F_MAX_NUM_BUF);
 
@@ -190,6 +197,7 @@ FLMEXP RCODE FLMAPI FlmINT2Storage(
 		*pucNibStk++ = 0x0B;
 	}
 
+	f_assert( pucNibStk <= pucNibStkEnd);
 	*puiBufLength = ((pucNibStk - ucNibStk) >> 1); 	
 
 	do
