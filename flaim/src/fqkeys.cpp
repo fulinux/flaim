@@ -2006,7 +2006,7 @@ RCODE flmBuildFromAndUntilKeys(
 				{
 					case FLM_INT32_VAL:
 					{
-						FLMINT	iValue = pCurPred->pVal->val.iVal;
+						FLMINT	iValue = (FLMINT)pCurPred->pVal->val.i32Val;
 						if (pCurPred->eOperator == FLM_GT_OP)
 						{
 							iValue++;
@@ -2049,7 +2049,7 @@ RCODE flmBuildFromAndUntilKeys(
 					case FLM_UINT32_VAL:
 					case FLM_REC_PTR_VAL:
 					{
-						FLMUINT	uiValue = pCurPred->pVal->val.uiVal;
+						FLMUINT	uiValue = (FLMUINT)pCurPred->pVal->val.ui32Val;
 						if (pCurPred->eOperator == FLM_GT_OP)
 						{
 							uiValue++;

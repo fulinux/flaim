@@ -290,8 +290,8 @@ FSTATIC RCODE flmSendCursorWhere(
 					case FLM_UINT32_VAL:
 						if (RC_BAD( rc = gedAddField( pPool, pRootNode,
 													FCS_ITERATOR_NUMBER_VALUE,
-													(void *)&pQNode->pQAtom->val.uiVal,
-													0, FLM_NUMBER_TYPE)))
+													(void *)&pQNode->pQAtom->val.ui32Val,
+													4, FLM_NUMBER_TYPE)))
 						{
 							goto Exit;
 						}
@@ -314,7 +314,7 @@ FSTATIC RCODE flmSendCursorWhere(
 						}
 						GedChildGraft( pRootNode, pFldNode, GED_LAST);
 						if (RC_BAD( rc = GedPutINT( pPool, pFldNode,
-													pQNode->pQAtom->val.iVal)))
+													(FLMINT)pQNode->pQAtom->val.i32Val)))
 						{
 							goto Exit;
 						}
@@ -336,8 +336,8 @@ FSTATIC RCODE flmSendCursorWhere(
 					case FLM_REC_PTR_VAL:
 						if (RC_BAD( rc = gedAddField( pPool, pRootNode,
 													FCS_ITERATOR_REC_PTR_VALUE,
-													(void *)&pQNode->pQAtom->val.uiVal,
-													0, FLM_NUMBER_TYPE)))
+													(void *)&pQNode->pQAtom->val.ui32Val,
+													4, FLM_NUMBER_TYPE)))
 						{
 							goto Exit;
 						}

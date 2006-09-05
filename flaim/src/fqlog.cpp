@@ -449,7 +449,7 @@ FSTATIC void flmLogPredicate(
 				case FLM_REC_PTR_VAL:
 				case FLM_UINT32_VAL:
 					f_logPrintf( pLogMsg, "%u",
-						(unsigned)pQNode->pQAtom->val.uiVal);
+						(unsigned)pQNode->pQAtom->val.ui32Val);
 					break;
 				case FLM_UINT64_VAL:
 					f_logPrintf( pLogMsg, "%I64u",
@@ -457,7 +457,7 @@ FSTATIC void flmLogPredicate(
 					break;
 				case FLM_INT32_VAL:
 					f_logPrintf( pLogMsg, "%d",
-						(int)pQNode->pQAtom->val.iVal);
+						(int)pQNode->pQAtom->val.i32Val);
 					break;
 				case FLM_INT64_VAL:
 					f_logPrintf( pLogMsg, "%I64d",

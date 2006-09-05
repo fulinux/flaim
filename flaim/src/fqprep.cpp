@@ -636,7 +636,7 @@ RCODE flmCurCopyQNode(
 			
 			case FLM_INT32_VAL:
 			{
-				pVal = (void *)&pSrcNode->pQAtom->val.iVal;
+				pVal = (void *)&pSrcNode->pQAtom->val.i32Val;
 				break;
 			}
 			
@@ -649,7 +649,7 @@ RCODE flmCurCopyQNode(
 			case FLM_REC_PTR_VAL:
 			case FLM_UINT32_VAL:
 			{
-				pVal = (void *)&pSrcNode->pQAtom->val.uiVal;
+				pVal = (void *)&pSrcNode->pQAtom->val.ui32Val;
 				break;
 			}
 			

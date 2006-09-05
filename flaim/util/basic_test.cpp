@@ -238,6 +238,41 @@ static FLMINT64_TEST gv_FLMINT64Tests [NUM_FLMINT64_TESTS] =
 #endif
 };
 
+FSTATIC const char * opToStr(
+	QTYPES	eOp);
+	
+FSTATIC const char * addOrSubtractOne(
+	FLMBOOL	bAddOne,
+	FLMBOOL	bSubtractOne);
+	
+FSTATIC FLMBOOL nonNegResultMatchesNonNegValueExpr(
+	FLMUINT64	ui64Result,
+	FLMUINT64	ui64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne);
+	
+FSTATIC FLMBOOL nonNegResultMatchesNegValueExpr(
+	FLMUINT64	ui64Result,
+	FLMINT64		i64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne);
+	
+FSTATIC FLMBOOL negResultMatchesNonNegValueExpr(
+	FLMINT64		i64Result,
+	FLMUINT64	ui64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne);
+	
+FSTATIC FLMBOOL negResultMatchesNegValueExpr(
+	FLMINT64		i64Result,
+	FLMINT64		i64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne);
+	
 /***************************************************************************
 Desc:
 ****************************************************************************/
@@ -347,6 +382,61 @@ public:
 		
 	RCODE numbersKeyRetrieveTest( void);
 		
+	RCODE verifyFLMUINT64ValueExpr(
+		FLMUINT64	ui64Value,
+		QTYPES		eOp,
+		FLMBOOL		bAddOne,
+		FLMBOOL		bSubtractOne,
+		FlmRecord *	pRec);
+		
+	RCODE verifyFLMINT64ValueExpr(
+		FLMINT64		i64Value,
+		QTYPES		eOp,
+		FLMBOOL		bAddOne,
+		FLMBOOL		bSubtractOne,
+		FlmRecord *	pRec);
+		
+	RCODE doFLMUINT64QueryTest(
+		FLMUINT64	ui64Value,
+		QTYPES		eOp,
+		FLMBOOL		bAddOne,
+		FLMBOOL		bSubtractOne);
+		
+	RCODE queryTestsFLMUINT64(
+		FLMUINT64	ui64Value);
+		
+	RCODE doFLMINT64QueryTest(
+		FLMINT64		i64Value,
+		QTYPES		eOp,
+		FLMBOOL		bAddOne,
+		FLMBOOL		bSubtractOne);
+		
+	RCODE queryTestsFLMINT64(
+		FLMINT64		i64Value);
+		
+	RCODE doFLMUINT32QueryTest(
+		FLMUINT32	ui32Value,
+		QTYPES		eOp,
+		FLMBOOL		bAddOne,
+		FLMBOOL		bSubtractOne);
+		
+	RCODE queryTestsFLMUINT32(
+		FLMUINT32	ui32Value);
+		
+	RCODE doFLMINT32QueryTest(
+		FLMINT32		i32Value,
+		QTYPES		eOp,
+		FLMBOOL		bAddOne,
+		FLMBOOL		bSubtractOne);
+		
+	RCODE queryTestsFLMINT32(
+		FLMINT32		i32Value);
+		
+	RCODE doNumQueryTests(
+		NUM_IX_VALUE *	pValue);
+		
+	RCODE numbersQueryTest( void);
+	
 	RCODE backupRestoreDbTest( void);
 	
 	RCODE compareRecords(
@@ -827,7 +917,7 @@ RCODE IFlmTestImpl::addRecordTest(
 				pCopyRec->root(), FIRST_NAME_TAG)) == NULL)
 			{
 				rc = RC_SET( FERR_DATA_ERROR);
-				MAKE_ERROR_STRING( "corruption calling FlmRecord->copy()", 
+				MAKE_ERROR_STRING( "corruption calling FlmRecord->find()", 
 					rc, m_szFailInfo);
 				goto Exit;
 			}
@@ -3778,6 +3868,1845 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
+FSTATIC const char * opToStr(
+	QTYPES	eOp)
+{
+	switch (eOp)
+	{
+		case FLM_EQ_OP: return( "==");
+		case FLM_GT_OP: return( ">");
+		case FLM_LT_OP: return( "<");
+		case FLM_GE_OP: return( ">=");
+		case FLM_LE_OP: return( "<=");
+		case FLM_NE_OP: return( "!=");
+		default:
+			flmAssert( 0);
+			return( "!!!");
+	}
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC const char * addOrSubtractOne(
+	FLMBOOL	bAddOne,
+	FLMBOOL	bSubtractOne)
+{
+	if (bAddOne)
+	{
+		return( "+ 1");
+	}
+	else if (bSubtractOne)
+	{
+		return( "- 1");
+	}
+	else
+	{
+		return( " ");
+	}
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC FLMBOOL nonNegResultMatchesNonNegValueExpr(
+	FLMUINT64	ui64Result,
+	FLMUINT64	ui64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	FLMBOOL	bMatches = TRUE;
+	
+	switch (eOp)
+	{
+		case FLM_EQ_OP:
+			if (bAddOne)
+			{
+				if (ui64Value == FLM_MAX_UINT64 || ui64Result != ui64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (!ui64Value || ui64Result != ui64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (ui64Result != ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_GT_OP:
+			if (bAddOne)
+			{
+				if (ui64Value == FLM_MAX_UINT64 || ui64Result <= ui64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (ui64Value && ui64Result <= ui64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (ui64Result <= ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_LT_OP:
+			if (bAddOne)
+			{
+				if (ui64Value < FLM_MAX_UINT64 && ui64Result >= ui64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (!ui64Value || ui64Result >= ui64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (ui64Result >= ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_GE_OP:
+			if (bAddOne)
+			{
+				if (ui64Value == FLM_MAX_UINT64 || ui64Result < ui64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (ui64Value && ui64Result < ui64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (ui64Result < ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_LE_OP:
+			if (bAddOne)
+			{
+				if (ui64Value < FLM_MAX_UINT64 && ui64Result > ui64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (!ui64Value || ui64Result > ui64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (ui64Result > ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_NE_OP:
+			if (bAddOne)
+			{
+				if (ui64Value == FLM_MAX_UINT64 || ui64Result == ui64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (ui64Value && ui64Result == ui64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (ui64Result == ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		default:
+			bMatches = FALSE;
+			flmAssert( 0);
+			break;
+	}
+	
+	return( bMatches);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC FLMBOOL nonNegResultMatchesNegValueExpr(
+	FLMUINT64	ui64Result,
+	FLMINT64		i64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		// bSubtractOne
+	)
+{
+	FLMBOOL	bMatches = TRUE;
+	
+	switch (eOp)
+	{
+		case FLM_EQ_OP:
+		
+			// Only matches if result is zero, and value is -1 + 1.
+				
+			if (ui64Result != 0 || i64Value != -1 || !bAddOne)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_GT_OP:
+		
+			// Always true except when result is zero and value = -1 + 1
+			
+			if (ui64Result == 0 && i64Value == -1 && bAddOne)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_LT_OP:
+		
+			// Result is always >= 0, and highest value is zero (-1 + 1), so result
+			// should never be < value +/- anything.
+			
+			bMatches = FALSE;
+			break;
+			
+		case FLM_GE_OP:
+		
+			// This will always be true
+			
+			break;
+			
+		case FLM_LE_OP:
+		
+			// This can only be true when result is zero and value is -1 + 1
+			
+			if (ui64Result != 0 || i64Value != -1 || !bAddOne)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_NE_OP:
+		
+			// This is always true except when result is zero and value is -1 + 1
+			
+			if (ui64Result == 0 && i64Value == -1 && bAddOne)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		default:
+			bMatches = FALSE;
+			flmAssert( 0);
+			break;
+	}
+	
+	return( bMatches);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC FLMBOOL negResultMatchesNonNegValueExpr(
+	FLMINT64		i64Result,
+	FLMUINT64	ui64Value,
+	QTYPES		eOp,
+	FLMBOOL,		// bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	FLMBOOL	bMatches = TRUE;
+	
+	flmAssert( i64Result < 0);
+	
+	switch (eOp)
+	{
+		case FLM_EQ_OP:
+		
+			// This will only be true in one case: result is -1, and
+			// value is 0 - 1.
+			
+			if (i64Result != -1 || !bSubtractOne || ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_GT_OP:
+		
+			// The largest that result could be is -1, and the smallest
+			// value is 0 - 1, so > will never match.
+			
+			bMatches = FALSE;
+			break;
+			
+		case FLM_LT_OP:
+		
+			// This will always be true except for the case where
+			// result is -1, and value is 0 - 1.
+			
+			if (i64Result == -1 && bSubtractOne && !ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+		case FLM_GE_OP:
+		
+			// This will only be true when result is -1 and value
+			// is 0 - 1
+			
+			if (i64Result != -1 || !bSubtractOne || ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_LE_OP:
+		
+			// This will always be TRUE, as the largest result must be
+			// -1, and the smallest value can be 0 - 1.
+			
+			break;
+			
+		case FLM_NE_OP:
+		
+			// This will always be true, except for the case where
+			// result is -1, and value is 0 - 1.
+			
+			if (i64Result == -1 && bSubtractOne && !ui64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		default:
+			flmAssert( 0);
+			bMatches = FALSE;
+			break;
+	}
+	
+	return( bMatches);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC FLMBOOL negResultMatchesNegValueExpr(
+	FLMINT64		i64Result,
+	FLMINT64		i64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	FLMBOOL	bMatches = TRUE;
+	
+	// Both values should be negative.
+	
+	flmAssert( i64Result < 0 && i64Value < 0);
+	
+	switch (eOp)
+	{
+		case FLM_EQ_OP:
+			if (bAddOne)
+			{
+				if (i64Result != i64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (i64Value == FLM_MIN_INT64 || i64Result != i64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (i64Result != i64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_GT_OP:
+			if (bAddOne)
+			{
+				if (i64Result <= i64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (i64Value != FLM_MIN_INT64 && i64Result <= i64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (i64Result <= i64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_LT_OP:
+			if (bAddOne)
+			{
+				if (i64Result >= i64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (i64Value == FLM_MIN_INT64 || i64Result >= i64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (i64Result >= i64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_GE_OP:
+			if (bAddOne)
+			{
+				if (i64Result < i64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (i64Value != FLM_MIN_INT64 && i64Result < i64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (i64Result < i64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_LE_OP:
+			if (bAddOne)
+			{
+				if (i64Result > i64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (i64Value == FLM_MIN_INT64 || i64Result > i64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (i64Result > i64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		case FLM_NE_OP:
+			if (bAddOne)
+			{
+				if (i64Result == i64Value + 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (bSubtractOne)
+			{
+				if (i64Value != FLM_MIN_INT64 && i64Result == i64Value - 1)
+				{
+					bMatches = FALSE;
+				}
+			}
+			else if (i64Result == i64Value)
+			{
+				bMatches = FALSE;
+			}
+			break;
+			
+		default:
+			bMatches = FALSE;
+			flmAssert( 0);
+			break;
+	}
+	
+	return( bMatches);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::verifyFLMUINT64ValueExpr(
+	FLMUINT64	ui64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne,
+	FlmRecord *	pRec)
+{
+	RCODE			rc = FERR_OK;
+	void *		pvField;
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+	
+	// Verify that the record has a field and that it matches the
+	// criteria we specified.
+	
+	if ((pvField = pRec->find( pRec->root(), NUMBER_TAG)) == NULL)
+	{
+		rc = RC_SET( FERR_DATA_ERROR);
+		MAKE_ERROR_STRING( "corruption calling FlmRecord->find()", 
+			rc, m_szFailInfo);
+		goto Exit;
+	}
+		
+	if (RC_BAD( rc = pRec->getUINT64( pvField, &ui64Result)))
+	{
+		if (rc != FERR_CONV_NUM_UNDERFLOW)
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->getUINT64()", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (RC_BAD( rc = pRec->getINT64( pvField, &i64Result)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->getINT64()", 
+				rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		// Results should only be negative at this point.
+		
+		if (!negResultMatchesNonNegValueExpr( i64Result, ui64Value, eOp,
+					bAddOne, bSubtractOne))
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Invalid result returned for query: "
+				"%I64d %s %I64u %s",
+				i64Result, opToStr( eOp), ui64Value,
+				addOrSubtractOne( bAddOne, bSubtractOne));
+			goto Exit;
+		}
+	}
+	else
+	{
+		if (!nonNegResultMatchesNonNegValueExpr( ui64Result, ui64Value,
+						eOp, bAddOne, bSubtractOne))
+		{
+			rc = RC_SET( FERR_FAILURE);
+			f_sprintf( m_szFailInfo, "Invalid result returned for query: "
+				"%I64u %s %I64u %s",
+				ui64Result, opToStr( eOp), ui64Value,
+				addOrSubtractOne( bAddOne, bSubtractOne));
+			goto Exit;
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::verifyFLMINT64ValueExpr(
+	FLMINT64		i64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne,
+	FlmRecord *	pRec)
+{
+	RCODE			rc = FERR_OK;
+	void *		pvField;
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+	
+	// Verify that the record has a field and that it matches the
+	// criteria we specified.
+	
+	if ((pvField = pRec->find( pRec->root(), NUMBER_TAG)) == NULL)
+	{
+		rc = RC_SET( FERR_DATA_ERROR);
+		MAKE_ERROR_STRING( "corruption calling FlmRecord->find()", 
+			rc, m_szFailInfo);
+		goto Exit;
+	}
+		
+	if (RC_BAD( rc = pRec->getUINT64( pvField, &ui64Result)))
+	{
+		if (rc != FERR_CONV_NUM_UNDERFLOW)
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->getUINT64()", rc, m_szFailInfo);
+			goto Exit;
+		}
+		if (RC_BAD( rc = pRec->getINT64( pvField, &i64Result)))
+		{
+			MAKE_ERROR_STRING( "calling FlmRecord->getINT64()", 
+				rc, m_szFailInfo);
+			goto Exit;
+		}
+		flmAssert( i64Result < 0);
+		
+		if (i64Value < 0)
+		{
+			if (!negResultMatchesNegValueExpr( i64Result, i64Value,
+							eOp, bAddOne, bSubtractOne))
+			{
+Err_Neg_Result:
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo, "Invalid result returned for query: "
+					"%I64d %s %I64d %s",
+					i64Result, opToStr( eOp), i64Value,
+					addOrSubtractOne( bAddOne, bSubtractOne));
+				goto Exit;
+			}
+		}
+		else
+		{
+			if (!negResultMatchesNonNegValueExpr( i64Result, (FLMUINT64)i64Value,
+							eOp, bAddOne, bSubtractOne))
+			{
+				goto Err_Neg_Result;
+			}
+		}
+	}
+	else
+	{
+		if (i64Value < 0)
+		{
+			if (!nonNegResultMatchesNegValueExpr( ui64Result, i64Value,
+							eOp, bAddOne, bSubtractOne))
+			{
+Err_NonNeg_Result:
+				rc = RC_SET( FERR_FAILURE);
+				f_sprintf( m_szFailInfo, "Invalid result returned for query: "
+					"%I64u %s %I64d %s",
+					ui64Result, opToStr( eOp), i64Value,
+					addOrSubtractOne( bAddOne, bSubtractOne));
+				goto Exit;
+			}
+		}
+		else
+		{
+			if (!nonNegResultMatchesNonNegValueExpr( ui64Result, (FLMUINT64)i64Value,
+							eOp, bAddOne, bSubtractOne))
+			{
+				goto Err_NonNeg_Result;
+			}
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::doFLMUINT64QueryTest(
+	FLMUINT64	ui64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	RCODE			rc = FERR_OK;
+	HFCURSOR		hCursor = HFCURSOR_NULL;
+	FLMUINT32	ui32Num;
+	FlmRecord *	pRec = NULL;
+
+	if( RC_BAD( rc = FlmCursorInit( m_hDb, FLM_DATA_CONTAINER, &hCursor)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorInit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// We will search on the number field.
+
+	if (RC_BAD( rc = FlmCursorAddField( hCursor, NUMBER_TAG, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddField", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, eOp)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add the value
+	
+	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT64_VAL, 
+		&ui64Value, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui64)", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if (bAddOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_PLUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(+)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=+1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	else if (bSubtractOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_MINUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(-)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=-1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Get the results
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = FlmCursorNext( hCursor, &pRec)))
+		{
+			if (rc == FERR_EOF_HIT)
+			{
+				rc = FERR_OK;
+				break;
+			}
+			else
+			{
+				f_sprintf( m_szFailInfo, "Error %e (file: %s, line %u) calling FlmCursorNext for query: "
+					"FLD %s %I64u %s",
+					rc, __FILE__, (unsigned)__LINE__,
+					opToStr( eOp), ui64Value,
+					addOrSubtractOne( bAddOne, bSubtractOne));
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = verifyFLMUINT64ValueExpr( ui64Value, eOp, bAddOne,
+									bSubtractOne, pRec)))
+		{
+			goto Exit;
+		}
+		
+	}
+	
+Exit:
+
+	if (pRec)
+	{
+		pRec->Release();
+	}
+
+	if (hCursor != HFCURSOR_NULL)
+	{
+		(void)FlmCursorFree( &hCursor);
+	}
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::queryTestsFLMUINT64(
+	FLMUINT64	ui64Value)
+{
+	RCODE	rc = FERR_OK;
+	
+	// N == Value
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_EQ_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value + 1
+	
+	if (ui64Value < FLM_MAX_UINT64)
+	{
+		if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_EQ_OP, TRUE, FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N == Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_EQ_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_GT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value + 1
+	
+	if (ui64Value < FLM_MAX_UINT64)
+	{
+		if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_GT_OP, TRUE, FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N > Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_GT_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_LT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value + 1
+	
+	if (ui64Value < FLM_MAX_UINT64)
+	{
+		if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_LT_OP, TRUE, FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N < Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_LT_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_GE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value + 1
+	
+	if (ui64Value < FLM_MAX_UINT64)
+	{
+		if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_GE_OP, TRUE, FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N >= Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_GE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_LE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value + 1
+	
+	if (ui64Value < FLM_MAX_UINT64)
+	{
+		if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_LE_OP, TRUE, FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N <= Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_LE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_NE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value + 1
+	
+	if (ui64Value < FLM_MAX_UINT64)
+	{
+		if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_NE_OP, TRUE, FALSE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N != Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT64QueryTest( ui64Value, FLM_NE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::doFLMINT64QueryTest(
+	FLMINT64		i64Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	RCODE			rc = FERR_OK;
+	HFCURSOR		hCursor = HFCURSOR_NULL;
+	FLMUINT32	ui32Num;
+	FlmRecord *	pRec = NULL;
+
+	if( RC_BAD( rc = FlmCursorInit( m_hDb, FLM_DATA_CONTAINER, &hCursor)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorInit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// We will search on the number field.
+
+	if (RC_BAD( rc = FlmCursorAddField( hCursor, NUMBER_TAG, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddField", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, eOp)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add the value
+	
+	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_INT64_VAL, 
+		&i64Value, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue(i64)", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if (bAddOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_PLUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(+)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=+1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	else if (bSubtractOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_MINUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(-)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=-1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Get the results
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = FlmCursorNext( hCursor, &pRec)))
+		{
+			if (rc == FERR_EOF_HIT)
+			{
+				rc = FERR_OK;
+				break;
+			}
+			else
+			{
+				f_sprintf( m_szFailInfo, "Error %e (file: %s, line %u) calling FlmCursorNext for query: "
+					"FLD %s %I64d %s",
+					rc, __FILE__, (unsigned)__LINE__,
+					opToStr( eOp), i64Value,
+					addOrSubtractOne( bAddOne, bSubtractOne));
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = verifyFLMINT64ValueExpr( i64Value, eOp, bAddOne,
+									bSubtractOne, pRec)))
+		{
+			goto Exit;
+		}
+		
+	}
+	
+Exit:
+
+	if (pRec)
+	{
+		pRec->Release();
+	}
+
+	if (hCursor != HFCURSOR_NULL)
+	{
+		(void)FlmCursorFree( &hCursor);
+	}
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::queryTestsFLMINT64(
+	FLMINT64	i64Value)
+{
+	RCODE	rc = FERR_OK;
+	
+	// N == Value
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_EQ_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value + 1
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_EQ_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value - 1
+
+	if (i64Value > FLM_MIN_INT64)
+	{
+		if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_EQ_OP, FALSE, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N > Value
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_GT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value + 1
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_GT_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value - 1
+	
+	if (i64Value > FLM_MIN_INT64)
+	{
+		if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_GT_OP, FALSE, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N < Value
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_LT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value + 1
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_LT_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value - 1
+	
+	if (i64Value > FLM_MIN_INT64)
+	{
+		if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_LT_OP, FALSE, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N >= Value
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_GE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value + 1
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_GE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value - 1
+	
+	if (i64Value > FLM_MIN_INT64)
+	{
+		if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_GE_OP, FALSE, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N <= Value
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_LE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value + 1
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_LE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value - 1
+	
+	if (i64Value > FLM_MIN_INT64)
+	{
+		if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_LE_OP, FALSE, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+	// N != Value
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_NE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value + 1
+	
+	if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_NE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value - 1
+	
+	if (i64Value > FLM_MIN_INT64)
+	{
+		if (RC_BAD( rc = doFLMINT64QueryTest( i64Value, FLM_NE_OP, FALSE, TRUE)))
+		{
+			goto Exit;
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::doFLMUINT32QueryTest(
+	FLMUINT32	ui32Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	RCODE			rc = FERR_OK;
+	HFCURSOR		hCursor = HFCURSOR_NULL;
+	FLMUINT32	ui32Num;
+	FlmRecord *	pRec = NULL;
+
+	if( RC_BAD( rc = FlmCursorInit( m_hDb, FLM_DATA_CONTAINER, &hCursor)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorInit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// We will search on the number field.
+
+	if (RC_BAD( rc = FlmCursorAddField( hCursor, NUMBER_TAG, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddField", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, eOp)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add the value
+	
+	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, 
+		&ui32Value, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32)", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if (bAddOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_PLUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(+)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=+1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	else if (bSubtractOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_MINUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(-)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=-1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Get the results
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = FlmCursorNext( hCursor, &pRec)))
+		{
+			if (rc == FERR_EOF_HIT)
+			{
+				rc = FERR_OK;
+				break;
+			}
+			else
+			{
+				f_sprintf( m_szFailInfo, "Error %e (file: %s, line %u) calling FlmCursorNext for query: "
+					"FLD %s %u %s",
+					rc, __FILE__, (unsigned)__LINE__,
+					opToStr( eOp), (unsigned)ui32Value,
+					addOrSubtractOne( bAddOne, bSubtractOne));
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = verifyFLMUINT64ValueExpr( (FLMUINT64)ui32Value, eOp, bAddOne,
+									bSubtractOne, pRec)))
+		{
+			goto Exit;
+		}
+		
+	}
+	
+Exit:
+
+	if (pRec)
+	{
+		pRec->Release();
+	}
+
+	if (hCursor != HFCURSOR_NULL)
+	{
+		(void)FlmCursorFree( &hCursor);
+	}
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::queryTestsFLMUINT32(
+	FLMUINT32	ui32Value)
+{
+	RCODE	rc = FERR_OK;
+	
+	// N == Value
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_EQ_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value + 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_EQ_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_EQ_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_GT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value + 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_GT_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_GT_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_LT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value + 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_LT_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_LT_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_GE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value + 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_GE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_GE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_LE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value + 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_LE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_LE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_NE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value + 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_NE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value - 1
+	
+	if (RC_BAD( rc = doFLMUINT32QueryTest( ui32Value, FLM_NE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::doFLMINT32QueryTest(
+	FLMINT32		i32Value,
+	QTYPES		eOp,
+	FLMBOOL		bAddOne,
+	FLMBOOL		bSubtractOne)
+{
+	RCODE			rc = FERR_OK;
+	HFCURSOR		hCursor = HFCURSOR_NULL;
+	FLMUINT32	ui32Num;
+	FlmRecord *	pRec = NULL;
+
+	if( RC_BAD( rc = FlmCursorInit( m_hDb, FLM_DATA_CONTAINER, &hCursor)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorInit", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// We will search on the number field.
+
+	if (RC_BAD( rc = FlmCursorAddField( hCursor, NUMBER_TAG, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddField", rc, m_szFailInfo);
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = FlmCursorAddOp( hCursor, eOp)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddOp", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	// Add the value
+	
+	if( RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_INT32_VAL, 
+		&i32Value, 0)))
+	{
+		MAKE_ERROR_STRING( "calling FlmCursorAddValue(i32)", rc, m_szFailInfo);
+		goto Exit;
+	}
+	
+	if (bAddOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_PLUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(+)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=+1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	else if (bSubtractOne)
+	{
+		if( RC_BAD( rc = FlmCursorAddOp( hCursor, FLM_MINUS_OP)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddOp(-)", rc, m_szFailInfo);
+			goto Exit;
+		}
+		ui32Num = 1;
+		if (RC_BAD( rc = FlmCursorAddValue( hCursor, FLM_UINT32_VAL, &ui32Num, 0)))
+		{
+			MAKE_ERROR_STRING( "calling FlmCursorAddValue(ui32=-1)", rc, m_szFailInfo);
+			goto Exit;
+		}
+	}
+	
+	// Get the results
+	
+	for (;;)
+	{
+		if (RC_BAD( rc = FlmCursorNext( hCursor, &pRec)))
+		{
+			if (rc == FERR_EOF_HIT)
+			{
+				rc = FERR_OK;
+				break;
+			}
+			else
+			{
+				f_sprintf( m_szFailInfo, "Error %e (file: %s, line %u) calling FlmCursorNext for query: "
+					"FLD %s %d %s",
+					rc, __FILE__, (unsigned)__LINE__,
+					opToStr( eOp), (int)i32Value,
+					addOrSubtractOne( bAddOne, bSubtractOne));
+				goto Exit;
+			}
+		}
+		
+		if (RC_BAD( rc = verifyFLMINT64ValueExpr( (FLMINT64)i32Value, eOp, bAddOne,
+									bSubtractOne, pRec)))
+		{
+			goto Exit;
+		}
+		
+	}
+	
+Exit:
+
+	if (pRec)
+	{
+		pRec->Release();
+	}
+
+	if (hCursor != HFCURSOR_NULL)
+	{
+		(void)FlmCursorFree( &hCursor);
+	}
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::queryTestsFLMINT32(
+	FLMINT32	i32Value)
+{
+	RCODE	rc = FERR_OK;
+	
+	// N == Value
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_EQ_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value + 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_EQ_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N == Value - 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_EQ_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_GT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value + 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_GT_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N > Value - 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_GT_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_LT_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value + 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_LT_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N < Value - 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_LT_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_GE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value + 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_GE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N >= Value - 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_GE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_LE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value + 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_LE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N <= Value - 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_LE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_NE_OP, FALSE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value + 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_NE_OP, TRUE, FALSE)))
+	{
+		goto Exit;
+	}
+	
+	// N != Value - 1
+	
+	if (RC_BAD( rc = doFLMINT32QueryTest( i32Value, FLM_NE_OP, FALSE, TRUE)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::doNumQueryTests(
+	NUM_IX_VALUE *	pValue)
+{
+	RCODE	rc = FERR_OK;
+	
+	if (pValue->bUnsigned)
+	{
+		if (RC_BAD( rc = queryTestsFLMUINT64( (FLMUINT)pValue->ui64Value)))
+		{
+			goto Exit;
+		}
+		if (pValue->ui64Value <= (FLMUINT64)(FLM_MAX_INT64))
+		{
+			if (RC_BAD( rc = queryTestsFLMINT64( (FLMINT64)pValue->ui64Value)))
+			{
+				goto Exit;
+			}
+		}
+		if (pValue->ui64Value <= (FLMUINT64)(FLM_MAX_UINT32))
+		{
+			if (RC_BAD( rc = queryTestsFLMUINT32( (FLMUINT32)pValue->ui64Value)))
+			{
+				goto Exit;
+			}
+		}
+		if (pValue->ui64Value <= (FLMUINT64)(FLM_MAX_INT32))
+		{
+			if (RC_BAD( rc = queryTestsFLMINT32( (FLMINT32)pValue->ui64Value)))
+			{
+				goto Exit;
+			}
+		}
+	}
+	else
+	{
+		if (RC_BAD( rc = queryTestsFLMINT64( pValue->i64Value)))
+		{
+			goto Exit;
+		}
+		if (pValue->i64Value >= (FLMINT64)(FLM_MIN_INT32) &&
+			 pValue->i64Value <= (FLMINT64)(FLM_MAX_INT32))
+		{
+			if (RC_BAD( rc = queryTestsFLMINT32( (FLMINT32)pValue->i64Value)))
+			{
+				goto Exit;
+			}
+		}
+		if (pValue->i64Value >= 0 &&
+			 pValue->i64Value <= (FLMINT64)(FLM_MAX_UINT32))
+		{
+			if (RC_BAD( rc = queryTestsFLMUINT32( (FLMUINT32)pValue->i64Value)))
+			{
+				goto Exit;
+			}
+		}
+		if (pValue->i64Value >= 0)
+		{
+			if (RC_BAD( rc = queryTestsFLMUINT64( (FLMUINT64)pValue->i64Value)))
+			{
+				goto Exit;
+			}
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
+RCODE IFlmTestImpl::numbersQueryTest( void)
+{
+	RCODE			rc = FERR_OK;
+	FLMBOOL		bPassed = FALSE;
+	FLMUINT		uiCurrKey;
+	FLMBOOL		bTransActive = FALSE;
+
+	beginTest( "Numbers Query Test");
+	
+	if( RC_BAD( rc = FlmDbTransBegin( m_hDb, FLM_READ_TRANS, 15)))
+	{
+		MAKE_ERROR_STRING( "calling FlmDbTransBegin", rc, m_szFailInfo);
+		goto Exit;
+	}
+	bTransActive = TRUE;
+	
+	for (uiCurrKey = 0; uiCurrKey < NUM_NUM_KEYS; uiCurrKey++)
+	{
+		if (RC_BAD( rc = doNumQueryTests( &gv_ExpectedNumIxValues [uiCurrKey])))
+		{
+			goto Exit;
+		}
+	}
+	bPassed = TRUE;
+
+Exit:
+
+	if (bTransActive)
+	{
+		(void)FlmDbTransAbort( m_hDb);
+	}
+
+	endTest( bPassed);
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+****************************************************************************/
 RCODE IFlmTestImpl::reopenDbTest( void)
 {
 	RCODE		rc = FERR_OK;
@@ -4878,6 +6807,13 @@ RCODE IFlmTestImpl::execute( void)
 	// Numbers key retrieve test.
 	
 	if (RC_BAD( rc = numbersKeyRetrieveTest()))
+	{
+		goto Exit;
+	}
+	
+	// Numbers query retrieve test.
+	
+	if (RC_BAD( rc = numbersQueryTest()))
 	{
 		goto Exit;
 	}

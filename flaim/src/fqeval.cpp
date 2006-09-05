@@ -240,7 +240,7 @@ FINLINE FLMUINT64 fqGetUInt64(
 {
 	if (pValue->eType == FLM_UINT32_VAL)
 	{
-		return( (FLMUINT64)pValue->val.uiVal);
+		return( (FLMUINT64)pValue->val.ui32Val);
 	}
 	else if( pValue->eType == FLM_UINT64_VAL)
 	{
@@ -255,9 +255,9 @@ FINLINE FLMUINT64 fqGetUInt64(
 	}
 	else if( pValue->eType == FLM_INT32_VAL)
 	{
-		if( pValue->val.iVal >= 0)
+		if( pValue->val.i32Val >= 0)
 		{
-			return( (FLMUINT64)pValue->val.iVal);
+			return( (FLMUINT64)pValue->val.i32Val);
 		}
 	}
 	
@@ -273,7 +273,7 @@ FINLINE FLMINT64 fqGetInt64(
 {
 	if (pValue->eType == FLM_INT32_VAL)
 	{
-		return( (FLMINT64)pValue->val.iVal);
+		return( (FLMINT64)pValue->val.i32Val);
 	}
 	else if( pValue->eType == FLM_INT64_VAL)
 	{
@@ -281,7 +281,7 @@ FINLINE FLMINT64 fqGetInt64(
 	}
 	else if( pValue->eType == FLM_UINT32_VAL)
 	{
-		return( (FLMINT64)pValue->val.uiVal);
+		return( (FLMINT64)pValue->val.ui32Val);
 	}
 	else if( pValue->eType == FLM_UINT64_VAL)
 	{
@@ -305,7 +305,7 @@ FSTATIC void fqOpUUBitAND(
 {
 	if (isNativeNum( pLValue->eType) &&  isNativeNum( pRValue->eType))
 	{
-		pResult->val.uiVal = pLValue->val.uiVal & pRValue->val.uiVal;
+		pResult->val.ui32Val = pLValue->val.ui32Val & pRValue->val.ui32Val;
 		pResult->eType = FLM_UINT32_VAL;
 	}
 	else
@@ -326,7 +326,7 @@ FSTATIC void fqOpUUBitOR(
 {
 	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
 	{
-		pResult->val.uiVal = pLValue->val.uiVal | pRValue->val.uiVal;
+		pResult->val.ui32Val = pLValue->val.ui32Val | pRValue->val.ui32Val;
 		pResult->eType = FLM_UINT32_VAL;
 	}
 	else
@@ -347,7 +347,7 @@ FSTATIC void fqOpUUBitXOR(
 {
 	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
 	{
-		pResult->val.uiVal = pLValue->val.uiVal ^ pRValue->val.uiVal;
+		pResult->val.ui32Val = pLValue->val.ui32Val ^ pRValue->val.ui32Val;
 		pResult->eType = FLM_UINT32_VAL;
 	}
 	else
@@ -359,24 +359,54 @@ FSTATIC void fqOpUUBitXOR(
 }
 
 /***************************************************************************
+Desc:	Put an unsigned result into a result atom.
+***************************************************************************/
+FINLINE void setUnsignedResult(
+	FLMUINT64	ui64Result,
+	FQATOM *		pResult)
+{
+	if (ui64Result <= (FLMUINT64)(FLM_MAX_UINT32))
+	{
+		pResult->val.ui32Val = (FLMUINT32)ui64Result;
+		pResult->eType = FLM_UINT32_VAL;
+	}
+	else
+	{
+		pResult->val.ui64Val = ui64Result;
+		pResult->eType = FLM_UINT64_VAL;
+	}
+}
+
+/***************************************************************************
+Desc:	Put a signed result into a result atom.
+***************************************************************************/
+FINLINE void setSignedResult(
+	FLMINT64	i64Result,
+	FQATOM *	pResult)
+{
+	if (i64Result >= (FLMINT64)(FLM_MIN_INT32) &&
+		i64Result <= (FLMINT64)(FLM_MAX_INT32))
+	{
+		pResult->val.i32Val = (FLMINT32)i64Result;
+		pResult->eType = FLM_INT32_VAL;
+	}
+	else
+	{
+		pResult->val.i64Val = i64Result;
+		pResult->eType = FLM_INT64_VAL;
+	}
+}
+
+/***************************************************************************
 Desc:		Performs the multiply operation
 ***************************************************************************/
 FSTATIC void fqOpUUMult(
 	FQATOM *	pLValue,
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
-{	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
-	{
-		pResult->val.uiVal = pLValue->val.uiVal * pRValue->val.uiVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.ui64Val = 
-			fqGetUInt64( pLValue) * fqGetUInt64( pRValue);
-		pResult->eType = FLM_UINT64_VAL;
-	}
+{
+	FLMUINT64	ui64Result = fqGetUInt64( pLValue) * fqGetUInt64( pRValue);
+	setUnsignedResult( ui64Result, pResult);
 }
 	
 /***************************************************************************
@@ -387,16 +417,20 @@ FSTATIC void fqOpUSMult(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Right < 0)
 	{
-		pResult->val.iVal = (FLMINT)pLValue->val.uiVal * pRValue->val.iVal;
-		pResult->eType = FLM_INT32_VAL;
+		i64Result = (FLMINT64)ui64Left * i64Right;
+		setSignedResult( i64Result, pResult);
 	}
 	else
 	{
-		pResult->val.i64Val = (FLMINT64)
-			fqGetUInt64( pLValue) * fqGetInt64( pRValue);
-		pResult->eType = FLM_INT64_VAL;
+		ui64Result = ui64Left * (FLMUINT64)i64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 	
@@ -408,21 +442,57 @@ FSTATIC void fqOpSSMult(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Left < 0)
 	{
-		pResult->val.iVal = pLValue->val.iVal * pRValue->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) 
-									? FLM_INT32_VAL 
-									: FLM_UINT32_VAL;
+		if (i64Right < 0)
+		{
+			if (i64Left == FLM_MIN_INT64)
+			{
+				if (i64Right == FLM_MIN_INT64)
+				{
+					// The result will actually overflow, but there is
+					// nothing we can do about that.
+					ui64Result = FLM_MAX_UINT64;
+				}
+				else
+				{
+					i64Right = -i64Right;
+					ui64Result = ((FLMUINT64)(FLM_MAX_INT64) + 1) * (FLMUINT64)i64Right;
+				}
+			}
+			else if (i64Right == FLM_MIN_INT64)
+			{
+				i64Left = -i64Left;
+				ui64Result = (FLMUINT64)i64Left * ((FLMUINT64)(FLM_MAX_INT64) + 1);
+			}
+			else
+			{
+				i64Left = -i64Left;
+				i64Right = -i64Right;
+				ui64Result = (FLMUINT64)i64Left * (FLMUINT64)i64Right;
+			}
+			setUnsignedResult( ui64Result, pResult);
+		}
+		else
+		{
+			i64Result = i64Left * i64Right;
+			setSignedResult( i64Result, pResult);
+		}
+	}
+	else if (i64Right < 0)
+	{
+		i64Result = i64Left * i64Right;
+		setSignedResult( i64Result, pResult);
 	}
 	else
 	{
-		pResult->val.i64Val = (FLMINT64)(fqGetInt64( pLValue) *
-										fqGetInt64( pRValue));
-
-		pResult->eType = (pResult->val.i64Val < 0) 
-									? FLM_INT64_VAL 
-									: FLM_UINT64_VAL;
+		ui64Result = (FLMUINT64)i64Left * (FLMUINT64)i64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 
@@ -434,17 +504,20 @@ FSTATIC void fqOpSUMult(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMINT64		i64Result;
+	FLMUINT64	ui64Result;
+
+	if (i64Left < 0)
 	{
-		pResult->val.iVal = pLValue->val.iVal * 
-			(FLMINT)pRValue->val.uiVal;
-		pResult->eType = FLM_INT32_VAL;
+		i64Result = i64Left * (FLMINT64)ui64Right;
+		setSignedResult( i64Result, pResult);
 	}
 	else
 	{
-		pResult->val.i64Val = (FLMINT64)
-			(fqGetInt64( pLValue) * fqGetUInt64( pRValue));
-		pResult->eType = FLM_INT64_VAL;
+		ui64Result = (FLMUINT64)i64Left * ui64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 
@@ -456,34 +529,19 @@ FSTATIC void fqOpUUDiv(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+
+	if (ui64Right)
 	{
-		if( pRValue->val.uiVal)
-		{
-			pResult->val.uiVal = pLValue->val.uiVal / pRValue->val.uiVal;
-			pResult->eType = FLM_UINT32_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		ui64Result = ui64Left / ui64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-
-		if( ui64RValue)
-		{
-			pResult->val.ui64Val = ui64LValue / ui64RValue;
-			pResult->eType = FLM_UINT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
 	}
 }
 	
@@ -495,34 +553,33 @@ FSTATIC void fqOpUSDiv(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Right < 0)
 	{
-		if( pRValue->val.iVal)
+		if (i64Right == FLM_MIN_INT64)
 		{
-			pResult->val.iVal = pLValue->val.uiVal / pRValue->val.iVal;
-			pResult->eType = FLM_INT32_VAL;
+			i64Result = -((FLMINT64)(ui64Left / ((FLMUINT64)(FLM_MAX_INT64) + 1)));
 		}
 		else
 		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
+			i64Right = -i64Right;
+			i64Result = -((FLMINT64)(ui64Left / (FLMUINT64)i64Right));
 		}
+		setSignedResult( i64Result, pResult);
+	}
+	else if (!i64Right)
+	{
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMINT64		i64RValue = fqGetInt64( pRValue);
-
-		if( i64RValue)
-		{
-			pResult->val.i64Val = ui64LValue  / i64RValue;
-			pResult->eType = FLM_INT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		ui64Result = ui64Left / (FLMUINT64)i64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 	
@@ -534,36 +591,19 @@ FSTATIC void fqOpSSDiv(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMINT64		i64Result;
+
+	if (i64Right)
 	{
-		if( pRValue->val.iVal)
-		{
-			pResult->val.iVal = pLValue->val.iVal / pRValue->val.iVal;
-			pResult->eType = (pResult->val.iVal < 0) 
-										? FLM_INT32_VAL : FLM_UINT32_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		i64Result = i64Left / i64Right;
+		setSignedResult( i64Result, pResult);
 	}
 	else
 	{
-		FLMINT64		i64LValue = fqGetInt64( pLValue);
-		FLMINT64		i64RValue = fqGetInt64( pRValue);
-
-		if( i64RValue)
-		{
-			pResult->val.i64Val = i64LValue  / i64RValue;
-			pResult->eType = (pResult->val.i64Val < 0) 
-										? FLM_INT64_VAL : FLM_UINT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
 	}
 }
 
@@ -575,34 +615,32 @@ FSTATIC void fqOpSUDiv(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (!ui64Right)
 	{
-		if( pRValue->val.uiVal)
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
+	}
+	else if (i64Left < 0)
+	{
+		if (ui64Right >= (FLMUINT64)(FLM_MAX_INT64) + 1)
 		{
-			pResult->val.iVal = pLValue->val.iVal / pRValue->val.uiVal;
-			pResult->eType = FLM_INT32_VAL;
+			setUnsignedResult( 0, pResult);
 		}
 		else
 		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
+			i64Result = i64Left / (FLMINT64)ui64Right;
+			setSignedResult( i64Result, pResult);
 		}
 	}
 	else
 	{
-		FLMINT64		i64LValue = fqGetInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-
-		if( ui64RValue)
-		{
-			pResult->val.i64Val = i64LValue  / ui64RValue;
-			pResult->eType = FLM_INT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// Divide by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		ui64Result = (FLMUINT64)i64Left / ui64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 
@@ -614,34 +652,19 @@ FSTATIC void fqOpUUMod(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+
+	if (ui64Right)
 	{
-		if( pRValue->val.uiVal)
-		{
-			pResult->val.uiVal = pLValue->val.uiVal % pRValue->val.uiVal;
-			pResult->eType = FLM_UINT32_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		ui64Result = ui64Left % ui64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-
-		if( ui64RValue)
-		{
-			pResult->val.ui64Val = ui64LValue  % ui64RValue;
-			pResult->eType = FLM_UINT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
 	}
 }
 	
@@ -653,34 +676,33 @@ FSTATIC void fqOpUSMod(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Right)
 	{
-		if( pRValue->val.iVal)
+		if (i64Right == FLM_MIN_INT64)
 		{
-			pResult->val.iVal = pLValue->val.uiVal % pRValue->val.iVal;
-			pResult->eType = FLM_INT32_VAL;
+			i64Result = -((FLMINT64)(ui64Left % ((FLMUINT64)(FLM_MAX_INT64) + 1)));
 		}
 		else
 		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
+			i64Right = -i64Right;
+			i64Result = -((FLMINT64)(ui64Left % (FLMUINT64)i64Right));
 		}
+		setSignedResult( i64Result, pResult);
+	}
+	else if (!i64Right)
+	{
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMINT64		i64RValue = fqGetInt64( pRValue);
-
-		if( i64RValue)
-		{
-			pResult->val.i64Val = ui64LValue  % i64RValue;
-			pResult->eType = FLM_INT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		ui64Result = ui64Left % (FLMUINT64)i64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 	
@@ -692,36 +714,19 @@ FSTATIC void fqOpSSMod(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMINT64		i64Result;
+
+	if (i64Right)
 	{
-		if( pRValue->val.iVal)
-		{
-			pResult->val.iVal = pLValue->val.iVal % pRValue->val.iVal;
-			pResult->eType = (pResult->val.iVal < 0) 
-										? FLM_INT32_VAL : FLM_UINT32_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		i64Result = i64Left % i64Right;
+		setSignedResult( i64Result, pResult);
 	}
 	else
 	{
-		FLMINT64		i64LValue = fqGetInt64( pLValue);
-		FLMINT64		i64RValue = fqGetInt64( pRValue);
-
-		if( i64RValue)
-		{
-			pResult->val.i64Val = i64LValue % i64RValue;
-			pResult->eType = (pResult->val.i64Val < 0) 
-										? FLM_INT64_VAL : FLM_UINT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
 	}
 }
 
@@ -733,34 +738,32 @@ FSTATIC void fqOpSUMod(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (!ui64Right)
 	{
-		if( pRValue->val.uiVal)
+		pResult->val.ui32Val = 0;				// Divide by ZERO case.
+		pResult->eType = NO_TYPE;
+	}
+	else if (i64Left < 0)
+	{
+		if (ui64Right >= (FLMUINT64)(FLM_MAX_INT64) + 1)
 		{
-			pResult->val.iVal = pLValue->val.iVal % pRValue->val.uiVal;
-			pResult->eType = FLM_INT32_VAL;
+			setSignedResult( i64Left, pResult);
 		}
 		else
 		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
+			i64Result = i64Left % (FLMINT64)ui64Right;
+			setSignedResult( i64Result, pResult);
 		}
 	}
 	else
 	{
-		FLMINT64		i64LValue = fqGetInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-
-		if( ui64RValue)
-		{
-			pResult->val.i64Val = i64LValue  % ui64RValue;
-			pResult->eType = FLM_INT64_VAL;
-		}
-		else
-		{
-			pResult->val.uiVal = 0;				// MOD by ZERO case.
-			pResult->eType = NO_TYPE;
-		}
+		ui64Result = (FLMUINT64)i64Left % ui64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 
@@ -772,17 +775,8 @@ FSTATIC void fqOpUUPlus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
-	{
-		pResult->val.uiVal = pLValue->val.uiVal + pRValue->val.uiVal;
-		pResult->eType = FLM_UINT32_VAL;
-	}
-	else
-	{
-		pResult->val.ui64Val = 
-			fqGetUInt64( pLValue) + fqGetUInt64( pRValue);
-		pResult->eType = FLM_UINT64_VAL;
-	}
+	FLMUINT64	ui64Result = fqGetUInt64( pLValue) + fqGetUInt64( pRValue);
+	setUnsignedResult( ui64Result, pResult);
 }
 
 /***************************************************************************
@@ -793,54 +787,52 @@ FSTATIC void fqOpUSPlus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+	
+	if (i64Right < 0)
 	{
-		if (pRValue->val.iVal < 0)
+		if (i64Right == FLM_MIN_INT64)
 		{
-			FLMINT	iTmpVal = -pRValue->val.iVal;
-			
-			if ((FLMUINT)iTmpVal > pLValue->val.uiVal)
+			if (ui64Left < (FLMUINT64)(FLM_MAX_INT64) + 1)
 			{
-				pResult->val.iVal = -(iTmpVal - (FLMINT)pLValue->val.uiVal);
-				pResult->eType = FLM_INT32_VAL;
+				if (!ui64Left)
+				{
+					i64Result = FLM_MIN_INT64;
+				}
+				else
+				{
+					i64Result = -((FLMINT64)((FLMUINT64)(FLM_MAX_INT64) + 1 - ui64Left));
+				}
+				setSignedResult( i64Result, pResult);
 			}
 			else
 			{
-				pResult->val.uiVal = pLValue->val.uiVal - (FLMUINT)iTmpVal;
-				pResult->eType = FLM_UINT32_VAL;
+				ui64Result = ui64Left - (FLMUINT64)(FLM_MAX_INT64) - 1;
+				setUnsignedResult( ui64Result, pResult);
 			}
 		}
 		else
 		{
-			pResult->val.uiVal = pLValue->val.uiVal + (FLMUINT)pRValue->val.iVal;
-			pResult->eType = FLM_UINT32_VAL;
+			i64Right = -i64Right;
+			if ((FLMUINT64)i64Right > ui64Left)
+			{
+				i64Result = -(i64Right - (FLMINT64)ui64Left);
+				setSignedResult( i64Result, pResult);
+			}
+			else
+			{
+				ui64Result = ui64Left - (FLMUINT64)i64Right;
+				setUnsignedResult( ui64Result, pResult);
+			}
 		}
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMINT64		i64RValue = fqGetInt64( pRValue);
-
-		if (i64RValue < 0)
-		{
-			i64RValue = -i64RValue;
-			
-			if ((FLMUINT64)i64RValue > ui64LValue)
-			{
-				pResult->val.i64Val = -(i64RValue - (FLMINT64)ui64LValue);
-				pResult->eType = FLM_INT64_VAL;
-			}
-			else
-			{
-				pResult->val.ui64Val = ui64LValue - (FLMUINT64)i64RValue;
-				pResult->eType = FLM_UINT64_VAL;
-			}
-		}
-		else
-		{
-			pResult->val.ui64Val = ui64LValue + (FLMUINT64)i64RValue;
-			pResult->eType = FLM_UINT64_VAL;
-		}
+		ui64Result = ui64Left + (FLMUINT64)i64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 
@@ -852,18 +844,20 @@ FSTATIC void fqOpSSPlus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMINT64		i64Result;
+	FLMUINT64	ui64Result;
+
+	if (i64Left >= 0 && i64Right >= 0)
 	{
-		pResult->val.iVal = pLValue->val.iVal + pRValue->val.iVal;
-		pResult->eType = (pResult->val.iVal < 0) 
-									? FLM_INT32_VAL : FLM_UINT32_VAL;
+		ui64Result = (FLMUINT64)i64Left + (FLMUINT64)i64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 	else
 	{
-		pResult->val.i64Val = 
-			fqGetInt64( pLValue) + fqGetInt64( pRValue);
-		pResult->eType = (pResult->val.i64Val < 0) 
-									? FLM_INT64_VAL : FLM_UINT64_VAL;
+		i64Result = i64Left + i64Right;
+		setSignedResult( i64Result, pResult);
 	}
 }
 
@@ -875,54 +869,52 @@ FSTATIC void fqOpSUPlus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+	
+	if (i64Left < 0)
 	{
-		if (pLValue->val.iVal < 0)
+		if (i64Left == FLM_MIN_INT64)
 		{
-			FLMINT	iTmpVal = -pLValue->val.iVal;
-			
-			if ((FLMUINT)iTmpVal > pRValue->val.uiVal)
+			if (ui64Right < (FLMUINT64)(FLM_MAX_INT64) + 1)
 			{
-				pResult->val.iVal = -(iTmpVal - (FLMINT)pRValue->val.uiVal);
-				pResult->eType = FLM_INT32_VAL;
+				if (!ui64Right)
+				{
+					i64Result = FLM_MIN_INT64;
+				}
+				else
+				{
+					i64Result = -((FLMINT64)((FLMUINT64)(FLM_MAX_INT64) + 1 - ui64Right));
+				}
+				setSignedResult( i64Result, pResult);
 			}
 			else
 			{
-				pResult->val.uiVal = pRValue->val.uiVal - (FLMUINT)iTmpVal;
-				pResult->eType = FLM_UINT32_VAL;
+				ui64Result = ui64Right - (FLMUINT64)(FLM_MAX_INT64) - 1;
+				setUnsignedResult( ui64Result, pResult);
 			}
 		}
 		else
 		{
-			pResult->val.uiVal = (FLMUINT)pLValue->val.iVal + pRValue->val.uiVal;
-			pResult->eType = FLM_UINT32_VAL;
+			i64Left = -i64Left;
+			if ((FLMUINT64)i64Left > ui64Right)
+			{
+				i64Result = -(i64Left - (FLMINT64)ui64Right);
+				setSignedResult( i64Result, pResult);
+			}
+			else
+			{
+				ui64Result = ui64Right - (FLMUINT64)i64Left;
+				setUnsignedResult( ui64Result, pResult);
+			}
 		}
 	}
 	else
 	{
-		FLMINT64		i64LValue = fqGetInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-		
-		if (i64LValue < 0)
-		{
-			i64LValue = -i64LValue;
-			
-			if ((FLMUINT64)i64LValue > ui64RValue)
-			{
-				pResult->val.i64Val = -(i64LValue - (FLMINT64)ui64RValue);
-				pResult->eType = FLM_INT64_VAL;
-			}
-			else
-			{
-				pResult->val.ui64Val = ui64RValue - (FLMUINT64)i64LValue;
-				pResult->eType = FLM_UINT64_VAL;
-			}
-		}
-		else
-		{
-			pResult->val.ui64Val = (FLMUINT64)i64LValue + ui64RValue;
-			pResult->eType = FLM_UINT64_VAL;
-		}
+		ui64Result = ui64Right + (FLMUINT64)i64Left;
+		setUnsignedResult( ui64Result, pResult);
 	}
 }
 
@@ -934,34 +926,20 @@ FSTATIC void fqOpUUMinus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if( ui64Left >= ui64Right)
 	{
-		if( pLValue->val.uiVal >= pRValue->val.uiVal)
-		{
-			pResult->val.uiVal = pLValue->val.uiVal - pRValue->val.uiVal;
-			pResult->eType = FLM_UINT32_VAL;
-		}
-		else
-		{
-			pResult->val.iVal = -((FLMINT)(pRValue->val.uiVal - pLValue->val.uiVal));
-			pResult->eType = FLM_INT32_VAL;
-		}
+		ui64Result = ui64Left - ui64Right;
+		setUnsignedResult( ui64Result, pResult);
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-
-		if( ui64LValue >= ui64RValue)
-		{
-			pResult->val.ui64Val = ui64LValue - ui64RValue;
-			pResult->eType = FLM_UINT64_VAL;
-		}
-		else
-		{
-			pResult->val.i64Val = -((FLMINT64)(ui64RValue - ui64LValue));
-			pResult->eType = FLM_INT64_VAL;
-		}
+		i64Result = -((FLMINT64)(ui64Right - ui64Left));
+		setSignedResult( i64Result, pResult);
 	}
 }
 	
@@ -973,47 +951,35 @@ FSTATIC void fqOpUSMinus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {	
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMUINT64	ui64Left = fqGetUInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Right < 0)
 	{
-		if( pRValue->val.iVal < 0) 
+		if (i64Right == FLM_MIN_INT64)
 		{
-			FLMINT	iTmpVal = -pRValue->val.iVal;
-			
-			pResult->val.uiVal = pLValue->val.uiVal + (FLMUINT)iTmpVal;
-			pResult->eType = FLM_UINT32_VAL;
-		}
-		else if ((FLMUINT)pRValue->val.iVal > pLValue->val.uiVal)
-		{
-			pResult->val.iVal = (FLMINT)pLValue->val.uiVal - pRValue->val.iVal;
-			pResult->eType = FLM_INT32_VAL;
+			ui64Result = ui64Left + (FLMUINT64)FLM_MAX_INT64 + 1;
 		}
 		else
 		{
-			pResult->val.uiVal = pLValue->val.uiVal - (FLMUINT)pRValue->val.iVal;
-			pResult->eType = FLM_UINT32_VAL;
+			i64Right = -i64Right;
+			ui64Result = ui64Left + (FLMUINT64)i64Right;
 		}
+		setUnsignedResult( ui64Result, pResult);
 	}
 	else
 	{
-		FLMUINT64	ui64LValue = fqGetUInt64( pLValue);
-		FLMINT64		i64RValue = fqGetInt64( pRValue);
-
-		if( i64RValue < 0)
+		if( ui64Left >= (FLMUINT64)i64Right)
 		{
-			i64RValue = -i64RValue;
-			
-			pResult->val.ui64Val = ui64LValue + (FLMUINT64)i64RValue;
-			pResult->eType = FLM_UINT64_VAL;
-		}
-		else if ((FLMUINT64)i64RValue > ui64LValue)
-		{
-			pResult->val.i64Val = (FLMINT64)ui64LValue - i64RValue;
-			pResult->eType = FLM_INT64_VAL;
+			ui64Result = ui64Left - (FLMUINT64)i64Right;
+			setUnsignedResult( ui64Result, pResult);
 		}
 		else
 		{
-			pResult->val.ui64Val = ui64LValue - (FLMUINT64)i64RValue;
-			pResult->eType = FLM_UINT64_VAL;
+			i64Result = -((FLMINT64)(i64Right - (FLMINT64)ui64Left));
+			setSignedResult( i64Result, pResult);
 		}
 	}
 }
@@ -1026,15 +992,54 @@ FSTATIC void fqOpSSMinus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMINT64		i64Right = fqGetInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Left < 0)
 	{
-		pResult->val.iVal = pLValue->val.iVal - pRValue->val.iVal;
-		pResult->eType = FLM_INT32_VAL;
+		if (i64Right >= 0)
+		{
+			i64Result = i64Left - i64Right;
+			setSignedResult( i64Result, pResult);
+		}
+		else if (i64Right == FLM_MIN_INT64)
+		{
+			if (i64Left == FLM_MIN_INT64)
+			{
+				ui64Result = 0;
+			}
+			else
+			{
+				i64Left = -i64Left;
+				ui64Result = (FLMUINT64)FLM_MAX_INT64 + 1 - (FLMUINT64)i64Left;
+			}
+			setUnsignedResult( ui64Result, pResult);
+		}
+		else
+		{
+			i64Result = i64Left - i64Right;
+			setSignedResult( i64Result, pResult);
+		}
+	}
+	else if (i64Right < 0)
+	{
+		if (i64Right == FLM_MIN_INT64)
+		{
+			ui64Result = (FLMUINT64)i64Left + (FLMUINT64)(FLM_MAX_INT64) + 1;
+		}
+		else
+		{
+			i64Right = -i64Right;
+			ui64Result = (FLMUINT64)i64Left + (FLMUINT64)i64Right;
+		}
+		setUnsignedResult( ui64Result, pResult);
 	}
 	else
 	{
-		pResult->val.i64Val = fqGetInt64( pLValue) - fqGetInt64( pRValue);
-		pResult->eType = FLM_INT64_VAL;
+		i64Result = i64Left - i64Right;
+		setSignedResult( i64Result, pResult);
 	}
 }
 
@@ -1046,18 +1051,28 @@ FSTATIC void fqOpSUMinus(
 	FQATOM *	pRValue,
 	FQATOM *	pResult)
 {
-	if (isNativeNum( pLValue->eType) && isNativeNum( pRValue->eType))
+	FLMINT64		i64Left = fqGetInt64( pLValue);
+	FLMUINT64	ui64Right = fqGetUInt64( pRValue);
+	FLMUINT64	ui64Result;
+	FLMINT64		i64Result;
+
+	if (i64Left < 0)
 	{
-		pResult->val.iVal = pLValue->val.iVal - (FLMINT)pRValue->val.uiVal;
-		pResult->eType = FLM_INT32_VAL;
+		i64Result = i64Left - (FLMINT64)ui64Right;
+		setSignedResult( i64Result, pResult);
 	}
 	else
 	{
-		FLMINT64		i64LValue = fqGetInt64( pLValue);
-		FLMUINT64	ui64RValue = fqGetUInt64( pRValue);
-
-		pResult->val.i64Val = i64LValue - (FLMINT64)ui64RValue;
-		pResult->eType = FLM_INT64_VAL;
+		if( (FLMUINT64)i64Left >= ui64Right)
+		{
+			ui64Result = (FLMUINT64)i64Left - ui64Right;
+			setUnsignedResult( ui64Result, pResult);
+		}
+		else
+		{
+			i64Result = -((FLMINT64)(ui64Right - (FLMUINT64)i64Left));
+			setSignedResult( i64Result, pResult);
+		}
 	}
 }
 
@@ -1100,7 +1115,7 @@ FSTATIC FLMUINT flmCurEvalTrueFalse(
 					uiTrueFalse |= FLM_UNK;
 					break;
 				case FLM_INT32_VAL:
-					if (pTmpQAtom->val.iVal)
+					if (pTmpQAtom->val.i32Val)
 					{
 						uiTrueFalse |= FLM_TRUE;
 					}
@@ -1120,7 +1135,7 @@ FSTATIC FLMUINT flmCurEvalTrueFalse(
 					}
 					break;
 				case FLM_UINT32_VAL:
-					if (pTmpQAtom->val.uiVal)
+					if (pTmpQAtom->val.ui32Val)
 					{
 						uiTrueFalse |= FLM_TRUE;
 					}
@@ -1216,150 +1231,36 @@ RCODE flmCurGetAtomVal(
 		}
 		
 		case FLM_INT32_VAL:
-		{
-			if (!pField || pRecord->getDataLength( pField) == 0)
-			{
-				// Default value
-				
-				pResult->val.iVal = 0;
-			}
-			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
-			{
-				if (RC_BAD( rc = pRecord->getINT( pField, &pResult->val.iVal)))
-				{
-
-					// Try to get the number as an unsigned value. For purposes
-					// of evaluation, the 32-bit value will still be treated as
-					// signed. In effect, the large positive value is wrapped and
-					// becomes a negative value.
-
-					if (rc == FERR_CONV_NUM_OVERFLOW)
-					{
-						rc = pRecord->getUINT( pField, &pResult->val.uiVal);
-						eFldType = FLM_UINT32_VAL;
-					}
-				}
-			}
-			else if (uiType == FLM_CONTEXT_TYPE)
-			{
-				rc = pRecord->getUINT( pField, &pResult->val.uiVal);
-				eFldType = FLM_UINT32_VAL;
-			}
-			else
-			{
-				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
-			}
-
-			if (RC_OK( rc))
-			{
-				pResult->eType = eFldType;
-			}
-			break;
-		}
-		
 		case FLM_INT64_VAL:
-		{
-			if (!pField || pRecord->getDataLength( pField) == 0)
-			{
-				// Default value
-				
-				pResult->val.i64Val = 0;
-			}
-			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
-			{
-				if (RC_BAD( rc = pRecord->getINT64( pField, &pResult->val.i64Val)))
-				{
-
-					// Try to get the number as an unsigned value. For purposes
-					// of evaluation, the 64-bit value will still be treated as
-					// signed. In effect, the large positive value is wrapped and
-					// becomes a negative value.
-
-					if (rc == FERR_CONV_NUM_OVERFLOW)
-					{
-						rc = pRecord->getUINT64( pField, &pResult->val.ui64Val);
-						eFldType = FLM_UINT64_VAL;
-					}
-				}
-			}
-			else if (uiType == FLM_CONTEXT_TYPE)
-			{
-				rc = pRecord->getUINT( pField, &pResult->val.uiVal);
-				eFldType = FLM_UINT32_VAL;
-			}
-			else
-			{
-				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
-			}
-
-			if (RC_OK( rc))
-			{
-				pResult->eType = eFldType;
-			}
-			break;
-		}
-		
 		case FLM_UINT32_VAL:
+		case FLM_UINT64_VAL:
 		case FLM_REC_PTR_VAL:
 		{
 			if (!pField || pRecord->getDataLength( pField) == 0)
 			{
 				// Default value
 				
-				pResult->val.uiVal = 0;
+				pResult->val.ui32Val = 0;
+				eFldType = FLM_UINT32_VAL;
 			}
 			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
 			{
-				if (RC_BAD( rc = pRecord->getUINT( pField, &pResult->val.uiVal)))
+				if (RC_OK( rc = pRecord->getUINT32( pField, &pResult->val.ui32Val)))
 				{
-
-					// Try to get the number as a signed value. For purposes of
-					// evaluation, the 32-bit value will still be treated as
-					// unsigned. In effect, the negative value is wrapped and
-					// becomes a large positive value.
-
-					if (rc == FERR_CONV_NUM_UNDERFLOW)
+					eFldType = FLM_UINT32_VAL;
+				}
+				else if (rc == FERR_CONV_NUM_OVERFLOW)
+				{
+					rc = pRecord->getUINT64( pField, &pResult->val.ui64Val);
+					eFldType = FLM_UINT64_VAL;
+				}
+				else if (rc == FERR_CONV_NUM_UNDERFLOW)
+				{
+					if (RC_OK( rc= pRecord->getINT32( pField, &pResult->val.i32Val)))
 					{
-						rc = pRecord->getINT( pField, &pResult->val.iVal);
 						eFldType = FLM_INT32_VAL;
 					}
-				}
-			}
-			else if (uiType == FLM_CONTEXT_TYPE)
-			{
-				rc = pRecord->getUINT( pField, &(pResult->val.uiVal));
-			}
-			else
-			{
-				rc = RC_SET( FERR_CONV_BAD_SRC_TYPE);
-			}
-
-			if (RC_OK( rc))
-			{
-				pResult->eType = eFldType;
-			}
-			break;
-		}
-		
-		case FLM_UINT64_VAL:
-		{
-			if (!pField || pRecord->getDataLength( pField) == 0)
-			{
-				// Default value
-				
-				pResult->val.ui64Val = 0;
-			}
-			else if (uiType == FLM_NUMBER_TYPE || uiType == FLM_TEXT_TYPE)
-			{
-				if (RC_BAD( rc = pRecord->getUINT64( pField, &pResult->val.ui64Val)))
-				{
-
-					// Try to get the number as a signed value. For purposes of
-					// evaluation, the 64-bit value will still be treated as
-					// unsigned. In effect, the negative value is wrapped and
-					// becomes a large positive value.
-
-					if (rc == FERR_CONV_NUM_UNDERFLOW)
+					else if (rc == FERR_CONV_NUM_UNDERFLOW)
 					{
 						rc = pRecord->getINT64( pField, &pResult->val.i64Val);
 						eFldType = FLM_INT64_VAL;
@@ -1368,7 +1269,7 @@ RCODE flmCurGetAtomVal(
 			}
 			else if (uiType == FLM_CONTEXT_TYPE)
 			{
-				rc = pRecord->getUINT( pField, &(pResult->val.uiVal));
+				rc = pRecord->getUINT32( pField, &pResult->val.ui32Val);
 				eFldType = FLM_REC_PTR_VAL;
 			}
 			else
@@ -1476,33 +1377,42 @@ RCODE flmCurGetAtomVal(
 					
 					case FLM_NUMBER_TYPE:
 					{
-						if (RC_OK( rc = pRecord->getUINT( pField, 
-								&pResult->val.uiVal)))
+						if (RC_OK( rc = pRecord->getUINT32( pField, 
+								&pResult->val.ui32Val)))
 						{
 							pResult->eType = FLM_UINT32_VAL;
 						}
-						else if (RC_OK( rc = pRecord->getINT( pField, 
-								&pResult->val.iVal)))
+						else if (rc == FERR_CONV_NUM_UNDERFLOW)
 						{
-							pResult->eType = FLM_INT32_VAL;
+							if (RC_OK( rc = pRecord->getINT32( pField, 
+									&pResult->val.i32Val)))
+							{
+								pResult->eType = FLM_INT32_VAL;
+							}
+							else if (rc == FERR_CONV_NUM_UNDERFLOW)
+							{
+								if (RC_OK( rc = pRecord->getINT64( pField, 
+										&pResult->val.i64Val)))
+								{
+									pResult->eType = FLM_INT64_VAL;
+								}
+							}
 						}
-						else if (RC_OK( rc = pRecord->getUINT64( pField, 
-								&pResult->val.ui64Val)))
+						else if (rc == FERR_CONV_NUM_OVERFLOW)
 						{
-							pResult->eType = FLM_UINT64_VAL;
-						}
-						else if (RC_OK( rc = pRecord->getINT64( pField, 
-								&pResult->val.i64Val)))
-						{
-							pResult->eType = FLM_INT64_VAL;
+							if (RC_OK( rc = pRecord->getUINT64( pField, 
+									&pResult->val.ui64Val)))
+							{
+								pResult->eType = FLM_UINT64_VAL;
+							}
 						}
 						break;
 					}
 					
 					case FLM_CONTEXT_TYPE:
 					{
-						if (RC_OK( rc = pRecord->getUINT( pField, 
-								&(pResult->val.uiVal))))
+						if (RC_OK( rc = pRecord->getUINT32( pField, 
+								&(pResult->val.ui32Val))))
 						{
 							pResult->eType = FLM_UINT32_VAL;
 						}
@@ -1610,7 +1520,7 @@ FSTATIC RCODE flmCurGetAtomFromRec(
 	if (*puiFldPath == FLM_RECID_FIELD)
 	{
 		pResult->eType = FLM_UINT32_VAL;
-		pResult->val.uiVal = pRecord->getID();
+		pResult->val.ui32Val = (FLMUINT32)pRecord->getID();
 		goto Exit;
 	}
 	
@@ -2007,13 +1917,13 @@ FSTATIC RCODE flmCurEvalArithOp(
 	pLhs->pFieldRec = NULL;
 	pLhs->eType = NO_TYPE;
 	pLhs->uiBufLen = 0;
-	pLhs->val.uiVal = 0;
+	pLhs->val.ui32Val = 0;
 
 	pRhs->pNext = NULL;
 	pRhs->pFieldRec = NULL;
 	pRhs->eType = NO_TYPE;
 	pRhs->uiBufLen = 0;
-	pRhs->val.uiVal = 0;
+	pRhs->val.ui32Val = 0;
 
 	// Get the two operands (may be multiple values per operand)
 
@@ -2375,7 +2285,7 @@ void flmCompareOperands(
 				if (pLhs->eType == FLM_UINT32_VAL && pRhs->eType == FLM_UINT32_VAL)
 				{
 					*puiTrueFalse =
-						(FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal) == 0)
+						(FQ_COMPARE( pLhs->val.ui32Val, pRhs->val.ui32Val) == 0)
 							? FLM_TRUE : FLM_FALSE;
 				}
 				else
@@ -3015,7 +2925,7 @@ Get_Operand:
 	pTmpQAtom->pFieldRec = NULL;
 	pTmpQAtom->eType = NO_TYPE;
 	pTmpQAtom->uiBufLen = 0;
-	pTmpQAtom->val.uiVal = 0;
+	pTmpQAtom->val.ui32Val = 0;
 
 	eType = GET_QNODE_TYPE( pTmpQNode);
 	if (IS_FLD_CB( eType, pTmpQNode))
@@ -3515,13 +3425,13 @@ FSTATIC RCODE flmCurDoNeg(
 		{
 			if (isNativeNum( pTmpQAtom->eType))
 			{
-				if (pTmpQAtom->val.uiVal >= (FLMUINT)(FLM_MAX_INT32) + 1)
+				if (pTmpQAtom->val.ui32Val >= (FLMUINT)(FLM_MAX_INT32) + 1)
 				{
 					pTmpQAtom->eType = NO_TYPE;
 				}
 				else
 				{
-					pTmpQAtom->val.iVal = -((FLMINT)(pTmpQAtom->val.uiVal));
+					pTmpQAtom->val.i32Val = -((FLMINT32)(pTmpQAtom->val.ui32Val));
 					pTmpQAtom->eType = FLM_INT32_VAL;
 				}
 			}
@@ -3542,7 +3452,7 @@ FSTATIC RCODE flmCurDoNeg(
 		{
 			if (isNativeNum( pTmpQAtom->eType))
 			{
-				pTmpQAtom->val.iVal *= -1;
+				pTmpQAtom->val.i32Val *= -1;
 			}
 			else
 			{
@@ -3709,27 +3619,27 @@ FLMINT flmCurDoRelationalOp(
 			{
 				case FLM_UINT32_VAL:
 				{
-					iCompVal = FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal);
+					iCompVal = FQ_COMPARE( pLhs->val.ui32Val, pRhs->val.ui32Val);
 					break;
 				}
 				
 				case FLM_UINT64_VAL:
 				{
-					iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.uiVal),
+					iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.ui32Val),
 													pRhs->val.ui64Val);
 					break;
 				}
 				
 				case FLM_INT32_VAL:
 				{
-					if (pRhs->val.iVal < 0)
+					if (pRhs->val.i32Val < 0)
 					{
 						iCompVal = 1;
 					}
 					else
 					{
-						iCompVal = FQ_COMPARE( pLhs->val.uiVal, 
-													  (FLMUINT) pRhs->val.iVal);
+						iCompVal = FQ_COMPARE( pLhs->val.ui32Val, 
+													  (FLMUINT32)pRhs->val.i32Val);
 					}
 					break;
 				}
@@ -3742,7 +3652,7 @@ FLMINT flmCurDoRelationalOp(
 					}
 					else
 					{
-						iCompVal = FQ_COMPARE( (FLMINT64)(pLhs->val.uiVal), 
+						iCompVal = FQ_COMPARE( (FLMINT64)(pLhs->val.ui32Val), 
 													  pRhs->val.i64Val);
 					}
 					break;
@@ -3764,7 +3674,7 @@ FLMINT flmCurDoRelationalOp(
 			{
 				case FLM_UINT32_VAL:
 				{
-					iCompVal = FQ_COMPARE( pLhs->val.ui64Val, (FLMUINT64)pRhs->val.uiVal);
+					iCompVal = FQ_COMPARE( pLhs->val.ui64Val, (FLMUINT64)pRhs->val.ui32Val);
 					break;
 				}
 				
@@ -3776,14 +3686,14 @@ FLMINT flmCurDoRelationalOp(
 				
 				case FLM_INT32_VAL:
 				{
-					if (pRhs->val.iVal < 0)
+					if (pRhs->val.i32Val < 0)
 					{
 						iCompVal = 1;
 					}
 					else
 					{
 						iCompVal = FQ_COMPARE( pLhs->val.ui64Val, 
-													  (FLMUINT64)(pRhs->val.iVal));
+													  (FLMUINT64)(pRhs->val.i32Val));
 					}
 					break;
 				}
@@ -3818,39 +3728,39 @@ FLMINT flmCurDoRelationalOp(
 			{
 				case FLM_INT32_VAL:
 				{
-					iCompVal = FQ_COMPARE( pLhs->val.iVal, pRhs->val.iVal);
+					iCompVal = FQ_COMPARE( pLhs->val.i32Val, pRhs->val.i32Val);
 					break;
 				}
 				
 				case FLM_INT64_VAL:
 				{
-					iCompVal = FQ_COMPARE( (FLMINT64)(pLhs->val.iVal), pRhs->val.i64Val);
+					iCompVal = FQ_COMPARE( (FLMINT64)(pLhs->val.i32Val), pRhs->val.i64Val);
 					break;
 				}
 				
 				case FLM_UINT32_VAL:
 				{
-					if (pLhs->val.iVal < 0)
+					if (pLhs->val.i32Val < 0)
 					{
 						iCompVal = -1;
 					}
 					else
 					{
-						iCompVal = FQ_COMPARE( (FLMUINT) pLhs->val.iVal, 
-													  pRhs->val.uiVal);
+						iCompVal = FQ_COMPARE( (FLMUINT) pLhs->val.i32Val, 
+													  pRhs->val.ui32Val);
 					}
 					break;
 				}
 				
 				case FLM_UINT64_VAL:
 				{
-					if (pLhs->val.iVal < 0)
+					if (pLhs->val.i32Val < 0)
 					{
 						iCompVal = -1;
 					}
 					else
 					{
-						iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.iVal), 
+						iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.i32Val),
 													  pRhs->val.ui64Val);
 					}
 					break;
@@ -3871,7 +3781,7 @@ FLMINT flmCurDoRelationalOp(
 			{
 				case FLM_INT32_VAL:
 				{
-					iCompVal = FQ_COMPARE( pLhs->val.i64Val, (FLMINT64)(pRhs->val.iVal));
+					iCompVal = FQ_COMPARE( pLhs->val.i64Val, (FLMINT64)(pRhs->val.i32Val));
 					break;
 				}
 				
@@ -3890,7 +3800,7 @@ FLMINT flmCurDoRelationalOp(
 					else
 					{
 						iCompVal = FQ_COMPARE( pLhs->val.i64Val, 
-													  (FLMINT64)(pRhs->val.uiVal));
+													  (FLMINT64)(pRhs->val.ui32Val));
 					}
 					break;
 				}
@@ -3923,11 +3833,11 @@ FLMINT flmCurDoRelationalOp(
 			if (pRhs->eType == FLM_REC_PTR_VAL ||
 				 pRhs->eType == FLM_UINT32_VAL)
 			{
-				iCompVal = FQ_COMPARE( pLhs->val.uiVal, pRhs->val.uiVal);
+				iCompVal = FQ_COMPARE( pLhs->val.ui32Val, pRhs->val.ui32Val);
 			}
 			else if (pRhs->eType == FLM_UINT64_VAL)
 			{
-				iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.uiVal), pRhs->val.ui64Val);
+				iCompVal = FQ_COMPARE( (FLMUINT64)(pLhs->val.ui32Val), pRhs->val.ui64Val);
 			}
 			else
 			{

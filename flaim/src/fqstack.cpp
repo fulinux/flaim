@@ -519,13 +519,13 @@ RCODE flmPutValInAtom(
 			break;
 		case FLM_UINT32_VAL:
 		case FLM_REC_PTR_VAL:
-			pQAtom->val.uiVal = *((FLMUINT *)pvVal);
+			pQAtom->val.ui32Val = *((FLMUINT32 *)pvVal);
 			break;
 		case FLM_UINT64_VAL:
 			pQAtom->val.ui64Val = *((FLMUINT64 *)pvVal);
 			break;
 		case FLM_INT32_VAL:
-			pQAtom->val.iVal = *((FLMINT *)pvVal);
+			pQAtom->val.i32Val = *((FLMINT32 *)pvVal);
 			break;
 		case FLM_INT64_VAL:
 			pQAtom->val.i64Val = *((FLMINT64 *)pvVal);
@@ -616,7 +616,7 @@ RCODE flmCurMakeQNode(
 		
 		case FLM_INT32_VAL:
 		{
-			pQAtom->val.iVal = *(FLMINT *)pVal;
+			pQAtom->val.i32Val = *(FLMINT32 *)pVal;
 			break;
 		}
 		
@@ -629,7 +629,7 @@ RCODE flmCurMakeQNode(
 		case FLM_REC_PTR_VAL:
 		case FLM_UINT32_VAL:
 		{
-			pQAtom->val.uiVal = *(FLMUINT *)pVal;
+			pQAtom->val.ui32Val = *(FLMUINT32 *)pVal;
 			break;
 		}
 		
@@ -749,7 +749,6 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 	)
 {
 	RCODE			rc = FERR_OK;
-	FLMINT		iVal;
 	FLMUINT		uiVal;
 	void *		pTmpVal = pVal;
 	CURSOR *		pCursor = (CURSOR *)hCursor;
@@ -828,35 +827,8 @@ FLMEXP RCODE FLMAPI FlmCursorAddValue(
 			break;
 
 		case FLM_INT32_VAL:
-
-			// Need to make switch to FLMINT, because that is what
-			// flmCurMakeQNode is expecting.  No need to change
-			// eValType.
-
-			iVal = (FLMINT)(*(FLMINT32 *)pVal);
-			pTmpVal = &iVal;
-			break;
-
 		case FLM_UINT32_VAL:
-
-			// Need to make switch to FLMUINT, because that is what
-			// flmCurMakeQNode is expecting.  No need to change
-			// eValType.
-
-			uiVal = (FLMUINT)(*(FLMUINT32 *)pVal);
-			pTmpVal = &uiVal;
-			break;
-
 		case FLM_REC_PTR_VAL:
-
-			// Need to make switch to FLMUINT, because that is what
-			// flmCurMakeQNode is expecting.  No need to change
-			// eValType.
-
-			uiVal = (FLMUINT)(*(FLMUINT32 *)pVal);
-			pTmpVal = &uiVal;
-			break;
-
 		case FLM_UINT64_VAL:
 		case FLM_INT64_VAL:
 		case FLM_TEXT_VAL:

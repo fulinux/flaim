@@ -148,8 +148,8 @@ typedef struct FQATOM
 	union
 	{
 		FLMUINT					uiBool;
-		FLMUINT					uiVal;
-		FLMINT					iVal;
+		FLMUINT32				ui32Val;
+		FLMINT32					i32Val;
 		FLMUINT64				ui64Val;
 		FLMINT64					i64Val;
 		F_TIME					Time;

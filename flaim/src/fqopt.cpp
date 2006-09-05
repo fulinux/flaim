@@ -446,7 +446,7 @@ FSTATIC RCODE flmSQGenPredicateList(
 							flmAssert( eSibOp == FLM_UINT32_VAL);
 							if (RC_BAD( rc = flmSQGetDrnRanges( pSubQuery,
 													pPredicate->eOperator,
-													pPredicate->pVal->val.uiVal)))
+													(FLMUINT)pPredicate->pVal->val.ui32Val)))
 							{
 								goto Exit;
 							}

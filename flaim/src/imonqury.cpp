@@ -949,7 +949,7 @@ void F_QueryFormatter::outputPredicate(
 					break;
 				case FLM_REC_PTR_VAL:
 				case FLM_UINT32_VAL:
-					f_sprintf( szBuf, "%u", (unsigned)pQNode->pQAtom->val.uiVal);
+					f_sprintf( szBuf, "%u", (unsigned)pQNode->pQAtom->val.ui32Val);
 					appendString( szBuf, Q_VALUE_COLOR);
 					break;
 				case FLM_UINT64_VAL:
@@ -957,7 +957,7 @@ void F_QueryFormatter::outputPredicate(
 					appendString( szBuf, Q_VALUE_COLOR);
 					break;
 				case FLM_INT32_VAL:
-					f_sprintf( szBuf, "%d", (int)pQNode->pQAtom->val.iVal);
+					f_sprintf( szBuf, "%d", (int)pQNode->pQAtom->val.i32Val);
 					appendString( szBuf, Q_VALUE_COLOR);
 					break;
 				case FLM_INT64_VAL:
