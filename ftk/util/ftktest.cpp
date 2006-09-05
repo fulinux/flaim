@@ -5116,9 +5116,10 @@ RCODE ftkTestText( void)
 	
 	for( uiLoop = 0; uiLoop <= 0xFFFF; uiLoop++)
 	{
-		FLMUINT16 	ui16WpChar = (FLMUINT16)uiLoop;
 		FLMUINT		uiLanguage;
 		
+		ui16WpChar = (FLMUINT16)uiLoop;
+
 		for( uiLanguage = 0; uiLanguage < FLM_LAST_LANG; uiLanguage++)
 		{
 			if( f_wpGetCollation( ui16WpChar, uiLanguage) !=
@@ -5165,10 +5166,11 @@ RCODE ftkTestText( void)
 	
 	for( uiLoop = 0; uiLoop <= 0xFFFF; uiLoop++)
 	{
-		FLMUINT16 	ui16WpChar = (FLMUINT16)uiLoop;
 		FLMUINT16	ui16DakutenOrHandakuten;
 		FLMUINT16	ui16DakutenOrHandakuten2;
 		
+		ui16WpChar = (FLMUINT16)uiLoop;
+
 		if( (ZenToHankaku( ui16WpChar, &ui16DakutenOrHandakuten) != 
 				f_wpZenToHankaku( ui16WpChar, &ui16DakutenOrHandakuten2)) ||
 			 ui16DakutenOrHandakuten != ui16DakutenOrHandakuten) 
@@ -5185,11 +5187,12 @@ RCODE ftkTestText( void)
 	
 	for( uiLoop = 0; uiLoop <= 0xFFFF; uiLoop++)
 	{
-		FLMUINT16 	ui16WpChar = (FLMUINT16)uiLoop;
 		FLMUINT16	ui16Zenkaku;
 		FLMUINT16	ui16Zenkaku2;
 		FLMUINT		uiNextWpChar;
 		
+		ui16WpChar = (FLMUINT16)uiLoop;
+
 		for( uiNextWpChar = 0x0B3D; uiNextWpChar <= 0x0B3E; uiNextWpChar++)
 		{
 			if( (HanToZenkaku( ui16WpChar, (FLMUINT16)uiNextWpChar, &ui16Zenkaku) !=

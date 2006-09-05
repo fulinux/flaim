@@ -542,8 +542,13 @@
 			return( f_atomicInc( &m_refCnt));
 		}
 
+		FLMINT FLMAPI Release( void)
+		{
+			return( Release( TRUE));
+		}
+
 		FLMINT FLMAPI Release(
-			FLMBOOL						bOkToReuse = TRUE);
+			FLMBOOL						bOkToReuse);
 
 		RCODE FLMAPI waitToComplete( void);
 
