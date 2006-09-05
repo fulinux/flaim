@@ -3062,6 +3062,7 @@ RCODE IFlmTestImpl::addRecWithFLMUINT64(
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
 		FLM_TEXT_TYPE, &pvDataField)))
 	{
@@ -3076,6 +3077,7 @@ RCODE IFlmTestImpl::addRecWithFLMUINT64(
 		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = pDataRec->setUINT64( pvDataField, ui64Num)))
 	{
 		f_sprintf( szErr, "calling setUINT64 to add Unsigned64 %I64u", ui64Num);
@@ -3232,6 +3234,7 @@ RCODE IFlmTestImpl::addRecWithFLMINT64(
 		MAKE_ERROR_STRING( "allocating FlmRecord", rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if( RC_BAD( rc = pDataRec->insertLast( 0, PERSON_TAG,
 		FLM_TEXT_TYPE, &pvDataField)))
 	{
@@ -3246,6 +3249,7 @@ RCODE IFlmTestImpl::addRecWithFLMINT64(
 		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (RC_BAD( rc = pDataRec->setINT64( pvDataField, i64Num)))
 	{
 		f_sprintf( szErr, "calling setINT64 to add Signed64 %I64d", i64Num);
@@ -3264,6 +3268,7 @@ RCODE IFlmTestImpl::addRecWithFLMINT64(
 		MAKE_ERROR_STRING( szErr, rc, m_szFailInfo);
 		goto Exit;
 	}
+	
 	if (i64TestNum != i64Num)
 	{
 		rc = RC_SET( FERR_FAILURE);
