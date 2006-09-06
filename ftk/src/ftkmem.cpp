@@ -4790,14 +4790,6 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 		goto Exit;
 	}
 	
-#elif defined( FLM_RING_ZERO_NLM)
-
-	if( (*ppvAlloc = Alloc( uiMinSize, gv_lAllocRTag)) == NULL)
-	{
-		rc = RC_SET( NE_FLM_MEM);
-		goto Exit;
-	}
-
 #elif defined( FLM_SOLARIS)
 
 	if( (*ppvAlloc = memalign( sysconf( _SC_PAGESIZE), uiMinSize)) == NULL)
@@ -4830,22 +4822,30 @@ RCODE FLMAPI f_allocAlignedBufferImp(
 		FLMBYTE *	pucAlloc;
 		FLMBYTE *	pucStartOfAlloc;
 		
-		uiAllocSize = (FLMUINT)(f_roundUp( uiMinSize, uiPageSize) + uiPageSize);
+		uiAllocSize = 
+			(FLMUINT)(f_roundUp( uiMinSize, uiPageSize) + (2 * uiPageSize));
 		
+	#if defined( FLM_RING_ZERO_NLM)
+		if( (pucAlloc = (FLMBYTE *)Alloc( uiAllocSize, gv_lAllocRTag)) == NULL)
+		{
+			rc = RC_SET( NE_FLM_MEM);
+			goto Exit;
+		}
+	#else
 		if( RC_BAD( rc = f_alloc( uiAllocSize, &pucAlloc)))
 		{
 			goto Exit;
 		}
+	#endif
 		
 		pucStartOfAlloc = pucAlloc;
-		pucAlloc += (uiPageSize - (((FLMUINT)pucAlloc) % uiPageSize));
+		pucAlloc += (uiPageSize - (((FLMUINT)pucAlloc) % uiPageSize)) + uiPageSize;
 		
 		f_assert( ((FLMUINT)(pucAlloc) % uiPageSize) == 0);
 
 		U642FBA( (FLMUINT64)pucStartOfAlloc, pucAlloc - 8);
 		*ppvAlloc = pucAlloc;
 	}
-
 
 #endif
 
@@ -4869,11 +4869,6 @@ void FLMAPI f_freeAlignedBufferImp(
 		(void)VirtualFree( *ppvAlloc, 0, MEM_RELEASE);
 		*ppvAlloc = NULL;
 		
-#elif defined( FLM_RING_ZERO_NLM)
-
-	Free( *ppvAlloc);
-	*ppvAlloc = NULL;
-
 #elif defined( FLM_UNIX)
 
 		free( *ppvAlloc);
@@ -4885,7 +4880,11 @@ void FLMAPI f_freeAlignedBufferImp(
 			FLMBYTE *		pucAlloc;
 			
 			pucAlloc = (FLMBYTE *)FB2U64( ((FLMBYTE *)(*ppvAlloc)) - 8);
+		#if defined( FLM_RING_ZERO_NLM)
+			Free( pucAlloc);
+		#else
 			f_free( &pucAlloc);
+		#endif
 			*ppvAlloc = NULL;
 		}
 
