@@ -3206,7 +3206,9 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete( void)
 	}
 	#endif
 
-	notifyComplete( completionRc, uiBytesDone);
+	m_completionRc = completionRc;	
+	m_uiBytesDone = uiBytesDone;
+
 #else
 	if( RC_BAD( completionRc = f_semWait( m_hSem, F_WAITFOREVER)))
 	{
@@ -3215,14 +3217,19 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete( void)
 
 	f_assert( f_semGetSignalCount( m_hSem) == 0);
 
+#ifndef FLM_RING_ZERO_NLM
 	if( m_pIOBuffer)
 	{
 		f_assert( !m_pIOBuffer->isPending());
 	}
+#endif
 
 	f_assert( m_completionRc != NE_FLM_IO_PENDING);
-	
 	completionRc = m_completionRc;	
+#endif
+
+#if defined( FLM_UNIX) || defined( FLM_RING_ZERO_NLM)
+	notifyComplete( m_completionRc, m_uiBytesDone);
 #endif
 
 	return( completionRc);
@@ -3235,8 +3242,10 @@ void FLMAPI F_FileAsyncClient::notifyComplete(
 	RCODE				completionRc,
 	FLMUINT			uiBytesDone)
 {
-	f_assert( m_completionRc == NE_FLM_IO_PENDING);
 	f_assert( !m_pIOBuffer || m_pIOBuffer->isPending());
+#if !defined( FLM_UNIX) && !defined( FLM_RING_ZERO_NLM)
+	f_assert( m_completionRc == NE_FLM_IO_PENDING);
+#endif
 
 	AddRef();
 
@@ -3266,7 +3275,7 @@ void FLMAPI F_FileAsyncClient::notifyComplete(
 		pIOBuffer = NULL;
 	}
 
-#if !defined( FLM_UNIX)
+#if !defined( FLM_UNIX) && !defined( FLM_RING_ZERO_NLM)
 	f_semSignal( m_hSem);
 	f_assert( f_semGetSignalCount( m_hSem) == 1);
 #endif

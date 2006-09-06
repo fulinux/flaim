@@ -4300,10 +4300,17 @@ int main( void)
 		goto Exit;
 	}
 
+#ifdef FLM_NLM
+	if( RC_BAD( rc = pFileSystem->openDir( "sys:\\", "*.*", &pDirHdl)))
+	{
+		goto Exit;
+	}
+#else
 	if( RC_BAD( rc = pFileSystem->openDir( ".", "*.*", &pDirHdl)))
 	{
 		goto Exit;
 	}
+#endif
 	
 	while( RC_OK( pDirHdl->next()))
 	{

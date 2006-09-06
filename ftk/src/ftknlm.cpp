@@ -1047,8 +1047,18 @@ FSTATIC void DirectIONoWaitCallBack(
 		rc = DfsMapError( completionCode, NE_FLM_DIRECT_WRITING_FILE);
 	}
 
-	f_assert( pAsyncClient->getBytesToDo());
-	pAsyncClient->notifyComplete( rc, 0);
+	pAsyncClient->m_completionRc = completionCode;	
+	if( RC_OK( completionCode))
+	{
+		pAsyncClient->m_uiBytesDone = pAsyncClient->m_uiBytesToDo;
+	}
+	else
+	{
+		pAsyncClient->m_uiBytesDone = 0;
+	}
+	
+	f_assert( f_semGetSignalCount( pAsyncClient->m_hSem) == 0);
+	f_semSignal( pAsyncClient->m_hSem);
 }
 #endif
 
@@ -1071,8 +1081,18 @@ FSTATIC void nssDioCallback(
 		rc = MapNSSError( completionCode, NE_FLM_DIRECT_WRITING_FILE);
 	}
 
-	f_assert( pAsyncClient->getBytesToDo());
-	pAsyncClient->notifyComplete( rc, 0);
+	pAsyncClient->m_completionRc = completionCode;	
+	if( RC_OK( completionCode))
+	{
+		pAsyncClient->m_uiBytesDone = pAsyncClient->m_uiBytesToDo;
+	}
+	else
+	{
+		pAsyncClient->m_uiBytesDone = 0;
+	}
+	
+	f_assert( f_semGetSignalCount( pAsyncClient->m_hSem) == 0);
+	f_semSignal( pAsyncClient->m_hSem);
 }
 #endif
 
@@ -3394,7 +3414,7 @@ RCODE F_FileHdl::lowLevelWrite(
 			
 		if( bWaitForWrite)
 		{
-			if( RC_BAD( rc = pAsyncClient->waitToComplete( FALSE)))
+			if( RC_BAD( rc = pAsyncClient->waitToComplete()))
 			{
 				if( rc != NE_FLM_IO_DISK_FULL)
 				{

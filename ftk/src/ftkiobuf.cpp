@@ -62,7 +62,7 @@ public:
 private:
 
 	F_MUTEX					m_hMutex;
-#ifndef FLM_UNIX
+#if !defined( FLM_UNIX) && !defined( FLM_NLM)
 	F_SEM						m_hAvailSem;
 #endif
 	FLMUINT					m_uiMaxBuffers;
@@ -122,7 +122,7 @@ Desc:
 F_IOBufferMgr::F_IOBufferMgr()
 {
 	m_hMutex = F_MUTEX_NULL;
-#ifndef FLM_UNIX
+#if !defined( FLM_UNIX) && !defined( FLM_NLM)
 	m_hAvailSem = F_SEM_NULL;
 #endif
 	
@@ -160,7 +160,7 @@ F_IOBufferMgr::~F_IOBufferMgr()
 		f_mutexDestroy( &m_hMutex);
 	}
 	
-#ifndef FLM_UNIX
+#if !defined( FLM_UNIX) && !defined( FLM_NLM)
 	if( m_hAvailSem != F_SEM_NULL)
 	{
 		f_semDestroy( &m_hAvailSem);
@@ -186,7 +186,7 @@ RCODE F_IOBufferMgr::setupBufferMgr(
 		goto Exit;
 	}
 	
-#ifndef FLM_UNIX
+#if !defined( FLM_UNIX) && !defined( FLM_NLM)
 	if( RC_BAD( rc = f_semCreate( &m_hAvailSem)))
 	{
 		goto Exit;
@@ -259,7 +259,7 @@ Retry:
 	}
 	else if( m_pFirstPending)
 	{
-	#ifndef FLM_UNIX
+	#if !defined( FLM_UNIX) && !defined( FLM_NLM)
 		if( RC_BAD( rc = f_notifyWait( m_hMutex, m_hAvailSem, 
 			NULL, &m_pAvailNotify)))
 		{

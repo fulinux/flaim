@@ -387,8 +387,10 @@ RCODE FLMAPI F_BlockAlloc::allocBlock(
 	{
 		goto Exit;
 	}
-	
+
+#ifndef FLM_NLM
 	f_assert( ((FLMUINT)(*ppvBlock) % m_uiBlockSize) == 0);
+#endif
 
 Exit:
 
@@ -414,7 +416,9 @@ void FLMAPI F_BlockAlloc::freeBlock(
 	FLMBOOL				bMutexLocked = FALSE;
 	
 	f_assert( pvBlock);
+#ifndef FLM_NLM
 	f_assert( ((FLMUINT)pvBlock % m_uiBlockSize) == 0);
+#endif
 	
 	if( m_hMutex != F_MUTEX_NULL)
 	{
@@ -670,7 +674,9 @@ void F_BlockAlloc::freeCell(
 	
 	// Verify that the cell address is on a block boundary
 	
+#ifndef FLM_NLM
 	f_assert( ((pCell - (FLMBYTE *)pSlab->pvSlab) % m_uiBlockSize) == 0);
+#endif
 	
 	// Determine the block number
 
