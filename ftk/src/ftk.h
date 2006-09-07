@@ -204,7 +204,9 @@
 		#if !defined( FLM_64BIT) && !defined( FLM_32BIT)
 			#if defined( FLM_UNIX)
 				#if defined( __x86_64__) || defined( _M_X64) || \
-					 defined( _LP64) || defined( __LP64__) || defined( __sparcv9)
+					 defined( _LP64) || defined( __LP64__) || \
+					 defined ( __64BIT__) || defined( __arch64__) || \
+					 defined( __sparcv9) || defined( __sparcv9__) 
 					#define FLM_64BIT
 				#endif
 			#endif
@@ -218,7 +220,8 @@
 		
 		#if defined( __x86_64__) || defined( _M_X64) || \
 			 defined( _LP64) || defined( __LP64__) || \
-			 defined( __arch64__) || defined( __sparcv9) || defined( __sparcv9__) 
+			 defined ( __64BIT__) || defined( __arch64__) || \
+			 defined( __sparcv9) || defined( __sparcv9__) 
 			#if !defined( FLM_64BIT)
 				#error Platform word size is incorrect
 			#endif
