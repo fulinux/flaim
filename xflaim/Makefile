@@ -722,6 +722,7 @@ include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = $(topdir)/build
 doxygen_output_dir = $(build_output_dir)/docs
+javadoc_output_dir = $(build_output_dir)/javadocs
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
@@ -1964,6 +1965,9 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
+ifdef jhome	
+	$(ec)$(call dircopycmd,$(javadoc_output_dir),$(package_stage_dir)/javadocs)
+endif
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 	$(ec)$(call mkdircmd,$(package_stage_dir)/ftk)
 	$(ec)$(call dircopycmd,$(dir $(topdir))ftk/src,$(package_stage_dir)/ftk/src)
@@ -2187,6 +2191,10 @@ rpms: spec srcdist
 docs: status clean dircheck doxyfile
 	$(ec)$(gprintf) "Creating documentation ...\n"
 	$(ec)doxygen $(doxyfile)
+ifdef jhome
+	$(ec)$(gprintf) "Compiling JAVADOC documentation ...\n"
+	$(ec)$(call hostpath,$(jhome)/bin/javadoc) -sourcepath java -d $(call hostpath,$(javadoc_output_dir)) $(project_name)
+endif
 	$(ec)$(gprintf) "Documentation created.\n"
 
 # -- misc. targets --
@@ -2200,6 +2208,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(java_output_dir))
 	$(ec)$(call mkdircmd,$(java_class_output_dir))
 	$(ec)$(call mkdircmd,$(doxygen_output_dir))
+	$(ec)$(call mkdircmd,$(javadoc_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
 	$(ec)$(call mkdircmd,$(sample_dir))
