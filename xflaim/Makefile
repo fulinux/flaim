@@ -661,8 +661,8 @@ version = $(major_version).$(minor_version).$(svn_revision)
 # 5. If any interfaces have been added since the last public release, increment age
 # 6. If any interfaces have been removed since the last public release, set age to 0
 
-so_current = 2
-so_revision = 1
+so_current = 3
+so_revision = 2
 so_age = 0
 shared_lib_version =
 

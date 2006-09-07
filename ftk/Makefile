@@ -145,7 +145,7 @@ endif
 # -- Versions --
 
 major_version = 1
-minor_version = 2
+minor_version = 1
 
 version = $(major_version).$(minor_version).$(svn_revision)
 
