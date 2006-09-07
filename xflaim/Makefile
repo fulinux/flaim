@@ -2189,10 +2189,10 @@ rpms: spec srcdist
 
 .PHONY : docs
 docs: status clean dircheck doxyfile
-	$(ec)$(gprintf) "Creating documentation ...\n"
+	$(ec)$(gprintf) "Creating DOXYGEN documentation ...\n"
 	$(ec)doxygen $(doxyfile)
 ifdef jhome
-	$(ec)$(gprintf) "Compiling JAVADOC documentation ...\n"
+	$(ec)$(gprintf) "Creating JAVADOC documentation ...\n"
 	$(ec)$(call hostpath,$(jhome)/bin/javadoc) -sourcepath java -d $(call hostpath,$(javadoc_output_dir)) $(project_name)
 endif
 	$(ec)$(gprintf) "Documentation created.\n"
