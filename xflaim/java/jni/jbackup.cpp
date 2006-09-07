@@ -261,7 +261,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_Backup__1backup(
 	IF_Backup *				pBackup = THIS_BACKUP();
 	FLMUINT					uiSeqNum = 0;
 	JavaVM *					pJvm;
-	JNIBackupClient *		pClient;
+	JNIBackupClient *		pClient = NULL;
 	JNIBackupStatus *		pStatus = NULL;
 	FLMBYTE					ucBackupPath [F_PATH_MAX_SIZE];
 	F_DynaBuf				backupPathBuf( ucBackupPath, sizeof( ucBackupPath));

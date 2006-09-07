@@ -430,7 +430,7 @@ Exit:
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getTransType(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -1145,7 +1145,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getElementNameId(
 {
 	RCODE			rc = NE_XFLM_OK;
 	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
+	FLMUINT		uiNameId = 0;
 	FLMBYTE		ucNamespaceBuf [200];
 	FLMBYTE		ucElementNameBuf [200];
 	F_DynaBuf	namespaceURI( ucNamespaceBuf, sizeof( ucNamespaceBuf));
@@ -1240,7 +1240,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getAttributeNameId(
 {
 	RCODE			rc = NE_XFLM_OK;
 	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
+	FLMUINT		uiNameId = 0;
 	FLMBYTE		ucNamespaceBuf [200];
 	FLMBYTE		ucAttributeNameBuf [200];
 	F_DynaBuf	namespaceURI( ucNamespaceBuf, sizeof( ucNamespaceBuf));
@@ -1320,7 +1320,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getPrefixId(
 {
 	RCODE			rc = NE_XFLM_OK;
 	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
+	FLMUINT		uiNameId = 0;
 	FLMBYTE		ucPrefixNameBuf [200];
 	F_DynaBuf	prefixName( ucPrefixNameBuf, sizeof( ucPrefixNameBuf));
 	
@@ -1400,7 +1400,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getEncDefId(
 {
 	RCODE			rc = NE_XFLM_OK;
 	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
+	FLMUINT		uiNameId = 0;
 	FLMBYTE		ucEncNameBuf [200];
 	F_DynaBuf	encName( ucEncNameBuf, sizeof( ucEncNameBuf));
 	
@@ -1467,11 +1467,11 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getCollectionNumber(
 	jlong				lThis,
 	jstring			sCollectionName)
 {
-	RCODE			rc = NE_XFLM_OK;
-	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
-	FLMBYTE		ucCollectionNameBuf [200];
-	F_DynaBuf	collectionName( ucCollectionNameBuf, sizeof( ucCollectionNameBuf));
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	FLMUINT			uiNameId = 0;
+	FLMBYTE			ucCollectionNameBuf [200];
+	F_DynaBuf		collectionName( ucCollectionNameBuf, sizeof( ucCollectionNameBuf));
 	
 	flmAssert( sCollectionName);
 	if (RC_BAD( rc = getUniString( pEnv, sCollectionName, &collectionName)))
@@ -1501,11 +1501,11 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getIndexNumber(
 	jlong				lThis,
 	jstring			sIndexName)
 {
-	RCODE			rc = NE_XFLM_OK;
-	IF_Db *		pDb = THIS_FDB();
-	FLMUINT		uiNameId;
-	FLMBYTE		ucIndexNameBuf [200];
-	F_DynaBuf	indexName( ucIndexNameBuf, sizeof( ucIndexNameBuf));
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	FLMUINT			uiNameId = 0;
+	FLMBYTE			ucIndexNameBuf [200];
+	F_DynaBuf		indexName( ucIndexNameBuf, sizeof( ucIndexNameBuf));
 	
 	flmAssert( sIndexName);
 	if (RC_BAD( rc = getUniString( pEnv, sIndexName, &indexName)))
@@ -1847,10 +1847,10 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getDataType(
 	jint				iDictType,
 	jint				iDictNumber)
 {
-	RCODE		rc = NE_XFLM_OK;
-	IF_Db *	pDb = THIS_FDB();
-	FLMUINT	uiDataType;
-	FLMUINT	uiDictType = 0;
+	RCODE				rc = NE_XFLM_OK;
+	IF_Db *			pDb = THIS_FDB();
+	FLMUINT			uiDataType = 0;
+	FLMUINT			uiDictType = 0;
 	
 	if (RC_BAD( rc = mapDictType( iDictType, &uiDictType)))
 	{
@@ -2416,7 +2416,7 @@ Exit:
 Desc:
 ****************************************************************************/
 JNIEXPORT void JNICALL Java_xflaim_Db__1setFileExtendSize(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis,
 	jint				iFileExtendSize)
@@ -2431,7 +2431,7 @@ JNIEXPORT void JNICALL Java_xflaim_Db__1setFileExtendSize(
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getFileExtendSize(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2444,7 +2444,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getFileExtendSize(
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getDbVersion(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2457,7 +2457,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getDbVersion(
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getBlockSize(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2470,7 +2470,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getBlockSize(
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getDefaultLanguage(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2483,7 +2483,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getDefaultLanguage(
 Desc:
 ****************************************************************************/
 JNIEXPORT jlong JNICALL Java_xflaim_Db__1getTransID(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2684,7 +2684,7 @@ Exit:
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getMustCloseRC(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2696,7 +2696,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getMustCloseRC(
 Desc:
 ****************************************************************************/
 JNIEXPORT jint JNICALL Java_xflaim_Db__1getAbortRC(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis)
 {
@@ -2708,7 +2708,7 @@ JNIEXPORT jint JNICALL Java_xflaim_Db__1getAbortRC(
 Desc:
 ****************************************************************************/
 JNIEXPORT void JNICALL Java_xflaim_Db__1setMustAbortTrans(
-	JNIEnv *			pEnv,
+	JNIEnv *,		// pEnv,
 	jobject,			// obj,
 	jlong				lThis,
 	jint				iRc)

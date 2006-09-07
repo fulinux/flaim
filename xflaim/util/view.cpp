@@ -569,7 +569,8 @@ Get_File_Name:
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pSFileClient->setup( gv_szViewFileName, gv_szDataDir)))
+	if (RC_BAD( rc = pSFileClient->setup( gv_szViewFileName, gv_szDataDir, 
+		gv_ViewDbHdr.ui32MaxFileSize)))
 	{
 		ViewShowRCError( "setting up super file handle", rc);
 		goto Exit;
@@ -593,7 +594,6 @@ Get_File_Name:
 	rc = ViewReadAndVerifyHdrInfo( NULL);
 
 	gv_pSFileHdl->releaseFiles();
-	gv_pSFileHdl->setBlockSize( (FLMUINT)gv_ViewDbHdr.ui16BlockSize);
 
 	if (RC_BAD( rc))
 	{

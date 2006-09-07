@@ -501,7 +501,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputKey(
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = (IF_Db *)(FLMUINT)ljDbRef;
 	FLMUINT			uiLength;
-	jbyteArray		Key;
+	jbyteArray		Key = NULL;
 	void *			pvKey = NULL;
 	jboolean			bIsCopy = false;
 	FLMBOOL			bMustRelease = false;
@@ -559,7 +559,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_DataVector__1outputData(
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = (IF_Db *)(FLMUINT)ljDbRef;
 	FLMUINT			uiLength = 0;
-	jbyteArray		Data;
+	jbyteArray		Data = NULL;
 	void *			pvData = NULL;
 	jboolean			bIsCopy = false;
 	FLMBOOL			bMustRelease = false;

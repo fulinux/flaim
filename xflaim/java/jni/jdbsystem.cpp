@@ -1754,7 +1754,7 @@ Desc:
 JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1openBufferIStream(
 	JNIEnv *			pEnv,
 	jobject,			// obj,
-	jlong				lThis,
+	jlong,			// lThis,
 	jstring			sBuffer)
 {
 	RCODE					rc = NE_XFLM_OK;
