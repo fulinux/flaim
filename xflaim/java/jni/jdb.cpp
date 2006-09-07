@@ -2813,7 +2813,7 @@ JNIEXPORT jbyteArray JNICALL Java_xflaim_Db__1getSerialNumber(
 	}
 	
    pEnv->SetByteArrayRegion( jSerialNumber, (jsize)0, (jsize)XFLM_SERIAL_NUM_SIZE,
-					(const jbyte *)ucSerialNumber);
+					(jbyte *)ucSerialNumber);
 
 Exit:
 
