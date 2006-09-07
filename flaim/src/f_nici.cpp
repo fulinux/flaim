@@ -1522,11 +1522,11 @@ RCODE F_CCS::setKeyFromStore(
 				goto Exit;
 			}
 	
-			if (RC_BAD( rc = bufferStream.open( (const char *)pTmpKey, ui32BufLen)))
+			if (RC_BAD( rc = bufferStream.openStream( (const char *)pTmpKey, (FLMUINT)ui32BufLen)))
 			{
 				goto Exit;
 			}
-			if (RC_BAD( rc = B64Decoder.open( &bufferStream)))
+			if (RC_BAD( rc = B64Decoder.openStream( &bufferStream)))
 			{
 				goto Exit;
 			}
