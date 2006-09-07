@@ -25,9 +25,12 @@
 package xflaim;
 
 /**
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ * This interface alows XFlaim to periodically pass information back to the
+ * client about the status of an ongoing database rebuild operation.  The
+ * implementor may do anything it wants with the information, such as write
+ * it to a log file or display it on the screen.
  */
 public interface DbRebuildStatus
 {
 }
+

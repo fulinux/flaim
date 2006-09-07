@@ -106,7 +106,7 @@ public class Query
 	
 	/**
 	 * Copy the query criteria from one Query object into this Query object.
-	 * @param querytoCopy Query object whose criteria is to be copied.
+	 * @param queryToCopy Query object whose criteria is to be copied.
 	 * @throws XFlaimException
 	 */
 	public void copyCriteria(
@@ -137,7 +137,7 @@ public class Query
 	 * Add an operator to a query.
 	 * @param iOperator Operator to be added.  Should be one of the constants
 	 * defined in {@link xflaim.QueryOperators QueryOperators}.
-	 * @param iCompareRules.  Flags for doing string comparisons.  Should be
+	 * @param iCompareRules  Flags for doing string comparisons.  Should be
 	 * logical ORs of the members of {@link xflaim.CompareRules CompareRules}.
 	 * @throws XFlaimException
 	 */
@@ -194,7 +194,6 @@ public class Query
 
 	/**
 	 * Add an "unknown" predicate to the query criteria.
-	 * @param bValue Boolean value to be added to criteria.
 	 * @throws XFlaimException
 	 */
 	public void addUnknown() throws XFlaimException
@@ -700,7 +699,7 @@ public class Query
 	 * the result set to be completely built before returning counts.  If true,
 	 * the method will return the current counts, even if the result set is
 	 * not completely built.
-	 * @returns {@link xflaim.ResultSetCounts ResultSetCounts} object which
+	 * @return {@link xflaim.ResultSetCounts ResultSetCounts} object which
 	 * contains various counts pertaining to the result set for the query.
 	 * @throws XFlaimException
 	 */

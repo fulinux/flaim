@@ -1128,14 +1128,14 @@ public class DOMNode
 	/**
 	 * Retrieves the first instance of the specified type of node from the
 	 * current node's list of child nodes.
-	 * @param eNodeType The value representing the node type.  
-	 * (Use the constants in FlmDomNodeType.)
-	 * @param ReusedNode An instance of DOMNode which is no longer needed and
-	 * can be reassigned to point to different data in the database.  (Reusing
-	 * DOMNode objects is encouraged as it saves the system from allocating
-	 * and freeing memory for each object.)  Can be null, if no instances are
-	 * available to be reused.
-	 * @return Returns an instance of DOMNode;
+	 * @param iNodeType The value representing the node type.  
+	 * (Use the constants in {@link xflaim.FlmDomNodeType FlmDomNodeType}.)
+	 * @param ReusedNode An instance of {@link xflaim.DOMNode DOMNode} which is
+	 * no longer needed and can be reassigned to point to different data in the
+	 * database.  (Reusing {@link xflaim.DOMNode DOMNode} objects is encouraged
+	 * as it saves the system from allocating and freeing memory for each
+	 * object.)  Can be null, if no instances are available to be reused.
+	 * @return Returns an instance of {@link xflaim.DOMNode DOMNode}
 	 * @throws XFlaimException
 	 */
 	public DOMNode getChild(

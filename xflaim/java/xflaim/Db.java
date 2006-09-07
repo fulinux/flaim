@@ -115,13 +115,13 @@ public class Db
 	 * snapshot as the passed in Db object.  The passed in Db object should
 	 * be running a read transaction.
 	 * 
-	 * @param Db Database whose transaction is to be copied.
+	 * @param db Database whose transaction is to be copied.
 	 * @throws XFlaimException
 	 */
 	public void transBegin(
-		Db 			jdb) throws XFlaimException
+		Db	db) throws XFlaimException
 	{
-		_transBegin( m_this, jdb.m_this);
+		_transBegin( m_this, db.m_this);
 	}
 
 	/**
@@ -161,7 +161,6 @@ public class Db
 	 * time to wait for database lock.  Valid values are 0 through 255 seconds.
 	 * Zero is used to specify no-wait locks. 255 is used to specify that there
 	 * is no timeout.
-	 * @param iTimeoutGet the current transaction type.
 	 * @return Returns the type of transaction.  Should be one of
 	 * the members of {@link xflaim.TransactionType TransactionType}.
 	 * @throws XFlaimException
@@ -364,7 +363,7 @@ public class Db
 	/**
 	 * Creates a new document node. 
 	 * @param iCollection The collection to store the new document in.
-	 * @return Returns the (@link xflaim.DOMNode DOMNode} representing the new document.
+	 * @return Returns the {@link xflaim.DOMNode DOMNode} representing the new document.
 	 * @throws XFlaimException
 	 */
 	 public DOMNode createDocument(
@@ -388,7 +387,7 @@ public class Db
 	 * in the XFlaim database.
 	 * @param iCollection The collection to store the new node in.
 	 * @param iElementNameId Name of the element to be created.
-	 * @return Returns the (@link xflaim.DOMNode DOMNode} representing the
+	 * @return Returns the {@link xflaim.DOMNode DOMNode} representing the
 	 * root element node.
 	 * @throws XFlaimException
 	 */
@@ -416,7 +415,7 @@ public class Db
 	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
 	 * can optionally be passed in, and it will be reused instead of a new
 	 * object being allocated.
-	 * @return - Returns a {@link xflaim.DOMNode DOMNode) which is the root node
+	 * @return - Returns a {@link xflaim.DOMNode DOMNode} which is the root node
 	 * of the requested document.
 	 * @throws XFlaimException
 	 */
@@ -467,7 +466,7 @@ public class Db
 	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
 	 * can optionally be passed in, and it will be reused instead of a new
 	 * object being allocated.
-	 * @return - Returns a {@link xflaim.DOMNode DOMNode) which is the root node
+	 * @return - Returns a {@link xflaim.DOMNode DOMNode} which is the root node
 	 * of the requested document.
 	 * @throws XFlaimException
 	 */
@@ -522,7 +521,7 @@ public class Db
 	 * @param ReusedNode An existing {@link xflaim.DOMNode DOMNode} object
 	 * can optionally be passed in, and it will be reused instead of a new
 	 * object being allocated.
-	 * @return - Returns a {@link xflaim.DOMNode DOMNode) which is the root node
+	 * @return - Returns a {@link xflaim.DOMNode DOMNode} which is the root node
 	 * of the requested document.
 	 * @throws XFlaimException
 	 */
@@ -847,7 +846,7 @@ public class Db
 	
 	/**
 	 * Creates a new collection in the dictionary.
-	 * @param sEncName The name of the collection.
+	 * @param sCollectionName The name of the collection.
 	 * @param iEncNumber ID of the encryption definition that should be used
 	 * to encrypt this collection.  Zero means the collection will not be encrypted.
 	 * @param iRequestedId If non-zero, then xflaim will try to use this
@@ -1246,7 +1245,7 @@ public class Db
 	 * {@link DictType DictType}.ATTRIBUTE_DEF.
 	 * @param iDictNum Number of element or attribute definition whose state
 	 * is to be changed.
-	 * @param sState.  State the definition is to be changed to.  Must be
+	 * @param sState State the definition is to be changed to.  Must be
 	 * "checking", "purge", or "active".
 	 * @throws XFlaimException
 	 */
@@ -1297,7 +1296,7 @@ public class Db
 	 * no action is taken.
 	 * @param iDictType  Type of dictionary definition whose "next dictionary
 	 * number" is to be changed.  Should be a valid {@link xflaim.DictType DictType}.
-	 * @param iDictNumber Next dictionary number.
+	 * @param iNextDictNumber Next dictionary number.
 	 * @throws XFlaimException
 	 */
 	public void setNextDictNum(
@@ -1547,7 +1546,7 @@ public class Db
 	}
 
 	/**
-	 * Get the name of the database's control file (e.g. mystuff.db).
+	 * Get the name of the database's control file (e.g.&nbsp;mystuff.db).
 	 * @return Returns control file name.
 	 * @throws XFlaimException
 	 */

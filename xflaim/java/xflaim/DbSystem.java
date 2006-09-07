@@ -130,7 +130,7 @@ public class DbSystem
 	 * @param sPassword Password for opening the database.  This is only needed
 	 * if the database key is currently wrapped in a password instead of the
 	 * local NICI storage key.
-	 * @return Returns an instance of a {@xflaim.Db Db} object.
+	 * @return Returns an instance of a {@link xflaim.Db Db} object.
 	 * @throws XFlaimException
 	 */
 	 
@@ -565,7 +565,7 @@ public class DbSystem
 	 * sBaseName.00000002, etc.  The extension is a hex number.
 	 * @param iMaxFileSize Maximum number of bytes to write to each file in the
 	 * multi-file set.
-	 * @param bOkToOverwrite. Flag indicating whether or not the output files
+	 * @param bOkToOverwrite Flag indicating whether or not the output files
 	 * should be overwritten if they already exist.
 	 * @return Returns an {@link xflaim.OStream OStream} object.
 	 * @throws XFlaimException
@@ -1165,7 +1165,7 @@ public class DbSystem
 	 * Determine if a string has a sub-string in it.
 	 * @param sString This is the string that is to be checked to see if it
 	 * contains a substring.
-	 * @param bSubString  This is the substring that is being looked for.
+	 * @param sSubString  This is the substring that is being looked for.
 	 * @param iCompareRules Flags for doing string comparisons.  Should be
 	 * logical ORs of the members of {@link xflaim.CompareRules CompareRules}.
 	 * @param iLanguage Language to use for doing collation of strings.

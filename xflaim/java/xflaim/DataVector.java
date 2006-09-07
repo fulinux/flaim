@@ -37,7 +37,6 @@ public class DataVector
 	 * IF_DataVector interace are accessible through this Java object.
 	 * 
 	 * @param lRef A reference to a C++ IF_DataVector object
-	 * @param dbSystem A reference to a DbSystem object
 	 */
 	public DataVector(
 		long		lRef)
@@ -306,7 +305,7 @@ public class DataVector
 	 * Get the type of the data value of an element in the data vector.
 	 * @param iElementNumber Element whose data value type is to be returned.
 	 * @return Returns element's data value type.  This will be one of the
-	 * values of {@link xflaim.FlmDataType FlmDataType).
+	 * values of {@link xflaim.FlmDataType FlmDataType}.
 	 * @throws XFlaimException
 	 */
 	public int getDataType(

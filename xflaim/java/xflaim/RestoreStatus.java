@@ -60,7 +60,6 @@ public interface RestoreStatus
 	/**
 	 * 
 	 * @param lTransId
-	 * @param iStartTime
 	 * @return Returns a status code.  The integer should one of the constants
 	 * found in {@link xflaim.RCODE xflaim.RCODE}.
 	 * Note that returning anything other than NE_XFLM_OK will cause the
