@@ -1515,8 +1515,8 @@
 	};
 	
 	/****************************************************************************
-	/// Message severity.
 	****************************************************************************/
+	/// Message severity.
 	typedef enum
 	{
 		F_FATAL_MESSAGE = 0,			///< Indicates that a fatal error occurred - the kind that would normally
