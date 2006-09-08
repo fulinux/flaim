@@ -1451,6 +1451,9 @@ typedef struct FlmSystemData
 #ifndef ALLOCATE_SYS_DATA
 	extern FLMSYSDATA			gv_XFlmSysData;
 #else
+	#ifdef FLM_SOLARIS
+		#pragma align 8 (gv_XFlmSysData)
+	#endif
 	FLMSYSDATA					gv_XFlmSysData;
 #endif
 

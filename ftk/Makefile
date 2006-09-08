@@ -940,7 +940,7 @@ ifdef unix_target
 				ccflags += -xO3
 			endif
 			ifeq ($(sun_studio_compiler),yes)
-				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse -errchk=longptr64
 			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64

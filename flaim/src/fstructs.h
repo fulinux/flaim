@@ -892,6 +892,9 @@ typedef struct FLMSYSDATA
 	extern FLMUINT			gv_uiCPThrdGrp;
 	extern FLMUINT			gv_uiDbThrdGrp;
 #else
+	#ifdef FLM_SOLARIS
+		#pragma align 8 (gv_FlmSysData)
+	#endif
 	FLMSYSDATA				gv_FlmSysData;
 	FLMUINT					gv_uiBackIxThrdGroup = F_INVALID_THREAD_GROUP;
 	FLMUINT					gv_uiCPThrdGrp = F_INVALID_THREAD_GROUP;
