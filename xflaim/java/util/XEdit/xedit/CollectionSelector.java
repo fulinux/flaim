@@ -94,7 +94,7 @@ public class CollectionSelector extends JDialog implements ActionListener
 							KeyRetrieveFlags.FO_FIRST,
 							SearchKey);
 			
-			SearchKey.setUINT(0, ReserveID.ELM_COLLECTION_TAG);
+			SearchKey.setLong(0, ReserveID.ELM_COLLECTION_TAG);
 			SearchKey.setString(1, "a");
 			
 			for (;;)
@@ -118,12 +118,12 @@ public class CollectionSelector extends JDialog implements ActionListener
 					break;
 				}
 				
-				if (FoundKey.getUINT(0) != ReserveID.ELM_COLLECTION_TAG)
+				if (FoundKey.getLong(0) != ReserveID.ELM_COLLECTION_TAG)
 				{
 					break;
 				}
 				String sName = FoundKey.getString(1);
-				int iNumber = FoundKey.getINT(3);
+				int iNumber = (int)FoundKey.getLong(3);
 				vCollections.add(new Collection(sName, iNumber));
 				
 			}

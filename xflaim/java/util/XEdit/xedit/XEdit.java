@@ -1400,7 +1400,18 @@ public class XEdit extends JFrame implements Runnable, ActionListener, MouseList
 		if (sDatabaseName != null)
 		{
 			// If this fails, we will throw an exception.
-			m_dbSystem.dbRemove( sDatabaseName, "", "", true);
+			try
+			{
+				m_dbSystem.dbRemove( sDatabaseName, "", "", true);
+			}
+			catch (XFlaimException e)
+			{
+				JOptionPane.showConfirmDialog(
+					this,
+					"Database Exception occurred: " + e.getMessage(),
+					"Database Exception",
+					JOptionPane.ERROR_MESSAGE);
+			}
 		}
 	}
 

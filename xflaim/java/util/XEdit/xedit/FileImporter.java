@@ -95,7 +95,7 @@ public class FileImporter extends Thread
 		String []		sList)
 	{
 		boolean				bTransBegun = false;
-		PosIStream 			jIStream = null;
+		IStream 				jIStream = null;
 		
 		if (m_box.Cancelled())
 		{

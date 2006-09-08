@@ -615,7 +615,7 @@ public class NodeDialog extends JDialog implements Runnable, ActionListener, Lis
 							  KeyRetrieveFlags.FO_FIRST,
 							  SearchKey);
 			
-			SearchKey.setUINT(0, ReserveID.ELM_ELEMENT_TAG);
+			SearchKey.setLong(0, ReserveID.ELM_ELEMENT_TAG);
 			SearchKey.setString(1, "a");
 			
 			for (;;)
@@ -639,12 +639,12 @@ public class NodeDialog extends JDialog implements Runnable, ActionListener, Lis
 					break;
 				}
 				
-				if (FoundKey.getUINT(0) != ReserveID.ELM_ELEMENT_TAG)
+				if (FoundKey.getLong(0) != ReserveID.ELM_ELEMENT_TAG)
 				{
 					break;
 				}
 				String sName = FoundKey.getString(1);
-				int iNumber = FoundKey.getINT(3);
+				int iNumber = (int)FoundKey.getLong(3);
 				vElements.add(new NodeTag("<" + sName + ">", iNumber));
 			}
 			
@@ -695,7 +695,7 @@ public class NodeDialog extends JDialog implements Runnable, ActionListener, Lis
 							  KeyRetrieveFlags.FO_FIRST,
 							  SearchKey);
 			
-			SearchKey.setUINT(0, ReserveID.ELM_ATTRIBUTE_TAG);
+			SearchKey.setLong(0, ReserveID.ELM_ATTRIBUTE_TAG);
 			SearchKey.setString(1, "a");
 			
 			for (;;)
@@ -719,12 +719,12 @@ public class NodeDialog extends JDialog implements Runnable, ActionListener, Lis
 					break;
 				}
 				
-				if (FoundKey.getUINT(0) != ReserveID.ELM_ATTRIBUTE_TAG)
+				if (FoundKey.getLong(0) != ReserveID.ELM_ATTRIBUTE_TAG)
 				{
 					break;
 				}
 				String sName = FoundKey.getString(1);
-				int iNumber = FoundKey.getINT(3);
+				int iNumber = (int)FoundKey.getLong(3);
 				vAttributes.add(new NodeTag("<" + sName + ">", iNumber));
 			}
 			
