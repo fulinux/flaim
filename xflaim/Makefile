@@ -508,6 +508,7 @@ question := \077
 asterisk := \052
 dash := \055
 backslash := \134
+double_quote := \042
 
 # -- Tools --
 
@@ -567,6 +568,16 @@ ifneq (,$(findstring docs,$(MAKECMDGOALS)))
 	ifndef ignore_local_mods
 		local_mods_ok =
 	endif
+endif
+
+ifneq (,$(findstring java,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	local_mods_ok = 1
+endif
+
+ifneq (,$(findstring xedit,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	local_mods_ok = 1
 endif
 
 ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
@@ -774,6 +785,7 @@ ifdef jhome
 endif
 
 xflaim_jni_jar = $(java_output_dir)/xflaimjni.jar
+xflaim_jar_manifest = $(java_output_dir)/xflaimjni.mf
 
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
@@ -1632,13 +1644,25 @@ libs: status clean dircheck $(xflaim_static_lib) $(xflaim_shared_lib)
 # -- JNI (Java) --
 
 ifdef jhome
-$(xflaim_jni_jar) : $(jni_java_src)
+java_manifest: dircheck
+	$(ec)$(gprintf) "Creating manifest for jar file ...\n"
+	$(ec)$(gprintf) "Manifest-version: 1.0\n\n" > $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Name: $(project_name)\n" >> $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Specification-Title: \"XFLAIM Java Classes\"\n" >> $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Specification-Version: \"$(major_version).$(minor_version)\"\n" >> $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Specification-Vendor: \"Novell, Inc.\"\n" >> $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Package-Title: \"xflaim\"\n" >> $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Package-Version: \"$(version)\"\n" >> $(xflaim_jar_manifest)
+	$(ec)$(gprintf) "Package-Vendor: \"Novell, Inc.\"\n" >> $(xflaim_jar_manifest)
+
+$(xflaim_jni_jar) : $(jni_java_src) java_manifest
 	$(ec)$(gprintf) "Compiling JNI java sources ...\n"
 	$(ec)$(call hostpath,$(jhome)/bin/javac) -g -d $(java_class_output_dir) $(call hostpath,$(jni_java_src))
 	$(ec)$(gprintf) "Creating JNI jar file ...\n"
 	$(ec)$(call rmcmd,$(xflaim_jni_jar))
-	$(ec)$(call hostpath,$(jhome)/bin/jar) cf $(call hostpath,$(xflaim_jni_jar)) \
-		-C $(call hostpath,$(java_class_output_dir)) .
+	$(ec)$(call hostpath,$(jhome)/bin/jar) cfm $(call hostpath,$(xflaim_jni_jar)) \
+		$(call hostpath,$(xflaim_jar_manifest)) \
+		-C $(call hostpath,$(java_class_output_dir)) $(project_name)
 	$(ec)$(gprintf) "Creating JNI header files ...\n"
 	$(ec)$(call hostpath,$(jhome)/bin/javah) -d $(jni_src_dir) \
 		-classpath $(call hostpath,$(xflaim_jni_jar)) \
