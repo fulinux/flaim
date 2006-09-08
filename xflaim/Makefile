@@ -1599,6 +1599,9 @@ ut_xpathtest2_obj = $(patsubst %.cpp,$(test_obj_dir)/%$(obj_suffix),$(ut_xpathte
 
 jni_java_src = $(wildcard java/xflaim/*.java)
 
+xedit_java_src = $(wildcard java/util/xedit/*.java)
+xedit_java_exe = $(java_class_output_dir)/xedit/XEdit.class
+
 # -- Utilities  --
 
 checkdb_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(checkdb_src))
@@ -1641,6 +1644,14 @@ $(xflaim_jni_jar) : $(jni_java_src)
 		-classpath $(call hostpath,$(xflaim_jni_jar)) \
 		$(foreach jclass,$(notdir $(basename $(jni_java_src))),xflaim.$(jclass))
 endif
+
+ifdef jhome
+$(xedit_java_exe): $(xedit_java_src) $(xflaim_jni_jar)
+	$(ec)$(gprintf) "Compiling XEDIT java sources ...\n"
+	$(ec)$(call hostpath,$(jhome)/bin/javac) -g -classpath $(call hostpath,$(xflaim_jni_jar)) \
+		-d $(call hostpath,$(java_class_output_dir)) $(call hostpath,$(xedit_java_src))
+endif
+
 
 # -- *.cpp -> *$(obj_suffix) --
 
@@ -1935,6 +1946,9 @@ $(test_dir)/xpathtest2$(exe_suffix): $(ut_xpathtest2_obj) $(xflaim_static_lib)
 
 .PHONY : java
 java: status clean dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
+
+.PHONY : xedit
+xedit: java $(xedit_java_exe)
 
 # -- version --
 
