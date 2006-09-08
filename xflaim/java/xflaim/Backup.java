@@ -111,7 +111,7 @@ public class Backup
 			}
 			catch (FileNotFoundException e)
 			{
-				throw new XFlaimException( xflaim.RCODE.NE_XFLM_OPENING_FILE,
+				throw new XFlaimException( xflaim.RCODE.NE_FLM_OPENING_FILE,
 					"IOException opening " + sBackupPath + ". Message from JVM was" +
 					e.getMessage());
 			}

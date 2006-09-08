@@ -860,7 +860,7 @@ JNIEXPORT jlong JNICALL Java_xflaim_DbSystem__1createDbSystem(
 	JNIEnv *				pEnv,
 	jobject)				// obj)
 {
-	IF_DbSystem * 		pDbSystem;
+	IF_DbSystem * 		pDbSystem = NULL;
 	
 	if( RC_BAD( FlmAllocDbSystem( &pDbSystem)))
 	{

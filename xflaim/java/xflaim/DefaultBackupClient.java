@@ -71,7 +71,7 @@ public class DefaultBackupClient
 		}
 		catch (IOException e)
 		{
-			iRCode = RCODE.NE_XFLM_WRITING_FILE;
+			iRCode = RCODE.NE_FLM_WRITING_FILE;
 		}
 		
 		return( iRCode);
