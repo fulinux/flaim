@@ -981,7 +981,7 @@ ifdef unix_target
 				ccflags += -xO3
 			endif
 			ifeq ($(sun_studio_compiler),yes)
-				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder -errchk=longptr64
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
 			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
@@ -1091,10 +1091,8 @@ ifdef unix_target
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
-				shared_link_flags += -xarch=generic64
 			else
 				link_flags += -xarch=v8plus
-				shared_link_flags += -xarch=v8plus
 			endif
 		endif
 
