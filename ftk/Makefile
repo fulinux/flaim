@@ -1048,6 +1048,7 @@ ifdef unix_target
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
+				shared_link_flags += -xarch=generic64
 			else
 				link_flags += -xarch=v8plus
 			endif
