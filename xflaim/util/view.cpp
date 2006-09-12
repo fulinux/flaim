@@ -516,7 +516,7 @@ Desc: This routine opens a database file in DIRECT mode - because we couldn't
 FSTATIC FLMBOOL ViewOpenFileDirect( void)
 {
 	RCODE				rc;
-	IF_FileHdl *	pCFileHdl;
+	IF_FileHdl *	pCFileHdl = NULL;
 
 	if (RC_BAD( rc = gv_pSFileHdl->getFileHdl( 0, FALSE, &pCFileHdl)))
 	{
