@@ -185,8 +185,9 @@ RCODE F_FileHdl::openOrCreate(
 			{
 				bDoDirectIO = FALSE;
 			}
-
+			#ifdef O_NOATIME
 			openFlags |= O_NOATIME;
+			#endif
 		}
 	#elif defined( FLM_AIX)
 		openFlags |= O_DIRECT;
