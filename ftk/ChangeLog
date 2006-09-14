@@ -1,0 +1,1402 @@
+2006-09-11 18:13 +0000 [r845]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: FTK change. Makefile change for Solaris.
+
+2006-09-10 21:16 +0000 [r843]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: FTK makefile changes for Solaris.
+
+2006-09-08 22:26 +0000 [r841]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/Makefile, trunk/ftk/Makefile,
+	  trunk/flaim/src/fstructs.h, trunk/flaim/Makefile,
+	  trunk/xflaim/src/fstructs.h: Needed pragmas to align global
+	  structs on the proper boundaries (Solaris).
+
+2006-09-07 19:10 +0000 [r825]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/Makefile, trunk/ftk/Makefile: Version number
+	  changes.
+
+2006-09-07 18:46 +0000 [r821]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftk.h: Fixed up doxygen comment.
+
+2006-09-07 18:35 +0000 [r819]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftk.h: FTK change. Fixed AIX
+	  xlc 64-bit build. Also incremented the library version numbers.
+
+2006-09-06 20:31 +0000 [r817]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftk.h: FTK changes. Fixed
+	  Solaris build.
+
+2006-09-06 19:01 +0000 [r816]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/flaim/Makefile: More changes for
+	  NetWare.
+
+2006-09-06 17:56 +0000 [r815]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftkiobuf.cpp, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftknlm.cpp: Various changes for NetWare.
+
+2006-09-05 17:12 +0000 [r812]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/util/ftktest.cpp: FTK change.
+	  Fixed Solaris compiler warnings.
+
+2006-09-01 19:55 +0000 [r808]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkiobuf.cpp: FTK change. Fixed issue where a
+	  thread was locking the same mutex twice.
+
+2006-09-01 19:45 +0000 [r807]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/flaim/util/gigatest.cpp, trunk/ftk/src/ftkwin.cpp,
+	  trunk/xflaim/src/fslfileu.cpp, trunk/ftk/src/ftkiobuf.cpp,
+	  trunk/xflaim/src/fqsort.cpp, trunk/flaim/src/fslfileu.cpp,
+	  trunk/xflaim/src/rfl.cpp, trunk/xflaim/src/flbackup.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/flaim/src/rfl.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftkstrm.cpp,
+	  trunk/flaim/src/scache.cpp, trunk/ftk/src/ftknlm.cpp,
+	  trunk/flaim/src/flbackup.cpp, trunk/ftk/src/ftklock.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Added support for I/O completion
+	  callbacks.
+
+2006-09-01 19:41 +0000 [r806]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcsum.cpp: FTK change. Needed to use the fast
+	  checksum code on Windows platforms when calculating a packet
+	  checksum.
+
+2006-08-23 17:16 +0000 [r797]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: FTK change. Cleanup.
+
+2006-08-23 17:12 +0000 [r796]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: FTK change. Fixed issue when building with
+	  gcc on Solaris.
+
+2006-08-23 17:00 +0000 [r795]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: FTK change. Added GCC optimization flags when
+	  doing a non-debug OS X build.
+
+2006-08-23 16:40 +0000 [r794]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h: FTK change. Renamed FLM_GENERIC_SPARC to
+	  FLM_SPARC_GENERIC. Also renamed the "generic" target to
+	  "genericsparc".
+
+2006-08-23 16:05 +0000 [r793]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkmisc.cpp: FTK change. Added support for the
+	  "genericsparc" target. This will build a library without any
+	  v8plus or newer instructions.
+
+2006-08-22 23:13 +0000 [r792]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: FTK change. Improved performance of
+	  PPC atomic ops by removing the leading sync instruction.
+
+2006-08-22 21:40 +0000 [r788]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcsum.cpp: FTK change. Fixed OS X compiler
+	  warning.
+
+2006-08-22 21:21 +0000 [r787]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp: FTK change. Added CRC test.
+
+2006-08-22 21:14 +0000 [r786]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp: FTK changes. Minor cleanup.
+
+2006-08-22 20:54 +0000 [r785]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp, trunk/ftk/src/ftkmisc.cpp: FTK
+	  changes. Various optimizations for Solaris.
+
+2006-08-22 18:44 +0000 [r784]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcsum.cpp: FTK change. Fixed Solaris 32-bit
+	  compile issue.
+
+2006-08-22 18:23 +0000 [r783]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp: FTK changes. Added unit test to
+	  compare native vs mutex-based atomic ops.
+
+2006-08-21 20:30 +0000 [r780]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp, trunk/ftk/src/ftkcoll.cpp: FTK
+	  changes. Fixed bug in f_combineWPChar that was resulting in an
+	  illegal memory access when processing characters beyond 0x0F00.
+
+2006-08-21 20:23 +0000 [r779]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp, trunk/ftk/src/ftkcoll.cpp: FTK
+	  changes. Fixed bug in f_wpBreakChar that was resulting in an
+	  illegal memory access when processing character 0x01F2.
+
+2006-08-21 20:05 +0000 [r778]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp: FTK changes. Fixed bug in one of the
+	  unit tests.
+
+2006-08-21 19:49 +0000 [r777]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcoll.cpp: FTK changes. Improvements to collation
+	  routines, including an optimization that results in 10x the
+	  performance when converting US English characters for collation.
+	  Added more collation unit tests.
+
+2006-08-17 22:59 +0000 [r774]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK change. Needed to verify items are
+	  in the avail list before changing the prev/next avail pointers in
+	  F_SlabInfoRelocator::relocate.
+
+2006-08-14 22:48 +0000 [r767]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp, trunk/ftk/src/ftkcsum.cpp: FTK
+	  change. Fixed bug in SPARC checksum code when processing a
+	  misaligned buffer. Added unit tests to validate the code change.
+
+2006-08-14 18:14 +0000 [r765]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp: FTK change. Added more packet
+	  checksum unit tests.
+
+2006-08-14 17:44 +0000 [r764]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcsum.cpp: FTK change. Fixed misc problems in
+	  ftkFastXor routine.
+
+2006-08-10 22:40 +0000 [r762]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcsum.cpp: Fixed compile errors on Linux.
+
+2006-08-10 22:32 +0000 [r759]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/src/ftkcsum.cpp: FTK changes.
+	  Checksum improvements for Windows.
+
+2006-08-10 21:33 +0000 [r758]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp: FTK change. Added assembly routines
+	  for calculating checksums on SPARC platforms.
+
+2006-08-09 20:36 +0000 [r757]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp: FTK change. Enabled use of fast
+	  checkum routines on all x86 platforms when building with gcc.
+
+2006-08-09 20:24 +0000 [r756]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp: FTK changes. Added
+	  f_calcPacketChecksum() function and corresponding unit tests.
+
+2006-08-09 19:48 +0000 [r755]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp: Added ftkFastCheckSumMMX for 32 and
+	  64-bit Intel Linux.
+
+2006-08-09 16:21 +0000 [r754]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkcsum.cpp, trunk/ftk/src/ftkmisc.cpp: FTK
+	  changes. Added f_getRandomByte() function and added a unit test
+	  for the block checksum routine.
+
+2006-08-08 23:12 +0000 [r753]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: FTK change. Added native Linux atomic
+	  ops on PPC.
+
+2006-08-08 18:43 +0000 [r749]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkmisc.cpp: FTK change. Added
+	  native atomic routines for Linux on SPARC processors.
+
+2006-08-08 16:14 +0000 [r747]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmisc.cpp: FTK change. Needed to use atomic
+	  "barrier" functions on OS X to ensure correct behavior.
+
+2006-08-07 19:17 +0000 [r746]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp: FTK changes. Added atomic
+	  inc-followed-by-dec test.
+
+2006-08-07 19:12 +0000 [r745]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp: FTK changes. Added simple atomic
+	  exchange unit test.
+
+2006-08-07 18:52 +0000 [r744]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/util/ftktest.cpp: FTK changes. Added simple atomic
+	  increment and decrement unit test.
+
+2006-08-07 18:16 +0000 [r743]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK changes. Added more asserts to
+	  check for correct list linkages.
+
+2006-08-03 19:21 +0000 [r732]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/Makefile, trunk/ftk/src/ftkftx.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftkstrm.cpp,
+	  trunk/ftk/src/ftksupr.cpp, trunk/ftk/src/ftkmisc.cpp: FTK
+	  Changes. Added support for HP-UX built with the native compiler
+	  (aCC). Added extendFile() method to the file handle class -- this
+	  method will increase the size of a file in the most optimal way
+	  possible on the host platform.
+
+2006-08-01 21:15 +0000 [r731]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Fixed Linux compiler warning.
+
+2006-08-01 21:11 +0000 [r730]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/flaim/src/flopen.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/flaim/src/flcreate.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp: Initial support
+	  for direct and async I/O on AIX.
+
+2006-08-01 19:31 +0000 [r729]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/sql/src/scache.cpp, trunk/sql/src/rfl.h,
+	  trunk/xflaim/src/fvector.cpp, trunk/ftk/Makefile,
+	  trunk/sql/src/flaimsys.h, trunk/xflaim/src/kybldkey.cpp,
+	  trunk/sql/src/kybuild.cpp, trunk/xflaim/src/rfl.cpp,
+	  trunk/ftk/src/ftkrset.cpp, trunk/xflaim/src/fdbcopy.cpp,
+	  trunk/xflaim/src/flverify.cpp, trunk/sql/src/fvector.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/xflaim/src/flblddb.cpp,
+	  trunk/flaim/src/rfl.cpp, trunk/xflaim/src/flaimsys.h,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftk.h, trunk/sql/src/fsysdata.cpp,
+	  trunk/ftk/src/ftkstrm.cpp, trunk/flaim/src/fdbcopy.cpp,
+	  trunk/sql/src/kycollat.cpp, trunk/sql/src/rfl.cpp,
+	  trunk/ftk/src/ftksupr.cpp, trunk/xflaim/util/fshell.cpp,
+	  trunk/xflaim/Makefile, trunk/sql/src/fdbcopy.cpp,
+	  trunk/sql/src/opendatabase.cpp, trunk/ftk/src/ftkwin.cpp,
+	  trunk/sql/src/flbackup.cpp, trunk/sql/src/frestore.cpp,
+	  trunk/xflaim/src/fquery.cpp, trunk/xflaim/util/rebuild.cpp,
+	  trunk/flaim/Makefile, trunk/xflaim/src/fqeval.cpp,
+	  trunk/xflaim/src/ncache.cpp, trunk/xflaim/src/kycollat.cpp,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/xflaim/src/flopen.cpp,
+	  trunk/ftk/src/ftkdynbtree.cpp, trunk/xflaim/src/fdom.cpp,
+	  trunk/sql/src/sqleval.cpp, trunk/xflaim/src/flbackup.cpp,
+	  trunk/ftk/src/ftkini.cpp, trunk/xflaim/src/rfl.h,
+	  trunk/xflaim/src/fdict.cpp, trunk/xflaim/src/frestore.cpp,
+	  trunk/xflaim/src/fxpath.cpp, trunk/xflaim/util/flm_dlst.cpp,
+	  trunk/sql/src/frow.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/flaim/src/fblob.cpp, trunk/sql/src/kybldkey.cpp,
+	  trunk/ftk/src/ftktext.cpp, trunk/flaim/src/flbackup.cpp,
+	  trunk/ftk/src/ftknlm.cpp, trunk/flaim/util/flm_dlst.cpp,
+	  trunk/xflaim/src/kybuild.cpp: Updated support for AIX.
+
+2006-07-31 19:06 +0000 [r728]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: FTK change. According to the
+	  documentation posix_* routines do not set errno. Needed to make a
+	  couple of code changes to account for this.
+
+2006-07-31 15:53 +0000 [r727]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/Makefile, trunk/ftk/Makefile: FTK/XFLAIM changes.
+	  Minor change to the makefile for Ubuntu/SPARC builds.
+
+2006-07-27 22:40 +0000 [r725]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK change. Fixed compiler warning in
+	  release build.
+
+2006-07-27 22:24 +0000 [r724]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/Makefile, trunk/ftk/Makefile,
+	  trunk/ftk/src/ftkunix.cpp, trunk/flaim/Makefile: All projects
+	  changed to build with -xarch=v8plus when using the Workshop
+	  compiler on Solaris.
+
+2006-07-27 21:13 +0000 [r723]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: FTK changes. Optimized Solaris file
+	  extend operation.
+
+2006-07-27 20:46 +0000 [r722]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Optimized file extend operations on
+	  Linux.
+
+2006-07-27 18:59 +0000 [r721]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK change. Fixed NetWare compiler
+	  warning.
+
+2006-07-27 18:41 +0000 [r720]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK change. Various enhancements to
+	  F_BlockAlloc::freeBlock().
+
+2006-07-27 17:32 +0000 [r719]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK change. Fixed compile error on
+	  Linux.
+
+2006-07-27 17:24 +0000 [r717-718]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: FTK change. Allocation of slabs will be
+	  done using valloc on various Unix platforms.
+
+	* trunk/ftk/src/ftkcmem.cpp: FTK change. The hash mask used by the
+	  block allocator is now based on the page size or allocation
+	  granularity of the platform.
+
+2006-07-27 17:00 +0000 [r716]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: FTK change. Needed to use memalign
+	  calls on Linux and Solaris.
+
+2006-07-27 16:36 +0000 [r711]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/Makefile,
+	  trunk/ftk/src/ftkcmem.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkntab.cpp,
+	  trunk/ftk/src/ftknlm.cpp: FTK changes. Completed the block cache
+	  allocator and added support on Win XP/2003 systems to use
+	  SetFileValidData when extending files.
+
+2006-07-25 23:06 +0000 [r710]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkcmem.cpp (added),
+	  trunk/ftk/src/ftk.h: FTK change. First draft of a page-aligned
+	  cache block allocator.
+
+2006-07-20 22:27 +0000 [r689]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/flaim/src/rfl.cpp,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/xflaim/src/fsysdata.cpp, trunk/ftk/src/ftknlm.cpp: Changed
+	  FLM_IO_MISALIGNED_OK to be FLM_IO_NO_MISALIGNED.
+
+2006-07-19 19:50 +0000 [r683]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/Makefile, trunk/ftk/Makefile, trunk/flaim/Makefile:
+	  Updated libtool versioning information and added documentation
+	  describing how and when libtool versioning should be changed.
+
+2006-07-19 19:09 +0000 [r681]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/flaim/src/fsysdata.cpp, trunk/xflaim/src/scache.cpp,
+	  trunk/flaim/src/fstructs.h, trunk/flaim/src/flopen.cpp,
+	  trunk/flaim/src/rcache.cpp, trunk/flaim/src/recover.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftksem.cpp,
+	  trunk/flaim/src/scache.cpp, trunk/xflaim/src/fcache.h,
+	  trunk/xflaim/src/ncache.cpp, trunk/xflaim/src/fstructs.h,
+	  trunk/xflaim/src/flopen.cpp: Renamed F_NOTIFY to
+	  F_NOTIFY_LIST_ITEM to avoid a conflict on Linux.
+
+2006-07-19 18:55 +0000 [r680]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkerror.cpp: FTK changes. Changed error code
+	  mapping of EINVAL from NE_FLM_IO_PATH_TOO_LONG to
+	  NE_FLM_INVALID_PARM
+
+2006-07-19 18:33 +0000 [r679]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksem.cpp: FTK change. Fixed NetWare compile
+	  error.
+
+2006-07-19 18:25 +0000 [r676]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftklock.cpp,
+	  trunk/ftk/src/ftksupr.cpp: FTK changes. Added support for notify
+	  lists and reader/writer locks.
+
+2006-07-19 16:21 +0000 [r675]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: FTK change. Moved include of dlfcn.h
+	  closer to the top of the file (so it is included before it is
+	  first needed).
+
+2006-07-14 22:30 +0000 [r671]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftknlm.cpp,
+	  trunk/ftk/src/ftksupr.cpp: FTK change. Added flag to prevent
+	  misaligned I/O operations to occur when a file has been opened in
+	  directio mode. This will allow us to find and fix sub-optimal I/O
+	  operations.
+
+2006-07-13 21:31 +0000 [r668]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: FTK change. Fixed Solaris compile
+	  error.
+
+2006-07-13 21:18 +0000 [r666-667]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp: FTK change. Need to force a flush when
+	  a write extends a file without calling extendFile.
+
+	* trunk/ftk/src/ftkmem.cpp: FTK change. Disabled stack walk in
+	  debug mode.
+
+2006-07-13 18:43 +0000 [r662]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h: Added bPreallocate flag to
+	  IF_SlabManager::resize().
+
+2006-07-13 17:39 +0000 [r658]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftkwin.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftksem.cpp,
+	  trunk/ftk/src/ftklock.cpp, trunk/ftk/src/ftkmisc.cpp: Slab
+	  manager improvements to reduce mutex contention. File I/O
+	  optimizations for Unix and Windows.
+
+2006-07-12 02:01 +0000 [r656]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Fixed problem with f_freeAlignedBuffer
+	  on OS X.
+
+2006-07-11 22:24 +0000 [r655]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Reverted to calling fsync on Mac OS X.
+
+2006-07-11 21:12 +0000 [r653]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftknlm.cpp: Enhanced Unix code for auto-extending
+	  files.
+
+2006-07-11 19:46 +0000 [r652]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Fixed Linux compile errors.
+
+2006-07-11 19:40 +0000 [r651]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp: Added support
+	  for auto-extending files when writing to minimize filesystem
+	  metadata logging.
+
+2006-07-11 03:01 +0000 [r644-646]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkfsys.cpp: waitToComplete() method needed to
+	  support OS X.
+
+	* trunk/ftk/src/ftkunix.cpp: Improved async i/o error handling.
+	  Disabled file system caching on OS X.
+
+	* trunk/ftk/src/ftkmem.cpp: Added support for allocating aligned
+	  buffers on Unix platforms that don't provide the memalign()
+	  function.
+
+2006-07-10 23:38 +0000 [r643]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/flaim/src/ftrans.cpp, trunk/flaim/src/kybuild.cpp,
+	  trunk/flaim/src/fsconvrt.cpp, trunk/flaim/src/fdbremov.cpp,
+	  trunk/flaim/src/imonsel.cpp, trunk/flaim/src/fslfileu.cpp,
+	  trunk/xflaim/src/filesys.h, trunk/xflaim/src/scache.cpp,
+	  trunk/xflaim/src/fdbcopy.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/xflaim/src/flindex.cpp, trunk/xflaim/src/flblddb.cpp,
+	  trunk/flaim/src/rfl.cpp, trunk/xflaim/src/flaimsys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/flaim/src/flreduce.cpp, trunk/flaim/src/flaim.h,
+	  trunk/xflaim/src/recover.cpp, trunk/ftk/src/ftkwin.cpp,
+	  trunk/flaim/src/fssearch.cpp, trunk/flaim/src/imonutil.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/flaim/util/flmunittest.cpp,
+	  trunk/xflaim/src/fdbrenam.cpp, trunk/flaim/util/basic_test.cpp,
+	  trunk/xflaim/src/fsysdata.cpp, trunk/xflaim/src/fstructs.h,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/flaim/src/imonfhsh.cpp,
+	  trunk/xflaim/src/flopen.cpp, trunk/flaim/src/fqeval.cpp,
+	  trunk/xflaim/src/flbackup.cpp, trunk/flaim/src/fldbglog.cpp,
+	  trunk/xflaim/src/frestore.cpp, trunk/flaim/src/ffilehdr.cpp,
+	  trunk/flaim/src/flcreate.cpp, trunk/ftk/src/ftknlm.cpp,
+	  trunk/flaim/src/rfl.h, trunk/flaim/src/translog.cpp,
+	  trunk/xflaim/src/fdbremov.cpp, trunk/xflaim/src/fslfileu.cpp,
+	  trunk/flaim/src/checksum.cpp, trunk/flaim/src/fdbcnfig.cpp,
+	  trunk/ftk/src/ftkftx.cpp, trunk/ftk/src/ftkiobuf.cpp,
+	  trunk/flaim/src/imonfsys.cpp, trunk/flaim/src/flmstat.cpp,
+	  trunk/xflaim/src/rfl.cpp, trunk/ftk/src/ftkdir.cpp,
+	  trunk/xflaim/src/flclose.cpp, trunk/xflaim/src/flreduce.cpp,
+	  trunk/flaim/src/filesys.h, trunk/ftk/src/ftksys.h,
+	  trunk/flaim/src/fdbcopy.cpp, trunk/flaim/src/scache.cpp,
+	  trunk/xflaim/src/flgethdr.cpp (removed),
+	  trunk/flaim/src/imonchk.cpp, trunk/flaim/src/flindex.cpp,
+	  trunk/ftk/src/ftksupr.cpp, trunk/flaim/src/flaimsys.h,
+	  trunk/ftk/src/ftkmisc.cpp, trunk/flaim/src/imonix.cpp,
+	  trunk/flaim/src/recover.cpp, trunk/xflaim/src/ffilehdr.cpp,
+	  trunk/xflaim/src/flcreate.cpp, trunk/flaim/src/fdbrenam.cpp,
+	  trunk/flaim/src/fsysdata.cpp, trunk/xflaim/src/rfl.h,
+	  trunk/xflaim/src/translog.cpp, trunk/flaim/src/fstructs.h,
+	  trunk/flaim/src/flopen.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/flaim/src/flbackup.cpp, trunk/ftk/src/ftklock.cpp,
+	  trunk/flaim/src/fdict.cpp, trunk/flaim/src/frebuild.cpp: Added
+	  option in FLAIM to disable direct I/O on Linux and Unix
+	  platforms. Re-architected the FTK I/O layer and cleaned up the
+	  async interfaces.
+
+2006-07-06 20:47 +0000 [r638]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp: Added support for f_yieldCPU() on Unix
+	  platforms.
+
+2006-07-06 19:03 +0000 [r637]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Updated FTK makefile to detect the Sun Studio
+	  compiler.
+
+2006-07-06 18:22 +0000 [r636]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftkmisc.cpp: Initial
+	  support for Solaris 7 and the Sun Forte.
+
+2006-07-05 14:42 +0000 [r633]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftk.h: Added default new
+	  operators to the F_Object class - ones without file and line
+	  number.
+
+2006-06-30 20:30 +0000 [r620]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftk.h: Modified to include stdarg.h to get va_xxx
+	  functionality - on all platforms except for Netware ring 0.
+
+2006-06-27 16:03 +0000 [r615]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Some typedefs are no longer in
+	  F_FixedAlloc class.
+
+2006-06-27 15:55 +0000 [r614]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Moved some typedefs out of the private
+	  area of the F_FixedAlloc class. Some compilers can't deal with
+	  that.
+
+2006-06-22 21:27 +0000 [r606]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftklog.cpp, trunk/ftk/src/ftkprntf.cpp: Modified to
+	  use new F_Printf object to do f_sprintf and logging.
+
+2006-06-22 21:20 +0000 [r604-605]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftksys.h: Got rid of printf formatter routines that
+	  are no longer used.
+
+	* trunk/ftk/src/ftk.h: Changed strings for embedding colors in
+	  printf() format strings. Added F_Printf class.
+
+2006-06-20 18:32 +0000 [r591-594]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftklog.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkmisc.cpp: Added prototypes
+	  and functions to initialize the logger client and associated
+	  mutex.
+
+	* trunk/ftk/src/ftkstrm.cpp: Base 64 decoder should have returned
+	  success instead of eof hit.
+
+2006-06-20 15:36 +0000 [r589]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkprntf.cpp: Added call to fflush in f_printf().
+
+2006-06-20 15:10 +0000 [r586-588]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/nlm.xdc (added), trunk/ftk/nlm.xdc (added): Added
+	  nlm.xdc.
+
+	* trunk/xflaim/Makefile, trunk/ftk/Makefile, trunk/flaim/Makefile,
+	  trunk/ftk/src/ftknlm.cpp, trunk/flaim/nlm.xdc (added): Fixed
+	  NetWare build issues.
+
+	* trunk/ftk/src/ftkmisc.cpp: Needed to lock/unlock the random
+	  generator mutex when getting a random number via
+	  f_getRandomUINT32.
+
+2006-06-19 21:03 +0000 [r585]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Fixed compiler warning on linux.
+
+2006-06-16 16:12 +0000 [r576-577]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftknlm.cpp: Added SynchronizeStart
+
+	* trunk/ftk/src/ftk.h: Made Ring 0 the default mode for compiling
+	  and building on Netware. Added "const" in one prototype.
+
+2006-06-15 17:05 +0000 [r575]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/flaim/util/view.cpp, trunk/flaim/util/flmarg.h,
+	  trunk/flaim/src/fdbremov.cpp, trunk/flaim/util/flmunittest.cpp,
+	  trunk/xflaim/src/kybldkey.cpp, trunk/xflaim/src/fsysdata.cpp,
+	  trunk/xflaim/src/fdbrenam.cpp, trunk/flaim/util/basic_test.cpp,
+	  trunk/flaim/util/flmunittest.h, trunk/xflaim/src/flopen.cpp,
+	  trunk/xflaim/src/fdbcopy.cpp, trunk/xflaim/src/fsuperfl.cpp
+	  (removed), trunk/flaim/src/fdbrenam.cpp,
+	  trunk/flaim/src/fsysdata.cpp, trunk/xflaim/src/flbackup.cpp,
+	  trunk/xflaim/src/flblddb.cpp, trunk/flaim/src/flopen.cpp,
+	  trunk/xflaim/src/fsuperfl.h (removed),
+	  trunk/xflaim/src/flaimsys.h, trunk/flaim/src/flcreate.cpp,
+	  trunk/ftk/src/ftk.h, trunk/flaim/src/fdbcopy.cpp,
+	  trunk/flaim/src/fsuperfl.cpp (removed),
+	  trunk/flaim/src/flbackup.cpp,
+	  trunk/xflaim/util/metaphonetestsrv.cpp, trunk/ftk/src/ftksupr.cpp
+	  (added), trunk/flaim/src/fsuperfl.h (removed),
+	  trunk/flaim/src/frebuild.cpp, trunk/flaim/src/flaimsys.h,
+	  trunk/xflaim/src/fdbremov.cpp, trunk/xflaim/util/flmunittest.cpp:
+	  Moved the super-file handle into FTK and fixed various memory
+	  leaks in the FLAIM/XFLAIM unit tests.
+
+2006-06-14 19:39 +0000 [r572]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/Makefile, trunk/ftk/src/ftkftx.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftknlm.cpp,
+	  trunk/ftk/src/ftkprntf.cpp, trunk/ftk/src/ftknlm.h: More bug
+	  fixes for NetWare.
+
+2006-06-13 21:13 +0000 [r571]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/flaim/src/fqcur.cpp, trunk/flaim/util/dbshell.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkiobuf.cpp, trunk/ftk/src/ftksem.cpp,
+	  trunk/flaim/src/scache.cpp, trunk/ftk/src/ftknlm.cpp: Fixed
+	  various memory leaks and enabled memory tracking for debug
+	  builds.
+
+2006-06-13 20:20 +0000 [r570]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/flaim/src/scache.cpp: Needed to
+	  release "free" cache during shutdown.
+
+2006-06-13 19:02 +0000 [r567]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftknlm.cpp: Misc. FTK
+	  cleanup.
+
+2006-06-13 18:52 +0000 [r566]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkdynbtree.cpp (added), trunk/ftk/src/ftkdynrset.h
+	  (added), trunk/ftk/src/ftkdynrset.cpp (added): Added
+	  F_DynSearchSet class and supporting classes.
+
+2006-06-13 18:14 +0000 [r560-561]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftk.h: Added
+	  F_DynSearchSet class. Moved a definition for other result sets to
+	  ftk.h
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkfsys.cpp: Moved
+	  definition for F_FileSystem to ftksys.h
+
+2006-06-13 17:29 +0000 [r559]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkthrd.cpp: NetWare ring
+	  zero thread fixes.
+
+2006-06-13 17:17 +0000 [r557]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Makefile changes for NetWare.
+
+2006-06-13 15:38 +0000 [r556]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Changed Solaris and Linux to use
+	  DEV_BSIZE as the value of m_uiBytesPerSector.
+
+2006-06-12 23:32 +0000 [r554]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Added more asserts.
+
+2006-06-12 23:20 +0000 [r553]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Needed to set uiBytesWritten in
+	  directWrite() after the async write has been queued.
+
+2006-06-12 23:07 +0000 [r552]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp: Enabled direct
+	  I/O and async on OS X.
+
+2006-06-12 21:13 +0000 [r550]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Fixed Solaris compile errors.
+
+2006-06-12 21:00 +0000 [r549]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Misc. changes for Solaris.
+
+2006-06-12 20:50 +0000 [r548]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp: Changes to
+	  support async reads on Solaris.
+
+2006-06-12 19:29 +0000 [r546]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h: Added f_getpid call - so all applications
+	  can call it.
+
+2006-06-12 18:48 +0000 [r542]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftkiobuf.cpp, trunk/ftk/src/ftknlm.cpp: NetWare
+	  async I/O changes.
+
+2006-06-12 18:28 +0000 [r540]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftkiobuf.cpp,
+	  trunk/ftk/src/ftknlm.cpp, trunk/ftk/src/ftkerror.cpp: Solaris
+	  async I/O changes.
+
+2006-06-09 18:45 +0000 [r539]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Added more asserts in F_FileHdl
+	  methods.
+
+2006-06-09 17:04 +0000 [r538]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftksem.cpp: Changes to use
+	  sema_xxxx calls on Solaris.
+
+2006-06-09 16:00 +0000 [r537]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksem.cpp: Changes to use lwp mutexes on Solaris.
+
+2006-06-08 20:27 +0000 [r534]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkiobuf.cpp: Added isPending method to
+	  IF_IOBuffer.
+
+2006-06-07 23:07 +0000 [r532]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp: Fixed Unix compile errors when doing a
+	  non-debug build.
+
+2006-06-06 22:49 +0000 [r527]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftklog.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h: Various message logging and async I/O
+	  changes.
+
+2006-06-06 21:10 +0000 [r526]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp: Fixed Linux
+	  compile errors.
+
+2006-06-06 21:03 +0000 [r524]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkunix.cpp: Added some
+	  typecasts.
+
+2006-06-06 20:49 +0000 [r523]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h: Changes to fall
+	  back to doing a non-async write when not writing on a sector
+	  boundary.
+
+2006-06-06 19:25 +0000 [r522]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Misc. cleanup.
+
+2006-06-06 19:00 +0000 [r520]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmisc.cpp: Fixed Solaris compiler warnings.
+
+2006-06-06 18:54 +0000 [r518]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Changes to UD2FBA AND UW2FBA prototypes.
+
+2006-06-06 17:43 +0000 [r517]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Fixed getRefCount method of F_OSBase.
+
+2006-06-06 16:21 +0000 [r516]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftk.h: Added an allocCell
+	  method that uses an allocation initializer callback.
+
+2006-06-05 23:29 +0000 [r512-514]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Needed throw() directive on overloaded
+	  new operators.
+
+	* trunk/ftk/src/ftk.h: Needed throw() directive on overloaded new
+	  operators.
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/src/ftkmisc.cpp: Fixed OS X
+	  warnings.
+
+2006-06-05 22:55 +0000 [r508]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/Makefile,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftknlm.cpp, trunk/ftk/src/ftkmisc.cpp,
+	  trunk/ftk/src/ftknlm.h: Changes to allow building ring 0 or ring
+	  3 (libc-based) libraries and unit tests for NetWare.
+
+2006-06-05 20:11 +0000 [r507]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftk.h: Added
+	  getThreadName method to the thread manager.
+
+2006-06-05 19:13 +0000 [r505]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftkftx.cpp, trunk/ftk/src/ftkthrd.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftklock.cpp: Added FTK
+	  console I/O routines to support FLAIM utilities. Misc. changes to
+	  the slab allocator.
+
+2006-06-02 14:33 +0000 [r501]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Changed char * to const char * to
+	  silence compiler warning.
+
+2006-06-01 20:21 +0000 [r499-500]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkfsys.cpp: Needed to set *ppszBuffer to NULL, not
+	  *pszBuffer.
+
+	* trunk/ftk/src/ftkcoll.cpp: Got rid of unused static variable.
+
+2006-06-01 19:42 +0000 [r497]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftkftx.cpp,
+	  trunk/ftk/src/ftklog.cpp, trunk/ftk/src/ftkthrd.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftktext.cpp, trunk/ftk/src/ftklock.cpp,
+	  trunk/ftk/src/ftkcoll.cpp, trunk/ftk/src/ftkmisc.cpp: Added a few
+	  more routines required to port FLAIM to FTK.
+
+2006-05-30 22:35 +0000 [r488]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftk.h: Changed some doxygen comments.
+
+2006-05-30 22:28 +0000 [r485]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftk.h: Fixed NetWare
+	  build.
+
+2006-05-30 22:24 +0000 [r484]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftk.h: Added some doxygen comments.
+
+2006-05-30 21:22 +0000 [r476]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/src/ftklock.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Lock object fixes.
+
+2006-05-30 20:05 +0000 [r474]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftktime.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftklock.cpp (added), trunk/ftk/src/ftkcoll.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Added support for lock files, lock
+	  objects, lists, and object tracking.
+
+2006-05-25 19:05 +0000 [r463]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftkthrd.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkcsum.cpp: Added
+	  f_threadCreate and f_threadDestroy functions.
+
+2006-05-25 15:28 +0000 [r461]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkstrm.cpp: Moved IStream and OStream
+	  implementations so they are now visible in ftk.h
+
+2006-05-25 15:20 +0000 [r459]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Added FLMEXP on public classes and
+	  interfaces. Also added little-endian storage functions.
+
+2006-05-24 20:17 +0000 [r457-458]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkntab.cpp: Fixed OS X
+	  warnings.
+
+	* trunk/ftk/Makefile: Removed exe_link_libs from the make file.
+
+2006-05-24 20:12 +0000 [r456]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Needed to link against ncurses when creating
+	  the OS X shared library.
+
+2006-05-24 19:58 +0000 [r455]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Needed util directory in the Makefile's
+	  vpath.
+
+2006-05-24 19:50 +0000 [r453-454]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Removed reference to platform.mak.
+
+	* trunk/ftk/platform.mak (removed), trunk/ftk/Makefile: Removed
+	  platform.mak.
+
+2006-05-24 19:43 +0000 [r452]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Makefile cleanup.
+
+2006-05-24 19:26 +0000 [r450]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftknlm.cpp: Added f_getcwd().
+
+2006-05-24 18:47 +0000 [r448]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkbtree.cpp,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftknlm.cpp: Updates for XFLAIM NetWare build.
+
+2006-05-22 20:14 +0000 [r437]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftk.h: Renamed MBLK to
+	  PoolMemoryBlock.
+
+2006-05-22 20:01 +0000 [r435]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/Doxyfile: Added documentation.
+
+2006-05-19 21:53 +0000 [r433]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Misc. cleanup.
+
+2006-05-19 19:51 +0000 [r430]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkftx.cpp: Fixed OpenSUSE 10.1 build issues.
+
+2006-05-19 19:46 +0000 [r428]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkftx.cpp, trunk/ftk/src/ftk.h: Various changes to
+	  the FTX code for Solaris.
+
+2006-05-19 18:08 +0000 [r426]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftksem.cpp: More updates for Solaris.
+
+2006-05-19 17:31 +0000 [r425]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/util/ftktest.cpp, trunk/ftk/src/ftkmisc.cpp: Fixed
+	  varargs support on Solaris.
+
+2006-05-18 22:27 +0000 [r424]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftk.h: Fixed Solaris
+	  issues.
+
+2006-05-18 19:23 +0000 [r422]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/platform.mak (added), trunk/ftk/Makefile: Moved
+	  platform detection code into platform.mak.
+
+2006-05-18 18:39 +0000 [r420]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Changed f_offsetof macro to fix build issues
+	  on ppc Linux.
+
+2006-05-17 22:37 +0000 [r414]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Changes to support B-Tree result sets.
+
+2006-05-15 15:08 +0000 [r411]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Added section for generating an import file
+	  for ring 0 NLMs.
+
+2006-05-12 19:43 +0000 [r410]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Fixed compiler warnings on windows -
+	  for release compiles.
+
+2006-05-12 19:26 +0000 [r409]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/xflaim/src/fxml.cpp, trunk/xflaim/util/fshell.h,
+	  trunk/xflaim/src/fslfileu.cpp, trunk/xflaim/src/fntable.cpp,
+	  trunk/xflaim/src/btreeinfo.cpp, trunk/xflaim/src/flclose.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/xflaim/src/Makefile.am,
+	  trunk/xflaim/src/flchkix.cpp, trunk/xflaim/src/funicode.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/xflaim/src/flaimsys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkstrm.cpp,
+	  trunk/xflaim/src/fdict.h, trunk/xflaim/util/fshell.cpp,
+	  trunk/xflaim/util/view.h, trunk/xflaim/util/checkdb.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftkbtree.cpp,
+	  trunk/xflaim/src/fquery.cpp, trunk/xflaim/src/fxml.h,
+	  trunk/xflaim/util/rebuild.cpp, trunk/xflaim/src/kyqsort.cpp,
+	  trunk/xflaim/src/fqsort.cpp, trunk/xflaim/src/fstructs.h,
+	  trunk/xflaim/src/flopen.cpp, trunk/xflaim/src/fdom.cpp,
+	  trunk/xflaim/src/flkeyret.cpp, trunk/xflaim/src/xflaim.h,
+	  trunk/ftk/src/ftkini.cpp, trunk/xflaim/src/fdict.cpp,
+	  trunk/xflaim/src/fxpath.cpp, trunk/ftk/src/ftkntab.cpp,
+	  trunk/ftk/src/ftktext.cpp, trunk/xflaim/src/kyunlock.cpp,
+	  trunk/xflaim/util/view.cpp, trunk/xflaim/src/kybuild.cpp: Got rid
+	  of IF_Pool and IF_DynaBuf. Got rid of FlmAllocPool. Also fixed
+	  compiler warnings for release builds.
+
+2006-05-11 23:04 +0000 [r408]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkcsum.cpp (added), trunk/ftk/src/ftkmisc.cpp:
+	  Added f_calcFastChecksum.
+
+2006-05-11 22:42 +0000 [r407]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftktime.cpp, trunk/ftk/src/ftkthrd.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftknlm.cpp (added),
+	  trunk/ftk/src/ftkerror.cpp, trunk/ftk/src/ftkprntf.cpp,
+	  trunk/ftk/src/ftkmisc.cpp, trunk/ftk/src/ftknlm.h (added):
+	  Completed adding support for ring 0 NLMs.
+
+2006-05-10 22:41 +0000 [r406]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/Makefile, trunk/xflaim/util/viewedit.cpp,
+	  trunk/ftk/src/ftkftx.cpp, trunk/ftk/src/ftk.h,
+	  trunk/xflaim/util/sharutil.cpp, trunk/xflaim/util/fshell.cpp:
+	  Fixed OS X issues.
+
+2006-05-10 22:21 +0000 [r404]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkdir.cpp, trunk/ftk/Makefile,
+	  trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftkftx.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftkerror.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: First round of changes to support ring
+	  0 NLMs.
+
+2006-05-10 21:23 +0000 [r402]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftk.h: Added some comments for doxygen
+	  documentation.
+
+2006-05-09 22:48 +0000 [r401]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/xflaim/util/fdomedt.cpp, trunk/xflaim/util/checkdb.cpp,
+	  trunk/xflaim/util/flmunittest.h, trunk/xflaim/sample/sample.cpp,
+	  trunk/xflaim/src/flerror.cpp, trunk/xflaim/util/domedit.cpp,
+	  trunk/xflaim/util/rebuild.cpp, trunk/xflaim/src/fsysdata.cpp,
+	  trunk/xflaim/util/viewdisp.cpp, trunk/xflaim/src/fdom.cpp,
+	  trunk/xflaim/src/xflaim.h, trunk/ftk/src/ftksys.h,
+	  trunk/xflaim/src/flaimsys.h, trunk/ftk/src/ftk.h,
+	  trunk/xflaim/util/view.cpp, trunk/xflaim/util/basictestsrv.cpp,
+	  trunk/ftk/src/ftkprntf.cpp, trunk/ftk/src/ftkerror.cpp,
+	  trunk/xflaim/util/fshell.cpp, trunk/ftk/src/ftkmisc.cpp,
+	  trunk/xflaim/util/rfltestsrv.cpp: Got rid of errorString.
+	  Renumbered error codes. Got rid of error string tables.
+
+2006-05-09 19:41 +0000 [r399]  dsandersoremutah <dsandersoremutah@localhost>:
+
+	* trunk/ftk/src/ftk.h: Fixed up some header comments.
+
+2006-05-09 18:00 +0000 [r398]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h: Fixed Linux
+	  compile errors.
+
+2006-05-09 17:57 +0000 [r397]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp: Added
+	  implementations for "posix" atomic operations.
+
+2006-05-09 17:27 +0000 [r395]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkftx.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkmisc.cpp: Fixed Solaris
+	  compile errors.
+
+2006-05-09 16:27 +0000 [r393-394]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp: Added error pragma for OS X build.
+
+	* trunk/ftk/src/ftksys.h: Added sys/resource.h for OS X build.
+
+2006-05-09 16:12 +0000 [r391]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h: Added f_canGetMemoryInfo() and added startup
+	  code to set various memory limits.
+
+2006-05-09 15:35 +0000 [r390]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmisc.cpp: Fixed Linux compile errors.
+
+2006-05-09 15:18 +0000 [r389]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/src/ftkrand.cpp: Moved
+	  FLM_MAX_RANDOM to ftk.h.
+
+2006-05-08 23:28 +0000 [r388]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/xflaim/src/fbtrset.cpp, trunk/xflaim/util/binarytest.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkrand.cpp,
+	  trunk/xflaim/src/flchkdb.cpp, trunk/xflaim/src/fsysdata.cpp:
+	  Changed random number generator to return FLMUINT32 values rather
+	  than FLMINT32 values.
+
+2006-05-08 22:55 +0000 [r387]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h: Missing pure virtual specifiers on a couple
+	  of IF_IOBuffer methods.
+
+2006-05-08 22:45 +0000 [r385]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h: Added support for
+	  locking and unlocking files (byte 0, exclusive).
+
+2006-05-08 22:24 +0000 [r380-382]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/Makefile: Makefile changes for NetWare build.
+
+	* trunk/ftk/src/ftkbtree.cpp: Needed a newline at the end of
+	  ftkbtree.cpp.
+
+	* trunk/ftk/src/ftkmisc.cpp: Added stricmp and strnicmp on Unix
+	  platforms.
+
+2006-05-08 22:15 +0000 [r379]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkstrm.cpp: Cleanup.
+
+2006-05-08 21:55 +0000 [r378]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftk.h, trunk/ftk/src/ftkmisc.cpp: Minor changes for
+	  NetWare.
+
+2006-05-08 21:17 +0000 [r377]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkpath.cpp (removed), trunk/ftk/src/ftktime.cpp,
+	  trunk/ftk/src/ftkxml.cpp, trunk/ftk/src/ftkftx.cpp,
+	  trunk/ftk/src/ftkiobuf.cpp, trunk/ftk/src/ftkdir.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkdom.cpp (removed),
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftkntab.cpp, trunk/ftk/src/ftksem.cpp,
+	  trunk/ftk/src/ftkstrm.cpp, trunk/ftk/src/ftkerror.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Added support for NetWare (libc) built
+	  using OpenWatcom.
+
+2006-05-08 17:27 +0000 [r376]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftkiobuf.cpp,
+	  trunk/ftk/src/ftkerror.cpp: More changes to support X-FLAIM.
+
+2006-05-05 23:19 +0000 [r374-375]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkcoll.cpp (added): Added support for collation.
+
+	* trunk/ftk/src/ftkxml.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftktext.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Added support for collation.
+
+2006-05-05 16:48 +0000 [r373]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/ftk/src/ftkmisc.cpp: Moved
+	  Linux-specific routines out of ftkmisc and into ftkunix.
+
+2006-05-05 16:25 +0000 [r372]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Linux fixes.
+
+2006-05-05 16:15 +0000 [r371]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/ftk/src/ftkmisc.cpp: Fixed OS X
+	  issues.
+
+2006-05-05 15:50 +0000 [r370]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftktime.cpp,
+	  trunk/ftk/src/ftkxml.cpp, trunk/ftk/src/ftkthrd.cpp,
+	  trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftkftx.cpp,
+	  trunk/ftk/src/ftkiobuf.cpp, trunk/ftk/util/ftktest.cpp,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/ftk/src/ftkrset.cpp,
+	  trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftkini.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkrand.cpp, trunk/ftk/src/ftksem.cpp,
+	  trunk/ftk/src/ftkntab.cpp, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftktext.cpp,
+	  trunk/ftk/src/ftkstrm.cpp, trunk/ftk/src/ftkprntf.cpp,
+	  trunk/ftk/src/ftkerror.cpp, trunk/ftk/src/ftkmisc.cpp: Changes to
+	  allow XFLAIM to consume FTK.
+
+2006-05-03 16:12 +0000 [r369]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftk.h: Removed B-Tree
+	  interfaces from ftk.h until they are ready for prime time.
+
+2006-05-01 23:29 +0000 [r368]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftkwin.cpp,
+	  trunk/ftk/src/ftkdir.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftkiobuf.cpp,
+	  trunk/ftk/src/ftkrand.cpp, trunk/ftk/src/ftkstrm.cpp,
+	  trunk/ftk/src/ftkerror.cpp: Initial changes needed to convert
+	  XFLAIM over to FTK.
+
+2006-04-27 23:27 +0000 [r365-366]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkftx.cpp, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftksem.cpp,
+	  trunk/ftk/src/ftkerror.cpp: Fixed OS X compile issues.
+
+	* trunk/ftk/util/ftktest.cpp: Added FTX.
+
+2006-04-27 23:17 +0000 [r364]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkxml.cpp,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftkftx.cpp (added),
+	  trunk/ftk/src/ftkbtree.cpp, trunk/ftk/src/ftkiobuf.cpp,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/ftk/src/ftkrset.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkini.cpp,
+	  trunk/ftk/src/ftklog.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftktext.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkntab.cpp, trunk/ftk/src/ftksem.cpp,
+	  trunk/ftk/src/ftkstrm.cpp, trunk/ftk/src/ftkprntf.cpp,
+	  trunk/ftk/src/ftkerror.cpp, trunk/ftk/src/ftkmisc.cpp: Added FTX.
+
+2006-04-27 19:46 +0000 [r363]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkxml.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp: Added missing
+	  functions on Unix platforms.
+
+2006-04-27 19:41 +0000 [r361-362]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/util/ftktest.cpp (added): Added ftktest.cpp.
+
+	* trunk/ftk/src/ftkxml.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkerror.cpp: Got rid of DOM
+	  code.
+
+2006-04-27 19:09 +0000 [r360]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkmem.cpp,
+	  trunk/ftk/Makefile, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h,
+	  trunk/ftk/src/ftkfsys.cpp, trunk/ftk/src/ftkntab.cpp,
+	  trunk/ftk/src/ftkstrm.cpp, trunk/ftk/src/ftkerror.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Updates, etc.
+
+2006-04-27 17:19 +0000 [r359]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftklog.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftk.h: Fixed Linux
+	  compile errors.
+
+2006-04-27 16:57 +0000 [r358]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkwin.cpp, trunk/ftk/src/ftkdir.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkxml.cpp,
+	  trunk/ftk/src/ftksys.h, trunk/ftk/src/ftkunix.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftksem.cpp, trunk/ftk/src/ftkerror.cpp,
+	  trunk/ftk/src/ftkmfh.cpp, trunk/ftk/src/ftkmisc.cpp: Fixed Mac
+	  compile errors.
+
+2006-04-27 15:59 +0000 [r357]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftkpath.cpp, trunk/ftk/src/ftkwin.cpp,
+	  trunk/ftk/src/ftkxml.cpp, trunk/ftk/Makefile,
+	  trunk/ftk/src/ftkthrd.cpp, trunk/ftk/src/ftkbtree.cpp,
+	  trunk/ftk/src/ftkiobuf.cpp, trunk/ftk/src/ftkmfh.cpp,
+	  trunk/ftk/src/ftkrset.cpp, trunk/ftk/src/ftkdir.cpp,
+	  trunk/ftk/src/ftkmem.cpp, trunk/ftk/src/ftkini.cpp,
+	  trunk/ftk/src/ftkunix.cpp, trunk/ftk/src/ftksys.h,
+	  trunk/ftk/src/ftkrand.cpp, trunk/ftk/src/ftksem.cpp,
+	  trunk/ftk/src/ftkntab.cpp, trunk/ftk/src/ftkfsys.cpp,
+	  trunk/ftk/src/ftk.h, trunk/ftk/src/ftktext.cpp,
+	  trunk/ftk/src/ftkstrm.cpp, trunk/ftk/src/ftkerror.cpp,
+	  trunk/ftk/src/ftkmisc.cpp: Updates, etc.
+
+2006-04-26 16:53 +0000 [r356]  ahodgkinson <ahodgkinson@localhost>:
+
+	* trunk/ftk/src/ftktime.cpp (added), trunk/ftk/NEWS (added),
+	  trunk/ftk/Makefile (added), trunk/ftk/src/ftkiobuf.cpp (added),
+	  trunk/ftk/ChangeLog (added), trunk/ftk/src/ftkrset.cpp (added),
+	  trunk/ftk/src/ftkmem.cpp (added), trunk/ftk/src/ftkdir.cpp
+	  (added), trunk/ftk/src/ftkdom.cpp (added), trunk/ftk/README
+	  (added), trunk/ftk/src/ftklog.cpp (added), trunk/ftk/src/ftksys.h
+	  (added), trunk/ftk (added), trunk/ftk/src/ftkrand.cpp (added),
+	  trunk/ftk/src/ftk.h (added), trunk/ftk/src/ftkfsys.cpp (added),
+	  trunk/ftk/src/ftksem.cpp (added), trunk/ftk/src/ftkstrm.cpp
+	  (added), trunk/ftk/src/ftkprntf.cpp (added),
+	  trunk/ftk/src/ftkmisc.cpp (added), trunk/ftk/src/ftkpath.cpp
+	  (added), trunk/ftk/src/ftkwin.cpp (added), trunk/ftk/util
+	  (added), trunk/ftk/src/ftkxml.cpp (added),
+	  trunk/ftk/src/ftkbtree.cpp (added), trunk/ftk/src/ftkthrd.cpp
+	  (added), trunk/ftk/Doxyfile (added), trunk/ftk/AUTHORS (added),
+	  trunk/ftk/src (added), trunk/ftk/src/ftkmfh.cpp (added),
+	  trunk/ftk/src/ftkini.cpp (added), trunk/ftk/make.exe (added),
+	  trunk/ftk/src/ftkunix.cpp (added), trunk/ftk/src/ftktext.cpp
+	  (added), trunk/ftk/src/ftkntab.cpp (added),
+	  trunk/ftk/src/ftkerror.cpp (added), trunk/ftk/COPYING (added):
+	  Added FTK.
+
