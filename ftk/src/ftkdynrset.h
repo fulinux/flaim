@@ -26,6 +26,13 @@
 #ifndef FTKDYNRSET_H
 #define FTKDYNRSET_H
 
+#if defined( FLM_WIN)
+
+	// Unreferenced inline function has been removed
+	#pragma warning (disable : 4514)
+
+#endif
+
 /*****************************************************************************
 *****
 ** 	Definitions

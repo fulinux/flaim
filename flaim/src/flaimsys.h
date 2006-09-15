@@ -37,6 +37,9 @@
 
 	// Function XXX not inlined
 	#pragma warning( disable : 4710) 
+
+	// Unreferenced inline function has been removed
+	#pragma warning (disable : 4514)
 #endif
 	
 #if defined( FLM_WATCOM_NLM)
