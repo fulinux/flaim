@@ -4474,6 +4474,8 @@
 	Desc:    Status and return codes
 	****************************************************************************/
 
+	// IMPORTANT NOTE: If changes are made to the RCODEs, please be sure to make
+	// corresponding changes in csharp/xflaim/RCODE.cs and java/xflaim/RCODE.java.
 	#define NE_XFLM_NOT_IMPLEMENTED							NE_FLM_NOT_IMPLEMENTED
 	#define NE_XFLM_MEM											NE_FLM_MEM
 	#define NE_XFLM_INVALID_PARM								NE_FLM_INVALID_PARM
@@ -4510,6 +4512,8 @@
 	/****************************************************************************
 	Desc:		General XFLAIM errors
 	****************************************************************************/
+	// IMPORTANT NOTE: If changes are made to the RCODEs, please be sure to make
+	// corresponding changes in csharp/xflaim/RCODE.cs and java/xflaim/RCODE.java.
 	#define NE_XFLM_OK											NE_FLM_OK
 	
 	#define NE_XFLM_USER_ABORT									0xD100			// User or application aborted (canceled) operation.
@@ -4668,6 +4672,8 @@
 	Desc:		DOM Errors
 	****************************************************************************/
 
+	// IMPORTANT NOTE: If changes are made to the RCODEs, please be sure to make
+	// corresponding changes in csharp/xflaim/RCODE.cs and java/xflaim/RCODE.java.
 	#define NE_XFLM_DOM_HIERARCHY_REQUEST_ERR				0xD201			// Attempt to insert a DOM node somewhere it doesn't belong.
 	#define NE_XFLM_DOM_WRONG_DOCUMENT_ERR					0xD202			// A DOM node is being used in a different document than the one that created it.
 	#define NE_XFLM_DOM_DATA_ERROR							0xD203			// Links between DOM nodes in a document are corrupt.
@@ -4680,6 +4686,8 @@
 	Desc:	Query Errors
 	****************************************************************************/
 
+	// IMPORTANT NOTE: If changes are made to the RCODEs, please be sure to make
+	// corresponding changes in csharp/xflaim/RCODE.cs and java/xflaim/RCODE.java.
 	#define NE_XFLM_Q_UNMATCHED_RPAREN						0xD301			// Query setup error: Unmatched right paren.
 	#define NE_XFLM_Q_UNEXPECTED_LPAREN						0xD302			// Query setup error: Unexpected left paren.
 	#define NE_XFLM_Q_UNEXPECTED_RPAREN						0xD303			// Query setup error: Unexpected right paren.
@@ -4720,6 +4728,8 @@
 	Desc:	NICI / Encryption Errors
 	****************************************************************************/
 
+	// IMPORTANT NOTE: If changes are made to the RCODEs, please be sure to make
+	// corresponding changes in csharp/xflaim/RCODE.cs and java/xflaim/RCODE.java.
 	#define NE_XFLM_NICI_CONTEXT								0xD401			// Error occurred while creating NICI context for encryption/decryption.
 	#define NE_XFLM_NICI_ATTRIBUTE_VALUE					0xD402			// Error occurred while accessing an attribute on a NICI encryption key.
 	#define NE_XFLM_NICI_BAD_ATTRIBUTE						0xD403			// Value retrieved from an attribute on a NICI encryption key was bad.
