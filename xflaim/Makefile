@@ -696,7 +696,7 @@ test_targets = basictest binarytest colldeftest dictchangetest dictdeftest \
 		indexdeftest indextest1 indextest2 indextest3 \
 		namespacetest metaphonetest regressiontest rfltest sortkeytest \
 		sortkeytest2 xpathtest1 xpathtest2
-all_targets = java rpms install libs all allutils test $(util_targets) $(test_targets)
+all_targets = java csharp rpms install libs all allutils test $(util_targets) $(test_targets)
 found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
 
 ifneq (,$(findstring clean,$(MAKECMDGOALS)))
@@ -772,6 +772,8 @@ develrpm_name = $(package_proj_name)-devel-$(version)-$(package_release_num).$(H
 
 java_output_dir = $(target_path)/java
 java_class_output_dir = $(target_path)/java/classes
+csharp_output_dir = $(target_path)/csharp
+cstest_output_dir = $(target_path)/csharp/cstest
 
 ifdef JAVA_HOME
 	jhome := $(subst \,/,$(JAVA_HOME))
@@ -787,9 +789,14 @@ endif
 xflaim_jni_jar = $(java_output_dir)/xflaimjni.jar
 xflaim_jar_manifest = $(java_output_dir)/xflaimjni.mf
 
+xflaim_csharp_assembly = $(csharp_output_dir)/$(lib_prefix)$(project_name)_csharp$(shared_lib_suffix)
+xflaim_csharp_assembly_xml = $(csharp_output_dir)/$(lib_prefix)$(project_name)_csharp.xml
+cstest_exe = $(cstest_output_dir)/cstest$(exe_suffix)
+
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
 sample_dir = $(target_path)/sample
+csharp_dir = $(target_path)/csharp
 lib_dir = $(target_path)/$(lib_dir_name)
 shared_lib_dir = $(lib_dir)/shared
 static_lib_dir = $(lib_dir)/static
@@ -799,6 +806,7 @@ test_obj_dir = $(test_dir)/obj
 sample_obj_dir = $(sample_dir)/obj
 
 lib_obj_dir = $(lib_dir)/obj
+csharp_obj_dir = $(csharp_dir)/obj
 
 doxyfile = $(doxygen_output_dir)/Doxyfile
 
@@ -812,6 +820,9 @@ compiler =
 # Compiler definitions and flags
 
 ccflags =
+clrflags =
+noclrflags =
+cs_flags = /nologo /warn:4 /warnaserror+
 ccdefs =
 
 ifeq ($(target_word_size),64)
@@ -831,6 +842,7 @@ ifdef win_target
 	exe_linker = link.exe
 	shared_linker = link.exe
 	compiler = cl.exe
+	csharp_compiler := csc.exe
 
 	# Compiler defines and flags
 
@@ -840,10 +852,13 @@ ifdef win_target
 	ccdefs += WIN32_EXTRA_LEAN
 
 	ifeq ($(target_build_type),debug)
-		ccflags += /Ob1 /Od /RTC1 /Wp64
+		ccflags += /Ob1 /Od /Wp64
+		noclrflags += /RTC1
 		ccdefs += FLM_DEBUG
+		cs_flags += /debug+ /debug:full /define:FLM_DEBUG
 	else
 		ccflags += /O2
+		cs_flags += /optimized+
 	endif
 
 	# Linker switches
@@ -1449,6 +1464,9 @@ ftk_src = \
 xflaim_jni_src = \
 	$(patsubst java/jni/%.cpp,%.cpp,$(wildcard java/jni/*.cpp))
 	
+xflaim_csharp_src = \
+	$(patsubst csharp/xflaim/%.cpp,%.cpp,$(wildcard csharp/xflaim/*.cpp))
+
 util_common_src = \
 	flm_dlst.cpp \
 	flm_lutl.cpp \
@@ -1576,6 +1594,7 @@ ut_xpathtest2_src = \
 ftk_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(ftk_src))
 xflaim_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_src))
 xflaim_jni_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
+xflaim_csharp_obj = $(patsubst %.cpp,$(csharp_obj_dir)/%$(obj_suffix),$(xflaim_csharp_src))
 xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
    xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
@@ -1614,6 +1633,11 @@ jni_java_src = $(wildcard java/xflaim/*.java)
 xedit_java_src = $(wildcard java/util/xedit/*.java)
 xedit_java_exe = $(java_class_output_dir)/xedit/XEdit.class
 
+# -- CSharp --
+
+csharp_src = $(wildcard csharp/xflaim/*.cs)
+cstest_src = $(wildcard csharp/cstest/*.cs)
+
 # -- Utilities  --
 
 checkdb_obj = $(patsubst %.cpp,$(util_obj_dir)/%$(obj_suffix),$(checkdb_src))
@@ -1633,8 +1657,9 @@ sample_exe = $(sample_dir)/sample$(exe_suffix)
 
 # -- Make system pattern search paths -- 
 
-vpath %.cpp src util sample java/jni $(ftk_src_dir) 
+vpath %.cpp src util sample java/jni csharp/xflaim $(ftk_src_dir) 
 vpath %.java jni/java/xflaim
+vpath %.cs csharp/xflaim csharp/cstest
 
 # -- Default target --
 
@@ -1676,18 +1701,44 @@ $(xedit_java_exe): $(xedit_java_src) $(xflaim_jni_jar)
 		-d $(call hostpath,$(java_class_output_dir)) $(call hostpath,$(xedit_java_src))
 endif
 
+# -- CSharp --
+ifdef csharp_compiler
+$(xflaim_csharp_assembly) : $(csharp_src)
+	$(ec)$(gprintf) "Compiling CSharp sources ...\n"
+	$(ec)$(csharp_compiler) /target:library /out:$(call hostpath,$(xflaim_csharp_assembly)) \
+		/doc:$(call hostpath,$(xflaim_csharp_assembly_xml)) $(cs_flags)\
+		$(call hostpath,$(csharp_src))
+endif
+
+ifdef csharp_compiler
+$(cstest_exe) : $(cstest_src) $(xflaim_csharp_assembly)
+	$(ec)$(gprintf) "Compiling CSTest sources ...\n"
+	$(ec)$(csharp_compiler) /out:$(call hostpath,$(cstest_exe)) $(call hostpath,$(cstest_src)) \
+		/reference:$(call hostpath,$(xflaim_csharp_assembly)) $(cs_flags)
+endif
 
 # -- *.cpp -> *$(obj_suffix) --
 
 ifdef win_target
 define cpp_to_obj_template
 $$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
-	$$(ec)$$(compiler) $$(ccflags) /Fo$$(call hostpath,$$@) $$(call hostpath,$$<)
+	$$(ec)$$(compiler) $$(ccflags) $$(noclrflags) /Fo$$(call hostpath,$$@) $$(call hostpath,$$<)
+endef
+
+define cpp_to_clr_obj_template
+$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
+	$$(ec)$$(compiler) $$(ccflags) /clr /AI$$(call hostpath,$$(csharp_output_dir)) /Fo$$(call hostpath,$$@) $$(call hostpath,$$<)
 endef
 endif
 
 ifdef unix_target
 define cpp_to_obj_template
+$$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
+	$$(ec)$$(gprintf) "$$<\n"
+	$$(ec)$$(compiler) $$(ccflags) -c $$< -o $$@
+endef
+
+define cpp_to_clr_obj_template
 $$($(1)_obj_dir)/%$$(obj_suffix) : %.cpp
 	$$(ec)$$(gprintf) "$$<\n"
 	$$(ec)$$(compiler) $$(ccflags) -c $$< -o $$@
@@ -1700,9 +1751,16 @@ $$($(1)_obj_dir)/%$(obj_suffix) : %.cpp
 	$$(ec)$$(gprintf) "$$(notdir $$(strip $$@))\n"
 	$$(ec)$$(call hostpath,$$(compiler)) $$(call hostpath,$$<) /fo=$$(call hostpath,$$@)
 endef
+
+define cpp_to_clr_obj_template
+$$($(1)_obj_dir)/%$(obj_suffix) : %.cpp
+	$$(ec)$$(gprintf) "$$(notdir $$(strip $$@))\n"
+	$$(ec)$$(call hostpath,$$(compiler)) $$(call hostpath,$$<) /fo=$$(call hostpath,$$@)
+endef
 endif
 
-$(foreach tmpl,lib util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
+$(foreach tmpl,lib csharp util sample test,$(eval $(call cpp_to_obj_template,$(tmpl))))
+#$(foreach tmpl,csharp,$(eval $(call cpp_to_clr_obj_template,$(tmpl))))
 
 # -- xflaim.lib and libxflaim.a --
 
@@ -1726,7 +1784,7 @@ endif
 
 # -- xflaim.dll and libxflaim.so --
 
-$(xflaim_shared_lib) : $(xflaim_obj) $(ftk_obj) $(xflaim_jni_obj)
+$(xflaim_shared_lib) : $(xflaim_obj) $(ftk_obj) $(xflaim_jni_obj) $(xflaim_csharp_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
 	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
@@ -1973,6 +2031,14 @@ java: status clean dircheck $(xflaim_jni_jar) $(xflaim_shared_lib)
 
 .PHONY : xedit
 xedit: java $(xedit_java_exe)
+
+# -- csharp
+
+.PHONY : csharp
+csharp: status clean dircheck $(xflaim_csharp_assembly) $(xflaim_shared_lib)
+
+.PHONY : cstest
+cstest: csharp $(cstest_exe)
 
 # -- version --
 
@@ -2243,8 +2309,11 @@ dircheck:
 	$(ec)$(call mkdircmd,$(test_obj_dir))
 	$(ec)$(call mkdircmd,$(sample_obj_dir))
 	$(ec)$(call mkdircmd,$(lib_obj_dir))
+	$(ec)$(call mkdircmd,$(csharp_obj_dir))
 	$(ec)$(call mkdircmd,$(java_output_dir))
 	$(ec)$(call mkdircmd,$(java_class_output_dir))
+	$(ec)$(call mkdircmd,$(csharp_output_dir))
+	$(ec)$(call mkdircmd,$(cstest_output_dir))
 	$(ec)$(call mkdircmd,$(doxygen_output_dir))
 	$(ec)$(call mkdircmd,$(javadoc_output_dir))
 	$(ec)$(call mkdircmd,$(util_dir))
