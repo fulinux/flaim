@@ -4980,11 +4980,11 @@ RCODE FLMAPI f_getMemoryInfo(
 
 			if( getrlimit( RLIMIT_VMEM, &rlim) != 0)
 			{
-				rlim.rlim_cur = RLIM_INFINITY;
-				rlim.rlim_max = RLIM_INFINITY;
+				rlim.rlim_cur = (rlim_t)RLIM_INFINITY;
+				rlim.rlim_max = (rlim_t)RLIM_INFINITY;
 			}
 
-			if( rlim.rlim_cur != RLIM_INFINITY)
+			if( rlim.rlim_cur != (rlim_t)RLIM_INFINITY)
 			{
 				uiProcVMemLimit = (FLMUINT)rlim.rlim_cur;
 			}
@@ -4997,11 +4997,11 @@ RCODE FLMAPI f_getMemoryInfo(
 
 			if( getrlimit( RLIMIT_DATA, &rlim) != 0)
 			{
-				rlim.rlim_cur = RLIM_INFINITY;
-				rlim.rlim_max = RLIM_INFINITY;
+				rlim.rlim_cur = (rlim_t)RLIM_INFINITY;
+				rlim.rlim_max = (rlim_t)RLIM_INFINITY;
 			}
 
-			if( rlim.rlim_cur != RLIM_INFINITY)
+			if( rlim.rlim_cur != (rlim_t)RLIM_INFINITY)
 			{
 				uiProcMemLimit = (FLMUINT)rlim.rlim_cur;
 			}

@@ -69,7 +69,7 @@ ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
 	endif
 endif
 
-ifneq (,$(findstring deb,$(MAKECMDGOALS)))
+ifneq (,$(findstring debpkg,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 	ifndef ignore_local_mods
 		local_mods_ok =
