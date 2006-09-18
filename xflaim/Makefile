@@ -1598,12 +1598,14 @@ ut_xpathtest2_src = \
 
 ftk_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(ftk_src))
 xflaim_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_src))
-xflaim_jni_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
 xflaim_csharp_obj = $(patsubst %.cpp,$(csharp_obj_dir)/%$(obj_suffix),$(xflaim_csharp_src))
 xflaim_static_lib = $(static_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 ifndef netware_target
    xflaim_shared_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
    xflaim_shared_imp_lib = $(shared_lib_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
+endif
+ifdef jhome
+	xflaim_jni_obj = $(patsubst %.cpp,$(lib_obj_dir)/%$(obj_suffix),$(xflaim_jni_src))
 endif
 
 # -- Unit tests  --
@@ -2069,7 +2071,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
-	$(ec)$(call copycmd,$(dir $(topdir))ftk/src/ftk.h,$(package_stage_dir)/src/xflaimtk.h)
+	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_stage_dir)/src/xflaimtk.h)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
@@ -2174,8 +2176,8 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(xflaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
-	install --mode=644 src/xflaimtk.h $(include_install_dir)
-	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	install --mode=644 $(ftk_src_dir)/ftk.h $(include_install_dir)/xflaimtk.h
+	ldconfig $(lib_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
