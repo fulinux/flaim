@@ -1492,6 +1492,7 @@
 
 	#define FLM_RECID_FIELD		FLM_DRN_TAG
 	#define FLM_ANY_FIELD		FLM_WILD_TAG
+	#define FLM_WILD				FLM_WILD_TAG
 
 	/// Add a field path to the query criteria.
 	/// \ingroup querydef

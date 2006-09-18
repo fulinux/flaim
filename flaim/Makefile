@@ -313,7 +313,9 @@ endif
 
 ifeq (,$(HOSTTYPE))
 	ifneq ($(host_os_family),hpux)
-		HOSTTYPE := $(shell uname -p)
+		ifneq ($(host_os_family),linux)
+			HOSTTYPE := $(shell uname -p)
+		endif
 	endif
 	ifeq (,$(HOSTTYPE))
 		HOSTTYPE := $(shell uname -m)
@@ -1717,7 +1719,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
 	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
-	$(ec)$(call copycmd,$(dir $(topdir))ftk/src/ftk.h,$(package_stage_dir)/src/flaimtk.h)
+	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_stage_dir)/src/flaimtk.h)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
@@ -1819,8 +1821,8 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(flaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
-	install --mode=644 src/flaimtk.h $(include_install_dir)
-	-ldconfig $(lib_install_dir) -l -v $(lib_install_dir)/$(lib_prefix)$(project_name)$(shared_lib_suffix)
+	install --mode=644 $(ftk_src_dir)/ftk.h $(include_install_dir)/flaimtk.h
+	ldconfig $(lib_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
