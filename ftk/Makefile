@@ -1878,7 +1878,7 @@ debsrc: srcdist
 	$(ec)$(gprintf) "Source: $(package_proj_name)\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0), ncurses-dev\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Standards-Version: 3.6.2\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Package: $(package_proj_name)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
@@ -1892,7 +1892,7 @@ debsrc: srcdist
 	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.ex)
 	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.EX)
 
-	$(ec)cd $(package_dir); dpkg-source -b -sa $(debian_stage_dir)/$(src_package_base_name)
+	$(ec)cd $(package_dir); dpkg-source -b $(debian_stage_dir)/$(src_package_base_name)
 	
 	$(ec)$(gprintf) "Checking Debian package ...\n"
 	$(ec)lintian -i $(package_dir)/$(package_proj_name)_$(version).dsc
