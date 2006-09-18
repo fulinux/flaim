@@ -789,9 +789,9 @@ endif
 xflaim_jni_jar = $(java_output_dir)/xflaimjni.jar
 xflaim_jar_manifest = $(java_output_dir)/xflaimjni.mf
 
-xflaim_csharp_assembly = $(csharp_output_dir)/$(lib_prefix)$(project_name)_csharp$(shared_lib_suffix)
-xflaim_csharp_assembly_xml = $(csharp_output_dir)/$(lib_prefix)$(project_name)_csharp.xml
-cstest_exe = $(cstest_output_dir)/cstest$(exe_suffix)
+xflaim_csharp_assembly = $(csharp_output_dir)/xflaim_csharp.dll
+xflaim_csharp_assembly_xml = $(csharp_output_dir)/xflaim_csharp.xml
+cstest_exe = $(cstest_output_dir)/cstest.exe
 
 util_dir = $(target_path)/util
 test_dir = $(target_path)/test
@@ -823,6 +823,12 @@ ccflags =
 clrflags =
 noclrflags =
 cs_flags = /nologo /warn:4 /warnaserror+
+ifeq ($(target_build_type),debug)
+	cs_flags += /debug+ /debug:full /define:FLM_DEBUG
+else
+	cs_flags += /optimized+
+endif
+
 ccdefs =
 
 ifeq ($(target_word_size),64)
@@ -855,10 +861,8 @@ ifdef win_target
 		ccflags += /Ob1 /Od /Wp64
 		noclrflags += /RTC1
 		ccdefs += FLM_DEBUG
-		cs_flags += /debug+ /debug:full /define:FLM_DEBUG
 	else
 		ccflags += /O2
-		cs_flags += /optimized+
 	endif
 
 	# Linker switches
@@ -996,6 +1000,7 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),linux)
+		csharp_compiler := mcs
 
 		# Must support 64 bit file sizes - even for 32 bit builds.
 

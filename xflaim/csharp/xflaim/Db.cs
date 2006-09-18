@@ -63,6 +63,15 @@ namespace xflaim
 			}
 			
 			m_dbSystem = dbSystem;
+			
+			// Must call something inside of DbSystem.  Otherwise, the
+			// m_dbSystem object gets a compiler warning on linux because
+			// it is not used anywhere.  Other than that, there is really
+			// no need to make the following call.
+			if (m_dbSystem.getRef() == 0)
+			{
+				throw new XFlaimException( "Invalid DbSystem.getRef()");
+			}
 		}
 
 		/// <summary>

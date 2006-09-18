@@ -260,6 +260,7 @@ namespace cstest
 		}
 	}
 
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 	public class MyDbCopyStatus : DbCopyStatus
 	{
 		public RCODE dbCopyStatus(
@@ -277,3 +278,4 @@ namespace cstest
 		}
 	}
 }
+

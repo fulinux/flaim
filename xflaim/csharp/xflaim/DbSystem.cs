@@ -257,7 +257,16 @@ namespace xflaim
 		{
 			xflaim_DbSystem_Release( m_this);
 			m_this = 0;
-		}	
+		}
+		
+		/// <summary>
+		/// Called by <see cref="Db"/> class to silence compiler warning.
+		/// Has no other important use!
+		/// </summary>
+		public ulong getRef()
+		{
+			return m_this;
+		}
 
 		/// <summary>
 		/// Creates a new XFlaim database.
@@ -452,18 +461,24 @@ namespace xflaim
 			RestoreStatus	restoreStatus)
 		{
 			int							rc;
-			RestoreStatusCallback	fnRestoreStatus;
-			RestoreClientCallback	fnRestoreClient;
-
-			fnRestoreClient = (restoreClient != null)
-									? new RestoreClientCallback( funcRestoreClient)
-									: null;
-			fnRestoreStatus = (restoreStatus != null)
-									? new RestoreStatusCallback( funcRestoreStatus)
-									: null;
+			RestoreClientDelegate	restoreClientDelegate = null;
+			RestoreClientCallback	fnRestoreClient = null;
+			RestoreStatusDelegate	restoreStatusDelegate = null;
+			RestoreStatusCallback	fnRestoreStatus = null;
+			
+			if (restoreClient != null)
+			{
+				restoreClientDelegate = new RestoreClientDelegate( restoreClient);
+				fnRestoreClient = new RestoreClientCallback( restoreClientDelegate.funcRestoreClient);
+			}
+			if (restoreStatus != null)
+			{
+				restoreStatusDelegate = new RestoreStatusDelegate( restoreStatus);
+				fnRestoreStatus = new RestoreStatusCallback( restoreStatusDelegate.funcRestoreStatus);
+			}
 		
 			if ((rc = xflaim_DbSystem_dbRestore( m_this, sDbPath, sDataDir, sRflDir, sBackupPath,
-				sPassword, restoreClient, fnRestoreClient, restoreStatus, fnRestoreStatus)) != 0)
+				sPassword, fnRestoreClient, fnRestoreStatus)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -481,37 +496,50 @@ namespace xflaim
 		}
 
 		private delegate RCODE RestoreClientCallback(
-			RestoreClient			restoreClient,
 			RestoreClientAction	eAction,
 			uint						uiFileNum,
 			uint						uiBytesRequested,
 			IntPtr					pvBuffer,
 			ref uint					puiBytesRead);
-
-		private RCODE funcRestoreClient(
-			RestoreClient			restoreClient,
-			RestoreClientAction	eAction,
-			uint						uiFileNum,
-			uint						uiBytesRequested,
-			IntPtr					pvBuffer,
-			ref uint					uiBytesRead)
+			
+		private class RestoreClientDelegate
 		{
-			switch (eAction)
+			public RestoreClientDelegate(
+				RestoreClient	restoreClient)
 			{
-				case RestoreClientAction.RESTORE_OPEN_BACKUP_SET:
-					return( restoreClient.openBackupSet());
-				case RestoreClientAction.RESTORE_OPEN_RFL_FILE:
-					return( restoreClient.openRflFile( uiFileNum));
-				case RestoreClientAction.RESTORE_OPEN_INC_FILE:
-					return( restoreClient.openIncFile( uiFileNum));
-				case RestoreClientAction.RESTORE_READ:
-					return( restoreClient.read( uiBytesRequested, pvBuffer, ref uiBytesRead));
-				case RestoreClientAction.RESTORE_CLOSE:
-					return( restoreClient.close());
-				case RestoreClientAction.RESTORE_ABORT_FILE:
-					return( restoreClient.abortFile());
+				m_restoreClient = restoreClient; 
 			}
-			return( RCODE.NE_XFLM_INVALID_PARM);
+			
+			~RestoreClientDelegate()
+			{
+			}
+			
+			public RCODE funcRestoreClient(
+				RestoreClientAction	eAction,
+				uint						uiFileNum,
+				uint						uiBytesRequested,
+				IntPtr					pvBuffer,
+				ref uint					uiBytesRead)
+			{
+				switch (eAction)
+				{
+					case RestoreClientAction.RESTORE_OPEN_BACKUP_SET:
+						return( m_restoreClient.openBackupSet());
+					case RestoreClientAction.RESTORE_OPEN_RFL_FILE:
+						return( m_restoreClient.openRflFile( uiFileNum));
+					case RestoreClientAction.RESTORE_OPEN_INC_FILE:
+						return( m_restoreClient.openIncFile( uiFileNum));
+					case RestoreClientAction.RESTORE_READ:
+						return( m_restoreClient.read( uiBytesRequested, pvBuffer, ref uiBytesRead));
+					case RestoreClientAction.RESTORE_CLOSE:
+						return( m_restoreClient.close());
+					case RestoreClientAction.RESTORE_ABORT_FILE:
+						return( m_restoreClient.abortFile());
+				}
+				return( RCODE.NE_XFLM_INVALID_PARM);
+			}
+			
+			private RestoreClient	m_restoreClient;
 		}
 
 		// WARNING NOTE: Any changes to this enum should also be reflected in DbSystem.cpp
@@ -546,9 +574,8 @@ namespace xflaim
 			REPORT_DOCUMENT_DONE				= 27,
 			REPORT_ROLL_OVER_DB_KEY			= 28
 		}
-
+		
 		private delegate RCODE RestoreStatusCallback(
-			RestoreStatus			restoreStatus,
 			RestoreStatusAction	eAction,
 			ref RestoreAction 	eRestoreAction,
 			ulong						ulTransId,
@@ -560,88 +587,123 @@ namespace xflaim
 			uint						uiShortNum3,
 			uint						uiShortNum4);
 
-		private RCODE funcRestoreStatus(
-			RestoreStatus			restoreStatus,
-			RestoreStatusAction	eAction,
-			ref RestoreAction 	eRestoreAction,
-			ulong						ulTransId,
-			ulong						ulLongNum1,
-			ulong						ulLongNum2,
-			ulong						ulLongNum3,
-			uint						uiShortNum1,
-			uint						uiShortNum2,
-			uint						uiShortNum3,
-			uint						uiShortNum4)
+		private class RestoreStatusDelegate
 		{
-			switch (eAction)
+			public RestoreStatusDelegate(
+				RestoreStatus	restoreStatus)
 			{
-				case RestoreStatusAction.REPORT_PROGRESS:
-					return( restoreStatus.reportProgress( ref eRestoreAction, ulLongNum1, ulLongNum2));
-				case RestoreStatusAction.REPORT_ERROR:
-					return( restoreStatus.reportError( ref eRestoreAction, (RCODE)uiShortNum1));
-				case RestoreStatusAction.REPORT_BEGIN_TRANS:
-					return( restoreStatus.reportBeginTrans( ref eRestoreAction, ulTransId));
-				case RestoreStatusAction.REPORT_COMMIT_TRANS:
-					return( restoreStatus.reportCommitTrans( ref eRestoreAction, ulTransId));
-				case RestoreStatusAction.REPORT_ABORT_TRANS:
-					return( restoreStatus.reportAbortTrans( ref eRestoreAction, ulTransId));
-				case RestoreStatusAction.REPORT_BLOCK_CHAIN_FREE:
-					return( restoreStatus.reportBlockChainFree( ref eRestoreAction, ulTransId, ulLongNum1,
-						uiShortNum1, uiShortNum2, uiShortNum3));
-				case RestoreStatusAction.REPORT_INDEX_SUSPEND:
-					return( restoreStatus.reportIndexSuspend( ref eRestoreAction, ulTransId, uiShortNum1));
-				case RestoreStatusAction.REPORT_INDEX_RESUME:
-					return( restoreStatus.reportIndexResume( ref eRestoreAction, ulTransId, uiShortNum1));
-				case RestoreStatusAction.REPORT_REDUCE:
-					return( restoreStatus.reportReduce( ref eRestoreAction, ulTransId, uiShortNum1));
-				case RestoreStatusAction.REPORT_UPGRADE:
-					return( restoreStatus.reportUpgrade( ref eRestoreAction, ulTransId, uiShortNum1, uiShortNum2));
-				case RestoreStatusAction.REPORT_OPEN_RFL_FILE:
-					return( restoreStatus.reportOpenRflFile( ref eRestoreAction, uiShortNum1));
-				case RestoreStatusAction.REPORT_RFL_READ:
-					return( restoreStatus.reportRflRead( ref eRestoreAction, uiShortNum1, uiShortNum2));
-				case RestoreStatusAction.REPORT_ENABLE_ENCRYPTION:
-					return( restoreStatus.reportEnableEncryption( ref eRestoreAction, ulTransId));
-				case RestoreStatusAction.REPORT_WRAP_KEY:
-					return( restoreStatus.reportWrapKey( ref eRestoreAction, ulTransId));
-				case RestoreStatusAction.REPORT_SET_NEXT_NODE_ID:
-					return( restoreStatus.reportSetNextNodeId( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1));
-				case RestoreStatusAction.REPORT_NODE_SET_META_VALUE:
-					return( restoreStatus.reportNodeSetMetaValue( ref eRestoreAction, ulTransId, uiShortNum1,
-						ulLongNum1, ulLongNum2));
-				case RestoreStatusAction.REPORT_NODE_SET_PREFIX_ID:
-					return( restoreStatus.reportNodeSetPrefixId( ref eRestoreAction, ulTransId, uiShortNum1,
-						ulLongNum1, uiShortNum2, uiShortNum3));
-				case RestoreStatusAction.REPORT_NODE_FLAGS_UPDATE:
-					return( restoreStatus.reportNodeFlagsUpdate( ref eRestoreAction, ulTransId, uiShortNum1,
-						ulLongNum1, uiShortNum2, (bool)(uiShortNum3 != 0 ? true : false)));
-				case RestoreStatusAction.REPORT_ATTRIBUTE_SET_VALUE:
-					return( restoreStatus.reportAttributeSetValue( ref eRestoreAction, ulTransId, uiShortNum1,
-						ulLongNum1, uiShortNum2));
-				case RestoreStatusAction.REPORT_NODE_SET_VALUE:
-					return( restoreStatus.reportNodeSetValue( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1));
-				case RestoreStatusAction.REPORT_NODE_UPDATE:
-					return( restoreStatus.reportNodeUpdate( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1));
-				case RestoreStatusAction.REPORT_INSERT_BEFORE:
-					return( restoreStatus.reportInsertBefore( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1,
-						ulLongNum2, ulLongNum3));
-				case RestoreStatusAction.REPORT_NODE_CREATE:
-					return( restoreStatus.reportNodeCreate( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1,
-						(eDomNodeType)uiShortNum2, uiShortNum3, (eNodeInsertLoc)uiShortNum4));
-				case RestoreStatusAction.REPORT_NODE_CHILDREN_DELETE:
-					return( restoreStatus.reportNodeChildrenDelete( ref eRestoreAction, ulTransId, uiShortNum1,
-						ulLongNum1, uiShortNum2));
-				case RestoreStatusAction.REPORT_ATTRIBUTE_DELETE:
-					return( restoreStatus.reportAttributeDelete( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1,
-						uiShortNum2));
-				case RestoreStatusAction.REPORT_NODE_DELETE:
-					return( restoreStatus.reportNodeDelete( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1));
-				case RestoreStatusAction.REPORT_DOCUMENT_DONE:
-					return( restoreStatus.reportDocumentDone( ref eRestoreAction, ulTransId, uiShortNum1, ulLongNum1));
-				case RestoreStatusAction.REPORT_ROLL_OVER_DB_KEY:
-					return( restoreStatus.reportRollOverDbKey( ref eRestoreAction, ulTransId));
+				m_restoreStatus = restoreStatus; 
 			}
-			return( RCODE.NE_XFLM_INVALID_PARM);
+			
+			~RestoreStatusDelegate()
+			{
+			}
+			
+			public RCODE funcRestoreStatus(
+				RestoreStatusAction	eAction,
+				ref RestoreAction 	eRestoreAction,
+				ulong						ulTransId,
+				ulong						ulLongNum1,
+				ulong						ulLongNum2,
+				ulong						ulLongNum3,
+				uint						uiShortNum1,
+				uint						uiShortNum2,
+				uint						uiShortNum3,
+				uint						uiShortNum4)
+			{
+				switch (eAction)
+				{
+					case RestoreStatusAction.REPORT_PROGRESS:
+						return( m_restoreStatus.reportProgress( ref eRestoreAction,
+							ulLongNum1, ulLongNum2));
+					case RestoreStatusAction.REPORT_ERROR:
+						return( m_restoreStatus.reportError( ref eRestoreAction,
+							(RCODE)uiShortNum1));
+					case RestoreStatusAction.REPORT_BEGIN_TRANS:
+						return( m_restoreStatus.reportBeginTrans( ref eRestoreAction,
+							ulTransId));
+					case RestoreStatusAction.REPORT_COMMIT_TRANS:
+						return( m_restoreStatus.reportCommitTrans( ref eRestoreAction,
+							ulTransId));
+					case RestoreStatusAction.REPORT_ABORT_TRANS:
+						return( m_restoreStatus.reportAbortTrans( ref eRestoreAction,
+							ulTransId));
+					case RestoreStatusAction.REPORT_BLOCK_CHAIN_FREE:
+						return( m_restoreStatus.reportBlockChainFree( ref eRestoreAction,
+							ulTransId, ulLongNum1, uiShortNum1, uiShortNum2, uiShortNum3));
+					case RestoreStatusAction.REPORT_INDEX_SUSPEND:
+						return( m_restoreStatus.reportIndexSuspend( ref eRestoreAction,
+							ulTransId, uiShortNum1));
+					case RestoreStatusAction.REPORT_INDEX_RESUME:
+						return( m_restoreStatus.reportIndexResume( ref eRestoreAction,
+							ulTransId, uiShortNum1));
+					case RestoreStatusAction.REPORT_REDUCE:
+						return( m_restoreStatus.reportReduce( ref eRestoreAction,
+							ulTransId, uiShortNum1));
+					case RestoreStatusAction.REPORT_UPGRADE:
+						return( m_restoreStatus.reportUpgrade( ref eRestoreAction,
+							ulTransId, uiShortNum1, uiShortNum2));
+					case RestoreStatusAction.REPORT_OPEN_RFL_FILE:
+						return( m_restoreStatus.reportOpenRflFile( ref eRestoreAction,
+							uiShortNum1));
+					case RestoreStatusAction.REPORT_RFL_READ:
+						return( m_restoreStatus.reportRflRead( ref eRestoreAction,
+							uiShortNum1, uiShortNum2));
+					case RestoreStatusAction.REPORT_ENABLE_ENCRYPTION:
+						return( m_restoreStatus.reportEnableEncryption( ref eRestoreAction,
+							ulTransId));
+					case RestoreStatusAction.REPORT_WRAP_KEY:
+						return( m_restoreStatus.reportWrapKey( ref eRestoreAction,
+							ulTransId));
+					case RestoreStatusAction.REPORT_SET_NEXT_NODE_ID:
+						return( m_restoreStatus.reportSetNextNodeId( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1));
+					case RestoreStatusAction.REPORT_NODE_SET_META_VALUE:
+						return( m_restoreStatus.reportNodeSetMetaValue( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, ulLongNum2));
+					case RestoreStatusAction.REPORT_NODE_SET_PREFIX_ID:
+						return( m_restoreStatus.reportNodeSetPrefixId( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, uiShortNum2, uiShortNum3));
+					case RestoreStatusAction.REPORT_NODE_FLAGS_UPDATE:
+						return( m_restoreStatus.reportNodeFlagsUpdate( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, uiShortNum2,
+							(bool)(uiShortNum3 != 0 ? true : false)));
+					case RestoreStatusAction.REPORT_ATTRIBUTE_SET_VALUE:
+						return( m_restoreStatus.reportAttributeSetValue( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, uiShortNum2));
+					case RestoreStatusAction.REPORT_NODE_SET_VALUE:
+						return( m_restoreStatus.reportNodeSetValue( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1));
+					case RestoreStatusAction.REPORT_NODE_UPDATE:
+						return( m_restoreStatus.reportNodeUpdate( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1));
+					case RestoreStatusAction.REPORT_INSERT_BEFORE:
+						return( m_restoreStatus.reportInsertBefore( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, ulLongNum2, ulLongNum3));
+					case RestoreStatusAction.REPORT_NODE_CREATE:
+						return( m_restoreStatus.reportNodeCreate( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1,
+							(eDomNodeType)uiShortNum2, uiShortNum3, (eNodeInsertLoc)uiShortNum4));
+					case RestoreStatusAction.REPORT_NODE_CHILDREN_DELETE:
+						return( m_restoreStatus.reportNodeChildrenDelete( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, uiShortNum2));
+					case RestoreStatusAction.REPORT_ATTRIBUTE_DELETE:
+						return( m_restoreStatus.reportAttributeDelete( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1, uiShortNum2));
+					case RestoreStatusAction.REPORT_NODE_DELETE:
+						return( m_restoreStatus.reportNodeDelete( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1));
+					case RestoreStatusAction.REPORT_DOCUMENT_DONE:
+						return( m_restoreStatus.reportDocumentDone( ref eRestoreAction,
+							ulTransId, uiShortNum1, ulLongNum1));
+					case RestoreStatusAction.REPORT_ROLL_OVER_DB_KEY:
+						return( m_restoreStatus.reportRollOverDbKey( ref eRestoreAction,
+							ulTransId));
+				}
+				return( RCODE.NE_XFLM_INVALID_PARM);
+			}
+			
+			private RestoreStatus	m_restoreStatus;
 		}
 
 		/// <summary>
@@ -683,41 +745,62 @@ namespace xflaim
 			DbCopyStatus	copyStatus)
 		{
 			int						rc;
-			DbCopyStatusCallback	fnDbCopyStatus = new DbCopyStatusCallback( funcDbCopyStatus);
+			DbCopyStatusDelegate	dbCopyStatus = null;
+			DbCopyStatusCallback	fnDbCopyStatus = null;
 
+			if (copyStatus != null)
+			{
+				dbCopyStatus = new DbCopyStatusDelegate( copyStatus);
+				fnDbCopyStatus = new DbCopyStatusCallback( dbCopyStatus.funcDbCopyStatus);
+			}
 			if ((rc = xflaim_DbSystem_dbCopy( m_this, sSrcDbName, sSrcDataDir, sSrcRflDir,
-				sDestDbName, sDestDataDir, sDestRflDir, copyStatus, fnDbCopyStatus)) != 0)
+				sDestDbName, sDestDataDir, sDestRflDir, fnDbCopyStatus)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
 		}
 
 		private delegate RCODE DbCopyStatusCallback(
-			DbCopyStatus	copyStatus,
 			ulong				ulBytesToCopy,
 			ulong				ulBytesCopied,
 			int				bNewSrcFile,
 			IntPtr			pszSrcFileName,
 			IntPtr			pszDestFileName);
 
-		private static RCODE funcDbCopyStatus(
-			DbCopyStatus	copyStatus,
-			ulong				ulBytesToCopy,
-			ulong				ulBytesCopied,
-			int				bNewSrcFile,
-			IntPtr			pszSrcFileName,
-			IntPtr			pszDestFileName)
+		private class DbCopyStatusDelegate
 		{
-			string	sSrcFileName = null;
-			string	sDestFileName = null;
-
-			if (bNewSrcFile != 0)
+			public DbCopyStatusDelegate(
+				DbCopyStatus	dbCopyStatus)
 			{
-				sSrcFileName = Marshal.PtrToStringAnsi( pszSrcFileName);
-				sDestFileName = Marshal.PtrToStringAnsi( pszDestFileName);
+				m_dbCopyStatus = dbCopyStatus; 
 			}
-			return( copyStatus.dbCopyStatus( ulBytesToCopy, ulBytesCopied,
-				sSrcFileName, sDestFileName));
+			
+			~DbCopyStatusDelegate()
+			{
+			}
+			
+			public RCODE funcDbCopyStatus(
+				ulong				ulBytesToCopy,
+				ulong				ulBytesCopied,
+				int				bNewSrcFile,
+				IntPtr			pszSrcFileName,
+				IntPtr			pszDestFileName)
+			{
+				RCODE		rc = RCODE.NE_XFLM_OK;
+				string	sSrcFileName = null;
+				string	sDestFileName = null;
+	
+				if (bNewSrcFile != 0)
+				{
+					sSrcFileName = Marshal.PtrToStringAnsi( pszSrcFileName);
+					sDestFileName = Marshal.PtrToStringAnsi( pszDestFileName);
+				}
+				rc = m_dbCopyStatus.dbCopyStatus( ulBytesToCopy, ulBytesCopied,
+					sSrcFileName, sDestFileName);
+				return( rc);
+			}
+			
+			private DbCopyStatus	m_dbCopyStatus;
 		}
 
 		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
@@ -767,9 +850,7 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszRflDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszBackupPath,
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
-														RestoreClient				restoreClient,
 														RestoreClientCallback	fnRestoreClient,
-														RestoreStatus				restoreStatus,
 														RestoreStatusCallback	fnRestoreStatus);
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
@@ -781,7 +862,6 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestDbName,
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestRflDir,
-														DbCopyStatus			copyStatus,
 														DbCopyStatusCallback	fnDbCopyStatus);
 
 		private ulong			m_this;

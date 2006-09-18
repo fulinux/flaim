@@ -145,7 +145,6 @@ typedef enum
 } eRestoreClientAction;
 
 typedef RCODE (FLMAPI * RESTORE_CLIENT)(
-	void *					pvObj,
 	eRestoreClientAction	eAction,
 	FLMUINT					uiFileNum,
 	FLMUINT					uiBytesRequested,
@@ -160,10 +159,8 @@ class CS_RestoreClient : public IF_RestoreClient
 public:
 
 	CS_RestoreClient(
-		void *			pvObj,
 		RESTORE_CLIENT	fnRestoreClient)
 	{
-		m_pvObj = pvObj;
 		m_fnRestoreClient = fnRestoreClient;
 	}
 
@@ -173,19 +170,19 @@ public:
 
 	RCODE FLMAPI openBackupSet( void)
 	{
-		return( m_fnRestoreClient( m_pvObj, RESTORE_OPEN_BACKUP_SET, 0, 0, NULL, NULL));
+		return( m_fnRestoreClient( RESTORE_OPEN_BACKUP_SET, 0, 0, NULL, NULL));
 	}
 
 	RCODE FLMAPI openRflFile(
 		FLMUINT	uiFileNum)
 	{
-		return( m_fnRestoreClient( m_pvObj, RESTORE_OPEN_RFL_FILE, uiFileNum, 0, NULL, NULL));
+		return( m_fnRestoreClient( RESTORE_OPEN_RFL_FILE, uiFileNum, 0, NULL, NULL));
 	}
 
 	RCODE FLMAPI openIncFile(
 		FLMUINT	uiFileNum)
 	{
-		return( m_fnRestoreClient( m_pvObj, RESTORE_OPEN_INC_FILE, uiFileNum, 0, NULL, NULL));
+		return( m_fnRestoreClient( RESTORE_OPEN_INC_FILE, uiFileNum, 0, NULL, NULL));
 	}
 
 	RCODE FLMAPI read(
@@ -193,24 +190,23 @@ public:
 		void *		pvBuffer,
 		FLMUINT *	puiBytesRead)
 	{
-		return( m_fnRestoreClient( m_pvObj, RESTORE_READ, 0, uiBytesRequested,
+		return( m_fnRestoreClient( RESTORE_READ, 0, uiBytesRequested,
 					pvBuffer, puiBytesRead));
 	}
 
 	
 	RCODE FLMAPI close( void)
 	{
-		return( m_fnRestoreClient( m_pvObj, RESTORE_CLOSE, 0, 0, NULL, NULL));
+		return( m_fnRestoreClient( RESTORE_CLOSE, 0, 0, NULL, NULL));
 	}
 
 	RCODE FLMAPI abortFile( void)
 	{
-		return( m_fnRestoreClient( m_pvObj, RESTORE_ABORT_FILE, 0, 0, NULL, NULL));
+		return( m_fnRestoreClient( RESTORE_ABORT_FILE, 0, 0, NULL, NULL));
 	}
 
 private:
 
-	void *			m_pvObj;
 	RESTORE_CLIENT	m_fnRestoreClient;
 };
 
@@ -248,7 +244,6 @@ typedef enum
 } eRestoreStatusAction;
 
 typedef RCODE (FLMAPI * RESTORE_STATUS)(
-	void *					pvObj,
 	eRestoreStatusAction	eAction,
 	eRestoreAction *		peRestoreAction,
 	FLMUINT64				ui64TransId,
@@ -268,10 +263,8 @@ class CS_RestoreStatus : public IF_RestoreStatus
 public:
 
 	CS_RestoreStatus(
-		void *			pvObj,
 		RESTORE_STATUS	fnRestoreStatus)
 	{
-		m_pvObj = pvObj;
 		m_fnRestoreStatus = fnRestoreStatus;
 	}
 
@@ -284,7 +277,7 @@ public:
 		FLMUINT64				ui64BytesToDo,
 		FLMUINT64				ui64BytesDone)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_PROGRESS, peAction, 0,
+		return( m_fnRestoreStatus( REPORT_PROGRESS, peAction, 0,
 					ui64BytesToDo, ui64BytesDone, 0,
 					0, 0, 0, 0));
 	}
@@ -293,7 +286,7 @@ public:
 		eRestoreAction *		peAction,
 		RCODE						rcErr)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_ERROR, peAction, 0,
+		return( m_fnRestoreStatus( REPORT_ERROR, peAction, 0,
 					0, 0, 0,
 					(FLMUINT)rcErr, 0, 0, 0));
 	}
@@ -302,7 +295,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT					uiFileNum)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_OPEN_RFL_FILE, peAction, 0,
+		return( m_fnRestoreStatus( REPORT_OPEN_RFL_FILE, peAction, 0,
 					0, 0, 0,
 					uiFileNum, 0, 0, 0));
 	}
@@ -312,7 +305,7 @@ public:
 		FLMUINT					uiFileNum,
 		FLMUINT					uiBytesRead)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_RFL_READ, peAction, 0,
+		return( m_fnRestoreStatus( REPORT_RFL_READ, peAction, 0,
 					0, 0, 0,
 					uiFileNum, uiBytesRead, 0, 0));
 	}
@@ -321,7 +314,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_BEGIN_TRANS, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_BEGIN_TRANS, peAction, ui64TransId,
 					0, 0, 0,
 					0, 0, 0, 0));
 	}
@@ -330,7 +323,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_COMMIT_TRANS, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_COMMIT_TRANS, peAction, ui64TransId,
 					0, 0, 0,
 					0, 0, 0, 0));
 	}
@@ -339,7 +332,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_ABORT_TRANS, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_ABORT_TRANS, peAction, ui64TransId,
 					0, 0, 0,
 					0, 0, 0, 0));
 	}
@@ -352,7 +345,7 @@ public:
 		FLMUINT					uiEndBlkAddr,
 		FLMUINT					uiCount)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_BLOCK_CHAIN_FREE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_BLOCK_CHAIN_FREE, peAction, ui64TransId,
 					ui64MaintDocNum, 0, 0,
 					uiStartBlkAddr, uiEndBlkAddr, uiCount, 0));
 	}
@@ -362,7 +355,7 @@ public:
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiIndexNum)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_INDEX_SUSPEND, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_INDEX_SUSPEND, peAction, ui64TransId,
 					0, 0, 0,
 					uiIndexNum, 0, 0, 0));
 	}
@@ -372,7 +365,7 @@ public:
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiIndexNum)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_INDEX_RESUME, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_INDEX_RESUME, peAction, ui64TransId,
 					0, 0, 0,
 					uiIndexNum, 0, 0, 0));
 	}
@@ -382,7 +375,7 @@ public:
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCount)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_REDUCE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_REDUCE, peAction, ui64TransId,
 					0, 0, 0,
 					uiCount, 0, 0, 0));
 	}
@@ -393,7 +386,7 @@ public:
 		FLMUINT					uiOldDbVersion,
 		FLMUINT					uiNewDbVersion)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_UPGRADE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_UPGRADE, peAction, ui64TransId,
 					0, 0, 0,
 					uiOldDbVersion, uiNewDbVersion, 0, 0));
 	}
@@ -402,7 +395,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_ENABLE_ENCRYPTION, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_ENABLE_ENCRYPTION, peAction, ui64TransId,
 					0, 0, 0,
 					0, 0, 0, 0));
 	}
@@ -411,7 +404,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_WRAP_KEY, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_WRAP_KEY, peAction, ui64TransId,
 					0, 0, 0,
 					0, 0, 0, 0));
 	}
@@ -420,7 +413,7 @@ public:
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_ROLL_OVER_DB_KEY, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_ROLL_OVER_DB_KEY, peAction, ui64TransId,
 					0, 0, 0,
 					0, 0, 0, 0));
 	}
@@ -431,7 +424,7 @@ public:
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64DocumentId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_DOCUMENT_DONE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_DOCUMENT_DONE, peAction, ui64TransId,
 					ui64DocumentId, 0, 0,
 					uiCollection, 0, 0, 0));
 	}
@@ -442,7 +435,7 @@ public:
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64NodeId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_DELETE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_DELETE, peAction, ui64TransId,
 					ui64NodeId, 0, 0,
 					uiCollection, 0, 0, 0));
 	}
@@ -454,7 +447,7 @@ public:
 		FLMUINT64				ui64ElementId,
 		FLMUINT					uiAttrNameId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_ATTRIBUTE_DELETE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_ATTRIBUTE_DELETE, peAction, ui64TransId,
 					ui64ElementId, 0, 0,
 					uiCollection, uiAttrNameId, 0, 0));
 	}
@@ -466,7 +459,7 @@ public:
 		FLMUINT64				ui64ParentNodeId,
 		FLMUINT					uiNameId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_CHILDREN_DELETE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_CHILDREN_DELETE, peAction, ui64TransId,
 					ui64ParentNodeId, 0, 0,
 					uiCollection, uiNameId, 0, 0));
 	}
@@ -480,7 +473,7 @@ public:
 		FLMUINT					uiNameId,
 		eNodeInsertLoc			eLocation)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_CREATE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_CREATE, peAction, ui64TransId,
 					ui64RefNodeId, 0, 0,
 					uiCollection, (FLMUINT)eNodeType, uiNameId, (FLMUINT)eLocation));
 	}
@@ -493,7 +486,7 @@ public:
 		FLMUINT64				ui64NewChildNodeId,
 		FLMUINT64				ui64RefChildNodeId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_INSERT_BEFORE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_INSERT_BEFORE, peAction, ui64TransId,
 					ui64ParentNodeId, ui64NewChildNodeId, ui64RefChildNodeId,
 					uiCollection, 0, 0, 0));
 	}
@@ -504,7 +497,7 @@ public:
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64NodeId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_UPDATE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_UPDATE, peAction, ui64TransId,
 					ui64NodeId, 0, 0,
 					uiCollection, 0, 0, 0));
 	}
@@ -515,7 +508,7 @@ public:
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64NodeId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_SET_VALUE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_SET_VALUE, peAction, ui64TransId,
 					ui64NodeId, 0, 0,
 					uiCollection, 0, 0, 0));
 	}
@@ -527,7 +520,7 @@ public:
 		FLMUINT64				ui64ElementNodeId,
 		FLMUINT					uiAttrNameId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_ATTRIBUTE_SET_VALUE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_ATTRIBUTE_SET_VALUE, peAction, ui64TransId,
 					ui64ElementNodeId, 0, 0,
 					uiCollection, uiAttrNameId, 0, 0));
 	}
@@ -540,7 +533,7 @@ public:
 		FLMUINT					uiFlags,
 		FLMBOOL					bAdd)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_FLAGS_UPDATE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_FLAGS_UPDATE, peAction, ui64TransId,
 					ui64NodeId, 0, 0,
 					uiCollection, uiFlags, (FLMUINT)bAdd, 0));
 	}
@@ -553,7 +546,7 @@ public:
 		FLMUINT					uiAttrNameId,
 		FLMUINT					uiPrefixId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_SET_PREFIX_ID, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_SET_PREFIX_ID, peAction, ui64TransId,
 					ui64NodeId, 0, 0,
 					uiCollection, uiAttrNameId, uiPrefixId, 0));
 	}
@@ -565,7 +558,7 @@ public:
 		FLMUINT64				ui64NodeId,
 		FLMUINT64				ui64MetaValue)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_NODE_SET_META_VALUE, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_NODE_SET_META_VALUE, peAction, ui64TransId,
 					ui64NodeId, ui64MetaValue, 0,
 					uiCollection, 0, 0, 0));
 	}
@@ -576,7 +569,7 @@ public:
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64NextNodeId)
 	{
-		return( m_fnRestoreStatus( m_pvObj, REPORT_SET_NEXT_NODE_ID, peAction, ui64TransId,
+		return( m_fnRestoreStatus( REPORT_SET_NEXT_NODE_ID, peAction, ui64TransId,
 					ui64NextNodeId, 0, 0,
 					uiCollection, 0, 0, 0));
 	}
@@ -584,7 +577,6 @@ public:
 
 private:
 
-	void *			m_pvObj;
 	RESTORE_STATUS	m_fnRestoreStatus;
 };
 
@@ -598,9 +590,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRestore(
 	const char *		pszRflDir,
 	const char *		pszBackupPath,
 	const char *		pszPassword,
-	void *				pvRestoreClientObj,
 	RESTORE_CLIENT		fnRestoreClient,
-	void *				pvRestoreStatusObj,
 	RESTORE_STATUS		fnRestoreStatus)
 {
 	RCODE						rc = NE_XFLM_OK;
@@ -608,17 +598,17 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRestore(
 	IF_RestoreClient *	pRestoreClient = NULL;
 	IF_RestoreStatus *	pRestoreStatus = NULL;
 
-	if (pvRestoreClientObj)
+	if (fnRestoreClient)
 	{
-		if ((pRestoreClient = f_new CS_RestoreClient( pvRestoreClientObj, fnRestoreClient)) == NULL)
+		if ((pRestoreClient = f_new CS_RestoreClient( fnRestoreClient)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
 	}
-	if (pvRestoreStatusObj)
+	if (fnRestoreStatus)
 	{
-		if ((pRestoreStatus = f_new CS_RestoreStatus( pvRestoreStatusObj, fnRestoreStatus)) == NULL)
+		if ((pRestoreStatus = f_new CS_RestoreStatus( fnRestoreStatus)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
@@ -646,7 +636,6 @@ Exit:
 }
 
 typedef RCODE (FLMAPI * DB_COPY_STATUS)(
-	void *			pvObj,
 	FLMUINT64		ui64BytesToCopy,
 	FLMUINT64		ui64BytesCopied,
 	FLMBOOL			bNewSrcFile,
@@ -661,10 +650,8 @@ class CS_DbCopyStatus : public IF_DbCopyStatus
 public:
 
 	CS_DbCopyStatus(
-		void *			pvObj,
 		DB_COPY_STATUS	fnCopyStatus)
 	{
-		m_pvObj = pvObj;
 		m_fnCopyStatus = fnCopyStatus;
 	}
 
@@ -679,13 +666,12 @@ public:
 		const char *	pszSrcFileName,
 		const char *	pszDestFileName)
 	{
-		return( m_fnCopyStatus( m_pvObj, ui64BytesToCopy, ui64BytesCopied,
-								bNewSrcFile, pszSrcFileName, pszDestFileName));
+		return( m_fnCopyStatus( ui64BytesToCopy, ui64BytesCopied, bNewSrcFile,
+									pszSrcFileName, pszDestFileName));
 	}
 		
 private:
 
-	void *			m_pvObj;
 	DB_COPY_STATUS	m_fnCopyStatus;
 
 };
@@ -701,16 +687,15 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCopy(
 	const char *		pszDestDbName,
 	const char *		pszDestDataDir,
 	const char *		pszDestRflDir,
-	void *				pvObj,
 	DB_COPY_STATUS		fnCopyStatus)
 {
 	RCODE					rc = NE_XFLM_OK;
 	IF_DbSystem *		pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
 	IF_DbCopyStatus *	pDbCopyStatus = NULL;
 
-	if (pvObj)
+	if (fnCopyStatus)
 	{
-		if ((pDbCopyStatus = f_new CS_DbCopyStatus( pvObj, fnCopyStatus)) == NULL)
+		if ((pDbCopyStatus = f_new CS_DbCopyStatus( fnCopyStatus)) == NULL)
 		{
 			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
