@@ -38,7 +38,7 @@
 
 project_name = flaim
 project_display_name = FLAIM
-project_desc = An extensible, flexible, adaptable, embeddable database engine
+project_brief_desc = An extensible, flexible, adaptable, embeddable database engine
 
 # -- Maintainers --
 
@@ -643,6 +643,13 @@ ifneq (,$(findstring dist,$(MAKECMDGOALS)))
 endif
 
 ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
+ifneq (,$(findstring debbin,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 	ifndef ignore_local_mods
 		local_mods_ok =
@@ -1883,7 +1890,7 @@ spec: dircheck
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
+	$(ec)$(gprintf) "Summary: $(project_brief_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(package_release_num)\n" >> $(spec_file)
@@ -1909,18 +1916,6 @@ spec: dircheck
 	$(ec)$(gprintf) "Summary: FLAIM static library and header file\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
 	$(ec)$(gprintf) "Provides: $(package_proj_name)-devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "FLAIM is an embeddable cross-platform database engine that provides a\n" >> $(spec_file)
-	$(ec)$(gprintf) "rich, powerful, easy-to-use feature set. It is the database engine used\n" >> $(spec_file)
-	$(ec)$(gprintf) "by Novell eDirectory. It has proven to be highly scalable, reliable,\n" >> $(spec_file)
-	$(ec)$(gprintf) "and robust. It is available on a wide variety of 32 bit and 64 bit\n" >> $(spec_file)
-	$(ec)$(gprintf) "platforms.\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "Authors:\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Daniel Sanders\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)prep\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
@@ -1956,7 +1951,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "libdir=$(dollar){exec_prefix}/$(lib_dir_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "includedir=$(dollar){prefix}/include\n\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
@@ -1996,20 +1991,25 @@ debbin: bindist
 	$(ec)$(gprintf) "Architecture: $(debian_arch)\n" >> $(debian_pkginfo_dir)/control
 	$(ec)$(gprintf) "Depends:\n" >> $(debian_pkginfo_dir)/control
 	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " FLAIM is an embeddable cross-platform database engine that provides a\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " rich, powerful, easy-to-use feature set. It is the database engine used\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " by Novell eDirectory. It has proven to be highly scalable, reliable,\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " and robust. It is available on a wide variety of 32 bit and 64 bit\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " platforms.\n" >> $(debian_pkginfo_dir)/control
 	
 	$(ec)$(gprintf) "Creating Debian post install file ...\n"
 	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postinst
 ifneq ($(so_age),0)
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "ln -fs $(ftk_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postinst 
+	$(ec)$(gprintf) "ln -fs $(flaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postinst 
 endif
 endif
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "ln -fs $(ftk_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postinst 
+	$(ec)$(gprintf) "ln -fs $(flaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postinst 
 endif
-	$(ec)$(gprintf) "ln -fs $(ftk_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postinst
-	$(ec)$(gprintf) "ldconfig /usr/lib/$(ftk_shared_lib)\n" >> $(debian_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "ln -fs $(flaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "ldconfig /usr/lib/$(flaim_shared_lib)\n" >> $(debian_pkginfo_dir)/postinst
 	$(ec)chmod 0755 $(debian_pkginfo_dir)/postinst
 	
 	$(ec)$(gprintf) "Creating Debian pre-uninstall file ...\n"
@@ -2063,7 +2063,7 @@ endif
 	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb)
 	
 	$(ec)$(gprintf) "Removing temporary files ...\n"
-	$(ec)$(call rmdircmd,$(debian_stage_dir))
+#	$(ec)$(call rmdircmd,$(debian_stage_dir))
 	
 	$(ec)$(gprintf) "Done.\n"
 	
@@ -2094,7 +2094,7 @@ debsrc: srcdist
 	$(ec)$(gprintf) "Package: $(package_proj_name)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Architecture: any\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Depends: ${shlibs:Depends}, ${misc:Depends}\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	
 	$(ec)$(call copycmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
 
