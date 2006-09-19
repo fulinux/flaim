@@ -2177,7 +2177,7 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
 	install --mode=644 $(ftk_src_dir)/ftk.h $(include_install_dir)/xflaimtk.h
-	ldconfig $(lib_install_dir)
+	-ldconfig $(lib_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
 
