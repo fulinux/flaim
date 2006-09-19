@@ -148,7 +148,7 @@ namespace xflaim
 		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
 
 		[DllImport("xflaim")]
-		private static extern int xflaim_Db_Release(
+		private static extern void xflaim_Db_Release(
 			ulong	pDb);
 
 		[DllImport("xflaim")]

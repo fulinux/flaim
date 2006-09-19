@@ -126,6 +126,20 @@ namespace xflaim
 	}
 
 	/// <summary>
+	/// Types of logical files.  These are defined in xflaim.h.  If they
+	/// are changed in xflaim.h, they need to be changed here as well.
+	/// </summary>
+	public enum eLFileType
+	{
+		/// <summary>Invalid type</summary>
+		XFLM_LF_INVALID = 0,
+		/// <summary>Collection</summary>
+		XFLM_LF_COLLECTION,
+		/// <summary>Index</summary>
+		XFLM_LF_INDEX
+	}
+
+	/// <summary>
 	/// Create options for creating a database
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -707,6 +721,105 @@ namespace xflaim
 		}
 
 		/// <summary>
+		/// Check for physical and logical corruptions on the specified database.
+		/// </summary>
+		/// <param name="sDbFileName">
+		/// The name of the control file of the database to be checked.
+		/// </param>
+		/// <param name="sDataDir">
+		/// The data file directory.  See <see cref="dbCreate"/> for more information.
+		/// </param>
+		/// <param name="sRflDir">
+		/// The roll-forward log file directory.  See <see cref="dbCreate"/> for more information.
+		/// </param>
+		/// <param name="sPassword">
+		/// Password for opening the database.  This is only needed
+		/// if the database key is currently wrapped in a password instead of the
+		/// local NICI storage key.
+		/// </param>
+		/// <param name="eFlags">
+		/// Flags that control exactly what the operation checks.
+		/// Should be a logical OR of the members of <see cref="DbCheckFlags"/>
+		/// </param>
+		/// <param name="checkStatus">
+		/// An object that implements the <see cref="DbCheckStatus"/> interface.  Methods on
+		/// this object will be called to report check progress and corruptions that are found.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DbInfo"/> object that contains various statistics that were
+		/// gathered during the database check.
+		/// </returns>
+		public DbInfo dbCheck(
+			string			sDbFileName,
+			string			sDataDir,
+			string			sRflDir,
+			string			sPassword,
+			DbCheckFlags	eFlags,
+			DbCheckStatus	checkStatus)
+		{
+			int							rc;
+			DbCheckStatusDelegate	dbCheckStatus = null;
+			DbCheckStatusCallback	fnDbCheckStatus = null;
+			ulong							pDbInfo;
+
+			if (checkStatus != null)
+			{
+				dbCheckStatus = new DbCheckStatusDelegate( checkStatus);
+				fnDbCheckStatus = new DbCheckStatusCallback( dbCheckStatus.funcDbCheckStatus);
+			}
+
+			if ((rc = xflaim_DbSystem_dbCheck( m_pDbSystem, sDbFileName, sDataDir,
+				sRflDir, sPassword, eFlags, fnDbCheckStatus, out pDbInfo)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new DbInfo( pDbInfo));
+		}
+
+		private delegate RCODE DbCheckStatusCallback(
+			int				bHaveProgressInfo,
+			IntPtr			pProgressInfo,
+			IntPtr			pCorruptInfo);
+
+		private class DbCheckStatusDelegate
+		{
+			public DbCheckStatusDelegate(
+				DbCheckStatus	dbCheckStatus)
+			{
+				m_dbCheckStatus = dbCheckStatus; 
+			}
+			
+			~DbCheckStatusDelegate()
+			{
+			}
+			
+			public RCODE funcDbCheckStatus(
+				int				bHaveProgressInfo,
+				IntPtr			pProgressInfo,
+				IntPtr			pCorruptInfo)
+			{
+				RCODE	rc = RCODE.NE_XFLM_OK;
+	
+				if (bHaveProgressInfo != 0)
+				{
+					rc = m_dbCheckStatus.reportProgress(
+						(XFLM_PROGRESS_CHECK_INFO)Marshal.PtrToStructure( pProgressInfo,
+																		typeof( XFLM_PROGRESS_CHECK_INFO)));
+				}
+				else
+				{
+					XFLM_CORRUPT_INFO	corruptInfo = new XFLM_CORRUPT_INFO();
+					rc = m_dbCheckStatus.reportCheckErr(
+						(XFLM_CORRUPT_INFO)Marshal.PtrToStructure( pCorruptInfo,
+																	typeof( XFLM_CORRUPT_INFO)));
+				}
+				return( rc);
+			}
+			
+			private DbCheckStatus	m_dbCheckStatus;
+		}
+
+		/// <summary>
 		/// Makes a copy of an existing database.
 		/// </summary>
 		/// <param name="sSrcDbName">
@@ -852,6 +965,17 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
 														RestoreClientCallback	fnRestoreClient,
 														RestoreStatusCallback	fnRestoreStatus);
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbCheck(
+														ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)] string						pszDbName,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszDataDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszRflDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
+														DbCheckFlags				eFlags,
+														DbCheckStatusCallback	fnDbCheckStatus,
+														out ulong					ppDbInfo);
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbCopy(

@@ -635,6 +635,95 @@ Exit:
 	return( rc);
 }
 
+typedef RCODE (FLMAPI * DB_CHECK_STATUS)(
+	FLMBOOL							bHaveProgressInfo,
+	XFLM_PROGRESS_CHECK_INFO *	pProgressInfo,
+	XFLM_CORRUPT_INFO *			pCorruptInfo);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class CS_DbCheckStatus : public IF_DbCheckStatus
+{
+public:
+
+	CS_DbCheckStatus(
+		DB_CHECK_STATUS	fnDbCheckStatus)
+	{
+		m_fnDbCheckStatus = fnDbCheckStatus;
+	}
+
+	virtual ~CS_DbCheckStatus()
+	{
+	}
+
+	RCODE FLMAPI reportProgress(
+		XFLM_PROGRESS_CHECK_INFO *	pProgCheck)
+	{
+		return( m_fnDbCheckStatus( TRUE, pProgCheck, NULL));
+	}
+	
+	RCODE FLMAPI reportCheckErr(
+		XFLM_CORRUPT_INFO *	pCorruptInfo,
+		FLMBOOL *				pbFix)
+	{
+		if (pbFix)
+		{
+			*pbFix = TRUE;
+		}
+		return( m_fnDbCheckStatus( FALSE, NULL, pCorruptInfo));
+	}
+
+private:
+
+	DB_CHECK_STATUS	m_fnDbCheckStatus;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCheck(
+	FLMUINT64			ui64This,
+	const char *		pszDbName,
+	const char *		pszDataDir,
+	const char *		pszRflDir,
+	const char *		pszPassword,
+	FLMUINT				uiFlags,
+	DB_CHECK_STATUS	fnCheckStatus,
+	FLMUINT64 *			pui64DbInfo)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbCheckStatus *	pDbCheckStatus = NULL;
+	IF_DbInfo *				pDbInfo = NULL;
+
+	if (fnCheckStatus)
+	{
+		if ((pDbCheckStatus = f_new CS_DbCheckStatus( fnCheckStatus)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			goto Exit;
+		}
+	}
+ 
+	if (RC_BAD( rc = pDbSystem->dbCheck( pszDbName, pszDataDir, pszRflDir, pszPassword,
+								uiFlags, &pDbInfo, pDbCheckStatus)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	*pui64DbInfo = (FLMUINT64)((FLMUINT)pDbInfo);
+
+	if (pDbCheckStatus)
+	{
+		pDbCheckStatus->Release();
+	}
+
+	return( rc);
+}
+
 typedef RCODE (FLMAPI * DB_COPY_STATUS)(
 	FLMUINT64		ui64BytesToCopy,
 	FLMUINT64		ui64BytesCopied,

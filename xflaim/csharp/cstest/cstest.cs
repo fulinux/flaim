@@ -301,6 +301,62 @@ namespace cstest
 		}
 
 		//--------------------------------------------------------------------------
+		// Check database test.
+		//--------------------------------------------------------------------------
+		static bool checkDbTest(
+			string	sDbName,
+			DbSystem	dbSystem)
+		{
+			MyDbCheckStatus	dbCheckStatus = null;
+			DbInfo				dbInfo = null;
+			XFLM_DB_HDR			dbHdr = new XFLM_DB_HDR();
+
+			// Try restoring the database
+
+			beginTest( "Check Database Test (" + sDbName + ")");
+
+			dbCheckStatus = new MyDbCheckStatus();
+			try
+			{
+				dbInfo = dbSystem.dbCheck( sDbName, null, null, null,
+					DbCheckFlags.XFLM_ONLINE | DbCheckFlags.XFLM_DO_LOGICAL_CHECK,
+					dbCheckStatus);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( dbCheckStatus.outputLines(), ex, "checking database");
+				return( false);
+			}
+
+			dbInfo.getDbHdr( dbHdr);
+			System.Console.Write( "\n");
+			System.Console.WriteLine( "Signature............. {0}", dbHdr.szSignature);
+			System.Console.WriteLine( "Database Version...... {0}", dbHdr.ui32DbVersion);
+			System.Console.WriteLine( "Block Size............ {0}", dbHdr.ui16BlockSize);
+
+			if (dbHdr.szSignature != "FLAIMDB")
+			{
+				endTest( true, false);
+				System.Console.WriteLine( "Invalid signature in database header");
+				return( false);
+			}
+			if (dbHdr.ui16BlockSize != 8192)
+			{
+				endTest( true, false);
+				System.Console.WriteLine( "Invalid block size in database header");
+				return( false);
+			}
+			if ((DBVersions)dbHdr.ui32DbVersion != DBVersions.XFLM_CURRENT_VERSION_NUM)
+			{
+				endTest( true, false);
+				System.Console.WriteLine( "Invalid version in database header");
+				return( false);
+			}
+			endTest( true, true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
 		// Remove database test.
 		//--------------------------------------------------------------------------
 		static bool removeDbTest(
@@ -359,6 +415,21 @@ namespace cstest
 			// Database restore test
 
 			if (!restoreDbTest( dbSystem))
+			{
+				return;
+			}
+
+			// Database check test
+
+			if (!checkDbTest( CREATE_DB_NAME, dbSystem))
+			{
+				return;
+			}
+			if (!checkDbTest( COPY_DB_NAME, dbSystem))
+			{
+				return;
+			}
+			if (!checkDbTest( RESTORE_DB_NAME, dbSystem))
 			{
 				return;
 			}
@@ -737,5 +808,78 @@ namespace cstest
 			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
 			return( RCODE.NE_XFLM_OK);
 		}
+	}
+
+	public class MyDbCheckStatus : DbCheckStatus
+	{
+		public MyDbCheckStatus()
+		{
+			m_bOutputLines = false;
+			System.Console.Write( "\n");
+		}
+
+		public RCODE reportProgress(
+			XFLM_PROGRESS_CHECK_INFO	progressInfo)
+		{
+			if (progressInfo.bStartFlag != 0)
+			{
+				if (progressInfo.eCheckPhase == FlmCheckPhase.XFLM_CHECK_B_TREE)
+				{
+					System.Console.WriteLine( "\nChecking B-Tree: {0} ({1})",
+						progressInfo.uiLfNumber, progressInfo.eLfType);
+				}
+				else
+				{
+					System.Console.WriteLine( "\nCheck Phase: {0}", progressInfo.eCheckPhase);
+				}
+			}
+			System.Console.Write( "Bytes To Check: {0}, Bytes Checked: {1}\r",
+				progressInfo.ulDatabaseSize, progressInfo.ulBytesExamined);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportCheckErr(
+			XFLM_CORRUPT_INFO	corruptInfo)
+		{
+			System.Console.WriteLine( "\nCorruption Found: {0}, Locale: {1}",
+				corruptInfo.eErrCode, corruptInfo.eErrLocale);
+			if (corruptInfo.uiErrLfNumber != 0)
+			{
+				System.Console.WriteLine( "  Logical File Number...... {0} ({1})",
+					corruptInfo.uiErrLfNumber, corruptInfo.eErrLfType);
+				System.Console.WriteLine( "  B-Tree Level............. {0}",
+					corruptInfo.uiErrBTreeLevel);
+			}
+			if (corruptInfo.uiErrBlkAddress != 0)
+			{
+				System.Console.WriteLine( "  Block Address............ {0:X})",
+					corruptInfo.uiErrBlkAddress);
+			}
+			if (corruptInfo.uiErrParentBlkAddress != 0)
+			{
+				System.Console.WriteLine( "  Parent Block Address..... {0:X})",
+					corruptInfo.uiErrParentBlkAddress);
+			}
+			if (corruptInfo.uiErrElmOffset != 0)
+			{
+				System.Console.WriteLine( "  Element Offset........... {0})",
+					corruptInfo.uiErrElmOffset);
+			}
+			if (corruptInfo.ulErrNodeId != 0)
+			{
+				System.Console.WriteLine( "  Node ID.................. {0})",
+					corruptInfo.ulErrNodeId);
+			}
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public bool outputLines()
+		{
+			return( m_bOutputLines);
+		}
+
+		private bool	m_bOutputLines;
 	}
 }
