@@ -1919,6 +1919,7 @@ docs: status clean dircheck doxyfile
 
 .PHONY : dircheck
 dircheck:
+	$(ec)$(call mkdircmd,$(doxygen_output_dir))
 	$(ec)$(call mkdircmd,$(test_obj_dir))
 	$(ec)$(call mkdircmd,$(lib_obj_dir))
 	$(ec)$(call mkdircmd,$(test_dir))
