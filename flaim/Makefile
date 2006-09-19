@@ -595,6 +595,7 @@ question := \077
 asterisk := \052
 dash := \055
 backslash := \134
+double_quote := \042
 
 # -- Tools --
 
@@ -1481,22 +1482,22 @@ flaim_src = \
 ftk_src = \
 	$(patsubst $(ftk_src_dir)/%.cpp,%.cpp,$(wildcard $(ftk_src_dir)/*.cpp))
 
-utilsup_src = \
+util_common_src = \
 	flm_dlst.cpp \
 	flm_lutl.cpp \
 	sharutil.cpp
 
 checkdb_src = \
 	checkdb.cpp \
-	$(utilsup_src)
+	$(util_common_src)
 
 gigatest_src = \
 	gigatest.cpp \
-	$(utilsup_src)
+	$(util_common_src)
 	
 rebuild_src = \
 	rebuild.cpp \
-	$(utilsup_src)
+	$(util_common_src)
 
 view_src = \
 	view.cpp \
@@ -1508,7 +1509,7 @@ view_src = \
 	viewlfil.cpp \
 	viewmenu.cpp \
 	viewsrch.cpp \
-	$(utilsup_src)
+	$(util_common_src)
 
 sample_src = \
 	sample.cpp
@@ -1516,12 +1517,12 @@ sample_src = \
 dbshell_src = \
 	dbshell.cpp \
 	flm_edit.cpp \
-	$(utilsup_src)
+	$(util_common_src)
 
 ut_basictest_src = \
 	flmunittest.cpp \
 	basic_test.cpp \
-	$(utilsup_src)
+	$(util_common_src)
 
 # -- FLAIM library --
 
@@ -1968,7 +1969,7 @@ pkgconfig: dircheck
 .PHONY : srcrpm
 srcrpm: srcdist spec
 	$(ec)$(gprintf) "Creating source RPM ...\n"
-	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -bs $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet --nodeps -bs $(spec_file)
 	$(ec)$(gprintf) "Source RPM created.\n"
 
 # -- RPMS --
@@ -1976,7 +1977,7 @@ srcrpm: srcdist spec
 .PHONY : rpms
 rpms: dist spec
 	$(ec)$(gprintf) "Creating source and binary RPMs ...\n"
-	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet -ba $(spec_file)
+	$(ec)rpmbuild --define="_topdir $(package_dir)" --quiet --nodeps -ba $(spec_file)
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 
@@ -2102,6 +2103,10 @@ debsrc: srcdist
 	$(ec)$(gprintf) "Architecture: any\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Depends: ${shlibs:Depends}, ${misc:Depends}\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " FLAIM is an embeddable cross-platform database engine that provides a\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " rich, powerful, easy-to-use feature set. It is the database engine used\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " by Novell eDirectory. It has proven to be highly scalable, reliable,\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " and robust. It is available on a wide variety of 32 bit and 64 bit\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	
 	$(ec)$(call copycmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
 
