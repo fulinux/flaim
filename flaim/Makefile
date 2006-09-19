@@ -656,6 +656,13 @@ ifneq (,$(findstring debbin,$(MAKECMDGOALS)))
 	endif
 endif
 
+ifneq (,$(findstring debsrc,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
 ifneq (,$(findstring docs,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 	ifndef ignore_local_mods
