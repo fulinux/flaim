@@ -30,9 +30,14 @@
 #
 #############################################################################
 
+# -- Include --
+
+-include config.in
+
 # -- Project --
 
 project_name = ftk
+project_display_name = FTK
 project_desc = FLAIM cross-platform toolkit library
 
 # -- Maintainers --
@@ -694,8 +699,9 @@ dollar := \044
 question := \077
 asterisk := \052
 dash := \055
+backslash := \134
 
-# -- Tools --
+# -- printf --
 
 ifdef unix_target
 	gprintf = printf
@@ -742,7 +748,7 @@ lib_install_dir = $(rpm_build_root)$(install_prefix)/$(lib_dir_name)
 include_install_dir = $(rpm_build_root)$(install_prefix)/include
 pkgconfig_install_dir = $(lib_install_dir)/pkgconfig
 build_output_dir = $(topdir)/build
-docs_output_dir = $(build_output_dir)/docs
+doxygen_output_dir = $(build_output_dir)/docs
 
 target_path = $(build_output_dir)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
 
@@ -791,6 +797,8 @@ static_lib_dir = $(lib_dir)/static
 
 test_obj_dir = $(test_dir)/obj
 lib_obj_dir = $(lib_dir)/obj
+
+doxyfile = $(doxygen_output_dir)/Doxyfile
 
 # -- Tools --
 
@@ -856,7 +864,8 @@ ifdef win_target
 		
 	# Libraries that our various components need to link against
 
-	link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib
+	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib
+	exe_link_libs = $(lib_link_libs)
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -984,7 +993,7 @@ ifdef unix_target
 				ccflags += -xO3
 			endif
 			ifeq ($(sun_studio_compiler),yes)
-				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
 			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
@@ -1037,7 +1046,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),osx)
 		ccdefs += OSX
-
+		
 		ifeq ($(target_build_type),release)
 			ccflags += $(gcc_optimization_flags)
 		endif
@@ -1077,10 +1086,12 @@ ifdef unix_target
 		endif
 	endif
 
-	link_libs = -lpthread
+	lib_link_libs = -lpthread
+	exe_link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
-		link_libs += -lrt -lstdc++ -ldl -lncurses
+		lib_link_libs += -lrt -lstdc++ -ldl -lncurses
+		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F) -o $@
 	endif
@@ -1098,7 +1109,8 @@ ifdef unix_target
 			endif
 		endif
 
-		link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
+		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
+		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
@@ -1109,19 +1121,23 @@ ifdef unix_target
 			link_flags += -q32
 			libr_flags = -X32
 		endif
-		link_libs += -lm -lc -lcurses
+		
+		lib_link_libs += -lm -lc -lcurses
+		exe_link_libs += -lm -lc -lcurses
 	endif
 
 	ifeq ($(target_os_family),hpux)
 		ifeq ($(target_word_size),64)
 			link_flags += +DD64
 		endif
-		link_libs += -lm -lc -lrt -lcurses
+		lib_link_libs += -lm -lc -lrt -lcurses
+		exe_link_libs += -lm -lc -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
-		link_libs += -lstdc++ -ldl -lncurses
+		lib_link_libs += -lstdc++ -ldl -lncurses
+		exe_link_libs += -lstdc++ -ldl -lncurses
 		shared_link_flags += -dynamiclib
 		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
 		shared_link_flags += -compatibility_version $(major_version).$(so_current).0
@@ -1212,7 +1228,8 @@ ifdef netware_target
 		$(ec)$(gprintf) "option start = f_nlmEntryPoint\n" >> $(4)
 		$(ec)$(gprintf) "option exit = f_nlmExitPoint\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
-		$(ec)$(gprintf) "option xdcdata=nlm.xdc\n" >> $(4) 
+		$(ec)$(gprintf) "option xdcdata=nlm.xdc\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
@@ -1247,7 +1264,8 @@ ifdef netware_target
 		$(ec)$(gprintf) "option start = _LibCPrelude\n" >> $(4)
 		$(ec)$(gprintf) "option exit = _LibCPostlude\n" >> $(4)
 		$(ec)$(gprintf) "option nodefaultlibs\n" >> $(4)
-		$(ec)$(gprintf) "option xdcdata=nlm.xdc\n" >> $(4) 
+		$(ec)$(gprintf) "option xdcdata=nlm.xdc\n" >> $(4)
+		$(ec)$(gprintf) "option pseudopreemption\n" >> $(4) 
 		$(ec)$(gprintf) "debug all debug novell\n" >> $(4)
 		$(ec)$(gprintf) "form novell nlm '$(2)'\n" >> $(4)
 		$(ec)$(gprintf) "name $(call ppath,$(1)/$(2)$(exe_suffix))\n" >> $(4)
@@ -1514,18 +1532,18 @@ endif
 $(ftk_shared_lib_path) : $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(link_libs)
+	$(ec)$(shared_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
-	$(ec)$(shared_linker) $+ $(shared_link_flags) $(link_libs)
+	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
 endif
 
 # -- Executable link command --
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(link_libs)
+		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
    endef
 endif
 
@@ -1564,7 +1582,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,debian,$(package_stage_dir)/debian)
-	$(ec)$(call dircopycmd,$(docs_output_dir),$(package_stage_dir)/docs)
+	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
 ifneq ($(host_os_family),win)
 	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
@@ -1630,16 +1648,6 @@ dist: status clean dircheck srcdist
 	$(ec)$(call rmcmd,$(package_dir)/$(src_package_name))
 	$(ec)$(gprintf) "Distribution created.\n"
 
-# -- pathinfo --
-
-.PHONY : pathinfo
-pathinfo:
-	$(ec)$(gprintf) "srcpackage = $(call ppath,$(src_package_dir)/$(src_package_name))\n"
-	$(ec)$(gprintf) "binpackage = $(call ppath,$(bin_package_dir)/$(bin_package_name))\n"
-	$(ec)$(gprintf) "rpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(rpm_name))\n"
-	$(ec)$(gprintf) "srcrpm = $(call ppath,$(package_srpms_dir)/$(srpm_name))\n"
-	$(ec)$(gprintf) "develrpm = $(call ppath,$(package_rpms_dir)/$(HOSTTYPE)/$(develrpm_name))\n"
-	
 # -- Change log --
 
 .PHONY : changelog
@@ -1747,7 +1755,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Libs: $(link_libs) -lftk -L$(dollar){libdir}\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Libs: $(exe_link_libs) -lftk -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
 
 # -- SRCRPM --
@@ -1911,9 +1919,9 @@ debsrc: srcdist
 # -- Documentation --
 
 .PHONY : docs
-docs: status clean dircheck
+docs: status clean dircheck doxyfile
 	$(ec)$(gprintf) "Creating documentation ...\n"
-	$(ec)doxygen Doxyfile
+	$(ec)doxygen $(doxyfile)
 	$(ec)$(gprintf) "Documentation created.\n"
 
 .PHONY : dircheck
@@ -2060,3 +2068,186 @@ status:
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
 	$(ec)$(gprintf) "===============================================================================\n"
+
+.PHONY : doxyfile
+doxyfile: dircheck
+	$(ec)$(gprintf) "PROJECT_NAME           = \"$(project_display_name)\"\n" > $(doxyfile)
+	$(ec)$(gprintf) "PROJECT_NUMBER         = \"$(version)\"\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OUTPUT_DIRECTORY       = $(doxygen_output_dir)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CREATE_SUBDIRS         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OUTPUT_LANGUAGE        = English\n" >> $(doxyfile)
+	$(ec)$(gprintf) "USE_WINDOWS_ENCODING   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "BRIEF_MEMBER_DESC      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "REPEAT_BRIEF           = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ABBREVIATE_BRIEF       = \"The $(dollar)name class\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         \"The $(dollar)name widget\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         \"The $(dollar)name file\" $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         is $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         provides $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         specifies $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         contains $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         represents $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         a $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         an $(backslash)\n" >> $(doxyfile)
+	$(ec)$(gprintf) "                         the\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALWAYS_DETAILED_SEC    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INLINE_INHERITED_MEMB  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "FULL_PATH_NAMES        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "STRIP_FROM_PATH        = \"\"\n" >> $(doxyfile)
+	$(ec)$(gprintf) "STRIP_FROM_INC_PATH    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHORT_NAMES            = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "JAVADOC_AUTOBRIEF      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MULTILINE_CPP_IS_BRIEF = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DETAILS_AT_TOP         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INHERIT_DOCS           = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SEPARATE_MEMBER_PAGES  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TAB_SIZE               = 3\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALIASES                = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "OPTIMIZE_OUTPUT_FOR_C  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "OPTIMIZE_OUTPUT_JAVA   = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "BUILTIN_STL_SUPPORT    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DISTRIBUTE_GROUP_DOC   = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SUBGROUPING            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_ALL            = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_PRIVATE        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_STATIC         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_LOCAL_CLASSES  = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRACT_LOCAL_METHODS  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_UNDOC_MEMBERS     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_UNDOC_CLASSES     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_FRIEND_COMPOUNDS  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_IN_BODY_DOCS      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INTERNAL_DOCS          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CASE_SENSE_NAMES       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_SCOPE_NAMES       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHOW_INCLUDE_FILES     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INLINE_INFO            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SORT_MEMBER_DOCS       = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SORT_BRIEF_DOCS        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SORT_BY_SCOPE_NAME     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TODOLIST      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TESTLIST      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_BUGLIST       = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_DEPRECATEDLIST= YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ENABLED_SECTIONS       = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_INITIALIZER_LINES  = 30\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHOW_USED_FILES        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SHOW_DIRECTORIES       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILE_VERSION_FILTER    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "QUIET                  = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARNINGS               = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_IF_UNDOCUMENTED   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_IF_DOC_ERROR      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_NO_PARAMDOC       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_FORMAT            = \"$(dollar)file:$(dollar)line: $(dollar)text\"\n" >> $(doxyfile)
+	$(ec)$(gprintf) "WARN_LOGFILE           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "INPUT                  = src/ftk.h\n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILE_PATTERNS          = *.h\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RECURSIVE              = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXCLUDE                = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXCLUDE_SYMLINKS       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXCLUDE_PATTERNS       = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXAMPLE_PATH           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXAMPLE_PATTERNS       = *\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXAMPLE_RECURSIVE      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "IMAGE_PATH             = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "INPUT_FILTER           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILTER_PATTERNS        = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "FILTER_SOURCE_FILES    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SOURCE_BROWSER         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INLINE_SOURCES         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "STRIP_CODE_COMMENTS    = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "REFERENCED_BY_RELATION = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "REFERENCES_RELATION    = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "USE_HTAGS              = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "VERBATIM_HEADERS       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALPHABETICAL_INDEX     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COLS_IN_ALPHA_INDEX    = 5\n" >> $(doxyfile)
+	$(ec)$(gprintf) "IGNORE_PREFIX          = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_HTML          = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_OUTPUT            = html\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_FILE_EXTENSION    = .html\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_HEADER            = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_FOOTER            = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_STYLESHEET        = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HTML_ALIGN_MEMBERS     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_HTMLHELP      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CHM_FILE               = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "HHC_LOCATION           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_CHI           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "BINARY_TOC             = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TOC_EXPAND             = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DISABLE_INDEX          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "ENUM_VALUES_PER_LINE   = 4\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TREEVIEW      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TREEVIEW_WIDTH         = 250\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_LATEX         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_OUTPUT           = latex\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_CMD_NAME         = latex\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAKEINDEX_CMD_NAME     = makeindex\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COMPACT_LATEX          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PAPER_TYPE             = a4wide\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTRA_PACKAGES         = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_HEADER           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "PDF_HYPERLINKS         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "USE_PDFLATEX           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_BATCHMODE        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "LATEX_HIDE_INDICES     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_RTF           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_OUTPUT             = rtf\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COMPACT_RTF            = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_HYPERLINKS         = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_STYLESHEET_FILE    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "RTF_EXTENSIONS_FILE    = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_MAN           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAN_OUTPUT             = man\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAN_EXTENSION          = .3\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAN_LINKS              = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_XML           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_OUTPUT             = xml\n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_SCHEMA             = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_DTD                = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "XML_PROGRAMLISTING     = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_AUTOGEN_DEF   = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_PERLMOD       = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERLMOD_LATEX          = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERLMOD_PRETTY         = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERLMOD_MAKEVAR_PREFIX = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "ENABLE_PREPROCESSING   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MACRO_EXPANSION        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXPAND_ONLY_PREDEF     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SEARCH_INCLUDES        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDE_PATH           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDE_FILE_PATTERNS  = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "PREDEFINED             = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXPAND_AS_DEFINED      = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "SKIP_FUNCTION_MACROS   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TAGFILES               = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_TAGFILE       = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "ALLEXTERNALS           = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "EXTERNAL_GROUPS        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "PERL_PATH              = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "CLASS_DIAGRAMS         = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HIDE_UNDOC_RELATIONS   = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "HAVE_DOT               = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CLASS_GRAPH            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "COLLABORATION_GRAPH    = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GROUP_GRAPHS           = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "UML_LOOK               = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "TEMPLATE_RELATIONS     = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDE_GRAPH          = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "INCLUDED_BY_GRAPH      = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "CALL_GRAPH             = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GRAPHICAL_HIERARCHY    = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DIRECTORY_GRAPH        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_IMAGE_FORMAT       = png\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_PATH               = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOTFILE_DIRS           = \n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_DOT_GRAPH_WIDTH    = 1024\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_DOT_GRAPH_HEIGHT   = 1024\n" >> $(doxyfile)
+	$(ec)$(gprintf) "MAX_DOT_GRAPH_DEPTH    = 1000\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_TRANSPARENT        = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_MULTI_TARGETS      = NO\n" >> $(doxyfile)
+	$(ec)$(gprintf) "GENERATE_LEGEND        = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "DOT_CLEANUP            = YES\n" >> $(doxyfile)
+	$(ec)$(gprintf) "SEARCHENGINE           = NO\n" >> $(doxyfile)
