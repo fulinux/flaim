@@ -35,8 +35,8 @@ namespace cstest
 		private const string COPY_DB_NAME = "copy.db";
 		private const string RENAME_DB_NAME = "rename.db";
 		private const string RESTORE_DB_NAME = "restore.db";
-		private const string REBUILD_DB_NAME = "rebuild.db";
 		private const string BACKUP_PATH = "backup";
+		private const string REBUILD_DB_NAME = "rebuild.db";
 
 		//--------------------------------------------------------------------------
 		// Begin a test.
@@ -51,8 +51,13 @@ namespace cstest
 		// End a test.
 		//--------------------------------------------------------------------------
 		static void endTest(
+			bool	bWriteLine,
 			bool	bPassed)
 		{
+			if (bWriteLine)
+			{
+				System.Console.Write( "\n");
+			}
 			if (bPassed)
 			{
 				System.Console.WriteLine( "PASS");
@@ -67,10 +72,11 @@ namespace cstest
 		// End a test with an exception
 		//--------------------------------------------------------------------------
 		static void endTest(
+			bool					bWriteLine,
 			XFlaimException	ex,
 			string				sWhat)
 		{
-			endTest( false);
+			endTest( bWriteLine, false);
 			System.Console.Write( "Error {0}: ", sWhat);
 			if (ex.getRCode() == RCODE.NE_XFLM_OK)
 			{
@@ -115,7 +121,7 @@ namespace cstest
 
 					if (rc != RCODE.NE_XFLM_FILE_EXISTS)
 					{
-						endTest( ex, "creating database");
+						endTest( false, ex, "creating database");
 						return( false);
 					}
 				}
@@ -132,7 +138,7 @@ namespace cstest
 				}
 				catch (XFlaimException ex)
 				{
-					endTest( ex, "removing database");
+					endTest( false, ex, "removing database");
 					return( false);
 				}
 			}
@@ -141,7 +147,7 @@ namespace cstest
 				db.close();
 				db = null;
 			}
-			endTest( true);
+			endTest( false, true);
 			return( true);
 		}
 
@@ -161,7 +167,7 @@ namespace cstest
 			}
 			catch (XFlaimException ex)
 			{
-				endTest( ex, "opening database");
+				endTest( false, ex, "opening database");
 				return( false);
 			}
 			if (db != null)
@@ -169,7 +175,7 @@ namespace cstest
 				db.close();
 				db = null;
 			}
-			endTest( true);
+			endTest( false, true);
 			return( true);
 		}
 
@@ -191,10 +197,106 @@ namespace cstest
 			}
 			catch (XFlaimException ex)
 			{
-				endTest( ex, "copying database");
+				endTest( copyStatus.outputLines(), ex, "copying database");
 				return( false);
 			}
-			endTest( true);
+			endTest( copyStatus.outputLines(), true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
+		// Backup database test.
+		//--------------------------------------------------------------------------
+		static bool backupDbTest(
+			DbSystem	dbSystem)
+		{
+			Db					db = null;
+			Backup			backup = null;
+			MyBackupStatus	backupStatus = null;
+			uint				uiSeqNum;
+
+			// Try backing up the database
+
+			beginTest( "Backup Database Test (" + COPY_DB_NAME + " to directory \"" + BACKUP_PATH + "\")");
+
+			try
+			{
+				db = dbSystem.dbOpen( COPY_DB_NAME, null, null, null, false);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "opening database");
+				return( false);
+			}
+
+			// Backup the database
+
+			try
+			{
+				backup = db.backupBegin( true, false, 0);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling backupBegin");
+				return( false);
+			}
+
+			// Perform the backup
+
+			backupStatus = new MyBackupStatus();
+			try
+			{
+				uiSeqNum = backup.backup( BACKUP_PATH, null, null, backupStatus);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( backupStatus.outputLines(), ex, "calling backup");
+				return( false);
+			}
+
+			// End the backup
+
+			try
+			{
+				backup.endBackup();
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( backupStatus.outputLines(), ex, "calling endBackup");
+				return( false);
+			}
+
+			db.close();
+			db = null;
+			endTest( backupStatus.outputLines(), true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
+		// Restore database test.
+		//--------------------------------------------------------------------------
+		static bool restoreDbTest(
+			DbSystem	dbSystem)
+		{
+			MyRestoreStatus	restoreStatus = null;
+
+			// Try restoring the database
+
+			beginTest( "Restore Database Test (from directory \"" + BACKUP_PATH + "\" to " + RESTORE_DB_NAME + ")");
+
+			restoreStatus = new MyRestoreStatus();
+			try
+			{
+				dbSystem.dbRestore( RESTORE_DB_NAME, null, null, BACKUP_PATH, null,
+										null, restoreStatus);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( restoreStatus.outputLines(), ex, "restoring database");
+				return( false);
+			}
+
+			endTest( restoreStatus.outputLines(), true);
 			return( true);
 		}
 
@@ -212,10 +314,10 @@ namespace cstest
 			}
 			catch (XFlaimException ex)
 			{
-				endTest( ex, "removing database");
+				endTest( false, ex, "removing database");
 				return( false);
 			}
-			endTest( true);
+			endTest( false, true);
 			return( true);
 		}
 
@@ -247,6 +349,20 @@ namespace cstest
 				return;
 			}
 
+			// Database backup test
+
+			if (!backupDbTest( dbSystem))
+			{
+				return;
+			}
+
+			// Database restore test
+
+			if (!restoreDbTest( dbSystem))
+			{
+				return;
+			}
+
 			// Database remove test
 
 			if (!removeDbTest( dbSystem, CREATE_DB_NAME))
@@ -257,15 +373,23 @@ namespace cstest
 			{
 				return;
 			}
+			if (!removeDbTest( dbSystem, RESTORE_DB_NAME))
+			{
+				return;
+			}
 		}
 	}
 
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 	public class MyDbCopyStatus : DbCopyStatus
 	{
+		public MyDbCopyStatus()
+		{
+			m_bOutputLines = false;
+		}
+
 		public RCODE dbCopyStatus(
-			ulong			uiBytesToCopy,
-			ulong			uiBytesCopied,
+			ulong			ulBytesToCopy,
+			ulong			ulBytesCopied,
 			string		sSrcFileName,
 			string		sDestFileName)
 		{
@@ -273,9 +397,345 @@ namespace cstest
 			{
 				System.Console.WriteLine( "\nSrc File: {0}, Dest File {1}", sSrcFileName, sDestFileName);
 			}
-			System.Console.Write( "Bytes To Copy: {0}, Bytes Copied: {1}\r", uiBytesToCopy, uiBytesCopied);
+			System.Console.Write( "Bytes To Copy: {0}, Bytes Copied: {1}\r", ulBytesToCopy, ulBytesCopied);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public bool outputLines()
+		{
+			return( m_bOutputLines);
+		}
+
+		private bool	m_bOutputLines;
+	}
+
+	public class MyBackupStatus : BackupStatus
+	{
+		public MyBackupStatus()
+		{
+			System.Console.WriteLine( " ");
+			m_bOutputLines = false;
+		}
+
+		public RCODE backupStatus(
+			ulong			ulBytesToDo,
+			ulong			ulBytesDone)
+		{
+			System.Console.Write( "Bytes To Backup: {0}, Bytes Backed Up: {1}\r", ulBytesToDo, ulBytesDone);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public bool outputLines()
+		{
+			return( m_bOutputLines);
+		}
+
+		private bool	m_bOutputLines;
+	}
+
+	public class MyRestoreStatus : RestoreStatus
+	{
+		private ulong	m_ulNumTransCommitted;
+		private ulong	m_ulNumTransAborted;
+		private bool	m_bOutputLines;
+		
+		public MyRestoreStatus()
+		{
+			m_ulNumTransCommitted = 0;
+			m_ulNumTransAborted = 0;
+			System.Console.WriteLine( " ");
+			m_bOutputLines = false;
+		}
+
+		public bool outputLines()
+		{
+			return( m_bOutputLines);
+		}
+
+		public RCODE reportProgress(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulBytesToDo,
+			ulong						ulBytesDone)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+
+			System.Console.Write( "Bytes To Restore: {0}, Bytes Restored: {1}, TRCmit: {2}, TRAbrt: {3}\r",
+				ulBytesToDo, ulBytesDone, m_ulNumTransCommitted, m_ulNumTransAborted);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportError(
+			ref RestoreAction 	peRestoreAction,
+			RCODE						rcErr)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+
+			System.Console.WriteLine( "\nError reported: {0}", rcErr);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportBeginTrans(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportCommitTrans(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			m_ulNumTransCommitted++;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportAbortTrans(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			m_ulNumTransAborted++;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportBlockChainFree(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			ulong						ulMaintDocNum,
+			uint						uiStartBlkAddr,
+			uint						uiEndBlkAddr,
+			uint						uiCount)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportIndexSuspend(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiIndexNum)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportIndexResume(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiIndexNum)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportReduce(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCount)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportUpgrade(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiOldDbVersion,
+			uint						uiNewDbVersion)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportOpenRflFile(
+			ref RestoreAction 	peRestoreAction,
+			uint						uiFileNum)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportRflRead(
+			ref RestoreAction 	peRestoreAction,
+			uint						uiFileNum,
+			uint						uiBytesRead)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportEnableEncryption(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportWrapKey(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportSetNextNodeId(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNextNodeId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeSetMetaValue(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId,
+			ulong						ulMetaValue)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeSetPrefixId(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId,
+			uint						uiAttrNameId,
+			uint						uiPrefixId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeFlagsUpdate(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId,
+			uint						uiFlags,
+			bool						bAdd)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportAttributeSetValue(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulElementNodeId,
+			uint						uiAttrNameId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeSetValue(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeUpdate(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportInsertBefore(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulParentId,
+			ulong						ulNewChildId,
+			ulong						ulRefChildId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeCreate(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulRefNodeId,
+			eDomNodeType			eNodeType,
+			uint						uiNameId,
+			eNodeInsertLoc			eLocation)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeChildrenDelete(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId,
+			uint						uiNameId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportAttributeDelete(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulElementNodeId,
+			uint						uiAttrNameId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportNodeDelete(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulNodeId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportDocumentDone(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId,
+			uint						uiCollection,
+			ulong						ulDocumentId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportRollOverDbKey(
+			ref RestoreAction 	peRestoreAction,
+			ulong						ulTransId)
+		{
+			peRestoreAction = RestoreAction.XFLM_RESTORE_ACTION_CONTINUE;
 			return( RCODE.NE_XFLM_OK);
 		}
 	}
 }
-

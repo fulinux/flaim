@@ -244,7 +244,7 @@ namespace xflaim
 		{
 			int	rc = 0;
 
-			if (( rc = xflaim_DbSystem_createDbSystem( out m_this)) != 0)
+			if (( rc = xflaim_DbSystem_createDbSystem( out m_pDbSystem)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -255,17 +255,17 @@ namespace xflaim
 		/// </summary>
 		~DbSystem()
 		{
-			xflaim_DbSystem_Release( m_this);
-			m_this = 0;
+			xflaim_DbSystem_Release( m_pDbSystem);
+			m_pDbSystem = 0;
 		}
 		
 		/// <summary>
 		/// Called by <see cref="Db"/> class to silence compiler warning.
 		/// Has no other important use!
 		/// </summary>
-		public ulong getRef()
+		public ulong getDbSystem()
 		{
-			return m_this;
+			return m_pDbSystem;
 		}
 
 		/// <summary>
@@ -320,18 +320,18 @@ namespace xflaim
 			CREATE_OPTS			createOpts)
 		{
 			Db			db = null;
-			ulong 	pulDbRef;
+			ulong 	pDb;
 			int		rc;
 		
-			if ((rc = xflaim_DbSystem_dbCreate( m_this, sDbFileName, sDataDir, sRflDir,
-				sDictFileName, sDictBuf, createOpts, out pulDbRef)) != 0)
+			if ((rc = xflaim_DbSystem_dbCreate( m_pDbSystem, sDbFileName, sDataDir, sRflDir,
+				sDictFileName, sDictBuf, createOpts, out pDb)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
 		
-			if (pulDbRef != 0)
+			if (pDb != 0)
 			{
-				db = new Db( pulDbRef, this);	
+				db = new Db( pDb, this);	
 			}
 			return( db);
 		}
@@ -366,18 +366,18 @@ namespace xflaim
 			bool		bAllowLimited)
 		{
 			Db			db = null;
-			ulong 	pulDbRef;
+			ulong 	pDb;
 			int		rc;
 		
-			if ((rc = xflaim_DbSystem_dbOpen( m_this, sDbFileName, sDataDir, sRflDir,
-				sPassword, (int)(bAllowLimited ? 1 : 0), out pulDbRef)) != 0)
+			if ((rc = xflaim_DbSystem_dbOpen( m_pDbSystem, sDbFileName, sDataDir, sRflDir,
+				sPassword, (int)(bAllowLimited ? 1 : 0), out pDb)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
 		
-			if (pulDbRef != 0)
+			if (pDb != 0)
 			{
-				db = new Db( pulDbRef, this);	
+				db = new Db( pDb, this);	
 			}
 			return( db);
 		}
@@ -406,7 +406,7 @@ namespace xflaim
 		{
 			int	rc;
 
-			if ((rc = xflaim_DbSystem_dbRemove( m_this, sDbFileName, sDataDir, sRflDir,
+			if ((rc = xflaim_DbSystem_dbRemove( m_pDbSystem, sDbFileName, sDataDir, sRflDir,
 				(int)(bRemoveRflFiles ? 1 : 0))) != 0)
 			{
 				throw new XFlaimException( rc);
@@ -477,7 +477,7 @@ namespace xflaim
 				fnRestoreStatus = new RestoreStatusCallback( restoreStatusDelegate.funcRestoreStatus);
 			}
 		
-			if ((rc = xflaim_DbSystem_dbRestore( m_this, sDbPath, sDataDir, sRflDir, sBackupPath,
+			if ((rc = xflaim_DbSystem_dbRestore( m_pDbSystem, sDbPath, sDataDir, sRflDir, sBackupPath,
 				sPassword, fnRestoreClient, fnRestoreStatus)) != 0)
 			{
 				throw new XFlaimException( rc);
@@ -753,7 +753,7 @@ namespace xflaim
 				dbCopyStatus = new DbCopyStatusDelegate( copyStatus);
 				fnDbCopyStatus = new DbCopyStatusCallback( dbCopyStatus.funcDbCopyStatus);
 			}
-			if ((rc = xflaim_DbSystem_dbCopy( m_this, sSrcDbName, sSrcDataDir, sSrcRflDir,
+			if ((rc = xflaim_DbSystem_dbCopy( m_pDbSystem, sSrcDbName, sSrcDataDir, sSrcRflDir,
 				sDestDbName, sDestDataDir, sDestRflDir, fnDbCopyStatus)) != 0)
 			{
 				throw new XFlaimException( rc);
@@ -807,36 +807,36 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_createDbSystem(
-			out ulong	pulDbSystemRef);
+			out ulong	ppDbSystem);
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_Release(
-			ulong	ulThis);
+			ulong	pDbSystem);
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbCreate(
-														ulong			ulThis,
+														ulong			pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr)] string		pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszRflDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszDictFileName,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszDictBuf,
 														CREATE_OPTS	pCreateOpts,
-														out ulong	pulDbRef);
+														out ulong	ppDb);
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbOpen(
-														ulong			ulThis,
+														ulong			pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr)] string		pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszRflDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszPassword,
 														int			bAllowLimited,
-														out ulong	pulDbRef);
+														out ulong	ppDb);
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbRemove(
-														ulong			ulThis,
+														ulong			pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr)] string		pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 		pszRflDir,
@@ -844,7 +844,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbRestore(
-														ulong							ulThis,
+														ulong							pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr)] string						pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszRflDir,
@@ -855,7 +855,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbCopy(
-														ulong						ulThis,
+														ulong						pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr)] string					pszSrcDbName,
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszSrcDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszSrcRflDir,
@@ -864,6 +864,6 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestRflDir,
 														DbCopyStatusCallback	fnDbCopyStatus);
 
-		private ulong			m_this;
+		private ulong			m_pDbSystem;
 	}
 }

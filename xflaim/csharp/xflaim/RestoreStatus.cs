@@ -48,7 +48,7 @@ namespace xflaim
 	}
 	
 	/// <summary>
-	/// This interface allows XFlaim's backup subsystem to periodicly pass
+	/// This interface allows XFlaim's restore subsystem to periodicly pass
 	/// information about the status of a restore operation (bytes completed and
 	/// bytes remaining) while the operation is running.  The implementor may do
 	/// anything it wants with the information, such as using it to update a

@@ -31,7 +31,7 @@ namespace xflaim
 
 	/// <summary>
 	/// This interface defines the client side interface to XFlaim's restore
-	/// subsystem.   Clients must pass an object that implements this interface
+	/// subsystem.   Clients may pass an object that implements this interface
 	/// into the call to <see cref="DbSystem.dbRestore"/>
 	/// See the documentation regarding Backup/Restore operations for more details.																																																 * @see DefaultRestoreClient
 	/// </summary>
