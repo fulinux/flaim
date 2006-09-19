@@ -916,6 +916,81 @@ namespace xflaim
 			private DbCopyStatus	m_dbCopyStatus;
 		}
 
+		/// <summary>
+		/// Rename a database.
+		/// </summary>
+		/// <param name="sDbName">
+		/// The name of the control file of the database to be renamed.
+		/// </param>
+		/// <param name="sDataDir">
+		/// The data file directory. See <see cref="dbCreate"/> for more information.
+		/// </param>
+		/// <param name="sRflDir">
+		/// The roll-forward log file directory.  See <see cref="dbCreate"/> for more information.
+		/// </param>
+		/// <param name="sNewDbName">
+		/// The new control file name for the database.
+		/// </param>
+		/// <param name="bOverwriteDestOk">
+		/// If true, then if the data specified in sNewDbName already exists, it will be overwritten.
+		/// </param>
+		/// <param name="renameStatus">
+		/// If non-null this is an object that implements the <see cref="DbRenameStatus"/>
+		/// interface.  It is a callback object that is used to report rename progress.
+		/// </param>
+		public void dbRename(
+			string				sDbName,
+			string				sDataDir,
+			string				sRflDir,
+			string				sNewDbName,
+			bool					bOverwriteDestOk,
+			DbRenameStatus		renameStatus)
+		{
+			int							rc;
+			DbRenameStatusDelegate	dbRenameStatus = null;
+			DbRenameStatusCallback	fnDbRenameStatus = null;
+
+			if (renameStatus != null)
+			{
+				dbRenameStatus = new DbRenameStatusDelegate( renameStatus);
+				fnDbRenameStatus = new DbRenameStatusCallback( dbRenameStatus.funcDbRenameStatus);
+			}
+
+			if ((rc = xflaim_DbSystem_dbRename( m_pDbSystem, sDbName, sDataDir, sRflDir, sNewDbName,
+				(int)(bOverwriteDestOk ? 1 : 0), fnDbRenameStatus)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		private delegate RCODE DbRenameStatusCallback(
+			IntPtr			pszSrcFileName,
+			IntPtr			pszDestFileName);
+
+		private class DbRenameStatusDelegate
+		{
+			public DbRenameStatusDelegate(
+				DbRenameStatus	dbRenameStatus)
+			{
+				m_dbRenameStatus = dbRenameStatus; 
+			}
+			
+			~DbRenameStatusDelegate()
+			{
+			}
+			
+			public RCODE funcDbRenameStatus(
+				IntPtr			pszSrcFileName,
+				IntPtr			pszDestFileName)
+			{
+				return( m_dbRenameStatus.dbRenameStatus(
+					Marshal.PtrToStringAnsi( pszSrcFileName),
+					Marshal.PtrToStringAnsi( pszDestFileName)));
+			}
+			
+			private DbRenameStatus	m_dbRenameStatus;
+		}
+
 		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
 
 		[DllImport("xflaim")]
@@ -987,6 +1062,16 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestDataDir,
 			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestRflDir,
 														DbCopyStatusCallback	fnDbCopyStatus);
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbRename(
+														ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)] string						pszSrcDbName,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszSrcDataDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszSrcRflDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDbName,
+														int							bOverwriteDestOk,
+														DbRenameStatusCallback	fnDbRenameStatus);
 
 		private ulong			m_pDbSystem;
 	}

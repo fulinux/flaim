@@ -806,3 +806,78 @@ Exit:
 
 	return( rc);
 }
+
+typedef RCODE (FLMAPI * DB_RENAME_STATUS)(
+	const char *	pszSrcFileName,
+	const char *	pszDestFileName);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class CS_DbRenameStatus : public IF_DbRenameStatus
+{
+public:
+
+	CS_DbRenameStatus(
+		DB_RENAME_STATUS	fnRenameStatus)
+	{
+		m_fnRenameStatus = fnRenameStatus;
+	}
+
+	virtual ~CS_DbRenameStatus()
+	{
+	}
+	
+	RCODE FLMAPI dbRenameStatus(
+		const char *	pszSrcFileName,
+		const char *	pszDestFileName)
+	{
+		return( m_fnRenameStatus( pszSrcFileName, pszDestFileName));
+	}
+		
+private:
+
+	DB_RENAME_STATUS	m_fnRenameStatus;
+
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRename(
+	FLMUINT64			ui64This,
+	const char *		pszSrcDbName,
+	const char *		pszSrcDataDir,
+	const char *		pszSrcRflDir,
+	const char *		pszDestDbName,
+	FLMBOOL				bOverwriteDestOk,
+	DB_RENAME_STATUS	fnRenameStatus)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbRenameStatus *	pDbRenameStatus = NULL;
+
+	if (fnRenameStatus)
+	{
+		if ((pDbRenameStatus = f_new CS_DbRenameStatus( fnRenameStatus)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			goto Exit;
+		}
+	}
+ 
+	if (RC_BAD( rc = pDbSystem->dbRename( pszSrcDbName, pszSrcDataDir, pszSrcRflDir, pszDestDbName,
+								bOverwriteDestOk, pDbRenameStatus)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if (pDbRenameStatus)
+	{
+		pDbRenameStatus->Release();
+	}
+
+	return( rc);
+}

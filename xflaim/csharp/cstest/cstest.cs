@@ -33,6 +33,7 @@ namespace cstest
 	{
 		private const string CREATE_DB_NAME = "create.db";
 		private const string COPY_DB_NAME = "copy.db";
+		private const string COPY2_DB_NAME = "copy2.db";
 		private const string RENAME_DB_NAME = "rename.db";
 		private const string RESTORE_DB_NAME = "restore.db";
 		private const string BACKUP_PATH = "backup";
@@ -183,6 +184,8 @@ namespace cstest
 		// Copy database test.
 		//--------------------------------------------------------------------------
 		static bool copyDbTest(
+			string	sSrcDbName,
+			string	sDestDbName,
 			DbSystem	dbSystem)
 		{
 
@@ -190,10 +193,10 @@ namespace cstest
 
 			MyDbCopyStatus	copyStatus = new MyDbCopyStatus();
 
-			beginTest( "Copy Database Test (" + CREATE_DB_NAME + " --> " + COPY_DB_NAME + ")");
+			beginTest( "Copy Database Test (" + sSrcDbName + " --> " + sDestDbName + ")");
 			try
 			{
-				dbSystem.dbCopy( CREATE_DB_NAME, null, null, COPY_DB_NAME, null, null, copyStatus);
+				dbSystem.dbCopy( sSrcDbName, null, null, sDestDbName, null, null, copyStatus);
 			}
 			catch (XFlaimException ex)
 			{
@@ -378,6 +381,33 @@ namespace cstest
 		}
 
 		//--------------------------------------------------------------------------
+		// Rename database test.
+		//--------------------------------------------------------------------------
+		static bool renameDbTest(
+			string	sSrcDbName,
+			string	sDestDbName,
+			DbSystem	dbSystem)
+		{
+
+			// Try renaming the database
+
+			MyDbRenameStatus	renameStatus = new MyDbRenameStatus();
+
+			beginTest( "Rename Database Test (" + sSrcDbName + " --> " + sDestDbName + ")");
+			try
+			{
+				dbSystem.dbRename( sSrcDbName, null, null, sDestDbName, true, renameStatus);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( renameStatus.outputLines(), ex, "renaming database");
+				return( false);
+			}
+			endTest( renameStatus.outputLines(), true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
 		// Main for tester program
 		//--------------------------------------------------------------------------
 		static void Main()
@@ -400,7 +430,18 @@ namespace cstest
 
 			// Database copy test
 
-			if (!copyDbTest( dbSystem))
+			if (!copyDbTest( CREATE_DB_NAME, COPY_DB_NAME, dbSystem))
+			{
+				return;
+			}
+			if (!copyDbTest( CREATE_DB_NAME, COPY2_DB_NAME, dbSystem))
+			{
+				return;
+			}
+
+			// Database rename test
+
+			if (!renameDbTest( COPY2_DB_NAME, RENAME_DB_NAME, dbSystem))
 			{
 				return;
 			}
@@ -433,6 +474,10 @@ namespace cstest
 			{
 				return;
 			}
+			if (!checkDbTest( RENAME_DB_NAME, dbSystem))
+			{
+				return;
+			}
 
 			// Database remove test
 
@@ -445,6 +490,10 @@ namespace cstest
 				return;
 			}
 			if (!removeDbTest( dbSystem, RESTORE_DB_NAME))
+			{
+				return;
+			}
+			if (!removeDbTest( dbSystem, RENAME_DB_NAME))
 			{
 				return;
 			}
@@ -871,6 +920,31 @@ namespace cstest
 				System.Console.WriteLine( "  Node ID.................. {0})",
 					corruptInfo.ulErrNodeId);
 			}
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public bool outputLines()
+		{
+			return( m_bOutputLines);
+		}
+
+		private bool	m_bOutputLines;
+	}
+
+	public class MyDbRenameStatus : DbRenameStatus
+	{
+		public MyDbRenameStatus()
+		{
+			m_bOutputLines = false;
+			System.Console.Write( "\n");
+		}
+
+		public RCODE dbRenameStatus(
+			string		sSrcFileName,
+			string		sDestFileName)
+		{
+			System.Console.WriteLine( "Renaming {0} to {1}", sSrcFileName, sDestFileName);
 			m_bOutputLines = true;
 			return( RCODE.NE_XFLM_OK);
 		}
