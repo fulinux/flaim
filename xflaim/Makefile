@@ -38,7 +38,64 @@
 
 project_name = xflaim
 project_display_name = XFLAIM
-project_desc = An extensible, flexible, adaptable, embeddable XML database engine
+project_brief_desc = An extensible, flexible, adaptable, embeddable XML database engine
+
+# -- Maintainers --
+
+ahodgkinson_info = Andrew Hodgkinson <ahodgkinson@novell.com>
+dsanders_info = Daniel Sanders <dsanders@novell.com>
+
+# -- Versions --
+
+major_version = 5
+minor_version = 1
+
+version = $(major_version).$(minor_version).$(svn_revision)
+
+# libtool versions are updated according to the following rules:
+#
+# 1. Start with a version of 0.0.0 for a library
+# 2. Update the version number immediately before a public release of the software
+# 3. If the library source code has changed at all since the last update, increment revision
+# 4. If any interfaces have been added, removed, or changed since the last update, increment current
+# 5. If any interfaces have been added since the last public release, increment age
+# 6. If any interfaces have been removed since the last public release, set age to 0
+
+so_current = 3
+so_revision = 2
+so_age = 0
+shared_lib_version =
+
+package_release_num = 1
+
+# -- Paths initializations --
+
+install_prefix = /usr
+
+# -- RPM, SPEC file names
+
+package_proj_name = lib$(project_name)
+package_proj_name_and_ver = $(package_proj_name)-$(version)
+
+# -- Determine if we are only cleaning --
+
+util_targets = checkdb rebuild view sample xshell
+test_targets = basictest binarytest colldeftest dictchangetest dictdeftest \
+		dirtyexittest1 dirtyexittest2 domnodetest enctest importtest \
+		indexdeftest indextest1 indextest2 indextest3 \
+		namespacetest metaphonetest regressiontest rfltest sortkeytest \
+		sortkeytest2 xpathtest1 xpathtest2
+all_targets = java csharp rpms install libs all allutils test $(util_targets) $(test_targets)
+found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
+
+ifneq (,$(findstring clean,$(MAKECMDGOALS)))
+	do_clean = 1
+	ifeq ($(if $(findstring 0,$(words $(found_targets))),1,0),0)
+      $(error Cannot specify other targets with clean target)
+	endif
+else
+	do_clean = 0
+endif
 
 # -- Target variables --
 
@@ -54,6 +111,7 @@ netware_target =
 submake_targets =
 netware_ring_0_target =
 sparc_generic =
+debian_arch = unknown
 
 # -- Enable command echoing --
 
@@ -134,6 +192,12 @@ endif
 
 ifndef host_os_family
 	ifneq (,$(findstring hpux,$(OSTYPE)))
+		host_os_family = hpux
+	endif
+endif
+
+ifndef host_os_family
+	ifneq (,$(findstring HP-UX,$(OSTYPE)))
 		host_os_family = hpux
 	endif
 endif
@@ -258,12 +322,21 @@ ifeq (,$(HOSTTYPE))
 endif
 
 ifeq (,$(HOSTTYPE))
-	HOSTTYPE := $(shell uname -p)
-	ifneq (,$(findstring nvalid,$(HOSTTYPE)))
-		HOSTTYPE := $(shell uname -m)
+	ifneq ($(host_os_family),hpux)
+		ifneq ($(host_os_family),linux)
+			HOSTTYPE := $(shell uname -p)
+		endif
 	endif
-	ifneq (,$(findstring unknown,$(HOSTTYPE)))
+	ifeq (,$(HOSTTYPE))
 		HOSTTYPE := $(shell uname -m)
+	else
+		ifneq (,$(findstring nvalid,$(HOSTTYPE)))
+			HOSTTYPE := $(shell uname -m)
+		else
+			ifneq (,$(findstring unknown,$(HOSTTYPE)))
+				HOSTTYPE := $(shell uname -m)
+			endif
+		endif
 	endif
 endif
 
@@ -407,6 +480,24 @@ ifdef requested_word_size
 	endif
 endif
 
+# -- Debian architecture --
+
+ifeq ($(target_os_family),linux)
+	ifeq ($(target_processor_family),x86)
+		ifeq ($(target_word_size),64)
+			debian_arch = amd64
+		else
+			debian_arch = i386
+		endif
+	endif
+	ifeq ($(target_processor_family),sparc)
+		debian_arch = sparc
+	endif
+	ifeq ($(target_processor_family),powerpc)
+		debian_arch = powerpc
+	endif
+endif
+
 # -- Other targets and options --
 
 ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
@@ -460,7 +551,7 @@ else
    endef
 
    define extract_archive
-		$(ec)gunzip $(strip $(1))/$(2).tar.gz
+		$(ec)gunzip -f $(strip $(1))/$(2).tar.gz
 		$(ec)tar xvf $(strip $(1))/$(2).tar -C $(1)
    endef
 endif
@@ -563,6 +654,20 @@ ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
 	endif
 endif
 
+ifneq (,$(findstring debbin,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
+ifneq (,$(findstring debsrc,$(MAKECMDGOALS)))
+	calc_svn_revision = 1
+	ifndef ignore_local_mods
+		local_mods_ok =
+	endif
+endif
+
 ifneq (,$(findstring docs,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 	ifndef ignore_local_mods
@@ -656,58 +761,6 @@ ifeq "$(svn_high_rev)" ""
 	svn_high_rev = $(svn_revision)
 endif
 
-# -- Versions --
-
-major_version = 5
-minor_version = 1
-
-version = $(major_version).$(minor_version).$(svn_revision)
-
-# libtool versions are updated according to the following rules:
-#
-# 1. Start with a version of 0.0.0 for a library
-# 2. Update the version number immediately before a public release of the software
-# 3. If the library source code has changed at all since the last update, increment revision
-# 4. If any interfaces have been added, removed, or changed since the last update, increment current
-# 5. If any interfaces have been added since the last public release, increment age
-# 6. If any interfaces have been removed since the last public release, set age to 0
-
-so_current = 3
-so_revision = 2
-so_age = 0
-shared_lib_version =
-
-package_release_num = 1
-
-# -- Paths initializations --
-
-install_prefix = /usr
-
-# -- RPM, SPEC file names
-
-package_proj_name = lib$(project_name)
-package_proj_name_and_ver = $(package_proj_name)-$(version)
-
-# -- Determine if we are only cleaning --
-
-util_targets = checkdb rebuild view sample xshell
-test_targets = basictest binarytest colldeftest dictchangetest dictdeftest \
-		dirtyexittest1 dirtyexittest2 domnodetest enctest importtest \
-		indexdeftest indextest1 indextest2 indextest3 \
-		namespacetest metaphonetest regressiontest rfltest sortkeytest \
-		sortkeytest2 xpathtest1 xpathtest2
-all_targets = java csharp rpms install libs all allutils test $(util_targets) $(test_targets)
-found_targets = $(foreach target,$(MAKECMDGOALS),$(if $(findstring $(target),$(all_targets)),$(target),))
-
-ifneq (,$(findstring clean,$(MAKECMDGOALS)))
-	do_clean = 1
-	ifeq ($(if $(findstring 0,$(words $(found_targets))),1,0),0)
-      $(error Cannot specify other targets with clean target)
-	endif
-else
-	do_clean = 0
-endif
-
 # Files and Directories
 
 ifeq ($(target_word_size),64)
@@ -747,6 +800,10 @@ package_rpms_dir = $(package_dir)/RPMS
 package_srpms_dir = $(package_dir)/SRPMS
 pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
+
+package_debian_dir = $(package_dir)/DEBIAN
+debian_stage_dir = $(package_dir)/debian_stage
+debian_pkginfo_dir = $(debian_stage_dir)/DEBIAN
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
@@ -858,7 +915,7 @@ ifdef win_target
 	ccdefs += WIN32_EXTRA_LEAN
 
 	ifeq ($(target_build_type),debug)
-		ccflags += /Ob1 /Od /Wp64
+		ccflags += /Ob1 /Od /RTC1 /Wp64
 		noclrflags += /RTC1
 		ccdefs += FLM_DEBUG
 	else
@@ -970,7 +1027,11 @@ ifdef unix_target
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
 			exe_linker = CC
-			shared_linker = ld
+			shared_linker = CC
+			compiler_version := $(shell $(compiler) -V 2>&1)	
+			ifneq (,$(findstring Sun C++,$(compiler_version)))
+				sun_studio_compiler = yes
+			endif
 		endif
 	endif
 
@@ -1028,7 +1089,7 @@ ifdef unix_target
 				ccflags += -xO3
 			endif
 			ifeq ($(sun_studio_compiler),yes)
-				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse
+				ccflags += -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder
 			endif
 			ifeq ($(target_word_size),64)
 				ccflags += -xarch=generic64
@@ -1063,14 +1124,25 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),hpux)
 		ifeq ($(usenativecc),yes)
-			# Must support 64 bit file sizes - even for 32 bit builds.
-
-			ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+		
+				# Disable "Placement operator delete invocation is not yet
+				# implemented" warning
+		
+				ccflags += +W930
+		
+			ifeq ($(target_word_size),64)
+				ccflags += +DD64
+			else
+				# Must support 64 bit file sizes - even for 32 bit builds.
+	
+				ccdefs += _LARGEFILE_SOURCE _FILE_OFFSET_BITS=64
+			endif
 		endif
 	endif
 
 	ifeq ($(target_os_family),osx)
 		ccdefs += OSX
+		
 		ifeq ($(target_build_type),release)
 			ccflags += $(gcc_optimization_flags)
 		endif
@@ -1118,7 +1190,7 @@ ifdef unix_target
 		lib_link_libs += -lrt -lstdc++ -ldl -lncurses
 		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
-			-Wl,-soname,$(@F).1 -o $@
+			-Wl,-soname,$(@F) -o $@
 	endif
 
 	ifeq ($(target_os_family),solaris)
@@ -1128,6 +1200,7 @@ ifdef unix_target
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
+				shared_link_flags += -xarch=generic64
 			else
 				link_flags += -xarch=v8plus
 			endif
@@ -1151,6 +1224,9 @@ ifdef unix_target
 	endif
 
 	ifeq ($(target_os_family),hpux)
+		ifeq ($(target_word_size),64)
+			link_flags += +DD64
+		endif
 		lib_link_libs += -lm -lc -lrt -lcurses
 		exe_link_libs += -lm -lc -lrt -lcurses
 	endif
@@ -1190,6 +1266,10 @@ ifdef netware_target
 		wc_dir = $(WC_DIR)
 	endif
 
+	ifndef wc_dir
+      $(error Watcom compiler could not be found.  Please define wc_dir)
+	endif
+	
 	wc_dir := $(call normpath,$(wc_dir))
 	
 	ifndef netware_ring_0_target
@@ -1208,13 +1288,13 @@ ifdef netware_target
 	ifneq ($(target_build_type),release)
 		ccdefs += FLM_DEBUG
 	endif
-
+	
 	ifdef netware_ring_0_target
 		ccdefs += FLM_RING_ZERO_NLM
 	else
 		ccdefs += FLM_LIBC_NLM
 	endif
-	
+
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
 
 	ifeq ($(target_build_type),release)
@@ -1225,10 +1305,10 @@ ifdef netware_target
 
 	libflags += /b /q /p=256
 	link_flags = /m /l /v /s
-
+	
 	inc_dirs += $(ndk_dir)/libc/include \
 					$(ndk_dir)/libc/include/winsock
-					
+
 	export include = $(foreach inc_dir,$(strip $(inc_dirs)),$(call hostpath,$(inc_dir));)
 	export INCLUDE = $(include)
 	export wpp386 = /d$(subst $(sp), /d,$(strip $(ccdefs))) $(ccflags)
@@ -1269,7 +1349,7 @@ ifdef netware_target
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8s)\n" >> $(4)
 		$(ec)$(gprintf) "alias __wcpp_4_fatal_runtime_error_=f_fatalRuntimeError\n" >> $(4)
    endef
-
+	
    define make_libc_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
@@ -1462,7 +1542,7 @@ endif
 
 xflaim_src = \
 	$(patsubst src/%.cpp,%.cpp,$(wildcard src/*.cpp))
-	
+
 ftk_src = \
 	$(patsubst $(ftk_src_dir)/%.cpp,%.cpp,$(wildcard $(ftk_src_dir)/*.cpp))
 
@@ -1794,7 +1874,7 @@ endif
 $(xflaim_shared_lib) : $(xflaim_obj) $(ftk_obj) $(xflaim_jni_obj) $(xflaim_csharp_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(shared_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
@@ -2069,10 +2149,12 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,Makefile,$(package_stage_dir))
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
+	$(ec)$(call copycmd,COPYRIGHT,$(package_stage_dir))
 	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
 	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_stage_dir)/src/xflaimtk.h)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
+	$(ec)$(call dircopycmd,debian,$(package_stage_dir)/debian)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
@@ -2091,7 +2173,7 @@ endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
 		$(src_package_dir)/$(src_package_base_name), \
 		$(package_proj_name_and_ver))
-	$(ec)$(call rmdircmd,$(package_stage_dir))
+	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
 	$(ec)$(gprintf) "Source package created.\n"
 
 # -- bindist --
@@ -2117,6 +2199,7 @@ binpackage: status
 	$(ec)$(call mkdircmd,$(package_util_stage_dir))
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
+	$(ec)$(call copycmd,COPYRIGHT,$(package_stage_dir))
 	$(ec)$(call copycmd,src/xflaim.h,$(package_inc_stage_dir))
 	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_inc_stage_dir)/xflaimtk.h)
 	$(ec)$(call copycmd,$(xflaim_static_lib),$(package_static_lib_stage_dir))
@@ -2159,7 +2242,6 @@ dist: status clean dircheck srcdist
 .PHONY : changelog
 changelog:
 	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
-	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
 	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
 	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(package_proj_name_and_ver).tar.log
 	$(ec)$(gprintf) "Change log created.\n"
@@ -2203,7 +2285,7 @@ spec: dircheck
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel java2-devel-packages\n" >> $(spec_file)
-	$(ec)$(gprintf) "Summary: $(project_desc)\n" >> $(spec_file)
+	$(ec)$(gprintf) "Summary: $(project_brief_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(package_release_num)\n" >> $(spec_file)
@@ -2221,24 +2303,13 @@ spec: dircheck
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "Authors:\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Daniel Sanders\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
+	$(ec)$(gprintf) "    $(dsanders_info)\n" >> $(spec_file)
+	$(ec)$(gprintf) "    $(ahodgkinson_info)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: XFLAIM static library and header file\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
 	$(ec)$(gprintf) "Provides: $(package_proj_name)-devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(spec_file)
-	$(ec)$(gprintf) "provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(spec_file)
-	$(ec)$(gprintf) "highly scalable, reliable, and robust. It is available on a wide\n" >> $(spec_file)
-	$(ec)$(gprintf) "variety of 32 bit and 64 bit platforms.\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
-	$(ec)$(gprintf) "Authors:\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Daniel Sanders\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)prep\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
@@ -2255,7 +2326,7 @@ spec: dircheck
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent)doc COPYING VERSION\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent)doc COPYING COPYRIGHT VERSION\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(asterisk)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
@@ -2274,7 +2345,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "libdir=$(dollar){exec_prefix}/$(lib_dir_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "includedir=$(dollar){prefix}/include\n\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lxflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
@@ -2296,11 +2367,158 @@ rpms: spec srcdist
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 
+# -- Debian Binary Package --
+
+.PHONY : debbin
+debbin: bindist
+	$(ec)$(gprintf) "Creating Debian binary package ...\n"
+	
+	-$(ec)$(call rmdircmd,$(debian_stage_dir))
+	$(ec)$(call mkdircmd,$(debian_stage_dir))
+	$(ec)$(call mkdircmd,$(debian_pkginfo_dir))
+	
+	$(ec)$(gprintf) "Creating Debian control file ...\n"
+	$(ec)$(gprintf) "Package: $(package_proj_name)\n" > $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Version: $(version)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Section: libs\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Architecture: $(debian_arch)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Depends:\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " highly scalable, reliable, and robust. It is available on a wide\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " variety of 32 bit and 64 bit platforms.\n" >> $(debian_pkginfo_dir)/control
+	
+	$(ec)$(gprintf) "Creating Debian post install file ...\n"
+	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postinst
+ifneq ($(so_age),0)
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "ln -fs $(xflaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postinst 
+endif
+endif
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "ln -fs $(xflaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postinst 
+endif
+	$(ec)$(gprintf) "ln -fs $(xflaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "ldconfig /usr/lib/$(xflaim_shared_lib)\n" >> $(debian_pkginfo_dir)/postinst
+	$(ec)chmod 0755 $(debian_pkginfo_dir)/postinst
+	
+	$(ec)$(gprintf) "Creating Debian pre-uninstall file ...\n"
+	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postrm
+ifneq ($(so_age),0)
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postrm 
+endif
+endif
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postrm 
+endif
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postrm
+	$(ec)chmod 0755 $(debian_pkginfo_dir)/postrm
+	
+	$(ec)$(gprintf) "Creating Debian shlibs file ...\n"
+	$(ec)$(gprintf) "$(lib_prefix)$(project_name) $(shared_lib_version)\n" > $(debian_pkginfo_dir)/shlibs
+	$(ec)chmod 0644 $(debian_pkginfo_dir)/shlibs
+	
+	-$(ec)$(call rmdircmd,$(debian_stage_dir)/tmp)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/tmp)
+	$(ec)$(call copycmd,$(bin_package_dir)/$(bin_package_name),$(debian_stage_dir)/tmp)
+	$(ec)$(call extract_archive,$(debian_stage_dir)/tmp,$(bin_package_base_name))
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/lib)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/include)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/share/doc/$(package_proj_name))
+	
+	$(ec)$(gprintf) "Creating Debian changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(version)) unstable; urgency=low\n" > $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)cat ChangeLog >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)822-date >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)gzip -f --best $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/usr/share/doc/$(package_proj_name)/copyright)
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/shared/*,$(debian_stage_dir)/usr/lib)
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(debian_stage_dir)/usr/lib)
+	$(ec)strip $(debian_stage_dir)/usr/lib/*
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(debian_stage_dir)/usr/lib)
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/include/*,$(debian_stage_dir)/usr/include)
+	$(ec)$(call rmdircmd,$(debian_stage_dir)/tmp)
+	$(ec)chmod 0644 $(debian_stage_dir)/usr/lib/*
+	$(ec)fakeroot dpkg-deb -b $(debian_stage_dir) $(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb
+
+	$(ec)$(gprintf) "Checking Debian package ...\n"
+	$(ec)lintian -i -X bin,shl $(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb
+	
+	$(ec)$(gprintf) "Moving package to DEBIAN directory ...\n"
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb,$(package_debian_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb)
+	
+	$(ec)$(gprintf) "Removing temporary files ...\n"
+#	$(ec)$(call rmdircmd,$(debian_stage_dir))
+	
+	$(ec)$(gprintf) "Done.\n"
+	
+# -- Debian Source Package --
+
+.PHONY : debsrc
+debsrc: srcdist
+	$(ec)$(gprintf) "Creating Debian source package ...\n"
+	
+	-$(ec)$(call rmdircmd,$(debian_stage_dir))
+	$(ec)$(call mkdircmd,$(debian_stage_dir))
+	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(debian_stage_dir))
+	$(ec)$(call extract_archive,$(debian_stage_dir),$(src_package_base_name))
+
+	$(ec)$(gprintf) "Creating Debian changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(version)) unstable; urgency=low\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)cat ChangeLog >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)822-date >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	
+	$(ec)$(gprintf) "Creating Debian control file ...\n"
+	$(ec)$(gprintf) "Source: $(package_proj_name)\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0), ncurses-dev\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Standards-Version: 3.6.2\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Package: $(package_proj_name)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Architecture: any\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Depends: ${shlibs:Depends}, ${misc:Depends}\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " highly scalable, reliable, and robust. It is available on a wide\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " variety of 32 bit and 64 bit platforms.\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	
+	$(ec)$(call copycmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
+
+	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.ex)
+	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.EX)
+
+	$(ec)cd $(package_dir); dpkg-source -b $(debian_stage_dir)/$(src_package_base_name)
+	
+	$(ec)$(gprintf) "Checking Debian package ...\n"
+	$(ec)lintian -i $(package_dir)/$(package_proj_name)_$(version).dsc
+	
+	$(ec)$(gprintf) "Moving packages to DEBIAN directory ...\n"
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version).dsc,$(package_debian_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version).dsc)
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version).tar.gz,$(package_debian_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version).tar.gz)
+
+	$(ec)$(gprintf) "Removing temporary files ...\n"
+	$(ec)$(call rmdircmd,$(debian_stage_dir))
+	
+	$(ec)$(gprintf) "Done.\n"
+	
 # -- Documentation --
 
 .PHONY : docs
 docs: status clean dircheck doxyfile
-	$(ec)$(gprintf) "Creating DOXYGEN documentation ...\n"
+	$(ec)$(gprintf) "Creating documentation ...\n"
 	$(ec)doxygen $(doxyfile)
 ifdef jhome
 	$(ec)$(gprintf) "Creating JAVADOC documentation ...\n"
@@ -2335,6 +2553,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(package_build_dir))
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
+	$(ec)$(call mkdircmd,$(package_debian_dir))
 
 # -- phony targets --
 
@@ -2409,7 +2628,7 @@ solaris:
 .PHONY : sparcgeneric
 sparcgeneric:
 	$(ec)$(gprintf) ""
-	
+
 .PHONY : osx
 osx:
 	$(ec)$(gprintf) ""
@@ -2421,7 +2640,7 @@ nlm:
 .PHONY : ring0
 ring0:
 	$(ec)$(gprintf) ""
-
+	
 .PHONY : verbose
 verbose:
 	$(ec)$(gprintf) ""
@@ -2483,6 +2702,8 @@ status:
 	$(ec)$(gprintf) "Target Word Size................ $(target_word_size)\n"
 	$(ec)$(gprintf) "Target Build Type............... $(target_build_type)\n"
 	$(ec)$(gprintf) "Target Path..................... $(call ppath,$(target_path))\n"
+	$(ec)$(gprintf) "Toolkit Path.................... $(call ppath,$(ftk_dir))\n"
+	$(ec)$(gprintf) "Install Prefix.................. $(call ppath,$(install_prefix))\n"
 	$(ec)$(gprintf) "Compiler........................ $(call ppath,$(compiler))\n"
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "JAVA HOME....................... $(call ppath,$(jhome))\n"
