@@ -40,6 +40,11 @@ project_name = flaim
 project_display_name = FLAIM
 project_desc = An extensible, flexible, adaptable, embeddable database engine
 
+# -- Maintainers --
+
+ahodgkinson_info = Andrew Hodgkinson <ahodgkinson@novell.com>
+dsanders_info = Daniel Sanders <dsanders@novell.com>
+
 # -- Versions --
 
 major_version = 4
@@ -102,6 +107,7 @@ netware_target =
 submake_targets =
 netware_ring_0_target =
 sparc_generic =
+debian_arch = unknown
 
 # -- Enable command echoing --
 
@@ -470,6 +476,24 @@ ifdef requested_word_size
 	endif
 endif
 
+# -- Debian architecture --
+
+ifeq ($(target_os_family),linux)
+	ifeq ($(target_processor_family),x86)
+		ifeq ($(target_word_size),64)
+			debian_arch = amd64
+		else
+			debian_arch = i386
+		endif
+	endif
+	ifeq ($(target_processor_family),sparc)
+		debian_arch = sparc
+	endif
+	ifeq ($(target_processor_family),powerpc)
+		debian_arch = powerpc
+	endif
+endif
+
 # -- Other targets and options --
 
 ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
@@ -523,7 +547,7 @@ else
    endef
 
    define extract_archive
-		$(ec)gunzip $(strip $(1))/$(2).tar.gz
+		$(ec)gunzip -f $(strip $(1))/$(2).tar.gz
 		$(ec)tar xvf $(strip $(1))/$(2).tar -C $(1)
    endef
 endif
@@ -747,6 +771,10 @@ package_srpms_dir = $(package_dir)/SRPMS
 pkgconfig_file_name = $(package_proj_name).pc
 pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 
+package_debian_dir = $(package_dir)/DEBIAN
+debian_stage_dir = $(package_dir)/debian_stage
+debian_pkginfo_dir = $(debian_stage_dir)/DEBIAN
+
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
 package_bin_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/$(target_build_type)
@@ -932,8 +960,8 @@ ifdef unix_target
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
 			exe_linker = CC
-			shared_linker = ld
-			compiler_version := $(shell $(compiler) -V 2>&1)
+			shared_linker = CC
+			compiler_version := $(shell $(compiler) -V 2>&1)	
 			ifneq (,$(findstring Sun C++,$(compiler_version)))
 				sun_studio_compiler = yes
 			endif
@@ -1083,7 +1111,7 @@ ifdef unix_target
 		lib_link_libs += -lrt -lstdc++ -ldl -lncurses
 		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
-			-Wl,-soname,$(@F).1 -o $@
+			-Wl,-soname,$(@F) -o $@
 	endif
 
 	ifeq ($(target_os_family),solaris)
@@ -1093,6 +1121,7 @@ ifdef unix_target
 		ifeq ($(usenativecc),yes)
 			ifeq ($(target_word_size),64)
 				link_flags += -xarch=generic64
+				shared_link_flags += -xarch=generic64
 			else
 				link_flags += -xarch=v8plus
 			endif
@@ -1158,16 +1187,20 @@ ifdef netware_target
 		wc_dir = $(WC_DIR)
 	endif
 
+	ifndef wc_dir
+      $(error Watcom compiler could not be found.  Please define wc_dir)
+	endif
+	
 	wc_dir := $(call normpath,$(wc_dir))
-
+	
 	ifndef netware_ring_0_target
 		ifndef ndk_dir
-         $(error Netware SDK could not be found.  Please define ndk_dir)
+			$(error Netware SDK could not be found.  Please define ndk_dir)
 		endif
 		
 		ndk_dir := $(call normpath,$(ndk_dir))
 	endif
-	
+
 	libr = "$(call normpath,$(strip $(wc_dir)))/binnt/wlib.exe"
 	exe_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
 	shared_linker = "$(call normpath,$(strip $(wc_dir)))/binnt/wlink.exe"
@@ -1176,13 +1209,13 @@ ifdef netware_target
 	ifneq ($(target_build_type),release)
 		ccdefs += FLM_DEBUG
 	endif
-
+	
 	ifdef netware_ring_0_target
 		ccdefs += FLM_RING_ZERO_NLM
 	else
 		ccdefs += FLM_LIBC_NLM
 	endif
-	
+
 	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
 
 	ifeq ($(target_build_type),release)
@@ -1193,7 +1226,7 @@ ifdef netware_target
 
 	libflags += /b /q /p=256
 	link_flags = /m /l /v /s
-
+	
 	inc_dirs += $(ndk_dir)/libc/include \
 					$(ndk_dir)/libc/include/winsock
 
@@ -1237,7 +1270,7 @@ ifdef netware_target
 		$(ec)$(gprintf) "file $(call ppath,$(wc_dir)/lib386/netware/clib3s.lib)(i8s)\n" >> $(4)
 		$(ec)$(gprintf) "alias __wcpp_4_fatal_runtime_error_=f_fatalRuntimeError\n" >> $(4)
    endef
-
+	
    define make_libc_lis_file_cmd
 		$(ec)$(gprintf) "option verbose\n" > $(4)
 		$(ec)$(gprintf) "option stack=32k\n" >> $(4)
@@ -1622,7 +1655,7 @@ endif
 $(flaim_shared_lib) : $(flaim_shared_obj) $(ftk_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(exe_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(shared_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
@@ -1717,10 +1750,12 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,Makefile,$(package_stage_dir))
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
+	$(ec)$(call copycmd,COPYRIGHT,$(package_stage_dir))
 	$(ec)$(call dircopycmd,docs,$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,src,$(package_stage_dir)/src)
 	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_stage_dir)/src/flaimtk.h)
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
+	$(ec)$(call dircopycmd,debian,$(package_stage_dir)/debian)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
@@ -1735,7 +1770,7 @@ endif
 	$(ec)$(call create_archive,$(package_stage_parent_dir), \
 		$(src_package_dir)/$(src_package_base_name), \
 		$(package_proj_name_and_ver))
-	$(ec)$(call rmdircmd,$(package_stage_dir))
+	$(ec)$(call rmdircmd,$(package_stage_parent_dir))
 	$(ec)$(gprintf) "Source package created.\n"
 
 # -- bindist --
@@ -1761,6 +1796,7 @@ binpackage: status
 	$(ec)$(call mkdircmd,$(package_util_stage_dir))
 	$(ec)$(call make_version_files,$(package_stage_dir)) 
 	$(ec)$(call copycmd,COPYING,$(package_stage_dir))
+	$(ec)$(call copycmd,COPYRIGHT,$(package_stage_dir))
 	$(ec)$(call copycmd,src/flaim.h,$(package_inc_stage_dir))
 	$(ec)$(call copycmd,$(ftk_src_dir)/ftk.h,$(package_inc_stage_dir)/flaimtk.h)
 	$(ec)$(call copycmd,$(flaim_static_lib),$(package_static_lib_stage_dir))
@@ -1804,7 +1840,6 @@ dist: status clean dircheck srcdist
 .PHONY : changelog
 changelog:
 	$(ec)$(gprintf) "Creating change log for SVN revisions $(svn_low_rev)-$(svn_high_rev) ...\n"
-	$(ec)$(gprintf) "Using SVN user $(svn_user) ...\n"
 	$(ec)$(gprintf) "Using SVN URL $(svnurl) ...\n"
 	$(ec)svn log $(svnurl) -v -r $(svn_low_rev):$(svn_high_rev) > $(package_sources_dir)/$(package_proj_name_and_ver).tar.log
 	$(ec)$(gprintf) "Change log created.\n"
@@ -1867,8 +1902,8 @@ spec: dircheck
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "Authors:\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)$(dash)\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Daniel Sanders\n" >> $(spec_file)
-	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
+	$(ec)$(gprintf) "    $(dsanders_info)\n" >> $(spec_file)
+	$(ec)$(gprintf) "    $(ahodgkinson_info)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: FLAIM static library and header file\n" >> $(spec_file)
@@ -1902,7 +1937,7 @@ spec: dircheck
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent)doc COPYING VERSION\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent)doc COPYING COPYRIGHT VERSION\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(asterisk)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
@@ -1943,6 +1978,145 @@ rpms: dist spec
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 
+# -- Debian Binary Package --
+
+.PHONY : debbin
+debbin: bindist
+	$(ec)$(gprintf) "Creating Debian binary package ...\n"
+	
+	-$(ec)$(call rmdircmd,$(debian_stage_dir))
+	$(ec)$(call mkdircmd,$(debian_stage_dir))
+	$(ec)$(call mkdircmd,$(debian_pkginfo_dir))
+	
+	$(ec)$(gprintf) "Creating Debian control file ...\n"
+	$(ec)$(gprintf) "Package: $(package_proj_name)\n" > $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Version: $(version)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Section: libs\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Architecture: $(debian_arch)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Depends:\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(debian_pkginfo_dir)/control
+	
+	$(ec)$(gprintf) "Creating Debian post install file ...\n"
+	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postinst
+ifneq ($(so_age),0)
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "ln -fs $(ftk_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postinst 
+endif
+endif
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "ln -fs $(ftk_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postinst 
+endif
+	$(ec)$(gprintf) "ln -fs $(ftk_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "ldconfig /usr/lib/$(ftk_shared_lib)\n" >> $(debian_pkginfo_dir)/postinst
+	$(ec)chmod 0755 $(debian_pkginfo_dir)/postinst
+	
+	$(ec)$(gprintf) "Creating Debian pre-uninstall file ...\n"
+	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postrm
+ifneq ($(so_age),0)
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postrm 
+endif
+endif
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postrm 
+endif
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postrm
+	$(ec)chmod 0755 $(debian_pkginfo_dir)/postrm
+	
+	$(ec)$(gprintf) "Creating Debian shlibs file ...\n"
+	$(ec)$(gprintf) "$(lib_prefix)$(project_name) $(shared_lib_version)\n" > $(debian_pkginfo_dir)/shlibs
+	$(ec)chmod 0644 $(debian_pkginfo_dir)/shlibs
+	
+	-$(ec)$(call rmdircmd,$(debian_stage_dir)/tmp)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/tmp)
+	$(ec)$(call copycmd,$(bin_package_dir)/$(bin_package_name),$(debian_stage_dir)/tmp)
+	$(ec)$(call extract_archive,$(debian_stage_dir)/tmp,$(bin_package_base_name))
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/lib)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/include)
+	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/share/doc/$(package_proj_name))
+	
+	$(ec)$(gprintf) "Creating Debian changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(version)) unstable; urgency=low\n" > $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)cat ChangeLog >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)822-date >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)gzip -f --best $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/usr/share/doc/$(package_proj_name)/copyright)
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/shared/*,$(debian_stage_dir)/usr/lib)
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(debian_stage_dir)/usr/lib)
+	$(ec)strip $(debian_stage_dir)/usr/lib/*
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(debian_stage_dir)/usr/lib)
+	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/include/*,$(debian_stage_dir)/usr/include)
+	$(ec)$(call rmdircmd,$(debian_stage_dir)/tmp)
+	$(ec)chmod 0644 $(debian_stage_dir)/usr/lib/*
+	$(ec)fakeroot dpkg-deb -b $(debian_stage_dir) $(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb
+
+	$(ec)$(gprintf) "Checking Debian package ...\n"
+	$(ec)lintian -i -X bin,shl $(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb
+	
+	$(ec)$(gprintf) "Moving package to DEBIAN directory ...\n"
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb,$(package_debian_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb)
+	
+	$(ec)$(gprintf) "Removing temporary files ...\n"
+	$(ec)$(call rmdircmd,$(debian_stage_dir))
+	
+	$(ec)$(gprintf) "Done.\n"
+	
+# -- Debian Source Package --
+
+.PHONY : debsrc
+debsrc: srcdist
+	$(ec)$(gprintf) "Creating Debian source package ...\n"
+	
+	-$(ec)$(call rmdircmd,$(debian_stage_dir))
+	$(ec)$(call mkdircmd,$(debian_stage_dir))
+	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(debian_stage_dir))
+	$(ec)$(call extract_archive,$(debian_stage_dir),$(src_package_base_name))
+
+	$(ec)$(gprintf) "Creating Debian changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(version)) unstable; urgency=low\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)cat ChangeLog >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)822-date >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	
+	$(ec)$(gprintf) "Creating Debian control file ...\n"
+	$(ec)$(gprintf) "Source: $(package_proj_name)\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0), ncurses-dev\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Standards-Version: 3.6.2\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Package: $(package_proj_name)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Architecture: any\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Depends: ${shlibs:Depends}, ${misc:Depends}\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Description: $(project_desc)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	
+	$(ec)$(call copycmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
+
+	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.ex)
+	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.EX)
+
+	$(ec)cd $(package_dir); dpkg-source -b $(debian_stage_dir)/$(src_package_base_name)
+	
+	$(ec)$(gprintf) "Checking Debian package ...\n"
+	$(ec)lintian -i $(package_dir)/$(package_proj_name)_$(version).dsc
+	
+	$(ec)$(gprintf) "Moving packages to DEBIAN directory ...\n"
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version).dsc,$(package_debian_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version).dsc)
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version).tar.gz,$(package_debian_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version).tar.gz)
+
+	$(ec)$(gprintf) "Removing temporary files ...\n"
+	$(ec)$(call rmdircmd,$(debian_stage_dir))
+	
+	$(ec)$(gprintf) "Done.\n"
+	
 # -- Documentation --
 
 .PHONY : docs
@@ -1975,6 +2149,7 @@ endif
 	$(ec)$(call mkdircmd,$(package_build_dir))
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
+	$(ec)$(call mkdircmd,$(package_debian_dir))
 
 # -- phony targets --
 
@@ -2106,6 +2281,7 @@ status:
 	$(ec)$(gprintf) "Target Build Type............... $(target_build_type)\n"
 	$(ec)$(gprintf) "Target Path..................... $(call ppath,$(target_path))\n"
 	$(ec)$(gprintf) "Toolkit Path.................... $(call ppath,$(ftk_dir))\n"
+	$(ec)$(gprintf) "Install Prefix.................. $(call ppath,$(install_prefix))\n"
 	$(ec)$(gprintf) "Compiler........................ $(call ppath,$(compiler))\n"
 	$(ec)$(gprintf) "Librarian....................... $(call ppath,$(libr))\n"
 	$(ec)$(gprintf) "Defines......................... $(strip $(ccdefs))\n"
