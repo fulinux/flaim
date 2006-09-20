@@ -216,7 +216,6 @@ namespace cstest
 			Db					db = null;
 			Backup			backup = null;
 			MyBackupStatus	backupStatus = null;
-			uint				uiSeqNum;
 
 			// Try backing up the database
 
@@ -249,7 +248,7 @@ namespace cstest
 			backupStatus = new MyBackupStatus();
 			try
 			{
-				uiSeqNum = backup.backup( BACKUP_PATH, null, null, backupStatus);
+				backup.backup( BACKUP_PATH, null, null, backupStatus);
 			}
 			catch (XFlaimException ex)
 			{

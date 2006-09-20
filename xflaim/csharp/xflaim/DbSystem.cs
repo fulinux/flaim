@@ -828,7 +828,6 @@ namespace xflaim
 				}
 				else
 				{
-					XFLM_CORRUPT_INFO	corruptInfo = new XFLM_CORRUPT_INFO();
 					rc = m_dbCheckStatus.reportCheckErr(
 						(XFLM_CORRUPT_INFO)Marshal.PtrToStructure( pCorruptInfo,
 																	typeof( XFLM_CORRUPT_INFO)));
@@ -1123,7 +1122,6 @@ namespace xflaim
 				}
 				else
 				{
-					XFLM_CORRUPT_INFO	corruptInfo = new XFLM_CORRUPT_INFO();
 					rc = m_dbRebuildStatus.reportRebuildErr(
 						(XFLM_CORRUPT_INFO)Marshal.PtrToStructure( pCorruptInfo,
 						typeof( XFLM_CORRUPT_INFO)));
