@@ -8230,7 +8230,14 @@ public:
 		return( rc);
 	}
 
+	void incrBytesExamined()
+	{
+		m_callbackData.ui64BytesExamined += m_dbHdr.ui16BlockSize;
+	}
+
 private:
+
+	RCODE getDatabaseSize( void);
 
 	RCODE rebuildDatabase( void);
 

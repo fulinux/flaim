@@ -146,6 +146,7 @@ public:
 private:
 
 	RCODE readBlock(
+		FLMBOOL				bCount,
 		FLMUINT				uiFileNumber,
 		FLMUINT				uiFileOffset,
 		F_SCAN_STATE *		pScanState);
@@ -831,9 +832,58 @@ Exit:
 /***************************************************************************
 Desc:
 *****************************************************************************/
+RCODE F_DbRebuild::getDatabaseSize( void)
+{
+	RCODE			rc = NE_XFLM_OK;
+	FLMUINT		uiFileNumber = 1;
+	FLMUINT64	ui64FileSize;
+
+	m_callbackData.ui64FileSize = 0;
+
+	while (uiFileNumber <= MAX_DATA_BLOCK_FILE_NUMBER)
+	{
+
+		// Get the actual size of the last file.
+
+		if (RC_BAD( rc = m_pSFileHdl->getFileSize( uiFileNumber,
+										&ui64FileSize)))
+		{
+			if (rc == NE_FLM_IO_PATH_NOT_FOUND ||
+				 rc == NE_FLM_IO_INVALID_FILENAME)
+			{
+				if (uiFileNumber > 1)
+				{
+					rc = NE_XFLM_OK;
+				}
+				else
+				{
+
+					// Should always be a data file #1
+
+					RC_UNEXPECTED_ASSERT( rc);
+				}
+			}
+			goto Exit;
+		}
+		else
+		{
+			m_callbackData.ui64FileSize += ui64FileSize;
+		}
+		uiFileNumber++;
+	}
+
+Exit:
+
+	return( rc);
+}
+
+/***************************************************************************
+Desc:
+*****************************************************************************/
 RCODE F_DbRebuild::rebuildDatabase( void)
 {
 	RCODE					rc = NE_XFLM_OK;
+	RCODE					rc2;
 	FLMBOOL				bStartedTrans = FALSE;
 
 	m_corruptInfo.uiErrLocale = XFLM_LOCALE_B_TREE;
@@ -852,10 +902,16 @@ RCODE F_DbRebuild::rebuildDatabase( void)
 		goto Exit;
 	}
 
+	if (RC_BAD( rc = getDatabaseSize()))
+	{
+		goto Exit;
+	}
+
 	// Recover the dictionary
 
 	m_callbackData.iDoingFlag = REBUILD_RECOVER_DICT;
 	m_callbackData.bStartFlag = TRUE;
+	m_callbackData.ui64BytesExamined = 0;
 
 	if( RC_BAD( rc = recoverNodes( TRUE)))
 	{
@@ -871,6 +927,7 @@ RCODE F_DbRebuild::rebuildDatabase( void)
 
 	m_callbackData.iDoingFlag = REBUILD_RECOVER_DATA;
 	m_callbackData.bStartFlag = TRUE;
+	m_callbackData.ui64BytesExamined = 0;
 
 	if( RC_BAD( rc = recoverNodes( FALSE)))
 	{
@@ -910,6 +967,12 @@ RCODE F_DbRebuild::rebuildDatabase( void)
 	}
 
 Exit:
+
+	rc2 = reportStatus( TRUE);
+	if (RC_OK( rc))
+	{
+		rc = rc2;
+	}
 
 	if( bStartedTrans)
 	{
@@ -1900,6 +1963,7 @@ RCODE F_RebuildNodeIStream::closeStream( void)
 Desc:
 *****************************************************************************/
 RCODE F_RebuildNodeIStream::readBlock(
+	FLMBOOL						bCount,
 	FLMUINT						uiFileNumber,
 	FLMUINT						uiFileOffset,
 	F_SCAN_STATE *				pScanState)
@@ -1918,6 +1982,10 @@ RCODE F_RebuildNodeIStream::readBlock(
 		uiBlockSize, pucBlk, NULL)))
 	{
 		goto Exit;
+	}
+	if (bCount)
+	{
+		m_pDbRebuild->incrBytesExamined();
 	}
 
 	// Determine if we should convert the block here.  Calculation of CRC
@@ -1960,6 +2028,7 @@ RCODE F_RebuildNodeIStream::readBlock(
 	// Make sure the transaction ID looks valid
 
 	if( !m_pDbRebuild->m_bBadHeader &&
+		pBlkHdr->ui64TransID > 1 &&
 		pBlkHdr->ui64TransID > m_pDbRebuild->m_dbHdr.ui64LastRflCommitID)
 	{
 		rc = RC_SET( NE_XFLM_DATA_ERROR);
@@ -1999,11 +2068,6 @@ RCODE F_RebuildNodeIStream::readBlock(
 	pScanState->uiBlockBytes = uiBlockSize - pBlkHdr->ui16BlkBytesAvail;
 	pScanState->uiCurOffset = 0;
 	f_memset( &pScanState->elmInfo, 0, sizeof( F_ELM_INFO));
-
-	if( RC_BAD( rc = m_pDbRebuild->reportStatus()))
-	{
-		goto Exit;
-	}
 
 Exit:
 
@@ -2051,7 +2115,7 @@ TryNextFile:
 			pScanState->uiFileOffset += uiBlockSize;
 		}
 		
-		if( RC_BAD( rc = readBlock( pScanState->uiFileNumber, 
+		if( RC_BAD( rc = readBlock( TRUE, pScanState->uiFileNumber, 
 			pScanState->uiFileOffset, pScanState)))
 		{
 			if( rc == NE_FLM_IO_END_OF_FILE ||
@@ -2069,41 +2133,11 @@ TryNextFile:
 			
 			goto Exit;
 		}
-		
-		// Make sure the block end looks correct
-		
-		if( pScanState->blkUnion.pBlkHdr->ui16BlkBytesAvail > 
-			 uiBlockSize - blkHdrSize( pScanState->blkUnion.pBlkHdr))
-		{
-			if( RC_BAD( rc = m_pDbRebuild->reportCorruption( 
-				FLM_BAD_BLK_HDR_BLK_END, 
-				pScanState->blkUnion.pBlkHdr->ui32BlkAddr, 0, 0)))
-			{
-				goto Exit;
-			}
-			
-			continue;
-		}
-		
-		// Verify the block address
-	
-		if( pScanState->blkUnion.pBlkHdr->ui32BlkAddr !=
-			FSBlkAddress( pScanState->uiFileNumber, pScanState->uiFileOffset))
-		{
-			if( RC_BAD( rc = m_pDbRebuild->reportCorruption( 
-				FLM_BAD_BLK_HDR_ADDR, pScanState->blkUnion.pBlkHdr->ui32BlkAddr,
-				0, 0)))
-			{
-				goto Exit;
-			}
-			
-			continue;
-		}
 
 		// Determine if this is a block that should be processed
 	
-		if( FSGetFileOffset( pScanState->blkUnion.pBlkHdr->ui32BlkAddr) == 
-				pScanState->uiFileOffset &&
+		if( pScanState->blkUnion.pBlkHdr->ui32BlkAddr ==
+					FSBlkAddress( pScanState->uiFileNumber, pScanState->uiFileOffset) &&
 			 (pScanState->blkUnion.pBlkHdr->ui8BlkType == BT_LEAF || 
 		     pScanState->blkUnion.pBlkHdr->ui8BlkType == BT_LEAF_DATA) &&
 			 pScanState->blkUnion.pBTreeBlkHdr->ui8BlkLevel == 0 &&
@@ -2111,6 +2145,22 @@ TryNextFile:
 			 isContainerBlk( pScanState->blkUnion.pBTreeBlkHdr) &&
 			 doCollection( uiBlkCollectionNum, m_bRecovDictionary))
 		{
+
+			// Make sure the block end looks correct
+			
+			if( pScanState->blkUnion.pBlkHdr->ui16BlkBytesAvail > 
+				uiBlockSize - blkHdrSize( pScanState->blkUnion.pBlkHdr))
+			{
+				if( RC_BAD( rc = m_pDbRebuild->reportCorruption( 
+					FLM_BAD_BLK_HDR_BLK_END, 
+					pScanState->blkUnion.pBlkHdr->ui32BlkAddr, 0, 0)))
+				{
+					goto Exit;
+				}
+				
+				continue;
+			}
+		
 			if( !m_bRecovDictionary)
 			{
 				if( RC_BAD( rc = m_pDbRebuild->m_pDb->getDict()->getCollection( 
@@ -2221,7 +2271,7 @@ RCODE F_RebuildNodeIStream::readContinuationElm( void)
 	{
 		F_BLK_HDR *		pBlkHdr = m_pCurState->blkUnion.pBlkHdr;
 
-		if( RC_BAD( rc = readBlock( 
+		if( RC_BAD( rc = readBlock( FALSE,
 			FSGetFileNumber( pBlkHdr->ui32NextBlkInChain), 
 			FSGetFileOffset( pBlkHdr->ui32NextBlkInChain), &m_tmpState)))
 		{
@@ -2304,7 +2354,7 @@ RCODE F_RebuildNodeIStream::readFirstDataOnlyBlock( void)
 
 	flmAssert( pElmInfo->uiDataOnlyBlkAddr);
 
-	if( RC_BAD( rc = readBlock( 
+	if( RC_BAD( rc = readBlock( FALSE,
 		FSGetFileNumber( pElmInfo->uiDataOnlyBlkAddr),
 		FSGetFileOffset( pElmInfo->uiDataOnlyBlkAddr), &m_tmpState)))
 	{
@@ -2379,7 +2429,7 @@ RCODE F_RebuildNodeIStream::readNextDataOnlyBlock( void)
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = readBlock( 
+	if( RC_BAD( rc = readBlock( FALSE,
 		FSGetFileNumber( ui32NextBlkAddr), 
 		FSGetFileOffset( ui32NextBlkAddr), &m_tmpState)))
 	{
@@ -2671,7 +2721,7 @@ RCODE F_RebuildNodeIStream::readNode(
 	}
 	f_mutexUnlock( gv_XFlmSysData.hNodeCacheMutex);
 
-	if( RC_BAD( rc = readBlock( FSGetFileNumber( ui32BlkAddr),
+	if( RC_BAD( rc = readBlock( FALSE, FSGetFileNumber( ui32BlkAddr),
 		FSGetFileOffset( ui32BlkAddr), &m_firstElmState)))
 	{
 		goto Exit;
