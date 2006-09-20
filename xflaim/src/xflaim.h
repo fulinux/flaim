@@ -752,6 +752,8 @@
 		FLMUINT64		ui64DiscardedDocs;
 	} XFLM_REBUILD_INFO;
 
+	// IMPORTANT NOTE: If this structure changes, corresponding changes need to be made
+	// to the same structure in DbSystem.cs for C#.
 	typedef struct
 	{
 		FLMINT		iErrCode;						// Zero means no error is being reported
