@@ -369,12 +369,10 @@ namespace xflaim
 		/// <summary>
 		/// Indicates whether we are just starting this phase of the operation.  Value
 		/// will be non-zero if just starting, zero otherwise.
-		/// is currently in.
 		/// </summary>
 		public int				bStartFlag;
 		/// <summary>
 		/// Total number of bytes in the database.
-		/// is currently in.
 		/// </summary>
 		public ulong			ulDatabaseSize;
 		/// <summary>

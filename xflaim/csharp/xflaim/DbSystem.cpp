@@ -881,3 +881,92 @@ Exit:
 
 	return( rc);
 }
+
+typedef RCODE (FLMAPI * DB_REBUILD_STATUS)(
+	FLMBOOL					bHaveRebuildInfo,
+	XFLM_REBUILD_INFO *	pRebuildInfo,
+	XFLM_CORRUPT_INFO *	pCorruptInfo);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class CS_DbRebuildStatus : public IF_DbRebuildStatus
+{
+public:
+
+	CS_DbRebuildStatus(
+		DB_REBUILD_STATUS	fnDbRebuildStatus)
+	{
+		m_fnDbRebuildStatus = fnDbRebuildStatus;
+	}
+
+	virtual ~CS_DbRebuildStatus()
+	{
+	}
+
+	RCODE FLMAPI reportRebuild(
+		XFLM_REBUILD_INFO *	pRebuildInfo)
+	{
+		return( m_fnDbRebuildStatus( TRUE, pRebuildInfo, NULL));
+	}
+	
+	RCODE FLMAPI reportRebuildErr(
+		XFLM_CORRUPT_INFO *	pCorruptInfo)
+	{
+		return( m_fnDbRebuildStatus( FALSE, NULL, pCorruptInfo));
+	}
+
+private:
+
+	DB_REBUILD_STATUS	m_fnDbRebuildStatus;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRebuild(
+	FLMUINT64				ui64This,
+	const char *			pszSourceDbPath,
+	const char *			pszSourceDataDir,
+	const char *			pszDestDbPath,
+	const char *			pszDestDataDir,
+	const char *			pszDestRflDir,
+	const char *			pszDictPath,
+	const char *			pszPassword,
+	XFLM_CREATE_OPTS *	pCreateOpts,
+	DB_REBUILD_STATUS		fnRebuildStatus)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbRebuildStatus *	pDbRebuildStatus = NULL;
+	FLMUINT64				ui64TotNodes;
+	FLMUINT64				ui64NodesRecov;
+	FLMUINT64				ui64DiscardedDocs;
+
+	if (fnRebuildStatus)
+	{
+		if ((pDbRebuildStatus = f_new CS_DbRebuildStatus( fnRebuildStatus)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			goto Exit;
+		}
+	}
+ 
+	if (RC_BAD( rc = pDbSystem->dbRebuild( pszSourceDbPath, pszSourceDataDir,
+								pszDestDbPath, pszDestDataDir, pszDestRflDir,
+								pszDictPath, pszPassword, pCreateOpts,
+								&ui64TotNodes, &ui64NodesRecov, &ui64DiscardedDocs,
+								pDbRebuildStatus)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if (pDbRebuildStatus)
+	{
+		pDbRebuildStatus->Release();
+	}
+
+	return( rc);
+}

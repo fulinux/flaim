@@ -282,6 +282,10 @@ namespace xflaim
 			return m_pDbSystem;
 		}
 
+//-----------------------------------------------------------------------------
+// dbCreate
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Creates a new XFlaim database.
 		/// </summary>
@@ -350,8 +354,12 @@ namespace xflaim
 			return( db);
 		}
 	
+//-----------------------------------------------------------------------------
+// dbOpen
+//-----------------------------------------------------------------------------
+
 		/// <summary>
-		/// Creates a new XFlaim database.
+		/// Opens an existing XFlaim database.
 		/// </summary>
 		/// <param name="sDbFileName">
 		/// See documentation on <see cref="dbCreate"/>.
@@ -396,6 +404,10 @@ namespace xflaim
 			return( db);
 		}
 	
+//-----------------------------------------------------------------------------
+// dbRemove
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Removes (deletes) an XFlaim database.
 		/// </summary>
@@ -426,6 +438,10 @@ namespace xflaim
 				throw new XFlaimException( rc);
 			}
 		}
+
+//-----------------------------------------------------------------------------
+// dbRestore
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Restores a previously backed up database. The <paramref name="sBackupPath"/> parameter
@@ -720,6 +736,10 @@ namespace xflaim
 			private RestoreStatus	m_restoreStatus;
 		}
 
+//-----------------------------------------------------------------------------
+// dbCheck
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Check for physical and logical corruptions on the specified database.
 		/// </summary>
@@ -819,6 +839,10 @@ namespace xflaim
 			private DbCheckStatus	m_dbCheckStatus;
 		}
 
+//-----------------------------------------------------------------------------
+// dbCopy
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Makes a copy of an existing database.
 		/// </summary>
@@ -916,6 +940,10 @@ namespace xflaim
 			private DbCopyStatus	m_dbCopyStatus;
 		}
 
+//-----------------------------------------------------------------------------
+// dbRename
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Rename a database.
 		/// </summary>
@@ -991,7 +1019,124 @@ namespace xflaim
 			private DbRenameStatus	m_dbRenameStatus;
 		}
 
-		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
+//-----------------------------------------------------------------------------
+// dbRebuild
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Rebuild a database.
+		/// </summary>
+		/// <param name="sSourceDbPath">
+		/// The name of the control file of the database that is to be rebuilt.
+		/// </param>
+		/// <param name="sSourceDataDir">
+		/// The data file directory.  See <see cref="dbCreate"/> for more information.
+		/// </param>
+		/// <param name="sDestDbPath">
+		/// The name of the control file of the destination
+		/// database that is to be built from the source database.
+		/// </param>
+		/// <param name="sDestDataDir">
+		/// The destination database's data file directory.  See <see cref="dbCreate"/> for
+		/// more information.
+		/// </param>
+		/// <param name="sDestRflDir">
+		/// The destination database's roll-forward log
+		/// directory.  See <see cref="dbCreate"/> for more information.
+		/// </param>
+		/// <param name="sDictPath">
+		/// The name of a file containing dictionary definitions that
+		/// are to be put into the destination database when it is created.
+		/// May be null.
+		/// </param>
+		/// <param name="sPassword">
+		/// Password for opening the source database.  This is only needed
+		/// if the database key is currently wrapped in a password instead of the
+		/// local NICI storage key.  May be null.
+		/// </param>
+		/// <param name="createOpts">
+		/// A <see cref="CREATE_OPTS"/> object that contains several parameters that
+		/// are used in the creation of the destination database.
+		/// </param>
+		/// <param name="rebuildStatus">
+		/// If non-null this is an object that implements the <see cref="DbRebuildStatus"/>
+		/// interface.  It is a callback object that is used to report rebuild progress.
+		/// </param>
+		public void dbRebuild(
+			string				sSourceDbPath,
+			string				sSourceDataDir,
+			string				sDestDbPath,
+			string				sDestDataDir,
+			string				sDestRflDir,
+			string				sDictPath,
+			string				sPassword,
+			CREATE_OPTS			createOpts,
+			DbRebuildStatus	rebuildStatus)
+		{
+			int							rc;
+			DbRebuildStatusDelegate	dbRebuildStatus = null;
+			DbRebuildStatusCallback	fnDbRebuildStatus = null;
+
+			if (rebuildStatus != null)
+			{
+				dbRebuildStatus = new DbRebuildStatusDelegate( rebuildStatus);
+				fnDbRebuildStatus = new DbRebuildStatusCallback( dbRebuildStatus.funcDbRebuildStatus);
+			}
+
+			if ((rc = xflaim_DbSystem_dbRebuild( m_pDbSystem, sSourceDbPath, sSourceDataDir, sDestDbPath,
+				sDestDataDir, sDestRflDir, sDictPath, sPassword,
+				createOpts, fnDbRebuildStatus)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		private delegate RCODE DbRebuildStatusCallback(
+			int				bHaveRebuildInfo,
+			IntPtr			pRebuildInfo,
+			IntPtr			pCorruptInfo);
+
+		private class DbRebuildStatusDelegate
+		{
+			public DbRebuildStatusDelegate(
+				DbRebuildStatus	dbRebuildStatus)
+			{
+				m_dbRebuildStatus = dbRebuildStatus; 
+			}
+			
+			~DbRebuildStatusDelegate()
+			{
+			}
+			
+			public RCODE funcDbRebuildStatus(
+				int				bHaveRebuildInfo,
+				IntPtr			pRebuildInfo,
+				IntPtr			pCorruptInfo)
+			{
+				RCODE	rc = RCODE.NE_XFLM_OK;
+	
+				if (bHaveRebuildInfo != 0)
+				{
+					rc = m_dbRebuildStatus.reportRebuild(
+						(XFLM_REBUILD_INFO)Marshal.PtrToStructure( pRebuildInfo,
+						typeof( XFLM_REBUILD_INFO)));
+				}
+				else
+				{
+					XFLM_CORRUPT_INFO	corruptInfo = new XFLM_CORRUPT_INFO();
+					rc = m_dbRebuildStatus.reportRebuildErr(
+						(XFLM_CORRUPT_INFO)Marshal.PtrToStructure( pCorruptInfo,
+						typeof( XFLM_CORRUPT_INFO)));
+				}
+				return( rc);
+			}
+
+			private DbRebuildStatus	m_dbRebuildStatus;
+		}
+
+//-----------------------------------------------------------------------------
+// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
+//-----------------------------------------------------------------------------
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_createDbSystem(
@@ -1072,6 +1217,19 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDbName,
 														int							bOverwriteDestOk,
 														DbRenameStatusCallback	fnDbRenameStatus);
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbRebuild(
+														ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)] string						pszSourceDbPath,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszSourceDataDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDbPath,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDataDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestRflDir,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszDictPath,
+			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
+														CREATE_OPTS					pCreateOpts,
+														DbRebuildStatusCallback	fnDbRebuildStatus);
 
 		private ulong			m_pDbSystem;
 	}

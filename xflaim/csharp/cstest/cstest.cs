@@ -360,6 +360,46 @@ namespace cstest
 		}
 
 		//--------------------------------------------------------------------------
+		// Rebuild database test.
+		//--------------------------------------------------------------------------
+		static bool rebuildDbTest(
+			string	sSrcDbName,
+			string	sDestDbName,
+			DbSystem	dbSystem)
+		{
+			MyDbRebuildStatus	dbRebuildStatus = null;
+			CREATE_OPTS			createOpts = null;
+
+			// Try restoring the database
+
+			beginTest( "Rebuild Database Test (" + sSrcDbName + " to " + sDestDbName + ")");
+
+			dbRebuildStatus = new MyDbRebuildStatus();
+			createOpts = new CREATE_OPTS();
+
+			createOpts.uiBlockSize = 8192;
+			createOpts.uiVersionNum = (uint)DBVersions.XFLM_CURRENT_VERSION_NUM;
+			createOpts.uiMinRflFileSize = 2000000;
+			createOpts.uiMaxRflFileSize = 20000000;
+			createOpts.bKeepRflFiles = 1;
+			createOpts.bLogAbortedTransToRfl = 1;
+			createOpts.uiDefaultLanguage = (uint)Languages.FLM_DE_LANG;
+			try
+			{
+				dbSystem.dbRebuild( sSrcDbName, null, sDestDbName, null, null,
+					null, null, createOpts, dbRebuildStatus);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( dbRebuildStatus.outputLines(), ex, "rebuilding database");
+				return( false);
+			}
+
+			endTest( true, true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
 		// Remove database test.
 		//--------------------------------------------------------------------------
 		static bool removeDbTest(
@@ -460,6 +500,13 @@ namespace cstest
 				return;
 			}
 
+			// Database rebuild test
+
+			if (!rebuildDbTest( RESTORE_DB_NAME, REBUILD_DB_NAME, dbSystem))
+			{
+				return;
+			}
+
 			// Database check test
 
 			if (!checkDbTest( CREATE_DB_NAME, dbSystem))
@@ -475,6 +522,10 @@ namespace cstest
 				return;
 			}
 			if (!checkDbTest( RENAME_DB_NAME, dbSystem))
+			{
+				return;
+			}
+			if (!checkDbTest( REBUILD_DB_NAME, dbSystem))
 			{
 				return;
 			}
@@ -494,6 +545,10 @@ namespace cstest
 				return;
 			}
 			if (!removeDbTest( dbSystem, RENAME_DB_NAME))
+			{
+				return;
+			}
+			if (!removeDbTest( dbSystem, REBUILD_DB_NAME))
 			{
 				return;
 			}
@@ -859,6 +914,43 @@ namespace cstest
 		}
 	}
 
+	public class PrintCorruption
+	{
+		public static void printCorruption(
+			XFLM_CORRUPT_INFO	corruptInfo)
+		{
+			System.Console.WriteLine( "\nCorruption Found: {0}, Locale: {1}",
+				corruptInfo.eErrCode, corruptInfo.eErrLocale);
+			if (corruptInfo.uiErrLfNumber != 0)
+			{
+				System.Console.WriteLine( "  Logical File Number...... {0} ({1})",
+					corruptInfo.uiErrLfNumber, corruptInfo.eErrLfType);
+				System.Console.WriteLine( "  B-Tree Level............. {0}",
+					corruptInfo.uiErrBTreeLevel);
+			}
+			if (corruptInfo.uiErrBlkAddress != 0)
+			{
+				System.Console.WriteLine( "  Block Address............ {0:X})",
+					corruptInfo.uiErrBlkAddress);
+			}
+			if (corruptInfo.uiErrParentBlkAddress != 0)
+			{
+				System.Console.WriteLine( "  Parent Block Address..... {0:X})",
+					corruptInfo.uiErrParentBlkAddress);
+			}
+			if (corruptInfo.uiErrElmOffset != 0)
+			{
+				System.Console.WriteLine( "  Element Offset........... {0})",
+					corruptInfo.uiErrElmOffset);
+			}
+			if (corruptInfo.ulErrNodeId != 0)
+			{
+				System.Console.WriteLine( "  Node ID.................. {0})",
+					corruptInfo.ulErrNodeId);
+			}
+		}
+	}
+
 	public class MyDbCheckStatus : DbCheckStatus
 	{
 		public MyDbCheckStatus()
@@ -891,35 +983,44 @@ namespace cstest
 		public RCODE reportCheckErr(
 			XFLM_CORRUPT_INFO	corruptInfo)
 		{
-			System.Console.WriteLine( "\nCorruption Found: {0}, Locale: {1}",
-				corruptInfo.eErrCode, corruptInfo.eErrLocale);
-			if (corruptInfo.uiErrLfNumber != 0)
+			PrintCorruption.printCorruption( corruptInfo);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public bool outputLines()
+		{
+			return( m_bOutputLines);
+		}
+
+		private bool	m_bOutputLines;
+	}
+
+	public class MyDbRebuildStatus : DbRebuildStatus
+	{
+		public MyDbRebuildStatus()
+		{
+			m_bOutputLines = false;
+			System.Console.Write( "\n");
+		}
+
+		public RCODE reportRebuild(
+			XFLM_REBUILD_INFO	rebuildInfo)
+		{
+			if (rebuildInfo.bStartFlag != 0)
 			{
-				System.Console.WriteLine( "  Logical File Number...... {0} ({1})",
-					corruptInfo.uiErrLfNumber, corruptInfo.eErrLfType);
-				System.Console.WriteLine( "  B-Tree Level............. {0}",
-					corruptInfo.uiErrBTreeLevel);
+				System.Console.WriteLine( "\nRebuild Phase: {0}", rebuildInfo.eDoingFlag);
 			}
-			if (corruptInfo.uiErrBlkAddress != 0)
-			{
-				System.Console.WriteLine( "  Block Address............ {0:X})",
-					corruptInfo.uiErrBlkAddress);
-			}
-			if (corruptInfo.uiErrParentBlkAddress != 0)
-			{
-				System.Console.WriteLine( "  Parent Block Address..... {0:X})",
-					corruptInfo.uiErrParentBlkAddress);
-			}
-			if (corruptInfo.uiErrElmOffset != 0)
-			{
-				System.Console.WriteLine( "  Element Offset........... {0})",
-					corruptInfo.uiErrElmOffset);
-			}
-			if (corruptInfo.ulErrNodeId != 0)
-			{
-				System.Console.WriteLine( "  Node ID.................. {0})",
-					corruptInfo.ulErrNodeId);
-			}
+			System.Console.Write( "Bytes To Do {0}, Bytes Done: {1}\r",
+				rebuildInfo.ulDatabaseSize, rebuildInfo.ulBytesExamined);
+			m_bOutputLines = true;
+			return( RCODE.NE_XFLM_OK);
+		}
+
+		public RCODE reportRebuildErr(
+			XFLM_CORRUPT_INFO	corruptInfo)
+		{
+			PrintCorruption.printCorruption( corruptInfo);
 			m_bOutputLines = true;
 			return( RCODE.NE_XFLM_OK);
 		}
