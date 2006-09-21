@@ -124,13 +124,15 @@ namespace xflaim
 	/// </summary>
 	public class DbInfo
 	{
+		private ulong	m_pDbInfo;		// Pointer to IF_DbInfo object in unmanaged space
+
 		/// <summary>
 		/// Constructor
 		/// </summary>
 		/// <param name="pDbInfo">
 		/// Pointer to IF_DbInfo object allocated in unmanaged space.
 		/// </param>
-		public DbInfo(
+		internal DbInfo(
 			ulong	pDbInfo)
 		{
 			if (pDbInfo == 0)
@@ -153,6 +155,14 @@ namespace xflaim
 			}
 		}
 
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbInfo_Release(
+			ulong	pDbInfo);
+
+//-----------------------------------------------------------------------------
+// getNumCollections
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Returns the number of collections in the database.
 		/// </summary>
@@ -162,6 +172,14 @@ namespace xflaim
 			return( xflaim_DbInfo_getNumCollections( m_pDbInfo));
 		}
 		
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbInfo_getNumCollections(
+			ulong	pDbInfo);
+
+//-----------------------------------------------------------------------------
+// getNumIndexes
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Returns the number of indexes in the database.
 		/// </summary>
@@ -170,6 +188,14 @@ namespace xflaim
 		{
 			return( xflaim_DbInfo_getNumIndexes( m_pDbInfo));
 		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbInfo_getNumIndexes(
+			ulong	pDbInfo);
+
+//-----------------------------------------------------------------------------
+// getNumLogicalFiles
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Returns the total number of collections and indexes in the database.
@@ -180,6 +206,14 @@ namespace xflaim
 			return( xflaim_DbInfo_getNumLogicalFiles( m_pDbInfo));
 		}
 
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbInfo_getNumLogicalFiles(
+			ulong	pDbInfo);
+
+//-----------------------------------------------------------------------------
+// getDatabaseSize
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Returns the total size of the database (in bytes).
 		/// </summary>
@@ -188,6 +222,14 @@ namespace xflaim
 		{
 			return( xflaim_DbInfo_getDatabaseSize( m_pDbInfo));
 		}
+
+		[DllImport("xflaim")]
+		private static extern ulong xflaim_DbInfo_getDatabaseSize(
+			ulong	pDbInfo);
+
+//-----------------------------------------------------------------------------
+// getDbHdr
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Get the database header
@@ -200,6 +242,15 @@ namespace xflaim
 		{
 			xflaim_DbInfo_getDbHdr( m_pDbInfo, pDbHdr);
 		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbInfo_getDbHdr(
+			[In]  ulong			m_pDbInfo,
+			[Out] XFLM_DB_HDR	pDbHdr);
+
+//-----------------------------------------------------------------------------
+// getAvailBlockStats
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Return statistics on blocks in the avail list.
@@ -227,6 +278,18 @@ namespace xflaim
 				out peLastError, out puiNumErrors);
 		}
 
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbInfo_getAvailBlockStats(
+			ulong							pDbInfo,
+			out ulong					pulBytesUsed,
+			out uint						puiBlockCount,
+			out FlmCorruptionCode	peLastError,
+			out uint						puiNumErrors);
+
+//-----------------------------------------------------------------------------
+// getLFHBlockStats
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Return statistics for blocks in the logical file header block list.
 		/// </summary>
@@ -252,6 +315,18 @@ namespace xflaim
 				out pulBytesUsed, out puiBlockCount,
 				out peLastError, out puiNumErrors);
 		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbInfo_getLFHBlockStats(
+			ulong							pDbInfo,
+			out ulong					pulBytesUsed,
+			out uint						puiBlockCount,
+			out FlmCorruptionCode	peLastError,
+			out uint						puiNumErrors);
+
+//-----------------------------------------------------------------------------
+// getBTreeInfo
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Returns information about a particular B-Tree in the database
@@ -286,6 +361,19 @@ namespace xflaim
 			xflaim_DbInfo_getBTreeInfo( m_pDbInfo, uiNthLogicalFile, out puiLfNum,
 				out peLfType, out puiRootBlkAddress, out puiNumLevels);
 		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbInfo_getBTreeInfo(
+			ulong					pDbInfo,
+			uint					uiNthLogicalFile,
+			out uint				puiLfNum,
+			out eLFileType		peLfType,
+			out uint				puiRootBlkAddress,
+			out uint				puiNumLevels);
+
+//-----------------------------------------------------------------------------
+// getBTreeBlockStats
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Return the statistics for a specific logical file at a specific level
@@ -343,53 +431,6 @@ namespace xflaim
 				out pulContElmBytes, out puiBlockCount, out peLastError, out puiNumErrors);
 		}
 
-		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
-
-		[DllImport("xflaim")]
-		private static extern void xflaim_DbInfo_Release(
-			ulong	pDbInfo);
-		
-		[DllImport("xflaim")]
-		private static extern uint xflaim_DbInfo_getNumCollections(
-			ulong	pDbInfo);
-
-		[DllImport("xflaim")]
-		private static extern uint xflaim_DbInfo_getNumIndexes(
-			ulong	pDbInfo);
-
-		[DllImport("xflaim")]
-		private static extern uint xflaim_DbInfo_getNumLogicalFiles(
-			ulong	pDbInfo);
-
-		[DllImport("xflaim")]
-		private static extern ulong xflaim_DbInfo_getDatabaseSize(
-			ulong	pDbInfo);
-
-		[DllImport("xflaim")]
-		private static extern void xflaim_DbInfo_getAvailBlockStats(
-			ulong							pDbInfo,
-			out ulong					pulBytesUsed,
-			out uint						puiBlockCount,
-			out FlmCorruptionCode	peLastError,
-			out uint						puiNumErrors);
-
-		[DllImport("xflaim")]
-		private static extern void xflaim_DbInfo_getLFHBlockStats(
-			ulong							pDbInfo,
-			out ulong					pulBytesUsed,
-			out uint						puiBlockCount,
-			out FlmCorruptionCode	peLastError,
-			out uint						puiNumErrors);
-
-		[DllImport("xflaim")]
-		private static extern void xflaim_DbInfo_getBTreeInfo(
-			ulong					pDbInfo,
-			uint					uiNthLogicalFile,
-			out uint				puiLfNum,
-			out eLFileType		peLfType,
-			out uint				puiRootBlkAddress,
-			out uint				puiNumLevels);
-		
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_getBTreeBlockStats(
 			ulong							pDbInfo,
@@ -403,12 +444,5 @@ namespace xflaim
 			out uint						puiBlockCount,
 			out FlmCorruptionCode	peLastError,
 			out uint						puiNumErrors);
-
-		[DllImport("xflaim")]
-		private static extern void xflaim_DbInfo_getDbHdr(
-			[In]  ulong			m_pDbInfo,
-			[Out] XFLM_DB_HDR	pDbHdr);
-
-		private ulong	m_pDbInfo;
 	}
 }

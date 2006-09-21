@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc: Database Info
+// Desc: Native C routines to support C# DbInfo class
 //
 // Tabs:	3
 //

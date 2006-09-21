@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:
+// Desc: Native C routines to support C# DbSystem class
 //
 // Tabs:	3
 //
@@ -52,7 +52,7 @@ Desc:
 FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_Release(
 	FLMUINT64	ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	
 	if (pDbSystem)
 	{
@@ -75,7 +75,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCreate(
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = NULL;
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	if (RC_BAD( rc = pDbSystem->dbCreate( pszDbPath, pszDataDir, pszRflDir,
 								pszDictFileName, pszDictBuf,
@@ -104,7 +104,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbOpen(
 {
 	RCODE				rc = NE_XFLM_OK;
 	IF_Db *			pDb = NULL;
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	
 	if (RC_BAD( rc = pDbSystem->dbOpen( pszDbPath, pszDataDir, pszRflDir,
 								pszPassword, bAllowLimited, (IF_Db **)&pDb)))
@@ -128,7 +128,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRemove(
 	const char *			pszRflDir,
 	FLMBOOL					bRemoveRflFiles)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
  
 	return( pDbSystem->dbRemove( pszDbPath, pszDataDir, pszRflDir, bRemoveRflFiles));
 }
@@ -594,7 +594,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRestore(
 	RESTORE_STATUS		fnRestoreStatus)
 {
 	RCODE						rc = NE_XFLM_OK;
-	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *			pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	IF_RestoreClient *	pRestoreClient = NULL;
 	IF_RestoreStatus *	pRestoreStatus = NULL;
 
@@ -693,7 +693,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCheck(
 	FLMUINT64 *			pui64DbInfo)
 {
 	RCODE						rc = NE_XFLM_OK;
-	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *			pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	IF_DbCheckStatus *	pDbCheckStatus = NULL;
 	IF_DbInfo *				pDbInfo = NULL;
 
@@ -779,7 +779,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCopy(
 	DB_COPY_STATUS		fnCopyStatus)
 {
 	RCODE					rc = NE_XFLM_OK;
-	IF_DbSystem *		pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	IF_DbCopyStatus *	pDbCopyStatus = NULL;
 
 	if (fnCopyStatus)
@@ -854,7 +854,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRename(
 	DB_RENAME_STATUS	fnRenameStatus)
 {
 	RCODE						rc = NE_XFLM_OK;
-	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *			pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	IF_DbRenameStatus *	pDbRenameStatus = NULL;
 
 	if (fnRenameStatus)
@@ -937,7 +937,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRebuild(
 	DB_REBUILD_STATUS		fnRebuildStatus)
 {
 	RCODE						rc = NE_XFLM_OK;
-	IF_DbSystem *			pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *			pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	IF_DbRebuildStatus *	pDbRebuildStatus = NULL;
 	FLMUINT64				ui64TotNodes;
 	FLMUINT64				ui64NodesRecov;
@@ -969,4 +969,316 @@ Exit:
 	}
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferIStream(
+	const char *			pszBuffer,
+	FLMUINT64 *				pui64IStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	FLMUINT				uiStrCharCount = f_strlen( pszBuffer) + 1;
+	F_BufferIStream *	pIStream = NULL;
+	char *				pszAllocBuffer = NULL;
+	
+	// Create the buffer stream object.
+	
+	if ((pIStream = f_new F_BufferIStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	// Call the openStream method so that it will allocate a buffer internally.
+	
+	if (RC_BAD( rc = pIStream->openStream( NULL, uiStrCharCount, &pszAllocBuffer)))
+	{
+		goto Exit;
+	}
+	
+	// Copy the data from the passed in string into pucBuffer, including the NULL.
+	
+	f_memcpy( pszAllocBuffer, pszBuffer, uiStrCharCount);
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openFileIStream(
+	FLMUINT64		ui64This,
+	const char *	pszFileName,
+	FLMUINT64 *		pui64IStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_PosIStream *	pIStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openFileIStream( pszFileName, &pIStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openMultiFileIStream(
+	FLMUINT64		ui64This,
+	const char *	pszDirectory,
+	const char *	pszBaseName,
+	FLMUINT64 *		pui64IStream)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_IStream *	pIStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openMultiFileIStream( pszDirectory, pszBaseName, &pIStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferedIStream(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64InputIStream,
+	FLMUINT			uiBufferSize,
+	FLMUINT64 *		pui64IStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)ui64InputIStream);
+	IF_IStream *		pIStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openBufferedIStream( pInputStream, uiBufferSize, &pIStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openUncompressingIStream(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64InputIStream,
+	FLMUINT64 *		pui64IStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)ui64InputIStream);
+	IF_IStream *		pIStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openUncompressingIStream( pInputStream, &pIStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBase64Encoder(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64InputIStream,
+	FLMBOOL			bInsertLineBreaks,
+	FLMUINT64 *		pui64IStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)ui64InputIStream);
+	IF_IStream *		pIStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openBase64Encoder( pInputStream, bInsertLineBreaks, &pIStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBase64Decoder(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64InputIStream,
+	FLMUINT64 *		pui64IStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_IStream *		pInputStream = (IF_IStream *)((FLMUINT)ui64InputIStream);
+	IF_IStream *		pIStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openBase64Decoder( pInputStream, &pIStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64IStream = (FLMUINT64)((FLMUINT)pIStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openFileOStream(
+	FLMUINT64		ui64This,
+	const char *	pszFileName,
+	FLMBOOL			bTruncateIfExists,
+	FLMUINT64 *		pui64OStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_OStream *		pOStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openFileOStream( pszFileName, bTruncateIfExists, &pOStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64OStream = (FLMUINT64)((FLMUINT)pOStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openMultiFileOStream(
+	FLMUINT64		ui64This,
+	const char *	pszDirectory,
+	const char *	pszBaseName,
+	FLMUINT			uiMaxFileSize,
+	FLMBOOL			bOkToOverwrite,
+	FLMUINT64 *		pui64OStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_OStream *		pOStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openMultiFileOStream( pszDirectory, pszBaseName,
+								uiMaxFileSize, bOkToOverwrite, &pOStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64OStream = (FLMUINT64)((FLMUINT)pOStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_removeMultiFileStream(
+	FLMUINT64		ui64This,
+	const char *	pszDirectory,
+	const char *	pszBaseName)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	
+	return( pDbSystem->removeMultiFileStream( pszDirectory, pszBaseName));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferedOStream(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64InputOStream,
+	FLMUINT			uiBufferSize,
+	FLMUINT64 *		pui64OStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_OStream *		pInputOStream = (IF_OStream *)((FLMUINT)ui64InputOStream);
+	IF_OStream *		pOStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openBufferedOStream( pInputOStream,
+								uiBufferSize, &pOStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64OStream = (FLMUINT64)((FLMUINT)pOStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openCompressingOStream(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64InputOStream,
+	FLMUINT64 *		pui64OStream)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_OStream *		pInputOStream = (IF_OStream *)((FLMUINT)ui64InputOStream);
+	IF_OStream *		pOStream = NULL;
+	
+	if (RC_BAD( rc = pDbSystem->openCompressingOStream( pInputOStream, &pOStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	*pui64OStream = (FLMUINT64)((FLMUINT)pOStream);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_writeToOStream(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64IStream,
+	FLMUINT64		ui64OStream)
+{
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_IStream *		pIStream = (IF_IStream *)((FLMUINT)ui64IStream);
+	IF_OStream *		pOStream = (IF_OStream *)((FLMUINT)ui64OStream);
+	
+	return( pDbSystem->writeToOStream( pIStream, pOStream));
 }

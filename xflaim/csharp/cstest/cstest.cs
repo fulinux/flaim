@@ -24,6 +24,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using xflaim;
 
@@ -38,6 +39,7 @@ namespace cstest
 		private const string RESTORE_DB_NAME = "restore.db";
 		private const string BACKUP_PATH = "backup";
 		private const string REBUILD_DB_NAME = "rebuild.db";
+		private const string TEST_STREAM_STRING = "abcdefghijklmnopqrstuvwxyzABCDEFJHIJKLMNOPQRSTUVWXYZ0123456789";
 
 		//--------------------------------------------------------------------------
 		// Begin a test.
@@ -447,6 +449,83 @@ namespace cstest
 		}
 
 		//--------------------------------------------------------------------------
+		// Stream tests
+		//--------------------------------------------------------------------------
+		static bool streamTests(
+			DbSystem	dbSystem)
+		{
+			IStream			bufferStream;
+			IStream			encoderStream;
+			IStream			decoderStream;
+			OStream			fileOStream;
+			Stream			s;
+			StreamReader	sr;
+
+			beginTest( "Creating IStream from buffer");
+			try
+			{
+				bufferStream = dbSystem.openBufferIStream( TEST_STREAM_STRING);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling openBufferIStream");
+				return( false);
+			}
+
+			try
+			{
+				encoderStream = dbSystem.openBase64Encoder( bufferStream, true);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling openBase64Encoder");
+				return( false);
+			}
+
+			try
+			{
+				decoderStream = dbSystem.openBase64Decoder( encoderStream);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling openBase64Decoder");
+				return( false);
+			}
+
+			try
+			{
+				fileOStream = dbSystem.openFileOStream( "Output_Stream", true);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling openFileOStream");
+				return( false);
+			}
+			try
+			{
+				dbSystem.writeToOStream( decoderStream, fileOStream);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling writeToOStream");
+				return( false);
+			}
+			fileOStream = null;
+
+			s = File.OpenRead( "Output_Sream");
+			sr = new StreamReader( s);
+			if (sr.ReadLine() != TEST_STREAM_STRING)
+			{
+				endTest( true, false);
+				System.Console.WriteLine( "Stream data does not match original string");
+				return( false);
+			}
+
+			endTest( false, true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
 		// Main for tester program
 		//--------------------------------------------------------------------------
 		static void Main()
@@ -548,6 +627,13 @@ namespace cstest
 				return;
 			}
 			if (!removeDbTest( dbSystem, REBUILD_DB_NAME))
+			{
+				return;
+			}
+
+			// Input and Output stream tests
+
+			if (!streamTests( dbSystem))
 			{
 				return;
 			}

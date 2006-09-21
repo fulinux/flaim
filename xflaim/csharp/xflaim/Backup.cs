@@ -34,6 +34,8 @@ namespace xflaim
 	/// </summary>
 	public class Backup
 	{
+		private ulong	m_pBackup;	// Pointer to IF_Backup object in unmanaged space
+		private Db		m_db;
 
 		/// <summary>
 		/// This constructor doesn't need to do much of anything; it's here mostly
@@ -69,7 +71,7 @@ namespace xflaim
 			// no need to make the following call.
 			if (m_db.getDb() == 0)
 			{
-				throw new XFlaimException( "Invalid Db.getRef()");
+				throw new XFlaimException( "Invalid Db.IF_Db object");
 			}
 		}
 
@@ -87,6 +89,14 @@ namespace xflaim
 			m_db = null;
 		}
 	
+		[DllImport("xflaim")]
+		private static extern int xflaim_Backup_Release(
+			ulong	pBackup);
+
+//-----------------------------------------------------------------------------
+// getBackupTransId
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Get the transaction ID for this backup operation.
 		/// </summary>
@@ -96,6 +106,14 @@ namespace xflaim
 			return( xflaim_Backup_getBackupTransId( m_pBackup));
 		}
 	
+		[DllImport("xflaim")]
+		private static extern ulong xflaim_Backup_getBackupTransId(
+			ulong	pBackup);
+
+//-----------------------------------------------------------------------------
+// getLastBackupTransId
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Gets the transaction ID for the last backup job run on this database.
 		/// </summary>
@@ -108,6 +126,14 @@ namespace xflaim
 			return( xflaim_Backup_getLastBackupTransId( m_pBackup));
 		}
 	
+		[DllImport("xflaim")]
+		private static extern ulong xflaim_Backup_getLastBackupTransId(
+			ulong	pBackup);
+
+//-----------------------------------------------------------------------------
+// backup
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Performs the backup operation. The <paramref name="sBackupPath"/> and
 		/// <paramref name="backupClient"/> parameters are mutually exclusive.  If
@@ -170,6 +196,17 @@ namespace xflaim
 			return( uiSeqNum);
 		}
 
+		[DllImport("xflaim")]
+		private static extern int xflaim_Backup_backup(
+			ulong						pBackup,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string					sBackupPath,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string					sPassword,
+			out uint					uiSeqNum,
+			BackupClientCallback	fnBackupClient,
+			BackupStatusCallback	fnBackupStatus);
+
 		private delegate RCODE BackupClientCallback(
 			IntPtr	pvData,
 			uint		uiDataLen);
@@ -222,6 +259,10 @@ namespace xflaim
 			private BackupStatus	m_backupStatus;
 		}
 
+//-----------------------------------------------------------------------------
+// endBackup
+//-----------------------------------------------------------------------------
+
 		/// <summary>
 		/// Ends the backup operation.
 		/// </summary>
@@ -235,35 +276,9 @@ namespace xflaim
 			}
 		}
 
-		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
-
-		[DllImport("xflaim")]
-		private static extern int xflaim_Backup_Release(
-			ulong	pBackup);
-
-		[DllImport("xflaim")]
-		private static extern ulong xflaim_Backup_getBackupTransId(
-			ulong	pBackup);
-		
-		[DllImport("xflaim")]
-		private static extern ulong xflaim_Backup_getLastBackupTransId(
-			ulong	pBackup);
-
-		[DllImport("xflaim")]
-		private static extern int xflaim_Backup_backup(
-														ulong						pBackup,
-			[MarshalAs(UnmanagedType.LPStr)] string					sBackupPath,
-			[MarshalAs(UnmanagedType.LPStr)] string					sPassword,
-														out uint					uiSeqNum,
-														BackupClientCallback	fnBackupClient,
-														BackupStatusCallback	fnBackupStatus);
-		
 		[DllImport("xflaim")]
 		private static extern int xflaim_Backup_endBackup(
 			ulong	pBackup);
 
-		private ulong			m_pBackup;
-		private Db				m_db;
 	}
 }
-

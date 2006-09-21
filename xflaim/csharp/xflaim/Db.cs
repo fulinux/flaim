@@ -36,6 +36,8 @@ namespace xflaim
 	/// </remarks>
 	public class Db
 	{
+		private ulong 		m_pDb;			// Pointer to IF_Db object in unmanaged space
+		private DbSystem 	m_dbSystem;
 
 		/// <summary>
 		/// Db constructor.
@@ -46,7 +48,7 @@ namespace xflaim
 		/// <param name="dbSystem">
 		/// DbSystem object that this Db object is associated with.
 		/// </param>
-		public Db(
+		internal Db(
 			ulong		pDb,
 			DbSystem	dbSystem)
 		{
@@ -70,7 +72,7 @@ namespace xflaim
 			// no need to make the following call.
 			if (m_dbSystem.getDbSystem() == 0)
 			{
-				throw new XFlaimException( "Invalid DbSystem.getRef()");
+				throw new XFlaimException( "Invalid DbSystem.IF_DbSystem object");
 			}
 		}
 
@@ -86,7 +88,7 @@ namespace xflaim
 		/// Return the pointer to the IF_Db object.
 		/// </summary>
 		/// <returns>Returns a pointer to the IF_Db object.</returns>
-		public ulong getDb()
+		internal ulong getDb()
 		{
 			return( m_pDb);
 		}
@@ -108,6 +110,14 @@ namespace xflaim
 		
 			m_dbSystem = null;
 		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Db_Release(
+			ulong	pDb);
+
+//-----------------------------------------------------------------------------
+// backupBegin
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Sets up a backup operation.
@@ -145,12 +155,6 @@ namespace xflaim
 			return( new Backup( pBackup, this));
 		}
 
-		// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
-
-		[DllImport("xflaim")]
-		private static extern void xflaim_Db_Release(
-			ulong	pDb);
-
 		[DllImport("xflaim")]
 		private static extern int xflaim_Db_backupBegin(
 			ulong			pDb,
@@ -158,11 +162,5 @@ namespace xflaim
 			int			bLockDb,
 			uint			uiMaxLockWait,
 			out ulong	ulBackupRef);
-
-		/// <summary>
-		/// Reference to C++ IF_Db object.
-		/// </summary>
-		public ulong 		m_pDb;
-		private DbSystem 	m_dbSystem;
 	}
 }

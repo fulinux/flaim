@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc: Native C routines to support C# Db class
+// Desc: Native C routines to support C# IStream class
 //
 // Tabs:	3
 //
@@ -28,45 +28,13 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Db_Release(
+FLMEXTC FLMEXP void FLMAPI xflaim_IStream_Release(
 	FLMUINT64	ui64This)
 {
-	IF_Db *	pDb = ((IF_Db *)(FLMUINT)ui64This);
+	IF_IStream *	pIStream = ((IF_IStream *)(FLMUINT)ui64This);
 	
-	if (pDb)
+	if (pIStream)
 	{
-		pDb->Release();
+		pIStream->Release();
 	}
-}
-
-/****************************************************************************
-Desc:
-****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_backupBegin(
-	FLMUINT64	ui64This,
-	FLMBOOL		bFullBackup,
-	FLMBOOL		bLockDb,
-	FLMUINT		uiMaxLockWait,
-	FLMUINT64 *	pui64BackupRef)
-{
-	RCODE			rc = NE_XFLM_OK;
-	IF_Db *		pDb = ((IF_Db *)(FLMUINT)ui64This);
-	IF_Backup *	pBackup = NULL;
-
-	if (RC_BAD( rc = pDb->backupBegin(
-								(eDbBackupType)(bFullBackup
-														? XFLM_FULL_BACKUP
-														: XFLM_INCREMENTAL_BACKUP),
-								(eDbTransType)(bLockDb
-													? XFLM_READ_TRANS
-													: XFLM_UPDATE_TRANS),
-								uiMaxLockWait, &pBackup)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	*pui64BackupRef = (FLMUINT64)((FLMUINT)pBackup);
-	return( rc);
 }

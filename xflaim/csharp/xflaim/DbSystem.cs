@@ -250,6 +250,7 @@ namespace xflaim
 	/// </remarks>
 	public class DbSystem
 	{
+		private ulong	m_pDbSystem;	// Pointer to IF_DbSystem object in unmanaged space
 
 		/// <summary>
 		/// DbSystem constructor.
@@ -264,6 +265,10 @@ namespace xflaim
 			}
 		}
 
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_createDbSystem(
+			out ulong	ppDbSystem);
+
 		/// <summary>
 		/// DbSystem destructor.
 		/// </summary>
@@ -273,11 +278,15 @@ namespace xflaim
 			m_pDbSystem = 0;
 		}
 		
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_Release(
+			ulong	pDbSystem);
+
 		/// <summary>
 		/// Called by <see cref="Db"/> class to silence compiler warning.
 		/// Has no other important use!
 		/// </summary>
-		public ulong getDbSystem()
+		internal ulong getDbSystem()
 		{
 			return m_pDbSystem;
 		}
@@ -337,7 +346,6 @@ namespace xflaim
 			string 				sDictBuf,
 			CREATE_OPTS			createOpts)
 		{
-			Db			db = null;
 			ulong 	pDb;
 			int		rc;
 		
@@ -346,14 +354,25 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-		
-			if (pDb != 0)
-			{
-				db = new Db( pDb, this);	
-			}
-			return( db);
+			return( new Db( pDb, this));
 		}
 	
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbCreate(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszDbFileName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszDictFileName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszDictBuf,
+			CREATE_OPTS	pCreateOpts,
+			out ulong	ppDb);
+
 //-----------------------------------------------------------------------------
 // dbOpen
 //-----------------------------------------------------------------------------
@@ -387,7 +406,6 @@ namespace xflaim
 			string	sPassword,
 			bool		bAllowLimited)
 		{
-			Db			db = null;
 			ulong 	pDb;
 			int		rc;
 		
@@ -397,13 +415,23 @@ namespace xflaim
 				throw new XFlaimException( rc);
 			}
 		
-			if (pDb != 0)
-			{
-				db = new Db( pDb, this);	
-			}
-			return( db);
+			return( new Db( pDb, this));
 		}
 	
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbOpen(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszDbFileName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszPassword,
+			int			bAllowLimited,
+			out ulong	ppDb);
+
 //-----------------------------------------------------------------------------
 // dbRemove
 //-----------------------------------------------------------------------------
@@ -438,6 +466,17 @@ namespace xflaim
 				throw new XFlaimException( rc);
 			}
 		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbRemove(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszDbFileName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 		pszRflDir,
+			int			bRemoveRflFiles);
 
 //-----------------------------------------------------------------------------
 // dbRestore
@@ -513,6 +552,22 @@ namespace xflaim
 				throw new XFlaimException( rc);
 			}
 		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbRestore(
+			ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string						pszDbFileName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszBackupPath,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszPassword,
+			RestoreClientCallback	fnRestoreClient,
+			RestoreStatusCallback	fnRestoreStatus);
 
 		// WARNING NOTE: Any changes to this enum should also be reflected in DbSystem.cpp
 		private enum RestoreClientAction
@@ -796,6 +851,21 @@ namespace xflaim
 			return( new DbInfo( pDbInfo));
 		}
 
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbCheck(
+			ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string						pszDbName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszPassword,
+			DbCheckFlags				eFlags,
+			DbCheckStatusCallback	fnDbCheckStatus,
+			out ulong					ppDbInfo);
+
 		private delegate RCODE DbCheckStatusCallback(
 			int				bHaveProgressInfo,
 			IntPtr			pProgressInfo,
@@ -896,6 +966,23 @@ namespace xflaim
 			}
 		}
 
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbCopy(
+			ulong						pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string					pszSrcDbName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 					pszSrcDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 					pszSrcRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 					pszDestDbName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 					pszDestDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 					pszDestRflDir,
+			DbCopyStatusCallback	fnDbCopyStatus);
+
 		private delegate RCODE DbCopyStatusCallback(
 			ulong				ulBytesToCopy,
 			ulong				ulBytesCopied,
@@ -989,6 +1076,20 @@ namespace xflaim
 				throw new XFlaimException( rc);
 			}
 		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbRename(
+			ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string						pszSrcDbName,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszSrcDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszSrcRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDestDbName,
+			int							bOverwriteDestOk,
+			DbRenameStatusCallback	fnDbRenameStatus);
 
 		private delegate RCODE DbRenameStatusCallback(
 			IntPtr			pszSrcFileName,
@@ -1090,6 +1191,26 @@ namespace xflaim
 			}
 		}
 
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_dbRebuild(
+			ulong							pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string						pszSourceDbPath,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszSourceDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDestDbPath,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDestDataDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDestRflDir,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszDictPath,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string 						pszPassword,
+			CREATE_OPTS					pCreateOpts,
+			DbRebuildStatusCallback	fnDbRebuildStatus);
+
 		private delegate RCODE DbRebuildStatusCallback(
 			int				bHaveRebuildInfo,
 			IntPtr			pRebuildInfo,
@@ -1133,102 +1254,517 @@ namespace xflaim
 		}
 
 //-----------------------------------------------------------------------------
-// PRIVATE METHODS THAT ARE IMPLEMENTED IN C AND C++
+// openBufferIStream
 //-----------------------------------------------------------------------------
 
-		[DllImport("xflaim")]
-		private static extern int xflaim_DbSystem_createDbSystem(
-			out ulong	ppDbSystem);
+		/// <summary>
+		/// Open an input stream that reads from a string buffer.
+		/// </summary>
+		/// <param name="sBuffer">
+		/// String the input stream is to read from.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openBufferIStream(
+			string	sBuffer)
+		{
+			int		rc;
+			ulong		pIStream = 0;
 
-		[DllImport("xflaim")]
-		private static extern int xflaim_DbSystem_Release(
-			ulong	pDbSystem);
-
-		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbCreate(
-														ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string		pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszDictFileName,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszDictBuf,
-														CREATE_OPTS	pCreateOpts,
-														out ulong	ppDb);
-
-		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbOpen(
-														ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string		pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszPassword,
-														int			bAllowLimited,
-														out ulong	ppDb);
+			if ((rc = xflaim_DbSystem_openBufferIStream( sBuffer, out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbRemove(
-														ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string		pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 		pszRflDir,
-														int			bRemoveRflFiles);
+		private static extern int xflaim_DbSystem_openBufferIStream(
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszBuffer,
+			out ulong	ppIStream);
+
+//-----------------------------------------------------------------------------
+// openFileIStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an input stream that reads from a file.
+		/// </summary>
+		/// <param name="sFileName">
+		/// Name of the file the input stream is to read from.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openFileIStream(
+			string	sFileName)
+		{
+			int		rc;
+			ulong		pIStream = 0;
+
+			if ((rc = xflaim_DbSystem_openFileIStream( m_pDbSystem, sFileName, out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbRestore(
-														ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string						pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszBackupPath,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
-														RestoreClientCallback	fnRestoreClient,
-														RestoreStatusCallback	fnRestoreStatus);
+		private static extern int xflaim_DbSystem_openFileIStream(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszFileName,
+			out ulong	ppIStream);
+
+//-----------------------------------------------------------------------------
+// openMultiFileIStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an input stream that reads from multiple files.
+		/// </summary>
+		/// <param name="sDirectory">
+		/// Name of the directory where the multiple files are to be found.
+		/// </param>
+		/// <param name="sBaseName">
+		/// Base name of the input files.  Files that constitute the
+		/// input stream are sBaseName, sBaseName.00000001, sBaseName.00000002, etc. - where
+		/// the extension is a Hex number.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openMultiFileIStream(
+			string	sDirectory,
+			string	sBaseName)
+		{
+			int		rc;
+			ulong		pIStream = 0;
+
+			if ((rc = xflaim_DbSystem_openMultiFileIStream( m_pDbSystem, sDirectory,
+									sBaseName, out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbCheck(
-														ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string						pszDbName,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
-														DbCheckFlags				eFlags,
-														DbCheckStatusCallback	fnDbCheckStatus,
-														out ulong					ppDbInfo);
+		private static extern int xflaim_DbSystem_openMultiFileIStream(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszDirectory,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszBaseName,
+			out ulong	ppIStream);
+
+//-----------------------------------------------------------------------------
+// openBufferedIStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an input stream that buffers an existing input stream.
+		/// </summary>
+		/// <param name="inputIStream">
+		/// Input stream that is to be buffered.
+		/// </param>
+		/// <param name="uiBufferSize">
+		/// iBufferSize The size (in bytes) of the buffer to use for the
+		/// input stream.  Data will be read into the buffer in chunks of this size.
+		/// This will help performance by preventing lots of smaller reads from
+		/// the original input stream.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openBufferedIStream(
+			IStream		inputIStream,
+			uint			uiBufferSize)
+		{
+			int		rc;
+			ulong		pIStream = 0;
+
+			if ((rc = xflaim_DbSystem_openBufferedIStream( m_pDbSystem,
+							inputIStream.getIStream(), uiBufferSize, out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbCopy(
-														ulong						pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string					pszSrcDbName,
-			[MarshalAs(UnmanagedType.LPStr)] string 					pszSrcDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 					pszSrcRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestDbName,
-			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 					pszDestRflDir,
-														DbCopyStatusCallback	fnDbCopyStatus);
+		private static extern int xflaim_DbSystem_openBufferedIStream(
+			ulong			pDbSystem,
+			ulong			pInputIStream,
+			uint			uiBufferSize,
+			out ulong	ppIStream);
+
+//-----------------------------------------------------------------------------
+// openUncompressingIStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an input stream that decompresses data from another input stream.  It
+		/// is assumed that data coming out of the other input stream is compressed.
+		/// </summary>
+		/// <param name="inputIStream">
+		/// Input stream whose data is to be decompressed.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openUncompressingIStream(
+			IStream	inputIStream)
+		{
+			int		rc;
+			ulong		pIStream = 0;
+
+			if ((rc = xflaim_DbSystem_openUncompressingIStream( m_pDbSystem,
+				inputIStream.getIStream(), out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbRename(
-														ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string						pszSrcDbName,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszSrcDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszSrcRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDbName,
-														int							bOverwriteDestOk,
-														DbRenameStatusCallback	fnDbRenameStatus);
+		private static extern int xflaim_DbSystem_openUncompressingIStream(
+			ulong			pDbSystem,
+			ulong			pInputIStream,
+			out ulong	ppIStream);
+
+//-----------------------------------------------------------------------------
+// openBase64Encoder
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an input stream that encodes data from another input stream into
+		/// base 64 encoded binary.  Data read from the stream object returned by
+		/// this method will be base 64 encoded.
+		/// </summary>
+		/// <param name="inputIStream">
+		/// Input stream whose data is to be base 64 encoded.
+		/// </param>
+		/// <param name="bInsertLineBreaks">
+		/// Flag indicating whether or not line breaks
+		/// should be inserted into the data as it is base 64 encoded.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openBase64Encoder(
+			IStream	inputIStream,
+			bool		bInsertLineBreaks)
+		{
+			int		rc;
+			ulong		pIStream = 0;
+
+			if ((rc = xflaim_DbSystem_openBase64Encoder( m_pDbSystem,
+				inputIStream.getIStream(), (int)(bInsertLineBreaks ? 1 : 0),
+				out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
-		private static extern int xflaim_DbSystem_dbRebuild(
-														ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)] string						pszSourceDbPath,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszSourceDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDbPath,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestDataDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDestRflDir,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszDictPath,
-			[MarshalAs(UnmanagedType.LPStr)] string 						pszPassword,
-														CREATE_OPTS					pCreateOpts,
-														DbRebuildStatusCallback	fnDbRebuildStatus);
+		private static extern int xflaim_DbSystem_openBase64Encoder(
+			ulong			pDbSystem,
+			ulong			pInputIStream,
+			int			bInsertLineBreaks,
+			out ulong	ppIStream);
 
-		private ulong			m_pDbSystem;
+//-----------------------------------------------------------------------------
+// openBase64Decoder
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an input stream that decodes data from another input stream.  It is
+		/// assumed that data read from the original input stream is base 64
+		/// encoded.
+		/// </summary>
+		/// <param name="inputIStream">
+		/// Input stream whose data is to be decoded.  It is assumed that data read
+		/// from this stream is base 64 encoded.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="IStream"/> object that can then be passed to
+		/// methods which require an IStream object.
+		/// </returns>
+		public IStream openBase64Decoder(
+			IStream	inputIStream)
+		{
+			int		rc;
+			ulong		pIStream = 0;
+
+			if ((rc = xflaim_DbSystem_openBase64Decoder( m_pDbSystem,
+				inputIStream.getIStream(), out pIStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new IStream( pIStream, this));
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_openBase64Decoder(
+			ulong			pDbSystem,
+			ulong			pInputIStream,
+			out ulong	ppIStream);
+
+//-----------------------------------------------------------------------------
+// openFileOStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open an output stream that writes data to a file.
+		/// </summary>
+		/// <param name="sFileName">
+		/// Name of file to write data to.
+		/// </param>
+		/// <param name="bTruncateIfExists">
+		/// Flag indicating whether or not the output file
+		/// should be truncated if it already exists.  If false, the file will be
+		/// appended to.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="OStream"/> object that can then be passed to
+		/// methods which require an OStream object.
+		/// </returns>
+		public OStream openFileOStream(
+			string	sFileName,
+			bool		bTruncateIfExists)
+		{
+			int		rc;
+			ulong		pOStream = 0;
+
+			if ((rc = xflaim_DbSystem_openFileOStream( m_pDbSystem,
+				sFileName, (int)(bTruncateIfExists ? 1 : 0), out pOStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new OStream( pOStream, this));
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_openFileOStream(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszFileName,
+			int			bTruncateIfExists,
+			out ulong	ppOStream);
+
+//-----------------------------------------------------------------------------
+// openMultiFileOStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open a multi-file output stream.  Data is written to one or more files.
+		/// </summary>
+		/// <param name="sDirectory">
+		/// Directory where output files are to be created.
+		/// </param>
+		/// <param name="sBaseName">
+		/// Base name for creating file names.  The first file will
+		/// be called sBaseName.  Subsequent files will be named sBaseName.00000001,
+		/// sBaseName.00000002, etc.  The extension is a hex number.
+		/// </param>
+		/// <param name="uiMaxFileSize">
+		/// Maximum number of bytes to write to each file in the multi-file set.
+		/// </param>
+		/// <param name="bOkToOverwrite">
+		/// Flag indicating whether or not the output files
+		/// should be overwritten if they already exist.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="OStream"/> object that can then be passed to
+		/// methods which require an OStream object.
+		/// </returns>
+		public OStream openMultiFileOStream(
+			string	sDirectory,
+			string	sBaseName,
+			uint		uiMaxFileSize,
+			bool		bOkToOverwrite)
+		{
+			int		rc;
+			ulong		pOStream = 0;
+
+			if ((rc = xflaim_DbSystem_openMultiFileOStream( m_pDbSystem,
+				sDirectory, sBaseName, uiMaxFileSize,
+				(int)(bOkToOverwrite ? 1 : 0), out pOStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new OStream( pOStream, this));
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_openMultiFileOStream(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszDirectory,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		sBaseName,
+			uint			uiMaxFileSize,
+			int			bOkToOverwrite,
+			out ulong	ppOStream);
+
+//-----------------------------------------------------------------------------
+// removeMultiFileStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Remove a multi-file output stream from disk.
+		/// </summary>
+		/// <param name="sDirectory">
+		/// Directory where the files belonging to the output stream are located.
+		/// </param>
+		/// <param name="sBaseName">
+		/// Base name for files belonging to the output stream.  The first file will
+		/// be called sBaseName.  Subsequent files will be named sBaseName.00000001,
+		/// sBaseName.00000002, etc.  The extension is a hex number.
+		/// </param>
+		public void removeMultiFileStream(
+			string	sDirectory,
+			string	sBaseName)
+		{
+			int	rc;
+
+			if ((rc = xflaim_DbSystem_removeMultiFileStream(  m_pDbSystem,
+				sDirectory, sBaseName)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_removeMultiFileStream(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		pszDirectory,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string		sBaseName);
+
+//-----------------------------------------------------------------------------
+// openBufferedOStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open a buffered output stream.  A buffer is allocated for writing data to
+		/// the original output stream.  Instead of writing small chunks of data to
+		/// the original output stream, it is first gathered into the output buffer.
+		/// When the output buffer fills, the entire buffer is sent to the original
+		/// output stream with a single write.  The idea is that by buffering the
+		/// output data, performance can be improved.
+		/// </summary>
+		/// <param name="inputOStream">
+		/// Output stream that the data is ultimately going to be written to - but it
+		/// will be buffered before being written.
+		/// </param>
+		/// <param name="uiBufferSize">
+		/// Size of the buffer to be used for buffering output.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="OStream"/> object that can then be passed to
+		/// methods which require an OStream object.
+		/// </returns>
+		public OStream openBufferedOStream(
+			OStream	inputOStream,
+			uint		uiBufferSize)
+		{
+			int		rc;
+			ulong		pOStream = 0;
+
+			if ((rc = xflaim_DbSystem_openBufferedOStream( m_pDbSystem,
+				inputOStream.getOStream(), uiBufferSize, out pOStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new OStream( pOStream, this));
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_openBufferedOStream(
+			ulong			pDbSystem,
+			ulong			pInputOStream,
+			uint			uiBufferSize,
+			out ulong	ppOStream);
+
+//-----------------------------------------------------------------------------
+// openCompressingOStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Open a compressing output stream.  Data is compressed before writing it
+		/// out to the passed in output stream object.
+		/// </summary>
+		/// <param name="inputOStream">
+		/// Output stream that the data is ultimately going to be written to - but it
+		/// will be compressed before being written.
+		/// </param>
+		/// <returns>
+		/// Returns an <see cref="OStream"/> object that can then be passed to
+		/// methods which require an OStream object.
+		/// </returns>
+		public OStream openCompressingOStream(
+			OStream	inputOStream)
+		{
+			int		rc;
+			ulong		pOStream = 0;
+
+			if ((rc = xflaim_DbSystem_openCompressingOStream( m_pDbSystem,
+				inputOStream.getOStream(), out pOStream)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new OStream( pOStream, this));
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_openCompressingOStream(
+			ulong			pDbSystem,
+			ulong			pInputOStream,
+			out ulong	ppOStream);
+
+//-----------------------------------------------------------------------------
+// writeToOStream
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Read data from an input stream and write it out to an output stream.  This
+		/// is a quick way to copy all data from an input stream to an output stream.
+		/// </summary>
+		/// <param name="istream">
+		/// Input stream data is to be read from.
+		/// </param>
+		/// <param name="ostream">
+		/// Output stream data is to be written to.
+		/// </param>
+		public void writeToOStream(
+			IStream	istream,
+			OStream	ostream)
+		{
+			int	rc;
+			
+			if ((rc = xflaim_DbSystem_writeToOStream( m_pDbSystem,
+				istream.getIStream(), ostream.getOStream())) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern int xflaim_DbSystem_writeToOStream(
+			ulong			pDbSystem,
+			ulong			pIStream,
+			ulong			pOStream);
 	}
 }

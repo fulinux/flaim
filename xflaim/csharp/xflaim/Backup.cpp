@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Desc:
+// Desc: Native C routines to support C# Backup class
 //
 // Tabs:	3
 //
