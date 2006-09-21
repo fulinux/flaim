@@ -774,7 +774,7 @@ Finish_Test:
 	// compiled with NICI or not...
 	if( RC_BAD( rc))
 #else
-	if (rc != NE_XFLM_UNSUPPORTED_FEATURE)
+	if (rc != NE_XFLM_ENCRYPTION_UNAVAILABLE)
 #endif
 	{
 		MAKE_FLM_ERROR_STRING( "backup failed", m_szDetails, rc);
