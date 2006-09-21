@@ -1854,6 +1854,7 @@ endif
 
 	$(ec)$(gprintf) "Checking Ubuntu package ...\n"
 	$(ec)lintian -i -X bin,shl $(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb
+	$(ec)linda -i $(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb
 	
 	$(ec)$(gprintf) "Moving package to UBUNTU directory ...\n"
 	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb,$(package_ubuntu_dir))
@@ -1883,6 +1884,7 @@ ubuntusrc: srcdist
 	
 	$(ec)$(gprintf) "Creating Ubuntu control file ...\n"
 	$(ec)$(gprintf) "Source: $(package_proj_name)\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Section: libs\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Priority: optional\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0), ncurses-dev\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
@@ -1903,6 +1905,7 @@ ubuntusrc: srcdist
 	
 	$(ec)$(gprintf) "Checking Ubuntu package ...\n"
 	$(ec)lintian -i $(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc
+	$(ec)linda -i $(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc
 	
 	$(ec)$(gprintf) "Moving packages to UBUNTU directory ...\n"
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc,$(package_ubuntu_dir))
