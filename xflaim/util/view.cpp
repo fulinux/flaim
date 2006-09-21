@@ -86,13 +86,13 @@ extern "C" int main(
 
 	// Setup defaults for fixing the file header if necessary
 
-	gv_ViewFixOptions.uiBlockSize = XFLM_DEFAULT_BLKSIZ;
-	gv_ViewFixOptions.uiVersionNum = XFLM_CURRENT_VERSION_NUM;
-	gv_ViewFixOptions.uiMinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
-	gv_ViewFixOptions.uiMaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
-	gv_ViewFixOptions.bKeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
-	gv_ViewFixOptions.bLogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
-	gv_ViewFixOptions.uiDefaultLanguage = XFLM_DEFAULT_LANG;
+	gv_ViewFixOptions.ui32BlockSize = XFLM_DEFAULT_BLKSIZ;
+	gv_ViewFixOptions.ui32VersionNum = XFLM_CURRENT_VERSION_NUM;
+	gv_ViewFixOptions.ui32MinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
+	gv_ViewFixOptions.ui32MaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
+	gv_ViewFixOptions.i32KeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
+	gv_ViewFixOptions.i32LogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
+	gv_ViewFixOptions.ui32DefaultLanguage = XFLM_DEFAULT_LANG;
 
 	// See if a file name was passed in
 
@@ -160,8 +160,8 @@ extern "C" int main(
 					break;
 				case 'b':
 				case 'B':
-					gv_ViewFixOptions.uiBlockSize =
-						f_atoi( &ppszArgV [uiArg][2]);
+					gv_ViewFixOptions.ui32BlockSize =
+						(FLMUINT32)f_atoi( &ppszArgV [uiArg][2]);
 					break;
 				case 'd':
 				case 'D':
@@ -181,13 +181,13 @@ extern "C" int main(
 					break;
 				case 'l':
 				case 'L':
-					gv_ViewFixOptions.uiMaxRflFileSize =
-						f_atol( &ppszArgV [uiArg][2]);
+					gv_ViewFixOptions.ui32MaxRflFileSize =
+						(FLMUINT32)f_atol( &ppszArgV [uiArg][2]);
 					break;
 				case 'm':
 				case 'M':
-					gv_ViewFixOptions.uiMinRflFileSize =
-						f_atol( &ppszArgV [uiArg][2]);
+					gv_ViewFixOptions.ui32MinRflFileSize =
+						(FLMUINT32)f_atol( &ppszArgV [uiArg][2]);
 					break;
 				case 'p':
 				case 'P':

@@ -81,25 +81,27 @@
 	Desc:    This structure is used as a parameter to dbCreate to specify
 				the create options for a database.  It is also optionally returned
 				when calling dbOpen.
+				IMPORTANT NOTE: This needs to be kept in sync with the same
+				structure that is defined in java and csharp modules.
 	****************************************************************************/
 	typedef struct
 	{
-		FLMUINT		uiBlockSize;
+		FLMUINT32	ui32BlockSize;
 	#define XFLM_DEFAULT_BLKSIZ						4096
-		FLMUINT		uiVersionNum;
+		FLMUINT32	ui32VersionNum;
 	#define XFLM_VER_5_12								512
 	#define XFLM_CURRENT_VERSION_NUM					XFLM_VER_5_12
 	#define XFLM_CURRENT_VER_STR						"5.12"
-		FLMUINT		uiMinRflFileSize;
+		FLMUINT32	ui32MinRflFileSize;
 	#define XFLM_DEFAULT_MIN_RFL_FILE_SIZE			((FLMUINT)100 * (FLMUINT)1024 * (FLMUINT)1024)
-		FLMUINT		uiMaxRflFileSize;
+		FLMUINT32	ui32MaxRflFileSize;
 	#define XFLM_DEFAULT_MAX_RFL_FILE_SIZE			FLM_MAXIMUM_FILE_SIZE
-		FLMBOOL		bKeepRflFiles;
+		FLMINT32		i32KeepRflFiles;
 	#define XFLM_DEFAULT_KEEP_RFL_FILES_FLAG		FALSE
-		FLMBOOL		bLogAbortedTransToRfl;
+		FLMINT32		i32LogAbortedTransToRfl;
 	#define XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG	FALSE
 
-		FLMUINT		uiDefaultLanguage;
+		FLMUINT32	ui32DefaultLanguage;
 	#define XFLM_DEFAULT_LANG							(FLM_US_LANG)
 	} XFLM_CREATE_OPTS, F_CREATE_OPTS;
 	

@@ -288,7 +288,7 @@ RCODE F_Db::initDbFiles(
 	// Determine what size of buffer to allocate.
 
 	uiBlkSize = (FLMUINT)(pCreateOpts
-								 ? flmAdjustBlkSize( pCreateOpts->uiBlockSize)
+								 ? flmAdjustBlkSize( (FLMUINT)pCreateOpts->ui32BlockSize)
 								 : (FLMUINT)XFLM_DEFAULT_BLKSIZ);
 
 	// Allocate a buffer for writing.

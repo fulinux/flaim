@@ -143,7 +143,7 @@ static FLMUINT				gv_uiCacheSize = 30000;
 static IF_FileHdl *		gv_pLogFile;
 static FLMBOOL				gv_bLoggingEnabled;
 static char *				gv_pszDictPath;
-static XFLM_CREATE_OPTS		gv_DefaultCreateOpts;
+static XFLM_CREATE_OPTS	gv_DefaultCreateOpts;
 static FLMBOOL				gv_bFixHdrInfo;
 static FLMBOOL				gv_bRunning;
 static FLMBOOL				gv_bPauseBeforeExiting = FALSE;
@@ -519,13 +519,13 @@ FSTATIC FLMBOOL bldGetParams(
 	gv_szDictFileName [0] = 0;
 	gv_szLogFileName [0] = 0;
 	gv_bFixHdrInfo = FALSE;
-	gv_DefaultCreateOpts.uiBlockSize = XFLM_DEFAULT_BLKSIZ;
-	gv_DefaultCreateOpts.uiMinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
-	gv_DefaultCreateOpts.uiMaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
-	gv_DefaultCreateOpts.bKeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
-	gv_DefaultCreateOpts.bLogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
-	gv_DefaultCreateOpts.uiDefaultLanguage = XFLM_DEFAULT_LANG;
-	gv_DefaultCreateOpts.uiVersionNum = XFLM_CURRENT_VERSION_NUM;
+	gv_DefaultCreateOpts.ui32BlockSize = XFLM_DEFAULT_BLKSIZ;
+	gv_DefaultCreateOpts.ui32MinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
+	gv_DefaultCreateOpts.ui32MaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
+	gv_DefaultCreateOpts.i32KeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
+	gv_DefaultCreateOpts.i32LogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
+	gv_DefaultCreateOpts.ui32DefaultLanguage = XFLM_DEFAULT_LANG;
+	gv_DefaultCreateOpts.ui32VersionNum = XFLM_CURRENT_VERSION_NUM;
 	gv_uiCacheSize = 30000;
 	gv_bBatchMode = FALSE;
 	gv_szPassword [0] = 0;
@@ -826,19 +826,19 @@ FSTATIC FLMBOOL bldParseHdrInfo(
 						bldShowError( "Illegal block size");
 						return( FALSE);
 					}
-					CreateOpts.uiBlockSize = uiNum;
+					CreateOpts.ui32BlockSize = (FLMUINT32)uiNum;
 					break;
 				case 2:
-					CreateOpts.uiMinRflFileSize = uiNum;
+					CreateOpts.ui32MinRflFileSize = (FLMUINT32)uiNum;
 					break;
 				case 3:
-					CreateOpts.uiMaxRflFileSize = uiNum;
+					CreateOpts.ui32MaxRflFileSize = (FLMUINT32)uiNum;
 					break;
 				case 4:
-					CreateOpts.uiDefaultLanguage = uiNum;
+					CreateOpts.ui32DefaultLanguage = (FLMUINT32)uiNum;
 					break;
 				case 5:
-					CreateOpts.uiVersionNum = uiNum;
+					CreateOpts.ui32VersionNum = (FLMUINT32)uiNum;
 					break;
 				default:
 					bldShowError( "Too many parameters in header information");

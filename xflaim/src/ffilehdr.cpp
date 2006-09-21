@@ -70,23 +70,23 @@ void flmInitDbHdr(
 
 	if (pCreateOpts)
 	{
-		pDbHdr->ui16BlockSize = (FLMUINT16)pCreateOpts->uiBlockSize;
-		pDbHdr->ui8DefaultLanguage = (FLMUINT8)pCreateOpts->uiDefaultLanguage;
-		if (pCreateOpts->bKeepRflFiles)
+		pDbHdr->ui16BlockSize = (FLMUINT16)pCreateOpts->ui32BlockSize;
+		pDbHdr->ui8DefaultLanguage = (FLMUINT8)pCreateOpts->ui32DefaultLanguage;
+		if (pCreateOpts->i32KeepRflFiles)
 		{
 			pDbHdr->ui8RflKeepFiles = 1;
 		}
-		if (pCreateOpts->bLogAbortedTransToRfl)
+		if (pCreateOpts->i32LogAbortedTransToRfl)
 		{
 			pDbHdr->ui8RflKeepAbortedTrans = 1;
 		}
 
-		if( (uiMinRflFileSize = pCreateOpts->uiMinRflFileSize) == 0)
+		if( (uiMinRflFileSize = (FLMUINT)pCreateOpts->ui32MinRflFileSize) == 0)
 		{
 			uiMinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
 		}
 
-		if( (uiMaxRflFileSize = pCreateOpts->uiMaxRflFileSize) == 0)
+		if( (uiMaxRflFileSize = (FLMUINT)pCreateOpts->ui32MaxRflFileSize) == 0)
 		{
 			uiMaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
 		}

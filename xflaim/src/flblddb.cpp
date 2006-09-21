@@ -535,7 +535,7 @@ Retry:
 				// Set block size to zero, so we will always take the calculated
 				// block size below.
 
-				m_createOpts.uiBlockSize = 0;
+				m_createOpts.ui32BlockSize = 0;
 				pCreateOpts = &m_createOpts;
 			}
 
@@ -546,8 +546,8 @@ Retry:
 				goto Exit;
 			}
 
-			uiSaveBlockSize = pCreateOpts->uiBlockSize;
-			pCreateOpts->uiBlockSize = uiCalcBlockSize;
+			uiSaveBlockSize = pCreateOpts->ui32BlockSize;
+			pCreateOpts->ui32BlockSize = (FLMUINT32)uiCalcBlockSize;
 
 			// Initialize the database header to useable values.
 
@@ -558,7 +558,7 @@ Retry:
 
 			if( uiSaveBlockSize)
 			{
-				pCreateOpts->uiBlockSize = uiSaveBlockSize;
+				pCreateOpts->ui32BlockSize = (FLMUINT32)uiSaveBlockSize;
 			}
 		}
 		else
@@ -629,9 +629,9 @@ Retry:
 	// If no block size has been specified or determined yet, use what we
 	// read from the database header.
 
-	if( !pCreateOpts->uiBlockSize)
+	if( !pCreateOpts->ui32BlockSize)
 	{
-		pCreateOpts->uiBlockSize = m_dbHdr.ui16BlockSize;
+		pCreateOpts->ui32BlockSize = (FLMUINT32)m_dbHdr.ui16BlockSize;
 	}
 
 	// Create the destination database
@@ -1811,28 +1811,28 @@ FSTATIC void flmGetCreateOpts(
 	f_memset( pCreateOpts, 0, sizeof( XFLM_CREATE_OPTS));
 	if( pDbHdr)
 	{
-		pCreateOpts->uiBlockSize = pDbHdr->ui16BlockSize;
-		pCreateOpts->uiVersionNum = pDbHdr->ui32DbVersion;
-		pCreateOpts->uiDefaultLanguage = pDbHdr->ui8DefaultLanguage;
-		pCreateOpts->uiMinRflFileSize = pDbHdr->ui32RflMinFileSize;
-		pCreateOpts->uiMaxRflFileSize = pDbHdr->ui32RflMaxFileSize;
-		pCreateOpts->bKeepRflFiles = (FLMBOOL)(pDbHdr->ui8RflKeepFiles
+		pCreateOpts->ui32BlockSize = (FLMUINT32)pDbHdr->ui16BlockSize;
+		pCreateOpts->ui32VersionNum = pDbHdr->ui32DbVersion;
+		pCreateOpts->ui32DefaultLanguage = pDbHdr->ui8DefaultLanguage;
+		pCreateOpts->ui32MinRflFileSize = pDbHdr->ui32RflMinFileSize;
+		pCreateOpts->ui32MaxRflFileSize = pDbHdr->ui32RflMaxFileSize;
+		pCreateOpts->i32KeepRflFiles = (FLMINT32)(pDbHdr->ui8RflKeepFiles
 															? TRUE
 															: FALSE);
-		pCreateOpts->bLogAbortedTransToRfl =
-			(FLMBOOL)(pDbHdr->ui8RflKeepAbortedTrans
+		pCreateOpts->i32LogAbortedTransToRfl =
+			(FLMINT32)(pDbHdr->ui8RflKeepAbortedTrans
 						 ? TRUE
 						 : FALSE);
 	}
 	else
 	{
-		pCreateOpts->uiBlockSize = XFLM_DEFAULT_BLKSIZ;
-		pCreateOpts->uiVersionNum = XFLM_CURRENT_VERSION_NUM;
-		pCreateOpts->uiDefaultLanguage = XFLM_DEFAULT_LANG;
-		pCreateOpts->uiMinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
-		pCreateOpts->uiMaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
-		pCreateOpts->bKeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
-		pCreateOpts->bLogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
+		pCreateOpts->ui32BlockSize = XFLM_DEFAULT_BLKSIZ;
+		pCreateOpts->ui32VersionNum = XFLM_CURRENT_VERSION_NUM;
+		pCreateOpts->ui32DefaultLanguage = XFLM_DEFAULT_LANG;
+		pCreateOpts->ui32MinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
+		pCreateOpts->ui32MaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
+		pCreateOpts->i32KeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
+		pCreateOpts->i32LogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
 	}
 }
 

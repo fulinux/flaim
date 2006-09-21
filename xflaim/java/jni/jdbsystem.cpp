@@ -894,19 +894,19 @@ FSTATIC void getCreateOpts(
 	jobject					createOpts,
 	XFLM_CREATE_OPTS *	pCreateOpts)
 {
-	pCreateOpts->uiBlockSize = (FLMUINT)pEnv->GetIntField( createOpts,
+	pCreateOpts->ui32BlockSize = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iBlockSize); 
-	pCreateOpts->uiVersionNum = (FLMUINT)pEnv->GetIntField( createOpts,
+	pCreateOpts->ui32VersionNum = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iVersionNum);
-	pCreateOpts->uiMinRflFileSize = (FLMUINT)pEnv->GetIntField( createOpts,
+	pCreateOpts->ui32MinRflFileSize = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iMinRflFileSize); 
-	pCreateOpts->uiMaxRflFileSize = (FLMUINT)pEnv->GetIntField( createOpts,
+	pCreateOpts->ui32MaxRflFileSize = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iMaxRflFileSize); 
-	pCreateOpts->bKeepRflFiles = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
+	pCreateOpts->i32KeepRflFiles = (FLMINT32)(pEnv->GetBooleanField( createOpts,
 			fid_CREATEOPTS_bKeepRflFiles) ? TRUE : FALSE); 
-	pCreateOpts->bLogAbortedTransToRfl = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
+	pCreateOpts->i32LogAbortedTransToRfl = (FLMINT32)(pEnv->GetBooleanField( createOpts,
 			fid_CREATEOPTS_bLogAbortedTransToRfl) ? TRUE : FALSE); 
-	pCreateOpts->uiDefaultLanguage = (FLMUINT)pEnv->GetIntField( createOpts,
+	pCreateOpts->ui32DefaultLanguage = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iDefaultLanguage);
 }
 
