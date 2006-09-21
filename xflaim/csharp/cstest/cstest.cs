@@ -107,7 +107,7 @@ namespace cstest
 				rc = RCODE.NE_XFLM_OK;
 				try
 				{
-					CREATE_OPTS	createOpts = new CREATE_OPTS();
+					XFLM_CREATE_OPTS	createOpts = new XFLM_CREATE_OPTS();
 
 					createOpts.uiBlockSize = 8192;
 					createOpts.uiVersionNum = (uint)DBVersions.XFLM_CURRENT_VERSION_NUM;
@@ -369,14 +369,14 @@ namespace cstest
 			DbSystem	dbSystem)
 		{
 			MyDbRebuildStatus	dbRebuildStatus = null;
-			CREATE_OPTS			createOpts = null;
+			XFLM_CREATE_OPTS	createOpts = null;
 
 			// Try restoring the database
 
 			beginTest( "Rebuild Database Test (" + sSrcDbName + " to " + sDestDbName + ")");
 
 			dbRebuildStatus = new MyDbRebuildStatus();
-			createOpts = new CREATE_OPTS();
+			createOpts = new XFLM_CREATE_OPTS();
 
 			createOpts.uiBlockSize = 8192;
 			createOpts.uiVersionNum = (uint)DBVersions.XFLM_CURRENT_VERSION_NUM;

@@ -140,10 +140,12 @@ namespace xflaim
 	}
 
 	/// <summary>
-	/// Create options for creating a database
+	/// Create options for creating a database.
+	/// IMPORTANT NOTE: This needs to be kept in sync with the same
+	/// structure that is defined in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-	public class CREATE_OPTS
+	public class XFLM_CREATE_OPTS
 	{
 
 		/// <summary>
@@ -344,7 +346,7 @@ namespace xflaim
 			string 				sRflDir,
 			string 				sDictFileName,
 			string 				sDictBuf,
-			CREATE_OPTS			createOpts)
+			XFLM_CREATE_OPTS	createOpts)
 		{
 			ulong 	pDb;
 			int		rc;
@@ -359,19 +361,19 @@ namespace xflaim
 	
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern int xflaim_DbSystem_dbCreate(
-			ulong			pDbSystem,
+			ulong					pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr)]
-			string		pszDbFileName,
+			string				pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr)]
-			string 		pszDataDir,
+			string 				pszDataDir,
 			[MarshalAs(UnmanagedType.LPStr)]
-			string 		pszRflDir,
+			string 				pszRflDir,
 			[MarshalAs(UnmanagedType.LPStr)]
-			string 		pszDictFileName,
+			string 				pszDictFileName,
 			[MarshalAs(UnmanagedType.LPStr)]
-			string 		pszDictBuf,
-			CREATE_OPTS	pCreateOpts,
-			out ulong	ppDb);
+			string 				pszDictBuf,
+			XFLM_CREATE_OPTS	pCreateOpts,
+			out ulong			ppDb);
 
 //-----------------------------------------------------------------------------
 // dbOpen
@@ -1155,7 +1157,7 @@ namespace xflaim
 		/// local NICI storage key.  May be null.
 		/// </param>
 		/// <param name="createOpts">
-		/// A <see cref="CREATE_OPTS"/> object that contains several parameters that
+		/// A <see cref="XFLM_CREATE_OPTS"/> object that contains several parameters that
 		/// are used in the creation of the destination database.
 		/// </param>
 		/// <param name="rebuildStatus">
@@ -1170,7 +1172,7 @@ namespace xflaim
 			string				sDestRflDir,
 			string				sDictPath,
 			string				sPassword,
-			CREATE_OPTS			createOpts,
+			XFLM_CREATE_OPTS	createOpts,
 			DbRebuildStatus	rebuildStatus)
 		{
 			int							rc;
@@ -1208,7 +1210,7 @@ namespace xflaim
 			string 						pszDictPath,
 			[MarshalAs(UnmanagedType.LPStr)]
 			string 						pszPassword,
-			CREATE_OPTS					pCreateOpts,
+			XFLM_CREATE_OPTS			pCreateOpts,
 			DbRebuildStatusCallback	fnDbRebuildStatus);
 
 		private delegate RCODE DbRebuildStatusCallback(
