@@ -32,7 +32,7 @@ namespace xflaim
 	/// <summary>
 	/// Phases of a rebuild operation.
 	/// </summary>
-	public enum RebuildPhase
+	public enum RebuildPhase : int
 	{
 		/// <summary>Determining block size</summary>
 		REBUILD_GET_BLK_SIZ		= 1,

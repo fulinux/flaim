@@ -337,9 +337,9 @@
 	
 		/// \addtogroup retcodes
 		/// @{
-		typedef FLMINT									RCODE;			///< Return code
+		typedef FLMINT32								RCODE;			///< Return code
 		/// @}
-		typedef FLMINT									FLMBOOL;
+		typedef FLMINT32								FLMBOOL;
 		
 		#define F_FILENAME_SIZE						256
 		#define F_PATH_MAX_SIZE						256

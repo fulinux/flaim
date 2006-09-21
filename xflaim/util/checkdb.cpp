@@ -157,7 +157,7 @@ FSTATIC void OutOneBlockStat(
 	FLMUINT64		ui64ContElementCount,
 	FLMUINT64		ui64ContElmBytes,
 	FLMUINT			uiBlockCount,
-	FLMINT			iLastError,
+	FLMINT32			i32LastError,
 	FLMUINT			uiNumErrors);
 
 FSTATIC void OutLogicalFile(
@@ -1143,7 +1143,7 @@ FSTATIC void OutOneBlockStat(
 	FLMUINT64		ui64ContElementCount,
 	FLMUINT64		ui64ContElmBytes,
 	FLMUINT			uiBlockCount,
-	FLMINT			iLastError,
+	FLMINT32			i32LastError,
 	FLMUINT			uiNumErrors)
 {
 	char			szTmpBuf[ 100];
@@ -1217,7 +1217,7 @@ FSTATIC void OutOneBlockStat(
 	{
 		f_strcpy( szTmpBuf, "    LAST ERROR: ");
 		f_strcpy( &szTmpBuf[ f_strlen( szTmpBuf)],
-			gv_pDbSystem->checkErrorToStr( iLastError));
+			gv_pDbSystem->checkErrorToStr( (FLMINT)i32LastError));
 		OutLine( szTmpBuf);
 		f_sprintf( szTmpBuf,
 			"    TOTAL ERRORS: %u", (unsigned)uiNumErrors);
@@ -1246,7 +1246,7 @@ FSTATIC void OutLogicalFile(
 	FLMUINT64	ui64ContElementCount;
 	FLMUINT64	ui64ContElmBytes;
 	FLMUINT		uiBlockCount;
-	FLMINT		iLastError;
+	FLMINT32		i32LastError;
 	FLMUINT		uiNumErrors;
 
 	pDbInfo->getBTreeInfo( uiIndex, &uiLfNum, &eLfType,
@@ -1288,11 +1288,11 @@ FSTATIC void OutLogicalFile(
 							&ui64KeyCount, &ui64BytesUsed,
 							&ui64ElementCount, &ui64ContElementCount,
 							&ui64ContElmBytes, &uiBlockCount,
-							&iLastError, &uiNumErrors);
+							&i32LastError, &uiNumErrors);
 			OutOneBlockStat( szTmpBuf,
 				pDbInfo->getDbHdr()->ui16BlockSize, ui64KeyCount,
 							ui64BytesUsed, ui64ElementCount, ui64ContElementCount,
-							ui64ContElmBytes, uiBlockCount, iLastError, uiNumErrors);
+							ui64ContElmBytes, uiBlockCount, i32LastError, uiNumErrors);
 		}
 	}
 }
@@ -1311,7 +1311,7 @@ FSTATIC void PrintInfo(
 	FLMUINT64				ui64ContElementCount;
 	FLMUINT64				ui64ContElmBytes;
 	FLMUINT					uiBlockCount;
-	FLMINT					iLastError;
+	FLMINT32					i32LastError;
 	FLMUINT					uiNumErrors;
 	const XFLM_DB_HDR *	pDbHdr = pDbInfo->getDbHdr();
 
@@ -1337,26 +1337,26 @@ FSTATIC void PrintInfo(
 	ui64ContElementCount = 0;
 	ui64ContElmBytes = 0;
 	pDbInfo->getAvailBlockStats( &ui64BytesUsed, &uiBlockCount,
-						&iLastError, &uiNumErrors);
+						&i32LastError, &uiNumErrors);
 	if( uiBlockCount)
 	{
 		OutOneBlockStat( "  Avail",
 			(FLMUINT)pDbHdr->ui16BlockSize,
 			0, ui64BytesUsed, ui64ElementCount, ui64ContElementCount,
-			ui64ContElmBytes, uiBlockCount, iLastError, uiNumErrors);
+			ui64ContElmBytes, uiBlockCount, i32LastError, uiNumErrors);
 	}
 
 	ui64ElementCount = 0;
 	ui64ContElementCount = 0;
 	ui64ContElmBytes = 0;
 	pDbInfo->getLFHBlockStats( &ui64BytesUsed, &uiBlockCount,
-						&iLastError, &uiNumErrors);
+						&i32LastError, &uiNumErrors);
 	if( uiBlockCount)
 	{
 		OutOneBlockStat( "  LFH",
 			(FLMUINT)pDbHdr->ui16BlockSize,
 			0, ui64BytesUsed, ui64ElementCount, ui64ContElementCount,
-			ui64ContElmBytes, uiBlockCount, iLastError, uiNumErrors);
+			ui64ContElmBytes, uiBlockCount, i32LastError, uiNumErrors);
 	}
 
 	uiNumLogicalFiles = pDbInfo->getNumLogicalFiles();
@@ -1588,10 +1588,10 @@ RCODE F_LocalCheckStatus::reportProgress(
 	DisplayNumValue( DOM_LINKS_VERIFIED_ROW, pProgCheck->ui64NumDomLinksVerified);
 	DisplayNumValue( TOTAL_BROKEN_LINKS_ROW, pProgCheck->ui64NumBrokenDomLinks);
 
-	DisplayNumValue( REPAIR_ROW, pProgCheck->uiNumProblemsFixed);
-	gv_uiRepairCount = pProgCheck->uiNumProblemsFixed;
+	DisplayNumValue( REPAIR_ROW, pProgCheck->ui32NumProblemsFixed);
+	gv_uiRepairCount = (FLMUINT)pProgCheck->ui32NumProblemsFixed;
 
-	if( pProgCheck->iCheckPhase != XFLM_CHECK_RS_SORT)
+	if( pProgCheck->i32CheckPhase != XFLM_CHECK_RS_SORT)
 	{
 		OutLabel( LABEL_COLUMN, AMOUNT_DONE_ROW, "Bytes Checked",
 				NULL, gv_ui64BytesDone, FALSE);
@@ -1602,36 +1602,36 @@ RCODE F_LocalCheckStatus::reportProgress(
 		gv_ui64FileSize = pProgCheck->ui64FileSize;
 		DisplayNumValue( FILE_SIZE_ROW, gv_ui64FileSize);
 
-		switch( pProgCheck->iCheckPhase)
+		switch( pProgCheck->i32CheckPhase)
 		{
 			case XFLM_CHECK_LFH_BLOCKS:
 				f_strcpy( szWhat, "LFH BLOCKS");
 				break;
 			case XFLM_CHECK_B_TREE:
 				*szLfName = '\0';
-				if( pProgCheck->uiLfType == XFLM_LF_INDEX)
+				if( pProgCheck->ui32LfType == XFLM_LF_INDEX)
 				{
 					f_strcpy( szWhat, "INDEX: ");
-					(void)NumToName( pProgCheck->uiLfNumber,
+					(void)NumToName( pProgCheck->ui32LfNumber,
 								ELM_INDEX_TAG, szLfName);
 				}
-				else if( pProgCheck->uiLfType == XFLM_LF_COLLECTION)
+				else if( pProgCheck->ui32LfType == XFLM_LF_COLLECTION)
 				{
 					f_strcpy( szWhat, "COLLECTION: ");
-					(void)NumToName( pProgCheck->uiLfNumber,
+					(void)NumToName( pProgCheck->ui32LfNumber,
 								ELM_COLLECTION_TAG, szLfName);
 				}
 				else
 				{
 					f_strcpy( szWhat, "DICTIONARY: ");
-					(void)NumToName( pProgCheck->uiLfNumber,
+					(void)NumToName( pProgCheck->ui32LfNumber,
 										ELM_INDEX_TAG, szLfName);
 				}
 
 				f_strcpy( &szWhat[ f_strlen( szWhat)], szLfName);
 
 				f_sprintf( &szWhat[ f_strlen( szWhat)], " (%u)",
-					(unsigned)pProgCheck->uiLfNumber);
+					(unsigned)pProgCheck->ui32LfNumber);
 				szWhat[ 50] = '\0';
 				break;
 			case XFLM_CHECK_AVAIL_BLOCKS:
@@ -1642,11 +1642,11 @@ RCODE F_LocalCheckStatus::reportProgress(
 				break;
 			case XFLM_CHECK_DOM_LINKS:
 				f_strcpy( szWhat, "COLLECTION: ");
-				(void)NumToName( pProgCheck->uiLfNumber,
+				(void)NumToName( pProgCheck->ui32LfNumber,
 									ELM_COLLECTION_TAG, szLfName);
 				f_strcpy( &szWhat[ f_strlen( szWhat)], szLfName);
 				f_sprintf( &szWhat[ f_strlen( szWhat)], " (%u)",
-					(unsigned)pProgCheck->uiLfNumber);
+					(unsigned)pProgCheck->ui32LfNumber);
 				szWhat[ 50] = '\0';
 				break;
 			default:
@@ -1688,13 +1688,13 @@ RCODE F_LocalCheckStatus::reportCheckErr(
 	
 	if( (gv_bLoggingEnabled) &&
 		 ((gv_bShowStats) ||
-		 (pCorruptInfo->iErrCode != FLM_OLD_VIEW)))
+		 (pCorruptInfo->i32ErrCode != FLM_OLD_VIEW)))
 	{
 		LogCorruptError( pCorruptInfo);
 	}
 
 	f_conSetBackFore( FLM_BLUE, FLM_WHITE);
-	if( pCorruptInfo->iErrCode == FLM_OLD_VIEW)
+	if( pCorruptInfo->i32ErrCode == FLM_OLD_VIEW)
 	{
 		gv_uiOldViewCount++;
 		DisplayNumValue( OLD_VIEW_ROW, gv_uiOldViewCount);
@@ -1746,7 +1746,7 @@ FSTATIC void LogCorruptError(
 	char			szWhat[ 20];
 	char			szTmpBuf[ 100];
 
-	switch( pCorrupt->uiErrLocale)
+	switch( pCorrupt->ui32ErrLocale)
 	{
 		case XFLM_LOCALE_LFH_LIST:
 		{
@@ -1762,7 +1762,7 @@ FSTATIC void LogCorruptError(
 		
 		case XFLM_LOCALE_B_TREE:
 		{
-			if( pCorrupt->iErrCode == FLM_OLD_VIEW)
+			if( pCorrupt->i32ErrCode == FLM_OLD_VIEW)
 			{
 				LogStr( 0, "OLD VIEW");
 			}
@@ -1772,11 +1772,11 @@ FSTATIC void LogCorruptError(
 				{
 					f_strcpy( szWhat, "NODE");
 				}
-				else if( pCorrupt->uiErrElmOffset)
+				else if( pCorrupt->ui32ErrElmOffset)
 				{
 					f_strcpy( szWhat, "ELEMENT");
 				}
-				else if( pCorrupt->uiErrBlkAddress)
+				else if( pCorrupt->ui32ErrBlkAddress)
 				{
 					f_strcpy( szWhat, "BLOCK");
 				}
@@ -1791,10 +1791,10 @@ FSTATIC void LogCorruptError(
 			// Log the logical file number, name, and type
 
 			f_sprintf( szTmpBuf, "Logical File Number: %u",
-				(unsigned)pCorrupt->uiErrLfNumber);
+				(unsigned)pCorrupt->ui32ErrLfNumber);
 			LogStr( 2, szTmpBuf);
 			
-			switch( pCorrupt->uiErrLfType)
+			switch( pCorrupt->ui32ErrLfType)
 			{
 				case XFLM_LF_COLLECTION:
 				{
@@ -1811,7 +1811,7 @@ FSTATIC void LogCorruptError(
 				default:
 				{
 					f_sprintf( szWhat, "?%u", 
-							(unsigned)pCorrupt->uiErrLfType);
+							(unsigned)pCorrupt->ui32ErrLfType);
 					break;
 				}
 			}
@@ -1821,10 +1821,10 @@ FSTATIC void LogCorruptError(
 
 			// Log the level in the B-Tree, if known
 
-			if( pCorrupt->uiErrBTreeLevel != 0xFF)
+			if( pCorrupt->ui32ErrBTreeLevel != 0xFF)
 			{
 				f_sprintf( szTmpBuf, "Level in B-Tree: %u",
-					(unsigned)pCorrupt->uiErrBTreeLevel);
+					(unsigned)pCorrupt->ui32ErrBTreeLevel);
 				LogStr( 2, szTmpBuf);
 			}
 			
@@ -1840,30 +1840,30 @@ FSTATIC void LogCorruptError(
 		
 		default:
 		{
-			pCorrupt->uiErrLocale = 0;
+			pCorrupt->ui32ErrLocale = 0;
 			break;
 		}
 	}
 
 	// Log the block address, if known
 
-	if( pCorrupt->uiErrBlkAddress)
+	if( pCorrupt->ui32ErrBlkAddress)
 	{
 		f_sprintf( szTmpBuf, "Block Address: 0x%08X (%u)",
-			(unsigned)pCorrupt->uiErrBlkAddress,
-			(unsigned)pCorrupt->uiErrBlkAddress);
+			(unsigned)pCorrupt->ui32ErrBlkAddress,
+			(unsigned)pCorrupt->ui32ErrBlkAddress);
 		LogStr( 2, szTmpBuf);
 	}
 
 	// Log the parent block address, if known
 
-	if( pCorrupt->uiErrParentBlkAddress)
+	if( pCorrupt->ui32ErrParentBlkAddress)
 	{
-		if( pCorrupt->uiErrParentBlkAddress != 0xFFFFFFFF)
+		if( pCorrupt->ui32ErrParentBlkAddress != FLM_MAX_UINT32)
 		{
 			f_sprintf( szTmpBuf, "Parent Block Address: 0x%08X (%u)",
-				(unsigned)pCorrupt->uiErrParentBlkAddress,
-				(unsigned)pCorrupt->uiErrParentBlkAddress);
+				(unsigned)pCorrupt->ui32ErrParentBlkAddress,
+				(unsigned)pCorrupt->ui32ErrParentBlkAddress);
 		}
 		else
 		{
@@ -1875,10 +1875,10 @@ FSTATIC void LogCorruptError(
 
 	// Log the element offset, if known
 
-	if( pCorrupt->uiErrElmOffset != (FLMUINT)~(0))
+	if( pCorrupt->ui32ErrElmOffset != FLM_MAX_UINT32)
 	{
 		f_sprintf( szTmpBuf, "Element Offset: %u", 
-				(unsigned)pCorrupt->uiErrElmOffset);
+				(unsigned)pCorrupt->ui32ErrElmOffset);
 		LogStr( 2, szTmpBuf);
 	}
 
@@ -1891,9 +1891,9 @@ FSTATIC void LogCorruptError(
 		LogStr( 2, szTmpBuf);
 	}
 
-	f_strcpy( szTmpBuf, gv_pDbSystem->checkErrorToStr( pCorrupt->iErrCode));
+	f_strcpy( szTmpBuf, gv_pDbSystem->checkErrorToStr( (FLMINT)pCorrupt->i32ErrCode));
 	f_sprintf( &szTmpBuf[ f_strlen( szTmpBuf)], " (%d)",
-		(int)pCorrupt->iErrCode);
+		(int)pCorrupt->i32ErrCode);
 	LogStr( 2, szTmpBuf);
 	LogStr( 0, NULL);
 	
@@ -1917,7 +1917,7 @@ FSTATIC void LogKeyError(
 	char					szTmpBuf[ 200];
 	FLMUINT				uiElementNumber;
 	
-	(void)NumToName( pCorrupt->uiErrLfNumber, ELM_INDEX_TAG, szNameBuf);
+	(void)NumToName( (FLMUINT)pCorrupt->ui32ErrLfNumber, ELM_INDEX_TAG, szNameBuf);
 	LogString( NULL);
 	LogString( NULL);
 	

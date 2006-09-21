@@ -773,7 +773,7 @@ RCODE F_DbCheck::addDelKeyRef(
 
 		// Update statistics
 
-		m_Progress.uiNumProblemsFixed++;
+		m_Progress.ui32NumProblemsFixed++;
 	}
 
 Exit:
@@ -802,7 +802,7 @@ Desc: Populates the XFLM_CORRUPT_INFO structure and calls the user's
 *********************************************************************/
 RCODE F_DbCheck::reportIxError(
 	STATE_INFO *	pStateInfo,
-	FLMINT			iErrCode,
+	FLMINT32			i32ErrCode,
 	FLMBYTE *		pucErrKey,
 	FLMUINT			uiErrKeyLen,
 	FLMBOOL *		pbFixErrRV
@@ -831,10 +831,10 @@ RCODE F_DbCheck::reportIxError(
 
 	// Fix corruptions by default unless the app says not to.
 
-	CorruptInfo.uiErrLocale = XFLM_LOCALE_INDEX;
-	CorruptInfo.iErrCode = iErrCode;
-	CorruptInfo.uiErrLfNumber = m_pIxd->uiIndexNum;
-	CorruptInfo.uiErrElmOffset = pStateInfo->uiElmOffset;
+	CorruptInfo.ui32ErrLocale = XFLM_LOCALE_INDEX;
+	CorruptInfo.i32ErrCode = i32ErrCode;
+	CorruptInfo.ui32ErrLfNumber = (FLMUINT32)m_pIxd->uiIndexNum;
+	CorruptInfo.ui32ErrElmOffset = (FLMUINT32)pStateInfo->uiElmOffset;
 
 	// Generate the key tree using the key that caused the error
 

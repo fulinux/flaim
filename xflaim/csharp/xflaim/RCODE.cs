@@ -32,7 +32,7 @@ namespace xflaim
 	/// <summary>
 	/// Error codes returned from XFLAIM.
 	/// </summary>
-	public enum RCODE
+	public enum RCODE : int
 	{
 		/// <summary></summary>
 		NE_XFLM_OK												= 0,

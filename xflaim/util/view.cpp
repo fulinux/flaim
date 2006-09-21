@@ -90,8 +90,8 @@ extern "C" int main(
 	gv_ViewFixOptions.ui32VersionNum = XFLM_CURRENT_VERSION_NUM;
 	gv_ViewFixOptions.ui32MinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
 	gv_ViewFixOptions.ui32MaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
-	gv_ViewFixOptions.i32KeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
-	gv_ViewFixOptions.i32LogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
+	gv_ViewFixOptions.bKeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
+	gv_ViewFixOptions.bLogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
 	gv_ViewFixOptions.ui32DefaultLanguage = XFLM_DEFAULT_LANG;
 
 	// See if a file name was passed in

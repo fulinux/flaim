@@ -32,7 +32,7 @@ namespace xflaim
 	/// <summary>
 	/// DOM Node types
 	/// </summary>
-	public enum eDomNodeType
+	public enum eDomNodeType : int
 	{
 		/// <summary>Invalid Node</summary>
 		INVALID_NODE =							0x00,
@@ -59,7 +59,7 @@ namespace xflaim
 	/// <summary>
 	/// Node insert locations - relative to another node.
 	/// </summary>
-	public enum eNodeInsertLoc
+	public enum eNodeInsertLoc : int
 	{
 		/// <summary>Insert node as root node of document</summary>
 		XFLM_ROOT = 0,

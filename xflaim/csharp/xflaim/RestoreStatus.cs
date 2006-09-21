@@ -35,7 +35,7 @@ namespace xflaim
 	/// what action to take with respect to the operation that it is
 	/// reporting it is about to do.
 	/// </summary>
-	public enum RestoreAction
+	public enum RestoreAction : int
 	{
 		/// <summary>Continue restore</summary>
 		XFLM_RESTORE_ACTION_CONTINUE = 0,

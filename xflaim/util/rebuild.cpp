@@ -125,7 +125,7 @@ FLMBOOL						gv_bShutdown = FALSE;
 static char *				gv_pszLogBuffer = NULL;
 static FLMUINT				gv_uiLogBufferCount = 0;
 static FLMBOOL				gv_bBatchMode;
-static FLMINT				gv_iLastDoing;
+static FLMINT32			gv_i32LastDoing;
 static FLMUINT64			gv_ui64BytesDone;
 static FLMUINT64			gv_ui64TotalNodes;
 static FLMUINT64			gv_ui64NodesRecovered;
@@ -243,7 +243,7 @@ FSTATIC FLMBOOL bldDoRebuild( void)
 	gv_ui64BytesDone = 0;
 	gv_ui64DictNodesRecovered = 0;
 	gv_ui64DiscardedDocs = 0;
-	gv_iLastDoing = -1;
+	gv_i32LastDoing = -1;
 	gv_ui64TotalNodes = 0;
 	gv_ui64NodesRecovered = 0;
 
@@ -522,8 +522,8 @@ FSTATIC FLMBOOL bldGetParams(
 	gv_DefaultCreateOpts.ui32BlockSize = XFLM_DEFAULT_BLKSIZ;
 	gv_DefaultCreateOpts.ui32MinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
 	gv_DefaultCreateOpts.ui32MaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
-	gv_DefaultCreateOpts.i32KeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
-	gv_DefaultCreateOpts.i32LogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
+	gv_DefaultCreateOpts.bKeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
+	gv_DefaultCreateOpts.bLogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
 	gv_DefaultCreateOpts.ui32DefaultLanguage = XFLM_DEFAULT_LANG;
 	gv_DefaultCreateOpts.ui32VersionNum = XFLM_CURRENT_VERSION_NUM;
 	gv_uiCacheSize = 30000;
@@ -1010,35 +1010,35 @@ FSTATIC void bldLogCorruptError(
 	bldLogString( NULL);
 	bldLogString( "ERROR IN DATABASE");
 	f_sprintf( szBuf, "Collection Number: %u",
-					(unsigned)pCorruptInfo->uiErrLfNumber);
+					(unsigned)pCorruptInfo->ui32ErrLfNumber);
 	bldLogStr( 2, szBuf);
 
 	// Log the block address, if known
 
-	if (pCorruptInfo->uiErrBlkAddress)
+	if (pCorruptInfo->ui32ErrBlkAddress)
 	{
 		f_sprintf( szBuf, "Block Address: 0x%08X (%u)",
-						 (unsigned)pCorruptInfo->uiErrBlkAddress,
-						 (unsigned)pCorruptInfo->uiErrBlkAddress);
+						 (unsigned)pCorruptInfo->ui32ErrBlkAddress,
+						 (unsigned)pCorruptInfo->ui32ErrBlkAddress);
 		bldLogStr( 2, szBuf);
 	}
 
 	// Log the parent block address, if known
 
-	if (pCorruptInfo->uiErrParentBlkAddress)
+	if (pCorruptInfo->ui32ErrParentBlkAddress)
 	{
 		f_sprintf( szBuf, "Parent Block Address: 0x%08X (%u)",
-						 (unsigned)pCorruptInfo->uiErrParentBlkAddress,
-						 (unsigned)pCorruptInfo->uiErrParentBlkAddress);
+						 (unsigned)pCorruptInfo->ui32ErrParentBlkAddress,
+						 (unsigned)pCorruptInfo->ui32ErrParentBlkAddress);
 		bldLogStr( 2, szBuf);
 	}
 
 	// Log the element offset, if known
 
-	if (pCorruptInfo->uiErrElmOffset)
+	if (pCorruptInfo->ui32ErrElmOffset)
 	{
 		f_sprintf( szBuf, "Offset of Element within Block: %u",
-						 (unsigned)pCorruptInfo->uiErrElmOffset);
+						 (unsigned)pCorruptInfo->ui32ErrElmOffset);
 		bldLogStr( 2, szBuf);
 	}
 
@@ -1053,9 +1053,9 @@ FSTATIC void bldLogCorruptError(
 
 	// Log the error message
 
-	f_strcpy( szBuf, gv_pDbSystem->checkErrorToStr( pCorruptInfo->iErrCode));
+	f_strcpy( szBuf, gv_pDbSystem->checkErrorToStr( (FLMINT)pCorruptInfo->i32ErrCode));
 	f_sprintf( (&szBuf [f_strlen( szBuf)]), " (%d)",
-		(int)pCorruptInfo->iErrCode);
+		(int)pCorruptInfo->i32ErrCode);
 	bldLogStr( 2, szBuf);
 	bldLogStr( 0, NULL);
 }
@@ -1070,15 +1070,15 @@ RCODE F_LocalRebuildStatus::reportRebuild(
 	RCODE		rc = NE_XFLM_OK;
 
 	// First update the display
-	if( gv_iLastDoing != pRebuild->iDoingFlag)
+	if( gv_i32LastDoing != pRebuild->i32DoingFlag)
 	{
-		gv_iLastDoing = pRebuild->iDoingFlag;
+		gv_i32LastDoing = pRebuild->i32DoingFlag;
 
-		if( gv_iLastDoing == REBUILD_GET_BLK_SIZ)
+		if( gv_i32LastDoing == REBUILD_GET_BLK_SIZ)
 		{
 			bldOutValue( DOING_ROW, "Determining Block Size   ");
 		}
-		else if( gv_iLastDoing == REBUILD_RECOVER_DICT)
+		else if( gv_i32LastDoing == REBUILD_RECOVER_DICT)
 		{
 			bldOutValue( DOING_ROW, "Recovering Dictionaries  ");
 		}
@@ -1088,7 +1088,7 @@ RCODE F_LocalRebuildStatus::reportRebuild(
 		}
 	}
 
-	if( gv_iLastDoing != REBUILD_GET_BLK_SIZ)
+	if( gv_i32LastDoing != REBUILD_GET_BLK_SIZ)
 	{
 		if( gv_ui64TotalNodes != pRebuild->ui64TotNodes)
 		{
@@ -1096,7 +1096,7 @@ RCODE F_LocalRebuildStatus::reportRebuild(
 			bldOutNumValue( TOTAL_REC_ROW, gv_ui64TotalNodes);
 		}
 
-		if( gv_iLastDoing == REBUILD_RECOVER_DICT)
+		if( gv_i32LastDoing == REBUILD_RECOVER_DICT)
 		{
 			if( gv_ui64DictNodesRecovered != pRebuild->ui64NodesRecov)
 			{

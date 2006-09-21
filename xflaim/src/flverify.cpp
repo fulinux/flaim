@@ -51,49 +51,49 @@ FSTATIC RCODE verifyRootLink(
 	FLMUINT					uiRSEntrySize,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 FSTATIC RCODE verifyParentLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 FSTATIC RCODE verifyFirstChildLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 FSTATIC RCODE verifyLastChildLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 FSTATIC RCODE verifyPrevSiblingLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 FSTATIC RCODE verifyNextSiblingLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 FSTATIC RCODE verifyAnnotationLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode);
+	FLMINT32 *				pi32ErrCode);
 
 /********************************************************************
 Desc: Verifies a block's header and sets up the STATE_INFO structure
 		to verify the rest of the block.
 *********************************************************************/
-FLMINT flmVerifyBlockHeader(
+FLMINT32 flmVerifyBlockHeader(
 	STATE_INFO *	pStateInfo,
 	BLOCK_INFO *	pBlockInfo,
 	FLMUINT			uiBlockSize,
@@ -224,7 +224,7 @@ RCODE flmVerifyElement(
 	STATE_INFO *	pStateInfo,
 	LFILE *			pLFile,
 	IXD *				pIxd,
-	FLMINT *			piErrCode)
+	FLMINT32 *		pi32ErrCode)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMBYTE *		pucEntry;
@@ -232,7 +232,7 @@ RCODE flmVerifyElement(
 	FLMUINT32		ui32ChildAddr = 0;
 	FLMUINT			uiCounts = 0;
 
-	*piErrCode = 0;
+	*pi32ErrCode = 0;
 
 	// Get the pointer to the element.
 	
@@ -244,7 +244,7 @@ RCODE flmVerifyElement(
 	if ((FLMUINT)pucEntry > (FLMUINT)pStateInfo->pBlkHdr + 
 				pStateInfo->pDb->getDatabase()->getBlockSize())
 	{
-		*piErrCode = FLM_BAD_ELM_OFFSET;
+		*pi32ErrCode = FLM_BAD_ELM_OFFSET;
 		goto Exit;
 
 	}
@@ -358,7 +358,7 @@ RCODE flmVerifyElement(
 		
 		default:
 		{
-			*piErrCode = FLM_BAD_BLK_TYPE;
+			*pi32ErrCode = FLM_BAD_BLK_TYPE;
 			goto Exit;
 		}
 	}
@@ -369,7 +369,7 @@ RCODE flmVerifyElement(
 				(FLMBYTE *)pStateInfo->pBlkHdr +
 				pStateInfo->pDb->getDatabase()->getBlockSize())
 	{
-		*piErrCode = FLM_BAD_ELM_LEN;
+		*pi32ErrCode = FLM_BAD_ELM_LEN;
 		goto Exit;
 	}
 
@@ -377,7 +377,7 @@ RCODE flmVerifyElement(
 	
 	if( pStateInfo->uiElmKeyLen > XFLM_MAX_KEY_SIZE)
 	{
-		*piErrCode = FLM_BAD_ELM_KEY_SIZE;
+		*pi32ErrCode = FLM_BAD_ELM_KEY_SIZE;
 		goto Exit;
 	}
 
@@ -387,7 +387,7 @@ RCODE flmVerifyElement(
 		pStateInfo->pBlkHdr, pStateInfo->pucElmKey, pStateInfo->uiElmKeyLen,
 		pStateInfo->uiElmOffset)))
 	{
-		*piErrCode = FLM_BAD_ELM_KEY_ORDER;
+		*pi32ErrCode = FLM_BAD_ELM_KEY_ORDER;
 		goto Exit;
 	}
 
@@ -407,7 +407,7 @@ RCODE flmVerifyElement(
 				{
 					if( !flmVerifyElementChain( pStateInfo, pLFile))
 					{
-						*piErrCode = FLM_BAD_ELEMENT_CHAIN;
+						*pi32ErrCode = FLM_BAD_ELEMENT_CHAIN;
 						goto Exit;
 					}
 				}
@@ -420,20 +420,20 @@ RCODE flmVerifyElement(
 								pStateInfo->uiElmKeyLen, pStateInfo->pucElmKey,
 								&pStateInfo->ui64ElmNodeId, &bNeg, &uiBytesProcessed)))
 					{
-						*piErrCode = FLM_BAD_ELM_KEY;
+						*pi32ErrCode = FLM_BAD_ELM_KEY;
 						goto Exit;
 					}
 
 					if( bNeg || uiBytesProcessed != pStateInfo->uiElmKeyLen)
 					{
-						*piErrCode = FLM_BAD_ELM_KEY;
+						*pi32ErrCode = FLM_BAD_ELM_KEY;
 						goto Exit;
 					}
 
 					if( !pStateInfo->ui64ElmNodeId)
 					{
 						flmAssert( 0);
-						*piErrCode = FLM_BAD_ELM_KEY;
+						*pi32ErrCode = FLM_BAD_ELM_KEY;
 						goto Exit;
 					}
 				}
@@ -443,7 +443,7 @@ RCODE flmVerifyElement(
 					
 					if( pStateInfo->pBlkHdr->ui32NextBlkInChain)
 					{
-						*piErrCode = FLM_BAD_ELM_KEY;
+						*pi32ErrCode = FLM_BAD_ELM_KEY;
 						goto Exit;
 					}
 				}
@@ -973,7 +973,7 @@ RCODE F_DbCheck::buildIndexKeyList(
 	
 	// Set information for the result set sort phase.
 	
-	m_Progress.iCheckPhase = XFLM_CHECK_RS_SORT;
+	m_Progress.i32CheckPhase = XFLM_CHECK_RS_SORT;
 	m_Progress.bStartFlag = TRUE;
 
 	if ((pKeyColl = f_new F_KeyCollector( this)) == NULL)
@@ -1246,7 +1246,7 @@ RCODE F_DbCheck::verifyBTrees(
 	uiCurrLf = 0;
 	while (uiCurrLf < m_pDbInfo->m_uiNumLogicalFiles)
 	{
-		m_Progress.uiCurrLF = uiCurrLf + 1;
+		m_Progress.ui32CurrLF = (FLMUINT32)(uiCurrLf + 1);
 		pLogicalFile = &m_pDbInfo->m_pLogicalFiles[uiCurrLf];
 		
 		if (pLogicalFile->eLfType == XFLM_LF_COLLECTION)
@@ -1326,10 +1326,10 @@ RCODE F_DbCheck::verifyBTrees(
 
 		// Setup XFLM_PROGRESS_CHECK_INFO structure
 
-		m_Progress.iCheckPhase = XFLM_CHECK_B_TREE;
+		m_Progress.i32CheckPhase = XFLM_CHECK_B_TREE;
 		m_Progress.bStartFlag = TRUE;
-		m_Progress.uiLfNumber = m_pLFile->uiLfNum;
-		m_Progress.uiLfType = m_pLFile->eLfType;
+		m_Progress.ui32LfNumber = (FLMUINT32)m_pLFile->uiLfNum;
+		m_Progress.ui32LfType = (FLMUINT32)m_pLFile->eLfType;
 
 		if (RC_BAD( rc = chkCallProgFunc()))
 		{
@@ -1688,15 +1688,15 @@ Reset:
 		
 		if (State[ 0].pNodeRS)
 		{
-			FLMINT			iErrCode;
+			FLMINT32			i32ErrCode;
 
 
 			// Setup the current progress phase
 			
-			m_Progress.iCheckPhase = XFLM_CHECK_DOM_LINKS;
+			m_Progress.i32CheckPhase = XFLM_CHECK_DOM_LINKS;
 			m_Progress.bStartFlag = TRUE;
-			m_Progress.uiLfNumber = m_pLFile->uiLfNum;
-			m_Progress.uiLfType = m_pLFile->eLfType;
+			m_Progress.ui32LfNumber = (FLMUINT32)m_pLFile->uiLfNum;
+			m_Progress.ui32LfType = (FLMUINT32)m_pLFile->eLfType;
 
 			if (RC_BAD( rc = chkCallProgFunc()))
 			{
@@ -1707,16 +1707,16 @@ Reset:
 
 			f_yieldCPU();
 
-			m_LastStatusRc = verifyNodePointers( &State[ 0], &iErrCode);
+			m_LastStatusRc = verifyNodePointers( &State[ 0], &i32ErrCode);
 
-			if (iErrCode)
+			if (i32ErrCode)
 			{
-				chkReportError( iErrCode,
+				chkReportError( i32ErrCode,
 									 XFLM_LOCALE_B_TREE,
-									 m_Progress.uiLfNumber,
-									 m_Progress.uiLfType,
-									 State[ 0].uiLevel,
-									 m_pLFile->uiBlkAddress,
+									 (FLMUINT32)m_Progress.ui32LfNumber,
+									 (FLMUINT32)m_Progress.ui32LfType,
+									 (FLMUINT32)State[ 0].uiLevel,
+									 (FLMUINT32)m_pLFile->uiBlkAddress,
 									 0,
 									 0,
 									 0);
@@ -1754,19 +1754,19 @@ Reset:
 				if (State [uiCurrLevel].ui32NextBlkAddr != 0xFFFFFFFF &&
 					 State [uiCurrLevel].ui32NextBlkAddr != 0)
 				{
-					FLMINT			iBlkErrCode;
+					FLMINT32			i32BlkErrCode;
 
 					// Verify our finding.  Get the block in question and see
 					// if it realy has a problem.
 
 					if (RC_BAD( rc = 	blkRead( State[ uiCurrLevel].ui32BlkAddress,
-							&pBlkHdr, &pSCache, &iBlkErrCode)))
+							&pBlkHdr, &pSCache, &i32BlkErrCode)))
 					{
 						// Log the error.
 
-						if (iBlkErrCode)
+						if (i32BlkErrCode)
 						{
-							chkReportError( iBlkErrCode, XFLM_LOCALE_LFH_LIST,
+							chkReportError( i32BlkErrCode, XFLM_LOCALE_LFH_LIST,
 								0, 0, 0xFF, State[ uiCurrLevel].ui32BlkAddress,
 								0, 0, 0);
 						}
@@ -1776,7 +1776,9 @@ Reset:
 					if (pBlkHdr->ui32NextBlkInChain != 0)
 					{
 						chkReportError( FLM_BAD_LAST_BLK_NEXT, XFLM_LOCALE_B_TREE,
-							m_Progress.uiLfNumber, m_Progress.uiLfType, uiCurrLevel,
+							(FLMUINT32)m_Progress.ui32LfNumber,
+							(FLMUINT32)m_Progress.ui32LfType,
+							(FLMUINT32)uiCurrLevel,
 							0, 0, 0, 0);
 					}
 					
@@ -1919,7 +1921,7 @@ RCODE F_DbCheck::setupLfTable()
 	// the logical check, can be built.
 	
 	m_pDbInfo->freeLogicalFiles();
-	m_Progress.uiNumLFs = 0;
+	m_Progress.ui32NumLFs = 0;
 
 	if (pDict)
 	{
@@ -1953,7 +1955,7 @@ RCODE F_DbCheck::setupLfTable()
 
 		m_pDbInfo->m_uiNumLogicalFiles = m_pDbInfo->m_uiNumIndexes +
 											  m_pDbInfo->m_uiNumCollections;
-		m_Progress.uiNumLFs = m_pDbInfo->m_uiNumLogicalFiles;
+		m_Progress.ui32NumLFs = (FLMUINT32)m_pDbInfo->m_uiNumLogicalFiles;
 
 		// Allocate memory for each collection and index, then set up each
 		// collection and index
@@ -2137,7 +2139,7 @@ RCODE F_DbCheck::getLfInfo(
 	F_CachedBlock *	pSCache = NULL;
 	F_BLK_HDR *			pBlkHdr = NULL;
 	FLMUINT				uiSaveLevel;
-	FLMINT				iBlkErrCode;
+	FLMINT32				i32BlkErrCode;
 
 	pLogicalFile->eLfType = pLFile->eLfType;
 	pLogicalFile->uiLfNum = pLFile->uiLfNum;
@@ -2146,19 +2148,19 @@ RCODE F_DbCheck::getLfInfo(
 	// Read in the block containing the logical file header.
 
 	if (RC_BAD( rc = blkRead( pLFile->uiBlkAddress,
-							&pBlkHdr, &pSCache, &iBlkErrCode)))
+							&pBlkHdr, &pSCache, &i32BlkErrCode)))
 	{
 
 		// Log the error.
 
-		if (iBlkErrCode)
+		if (i32BlkErrCode)
 		{
-			chkReportError( iBlkErrCode,
+			chkReportError( i32BlkErrCode,
 								 XFLM_LOCALE_LFH_LIST,
 								 0,
 								 0,
 								 0xFF,
-								 pLFile->uiBlkAddress,
+								 (FLMUINT32)pLFile->uiBlkAddress,
 								 0,
 								 0,
 								 0);
@@ -2173,16 +2175,16 @@ RCODE F_DbCheck::getLfInfo(
 	if (RC_BAD( rc = blkRead( pLFile->uiRootBlk,
 									  &pBlkHdr,
 									  &pSCache,
-									  &iBlkErrCode)))
+									  &i32BlkErrCode)))
 	{
-		if (iBlkErrCode)
+		if (i32BlkErrCode)
 		{
-			chkReportError( iBlkErrCode,
+			chkReportError( i32BlkErrCode,
 								 XFLM_LOCALE_B_TREE,
-								 pLFile->uiLfNum,
-								 pLFile->eLfType,
+								 (FLMUINT32)pLFile->uiLfNum,
+								 (FLMUINT32)pLFile->eLfType,
 								 0xFF,
-								 pLFile->uiRootBlk,
+								 (FLMUINT32)pLFile->uiRootBlk,
 								 0,
 								 0,
 								 0);
@@ -2199,10 +2201,10 @@ RCODE F_DbCheck::getLfInfo(
 	{
 		chkReportError( FLM_BAD_BLK_HDR_LEVEL,
 							 XFLM_LOCALE_B_TREE,
-							 pLFile->uiLfNum,
-							 pLFile->eLfType,
-							 (FLMUINT)(((F_BTREE_BLK_HDR *)pBlkHdr)->ui8BlkLevel),
-							 pLFile->uiRootBlk,
+							 (FLMUINT32)pLFile->uiLfNum,
+							 (FLMUINT32)pLFile->eLfType,
+							 (FLMUINT32)(((F_BTREE_BLK_HDR *)pBlkHdr)->ui8BlkLevel),
+							 (FLMUINT32)pLFile->uiRootBlk,
 							 0,
 							 0,
 							 0);
@@ -2254,7 +2256,7 @@ Desc:	Goes throught the (finalized) result set and validates that all the
 *****************************************************************************/
 RCODE F_DbCheck::verifyNodePointers(
 	STATE_INFO *					pStateInfo,
-	FLMINT *							piErrCode
+	FLMINT32 *						pi32ErrCode
 	)
 {
 	RCODE								rc = NE_XFLM_OK;
@@ -2266,9 +2268,9 @@ RCODE F_DbCheck::verifyNodePointers(
 	FLMBYTE							pucKey[ XFLM_MAX_KEY_SIZE];
 	FLMUINT							uiKeyLength = XFLM_MAX_KEY_SIZE;
 	F_Btree *						pBTree = NULL;
-	FLMINT							iErrCode = 0;
+	FLMINT32							i32ErrCode = 0;
 
-	*piErrCode = 0;
+	*pi32ErrCode = 0;
 
 	if (RC_BAD( rc = f_calloc( sizeof( NODE_RS_ENTRY), &pRSEntry)))
 	{
@@ -2331,17 +2333,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		bFirst = FALSE;
 
 		if (RC_BAD( rc = verifyRootLink(
-						pRSEntry, uiRSEntrySize, pTmpRSEntry, pResult, &iErrCode)))
+						pRSEntry, uiRSEntrySize, pTmpRSEntry, pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if (iErrCode)
+		if (i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2350,17 +2353,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		}
 
 		if (RC_BAD( rc = verifyParentLink(
-						pRSEntry, pTmpRSEntry, pResult, &iErrCode)))
+						pRSEntry, pTmpRSEntry, pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if (iErrCode)
+		if (i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2369,17 +2373,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		}
 
 		if( RC_BAD( rc = verifyFirstChildLink( pRSEntry, pTmpRSEntry, 
-			pResult, &iErrCode)))
+			pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if( iErrCode)
+		if( i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2388,17 +2393,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		}
 
 		if (RC_BAD( rc = verifyLastChildLink(
-						pRSEntry, pTmpRSEntry, pResult, &iErrCode)))
+						pRSEntry, pTmpRSEntry, pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if (iErrCode)
+		if (i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2407,17 +2413,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		}
 
 		if (RC_BAD( rc = verifyPrevSiblingLink(
-						pRSEntry, pTmpRSEntry, pResult, &iErrCode)))
+						pRSEntry, pTmpRSEntry, pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if (iErrCode)
+		if (i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2426,17 +2433,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		}
 
 		if (RC_BAD( rc = verifyNextSiblingLink(
-						pRSEntry, pTmpRSEntry, pResult, &iErrCode)))
+						pRSEntry, pTmpRSEntry, pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if (iErrCode)
+		if (i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2445,17 +2453,18 @@ RCODE F_DbCheck::verifyNodePointers(
 		}
 
 		if (RC_BAD( rc = verifyAnnotationLink(
-						pRSEntry, pTmpRSEntry, pResult, &iErrCode)))
+						pRSEntry, pTmpRSEntry, pResult, &i32ErrCode)))
 		{
 			goto Exit;
 		}
 
-		if (iErrCode)
+		if (i32ErrCode)
 		{
-			chkReportError( iErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-						m_Progress.uiLfType, 0, 0, 0, (FLMUINT)~(0),
+			chkReportError( i32ErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, 0, 0, 0, FLM_MAX_UINT32,
 						pRSEntry->hdr.ui64NodeId);
-			iErrCode = 0;
+			i32ErrCode = 0;
 			m_Progress.ui64NumBrokenDomLinks++;
 		}
 		else
@@ -2501,7 +2510,7 @@ FSTATIC RCODE verifyRootLink(
 	FLMUINT					uiRSEntrySize,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode
+	FLMINT32 *				pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -2526,7 +2535,7 @@ FSTATIC RCODE verifyRootLink(
 			&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 			&uiTmpRSEntrySize)))
 		{
-			*piErrCode = FLM_BAD_ROOT_LINK;
+			*pi32ErrCode = FLM_BAD_ROOT_LINK;
 			goto Exit;
 		}
 
@@ -2536,7 +2545,7 @@ FSTATIC RCODE verifyRootLink(
 		// Cannot have a parent node
 		if (pTmpRSEntry->hdr.ui16BitMap & CHK_BM_PARENT_ID)
 		{
-			*piErrCode = FLM_BAD_ROOT_PARENT;
+			*pi32ErrCode = FLM_BAD_ROOT_PARENT;
 			goto Exit;
 		}
 
@@ -2545,7 +2554,7 @@ FSTATIC RCODE verifyRootLink(
 			 pTmpRSEntry->hdr.ui16Flags & CHK_LAST_CHILD_VERIFIED ||
 			 pTmpRSEntry->hdr.ui16Flags & CHK_ANNOTATION_VERIFIED)
 		{
-			*piErrCode = FLM_BAD_ROOT_LINK;
+			*pi32ErrCode = FLM_BAD_ROOT_LINK;
 			goto Exit;
 		}
 
@@ -2564,7 +2573,7 @@ FSTATIC RCODE verifyRootLink(
 		// Cannot have a parent node
 		if (pRSEntry->hdr.ui16BitMap & CHK_BM_PARENT_ID)
 		{
-			*piErrCode = FLM_BAD_ROOT_LINK;
+			*pi32ErrCode = FLM_BAD_ROOT_LINK;
 			goto Exit;
 		}
 
@@ -2573,7 +2582,7 @@ FSTATIC RCODE verifyRootLink(
 			 pRSEntry->hdr.ui16Flags & CHK_LAST_CHILD_VERIFIED ||
 			 pRSEntry->hdr.ui16Flags & CHK_ANNOTATION_VERIFIED)
 		{
-			*piErrCode = FLM_BAD_ROOT_LINK;
+			*pi32ErrCode = FLM_BAD_ROOT_LINK;
 			goto Exit;
 		}
 
@@ -2600,7 +2609,7 @@ FSTATIC RCODE verifyParentLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode
+	FLMINT32 *				pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -2620,7 +2629,7 @@ FSTATIC RCODE verifyParentLink(
 			 pRSEntry->hdr.ui16Flags & CHK_LAST_CHILD_VERIFIED ||
 			 pRSEntry->hdr.ui16Flags & CHK_ANNOTATION_VERIFIED)
 		{
-			*piErrCode = FLM_BAD_PARENT_LINK;
+			*pi32ErrCode = FLM_BAD_PARENT_LINK;
 		}
 
 		goto Exit;
@@ -2628,7 +2637,7 @@ FSTATIC RCODE verifyParentLink(
 
 	if (ui64ParentId == pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_PARENT_LINK;
+		*pi32ErrCode = FLM_BAD_PARENT_LINK;
 		goto Exit;
 	}
 
@@ -2639,7 +2648,7 @@ FSTATIC RCODE verifyParentLink(
 		&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 		&uiTmpRSEntrySize)))
 	{
-		*piErrCode = FLM_BAD_PARENT_LINK;
+		*pi32ErrCode = FLM_BAD_PARENT_LINK;
 		goto Exit;
 	}
 
@@ -2649,7 +2658,7 @@ FSTATIC RCODE verifyParentLink(
 	{
 		if (ui64RootId != ui64TmpRootId)
 		{
-			*piErrCode = FLM_BAD_PARENT_LINK;
+			*pi32ErrCode = FLM_BAD_PARENT_LINK;
 			goto Exit;
 		}
 	}
@@ -2657,7 +2666,7 @@ FSTATIC RCODE verifyParentLink(
 	{
 		if (ui64ParentId != ui64RootId)
 		{
-			*piErrCode = FLM_BAD_PARENT_LINK;
+			*pi32ErrCode = FLM_BAD_PARENT_LINK;
 			goto Exit;
 		}
 	}
@@ -2683,7 +2692,7 @@ FSTATIC RCODE verifyFirstChildLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode)
+	FLMINT32 *				pi32ErrCode)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT64		ui64FirstChildId = getLinkVal( CHK_BM_FIRST_CHILD, pRSEntry);
@@ -2700,14 +2709,14 @@ FSTATIC RCODE verifyFirstChildLink(
 		
 		if (getLinkVal( CHK_BM_LAST_CHILD, pRSEntry))
 		{
-			*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+			*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 		}
 
 		if (pRSEntry->hdr.ui16Flags & CHK_PARENT_VERIFIED)
 		{
 			if( !getLinkVal( CHK_BM_ANNOTATION, pRSEntry))
 			{
-				*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+				*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 			}
 		}
 		goto Exit;
@@ -2716,7 +2725,7 @@ FSTATIC RCODE verifyFirstChildLink(
 
 	if (ui64FirstChildId == pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 		goto Exit;
 	}
 
@@ -2727,7 +2736,7 @@ FSTATIC RCODE verifyFirstChildLink(
 		&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 		&uiTmpRSEntrySize)))
 	{
-		*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 		goto Exit;
 	}
 
@@ -2738,7 +2747,7 @@ FSTATIC RCODE verifyFirstChildLink(
 	{
 		if (ui64RootId != ui64TmpRootId)
 		{
-			*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+			*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 			goto Exit;
 		}
 	}
@@ -2746,7 +2755,7 @@ FSTATIC RCODE verifyFirstChildLink(
 	{
 		if (ui64TmpRootId != pRSEntry->hdr.ui64NodeId)
 		{
-			*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+			*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 			goto Exit;
 		}
 	}
@@ -2754,14 +2763,14 @@ FSTATIC RCODE verifyFirstChildLink(
 	// Make sure this child has not been visited as a first child already.
 	if (pTmpRSEntry->hdr.ui16Flags & CHK_FIRST_CHILD_VERIFIED)
 	{
-		*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 		goto Exit;
 	}
 
 	// Does this child reference the correct parent?
 	if (getLinkVal( CHK_BM_PARENT_ID, pTmpRSEntry) != pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 		goto Exit;
 	}
 
@@ -2789,7 +2798,7 @@ FSTATIC RCODE verifyLastChildLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode
+	FLMINT32 *				pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -2807,14 +2816,14 @@ FSTATIC RCODE verifyLastChildLink(
 		
 		if (getLinkVal( CHK_BM_FIRST_CHILD, pRSEntry))
 		{
-			*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+			*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 		}
 
 		if (pRSEntry->hdr.ui16Flags & CHK_PARENT_VERIFIED)
 		{
 			if( !getLinkVal( CHK_BM_ANNOTATION, pRSEntry))
 			{
-				*piErrCode = FLM_BAD_FIRST_CHILD_LINK;
+				*pi32ErrCode = FLM_BAD_FIRST_CHILD_LINK;
 			}
 		}
 		goto Exit;
@@ -2823,7 +2832,7 @@ FSTATIC RCODE verifyLastChildLink(
 
 	if (ui64LastChildId == pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 		goto Exit;
 	}
 
@@ -2834,7 +2843,7 @@ FSTATIC RCODE verifyLastChildLink(
 		&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 		&uiTmpRSEntrySize)))
 	{
-		*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 		goto Exit;
 	}
 
@@ -2844,7 +2853,7 @@ FSTATIC RCODE verifyLastChildLink(
 	{
 		if (ui64RootId != ui64TmpRootId)
 		{
-			*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+			*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 			goto Exit;
 		}
 	}
@@ -2852,7 +2861,7 @@ FSTATIC RCODE verifyLastChildLink(
 	{
 		if (ui64TmpRootId != pRSEntry->hdr.ui64NodeId)
 		{
-			*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+			*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 			goto Exit;
 		}
 	}
@@ -2860,14 +2869,14 @@ FSTATIC RCODE verifyLastChildLink(
 	// Make sure this child has not been visited as a last child already.
 	if (pTmpRSEntry->hdr.ui16Flags & CHK_LAST_CHILD_VERIFIED)
 	{
-		*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 		goto Exit;
 	}
 
 	// Does this child reference the correct parent?
 	if (getLinkVal( CHK_BM_PARENT_ID, pTmpRSEntry) != pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_LAST_CHILD_LINK;
+		*pi32ErrCode = FLM_BAD_LAST_CHILD_LINK;
 		goto Exit;
 	}
 
@@ -2896,7 +2905,7 @@ FSTATIC RCODE verifyPrevSiblingLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode
+	FLMINT32 *				pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -2913,7 +2922,7 @@ FSTATIC RCODE verifyPrevSiblingLink(
 		// Should not be a Next Sibling to anyone.
 		if (pRSEntry->hdr.ui16Flags & CHK_NEXT_SIBLING_VERIFIED)
 		{
-			*piErrCode = FLM_BAD_PREV_SIBLING_LINK;
+			*pi32ErrCode = FLM_BAD_PREV_SIBLING_LINK;
 		}
 
 		// Must also verify that this node is the first child of the parent node
@@ -2928,7 +2937,7 @@ FSTATIC RCODE verifyPrevSiblingLink(
 				&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 				&uiTmpRSEntrySize)))
 			{
-				*piErrCode = FLM_BAD_PARENT_LINK;
+				*pi32ErrCode = FLM_BAD_PARENT_LINK;
 				goto Exit;
 			}
 			ui64FirstChild = getLinkVal( CHK_BM_FIRST_CHILD, pTmpRSEntry);
@@ -2941,7 +2950,7 @@ FSTATIC RCODE verifyPrevSiblingLink(
 				ui64Annot = getLinkVal( CHK_BM_ANNOTATION, pTmpRSEntry);
 				if (ui64Annot != pRSEntry->hdr.ui64NodeId)
 				{
-					*piErrCode = FLM_BAD_PREV_SIBLING_LINK;
+					*pi32ErrCode = FLM_BAD_PREV_SIBLING_LINK;
 					goto Exit;
 				}
 			}
@@ -2956,7 +2965,7 @@ FSTATIC RCODE verifyPrevSiblingLink(
 		&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 		&uiTmpRSEntrySize)))
 	{
-		*piErrCode = FLM_BAD_PREV_SIBLING_LINK;
+		*pi32ErrCode = FLM_BAD_PREV_SIBLING_LINK;
 		goto Exit;
 	}
 
@@ -2967,7 +2976,7 @@ FSTATIC RCODE verifyPrevSiblingLink(
 	{
 		if( ui64ParentId || getLinkVal( CHK_BM_PARENT_ID, pTmpRSEntry))
 		{
-			*piErrCode = FLM_BAD_PREV_SIBLING_LINK;
+			*pi32ErrCode = FLM_BAD_PREV_SIBLING_LINK;
 			goto Exit;
 		}
 	}
@@ -2977,14 +2986,14 @@ FSTATIC RCODE verifyPrevSiblingLink(
 
 	if (pTmpRSEntry->hdr.ui16Flags & CHK_PREV_SIBLING_VERIFIED)
 	{
-		*piErrCode = FLM_BAD_PREV_SIBLING_LINK;
+		*pi32ErrCode = FLM_BAD_PREV_SIBLING_LINK;
 		goto Exit;
 	}
 
 	// Should point to "this" node.
 	if (getLinkVal( CHK_BM_NEXT_SIBLING, pTmpRSEntry) != pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_PREV_SIBLING_LINK;
+		*pi32ErrCode = FLM_BAD_PREV_SIBLING_LINK;
 		goto Exit;
 	}
 
@@ -3013,7 +3022,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode
+	FLMINT32 *				pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -3030,7 +3039,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 		// Should not be a Prev Sibling to anyone.
 		if (pRSEntry->hdr.ui16Flags & CHK_PREV_SIBLING_VERIFIED)
 		{
-			*piErrCode = FLM_BAD_NEXT_SIBLING_LINK;
+			*pi32ErrCode = FLM_BAD_NEXT_SIBLING_LINK;
 		}
 		// Must also verify that this node is the last child of the parent node
 		// - if there is a parent.
@@ -3044,7 +3053,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 				&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 				&uiTmpRSEntrySize)))
 			{
-				*piErrCode = FLM_BAD_PARENT_LINK;
+				*pi32ErrCode = FLM_BAD_PARENT_LINK;
 				goto Exit;
 			}
 			ui64LastChild = getLinkVal( CHK_BM_LAST_CHILD, pTmpRSEntry);
@@ -3057,7 +3066,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 				ui64Annot = getLinkVal( CHK_BM_ANNOTATION, pTmpRSEntry);
 				if (ui64Annot != pRSEntry->hdr.ui64NodeId)
 				{
-					*piErrCode = FLM_BAD_NEXT_SIBLING_LINK;
+					*pi32ErrCode = FLM_BAD_NEXT_SIBLING_LINK;
 					goto Exit;
 				}
 			}
@@ -3074,7 +3083,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 		&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 		&uiTmpRSEntrySize)))
 	{
-		*piErrCode = FLM_BAD_NEXT_SIBLING_LINK;
+		*pi32ErrCode = FLM_BAD_NEXT_SIBLING_LINK;
 		goto Exit;
 	}
 
@@ -3085,7 +3094,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 	{
 		if( ui64ParentId || getLinkVal( CHK_BM_PARENT_ID, pTmpRSEntry))
 		{
-			*piErrCode = FLM_BAD_NEXT_SIBLING_LINK;
+			*pi32ErrCode = FLM_BAD_NEXT_SIBLING_LINK;
 			goto Exit;
 		}
 	}
@@ -3095,7 +3104,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 
 	if( pTmpRSEntry->hdr.ui16Flags & CHK_NEXT_SIBLING_VERIFIED)
 	{
-		*piErrCode = FLM_BAD_NEXT_SIBLING_LINK;
+		*pi32ErrCode = FLM_BAD_NEXT_SIBLING_LINK;
 		goto Exit;
 	}
 
@@ -3103,7 +3112,7 @@ FSTATIC RCODE verifyNextSiblingLink(
 
 	if( getLinkVal( CHK_BM_PREV_SIBLING, pTmpRSEntry) != pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_NEXT_SIBLING_LINK;
+		*pi32ErrCode = FLM_BAD_NEXT_SIBLING_LINK;
 		goto Exit;
 	}
 
@@ -3130,7 +3139,7 @@ FSTATIC RCODE verifyAnnotationLink(
 	NODE_RS_ENTRY *		pRSEntry,
 	NODE_RS_ENTRY *		pTmpRSEntry,
 	F_BtResultSet *		pResult,
-	FLMINT *					piErrCode
+	FLMINT32 *				pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -3154,7 +3163,7 @@ FSTATIC RCODE verifyAnnotationLink(
 		&uiKeySize, (FLMBYTE *)pTmpRSEntry, sizeof( NODE_RS_ENTRY),
 		&uiTmpRSEntrySize)))
 	{
-		*piErrCode = FLM_BAD_ANNOTATION_LINK;
+		*pi32ErrCode = FLM_BAD_ANNOTATION_LINK;
 		goto Exit;
 	}
 
@@ -3169,7 +3178,7 @@ FSTATIC RCODE verifyAnnotationLink(
 	{
 		if (ui64RootId != ui64TmpRootId)
 		{
-			*piErrCode = FLM_BAD_ANNOTATION_LINK;
+			*pi32ErrCode = FLM_BAD_ANNOTATION_LINK;
 			goto Exit;
 		}
 	}
@@ -3179,7 +3188,7 @@ FSTATIC RCODE verifyAnnotationLink(
 		
 		if (ui64TmpRootId != pRSEntry->hdr.ui64NodeId)
 		{
-			*piErrCode = FLM_BAD_ANNOTATION_LINK;
+			*pi32ErrCode = FLM_BAD_ANNOTATION_LINK;
 			goto Exit;
 		}
 	}
@@ -3187,14 +3196,14 @@ FSTATIC RCODE verifyAnnotationLink(
 	// The annotation should not have been visited as such before now.
 	if (pTmpRSEntry->hdr.ui16Flags & CHK_ANNOTATION_VERIFIED)
 	{
-		*piErrCode = FLM_BAD_ANNOTATION_LINK;
+		*pi32ErrCode = FLM_BAD_ANNOTATION_LINK;
 		goto Exit;
 	}
 
 	// Parent should point to "this" node.
 	if (getLinkVal( CHK_BM_PARENT_ID, pTmpRSEntry) != pRSEntry->hdr.ui64NodeId)
 	{
-		*piErrCode = FLM_BAD_ANNOTATION_LINK;
+		*pi32ErrCode = FLM_BAD_ANNOTATION_LINK;
 		goto Exit;
 	}
 
@@ -3225,7 +3234,7 @@ Desc:	This routine does for chains of data-only blocks what verifySubTree
 RCODE F_DbCheck::verifyDOChain(
 	STATE_INFO *	pParentState,
 	FLMUINT			uiBlkAddr,
-	FLMINT *			piElmErrCode)
+	FLMINT32 *		pi32ElmErrCode)
 {
 	RCODE					rc = NE_XFLM_OK;
 	F_NodeVerifier *	pNodeVerifier = pParentState->pNodeVerifier;
@@ -3246,7 +3255,7 @@ RCODE F_DbCheck::verifyDOChain(
 	// to data only blocks...
 	if (pParentState->uiLevel != 0)
 	{
-		*piElmErrCode = FLM_BAD_ELM_INVALID_LEVEL;
+		*pi32ElmErrCode = FLM_BAD_ELM_INVALID_LEVEL;
 		rc = RC_SET_AND_ASSERT( NE_XFLM_FAILURE);
 		goto Exit;
 	}
@@ -3274,18 +3283,18 @@ RCODE F_DbCheck::verifyDOChain(
 		if (RC_BAD( rc = blkRead( uiBlkAddr,
 										  &pBlkHdr,
 										  &pSCache,
-										  piElmErrCode)))
+										  pi32ElmErrCode)))
 		{
-			if (*piElmErrCode)
+			if (*pi32ElmErrCode)
 			{
 				uiNumErrors++;
-				chkReportError( *piElmErrCode,
+				chkReportError( *pi32ElmErrCode,
 									 XFLM_LOCALE_B_TREE,
-									 m_Progress.uiLfNumber,
-									 m_Progress.uiLfType,
-									 StateInfo.uiLevel,
-									 uiBlkAddr,
-									 uiParentBlkAddr,
+									 (FLMUINT32)m_Progress.ui32LfNumber,
+									 (FLMUINT32)m_Progress.ui32LfType,
+									 (FLMUINT32)StateInfo.uiLevel,
+									 (FLMUINT32)uiBlkAddr,
+									 (FLMUINT32)uiParentBlkAddr,
 									 0,
 									 0);
 			}
@@ -3312,7 +3321,7 @@ RCODE F_DbCheck::verifyDOChain(
 		// Chains of data only blocks should always have at least 2 blocks...
 		if ((uiNumBlksRead == 0) && (pBlkHdr->ui32NextBlkInChain == 0))
 		{
-			*piElmErrCode = FLM_BAD_DATA_BLOCK_COUNT;
+			*pi32ElmErrCode = FLM_BAD_DATA_BLOCK_COUNT;
 			rc = RC_SET_AND_ASSERT( NE_XFLM_FAILURE);
 			goto Exit;
 		}
@@ -3326,15 +3335,17 @@ RCODE F_DbCheck::verifyDOChain(
 		StateInfo.pBlkHdr = pBlkHdr;
 		StateInfo.uiBlkType = BT_DATA_ONLY;
 		StateInfo.ui32BlkAddress = (FLMUINT32)uiBlkAddr;
-		*piElmErrCode = flmVerifyBlockHeader( &StateInfo, pBlkInfo, uiBlockSize,
+		*pi32ElmErrCode = flmVerifyBlockHeader( &StateInfo, pBlkInfo, uiBlockSize,
 														  0xFFFFFFFF, (uiNumBlksRead > 1) ?
 														  uiPrevNextBlkAddr : 0,	TRUE);
-		if (*piElmErrCode != 0)
+		if (*pi32ElmErrCode != 0)
 		{
 			uiNumErrors++;
-			chkReportError( *piElmErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-								 m_Progress.uiLfType, StateInfo.uiLevel, uiBlkAddr,
-								 uiParentBlkAddr, 0, 0);
+			chkReportError( *pi32ElmErrCode, XFLM_LOCALE_B_TREE,
+								 (FLMUINT32)m_Progress.ui32LfNumber,
+								 (FLMUINT32)m_Progress.ui32LfType,
+								 (FLMUINT32)StateInfo.uiLevel, (FLMUINT32)uiBlkAddr,
+								 (FLMUINT32)uiParentBlkAddr, 0, 0);
 		}
 
 		// Verify that the ui16BlkBytesAvail is a reasonable size...
@@ -3342,7 +3353,7 @@ RCODE F_DbCheck::verifyDOChain(
 		if( (pBlkHdr->ui32NextBlkInChain != 0) &&
 			 (pBlkHdr->ui16BlkBytesAvail != 0))
 		{
-			*piElmErrCode = FLM_BAD_AVAIL_SIZE;
+			*pi32ElmErrCode = FLM_BAD_AVAIL_SIZE;
 			rc = RC_SET_AND_ASSERT( NE_XFLM_FAILURE);
 			goto Exit;
 		}
@@ -3417,9 +3428,9 @@ RCODE F_DbCheck::verifySubTree(
 	FLMUINT				uiParentBlkAddress;
 	FLMUINT				uiChildBlkAddress;
 	FLMUINT				uiPrevNextBlkAddress;
-	FLMINT			  	iElmErrCode;
-	FLMINT			  	iBlkErrCode = 0;
-	FLMINT			  	iLastErrCode = 0;
+	FLMINT32			  	i32ElmErrCode;
+	FLMINT32			  	i32BlkErrCode = 0;
+	FLMINT32			  	i32LastErrCode = 0;
 	FLMUINT				uiNumErrors = 0;
 	FLMUINT64		  	ui64SaveKeyCount = 0;
 	FLMUINT64			ui64SaveKeyRefs = 0;
@@ -3429,7 +3440,7 @@ RCODE F_DbCheck::verifySubTree(
 	FLMBOOL			  	bCountElm;
 	FLMBOOL				bDescendToChildBlocks;
 	FLMINT			  	iCompareStatus;
-	FLMINT				iHdrErrCode;
+	FLMINT32				i32HdrErrCode;
 	F_NodeVerifier *	pNodeVerifier = pStateInfo->pNodeVerifier;
 	STATE_INFO *		pChildStateInfo = NULL;
 	F_CachedBlock *	pTmpSCache = NULL;
@@ -3448,30 +3459,31 @@ RCODE F_DbCheck::verifySubTree(
 	
 	bDescendToChildBlocks = TRUE;
 
-	if (RC_BAD( rc = blkRead( uiBlkAddress, &pBlkHdr, &pSCache, &iBlkErrCode)))
+	if (RC_BAD( rc = blkRead( uiBlkAddress, &pBlkHdr, &pSCache, &i32BlkErrCode)))
 	{
-		if (iBlkErrCode)
+		if (i32BlkErrCode)
 		{
 			uiNumErrors++;
-			iLastErrCode = iBlkErrCode;
+			i32LastErrCode = i32BlkErrCode;
 
-			chkReportError( iBlkErrCode, XFLM_LOCALE_B_TREE, 
-				m_Progress.uiLfNumber, m_Progress.uiLfType, uiLevel, uiBlkAddress,
-				uiParentBlkAddress, 0, 0);
+			chkReportError( i32BlkErrCode, XFLM_LOCALE_B_TREE, 
+				(FLMUINT32)m_Progress.ui32LfNumber, (FLMUINT32)m_Progress.ui32LfType,
+				(FLMUINT32)uiLevel, (FLMUINT32)uiBlkAddress,
+				(FLMUINT32)uiParentBlkAddress, 0, 0);
 				
-			if( iBlkErrCode == FLM_BAD_BLK_CHECKSUM)
+			if( i32BlkErrCode == FLM_BAD_BLK_CHECKSUM)
 			{
 				bDescendToChildBlocks = FALSE;
 
 				// Allow to continue the check, but if this is a non-leaf block
-				// a non-zero iBlkErrCode will prevent us from descending to
+				// a non-zero i32BlkErrCode will prevent us from descending to
 				// child blocks.  Set rc to SUCCESS so we won't goto Exit below.
 
 				rc = NE_XFLM_OK;
 			}
-			else if (iBlkErrCode == FLM_COULD_NOT_SYNC_BLK)
+			else if (i32BlkErrCode == FLM_COULD_NOT_SYNC_BLK)
 			{
-				iLastErrCode = iBlkErrCode;
+				i32LastErrCode = i32BlkErrCode;
 
 				// Need the goto here, because rc is changed to SUCCESS,
 				// and the goto below would get skipped.
@@ -3507,7 +3519,7 @@ RCODE F_DbCheck::verifySubTree(
 
 	// Check the block header.
 
-	if ((iHdrErrCode =
+	if ((i32HdrErrCode =
 				flmVerifyBlockHeader( pStateInfo, pBlkInfo, uiBlockSize,
 											 (pParentState == NULL)
 													 ? 0
@@ -3525,29 +3537,30 @@ RCODE F_DbCheck::verifySubTree(
 			 uiPrevNextBlkAddress != uiBlkAddress &&
 			 (uiResetKeyLen == ~(FLMUINT)0))
 		{
-			iHdrErrCode = FLM_BAD_PREV_BLK_NEXT;
+			i32HdrErrCode = FLM_BAD_PREV_BLK_NEXT;
 		}
 	}
 	
-	if (iHdrErrCode != 0)
+	if (i32HdrErrCode != 0)
 	{
 		// Check to see if the previous block is still valid.
 		// It may be that the block has gone away, and so is no longer valid.
 		
-		if (iHdrErrCode == FLM_BAD_BLK_HDR_PREV)
+		if (i32HdrErrCode == FLM_BAD_BLK_HDR_PREV)
 		{
 
 			flmAssert( pParentState);
 
 			if (RC_BAD( rc = blkRead( pParentState->ui32LastChildAddr,
-				&pTmpBlkHdr, &pTmpSCache, &iBlkErrCode)))
+				&pTmpBlkHdr, &pTmpSCache, &i32BlkErrCode)))
 			{
-				iLastErrCode = iBlkErrCode;
+				i32LastErrCode = i32BlkErrCode;
 				uiNumErrors++;
 				
-				chkReportError( iBlkErrCode, XFLM_LOCALE_B_TREE,
-					m_Progress.uiLfNumber, m_Progress.uiLfType, uiLevel,
-					uiBlkAddress, uiParentBlkAddress, 0, 0);
+				chkReportError( i32BlkErrCode, XFLM_LOCALE_B_TREE,
+					(FLMUINT32)m_Progress.ui32LfNumber, (FLMUINT32)m_Progress.ui32LfType,
+					(FLMUINT32)uiLevel,
+					(FLMUINT32)uiBlkAddress, (FLMUINT32)uiParentBlkAddress, 0, 0);
 			}
 			else
 			{
@@ -3557,24 +3570,27 @@ RCODE F_DbCheck::verifySubTree(
 				
 				if (pTmpBlkHdr->ui8BlkType == BT_FREE)
 				{
-					iHdrErrCode = 0;
+					i32HdrErrCode = 0;
 				}
 				else
 				{
-					iLastErrCode = iHdrErrCode;
+					i32LastErrCode = i32HdrErrCode;
 					uiNumErrors++;
-					chkReportError( iHdrErrCode, XFLM_LOCALE_B_TREE,
-						m_Progress.uiLfNumber, m_Progress.uiLfType, uiLevel,
-						uiBlkAddress, uiParentBlkAddress, 0, 0);
+					chkReportError( i32HdrErrCode, XFLM_LOCALE_B_TREE,
+						(FLMUINT32)m_Progress.ui32LfNumber,
+						(FLMUINT32)m_Progress.ui32LfType, (FLMUINT32)uiLevel,
+						(FLMUINT32)uiBlkAddress, (FLMUINT32)uiParentBlkAddress, 0, 0);
 				}
 			}
 		}
 		else
 		{
-			iLastErrCode = iHdrErrCode;
+			i32LastErrCode = i32HdrErrCode;
 			uiNumErrors++;
-			chkReportError( iHdrErrCode, XFLM_LOCALE_B_TREE, m_Progress.uiLfNumber,
-				m_Progress.uiLfType, uiLevel, uiBlkAddress, uiParentBlkAddress,
+			chkReportError( i32HdrErrCode, XFLM_LOCALE_B_TREE,
+				(FLMUINT32)m_Progress.ui32LfNumber,
+				(FLMUINT32)m_Progress.ui32LfType, (FLMUINT32)uiLevel,
+				(FLMUINT32)uiBlkAddress, (FLMUINT32)uiParentBlkAddress,
 				0, 0);
 		}
 
@@ -3593,7 +3609,7 @@ RCODE F_DbCheck::verifySubTree(
 	{
 		if (rc == NE_XFLM_BTREE_ERROR)
 		{
-			iBlkErrCode = FLM_BAD_BLOCK_STRUCTURE;
+			i32BlkErrCode = FLM_BAD_BLOCK_STRUCTURE;
 			rc = NE_XFLM_OK;
 			goto fix_state;
 		}
@@ -3631,17 +3647,18 @@ RCODE F_DbCheck::verifySubTree(
 		// Verify the element first, then check if we are restting...
 
 		m_LastStatusRc = flmVerifyElement( pStateInfo, m_pLFile, m_pIxd,
-																    &iElmErrCode);
-		if (iElmErrCode)
+																    &i32ElmErrCode);
+		if (i32ElmErrCode)
 		{
 			// Report any errors in the element.
 			
-			iLastErrCode = iElmErrCode;
+			i32LastErrCode = i32ElmErrCode;
 			uiNumErrors++;
 			
-			if (RC_BAD( rc = chkReportError( iElmErrCode, XFLM_LOCALE_B_TREE,
-				m_Progress.uiLfNumber, m_Progress.uiLfType, uiLevel, uiBlkAddress,
-				uiParentBlkAddress, pStateInfo->uiElmOffset,
+			if (RC_BAD( rc = chkReportError( i32ElmErrCode, XFLM_LOCALE_B_TREE,
+				(FLMUINT32)m_Progress.ui32LfNumber, (FLMUINT32)m_Progress.ui32LfType,
+				(FLMUINT32)uiLevel, (FLMUINT32)uiBlkAddress,
+				(FLMUINT32)uiParentBlkAddress, (FLMUINT32)pStateInfo->uiElmOffset,
 				pStateInfo->ui64ElmNodeId)))
 			{
 				break;
@@ -3751,7 +3768,7 @@ RCODE F_DbCheck::verifySubTree(
 
 		// Do some further checking.
 
-		if (iElmErrCode == 0)
+		if (i32ElmErrCode == 0)
 		{
 			if (bProcessElm &&
 				 (uiBlkType == BT_LEAF_DATA ||
@@ -3769,7 +3786,7 @@ RCODE F_DbCheck::verifySubTree(
 						flmAssert( pStateInfo->uiElmDataLen == 4);
 
 						if( RC_BAD( rc = verifyDOChain( pStateInfo,
-							FB2UD( pStateInfo->pucElmData), &iElmErrCode)))
+							FB2UD( pStateInfo->pucElmData), &i32ElmErrCode)))
 						{
 							goto Exit;
 						}
@@ -3823,7 +3840,7 @@ RCODE F_DbCheck::verifySubTree(
 								m_pDb, m_pDb->m_pDict,
 								pStateInfo->pCollection->lfInfo.uiLfNum,
 								pStateInfo->ui64ElmNodeId, m_bSkipDOMLinkCheck,
-								&iElmErrCode)))
+								&i32ElmErrCode)))
 							{
 								goto Exit;
 							}
@@ -3833,16 +3850,18 @@ RCODE F_DbCheck::verifySubTree(
 
 				if (bProcessElm)
 				{
-					if (iElmErrCode != 0)
+					if (i32ElmErrCode != 0)
 					{
 						// Report any errors in the element.
 
-						iLastErrCode = iElmErrCode;
+						i32LastErrCode = i32ElmErrCode;
 						uiNumErrors++;
 						
-						chkReportError( iElmErrCode, XFLM_LOCALE_B_TREE,
-							m_Progress.uiLfNumber, m_Progress.uiLfType, uiLevel,
-							uiBlkAddress, uiParentBlkAddress, pStateInfo->uiElmOffset,
+						chkReportError( i32ElmErrCode, XFLM_LOCALE_B_TREE,
+							(FLMUINT32)m_Progress.ui32LfNumber, (FLMUINT32)m_Progress.ui32LfType,
+							(FLMUINT32)uiLevel,
+							(FLMUINT32)uiBlkAddress, (FLMUINT32)uiParentBlkAddress,
+							(FLMUINT32)pStateInfo->uiElmOffset,
 							pStateInfo->ui64ElmNodeId);
 				
 						if (RC_BAD( m_LastStatusRc))
@@ -3936,7 +3955,7 @@ RCODE F_DbCheck::verifySubTree(
 
 	// Verify that the last key in the block matches the parent's key.
 
-	if (iLastErrCode == 0 && pParentState && RC_OK( m_LastStatusRc))
+	if (i32LastErrCode == 0 && pParentState && RC_OK( m_LastStatusRc))
 	{
 		if (pStateInfo->bValidKey && pParentState->bValidKey &&
 			 f_memcmp( pStateInfo->pucElmKey,
@@ -3945,12 +3964,13 @@ RCODE F_DbCheck::verifySubTree(
 								? pStateInfo->uiElmKeyLen
 								: pParentState->uiElmKeyLen) != 0)
 		{
-			iLastErrCode = FLM_BAD_PARENT_KEY;
+			i32LastErrCode = FLM_BAD_PARENT_KEY;
 			uiNumErrors++;
 			
-			chkReportError( iLastErrCode, XFLM_LOCALE_B_TREE, 
-				m_Progress.uiLfNumber, m_Progress.uiLfType, uiLevel, uiBlkAddress,
-				uiParentBlkAddress, 0, 0);
+			chkReportError( i32LastErrCode, XFLM_LOCALE_B_TREE, 
+				(FLMUINT32)m_Progress.ui32LfNumber, (FLMUINT32)m_Progress.ui32LfType,
+				(FLMUINT32)uiLevel, (FLMUINT32)uiBlkAddress,
+				(FLMUINT32)uiParentBlkAddress, 0, 0);
 		}
 	}
 
@@ -3960,9 +3980,9 @@ fix_state:
 	// address and last child address to zero to indicate that we really
 	// aren't sure we're at the right place in this level in the B-TREE.
 
-	if (iLastErrCode != 0)
+	if (i32LastErrCode != 0)
 	{
-		pStateInfo->BlkInfo.iErrCode = iLastErrCode;
+		pStateInfo->BlkInfo.i32ErrCode = i32LastErrCode;
 		pStateInfo->BlkInfo.uiNumErrors += uiNumErrors;
 
 		// Reset all child block states.
@@ -4406,7 +4426,7 @@ RCODE F_NodeVerifier::finalize(
 	FLMUINT				uiCollection,
 	FLMUINT64			ui64NodeId,
 	FLMBOOL				bSkipDOMLinkCheck,
-	FLMINT *				piElmErrCodeRV)
+	FLMINT32 *			pi32ElmErrCodeRV)
 {
 	RCODE						rc	= NE_XFLM_OK;
 	NODE_RS_ENTRY *		pRSEntry = NULL;
@@ -4415,7 +4435,7 @@ RCODE F_NodeVerifier::finalize(
 	F_NameTable *			pNameTable = pDict->getNameTable();
 	IF_BufferIStream *	pBufferStream = NULL;
 
-	*piElmErrCodeRV = 0;
+	*pi32ElmErrCodeRV = 0;
 	
 	if( m_bFinalizeCalled)
 	{
@@ -4450,7 +4470,7 @@ RCODE F_NodeVerifier::finalize(
 		
 		if( m_nodeInfo.eNodeType != ELEMENT_NODE)
 		{
-			*piElmErrCodeRV = FLM_BAD_NODE_TYPE;
+			*pi32ElmErrCodeRV = FLM_BAD_NODE_TYPE;
 			goto Exit;
 		}
 		
@@ -4460,7 +4480,7 @@ RCODE F_NodeVerifier::finalize(
 		{
 			if( !(uiStorageFlags & NSF_HAVE_CHILDREN_BIT))
 			{
-				*piElmErrCodeRV = FLM_BAD_CHILD_ELM_COUNT;
+				*pi32ElmErrCodeRV = FLM_BAD_CHILD_ELM_COUNT;
 				goto Exit;
 			}
 		}
@@ -4469,23 +4489,23 @@ RCODE F_NodeVerifier::finalize(
 	// Verify the Name and Prefix Ids.
 	
 	if( RC_BAD( rc = verifyNameId( pDb, m_nodeInfo.eNodeType,
-			m_nodeInfo.uiNameId, pNameTable, piElmErrCodeRV)))
+			m_nodeInfo.uiNameId, pNameTable, pi32ElmErrCodeRV)))
 	{
 		goto Exit;
 	}
 
-	if( *piElmErrCodeRV)
+	if( *pi32ElmErrCodeRV)
 	{
 		goto Exit;
 	}
 
 	if( RC_BAD( rc = verifyPrefixId( pDb, 
-		m_nodeInfo.uiPrefixId, pNameTable, piElmErrCodeRV)))
+		m_nodeInfo.uiPrefixId, pNameTable, pi32ElmErrCodeRV)))
 	{
 		goto Exit;
 	}
 
-	if( *piElmErrCodeRV)
+	if( *pi32ElmErrCodeRV)
 	{
 		goto Exit;
 	}
@@ -4555,7 +4575,7 @@ RCODE F_NodeVerifier::finalize(
 			sizeof( FLMUINT64), (FLMBYTE *)pRSEntry, 
 			sizeof( NODE_RS_HDR) + (uiRSBufIndex * sizeof( FLMUINT64)))))
 		{
-			*piElmErrCodeRV = -1;
+			*pi32ElmErrCodeRV = -1;
 			goto Exit;
 		}
 	}
@@ -4793,7 +4813,7 @@ RCODE F_NodeVerifier::verifyNameId(
 	eDomNodeType		eNodeType,
 	FLMUINT				uiNameId,
 	F_NameTable *		pNameTable,
-	FLMINT *				piErrCode)
+	FLMINT32 *			pi32ErrCode)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT				uiType;
@@ -4824,7 +4844,7 @@ RCODE F_NodeVerifier::verifyNameId(
 		default:
 		{
 			flmAssert( 0);
-			*piErrCode = FLM_UNSUPPORTED_NODE_TYPE;
+			*pi32ErrCode = FLM_UNSUPPORTED_NODE_TYPE;
 			goto Exit;
 		}
 	}
@@ -4832,7 +4852,7 @@ RCODE F_NodeVerifier::verifyNameId(
 	if (RC_BAD( rc = pNameTable->getFromTagTypeAndNum( pDb, uiType,
 		uiNameId, NULL, NULL, &uiLen, NULL, NULL, NULL, NULL, TRUE)))
 	{
-		*piErrCode = FLM_BAD_INVALID_NAME_ID;
+		*pi32ErrCode = FLM_BAD_INVALID_NAME_ID;
 		goto Exit;
 	}
 
@@ -4849,7 +4869,7 @@ RCODE F_NodeVerifier::verifyPrefixId(
 	F_Db *				pDb,
 	FLMUINT				uiPrefixId,
 	F_NameTable *		pNameTable,
-	FLMINT *				piErrCode
+	FLMINT32 *			pi32ErrCode
 	)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -4863,7 +4883,7 @@ RCODE F_NodeVerifier::verifyPrefixId(
 	if (RC_BAD( rc = pNameTable->getFromTagTypeAndNum(
 								pDb, ELM_PREFIX_TAG, uiPrefixId, NULL, NULL, &uiLen)))
 	{
-		*piErrCode = FLM_BAD_INVALID_PREFIX_ID;
+		*pi32ErrCode = FLM_BAD_INVALID_PREFIX_ID;
 		goto Exit;
 	}
 

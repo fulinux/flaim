@@ -32,7 +32,7 @@ namespace xflaim
 	/// <summary>
 	/// Valid database versions
 	/// </summary>
-	public enum DBVersions
+	public enum DBVersions : uint
 	{
 		/// <summary>Version 5.12</summary>
 		XFLM_VER_5_12					= 512,
@@ -43,7 +43,7 @@ namespace xflaim
 	/// <summary>
 	/// Valid languages
 	/// </summary>
-	public enum Languages
+	public enum Languages : int
 	{
 		/// <summary>English, United States</summary>
 		FLM_US_LANG 			= 0,
@@ -129,7 +129,7 @@ namespace xflaim
 	/// Types of logical files.  These are defined in xflaim.h.  If they
 	/// are changed in xflaim.h, they need to be changed here as well.
 	/// </summary>
-	public enum eLFileType
+	public enum eLFileType : int
 	{
 		/// <summary>Invalid type</summary>
 		XFLM_LF_INVALID = 0,
@@ -572,7 +572,7 @@ namespace xflaim
 			RestoreStatusCallback	fnRestoreStatus);
 
 		// WARNING NOTE: Any changes to this enum should also be reflected in DbSystem.cpp
-		private enum RestoreClientAction
+		private enum RestoreClientAction : int
 		{
 			RESTORE_OPEN_BACKUP_SET		= 1,
 			RESTORE_OPEN_RFL_FILE		= 2,
@@ -630,7 +630,7 @@ namespace xflaim
 		}
 
 		// WARNING NOTE: Any changes to this enum should also be reflected in DbSystem.cpp
-		private enum RestoreStatusAction
+		private enum RestoreStatusAction : int
 		{
 			REPORT_PROGRESS					= 1,
 			REPORT_ERROR						= 2,

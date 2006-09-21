@@ -77,7 +77,7 @@ FSTATIC void flmGetCreateOpts(
 	XFLM_DB_HDR *				pDbHdr,
 	XFLM_CREATE_OPTS *		pCreateOpts);
 
-FSTATIC FLMINT bldGetElmInfo(
+FSTATIC FLMINT32 bldGetElmInfo(
 	F_BTREE_BLK_HDR *			pBlkHdr,
 	FLMUINT						uiBlockSize,
 	FLMUINT						uiElmNumber,
@@ -886,8 +886,8 @@ RCODE F_DbRebuild::rebuildDatabase( void)
 	RCODE					rc2;
 	FLMBOOL				bStartedTrans = FALSE;
 
-	m_corruptInfo.uiErrLocale = XFLM_LOCALE_B_TREE;
-	m_corruptInfo.uiErrLfType = XFLM_LF_COLLECTION;
+	m_corruptInfo.ui32ErrLocale = XFLM_LOCALE_B_TREE;
+	m_corruptInfo.ui32ErrLfType = XFLM_LF_COLLECTION;
 
 	m_callbackData.ui64NodesRecov = 0;
 	m_callbackData.ui64DiscardedDocs = 0;
@@ -909,7 +909,7 @@ RCODE F_DbRebuild::rebuildDatabase( void)
 
 	// Recover the dictionary
 
-	m_callbackData.iDoingFlag = REBUILD_RECOVER_DICT;
+	m_callbackData.i32DoingFlag = REBUILD_RECOVER_DICT;
 	m_callbackData.bStartFlag = TRUE;
 	m_callbackData.ui64BytesExamined = 0;
 
@@ -925,7 +925,7 @@ RCODE F_DbRebuild::rebuildDatabase( void)
 
 	// Recover data
 
-	m_callbackData.iDoingFlag = REBUILD_RECOVER_DATA;
+	m_callbackData.i32DoingFlag = REBUILD_RECOVER_DATA;
 	m_callbackData.bStartFlag = TRUE;
 	m_callbackData.ui64BytesExamined = 0;
 
@@ -1605,13 +1605,13 @@ Exit:
 /***************************************************************************
 Desc:	Function to extract information about the current element
 ***************************************************************************/
-FSTATIC FLMINT bldGetElmInfo(
+FSTATIC FLMINT32 bldGetElmInfo(
 	F_BTREE_BLK_HDR *	pBlkHdr,
 	FLMUINT				uiBlockSize,
 	FLMUINT				uiElmNumber,
 	F_ELM_INFO *		pElmInfo)
 {
-	FLMINT				iErrCode = 0;
+	FLMINT32				i32ErrCode = 0;
 	FLMBYTE *			pucElm = NULL;
 	FLMUINT				uiElmLen = 0;
 	FLMUINT				uiElmKeyLen = 0;
@@ -1630,7 +1630,7 @@ FSTATIC FLMINT bldGetElmInfo(
 	if( uiElmNumber >= uiNumKeys)
 	{
 		flmAssert( 0);
-		iErrCode = FLM_BAD_ELM_OFFSET;
+		i32ErrCode = FLM_BAD_ELM_OFFSET;
 		goto Exit;
 	}
 	
@@ -1645,7 +1645,7 @@ FSTATIC FLMINT bldGetElmInfo(
 		{
 			if( pucElm + 2 > pucBlkEnd)
 			{
-				iErrCode = FLM_BAD_ELM_LEN;
+				i32ErrCode = FLM_BAD_ELM_LEN;
 				goto Exit;
 			}
 			
@@ -1663,7 +1663,7 @@ FSTATIC FLMINT bldGetElmInfo(
 			{
 				if( pucPtr + 2 > pucBlkEnd)
 				{
-					iErrCode = FLM_BAD_ELM_LEN;
+					i32ErrCode = FLM_BAD_ELM_LEN;
 					goto Exit;
 				}
 				
@@ -1675,7 +1675,7 @@ FSTATIC FLMINT bldGetElmInfo(
 			{
 				if( pucPtr > pucBlkEnd)
 				{
-					iErrCode = FLM_BAD_ELM_LEN;
+					i32ErrCode = FLM_BAD_ELM_LEN;
 					goto Exit;
 				}
 				
@@ -1688,7 +1688,7 @@ FSTATIC FLMINT bldGetElmInfo(
 			{
 				if( pucPtr + 2 > pucBlkEnd)
 				{
-					iErrCode = FLM_BAD_ELM_LEN;
+					i32ErrCode = FLM_BAD_ELM_LEN;
 					goto Exit;
 				}
 				
@@ -1700,7 +1700,7 @@ FSTATIC FLMINT bldGetElmInfo(
 			{
 				if( pucPtr > pucBlkEnd)
 				{
-					iErrCode = FLM_BAD_ELM_LEN;
+					i32ErrCode = FLM_BAD_ELM_LEN;
 					goto Exit;
 				}
 				
@@ -1726,7 +1726,7 @@ FSTATIC FLMINT bldGetElmInfo(
 			{
 				if( uiElmDataLen != 4)
 				{
-					iErrCode = FLM_BAD_ELM_LEN;
+					i32ErrCode = FLM_BAD_ELM_LEN;
 					goto Exit;
 				}
 
@@ -1738,14 +1738,14 @@ FSTATIC FLMINT bldGetElmInfo(
 
 		default:
 		{
-			iErrCode = FLM_BAD_BLK_TYPE;
+			i32ErrCode = FLM_BAD_BLK_TYPE;
 			goto Exit;
 		}
 	}
 	
 	if( pucElm + uiElmLen >	pucBlkEnd)
 	{
-		iErrCode = FLM_BAD_ELM_LEN;
+		i32ErrCode = FLM_BAD_ELM_LEN;
 		goto Exit;
 	}
 
@@ -1754,13 +1754,13 @@ FSTATIC FLMINT bldGetElmInfo(
 		if( RC_BAD( flmCollation2Number( uiElmKeyLen, pucElmKey,
 			&ui64ElmNodeId, &bNeg, &uiBytesProcessed)))
 		{
-			iErrCode = FLM_BAD_ELM_KEY;
+			i32ErrCode = FLM_BAD_ELM_KEY;
 			goto Exit;
 		}
 
 		if( bNeg || uiBytesProcessed != uiElmKeyLen || !ui64ElmNodeId)
 		{
-			iErrCode = FLM_BAD_ELM_KEY;
+			i32ErrCode = FLM_BAD_ELM_KEY;
 			goto Exit;
 		}
 	}
@@ -1770,7 +1770,7 @@ FSTATIC FLMINT bldGetElmInfo(
 		
 		if( pBlkHdr->stdBlkHdr.ui32NextBlkInChain)
 		{
-			iErrCode = FLM_BAD_ELM_KEY;
+			i32ErrCode = FLM_BAD_ELM_KEY;
 			goto Exit;
 		}
 	}
@@ -1798,7 +1798,7 @@ Exit:
 	pElmInfo->ui32NextBlkInChain = pBlkHdr->stdBlkHdr.ui32NextBlkInChain;
 	pElmInfo->uiNumKeysInBlk = pBlkHdr->ui16NumKeys;
 
-	return( iErrCode);
+	return( i32ErrCode);
 }
 
 /****************************************************************************
@@ -1816,11 +1816,11 @@ FSTATIC void flmGetCreateOpts(
 		pCreateOpts->ui32DefaultLanguage = pDbHdr->ui8DefaultLanguage;
 		pCreateOpts->ui32MinRflFileSize = pDbHdr->ui32RflMinFileSize;
 		pCreateOpts->ui32MaxRflFileSize = pDbHdr->ui32RflMaxFileSize;
-		pCreateOpts->i32KeepRflFiles = (FLMINT32)(pDbHdr->ui8RflKeepFiles
+		pCreateOpts->bKeepRflFiles = (FLMBOOL)(pDbHdr->ui8RflKeepFiles
 															? TRUE
 															: FALSE);
-		pCreateOpts->i32LogAbortedTransToRfl =
-			(FLMINT32)(pDbHdr->ui8RflKeepAbortedTrans
+		pCreateOpts->bLogAbortedTransToRfl =
+			(FLMBOOL)(pDbHdr->ui8RflKeepAbortedTrans
 						 ? TRUE
 						 : FALSE);
 	}
@@ -1831,8 +1831,8 @@ FSTATIC void flmGetCreateOpts(
 		pCreateOpts->ui32DefaultLanguage = XFLM_DEFAULT_LANG;
 		pCreateOpts->ui32MinRflFileSize = XFLM_DEFAULT_MIN_RFL_FILE_SIZE;
 		pCreateOpts->ui32MaxRflFileSize = XFLM_DEFAULT_MAX_RFL_FILE_SIZE;
-		pCreateOpts->i32KeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
-		pCreateOpts->i32LogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
+		pCreateOpts->bKeepRflFiles = XFLM_DEFAULT_KEEP_RFL_FILES_FLAG;
+		pCreateOpts->bLogAbortedTransToRfl = XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG;
 	}
 }
 
@@ -2191,7 +2191,7 @@ Desc:
 RCODE F_RebuildNodeIStream::readNextFirstElm( void)
 {
 	RCODE					rc = NE_XFLM_OK;
-	FLMINT				iErrCode = 0;
+	FLMINT32				i32ErrCode = 0;
 
 	m_pCurState = NULL;
 
@@ -2213,11 +2213,11 @@ GetNextElement:
 		
 	// Extract information about the element
 	
-	if( (iErrCode = bldGetElmInfo( m_firstElmState.blkUnion.pBTreeBlkHdr, 
+	if( (i32ErrCode = bldGetElmInfo( m_firstElmState.blkUnion.pBTreeBlkHdr, 
 		m_firstElmState.uiBlockSize, m_firstElmState.elmInfo.uiElmNumber, 
 		&m_firstElmState.elmInfo)) != 0)
 	{
-			if( RC_BAD( rc = m_pDbRebuild->reportCorruption( iErrCode,
+			if( RC_BAD( rc = m_pDbRebuild->reportCorruption( i32ErrCode,
 			FSBlkAddress( m_firstElmState.uiFileNumber, m_firstElmState.uiFileOffset),
 			m_firstElmState.elmInfo.uiElmNumber, 
 			m_firstElmState.elmInfo.ui64ElmNodeId)))
@@ -2264,7 +2264,7 @@ Desc:
 RCODE F_RebuildNodeIStream::readContinuationElm( void)
 {
 	RCODE			rc = NE_XFLM_OK;
-	FLMINT		iErrCode = 0;
+	FLMINT32		i32ErrCode = 0;
 	
 	if( m_pCurState->elmInfo.uiElmNumber + 1 >= 
 		 m_pCurState->blkUnion.pBTreeBlkHdr->ui16NumKeys)
@@ -2294,11 +2294,11 @@ RCODE F_RebuildNodeIStream::readContinuationElm( void)
 		
 	// Extract information about the element
 	
-	if( (iErrCode = bldGetElmInfo( 
+	if( (i32ErrCode = bldGetElmInfo( 
 		m_pCurState->blkUnion.pBTreeBlkHdr, m_pCurState->uiBlockSize, 
 		m_pCurState->elmInfo.uiElmNumber, &m_pCurState->elmInfo)) != 0)
 	{
-		if( RC_BAD( rc = m_pDbRebuild->reportCorruption( iErrCode,
+		if( RC_BAD( rc = m_pDbRebuild->reportCorruption( i32ErrCode,
 			FSBlkAddress( m_pCurState->uiFileNumber, m_pCurState->uiFileOffset),
 			m_pCurState->elmInfo.uiElmNumber, m_pCurState->elmInfo.ui64ElmNodeId)))
 		{
@@ -2695,7 +2695,7 @@ RCODE F_RebuildNodeIStream::readNode(
 {
 	RCODE							rc = NE_XFLM_OK;
 	F_CachedNode *				pCachedNode = NULL;
-	FLMINT						iErrCode = 0;
+	FLMINT32						i32ErrCode = 0;
 
 	m_pCurState = NULL;
 
@@ -2731,10 +2731,10 @@ RCODE F_RebuildNodeIStream::readNode(
 
 	// Extract information about the element
 	
-	if( (iErrCode = bldGetElmInfo( m_firstElmState.blkUnion.pBTreeBlkHdr, 
+	if( (i32ErrCode = bldGetElmInfo( m_firstElmState.blkUnion.pBTreeBlkHdr, 
 		m_firstElmState.uiBlockSize, uiElmNumber, &m_firstElmState.elmInfo)) != 0)
 	{
-		if( RC_BAD( rc = m_pDbRebuild->reportCorruption( iErrCode,
+		if( RC_BAD( rc = m_pDbRebuild->reportCorruption( i32ErrCode,
 			FSBlkAddress( m_firstElmState.uiFileNumber, m_firstElmState.uiFileOffset),
 			m_firstElmState.elmInfo.uiElmNumber, 
 			m_firstElmState.elmInfo.ui64ElmNodeId)))
@@ -2808,7 +2808,7 @@ RCODE F_DbRebuild::determineBlkSize(
 
 	// Start from byte offset 0 in the first file.
 
-	m_callbackData.iDoingFlag = REBUILD_GET_BLK_SIZ;
+	m_callbackData.i32DoingFlag = REBUILD_GET_BLK_SIZ;
 	m_callbackData.bStartFlag = TRUE;
 
 	for (;;)

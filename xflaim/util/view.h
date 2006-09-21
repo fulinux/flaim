@@ -721,7 +721,7 @@ FLMBOOL ViewGetNum(						// Source: viewedit.cpp
 	FLMUINT64		ui64MaxValue,
 	FLMBOOL *		pbValEntered);
 
-FLMINT ViewEditNum(						// Source: viewedit.cpp
+FLMBOOL ViewEditNum(						// Source: viewedit.cpp
 	void *			pvNum,
 	FLMBOOL			bEnterHexFlag,
 	FLMUINT			uiNumBytes,

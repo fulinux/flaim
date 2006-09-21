@@ -997,7 +997,7 @@ FSTATIC void f_rwlockNotify(
 
 		*(pNotify->pRc) = NE_FLM_OK;
 		hSem = pNotify->hSem;
-		bFoundWriter = (FLMBOOL)pNotify->pvData;
+		bFoundWriter = (FLMBOOL)((FLMINT)pNotify->pvData);
 		pNotify = pNotify->pNext;
 		f_semSignal( hSem);
 	}
@@ -1079,7 +1079,7 @@ RCODE FLMAPI f_rwlockAcquire(
 	{
 		if( pReadWriteLock->iRefCnt != 0)
 		{
-			rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)bWriter, 
+			rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)((FLMINT)bWriter),
 				&pReadWriteLock->pNotifyList); 
 		}
 		
@@ -1094,7 +1094,7 @@ RCODE FLMAPI f_rwlockAcquire(
 	{	 
 		if( pReadWriteLock->iRefCnt < 0 || pReadWriteLock->pNotifyList)
 		{
-			rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)bWriter, 
+			rc = f_notifyWait( pReadWriteLock->hMutex, hSem, (void *)((FLMINT)bWriter), 
 				&pReadWriteLock->pNotifyList); 
 		}
 		

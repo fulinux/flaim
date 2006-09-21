@@ -7454,7 +7454,7 @@ typedef struct
 	FLMUINT64 	ui64ContElementCount;
 	FLMUINT64 	ui64ContElmBytes;
 	FLMUINT		uiBlockCount;
-	FLMINT		iErrCode;
+	FLMINT32		i32ErrCode;
 	FLMUINT		uiNumErrors;
 } BLOCK_INFO;
 
@@ -7541,7 +7541,7 @@ public:
 		FLMUINT			uiCollection,
 		FLMUINT64		ui64NodeId,
 		FLMBOOL			bSkipDOMLinkCheck,
-		FLMINT *			piElmErrCodeRV);
+		FLMINT32 *		pi32ElmErrCodeRV);
 
 	FINLINE void setupNodeRS(
 		F_BtResultSet *	pRS)
@@ -7563,13 +7563,13 @@ private:
 		eDomNodeType		eNodeType,
 		FLMUINT				uiNameId,
 		F_NameTable *		pNameTable,
-		FLMINT *				piErrCode);
+		FLMINT32 *			pi32ErrCode);
 
 	RCODE verifyPrefixId(
 		F_Db *				pDb,
 		FLMUINT				uiPrefixId,
 		F_NameTable *		pNameTable,
-		FLMINT *				piErrCode);
+		FLMINT32 *			pi32ErrCode);
 
 	RCODE checkForIndexes( 
 		F_Db *				pDb,
@@ -7703,14 +7703,14 @@ private:
 	}
 
 	RCODE chkReportError(
-		FLMINT			iErrCode,
-		FLMUINT			uiErrLocale,
-		FLMUINT			uiErrLfNumber,
-		FLMUINT			uiErrLfType,
-		FLMUINT			uiErrBTreeLevel,
-		FLMUINT			uiErrBlkAddress,
-		FLMUINT			uiErrParentBlkAddress,
-		FLMUINT			uiErrElmOffset,
+		FLMINT32			i32ErrCode,
+		FLMUINT32		ui32ErrLocale,
+		FLMUINT32		ui32ErrLfNumber,
+		FLMUINT32		ui32ErrLfType,
+		FLMUINT32		ui32ErrBTreeLevel,
+		FLMUINT32		ui32ErrBlkAddress,
+		FLMUINT32		ui32ErrParentBlkAddress,
+		FLMUINT32		ui32ErrElmOffset,
 		FLMUINT64		ui64ErrNodeId);
 
 	FINLINE XFLM_PROGRESS_CHECK_INFO * getProgress( void)
@@ -7744,7 +7744,7 @@ private:
 		FLMUINT				uiBlkAddress,
 		F_BLK_HDR **		ppBlkHdr,
 		F_CachedBlock **	ppSCache,
-		FLMINT *				piBlkErrCodeRV);
+		FLMINT32 *			pi32BlkErrCodeRV);
 
 	RCODE verifySubTree(
 		STATE_INFO *		pParentState,
@@ -7770,12 +7770,12 @@ private:
 		
 	RCODE verifyNodePointers(
 		STATE_INFO *		pStateInfo,
-		FLMINT *				piErrCode);
+		FLMINT32 *			pi32ErrCode);
 
 	RCODE verifyDOChain(
 		STATE_INFO *		pParentState,
 		FLMUINT				uiBlkAddr,
-		FLMINT *				piElmErrCode);
+		FLMINT32 *			pi32ElmErrCode);
 
 	RCODE chkGetNextRSKey( void);
 		
@@ -7812,7 +7812,7 @@ private:
 
 	RCODE reportIxError(
 		STATE_INFO *		pStateInfo,
-		FLMINT				iErrCode,
+		FLMINT32				i32ErrCode,
 		FLMBYTE *			pucErrKey,
 		FLMUINT				uiErrKeyLen,
 		FLMBOOL *			pbFixErrRV);
@@ -8064,24 +8064,24 @@ public:
 	FINLINE void FLMAPI getAvailBlockStats(
 		FLMUINT64 *		pui64BytesUsed,
 		FLMUINT *		puiBlockCount,
-		FLMINT *			piLastError,
-		FLMUINT *	puiNumErrors)
+		FLMINT32 *		pi32LastError,
+		FLMUINT *		puiNumErrors)
 	{
 		*pui64BytesUsed = m_LFHBlocks.ui64BytesUsed;
 		*puiBlockCount = m_AvailBlocks.uiBlockCount;
-		*piLastError = m_AvailBlocks.iErrCode;
+		*pi32LastError = m_AvailBlocks.i32ErrCode;
 		*puiNumErrors = m_AvailBlocks.uiNumErrors;
 	}
 
 	FINLINE void FLMAPI getLFHBlockStats(
 		FLMUINT64 *		pui64BytesUsed,
 		FLMUINT *		puiBlockCount,
-		FLMINT *			piLastError,
-		FLMUINT *	puiNumErrors)
+		FLMINT32 *		pi32LastError,
+		FLMUINT *		puiNumErrors)
 	{
 		*pui64BytesUsed = m_LFHBlocks.ui64BytesUsed;
 		*puiBlockCount = m_LFHBlocks.uiBlockCount;
-		*piLastError = m_LFHBlocks.iErrCode;
+		*pi32LastError = m_LFHBlocks.i32ErrCode;
 		*puiNumErrors = m_LFHBlocks.uiNumErrors;
 	}
 
@@ -8093,7 +8093,7 @@ public:
 		FLMUINT *		puiNumLevels);
 
 	void FLMAPI getBTreeBlockStats(
-		FLMUINT		uiNthLogicalFile,
+		FLMUINT			uiNthLogicalFile,
 		FLMUINT			uiLevel,
 		FLMUINT64 *		pui64KeyCount,
 		FLMUINT64 *		pui64BytesUsed,
@@ -8101,8 +8101,8 @@ public:
 		FLMUINT64 *		pui64ContElementCount,
 		FLMUINT64 *		pui64ContElmBytes,
 		FLMUINT *		puiBlockCount,
-		FLMINT *			piLastError,
-		FLMUINT *	puiNumErrors);
+		FLMINT32 *		pi32LastError,
+		FLMUINT *		puiNumErrors);
 
 private:
 
@@ -8322,7 +8322,7 @@ private:
 		FLMBYTE *					pucNodeIV);
 
 	FINLINE RCODE reportCorruption(
-		FLMINT				iErrCode,
+		FLMINT32				i32ErrCode,
 		FLMUINT				uiErrBlkAddress,
 		FLMUINT				uiErrElmOffset,
 		FLMUINT64			ui64ErrNodeId)
@@ -8331,12 +8331,12 @@ private:
 
 		if( m_pRebuildStatus)
 		{
-			m_corruptInfo.iErrCode = iErrCode;
-			m_corruptInfo.uiErrBlkAddress = uiErrBlkAddress;
-			m_corruptInfo.uiErrElmOffset = uiErrElmOffset;
+			m_corruptInfo.i32ErrCode = i32ErrCode;
+			m_corruptInfo.ui32ErrBlkAddress = (FLMUINT32)uiErrBlkAddress;
+			m_corruptInfo.ui32ErrElmOffset = (FLMUINT32)uiErrElmOffset;
 			m_corruptInfo.ui64ErrNodeId = ui64ErrNodeId;
 			rc = m_pRebuildStatus->reportRebuildErr( &m_corruptInfo);
-			m_corruptInfo.iErrCode = 0;
+			m_corruptInfo.i32ErrCode = 0;
 			return( rc);
 		}
 		
@@ -8383,7 +8383,7 @@ void flmInitReadState(
 	FLMUINT			uiBlkType,
 	FLMBYTE *		pucKeyBuffer);
 
-FLMINT flmVerifyBlockHeader(
+FLMINT32 flmVerifyBlockHeader(
 	STATE_INFO *	pStateInfo,
 	BLOCK_INFO *	pBlockInfoRV,
 	FLMUINT			uiBlockSize,
@@ -8395,7 +8395,7 @@ RCODE flmVerifyElement(
 	STATE_INFO *	pStateInfo,
 	LFILE *			pLFile,
 	IXD *				pIxd,
-	FLMINT *			piErrCode);
+	FLMINT32 *		pi32ErrCode);
 
 void getEntryInfo(
 	F_BTREE_BLK_HDR *		pBlkHdr,

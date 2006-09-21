@@ -902,9 +902,9 @@ FSTATIC void getCreateOpts(
 			fid_CREATEOPTS_iMinRflFileSize); 
 	pCreateOpts->ui32MaxRflFileSize = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iMaxRflFileSize); 
-	pCreateOpts->i32KeepRflFiles = (FLMINT32)(pEnv->GetBooleanField( createOpts,
+	pCreateOpts->bKeepRflFiles = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
 			fid_CREATEOPTS_bKeepRflFiles) ? TRUE : FALSE); 
-	pCreateOpts->i32LogAbortedTransToRfl = (FLMINT32)(pEnv->GetBooleanField( createOpts,
+	pCreateOpts->bLogAbortedTransToRfl = (FLMBOOL)(pEnv->GetBooleanField( createOpts,
 			fid_CREATEOPTS_bLogAbortedTransToRfl) ? TRUE : FALSE); 
 	pCreateOpts->ui32DefaultLanguage = (FLMUINT32)pEnv->GetIntField( createOpts,
 			fid_CREATEOPTS_iDefaultLanguage);
@@ -1572,7 +1572,7 @@ public:
 		
 		return( (RCODE)m_pEnv->CallIntMethod( m_jDbRebuildStatusObject,
 									m_jReportRebuildMethodId,
-									(jint)pRebuild->iDoingFlag,
+									(jint)pRebuild->i32DoingFlag,
 									(jboolean)(pRebuild->bStartFlag ? JNI_TRUE : JNI_FALSE),
 									(jlong)pRebuild->ui64FileSize,
 									(jlong)pRebuild->ui64BytesExamined,
@@ -1586,14 +1586,14 @@ public:
 	{
 		return( (RCODE)m_pEnv->CallIntMethod( m_jDbRebuildStatusObject,
 									m_jReportRebuildErrMethodId,
-									(jint)pCorruptInfo->iErrCode,
-									(jint)pCorruptInfo->uiErrLocale,
-									(jint)pCorruptInfo->uiErrLfNumber,
-									(jint)pCorruptInfo->uiErrLfType,
-									(jint)pCorruptInfo->uiErrBTreeLevel,
-									(jint)pCorruptInfo->uiErrBlkAddress,
-									(jint)pCorruptInfo->uiErrParentBlkAddress,
-									(jint)pCorruptInfo->uiErrElmOffset,
+									(jint)pCorruptInfo->i32ErrCode,
+									(jint)pCorruptInfo->ui32ErrLocale,
+									(jint)pCorruptInfo->ui32ErrLfNumber,
+									(jint)pCorruptInfo->ui32ErrLfType,
+									(jint)pCorruptInfo->ui32ErrBTreeLevel,
+									(jint)pCorruptInfo->ui32ErrBlkAddress,
+									(jint)pCorruptInfo->ui32ErrParentBlkAddress,
+									(jint)pCorruptInfo->ui32ErrElmOffset,
 									(jlong)pCorruptInfo->ui64ErrNodeId));
 	}
 	

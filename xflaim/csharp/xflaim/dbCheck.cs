@@ -33,7 +33,7 @@ namespace xflaim
 	/// Flags to be used for checking a database.
 	/// </summary>
 	[Flags]
-	public enum DbCheckFlags
+	public enum DbCheckFlags : int
 	{
 		/// <summary>Repair index corruptions on-line.</summary>
 		XFLM_ONLINE						= 0x0020,
@@ -55,7 +55,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: Any additions or changes made in the C++ code should be
 	/// synced to here.
 	/// </summary>
-	public enum FlmCorruptionCode
+	public enum FlmCorruptionCode : int
 	{
 		/// <summary></summary>
 		FLM_BAD_CHAR							= 1,
@@ -266,7 +266,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: Any additions or changes made in the C++ code should be
 	/// synced to here.
 	/// </summary>
-	public enum ErrLocale
+	public enum ErrLocale : int
 	{
 		/// <summary></summary>
 		XFLM_LOCALE_NONE				= 0,
@@ -338,7 +338,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: These enums need to stay in sync with the corresponding
 	/// definitions in xflaim.h
 	/// </summary>
-	public enum FlmCheckPhase
+	public enum FlmCheckPhase : int
 	{
 		/// <summary>Checking logical file header blocks.</summary>
 		XFLM_CHECK_LFH_BLOCKS			= 1,

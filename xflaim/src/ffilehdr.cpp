@@ -72,11 +72,11 @@ void flmInitDbHdr(
 	{
 		pDbHdr->ui16BlockSize = (FLMUINT16)pCreateOpts->ui32BlockSize;
 		pDbHdr->ui8DefaultLanguage = (FLMUINT8)pCreateOpts->ui32DefaultLanguage;
-		if (pCreateOpts->i32KeepRflFiles)
+		if (pCreateOpts->bKeepRflFiles)
 		{
 			pDbHdr->ui8RflKeepFiles = 1;
 		}
-		if (pCreateOpts->i32LogAbortedTransToRfl)
+		if (pCreateOpts->bLogAbortedTransToRfl)
 		{
 			pDbHdr->ui8RflKeepAbortedTrans = 1;
 		}

@@ -399,7 +399,7 @@ Begin_Check:
 	if (FSGetFileOffset( uiFileEnd) % uiBlockSize != 0)
 	{
 		if (RC_BAD( rc = chkReportError( FLM_BAD_FILE_SIZE, XFLM_LOCALE_NONE,
-			0, 0, 0xFF, uiFileEnd, 0, 0, 0)))
+			0, 0, 0xFF, (FLMUINT32)uiFileEnd, 0, 0, 0)))
 		{
 			goto Exit;
 		}
@@ -542,7 +542,7 @@ RCODE F_DbCheck::verifyBlkChain(
 	)
 {
 	RCODE					rc = NE_XFLM_OK;
-	FLMINT				iVerifyCode = 0;
+	FLMINT32				i32VerifyCode = 0;
 	F_CachedBlock *	pSCache = NULL;
 	F_BLK_HDR *			pBlkHdr = NULL;
 	FLMUINT				uiPrevBlkAddress;
@@ -562,9 +562,9 @@ RCODE F_DbCheck::verifyBlkChain(
 
 	if ((uiBlkType == BT_LFH_BLK) && (uiFirstBlkAddr == 0))
 	{
-		iVerifyCode = FLM_BAD_LFH_LIST_PTR;
-		(void)chkReportError( iVerifyCode,
-									 uiLocale,
+		i32VerifyCode = FLM_BAD_LFH_LIST_PTR;
+		(void)chkReportError( i32VerifyCode,
+									 (FLMUINT32)uiLocale,
 									 0,
 									 0,
 									 0xFF,
@@ -598,7 +598,7 @@ Restart_Chain:
 	{
 		StateInfo.pBlkHdr = NULL;
 		if( RC_BAD( rc = blkRead( StateInfo.ui32BlkAddress, &pBlkHdr,
-			&pSCache, &iVerifyCode)))
+			&pSCache, &i32VerifyCode)))
 		{
 			if (rc == NE_XFLM_OLD_VIEW)
 			{
@@ -618,10 +618,10 @@ Restart_Chain:
 				m_Progress.ui64BytesExamined = ui64SaveBytesExamined;
 				goto Restart_Chain;
 			}
-			pBlkInfo->iErrCode = iVerifyCode;
+			pBlkInfo->i32ErrCode = i32VerifyCode;
 			pBlkInfo->uiNumErrors++;
-			rc = chkReportError( iVerifyCode,
-										uiLocale,
+			rc = chkReportError( i32VerifyCode,
+										(FLMUINT32)uiLocale,
 										0,
 										0,
 										0xFF,
@@ -640,17 +640,17 @@ Restart_Chain:
 
 		f_yieldCPU();
 
-		if ((iVerifyCode = flmVerifyBlockHeader( &StateInfo,
+		if ((i32VerifyCode = flmVerifyBlockHeader( &StateInfo,
 															  pBlkInfo,
 															  uiBlockSize,
 															  0xFFFFFFFF,
 															  uiPrevBlkAddress,
 															  TRUE)) != 0)
 		{
-			pBlkInfo->iErrCode = iVerifyCode;
+			pBlkInfo->i32ErrCode = i32VerifyCode;
 			pBlkInfo->uiNumErrors++;
-			chkReportError( iVerifyCode,
-								 uiLocale,
+			chkReportError( i32VerifyCode,
+								 (FLMUINT32)uiLocale,
 								 0,
 								 0,
 								 0xFF,
@@ -668,20 +668,20 @@ Restart_Chain:
 		switch (uiBlkType)
 		{
 			case BT_LFH_BLK:
-				iVerifyCode = FLM_BAD_LFH_LIST_END;
+				i32VerifyCode = FLM_BAD_LFH_LIST_END;
 				break;
 			case BT_FREE:
-				iVerifyCode = FLM_BAD_AVAIL_LIST_END;
+				i32VerifyCode = FLM_BAD_AVAIL_LIST_END;
 				break;
 		}
-		pBlkInfo->iErrCode = iVerifyCode;
+		pBlkInfo->i32ErrCode = i32VerifyCode;
 		pBlkInfo->uiNumErrors++;
-		chkReportError( iVerifyCode,
-							 uiLocale,
+		chkReportError( i32VerifyCode,
+							 (FLMUINT32)uiLocale,
 							 0,
 							 0,
 							 0xFF,
-							 uiPrevBlkAddress,
+							 (FLMUINT32)uiPrevBlkAddress,
 							 0,
 							 0,
 							 0);
@@ -699,7 +699,7 @@ Exit:
 		f_free( &pBlkHdr);
 	}
 
-	if (RC_OK(rc) && (iVerifyCode != 0))
+	if (RC_OK(rc) && (i32VerifyCode != 0))
 	{
 		rc = RC_SET( NE_XFLM_DATA_ERROR);
 	}
@@ -716,9 +716,9 @@ RCODE F_DbCheck::verifyLFHBlocks(
 {
 	RCODE	rc = NE_XFLM_OK;
 
-	m_Progress.uiLfNumber = 0;
-	m_Progress.uiLfType = 0;
-	m_Progress.iCheckPhase = XFLM_CHECK_LFH_BLOCKS;
+	m_Progress.ui32LfNumber = 0;
+	m_Progress.ui32LfType = 0;
+	m_Progress.i32CheckPhase = XFLM_CHECK_LFH_BLOCKS;
 	m_Progress.bStartFlag = TRUE;
 	if (RC_BAD( rc = chkCallProgFunc()))
 	{
@@ -753,9 +753,9 @@ RCODE F_DbCheck::verifyAvailList(
 {
 	RCODE		rc = NE_XFLM_OK;
 
-	m_Progress.uiLfNumber = 0;
-	m_Progress.uiLfType = 0;
-	m_Progress.iCheckPhase = XFLM_CHECK_AVAIL_BLOCKS;
+	m_Progress.ui32LfNumber = 0;
+	m_Progress.ui32LfType = 0;
+	m_Progress.i32CheckPhase = XFLM_CHECK_AVAIL_BLOCKS;
 	m_Progress.bStartFlag = TRUE;
 	if (RC_BAD( rc = chkCallProgFunc()))
 	{
@@ -823,7 +823,7 @@ void FLMAPI F_DbInfo::getBTreeBlockStats(
 	FLMUINT64 *	pui64ContElementCount,
 	FLMUINT64 *	pui64ContElmBytes,
 	FLMUINT *	puiBlockCount,
-	FLMINT *		piLastError,
+	FLMINT32 *	pi32LastError,
 	FLMUINT *	puiNumErrors
 	)
 {
@@ -839,7 +839,7 @@ void FLMAPI F_DbInfo::getBTreeBlockStats(
 		*pui64ContElementCount = pLfHdr->pLevelInfo [uiLevel].BlockInfo.ui64ContElementCount;
 		*pui64ContElmBytes = pLfHdr->pLevelInfo [uiLevel].BlockInfo.ui64ContElmBytes;
 		*puiBlockCount = pLfHdr->pLevelInfo [uiLevel].BlockInfo.uiBlockCount;
-		*piLastError = pLfHdr->pLevelInfo [uiLevel].BlockInfo.iErrCode;
+		*pi32LastError = pLfHdr->pLevelInfo [uiLevel].BlockInfo.i32ErrCode;
 		*puiNumErrors = pLfHdr->pLevelInfo [uiLevel].BlockInfo.uiNumErrors;
 	}
 	else
@@ -851,7 +851,7 @@ void FLMAPI F_DbInfo::getBTreeBlockStats(
 		*pui64ContElementCount = 0;
 		*pui64ContElmBytes = 0;
 		*puiBlockCount = 0;
-		*piLastError = 0;
+		*pi32LastError = 0;
 		*puiNumErrors = 0;
 	}
 }

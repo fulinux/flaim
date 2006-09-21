@@ -40,7 +40,7 @@ RCODE F_DbCheck::blkRead(
 	FLMUINT				uiBlkAddress,
 	F_BLK_HDR **		ppBlkHdr,
 	F_CachedBlock **	ppSCache,
-	FLMINT *				piBlkErrCodeRV)
+	FLMINT32 *			pi32BlkErrCodeRV)
 {
 	RCODE		rc = NE_XFLM_OK;
 
@@ -159,16 +159,16 @@ RCODE F_DbCheck::blkRead(
 
 Exit:
 
-	*piBlkErrCodeRV = 0;
+	*pi32BlkErrCodeRV = 0;
 	if (RC_BAD( rc))
 	{
 		switch (rc)
 		{
 			case NE_XFLM_DATA_ERROR:
-				*piBlkErrCodeRV = FLM_COULD_NOT_SYNC_BLK;
+				*pi32BlkErrCodeRV = FLM_COULD_NOT_SYNC_BLK;
 				break;
 			case NE_XFLM_BLOCK_CRC:
-				*piBlkErrCodeRV = FLM_BAD_BLK_CHECKSUM;
+				*pi32BlkErrCodeRV = FLM_BAD_BLK_CHECKSUM;
 				break;
 		}
 	}
@@ -235,27 +235,27 @@ Exit:
 Desc:	Report an error
 *********************************************************************/
 RCODE F_DbCheck::chkReportError(
-	FLMINT			iErrCode,
-	FLMUINT			uiErrLocale,
-	FLMUINT			uiErrLfNumber,
-	FLMUINT			uiErrLfType,
-	FLMUINT			uiErrBTreeLevel,
-	FLMUINT			uiErrBlkAddress,
-	FLMUINT			uiErrParentBlkAddress,
-	FLMUINT			uiErrElmOffset,
+	FLMINT32			i32ErrCode,
+	FLMUINT32		ui32ErrLocale,
+	FLMUINT32		ui32ErrLfNumber,
+	FLMUINT32		ui32ErrLfType,
+	FLMUINT32		ui32ErrBTreeLevel,
+	FLMUINT32		ui32ErrBlkAddress,
+	FLMUINT32		ui32ErrParentBlkAddress,
+	FLMUINT32		ui32ErrElmOffset,
 	FLMUINT64		ui64ErrNodeId)
 {
 	XFLM_CORRUPT_INFO		CorruptInfo;
 	FLMBOOL					bFixErr;
 
-	CorruptInfo.iErrCode = iErrCode;
-	CorruptInfo.uiErrLocale = uiErrLocale;
-	CorruptInfo.uiErrLfNumber = uiErrLfNumber;
-	CorruptInfo.uiErrLfType = uiErrLfType;
-	CorruptInfo.uiErrBTreeLevel = uiErrBTreeLevel;
-	CorruptInfo.uiErrBlkAddress = uiErrBlkAddress;
-	CorruptInfo.uiErrParentBlkAddress = uiErrParentBlkAddress;
-	CorruptInfo.uiErrElmOffset = uiErrElmOffset;
+	CorruptInfo.i32ErrCode = i32ErrCode;
+	CorruptInfo.ui32ErrLocale = ui32ErrLocale;
+	CorruptInfo.ui32ErrLfNumber = ui32ErrLfNumber;
+	CorruptInfo.ui32ErrLfType = ui32ErrLfType;
+	CorruptInfo.ui32ErrBTreeLevel = ui32ErrBTreeLevel;
+	CorruptInfo.ui32ErrBlkAddress = ui32ErrBlkAddress;
+	CorruptInfo.ui32ErrParentBlkAddress = ui32ErrParentBlkAddress;
+	CorruptInfo.ui32ErrElmOffset = ui32ErrElmOffset;
 	CorruptInfo.ui64ErrNodeId = ui64ErrNodeId;
 	CorruptInfo.ifpErrIxKey = NULL;
 
@@ -265,7 +265,7 @@ RCODE F_DbCheck::chkReportError(
 		m_LastStatusRc = m_pDbCheckStatus->reportCheckErr( &CorruptInfo, &bFixErr);
 	}
 
-	if (iErrCode != FLM_OLD_VIEW)
+	if (i32ErrCode != FLM_OLD_VIEW)
 	{
 		m_bPhysicalCorrupt = TRUE;
 		m_uiFlags &= ~XFLM_DO_LOGICAL_CHECK;
@@ -273,4 +273,3 @@ RCODE F_DbCheck::chkReportError(
 
 	return( m_LastStatusRc);
 }
-

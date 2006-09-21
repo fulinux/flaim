@@ -63,7 +63,7 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getLastBackupTransId(
 
 typedef RCODE (FLMAPI * BACKUP_CLIENT)(
 	const void *	pvData,
-	FLMUINT			uiDataLen);
+	FLMUINT32		ui32DataLen);
 
 /****************************************************************************
 Desc:
@@ -86,7 +86,7 @@ public:
 		const void *			pvBuffer,
 		FLMUINT					uiBytesToWrite)
 	{
-		return( m_fnBackupClient( pvBuffer, uiBytesToWrite));
+		return( m_fnBackupClient( pvBuffer, (FLMUINT32)uiBytesToWrite));
 	}
 
 private:
@@ -134,7 +134,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_backup(
 	FLMUINT64		ui64This,
 	const char *	pszBackupPath,
 	const char *	pszPassword,
-	FLMUINT *		puiSeqNum,
+	FLMUINT32 *		pui32SeqNum,
 	BACKUP_CLIENT	fnBackupClient,
 	BACKUP_STATUS	fnBackupStatus)
 {
@@ -142,6 +142,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_backup(
 	IF_Backup *			pBackup = (IF_Backup *)((FLMUINT)ui64This);
 	IF_BackupClient *	pBackupClient = NULL;
 	IF_BackupStatus *	pBackupStatus = NULL;
+	FLMUINT				uiSeqNum;
 
 	if (fnBackupClient)
 	{
@@ -160,9 +161,13 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_backup(
 		}
 	}
 	if (RC_BAD( rc = pBackup->backup( pszBackupPath, pszPassword, pBackupClient,
-								pBackupStatus, puiSeqNum)))
+								pBackupStatus, &uiSeqNum)))
 	{
 		goto Exit;
+	}
+	if (pui32SeqNum)
+	{
+		*pui32SeqNum = (FLMUINT32)uiSeqNum;
 	}
 	
 Exit:

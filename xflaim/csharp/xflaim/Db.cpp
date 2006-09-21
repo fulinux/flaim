@@ -46,7 +46,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_backupBegin(
 	FLMUINT64	ui64This,
 	FLMBOOL		bFullBackup,
 	FLMBOOL		bLockDb,
-	FLMUINT		uiMaxLockWait,
+	FLMUINT32	ui32MaxLockWait,
 	FLMUINT64 *	pui64BackupRef)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -60,7 +60,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_backupBegin(
 								(eDbTransType)(bLockDb
 													? XFLM_READ_TRANS
 													: XFLM_UPDATE_TRANS),
-								uiMaxLockWait, &pBackup)))
+								(FLMUINT)ui32MaxLockWait, &pBackup)))
 	{
 		goto Exit;
 	}

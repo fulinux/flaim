@@ -96,9 +96,9 @@
 	#define XFLM_DEFAULT_MIN_RFL_FILE_SIZE			((FLMUINT)100 * (FLMUINT)1024 * (FLMUINT)1024)
 		FLMUINT32	ui32MaxRflFileSize;
 	#define XFLM_DEFAULT_MAX_RFL_FILE_SIZE			FLM_MAXIMUM_FILE_SIZE
-		FLMINT32		i32KeepRflFiles;
+		FLMBOOL		bKeepRflFiles;
 	#define XFLM_DEFAULT_KEEP_RFL_FILES_FLAG		FALSE
-		FLMINT32		i32LogAbortedTransToRfl;
+		FLMBOOL		bLogAbortedTransToRfl;
 	#define XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG	FALSE
 
 		FLMUINT32	ui32DefaultLanguage;
@@ -737,12 +737,14 @@
 	} XFLM_INDEX_STATUS;
 
 	/****************************************************************************
-	Desc:  The following structures are used to pass data to the client via the
-			 IF_DbRebuildStatus interface
+	Desc:	The following structures are used to pass data to the client via the
+			IF_DbRebuildStatus interface
+			IMPORTANT NOTE: If this structure changes, corresponding changes need
+			to be made to the same structure in java and/or C# code.
 	****************************************************************************/
 	typedef struct
 	{
-		FLMINT			iDoingFlag;
+		FLMINT32			i32DoingFlag;
 	#define					REBUILD_GET_BLK_SIZ		1
 	#define					REBUILD_RECOVER_DICT		2
 	#define					REBUILD_RECOVER_DATA		3
@@ -755,30 +757,32 @@
 	} XFLM_REBUILD_INFO;
 
 	// IMPORTANT NOTE: If this structure changes, corresponding changes need to be made
-	// to the same structure in DbSystem.cs for C#.
+	// to the same structure in java and/or C# code
 	typedef struct
 	{
-		FLMINT		iErrCode;						// Zero means no error is being reported
-		FLMUINT		uiErrLocale;
+		FLMINT32		i32ErrCode;						// Zero means no error is being reported
+		FLMUINT32	ui32ErrLocale;
 	#define				XFLM_LOCALE_NONE			0
 	#define				XFLM_LOCALE_LFH_LIST		1
 	#define				XFLM_LOCALE_AVAIL_LIST	2
 	#define				XFLM_LOCALE_B_TREE		3
 	#define				XFLM_LOCALE_INDEX			4
-		FLMUINT		uiErrLfNumber;
-		FLMUINT		uiErrLfType;
-		FLMUINT		uiErrBTreeLevel;
-		FLMUINT		uiErrBlkAddress;
-		FLMUINT		uiErrParentBlkAddress;
-		FLMUINT		uiErrElmOffset;
+		FLMUINT32	ui32ErrLfNumber;
+		FLMUINT32	ui32ErrLfType;
+		FLMUINT32	ui32ErrBTreeLevel;
+		FLMUINT32	ui32ErrBlkAddress;
+		FLMUINT32	ui32ErrParentBlkAddress;
+		FLMUINT32	ui32ErrElmOffset;
 		FLMUINT64	ui64ErrNodeId;
 
 		IF_DataVector *	ifpErrIxKey;
 	} XFLM_CORRUPT_INFO;
 
+	// IMPORTANT NOTE: If this structure changes, corresponding changes need to be made
+	// to the same structure in java and/or C# code
 	typedef struct
 	{
-		FLMINT			iCheckPhase;
+		FLMINT32			i32CheckPhase;
 	#define					XFLM_CHECK_LFH_BLOCKS		1
 	#define					XFLM_CHECK_B_TREE				2
 	#define					XFLM_CHECK_AVAIL_BLOCKS		3
@@ -786,12 +790,12 @@
 	#define					XFLM_CHECK_DOM_LINKS			5
 		FLMBOOL			bStartFlag;
 		FLMUINT64		ui64FileSize;
-		FLMUINT			uiNumLFs;
-		FLMUINT			uiCurrLF;
-		FLMUINT			uiLfNumber;					/* Logical File Pass */
-		FLMUINT			uiLfType;
+		FLMUINT32		ui32NumLFs;
+		FLMUINT32		ui32CurrLF;
+		FLMUINT32		ui32LfNumber;					/* Logical File Pass */
+		FLMUINT32		ui32LfType;
 		FLMUINT64		ui64BytesExamined;
-		FLMUINT			uiNumProblemsFixed;		/* Number of corruptions repaired */
+		FLMUINT32		ui32NumProblemsFixed;		/* Number of corruptions repaired */
 		FLMUINT64		ui64NumDomNodes;				/* in the current Lf */
 		FLMUINT64		ui64NumDomLinksVerified;	/* in the current Lf */
 		FLMUINT64		ui64NumBrokenDomLinks;		/* in the current Lf */
@@ -3955,13 +3959,13 @@
 		virtual void FLMAPI getAvailBlockStats(
 			FLMUINT64 *				pui64BytesUsed,
 			FLMUINT *				puiBlockCount,
-			FLMINT *					piLastError,
+			FLMINT32 *				pi32LastError,
 			FLMUINT *				puiNumErrors) = 0;
 
 		virtual void FLMAPI getLFHBlockStats(
 			FLMUINT64 *				pui64BytesUsed,
 			FLMUINT *				puiBlockCount,
-			FLMINT *					piLastError,
+			FLMINT32 *				pi32LastError,
 			FLMUINT *				puiNumErrors) = 0;
 
 		virtual void FLMAPI getBTreeInfo(
@@ -3980,7 +3984,7 @@
 			FLMUINT64 *				pui64ContElementCount,
 			FLMUINT64 *				pui64ContElmBytes,
 			FLMUINT *				puiBlockCount,
-			FLMINT *					piLastError,
+			FLMINT32 *				pi32LastError,
 			FLMUINT *				puiNumErrors) = 0;
 	};
 
