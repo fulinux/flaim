@@ -794,7 +794,7 @@ package_ubuntu_dir = $(package_dir)/UBUNTU
 package_version_ubuntu = $(version)-0ubuntu1
 package_distro_ubuntu = dapper
 ubuntu_stage_dir = $(package_dir)/ubuntu_stage
-ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/UBUNTU
+ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/DEBIAN
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
@@ -2022,7 +2022,7 @@ ubuntubin: bindist
 	$(ec)$(gprintf) " rich, powerful, easy-to-use feature set. It is the database engine used\n" >> $(ubuntu_pkginfo_dir)/control
 	$(ec)$(gprintf) " by Novell eDirectory. It has proven to be highly scalable, reliable,\n" >> $(ubuntu_pkginfo_dir)/control
 	$(ec)$(gprintf) " and robust. It is available on a wide variety of 32 bit and 64 bit\n" >> $(ubuntu_pkginfo_dir)/control
-	$(ec)$(gprintf) " platforms.\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) " platforms.\n" >> $(ubuntu_pkginfo_dir)/control
 	
 	$(ec)$(gprintf) "Creating Ubuntu post install file ...\n"
 	$(ec)$(gprintf) "#!/bin/bash\n" > $(ubuntu_pkginfo_dir)/postinst

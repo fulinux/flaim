@@ -764,7 +764,7 @@ package_ubuntu_dir = $(package_dir)/UBUNTU
 package_version_ubuntu = $(version)-0ubuntu1
 package_distro_ubuntu = dapper
 ubuntu_stage_dir = $(package_dir)/ubuntu_stage
-ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/UBUNTU
+ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/DEBIAN
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
