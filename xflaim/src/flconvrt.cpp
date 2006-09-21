@@ -498,9 +498,8 @@ RCODE F_Db::createDbKey( void)
 		m_pDatabase->m_pWrappingKey = NULL;
 	}
 	
-	if( (m_pDatabase->m_pWrappingKey = f_new F_CCS) == NULL)
+	if( RC_BAD( rc = flmAllocCCS( &m_pDatabase->m_pWrappingKey)))
 	{
-		rc = RC_SET( NE_XFLM_MEM);
 		goto Exit;
 	}
 
@@ -522,14 +521,15 @@ RCODE F_Db::createDbKey( void)
 				XFLM_NICI_AES128)))
 			{
 				// Try using DES3
-				m_pDatabase->m_pWrappingKey->Release();
 				
-				if ((m_pDatabase->m_pWrappingKey = f_new F_CCS) == NULL)
+				m_pDatabase->m_pWrappingKey->Release();
+				m_pDatabase->m_pWrappingKey = NULL;
+				
+				if( RC_BAD( rc = flmAllocCCS( &m_pDatabase->m_pWrappingKey)))
 				{
-					rc = RC_SET( NE_XFLM_MEM);
 					goto Exit;
 				}
-			
+				
 				if (RC_BAD( rc = m_pDatabase->m_pWrappingKey->init(
 					TRUE, FLM_NICI_DES3)))
 				{
@@ -547,8 +547,10 @@ RCODE F_Db::createDbKey( void)
 	}
 	
 Exit:
+
 	return rc;
 }
+
 /****************************************************************************
 Desc : Generate a new database key and re-wrap all existing keys in it
 		 NOTE:  New database key will be wrapped in NICI server key,

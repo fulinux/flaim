@@ -34,10 +34,10 @@ FSTATIC void ScaNotify(
 	RCODE							NotifyRc);
 
 #ifdef SCACHE_LINK_CHECKING
-FSTATIC void scaVerify(
-	int				iPlace);
+	FSTATIC void scaVerify(
+		int				iPlace);
 #else
-#define scaVerify(iPlace)
+	#define scaVerify(iPlace)
 #endif
 
 /***************************************************************************
@@ -7361,8 +7361,7 @@ Desc:	This function will encrypt the block of data passed in. This function
 ****************************************************************************/
 RCODE F_Database::encryptBlock(
 	F_Dict *		pDict,
-	FLMBYTE *	pucBuffer
-	)
+	FLMBYTE *	pucBuffer)
 {
 	RCODE						rc = NE_XFLM_OK;
 	IXD *						pIxd;
@@ -7372,13 +7371,10 @@ RCODE F_Database::encryptBlock(
 	F_ENCDEF *				pEncDef = NULL;
 	FLMUINT					uiEncId;
 	FLMUINT					uiEncLen = m_uiBlockSize - sizeofBTreeBlkHdr( pBlkHdr);
-#ifdef FLM_USE_NICI
-	F_CCS *					pCcs = NULL;
-#endif
+	IF_CCS *					pCcs = NULL;
 
 	if (!blkIsBTree( (F_BLK_HDR *)pucBuffer))
 	{
-		// Nothing to do.  We are only interested in btree blocks.
 		goto Exit;
 	}
 	
@@ -7410,12 +7406,8 @@ RCODE F_Database::encryptBlock(
 		{
 			uiLfNum = pBlkHdr->ui16LogicalFile;
 	
-			// Get the index.
-			if (RC_BAD( rc = pDict->getCollection( uiLfNum,
-																&pCollection,
-																TRUE)))
+			if (RC_BAD( rc = pDict->getCollection( uiLfNum, &pCollection, TRUE)))
 			{
-				// Not a collection.
 				if (rc == NE_XFLM_BAD_COLLECTION)
 				{
 					rc = NE_XFLM_OK;
@@ -7423,52 +7415,40 @@ RCODE F_Database::encryptBlock(
 				goto Exit;
 			}
 	
-			// The collection may not be encrypted.
-			// We can just exit here.
-	
-			if (!pCollection || !pCollection->lfInfo.uiEncId)
+			if( !pCollection || !pCollection->lfInfo.uiEncId)
 			{
-				goto Exit;  // NE_XFLM_OK;
+				goto Exit;
 			}
 	
-			// Need to get the encryption object.
-			if (RC_BAD( rc = pDict->getEncDef( pCollection->lfInfo.uiEncId,
-														  &pEncDef)))
+			if( RC_BAD( rc = pDict->getEncDef( 
+				pCollection->lfInfo.uiEncId, &pEncDef)))
 			{
 				goto Exit;
 			}
 		}
 	}
-	else if (isIndexBlk( pBlkHdr))
+	else if( isIndexBlk( pBlkHdr))
 	{
-		if (!m_bTempDb)
+		if( !m_bTempDb)
 		{
 			uiLfNum = pBlkHdr->ui16LogicalFile;
 	
-			// Get the index.
-			if (RC_BAD( rc = pDict->getIndex( uiLfNum,
-														 NULL,
-														 &pIxd,
-														 TRUE)))
+			if( RC_BAD( rc = pDict->getIndex( uiLfNum, NULL, &pIxd, TRUE)))
 			{
-				// Not an index.
 				if (rc == NE_XFLM_BAD_IX)
 				{
 					rc = NE_XFLM_OK;
 				}
+				
 				goto Exit;
 			}
 		
-			// The index may not be encrypted.
-			// We can just exit here.
-			if (!pIxd || !pIxd->lfInfo.uiEncId)
+			if( !pIxd || !pIxd->lfInfo.uiEncId)
 			{
-				goto Exit;  // NE_XFLM_OK;
+				goto Exit;
 			}
 		
-			// Need to get the encryption object.
-			if (RC_BAD( rc = pDict->getEncDef( pIxd->lfInfo.uiEncId,
-														  &pEncDef)))
+			if( RC_BAD( rc = pDict->getEncDef( pIxd->lfInfo.uiEncId, &pEncDef)))
 			{
 				goto Exit;
 			}
@@ -7476,21 +7456,16 @@ RCODE F_Database::encryptBlock(
 	}
 	else
 	{
-		goto Exit;  // NE_XFLM_OK
+		goto Exit;
 	}
 
-#ifndef FLM_USE_NICI
-	rc = RC_SET( NE_XFLM_ENCRYPTION_UNAVAILABLE);
-	goto Exit;
-#else
-
-	if (m_bInLimitedMode)
+	if( m_bInLimitedMode)
 	{
 		rc = RC_SET( NE_XFLM_ENCRYPTION_UNAVAILABLE);
 		goto Exit;
 	}
 
-	if (!m_bTempDb)
+	if( !m_bTempDb)
 	{
 		flmAssert( pEncDef);
 		pCcs = pEncDef->pCcs;
@@ -7506,12 +7481,11 @@ RCODE F_Database::encryptBlock(
 
 	// Encrypt the buffer in place.
 	
-	if (pBlkHdr->stdBlkHdr.ui8BlkType == BT_DATA_ONLY)
+	if( pBlkHdr->stdBlkHdr.ui8BlkType == BT_DATA_ONLY)
 	{
-		if (RC_BAD( rc = pCcs->encryptToStore( &pucBuffer[ sizeofDOBlkHdr( (F_BLK_HDR *)pBlkHdr)],
-															uiEncLen,
-															&pucBuffer[ sizeofDOBlkHdr( (F_BLK_HDR *)pBlkHdr)],
-															&uiEncLen)))
+		if( RC_BAD( rc = pCcs->encryptToStore( 
+			&pucBuffer[ sizeofDOBlkHdr( (F_BLK_HDR *)pBlkHdr)], uiEncLen,
+			&pucBuffer[ sizeofDOBlkHdr( (F_BLK_HDR *)pBlkHdr)], &uiEncLen)))
 		{
 			goto Exit;
 		}
@@ -7521,10 +7495,9 @@ RCODE F_Database::encryptBlock(
 	}
 	else
 	{
-		if (RC_BAD( rc = pCcs->encryptToStore( &pucBuffer[ sizeofBTreeBlkHdr( pBlkHdr)],
-															uiEncLen,
-															&pucBuffer[ sizeofBTreeBlkHdr( pBlkHdr)],
-															&uiEncLen)))
+		if( RC_BAD( rc = pCcs->encryptToStore( 
+			&pucBuffer[ sizeofBTreeBlkHdr( pBlkHdr)], uiEncLen,
+			&pucBuffer[ sizeofBTreeBlkHdr( pBlkHdr)], &uiEncLen)))
 		{
 			goto Exit;
 		}
@@ -7532,19 +7505,18 @@ RCODE F_Database::encryptBlock(
 		flmAssert( uiEncLen == (m_uiBlockSize - sizeofBTreeBlkHdr( pBlkHdr)));
 	
 	}
-#endif
 
 Exit:
 
-	return rc;
+	return( rc);
 }
 
 /****************************************************************************
 Desc:	This function will decrypt the block of data passed in.
 ****************************************************************************/
 RCODE F_Database::decryptBlock(
-	F_Dict *		pDict,
-	FLMBYTE *	pucBuffer)
+	F_Dict *					pDict,
+	FLMBYTE *				pucBuffer)
 {
 	RCODE						rc = NE_XFLM_OK;
 	IXD *						pIxd;
@@ -7553,17 +7525,14 @@ RCODE F_Database::decryptBlock(
 	F_BTREE_BLK_HDR *		pBlkHdr = (F_BTREE_BLK_HDR *)pucBuffer;
 	FLMUINT					uiEncLen;
 	F_ENCDEF *				pEncDef = NULL;
-#ifdef FLM_USE_NICI
-	F_CCS *					pCcs = NULL;
-#endif
+	IF_CCS *					pCcs = NULL;
 
-	if (!blkIsBTree( (F_BLK_HDR *)pucBuffer))
+	if( !blkIsBTree( (F_BLK_HDR *)pucBuffer))
 	{
-		// Nothing to do.  We are only interested in btree blocks.
 		goto Exit;
 	}
 
-	if (!isEncryptedBlk( (F_BLK_HDR *)pBlkHdr))
+	if( !isEncryptedBlk( (F_BLK_HDR *)pBlkHdr))
 	{
 		goto Exit;
 	}
@@ -7573,20 +7542,16 @@ RCODE F_Database::decryptBlock(
 
 		uiEncLen = m_uiBlockSize - sizeofDOBlkHdr( (F_BLK_HDR *)pBlkHdr);
 		
-		if (!m_bTempDb)
+		if( !m_bTempDb)
 		{
-			
-			// Need to get the encryption object.
-	
-			if (RC_BAD( rc = pDict->getEncDef(
-										(FLMUINT)(((F_ENC_DO_BLK_HDR *)pBlkHdr)->ui32EncId),
-										&pEncDef)))
+			if( RC_BAD( rc = pDict->getEncDef( 
+				(FLMUINT)(((F_ENC_DO_BLK_HDR *)pBlkHdr)->ui32EncId), &pEncDef)))
 			{
 				goto Exit;
 			}
 		}
 	}
-	else if (isContainerBlk( pBlkHdr))
+	else if( isContainerBlk( pBlkHdr))
 	{
 		uiEncLen = m_uiBlockSize - sizeofBTreeBlkHdr( pBlkHdr);
 		
@@ -7594,71 +7559,56 @@ RCODE F_Database::decryptBlock(
 		{
 			uiLfNum = pBlkHdr->ui16LogicalFile;
 	
-			// Get the index.
-			if (RC_BAD( rc = pDict->getCollection( uiLfNum,
-																&pCollection,
-																TRUE)))
+			if( RC_BAD( rc = pDict->getCollection( uiLfNum, &pCollection, TRUE)))
 			{
-				// Not a collection.
-				if (rc == NE_XFLM_BAD_COLLECTION)
+				if( rc == NE_XFLM_BAD_COLLECTION)
 				{
 					rc = NE_XFLM_OK;
 				}
+				
 				goto Exit;
 			}
 	
-			// The collection may not be encrypted.
-			// We can just exit here.
-	
-			if (!pCollection || !pCollection->lfInfo.uiEncId)
+			if( !pCollection || !pCollection->lfInfo.uiEncId)
 			{
-				goto Exit;  // NE_XFLM_OK;
+				goto Exit;
 			}
 		
 			// Need to get the encryption object.
 	
-			if (RC_BAD( rc = pDict->getEncDef( pCollection->lfInfo.uiEncId,
-														  &pEncDef)))
+			if( RC_BAD( rc = pDict->getEncDef( 
+				pCollection->lfInfo.uiEncId, &pEncDef)))
 			{
 				goto Exit;
 			}
 		}
 	}
-	else if (isIndexBlk( pBlkHdr))
+	else if( isIndexBlk( pBlkHdr))
 	{
 		uiEncLen = m_uiBlockSize - sizeofBTreeBlkHdr( pBlkHdr);
 		
-		if (!m_bTempDb)
+		if( !m_bTempDb)
 		{
 			uiLfNum = pBlkHdr->ui16LogicalFile;
 	
 			// Get the index.
 	
-			if (RC_BAD( rc = pDict->getIndex( uiLfNum,
-														 NULL,
-														 &pIxd,
-														 TRUE)))
+			if( RC_BAD( rc = pDict->getIndex( uiLfNum, NULL, &pIxd, TRUE)))
 			{
-				// Not an index.
-				if (rc == NE_XFLM_BAD_IX)
+				if( rc == NE_XFLM_BAD_IX)
 				{
 					rc = NE_XFLM_OK;
 				}
+				
 				goto Exit;
 			}
 		
-			// The index may not be encrypted.
-			// We can just exit here.
-	
-			if (!pIxd || !pIxd->lfInfo.uiEncId)
+			if( !pIxd || !pIxd->lfInfo.uiEncId)
 			{
-				goto Exit;  // NE_XFLM_OK;
+				goto Exit;
 			}
 		
-			// Need to get the encryption object.
-	
-			if (RC_BAD( rc = pDict->getEncDef( pIxd->lfInfo.uiEncId,
-														  &pEncDef)))
+			if( RC_BAD( rc = pDict->getEncDef( pIxd->lfInfo.uiEncId, &pEncDef)))
 			{
 				goto Exit;
 			}
@@ -7666,22 +7616,16 @@ RCODE F_Database::decryptBlock(
 	}
 	else
 	{
-		goto Exit;  // NE_XFLM_OK
+		goto Exit;
 	}
 
-
-#ifndef FLM_USE_NICI
-	rc = RC_SET( NE_XFLM_ENCRYPTION_UNAVAILABLE);
-	goto Exit;
-#else
-
-	if (m_bInLimitedMode)
+	if( m_bInLimitedMode)
 	{
 		rc = RC_SET( NE_XFLM_ENCRYPTION_UNAVAILABLE);
 		goto Exit;
 	}
 
-	if (!m_bTempDb)
+	if( !m_bTempDb)
 	{
 		flmAssert( pEncDef);
 		pCcs = pEncDef->pCcs;
@@ -7695,7 +7639,7 @@ RCODE F_Database::decryptBlock(
 	flmAssert( pCcs);
 	flmAssert( !(uiEncLen % 16));
 
-	if (pBlkHdr->stdBlkHdr.ui8BlkType == BT_DATA_ONLY)
+	if( pBlkHdr->stdBlkHdr.ui8BlkType == BT_DATA_ONLY)
 	{
 		if (RC_BAD( rc = pCcs->decryptFromStore( 
 			&pucBuffer[ sizeofDOBlkHdr( (F_BLK_HDR *)pBlkHdr)], uiEncLen,
@@ -7709,7 +7653,7 @@ RCODE F_Database::decryptBlock(
 	}
 	else
 	{
-		if (RC_BAD( rc = pCcs->decryptFromStore( 
+		if( RC_BAD( rc = pCcs->decryptFromStore( 
 			&pucBuffer[ sizeofBTreeBlkHdr( pBlkHdr)], uiEncLen,
 			&pucBuffer[ sizeofBTreeBlkHdr( pBlkHdr)], &uiEncLen)))
 		{
@@ -7719,11 +7663,9 @@ RCODE F_Database::decryptBlock(
 		flmAssert( uiEncLen == (m_uiBlockSize - sizeofBTreeBlkHdr( pBlkHdr)));
 	}
 
-#endif
-
 Exit:
 
-	return rc;
+	return( rc);
 }
 
 #undef new

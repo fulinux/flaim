@@ -27,9 +27,13 @@
 #ifndef  FLAIMSYS_H
 #define  FLAIMSYS_H
 
-// Public includes
-
 #include "xflaim.h"
+
+#undef FLM_HAS_ENCRYPTION
+
+#ifdef FLM_USE_NICI
+	#define FLM_HAS_ENCRYPTION
+#endif
 
 #ifdef HAVE_CONFIG_H
 	#include "../config.h"
@@ -102,7 +106,7 @@ class F_RebuildNodeIStream;
 #include "rfl.h"
 #include "filesys.h"
 #include "flog.h"
-#include "f_nici.h"
+#include "f_ccs.h"
 
 RCODE MapErrnoToFlaimErr(
 	int		err,
@@ -2545,7 +2549,7 @@ public:
 		FLMUNICODE **			ppuzEncDefName,
 		FLMUINT *				puiEncDefNumber,
 		FLMUINT *				puiEncDefKeySize,
-		F_CCS **					ppCcs);
+		IF_CCS **				ppCcs);
 
 	RCODE getIndexDef(
 		FLMUINT64				ui64DocumentID,

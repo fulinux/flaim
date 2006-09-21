@@ -1270,13 +1270,16 @@ F_Database::~F_Database()
 	f_free( &m_pszDbPath);
 	
 	// Encryption stuff
+	
 	if (m_pszDbPasswd)
 	{
 		f_free( &m_pszDbPasswd);
 	}
+	
 	if (m_pWrappingKey)
 	{
-		delete m_pWrappingKey;
+		m_pWrappingKey->Release();
+		m_pWrappingKey = NULL;
 	}
 	
 	flmAssert( !m_pFirstNode && !m_pLastNode && !m_pLastDirtyNode);
@@ -1533,13 +1536,12 @@ RCODE F_Database::readDbHdr(
 		
 		f_strcpy( (char *)m_pszDbPasswd, (const char *)pszPassword);
 	}
-
-	if ((m_pWrappingKey = f_new F_CCS()) == NULL)
+	
+	if( RC_BAD( rc = flmAllocCCS( &m_pWrappingKey)))
 	{
-		RC_SET( rc = NE_XFLM_MEM);
 		goto Exit;
 	}
-		
+
 	if( RC_OK( rc = m_pWrappingKey->init( TRUE, FLM_NICI_AES)))
 	{
 		// If the key was encrypted in a password, then the pszPassword parameter better
@@ -1553,10 +1555,7 @@ RCODE F_Database::readDbHdr(
 	
 	if( RC_BAD( rc))
 	{
-		// NE_XFLM_UNSUPPORTED_FEATURE is returned when we've been compiled
-		// without NICI support
-
-		if ((rc == NE_XFLM_UNSUPPORTED_FEATURE) || bAllowLimited)
+		if ((rc == NE_XFLM_ENCRYPTION_UNAVAILABLE) || bAllowLimited)
 		{
 			m_bInLimitedMode = TRUE;
 			rc = NE_XFLM_OK;

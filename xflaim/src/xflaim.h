@@ -414,7 +414,18 @@
 		XFLM_INCREMENTAL_BACKUP
 	} eDbBackupType;
 
-	// FLAIM Data types.
+	// Encryption
+	
+	#define FLM_NICI_AES				0
+	#define FLM_NICI_DES3			1
+	#define FLM_NICI_UNDEFINED		0xFF
+	
+	#define XFLM_NICI_AES128		128
+	#define XFLM_NICI_AES192		192
+	#define XFLM_NICI_AES256		256
+	#define XFLM_NICI_DES3X			168
+	
+	// Data types.
 
 	#define XFLM_NODATA_TYPE			0
 	#define XFLM_TEXT_TYPE				1

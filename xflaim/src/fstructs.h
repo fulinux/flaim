@@ -1265,7 +1265,7 @@ private:
 	IF_Thread *				m_pMaintThrd;			// Background maintenance thread
 	F_SEM						m_hMaintSem;			// Maintenance thread "work-to-do" semaphore
 	FLMBYTE *				m_pszDbPasswd;			// The database encryption password
-	F_CCS *					m_pWrappingKey;		// The database wrapping key
+	IF_CCS *					m_pWrappingKey;		// The database wrapping key
 	FLMBOOL					m_bHaveEncKey;			// 
 	FLMBOOL					m_bAllowLimitedMode;	// Is this database allowed to be opened in limited mode?
 	FLMBOOL					m_bInLimitedMode;		// Has this database been opened in limited mode?

@@ -222,17 +222,16 @@ void F_Dict::resetDict( void)
 	m_uiLowestPrefixNum = 0;
 	m_uiHighestPrefixNum = 0;
 
-	for ( uiLoop = 0;
-			uiLoop <= (m_uiHighestEncDefNum - m_uiLowestEncDefNum);
-			uiLoop++ )
+	for( uiLoop = 0; 
+		  uiLoop <= (m_uiHighestEncDefNum - m_uiLowestEncDefNum); uiLoop++)
 	{
-		if (m_ppEncDefTbl && 
-			 m_ppEncDefTbl[ uiLoop] &&
-			 (*m_ppEncDefTbl[ uiLoop]).pCcs)
+		if (m_ppEncDefTbl && m_ppEncDefTbl[ uiLoop] && 
+			(*m_ppEncDefTbl[ uiLoop]).pCcs)
 		{
 			(*m_ppEncDefTbl[ uiLoop]).pCcs->Release();
 		}
 	}
+	
 	f_free( &m_ppEncDefTbl);
 	m_uiLowestEncDefNum = 0;
 	m_uiHighestEncDefNum = 0;
@@ -2606,9 +2605,9 @@ FSTATIC RCODE fdictCopyEncDef(
 					 pSrcEncDef->puzEncDefName,
 					 (uiEncDefLen + 1) *	sizeof( FLMUNICODE));
 	
-		 (*ppDestEncDef)->pCcs = pSrcEncDef->pCcs;
-		 (*ppDestEncDef)->uiEncKeySize = pSrcEncDef->uiEncKeySize;
-		 (*ppDestEncDef)->pCcs->AddRef();
+		(*ppDestEncDef)->pCcs = pSrcEncDef->pCcs;
+		(*ppDestEncDef)->pCcs->AddRef();
+		(*ppDestEncDef)->uiEncKeySize = pSrcEncDef->uiEncKeySize;
 	}
 
 Exit:
@@ -4916,8 +4915,7 @@ Desc:	Determine if a specified encryption key size is legal
 ***************************************************************************/
 FINLINE RCODE fdictLegalEncKeySize(
 	FLMUINT			uiEncType,
-	FLMUINT			uiEncKeySize
-	)
+	FLMUINT			uiEncKeySize)
 {
 	RCODE			rc = NE_XFLM_OK;
 	
@@ -7430,8 +7428,7 @@ RCODE F_Db::getEncDefDef(
 	FLMUNICODE **	ppuzEncDefName,
 	FLMUINT *		puiEncDefNumber,
 	FLMUINT *		puiEncDefKeySize,
-	F_CCS **			ppCcs
-	)
+	IF_CCS **		ppCcs)
 {
 	RCODE				rc = NE_XFLM_OK;
 	F_DOMNode *		pNode = NULL;
@@ -7464,10 +7461,12 @@ RCODE F_Db::getEncDefDef(
 	}
 	
 	flmAssert( ppCcs);
+	
 	if (*ppCcs)
 	{
 		(*ppCcs)->Release();
 	}
+	
 	*ppCcs = NULL;
 
 	// Retrieve the root element of the encDef definition
@@ -7659,14 +7658,13 @@ RCODE F_Db::getEncDefDef(
 		goto Exit;
 	}
 
-	if (bHadEncKey)
+	if( bHadEncKey)
 	{
-		if ((*ppCcs = f_new( F_CCS)) == NULL)
+		if( RC_BAD( rc = flmAllocCCS( ppCcs)))
 		{
-			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
-
+		
 		if (RC_BAD( rc = (*ppCcs)->init( FALSE, uiEncType)))
 		{
 			goto Exit;
@@ -7680,9 +7678,10 @@ RCODE F_Db::getEncDefDef(
 	}
 	else
 	{
-		if (!bHadEncKeySize)
+		if( !bHadEncKeySize)
 		{
 			// Pick a key size based on the encryption algorithm.
+			
 			(void)fdictGetLegalKeySize( uiEncType, &uiEncKeySize);
 
 		}
@@ -7692,49 +7691,51 @@ RCODE F_Db::getEncDefDef(
 
 		// We will need an update transaction before we can proceed.
 
-		if ( getTransType() == XFLM_READ_TRANS)
+		if( getTransType() == XFLM_READ_TRANS)
 		{
 			// End this transaction
-			if (RC_BAD( rc = transCommit()))
+			
+			if( RC_BAD( rc = transCommit()))
 			{
 				goto Exit;
 			}
+			
 			bRestartReadTrans = TRUE;
 		}
 
-		if ( getTransType() == XFLM_NO_TRANS)
+		if( getTransType() == XFLM_NO_TRANS)
 		{
-			if (RC_BAD( rc = transBegin( XFLM_UPDATE_TRANS)))
+			if( RC_BAD( rc = transBegin( XFLM_UPDATE_TRANS)))
 			{
 				goto Exit;
 			}
 			bStartedUpdateTrans = TRUE;
 		}
-
-		if ((*ppCcs = f_new( F_CCS)) == NULL)
+		
+		if( RC_BAD( rc = flmAllocCCS( ppCcs)))
 		{
-			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = (*ppCcs)->init( FALSE, uiEncType)))
+		if( RC_BAD( rc = (*ppCcs)->init( FALSE, uiEncType)))
 		{
 			goto Exit;
 		}
 
 TryNewKeySize:
 
-		if (RC_BAD( rc = (*ppCcs)->generateEncryptionKey( uiEncKeySize)))
+		if( RC_BAD( rc = (*ppCcs)->generateEncryptionKey( uiEncKeySize)))
 		{
-			if (!fdictGetLegalKeySize( uiEncType, &uiEncKeySize))
+			if( !fdictGetLegalKeySize( uiEncType, &uiEncKeySize))
 			{
 				goto Exit;
 			}
+			
 			rc = NE_XFLM_OK;
 			goto TryNewKeySize;
 		}
 
-		if (RC_BAD( rc = (*ppCcs)->getKeyToStore(
+		if( RC_BAD( rc = (*ppCcs)->getKeyToStore(
 			(FLMBYTE **)&pvEncKeyBuf, &ui32EncKeyLen, NULL,
 			m_pDatabase->m_pWrappingKey)))
 		{
@@ -7742,77 +7743,77 @@ TryNewKeySize:
 		}
 
 		// Set the key in the DOM node as a binary string.
-		if (RC_BAD( rc = pNode->createAttribute( this,
-										ATTR_ENCRYPTION_KEY_TAG,
+		
+		if( RC_BAD( rc = pNode->createAttribute( this, ATTR_ENCRYPTION_KEY_TAG,
 										(IF_DOMNode **)&pAttr)))
 		{
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pAttr->setBinary( this, pvEncKeyBuf, ui32EncKeyLen)))
+		if( RC_BAD( rc = pAttr->setBinary( this, pvEncKeyBuf, ui32EncKeyLen)))
 		{
 			goto Exit;
 		}
 
-		if (RC_BAD( rc = pAttr->addModeFlags( this,
+		if( RC_BAD( rc = pAttr->addModeFlags( this, 
 			FDOM_READ_ONLY | FDOM_CANNOT_DELETE)))
 		{
 			goto Exit;
 		}
 
-		if (!bHadEncKeySize)
+		if( !bHadEncKeySize)
 		{
 			// Set the key size
-			if (RC_BAD( rc = pNode->createAttribute( this,
-											ATTR_ENCRYPTION_KEY_SIZE_TAG,
-											(IF_DOMNode **)&pAttr)))
+			
+			if( RC_BAD( rc = pNode->createAttribute( this,
+				ATTR_ENCRYPTION_KEY_SIZE_TAG, (IF_DOMNode **)&pAttr)))
 			{
 				goto Exit;
 			}
 
-			if (RC_BAD( rc = pAttr->setUINT( this, uiEncKeySize)))
+			if( RC_BAD( rc = pAttr->setUINT( this, uiEncKeySize)))
 			{
 				goto Exit;
 			}
 		}
 		else
 		{
-			if (RC_BAD( rc = pNode->getAttribute( this,
-											ATTR_ENCRYPTION_KEY_SIZE_TAG,
-											(IF_DOMNode **)&pAttr)))
+			if( RC_BAD( rc = pNode->getAttribute( this, 
+				ATTR_ENCRYPTION_KEY_SIZE_TAG, (IF_DOMNode **)&pAttr)))
 			{
 				goto Exit;
 			}
 		}
 
-		if (RC_BAD( rc = pAttr->addModeFlags( this,
-								FDOM_READ_ONLY | FDOM_CANNOT_DELETE)))
+		if( RC_BAD( rc = pAttr->addModeFlags( this,
+			FDOM_READ_ONLY | FDOM_CANNOT_DELETE)))
 		{
 			goto Exit;
 		}
 
 		// End the transaction
-		if (bStartedUpdateTrans)
+		
+		if( bStartedUpdateTrans)
 		{
-			if (RC_BAD( rc = transCommit()))
+			if( RC_BAD( rc = transCommit()))
 			{
 				goto Exit;
 			}
+			
 			bStartedUpdateTrans = FALSE;
 		}
-
 	}
 	
-	if (puiEncDefKeySize)
+	if( puiEncDefKeySize)
 	{
 		*puiEncDefKeySize = uiEncKeySize;
 	}
 
 Exit:
 
-	if (RC_BAD( rc))
+	if( RC_BAD( rc))
 	{
-		if (*ppCcs)
+		if( *ppCcs)
 		{
 			(*ppCcs)->Release();
 			*ppCcs = NULL;
@@ -7825,7 +7826,7 @@ Exit:
 		{
 			// Commit the update transaction
 			
-			if (RC_BAD( rc = transCommit()))
+			if( RC_BAD( rc = transCommit()))
 			{
 				(void)transAbort();
 			}
@@ -7880,8 +7881,8 @@ RCODE F_Dict::updateEncDef(
 	FLMUNICODE *	puzEncDefName = NULL;
 	FLMUINT			uiTmp;
 	void *			pvMark = m_dictPool.poolMark();
-	F_CCS *			pCcs = NULL;
 	FLMUINT			uiEncKeySize = 0;
+	IF_CCS *			pCcs = NULL;
 
 	if (bOpeningDict)
 	{
@@ -8005,12 +8006,12 @@ Exit:
 		}
 	}
 
-	if (pCcs)
+	if( pCcs)
 	{
 		pCcs->Release();
 	}
 
-	return( rc );
+	return( rc);
 }
 
 /***************************************************************************

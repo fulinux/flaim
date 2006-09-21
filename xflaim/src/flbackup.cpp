@@ -394,6 +394,7 @@ RCODE F_Backup::backup(
 	IF_BackupStatus *		ifpStatus,
 	FLMUINT *				puiIncSeqNum)
 {
+	RCODE						rc = NE_XFLM_OK;
 	FLMBOOL					bFullBackup = TRUE;
 	FLMINT					iFileNum;
 	FLMUINT					uiBlkAddr;
@@ -415,7 +416,6 @@ RCODE F_Backup::backup(
 	FLMUINT					uiMaxFileSize;
 	FLMBOOL					bReleaseClient = FALSE;
 	FLMBOOL					bMustUnlock = FALSE;
-	RCODE						rc = NE_XFLM_OK;
 
 	if( puiIncSeqNum)
 	{
@@ -601,15 +601,14 @@ RCODE F_Backup::backup(
 	pDbHdr->ui32RblFirstCPBlkAddr = 0;
 
 	// If a password was used, wrap the database key in that password
-	if (pszPassword && *pszPassword)
+
+	if( pszPassword && *pszPassword)
 	{
 		FLMBYTE *	pucTmp = NULL;
 		
 		// Need to get a lock on the database - mostly to prevent the very
 		// unlikely possibility of another thread attempting to use the
 		// database key at the same time we are.
-		// (Carson found this in his random testing when one thread did
-		// a wrapKey while another did a backup.)
 		
 		if ((m_pDb->m_uiFlags & FDB_HAS_FILE_LOCK) == 0)
 		{
@@ -618,22 +617,26 @@ RCODE F_Backup::backup(
 			{
 				goto Exit;
 			}
+
 			bMustUnlock = TRUE;
 		}
+
 		rc = m_pDb->getDatabase()->m_pWrappingKey->getKeyToStore( &pucTmp,
 								 &pDbHdr->ui32DbKeyLen,
 								 (FLMBYTE *)pszPassword, NULL);
-		if (bMustUnlock)
+		if( bMustUnlock)
 		{
 			m_pDb->dbUnlock();
 			bMustUnlock = FALSE;
 		}
-		if (RC_BAD( rc))
+		
+		if( RC_BAD( rc))
 		{
-			if (pucTmp)
+			if( pucTmp)
 			{
 				f_free( &pucTmp);
 			}
+
 			goto Exit;
 		}
 		
@@ -844,7 +847,6 @@ Exit:
 }
 
 /****************************************************************************
-Area : MISC
 Desc : Ends the backup, updating the log header if needed.
 ****************************************************************************/
 RCODE F_Backup::endBackup( void)

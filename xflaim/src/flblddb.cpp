@@ -343,10 +343,10 @@ RCODE F_DbRebuild::dbRebuild(
 	FLMBOOL					bUsedDatabase = FALSE;
  	FLMBOOL					bWaited;
 	FLMBYTE *				pucWrappingKey = NULL;
-	FLMUINT32				ui32KeyLen;
 	F_SEM						hWaitSem = F_SEM_NULL;
 	FLMUINT					uiRflToken = 0;
-	F_CCS *					pWrappingKey = NULL;
+	IF_CCS *					pWrappingKey = NULL;
+	FLMUINT32				ui32KeyLen;
 	F_SuperFileClient		SFileClient;
 	
 	if( RC_BAD( rc = f_semCreate( &hWaitSem)))
@@ -580,19 +580,11 @@ Retry:
 
 	if( m_dbHdr.ui32DbKeyLen)
 	{
-#ifndef FLM_USE_NICI
-
-		rc = RC_SET( NE_XFLM_UNSUPPORTED_FEATURE);
-		goto Exit;
-
-#else
-
-		if( (pWrappingKey = f_new F_CCS) == NULL)
+		if( RC_BAD( rc = flmAllocCCS( &pWrappingKey)))
 		{
-			rc = RC_SET( NE_XFLM_MEM);
 			goto Exit;
 		}
-		
+
 		if( RC_BAD( rc = pWrappingKey->init( TRUE, FLM_NICI_AES)))
 		{
 			goto Exit;
@@ -607,8 +599,6 @@ Retry:
 		{
 			goto Exit;
 		}
-
-#endif
 	}
 
 	// Delete the destination database in case it already exists.

@@ -14312,7 +14312,7 @@ RCODE F_Db::flushNode(
 				goto Exit;
 			}
 			
-			uiDataOutputSize = getEncLen( uiNodeDataLength); 
+			uiDataOutputSize = getEncLen( uiNodeDataLength);
 		}
 												
 		if( RC_BAD( rc = dynaBuf.allocSpace( uiDataOutputSize, 
@@ -17897,11 +17897,11 @@ Exit:
 Desc:
 ****************************************************************************/
 RCODE F_AttrItem::setupAttribute(
-	F_Db *	pDb,
-	FLMUINT	uiEncDefId,
-	FLMUINT	uiDataSizeNeeded,
-	FLMBOOL	bOkToGenerateIV,
-	FLMBOOL	bMutexAlreadyLocked)
+	F_Db *			pDb,
+	FLMUINT			uiEncDefId,
+	FLMUINT			uiDataSizeNeeded,
+	FLMBOOL			bOkToGenerateIV,
+	FLMBOOL			bMutexAlreadyLocked)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiTotalNeeded = uiDataSizeNeeded;

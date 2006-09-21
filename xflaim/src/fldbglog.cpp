@@ -311,15 +311,13 @@ void flmDbgLogUpdate(
 	f_mutexUnlock( g_hDbgLogMutex);
 }
 
-#else
+#endif // FLM_DBG_LOG
 
-// Must have something here for the Netware platform, or it won't build.
-
-#if defined( FLM_WATCOM_NLM)
-	void gv_fldbglog()
-	{
-	}
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifndef FLM_DBG_LOG
+void fldbglog_dummy()
+{
+}
 #endif
-
-
-#endif	// #ifdef FLM_DBG_LOG

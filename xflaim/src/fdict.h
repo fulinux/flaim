@@ -38,8 +38,8 @@
 struct IXD;
 struct ICD;
 class F_Database;
-class F_CCS;
 class F_AttrItem;
+class IF_CCS;
 
 /****************************************************************************
 Desc:		Attribute/Element definition structure.
@@ -251,7 +251,7 @@ typedef struct
 	FLMUINT64			ui64DocumentId;
 	FLMUNICODE *		puzEncDefName;
 	FLMUINT				uiEncKeySize;
-	F_CCS *				pCcs;
+	IF_CCS *				pCcs;
 } F_ENCDEF;
 
 /****************************************************************************

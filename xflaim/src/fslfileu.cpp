@@ -106,7 +106,7 @@ RCODE F_Db::checkDictDefInfo(
 			uiMaxTagNum = XFLM_MAX_COLLECTION_NUM;
 			break;
 		case ELM_ENCDEF_TAG:
-#ifndef FLM_USE_NICI
+#ifndef FLM_HAS_ENCRYPTION
 			rc = RC_SET( NE_XFLM_ENCRYPTION_UNAVAILABLE);
 			goto Exit;
 #else

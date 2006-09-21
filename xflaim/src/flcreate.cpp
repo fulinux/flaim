@@ -281,9 +281,7 @@ RCODE F_Db::initDbFiles(
 	F_BLK_HDR *			pBlkHdr;
 	F_CachedBlock *	pSCache = NULL;
 	FLMBYTE *			pucWrappingKey = NULL;
-#ifdef FLM_USE_NICI
 	FLMUINT32			ui32KeyLen = 0;
-#endif
 
 	// Determine what size of buffer to allocate.
 
@@ -319,35 +317,37 @@ RCODE F_Db::initDbFiles(
 		}
 	}
 	
-#ifdef FLM_USE_NICI
-	if (RC_BAD( rc = createDbKey()))
+	if( RC_OK( rc = createDbKey()))
 	{
-		goto Exit;
-	}
+		if (RC_BAD( rc = m_pDatabase->m_pWrappingKey->getKeyToStore(
+								&pucWrappingKey,
+								&ui32KeyLen,
+								m_pDatabase->m_pszDbPasswd,
+								NULL)))
+		{
+			goto Exit;
+		}
 	
-	if (RC_BAD( rc = m_pDatabase->m_pWrappingKey->getKeyToStore(
-							&pucWrappingKey,
-							&ui32KeyLen,
-							m_pDatabase->m_pszDbPasswd,
-							NULL)))
+		f_memcpy( m_pDatabase->m_lastCommittedDbHdr.DbKey,
+					 pucWrappingKey,
+					 ui32KeyLen);
+		m_pDatabase->m_lastCommittedDbHdr.ui32DbKeyLen = ui32KeyLen;
+	
+		m_pDatabase->m_rcLimitedCode = NE_XFLM_OK;
+		m_pDatabase->m_bInLimitedMode = FALSE;
+		m_pDatabase->m_bHaveEncKey = TRUE;
+	}
+	else if( rc == NE_XFLM_ENCRYPTION_UNAVAILABLE)
+	{
+		rc = NE_XFLM_OK;
+		m_pDatabase->m_rcLimitedCode = NE_XFLM_ENCRYPTION_UNAVAILABLE;
+		m_pDatabase->m_bInLimitedMode = TRUE;
+		m_pDatabase->m_bHaveEncKey = FALSE;
+	}
+	else
 	{
 		goto Exit;
 	}
-
-	f_memcpy( m_pDatabase->m_lastCommittedDbHdr.DbKey,
-				 pucWrappingKey,
-				 ui32KeyLen);
-	m_pDatabase->m_lastCommittedDbHdr.ui32DbKeyLen = ui32KeyLen;
-
-	m_pDatabase->m_rcLimitedCode = NE_XFLM_OK;
-	m_pDatabase->m_bInLimitedMode = FALSE;
-	m_pDatabase->m_bHaveEncKey = TRUE;
-
-#else
-	m_pDatabase->m_rcLimitedCode = NE_XFLM_ENCRYPTION_UNAVAILABLE;
-	m_pDatabase->m_bInLimitedMode = TRUE;
-	m_pDatabase->m_bHaveEncKey = FALSE;
-#endif
 
 	// Write out the log header
 
