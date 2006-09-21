@@ -3093,10 +3093,9 @@ FSTATIC RCODE fsvIteratorFromParse(
 
 							if (RC_BAD( rc = FlmCursorConfig( hIterator,
 										  FCURSOR_RETURN_KEYS_OK, 
-										  (void *) (FLMBOOL) (uiOkToReturnKeys 
+										  (void *) (FLMUINT)(uiOkToReturnKeys 
 																? TRUE 
-																: FALSE),
-										  (void *) NULL)))
+																: FALSE), NULL)))
 							{
 								goto Exit;
 							}

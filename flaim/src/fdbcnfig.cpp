@@ -715,7 +715,7 @@ Transmission_Error:
 				{
 					goto Exit;
 				}
-				pLFile->bMakeFieldIdTable = (FLMBOOL)pvValue2;
+				pLFile->bMakeFieldIdTable = (FLMBOOL)((FLMUINT)pvValue2);
 			}
 			else if (pDb->pFile->pDictList)
 			{
@@ -724,7 +724,7 @@ Transmission_Error:
 				{
 					goto Exit;
 				}
-				pLFile->bMakeFieldIdTable = (FLMBOOL)pvValue2;
+				pLFile->bMakeFieldIdTable = (FLMBOOL)((FLMUINT)pvValue2);
 			}
 			break;
 		}

@@ -1637,7 +1637,7 @@ FLMEXP RCODE FLMAPI FlmCursorConfig(
 			break;
 
 		case FCURSOR_RETURN_KEYS_OK:
-			pCursor->bOkToReturnKeys = (FLMBOOL)((FLMBOOL)Value1 ? TRUE : FALSE);
+			pCursor->bOkToReturnKeys = (FLMBOOL)((FLMBOOL)(FLMUINT)Value1 ? TRUE : FALSE);
 			break;
 
 		case FCURSOR_SET_FLM_IX:
@@ -1695,7 +1695,7 @@ FLMEXP RCODE FLMAPI FlmCursorConfig(
 			}
 			rc = flmCurSetAbsolutePos( pCursor,
 									*((FLMUINT *)Value1),
-									(FLMBOOL)Value2,
+									(FLMBOOL)(FLMUINT)Value2,
 									(FLMUINT *)Value1);
 			break;
 

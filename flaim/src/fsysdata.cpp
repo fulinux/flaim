@@ -1093,7 +1093,7 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			f_mutexLock( gv_FlmSysData.hShareMutex);
 			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
 			gv_FlmSysData.bDynamicCacheAdjust = FALSE;
-			rc = flmSetCacheLimits( (FLMUINT)Value1, TRUE, (FLMBOOL)Value2);
+			rc = flmSetCacheLimits( (FLMUINT)Value1, TRUE, (FLMBOOL)(FLMUINT)Value2);
 			f_mutexUnlock( gv_FlmSysData.RCacheMgr.hMutex);
 			f_mutexUnlock( gv_FlmSysData.hShareMutex);
 			break;

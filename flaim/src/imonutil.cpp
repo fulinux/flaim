@@ -4708,7 +4708,7 @@ RCODE F_DatabaseConfigPage::display(
 		if( RC_OK( ExtractParameter( uiNumParams, ppszParams, szTmp, sizeof( szTmp), szTmp)))
 		{
 			FLMBOOL	bFlag = f_atoi( szTmp) ? TRUE : FALSE;
-			rc = FlmDbConfig( hDb, FDB_RFL_KEEP_FILES, (void *)bFlag, NULL);
+			rc = FlmDbConfig( hDb, FDB_RFL_KEEP_FILES, (void *)(FLMUINT)bFlag, NULL);
 			bExecuted = TRUE;
 		}
 	}
@@ -4719,7 +4719,7 @@ RCODE F_DatabaseConfigPage::display(
 		if( RC_OK( ExtractParameter( uiNumParams, ppszParams, szTmp, sizeof( szTmp), szTmp)))
 		{
 			FLMBOOL	bFlag = f_atoi( szTmp) ? TRUE : FALSE;
-			rc = FlmDbConfig( hDb, FDB_AUTO_TURN_OFF_KEEP_RFL, (void *)bFlag, NULL);
+			rc = FlmDbConfig( hDb, FDB_AUTO_TURN_OFF_KEEP_RFL, (void *)(FLMUINT)bFlag, NULL);
 			bExecuted = TRUE;
 		}
 	}
@@ -4730,7 +4730,7 @@ RCODE F_DatabaseConfigPage::display(
 		if( RC_OK( ExtractParameter( uiNumParams, ppszParams, szTmp, sizeof( szTmp), szTmp)))
 		{
 			FLMBOOL	bFlag = f_atoi( szTmp) ? TRUE : FALSE;
-			rc = FlmDbConfig( hDb, FDB_KEEP_ABORTED_TRANS_IN_RFL, (void *)bFlag, NULL);
+			rc = FlmDbConfig( hDb, FDB_KEEP_ABORTED_TRANS_IN_RFL, (void *)(FLMUINT)bFlag, NULL);
 			bExecuted = TRUE;
 		}
 	}
