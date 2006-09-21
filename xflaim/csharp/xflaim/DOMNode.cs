@@ -30,6 +30,23 @@ namespace xflaim
 {
 
 	/// <summary>
+	/// Data types supported in an XFLAIM database.
+	/// IMPORTANT NOTE: These should be kept in sync with data types defined
+	/// in xflaim.h
+	/// </summary>
+	public enum FlmDataType : int
+	{
+		/// <summary>No data may be stored with a node of this type</summary>
+		XFLM_NODATA_TYPE			= 0,
+		/// <summary>String data - UTF8 - unicode 16 supported</summary>
+		XFLM_TEXT_TYPE				= 1,
+		/// <summary>Integer numbers - 64 bit signed and unsigned supported</summary>
+		XFLM_NUMBER_TYPE			= 2,
+		/// <summary>Binary data</summary>
+		XFLM_BINARY_TYPE			= 3
+	}
+
+	/// <summary>
 	/// DOM Node types
 	/// </summary>
 	public enum eDomNodeType : int

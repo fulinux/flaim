@@ -293,9 +293,9 @@ namespace xflaim
 			return m_pDbSystem;
 		}
 
-//-----------------------------------------------------------------------------
-// dbCreate
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbCreate
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Creates a new XFlaim database.
@@ -375,9 +375,9 @@ namespace xflaim
 			XFLM_CREATE_OPTS	pCreateOpts,
 			out ulong			ppDb);
 
-//-----------------------------------------------------------------------------
-// dbOpen
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbOpen
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Opens an existing XFlaim database.
@@ -434,9 +434,9 @@ namespace xflaim
 			int			bAllowLimited,
 			out ulong	ppDb);
 
-//-----------------------------------------------------------------------------
-// dbRemove
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbRemove
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Removes (deletes) an XFlaim database.
@@ -480,9 +480,9 @@ namespace xflaim
 			string 		pszRflDir,
 			int			bRemoveRflFiles);
 
-//-----------------------------------------------------------------------------
-// dbRestore
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbRestore
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Restores a previously backed up database. The <paramref name="sBackupPath"/> parameter
@@ -793,9 +793,9 @@ namespace xflaim
 			private RestoreStatus	m_restoreStatus;
 		}
 
-//-----------------------------------------------------------------------------
-// dbCheck
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbCheck
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Check for physical and logical corruptions on the specified database.
@@ -896,13 +896,13 @@ namespace xflaim
 				{
 					rc = m_dbCheckStatus.reportProgress(
 						(XFLM_PROGRESS_CHECK_INFO)Marshal.PtrToStructure( pProgressInfo,
-																		typeof( XFLM_PROGRESS_CHECK_INFO)));
+						typeof( XFLM_PROGRESS_CHECK_INFO)));
 				}
 				else
 				{
 					rc = m_dbCheckStatus.reportCheckErr(
 						(XFLM_CORRUPT_INFO)Marshal.PtrToStructure( pCorruptInfo,
-																	typeof( XFLM_CORRUPT_INFO)));
+						typeof( XFLM_CORRUPT_INFO)));
 				}
 				return( rc);
 			}
@@ -910,9 +910,9 @@ namespace xflaim
 			private DbCheckStatus	m_dbCheckStatus;
 		}
 
-//-----------------------------------------------------------------------------
-// dbCopy
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbCopy
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Makes a copy of an existing database.
@@ -1028,9 +1028,9 @@ namespace xflaim
 			private DbCopyStatus	m_dbCopyStatus;
 		}
 
-//-----------------------------------------------------------------------------
-// dbRename
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbRename
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Rename a database.
@@ -1121,9 +1121,9 @@ namespace xflaim
 			private DbRenameStatus	m_dbRenameStatus;
 		}
 
-//-----------------------------------------------------------------------------
-// dbRebuild
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// dbRebuild
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Rebuild a database.
@@ -1255,9 +1255,9 @@ namespace xflaim
 			private DbRebuildStatus	m_dbRebuildStatus;
 		}
 
-//-----------------------------------------------------------------------------
-// openBufferIStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openBufferIStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that reads from a string buffer.
@@ -1288,9 +1288,9 @@ namespace xflaim
 			string		pszBuffer,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openFileIStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openFileIStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that reads from a file.
@@ -1322,9 +1322,9 @@ namespace xflaim
 			string		pszFileName,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openMultiFileIStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openMultiFileIStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that reads from multiple files.
@@ -1349,7 +1349,7 @@ namespace xflaim
 			ulong		pIStream = 0;
 
 			if ((rc = xflaim_DbSystem_openMultiFileIStream( m_pDbSystem, sDirectory,
-									sBaseName, out pIStream)) != 0)
+				sBaseName, out pIStream)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -1365,9 +1365,9 @@ namespace xflaim
 			string		pszBaseName,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openBufferedIStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openBufferedIStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that buffers an existing input stream.
@@ -1393,7 +1393,7 @@ namespace xflaim
 			ulong		pIStream = 0;
 
 			if ((rc = xflaim_DbSystem_openBufferedIStream( m_pDbSystem,
-							inputIStream.getIStream(), uiBufferSize, out pIStream)) != 0)
+				inputIStream.getIStream(), uiBufferSize, out pIStream)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -1407,9 +1407,9 @@ namespace xflaim
 			uint			uiBufferSize,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openUncompressingIStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openUncompressingIStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that decompresses data from another input stream.  It
@@ -1442,9 +1442,9 @@ namespace xflaim
 			ulong			pInputIStream,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openBase64Encoder
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openBase64Encoder
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that encodes data from another input stream into
@@ -1485,9 +1485,9 @@ namespace xflaim
 			int			bInsertLineBreaks,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openBase64Decoder
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openBase64Decoder
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that decodes data from another input stream.  It is
@@ -1522,9 +1522,9 @@ namespace xflaim
 			ulong			pInputIStream,
 			out ulong	ppIStream);
 
-//-----------------------------------------------------------------------------
-// openFileOStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openFileOStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an output stream that writes data to a file.
@@ -1564,9 +1564,9 @@ namespace xflaim
 			int			bTruncateIfExists,
 			out ulong	ppOStream);
 
-//-----------------------------------------------------------------------------
-// openMultiFileOStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openMultiFileOStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open a multi-file output stream.  Data is written to one or more files.
@@ -1619,9 +1619,9 @@ namespace xflaim
 			int			bOkToOverwrite,
 			out ulong	ppOStream);
 
-//-----------------------------------------------------------------------------
-// removeMultiFileStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// removeMultiFileStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Remove a multi-file output stream from disk.
@@ -1655,9 +1655,9 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr)]
 			string		sBaseName);
 
-//-----------------------------------------------------------------------------
-// openBufferedOStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openBufferedOStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open a buffered output stream.  A buffer is allocated for writing data to
@@ -1700,9 +1700,9 @@ namespace xflaim
 			uint			uiBufferSize,
 			out ulong	ppOStream);
 
-//-----------------------------------------------------------------------------
-// openCompressingOStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// openCompressingOStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open a compressing output stream.  Data is compressed before writing it
@@ -1736,9 +1736,9 @@ namespace xflaim
 			ulong			pInputOStream,
 			out ulong	ppOStream);
 
-//-----------------------------------------------------------------------------
-// writeToOStream
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// writeToOStream
+		//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Read data from an input stream and write it out to an output stream.  This
@@ -1768,5 +1768,45 @@ namespace xflaim
 			ulong			pDbSystem,
 			ulong			pIStream,
 			ulong			pOStream);
+
+//-----------------------------------------------------------------------------
+// createDataVector
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Create a <see cref="DataVector"/> object.
+		/// </summary>
+		/// <returns>Returns a <see cref="DataVector"/> objecdt</returns>
+		public DataVector createDataVector()
+		{
+			RCODE	rc;
+			ulong	pDataVector;
+			
+			if ((rc = xflaim_DbSystem_createDataVector( m_pDbSystem, out pDataVector)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new DataVector( pDataVector, this));
+		}
+
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern RCODE xflaim_DbSystem_createDataVector(
+			ulong			pDbSystem,
+			out ulong	ppDataVector);
+
+//-----------------------------------------------------------------------------
+// freeUnmanagedMem
+//-----------------------------------------------------------------------------
+
+		internal void freeUnmanagedMem(
+			IntPtr	pMem)
+		{
+			xflaim_DbSystem_freeUnmanagedMem( m_pDbSystem, pMem);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_freeUnmanagedMem(
+			ulong		pDbSystem,
+			IntPtr	pMem);
 	}
 }

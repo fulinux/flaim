@@ -1433,3 +1433,37 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_writeToOStream(
 	
 	return( pDbSystem->writeToOStream( pIStream, pOStream));
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_createDataVector(
+	FLMUINT64		ui64This,
+	FLMUINT64 *		pui64DataVector)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DataVector *	pDataVector = NULL;
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	
+	if (RC_BAD( rc = pDbSystem->createIFDataVector( &pDataVector)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	*pui64DataVector = (FLMUINT64)((FLMUINT)pDataVector);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_freeUnmanagedMem(
+	FLMUINT64		ui64This,
+	void *			pvMem)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	
+	pDbSystem->freeMem( &pvMem);
+}

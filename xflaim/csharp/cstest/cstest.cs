@@ -542,6 +542,97 @@ namespace cstest
 		}
 
 		//--------------------------------------------------------------------------
+		// Vector tests
+		//--------------------------------------------------------------------------
+		static bool vectorTests(
+			DbSystem	dbSystem)
+		{
+			DataVector	v;
+			byte []		b = new byte [] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+			byte []		b2;
+			bool			bDataSame;
+
+			beginTest( "Creating DataVector");
+			try
+			{
+				v = dbSystem.createDataVector();
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling createDataVector");
+				return( false);
+			}
+			endTest( false, true);
+
+
+
+			beginTest( "Setting binary data");
+			try
+			{
+				v.setBinary( 0, b);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling setBinary");
+				return( false);
+			}
+			endTest( false, true);
+
+			beginTest( "Getting binary data");
+			try
+			{
+				b2 = v.getBinary( 0);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling getBinary");
+				return( false);
+			}
+			endTest( false, true);
+
+
+			beginTest( "Comparing set data to get data");
+
+			bDataSame = true;
+			if (b.Length != b2.Length)
+			{
+				bDataSame = false;
+			}
+			else
+			{
+				for( uint uiLoop = 0; uiLoop < b.Length; uiLoop++)
+				{
+					if (b [uiLoop] != b2 [uiLoop])
+					{
+						bDataSame = false;
+						break;
+					}
+				}
+			}
+			if (!bDataSame)
+			{
+				endTest( false, false);
+				System.Console.WriteLine( "Set data does not match get data");
+				System.Console.Write( "Set Data Length: {0}\n[", b.Length);
+				for( uint uiLoop = 0; uiLoop < b.Length; uiLoop++)
+				{
+					System.Console.Write( "{0} ", b[uiLoop]);
+				}
+				System.Console.WriteLine( "]");
+				System.Console.Write( "Get Data Length: {0}\n[", b2.Length);
+				for( uint uiLoop = 0; uiLoop < b2.Length; uiLoop++)
+				{
+					System.Console.Write( "{0} ", b2[uiLoop]);
+				}
+				System.Console.WriteLine( "]");
+				return( false);
+			}
+
+			endTest( false, true);
+			return( true);
+		}
+
+		//--------------------------------------------------------------------------
 		// Main for tester program
 		//--------------------------------------------------------------------------
 		static void Main()
@@ -650,6 +741,13 @@ namespace cstest
 			// Input and Output stream tests
 
 			if (!streamTests( dbSystem))
+			{
+				return;
+			}
+
+			// Data vector tests
+
+			if (!vectorTests( dbSystem))
 			{
 				return;
 			}
