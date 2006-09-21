@@ -90,7 +90,7 @@ namespace xflaim
 		}
 	
 		[DllImport("xflaim")]
-		private static extern int xflaim_Backup_Release(
+		private static extern void xflaim_Backup_Release(
 			ulong	pBackup);
 
 //-----------------------------------------------------------------------------
@@ -170,7 +170,7 @@ namespace xflaim
 			BackupClient		backupClient,
 			BackupStatus		backupStatus)
 		{
-			int						rc;
+			RCODE						rc;
 			uint						uiSeqNum;
 			BackupClientDelegate	backupClientDelegate = null;
 			BackupClientCallback	fnBackupClient = null;
@@ -197,7 +197,7 @@ namespace xflaim
 		}
 
 		[DllImport("xflaim")]
-		private static extern int xflaim_Backup_backup(
+		private static extern RCODE xflaim_Backup_backup(
 			ulong						pBackup,
 			[MarshalAs(UnmanagedType.LPStr)]
 			string					sBackupPath,
@@ -268,7 +268,7 @@ namespace xflaim
 		/// </summary>
 		public void endBackup()
 		{
-			int	rc;
+			RCODE	rc;
 
 			if ((rc = xflaim_Backup_endBackup( m_pBackup)) != 0)
 			{
@@ -277,7 +277,7 @@ namespace xflaim
 		}
 
 		[DllImport("xflaim")]
-		private static extern int xflaim_Backup_endBackup(
+		private static extern RCODE xflaim_Backup_endBackup(
 			ulong	pBackup);
 
 	}

@@ -143,7 +143,7 @@ namespace xflaim
 			bool	bLockDb,
 			uint	uiMaxLockWait)
 		{
-			int		rc = 0;
+			RCODE		rc = 0;
 			ulong		pBackup;
 
 			if ((rc = xflaim_Db_backupBegin( m_pDb, (bFullBackup ? 1 : 0),
@@ -156,7 +156,7 @@ namespace xflaim
 		}
 
 		[DllImport("xflaim")]
-		private static extern int xflaim_Db_backupBegin(
+		private static extern RCODE xflaim_Db_backupBegin(
 			ulong			pDb,
 			int			bFullBackup,
 			int			bLockDb,
