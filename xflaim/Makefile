@@ -883,7 +883,7 @@ cs_flags = /nologo /warn:4 /warnaserror+
 ifeq ($(target_build_type),debug)
 	cs_flags += /debug+ /debug:full /define:FLM_DEBUG
 else
-	cs_flags += /optimized+
+	cs_flags += /optimize+
 endif
 
 ccdefs =
