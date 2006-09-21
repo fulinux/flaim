@@ -1966,7 +1966,7 @@ RCODE FLMAPI F_Base64EncoderIStream::read(
 	FLMUINT		uiBytesToEncode;
 	FLMBYTE		ucTriBuffer[ 3];
 	
-	if( *puiBytesRead)
+	if( puiBytesRead)
 	{
 		*puiBytesRead = 0;
 	}
