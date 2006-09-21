@@ -2182,6 +2182,7 @@ endif
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
 	$(ec)$(call mkdircmd,$(package_debian_dir))
+	$(ec)$(call mkdircmd,$(package_ubuntu_dir))
 
 # -- phony targets --
 
