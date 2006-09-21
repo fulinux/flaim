@@ -979,7 +979,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferIStream(
 	FLMUINT64 *				pui64IStream)
 {
 	RCODE					rc = NE_XFLM_OK;
-	FLMUINT				uiStrCharCount = f_strlen( pszBuffer) + 1;
+	FLMUINT				uiStrCharCount = f_strlen( pszBuffer);
 	F_BufferIStream *	pIStream = NULL;
 	char *				pszAllocBuffer = NULL;
 	
@@ -998,7 +998,8 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferIStream(
 		goto Exit;
 	}
 	
-	// Copy the data from the passed in string into pucBuffer, including the NULL.
+	// Copy the data from the passed in string into pucBuffer, excluding the null
+	// terminating byte.
 	
 	f_memcpy( pszAllocBuffer, pszBuffer, uiStrCharCount);
 	

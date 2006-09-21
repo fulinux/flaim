@@ -85,6 +85,14 @@ namespace xflaim
 		/// </summary>
 		~IStream()
 		{
+			close();
+		}
+
+		/// <summary>
+		/// Close the input stream and free the IF_IStream object.
+		/// </summary>
+		public void close()
+		{
 			if (m_pIStream != 0)
 			{
 				xflaim_IStream_Release( m_pIStream);

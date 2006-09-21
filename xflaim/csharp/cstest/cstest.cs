@@ -460,6 +460,7 @@ namespace cstest
 			OStream			fileOStream;
 			Stream			s;
 			StreamReader	sr;
+			string			sFileData;
 
 			beginTest( "Creating IStream from buffer");
 			try
@@ -471,7 +472,9 @@ namespace cstest
 				endTest( false, ex, "calling openBufferIStream");
 				return( false);
 			}
+			endTest( false, true);
 
+			beginTest( "Creating base 64 encoder stream");
 			try
 			{
 				encoderStream = dbSystem.openBase64Encoder( bufferStream, true);
@@ -481,7 +484,9 @@ namespace cstest
 				endTest( false, ex, "calling openBase64Encoder");
 				return( false);
 			}
+			endTest( false, true);
 
+			beginTest( "Creating base 64 decoder stream");
 			try
 			{
 				decoderStream = dbSystem.openBase64Decoder( encoderStream);
@@ -491,7 +496,9 @@ namespace cstest
 				endTest( false, ex, "calling openBase64Decoder");
 				return( false);
 			}
+			endTest( false, true);
 
+			beginTest( "Creating file output stream");
 			try
 			{
 				fileOStream = dbSystem.openFileOStream( "Output_Stream", true);
@@ -501,6 +508,9 @@ namespace cstest
 				endTest( false, ex, "calling openFileOStream");
 				return( false);
 			}
+			endTest( false, true);
+
+			beginTest( "Writing from input stream to output stream");
 			try
 			{
 				dbSystem.writeToOStream( decoderStream, fileOStream);
@@ -510,14 +520,20 @@ namespace cstest
 				endTest( false, ex, "calling writeToOStream");
 				return( false);
 			}
-			fileOStream = null;
+			fileOStream.close();
+			endTest( false, true);
 
-			s = File.OpenRead( "Output_Sream");
+			beginTest( "Comparing output stream data to original data");
+
+			s = File.OpenRead( "Output_Stream");
 			sr = new StreamReader( s);
-			if (sr.ReadLine() != TEST_STREAM_STRING)
+			sFileData = sr.ReadLine();
+			if (sFileData != TEST_STREAM_STRING)
 			{
-				endTest( true, false);
+				endTest( false, false);
 				System.Console.WriteLine( "Stream data does not match original string");
+				System.Console.WriteLine( "File Data:\n[{0}]", sFileData);
+				System.Console.WriteLine( "Original String:\n[{0}]", TEST_STREAM_STRING);
 				return( false);
 			}
 

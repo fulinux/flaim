@@ -85,6 +85,14 @@ namespace xflaim
 		/// </summary>
 		~OStream()
 		{
+			close();
+		}
+
+		/// <summary>
+		/// Close the output stream and free the IF_OStream object.
+		/// </summary>
+		public void close()
+		{
 			if (m_pOStream != 0)
 			{
 				xflaim_OStream_Release( m_pOStream);
